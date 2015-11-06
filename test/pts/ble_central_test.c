@@ -234,26 +234,13 @@ static const char * att_error_application = "Application Error";
 static const char * att_error_common_error = "Common Profile and Service Error Codes";
 static const char * att_error_timeout = "Timeout";
 
-const char * att_error_string_for_code(uint8_t code){
+static const char * att_error_string_for_code(uint8_t code){
     if (code >= 0xe0) return att_error_common_error;
     if (code >= 0xa0) return att_error_reserved;
     if (code >= 0x80) return att_error_application;
     if (code == 0x7f) return att_error_timeout;
     if (code >= 0x12) return att_error_reserved;
     return att_errors[code];
-}
-
-void dump_characteristic(le_characteristic_t * characteristic){
-    printf("    * characteristic: [0x%04x-0x%04x-0x%04x], properties 0x%02x, uuid ",
-                            characteristic->start_handle, characteristic->value_handle, characteristic->end_handle, characteristic->properties);
-    printUUID(characteristic->uuid128, characteristic->uuid16);
-    printf("\n");
-}
-
-void dump_service(le_service_t * service){
-    printf("    * service: [0x%04x-0x%04x], uuid ", service->start_group_handle, service->end_group_handle);
-    printUUID(service->uuid128, service->uuid16);
-    printf("\n");
 }
 
 const char * ad_event_types[] = {
@@ -331,7 +318,7 @@ static void gap_run(void){
     if (!hci_can_send_command_packet_now()) return;
 }
 
-void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     uint16_t aHandle;
     bd_addr_t event_address;
 
@@ -414,22 +401,22 @@ void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet,
     gap_run();
 }
 
-void use_public_pts_address(void){
+static void use_public_pts_address(void){
     memcpy(current_pts_address, public_pts_address, 6);
     current_pts_address_type = public_pts_address_type;                    
 }
 
-void extract_service(le_service_t * service, uint8_t * data){
-    service->start_group_handle = READ_BT_16(data, 0);
-    service->end_group_handle   = READ_BT_16(data, 2);
-    service->uuid16 = 0;
-    swap128(&data[4], service->uuid128);
-    if (sdp_has_blueooth_base_uuid(service->uuid128)){
-        service->uuid16 = READ_NET_32(service->uuid128, 0);
+static void extract_service(le_service_t * aService, uint8_t * data){
+    aService->start_group_handle = READ_BT_16(data, 0);
+    aService->end_group_handle   = READ_BT_16(data, 2);
+    aService->uuid16 = 0;
+    swap128(&data[4], aService->uuid128);
+    if (sdp_has_blueooth_base_uuid(aService->uuid128)){
+        aService->uuid16 = READ_NET_32(aService->uuid128, 0);
     }
 }
 
-void extract_characteristic(le_characteristic_t * characteristic, uint8_t * packet){
+static void extract_characteristic(le_characteristic_t * characteristic, uint8_t * packet){
     characteristic->start_handle = READ_BT_16(packet, 4);
     characteristic->value_handle = READ_BT_16(packet, 6);
     characteristic->end_handle =   READ_BT_16(packet, 8);
@@ -441,7 +428,7 @@ void extract_characteristic(le_characteristic_t * characteristic, uint8_t * pack
     }
 }
 
-void handle_gatt_client_event(uint8_t packet_type, uint8_t *packet, uint16_t size){
+static void handle_gatt_client_event(uint8_t packet_type, uint8_t *packet, uint16_t size){
 
     if (packet_type != HCI_EVENT_PACKET) return;
 
@@ -739,10 +726,10 @@ void handle_gatt_client_event(uint8_t packet_type, uint8_t *packet, uint16_t siz
                             {
                                 printf("Searching Characteristic Declaration\n");
                                 central_state = CENTRAL_GPA_W4_RESPONSE2;
-                                le_service_t service;                  
-                                service.start_group_handle = ui_start_handle;
-                                service.end_group_handle   = ui_end_handle;
-                                gatt_client_discover_characteristics_for_service(gc_id, handle, &service);
+                                le_service_t aService;                  
+                                aService.start_group_handle = ui_start_handle;
+                                aService.end_group_handle   = ui_end_handle;
+                                gatt_client_discover_characteristics_for_service(gc_id, handle, &aService);
                                 break;
                             }
                             break;
@@ -811,7 +798,7 @@ const char * lines[100];
 const char * empty_string = "";
 const int width = 70;
 
-void reset_screen(void){
+static void reset_screen(void){
     // free memory
     int i = 0;
     for (i=0;i<num_rows;i++) {
@@ -826,7 +813,7 @@ void reset_screen(void){
     num_lines = 0;
 }
 
-void print_line(const char * format, ...){
+static void print_line(const char * format, ...){
     va_list argptr;
     va_start(argptr, format);
     char * line = malloc(80);
@@ -836,7 +823,7 @@ void print_line(const char * format, ...){
     num_lines++;
 }
 
-void printf_row(const char * format, ...){
+static void printf_row(const char * format, ...){
     va_list argptr;
     va_start(argptr, format);
     char * row = malloc(80);
@@ -846,7 +833,7 @@ void printf_row(const char * format, ...){
     num_rows++;
 }
 
-void print_screen(void){
+static void print_screen(void){
 
     // clear screen
     printf("\e[1;1H\e[2J");
@@ -875,7 +862,7 @@ void print_screen(void){
     printf("\n");
 }
 
-void show_usage(void){
+static void show_usage(void){
     uint8_t iut_address_type;
     bd_addr_t      iut_address;
     hci_le_advertisement_address(&iut_address_type, iut_address);
@@ -946,7 +933,7 @@ void show_usage(void){
     print_screen();
 }
 
-void update_auth_req(void){
+static void update_auth_req(void){
     uint8_t auth_req = 0;
     if (sm_mitm_protection){
         auth_req |= SM_AUTHREQ_MITM_PROTECTION;
@@ -969,7 +956,7 @@ static void att_signed_write_handle_cmac_result(uint8_t hash[8]){
     l2cap_send_prepared_connectionless(handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, 3 + value_length + 12);
 }
 
-int hexForChar(char c){
+static int hexForChar(char c){
     if (c >= '0' && c <= '9'){
         return c - '0';
     } 
@@ -1051,10 +1038,10 @@ static int ui_process_uint16_request(char buffer){
             case CENTRAL_ENTER_END_HANDLE_4_DISCOVER_CHARACTERISTICS: {
                 printf("Discover Characteristics from 0x%04x to 0x%04x\n", ui_attribute_handle, ui_uint16);
                 central_state = CENTRAL_W4_CHARACTERISTICS;
-                le_service_t service;
-                service.start_group_handle = ui_attribute_handle;
-                service.end_group_handle   = ui_uint16;
-                gatt_client_discover_characteristics_for_service(gc_id, handle, &service);
+                le_service_t aService;
+                aService.start_group_handle = ui_attribute_handle;
+                aService.end_group_handle   = ui_uint16;
+                gatt_client_discover_characteristics_for_service(gc_id, handle, &aService);
                 return 0;
             }
             case CENTRAL_W4_CHARACTERISTICS:
@@ -1529,10 +1516,10 @@ static void ui_process_command(char buffer){
         case 'i':
             {
                 central_state = CENTRAL_W4_CHARACTERISTICS;
-                le_service_t service;
-                service.start_group_handle = 0x0001;
-                service.end_group_handle   = 0xffff;
-                gatt_client_find_included_services_for_service(gc_id, handle, &service);
+                le_service_t aService;
+                aService.start_group_handle = 0x0001;
+                aService.end_group_handle   = 0xffff;
+                gatt_client_find_included_services_for_service(gc_id, handle, &aService);
             }
             break;
         case 'h':
@@ -1616,7 +1603,7 @@ static void ui_process_command(char buffer){
     }
 }
 
-int stdin_process(struct data_source *ds){
+static int stdin_process(struct data_source *ds){
     char buffer;
     read(ds->fd, &buffer, 1);
 
@@ -1675,11 +1662,6 @@ static uint16_t att_read_callback(uint16_t con_handle, uint16_t attribute_handle
             break;
     }
     return 0;
-}
-
-
-void setup(void){
-
 }
 
 int btstack_main(int argc, const char * argv[]);

@@ -384,8 +384,11 @@ void hfp_handle_hci_event(hfp_callback_t callback, uint8_t packet_type, uint8_t 
 void hfp_emit_event(hfp_callback_t callback, uint8_t event_subtype, uint8_t value);
 hfp_connection_t * get_hfp_connection_context_for_rfcomm_cid(uint16_t cid);
 hfp_connection_t * get_hfp_connection_context_for_bd_addr(bd_addr_t bd_addr);
+int get_hfp_generic_status_indicators_nr(void);
+hfp_generic_status_indicator_t * get_hfp_generic_status_indicators(void);
+void set_hfp_generic_status_indicators(hfp_generic_status_indicator_t * indicators, int indicator_nr);
 
-linked_list_t * hfp_get_connections();
+linked_list_t * hfp_get_connections(void);
 void hfp_parse(hfp_connection_t * context, uint8_t byte);
 
 void hfp_init(uint16_t rfcomm_channel_nr);

@@ -318,7 +318,6 @@ static void hsp_run(void){
     }
             
     if (hs_send_button_press){
-        int err = 0;
         if (hsp_state == HSP_W4_USER_ACTION){
             err = send_str_over_rfcomm(rfcomm_cid, HSP_HS_AT_CKPD);
         } else {

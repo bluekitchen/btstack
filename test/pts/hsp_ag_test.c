@@ -148,7 +148,7 @@ static int stdin_process(struct data_source *ds){
 }
 
 // Audio Gateway routines 
-void packet_handler(uint8_t * event, uint16_t event_size){
+static void packet_handler(uint8_t * event, uint16_t event_size){
     switch (event[2]) {
         case HSP_SUBEVENT_AUDIO_CONNECTION_COMPLETE:
             if (event[3] == 0){
@@ -182,6 +182,7 @@ void packet_handler(uint8_t * event, uint16_t event_size){
     }
 }
 
+int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
     // init SDP, create record for SPP and register with SDP
     memset((uint8_t *)hsp_service_buffer, 0, sizeof(hsp_service_buffer));

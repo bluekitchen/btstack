@@ -73,6 +73,7 @@ const char hsp_hs_service_name[] = "Headset Test";
 
 static bd_addr_t pts_addr = {0x00,0x1b,0xDC,0x07,0x32,0xEF};
 static bd_addr_t local_mac = {0x04, 0x0C, 0xCE, 0xE4, 0x85, 0xD3};
+static bd_addr_t current_addr;
 
 static char hs_cmd_buffer[100];
 
@@ -105,15 +106,17 @@ static int stdin_process(struct data_source *ds){
     switch (buffer){
         case 'p':
             printf("Establishing audio connection to PTS module %s...\n", bd_addr_to_str(pts_addr));
+            memcpy(current_addr, pts_addr, 6);
             hsp_hs_connect(pts_addr);
             break;
         case 'e':
             printf("Establishing audio connection to local mac %s...\n", bd_addr_to_str(local_mac));
+            memcpy(current_addr, local_mac, 6);
             hsp_hs_connect(local_mac);
             break;
         case 'd':
             printf("Releasing audio connection.\n");
-            hsp_hs_disconnect();
+            hsp_hs_disconnect(current_addr);
             break;
         case 'z':
             printf("Setting microphone gain 0\n");
@@ -147,7 +150,7 @@ static int stdin_process(struct data_source *ds){
     return 0;
 }
 
-void packet_handler(uint8_t * event, uint16_t event_size){
+static void packet_handler(uint8_t * event, uint16_t event_size){
     switch (event[2]) {   
         case HSP_SUBEVENT_AUDIO_CONNECTION_COMPLETE:
             if (event[3] == 0){
@@ -181,6 +184,7 @@ void packet_handler(uint8_t * event, uint16_t event_size){
     }
 }
 
+int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
     // init SDP, create record for SPP and register with SDP
     memset((uint8_t *)hsp_service_buffer, 0, sizeof(hsp_service_buffer));
