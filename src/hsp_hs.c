@@ -111,7 +111,7 @@ typedef enum {
 
 static hsp_state_t hsp_state = HSP_IDLE;
 
-static void hsp_run();
+static void hsp_run(void);
 static void packet_handler (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static void handle_query_rfcomm_event(sdp_query_event_t * event, void * context);
 

@@ -58,6 +58,7 @@
 #define SDP_RESPONSE_BUFFER_SIZE (HCI_ACL_BUFFER_SIZE-HCI_ACL_HEADER_SIZE)
 
 static void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+uint32_t sdp_get_service_record_handle(uint8_t * record);
 
 // registered service records
 static linked_list_t sdp_service_records = NULL;
@@ -85,7 +86,7 @@ void sdp_register_packet_handler(void (*handler)(void * connection, uint8_t pack
     l2cap_cid = 0;
 }
 
-static uint32_t sdp_get_service_record_handle(uint8_t * record){
+uint32_t sdp_get_service_record_handle(uint8_t * record){
     uint8_t * serviceRecordHandleAttribute = sdp_get_attribute_value_for_attribute_id(record, SDP_ServiceRecordHandle);
     if (!serviceRecordHandleAttribute) return 0;
     if (de_get_element_type(serviceRecordHandleAttribute) != DE_UINT) return 0;
