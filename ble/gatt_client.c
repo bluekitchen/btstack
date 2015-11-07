@@ -1191,7 +1191,7 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
             uint8_t pair_size = 4;
             int i;
             uint16_t start_group_handle;
-            uint16_t   end_group_handle;
+            uint16_t   end_group_handle= 0xffff; // asserts GATT_QUERY_COMPLETE is emitted if no results 
             for (i = 1; i<size; i+=pair_size){
                 start_group_handle = READ_BT_16(packet,i);
                 end_group_handle = READ_BT_16(packet,i+2);
