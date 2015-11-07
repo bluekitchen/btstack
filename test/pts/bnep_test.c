@@ -237,7 +237,7 @@ static uint16_t calc_internet_checksum(uint8_t * data, int size){
     uint32_t checksum = 0;
     while (size){
         // add 16-bit value
-        checksum = sum_ones_complement(checksum, *(uint16_t*)data);
+        checksum = sum_ones_complement(checksum, READ_NET_16(data, 0));
         data += 2;
         size -= 2;
     }
