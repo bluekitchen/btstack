@@ -208,6 +208,7 @@ typedef enum {
 
 typedef struct rfcomm_channel_event {
     RFCOMM_CHANNEL_EVENT type;
+    uint16_t dummy; // force rfcomm_channel_event to be 2-byte aligned -> avoid -Wcast-align warning
 } rfcomm_channel_event_t;
 
 typedef struct rfcomm_channel_event_pn {
