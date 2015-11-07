@@ -658,7 +658,7 @@ static uint16_t handle_read_blob_request(att_connection_t * att_connection, uint
 //
 // MARK: ATT_READ_MULTIPLE_REQUEST 0x0e
 //
-static uint16_t handle_read_multiple_request2(att_connection_t * att_connection, uint8_t * response_buffer, uint16_t response_buffer_size, uint16_t num_handles, uint16_t * handles){
+static uint16_t handle_read_multiple_request2(att_connection_t * att_connection, uint8_t * response_buffer, uint16_t response_buffer_size, uint16_t num_handles, uint8_t * handles){
     log_info("ATT_READ_MULTIPLE_REQUEST: num handles %u", num_handles);
     uint8_t request_type = ATT_READ_MULTIPLE_REQUEST;
     
@@ -673,7 +673,7 @@ static uint16_t handle_read_multiple_request2(att_connection_t * att_connection,
     uint8_t error_code = 0;
     uint16_t handle = 0;
     for (i=0;i<num_handles;i++){
-        handle = handles[i];
+        handle = READ_BT_16(handles, i << 1);
         
         if (handle == 0){
             return setup_error_invalid_handle(response_buffer, request_type, handle);
@@ -718,7 +718,7 @@ static uint16_t handle_read_multiple_request2(att_connection_t * att_connection,
 static uint16_t handle_read_multiple_request(att_connection_t * att_connection, uint8_t * request_buffer,  uint16_t request_len,
                                       uint8_t * response_buffer, uint16_t response_buffer_size){
     int num_handles = (request_len - 1) >> 1;
-    return handle_read_multiple_request2(att_connection, response_buffer, response_buffer_size, num_handles, (uint16_t*) &request_buffer[1]);
+    return handle_read_multiple_request2(att_connection, response_buffer, response_buffer_size, num_handles, &request_buffer[1]);
 }
 
 //
