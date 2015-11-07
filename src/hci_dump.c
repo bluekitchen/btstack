@@ -65,37 +65,33 @@
 #include <stdarg.h>       // for va_list
 #endif
 
-// BLUEZ hcidump
+// BLUEZ hcidump - struct not used directly, but left here as documentation
 typedef struct {
-	uint16_t	len;
-	uint8_t		in;
-	uint8_t		pad;
-	uint32_t	ts_sec;
-	uint32_t	ts_usec;
+    uint16_t    len;
+    uint8_t     in;
+    uint8_t     pad;
+    uint32_t    ts_sec;
+    uint32_t    ts_usec;
     uint8_t     packet_type;
 }
-#ifdef __GNUC__
-__attribute__ ((packed))
-#endif 
 hcidump_hdr;
+const int hcidump_hdr_size = 13;
 
-// APPLE PacketLogger
+// APPLE PacketLogger - struct not used directly, but left here as documentation
 typedef struct {
-	uint32_t	len;
-	uint32_t	ts_sec;
-	uint32_t	ts_usec;
-	uint8_t		type;   // 0xfc for note
+    uint32_t    len;
+    uint32_t    ts_sec;
+    uint32_t    ts_usec;
+    uint8_t     type;   // 0xfc for note
 }
-#ifdef __GNUC__
-__attribute__ ((packed))
-#endif
 pktlog_hdr;
+const int pktlog_hdr_size = 13;
 
 static int dump_file = -1;
 #ifndef EMBEDDED
 static int dump_format;
-static hcidump_hdr header_bluez;
-static pktlog_hdr  header_packetlogger;
+static uint8_t header_bluez[hcidump_hdr_size];
+static uint8_t header_packetlogger[pcklog_hdr_size];
 static char time_string[40];
 static int  max_nr_packets = -1;
 static int  nr_packets = 0;
@@ -195,48 +191,48 @@ void hci_dump_packet(uint8_t packet_type, uint8_t in, uint8_t *packet, uint16_t 
         }
             
         case HCI_DUMP_BLUEZ:
-            bt_store_16( (uint8_t *) &header_bluez.len, 0, 1 + len);
-            header_bluez.in  = in;
-            header_bluez.pad = 0;
-            bt_store_32( (uint8_t *) &header_bluez.ts_sec,  0, curr_time.tv_sec);
-            bt_store_32( (uint8_t *) &header_bluez.ts_usec, 0, curr_time.tv_usec);
-            header_bluez.packet_type = packet_type;
-            write (dump_file, &header_bluez, sizeof(hcidump_hdr) );
+            bt_store_16( header_bluez, 0, 1 + len);
+            header_bluez[2] = in;
+            header_bluez[3] = 0;
+            bt_store_32( header_bluez.ts_sec,  4, curr_time.tv_sec);
+            bt_store_32( header_bluez.ts_usec, 8, curr_time.tv_usec);
+            header_bluez[12] = packet_type;
+            write (dump_file, header_bluez, hcidump_hdr_size);
             write (dump_file, packet, len );
             break;
             
         case HCI_DUMP_PACKETLOGGER:
-            net_store_32( (uint8_t *) &header_packetlogger, 0, sizeof(pktlog_hdr) - 4 + len);
-            net_store_32( (uint8_t *) &header_packetlogger, 4, curr_time.tv_sec);
-            net_store_32( (uint8_t *) &header_packetlogger, 8, curr_time.tv_usec);
+            net_store_32( header_packetlogger, 0, pktlog_hdr_size - 4 + len);
+            net_store_32( header_packetlogger, 4, curr_time.tv_sec);
+            net_store_32( header_packetlogger, 8, curr_time.tv_usec);
             switch (packet_type){
                 case HCI_COMMAND_DATA_PACKET:
-                    header_packetlogger.type = 0x00;
+                    header_packetlogger[12] = 0x00;
                     break;
                 case HCI_ACL_DATA_PACKET:
                     if (in) {
-                        header_packetlogger.type = 0x03;
+                        header_packetlogger[12] = 0x03;
                     } else {
-                        header_packetlogger.type = 0x02;
+                        header_packetlogger[12] = 0x02;
                     }
                     break;
                 case HCI_SCO_DATA_PACKET:
                     if (in) {
-                        header_packetlogger.type = 0x09;
+                        header_packetlogger[12] = 0x09;
                     } else {
-                        header_packetlogger.type = 0x08;
+                        header_packetlogger[12] = 0x08;
                     }
                     break;
                 case HCI_EVENT_PACKET:
-                    header_packetlogger.type = 0x01;
+                    header_packetlogger[12] = 0x01;
                     break;
                 case LOG_MESSAGE_PACKET:
-                    header_packetlogger.type = 0xfc;
+                    header_packetlogger[12] = 0xfc;
                     break;
                 default:
                     return;
             }
-            write (dump_file, &header_packetlogger, sizeof(pktlog_hdr) );
+            write (dump_file, &header_packetlogger, pktlog_hdr_size) );
             write (dump_file, packet, len );
             break;
             
