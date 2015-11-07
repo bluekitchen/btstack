@@ -74,6 +74,7 @@ int  de_state_size(uint8_t eventByte, de_state_t *de_state);
 // Basic SDP Query event type
 typedef struct sdp_query_event {
     uint8_t type;
+    void * dummy;   // force sdp_query_event struct to be word aligned -> avoid -Wcast-align warning
 } sdp_query_event_t;
 
 // SDP Query event to indicate that query/parser is complete.
