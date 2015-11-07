@@ -133,8 +133,8 @@ static hci_connection_t * create_connection_for_bd_addr_and_type(bd_addr_t addr,
 *
  * @return le connection parameter range struct
  */
-le_connection_parameter_range_t gap_le_get_connection_parameter_range(void){
-    return hci_stack->le_connection_parameter_range;
+void gap_le_get_connection_parameter_range(le_connection_parameter_range_t range){
+    range = hci_stack->le_connection_parameter_range;
 }
 
 /**
@@ -143,12 +143,7 @@ le_connection_parameter_range_t gap_le_get_connection_parameter_range(void){
  */
 
 void gap_le_set_connection_parameter_range(le_connection_parameter_range_t range){
-    hci_stack->le_connection_parameter_range.le_conn_interval_min = range.le_conn_interval_min;
-    hci_stack->le_connection_parameter_range.le_conn_interval_max = range.le_conn_interval_max;
-    hci_stack->le_connection_parameter_range.le_conn_interval_min = range.le_conn_latency_min;
-    hci_stack->le_connection_parameter_range.le_conn_interval_max = range.le_conn_latency_max;
-    hci_stack->le_connection_parameter_range.le_supervision_timeout_min = range.le_supervision_timeout_min;
-    hci_stack->le_connection_parameter_range.le_supervision_timeout_max = range.le_supervision_timeout_max;
+    hci_stack->le_connection_parameter_range = range;
 }
 
 /**
