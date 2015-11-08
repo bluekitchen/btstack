@@ -381,6 +381,7 @@ static void packet_handler2 (void * connection, uint8_t packet_type, uint16_t ch
 
 
 static void update_auth_req(void){
+    gap_set_bondable_mode(gap_bondable);
     gap_auth_req = 0;
     if (gap_mitm_protection){
         gap_auth_req |= 1;  // MITM Flag
