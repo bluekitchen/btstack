@@ -113,7 +113,7 @@ static int get_link_key(bd_addr_t bd_addr, link_key_t link_key, link_key_type_t 
     if (scan_result == 0 ) return 0;
 
     int link_key_type_buffer;
-    scan_result = sscanf( (char *) link_key_type_str, "%d", link_key_type_buffer);
+    scan_result = sscanf( (char *) link_key_type_str, "%d", &link_key_type_buffer);
     if (scan_result == 0 ) return 0;
     *link_key_type = (link_key_type_t) link_key_type_buffer;
     return 1;
