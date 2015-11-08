@@ -87,6 +87,8 @@ static void hci_power_control_off(void);
 static void hci_state_reset(void);
 
 #ifdef HAVE_BLE
+// called from test/ble_client/advertising_data_parser.c
+void le_handle_advertisement_report(uint8_t *packet, int size);
 static void hci_remove_from_whitelist(bd_addr_type_t address_type, bd_addr_t address);
 #endif
 
@@ -787,7 +789,7 @@ void hci_le_advertisement_address(uint8_t * addr_type, bd_addr_t  addr){
 }
 
 #ifdef HAVE_BLE
-static void le_handle_advertisement_report(uint8_t *packet, int size){
+void le_handle_advertisement_report(uint8_t *packet, int size){
     int offset = 3;
     int num_reports = packet[offset];
     offset += 1;
