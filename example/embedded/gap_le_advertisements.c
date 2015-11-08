@@ -66,7 +66,7 @@
 /* LISTING_START(GAPLEAdvSetup): Setting up GAP LE client for receiving advertisements */
 static void handle_hci_event(uint8_t packet_type, uint8_t *packet, uint16_t size);
 
-static void gap_le_advertisements_setup(){
+static void gap_le_advertisements_setup(void){
     hci_register_packet_handler(handle_hci_event);
 }
 /* LISTING_END */
