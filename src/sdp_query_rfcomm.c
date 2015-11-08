@@ -50,6 +50,9 @@
 #include "sdp_client.h"
 #include "sdp_query_rfcomm.h"
 
+// called by test/sdp_client
+void sdp_query_rfcomm_init(void);
+
 static void dummy_notify_app(sdp_query_event_t* event, void * context);
 
 typedef enum { 
@@ -289,7 +292,7 @@ static void handle_sdp_parser_event(sdp_query_event_t * event){
     // insert higher level code HERE
 }
 
-static void sdp_query_rfcomm_init(void){
+void sdp_query_rfcomm_init(void){
     // init
     de_state_init(&de_header_state);
     de_state_init(&sn_de_header_state);
