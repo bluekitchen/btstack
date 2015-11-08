@@ -109,7 +109,6 @@ static void report_found_services(void){
 
 static void handle_query_rfcomm_event(sdp_query_event_t * event, void * context){
     sdp_query_rfcomm_service_event_t * ve;
-    sdp_query_complete_event_t * ce;
             
     switch (event->type){
         case SDP_QUERY_RFCOMM_SERVICE:
@@ -117,7 +116,6 @@ static void handle_query_rfcomm_event(sdp_query_event_t * event, void * context)
             store_found_service(ve->service_name, ve->channel_nr);
             break;
         case SDP_QUERY_COMPLETE:
-            ce = (sdp_query_complete_event_t*) event;
             report_found_services();
             break;
     }
