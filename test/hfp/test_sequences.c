@@ -82,29 +82,10 @@ const char * slc_cmds_test1[] = {
     "OK"
 };
 
-const char * slc_cmds_test2[] = {
-    "AT+BAC=1,3", 
-    "OK"
-};
-
-const char * slc_cmds_test3[] = {
-    "AT+BAC=1,3", 
-    "OK"
-};
-
-const char * slc_cmds_test4[] = {
-    "AT+BAC=1,3", 
-    "OK"
-};
-
-const char * slc_cmds_test5[] = {
-    "AT+BAC=1,3", 
-    "OK"
-};
-
 hfp_test_item_t slc_cmds_tests[] = {
     TEST_SEQUENCE(slc_cmds_test1)
 };
+
 /* Codecs Connection (cc) test sequences */
 const char * cc_test1[] = {
     "AT+BCC", 

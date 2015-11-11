@@ -106,7 +106,7 @@ static void prepare_rfcomm_buffer(uint8_t * data, int len){
 static void print_without_newlines(uint8_t *data, uint16_t len){
     int found_newline = 0;
     int found_item = 0;
-    printf("\n");
+    
     for (int i=0; i<len; i++){
         if (data[i] == '\r' || data[i] == '\n'){
             if (!found_newline && found_item) printf("\n");
@@ -217,26 +217,14 @@ void rfcomm_accept_connection_internal(uint16_t rfcomm_cid){
 }
 
 
-void inject_rfcomm_command(uint8_t * data, int len){
-    prepare_rfcomm_buffer(data, len);
-    if (memcmp((char*)data, "AT", 2) == 0){
-        printf("\n\n ---> Send cmd to AG state machine: %s", data);
-    } else if (memcmp((char*)data, "+", 1) == 0){
-
-    } else {
-        printf("\n\n ---> Send cmd to HF state machine: %s", data);
-    }
-    (*registered_rfcomm_packet_handler)(active_connection, RFCOMM_DATA_PACKET, rfcomm_cid, (uint8_t *) &rfcomm_payload[0], rfcomm_payload_len);
-}
-
 void inject_rfcomm_command_to_hf(uint8_t * data, int len){
     if (memcmp((char*)data, "AT", 2) == 0) return;
     
     prepare_rfcomm_buffer(data, len);
-    if (data[0] == '+'){
-        printf("Send cmd to HF state machine: %s", data);
+    if (data[0] == '+' || (data[0] == 'O' && data[1] == 'K')){
+        printf("Send cmd to HF state machine: %s\n", data);
     } else {
-        printf("Trigger HF state machine: %s", data);
+        printf("Trigger HF state machine - %s", data);
     }
     (*registered_rfcomm_packet_handler)(active_connection, RFCOMM_DATA_PACKET, rfcomm_cid, (uint8_t *) &rfcomm_payload[0], rfcomm_payload_len);
 }
@@ -248,7 +236,7 @@ void inject_rfcomm_command_to_ag(uint8_t * data, int len){
     if (memcmp((char*)data, "AT", 2) == 0){
         printf("Send cmd to AG state machine: %s\n", data);
     } else {
-        printf("Trigger AG state machine: %s", data);
+        printf("Trigger AG state machine - %s", data);
     }
     (*registered_rfcomm_packet_handler)(active_connection, RFCOMM_DATA_PACKET, rfcomm_cid, (uint8_t *) &rfcomm_payload[0], rfcomm_payload_len);
 }

@@ -224,13 +224,10 @@ TEST(HFPParser, HFP_AG_EXTENDED_AUDIO_GATEWAY_ERROR){
 
 TEST(HFPParser, HFP_AG_TRIGGER_CODEC_CONNECTION_SETUP){
     sprintf(packet, "\r\nAT%s\r\n", HFP_TRIGGER_CODEC_CONNECTION_SETUP);
-    
     for (pos = 0; pos < strlen(packet); pos++){
         hfp_parse(&context, packet[pos]);
     }
-
     CHECK_EQUAL(context.command, HFP_CMD_TRIGGER_CODEC_CONNECTION_SETUP);
-    CHECK_EQUAL(context.ag_trigger_codec_connection_setup, 1);
 }
 
 TEST(HFPParser, HFP_AG_CONFIRM_COMMON_CODEC){
