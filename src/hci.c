@@ -3217,6 +3217,27 @@ le_command_status_t gap_disconnect(hci_con_handle_t handle){
     return BLE_PERIPHERAL_OK;
 }
 
+/**
+ * @brief Get connection type
+ * @param con_handle
+ * @result connection_type
+ */
+gap_connection_type_t gap_get_connection_type(hci_con_handle_t connection_handle){
+    hci_connection_t * conn = hci_connection_for_handle(connection_handle);
+    if (!conn) return GAP_CONNECTION_INVALID;
+    switch (conn->address_type){
+        case BD_ADDR_TYPE_LE_PUBLIC:
+        case BD_ADDR_TYPE_LE_RANDOM:
+            return GAP_CONNECTION_LE;
+        case BD_ADDR_TYPE_SCO:
+            return GAP_CONNECTION_SCO;
+        case BD_ADDR_TYPE_CLASSIC:
+            return GAP_CONNECTION_ACL;
+        default:
+            return GAP_CONNECTION_INVALID;
+    }
+}
+
 #ifdef HAVE_BLE
 
 /**
