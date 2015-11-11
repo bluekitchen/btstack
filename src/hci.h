@@ -587,6 +587,8 @@ typedef enum hci_init_state{
     HCI_INIT_W4_WRITE_SIMPLE_PAIRING_MODE,
     HCI_INIT_WRITE_PAGE_TIMEOUT,
     HCI_INIT_W4_WRITE_PAGE_TIMEOUT,
+    HCI_INIT_WRITE_SYNCHRONOUS_FLOW_CONTROL_ENABLE,
+    HCI_INIT_W4_SYNCHRONOUS_FLOW_CONTROL_ENABLE,
 
     HCI_INIT_WRITE_CLASS_OF_DEVICE,
     HCI_INIT_W4_WRITE_CLASS_OF_DEVICE,
@@ -670,6 +672,7 @@ typedef struct {
     uint16_t acl_data_packet_length;
     uint8_t  sco_packets_total_num;
     uint8_t  sco_data_packet_length;
+    uint8_t  synchronous_flow_control_enabled;
     uint8_t  le_acl_packets_total_num;
     uint16_t le_data_packets_length;
 
