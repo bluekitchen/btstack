@@ -78,8 +78,12 @@ static void packet_handler(void * connection, uint8_t packet_type, uint16_t chan
 hfp_generic_status_indicator_t * get_hfp_generic_status_indicators();
 int get_hfp_generic_status_indicators_nr();
 void set_hfp_generic_status_indicators(hfp_generic_status_indicator_t * indicators, int indicator_nr);
+void set_hfp_ag_indicators(hfp_ag_indicator_t * indicators, int indicator_nr);
+int get_hfp_ag_indicators_nr(hfp_connection_t * context);
+hfp_ag_indicator_t * get_hfp_ag_indicators(hfp_connection_t * context);
 
-static hfp_ag_indicator_t * get_hfp_ag_indicators(hfp_connection_t * context){
+
+hfp_ag_indicator_t * get_hfp_ag_indicators(hfp_connection_t * context){
     // TODO: save only value, and value changed in the context?
     if (context->ag_indicators_nr != hfp_ag_indicators_nr){
         context->ag_indicators_nr = hfp_ag_indicators_nr;
@@ -88,14 +92,12 @@ static hfp_ag_indicator_t * get_hfp_ag_indicators(hfp_connection_t * context){
     return (hfp_ag_indicator_t *)&(context->ag_indicators);
 }
 
-#if 0
-static void set_hfp_ag_indicators(hfp_ag_indicator_t * indicators, int indicator_nr){
+void set_hfp_ag_indicators(hfp_ag_indicator_t * indicators, int indicator_nr){
     memcpy(hfp_ag_indicators, indicators, indicator_nr * sizeof(hfp_ag_indicator_t));
     hfp_ag_indicators_nr = indicator_nr;
 }
-#endif
 
-static int get_hfp_ag_indicators_nr(hfp_connection_t * context){
+int get_hfp_ag_indicators_nr(hfp_connection_t * context){
     if (context->ag_indicators_nr != hfp_ag_indicators_nr){
         context->ag_indicators_nr = hfp_ag_indicators_nr;
         memcpy(context->ag_indicators, hfp_ag_indicators, hfp_ag_indicators_nr * sizeof(hfp_ag_indicator_t));
