@@ -473,6 +473,9 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                 break;
             }
 
+            // forward event to app
+            hsp_hs_callback(packet, size);
+
             hsp_state = HSP_ACTIVE;
             emit_event(HSP_SUBEVENT_AUDIO_CONNECTION_COMPLETE, 0);
             break;                
@@ -520,12 +523,13 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
             break;
         case DAEMON_EVENT_HCI_PACKET_SENT:
         case RFCOMM_EVENT_CREDITS:
+            hsp_hs_callback(packet, size);
             break;
         
         case HCI_EVENT_DISCONNECTION_COMPLETE:
             printf("HCI_EVENT_DISCONNECTION_COMPLETE \n");
             if (hsp_state != HSP_W4_SCO_DISCONNECTED){
-                printf("received gap disconnect in wrong hsp state");
+                printf("received gap disconnect in wrong hsp state\n");
             }
             handle = READ_BT_16(packet,3);
             if (handle == sco_handle){
@@ -536,9 +540,9 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
             }
             break;
         case RFCOMM_EVENT_CHANNEL_CLOSED:
-            printf(" RFCOMM_EVENT_CHANNEL_CLOSED\n");
+            printf("RFCOMM_EVENT_CHANNEL_CLOSED\n");
             if (hsp_state != HSP_W4_RFCOMM_DISCONNECTED){
-                printf("received RFCOMM disconnect in wrong hsp state");
+                printf("received RFCOMM disconnect in wrong hsp state\n");
             }
             printf("RFCOMM channel closed\n");
             hsp_hs_reset_state();
