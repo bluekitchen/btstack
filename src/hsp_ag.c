@@ -62,7 +62,7 @@
 
 #define RFCOMM_SERVER_CHANNEL 1
 
-#define HSP_HS_BUTTON_PRESS "AT+CKPD=200\r\n"
+#define HSP_HS_BUTTON_PRESS "AT+CKPD=200"
 #define HSP_HS_AT_CKPD "AT+CKPD\r\n"
 #define HSP_AG_OK "\r\nOK\r\n"
 #define HSP_AG_ERROR "\r\nERROR\r\n"
