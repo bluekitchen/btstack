@@ -2308,7 +2308,7 @@ void hci_run(void){
                     hci_send_cmd(&hci_accept_connection_request, connection->address, 1);
                 } else {
                     // TODO: allows to customize synchronous connection parameters
-                    hci_send_cmd(&hci_accept_synchronous_connection, connection->address, 8000, 8000, 0xFFFF, 0x0060, 0xFF, 0x003F);
+                    hci_send_cmd(&hci_accept_synchronous_connection, connection->address, 8000, 8000, 0xFFFF, 0x0040, 0xFF, 0x003F);
                 }
                 return;
 
