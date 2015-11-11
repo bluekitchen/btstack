@@ -43,6 +43,9 @@
 
 #include "btstack-config.h"
 
+#include <portaudio.h>
+#include <math.h>
+
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -67,19 +70,58 @@
 #include "hsp_hs.h"
 #include "stdin_support.h"
 
+// portaudio config
+#define NUM_CHANNELS 1
+#define SAMPLE_RATE 8000
+#define FRAMES_PER_BUFFER 1000
+#define PA_SAMPLE_TYPE paInt8
+
 const uint32_t   hsp_service_buffer[150/4]; // implicit alignment to 4-byte memory address
 const uint8_t    rfcomm_channel_nr = 1;
 const char hsp_hs_service_name[] = "Headset Test";
 
 static bd_addr_t pts_addr = {0x00,0x1b,0xDC,0x07,0x32,0xEF};
 static bd_addr_t local_mac = {0x04, 0x0C, 0xCE, 0xE4, 0x85, 0xD3};
+// static bd_addr_t local_mac = {0x54, 0xe4, 0x3a, 0x26, 0xa2, 0x39};
 static bd_addr_t current_addr;
 
 static char hs_cmd_buffer[100];
 
+// portaudio globals
+static  PaStream * stream;
+
 // prototypes
 static void show_usage();
 
+static void setup_audio(void){
+    int err;
+    PaStreamParameters outputParameters;
+
+    /* -- initialize PortAudio -- */
+    err = Pa_Initialize();
+    if( err != paNoError ) return;
+    /* -- setup input and output -- */
+    outputParameters.device = Pa_GetDefaultOutputDevice(); /* default output device */
+    outputParameters.channelCount = NUM_CHANNELS;
+    outputParameters.sampleFormat = PA_SAMPLE_TYPE;
+    outputParameters.suggestedLatency = Pa_GetDeviceInfo( outputParameters.device )->defaultHighOutputLatency;
+    outputParameters.hostApiSpecificStreamInfo = NULL;
+    /* -- setup stream -- */
+    err = Pa_OpenStream(
+              &stream,
+              NULL, // &inputParameters,
+              &outputParameters,
+              SAMPLE_RATE,
+              FRAMES_PER_BUFFER,
+              paClipOff,      /* we won't output out of range samples so don't bother clipping them */
+              NULL, /* no callback, use blocking API */
+              NULL ); /* no callback, so no callback userData */
+    if( err != paNoError ) return;
+    /* -- start stream -- */
+    err = Pa_StartStream( stream );
+    if( err != paNoError ) return;
+    printf("Portaudio setup\n");
+}
 
 // Testig User Interface 
 static void show_usage(void){
@@ -184,12 +226,19 @@ static void packet_handler(uint8_t * event, uint16_t event_size){
     }
 }
 
+static void sco_packet_handler(uint8_t packet_type, uint8_t * packet, uint16_t size){
+    Pa_WriteStream( stream, &packet[3], size -3);
+}
+
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
-    // init SDP, create record for SPP and register with SDP
+
+    setup_audio();
+    hci_register_sco_packet_handler(&sco_packet_handler);
+
     memset((uint8_t *)hsp_service_buffer, 0, sizeof(hsp_service_buffer));
     hsp_hs_create_service((uint8_t *)hsp_service_buffer, rfcomm_channel_nr, hsp_hs_service_name, 0);
-    
+
     hsp_hs_init(rfcomm_channel_nr);
     hsp_hs_register_packet_handler(packet_handler);
     
@@ -198,6 +247,9 @@ int btstack_main(int argc, const char * argv[]){
 
     // turn on!
     hci_power_control(HCI_POWER_ON);
+
+    hci_discoverable_control(1);
+    hci_set_class_of_device(0x200418);
     
     btstack_stdin_setup(stdin_process);
 
