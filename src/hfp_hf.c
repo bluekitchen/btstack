@@ -307,6 +307,7 @@ static int hfp_hf_run_for_context_service_level_connection(hfp_connection_t * co
         default:
             break;
     }
+    return done;
 }
 
 static void hfp_hf_handle_ok_service_level_connection_establishment(hfp_connection_t *context){
