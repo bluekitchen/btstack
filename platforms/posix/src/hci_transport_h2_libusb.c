@@ -888,6 +888,7 @@ static int usb_send_sco_packet(uint8_t *packet, int size){
     int completed = 0;
     libusb_fill_iso_transfer(sco_out_transfer, handle, sco_out_addr, packet, size, 1,
         async_callback, &completed, 0);
+    libusb_set_iso_packet_lengths(sco_out_transfer, size);
     sco_out_transfer->type = LIBUSB_TRANSFER_TYPE_ISOCHRONOUS;
     sco_out_transfer->iso_packet_desc[0].length = size;
 
