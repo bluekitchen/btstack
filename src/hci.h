@@ -694,6 +694,9 @@ typedef struct {
     /* callback to L2CAP layer */
     void (*packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size);
 
+    /* callback for SCO data */
+    void (*sco_packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size);
+
     /* remote device db */
     remote_device_db_t const*remote_device_db;
     
@@ -890,6 +893,11 @@ void hci_set_bd_addr(bd_addr_t addr);
  * @brief Registers a packet handler. Used if L2CAP is not used (rarely). 
  */
 void hci_register_packet_handler(void (*handler)(uint8_t packet_type, uint8_t *packet, uint16_t size));
+
+/**
+ * @brief Registers a packet handler for SCO data. Used for HSP and HFP profiles.
+ */
+void hci_register_sco_packet_handler(void (*handler)(uint8_t packet_type, uint8_t *packet, uint16_t size));
 
 /**
  * @brief Requests the change of BTstack power mode.
