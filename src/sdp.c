@@ -58,6 +58,7 @@
 #define SDP_RESPONSE_BUFFER_SIZE (HCI_ACL_BUFFER_SIZE-HCI_ACL_HEADER_SIZE)
 
 static void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+uint32_t sdp_get_service_record_handle(uint8_t * record);
 
 // registered service records
 static linked_list_t sdp_service_records = NULL;
@@ -105,7 +106,7 @@ static void sdp_emit_service_registered(void *connection, uint32_t handle, uint8
 	(*app_packet_handler)(connection, HCI_EVENT_PACKET, 0, (uint8_t *) event, sizeof(event));
 }
 
-service_record_item_t * sdp_get_record_for_handle(uint32_t handle){
+static service_record_item_t * sdp_get_record_for_handle(uint32_t handle){
     linked_item_t *it;
     for (it = (linked_item_t *) sdp_service_records; it ; it = it->next){
         service_record_item_t * item = (service_record_item_t *) it;
@@ -117,7 +118,7 @@ service_record_item_t * sdp_get_record_for_handle(uint32_t handle){
 }
 
 // get next free, unregistered service record handle
-uint32_t sdp_create_service_record_handle(void){
+static uint32_t sdp_create_service_record_handle(void){
     uint32_t handle = 0;
     do {
         handle = sdp_next_service_record_handle++;
@@ -264,7 +265,7 @@ void sdp_unregister_service_internal(void *connection, uint32_t service_record_h
 // PDU
 // PDU ID (1), Transaction ID (2), Param Length (2), Param 1, Param 2, ..
 
-int sdp_create_error_response(uint16_t transaction_id, uint16_t error_code){
+static int sdp_create_error_response(uint16_t transaction_id, uint16_t error_code){
     sdp_response_buffer[0] = SDP_ErrorResponse;
     net_store_16(sdp_response_buffer, 1, transaction_id);
     net_store_16(sdp_response_buffer, 3, 2);

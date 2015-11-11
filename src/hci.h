@@ -61,7 +61,11 @@
 #if defined __cplusplus
 extern "C" {
 #endif
-    
+ 
+// HCI roles
+#define HCI_ROLE_MASTER 0
+#define HCI_ROLE_SLAVE  1
+
 // packet header sizes
 #define HCI_CMD_HEADER_SIZE          3
 #define HCI_ACL_HEADER_SIZE   	     4
@@ -493,6 +497,9 @@ typedef struct {
     // le public, le random, classic
     bd_addr_type_t address_type;
 
+    // role: 0 - master, 1 - slave
+    uint8_t role;
+
     // connection state
     CONNECTION_STATE state;
     
@@ -835,7 +842,7 @@ int hci_send_cmd_packet(uint8_t *packet, int size);
 
 /* API_START */
 
-le_connection_parameter_range_t gap_le_get_connection_parameter_range(void);
+void gap_le_get_connection_parameter_range(le_connection_parameter_range_t range);
 void gap_le_set_connection_parameter_range(le_connection_parameter_range_t range);
 
 /* LE Client Start */

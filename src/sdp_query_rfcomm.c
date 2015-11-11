@@ -50,6 +50,9 @@
 #include "sdp_client.h"
 #include "sdp_query_rfcomm.h"
 
+// called by test/sdp_client
+void sdp_query_rfcomm_init(void);
+
 static void dummy_notify_app(sdp_query_event_t* event, void * context);
 
 typedef enum { 
@@ -107,7 +110,7 @@ void sdp_query_rfcomm_register_callback(void (*sdp_callback)(sdp_query_event_t* 
     sdp_app_context = context;
 }
 
-void handleProtocolDescriptorListData(uint32_t attribute_value_length, uint32_t data_offset, uint8_t data){
+static void handleProtocolDescriptorListData(uint32_t attribute_value_length, uint32_t data_offset, uint8_t data){
     // init state on first byte
     if (data_offset == 0){
         pdl_state = GET_PROTOCOL_LIST_LENGTH;
@@ -206,7 +209,7 @@ void handleProtocolDescriptorListData(uint32_t attribute_value_length, uint32_t 
     }
 }
 
-void handleServiceNameData(uint32_t attribute_value_length, uint32_t data_offset, uint8_t data){
+static void handleServiceNameData(uint32_t attribute_value_length, uint32_t data_offset, uint8_t data){
 
     // Get Header Len
     if (data_offset == 0){

@@ -9,7 +9,7 @@ COMMON += hci_transport_h2_libusb.c run_loop_posix.c remote_device_db_fs.c
 include ${BTSTACK_ROOT}/example/embedded/Makefile.inc
 
 # CC = gcc-fsf-4.9
-CFLAGS  += -g -Wall 
+CFLAGS  += -g -Wall -Wmissing-prototypes -Wstrict-prototypes -Wshadow -Werror
 # CFLAGS += -Werror
 
 CFLAGS += -I${POSIX_ROOT}/src

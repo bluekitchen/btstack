@@ -138,7 +138,8 @@ static void error_code(int status){
             break;
     }
 }
-void handle_gatt_client_event(le_event_t * event){
+
+static void handle_gatt_client_event(le_event_t * event){
     switch(state){
         case TC_W4_SERVICE_RESULT:
             switch(event->type){
@@ -260,7 +261,7 @@ static void handle_hci_event(void * connection, uint8_t packet_type, uint16_t ch
     }
 }
 
-void usage(const char *name){
+static void usage(const char *name){
 	fprintf(stderr, "\nUsage: %s [-a|--address aa:bb:cc:dd:ee:ff]\n", name);
 	fprintf(stderr, "If no argument is provided, GATT browser will start scanning and connect to the first found device.\nTo connect to a specific device use argument [-a].\n\n");
 }

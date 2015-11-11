@@ -59,7 +59,7 @@
 #include "l2cap.h"
 #include "stdin_support.h"
  
-void show_usage();
+static void show_usage();
 
 // static bd_addr_t remote = {0x04,0x0C,0xCE,0xE4,0x85,0xD3};
 static bd_addr_t remote = {0x84, 0x38, 0x35, 0x65, 0xD1, 0x15};
@@ -112,7 +112,7 @@ static void packet_handler2 (void * connection, uint8_t packet_type, uint16_t ch
     packet_handler(packet_type, 0, packet, size);
 }
 
-void show_usage(void){
+static void show_usage(void){
     printf("\n--- CLI for L2CAP TEST ---\n");
     printf("c      - create connection to SDP at addr %s\n", bd_addr_to_str(remote));
     printf("s      - send data\n");
@@ -122,7 +122,7 @@ void show_usage(void){
     printf("---\n");
 }
 
-int  stdin_process(struct data_source *ds){
+static int stdin_process(struct data_source *ds){
     char buffer;
     read(ds->fd, &buffer, 1);
     switch (buffer){
@@ -157,7 +157,7 @@ int  stdin_process(struct data_source *ds){
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
 
-    hci_set_class_of_device(0x200404);
+    hci_set_class_of_device(0x220404);
     hci_discoverable_control(1);
 
     l2cap_init();

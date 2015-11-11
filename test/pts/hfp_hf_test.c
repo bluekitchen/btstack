@@ -184,7 +184,7 @@ static int stdin_process(struct data_source *ds){
 }
 
 
-void packet_handler(uint8_t * event, uint16_t event_size){
+static void packet_handler(uint8_t * event, uint16_t event_size){
     if (event[0] != HCI_EVENT_HFP_META) return;
     if (event[3] && event[2] != HFP_SUBEVENT_EXTENDED_AUDIO_GATEWAY_ERROR){
         printf("ERROR, status: %u\n", event[3]);
@@ -224,7 +224,7 @@ void packet_handler(uint8_t * event, uint16_t event_size){
     }
 }
 
-
+int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
     // init L2CAP
     l2cap_init();

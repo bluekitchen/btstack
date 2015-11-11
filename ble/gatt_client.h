@@ -380,7 +380,7 @@ le_command_status_t gatt_client_write_client_characteristic_configuration(uint16
 /* API_END */
 
 // only used for testing
-void gatt_client_pts_suppress_mtu_exchange();
+void gatt_client_pts_suppress_mtu_exchange(void);
 
 #if defined __cplusplus
 }

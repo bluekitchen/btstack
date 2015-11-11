@@ -197,7 +197,15 @@ extern "C" {
 #define HCI_EVENT_HARDWARE_ERROR                           0x10
 
 #define HCI_EVENT_FLUSH_OCCURED                            0x11
+
+/**
+ * @format 1B1
+ * @param status
+ * @param bd_addr
+ * @param role
+ */
 #define HCI_EVENT_ROLE_CHANGE                              0x12
+
 #define HCI_EVENT_NUMBER_OF_COMPLETED_PACKETS              0x13
 #define HCI_EVENT_MODE_CHANGE_EVENT                        0x14
 #define HCI_EVENT_RETURN_LINK_KEYS                         0x15

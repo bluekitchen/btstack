@@ -83,7 +83,7 @@ enum STATE {INIT, ACTIVE} ;
 enum STATE state = INIT;
 
 
-int getDeviceIndexForAddress( bd_addr_t addr){
+static int getDeviceIndexForAddress( bd_addr_t addr){
     int j;
     for (j=0; j< deviceCount; j++){
         if (BD_ADDR_CMP(addr, devices[j].address) == 0){
@@ -93,12 +93,12 @@ int getDeviceIndexForAddress( bd_addr_t addr){
     return -1;
 }
 
-void start_scan(void){
+static void start_scan(void){
     printf("Starting inquiry scan..\n");
     hci_send_cmd(&hci_inquiry, HCI_INQUIRY_LAP, INQUIRY_INTERVAL, 0);
 }
 
-int has_more_remote_name_requests(void){
+static int has_more_remote_name_requests(void){
     int i;
     for (i=0;i<deviceCount;i++) {
         if (devices[i].state == REMOTE_NAME_REQUEST) return 1;
@@ -106,7 +106,7 @@ int has_more_remote_name_requests(void){
     return 0;
 }
 
-void do_next_remote_name_request(void){
+static void do_next_remote_name_request(void){
     int i;
     for (i=0;i<deviceCount;i++) {
         // remote name request

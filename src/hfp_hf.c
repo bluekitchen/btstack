@@ -118,14 +118,14 @@ void hfp_hf_create_sdp_record(uint8_t * service, int rfcomm_channel_nr, const ch
 }
 
 
-int hfp_hf_cmd_exchange_supported_features(uint16_t cid){
+static int hfp_hf_cmd_exchange_supported_features(uint16_t cid){
     char buffer[20];
     sprintf(buffer, "AT%s=%d\r\n", HFP_SUPPORTED_FEATURES, hfp_supported_features);
     // printf("exchange_supported_features %s\n", buffer);
     return send_str_over_rfcomm(cid, buffer);
 }
 
-int hfp_hf_cmd_notify_on_codecs(uint16_t cid){
+static int hfp_hf_cmd_notify_on_codecs(uint16_t cid){
     char buffer[30];
     int offset = snprintf(buffer, sizeof(buffer), "AT%s=", HFP_AVAILABLE_CODECS);
     offset += join(buffer+offset, sizeof(buffer)-offset, hfp_codecs, hfp_codecs_nr);
@@ -134,28 +134,28 @@ int hfp_hf_cmd_notify_on_codecs(uint16_t cid){
     return send_str_over_rfcomm(cid, buffer);
 }
 
-int hfp_hf_cmd_retrieve_indicators(uint16_t cid){
+static int hfp_hf_cmd_retrieve_indicators(uint16_t cid){
     char buffer[20];
     sprintf(buffer, "AT%s=?\r\n", HFP_INDICATOR);
     // printf("retrieve_indicators %s\n", buffer);
     return send_str_over_rfcomm(cid, buffer);
 }
 
-int hfp_hf_cmd_retrieve_indicators_status(uint16_t cid){
+static int hfp_hf_cmd_retrieve_indicators_status(uint16_t cid){
     char buffer[20];
     sprintf(buffer, "AT%s?\r\n", HFP_INDICATOR);
     // printf("retrieve_indicators_status %s\n", buffer);
     return send_str_over_rfcomm(cid, buffer);
 }
 
-int hfp_hf_cmd_activate_status_update_for_all_ag_indicators(uint16_t cid, uint8_t activate){
+static int hfp_hf_cmd_activate_status_update_for_all_ag_indicators(uint16_t cid, uint8_t activate){
     char buffer[20];
     sprintf(buffer, "AT%s=3,0,0,%d\r\n", HFP_ENABLE_STATUS_UPDATE_FOR_AG_INDICATORS, activate);
     // printf("toggle_indicator_status_update %s\n", buffer);
     return send_str_over_rfcomm(cid, buffer);
 }
 
-int hfp_hf_cmd_activate_status_update_for_ag_indicator(uint16_t cid, uint32_t indicators_status, int indicators_nr){
+static int hfp_hf_cmd_activate_status_update_for_ag_indicator(uint16_t cid, uint32_t indicators_status, int indicators_nr){
     char buffer[50];
     int offset = snprintf(buffer, sizeof(buffer), "AT%s=", HFP_UPDATE_ENABLE_STATUS_FOR_INDIVIDUAL_AG_INDICATORS);
     offset += join_bitmap(buffer+offset, sizeof(buffer)-offset, indicators_status, indicators_nr);
@@ -164,14 +164,14 @@ int hfp_hf_cmd_activate_status_update_for_ag_indicator(uint16_t cid, uint32_t in
     return send_str_over_rfcomm(cid, buffer);
 }
 
-int hfp_hf_cmd_retrieve_can_hold_call(uint16_t cid){
+static int hfp_hf_cmd_retrieve_can_hold_call(uint16_t cid){
     char buffer[20];
     sprintf(buffer, "AT%s=?\r\n", HFP_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES);
     // printf("retrieve_can_hold_call %s\n", buffer);
     return send_str_over_rfcomm(cid, buffer);
 }
 
-int hfp_hf_cmd_list_supported_generic_status_indicators(uint16_t cid){
+static int hfp_hf_cmd_list_supported_generic_status_indicators(uint16_t cid){
     char buffer[30];
     int offset = snprintf(buffer, sizeof(buffer), "AT%s=", HFP_GENERIC_STATUS_INDICATOR);
     offset += join(buffer+offset, sizeof(buffer)-offset, hfp_indicators, hfp_indicators_nr);
@@ -180,45 +180,45 @@ int hfp_hf_cmd_list_supported_generic_status_indicators(uint16_t cid){
     return send_str_over_rfcomm(cid, buffer);
 }
 
-int hfp_hf_cmd_retrieve_supported_generic_status_indicators(uint16_t cid){
+static int hfp_hf_cmd_retrieve_supported_generic_status_indicators(uint16_t cid){
     char buffer[20];
     sprintf(buffer, "AT%s=?\r\n", HFP_GENERIC_STATUS_INDICATOR); 
     // printf("retrieve_supported_generic_status_indicators %s\n", buffer);
     return send_str_over_rfcomm(cid, buffer);
 }
 
-int hfp_hf_cmd_list_initital_supported_generic_status_indicators(uint16_t cid){
+static int hfp_hf_cmd_list_initital_supported_generic_status_indicators(uint16_t cid){
     char buffer[20];
     sprintf(buffer, "AT%s?\r\n", HFP_GENERIC_STATUS_INDICATOR);
     // printf("list_initital_supported_generic_status_indicators %s\n", buffer);
     return send_str_over_rfcomm(cid, buffer);
 }
 
-int hfp_hf_cmd_query_operator_name_format(uint16_t cid){
+static int hfp_hf_cmd_query_operator_name_format(uint16_t cid){
     char buffer[20];
     sprintf(buffer, "AT%s=3,0\r\n", HFP_QUERY_OPERATOR_SELECTION);
     return send_str_over_rfcomm(cid, buffer);
 }
 
-int hfp_hf_cmd_query_operator_name(uint16_t cid){
+static int hfp_hf_cmd_query_operator_name(uint16_t cid){
     char buffer[20];
     sprintf(buffer, "AT%s?\r\n", HFP_QUERY_OPERATOR_SELECTION);
     return send_str_over_rfcomm(cid, buffer);
 }
 
-int hfp_hf_cmd_enable_extended_audio_gateway_error_report(uint16_t cid, uint8_t enable){
+static int hfp_hf_cmd_enable_extended_audio_gateway_error_report(uint16_t cid, uint8_t enable){
     char buffer[20];
     sprintf(buffer, "AT%s=%d\r\n", HFP_ENABLE_EXTENDED_AUDIO_GATEWAY_ERROR, enable);
     return send_str_over_rfcomm(cid, buffer);
 }
 
-int hfp_hf_cmd_trigger_codec_connection_setup(uint16_t cid){
+static int hfp_hf_cmd_trigger_codec_connection_setup(uint16_t cid){
     char buffer[20];
     sprintf(buffer, "AT%s\r\n", HFP_TRIGGER_CODEC_CONNECTION_SETUP);
     return send_str_over_rfcomm(cid, buffer);
 }
 
-int hfp_hf_cmd_confirm_codec(uint16_t cid, uint8_t codec){
+static int hfp_hf_cmd_confirm_codec(uint16_t cid, uint8_t codec){
     char buffer[20];
     sprintf(buffer, "AT%s=%d\r\n", HFP_CONFIRM_COMMON_CODEC, codec);
     return send_str_over_rfcomm(cid, buffer);
@@ -317,7 +317,7 @@ static int hfp_hf_run_for_context_service_level_connection(hfp_connection_t * co
     return done;
 }
 
-void hfp_hf_handle_ok_service_level_connection_establishment(hfp_connection_t *context){
+static void hfp_hf_handle_ok_service_level_connection_establishment(hfp_connection_t *context){
     if (context->state >= HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED) return;
     switch (context->state){
         case HFP_W4_EXCHANGE_SUPPORTED_FEATURES:
@@ -622,7 +622,7 @@ static void hfp_run_for_context(hfp_connection_t * context){
     }
 }
 
-void hfp_hf_switch_on_ok(hfp_connection_t *context){
+static void hfp_hf_switch_on_ok(hfp_connection_t *context){
     // printf("switch on ok\n");
     context->wait_ok = 0;
     

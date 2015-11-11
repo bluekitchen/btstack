@@ -59,15 +59,15 @@ void hsp_ag_create_service(uint8_t * service, int rfcomm_channel_nr, const char 
 
 void hsp_ag_init(uint8_t rfcomm_channel_nr);
 void hsp_ag_connect(bd_addr_t bd_addr);
-void hsp_ag_disconnect();
+void hsp_ag_disconnect(void);
 
 // +VGM=[0..15]
 void hsp_ag_set_microphone_gain(uint8_t gain);
 // +VGS=[0..15]
 void hsp_ag_set_speaker_gain(uint8_t gain);
 
-void hsp_ag_start_ringing();
-void hsp_ag_stop_ringing();
+void hsp_ag_start_ringing(void);
+void hsp_ag_stop_ringing(void);
 
 void hsp_ag_support_custom_commands(int enable);
 

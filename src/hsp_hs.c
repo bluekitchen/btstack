@@ -111,7 +111,7 @@ typedef enum {
 
 static hsp_state_t hsp_state = HSP_IDLE;
 
-static void hsp_run();
+static void hsp_run(void);
 static void packet_handler (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static void handle_query_rfcomm_event(sdp_query_event_t * event, void * context);
 
@@ -137,7 +137,7 @@ static void emit_event(uint8_t event_subtype, uint8_t value){
 // remote audio volume control
 // AG +VGM=13 [0..15] ; HS AT+VGM=6 | AG OK
 
-int send_str_over_rfcomm(uint16_t cid, char * command){
+static int hsp_hs_send_str_over_rfcomm(uint16_t cid, const char * command){
     if (!rfcomm_can_send_packet_now(rfcomm_cid)) return 1;
     int err = rfcomm_send_internal(cid, (uint8_t*) command, strlen(command));
     if (err){
@@ -155,7 +155,7 @@ void hsp_hs_support_custom_indications(int enable){
 // by calling hsp_hs_send_result function.
 int hsp_hs_send_result(char * result){
     if (!hs_support_custom_indications) return 1;
-    return send_str_over_rfcomm(rfcomm_cid, result);
+    return hsp_hs_send_str_over_rfcomm(rfcomm_cid, result);
 }
 
 
@@ -318,11 +318,10 @@ static void hsp_run(void){
     }
             
     if (hs_send_button_press){
-        int err = 0;
         if (hsp_state == HSP_W4_USER_ACTION){
-            err = send_str_over_rfcomm(rfcomm_cid, HSP_HS_AT_CKPD);
+            err = hsp_hs_send_str_over_rfcomm(rfcomm_cid, HSP_HS_AT_CKPD);
         } else {
-            err = send_str_over_rfcomm(rfcomm_cid, HSP_HS_BUTTON_PRESS);
+            err = hsp_hs_send_str_over_rfcomm(rfcomm_cid, HSP_HS_BUTTON_PRESS);
         }
         if (!err) hs_send_button_press = 0;
         return;
@@ -348,7 +347,7 @@ static void hsp_run(void){
              if (hs_microphone_gain >= 0){
                 char buffer[20];
                 sprintf(buffer, "%s=%d\r\n", HSP_HS_MICROPHONE_GAIN, hs_microphone_gain);
-                err = send_str_over_rfcomm(rfcomm_cid, buffer);
+                err = hsp_hs_send_str_over_rfcomm(rfcomm_cid, buffer);
                 if (!err) hs_microphone_gain = -1;
                 break;
             }
@@ -356,7 +355,7 @@ static void hsp_run(void){
             if (hs_speaker_gain >= 0){
                 char buffer[20];
                 sprintf(buffer, "%s=%d\r\n", HSP_HS_SPEAKER_GAIN, hs_speaker_gain);
-                err = send_str_over_rfcomm(rfcomm_cid, buffer);
+                err = hsp_hs_send_str_over_rfcomm(rfcomm_cid, buffer);
                 if (!err) hs_speaker_gain = -1;
                 break;
             }

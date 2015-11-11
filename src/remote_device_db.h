@@ -87,6 +87,8 @@ extern const remote_device_db_t remote_device_db_memory;
  */
 extern const remote_device_db_t remote_device_db_fs;
 
+const remote_device_db_t * remote_device_db_fs_instance(void);
+
 /* API_END */
 
 // MARK: non-persistent implementation

@@ -229,8 +229,7 @@ static void rfcomm_emit_service_registered(void *connection, uint8_t status, uin
 	(*app_packet_handler)(connection, HCI_EVENT_PACKET, 0, (uint8_t *) event, sizeof(event));
 }
 
-// static
-void rfcomm_emit_remote_line_status(rfcomm_channel_t *channel, uint8_t line_status){
+static void rfcomm_emit_remote_line_status(rfcomm_channel_t *channel, uint8_t line_status){
     log_info("RFCOMM_EVENT_REMOTE_LINE_STATUS cid 0x%02x c, line status 0x%x", channel->rfcomm_cid, line_status);
     uint8_t event[5];
     event[0] = RFCOMM_EVENT_REMOTE_LINE_STATUS;
@@ -241,7 +240,7 @@ void rfcomm_emit_remote_line_status(rfcomm_channel_t *channel, uint8_t line_stat
     (*app_packet_handler)(channel->connection, HCI_EVENT_PACKET, 0, (uint8_t *) event, sizeof(event));
 }
 
-void rfcomm_emit_port_configuration(rfcomm_channel_t *channel){
+static void rfcomm_emit_port_configuration(rfcomm_channel_t *channel){
     // notify client about new settings
     uint8_t event[2+sizeof(rfcomm_rpn_data_t)];
     event[0] = RFCOMM_EVENT_PORT_CONFIGURATION;
@@ -1147,12 +1146,12 @@ static void rfcomm_multiplexer_state_machine(rfcomm_multiplexer_t * multiplexer,
         rfcomm_send_uih_fc_rsp(multiplexer, multiplexer->fcon);
         if (multiplexer->fcon == 0) return;
         // trigger client to send again after sending FCon Response
-        uint8_t event[] = { DAEMON_EVENT_HCI_PACKET_SENT, 0};
+        uint8_t packet_sent_event[] = { DAEMON_EVENT_HCI_PACKET_SENT, 0};
         linked_item_t *it;
         for (it = (linked_item_t *) rfcomm_channels; it ; it = it->next){
             rfcomm_channel_t * channel = ((rfcomm_channel_t *) it);
             if (channel->multiplexer != multiplexer) continue;
-            (*app_packet_handler)(channel->connection, HCI_EVENT_PACKET, 0, (uint8_t *) event, sizeof(event));
+            (*app_packet_handler)(channel->connection, HCI_EVENT_PACKET, 0, (uint8_t *) packet_sent_event, sizeof(packet_sent_event));
         }
         return;
     }
@@ -1407,7 +1406,7 @@ static void rfcomm_channel_state_machine_2(rfcomm_multiplexer_t * multiplexer, u
     rfcomm_channel_state_machine(channel, event);
 }
 
-void rfcomm_channel_packet_handler(rfcomm_multiplexer_t * multiplexer,  uint8_t *packet, uint16_t size){
+static void rfcomm_channel_packet_handler(rfcomm_multiplexer_t * multiplexer,  uint8_t *packet, uint16_t size){
     
     // rfcomm: (0) addr [76543 server channel] [2 direction: initiator uses 1] [1 C/R: CMD by initiator = 1] [0 EA=1]
     const uint8_t frame_dlci = packet[0] >> 2;
@@ -1715,11 +1714,11 @@ static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, rfcomm_chann
     if (event->type == CH_EVT_RCVD_MSC_CMD){
         // notify client about new settings
         rfcomm_channel_event_msc_t *event_msc = (rfcomm_channel_event_msc_t*) event;
-        uint8_t event[2+1];
-        event[0] = RFCOMM_EVENT_REMOTE_MODEM_STATUS;
-        event[1] = 1;
-        event[2] = event_msc->modem_status;
-        (*app_packet_handler)(channel->connection, HCI_EVENT_PACKET, channel->rfcomm_cid, (uint8_t*)&event, sizeof(event));
+        uint8_t modem_status_event[2+1];
+        modem_status_event[0] = RFCOMM_EVENT_REMOTE_MODEM_STATUS;
+        modem_status_event[1] = 1;
+        modem_status_event[2] = event_msc->modem_status;
+        (*app_packet_handler)(channel->connection, HCI_EVENT_PACKET, channel->rfcomm_cid, (uint8_t*)&modem_status_event, sizeof(modem_status_event));
         // no return, MSC_CMD will be handled by state machine below
     }
 
@@ -1904,8 +1903,8 @@ static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, rfcomm_chann
                     break;
                 case CH_EVT_RCVD_CREDITS: {
                     // notify daemon -> might trigger re-try of parked connections
-                    uint8_t event[2] = { DAEMON_EVENT_NEW_RFCOMM_CREDITS, 0 };
-                    (*app_packet_handler)(channel->connection, DAEMON_EVENT_PACKET, channel->rfcomm_cid, event, sizeof(event));
+                    uint8_t credits_event[2] = { DAEMON_EVENT_NEW_RFCOMM_CREDITS, 0 };
+                    (*app_packet_handler)(channel->connection, DAEMON_EVENT_PACKET, channel->rfcomm_cid, credits_event, sizeof(credits_event));
                     break;
                 }
                 default:
@@ -2032,7 +2031,7 @@ int rfcomm_can_send_packet_now(uint16_t rfcomm_cid){
     rfcomm_channel_t * channel = rfcomm_channel_for_rfcomm_cid(rfcomm_cid);
     if (!channel){
         log_error("rfcomm_send_internal cid 0x%02x doesn't exist!", rfcomm_cid);
-        return 0;
+        return 1;
     }
     if (!channel->credits_outgoing) return 0;
     if (!channel->packets_granted)  return 0;
@@ -2184,7 +2183,7 @@ int rfcomm_query_port_configuration(uint16_t rfcomm_cid){
 }
 
 
-void rfcomm_create_channel2(void * connection, bd_addr_t addr, uint8_t server_channel, uint8_t incoming_flow_control, uint8_t initial_credits){
+static void rfcomm_create_channel2(void * connection, bd_addr_t addr, uint8_t server_channel, uint8_t incoming_flow_control, uint8_t initial_credits){
     log_info("RFCOMM_CREATE_CHANNEL addr %s channel #%u flow control %u init credits %u",  bd_addr_to_str(addr), server_channel,
              incoming_flow_control, initial_credits);
     
@@ -2246,7 +2245,7 @@ void rfcomm_disconnect_internal(uint16_t rfcomm_cid){
 }
 
 
-void rfcomm_register_service2(void * connection, uint8_t channel, uint16_t max_frame_size, uint8_t incoming_flow_control, uint8_t initial_credits){
+static void rfcomm_register_service2(void * connection, uint8_t channel, uint16_t max_frame_size, uint8_t incoming_flow_control, uint8_t initial_credits){
     log_info("RFCOMM_REGISTER_SERVICE channel #%u mtu %u flow_control %u credits %u",
              channel, max_frame_size, incoming_flow_control, initial_credits);
     // check if already registered

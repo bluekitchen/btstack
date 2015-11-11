@@ -85,7 +85,12 @@ static void hci_connection_timestamp(hci_connection_t *connection);
 static int  hci_power_control_on(void);
 static void hci_power_control_off(void);
 static void hci_state_reset(void);
+
+#ifdef HAVE_BLE
+// called from test/ble_client/advertising_data_parser.c
+void le_handle_advertisement_report(uint8_t *packet, int size);
 static void hci_remove_from_whitelist(bd_addr_type_t address_type, bd_addr_t address);
+#endif
 
 // the STACK is here
 #ifndef HAVE_MALLOC
@@ -130,8 +135,8 @@ static hci_connection_t * create_connection_for_bd_addr_and_type(bd_addr_t addr,
 *
  * @return le connection parameter range struct
  */
-le_connection_parameter_range_t gap_le_get_connection_parameter_range(void){
-    return hci_stack->le_connection_parameter_range;
+void gap_le_get_connection_parameter_range(le_connection_parameter_range_t range){
+    range = hci_stack->le_connection_parameter_range;
 }
 
 /**
@@ -140,12 +145,7 @@ le_connection_parameter_range_t gap_le_get_connection_parameter_range(void){
  */
 
 void gap_le_set_connection_parameter_range(le_connection_parameter_range_t range){
-    hci_stack->le_connection_parameter_range.le_conn_interval_min = range.le_conn_interval_min;
-    hci_stack->le_connection_parameter_range.le_conn_interval_max = range.le_conn_interval_max;
-    hci_stack->le_connection_parameter_range.le_conn_interval_min = range.le_conn_latency_min;
-    hci_stack->le_connection_parameter_range.le_conn_interval_max = range.le_conn_latency_max;
-    hci_stack->le_connection_parameter_range.le_supervision_timeout_min = range.le_supervision_timeout_min;
-    hci_stack->le_connection_parameter_range.le_supervision_timeout_max = range.le_supervision_timeout_max;
+    hci_stack->le_connection_parameter_range = range;
 }
 
 /**
@@ -352,7 +352,7 @@ uint8_t hci_number_free_acl_slots_for_handle(hci_con_handle_t con_handle){
     }
 }
 
-int hci_number_free_sco_slots_for_handle(hci_con_handle_t handle){
+static int hci_number_free_sco_slots_for_handle(hci_con_handle_t handle){
     int num_sco_packets_sent = 0;
     linked_item_t *it;
     for (it = (linked_item_t *) hci_stack->connections; it ; it = it->next){
@@ -429,7 +429,7 @@ void hci_release_packet_buffer(void){
 }
 
 // assumption: synchronous implementations don't provide can_send_packet_now as they don't keep the buffer after the call
-int hci_transport_synchronous(void){
+static int hci_transport_synchronous(void){
     return hci_stack->hci_transport->can_send_packet_now == NULL;
 }
 
@@ -759,17 +759,17 @@ int hci_non_flushable_packet_boundary_flag_supported(void){
     return (hci_stack->local_supported_features[6] & (1 << 6)) != 0;
 }
 
-int hci_ssp_supported(void){
+static int hci_ssp_supported(void){
     // No. 51, byte 6, bit 3
     return (hci_stack->local_supported_features[6] & (1 << 3)) != 0;
 }
 
-int hci_classic_supported(void){
+static int hci_classic_supported(void){
     // No. 37, byte 4, bit 5, = No BR/EDR Support
     return (hci_stack->local_supported_features[4] & (1 << 5)) == 0;
 }
 
-int hci_le_supported(void){
+static int hci_le_supported(void){
 #ifdef HAVE_BLE
     // No. 37, byte 4, bit 6 = LE Supported (Controller)
     return (hci_stack->local_supported_features[4] & (1 << 6)) != 0;
@@ -1313,6 +1313,7 @@ static void event_handler(uint8_t *packet, int size){
                 BD_ADDR_COPY(hci_stack->decline_addr, addr);
                 break;
             }
+            conn->role  = HCI_ROLE_SLAVE;
             conn->state = RECEIVED_CONNECTION_REQUEST;
             hci_run();
             break;
@@ -1550,6 +1551,14 @@ static void event_handler(uint8_t *packet, int size){
             }
             break;
 
+        case HCI_EVENT_ROLE_CHANGE:
+            if (packet[2]) break;   // status != 0
+            handle = READ_BT_16(packet, 3);
+            conn = hci_connection_for_handle(handle);
+            if (!conn) break;       // no conn
+            conn->role = packet[9];
+            break;
+
         case DAEMON_EVENT_HCI_PACKET_SENT:
             // release packet buffer only for asynchronous transport and if there are not further fragements
             if (hci_transport_synchronous()) {
@@ -1590,7 +1599,7 @@ static void event_handler(uint8_t *packet, int size){
                         break;
                     }
                     // on success, both hosts receive connection complete event
-                    if (packet[6] == 0){
+                    if (packet[6] == HCI_ROLE_MASTER){
                         // if we're master, it was an outgoing connection and we're done with it
                         hci_stack->le_connecting_state = LE_CONNECTING_IDLE;
                     } else {
@@ -1607,6 +1616,7 @@ static void event_handler(uint8_t *packet, int size){
                     }
                     
                     conn->state = OPEN;
+                    conn->role  = packet[6];
                     conn->con_handle = READ_BT_16(packet, 4);
                     
                     // TODO: store - role, peer address type, conn_interval, conn_latency, supervision timeout, master clock
@@ -1650,13 +1660,13 @@ static void event_handler(uint8_t *packet, int size){
     if (packet[0] == HCI_EVENT_DISCONNECTION_COMPLETE){
         if (!packet[2]){
             handle = READ_BT_16(packet, 3);
-            hci_connection_t * conn = hci_connection_for_handle(handle);
-            if (conn) {
-                uint8_t status = conn->bonding_status;
-                uint16_t flags = conn->bonding_flags;
+            hci_connection_t * aConn = hci_connection_for_handle(handle);
+            if (aConn) {
+                uint8_t status = aConn->bonding_status;
+                uint16_t flags = aConn->bonding_flags;
                 bd_addr_t bd_address;
-                memcpy(&bd_address, conn->address, 6);
-                hci_shutdown_connection(conn);
+                memcpy(&bd_address, aConn->address, 6);
+                hci_shutdown_connection(aConn);
                 // connection struct is gone, don't access anymore
                 if (flags & BONDING_EMIT_COMPLETE_ON_DISCONNECT){
                     hci_emit_dedicated_bonding_result(bd_address, status);
@@ -1718,12 +1728,12 @@ static void hci_state_reset(void){
     hci_stack->le_connecting_state = LE_CONNECTING_IDLE;
     hci_stack->le_whitelist = 0;
     hci_stack->le_whitelist_capacity = 0;
-    hci_stack->le_connection_parameter_range.le_conn_interval_min = 0x0006;
-    hci_stack->le_connection_parameter_range.le_conn_interval_max = 0x0C80;
-    hci_stack->le_connection_parameter_range.le_conn_latency_min = 0x0000;
-    hci_stack->le_connection_parameter_range.le_conn_latency_max = 0x03E8;
-    hci_stack->le_connection_parameter_range.le_supervision_timeout_min = 0x000A;
-    hci_stack->le_connection_parameter_range.le_supervision_timeout_max = 0x0C80;
+    hci_stack->le_connection_parameter_range.le_conn_interval_min =          6; 
+    hci_stack->le_connection_parameter_range.le_conn_interval_max =       3200;
+    hci_stack->le_connection_parameter_range.le_conn_latency_min =           0;
+    hci_stack->le_connection_parameter_range.le_conn_latency_max =         500;
+    hci_stack->le_connection_parameter_range.le_supervision_timeout_min =   10;
+    hci_stack->le_connection_parameter_range.le_supervision_timeout_max = 3200;
 }
 
 void hci_init(hci_transport_t *transport, void *config, bt_control_t *control, remote_device_db_t const* remote_device_db){
@@ -2085,7 +2095,6 @@ void hci_local_bd_addr(bd_addr_t address_buffer){
 void hci_run(void){
     
     // log_info("hci_run: entered");
-    hci_connection_t * connection;
     linked_item_t * it;
 
     // send continuation fragments first, as they block the prepared packet buffer
@@ -2250,7 +2259,7 @@ void hci_run(void){
     
     // send pending HCI commands
     for (it = (linked_item_t *) hci_stack->connections; it ; it = it->next){
-        connection = (hci_connection_t *) it;
+        hci_connection_t * connection = (hci_connection_t *) it;
         
         switch(connection->state){
             case SEND_CREATE_CONNECTION:
@@ -2286,6 +2295,7 @@ void hci_run(void){
             case RECEIVED_CONNECTION_REQUEST:
                 log_info("sending hci_accept_connection_request");
                 connection->state = ACCEPTED_CONNECTION_REQUEST;
+                connection->role  = HCI_ROLE_SLAVE;
                 if (connection->address_type == BD_ADDR_TYPE_CLASSIC){
                     hci_send_cmd(&hci_accept_connection_request, connection->address, 1);
                 } else {
@@ -2403,7 +2413,8 @@ void hci_run(void){
         }
 #endif
     }
-
+    
+    hci_connection_t * connection;
     switch (hci_stack->state){
         case HCI_STATE_INITIALIZING:
             hci_initializing_run();
@@ -2715,7 +2726,7 @@ void hci_emit_connection_complete(hci_connection_t *conn, uint8_t status){
     hci_stack->packet_handler(HCI_EVENT_PACKET, event, sizeof(event));
 }
 
-void hci_emit_le_connection_complete(uint8_t address_type, bd_addr_t address, uint16_t conn_handle, uint8_t status){
+static void hci_emit_le_connection_complete(uint8_t address_type, bd_addr_t address, uint16_t conn_handle, uint8_t status){
     uint8_t event[21];
     event[0] = HCI_EVENT_LE_META;
     event[1] = sizeof(event) - 2;

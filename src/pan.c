@@ -58,7 +58,7 @@ static const char default_nap_service_desc[] = "Personal Ad-hoc Network Service 
 static const char default_gn_service_name[] = "Group Ad-hoc Network Service";
 static const char default_gn_service_desc[] = "Personal Group Ad-hoc Network Service";
 
-void pan_create_service(uint8_t *service, uint32_t service_uuid, uint16_t * network_packet_types, const char *name, const char *descriptor,
+static void pan_create_service(uint8_t *service, uint32_t service_uuid, uint16_t * network_packet_types, const char *name, const char *descriptor,
 	 security_description_t security_desc, net_access_type_t net_access_type, uint32_t max_net_access_rate,
 	 const char *IPv4Subnet, const char *IPv6Subnet){
 

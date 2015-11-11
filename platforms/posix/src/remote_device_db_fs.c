@@ -51,13 +51,6 @@
 
 static char keypath[sizeof(LINK_KEY_PATH) + sizeof(LINK_KEY_PREFIX) + 17 + sizeof(LINK_KEY_SUFIX) + 1];
 
-static char char_for_nibble(int nibble){
-    if (nibble < 10) return '0' + nibble;
-    nibble -= 10;
-    if (nibble < 6) return 'A' + nibble;
-    return '?';
-}
-
 static char bd_addr_to_dash_str_buffer[6*3];  // 12-45-78-01-34-67\0
 static char * bd_addr_to_dash_str(bd_addr_t addr){
     char * p = bd_addr_to_dash_str_buffer;
@@ -119,9 +112,10 @@ static int get_link_key(bd_addr_t bd_addr, link_key_t link_key, link_key_type_t 
     int scan_result = sscan_link_key(link_key_str, link_key);
     if (scan_result == 0 ) return 0;
 
-    scan_result = sscanf( (char *) link_key_type_str, "%d", link_key_type);
+    int link_key_type_buffer;
+    scan_result = sscanf( (char *) link_key_type_str, "%d", &link_key_type_buffer);
     if (scan_result == 0 ) return 0;
-
+    *link_key_type = (link_key_type_t) link_key_type_buffer;
     return 1;
 }
 

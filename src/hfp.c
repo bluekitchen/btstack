@@ -102,14 +102,12 @@ static hfp_generic_status_indicator_t hfp_generic_status_indicators[HFP_MAX_NUM_
 
 static linked_list_t hfp_connections = NULL;
 
-hfp_generic_status_indicator_t * get_hfp_generic_status_indicators(){
+hfp_generic_status_indicator_t * get_hfp_generic_status_indicators(void){
     return (hfp_generic_status_indicator_t *) &hfp_generic_status_indicators;
 }
-
-int get_hfp_generic_status_indicators_nr(){
+int get_hfp_generic_status_indicators_nr(void){
     return hfp_generic_status_indicators_nr;
 }
-
 void set_hfp_generic_status_indicators(hfp_generic_status_indicator_t * indicators, int indicator_nr){
     if (indicator_nr > HFP_MAX_NUM_HF_INDICATORS) return;
     hfp_generic_status_indicators_nr = indicator_nr;
@@ -139,6 +137,7 @@ int send_str_over_rfcomm(uint16_t cid, char * command){
     return 1;
 }
 
+#if 0
 void hfp_set_codec(hfp_connection_t * context, uint8_t *packet, uint16_t size){
     // parse available codecs
     int pos = 0;
@@ -151,6 +150,7 @@ void hfp_set_codec(hfp_connection_t * context, uint8_t *packet, uint16_t size){
     }
     printf("Negotiated Codec 0x%02x\n", context->negotiated_codec);
 }
+#endif
 
 // UTILS
 int get_bit(uint16_t bitmap, int position){
@@ -307,7 +307,7 @@ static void remove_hfp_connection_context(hfp_connection_t * context){
     linked_list_remove(&hfp_connections, (linked_item_t*)context);   
 }
 
-hfp_connection_t * provide_hfp_connection_context_for_bd_addr(bd_addr_t bd_addr){
+static hfp_connection_t * provide_hfp_connection_context_for_bd_addr(bd_addr_t bd_addr){
     hfp_connection_t * context = get_hfp_connection_context_for_bd_addr(bd_addr);
     if (context) return  context;
     context = create_hfp_connection_context();
@@ -583,7 +583,7 @@ void hfp_handle_hci_event(hfp_callback_t callback, uint8_t packet_type, uint8_t 
 }
 
 // translates command string into hfp_command_t CMD and flags to distinguish between CMD=, CMD?, CMD=?
-void process_command(hfp_connection_t * context){
+static void process_command(hfp_connection_t * context){
     if (context->line_size < 2) return;
     // printf("process_command %s\n", context->line_buffer);
     context->command = HFP_CMD_NONE;
@@ -715,9 +715,11 @@ void process_command(hfp_connection_t * context){
     printf(" process unknown command 3 %s \n", context->line_buffer);
 }
 
+#if 0
 uint32_t fromBinary(char *s) {
     return (uint32_t) strtol(s, NULL, 2);
 }
+#endif
 
 static void hfp_parser_store_byte(hfp_connection_t * context, uint8_t byte){
     // TODO: add limit

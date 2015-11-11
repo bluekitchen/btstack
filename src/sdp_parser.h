@@ -74,12 +74,14 @@ int  de_state_size(uint8_t eventByte, de_state_t *de_state);
 // Basic SDP Query event type
 typedef struct sdp_query_event {
     uint8_t type;
+    void * dummy;   // force sdp_query_event struct to be word aligned -> avoid -Wcast-align warning
 } sdp_query_event_t;
 
 // SDP Query event to indicate that query/parser is complete.
 typedef struct sdp_query_complete_event {
     uint8_t type;
     uint8_t status; // 0 == OK
+    void * dummy;   // force sdp_query_complete_event struct to be word aligned -> avoid -Wcast-align warning
 } sdp_query_complete_event_t;
 
 // SDP Parser event to deliver an attribute value byte by byte
@@ -90,6 +92,7 @@ typedef struct sdp_query_attribute_value_event {
     uint32_t attribute_length;
     int data_offset;
     uint8_t data;
+    void * dummy;   // force sdp_query_attribute_value_event struct to be word aligned -> avoid -Wcast-align warning
 } sdp_query_attribute_value_event_t;
 
 
@@ -99,6 +102,7 @@ typedef struct sdp_query_service_record_handle_event {
     uint16_t total_count;
     uint16_t current_count;
     uint32_t record_handle;
+    void * dummy;   // force sdp_query_service_record_handle_event struct to be word aligned -> avoid -Wcast-align warning
 } sdp_query_service_record_handle_event_t;
 #endif
 

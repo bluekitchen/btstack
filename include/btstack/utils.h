@@ -96,13 +96,13 @@ typedef uint8_t device_name_t[DEVICE_NAME_LEN+1];
 	
 	
 // helper for BT little endian format
-#define READ_BT_16( buffer, pos) ( ((uint16_t) buffer[pos]) | (((uint16_t)buffer[pos+1]) << 8))
-#define READ_BT_24( buffer, pos) ( ((uint32_t) buffer[pos]) | (((uint32_t)buffer[pos+1]) << 8) | (((uint32_t)buffer[pos+2]) << 16))
-#define READ_BT_32( buffer, pos) ( ((uint32_t) buffer[pos]) | (((uint32_t)buffer[pos+1]) << 8) | (((uint32_t)buffer[pos+2]) << 16) | (((uint32_t) buffer[pos+3])) << 24)
+#define READ_BT_16( buffer, pos) ( ((uint16_t) buffer[pos]) | (((uint16_t)buffer[(pos)+1]) << 8))
+#define READ_BT_24( buffer, pos) ( ((uint32_t) buffer[pos]) | (((uint32_t)buffer[(pos)+1]) << 8) | (((uint32_t)buffer[(pos)+2]) << 16))
+#define READ_BT_32( buffer, pos) ( ((uint32_t) buffer[pos]) | (((uint32_t)buffer[(pos)+1]) << 8) | (((uint32_t)buffer[(pos)+2]) << 16) | (((uint32_t) buffer[(pos)+3])) << 24)
 
 // helper for SDP big endian format
-#define READ_NET_16( buffer, pos) ( ((uint16_t) buffer[pos+1]) | (((uint16_t)buffer[pos  ]) << 8))
-#define READ_NET_32( buffer, pos) ( ((uint32_t) buffer[pos+3]) | (((uint32_t)buffer[pos+2]) << 8) | (((uint32_t)buffer[pos+1]) << 16) | (((uint32_t) buffer[pos])) << 24)
+#define READ_NET_16( buffer, pos) ( ((uint16_t) buffer[(pos)+1]) | (((uint16_t)buffer[ pos   ]) << 8))
+#define READ_NET_32( buffer, pos) ( ((uint32_t) buffer[(pos)+3]) | (((uint32_t)buffer[(pos)+2]) << 8) | (((uint32_t)buffer[(pos)+1]) << 16) | (((uint32_t) buffer[pos])) << 24)
 
 // HCI CMD OGF/OCF
 #define READ_CMD_OGF(buffer) (buffer[1] >> 2)
@@ -141,6 +141,8 @@ void swap24(const uint8_t  src[3],  uint8_t dst[3]);
 void swap56(const uint8_t  src[7],  uint8_t dst[7]);
 void swap64(const uint8_t  src[8],  uint8_t dst[8]);
 void swap128(const uint8_t src[16], uint8_t dst[16]);
+
+char char_for_nibble(int nibble);
 
 void printf_hexdump(const void *data, int size);
 void hexdump(const void *data, int size);

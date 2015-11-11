@@ -80,15 +80,15 @@ typedef struct att_iterator {
     uint8_t  const * value;
 } att_iterator_t;
 
-void att_iterator_init(att_iterator_t *it){
+static void att_iterator_init(att_iterator_t *it){
     it->att_ptr = att_db;
 }
 
-int att_iterator_has_next(att_iterator_t *it){
+static int att_iterator_has_next(att_iterator_t *it){
     return it->att_ptr != NULL;
 }
 
-void att_iterator_fetch_next(att_iterator_t *it){
+static void att_iterator_fetch_next(att_iterator_t *it){
     it->size   = READ_BT_16(it->att_ptr, 0);
     if (it->size == 0){
         it->flags = 0;
@@ -114,7 +114,7 @@ void att_iterator_fetch_next(att_iterator_t *it){
     it->att_ptr += it->size;
 }
 
-int att_iterator_match_uuid16(att_iterator_t *it, uint16_t uuid){
+static int att_iterator_match_uuid16(att_iterator_t *it, uint16_t uuid){
     if (it->handle == 0) return 0;
     if (it->flags & ATT_PROPERTY_UUID128){
         if (!is_Bluetooth_Base_UUID(it->uuid)) return 0;
@@ -123,7 +123,7 @@ int att_iterator_match_uuid16(att_iterator_t *it, uint16_t uuid){
     return READ_BT_16(it->uuid, 0)  == uuid;
 }
 
-int att_iterator_match_uuid(att_iterator_t *it, uint8_t *uuid, uint16_t uuid_len){
+static int att_iterator_match_uuid(att_iterator_t *it, uint8_t *uuid, uint16_t uuid_len){
     if (it->handle == 0) return 0;
     // input: UUID16
     if (uuid_len == 2) {
@@ -139,7 +139,7 @@ int att_iterator_match_uuid(att_iterator_t *it, uint8_t *uuid, uint16_t uuid_len
 }
 
 
-int att_find_handle(att_iterator_t *it, uint16_t handle){
+static int att_find_handle(att_iterator_t *it, uint16_t handle){
     if (handle == 0) return 0;
     att_iterator_init(it);
     while (att_iterator_has_next(it)){
@@ -650,7 +650,7 @@ static uint16_t handle_read_blob_request2(att_connection_t * att_connection, uin
     return offset;
 }
 
-uint16_t handle_read_blob_request(att_connection_t * att_connection, uint8_t * request_buffer,  uint16_t request_len,
+static uint16_t handle_read_blob_request(att_connection_t * att_connection, uint8_t * request_buffer,  uint16_t request_len,
                                   uint8_t * response_buffer, uint16_t response_buffer_size){
     return handle_read_blob_request2(att_connection, response_buffer, response_buffer_size, READ_BT_16(request_buffer, 1), READ_BT_16(request_buffer, 3));
 }
@@ -658,7 +658,7 @@ uint16_t handle_read_blob_request(att_connection_t * att_connection, uint8_t * r
 //
 // MARK: ATT_READ_MULTIPLE_REQUEST 0x0e
 //
-static uint16_t handle_read_multiple_request2(att_connection_t * att_connection, uint8_t * response_buffer, uint16_t response_buffer_size, uint16_t num_handles, uint16_t * handles){
+static uint16_t handle_read_multiple_request2(att_connection_t * att_connection, uint8_t * response_buffer, uint16_t response_buffer_size, uint16_t num_handles, uint8_t * handles){
     log_info("ATT_READ_MULTIPLE_REQUEST: num handles %u", num_handles);
     uint8_t request_type = ATT_READ_MULTIPLE_REQUEST;
     
@@ -673,7 +673,7 @@ static uint16_t handle_read_multiple_request2(att_connection_t * att_connection,
     uint8_t error_code = 0;
     uint16_t handle = 0;
     for (i=0;i<num_handles;i++){
-        handle = handles[i];
+        handle = READ_BT_16(handles, i << 1);
         
         if (handle == 0){
             return setup_error_invalid_handle(response_buffer, request_type, handle);
@@ -715,10 +715,10 @@ static uint16_t handle_read_multiple_request2(att_connection_t * att_connection,
     response_buffer[0] = ATT_READ_MULTIPLE_RESPONSE;
     return offset;
 }
-uint16_t handle_read_multiple_request(att_connection_t * att_connection, uint8_t * request_buffer,  uint16_t request_len,
+static uint16_t handle_read_multiple_request(att_connection_t * att_connection, uint8_t * request_buffer,  uint16_t request_len,
                                       uint8_t * response_buffer, uint16_t response_buffer_size){
     int num_handles = (request_len - 1) >> 1;
-    return handle_read_multiple_request2(att_connection, response_buffer, response_buffer_size, num_handles, (uint16_t*) &request_buffer[1]);
+    return handle_read_multiple_request2(att_connection, response_buffer, response_buffer_size, num_handles, &request_buffer[1]);
 }
 
 //
@@ -828,7 +828,7 @@ static uint16_t handle_read_by_group_type_request2(att_connection_t * att_connec
     response_buffer[0] = ATT_READ_BY_GROUP_TYPE_RESPONSE;
     return offset;
 }
-uint16_t handle_read_by_group_type_request(att_connection_t * att_connection, uint8_t * request_buffer,  uint16_t request_len,
+static uint16_t handle_read_by_group_type_request(att_connection_t * att_connection, uint8_t * request_buffer,  uint16_t request_len,
                                            uint8_t * response_buffer, uint16_t response_buffer_size){
     int attribute_type_len;
     if (request_len <= 7){

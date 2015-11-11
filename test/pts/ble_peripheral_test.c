@@ -67,7 +67,7 @@
 #define HEARTBEAT_PERIOD_MS 1000
 
 // test profile
-#include "profile.h"
+#include "ble_peripheral_test.h"
 
 enum {
     DISABLE_ADVERTISEMENTS   = 1 << 0,
@@ -225,16 +225,16 @@ static void att_write_queue_init(void){
     }
 }
 
-static int att_write_queue_for_handle(uint16_t handle){
+static int att_write_queue_for_handle(uint16_t aHandle){
     int i;
     for (i=0;i<ATT_NUM_WRITE_QUEUES;i++){
-        if (att_write_queues[i].handle == handle){
+        if (att_write_queues[i].handle == aHandle){
             return i;
         }
     }
     for (i=0;i<ATT_NUM_WRITE_QUEUES;i++){
         if (att_write_queues[i].handle == 0){
-            att_write_queues[i].handle = handle;
+            att_write_queues[i].handle = aHandle;
             memset(att_write_queues[i].value, 0, ATT_VALUE_MAX_LEN);
             att_write_queues[i].len = 0;
             return i;
@@ -251,10 +251,10 @@ static void att_attributes_init(void){
 }
 
 // handle == 0 finds free attribute
-static int att_attribute_for_handle(uint16_t handle){
+static int att_attribute_for_handle(uint16_t aHandle){
     int i;
     for (i=0;i<ATT_NUM_ATTRIBUTES;i++){
-        if (att_attributes[i].handle == handle) {
+        if (att_attributes[i].handle == aHandle) {
             return i;
         }
     }
@@ -302,44 +302,50 @@ static void app_run(void){
 // @param offset defines start of attribute value
 static uint16_t att_read_callback(uint16_t con_handle, uint16_t attribute_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
 
-    printf("READ Callback, handle %04x, offset %u, buffer size %u\n", handle, offset, buffer_size);
+    printf("READ Callback, handle %04x, offset %u, buffer size %u\n", attribute_handle, offset, buffer_size);
     uint16_t  att_value_len;
 
-    uint16_t uuid16 = att_uuid_for_handle(handle);
-    switch (uuid16){
-        case 0x2902:
-            if (buffer) {
-                buffer[0] = client_configuration;
-            }
-            return 1;
-        case 0x2a00:
+    switch (attribute_handle){
+        case ATT_CHARACTERISTIC_GAP_DEVICE_NAME_01_VALUE_HANDLE:
             att_value_len = strlen(gap_device_name);
             if (buffer) {
                 memcpy(buffer, gap_device_name, att_value_len);
             }
-            return att_value_len;        
-        case 0x2a01:
+            return att_value_len; 
+        case ATT_CHARACTERISTIC_GAP_APPEARANCE_01_VALUE_HANDLE:
             if (buffer){
                 bt_store_16(buffer, 0, gap_appearance);
             }
             return 2;
-        case 0x2a02:
+        case ATT_CHARACTERISTIC_GAP_PERIPHERAL_PRIVACY_FLAG_01_VALUE_HANDLE:
             if (buffer){
                 buffer[0] = gap_privacy;
             }
             return 1;
-        case 0x2A03:
+        case ATT_CHARACTERISTIC_GAP_RECONNECTION_ADDRESS_01_VALUE_HANDLE:
             if (buffer) {
                 bt_flip_addr(buffer, gap_reconnection_address);
             }
             return 6;
 
-        // handle device name
-        // handle appearance
         default:
             break;
     }
 
+    uint16_t uuid16 = att_uuid_for_handle(handle);
+    if (uuid16){
+        printf("Resolved to UUID %04x\n", uuid16);
+        switch (uuid16){
+            case 0x2902:
+                if (buffer) {
+                    buffer[0] = client_configuration;
+                }
+                return 1;
+            default:
+                break;
+        }
+    }
+    
     // find attribute
     int index = att_attribute_for_handle(handle);
     uint8_t * att_value;
@@ -374,36 +380,43 @@ static uint16_t att_read_callback(uint16_t con_handle, uint16_t attribute_handle
 
 // write requests
 static int att_write_callback(uint16_t con_handle, uint16_t attribute_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size){
-    printf("WRITE Callback, handle %04x, mode %u, offset %u, data: ", handle, transaction_mode, offset);
+    printf("WRITE Callback, handle %04x, mode %u, offset %u, data: ", attribute_handle, transaction_mode, offset);
     printf_hexdump(buffer, buffer_size);
 
-    uint16_t uuid16 = att_uuid_for_handle(handle);
-    switch (uuid16){
-        case 0x2902:
-            client_configuration = buffer[0];
-            client_configuration_handle = handle;
-            printf("Client Configuration set to %u for handle %04x\n", client_configuration, handle);
-            return 0;   // ok
-        case 0x2a00:
+    switch (attribute_handle){
+        case ATT_CHARACTERISTIC_GAP_DEVICE_NAME_01_VALUE_HANDLE:
             memcpy(gap_device_name, buffer, buffer_size);
             gap_device_name[buffer_size]=0;
             printf("Setting device name to '%s'\n", gap_device_name);
             return 0;
-        case 0x2a01:
+        case ATT_CHARACTERISTIC_GAP_APPEARANCE_01_VALUE_HANDLE:
             gap_appearance = READ_BT_16(buffer, 0);
             printf("Setting appearance to 0x%04x'\n", gap_appearance);
             return 0;
-        case 0x2a02:
+        case ATT_CHARACTERISTIC_GAP_PERIPHERAL_PRIVACY_FLAG_01_VALUE_HANDLE:
             gap_privacy = buffer[0];
             printf("Setting privacy to 0x%04x'\n", gap_privacy);
             update_advertisements();
             return 0;
-        case 0x2A03:
+        case ATT_CHARACTERISTIC_GAP_RECONNECTION_ADDRESS_01_VALUE_HANDLE:
             bt_flip_addr(gap_reconnection_address, buffer);
             printf("Setting Reconnection Address to %s\n", bd_addr_to_str(gap_reconnection_address));
             return 0;
-        // handle device name
-        // handle appearance
+        default:
+            break;
+    }
+    uint16_t uuid16 = att_uuid_for_handle(attribute_handle);
+    if (uuid16){
+        printf("Resolved to UUID %04x\n", uuid16);
+        switch (uuid16){
+            case GATT_CLIENT_CHARACTERISTICS_CONFIGURATION:
+                client_configuration = buffer[0];
+                client_configuration_handle = attribute_handle;
+                printf("Client Configuration set to %u for handle %04x\n", client_configuration, client_configuration_handle);
+                return 0;   // ok
+            default:
+                break;
+        }
     }
 
     // check transaction mode
@@ -411,11 +424,11 @@ static int att_write_callback(uint16_t con_handle, uint16_t attribute_handle, ui
     int writes_index;
     switch (transaction_mode){
         case ATT_TRANSACTION_MODE_NONE:
-            attributes_index = att_attribute_for_handle(handle);
+            attributes_index = att_attribute_for_handle(attribute_handle);
             if (attributes_index < 0){
                 attributes_index = att_attribute_for_handle(0);
                 if (attributes_index < 0) return 0;    // ok, but we couldn't store it (our fault)
-                att_attributes[attributes_index].handle = handle;
+                att_attributes[attributes_index].handle = attribute_handle;
                 // not written before
                 uint8_t * att_value;
                 uint16_t att_value_len;
@@ -433,7 +446,7 @@ static int att_write_callback(uint16_t con_handle, uint16_t attribute_handle, ui
             memcpy(att_attributes[attributes_index].value, buffer, buffer_size);
             break;
         case ATT_TRANSACTION_MODE_ACTIVE:
-            writes_index = att_write_queue_for_handle(handle);
+            writes_index = att_write_queue_for_handle(attribute_handle);
             if (writes_index < 0)                            return ATT_ERROR_PREPARE_QUEUE_FULL;
             if (offset > att_write_queues[writes_index].len) return ATT_ERROR_INVALID_OFFSET;
             if (buffer_size + offset > ATT_VALUE_MAX_LEN)    return ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH;
@@ -442,13 +455,13 @@ static int att_write_callback(uint16_t con_handle, uint16_t attribute_handle, ui
             break;
         case ATT_TRANSACTION_MODE_EXECUTE:
             for (writes_index=0 ; writes_index<ATT_NUM_WRITE_QUEUES ; writes_index++){
-                handle = att_write_queues[writes_index].handle;
-                if (handle == 0) continue;
-                attributes_index = att_attribute_for_handle(handle);
+                uint16_t aHandle = att_write_queues[writes_index].handle;
+                if (aHandle == 0) continue;
+                attributes_index = att_attribute_for_handle(aHandle);
                 if (attributes_index < 0){
                     attributes_index = att_attribute_for_handle(0);
                     if (attributes_index < 0) continue;
-                    att_attributes[attributes_index].handle = handle;
+                    att_attributes[attributes_index].handle = aHandle;
                 }
                 att_attributes[attributes_index].len = att_write_queues[writes_index].len;
                 memcpy(att_attributes[attributes_index].value, att_write_queues[writes_index].value, att_write_queues[writes_index].len);
@@ -694,7 +707,7 @@ void update_advertisements(void){
     gap_run();
 }
 
-void update_auth_req(void){
+static void update_auth_req(void){
     uint8_t auth_req = 0;
     if (sm_mitm_protection){
         auth_req |= SM_AUTHREQ_MITM_PROTECTION;
@@ -705,7 +718,7 @@ void update_auth_req(void){
     sm_set_authentication_requirements(auth_req);
 }
 
-int  stdin_process(struct data_source *ds){
+static int stdin_process(struct data_source *ds){
     char buffer;
     read(ds->fd, &buffer, 1);
 
@@ -943,9 +956,6 @@ static hci_uart_config_t hci_uart_config = {
 };
 #endif
 
-void setup(void){
-
-}
 
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
@@ -973,7 +983,7 @@ int btstack_main(int argc, const char * argv[]){
 
     btstack_stdin_setup(stdin_process);
 
-    gap_random_address_set_update_period(300000);
+    gap_random_address_set_update_period(5000);
     gap_random_address_set_mode(GAP_RANDOM_ADDRESS_RESOLVABLE);
     strcpy(gap_device_name, "BTstack");
     sm_set_io_capabilities(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);

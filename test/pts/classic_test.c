@@ -63,7 +63,7 @@
 #include "sm.h"
 #include "stdin_support.h"
 
-void show_usage();
+static void show_usage();
 
 // static bd_addr_t remote = {0x04,0x0C,0xCE,0xE4,0x85,0xD3};
 // static bd_addr_t remote = {0x84, 0x38, 0x35, 0x65, 0xD1, 0x15};
@@ -121,7 +121,7 @@ enum STATE {INIT, W4_INQUIRY_MODE_COMPLETE, ACTIVE} ;
 enum STATE state = INIT;
 
 
-int getDeviceIndexForAddress( bd_addr_t addr){
+static int getDeviceIndexForAddress( bd_addr_t addr){
     int j;
     for (j=0; j< deviceCount; j++){
         if (BD_ADDR_CMP(addr, devices[j].address) == 0){
@@ -131,12 +131,12 @@ int getDeviceIndexForAddress( bd_addr_t addr){
     return -1;
 }
 
-void start_scan(void){
+static void start_scan(void){
     printf("Starting inquiry scan..\n");
     hci_send_cmd(&hci_inquiry, HCI_INQUIRY_LAP, INQUIRY_INTERVAL, 0);
 }
 
-int has_more_remote_name_requests(void){
+static int has_more_remote_name_requests(void){
     int i;
     for (i=0;i<deviceCount;i++) {
         if (devices[i].state == REMOTE_NAME_REQUEST) return 1;
@@ -144,7 +144,7 @@ int has_more_remote_name_requests(void){
     return 0;
 }
 
-void do_next_remote_name_request(void){
+static void do_next_remote_name_request(void){
     int i;
     for (i=0;i<deviceCount;i++) {
         // remote name request
@@ -394,12 +394,12 @@ static void update_auth_req(void){
     hci_ssp_set_authentication_requirement(gap_auth_req);
 }
 
-void handle_found_service(char * name, uint8_t port){
+static void handle_found_service(char * name, uint8_t port){
     printf("SDP: Service name: '%s', RFCOMM port %u\n", name, port);
     rfcomm_channel_nr = port;
 }
 
-void handle_query_rfcomm_event(sdp_query_event_t * event, void * context){
+static void handle_query_rfcomm_event(sdp_query_event_t * event, void * context){
     sdp_query_rfcomm_service_event_t * ve;
             
     switch (event->type){
@@ -415,7 +415,7 @@ void handle_query_rfcomm_event(sdp_query_event_t * event, void * context){
     }
 }
 
-void send_ucd_packet(void){
+static void send_ucd_packet(void){
     l2cap_reserve_packet_buffer();
     int ucd_size = 50;
     uint8_t * ucd_buffer = l2cap_get_outgoing_buffer();
@@ -427,23 +427,7 @@ void send_ucd_packet(void){
     l2cap_send_prepared_connectionless(handle, L2CAP_CID_CONNECTIONLESS_CHANNEL, ucd_size);
 }
 
-void  heartbeat_handler(struct timer *ts){
-    if (rfcomm_channel_id){
-        static int counter = 0;
-        char lineBuffer[30];
-        sprintf(lineBuffer, "BTstack counter %04u\n\r", ++counter);
-        puts(lineBuffer);
-        if (rfcomm_can_send_packet_now(rfcomm_channel_id)) {
-            int err = rfcomm_send_internal(rfcomm_channel_id, (uint8_t*) lineBuffer, strlen(lineBuffer));
-            if (err) printf("rfcomm_send_internal -> error 0X%02x", err); 
-        }   
-    }
-    
-    run_loop_set_timer(ts, HEARTBEAT_PERIOD_MS);
-    run_loop_add_timer(ts);
-} 
-
-void show_usage(void){
+static void show_usage(void){
 
     printf("\n--- Bluetooth Classic Test Console ---\n");
     printf("GAP: discoverable %u, connectable %u, bondable %u, MITM %u, dedicated bonding %u, auth_req 0x0%u, %s\n",
@@ -491,7 +475,7 @@ void show_usage(void){
     printf("---\n");
 }
 
-int  stdin_process(struct data_source *ds){
+static int  stdin_process(struct data_source *ds){
     char buffer;
     read(ds->fd, &buffer, 1);
 
@@ -543,13 +527,11 @@ int  stdin_process(struct data_source *ds){
             break;
         case 'b':
             gap_bondable = 0;
-            // gap_set_bondable_mode(0);
             update_auth_req();
             show_usage();
             break;
         case 'B':
             gap_bondable = 1;
-            // gap_set_bondable_mode(1);
             update_auth_req();
             show_usage();
             break;
@@ -712,7 +694,7 @@ int  stdin_process(struct data_source *ds){
     return 0;
 }
 
-void sdp_create_dummy_service(uint8_t *service, const char *name){
+static void sdp_create_dummy_service(uint8_t *service, const char *name){
     
     uint8_t* attribute;
     de_create_sequence(service);
@@ -781,13 +763,13 @@ int btstack_main(int argc, const char * argv[]){
 
     printf("Starting up..\n");
 
-    hci_set_class_of_device(0x200404);
+    hci_set_class_of_device(0x220404);
     hci_disable_l2cap_timeout_check();
     hci_ssp_set_io_capability(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);
     gap_io_capabilities =  "IO_CAPABILITY_NO_INPUT_NO_OUTPUT";
     hci_ssp_set_authentication_requirement(0);
     hci_ssp_set_auto_accept(0);
-    // gap_set_bondable_mode(0);
+    update_auth_req();
 
     l2cap_init();
     l2cap_register_packet_handler(&packet_handler2);
@@ -819,12 +801,6 @@ int btstack_main(int argc, const char * argv[]){
     hci_power_control(HCI_POWER_ON);
 
     btstack_stdin_setup(stdin_process);
-
-    // set one-shot timer
-    // timer_source_t heartbeat;
-    // heartbeat.process = &heartbeat_handler;
-    // run_loop_set_timer(&heartbeat, HEARTBEAT_PERIOD_MS);
-    // run_loop_add_timer(&heartbeat);
 
     return 0;
 }
