@@ -715,6 +715,8 @@ typedef struct {
     /* buffer for scan enable cmd - 0xff no change */
     uint8_t   new_scan_enable_value;
     
+    uint16_t   sco_voice_setting;
+
     // buffer for single connection decline
     uint8_t   decline_reason;
     bd_addr_t decline_addr;
@@ -944,6 +946,17 @@ void hci_le_advertisement_address(uint8_t * addr_type, bd_addr_t addr);
  * @brief Set callback for Bluetooth Hardware Error
  */
 void hci_set_hardware_error_callback(void (*fn)(void));
+
+/** 
+ * @brief Configure Voice Setting for use with SCO data in HSP/HFP
+ */
+void hci_set_sco_voice_setting(uint16_t voice_setting);
+
+/**
+ * @brief Get SCO Voice Setting
+ * @return current voice setting
+ */
+uint16_t hci_get_sco_voice_setting(void);
 
 /* API_END */
 
