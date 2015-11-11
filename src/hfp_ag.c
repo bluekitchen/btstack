@@ -579,7 +579,7 @@ static int hfp_ag_run_for_context_service_level_connection_queries(hfp_connectio
 
 static int hfp_ag_run_for_context_codecs_connection(hfp_connection_t * context){
     if (context->state <= HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED ||
-        context->state > HFP_CODECS_CONNECTION_ESTABLISHED) return 0;
+        context->state > HFP_W2_DISCONNECT_SCO) return 0;
 
     int done = 0;
     //printf(" AG run for context_codecs_connection: ");
@@ -660,6 +660,25 @@ static int hfp_ag_run_for_context_codecs_connection(hfp_connection_t * context){
                 default:
                     break;
             }
+            if (done) return done;
+            
+            if (context->establish_audio_connection){
+                context->state = HFP_W4_SCO_CONNECTED;
+                hci_send_cmd(&hci_setup_synchronous_connection, context->con_handle, 8000, 8000, 0xFFFF, 0x0043, 0xFF, 0x003F);
+                done = 1;
+                return done;
+            }
+            break;
+        
+        case HFP_AUDIO_CONNECTION_ESTABLISHED:
+        case HFP_W2_DISCONNECT_SCO:
+            if (context->release_audio_connection){
+                context->state = HFP_W4_SCO_DISCONNECTED;
+                gap_disconnect(context->sco_handle);
+                done = 1;
+                return done;
+            }
+            break;
 
         default:
             break;
@@ -672,7 +691,7 @@ static void hfp_run_for_context(hfp_connection_t *context){
 
     if (!rfcomm_can_send_packet_now(context->rfcomm_cid)) return;
 
-    // printf("AG hfp_run_for_context 1 state %d, command %d\n", context->state, context->command);
+    // printf("AG hfp_run_for_context 1 state %d == %d (HFP_W2_DISCONNECT_SCO), command %d\n", context->state, HFP_W2_DISCONNECT_SCO, context->command);
     if (context->send_ok){
         hfp_ag_ok(context->rfcomm_cid);
         context->send_ok = 0;

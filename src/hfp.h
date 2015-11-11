@@ -248,8 +248,8 @@ typedef enum {
     
     HFP_CODECS_CONNECTION_ESTABLISHED, // 25
     
-    HFP_CCE_W2_ESTABLISH_SCO,
-    HFP_CCE_W4_SCO_CONNECTION_ESTABLISHED,
+    HFP_W2_CONNECT_SCO,
+    HFP_W4_SCO_CONNECTED,
     
     HFP_AUDIO_CONNECTION_ESTABLISHED,
     
@@ -383,8 +383,11 @@ int store_bit(uint32_t bitmap, int position, uint8_t value);
 void hfp_create_sdp_record(uint8_t * service, uint16_t service_uuid, int rfcomm_channel_nr, const char * name, uint16_t supported_features);
 void hfp_handle_hci_event(hfp_callback_t callback, uint8_t packet_type, uint8_t *packet, uint16_t size);
 void hfp_emit_event(hfp_callback_t callback, uint8_t event_subtype, uint8_t value);
+
 hfp_connection_t * get_hfp_connection_context_for_rfcomm_cid(uint16_t cid);
 hfp_connection_t * get_hfp_connection_context_for_bd_addr(bd_addr_t bd_addr);
+hfp_connection_t * get_hfp_connection_context_for_sco_handle(bd_addr_t bd_addr);
+
 int get_hfp_generic_status_indicators_nr(void);
 hfp_generic_status_indicator_t * get_hfp_generic_status_indicators(void);
 void set_hfp_generic_status_indicators(hfp_generic_status_indicator_t * indicators, int indicator_nr);

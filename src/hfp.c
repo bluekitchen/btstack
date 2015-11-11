@@ -233,12 +233,12 @@ hfp_connection_t * get_hfp_connection_context_for_bd_addr(bd_addr_t bd_addr){
     return NULL;
 }
 
-static hfp_connection_t * get_hfp_connection_context_for_handle(uint16_t handle){
+hfp_connection_t * get_hfp_connection_context_for_sco_handle(uint16_t handle){
     linked_list_iterator_t it;    
     linked_list_iterator_init(&it, hfp_get_connections());
     while (linked_list_iterator_has_next(&it)){
         hfp_connection_t * connection = (hfp_connection_t *)linked_list_iterator_next(&it);
-        if (connection->con_handle == handle){
+        if (connection->sco_handle == handle){
             return connection;
         }
     }
@@ -470,6 +470,7 @@ void hfp_handle_hci_event(hfp_callback_t callback, uint8_t packet_type, uint8_t 
         case RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE:
             // data: event(8), len(8), status (8), address (48), handle(16), server channel(8), rfcomm_cid(16), max frame size(16)
             printf("RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE packet_handler type %u, packet[0] %x\n", packet_type, packet[0]);
+
             bt_flip_addr(event_addr, &packet[3]); 
             context = get_hfp_connection_context_for_bd_addr(event_addr);
             if (!context || context->state != HFP_W4_RFCOMM_CONNECTED) return;
@@ -479,6 +480,8 @@ void hfp_handle_hci_event(hfp_callback_t callback, uint8_t packet_type, uint8_t 
                 remove_hfp_connection_context(context);
             } else {
                 context->con_handle = READ_BT_16(packet, 9);
+                printf("RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE con_handle 0x%02x\n", context->con_handle);
+            
                 context->rfcomm_cid = READ_BT_16(packet, 12);
                 uint16_t mtu = READ_BT_16(packet, 14);
                 printf("RFCOMM channel open succeeded. Context %p, RFCOMM Channel ID 0x%02x, max frame size %u\n", context, context->rfcomm_cid, mtu);
@@ -543,10 +546,9 @@ void hfp_handle_hci_event(hfp_callback_t callback, uint8_t packet_type, uint8_t 
                 context->state = HFP_W2_DISCONNECT_SCO;
                 break;
             }
-            
             context->sco_handle = sco_handle;
             context->state = HFP_AUDIO_CONNECTION_ESTABLISHED;
-            hfp_emit_event(callback, HFP_SUBEVENT_AUDIO_CONNECTION_COMPLETE, packet[2]);
+            hfp_emit_event(callback, HFP_SUBEVENT_AUDIO_CONNECTION_ESTABLISHED, packet[2]);
             break;                
         }
 
@@ -566,15 +568,21 @@ void hfp_handle_hci_event(hfp_callback_t callback, uint8_t packet_type, uint8_t 
 
         case HCI_EVENT_DISCONNECTION_COMPLETE:
             handle = READ_BT_16(packet,3);
-            context = get_hfp_connection_context_for_handle(handle);
+            context = get_hfp_connection_context_for_sco_handle(handle);
+            
             if (!context) break;
-            if (context->state == HFP_W4_RFCOMM_DISCONNECTED_AND_RESTART){
-                context->state = HFP_IDLE;
-                hfp_establish_service_level_connection(context->remote_addr, context->service_uuid);
+
+            if (context->state != HFP_W4_SCO_DISCONNECTED){
+                log_info("Received gap disconnect in wrong hfp state");
+            }
+
+            if (handle == context->sco_handle){
+                printf("SCO disconnected, w2 disconnect RFCOMM\n");
+                context->sco_handle = 0;
+                context->state = HFP_W2_DISCONNECT_RFCOMM;
+                hfp_emit_event(callback, HFP_SUBEVENT_AUDIO_CONNECTION_RELEASED, 0);
                 break;
             }
-            hfp_emit_event(callback, HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED, packet[2]);
-            remove_hfp_connection_context(context);
             break;
 
         default:
@@ -1051,7 +1059,7 @@ void hfp_release_service_level_connection(hfp_connection_t * context){
         return;
     }
 
-    if (context->state < HFP_CCE_W4_SCO_CONNECTION_ESTABLISHED){
+    if (context->state < HFP_W4_SCO_CONNECTED){
         context->state = HFP_W2_DISCONNECT_RFCOMM;
         return;
     }

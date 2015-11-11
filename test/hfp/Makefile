@@ -28,7 +28,7 @@ COMMON = \
 
 
 MOCK = \
-    btstack_memory.c            \
+	btstack_memory.c            \
     linked_list.c	            \
     memory_pool.c               \
     remote_device_db_memory.c   \
@@ -58,7 +58,7 @@ EXAMPLES = hfp_ag_parser_test hfp_ag_client_test hfp_hf_parser_test hfp_hf_clien
 all: ${BTSTACK_ROOT}/include/btstack/version.h ${EXAMPLES}
 
 clean:
-	rm -rf *.o $(PARSER_EXAMPLES) $(CLIENT_EXAMPLES) *.dSYM
+	rm -rf *.o $(EXAMPLES) $(CLIENT_EXAMPLES) *.dSYM
 
 hfp_ag_parser_test: ${COMMON_OBJ} hfp_ag.o hfp.o hfp_ag_parser_test.c  
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
