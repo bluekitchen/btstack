@@ -82,8 +82,9 @@ const uint8_t    rfcomm_channel_nr = 1;
 const char hsp_hs_service_name[] = "Headset Test";
 static uint16_t  sco_handle = 0;
 static bd_addr_t pts_addr = {0x00,0x1b,0xDC,0x07,0x32,0xEF};
-static bd_addr_t local_mac = {0x04, 0x0C, 0xCE, 0xE4, 0x85, 0xD3};
-// static bd_addr_t local_mac = {0x54, 0xe4, 0x3a, 0x26, 0xa2, 0x39};
+static bd_addr_t local_mac = {0x04, 0x0C, 0xCE, 0xE4, 0x85, 0xD3}; // MacBook Air 2011
+// static bd_addr_t local_mac = {0x84, 0x38, 0x35, 0x65, 0xD1, 0x15}; // MacBook Air 2013
+// static bd_addr_t local_mac = {0x54, 0xe4, 0x3a, 0x26, 0xa2, 0x39}; // iPhone 5S
 static bd_addr_t current_addr;
 
 static char hs_cmd_buffer[100];
@@ -233,11 +234,11 @@ static void packet_handler(uint8_t * event, uint16_t event_size){
     // try_send_sco();
     switch (event[0]) {
         case DAEMON_EVENT_HCI_PACKET_SENT:
-            printf("DAEMON_EVENT_HCI_PACKET_SENT\n");
+            // printf("DAEMON_EVENT_HCI_PACKET_SENT\n");
             try_send_sco();
             break;
         case HCI_EVENT_SYNCHRONOUS_CONNECTION_COMPLETE:
-            printf("HCI_EVENT_SYNCHRONOUS_CONNECTION_COMPLETE status %u, %x\n", event[2], READ_BT_16(event, 3));
+            // printf("HCI_EVENT_SYNCHRONOUS_CONNECTION_COMPLETE status %u, %x\n", event[2], READ_BT_16(event, 3));
             if (event[2]) break;
             sco_handle = READ_BT_16(event, 3);
             break;  
