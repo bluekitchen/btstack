@@ -401,6 +401,7 @@ int hci_can_send_prepared_sco_packet_now(hci_con_handle_t con_handle){
             return 0;
         }
     }
+    if (!hci_stack->synchronous_flow_control_enabled) return 1;
     return hci_number_free_sco_slots_for_handle(con_handle) > 0;    
 }
 
