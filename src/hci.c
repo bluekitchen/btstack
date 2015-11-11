@@ -1680,7 +1680,8 @@ static void event_handler(uint8_t *packet, int size){
 }
 
 static void sco_handler(uint8_t * packet, uint16_t size){
-    // not handled yet
+    if (!hci_stack->sco_packet_handler) return;
+    hci_stack->sco_packet_handler(HCI_SCO_DATA_PACKET, packet, size);
 }
 
 static void packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
@@ -1702,6 +1703,13 @@ static void packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
 /** Register HCI packet handlers */
 void hci_register_packet_handler(void (*handler)(uint8_t packet_type, uint8_t *packet, uint16_t size)){
     hci_stack->packet_handler = handler;
+}
+
+/**
+ * @brief Registers a packet handler for SCO data. Used for HSP and HFP profiles.
+ */
+void hci_register_sco_packet_handler(void (*handler)(uint8_t packet_type, uint8_t *packet, uint16_t size)){
+    hci_stack->sco_packet_handler = handler;    
 }
 
 static void hci_state_reset(void){
