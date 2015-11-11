@@ -118,11 +118,10 @@ void simulate_test_sequence(char ** test_steps, int nr_test_steps){
     int i = 0;
     for (i=0; i < nr_test_steps; i++){
         char * cmd = test_steps[i];
-        printf("\n --> Test step %d: ", i);
+        printf("\n---> NEXT STEP %s\n", cmd);
         if (memcmp(cmd, "AT", 2) == 0){
             inject_rfcomm_command_to_ag((uint8_t*)cmd, strlen(cmd));
         } else if (memcmp(cmd, "NOP", 3) == 0){
-            printf("Trigger AG to run state machine\n");
             inject_rfcomm_command_to_ag((uint8_t*)"NOP",3);
         } else {
             int expected_cmd = expected_rfcomm_command(cmd);

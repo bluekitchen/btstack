@@ -111,16 +111,18 @@ void hfp_hf_run_test_sequence(char ** test_steps, int nr_test_steps){
     int i = 0;
     for (i=0; i < nr_test_steps; i++){
         char * cmd = test_steps[i];
-        // printf("---> next step %s\n", cmd);
+        printf("\n---> NEXT STEP %s\n", cmd);
         if (memcmp(cmd, "AT", 2) == 0){
             int parsed_codecs[2];
             uint8_t new_codecs[2];
             if (memcmp(cmd, "AT+BAC=", 7) == 0){
+                printf("Send BAC\n");
                 sscanf(&cmd[7],"%d,%d", &parsed_codecs[0], &parsed_codecs[1]);
                 new_codecs[0] = parsed_codecs[0];
                 new_codecs[1] = parsed_codecs[1];
                 hfp_hf_set_codecs((uint8_t*)new_codecs, 2);
             } else {
+                printf("Verify\n");
                 int expected_cmd = expected_rfcomm_command(cmd);
                 if (expected_cmd){
                     printf("\nError: Expected:'%s', but got:'%s'", cmd, (char *)get_rfcomm_payload());
@@ -128,7 +130,7 @@ void hfp_hf_run_test_sequence(char ** test_steps, int nr_test_steps){
                 }
             }
         } else {
-            inject_rfcomm_command((uint8_t*)cmd, strlen(cmd));
+            inject_rfcomm_command_to_hf((uint8_t*)cmd, strlen(cmd));
         }
     }
 }
@@ -213,9 +215,13 @@ TEST_GROUP(HFPClient){
 
 
 TEST(HFPClient, HFCodecsConnectionEstablished){
-    verify_hfp_service_level_connection_established(default_slc_setup(), default_slc_setup_size());
     for (int i = 0; i < cc_tests_size(); i++){
-        verify_hfp_codecs_connection_established(hfp_cc_tests()[i].test, hfp_cc_tests()[i].len);
+        setup_hfp_service_level_connection(default_slc_setup(), default_slc_setup_size());
+        CHECK_EQUAL(service_level_connection_established, 1);
+        
+        setup_hfp_codecs_connection(hfp_cc_tests()[i].test, hfp_cc_tests()[i].len);
+        //CHECK_EQUAL(codecs_connection_established, 1);
+        teardown();
     }
 }
 
@@ -229,7 +235,9 @@ TEST(HFPClient, HFServiceLevelConnectionCommands){
 
 TEST(HFPClient, HFServiceLevelConnectionEstablished){
     for (int i = 0; i < slc_tests_size(); i++){
-        verify_hfp_service_level_connection_established(hfp_slc_tests()[i].test, hfp_slc_tests()[i].len);
+        setup_hfp_service_level_connection(hfp_slc_tests()[i].test, hfp_slc_tests()[i].len);
+        CHECK_EQUAL(service_level_connection_established, 1);
+        teardown();
     }
 }
 

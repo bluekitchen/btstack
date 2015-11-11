@@ -369,7 +369,7 @@ static uint8_t hfp_ag_suggest_codec(hfp_connection_t *context){
 
 static int hfp_ag_run_for_context_service_level_connection(hfp_connection_t * context){
     if (context->state >= HFP_CODECS_CONNECTION_ESTABLISHED) return 0;
-    printf(" AG run for context_service_level_connection \n");
+    //printf(" AG run for context_service_level_connection \n");
     int done = 0;
 
     switch(context->command){
@@ -397,7 +397,7 @@ static int hfp_ag_run_for_context_service_level_connection(hfp_connection_t * co
                     break;
                 case HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED:
                     context->suggested_codec = hfp_ag_suggest_codec(context);
-                    printf("received BAC == new HF codecs, suggested codec %d\n", context->suggested_codec);
+                    //printf("received BAC == new HF codecs, suggested codec %d\n", context->suggested_codec);
                     hfp_ag_ok(context->rfcomm_cid);
                     done = 1;
                     break;
@@ -498,12 +498,12 @@ static int hfp_ag_run_for_context_service_level_connection(hfp_connection_t * co
 static int hfp_ag_run_for_context_service_level_connection_queries(hfp_connection_t * context){
     if (context->state != HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED) return 0;
     int done = 0;
-    printf("    SLC queries: ");
+    //printf("    SLC queries: ");
     
     switch(context->command){
         case HFP_CMD_AVAILABLE_CODECS:
             context->suggested_codec = hfp_ag_suggest_codec(context);
-            printf("received BAC == new HF codecs, suggested codec %d\n", context->suggested_codec);
+            //printf("received BAC == new HF codecs, suggested codec %d\n", context->suggested_codec);
             hfp_ag_ok(context->rfcomm_cid);
             done = 1;
             break;
@@ -541,7 +541,7 @@ static int hfp_ag_run_for_context_service_level_connection_queries(hfp_connectio
             }
         case HFP_CMD_TRIGGER_CODEC_CONNECTION_SETUP:
             if (context->hf_trigger_codec_connection_setup){ // received BCC
-                printf(" received BCC \n");
+                //printf(" received BCC \n");
                 context->hf_trigger_codec_connection_setup = 0;
                 context->ag_trigger_codec_connection_setup = 1;
                 context->state = HFP_SLE_W2_EXCHANGE_COMMON_CODEC;
@@ -551,7 +551,7 @@ static int hfp_ag_run_for_context_service_level_connection_queries(hfp_connectio
             }
             
             if (context->ag_trigger_codec_connection_setup){ // received BCS
-                printf(" send BCS \n");
+                //printf(" send BCS \n");
                 context->ag_trigger_codec_connection_setup = 0;
                 context->state = HFP_SLE_W4_EXCHANGE_COMMON_CODEC;
                 context->suggested_codec = hfp_ag_suggest_codec(context);
@@ -582,11 +582,11 @@ static int hfp_ag_run_for_context_codecs_connection(hfp_connection_t * context){
         context->state > HFP_CODECS_CONNECTION_ESTABLISHED) return 0;
 
     int done = 0;
-    printf(" AG run for context_codecs_connection: ");
+    //printf(" AG run for context_codecs_connection: ");
     switch (context->state){
         case HFP_SLE_W2_EXCHANGE_COMMON_CODEC:
             if (context->ag_trigger_codec_connection_setup){ // received BCS
-                printf(" send BCS \n");
+                //printf(" send BCS \n");
                 context->ag_trigger_codec_connection_setup = 0;
                 context->state = HFP_SLE_W4_EXCHANGE_COMMON_CODEC;
                 context->suggested_codec = hfp_ag_suggest_codec(context);
@@ -599,7 +599,7 @@ static int hfp_ag_run_for_context_codecs_connection(hfp_connection_t * context){
             switch(context->command){
                 case HFP_CMD_AVAILABLE_CODECS:
                     if (context->notify_ag_on_new_codecs){ // received BAC
-                        printf(" received BAC\n");
+                        //printf(" received BAC\n");
                         context->notify_ag_on_new_codecs = 0;
                         if (context->suggested_codec != hfp_ag_suggest_codec(context)){
                             context->suggested_codec = hfp_ag_suggest_codec(context);
@@ -612,7 +612,7 @@ static int hfp_ag_run_for_context_codecs_connection(hfp_connection_t * context){
                     }
                     break;
                 case HFP_CMD_HF_CONFIRMED_CODEC:
-                    printf(" received AT+BCS\n");
+                    //printf(" received AT+BCS\n");
                     if (context->codec_confirmed != context->suggested_codec){
                         context->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
                         hfp_ag_error(context->rfcomm_cid);
