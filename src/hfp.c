@@ -712,6 +712,8 @@ static void process_command(hfp_connection_t * context){
         return;
     } 
 
+    if (strncmp((char *)context->line_buffer+offset, "NOP", 3) == 0) return;
+    
     printf(" process unknown command 3 %s \n", context->line_buffer);
 }
 

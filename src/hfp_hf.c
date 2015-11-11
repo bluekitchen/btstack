@@ -252,6 +252,8 @@ static void hfp_emit_network_operator_event(hfp_callback_t callback, int status,
 static int hfp_hf_run_for_context_service_level_connection(hfp_connection_t * context){
     if (context->state >= HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED) return 0;
     int done = 0;
+    if (context->wait_ok) return done;
+    
     switch (context->state){
         case HFP_EXCHANGE_SUPPORTED_FEATURES:
             hfp_hf_cmd_exchange_supported_features(context->rfcomm_cid);
@@ -641,7 +643,7 @@ static void hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8
 
     packet[size] = 0;
     int pos, i;
-    printf("\nHF received: %s", packet+2);
+    //printf("\nHF received: %s", packet+2);
     for (pos = 0; pos < size ; pos++){
         hfp_parse(context, packet[pos]);
         

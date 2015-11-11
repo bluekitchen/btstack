@@ -53,8 +53,7 @@ VPATH += ${BTSTACK_ROOT}/platforms/posix/src
 CFLAGS  = -g -Wall -I. -I../ -I${BTSTACK_ROOT}/src -I${BTSTACK_ROOT}/include -I${BTSTACK_ROOT}/ble
 LDFLAGS += -lCppUTest -lCppUTestExt
 
-EXAMPLES =  hfp_ag_client_test  
-#hfp_hf_parser_test hfp_hf_client_test hfp_ag_parser_test
+EXAMPLES = hfp_ag_parser_test hfp_ag_client_test hfp_hf_parser_test hfp_hf_client_test 
 
 all: ${BTSTACK_ROOT}/include/btstack/version.h ${EXAMPLES}
 
@@ -74,8 +73,8 @@ hfp_ag_client_test: ${MOCK_OBJ} hfp_ag.o hfp.o hfp_ag_client_test.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 test: all
-	#./hfp_hf_parser_test
-	#./hfp_ag_parser_test
-	#./hfp_hf_client_test
+	./hfp_ag_parser_test
 	./hfp_ag_client_test
+	./hfp_hf_parser_test
+	./hfp_hf_client_test
 	
