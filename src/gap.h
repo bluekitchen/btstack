@@ -77,6 +77,13 @@ typedef enum {
 	// GAP_SECURITY_AUTHORIZED
 } gap_security_state;
 
+typedef enum {
+	GAP_CONNECTION_INVALID,
+	GAP_CONNECTION_ACL,
+	GAP_CONNECTION_SCO,
+	GAP_CONNECTION_LE
+} gap_connection_type_t;
+
 /* API_START */
 
 /**
@@ -113,6 +120,13 @@ int  gap_mitm_protection_required_for_security_level(gap_security_level_t level)
  */
 void gap_set_local_name(const char * local_name);
 /* API_END*/
+
+/**
+ * @brief Get connection type
+ * @param con_handle
+ * @result connection_type
+ */
+gap_connection_type_t gap_get_connection_type(hci_con_handle_t connection_handle);
 
 #if defined __cplusplus
 }
