@@ -59,6 +59,8 @@ static void *registered_sdp_app_context;
 static uint8_t sdp_rfcomm_channel_nr = 1;
 const char sdp_rfcomm_service_name[] = "BTstackMock";
 static uint16_t rfcomm_cid = 1;
+static bd_addr_t dev_addr;
+static uint16_t sco_handle = 10;
 static uint8_t rfcomm_payload[200];
 static uint16_t rfcomm_payload_len;
 void * active_connection;
@@ -133,8 +135,33 @@ int  rfcomm_send_internal(uint16_t rfcomm_cid, uint8_t *data, uint16_t len){
 	return 0;
 }
 
+static void hci_event_sco_complete(){
+    uint8_t event[20];
+    uint8_t pos = 0;
+    event[pos++] = HCI_EVENT_SYNCHRONOUS_CONNECTION_COMPLETE;
+    event[pos++] = sizeof(event) - 2;
+
+    event[pos++] = 0; //status
+    bt_store_16(event,  pos, sco_handle);   pos += 2; // sco handle
+    bt_flip_addr(&event[pos], dev_addr); pos += 6;
+    printf("hci_event_sco_complete sco_handle 0x%02x, address %s\n", sco_handle, bd_addr_to_str(&event[pos-6]));
+
+    event[pos++] = 0; // link_type
+    event[pos++] = 0; // transmission_interval
+    event[pos++] = 0; // retransmission_interval
+
+    bt_store_16(event,  pos, 0);   pos += 2; // rx_packet_length
+    bt_store_16(event,  pos, 0);   pos += 2; // tx_packet_length
+
+    event[pos++] = 0; // air_mode
+    (*registered_rfcomm_packet_handler)(0, HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
 int hci_send_cmd(const hci_cmd_t *cmd, ...){
-	printf("hci_send_cmd opcode 0x%02x\n", cmd->opcode);	
+	// printf("hci_send_cmd opcode 0x%02x\n", cmd->opcode);	
+    if (cmd->opcode == 0x428){
+        hci_event_sco_complete();
+    }
 	return 0;
 }
 
@@ -167,6 +194,7 @@ void sdp_query_rfcomm_channel_and_name_for_uuid(bd_addr_t remote, uint16_t uuid)
 	sdp_query_complete_response(0);
 }
 
+
 void rfcomm_create_channel_internal(void * connection, bd_addr_t addr, uint8_t channel){
 	// RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE
 	// printf("rfcomm_create_channel_internal\n");
@@ -178,6 +206,8 @@ void rfcomm_create_channel_internal(void * connection, bd_addr_t addr, uint8_t c
     event[pos++] = 0;
     
     bt_flip_addr(&event[pos], addr); pos += 6;
+    bt_flip_addr(dev_addr, addr);
+    
     bt_store_16(event,  pos, 1);   pos += 2;
 	event[pos++] = 0;
 	
@@ -214,6 +244,21 @@ void sdp_query_rfcomm_channel_and_name_for_search_pattern(bd_addr_t remote, uint
 
 void rfcomm_accept_connection_internal(uint16_t rfcomm_cid){
 	printf("rfcomm_accept_connection_internal \n");
+}
+
+void hci_emit_disconnection_complete(uint16_t handle, uint8_t reason){
+    uint8_t event[6];
+    event[0] = HCI_EVENT_DISCONNECTION_COMPLETE;
+    event[1] = sizeof(event) - 2;
+    event[2] = 0; // status = OK
+    bt_store_16(event, 3, handle);
+    event[5] = reason;
+    (*registered_rfcomm_packet_handler)(0, HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
+le_command_status_t gap_disconnect(hci_con_handle_t handle){
+    hci_emit_disconnection_complete(handle, 0);
+    return BLE_PERIPHERAL_OK;
 }
 
 
