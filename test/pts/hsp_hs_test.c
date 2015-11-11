@@ -75,6 +75,7 @@
 #define SAMPLE_RATE 8000
 #define FRAMES_PER_BUFFER 1000
 #define PA_SAMPLE_TYPE paInt8
+#define TABLE_SIZE    (50)
 
 const uint32_t   hsp_service_buffer[150/4]; // implicit alignment to 4-byte memory address
 const uint8_t    rfcomm_channel_nr = 1;
@@ -89,11 +90,20 @@ static char hs_cmd_buffer[100];
 
 // portaudio globals
 static  PaStream * stream;
+static int8_t sine[TABLE_SIZE];
+static int phase = 0;
 
 // prototypes
 static void show_usage();
 
 static void setup_audio(void){
+
+    // create sine wave table
+    int i;
+    for( i=0; i<TABLE_SIZE; i++ ) {
+        sine[i] = (uint8_t) (127.0 * sin( ((double)i/(double)TABLE_SIZE) * M_PI * 2. ));
+    }
+
     int err;
     PaStreamParameters outputParameters;
 
@@ -196,12 +206,35 @@ static int stdin_process(struct data_source *ds){
     return 0;
 }
 
+static void try_send_sco(void){
+    if (!sco_handle) return;
+    if (!hci_can_send_sco_packet_now(sco_handle)) {
+        printf("try_send_sco, cannot send now\n");
+        return;
+    }
+    const int frames_per_packet = 20;
+    hci_reserve_packet_buffer();
+    uint8_t * sco_packet = hci_get_outgoing_packet_buffer();
+    // set handle + flags
+    bt_store_16(sco_packet, 0, sco_handle);
+    // set len
+    sco_packet[2] = frames_per_packet;
+    int i;
+    for (i=0;i<frames_per_packet;i++){
+        sco_packet[3+i] = sine[phase];
+        phase++;
+        if (phase >= TABLE_SIZE) phase = 0;
+    }
+    hci_send_sco_packet_buffer(frames_per_packet);
+}
+
 static void packet_handler(uint8_t * event, uint16_t event_size){
     // printf("Packet handler event 0x%02x\n", event[0]);
     // try_send_sco();
     switch (event[0]) {
         case DAEMON_EVENT_HCI_PACKET_SENT:
             printf("DAEMON_EVENT_HCI_PACKET_SENT\n");
+            try_send_sco();
             break;
         case HCI_EVENT_SYNCHRONOUS_CONNECTION_COMPLETE:
             printf("HCI_EVENT_SYNCHRONOUS_CONNECTION_COMPLETE status %u, %x\n", event[2], READ_BT_16(event, 3));
@@ -213,6 +246,7 @@ static void packet_handler(uint8_t * event, uint16_t event_size){
                 case HSP_SUBEVENT_AUDIO_CONNECTION_COMPLETE:
                     if (event[3] == 0){
                         printf("Audio connection established with SCO handle 0x%04x.\n", sco_handle);
+                        try_send_sco();
                     } else {
                         printf("Audio connection establishment failed with status %u\n", event[3]);
                     }
