@@ -1785,6 +1785,9 @@ void hci_init(hci_transport_t *transport, void *config, bt_control_t *control, r
     hci_stack->ssp_authentication_requirement = SSP_IO_AUTHREQ_MITM_PROTECTION_NOT_REQUIRED_GENERAL_BONDING;
     hci_stack->ssp_auto_accept = 1;
 
+    // voice setting - signed 8 bit pcm data with CVSD over the air
+    hci_stack->sco_voice_setting = 0x40;
+
     hci_state_reset();
 }
 
@@ -2299,8 +2302,7 @@ void hci_run(void){
                 if (connection->address_type == BD_ADDR_TYPE_CLASSIC){
                     hci_send_cmd(&hci_accept_connection_request, connection->address, 1);
                 } else {
-                    // TODO: allows to customize synchronous connection parameters
-                    hci_send_cmd(&hci_accept_synchronous_connection, connection->address, 8000, 8000, 0xFFFF, 0x0060, 0xFF, 0x003F);
+                    hci_send_cmd(&hci_accept_synchronous_connection, connection->address, 8000, 8000, 0xFFFF, hci_stack->sco_voice_setting, 0xFF, 0x003F);
                 }
                 return;
 
@@ -3289,6 +3291,21 @@ void gap_auto_connection_stop_all(void){
 }
 
 #endif
+
+/** 
+ * @brief Configure Voice Setting for use with SCO data in HSP/HFP
+ */
+void hci_set_sco_voice_setting(uint16_t voice_setting){
+    hci_stack->sco_voice_setting = voice_setting;
+}
+
+/**
+ * @brief Get SCO Voice Setting
+ * @return current voice setting
+ */
+uint16_t hci_get_sco_voice_setting(){
+    return hci_stack->sco_voice_setting;
+}
 
 /**
  * @brief Set callback for Bluetooth Hardware Error
