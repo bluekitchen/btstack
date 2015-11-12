@@ -131,6 +131,7 @@ extern "C" {
 #define OGF_CONTROLLER_BASEBAND   0x03
 #define OGF_INFORMATIONAL_PARAMETERS 0x04
 #define OGF_STATUS_PARAMETERS     0x05
+#define OGF_TESTING               0x06
 #define OGF_LE_CONTROLLER 0x08
 #define OGF_BTSTACK 0x3d
 #define OGF_VENDOR  0x3f
@@ -719,6 +720,8 @@ typedef struct {
     uint8_t   new_scan_enable_value;
     
     uint16_t   sco_voice_setting;
+
+    uint8_t   loopback_mode;
 
     // buffer for single connection decline
     uint8_t   decline_reason;
