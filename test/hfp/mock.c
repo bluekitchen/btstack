@@ -122,6 +122,12 @@ static void print_without_newlines(uint8_t *data, uint16_t len){
     printf("\n");
 }
 
+extern "C" void l2cap_init(void){}
+
+extern "C" void l2cap_register_packet_handler(void (*handler)(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size)){
+}
+
+
 int  rfcomm_send_internal(uint16_t rfcomm_cid, uint8_t *data, uint16_t len){
 	if (strncmp((char*)data, "AT", 2) == 0){
 		printf("Verify HF state machine response: ");
