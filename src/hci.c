@@ -835,6 +835,7 @@ static void hci_initialization_timeout_handler(timer_source_t * ds){
             hci_stack->substate = HCI_INIT_SEND_RESET_CSR_WARM_BOOT;
             hci_stack->num_cmd_packets = 1;
             hci_run();
+            break;
         case HCI_INIT_W4_SEND_BAUD_CHANGE:
             log_info("Local baud rate change to %"PRIu32, ((hci_uart_config_t *)hci_stack->config)->baudrate_main);
             hci_stack->hci_transport->set_baudrate(((hci_uart_config_t *)hci_stack->config)->baudrate_main);
