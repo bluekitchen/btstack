@@ -207,7 +207,7 @@ void hsp_ag_create_service(uint8_t * service, int rfcomm_channel_nr, const char 
 }
 
 static int hsp_ag_send_str_over_rfcomm(uint16_t cid, char * command){
-    if (!rfcomm_can_send_packet_now(rfcomm_cid)) return 1;
+    if (!rfcomm_can_send_packet_now(cid)) return 1;
     int err = rfcomm_send_internal(cid, (uint8_t*) command, strlen(command));
     if (err){
         printf("rfcomm_send_internal -> error 0X%02x", err);
@@ -337,16 +337,20 @@ static void hsp_run(void){
     int err;
 
     if (ag_send_ok){
+        ag_send_ok = 0;  
         err = hsp_ag_send_str_over_rfcomm(rfcomm_cid, HSP_AG_OK);
-        if (!err){
-            ag_send_ok = 0;  
+        if (err){
+            ag_send_ok = 1;  
         } 
         return;
     }
 
     if (ag_send_error){
+        ag_send_error = 0;
         err = hsp_ag_send_str_over_rfcomm(rfcomm_cid, HSP_AG_ERROR);
-        if (!err) ag_send_error = 0;
+        if (err) {
+            ag_send_error = 1;
+        }
         return;
     }
     
@@ -359,18 +363,24 @@ static void hsp_run(void){
 
         case HSP_W4_RING_ANSWER:
             if (ag_ring){
+                ag_ring = 0;
                 err = hsp_ag_send_str_over_rfcomm(rfcomm_cid, HSP_AG_RING);
-                if (!err) ag_ring = 0;
+                if (err) {
+                    ag_ring = 1;
+                }
                 break;
             }
 
             if (!ag_num_button_press_received) break;    
-            
+            ag_send_ok = 0;
+
+            ag_num_button_press_received = 0;
+            hsp_state = HSP_W2_CONNECT_SCO;
+
             err = hsp_ag_send_str_over_rfcomm(rfcomm_cid, HSP_AG_OK);
-            if (!err) {
-                hsp_state = HSP_W2_CONNECT_SCO;
-                ag_send_ok = 0;
-                ag_num_button_press_received = 0;
+            if (err) {
+                hsp_state = HSP_W4_RING_ANSWER;
+                ag_num_button_press_received = 1;
             }
             break;
         case HSP_W2_CONNECT_SCO:
@@ -393,18 +403,26 @@ static void hsp_run(void){
         case HSP_ACTIVE:
             
             if (ag_microphone_gain >= 0){
+                int gain = ag_microphone_gain;
+                ag_microphone_gain = -1;
                 char buffer[10];
                 sprintf(buffer, "%s=%d\r\n", HSP_MICROPHONE_GAIN, ag_microphone_gain);
                 err = hsp_ag_send_str_over_rfcomm(rfcomm_cid, buffer);
-                if (!err) ag_microphone_gain = -1;
+                if (err) {
+                    ag_microphone_gain = gain;
+                }
                 break;
             }
 
             if (ag_speaker_gain >= 0){
+                int gain = ag_speaker_gain;
+                ag_speaker_gain = -1;
                 char buffer[10];
                 sprintf(buffer, "%s=%d\r\n", HSP_SPEAKER_GAIN, ag_speaker_gain);
                 err = hsp_ag_send_str_over_rfcomm(rfcomm_cid, buffer);
-                if (!err) ag_speaker_gain = -1;
+                if (err) {
+                    ag_speaker_gain = gain;
+                }
                 break;
             }
             break;
