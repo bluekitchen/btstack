@@ -98,7 +98,7 @@ static uint8_t service_level_connection_established = 0;
 static uint8_t codecs_connection_established = 0;
 static uint8_t audio_connection_established = 0;
 static uint8_t start_ringing = 0;
-
+static uint8_t stop_ringing = 0;
 
 int expected_rfcomm_command(const char * expected_cmd){
     char * ag_cmd = (char *)get_rfcomm_payload();
@@ -171,6 +171,7 @@ void packet_handler(uint8_t * event, uint16_t event_size){
             break;
         case HFP_SUBEVENT_STOP_RINGINIG:
             printf("\n** Stop ringing **\n\n"); 
+            stop_ringing = 1;
             start_ringing = 0;
             break;
         default:
@@ -221,7 +222,7 @@ TEST(HFPClient, HFAnswerIncomingCallWithInBandRingTone){
     CHECK_EQUAL(audio_connection_established, 1);
 
     simulate_test_sequence(alert_ic_setup(), alert_ic_setup_size());
-    CHECK_EQUAL(start_ringing, 1);
+    CHECK_EQUAL(stop_ringing, 1);
 }
 
 

@@ -89,6 +89,7 @@ extern "C" {
 */
 #define HFP_AGSF_THREE_WAY_CALLING  0
 #define HFP_AGSF_EC_NR_FUNCTION     1
+#define HFP_AGSF_IN_BAND_RING_TONE  3
 #define HFP_AGSF_CODEC_NEGOTIATION  9
 #define HFP_AGSF_HF_INDICATORS      10
 #define HFP_AGSF_ESCO               11
@@ -114,6 +115,7 @@ extern "C" {
 #define HFP_EXTENDED_AUDIO_GATEWAY_ERROR "+CME ERROR"
 #define HFP_TRIGGER_CODEC_CONNECTION_SETUP "+BCC"
 #define HFP_CONFIRM_COMMON_CODEC "+BCS"
+#define HFP_CALL_ANSWERED "ATA"
 
 #define HFP_OK "OK"
 #define HFP_ERROR "ERROR"
@@ -143,8 +145,8 @@ typedef enum {
     HFP_CMD_EXTENDED_AUDIO_GATEWAY_ERROR,
     HFP_CMD_TRIGGER_CODEC_CONNECTION_SETUP,
     HFP_CMD_AG_SUGGESTED_CODEC,
-    HFP_CMD_HF_CONFIRMED_CODEC
-    
+    HFP_CMD_HF_CONFIRMED_CODEC,
+    HFP_CMD_CALL_ANSWERED
 } hfp_command_t;
 
 typedef enum {
@@ -253,7 +255,9 @@ typedef enum {
     HFP_W4_SCO_CONNECTED,
     
     HFP_AUDIO_CONNECTION_ESTABLISHED,
-    
+    HFP_RING_ALERT,
+    HFP_CALL_ACTIVE,
+
     HFP_W2_DISCONNECT_SCO,
     HFP_W4_SCO_DISCONNECTED, // 30
 
@@ -374,7 +378,9 @@ typedef struct hfp_connection {
     uint8_t start_call;
     uint8_t terminate_call;
     uint8_t start_ringing;
-    uint8_t stop_ringing;
+    uint8_t update_call_status;
+    uint8_t update_callsetup_status;
+    
 } hfp_connection_t;
 
 // UTILS_START : TODO move to utils

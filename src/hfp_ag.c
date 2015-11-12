@@ -684,6 +684,42 @@ static int hfp_ag_run_for_context_codecs_connection(hfp_connection_t * context){
                 done = 1;
                 return done;
             }
+            if (context->start_ringing){
+                context->start_ringing = 0;
+                context->state = HFP_RING_ALERT;
+                hfp_emit_event(hfp_callback, HFP_SUBEVENT_START_RINGINIG, 0);
+            }
+            break;
+        
+        case HFP_RING_ALERT:
+            // check if ATA
+            if (context->command == HFP_CMD_CALL_ANSWERED){
+                context->state = HFP_CALL_ACTIVE;
+                context->update_call_status = 1;
+                hfp_emit_event(hfp_callback, HFP_SUBEVENT_STOP_RINGINIG, 0);
+                hfp_ag_ok(context->rfcomm_cid);
+                done = 1;
+                return done;
+            }
+            break;
+        case HFP_CALL_ACTIVE:
+            if (context->update_call_status){
+                context->update_call_status = 0;
+                context->update_callsetup_status = 1;
+                hfp_ag_indicator_t * indicator = get_ag_indicator_for_name(context, "call");
+                indicator->status = HFP_CALL_STATUS_ACTIVE_OR_HELD_CALL_IS_PRESENT;
+                hfp_ag_transfer_ag_indicators_status_cmd(context->rfcomm_cid, indicator);
+                done = 1;
+                return done;
+            }
+            if (context->update_callsetup_status){
+                context->update_callsetup_status = 0;
+                hfp_ag_indicator_t * indicator = get_ag_indicator_for_name(context, "callsetup");
+                indicator->status = HFP_HELDCALL_STATUS_NO_CALLS_HELD;
+                hfp_ag_transfer_ag_indicators_status_cmd(context->rfcomm_cid, indicator);
+                done = 1;
+                return done;   
+            }
             break;
         default:
             break;
@@ -714,16 +750,6 @@ static int hfp_ag_run_for_context_codecs_connection(hfp_connection_t * context){
         return done;
     }
     
-    if (context->start_ringing){
-        context->start_ringing = 0;
-        hfp_emit_event(hfp_callback, HFP_SUBEVENT_START_RINGINIG, 0);
-    }
-
-    if (context->stop_ringing){
-        context->stop_ringing = 0;
-        hfp_emit_event(hfp_callback, HFP_SUBEVENT_STOP_RINGINIG, 0);
-    }
-
     return done;
 }
 
@@ -935,6 +961,7 @@ void hfp_ag_call(bd_addr_t bd_addr){
     printf("hfp_ag_call\n");
     hfp_run_for_context(connection);
 }
+
 
 /**
  * @brief 

@@ -155,23 +155,12 @@ const char * ic_test1[] = {
 
 const char * ic_alert_test1[] = {
     "NOP",
-    // //"RING",
-    // "NOP",
-    // "+CLIP:\"1234\",128",
-    // "NOP",
-    // "InBandRingTone",
-    // "NOP",
-    // "RING",
-    // "NOP",
-    // "+CLIP:\"1234\",128", // 128-143, 144-159, 160-175
-    // "NOP",
-    // "InBandRingTone",
-    // "ATA",
-    // "OK",
-    // "NOP",
-    // "+CIEV:2,1", // call = 1
-    // "NOP",
-    // "+CIEV:3,0"
+    "ATA",
+    "OK",
+    "NOP",
+    "+CIEV:2,1", // call = 1
+    "NOP",
+    "+CIEV:3,0"    
 };
 
 hfp_test_item_t ic_tests[] = {

@@ -623,6 +623,11 @@ static void process_command(hfp_connection_t * context){
     context->command = HFP_CMD_NONE;
     int offset = 0;
     int isHandsFree = 1;
+    
+    if (strncmp((char *)context->line_buffer+offset, HFP_CALL_ANSWERED, strlen(HFP_CALL_ANSWERED)) == 0){
+        context->command = HFP_CMD_CALL_ANSWERED;
+        return;
+    }
 
     if (strncmp((char *)context->line_buffer, "AT", 2) == 0){
         offset = 2;
@@ -745,7 +750,6 @@ static void process_command(hfp_connection_t * context){
         }
         return;
     } 
-
     
     if (strncmp((char *)context->line_buffer+offset, "AT+", 3) == 0){
         context->command = HFP_CMD_UNKNOWN;
