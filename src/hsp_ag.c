@@ -493,7 +493,6 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
 
             if (status != 0){
                 log_error("(e)SCO Connection is not established, status %u", status);
-                exit(0);
                 break;
             }
             switch (link_type){
