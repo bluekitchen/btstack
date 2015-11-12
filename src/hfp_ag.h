@@ -162,6 +162,16 @@ void hfp_ag_establish_audio_connection(bd_addr_t bd_addr);
 void hfp_ag_release_audio_connection(bd_addr_t bd_addr);
 
 
+/**
+ * @brief 
+ */
+void hfp_ag_call(bd_addr_t bd_addr);
+
+/**
+ * @brief 
+ */
+void hfp_ag_terminate_call(bd_addr_t bd_addr);
+
 /* API_END */
 
 #if defined __cplusplus

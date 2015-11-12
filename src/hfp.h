@@ -125,6 +125,7 @@ extern "C" {
 typedef enum {
     HFP_CMD_NONE = 0,
     HFP_CMD_ERROR,
+    HFP_CMD_UNKNOWN,
     HFP_CMD_OK,
     HFP_CMD_SUPPORTED_FEATURES,
     HFP_CMD_AVAILABLE_CODECS,
@@ -370,6 +371,10 @@ typedef struct hfp_connection {
     uint8_t establish_audio_connection; 
     uint8_t release_audio_connection; 
 
+    uint8_t start_call;
+    uint8_t terminate_call;
+    uint8_t start_ringing;
+    uint8_t stop_ringing;
 } hfp_connection_t;
 
 // UTILS_START : TODO move to utils

@@ -97,6 +97,7 @@ static hfp_generic_status_indicator_t hf_indicators[] = {
 static uint8_t service_level_connection_established = 0;
 static uint8_t codecs_connection_established = 0;
 static uint8_t audio_connection_established = 0;
+static uint8_t start_ringing = 0;
 
 
 int expected_rfcomm_command(const char * expected_cmd){
@@ -164,6 +165,14 @@ void packet_handler(uint8_t * event, uint16_t event_size){
             printf("\n** AC released **\n\n");
             audio_connection_established = 0;
             break;
+        case HFP_SUBEVENT_START_RINGINIG:
+            printf("\n** Start ringing **\n\n"); 
+            start_ringing = 1;
+            break;
+        case HFP_SUBEVENT_STOP_RINGINIG:
+            printf("\n** Stop ringing **\n\n"); 
+            start_ringing = 0;
+            break;
         default:
             printf("event not handled %u\n", event[2]);
             break;
@@ -201,8 +210,20 @@ TEST_GROUP(HFPClient){
         codecs_connection_established = 0;
         simulate_test_sequence((char **) test_steps, nr_test_steps);
     }
-
 };
+
+TEST(HFPClient, HFAnswerIncomingCallWithInBandRingTone){
+    setup_hfp_service_level_connection(default_slc_setup(), default_slc_setup_size());
+    CHECK_EQUAL(service_level_connection_established, 1);
+    
+    hfp_ag_call(device_addr);
+    simulate_test_sequence(default_ic_setup(), default_ic_setup_size());
+    CHECK_EQUAL(audio_connection_established, 1);
+
+    simulate_test_sequence(alert_ic_setup(), alert_ic_setup_size());
+    CHECK_EQUAL(start_ringing, 1);
+}
+
 
 TEST(HFPClient, HFAudioConnectionEstablished){
     setup_hfp_service_level_connection(default_slc_setup(), default_slc_setup_size());

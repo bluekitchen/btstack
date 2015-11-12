@@ -143,6 +143,41 @@ hfp_test_item_t cc_tests[] = {
     TEST_SEQUENCE(cc_test4)
 };
 
+/* Incoming call sequence */
+const char * ic_test1[] = {
+    "+CIEV:3,1",
+    "NOP",
+    "BCS:1",
+    "AT+BCS=1",
+    "OK",
+    "NOP"
+};
+
+const char * ic_alert_test1[] = {
+    "NOP",
+    // //"RING",
+    // "NOP",
+    // "+CLIP:\"1234\",128",
+    // "NOP",
+    // "InBandRingTone",
+    // "NOP",
+    // "RING",
+    // "NOP",
+    // "+CLIP:\"1234\",128", // 128-143, 144-159, 160-175
+    // "NOP",
+    // "InBandRingTone",
+    // "ATA",
+    // "OK",
+    // "NOP",
+    // "+CIEV:2,1", // call = 1
+    // "NOP",
+    // "+CIEV:3,0"
+};
+
+hfp_test_item_t ic_tests[] = {
+    TEST_SEQUENCE(ic_test1)
+};
+
 
 
 //////////////
@@ -165,10 +200,15 @@ int default_slc_cmds_setup_size(){ return sizeof(slc_cmds_test1)/sizeof(char*);}
 
 // CC
 hfp_test_item_t * hfp_cc_tests(){ return cc_tests;}
-int cc_tests_size(){ return sizeof(cc_tests) /test_item_size;
-}
+int cc_tests_size(){ return sizeof(cc_tests) /test_item_size;}
+
 char ** default_cc_setup() { return (char **)cc_test1;}
 int default_cc_setup_size(){ return sizeof(cc_test1)/sizeof(char*);}
 
+// IC
+char ** default_ic_setup() { return (char **)ic_test1;}
+int default_ic_setup_size(){ return sizeof(ic_test1)/sizeof(char*);}
 
+char ** alert_ic_setup() { return (char **)ic_alert_test1;}
+int alert_ic_setup_size(){ return sizeof(ic_alert_test1)/sizeof(char*);}
  

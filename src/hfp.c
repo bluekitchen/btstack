@@ -204,6 +204,16 @@ void hfp_emit_event(hfp_callback_t callback, uint8_t event_subtype, uint8_t valu
     (*callback)(event, sizeof(event));
 }
 
+void hfp_emit_audio_connection_established_event(hfp_callback_t callback, uint8_t value, uint16_t sco_handle){
+    if (!callback) return;
+    uint8_t event[6];
+    event[0] = HCI_EVENT_HFP_META;
+    event[1] = sizeof(event) - 2;
+    event[2] = HFP_SUBEVENT_AUDIO_CONNECTION_ESTABLISHED;
+    event[3] = value; // status 0 == OK
+    bt_store_16(event, 4, sco_handle);
+    (*callback)(event, sizeof(event));
+}
 
 linked_list_t * hfp_get_connections(){
     return (linked_list_t *) &hfp_connections;
@@ -560,8 +570,9 @@ void hfp_handle_hci_event(hfp_callback_t callback, uint8_t packet_type, uint8_t 
                 break;
             }
             context->sco_handle = sco_handle;
+            context->establish_audio_connection = 0;
             context->state = HFP_AUDIO_CONNECTION_ESTABLISHED;
-            hfp_emit_event(callback, HFP_SUBEVENT_AUDIO_CONNECTION_ESTABLISHED, packet[2]);
+            hfp_emit_audio_connection_established_event(callback, packet[2], sco_handle);
             break;                
         }
 
@@ -735,10 +746,23 @@ static void process_command(hfp_connection_t * context){
         return;
     } 
 
-    if (strncmp((char *)context->line_buffer+offset, "NOP", 3) == 0) return;
     
-    context->command = HFP_CMD_ERROR;
-    printf(" process unknown command %s \n", context->line_buffer);
+    if (strncmp((char *)context->line_buffer+offset, "AT+", 3) == 0){
+        context->command = HFP_CMD_UNKNOWN;
+        printf(" process unknown HF command %s \n", context->line_buffer);
+        return;
+    } 
+    if (strncmp((char *)context->line_buffer+offset, "+", 1) == 0){
+        context->command = HFP_CMD_UNKNOWN;
+        printf(" process unknown AG command %s \n", context->line_buffer);
+        return;
+    }
+    
+    if (strncmp((char *)context->line_buffer+offset, "NOP", 3) == 0){
+        context->command = HFP_CMD_NONE;
+        return;
+    } 
+     
 }
 
 #if 0
@@ -941,7 +965,8 @@ void hfp_parse(hfp_connection_t * context, uint8_t byte){
                 case HFP_CMD_TRANSFER_AG_INDICATOR_STATUS:
                     // indicators are indexed starting with 1
                     context->parser_item_index = atoi((char *)&context->line_buffer[0]) - 1;
-                    log_info("Parsed status of the AG indicator %d, status ", context->parser_item_index);
+                    printf("Parsed status of the AG indicator %d, status ", context->parser_item_index);
+                    printf("\n");
                     break;
                 case HFP_CMD_QUERY_OPERATOR_SELECTION:
                     if (context->operator_name_format == 1){
