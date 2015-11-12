@@ -702,7 +702,7 @@ OPCODE(OGF_TESTING, 0x01), ""
  * @param loopback_mode
  */
 const hci_cmd_t hci_write_loopback_mode = {
-OPCODE(OGF_TESTING, 0x01), "1"
+OPCODE(OGF_TESTING, 0x02), "1"
 // return: status
 };
 
