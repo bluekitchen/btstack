@@ -318,12 +318,15 @@ static void hsp_run(void){
     }
             
     if (hs_send_button_press){
+        hs_send_button_press = 0;
         if (hsp_state == HSP_W4_USER_ACTION){
             err = hsp_hs_send_str_over_rfcomm(rfcomm_cid, HSP_HS_AT_CKPD);
         } else {
             err = hsp_hs_send_str_over_rfcomm(rfcomm_cid, HSP_HS_BUTTON_PRESS);
         }
-        if (!err) hs_send_button_press = 0;
+        if (err) {
+            hs_send_button_press = 1;
+        }
         return;
     }
 
@@ -419,6 +422,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
             if (packet[2] == HCI_STATE_WORKING){
                 printf("BTstack activated, get started .\n");
             }
+            hsp_hs_callback(packet, size);
             break;
 
         case HCI_EVENT_PIN_CODE_REQUEST:
@@ -446,7 +450,6 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
 
             if (status != 0){
                 log_error("(e)SCO Connection is not established, status %u", status);
-                exit(0);
                 break;
             }
             switch (link_type){
@@ -522,6 +525,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
             }
             break;
         case DAEMON_EVENT_HCI_PACKET_SENT:
+        case HCI_EVENT_NUMBER_OF_COMPLETED_PACKETS:
         case RFCOMM_EVENT_CREDITS:
             hsp_hs_callback(packet, size);
             break;
