@@ -469,7 +469,7 @@ void hfp_handle_hci_event(hfp_callback_t callback, uint8_t packet_type, uint8_t 
 
         case RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE:
             // data: event(8), len(8), status (8), address (48), handle(16), server channel(8), rfcomm_cid(16), max frame size(16)
-            printf("RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE packet_handler type %u, packet[0] %x\n", packet_type, packet[0]);
+            printf("RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE packet_handler type %u, packet[0] %x, size %u\n", packet_type, packet[0], size);
 
             bt_flip_addr(event_addr, &packet[3]); 
             context = get_hfp_connection_context_for_bd_addr(event_addr);
@@ -501,13 +501,23 @@ void hfp_handle_hci_event(hfp_callback_t callback, uint8_t packet_type, uint8_t 
             break;
         
         case HCI_EVENT_SYNCHRONOUS_CONNECTION_COMPLETE:{
+            bt_flip_addr(event_addr, &packet[5]);
+            printf("SCO Complete packet_handler type %u (HCI = %u), packet[0] %x, size %u\n", packet_type, HCI_EVENT_PACKET, packet[0], size);
+   
             int index = 2;
             uint8_t status = packet[index++];
+
+            if (status != 0){
+                log_error("(e)SCO Connection is not established, status %u", status);
+                break;
+            }
+            
             uint16_t sco_handle = READ_BT_16(packet, index);
             index+=2;
-            bd_addr_t address; 
-            memcpy(address, &packet[index], 6);
+
+            bt_flip_addr(event_addr, &packet[index]);
             index+=6;
+
             uint8_t link_type = packet[index++];
             uint8_t transmission_interval = packet[index++];  // measured in slots
             uint8_t retransmission_interval = packet[index++];// measured in slots
@@ -517,20 +527,16 @@ void hfp_handle_hci_event(hfp_callback_t callback, uint8_t packet_type, uint8_t 
             index+=2;
             uint8_t air_mode = packet[index];
 
-            if (status != 0){
-                log_error("(e)SCO Connection is not established, status %u", status);
-                break;
-            }
             switch (link_type){
                 case 0x00:
-                    printf("SCO Connection established. \n");
+                    log_info("SCO Connection established. \n");
                     if (transmission_interval != 0) log_error("SCO Connection: transmission_interval not zero: %d.", transmission_interval);
                     if (retransmission_interval != 0) log_error("SCO Connection: retransmission_interval not zero: %d.", retransmission_interval);
                     if (rx_packet_length != 0) log_error("SCO Connection: rx_packet_length not zero: %d.", rx_packet_length);
                     if (tx_packet_length != 0) log_error("SCO Connection: tx_packet_length not zero: %d.", tx_packet_length);
                     break;
                 case 0x02:
-                    printf("eSCO Connection established. \n");
+                    log_info("eSCO Connection established. \n");
                     break;
                 default:
                     log_error("(e)SCO reserved link_type 0x%2x", link_type);
@@ -538,11 +544,17 @@ void hfp_handle_hci_event(hfp_callback_t callback, uint8_t packet_type, uint8_t 
             }
             log_info("sco_handle 0x%2x, address %s, transmission_interval %u slots, retransmission_interval %u slots, " 
                  " rx_packet_length %u bytes, tx_packet_length %u bytes, air_mode 0x%2x (0x02 == CVSD)", sco_handle,
-                 bd_addr_to_str(address), transmission_interval, retransmission_interval, rx_packet_length, tx_packet_length, air_mode);
+                 bd_addr_to_str(event_addr), transmission_interval, retransmission_interval, rx_packet_length, tx_packet_length, air_mode);
 
-            context = get_hfp_connection_context_for_bd_addr(address);
+            context = get_hfp_connection_context_for_bd_addr(event_addr);
+            
+            if (!context) {
+                log_error("SCO link created, context not found.");
+                break;
+            }
 
             if (context->state == HFP_W4_CONNECTION_ESTABLISHED_TO_SHUTDOWN){
+                log_info("sco about to disconnect: HFP_W4_CONNECTION_ESTABLISHED_TO_SHUTDOWN");
                 context->state = HFP_W2_DISCONNECT_SCO;
                 break;
             }
@@ -575,10 +587,12 @@ void hfp_handle_hci_event(hfp_callback_t callback, uint8_t packet_type, uint8_t 
             if (context->state != HFP_W4_SCO_DISCONNECTED){
                 log_info("Received gap disconnect in wrong hfp state");
             }
-
+            log_info("Check SCO handle: incoming 0x%02x, context 0x%02x\n", handle,context->sco_handle);
+                
             if (handle == context->sco_handle){
-                printf("SCO disconnected, w2 disconnect RFCOMM\n");
+                log_info("SCO disconnected, w2 disconnect RFCOMM\n");
                 context->sco_handle = 0;
+                context->release_audio_connection = 0;
                 context->state = HFP_W2_DISCONNECT_RFCOMM;
                 hfp_emit_event(callback, HFP_SUBEVENT_AUDIO_CONNECTION_RELEASED, 0);
                 break;
@@ -722,7 +736,8 @@ static void process_command(hfp_connection_t * context){
 
     if (strncmp((char *)context->line_buffer+offset, "NOP", 3) == 0) return;
     
-    printf(" process unknown command 3 %s \n", context->line_buffer);
+    context->command = HFP_CMD_ERROR;
+    printf(" process unknown command %s \n", context->line_buffer);
 }
 
 #if 0
@@ -1072,10 +1087,10 @@ void hfp_release_service_level_connection(hfp_connection_t * context){
     return;
 }
 
-void hfp_release_audio_connection(hfp_connection_t * connection){
-    if (!connection) return;
-    if (connection->state >= HFP_W2_DISCONNECT_SCO) return;
-    connection->release_audio_connection = 1; 
+void hfp_release_audio_connection(hfp_connection_t * context){
+    if (!context) return;
+    if (context->state >= HFP_W2_DISCONNECT_SCO) return;
+    context->release_audio_connection = 1; 
 }
 
 

@@ -261,6 +261,9 @@ le_command_status_t gap_disconnect(hci_con_handle_t handle){
     return BLE_PERIPHERAL_OK;
 }
 
+uint16_t hci_get_sco_voice_setting(){
+    return 0x40;
+}
 
 void inject_rfcomm_command_to_hf(uint8_t * data, int len){
     if (memcmp((char*)data, "AT", 2) == 0) return;

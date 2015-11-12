@@ -217,31 +217,31 @@ TEST(HFPClient, HFAudioConnectionEstablished){
     CHECK_EQUAL(audio_connection_established, 0);
 }
 
-// TEST(HFPClient, HFCodecsConnectionEstablished){
-//     for (int i = 0; i < cc_tests_size(); i++){
-//         setup_hfp_service_level_connection(default_slc_setup(), default_slc_setup_size());
-//         CHECK_EQUAL(service_level_connection_established, 1);
+TEST(HFPClient, HFCodecsConnectionEstablished){
+    for (int i = 0; i < cc_tests_size(); i++){
+        setup_hfp_service_level_connection(default_slc_setup(), default_slc_setup_size());
+        CHECK_EQUAL(service_level_connection_established, 1);
         
-//         setup_hfp_codecs_connection(hfp_cc_tests()[i].test, hfp_cc_tests()[i].len);
-//         CHECK_EQUAL(codecs_connection_established, 1);
-//         teardown();
-//     }
-// }
+        setup_hfp_codecs_connection(hfp_cc_tests()[i].test, hfp_cc_tests()[i].len);
+        CHECK_EQUAL(codecs_connection_established, 1);
+        teardown();
+    }
+}
 
-// TEST(HFPClient, HFServiceLevelConnectionCommands){
-//     setup_hfp_service_level_connection(default_slc_setup(), default_slc_setup_size());
-//     CHECK_EQUAL(service_level_connection_established, 1);
-//     for (int i = 0; i < slc_cmds_tests_size(); i++){
-//         simulate_test_sequence(hfp_slc_cmds_tests()[i].test, hfp_slc_cmds_tests()[i].len);
-//     }
-// }
+TEST(HFPClient, HFServiceLevelConnectionCommands){
+    setup_hfp_service_level_connection(default_slc_setup(), default_slc_setup_size());
+    CHECK_EQUAL(service_level_connection_established, 1);
+    for (int i = 0; i < slc_cmds_tests_size(); i++){
+        simulate_test_sequence(hfp_slc_cmds_tests()[i].test, hfp_slc_cmds_tests()[i].len);
+    }
+}
 
-// TEST(HFPClient, HFServiceLevelConnectionEstablished){
-//     for (int i = 0; i < slc_tests_size(); i++){
-//         setup_hfp_service_level_connection(hfp_slc_tests()[i].test, hfp_slc_tests()[i].len);
-//         CHECK_EQUAL(service_level_connection_established, 1);
-//     }
-// }
+TEST(HFPClient, HFServiceLevelConnectionEstablished){
+    for (int i = 0; i < slc_tests_size(); i++){
+        setup_hfp_service_level_connection(hfp_slc_tests()[i].test, hfp_slc_tests()[i].len);
+        CHECK_EQUAL(service_level_connection_established, 1);
+    }
+}
 
 
 int main (int argc, const char * argv[]){

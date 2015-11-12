@@ -724,6 +724,8 @@ void hfp_hf_set_codecs(uint8_t * codecs, int codecs_nr){
 }
 
 void hfp_hf_init(uint16_t rfcomm_channel_nr, uint32_t supported_features, uint16_t * indicators, int indicators_nr, uint32_t indicators_status){
+    l2cap_init();
+    l2cap_register_packet_handler(packet_handler);
     rfcomm_register_packet_handler(packet_handler);
     hfp_init(rfcomm_channel_nr);
     

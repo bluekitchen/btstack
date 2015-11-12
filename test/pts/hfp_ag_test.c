@@ -102,9 +102,6 @@ char cmd;
 // prototypes
 static void show_usage();
 
-static void reset_pst_flags(){
-}
-
 // Testig User Interface 
 static void show_usage(void){
     printf("\n--- Bluetooth HFP Hands-Free (HF) unit Test Console ---\n");
@@ -113,12 +110,12 @@ static void show_usage(void){
     printf("a - establish HFP connection to PTS module\n");
     printf("A - release HFP connection to PTS module\n");
     
+    printf("z - establish HFP connection to speaker\n");
+    printf("Z - release HFP connection to speaker\n");
+    
     printf("b - establish AUDIO connection\n");
     printf("B - release AUDIO connection\n");
     
-    printf("z - establish HFP connection to local mac\n");
-    printf("Z - release HFP connection to local mac\n");
-
     printf("d - report AG failure\n");
 
     printf("---\n");
@@ -181,7 +178,12 @@ static void packet_handler(uint8_t * event, uint16_t event_size){
             break;
         case HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED:
             printf("Service level connection released.\n\n");
-            reset_pst_flags();
+            break;
+        case HFP_SUBEVENT_AUDIO_CONNECTION_ESTABLISHED:
+            printf("\n** Audio connection established **\n\n");
+            break;
+        case HFP_SUBEVENT_AUDIO_CONNECTION_RELEASED:
+            printf("\n** Audio connection released **\n\n");
             break;
         default:
             printf("event not handled %u\n", event[2]);
