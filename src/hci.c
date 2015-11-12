@@ -581,7 +581,16 @@ int hci_send_sco_packet_buffer(int size){
     }
 
     hci_dump_packet( HCI_SCO_DATA_PACKET, 0, packet, size);
-    return hci_stack->hci_transport->send_packet(HCI_SCO_DATA_PACKET, packet, size);
+    int err = hci_stack->hci_transport->send_packet(HCI_SCO_DATA_PACKET, packet, size);
+
+    if (hci_transport_synchronous()){
+        hci_release_packet_buffer();
+        // notify upper stack that iit might be possible to send again
+        uint8_t event[] = { DAEMON_EVENT_HCI_PACKET_SENT, 0};
+        hci_stack->packet_handler(HCI_EVENT_PACKET, &event[0], sizeof(event));
+    }
+
+    return err;
 }
 
 static void acl_handler(uint8_t *packet, int size){
