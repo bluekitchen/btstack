@@ -686,6 +686,26 @@ OPCODE(OGF_CONTROLLER_BASEBAND, 0x6d), "11"
 // return: status
 };
 
+/**
+ * Testing Commands
+ */
+
+
+/**
+ */
+const hci_cmd_t hci_read_loopback_mode = {
+OPCODE(OGF_TESTING, 0x01), ""
+// return: status, loopback mode (0 = off, 1 = local loopback, 2 = remote loopback)
+};
+
+/**
+ * @param loopback_mode
+ */
+const hci_cmd_t hci_write_loopback_mode = {
+OPCODE(OGF_TESTING, 0x01), "1"
+// return: status
+};
+
 
 /**
  * Informational Parameters
