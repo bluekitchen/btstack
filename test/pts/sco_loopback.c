@@ -69,7 +69,7 @@ static void try_send_sco(void){
     for (i=0;i<frames_per_packet;i++){
         sco_packet[3+i] = i;
     }
-    hci_send_sco_packet_buffer(frames_per_packet);
+    hci_send_sco_packet_buffer(frames_per_packet+3);
 }
 
 static void packet_handler(uint8_t packet_type, uint8_t * packet, uint16_t event_size){
@@ -86,6 +86,7 @@ static void packet_handler(uint8_t packet_type, uint8_t * packet, uint16_t event
             try_send_sco();
             break;
         default:
+            try_send_sco();
             break;
     }
 }
