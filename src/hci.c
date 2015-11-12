@@ -558,23 +558,27 @@ int hci_send_sco_packet_buffer(int size){
     }
 
     uint8_t * packet = hci_stack->hci_packet_buffer;
-    hci_con_handle_t con_handle = READ_ACL_CONNECTION_HANDLE(packet);   // same for ACL and SCO
 
-    // check for free places on Bluetooth module
-    if (!hci_can_send_prepared_sco_packet_now(con_handle)) {
-        log_error("hci_send_sco_packet_buffer called but no free ACL buffers on controller");
-        hci_release_packet_buffer();
-        return BTSTACK_ACL_BUFFERS_FULL;
-    }
+    // skip checks in loopback mode
+    if (!hci_stack->loopback_mode){
+        hci_con_handle_t con_handle = READ_ACL_CONNECTION_HANDLE(packet);   // same for ACL and SCO
 
-    // track send packet in connection struct
-    hci_connection_t *connection = hci_connection_for_handle( con_handle);
-    if (!connection) {
-        log_error("hci_send_sco_packet_buffer called but no connection for handle 0x%04x", con_handle);
-        hci_release_packet_buffer();
-        return 0;
+        // check for free places on Bluetooth module
+        if (!hci_can_send_prepared_sco_packet_now(con_handle)) {
+            log_error("hci_send_sco_packet_buffer called but no free ACL buffers on controller");
+            hci_release_packet_buffer();
+            return BTSTACK_ACL_BUFFERS_FULL;
+        }
+
+        // track send packet in connection struct
+        hci_connection_t *connection = hci_connection_for_handle( con_handle);
+        if (!connection) {
+            log_error("hci_send_sco_packet_buffer called but no connection for handle 0x%04x", con_handle);
+            hci_release_packet_buffer();
+            return 0;
+        }
+        connection->num_sco_packets_sent++;
     }
-    connection->num_sco_packets_sent++;
 
     hci_dump_packet( HCI_SCO_DATA_PACKET, 0, packet, size);
     return hci_stack->hci_transport->send_packet(HCI_SCO_DATA_PACKET, packet, size);
@@ -2608,6 +2612,10 @@ int hci_send_cmd_packet(uint8_t *packet, int size){
         if (conn){
             connectionClearAuthenticationFlags(conn, SSP_PAIRING_ACTIVE);
         }
+    }
+
+    if (IS_COMMAND(packet, hci_write_loopback_mode)){
+        hci_stack->loopback_mode = packet[3];
     }
 
 #ifdef HAVE_BLE
