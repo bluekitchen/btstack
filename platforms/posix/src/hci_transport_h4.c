@@ -64,6 +64,7 @@ typedef enum {
     H4_W4_PACKET_TYPE,
     H4_W4_EVENT_HEADER,
     H4_W4_ACL_HEADER,
+    H4_W4_SCO_HEADER,
     H4_W4_PAYLOAD,
 } H4_STATE;
 
@@ -212,7 +213,7 @@ static int h4_send_packet(uint8_t packet_type, uint8_t * packet, int size){
         bytes_written = write(hci_transport_h4->uart_fd, &packet_type, 1);
     };
     while (size > 0) {
-        int bytes_written = write(hci_transport_h4->uart_fd, data, size);
+        bytes_written = write(hci_transport_h4->uart_fd, data, size);
         if (bytes_written < 0) {
             usleep(5000);
             continue;
@@ -240,16 +241,24 @@ static void h4_statemachine(void){
     switch (h4_state) {
             
         case H4_W4_PACKET_TYPE:
-            if (hci_packet[0] == HCI_EVENT_PACKET){
-                bytes_to_read = HCI_EVENT_HEADER_SIZE;
-                h4_state = H4_W4_EVENT_HEADER;
-            } else if (hci_packet[0] == HCI_ACL_DATA_PACKET){
-                bytes_to_read = HCI_ACL_HEADER_SIZE;
-                h4_state = H4_W4_ACL_HEADER;
-            } else {
-                log_error("h4_process: invalid packet type 0x%02x", hci_packet[0]);
-                read_pos = 0;
-                bytes_to_read = 1;
+            switch (hci_packet[0]){
+                case HCI_EVENT_PACKET:
+                    bytes_to_read = HCI_EVENT_HEADER_SIZE;
+                    h4_state = H4_W4_EVENT_HEADER;
+                    break;
+                case HCI_ACL_DATA_PACKET:
+                    bytes_to_read = HCI_ACL_HEADER_SIZE;
+                    h4_state = H4_W4_ACL_HEADER;
+                    break;
+                case HCI_SCO_DATA_PACKET:
+                    bytes_to_read = HCI_SCO_HEADER_SIZE;
+                    h4_state = H4_W4_SCO_HEADER;
+                    break;
+                default:
+                    log_error("h4_process: invalid packet type 0x%02x", hci_packet[0]);
+                    read_pos = 0;
+                    bytes_to_read = 1;
+                    break;
             }
             break;
             
@@ -263,15 +272,21 @@ static void h4_statemachine(void){
             h4_state = H4_W4_PAYLOAD;
             break;
             
+        case H4_W4_SCO_HEADER:
+            bytes_to_read = hci_packet[3];
+            h4_state = H4_W4_PAYLOAD;
+            break;
+
         case H4_W4_PAYLOAD:
             h4_deliver_packet();
             break;
+
         default:
             break;
     }
 }
 
-static int    h4_process(struct data_source *ds) {
+static int h4_process(struct data_source *ds) {
     if (hci_transport_h4->uart_fd == 0) return -1;
 
     int read_now = bytes_to_read;
