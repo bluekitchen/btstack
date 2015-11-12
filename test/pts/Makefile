@@ -30,7 +30,7 @@ LDFLAGS += $(shell pkg-config portaudio-2.0 --libs)
 # CFLAGS  += -I/usr/local/include
 # LDFLAGS += -L/sw/lib -lportaudio -Wl,-framework,CoreAudio -Wl,-framework,AudioToolbox -Wl,-framework,AudioUnit -Wl,-framework,Carbon
 
-EXAMPLES = hfp_hf_test hfp_ag_test ble_peripheral_test ble_central_test l2cap_test classic_test bnep_test hsp_ag_test hsp_hs_test
+EXAMPLES = hfp_hf_test hfp_ag_test ble_peripheral_test ble_central_test l2cap_test classic_test bnep_test hsp_ag_test hsp_hs_test sco_loopback
 
 all: ${BTSTACK_ROOT}/include/btstack/version.h ${EXAMPLES}
 
@@ -65,4 +65,7 @@ classic_test: ${CORE_OBJ} ${COMMON_OBJ} ${SDP_CLIENT} classic_test.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 bnep_test: ${CORE_OBJ} ${COMMON_OBJ} pan.o bnep_test.c
+	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+
+sco_loopback: ${CORE_OBJ} ${COMMON_OBJ} sco_loopback.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
