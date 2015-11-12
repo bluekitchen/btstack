@@ -212,8 +212,9 @@ TEST(HFPClient, HFAudioConnectionEstablished){
     CHECK_EQUAL(codecs_connection_established, 1);
 
     hfp_ag_establish_audio_connection(device_addr);
-    CHECK_EQUAL(audio_connection_established, 1);  
-    hfp_ag_release_audio_connection(device_addr);  
+    CHECK_EQUAL(audio_connection_established, 1);
+
+    hfp_ag_release_audio_connection(device_addr);
     CHECK_EQUAL(audio_connection_established, 0);
 }
 

@@ -670,14 +670,6 @@ static int hfp_ag_run_for_context_codecs_connection(hfp_connection_t * context){
                 default:
                     break;
             }
-            if (done) return done;
-            
-            if (context->establish_audio_connection){
-                context->state = HFP_W4_SCO_CONNECTED;
-                hci_send_cmd(&hci_setup_synchronous_connection, context->con_handle, 8000, 8000, 0xFFFF, hci_get_sco_voice_setting(), 0xFF, 0x003F);
-                done = 1;
-                return done;
-            }
             break;
 
         case HFP_W2_DISCONNECT_SCO:
@@ -685,7 +677,7 @@ static int hfp_ag_run_for_context_codecs_connection(hfp_connection_t * context){
             gap_disconnect(context->sco_handle);
             done = 1;
             return done;
-            
+
         case HFP_AUDIO_CONNECTION_ESTABLISHED:
             if (context->release_audio_connection){
                 context->state = HFP_W4_SCO_DISCONNECTED;
@@ -699,7 +691,25 @@ static int hfp_ag_run_for_context_codecs_connection(hfp_connection_t * context){
     }
 
     if (done) return done;
-
+            
+    if (context->establish_audio_connection){
+        if (context->state < HFP_SLE_W4_EXCHANGE_COMMON_CODEC){
+            printf("hfp_ag_establish_audio_connection ag_trigger_codec_connection_setup");
+            context->ag_trigger_codec_connection_setup = 0;
+            context->state = HFP_SLE_W4_EXCHANGE_COMMON_CODEC;
+            context->suggested_codec = hfp_ag_suggest_codec(context);
+            hfp_ag_cmd_suggest_codec(context->rfcomm_cid, context->suggested_codec);
+            done = 1;
+            return done;
+        } else {
+            printf("create sco");
+            context->state = HFP_W4_SCO_CONNECTED;
+            hci_send_cmd(&hci_setup_synchronous_connection, context->con_handle, 8000, 8000, 0xFFFF, hci_get_sco_voice_setting(), 0xFF, 0x003F);
+            done = 1;
+            return done;
+        }
+    }
+    
     if (context->release_audio_connection){
         context->state = HFP_W4_SCO_DISCONNECTED;
         gap_disconnect(context->sco_handle);
@@ -953,7 +963,7 @@ void hfp_ag_establish_audio_connection(bd_addr_t bd_addr){
     hfp_ag_establish_service_level_connection(bd_addr);
     hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
     if (!has_codec_negotiation_feature(connection)){
-        log_info("hfp_ag_establish_audio_connection 1 - no codec negotiation");
+        log_info("hfp_ag_establish_audio_connection - no codec negotiation feature");
         return;
     } 
     
@@ -961,9 +971,10 @@ void hfp_ag_establish_audio_connection(bd_addr_t bd_addr){
     if (connection->state == HFP_AUDIO_CONNECTION_ESTABLISHED) return;
     if (connection->state >= HFP_W2_DISCONNECT_SCO) return;
     
-    log_info("hfp_ag_establish_audio_connection 2");
+    log_info("hfp_ag_establish_audio_connection");
         
     connection->establish_audio_connection = 1;
+
     if (connection->state < HFP_SLE_W4_EXCHANGE_COMMON_CODEC){
         log_info("hfp_ag_establish_audio_connection ag_trigger_codec_connection_setup");
         connection->command = HFP_CMD_TRIGGER_CODEC_CONNECTION_SETUP;

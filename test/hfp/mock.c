@@ -64,6 +64,7 @@ static uint16_t sco_handle = 10;
 static uint8_t rfcomm_payload[200];
 static uint16_t rfcomm_payload_len;
 void * active_connection;
+hfp_connection_t * hfp_context;
 
 void (*registered_rfcomm_packet_handler)(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 void (*registered_sdp_app_callback)(sdp_query_event_t * event, void * context);
@@ -142,15 +143,14 @@ int  rfcomm_send_internal(uint16_t rfcomm_cid, uint8_t *data, uint16_t len){
 }
 
 static void hci_event_sco_complete(){
-    uint8_t event[20];
+    uint8_t event[19];
     uint8_t pos = 0;
     event[pos++] = HCI_EVENT_SYNCHRONOUS_CONNECTION_COMPLETE;
     event[pos++] = sizeof(event) - 2;
 
     event[pos++] = 0; //status
     bt_store_16(event,  pos, sco_handle);   pos += 2; // sco handle
-    bt_flip_addr(&event[pos], dev_addr); pos += 6;
-    printf("hci_event_sco_complete sco_handle 0x%02x, address %s\n", sco_handle, bd_addr_to_str(&event[pos-6]));
+    bt_flip_addr(&event[pos], dev_addr);    pos += 6;
 
     event[pos++] = 0; // link_type
     event[pos++] = 0; // transmission_interval
@@ -160,11 +160,11 @@ static void hci_event_sco_complete(){
     bt_store_16(event,  pos, 0);   pos += 2; // tx_packet_length
 
     event[pos++] = 0; // air_mode
-    (*registered_rfcomm_packet_handler)(0, HCI_EVENT_PACKET, 0, event, sizeof(event));
+    (*registered_rfcomm_packet_handler)(active_connection, HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
 int hci_send_cmd(const hci_cmd_t *cmd, ...){
-	// printf("hci_send_cmd opcode 0x%02x\n", cmd->opcode);	
+	printf("hci_send_cmd opcode 0x%02x\n", cmd->opcode);	
     if (cmd->opcode == 0x428){
         hci_event_sco_complete();
     }
@@ -203,7 +203,6 @@ void sdp_query_rfcomm_channel_and_name_for_uuid(bd_addr_t remote, uint16_t uuid)
 
 void rfcomm_create_channel_internal(void * connection, bd_addr_t addr, uint8_t channel){
 	// RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE
-	// printf("rfcomm_create_channel_internal\n");
 	active_connection = connection;
     uint8_t event[16];
     uint8_t pos = 0;
@@ -211,15 +210,16 @@ void rfcomm_create_channel_internal(void * connection, bd_addr_t addr, uint8_t c
     event[pos++] = sizeof(event) - 2;
     event[pos++] = 0;
     
-    bt_flip_addr(&event[pos], addr); pos += 6;
-    bt_flip_addr(dev_addr, addr);
+    bt_flip_addr(&event[pos], addr);
+    memcpy(dev_addr, addr, 6);
+    pos += 6;
     
     bt_store_16(event,  pos, 1);   pos += 2;
 	event[pos++] = 0;
 	
 	bt_store_16(event, pos, rfcomm_cid); pos += 2;       // channel ID
 	bt_store_16(event, pos, 200); pos += 2;   // max frame size
-    (*registered_rfcomm_packet_handler)(connection, HCI_EVENT_PACKET, 0, (uint8_t *) event, pos);
+    (*registered_rfcomm_packet_handler)(active_connection, HCI_EVENT_PACKET, 0, (uint8_t *) event, pos);
 }
 
 int rfcomm_can_send_packet_now(uint16_t rfcomm_cid){
@@ -259,7 +259,7 @@ void hci_emit_disconnection_complete(uint16_t handle, uint8_t reason){
     event[2] = 0; // status = OK
     bt_store_16(event, 3, handle);
     event[5] = reason;
-    (*registered_rfcomm_packet_handler)(0, HCI_EVENT_PACKET, 0, event, sizeof(event));
+    (*registered_rfcomm_packet_handler)(active_connection, HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
 le_command_status_t gap_disconnect(hci_con_handle_t handle){
