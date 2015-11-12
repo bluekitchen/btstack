@@ -46,7 +46,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "hci_cmds.h"
+#include <btstack/hci_cmds.h>
 #include "hci.h"
 #include "debug.h"
  
