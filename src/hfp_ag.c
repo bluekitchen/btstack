@@ -92,7 +92,7 @@ hfp_ag_indicator_t * get_hfp_ag_indicators(hfp_connection_t * context){
     return (hfp_ag_indicator_t *)&(context->ag_indicators);
 }
 
-hfp_ag_indicator_t * get_ag_indicator_for_name(hfp_connection_t * context, const char * name){
+static hfp_ag_indicator_t * get_ag_indicator_for_name(hfp_connection_t * context, const char * name){
     int i;
     for (i = 0; i < context->ag_indicators_nr; i++){
         if (strcmp(context->ag_indicators[i].name, name) == 0){

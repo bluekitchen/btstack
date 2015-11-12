@@ -204,7 +204,7 @@ void hfp_emit_event(hfp_callback_t callback, uint8_t event_subtype, uint8_t valu
     (*callback)(event, sizeof(event));
 }
 
-void hfp_emit_audio_connection_established_event(hfp_callback_t callback, uint8_t value, uint16_t sco_handle){
+static void hfp_emit_audio_connection_established_event(hfp_callback_t callback, uint8_t value, uint16_t sco_handle){
     if (!callback) return;
     uint8_t event[6];
     event[0] = HCI_EVENT_HFP_META;
