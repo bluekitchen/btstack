@@ -2263,7 +2263,9 @@ static uint8_t rfcomm_create_channel3(bd_addr_t addr, uint8_t server_channel, ui
     channel->new_credits_incoming  = initial_credits;
     
     // return rfcomm_cid
-    *out_rfcomm_cid = channel->rfcomm_cid;
+    if (out_rfcomm_cid){
+        *out_rfcomm_cid = channel->rfcomm_cid;
+    }
 
     // start multiplexer setup
     if (multiplexer->state != RFCOMM_MULTIPLEXER_OPEN) {
