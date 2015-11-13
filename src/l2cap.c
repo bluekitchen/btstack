@@ -832,65 +832,6 @@ uint8_t l2cap_create_channel(btstack_packet_handler_t channel_packet_handler, bd
     return 0;
 }
 
-// open outgoing L2CAP channel
-void l2cap_create_channel_internal(void * connection, btstack_packet_handler_t channel_packet_handler,
-                                   bd_addr_t address, uint16_t psm, uint16_t mtu){
-    
-    log_info("L2CAP_CREATE_CHANNEL_MTU addr %s psm 0x%x mtu %u", bd_addr_to_str(address), psm, mtu);
-    
-    // alloc structure
-    l2cap_channel_t * chan = btstack_memory_l2cap_channel_get();
-    if (!chan) {
-        // emit error event
-        l2cap_channel_t dummy_channel;
-        BD_ADDR_COPY(dummy_channel.address, address);
-        dummy_channel.psm = psm;
-        l2cap_emit_channel_opened(&dummy_channel, BTSTACK_MEMORY_ALLOC_FAILED);
-        return;
-    }
-
-    // Init memory (make valgrind happy)
-    memset(chan, 0, sizeof(l2cap_channel_t));
-    // limit local mtu to max acl packet length - l2cap header
-    if (mtu > l2cap_max_mtu()) {
-        mtu = l2cap_max_mtu();
-    }
-        
-    // fill in 
-    BD_ADDR_COPY(chan->address, address);
-    chan->psm = psm;
-    chan->handle = 0;
-    chan->connection = connection;
-    chan->packet_handler = channel_packet_handler;
-    chan->remote_mtu = L2CAP_MINIMAL_MTU;
-    chan->local_mtu = mtu;
-    chan->packets_granted = 0;
-    chan->local_cid = l2cap_next_local_cid();
-    
-    // set initial state
-    chan->state = L2CAP_STATE_WILL_SEND_CREATE_CONNECTION;
-    chan->state_var = L2CAP_CHANNEL_STATE_VAR_NONE;
-    chan->remote_sig_id = L2CAP_SIG_ID_INVALID;
-    chan->local_sig_id = L2CAP_SIG_ID_INVALID;
-    chan->required_security_level = LEVEL_0;
-
-    // add to connections list
-    linked_list_add(&l2cap_channels, (linked_item_t *) chan);
-    
-    // check if hci connection is already usable
-    hci_connection_t * conn = hci_connection_for_bd_addr_and_type(address, BD_ADDR_TYPE_CLASSIC);
-    if (conn){
-        log_info("l2cap_create_channel_internal, hci connection already exists");
-        l2cap_handle_connection_complete(conn->con_handle, chan);
-        // check if remote supported fearures are already received
-        if (conn->bonding_flags & BONDING_RECEIVED_REMOTE_FEATURES) {
-            l2cap_handle_remote_supported_features_received(chan);
-        }
-    }
-
-    l2cap_run();
-}
-
 void l2cap_disconnect_internal(uint16_t local_cid, uint8_t reason){
     log_info("L2CAP_DISCONNECT local_cid 0x%x reason 0x%x", local_cid, reason);
     // find channel for local_cid
