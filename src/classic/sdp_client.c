@@ -93,7 +93,7 @@ void sdp_client_query(bd_addr_t remote, uint8_t * des_serviceSearchPattern, uint
     PDU_ID = SDP_ServiceSearchAttributeResponse;
 
     sdp_client_state = W4_CONNECT;
-    l2cap_create_channel_internal(NULL, sdp_packet_handler, remote, PSM_SDP, l2cap_max_mtu());
+    l2cap_create_channel(sdp_packet_handler, remote, PSM_SDP, l2cap_max_mtu(), NULL);
 }
 
 static int can_send_now(uint16_t channel){
@@ -462,7 +462,7 @@ void sdp_client_service_attribute_search(bd_addr_t remote, uint32_t search_servi
     PDU_ID = SDP_ServiceAttributeResponse;
 
     sdp_client_state = W4_CONNECT;
-    l2cap_create_channel_internal(NULL, sdp_packet_handler, remote, PSM_SDP, l2cap_max_mtu());
+    l2cap_create_channel(sdp_packet_handler, remote, PSM_SDP, l2cap_max_mtu(), NULL);
 }
 
 void sdp_client_service_search(bd_addr_t remote, uint8_t * des_serviceSearchPattern){
@@ -471,7 +471,7 @@ void sdp_client_service_search(bd_addr_t remote, uint8_t * des_serviceSearchPatt
     PDU_ID = SDP_ServiceSearchResponse;
 
     sdp_client_state = W4_CONNECT;
-    l2cap_create_channel_internal(NULL, sdp_packet_handler, remote, PSM_SDP, l2cap_max_mtu());
+    l2cap_create_channel(sdp_packet_handler, remote, PSM_SDP, l2cap_max_mtu(), NULL);
 }
 #endif
 
