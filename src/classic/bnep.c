@@ -66,8 +66,7 @@ static linked_list_t bnep_channels = NULL;
 
 static gap_security_level_t bnep_security_level;
 
-static void (*app_packet_handler)(void * connection, uint8_t packet_type,
-                                  uint16_t channel, uint8_t *packet, uint16_t size);
+static void (*app_packet_handler)(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
 
 static bnep_channel_t * bnep_channel_for_l2cap_cid(uint16_t l2cap_cid);
@@ -75,19 +74,6 @@ static void bnep_channel_finalize(bnep_channel_t *channel);
 static void bnep_run(void);
 static void bnep_channel_start_timer(bnep_channel_t *channel, int timeout);
 inline static void bnep_channel_state_add(bnep_channel_t *channel, BNEP_CHANNEL_STATE_VAR event);
-
-/* Emit service registered event */
-static void bnep_emit_service_registered(void *connection, uint8_t status, uint16_t service_uuid)
-{
-    log_info("BNEP_EVENT_SERVICE_REGISTERED status 0x%02x, uuid: 0x%04x", status, service_uuid);
-    uint8_t event[5];
-    event[0] = BNEP_EVENT_SERVICE_REGISTERED;
-    event[1] = sizeof(event) - 2;
-    event[2] = status;
-    bt_store_16(event, 3, service_uuid);
-    hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
-	(*app_packet_handler)(connection, HCI_EVENT_PACKET, 0, (uint8_t *) event, sizeof(event));
-}
 
 static void bnep_emit_open_channel_complete(bnep_channel_t *channel, uint8_t status) 
 {
@@ -101,7 +87,7 @@ static void bnep_emit_open_channel_complete(bnep_channel_t *channel, uint8_t sta
     bt_store_16(event, 7, channel->max_frame_size);
     BD_ADDR_COPY(&event[9], channel->remote_addr);
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
-	(*app_packet_handler)(channel->connection, HCI_EVENT_PACKET, channel->l2cap_cid, (uint8_t *) event, sizeof(event));
+	(*app_packet_handler)(HCI_EVENT_PACKET, channel->l2cap_cid, (uint8_t *) event, sizeof(event));
 }
 
 static void bnep_emit_channel_timeout(bnep_channel_t *channel) 
@@ -115,7 +101,7 @@ static void bnep_emit_channel_timeout(bnep_channel_t *channel)
     BD_ADDR_COPY(&event[6], channel->remote_addr);
     event[12] = channel->state; 
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
-	(*app_packet_handler)(channel->connection, HCI_EVENT_PACKET, channel->l2cap_cid, (uint8_t *) event, sizeof(event));
+	(*app_packet_handler)(HCI_EVENT_PACKET, channel->l2cap_cid, (uint8_t *) event, sizeof(event));
 }
 
 static void bnep_emit_channel_closed(bnep_channel_t *channel) 
@@ -128,7 +114,7 @@ static void bnep_emit_channel_closed(bnep_channel_t *channel)
     bt_store_16(event, 4, channel->uuid_dest);
     BD_ADDR_COPY(&event[6], channel->remote_addr);
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
-	(*app_packet_handler)(channel->connection, HCI_EVENT_PACKET, channel->l2cap_cid, (uint8_t *) event, sizeof(event));
+	(*app_packet_handler)(HCI_EVENT_PACKET, channel->l2cap_cid, (uint8_t *) event, sizeof(event));
 }
 
 static void bnep_emit_ready_to_send(bnep_channel_t *channel)
@@ -137,7 +123,7 @@ static void bnep_emit_ready_to_send(bnep_channel_t *channel)
     event[0] = BNEP_EVENT_READY_TO_SEND;
     event[1] = sizeof(event) - 2;
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
-	(*app_packet_handler)(channel->connection, HCI_EVENT_PACKET, channel->l2cap_cid, (uint8_t *) event, sizeof(event));
+	(*app_packet_handler)(HCI_EVENT_PACKET, channel->l2cap_cid, (uint8_t *) event, sizeof(event));
 }
 
 /* Send BNEP connection request */
@@ -1084,7 +1070,7 @@ static int bnep_handle_ethernet_packet(bnep_channel_t *channel, bd_addr_t addr_d
 #endif
     
     /* Notify application layer and deliver the ethernet packet */
-    (*app_packet_handler)(channel->connection, BNEP_DATA_PACKET, channel->uuid_source,
+    (*app_packet_handler)(BNEP_DATA_PACKET, channel->uuid_source,
                           ethernet_packet, size + sizeof(uint16_t) + 2 * sizeof(bd_addr_t));
     
     return size;
@@ -1440,7 +1426,7 @@ void bnep_packet_handler(uint8_t packet_type, uint16_t l2cap_cid, uint8_t *packe
 
     /* Forward non l2cap packages to application handler */
     if (packet_type != L2CAP_DATA_PACKET) {
-        (*app_packet_handler)(NULL, packet_type, l2cap_cid, packet, size);
+        (*app_packet_handler)(packet_type, l2cap_cid, packet, size);
         return;
     }
 
@@ -1550,12 +1536,11 @@ void bnep_set_required_security_level(gap_security_level_t security_level)
 }
 
 /* Register application packet handler */
-void bnep_register_packet_handler(void (*handler)(void * connection, uint8_t packet_type,
-                                                    uint16_t channel, uint8_t *packet, uint16_t size)){
+void bnep_register_packet_handler(void (*handler)(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size)){
 	app_packet_handler = handler;
 }
 
-int bnep_connect(void * connection, bd_addr_t addr, uint16_t l2cap_psm, uint16_t uuid_src, uint16_t uuid_dest)
+int bnep_connect(bd_addr_t addr, uint16_t l2cap_psm, uint16_t uuid_src, uint16_t uuid_dest)
 {
     bnep_channel_t *channel;
     log_info("BNEP_CONNECT addr %s", bd_addr_to_str(addr));
@@ -1588,15 +1573,14 @@ void bnep_disconnect(bd_addr_t addr)
 }
 
 
-void bnep_register_service(void * connection, uint16_t service_uuid, uint16_t max_frame_size)
+uint8_t bnep_register_service(uint16_t service_uuid, uint16_t max_frame_size)
 {
     log_info("BNEP_REGISTER_SERVICE mtu %d", max_frame_size);
 
     /* Check if we already registered a service */
     bnep_service_t * service = bnep_service_for_uuid(service_uuid);
     if (service) {
-        bnep_emit_service_registered(connection, BNEP_SERVICE_ALREADY_REGISTERED, service_uuid);
-        return;
+        return BNEP_SERVICE_ALREADY_REGISTERED;
     }
 
     /* Only alow one the three service types: PANU, NAP, GN */
@@ -1604,14 +1588,13 @@ void bnep_register_service(void * connection, uint16_t service_uuid, uint16_t ma
         (service_uuid != SDP_NAP) &&
         (service_uuid != SDP_GN)) {
         log_info("BNEP_REGISTER_SERVICE: Invalid service UUID: %04x", service_uuid);
-        return;
+        return BNEP_SERVICE_ALREADY_REGISTERED; // TODO: define own error
     }
     
     /* Allocate service memory */
     service = (bnep_service_t*) btstack_memory_bnep_service_get();
     if (!service) {
-        bnep_emit_service_registered(connection, BTSTACK_MEMORY_ALLOC_FAILED, service_uuid);
-        return;
+        return BTSTACK_MEMORY_ALLOC_FAILED;
     }
     memset(service, 0, sizeof(bnep_service_t));
 
@@ -1619,15 +1602,13 @@ void bnep_register_service(void * connection, uint16_t service_uuid, uint16_t ma
     l2cap_register_service(bnep_packet_handler, PSM_BNEP, 0xffff, bnep_security_level);
         
     /* Setup the service struct */
-    service->connection     = connection;
     service->max_frame_size = max_frame_size;
     service->service_uuid    = service_uuid;
 
     /* Add to services list */
     linked_list_add(&bnep_services, (linked_item_t *) service);
     
-    /* Inform the application layer */
-    bnep_emit_service_registered(connection, 0, service_uuid);
+    return 0;
 }
 
 void bnep_unregister_service(uint16_t service_uuid)

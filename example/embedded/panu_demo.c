@@ -145,7 +145,7 @@ static void panu_setup(void){
     bnep_init();
     bnep_register_packet_handler(packet_handler);
     // Minimum L2CAP MTU for bnep is 1691 bytes
-    bnep_register_service(NULL, SDP_PANU, 1691);  
+    bnep_register_service(SDP_PANU, 1691);  
 
     // Initialise SDP 
     sdp_parser_init();

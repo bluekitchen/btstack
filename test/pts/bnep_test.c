@@ -573,7 +573,7 @@ static int stdin_process(struct data_source *ds){
     switch (buffer){
         case 'p':
             printf("Connecting to PTS at %s...\n", bd_addr_to_str(pts_addr));
-            bnep_connect(NULL, pts_addr, bnep_l2cap_psm, bnep_src_uuid, bnep_dest_uuid);
+            bnep_connect(pts_addr, bnep_l2cap_psm, bnep_src_uuid, bnep_dest_uuid);
             break;
         case 'e':
             printf("Sending general ethernet packet\n");
@@ -782,10 +782,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
     }
 }
 
-static void packet_handler2 (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    packet_handler(packet_type, 0, packet, size);
-}
-
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
     
@@ -796,8 +792,8 @@ int btstack_main(int argc, const char * argv[]){
 
     /* Initialise BNEP */
     bnep_init();
-    bnep_register_packet_handler(packet_handler2);
-    bnep_register_service(NULL, bnep_local_service_uuid, 1691);  /* Minimum L2CAP MTU for bnep is 1691 bytes */
+    bnep_register_packet_handler(packet_handler);
+    bnep_register_service(bnep_local_service_uuid, 1691);  /* Minimum L2CAP MTU for bnep is 1691 bytes */
 
     /* Initialize SDP and add PANU record */
     sdp_init();
