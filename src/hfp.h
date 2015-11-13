@@ -144,6 +144,7 @@ typedef enum {
     HFP_CMD_ENABLE_EXTENDED_AUDIO_GATEWAY_ERROR,
     HFP_CMD_EXTENDED_AUDIO_GATEWAY_ERROR,
     HFP_CMD_TRIGGER_CODEC_CONNECTION_SETUP,
+    HFP_CMD_AG_SEND_COMMON_CODEC,
     HFP_CMD_AG_SUGGESTED_CODEC,
     HFP_CMD_HF_CONFIRMED_CODEC,
     HFP_CMD_CALL_ANSWERED
@@ -255,9 +256,7 @@ typedef enum {
     HFP_W4_SCO_CONNECTED,
     
     HFP_AUDIO_CONNECTION_ESTABLISHED,
-    HFP_RING_ALERT,
-    HFP_CALL_ACTIVE,
-
+    
     HFP_W2_DISCONNECT_SCO,
     HFP_W4_SCO_DISCONNECTED, // 30
 
@@ -266,6 +265,44 @@ typedef enum {
     HFP_W4_RFCOMM_DISCONNECTED_AND_RESTART,
     HFP_W4_CONNECTION_ESTABLISHED_TO_SHUTDOWN
 } hfp_state_t;
+
+/*
+// establish codecs connection
+uint8_t hf_trigger_codec_connection_setup;
+uint8_t ag_trigger_codec_connection_setup;
+uint8_t ag_ready_for_codecs_connection_setup;
+uint8_t suggested_codec;
+uint8_t codec_confirmed;
+*/
+
+typedef enum {
+    HFP_CODECS_IDLE,
+    HFP_RECEIVED_LIST_OF_CODECS,
+    HFP_CODECS_RECEIVED_TRIGGER_CODEC_EXCHANGE,
+    HFP_CODECS_AG_SENT_COMMON_CODEC,
+    HFP_CODECS_EXCHANGED,
+    HFP_CODECS_ERROR
+} hfp_codecs_state_t;
+
+typedef enum {
+    HFP_CALL_IDLE,
+    HFP_CALL_TRIGGER_AUDIO_CONNECTION,
+    HFP_CALL_W4_AUDIO_CONNECTION,
+    HFP_CALL_W4_ANSWER,
+
+    HFP_CALL_TRANSFER_CALL_STATUS,
+    HFP_CALL_TRANSFER_CALLSETUP_STATUS,
+    HFP_CALL_ACTIVE
+} hfp_call_state_t;
+
+typedef enum{
+    HFP_NONE_SM,
+    HFP_SLC_SM,
+    HFP_SLC_QUERIES_SM,
+    HFP_CODECS_CONNECTION_SM,
+    HFP_AUDIO_CONNECTION_SM,
+    HFP_CALL_SM
+} hfp_state_machine_t;
 
 typedef void (*hfp_callback_t)(uint8_t * event, uint16_t event_size);
 
@@ -306,7 +343,12 @@ typedef struct hfp_connection {
     uint16_t rfcomm_channel_nr;
     uint16_t rfcomm_cid;
     
+    hfp_state_machine_t state_machine;
+
     hfp_state_t state;
+    hfp_call_state_t call_state;
+    hfp_codecs_state_t codecs_state;
+    
     // needed for reestablishing connection
     uint16_t service_uuid;
 
@@ -375,12 +417,10 @@ typedef struct hfp_connection {
     uint8_t establish_audio_connection; 
     uint8_t release_audio_connection; 
 
-    uint8_t start_call;
+    uint8_t run_call_state_machine;
+    uint8_t run_codecs_state_machine;
+    uint8_t use_in_band_ring_tone;
     uint8_t terminate_call;
-    uint8_t start_ringing;
-    uint8_t update_call_status;
-    uint8_t update_callsetup_status;
-    
 } hfp_connection_t;
 
 // UTILS_START : TODO move to utils

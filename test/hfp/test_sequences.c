@@ -136,11 +136,18 @@ const char * cc_test4[] = {
     "OK"
 };
 
+const char * cc_test5[] = {
+    "+BCS:1",
+    "AT+BCS=1",
+    "OK"
+};
+
 hfp_test_item_t cc_tests[] = {
     TEST_SEQUENCE(cc_test1),
-    TEST_SEQUENCE(cc_test2),
-    TEST_SEQUENCE(cc_test3),
-    TEST_SEQUENCE(cc_test4)
+    // TEST_SEQUENCE(cc_test2),
+    // TEST_SEQUENCE(cc_test3),
+    // TEST_SEQUENCE(cc_test4),
+    // TEST_SEQUENCE(cc_test5)
 };
 
 /* Incoming call sequence */

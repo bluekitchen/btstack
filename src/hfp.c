@@ -284,7 +284,7 @@ void hfp_reset_context_flags(hfp_connection_t * context){
     context->notify_ag_on_new_codecs = 0;
     
     // establish codecs connection
-    context->ag_trigger_codec_connection_setup = 0;
+    context->ag_trigger_codec_connection_setup = 0; // TODO remove
     context->hf_trigger_codec_connection_setup = 0;
     context->suggested_codec = 0;
     context->negotiated_codec = 0;
@@ -300,6 +300,9 @@ static hfp_connection_t * create_hfp_connection_context(){
     memset(context,0, sizeof(hfp_connection_t));
 
     context->state = HFP_IDLE;
+    context->call_state = HFP_CALL_IDLE;
+    context->codecs_state = HFP_CODECS_IDLE;
+
     context->parser_state = HFP_PARSER_CMD_HEADER;
     context->command = HFP_CMD_NONE;
     context->negotiated_codec = 0;
@@ -1072,6 +1075,7 @@ void hfp_establish_service_level_connection(bd_addr_t bd_addr, uint16_t service_
         log_error("hfp_establish_service_level_connection for addr %s failed", bd_addr_to_str(bd_addr));
         return;
     }
+
     switch (context->state){
         case HFP_W2_DISCONNECT_RFCOMM:
             context->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;

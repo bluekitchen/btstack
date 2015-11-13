@@ -165,7 +165,8 @@ void hfp_ag_release_audio_connection(bd_addr_t bd_addr);
 /**
  * @brief 
  */
-void hfp_ag_call(bd_addr_t bd_addr);
+void hfp_ag_call(bd_addr_t bd_addr, uint8_t use_in_band_ring_tone);
+
 
 
 /**
