@@ -1373,7 +1373,6 @@ static void rfcomm_channel_state_machine_2(rfcomm_multiplexer_t * multiplexer, u
         multiplexer->send_dm_for_dlci = dlci;
         return;
     }
-    channel->connection = service->connection;
     rfcomm_channel_state_machine(channel, event);
 }
 

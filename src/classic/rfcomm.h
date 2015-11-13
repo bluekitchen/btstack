@@ -260,9 +260,6 @@ typedef struct {
     // initial incoming credits
     uint8_t incoming_initial_credits;
     
-    // client connection
-    void *connection;    
-    
     // internal connection
     btstack_packet_handler_t packet_handler;
     
@@ -357,10 +354,7 @@ typedef struct {
     
     // internal connection
     btstack_packet_handler_t packet_handler;
-    
-    // client connection
-    void * connection;
-    
+        
 } rfcomm_channel_t;
 
 /* API_START */
