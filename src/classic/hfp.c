@@ -424,7 +424,7 @@ static void handle_query_rfcomm_event(sdp_query_event_t * event, void * context)
             if (connection->rfcomm_channel_nr > 0){
                 connection->state = HFP_W4_RFCOMM_CONNECTED;
                 log_info("HFP: SDP_QUERY_COMPLETE context %p, addr %s, state %d", connection, bd_addr_to_str( connection->remote_addr),  connection->state);
-                rfcomm_create_channel_internal(NULL, connection->remote_addr, connection->rfcomm_channel_nr); 
+                rfcomm_create_channel(connection->remote_addr, connection->rfcomm_channel_nr, NULL); 
                 break;
             }
             log_info("rfcomm service not found, status %u.", ce->status);
