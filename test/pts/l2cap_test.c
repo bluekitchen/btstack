@@ -108,10 +108,6 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
     }
 }
 
-static void packet_handler2 (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    packet_handler(packet_type, 0, packet, size);
-}
-
 static void show_usage(void){
     printf("\n--- CLI for L2CAP TEST ---\n");
     printf("c      - create connection to SDP at addr %s\n", bd_addr_to_str(remote));
@@ -128,7 +124,7 @@ static int stdin_process(struct data_source *ds){
     switch (buffer){
         case 'c':
             printf("Creating L2CAP Connection to %s, PSM SDP\n", bd_addr_to_str(remote));
-            l2cap_create_channel_internal(NULL, packet_handler, remote, PSM_SDP, 100);
+            l2cap_create_channel(packet_handler, remote, PSM_SDP, 100, NULL);
             break;
         case 's':
             printf("Send L2CAP Data\n");
@@ -161,7 +157,7 @@ int btstack_main(int argc, const char * argv[]){
     hci_discoverable_control(1);
 
     l2cap_init();
-    l2cap_register_packet_handler(&packet_handler2);
+    l2cap_register_packet_handler(&packet_handler);
     l2cap_register_service(packet_handler, PSM_SDP, 100, LEVEL_0);
     
     // turn on!

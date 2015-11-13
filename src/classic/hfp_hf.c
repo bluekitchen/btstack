@@ -663,6 +663,10 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
     hfp_run();
 }
 
+static void rfcomm_packet_handler(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    packet_handler(packet_type, channel, packet, size);
+}
+
 void hfp_hf_set_codecs(uint8_t * codecs, int codecs_nr){
     if (codecs_nr > HFP_MAX_NUM_CODECS){
         log_error("hfp_hf_set_codecs: codecs_nr (%d) > HFP_MAX_NUM_CODECS (%d)", codecs_nr, HFP_MAX_NUM_CODECS);
@@ -691,7 +695,7 @@ void hfp_hf_set_codecs(uint8_t * codecs, int codecs_nr){
 }
 
 void hfp_hf_init(uint16_t rfcomm_channel_nr, uint32_t supported_features, uint16_t * indicators, int indicators_nr, uint32_t indicators_status){
-    rfcomm_register_packet_handler(packet_handler);
+    rfcomm_register_packet_handler(rfcomm_packet_handler);
     hfp_init(rfcomm_channel_nr);
     
     hfp_supported_features = supported_features;

@@ -632,7 +632,7 @@ static int stdin_process(struct data_source *ds){
 }
 
 /*************** PANU client routines *********************/
-static void packet_handler (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size)
+static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size)
 {
     uint8_t   event;
     bd_addr_t event_addr;
@@ -782,6 +782,10 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
     }
 }
 
+static void packet_handler2 (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    packet_handler(packet_type, 0, packet, size);
+}
+
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
     
@@ -792,7 +796,7 @@ int btstack_main(int argc, const char * argv[]){
 
     /* Initialise BNEP */
     bnep_init();
-    bnep_register_packet_handler(packet_handler);
+    bnep_register_packet_handler(packet_handler2);
     bnep_register_service(NULL, bnep_local_service_uuid, 1691);  /* Minimum L2CAP MTU for bnep is 1691 bytes */
 
     /* Initialize SDP and add PANU record */
