@@ -371,29 +371,49 @@ static int codecs_exchange_state_machine(hfp_connection_t * context){
         HFP_CMD_HF_CONFIRMED_CODEC == received AT+BCS
     */
             
-    if (context->codecs_state == HFP_CODECS_RECEIVED_TRIGGER_CODEC_EXCHANGE){
-        context->command = HFP_CMD_AG_SEND_COMMON_CODEC;
+     switch (context->codecs_state){
+        case HFP_CODECS_RECEIVED_TRIGGER_CODEC_EXCHANGE:
+            context->command = HFP_CMD_AG_SEND_COMMON_CODEC;
+            break;
+        case HFP_CODECS_AG_RESEND_COMMON_CODEC:
+            context->command = HFP_CMD_AG_SEND_COMMON_CODEC;
+            break;
+        default:
+            break;
     }
 
+    printf(" -> State machine: CC\n");
+    
     int done = 1;
     switch (context->command){
         case HFP_CMD_AVAILABLE_CODECS:
-            printf("HFP_RECEIVED_LIST_OF_CODECS \n");
-            context->codecs_state = HFP_RECEIVED_LIST_OF_CODECS;
-            context->suggested_codec = hfp_ag_suggest_codec(context);
             hfp_ag_ok(context->rfcomm_cid);
+            printf("HFP_RECEIVED_LIST_OF_CODECS \n");
+            if (context->state < HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED){
+                context->codecs_state = HFP_RECEIVED_LIST_OF_CODECS;
+                break;    
+            }
+
+            switch (context->codecs_state){
+                case HFP_CODECS_AG_SENT_COMMON_CODEC:
+                case HFP_CODECS_EXCHANGED:
+                    context->codecs_state = HFP_CODECS_AG_RESEND_COMMON_CODEC;
+                    break;
+                default:
+                    break;
+            }
             break;
         
         case HFP_CMD_TRIGGER_CODEC_CONNECTION_SETUP:
+            hfp_ag_ok(context->rfcomm_cid);
             printf(" HFP_CMD_TRIGGER_CODEC_CONNECTION_SETUP \n");
             context->codecs_state = HFP_CODECS_RECEIVED_TRIGGER_CODEC_EXCHANGE;
-            context->suggested_codec = hfp_ag_suggest_codec(context);
-            hfp_ag_ok(context->rfcomm_cid);
             break;
         
         case HFP_CMD_AG_SEND_COMMON_CODEC:
             printf(" HFP_CMD_AG_SEND_COMMON_CODEC \n");
             context->codecs_state = HFP_CODECS_AG_SENT_COMMON_CODEC;
+            context->suggested_codec = hfp_ag_suggest_codec(context);
             hfp_ag_cmd_suggest_codec(context->rfcomm_cid, context->suggested_codec);
             break;
 
@@ -419,9 +439,9 @@ static int codecs_exchange_state_machine(hfp_connection_t * context){
 
 
 static int hfp_ag_run_for_context_service_level_connection(hfp_connection_t * context){
-    if (context->state >= HFP_CODECS_CONNECTION_ESTABLISHED) return 0;
+    if (context->state >= HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED) return 0;
     int done = 0;
-    // printf(" AG run for context_service_level_connection 1\n");
+    printf(" -> State machine: SLC\n");
     
     switch(context->command){
         case HFP_CMD_SUPPORTED_FEATURES:
@@ -538,11 +558,11 @@ static int hfp_ag_run_for_context_service_level_connection(hfp_connection_t * co
 static int hfp_ag_run_for_context_service_level_connection_queries(hfp_connection_t * context){
     if (context->state != HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED) return 0;
     int done = 0;
-    printf("    SLC queries: \n");
-
+    
     done = codecs_exchange_state_machine(context);
     if (done) return done;
 
+    printf(" -> State machine: SLC Queries\n");
     switch(context->command){
 
         case HFP_CMD_QUERY_OPERATOR_SELECTION:
@@ -737,10 +757,15 @@ static void hfp_run_for_context(hfp_connection_t *context){
         context->command = HFP_CMD_NONE;
         return;
     }
+    //printf("hfp_run_for_context 1, state %d\n", context->state);
 
     int done = hfp_ag_run_for_context_service_level_connection(context);
+    //printf("hfp_run_for_context 2, state %d\n", context->state);
     if (!done){
+        
         done = hfp_ag_run_for_context_service_level_connection_queries(context);
+      //  printf("hfp_run_for_context 3, state %d\n", context->state);
+
     } 
     // if (!done){
     //     done = incoming_call_state_machine(context);
