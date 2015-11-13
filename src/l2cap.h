@@ -161,9 +161,6 @@ typedef struct {
     
     timer_source_t rtx; // also used for ertx
 
-    // client connection
-    void * connection;
-    
     // internal connection
     btstack_packet_handler_t packet_handler;
     
@@ -182,9 +179,6 @@ typedef struct {
 
     // incoming MPS
     uint16_t mps;
-    
-    // client connection
-    void * connection;    
     
     // internal connection
     btstack_packet_handler_t packet_handler;
@@ -223,7 +217,7 @@ void l2cap_init(void);
 /** 
  * @brief Registers a packet handler that handles HCI and general BTstack events.
  */
-void l2cap_register_packet_handler(void (*handler)(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size));
+void l2cap_register_packet_handler(void (*handler)(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size));
 
 /** 
  * @brief Creates L2CAP channel to the PSM of a remote device with baseband address. A new baseband connection will be initiated if necessary.
@@ -302,9 +296,9 @@ int  l2cap_send_connectionless(uint16_t handle, uint16_t cid, uint8_t *data, uin
  * @brief Regster L2CAP LE Credit Based Flow Control Mode service
  * @param
  */
-void l2cap_le_register_service_internal(void * connection, btstack_packet_handler_t packet_handler, uint16_t psm,
-                                        uint16_t mtu, uint16_t mps, uint16_t initial_credits, gap_security_level_t security_level);
-void l2cap_le_unregister_service_internal(void * connection, uint16_t psm);
+void l2cap_le_register_service(btstack_packet_handler_t packet_handler, uint16_t psm,
+    uint16_t mtu, uint16_t mps, uint16_t initial_credits, gap_security_level_t security_level);
+void l2cap_le_unregister_service(uint16_t psm);
 #endif
 
 #if defined __cplusplus

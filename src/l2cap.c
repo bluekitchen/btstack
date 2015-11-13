@@ -66,7 +66,7 @@
 #define L2CAP_SIGNALING_COMMAND_LENGTH_OFFSET 2
 #define L2CAP_SIGNALING_COMMAND_DATA_OFFSET   4
 
-static void null_packet_handler(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+static void null_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static void l2cap_packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t size);
 
 // used to cache l2cap rejects, echo, and informational requests
@@ -77,7 +77,7 @@ static linked_list_t l2cap_channels;
 static linked_list_t l2cap_services;
 static linked_list_t l2cap_le_channels;
 static linked_list_t l2cap_le_services;
-static void (*packet_handler) (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) = null_packet_handler;
+static void (*packet_handler) (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) = null_packet_handler;
 static int new_credits_blocked = 0;
 
 static btstack_packet_handler_t attribute_protocol_packet_handler;
@@ -119,9 +119,9 @@ void l2cap_init(void){
 
 
 /** Register L2CAP packet handlers */
-static void null_packet_handler(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+static void null_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
 }
-void l2cap_register_packet_handler(void (*handler)(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size)){
+void l2cap_register_packet_handler(void (*handler)(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size)){
     packet_handler = handler;
 }
 
@@ -130,7 +130,7 @@ static void l2cap_dispatch(l2cap_channel_t *channel, uint8_t type, uint8_t * dat
     if (channel->packet_handler) {
         (* (channel->packet_handler))(type, channel->local_cid, data, size);
     } else {
-        (*packet_handler)(channel->connection, type, channel->local_cid, data, size);
+        (*packet_handler)(type, channel->local_cid, data, size);
     }
 }
 
@@ -186,7 +186,7 @@ static void l2cap_emit_connection_parameter_update_response(uint16_t handle, uin
     bt_store_16(event, 2, handle);
     bt_store_16(event, 4, result);
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
-    (*packet_handler)(NULL, HCI_EVENT_PACKET, 0, event, sizeof(event));
+    (*packet_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
 static void l2cap_emit_credits(l2cap_channel_t *channel, uint8_t credits) {
@@ -1015,7 +1015,7 @@ static void l2cap_event_handler(uint8_t *packet, uint16_t size){
     }
     
     // pass on: main packet handler, att and sm packet handlers
-    (*packet_handler)(NULL, HCI_EVENT_PACKET, 0, packet, size);
+    (*packet_handler)(HCI_EVENT_PACKET, 0, packet, size);
     if (attribute_protocol_packet_handler){
         (*attribute_protocol_packet_handler)(HCI_EVENT_PACKET, 0, packet, size);
     } 
@@ -1078,7 +1078,6 @@ static void l2cap_handle_connection_request(hci_con_handle_t handle, uint8_t sig
     BD_ADDR_COPY(channel->address, hci_connection->address);
     channel->psm = psm;
     channel->handle = handle;
-    channel->connection = service->connection;
     channel->packet_handler = service->packet_handler;
     channel->local_cid  = l2cap_next_local_cid();
     channel->remote_cid = source_cid;
@@ -1460,7 +1459,7 @@ static void l2cap_acl_handler( uint8_t *packet, uint16_t size ){
                     }
                 
                     hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
-                    (*packet_handler)(NULL, HCI_EVENT_PACKET, 0, event, sizeof(event));
+                    (*packet_handler)( HCI_EVENT_PACKET, 0, event, sizeof(event));
 
                     break;
                 }
@@ -1600,7 +1599,7 @@ static inline l2cap_service_t * l2cap_le_get_service(uint16_t psm){
  * @brief Regster L2CAP LE Credit Based Flow Control Mode service
  * @param
  */
-void l2cap_le_register_service_internal(void * connection, btstack_packet_handler_t packet_handler, uint16_t psm,
+void l2cap_le_register_service(btstack_packet_handler_t packet_handler, uint16_t psm,
     uint16_t mtu, uint16_t mps, uint16_t initial_credits, gap_security_level_t security_level){
     
     log_info("L2CAP_LE_REGISTER_SERVICE psm 0x%x mtu %u connection %p", psm, mtu, connection);
@@ -1627,7 +1626,6 @@ void l2cap_le_register_service_internal(void * connection, btstack_packet_handle
     service->psm = psm;
     service->mtu = mtu;
     service->mps = mps;
-    service->connection = connection;
     service->packet_handler = packet_handler;
     service->required_security_level = security_level;
 
@@ -1638,7 +1636,7 @@ void l2cap_le_register_service_internal(void * connection, btstack_packet_handle
     l2cap_emit_service_registered(connection, 0, psm);
 }
 
-void l2cap_le_unregister_service_internal(void * connection, uint16_t psm) {
+void l2cap_le_unregister_service(uint16_t psm) {
 
     log_info("L2CAP_LE_UNREGISTER_SERVICE psm 0x%x", psm);
 

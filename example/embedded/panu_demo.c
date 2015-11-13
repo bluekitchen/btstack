@@ -133,7 +133,7 @@ static data_source_t tap_dev_ds;
  */
 
 /* LISTING_START(PanuSetup): Panu setup */
-static void packet_handler (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static void handle_sdp_client_query_result(sdp_query_event_t *event);
 
 static void panu_setup(void){
@@ -428,7 +428,7 @@ static void handle_sdp_client_query_result(sdp_query_event_t *event)
 
 
 /* LISTING_START(packetHandler): Packet Handler */
-static void packet_handler (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size)
+static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size)
 {
 /* LISTING_PAUSE */
     int       rc;

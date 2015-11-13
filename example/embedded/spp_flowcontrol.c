@@ -62,7 +62,7 @@
 
 #define HEARTBEAT_PERIOD_MS 500
 
-static void packet_handler (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
 static uint8_t   rfcomm_channel_nr = 1;
 static uint16_t  rfcomm_channel_id;
@@ -133,7 +133,7 @@ static void one_shot_timer_setup(void){
 
 /* LISTING_START(phManual): Packet handler with manual credit management */
 // Bluetooth logic
-static void packet_handler (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
 /* LISTING_PAUSE */
     bd_addr_t event_addr;
     uint8_t   rfcomm_channel_nr;

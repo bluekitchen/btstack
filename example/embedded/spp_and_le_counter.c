@@ -111,7 +111,7 @@ uint8_t adv_data_len = sizeof(adv_data);
  * @text The packet handler of the combined example is just the combination of the individual packet handlers.
  */
 
-static void packet_handler (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     bd_addr_t event_addr;
     uint8_t   rfcomm_channel_nr;
     uint16_t  mtu;
@@ -180,6 +180,10 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
 	}
 }
 
+static void rfcomm_packet_handler (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    packet_handler(packet_type, channel, packet, size);
+}
+
 // ATT Client Read Callback for Dynamic Data
 // - if buffer == NULL, don't copy data, just return size of value
 // - if buffer != NULL, copy data and return number bytes copied
@@ -213,7 +217,7 @@ static int att_write_callback(uint16_t con_handle, uint16_t att_handle, uint16_t
  */
 
  /* LISTING_START(heartbeat): Combined Heartbeat handler */
-static void  heartbeat_handler(struct timer *ts){
+static void heartbeat_handler(struct timer *ts){
 
     counter++;
     counter_string_len = sprintf(counter_string, "BTstack counter %04u\n", counter);
@@ -255,7 +259,7 @@ int btstack_main(void)
     l2cap_register_packet_handler(packet_handler);
 
     rfcomm_init();
-    rfcomm_register_packet_handler(packet_handler);
+    rfcomm_register_packet_handler(rfcomm_packet_handler);
     rfcomm_register_service_internal(NULL, RFCOMM_SERVER_CHANNEL, 0xffff);
 
     // init SDP, create record for SPP and register with SDP

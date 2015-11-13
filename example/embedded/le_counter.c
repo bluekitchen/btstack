@@ -86,7 +86,7 @@
 static int  le_notification_enabled;
 static timer_source_t heartbeat;
 
-static void packet_handler (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static uint16_t att_read_callback(uint16_t con_handle, uint16_t att_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size);
 static int att_write_callback(uint16_t con_handle, uint16_t att_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size);
 static void  heartbeat_handler(struct timer *ts);
@@ -136,7 +136,7 @@ static void le_counter_setup(void){
  */
 
 /* LISTING_START(packetHandler): Packet Handler */
-static void packet_handler (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
 	switch (packet_type) {
 		case HCI_EVENT_PACKET:
 			switch (packet[0]) {

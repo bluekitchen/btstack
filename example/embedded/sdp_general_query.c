@@ -79,7 +79,7 @@ static const int attribute_value_buffer_size = sizeof(attribute_value);
  */
 
 /* LISTING_START(SDPClientInit): SDP client setup */
-static void packet_handler (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static void handle_sdp_client_query_result(sdp_query_event_t * event);
 
 static void sdp_client_init(void){
@@ -107,7 +107,7 @@ static bd_addr_t remote = {0x04,0x0C,0xCE,0xE4,0x85,0xD3};
 /* LISTING_END */
 
 /* LISTING_START(SDPQueryUUID): Querying a list of service records on a remote device. */
-static void packet_handler (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     // printf("packet_handler type %u, packet[0] %x\n", packet_type, packet[0]);
 
     if (packet_type != HCI_EVENT_PACKET) return;

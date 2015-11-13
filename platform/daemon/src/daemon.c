@@ -835,6 +835,7 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             psm = READ_BT_16(packet, 3);
             mtu = READ_BT_16(packet, 5);
             status = l2cap_register_service(NULL, psm, mtu, LEVEL_0);
+            daemon_add_client_l2cap_service(connection, READ_BT_16(packet, 3));
             l2cap_emit_service_registered(connection, status, psm);
             break;
         case L2CAP_UNREGISTER_SERVICE:
@@ -1361,6 +1362,7 @@ static void daemon_packet_handler(void * connection, uint8_t packet_type, uint16
                     daemon_add_client_rfcomm_service(connection, packet[3]);
                     break;
                 case L2CAP_EVENT_CHANNEL_OPENED:
+                    // TODO: connection == NULL, lookup via l2cap_cid needed
                     if (packet[2]) {
                         daemon_remove_client_l2cap_channel(connection, READ_BT_16(packet, 13));
                     } else {
@@ -1368,11 +1370,8 @@ static void daemon_packet_handler(void * connection, uint8_t packet_type, uint16
                     }
                     break;
                 case L2CAP_EVENT_CHANNEL_CLOSED:
+                    // TODO: connection == NULL, lookup via l2cap_cid needed
                     daemon_remove_client_l2cap_channel(connection, READ_BT_16(packet, 2));
-                    break;
-                case L2CAP_EVENT_SERVICE_REGISTERED:
-                    if (packet[2]) break;
-                    daemon_add_client_l2cap_service(connection, READ_BT_16(packet, 3));
                     break;
 #if defined(HAVE_BLE) && defined(HAVE_MALLOC)
                 case HCI_EVENT_DISCONNECTION_COMPLETE:
@@ -1400,6 +1399,10 @@ static void daemon_packet_handler(void * connection, uint8_t packet_type, uint16
     } else {
         socket_connection_send_packet_all(packet_type, channel, packet, size);
     }
+}
+
+static void l2cap_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * packet, uint16_t size){
+    daemon_packet_handler(NULL, packet_type, channel, packet, size);
 }
 
 static void handle_sdp_rfcomm_service_result(sdp_query_event_t * rfcomm_event, void * context){
@@ -1838,7 +1841,7 @@ int main (int argc,  char * const * argv){
 #endif
     // init L2CAP
     l2cap_init();
-    l2cap_register_packet_handler(&daemon_packet_handler);
+    l2cap_register_packet_handler(&l2cap_packet_handler);
     timeout.process = daemon_no_connections_timeout;
 
 #ifdef HAVE_RFCOMM

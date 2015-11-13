@@ -108,7 +108,7 @@ static int has_hf_indicators_feature(hfp_connection_t * connection){
     return hf && ag;
 }
 
-static void packet_handler(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
 void hfp_hf_create_sdp_record(uint8_t * service, int rfcomm_channel_nr, const char * name, uint16_t supported_features){
     if (!name){
@@ -650,7 +650,7 @@ static void hfp_run(){
     }
 }
 
-static void packet_handler(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     switch (packet_type){
         case RFCOMM_DATA_PACKET:
             hfp_handle_rfcomm_event(packet_type, channel, packet, size);

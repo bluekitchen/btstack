@@ -68,11 +68,14 @@
 #define RFCOMM_SERVER_CHANNEL 1
 #define HEARTBEAT_PERIOD_MS 1000
 
-static void packet_handler (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
 static uint16_t  rfcomm_channel_id;
 static uint32_t  spp_service_buffer[150/4];  // implicit alignment to 4-byte memory address
 
+static void rfcomm_packet_handler (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    packet_handler(packet_type, channel, packet, size);
+}
 
 /* @section SPP Service Setup 
  *s
@@ -94,7 +97,7 @@ static void spp_service_setup(void){
     l2cap_register_packet_handler(packet_handler);
 
     rfcomm_init();
-    rfcomm_register_packet_handler(packet_handler);
+    rfcomm_register_packet_handler(rfcomm_packet_handler);
     rfcomm_register_service_internal(NULL, RFCOMM_SERVER_CHANNEL, 0xffff);  // reserved channel, mtu limited by l2cap
 
     // init SDP, create record for SPP and register with SDP
@@ -188,7 +191,7 @@ static void one_shot_timer_setup(void){
  */ 
 
 /* LISTING_START(SppServerPacketHandler): SPP Server - Heartbeat Counter over RFCOMM */
-static void packet_handler (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
 /* LISTING_PAUSE */ 
     bd_addr_t event_addr;
     uint8_t   rfcomm_channel_nr;
