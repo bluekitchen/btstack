@@ -1448,9 +1448,18 @@ static void daemon_packet_handler(void * connection, uint8_t packet_type, uint16
                 default:
                     break;
             }
+        case L2CAP_DATA_PACKET:
+            connection = connection_for_l2cap_cid(channel);
+            if (!connection) return;
+            break;
+        case RFCOMM_DATA_PACKET:        
+            connection = connection_for_l2cap_cid(channel);
+            if (!connection) return;
+            break;
         default:
             break;
     }
+    
     if (connection) {
         socket_connection_send_packet(connection, packet_type, channel, packet, size);
     } else {
