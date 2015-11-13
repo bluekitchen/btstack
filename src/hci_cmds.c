@@ -1062,7 +1062,7 @@ OPCODE(OGF_BTSTACK, BTSTACK_SET_BLUETOOTH_ENABLED), "1"
  * @param bd_addr (48)
  * @param psm (16)
  */
-const hci_cmd_t l2cap_create_channel = {
+const hci_cmd_t l2cap_create_channel_cmd = {
 OPCODE(OGF_BTSTACK, L2CAP_CREATE_CHANNEL), "B2"
 };
 
@@ -1071,7 +1071,7 @@ OPCODE(OGF_BTSTACK, L2CAP_CREATE_CHANNEL), "B2"
  * @param psm (16)
  * @param mtu (16)
  */
-const hci_cmd_t l2cap_create_channel_mtu = {
+const hci_cmd_t l2cap_create_channel_mtu_cmd = {
 OPCODE(OGF_BTSTACK, L2CAP_CREATE_CHANNEL_MTU), "B22"
 // @param bd_addr(48), psm (16), mtu (16)
 };
@@ -1080,7 +1080,7 @@ OPCODE(OGF_BTSTACK, L2CAP_CREATE_CHANNEL_MTU), "B22"
  * @param channel (16)
  * @param reason (16)
  */
-const hci_cmd_t l2cap_disconnect = {
+const hci_cmd_t l2cap_disconnect_cmd = {
 OPCODE(OGF_BTSTACK, L2CAP_DISCONNECT), "21"
 };
 
@@ -1088,21 +1088,21 @@ OPCODE(OGF_BTSTACK, L2CAP_DISCONNECT), "21"
  * @param psm (16)
  * @param mtu (16)
  */
-const hci_cmd_t l2cap_register_service = {
+const hci_cmd_t l2cap_register_service_cmd = {
 OPCODE(OGF_BTSTACK, L2CAP_REGISTER_SERVICE), "22"
 };
 
 /**
  * @param psm (16)
  */
-const hci_cmd_t l2cap_unregister_service = {
+const hci_cmd_t l2cap_unregister_service_cmd = {
 OPCODE(OGF_BTSTACK, L2CAP_UNREGISTER_SERVICE), "2"
 };
 
 /**
  * @param source_cid (16)
  */
-const hci_cmd_t l2cap_accept_connection = {
+const hci_cmd_t l2cap_accept_connection_cmd = {
 OPCODE(OGF_BTSTACK, L2CAP_ACCEPT_CONNECTION), "2"
 };
 
@@ -1110,7 +1110,7 @@ OPCODE(OGF_BTSTACK, L2CAP_ACCEPT_CONNECTION), "2"
  * @param source_cid (16)
  * @param reason
  */
-const hci_cmd_t l2cap_decline_connection = {
+const hci_cmd_t l2cap_decline_connection_cmd = {
 OPCODE(OGF_BTSTACK, L2CAP_DECLINE_CONNECTION), "21"
 };
 
@@ -1118,14 +1118,14 @@ OPCODE(OGF_BTSTACK, L2CAP_DECLINE_CONNECTION), "21"
 /**
  * @param service_record
  */
-const hci_cmd_t sdp_register_service_record = {
+const hci_cmd_t sdp_register_service_record_cmd = {
 OPCODE(OGF_BTSTACK, SDP_REGISTER_SERVICE_RECORD), "S"
 };
 
 /**
  * @param service_record_handle
  */
-const hci_cmd_t sdp_unregister_service_record = {
+const hci_cmd_t sdp_unregister_service_record_cmd = {
 OPCODE(OGF_BTSTACK, SDP_UNREGISTER_SERVICE_RECORD), "4"
 };
 
@@ -1133,7 +1133,7 @@ OPCODE(OGF_BTSTACK, SDP_UNREGISTER_SERVICE_RECORD), "4"
  * @param bd_addr
  * @param service_search_pattern
  */
-const hci_cmd_t sdp_client_query_rfcomm_services = {
+const hci_cmd_t sdp_client_query_rfcomm_services_cmd = {
 OPCODE(OGF_BTSTACK, SDP_CLIENT_QUERY_RFCOMM_SERVICES), "BS"
 };
 
@@ -1142,7 +1142,7 @@ OPCODE(OGF_BTSTACK, SDP_CLIENT_QUERY_RFCOMM_SERVICES), "BS"
  * @param service_search_pattern
  * @param attribute_ID_list
  */
-const hci_cmd_t sdp_client_query_services = {
+const hci_cmd_t sdp_client_query_services_cmd = {
 OPCODE(OGF_BTSTACK, SDP_CLIENT_QUERY_SERVICES), "BSS"
 };
 
@@ -1150,7 +1150,7 @@ OPCODE(OGF_BTSTACK, SDP_CLIENT_QUERY_SERVICES), "BSS"
  * @param bd_addr
  * @param server_channel
  */
-const hci_cmd_t rfcomm_create_channel = {
+const hci_cmd_t rfcomm_create_channel_cmd = {
 OPCODE(OGF_BTSTACK, RFCOMM_CREATE_CHANNEL), "B1"
 };
 
@@ -1160,7 +1160,7 @@ OPCODE(OGF_BTSTACK, RFCOMM_CREATE_CHANNEL), "B1"
  * @param mtu
  * @param credits
  */
-const hci_cmd_t rfcomm_create_channel_with_initial_credits = {
+const hci_cmd_t rfcomm_create_channel_with_initial_credits_cmd = {
 OPCODE(OGF_BTSTACK, RFCOMM_CREATE_CHANNEL_WITH_CREDITS), "B121"
 };
 
@@ -1168,7 +1168,7 @@ OPCODE(OGF_BTSTACK, RFCOMM_CREATE_CHANNEL_WITH_CREDITS), "B121"
  * @param rfcomm_cid
  * @param credits
  */
-const hci_cmd_t rfcomm_grants_credits= {
+const hci_cmd_t rfcomm_grants_credits_cmd = {
 OPCODE(OGF_BTSTACK, RFCOMM_GRANT_CREDITS), "21"
 };
 
@@ -1176,7 +1176,7 @@ OPCODE(OGF_BTSTACK, RFCOMM_GRANT_CREDITS), "21"
  * @param rfcomm_cid
  * @param reason
  */
-const hci_cmd_t rfcomm_disconnect = {
+const hci_cmd_t rfcomm_disconnect_cmd = {
 OPCODE(OGF_BTSTACK, RFCOMM_DISCONNECT), "21"
 };
 
@@ -1184,7 +1184,7 @@ OPCODE(OGF_BTSTACK, RFCOMM_DISCONNECT), "21"
  * @param server_channel
  * @param mtu
  */
-const hci_cmd_t rfcomm_register_service = {
+const hci_cmd_t rfcomm_register_service_cmd = {
 OPCODE(OGF_BTSTACK, RFCOMM_REGISTER_SERVICE), "12"
 };
 
@@ -1193,21 +1193,21 @@ OPCODE(OGF_BTSTACK, RFCOMM_REGISTER_SERVICE), "12"
  * @param mtu
  * @param initial_credits
  */
-const hci_cmd_t rfcomm_register_service_with_initial_credits = {
+const hci_cmd_t rfcomm_register_service_with_initial_credits_cmd = {
 OPCODE(OGF_BTSTACK, RFCOMM_REGISTER_SERVICE_WITH_CREDITS), "121"
 };
 
 /**
  * @param service_channel
  */
-const hci_cmd_t rfcomm_unregister_service = {
+const hci_cmd_t rfcomm_unregister_service_cmd = {
 OPCODE(OGF_BTSTACK, RFCOMM_UNREGISTER_SERVICE), "2"
 };
 
 /**
  * @param source_cid
  */
-const hci_cmd_t rfcomm_accept_connection = {
+const hci_cmd_t rfcomm_accept_connection_cmd = {
 OPCODE(OGF_BTSTACK, RFCOMM_ACCEPT_CONNECTION), "2"
 };
 
@@ -1216,7 +1216,7 @@ OPCODE(OGF_BTSTACK, RFCOMM_ACCEPT_CONNECTION), "2"
  * @param source_cid
  * @param reason
  */
-const hci_cmd_t rfcomm_decline_connection = {
+const hci_cmd_t rfcomm_decline_connection_cmd = {
 OPCODE(OGF_BTSTACK, RFCOMM_DECLINE_CONNECTION), "21"
 };
 
@@ -1224,7 +1224,7 @@ OPCODE(OGF_BTSTACK, RFCOMM_DECLINE_CONNECTION), "21"
 /**
  * @param named_service
  */
-const hci_cmd_t rfcomm_persistent_channel_for_service = {
+const hci_cmd_t rfcomm_persistent_channel_for_service_cmd = {
 OPCODE(OGF_BTSTACK, RFCOMM_PERSISTENT_CHANNEL), "N"
 };
 

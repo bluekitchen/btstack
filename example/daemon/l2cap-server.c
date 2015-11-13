@@ -118,7 +118,7 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 						bd_addr_to_str(event_addr), handle, psm, local_cid, remote_cid);
 
 					// accept
-					bt_send_cmd(&l2cap_accept_connection, local_cid);
+					bt_send_cmd(&l2cap_accept_connection_cmd, local_cid);
 					break;
 					
 				case HCI_EVENT_LINK_KEY_REQUEST:
@@ -203,8 +203,8 @@ int main (int argc, const char * argv[]){
 		return err;
 	}
 	bt_register_packet_handler(packet_handler);
-	bt_send_cmd(&l2cap_register_service, PSM_HID_CONTROL, 250);
-	bt_send_cmd(&l2cap_register_service, PSM_HID_INTERRUPT, 250);
+	bt_send_cmd(&l2cap_register_service_cmd, PSM_HID_CONTROL, 250);
+	bt_send_cmd(&l2cap_register_service_cmd, PSM_HID_INTERRUPT, 250);
 	
 	bt_send_cmd(&btstack_set_power_mode, HCI_POWER_ON );
 	run_loop_execute();

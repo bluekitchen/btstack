@@ -117,7 +117,7 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
                 case HCI_EVENT_COMMAND_COMPLETE:
 					// use pairing yes/no
 					if ( COMMAND_COMPLETE_EVENT(packet, hci_write_class_of_device) ) {
-    				    bt_send_cmd(&l2cap_create_channel_mtu, addr, PSM_TEST, PACKET_SIZE);
+    				    bt_send_cmd(&l2cap_create_channel_mtu_cmd, addr, PSM_TEST, PACKET_SIZE);
 					}
 					break;
 
@@ -130,7 +130,7 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 					// remote_cid = READ_BT_16(packet, 14); 
 					printf("L2CAP_EVENT_INCOMING_CONNECTION %s, handle 0x%02x, psm 0x%02x, local cid 0x%02x\n", bd_addr_to_str(event_addr), handle, psm, local_cid);
 					// accept
-					bt_send_cmd(&l2cap_accept_connection, local_cid);
+					bt_send_cmd(&l2cap_accept_connection_cmd, local_cid);
 					break;
 					
 				case HCI_EVENT_LINK_KEY_REQUEST:
@@ -207,7 +207,7 @@ int main (int argc, const char * argv[]){
 		return err;
 	}
 	bt_register_packet_handler(packet_handler);
-	bt_send_cmd(&l2cap_register_service, PSM_TEST, PACKET_SIZE);
+	bt_send_cmd(&l2cap_register_service_cmd, PSM_TEST, PACKET_SIZE);
 	bt_send_cmd(&btstack_set_power_mode, HCI_POWER_ON );
 	
 	// banner

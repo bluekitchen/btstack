@@ -88,21 +88,21 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
                     if (packet[2] == HCI_STATE_WORKING) {
                         // get persistent RFCOMM channel
                         printf("HCI_STATE_WORKING\n");
-                        bt_send_cmd(&rfcomm_persistent_channel_for_service, "ch.ringwald.btstack.rfcomm-echo2");
+                        bt_send_cmd(&rfcomm_persistent_channel_for_service_cmd, "ch.ringwald.btstack.rfcomm-echo2");
                   	}
 					break;
                     
                 case RFCOMM_EVENT_PERSISTENT_CHANNEL:
                     rfcomm_channel_nr = packet[3];
                     printf("RFCOMM channel %u was assigned by BTdaemon\n", rfcomm_channel_nr);
-                    bt_send_cmd(&rfcomm_register_service, rfcomm_channel_nr, 0xffff);  // reserved channel, mtu limited by l2cap
+                    bt_send_cmd(&rfcomm_register_service_cmd, rfcomm_channel_nr, 0xffff);  // reserved channel, mtu limited by l2cap
                     break;
                     
                 case RFCOMM_EVENT_SERVICE_REGISTERED:
                     printf("RFCOMM_EVENT_SERVICE_REGISTERED channel: %u, status: 0x%02x\n", packet[3], packet[2]);
                     // register SDP for our SPP
                     sdp_create_spp_service((uint8_t*)service_buffer, rfcomm_channel_nr, "SPP ECHO");
-                    bt_send_cmd(&sdp_register_service_record, service_buffer);
+                    bt_send_cmd(&sdp_register_service_record_cmd, service_buffer);
                     bt_send_cmd(&btstack_set_discoverable, 1);
                     break;
                 
@@ -119,7 +119,7 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 					rfcomm_channel_nr = packet[8];
 					rfcomm_channel_id = READ_BT_16(packet, 9);
 					printf("RFCOMM channel %u requested for %s\n", rfcomm_channel_nr, bd_addr_to_str(event_addr));
-					bt_send_cmd(&rfcomm_accept_connection, rfcomm_channel_id);
+					bt_send_cmd(&rfcomm_accept_connection_cmd, rfcomm_channel_id);
 					break;
 					
 				case RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE:

@@ -86,7 +86,7 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 				case BTSTACK_EVENT_STATE:
 					// bt stack activated, get started
                     if (packet[2] == HCI_STATE_WORKING) {
-						bt_send_cmd(&rfcomm_create_channel, addr, rfcomm_channel);
+						bt_send_cmd(&rfcomm_create_channel_cmd, addr, rfcomm_channel);
 					}
 					break;
 					
