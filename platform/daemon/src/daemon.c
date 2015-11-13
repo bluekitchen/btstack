@@ -521,7 +521,7 @@ static connection_t * connection_for_l2cap_cid(uint16_t cid){
     return NULL;
 }
 
-connection_t * connection_for_rfcomm_cid(uint16_t cid){
+static connection_t * connection_for_rfcomm_cid(uint16_t cid){
     linked_list_iterator_t cl;
     linked_list_iterator_init(&cl, &clients);
     while (linked_list_iterator_has_next(&cl)){
@@ -1382,14 +1382,20 @@ static void daemon_packet_handler(void * connection, uint8_t packet_type, uint16
                     daemon_retry_parked();
                     break;
                  case RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE:
+                    cid = READ_BT_16(packet, 13);
+                    connection = connection_for_rfcomm_cid(cid);
+                    if (!connection) break;
                     if (packet[2]) {
-                        daemon_remove_client_rfcomm_channel(connection, READ_BT_16(packet, 13));
+                        daemon_remove_client_rfcomm_channel(connection, cid);
                     } else {
-                        daemon_add_client_rfcomm_channel(connection, READ_BT_16(packet, 13));
+                        daemon_add_client_rfcomm_channel(connection, cid);
                     }
                     break;
                 case RFCOMM_EVENT_CHANNEL_CLOSED:
-                    daemon_remove_client_rfcomm_channel(connection, READ_BT_16(packet, 2));
+                    cid = READ_BT_16(packet, 2);
+                    connection = connection_for_rfcomm_cid(cid);
+                    if (!connection) break;
+                    daemon_remove_client_rfcomm_channel(connection, cid);
                     break;
                 case RFCOMM_EVENT_SERVICE_REGISTERED:
                     if (packet[2]) break;
