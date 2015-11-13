@@ -504,6 +504,40 @@ static void daemon_sdp_close_connection(client_state_t * daemon_client){
     }
 }
 
+static connection_t * connection_for_l2cap_cid(uint16_t cid){
+    linked_list_iterator_t cl;
+    linked_list_iterator_init(&cl, &clients);
+    while (linked_list_iterator_has_next(&cl)){
+        client_state_t * client_state = (client_state_t *) linked_list_iterator_next(&cl);
+        linked_list_iterator_t it;
+        linked_list_iterator_init(&it, &client_state->l2cap_cids);
+        while (linked_list_iterator_has_next(&it)){
+            linked_list_uint32_t * item = (linked_list_uint32_t*) linked_list_iterator_next(&it);
+            if (item->value == cid){
+                return client_state->connection;
+            }
+        }
+    }
+    return NULL;
+}
+
+connection_t * connection_for_rfcomm_cid(uint16_t cid){
+    linked_list_iterator_t cl;
+    linked_list_iterator_init(&cl, &clients);
+    while (linked_list_iterator_has_next(&cl)){
+        client_state_t * client_state = (client_state_t *) linked_list_iterator_next(&cl);
+        linked_list_iterator_t it;
+        linked_list_iterator_init(&it, &client_state->rfcomm_cids);
+        while (linked_list_iterator_has_next(&it)){
+            linked_list_uint32_t * item = (linked_list_uint32_t*) linked_list_iterator_next(&it);
+            if (item->value == cid){
+                return client_state->connection;
+            }
+        }
+    }
+    return NULL;
+}
+
 #ifdef HAVE_BLE
 static void daemon_gatt_client_close_connection(connection_t * connection){
     client_state_t * client = client_for_connection(connection);
@@ -1332,7 +1366,7 @@ static void app_run(void){
 #endif 
 
 static void daemon_packet_handler(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-
+    uint16_t cid;
     switch (packet_type) {
         case HCI_EVENT_PACKET:
             deamon_status_event_handler(packet, size);
@@ -1362,16 +1396,20 @@ static void daemon_packet_handler(void * connection, uint8_t packet_type, uint16
                     daemon_add_client_rfcomm_service(connection, packet[3]);
                     break;
                 case L2CAP_EVENT_CHANNEL_OPENED:
-                    // TODO: connection == NULL, lookup via l2cap_cid needed
+                    cid = READ_BT_16(packet, 13);
+                    connection = connection_for_l2cap_cid(cid);
+                    if (!connection) break;
                     if (packet[2]) {
-                        daemon_remove_client_l2cap_channel(connection, READ_BT_16(packet, 13));
+                        daemon_remove_client_l2cap_channel(connection, cid);
                     } else {
-                        daemon_add_client_l2cap_channel(connection, READ_BT_16(packet, 13));
+                        daemon_add_client_l2cap_channel(connection, cid);
                     }
                     break;
                 case L2CAP_EVENT_CHANNEL_CLOSED:
-                    // TODO: connection == NULL, lookup via l2cap_cid needed
-                    daemon_remove_client_l2cap_channel(connection, READ_BT_16(packet, 2));
+                    cid = READ_BT_16(packet, 2);
+                    connection = connection_for_l2cap_cid(cid);
+                    if (!connection) break;
+                    daemon_remove_client_l2cap_channel(connection, cid);
                     break;
 #if defined(HAVE_BLE) && defined(HAVE_MALLOC)
                 case HCI_EVENT_DISCONNECTION_COMPLETE:
