@@ -747,7 +747,6 @@ static void l2cap_handle_connection_complete(uint16_t handle, l2cap_channel_t * 
         log_info("l2cap_handle_connection_complete expected state");
         // success, start l2cap handshake
         channel->handle = handle;
-        channel->local_cid = l2cap_next_local_cid();
         // check remote SSP feature first
         channel->state = L2CAP_STATE_WAIT_REMOTE_SUPPORTED_FEATURES;
     }
@@ -768,6 +767,71 @@ static void l2cap_handle_remote_supported_features_received(l2cap_channel_t * ch
     channel->state = L2CAP_STATE_WILL_SEND_CONNECTION_REQUEST;
 }
 
+/** 
+ * @brief Creates L2CAP channel to the PSM of a remote device with baseband address. A new baseband connection will be initiated if necessary.
+ * @param packet_handler
+ * @param address
+ * @param psm
+ * @param mtu
+ * @param local_cid
+ */
+uint8_t l2cap_create_channel(btstack_packet_handler_t channel_packet_handler, bd_addr_t address, uint16_t psm, uint16_t mtu, uint16_t * out_local_cid){
+    log_info("L2CAP_CREATE_CHANNEL addr %s psm 0x%x mtu %u", bd_addr_to_str(address), psm, mtu);
+    
+    // alloc structure
+    l2cap_channel_t * chan = btstack_memory_l2cap_channel_get();
+    if (!chan) {
+        return BTSTACK_MEMORY_ALLOC_FAILED;
+    }
+
+     // Init memory (make valgrind happy)
+    memset(chan, 0, sizeof(l2cap_channel_t));
+    // limit local mtu to max acl packet length - l2cap header
+    if (mtu > l2cap_max_mtu()) {
+        mtu = l2cap_max_mtu();
+    }
+        
+    // fill in 
+    BD_ADDR_COPY(chan->address, address);
+    chan->psm = psm;
+    chan->handle = 0;
+    chan->packet_handler = channel_packet_handler;
+    chan->remote_mtu = L2CAP_MINIMAL_MTU;
+    chan->local_mtu = mtu;
+    chan->packets_granted = 0;
+    chan->local_cid = l2cap_next_local_cid();
+
+    // set initial state
+    chan->state = L2CAP_STATE_WILL_SEND_CREATE_CONNECTION;
+    chan->state_var = L2CAP_CHANNEL_STATE_VAR_NONE;
+    chan->remote_sig_id = L2CAP_SIG_ID_INVALID;
+    chan->local_sig_id = L2CAP_SIG_ID_INVALID;
+    chan->required_security_level = LEVEL_0;
+
+    // add to connections list
+    linked_list_add(&l2cap_channels, (linked_item_t *) chan);
+
+    // store local_cid
+    if (out_local_cid){
+       *out_local_cid = chan->local_cid;
+    }
+
+    // check if hci connection is already usable
+    hci_connection_t * conn = hci_connection_for_bd_addr_and_type(address, BD_ADDR_TYPE_CLASSIC);
+    if (conn){
+        log_info("l2cap_create_channel_internal, hci connection already exists");
+        l2cap_handle_connection_complete(conn->con_handle, chan);
+        // check if remote supported fearures are already received
+        if (conn->bonding_flags & BONDING_RECEIVED_REMOTE_FEATURES) {
+            l2cap_handle_remote_supported_features_received(chan);
+        }
+    }
+
+    l2cap_run();
+
+    return 0;
+}
+
 // open outgoing L2CAP channel
 void l2cap_create_channel_internal(void * connection, btstack_packet_handler_t channel_packet_handler,
                                    bd_addr_t address, uint16_t psm, uint16_t mtu){
@@ -784,6 +848,7 @@ void l2cap_create_channel_internal(void * connection, btstack_packet_handler_t c
         l2cap_emit_channel_opened(&dummy_channel, BTSTACK_MEMORY_ALLOC_FAILED);
         return;
     }
+
     // Init memory (make valgrind happy)
     memset(chan, 0, sizeof(l2cap_channel_t));
     // limit local mtu to max acl packet length - l2cap header
@@ -800,6 +865,7 @@ void l2cap_create_channel_internal(void * connection, btstack_packet_handler_t c
     chan->remote_mtu = L2CAP_MINIMAL_MTU;
     chan->local_mtu = mtu;
     chan->packets_granted = 0;
+    chan->local_cid = l2cap_next_local_cid();
     
     // set initial state
     chan->state = L2CAP_STATE_WILL_SEND_CREATE_CONNECTION;

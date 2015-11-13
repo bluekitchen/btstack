@@ -227,8 +227,14 @@ void l2cap_register_packet_handler(void (*handler)(void * connection, uint8_t pa
 
 /** 
  * @brief Creates L2CAP channel to the PSM of a remote device with baseband address. A new baseband connection will be initiated if necessary.
+ * @param packet_handler
+ * @param address
+ * @param psm
+ * @param mtu
+ * @param local_cid
+ * @param status
  */
-void l2cap_create_channel_internal(void * connection, btstack_packet_handler_t packet_handler, bd_addr_t address, uint16_t psm, uint16_t mtu);
+uint8_t l2cap_create_channel(btstack_packet_handler_t packet_handler, bd_addr_t address, uint16_t psm, uint16_t mtu, uint16_t * out_local_cid);
 
 /** 
  * @brief Disconnects L2CAP channel with given identifier. 
@@ -248,12 +254,12 @@ int l2cap_send_internal(uint16_t local_cid, uint8_t *data, uint16_t len);
 /** 
  * @brief Registers L2CAP service with given PSM and MTU, and assigns a packet handler. On embedded systems, use NULL for connection parameter.
  */
-void l2cap_register_service_internal(void *connection, btstack_packet_handler_t packet_handler, uint16_t psm, uint16_t mtu, gap_security_level_t security_level);
+void l2cap_register_service(btstack_packet_handler_t packet_handler, uint16_t psm, uint16_t mtu, gap_security_level_t security_level);
 
 /** 
  * @brief Unregisters L2CAP service with given PSM.  On embedded systems, use NULL for connection parameter.
  */
-void l2cap_unregister_service_internal(void *connection, uint16_t psm);
+void l2cap_unregister_service(uint16_t psm);
 
 /** 
  * @brief Accepts/Deny incoming L2CAP connection.
@@ -288,6 +294,23 @@ uint16_t l2cap_max_le_mtu(void);
 int  l2cap_send_connectionless(uint16_t handle, uint16_t cid, uint8_t *data, uint16_t len);
 
 /* API_END */
+
+// deprecated...
+
+/** 
+ * @brief Creates L2CAP channel to the PSM of a remote device with baseband address. A new baseband connection will be initiated if necessary.
+ */
+void l2cap_create_channel_internal(void * connection, btstack_packet_handler_t packet_handler, bd_addr_t address, uint16_t psm, uint16_t mtu);
+
+/** 
+ * @brief Registers L2CAP service with given PSM and MTU, and assigns a packet handler. On embedded systems, use NULL for connection parameter.
+ */
+void l2cap_register_service_internal(void *connection, btstack_packet_handler_t packet_handler, uint16_t psm, uint16_t mtu, gap_security_level_t security_level);
+
+/** 
+ * @brief Unregisters L2CAP service with given PSM.  On embedded systems, use NULL for connection parameter.
+ */
+void l2cap_unregister_service_internal(void *connection, uint16_t psm);
 
 #if 0
 
