@@ -474,18 +474,6 @@ uint16_t  rfcomm_get_max_frame_size(uint16_t rfcomm_cid);
 int       rfcomm_send_prepared(uint16_t rfcomm_cid, uint16_t len);
 /* API_END */
 
-// depreccated
-
-/** 
- * @brief Creates RFCOMM connection (channel) to a given server channel on a remote device with baseband address. A new baseband connection will be initiated if necessary. This channel will automatically provide enough credits to the remote side
- */
-void rfcomm_create_channel_internal(void * connection, bd_addr_t addr, uint8_t channel);
-
-/** 
- * @brief Creates RFCOMM connection (channel) to a given server channel on a remote device with baseband address. new baseband connection will be initiated if necessary. This channel will use explicit credit management. During channel establishment, an initial  amount of credits is provided.
- */
-void rfcomm_create_channel_with_initial_credits_internal(void * connection, bd_addr_t addr, uint8_t server_channel, uint8_t initial_credits);
-
 #if defined __cplusplus
 }
 #endif
