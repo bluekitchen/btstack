@@ -1568,8 +1568,10 @@ int bnep_connect(void * connection, bd_addr_t addr, uint16_t l2cap_psm, uint16_t
     channel->uuid_source = uuid_src;
     channel->uuid_dest   = uuid_dest;
 
-    l2cap_create_channel_internal(connection, bnep_packet_handler, addr, l2cap_psm, l2cap_max_mtu());
-    
+    uint8_t status = l2cap_create_channel(bnep_packet_handler, addr, l2cap_psm, l2cap_max_mtu(), NULL);
+    if (status){
+        return -1;
+    }
     return 0;
 }
 
