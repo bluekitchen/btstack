@@ -12,3 +12,4 @@ profile.h
 
 ble_peripheral_test.h
 ble_central_test.h
+sco_loopback
