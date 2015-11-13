@@ -58,14 +58,14 @@
 
 #include "hci_cmds.h"
 #include "run_loop.h"
-#include "sdp_util.h"
+#include "classic/sdp_util.h"
 
 #include "hci.h"
 #include "l2cap.h"
-#include "rfcomm.h"
+#include "classic/rfcomm.h"
 #include "sdp.h"
 #include "debug.h"
-#include "hfp_hf.h"
+#include "classic/hfp_hf.h"
 #include "stdin_support.h"
 
 const uint32_t   hfp_service_buffer[150/4]; // implicit alignment to 4-byte memory address

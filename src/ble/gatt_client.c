@@ -42,22 +42,22 @@
 #include "run_loop.h"
 #include "hci_cmds.h"
 #include "utils.h"
-#include "sdp_util.h"
+#include "classic/sdp_util.h"
 
 #include "btstack-config.h"
 
-#include "gatt_client.h"
-#include "ad_parser.h"
+#include "ble/gatt_client.h"
+#include "ble/ad_parser.h"
 
 #include "debug.h"
 #include "btstack_memory.h"
 #include "hci.h"
 #include "hci_dump.h"
 #include "l2cap.h"
-#include "att.h"
+#include "ble/att.h"
 #include "att_dispatch.h"
-#include "sm.h"
-#include "le_device_db.h"
+#include "ble/sm.h"
+#include "ble/le_device_db.h"
 
 static linked_list_t gatt_client_connections = NULL;
 static linked_list_t gatt_subclients = NULL;

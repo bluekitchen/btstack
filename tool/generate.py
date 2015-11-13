@@ -132,9 +132,9 @@ java_event_to_string = \
 # global variables/defines
 package='com.bluekitchen.btstack'
 gen_path = 'gen/' + package.replace('.', '/')
-hci_cmds_h_path = '../include/btstack/hci_cmds.h'
-hci_cmds_c_path = '../src/hci_cmds.c'
-hci_h_path = '../src/hci.h'
+hci_cmds_h_path = '../../src/hci_cmds.h'
+hci_cmds_c_path = '../../src/hci_cmds.c'
+hci_h_path = '../../src/hci.h'
 
 defines = dict()
 defines_used = set()

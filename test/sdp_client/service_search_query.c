@@ -19,7 +19,7 @@
 #include "btstack_memory.h"
 #include "hci_dump.h"
 #include "l2cap.h"
-#include "sdp_parser.h"
+#include "classic/sdp_parser.h"
 
 #include "CppUTest/TestHarness.h"
 #include "CppUTest/CommandLineTestRunner.h"

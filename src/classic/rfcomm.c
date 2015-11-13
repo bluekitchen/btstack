@@ -52,7 +52,7 @@
 #include "hci.h"
 #include "hci_dump.h"
 #include "debug.h"
-#include "rfcomm.h"
+#include "classic/rfcomm.h"
 
 // workaround for missing PRIxPTR on mspgcc (16/20-bit MCU)
 #ifndef PRIxPTR

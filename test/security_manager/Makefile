@@ -7,17 +7,15 @@ BTSTACK_ROOT =  ../..
 CFLAGS  = -DUNIT_TEST -x c++ -g -Wall -Wno-unused -I. -I.. -I${BTSTACK_ROOT}/src -I${BTSTACK_ROOT}/ble -I${BTSTACK_ROOT}/include
 LDFLAGS +=  -lCppUTest -lCppUTestExt
 
-VPATH += ${BTSTACK_ROOT}/ble 
 VPATH += ${BTSTACK_ROOT}/src
-VPATH += ${BTSTACK_ROOT}/platforms/posix/src
+VPATH += ${BTSTACK_ROOT}/src/ble 
+VPATH += ${BTSTACK_ROOT}/platform/posix/src
 
 COMMON = \
     utils.c			            \
     btstack_memory.c			\
     memory_pool.c			    \
     linked_list.c			    \
-    sdp_util.c			        \
-    remote_device_db_memory.c	\
     run_loop.c					\
     run_loop_posix.c			\
     hci_cmds.c					\

@@ -522,7 +522,7 @@ extern "C" {
 #define GATT_CHARACTERISTIC_VALUE_QUERY_RESULT             0xA5
 
 /**
- * @format H2LV
+ * @format H22LV
  * @param handle
  * @param value_handle
  * @param value_offset

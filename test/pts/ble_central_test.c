@@ -57,13 +57,13 @@
 
 #include "l2cap.h"
 
-#include "sm.h"
-#include "att.h"
-#include "att_server.h"
-#include "gap_le.h"
-#include "le_device_db.h"
+#include "ble/sm.h"
+#include "ble/att.h"
+#include "ble/att_server.h"
+#include "ble/gap_le.h"
+#include "ble/le_device_db.h"
 #include "stdin_support.h"
-#include "ad_parser.h"
+#include "ble/ad_parser.h"
 
 // test profile
 #include "ble_central_test.h"

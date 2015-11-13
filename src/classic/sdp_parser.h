@@ -49,7 +49,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "sdp_util.h"
+#include "classic/sdp_util.h"
 #include "utils.h"
 
 #if defined __cplusplus

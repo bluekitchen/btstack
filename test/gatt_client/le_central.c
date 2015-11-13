@@ -19,7 +19,7 @@
 
 #include "btstack_memory.h"
 #include "hci.h"
-#include "gatt_client.h"
+#include "ble/gatt_client.h"
  
 static uint8_t advertisement_received;
 static uint8_t connected;

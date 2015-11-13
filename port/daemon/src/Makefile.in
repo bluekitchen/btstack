@@ -4,17 +4,21 @@ prefix = @prefix@
 
 CC = @CC@
 LDFLAGS = @LDFLAGS@
-CFLAGS = @CFLAGS@ -I.. -I $(BTSTACK_ROOT)/include -I$(BTSTACK_ROOT)/platforms/src/daemon -I $(BTSTACK_ROOT)/ble  -I $(BTSTACK_ROOT)/src -I $(BTSTACK_ROOT)
+CFLAGS = @CFLAGS@ \
+    -I $(BTSTACK_ROOT)/platform/src/daemon \
+    -I $(BTSTACK_ROOT)/src \
+    -I..
 BTSTACK_LIB_LDFLAGS = @BTSTACK_LIB_LDFLAGS@
 BTSTACK_LIB_EXTENSION = @BTSTACK_LIB_EXTENSION@
 LIBUSB_CFLAGS = @LIBUSB_CFLAGS@
 LIBUSB_LDFLAGS = @LIBUSB_LDFLAGS@
 
-VPATH += ${BTSTACK_ROOT}/platforms/daemon/src
-VPATH += ${BTSTACK_ROOT}/platforms/posix/src
-VPATH += ${BTSTACK_ROOT}/platforms/cocoa
+VPATH += ${BTSTACK_ROOT}/platform/daemon/src
+VPATH += ${BTSTACK_ROOT}/platform/posix/src
+VPATH += ${BTSTACK_ROOT}/platform/cocoa
 VPATH += ${BTSTACK_ROOT}/src
-VPATH += ${BTSTACK_ROOT}/ble
+VPATH += ${BTSTACK_ROOT}/src/ble
+VPATH += ${BTSTACK_ROOT}/src/classic
 
 remote_device_db_sources = @REMOTE_DEVICE_DB_SOURCES@
 run_loop_sources = @RUN_LOOP_SOURCES@
@@ -64,7 +68,7 @@ BTdaemon_SOURCES =      \
 all: libBTstack.$(BTSTACK_LIB_EXTENSION) BTdaemon
 
 libBTstack.$(BTSTACK_LIB_EXTENSION): $(libBTstack_SOURCES)
-		$(BTSTACK_ROOT)/tools/get_version.sh
+		$(BTSTACK_ROOT)/tool/get_version.sh
 		$(CC) $(CFLAGS) $(BTSTACK_LIB_LDFLAGS) -o $@ $^ $(LDFLAGS)
 
 # libBTstack.a: $(libBTstack_SOURCES:.c=.o) $(libBTstack_SOURCES:.m=.o)

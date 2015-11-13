@@ -52,7 +52,7 @@
 #include "btstack-config.h"
 
 #include "run_loop.h"
-#include "sdp_util.h"
+#include "classic/sdp_util.h"
 
 #include "debug.h"
 #include "btstack_memory.h"
@@ -61,9 +61,9 @@
 
 #include "l2cap.h"
 
-#include "rfcomm.h"
+#include "classic/rfcomm.h"
 
-#include "sdp.h"
+#include "classic/sdp.h"
 
 #define RFCOMM_SERVER_CHANNEL 1
 #define HEARTBEAT_PERIOD_MS 1000

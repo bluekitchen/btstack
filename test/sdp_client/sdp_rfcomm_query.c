@@ -12,7 +12,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "sdp_query_rfcomm.h"
+#include "classic/sdp_query_rfcomm.h"
 #include "hci_cmds.h"
 #include "run_loop.h"
 

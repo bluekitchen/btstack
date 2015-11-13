@@ -57,10 +57,10 @@
 #include "btstack_memory.h"
 #include "hci_dump.h"
 #include "l2cap.h"
-#include "rfcomm.h"
-#include "sdp.h"
-#include "sdp_query_rfcomm.h"
-#include "sm.h"
+#include "classic/rfcomm.h"
+#include "classic/sdp.h"
+#include "classic/sdp_query_rfcomm.h"
+#include "ble/sm.h"
 #include "stdin_support.h"
 
 static void show_usage();

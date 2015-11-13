@@ -73,11 +73,11 @@
 #include "hci_dump.h"
 #include "l2cap.h"
 
-#include "sm.h"
-#include "att.h"
-#include "att_server.h"
-#include "gap_le.h"
-#include "le_device_db.h"
+#include "ble/sm.h"
+#include "ble/att.h"
+#include "ble/att_server.h"
+#include "ble/gap_le.h"
+#include "ble/le_device_db.h"
 
 #define FONT_HEIGHT		12                    // Each character has 13 lines 
 #define FONT_WIDTH       8

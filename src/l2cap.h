@@ -49,7 +49,6 @@
 #include "hci.h"
 #include "l2cap_signaling.h"
 #include "utils.h"
-#include "btstack.h"
 
 #if defined __cplusplus
 extern "C" {

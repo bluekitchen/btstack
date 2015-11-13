@@ -44,7 +44,7 @@
 #include "CppUTest/TestHarness.h"
 #include "CppUTest/CommandLineTestRunner.h"
 
-#include "hfp.h"
+#include "classic/hfp.h"
 
 void hfp_parse(hfp_connection_t * context, uint8_t byte);
 

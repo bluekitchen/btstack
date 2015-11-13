@@ -6,11 +6,13 @@ SUBDIRS =  \
 	ble_client \
 	des_iterator \
 	gatt_client \
-	hfp \
 	linked_list \
 	remote_device_db \
 	sdp_client \
 	security_manager \
+
+#	hfp \
+
 
 subdirs:
 	echo Building all tests

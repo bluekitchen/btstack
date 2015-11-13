@@ -2,7 +2,10 @@ BTSTACK_ROOT=../../..
 
 CC = @CC@
 LDFLAGS  = @LDFLAGS@ -lBTstack -L../src
-CFLAGS = @CFLAGS@ -I$(BTSTACK_ROOT)/platforms/daemon -I$(BTSTACK_ROOT)/include
+CFLAGS = @CFLAGS@ \
+	-I$(BTSTACK_ROOT)/platform/daemon/src \
+	-I$(BTSTACK_ROOT)/src \
+	-I..
 prefix = @prefix@
 
 VPATH += ${BTSTACK_ROOT}/example/daemon

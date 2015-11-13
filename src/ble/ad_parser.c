@@ -48,11 +48,11 @@
 #include <string.h>
 
 #include "utils.h"
-#include "sdp_util.h"
+#include "classic/sdp_util.h"
 #include "hci_cmds.h"
 
 #include "hci.h"
-#include "ad_parser.h"
+#include "ble/ad_parser.h"
 
 typedef enum {
     IncompleteList16 = 0x02, 

@@ -39,12 +39,12 @@
  * Implementation of the Service Discovery Protocol Server 
  */
 
-#include "sdp.h"
+#include "classic/sdp.h"
 
 #include <stdio.h>
 #include <string.h>
 
-#include "sdp_util.h"
+#include "classic/sdp_util.h"
 
 #include "hci_dump.h"
 #include "l2cap.h"

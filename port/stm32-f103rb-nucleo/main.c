@@ -52,7 +52,7 @@
 #include "hci.h"
 #include "bt_control_cc256x.h"
 #include "btstack_memory.h"
-#include "remote_device_db.h"
+#include "classic/remote_device_db.h"
 
 // STDOUT_FILENO and STDERR_FILENO are defined by <unistd.h> with GCC
 // (this is a hack for IAR)

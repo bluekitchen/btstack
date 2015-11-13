@@ -3,13 +3,13 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "btstack.h"
-#include "att.h"
 #include "hci.h"
 #include "hci_dump.h"
 #include "l2cap.h"
-#include "gatt_client.h"
-#include "sm.h"
+
+#include "ble/att.h"
+#include "ble/gatt_client.h"
+#include "ble/sm.h"
 
 static btstack_packet_handler_t att_packet_handler;
 static void (*registered_l2cap_packet_handler) (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) = NULL;

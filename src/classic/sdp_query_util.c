@@ -38,9 +38,9 @@
 /*
  *  sdp_query_util.c
  */
-#include "sdp_parser.h"
-#include "sdp_client.h"
-#include "sdp_query_util.h"
+#include "classic/sdp_parser.h"
+#include "classic/sdp_client.h"
+#include "classic/sdp_query_util.h"
  
 static uint8_t des_attributeIDList[]    = { 0x35, 0x05, 0x0A, 0x00, 0x01, 0xff, 0xff};  // Attribute: 0x0001 - 0x0100
 static uint8_t des_serviceSearchPattern[] = {0x35, 0x03, 0x19, 0x00, 0x00};

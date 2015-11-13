@@ -18,31 +18,27 @@
       </logicalFolder>
       <logicalFolder name="f3" displayName="btstack" projectFiles="true">
         <logicalFolder name="ble" displayName="ble" projectFiles="true">
-          <itemPath>../../../ble/ad_parser.h</itemPath>
-          <itemPath>../../../ble/ancs_client_lib.h</itemPath>
-          <itemPath>../../../ble/att.h</itemPath>
-          <itemPath>../../../ble/att_dispatch.h</itemPath>
-          <itemPath>../../../ble/att_server.h</itemPath>
-          <itemPath>../../../ble/gap_le.h</itemPath>
-          <itemPath>../../../ble/gatt_client.h</itemPath>
-          <itemPath>../../../ble/le_device_db.h</itemPath>
-          <itemPath>../../../ble/sm.h</itemPath>
-        </logicalFolder>
-        <logicalFolder name="btstack" displayName="btstack" projectFiles="true">
-          <itemPath>../../../include/btstack/ant_cmds.h</itemPath>
-          <itemPath>../../../include/btstack/btstack.h</itemPath>
-          <itemPath>../../../include/btstack/hal_cpu.h</itemPath>
-          <itemPath>../../../include/btstack/hal_led.h</itemPath>
-          <itemPath>../../../include/btstack/hal_tick.h</itemPath>
-          <itemPath>../../../include/btstack/hal_uart_dma.h</itemPath>
-          <itemPath>../../../include/btstack/hci_cmds.h</itemPath>
-          <itemPath>../../../include/btstack/linked_list.h</itemPath>
-          <itemPath>../../../include/btstack/memory_pool.h</itemPath>
-          <itemPath>../../../include/btstack/run_loop.h</itemPath>
-          <itemPath>../../../include/btstack/sdp_util.h</itemPath>
-          <itemPath>../../../include/btstack/utils.h</itemPath>
+          <itemPath>../../../src/ble/ad_parser.h</itemPath>
+          <itemPath>../../../src/ble/ancs_client_lib.h</itemPath>
+          <itemPath>../../../src/ble/att.h</itemPath>
+          <itemPath>../../../src/ble/att_dispatch.h</itemPath>
+          <itemPath>../../../src/ble/att_server.h</itemPath>
+          <itemPath>../../../src/ble/gap_le.h</itemPath>
+          <itemPath>../../../src/ble/gatt_client.h</itemPath>
+          <itemPath>../../../src/ble/le_device_db.h</itemPath>
+          <itemPath>../../../src/ble/sm.h</itemPath>
+        <logicalFolder name="embedded" displayName="embedded" projectFiles="true">
+          <itemPath>../../../platform/embedded/hal_cpu.h</itemPath>
+          <itemPath>../../../platform/embedded/hal_led.h</itemPath>
+          <itemPath>../../../platform/embedded/hal_tick.h</itemPath>
+          <itemPath>../../../platform/embedded/hal_uart_dma.h</itemPath>
         </logicalFolder>
         <logicalFolder name="src" displayName="src" projectFiles="true">
+          <itemPath>../../../src/hci_cmds.h</itemPath>
+          <itemPath>../../../src/linked_list.h</itemPath>
+          <itemPath>../../../src/memory_pool.h</itemPath>
+          <itemPath>../../../src/run_loop.h</itemPath>
+          <itemPath>../../../src/utils.h</itemPath>
           <itemPath>../../../src/bnep.h</itemPath>
           <itemPath>../../../src/bt_control.h</itemPath>
           <itemPath>../../../src/btstack_memory.h</itemPath>
@@ -53,10 +49,12 @@
           <itemPath>../../../src/hci_transport.h</itemPath>
           <itemPath>../../../src/l2cap.h</itemPath>
           <itemPath>../../../src/l2cap_signaling.h</itemPath>
-          <itemPath>../../../src/pan.h</itemPath>
+          <itemPath>../../../src/run_loop_private.h</itemPath>
+        </logicalFolder>
+        <logicalFolder name="classic" displayName="classic" projectFiles="true">
+          <itemPath>../../../src/classic/sdp_util.h</itemPath>
           <itemPath>../../../src/remote_device_db.h</itemPath>
           <itemPath>../../../src/rfcomm.h</itemPath>
-          <itemPath>../../../src/run_loop_private.h</itemPath>
           <itemPath>../../../src/sdp.h</itemPath>
           <itemPath>../../../src/sdp_client.h</itemPath>
           <itemPath>../../../src/sdp_parser.h</itemPath>
@@ -111,18 +109,17 @@
       </logicalFolder>
       <logicalFolder name="f3" displayName="btstack" projectFiles="true">
         <logicalFolder name="ble" displayName="ble" projectFiles="true">
-          <itemPath>../../../ble/ad_parser.c</itemPath>
-          <itemPath>../../../ble/att.c</itemPath>
-          <itemPath>../../../ble/att_dispatch.c</itemPath>
-          <itemPath>../../../ble/att_server.c</itemPath>
-          <itemPath>../../../ble/le_device_db_memory.c</itemPath>
-          <itemPath>../../../ble/sm.c</itemPath>
+          <itemPath>../../../src/ble/ad_parser.c</itemPath>
+          <itemPath>../../../src/ble/att.c</itemPath>
+          <itemPath>../../../src/ble/att_dispatch.c</itemPath>
+          <itemPath>../../../src/ble/att_server.c</itemPath>
+          <itemPath>../../../src/ble/le_device_db_memory.c</itemPath>
+          <itemPath>../../../src/ble/sm.c</itemPath>
         </logicalFolder>
         <logicalFolder name="chipset-csr" displayName="chipset-csr" projectFiles="true">
           <itemPath>../../../chipset/csr/bt_control_csr.c</itemPath>
         </logicalFolder>
         <logicalFolder name="src" displayName="src" projectFiles="true">
-          <itemPath>../../../src/bnep.c</itemPath>
           <itemPath>../../../src/btstack_memory.c</itemPath>
           <itemPath>../../../src/hci.c</itemPath>
           <itemPath>../../../src/hci_cmds.c</itemPath>
@@ -132,17 +129,16 @@
           <itemPath>../../../src/l2cap_signaling.c</itemPath>
           <itemPath>../../../src/linked_list.c</itemPath>
           <itemPath>../../../src/memory_pool.c</itemPath>
-          <itemPath>../../../src/pan.c</itemPath>
-          <itemPath>../../../src/remote_device_db_memory.c</itemPath>
-          <itemPath>../../../src/rfcomm.c</itemPath>
+          <itemPath>../../../src/classic/remote_device_db_memory.c</itemPath>
+          <itemPath>../../../src/classic/rfcomm.c</itemPath>
           <itemPath>../../../src/run_loop.c</itemPath>
           <itemPath>../../../src/run_loop_embedded.c</itemPath>
-          <itemPath>../../../src/sdp.c</itemPath>
-          <itemPath>../../../src/sdp_client.c</itemPath>
-          <itemPath>../../../src/sdp_parser.c</itemPath>
-          <itemPath>../../../src/sdp_query_rfcomm.c</itemPath>
-          <itemPath>../../../src/sdp_query_util.c</itemPath>
-          <itemPath>../../../src/sdp_util.c</itemPath>
+          <itemPath>../../../src/classic/sdp.c</itemPath>
+          <itemPath>../../../src/classic/sdp_client.c</itemPath>
+          <itemPath>../../../src/classic/sdp_parser.c</itemPath>
+          <itemPath>../../../src/classic/sdp_query_rfcomm.c</itemPath>
+          <itemPath>../../../src/classic/sdp_query_util.c</itemPath>
+          <itemPath>../../../src/classic/sdp_util.c</itemPath>
           <itemPath>../../../src/utils.c</itemPath>
         </logicalFolder>
       </logicalFolder>

@@ -7,9 +7,9 @@ BTSTACK_ROOT =  ../..
 CFLAGS  = -g -Wall -I.. -I${BTSTACK_ROOT}/src -I${BTSTACK_ROOT}/include
 LDFLAGS += -lCppUTest -lCppUTestExt
 
-VPATH += ${BTSTACK_ROOT}/ble 
 VPATH += ${BTSTACK_ROOT}/src
-VPATH += ${BTSTACK_ROOT}/platforms/posix/src
+VPATH += ${BTSTACK_ROOT}/src/classic
+VPATH += ${BTSTACK_ROOT}/platform/posix/src
 
 COMMON = \
     sdp_util.c	              \

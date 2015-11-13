@@ -66,30 +66,30 @@
 #include "hci_dump.h"
 #include "hci_transport.h"
 #include "l2cap.h"
-#include "rfcomm.h"
-#include "sdp.h"
-#include "sdp_parser.h"
-#include "sdp_client.h"
-#include "sdp_query_util.h"
-#include "sdp_query_rfcomm.h"
+#include "classic/rfcomm.h"
+#include "classic/sdp.h"
+#include "classic/sdp_parser.h"
+#include "classic/sdp_client.h"
+#include "classic/sdp_query_util.h"
+#include "classic/sdp_query_rfcomm.h"
 #include "socket_connection.h"
 
 #ifdef HAVE_BLE
-#include "gatt_client.h"
-#include "att_server.h"
-#include "att.h"
-#include "le_device_db.h"
-#include "sm.h"
+#include "ble/gatt_client.h"
+#include "ble/att_server.h"
+#include "ble/att.h"
+#include "ble/le_device_db.h"
+#include "ble/sm.h"
 #endif
 
 #ifdef USE_BLUETOOL
 #include <CoreFoundation/CoreFoundation.h>
-#include "../platforms/ios/src/bt_control_iphone.h"
+#include "../port/ios/src/bt_control_iphone.h"
 #include <notify.h>
 #endif
 
 #ifdef USE_SPRINGBOARD
-#include "../platforms/ios/src/platform_iphone.h"
+#include "../port/ios/src/platform_iphone.h"
 #endif
 
 #ifndef BTSTACK_LOG_FILE

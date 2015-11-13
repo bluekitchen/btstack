@@ -39,7 +39,7 @@
  *  sdp_util.c
  */
 
-#include "sdp_util.h"
+#include "classic/sdp_util.h"
 #include "utils.h"
 #include "btstack-config.h"
 
@@ -58,19 +58,6 @@
 // date element type names
 const char * const type_names[] = { "NIL", "UINT", "INT", "UUID", "STRING", "BOOL", "DES", "DEA", "URL"};
 #endif
-
-// Bluetooth Base UUID: 00000000-0000-1000-8000- 00805F9B34FB
-const uint8_t sdp_bluetooth_base_uuid[] = { 0x00, 0x00, 0x00, 0x00, /* - */ 0x00, 0x00, /* - */ 0x10, 0x00, /* - */
-    0x80, 0x00, /* - */ 0x00, 0x80, 0x5F, 0x9B, 0x34, 0xFB };
-
-void sdp_normalize_uuid(uint8_t *uuid, uint32_t shortUUID){
-    memcpy(uuid, sdp_bluetooth_base_uuid, 16);
-    net_store_32(uuid, 0, shortUUID);
-}
-
-int sdp_has_blueooth_base_uuid(uint8_t * uuid128){
-    return memcmp(&uuid128[4], &sdp_bluetooth_base_uuid[4], 12) == 0;
-}
 
 // MARK: DataElement getter
 de_size_t de_get_size_type(uint8_t *header){

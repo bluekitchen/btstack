@@ -94,6 +94,8 @@ typedef uint8_t sm_key_t[16];
 #define DEVICE_NAME_LEN 248
 typedef uint8_t device_name_t[DEVICE_NAME_LEN+1]; 
 	
+// packet handler
+typedef void (*btstack_packet_handler_t) (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 	
 // helper for BT little endian format
 #define READ_BT_16( buffer, pos) ( ((uint16_t) buffer[pos]) | (((uint16_t)buffer[(pos)+1]) << 8))
@@ -157,6 +159,9 @@ void print_bd_addr( bd_addr_t addr);
 char * bd_addr_to_str(bd_addr_t addr);
 char * link_key_to_str(link_key_t link_key);
 char *link_key_type_to_str(link_key_type_t link_key);
+
+void sdp_normalize_uuid(uint8_t *uuid, uint32_t shortUUID);
+int  sdp_has_blueooth_base_uuid(uint8_t * uuid128);
 
 int sscan_bd_addr(uint8_t * addr_string, bd_addr_t addr);
 int sscan_link_key(char * addr_string, link_key_t link_key);

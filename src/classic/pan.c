@@ -46,7 +46,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "sdp_util.h"
+#include "classic/sdp_util.h"
 #include "hci_cmds.h"
 
 static const char default_panu_service_name[] = "Personal Ad-hoc User Service";

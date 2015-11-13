@@ -43,15 +43,15 @@
 #include <string.h>
 
 #include "run_loop.h"
-#include "sdp_util.h"
+#include "classic/sdp_util.h"
 
 #include "ancs_client_lib.h"
 
-#include "att.h"
+#include "ble/att.h"
 #include "debug.h"
-#include "gap_le.h"
-#include "gatt_client.h"
-#include "sm.h"
+#include "ble/gap_le.h"
+#include "ble/gatt_client.h"
+#include "ble/sm.h"
 
 // ancs_client.h Start
 typedef enum ancs_chunk_parser_state {

@@ -7,10 +7,11 @@ TARGET_IPHONEOS_DEPLOYMENT_VERSION_arm64 = 7.0
 ARCHS = armv6 arm64
 
 BTSTACK_ROOT=../../..
-POSIX_ROOT=$(BTSTACK_ROOT)/platforms/posix
-DAEMON_ROOT=$(BTSTACK_ROOT)/platforms/daemon
+POSIX_ROOT=$(BTSTACK_ROOT)/platform/posix
+DAEMON_ROOT=$(BTSTACK_ROOT)/platform/daemon
 
-VPATH += $(BTSTACK_ROOT)/src
+VPATH += $(BTSTACK_ROOT)/src \
+		 $(BTSTACK_ROOT)/src/classic 
 
 LIBRARY_NAME = libBTstack
 libBTstack_FILES = \
@@ -20,12 +21,12 @@ libBTstack_FILES = \
 	run_loop.c \
 	sdp_util.c \
 	utils.c \
-	$(BTSTACK_ROOT)/platforms/cocoa/run_loop_cocoa.m \
+	$(BTSTACK_ROOT)/platform/cocoa/run_loop_cocoa.m \
 	$(POSIX_ROOT)/src/run_loop_posix.c \
 	$(DAEMON_ROOT)/src/btstack.c \
 	$(DAEMON_ROOT)/src/socket_connection.c \
 
-libBTstack_CFLAGS = -I$(BTSTACK_ROOT)/include -I$(BTSTACK_ROOT)/ble -I$(BTSTACK_ROOT)/src -I..
+libBTstack_CFLAGS = -I$(BTSTACK_ROOT)/src/ble -I$(BTSTACK_ROOT)/src -I..
 
 TOOL_NAME = BTdaemon
 BTdaemon_FILES = \
@@ -43,17 +44,17 @@ BTdaemon_FILES = \
     sdp_query_util.c        \
 	$(DAEMON_ROOT)/src/daemon.c  \
 	$(POSIX_ROOT)/src/hci_transport_h4.c 		 	\
-	$(BTSTACK_ROOT)/platforms/ios/src/bt_control_iphone.m     	\
-	$(BTSTACK_ROOT)/platforms/ios/src/hci_transport_h4_iphone.c  \
-	$(BTSTACK_ROOT)/platforms/ios/src/platform_iphone.m       	\
-	$(BTSTACK_ROOT)/platforms/ios/SpringBoardAccess/SpringBoardAccess.c \
-	$(BTSTACK_ROOT)/platforms/cocoa/remote_device_db_cocoa.m  	\
+	$(BTSTACK_ROOT)/port/ios/src/bt_control_iphone.m     	\
+	$(BTSTACK_ROOT)/port/ios/src/hci_transport_h4_iphone.c  \
+	$(BTSTACK_ROOT)/port/ios/src/platform_iphone.m       	\
+	$(BTSTACK_ROOT)/port/ios/SpringBoardAccess/SpringBoardAccess.c \
+	$(BTSTACK_ROOT)/platform/cocoa/remote_device_db_cocoa.m  	\
 
-BTdaemon_CFLAGS = -I$(BTSTACK_ROOT)/include -I$(BTSTACK_ROOT)/ble -I$(BTSTACK_ROOT)/src -I..
+BTdaemon_CFLAGS = -I$(BTSTACK_ROOT)/src -I$(BTSTACK_ROOT)/platform/daemon/src -I..
 BTdaemon_PRIVATE_FRAMEWORKS = IOKIT
 
 before-all::
-	../../../tools/get_version.sh
+	../../../tool/get_version.sh
 
 after-BTdaemon-stage::
 	echo $(THEOS_STAGING_DIR)

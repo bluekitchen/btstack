@@ -13,7 +13,7 @@ Packages that already use BTstack are: BTstack GPS, Blutrol, WeBe++, and various
 
 Note: As BTstack directly uses the Bluetooth hardware, the iOS Bluetooth is automatically disabled for BTstack applications & services. You can always turn BTstack off in Settings->BTstack.
 
-Please visit the [project page at GitHub](https://github.com/bluekitchen/btstack/) for technical information and check the platform/ios subfolder.
+Please visit the [project page at GitHub](https://github.com/bluekitchen/btstack/) for technical information and check the port/ios subfolder.
 
 ## How to develop
 
@@ -34,9 +34,9 @@ Set the $THEOS environment variable to the location of the theos checkout, e.g. 
 
 	export THEOS=/Projects/theos
 
-Go to btstack/platforms/ios and run make
+Go to btstack/port/ios and run make
 
-	cd btstack/platforms/ios
+	cd btstack/port/ios
 	make package
 
 If everything went right, you'll end up with a .deb package that you could install via:
@@ -48,7 +48,7 @@ If everything went right, you'll end up with a .deb package that you could insta
 
 With THEOS set-up as before, you can compile and install a set of command line examples in the example folder:
 
-	cd btstack/platforms/ios/example
+	cd btstack/port/ios/example
 	make
 
 You can copy the created examples to your device using scp and run it from there.
@@ -58,7 +58,7 @@ You can copy the created examples to your device using scp and run it from there
 
 Similar as before, you can compile the WiiMoteOpenGLDemo by running make:
 
-	cd btstack/platforms/ios/example/WiiMoteOpenGLDemo
+	cd btstack/port/ios/example/WiiMoteOpenGLDemo
 	make package
 
 You'll end up with a deb file that you can install with

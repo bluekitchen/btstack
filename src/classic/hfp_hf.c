@@ -55,11 +55,11 @@
 #include "btstack_memory.h"
 #include "hci_dump.h"
 #include "l2cap.h"
-#include "sdp_query_rfcomm.h"
-#include "sdp.h"
+#include "classic/sdp_query_rfcomm.h"
+#include "classic/sdp.h"
 #include "debug.h"
-#include "hfp.h"
-#include "hfp_hf.h"
+#include "classic/hfp.h"
+#include "classic/hfp_hf.h"
 
 
 static const char default_hfp_hf_service_name[] = "Hands-Free unit";

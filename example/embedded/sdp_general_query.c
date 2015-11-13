@@ -50,9 +50,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "sdp_parser.h"
-#include "sdp_client.h"
-#include "sdp_query_util.h"
+#include "classic/sdp_parser.h"
+#include "classic/sdp_client.h"
+#include "classic/sdp_query_util.h"
 
 #include "hci_cmds.h"
 #include "run_loop.h"
@@ -61,7 +61,7 @@
 #include "btstack_memory.h"
 #include "hci_dump.h"
 #include "l2cap.h"
-#include "sdp_parser.h"
+#include "classic/sdp_parser.h"
 
 int record_id = -1;
 int attribute_id = -1;

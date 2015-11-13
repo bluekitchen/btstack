@@ -49,13 +49,14 @@
 #include "btstack-config.h"
 
 #include "run_loop.h"
-#include "sdp_util.h"
 
 #include "debug.h"
 #include "btstack_memory.h"
 #include "hci.h"
 #include "hci_dump.h"
 #include "gap.h"
+
+#include "classic/sdp_util.h"
 
 #define MAX_DEVICES 10
 enum DEVICE_STATE { BONDING_REQUEST, BONDING_REQUESTED, BONDING_COMPLETED };

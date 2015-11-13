@@ -19,8 +19,8 @@
 #include "btstack_memory.h"
 #include "hci.h"
 #include "hci_dump.h"
-#include "gatt_client.h"
-#include "att.h"
+#include "ble/gatt_client.h"
+#include "ble/att.h"
 #include "profile.h"
 #include "expected_results.h"
 

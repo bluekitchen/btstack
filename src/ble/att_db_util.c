@@ -39,7 +39,7 @@
 #include <string.h>
 
 #include "att_db_util.h"
-#include "att.h"
+#include "ble/att.h"
 #include "utils.h"
 #include "debug.h"
 

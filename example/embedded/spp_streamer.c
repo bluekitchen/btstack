@@ -56,8 +56,8 @@
 #include "btstack_memory.h"
 #include "hci_dump.h"
 #include "l2cap.h"
-#include "sdp_query_rfcomm.h"
-#include "rfcomm.h"
+#include "classic/sdp_query_rfcomm.h"
+#include "classic/rfcomm.h"
 
 #define NUM_ROWS 25
 #define NUM_COLS 40

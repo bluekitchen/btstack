@@ -38,7 +38,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "remote_device_db.h"
+#include "classic/remote_device_db.h"
 #include "btstack_memory.h"
 #include "debug.h"
 

@@ -10,10 +10,12 @@ LDSCRIPT = stm32f1-nucleo.ld
 BTSTACK_ROOT = ../..
 VPATH  = $(BTSTACK_ROOT)/example/embedded
 VPATH += $(BTSTACK_ROOT)/src
-VPATH += $(BTSTACK_ROOT)/ble
+VPATH += $(BTSTACK_ROOT)/src/ble
+VPATH += $(BTSTACK_ROOT)/src/classic
+VPATH += $(BTSTACK_ROOT)/platform/embedded
 VPATH += $(BTSTACK_ROOT)/chipset/cc256x
 
-CORE   = \
+CORE = \
 	main.c 					  \
     btstack_memory.c          \
     linked_list.c	          \
@@ -49,12 +51,15 @@ BLE = \
 #	gatt_client.c             \
 
 CORE_OBJ   = $(CORE:.c=.o)
-COMMON_OBJ   = $(COMMON:.c=.o)
-BLE_OBJ   = $(BLE:.c=.o)
+COMMON_OBJ = $(COMMON:.c=.o)
+BLE_OBJ    = $(BLE:.c=.o)
 
 OBJS += $(CORE_OBJ) $(COMMON_OBJ) $(BLE_OBJ)
 
-CFLAGS = -I. -I$(BTSTACK_ROOT)/include -I$(BTSTACK_ROOT)/src -I$(BTSTACK_ROOT)/ble -I$(BTSTACK_ROOT)/chipset/cc256x
+CFLAGS = -I. \
+		 -I$(BTSTACK_ROOT)/platform/embedded \
+		 -I$(BTSTACK_ROOT)/src \
+		 -I$(BTSTACK_ROOT)/chipset/cc256x
 
 examples: libopencm3/lib/libopencm3_stm32f1.a spp_and_le_counter.h spp_and_le_counter.elf
 
@@ -73,5 +78,5 @@ libopencm3/lib/libopencm3_stm32f1.a:
 
 # compile GATT database
 spp_and_le_counter.h: spp_and_le_counter.gatt
-	python ${BTSTACK_ROOT}/ble/compile-gatt.py $< $@ 
+	python ${BTSTACK_ROOT}/tool/compile-gatt.py $< $@ 
 

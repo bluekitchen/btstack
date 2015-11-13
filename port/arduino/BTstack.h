@@ -3,9 +3,9 @@
  */
 #pragma once
 
-#include "att.h"
+#include "ble/att.h"
 #include "utils.h" 
-#include "gatt_client.h"
+#include "ble/gatt_client.h"
 #include "hci.h"
 #include <stdint.h>
 

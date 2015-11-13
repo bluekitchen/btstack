@@ -50,7 +50,7 @@
 #include <sys/stat.h>
 
 #include "btstack.h"
-#include "sdp_util.h"
+#include "classic/sdp_util.h"
 
 #define NUM_ROWS 25
 #define NUM_COLS 80

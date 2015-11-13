@@ -40,13 +40,13 @@
  */
 
 #include "btstack-config.h"
-#include "sdp_client.h"
+#include "classic/sdp_client.h"
 
 #include "hci_cmds.h"
 
 #include "l2cap.h"
-#include "sdp_parser.h"
-#include "sdp.h"
+#include "classic/sdp_parser.h"
+#include "classic/sdp.h"
 #include "debug.h"
 
 typedef enum {

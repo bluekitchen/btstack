@@ -3,8 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "btstack.h"
-#include "att.h"
+#include "ble/att.h"
 #include "hci.h"
 #include "hci_dump.h"
 #include "l2cap.h"

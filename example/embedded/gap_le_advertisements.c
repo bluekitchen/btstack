@@ -54,7 +54,7 @@
 
 #include "btstack_memory.h"
 #include "hci.h"
-#include "ad_parser.h"
+#include "ble/ad_parser.h"
 
 /* @section GAP LE setup for receiving advertisements
  *

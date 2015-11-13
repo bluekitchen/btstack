@@ -1,6 +1,6 @@
 # Makefile for libusb based examples
 BTSTACK_ROOT = ../..
-POSIX_ROOT= ${BTSTACK_ROOT}/platforms/posix
+POSIX_ROOT= ${BTSTACK_ROOT}/platform/posix
 
 CORE += main.c stdin_support.c bt_control_stlc2500d.c
 
@@ -12,10 +12,11 @@ include ${BTSTACK_ROOT}/example/embedded/Makefile.inc
 CFLAGS += -I$(BTSTACK_ROOT)/chipset/stlc2500d
 
 # CC = gcc-fsf-4.9
-CFLAGS  += -g -Wall 
+CFLAGS  += -g -Wall -I$(BTSTACK_ROOT)/platform/embedded
 # CFLAGS += -Werror
 
-VPATH += ${BTSTACK_ROOT}/platforms/posix/src
+VPATH += ${BTSTACK_ROOT}/platform/posix/src
+VPATH += ${BTSTACK_ROOT}/platform/embedded
 VPATH += ${BTSTACK_ROOT}/chipset/stlc2500d
 
 ifeq ($(OS),Windows_NT)

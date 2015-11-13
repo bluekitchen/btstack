@@ -9,19 +9,21 @@ VERSION=`sed -n -e 's/^.*BTSTACK_VERSION \"\(.*\)\"/\1/p' ${BTSTACK_ROOT}/src/ve
 BTSTACK_PACKAGE=/tmp/btstack
 ARCHIVE=btstack-arduino-${VERSION}.zip
 
-SRC_FILES  =btstack_memory.c linked_list.c memory_pool.c run_loop.c run_loop_embedded.c
-SRC_FILES +=hci_dump.c hci.c hci_cmds.c hci_transport_h4_dma.c sdp_util.c utils.c
+SRC_FILES  = btstack_memory.c linked_list.c memory_pool.c run_loop.c 
+SRC_FILES += hci_dump.c hci.c hci_cmds.c  utils.c l2cap.c
 BLE_FILES  =  ad_parser.c att.c att_server.c att_dispatch.c att_db_util.c le_device_db_memory.c gatt_client.c
-BLE_FILES  += sm.c l2cap_le.c ancs_client_lib.h ancs_client_lib.c
+BLE_FILES += sm.c ancs_client_lib.h ancs_client_lib.c
 PORT_FILES = btstack-config.h bsp_arduino_em9301.cpp BTstack.cpp BTstack.h
+EMBEDDED_FILES = run_loop_embedded.c hci_transport_h4_dma.c
 
 PATHS  = $(addprefix ${BTSTACK_ROOT}/src/, ${SRC_FILES})
 PATHS += $(wildcard  ${BTSTACK_ROOT}/src/*.h)
-PATHS += $(addprefix ${BTSTACK_ROOT}/ble/, ${BLE_FILES})
-PATHS += $(wildcard  ${BTSTACK_ROOT}/ble/*.h)
+PATHS += $(addprefix ${BTSTACK_ROOT}/src/ble/, ${BLE_FILES})
+PATHS += $(wildcard  ${BTSTACK_ROOT}/src/ble/*.h)
+PATHS += $(addprefix ${BTSTACK_ROOT}/platform/embedded/, ${EMBEDDED_FILES})
+PATHS += $(wildcard  ${BTSTACK_ROOT}/platform/embedded/*.h)
 PATHS += $(wildcard  ${BTSTACK_ROOT}/chipset/em9301/*)
-PATHS += ${BTSTACK_ROOT}/include/btstack
-PATHS += ${BTSTACK_ROOT}/platforms/arduino/examples
+PATHS += ${BTSTACK_ROOT}/port/arduino/examples
 PATHS += $(addprefix ${DIR}/, ${PORT_FILES})
 
 ARDUINO_LIBS=~/Documents/arduino/libraries/BTstack
@@ -32,7 +34,7 @@ clean:
 	rm -rf ${BTSTACK_PACKAGE}
 
 update_version:
-	${BTSTACK_ROOT}/tools/get_version.sh 
+	${BTSTACK_ROOT}/tool/get_version.sh 
 
 install: update_version
 	rm -rf ${ARDUINO_LIBS}

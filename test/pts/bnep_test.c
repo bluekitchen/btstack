@@ -57,13 +57,13 @@
 
 #include "hci_cmds.h"
 #include "run_loop.h"
-#include "sdp_util.h"
+#include "classic/sdp_util.h"
 
 #include "hci.h"
 #include "btstack_memory.h"
 #include "hci_dump.h"
 #include "l2cap.h"
-#include "sdp.h"
+#include "classic/sdp.h"
 #include "pan.h"
 #include "stdin_support.h"
 

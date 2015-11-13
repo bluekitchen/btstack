@@ -5,12 +5,13 @@ SDKVERSION_armv6 = 5.1
 TARGET_IPHONEOS_DEPLOYMENT_VERSION = 3.0
 TARGET_IPHONEOS_DEPLOYMENT_VERSION_arm64 = 7.0
 ARCHS = armv6 arm64
+BTSTACK_ROOT=../../..
 
 BUNDLE_NAME = BTstack
 BTstack_FILES = PrefsViewController.m BluetoothController.m BluetoothTableViewAdapter.m
 BTstack_INSTALL_PATH = /Library/PreferenceBundles
 BTstack_FRAMEWORKS = UIKit
-BTstack_CFLAGS = -I.. -I../../../src -g
+BTstack_CFLAGS = -I.. -I$(BTSTACK_ROOT)/src -I$(BTSTACK_ROOT)/platform/daemon/src -g
 
 BTstack_LDFLAGS = -L../src/.theos/obj -lBTstack
 BTstack_PRIVATE_FRAMEWORKS = Preferences

@@ -47,16 +47,16 @@
 
 #include "btstack-config.h"
 
-#include "hci_cmds.h"
-#include "utils.h"
-#include "hci_transport.h"
 #include "bt_control.h"
-#include "remote_device_db.h"
+#include "classic/remote_device_db.h"
+#include "hci_cmds.h"
+#include "hci_transport.h"
+#include "linked_list.h"
+#include "utils.h"
 
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdarg.h>
-#include "linked_list.h"
 
 #if defined __cplusplus
 extern "C" {

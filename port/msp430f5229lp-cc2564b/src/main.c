@@ -60,7 +60,7 @@
 #include "hci.h"
 #include "hci_dump.h"
 #include "btstack_memory.h"
-#include "remote_device_db.h"
+#include "classic/remote_device_db.h"
 #include "btstack-config.h"
 
 static void hw_setup(void){

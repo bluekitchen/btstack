@@ -5,12 +5,16 @@ CC=g++
 BTSTACK_ROOT =  ../..
 CPPUTEST_HOME = ${BTSTACK_ROOT}/test/cpputest
 
-CFLAGS  = -g -Wall -I. -I../ -I${BTSTACK_ROOT}/src -I${BTSTACK_ROOT}/include -I${BTSTACK_ROOT}/ble
+CFLAGS  = -g -Wall \
+		  -I. \
+		  -I.. \
+		  -I${BTSTACK_ROOT}/src
+		  
 LDFLAGS += -lCppUTest -lCppUTestExt
 
-VPATH += ${BTSTACK_ROOT}/ble 
+VPATH += ${BTSTACK_ROOT}/src/classic
 VPATH += ${BTSTACK_ROOT}/src
-VPATH += ${BTSTACK_ROOT}/platforms/posix/src
+VPATH += ${BTSTACK_ROOT}/platform/posix/src
 
 FS = \
     utils.c                   \

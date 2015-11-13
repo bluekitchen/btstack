@@ -38,9 +38,8 @@
 #ifndef __SM_H
 #define __SM_H
 
-#include "utils.h"
-#include "btstack.h"
 #include <stdint.h>
+#include "utils.h"
 
 #if defined __cplusplus
 extern "C" {

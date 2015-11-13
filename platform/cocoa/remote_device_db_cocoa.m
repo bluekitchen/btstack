@@ -33,7 +33,7 @@
  * Please inquire about commercial licensing options at btstack@ringwald.ch
  *
  */
-#include "remote_device_db.h"
+#include "classic/remote_device_db.h"
 #include "debug.h"
 
 #import <Foundation/Foundation.h>

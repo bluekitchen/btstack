@@ -1,9 +1,9 @@
 #include <BTstack.h>
 #include <stdio.h>
-#include "att_server.h"
-#include "gatt_client.h"
+#include "ble/att_server.h"
+#include "ble/gatt_client.h"
 #include "ancs_client_lib.h"
-#include "sm.h"
+#include "ble/sm.h"
 #include <SPI.h>
 
 /* 

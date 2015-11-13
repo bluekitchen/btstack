@@ -40,7 +40,7 @@
 #include <stdio.h>
 #include <unistd.h>
 
-#include "remote_device_db.h"
+#include "classic/remote_device_db.h"
 #include "debug.h"
 
 #include "utils.h"

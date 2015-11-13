@@ -2,7 +2,7 @@ CC=g++
 
 # Makefile for libusb based PTS tests
 BTSTACK_ROOT = ../..
-POSIX_ROOT= ${BTSTACK_ROOT}/platforms/posix
+POSIX_ROOT= ${BTSTACK_ROOT}/platform/posix
 CPPUTEST_HOME = ${BTSTACK_ROOT}/test/cpputest
 
 COMMON = \
@@ -43,12 +43,15 @@ COMMON_OBJ  = $(COMMON:.c=.o)
 MOCK_OBJ  = $(MOCK:.c=.o)
 
 # CC = gcc-fsf-4.9
-CFLAGS  = -g -Wall -I. -I../ -I${BTSTACK_ROOT}/src -I${BTSTACK_ROOT}/include
+CFLAGS  = -g -Wall \
+		  -I. \
+		  -I.. \
+		  -I${BTSTACK_ROOT}/src
 # CFLAGS += -Werror
 
 VPATH += ${BTSTACK_ROOT}/src
-VPATH += ${BTSTACK_ROOT}/ble
-VPATH += ${BTSTACK_ROOT}/platforms/posix/src
+VPATH += ${BTSTACK_ROOT}/src/classic
+VPATH += ${BTSTACK_ROOT}/platform/posix/src
 
 CFLAGS  = -g -Wall -I. -I../ -I${BTSTACK_ROOT}/src -I${BTSTACK_ROOT}/include -I${BTSTACK_ROOT}/ble
 LDFLAGS += -lCppUTest -lCppUTestExt

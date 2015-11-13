@@ -39,7 +39,7 @@
  *  sdp_parser.c
  */
 #include "hci_cmds.h"
-#include "sdp_parser.h"
+#include "classic/sdp_parser.h"
 #include "debug.h"
 
 typedef enum { 

@@ -56,19 +56,17 @@
 
 #include "debug.h"
 #include "btstack_memory.h"
-
 #include "hci.h"
 #include "hci_dump.h"
-
 #include "l2cap.h"
 
-#include "att.h"
-#include "att_server.h"
-#include "le_device_db.h"
-#include "gap_le.h"
-#include "gatt_client.h"
-#include "sm.h"
-#include "ancs_client_lib.h"
+#include "ble/ancs_client_lib.h"
+#include "ble/att.h"
+#include "ble/att_server.h"
+#include "ble/gap_le.h"
+#include "ble/gatt_client.h"
+#include "ble/le_device_db.h"
+#include "ble/sm.h"
 
 // ancs client profile
 #include "ancs_client.h"

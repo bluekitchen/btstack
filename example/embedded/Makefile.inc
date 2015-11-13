@@ -1,11 +1,11 @@
 VPATH += ${BTSTACK_ROOT}/src
-VPATH += ${BTSTACK_ROOT}/ble
+VPATH += ${BTSTACK_ROOT}/src/ble
+VPATH += ${BTSTACK_ROOT}/src/classic
 VPATH += ${BTSTACK_ROOT}/example/embedded
 
-
 CFLAGS += -I.
-CFLAGS += -I${BTSTACK_ROOT}/ble
-CFLAGS += -I${BTSTACK_ROOT}/include 
+CFLAGS += -I${BTSTACK_ROOT}/src/ble
+CFLAGS += -I${BTSTACK_ROOT}/src/classic
 CFLAGS += -I${BTSTACK_ROOT}/src
 
 CORE += \
@@ -95,19 +95,19 @@ PAN_OBJ = $(PAN:.c=.o)
 default_target: all
 
 ${BTSTACK_ROOT}/src/version.h:
-	${BTSTACK_ROOT}/tools/get_version.sh
+	${BTSTACK_ROOT}/tool/get_version.sh
 
 # compile .gatt descriptions
 profile.h: profile.gatt
-	python ${BTSTACK_ROOT}/ble/compile-gatt.py $< $@ 
+	python ${BTSTACK_ROOT}/tool/compile-gatt.py $< $@ 
 ancs_client.h: ancs_client.gatt
-	python ${BTSTACK_ROOT}/ble/compile-gatt.py $< $@ 
+	python ${BTSTACK_ROOT}/tool/compile-gatt.py $< $@ 
 spp_and_le_counter.h: spp_and_le_counter.gatt
-	python ${BTSTACK_ROOT}/ble/compile-gatt.py $< $@ 
+	python ${BTSTACK_ROOT}/tool/compile-gatt.py $< $@ 
 le_counter.h: le_counter.gatt
-	python ${BTSTACK_ROOT}/ble/compile-gatt.py $< $@ 
+	python ${BTSTACK_ROOT}/tool/compile-gatt.py $< $@ 
 le_streamer.h: le_streamer.gatt
-	python ${BTSTACK_ROOT}/ble/compile-gatt.py $< $@ 
+	python ${BTSTACK_ROOT}/tool/compile-gatt.py $< $@ 
 
 # examples
 sdp_rfcomm_query: ${CORE_OBJ} ${COMMON_OBJ} ${PAN_OBJ} ${SDP_CLIENT} sdp_rfcomm_query.c
@@ -155,7 +155,7 @@ gatt_browser: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} ${SM_REAL_
 gatt_battery_query: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} ${SM_REAL_OBJ} gatt_battery_query.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-ancs_client: ancs_client.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${GATT_CLIENT_OBJ} ${SM_REAL_OBJ} ${BTSTACK_ROOT}/ble/ancs_client_lib.c ancs_client.c
+ancs_client: ancs_client.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${GATT_CLIENT_OBJ} ${SM_REAL_OBJ} ancs_client_lib.c ancs_client.c
 	${CC} $(filter-out ancs_client.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
 
 led_counter: ${CORE_OBJ} ${COMMON_OBJ} led_counter.c
@@ -173,6 +173,6 @@ clean:
 	rm -rf *.dSYM
 	rm -rf ${BTSTACK_ROOT}/ble/*.o
 	rm -rf ${BTSTACK_ROOT}/src/*.o
-	rm -rf ${BTSTACK_ROOT}/platforms/posix/src/*.o
+	rm -rf ${BTSTACK_ROOT}/platform/posix/src/*.o
 	
 	

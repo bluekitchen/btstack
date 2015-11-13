@@ -50,7 +50,7 @@
 #include <sys/stat.h>
 
 #include "btstack.h"
-#include "sdp_util.h"
+#include "classic/sdp_util.h"
 
 // input from command line arguments
 bd_addr_t addr = { };

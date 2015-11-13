@@ -4,7 +4,7 @@
 #include "CppUTest/TestHarness.h"
 #include "CppUTest/CommandLineTestRunner.h"
 
-#include "remote_device_db.h"
+#include "classic/remote_device_db.h"
 #include "btstack_memory.h"
 
 #include "btstack-config.h"

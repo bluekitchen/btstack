@@ -40,8 +40,6 @@
  *  Created by Matthias Ringwald on 8/2/09.
  */
 
-#include "btstack.h"
-
 #include "run_loop.h"
 #include "run_loop_private.h"
 #include "debug.h"

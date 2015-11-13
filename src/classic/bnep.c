@@ -46,10 +46,9 @@
 #include <string.h> // memcpy
 #include <stdint.h>
 
-#include "btstack.h"
 #include "hci_cmds.h"
 #include "utils.h"
-#include "sdp_util.h"
+#include "classic/sdp_util.h"
 
 #include "btstack_memory.h"
 #include "hci.h"

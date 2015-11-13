@@ -21,7 +21,7 @@
 #include "hci.h"
 #include "hci_dump.h"
 #include "l2cap.h"
-#include "sm.h"
+#include "ble/sm.h"
 
 // test data
 

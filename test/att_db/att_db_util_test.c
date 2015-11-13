@@ -50,10 +50,11 @@
 #include "CppUTest/TestHarness.h"
 #include "CppUTest/CommandLineTestRunner.h"
 
-#include "att.h"
-#include "att_db_util.h"
-#include "le_counter.h"
+#include "ble/att.h"
+#include "ble/att_db_util.h"
 #include "utils.h"
+
+#include "le_counter.h"
 
 #if 0
 PRIMARY_SERVICE, GAP_SERVICE

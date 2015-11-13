@@ -11,7 +11,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "sdp_util.h"
+#include "classic/sdp_util.h"
 #include "CppUTest/TestHarness.h"
 #include "CppUTest/CommandLineTestRunner.h"
 

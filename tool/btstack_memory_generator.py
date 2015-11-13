@@ -56,16 +56,20 @@ extern "C" {
 
 #include "btstack-config.h"
     
+// Core
 #include "hci.h"
 #include "l2cap.h"
-#include "rfcomm.h"
-#include "bnep.h"
-#include "hfp.h"
-#include "remote_device_db.h"
 
+// Classic
+#include "classic/rfcomm.h"
+#include "classic/bnep.h"
+#include "classic/hfp.h"
+#include "classic/remote_device_db.h"
+
+// BLE
 #ifdef HAVE_BLE
-#include "gatt_client.h"
-#include "sm.h"
+#include "ble/gatt_client.h"
+#include "ble/sm.h"
 #endif
 
 /* API_START */

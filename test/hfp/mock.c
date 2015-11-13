@@ -46,12 +46,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "btstack.h"
 #include "hci.h"
 #include "hci_dump.h"
-#include "sdp_query_rfcomm.h"
-#include "rfcomm.h"
-#include "hfp_hf.h"
+#include "classic/sdp_query_rfcomm.h"
+#include "classic/rfcomm.h"
+#include "classic/hfp_hf.h"
 
 #include "mock.h"
 

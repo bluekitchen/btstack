@@ -58,20 +58,19 @@
 #include "run_loop.h"
 #include "hci_cmds.h"
 #include "utils.h"
-#include "sdp_util.h"
 
 #include "btstack-config.h"
 
-#include "ad_parser.h"
 
 #include "debug.h"
 #include "btstack_memory.h"
 #include "hci.h"
 #include "hci_dump.h"
 #include "l2cap.h"
-#include "att.h"
-#include "gatt_client.h"
-#include "sm.h"
+#include "ble/att.h"
+#include "ble/gatt_client.h"
+#include "ble/ad_parser.h"
+#include "ble/sm.h"
 
 typedef struct advertising_report {
     uint8_t   type;

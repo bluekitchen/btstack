@@ -12,11 +12,13 @@ BTSTACK_ROOT = ../..
 VPATH += example
 VPATH += firmware
 VPATH += src
-VPATH += ${BTSTACK_ROOT}/platforms/msp430
-VPATH += $(BTSTACK_ROOT)/ble
-VPATH += $(BTSTACK_ROOT)/chipset/cc256x
-VPATH += $(BTSTACK_ROOT)/example/embedded
+VPATH += ${BTSTACK_ROOT}/platform/msp430
 VPATH += $(BTSTACK_ROOT)/src
+VPATH += $(BTSTACK_ROOT)/src/ble
+VPATH += $(BTSTACK_ROOT)/src/classic
+VPATH += $(BTSTACK_ROOT)/chipset/cc256x
+VPATH += $(BTSTACK_ROOT)/platform/embedded
+VPATH += $(BTSTACK_ROOT)/example/embedded
 
 CC      = msp430-gcc
 CFLAGS  = -mmcu=msp430f5438a -Os -Wall -fno-toplevel-reorder
@@ -24,11 +26,10 @@ CFLAGS += \
 	-I. \
 	-I src \
 	-I firmware \
-	-I$(BTSTACK_ROOT)/include \
   	-I$(BTSTACK_ROOT)/src \
-	-I$(BTSTACK_ROOT)/ble \
 	-I$(BTSTACK_ROOT)/chipset/cc256x \
-    -I${BTSTACK_ROOT}/platforms/msp430 \
+	-I$(BTSTACK_ROOT)/platform/embedded \
+    -I${BTSTACK_ROOT}/platform/msp430 \
 
 LDFLAGS = -mmcu=msp430f5438a
 
@@ -74,7 +75,7 @@ BLE = \
 	le_device_db_memory.c     \
 	sm.c                      \
 	att_dispatch.c            \
-	l2cap_le.c 				  \
+	l2cap.c 				  \
 	${CC2564B}                \
 #	gatt_client.c             \
 
@@ -107,7 +108,7 @@ include ${BTSTACK_ROOT}/chipset/cc256x/Makefile.inc
 
 # compile GATT database
 %.h: %.gatt
-	python ${BTSTACK_ROOT}/ble/compile-gatt.py $< $@ 
+	python ${BTSTACK_ROOT}/tool/compile-gatt.py $< $@ 
 
 
 led_counter.out: ${CORE_OBJ} ${COMMON_OBJ} ${CC2560B} led_counter.o 

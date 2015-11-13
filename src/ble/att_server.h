@@ -37,9 +37,8 @@
 #ifndef __ATT_SERVER_H
 #define __ATT_SERVER_H
 
-#include "btstack.h"
 #include <stdint.h>
-#include "att.h"
+#include "ble/att.h"
 
 #if defined __cplusplus
 extern "C" {

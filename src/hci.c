@@ -48,7 +48,7 @@
 #include "gap.h"
 
 #ifdef HAVE_BLE
-#include "gap_le.h"
+#include "ble/gap_le.h"
 #endif
 
 #include <stdarg.h>
@@ -75,7 +75,7 @@
 #define HCI_CONNECTION_TIMEOUT_MS 10000
 
 #ifdef USE_BLUETOOL
-#include "../platforms/ios/src/bt_control_iphone.h"
+#include "../port/ios/src/bt_control_iphone.h"
 #endif
 
 static void hci_update_scan_enable(void);

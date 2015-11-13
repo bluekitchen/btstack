@@ -56,14 +56,14 @@
 
 #include "hci_cmds.h"
 #include "run_loop.h"
-#include "sdp_util.h"
+#include "classic/sdp_util.h"
 
 #include "hci.h"
 #include "l2cap.h"
-#include "rfcomm.h"
-#include "sdp.h"
+#include "classic/rfcomm.h"
+#include "classic/sdp.h"
 #include "debug.h"
-#include "hfp_ag.h"
+#include "classic/hfp_ag.h"
 #include "stdin_support.h"
  
 

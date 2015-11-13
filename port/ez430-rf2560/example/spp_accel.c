@@ -56,14 +56,14 @@
 
 #include "hci_cmds.h"
 #include "run_loop.h"
-#include "sdp_util.h"
+#include "classic/sdp_util.h"
 
 #include "hci.h"
 #include "l2cap.h"
 #include "btstack_memory.h"
-#include "remote_device_db.h"
-#include "rfcomm.h"
-#include "sdp.h"
+#include "classic/remote_device_db.h"
+#include "classic/rfcomm.h"
+#include "classic/sdp.h"
 #include "btstack-config.h"
 
 #define HEARTBEAT_PERIOD_MS 1000

@@ -53,7 +53,7 @@
 #include "btstack-config.h"
 
 #include "run_loop.h"
-#include "sdp_util.h"
+#include "classic/sdp_util.h"
 
 #include "debug.h"
 #include "btstack_memory.h"
@@ -64,11 +64,11 @@
 
 #include "le_counter.h"
 
-#include "att.h"
-#include "att_server.h"
-#include "le_device_db.h"
-#include "gap_le.h"
-#include "sm.h"
+#include "ble/att.h"
+#include "ble/att_server.h"
+#include "ble/le_device_db.h"
+#include "ble/gap_le.h"
+#include "ble/sm.h"
 
 #define HEARTBEAT_PERIOD_MS 1000
 

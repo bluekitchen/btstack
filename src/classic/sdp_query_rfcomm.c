@@ -45,10 +45,10 @@
 #include <string.h>
 
 #include "hci_cmds.h"
-#include "sdp_util.h"
+#include "classic/sdp_util.h"
 
-#include "sdp_client.h"
-#include "sdp_query_rfcomm.h"
+#include "classic/sdp_client.h"
+#include "classic/sdp_query_rfcomm.h"
 
 // called by test/sdp_client
 void sdp_query_rfcomm_init(void);

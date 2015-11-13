@@ -56,11 +56,11 @@
 
 #include "hci_cmds.h"
 #include "run_loop.h"
-#include "sdp_util.h"
+#include "classic/sdp_util.h"
 
 #include "hci.h"
 #include "l2cap.h"
-#include "sdp.h"
+#include "classic/sdp.h"
 #include "debug.h"
 #include "hsp_ag.h"
 #include "stdin_support.h"

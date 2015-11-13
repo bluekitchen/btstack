@@ -4,12 +4,16 @@ CC = g++
 
 BTSTACK_ROOT =  ../..
 
-CFLAGS  = -g -Wall -I.. -I${BTSTACK_ROOT}/example/libusb -I${BTSTACK_ROOT}/src -I${BTSTACK_ROOT}/ble -I${BTSTACK_ROOT}/include 
+CFLAGS  = -g -Wall \
+		  -I.. \
+		  -I${BTSTACK_ROOT}/example/libusb \
+		  -I${BTSTACK_ROOT}/src
+		  
 LDFLAGS += -lCppUTest -lCppUTestExt 
 
-VPATH += ${BTSTACK_ROOT}/ble 
 VPATH += ${BTSTACK_ROOT}/src
-VPATH += ${BTSTACK_ROOT}/platforms/posix/src
+VPATH += ${BTSTACK_ROOT}/src/ble
+VPATH += ${BTSTACK_ROOT}/platform/posix/src
 
 COMMON = \
     utils.c		  \

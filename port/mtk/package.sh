@@ -2,7 +2,7 @@
 DIR=`dirname $0`
 
 echo "Update version info"
-$DIR/../../tools/get_version.sh
+$DIR/../../tool/get_version.sh
 
 echo "Rebuild clean"
 pushd .
@@ -13,7 +13,7 @@ popd
 
 echo "Build Java Classes"
 pushd .
-cd $DIR/../../java
+cd $DIR/../../binding/java
 ant jar
 popd
 
@@ -23,7 +23,7 @@ VERSION=`sed -n -e 's/^.*BTSTACK_VERSION \"\(.*\)\"/\1/p' src/version.h`
 ARCHIVE=btstack-android-mtk-$VERSION.tar.gz
 echo "Create Archive $ARCHIVE"
 rm -f $ARCHIVE
-tar cfz $ARCHIVE platforms/mtk java
+tar cfz $ARCHIVE port/mtk binding/java
 popd
 
 

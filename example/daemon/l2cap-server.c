@@ -48,7 +48,7 @@
 
 #include "btstack.h"
 #include "hci_cmds.h"
-#include "sdp_util.h"
+#include "classic/sdp_util.h"
 
 int l2cap_reg_fail = 0;
 

@@ -60,7 +60,7 @@
 
 #include "hci.h"
 #include "btstack_memory.h"
-#include "remote_device_db.h"
+#include "classic/remote_device_db.h"
 #include "btstack-config.h"
 
 int btstack_main(int argc, const char * argv[]);
