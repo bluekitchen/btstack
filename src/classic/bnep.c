@@ -1643,6 +1643,6 @@ void bnep_unregister_service(uint16_t service_uuid)
     btstack_memory_bnep_service_free(service);
     service = NULL;
     
-    l2cap_unregister_service_internal(NULL, PSM_BNEP);
+    l2cap_unregister_service(PSM_BNEP);
 }
 

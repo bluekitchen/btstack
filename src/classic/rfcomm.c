@@ -2293,7 +2293,7 @@ void rfcomm_unregister_service_internal(uint8_t service_channel){
     // unregister if no services active
     if (linked_list_empty(&rfcomm_services)){
         // bt_send_cmd(&l2cap_unregister_service, PSM_RFCOMM);
-        l2cap_unregister_service_internal(NULL, PSM_RFCOMM);
+        l2cap_unregister_service(PSM_RFCOMM);
     }
 }
 

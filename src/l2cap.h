@@ -295,13 +295,6 @@ int  l2cap_send_connectionless(uint16_t handle, uint16_t cid, uint8_t *data, uin
 
 /* API_END */
 
-// deprecated...
-
-/** 
- * @brief Unregisters L2CAP service with given PSM.  On embedded systems, use NULL for connection parameter.
- */
-void l2cap_unregister_service_internal(void * connection, uint16_t psm);
-
 #if 0
 
 // to be implemented soon

@@ -478,7 +478,7 @@ static void daemon_l2cap_close_connection(client_state_t * daemon_client){
     linked_list_iterator_init(&it, l2cap_psms);
     while (linked_list_iterator_has_next(&it)){
         linked_list_uint32_t * item = (linked_list_uint32_t*) linked_list_iterator_next(&it);
-        l2cap_unregister_service_internal(NULL, item->value);
+        l2cap_unregister_service(item->value);
         linked_list_remove(l2cap_psms, (linked_item_t *) item);
         free(item);
     }
@@ -840,7 +840,7 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
         case L2CAP_UNREGISTER_SERVICE:
             psm = READ_BT_16(packet, 3);
             daemon_remove_client_l2cap_service(connection, psm);
-            l2cap_unregister_service_internal(connection, psm);
+            l2cap_unregister_service(psm);
             break;
         case L2CAP_ACCEPT_CONNECTION:
             cid    = READ_BT_16(packet, 3);

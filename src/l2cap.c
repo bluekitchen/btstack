@@ -1560,7 +1560,7 @@ uint8_t l2cap_register_service(btstack_packet_handler_t service_packet_handler, 
     return 0;
 }
 
-void l2cap_unregister_service_internal(void *connection, uint16_t psm){
+void l2cap_unregister_service(uint16_t psm){
     
     log_info("L2CAP_UNREGISTER_SERVICE psm 0x%x", psm);
 
