@@ -22,13 +22,14 @@ LDFLAGS += $(shell pkg-config libusb-1.0 --libs)
 # LDFLAGS += -L/usr/local/lib -lusb-1.0
 
 # use pkg-config for portaudio
-CFLAGS  += $(shell pkg-config portaudio-2.0 --cflags)
-LDFLAGS += $(shell pkg-config portaudio-2.0 --libs)
+# CFLAGS  += $(shell pkg-config portaudio-2.0 --cflags)
+# LDFLAGS += $(shell pkg-config portaudio-2.0 --libs)
 # hard coded flags for portaudio in /usr/local/lib
 # CFLAGS  += -I/usr/local/include
 # LDFLAGS += -L/sw/lib -lportaudio -Wl,-framework,CoreAudio -Wl,-framework,AudioToolbox -Wl,-framework,AudioUnit -Wl,-framework,Carbon
 
-EXAMPLES = hfp_hf_test hfp_ag_test ble_peripheral_test ble_central_test l2cap_test classic_test bnep_test hsp_ag_test hsp_hs_test sco_loopback
+EXAMPLES = hfp_hf_test hfp_ag_test ble_peripheral_test ble_central_test l2cap_test classic_test bnep_test
+#  hsp_ag_test hsp_hs_test sco_loopback
 
 all: ${BTSTACK_ROOT}/src/version.h ${EXAMPLES}
 
