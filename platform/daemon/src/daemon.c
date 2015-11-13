@@ -602,6 +602,17 @@ static void send_l2cap_connection_open_failed(connection_t * connection, bd_addr
     socket_connection_send_packet(connection, HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
+static void l2cap_emit_service_registered(void *connection, uint8_t status, uint16_t psm){
+    log_info("L2CAP_EVENT_SERVICE_REGISTERED status 0x%x psm 0x%x", status, psm);
+    uint8_t event[5];
+    event[0] = L2CAP_EVENT_SERVICE_REGISTERED;
+    event[1] = sizeof(event) - 2;
+    event[2] = status;
+    bt_store_16(event, 3, psm);
+    hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
+    socket_connection_send_packet(connection, HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
 static void send_rfcomm_create_channel_failed(void * connection, bd_addr_t addr, uint8_t server_channel, uint8_t status){
     // emit error - see rfcom.c:rfcomm_emit_channel_open_failed_outgoing_memory(..)
     uint8_t event[16];
@@ -823,7 +834,8 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
         case L2CAP_REGISTER_SERVICE:
             psm = READ_BT_16(packet, 3);
             mtu = READ_BT_16(packet, 5);
-            l2cap_register_service_internal(connection, NULL, psm, mtu, LEVEL_0);
+            status = l2cap_register_service(NULL, psm, mtu, LEVEL_0);
+            l2cap_emit_service_registered(connection, status, psm);
             break;
         case L2CAP_UNREGISTER_SERVICE:
             psm = READ_BT_16(packet, 3);

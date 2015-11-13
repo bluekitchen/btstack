@@ -162,7 +162,7 @@ int btstack_main(int argc, const char * argv[]){
 
     l2cap_init();
     l2cap_register_packet_handler(&packet_handler2);
-    l2cap_register_service_internal(NULL, packet_handler, PSM_SDP, 100, LEVEL_0);
+    l2cap_register_service(packet_handler, PSM_SDP, 100, LEVEL_0);
     
     // turn on!
     hci_power_control(HCI_POWER_ON);

@@ -1616,7 +1616,7 @@ void bnep_register_service(void * connection, uint16_t service_uuid, uint16_t ma
     memset(service, 0, sizeof(bnep_service_t));
 
     /* register with l2cap if not registered before, max MTU */
-    l2cap_register_service_internal(NULL, bnep_packet_handler, PSM_BNEP, 0xffff, bnep_security_level);
+    l2cap_register_service(bnep_packet_handler, PSM_BNEP, 0xffff, bnep_security_level);
         
     /* Setup the service struct */
     service->connection     = connection;

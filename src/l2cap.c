@@ -189,17 +189,6 @@ static void l2cap_emit_connection_parameter_update_response(uint16_t handle, uin
     (*packet_handler)(NULL, HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-static void l2cap_emit_service_registered(void *connection, uint8_t status, uint16_t psm){
-    log_info("L2CAP_EVENT_SERVICE_REGISTERED status 0x%x psm 0x%x", status, psm);
-    uint8_t event[5];
-    event[0] = L2CAP_EVENT_SERVICE_REGISTERED;
-    event[1] = sizeof(event) - 2;
-    event[2] = status;
-    bt_store_16(event, 3, psm);
-    hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
-    (*packet_handler)(connection, HCI_EVENT_PACKET, 0, event, sizeof(event));
-}
-
 static void l2cap_emit_credits(l2cap_channel_t *channel, uint8_t credits) {
     
     log_info("L2CAP_EVENT_CREDITS local_cid 0x%x credits %u", channel->local_cid, credits);
@@ -1535,32 +1524,30 @@ static inline l2cap_service_t * l2cap_get_service(uint16_t psm){
     return l2cap_get_service_internal(&l2cap_services, psm);
 }
 
-void l2cap_register_service_internal(void *connection, btstack_packet_handler_t service_packet_handler, uint16_t psm, uint16_t mtu, gap_security_level_t security_level){
+
+uint8_t l2cap_register_service(btstack_packet_handler_t service_packet_handler, uint16_t psm, uint16_t mtu, gap_security_level_t security_level){
     
-    log_info("L2CAP_REGISTER_SERVICE psm 0x%x mtu %u connection %p", psm, mtu, connection);
+    log_info("L2CAP_REGISTER_SERVICE psm 0x%x mtu %u", psm, mtu);
     
     // check for alread registered psm 
     // TODO: emit error event
     l2cap_service_t *service = l2cap_get_service(psm);
     if (service) {
-        log_error("l2cap_register_service_internal: PSM %u already registered", psm);
-        l2cap_emit_service_registered(connection, L2CAP_SERVICE_ALREADY_REGISTERED, psm);
-        return;
+        log_error("l2cap_register_service: PSM %u already registered", psm);
+        return L2CAP_SERVICE_ALREADY_REGISTERED;
     }
     
     // alloc structure
     // TODO: emit error event
     service = btstack_memory_l2cap_service_get();
     if (!service) {
-        log_error("l2cap_register_service_internal: no memory for l2cap_service_t");
-        l2cap_emit_service_registered(connection, BTSTACK_MEMORY_ALLOC_FAILED, psm);
-        return;
+        log_error("l2cap_register_service: no memory for l2cap_service_t");
+        return BTSTACK_MEMORY_ALLOC_FAILED;
     }
     
     // fill in 
     service->psm = psm;
     service->mtu = mtu;
-    service->connection = connection;
     service->packet_handler = service_packet_handler;
     service->required_security_level = security_level;
 
@@ -1570,8 +1557,7 @@ void l2cap_register_service_internal(void *connection, btstack_packet_handler_t 
     // enable page scan
     hci_connectable_control(1);
 
-    // done
-    l2cap_emit_service_registered(connection, 0, psm);
+    return 0;
 }
 
 void l2cap_unregister_service_internal(void *connection, uint16_t psm){

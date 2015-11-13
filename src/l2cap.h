@@ -184,7 +184,7 @@ typedef struct {
     uint16_t mps;
     
     // client connection
-    void *connection;    
+    void * connection;    
     
     // internal connection
     btstack_packet_handler_t packet_handler;
@@ -252,9 +252,9 @@ uint16_t l2cap_get_remote_mtu_for_local_cid(uint16_t local_cid);
 int l2cap_send_internal(uint16_t local_cid, uint8_t *data, uint16_t len);
 
 /** 
- * @brief Registers L2CAP service with given PSM and MTU, and assigns a packet handler. On embedded systems, use NULL for connection parameter.
+ * @brief Registers L2CAP service with given PSM and MTU, and assigns a packet handler.
  */
-void l2cap_register_service(btstack_packet_handler_t packet_handler, uint16_t psm, uint16_t mtu, gap_security_level_t security_level);
+uint8_t l2cap_register_service(btstack_packet_handler_t packet_handler, uint16_t psm, uint16_t mtu, gap_security_level_t security_level);
 
 /** 
  * @brief Unregisters L2CAP service with given PSM.  On embedded systems, use NULL for connection parameter.
@@ -298,14 +298,9 @@ int  l2cap_send_connectionless(uint16_t handle, uint16_t cid, uint8_t *data, uin
 // deprecated...
 
 /** 
- * @brief Registers L2CAP service with given PSM and MTU, and assigns a packet handler. On embedded systems, use NULL for connection parameter.
- */
-void l2cap_register_service_internal(void *connection, btstack_packet_handler_t packet_handler, uint16_t psm, uint16_t mtu, gap_security_level_t security_level);
-
-/** 
  * @brief Unregisters L2CAP service with given PSM.  On embedded systems, use NULL for connection parameter.
  */
-void l2cap_unregister_service_internal(void *connection, uint16_t psm);
+void l2cap_unregister_service_internal(void * connection, uint16_t psm);
 
 #if 0
 
