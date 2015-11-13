@@ -150,10 +150,6 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
     }
 }
 
-static void rfcomm_packet_handler (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    packet_handler(packet_type, channel, packet, size);
-}
-
 static void handle_found_service(char * name, uint8_t port){
     printf("APP: Service name: '%s', RFCOMM port %u\n", name, port);
 
@@ -198,7 +194,7 @@ int btstack_main(int argc, const char * argv[]){
     l2cap_init();
     l2cap_register_packet_handler(packet_handler);
 
-    rfcomm_register_packet_handler(rfcomm_packet_handler);
+    rfcomm_register_packet_handler(packet_handler);
 
     sdp_query_rfcomm_register_callback(handle_query_rfcomm_event, NULL);
 

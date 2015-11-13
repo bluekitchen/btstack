@@ -180,10 +180,6 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 	}
 }
 
-static void rfcomm_packet_handler (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    packet_handler(packet_type, channel, packet, size);
-}
-
 // ATT Client Read Callback for Dynamic Data
 // - if buffer == NULL, don't copy data, just return size of value
 // - if buffer != NULL, copy data and return number bytes copied
@@ -259,7 +255,7 @@ int btstack_main(void)
     l2cap_register_packet_handler(packet_handler);
 
     rfcomm_init();
-    rfcomm_register_packet_handler(rfcomm_packet_handler);
+    rfcomm_register_packet_handler(packet_handler);
     rfcomm_register_service(RFCOMM_SERVER_CHANNEL, 0xffff);
 
     // init SDP, create record for SPP and register with SDP

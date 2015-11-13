@@ -375,11 +375,6 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
     }
 }
 
-static void packet_handler2 (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    packet_handler(packet_type, 0, packet, size);
-}
-
-
 static void update_auth_req(void){
     gap_set_bondable_mode(gap_bondable);
     gap_auth_req = 0;
@@ -777,7 +772,7 @@ int btstack_main(int argc, const char * argv[]){
     l2cap_register_fixed_channel(&packet_handler, L2CAP_CID_CONNECTIONLESS_CHANNEL);
 
     rfcomm_init();
-    rfcomm_register_packet_handler(packet_handler2);
+    rfcomm_register_packet_handler(packet_handler);
     rfcomm_register_service(RFCOMM_SERVER_CHANNEL, 150);  // reserved channel, mtu=100
 
     // init SDP, create record for SPP and register with SDP

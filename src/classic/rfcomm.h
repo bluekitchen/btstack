@@ -378,7 +378,7 @@ void rfcomm_set_required_security_level(gap_security_level_t security_level);
 /** 
  * @brief Register packet handler.
  */
-void rfcomm_register_packet_handler(void (*handler)(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size));
+void rfcomm_register_packet_handler(void (*handler)(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size));
 
 /* 
  * @brief Create RFCOMM connection to a given server channel on a remote deivce.

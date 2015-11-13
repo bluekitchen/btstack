@@ -1461,6 +1461,9 @@ static void daemon_packet_handler(void * connection, uint8_t packet_type, uint16
 static void l2cap_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * packet, uint16_t size){
     daemon_packet_handler(NULL, packet_type, channel, packet, size);
 }
+static void rfcomm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * packet, uint16_t size){
+    daemon_packet_handler(NULL, packet_type, channel, packet, size);
+}
 
 static void handle_sdp_rfcomm_service_result(sdp_query_event_t * rfcomm_event, void * context){
     switch (rfcomm_event->type){
@@ -1904,7 +1907,7 @@ int main (int argc,  char * const * argv){
 #ifdef HAVE_RFCOMM
     log_info("config.h: HAVE_RFCOMM\n");
     rfcomm_init();
-    rfcomm_register_packet_handler(&daemon_packet_handler);
+    rfcomm_register_packet_handler(&rfcomm_packet_handler);
 #endif
     
 #ifdef HAVE_SDP
