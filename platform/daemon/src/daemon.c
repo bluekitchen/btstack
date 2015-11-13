@@ -602,6 +602,25 @@ static void send_l2cap_connection_open_failed(connection_t * connection, bd_addr
     socket_connection_send_packet(connection, HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
+static void send_rfcomm_create_channel_failed(void * connection, bd_addr_t addr, uint8_t server_channel, uint8_t status){
+    // emit error - see rfcom.c:rfcomm_emit_channel_open_failed_outgoing_memory(..)
+    uint8_t event[16];
+    memset(event, 0, sizeof(event));
+    uint8_t pos = 0;
+    event[pos++] = RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = status;
+    bt_flip_addr(&event[pos], addr); pos += 6;
+    bt_store_16(event,  pos, 0);   pos += 2;
+    event[pos++] = server_channel;
+    bt_store_16(event, pos, 0); pos += 2;   // channel ID
+    bt_store_16(event, pos, 0); pos += 2;   // max frame size
+    hci_dump_packet(HCI_EVENT_PACKET, 0, event, sizeof(event));
+    hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
+    socket_connection_send_packet(connection, HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
+
 linked_list_gatt_client_helper_t * daemon_setup_gatt_client_request(connection_t *connection, uint8_t *packet, int track_active_connection) {
     hci_con_handle_t handle = READ_BT_16(packet, 3);    
     log_info("daemon_setup_gatt_client_request for handle 0x%02x", handle);
@@ -823,13 +842,23 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
         case RFCOMM_CREATE_CHANNEL:
             bt_flip_addr(addr, &packet[3]);
             rfcomm_channel = packet[9];
-            rfcomm_create_channel_internal( connection, addr, rfcomm_channel );
+            status = rfcomm_create_channel(addr, rfcomm_channel, &cid);
+            if (status){
+                send_rfcomm_create_channel_failed(connection, addr, rfcomm_channel, status);
+            } else {
+                daemon_add_client_rfcomm_channel(connection, cid);
+            }
             break;
         case RFCOMM_CREATE_CHANNEL_WITH_CREDITS:
             bt_flip_addr(addr, &packet[3]);
             rfcomm_channel = packet[9];
             rfcomm_credits = packet[10];
-            rfcomm_create_channel_with_initial_credits_internal( connection, addr, rfcomm_channel, rfcomm_credits );
+            status = rfcomm_create_channel_with_initial_credits(addr, rfcomm_channel, rfcomm_credits, &cid );
+            if (status){
+                send_rfcomm_create_channel_failed(connection, addr, rfcomm_channel, status);
+            } else {
+                daemon_add_client_rfcomm_channel(connection, cid);
+            }
             break;
         case RFCOMM_DISCONNECT:
             cid = READ_BT_16(packet, 3);
@@ -1306,8 +1335,11 @@ static void daemon_packet_handler(void * connection, uint8_t packet_type, uint16
                     daemon_retry_parked();
                     break;
                  case RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE:
-                    if (packet[2]) break;
-                    daemon_add_client_rfcomm_channel(connection, READ_BT_16(packet, 9));
+                    if (packet[2]) {
+                        daemon_remove_client_rfcomm_channel(connection, READ_BT_16(packet, 13));
+                    } else {
+                        daemon_add_client_rfcomm_channel(connection, READ_BT_16(packet, 13));
+                    }
                     break;
                 case RFCOMM_EVENT_CHANNEL_CLOSED:
                     daemon_remove_client_rfcomm_channel(connection, READ_BT_16(packet, 2));

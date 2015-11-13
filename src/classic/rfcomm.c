@@ -152,13 +152,13 @@ static void rfcomm_emit_channel_opened(rfcomm_channel_t *channel, uint8_t status
              channel->dlci>>1, channel->rfcomm_cid, channel->max_frame_size);
     uint8_t event[16];
     uint8_t pos = 0;
-    event[pos++] = RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE;
-    event[pos++] = sizeof(event) - 2;
-    event[pos++] = status;
-    bt_flip_addr(&event[pos], channel->multiplexer->remote_addr); pos += 6;
-    bt_store_16(event,  pos, channel->multiplexer->con_handle);   pos += 2;
-	event[pos++] = channel->dlci >> 1;
-	bt_store_16(event, pos, channel->rfcomm_cid); pos += 2;       // channel ID
+    event[pos++] = RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE;  // 0
+    event[pos++] = sizeof(event) - 2;                   // 1
+    event[pos++] = status;                              // 2
+    bt_flip_addr(&event[pos], channel->multiplexer->remote_addr); pos += 6; // 3
+    bt_store_16(event,  pos, channel->multiplexer->con_handle);   pos += 2; // 9
+	event[pos++] = channel->dlci >> 1;                                      // 11
+	bt_store_16(event, pos, channel->rfcomm_cid); pos += 2;                 // 12 - channel ID
 	bt_store_16(event, pos, channel->max_frame_size); pos += 2;   // max frame size
     hci_dump_packet(HCI_EVENT_PACKET, 0, event, sizeof(event));
 	(*app_packet_handler)(channel->connection, HCI_EVENT_PACKET, 0, (uint8_t *) event, pos);
@@ -2232,6 +2232,69 @@ void rfcomm_create_channel_internal(void * connection, bd_addr_t addr, uint8_t s
     rfcomm_create_channel2(connection, addr, server_channel, 0,RFCOMM_CREDITS);
 }
 
+
+static uint8_t rfcomm_create_channel3(bd_addr_t addr, uint8_t server_channel, uint8_t incoming_flow_control, uint8_t initial_credits, uint16_t * out_rfcomm_cid){
+    log_info("RFCOMM_CREATE_CHANNEL addr %s channel #%u init credits %u",  bd_addr_to_str(addr), server_channel, initial_credits);
+    
+    // create new multiplexer if necessary
+    uint8_t status = 0;
+    int new_multiplexer = 0;
+    rfcomm_channel_t * channel = NULL;
+    rfcomm_multiplexer_t * multiplexer = rfcomm_multiplexer_for_addr(addr);
+    if (!multiplexer) {
+        multiplexer = rfcomm_multiplexer_create_for_addr(addr);
+        if (!multiplexer){
+            status = BTSTACK_MEMORY_ALLOC_FAILED;
+            goto fail;
+        }
+        multiplexer->outgoing = 1;
+        multiplexer->state = RFCOMM_MULTIPLEXER_W4_CONNECT;
+        new_multiplexer = 1;
+    }
+    
+    // prepare channel
+    channel = rfcomm_channel_create(multiplexer, NULL, server_channel);
+    if (!channel){
+        status = BTSTACK_MEMORY_ALLOC_FAILED;
+        goto fail;
+    }
+    // rfcomm_cid is already assigned by rfcomm_channel_create
+    channel->incoming_flow_control = incoming_flow_control;
+    channel->new_credits_incoming  = initial_credits;
+    
+    // return rfcomm_cid
+    *out_rfcomm_cid = channel->rfcomm_cid;
+
+    // start multiplexer setup
+    if (multiplexer->state != RFCOMM_MULTIPLEXER_OPEN) {
+        channel->state = RFCOMM_CHANNEL_W4_MULTIPLEXER;
+        uint16_t l2cap_cid = 0;
+        status = l2cap_create_channel(rfcomm_packet_handler, addr, PSM_RFCOMM, l2cap_max_mtu(), &l2cap_cid);
+        if (status) goto fail;
+        multiplexer->l2cap_cid = l2cap_cid;
+        return 0;
+    }
+    
+    channel->state = RFCOMM_CHANNEL_SEND_UIH_PN;
+    
+    // start connecting, if multiplexer is already up and running
+    rfcomm_run();
+    return 0;
+
+fail:
+    if (new_multiplexer) btstack_memory_rfcomm_multiplexer_free(multiplexer);
+    if (channel)         btstack_memory_rfcomm_channel_free(channel);
+    return status;
+}
+
+uint8_t rfcomm_create_channel_with_initial_credits(bd_addr_t addr, uint8_t server_channel, uint8_t initial_credits, uint16_t * out_rfcomm_cid){
+    return rfcomm_create_channel3(addr, server_channel, 1, initial_credits, out_rfcomm_cid);
+}
+
+uint8_t rfcomm_create_channel(bd_addr_t addr, uint8_t server_channel, uint16_t * out_rfcomm_cid){
+    return rfcomm_create_channel3(addr, server_channel, 0, RFCOMM_CREDITS, out_rfcomm_cid);
+}
+
 void rfcomm_disconnect_internal(uint16_t rfcomm_cid){
     log_info("RFCOMM_DISCONNECT cid 0x%02x", rfcomm_cid);
     rfcomm_channel_t * channel = rfcomm_channel_for_rfcomm_cid(rfcomm_cid);
@@ -2242,7 +2305,6 @@ void rfcomm_disconnect_internal(uint16_t rfcomm_cid){
     // process
     rfcomm_run();
 }
-
 
 static void rfcomm_register_service2(void * connection, uint8_t channel, uint16_t max_frame_size, uint8_t incoming_flow_control, uint8_t initial_credits){
     log_info("RFCOMM_REGISTER_SERVICE channel #%u mtu %u flow_control %u credits %u",

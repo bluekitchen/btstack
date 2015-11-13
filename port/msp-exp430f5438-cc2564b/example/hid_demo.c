@@ -335,7 +335,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
 					if (COMMAND_COMPLETE_EVENT(packet, hci_inquiry_cancel) ) {
 						// inq successfully cancelled
 						// printLine("Connecting");
-						l2cap_create_channel_internal(NULL, l2cap_packet_handler, keyboard, PSM_HID_INTERRUPT, 150);
+						l2cap_create_channel(l2cap_packet_handler, keyboard, PSM_HID_INTERRUPT, 150);
 						break;
 					}
 			}
