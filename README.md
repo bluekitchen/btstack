@@ -80,6 +80,19 @@ EM 9301              | experimental use on Arduino Shield (chipset-em9301)
 CSR USB Dongles      | complete
 Broadcom USB Dongles | complete
 
+
+## Source Tree Overview
+Path				| Description
+--------------------|---------------
+binding	            | Language bindings for BTstack, e.g. Java client/server
+chipset             | Support for individual Bluetooth chipsets
+doc                 | Sources for BTstack documentation
+example             | Example applications available for different ports
+platform            | Support for special OSs and/or MCU architectures
+port                | Complete port for a individual MCU + Chipset combinations
+src                 | Bluetooth stack implementation
+test                | Unit and PTS tests
+tool                | Helper tools for BTstack
+
 ## Discussion and Community Support
 [BTstack Google Group](http://groups.google.com/group/btstack-dev)
-
