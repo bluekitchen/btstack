@@ -1013,7 +1013,7 @@ void hfp_parse(hfp_connection_t * context, uint8_t byte){
 }
 
 void hfp_init(uint16_t rfcomm_channel_nr){
-    rfcomm_register_service_internal(NULL, rfcomm_channel_nr, 0xffff);  
+    rfcomm_register_service(rfcomm_channel_nr, 0xffff);  
     sdp_query_rfcomm_register_callback(handle_query_rfcomm_event, NULL);
 }
 

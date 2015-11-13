@@ -455,7 +455,7 @@ static void daemon_rfcomm_close_connection(client_state_t * daemon_client){
     linked_list_iterator_init(&it, rfcomm_services);
     while (linked_list_iterator_has_next(&it)){
         linked_list_uint32_t * item = (linked_list_uint32_t*) linked_list_iterator_next(&it);
-        rfcomm_unregister_service_internal(item->value);
+        rfcomm_unregister_service(item->value);
         linked_list_remove(rfcomm_services, (linked_item_t *) item);
         free(item);
     }
@@ -643,6 +643,17 @@ static void l2cap_emit_service_registered(void *connection, uint8_t status, uint
     event[1] = sizeof(event) - 2;
     event[2] = status;
     bt_store_16(event, 3, psm);
+    hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
+    socket_connection_send_packet(connection, HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
+static void rfcomm_emit_service_registered(void *connection, uint8_t status, uint8_t channel){
+    log_info("RFCOMM_EVENT_SERVICE_REGISTERED status 0x%x channel #%u", status, channel);
+    uint8_t event[4];
+    event[0] = RFCOMM_EVENT_SERVICE_REGISTERED;
+    event[1] = sizeof(event) - 2;
+    event[2] = status;
+    event[3] = channel;
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
     socket_connection_send_packet(connection, HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
@@ -915,18 +926,20 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
         case RFCOMM_REGISTER_SERVICE:
             rfcomm_channel = packet[3];
             mtu = READ_BT_16(packet, 4);
-            rfcomm_register_service_internal(connection, rfcomm_channel, mtu);
+            status = rfcomm_register_service(rfcomm_channel, mtu);
+            rfcomm_emit_service_registered(connection, status, rfcomm_channel);
             break;
         case RFCOMM_REGISTER_SERVICE_WITH_CREDITS:
             rfcomm_channel = packet[3];
             mtu = READ_BT_16(packet, 4);
             rfcomm_credits = packet[6];
-            rfcomm_register_service_with_initial_credits_internal(connection, rfcomm_channel, mtu, rfcomm_credits);
+            status = rfcomm_register_service_with_initial_credits(rfcomm_channel, mtu, rfcomm_credits);
+            rfcomm_emit_service_registered(connection, status, rfcomm_channel);
             break;
         case RFCOMM_UNREGISTER_SERVICE:
             service_channel = READ_BT_16(packet, 3);
             daemon_remove_client_rfcomm_service(connection, service_channel);
-            rfcomm_unregister_service_internal(service_channel);
+            rfcomm_unregister_service(service_channel);
             break;
         case RFCOMM_ACCEPT_CONNECTION:
             cid    = READ_BT_16(packet, 3);

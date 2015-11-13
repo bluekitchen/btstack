@@ -200,17 +200,6 @@ static void rfcomm_emit_credits(rfcomm_channel_t * channel, uint8_t credits) {
 	(*app_packet_handler)(channel->connection, HCI_EVENT_PACKET, 0, (uint8_t *) event, sizeof(event));
 }
 
-static void rfcomm_emit_service_registered(void *connection, uint8_t status, uint8_t channel){
-    log_info("RFCOMM_EVENT_SERVICE_REGISTERED status 0x%x channel #%u", status, channel);
-    uint8_t event[4];
-    event[0] = RFCOMM_EVENT_SERVICE_REGISTERED;
-    event[1] = sizeof(event) - 2;
-    event[2] = status;
-    event[3] = channel;
-    hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
-	(*app_packet_handler)(connection, HCI_EVENT_PACKET, 0, (uint8_t *) event, sizeof(event));
-}
-
 static void rfcomm_emit_remote_line_status(rfcomm_channel_t *channel, uint8_t line_status){
     log_info("RFCOMM_EVENT_REMOTE_LINE_STATUS cid 0x%02x c, line status 0x%x", channel->rfcomm_cid, line_status);
     uint8_t event[5];
@@ -1537,7 +1526,7 @@ static void rfcomm_channel_packet_handler(rfcomm_multiplexer_t * multiplexer,  u
     rfcomm_run();
 }
 
-void rfcomm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+static void rfcomm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     
     // multiplexer handler
     int handled = 0;
@@ -2239,21 +2228,20 @@ void rfcomm_disconnect_internal(uint16_t rfcomm_cid){
     rfcomm_run();
 }
 
-static void rfcomm_register_service2(void * connection, uint8_t channel, uint16_t max_frame_size, uint8_t incoming_flow_control, uint8_t initial_credits){
+static uint8_t rfcomm_register_service_internal(uint8_t channel, uint16_t max_frame_size, uint8_t incoming_flow_control, uint8_t initial_credits){
     log_info("RFCOMM_REGISTER_SERVICE channel #%u mtu %u flow_control %u credits %u",
              channel, max_frame_size, incoming_flow_control, initial_credits);
+
     // check if already registered
     rfcomm_service_t * service = rfcomm_service_for_channel(channel);
     if (service){
-        rfcomm_emit_service_registered(connection, RFCOMM_CHANNEL_ALREADY_REGISTERED, channel);
-        return;
+        return RFCOMM_CHANNEL_ALREADY_REGISTERED;
     }
     
     // alloc structure
     service = btstack_memory_rfcomm_service_get();
     if (!service) {
-        rfcomm_emit_service_registered(connection, BTSTACK_MEMORY_ALLOC_FAILED, channel);
-        return;
+        return BTSTACK_MEMORY_ALLOC_FAILED;
     }
     
     // register with l2cap if not registered before, max MTU
@@ -2262,7 +2250,6 @@ static void rfcomm_register_service2(void * connection, uint8_t channel, uint16_
     }
     
     // fill in 
-    service->connection     = connection;
     service->server_channel = channel;
     service->max_frame_size = max_frame_size;
     service->incoming_flow_control = incoming_flow_control;
@@ -2271,19 +2258,18 @@ static void rfcomm_register_service2(void * connection, uint8_t channel, uint16_
     // add to services list
     linked_list_add(&rfcomm_services, (linked_item_t *) service);
     
-    // done
-    rfcomm_emit_service_registered(connection, 0, channel);
+    return 0;
 }
 
-void rfcomm_register_service_with_initial_credits_internal(void * connection, uint8_t channel, uint16_t max_frame_size, uint8_t initial_credits){
-    rfcomm_register_service2(connection, channel, max_frame_size, 1, initial_credits);
+uint8_t rfcomm_register_service_with_initial_credits(uint8_t channel, uint16_t max_frame_size, uint8_t initial_credits){
+    return rfcomm_register_service_internal(channel, max_frame_size, 1, initial_credits);
 }
 
-void rfcomm_register_service_internal(void * connection, uint8_t channel, uint16_t max_frame_size){
-    rfcomm_register_service2(connection, channel, max_frame_size, 0,RFCOMM_CREDITS);
+uint8_t rfcomm_register_service(uint8_t channel, uint16_t max_frame_size){
+    return rfcomm_register_service_internal(channel, max_frame_size, 0,RFCOMM_CREDITS);
 }
 
-void rfcomm_unregister_service_internal(uint8_t service_channel){
+void rfcomm_unregister_service(uint8_t service_channel){
     log_info("RFCOMM_UNREGISTER_SERVICE #%u", service_channel);
     rfcomm_service_t *service = rfcomm_service_for_channel(service_channel);
     if (!service) return;

@@ -409,17 +409,17 @@ void rfcomm_disconnect_internal(uint16_t rfcomm_cid);
 /** 
  * @brief Registers RFCOMM service for a server channel and a maximum frame size, and assigns a packet handler. On embedded systems, use NULL for connection parameter. This channel provides automatically enough credits to the remote side.
  */
-void rfcomm_register_service_internal(void * connection, uint8_t channel, uint16_t max_frame_size);
+uint8_t rfcomm_register_service(uint8_t channel, uint16_t max_frame_size);
 
 /** 
  * @brief Registers RFCOMM service for a server channel and a maximum frame size, and assigns a packet handler. On embedded systems, use NULL for connection parameter. This channel will use explicit credit management. During channel establishment, an initial amount of credits is provided.
  */
-void rfcomm_register_service_with_initial_credits_internal(void * connection, uint8_t channel, uint16_t max_frame_size, uint8_t initial_credits);
+uint8_t rfcomm_register_service_with_initial_credits(uint8_t channel, uint16_t max_frame_size, uint8_t initial_credits);
 
 /** 
  * @brief Unregister RFCOMM service.
  */
-void rfcomm_unregister_service_internal(uint8_t service_channel);
+void rfcomm_unregister_service(uint8_t service_channel);
 
 /** 
  * @brief Accepts/Deny incoming RFCOMM connection.
