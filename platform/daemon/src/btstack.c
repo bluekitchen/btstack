@@ -61,7 +61,6 @@ static connection_t *btstack_connection = NULL;
 
 /** prototypes & dummy functions */
 static void dummy_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){};
-static int btstack_packet_handler(connection_t *connection, uint16_t packet_type, uint16_t channel, uint8_t *data, uint16_t size);
 
 /** local globals :) */
 static void (*client_packet_handler)(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) = dummy_handler;
@@ -76,10 +75,16 @@ void bt_use_tcp(const char * address, uint16_t port){
     daemon_tcp_port    = port;
 }
 
+static int socket_packet_handler(connection_t *connection, uint16_t packet_type, uint16_t channel, uint8_t *data, uint16_t size){
+    // log_info("BTstack client handler: packet type %u, data[0] %x", packet_type, data[0]);
+    (*client_packet_handler)(packet_type, channel, data, size);
+    return 0;
+}
+
 // init BTstack library
 int bt_open(void){
 
-    socket_connection_register_packet_callback(btstack_packet_handler);
+    socket_connection_register_packet_callback(socket_packet_handler);
 
     // BTdaemon
     if (daemon_tcp_address) {
@@ -104,12 +109,6 @@ int bt_send_cmd(const hci_cmd_t *cmd, ...){
     uint16_t len = hci_create_cmd_internal(hci_cmd_buffer, cmd, argptr);
     va_end(argptr);
     socket_connection_send_packet(btstack_connection, HCI_COMMAND_DATA_PACKET, 0, hci_cmd_buffer, len);
-    return 0;
-}
-
-int btstack_packet_handler(connection_t *connection, uint16_t packet_type, uint16_t channel, uint8_t *data, uint16_t size){
-    // log_info("BTstack client handler: packet type %u, data[0] %x", packet_type, data[0]);
-    (*client_packet_handler)(packet_type, channel, data, size);
     return 0;
 }
 
