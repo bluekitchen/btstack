@@ -207,6 +207,13 @@ static void daemon_no_connections_timeout(struct timer *ts){
 
 
 static void add_uint32_to_list(linked_list_t *list, uint32_t value){
+    linked_list_iterator_t it;    
+    linked_list_iterator_init(&it, list);
+    while (linked_list_iterator_has_next(&it)){
+        linked_list_uint32_t * item = (linked_list_uint32_t*) linked_list_iterator_next(&it);
+        if ( item->value == value) return; // already in list
+    } 
+
     linked_list_uint32_t * item = malloc(sizeof(linked_list_uint32_t));
     if (!item) return; 
     item->value = value;
@@ -576,6 +583,25 @@ static void send_gatt_mtu_event(connection_t * connection, uint16_t handle, uint
     socket_connection_send_packet(connection, HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
+static void send_l2cap_connection_open_failed(connection_t * connection, bd_addr_t address, uint16_t psm, uint8_t status){
+    // emit error - see l2cap.c:l2cap_emit_channel_opened(..)
+    uint8_t event[23];
+    memset(event, 0, sizeof(event));
+    event[0] = L2CAP_EVENT_CHANNEL_OPENED;
+    event[1] = sizeof(event) - 2;
+    event[2] = status;
+    bt_flip_addr(&event[3], address);
+    // bt_store_16(event,  9, channel->handle);
+    bt_store_16(event, 11, psm);
+    // bt_store_16(event, 13, channel->local_cid);
+    // bt_store_16(event, 15, channel->remote_cid);
+    // bt_store_16(event, 17, channel->local_mtu);
+    // bt_store_16(event, 19, channel->remote_mtu); 
+    // bt_store_16(event, 21, channel->flush_timeout); 
+    hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
+    socket_connection_send_packet(connection, HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
 linked_list_gatt_client_helper_t * daemon_setup_gatt_client_request(connection_t *connection, uint8_t *packet, int track_active_connection) {
     hci_con_handle_t handle = READ_BT_16(packet, 3);    
     log_info("daemon_setup_gatt_client_request for handle 0x%02x", handle);
@@ -668,6 +694,7 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
     uint8_t  rfcomm_credits;
     uint32_t service_record_handle;
     client_state_t *client;
+    uint8_t status;
 
 #if defined(HAVE_MALLOC) && defined(HAVE_BLE)
     uint8_t uuid128[16];
@@ -751,12 +778,23 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             bt_flip_addr(addr, &packet[3]);
             psm = READ_BT_16(packet, 9);
             mtu = READ_BT_16(packet, 11);
-            l2cap_create_channel_internal( connection, NULL, addr, psm, mtu);
+            status = l2cap_create_channel(NULL, addr, psm, mtu, &cid);
+            if (status){
+                send_l2cap_connection_open_failed(connection, addr, psm, status);
+            } else {
+                daemon_add_client_l2cap_channel(connection, cid);
+            }
             break;
         case L2CAP_CREATE_CHANNEL:
             bt_flip_addr(addr, &packet[3]);
             psm = READ_BT_16(packet, 9);
-            l2cap_create_channel_internal( connection, NULL, addr, psm, 150);   // until r865
+            mtu = 150; // until r865
+            status = l2cap_create_channel(NULL, addr, psm, mtu, &cid);
+            if (status){
+                send_l2cap_connection_open_failed(connection, addr, psm, status);
+            } else {
+                daemon_add_client_l2cap_channel(connection, cid);
+            }
             break;
         case L2CAP_DISCONNECT:
             cid = READ_BT_16(packet, 3);
@@ -1279,8 +1317,11 @@ static void daemon_packet_handler(void * connection, uint8_t packet_type, uint16
                     daemon_add_client_rfcomm_service(connection, packet[3]);
                     break;
                 case L2CAP_EVENT_CHANNEL_OPENED:
-                    if (packet[2]) break;
-                    daemon_add_client_l2cap_channel(connection, READ_BT_16(packet, 13));
+                    if (packet[2]) {
+                        daemon_remove_client_l2cap_channel(connection, READ_BT_16(packet, 13));
+                    } else {
+                        daemon_add_client_l2cap_channel(connection, READ_BT_16(packet, 13));
+                    }
                     break;
                 case L2CAP_EVENT_CHANNEL_CLOSED:
                     daemon_remove_client_l2cap_channel(connection, READ_BT_16(packet, 2));
