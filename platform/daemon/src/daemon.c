@@ -440,10 +440,10 @@ static void daemon_remove_gatt_client_helper(uint32_t con_handle){
 }
 #endif
 
-static void daemon_rfcomm_close_connection(client_state_t * gatt_client){
+static void daemon_rfcomm_close_connection(client_state_t * daemon_client){
     linked_list_iterator_t it;  
-    linked_list_t *rfcomm_services = &gatt_client->rfcomm_services;
-    linked_list_t *rfcomm_cids = &gatt_client->rfcomm_cids;
+    linked_list_t *rfcomm_services = &daemon_client->rfcomm_services;
+    linked_list_t *rfcomm_cids = &daemon_client->rfcomm_cids;
     
     linked_list_iterator_init(&it, rfcomm_services);
     while (linked_list_iterator_has_next(&it)){
@@ -463,10 +463,10 @@ static void daemon_rfcomm_close_connection(client_state_t * gatt_client){
 }
 
 
-static void daemon_l2cap_close_connection(client_state_t * gatt_client){
+static void daemon_l2cap_close_connection(client_state_t * daemon_client){
     linked_list_iterator_t it;  
-    linked_list_t *l2cap_psms = &gatt_client->l2cap_psms;
-    linked_list_t *l2cap_cids = &gatt_client->l2cap_cids;
+    linked_list_t *l2cap_psms = &daemon_client->l2cap_psms;
+    linked_list_t *l2cap_cids = &daemon_client->l2cap_cids;
     
     linked_list_iterator_init(&it, l2cap_psms);
     while (linked_list_iterator_has_next(&it)){
@@ -485,13 +485,13 @@ static void daemon_l2cap_close_connection(client_state_t * gatt_client){
     }
 }
 
-static void daemon_sdp_close_connection(client_state_t * gatt_client){
-    linked_list_t * list = &gatt_client->sdp_record_handles;
+static void daemon_sdp_close_connection(client_state_t * daemon_client){
+    linked_list_t * list = &daemon_client->sdp_record_handles;
     linked_list_iterator_t it;  
     linked_list_iterator_init(&it, list);
     while (linked_list_iterator_has_next(&it)){
         linked_list_uint32_t * item = (linked_list_uint32_t*) linked_list_iterator_next(&it);
-        sdp_unregister_service_internal(&gatt_client->connection, item->value);
+        sdp_unregister_service_internal(&daemon_client->connection, item->value);
         linked_list_remove(list, (linked_item_t *) item);
         free(item);
     }
