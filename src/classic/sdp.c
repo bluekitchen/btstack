@@ -94,18 +94,6 @@ uint32_t sdp_get_service_record_handle(uint8_t * record){
     return READ_NET_32(serviceRecordHandleAttribute, 1); 
 }
 
-// data: event(8), len(8), status(8), service_record_handle(32)
-static void sdp_emit_service_registered(void *connection, uint32_t handle, uint8_t status) {
-    if (!app_packet_handler) return;
-    uint8_t event[7];
-    event[0] = SDP_SERVICE_REGISTERED;
-    event[1] = sizeof(event) - 2;
-    event[2] = status;
-    bt_store_32(event, 3, handle);
-    hci_dump_packet(HCI_EVENT_PACKET, 0, event, sizeof(event));
-	(*app_packet_handler)(connection, HCI_EVENT_PACKET, 0, (uint8_t *) event, sizeof(event));
-}
-
 static service_record_item_t * sdp_get_record_for_handle(uint32_t handle){
     linked_item_t *it;
     for (it = (linked_item_t *) sdp_service_records; it ; it = it->next){
@@ -167,9 +155,7 @@ uint32_t sdp_register_service_internal(void *connection, service_record_item_t *
     
     // add to linked list
     linked_list_add(&sdp_service_records, (linked_item_t *) record_item);
-    
-    sdp_emit_service_registered(connection, 0, record_item->service_record_handle);
-    
+        
     return record_handle;
 }
 
@@ -212,7 +198,6 @@ uint32_t sdp_register_service_internal(void *connection, uint8_t * record){
     // alloc memory for new service_record_item
     service_record_item_t * newRecordItem = (service_record_item_t *) malloc(recordSize + sizeof(service_record_item_t));
     if (!newRecordItem) {
-        sdp_emit_service_registered(connection, 0, BTSTACK_MEMORY_ALLOC_FAILED);
         return 0;
     }
     // link new service item to client connection
@@ -241,8 +226,6 @@ uint32_t sdp_register_service_internal(void *connection, uint8_t * record){
     // add to linked list
     linked_list_add(&sdp_service_records, (linked_item_t *) newRecordItem);
     
-    sdp_emit_service_registered(connection, 0, newRecordItem->service_record_handle);
-
     return record_handle;
 }
 

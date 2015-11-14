@@ -672,10 +672,21 @@ static void send_rfcomm_create_channel_failed(void * connection, bd_addr_t addr,
     bt_store_16(event, pos, 0); pos += 2;   // channel ID
     bt_store_16(event, pos, 0); pos += 2;   // max frame size
     hci_dump_packet(HCI_EVENT_PACKET, 0, event, sizeof(event));
-    hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
     socket_connection_send_packet(connection, HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
+
+// data: event(8), len(8), status(8), service_record_handle(32)
+static void sdp_emit_service_registered(void *connection, uint32_t handle, uint8_t status) {
+    if (!app_packet_handler) return;
+    uint8_t event[7];
+    event[0] = SDP_SERVICE_REGISTERED;
+    event[1] = sizeof(event) - 2;
+    event[2] = status;
+    bt_store_32(event, 3, handle);
+    hci_dump_packet(HCI_EVENT_PACKET, 0, event, sizeof(event));
+    socket_connection_send_packet(connection, HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
 
 linked_list_gatt_client_helper_t * daemon_setup_gatt_client_request(connection_t *connection, uint8_t *packet, int track_active_connection) {
     hci_con_handle_t handle = READ_BT_16(packet, 3);    
@@ -978,7 +989,12 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
         case SDP_REGISTER_SERVICE_RECORD:
             log_info("SDP_REGISTER_SERVICE_RECORD size %u\n", size);
             service_record_handle = sdp_register_service_internal(connection, &packet[3]);
-            daemon_add_client_sdp_service_record_handle(connection, service_record_handle);
+            if (service_record_handle){
+                daemon_add_client_sdp_service_record_handle(connection, service_record_handle);
+                sdp_emit_service_registered(connection, service_record_handle, 0);
+            } else {
+               sdp_emit_service_registered(connection, 0, BTSTACK_MEMORY_ALLOC_FAILED);
+            }
             break;
         case SDP_UNREGISTER_SERVICE_RECORD:
             service_record_handle = READ_BT_32(packet, 3);
