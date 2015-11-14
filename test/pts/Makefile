@@ -9,6 +9,7 @@ include ${BTSTACK_ROOT}/example/embedded/Makefile.inc
 
 CFLAGS += -g -Wall -Wmissing-prototypes -Wstrict-prototypes -Wshadow -Werror \
           -I${BTSTACK_ROOT}/platform/posix/src \
+          -I${BTSTACK_ROOT}/platform/embedded \
 	      -I${BTSTACK_ROOT}/port/libusb
 
 VPATH += ${BTSTACK_ROOT}/platform/posix/src

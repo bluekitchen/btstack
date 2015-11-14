@@ -1,6 +1,5 @@
 # Makefile for libusb based examples
 BTSTACK_ROOT = ../..
-POSIX_ROOT= ${BTSTACK_ROOT}/platform/posix
 
 CORE += main.c stdin_support.c
 
@@ -12,7 +11,7 @@ include ${BTSTACK_ROOT}/example/embedded/Makefile.inc
 CFLAGS  += -g -Wall -Wmissing-prototypes -Wstrict-prototypes -Wshadow -Werror
 # CFLAGS += -Werror
 
-CFLAGS += -I${POSIX_ROOT}/src \
+CFLAGS += -I${BTSTACK_ROOT}/platform/posix/src \
 		  -I${BTSTACK_ROOT}/platform/embedded
 
 VPATH += ${BTSTACK_ROOT}/platform/embedded
