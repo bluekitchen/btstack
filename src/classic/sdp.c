@@ -200,9 +200,7 @@ uint32_t sdp_register_service_internal(void *connection, uint8_t * record){
     if (!newRecordItem) {
         return 0;
     }
-    // link new service item to client connection
-    newRecordItem->connection = connection;
-    
+        
     // set new handle
     newRecordItem->service_record_handle = record_handle;
 
@@ -237,12 +235,11 @@ uint32_t sdp_register_service_internal(void *connection, uint8_t * record){
 //
 void sdp_unregister_service_internal(void *connection, uint32_t service_record_handle){
     service_record_item_t * record_item = sdp_get_record_for_handle(service_record_handle);
-    if (record_item && record_item->connection == connection) {
-        linked_list_remove(&sdp_service_records, (linked_item_t *) record_item);
+    if (!record_item) return;
+    linked_list_remove(&sdp_service_records, (linked_item_t *) record_item);
 #ifndef EMBEDDED
-        free(record_item);
+    free(record_item);
 #endif        
-    }
 }
 
 // PDU
