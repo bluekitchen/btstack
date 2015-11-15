@@ -63,34 +63,6 @@
 #endif
 #endif
 
-
-// Control field values      bit no.       1 2 3 4 PF 6 7 8
-#define BT_RFCOMM_SABM       0x3F       // 1 1 1 1  1 1 0 0
-#define BT_RFCOMM_UA         0x73       // 1 1 0 0  1 1 1 0
-#define BT_RFCOMM_DM         0x0F       // 1 1 1 1  0 0 0 0
-#define BT_RFCOMM_DM_PF      0x1F		// 1 1 1 1  1 0 0 0
-#define BT_RFCOMM_DISC       0x53       // 1 1 0 0  1 0 1 0
-#define BT_RFCOMM_UIH        0xEF       // 1 1 1 1  0 1 1 1
-#define BT_RFCOMM_UIH_PF     0xFF       // 1 1 1 1  0 1 1 1
-
-// Multiplexer message types 
-#define BT_RFCOMM_CLD_CMD    0xC3
-#define BT_RFCOMM_FCON_CMD   0xA3
-#define BT_RFCOMM_FCON_RSP   0xA1
-#define BT_RFCOMM_FCOFF_CMD  0x63
-#define BT_RFCOMM_FCOFF_RSP  0x61
-#define BT_RFCOMM_MSC_CMD    0xE3
-#define BT_RFCOMM_MSC_RSP    0xE1
-#define BT_RFCOMM_NSC_RSP    0x11
-#define BT_RFCOMM_PN_CMD     0x83
-#define BT_RFCOMM_PN_RSP     0x81
-#define BT_RFCOMM_RLS_CMD    0x53
-#define BT_RFCOMM_RLS_RSP    0x51
-#define BT_RFCOMM_RPN_CMD    0x93
-#define BT_RFCOMM_RPN_RSP    0x91
-#define BT_RFCOMM_TEST_CMD   0x23
-#define BT_RFCOMM_TEST_RSP   0x21
-
 #define RFCOMM_MULIPLEXER_TIMEOUT_MS 60000
 
 #define RFCOMM_CREDITS 10

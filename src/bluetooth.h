@@ -455,6 +455,110 @@
 #define PSM_HID_INTERRUPT 0x13
 
 /**
+ * RFCOMM Protocol
+ */
+
+// Control field values      bit no.       1 2 3 4 PF 6 7 8
+#define BT_RFCOMM_SABM       0x3F       // 1 1 1 1  1 1 0 0
+#define BT_RFCOMM_UA         0x73       // 1 1 0 0  1 1 1 0
+#define BT_RFCOMM_DM         0x0F       // 1 1 1 1  0 0 0 0
+#define BT_RFCOMM_DM_PF      0x1F		// 1 1 1 1  1 0 0 0
+#define BT_RFCOMM_DISC       0x53       // 1 1 0 0  1 0 1 0
+#define BT_RFCOMM_UIH        0xEF       // 1 1 1 1  0 1 1 1
+#define BT_RFCOMM_UIH_PF     0xFF       // 1 1 1 1  0 1 1 1
+
+// Multiplexer message types 
+#define BT_RFCOMM_CLD_CMD    0xC3
+#define BT_RFCOMM_FCON_CMD   0xA3
+#define BT_RFCOMM_FCON_RSP   0xA1
+#define BT_RFCOMM_FCOFF_CMD  0x63
+#define BT_RFCOMM_FCOFF_RSP  0x61
+#define BT_RFCOMM_MSC_CMD    0xE3
+#define BT_RFCOMM_MSC_RSP    0xE1
+#define BT_RFCOMM_NSC_RSP    0x11
+#define BT_RFCOMM_PN_CMD     0x83
+#define BT_RFCOMM_PN_RSP     0x81
+#define BT_RFCOMM_RLS_CMD    0x53
+#define BT_RFCOMM_RLS_RSP    0x51
+#define BT_RFCOMM_RPN_CMD    0x93
+#define BT_RFCOMM_RPN_RSP    0x91
+#define BT_RFCOMM_TEST_CMD   0x23
+#define BT_RFCOMM_TEST_RSP   0x21
+
+// Line Status
+#define LINE_STATUS_NO_ERROR       0x00
+#define LINE_STATUS_OVERRUN_ERROR  0x03
+#define LINE_STATUS_PARITY_ERORR   0x05
+#define LINE_STATUS_FRAMING_ERROR  0x09
+
+// Modem Status Flags
+#define MODEM_STATUS_FC   0x02
+#define MODEM_STATUS_RTC  0x04
+#define MODEM_STATUS_RTR  0x08
+#define MODEM_STATUS_IC   0x40
+#define MODEM_STATUS_DV   0x80
+
+typedef enum rpn_baud {
+    RPN_BAUD_2400 = 0,
+    RPN_BAUD_4800,
+    RPN_BAUD_7200,
+    RPN_BAUD_9600,
+    RPN_BAUD_19200,
+    RPN_BAUD_38400,
+    RPN_BAUD_57600,
+    RPN_BAUD_115200,
+    RPN_BAUD_230400
+} rpn_baud_t;
+
+typedef enum rpn_data_bits {
+    RPN_DATA_BITS_5 = 0,
+    RPN_DATA_BITS_6 = 0,
+    RPN_DATA_BITS_7 = 0,
+    RPN_DATA_BITS_8 = 0
+} rpn_data_bits_t;
+
+typedef enum rpn_stop_bits {
+    RPN_STOP_BITS_1_0 = 0,
+    RPN_STOP_BITS_1_5 
+} rpn_stop_bits_t;
+
+typedef enum rpn_parity {
+    RPN_PARITY_NONE  = 0,
+    RPN_PARITY_ODD   = 1,
+    RPN_PARITY_EVEN  = 3,
+    RPN_PARITY_MARK  = 5,
+    RPN_PARITY_SPACE = 7, 
+} rpn_parity_t;
+
+typedef enum rpn_flow_control {
+    RPN_FLOW_CONTROL_XONXOFF_ON_INPUT  = 1 << 0,
+    RPN_FLOW_CONTROL_XONXOFF_ON_OUTPUT = 1 << 1,
+    RPN_FLOW_CONTROL_RTR_ON_INPUT  = 1 << 2,
+    RPN_FLOW_CONTROL_RTR_ON_OUTPUT = 1 << 3,
+    RPN_FLOW_CONTROL_RTC_ON_INPUT  = 1 << 4,
+    RPN_FLOW_CONTROL_RTC_ON_OUTPUT = 1 << 5,
+} rpn_flow_control_t;
+
+#define RPN_PARAM_MASK_0_BAUD             0x01
+#define RPN_PARAM_MASK_0_DATA_BITS        0x02
+#define RPN_PARAM_MASK_0_STOP_BITS        0x04
+#define RPN_PARAM_MASK_0_PARITY           0x08       
+#define RPN_PARAM_MASK_0_PARITY_TYPE      0x10
+#define RPN_PARAM_MASK_0_XON_CHAR         0x20
+#define RPN_PARAM_MASK_0_XOFF_CHAR        0x40
+#define RPN_PARAM_MASK_0_RESERVED         0x80
+
+// @note: values are identical to rpn_flow_control_t
+#define RPN_PARAM_MASK_1_XONOFF_ON_INPUT  0x01
+#define RPN_PARAM_MASK_1_XONOFF_ON_OUTPUT 0x02
+#define RPN_PARAM_MASK_1_RTR_ON_INPUT     0x04
+#define RPN_PARAM_MASK_1_RTR_ON_OUTPUT    0x08       
+#define RPN_PARAM_MASK_1_RTC_ON_INPUT     0x10
+#define RPN_PARAM_MASK_1_RTC_ON_OUTPUT    0x20
+#define RPN_PARAM_MASK_1_RESERVED_0       0x40
+#define RPN_PARAM_MASK_1_RESERVED_1       0x80
+
+/**
  * BNEP Protocol
  */
 
