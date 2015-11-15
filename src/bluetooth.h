@@ -414,6 +414,39 @@
  * L2CAP Layer
  */
 
+#define L2CAP_HEADER_SIZE 4
+
+#define L2CAP_SIG_ID_INVALID 0
+
+// size of HCI ACL + L2CAP Header for regular data packets (8)
+#define COMPLETE_L2CAP_HEADER (HCI_ACL_HEADER_SIZE + L2CAP_HEADER_SIZE)
+    
+// minimum signaling MTU
+#define L2CAP_MINIMAL_MTU 48
+#define L2CAP_DEFAULT_MTU 672
+    
+// Minimum/default MTU
+#define L2CAP_LE_DEFAULT_MTU  23
+
+// L2CAP Fixed Channel IDs    
+#define L2CAP_CID_SIGNALING                 0x0001
+#define L2CAP_CID_CONNECTIONLESS_CHANNEL    0x0002
+#define L2CAP_CID_ATTRIBUTE_PROTOCOL        0x0004
+#define L2CAP_CID_SIGNALING_LE              0x0005
+#define L2CAP_CID_SECURITY_MANAGER_PROTOCOL 0x0006
+
+// L2CAP Configuration Result Codes
+#define L2CAP_CONF_RESULT_UNKNOWN_OPTIONS   0x0003
+
+// L2CAP Reject Result Codes
+#define L2CAP_REJ_CMD_UNKNOWN               0x0000
+    
+// Response Timeout eXpired
+#define L2CAP_RTX_TIMEOUT_MS   10000
+
+// Extended Response Timeout eXpired
+#define L2CAP_ERTX_TIMEOUT_MS 120000
+
 // Fixed PSM numbers
 #define PSM_SDP           0x01
 #define PSM_RFCOMM 		  0x03

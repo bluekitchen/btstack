@@ -49,49 +49,17 @@
 #include "hci.h"
 #include "l2cap_signaling.h"
 #include "utils.h"
+#include "bluetooth.h"
 
 #if defined __cplusplus
 extern "C" {
 #endif
     
-#define L2CAP_SIG_ID_INVALID 0
-
-#define L2CAP_HEADER_SIZE 4
-
-// size of HCI ACL + L2CAP Header for regular data packets (8)
-#define COMPLETE_L2CAP_HEADER (HCI_ACL_HEADER_SIZE + L2CAP_HEADER_SIZE)
-    
-// minimum signaling MTU
-#define L2CAP_MINIMAL_MTU 48
-#define L2CAP_DEFAULT_MTU 672
-    
-// Minimum/default MTU
-#define L2CAP_LE_DEFAULT_MTU  23
-
 // check L2CAP MTU
 #if (L2CAP_MINIMAL_MTU + L2CAP_HEADER_SIZE) > HCI_ACL_PAYLOAD_SIZE
 #error "HCI_ACL_PAYLOAD_SIZE too small for minimal L2CAP MTU of 48 bytes"
 #endif    
     
-// L2CAP Fixed Channel IDs    
-#define L2CAP_CID_SIGNALING                 0x0001
-#define L2CAP_CID_CONNECTIONLESS_CHANNEL    0x0002
-#define L2CAP_CID_ATTRIBUTE_PROTOCOL        0x0004
-#define L2CAP_CID_SIGNALING_LE              0x0005
-#define L2CAP_CID_SECURITY_MANAGER_PROTOCOL 0x0006
-
-// L2CAP Configuration Result Codes
-#define L2CAP_CONF_RESULT_UNKNOWN_OPTIONS   0x0003
-
-// L2CAP Reject Result Codes
-#define L2CAP_REJ_CMD_UNKNOWN               0x0000
-    
-// Response Timeout eXpired
-#define L2CAP_RTX_TIMEOUT_MS   10000
-
-// Extended Response Timeout eXpired
-#define L2CAP_ERTX_TIMEOUT_MS 120000
-
 // private structs
 typedef enum {
     L2CAP_STATE_CLOSED = 1,           // no baseband
