@@ -441,6 +441,39 @@ void btstack_memory_hfp_connection_free(hfp_connection_t *hfp_connection){
 #endif
 
 
+
+// MARK: service_record_item_t
+#ifdef MAX_NO_SERVICE_RECORD_ITEMS
+#if MAX_NO_SERVICE_RECORD_ITEMS > 0
+static service_record_item_t service_record_item_storage[MAX_NO_SERVICE_RECORD_ITEMS];
+static memory_pool_t service_record_item_pool;
+service_record_item_t * btstack_memory_service_record_item_get(void){
+    return (service_record_item_t *) memory_pool_get(&service_record_item_pool);
+}
+void btstack_memory_service_record_item_free(service_record_item_t *service_record_item){
+    memory_pool_free(&service_record_item_pool, service_record_item);
+}
+#else
+service_record_item_t * btstack_memory_service_record_item_get(void){
+    return NULL;
+}
+void btstack_memory_service_record_item_free(service_record_item_t *service_record_item){
+    // silence compiler warning about unused parameter in a portable way
+    (void) service_record_item;
+};
+#endif
+#elif defined(HAVE_MALLOC)
+service_record_item_t * btstack_memory_service_record_item_get(void){
+    return (service_record_item_t*) malloc(sizeof(service_record_item_t));
+}
+void btstack_memory_service_record_item_free(service_record_item_t *service_record_item){
+    free(service_record_item);
+}
+#else
+#error "Neither HAVE_MALLOC nor MAX_NO_SERVICE_RECORD_ITEMS for struct service_record_item is defined. Please, edit the config file."
+#endif
+
+
 #ifdef HAVE_BLE
 
 // MARK: gatt_client_t
@@ -609,6 +642,9 @@ void btstack_memory_init(void){
 #endif
 #if MAX_NO_HFP_CONNECTIONS > 0
     memory_pool_create(&hfp_connection_pool, hfp_connection_storage, MAX_NO_HFP_CONNECTIONS, sizeof(hfp_connection_t));
+#endif
+#if MAX_NO_SERVICE_RECORD_ITEMS > 0
+    memory_pool_create(&service_record_item_pool, service_record_item_storage, MAX_NO_SERVICE_RECORD_ITEMS, sizeof(service_record_item_t));
 #endif
 #ifdef HAVE_BLE
 #if MAX_NO_GATT_CLIENTS > 0
