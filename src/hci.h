@@ -61,36 +61,7 @@
 #if defined __cplusplus
 extern "C" {
 #endif
- 
-// HCI roles
-#define HCI_ROLE_MASTER 0
-#define HCI_ROLE_SLAVE  1
-
-// packet header sizes
-#define HCI_CMD_HEADER_SIZE          3
-#define HCI_ACL_HEADER_SIZE   	     4
-#define HCI_SCO_HEADER_SIZE  	     3
-#define HCI_EVENT_HEADER_SIZE        2
-
-// packet sizes (max payload)
-#define HCI_ACL_DM1_SIZE            17
-#define HCI_ACL_DH1_SIZE            27
-#define HCI_ACL_2DH1_SIZE           54
-#define HCI_ACL_3DH1_SIZE           83
-#define HCI_ACL_DM3_SIZE           121
-#define HCI_ACL_DH3_SIZE           183
-#define HCI_ACL_DM5_SIZE           224
-#define HCI_ACL_DH5_SIZE           339
-#define HCI_ACL_2DH3_SIZE          367
-#define HCI_ACL_3DH3_SIZE          552
-#define HCI_ACL_2DH5_SIZE          679
-#define HCI_ACL_3DH5_SIZE         1021
-       
-#define HCI_EVENT_PAYLOAD_SIZE     255
-#define HCI_CMD_PAYLOAD_SIZE       255
-
-#define LE_ADVERTISING_DATA_SIZE    31
-    
+     
 // packet buffer sizes
 // HCI_ACL_PAYLOAD_SIZE is configurable and defined in config.h
 #define HCI_EVENT_BUFFER_SIZE      (HCI_EVENT_HEADER_SIZE + HCI_EVENT_PAYLOAD_SIZE)
@@ -125,16 +96,7 @@ extern "C" {
     #define HCI_INCOMING_PRE_BUFFER_SIZE 0
 #endif
 
-// OGFs
-#define OGF_LINK_CONTROL          0x01
-#define OGF_LINK_POLICY           0x02
-#define OGF_CONTROLLER_BASEBAND   0x03
-#define OGF_INFORMATIONAL_PARAMETERS 0x04
-#define OGF_STATUS_PARAMETERS     0x05
-#define OGF_TESTING               0x06
-#define OGF_LE_CONTROLLER 0x08
 #define OGF_BTSTACK 0x3d
-#define OGF_VENDOR  0x3f
 
 // cmds for BTstack 
 // get state: @returns HCI_STATE
