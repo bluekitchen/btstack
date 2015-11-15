@@ -899,6 +899,7 @@ static int bnep_handle_filter_net_type_set(bnep_channel_t *channel, uint8_t *pac
         int i;
         channel->net_filter_count = 0;
         /* There is still enough space, copy the filters to our filter list */
+        /* There is still enough space, copy the filters to our filter list */
         for (i = 0; i < list_length / (2 * 2); i ++) {
             channel->net_filter[channel->net_filter_count].range_start = READ_NET_16(packet, 1 + 2 + i * 4);
             channel->net_filter[channel->net_filter_count].range_end = READ_NET_16(packet, 1 + 2 + i * 4 + 2);

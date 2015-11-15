@@ -49,62 +49,6 @@ extern "C" {
 #endif
 
 /* API_START */
-
-// UNIVERSAL ATTRIBUTE DEFINITIONS
-#define SDP_ServiceRecordHandle     0x0000
-#define SDP_ServiceClassIDList      0x0001
-#define SDP_ServiceRecordState      0x0002
-#define SDP_ServiceID               0x0003
-#define SDP_ProtocolDescriptorList  0x0004
-#define SDP_BrowseGroupList		    0x0005
-#define SDP_LanguageBaseAttributeIDList 0x0006
-#define SDP_ServiceInfoTimeToLive	0x0007
-#define SDP_ServiceAvailability		0x0008
-#define SDP_BluetoothProfileDescriptorList 0x0009
-#define SDP_DocumentationURL		0x000a
-#define SDP_ClientExecutableURL     0x000b
-#define SDP_IconURL                 0x000c
-#define SDP_AdditionalProtocolDescriptorList 0x000d
-#define SDP_SupportedFormatsList    0x0303
-
-// SERVICE CLASSES
-#define SDP_OBEXObjectPush          0x1105
-#define SDP_OBEXFileTransfer        0x1106
-#define SDP_PublicBrowseGroup       0x1002
-#define SDP_HSP                     0x1108
-#define SDP_Headset_AG              0x1112
-#define SDP_PANU                    0x1115
-#define SDP_NAP                     0x1116
-#define SDP_GN                      0x1117
-#define SDP_Handsfree               0x111E
-#define SDP_HandsfreeAudioGateway   0x111F
-#define SDP_Headset_HS              0x1131
-#define SDP_GenericAudio            0x1203
-
-
-// PROTOCOLS
-#define SDP_SDPProtocol       0x0001
-#define SDP_UDPProtocol       0x0002
-#define SDP_RFCOMMProtocol    0x0003
-#define SDP_OBEXProtocol      0x0008
-#define SDP_L2CAPProtocol     0x0100
-#define SDP_BNEPProtocol      0x000F
-#define SDP_AVDTPProtocol     0x0019
-
-// OFFSETS FOR LOCALIZED ATTRIBUTES - SDP_LanguageBaseAttributeIDList
-#define SDP_Offest_ServiceName      0x0000
-#define SDP_Offest_ServiceDescription 0x0001
-#define SDP_Offest_ProviderName     0x0002
-
-// OBEX
-#define SDP_vCard_2_1       0x01
-#define SDP_vCard_3_0       0x02
-#define SDP_vCal_1_0        0x03
-#define SDP_iCal_2_0        0x04
-#define SDP_vNote           0x05
-#define SDP_vMessage        0x06
-#define SDP_OBEXFileTypeAny 0xFF
-
     
 typedef enum {
     DE_NIL = 0,
