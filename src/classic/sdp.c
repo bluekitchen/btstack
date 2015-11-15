@@ -122,7 +122,7 @@ static uint32_t sdp_create_service_record_handle(void){
 // pre: ServiceRecordHandle is first attribute and valid
 // pre: record
 // @returns ServiceRecordHandle or 0 if registration failed
-uint32_t sdp_register_service_internal(void *connection, service_record_item_t * record_item){
+uint32_t sdp_register_service_internal(service_record_item_t * record_item){
     // get user record handle
     uint32_t record_handle = record_item->service_record_handle;
     // get actual record
@@ -167,7 +167,7 @@ static const uint8_t removeServiceRecordHandleAttributeIDList[] = { 0x36, 0x00, 
 // register service record internally - the normal version creates a copy of the record
 // pre: AttributeIDs are in ascending order => ServiceRecordHandle is first attribute if present
 // @returns ServiceRecordHandle or 0 if registration failed
-uint32_t sdp_register_service_internal(void *connection, uint8_t * record){
+uint32_t sdp_register_service_internal(uint8_t * record){
 
     // dump for now
     // log_info("Register service record");
@@ -200,8 +200,6 @@ uint32_t sdp_register_service_internal(void *connection, uint8_t * record){
     if (!newRecordItem) {
         return 0;
     }
-    // link new service item to client connection
-    newRecordItem->connection = connection;
     
     // set new handle
     newRecordItem->service_record_handle = record_handle;
@@ -235,14 +233,13 @@ uint32_t sdp_register_service_internal(void *connection, uint8_t * record){
 // 
 // makes sure one client cannot remove service records of other clients
 //
-void sdp_unregister_service_internal(void *connection, uint32_t service_record_handle){
+void sdp_unregister_service_internal(uint32_t service_record_handle){
     service_record_item_t * record_item = sdp_get_record_for_handle(service_record_handle);
-    if (record_item && record_item->connection == connection) {
-        linked_list_remove(&sdp_service_records, (linked_item_t *) record_item);
+    if (!record_item) return;
+    linked_list_remove(&sdp_service_records, (linked_item_t *) record_item);
 #ifndef EMBEDDED
-        free(record_item);
+    free(record_item);
 #endif        
-    }
 }
 
 // PDU

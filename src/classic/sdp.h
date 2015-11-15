@@ -63,9 +63,6 @@ typedef struct {
     // linked list - assert: first field
     linked_item_t   item;
     
-    // client connection
-    void *  connection;
-    
     // data is contained in same memory
     uint32_t        service_record_handle;
     uint8_t         service_record[1];  // waste 1 byte to allow compilation with older compilers
@@ -92,7 +89,7 @@ void sdp_register_packet_handler(void (*handler)(void * connection, uint8_t pack
     - ServiceRecordHandle is first attribute and valid.
  * @return ServiceRecordHandle or 0 if registration failed.
  */
-uint32_t sdp_register_service_internal(void *connection, service_record_item_t * record_item);
+uint32_t sdp_register_service_internal(service_record_item_t * record_item);
 #endif
 
 #ifndef EMBEDDED
@@ -100,13 +97,13 @@ uint32_t sdp_register_service_internal(void *connection, service_record_item_t *
  * @brief Register service record internally - this version creates a copy of the record precondition: AttributeIDs are in ascending order => ServiceRecordHandle is first attribute if present. 
  * @return ServiceRecordHandle or 0 if registration failed
  */
-uint32_t sdp_register_service_internal(void *connection, uint8_t * service_record);
+uint32_t sdp_register_service_internal(uint8_t * service_record);
 #endif
 
 /** 
  * @brief Unregister service record internally.
  */
-void sdp_unregister_service_internal(void *connection, uint32_t service_record_handle);
+void sdp_unregister_service_internal(uint32_t service_record_handle);
 /* API_END */
 
 #if defined __cplusplus

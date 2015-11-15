@@ -312,7 +312,7 @@ int btstack_main(int argc, const char * argv[]){
     hsp_hs_register_packet_handler(packet_handler);
     
     sdp_init();
-    sdp_register_service_internal(NULL, (uint8_t *)hsp_service_buffer);
+     sdp_register_service_internal((uint8_t *)hsp_service_buffer);
 
     hci_discoverable_control(1);
     hci_set_class_of_device(0x200418);

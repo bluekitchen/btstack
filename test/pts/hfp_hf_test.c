@@ -240,7 +240,7 @@ int btstack_main(int argc, const char * argv[]){
     // init SDP, create record for SPP and register with SDP
     memset((uint8_t *)hfp_service_buffer, 0, sizeof(hfp_service_buffer));
     hfp_hf_create_sdp_record((uint8_t *)hfp_service_buffer, rfcomm_channel_nr, hfp_hf_service_name, 0);
-    sdp_register_service_internal(NULL, (uint8_t *)hfp_service_buffer);
+     sdp_register_service_internal((uint8_t *)hfp_service_buffer);
 
     // turn on!
     hci_power_control(HCI_POWER_ON);
