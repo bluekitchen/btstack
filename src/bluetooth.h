@@ -388,6 +388,8 @@
 
 #define HCI_EVENT_LE_META                                  0x3E
 
+#define HCI_EVENT_VENDOR_SPECIFIC                          0xFF
+
 /** 
  * @format 11211B2221
  * @param subevent_code

@@ -47,6 +47,7 @@
 
 #include "btstack-config.h"
 
+
 #include "bt_control.h"
 #include "classic/remote_device_db.h"
 #include "hci_cmds.h"
