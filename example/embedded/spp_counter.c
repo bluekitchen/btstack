@@ -70,8 +70,8 @@
 
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
-static uint16_t  rfcomm_channel_id;
-static uint32_t  spp_service_buffer[150/4];  // implicit alignment to 4-byte memory address
+static uint16_t rfcomm_channel_id;
+static uint8_t  spp_service_buffer[150];
 
 
 /* @section SPP Service Setup 
@@ -100,9 +100,9 @@ static void spp_service_setup(void){
     // init SDP, create record for SPP and register with SDP
     sdp_init();
     memset(spp_service_buffer, 0, sizeof(spp_service_buffer));
-    sdp_create_spp_service( (uint8_t*) spp_service_buffer, RFCOMM_SERVER_CHANNEL, "SPP Counter");
-    printf("SDP service record size: %u\n", de_get_len((uint8_t*) spp_service_buffer));
-    sdp_register_service((uint8_t*)spp_service_buffer);
+    sdp_create_spp_service(spp_service_buffer, RFCOMM_SERVER_CHANNEL, "SPP Counter");
+    sdp_register_service(spp_service_buffer);
+    printf("SDP service record size: %u\n", de_get_len(spp_service_buffer));
 }
 /* LISTING_END */
 
