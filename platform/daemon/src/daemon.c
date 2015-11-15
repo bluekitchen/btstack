@@ -498,7 +498,7 @@ static void daemon_sdp_close_connection(client_state_t * daemon_client){
     linked_list_iterator_init(&it, list);
     while (linked_list_iterator_has_next(&it)){
         linked_list_uint32_t * item = (linked_list_uint32_t*) linked_list_iterator_next(&it);
-        sdp_unregister_service_internal(&daemon_client->connection, item->value);
+        sdp_unregister_service(item->value);
         linked_list_remove(list, (linked_item_t *) item);
         free(item);
     }
@@ -519,6 +519,45 @@ static connection_t * connection_for_l2cap_cid(uint16_t cid){
         }
     }
     return NULL;
+}
+
+static const uint8_t removeServiceRecordHandleAttributeIDList[] = { 0x36, 0x00, 0x05, 0x0A, 0x00, 0x01, 0xFF, 0xFF };
+
+// register a service record
+// pre: AttributeIDs are in ascending order
+// pre: ServiceRecordHandle is first attribute and is not already registered in database
+// @returns status
+static uint32_t daemon_sdp_create_and_register_service(uint8_t * record){
+    
+    // create new handle
+    uint32_t record_handle = sdp_create_service_record_handle();
+    
+    // calculate size of new service record: DES (2 byte len) 
+    // + ServiceRecordHandle attribute (UINT16 UINT32) + size of existing attributes
+    uint16_t recordSize =  3 + (3 + 5) + de_get_data_size(record);
+        
+    // alloc memory for new service record
+    uint8_t * newRecord = malloc(recordSize);
+    if (!newRecord) return 0;
+    
+    // create DES for new record
+    de_create_sequence(newRecord);
+    
+    // set service record handle
+    de_add_number(newRecord, DE_UINT, DE_SIZE_16, 0);
+    de_add_number(newRecord, DE_UINT, DE_SIZE_32, record_handle);
+    
+    // add other attributes
+    sdp_append_attributes_in_attributeIDList(record, (uint8_t *) removeServiceRecordHandleAttributeIDList, 0, recordSize, newRecord);
+    
+    uint8_t status = sdp_register_service(newRecord);
+
+    if (status) {
+        free(newRecord);
+        return 0;
+    }
+
+    return record_handle;
 }
 
 static connection_t * connection_for_rfcomm_cid(uint16_t cid){
@@ -637,7 +676,6 @@ static void send_l2cap_connection_open_failed(connection_t * connection, bd_addr
 }
 
 static void l2cap_emit_service_registered(void *connection, uint8_t status, uint16_t psm){
-    log_info("L2CAP_EVENT_SERVICE_REGISTERED status 0x%x psm 0x%x", status, psm);
     uint8_t event[5];
     event[0] = L2CAP_EVENT_SERVICE_REGISTERED;
     event[1] = sizeof(event) - 2;
@@ -648,7 +686,6 @@ static void l2cap_emit_service_registered(void *connection, uint8_t status, uint
 }
 
 static void rfcomm_emit_service_registered(void *connection, uint8_t status, uint8_t channel){
-    log_info("RFCOMM_EVENT_SERVICE_REGISTERED status 0x%x channel #%u", status, channel);
     uint8_t event[4];
     event[0] = RFCOMM_EVENT_SERVICE_REGISTERED;
     event[1] = sizeof(event) - 2;
@@ -675,10 +712,8 @@ static void send_rfcomm_create_channel_failed(void * connection, bd_addr_t addr,
     socket_connection_send_packet(connection, HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-
 // data: event(8), len(8), status(8), service_record_handle(32)
 static void sdp_emit_service_registered(void *connection, uint32_t handle, uint8_t status) {
-    if (!app_packet_handler) return;
     uint8_t event[7];
     event[0] = SDP_SERVICE_REGISTERED;
     event[1] = sizeof(event) - 2;
@@ -781,14 +816,13 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
     uint32_t service_record_handle;
     client_state_t *client;
     uint8_t status;
-
+    uint8_t  * data;
 #if defined(HAVE_MALLOC) && defined(HAVE_BLE)
     uint8_t uuid128[16];
     le_service_t service;
     le_characteristic_t characteristic;
     le_characteristic_descriptor_t descriptor;
     uint16_t data_length;
-    uint8_t  * data;
     linked_list_gatt_client_helper_t * gatt_helper;
 #endif
 
@@ -985,10 +1019,9 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             socket_connection_send_packet(connection, HCI_EVENT_PACKET, 0, (uint8_t *) event, sizeof(event));
             break;
         }
-            
         case SDP_REGISTER_SERVICE_RECORD:
             log_info("SDP_REGISTER_SERVICE_RECORD size %u\n", size);
-            service_record_handle = sdp_register_service_internal(&packet[3]);
+            service_record_handle = daemon_sdp_create_and_register_service(&packet[3]);
             if (service_record_handle){
                 daemon_add_client_sdp_service_record_handle(connection, service_record_handle);
                 sdp_emit_service_registered(connection, service_record_handle, 0);
@@ -999,8 +1032,12 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
         case SDP_UNREGISTER_SERVICE_RECORD:
             service_record_handle = READ_BT_32(packet, 3);
             log_info("SDP_UNREGISTER_SERVICE_RECORD handle 0x%x ", service_record_handle);
-            sdp_unregister_service_internal(service_record_handle);
+            data = sdp_get_record_for_handle(service_record_handle);
+            sdp_unregister_service(service_record_handle);
             daemon_remove_client_sdp_service_record_handle(connection, service_record_handle);
+            if (data){
+                free(data);
+            }
             break;
         case SDP_CLIENT_QUERY_RFCOMM_SERVICES: 
             bt_flip_addr(addr, &packet[3]);

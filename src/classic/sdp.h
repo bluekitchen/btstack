@@ -57,21 +57,17 @@ typedef enum {
 	SDP_ServiceSearchAttributeResponse
 } SDP_PDU_ID_t;
 
-// service record
-// -- uses user_data field for actual
 typedef struct {
     // linked list - assert: first field
     linked_item_t   item;
-    
-    // data is contained in same memory
+
     uint32_t        service_record_handle;
-    uint8_t         service_record[1];  // waste 1 byte to allow compilation with older compilers
+    uint8_t *       service_record;
 } service_record_item_t;
 
 int sdp_handle_service_search_request(uint8_t * packet, uint16_t remote_mtu);
 int sdp_handle_service_attribute_request(uint8_t * packet, uint16_t remote_mtu);
 int sdp_handle_service_search_attribute_request(uint8_t * packet, uint16_t remote_mtu);
-
 
 /* API_START */
 
@@ -80,29 +76,42 @@ int sdp_handle_service_search_attribute_request(uint8_t * packet, uint16_t remot
  */
 void sdp_init(void);
 
-#ifdef EMBEDDED
-/** 
- * @brief Register service record internally - this version doesn't copy the record therefore it must be forever accessible. Preconditions:
-    - AttributeIDs are in ascending order;
-    - ServiceRecordHandle is first attribute and valid.
- * @return ServiceRecordHandle or 0 if registration failed.
+/**
+ * @brief Register Service Record with database using ServiceRecordHandle stored in record
+ * @pre AttributeIDs are in ascending order
+ * @pre ServiceRecordHandle is first attribute and valid
+ * @param record is not copied!
+ * @result status
  */
-uint32_t sdp_register_service_internal(service_record_item_t * record_item);
-#endif
-
-#ifndef EMBEDDED
-/** 
- * @brief Register service record internally - this version creates a copy of the record precondition: AttributeIDs are in ascending order => ServiceRecordHandle is first attribute if present. 
- * @return ServiceRecordHandle or 0 if registration failed
- */
-uint32_t sdp_register_service_internal(uint8_t * service_record);
-#endif
+uint8_t sdp_register_service(const uint8_t * record);
 
 /** 
  * @brief Unregister service record internally.
  */
-void sdp_unregister_service_internal(uint32_t service_record_handle);
+void sdp_unregister_service(uint32_t service_record_handle);
+
 /* API_END */
+
+// used by daemon
+
+/**
+ * @brief Finds an unused valid service record handle
+ * @result handle
+ */
+uint32_t sdp_create_service_record_handle(void);
+
+/**
+ * @brief gets record for handle
+ * @result record
+ */
+
+uint8_t * sdp_get_record_for_handle(uint32_t handle);
+
+/**
+ * @brief gets service record handle from record
+ * @resutl service record handle or 0
+ */
+uint32_t sdp_get_service_record_handle(const uint8_t * record);
 
 #if defined __cplusplus
 }

@@ -799,16 +799,9 @@ int btstack_main(int argc, const char * argv[]){
     sdp_init();
 
     uint16_t network_packet_types[] = { NETWORK_TYPE_IPv4, NETWORK_TYPE_ARP, 0};    // 0 as end of list
-#ifdef EMBEDDED
-    service_record_item_t * service_record_item = (service_record_item_t *) panu_sdp_record;
-    pan_create_panu_service((uint8_t*) &service_record_item->service_record, network_packet_types, NULL, NULL, BNEP_SECURITY_NONE);
-    printf("SDP service buffer size: %u\n", (uint16_t) (sizeof(service_record_item_t) + de_get_len((uint8_t*) &service_record_item->service_record)));
-     sdp_register_service_internal(service_record_item);
-#else
     pan_create_panu_service(panu_sdp_record, network_packet_types, NULL, NULL, BNEP_SECURITY_NONE);
     printf("SDP service record size: %u\n", de_get_len((uint8_t*) panu_sdp_record));
-     sdp_register_service_internal((uint8_t*)panu_sdp_record);
-#endif
+    sdp_register_service((uint8_t*)panu_sdp_record);
 
     /* Turn on the device */
     hci_power_control(HCI_POWER_ON);

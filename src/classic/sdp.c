@@ -39,17 +39,16 @@
  * Implementation of the Service Discovery Protocol Server 
  */
 
-#include "classic/sdp.h"
-
 #include <stdio.h>
 #include <string.h>
 
-#include "classic/sdp_util.h"
-
+#include "btstack_memory.h"
+#include "debug.h"
 #include "hci_dump.h"
 #include "l2cap.h"
 
-#include "debug.h"
+#include "classic/sdp.h"
+#include "classic/sdp_util.h"
 
 // max reserved ServiceRecordHandle
 #define maxReservedServiceRecordHandle 0xffff
@@ -58,7 +57,6 @@
 #define SDP_RESPONSE_BUFFER_SIZE (HCI_ACL_BUFFER_SIZE-HCI_ACL_HEADER_SIZE)
 
 static void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
-uint32_t sdp_get_service_record_handle(uint8_t * record);
 
 // registered service records
 static linked_list_t sdp_service_records = NULL;
@@ -76,15 +74,16 @@ void sdp_init(void){
     l2cap_register_service(sdp_packet_handler, PSM_SDP, 0xffff, LEVEL_0);
 }
 
-uint32_t sdp_get_service_record_handle(uint8_t * record){
-    uint8_t * serviceRecordHandleAttribute = sdp_get_attribute_value_for_attribute_id(record, SDP_ServiceRecordHandle);
+uint32_t sdp_get_service_record_handle(const uint8_t * record){
+    // TODO: make sdp_get_attribute_value_for_attribute_id accept const data to remove cast
+    uint8_t * serviceRecordHandleAttribute = sdp_get_attribute_value_for_attribute_id((uint8_t *)record, SDP_ServiceRecordHandle);
     if (!serviceRecordHandleAttribute) return 0;
     if (de_get_element_type(serviceRecordHandleAttribute) != DE_UINT) return 0;
     if (de_get_size_type(serviceRecordHandleAttribute) != DE_SIZE_32) return 0;
     return READ_NET_32(serviceRecordHandleAttribute, 1); 
 }
 
-static service_record_item_t * sdp_get_record_for_handle(uint32_t handle){
+static service_record_item_t * sdp_get_record_item_for_handle(uint32_t handle){
     linked_item_t *it;
     for (it = (linked_item_t *) sdp_service_records; it ; it = it->next){
         service_record_item_t * item = (service_record_item_t *) it;
@@ -95,140 +94,58 @@ static service_record_item_t * sdp_get_record_for_handle(uint32_t handle){
     return NULL;
 }
 
+uint8_t * sdp_get_record_for_handle(uint32_t handle){
+    service_record_item_t * record_item =  sdp_get_record_item_for_handle(handle);
+    if (!record_item) return 0;
+    return record_item->service_record;
+}
+
 // get next free, unregistered service record handle
-static uint32_t sdp_create_service_record_handle(void){
+uint32_t sdp_create_service_record_handle(void){
     uint32_t handle = 0;
     do {
         handle = sdp_next_service_record_handle++;
-        if (sdp_get_record_for_handle(handle)) handle = 0;
+        if (sdp_get_record_item_for_handle(handle)) handle = 0;
     } while (handle == 0);
     return handle;
 }
 
-#ifdef EMBEDDED
+/**
+ * @brief Register Service Record with database using ServiceRecordHandle stored in record
+ * @pre AttributeIDs are in ascending order
+ * @pre ServiceRecordHandle is first attribute and valid
+ * @param record is not copied!
+ * @result status
+ */
+uint8_t sdp_register_service(const uint8_t * record){
 
-// register service record internally - this special version doesn't copy the record, it should not be freeed
-// pre: AttributeIDs are in ascending order
-// pre: ServiceRecordHandle is first attribute and valid
-// pre: record
-// @returns ServiceRecordHandle or 0 if registration failed
-uint32_t sdp_register_service_internal(service_record_item_t * record_item){
-    // get user record handle
-    uint32_t record_handle = record_item->service_record_handle;
-    // get actual record
-    uint8_t *record = record_item->service_record;
-    
-    // check for ServiceRecordHandle attribute, returns pointer or null
-    uint8_t * req_record_handle = sdp_get_attribute_value_for_attribute_id(record, SDP_ServiceRecordHandle);
-    if (!req_record_handle) {
-        log_error("SDP Error - record does not contain ServiceRecordHandle attribute");
-        return 0;
-    }
-    
-    // validate service record handle is not in reserved range
-    if (record_handle <= maxReservedServiceRecordHandle) record_handle = 0;
-    
-    // check if already in use
-    if (record_handle) {
-        if (sdp_get_record_for_handle(record_handle)) {
-            record_handle = 0;
-        }
-    }
-    
-    // create new handle if needed
-    if (!record_handle){
-        record_handle = sdp_create_service_record_handle();
-        // Write the handle back into the record too
-        record_item->service_record_handle = record_handle;
-        sdp_set_attribute_value_for_attribute_id(record, SDP_ServiceRecordHandle, record_handle);
-    }
-    
-    // add to linked list
-    linked_list_add(&sdp_service_records, (linked_item_t *) record_item);
-        
-    return record_handle;
-}
-
-#else
-
-// AttributeIDList used to remove ServiceRecordHandle
-static const uint8_t removeServiceRecordHandleAttributeIDList[] = { 0x36, 0x00, 0x05, 0x0A, 0x00, 0x01, 0xFF, 0xFF };
-
-// register service record internally - the normal version creates a copy of the record
-// pre: AttributeIDs are in ascending order => ServiceRecordHandle is first attribute if present
-// @returns ServiceRecordHandle or 0 if registration failed
-uint32_t sdp_register_service_internal(uint8_t * record){
-
-    // dump for now
-    // log_info("Register service record");
-    // de_dump_data_element(record);
-    
-    // get user record handle
+    // validate service record handle. it must: exist, be in valid range, not have been already used
     uint32_t record_handle = sdp_get_service_record_handle(record);
+    if (!record_handle) return SDP_HANDLE_INVALID;
+    if (record_handle <= maxReservedServiceRecordHandle) return SDP_HANDLE_INVALID;
+    if (sdp_get_record_item_for_handle(record_handle)) return SDP_HANDLE_ALREADY_REGISTERED;
 
-    // validate service record handle is not in reserved range
-    if (record_handle <= maxReservedServiceRecordHandle) record_handle = 0;
-    
-    // check if already in use
-    if (record_handle) {
-        if (sdp_get_record_for_handle(record_handle)) {
-            record_handle = 0;
-        }
-    }
-    
-    // create new handle if needed
-    if (!record_handle){
-        record_handle = sdp_create_service_record_handle();
-    }
-    
-    // calculate size of new service record: DES (2 byte len) 
-    // + ServiceRecordHandle attribute (UINT16 UINT32) + size of existing attributes
-    uint16_t recordSize =  3 + (3 + 5) + de_get_data_size(record);
-        
     // alloc memory for new service_record_item
-    service_record_item_t * newRecordItem = (service_record_item_t *) malloc(recordSize + sizeof(service_record_item_t));
-    if (!newRecordItem) {
-        return 0;
-    }
-    // set new handle
-    newRecordItem->service_record_handle = record_handle;
+    service_record_item_t * newRecordItem = btstack_memory_service_record_item_get();
+    if (!newRecordItem) return BTSTACK_MEMORY_ALLOC_FAILED;
 
-    // create updated service record
-    uint8_t * newRecord = (uint8_t *) &(newRecordItem->service_record);
-    
-    // create DES for new record
-    de_create_sequence(newRecord);
-    
-    // set service record handle
-    de_add_number(newRecord, DE_UINT, DE_SIZE_16, 0);
-    de_add_number(newRecord, DE_UINT, DE_SIZE_32, record_handle);
-    
-    // add other attributes
-    sdp_append_attributes_in_attributeIDList(record, (uint8_t *) removeServiceRecordHandleAttributeIDList, 0, recordSize, newRecord);
-    
-    // dump for now
-    // de_dump_data_element(newRecord);
-    // log_info("reserved size %u, actual size %u", recordSize, de_get_len(newRecord));
+    // set handle and record
+    newRecordItem->service_record_handle = record_handle;
+    newRecordItem->service_record = (uint8_t*) record;
     
     // add to linked list
     linked_list_add(&sdp_service_records, (linked_item_t *) newRecordItem);
     
-    return record_handle;
+    return 0;
 }
 
-#endif
-
-// unregister service record internally
-// 
-// makes sure one client cannot remove service records of other clients
 //
-void sdp_unregister_service_internal(uint32_t service_record_handle){
-    service_record_item_t * record_item = sdp_get_record_for_handle(service_record_handle);
+// unregister service record
+//
+void sdp_unregister_service(uint32_t service_record_handle){
+    service_record_item_t * record_item = sdp_get_record_item_for_handle(service_record_handle);
     if (!record_item) return;
     linked_list_remove(&sdp_service_records, (linked_item_t *) record_item);
-#ifndef EMBEDDED
-    free(record_item);
-#endif        
 }
 
 // PDU
@@ -343,7 +260,7 @@ int sdp_handle_service_attribute_request(uint8_t * packet, uint16_t remote_mtu){
     }
     
     // get service record
-    service_record_item_t * item = sdp_get_record_for_handle(serviceRecordHandle);
+    service_record_item_t * item = sdp_get_record_item_for_handle(serviceRecordHandle);
     if (!item){
         // service record handle doesn't exist
         return sdp_create_error_response(transaction_id, 0x0002); /// invalid Service Record Handle

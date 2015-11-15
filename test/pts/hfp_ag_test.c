@@ -202,12 +202,11 @@ int btstack_main(int argc, const char * argv[]){
 
     hfp_ag_register_packet_handler(packet_handler);
 
-    sdp_init();
     // init SDP, create record for SPP and register with SDP
+    sdp_init();
     memset((uint8_t *)hfp_service_buffer, 0, sizeof(hfp_service_buffer));
     hfp_ag_create_sdp_record((uint8_t *)hfp_service_buffer, rfcomm_channel_nr, hfp_ag_service_name, 0, 0);
-
-     sdp_register_service_internal((uint8_t *)hfp_service_buffer);
+    sdp_register_service((uint8_t *)hfp_service_buffer);
 
     // turn on!
     hci_power_control(HCI_POWER_ON);

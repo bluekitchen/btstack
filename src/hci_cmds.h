@@ -853,6 +853,7 @@ extern "C" {
 #define SDP_HANDLE_ALREADY_REGISTERED                      0x80
 #define SDP_QUERY_INCOMPLETE                               0x81
 #define SDP_SERVICE_NOT_FOUND                              0x82
+#define SDP_HANDLE_INVALID                                 0x83
  
 #define ATT_HANDLE_VALUE_INDICATION_IN_PORGRESS            0x90 
 #define ATT_HANDLE_VALUE_INDICATION_TIMEOUT                0x91

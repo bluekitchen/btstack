@@ -217,10 +217,9 @@ int btstack_main(int argc, const char * argv[]){
     // init SDP, create record for SPP and register with SDP
     sdp_init();
     memset(spp_service_buffer, 0, sizeof(spp_service_buffer));
-    service_record_item_t * service_record_item = (service_record_item_t *) spp_service_buffer;
-    sdp_create_spp_service( (uint8_t*) &service_record_item->service_record, 1, "SPP Accel");
-    printf("SDP service buffer size: %u\n\r", (uint16_t) (sizeof(service_record_item_t) + de_get_len((uint8_t*) &service_record_item->service_record)));
-     sdp_register_service_internal(service_record_item);
+    sdp_create_spp_service( (uint8_t*) spp_service_buffer, 1, "SPP Accel");
+    printf("SDP service buffer size: %u\n\r", (uint16_t) de_get_len((uint8_t*) spp_service_buffer));
+    sdp_register_service(spp_service_buffer);
     
     // ready - enable irq used in h4 task
     __enable_interrupt();   

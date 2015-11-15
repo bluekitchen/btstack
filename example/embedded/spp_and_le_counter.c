@@ -261,20 +261,9 @@ int btstack_main(void)
     // init SDP, create record for SPP and register with SDP
     sdp_init();
     memset(spp_service_buffer, 0, sizeof(spp_service_buffer));
-/* LISTING_PAUSE */
-#ifdef EMBEDDED
-/* LISTING_RESUME */
-    service_record_item_t * service_record_item = (service_record_item_t *) spp_service_buffer;
-    sdp_create_spp_service( (uint8_t*) &service_record_item->service_record, RFCOMM_SERVER_CHANNEL, "SPP Counter");
-    printf("SDP service buffer size: %u\n", (uint16_t) (sizeof(service_record_item_t) + de_get_len((uint8_t*) &service_record_item->service_record)));
-     sdp_register_service_internal(service_record_item);
-/* LISTING_PAUSE */
-#else
     sdp_create_spp_service( (uint8_t*)spp_service_buffer, RFCOMM_SERVER_CHANNEL, "SPP Counter");
     printf("SDP service record size: %u\n", de_get_len((uint8_t*)spp_service_buffer));
-     sdp_register_service_internal((uint8_t*)spp_service_buffer);
-#endif
-/* LISTING_RESUME */
+    sdp_register_service((uint8_t*)spp_service_buffer);
 
     hci_ssp_set_io_capability(SSP_IO_CAPABILITY_DISPLAY_YES_NO);
 
