@@ -1937,7 +1937,6 @@ int main (int argc,  char * const * argv){
     
 #ifdef HAVE_SDP
     sdp_init();
-    sdp_register_packet_handler(&daemon_packet_handler);
 #endif
 
 #ifdef HAVE_BLE

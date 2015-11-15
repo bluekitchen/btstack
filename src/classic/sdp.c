@@ -68,22 +68,12 @@ static uint32_t sdp_next_service_record_handle = ((uint32_t) maxReservedServiceR
 
 static uint8_t sdp_response_buffer[SDP_RESPONSE_BUFFER_SIZE];
 
-static void (*app_packet_handler)(void * connection, uint8_t packet_type,
-                                  uint16_t channel, uint8_t *packet, uint16_t size) = NULL;
-
 static uint16_t l2cap_cid = 0;
 static uint16_t sdp_response_size = 0;
 
 void sdp_init(void){
     // register with l2cap psm sevices - max MTU
     l2cap_register_service(sdp_packet_handler, PSM_SDP, 0xffff, LEVEL_0);
-}
-
-// register packet handler
-void sdp_register_packet_handler(void (*handler)(void * connection, uint8_t packet_type,
-                                                 uint16_t channel, uint8_t *packet, uint16_t size)){
-	app_packet_handler = handler;
-    l2cap_cid = 0;
 }
 
 uint32_t sdp_get_service_record_handle(uint8_t * record){

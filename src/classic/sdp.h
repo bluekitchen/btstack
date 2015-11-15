@@ -80,8 +80,6 @@ int sdp_handle_service_search_attribute_request(uint8_t * packet, uint16_t remot
  */
 void sdp_init(void);
 
-void sdp_register_packet_handler(void (*handler)(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size));
-
 #ifdef EMBEDDED
 /** 
  * @brief Register service record internally - this version doesn't copy the record therefore it must be forever accessible. Preconditions:
