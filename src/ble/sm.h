@@ -45,68 +45,6 @@
 extern "C" {
 #endif
 
-
-// Bluetooth Spec definitions
-typedef enum {
-    SM_CODE_PAIRING_REQUEST = 0X01,
-    SM_CODE_PAIRING_RESPONSE,
-    SM_CODE_PAIRING_CONFIRM,
-    SM_CODE_PAIRING_RANDOM,
-    SM_CODE_PAIRING_FAILED,
-    SM_CODE_ENCRYPTION_INFORMATION,
-    SM_CODE_MASTER_IDENTIFICATION,
-    SM_CODE_IDENTITY_INFORMATION,
-    SM_CODE_IDENTITY_ADDRESS_INFORMATION,
-    SM_CODE_SIGNING_INFORMATION,
-    SM_CODE_SECURITY_REQUEST
-} SECURITY_MANAGER_COMMANDS;
-
-// IO Capability Values
-typedef enum {
-    IO_CAPABILITY_DISPLAY_ONLY = 0,
-    IO_CAPABILITY_DISPLAY_YES_NO,
-    IO_CAPABILITY_KEYBOARD_ONLY,
-    IO_CAPABILITY_NO_INPUT_NO_OUTPUT,
-    IO_CAPABILITY_KEYBOARD_DISPLAY, // not used by secure simple pairing
-} io_capability_t;
-
-
-// Authentication requirement flags
-#define SM_AUTHREQ_NO_BONDING 0x00
-#define SM_AUTHREQ_BONDING 0x01
-#define SM_AUTHREQ_MITM_PROTECTION 0x04
-
-// Key distribution flags used by spec
-#define SM_KEYDIST_ENC_KEY 0X01
-#define SM_KEYDIST_ID_KEY  0x02
-#define SM_KEYDIST_SIGN    0x04
-
-// Key distribution flags used internally
-#define SM_KEYDIST_FLAG_ENCRYPTION_INFORMATION       0x01
-#define SM_KEYDIST_FLAG_MASTER_IDENTIFICATION        0x02
-#define SM_KEYDIST_FLAG_IDENTITY_INFORMATION         0x04
-#define SM_KEYDIST_FLAG_IDENTITY_ADDRESS_INFORMATION 0x08
-#define SM_KEYDIST_FLAG_SIGNING_IDENTIFICATION       0x10
-
-// STK Generation Methods
-#define SM_STK_GENERATION_METHOD_JUST_WORKS 0x01
-#define SM_STK_GENERATION_METHOD_OOB        0x02
-#define SM_STK_GENERATION_METHOD_PASSKEY    0x04
-
-// Pairing Failed Reasons
-#define SM_REASON_RESERVED                     0x00
-#define SM_REASON_PASSKEYT_ENTRY_FAILED        0x01
-#define SM_REASON_OOB_NOT_AVAILABLE            0x02
-#define SM_REASON_AUTHENTHICATION_REQUIREMENTS 0x03
-#define SM_REASON_CONFIRM_VALUE_FAILED         0x04
-#define SM_REASON_PAIRING_NOT_SUPPORTED        0x05
-#define SM_REASON_ENCRYPTION_KEY_SIZE          0x06
-#define SM_REASON_COMMAND_NOT_SUPPORTED        0x07
-#define SM_REASON_UNSPECIFIED_REASON           0x08
-#define SM_REASON_REPEATED_ATTEMPTS            0x09
-// also, invalid parameters
-// and reserved
-
 // Only for PTS testing
 void sm_test_set_irk(sm_key_t irk);
 

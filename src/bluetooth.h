@@ -717,4 +717,185 @@ typedef enum {
 	PAN_NET_ACCESS_TYPE_NONE
 } net_access_type_t;
 
+/**
+ * ATT
+ */
+
+// Minimum/default MTU
+#define ATT_DEFAULT_MTU               23
+
+// MARK: Attribute PDU Opcodes 
+#define ATT_ERROR_RESPONSE              0x01
+
+#define ATT_EXCHANGE_MTU_REQUEST        0x02
+#define ATT_EXCHANGE_MTU_RESPONSE       0x03
+
+#define ATT_FIND_INFORMATION_REQUEST    0x04
+#define ATT_FIND_INFORMATION_REPLY      0x05
+#define ATT_FIND_BY_TYPE_VALUE_REQUEST  0x06
+#define ATT_FIND_BY_TYPE_VALUE_RESPONSE 0x07
+
+#define ATT_READ_BY_TYPE_REQUEST        0x08
+#define ATT_READ_BY_TYPE_RESPONSE       0x09
+#define ATT_READ_REQUEST                0x0a
+#define ATT_READ_RESPONSE               0x0b
+#define ATT_READ_BLOB_REQUEST           0x0c
+#define ATT_READ_BLOB_RESPONSE          0x0d
+#define ATT_READ_MULTIPLE_REQUEST       0x0e
+#define ATT_READ_MULTIPLE_RESPONSE      0x0f
+#define ATT_READ_BY_GROUP_TYPE_REQUEST  0x10
+#define ATT_READ_BY_GROUP_TYPE_RESPONSE 0x11
+
+#define ATT_WRITE_REQUEST               0x12
+#define ATT_WRITE_RESPONSE              0x13
+
+#define ATT_PREPARE_WRITE_REQUEST       0x16
+#define ATT_PREPARE_WRITE_RESPONSE      0x17
+#define ATT_EXECUTE_WRITE_REQUEST       0x18
+#define ATT_EXECUTE_WRITE_RESPONSE      0x19
+
+#define ATT_HANDLE_VALUE_NOTIFICATION   0x1b
+#define ATT_HANDLE_VALUE_INDICATION     0x1d
+#define ATT_HANDLE_VALUE_CONFIRMATION   0x1e
+
+
+#define ATT_WRITE_COMMAND                0x52
+#define ATT_SIGNED_WRITE_COMMAND         0xD2
+
+// MARK: ATT Error Codes
+#define ATT_ERROR_INVALID_HANDLE                   0x01
+#define ATT_ERROR_READ_NOT_PERMITTED               0x02
+#define ATT_ERROR_WRITE_NOT_PERMITTED              0x03
+#define ATT_ERROR_INVALID_PDU                      0x04  
+#define ATT_ERROR_INSUFFICIENT_AUTHENTICATION      0x05
+#define ATT_ERROR_REQUEST_NOT_SUPPORTED            0x06
+#define ATT_ERROR_INVALID_OFFSET                   0x07
+#define ATT_ERROR_INSUFFICIENT_AUTHORIZATION       0x08
+#define ATT_ERROR_PREPARE_QUEUE_FULL               0x09
+#define ATT_ERROR_ATTRIBUTE_NOT_FOUND              0x0a
+#define ATT_ERROR_ATTRIBUTE_NOT_LONG               0x0b
+#define ATT_ERROR_INSUFFICIENT_ENCRYPTION_KEY_SIZE 0x0c
+#define ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH   0x0d
+#define ATT_ERROR_UNLIKELY_ERROR                   0x0e
+#define ATT_ERROR_INSUFFICIENT_ENCRYPTION          0x0f
+#define ATT_ERROR_UNSUPPORTED_GROUP_TYPE           0x10
+#define ATT_ERROR_INSUFFICIENT_RESOURCES           0x11
+
+// MARK: Attribute Property Flags
+#define ATT_PROPERTY_BROADCAST           0x01
+#define ATT_PROPERTY_READ                0x02
+#define ATT_PROPERTY_WRITE_WITHOUT_RESPONSE 0x04
+#define ATT_PROPERTY_WRITE               0x08
+#define ATT_PROPERTY_NOTIFY              0x10
+#define ATT_PROPERTY_INDICATE            0x20
+#define ATT_PROPERTY_AUTHENTICATED_SIGNED_WRITE 0x40
+#define ATT_PROPERTY_EXTENDED_PROPERTIES 0x80
+
+// MARK: Attribute Property Flag, BTstack extension
+// value is asked from client
+#define ATT_PROPERTY_DYNAMIC             0x100
+// 128 bit UUID used
+#define ATT_PROPERTY_UUID128             0x200
+// Authentication required
+#define ATT_PROPERTY_AUTHENTICATION_REQUIRED 0x400
+// Authorization from user required
+#define ATT_PROPERTY_AUTHORIZATION_REQUIRED  0x800
+// Encryption key size stored in upper 4 bits, 0 == no encryption, encryption key size - 1 otherwise
+
+// ATT Transaction Timeout of 30 seconds for Command/Response or Incidationc/Confirmation
+#define ATT_TRANSACTION_TIMEOUT_MS     30000
+
+#define ATT_TRANSACTION_MODE_NONE      0x0
+#define ATT_TRANSACTION_MODE_ACTIVE    0x1
+#define ATT_TRANSACTION_MODE_EXECUTE   0x2
+#define ATT_TRANSACTION_MODE_CANCEL    0x3
+
+// MARK: GATT UUIDs
+#define GATT_PRIMARY_SERVICE_UUID                   0x2800
+#define GATT_SECONDARY_SERVICE_UUID                 0x2801
+#define GATT_INCLUDE_SERVICE_UUID                   0x2802
+#define GATT_CHARACTERISTICS_UUID                   0x2803
+#define GATT_CHARACTERISTIC_EXTENDED_PROPERTIES     0x2900
+#define GATT_CHARACTERISTIC_USER_DESCRIPTION        0x2901
+#define GATT_CLIENT_CHARACTERISTICS_CONFIGURATION   0x2902
+#define GATT_SERVER_CHARACTERISTICS_CONFIGURATION   0x2903
+#define GATT_CHARACTERISTIC_PRESENTATION_FORMAT     0x2904
+#define GATT_CHARACTERISTIC_AGGREGATE_FORMAT        0x2905
+
+#define GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NONE          0
+#define GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION  1
+#define GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_INDICATION    2
+
+// GAP Service and Characteristics
+#define GAP_SERVICE_UUID               0x1800
+#define GAP_DEVICE_NAME_UUID           0x2a00
+#define GAP_APPEARANCE_UUID            0x2a01
+#define GAP_PERIPHERAL_PRIVACY_FLAG    0x2a02
+#define GAP_RECONNECTION_ADDRESS_UUID  0x2a03
+#define GAP_PERIPHERAL_PREFERRED_CONNECTION_PARAMETERS_UUID 0x2a04
+
+/**
+ * SM - LE Security Manager 
+ */
+// Bluetooth Spec definitions
+typedef enum {
+    SM_CODE_PAIRING_REQUEST = 0X01,
+    SM_CODE_PAIRING_RESPONSE,
+    SM_CODE_PAIRING_CONFIRM,
+    SM_CODE_PAIRING_RANDOM,
+    SM_CODE_PAIRING_FAILED,
+    SM_CODE_ENCRYPTION_INFORMATION,
+    SM_CODE_MASTER_IDENTIFICATION,
+    SM_CODE_IDENTITY_INFORMATION,
+    SM_CODE_IDENTITY_ADDRESS_INFORMATION,
+    SM_CODE_SIGNING_INFORMATION,
+    SM_CODE_SECURITY_REQUEST
+} SECURITY_MANAGER_COMMANDS;
+
+// IO Capability Values
+typedef enum {
+    IO_CAPABILITY_DISPLAY_ONLY = 0,
+    IO_CAPABILITY_DISPLAY_YES_NO,
+    IO_CAPABILITY_KEYBOARD_ONLY,
+    IO_CAPABILITY_NO_INPUT_NO_OUTPUT,
+    IO_CAPABILITY_KEYBOARD_DISPLAY, // not used by secure simple pairing
+} io_capability_t;
+
+// Authentication requirement flags
+#define SM_AUTHREQ_NO_BONDING 0x00
+#define SM_AUTHREQ_BONDING 0x01
+#define SM_AUTHREQ_MITM_PROTECTION 0x04
+
+// Key distribution flags used by spec
+#define SM_KEYDIST_ENC_KEY 0X01
+#define SM_KEYDIST_ID_KEY  0x02
+#define SM_KEYDIST_SIGN    0x04
+
+// Key distribution flags used internally
+#define SM_KEYDIST_FLAG_ENCRYPTION_INFORMATION       0x01
+#define SM_KEYDIST_FLAG_MASTER_IDENTIFICATION        0x02
+#define SM_KEYDIST_FLAG_IDENTITY_INFORMATION         0x04
+#define SM_KEYDIST_FLAG_IDENTITY_ADDRESS_INFORMATION 0x08
+#define SM_KEYDIST_FLAG_SIGNING_IDENTIFICATION       0x10
+
+// STK Generation Methods
+#define SM_STK_GENERATION_METHOD_JUST_WORKS 0x01
+#define SM_STK_GENERATION_METHOD_OOB        0x02
+#define SM_STK_GENERATION_METHOD_PASSKEY    0x04
+
+// Pairing Failed Reasons
+#define SM_REASON_RESERVED                     0x00
+#define SM_REASON_PASSKEYT_ENTRY_FAILED        0x01
+#define SM_REASON_OOB_NOT_AVAILABLE            0x02
+#define SM_REASON_AUTHENTHICATION_REQUIREMENTS 0x03
+#define SM_REASON_CONFIRM_VALUE_FAILED         0x04
+#define SM_REASON_PAIRING_NOT_SUPPORTED        0x05
+#define SM_REASON_ENCRYPTION_KEY_SIZE          0x06
+#define SM_REASON_COMMAND_NOT_SUPPORTED        0x07
+#define SM_REASON_UNSPECIFIED_REASON           0x08
+#define SM_REASON_REPEATED_ATTEMPTS            0x09
+// also, invalid parameters
+// and reserved
+
+
 #endif
