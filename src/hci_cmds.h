@@ -46,17 +46,11 @@
 
 #include <stdint.h>
 
+#include "bluetooth.h"
+
 #if defined __cplusplus
 extern "C" {
 #endif
-    
-/**
- * packet types - used in BTstack and over the H4 UART interface
- */
-#define HCI_COMMAND_DATA_PACKET 0x01
-#define HCI_ACL_DATA_PACKET     0x02
-#define HCI_SCO_DATA_PACKET     0x03
-#define HCI_EVENT_PACKET          0x04
 
 // extension for client/server communication
 #define DAEMON_EVENT_PACKET     0x05
@@ -86,213 +80,6 @@ extern "C" {
 // debug log messages
 #define LOG_MESSAGE_PACKET      0xfc
 
-    
-// Fixed PSM numbers
-#define PSM_SDP    0x01
-#define PSM_RFCOMM 0x03
-#define PSM_HID_CONTROL 0x11
-#define PSM_HID_INTERRUPT 0x13
-#define PSM_BNEP   0x0F
-
-// Events from host controller to host
-
-/**
- * @format 1
- * @param status
- */
-#define HCI_EVENT_INQUIRY_COMPLETE                         0x01
-// no format yet, can contain multiple results
-
-/** 
- * @format 1B11132
- * @param num_responses
- * @param bd_addr
- * @param page_scan_repetition_mode
- * @param reserved1
- * @param reserved2
- * @param class_of_device
- * @param clock_offset
- */
-#define HCI_EVENT_INQUIRY_RESULT                           0x02
-
-/**
- * @format 12B11
- * @param status
- * @param connection_handle
- * @param bd_addr
- * @param link_type
- * @param encryption_enabled
- */
-#define HCI_EVENT_CONNECTION_COMPLETE                      0x03
-/**
- * @format B31
- * @param bd_addr
- * @param class_of_device
- * @param link_type
- */
-#define HCI_EVENT_CONNECTION_REQUEST                       0x04
-/**
- * @format 121
- * @param status
- * @param connection_handle
- * @param reason 
- */
-#define HCI_EVENT_DISCONNECTION_COMPLETE                   0x05
-/**
- * @format 12
- * @param status
- * @param connection_handle
- */
-#define HCI_EVENT_AUTHENTICATION_COMPLETE_EVENT            0x06
-/**
- * @format 1BN
- * @param status
- * @param bd_addr
- * @param remote_name
- */
-#define HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE             0x07
-/**
- * @format 121
- * @param status
- * @param connection_handle
- * @param encryption_enabled 
- */
-#define HCI_EVENT_ENCRYPTION_CHANGE                        0x08
-/**
- * @format 12
- * @param status
- * @param connection_handle
- */
-#define HCI_EVENT_CHANGE_CONNECTION_LINK_KEY_COMPLETE      0x09
-/**
- * @format 121
- * @param status
- * @param connection_handle
- * @param key_flag 
- */
-#define HCI_EVENT_MASTER_LINK_KEY_COMPLETE                 0x0A
-#define HCI_EVENT_READ_REMOTE_SUPPORTED_FEATURES_COMPLETE  0x0B
-#define HCI_EVENT_READ_REMOTE_VERSION_INFORMATION_COMPLETE 0x0C
-#define HCI_EVENT_QOS_SETUP_COMPLETE                       0x0D
-
-/**
- * @format 12R
- * @param num_hci_command_packets
- * @param command_opcode
- * @param return_parameters
- */
-#define HCI_EVENT_COMMAND_COMPLETE                         0x0E
-/**
- * @format 112
- * @param status
- * @param num_hci_command_packets
- * @param command_opcode
- */
-#define HCI_EVENT_COMMAND_STATUS                                   0x0F
-
-/**
- * @format 121
- * @param hardware_code
- */
-#define HCI_EVENT_HARDWARE_ERROR                           0x10
-
-#define HCI_EVENT_FLUSH_OCCURED                            0x11
-
-/**
- * @format 1B1
- * @param status
- * @param bd_addr
- * @param role
- */
-#define HCI_EVENT_ROLE_CHANGE                              0x12
-
-#define HCI_EVENT_NUMBER_OF_COMPLETED_PACKETS              0x13
-#define HCI_EVENT_MODE_CHANGE_EVENT                        0x14
-#define HCI_EVENT_RETURN_LINK_KEYS                         0x15
-#define HCI_EVENT_PIN_CODE_REQUEST                         0x16
-#define HCI_EVENT_LINK_KEY_REQUEST                         0x17
-#define HCI_EVENT_LINK_KEY_NOTIFICATION                    0x18
-#define HCI_EVENT_DATA_BUFFER_OVERFLOW                     0x1A
-#define HCI_EVENT_MAX_SLOTS_CHANGED                        0x1B
-#define HCI_EVENT_READ_CLOCK_OFFSET_COMPLETE               0x1C
-#define HCI_EVENT_PACKET_TYPE_CHANGED                      0x1D
-
-/** 
- * @format 1B11321
- * @param num_responses
- * @param bd_addr
- * @param page_scan_repetition_mode
- * @param reserved
- * @param class_of_device
- * @param clock_offset
- * @param rssi
- */
-#define HCI_EVENT_INQUIRY_RESULT_WITH_RSSI                 0x22
-
-/**
- * @format 1HB111221
- * @param status
- * @param handle
- * @param bd_addr
- * @param link_type
- * @param transmission_interval
- * @param retransmission_interval
- * @param rx_packet_length
- * @param tx_packet_length
- * @param air_mode
- */
-#define HCI_EVENT_SYNCHRONOUS_CONNECTION_COMPLETE          0x2C
-
-// TODO: serialize extended_inquiry_response and provide parser
-/** 
- * @format 1B11321
- * @param num_responses
- * @param bd_addr
- * @param page_scan_repetition_mode
- * @param reserved
- * @param class_of_device
- * @param clock_offset
- * @param rssi
- */
-#define HCI_EVENT_EXTENDED_INQUIRY_RESPONSE                0x2F
-
- /** 
-  * @format 1H
-  * @param status
-  * @param handle
-  */
-#define HCI_EVENT_ENCRYPTION_KEY_REFRESH_COMPLETE	       0x30
-
-#define HCI_EVENT_IO_CAPABILITY_REQUEST                    0x31
-#define HCI_EVENT_IO_CAPABILITY_RESPONSE                   0x32
-#define HCI_EVENT_USER_CONFIRMATION_REQUEST                0x33
-#define HCI_EVENT_USER_PASSKEY_REQUEST                     0x34
-#define HCI_EVENT_REMOTE_OOB_DATA_REQUEST                  0x35
-#define HCI_EVENT_SIMPLE_PAIRING_COMPLETE                  0x36
-
-#define HCI_EVENT_LE_META                                  0x3E
-
-/** 
- * @format 11211B2221
- * @param subevent_code
- * @param status
- * @param connection_handle
- * @param role
- * @param peer_address_type
- * @param peer_address
- * @param conn_interval
- * @param conn_latency
- * @param supervision_timeout
- * @param master_clock_accuracy
- */
-#define HCI_SUBEVENT_LE_CONNECTION_COMPLETE                0x01
-#define HCI_SUBEVENT_LE_ADVERTISING_REPORT                 0x02
-#define HCI_SUBEVENT_LE_CONNECTION_UPDATE_COMPLETE         0x03
-#define HCI_SUBEVENT_LE_READ_REMOTE_USED_FEATURES_COMPLETE 0x04
-#define HCI_SUBEVENT_LE_LONG_TERM_KEY_REQUEST              0x05
-    
-// last used HCI_EVENT in 2.1 is 0x3d
-// last used HCI_EVENT in 4.1 is 0x57
 
 /**
  * @format 1
@@ -571,14 +358,14 @@ extern "C" {
  * @param handle
  * @param MTU
  */    
-#define GATT_MTU										   0xAB
+#define GATT_MTU                                           0xAB
 
 /** 
  * @format H2
  * @param handle
  * @param MTU
  */    
-#define ATT_MTU_EXCHANGE_COMPLETE						   0xB5
+#define ATT_MTU_EXCHANGE_COMPLETE                          0xB5
 
 // data: event(8), len(8), status (8), hci_handle (16), attribute_handle (16)
 #define ATT_HANDLE_VALUE_INDICATION_COMPLETE               0xB6
@@ -749,76 +536,6 @@ extern "C" {
 
 #define HCI_EVENT_VENDOR_SPECIFIC                          0xFF
 
-//
-// Error Codes
-//
-
-// from Bluetooth Core Specification
-#define ERROR_CODE_UNKNOWN_HCI_COMMAND                     0x01
-#define ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER           0x02
-#define ERROR_CODE_HARDWARE_FAILURE                        0x03
-#define ERROR_CODE_PAGE_TIMEOUT                            0x04
-#define ERROR_CODE_AUTHENTICATION_FAILURE				           0x05
-#define ERROR_CODE_PIN_OR_KEY_MISSING                      0x06
-#define ERROR_CODE_MEMORY_CAPACITY_EXCEEDED	    		       0x07
-#define ERROR_CODE_CONNECTION_TIMEOUT                      0x08
-#define ERROR_CODE_CONNECTION_LIMIT_EXCEEDED               0x09
-#define ERROR_CODE_SYNCHRONOUS_CONNECTION_LIMIT_TO_A_DEVICE_EXCEEDED  0x0A
-#define ERROR_CODE_ACL_CONNECTION_ALREADY_EXISTS           0x0B
-#define ERROR_CODE_COMMAND_DISALLOWED                      0x0C
-#define ERROR_CODE_CONNECTION_REJECTED_DUE_TO_LIMITED_RESOURCES 0x0D
-#define ERROR_CODE_CONNECTION_REJECTED_DUE_TO_SECURITY_REASONS  0x0E 
-#define ERROR_CODE_CONNECTION_REJECTED_DUE_TO_UNACCEPTABLE_BD_ADDR 0x0F 
-#define ERROR_CODE_CONNECTION_ACCEPT_TIMEOUT_EXCEEDED      0x10
-#define ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE  0x11 
-#define ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS          0x12 
-#define ERROR_CODE_REMOTE_USER_TERMINATED_CONNECTION       0x13
-#define ERROR_CODE_REMOTE_DEVICE_TERMINATED_CONNECTION_DUE_TO_LOW_RESOURCES 0x14 
-#define ERROR_CODE_REMOTE_DEVICE_TERMINATED_CONNECTION_DUE_TO_POWER_OFF     0x15
-#define ERROR_CODE_CONNECTION_TERMINATED_BY_LOCAL_HOST     0x16
-#define ERROR_CODE_REPEATED_ATTEMPTS                       0x17
-#define ERROR_CODE_PAIRING_NOT_ALLOWED                     0x18
-#define ERROR_CODE_UNKNOWN_LMP_PDU                         0x19                  
-#define ERROR_CODE_UNSUPPORTED_REMOTE_FEATURE_UNSUPPORTED_LMP_FEATURE 0x1A
-#define ERROR_CODE_SCO_OFFSET_REJECTED                     0x1B
-#define ERROR_CODE_SCO_INTERVAL_REJECTED                   0x1C
-#define ERROR_CODE_SCO_AIR_MODE_REJECTED                   0x1D
-#define ERROR_CODE_INVALID_LMP_PARAMETERS_INVALID_LL_PARAMETERS 0x1E
-#define ERROR_CODE_UNSPECIFIED_ERROR                       0x1F
-#define ERROR_CODE_UNSUPPORTED_LMP_PARAMETER_VALUE_UNSUPPORTED_LL_PARAMETER_VALUE 0x20
-#define ERROR_CODE_ROLE_CHANGE_NOT_ALLOWED                 0x21
-#define ERROR_CODE_LMP_RESPONSE_TIMEOUT_LL_RESPONSE_TIMEOUT 0x22
-#define ERROR_CODE_LMP_ERROR_TRANSACTION_COLLISION         0x23
-#define ERROR_CODE_LMP_PDU_NOT_ALLOWED                     0x24
-#define ERROR_CODE_ENCRYPTION_MODE_NOT_ACCEPTABLE          0x25
-#define ERROR_CODE_LINK_KEY_CANNOT_BE_CHANGED              0x26
-#define ERROR_CODE_REQUESTED_QOS_NOT_SUPPORTED             0x27
-#define ERROR_CODE_INSTANT_PASSED                          0x28
-#define ERROR_CODE_PAIRING_WITH_UNIT_KEY_NOT_SUPPORTED     0x29
-#define ERROR_CODE_DIFFERENT_TRANSACTION_COLLISION         0x2A
-#define ERROR_CODE_RESERVED                                0x2B
-#define ERROR_CODE_QOS_UNACCEPTABLE_PARAMETER              0x2C
-#define ERROR_CODE_QOS_REJECTED                            0x2D
-#define ERROR_CODE_CHANNEL_CLASSIFICATION_NOT_SUPPORTED    0x2E
-#define ERROR_CODE_INSUFFICIENT_SECURITY                   0x2F
-#define ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE        0x30
-// #define ERROR_CODE_RESERVED
-#define ERROR_CODE_ROLE_SWITCH_PENDING                     0x32
-// #define ERROR_CODE_RESERVED
-#define ERROR_CODE_RESERVED_SLOT_VIOLATION                 0x34
-#define ERROR_CODE_ROLE_SWITCH_FAILED                      0x35
-#define ERROR_CODE_EXTENDED_INQUIRY_RESPONSE_TOO_LARGE     0x36
-#define ERROR_CODE_SECURE_SIMPLE_PAIRING_NOT_SUPPORTED_BY_HOST 0x37
-#define ERROR_CODE_HOST_BUSY_PAIRING                       0x38
-#define ERROR_CODE_CONNECTION_REJECTED_DUE_TO_NO_SUITABLE_CHANNEL_FOUND 0x39
-#define ERROR_CODE_CONTROLLER_BUSY                         0x3A
-#define ERROR_CODE_UNACCEPTABLE_CONNECTION_PARAMETERS      0x3B
-#define ERROR_CODE_DIRECTED_ADVERTISING_TIMEOUT            0x3C
-#define ERROR_CODE_CONNECTION_TERMINATED_DUE_TO_MIC_FAILURE 0x3D
-#define ERROR_CODE_CONNECTION_FAILED_TO_BE_ESTABLISHED     0x3E
-#define ERROR_CODE_MAC_CONNECTION_FAILED                   0x3F
-#define ERROR_CODE_COARSE_CLOCK_ADJUSTMENT_REJECTED_BUT_WILL_TRY_TO_ADJUST_USING_CLOCK_DRAGGING 0x40
-
 // last error code in 2.1 is 0x38 - we start with 0x50 for BTstack errors
 #define BTSTACK_CONNECTION_TO_BTDAEMON_FAILED              0x50
 #define BTSTACK_ACTIVATION_FAILED_SYSTEM_BLUETOOTH         0x51
@@ -877,49 +594,13 @@ typedef enum {
 } le_command_status_t;
 
 /**
- * Default INQ Mode
- */
-#define HCI_INQUIRY_LAP 0x9E8B33L  // 0x9E8B33: General/Unlimited Inquiry Access Code (GIAC)
-
-/**
- * SSP IO Capabilities - if capability is set, BTstack answers IO Capability Requests
- */
-#define SSP_IO_CAPABILITY_DISPLAY_ONLY   0
-#define SSP_IO_CAPABILITY_DISPLAY_YES_NO 1
-#define SSP_IO_CAPABILITY_KEYBOARD_ONLY  2
-#define SSP_IO_CAPABILITY_NO_INPUT_NO_OUTPUT 3
-#define SSP_IO_CAPABILITY_UNKNOWN 0xff
-
-/**
- * SSP Authentication Requirements, see IO Capability Request Reply Commmand 
- */
-
-// Numeric comparison with automatic accept allowed.
-#define SSP_IO_AUTHREQ_MITM_PROTECTION_NOT_REQUIRED_NO_BONDING 0x00
-
-// Use IO Capabilities to deter- mine authentication procedure
-#define SSP_IO_AUTHREQ_MITM_PROTECTION_REQUIRED_NO_BONDING 0x01
-
-// Numeric compar- ison with automatic accept allowed.
-#define SSP_IO_AUTHREQ_MITM_PROTECTION_NOT_REQUIRED_DEDICATED_BONDING 0x02
-
-// Use IO Capabilities to determine authentication procedure
-#define SSP_IO_AUTHREQ_MITM_PROTECTION_REQUIRED_DEDICATED_BONDING 0x03
-
-// Numeric Compari- son with automatic accept allowed.
-#define SSP_IO_AUTHREQ_MITM_PROTECTION_NOT_REQUIRED_GENERAL_BONDING 0x04
-
-// . Use IO capabilities to determine authentication procedure.
-#define SSP_IO_AUTHREQ_MITM_PROTECTION_REQUIRED_GENERAL_BONDING 0x05
-
-/**
  * Address types
  * @note: BTstack uses a custom addr type to refer to classic ACL and SCO devices
  */
  typedef enum {
     BD_ADDR_TYPE_LE_PUBLIC = 0,
     BD_ADDR_TYPE_LE_RANDOM = 1,
-  BD_ADDR_TYPE_SCO       = 0xfe,
+    BD_ADDR_TYPE_SCO       = 0xfe,
     BD_ADDR_TYPE_CLASSIC   = 0xff,
     BD_ADDR_TYPE_UNKNOWN   = 0xfe
  } bd_addr_type_t;
