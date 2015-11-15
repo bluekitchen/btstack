@@ -52,58 +52,10 @@
 extern "C" {
 #endif
 
-#ifndef ETHER_ADDR_LEN
-#define ETHER_ADDR_LEN sizeof(bd_addr_t)
-#endif
-
-#ifndef ETHERTYPE_VLAN
-#define	ETHERTYPE_VLAN		                            0x8100 /* IEEE 802.1Q VLAN tag */
-#endif
-
-#define	BNEP_MTU_MIN		                            1691
-
 #define MAX_BNEP_NETFILTER                              8
 #define MAX_BNEP_MULTICAST_FILTER                       8
 #define MAX_BNEP_NETFILTER_OUT                          421
-#define MAX_BNEP_MULTICAST_FULTER_OUT                   140
-    
-#define BNEP_EXT_FLAG                                   0x80
-#define BNEP_TYPE_MASK                                  0x7F
-#define	BNEP_TYPE(header)                               ((header) & BNEP_TYPE_MASK)
-#define BNEP_HEADER_HAS_EXT(x)	                        (((x) & BNEP_EXT_FLAG) == BNEP_EXT_FLAG)
-    
-/* BNEP packet types */    
-#define	BNEP_PKT_TYPE_GENERAL_ETHERNET                  0x00
-#define	BNEP_PKT_TYPE_CONTROL                           0x01
-#define	BNEP_PKT_TYPE_COMPRESSED_ETHERNET               0x02
-#define	BNEP_PKT_TYPE_COMPRESSED_ETHERNET_SOURCE_ONLY   0x03
-#define	BNEP_PKT_TYPE_COMPRESSED_ETHERNET_DEST_ONLY     0x04
-
-/* BNEP control types */
-#define	BNEP_CONTROL_TYPE_COMMAND_NOT_UNDERSTOOD        0x00
-#define	BNEP_CONTROL_TYPE_SETUP_CONNECTION_REQUEST      0x01
-#define	BNEP_CONTROL_TYPE_SETUP_CONNECTION_RESPONSE     0x02
-#define	BNEP_CONTROL_TYPE_FILTER_NET_TYPE_SET           0x03
-#define	BNEP_CONTROL_TYPE_FILTER_NET_TYPE_RESPONSE      0x04
-#define	BNEP_CONTROL_TYPE_FILTER_MULTI_ADDR_SET         0x05
-#define	BNEP_CONTROL_TYPE_FILTER_MULTI_ADDR_RESPONSE    0x06
-
-/* BNEP extension header types */
-#define	BNEP_EXT_HEADER_TYPE_EXTENSION_CONTROL          0x00
-
-/* BNEP setup response codes */
-#define	BNEP_RESP_SETUP_SUCCESS                         0x0000
-#define	BNEP_RESP_SETUP_INVALID_DEST_UUID               0x0001
-#define	BNEP_RESP_SETUP_INVALID_SOURCE_UUID             0x0002
-#define	BNEP_RESP_SETUP_INVALID_SERVICE_UUID_SIZE       0x0003
-#define	BNEP_RESP_SETUP_CONNECTION_NOT_ALLOWED          0x0004
-
-/* BNEP filter response codes */
-#define	BNEP_RESP_FILTER_SUCCESS                        0x0000
-#define	BNEP_RESP_FILTER_UNSUPPORTED_REQUEST            0x0001
-#define	BNEP_RESP_FILTER_ERR_INVALID_RANGE              0x0002
-#define	BNEP_RESP_FILTER_ERR_TOO_MANY_FILTERS           0x0003
-#define	BNEP_RESP_FILTER_ERR_SECURITY                   0x0004
+#define MAX_BNEP_MULTICAST_FILTER_OUT                   140
 
 typedef enum {
 	BNEP_CHANNEL_STATE_CLOSED = 1,

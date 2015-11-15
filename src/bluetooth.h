@@ -454,7 +454,92 @@
 #define PSM_HID_CONTROL   0x11
 #define PSM_HID_INTERRUPT 0x13
 
+/**
+ * BNEP Protocol
+ */
 
+#ifndef ETHER_ADDR_LEN
+#define ETHER_ADDR_LEN sizeof(bd_addr_t)
+#endif
 
+#ifndef ETHERTYPE_VLAN
+#define	ETHERTYPE_VLAN		                            0x8100 /* IEEE 802.1Q VLAN tag */
+#endif
+    
+#define BNEP_MTU_MIN                                    1691
+
+#define BNEP_EXT_FLAG                                   0x80
+#define BNEP_TYPE_MASK                                  0x7F
+#define	BNEP_TYPE(header)                               ((header) & BNEP_TYPE_MASK)
+#define BNEP_HEADER_HAS_EXT(x)	                        (((x) & BNEP_EXT_FLAG) == BNEP_EXT_FLAG)
+    
+/* BNEP packet types */    
+#define	BNEP_PKT_TYPE_GENERAL_ETHERNET                  0x00
+#define	BNEP_PKT_TYPE_CONTROL                           0x01
+#define	BNEP_PKT_TYPE_COMPRESSED_ETHERNET               0x02
+#define	BNEP_PKT_TYPE_COMPRESSED_ETHERNET_SOURCE_ONLY   0x03
+#define	BNEP_PKT_TYPE_COMPRESSED_ETHERNET_DEST_ONLY     0x04
+
+/* BNEP control types */
+#define	BNEP_CONTROL_TYPE_COMMAND_NOT_UNDERSTOOD        0x00
+#define	BNEP_CONTROL_TYPE_SETUP_CONNECTION_REQUEST      0x01
+#define	BNEP_CONTROL_TYPE_SETUP_CONNECTION_RESPONSE     0x02
+#define	BNEP_CONTROL_TYPE_FILTER_NET_TYPE_SET           0x03
+#define	BNEP_CONTROL_TYPE_FILTER_NET_TYPE_RESPONSE      0x04
+#define	BNEP_CONTROL_TYPE_FILTER_MULTI_ADDR_SET         0x05
+#define	BNEP_CONTROL_TYPE_FILTER_MULTI_ADDR_RESPONSE    0x06
+
+/* BNEP extension header types */
+#define	BNEP_EXT_HEADER_TYPE_EXTENSION_CONTROL          0x00
+
+/* BNEP setup response codes */
+#define	BNEP_RESP_SETUP_SUCCESS                         0x0000
+#define	BNEP_RESP_SETUP_INVALID_DEST_UUID               0x0001
+#define	BNEP_RESP_SETUP_INVALID_SOURCE_UUID             0x0002
+#define	BNEP_RESP_SETUP_INVALID_SERVICE_UUID_SIZE       0x0003
+#define	BNEP_RESP_SETUP_CONNECTION_NOT_ALLOWED          0x0004
+
+/* BNEP filter response codes */
+#define	BNEP_RESP_FILTER_SUCCESS                        0x0000
+#define	BNEP_RESP_FILTER_UNSUPPORTED_REQUEST            0x0001
+#define	BNEP_RESP_FILTER_ERR_INVALID_RANGE              0x0002
+#define	BNEP_RESP_FILTER_ERR_TOO_MANY_FILTERS           0x0003
+#define	BNEP_RESP_FILTER_ERR_SECURITY                   0x0004
+
+/**
+ * PAN Profile
+ */
+
+typedef enum {
+	PANU_UUID = 0x1115,
+	NAP_UUID = 0x1116, 
+	GN_UUID = 0x1117
+} bnep_service_uuid_t; 
+
+typedef enum {
+	BNEP_SECURITY_NONE = 0x0000,
+	BNEP_SECURITY_SERVICE_LEVEL_ENFORCED,
+	BNEP_SECURITY_802_1X
+} security_description_t;
+
+typedef enum {
+	PAN_NET_ACCESS_TYPE_PSTN = 0x0000,
+	PAN_NET_ACCESS_TYPE_ISDN,
+	PAN_NET_ACCESS_TYPE_DSL,
+	PAN_NET_ACCESS_TYPE_CABLE_MODEM,
+	PAN_NET_ACCESS_TYPE_10MB_ETHERNET,
+	PAN_NET_ACCESS_TYPE_100MB_ETHERNET,
+	PAN_NET_ACCESS_TYPE_4MB_TOKEN_RING,
+	PAN_NET_ACCESS_TYPE_16MB_TOKEN_RING,
+	PAN_NET_ACCESS_TYPE_100MB_TOKEN_RING,
+	PAN_NET_ACCESS_TYPE_FDDI,
+	PAN_NET_ACCESS_TYPE_GSM,
+	PAN_NET_ACCESS_TYPE_CDMA,
+	PAN_NET_ACCESS_TYPE_GPRS,
+	PAN_NET_ACCESS_TYPE_3G,
+	PAN_NET_ACCESS_TYPE_CELULAR,
+	PAN_NET_ACCESS_TYPE_OTHER = 0xFFFE,
+	PAN_NET_ACCESS_TYPE_NONE
+} net_access_type_t;
 
 #endif

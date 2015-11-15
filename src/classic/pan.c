@@ -46,6 +46,8 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "btstack-config.h"
+
 #include "classic/sdp_util.h"
 #include "hci_cmds.h"
 

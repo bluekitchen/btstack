@@ -595,7 +595,7 @@ int bnep_set_multicast_filter(uint16_t bnep_cid,  bnep_multi_filter_t *filter, u
         return BNEP_CHANNEL_NOT_CONNECTED;
     }
     
-    if (len > MAX_BNEP_MULTICAST_FULTER_OUT) {
+    if (len > MAX_BNEP_MULTICAST_FILTER_OUT) {
         return BNEP_DATA_LEN_EXCEEDS_MTU;
     }
 
