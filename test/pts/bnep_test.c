@@ -803,11 +803,11 @@ int btstack_main(int argc, const char * argv[]){
     service_record_item_t * service_record_item = (service_record_item_t *) panu_sdp_record;
     pan_create_panu_service((uint8_t*) &service_record_item->service_record, network_packet_types, NULL, NULL, BNEP_SECURITY_NONE);
     printf("SDP service buffer size: %u\n", (uint16_t) (sizeof(service_record_item_t) + de_get_len((uint8_t*) &service_record_item->service_record)));
-    sdp_register_service_internal(NULL, service_record_item);
+     sdp_register_service_internal(service_record_item);
 #else
     pan_create_panu_service(panu_sdp_record, network_packet_types, NULL, NULL, BNEP_SECURITY_NONE);
     printf("SDP service record size: %u\n", de_get_len((uint8_t*) panu_sdp_record));
-    sdp_register_service_internal(NULL, (uint8_t*)panu_sdp_record);
+     sdp_register_service_internal((uint8_t*)panu_sdp_record);
 #endif
 
     /* Turn on the device */

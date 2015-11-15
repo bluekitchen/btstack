@@ -207,7 +207,7 @@ int btstack_main(int argc, const char * argv[]){
     memset((uint8_t *)hfp_service_buffer, 0, sizeof(hfp_service_buffer));
     hfp_ag_create_sdp_record((uint8_t *)hfp_service_buffer, rfcomm_channel_nr, hfp_ag_service_name, 0, 0);
 
-    sdp_register_service_internal(NULL, (uint8_t *)hfp_service_buffer);
+     sdp_register_service_internal((uint8_t *)hfp_service_buffer);
 
     // turn on!
     hci_power_control(HCI_POWER_ON);

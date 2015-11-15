@@ -58,10 +58,11 @@ extern "C" {
 #include "l2cap.h"
 
 // Classic
-#include "classic/rfcomm.h"
 #include "classic/bnep.h"
 #include "classic/hfp.h"
 #include "classic/remote_device_db.h"
+#include "classic/rfcomm.h"
+#include "classic/sdp.h"
 
 // BLE
 #ifdef HAVE_BLE
@@ -113,6 +114,10 @@ void   btstack_memory_bnep_channel_free(bnep_channel_t *bnep_channel);
 // hfp_connection
 hfp_connection_t * btstack_memory_hfp_connection_get(void);
 void   btstack_memory_hfp_connection_free(hfp_connection_t *hfp_connection);
+
+// service_record_item
+service_record_item_t * btstack_memory_service_record_item_get(void);
+void   btstack_memory_service_record_item_free(service_record_item_t *service_record_item);
 
 #ifdef HAVE_BLE
 // gatt_client, gatt_subclient, whitelist_entry, sm_lookup_entry

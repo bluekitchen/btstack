@@ -988,7 +988,7 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             
         case SDP_REGISTER_SERVICE_RECORD:
             log_info("SDP_REGISTER_SERVICE_RECORD size %u\n", size);
-            service_record_handle = sdp_register_service_internal(connection, &packet[3]);
+            service_record_handle = sdp_register_service_internal(&packet[3]);
             if (service_record_handle){
                 daemon_add_client_sdp_service_record_handle(connection, service_record_handle);
                 sdp_emit_service_registered(connection, service_record_handle, 0);
@@ -999,7 +999,7 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
         case SDP_UNREGISTER_SERVICE_RECORD:
             service_record_handle = READ_BT_32(packet, 3);
             log_info("SDP_UNREGISTER_SERVICE_RECORD handle 0x%x ", service_record_handle);
-            sdp_unregister_service_internal(connection, service_record_handle);
+            sdp_unregister_service_internal(service_record_handle);
             daemon_remove_client_sdp_service_record_handle(connection, service_record_handle);
             break;
         case SDP_CLIENT_QUERY_RFCOMM_SERVICES: 
@@ -1937,7 +1937,6 @@ int main (int argc,  char * const * argv){
     
 #ifdef HAVE_SDP
     sdp_init();
-    sdp_register_packet_handler(&daemon_packet_handler);
 #endif
 
 #ifdef HAVE_BLE

@@ -68,22 +68,12 @@ static uint32_t sdp_next_service_record_handle = ((uint32_t) maxReservedServiceR
 
 static uint8_t sdp_response_buffer[SDP_RESPONSE_BUFFER_SIZE];
 
-static void (*app_packet_handler)(void * connection, uint8_t packet_type,
-                                  uint16_t channel, uint8_t *packet, uint16_t size) = NULL;
-
 static uint16_t l2cap_cid = 0;
 static uint16_t sdp_response_size = 0;
 
 void sdp_init(void){
     // register with l2cap psm sevices - max MTU
     l2cap_register_service(sdp_packet_handler, PSM_SDP, 0xffff, LEVEL_0);
-}
-
-// register packet handler
-void sdp_register_packet_handler(void (*handler)(void * connection, uint8_t packet_type,
-                                                 uint16_t channel, uint8_t *packet, uint16_t size)){
-	app_packet_handler = handler;
-    l2cap_cid = 0;
 }
 
 uint32_t sdp_get_service_record_handle(uint8_t * record){
@@ -122,7 +112,7 @@ static uint32_t sdp_create_service_record_handle(void){
 // pre: ServiceRecordHandle is first attribute and valid
 // pre: record
 // @returns ServiceRecordHandle or 0 if registration failed
-uint32_t sdp_register_service_internal(void *connection, service_record_item_t * record_item){
+uint32_t sdp_register_service_internal(service_record_item_t * record_item){
     // get user record handle
     uint32_t record_handle = record_item->service_record_handle;
     // get actual record
@@ -167,7 +157,7 @@ static const uint8_t removeServiceRecordHandleAttributeIDList[] = { 0x36, 0x00, 
 // register service record internally - the normal version creates a copy of the record
 // pre: AttributeIDs are in ascending order => ServiceRecordHandle is first attribute if present
 // @returns ServiceRecordHandle or 0 if registration failed
-uint32_t sdp_register_service_internal(void *connection, uint8_t * record){
+uint32_t sdp_register_service_internal(uint8_t * record){
 
     // dump for now
     // log_info("Register service record");
@@ -200,7 +190,6 @@ uint32_t sdp_register_service_internal(void *connection, uint8_t * record){
     if (!newRecordItem) {
         return 0;
     }
-        
     // set new handle
     newRecordItem->service_record_handle = record_handle;
 
@@ -233,7 +222,7 @@ uint32_t sdp_register_service_internal(void *connection, uint8_t * record){
 // 
 // makes sure one client cannot remove service records of other clients
 //
-void sdp_unregister_service_internal(void *connection, uint32_t service_record_handle){
+void sdp_unregister_service_internal(uint32_t service_record_handle){
     service_record_item_t * record_item = sdp_get_record_for_handle(service_record_handle);
     if (!record_item) return;
     linked_list_remove(&sdp_service_records, (linked_item_t *) record_item);

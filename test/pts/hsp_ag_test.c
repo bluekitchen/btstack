@@ -192,7 +192,7 @@ int btstack_main(int argc, const char * argv[]){
     hsp_ag_register_packet_handler(packet_handler);
     
     sdp_init();
-    sdp_register_service_internal(NULL, (uint8_t *)hsp_service_buffer);
+     sdp_register_service_internal((uint8_t *)hsp_service_buffer);
 
     // turn on!
     hci_power_control(HCI_POWER_ON);

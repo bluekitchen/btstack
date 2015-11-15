@@ -49,12 +49,11 @@
 
 #include "btstack-config.h"
 
-#include <btstack/run_loop.h>
-
-#include "debug.h"
 #include "btstack_memory.h"
+#include "debug.h"
 #include "hci.h"
 #include "hci_dump.h"
+#include "run_loop.h"
 #include "stdin_support.h"
 
 int btstack_main(int argc, const char * argv[]);
