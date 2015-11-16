@@ -3032,18 +3032,18 @@ void gap_set_local_name(const char * local_name){
     hci_stack->local_name = local_name;
 }
 
-le_command_status_t le_central_start_scan(void){
-    if (hci_stack->le_scanning_state == LE_SCANNING) return BLE_PERIPHERAL_OK;
+uint8_t le_central_start_scan(void){
+    if (hci_stack->le_scanning_state == LE_SCANNING) return 0;
     hci_stack->le_scanning_state = LE_START_SCAN;
     hci_run();
-    return BLE_PERIPHERAL_OK;
+    return 0;
 }
 
-le_command_status_t le_central_stop_scan(void){
-    if ( hci_stack->le_scanning_state == LE_SCAN_IDLE) return BLE_PERIPHERAL_OK;
+uint8_t le_central_stop_scan(void){
+    if ( hci_stack->le_scanning_state == LE_SCAN_IDLE) return 0;
     hci_stack->le_scanning_state = LE_STOP_SCAN;
     hci_run();
-    return BLE_PERIPHERAL_OK;
+    return 0;
 }
 
 void le_central_set_scan_parameters(uint8_t scan_type, uint16_t scan_interval, uint16_t scan_window){
@@ -3053,7 +3053,7 @@ void le_central_set_scan_parameters(uint8_t scan_type, uint16_t scan_interval, u
     hci_run();
 }
 
-le_command_status_t le_central_connect(bd_addr_t addr, bd_addr_type_t addr_type){
+uint8_t le_central_connect(bd_addr_t addr, bd_addr_type_t addr_type){
     hci_connection_t * conn = hci_connection_for_bd_addr_and_type(addr, addr_type);
     if (!conn){
         log_info("le_central_connect: no connection exists yet, creating context");
@@ -3067,7 +3067,7 @@ le_command_status_t le_central_connect(bd_addr_t addr, bd_addr_type_t addr_type)
         conn->state = SEND_CREATE_CONNECTION;
         log_info("le_central_connect: send create connection next");
         hci_run();
-        return BLE_PERIPHERAL_OK;
+        return 0;
     }
     
     if (!hci_is_le_connection(conn) ||
@@ -3075,13 +3075,13 @@ le_command_status_t le_central_connect(bd_addr_t addr, bd_addr_type_t addr_type)
         conn->state == SENT_CREATE_CONNECTION) {
         hci_emit_le_connection_complete(conn->address_type, conn->address, 0, ERROR_CODE_COMMAND_DISALLOWED);
         log_error("le_central_connect: classic connection or connect is already being created");
-        return BLE_PERIPHERAL_IN_WRONG_STATE;
+        return GATT_CLIENT_IN_WRONG_STATE;
     }
     
     log_info("le_central_connect: context exists with state %u", conn->state);
     hci_emit_le_connection_complete(conn->address_type, conn->address, conn->con_handle, 0);
     hci_run();
-    return BLE_PERIPHERAL_OK;
+    return 0;
 }
 
 // @assumption: only a single outgoing LE Connection exists
@@ -3101,9 +3101,9 @@ static hci_connection_t * le_central_get_outgoing_connection(void){
     return NULL;
 }
 
-le_command_status_t le_central_connect_cancel(void){
+uint8_t le_central_connect_cancel(void){
     hci_connection_t * conn = le_central_get_outgoing_connection();
-    if (!conn) return BLE_PERIPHERAL_OK;
+    if (!conn) return 0;
     switch (conn->state){
         case SEND_CREATE_CONNECTION:
             // skip sending create connection and emit event instead
@@ -3119,7 +3119,7 @@ le_command_status_t le_central_connect_cancel(void){
         default:
             break;
     }
-    return BLE_PERIPHERAL_OK;
+    return 0;
 }
 
 /**
@@ -3233,15 +3233,15 @@ void gap_advertisements_enable(int enabled){
 }
 
 
-le_command_status_t gap_disconnect(hci_con_handle_t handle){
+uint8_t gap_disconnect(hci_con_handle_t handle){
     hci_connection_t * conn = hci_connection_for_handle(handle);
     if (!conn){
         hci_emit_disconnection_complete(handle, 0);
-        return BLE_PERIPHERAL_OK;
+        return 0;
     }
     conn->state = SEND_DISCONNECT;
     hci_run();
-    return BLE_PERIPHERAL_OK;
+    return 0;
 }
 
 /**

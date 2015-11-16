@@ -102,7 +102,7 @@ void loop(void){
     if (sendCounter){
         sprintf(counterString, "BTstack %u\n", counter);
         int result = myBLEDevice.writeCharacteristicWithoutResponse(&characteristics[charTX].characteristic, (uint8_t*) counterString, strlen(counterString) );
-        if (result == BLE_PERIPHERAL_OK){
+        if (result == 0){
             Serial.print("Wrote without response: ");
             Serial.println(counterString);
             counter++;

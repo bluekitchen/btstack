@@ -43,14 +43,14 @@ void mock_simulate_scan_response(void){
 	registered_l2cap_packet_handler(HCI_EVENT_PACKET, NULL, (uint8_t *)&packet, sizeof(packet));
 }
 
-le_command_status_t le_central_start_scan(void){
-	return BLE_PERIPHERAL_OK; 
+uint8_t le_central_start_scan(void){
+	return 0; 
 }
-le_command_status_t le_central_stop_scan(void){
-	return BLE_PERIPHERAL_OK;
+uint8_t le_central_stop_scan(void){
+	return 0;
 }
-le_command_status_t le_central_connect(bd_addr_t addr, bd_addr_type_t addr_type){
-	return BLE_PERIPHERAL_OK;
+uint8_t le_central_connect(bd_addr_t addr, bd_addr_type_t addr_type){
+	return 0;
 }
 void le_central_set_scan_parameters(uint8_t scan_type, uint16_t scan_interval, uint16_t scan_window){
 }

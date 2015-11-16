@@ -60,8 +60,8 @@
 
 // packet header sizes
 #define HCI_CMD_HEADER_SIZE          3
-#define HCI_ACL_HEADER_SIZE   	     4
-#define HCI_SCO_HEADER_SIZE  	     3
+#define HCI_ACL_HEADER_SIZE          4
+#define HCI_SCO_HEADER_SIZE          3
 #define HCI_EVENT_HEADER_SIZE        2
 
 /** 
@@ -73,13 +73,14 @@
 //
 
 // from Bluetooth Core Specification
+#define ERROR_CODE_SUCCESS                                 0x00 
 #define ERROR_CODE_UNKNOWN_HCI_COMMAND                     0x01
 #define ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER           0x02
 #define ERROR_CODE_HARDWARE_FAILURE                        0x03
 #define ERROR_CODE_PAGE_TIMEOUT                            0x04
-#define ERROR_CODE_AUTHENTICATION_FAILURE                          0x05
+#define ERROR_CODE_AUTHENTICATION_FAILURE                  0x05
 #define ERROR_CODE_PIN_OR_KEY_MISSING                      0x06
-#define ERROR_CODE_MEMORY_CAPACITY_EXCEEDED                    0x07
+#define ERROR_CODE_MEMORY_CAPACITY_EXCEEDED                0x07
 #define ERROR_CODE_CONNECTION_TIMEOUT                      0x08
 #define ERROR_CODE_CONNECTION_LIMIT_EXCEEDED               0x09
 #define ERROR_CODE_SYNCHRONOUS_CONNECTION_LIMIT_TO_A_DEVICE_EXCEEDED  0x0A
@@ -451,8 +452,8 @@
 
 // Fixed PSM numbers
 #define PSM_SDP           0x01
-#define PSM_RFCOMM 		  0x03
-#define PSM_BNEP   	      0x0F
+#define PSM_RFCOMM        0x03
+#define PSM_BNEP          0x0F
 #define PSM_HID_CONTROL   0x11
 #define PSM_HID_INTERRUPT 0x13
 
@@ -463,13 +464,13 @@
  // PDU Types
 typedef enum {
     SDP_Invalid = 0,
-	SDP_ErrorResponse = 1,
-	SDP_ServiceSearchRequest,
-	SDP_ServiceSearchResponse,
-	SDP_ServiceAttributeRequest,
-	SDP_ServiceAttributeResponse,
-	SDP_ServiceSearchAttributeRequest,
-	SDP_ServiceSearchAttributeResponse
+    SDP_ErrorResponse = 1,
+    SDP_ServiceSearchRequest,
+    SDP_ServiceSearchResponse,
+    SDP_ServiceAttributeRequest,
+    SDP_ServiceAttributeResponse,
+    SDP_ServiceSearchAttributeRequest,
+    SDP_ServiceSearchAttributeResponse
 } SDP_PDU_ID_t;
 
 // UNIVERSAL ATTRIBUTE DEFINITIONS
@@ -478,12 +479,12 @@ typedef enum {
 #define SDP_ServiceRecordState      0x0002
 #define SDP_ServiceID               0x0003
 #define SDP_ProtocolDescriptorList  0x0004
-#define SDP_BrowseGroupList		    0x0005
+#define SDP_BrowseGroupList         0x0005
 #define SDP_LanguageBaseAttributeIDList 0x0006
-#define SDP_ServiceInfoTimeToLive	0x0007
-#define SDP_ServiceAvailability		0x0008
+#define SDP_ServiceInfoTimeToLive   0x0007
+#define SDP_ServiceAvailability     0x0008
 #define SDP_BluetoothProfileDescriptorList 0x0009
-#define SDP_DocumentationURL		0x000a
+#define SDP_DocumentationURL        0x000a
 #define SDP_ClientExecutableURL     0x000b
 #define SDP_IconURL                 0x000c
 #define SDP_AdditionalProtocolDescriptorList 0x000d
@@ -535,7 +536,7 @@ typedef enum {
 #define BT_RFCOMM_SABM       0x3F       // 1 1 1 1  1 1 0 0
 #define BT_RFCOMM_UA         0x73       // 1 1 0 0  1 1 1 0
 #define BT_RFCOMM_DM         0x0F       // 1 1 1 1  0 0 0 0
-#define BT_RFCOMM_DM_PF      0x1F		// 1 1 1 1  1 0 0 0
+#define BT_RFCOMM_DM_PF      0x1F       // 1 1 1 1  1 0 0 0
 #define BT_RFCOMM_DISC       0x53       // 1 1 0 0  1 0 1 0
 #define BT_RFCOMM_UIH        0xEF       // 1 1 1 1  0 1 1 1
 #define BT_RFCOMM_UIH_PF     0xFF       // 1 1 1 1  0 1 1 1
@@ -640,83 +641,83 @@ typedef enum rpn_flow_control {
 #endif
 
 #ifndef ETHERTYPE_VLAN
-#define	ETHERTYPE_VLAN		                            0x8100 /* IEEE 802.1Q VLAN tag */
+#define ETHERTYPE_VLAN                                  0x8100 /* IEEE 802.1Q VLAN tag */
 #endif
     
 #define BNEP_MTU_MIN                                    1691
 
 #define BNEP_EXT_FLAG                                   0x80
 #define BNEP_TYPE_MASK                                  0x7F
-#define	BNEP_TYPE(header)                               ((header) & BNEP_TYPE_MASK)
-#define BNEP_HEADER_HAS_EXT(x)	                        (((x) & BNEP_EXT_FLAG) == BNEP_EXT_FLAG)
+#define BNEP_TYPE(header)                               ((header) & BNEP_TYPE_MASK)
+#define BNEP_HEADER_HAS_EXT(x)                          (((x) & BNEP_EXT_FLAG) == BNEP_EXT_FLAG)
     
 /* BNEP packet types */    
-#define	BNEP_PKT_TYPE_GENERAL_ETHERNET                  0x00
-#define	BNEP_PKT_TYPE_CONTROL                           0x01
-#define	BNEP_PKT_TYPE_COMPRESSED_ETHERNET               0x02
-#define	BNEP_PKT_TYPE_COMPRESSED_ETHERNET_SOURCE_ONLY   0x03
-#define	BNEP_PKT_TYPE_COMPRESSED_ETHERNET_DEST_ONLY     0x04
+#define BNEP_PKT_TYPE_GENERAL_ETHERNET                  0x00
+#define BNEP_PKT_TYPE_CONTROL                           0x01
+#define BNEP_PKT_TYPE_COMPRESSED_ETHERNET               0x02
+#define BNEP_PKT_TYPE_COMPRESSED_ETHERNET_SOURCE_ONLY   0x03
+#define BNEP_PKT_TYPE_COMPRESSED_ETHERNET_DEST_ONLY     0x04
 
 /* BNEP control types */
-#define	BNEP_CONTROL_TYPE_COMMAND_NOT_UNDERSTOOD        0x00
-#define	BNEP_CONTROL_TYPE_SETUP_CONNECTION_REQUEST      0x01
-#define	BNEP_CONTROL_TYPE_SETUP_CONNECTION_RESPONSE     0x02
-#define	BNEP_CONTROL_TYPE_FILTER_NET_TYPE_SET           0x03
-#define	BNEP_CONTROL_TYPE_FILTER_NET_TYPE_RESPONSE      0x04
-#define	BNEP_CONTROL_TYPE_FILTER_MULTI_ADDR_SET         0x05
-#define	BNEP_CONTROL_TYPE_FILTER_MULTI_ADDR_RESPONSE    0x06
+#define BNEP_CONTROL_TYPE_COMMAND_NOT_UNDERSTOOD        0x00
+#define BNEP_CONTROL_TYPE_SETUP_CONNECTION_REQUEST      0x01
+#define BNEP_CONTROL_TYPE_SETUP_CONNECTION_RESPONSE     0x02
+#define BNEP_CONTROL_TYPE_FILTER_NET_TYPE_SET           0x03
+#define BNEP_CONTROL_TYPE_FILTER_NET_TYPE_RESPONSE      0x04
+#define BNEP_CONTROL_TYPE_FILTER_MULTI_ADDR_SET         0x05
+#define BNEP_CONTROL_TYPE_FILTER_MULTI_ADDR_RESPONSE    0x06
 
 /* BNEP extension header types */
-#define	BNEP_EXT_HEADER_TYPE_EXTENSION_CONTROL          0x00
+#define BNEP_EXT_HEADER_TYPE_EXTENSION_CONTROL          0x00
 
 /* BNEP setup response codes */
-#define	BNEP_RESP_SETUP_SUCCESS                         0x0000
-#define	BNEP_RESP_SETUP_INVALID_DEST_UUID               0x0001
-#define	BNEP_RESP_SETUP_INVALID_SOURCE_UUID             0x0002
-#define	BNEP_RESP_SETUP_INVALID_SERVICE_UUID_SIZE       0x0003
-#define	BNEP_RESP_SETUP_CONNECTION_NOT_ALLOWED          0x0004
+#define BNEP_RESP_SETUP_SUCCESS                         0x0000
+#define BNEP_RESP_SETUP_INVALID_DEST_UUID               0x0001
+#define BNEP_RESP_SETUP_INVALID_SOURCE_UUID             0x0002
+#define BNEP_RESP_SETUP_INVALID_SERVICE_UUID_SIZE       0x0003
+#define BNEP_RESP_SETUP_CONNECTION_NOT_ALLOWED          0x0004
 
 /* BNEP filter response codes */
-#define	BNEP_RESP_FILTER_SUCCESS                        0x0000
-#define	BNEP_RESP_FILTER_UNSUPPORTED_REQUEST            0x0001
-#define	BNEP_RESP_FILTER_ERR_INVALID_RANGE              0x0002
-#define	BNEP_RESP_FILTER_ERR_TOO_MANY_FILTERS           0x0003
-#define	BNEP_RESP_FILTER_ERR_SECURITY                   0x0004
+#define BNEP_RESP_FILTER_SUCCESS                        0x0000
+#define BNEP_RESP_FILTER_UNSUPPORTED_REQUEST            0x0001
+#define BNEP_RESP_FILTER_ERR_INVALID_RANGE              0x0002
+#define BNEP_RESP_FILTER_ERR_TOO_MANY_FILTERS           0x0003
+#define BNEP_RESP_FILTER_ERR_SECURITY                   0x0004
 
 /**
  * PAN Profile
  */
 
 typedef enum {
-	PANU_UUID = 0x1115,
-	NAP_UUID = 0x1116, 
-	GN_UUID = 0x1117
+    PANU_UUID = 0x1115,
+    NAP_UUID = 0x1116, 
+    GN_UUID = 0x1117
 } bnep_service_uuid_t; 
 
 typedef enum {
-	BNEP_SECURITY_NONE = 0x0000,
-	BNEP_SECURITY_SERVICE_LEVEL_ENFORCED,
-	BNEP_SECURITY_802_1X
+    BNEP_SECURITY_NONE = 0x0000,
+    BNEP_SECURITY_SERVICE_LEVEL_ENFORCED,
+    BNEP_SECURITY_802_1X
 } security_description_t;
 
 typedef enum {
-	PAN_NET_ACCESS_TYPE_PSTN = 0x0000,
-	PAN_NET_ACCESS_TYPE_ISDN,
-	PAN_NET_ACCESS_TYPE_DSL,
-	PAN_NET_ACCESS_TYPE_CABLE_MODEM,
-	PAN_NET_ACCESS_TYPE_10MB_ETHERNET,
-	PAN_NET_ACCESS_TYPE_100MB_ETHERNET,
-	PAN_NET_ACCESS_TYPE_4MB_TOKEN_RING,
-	PAN_NET_ACCESS_TYPE_16MB_TOKEN_RING,
-	PAN_NET_ACCESS_TYPE_100MB_TOKEN_RING,
-	PAN_NET_ACCESS_TYPE_FDDI,
-	PAN_NET_ACCESS_TYPE_GSM,
-	PAN_NET_ACCESS_TYPE_CDMA,
-	PAN_NET_ACCESS_TYPE_GPRS,
-	PAN_NET_ACCESS_TYPE_3G,
-	PAN_NET_ACCESS_TYPE_CELULAR,
-	PAN_NET_ACCESS_TYPE_OTHER = 0xFFFE,
-	PAN_NET_ACCESS_TYPE_NONE
+    PAN_NET_ACCESS_TYPE_PSTN = 0x0000,
+    PAN_NET_ACCESS_TYPE_ISDN,
+    PAN_NET_ACCESS_TYPE_DSL,
+    PAN_NET_ACCESS_TYPE_CABLE_MODEM,
+    PAN_NET_ACCESS_TYPE_10MB_ETHERNET,
+    PAN_NET_ACCESS_TYPE_100MB_ETHERNET,
+    PAN_NET_ACCESS_TYPE_4MB_TOKEN_RING,
+    PAN_NET_ACCESS_TYPE_16MB_TOKEN_RING,
+    PAN_NET_ACCESS_TYPE_100MB_TOKEN_RING,
+    PAN_NET_ACCESS_TYPE_FDDI,
+    PAN_NET_ACCESS_TYPE_GSM,
+    PAN_NET_ACCESS_TYPE_CDMA,
+    PAN_NET_ACCESS_TYPE_GPRS,
+    PAN_NET_ACCESS_TYPE_3G,
+    PAN_NET_ACCESS_TYPE_CELULAR,
+    PAN_NET_ACCESS_TYPE_OTHER = 0xFFFE,
+    PAN_NET_ACCESS_TYPE_NONE
 } net_access_type_t;
 
 /**
