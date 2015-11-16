@@ -610,51 +610,6 @@ static void daemon_disconnect_client(connection_t * connection){
     free(client); 
 }
 
-#ifdef HAVE_BLE
-
-linked_list_gatt_client_helper_t * daemon_get_gatt_client_helper(uint16_t handle) {
-    linked_list_iterator_t it;  
-    if (!gatt_client_helpers) return NULL;
-    log_info("daemon_get_gatt_client_helper for handle 0x%02x", handle);
-    
-    linked_list_iterator_init(&it, &gatt_client_helpers);
-    while (linked_list_iterator_has_next(&it)){
-        linked_list_gatt_client_helper_t * item = (linked_list_gatt_client_helper_t*) linked_list_iterator_next(&it);
-        if (!item ) {
-            log_info("daemon_get_gatt_client_helper gatt_client_helpers null item");
-            break;
-        } 
-        if (item->con_handle == handle){
-            return item;
-        }
-    }
-    log_info("daemon_get_gatt_client_helper for handle 0x%02x is NULL.", handle);
-    return NULL;
-}
-
-static void send_gatt_query_complete(connection_t * connection, uint16_t handle, uint8_t status){
-    // @format H1
-    uint8_t event[5];
-    event[0] = GATT_QUERY_COMPLETE;
-    event[1] = 3;
-    bt_store_16(event, 2, handle);
-    event[4] = status;
-    hci_dump_packet(HCI_EVENT_PACKET, 0, event, sizeof(event));
-    socket_connection_send_packet(connection, HCI_EVENT_PACKET, 0, event, sizeof(event));
-}
-
-static void send_gatt_mtu_event(connection_t * connection, uint16_t handle, uint16_t mtu){
-    uint8_t event[6];
-    int pos = 0;
-    event[pos++] = GATT_MTU;
-    event[pos++] = sizeof(event) - 2;
-    bt_store_16(event, pos, handle);
-    pos += 2;
-    bt_store_16(event, pos, mtu);
-    pos += 2;
-    hci_dump_packet(HCI_EVENT_PACKET, 0, event, sizeof(event));
-    socket_connection_send_packet(connection, HCI_EVENT_PACKET, 0, event, sizeof(event));
-}
 
 static void send_l2cap_connection_open_failed(connection_t * connection, bd_addr_t address, uint16_t psm, uint8_t status){
     // emit error - see l2cap.c:l2cap_emit_channel_opened(..)
@@ -719,6 +674,52 @@ static void sdp_emit_service_registered(void *connection, uint32_t handle, uint8
     event[1] = sizeof(event) - 2;
     event[2] = status;
     bt_store_32(event, 3, handle);
+    hci_dump_packet(HCI_EVENT_PACKET, 0, event, sizeof(event));
+    socket_connection_send_packet(connection, HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
+#ifdef HAVE_BLE
+
+linked_list_gatt_client_helper_t * daemon_get_gatt_client_helper(uint16_t handle) {
+    linked_list_iterator_t it;  
+    if (!gatt_client_helpers) return NULL;
+    log_info("daemon_get_gatt_client_helper for handle 0x%02x", handle);
+    
+    linked_list_iterator_init(&it, &gatt_client_helpers);
+    while (linked_list_iterator_has_next(&it)){
+        linked_list_gatt_client_helper_t * item = (linked_list_gatt_client_helper_t*) linked_list_iterator_next(&it);
+        if (!item ) {
+            log_info("daemon_get_gatt_client_helper gatt_client_helpers null item");
+            break;
+        } 
+        if (item->con_handle == handle){
+            return item;
+        }
+    }
+    log_info("daemon_get_gatt_client_helper for handle 0x%02x is NULL.", handle);
+    return NULL;
+}
+
+static void send_gatt_query_complete(connection_t * connection, uint16_t handle, uint8_t status){
+    // @format H1
+    uint8_t event[5];
+    event[0] = GATT_QUERY_COMPLETE;
+    event[1] = 3;
+    bt_store_16(event, 2, handle);
+    event[4] = status;
+    hci_dump_packet(HCI_EVENT_PACKET, 0, event, sizeof(event));
+    socket_connection_send_packet(connection, HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
+static void send_gatt_mtu_event(connection_t * connection, uint16_t handle, uint16_t mtu){
+    uint8_t event[6];
+    int pos = 0;
+    event[pos++] = GATT_MTU;
+    event[pos++] = sizeof(event) - 2;
+    bt_store_16(event, pos, handle);
+    pos += 2;
+    bt_store_16(event, pos, mtu);
+    pos += 2;
     hci_dump_packet(HCI_EVENT_PACKET, 0, event, sizeof(event));
     socket_connection_send_packet(connection, HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
