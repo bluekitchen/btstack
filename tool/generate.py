@@ -8,7 +8,7 @@ import os
 
 print '''
 Java binding generator for BTstack
-Copyright 2014, BlueKitchen GmbH
+Copyright 2015, BlueKitchen GmbH
 '''
 
 # com.bluekitchen.btstack.BTstack.java templates
@@ -134,7 +134,10 @@ package='com.bluekitchen.btstack'
 gen_path = 'gen/' + package.replace('.', '/')
 hci_cmds_h_path = '../../src/hci_cmds.h'
 hci_cmds_c_path = '../../src/hci_cmds.c'
+daemon_cmds_c_path = '../../platform/daemon/src/daemon_cmds.c'
 hci_h_path = '../../src/hci.h'
+bluetooth_h_path = '../../src/bluetooth.h'
+btstack_defines_h_path = '../../src/btstack_defines.h'
 
 defines = dict()
 defines_used = set()
@@ -432,15 +435,24 @@ def parse_events(path):
                 format = None
     return (events, le_events, event_types)
 
-# # read defines from hci_cmds.h and hci.h
+# read defines from hci_cmds.h and hci.h
 read_defines(hci_cmds_h_path)
 read_defines(hci_h_path)
+read_defines(bluetooth_h_path)
+read_defines(btstack_defines_h_path)
 
-# # parse commands and generate BTstack.java
+# parse commands and generate BTstack.java
 parse_commands(hci_cmds_c_path)
+parse_commands(daemon_cmds_c_path)
 
-# parse hci.h to get used events
-(events, le_events, event_types) = parse_events(hci_cmds_h_path)
+# parse bluetooth.h to get used events
+(bluetooth_events, bluetooth_le_events, bluetooth_event_types) = parse_events(bluetooth_h_path)
+
+# parse btstack_defines to get events
+(btstack_events, btstack_le_events, btstack_event_types) = parse_events(btstack_defines_h_path)
+
+# concat lists
+(events, le_events, event_types) = (bluetooth_events + btstack_events, bluetooth_le_events + btstack_le_events, bluetooth_event_types | btstack_event_types)
 
 # create events, le meta events, and event factory
 create_events(events)
