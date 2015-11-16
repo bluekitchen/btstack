@@ -28,6 +28,7 @@ libBTstack_SOURCES =    \
     btstack.c           \
     socket_connection.c \
     hci_cmds.c          \
+    daemon_cmds.c       \
     linked_list.c       \
     run_loop.c          \
     sdp_util.c          \
