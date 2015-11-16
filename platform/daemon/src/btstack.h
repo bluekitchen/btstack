@@ -48,6 +48,7 @@
 #define __BTSTACK_H
 
 #include "hci_cmds.h"
+#include "daemon_cmds.h"
 #include "run_loop.h"
 #include "utils.h"
 
