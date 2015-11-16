@@ -42,6 +42,8 @@
 extern "C" {
 #endif
 
+#include "btstack_defines.h"
+
 typedef enum {
 
 	// MITM protection not required
@@ -127,6 +129,103 @@ void gap_set_local_name(const char * local_name);
  * @result connection_type
  */
 gap_connection_type_t gap_get_connection_type(hci_con_handle_t connection_handle);
+
+typedef enum {
+    GAP_RANDOM_ADDRESS_TYPE_OFF = 0,
+    GAP_RANDOM_ADDRESS_NON_RESOLVABLE,
+    GAP_RANDOM_ADDRESS_RESOLVABLE,
+} gap_random_address_type_t;
+
+/**
+ * @brief Enable privacy by using random addresses
+ * @param random_address_type to use (incl. OFF)
+ */
+void gap_random_address_set_mode(gap_random_address_type_t random_address_type);
+
+/**
+ * @brief Get privacy mode
+ */
+gap_random_address_type_t gap_random_address_get_mode(void);
+
+/**
+ * @brief Sets update period for random address
+ * @param period_ms in ms
+ */
+ void gap_random_address_set_update_period(int period_ms);
+
+/**
+ * @brief Updates the connection parameters for a given LE connection
+ * @param handle
+ * @param conn_interval_min (unit: 1.25ms)
+ * @param conn_interval_max (unit: 1.25ms)
+ * @param conn_latency
+ * @param supervision_timeout (unit: 10ms)
+ * @returns 0 if ok
+ */
+int gap_update_connection_parameters(hci_con_handle_t con_handle, uint16_t conn_interval_min,
+	uint16_t conn_interval_max, uint16_t conn_latency, uint16_t supervision_timeout);
+
+/**
+ * @brief Request an update of the connection parameter for a given LE connection
+ * @param handle
+ * @param conn_interval_min (unit: 1.25ms)
+ * @param conn_interval_max (unit: 1.25ms)
+ * @param conn_latency
+ * @param supervision_timeout (unit: 10ms)
+ * @returns 0 if ok
+ */
+int gap_request_connection_parameter_update(hci_con_handle_t con_handle, uint16_t conn_interval_min,
+	uint16_t conn_interval_max, uint16_t conn_latency, uint16_t supervision_timeout);
+
+/**
+ * @brief Set Advertisement Data
+ * @param advertising_data_length
+ * @param advertising_data (max 31 octets)
+ * @note data is not copied, pointer has to stay valid
+ */
+void gap_advertisements_set_data(uint8_t advertising_data_length, uint8_t * advertising_data);
+
+/**
+ * @brief Set Advertisement Paramters
+ * @param adv_int_min
+ * @param adv_int_max
+ * @param adv_type
+ * @param direct_address_type
+ * @param direct_address
+ * @param channel_map
+ * @param filter_policy
+ * @note own_address_type is used from gap_random_address_set_mode
+ */
+void gap_advertisements_set_params(uint16_t adv_int_min, uint16_t adv_int_max, uint8_t adv_type,
+	uint8_t direct_address_typ, bd_addr_t direct_address, uint8_t channel_map, uint8_t filter_policy);
+
+/** 
+ * @brief Enable/Disable Advertisements
+ * @param enabled
+ */
+void gap_advertisements_enable(int enabled);
+
+/**
+ * @brief Auto Connection Establishment - Start Connecting to device
+ * @param address_typ
+ * @param address
+ * @returns 0 if ok
+ */
+int gap_auto_connection_start(bd_addr_type_t address_typ, bd_addr_t address);
+
+/**
+ * @brief Auto Connection Establishment - Stop Connecting to device
+ * @param address_typ
+ * @param address
+ * @returns 0 if ok
+ */
+int gap_auto_connection_stop(bd_addr_type_t address_typ, bd_addr_t address);
+
+/**
+ * @brief Auto Connection Establishment - Stop everything
+ * @note  Convenience function to stop all active auto connection attempts
+ */
+void gap_auto_connection_stop_all(void);
 
 #if defined __cplusplus
 }

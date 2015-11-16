@@ -43,6 +43,18 @@
 #ifndef __BTSTACK_DEFINES_H
 #define __BTSTACK_DEFINES_H
 
+/**
+ * Address types
+ * @note: BTstack uses a custom addr type to refer to classic ACL and SCO devices
+ */
+ typedef enum {
+    BD_ADDR_TYPE_LE_PUBLIC = 0,
+    BD_ADDR_TYPE_LE_RANDOM = 1,
+    BD_ADDR_TYPE_SCO       = 0xfe,
+    BD_ADDR_TYPE_CLASSIC   = 0xff,
+    BD_ADDR_TYPE_UNKNOWN   = 0xfe
+ } bd_addr_type_t;
+
 // DEFINES
 
 #define DAEMON_EVENT_PACKET     0x05

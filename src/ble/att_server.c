@@ -59,7 +59,7 @@
 #include "ble/sm.h"
 #include "ble/att.h"
 #include "att_dispatch.h"
-#include "ble/gap_le.h"
+#include "gap.h"
 #include "ble/le_device_db.h"
 
 #include "ble/att_server.h"

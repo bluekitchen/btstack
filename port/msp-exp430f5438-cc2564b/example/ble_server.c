@@ -69,6 +69,7 @@
 
 #include "btstack_memory.h"
 #include "bt_control_cc256x.h"
+#include "gap.h"
 #include "hci.h"
 #include "hci_dump.h"
 #include "l2cap.h"
@@ -76,7 +77,6 @@
 #include "ble/sm.h"
 #include "ble/att.h"
 #include "ble/att_server.h"
-#include "ble/gap_le.h"
 #include "ble/le_device_db.h"
 
 #define FONT_HEIGHT		12                    // Each character has 13 lines 

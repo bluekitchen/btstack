@@ -60,7 +60,7 @@
 #include "ble/sm.h"
 #include "ble/att.h"
 #include "ble/att_server.h"
-#include "ble/gap_le.h"
+#include "gap.h"
 #include "ble/le_device_db.h"
 #include "stdin_support.h"
 #include "ble/ad_parser.h"

@@ -49,7 +49,7 @@
 
 #include "ble/att.h"
 #include "debug.h"
-#include "ble/gap_le.h"
+#include "gap.h"
 #include "ble/gatt_client.h"
 #include "ble/sm.h"
 

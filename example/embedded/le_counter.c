@@ -57,6 +57,7 @@
 
 #include "debug.h"
 #include "btstack_memory.h"
+#include "gap.h"
 #include "hci.h"
 #include "hci_dump.h"
 
@@ -67,7 +68,6 @@
 #include "ble/att.h"
 #include "ble/att_server.h"
 #include "ble/le_device_db.h"
-#include "ble/gap_le.h"
 #include "ble/sm.h"
 
 #define HEARTBEAT_PERIOD_MS 1000

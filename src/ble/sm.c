@@ -47,7 +47,7 @@
 #include "l2cap.h"
 #include "ble/le_device_db.h"
 #include "ble/sm.h"
-#include "ble/gap_le.h"
+#include "gap.h"
 
 //
 // SM internal types and globals

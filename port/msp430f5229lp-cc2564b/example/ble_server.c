@@ -74,7 +74,7 @@
 #include "ble/sm.h"
 #include "ble/att.h"
 #include "ble/att_server.h"
-#include "ble/gap_le.h"
+#include "gap.h"
 #include "ble/le_device_db.h"
 
 #define FONT_HEIGHT		12                    // Each character has 13 lines 

@@ -24,6 +24,7 @@
 #include "classic/sdp_util.h"
 
 #include "bt_control_em9301.h"
+#include "gap.h"
 #include "hci.h"
 #include "hci_dump.h"
 #include "l2cap.h"
@@ -33,7 +34,6 @@
 #include "att_db_util.h"
 #include "ble/le_device_db.h"
 #include "ble/sm.h"
-#include "ble/gap_le.h"
 #include "debug.h"
 
 // Pin 13 has an LED connected on most Arduino boards.
