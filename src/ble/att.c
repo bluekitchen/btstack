@@ -39,6 +39,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "bluetooth.h"
 #include "ble/att.h"
 #include "debug.h"
 #include "utils.h"
