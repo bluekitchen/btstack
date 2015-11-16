@@ -8,31 +8,33 @@ class State:
 
 # [file_name, api_title, api_lable]
 apis = [ 
-    ["ble/ad_parser.h", "BLE Advertisements Parser", "advParser"],
-    ["ble/ancs_client_lib.h", "BLE ANCS Client", "ancsClient"],
-    ["ble/att_db_util.h", "BLE ATT Database", "attDb"],
-    ["ble/att_server.h", "BLE ATT Server", "attServer"],
-    ["ble/gap_le.h", "BLE GAP", "gapLE"],
-    ["ble/gatt_client.h", "BLE GATT Client", "gattClient"],
-    ["ble/le_device_db.h", "BLE Device Database", "leDeviceDb"],
-    ["ble/sm.h", "BLE Security Manager", "sm"],
-    ["src/bnep.h", "BNEP", "bnep"],
+    ["src/ble/ad_parser.h", "BLE Advertisements Parser", "advParser"],
+    ["src/ble/ancs_client_lib.h", "BLE ANCS Client", "ancsClient"],
+    ["src/ble/att_db_util.h", "BLE ATT Database", "attDb"],
+    ["src/ble/att_server.h", "BLE ATT Server", "attServer"],
+    ["src/ble/gap_le.h", "BLE GAP", "gapLE"],
+    ["src/ble/gatt_client.h", "BLE GATT Client", "gattClient"],
+    ["src/ble/le_device_db.h", "BLE Device Database", "leDeviceDb"],
+    ["src/ble/sm.h", "BLE Security Manager", "sm"],
+
+    ["src/classic/bnep.h", "BNEP", "bnep"],
+    ["src/classic/pan.h", "PAN", "pan"],
+    ["src/classic/remote_device_db.h","Remote Device DB","rdevDb"],
+    ["src/classic/rfcomm.h", "RFCOMM", "rfcomm"],
+    ["src/classic/sdp.h", "SDP", "sdp"],
+    ["src/classic/sdp_client.h", "SDP Client", "sdpClient"],
+    ["src/classic/sdp_parser.h","SDP Parser","sdpParser"],
+    ["src/classic/sdp_query_rfcomm.h", "SDP RFCOMM Query", "sdpQueries"],
+    ["src/classic/sdp_query_util.h","SDP Query Utils","sdpQueryUtil"],
+    ["src/classic/sdp_util.h","SDP Utils", "sdpUtil"],
+
     ["src/btstack_memory.h","BTstack Memory Management","btMemory"],
     ["src/gap.h", "GAP", "gap"],
     ["src/hci.h", "HCI", "hci"],
     ["src/hci_dump.h","HCI Logging","hciTrace"],
     ["src/hci_transport.h","HCI Transport","hciTransport"],
     ["src/l2cap.h", "L2CAP", "l2cap"],
-    ["src/pan.h", "PAN", "pan"],
-    ["src/remote_device_db.h","Remote Device DB","rdevDb"],
-    ["src/rfcomm.h", "RFCOMM", "rfcomm"],
-    ["include/btstack/run_loop.h", "Run Loop", "runLoop"],
-    ["src/sdp.h", "SDP", "sdp"],
-    ["src/sdp_client.h", "SDP Client", "sdpClient"],
-    ["src/sdp_parser.h","SDP Parser","sdpParser"],
-    ["src/sdp_query_rfcomm.h", "SDP RFCOMM Query", "sdpQueries"],
-    ["src/sdp_query_util.h","SDP Query Utils","sdpQueryUtil"],
-    ["include/btstack/sdp_util.h","SDP Utils", "sdpUtil"]
+    ["src/run_loop.h", "Run Loop", "runLoop"],
 ]
 
 functions = {}
