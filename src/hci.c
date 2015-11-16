@@ -48,7 +48,7 @@
 #include "gap.h"
 
 #ifdef HAVE_BLE
-#include "ble/gap_le.h"
+#include "gap.h"
 #endif
 
 #include <stdarg.h>
@@ -3062,7 +3062,7 @@ uint8_t le_central_connect(bd_addr_t addr, bd_addr_type_t addr_type){
             // notify client that alloc failed
             hci_emit_le_connection_complete(addr_type, addr, 0, BTSTACK_MEMORY_ALLOC_FAILED);
             log_info("le_central_connect: failed to alloc hci_connection_t");
-            return BLE_PERIPHERAL_NOT_CONNECTED; // don't sent packet to controller
+            return GATT_CLIENT_NOT_CONNECTED; // don't sent packet to controller
         }
         conn->state = SEND_CREATE_CONNECTION;
         log_info("le_central_connect: send create connection next");
