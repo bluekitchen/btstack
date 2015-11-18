@@ -458,7 +458,7 @@ void hfp_handle_hci_event(hfp_callback_t callback, uint8_t packet_type, uint8_t 
         case RFCOMM_EVENT_INCOMING_CONNECTION:
             // data: event (8), len(8), address(48), channel (8), rfcomm_cid (16)
             bt_flip_addr(event_addr, &packet[2]); 
-            context = get_hfp_connection_context_for_bd_addr(event_addr);
+            context = provide_hfp_connection_context_for_bd_addr(event_addr);
             
             if (!context || context->state != HFP_IDLE) return;
 
@@ -498,6 +498,8 @@ void hfp_handle_hci_event(hfp_callback_t callback, uint8_t packet_type, uint8_t 
                     default:
                         break;
                 }
+                // forward event to app, to learn about con_handle
+                (*callback)(packet, size);
             }
             break;
         
