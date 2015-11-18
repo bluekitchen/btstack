@@ -75,6 +75,7 @@ static bd_addr_t device_addr;
 static bd_addr_t pts_addr = {0x00,0x1b,0xDC,0x07,0x32,0xEF};
 static bd_addr_t speaker_addr = {0x00, 0x21, 0x3C, 0xAC, 0xF7, 0x38};
 static uint8_t codecs[1] = {HFP_CODEC_CVSD};
+static uint16_t handle = -1;
 
 static int ag_indicators_nr = 7;
 static hfp_ag_indicator_t ag_indicators[] = {
@@ -108,15 +109,17 @@ static void show_usage(void){
     printf("---\n");
     
     printf("a - establish HFP connection to PTS module\n");
-    printf("A - release HFP connection to PTS module\n");
+    // printf("A - release HFP connection to PTS module\n");
     
     printf("z - establish HFP connection to speaker\n");
-    printf("Z - release HFP connection to speaker\n");
+    // printf("Z - release HFP connection to speaker\n");
     
     printf("b - establish AUDIO connection\n");
     printf("B - release AUDIO connection\n");
     
     printf("d - report AG failure\n");
+
+    printf("t - terminate connection\n");
 
     printf("---\n");
     printf("Ctrl-c - exit\n");
@@ -155,7 +158,9 @@ static int stdin_process(struct data_source *ds){
         case 'd':
             printf("Report AG failure\n");
             hfp_ag_report_extended_audio_gateway_error_result_code(device_addr, HFP_CME_ERROR_AG_FAILURE);
-
+            break;
+        case 't':
+            gap_disconnect(handle);
         default:
             show_usage();
             break;
@@ -166,6 +171,13 @@ static int stdin_process(struct data_source *ds){
 
 
 static void packet_handler(uint8_t * event, uint16_t event_size){
+
+    if (event[0] == RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE){
+        handle = READ_BT_16(event, 9);
+        printf("RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE received for handle 0x%04x\n", handle);
+        return;
+    }
+
     if (event[0] != HCI_EVENT_HFP_META) return;
     if (event[3]){
         printf("ERROR, status: %u\n", event[3]);
@@ -197,7 +209,7 @@ int btstack_main(int argc, const char * argv[]){
     l2cap_init();
     rfcomm_init();
     
-    hfp_ag_init(rfcomm_channel_nr, 1007, codecs, sizeof(codecs), 
+    hfp_ag_init(rfcomm_channel_nr, 1007 | (1<<HFP_AGSF_HF_INDICATORS), codecs, sizeof(codecs), 
         ag_indicators, ag_indicators_nr, 
         hf_indicators, hf_indicators_nr, 
         call_hold_services, call_hold_services_nr);

@@ -150,14 +150,17 @@ void hfp_ag_create_sdp_record(uint8_t * service, int rfcomm_channel_nr, const ch
     if (!name){
         name = default_hfp_ag_service_name;
     }
-    hfp_create_sdp_record(service, SDP_HandsfreeAudioGateway, rfcomm_channel_nr, name, supported_features);
+    hfp_create_sdp_record(service, SDP_HandsfreeAudioGateway, rfcomm_channel_nr, name);
     
-    // Network
-    de_add_number(service, DE_UINT, DE_SIZE_8, ability_to_reject_call);
     /*
      * 0x01 – Ability to reject a call
      * 0x00 – No ability to reject a call
      */
+    de_add_number(service, DE_UINT, DE_SIZE_16, 0x0301);    // Hands-Free Profile - Network
+    de_add_number(service, DE_UINT, DE_SIZE_8, ability_to_reject_call);
+
+    de_add_number(service, DE_UINT, DE_SIZE_16, 0x0311);    // Hands-Free Profile - SupportedFeatures
+    de_add_number(service, DE_UINT, DE_SIZE_16, supported_features);
 }
 
 static int hfp_ag_exchange_supported_features_cmd(uint16_t cid){
