@@ -442,6 +442,7 @@ static int hfp_ag_run_for_context_service_level_connection(hfp_connection_t * co
         case HFP_CMD_SUPPORTED_FEATURES:
             switch(context->state){
                 case HFP_W4_EXCHANGE_SUPPORTED_FEATURES:
+                case HFP_EXCHANGE_SUPPORTED_FEATURES:
                     hfp_ag_exchange_supported_features_cmd(context->rfcomm_cid);
                     done = 1;
                     if (has_codec_negotiation_feature(context)){
@@ -782,10 +783,6 @@ static void hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8
     hfp_connection_t * context = get_hfp_connection_context_for_rfcomm_cid(channel);
     if (!context) return;
     
-    if (context->state == HFP_EXCHANGE_SUPPORTED_FEATURES){
-        context->state = HFP_W4_EXCHANGE_SUPPORTED_FEATURES;   
-    }
-
     packet[size] = 0;
     int pos;
     for (pos = 0; pos < size ; pos++){
