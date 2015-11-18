@@ -605,7 +605,7 @@ void hfp_handle_hci_event(hfp_callback_t callback, uint8_t packet_type, uint8_t 
     }
 }
 
-// translates command string into hfp_command_t CMD and flags to distinguish between CMD=, CMD?, CMD=?
+// translates command string into hfp_command_t CMD
 static hfp_command_t parse_command(const char * line_buffer, int isHandsFree){
     int offset = isHandsFree ? 0 : 2;
     
@@ -653,14 +653,10 @@ static hfp_command_t parse_command(const char * line_buffer, int isHandsFree){
         if (strncmp(line_buffer+strlen(HFP_GENERIC_STATUS_INDICATOR)+offset, "=?", 2) == 0){
             return HFP_CMD_RETRIEVE_GENERIC_STATUS_INDICATORS;
         } 
-
         if (strncmp(line_buffer+strlen(HFP_GENERIC_STATUS_INDICATOR)+offset, "=", 1) == 0){
             return HFP_CMD_LIST_GENERIC_STATUS_INDICATORS;    
         }
-
-        {
-            return HFP_CMD_RETRIEVE_GENERIC_STATUS_INDICATORS_STATE;
-        }
+        return HFP_CMD_RETRIEVE_GENERIC_STATUS_INDICATORS_STATE;
     } 
 
     if (strncmp(line_buffer+offset, HFP_UPDATE_ENABLE_STATUS_FOR_INDIVIDUAL_AG_INDICATORS, strlen(HFP_UPDATE_ENABLE_STATUS_FOR_INDIVIDUAL_AG_INDICATORS)) == 0){
@@ -669,8 +665,6 @@ static hfp_command_t parse_command(const char * line_buffer, int isHandsFree){
     
 
     if (strncmp(line_buffer+offset, HFP_QUERY_OPERATOR_SELECTION, strlen(HFP_QUERY_OPERATOR_SELECTION)) == 0){
-        if (isHandsFree) return HFP_CMD_QUERY_OPERATOR_SELECTION_NAME;
-
         if (strncmp(line_buffer+strlen(HFP_QUERY_OPERATOR_SELECTION)+offset, "=", 1) == 0){
             return HFP_CMD_QUERY_OPERATOR_SELECTION_NAME_FORMAT;
         } 
