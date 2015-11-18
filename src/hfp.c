@@ -284,7 +284,6 @@ void hfp_reset_context_flags(hfp_connection_t * context){
     context->notify_ag_on_new_codecs = 0;
     
     // establish codecs connection
-    context->ag_trigger_codec_connection_setup = 0; // TODO remove
     context->hf_trigger_codec_connection_setup = 0;
     context->suggested_codec = 0;
     context->negotiated_codec = 0;

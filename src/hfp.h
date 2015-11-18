@@ -266,15 +266,6 @@ typedef enum {
     HFP_W4_CONNECTION_ESTABLISHED_TO_SHUTDOWN
 } hfp_state_t;
 
-/*
-// establish codecs connection
-uint8_t hf_trigger_codec_connection_setup;
-uint8_t ag_trigger_codec_connection_setup;
-uint8_t ag_ready_for_codecs_connection_setup;
-uint8_t suggested_codec;
-uint8_t codec_confirmed;
-*/
-
 typedef enum {
     HFP_CODECS_IDLE,
     HFP_CODECS_RECEIVED_LIST,
@@ -410,8 +401,6 @@ typedef struct hfp_connection {
     
     // establish codecs connection
     uint8_t hf_trigger_codec_connection_setup;
-    uint8_t ag_trigger_codec_connection_setup;
-    uint8_t ag_ready_for_codecs_connection_setup;
     uint8_t suggested_codec;
     uint8_t codec_confirmed;
 

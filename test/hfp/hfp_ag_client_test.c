@@ -213,17 +213,17 @@ TEST_GROUP(HFPClient){
     }
 };
 
-// TEST(HFPClient, HFAnswerIncomingCallWithInBandRingTone){
-//     setup_hfp_service_level_connection(default_slc_setup(), default_slc_setup_size());
-//     CHECK_EQUAL(service_level_connection_established, 1);
+TEST(HFPClient, HFAnswerIncomingCallWithInBandRingTone){
+    setup_hfp_service_level_connection(default_slc_setup(), default_slc_setup_size());
+    CHECK_EQUAL(service_level_connection_established, 1);
     
-//     hfp_ag_call(device_addr, 1);
-//     simulate_test_sequence(default_ic_setup(), default_ic_setup_size());
-//     CHECK_EQUAL(audio_connection_established, 1);
+    hfp_ag_call(device_addr, 1);
+    simulate_test_sequence(default_ic_setup(), default_ic_setup_size());
+    CHECK_EQUAL(audio_connection_established, 1);
 
-//     //simulate_test_sequence(alert_ic_setup(), alert_ic_setup_size());
-//     //CHECK_EQUAL(stop_ringing, 1);
-// }
+    simulate_test_sequence(alert_ic_setup(), alert_ic_setup_size());
+    CHECK_EQUAL(stop_ringing, 1);
+}
 
 
 TEST(HFPClient, HFAudioConnectionEstablished){

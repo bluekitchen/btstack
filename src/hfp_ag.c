@@ -388,7 +388,7 @@ static int codecs_exchange_state_machine(hfp_connection_t * context){
     switch (context->command){
         case HFP_CMD_AVAILABLE_CODECS:
             hfp_ag_ok(context->rfcomm_cid);
-            printf("HFP_CODECS_RECEIVED_LIST \n");
+            //printf("HFP_CODECS_RECEIVED_LIST \n");
             if (context->state < HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED){
                 context->codecs_state = HFP_CODECS_RECEIVED_LIST;
                 break;    
@@ -406,19 +406,19 @@ static int codecs_exchange_state_machine(hfp_connection_t * context){
         
         case HFP_CMD_TRIGGER_CODEC_CONNECTION_SETUP:
             hfp_ag_ok(context->rfcomm_cid);
-            printf(" HFP_CMD_TRIGGER_CODEC_CONNECTION_SETUP \n");
+            //printf(" HFP_CMD_TRIGGER_CODEC_CONNECTION_SETUP \n");
             context->codecs_state = HFP_CODECS_RECEIVED_TRIGGER_CODEC_EXCHANGE;
             break;
         
         case HFP_CMD_AG_SEND_COMMON_CODEC:
-            printf(" HFP_CMD_AG_SEND_COMMON_CODEC \n");
+            //printf(" HFP_CMD_AG_SEND_COMMON_CODEC \n");
             context->codecs_state = HFP_CODECS_AG_SENT_COMMON_CODEC;
             context->suggested_codec = hfp_ag_suggest_codec(context);
             hfp_ag_cmd_suggest_codec(context->rfcomm_cid, context->suggested_codec);
             break;
 
         case HFP_CMD_HF_CONFIRMED_CODEC:
-            printf("HFP_CMD_HF_CONFIRMED_CODEC \n");
+            //printf("HFP_CMD_HF_CONFIRMED_CODEC \n");
             context->run_codecs_state_machine = 0;
             if (context->codec_confirmed != context->suggested_codec){
                 context->codecs_state = HFP_CODECS_ERROR;
@@ -618,14 +618,16 @@ static int hfp_ag_run_for_audio_connection(hfp_connection_t * context){
 
     if (context->release_audio_connection){
         context->state = HFP_W4_SCO_DISCONNECTED;
+        context->release_audio_connection = 0;
         gap_disconnect(context->sco_handle);
         done = 1;
         return done;
     }
-
+    if (context->state == HFP_AUDIO_CONNECTION_ESTABLISHED) return done;
     if (context->codecs_state != HFP_CODECS_EXCHANGED) return done;
     if (context->establish_audio_connection){
         context->state = HFP_W4_SCO_CONNECTED;
+        context->establish_audio_connection = 0;
         hci_send_cmd(&hci_setup_synchronous_connection, context->con_handle, 8000, 8000, 0xFFFF, hci_get_sco_voice_setting(), 0xFF, 0x003F);
         done = 1;
         return done;
@@ -636,16 +638,22 @@ static int hfp_ag_run_for_audio_connection(hfp_connection_t * context){
 
 static int incoming_call_state_machine(hfp_connection_t * context){
     if (!context->run_call_state_machine) return 0;
-    if (context->state != HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED) return 0;
+    if (context->state < HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED) return 0;
 
-    printf("* incoming_call_state_machine *\n");
+    printf(" -> State machine: Incoming Call\n");
     int done = 0;
     hfp_ag_indicator_t * indicator;
     
+    if (context->terminate_call){
+        // TODO, reset flags
+        context->terminate_call = 0;
+        context->run_call_state_machine = 0;
+        return done;
+    }
+
     switch (context->call_state){
         case HFP_CALL_IDLE:
-            printf(" HFP_CALL_TRIGGER_AUDIO_CONNECTION \n");
-            
+            //printf(" HFP_CALL_TRIGGER_AUDIO_CONNECTION \n");
             indicator = get_ag_indicator_for_name(context, "callsetup");
             if (!indicator) break;
 
@@ -662,8 +670,7 @@ static int incoming_call_state_machine(hfp_connection_t * context){
             break;
 
         case HFP_CALL_W4_ANSWER:
-            printf(" HFP_CALL_W4_ANSWER \n");
-            
+            //printf(" HFP_CALL_W4_ANSWER \n");
             context->call_state = HFP_CALL_TRANSFER_CALL_STATUS;
             hfp_emit_event(hfp_callback, HFP_SUBEVENT_STOP_RINGINIG, 0);
             hfp_ag_ok(context->rfcomm_cid);
@@ -671,8 +678,7 @@ static int incoming_call_state_machine(hfp_connection_t * context){
             break;
 
         case HFP_CALL_TRANSFER_CALL_STATUS:
-            printf(" HFP_CALL_TRANSFER_CALL_STATUS \n");
-            
+            //printf(" HFP_CALL_TRANSFER_CALL_STATUS \n");
             context->call_state = HFP_CALL_TRANSFER_CALLSETUP_STATUS;
             indicator = get_ag_indicator_for_name(context, "call");
             indicator->status = HFP_CALL_STATUS_ACTIVE_OR_HELD_CALL_IS_PRESENT;
@@ -681,8 +687,7 @@ static int incoming_call_state_machine(hfp_connection_t * context){
             break;
 
         case HFP_CALL_TRANSFER_CALLSETUP_STATUS:
-            printf(" HFP_CALL_TRANSFER_CALLSETUP_STATUS \n");
-            
+            //printf(" HFP_CALL_TRANSFER_CALLSETUP_STATUS \n");
             if (use_in_band_tone(context)){
                 context->call_state = HFP_CALL_ACTIVE;
             } else {
@@ -695,13 +700,12 @@ static int incoming_call_state_machine(hfp_connection_t * context){
             done = 1;
             break;
         case HFP_CALL_TRIGGER_AUDIO_CONNECTION:
-            printf(" HFP_CALL_TRIGGER_AUDIO_CONNECTION \n");
+            //printf(" HFP_CALL_TRIGGER_AUDIO_CONNECTION \n");
             context->call_state = HFP_CALL_W4_AUDIO_CONNECTION;
             hfp_ag_establish_audio_connection(context->remote_addr);
             break;
         case HFP_CALL_W4_AUDIO_CONNECTION:
-            printf(" HFP_CALL_W4_AUDIO_CONNECTION \n");
-            
+            //printf(" HFP_CALL_W4_AUDIO_CONNECTION \n");
             if (context->state < HFP_AUDIO_CONNECTION_ESTABLISHED) break;
             printf(" HFP_CALL_W4_AUDIO_CONNECTION 2 \n");
             
@@ -713,8 +717,7 @@ static int incoming_call_state_machine(hfp_connection_t * context){
             }
             break;
         case HFP_CALL_ACTIVE:
-            printf(" HFP_CALL_ACTIVE \n");
-            
+            //printf(" HFP_CALL_ACTIVE \n");
             break;
         default:
             break;
@@ -754,10 +757,10 @@ static void hfp_run_for_context(hfp_connection_t *context){
     if (!done){
         done = hfp_ag_run_for_context_service_level_connection_queries(context);
     } 
-    
-    // if (!done){
-    //     done = incoming_call_state_machine(context);
-    // } 
+
+    if (!done){
+        done = incoming_call_state_machine(context);
+    }
 
     if (!done){  
         done = hfp_ag_run_for_audio_connection(context);
@@ -903,7 +906,6 @@ void hfp_ag_establish_audio_connection(bd_addr_t bd_addr){
         case HFP_CODECS_RECEIVED_LIST:
         case HFP_CODECS_AG_RESEND_COMMON_CODEC:
         case HFP_CODECS_ERROR:
-            printf("\nhfp_ag_establish_audio_connection ag_trigger_codec_connection_setup\n");
             connection->command = HFP_CMD_AG_SEND_COMMON_CODEC;
             break;
         default:
