@@ -119,11 +119,7 @@ TEST(HFPParser, HFP_AG_GENERIC_STATUS_INDICATOR){
         hfp_parse(&context, packet[pos]);
     }
 
-    CHECK_EQUAL(context.command, HFP_CMD_GENERIC_STATUS_INDICATOR);
-    CHECK_EQUAL(context.list_generic_status_indicators, 1);
-    CHECK_EQUAL(context.retrieve_generic_status_indicators, 0);
-    CHECK_EQUAL(context.retrieve_generic_status_indicators_state, 0);
-    
+    CHECK_EQUAL(context.command, HFP_CMD_LIST_GENERIC_STATUS_INDICATORS);
     CHECK_EQUAL(5, context.generic_status_indicators_nr);
     
     for (pos = 0; pos < context.generic_status_indicators_nr; pos++){

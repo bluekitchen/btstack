@@ -263,10 +263,6 @@ void hfp_reset_context_flags(hfp_connection_t * context){
 
     context->keep_separator = 0;
 
-    context->list_generic_status_indicators = 0;           // HFP_CMD_LIST_GENERIC_STATUS_INDICATOR
-    context->retrieve_generic_status_indicators = 0;       // HFP_CMD_GENERIC_STATUS_INDICATOR
-    context->retrieve_generic_status_indicators_state = 0; // HFP_CMD_GENERIC_STATUS_INDICATOR_STATE
-    
     context->change_status_update_for_individual_ag_indicators = 0; 
     context->operator_name_changed = 0;      
 
@@ -667,21 +663,14 @@ static void process_command(hfp_connection_t * context){
     } 
 
     if (strncmp((char *)context->line_buffer+offset, HFP_GENERIC_STATUS_INDICATOR, strlen(HFP_GENERIC_STATUS_INDICATOR)) == 0){
-        context->command = HFP_CMD_GENERIC_STATUS_INDICATOR;
         if (isHandsFree) return;
 
         if (strncmp((char *)context->line_buffer+strlen(HFP_GENERIC_STATUS_INDICATOR)+offset, "=?", 2) == 0){
-            context->list_generic_status_indicators = 0;
-            context->retrieve_generic_status_indicators = 1;
-            context->retrieve_generic_status_indicators_state = 0;    
+            context->command = HFP_CMD_RETRIEVE_GENERIC_STATUS_INDICATORS;
         } else if (strncmp((char *)context->line_buffer+strlen(HFP_GENERIC_STATUS_INDICATOR)+offset, "=", 1) == 0){
-            context->list_generic_status_indicators = 1;
-            context->retrieve_generic_status_indicators = 0;
-            context->retrieve_generic_status_indicators_state = 0;    
+            context->command = HFP_CMD_LIST_GENERIC_STATUS_INDICATORS;    
         } else {
-            context->list_generic_status_indicators = 0;
-            context->retrieve_generic_status_indicators = 0;
-            context->retrieve_generic_status_indicators_state = 1;
+            context->command = HFP_CMD_RETRIEVE_GENERIC_STATUS_INDICATORS_STATE;
         }
         return;
     } 
@@ -807,11 +796,8 @@ static void hfp_parser_next_state(hfp_connection_t * context, uint8_t byte){
                 case HFP_CMD_RETRIEVE_AG_INDICATORS:
                     context->parser_state = HFP_PARSER_SECOND_ITEM;
                     break;
-                case HFP_CMD_GENERIC_STATUS_INDICATOR:
-                    if (context->retrieve_generic_status_indicators_state == 1){
-                        context->parser_state = HFP_PARSER_SECOND_ITEM;
-                        break;
-                    }
+                case HFP_CMD_RETRIEVE_GENERIC_STATUS_INDICATORS_STATE:
+                    context->parser_state = HFP_PARSER_SECOND_ITEM;
                     break;
                 default:
                     break;
@@ -911,27 +897,18 @@ void hfp_parse(hfp_connection_t * context, uint8_t byte){
                     strcpy((char *)context->remote_call_services[context->remote_call_services_nr].name,  (char *)context->line_buffer);
                     context->remote_call_services_nr++;
                     break;
-                case HFP_CMD_GENERIC_STATUS_INDICATOR:
-                    log_info("parser HFP_CMD_GENERIC_STATUS_INDICATOR 1 (%d, %d, %d)\n", 
-                            context->list_generic_status_indicators, 
-                            context->retrieve_generic_status_indicators,
-                            context->retrieve_generic_status_indicators_state);
-                    if (context->retrieve_generic_status_indicators == 1 || context->list_generic_status_indicators == 1){
-                        log_info("Parsed Generic status indicator: %s\n", context->line_buffer);
-                        context->generic_status_indicators[context->parser_item_index].uuid = (uint16_t)atoi((char*)context->line_buffer);
-                        context->parser_item_index++;
-                        context->generic_status_indicators_nr = context->parser_item_index;
-                        break;    
-                    }
-                    log_info("parser HFP_CMD_GENERIC_STATUS_INDICATOR 2\n");
-                    if (context->retrieve_generic_status_indicators_state == 1){
-                        // HF parses inital AG gen. ind. state
-                        log_info("Parsed List generic status indicator %s state: ", context->line_buffer);
-                        context->parser_item_index = (uint8_t)atoi((char*)context->line_buffer);
-                        break;
-                    }
+                case HFP_CMD_LIST_GENERIC_STATUS_INDICATORS:
+                case HFP_CMD_RETRIEVE_GENERIC_STATUS_INDICATORS:
+                    log_info("Parsed Generic status indicator: %s\n", context->line_buffer);
+                    context->generic_status_indicators[context->parser_item_index].uuid = (uint16_t)atoi((char*)context->line_buffer);
+                    context->parser_item_index++;
+                    context->generic_status_indicators_nr = context->parser_item_index;
                     break;
-    
+                case HFP_CMD_RETRIEVE_GENERIC_STATUS_INDICATORS_STATE:
+                    // HF parses inital AG gen. ind. state
+                    log_info("Parsed List generic status indicator %s state: ", context->line_buffer);
+                    context->parser_item_index = (uint8_t)atoi((char*)context->line_buffer);
+                    break;
                 case HFP_CMD_ENABLE_INDIVIDUAL_AG_INDICATOR_STATUS_UPDATE:
                     // AG parses new gen. ind. state
                     log_info("Parsed Enable ag indicator state: %s\n", context->line_buffer);
@@ -945,7 +922,6 @@ void hfp_parse(hfp_connection_t * context, uint8_t byte){
                     // indicators are indexed starting with 1
                     context->parser_item_index = atoi((char *)&context->line_buffer[0]) - 1;
                     printf("Parsed status of the AG indicator %d, status ", context->parser_item_index);
-                    printf("\n");
                     break;
                 case HFP_CMD_QUERY_OPERATOR_SELECTION_NAME:
                     context->network_operator.mode = atoi((char *)&context->line_buffer[0]);
@@ -977,18 +953,21 @@ void hfp_parse(hfp_connection_t * context, uint8_t byte){
         case HFP_PARSER_SECOND_ITEM:
             switch (context->command){
                 case HFP_CMD_QUERY_OPERATOR_SELECTION_NAME:
-                    log_info("format %s, ", context->line_buffer);
+                    printf("format %s, ", context->line_buffer);
                     context->network_operator.format =  atoi((char *)&context->line_buffer[0]);
                     break;
                 case HFP_CMD_QUERY_OPERATOR_SELECTION_NAME_FORMAT:
-                    log_info("format %s \n", context->line_buffer);
+                    printf("format %s \n", context->line_buffer);
                     context->network_operator.format =  atoi((char *)&context->line_buffer[0]);
                     break;
-                case HFP_CMD_GENERIC_STATUS_INDICATOR:
+                case HFP_CMD_LIST_GENERIC_STATUS_INDICATORS:
+                case HFP_CMD_RETRIEVE_GENERIC_STATUS_INDICATORS:
+                case HFP_CMD_RETRIEVE_GENERIC_STATUS_INDICATORS_STATE:
                     context->generic_status_indicators[context->parser_item_index].state = (uint8_t)atoi((char*)context->line_buffer);
                     break;
                 case HFP_CMD_TRANSFER_AG_INDICATOR_STATUS:
                     context->ag_indicators[context->parser_item_index].status = (uint8_t)atoi((char*)context->line_buffer);
+                    printf("%d \n", context->ag_indicators[context->parser_item_index].status);
                     context->ag_indicators[context->parser_item_index].status_changed = 1;
                     break;
                 case HFP_CMD_RETRIEVE_AG_INDICATORS:

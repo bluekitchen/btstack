@@ -139,8 +139,11 @@ typedef enum {
     HFP_CMD_ENABLE_INDIVIDUAL_AG_INDICATOR_STATUS_UPDATE,
     HFP_CMD_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES,
 
-    HFP_CMD_GENERIC_STATUS_INDICATOR,
-
+    // HFP_CMD_GENERIC_STATUS_INDICATOR,
+    HFP_CMD_LIST_GENERIC_STATUS_INDICATORS,
+    HFP_CMD_RETRIEVE_GENERIC_STATUS_INDICATORS,
+    HFP_CMD_RETRIEVE_GENERIC_STATUS_INDICATORS_STATE,
+    
     HFP_CMD_TRANSFER_AG_INDICATOR_STATUS,
 
     HFP_CMD_QUERY_OPERATOR_SELECTION_NAME,
@@ -379,10 +382,6 @@ typedef struct hfp_connection {
     uint8_t send_error;
 
     uint8_t keep_separator;
-
-    uint8_t list_generic_status_indicators;           // HFP_CMD_LIST_GENERIC_STATUS_INDICATOR
-    uint8_t retrieve_generic_status_indicators;       // HFP_CMD_GENERIC_STATUS_INDICATOR
-    uint8_t retrieve_generic_status_indicators_state; // HFP_CMD_GENERIC_STATUS_INDICATOR_STATE
     
     uint8_t change_status_update_for_individual_ag_indicators; 
     uint8_t operator_name_changed;      

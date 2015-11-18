@@ -161,9 +161,7 @@ TEST(HFPParser, HFP_HF_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES){
 
 TEST(HFPParser, HFP_HF_GENERIC_STATUS_INDICATOR){
     sprintf(packet, "\r\n%s:0,1,2,3,4\r\n\r\nOK\r\n", HFP_GENERIC_STATUS_INDICATOR);
-    context.list_generic_status_indicators = 0;
-    context.retrieve_generic_status_indicators = 1;
-    context.retrieve_generic_status_indicators_state = 0;
+    context.command = HFP_CMD_RETRIEVE_GENERIC_STATUS_INDICATORS;
 
     for (pos = 0; pos < strlen(packet); pos++){
         hfp_parse(&context, packet[pos]);
@@ -179,9 +177,7 @@ TEST(HFPParser, HFP_HF_GENERIC_STATUS_INDICATOR){
 
 TEST(HFPParser, HFP_HF_GENERIC_STATUS_INDICATOR_STATE){
     sprintf(packet, "\r\n%s:0,1\r\n\r\nOK\r\n", HFP_GENERIC_STATUS_INDICATOR);
-    context.list_generic_status_indicators = 0;
-    context.retrieve_generic_status_indicators = 0;
-    context.retrieve_generic_status_indicators_state = 1;
+     context.command = HFP_CMD_RETRIEVE_GENERIC_STATUS_INDICATORS_STATE;
     
     for (pos = 0; pos < strlen(packet); pos++){
         hfp_parse(&context, packet[pos]);

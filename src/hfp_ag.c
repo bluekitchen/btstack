@@ -511,35 +511,26 @@ static int hfp_ag_run_for_context_service_level_connection(hfp_connection_t * co
                     break;
             }
             break;
-        case HFP_CMD_GENERIC_STATUS_INDICATOR:
-            switch(context->state){
-                case HFP_W4_LIST_GENERIC_STATUS_INDICATORS:
-                    if (context->list_generic_status_indicators == 0) break;
-                    hfp_ag_list_supported_generic_status_indicators_cmd(context->rfcomm_cid);
-                    done = 1;
-                    context->state = HFP_W4_RETRIEVE_GENERIC_STATUS_INDICATORS;
-                    context->list_generic_status_indicators = 0;
-                    break;
-                case HFP_W4_RETRIEVE_GENERIC_STATUS_INDICATORS:
-                    if (context->retrieve_generic_status_indicators == 0) break;
-                    hfp_ag_retrieve_supported_generic_status_indicators_cmd(context->rfcomm_cid);
-                    done = 1;
-                    context->state = HFP_W4_RETRIEVE_INITITAL_STATE_GENERIC_STATUS_INDICATORS; 
-                    context->retrieve_generic_status_indicators = 0;
-                    break;
-                case HFP_W4_RETRIEVE_INITITAL_STATE_GENERIC_STATUS_INDICATORS:
-                    if (context->retrieve_generic_status_indicators_state == 0) break;
-                    hfp_ag_retrieve_initital_supported_generic_status_indicators_cmd(context->rfcomm_cid);
-                    done = 1;
-                    context->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
-                    context->retrieve_generic_status_indicators_state = 0;
-                    hfp_emit_event(hfp_callback, HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED, 0);
-                    break;
-                default:
-                    break;
-            }
+        
+        case HFP_CMD_LIST_GENERIC_STATUS_INDICATORS:
+            if (context->state != HFP_W4_LIST_GENERIC_STATUS_INDICATORS) break;
+            done = 1;
+            context->state = HFP_W4_RETRIEVE_GENERIC_STATUS_INDICATORS;
+            hfp_ag_list_supported_generic_status_indicators_cmd(context->rfcomm_cid);
             break;
-
+        case HFP_CMD_RETRIEVE_GENERIC_STATUS_INDICATORS:
+            if (context->state != HFP_W4_RETRIEVE_GENERIC_STATUS_INDICATORS) break;
+            done = 1;
+            context->state = HFP_W4_RETRIEVE_INITITAL_STATE_GENERIC_STATUS_INDICATORS; 
+            hfp_ag_retrieve_supported_generic_status_indicators_cmd(context->rfcomm_cid);
+            break;
+        case HFP_CMD_RETRIEVE_GENERIC_STATUS_INDICATORS_STATE:
+            if (context->state != HFP_W4_RETRIEVE_INITITAL_STATE_GENERIC_STATUS_INDICATORS) break;
+            done = 1;
+            context->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
+            hfp_emit_event(hfp_callback, HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED, 0);
+            hfp_ag_retrieve_initital_supported_generic_status_indicators_cmd(context->rfcomm_cid);
+            break;
         default:
             break;
     }
