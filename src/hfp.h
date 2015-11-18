@@ -408,7 +408,6 @@ typedef struct hfp_connection {
     uint8_t release_audio_connection; 
 
     uint8_t run_call_state_machine;
-    uint8_t run_codecs_state_machine;
     uint8_t use_in_band_ring_tone;
     uint8_t terminate_call;
 } hfp_connection_t;

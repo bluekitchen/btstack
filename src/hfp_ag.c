@@ -419,7 +419,6 @@ static int codecs_exchange_state_machine(hfp_connection_t * context){
 
         case HFP_CMD_HF_CONFIRMED_CODEC:
             //printf("HFP_CMD_HF_CONFIRMED_CODEC \n");
-            context->run_codecs_state_machine = 0;
             if (context->codec_confirmed != context->suggested_codec){
                 context->codecs_state = HFP_CODECS_ERROR;
                 hfp_ag_error(context->rfcomm_cid);
