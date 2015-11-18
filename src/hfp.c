@@ -263,9 +263,6 @@ void hfp_reset_context_flags(hfp_connection_t * context){
 
     context->keep_separator = 0;
 
-    context->retrieve_ag_indicators = 0;        // HFP_CMD_INDICATOR, check if needed
-    context->retrieve_ag_indicators_status = 0; 
-
     context->list_generic_status_indicators = 0;           // HFP_CMD_LIST_GENERIC_STATUS_INDICATOR
     context->retrieve_generic_status_indicators = 0;       // HFP_CMD_GENERIC_STATUS_INDICATOR
     context->retrieve_generic_status_indicators_state = 0; // HFP_CMD_GENERIC_STATUS_INDICATOR_STATE
@@ -617,7 +614,6 @@ void hfp_handle_hci_event(hfp_callback_t callback, uint8_t packet_type, uint8_t 
 static void process_command(hfp_connection_t * context){
     if (context->line_size < 2) return;
     // printf("process_command %s\n", context->line_buffer);
-    context->command = HFP_CMD_NONE;
     int offset = 0;
     int isHandsFree = 1;
     
@@ -648,16 +644,12 @@ static void process_command(hfp_connection_t * context){
     }
 
     if (strncmp((char *)context->line_buffer+offset, HFP_INDICATOR, strlen(HFP_INDICATOR)) == 0){
-        //printf("parsed HFP_INDICATOR \n");
-        context->command = HFP_CMD_INDICATOR;
-        if (isHandsFree) return;
-        
         if (strncmp((char *)context->line_buffer+strlen(HFP_INDICATOR)+offset, "?", 1) == 0){
-            context->retrieve_ag_indicators_status = 1; 
-            context->retrieve_ag_indicators = 0;     
-        } else {
-            context->retrieve_ag_indicators = 1; 
-            context->retrieve_ag_indicators_status = 0;    
+            context->command = HFP_CMD_RETRIEVE_AG_INDICATORS_STATUS;
+        }
+
+        if (strncmp((char *)context->line_buffer+strlen(HFP_INDICATOR)+offset, "=?", 2) == 0){
+            context->command = HFP_CMD_RETRIEVE_AG_INDICATORS;
         }
         return;
     }
@@ -760,7 +752,7 @@ static void process_command(hfp_connection_t * context){
         context->command = HFP_CMD_NONE;
         return;
     } 
-     
+    context->command = HFP_CMD_NONE;
 }
 
 #if 0
@@ -816,11 +808,8 @@ static void hfp_parser_next_state(hfp_connection_t * context, uint8_t byte){
                 case HFP_CMD_QUERY_OPERATOR_SELECTION:
                     context->parser_state = HFP_PARSER_SECOND_ITEM;
                     break;
-                case HFP_CMD_INDICATOR:
-                    if (context->retrieve_ag_indicators == 1){
-                        context->parser_state = HFP_PARSER_SECOND_ITEM;
-                        break;
-                    }
+                case HFP_CMD_RETRIEVE_AG_INDICATORS:
+                    context->parser_state = HFP_PARSER_SECOND_ITEM;
                     break;
                 case HFP_CMD_GENERIC_STATUS_INDICATOR:
                     if (context->retrieve_generic_status_indicators_state == 1){
@@ -836,7 +825,7 @@ static void hfp_parser_next_state(hfp_connection_t * context, uint8_t byte){
             context->parser_state = HFP_PARSER_THIRD_ITEM;
             break;
         case HFP_PARSER_THIRD_ITEM:
-            if (context->command == HFP_CMD_INDICATOR && context->retrieve_ag_indicators){
+            if (context->command == HFP_CMD_RETRIEVE_AG_INDICATORS){
                 context->parser_state = HFP_PARSER_CMD_SEQUENCE;
                 break;
             }
@@ -903,19 +892,15 @@ void hfp_parse(hfp_connection_t * context, uint8_t byte){
                     context->parser_item_index++;
                     context->remote_codecs_nr = context->parser_item_index;
                     break;
-                case HFP_CMD_INDICATOR:
-                    if (context->retrieve_ag_indicators == 1){
-                        strcpy((char *)context->ag_indicators[context->parser_item_index].name,  (char *)context->line_buffer);
-                        context->ag_indicators[context->parser_item_index].index = context->parser_item_index+1;
-                        log_info("Indicator %d: %s (", context->ag_indicators_nr+1, context->line_buffer);
-                    }
-
-                    if (context->retrieve_ag_indicators_status == 1){ 
-                        log_info("Parsed Indicator %d with status: %s\n", context->parser_item_index+1, context->line_buffer);
-                        context->ag_indicators[context->parser_item_index].status = atoi((char *) context->line_buffer);
-                        context->parser_item_index++;
-                        break;
-                    }
+                case HFP_CMD_RETRIEVE_AG_INDICATORS:
+                    strcpy((char *)context->ag_indicators[context->parser_item_index].name,  (char *)context->line_buffer);
+                    context->ag_indicators[context->parser_item_index].index = context->parser_item_index+1;
+                    log_info("Indicator %d: %s (", context->ag_indicators_nr+1, context->line_buffer);
+                    break;
+                case HFP_CMD_RETRIEVE_AG_INDICATORS_STATUS:
+                    log_info("Parsed Indicator %d with status: %s\n", context->parser_item_index+1, context->line_buffer);
+                    context->ag_indicators[context->parser_item_index].status = atoi((char *) context->line_buffer);
+                    context->parser_item_index++;
                     break;
                 case HFP_CMD_ENABLE_INDICATOR_STATUS_UPDATE:
                     context->parser_item_index++;
@@ -1018,11 +1003,9 @@ void hfp_parse(hfp_connection_t * context, uint8_t byte){
                     context->ag_indicators[context->parser_item_index].status = (uint8_t)atoi((char*)context->line_buffer);
                     context->ag_indicators[context->parser_item_index].status_changed = 1;
                     break;
-                case HFP_CMD_INDICATOR:
-                    if (context->retrieve_ag_indicators == 1){
-                        context->ag_indicators[context->parser_item_index].min_range = atoi((char *)context->line_buffer);
-                        log_info("%s, ", context->line_buffer);
-                    }
+                case HFP_CMD_RETRIEVE_AG_INDICATORS:
+                    context->ag_indicators[context->parser_item_index].min_range = atoi((char *)context->line_buffer);
+                    log_info("%s, ", context->line_buffer);
                     break;
                 default:
                     break;
@@ -1037,13 +1020,11 @@ void hfp_parse(hfp_connection_t * context, uint8_t byte){
                         log_info("name %s\n", context->line_buffer);
                     }
                     break;
-                case HFP_CMD_INDICATOR:
-                    if (context->retrieve_ag_indicators == 1){
-                        context->ag_indicators[context->parser_item_index].max_range = atoi((char *)context->line_buffer);
-                        context->parser_item_index++;
-                        context->ag_indicators_nr = context->parser_item_index;
-                        log_info("%s)\n", context->line_buffer);
-                    }
+                case HFP_CMD_RETRIEVE_AG_INDICATORS:
+                    context->ag_indicators[context->parser_item_index].max_range = atoi((char *)context->line_buffer);
+                    context->parser_item_index++;
+                    context->ag_indicators_nr = context->parser_item_index;
+                    log_info("%s)\n", context->line_buffer);
                     break;
                 default:
                     break;

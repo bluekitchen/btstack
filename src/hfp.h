@@ -131,7 +131,10 @@ typedef enum {
     HFP_CMD_OK,
     HFP_CMD_SUPPORTED_FEATURES,
     HFP_CMD_AVAILABLE_CODECS,
-    HFP_CMD_INDICATOR, // 5
+    
+    HFP_CMD_RETRIEVE_AG_INDICATORS,
+    HFP_CMD_RETRIEVE_AG_INDICATORS_STATUS, 
+    
     HFP_CMD_ENABLE_INDICATOR_STATUS_UPDATE,
     HFP_CMD_ENABLE_INDIVIDUAL_AG_INDICATOR_STATUS_UPDATE,
     HFP_CMD_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES,
@@ -374,9 +377,6 @@ typedef struct hfp_connection {
     uint8_t send_error;
 
     uint8_t keep_separator;
-
-    uint8_t retrieve_ag_indicators;        // HFP_CMD_INDICATOR, check if needed
-    uint8_t retrieve_ag_indicators_status; 
 
     uint8_t list_generic_status_indicators;           // HFP_CMD_LIST_GENERIC_STATUS_INDICATOR
     uint8_t retrieve_generic_status_indicators;       // HFP_CMD_GENERIC_STATUS_INDICATOR

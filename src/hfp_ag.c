@@ -462,24 +462,19 @@ static int hfp_ag_run_for_context_service_level_connection(hfp_connection_t * co
                 context->state = HFP_W4_RETRIEVE_INDICATORS;
             }
             break;
-        case HFP_CMD_INDICATOR:
-            switch(context->state){
-                case HFP_W4_RETRIEVE_INDICATORS:
-                    if (context->retrieve_ag_indicators == 0) break;
-                    hfp_ag_retrieve_indicators_cmd(context->rfcomm_cid, context);
-                    done = 1;
-                    context->state = HFP_W4_RETRIEVE_INDICATORS_STATUS;
-                    break;
-                case HFP_W4_RETRIEVE_INDICATORS_STATUS:
-                    if (context->retrieve_ag_indicators_status == 0) break;
-                    hfp_ag_retrieve_indicators_status_cmd(context->rfcomm_cid);
-                    done = 1;
-                    context->state = HFP_W4_ENABLE_INDICATORS_STATUS_UPDATE;
-                    break;
-                default:
-                    break;
-            }
+        case HFP_CMD_RETRIEVE_AG_INDICATORS:
+            if (context->state != HFP_W4_RETRIEVE_INDICATORS) break;
+            context->state = HFP_W4_RETRIEVE_INDICATORS_STATUS;
+            done = 1;
+            hfp_ag_retrieve_indicators_cmd(context->rfcomm_cid, context);
             break;
+        case HFP_CMD_RETRIEVE_AG_INDICATORS_STATUS:
+            if (context->state != HFP_W4_RETRIEVE_INDICATORS_STATUS) break;
+            context->state = HFP_W4_ENABLE_INDICATORS_STATUS_UPDATE;
+            done = 1;
+            hfp_ag_retrieve_indicators_status_cmd(context->rfcomm_cid);
+            break;
+
         case HFP_CMD_ENABLE_INDICATOR_STATUS_UPDATE:
             switch(context->state){
                 case HFP_W4_ENABLE_INDICATORS_STATUS_UPDATE:

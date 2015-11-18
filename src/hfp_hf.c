@@ -269,15 +269,13 @@ static int hfp_hf_run_for_context_service_level_connection(hfp_connection_t * co
             hfp_hf_cmd_retrieve_indicators(context->rfcomm_cid);
             done = 1;
             context->state = HFP_W4_RETRIEVE_INDICATORS;
-            context->retrieve_ag_indicators = 1;
-            context->retrieve_ag_indicators_status = 0;
+            context->command = HFP_CMD_RETRIEVE_AG_INDICATORS;
             break;
         case HFP_RETRIEVE_INDICATORS_STATUS:
             hfp_hf_cmd_retrieve_indicators_status(context->rfcomm_cid);
             done = 1;
             context->state = HFP_W4_RETRIEVE_INDICATORS_STATUS;
-            context->retrieve_ag_indicators_status = 1;
-            context->retrieve_ag_indicators = 0;
+            context->command = HFP_CMD_RETRIEVE_AG_INDICATORS;
             break;
         case HFP_ENABLE_INDICATORS_STATUS_UPDATE:
             hfp_hf_cmd_activate_status_update_for_all_ag_indicators(context->rfcomm_cid, 1);
@@ -336,12 +334,10 @@ static void hfp_hf_handle_ok_service_level_connection_establishment(hfp_connecti
         
         case HFP_W4_RETRIEVE_INDICATORS:
             context->state = HFP_RETRIEVE_INDICATORS_STATUS; 
-            context->retrieve_ag_indicators = 0;
             break;
         
         case HFP_W4_RETRIEVE_INDICATORS_STATUS:
             context->state = HFP_ENABLE_INDICATORS_STATUS_UPDATE;
-            context->retrieve_ag_indicators_status = 0;
             break;
             
         case HFP_W4_ENABLE_INDICATORS_STATUS_UPDATE:

@@ -107,8 +107,7 @@ TEST(HFPParser, HFP_HF_INDICATORS){
     }
     offset += snprintf(packet+offset, sizeof(packet)-offset, "\"%s\", (%d, %d)\r\n\r\nOK\r\n", hfp_ag_indicators[pos].name, hfp_ag_indicators[pos].min_range, hfp_ag_indicators[pos].max_range);
 
-    context.retrieve_ag_indicators = 1;
-    context.retrieve_ag_indicators_status = 0;
+    context.command = HFP_CMD_RETRIEVE_AG_INDICATORS;
 
     for (pos = 0; pos < strlen(packet); pos++){
         hfp_parse(&context, packet[pos]);
@@ -132,10 +131,8 @@ TEST(HFPParser, HFP_HF_INDICATOR_STATUS){
     }
     offset += snprintf(packet+offset, sizeof(packet)-offset, "%d\r\n\r\nOK\r\n", hfp_ag_indicators[pos].status);
     
-    context.command = HFP_CMD_INDICATOR;
-    context.retrieve_ag_indicators_status = 1;
-    context.retrieve_ag_indicators = 0;
-
+    context.command = HFP_CMD_RETRIEVE_AG_INDICATORS_STATUS;
+    
     for (pos = 0; pos < strlen(packet); pos++){
         hfp_parse(&context, packet[pos]);
     }
