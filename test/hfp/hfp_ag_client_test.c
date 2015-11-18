@@ -226,19 +226,19 @@ TEST_GROUP(HFPClient){
 // }
 
 
-// TEST(HFPClient, HFAudioConnectionEstablished){
-//     setup_hfp_service_level_connection(default_slc_setup(), default_slc_setup_size());
-//     CHECK_EQUAL(service_level_connection_established, 1);
+TEST(HFPClient, HFAudioConnectionEstablished){
+    setup_hfp_service_level_connection(default_slc_setup(), default_slc_setup_size());
+    CHECK_EQUAL(service_level_connection_established, 1);
         
-//     setup_hfp_codecs_connection(default_cc_setup(), default_cc_setup_size());
-//     CHECK_EQUAL(codecs_connection_established, 1);
+    setup_hfp_codecs_connection(default_cc_setup(), default_cc_setup_size());
+    CHECK_EQUAL(codecs_connection_established, 1);
 
-//     hfp_ag_establish_audio_connection(device_addr);
-//     CHECK_EQUAL(audio_connection_established, 1);
+    hfp_ag_establish_audio_connection(device_addr);
+    CHECK_EQUAL(audio_connection_established, 1);
 
-//     hfp_ag_release_audio_connection(device_addr);
-//     CHECK_EQUAL(audio_connection_established, 0);
-// }
+    hfp_ag_release_audio_connection(device_addr);
+    CHECK_EQUAL(audio_connection_established, 0);
+}
 
 TEST(HFPClient, HFCodecsConnectionEstablished){
     for (int i = 0; i < cc_tests_size(); i++){
