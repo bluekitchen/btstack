@@ -210,13 +210,13 @@ TEST(HFPParser, HFP_HF_AG_INDICATOR_STATUS_UPDATE){
 TEST(HFPParser, HFP_HF_AG_QUERY_OPERATOR_SELECTION){
     sprintf(packet, "\r\n%s:1,0,\"sunrise\"\r\n\r\nOK\r\n", HFP_QUERY_OPERATOR_SELECTION);
     
+    context.command = HFP_CMD_QUERY_OPERATOR_SELECTION_NAME;
+
     for (pos = 0; pos < strlen(packet); pos++){
         hfp_parse(&context, packet[pos]);
     }
 
     CHECK_EQUAL(context.command, HFP_CMD_OK);
-    CHECK_EQUAL(context.operator_name_format, 0);       
-    CHECK_EQUAL(context.operator_name, 1);              
     CHECK_EQUAL(context.operator_name_changed, 0); 
     CHECK_EQUAL( strcmp("sunrise", context.network_operator.name), 0);
 }

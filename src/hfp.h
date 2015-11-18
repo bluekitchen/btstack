@@ -142,7 +142,9 @@ typedef enum {
     HFP_CMD_GENERIC_STATUS_INDICATOR,
 
     HFP_CMD_TRANSFER_AG_INDICATOR_STATUS,
-    HFP_CMD_QUERY_OPERATOR_SELECTION,
+
+    HFP_CMD_QUERY_OPERATOR_SELECTION_NAME,
+    HFP_CMD_QUERY_OPERATOR_SELECTION_NAME_FORMAT,
 
     HFP_CMD_ENABLE_EXTENDED_AUDIO_GATEWAY_ERROR,
     HFP_CMD_EXTENDED_AUDIO_GATEWAY_ERROR,
@@ -383,9 +385,6 @@ typedef struct hfp_connection {
     uint8_t retrieve_generic_status_indicators_state; // HFP_CMD_GENERIC_STATUS_INDICATOR_STATE
     
     uint8_t change_status_update_for_individual_ag_indicators; 
-
-    uint8_t operator_name_format;       
-    uint8_t operator_name;              
     uint8_t operator_name_changed;      
 
     uint8_t enable_extended_audio_gateway_error_report;

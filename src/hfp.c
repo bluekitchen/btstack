@@ -268,9 +268,6 @@ void hfp_reset_context_flags(hfp_connection_t * context){
     context->retrieve_generic_status_indicators_state = 0; // HFP_CMD_GENERIC_STATUS_INDICATOR_STATE
     
     context->change_status_update_for_individual_ag_indicators = 0; 
-
-    context->operator_name_format = 0;       
-    context->operator_name = 0;              
     context->operator_name_changed = 0;      
 
     context->enable_extended_audio_gateway_error_report = 0;
@@ -696,14 +693,12 @@ static void process_command(hfp_connection_t * context){
     
 
     if (strncmp((char *)context->line_buffer+offset, HFP_QUERY_OPERATOR_SELECTION, strlen(HFP_QUERY_OPERATOR_SELECTION)) == 0){
-        context->command = HFP_CMD_QUERY_OPERATOR_SELECTION;
-        context->operator_name = 1;
-        context->operator_name_format = 0;
+        context->command = HFP_CMD_QUERY_OPERATOR_SELECTION_NAME;
+        
         if (isHandsFree) return;
 
-        context->operator_name = 0;
         if (strncmp((char *)context->line_buffer+strlen(HFP_QUERY_OPERATOR_SELECTION)+offset, "=", 1) == 0){
-            context->operator_name_format = 1; 
+            context->command = HFP_CMD_QUERY_OPERATOR_SELECTION_NAME_FORMAT;
         } 
         return;
     }
@@ -805,7 +800,8 @@ static void hfp_parser_next_state(hfp_connection_t * context, uint8_t byte){
         case HFP_PARSER_CMD_SEQUENCE:
             switch (context->command){
                 case HFP_CMD_TRANSFER_AG_INDICATOR_STATUS:
-                case HFP_CMD_QUERY_OPERATOR_SELECTION:
+                case HFP_CMD_QUERY_OPERATOR_SELECTION_NAME:
+                case HFP_CMD_QUERY_OPERATOR_SELECTION_NAME_FORMAT:
                     context->parser_state = HFP_PARSER_SECOND_ITEM;
                     break;
                 case HFP_CMD_RETRIEVE_AG_INDICATORS:
@@ -951,22 +947,17 @@ void hfp_parse(hfp_connection_t * context, uint8_t byte){
                     printf("Parsed status of the AG indicator %d, status ", context->parser_item_index);
                     printf("\n");
                     break;
-                case HFP_CMD_QUERY_OPERATOR_SELECTION:
-                    if (context->operator_name_format == 1){
-                        if (context->line_buffer[0] == '3'){
-                            log_info("Parsed Set network operator format : %s, ", context->line_buffer);
-                            break;
-                        }
-                        // TODO emit ERROR, wrong format
-                        log_info("ERROR Set network operator format: index %s not supported\n", context->line_buffer);
+                case HFP_CMD_QUERY_OPERATOR_SELECTION_NAME:
+                    context->network_operator.mode = atoi((char *)&context->line_buffer[0]);
+                    log_info("Parsed network operator mode: %d, ", context->network_operator.mode);
+                    break;
+                case HFP_CMD_QUERY_OPERATOR_SELECTION_NAME_FORMAT:
+                    if (context->line_buffer[0] == '3'){
+                        log_info("Parsed Set network operator format : %s, ", context->line_buffer);
                         break;
                     }
-
-                    if (context->operator_name == 1) {
-                        context->network_operator.mode = atoi((char *)&context->line_buffer[0]);
-                        log_info("Parsed network operator mode: %d, ", context->network_operator.mode);
-                        break;
-                    }
+                    // TODO emit ERROR, wrong format
+                    log_info("ERROR Set network operator format: index %s not supported\n", context->line_buffer);
                     break;
                 case HFP_CMD_ERROR:
                     break;
@@ -985,16 +976,13 @@ void hfp_parse(hfp_connection_t * context, uint8_t byte){
 
         case HFP_PARSER_SECOND_ITEM:
             switch (context->command){
-                case HFP_CMD_QUERY_OPERATOR_SELECTION:
-                    if (context->operator_name_format == 1) {
-                        log_info("format %s \n", context->line_buffer);
-                        context->network_operator.format =  atoi((char *)&context->line_buffer[0]);
-                        break;
-                    }
-                    if (context->operator_name == 1){
-                        log_info("format %s, ", context->line_buffer);
-                        context->network_operator.format =  atoi((char *)&context->line_buffer[0]);
-                    }
+                case HFP_CMD_QUERY_OPERATOR_SELECTION_NAME:
+                    log_info("format %s, ", context->line_buffer);
+                    context->network_operator.format =  atoi((char *)&context->line_buffer[0]);
+                    break;
+                case HFP_CMD_QUERY_OPERATOR_SELECTION_NAME_FORMAT:
+                    log_info("format %s \n", context->line_buffer);
+                    context->network_operator.format =  atoi((char *)&context->line_buffer[0]);
                     break;
                 case HFP_CMD_GENERIC_STATUS_INDICATOR:
                     context->generic_status_indicators[context->parser_item_index].state = (uint8_t)atoi((char*)context->line_buffer);
@@ -1014,11 +1002,9 @@ void hfp_parse(hfp_connection_t * context, uint8_t byte){
 
         case HFP_PARSER_THIRD_ITEM:
              switch (context->command){
-                case HFP_CMD_QUERY_OPERATOR_SELECTION:
-                    if (context->operator_name == 1){
-                        strcpy(context->network_operator.name, (char *)context->line_buffer);
-                        log_info("name %s\n", context->line_buffer);
-                    }
+                case HFP_CMD_QUERY_OPERATOR_SELECTION_NAME:
+                    strcpy(context->network_operator.name, (char *)context->line_buffer);
+                    log_info("name %s\n", context->line_buffer);
                     break;
                 case HFP_CMD_RETRIEVE_AG_INDICATORS:
                     context->ag_indicators[context->parser_item_index].max_range = atoi((char *)context->line_buffer);

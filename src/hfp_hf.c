@@ -402,13 +402,13 @@ static int hfp_hf_run_for_context_service_level_connection_queries(hfp_connectio
         return done;
     }
 
-    if (context->operator_name_format){
+    if (context->command == HFP_CMD_QUERY_OPERATOR_SELECTION_NAME_FORMAT){
         hfp_hf_cmd_query_operator_name_format(context->rfcomm_cid);
         context->wait_ok = 1;
         done = 1;
         return done;
     }
-    if (context->operator_name){
+    if (context->command == HFP_CMD_QUERY_OPERATOR_SELECTION_NAME){
         hfp_hf_cmd_query_operator_name(context->rfcomm_cid);
         context->wait_ok = 1;
         done = 1;
@@ -440,14 +440,12 @@ static void hfp_hf_handle_ok_service_level_connection_queries(hfp_connection_t *
         return;
     }
 
-    if (context->operator_name_format){
-        context->operator_name_format = 0;
-        context->operator_name = 1;
+    if (context->command == HFP_CMD_QUERY_OPERATOR_SELECTION_NAME_FORMAT){
+        context->command = HFP_CMD_QUERY_OPERATOR_SELECTION_NAME;
         return;
     }
     
-    if (context->operator_name){
-        context->operator_name = 0;
+    if (context->command == HFP_CMD_QUERY_OPERATOR_SELECTION_NAME){
         hfp_emit_network_operator_event(hfp_callback, 0, context->network_operator);
         return;
     }
@@ -702,7 +700,7 @@ void hfp_hf_query_operator_selection(bd_addr_t bd_addr){
         log_error("HFP HF: connection doesn't exist.");
         return;
     }
-    connection->operator_name_format = 1;
+    connection->command = HFP_CMD_QUERY_OPERATOR_SELECTION_NAME_FORMAT;
     hfp_run_for_context(connection);
 }
 

@@ -556,35 +556,27 @@ static int hfp_ag_run_for_context_service_level_connection_queries(hfp_connectio
     printf(" -> State machine: SLC Queries\n");
     switch(context->command){
 
-        case HFP_CMD_QUERY_OPERATOR_SELECTION:
-            if (context->operator_name_format == 1){
-                if (context->network_operator.format != 0){
-                    hfp_ag_error(context->rfcomm_cid);
-                    done = 1;
-                    break;
-                }
-                hfp_ag_ok(context->rfcomm_cid);
-                done = 1;
-                context->operator_name_format = 0;    
+        case HFP_CMD_QUERY_OPERATOR_SELECTION_NAME:
+            done = 1;
+            hfp_ag_report_network_operator_name_cmd(context->rfcomm_cid, context->network_operator);
+            break;
+        case HFP_CMD_QUERY_OPERATOR_SELECTION_NAME_FORMAT:
+            done = 1;
+            if (context->network_operator.format != 0){
+                hfp_ag_error(context->rfcomm_cid);
                 break;
             }
-            if (context->operator_name == 1){
-                hfp_ag_report_network_operator_name_cmd(context->rfcomm_cid, context->network_operator);
-                context->operator_name = 0;
-                done = 1;
-                break;
-            }
+            hfp_ag_ok(context->rfcomm_cid);
             break;
         case HFP_CMD_ENABLE_INDIVIDUAL_AG_INDICATOR_STATUS_UPDATE:
-            hfp_ag_ok(context->rfcomm_cid);
             done = 1;
+            hfp_ag_ok(context->rfcomm_cid);
             break;
-        
         case HFP_CMD_ENABLE_EXTENDED_AUDIO_GATEWAY_ERROR:
             if (context->extended_audio_gateway_error){
-                hfp_ag_report_extended_audio_gateway_error(context->rfcomm_cid, context->extended_audio_gateway_error);
                 context->extended_audio_gateway_error = 0;
                 done = 1;
+                hfp_ag_report_extended_audio_gateway_error(context->rfcomm_cid, context->extended_audio_gateway_error);
                 break;
             }
         case HFP_CMD_ENABLE_INDICATOR_STATUS_UPDATE:
