@@ -184,10 +184,6 @@ static int hfp_ag_report_extended_audio_gateway_error(uint16_t cid, uint8_t erro
     return send_str_over_rfcomm(cid, buffer);
 }
 
-static int hfp_ag_retrieve_codec_cmd(uint16_t cid){
-    return hfp_ag_ok(cid);
-}
-
 static int hfp_ag_indicators_join(char * buffer, int buffer_size, hfp_connection_t * context){
     if (buffer_size < get_hfp_ag_indicators_nr(context) * (1 + sizeof(hfp_ag_indicator_t))) return 0;
     int i;

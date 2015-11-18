@@ -279,12 +279,7 @@ void hfp_reset_context_flags(hfp_connection_t * context){
     context->enable_extended_audio_gateway_error_report = 0;
     context->extended_audio_gateway_error = 0;
 
-    // can come any time (here taken into account only after SLE),
-    // if codec negotiation feature is set
-    context->notify_ag_on_new_codecs = 0;
-    
     // establish codecs connection
-    context->hf_trigger_codec_connection_setup = 0;
     context->suggested_codec = 0;
     context->negotiated_codec = 0;
     context->codec_confirmed = 0;
@@ -669,7 +664,6 @@ static void process_command(hfp_connection_t * context){
 
     if (strncmp((char *)context->line_buffer+offset, HFP_AVAILABLE_CODECS, strlen(HFP_AVAILABLE_CODECS)) == 0){
         context->command = HFP_CMD_AVAILABLE_CODECS;
-        context->notify_ag_on_new_codecs = 1;
         return;
     }
 
@@ -739,8 +733,6 @@ static void process_command(hfp_connection_t * context){
 
     if (strncmp((char *)context->line_buffer+offset, HFP_TRIGGER_CODEC_CONNECTION_SETUP, strlen(HFP_TRIGGER_CODEC_CONNECTION_SETUP)) == 0){
         context->command = HFP_CMD_TRIGGER_CODEC_CONNECTION_SETUP;
-        // printf("HFP_CMD_TRIGGER_CODEC_CONNECTION_SETUP update command\n");
-        context->hf_trigger_codec_connection_setup = 1;
         return;
     } 
 

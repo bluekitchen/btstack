@@ -242,27 +242,22 @@ typedef enum {
     HFP_RETRIEVE_GENERIC_STATUS_INDICATORS,
     HFP_W4_RETRIEVE_GENERIC_STATUS_INDICATORS,
     
-    HFP_RETRIEVE_INITITAL_STATE_GENERIC_STATUS_INDICATORS, // 20
+    HFP_RETRIEVE_INITITAL_STATE_GENERIC_STATUS_INDICATORS, 
     HFP_W4_RETRIEVE_INITITAL_STATE_GENERIC_STATUS_INDICATORS,
     
-    HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED, // 22
-    
-    HFP_SLE_W2_EXCHANGE_COMMON_CODEC,
-    HFP_SLE_W4_EXCHANGE_COMMON_CODEC,
-    
-    HFP_CODECS_CONNECTION_ESTABLISHED, // 25
+    HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED, 
     
     HFP_W2_CONNECT_SCO,
     HFP_W4_SCO_CONNECTED,
     
-    HFP_AUDIO_CONNECTION_ESTABLISHED,
+    HFP_AUDIO_CONNECTION_ESTABLISHED, 
     
     HFP_W2_DISCONNECT_SCO,
-    HFP_W4_SCO_DISCONNECTED, // 30
+    HFP_W4_SCO_DISCONNECTED, 
 
     HFP_W2_DISCONNECT_RFCOMM,
     HFP_W4_RFCOMM_DISCONNECTED, 
-    HFP_W4_RFCOMM_DISCONNECTED_AND_RESTART,
+    HFP_W4_RFCOMM_DISCONNECTED_AND_RESTART, 
     HFP_W4_CONNECTION_ESTABLISHED_TO_SHUTDOWN
 } hfp_state_t;
 
@@ -270,6 +265,7 @@ typedef enum {
     HFP_CODECS_IDLE,
     HFP_CODECS_RECEIVED_LIST,
     HFP_CODECS_RECEIVED_TRIGGER_CODEC_EXCHANGE,
+    HFP_CODECS_W4_AG_COMMON_CODEC,
     HFP_CODECS_AG_SENT_COMMON_CODEC,
     HFP_CODECS_AG_RESEND_COMMON_CODEC,
     HFP_CODECS_EXCHANGED,
@@ -395,12 +391,7 @@ typedef struct hfp_connection {
     uint8_t enable_extended_audio_gateway_error_report;
     uint8_t extended_audio_gateway_error;
 
-    // can come any time (here taken into account only after SLE),
-    // if codec negotiation feature is set
-    uint8_t notify_ag_on_new_codecs;
-    
     // establish codecs connection
-    uint8_t hf_trigger_codec_connection_setup;
     uint8_t suggested_codec;
     uint8_t codec_confirmed;
 

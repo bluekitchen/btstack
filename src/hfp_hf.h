@@ -141,8 +141,6 @@ void hfp_hf_enable_report_extended_audio_gateway_error_result_code(bd_addr_t bd_
 /**
  * @brief 
  */
-void hfp_hf_negotiate_codecs(bd_addr_t bd_addr);
-
 void hfp_hf_establish_audio_connection(bd_addr_t bd_addr);
 
 /**
