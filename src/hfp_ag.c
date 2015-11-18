@@ -779,7 +779,7 @@ static void hfp_run_for_context(hfp_connection_t *context){
     }
 }
 
-static void hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+static void hfp_handle_rfcomm_data(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     hfp_connection_t * context = get_hfp_connection_context_for_rfcomm_cid(channel);
     if (!context) return;
     int pos;
@@ -800,7 +800,7 @@ static void hfp_run(){
 static void packet_handler(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     switch (packet_type){
         case RFCOMM_DATA_PACKET:
-            hfp_handle_rfcomm_event(packet_type, channel, packet, size);
+            hfp_handle_rfcomm_data(packet_type, channel, packet, size);
             break;
         case HCI_EVENT_PACKET:
             hfp_handle_hci_event(hfp_callback, packet_type, packet, size);
