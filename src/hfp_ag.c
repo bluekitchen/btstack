@@ -708,25 +708,25 @@ static void hfp_run_for_context(hfp_connection_t *context){
     if (!rfcomm_can_send_packet_now(context->rfcomm_cid)) return;
     
     if (context->command == HFP_CMD_UNKNOWN){
-        hfp_ag_error(context->rfcomm_cid);
         context->ok_pending = 0;
         context->send_error = 0;
         context->command = HFP_CMD_NONE;
+        hfp_ag_error(context->rfcomm_cid);
         return;
     }
 
     
     if (context->ok_pending){
-        hfp_ag_ok(context->rfcomm_cid);
         context->ok_pending = 0;
         context->command = HFP_CMD_NONE;
+        hfp_ag_ok(context->rfcomm_cid);
         return;
     }
 
     if (context->send_error){
-        hfp_ag_error(context->rfcomm_cid); 
         context->send_error = 0;
         context->command = HFP_CMD_NONE;
+        hfp_ag_error(context->rfcomm_cid); 
         return;
     }
     

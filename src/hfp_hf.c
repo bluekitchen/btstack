@@ -266,14 +266,11 @@ static int hfp_hf_run_for_context_service_level_connection(hfp_connection_t * co
             hfp_hf_cmd_notify_on_codecs(context->rfcomm_cid);
             break;
         case HFP_RETRIEVE_INDICATORS:
-            hfp_hf_cmd_retrieve_indicators(context->rfcomm_cid);
-            done = 1;
             context->state = HFP_W4_RETRIEVE_INDICATORS;
-            context->command = HFP_CMD_RETRIEVE_AG_INDICATORS;
+            hfp_hf_cmd_retrieve_indicators(context->rfcomm_cid);
             break;
         case HFP_RETRIEVE_INDICATORS_STATUS:
             context->state = HFP_W4_RETRIEVE_INDICATORS_STATUS;
-            context->command = HFP_CMD_RETRIEVE_AG_INDICATORS;
             hfp_hf_cmd_retrieve_indicators_status(context->rfcomm_cid);
             break;
         case HFP_ENABLE_INDICATORS_STATUS_UPDATE:
@@ -286,17 +283,14 @@ static int hfp_hf_run_for_context_service_level_connection(hfp_connection_t * co
             break;
         case HFP_LIST_GENERIC_STATUS_INDICATORS:
             context->state = HFP_W4_LIST_GENERIC_STATUS_INDICATORS;
-            context->command = HFP_CMD_LIST_GENERIC_STATUS_INDICATORS;
             hfp_hf_cmd_list_supported_generic_status_indicators(context->rfcomm_cid);
             break;
         case HFP_RETRIEVE_GENERIC_STATUS_INDICATORS:
             context->state = HFP_W4_RETRIEVE_GENERIC_STATUS_INDICATORS;
-            context->command = HFP_CMD_RETRIEVE_GENERIC_STATUS_INDICATORS;
             hfp_hf_cmd_retrieve_supported_generic_status_indicators(context->rfcomm_cid);
             break;
         case HFP_RETRIEVE_INITITAL_STATE_GENERIC_STATUS_INDICATORS:
             context->state = HFP_W4_RETRIEVE_INITITAL_STATE_GENERIC_STATUS_INDICATORS;
-            context->command = HFP_CMD_RETRIEVE_GENERIC_STATUS_INDICATORS_STATE;
             hfp_hf_cmd_list_initital_supported_generic_status_indicators(context->rfcomm_cid);
             break;
         default:

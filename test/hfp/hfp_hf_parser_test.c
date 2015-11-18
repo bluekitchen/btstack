@@ -107,7 +107,8 @@ TEST(HFPParser, HFP_HF_INDICATORS){
     }
     offset += snprintf(packet+offset, sizeof(packet)-offset, "\"%s\", (%d, %d)\r\n\r\nOK\r\n", hfp_ag_indicators[pos].name, hfp_ag_indicators[pos].min_range, hfp_ag_indicators[pos].max_range);
 
-    context.command = HFP_CMD_RETRIEVE_AG_INDICATORS;
+    //context.command = HFP_CMD_RETRIEVE_AG_INDICATORS;
+    context.state = HFP_W4_RETRIEVE_INDICATORS;
 
     for (pos = 0; pos < strlen(packet); pos++){
         hfp_parse(&context, packet[pos], 1);
@@ -131,8 +132,9 @@ TEST(HFPParser, HFP_HF_INDICATOR_STATUS){
     }
     offset += snprintf(packet+offset, sizeof(packet)-offset, "%d\r\n\r\nOK\r\n", hfp_ag_indicators[pos].status);
     
-    context.command = HFP_CMD_RETRIEVE_AG_INDICATORS_STATUS;
-    
+    //context.command = HFP_CMD_RETRIEVE_AG_INDICATORS_STATUS;
+    context.state = HFP_W4_RETRIEVE_INDICATORS_STATUS;
+
     for (pos = 0; pos < strlen(packet); pos++){
         hfp_parse(&context, packet[pos], 1);
     }
@@ -161,8 +163,9 @@ TEST(HFPParser, HFP_HF_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES){
 
 TEST(HFPParser, HFP_HF_GENERIC_STATUS_INDICATOR){
     sprintf(packet, "\r\n%s:0,1,2,3,4\r\n\r\nOK\r\n", HFP_GENERIC_STATUS_INDICATOR);
-    context.command = HFP_CMD_RETRIEVE_GENERIC_STATUS_INDICATORS;
-
+    //context.command = HFP_CMD_RETRIEVE_GENERIC_STATUS_INDICATORS;
+    context.state = HFP_W4_RETRIEVE_GENERIC_STATUS_INDICATORS;
+    
     for (pos = 0; pos < strlen(packet); pos++){
         hfp_parse(&context, packet[pos], 1);
     }
@@ -177,8 +180,9 @@ TEST(HFPParser, HFP_HF_GENERIC_STATUS_INDICATOR){
 
 TEST(HFPParser, HFP_HF_GENERIC_STATUS_INDICATOR_STATE){
     sprintf(packet, "\r\n%s:0,1\r\n\r\nOK\r\n", HFP_GENERIC_STATUS_INDICATOR);
-     context.command = HFP_CMD_RETRIEVE_GENERIC_STATUS_INDICATORS_STATE;
-    
+    // context.command = HFP_CMD_RETRIEVE_GENERIC_STATUS_INDICATORS_STATE;
+    context.state = HFP_W4_RETRIEVE_INITITAL_STATE_GENERIC_STATUS_INDICATORS;
+                        
     for (pos = 0; pos < strlen(packet); pos++){
         hfp_parse(&context, packet[pos], 1);
     }
