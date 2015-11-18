@@ -108,7 +108,7 @@ int expected_rfcomm_command(const char * expected_cmd){
         if ( (ag_cmd+i)[0] == '\r' || (ag_cmd+i)[0] == '\n' ) {
             continue;
         }
-        if (memcmp(ag_cmd + i, expected_cmd, expected_len) == 0) return 1;
+        if (strncmp(ag_cmd + i, expected_cmd, expected_len) == 0) return 1;
     }
     return 0;
 }
@@ -119,9 +119,9 @@ void simulate_test_sequence(char ** test_steps, int nr_test_steps){
     for (i=0; i < nr_test_steps; i++){
         char * cmd = test_steps[i];
         printf("\n---> NEXT STEP %s\n", cmd);
-        if (memcmp(cmd, "AT", 2) == 0){
+        if (strncmp(cmd, "AT", 2) == 0){
             inject_rfcomm_command_to_ag((uint8_t*)cmd, strlen(cmd));
-        } else if (memcmp(cmd, "NOP", 3) == 0){
+        } else if (strncmp(cmd, "NOP", 3) == 0){
             inject_rfcomm_command_to_ag((uint8_t*)"NOP",3);
         } else {
             int expected_cmd = expected_rfcomm_command(cmd);

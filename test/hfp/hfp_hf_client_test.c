@@ -81,7 +81,7 @@ int expected_rfcomm_command(const char * cmd){
     int offset = 2;
     int cmd_size = strlen(cmd);
 
-    int cmd_found = memcmp(ag_cmd+offset, cmd, cmd_size) == 0;
+    int cmd_found = strncmp(ag_cmd+offset, cmd, cmd_size) == 0;
     while (!cmd_found && get_rfcomm_payload_len() - cmd_size >= offset){
         offset++;
         cmd_found = strncmp(ag_cmd+offset, cmd, cmd_size) == 0;
@@ -89,17 +89,17 @@ int expected_rfcomm_command(const char * cmd){
     if (!cmd_found) return 0;
     
     // AG cmds that are not followed by OK
-    if (memcmp(ag_cmd+offset, "+BCS", 4) == 0){
+    if (strncmp(ag_cmd+offset, "+BCS", 4) == 0){
         return cmd_found;
     }
 
     offset += strlen(cmd)+4;
     // printf("cmd found, offset %d, cmd %s\n", offset, ag_cmd+offset);
-    int ok_found = memcmp(ag_cmd+offset, "OK", 2) == 0;
+    int ok_found = strncmp(ag_cmd+offset, "OK", 2) == 0;
     while (!ok_found && get_rfcomm_payload_len() - 2 >= offset){
         offset++;
         // printf("cmd found, offset %d, cmd %s\n", offset, ag_cmd+offset);
-        ok_found = memcmp(ag_cmd+offset, "OK", 2) == 0;
+        ok_found = strncmp(ag_cmd+offset, "OK", 2) == 0;
     }
     // printf("cmd found, ok found %d\n", ok_found);
     return cmd_found && ok_found;
@@ -110,10 +110,10 @@ void simulate_test_sequence(char ** test_steps, int nr_test_steps){
     for (i=0; i < nr_test_steps; i++){
         char * cmd = test_steps[i];
         printf("\n---> NEXT STEP %s\n", cmd);
-        if (memcmp(cmd, "AT", 2) == 0){
+        if (strncmp(cmd, "AT", 2) == 0){
             int parsed_codecs[2];
             uint8_t new_codecs[2];
-            if (memcmp(cmd, "AT+BAC=", 7) == 0){
+            if (strncmp(cmd, "AT+BAC=", 7) == 0){
                 printf("Send BAC\n");
                 sscanf(&cmd[7],"%d,%d", &parsed_codecs[0], &parsed_codecs[1]);
                 new_codecs[0] = parsed_codecs[0];
