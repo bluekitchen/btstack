@@ -114,9 +114,11 @@ void hfp_hf_create_sdp_record(uint8_t * service, int rfcomm_channel_nr, const ch
     if (!name){
         name = default_hfp_hf_service_name;
     }
-    hfp_create_sdp_record(service, SDP_Handsfree, rfcomm_channel_nr, name, supported_features);
-}
+    hfp_create_sdp_record(service, SDP_Handsfree, rfcomm_channel_nr, name);
 
+    de_add_number(service, DE_UINT, DE_SIZE_16, 0x0311);    // Hands-Free Profile - SupportedFeatures
+    de_add_number(service, DE_UINT, DE_SIZE_16, supported_features);
+}
 
 static int hfp_hf_cmd_exchange_supported_features(uint16_t cid){
     char buffer[20];

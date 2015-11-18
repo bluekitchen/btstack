@@ -323,6 +323,10 @@ static hfp_connection_t * provide_hfp_connection_context_for_bd_addr(bd_addr_t b
     return context;
 }
 
+/* @param network.
+ * 0 == no ability to reject a call. 
+ * 1 == ability to reject a call.
+ */
 
 /* @param suported_features
  * HF bit 0: EC and/or NR function (yes/no, 1 = yes, 0 = no)
@@ -341,8 +345,7 @@ static hfp_connection_t * provide_hfp_connection_context_for_bd_addr(bd_addr_t b
  * AG bit 5: Wide band speech (yes/no, 1 = yes, 0 = no)
  */
 
-
-void hfp_create_sdp_record(uint8_t * service, uint16_t service_uuid, int rfcomm_channel_nr, const char * name, uint16_t supported_features){
+void hfp_create_sdp_record(uint8_t * service, uint16_t service_uuid, int rfcomm_channel_nr, const char * name){
     uint8_t* attribute;
     de_create_sequence(service);
 
@@ -404,8 +407,6 @@ void hfp_create_sdp_record(uint8_t * service, uint16_t service_uuid, int rfcomm_
     // 0x0100 "Service Name"
     de_add_number(service,  DE_UINT, DE_SIZE_16, 0x0100);
     de_add_data(service,  DE_STRING, strlen(name), (uint8_t *) name);
-    
-    de_add_number(service, DE_UINT, DE_SIZE_16, supported_features);
 }
 
 static hfp_connection_t * connection_doing_sdp_query = NULL;
