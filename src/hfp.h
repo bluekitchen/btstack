@@ -377,8 +377,8 @@ typedef struct hfp_connection {
     uint8_t  negotiated_codec;
 
     // TODO: put these bit flags in a bitmap
-    uint8_t wait_ok;
-    uint8_t send_ok;
+    uint8_t ok_pending;
+    // uint8_t send_ok;
     uint8_t send_error;
 
     uint8_t keep_separator;

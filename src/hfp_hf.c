@@ -252,7 +252,7 @@ static void hfp_emit_network_operator_event(hfp_callback_t callback, int status,
 static int hfp_hf_run_for_context_service_level_connection(hfp_connection_t * context){
     if (context->state >= HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED) return 0;
     int done = 0;
-    if (context->wait_ok) return done;
+    if (context->ok_pending) return done;
     
     switch (context->state){
         case HFP_EXCHANGE_SUPPORTED_FEATURES:
@@ -375,12 +375,12 @@ static void hfp_hf_handle_ok_service_level_connection_establishment(hfp_connecti
 
 static int hfp_hf_run_for_context_service_level_connection_queries(hfp_connection_t * context){
     if (context->state != HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED) return 0;
-    if (context->wait_ok) return 0;
+    if (context->ok_pending) return 0;
     
     int done = 0;
     if (context->enable_status_update_for_ag_indicators != 0xFF){
         hfp_hf_cmd_activate_status_update_for_all_ag_indicators(context->rfcomm_cid, context->enable_status_update_for_ag_indicators);
-        context->wait_ok = 1;
+        context->ok_pending = 1;
         done = 1;
         return done;
     };
@@ -388,27 +388,27 @@ static int hfp_hf_run_for_context_service_level_connection_queries(hfp_connectio
         hfp_hf_cmd_activate_status_update_for_ag_indicator(context->rfcomm_cid, 
                 context->ag_indicators_status_update_bitmap,
                 context->ag_indicators_nr);
-        context->wait_ok = 1;
+        context->ok_pending = 1;
         done = 1;
         return done;
     }
 
     if (context->command == HFP_CMD_QUERY_OPERATOR_SELECTION_NAME_FORMAT){
         hfp_hf_cmd_query_operator_name_format(context->rfcomm_cid);
-        context->wait_ok = 1;
+        context->ok_pending = 1;
         done = 1;
         return done;
     }
     if (context->command == HFP_CMD_QUERY_OPERATOR_SELECTION_NAME){
         hfp_hf_cmd_query_operator_name(context->rfcomm_cid);
-        context->wait_ok = 1;
+        context->ok_pending = 1;
         done = 1;
         return done;
     }
 
     if (context->enable_extended_audio_gateway_error_report){
         hfp_hf_cmd_enable_extended_audio_gateway_error_report(context->rfcomm_cid, context->enable_extended_audio_gateway_error_report);
-        context->wait_ok = 1;
+        context->ok_pending = 1;
         done = 1;
         return done;   
     }
@@ -447,7 +447,7 @@ static void hfp_hf_handle_ok_service_level_connection_queries(hfp_connection_t *
 }
 
 static int codecs_exchange_state_machine(hfp_connection_t * context){
-    if (context->wait_ok) return 0;
+    if (context->ok_pending) return 0;
     int done = 0;
     
     switch(context->command){
@@ -495,7 +495,7 @@ static int codecs_exchange_state_machine(hfp_connection_t * context){
     }
 
     if (done){
-         context->wait_ok = 1;
+         context->ok_pending = 1;
     }
     return done;
 }
@@ -538,7 +538,7 @@ static void hfp_run_for_context(hfp_connection_t * context){
 
 static void hfp_hf_switch_on_ok(hfp_connection_t *context){
     // printf("switch on ok\n");
-    context->wait_ok = 0;
+    context->ok_pending = 0;
     
     hfp_hf_handle_ok_service_level_connection_establishment(context);
     hfp_hf_handle_ok_service_level_connection_queries(context);
@@ -568,13 +568,13 @@ static void hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8
         }
 
         if (context->command == HFP_CMD_ERROR){
-            context->wait_ok = 0;
+            context->ok_pending = 0;
             hfp_reset_context_flags(context);
             hfp_emit_event(hfp_callback, HFP_SUBEVENT_COMPLETE, 1); 
             return;
         }
         if (context->command == HFP_CMD_EXTENDED_AUDIO_GATEWAY_ERROR){
-            context->wait_ok = 0;
+            context->ok_pending = 0;
             hfp_emit_event(hfp_callback, HFP_SUBEVENT_EXTENDED_AUDIO_GATEWAY_ERROR, context->extended_audio_gateway_error); 
             context->extended_audio_gateway_error = 0;
             return;   

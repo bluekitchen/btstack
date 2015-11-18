@@ -257,8 +257,7 @@ hfp_connection_t * get_hfp_connection_context_for_sco_handle(uint16_t handle){
 
 void hfp_reset_context_flags(hfp_connection_t * context){
     if (!context) return;
-    context->wait_ok = 0;
-    context->send_ok = 0;
+    context->ok_pending = 0;
     context->send_error = 0;
 
     context->keep_separator = 0;
@@ -942,7 +941,7 @@ void hfp_parse(hfp_connection_t * context, uint8_t byte){
                     break;
                 case HFP_CMD_ENABLE_EXTENDED_AUDIO_GATEWAY_ERROR:
                     context->enable_extended_audio_gateway_error_report = (uint8_t)atoi((char*)context->line_buffer);
-                    context->send_ok = 1;
+                    context->ok_pending = 1;
                     context->extended_audio_gateway_error = 0;
                     break;
                 default:
