@@ -857,16 +857,18 @@ void hfp_ag_report_extended_audio_gateway_error_result_code(bd_addr_t bd_addr, h
 void hfp_ag_establish_audio_connection(bd_addr_t bd_addr){
     hfp_ag_establish_service_level_connection(bd_addr);
     hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
-    if (!has_codec_negotiation_feature(connection)){
-        log_info("hfp_ag_establish_audio_connection - no codec negotiation feature");
-        return;
-    } 
-    
+
     connection->establish_audio_connection = 0;
     if (connection->state == HFP_AUDIO_CONNECTION_ESTABLISHED) return;
     if (connection->state >= HFP_W2_DISCONNECT_SCO) return;
         
     connection->establish_audio_connection = 1;
+
+    if (!has_codec_negotiation_feature(connection)){
+        log_info("hfp_ag_establish_audio_connection - no codec negotiation feature, using defaults");
+        connection->negotiated_codec = HFP_CODEC_CVSD;
+        connection->codecs_state = HFP_CODECS_EXCHANGED;
+    } 
 
     switch (connection->codecs_state){
         case HFP_CODECS_IDLE:
