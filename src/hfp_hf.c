@@ -556,7 +556,7 @@ static void hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8
     int pos, i;
     //printf("\nHF received: %s", packet+2);
     for (pos = 0; pos < size ; pos++){
-        hfp_parse(context, packet[pos]);
+        hfp_parse(context, packet[pos], 1);
         
         // emit indicators status changed
         for (i = 0; i < context->ag_indicators_nr; i++){

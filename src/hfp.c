@@ -603,11 +603,10 @@ void hfp_handle_hci_event(hfp_callback_t callback, uint8_t packet_type, uint8_t 
 }
 
 // translates command string into hfp_command_t CMD and flags to distinguish between CMD=, CMD?, CMD=?
-static void process_command(hfp_connection_t * context){
+static void process_command(hfp_connection_t * context, int isHandsFree){
     if (context->line_size < 2) return;
-    // printf("process_command %s\n", context->line_buffer);
-    int offset = 0;
-    int isHandsFree = 1;
+    
+    int offset = isHandsFree ? 0 : 2;
     
     if (strncmp((char *)context->line_buffer+offset, HFP_CALL_ANSWERED, strlen(HFP_CALL_ANSWERED)) == 0){
         context->command = HFP_CMD_CALL_ANSWERED;
@@ -815,7 +814,7 @@ static void hfp_parser_next_state(hfp_connection_t * context, uint8_t byte){
     }
 }
 
-void hfp_parse(hfp_connection_t * context, uint8_t byte){
+void hfp_parse(hfp_connection_t * context, uint8_t byte, int isHandsFree){
     int value;
     
     // TODO: handle space inside word        
@@ -849,7 +848,7 @@ void hfp_parse(hfp_connection_t * context, uint8_t byte){
             // printf(" parse header 2 %s, keep separator $ %d\n", context->line_buffer, context->keep_separator);
             if (hfp_parser_is_end_of_header(byte) || context->keep_separator == 1){
                 // printf(" parse header 3 %s, keep separator $ %d\n", context->line_buffer, context->keep_separator);
-                process_command(context);
+                process_command(context, isHandsFree);
             }
             break;
 

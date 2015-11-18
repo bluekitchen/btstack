@@ -762,7 +762,7 @@ static void hfp_handle_rfcomm_data(uint8_t packet_type, uint16_t channel, uint8_
     if (!context) return;
     int pos;
     for (pos = 0; pos < size ; pos++){
-        hfp_parse(context, packet[pos]);
+        hfp_parse(context, packet[pos], 0);
     }
 }
 
