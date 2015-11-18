@@ -175,6 +175,10 @@ static int hfp_ag_ok(uint16_t cid){
     return send_str_over_rfcomm(cid, buffer);
 }
 
+static int hfp_ag_ring(uint16_t cid){
+    return send_str_over_rfcomm(cid, "\r\nRING\r\n");
+}
+
 static int hfp_ag_error(uint16_t cid){
     char buffer[10];
     sprintf(buffer, "\r\nERROR\r\n");
@@ -634,17 +638,22 @@ static int incoming_call_state_machine(hfp_connection_t * context){
             indicator = get_ag_indicator_for_name(context, "callsetup");
             if (!indicator) break;
 
-            if (use_in_band_tone(context)){
-                context->call_state = HFP_CALL_TRIGGER_AUDIO_CONNECTION;
-            } else {
-                context->call_state = HFP_CALL_W4_ANSWER;
-                hfp_emit_event(hfp_callback, HFP_SUBEVENT_START_RINGINIG, 0);
-            }
-            
             indicator->status = HFP_CALLSETUP_STATUS_INCOMING_CALL_SETUP_IN_PROGRESS;
             hfp_ag_transfer_ag_indicators_status_cmd(context->rfcomm_cid, indicator);
             done = 1;
+            
+            if (use_in_band_tone(context)){
+                context->call_state = HFP_CALL_TRIGGER_AUDIO_CONNECTION;
+            } else {
+                context->call_state = HFP_CALL_RING;;
+                hfp_emit_event(hfp_callback, HFP_SUBEVENT_START_RINGINIG, 0);
+            }
             break;
+
+        case HFP_CALL_RING:
+            context->call_state = HFP_CALL_W4_ANSWER;
+            hfp_ag_ring(context->rfcomm_cid);
+            return 1;
 
         case HFP_CALL_W4_ANSWER:
             //printf(" HFP_CALL_W4_ANSWER \n");
@@ -715,7 +724,6 @@ static void hfp_run_for_context(hfp_connection_t *context){
         return;
     }
 
-    
     if (context->ok_pending){
         context->ok_pending = 0;
         context->command = HFP_CMD_NONE;
@@ -785,7 +793,7 @@ static void packet_handler(void * connection, uint8_t packet_type, uint16_t chan
             break;
         case HCI_EVENT_PACKET:
             hfp_handle_hci_event(hfp_callback, packet_type, packet, size);
-            return;
+            break;
         default:
             break;
     }
@@ -893,7 +901,7 @@ void hfp_ag_release_audio_connection(bd_addr_t bd_addr){
 /**
  * @brief 
  */
-void hfp_ag_call(bd_addr_t bd_addr, uint8_t use_in_band_ring_tone){
+void hfp_ag_incoming_call(bd_addr_t bd_addr, uint8_t use_in_band_ring_tone){
     hfp_ag_establish_service_level_connection(bd_addr);
     hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
 

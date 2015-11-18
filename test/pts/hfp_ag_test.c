@@ -97,7 +97,7 @@ static hfp_generic_status_indicator_t hf_indicators[] = {
     {1, 1},
     {2, 1},
 };
-
+static int inband_ringing = 0;
 
 char cmd;
 // prototypes
@@ -118,6 +118,8 @@ static void show_usage(void){
     printf("B - release AUDIO connection\n");
     
     printf("d - report AG failure\n");
+    printf("c - simulate incoming call\n");
+    printf("C - simulate terminage call\n");
 
     printf("t - terminate connection\n");
 
@@ -154,6 +156,14 @@ static int stdin_process(struct data_source *ds){
         case 'B':
             printf("Release Audio connection.\n");
             hfp_ag_release_audio_connection(device_addr);
+            break;
+        case 'c':
+            printf("Simulate incoming call\n");
+            hfp_ag_incoming_call(device_addr, inband_ringing);
+            break;
+        case 'C':
+            printf("Simulate terminate call\n");
+            hfp_ag_terminate_call(device_addr);
             break;
         case 'd':
             printf("Report AG failure\n");
@@ -197,6 +207,12 @@ static void packet_handler(uint8_t * event, uint16_t event_size){
         case HFP_SUBEVENT_AUDIO_CONNECTION_RELEASED:
             printf("\n** Audio connection released **\n\n");
             break;
+        case HFP_SUBEVENT_START_RINGINIG:
+            printf("\n** Start Ringing **\n\n");
+            break;        
+        case HFP_SUBEVENT_STOP_RINGINIG:
+            printf("\n** Stop Ringing **\n\n");
+            break;        
         default:
             printf("event not handled %u\n", event[2]);
             break;
