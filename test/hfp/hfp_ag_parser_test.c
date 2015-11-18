@@ -119,11 +119,7 @@ TEST(HFPParser, HFP_AG_GENERIC_STATUS_INDICATOR){
         hfp_parse(&context, packet[pos]);
     }
 
-    CHECK_EQUAL(context.command, HFP_CMD_GENERIC_STATUS_INDICATOR);
-    CHECK_EQUAL(context.list_generic_status_indicators, 1);
-    CHECK_EQUAL(context.retrieve_generic_status_indicators, 0);
-    CHECK_EQUAL(context.retrieve_generic_status_indicators_state, 0);
-    
+    CHECK_EQUAL(context.command, HFP_CMD_LIST_GENERIC_STATUS_INDICATORS);
     CHECK_EQUAL(5, context.generic_status_indicators_nr);
     
     for (pos = 0; pos < context.generic_status_indicators_nr; pos++){
@@ -193,21 +189,15 @@ TEST(HFPParser, HFP_AG_HF_QUERY_OPERATOR_SELECTION){
     for (pos = 0; pos < strlen(packet); pos++){
         hfp_parse(&context, packet[pos]);
     }
-    CHECK_EQUAL(context.operator_name_format, 1);       
-    CHECK_EQUAL(context.operator_name, 0);              
     CHECK_EQUAL(context.operator_name_changed, 0); 
 
-    CHECK_EQUAL(HFP_CMD_QUERY_OPERATOR_SELECTION, context.command);
-    CHECK_EQUAL(context.network_operator.format, 0);
-    CHECK_EQUAL(context.network_operator.mode, 0);
+    CHECK_EQUAL(HFP_CMD_QUERY_OPERATOR_SELECTION_NAME_FORMAT, context.command);
     
     sprintf(packet, "\r\nAT%s?\r\n", HFP_QUERY_OPERATOR_SELECTION);
     
     for (pos = 0; pos < strlen(packet); pos++){
         hfp_parse(&context, packet[pos]);
     }
-    CHECK_EQUAL(context.operator_name_format, 0);       
-    CHECK_EQUAL(context.operator_name, 0);              
     CHECK_EQUAL(context.operator_name_changed, 0); 
 }
 

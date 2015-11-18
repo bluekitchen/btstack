@@ -131,15 +131,23 @@ typedef enum {
     HFP_CMD_OK,
     HFP_CMD_SUPPORTED_FEATURES,
     HFP_CMD_AVAILABLE_CODECS,
-    HFP_CMD_INDICATOR, // 5
+    
+    HFP_CMD_RETRIEVE_AG_INDICATORS,
+    HFP_CMD_RETRIEVE_AG_INDICATORS_STATUS, 
+    
     HFP_CMD_ENABLE_INDICATOR_STATUS_UPDATE,
     HFP_CMD_ENABLE_INDIVIDUAL_AG_INDICATOR_STATUS_UPDATE,
     HFP_CMD_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES,
 
-    HFP_CMD_GENERIC_STATUS_INDICATOR,
-
+    // HFP_CMD_GENERIC_STATUS_INDICATOR,
+    HFP_CMD_LIST_GENERIC_STATUS_INDICATORS,
+    HFP_CMD_RETRIEVE_GENERIC_STATUS_INDICATORS,
+    HFP_CMD_RETRIEVE_GENERIC_STATUS_INDICATORS_STATE,
+    
     HFP_CMD_TRANSFER_AG_INDICATOR_STATUS,
-    HFP_CMD_QUERY_OPERATOR_SELECTION,
+
+    HFP_CMD_QUERY_OPERATOR_SELECTION_NAME,
+    HFP_CMD_QUERY_OPERATOR_SELECTION_NAME_FORMAT,
 
     HFP_CMD_ENABLE_EXTENDED_AUDIO_GATEWAY_ERROR,
     HFP_CMD_EXTENDED_AUDIO_GATEWAY_ERROR,
@@ -374,18 +382,8 @@ typedef struct hfp_connection {
     uint8_t send_error;
 
     uint8_t keep_separator;
-
-    uint8_t retrieve_ag_indicators;        // HFP_CMD_INDICATOR, check if needed
-    uint8_t retrieve_ag_indicators_status; 
-
-    uint8_t list_generic_status_indicators;           // HFP_CMD_LIST_GENERIC_STATUS_INDICATOR
-    uint8_t retrieve_generic_status_indicators;       // HFP_CMD_GENERIC_STATUS_INDICATOR
-    uint8_t retrieve_generic_status_indicators_state; // HFP_CMD_GENERIC_STATUS_INDICATOR_STATE
     
     uint8_t change_status_update_for_individual_ag_indicators; 
-
-    uint8_t operator_name_format;       
-    uint8_t operator_name;              
     uint8_t operator_name_changed;      
 
     uint8_t enable_extended_audio_gateway_error_report;
