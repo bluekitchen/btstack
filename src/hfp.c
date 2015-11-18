@@ -257,8 +257,7 @@ hfp_connection_t * get_hfp_connection_context_for_sco_handle(uint16_t handle){
 
 void hfp_reset_context_flags(hfp_connection_t * context){
     if (!context) return;
-    context->wait_ok = 0;
-    context->send_ok = 0;
+    context->ok_pending = 0;
     context->send_error = 0;
 
     context->keep_separator = 0;
@@ -607,139 +606,116 @@ void hfp_handle_hci_event(hfp_callback_t callback, uint8_t packet_type, uint8_t 
 }
 
 // translates command string into hfp_command_t CMD and flags to distinguish between CMD=, CMD?, CMD=?
-static void process_command(hfp_connection_t * context){
-    if (context->line_size < 2) return;
-    // printf("process_command %s\n", context->line_buffer);
-    int offset = 0;
-    int isHandsFree = 1;
+static hfp_command_t parse_command(const char * line_buffer, int isHandsFree){
+    int offset = isHandsFree ? 0 : 2;
     
-    if (strncmp((char *)context->line_buffer+offset, HFP_CALL_ANSWERED, strlen(HFP_CALL_ANSWERED)) == 0){
-        context->command = HFP_CMD_CALL_ANSWERED;
-        return;
+    if (strncmp(line_buffer+offset, HFP_CALL_ANSWERED, strlen(HFP_CALL_ANSWERED)) == 0){
+        return HFP_CMD_CALL_ANSWERED;
     }
 
-    if (strncmp((char *)context->line_buffer, "AT", 2) == 0){
-        offset = 2;
-        isHandsFree = 0;
-    }
-    
-    if (strncmp((char *)context->line_buffer+offset, HFP_ERROR, strlen(HFP_ERROR)) == 0){
-        context->command = HFP_CMD_ERROR;
-        return;
+    if (strncmp(line_buffer+offset, HFP_ERROR, strlen(HFP_ERROR)) == 0){
+        return HFP_CMD_ERROR;
     }
 
-    if (isHandsFree && strncmp((char *)context->line_buffer+offset, HFP_OK, strlen(HFP_OK)) == 0){
-        //printf("parsed HFP_CMD_OK \n");
-        context->command = HFP_CMD_OK;
-        return;
+    if (isHandsFree && strncmp(line_buffer+offset, HFP_OK, strlen(HFP_OK)) == 0){
+        return HFP_CMD_OK;
     }
 
-    if (strncmp((char *)context->line_buffer+offset, HFP_SUPPORTED_FEATURES, strlen(HFP_SUPPORTED_FEATURES)) == 0){
-        context->command = HFP_CMD_SUPPORTED_FEATURES;
-        return;
+    if (strncmp(line_buffer+offset, HFP_SUPPORTED_FEATURES, strlen(HFP_SUPPORTED_FEATURES)) == 0){
+        return HFP_CMD_SUPPORTED_FEATURES;
     }
 
-    if (strncmp((char *)context->line_buffer+offset, HFP_INDICATOR, strlen(HFP_INDICATOR)) == 0){
-        if (strncmp((char *)context->line_buffer+strlen(HFP_INDICATOR)+offset, "?", 1) == 0){
-            context->command = HFP_CMD_RETRIEVE_AG_INDICATORS_STATUS;
+    if (strncmp(line_buffer+offset, HFP_INDICATOR, strlen(HFP_INDICATOR)) == 0){
+        if (strncmp(line_buffer+strlen(HFP_INDICATOR)+offset, "?", 1) == 0){
+            return HFP_CMD_RETRIEVE_AG_INDICATORS_STATUS;
         }
 
-        if (strncmp((char *)context->line_buffer+strlen(HFP_INDICATOR)+offset, "=?", 2) == 0){
-            context->command = HFP_CMD_RETRIEVE_AG_INDICATORS;
+        if (strncmp(line_buffer+strlen(HFP_INDICATOR)+offset, "=?", 2) == 0){
+            return HFP_CMD_RETRIEVE_AG_INDICATORS;
         }
-        return;
     }
 
-    if (strncmp((char *)context->line_buffer+offset, HFP_AVAILABLE_CODECS, strlen(HFP_AVAILABLE_CODECS)) == 0){
-        context->command = HFP_CMD_AVAILABLE_CODECS;
-        return;
+    if (strncmp(line_buffer+offset, HFP_AVAILABLE_CODECS, strlen(HFP_AVAILABLE_CODECS)) == 0){
+        return HFP_CMD_AVAILABLE_CODECS;
     }
 
-    if (strncmp((char *)context->line_buffer+offset, HFP_ENABLE_STATUS_UPDATE_FOR_AG_INDICATORS, strlen(HFP_ENABLE_STATUS_UPDATE_FOR_AG_INDICATORS)) == 0){
-        context->command = HFP_CMD_ENABLE_INDICATOR_STATUS_UPDATE;
-        return;
+    if (strncmp(line_buffer+offset, HFP_ENABLE_STATUS_UPDATE_FOR_AG_INDICATORS, strlen(HFP_ENABLE_STATUS_UPDATE_FOR_AG_INDICATORS)) == 0){
+        return HFP_CMD_ENABLE_INDICATOR_STATUS_UPDATE;
     }
 
-    if (strncmp((char *)context->line_buffer+offset, HFP_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES, strlen(HFP_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES)) == 0){
-        context->command = HFP_CMD_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES;
-        return;
+    if (strncmp(line_buffer+offset, HFP_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES, strlen(HFP_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES)) == 0){
+        return HFP_CMD_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES;
     } 
 
-    if (strncmp((char *)context->line_buffer+offset, HFP_GENERIC_STATUS_INDICATOR, strlen(HFP_GENERIC_STATUS_INDICATOR)) == 0){
-        if (isHandsFree) return;
+    if (strncmp(line_buffer+offset, HFP_GENERIC_STATUS_INDICATOR, strlen(HFP_GENERIC_STATUS_INDICATOR)) == 0){
+        if (isHandsFree) return HFP_CMD_UNKNOWN;
 
-        if (strncmp((char *)context->line_buffer+strlen(HFP_GENERIC_STATUS_INDICATOR)+offset, "=?", 2) == 0){
-            context->command = HFP_CMD_RETRIEVE_GENERIC_STATUS_INDICATORS;
-        } else if (strncmp((char *)context->line_buffer+strlen(HFP_GENERIC_STATUS_INDICATOR)+offset, "=", 1) == 0){
-            context->command = HFP_CMD_LIST_GENERIC_STATUS_INDICATORS;    
-        } else {
-            context->command = HFP_CMD_RETRIEVE_GENERIC_STATUS_INDICATORS_STATE;
-        }
-        return;
-    } 
-
-    if (strncmp((char *)context->line_buffer+offset, HFP_UPDATE_ENABLE_STATUS_FOR_INDIVIDUAL_AG_INDICATORS, strlen(HFP_UPDATE_ENABLE_STATUS_FOR_INDIVIDUAL_AG_INDICATORS)) == 0){
-        context->command = HFP_CMD_ENABLE_INDIVIDUAL_AG_INDICATOR_STATUS_UPDATE;
-        return;
-    } 
-    
-
-    if (strncmp((char *)context->line_buffer+offset, HFP_QUERY_OPERATOR_SELECTION, strlen(HFP_QUERY_OPERATOR_SELECTION)) == 0){
-        context->command = HFP_CMD_QUERY_OPERATOR_SELECTION_NAME;
-        
-        if (isHandsFree) return;
-
-        if (strncmp((char *)context->line_buffer+strlen(HFP_QUERY_OPERATOR_SELECTION)+offset, "=", 1) == 0){
-            context->command = HFP_CMD_QUERY_OPERATOR_SELECTION_NAME_FORMAT;
+        if (strncmp(line_buffer+strlen(HFP_GENERIC_STATUS_INDICATOR)+offset, "=?", 2) == 0){
+            return HFP_CMD_RETRIEVE_GENERIC_STATUS_INDICATORS;
         } 
-        return;
-    }
 
-    if (strncmp((char *)context->line_buffer+offset, HFP_TRANSFER_AG_INDICATOR_STATUS, strlen(HFP_TRANSFER_AG_INDICATOR_STATUS)) == 0){
-        context->command = HFP_CMD_TRANSFER_AG_INDICATOR_STATUS;
-        return;
-    } 
-
-    if (isHandsFree && strncmp((char *)context->line_buffer+offset, HFP_EXTENDED_AUDIO_GATEWAY_ERROR, strlen(HFP_EXTENDED_AUDIO_GATEWAY_ERROR)) == 0){
-        context->command = HFP_CMD_EXTENDED_AUDIO_GATEWAY_ERROR;
-        return;
-    }
-
-    if (!isHandsFree && strncmp((char *)context->line_buffer+offset, HFP_ENABLE_EXTENDED_AUDIO_GATEWAY_ERROR, strlen(HFP_ENABLE_EXTENDED_AUDIO_GATEWAY_ERROR)) == 0){
-        context->command = HFP_CMD_ENABLE_EXTENDED_AUDIO_GATEWAY_ERROR;
-        return;
-    }
-
-    if (strncmp((char *)context->line_buffer+offset, HFP_TRIGGER_CODEC_CONNECTION_SETUP, strlen(HFP_TRIGGER_CODEC_CONNECTION_SETUP)) == 0){
-        context->command = HFP_CMD_TRIGGER_CODEC_CONNECTION_SETUP;
-        return;
-    } 
-
-    if (strncmp((char *)context->line_buffer+offset, HFP_CONFIRM_COMMON_CODEC, strlen(HFP_CONFIRM_COMMON_CODEC)) == 0){
-        if (!isHandsFree){
-            context->command = HFP_CMD_HF_CONFIRMED_CODEC;
-        } else {
-            context->command = HFP_CMD_AG_SUGGESTED_CODEC;
+        if (strncmp(line_buffer+strlen(HFP_GENERIC_STATUS_INDICATOR)+offset, "=", 1) == 0){
+            return HFP_CMD_LIST_GENERIC_STATUS_INDICATORS;    
         }
-        return;
+
+        {
+            return HFP_CMD_RETRIEVE_GENERIC_STATUS_INDICATORS_STATE;
+        }
+    } 
+
+    if (strncmp(line_buffer+offset, HFP_UPDATE_ENABLE_STATUS_FOR_INDIVIDUAL_AG_INDICATORS, strlen(HFP_UPDATE_ENABLE_STATUS_FOR_INDIVIDUAL_AG_INDICATORS)) == 0){
+        return HFP_CMD_ENABLE_INDIVIDUAL_AG_INDICATOR_STATUS_UPDATE;
     } 
     
-    if (strncmp((char *)context->line_buffer+offset, "AT+", 3) == 0){
-        context->command = HFP_CMD_UNKNOWN;
-        printf(" process unknown HF command %s \n", context->line_buffer);
-        return;
+
+    if (strncmp(line_buffer+offset, HFP_QUERY_OPERATOR_SELECTION, strlen(HFP_QUERY_OPERATOR_SELECTION)) == 0){
+        if (isHandsFree) return HFP_CMD_QUERY_OPERATOR_SELECTION_NAME;
+
+        if (strncmp(line_buffer+strlen(HFP_QUERY_OPERATOR_SELECTION)+offset, "=", 1) == 0){
+            return HFP_CMD_QUERY_OPERATOR_SELECTION_NAME_FORMAT;
+        } 
+        return HFP_CMD_QUERY_OPERATOR_SELECTION_NAME;
+    }
+
+    if (strncmp(line_buffer+offset, HFP_TRANSFER_AG_INDICATOR_STATUS, strlen(HFP_TRANSFER_AG_INDICATOR_STATUS)) == 0){
+        return HFP_CMD_TRANSFER_AG_INDICATOR_STATUS;
     } 
-    if (strncmp((char *)context->line_buffer+offset, "+", 1) == 0){
-        context->command = HFP_CMD_UNKNOWN;
-        printf(" process unknown AG command %s \n", context->line_buffer);
-        return;
+
+    if (isHandsFree && strncmp(line_buffer+offset, HFP_EXTENDED_AUDIO_GATEWAY_ERROR, strlen(HFP_EXTENDED_AUDIO_GATEWAY_ERROR)) == 0){
+        return HFP_CMD_EXTENDED_AUDIO_GATEWAY_ERROR;
+    }
+
+    if (!isHandsFree && strncmp(line_buffer+offset, HFP_ENABLE_EXTENDED_AUDIO_GATEWAY_ERROR, strlen(HFP_ENABLE_EXTENDED_AUDIO_GATEWAY_ERROR)) == 0){
+        return HFP_CMD_ENABLE_EXTENDED_AUDIO_GATEWAY_ERROR;
+    }
+
+    if (strncmp(line_buffer+offset, HFP_TRIGGER_CODEC_CONNECTION_SETUP, strlen(HFP_TRIGGER_CODEC_CONNECTION_SETUP)) == 0){
+        return HFP_CMD_TRIGGER_CODEC_CONNECTION_SETUP;
+    } 
+
+    if (strncmp(line_buffer+offset, HFP_CONFIRM_COMMON_CODEC, strlen(HFP_CONFIRM_COMMON_CODEC)) == 0){
+        if (isHandsFree){
+            return HFP_CMD_AG_SUGGESTED_CODEC;
+        } else {
+            return HFP_CMD_HF_CONFIRMED_CODEC;
+        }
+    } 
+    
+    if (strncmp(line_buffer+offset, "AT+", 3) == 0){
+        printf(" process unknown HF command %s \n", line_buffer);
+        return HFP_CMD_UNKNOWN;
+    } 
+    
+    if (strncmp(line_buffer+offset, "+", 1) == 0){
+        printf(" process unknown AG command %s \n", line_buffer);
+        return HFP_CMD_UNKNOWN;
     }
     
-    if (strncmp((char *)context->line_buffer+offset, "NOP", 3) == 0){
-        context->command = HFP_CMD_NONE;
-        return;
+    if (strncmp(line_buffer+offset, "NOP", 3) == 0){
+        return HFP_CMD_NONE;
     } 
-    context->command = HFP_CMD_NONE;
+    
+    return HFP_CMD_NONE;
 }
 
 #if 0
@@ -819,7 +795,7 @@ static void hfp_parser_next_state(hfp_connection_t * context, uint8_t byte){
     }
 }
 
-void hfp_parse(hfp_connection_t * context, uint8_t byte){
+void hfp_parse(hfp_connection_t * context, uint8_t byte, int isHandsFree){
     int value;
     
     // TODO: handle space inside word        
@@ -853,7 +829,31 @@ void hfp_parse(hfp_connection_t * context, uint8_t byte){
             // printf(" parse header 2 %s, keep separator $ %d\n", context->line_buffer, context->keep_separator);
             if (hfp_parser_is_end_of_header(byte) || context->keep_separator == 1){
                 // printf(" parse header 3 %s, keep separator $ %d\n", context->line_buffer, context->keep_separator);
-                process_command(context);
+                char * line_buffer = (char *)context->line_buffer;
+                context->command = parse_command(line_buffer, isHandsFree);
+                
+                /* resolve command name according to context */
+                if (context->command == HFP_CMD_UNKNOWN){
+                    switch(context->state){
+                        case HFP_W4_LIST_GENERIC_STATUS_INDICATORS:
+                            context->command = HFP_CMD_LIST_GENERIC_STATUS_INDICATORS;
+                            break;
+                        case HFP_W4_RETRIEVE_GENERIC_STATUS_INDICATORS:
+                            context->command = HFP_CMD_RETRIEVE_GENERIC_STATUS_INDICATORS;
+                            break;
+                        case HFP_W4_RETRIEVE_INITITAL_STATE_GENERIC_STATUS_INDICATORS:
+                            context->command = HFP_CMD_RETRIEVE_GENERIC_STATUS_INDICATORS_STATE;
+                            break;
+                        case HFP_W4_RETRIEVE_INDICATORS_STATUS:
+                            context->command = HFP_CMD_RETRIEVE_AG_INDICATORS_STATUS;
+                            break;
+                        case HFP_W4_RETRIEVE_INDICATORS:
+                            context->command = HFP_CMD_RETRIEVE_AG_INDICATORS;
+                            break;
+                        default:
+                            break;
+                    }
+                }
             }
             break;
 
@@ -945,7 +945,7 @@ void hfp_parse(hfp_connection_t * context, uint8_t byte){
                     break;
                 case HFP_CMD_ENABLE_EXTENDED_AUDIO_GATEWAY_ERROR:
                     context->enable_extended_audio_gateway_error_report = (uint8_t)atoi((char*)context->line_buffer);
-                    context->send_ok = 1;
+                    context->ok_pending = 1;
                     context->extended_audio_gateway_error = 0;
                     break;
                 default:
