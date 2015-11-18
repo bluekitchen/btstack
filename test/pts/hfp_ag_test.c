@@ -177,7 +177,7 @@ static void packet_handler(uint8_t * event, uint16_t event_size){
         printf("RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE received for handle 0x%04x\n", handle);
         return;
     }
-    
+
     if (event[0] != HCI_EVENT_HFP_META) return;
     if (event[3]){
         printf("ERROR, status: %u\n", event[3]);
@@ -209,7 +209,7 @@ int btstack_main(int argc, const char * argv[]){
     l2cap_init();
     rfcomm_init();
     
-    hfp_ag_init(rfcomm_channel_nr, 1007, codecs, sizeof(codecs), 
+    hfp_ag_init(rfcomm_channel_nr, 1007 | (1<<HFP_AGSF_HF_INDICATORS), codecs, sizeof(codecs), 
         ag_indicators, ag_indicators_nr, 
         hf_indicators, hf_indicators_nr, 
         call_hold_services, call_hold_services_nr);
