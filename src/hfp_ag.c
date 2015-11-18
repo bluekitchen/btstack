@@ -782,15 +782,9 @@ static void hfp_run_for_context(hfp_connection_t *context){
 static void hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     hfp_connection_t * context = get_hfp_connection_context_for_rfcomm_cid(channel);
     if (!context) return;
-    
-    packet[size] = 0;
     int pos;
     for (pos = 0; pos < size ; pos++){
         hfp_parse(context, packet[pos]);
-
-        // trigger next action after CMD received
-        if (context->command == HFP_CMD_NONE) continue;
-        //hfp_run_for_context(context);
     }
 }
 
