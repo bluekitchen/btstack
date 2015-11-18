@@ -304,12 +304,12 @@ static int hfp_ag_list_supported_generic_status_indicators_cmd(uint16_t cid){
 
 static int hfp_ag_retrieve_supported_generic_status_indicators_cmd(uint16_t cid){
     char buffer[40];
-    int offset = snprintf(buffer, sizeof(buffer), "\r\n%s:", HFP_GENERIC_STATUS_INDICATOR);
+    int offset = snprintf(buffer, sizeof(buffer), "\r\n%s:(", HFP_GENERIC_STATUS_INDICATOR);
     offset += hfp_hf_indicators_join(buffer+offset, sizeof(buffer)-offset);
     
     buffer[offset] = 0;
     
-    offset += snprintf(buffer+offset, sizeof(buffer)-offset, "\r\n\r\nOK\r\n");
+    offset += snprintf(buffer+offset, sizeof(buffer)-offset, ")\r\n\r\nOK\r\n");
     buffer[offset] = 0;
     return send_str_over_rfcomm(cid, buffer);
 }
