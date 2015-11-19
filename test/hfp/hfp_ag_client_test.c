@@ -229,6 +229,9 @@ TEST(HFPClient, HFAnswerIncomingCallWithInBandRingTone){
 
     simulate_test_sequence(alert_ic_setup(), alert_ic_setup_size());
     CHECK_EQUAL(stop_ringing, 1);
+
+    hfp_ag_terminate_call();
+    simulate_test_sequence(terminate_ic_ag_setup(), terminate_ic_ag_setup_size());
 }
 
 

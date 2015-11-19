@@ -181,7 +181,19 @@ const char * ic_alert_test1[] = {
     "NOP",
     "+CIEV:2,1", // call = 1
     "NOP",
-    "+CIEV:3,0"    
+    "+CIEV:3,0", 
+};
+
+const char * ic_ag_terminates_call[] = {
+    // AG terminates call
+    "+CIEV:2,0"  
+};
+
+const char * ic_hf_terminates_call[] = {
+    // HF terminates call
+    "AT+CHUP",
+    "OK"
+    "+CIEV:2,0"  
 };
 
 hfp_test_item_t ic_tests[] = {
@@ -221,4 +233,11 @@ int default_ic_setup_size(){ return sizeof(ic_test1)/sizeof(char*);}
 
 char ** alert_ic_setup() { return (char **)ic_alert_test1;}
 int alert_ic_setup_size(){ return sizeof(ic_alert_test1)/sizeof(char*);}
+
+
+char ** terminate_ic_ag_setup() { return (char **)ic_ag_terminates_call;}
+int terminate_ic_ag_setup_size(){ return sizeof(ic_ag_terminates_call)/sizeof(char*);}
+
+char ** terminate_ic_hf_setup() { return (char **)ic_hf_terminates_call;}
+int terminate_ic_hf_setup_size(){ return sizeof(ic_hf_terminates_call)/sizeof(char*);}
  

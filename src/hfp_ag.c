@@ -605,17 +605,22 @@ static int incoming_call_state_machine(hfp_connection_t * context){
     if (context->state < HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED) return 0;
 
     // printf(" -> State machine: Incoming Call\n");
-    int done = 0;
     hfp_ag_indicator_t * indicator;
     
     if (context->terminate_call){
         printf(" -> State machine: Terminate Incoming Call\n");
-        // TODO, reset flags
+        indicator = get_ag_indicator_for_name("call");
+        if (!indicator) return 0;
+
+        indicator->status = HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS;
+        hfp_ag_transfer_ag_indicators_status_cmd(context->rfcomm_cid, indicator);
+        
         context->terminate_call = 0;
         context->run_call_state_machine = 0;
-        return done;
+        return 1;
     }
 
+    int done = 0;
     switch (context->call_state){
         case HFP_CALL_IDLE:
             //printf(" HFP_CALL_TRIGGER_AUDIO_CONNECTION \n");
@@ -685,7 +690,7 @@ static int incoming_call_state_machine(hfp_connection_t * context){
             }
             return 0;
         case HFP_CALL_ACTIVE:
-            //printf(" HFP_CALL_ACTIVE \n");
+            printf(" HFP_CALL_ACTIVE \n");
             break;
         default:
             break;
@@ -908,7 +913,6 @@ void hfp_ag_terminate_call(void){
     linked_list_iterator_init(&it, hfp_get_connections());
     while (linked_list_iterator_has_next(&it)){
         hfp_connection_t * connection = (hfp_connection_t *)linked_list_iterator_next(&it);
-        if (connection->state != HFP_AUDIO_CONNECTION_ESTABLISHED) return;
         connection->terminate_call = 1;
         hfp_run_for_context(connection);
     }
