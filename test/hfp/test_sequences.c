@@ -191,8 +191,10 @@ const char * ic_ag_terminates_call[] = {
 
 const char * ic_hf_terminates_call[] = {
     // HF terminates call
+    "NOP",
     "AT+CHUP",
-    "OK"
+    "OK",
+    "NOP",
     "+CIEV:2,0"  
 };
 

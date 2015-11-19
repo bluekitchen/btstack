@@ -606,17 +606,22 @@ static int incoming_call_state_machine(hfp_connection_t * context){
 
     // printf(" -> State machine: Incoming Call\n");
     hfp_ag_indicator_t * indicator;
-    
+    if (context->command == HFP_CMD_HANG_UP_CALL){
+        context->terminate_call = 1;
+        hfp_ag_ok(context->rfcomm_cid);
+        return 1;
+    }
+
     if (context->terminate_call){
         printf(" -> State machine: Terminate Incoming Call\n");
         indicator = get_ag_indicator_for_name("call");
         if (!indicator) return 0;
 
         indicator->status = HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS;
-        hfp_ag_transfer_ag_indicators_status_cmd(context->rfcomm_cid, indicator);
-        
         context->terminate_call = 0;
         context->run_call_state_machine = 0;
+        hfp_emit_event(hfp_callback, HFP_SUBEVENT_CALL_TERMINATED, 0);
+        hfp_ag_transfer_ag_indicators_status_cmd(context->rfcomm_cid, indicator);
         return 1;
     }
 

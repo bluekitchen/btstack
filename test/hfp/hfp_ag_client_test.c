@@ -102,6 +102,7 @@ static uint8_t codecs_connection_established = 0;
 static uint8_t audio_connection_established = 0;
 static uint8_t start_ringing = 0;
 static uint8_t stop_ringing = 0;
+static uint8_t call_termiated = 0;
 
 int expected_rfcomm_command(const char * expected_cmd){
     char * ag_cmd = (char *)get_rfcomm_payload();
@@ -177,6 +178,9 @@ void packet_handler(uint8_t * event, uint16_t event_size){
             stop_ringing = 1;
             start_ringing = 0;
             break;
+        case HFP_SUBEVENT_CALL_TERMINATED:
+            call_termiated = 1;
+            break;
         default:
             printf("event not handled %u\n", event[2]);
             break;
@@ -189,6 +193,9 @@ TEST_GROUP(HFPClient){
         service_level_connection_established = 0;
         codecs_connection_established = 0;
         audio_connection_established = 0;
+        start_ringing = 0;
+        stop_ringing = 0;
+        call_termiated = 0;
 
         hfp_ag_init(rfcomm_channel_nr, supported_features_with_codec_negotiation, 
             codecs, sizeof(codecs), 
@@ -218,7 +225,24 @@ TEST_GROUP(HFPClient){
     }
 };
 
-TEST(HFPClient, HFAnswerIncomingCallWithInBandRingTone){
+TEST(HFPClient, HFAnswerIncomingCallWithInBandRingToneHFTermiantesCall){
+    setup_hfp_service_level_connection(default_slc_setup(), default_slc_setup_size());
+    CHECK_EQUAL(service_level_connection_established, 1);
+
+    hfp_ag_set_use_in_band_ring_tone(1);    
+    hfp_ag_incoming_call();
+    simulate_test_sequence(default_ic_setup(), default_ic_setup_size());
+    CHECK_EQUAL(audio_connection_established, 1);
+
+    simulate_test_sequence(alert_ic_setup(), alert_ic_setup_size());
+    CHECK_EQUAL(stop_ringing, 1);
+    
+    simulate_test_sequence(terminate_ic_hf_setup(), terminate_ic_hf_setup_size());
+    CHECK_EQUAL(call_termiated,1);
+}
+
+
+TEST(HFPClient, HFAnswerIncomingCallWithInBandRingToneAGTerminatesCall){
     setup_hfp_service_level_connection(default_slc_setup(), default_slc_setup_size());
     CHECK_EQUAL(service_level_connection_established, 1);
 
@@ -230,8 +254,10 @@ TEST(HFPClient, HFAnswerIncomingCallWithInBandRingTone){
     simulate_test_sequence(alert_ic_setup(), alert_ic_setup_size());
     CHECK_EQUAL(stop_ringing, 1);
 
+    // AG terminates call
     hfp_ag_terminate_call();
     simulate_test_sequence(terminate_ic_ag_setup(), terminate_ic_ag_setup_size());
+    CHECK_EQUAL(call_termiated,1);
 }
 
 

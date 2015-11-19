@@ -613,6 +613,10 @@ static hfp_command_t parse_command(const char * line_buffer, int isHandsFree){
         return HFP_CMD_CALL_ANSWERED;
     }
 
+    if (strncmp(line_buffer+offset, HFP_HANG_UP_CALL, strlen(HFP_HANG_UP_CALL)) == 0){
+        return HFP_CMD_HANG_UP_CALL;
+    }
+
     if (strncmp(line_buffer+offset, HFP_ERROR, strlen(HFP_ERROR)) == 0){
         return HFP_CMD_ERROR;
     }
