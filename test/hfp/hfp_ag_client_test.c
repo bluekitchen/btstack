@@ -198,13 +198,9 @@ TEST_GROUP(HFPClient){
     }
 
     void teardown(void){
-        if (audio_connection_established){
-            hfp_ag_release_audio_connection(device_addr);
-        }
-
-        if (service_level_connection_established){
-            hfp_ag_release_service_level_connection(device_addr);
-        }
+        hfp_ag_release_audio_connection(device_addr);
+        hfp_ag_release_service_level_connection(device_addr);
+        
         service_level_connection_established = 0;
         codecs_connection_established = 0;
         audio_connection_established = 0;
@@ -236,7 +232,7 @@ TEST(HFPClient, HFAnswerIncomingCallWithInBandRingTone){
 }
 
 
-TEST(HFPClient, HFAudioConnectionEstablishedWithCodecNegtiation){
+TEST(HFPClient, HFAudioConnectionEstablishedWithCodecNegotiation){
     setup_hfp_service_level_connection(default_slc_setup(), default_slc_setup_size());
     CHECK_EQUAL(service_level_connection_established, 1);
         
@@ -250,7 +246,7 @@ TEST(HFPClient, HFAudioConnectionEstablishedWithCodecNegtiation){
     CHECK_EQUAL(audio_connection_established, 0);
 }
 
-TEST(HFPClient, HFAudioConnectionEstablishedWithDefaultCodec){
+TEST(HFPClient, HFAudioConnectionEstablishedWithoutCodecNegotiation){
     hfp_ag_init(rfcomm_channel_nr, supported_features_without_codec_negotiation, 
         codecs, sizeof(codecs), 
         ag_indicators, ag_indicators_nr, 

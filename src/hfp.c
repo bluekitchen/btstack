@@ -594,6 +594,8 @@ void hfp_handle_hci_event(hfp_callback_t callback, uint8_t packet_type, uint8_t 
                 log_info("SCO disconnected, w2 disconnect RFCOMM\n");
                 context->sco_handle = 0;
                 context->release_audio_connection = 0;
+                context->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
+                hfp_emit_event(callback, HFP_SUBEVENT_AUDIO_CONNECTION_RELEASED, 0);
                 break;
             }
             break;
