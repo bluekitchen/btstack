@@ -390,7 +390,7 @@ static int codecs_exchange_state_machine(hfp_connection_t * context){
             break;
     }
 
-    printf(" -> State machine: CC\n");
+    // printf(" -> State machine: CC\n");
     
     switch (context->command){
         case HFP_CMD_AVAILABLE_CODECS:
@@ -447,7 +447,7 @@ static int codecs_exchange_state_machine(hfp_connection_t * context){
 static int hfp_ag_run_for_context_service_level_connection(hfp_connection_t * context){
     if (context->state >= HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED) return 0;
     int done = 0;
-    printf(" -> State machine: SLC\n");
+    // printf(" -> State machine: SLC\n");
     
     switch(context->command){
         case HFP_CMD_SUPPORTED_FEATURES:
@@ -539,7 +539,7 @@ static int hfp_ag_run_for_context_service_level_connection_queries(hfp_connectio
     int done = codecs_exchange_state_machine(context);
     if (done) return done;
 
-    printf(" -> State machine: SLC Queries\n");
+    // printf(" -> State machine: SLC Queries\n");
     switch(context->command){
         case HFP_CMD_QUERY_OPERATOR_SELECTION_NAME:
             hfp_ag_report_network_operator_name_cmd(context->rfcomm_cid, context->network_operator);
@@ -587,7 +587,7 @@ static int hfp_ag_run_for_audio_connection(hfp_connection_t * context){
     // run codecs exchange
     int done = codecs_exchange_state_machine(context);
     if (done) return done;
-    printf(" -> State machine: Audio Connection\n");
+    // printf(" -> State machine: Audio Connection\n");
 
     if (context->codecs_state != HFP_CODECS_EXCHANGED) return done;
     if (context->establish_audio_connection){
@@ -604,7 +604,7 @@ static int incoming_call_state_machine(hfp_connection_t * context){
     if (!context->run_call_state_machine) return 0;
     if (context->state < HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED) return 0;
 
-    printf(" -> State machine: Incoming Call\n");
+    // printf(" -> State machine: Incoming Call\n");
     int done = 0;
     hfp_ag_indicator_t * indicator;
     

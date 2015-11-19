@@ -174,6 +174,7 @@ static int stdin_process(struct data_source *ds){
             hfp_ag_set_use_in_band_ring_tone(1);
             break;
         case 't':
+            printf("Terminate HCI connection.\n");
             gap_disconnect(handle);
         default:
             show_usage();
