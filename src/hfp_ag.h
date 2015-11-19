@@ -201,9 +201,14 @@ void hfp_ag_audio_connection_transfer_towards_ag(bd_addr_t bd_addr);
 void hfp_ag_place_a_call_with_phone_number(void);
 
 /*
- * @breif
+ * @brief
  */
 void hfp_ag_set_registration_status(int status);
+
+/*
+ * @brief
+ */
+void hfp_ag_set_signal_strength(int strength);
 
 /* API_END */
 

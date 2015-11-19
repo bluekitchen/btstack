@@ -1058,13 +1058,10 @@ void hfp_ag_place_a_call_with_phone_number(void){
     // }   
 }
 
-/*
- * @breif
- */
-void hfp_ag_set_registration_status(int status){
-    int indicator_index = get_ag_indicator_index_for_name("service");
+static void hfp_ag_set_ag_indicator(const char * name, int value){
+    int indicator_index = get_ag_indicator_index_for_name(name);
     if (indicator_index < 0) return;
-    hfp_ag_indicators[indicator_index].status = status;
+    hfp_ag_indicators[indicator_index].status = value;
 
     linked_list_iterator_t it;    
     linked_list_iterator_init(&it, hfp_get_connections());
@@ -1073,5 +1070,20 @@ void hfp_ag_set_registration_status(int status){
         connection->ag_indicators_status_update_bitmap = store_bit(connection->ag_indicators_status_update_bitmap, indicator_index, 1);
         hfp_run_for_context(connection);
     }    
+}
+
+/*
+ * @brief
+ */
+void hfp_ag_set_registration_status(int status){
+    hfp_ag_set_ag_indicator("service", status);
+}
+
+/*
+ * @brief
+ */
+void hfp_ag_set_signal_strength(int strength){
+    hfp_ag_set_ag_indicator("signal", strength);
+  
 }
 

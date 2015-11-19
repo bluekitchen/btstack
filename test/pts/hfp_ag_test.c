@@ -129,6 +129,9 @@ static void show_usage(void){
     printf("f - Disable cellular network\n");
     printf("F - Enable cellular network\n");
 
+    printf("g - Set signal strength to 0\n");
+    printf("G - Set signal strength to 5\n");
+
     printf("t - terminate connection\n");
 
     printf("---\n");
@@ -188,6 +191,14 @@ static int stdin_process(struct data_source *ds){
         case 'F':
             printf("Enable cellular network\n");
             hfp_ag_set_registration_status(1);
+            break;
+        case 'g':
+            printf("Set signal strength to 0\n");
+            hfp_ag_set_signal_strength(0);
+            break;
+        case 'G':
+            printf("Set signal strength to 5\n");
+            hfp_ag_set_signal_strength(5);
             break;
         case 'r':
             printf("Disable in-band ring tone\n");
