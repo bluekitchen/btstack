@@ -285,9 +285,7 @@ typedef enum {
     HFP_CALL_IDLE,
     HFP_CALL_TRIGGER_AUDIO_CONNECTION,
     HFP_CALL_W4_AUDIO_CONNECTION,
-    HFP_CALL_RING,
     HFP_CALL_W4_ANSWER,
-
     HFP_CALL_TRANSFER_CALL_STATUS,
     HFP_CALL_TRANSFER_CALLSETUP_STATUS,
     HFP_CALL_ACTIVE
@@ -400,7 +398,10 @@ typedef struct hfp_connection {
 
     uint8_t run_call_state_machine;
     uint8_t use_in_band_ring_tone;
+    uint8_t ag_ring;
     uint8_t terminate_call;
+    timer_source_t hfp_timeout;
+
 } hfp_connection_t;
 
 // UTILS_START : TODO move to utils

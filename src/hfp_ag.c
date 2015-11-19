@@ -600,6 +600,40 @@ static int hfp_ag_run_for_audio_connection(hfp_connection_t * context){
     return 0;
 }
 
+static hfp_connection_t * hfp_ag_context_for_timer(timer_source_t * ts){
+    linked_list_iterator_t it;    
+    linked_list_iterator_init(&it, hfp_get_connections());
+
+    while (linked_list_iterator_has_next(&it)){
+        hfp_connection_t * connection = (hfp_connection_t *)linked_list_iterator_next(&it);
+        if ( &connection->hfp_timeout == ts) {
+            return connection;
+        }
+    }
+    return NULL;
+}
+
+static void hfp_timeout_handler(timer_source_t * timer){
+    hfp_connection_t * context = hfp_ag_context_for_timer(timer);
+    if (!context) return;
+    log_info("HFP start ring timeout, con handle 0x%02x", context->con_handle);
+    context->ag_ring = 1;
+    run_loop_set_timer(&context->hfp_timeout, 2000); // 5 seconds timeout
+    run_loop_add_timer(&context->hfp_timeout);
+}
+
+static void hfp_timeout_start(hfp_connection_t * context){
+    run_loop_remove_timer(&context->hfp_timeout);
+    run_loop_set_timer_handler(&context->hfp_timeout, hfp_timeout_handler);
+    run_loop_set_timer(&context->hfp_timeout, 2000); // 5 seconds timeout
+    run_loop_add_timer(&context->hfp_timeout);
+}
+
+static void hfp_timeout_stop(hfp_connection_t * context){
+    log_info("HFP stor ring timeout, con handle 0x%02x", context->con_handle);
+    run_loop_remove_timer(&context->hfp_timeout);
+} 
+
 static int incoming_call_state_machine(hfp_connection_t * context){
     if (!context->run_call_state_machine) return 0;
     if (context->state < HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED) return 0;
@@ -638,20 +672,23 @@ static int incoming_call_state_machine(hfp_connection_t * context){
             if (use_in_band_tone(context)){
                 context->call_state = HFP_CALL_TRIGGER_AUDIO_CONNECTION;
             } else {
-                context->call_state = HFP_CALL_RING;;
+                context->call_state = HFP_CALL_W4_ANSWER;
+                hfp_timeout_start(context);
                 hfp_emit_event(hfp_callback, HFP_SUBEVENT_START_RINGINIG, 0);
             }
             return 1;
-
-        case HFP_CALL_RING:
-            //printf(" HFP_CALL_RING \n");
-            context->call_state = HFP_CALL_W4_ANSWER;
-            hfp_ag_ring(context->rfcomm_cid);
-            return 1;
-
+        
         case HFP_CALL_W4_ANSWER:
+            if (context->command != HFP_CMD_CALL_ANSWERED) {
+                if (context->ag_ring){
+                    hfp_ag_ring(context->rfcomm_cid);
+                    return 1;
+                }
+                return 0;
+            }
+            context->ag_ring = 0;
+            hfp_timeout_stop(context);
             //printf(" HFP_CALL_W4_ANSWER, cmd %d \n", context->command);
-            if (context->command != HFP_CMD_CALL_ANSWERED) return 0;
             context->call_state = HFP_CALL_TRANSFER_CALL_STATUS;
             hfp_emit_event(hfp_callback, HFP_SUBEVENT_STOP_RINGINIG, 0);
             hfp_ag_ok(context->rfcomm_cid);
@@ -908,12 +945,10 @@ void hfp_ag_incoming_call(void){
     }
 }
 
-
 /**
  * @brief 
  */
 void hfp_ag_terminate_call(void){
-
     linked_list_iterator_t it;    
     linked_list_iterator_init(&it, hfp_get_connections());
     while (linked_list_iterator_has_next(&it)){

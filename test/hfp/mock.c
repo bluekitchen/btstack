@@ -252,6 +252,19 @@ void rfcomm_accept_connection_internal(uint16_t rfcomm_cid){
 	printf("rfcomm_accept_connection_internal \n");
 }
 
+void run_loop_add_timer(timer_source_t *timer){
+}
+
+int  run_loop_remove_timer(timer_source_t *timer){
+    return 0;
+}
+void run_loop_set_timer_handler(timer_source_t *ts, void (*process)(timer_source_t *_ts)){
+}
+
+void run_loop_set_timer(timer_source_t *a, uint32_t timeout_in_ms){
+}
+
+
 void hci_emit_disconnection_complete(uint16_t handle, uint8_t reason){
     uint8_t event[6];
     event[0] = HCI_EVENT_DISCONNECTION_COMPLETE;
