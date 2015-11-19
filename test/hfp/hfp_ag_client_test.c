@@ -84,6 +84,9 @@ static hfp_ag_indicator_t ag_indicators[] = {
     {7, "callheld",  0, 2, 0, 1, 1, 0}
 };
 
+static int supported_features_with_codec_negotiation = 1007;   // 0011 1110 1111
+static int supported_features_without_codec_negotiation = 495; // 0001 1110 1111
+
 static int call_hold_services_nr = 5;
 static const char* call_hold_services[] = {"1", "1x", "2", "2x", "3"};
 
@@ -186,6 +189,12 @@ TEST_GROUP(HFPClient){
         service_level_connection_established = 0;
         codecs_connection_established = 0;
         audio_connection_established = 0;
+
+        hfp_ag_init(rfcomm_channel_nr, supported_features_with_codec_negotiation, 
+            codecs, sizeof(codecs), 
+            ag_indicators, ag_indicators_nr, 
+            hf_indicators, hf_indicators_nr, 
+            call_hold_services, call_hold_services_nr);
     }
 
     void teardown(void){
@@ -226,8 +235,28 @@ TEST(HFPClient, HFAnswerIncomingCallWithInBandRingTone){
 }
 
 
-TEST(HFPClient, HFAudioConnectionEstablished){
+TEST(HFPClient, HFAudioConnectionEstablishedWithCodecNegtiation){
     setup_hfp_service_level_connection(default_slc_setup(), default_slc_setup_size());
+    CHECK_EQUAL(service_level_connection_established, 1);
+        
+    setup_hfp_codecs_connection(default_cc_setup(), default_cc_setup_size());
+    CHECK_EQUAL(codecs_connection_established, 1);
+
+    hfp_ag_establish_audio_connection(device_addr);
+    CHECK_EQUAL(audio_connection_established, 1);
+
+    hfp_ag_release_audio_connection(device_addr);
+    CHECK_EQUAL(audio_connection_established, 0);
+}
+
+TEST(HFPClient, HFAudioConnectionEstablishedWithDefaultCodec){
+    hfp_ag_init(rfcomm_channel_nr, supported_features_without_codec_negotiation, 
+        codecs, sizeof(codecs), 
+        ag_indicators, ag_indicators_nr, 
+        hf_indicators, hf_indicators_nr, 
+        call_hold_services, call_hold_services_nr);
+
+    setup_hfp_service_level_connection(hfp_slc_tests()[1].test, hfp_slc_tests()[1].len);
     CHECK_EQUAL(service_level_connection_established, 1);
         
     setup_hfp_codecs_connection(default_cc_setup(), default_cc_setup_size());
@@ -259,20 +288,22 @@ TEST(HFPClient, HFServiceLevelConnectionCommands){
     }
 }
 
-TEST(HFPClient, HFServiceLevelConnectionEstablished){
-    for (int i = 0; i < slc_tests_size(); i++){
-        setup_hfp_service_level_connection(hfp_slc_tests()[i].test, hfp_slc_tests()[i].len);
-        CHECK_EQUAL(service_level_connection_established, 1);
-    }
-}
-
-
-int main (int argc, const char * argv[]){
-    hfp_ag_init(rfcomm_channel_nr, 1007, codecs, sizeof(codecs), 
+TEST(HFPClient, HFServiceLevelConnectionEstablishedWithoutCodecNegotiation){
+    hfp_ag_init(rfcomm_channel_nr, supported_features_without_codec_negotiation, 
+        codecs, sizeof(codecs), 
         ag_indicators, ag_indicators_nr, 
         hf_indicators, hf_indicators_nr, 
         call_hold_services, call_hold_services_nr);
+    setup_hfp_service_level_connection(hfp_slc_tests()[1].test, hfp_slc_tests()[1].len);
+    CHECK_EQUAL(service_level_connection_established, 1);
+}
 
+TEST(HFPClient, HFServiceLevelConnectionEstablishedWithCodecNegotiation){
+    setup_hfp_service_level_connection(hfp_slc_tests()[0].test, hfp_slc_tests()[0].len);
+    CHECK_EQUAL(service_level_connection_established, 1);
+}
+
+int main (int argc, const char * argv[]){
     hfp_ag_register_packet_handler(packet_handler);
 
     return CommandLineTestRunner::RunAllTests(argc, argv);

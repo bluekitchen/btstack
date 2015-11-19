@@ -353,7 +353,7 @@ static int hfp_ag_cmd_suggest_codec(uint16_t cid, uint8_t codec){
 
 static uint8_t hfp_ag_suggest_codec(hfp_connection_t *context){
     int i,j;
-    uint8_t codec = 0;
+    uint8_t codec = HFP_CODEC_CVSD;
     for (i = 0; i < hfp_codecs_nr; i++){
         for (j = 0; j < context->remote_codecs_nr; j++){
             if (context->remote_codecs[j] == hfp_codecs[i]){
@@ -793,7 +793,7 @@ void hfp_ag_init(uint16_t rfcomm_channel_nr, uint32_t supported_features,
     rfcomm_register_packet_handler(packet_handler);
 
     hfp_init(rfcomm_channel_nr);
-    
+        
     hfp_supported_features = supported_features;
     hfp_codecs_nr = codecs_nr;
 
@@ -804,9 +804,6 @@ void hfp_ag_init(uint16_t rfcomm_channel_nr, uint32_t supported_features,
 
     hfp_ag_indicators_nr = ag_indicators_nr;
     memcpy(hfp_ag_indicators, ag_indicators, ag_indicators_nr * sizeof(hfp_ag_indicator_t));
-    for (i=0; i<hfp_ag_indicators_nr; i++){
-        printf("ag ind %s\n", hfp_ag_indicators[i].name);
-    }
 
     set_hfp_generic_status_indicators(hf_indicators, hf_indicators_nr);
 
@@ -851,7 +848,6 @@ void hfp_ag_establish_audio_connection(bd_addr_t bd_addr){
 
     if (!has_codec_negotiation_feature(connection)){
         log_info("hfp_ag_establish_audio_connection - no codec negotiation feature, using defaults");
-        connection->negotiated_codec = HFP_CODEC_CVSD;
         connection->codecs_state = HFP_CODECS_EXCHANGED;
     } 
 

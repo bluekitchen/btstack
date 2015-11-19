@@ -53,6 +53,7 @@
 
 /* Service Level Connection (slc) test sequences */
 
+// with codec negotiation feature
 const char * slc_test1[] = {
     "AT+BRSF=438",
     "+BRSF:1007", 
@@ -72,8 +73,27 @@ const char * slc_test1[] = {
     "OK"
 };
 
+// without codec negotiation feature
+const char * slc_test2[] = {
+    "AT+BRSF=438",
+    "+BRSF:495", 
+    "OK",
+    "AT+CIND=?",
+    "+CIND:(\"service\",(0,1)),(\"call\",(0,1)),(\"callsetup\",(0,3)),(\"battchg\",(0,5)),(\"signal\",(0,5)),(\"roam\",(0,1)),(\"callheld\",(0,2))",
+    "OK",
+    "AT+CIND?",
+    "+CIND:1,0,0,3,5,0,0",
+    "OK",
+    "AT+CMER=3,0,0,1",
+    "OK",
+    "AT+CHLD=?",
+    "+CHLD:(1,1x,2,2x,3)",
+    "OK"
+};
+
 hfp_test_item_t slc_tests[] = {
-    TEST_SEQUENCE(slc_test1)
+    TEST_SEQUENCE(slc_test1),
+    TEST_SEQUENCE(slc_test2)
 };
 
 /* Service Level Connection (slc) common commands */
