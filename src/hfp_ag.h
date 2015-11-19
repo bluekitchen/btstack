@@ -154,6 +154,9 @@ void hfp_ag_transfer_callheld_status(bd_addr_t bd_addr, hfp_callheld_status_t st
  */
 void hfp_ag_negotiate_codecs(bd_addr_t bd_addr);
 
+/**
+ * @brief 
+ */
 void hfp_ag_establish_audio_connection(bd_addr_t bd_addr);
 
 /**
@@ -196,6 +199,11 @@ void hfp_ag_audio_connection_transfer_towards_ag(bd_addr_t bd_addr);
  * @brief 
  */
 void hfp_ag_place_a_call_with_phone_number(void);
+
+/*
+ * @breif
+ */
+void hfp_ag_set_registration_status(int status);
 
 /* API_END */
 

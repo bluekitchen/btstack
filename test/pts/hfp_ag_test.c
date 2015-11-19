@@ -126,6 +126,8 @@ static void show_usage(void){
     printf("r - disable in-band ring tone\n");
     printf("R - enable in-band ring tone\n");
 
+    printf("f - Disable cellular network\n");
+    printf("F - Enable cellular network\n");
 
     printf("t - terminate connection\n");
 
@@ -178,6 +180,14 @@ static int stdin_process(struct data_source *ds){
         case 'e':
             printf("Answer call on AG\n");
             hfp_ag_answer_incoming_call();
+            break;
+        case 'f':
+            printf("Disable cellular network\n");
+            hfp_ag_set_registration_status(0);
+            break;
+        case 'F':
+            printf("Enable cellular network\n");
+            hfp_ag_set_registration_status(1);
             break;
         case 'r':
             printf("Disable in-band ring tone\n");

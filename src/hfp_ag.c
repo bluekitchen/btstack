@@ -105,6 +105,16 @@ static hfp_ag_indicator_t * get_ag_indicator_for_name(const char * name){
     return NULL;
 }
 
+static int get_ag_indicator_index_for_name(const char * name){
+    int i;
+    for (i = 0; i < hfp_ag_indicators_nr; i++){
+        if (strcmp(hfp_ag_indicators[i].name, name) == 0){
+            return i;
+        }
+    }
+    return -1;
+}
+
 void set_hfp_ag_indicators(hfp_ag_indicator_t * indicators, int indicator_nr){
     memcpy(hfp_ag_indicators, indicators, indicator_nr * sizeof(hfp_ag_indicator_t));
     hfp_ag_indicators_nr = indicator_nr;
@@ -798,6 +808,19 @@ static void hfp_run_for_context(hfp_connection_t *context){
         done = hfp_ag_run_for_context_service_level_connection_queries(context);
     } 
 
+    // update AG indicators
+    if (context->ag_indicators_status_update_bitmap){
+        int i;
+        for (i=0;i<context->ag_indicators_nr;i++){
+            if (get_bit(context->ag_indicators_status_update_bitmap, i)){
+                context->ag_indicators_status_update_bitmap = store_bit(context->ag_indicators_status_update_bitmap, i, 0);
+                hfp_ag_transfer_ag_indicators_status_cmd(context->rfcomm_cid, &hfp_ag_indicators[i]);
+                done = 1;
+                break;
+            }
+        }
+    }
+
     if (!done){
         done = incoming_call_state_machine(context);
     }
@@ -1033,5 +1056,22 @@ void hfp_ag_place_a_call_with_phone_number(void){
     //     ...
     //     hfp_run_for_context(connection);
     // }   
+}
+
+/*
+ * @breif
+ */
+void hfp_ag_set_registration_status(int status){
+    int indicator_index = get_ag_indicator_index_for_name("service");
+    if (indicator_index < 0) return;
+    hfp_ag_indicators[indicator_index].status = status;
+
+    linked_list_iterator_t it;    
+    linked_list_iterator_init(&it, hfp_get_connections());
+    while (linked_list_iterator_has_next(&it)){
+        hfp_connection_t * connection = (hfp_connection_t *)linked_list_iterator_next(&it);
+        connection->ag_indicators_status_update_bitmap = store_bit(connection->ag_indicators_status_update_bitmap, indicator_index, 1);
+        hfp_run_for_context(connection);
+    }    
 }
 
