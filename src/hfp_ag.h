@@ -210,6 +210,11 @@ void hfp_ag_set_registration_status(int status);
  */
 void hfp_ag_set_signal_strength(int strength);
 
+/*
+ * @brief
+ */
+void hfp_ag_set_roaming_status(int status);
+
 /* API_END */
 
 #if defined __cplusplus

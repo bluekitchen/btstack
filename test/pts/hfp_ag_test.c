@@ -132,6 +132,9 @@ static void show_usage(void){
     printf("g - Set signal strength to 0\n");
     printf("G - Set signal strength to 5\n");
 
+    printf("h - Disable roaming\n");
+    printf("H - Enable roaming\n");
+
     printf("t - terminate connection\n");
 
     printf("---\n");
@@ -199,6 +202,14 @@ static int stdin_process(struct data_source *ds){
         case 'G':
             printf("Set signal strength to 5\n");
             hfp_ag_set_signal_strength(5);
+            break;
+        case 'h':
+            printf("Disable roaming\n");
+            hfp_ag_set_roaming_status(0);
+            break;
+        case 'H':
+            printf("Enable roaming\n");
+            hfp_ag_set_roaming_status(1);
             break;
         case 'r':
             printf("Disable in-band ring tone\n");

@@ -1084,6 +1084,12 @@ void hfp_ag_set_registration_status(int status){
  */
 void hfp_ag_set_signal_strength(int strength){
     hfp_ag_set_ag_indicator("signal", strength);
-  
+}
+
+/*
+ * @brief
+ */
+void hfp_ag_set_roaming_status(int status){
+    hfp_ag_set_ag_indicator("roam", status);
 }
 
