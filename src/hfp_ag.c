@@ -664,6 +664,7 @@ static int incoming_call_state_machine(hfp_connection_t * context){
         indicator->status = HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS;
         context->terminate_call = 0;
         context->run_call_state_machine = 0;
+        context->call_state = HFP_CALL_IDLE;
         hfp_emit_event(hfp_callback, HFP_SUBEVENT_CALL_TERMINATED, 0);
         hfp_ag_transfer_ag_indicators_status_cmd(context->rfcomm_cid, indicator);
         return 1;
@@ -745,7 +746,7 @@ static int incoming_call_state_machine(hfp_connection_t * context){
             }
             return 0;
         case HFP_CALL_ACTIVE:
-            printf(" HFP_CALL_ACTIVE \n");
+            // printf(" HFP_CALL_ACTIVE \n");
             break;
         default:
             break;
@@ -943,7 +944,7 @@ void hfp_ag_set_use_in_band_ring_tone(int use_in_band_ring_tone){
     if (get_bit(hfp_supported_features, HFP_AGSF_IN_BAND_RING_TONE) == use_in_band_ring_tone){
         return;
     } 
-    store_bit(hfp_supported_features, HFP_AGSF_IN_BAND_RING_TONE, use_in_band_ring_tone);
+    hfp_supported_features = store_bit(hfp_supported_features, HFP_AGSF_IN_BAND_RING_TONE, use_in_band_ring_tone);
         
     linked_list_iterator_t it;    
     linked_list_iterator_init(&it, hfp_get_connections());
