@@ -62,7 +62,9 @@
 #include "hfp_ag.h"
 
 static const char default_hfp_ag_service_name[] = "Voice gateway";
+
 static uint16_t hfp_supported_features = HFP_DEFAULT_AG_SUPPORTED_FEATURES;
+
 static uint8_t hfp_codecs_nr = 0;
 static uint8_t hfp_codecs[HFP_MAX_NUM_CODECS];
 
@@ -72,6 +74,9 @@ static hfp_ag_indicator_t hfp_ag_indicators[HFP_MAX_NUM_AG_INDICATORS];
 static int  hfp_ag_call_hold_services_nr = 0;
 static char *hfp_ag_call_hold_services[6];
 static hfp_callback_t hfp_callback;
+
+// AG Model
+static uint8_t hfp_ag_use_in_band_ring_tone = 0;
 
 static void packet_handler(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
@@ -92,11 +97,11 @@ hfp_ag_indicator_t * get_hfp_ag_indicators(hfp_connection_t * context){
     return (hfp_ag_indicator_t *)&(context->ag_indicators);
 }
 
-static hfp_ag_indicator_t * get_ag_indicator_for_name(hfp_connection_t * context, const char * name){
+static hfp_ag_indicator_t * get_ag_indicator_for_name(const char * name){
     int i;
-    for (i = 0; i < context->ag_indicators_nr; i++){
-        if (strcmp(context->ag_indicators[i].name, name) == 0){
-            return &context->ag_indicators[i];
+    for (i = 0; i < hfp_ag_indicators_nr; i++){
+        if (strcmp(hfp_ag_indicators[i].name, name) == 0){
+            return &hfp_ag_indicators[i];
         }
     }
     return NULL;
@@ -176,7 +181,7 @@ static int hfp_ag_ok(uint16_t cid){
 }
 
 static int hfp_ag_ring(uint16_t cid){
-    return send_str_over_rfcomm(cid, "\r\nRING\r\n");
+    return send_str_over_rfcomm(cid, (char *) "\r\nRING\r\n");
 }
 
 static int hfp_ag_error(uint16_t cid){
@@ -385,7 +390,7 @@ static int codecs_exchange_state_machine(hfp_connection_t * context){
             break;
     }
 
-    printf(" -> State machine: CC\n");
+    // printf(" -> State machine: CC\n");
     
     switch (context->command){
         case HFP_CMD_AVAILABLE_CODECS:
@@ -442,7 +447,7 @@ static int codecs_exchange_state_machine(hfp_connection_t * context){
 static int hfp_ag_run_for_context_service_level_connection(hfp_connection_t * context){
     if (context->state >= HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED) return 0;
     int done = 0;
-    printf(" -> State machine: SLC\n");
+    // printf(" -> State machine: SLC\n");
     
     switch(context->command){
         case HFP_CMD_SUPPORTED_FEATURES:
@@ -534,7 +539,7 @@ static int hfp_ag_run_for_context_service_level_connection_queries(hfp_connectio
     int done = codecs_exchange_state_machine(context);
     if (done) return done;
 
-    printf(" -> State machine: SLC Queries\n");
+    // printf(" -> State machine: SLC Queries\n");
     switch(context->command){
         case HFP_CMD_QUERY_OPERATOR_SELECTION_NAME:
             hfp_ag_report_network_operator_name_cmd(context->rfcomm_cid, context->network_operator);
@@ -582,7 +587,7 @@ static int hfp_ag_run_for_audio_connection(hfp_connection_t * context){
     // run codecs exchange
     int done = codecs_exchange_state_machine(context);
     if (done) return done;
-    printf(" -> State machine: Audio Connection\n");
+    // printf(" -> State machine: Audio Connection\n");
 
     if (context->codecs_state != HFP_CODECS_EXCHANGED) return done;
     if (context->establish_audio_connection){
@@ -599,7 +604,7 @@ static int incoming_call_state_machine(hfp_connection_t * context){
     if (!context->run_call_state_machine) return 0;
     if (context->state < HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED) return 0;
 
-    printf(" -> State machine: Incoming Call\n");
+    // printf(" -> State machine: Incoming Call\n");
     int done = 0;
     hfp_ag_indicator_t * indicator;
     
@@ -614,7 +619,7 @@ static int incoming_call_state_machine(hfp_connection_t * context){
     switch (context->call_state){
         case HFP_CALL_IDLE:
             //printf(" HFP_CALL_TRIGGER_AUDIO_CONNECTION \n");
-            indicator = get_ag_indicator_for_name(context, "callsetup");
+            indicator = get_ag_indicator_for_name("callsetup");
             if (!indicator) return 0;
 
             indicator->status = HFP_CALLSETUP_STATUS_INCOMING_CALL_SETUP_IN_PROGRESS;
@@ -645,7 +650,7 @@ static int incoming_call_state_machine(hfp_connection_t * context){
         case HFP_CALL_TRANSFER_CALL_STATUS:
             //printf(" HFP_CALL_TRANSFER_CALL_STATUS \n");
             context->call_state = HFP_CALL_TRANSFER_CALLSETUP_STATUS;
-            indicator = get_ag_indicator_for_name(context, "call");
+            indicator = get_ag_indicator_for_name("call");
             indicator->status = HFP_CALL_STATUS_ACTIVE_OR_HELD_CALL_IS_PRESENT;
             hfp_ag_transfer_ag_indicators_status_cmd(context->rfcomm_cid, indicator);
             return 1;
@@ -658,7 +663,7 @@ static int incoming_call_state_machine(hfp_connection_t * context){
                 context->call_state = HFP_CALL_TRIGGER_AUDIO_CONNECTION;
             }
             
-            indicator = get_ag_indicator_for_name(context, "callsetup");
+            indicator = get_ag_indicator_for_name("callsetup");
             indicator->status = HFP_HELDCALL_STATUS_NO_CALLS_HELD;
             hfp_ag_transfer_ag_indicators_status_cmd(context->rfcomm_cid, indicator);
             return 1;
@@ -754,7 +759,7 @@ static void hfp_handle_rfcomm_data(uint8_t packet_type, uint16_t channel, uint8_
     }
 }
 
-static void hfp_run(){
+static void hfp_run(void){
     linked_list_iterator_t it;    
     linked_list_iterator_init(&it, hfp_get_connections());
     while (linked_list_iterator_has_next(&it)){
@@ -872,26 +877,41 @@ void hfp_ag_release_audio_connection(bd_addr_t bd_addr){
 }
 
 /**
+ * @brief Enable in-band ring tone
+ */
+void hfp_ag_set_use_in_band_ring_tone(int use_in_band_ring_tone){
+    hfp_ag_use_in_band_ring_tone = use_in_band_ring_tone;
+}
+
+/**
  * @brief 
  */
-void hfp_ag_incoming_call(bd_addr_t bd_addr, uint8_t use_in_band_ring_tone){
-    hfp_ag_establish_service_level_connection(bd_addr);
-    hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
-
-    connection->use_in_band_ring_tone = use_in_band_ring_tone;
-    connection->run_call_state_machine = 1;
-    hfp_run_for_context(connection);
+void hfp_ag_incoming_call(void){
+    linked_list_iterator_t it;    
+    linked_list_iterator_init(&it, hfp_get_connections());
+    while (linked_list_iterator_has_next(&it)){
+        hfp_connection_t * connection = (hfp_connection_t *)linked_list_iterator_next(&it);
+        hfp_ag_establish_service_level_connection(connection->remote_addr);
+        connection->use_in_band_ring_tone = hfp_ag_use_in_band_ring_tone;
+        connection->run_call_state_machine = 1;
+        hfp_run_for_context(connection);
+    }
 }
 
 
 /**
  * @brief 
  */
-void hfp_ag_terminate_call(bd_addr_t bd_addr){
-    hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
-    if (connection->state != HFP_AUDIO_CONNECTION_ESTABLISHED) return;
-    connection->terminate_call = 1;
-    hfp_run_for_context(connection);
+void hfp_ag_terminate_call(void){
+
+    linked_list_iterator_t it;    
+    linked_list_iterator_init(&it, hfp_get_connections());
+    while (linked_list_iterator_has_next(&it)){
+        hfp_connection_t * connection = (hfp_connection_t *)linked_list_iterator_next(&it);
+        if (connection->state != HFP_AUDIO_CONNECTION_ESTABLISHED) return;
+        connection->terminate_call = 1;
+        hfp_run_for_context(connection);
+    }
 }
 
 

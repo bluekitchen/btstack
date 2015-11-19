@@ -97,7 +97,6 @@ static hfp_generic_status_indicator_t hf_indicators[] = {
     {1, 1},
     {2, 1},
 };
-static int inband_ringing = 0;
 
 char cmd;
 // prototypes
@@ -121,6 +120,7 @@ static void show_usage(void){
     printf("c - simulate incoming call\n");
     printf("C - simulate terminage call\n");
 
+    printf("r - enable in-band ring tone\n");
     printf("t - terminate connection\n");
 
     printf("---\n");
@@ -159,17 +159,22 @@ static int stdin_process(struct data_source *ds){
             break;
         case 'c':
             printf("Simulate incoming call\n");
-            hfp_ag_incoming_call(device_addr, inband_ringing);
+            hfp_ag_incoming_call();
             break;
         case 'C':
             printf("Simulate terminate call\n");
-            hfp_ag_terminate_call(device_addr);
+            hfp_ag_terminate_call();
             break;
         case 'd':
             printf("Report AG failure\n");
             hfp_ag_report_extended_audio_gateway_error_result_code(device_addr, HFP_CME_ERROR_AG_FAILURE);
             break;
+        case 'r':
+            printf("Enable in-band ring tone");
+            hfp_ag_set_use_in_band_ring_tone(1);
+            break;
         case 't':
+            printf("Terminate HCI connection.\n");
             gap_disconnect(handle);
         default:
             show_usage();
