@@ -918,6 +918,7 @@ void hfp_ag_terminate_call(void){
     linked_list_iterator_init(&it, hfp_get_connections());
     while (linked_list_iterator_has_next(&it)){
         hfp_connection_t * connection = (hfp_connection_t *)linked_list_iterator_next(&it);
+        hfp_ag_establish_service_level_connection(connection->remote_addr);
         connection->terminate_call = 1;
         hfp_run_for_context(connection);
     }
