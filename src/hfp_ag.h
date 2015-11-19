@@ -175,6 +175,11 @@ void hfp_ag_incoming_call(void);
 /**
  * @brief 
  */
+ void hfp_ag_answer_incomming_call(void);
+
+/**
+ * @brief 
+ */
 void hfp_ag_terminate_call(void);
 
 /**
@@ -186,6 +191,11 @@ void hfp_ag_audio_connection_transfer_towards_hf(bd_addr_t bd_addr);
  * @brief 
  */
 void hfp_ag_audio_connection_transfer_towards_ag(bd_addr_t bd_addr);
+
+/**
+ * @brief 
+ */
+void hfp_ag_place_a_call_with_phone_number(void);
 
 /* API_END */
 
