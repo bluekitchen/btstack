@@ -121,6 +121,7 @@ static void show_usage(void){
     printf("C - simulate terminage call\n");
 
     printf("r - enable in-band ring tone\n");
+    printf("R - disable in-band ring tone\n");
     printf("t - terminate connection\n");
 
     printf("---\n");
@@ -170,7 +171,11 @@ static int stdin_process(struct data_source *ds){
             hfp_ag_report_extended_audio_gateway_error_result_code(device_addr, HFP_CME_ERROR_AG_FAILURE);
             break;
         case 'r':
-            printf("Enable in-band ring tone");
+            printf("Disable in-band ring tone\n");
+            hfp_ag_set_use_in_band_ring_tone(0);
+            break;
+        case 'R':
+            printf("Enable in-band ring tone\n");
             hfp_ag_set_use_in_band_ring_tone(1);
             break;
         case 't':
@@ -219,7 +224,7 @@ static void packet_handler(uint8_t * event, uint16_t event_size){
             printf("\n** Stop Ringing **\n\n");
             break;        
         default:
-            printf("event not handled %u\n", event[2]);
+            // printf("event not handled %u\n", event[2]);
             break;
     }
 }
@@ -230,7 +235,7 @@ int btstack_main(int argc, const char * argv[]){
     l2cap_init();
     rfcomm_init();
     
-    hfp_ag_init(rfcomm_channel_nr, 1007 | (1<<HFP_AGSF_HF_INDICATORS), codecs, sizeof(codecs), 
+    hfp_ag_init(rfcomm_channel_nr, 0x3ef | (1<<HFP_AGSF_HF_INDICATORS), codecs, sizeof(codecs), 
         ag_indicators, ag_indicators_nr, 
         hf_indicators, hf_indicators_nr, 
         call_hold_services, call_hold_services_nr);
