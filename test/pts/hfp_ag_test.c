@@ -116,12 +116,17 @@ static void show_usage(void){
     printf("b - establish AUDIO connection\n");
     printf("B - release AUDIO connection\n");
     
-    printf("d - report AG failure\n");
     printf("c - simulate incoming call\n");
     printf("C - simulate terminage call\n");
 
+    printf("d - report AG failure\n");
+
+    printf("e - answer call on AG\n");
+
     printf("r - disable in-band ring tone\n");
     printf("R - enable in-band ring tone\n");
+
+
     printf("t - terminate connection\n");
 
     printf("---\n");
@@ -169,6 +174,10 @@ static int stdin_process(struct data_source *ds){
         case 'd':
             printf("Report AG failure\n");
             hfp_ag_report_extended_audio_gateway_error_result_code(device_addr, HFP_CME_ERROR_AG_FAILURE);
+            break;
+        case 'e':
+            printf("Answer call on AG\n");
+            hfp_ag_answer_incoming_call();
             break;
         case 'r':
             printf("Disable in-band ring tone\n");

@@ -175,7 +175,7 @@ void hfp_ag_incoming_call(void);
 /**
  * @brief 
  */
- void hfp_ag_answer_incomming_call(void);
+ void hfp_ag_answer_incoming_call(void);
 
 /**
  * @brief 

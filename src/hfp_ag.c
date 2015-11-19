@@ -648,7 +648,7 @@ static int incoming_call_state_machine(hfp_connection_t * context){
     if (!context->run_call_state_machine) return 0;
     if (context->state < HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED) return 0;
 
-    // printf(" -> State machine: Incoming Call\n");
+    // printf(" -> State machine: Incoming Call, state %u, command %u\n", context->call_state, context->command);
     hfp_ag_indicator_t * indicator;
     if (context->command == HFP_CMD_HANG_UP_CALL){
         context->terminate_call = 1;
@@ -692,7 +692,7 @@ static int incoming_call_state_machine(hfp_connection_t * context){
             return 1;
         
         case HFP_CALL_W4_ANSWER:
-            if (context->command != HFP_CMD_CALL_ANSWERED ||
+            if (context->command != HFP_CMD_CALL_ANSWERED &&
                 context->command != HFP_CMD_AG_ANSWER_CALL) {
                 if (context->ag_ring){
                     context->ag_ring = 0;
@@ -703,9 +703,9 @@ static int incoming_call_state_machine(hfp_connection_t * context){
             }
             context->ag_ring = 0;
             hfp_timeout_stop(context);
-            //printf(" HFP_CALL_W4_ANSWER, cmd %d \n", context->command);
-            context->call_state = HFP_CALL_TRANSFER_CALL_STATUS;
             hfp_emit_event(hfp_callback, HFP_SUBEVENT_STOP_RINGINIG, 0);
+
+            // printf(" HFP_CALL_W4_ANSWER, cmd %d \n", context->command);
             if (context->command == HFP_CMD_CALL_ANSWERED){
                 context->call_state = HFP_CALL_TRANSFER_CALL_STATUS;
                 hfp_ag_ok(context->rfcomm_cid);
@@ -1002,14 +1002,12 @@ void hfp_ag_audio_connection_transfer_towards_ag(bd_addr_t bd_addr){
     hfp_ag_release_audio_connection(bd_addr);
 }
 
-void hfp_ag_answer_incomming_call(void){
+void hfp_ag_answer_incoming_call(void){
     linked_list_iterator_t it;    
     linked_list_iterator_init(&it, hfp_get_connections());
     while (linked_list_iterator_has_next(&it)){
         hfp_connection_t * connection = (hfp_connection_t *)linked_list_iterator_next(&it);
         if (connection->call_state != HFP_CALL_W4_ANSWER) continue;
-        
-        hfp_ag_establish_service_level_connection(connection->remote_addr);
         connection->run_call_state_machine = 1;
         connection->command = HFP_CMD_AG_ANSWER_CALL;
         hfp_run_for_context(connection);
