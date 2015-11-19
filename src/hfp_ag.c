@@ -62,7 +62,9 @@
 #include "hfp_ag.h"
 
 static const char default_hfp_ag_service_name[] = "Voice gateway";
+
 static uint16_t hfp_supported_features = HFP_DEFAULT_AG_SUPPORTED_FEATURES;
+
 static uint8_t hfp_codecs_nr = 0;
 static uint8_t hfp_codecs[HFP_MAX_NUM_CODECS];
 
@@ -95,11 +97,11 @@ hfp_ag_indicator_t * get_hfp_ag_indicators(hfp_connection_t * context){
     return (hfp_ag_indicator_t *)&(context->ag_indicators);
 }
 
-static hfp_ag_indicator_t * get_ag_indicator_for_name(hfp_connection_t * context, const char * name){
+static hfp_ag_indicator_t * get_ag_indicator_for_name(const char * name){
     int i;
-    for (i = 0; i < context->ag_indicators_nr; i++){
-        if (strcmp(context->ag_indicators[i].name, name) == 0){
-            return &context->ag_indicators[i];
+    for (i = 0; i < hfp_ag_indicators_nr; i++){
+        if (strcmp(hfp_ag_indicators[i].name, name) == 0){
+            return &hfp_ag_indicators[i];
         }
     }
     return NULL;
@@ -617,7 +619,7 @@ static int incoming_call_state_machine(hfp_connection_t * context){
     switch (context->call_state){
         case HFP_CALL_IDLE:
             //printf(" HFP_CALL_TRIGGER_AUDIO_CONNECTION \n");
-            indicator = get_ag_indicator_for_name(context, "callsetup");
+            indicator = get_ag_indicator_for_name("callsetup");
             if (!indicator) return 0;
 
             indicator->status = HFP_CALLSETUP_STATUS_INCOMING_CALL_SETUP_IN_PROGRESS;
@@ -648,7 +650,7 @@ static int incoming_call_state_machine(hfp_connection_t * context){
         case HFP_CALL_TRANSFER_CALL_STATUS:
             //printf(" HFP_CALL_TRANSFER_CALL_STATUS \n");
             context->call_state = HFP_CALL_TRANSFER_CALLSETUP_STATUS;
-            indicator = get_ag_indicator_for_name(context, "call");
+            indicator = get_ag_indicator_for_name("call");
             indicator->status = HFP_CALL_STATUS_ACTIVE_OR_HELD_CALL_IS_PRESENT;
             hfp_ag_transfer_ag_indicators_status_cmd(context->rfcomm_cid, indicator);
             return 1;
@@ -661,7 +663,7 @@ static int incoming_call_state_machine(hfp_connection_t * context){
                 context->call_state = HFP_CALL_TRIGGER_AUDIO_CONNECTION;
             }
             
-            indicator = get_ag_indicator_for_name(context, "callsetup");
+            indicator = get_ag_indicator_for_name("callsetup");
             indicator->status = HFP_HELDCALL_STATUS_NO_CALLS_HELD;
             hfp_ag_transfer_ag_indicators_status_cmd(context->rfcomm_cid, indicator);
             return 1;
