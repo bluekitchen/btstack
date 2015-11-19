@@ -97,7 +97,6 @@ static hfp_generic_status_indicator_t hf_indicators[] = {
     {1, 1},
     {2, 1},
 };
-static int inband_ringing = 0;
 
 char cmd;
 // prototypes
