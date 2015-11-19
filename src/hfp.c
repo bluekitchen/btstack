@@ -861,6 +861,11 @@ void hfp_parse(hfp_connection_t * context, uint8_t byte, int isHandsFree){
 
         case HFP_PARSER_CMD_SEQUENCE: // parse comma separated sequence, ignore breacktes
             switch (context->command){
+                case HFP_CMD_CHANGE_IN_BAND_RING_TONE_SETTING:
+                    value = atoi((char *)&context->line_buffer[0]);
+                    context->remote_supported_features = store_bit(context->remote_supported_features, HFP_AGSF_IN_BAND_RING_TONE, value);
+                    log_info("hfp parse HFP_CHANGE_IN_BAND_RING_TONE_SETTING %d\n", value);
+                    break;
                 case HFP_CMD_HF_CONFIRMED_CODEC:
                     context->codec_confirmed = atoi((char*)context->line_buffer);
                     log_info("hfp parse HFP_CMD_HF_CONFIRMED_CODEC %d\n", context->codec_confirmed);
