@@ -609,7 +609,7 @@ void hfp_handle_hci_event(hfp_callback_t callback, uint8_t packet_type, uint8_t 
 static hfp_command_t parse_command(const char * line_buffer, int isHandsFree){
     int offset = isHandsFree ? 0 : 2;
     
-    if (strncmp(line_buffer+offset, HFP_CALL_ANSWERED, strlen(HFP_CALL_ANSWERED)) == 0){
+    if (strncmp(line_buffer, HFP_CALL_ANSWERED, strlen(HFP_CALL_ANSWERED)) == 0){
         return HFP_CMD_CALL_ANSWERED;
     }
 

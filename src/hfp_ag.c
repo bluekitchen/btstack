@@ -529,7 +529,7 @@ static int hfp_ag_run_for_context_service_level_connection(hfp_connection_t * co
 }
 
 static int hfp_ag_run_for_context_service_level_connection_queries(hfp_connection_t * context){
-    if (context->state != HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED) return 0;
+    // if (context->state != HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED) return 0;
     
     int done = codecs_exchange_state_machine(context);
     if (done) return done;
@@ -569,18 +569,21 @@ static int hfp_ag_run_for_audio_connection(hfp_connection_t * context){
     if (context->state < HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED ||
         context->state > HFP_W2_DISCONNECT_SCO) return 0;
 
-    // run codecs exchange
-    int done = codecs_exchange_state_machine(context);
-    if (done) return done;
-    printf(" -> State machine: Audio Connection\n");
 
-    if (context->release_audio_connection){
+    if (context->state == HFP_AUDIO_CONNECTION_ESTABLISHED && context->release_audio_connection){
         context->state = HFP_W4_SCO_DISCONNECTED;
         context->release_audio_connection = 0;
         gap_disconnect(context->sco_handle);
         return 1;
     }
-    if (context->state == HFP_AUDIO_CONNECTION_ESTABLISHED) return done;
+
+    if (context->state == HFP_AUDIO_CONNECTION_ESTABLISHED) return 0;
+    
+    // run codecs exchange
+    int done = codecs_exchange_state_machine(context);
+    if (done) return done;
+    printf(" -> State machine: Audio Connection\n");
+
     if (context->codecs_state != HFP_CODECS_EXCHANGED) return done;
     if (context->establish_audio_connection){
         context->state = HFP_W4_SCO_CONNECTED;
@@ -601,6 +604,7 @@ static int incoming_call_state_machine(hfp_connection_t * context){
     hfp_ag_indicator_t * indicator;
     
     if (context->terminate_call){
+        printf(" -> State machine: Terminate Incoming Call\n");
         // TODO, reset flags
         context->terminate_call = 0;
         context->run_call_state_machine = 0;
@@ -625,12 +629,14 @@ static int incoming_call_state_machine(hfp_connection_t * context){
             return 1;
 
         case HFP_CALL_RING:
+            //printf(" HFP_CALL_RING \n");
             context->call_state = HFP_CALL_W4_ANSWER;
             hfp_ag_ring(context->rfcomm_cid);
             return 1;
 
         case HFP_CALL_W4_ANSWER:
-            //printf(" HFP_CALL_W4_ANSWER \n");
+            //printf(" HFP_CALL_W4_ANSWER, cmd %d \n", context->command);
+            if (context->command != HFP_CMD_CALL_ANSWERED) return 0;
             context->call_state = HFP_CALL_TRANSFER_CALL_STATUS;
             hfp_emit_event(hfp_callback, HFP_SUBEVENT_STOP_RINGINIG, 0);
             hfp_ag_ok(context->rfcomm_cid);
