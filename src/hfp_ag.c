@@ -75,9 +75,6 @@ static int  hfp_ag_call_hold_services_nr = 0;
 static char *hfp_ag_call_hold_services[6];
 static hfp_callback_t hfp_callback;
 
-// AG Model
-static uint8_t hfp_ag_use_in_band_ring_tone = 0;
-
 static void packet_handler(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
 hfp_generic_status_indicator_t * get_hfp_generic_status_indicators();
@@ -129,8 +126,8 @@ void hfp_ag_register_packet_handler(hfp_callback_t callback){
     hfp_callback = callback;
 }
 
-static int use_in_band_tone(hfp_connection_t * connection){
-    return get_bit(hfp_supported_features, HFP_AGSF_IN_BAND_RING_TONE) && connection->use_in_band_ring_tone;
+static int use_in_band_tone(){
+    return get_bit(hfp_supported_features, HFP_AGSF_IN_BAND_RING_TONE);
 }
 
 static int has_codec_negotiation_feature(hfp_connection_t * connection){
@@ -166,6 +163,12 @@ void hfp_ag_create_sdp_record(uint8_t * service, int rfcomm_channel_nr, const ch
 
     de_add_number(service, DE_UINT, DE_SIZE_16, 0x0311);    // Hands-Free Profile - SupportedFeatures
     de_add_number(service, DE_UINT, DE_SIZE_16, supported_features);
+}
+
+static int hfp_ag_change_in_band_ring_tone_setting_cmd(uint16_t cid){
+    char buffer[20];
+    sprintf(buffer, "\r\n%s:%d\r\n", HFP_CHANGE_IN_BAND_RING_TONE_SETTING, use_in_band_tone());
+    return send_str_over_rfcomm(cid, buffer);
 }
 
 static int hfp_ag_exchange_supported_features_cmd(uint16_t cid){
@@ -448,7 +451,6 @@ static int hfp_ag_run_for_context_service_level_connection(hfp_connection_t * co
     if (context->state >= HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED) return 0;
     int done = 0;
     // printf(" -> State machine: SLC\n");
-    
     switch(context->command){
         case HFP_CMD_SUPPORTED_FEATURES:
             switch(context->state){
@@ -538,9 +540,12 @@ static int hfp_ag_run_for_context_service_level_connection_queries(hfp_connectio
     
     int done = codecs_exchange_state_machine(context);
     if (done) return done;
-
+   
     // printf(" -> State machine: SLC Queries\n");
     switch(context->command){
+        case HFP_CMD_CHANGE_IN_BAND_RING_TONE_SETTING:
+            hfp_ag_change_in_band_ring_tone_setting_cmd(context->rfcomm_cid);
+            return 1;
         case HFP_CMD_QUERY_OPERATOR_SELECTION_NAME:
             hfp_ag_report_network_operator_name_cmd(context->rfcomm_cid, context->network_operator);
             return 1;
@@ -669,7 +674,7 @@ static int incoming_call_state_machine(hfp_connection_t * context){
             indicator->status = HFP_CALLSETUP_STATUS_INCOMING_CALL_SETUP_IN_PROGRESS;
             hfp_ag_transfer_ag_indicators_status_cmd(context->rfcomm_cid, indicator);
             
-            if (use_in_band_tone(context)){
+            if (use_in_band_tone()){
                 context->call_state = HFP_CALL_TRIGGER_AUDIO_CONNECTION;
             } else {
                 context->call_state = HFP_CALL_W4_ANSWER;
@@ -704,7 +709,7 @@ static int incoming_call_state_machine(hfp_connection_t * context){
 
         case HFP_CALL_TRANSFER_CALLSETUP_STATUS:
             //printf(" HFP_CALL_TRANSFER_CALLSETUP_STATUS \n");
-            if (use_in_band_tone(context)){
+            if (use_in_band_tone()){
                 context->call_state = HFP_CALL_ACTIVE;
             } else {
                 context->call_state = HFP_CALL_TRIGGER_AUDIO_CONNECTION;
@@ -724,7 +729,7 @@ static int incoming_call_state_machine(hfp_connection_t * context){
             //printf(" HFP_CALL_W4_AUDIO_CONNECTION \n");
             if (context->state < HFP_AUDIO_CONNECTION_ESTABLISHED) return 0;
             
-            if (use_in_band_tone(context)){
+            if (use_in_band_tone()){
                 context->call_state = HFP_CALL_W4_ANSWER;
                 hfp_emit_event(hfp_callback, HFP_SUBEVENT_START_RINGINIG, 0);
             } else {
@@ -927,7 +932,18 @@ void hfp_ag_release_audio_connection(bd_addr_t bd_addr){
  * @brief Enable in-band ring tone
  */
 void hfp_ag_set_use_in_band_ring_tone(int use_in_band_ring_tone){
-    hfp_ag_use_in_band_ring_tone = use_in_band_ring_tone;
+    if (get_bit(hfp_supported_features, HFP_AGSF_IN_BAND_RING_TONE) == use_in_band_ring_tone){
+        return;
+    } 
+    store_bit(hfp_supported_features, HFP_AGSF_IN_BAND_RING_TONE, use_in_band_ring_tone);
+        
+    linked_list_iterator_t it;    
+    linked_list_iterator_init(&it, hfp_get_connections());
+    while (linked_list_iterator_has_next(&it)){
+        hfp_connection_t * connection = (hfp_connection_t *)linked_list_iterator_next(&it);
+        connection->command = HFP_CMD_CHANGE_IN_BAND_RING_TONE_SETTING;
+        hfp_run_for_context(connection);
+    }
 }
 
 /**
@@ -939,7 +955,6 @@ void hfp_ag_incoming_call(void){
     while (linked_list_iterator_has_next(&it)){
         hfp_connection_t * connection = (hfp_connection_t *)linked_list_iterator_next(&it);
         hfp_ag_establish_service_level_connection(connection->remote_addr);
-        connection->use_in_band_ring_tone = hfp_ag_use_in_band_ring_tone;
         connection->run_call_state_machine = 1;
         hfp_run_for_context(connection);
     }

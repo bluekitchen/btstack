@@ -117,6 +117,7 @@ extern "C" {
 #define HFP_CONFIRM_COMMON_CODEC "+BCS"
 #define HFP_CALL_ANSWERED "ATA"
 #define HFP_HANG_UP_CALL "+CHUP"
+#define HFP_CHANGE_IN_BAND_RING_TONE_SETTING "+BSIR"
 
 #define HFP_OK "OK"
 #define HFP_ERROR "ERROR"
@@ -156,7 +157,8 @@ typedef enum {
     HFP_CMD_AG_SUGGESTED_CODEC,
     HFP_CMD_HF_CONFIRMED_CODEC,
     HFP_CMD_CALL_ANSWERED,
-    HFP_CMD_HANG_UP_CALL
+    HFP_CMD_HANG_UP_CALL,
+    HFP_CMD_CHANGE_IN_BAND_RING_TONE_SETTING
 } hfp_command_t;
 
 typedef enum {
@@ -397,7 +399,7 @@ typedef struct hfp_connection {
     uint8_t release_audio_connection; 
 
     uint8_t run_call_state_machine;
-    uint8_t use_in_band_ring_tone;
+    uint8_t change_in_band_ring_tone_setting;
     uint8_t ag_ring;
     uint8_t terminate_call;
     timer_source_t hfp_timeout;
