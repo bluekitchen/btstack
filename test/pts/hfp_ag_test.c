@@ -135,6 +135,9 @@ static void show_usage(void){
     printf("h - Disable roaming\n");
     printf("H - Enable roaming\n");
 
+    printf("i - Set battery level to 3\n");
+    printf("I - Set battery level to 5\n");
+
     printf("t - terminate connection\n");
 
     printf("---\n");
@@ -210,6 +213,14 @@ static int stdin_process(struct data_source *ds){
         case 'H':
             printf("Enable roaming\n");
             hfp_ag_set_roaming_status(1);
+            break;
+        case 'i':
+            printf("Set battery level to 3\n");
+            hfp_ag_set_battery_level(3);
+            break;
+        case 'I':
+            printf("Set battery level to 5\n");
+            hfp_ag_set_battery_level(5);
             break;
         case 'r':
             printf("Disable in-band ring tone\n");

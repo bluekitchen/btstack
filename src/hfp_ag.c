@@ -1093,3 +1093,9 @@ void hfp_ag_set_roaming_status(int status){
     hfp_ag_set_ag_indicator("roam", status);
 }
 
+/*
+ * @brief
+ */
+void hfp_ag_set_battery_level(int level){
+    hfp_ag_set_ag_indicator("battchg", level);
+}

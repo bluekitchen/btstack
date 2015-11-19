@@ -215,6 +215,11 @@ void hfp_ag_set_signal_strength(int strength);
  */
 void hfp_ag_set_roaming_status(int status);
 
+/*
+ * @brief
+ */
+void hfp_ag_set_battery_level(int level);
+
 /* API_END */
 
 #if defined __cplusplus
