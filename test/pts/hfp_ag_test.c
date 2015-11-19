@@ -120,8 +120,8 @@ static void show_usage(void){
     printf("c - simulate incoming call\n");
     printf("C - simulate terminage call\n");
 
-    printf("r - enable in-band ring tone\n");
-    printf("R - disable in-band ring tone\n");
+    printf("r - disable in-band ring tone\n");
+    printf("R - enable in-band ring tone\n");
     printf("t - terminate connection\n");
 
     printf("---\n");

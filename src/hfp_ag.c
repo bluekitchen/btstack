@@ -76,6 +76,7 @@ static char *hfp_ag_call_hold_services[6];
 static hfp_callback_t hfp_callback;
 
 static void packet_handler(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+static void hfp_run_for_context(hfp_connection_t *context);
 
 hfp_generic_status_indicator_t * get_hfp_generic_status_indicators();
 int get_hfp_generic_status_indicators_nr();
@@ -621,10 +622,14 @@ static hfp_connection_t * hfp_ag_context_for_timer(timer_source_t * ts){
 static void hfp_timeout_handler(timer_source_t * timer){
     hfp_connection_t * context = hfp_ag_context_for_timer(timer);
     if (!context) return;
+
     log_info("HFP start ring timeout, con handle 0x%02x", context->con_handle);
     context->ag_ring = 1;
+
     run_loop_set_timer(&context->hfp_timeout, 2000); // 5 seconds timeout
     run_loop_add_timer(&context->hfp_timeout);
+
+    hfp_run_for_context(context);
 }
 
 static void hfp_timeout_start(hfp_connection_t * context){
@@ -635,7 +640,7 @@ static void hfp_timeout_start(hfp_connection_t * context){
 }
 
 static void hfp_timeout_stop(hfp_connection_t * context){
-    log_info("HFP stor ring timeout, con handle 0x%02x", context->con_handle);
+    log_info("HFP stop ring timeout, con handle 0x%02x", context->con_handle);
     run_loop_remove_timer(&context->hfp_timeout);
 } 
 
@@ -659,6 +664,7 @@ static int incoming_call_state_machine(hfp_connection_t * context){
         indicator->status = HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS;
         context->terminate_call = 0;
         context->run_call_state_machine = 0;
+        context->call_state = HFP_CALL_IDLE;
         hfp_emit_event(hfp_callback, HFP_SUBEVENT_CALL_TERMINATED, 0);
         hfp_ag_transfer_ag_indicators_status_cmd(context->rfcomm_cid, indicator);
         return 1;
@@ -674,11 +680,13 @@ static int incoming_call_state_machine(hfp_connection_t * context){
             indicator->status = HFP_CALLSETUP_STATUS_INCOMING_CALL_SETUP_IN_PROGRESS;
             hfp_ag_transfer_ag_indicators_status_cmd(context->rfcomm_cid, indicator);
             
+            hfp_timeout_start(context);
+            context->ag_ring = 1;
+
             if (use_in_band_tone()){
                 context->call_state = HFP_CALL_TRIGGER_AUDIO_CONNECTION;
             } else {
                 context->call_state = HFP_CALL_W4_ANSWER;
-                hfp_timeout_start(context);
                 hfp_emit_event(hfp_callback, HFP_SUBEVENT_START_RINGINIG, 0);
             }
             return 1;
@@ -687,6 +695,7 @@ static int incoming_call_state_machine(hfp_connection_t * context){
             if (context->command != HFP_CMD_CALL_ANSWERED ||
                 context->command != HFP_CMD_AG_ANSWER_CALL) {
                 if (context->ag_ring){
+                    context->ag_ring = 0;
                     hfp_ag_ring(context->rfcomm_cid);
                     return 1;
                 }
@@ -749,7 +758,7 @@ static int incoming_call_state_machine(hfp_connection_t * context){
             }
             return 0;
         case HFP_CALL_ACTIVE:
-            printf(" HFP_CALL_ACTIVE \n");
+            // printf(" HFP_CALL_ACTIVE \n");
             break;
         default:
             break;
@@ -947,7 +956,7 @@ void hfp_ag_set_use_in_band_ring_tone(int use_in_band_ring_tone){
     if (get_bit(hfp_supported_features, HFP_AGSF_IN_BAND_RING_TONE) == use_in_band_ring_tone){
         return;
     } 
-    store_bit(hfp_supported_features, HFP_AGSF_IN_BAND_RING_TONE, use_in_band_ring_tone);
+    hfp_supported_features = store_bit(hfp_supported_features, HFP_AGSF_IN_BAND_RING_TONE, use_in_band_ring_tone);
         
     linked_list_iterator_t it;    
     linked_list_iterator_init(&it, hfp_get_connections());
