@@ -73,6 +73,9 @@ static int  hfp_ag_call_hold_services_nr = 0;
 static char *hfp_ag_call_hold_services[6];
 static hfp_callback_t hfp_callback;
 
+// AG Model
+static uint8_t hfp_ag_use_in_band_ring_tone = 0;
+
 static void packet_handler(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
 hfp_generic_status_indicator_t * get_hfp_generic_status_indicators();
@@ -176,7 +179,7 @@ static int hfp_ag_ok(uint16_t cid){
 }
 
 static int hfp_ag_ring(uint16_t cid){
-    return send_str_over_rfcomm(cid, "\r\nRING\r\n");
+    return send_str_over_rfcomm(cid, (char *) "\r\nRING\r\n");
 }
 
 static int hfp_ag_error(uint16_t cid){
@@ -754,7 +757,7 @@ static void hfp_handle_rfcomm_data(uint8_t packet_type, uint16_t channel, uint8_
     }
 }
 
-static void hfp_run(){
+static void hfp_run(void){
     linked_list_iterator_t it;    
     linked_list_iterator_init(&it, hfp_get_connections());
     while (linked_list_iterator_has_next(&it)){
@@ -876,26 +879,41 @@ void hfp_ag_release_audio_connection(bd_addr_t bd_addr){
 }
 
 /**
+ * @brief Enable in-band ring tone
+ */
+void hfp_ag_set_use_in_band_ring_tone(int use_in_band_ring_tone){
+    hfp_ag_use_in_band_ring_tone = use_in_band_ring_tone;
+}
+
+/**
  * @brief 
  */
-void hfp_ag_incoming_call(bd_addr_t bd_addr, uint8_t use_in_band_ring_tone){
-    hfp_ag_establish_service_level_connection(bd_addr);
-    hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
-
-    connection->use_in_band_ring_tone = use_in_band_ring_tone;
-    connection->run_call_state_machine = 1;
-    hfp_run_for_context(connection);
+void hfp_ag_incoming_call(void){
+    linked_list_iterator_t it;    
+    linked_list_iterator_init(&it, hfp_get_connections());
+    while (linked_list_iterator_has_next(&it)){
+        hfp_connection_t * connection = (hfp_connection_t *)linked_list_iterator_next(&it);
+        hfp_ag_establish_service_level_connection(connection->remote_addr);
+        connection->use_in_band_ring_tone = hfp_ag_use_in_band_ring_tone;
+        connection->run_call_state_machine = 1;
+        hfp_run_for_context(connection);
+    }
 }
 
 
 /**
  * @brief 
  */
-void hfp_ag_terminate_call(bd_addr_t bd_addr){
-    hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
-    if (connection->state != HFP_AUDIO_CONNECTION_ESTABLISHED) return;
-    connection->terminate_call = 1;
-    hfp_run_for_context(connection);
+void hfp_ag_terminate_call(void){
+
+    linked_list_iterator_t it;    
+    linked_list_iterator_init(&it, hfp_get_connections());
+    while (linked_list_iterator_has_next(&it)){
+        hfp_connection_t * connection = (hfp_connection_t *)linked_list_iterator_next(&it);
+        if (connection->state != HFP_AUDIO_CONNECTION_ESTABLISHED) return;
+        connection->terminate_call = 1;
+        hfp_run_for_context(connection);
+    }
 }
 
 

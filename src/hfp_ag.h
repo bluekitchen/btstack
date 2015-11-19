@@ -163,16 +163,19 @@ void hfp_ag_release_audio_connection(bd_addr_t bd_addr);
 
 
 /**
- * @brief 
+ * @brief Enable in-band ring tone
  */
-void hfp_ag_incoming_call(bd_addr_t bd_addr, uint8_t use_in_band_ring_tone);
-
-
+void hfp_ag_set_use_in_band_ring_tone(int use_in_band_ring_tone);
 
 /**
  * @brief 
  */
-void hfp_ag_terminate_call(bd_addr_t bd_addr);
+void hfp_ag_incoming_call(void);
+
+/**
+ * @brief 
+ */
+void hfp_ag_terminate_call(void);
 
 /* API_END */
 

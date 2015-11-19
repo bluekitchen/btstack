@@ -216,8 +216,9 @@ TEST_GROUP(HFPClient){
 TEST(HFPClient, HFAnswerIncomingCallWithInBandRingTone){
     setup_hfp_service_level_connection(default_slc_setup(), default_slc_setup_size());
     CHECK_EQUAL(service_level_connection_established, 1);
-    
-    hfp_ag_incoming_call(device_addr, 1);
+
+    hfp_ag_set_use_in_band_ring_tone(1);    
+    hfp_ag_incoming_call();
     simulate_test_sequence(default_ic_setup(), default_ic_setup_size());
     CHECK_EQUAL(audio_connection_established, 1);
 
