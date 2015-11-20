@@ -688,19 +688,6 @@ static int incoming_call_state_machine(hfp_connection_t * context){
 
     int done = 0;
     switch (context->call_state){
-        case HFP_CALL_IDLE:
-            //printf(" HFP_CALL_TRIGGER_AUDIO_CONNECTION \n");
-            hfp_timeout_start(context);
-            context->ag_ring = 1;
-
-            if (use_in_band_tone()){
-                context->call_state = HFP_CALL_TRIGGER_AUDIO_CONNECTION;
-            } else {
-                context->call_state = HFP_CALL_W4_ANSWER;
-                hfp_emit_event(hfp_callback, HFP_SUBEVENT_START_RINGINIG, 0);
-            }
-            return 1;
-        
         case HFP_CALL_W4_ANSWER:
             if (context->command != HFP_CMD_CALL_ANSWERED &&
                 context->command != HFP_CMD_AG_ANSWER_CALL) {
@@ -775,6 +762,18 @@ static int incoming_call_state_machine(hfp_connection_t * context){
     return done;
 }
 
+static void hfp_ag_hf_start_ringing(hfp_connection_t * context){
+    //printf(" HFP_CALL_TRIGGER_AUDIO_CONNECTION \n");
+    hfp_timeout_start(context);
+    context->ag_ring = 1;
+    if (use_in_band_tone()){
+        context->call_state = HFP_CALL_TRIGGER_AUDIO_CONNECTION;
+    } else {
+        context->call_state = HFP_CALL_W4_ANSWER;
+        hfp_emit_event(hfp_callback, HFP_SUBEVENT_START_RINGINIG, 0);
+    }
+}
+
 static void hfp_ag_trigger_incoming_call(void){
     int indicator_index = get_ag_indicator_index_for_name("callsetup");
     if (indicator_index < 0) return;
@@ -785,6 +784,7 @@ static void hfp_ag_trigger_incoming_call(void){
         hfp_connection_t * connection = (hfp_connection_t *)linked_list_iterator_next(&it);
         hfp_ag_establish_service_level_connection(connection->remote_addr);
         if (connection->call_state == HFP_CALL_IDLE){
+            hfp_ag_hf_start_ringing(connection);
             connection->run_call_state_machine = 1;
             connection->ag_indicators_status_update_bitmap = store_bit(connection->ag_indicators_status_update_bitmap, indicator_index, 1);
         }
