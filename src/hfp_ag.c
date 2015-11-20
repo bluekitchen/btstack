@@ -667,28 +667,6 @@ static int incoming_call_state_machine(hfp_connection_t * context){
     if (!context->run_call_state_machine) return 0;
     if (context->state < HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED) return 0;
 
-    // printf(" -> State machine: Incoming Call, state %u, command %u\n", context->call_state, context->command);
-    hfp_ag_indicator_t * indicator;
-    switch (context->command){
-        case HFP_CMD_HANG_UP_CALL:
-            context->terminate_call = 1;
-            hfp_ag_ok(context->rfcomm_cid);
-            return 1;
-        default:
-            break;        
-    }
-
-    if (context->terminate_call){
-        printf(" -> State machine: Terminate Incoming Call\n");
-        context->terminate_call = 0;
-        context->run_call_state_machine = 0;
-        context->call_state = HFP_CALL_IDLE;
-        indicator = get_ag_indicator_for_name("call");
-        if (!indicator) return 0;
-        hfp_emit_event(hfp_callback, HFP_SUBEVENT_CALL_TERMINATED, 0);
-        return 1;
-    }
-
     if (context->ag_ring){
         context->ag_ring = 0;
         hfp_ag_ring(context->rfcomm_cid);
@@ -779,7 +757,8 @@ static void hfp_ag_hf_accept_call(hfp_connection_t * source){
             connection->ag_indicators_status_update_bitmap = store_bit(connection->ag_indicators_status_update_bitmap, callsetup_indicator_index, 1);
 
         } else {
-            connection->terminate_call = 1;
+            connection->run_call_state_machine = 0;
+            connection->call_state = HFP_CALL_IDLE;
         }
         hfp_run_for_context(connection);
         break;  // only single 
@@ -816,9 +795,11 @@ static void hfp_ag_trigger_terminate_call(void){
         hfp_connection_t * connection = (hfp_connection_t *)linked_list_iterator_next(&it);
         hfp_ag_establish_service_level_connection(connection->remote_addr);
         if (connection->call_state == HFP_CALL_IDLE) continue;
-        connection->terminate_call = 1;
+        connection->run_call_state_machine = 0;
+        connection->call_state = HFP_CALL_IDLE;
         hfp_run_for_context(connection);
     }
+    hfp_emit_event(hfp_callback, HFP_SUBEVENT_CALL_TERMINATED, 0);
 }
 
 static void hfp_ag_set_callsetup_state(hfp_callsetup_status_t state){
@@ -898,6 +879,20 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * connect
                     break;
             }
             break;
+
+        case HFP_AG_TERMINATE_CALL_BY_HF:
+             switch (hfp_ag_call_state){
+                case HFP_CALL_STATUS_ACTIVE_OR_HELD_CALL_IS_PRESENT:
+                    hfp_ag_set_callsetup_state(HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS);
+                    hfp_ag_set_call_state(HFP_CALL_STATUS_ACTIVE_OR_HELD_CALL_IS_PRESENT);
+                    hfp_ag_trigger_terminate_call();
+                    printf("TODO AG terminate call\n");
+                    break;
+                default:
+                    break;
+            }
+            break;
+
         case HFP_AG_TERMINATE_CALL_BY_AG:
              switch (hfp_ag_call_state){
                 case HFP_CALL_STATUS_ACTIVE_OR_HELD_CALL_IS_PRESENT:
@@ -1011,6 +1006,10 @@ static void hfp_handle_rfcomm_data(uint8_t packet_type, uint16_t channel, uint8_
             context->command = HFP_CMD_NONE;
             hfp_ag_call_sm(HFP_AG_INCOMING_CALL_ACCEPTED_BY_HF, context);
             break;
+        case  HFP_CMD_HANG_UP_CALL:
+            context->command = HFP_CMD_NONE;
+            context->ok_pending = 1;
+            hfp_ag_call_sm(HFP_AG_TERMINATE_CALL_BY_HF, context);
         default:
             break;
     }

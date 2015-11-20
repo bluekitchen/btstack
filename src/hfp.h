@@ -409,7 +409,6 @@ typedef struct hfp_connection {
     uint8_t run_call_state_machine;
     uint8_t change_in_band_ring_tone_setting;
     uint8_t ag_ring;
-    uint8_t terminate_call;
     timer_source_t hfp_timeout;
 
 } hfp_connection_t;
