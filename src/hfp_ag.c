@@ -1175,24 +1175,6 @@ void hfp_ag_terminate_call(void){
     hfp_ag_call_sm(HFP_AG_TERMINATE_CALL_BY_AG, NULL);
 }
 
-
-void hfp_ag_audio_connection_transfer_towards_ag(bd_addr_t bd_addr){
-    hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
-    if (connection->call_state != HFP_CALL_ACTIVE) return;
-    if (connection->state != HFP_AUDIO_CONNECTION_ESTABLISHED) return;
-    hfp_ag_release_audio_connection(bd_addr);
-}
-
-/**
- * @brief 
- */
-void hfp_ag_audio_connection_transfer_towards_hf(bd_addr_t bd_addr){
-    hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
-    if (connection->call_state != HFP_CALL_ACTIVE) return;
-    if (connection->state != HFP_AUDIO_CONNECTION_ESTABLISHED) return;
-    hfp_ag_establish_audio_connection(bd_addr);
-}
-
 void hfp_ag_place_a_call_with_phone_number(void){
     // linked_list_iterator_t it;    
     // linked_list_iterator_init(&it, hfp_get_connections());
