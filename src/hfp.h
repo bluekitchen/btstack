@@ -414,10 +414,7 @@ typedef struct hfp_connection {
     uint8_t change_in_band_ring_tone_setting;
     uint8_t ag_ring;
 
-    char * place_call_with_number;
     timer_source_t hfp_timeout;
-
-
 } hfp_connection_t;
 
 // UTILS_START : TODO move to utils

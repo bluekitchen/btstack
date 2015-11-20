@@ -210,8 +210,9 @@ void hfp_emit_string_event(hfp_callback_t callback, uint8_t event_subtype, const
     event[0] = HCI_EVENT_HFP_META;
     event[1] = sizeof(event) - 2;
     event[2] = event_subtype;
-    int size = sizeof(value) < sizeof(event) - 4? sizeof(value) : sizeof(event) - 4;
+    int size = (strlen(value) < sizeof(event) - 4) ? strlen(value) : sizeof(event) - 4;
     strncpy((char*)&event[3], value, size);
+    event[sizeof(event)-1] = 0;
     (*callback)(event, sizeof(event));
 }
 
@@ -624,7 +625,7 @@ static hfp_command_t parse_command(const char * line_buffer, int isHandsFree){
         return HFP_CMD_CALL_ANSWERED;
     }
 
-    if (strncmp(line_buffer+offset, HFP_CALL_PHONE_NUMBER, strlen(HFP_CALL_PHONE_NUMBER)) == 0){
+    if (strncmp(line_buffer, HFP_CALL_PHONE_NUMBER, strlen(HFP_CALL_PHONE_NUMBER)) == 0){
         return HFP_CMD_CALL_PHONE_NUMBER;
     }
 
@@ -815,6 +816,19 @@ static void hfp_parser_next_state(hfp_connection_t * context, uint8_t byte){
 void hfp_parse(hfp_connection_t * context, uint8_t byte, int isHandsFree){
     int value;
     
+    // handle ATD<dial_string>;
+    if (strncmp((const char*)context->line_buffer, HFP_CALL_PHONE_NUMBER, strlen(HFP_CALL_PHONE_NUMBER)) == 0){
+        // check for end-of-line or ';'
+        if (byte == ';' || hfp_parser_is_end_of_line(byte)){
+            context->line_buffer[context->line_size] = 0;
+            context->line_size = 0;
+            context->command = HFP_CMD_CALL_PHONE_NUMBER;
+        } else {
+            context->line_buffer[context->line_size++] = byte;
+        }
+        return;
+    }
+
     // TODO: handle space inside word        
     if (byte == ' ' && context->parser_state > HFP_PARSER_CMD_HEADER) return;
 
@@ -876,10 +890,6 @@ void hfp_parse(hfp_connection_t * context, uint8_t byte, int isHandsFree){
 
         case HFP_PARSER_CMD_SEQUENCE: // parse comma separated sequence, ignore breacktes
             switch (context->command){
-                case HFP_CMD_CALL_PHONE_NUMBER:
-                    context->place_call_with_number = (char *)context->line_buffer;
-                    log_info("hfp parse HFP_CMD_CALL_PHONE_NUMBER %s", context->place_call_with_number);
-                    break;
                 case HFP_CMD_CHANGE_IN_BAND_RING_TONE_SETTING:
                     value = atoi((char *)&context->line_buffer[0]);
                     context->remote_supported_features = store_bit(context->remote_supported_features, HFP_AGSF_IN_BAND_RING_TONE, value);

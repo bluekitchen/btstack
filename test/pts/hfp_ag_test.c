@@ -256,7 +256,7 @@ static void packet_handler(uint8_t * event, uint16_t event_size){
     }
 
     if (event[0] != HCI_EVENT_HFP_META) return;
-    if (event[3]){
+    if (event[3] && event[2] != HFP_SUBEVENT_PLACE_CALL_WITH_NUMBER){
         printf("ERROR, status: %u\n", event[3]);
         return;
     }
@@ -279,7 +279,10 @@ static void packet_handler(uint8_t * event, uint16_t event_size){
             break;        
         case HFP_SUBEVENT_STOP_RINGINIG:
             printf("\n** Stop Ringing **\n\n");
-            break;        
+            break;
+        case HFP_SUBEVENT_PLACE_CALL_WITH_NUMBER:
+            printf("\n** Outgoing call '%s' **\n\n", &event[3]);
+            break;
         default:
             // printf("event not handled %u\n", event[2]);
             break;
