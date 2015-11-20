@@ -690,10 +690,6 @@ static int incoming_call_state_machine(hfp_connection_t * context){
     switch (context->call_state){
         case HFP_CALL_IDLE:
             //printf(" HFP_CALL_TRIGGER_AUDIO_CONNECTION \n");
-            indicator = get_ag_indicator_for_name("callsetup");
-            if (!indicator) return 0;
-            hfp_ag_transfer_ag_indicators_status_cmd(context->rfcomm_cid, indicator);
-            
             hfp_timeout_start(context);
             context->ag_ring = 1;
 
