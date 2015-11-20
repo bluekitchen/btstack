@@ -689,16 +689,14 @@ static int incoming_call_state_machine(hfp_connection_t * context){
         return 1;
     }
 
+    if (context->ag_ring){
+        context->ag_ring = 0;
+        hfp_ag_ring(context->rfcomm_cid);
+        return 1;
+    }
+
     int done = 0;
     switch (context->call_state){
-        case HFP_CALL_RINGING:
-            if (context->ag_ring){
-                context->ag_ring = 0;
-                hfp_ag_ring(context->rfcomm_cid);
-                return 1;
-            }
-            break;
-            
         case HFP_CALL_TRIGGER_AUDIO_CONNECTION:
             if (use_in_band_tone()){
                 context->call_state = HFP_CALL_ACTIVE;
