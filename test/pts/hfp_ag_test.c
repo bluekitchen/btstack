@@ -117,7 +117,7 @@ static void show_usage(void){
     printf("B - release AUDIO connection\n");
     
     printf("c - simulate incoming call\n");
-    printf("C - simulate terminage call\n");
+    printf("C - simulate call dropped\n");
 
     printf("d - report AG failure\n");
 
@@ -180,7 +180,7 @@ static int stdin_process(struct data_source *ds){
             break;
         case 'C':
             printf("Simulate terminate call\n");
-            hfp_ag_terminate_call();
+            hfp_ag_call_dropped();
             break;
         case 'd':
             printf("Report AG failure\n");
