@@ -667,12 +667,6 @@ static int incoming_call_state_machine(hfp_connection_t * context){
     if (!context->run_call_state_machine) return 0;
     if (context->state < HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED) return 0;
 
-    if (context->ag_ring){
-        context->ag_ring = 0;
-        hfp_ag_ring(context->rfcomm_cid);
-        return 1;
-    }
-
     int done = 0;
     switch (context->call_state){
         case HFP_CALL_TRIGGER_AUDIO_CONNECTION:
@@ -951,6 +945,13 @@ static void hfp_run_for_context(hfp_connection_t *context){
         context->send_error = 0;
         context->command = HFP_CMD_NONE;
         hfp_ag_error(context->rfcomm_cid); 
+        return;
+    }
+
+    if (context->ag_ring){
+        context->ag_ring = 0;
+        context->command = HFP_CMD_NONE;
+        hfp_ag_ring(context->rfcomm_cid);
         return;
     }
     
