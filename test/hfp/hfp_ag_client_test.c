@@ -225,40 +225,40 @@ TEST_GROUP(HFPClient){
     }
 };
 
-TEST(HFPClient, HFAnswerIncomingCallWithInBandRingToneHFTermiantesCall){
-    setup_hfp_service_level_connection(default_slc_setup(), default_slc_setup_size());
-    CHECK_EQUAL(service_level_connection_established, 1);
+// TEST(HFPClient, HFAnswerIncomingCallWithInBandRingToneHFTermiantesCall){
+//     setup_hfp_service_level_connection(default_slc_setup(), default_slc_setup_size());
+//     CHECK_EQUAL(service_level_connection_established, 1);
 
-    hfp_ag_set_use_in_band_ring_tone(1);    
-    hfp_ag_incoming_call();
-    simulate_test_sequence(default_ic_setup(), default_ic_setup_size());
-    CHECK_EQUAL(audio_connection_established, 1);
+//     hfp_ag_set_use_in_band_ring_tone(1);    
+//     hfp_ag_incoming_call();
+//     simulate_test_sequence(default_ic_setup(), default_ic_setup_size());
+//     CHECK_EQUAL(audio_connection_established, 1);
 
-    simulate_test_sequence(alert_ic_setup(), alert_ic_setup_size());
-    CHECK_EQUAL(stop_ringing, 1);
+//     simulate_test_sequence(alert_ic_setup(), alert_ic_setup_size());
+//     CHECK_EQUAL(stop_ringing, 1);
     
-    simulate_test_sequence(terminate_ic_hf_setup(), terminate_ic_hf_setup_size());
-    CHECK_EQUAL(call_termiated,1);
-}
+//     simulate_test_sequence(terminate_ic_hf_setup(), terminate_ic_hf_setup_size());
+//     CHECK_EQUAL(call_termiated,1);
+// }
 
 
-TEST(HFPClient, HFAnswerIncomingCallWithInBandRingToneAGTerminatesCall){
-    setup_hfp_service_level_connection(default_slc_setup(), default_slc_setup_size());
-    CHECK_EQUAL(service_level_connection_established, 1);
+// TEST(HFPClient, HFAnswerIncomingCallWithInBandRingToneAGTerminatesCall){
+//     setup_hfp_service_level_connection(default_slc_setup(), default_slc_setup_size());
+//     CHECK_EQUAL(service_level_connection_established, 1);
 
-    hfp_ag_set_use_in_band_ring_tone(1);    
-    hfp_ag_incoming_call();
-    simulate_test_sequence(default_ic_setup(), default_ic_setup_size());
-    CHECK_EQUAL(audio_connection_established, 1);
+//     hfp_ag_set_use_in_band_ring_tone(1);    
+//     hfp_ag_incoming_call();
+//     simulate_test_sequence(default_ic_setup(), default_ic_setup_size());
+//     CHECK_EQUAL(audio_connection_established, 1);
 
-    simulate_test_sequence(alert_ic_setup(), alert_ic_setup_size());
-    CHECK_EQUAL(stop_ringing, 1);
+//     simulate_test_sequence(alert_ic_setup(), alert_ic_setup_size());
+//     CHECK_EQUAL(stop_ringing, 1);
 
-    // AG terminates call
-    hfp_ag_terminate_call();
-    simulate_test_sequence(terminate_ic_ag_setup(), terminate_ic_ag_setup_size());
-    CHECK_EQUAL(call_termiated,1);
-}
+//     // AG terminates call
+//     hfp_ag_terminate_call();
+//     simulate_test_sequence(terminate_ic_ag_setup(), terminate_ic_ag_setup_size());
+//     CHECK_EQUAL(call_termiated,1);
+// }
 
 
 TEST(HFPClient, HFAudioConnectionEstablishedWithCodecNegotiation){

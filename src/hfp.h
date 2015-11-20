@@ -217,6 +217,12 @@ typedef enum {
 } hfp_callheld_status_t;
 
 typedef enum {
+    HFP_AG_INCOMING_CALL,
+    HFP_AG_INCOMING_CALL_DROPED
+} hfp_ag_call_event_t;
+
+
+typedef enum {
     HFP_PARSER_CMD_HEADER = 0,
     HFP_PARSER_CMD_SEQUENCE,
     HFP_PARSER_SECOND_ITEM,
@@ -332,7 +338,7 @@ typedef struct{
     char name[17]; // enabled
 } hfp_network_opearator_t;
 
-
+    
 typedef struct hfp_connection {
     linked_item_t    item;
     
@@ -343,9 +349,8 @@ typedef struct hfp_connection {
     uint16_t rfcomm_cid;
     
     hfp_state_machine_t state_machine;
-
-    hfp_state_t state;
     hfp_call_state_t call_state;
+    hfp_state_t state;
     hfp_codecs_state_t codecs_state;
     
     // needed for reestablishing connection

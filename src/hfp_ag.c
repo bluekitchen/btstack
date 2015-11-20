@@ -75,6 +75,12 @@ static int  hfp_ag_call_hold_services_nr = 0;
 static char *hfp_ag_call_hold_services[6];
 static hfp_callback_t hfp_callback;
 
+
+static hfp_call_status_t hfp_ag_call_state;
+static hfp_callsetup_status_t hfp_ag_callsetup_state;
+static hfp_callheld_status_t hfp_ag_callheld_state;
+
+
 static void packet_handler(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static void hfp_run_for_context(hfp_connection_t *context);
 
@@ -776,6 +782,42 @@ static int incoming_call_state_machine(hfp_connection_t * context){
     return done;
 }
 
+static void hfp_ag_trigger_incoming_call(void){
+    linked_list_iterator_t it;    
+    linked_list_iterator_init(&it, hfp_get_connections());
+    while (linked_list_iterator_has_next(&it)){
+        hfp_connection_t * connection = (hfp_connection_t *)linked_list_iterator_next(&it);
+        hfp_ag_establish_service_level_connection(connection->remote_addr);
+        connection->run_call_state_machine = 1;
+        hfp_run_for_context(connection);
+    }
+}
+
+static void hfp_ag_call_sm(hfp_ag_call_event_t event){
+    switch (event){
+        case HFP_AG_INCOMING_CALL:
+            switch (hfp_ag_call_state){
+                case HFP_CALL_STATUS_NO_HELD_OR_ACTIVE_CALLS:
+                    switch (hfp_ag_callsetup_state){
+                        case HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS:
+                            hfp_ag_trigger_incoming_call();
+                            break;
+                        default:
+                            break;
+                    }
+
+                    break;
+                case HFP_CALL_STATUS_ACTIVE_OR_HELD_CALL_IS_PRESENT:
+                    break;
+            }
+
+            break;
+        case HFP_AG_INCOMING_CALL_DROPED:
+            break;
+    }
+
+}
+
 
 static void hfp_run_for_context(hfp_connection_t *context){
     if (!context) return;
@@ -910,6 +952,10 @@ void hfp_ag_init(uint16_t rfcomm_channel_nr, uint32_t supported_features,
 
     hfp_ag_call_hold_services_nr = call_hold_services_nr;
     memcpy(hfp_ag_call_hold_services, call_hold_services, call_hold_services_nr * sizeof(char *));
+
+    hfp_ag_call_state = HFP_CALL_STATUS_NO_HELD_OR_ACTIVE_CALLS;
+    hfp_ag_callsetup_state = HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS;
+    hfp_ag_callheld_state = HFP_HELDCALL_STATUS_NO_CALLS_HELD;
 }
 
 void hfp_ag_establish_service_level_connection(bd_addr_t bd_addr){
@@ -994,14 +1040,7 @@ void hfp_ag_set_use_in_band_ring_tone(int use_in_band_ring_tone){
  * @brief 
  */
 void hfp_ag_incoming_call(void){
-    linked_list_iterator_t it;    
-    linked_list_iterator_init(&it, hfp_get_connections());
-    while (linked_list_iterator_has_next(&it)){
-        hfp_connection_t * connection = (hfp_connection_t *)linked_list_iterator_next(&it);
-        hfp_ag_establish_service_level_connection(connection->remote_addr);
-        connection->run_call_state_machine = 1;
-        hfp_run_for_context(connection);
-    }
+    hfp_ag_call_sm(HFP_AG_INCOMING_CALL);
 }
 
 /**
