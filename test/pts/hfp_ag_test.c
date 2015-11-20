@@ -122,6 +122,7 @@ static void show_usage(void){
     printf("d - report AG failure\n");
 
     printf("e - answer call on AG\n");
+    printf("E - reject call on AG\n");
 
     printf("r - disable in-band ring tone\n");
     printf("R - enable in-band ring tone\n");
@@ -189,6 +190,10 @@ static int stdin_process(struct data_source *ds){
         case 'e':
             printf("Answer call on AG\n");
             hfp_ag_answer_incoming_call();
+            break;
+        case 'E':
+            printf("Reject call on AG\n");
+            hfp_ag_terminate_call();
             break;
         case 'f':
             printf("Disable cellular network\n");
