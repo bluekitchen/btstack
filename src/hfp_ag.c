@@ -789,6 +789,8 @@ static void hfp_ag_ag_accept_call(void){
 }
 
 static void hfp_ag_trigger_terminate_call(void){
+    int call_indicator_index = get_ag_indicator_index_for_name("call");
+
     linked_list_iterator_t it;    
     linked_list_iterator_init(&it, hfp_get_connections());
     while (linked_list_iterator_has_next(&it)){
@@ -797,6 +799,7 @@ static void hfp_ag_trigger_terminate_call(void){
         if (connection->call_state == HFP_CALL_IDLE) continue;
         connection->run_call_state_machine = 0;
         connection->call_state = HFP_CALL_IDLE;
+        connection->ag_indicators_status_update_bitmap = store_bit(connection->ag_indicators_status_update_bitmap, call_indicator_index, 1);
         hfp_run_for_context(connection);
     }
     hfp_emit_event(hfp_callback, HFP_SUBEVENT_CALL_TERMINATED, 0);
