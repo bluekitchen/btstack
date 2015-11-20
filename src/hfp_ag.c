@@ -680,22 +680,18 @@ static int incoming_call_state_machine(hfp_connection_t * context){
 
     if (context->terminate_call){
         printf(" -> State machine: Terminate Incoming Call\n");
-        indicator = get_ag_indicator_for_name("call");
-        if (!indicator) return 0;
-
-        indicator->status = HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS;
         context->terminate_call = 0;
         context->run_call_state_machine = 0;
         context->call_state = HFP_CALL_IDLE;
+        indicator = get_ag_indicator_for_name("call");
+        if (!indicator) return 0;
         hfp_emit_event(hfp_callback, HFP_SUBEVENT_CALL_TERMINATED, 0);
-        hfp_ag_transfer_ag_indicators_status_cmd(context->rfcomm_cid, indicator);
         return 1;
     }
 
     int done = 0;
     switch (context->call_state){
         case HFP_CALL_RINGING:
-            // hp stuff
             if (context->ag_ring){
                 context->ag_ring = 0;
                 hfp_ag_ring(context->rfcomm_cid);
@@ -710,12 +706,9 @@ static int incoming_call_state_machine(hfp_connection_t * context){
                 context->call_state = HFP_CALL_W4_AUDIO_CONNECTION;
                 hfp_ag_establish_audio_connection(context->remote_addr);
             }
-            //printf(" HFP_CALL_TRIGGER_AUDIO_CONNECTION \n");
-            
             break;
 
         case HFP_CALL_W4_AUDIO_CONNECTION:
-            //printf(" HFP_CALL_W4_AUDIO_CONNECTION \n");
             if (context->state < HFP_AUDIO_CONNECTION_ESTABLISHED) return 0;
             
             if (use_in_band_tone()){
@@ -725,9 +718,6 @@ static int incoming_call_state_machine(hfp_connection_t * context){
                 context->call_state = HFP_CALL_ACTIVE;
             }
             return 0;
-        case HFP_CALL_ACTIVE:
-            // printf(" HFP_CALL_ACTIVE \n");
-            break;
         default:
             break;
     }
@@ -827,6 +817,7 @@ static void hfp_ag_trigger_terminate_call(void){
     while (linked_list_iterator_has_next(&it)){
         hfp_connection_t * connection = (hfp_connection_t *)linked_list_iterator_next(&it);
         hfp_ag_establish_service_level_connection(connection->remote_addr);
+        if (connection->call_state == HFP_CALL_IDLE) continue;
         connection->terminate_call = 1;
         hfp_run_for_context(connection);
     }
