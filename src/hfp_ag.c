@@ -1007,10 +1007,13 @@ static void hfp_handle_rfcomm_data(uint8_t packet_type, uint16_t channel, uint8_
             context->command = HFP_CMD_NONE;
             hfp_ag_call_sm(HFP_AG_INCOMING_CALL_ACCEPTED_BY_HF, context);
             break;
-        case  HFP_CMD_HANG_UP_CALL:
+        case HFP_CMD_HANG_UP_CALL:
             context->command = HFP_CMD_NONE;
             context->ok_pending = 1;
             hfp_ag_call_sm(HFP_AG_TERMINATE_CALL_BY_HF, context);
+        case HFP_CMD_CALL_PHONE_NUMBER:
+            hfp_emit_string_event(hfp_callback, HFP_SUBEVENT_PLACE_CALL_WITH_NUMBER, context->place_call_with_number);
+            break;
         default:
             break;
     }

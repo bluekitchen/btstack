@@ -640,7 +640,7 @@ extern "C" {
 #define HFP_SUBEVENT_START_RINGINIG                        0x0A
 #define HFP_SUBEVENT_STOP_RINGINIG                         0x0B
 #define HFP_SUBEVENT_CALL_TERMINATED                       0x0C
-
+#define HFP_SUBEVENT_PLACE_CALL_WITH_NUMBER                0x0D
 
 
 

@@ -204,6 +204,17 @@ void hfp_emit_event(hfp_callback_t callback, uint8_t event_subtype, uint8_t valu
     (*callback)(event, sizeof(event));
 }
 
+void hfp_emit_string_event(hfp_callback_t callback, uint8_t event_subtype, const char * value){
+    if (!callback) return;
+    uint8_t event[24];
+    event[0] = HCI_EVENT_HFP_META;
+    event[1] = sizeof(event) - 2;
+    event[2] = event_subtype;
+    int size = sizeof(value) < sizeof(event) - 4? sizeof(value) : sizeof(event) - 4;
+    strncpy((char*)&event[3], value, size);
+    (*callback)(event, sizeof(event));
+}
+
 static void hfp_emit_audio_connection_established_event(hfp_callback_t callback, uint8_t value, uint16_t sco_handle){
     if (!callback) return;
     uint8_t event[6];
@@ -613,6 +624,10 @@ static hfp_command_t parse_command(const char * line_buffer, int isHandsFree){
         return HFP_CMD_CALL_ANSWERED;
     }
 
+    if (strncmp(line_buffer+offset, HFP_CALL_PHONE_NUMBER, strlen(HFP_CALL_PHONE_NUMBER)) == 0){
+        return HFP_CMD_CALL_PHONE_NUMBER;
+    }
+
     if (strncmp(line_buffer+offset, HFP_CHANGE_IN_BAND_RING_TONE_SETTING, strlen(HFP_CHANGE_IN_BAND_RING_TONE_SETTING)) == 0){
         return HFP_CMD_CHANGE_IN_BAND_RING_TONE_SETTING;
     }
@@ -861,6 +876,10 @@ void hfp_parse(hfp_connection_t * context, uint8_t byte, int isHandsFree){
 
         case HFP_PARSER_CMD_SEQUENCE: // parse comma separated sequence, ignore breacktes
             switch (context->command){
+                case HFP_CMD_CALL_PHONE_NUMBER:
+                    context->place_call_with_number = (char *)context->line_buffer;
+                    log_info("hfp parse HFP_CMD_CALL_PHONE_NUMBER %s", context->place_call_with_number);
+                    break;
                 case HFP_CMD_CHANGE_IN_BAND_RING_TONE_SETTING:
                     value = atoi((char *)&context->line_buffer[0]);
                     context->remote_supported_features = store_bit(context->remote_supported_features, HFP_AGSF_IN_BAND_RING_TONE, value);

@@ -118,6 +118,7 @@ extern "C" {
 #define HFP_CALL_ANSWERED "ATA"
 #define HFP_HANG_UP_CALL "+CHUP"
 #define HFP_CHANGE_IN_BAND_RING_TONE_SETTING "+BSIR"
+#define HFP_CALL_PHONE_NUMBER "ATD"
 
 #define HFP_OK "OK"
 #define HFP_ERROR "ERROR"
@@ -159,7 +160,8 @@ typedef enum {
     HFP_CMD_CALL_ANSWERED,
     HFP_CMD_AG_ANSWER_CALL,
     HFP_CMD_HANG_UP_CALL,
-    HFP_CMD_CHANGE_IN_BAND_RING_TONE_SETTING
+    HFP_CMD_CHANGE_IN_BAND_RING_TONE_SETTING,
+    HFP_CMD_CALL_PHONE_NUMBER
 } hfp_command_t;
 
 typedef enum {
@@ -411,7 +413,10 @@ typedef struct hfp_connection {
     uint8_t run_call_state_machine;
     uint8_t change_in_band_ring_tone_setting;
     uint8_t ag_ring;
+
+    char * place_call_with_number;
     timer_source_t hfp_timeout;
+
 
 } hfp_connection_t;
 
@@ -426,6 +431,7 @@ int store_bit(uint32_t bitmap, int position, uint8_t value);
 void hfp_create_sdp_record(uint8_t * service, uint16_t service_uuid, int rfcomm_channel_nr, const char * name);
 void hfp_handle_hci_event(hfp_callback_t callback, uint8_t packet_type, uint8_t *packet, uint16_t size);
 void hfp_emit_event(hfp_callback_t callback, uint8_t event_subtype, uint8_t value);
+void hfp_emit_string_event(hfp_callback_t callback, uint8_t event_subtype, const char * value);
 
 hfp_connection_t * get_hfp_connection_context_for_rfcomm_cid(uint16_t cid);
 hfp_connection_t * get_hfp_connection_context_for_bd_addr(bd_addr_t bd_addr);
