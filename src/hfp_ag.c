@@ -780,12 +780,18 @@ static int incoming_call_state_machine(hfp_connection_t * context){
 }
 
 static void hfp_ag_trigger_incoming_call(void){
+    int indicator_index = get_ag_indicator_index_for_name("callsetup");
+    if (indicator_index < 0) return;
+
     linked_list_iterator_t it;    
     linked_list_iterator_init(&it, hfp_get_connections());
     while (linked_list_iterator_has_next(&it)){
         hfp_connection_t * connection = (hfp_connection_t *)linked_list_iterator_next(&it);
         hfp_ag_establish_service_level_connection(connection->remote_addr);
-        connection->run_call_state_machine = 1;
+        if (connection->call_state == HFP_CALL_IDLE){
+            connection->run_call_state_machine = 1;
+            connection->ag_indicators_status_update_bitmap = store_bit(connection->ag_indicators_status_update_bitmap, indicator_index, 1);
+        }
         hfp_run_for_context(connection);
     }
 }
