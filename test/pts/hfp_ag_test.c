@@ -138,6 +138,8 @@ static void show_usage(void){
     printf("i - Set battery level to 3\n");
     printf("I - Set battery level to 5\n");
 
+    printf("j - Transfer audio from AG to HF\n");
+
     printf("t - terminate connection\n");
 
     printf("---\n");
@@ -221,6 +223,9 @@ static int stdin_process(struct data_source *ds){
         case 'I':
             printf("Set battery level to 5\n");
             hfp_ag_set_battery_level(5);
+            break;
+        case 'j':
+            hfp_ag_audio_connection_transfer_towards_hf(device_addr);
             break;
         case 'r':
             printf("Disable in-band ring tone\n");

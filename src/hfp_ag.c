@@ -463,6 +463,15 @@ static int codecs_exchange_state_machine(hfp_connection_t * context){
     return 0;
 }
 
+static void hfp_ag_slc_established(hfp_connection_t * context){
+    context->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
+    hfp_emit_event(hfp_callback, HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED, 0);
+
+    // if active call exist, set per-connection state active, too (when audio is on)
+    if (hfp_ag_call_state == HFP_CALL_STATUS_ACTIVE_OR_HELD_CALL_IS_PRESENT){
+        context->call_state = HFP_CALL_W4_AUDIO_CONNECTION_FOR_ACTIVE;
+    }
+}
 
 static int hfp_ag_run_for_context_service_level_connection(hfp_connection_t * context){
     if (context->state >= HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED) return 0;
@@ -511,8 +520,7 @@ static int hfp_ag_run_for_context_service_level_connection(hfp_connection_t * co
             } else if (has_hf_indicators_feature(context)){
                 context->state = HFP_W4_LIST_GENERIC_STATUS_INDICATORS;
             } else {
-                context->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
-                hfp_emit_event(hfp_callback, HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED, 0);
+                hfp_ag_slc_established(context);
             }
             hfp_ag_set_indicator_status_update_cmd(context->rfcomm_cid, 1);
             return 1;
@@ -522,8 +530,7 @@ static int hfp_ag_run_for_context_service_level_connection(hfp_connection_t * co
             if (has_hf_indicators_feature(context)){
                 context->state = HFP_W4_LIST_GENERIC_STATUS_INDICATORS;
             } else {
-                context->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
-                hfp_emit_event(hfp_callback, HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED, 0);
+                hfp_ag_slc_established(context);
             }
             hfp_ag_retrieve_can_hold_call_cmd(context->rfcomm_cid);
             return 1;
@@ -542,8 +549,7 @@ static int hfp_ag_run_for_context_service_level_connection(hfp_connection_t * co
 
         case HFP_CMD_RETRIEVE_GENERIC_STATUS_INDICATORS_STATE:
             if (context->state != HFP_W4_RETRIEVE_INITITAL_STATE_GENERIC_STATUS_INDICATORS) break;
-            context->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
-            hfp_emit_event(hfp_callback, HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED, 0);
+            hfp_ag_slc_established(context);
             hfp_ag_retrieve_initital_supported_generic_status_indicators_cmd(context->rfcomm_cid);
             return 1;
         default:
@@ -713,9 +719,9 @@ static void hfp_ag_trigger_incoming_call(void){
         hfp_connection_t * connection = (hfp_connection_t *)linked_list_iterator_next(&it);
         hfp_ag_establish_service_level_connection(connection->remote_addr);
         if (connection->call_state == HFP_CALL_IDLE){
-            hfp_ag_hf_start_ringing(connection);
-            connection->run_call_state_machine = 1;
             connection->ag_indicators_status_update_bitmap = store_bit(connection->ag_indicators_status_update_bitmap, indicator_index, 1);
+            connection->run_call_state_machine = 1;
+            hfp_ag_hf_start_ringing(connection);
         }
         hfp_run_for_context(connection);
     }
@@ -941,6 +947,18 @@ static void hfp_run_for_context(hfp_connection_t *context){
         return;
     }
 
+    // update AG indicators
+    if (context->ag_indicators_status_update_bitmap){
+        int i;
+        for (i=0;i<context->ag_indicators_nr;i++){
+            if (get_bit(context->ag_indicators_status_update_bitmap, i)){
+                context->ag_indicators_status_update_bitmap = store_bit(context->ag_indicators_status_update_bitmap, i, 0);
+                hfp_ag_transfer_ag_indicators_status_cmd(context->rfcomm_cid, &hfp_ag_indicators[i]);
+                return;
+            }
+        }
+    }
+
     if (context->ag_ring){
         context->ag_ring = 0;
         context->command = HFP_CMD_NONE;
@@ -953,19 +971,6 @@ static void hfp_run_for_context(hfp_connection_t *context){
         done = hfp_ag_run_for_context_service_level_connection_queries(context);
     } 
 
-    // update AG indicators
-    if (context->ag_indicators_status_update_bitmap){
-        int i;
-        for (i=0;i<context->ag_indicators_nr;i++){
-            if (get_bit(context->ag_indicators_status_update_bitmap, i)){
-                context->ag_indicators_status_update_bitmap = store_bit(context->ag_indicators_status_update_bitmap, i, 0);
-                hfp_ag_transfer_ag_indicators_status_cmd(context->rfcomm_cid, &hfp_ag_indicators[i]);
-                done = 1;
-                break;
-            }
-        }
-    }
-
     if (!done){
         done = incoming_call_state_machine(context);
     }
@@ -973,7 +978,6 @@ static void hfp_run_for_context(hfp_connection_t *context){
     if (!done){  
         done = hfp_ag_run_for_audio_connection(context);
     }
-    
 
     if (context->command == HFP_CMD_NONE && !done){
         log_info("context->command == HFP_CMD_NONE");
