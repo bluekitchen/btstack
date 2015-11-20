@@ -695,11 +695,11 @@ static int incoming_call_state_machine(hfp_connection_t * context){
 }
 
 static void hfp_ag_hf_start_ringing(hfp_connection_t * context){
-    //printf(" HFP_CALL_TRIGGER_AUDIO_CONNECTION \n");
     hfp_timeout_start(context);
     context->ag_ring = 1;
     if (use_in_band_tone()){
-        context->call_state = HFP_CALL_TRIGGER_AUDIO_CONNECTION;
+        hfp_ag_establish_audio_connection(context->remote_addr);
+        context->call_state = HFP_CALL_W4_AUDIO_CONNECTION;
     } else {
         context->call_state = HFP_CALL_RINGING;
         hfp_emit_event(hfp_callback, HFP_SUBEVENT_START_RINGINIG, 0);
