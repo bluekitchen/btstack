@@ -785,6 +785,22 @@ static void hfp_ag_ag_accept_call(void){
     }    
 }
 
+static void hfp_ag_trigger_reject_call(void){
+    int callsetup_indicator_index = get_ag_indicator_index_for_name("callsetup");
+    linked_list_iterator_t it;    
+    linked_list_iterator_init(&it, hfp_get_connections());
+    while (linked_list_iterator_has_next(&it)){
+        hfp_connection_t * connection = (hfp_connection_t *)linked_list_iterator_next(&it);
+        if (connection->call_state != HFP_CALL_RINGING) continue;
+        hfp_ag_hf_stop_ringing(connection);
+        connection->ag_indicators_status_update_bitmap = store_bit(connection->ag_indicators_status_update_bitmap, callsetup_indicator_index, 1);
+        connection->run_call_state_machine = 0;
+        connection->call_state = HFP_CALL_IDLE;
+        hfp_run_for_context(connection);
+        break;  // only single 
+    }    
+}
+
 static void hfp_ag_trigger_terminate_call(void){
     int call_indicator_index = get_ag_indicator_index_for_name("call");
 
@@ -881,19 +897,38 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * connect
 
         case HFP_AG_TERMINATE_CALL_BY_HF:
              switch (hfp_ag_call_state){
+                case HFP_CALL_STATUS_NO_HELD_OR_ACTIVE_CALLS:
+                    switch (hfp_ag_callsetup_state){
+                        case HFP_CALLSETUP_STATUS_INCOMING_CALL_SETUP_IN_PROGRESS:
+                            hfp_ag_set_callsetup_state(HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS);
+                            hfp_ag_trigger_reject_call();
+                            printf("TODO HF Rejected Incoming call, AG terminate call\n");
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
                 case HFP_CALL_STATUS_ACTIVE_OR_HELD_CALL_IS_PRESENT:
                     hfp_ag_set_callsetup_state(HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS);
                     hfp_ag_set_call_state(HFP_CALL_STATUS_NO_HELD_OR_ACTIVE_CALLS);
                     hfp_ag_trigger_terminate_call();
                     printf("TODO AG terminate call\n");
                     break;
-                default:
-                    break;
             }
             break;
 
         case HFP_AG_TERMINATE_CALL_BY_AG:
              switch (hfp_ag_call_state){
+                case HFP_CALL_STATUS_NO_HELD_OR_ACTIVE_CALLS:
+                    switch (hfp_ag_callsetup_state){
+                        case HFP_CALLSETUP_STATUS_INCOMING_CALL_SETUP_IN_PROGRESS:
+                            hfp_ag_set_callsetup_state(HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS);
+                            hfp_ag_trigger_reject_call();
+                            printf("TODO AG Rejected Incoming call, AG terminate call\n");
+                            break;
+                        default:
+                            break;
+                    }
                 case HFP_CALL_STATUS_ACTIVE_OR_HELD_CALL_IS_PRESENT:
                     hfp_ag_set_callsetup_state(HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS);
                     hfp_ag_set_call_state(HFP_CALL_STATUS_NO_HELD_OR_ACTIVE_CALLS);
@@ -1177,24 +1212,6 @@ void hfp_ag_answer_incoming_call(void){
 
 void hfp_ag_terminate_call(void){
     hfp_ag_call_sm(HFP_AG_TERMINATE_CALL_BY_AG, NULL);
-}
-
-
-void hfp_ag_audio_connection_transfer_towards_ag(bd_addr_t bd_addr){
-    hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
-    if (connection->call_state != HFP_CALL_ACTIVE) return;
-    if (connection->state != HFP_AUDIO_CONNECTION_ESTABLISHED) return;
-    hfp_ag_release_audio_connection(bd_addr);
-}
-
-/**
- * @brief 
- */
-void hfp_ag_audio_connection_transfer_towards_hf(bd_addr_t bd_addr){
-    hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
-    if (connection->call_state != HFP_CALL_ACTIVE) return;
-    if (connection->state != HFP_AUDIO_CONNECTION_ESTABLISHED) return;
-    hfp_ag_establish_audio_connection(bd_addr);
 }
 
 void hfp_ag_place_a_call_with_phone_number(void){

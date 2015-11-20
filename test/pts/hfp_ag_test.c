@@ -122,6 +122,7 @@ static void show_usage(void){
     printf("d - report AG failure\n");
 
     printf("e - answer call on AG\n");
+    printf("E - reject call on AG\n");
 
     printf("r - disable in-band ring tone\n");
     printf("R - enable in-band ring tone\n");
@@ -137,8 +138,6 @@ static void show_usage(void){
 
     printf("i - Set battery level to 3\n");
     printf("I - Set battery level to 5\n");
-
-    printf("j - Transfer audio from AG to HF\n");
 
     printf("t - terminate connection\n");
 
@@ -192,6 +191,10 @@ static int stdin_process(struct data_source *ds){
             printf("Answer call on AG\n");
             hfp_ag_answer_incoming_call();
             break;
+        case 'E':
+            printf("Reject call on AG\n");
+            hfp_ag_terminate_call();
+            break;
         case 'f':
             printf("Disable cellular network\n");
             hfp_ag_set_registration_status(0);
@@ -223,9 +226,6 @@ static int stdin_process(struct data_source *ds){
         case 'I':
             printf("Set battery level to 5\n");
             hfp_ag_set_battery_level(5);
-            break;
-        case 'j':
-            hfp_ag_audio_connection_transfer_towards_hf(device_addr);
             break;
         case 'r':
             printf("Disable in-band ring tone\n");
