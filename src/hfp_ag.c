@@ -816,7 +816,6 @@ static void hfp_ag_trigger_terminate_call(void){
     }
 }
 
-
 static void hfp_ag_call_sm(hfp_ag_call_event_t event){
     switch (event){
         case HFP_AG_INCOMING_CALL:
@@ -857,18 +856,17 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event){
             }
             break;
         case HFP_AG_TERMINATE_CALL_BY_AG:
+        case HFP_AG_CALL_DROPPED:
              switch (hfp_ag_call_state){
                 case HFP_CALL_STATUS_ACTIVE_OR_HELD_CALL_IS_PRESENT:
                     hfp_ag_callsetup_state = HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS;
                     hfp_ag_call_state = HFP_CALL_STATUS_NO_HELD_OR_ACTIVE_CALLS;
                     hfp_ag_trigger_terminate_call();
-                    printf("TODO AG termante call\n");
+                    printf("TODO AG terminate or drop call\n");
                     break;
                 default:
                     break;
             }
-            break;
-        case HFP_AG_CALL_DROPED:
             break;
         default:
             break;
@@ -1101,16 +1099,19 @@ void hfp_ag_incoming_call(void){
     hfp_ag_call_sm(HFP_AG_INCOMING_CALL);
 }
 
+void hfp_ag_call_dropped(void){
+    hfp_ag_call_sm(HFP_AG_CALL_DROPPED);
+}
 
+// call from AG UI
 void hfp_ag_answer_incoming_call(void){
     hfp_ag_call_sm(HFP_AG_INCOMING_CALL_ACCEPETED_BY_AG);
 }
-/**
- * @brief 
- */
+
 void hfp_ag_terminate_call(void){
     hfp_ag_call_sm(HFP_AG_TERMINATE_CALL_BY_AG);
 }
+
 
 void hfp_ag_audio_connection_transfer_towards_ag(bd_addr_t bd_addr){
     hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);

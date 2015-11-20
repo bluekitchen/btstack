@@ -178,6 +178,11 @@ void hfp_ag_incoming_call(void);
 /**
  * @brief 
  */
+void hfp_ag_call_dropped(void);
+
+/**
+ * @brief 
+ */
  void hfp_ag_answer_incoming_call(void);
 
 /**
