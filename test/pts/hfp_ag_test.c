@@ -300,6 +300,10 @@ int btstack_main(int argc, const char * argv[]){
     hfp_ag_create_sdp_record((uint8_t *)hfp_service_buffer, rfcomm_channel_nr, hfp_ag_service_name, 0, 0);
 
     sdp_register_service_internal(NULL, (uint8_t *)hfp_service_buffer);
+    
+
+    // pre-select pts
+    memcpy(device_addr, pts_addr, 6);
 
     // turn on!
     hci_power_control(HCI_POWER_ON);
