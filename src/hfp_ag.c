@@ -660,46 +660,33 @@ static void hfp_timeout_stop(hfp_connection_t * context){
     run_loop_remove_timer(&context->hfp_timeout);
 } 
 
-
-static void hfp_ag_hf_stop_ringing(hfp_connection_t * context);
-
+//
+// only reason for this: wait for audio connection established event
+//
 static int incoming_call_state_machine(hfp_connection_t * context){
-    if (!context->run_call_state_machine) return 0;
-    if (context->state < HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED) return 0;
+    if (context->state      != HFP_AUDIO_CONNECTION_ESTABLISHED) return 0;
+    if (context->call_state != HFP_CALL_W4_AUDIO_CONNECTION) return 0;
 
-    int done = 0;
-    switch (context->call_state){
-        case HFP_CALL_TRIGGER_AUDIO_CONNECTION:
-            if (use_in_band_tone()){
-                context->call_state = HFP_CALL_ACTIVE;
-            } else {
-                context->call_state = HFP_CALL_W4_AUDIO_CONNECTION;
-                hfp_ag_establish_audio_connection(context->remote_addr);
-            }
-            break;
-
-        case HFP_CALL_W4_AUDIO_CONNECTION:
-            if (context->state < HFP_AUDIO_CONNECTION_ESTABLISHED) return 0;
-            
-            if (use_in_band_tone()){
-                context->call_state = HFP_CALL_RINGING;
-                hfp_emit_event(hfp_callback, HFP_SUBEVENT_START_RINGINIG, 0);
-            } else {
-                context->call_state = HFP_CALL_ACTIVE;
-            }
-            return 0;
-        default:
-            break;
+    // we got event: audio connection established
+    if (use_in_band_tone()){
+        context->call_state = HFP_CALL_RINGING;
+        hfp_emit_event(hfp_callback, HFP_SUBEVENT_START_RINGINIG, 0);
+    } else {
+        context->call_state = HFP_CALL_ACTIVE;
     }
-    return done;
+    return 0;
 }
+
+//
+// transitition implementations for hfp_ag_call_state_machine
+//
 
 static void hfp_ag_hf_start_ringing(hfp_connection_t * context){
     hfp_timeout_start(context);
     context->ag_ring = 1;
     if (use_in_band_tone()){
-        hfp_ag_establish_audio_connection(context->remote_addr);
         context->call_state = HFP_CALL_W4_AUDIO_CONNECTION;
+        hfp_ag_establish_audio_connection(context->remote_addr);
     } else {
         context->call_state = HFP_CALL_RINGING;
         hfp_emit_event(hfp_callback, HFP_SUBEVENT_START_RINGINIG, 0);
@@ -745,7 +732,13 @@ static void hfp_ag_hf_accept_call(hfp_connection_t * source){
         connection->run_call_state_machine = 1;
         if (connection == source){
             connection->ok_pending = 1;
-            connection->call_state = HFP_CALL_TRIGGER_AUDIO_CONNECTION;
+
+            if (use_in_band_tone()){
+                connection->call_state = HFP_CALL_ACTIVE;
+            } else {
+                connection->call_state = HFP_CALL_W4_AUDIO_CONNECTION;
+                hfp_ag_establish_audio_connection(connection->remote_addr);
+            }
 
             connection->ag_indicators_status_update_bitmap = store_bit(connection->ag_indicators_status_update_bitmap, call_indicator_index, 1);
             connection->ag_indicators_status_update_bitmap = store_bit(connection->ag_indicators_status_update_bitmap, callsetup_indicator_index, 1);
@@ -833,9 +826,8 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * connect
                         default:
                             break;
                     }
-
                     break;
-                case HFP_CALL_STATUS_ACTIVE_OR_HELD_CALL_IS_PRESENT:
+                default:
                     break;
             }
 
@@ -914,13 +906,10 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * connect
                     break;
             }
             break;
-
         default:
             break;
     }
-
 }
-
 
 static void hfp_run_for_context(hfp_connection_t *context){
     if (!context) return;
