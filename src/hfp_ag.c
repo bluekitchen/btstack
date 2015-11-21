@@ -995,11 +995,36 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * connect
                     break;
             }
             break;
+
         case HFP_AG_OUTGOING_CALL_INITIATED:
+            connection->call_state = HFP_CALL_OUTGOING_INITIATED;
+            hfp_emit_string_event(hfp_callback, HFP_SUBEVENT_PLACE_CALL_WITH_NUMBER, (const char *) &connection->line_buffer[3]);
+            break;
+
+        case HFP_AG_OUTGOING_CALL_REJECTED:
+            connection = hfp_ag_connection_for_call_state(HFP_CALL_OUTGOING_INITIATED);
+            if (!connection){
+                log_info("hfp_ag_call_sm: did not find outgoing connection in initiated state");
+                break;
+            }
+            connection->call_state = HFP_CALL_IDLE;
+            connection->send_error = 1;
+            hfp_run_for_context(connection);
+            break;
+
+        case HFP_AG_OUTGOING_CALL_ACCEPTED:
+            connection = hfp_ag_connection_for_call_state(HFP_CALL_OUTGOING_INITIATED);
+            if (!connection){
+                log_info("hfp_ag_call_sm: did not find outgoing connection in initiated state");
+                break;
+            }
+            connection->ok_pending = 1;
             connection->call_state = HFP_CALL_OUTGOING_DIALING;
+            hfp_ag_establish_audio_connection(connection->remote_addr);
             hfp_ag_set_callsetup_state(HFP_CALLSETUP_STATUS_OUTGOING_CALL_SETUP_IN_DIALING_STATE);
             hfp_ag_transfer_callsetup_state();
             break;
+
         case HFP_AG_OUTGOING_CALL_RINGING:
             connection = hfp_ag_connection_for_call_state(HFP_CALL_OUTGOING_DIALING);
             if (!connection){
@@ -1129,9 +1154,6 @@ static void hfp_handle_rfcomm_data(uint8_t packet_type, uint16_t channel, uint8_
             break;
         case HFP_CMD_CALL_PHONE_NUMBER:
             context->command = HFP_CMD_NONE;
-            context->ok_pending = 1;
-            hfp_emit_string_event(hfp_callback, HFP_SUBEVENT_PLACE_CALL_WITH_NUMBER, (const char *) &context->line_buffer[3]);
-            hfp_ag_establish_audio_connection(context->remote_addr);
             hfp_ag_call_sm(HFP_AG_OUTGOING_CALL_INITIATED, context);
             break;
         default:
@@ -1304,6 +1326,14 @@ void hfp_ag_outgoing_call_ringing(void){
 
 void hfp_ag_outgoing_call_established(void){
     hfp_ag_call_sm(HFP_AG_OUTGOING_CALL_ESTABLISHED, NULL);
+}
+
+void hfp_ag_outgoing_call_rejected(void){
+    hfp_ag_call_sm(HFP_AG_OUTGOING_CALL_REJECTED, NULL);
+}
+
+void hfp_ag_outgoing_call_accepted(void){
+    hfp_ag_call_sm(HFP_AG_OUTGOING_CALL_ACCEPTED, NULL);
 }
 
 void hfp_ag_place_a_call_with_phone_number(void){

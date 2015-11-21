@@ -76,6 +76,7 @@ static bd_addr_t pts_addr = {0x00,0x1b,0xDC,0x07,0x32,0xEF};
 static bd_addr_t speaker_addr = {0x00, 0x21, 0x3C, 0xAC, 0xF7, 0x38};
 static uint8_t codecs[1] = {HFP_CODEC_CVSD};
 static uint16_t handle = -1;
+static int memory_1_enabled = 1;
 
 static int ag_indicators_nr = 7;
 static hfp_ag_indicator_t ag_indicators[] = {
@@ -140,6 +141,9 @@ static void show_usage(void){
     printf("I - Set battery level to 5\n");
     
     printf("j - Answering call on remote side\n");
+
+    printf("k - Clear memory #0\n");
+    printf("K - Set memory #0\n");
 
     printf("t - terminate connection\n");
 
@@ -229,6 +233,14 @@ static int stdin_process(struct data_source *ds){
             printf("Set battery level to 5\n");
             hfp_ag_set_battery_level(5);
             break;
+        case 'k':
+            printf("Memory 1 cleared\n");
+            memory_1_enabled = 0;
+            break;
+        case 'K':
+            printf("Memory 1 set\n");
+            memory_1_enabled = 1;
+            break;
         case 'j':
             printf("Answering call on remote side\n");
             hfp_ag_outgoing_call_established();
@@ -288,9 +300,17 @@ static void packet_handler(uint8_t * event, uint16_t event_size){
             break;
         case HFP_SUBEVENT_PLACE_CALL_WITH_NUMBER:
             printf("\n** Outgoing call '%s' **\n", &event[3]);
-            // directly start ringing
-            printf("Simulate outgoing call ringing\n");
-            hfp_ag_outgoing_call_ringing();
+            // validate number
+            if ( strcmp("1234567", (char*) &event[3]) == 0
+              || strcmp("7654321", (char*) &event[3]) == 0
+              || (memory_1_enabled && strcmp(">1",      (char*) &event[3]) == 0)){
+                printf("Dialstring valid: accept call\n");
+                hfp_ag_outgoing_call_accepted();
+                // hfp_ag_outgoing_call_ringing();
+                break;                
+            }
+            printf("Dialstring invalid: reject call\n");
+            hfp_ag_outgoing_call_rejected();
             break;
         default:
             // printf("event not handled %u\n", event[2]);

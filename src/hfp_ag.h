@@ -178,6 +178,16 @@ void hfp_ag_incoming_call(void);
 /**
  * @brief 
  */
+void hfp_ag_outgoing_call_rejected(void);
+
+/**
+ * @brief 
+ */
+void hfp_ag_outgoing_call_accepted(void);
+
+/**
+ * @brief 
+ */
 void hfp_ag_outgoing_call_ringing(void);
 
 /**
