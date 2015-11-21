@@ -178,6 +178,16 @@ void hfp_ag_incoming_call(void);
 /**
  * @brief 
  */
+void hfp_ag_outgoing_call_ringing(void);
+
+/**
+ * @brief 
+ */
+void hfp_ag_outgoing_call_established(void);
+
+/**
+ * @brief 
+ */
 void hfp_ag_call_dropped(void);
 
 /**

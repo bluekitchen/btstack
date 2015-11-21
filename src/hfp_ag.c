@@ -727,6 +727,36 @@ static void hfp_ag_trigger_incoming_call(void){
     }
 }
 
+static void hfp_ag_transfer_callsetup_state(void){
+    int indicator_index = get_ag_indicator_index_for_name("callsetup");
+    if (indicator_index < 0) return;
+
+    linked_list_iterator_t it;    
+    linked_list_iterator_init(&it, hfp_get_connections());
+    while (linked_list_iterator_has_next(&it)){
+        hfp_connection_t * connection = (hfp_connection_t *)linked_list_iterator_next(&it);
+        hfp_ag_establish_service_level_connection(connection->remote_addr);
+        connection->ag_indicators_status_update_bitmap = store_bit(connection->ag_indicators_status_update_bitmap, indicator_index, 1);
+        hfp_run_for_context(connection);
+    }
+}
+
+#if 0
+static void hfp_ag_transfer_call_state(void){
+    int indicator_index = get_ag_indicator_index_for_name("call");
+    if (indicator_index < 0) return;
+
+    linked_list_iterator_t it;    
+    linked_list_iterator_init(&it, hfp_get_connections());
+    while (linked_list_iterator_has_next(&it)){
+        hfp_connection_t * connection = (hfp_connection_t *)linked_list_iterator_next(&it);
+        hfp_ag_establish_service_level_connection(connection->remote_addr);
+        connection->ag_indicators_status_update_bitmap = store_bit(connection->ag_indicators_status_update_bitmap, indicator_index, 1);
+        hfp_run_for_context(connection);
+    }
+}
+#endif
+
 static void hfp_ag_hf_accept_call(hfp_connection_t * source){
     
     int call_indicator_index = get_ag_indicator_index_for_name("call");
@@ -904,6 +934,12 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * connect
                             hfp_ag_trigger_reject_call();
                             printf("TODO HF Rejected Incoming call, AG terminate call\n");
                             break;
+                        case HFP_CALLSETUP_STATUS_OUTGOING_CALL_SETUP_IN_DIALING_STATE:
+                        case HFP_CALLSETUP_STATUS_OUTGOING_CALL_SETUP_IN_ALERTING_STATE:
+                            hfp_ag_set_callsetup_state(HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS);
+                            // hfp_ag_transfer_call_state();
+                            hfp_ag_transfer_callsetup_state();
+                            printf("TODO AG terminate outgoing call process\n");                            
                         default:
                             break;
                     }
@@ -950,6 +986,16 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * connect
                 default:
                     break;
             }
+            break;
+        case HFP_AG_OUTGOING_CALL_INITIATED:
+            hfp_ag_set_callsetup_state(HFP_CALLSETUP_STATUS_OUTGOING_CALL_SETUP_IN_DIALING_STATE);
+            hfp_ag_transfer_callsetup_state();
+            break;
+        case HFP_AG_OUTGOING_CALL_RINGING:
+            hfp_ag_set_callsetup_state(HFP_CALLSETUP_STATUS_OUTGOING_CALL_SETUP_IN_ALERTING_STATE);
+            hfp_ag_transfer_callsetup_state();
+            break;
+        case HFP_AG_OUTGOING_CALL_ESTABLISHED:
             break;
         default:
             break;
@@ -1046,10 +1092,13 @@ static void hfp_handle_rfcomm_data(uint8_t packet_type, uint16_t channel, uint8_
             context->command = HFP_CMD_NONE;
             context->ok_pending = 1;
             hfp_ag_call_sm(HFP_AG_TERMINATE_CALL_BY_HF, context);
+            break;
         case HFP_CMD_CALL_PHONE_NUMBER:
             context->command = HFP_CMD_NONE;
             context->ok_pending = 1;
             hfp_emit_string_event(hfp_callback, HFP_SUBEVENT_PLACE_CALL_WITH_NUMBER, (const char *) &context->line_buffer[3]);
+            hfp_ag_establish_audio_connection(context->remote_addr);
+            hfp_ag_call_sm(HFP_AG_OUTGOING_CALL_INITIATED, context);
             break;
         default:
             break;
@@ -1213,6 +1262,14 @@ void hfp_ag_answer_incoming_call(void){
 
 void hfp_ag_terminate_call(void){
     hfp_ag_call_sm(HFP_AG_TERMINATE_CALL_BY_AG, NULL);
+}
+
+void hfp_ag_outgoing_call_ringing(void){
+    hfp_ag_call_sm(HFP_AG_OUTGOING_CALL_RINGING, NULL);
+}
+
+void hfp_ag_outgoing_call_established(void){
+    hfp_ag_call_sm(HFP_AG_OUTGOING_CALL_ESTABLISHED, NULL);
 }
 
 void hfp_ag_place_a_call_with_phone_number(void){

@@ -263,25 +263,28 @@ static void packet_handler(uint8_t * event, uint16_t event_size){
 
     switch (event[2]) {   
         case HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED:
-            printf("Service level connection established.\n\n");
+            printf("Service level connection established.\n");
             break;
         case HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED:
-            printf("Service level connection released.\n\n");
+            printf("Service level connection released.\n");
             break;
         case HFP_SUBEVENT_AUDIO_CONNECTION_ESTABLISHED:
-            printf("\n** Audio connection established **\n\n");
+            printf("\n** Audio connection established **\n");
             break;
         case HFP_SUBEVENT_AUDIO_CONNECTION_RELEASED:
-            printf("\n** Audio connection released **\n\n");
+            printf("\n** Audio connection released **\n");
             break;
         case HFP_SUBEVENT_START_RINGINIG:
-            printf("\n** Start Ringing **\n\n");
+            printf("\n** Start Ringing **\n");
             break;        
         case HFP_SUBEVENT_STOP_RINGINIG:
-            printf("\n** Stop Ringing **\n\n");
+            printf("\n** Stop Ringing **\n");
             break;
         case HFP_SUBEVENT_PLACE_CALL_WITH_NUMBER:
-            printf("\n** Outgoing call '%s' **\n\n", &event[3]);
+            printf("\n** Outgoing call '%s' **\n", &event[3]);
+            // directly start ringing
+            printf("Simulate outgoing call ringing\n");
+            hfp_ag_outgoing_call_ringing();
             break;
         default:
             // printf("event not handled %u\n", event[2]);
