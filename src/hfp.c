@@ -212,7 +212,7 @@ void hfp_emit_string_event(hfp_callback_t callback, uint8_t event_subtype, const
     event[2] = event_subtype;
     int size = (strlen(value) < sizeof(event) - 4) ? strlen(value) : sizeof(event) - 4;
     strncpy((char*)&event[3], value, size);
-    event[sizeof(event)-1] = 0;
+    event[3 + size] = 0;
     (*callback)(event, sizeof(event));
 }
 
