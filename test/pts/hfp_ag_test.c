@@ -138,6 +138,8 @@ static void show_usage(void){
 
     printf("i - Set battery level to 3\n");
     printf("I - Set battery level to 5\n");
+    
+    printf("j - Answering call on remote side\n");
 
     printf("t - terminate connection\n");
 
@@ -226,6 +228,10 @@ static int stdin_process(struct data_source *ds){
         case 'I':
             printf("Set battery level to 5\n");
             hfp_ag_set_battery_level(5);
+            break;
+        case 'j':
+            printf("Answering call on remote side\n");
+            hfp_ag_outgoing_call_established();
             break;
         case 'r':
             printf("Disable in-band ring tone\n");

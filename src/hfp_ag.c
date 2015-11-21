@@ -741,7 +741,6 @@ static void hfp_ag_transfer_callsetup_state(void){
     }
 }
 
-#if 0
 static void hfp_ag_transfer_call_state(void){
     int indicator_index = get_ag_indicator_index_for_name("call");
     if (indicator_index < 0) return;
@@ -755,7 +754,6 @@ static void hfp_ag_transfer_call_state(void){
         hfp_run_for_context(connection);
     }
 }
-#endif
 
 static void hfp_ag_hf_accept_call(hfp_connection_t * source){
     
@@ -865,6 +863,16 @@ static void hfp_ag_set_call_state(hfp_call_status_t state){
         log_error("hfp_ag_set_call_state: call indicator is missing");
     };
     indicator->status = state;
+}
+
+static hfp_connection_t * hfp_ag_connection_for_call_state(hfp_call_state_t call_state){
+    linked_list_iterator_t it;    
+    linked_list_iterator_init(&it, hfp_get_connections());
+    while (linked_list_iterator_has_next(&it)){
+        hfp_connection_t * connection = (hfp_connection_t *)linked_list_iterator_next(&it);
+        if (connection->call_state == call_state) return connection;
+    }
+    return NULL;
 }
 
 // connection is used to identify originating HF
@@ -988,14 +996,40 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * connect
             }
             break;
         case HFP_AG_OUTGOING_CALL_INITIATED:
+            connection->call_state = HFP_CALL_OUTGOING_DIALING;
             hfp_ag_set_callsetup_state(HFP_CALLSETUP_STATUS_OUTGOING_CALL_SETUP_IN_DIALING_STATE);
             hfp_ag_transfer_callsetup_state();
             break;
         case HFP_AG_OUTGOING_CALL_RINGING:
+            connection = hfp_ag_connection_for_call_state(HFP_CALL_OUTGOING_DIALING);
+            if (!connection){
+                log_info("hfp_ag_call_sm: did not find outgoing connection in dialing state");
+                break;
+            }
+            connection->call_state = HFP_CALL_OUTGOING_RINGING;
             hfp_ag_set_callsetup_state(HFP_CALLSETUP_STATUS_OUTGOING_CALL_SETUP_IN_ALERTING_STATE);
             hfp_ag_transfer_callsetup_state();
             break;
         case HFP_AG_OUTGOING_CALL_ESTABLISHED:
+            switch (hfp_ag_call_state){
+                case HFP_CALL_STATUS_NO_HELD_OR_ACTIVE_CALLS:
+                    connection = hfp_ag_connection_for_call_state(HFP_CALL_OUTGOING_RINGING);
+                    if (!connection){
+                        connection = hfp_ag_connection_for_call_state(HFP_CALL_OUTGOING_DIALING);
+                    }
+                    if (!connection){
+                        log_info("hfp_ag_call_sm: did not find outgoing connection");
+                        break;
+                    }
+                    connection->call_state = HFP_CALL_ACTIVE;
+                    hfp_ag_set_callsetup_state(HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS);
+                    hfp_ag_set_call_state(HFP_CALL_STATUS_ACTIVE_OR_HELD_CALL_IS_PRESENT);
+                    hfp_ag_transfer_call_state();
+                    hfp_ag_transfer_callsetup_state();
+                    break;
+                default:
+                    break;
+            }
             break;
         default:
             break;
