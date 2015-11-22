@@ -885,6 +885,14 @@ static void hfp_ag_set_callsetup_state(hfp_callsetup_status_t state){
     indicator->status = state;
 }
 
+static void hfp_ag_set_callheld_state(hfp_callheld_status_t state){
+    hfp_ag_callheld_state = state;
+    hfp_ag_indicator_t * indicator = get_ag_indicator_for_name("callheld");
+    if (!indicator){
+        log_error("hfp_ag_set_callheld_state: callheld indicator is missing");
+    };
+    indicator->status = state;
+}
 
 static void hfp_ag_set_call_state(hfp_call_status_t state){
     hfp_ag_call_state = state;
@@ -1217,19 +1225,49 @@ static void hfp_handle_rfcomm_data(uint8_t packet_type, uint16_t channel, uint8_
         case HFP_CMD_CALL_HOLD:
             // TODO: fully implement this
             log_error("HFP: unhandled call hold type %c", context->line_buffer[0]);
-            int indicator_index = get_ag_indicator_index_for_name("callsetup");
+            int callsetup_indicator_index = get_ag_indicator_index_for_name("callsetup");
+            int callheld_indicator_index = get_ag_indicator_index_for_name("callheld");
             switch (context->line_buffer[0]){
                 case '0':
                     context->command = HFP_CMD_NONE;
                     context->ok_pending = 1;
                     hfp_ag_set_callsetup_state(HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS);
-                    context->ag_indicators_status_update_bitmap = store_bit(context->ag_indicators_status_update_bitmap, indicator_index, 1);
-                    context->call_state = HFP_CALL_IDLE;
+                    context->ag_indicators_status_update_bitmap = store_bit(context->ag_indicators_status_update_bitmap, callsetup_indicator_index, 1);
+                    context->call_state = HFP_CALL_ACTIVE;
                     printf("AG: Call Waiting, User Busy\n");
                     break;
                 case '1':
+                    context->command = HFP_CMD_NONE;
+                    context->ok_pending = 1;
+                    if (hfp_ag_callsetup_state != HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS){
+                        printf("AG: Call Dropped, Accept new call\n");
+                        hfp_ag_set_callsetup_state(HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS);
+                        context->ag_indicators_status_update_bitmap = store_bit(context->ag_indicators_status_update_bitmap, callsetup_indicator_index, 1);
+                    } else {
+                        printf("AG: Call Dropped, Resume held call\n");
+                    }
+                    if (hfp_ag_callheld_state != HFP_CALLHELD_STATUS_NO_CALLS_HELD){
+                        hfp_ag_set_callheld_state(HFP_CALLHELD_STATUS_NO_CALLS_HELD);
+                        context->ag_indicators_status_update_bitmap = store_bit(context->ag_indicators_status_update_bitmap, callheld_indicator_index, 1);
+                    }
+                    context->call_state = HFP_CALL_ACTIVE;
                     break;
                 case '2':
+                    context->command = HFP_CMD_NONE;
+                    context->ok_pending = 1;
+                    // only update if callsetup changed
+                    if (hfp_ag_callsetup_state != HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS){
+                        printf("AG: Call on Hold, Accept new call\n");
+                        hfp_ag_set_callsetup_state(HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS);
+                        context->ag_indicators_status_update_bitmap = store_bit(context->ag_indicators_status_update_bitmap, callsetup_indicator_index, 1);
+                    } else {
+                        printf("AG: Swap calls\n");
+                    }
+                    // if (hfp_ag_callheld_state != HFP_CALLHELD_STATUS_CALL_ON_HOLD_OR_SWAPPED){
+                        hfp_ag_set_callheld_state(HFP_CALLHELD_STATUS_CALL_ON_HOLD_OR_SWAPPED);
+                        context->ag_indicators_status_update_bitmap = store_bit(context->ag_indicators_status_update_bitmap, callheld_indicator_index, 1);
+                    // }
+                    context->call_state = HFP_CALL_ACTIVE;
                     break;
                 case '3':
                     break;
@@ -1324,7 +1362,7 @@ void hfp_ag_init(uint16_t rfcomm_channel_nr, uint32_t supported_features,
 
     hfp_ag_call_state = HFP_CALL_STATUS_NO_HELD_OR_ACTIVE_CALLS;
     hfp_ag_callsetup_state = HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS;
-    hfp_ag_callheld_state = HFP_HELDCALL_STATUS_NO_CALLS_HELD;
+    hfp_ag_callheld_state = HFP_CALLHELD_STATUS_NO_CALLS_HELD;
 }
 
 void hfp_ag_establish_service_level_connection(bd_addr_t bd_addr){
