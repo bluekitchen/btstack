@@ -641,8 +641,7 @@ extern "C" {
 #define HFP_SUBEVENT_STOP_RINGINIG                         0x0B
 #define HFP_SUBEVENT_CALL_TERMINATED                       0x0C
 #define HFP_SUBEVENT_PLACE_CALL_WITH_NUMBER                0x0D
-
-
+#define HFP_SUBEVENT_REDIAL_LAST_NUMBER                    0x0E
 
 // ANCS Client
 #define ANCS_CLIENT_CONNECTED                              0xF0

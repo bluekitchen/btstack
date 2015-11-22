@@ -1001,6 +1001,11 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * connect
             hfp_emit_string_event(hfp_callback, HFP_SUBEVENT_PLACE_CALL_WITH_NUMBER, (const char *) &connection->line_buffer[3]);
             break;
 
+        case HFP_AG_OUTGOING_REDIAL_INITIATED:
+            connection->call_state = HFP_CALL_OUTGOING_INITIATED;
+            hfp_emit_event(hfp_callback, HFP_SUBEVENT_REDIAL_LAST_NUMBER, 0);
+            break;
+
         case HFP_AG_OUTGOING_CALL_REJECTED:
             connection = hfp_ag_connection_for_call_state(HFP_CALL_OUTGOING_INITIATED);
             if (!connection){
@@ -1156,6 +1161,9 @@ static void hfp_handle_rfcomm_data(uint8_t packet_type, uint16_t channel, uint8_
             context->command = HFP_CMD_NONE;
             hfp_ag_call_sm(HFP_AG_OUTGOING_CALL_INITIATED, context);
             break;
+        case HFP_CMD_REDIAL_LAST_NUMBER:
+            context->command = HFP_CMD_NONE;
+            hfp_ag_call_sm(HFP_AG_OUTGOING_REDIAL_INITIATED, context);
         default:
             break;
     }
