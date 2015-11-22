@@ -675,6 +675,10 @@ static hfp_command_t parse_command(const char * line_buffer, int isHandsFree){
         return HFP_CMD_ENABLE_CLIP;
     }
 
+    if (strncmp(line_buffer+offset, HFP_ENABLE_CALL_WAITING_NOTIFICATION, strlen(HFP_ENABLE_CALL_WAITING_NOTIFICATION)) == 0){
+        return HFP_CMD_ENABLE_CALL_WAITING_NOTIFICATION;
+    }
+
     if (strncmp(line_buffer+offset, HFP_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES, strlen(HFP_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES)) == 0){
         return HFP_CMD_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES;
     } 

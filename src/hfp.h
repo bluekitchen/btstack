@@ -107,6 +107,7 @@ extern "C" {
 #define HFP_INDICATOR "+CIND"
 #define HFP_ENABLE_STATUS_UPDATE_FOR_AG_INDICATORS "+CMER"
 #define HFP_ENABLE_CLIP "+CLIP"
+#define HFP_ENABLE_CALL_WAITING_NOTIFICATION "+CCWA"
 #define HFP_UPDATE_ENABLE_STATUS_FOR_INDIVIDUAL_AG_INDICATORS "+BIA" // +BIA:<enabled>,,<enabled>,,,<enabled>
 #define HFP_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES "+CHLD"
 #define HFP_GENERIC_STATUS_INDICATOR "+BIND"
@@ -144,6 +145,7 @@ typedef enum {
     HFP_CMD_ENABLE_INDIVIDUAL_AG_INDICATOR_STATUS_UPDATE,
     HFP_CMD_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES,
     HFP_CMD_ENABLE_CLIP,
+    HFP_CMD_ENABLE_CALL_WAITING_NOTIFICATION,
 
     HFP_CMD_LIST_GENERIC_STATUS_INDICATORS,
     HFP_CMD_RETRIEVE_GENERIC_STATUS_INDICATORS,
@@ -405,6 +407,7 @@ typedef struct hfp_connection {
 
     // HF -> AG configuration
     uint8_t clip_enabled;
+    uint8_t call_waiting_notification_enabled;
 
     // TODO: put these bit flags in a bitmap
     uint8_t ok_pending;
