@@ -163,6 +163,7 @@ typedef enum {
     HFP_CMD_AG_SUGGESTED_CODEC,
     HFP_CMD_HF_CONFIRMED_CODEC,
     HFP_CMD_CALL_ANSWERED,
+    HFP_CMD_CALL_HOLD,
     HFP_CMD_AG_ANSWER_CALL,
     HFP_CMD_HANG_UP_CALL,
     HFP_CMD_CHANGE_IN_BAND_RING_TONE_SETTING,
@@ -316,6 +317,8 @@ typedef enum {
     HFP_CALL_RINGING,
     HFP_CALL_W4_AUDIO_CONNECTION_FOR_ACTIVE,
     HFP_CALL_ACTIVE,
+    HFP_CALL_W2_SEND_CALL_WAITING,
+    HFP_CALL_W4_CHLD,
     HFP_CALL_OUTGOING_INITIATED,
     HFP_CALL_OUTGOING_DIALING,
     HFP_CALL_OUTGOING_RINGING
@@ -429,7 +432,6 @@ typedef struct hfp_connection {
     uint8_t establish_audio_connection; 
     uint8_t release_audio_connection; 
 
-    uint8_t run_call_state_machine;
     uint8_t change_in_band_ring_tone_setting;
     uint8_t ag_ring;
     uint8_t ag_send_clip;

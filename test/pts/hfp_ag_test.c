@@ -118,8 +118,8 @@ static void show_usage(void){
     printf("b - establish AUDIO connection\n");
     printf("B - release AUDIO connection\n");
     
-    printf("c - simulate incoming call\n");
-    printf("C - simulate call dropped\n");
+    printf("c - simulate incoming call from 1234567\n");
+    printf("C - simulate call from 1234567 dropped\n");
 
     printf("d - report AG failure\n");
 
@@ -148,6 +148,9 @@ static void show_usage(void){
 
     printf("l - Clear last number\n");
     printf("L - Set last number\n");
+
+    printf("m - simulate incoming call from 7654321\n");
+    // printf("M - simulate call from 7654321 dropped\n");
 
     printf("t - terminate connection\n");
 
@@ -186,8 +189,13 @@ static int stdin_process(struct data_source *ds){
             hfp_ag_release_audio_connection(device_addr);
             break;
         case 'c':
-            printf("Simulate incoming call\n");
+            printf("Simulate incoming call from 1234567\n");
             hfp_ag_set_clip(129, "1234567");
+            hfp_ag_incoming_call();
+            break;
+        case 'm':
+            printf("Simulate incoming call from 7654321\n");
+            hfp_ag_set_clip(129, "7654321");
             hfp_ag_incoming_call();
             break;
         case 'C':

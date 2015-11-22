@@ -208,8 +208,20 @@ static int hfp_ag_ring(uint16_t cid){
 }
 
 static int hfp_ag_send_clip(uint16_t cid){
+    if (!clip_type){
+        clip_number[0] = 0;
+    }
     char buffer[50];
     sprintf(buffer, "\r\n+CLIP: \"%s\",%u\r\n", clip_number, clip_type);
+    return send_str_over_rfcomm(cid, buffer);
+}
+
+static int hfp_ag_send_call_waiting_notification(uint16_t cid){
+    if (!clip_type){
+        clip_number[0] = 0;
+    }
+    char buffer[50];
+    sprintf(buffer, "\r\n+CCWA: \"%s\",%u\r\n", clip_number, clip_type);
     return send_str_over_rfcomm(cid, buffer);
 }
 
@@ -679,18 +691,26 @@ static void hfp_timeout_stop(hfp_connection_t * context){
 //
 // only reason for this: wait for audio connection established event
 //
-static int incoming_call_state_machine(hfp_connection_t * context){
-    if (context->state      != HFP_AUDIO_CONNECTION_ESTABLISHED) return 0;
-
-    // we got event: audio connection established
-    switch (context->call_state){
+static int incoming_call_state_machine(hfp_connection_t * connection){
+    switch (connection->call_state){
         case HFP_CALL_W4_AUDIO_CONNECTION_FOR_IN_BAND_RING:
-            context->call_state = HFP_CALL_RINGING;
+            if (connection->state != HFP_AUDIO_CONNECTION_ESTABLISHED) return 0;
+            // we got event: audio connection established
+            connection->call_state = HFP_CALL_RINGING;
             hfp_emit_event(hfp_callback, HFP_SUBEVENT_START_RINGINIG, 0);
             break;        
         case HFP_CALL_W4_AUDIO_CONNECTION_FOR_ACTIVE:
-            context->call_state = HFP_CALL_ACTIVE;
+            if (connection->state != HFP_AUDIO_CONNECTION_ESTABLISHED) return 0;
+            // we got event: audio connection established
+            connection->call_state = HFP_CALL_ACTIVE;
             break;    
+        case HFP_CALL_W2_SEND_CALL_WAITING: {
+            hfp_ag_send_call_waiting_notification(connection->rfcomm_cid);
+            int indicator_index = get_ag_indicator_index_for_name("callsetup");
+            connection->ag_indicators_status_update_bitmap = store_bit(connection->ag_indicators_status_update_bitmap, indicator_index, 1);
+            connection->call_state = HFP_CALL_W4_CHLD;
+            break;
+        }
         default:
             break;
     }
@@ -732,8 +752,10 @@ static void hfp_ag_trigger_incoming_call(void){
         hfp_ag_establish_service_level_connection(connection->remote_addr);
         if (connection->call_state == HFP_CALL_IDLE){
             connection->ag_indicators_status_update_bitmap = store_bit(connection->ag_indicators_status_update_bitmap, indicator_index, 1);
-            connection->run_call_state_machine = 1;
             hfp_ag_hf_start_ringing(connection);
+        }
+        if (connection->call_state == HFP_CALL_ACTIVE){
+            connection->call_state = HFP_CALL_W2_SEND_CALL_WAITING;
         }
         hfp_run_for_context(connection);
     }
@@ -780,7 +802,6 @@ static void hfp_ag_hf_accept_call(hfp_connection_t * source){
             connection->call_state != HFP_CALL_W4_AUDIO_CONNECTION_FOR_IN_BAND_RING) continue;
 
         hfp_ag_hf_stop_ringing(connection);
-        connection->run_call_state_machine = 1;
         if (connection == source){
             connection->ok_pending = 1;
 
@@ -795,7 +816,6 @@ static void hfp_ag_hf_accept_call(hfp_connection_t * source){
             connection->ag_indicators_status_update_bitmap = store_bit(connection->ag_indicators_status_update_bitmap, callsetup_indicator_index, 1);
 
         } else {
-            connection->run_call_state_machine = 0;
             connection->call_state = HFP_CALL_IDLE;
         }
         hfp_run_for_context(connection);
@@ -814,7 +834,6 @@ static void hfp_ag_ag_accept_call(void){
         if (connection->call_state != HFP_CALL_RINGING) continue;
 
         hfp_ag_hf_stop_ringing(connection);
-        connection->run_call_state_machine = 1;
         connection->call_state = HFP_CALL_TRIGGER_AUDIO_CONNECTION;
 
         connection->ag_indicators_status_update_bitmap = store_bit(connection->ag_indicators_status_update_bitmap, call_indicator_index, 1);
@@ -835,7 +854,6 @@ static void hfp_ag_trigger_reject_call(void){
             connection->call_state != HFP_CALL_W4_AUDIO_CONNECTION_FOR_IN_BAND_RING) continue;
         hfp_ag_hf_stop_ringing(connection);
         connection->ag_indicators_status_update_bitmap = store_bit(connection->ag_indicators_status_update_bitmap, callsetup_indicator_index, 1);
-        connection->run_call_state_machine = 0;
         connection->call_state = HFP_CALL_IDLE;
         hfp_run_for_context(connection);
         break;  // only single 
@@ -851,7 +869,6 @@ static void hfp_ag_trigger_terminate_call(void){
         hfp_connection_t * connection = (hfp_connection_t *)linked_list_iterator_next(&it);
         hfp_ag_establish_service_level_connection(connection->remote_addr);
         if (connection->call_state == HFP_CALL_IDLE) continue;
-        connection->run_call_state_machine = 0;
         connection->call_state = HFP_CALL_IDLE;
         connection->ag_indicators_status_update_bitmap = store_bit(connection->ag_indicators_status_update_bitmap, call_indicator_index, 1);
         hfp_run_for_context(connection);
@@ -904,10 +921,18 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * connect
                             break;
                     }
                     break;
-                default:
+                case HFP_CALL_STATUS_ACTIVE_OR_HELD_CALL_IS_PRESENT:
+                    switch (hfp_ag_callsetup_state){
+                        case HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS:
+                            hfp_ag_set_callsetup_state(HFP_CALLSETUP_STATUS_INCOMING_CALL_SETUP_IN_PROGRESS);
+                            hfp_ag_trigger_incoming_call();
+                            printf("TODO AG call waiting\n");
+                            break;
+                        default:
+                            break;
+                    }
                     break;
             }
-
             break;
         case HFP_AG_INCOMING_CALL_ACCEPTED_BY_AG:
             // clear CLIP
@@ -1188,6 +1213,34 @@ static void hfp_handle_rfcomm_data(uint8_t packet_type, uint16_t channel, uint8_
             context->command = HFP_CMD_NONE;
             context->ok_pending = 1;
             hfp_ag_call_sm(HFP_AG_TERMINATE_CALL_BY_HF, context);
+            break;
+        case HFP_CMD_CALL_HOLD:
+            // TODO: fully implement this
+            log_error("HFP: unhandled call hold type %c", context->line_buffer[0]);
+            int indicator_index = get_ag_indicator_index_for_name("callsetup");
+            switch (context->line_buffer[0]){
+                case '0':
+                    context->command = HFP_CMD_NONE;
+                    context->ok_pending = 1;
+                    hfp_ag_set_callsetup_state(HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS);
+                    context->ag_indicators_status_update_bitmap = store_bit(context->ag_indicators_status_update_bitmap, indicator_index, 1);
+                    context->call_state = HFP_CALL_IDLE;
+                    printf("AG: Call Waiting, User Busy\n");
+                    break;
+                case '1':
+                    break;
+                case '2':
+                    break;
+                case '3':
+                    break;
+                case '4':
+                    break;
+                case '?':
+                    // handled by  for feature
+                    break;
+                default:
+                    break;
+            }
             break;
         case HFP_CMD_CALL_PHONE_NUMBER:
             context->command = HFP_CMD_NONE;
