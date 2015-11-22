@@ -176,6 +176,11 @@ void hfp_ag_set_use_in_band_ring_tone(int use_in_band_ring_tone);
 void hfp_ag_incoming_call(void);
 
 /**
+ * @brief number is stored.
+ */
+void hfp_ag_set_clip(uint8_t type, const char * number);
+
+/**
  * @brief 
  */
 void hfp_ag_outgoing_call_rejected(void);

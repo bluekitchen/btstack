@@ -106,6 +106,7 @@ extern "C" {
 #define HFP_AVAILABLE_CODECS "+BAC"
 #define HFP_INDICATOR "+CIND"
 #define HFP_ENABLE_STATUS_UPDATE_FOR_AG_INDICATORS "+CMER"
+#define HFP_ENABLE_CLIP "+CLIP"
 #define HFP_UPDATE_ENABLE_STATUS_FOR_INDIVIDUAL_AG_INDICATORS "+BIA" // +BIA:<enabled>,,<enabled>,,,<enabled>
 #define HFP_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES "+CHLD"
 #define HFP_GENERIC_STATUS_INDICATOR "+BIND"
@@ -142,6 +143,7 @@ typedef enum {
     HFP_CMD_ENABLE_INDICATOR_STATUS_UPDATE,
     HFP_CMD_ENABLE_INDIVIDUAL_AG_INDICATOR_STATUS_UPDATE,
     HFP_CMD_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES,
+    HFP_CMD_ENABLE_CLIP,
 
     HFP_CMD_LIST_GENERIC_STATUS_INDICATORS,
     HFP_CMD_RETRIEVE_GENERIC_STATUS_INDICATORS,
@@ -401,6 +403,9 @@ typedef struct hfp_connection {
     // Retrieved during service level connection establishment, not used yet
     uint8_t  negotiated_codec;
 
+    // HF -> AG configuration
+    uint8_t clip_enabled;
+
     // TODO: put these bit flags in a bitmap
     uint8_t ok_pending;
     // uint8_t send_ok;
@@ -424,6 +429,7 @@ typedef struct hfp_connection {
     uint8_t run_call_state_machine;
     uint8_t change_in_band_ring_tone_setting;
     uint8_t ag_ring;
+    uint8_t ag_send_clip;
 
     timer_source_t hfp_timeout;
 } hfp_connection_t;

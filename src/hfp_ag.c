@@ -80,6 +80,9 @@ static hfp_call_status_t hfp_ag_call_state;
 static hfp_callsetup_status_t hfp_ag_callsetup_state;
 static hfp_callheld_status_t hfp_ag_callheld_state;
 
+// CLIP feature
+static uint8_t clip_type;       // 0 == not set
+static char    clip_number[25]; // 
 
 static void packet_handler(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static void hfp_run_for_context(hfp_connection_t *context);
@@ -202,6 +205,12 @@ static int hfp_ag_ok(uint16_t cid){
 
 static int hfp_ag_ring(uint16_t cid){
     return send_str_over_rfcomm(cid, (char *) "\r\nRING\r\n");
+}
+
+static int hfp_ag_send_clip(uint16_t cid){
+    char buffer[50];
+    sprintf(buffer, "\r\n+CLIP: \"%s\",%u\r\n", clip_number, clip_type);
+    return send_str_over_rfcomm(cid, buffer);
 }
 
 static int hfp_ag_error(uint16_t cid){
@@ -647,6 +656,7 @@ static void hfp_timeout_handler(timer_source_t * timer){
 
     log_info("HFP start ring timeout, con handle 0x%02x", context->con_handle);
     context->ag_ring = 1;
+    context->ag_send_clip = clip_type && context->clip_enabled;
 
     run_loop_set_timer(&context->hfp_timeout, 2000); // 5 seconds timeout
     run_loop_add_timer(&context->hfp_timeout);
@@ -694,6 +704,7 @@ static int incoming_call_state_machine(hfp_connection_t * context){
 static void hfp_ag_hf_start_ringing(hfp_connection_t * context){
     hfp_timeout_start(context);
     context->ag_ring = 1;
+    context->ag_send_clip = clip_type && context->clip_enabled;
     if (use_in_band_tone()){
         context->call_state = HFP_CALL_W4_AUDIO_CONNECTION_FOR_IN_BAND_RING;
         hfp_ag_establish_audio_connection(context->remote_addr);
@@ -705,6 +716,7 @@ static void hfp_ag_hf_start_ringing(hfp_connection_t * context){
 
 static void hfp_ag_hf_stop_ringing(hfp_connection_t * context){
     context->ag_ring = 0;
+    context->ag_send_clip = 0;
     hfp_timeout_stop(context);
     hfp_emit_event(hfp_callback, HFP_SUBEVENT_STOP_RINGINIG, 0);
 }
@@ -764,7 +776,8 @@ static void hfp_ag_hf_accept_call(hfp_connection_t * source){
     linked_list_iterator_init(&it, hfp_get_connections());
     while (linked_list_iterator_has_next(&it)){
         hfp_connection_t * connection = (hfp_connection_t *)linked_list_iterator_next(&it);
-        if (connection->call_state != HFP_CALL_RINGING) continue;
+        if (connection->call_state != HFP_CALL_RINGING &&
+            connection->call_state != HFP_CALL_W4_AUDIO_CONNECTION_FOR_IN_BAND_RING) continue;
 
         hfp_ag_hf_stop_ringing(connection);
         connection->run_call_state_machine = 1;
@@ -786,7 +799,6 @@ static void hfp_ag_hf_accept_call(hfp_connection_t * source){
             connection->call_state = HFP_CALL_IDLE;
         }
         hfp_run_for_context(connection);
-        break;  // only single 
     }    
 }
 
@@ -819,7 +831,8 @@ static void hfp_ag_trigger_reject_call(void){
     linked_list_iterator_init(&it, hfp_get_connections());
     while (linked_list_iterator_has_next(&it)){
         hfp_connection_t * connection = (hfp_connection_t *)linked_list_iterator_next(&it);
-        if (connection->call_state != HFP_CALL_RINGING) continue;
+        if (connection->call_state != HFP_CALL_RINGING &&
+            connection->call_state != HFP_CALL_W4_AUDIO_CONNECTION_FOR_IN_BAND_RING) continue;
         hfp_ag_hf_stop_ringing(connection);
         connection->ag_indicators_status_update_bitmap = store_bit(connection->ag_indicators_status_update_bitmap, callsetup_indicator_index, 1);
         connection->run_call_state_machine = 0;
@@ -897,6 +910,8 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * connect
 
             break;
         case HFP_AG_INCOMING_CALL_ACCEPTED_BY_AG:
+            // clear CLIP
+            clip_type = 0;
             switch (hfp_ag_call_state){
                 case HFP_CALL_STATUS_NO_HELD_OR_ACTIVE_CALLS:
                     switch (hfp_ag_callsetup_state){
@@ -915,6 +930,8 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * connect
             }
             break;
         case HFP_AG_INCOMING_CALL_ACCEPTED_BY_HF:
+            // clear CLIP
+            clip_type = 0;
             switch (hfp_ag_call_state){
                 case HFP_CALL_STATUS_NO_HELD_OR_ACTIVE_CALLS:
                     switch (hfp_ag_callsetup_state){
@@ -934,7 +951,9 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * connect
             break;
 
         case HFP_AG_TERMINATE_CALL_BY_HF:
-             switch (hfp_ag_call_state){
+            // clear CLIP
+            clip_type = 0;
+            switch (hfp_ag_call_state){
                 case HFP_CALL_STATUS_NO_HELD_OR_ACTIVE_CALLS:
                     switch (hfp_ag_callsetup_state){
                         case HFP_CALLSETUP_STATUS_INCOMING_CALL_SETUP_IN_PROGRESS:
@@ -962,7 +981,9 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * connect
             break;
 
         case HFP_AG_TERMINATE_CALL_BY_AG:
-             switch (hfp_ag_call_state){
+            // clear CLIP
+            clip_type = 0;
+            switch (hfp_ag_call_state){
                 case HFP_CALL_STATUS_NO_HELD_OR_ACTIVE_CALLS:
                     switch (hfp_ag_callsetup_state){
                         case HFP_CALLSETUP_STATUS_INCOMING_CALL_SETUP_IN_PROGRESS:
@@ -984,7 +1005,9 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * connect
             }
             break;
         case HFP_AG_CALL_DROPPED:
-             switch (hfp_ag_call_state){
+            // clear CLIP
+            clip_type = 0;
+            switch (hfp_ag_call_state){
                 case HFP_CALL_STATUS_ACTIVE_OR_HELD_CALL_IS_PRESENT:
                     hfp_ag_set_callsetup_state(HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS);
                     hfp_ag_set_call_state(HFP_CALL_STATUS_NO_HELD_OR_ACTIVE_CALLS);
@@ -1040,6 +1063,7 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * connect
             hfp_ag_set_callsetup_state(HFP_CALLSETUP_STATUS_OUTGOING_CALL_SETUP_IN_ALERTING_STATE);
             hfp_ag_transfer_callsetup_state();
             break;
+
         case HFP_AG_OUTGOING_CALL_ESTABLISHED:
             switch (hfp_ag_call_state){
                 case HFP_CALL_STATUS_NO_HELD_OR_ACTIVE_CALLS:
@@ -1110,6 +1134,13 @@ static void hfp_run_for_context(hfp_connection_t *context){
         hfp_ag_ring(context->rfcomm_cid);
         return;
     }
+
+    if (context->ag_send_clip){
+        context->ag_send_clip = 0;
+        context->command = HFP_CMD_NONE;
+        hfp_ag_send_clip(context->rfcomm_cid);
+        return;
+    }
     
     int done = hfp_ag_run_for_context_service_level_connection(context);
     if (!done){
@@ -1125,7 +1156,7 @@ static void hfp_run_for_context(hfp_connection_t *context){
     }
 
     if (context->command == HFP_CMD_NONE && !done){
-        log_info("context->command == HFP_CMD_NONE");
+        // log_info("context->command == HFP_CMD_NONE");
         switch(context->state){
             case HFP_W2_DISCONNECT_RFCOMM:
                 context->state = HFP_W4_RFCOMM_DISCONNECTED;
@@ -1150,6 +1181,7 @@ static void hfp_handle_rfcomm_data(uint8_t packet_type, uint16_t channel, uint8_
     switch(context->command){
         case HFP_CMD_CALL_ANSWERED:
             context->command = HFP_CMD_NONE;
+            printf("HFP: ATA\n");
             hfp_ag_call_sm(HFP_AG_INCOMING_CALL_ACCEPTED_BY_HF, context);
             break;
         case HFP_CMD_HANG_UP_CALL:
@@ -1164,6 +1196,12 @@ static void hfp_handle_rfcomm_data(uint8_t packet_type, uint16_t channel, uint8_
         case HFP_CMD_REDIAL_LAST_NUMBER:
             context->command = HFP_CMD_NONE;
             hfp_ag_call_sm(HFP_AG_OUTGOING_REDIAL_INITIATED, context);
+        case HFP_CMD_ENABLE_CLIP:
+            context->command = HFP_CMD_NONE;
+            context->clip_enabled = context->line_buffer[8] != '0';
+            log_info("hfp: clip set, now: %u", context->clip_enabled);
+            context->ok_pending = 1;
+            break;
         default:
             break;
     }
@@ -1313,6 +1351,16 @@ void hfp_ag_set_use_in_band_ring_tone(int use_in_band_ring_tone){
  */
 void hfp_ag_incoming_call(void){
     hfp_ag_call_sm(HFP_AG_INCOMING_CALL, NULL);
+}
+
+/**
+ * @brief number is stored.
+ */
+void hfp_ag_set_clip(uint8_t type, const char * number){
+    clip_type = type;
+    // copy and terminate
+    strncpy(clip_number, number, sizeof(clip_number));
+    clip_number[sizeof(clip_number)-1] = '\0';
 }
 
 void hfp_ag_call_dropped(void){

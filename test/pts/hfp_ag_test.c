@@ -187,6 +187,7 @@ static int stdin_process(struct data_source *ds){
             break;
         case 'c':
             printf("Simulate incoming call\n");
+            hfp_ag_set_clip(129, "1234567");
             hfp_ag_incoming_call();
             break;
         case 'C':
@@ -237,6 +238,14 @@ static int stdin_process(struct data_source *ds){
             printf("Set battery level to 5\n");
             hfp_ag_set_battery_level(5);
             break;
+        case 'j':
+            printf("Answering call on remote side\n");
+            hfp_ag_outgoing_call_established();
+            break;
+        case 'r':
+            printf("Disable in-band ring tone\n");
+            hfp_ag_set_use_in_band_ring_tone(0);
+            break;
         case 'k':
             printf("Memory 1 cleared\n");
             memory_1_enabled = 0;
@@ -252,14 +261,6 @@ static int stdin_process(struct data_source *ds){
         case 'L':
             printf("Last dialed number set\n");
             last_number_exists = 1;
-            break;
-        case 'j':
-            printf("Answering call on remote side\n");
-            hfp_ag_outgoing_call_established();
-            break;
-        case 'r':
-            printf("Disable in-band ring tone\n");
-            hfp_ag_set_use_in_band_ring_tone(0);
             break;
         case 'R':
             printf("Enable in-band ring tone\n");
