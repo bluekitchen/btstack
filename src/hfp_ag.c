@@ -908,7 +908,7 @@ static hfp_connection_t * hfp_ag_connection_for_call_state(hfp_call_state_t call
     return NULL;
 }
 
-static int incoming_call_state_machine(hfp_connection_t * connection){
+static int call_setup_state_machine(hfp_connection_t * connection){
     int indicator_index;
     switch (connection->call_state){
         case HFP_CALL_W4_AUDIO_CONNECTION_FOR_IN_BAND_RING:
@@ -1244,7 +1244,7 @@ static void hfp_run_for_context(hfp_connection_t *context){
     } 
 
     if (!done){
-        done = incoming_call_state_machine(context);
+        done = call_setup_state_machine(context);
     }
 
     if (!done){  
