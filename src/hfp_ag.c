@@ -212,7 +212,7 @@ static int hfp_ag_send_clip(uint16_t cid){
         clip_number[0] = 0;
     }
     char buffer[50];
-    sprintf(buffer, "\r\n+CLIP: \"%s\",%u\r\n", clip_number, clip_type);
+    sprintf(buffer, "\r\n%s: \"%s\",%u\r\n", HFP_ENABLE_CLIP, clip_number, clip_type);
     return send_str_over_rfcomm(cid, buffer);
 }
 
@@ -1275,6 +1275,14 @@ static void hfp_handle_rfcomm_data(uint8_t packet_type, uint16_t channel, uint8_
         hfp_parse(context, packet[pos], 0);
     }
     switch(context->command){
+        case HFP_CMD_TURN_OFF_EC_AND_NR:
+            if (get_bit(hfp_supported_features, HFP_AGSF_EC_NR_FUNCTION)){
+                context->ok_pending = 1;
+                hfp_supported_features = store_bit(hfp_supported_features, HFP_AGSF_EC_NR_FUNCTION, context->ag_echo_and_noise_reduction);
+            } else {
+                context->send_error = 1;
+            }
+            break;
         case HFP_CMD_CALL_ANSWERED:
             context->command = HFP_CMD_NONE;
             printf("HFP: ATA\n");

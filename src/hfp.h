@@ -122,6 +122,7 @@ extern "C" {
 #define HFP_CHANGE_IN_BAND_RING_TONE_SETTING "+BSIR"
 #define HFP_CALL_PHONE_NUMBER "ATD"
 #define HFP_REDIAL_LAST_NUMBER "AT+BLDN"
+#define HFP_TURN_OFF_EC_AND_NR "AT+NREC" // EC (Echo CAnceling), NR (Noise Reduction)
 
 #define HFP_OK "OK"
 #define HFP_ERROR "ERROR"
@@ -168,7 +169,8 @@ typedef enum {
     HFP_CMD_HANG_UP_CALL,
     HFP_CMD_CHANGE_IN_BAND_RING_TONE_SETTING,
     HFP_CMD_CALL_PHONE_NUMBER,
-    HFP_CMD_REDIAL_LAST_NUMBER
+    HFP_CMD_REDIAL_LAST_NUMBER,
+    HFP_CMD_TURN_OFF_EC_AND_NR
 } hfp_command_t;
 
 typedef enum {
@@ -435,7 +437,8 @@ typedef struct hfp_connection {
     uint8_t change_in_band_ring_tone_setting;
     uint8_t ag_ring;
     uint8_t ag_send_clip;
-
+    uint8_t ag_echo_and_noise_reduction;
+    
     timer_source_t hfp_timeout;
 } hfp_connection_t;
 
