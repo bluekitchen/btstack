@@ -1025,13 +1025,13 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * connect
                     switch (hfp_ag_callsetup_state){
                         case HFP_CALLSETUP_STATUS_INCOMING_CALL_SETUP_IN_PROGRESS:
                             hfp_ag_set_callsetup_state(HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS);
+                            hfp_ag_transfer_callsetup_state();
                             hfp_ag_trigger_reject_call();
                             printf("HF Rejected Incoming call, AG terminate call\n");
                             break;
                         case HFP_CALLSETUP_STATUS_OUTGOING_CALL_SETUP_IN_DIALING_STATE:
                         case HFP_CALLSETUP_STATUS_OUTGOING_CALL_SETUP_IN_ALERTING_STATE:
                             hfp_ag_set_callsetup_state(HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS);
-                            // hfp_ag_transfer_call_state();
                             hfp_ag_transfer_callsetup_state();
                             printf("AG terminate outgoing call process\n");                            
                         default:
@@ -1039,9 +1039,8 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * connect
                     }
                     break;
                 case HFP_CALL_STATUS_ACTIVE_OR_HELD_CALL_IS_PRESENT:
-                    hfp_ag_set_callsetup_state(HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS);
                     hfp_ag_set_call_state(HFP_CALL_STATUS_NO_HELD_OR_ACTIVE_CALLS);
-                    hfp_ag_trigger_terminate_call();
+                    hfp_ag_transfer_call_state();
                     printf("AG terminate call\n");
                     break;
             }
