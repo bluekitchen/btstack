@@ -1426,6 +1426,16 @@ static void hfp_handle_rfcomm_data(uint8_t packet_type, uint16_t channel, uint8_
             log_info("hfp: call waiting notification set, now: %u", context->call_waiting_notification_enabled);
             context->ok_pending = 1;
             break;
+        case HFP_CMD_SET_SPEAKER_GAIN:
+            context->command = HFP_CMD_NONE;
+            context->ok_pending = 1;
+            printf("HF speaker gain = %u\n", context->speaker_gain);
+            break;
+        case HFP_CMD_SET_MICROPHONE_GAIN:
+            context->command = HFP_CMD_NONE;
+            context->ok_pending = 1;
+            printf("HF microphone gain = %u\n", context->microphone_gain);
+            break;
         default:
             break;
     }
