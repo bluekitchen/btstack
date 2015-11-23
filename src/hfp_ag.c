@@ -689,35 +689,6 @@ static void hfp_timeout_stop(hfp_connection_t * context){
 } 
 
 //
-// only reason for this: wait for audio connection established event
-//
-static int incoming_call_state_machine(hfp_connection_t * connection){
-    switch (connection->call_state){
-        case HFP_CALL_W4_AUDIO_CONNECTION_FOR_IN_BAND_RING:
-            if (connection->state != HFP_AUDIO_CONNECTION_ESTABLISHED) return 0;
-            // we got event: audio connection established
-            connection->call_state = HFP_CALL_RINGING;
-            hfp_emit_event(hfp_callback, HFP_SUBEVENT_START_RINGINIG, 0);
-            break;        
-        case HFP_CALL_W4_AUDIO_CONNECTION_FOR_ACTIVE:
-            if (connection->state != HFP_AUDIO_CONNECTION_ESTABLISHED) return 0;
-            // we got event: audio connection established
-            connection->call_state = HFP_CALL_ACTIVE;
-            break;    
-        case HFP_CALL_W2_SEND_CALL_WAITING: {
-            hfp_ag_send_call_waiting_notification(connection->rfcomm_cid);
-            int indicator_index = get_ag_indicator_index_for_name("callsetup");
-            connection->ag_indicators_status_update_bitmap = store_bit(connection->ag_indicators_status_update_bitmap, indicator_index, 1);
-            connection->call_state = HFP_CALL_W4_CHLD;
-            break;
-        }
-        default:
-            break;
-    }
-    return 0;
-}
-
-//
 // transitition implementations for hfp_ag_call_state_machine
 //
 
@@ -777,6 +748,20 @@ static void hfp_ag_transfer_callsetup_state(void){
 
 static void hfp_ag_transfer_call_state(void){
     int indicator_index = get_ag_indicator_index_for_name("call");
+    if (indicator_index < 0) return;
+
+    linked_list_iterator_t it;    
+    linked_list_iterator_init(&it, hfp_get_connections());
+    while (linked_list_iterator_has_next(&it)){
+        hfp_connection_t * connection = (hfp_connection_t *)linked_list_iterator_next(&it);
+        hfp_ag_establish_service_level_connection(connection->remote_addr);
+        connection->ag_indicators_status_update_bitmap = store_bit(connection->ag_indicators_status_update_bitmap, indicator_index, 1);
+        hfp_run_for_context(connection);
+    }
+}
+
+static void hfp_ag_transfer_callheld_state(void){
+    int indicator_index = get_ag_indicator_index_for_name("callheld");
     if (indicator_index < 0) return;
 
     linked_list_iterator_t it;    
@@ -913,8 +898,34 @@ static hfp_connection_t * hfp_ag_connection_for_call_state(hfp_call_state_t call
     return NULL;
 }
 
+static int incoming_call_state_machine(hfp_connection_t * connection){
+    int indicator_index;
+    switch (connection->call_state){
+        case HFP_CALL_W4_AUDIO_CONNECTION_FOR_IN_BAND_RING:
+            if (connection->state != HFP_AUDIO_CONNECTION_ESTABLISHED) return 0;
+            // we got event: audio connection established
+            connection->call_state = HFP_CALL_RINGING;
+            hfp_emit_event(hfp_callback, HFP_SUBEVENT_START_RINGINIG, 0);
+            break;        
+        case HFP_CALL_W4_AUDIO_CONNECTION_FOR_ACTIVE:
+            if (connection->state != HFP_AUDIO_CONNECTION_ESTABLISHED) return 0;
+            // we got event: audio connection established
+            connection->call_state = HFP_CALL_ACTIVE;
+            break;    
+        case HFP_CALL_W2_SEND_CALL_WAITING:
+            connection->call_state = HFP_CALL_W4_CHLD;
+            hfp_ag_send_call_waiting_notification(connection->rfcomm_cid);
+            indicator_index = get_ag_indicator_index_for_name("callsetup");
+            connection->ag_indicators_status_update_bitmap = store_bit(connection->ag_indicators_status_update_bitmap, indicator_index, 1);
+            break;
+        default:
+            break;
+    }
+    return 0;
+}
 // connection is used to identify originating HF
 static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * connection){
+    int indicator_index;
     switch (event){
         case HFP_AG_INCOMING_CALL:
             switch (hfp_ag_call_state){
@@ -1092,11 +1103,25 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * connect
                 log_info("hfp_ag_call_sm: did not find outgoing connection in initiated state");
                 break;
             }
+
             connection->ok_pending = 1;
             connection->call_state = HFP_CALL_OUTGOING_DIALING;
-            hfp_ag_establish_audio_connection(connection->remote_addr);
+
+            // trigger callsetup to be
             hfp_ag_set_callsetup_state(HFP_CALLSETUP_STATUS_OUTGOING_CALL_SETUP_IN_DIALING_STATE);
-            hfp_ag_transfer_callsetup_state();
+            indicator_index = get_ag_indicator_index_for_name("callsetup");
+            connection->ag_indicators_status_update_bitmap = store_bit(connection->ag_indicators_status_update_bitmap, indicator_index, 1);
+
+            // put current call on hold if active
+            if (hfp_ag_call_state == HFP_CALL_STATUS_ACTIVE_OR_HELD_CALL_IS_PRESENT){
+                printf("AG putting current call on hold for new outgoing call\n");
+                hfp_ag_set_callheld_state(HFP_CALLHELD_STATUS_CALL_ON_HOLD_AND_NO_ACTIVE_CALLS);
+                indicator_index = get_ag_indicator_index_for_name("callheld");
+                hfp_ag_transfer_ag_indicators_status_cmd(connection->rfcomm_cid, &hfp_ag_indicators[indicator_index]);
+            }
+
+            // start audio if needed
+            hfp_ag_establish_audio_connection(connection->remote_addr);
             break;
 
         case HFP_AG_OUTGOING_CALL_RINGING:
@@ -1111,24 +1136,23 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * connect
             break;
 
         case HFP_AG_OUTGOING_CALL_ESTABLISHED:
-            switch (hfp_ag_call_state){
-                case HFP_CALL_STATUS_NO_HELD_OR_ACTIVE_CALLS:
-                    connection = hfp_ag_connection_for_call_state(HFP_CALL_OUTGOING_RINGING);
-                    if (!connection){
-                        connection = hfp_ag_connection_for_call_state(HFP_CALL_OUTGOING_DIALING);
-                    }
-                    if (!connection){
-                        log_info("hfp_ag_call_sm: did not find outgoing connection");
-                        break;
-                    }
-                    connection->call_state = HFP_CALL_ACTIVE;
-                    hfp_ag_set_callsetup_state(HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS);
-                    hfp_ag_set_call_state(HFP_CALL_STATUS_ACTIVE_OR_HELD_CALL_IS_PRESENT);
-                    hfp_ag_transfer_call_state();
-                    hfp_ag_transfer_callsetup_state();
-                    break;
-                default:
-                    break;
+            // get outgoing call
+            connection = hfp_ag_connection_for_call_state(HFP_CALL_OUTGOING_RINGING);
+            if (!connection){
+                connection = hfp_ag_connection_for_call_state(HFP_CALL_OUTGOING_DIALING);
+            }
+            if (!connection){
+                log_info("hfp_ag_call_sm: did not find outgoing connection");
+                break;
+            }
+            connection->call_state = HFP_CALL_ACTIVE;
+            hfp_ag_set_callsetup_state(HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS);
+            hfp_ag_set_call_state(HFP_CALL_STATUS_ACTIVE_OR_HELD_CALL_IS_PRESENT);
+            hfp_ag_transfer_call_state();
+            hfp_ag_transfer_callsetup_state();
+            if (hfp_ag_callheld_state == HFP_CALLHELD_STATUS_CALL_ON_HOLD_AND_NO_ACTIVE_CALLS){
+                hfp_ag_set_callheld_state(HFP_CALLHELD_STATUS_CALL_ON_HOLD_OR_SWAPPED);
+                hfp_ag_transfer_callheld_state();
             }
             break;
         default:
@@ -1306,6 +1330,7 @@ static void hfp_handle_rfcomm_data(uint8_t packet_type, uint16_t channel, uint8_
         case HFP_CMD_REDIAL_LAST_NUMBER:
             context->command = HFP_CMD_NONE;
             hfp_ag_call_sm(HFP_AG_OUTGOING_REDIAL_INITIATED, context);
+            break;
         case HFP_CMD_ENABLE_CLIP:
             context->command = HFP_CMD_NONE;
             context->clip_enabled = context->line_buffer[8] != '0';
