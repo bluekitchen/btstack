@@ -621,29 +621,29 @@ void hfp_handle_hci_event(hfp_callback_t callback, uint8_t packet_type, uint8_t 
 static hfp_command_t parse_command(const char * line_buffer, int isHandsFree){
     int offset = isHandsFree ? 0 : 2;
 
-    if (strncmp(line_buffer+offset, HFP_REQUEST_PHONE_NUMBER, strlen(HFP_REQUEST_PHONE_NUMBER))){
+    if (strncmp(line_buffer+offset, HFP_REQUEST_PHONE_NUMBER, strlen(HFP_REQUEST_PHONE_NUMBER)) == 0){
         if (isHandsFree) return HFP_CMD_AG_SEND_PHONE_NUMBER;
         return HFP_CMD_HF_REQUEST_PHONE_NUMBER;
     }
 
-    if (strncmp(line_buffer+offset, HFP_TRANSMIT_DTMF_CODES, strlen(HFP_TRANSMIT_DTMF_CODES))){
+    if (strncmp(line_buffer+offset, HFP_TRANSMIT_DTMF_CODES, strlen(HFP_TRANSMIT_DTMF_CODES)) == 0){
         return HFP_CMD_TRANSMIT_DTMF_CODES;
     }
 
-    if (strncmp(line_buffer+offset, HFP_SET_MICROPHONE_GAIN, strlen(HFP_SET_MICROPHONE_GAIN))){
+    if (strncmp(line_buffer+offset, HFP_SET_MICROPHONE_GAIN, strlen(HFP_SET_MICROPHONE_GAIN)) == 0){
         return HFP_CMD_SET_MICROPHONE_GAIN;
     }
 
-    if (strncmp(line_buffer+offset, HFP_SET_SPEAKER_GAIN, strlen(HFP_SET_SPEAKER_GAIN))){
+    if (strncmp(line_buffer+offset, HFP_SET_SPEAKER_GAIN, strlen(HFP_SET_SPEAKER_GAIN)) == 0){
         return HFP_CMD_SET_SPEAKER_GAIN;
     }
     
-    if (strncmp(line_buffer+offset, HFP_ACTIVATE_VOICE_RECOGNITION, strlen(HFP_ACTIVATE_VOICE_RECOGNITION))){
+    if (strncmp(line_buffer+offset, HFP_ACTIVATE_VOICE_RECOGNITION, strlen(HFP_ACTIVATE_VOICE_RECOGNITION)) == 0){
         if (isHandsFree) return HFP_CMD_AG_ACTIVATE_VOICE_RECOGNITION;
         return HFP_CMD_HF_ACTIVATE_VOICE_RECOGNITION;
     }
 
-    if (strncmp(line_buffer+offset, HFP_TURN_OFF_EC_AND_NR, strlen(HFP_TURN_OFF_EC_AND_NR))){
+    if (strncmp(line_buffer+offset, HFP_TURN_OFF_EC_AND_NR, strlen(HFP_TURN_OFF_EC_AND_NR)) == 0){
         return HFP_CMD_TURN_OFF_EC_AND_NR;
     }
 
