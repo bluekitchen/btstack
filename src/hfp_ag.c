@@ -1317,6 +1317,7 @@ static void hfp_handle_rfcomm_data(uint8_t packet_type, uint16_t channel, uint8_
             if (get_bit(hfp_supported_features, HFP_AGSF_EC_NR_FUNCTION)){
                 context->ok_pending = 1;
                 hfp_supported_features = store_bit(hfp_supported_features, HFP_AGSF_EC_NR_FUNCTION, context->ag_echo_and_noise_reduction);
+                printf("AG: EC/NR = %u\n", context->ag_echo_and_noise_reduction);
             } else {
                 context->send_error = 1;
             }
