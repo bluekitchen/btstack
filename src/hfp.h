@@ -66,8 +66,9 @@ extern "C" {
 9: eSCO S4 (and T2) Settings Supported
 10-31: Reserved for future definition
 */
-#define HFP_HFSF_THREE_WAY_CALLING  1
 #define HFP_HFSF_EC_NR_FUNCTION     0
+#define HFP_HFSF_THREE_WAY_CALLING  1
+#define HFP_HFSF_VOICE_RECOGNITION_FUNCTION 3
 #define HFP_HFSF_CODEC_NEGOTIATION  7
 #define HFP_HFSF_HF_INDICATORS      8
 #define HFP_HFSF_ESCO               9

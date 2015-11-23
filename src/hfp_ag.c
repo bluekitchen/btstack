@@ -1675,9 +1675,12 @@ void hfp_ag_set_battery_level(int level){
  */
 void hfp_ag_activate_voice_recognition(bd_addr_t bd_addr, int activate){
     if (!get_bit(hfp_supported_features, HFP_AGSF_VOICE_RECOGNITION_FUNCTION)) return;
-
     hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
-    if (connection->ag_activate_voice_recognition == activate) return;
+
+    if (!get_bit(connection->remote_supported_features, HFP_HFSF_VOICE_RECOGNITION_FUNCTION)) {
+        printf("AG cannot acivate voice recognition - not supported by HF\n");
+        return;
+    }
 
     if (activate){
         hfp_ag_establish_audio_connection(bd_addr);
