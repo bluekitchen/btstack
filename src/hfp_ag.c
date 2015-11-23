@@ -1264,6 +1264,7 @@ static void hfp_handle_rfcomm_data(uint8_t packet_type, uint16_t channel, uint8_
             log_error("HFP: unhandled call hold type %c", context->line_buffer[0]);
             int callsetup_indicator_index = get_ag_indicator_index_for_name("callsetup");
             int callheld_indicator_index = get_ag_indicator_index_for_name("callheld");
+            int call_indicator_index = get_ag_indicator_index_for_name("call");
             switch (context->line_buffer[0]){
                 case '0':
                     context->command = HFP_CMD_NONE;
@@ -1274,6 +1275,7 @@ static void hfp_handle_rfcomm_data(uint8_t packet_type, uint16_t channel, uint8_
                     printf("AG: Call Waiting, User Busy\n");
                     break;
                 case '1':
+                    // Releases all active calls (if any exist) and accepts the other (held or waiting) call.
                     context->command = HFP_CMD_NONE;
                     context->ok_pending = 1;
                     if (hfp_ag_callsetup_state != HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS){
@@ -1290,6 +1292,7 @@ static void hfp_handle_rfcomm_data(uint8_t packet_type, uint16_t channel, uint8_
                     context->call_state = HFP_CALL_ACTIVE;
                     break;
                 case '2':
+                    // Places all active calls (if any exist) on hold and accepts the other (held or waiting) call.
                     context->command = HFP_CMD_NONE;
                     context->ok_pending = 1;
                     // only update if callsetup changed
@@ -1305,6 +1308,7 @@ static void hfp_handle_rfcomm_data(uint8_t packet_type, uint16_t channel, uint8_
                     context->call_state = HFP_CALL_ACTIVE;
                     break;
                 case '3':
+                    // Adds a held call to the conversation.
                     context->command = HFP_CMD_NONE;
                     context->ok_pending = 1;
                     if (hfp_ag_callheld_state != HFP_CALLHELD_STATUS_NO_CALLS_HELD){
@@ -1315,9 +1319,15 @@ static void hfp_handle_rfcomm_data(uint8_t packet_type, uint16_t channel, uint8_
                     context->call_state = HFP_CALL_ACTIVE;
                     break;
                 case '4':
-                    break;
-                case '?':
-                    // handled by  for feature
+                    // Connects the two calls and disconnects the subscriber from both calls (Explicit Call Transfer)
+                    context->command = HFP_CMD_NONE;
+                    context->ok_pending = 1;
+                    printf("AG: Transfer call -> Connect two calls and disconnect\n");
+                    hfp_ag_set_call_state(HFP_CALL_STATUS_NO_HELD_OR_ACTIVE_CALLS);
+                    hfp_ag_set_callheld_state(HFP_CALLHELD_STATUS_NO_CALLS_HELD);
+                    context->ag_indicators_status_update_bitmap = store_bit(context->ag_indicators_status_update_bitmap, call_indicator_index, 1);
+                    context->ag_indicators_status_update_bitmap = store_bit(context->ag_indicators_status_update_bitmap, callheld_indicator_index, 1);
+                    context->call_state = HFP_CALL_IDLE;
                     break;
                 default:
                     break;
@@ -1532,18 +1542,6 @@ void hfp_ag_outgoing_call_rejected(void){
 void hfp_ag_outgoing_call_accepted(void){
     hfp_ag_call_sm(HFP_AG_OUTGOING_CALL_ACCEPTED, NULL);
 }
-
-void hfp_ag_place_a_call_with_phone_number(void){
-    // linked_list_iterator_t it;    
-    // linked_list_iterator_init(&it, hfp_get_connections());
-    // while (linked_list_iterator_has_next(&it)){
-    //     hfp_connection_t * connection = (hfp_connection_t *)linked_list_iterator_next(&it);
-    //     hfp_ag_establish_service_level_connection(connection->remote_addr);
-    //     ...
-    //     hfp_run_for_context(connection);
-    // }   
-}
-
 static void hfp_ag_set_ag_indicator(const char * name, int value){
     int indicator_index = get_ag_indicator_index_for_name(name);
     if (indicator_index < 0) return;

@@ -215,11 +215,6 @@ void hfp_ag_call_dropped(void);
  */
 void hfp_ag_terminate_call(void);
 
-/**
- * @brief 
- */
-void hfp_ag_place_a_call_with_phone_number(void);
-
 /*
  * @brief
  */
