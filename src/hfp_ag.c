@@ -1285,7 +1285,7 @@ static void hfp_handle_rfcomm_data(uint8_t packet_type, uint16_t channel, uint8_
             context->ok_pending = 1;
             hfp_ag_call_sm(HFP_AG_TERMINATE_CALL_BY_HF, context);
             break;
-        case HFP_CMD_CALL_HOLD:
+        case HFP_CMD_CALL_HOLD: {
             // TODO: fully implement this
             log_error("HFP: unhandled call hold type %c", context->line_buffer[0]);
             int callsetup_indicator_index = get_ag_indicator_index_for_name("callsetup");
@@ -1359,6 +1359,7 @@ static void hfp_handle_rfcomm_data(uint8_t packet_type, uint16_t channel, uint8_
                     break;
             }
             break;
+        }
         case HFP_CMD_CALL_PHONE_NUMBER:
             context->command = HFP_CMD_NONE;
             hfp_ag_call_sm(HFP_AG_OUTGOING_CALL_INITIATED, context);
