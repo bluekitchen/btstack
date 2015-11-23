@@ -241,6 +241,16 @@ void hfp_ag_set_battery_level(int level);
  */
 void hfp_ag_activate_voice_recognition(bd_addr_t bd_addr, int activate);
 
+/*
+ * @brief
+ */
+void hfp_ag_set_microphone_gain(bd_addr_t bd_addr, int gain);
+
+/*
+ * @brief
+ */
+void hfp_ag_set_speaker_gain(bd_addr_t bd_addr, int gain);
+
 /* API_END */
 
 #if defined __cplusplus

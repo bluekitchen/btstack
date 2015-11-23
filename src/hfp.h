@@ -125,6 +125,11 @@ extern "C" {
 #define HFP_REDIAL_LAST_NUMBER "AT+BLDN"
 #define HFP_TURN_OFF_EC_AND_NR "+NREC" // EC (Echo CAnceling), NR (Noise Reduction)
 #define HFP_ACTIVATE_VOICE_RECOGNITION "+BVRA" // EC (Echo CAnceling), NR (Noise Reduction)
+#define HFP_SET_MICROPHONE_GAIN  "+VGM"
+#define HFP_SET_SPEAKER_GAIN     "+VGS"
+
+#define HFP_REQUEST_PHONE_NUMBER "+BINP"
+#define HFP_TRANSMIT_DTMF_CODES  "+VTS"
 
 
 #define HFP_OK "OK"
@@ -176,7 +181,13 @@ typedef enum {
     HFP_CMD_TURN_OFF_EC_AND_NR,
     HFP_CMD_AG_ACTIVATE_VOICE_RECOGNITION,
     HFP_CMD_HF_ACTIVATE_VOICE_RECOGNITION,
+    HFP_CMD_HF_REQUEST_PHONE_NUMBER,
+    HFP_CMD_AG_SEND_PHONE_NUMBER,
+    HFP_CMD_TRANSMIT_DTMF_CODES,
+    HFP_CMD_SET_MICROPHONE_GAIN,
+    HFP_CMD_SET_SPEAKER_GAIN
 } hfp_command_t;
+ 
 
 typedef enum {
     HFP_CME_ERROR_AG_FAILURE = 0, 
@@ -444,6 +455,9 @@ typedef struct hfp_connection {
     uint8_t ag_send_clip;
     uint8_t ag_echo_and_noise_reduction;
     uint8_t ag_activate_voice_recognition;
+
+    uint8_t microphone_gain;
+    uint8_t speaker_gain;
 
     timer_source_t hfp_timeout;
 } hfp_connection_t;

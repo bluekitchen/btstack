@@ -620,13 +620,30 @@ void hfp_handle_hci_event(hfp_callback_t callback, uint8_t packet_type, uint8_t 
 // translates command string into hfp_command_t CMD
 static hfp_command_t parse_command(const char * line_buffer, int isHandsFree){
     int offset = isHandsFree ? 0 : 2;
+
+    if (strncmp(line_buffer+offset, HFP_REQUEST_PHONE_NUMBER, strlen(HFP_REQUEST_PHONE_NUMBER))){
+        if (isHandsFree) return HFP_CMD_AG_SEND_PHONE_NUMBER;
+        return HFP_CMD_HF_REQUEST_PHONE_NUMBER;
+    }
+
+    if (strncmp(line_buffer+offset, HFP_TRANSMIT_DTMF_CODES, strlen(HFP_TRANSMIT_DTMF_CODES))){
+        return HFP_CMD_TRANSMIT_DTMF_CODES;
+    }
+
+    if (strncmp(line_buffer+offset, HFP_SET_MICROPHONE_GAIN, strlen(HFP_SET_MICROPHONE_GAIN))){
+        return HFP_CMD_SET_MICROPHONE_GAIN;
+    }
+
+    if (strncmp(line_buffer+offset, HFP_SET_SPEAKER_GAIN, strlen(HFP_SET_SPEAKER_GAIN))){
+        return HFP_CMD_SET_SPEAKER_GAIN;
+    }
     
-    if (strncmp(line_buffer, HFP_ACTIVATE_VOICE_RECOGNITION, strlen(HFP_ACTIVATE_VOICE_RECOGNITION))){
+    if (strncmp(line_buffer+offset, HFP_ACTIVATE_VOICE_RECOGNITION, strlen(HFP_ACTIVATE_VOICE_RECOGNITION))){
         if (isHandsFree) return HFP_CMD_AG_ACTIVATE_VOICE_RECOGNITION;
         return HFP_CMD_HF_ACTIVATE_VOICE_RECOGNITION;
     }
 
-    if (strncmp(line_buffer, HFP_TURN_OFF_EC_AND_NR, strlen(HFP_TURN_OFF_EC_AND_NR))){
+    if (strncmp(line_buffer+offset, HFP_TURN_OFF_EC_AND_NR, strlen(HFP_TURN_OFF_EC_AND_NR))){
         return HFP_CMD_TURN_OFF_EC_AND_NR;
     }
 
@@ -921,6 +938,16 @@ void hfp_parse(hfp_connection_t * context, uint8_t byte, int isHandsFree){
 
         case HFP_PARSER_CMD_SEQUENCE: // parse comma separated sequence, ignore breacktes
             switch (context->command){
+                case HFP_CMD_SET_MICROPHONE_GAIN:
+                    value = atoi((char *)&context->line_buffer[0]);
+                    context->microphone_gain = value;
+                    log_info("hfp parse HFP_CMD_SET_MICROPHONE_GAIN %d\n", value);
+                    break;
+                case HFP_CMD_SET_SPEAKER_GAIN:
+                    value = atoi((char *)&context->line_buffer[0]);
+                    context->speaker_gain = value;
+                    log_info("hfp parse HFP_CMD_SET_SPEAKER_GAIN %d\n", value);
+                    break;
                 case HFP_CMD_HF_ACTIVATE_VOICE_RECOGNITION:
                     value = atoi((char *)&context->line_buffer[0]);
                     context->ag_activate_voice_recognition = value;

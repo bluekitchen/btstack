@@ -403,6 +403,19 @@ static int hfp_ag_activate_voice_recognition_cmd(uint16_t cid, uint8_t activate_
     return send_str_over_rfcomm(cid, buffer);
 }
 
+static int hfp_ag_set_speaker_gain_cmd(uint16_t cid, uint8_t gain){
+    char buffer[30];
+    sprintf(buffer, "\r\n%s:%d\r\n", HFP_SET_SPEAKER_GAIN, gain);
+    return send_str_over_rfcomm(cid, buffer);
+}
+
+static int hfp_ag_set_microphone_gain_cmd(uint16_t cid, uint8_t gain){
+    char buffer[30];
+    sprintf(buffer, "\r\n%s:%d\r\n", HFP_SET_MICROPHONE_GAIN, gain);
+    return send_str_over_rfcomm(cid, buffer);
+}
+            
+
 static uint8_t hfp_ag_suggest_codec(hfp_connection_t *context){
     int i,j;
     uint8_t codec = HFP_CODEC_CVSD;
@@ -593,6 +606,12 @@ static int hfp_ag_run_for_context_service_level_connection_queries(hfp_connectio
    
     // printf(" -> State machine: SLC Queries\n");
     switch(context->command){
+        case HFP_CMD_SET_SPEAKER_GAIN:
+            hfp_ag_set_speaker_gain_cmd(context->rfcomm_cid, context->ag_activate_voice_recognition);
+            return 1;
+        case HFP_CMD_SET_MICROPHONE_GAIN:
+            hfp_ag_set_microphone_gain_cmd(context->rfcomm_cid, context->ag_activate_voice_recognition);
+            return 1;
         case HFP_CMD_AG_ACTIVATE_VOICE_RECOGNITION:
             hfp_supported_features = store_bit(hfp_supported_features, HFP_AGSF_VOICE_RECOGNITION_FUNCTION, context->ag_activate_voice_recognition);
             hfp_ag_activate_voice_recognition_cmd(context->rfcomm_cid, context->ag_activate_voice_recognition);
@@ -1648,10 +1667,31 @@ void hfp_ag_activate_voice_recognition(bd_addr_t bd_addr, int activate){
 
     hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
     if (connection->ag_activate_voice_recognition == activate) return;
-    
+
     connection->ag_activate_voice_recognition = activate;
     connection->command = HFP_CMD_AG_ACTIVATE_VOICE_RECOGNITION;
     hfp_run_for_context(connection);
 }
 
+/*
+ * @brief
+ */
+void hfp_ag_set_microphone_gain(bd_addr_t bd_addr, int gain){
+    hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
+    if (connection->microphone_gain != gain){
+        connection->command = HFP_CMD_SET_MICROPHONE_GAIN;
+        connection->microphone_gain = gain;
+    } 
+}
+
+/*
+ * @brief
+ */
+void hfp_ag_set_speaker_gain(bd_addr_t bd_addr, int gain){
+    hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
+    if (connection->speaker_gain != gain){
+        connection->command = HFP_CMD_SET_SPEAKER_GAIN;
+        connection->speaker_gain = gain;
+    } 
+}
 
