@@ -235,6 +235,12 @@ void hfp_ag_set_roaming_status(int status);
  */
 void hfp_ag_set_battery_level(int level);
 
+
+/*
+ * @brief
+ */
+void hfp_ag_activate_voice_recognition(bd_addr_t bd_addr, int activate);
+
 /* API_END */
 
 #if defined __cplusplus

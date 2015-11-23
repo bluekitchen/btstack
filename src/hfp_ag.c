@@ -86,6 +86,7 @@ static char    clip_number[25]; //
 
 static void packet_handler(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static void hfp_run_for_context(hfp_connection_t *context);
+static void hfp_ag_setup_audio_connection(hfp_connection_t * connection);
 
 hfp_generic_status_indicator_t * get_hfp_generic_status_indicators();
 int get_hfp_generic_status_indicators_nr();
@@ -93,7 +94,6 @@ void set_hfp_generic_status_indicators(hfp_generic_status_indicator_t * indicato
 void set_hfp_ag_indicators(hfp_ag_indicator_t * indicators, int indicator_nr);
 int get_hfp_ag_indicators_nr(hfp_connection_t * context);
 hfp_ag_indicator_t * get_hfp_ag_indicators(hfp_connection_t * context);
-
 
 hfp_ag_indicator_t * get_hfp_ag_indicators(hfp_connection_t * context){
     // TODO: save only value, and value changed in the context?
@@ -397,6 +397,12 @@ static int hfp_ag_cmd_suggest_codec(uint16_t cid, uint8_t codec){
     return send_str_over_rfcomm(cid, buffer);
 }
 
+static int hfp_ag_activate_voice_recognition_cmd(uint16_t cid, uint8_t activate_voice_recognition){
+    char buffer[30];
+    sprintf(buffer, "\r\n%s:%d\r\n", HFP_ACTIVATE_VOICE_RECOGNITION, activate_voice_recognition);
+    return send_str_over_rfcomm(cid, buffer);
+}
+
 static uint8_t hfp_ag_suggest_codec(hfp_connection_t *context){
     int i,j;
     uint8_t codec = HFP_CODEC_CVSD;
@@ -587,6 +593,19 @@ static int hfp_ag_run_for_context_service_level_connection_queries(hfp_connectio
    
     // printf(" -> State machine: SLC Queries\n");
     switch(context->command){
+        case HFP_CMD_AG_ACTIVATE_VOICE_RECOGNITION:
+            hfp_supported_features = store_bit(hfp_supported_features, HFP_AGSF_VOICE_RECOGNITION_FUNCTION, context->ag_activate_voice_recognition);
+            hfp_ag_activate_voice_recognition_cmd(context->rfcomm_cid, context->ag_activate_voice_recognition);
+            return 1;
+        case HFP_CMD_HF_ACTIVATE_VOICE_RECOGNITION:
+            if (get_bit(hfp_supported_features, HFP_AGSF_VOICE_RECOGNITION_FUNCTION)){
+                hfp_supported_features = store_bit(hfp_supported_features, HFP_AGSF_VOICE_RECOGNITION_FUNCTION, context->ag_activate_voice_recognition);
+                hfp_ag_ok(context->rfcomm_cid);
+                hfp_ag_setup_audio_connection(context);
+            } else {
+                hfp_ag_error(context->rfcomm_cid);
+            }
+            return 1;
         case HFP_CMD_CHANGE_IN_BAND_RING_TONE_SETTING:
             hfp_ag_change_in_band_ring_tone_setting_cmd(context->rfcomm_cid);
             return 1;
@@ -1478,12 +1497,7 @@ void hfp_ag_report_extended_audio_gateway_error_result_code(bd_addr_t bd_addr, h
     hfp_run_for_context(connection);
 }
 
-
-void hfp_ag_establish_audio_connection(bd_addr_t bd_addr){
-    hfp_ag_establish_service_level_connection(bd_addr);
-    hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
-
-    connection->establish_audio_connection = 0;
+static void hfp_ag_setup_audio_connection(hfp_connection_t * connection){
     if (connection->state == HFP_AUDIO_CONNECTION_ESTABLISHED) return;
     if (connection->state >= HFP_W2_DISCONNECT_SCO) return;
         
@@ -1504,7 +1518,14 @@ void hfp_ag_establish_audio_connection(bd_addr_t bd_addr){
         default:
             break;
     } 
+}
 
+void hfp_ag_establish_audio_connection(bd_addr_t bd_addr){
+    hfp_ag_establish_service_level_connection(bd_addr);
+    hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
+
+    connection->establish_audio_connection = 0;
+    hfp_ag_setup_audio_connection(connection);
     hfp_run_for_context(connection);
 }
 
@@ -1618,3 +1639,19 @@ void hfp_ag_set_roaming_status(int status){
 void hfp_ag_set_battery_level(int level){
     hfp_ag_set_ag_indicator("battchg", level);
 }
+
+/*
+ * @brief
+ */
+void hfp_ag_activate_voice_recognition(bd_addr_t bd_addr, int activate){
+    if (!get_bit(hfp_supported_features, HFP_AGSF_VOICE_RECOGNITION_FUNCTION)) return;
+
+    hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
+    if (connection->ag_activate_voice_recognition == activate) return;
+    
+    connection->ag_activate_voice_recognition = activate;
+    connection->command = HFP_CMD_AG_ACTIVATE_VOICE_RECOGNITION;
+    hfp_run_for_context(connection);
+}
+
+

@@ -621,6 +621,11 @@ void hfp_handle_hci_event(hfp_callback_t callback, uint8_t packet_type, uint8_t 
 static hfp_command_t parse_command(const char * line_buffer, int isHandsFree){
     int offset = isHandsFree ? 0 : 2;
     
+    if (strncmp(line_buffer, HFP_ACTIVATE_VOICE_RECOGNITION, strlen(HFP_ACTIVATE_VOICE_RECOGNITION))){
+        if (isHandsFree) return HFP_CMD_AG_ACTIVATE_VOICE_RECOGNITION;
+        return HFP_CMD_HF_ACTIVATE_VOICE_RECOGNITION;
+    }
+
     if (strncmp(line_buffer, HFP_TURN_OFF_EC_AND_NR, strlen(HFP_TURN_OFF_EC_AND_NR))){
         return HFP_CMD_TURN_OFF_EC_AND_NR;
     }
@@ -916,6 +921,11 @@ void hfp_parse(hfp_connection_t * context, uint8_t byte, int isHandsFree){
 
         case HFP_PARSER_CMD_SEQUENCE: // parse comma separated sequence, ignore breacktes
             switch (context->command){
+                case HFP_CMD_HF_ACTIVATE_VOICE_RECOGNITION:
+                    value = atoi((char *)&context->line_buffer[0]);
+                    context->ag_activate_voice_recognition = value;
+                    log_info("hfp parse HFP_CMD_HF_ACTIVATE_VOICE_RECOGNITION %d\n", value);
+                    break;
                 case HFP_CMD_TURN_OFF_EC_AND_NR:
                     value = atoi((char *)&context->line_buffer[0]);
                     context->ag_echo_and_noise_reduction = value;

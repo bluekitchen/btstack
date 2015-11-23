@@ -89,6 +89,7 @@ extern "C" {
 */
 #define HFP_AGSF_THREE_WAY_CALLING  0
 #define HFP_AGSF_EC_NR_FUNCTION     1
+#define HFP_AGSF_VOICE_RECOGNITION_FUNCTION     2
 #define HFP_AGSF_IN_BAND_RING_TONE  3
 #define HFP_AGSF_CODEC_NEGOTIATION  9
 #define HFP_AGSF_HF_INDICATORS      10
@@ -122,7 +123,9 @@ extern "C" {
 #define HFP_CHANGE_IN_BAND_RING_TONE_SETTING "+BSIR"
 #define HFP_CALL_PHONE_NUMBER "ATD"
 #define HFP_REDIAL_LAST_NUMBER "AT+BLDN"
-#define HFP_TURN_OFF_EC_AND_NR "AT+NREC" // EC (Echo CAnceling), NR (Noise Reduction)
+#define HFP_TURN_OFF_EC_AND_NR "+NREC" // EC (Echo CAnceling), NR (Noise Reduction)
+#define HFP_ACTIVATE_VOICE_RECOGNITION "+BVRA" // EC (Echo CAnceling), NR (Noise Reduction)
+
 
 #define HFP_OK "OK"
 #define HFP_ERROR "ERROR"
@@ -170,7 +173,9 @@ typedef enum {
     HFP_CMD_CHANGE_IN_BAND_RING_TONE_SETTING,
     HFP_CMD_CALL_PHONE_NUMBER,
     HFP_CMD_REDIAL_LAST_NUMBER,
-    HFP_CMD_TURN_OFF_EC_AND_NR
+    HFP_CMD_TURN_OFF_EC_AND_NR,
+    HFP_CMD_AG_ACTIVATE_VOICE_RECOGNITION,
+    HFP_CMD_HF_ACTIVATE_VOICE_RECOGNITION,
 } hfp_command_t;
 
 typedef enum {
@@ -438,7 +443,8 @@ typedef struct hfp_connection {
     uint8_t ag_ring;
     uint8_t ag_send_clip;
     uint8_t ag_echo_and_noise_reduction;
-    
+    uint8_t ag_activate_voice_recognition;
+
     timer_source_t hfp_timeout;
 } hfp_connection_t;
 
