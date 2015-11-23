@@ -841,7 +841,6 @@ static void hfp_ag_trigger_reject_call(void){
         connection->ag_indicators_status_update_bitmap = store_bit(connection->ag_indicators_status_update_bitmap, callsetup_indicator_index, 1);
         connection->call_state = HFP_CALL_IDLE;
         hfp_run_for_context(connection);
-        break;  // only single 
     }    
 }
 
@@ -886,6 +885,17 @@ static void hfp_ag_set_call_state(hfp_call_status_t state){
         log_error("hfp_ag_set_call_state: call indicator is missing");
     };
     indicator->status = state;
+}
+
+static void hfp_ag_stop_ringing(void){
+    linked_list_iterator_t it;    
+    linked_list_iterator_init(&it, hfp_get_connections());
+    while (linked_list_iterator_has_next(&it)){
+        hfp_connection_t * connection = (hfp_connection_t *)linked_list_iterator_next(&it);
+        if (connection->call_state != HFP_CALL_RINGING &&
+            connection->call_state != HFP_CALL_W4_AUDIO_CONNECTION_FOR_IN_BAND_RING) continue;
+        hfp_ag_hf_stop_ringing(connection);
+    }    
 }
 
 static hfp_connection_t * hfp_ag_connection_for_call_state(hfp_call_state_t call_state){
@@ -1065,6 +1075,23 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * connect
             // clear CLIP
             clip_type = 0;
             switch (hfp_ag_call_state){
+                case HFP_CALL_STATUS_NO_HELD_OR_ACTIVE_CALLS:
+                    switch (hfp_ag_callsetup_state){
+                        case HFP_CALLSETUP_STATUS_INCOMING_CALL_SETUP_IN_PROGRESS:
+                            hfp_ag_stop_ringing();
+                            printf("Incoming call interrupted\n");
+                            break;
+                        case HFP_CALLSETUP_STATUS_OUTGOING_CALL_SETUP_IN_DIALING_STATE:
+                        case HFP_CALLSETUP_STATUS_OUTGOING_CALL_SETUP_IN_ALERTING_STATE:
+                            printf("Outgoing call interrupted\n");
+                            printf("AG notify call dropped\n");
+                            break;
+                        default:
+                            break;
+                    }
+                    hfp_ag_set_callsetup_state(HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS);
+                    hfp_ag_transfer_callsetup_state();
+                    break;
                 case HFP_CALL_STATUS_ACTIVE_OR_HELD_CALL_IS_PRESENT:
                     hfp_ag_set_callsetup_state(HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS);
                     hfp_ag_set_call_state(HFP_CALL_STATUS_NO_HELD_OR_ACTIVE_CALLS);
