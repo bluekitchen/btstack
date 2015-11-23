@@ -399,7 +399,7 @@ static int hfp_ag_cmd_suggest_codec(uint16_t cid, uint8_t codec){
 
 static int hfp_ag_activate_voice_recognition_cmd(uint16_t cid, uint8_t activate_voice_recognition){
     char buffer[30];
-    sprintf(buffer, "\r\n%s:%d\r\n", HFP_ACTIVATE_VOICE_RECOGNITION, activate_voice_recognition);
+    sprintf(buffer, "\r\n%s: %d\r\n", HFP_ACTIVATE_VOICE_RECOGNITION, activate_voice_recognition);
     return send_str_over_rfcomm(cid, buffer);
 }
 
@@ -1678,6 +1678,10 @@ void hfp_ag_activate_voice_recognition(bd_addr_t bd_addr, int activate){
 
     hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
     if (connection->ag_activate_voice_recognition == activate) return;
+
+    if (activate){
+        hfp_ag_establish_audio_connection(bd_addr);
+    }
 
     connection->ag_activate_voice_recognition = activate;
     connection->command = HFP_CMD_AG_ACTIVATE_VOICE_RECOGNITION;

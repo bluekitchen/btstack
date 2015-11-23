@@ -152,6 +152,9 @@ static void show_usage(void){
     printf("m - simulate incoming call from 7654321\n");
     // printf("M - simulate call from 7654321 dropped\n");
 
+    printf("n - Disable Voice Regocnition\n");
+    printf("N - Enable Voice Recognition\n");
+
     printf("t - terminate connection\n");
 
     printf("---\n");
@@ -269,6 +272,14 @@ static int stdin_process(struct data_source *ds){
         case 'L':
             printf("Last dialed number set\n");
             last_number_exists = 1;
+            break;
+        case 'n':
+            printf("Disable Voice Recognition\n");
+            hfp_ag_activate_voice_recognition(device_addr, 0);
+            break;
+        case 'N':
+            printf("Enable Voice Recognition\n");
+            hfp_ag_activate_voice_recognition(device_addr, 1);
             break;
         case 'R':
             printf("Enable in-band ring tone\n");
