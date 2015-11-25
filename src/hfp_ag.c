@@ -1820,7 +1820,7 @@ void hfp_ag_send_current_call_status(bd_addr_t bd_addr, int idx, hfp_enhanced_ca
     char buffer[100];
     int offset = snprintf(buffer, sizeof(buffer), "\r\n%s: %d,%d,%d,%d,%d", HFP_LIST_CURRENT_CALLS, idx, dir, status, mode, mpty);
     if (number){
-        offset += snprintf(buffer+offset, sizeof(buffer)-offset, "\"%s\",%u", number, type);
+        offset += snprintf(buffer+offset, sizeof(buffer)-offset, ", \"%s\",%u", number, type);
     } 
     snprintf(buffer+offset, sizeof(buffer)-offset, "\r\n");
     send_str_over_rfcomm(connection->rfcomm_cid, buffer);

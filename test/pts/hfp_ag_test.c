@@ -79,6 +79,12 @@ static uint16_t handle = -1;
 static int memory_1_enabled = 1;
 static int last_number_exists = 1;
 
+static int current_call_info_available = 0;
+static hfp_enhanced_call_dir_t    current_call_dir;
+static hfp_enhanced_call_status_t current_call_status;
+static hfp_enhanced_call_mpty_t   current_call_mpty   = HFP_ENHANCED_CALL_MPTY_NOT_A_CONFERENCE_CALL;
+static char *                     current_call_number = NULL;
+
 static int ag_indicators_nr = 7;
 static hfp_ag_indicator_t ag_indicators[] = {
     // index, name, min range, max range, status, mandatory, enabled, status changed
@@ -203,11 +209,19 @@ static int stdin_process(struct data_source *ds){
             break;
         case 'c':
             printf("Simulate incoming call from 1234567\n");
+            current_call_info_available = 1;
+            current_call_dir = HFP_ENHANCED_CALL_DIR_INCOMING;
+            current_call_status = HFP_ENHANCED_CALL_STATUS_INCOMING;
+            current_call_number = "1234567";
             hfp_ag_set_clip(129, "1234567");
             hfp_ag_incoming_call();
             break;
         case 'm':
             printf("Simulate incoming call from 7654321\n");
+            current_call_info_available = 1;
+            current_call_dir = HFP_ENHANCED_CALL_DIR_INCOMING;
+            current_call_status = HFP_ENHANCED_CALL_STATUS_INCOMING;
+            current_call_number = "7654321";
             hfp_ag_set_clip(129, "7654321");
             hfp_ag_incoming_call();
             break;
@@ -221,10 +235,12 @@ static int stdin_process(struct data_source *ds){
             break;
         case 'e':
             printf("Answer call on AG\n");
+            current_call_status = HFP_ENHANCED_CALL_STATUS_ACTIVE;
             hfp_ag_answer_incoming_call();
             break;
         case 'E':
             printf("Reject call on AG\n");
+            current_call_info_available = 0;
             hfp_ag_terminate_call();
             break;
         case 'f':
@@ -348,6 +364,7 @@ static void packet_handler(uint8_t * event, uint16_t event_size){
     }
 
     if (event[0] != HCI_EVENT_HFP_META) return;
+
     if (event[3]
         && event[2] != HFP_SUBEVENT_PLACE_CALL_WITH_NUMBER
         && event[2] != HFP_SUBEVENT_ATTACH_NUMBER_TO_VOICE_TAG 
@@ -411,9 +428,16 @@ static void packet_handler(uint8_t * event, uint16_t event_size){
             printf("\n** Send DTMF Codes: '%s'\n", &event[3]);
             hfp_ag_send_dtmf_code_done(device_addr);
             break;
-
+        case HFP_SUBEVENT_TRANSMIT_STATUS_OF_CURRENT_CALL:
+            if (current_call_info_available){
+                current_call_info_available = 0;
+                hfp_ag_send_current_call_status(device_addr, 1, current_call_dir, current_call_status,
+                        HFP_ENHANCED_CALL_MODE_VOICE, current_call_mpty, 129, current_call_number);
+            }
+            hfp_ag_send_current_call_status_done(device_addr);
+            break;
         default:
-            // printf("event not handled %u\n", event[2]);
+            printf("Event not handled %u\n", event[2]);
             break;
     }
 }
