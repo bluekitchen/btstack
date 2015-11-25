@@ -1042,6 +1042,25 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * connect
                     break;
             }
             break;
+        
+        case HFP_AG_HELD_CALL_JOINED_BY_AG:
+            switch (hfp_ag_call_state){
+                case HFP_CALL_STATUS_ACTIVE_OR_HELD_CALL_IS_PRESENT:
+                    switch (hfp_ag_callheld_state){
+                        case HFP_CALLHELD_STATUS_CALL_ON_HOLD_OR_SWAPPED:
+                            printf("AG: joining held call with active call\n");
+                            hfp_ag_set_callheld_state(HFP_CALLHELD_STATUS_NO_CALLS_HELD);
+                            hfp_ag_transfer_callheld_state();
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
+                default:
+                    break;
+            }
+            break;
+
         case HFP_AG_INCOMING_CALL_ACCEPTED_BY_HF:
             // clear CLIP
             clip_type = 0;
@@ -1676,6 +1695,10 @@ void hfp_ag_call_dropped(void){
 // call from AG UI
 void hfp_ag_answer_incoming_call(void){
     hfp_ag_call_sm(HFP_AG_INCOMING_CALL_ACCEPTED_BY_AG, NULL);
+}
+
+void hfp_ag_join_held_call(void){
+    hfp_ag_call_sm(HFP_AG_HELD_CALL_JOINED_BY_AG, NULL);
 }
 
 void hfp_ag_terminate_call(void){

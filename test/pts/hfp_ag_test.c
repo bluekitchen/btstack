@@ -79,11 +79,13 @@ static uint16_t handle = -1;
 static int memory_1_enabled = 1;
 static int last_number_exists = 1;
 
-static int current_call_info_available = 0;
+static int                        current_call_index = 0;
 static hfp_enhanced_call_dir_t    current_call_dir;
+static int                        current_call_exists_a = 0;
+static int                        current_call_exists_b = 0;
 static hfp_enhanced_call_status_t current_call_status;
 static hfp_enhanced_call_mpty_t   current_call_mpty   = HFP_ENHANCED_CALL_MPTY_NOT_A_CONFERENCE_CALL;
-static char *                     current_call_number = NULL;
+
 
 static int ag_indicators_nr = 7;
 static hfp_ag_indicator_t ag_indicators[] = {
@@ -172,7 +174,7 @@ static void show_usage(void){
     printf("S - Set microphone gain to 15 (maximum)\n");
 
     printf("t - terminate connection\n");
-
+    printf("u - join held call\n");
     printf("---\n");
     printf("Ctrl-c - exit\n");
     printf("---\n");
@@ -209,19 +211,17 @@ static int stdin_process(struct data_source *ds){
             break;
         case 'c':
             printf("Simulate incoming call from 1234567\n");
-            current_call_info_available = 1;
+            current_call_exists_a = 1;
             current_call_dir = HFP_ENHANCED_CALL_DIR_INCOMING;
             current_call_status = HFP_ENHANCED_CALL_STATUS_INCOMING;
-            current_call_number = "1234567";
             hfp_ag_set_clip(129, "1234567");
             hfp_ag_incoming_call();
             break;
         case 'm':
             printf("Simulate incoming call from 7654321\n");
-            current_call_info_available = 1;
+            current_call_exists_b = 1;
             current_call_dir = HFP_ENHANCED_CALL_DIR_INCOMING;
             current_call_status = HFP_ENHANCED_CALL_STATUS_INCOMING;
-            current_call_number = "7654321";
             hfp_ag_set_clip(129, "7654321");
             hfp_ag_incoming_call();
             break;
@@ -240,7 +240,6 @@ static int stdin_process(struct data_source *ds){
             break;
         case 'E':
             printf("Reject call on AG\n");
-            current_call_info_available = 0;
             hfp_ag_terminate_call();
             break;
         case 'f':
@@ -346,6 +345,13 @@ static int stdin_process(struct data_source *ds){
         case 't':
             printf("Terminate HCI connection.\n");
             gap_disconnect(handle);
+            break;
+        case 'u':
+            printf("Join held call\n");
+            current_call_mpty = HFP_ENHANCED_CALL_MPTY_CONFERENCE_CALL;
+            current_call_status = HFP_ENHANCED_CALL_STATUS_ACTIVE;
+            hfp_ag_join_held_call();
+            break;
         default:
             show_usage();
             break;
@@ -429,10 +435,17 @@ static void packet_handler(uint8_t * event, uint16_t event_size){
             hfp_ag_send_dtmf_code_done(device_addr);
             break;
         case HFP_SUBEVENT_TRANSMIT_STATUS_OF_CURRENT_CALL:
-            if (current_call_info_available){
-                current_call_info_available = 0;
+            if (current_call_index == 0 && current_call_exists_a){
                 hfp_ag_send_current_call_status(device_addr, 1, current_call_dir, current_call_status,
-                        HFP_ENHANCED_CALL_MODE_VOICE, current_call_mpty, 129, current_call_number);
+                        HFP_ENHANCED_CALL_MODE_VOICE, current_call_mpty, 129, "1234567");
+                current_call_index = 1;
+                break;
+            }
+            if (current_call_index == 1 && current_call_exists_b){
+                hfp_ag_send_current_call_status(device_addr, 2, current_call_dir, current_call_status,
+                        HFP_ENHANCED_CALL_MODE_VOICE, current_call_mpty, 129, "7654321");
+                current_call_index = 2;
+                break;
             }
             hfp_ag_send_current_call_status_done(device_addr);
             break;
@@ -441,6 +454,10 @@ static void packet_handler(uint8_t * event, uint16_t event_size){
             break;
     }
 }
+
+static hfp_phone_number_t subscriber_number = {
+    129, "225577"
+};
 
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
@@ -452,7 +469,7 @@ int btstack_main(int argc, const char * argv[]){
         ag_indicators, ag_indicators_nr, 
         hf_indicators, hf_indicators_nr, 
         call_hold_services, call_hold_services_nr);
-
+    hfp_ag_set_subcriber_number_information(&subscriber_number, 1);
     hfp_ag_register_packet_handler(packet_handler);
 
     sdp_init();

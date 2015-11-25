@@ -212,7 +212,12 @@ void hfp_ag_call_dropped(void);
 /**
  * @brief 
  */
- void hfp_ag_answer_incoming_call(void);
+void hfp_ag_answer_incoming_call(void);
+
+/**
+ * @brief 
+ */
+void hfp_ag_join_held_call(void);
 
 /**
  * @brief 
