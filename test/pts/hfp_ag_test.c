@@ -160,8 +160,10 @@ static void show_usage(void){
     printf("p - Set speaker volume to 12 (higher)\n");
     printf("P - Set speaker volume to 15 (maximum)\n");
 
-    printf("q - Set microphone gain to 9\n");
-    printf("Q - Set microphone gain to 12\n");
+    printf("q - Set microphone gain to 0  (minimum)\n");
+    printf("Q - Set microphone gain to 9  (default)\n");
+    printf("s - Set microphone gain to 12 (higher)\n");
+    printf("S - Set microphone gain to 15 (maximum)\n");
 
     printf("t - terminate connection\n");
 
@@ -306,12 +308,20 @@ static int stdin_process(struct data_source *ds){
             hfp_ag_set_speaker_gain(device_addr, 15);
             break;
         case 'q':
+            printf("Set microphone gain to 0\n");
+            hfp_ag_set_microphone_gain(device_addr, 0);
+            break;
+        case 'Q':
             printf("Set microphone gain to 9\n");
             hfp_ag_set_microphone_gain(device_addr, 9);
             break;
-        case 'Q':
+        case 's':
             printf("Set microphone gain to 12\n");
             hfp_ag_set_microphone_gain(device_addr, 12);
+            break;
+        case 'S':
+            printf("Set microphone gain to 15\n");
+            hfp_ag_set_microphone_gain(device_addr, 15);
             break;
         case 'R':
             printf("Enable in-band ring tone\n");
