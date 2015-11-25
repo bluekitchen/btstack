@@ -799,7 +799,7 @@ int btstack_main(int argc, const char * argv[]){
     sdp_init();
 
     uint16_t network_packet_types[] = { NETWORK_TYPE_IPv4, NETWORK_TYPE_ARP, 0};    // 0 as end of list
-    pan_create_panu_service(panu_sdp_record, network_packet_types, NULL, NULL, BNEP_SECURITY_NONE);
+    pan_create_panu_service(panu_sdp_record, 0x10002, network_packet_types, NULL, NULL, BNEP_SECURITY_NONE);
     printf("SDP service record size: %u\n", de_get_len((uint8_t*) panu_sdp_record));
     sdp_register_service((uint8_t*)panu_sdp_record);
 
