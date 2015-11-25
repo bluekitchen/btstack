@@ -128,10 +128,9 @@ extern "C" {
 #define HFP_ACTIVATE_VOICE_RECOGNITION "+BVRA" // EC (Echo CAnceling), NR (Noise Reduction)
 #define HFP_SET_MICROPHONE_GAIN  "+VGM"
 #define HFP_SET_SPEAKER_GAIN     "+VGS"
-
 #define HFP_PHONE_NUMBER_FOR_VOICE_TAG "+BINP"
 #define HFP_TRANSMIT_DTMF_CODES  "+VTS"
-
+#define HFP_SUBSCRIBER_NUMBER_INFORMATION "+CNUM"
 
 #define HFP_OK "OK"
 #define HFP_ERROR "ERROR"
@@ -186,7 +185,8 @@ typedef enum {
     HFP_CMD_AG_SEND_PHONE_NUMBER,
     HFP_CMD_TRANSMIT_DTMF_CODES,
     HFP_CMD_SET_MICROPHONE_GAIN,
-    HFP_CMD_SET_SPEAKER_GAIN
+    HFP_CMD_SET_SPEAKER_GAIN,
+    HFP_CMD_GET_SUBSCRIBER_NUMBER_INFORMATION
 } hfp_command_t;
  
 
@@ -464,6 +464,10 @@ typedef struct hfp_connection {
     uint8_t send_speaker_gain;
 
     uint8_t send_phone_number_for_voice_tag;
+    
+    uint8_t send_subscriber_number;
+    int next_subscriber_number_to_send;
+
     timer_source_t hfp_timeout;
 } hfp_connection_t;
 

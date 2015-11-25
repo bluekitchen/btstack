@@ -84,6 +84,10 @@ static hfp_callheld_status_t hfp_ag_callheld_state;
 static uint8_t clip_type;       // 0 == not set
 static char    clip_number[25]; // 
 
+// Subcriber information entries
+static hfp_phone_number_t * subscriber_numbers = NULL;
+static int subscriber_numbers_count = 0;
+
 static void packet_handler(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static void hfp_run_for_context(hfp_connection_t *context);
 static void hfp_ag_setup_audio_connection(hfp_connection_t * connection);
@@ -216,6 +220,12 @@ static int hfp_ag_send_clip(uint16_t cid){
     return send_str_over_rfcomm(cid, buffer);
 }
 
+static int hfp_send_subscriber_number_cmd(uint16_t cid, uint8_t type, const char * number){
+    char buffer[50];
+    sprintf(buffer, "\r\n%s:,\"%s\",%u,\r\n", HFP_SUBSCRIBER_NUMBER_INFORMATION, number, type);
+    return send_str_over_rfcomm(cid, buffer);
+}
+        
 static int hfp_ag_send_phone_number_for_voice_tag_cmd(uint16_t cid){
     char buffer[50];
     sprintf(buffer, "\r\n%s:%s\r\n", HFP_PHONE_NUMBER_FOR_VOICE_TAG, clip_number);
@@ -1285,6 +1295,18 @@ static void hfp_run_for_context(hfp_connection_t *context){
         return;
     }
 
+    if (context->send_subscriber_number){
+        if (context->next_subscriber_number_to_send < subscriber_numbers_count){
+            hfp_phone_number_t phone = subscriber_numbers[context->next_subscriber_number_to_send++];
+            hfp_send_subscriber_number_cmd(context->rfcomm_cid, phone.type, phone.number);
+        } else {
+            context->send_subscriber_number = 0;
+            context->next_subscriber_number_to_send = 0;
+            hfp_ag_ok(context->rfcomm_cid);
+        }
+        context->command = HFP_CMD_NONE;
+    }
+
     if (context->send_microphone_gain){
         context->send_microphone_gain = 0;
         context->command = HFP_CMD_NONE;
@@ -1336,6 +1358,14 @@ static void hfp_handle_rfcomm_data(uint8_t packet_type, uint16_t channel, uint8_
         hfp_parse(context, packet[pos], 0);
     }
     switch(context->command){
+        case HFP_CMD_GET_SUBSCRIBER_NUMBER_INFORMATION:
+            if (subscriber_numbers_count == 0){
+                hfp_ag_ok(context->rfcomm_cid);
+                break;
+            }
+            context->next_subscriber_number_to_send = 0;
+            context->send_subscriber_number = 1;
+            break;
         case HFP_CMD_TRANSMIT_DTMF_CODES:
             context->command = HFP_CMD_NONE;
             hfp_emit_string_event(hfp_callback, HFP_SUBEVENT_TRANSMIT_DTMF_CODES, (const char *) &context->line_buffer[0]);
@@ -1765,3 +1795,7 @@ void hfp_ag_send_dtmf_code_done(bd_addr_t bd_addr){
     connection->ok_pending = 1;
 }
 
+void hfp_ag_set_subcriber_number_information(hfp_phone_number_t * numbers, int numbers_count){
+    subscriber_numbers = numbers;
+    subscriber_numbers_count = numbers_count;
+}
