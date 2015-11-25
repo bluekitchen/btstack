@@ -222,7 +222,7 @@ static int hfp_ag_send_clip(uint16_t cid){
 
 static int hfp_send_subscriber_number_cmd(uint16_t cid, uint8_t type, const char * number){
     char buffer[50];
-    sprintf(buffer, "\r\n%s: ,\"%s\",%u,\r\n", HFP_SUBSCRIBER_NUMBER_INFORMATION, number, type);
+    sprintf(buffer, "\r\n%s: ,\"%s\",%u, , \r\n", HFP_SUBSCRIBER_NUMBER_INFORMATION, number, type);
     return send_str_over_rfcomm(cid, buffer);
 }
         
