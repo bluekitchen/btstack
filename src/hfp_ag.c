@@ -1033,10 +1033,8 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * connect
                             printf("AG: current call is placed on hold, incoming call gets active\n");
                             hfp_ag_set_callsetup_state(HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS);
                             hfp_ag_set_callheld_state(HFP_CALLHELD_STATUS_CALL_ON_HOLD_OR_SWAPPED);
-                            // TODO: update AG indicators for all connections
-                            // context->ag_indicators_status_update_bitmap = store_bit(context->ag_indicators_status_update_bitmap, callsetup_indicator_index, 1);
-                            // context->ag_indicators_status_update_bitmap = store_bit(context->ag_indicators_status_update_bitmap, callheld_indicator_index, 1);
-                            // context->call_state = HFP_CALL_ACTIVE;
+                            hfp_ag_transfer_callsetup_state();
+                            hfp_ag_transfer_callheld_state();
                             break;
                         default:
                             break;
