@@ -216,6 +216,13 @@ static int hfp_ag_send_clip(uint16_t cid){
     return send_str_over_rfcomm(cid, buffer);
 }
 
+static int hfp_ag_send_phone_number_for_voice_tag(uint16_t cid){
+    char buffer[50];
+    sprintf(buffer, "\r\n%s:%s\r\n", HFP_PHONE_NUMBER_FOR_VOICE_TAG, clip_number);
+    return send_str_over_rfcomm(cid, buffer);
+}
+
+
 static int hfp_ag_send_call_waiting_notification(uint16_t cid){
     if (!clip_type){
         clip_number[0] = 0;
@@ -606,12 +613,6 @@ static int hfp_ag_run_for_context_service_level_connection_queries(hfp_connectio
    
     // printf(" -> State machine: SLC Queries\n");
     switch(context->command){
-        case HFP_CMD_SET_SPEAKER_GAIN:
-            hfp_ag_set_speaker_gain_cmd(context->rfcomm_cid, context->ag_activate_voice_recognition);
-            return 1;
-        case HFP_CMD_SET_MICROPHONE_GAIN:
-            hfp_ag_set_microphone_gain_cmd(context->rfcomm_cid, context->ag_activate_voice_recognition);
-            return 1;
         case HFP_CMD_AG_ACTIVATE_VOICE_RECOGNITION:
             hfp_supported_features = store_bit(hfp_supported_features, HFP_AGSF_VOICE_RECOGNITION_FUNCTION, context->ag_activate_voice_recognition);
             hfp_ag_activate_voice_recognition_cmd(context->rfcomm_cid, context->ag_activate_voice_recognition);
@@ -1276,6 +1277,28 @@ static void hfp_run_for_context(hfp_connection_t *context){
         return;
     }
     
+    if (context->send_phone_number_for_voice_tag){
+        context->send_phone_number_for_voice_tag = 0;
+        context->command = HFP_CMD_NONE;
+        context->ok_pending = 1;
+        hfp_ag_send_phone_number_for_voice_tag(context->rfcomm_cid);
+        return;
+    }
+
+    if (context->send_microphone_gain){
+        context->send_microphone_gain = 0;
+        context->command = HFP_CMD_NONE;
+        hfp_ag_set_microphone_gain_cmd(context->rfcomm_cid, context->microphone_gain);
+        return;
+    }
+    
+    if (context->send_speaker_gain){
+        context->send_speaker_gain = 0;
+        context->command = HFP_CMD_NONE;
+        hfp_ag_set_speaker_gain_cmd(context->rfcomm_cid, context->speaker_gain);
+        return;
+    }
+    
     int done = hfp_ag_run_for_context_service_level_connection(context);
     if (!done){
         done = hfp_ag_run_for_context_service_level_connection_queries(context);
@@ -1313,6 +1336,10 @@ static void hfp_handle_rfcomm_data(uint8_t packet_type, uint16_t channel, uint8_
         hfp_parse(context, packet[pos], 0);
     }
     switch(context->command){
+        case HFP_CMD_HF_REQUEST_PHONE_NUMBER:
+            hfp_emit_event(hfp_callback, HFP_SUBEVENT_ATTACH_NUMBER_TO_VOICE_TAG, 0);
+            break;
+        
         case HFP_CMD_TURN_OFF_EC_AND_NR:
             if (get_bit(hfp_supported_features, HFP_AGSF_EC_NR_FUNCTION)){
                 context->ok_pending = 1;
@@ -1699,6 +1726,7 @@ void hfp_ag_set_microphone_gain(bd_addr_t bd_addr, int gain){
     if (connection->microphone_gain != gain){
         connection->command = HFP_CMD_SET_MICROPHONE_GAIN;
         connection->microphone_gain = gain;
+        connection->send_microphone_gain = 1;
     } 
 }
 
@@ -1708,8 +1736,24 @@ void hfp_ag_set_microphone_gain(bd_addr_t bd_addr, int gain){
 void hfp_ag_set_speaker_gain(bd_addr_t bd_addr, int gain){
     hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
     if (connection->speaker_gain != gain){
-        connection->command = HFP_CMD_SET_SPEAKER_GAIN;
         connection->speaker_gain = gain;
+        connection->send_speaker_gain = 1;
     } 
 }
+
+/*
+ * @brief
+ */
+void hfp_ag_send_phone_number_for_voice_tag(bd_addr_t bd_addr, const char * number){
+    hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
+    hfp_ag_set_clip(0, number);
+    connection->send_phone_number_for_voice_tag = 1;
+}
+
+void hfp_ag_reject_phone_number_for_voice_tag(bd_addr_t bd_addr){
+    hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
+    connection->send_error = 1;
+}
+
+
 

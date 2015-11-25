@@ -129,7 +129,7 @@ extern "C" {
 #define HFP_SET_MICROPHONE_GAIN  "+VGM"
 #define HFP_SET_SPEAKER_GAIN     "+VGS"
 
-#define HFP_REQUEST_PHONE_NUMBER "+BINP"
+#define HFP_PHONE_NUMBER_FOR_VOICE_TAG "+BINP"
 #define HFP_TRANSMIT_DTMF_CODES  "+VTS"
 
 
@@ -458,8 +458,12 @@ typedef struct hfp_connection {
     uint8_t ag_activate_voice_recognition;
 
     uint8_t microphone_gain;
-    uint8_t speaker_gain;
+    uint8_t send_microphone_gain;
 
+    uint8_t speaker_gain;
+    uint8_t send_speaker_gain;
+
+    uint8_t send_phone_number_for_voice_tag;
     timer_source_t hfp_timeout;
 } hfp_connection_t;
 

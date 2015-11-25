@@ -251,6 +251,16 @@ void hfp_ag_set_microphone_gain(bd_addr_t bd_addr, int gain);
  */
 void hfp_ag_set_speaker_gain(bd_addr_t bd_addr, int gain);
 
+/*
+ * @brief
+ */
+void hfp_ag_send_phone_number_for_voice_tag(bd_addr_t bd_addr, const char * number);
+
+/*
+ * @brief
+ */
+ void hfp_ag_reject_phone_number_for_voice_tag(bd_addr_t bd_addr);
+
 /* API_END */
 
 #if defined __cplusplus
