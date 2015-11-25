@@ -110,11 +110,11 @@ static int has_hf_indicators_feature(hfp_connection_t * connection){
 
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
-void hfp_hf_create_sdp_record(uint8_t * service, int rfcomm_channel_nr, const char * name, uint16_t supported_features){
+void hfp_hf_create_sdp_record(uint8_t * service, uint32_t service_record_handle, int rfcomm_channel_nr, const char * name, uint16_t supported_features){
     if (!name){
         name = default_hfp_hf_service_name;
     }
-    hfp_create_sdp_record(service, SDP_Handsfree, rfcomm_channel_nr, name);
+    hfp_create_sdp_record(service, service_record_handle, SDP_Handsfree, rfcomm_channel_nr, name);
 
     de_add_number(service, DE_UINT, DE_SIZE_16, 0x0311);    // Hands-Free Profile - SupportedFeatures
     de_add_number(service, DE_UINT, DE_SIZE_16, supported_features);
