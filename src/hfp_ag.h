@@ -275,6 +275,15 @@ void hfp_ag_send_dtmf_code_done(bd_addr_t bd_addr);
  */
 void hfp_ag_set_subcriber_number_information(hfp_phone_number_t * numbers, int numbers_count);
 
+/*
+ * @brief
+ */
+void hfp_ag_send_current_call_status(bd_addr_t bd_addr, int idx, hfp_enhanced_call_dir_t dir, 
+    hfp_enhanced_call_status_t status, hfp_enhanced_call_mode_t mode, 
+    hfp_enhanced_call_mpty_t mpty, uint8_t type, const char * number);
+
+void hfp_ag_send_current_call_status_done(bd_addr_t bd_addr);
+
 /* API_END */
 
 #if defined __cplusplus

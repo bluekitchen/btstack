@@ -621,6 +621,14 @@ void hfp_handle_hci_event(hfp_callback_t callback, uint8_t packet_type, uint8_t 
 static hfp_command_t parse_command(const char * line_buffer, int isHandsFree){
     int offset = isHandsFree ? 0 : 2;
 
+    if (strncmp(line_buffer+offset, HFP_LIST_CURRENT_CALLS, strlen(HFP_LIST_CURRENT_CALLS)) == 0){
+        return HFP_CMD_LIST_CURRENT_CALLS;
+    }
+
+    if (strncmp(line_buffer+offset, HFP_SUBSCRIBER_NUMBER_INFORMATION, strlen(HFP_SUBSCRIBER_NUMBER_INFORMATION)) == 0){
+        return HFP_CMD_GET_SUBSCRIBER_NUMBER_INFORMATION;
+    }
+
     if (strncmp(line_buffer+offset, HFP_PHONE_NUMBER_FOR_VOICE_TAG, strlen(HFP_PHONE_NUMBER_FOR_VOICE_TAG)) == 0){
         if (isHandsFree) return HFP_CMD_AG_SEND_PHONE_NUMBER;
         return HFP_CMD_HF_REQUEST_PHONE_NUMBER;

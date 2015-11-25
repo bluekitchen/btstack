@@ -131,6 +131,8 @@ extern "C" {
 #define HFP_PHONE_NUMBER_FOR_VOICE_TAG "+BINP"
 #define HFP_TRANSMIT_DTMF_CODES  "+VTS"
 #define HFP_SUBSCRIBER_NUMBER_INFORMATION "+CNUM"
+#define HFP_LIST_CURRENT_CALLS "+CLCC"
+
 
 #define HFP_OK "OK"
 #define HFP_ERROR "ERROR"
@@ -186,7 +188,9 @@ typedef enum {
     HFP_CMD_TRANSMIT_DTMF_CODES,
     HFP_CMD_SET_MICROPHONE_GAIN,
     HFP_CMD_SET_SPEAKER_GAIN,
-    HFP_CMD_GET_SUBSCRIBER_NUMBER_INFORMATION
+    HFP_CMD_GET_SUBSCRIBER_NUMBER_INFORMATION,
+    HFP_CMD_LIST_CURRENT_CALLS
+
 } hfp_command_t;
  
 
@@ -344,6 +348,32 @@ typedef enum {
 } hfp_call_state_t;
 
 typedef enum{
+    HFP_ENHANCED_CALL_DIR_OUTGOING,
+    HFP_ENHANCED_CALL_DIR_INCOMING
+} hfp_enhanced_call_dir_t;
+
+typedef enum{
+    HFP_ENHANCED_CALL_STATUS_ACTIVE,
+    HFP_ENHANCED_CALL_STATUS_HELD,
+    HFP_ENHANCED_CALL_STATUS_OUTGOING_DIALING,
+    HFP_ENHANCED_CALL_STATUS_OUTGOING_ALERTING,
+    HFP_ENHANCED_CALL_STATUS_INCOMING,
+    HFP_ENHANCED_CALL_STATUS_INCOMING_WAITING,
+    HFP_ENHANCED_CALL_STATUS_CALL_HELD_BY_RESPONSE_AND_HOLD
+} hfp_enhanced_call_status_t;
+
+typedef enum{
+    HFP_ENHANCED_CALL_MODE_VOICE,
+    HFP_ENHANCED_CALL_MODE_DATA,
+    HFP_ENHANCED_CALL_MODE_FAX
+} hfp_enhanced_call_mode_t;
+
+typedef enum{
+    HFP_ENHANCED_CALL_MPTY_NOT_A_CONFERENCE_CALL,
+    HFP_ENHANCED_CALL_MPTY_CONFERENCE_CALL
+} hfp_enhanced_call_mpty_t;
+
+typedef enum{
     HFP_NONE_SM,
     HFP_SLC_SM,
     HFP_SLC_QUERIES_SM,
@@ -468,6 +498,7 @@ typedef struct hfp_connection {
     uint8_t send_subscriber_number;
     int next_subscriber_number_to_send;
 
+    int send_status_of_current_calls;
     timer_source_t hfp_timeout;
 } hfp_connection_t;
 

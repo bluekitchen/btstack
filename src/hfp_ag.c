@@ -232,7 +232,6 @@ static int hfp_ag_send_phone_number_for_voice_tag_cmd(uint16_t cid){
     return send_str_over_rfcomm(cid, buffer);
 }
 
-
 static int hfp_ag_send_call_waiting_notification(uint16_t cid){
     if (!clip_type){
         clip_number[0] = 0;
@@ -1239,6 +1238,11 @@ static void hfp_run_for_context(hfp_connection_t *context){
     if (!context) return;
     if (!rfcomm_can_send_packet_now(context->rfcomm_cid)) return;
     
+    if (context->send_status_of_current_calls){
+        hfp_emit_event(hfp_callback, HFP_SUBEVENT_TRANSMIT_STATUS_OF_CURRENT_CALL, 0);
+        return;
+    } 
+
     if (context->command == HFP_CMD_UNKNOWN){
         context->ok_pending = 0;
         context->send_error = 0;
@@ -1358,6 +1362,11 @@ static void hfp_handle_rfcomm_data(uint8_t packet_type, uint16_t channel, uint8_
         hfp_parse(context, packet[pos], 0);
     }
     switch(context->command){
+        case HFP_CMD_LIST_CURRENT_CALLS:   
+            context->command = HFP_CMD_NONE;
+            context->send_status_of_current_calls = 1;
+            hfp_emit_event(hfp_callback, HFP_SUBEVENT_TRANSMIT_STATUS_OF_CURRENT_CALL, 0);
+            break;
         case HFP_CMD_GET_SUBSCRIBER_NUMBER_INFORMATION:
             if (subscriber_numbers_count == 0){
                 hfp_ag_ok(context->rfcomm_cid);
@@ -1799,3 +1808,26 @@ void hfp_ag_set_subcriber_number_information(hfp_phone_number_t * numbers, int n
     subscriber_numbers = numbers;
     subscriber_numbers_count = numbers_count;
 }
+
+void hfp_ag_send_current_call_status(bd_addr_t bd_addr, int idx, hfp_enhanced_call_dir_t dir, 
+    hfp_enhanced_call_status_t status, hfp_enhanced_call_mode_t mode, 
+    hfp_enhanced_call_mpty_t mpty, uint8_t type, const char * number){
+    
+    hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
+    
+    char buffer[100];
+    int offset = snprintf(buffer, sizeof(buffer), "\r\n%s:%d,%d,%d,%d,%d", HFP_LIST_CURRENT_CALLS, idx, dir, status, mode, mpty);
+    if (number){
+        offset += snprintf(buffer+offset, sizeof(buffer)-offset, "\"%s\",%u", number, type);
+    } 
+    snprintf(buffer+offset, sizeof(buffer)-offset, "\r\n");
+    send_str_over_rfcomm(connection->rfcomm_cid, buffer);
+}
+
+
+void hfp_ag_send_current_call_status_done(bd_addr_t bd_addr){
+    hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
+    connection->ok_pending = 1;
+    connection->send_status_of_current_calls = 0;
+}
+
