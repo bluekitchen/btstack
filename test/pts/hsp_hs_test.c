@@ -43,7 +43,6 @@
 
 #include "btstack-config.h"
 
-#include <portaudio.h>
 #include <math.h>
 
 #include <stdint.h>
@@ -70,12 +69,6 @@
 #include "hsp_hs.h"
 #include "stdin_support.h"
 
-// portaudio config
-#define NUM_CHANNELS 1
-#define SAMPLE_RATE 8000
-#define FRAMES_PER_BUFFER 1000
-#define PA_SAMPLE_TYPE paInt8
-#define TABLE_SIZE    (50)
 
 const uint32_t   hsp_service_buffer[150/4]; // implicit alignment to 4-byte memory address
 const uint8_t    rfcomm_channel_nr = 1;
@@ -90,16 +83,48 @@ static bd_addr_t current_addr;
 
 static char hs_cmd_buffer[100];
 
-// portaudio globals
-static  PaStream * stream;
-static int8_t sine[TABLE_SIZE];
-int phase = 0;
-
 // prototypes
 static void show_usage();
 
-static void setup_audio(void){
+#ifdef HAVE_PORTAUDIO
+#include <portaudio.h>
 
+// portaudio config
+#define NUM_CHANNELS 1
+#define SAMPLE_RATE 8000
+#define FRAMES_PER_BUFFER 1000
+#define PA_SAMPLE_TYPE paInt8
+#define TABLE_SIZE    (50)
+
+// portaudio globals
+static int8_t sine[TABLE_SIZE];
+int phase = 0;
+static  PaStream * stream;
+
+static void try_send_sco(void){
+    printf("try send handle %x\n", sco_handle);
+    if (!sco_handle) return;
+    if (!hci_can_send_sco_packet_now(sco_handle)) {
+        printf("try_send_sco, cannot send now\n");
+        return;
+    }
+    const int frames_per_packet = 9;
+    hci_reserve_packet_buffer();
+    uint8_t * sco_packet = hci_get_outgoing_packet_buffer();
+    // set handle + flags
+    bt_store_16(sco_packet, 0, sco_handle);
+    // set len
+    sco_packet[2] = frames_per_packet;
+    int i;
+    for (i=0;i<frames_per_packet;i++){
+        sco_packet[3+i] = sine[phase];
+        phase++;
+        if (phase >= TABLE_SIZE) phase = 0;
+    }
+    hci_send_sco_packet_buffer(3 + frames_per_packet);
+}
+
+static void setup_audio(void){
     // create sine wave table
     int i;
     for( i=0; i<TABLE_SIZE; i++ ) {
@@ -134,6 +159,11 @@ static void setup_audio(void){
     if( err != paNoError ) return;
     printf("Portaudio setup\n");
 }
+static void sco_packet_handler(uint8_t packet_type, uint8_t * packet, uint16_t size){
+    Pa_WriteStream( stream, &packet[3], size -3);
+}
+
+#endif
 
 // Testig User Interface 
 static void show_usage(void){
@@ -208,31 +238,6 @@ static int stdin_process(struct data_source *ds){
     return 0;
 }
 
-#if 0
-static void try_send_sco(void){
-    printf("try send handle %x\n", sco_handle);
-    if (!sco_handle) return;
-    if (!hci_can_send_sco_packet_now(sco_handle)) {
-        printf("try_send_sco, cannot send now\n");
-        return;
-    }
-    const int frames_per_packet = 9;
-    hci_reserve_packet_buffer();
-    uint8_t * sco_packet = hci_get_outgoing_packet_buffer();
-    // set handle + flags
-    bt_store_16(sco_packet, 0, sco_handle);
-    // set len
-    sco_packet[2] = frames_per_packet;
-    int i;
-    for (i=0;i<frames_per_packet;i++){
-        sco_packet[3+i] = sine[phase];
-        phase++;
-        if (phase >= TABLE_SIZE) phase = 0;
-    }
-    hci_send_sco_packet_buffer(3 + frames_per_packet);
-}
-#endif
-
 static void packet_handler(uint8_t * event, uint16_t event_size){
     // printf("Packet handler event 0x%02x\n", event[0]);
     // try_send_sco();
@@ -295,15 +300,13 @@ static void packet_handler(uint8_t * event, uint16_t event_size){
     }
 }
 
-static void sco_packet_handler(uint8_t packet_type, uint8_t * packet, uint16_t size){
-    Pa_WriteStream( stream, &packet[3], size -3);
-}
-
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
 
+#ifdef HAVE_PORTAUDIO
     setup_audio();
     hci_register_sco_packet_handler(&sco_packet_handler);
+#endif
 
     hsp_hs_init(rfcomm_channel_nr);
     hsp_hs_register_packet_handler(packet_handler);
