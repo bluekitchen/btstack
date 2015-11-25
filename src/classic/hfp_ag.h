@@ -58,7 +58,7 @@ extern "C" {
 /**
  * @brief Create HFP Audio Gateway (AG) SDP service record. 
  */
-void hfp_ag_create_sdp_record(uint8_t * service, int rfcomm_channel_nr, const char * name, uint8_t ability_to_reject_call, uint16_t supported_features);;
+void hfp_ag_create_sdp_record(uint8_t * service, uint32_t service_record_handle, int rfcomm_channel_nr, const char * name, uint8_t ability_to_reject_call, uint16_t supported_features);;
 
 /**
  * @brief Intialize HFP Audio Gateway (AG) device. 

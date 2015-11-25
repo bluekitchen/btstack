@@ -346,13 +346,13 @@ static hfp_connection_t * provide_hfp_connection_context_for_bd_addr(bd_addr_t b
  * AG bit 5: Wide band speech (yes/no, 1 = yes, 0 = no)
  */
 
-void hfp_create_sdp_record(uint8_t * service, uint16_t service_uuid, int rfcomm_channel_nr, const char * name){
+void hfp_create_sdp_record(uint8_t * service, uint32_t service_record_handle, uint16_t service_uuid, int rfcomm_channel_nr, const char * name){
     uint8_t* attribute;
     de_create_sequence(service);
 
     // 0x0000 "Service Record Handle"
     de_add_number(service, DE_UINT, DE_SIZE_16, SDP_ServiceRecordHandle);
-    de_add_number(service, DE_UINT, DE_SIZE_32, 0x10001);
+    de_add_number(service, DE_UINT, DE_SIZE_32, service_record_handle);
 
     // 0x0001 "Service Class ID List"
     de_add_number(service,  DE_UINT, DE_SIZE_16, SDP_ServiceClassIDList);

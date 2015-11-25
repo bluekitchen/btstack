@@ -70,7 +70,7 @@ static void pan_create_service(uint8_t *service, uint32_t service_record_handle,
 
 	// 0x0000 "Service Record Handle"
 	de_add_number(service, DE_UINT, DE_SIZE_16, SDP_ServiceRecordHandle);
-	de_add_number(service, DE_UINT, DE_SIZE_32, 0x10001);
+	de_add_number(service, DE_UINT, DE_SIZE_32, service_record_handle);
 
 	// 0x0001 "Service Class ID List"
 	de_add_number(service,  DE_UINT, DE_SIZE_16, SDP_ServiceClassIDList);

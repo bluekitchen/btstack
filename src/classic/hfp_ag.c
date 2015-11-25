@@ -168,11 +168,11 @@ static int has_hf_indicators_feature(hfp_connection_t * connection){
     return hf && ag;
 }
 
-void hfp_ag_create_sdp_record(uint8_t * service, int rfcomm_channel_nr, const char * name, uint8_t ability_to_reject_call, uint16_t supported_features){
+void hfp_ag_create_sdp_record(uint8_t * service, uint32_t service_record_handle, int rfcomm_channel_nr, const char * name, uint8_t ability_to_reject_call, uint16_t supported_features){
     if (!name){
         name = default_hfp_ag_service_name;
     }
-    hfp_create_sdp_record(service, SDP_HandsfreeAudioGateway, rfcomm_channel_nr, name);
+    hfp_create_sdp_record(service, SDP_HandsfreeAudioGateway, service_record_handle, rfcomm_channel_nr, name);
     
     /*
      * 0x01 – Ability to reject a call
