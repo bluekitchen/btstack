@@ -11,4 +11,6 @@ hsp_ag_test
 hsp_hs_test
 l2cap_test
 profile.h
+sco_loopbackiopt
 sco_loopback
+iopt
