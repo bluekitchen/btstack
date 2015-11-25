@@ -70,3 +70,16 @@ int cc_tests_size();
 char ** default_cc_setup();
 int default_cc_setup_size();
 
+/* Incoming call (ic) test sequences */
+char ** default_ic_setup();
+int default_ic_setup_size();
+
+char ** alert_ic_setup();
+int alert_ic_setup_size();
+
+char ** terminate_ic_ag_setup();
+int terminate_ic_ag_setup_size();
+
+char ** terminate_ic_hf_setup();
+int terminate_ic_hf_setup_size();
+

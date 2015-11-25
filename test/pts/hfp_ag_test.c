@@ -75,6 +75,9 @@ static bd_addr_t device_addr;
 static bd_addr_t pts_addr = {0x00,0x1b,0xDC,0x07,0x32,0xEF};
 static bd_addr_t speaker_addr = {0x00, 0x21, 0x3C, 0xAC, 0xF7, 0x38};
 static uint8_t codecs[1] = {HFP_CODEC_CVSD};
+static uint16_t handle = -1;
+static int memory_1_enabled = 1;
+static int last_number_exists = 1;
 
 static int ag_indicators_nr = 7;
 static hfp_ag_indicator_t ag_indicators[] = {
@@ -97,13 +100,9 @@ static hfp_generic_status_indicator_t hf_indicators[] = {
     {2, 1},
 };
 
-
 char cmd;
 // prototypes
 static void show_usage();
-
-static void reset_pst_flags(){
-}
 
 // Testig User Interface 
 static void show_usage(void){
@@ -111,15 +110,52 @@ static void show_usage(void){
     printf("---\n");
     
     printf("a - establish HFP connection to PTS module\n");
-    printf("A - release HFP connection to PTS module\n");
+    // printf("A - release HFP connection to PTS module\n");
+    
+    printf("z - establish HFP connection to speaker\n");
+    // printf("Z - release HFP connection to speaker\n");
     
     printf("b - establish AUDIO connection\n");
     printf("B - release AUDIO connection\n");
     
-    printf("z - establish HFP connection to local mac\n");
-    printf("Z - release HFP connection to local mac\n");
+    printf("c - simulate incoming call from 1234567\n");
+    printf("C - simulate call from 1234567 dropped\n");
 
     printf("d - report AG failure\n");
+
+    printf("e - answer call on AG\n");
+    printf("E - reject call on AG\n");
+
+    printf("r - disable in-band ring tone\n");
+    printf("R - enable in-band ring tone\n");
+
+    printf("f - Disable cellular network\n");
+    printf("F - Enable cellular network\n");
+
+    printf("g - Set signal strength to 0\n");
+    printf("G - Set signal strength to 5\n");
+
+    printf("h - Disable roaming\n");
+    printf("H - Enable roaming\n");
+
+    printf("i - Set battery level to 3\n");
+    printf("I - Set battery level to 5\n");
+    
+    printf("j - Answering call on remote side\n");
+
+    printf("k - Clear memory #1\n");
+    printf("K - Set memory #1\n");
+
+    printf("l - Clear last number\n");
+    printf("L - Set last number\n");
+
+    printf("m - simulate incoming call from 7654321\n");
+    // printf("M - simulate call from 7654321 dropped\n");
+
+    printf("n - Disable Voice Regocnition\n");
+    printf("N - Enable Voice Recognition\n");
+
+    printf("t - terminate connection\n");
 
     printf("---\n");
     printf("Ctrl-c - exit\n");
@@ -155,10 +191,103 @@ static int stdin_process(struct data_source *ds){
             printf("Release Audio connection.\n");
             hfp_ag_release_audio_connection(device_addr);
             break;
+        case 'c':
+            printf("Simulate incoming call from 1234567\n");
+            hfp_ag_set_clip(129, "1234567");
+            hfp_ag_incoming_call();
+            break;
+        case 'm':
+            printf("Simulate incoming call from 7654321\n");
+            hfp_ag_set_clip(129, "7654321");
+            hfp_ag_incoming_call();
+            break;
+        case 'C':
+            printf("Simulate terminate call\n");
+            hfp_ag_call_dropped();
+            break;
         case 'd':
             printf("Report AG failure\n");
             hfp_ag_report_extended_audio_gateway_error_result_code(device_addr, HFP_CME_ERROR_AG_FAILURE);
-
+            break;
+        case 'e':
+            printf("Answer call on AG\n");
+            hfp_ag_answer_incoming_call();
+            break;
+        case 'E':
+            printf("Reject call on AG\n");
+            hfp_ag_terminate_call();
+            break;
+        case 'f':
+            printf("Disable cellular network\n");
+            hfp_ag_set_registration_status(0);
+            break;
+        case 'F':
+            printf("Enable cellular network\n");
+            hfp_ag_set_registration_status(1);
+            break;
+        case 'g':
+            printf("Set signal strength to 0\n");
+            hfp_ag_set_signal_strength(0);
+            break;
+        case 'G':
+            printf("Set signal strength to 5\n");
+            hfp_ag_set_signal_strength(5);
+            break;
+        case 'h':
+            printf("Disable roaming\n");
+            hfp_ag_set_roaming_status(0);
+            break;
+        case 'H':
+            printf("Enable roaming\n");
+            hfp_ag_set_roaming_status(1);
+            break;
+        case 'i':
+            printf("Set battery level to 3\n");
+            hfp_ag_set_battery_level(3);
+            break;
+        case 'I':
+            printf("Set battery level to 5\n");
+            hfp_ag_set_battery_level(5);
+            break;
+        case 'j':
+            printf("Answering call on remote side\n");
+            hfp_ag_outgoing_call_established();
+            break;
+        case 'r':
+            printf("Disable in-band ring tone\n");
+            hfp_ag_set_use_in_band_ring_tone(0);
+            break;
+        case 'k':
+            printf("Memory 1 cleared\n");
+            memory_1_enabled = 0;
+            break;
+        case 'K':
+            printf("Memory 1 set\n");
+            memory_1_enabled = 1;
+            break;
+        case 'l':
+            printf("Last dialed number cleared\n");
+            last_number_exists = 0;
+            break;
+        case 'L':
+            printf("Last dialed number set\n");
+            last_number_exists = 1;
+            break;
+        case 'n':
+            printf("Disable Voice Recognition\n");
+            hfp_ag_activate_voice_recognition(device_addr, 0);
+            break;
+        case 'N':
+            printf("Enable Voice Recognition\n");
+            hfp_ag_activate_voice_recognition(device_addr, 1);
+            break;
+        case 'R':
+            printf("Enable in-band ring tone\n");
+            hfp_ag_set_use_in_band_ring_tone(1);
+            break;
+        case 't':
+            printf("Terminate HCI connection.\n");
+            gap_disconnect(handle);
         default:
             show_usage();
             break;
@@ -169,22 +298,68 @@ static int stdin_process(struct data_source *ds){
 
 
 static void packet_handler(uint8_t * event, uint16_t event_size){
+
+    if (event[0] == RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE){
+        handle = READ_BT_16(event, 9);
+        printf("RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE received for handle 0x%04x\n", handle);
+        return;
+    }
+
     if (event[0] != HCI_EVENT_HFP_META) return;
-    if (event[3]){
+    if (event[3] && event[2] != HFP_SUBEVENT_PLACE_CALL_WITH_NUMBER){
         printf("ERROR, status: %u\n", event[3]);
         return;
     }
 
     switch (event[2]) {   
         case HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED:
-            printf("Service level connection established.\n\n");
+            printf("Service level connection established.\n");
             break;
         case HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED:
-            printf("Service level connection released.\n\n");
-            reset_pst_flags();
+            printf("Service level connection released.\n");
             break;
+        case HFP_SUBEVENT_AUDIO_CONNECTION_ESTABLISHED:
+            printf("\n** Audio connection established **\n");
+            break;
+        case HFP_SUBEVENT_AUDIO_CONNECTION_RELEASED:
+            printf("\n** Audio connection released **\n");
+            break;
+        case HFP_SUBEVENT_START_RINGINIG:
+            printf("\n** Start Ringing **\n");
+            break;        
+        case HFP_SUBEVENT_STOP_RINGINIG:
+            printf("\n** Stop Ringing **\n");
+            break;
+        case HFP_SUBEVENT_PLACE_CALL_WITH_NUMBER:
+            printf("\n** Outgoing call '%s' **\n", &event[3]);
+            // validate number
+            if ( strcmp("1234567", (char*) &event[3]) == 0
+              || strcmp("7654321", (char*) &event[3]) == 0
+              || (memory_1_enabled && strcmp(">1",      (char*) &event[3]) == 0)){
+                printf("Dialstring valid: accept call\n");
+                hfp_ag_outgoing_call_accepted();
+                // TODO: calling ringing right away leads to callstatus=2 being skipped. don't call for now
+                // hfp_ag_outgoing_call_ringing();
+            } else {
+                printf("Dialstring invalid: reject call\n");
+                hfp_ag_outgoing_call_rejected();
+            }
+            break;
+        case HFP_SUBEVENT_REDIAL_LAST_NUMBER:
+            printf("\n** Redial last number\n");
+            if (last_number_exists){
+                hfp_ag_outgoing_call_accepted();
+                printf("Last number exists: accept call\n");
+                // TODO: calling ringing right away leads to callstatus=2 being skipped. don't call for now
+                // hfp_ag_outgoing_call_ringing();
+            } else {
+                printf("Last number missing: reject call\n");
+                hfp_ag_outgoing_call_rejected();
+            }
+            break;
+
         default:
-            printf("event not handled %u\n", event[2]);
+            // printf("event not handled %u\n", event[2]);
             break;
     }
 }
@@ -195,7 +370,7 @@ int btstack_main(int argc, const char * argv[]){
     l2cap_init();
     rfcomm_init();
     
-    hfp_ag_init(rfcomm_channel_nr, 1007, codecs, sizeof(codecs), 
+    hfp_ag_init(rfcomm_channel_nr, 0x3ef | (1<<HFP_AGSF_HF_INDICATORS), codecs, sizeof(codecs), 
         ag_indicators, ag_indicators_nr, 
         hf_indicators, hf_indicators_nr, 
         call_hold_services, call_hold_services_nr);
@@ -206,7 +381,12 @@ int btstack_main(int argc, const char * argv[]){
     sdp_init();
     memset((uint8_t *)hfp_service_buffer, 0, sizeof(hfp_service_buffer));
     hfp_ag_create_sdp_record((uint8_t *)hfp_service_buffer, rfcomm_channel_nr, hfp_ag_service_name, 0, 0);
-    sdp_register_service((uint8_t *)hfp_service_buffer);
+
+    sdp_register_service_internal(NULL, (uint8_t *)hfp_service_buffer);
+    
+
+    // pre-select pts
+    memcpy(device_addr, pts_addr, 6);
 
     // turn on!
     hci_power_control(HCI_POWER_ON);

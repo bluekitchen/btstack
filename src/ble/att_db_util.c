@@ -42,6 +42,7 @@
 #include "ble/att.h"
 #include "utils.h"
 #include "debug.h"
+#include "bluetooth.h"
 
 // ATT DB Storage
 #ifndef HAVE_MALLOC

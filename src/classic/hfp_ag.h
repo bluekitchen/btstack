@@ -154,6 +154,9 @@ void hfp_ag_transfer_callheld_status(bd_addr_t bd_addr, hfp_callheld_status_t st
  */
 void hfp_ag_negotiate_codecs(bd_addr_t bd_addr);
 
+/**
+ * @brief 
+ */
 void hfp_ag_establish_audio_connection(bd_addr_t bd_addr);
 
 /**
@@ -161,6 +164,102 @@ void hfp_ag_establish_audio_connection(bd_addr_t bd_addr);
  */
 void hfp_ag_release_audio_connection(bd_addr_t bd_addr);
 
+
+/**
+ * @brief Enable in-band ring tone
+ */
+void hfp_ag_set_use_in_band_ring_tone(int use_in_band_ring_tone);
+
+/**
+ * @brief 
+ */
+void hfp_ag_incoming_call(void);
+
+/**
+ * @brief number is stored.
+ */
+void hfp_ag_set_clip(uint8_t type, const char * number);
+
+/**
+ * @brief 
+ */
+void hfp_ag_outgoing_call_rejected(void);
+
+/**
+ * @brief 
+ */
+void hfp_ag_outgoing_call_accepted(void);
+
+/**
+ * @brief 
+ */
+void hfp_ag_outgoing_call_ringing(void);
+
+/**
+ * @brief 
+ */
+void hfp_ag_outgoing_call_established(void);
+
+/**
+ * @brief 
+ */
+void hfp_ag_call_dropped(void);
+
+/**
+ * @brief 
+ */
+ void hfp_ag_answer_incoming_call(void);
+
+/**
+ * @brief 
+ */
+void hfp_ag_terminate_call(void);
+
+/*
+ * @brief
+ */
+void hfp_ag_set_registration_status(int status);
+
+/*
+ * @brief
+ */
+void hfp_ag_set_signal_strength(int strength);
+
+/*
+ * @brief
+ */
+void hfp_ag_set_roaming_status(int status);
+
+/*
+ * @brief
+ */
+void hfp_ag_set_battery_level(int level);
+
+
+/*
+ * @brief
+ */
+void hfp_ag_activate_voice_recognition(bd_addr_t bd_addr, int activate);
+
+/*
+ * @brief
+ */
+void hfp_ag_set_microphone_gain(bd_addr_t bd_addr, int gain);
+
+/*
+ * @brief
+ */
+void hfp_ag_set_speaker_gain(bd_addr_t bd_addr, int gain);
+
+/*
+ * @brief
+ */
+void hfp_ag_send_phone_number_for_voice_tag(bd_addr_t bd_addr, const char * number);
+
+/*
+ * @brief
+ */
+ void hfp_ag_reject_phone_number_for_voice_tag(bd_addr_t bd_addr);
 
 /* API_END */
 

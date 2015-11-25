@@ -683,7 +683,12 @@
 #define HFP_SUBEVENT_NETWORK_OPERATOR_CHANGED              0x07
 #define HFP_SUBEVENT_EXTENDED_AUDIO_GATEWAY_ERROR          0x08
 #define HFP_SUBEVENT_CODECS_CONNECTION_COMPLETE            0x09
-#define HFP_SUBEVENT_AUDIO_CONNECTION_COMPLETE             0x0A
+#define HFP_SUBEVENT_START_RINGINIG                        0x0A
+#define HFP_SUBEVENT_STOP_RINGINIG                         0x0B
+#define HFP_SUBEVENT_CALL_TERMINATED                       0x0C
+#define HFP_SUBEVENT_PLACE_CALL_WITH_NUMBER                0x0D
+#define HFP_SUBEVENT_REDIAL_LAST_NUMBER                    0x0E
+#define HFP_SUBEVENT_ATTACH_NUMBER_TO_VOICE_TAG            0x0F
  
 // ANCS Client
 #define ANCS_CLIENT_CONNECTED                              0xF0

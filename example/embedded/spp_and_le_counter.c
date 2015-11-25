@@ -59,7 +59,6 @@
 
 #include "debug.h"
 #include "btstack_memory.h"
-#include "gap_le.h"
 #include "hci.h"
 #include "hci_dump.h"
 

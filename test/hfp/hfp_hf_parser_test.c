@@ -46,7 +46,7 @@
 
 #include "classic/hfp.h"
 
-void hfp_parse(hfp_connection_t * context, uint8_t byte);
+void hfp_parse(hfp_connection_t * context, uint8_t byte, int isHandsFree);
 
 static  hfp_connection_t context;
 static int hfp_ag_indicators_nr = 7;
@@ -84,7 +84,7 @@ TEST_GROUP(HFPParser){
 TEST(HFPParser, HFP_HF_OK){
     sprintf(packet, "\r\n%s\r\n", HFP_OK);
     for (pos = 0; pos < strlen(packet); pos++){
-        hfp_parse(&context, packet[pos]);
+        hfp_parse(&context, packet[pos], 1);
     }
     CHECK_EQUAL(HFP_CMD_OK, context.command);
 }
@@ -92,7 +92,7 @@ TEST(HFPParser, HFP_HF_OK){
 TEST(HFPParser, HFP_HF_SUPPORTED_FEATURES){
     sprintf(packet, "\r\n%s:1007\r\n\r\nOK\r\n", HFP_SUPPORTED_FEATURES);
     for (pos = 0; pos < strlen(packet); pos++){
-        hfp_parse(&context, packet[pos]);
+        hfp_parse(&context, packet[pos], 1);
     }
     CHECK_EQUAL(HFP_CMD_OK, context.command);
     CHECK_EQUAL(1007, context.remote_supported_features);
@@ -107,11 +107,11 @@ TEST(HFPParser, HFP_HF_INDICATORS){
     }
     offset += snprintf(packet+offset, sizeof(packet)-offset, "\"%s\", (%d, %d)\r\n\r\nOK\r\n", hfp_ag_indicators[pos].name, hfp_ag_indicators[pos].min_range, hfp_ag_indicators[pos].max_range);
 
-    context.retrieve_ag_indicators = 1;
-    context.retrieve_ag_indicators_status = 0;
+    //context.command = HFP_CMD_RETRIEVE_AG_INDICATORS;
+    context.state = HFP_W4_RETRIEVE_INDICATORS;
 
     for (pos = 0; pos < strlen(packet); pos++){
-        hfp_parse(&context, packet[pos]);
+        hfp_parse(&context, packet[pos], 1);
     }
     CHECK_EQUAL(HFP_CMD_OK, context.command);
     CHECK_EQUAL(hfp_ag_indicators_nr, context.ag_indicators_nr);
@@ -132,12 +132,11 @@ TEST(HFPParser, HFP_HF_INDICATOR_STATUS){
     }
     offset += snprintf(packet+offset, sizeof(packet)-offset, "%d\r\n\r\nOK\r\n", hfp_ag_indicators[pos].status);
     
-    context.command = HFP_CMD_INDICATOR;
-    context.retrieve_ag_indicators_status = 1;
-    context.retrieve_ag_indicators = 0;
+    //context.command = HFP_CMD_RETRIEVE_AG_INDICATORS_STATUS;
+    context.state = HFP_W4_RETRIEVE_INDICATORS_STATUS;
 
     for (pos = 0; pos < strlen(packet); pos++){
-        hfp_parse(&context, packet[pos]);
+        hfp_parse(&context, packet[pos], 1);
     }
 
     CHECK_EQUAL(HFP_CMD_OK, context.command);
@@ -150,7 +149,7 @@ TEST(HFPParser, HFP_HF_INDICATOR_STATUS){
 TEST(HFPParser, HFP_HF_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES){
     sprintf(packet, "\r\n%s:(1,1x,2,2x,3)\r\n\r\nOK\r\n", HFP_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES);
     for (pos = 0; pos < strlen(packet); pos++){
-        hfp_parse(&context, packet[pos]);
+        hfp_parse(&context, packet[pos], 1);
     }
     CHECK_EQUAL(HFP_CMD_OK, context.command);
     CHECK_EQUAL(5, context.remote_call_services_nr);
@@ -164,12 +163,11 @@ TEST(HFPParser, HFP_HF_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES){
 
 TEST(HFPParser, HFP_HF_GENERIC_STATUS_INDICATOR){
     sprintf(packet, "\r\n%s:0,1,2,3,4\r\n\r\nOK\r\n", HFP_GENERIC_STATUS_INDICATOR);
-    context.list_generic_status_indicators = 0;
-    context.retrieve_generic_status_indicators = 1;
-    context.retrieve_generic_status_indicators_state = 0;
-
+    //context.command = HFP_CMD_RETRIEVE_GENERIC_STATUS_INDICATORS;
+    context.state = HFP_W4_RETRIEVE_GENERIC_STATUS_INDICATORS;
+    
     for (pos = 0; pos < strlen(packet); pos++){
-        hfp_parse(&context, packet[pos]);
+        hfp_parse(&context, packet[pos], 1);
     }
     
     CHECK_EQUAL(HFP_CMD_OK, context.command);
@@ -182,12 +180,11 @@ TEST(HFPParser, HFP_HF_GENERIC_STATUS_INDICATOR){
 
 TEST(HFPParser, HFP_HF_GENERIC_STATUS_INDICATOR_STATE){
     sprintf(packet, "\r\n%s:0,1\r\n\r\nOK\r\n", HFP_GENERIC_STATUS_INDICATOR);
-    context.list_generic_status_indicators = 0;
-    context.retrieve_generic_status_indicators = 0;
-    context.retrieve_generic_status_indicators_state = 1;
-    
+    // context.command = HFP_CMD_RETRIEVE_GENERIC_STATUS_INDICATORS_STATE;
+    context.state = HFP_W4_RETRIEVE_INITITAL_STATE_GENERIC_STATUS_INDICATORS;
+                        
     for (pos = 0; pos < strlen(packet); pos++){
-        hfp_parse(&context, packet[pos]);
+        hfp_parse(&context, packet[pos], 1);
     }
     
     CHECK_EQUAL(HFP_CMD_OK, context.command);
@@ -203,7 +200,7 @@ TEST(HFPParser, HFP_HF_AG_INDICATOR_STATUS_UPDATE){
 
     sprintf(packet, "\r\n%s:%d,%d\r\n\r\nOK\r\n", HFP_TRANSFER_AG_INDICATOR_STATUS, index, status);
     for (pos = 0; pos < strlen(packet); pos++){
-        hfp_parse(&context, packet[pos]);
+        hfp_parse(&context, packet[pos], 1);
     }
 
     CHECK_EQUAL(HFP_CMD_OK, context.command);
@@ -213,13 +210,13 @@ TEST(HFPParser, HFP_HF_AG_INDICATOR_STATUS_UPDATE){
 TEST(HFPParser, HFP_HF_AG_QUERY_OPERATOR_SELECTION){
     sprintf(packet, "\r\n%s:1,0,\"sunrise\"\r\n\r\nOK\r\n", HFP_QUERY_OPERATOR_SELECTION);
     
+    context.command = HFP_CMD_QUERY_OPERATOR_SELECTION_NAME;
+
     for (pos = 0; pos < strlen(packet); pos++){
-        hfp_parse(&context, packet[pos]);
+        hfp_parse(&context, packet[pos], 1);
     }
 
     CHECK_EQUAL(context.command, HFP_CMD_OK);
-    CHECK_EQUAL(context.operator_name_format, 0);       
-    CHECK_EQUAL(context.operator_name, 1);              
     CHECK_EQUAL(context.operator_name_changed, 0); 
     CHECK_EQUAL( strcmp("sunrise", context.network_operator.name), 0);
 }
@@ -228,7 +225,7 @@ TEST(HFPParser, HFP_HF_ERROR){
     sprintf(packet, "\r\n%s\r\n", HFP_ERROR);
     
     for (pos = 0; pos < strlen(packet); pos++){
-        hfp_parse(&context, packet[pos]);
+        hfp_parse(&context, packet[pos], 1);
     }
 
     CHECK_EQUAL(context.command, HFP_CMD_ERROR);       
@@ -238,7 +235,7 @@ TEST(HFPParser, HFP_HF_EXTENDED_AUDIO_GATEWAY_ERROR){
     sprintf(packet, "\r\n%s:%d\r\n", HFP_EXTENDED_AUDIO_GATEWAY_ERROR, HFP_CME_ERROR_NO_NETWORK_SERVICE);
     
     for (pos = 0; pos < strlen(packet); pos++){
-        hfp_parse(&context, packet[pos]);
+        hfp_parse(&context, packet[pos], 1);
     }
 
     CHECK_EQUAL(context.command, HFP_CMD_EXTENDED_AUDIO_GATEWAY_ERROR);
@@ -255,7 +252,7 @@ TEST(HFPParser, HFP_HF_AG_INDICATOR_CALLS_STATUS_UPDATE){
     uint8_t index = call_status_index;
     sprintf(packet, "\r\n%s:%d,%d\r\n\r\nOK\r\n", HFP_TRANSFER_AG_INDICATOR_STATUS, index, status);
     for (pos = 0; pos < strlen(packet); pos++){
-        hfp_parse(&context, packet[pos]);
+        hfp_parse(&context, packet[pos], 1);
     }
     CHECK_EQUAL(HFP_CMD_OK, context.command);
     CHECK_EQUAL(context.ag_indicators[index - 1].status, status);
@@ -264,7 +261,7 @@ TEST(HFPParser, HFP_HF_AG_INDICATOR_CALLS_STATUS_UPDATE){
     index = callsetup_status_index;
     sprintf(packet, "\r\n%s:%d,%d\r\n\r\nOK\r\n", HFP_TRANSFER_AG_INDICATOR_STATUS, index, status);
     for (pos = 0; pos < strlen(packet); pos++){
-        hfp_parse(&context, packet[pos]);
+        hfp_parse(&context, packet[pos], 1);
     }
     CHECK_EQUAL(HFP_CMD_OK, context.command);
     CHECK_EQUAL(context.ag_indicators[index - 1].status, status);
@@ -273,7 +270,7 @@ TEST(HFPParser, HFP_HF_AG_INDICATOR_CALLS_STATUS_UPDATE){
     index = callheld_status_index;
     sprintf(packet, "\r\n%s:%d,%d\r\n\r\nOK\r\n", HFP_TRANSFER_AG_INDICATOR_STATUS, index, status);
     for (pos = 0; pos < strlen(packet); pos++){
-        hfp_parse(&context, packet[pos]);
+        hfp_parse(&context, packet[pos], 1);
     }
     CHECK_EQUAL(HFP_CMD_OK, context.command);
     CHECK_EQUAL(context.ag_indicators[index - 1].status, status);

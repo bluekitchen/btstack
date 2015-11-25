@@ -58,11 +58,14 @@ static void *registered_sdp_app_context;
 static uint8_t sdp_rfcomm_channel_nr = 1;
 const char sdp_rfcomm_service_name[] = "BTstackMock";
 static uint16_t rfcomm_cid = 1;
+static bd_addr_t dev_addr;
+static uint16_t sco_handle = 10;
 static uint8_t rfcomm_payload[200];
 static uint16_t rfcomm_payload_len;
 void * active_connection;
+hfp_connection_t * hfp_context;
 
-void (*registered_rfcomm_packet_handler)(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+void (*registered_rfcomm_packet_handler)(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 void (*registered_sdp_app_callback)(sdp_query_event_t * event, void * context);
 
 uint8_t * get_rfcomm_payload(){
@@ -119,6 +122,12 @@ static void print_without_newlines(uint8_t *data, uint16_t len){
     printf("\n");
 }
 
+extern "C" void l2cap_init(void){}
+
+extern "C" void l2cap_register_packet_handler(void (*handler)(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size)){
+}
+
+
 int  rfcomm_send_internal(uint16_t rfcomm_cid, uint8_t *data, uint16_t len){
 	if (strncmp((char*)data, "AT", 2) == 0){
 		printf("Verify HF state machine response: ");
@@ -132,8 +141,32 @@ int  rfcomm_send_internal(uint16_t rfcomm_cid, uint8_t *data, uint16_t len){
 	return 0;
 }
 
+static void hci_event_sco_complete(){
+    uint8_t event[19];
+    uint8_t pos = 0;
+    event[pos++] = HCI_EVENT_SYNCHRONOUS_CONNECTION_COMPLETE;
+    event[pos++] = sizeof(event) - 2;
+
+    event[pos++] = 0; //status
+    bt_store_16(event,  pos, sco_handle);   pos += 2; // sco handle
+    bt_flip_addr(&event[pos], dev_addr);    pos += 6;
+
+    event[pos++] = 0; // link_type
+    event[pos++] = 0; // transmission_interval
+    event[pos++] = 0; // retransmission_interval
+
+    bt_store_16(event,  pos, 0);   pos += 2; // rx_packet_length
+    bt_store_16(event,  pos, 0);   pos += 2; // tx_packet_length
+
+    event[pos++] = 0; // air_mode
+    (*registered_rfcomm_packet_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
 int hci_send_cmd(const hci_cmd_t *cmd, ...){
 	printf("hci_send_cmd opcode 0x%02x\n", cmd->opcode);	
+    if (cmd->opcode == 0x428){
+        hci_event_sco_complete();
+    }
 	return 0;
 }
 
@@ -166,23 +199,30 @@ void sdp_query_rfcomm_channel_and_name_for_uuid(bd_addr_t remote, uint16_t uuid)
 	sdp_query_complete_response(0);
 }
 
-void rfcomm_create_channel_internal(void * connection, bd_addr_t addr, uint8_t channel){
+
+uint8_t rfcomm_create_channel(bd_addr_t addr, uint8_t channel, uint16_t * out_cid){
 	// RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE
-	// printf("rfcomm_create_channel_internal\n");
-	active_connection = connection;
     uint8_t event[16];
     uint8_t pos = 0;
     event[pos++] = RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE;
     event[pos++] = sizeof(event) - 2;
     event[pos++] = 0;
     
-    bt_flip_addr(&event[pos], addr); pos += 6;
+    bt_flip_addr(&event[pos], addr);
+    memcpy(dev_addr, addr, 6);
+    pos += 6;
+    
     bt_store_16(event,  pos, 1);   pos += 2;
 	event[pos++] = 0;
 	
 	bt_store_16(event, pos, rfcomm_cid); pos += 2;       // channel ID
 	bt_store_16(event, pos, 200); pos += 2;   // max frame size
-    (*registered_rfcomm_packet_handler)(connection, HCI_EVENT_PACKET, 0, (uint8_t *) event, pos);
+    (*registered_rfcomm_packet_handler)(HCI_EVENT_PACKET, 0, (uint8_t *) event, pos);
+
+    if (out_cid){
+        *out_cid = rfcomm_cid;
+    }
+    return 0;
 }
 
 int rfcomm_can_send_packet_now(uint16_t rfcomm_cid){
@@ -194,15 +234,16 @@ void rfcomm_disconnect_internal(uint16_t rfcomm_cid){
 	event[0] = RFCOMM_EVENT_CHANNEL_CLOSED;
     event[1] = sizeof(event) - 2;
     bt_store_16(event, 2, rfcomm_cid);
-    (*registered_rfcomm_packet_handler)(active_connection, HCI_EVENT_PACKET, 0, (uint8_t *) event, sizeof(event));
+    (*registered_rfcomm_packet_handler)(HCI_EVENT_PACKET, 0, (uint8_t *) event, sizeof(event));
 }
 
-void rfcomm_register_packet_handler(void (*handler)(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size)){
+void rfcomm_register_packet_handler(void (*handler)(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size)){
 	registered_rfcomm_packet_handler = handler;
 }
 
-void rfcomm_register_service_internal(void * connection, uint8_t channel, uint16_t max_frame_size){
-	printf("rfcomm_register_service_internal\n");
+uint8_t rfcomm_register_service(uint8_t channel, uint16_t max_frame_size){
+	printf("rfcomm_register_service\n");
+    return 0;
 }
 
 
@@ -215,6 +256,37 @@ void rfcomm_accept_connection_internal(uint16_t rfcomm_cid){
 	printf("rfcomm_accept_connection_internal \n");
 }
 
+void run_loop_add_timer(timer_source_t *timer){
+}
+
+int  run_loop_remove_timer(timer_source_t *timer){
+    return 0;
+}
+void run_loop_set_timer_handler(timer_source_t *ts, void (*process)(timer_source_t *_ts)){
+}
+
+void run_loop_set_timer(timer_source_t *a, uint32_t timeout_in_ms){
+}
+
+
+void hci_emit_disconnection_complete(uint16_t handle, uint8_t reason){
+    uint8_t event[6];
+    event[0] = HCI_EVENT_DISCONNECTION_COMPLETE;
+    event[1] = sizeof(event) - 2;
+    event[2] = 0; // status = OK
+    bt_store_16(event, 3, handle);
+    event[5] = reason;
+    (*registered_rfcomm_packet_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
+uint8_t gap_disconnect(hci_con_handle_t handle){
+    hci_emit_disconnection_complete(handle, 0);
+    return 0;
+}
+
+uint16_t hci_get_sco_voice_setting(){
+    return 0x40;
+}
 
 void inject_rfcomm_command_to_hf(uint8_t * data, int len){
     if (memcmp((char*)data, "AT", 2) == 0) return;
@@ -225,7 +297,7 @@ void inject_rfcomm_command_to_hf(uint8_t * data, int len){
     } else {
         printf("Trigger HF state machine - %s", data);
     }
-    (*registered_rfcomm_packet_handler)(active_connection, RFCOMM_DATA_PACKET, rfcomm_cid, (uint8_t *) &rfcomm_payload[0], rfcomm_payload_len);
+    (*registered_rfcomm_packet_handler)(RFCOMM_DATA_PACKET, rfcomm_cid, (uint8_t *) &rfcomm_payload[0], rfcomm_payload_len);
 }
 
 void inject_rfcomm_command_to_ag(uint8_t * data, int len){
@@ -237,9 +309,8 @@ void inject_rfcomm_command_to_ag(uint8_t * data, int len){
     } else {
         printf("Trigger AG state machine - %s", data);
     }
-    (*registered_rfcomm_packet_handler)(active_connection, RFCOMM_DATA_PACKET, rfcomm_cid, (uint8_t *) &rfcomm_payload[0], rfcomm_payload_len);
+    (*registered_rfcomm_packet_handler)( RFCOMM_DATA_PACKET, rfcomm_cid, (uint8_t *) &rfcomm_payload[0], rfcomm_payload_len);
 }
-
 
 
 

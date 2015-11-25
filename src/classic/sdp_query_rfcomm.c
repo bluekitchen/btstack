@@ -53,6 +53,9 @@
 // called by test/sdp_client
 void sdp_query_rfcomm_init(void);
 
+// called by test/sdp_client
+void sdp_query_rfcomm_init(void);
+
 static void dummy_notify_app(sdp_query_event_t* event, void * context);
 
 typedef enum { 

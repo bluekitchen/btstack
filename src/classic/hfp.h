@@ -66,8 +66,9 @@ extern "C" {
 9: eSCO S4 (and T2) Settings Supported
 10-31: Reserved for future definition
 */
-#define HFP_HFSF_THREE_WAY_CALLING  1
 #define HFP_HFSF_EC_NR_FUNCTION     0
+#define HFP_HFSF_THREE_WAY_CALLING  1
+#define HFP_HFSF_VOICE_RECOGNITION_FUNCTION 3
 #define HFP_HFSF_CODEC_NEGOTIATION  7
 #define HFP_HFSF_HF_INDICATORS      8
 #define HFP_HFSF_ESCO               9
@@ -89,6 +90,8 @@ extern "C" {
 */
 #define HFP_AGSF_THREE_WAY_CALLING  0
 #define HFP_AGSF_EC_NR_FUNCTION     1
+#define HFP_AGSF_VOICE_RECOGNITION_FUNCTION     2
+#define HFP_AGSF_IN_BAND_RING_TONE  3
 #define HFP_AGSF_CODEC_NEGOTIATION  9
 #define HFP_AGSF_HF_INDICATORS      10
 #define HFP_AGSF_ESCO               11
@@ -105,6 +108,8 @@ extern "C" {
 #define HFP_AVAILABLE_CODECS "+BAC"
 #define HFP_INDICATOR "+CIND"
 #define HFP_ENABLE_STATUS_UPDATE_FOR_AG_INDICATORS "+CMER"
+#define HFP_ENABLE_CLIP "+CLIP"
+#define HFP_ENABLE_CALL_WAITING_NOTIFICATION "+CCWA"
 #define HFP_UPDATE_ENABLE_STATUS_FOR_INDIVIDUAL_AG_INDICATORS "+BIA" // +BIA:<enabled>,,<enabled>,,,<enabled>
 #define HFP_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES "+CHLD"
 #define HFP_GENERIC_STATUS_INDICATOR "+BIND"
@@ -114,6 +119,19 @@ extern "C" {
 #define HFP_EXTENDED_AUDIO_GATEWAY_ERROR "+CME ERROR"
 #define HFP_TRIGGER_CODEC_CONNECTION_SETUP "+BCC"
 #define HFP_CONFIRM_COMMON_CODEC "+BCS"
+#define HFP_CALL_ANSWERED "ATA"
+#define HFP_HANG_UP_CALL "+CHUP"
+#define HFP_CHANGE_IN_BAND_RING_TONE_SETTING "+BSIR"
+#define HFP_CALL_PHONE_NUMBER "ATD"
+#define HFP_REDIAL_LAST_NUMBER "AT+BLDN"
+#define HFP_TURN_OFF_EC_AND_NR "+NREC" // EC (Echo CAnceling), NR (Noise Reduction)
+#define HFP_ACTIVATE_VOICE_RECOGNITION "+BVRA" // EC (Echo CAnceling), NR (Noise Reduction)
+#define HFP_SET_MICROPHONE_GAIN  "+VGM"
+#define HFP_SET_SPEAKER_GAIN     "+VGS"
+
+#define HFP_PHONE_NUMBER_FOR_VOICE_TAG "+BINP"
+#define HFP_TRANSMIT_DTMF_CODES  "+VTS"
+
 
 #define HFP_OK "OK"
 #define HFP_ERROR "ERROR"
@@ -125,26 +143,52 @@ extern "C" {
 typedef enum {
     HFP_CMD_NONE = 0,
     HFP_CMD_ERROR,
+    HFP_CMD_UNKNOWN,
     HFP_CMD_OK,
     HFP_CMD_SUPPORTED_FEATURES,
     HFP_CMD_AVAILABLE_CODECS,
-    HFP_CMD_INDICATOR, // 5
+    
+    HFP_CMD_RETRIEVE_AG_INDICATORS,
+    HFP_CMD_RETRIEVE_AG_INDICATORS_STATUS, 
+    
     HFP_CMD_ENABLE_INDICATOR_STATUS_UPDATE,
     HFP_CMD_ENABLE_INDIVIDUAL_AG_INDICATOR_STATUS_UPDATE,
     HFP_CMD_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES,
+    HFP_CMD_ENABLE_CLIP,
+    HFP_CMD_ENABLE_CALL_WAITING_NOTIFICATION,
 
-    HFP_CMD_GENERIC_STATUS_INDICATOR,
-
+    HFP_CMD_LIST_GENERIC_STATUS_INDICATORS,
+    HFP_CMD_RETRIEVE_GENERIC_STATUS_INDICATORS,
+    HFP_CMD_RETRIEVE_GENERIC_STATUS_INDICATORS_STATE,
+    
     HFP_CMD_TRANSFER_AG_INDICATOR_STATUS,
-    HFP_CMD_QUERY_OPERATOR_SELECTION,
+
+    HFP_CMD_QUERY_OPERATOR_SELECTION_NAME,
+    HFP_CMD_QUERY_OPERATOR_SELECTION_NAME_FORMAT,
 
     HFP_CMD_ENABLE_EXTENDED_AUDIO_GATEWAY_ERROR,
     HFP_CMD_EXTENDED_AUDIO_GATEWAY_ERROR,
     HFP_CMD_TRIGGER_CODEC_CONNECTION_SETUP,
+    HFP_CMD_AG_SEND_COMMON_CODEC,
     HFP_CMD_AG_SUGGESTED_CODEC,
-    HFP_CMD_HF_CONFIRMED_CODEC
-    
+    HFP_CMD_HF_CONFIRMED_CODEC,
+    HFP_CMD_CALL_ANSWERED,
+    HFP_CMD_CALL_HOLD,
+    HFP_CMD_AG_ANSWER_CALL,
+    HFP_CMD_HANG_UP_CALL,
+    HFP_CMD_CHANGE_IN_BAND_RING_TONE_SETTING,
+    HFP_CMD_CALL_PHONE_NUMBER,
+    HFP_CMD_REDIAL_LAST_NUMBER,
+    HFP_CMD_TURN_OFF_EC_AND_NR,
+    HFP_CMD_AG_ACTIVATE_VOICE_RECOGNITION,
+    HFP_CMD_HF_ACTIVATE_VOICE_RECOGNITION,
+    HFP_CMD_HF_REQUEST_PHONE_NUMBER,
+    HFP_CMD_AG_SEND_PHONE_NUMBER,
+    HFP_CMD_TRANSMIT_DTMF_CODES,
+    HFP_CMD_SET_MICROPHONE_GAIN,
+    HFP_CMD_SET_SPEAKER_GAIN
 } hfp_command_t;
+ 
 
 typedef enum {
     HFP_CME_ERROR_AG_FAILURE = 0, 
@@ -195,10 +239,27 @@ typedef enum {
 } hfp_callsetup_status_t;
 
 typedef enum {
-    HFP_HELDCALL_STATUS_NO_CALLS_HELD = 0,
-    HFP_HELDCALL_STATUS_CALL_ON_HOLD_OR_SWAPPED,
-    HFP_HELDCALL_STATUS_CALL_ON_HOLD_AND_NO_ACTIVE_CALLS 
+    HFP_CALLHELD_STATUS_NO_CALLS_HELD = 0,
+    HFP_CALLHELD_STATUS_CALL_ON_HOLD_OR_SWAPPED,
+    HFP_CALLHELD_STATUS_CALL_ON_HOLD_AND_NO_ACTIVE_CALLS 
 } hfp_callheld_status_t;
+
+typedef enum {
+    HFP_AG_INCOMING_CALL,
+    HFP_AG_INCOMING_CALL_ACCEPTED_BY_AG,
+    HFP_AG_INCOMING_CALL_ACCEPTED_BY_HF,
+    HFP_AG_AUDIO_CONNECTION_ESTABLISHED,
+    HFP_AG_OUTGOING_CALL_INITIATED,
+    HFP_AG_OUTGOING_CALL_REJECTED,
+    HFP_AG_OUTGOING_CALL_ACCEPTED,
+    HFP_AG_OUTGOING_CALL_RINGING,
+    HFP_AG_OUTGOING_CALL_ESTABLISHED,
+    HFP_AG_OUTGOING_REDIAL_INITIATED,
+    HFP_AG_TERMINATE_CALL_BY_AG,
+    HFP_AG_TERMINATE_CALL_BY_HF,
+    HFP_AG_CALL_DROPPED,
+} hfp_ag_call_event_t;
+
 
 typedef enum {
     HFP_PARSER_CMD_HEADER = 0,
@@ -238,29 +299,58 @@ typedef enum {
     HFP_RETRIEVE_GENERIC_STATUS_INDICATORS,
     HFP_W4_RETRIEVE_GENERIC_STATUS_INDICATORS,
     
-    HFP_RETRIEVE_INITITAL_STATE_GENERIC_STATUS_INDICATORS, // 20
+    HFP_RETRIEVE_INITITAL_STATE_GENERIC_STATUS_INDICATORS, 
     HFP_W4_RETRIEVE_INITITAL_STATE_GENERIC_STATUS_INDICATORS,
     
-    HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED, // 22
+    HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED, 
     
-    HFP_SLE_W2_EXCHANGE_COMMON_CODEC,
-    HFP_SLE_W4_EXCHANGE_COMMON_CODEC,
+    HFP_W2_CONNECT_SCO,
+    HFP_W4_SCO_CONNECTED,
     
-    HFP_CODECS_CONNECTION_ESTABLISHED, // 25
-    
-    HFP_CCE_W2_ESTABLISH_SCO,
-    HFP_CCE_W4_SCO_CONNECTION_ESTABLISHED,
-    
-    HFP_AUDIO_CONNECTION_ESTABLISHED,
+    HFP_AUDIO_CONNECTION_ESTABLISHED, 
     
     HFP_W2_DISCONNECT_SCO,
-    HFP_W4_SCO_DISCONNECTED, // 30
+    HFP_W4_SCO_DISCONNECTED, 
 
     HFP_W2_DISCONNECT_RFCOMM,
     HFP_W4_RFCOMM_DISCONNECTED, 
-    HFP_W4_RFCOMM_DISCONNECTED_AND_RESTART,
+    HFP_W4_RFCOMM_DISCONNECTED_AND_RESTART, 
     HFP_W4_CONNECTION_ESTABLISHED_TO_SHUTDOWN
 } hfp_state_t;
+
+typedef enum {
+    HFP_CODECS_IDLE,
+    HFP_CODECS_RECEIVED_LIST,
+    HFP_CODECS_RECEIVED_TRIGGER_CODEC_EXCHANGE,
+    HFP_CODECS_W4_AG_COMMON_CODEC,
+    HFP_CODECS_AG_SENT_COMMON_CODEC,
+    HFP_CODECS_AG_RESEND_COMMON_CODEC,
+    HFP_CODECS_EXCHANGED,
+    HFP_CODECS_ERROR
+} hfp_codecs_state_t;
+
+typedef enum {
+    HFP_CALL_IDLE,
+    HFP_CALL_TRIGGER_AUDIO_CONNECTION,
+    HFP_CALL_W4_AUDIO_CONNECTION_FOR_IN_BAND_RING,
+    HFP_CALL_RINGING,
+    HFP_CALL_W4_AUDIO_CONNECTION_FOR_ACTIVE,
+    HFP_CALL_ACTIVE,
+    HFP_CALL_W2_SEND_CALL_WAITING,
+    HFP_CALL_W4_CHLD,
+    HFP_CALL_OUTGOING_INITIATED,
+    HFP_CALL_OUTGOING_DIALING,
+    HFP_CALL_OUTGOING_RINGING
+} hfp_call_state_t;
+
+typedef enum{
+    HFP_NONE_SM,
+    HFP_SLC_SM,
+    HFP_SLC_QUERIES_SM,
+    HFP_CODECS_CONNECTION_SM,
+    HFP_AUDIO_CONNECTION_SM,
+    HFP_CALL_SM
+} hfp_state_machine_t;
 
 typedef void (*hfp_callback_t)(uint8_t * event, uint16_t event_size);
 
@@ -291,7 +381,7 @@ typedef struct{
     char name[17]; // enabled
 } hfp_network_opearator_t;
 
-
+    
 typedef struct hfp_connection {
     linked_item_t    item;
     
@@ -301,7 +391,11 @@ typedef struct hfp_connection {
     uint16_t rfcomm_channel_nr;
     uint16_t rfcomm_cid;
     
+    hfp_state_machine_t state_machine;
+    hfp_call_state_t call_state;
     hfp_state_t state;
+    hfp_codecs_state_t codecs_state;
+    
     // needed for reestablishing connection
     uint16_t service_uuid;
 
@@ -333,43 +427,44 @@ typedef struct hfp_connection {
     // Retrieved during service level connection establishment, not used yet
     uint8_t  negotiated_codec;
 
+    // HF -> AG configuration
+    uint8_t clip_enabled;
+    uint8_t call_waiting_notification_enabled;
+
     // TODO: put these bit flags in a bitmap
-    uint8_t wait_ok;
-    uint8_t send_ok;
+    uint8_t ok_pending;
+    // uint8_t send_ok;
     uint8_t send_error;
 
     uint8_t keep_separator;
-
-    uint8_t retrieve_ag_indicators;        // HFP_CMD_INDICATOR, check if needed
-    uint8_t retrieve_ag_indicators_status; 
-
-    uint8_t list_generic_status_indicators;           // HFP_CMD_LIST_GENERIC_STATUS_INDICATOR
-    uint8_t retrieve_generic_status_indicators;       // HFP_CMD_GENERIC_STATUS_INDICATOR
-    uint8_t retrieve_generic_status_indicators_state; // HFP_CMD_GENERIC_STATUS_INDICATOR_STATE
     
     uint8_t change_status_update_for_individual_ag_indicators; 
-
-    uint8_t operator_name_format;       
-    uint8_t operator_name;              
     uint8_t operator_name_changed;      
 
     uint8_t enable_extended_audio_gateway_error_report;
     uint8_t extended_audio_gateway_error;
 
-    // can come any time (here taken into account only after SLE),
-    // if codec negotiation feature is set
-    uint8_t notify_ag_on_new_codecs;
-    
     // establish codecs connection
-    uint8_t hf_trigger_codec_connection_setup;
-    uint8_t ag_trigger_codec_connection_setup;
-    uint8_t ag_ready_for_codecs_connection_setup;
     uint8_t suggested_codec;
     uint8_t codec_confirmed;
 
     uint8_t establish_audio_connection; 
     uint8_t release_audio_connection; 
 
+    uint8_t change_in_band_ring_tone_setting;
+    uint8_t ag_ring;
+    uint8_t ag_send_clip;
+    uint8_t ag_echo_and_noise_reduction;
+    uint8_t ag_activate_voice_recognition;
+
+    uint8_t microphone_gain;
+    uint8_t send_microphone_gain;
+
+    uint8_t speaker_gain;
+    uint8_t send_speaker_gain;
+
+    uint8_t send_phone_number_for_voice_tag;
+    timer_source_t hfp_timeout;
 } hfp_connection_t;
 
 // UTILS_START : TODO move to utils
@@ -380,17 +475,21 @@ int get_bit(uint16_t bitmap, int position);
 int store_bit(uint32_t bitmap, int position, uint8_t value);
 // UTILS_END
 
-void hfp_create_sdp_record(uint8_t * service, uint16_t service_uuid, int rfcomm_channel_nr, const char * name, uint16_t supported_features);
+void hfp_create_sdp_record(uint8_t * service, uint16_t service_uuid, int rfcomm_channel_nr, const char * name);
 void hfp_handle_hci_event(hfp_callback_t callback, uint8_t packet_type, uint8_t *packet, uint16_t size);
 void hfp_emit_event(hfp_callback_t callback, uint8_t event_subtype, uint8_t value);
+void hfp_emit_string_event(hfp_callback_t callback, uint8_t event_subtype, const char * value);
+
 hfp_connection_t * get_hfp_connection_context_for_rfcomm_cid(uint16_t cid);
 hfp_connection_t * get_hfp_connection_context_for_bd_addr(bd_addr_t bd_addr);
+hfp_connection_t * get_hfp_connection_context_for_sco_handle(uint16_t handle);
+
 int get_hfp_generic_status_indicators_nr(void);
 hfp_generic_status_indicator_t * get_hfp_generic_status_indicators(void);
 void set_hfp_generic_status_indicators(hfp_generic_status_indicator_t * indicators, int indicator_nr);
 
 linked_list_t * hfp_get_connections(void);
-void hfp_parse(hfp_connection_t * context, uint8_t byte);
+void hfp_parse(hfp_connection_t * context, uint8_t byte, int isHandsFree);
 
 void hfp_init(uint16_t rfcomm_channel_nr);
 void hfp_establish_service_level_connection(bd_addr_t bd_addr, uint16_t service_uuid);

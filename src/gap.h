@@ -43,7 +43,8 @@ extern "C" {
 #endif
 
 #include "btstack_defines.h"
-
+#include "utils.h"
+	
 typedef enum {
 
 	// MITM protection not required

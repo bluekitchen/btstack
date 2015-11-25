@@ -53,7 +53,8 @@
 #include "ble/att.h"
 #include "ble/att_db_util.h"
 #include "utils.h"
-
+#include "bluetooth.h"
+ 
 #include "le_counter.h"
 
 #if 0

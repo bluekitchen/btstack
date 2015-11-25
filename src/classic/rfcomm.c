@@ -2124,6 +2124,7 @@ int rfcomm_query_port_configuration(uint16_t rfcomm_cid){
     return rfcomm_send_uih_rpn_req(channel->multiplexer, channel->dlci);
 }
 
+
 static uint8_t rfcomm_create_channel_internal(bd_addr_t addr, uint8_t server_channel, uint8_t incoming_flow_control, uint8_t initial_credits, uint16_t * out_rfcomm_cid){
     log_info("RFCOMM_CREATE_CHANNEL addr %s channel #%u init credits %u",  bd_addr_to_str(addr), server_channel, initial_credits);
     
@@ -2199,8 +2200,7 @@ void rfcomm_disconnect_internal(uint16_t rfcomm_cid){
     rfcomm_run();
 }
 
-static uint8_t rfcomm_register_service_internal(uint8_t channel, uint16_t max_frame_size, uint8_t incoming_flow_control, uint8_t initial_credits){
-    log_info("RFCOMM_REGISTER_SERVICE channel #%u mtu %u flow_control %u credits %u",
+static uint8_t rfcomm_register_service_internal(uint8_t channel, uint16_t max_frame_size, uint8_t incoming_flow_control, uint8_t initial_credits){    log_info("RFCOMM_REGISTER_SERVICE channel #%u mtu %u flow_control %u credits %u",
              channel, max_frame_size, incoming_flow_control, initial_credits);
 
     // check if already registered
