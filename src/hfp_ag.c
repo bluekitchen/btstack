@@ -222,13 +222,13 @@ static int hfp_ag_send_clip(uint16_t cid){
 
 static int hfp_send_subscriber_number_cmd(uint16_t cid, uint8_t type, const char * number){
     char buffer[50];
-    sprintf(buffer, "\r\n%s:,\"%s\",%u,\r\n", HFP_SUBSCRIBER_NUMBER_INFORMATION, number, type);
+    sprintf(buffer, "\r\n%s: ,\"%s\",%u,\r\n", HFP_SUBSCRIBER_NUMBER_INFORMATION, number, type);
     return send_str_over_rfcomm(cid, buffer);
 }
         
 static int hfp_ag_send_phone_number_for_voice_tag_cmd(uint16_t cid){
     char buffer[50];
-    sprintf(buffer, "\r\n%s:%s\r\n", HFP_PHONE_NUMBER_FOR_VOICE_TAG, clip_number);
+    sprintf(buffer, "\r\n%s: %s\r\n", HFP_PHONE_NUMBER_FOR_VOICE_TAG, clip_number);
     return send_str_over_rfcomm(cid, buffer);
 }
 
@@ -1816,7 +1816,7 @@ void hfp_ag_send_current_call_status(bd_addr_t bd_addr, int idx, hfp_enhanced_ca
     hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
     
     char buffer[100];
-    int offset = snprintf(buffer, sizeof(buffer), "\r\n%s:%d,%d,%d,%d,%d", HFP_LIST_CURRENT_CALLS, idx, dir, status, mode, mpty);
+    int offset = snprintf(buffer, sizeof(buffer), "\r\n%s: %d,%d,%d,%d,%d", HFP_LIST_CURRENT_CALLS, idx, dir, status, mode, mpty);
     if (number){
         offset += snprintf(buffer+offset, sizeof(buffer)-offset, "\"%s\",%u", number, type);
     } 
