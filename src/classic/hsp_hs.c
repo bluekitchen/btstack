@@ -159,13 +159,13 @@ int hsp_hs_send_result(char * result){
 }
 
 
-void hsp_hs_create_service(uint8_t * service, int rfcomm_channel_nr, const char * name, uint8_t have_remote_audio_control){
+void hsp_hs_create_service(uint8_t * service, uint32_t service_record_handle, int rfcomm_channel_nr, const char * name, uint8_t have_remote_audio_control){
     uint8_t* attribute;
     de_create_sequence(service);
 
     // 0x0000 "Service Record Handle"
     de_add_number(service, DE_UINT, DE_SIZE_16, SDP_ServiceRecordHandle);
-    de_add_number(service, DE_UINT, DE_SIZE_32, 0x10001);
+    de_add_number(service, DE_UINT, DE_SIZE_32, service_record_handle);
 
     // 0x0001 "Service Class ID List"
     de_add_number(service,  DE_UINT, DE_SIZE_16, SDP_ServiceClassIDList);

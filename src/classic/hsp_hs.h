@@ -55,7 +55,7 @@ extern "C" {
 typedef void (*hsp_hs_callback_t)(uint8_t * event, uint16_t event_size);
 // Register callback (packet handler) for hsp headset
 void hsp_hs_register_packet_handler(hsp_hs_callback_t callback);
-void hsp_hs_create_service(uint8_t * service, int rfcomm_channel_nr, const char * name, uint8_t have_remote_audio_control);
+void hsp_hs_create_service(uint8_t * service, uint32_t service_record_handle, int rfcomm_channel_nr, const char * name, uint8_t have_remote_audio_control);
 
 void hsp_hs_init(uint8_t rfcomm_channel_nr);
 void hsp_hs_connect(bd_addr_t bd_addr);

@@ -103,10 +103,10 @@ int btstack_main(int argc, const char * argv[]){
     pan_create_panu_service(pan_service_buffer, 0x10002, network_packet_types, NULL, NULL, BNEP_SECURITY_NONE);
     sdp_register_service((uint8_t*)pan_service_buffer);
 
-    hsp_ag_create_service((uint8_t *)hsp_ag_service_buffer, 2, "HSP AG");
+    hsp_ag_create_service((uint8_t *)hsp_ag_service_buffer, 0x10003,  2, "HSP AG");
     sdp_register_service((uint8_t *)hsp_ag_service_buffer);
 
-    hsp_hs_create_service((uint8_t *)hsp_hs_service_buffer, 3, "HSP HS", 0);
+    hsp_hs_create_service((uint8_t *)hsp_hs_service_buffer, 0x10004, 3, "HSP HS", 0);
     sdp_register_service((uint8_t *)hsp_hs_service_buffer);
 
     hfp_ag_create_sdp_record((uint8_t *)hfp_ag_service_buffer, 4, "HFP AG", 0, 0);

@@ -139,7 +139,7 @@ static void emit_event(uint8_t event_subtype, uint8_t value){
     (*hsp_ag_callback)(event, sizeof(event));
 }
 
-void hsp_ag_create_service(uint8_t * service, int rfcomm_channel_nr, const char * name){
+void hsp_ag_create_service(uint8_t * service, uint32_t service_record_handle, int rfcomm_channel_nr, const char * name){
     uint8_t* attribute;
     de_create_sequence(service);
 
