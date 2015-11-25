@@ -29,7 +29,7 @@ LDFLAGS += $(shell pkg-config libusb-1.0 --libs)
 # CFLAGS  += -I/usr/local/include
 # LDFLAGS += -L/sw/lib -lportaudio -Wl,-framework,CoreAudio -Wl,-framework,AudioToolbox -Wl,-framework,AudioUnit -Wl,-framework,Carbon
 
-EXAMPLES = hfp_hf_test hfp_ag_test ble_peripheral_test ble_central_test l2cap_test classic_test bnep_test
+EXAMPLES = iopt hfp_hf_test hfp_ag_test ble_peripheral_test ble_central_test l2cap_test classic_test bnep_test
 #  hsp_ag_test hsp_hs_test sco_loopback
 
 all: ${BTSTACK_ROOT}/src/version.h ${EXAMPLES}
@@ -69,3 +69,7 @@ bnep_test: ${CORE_OBJ} ${COMMON_OBJ} pan.o bnep_test.c
 
 sco_loopback: ${CORE_OBJ} ${COMMON_OBJ} sco_loopback.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+
+iopt: ${CORE_OBJ} ${COMMON_OBJ} pan.o hsp_ag.o hsp_hs.o hfp_ag.o hfp_hf.o iopt.c hfp.o ${SDP_CLIENT}
+	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+	
