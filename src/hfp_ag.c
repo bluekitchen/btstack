@@ -1772,6 +1772,7 @@ void hfp_ag_set_microphone_gain(bd_addr_t bd_addr, int gain){
         connection->microphone_gain = gain;
         connection->send_microphone_gain = 1;
     } 
+    hfp_run_for_context(connection);
 }
 
 /*
@@ -1783,6 +1784,7 @@ void hfp_ag_set_speaker_gain(bd_addr_t bd_addr, int gain){
         connection->speaker_gain = gain;
         connection->send_speaker_gain = 1;
     } 
+    hfp_run_for_context(connection);
 }
 
 /*

@@ -155,6 +155,14 @@ static void show_usage(void){
     printf("n - Disable Voice Regocnition\n");
     printf("N - Enable Voice Recognition\n");
 
+    printf("o - Set speaker volume to 0  (minimum)\n");
+    printf("O - Set speaker volume to 9  (default)\n");
+    printf("p - Set speaker volume to 12 (higher)\n");
+    printf("P - Set speaker volume to 15 (maximum)\n");
+
+    printf("q - Set microphone gain to 9\n");
+    printf("Q - Set microphone gain to 12\n");
+
     printf("t - terminate connection\n");
 
     printf("---\n");
@@ -280,6 +288,30 @@ static int stdin_process(struct data_source *ds){
         case 'N':
             printf("Enable Voice Recognition\n");
             hfp_ag_activate_voice_recognition(device_addr, 1);
+            break;
+        case 'o':
+            printf("Set speaker gain to 0 (minimum)\n");
+            hfp_ag_set_speaker_gain(device_addr, 0);
+            break;
+        case 'O':
+            printf("Set speaker gain to 9 (default)\n");
+            hfp_ag_set_speaker_gain(device_addr, 9);
+            break;
+        case 'p':
+            printf("Set speaker gain to 12 (higher)\n");
+            hfp_ag_set_speaker_gain(device_addr, 12);
+            break;
+        case 'P':
+            printf("Set speaker gain to 15 (maximum)\n");
+            hfp_ag_set_speaker_gain(device_addr, 15);
+            break;
+        case 'q':
+            printf("Set microphone gain to 9\n");
+            hfp_ag_set_microphone_gain(device_addr, 9);
+            break;
+        case 'Q':
+            printf("Set microphone gain to 12\n");
+            hfp_ag_set_microphone_gain(device_addr, 12);
             break;
         case 'R':
             printf("Enable in-band ring tone\n");
