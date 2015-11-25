@@ -689,7 +689,8 @@
 #define HFP_SUBEVENT_PLACE_CALL_WITH_NUMBER                0x0D
 #define HFP_SUBEVENT_REDIAL_LAST_NUMBER                    0x0E
 #define HFP_SUBEVENT_ATTACH_NUMBER_TO_VOICE_TAG            0x0F
- 
+#define HFP_SUBEVENT_TRANSMIT_DTMF_CODES                   0x10
+
 // ANCS Client
 #define ANCS_CLIENT_CONNECTED                              0xF0
 #define ANCS_CLIENT_NOTIFICATION                           0xF1
