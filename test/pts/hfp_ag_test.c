@@ -306,7 +306,11 @@ static void packet_handler(uint8_t * event, uint16_t event_size){
     }
 
     if (event[0] != HCI_EVENT_HFP_META) return;
-    if (event[3] && event[2] != HFP_SUBEVENT_PLACE_CALL_WITH_NUMBER){
+    if (event[3]
+        && event[2] != HFP_SUBEVENT_PLACE_CALL_WITH_NUMBER
+        && event[2] != HFP_SUBEVENT_ATTACH_NUMBER_TO_VOICE_TAG 
+        && event[2] != HFP_SUBEVENT_TRANSMIT_DTMF_CODES
+        && event[2] != HFP_SUBEVENT_TRANSMIT_STATUS_OF_CURRENT_CALL){
         printf("ERROR, status: %u\n", event[3]);
         return;
     }
@@ -356,6 +360,14 @@ static void packet_handler(uint8_t * event, uint16_t event_size){
                 printf("Last number missing: reject call\n");
                 hfp_ag_outgoing_call_rejected();
             }
+            break;
+        case HFP_SUBEVENT_ATTACH_NUMBER_TO_VOICE_TAG:
+            printf("\n** Attach number to voice tag. Sending '1234567\n");
+            hfp_ag_send_phone_number_for_voice_tag(device_addr, "1234567");
+            break;
+        case HFP_SUBEVENT_TRANSMIT_DTMF_CODES:
+            printf("\n** Send DTMF Codes: '%s'\n", &event[3]);
+            hfp_ag_send_dtmf_code_done(device_addr);
             break;
 
         default:
