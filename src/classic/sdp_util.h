@@ -116,7 +116,7 @@ int       sdp_filter_attributes_in_attributeIDList(uint8_t *record, uint8_t *att
 int       sdp_attribute_list_constains_id(uint8_t *attributeIDList, uint16_t attributeID);
 int       sdp_traversal_match_pattern(uint8_t * element, de_type_t attributeType, de_size_t size, void *my_context);
 
-void      sdp_create_spp_service(uint8_t *service, int service_id, const char *name);
+void      sdp_create_spp_service(uint8_t *service, uint32_t service_record_handle, int service_id, const char *name);
 
 /* API_END */
 

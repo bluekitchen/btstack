@@ -778,7 +778,7 @@ int btstack_main(int argc, const char * argv[]){
     // init SDP, create record for SPP and register with SDP
     sdp_init();
     memset(spp_service_buffer, 0, sizeof(spp_service_buffer));
-    sdp_create_spp_service((uint8_t*) spp_service_buffer, RFCOMM_SERVER_CHANNEL, "SPP Counter");
+    sdp_create_spp_service((uint8_t*) spp_service_buffer, 0x10001, RFCOMM_SERVER_CHANNEL, "SPP Counter");
     de_dump_data_element((uint8_t*) spp_service_buffer);
     printf("SDP service record size: %u\n\r", de_get_len((uint8_t*)spp_service_buffer));
     sdp_register_service((uint8_t*)spp_service_buffer);
