@@ -259,7 +259,12 @@ void hfp_ag_send_phone_number_for_voice_tag(bd_addr_t bd_addr, const char * numb
 /*
  * @brief
  */
- void hfp_ag_reject_phone_number_for_voice_tag(bd_addr_t bd_addr);
+void hfp_ag_reject_phone_number_for_voice_tag(bd_addr_t bd_addr);
+
+/*
+ * @brief
+ */
+void hfp_ag_send_dtmf_code_done(bd_addr_t bd_addr);
 
 /* API_END */
 

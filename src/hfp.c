@@ -206,7 +206,7 @@ void hfp_emit_event(hfp_callback_t callback, uint8_t event_subtype, uint8_t valu
 
 void hfp_emit_string_event(hfp_callback_t callback, uint8_t event_subtype, const char * value){
     if (!callback) return;
-    uint8_t event[24];
+    uint8_t event[40];
     event[0] = HCI_EVENT_HFP_META;
     event[1] = sizeof(event) - 2;
     event[2] = event_subtype;
