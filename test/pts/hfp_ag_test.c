@@ -83,7 +83,8 @@ static int                        current_call_index = 0;
 static hfp_enhanced_call_dir_t    current_call_dir;
 static int                        current_call_exists_a = 0;
 static int                        current_call_exists_b = 0;
-static hfp_enhanced_call_status_t current_call_status;
+static hfp_enhanced_call_status_t current_call_status_a;
+static hfp_enhanced_call_status_t current_call_status_b;
 static hfp_enhanced_call_mpty_t   current_call_mpty   = HFP_ENHANCED_CALL_MPTY_NOT_A_CONFERENCE_CALL;
 
 
@@ -212,16 +213,16 @@ static int stdin_process(struct data_source *ds){
         case 'c':
             printf("Simulate incoming call from 1234567\n");
             current_call_exists_a = 1;
+            current_call_status_a = HFP_ENHANCED_CALL_STATUS_INCOMING;
             current_call_dir = HFP_ENHANCED_CALL_DIR_INCOMING;
-            current_call_status = HFP_ENHANCED_CALL_STATUS_INCOMING;
             hfp_ag_set_clip(129, "1234567");
             hfp_ag_incoming_call();
             break;
         case 'm':
             printf("Simulate incoming call from 7654321\n");
             current_call_exists_b = 1;
+            current_call_status_b = HFP_ENHANCED_CALL_STATUS_INCOMING;
             current_call_dir = HFP_ENHANCED_CALL_DIR_INCOMING;
-            current_call_status = HFP_ENHANCED_CALL_STATUS_INCOMING;
             hfp_ag_set_clip(129, "7654321");
             hfp_ag_incoming_call();
             break;
@@ -235,7 +236,12 @@ static int stdin_process(struct data_source *ds){
             break;
         case 'e':
             printf("Answer call on AG\n");
-            current_call_status = HFP_ENHANCED_CALL_STATUS_ACTIVE;
+            if (current_call_status_a == HFP_ENHANCED_CALL_STATUS_INCOMING){
+                current_call_status_a = HFP_ENHANCED_CALL_STATUS_ACTIVE;
+            }
+            if (current_call_status_b == HFP_ENHANCED_CALL_STATUS_INCOMING){
+                current_call_status_b = HFP_ENHANCED_CALL_STATUS_ACTIVE;
+            }
             hfp_ag_answer_incoming_call();
             break;
         case 'E':
@@ -349,7 +355,6 @@ static int stdin_process(struct data_source *ds){
         case 'u':
             printf("Join held call\n");
             current_call_mpty = HFP_ENHANCED_CALL_MPTY_CONFERENCE_CALL;
-            current_call_status = HFP_ENHANCED_CALL_STATUS_ACTIVE;
             hfp_ag_join_held_call();
             break;
         default:
@@ -436,18 +441,32 @@ static void packet_handler(uint8_t * event, uint16_t event_size){
             break;
         case HFP_SUBEVENT_TRANSMIT_STATUS_OF_CURRENT_CALL:
             if (current_call_index == 0 && current_call_exists_a){
-                hfp_ag_send_current_call_status(device_addr, 1, current_call_dir, current_call_status,
+                hfp_ag_send_current_call_status(device_addr, 1, current_call_dir, current_call_status_a,
                         HFP_ENHANCED_CALL_MODE_VOICE, current_call_mpty, 129, "1234567");
                 current_call_index = 1;
                 break;
             }
             if (current_call_index == 1 && current_call_exists_b){
-                hfp_ag_send_current_call_status(device_addr, 2, current_call_dir, current_call_status,
+                hfp_ag_send_current_call_status(device_addr, 2, current_call_dir, current_call_status_b,
                         HFP_ENHANCED_CALL_MODE_VOICE, current_call_mpty, 129, "7654321");
                 current_call_index = 2;
                 break;
             }
             hfp_ag_send_current_call_status_done(device_addr);
+            break;
+        case HFP_CMD_CALL_ANSWERED:
+            printf("Call answered by HF\n");
+            if (current_call_status_a == HFP_ENHANCED_CALL_STATUS_INCOMING){
+                current_call_status_a = HFP_ENHANCED_CALL_STATUS_ACTIVE;
+            }
+            if (current_call_status_b == HFP_ENHANCED_CALL_STATUS_INCOMING){
+                current_call_status_b = HFP_ENHANCED_CALL_STATUS_ACTIVE;
+            }
+            break;
+        case HFP_SUBEVENT_CONFERENCE_CALL:
+            current_call_mpty = HFP_ENHANCED_CALL_MPTY_CONFERENCE_CALL;
+            current_call_status_a = HFP_ENHANCED_CALL_STATUS_ACTIVE;
+            current_call_status_b = HFP_ENHANCED_CALL_STATUS_ACTIVE;
             break;
         default:
             printf("Event not handled %u\n", event[2]);

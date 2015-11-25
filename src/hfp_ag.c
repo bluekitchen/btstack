@@ -1072,6 +1072,7 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * connect
                             hfp_ag_set_call_state(HFP_CALL_STATUS_ACTIVE_OR_HELD_CALL_IS_PRESENT);
                             hfp_ag_hf_accept_call(connection);
                             printf("HF answers call, accept call by GSM\n");
+                            hfp_emit_event(hfp_callback, HFP_CMD_CALL_ANSWERED, 0);
                             break;
                         default:
                             break;
@@ -1476,6 +1477,7 @@ static void hfp_handle_rfcomm_data(uint8_t packet_type, uint16_t channel, uint8_
                         printf("AG: Join 3-way-call\n");
                         hfp_ag_set_callheld_state(HFP_CALLHELD_STATUS_NO_CALLS_HELD);
                         context->ag_indicators_status_update_bitmap = store_bit(context->ag_indicators_status_update_bitmap, callheld_indicator_index, 1);
+                        hfp_emit_event(hfp_callback, HFP_SUBEVENT_CONFERENCE_CALL, 0);
                     }
                     context->call_state = HFP_CALL_ACTIVE;
                     break;

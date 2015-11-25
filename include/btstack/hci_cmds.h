@@ -645,6 +645,8 @@ extern "C" {
 #define HFP_SUBEVENT_ATTACH_NUMBER_TO_VOICE_TAG            0x0F
 #define HFP_SUBEVENT_TRANSMIT_DTMF_CODES                   0x10
 #define HFP_SUBEVENT_TRANSMIT_STATUS_OF_CURRENT_CALL       0x11
+#define HFP_SUBEVENT_CALL_ANSWERED                         0x12
+#define HFP_SUBEVENT_CONFERENCE_CALL                       0x13
 
 // ANCS Client
 #define ANCS_CLIENT_CONNECTED                              0xF0
