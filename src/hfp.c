@@ -897,15 +897,17 @@ void hfp_parse(hfp_connection_t * context, uint8_t byte, int isHandsFree){
     if (!hfp_parser_found_separator(context, byte)){
         hfp_parser_store_byte(context, byte);
         return;
-    }
-    if (hfp_parser_is_end_of_line(byte)) {
-        if (hfp_parser_is_buffer_empty(context)){
-            context->parser_state = HFP_PARSER_CMD_HEADER;
+    } 
+
+    if (context->command != HFP_CMD_ENABLE_INDIVIDUAL_AG_INDICATOR_STATUS_UPDATE){
+        if (hfp_parser_is_end_of_line(byte)) {
+            if (hfp_parser_is_buffer_empty(context)){
+                context->parser_state = HFP_PARSER_CMD_HEADER;
+            }
         }
+        if (hfp_parser_is_buffer_empty(context)) return;
     }
-    if (hfp_parser_is_buffer_empty(context)) return;
-
-
+    
     switch (context->parser_state){
         case HFP_PARSER_CMD_HEADER: // header
             if (byte == '='){
@@ -950,7 +952,7 @@ void hfp_parse(hfp_connection_t * context, uint8_t byte, int isHandsFree){
             }
             break;
 
-        case HFP_PARSER_CMD_SEQUENCE: // parse comma separated sequence, ignore breacktes
+        case HFP_PARSER_CMD_SEQUENCE: 
             switch (context->command){
                 case HFP_CMD_SET_MICROPHONE_GAIN:
                     value = atoi((char *)&context->line_buffer[0]);
@@ -1046,7 +1048,7 @@ void hfp_parse(hfp_connection_t * context, uint8_t byte, int isHandsFree){
                 case HFP_CMD_TRANSFER_AG_INDICATOR_STATUS:
                     // indicators are indexed starting with 1
                     context->parser_item_index = atoi((char *)&context->line_buffer[0]) - 1;
-                    printf("Parsed status of the AG indicator %d, status ", context->parser_item_index);
+                    log_info("Parsed status of the AG indicator %d, status ", context->parser_item_index);
                     break;
                 case HFP_CMD_QUERY_OPERATOR_SELECTION_NAME:
                     context->network_operator.mode = atoi((char *)&context->line_buffer[0]);
@@ -1078,11 +1080,11 @@ void hfp_parse(hfp_connection_t * context, uint8_t byte, int isHandsFree){
         case HFP_PARSER_SECOND_ITEM:
             switch (context->command){
                 case HFP_CMD_QUERY_OPERATOR_SELECTION_NAME:
-                    printf("format %s, ", context->line_buffer);
+                    log_info("format %s, ", context->line_buffer);
                     context->network_operator.format =  atoi((char *)&context->line_buffer[0]);
                     break;
                 case HFP_CMD_QUERY_OPERATOR_SELECTION_NAME_FORMAT:
-                    printf("format %s \n", context->line_buffer);
+                    log_info("format %s \n", context->line_buffer);
                     context->network_operator.format =  atoi((char *)&context->line_buffer[0]);
                     break;
                 case HFP_CMD_LIST_GENERIC_STATUS_INDICATORS:
@@ -1092,7 +1094,7 @@ void hfp_parse(hfp_connection_t * context, uint8_t byte, int isHandsFree){
                     break;
                 case HFP_CMD_TRANSFER_AG_INDICATOR_STATUS:
                     context->ag_indicators[context->parser_item_index].status = (uint8_t)atoi((char*)context->line_buffer);
-                    printf("%d \n", context->ag_indicators[context->parser_item_index].status);
+                    log_info("%d \n", context->ag_indicators[context->parser_item_index].status);
                     context->ag_indicators[context->parser_item_index].status_changed = 1;
                     break;
                 case HFP_CMD_RETRIEVE_AG_INDICATORS:
