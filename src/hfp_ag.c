@@ -93,6 +93,7 @@ static int subscriber_numbers_count = 0;
 static void packet_handler(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static void hfp_run_for_context(hfp_connection_t *context);
 static void hfp_ag_setup_audio_connection(hfp_connection_t * connection);
+static void hfp_ag_hf_start_ringing(hfp_connection_t * context);
 
 hfp_generic_status_indicator_t * get_hfp_generic_status_indicators();
 int get_hfp_generic_status_indicators_nr();
@@ -535,6 +536,11 @@ static void hfp_ag_slc_established(hfp_connection_t * context){
     if (hfp_ag_call_state == HFP_CALL_STATUS_ACTIVE_OR_HELD_CALL_IS_PRESENT){
         context->call_state = HFP_CALL_W4_AUDIO_CONNECTION_FOR_ACTIVE;
     }
+    // if AG is ringing, also start ringing on the HF
+    if (hfp_ag_call_state == HFP_CALL_STATUS_NO_HELD_OR_ACTIVE_CALLS &&
+        hfp_ag_callsetup_state == HFP_CALLSETUP_STATUS_INCOMING_CALL_SETUP_IN_PROGRESS){
+        hfp_ag_hf_start_ringing(context);
+    }
 }
 
 static int hfp_ag_run_for_context_service_level_connection(hfp_connection_t * context){
@@ -593,10 +599,11 @@ static int hfp_ag_run_for_context_service_level_connection(hfp_connection_t * co
             if (context->state != HFP_W4_RETRIEVE_CAN_HOLD_CALL) break;
             if (has_hf_indicators_feature(context)){
                 context->state = HFP_W4_LIST_GENERIC_STATUS_INDICATORS;
-            } else {
-                hfp_ag_slc_established(context);
             }
             hfp_ag_retrieve_can_hold_call_cmd(context->rfcomm_cid);
+            if (!has_hf_indicators_feature(context)){
+                hfp_ag_slc_established(context);
+            }
             return 1;
         
         case HFP_CMD_LIST_GENERIC_STATUS_INDICATORS:
