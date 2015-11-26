@@ -468,7 +468,9 @@ typedef struct hfp_connection {
     // uint8_t send_ok;
     uint8_t send_error;
 
-    uint8_t keep_separator;
+    uint8_t keep_byte;
+    uint8_t ignore_value;
+    uint8_t resolve_byte;
     
     uint8_t change_status_update_for_individual_ag_indicators; 
     uint8_t operator_name_changed;      
