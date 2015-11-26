@@ -287,7 +287,25 @@ void hfp_ag_send_current_call_status(bd_addr_t bd_addr, int idx, hfp_enhanced_ca
     hfp_enhanced_call_status_t status, hfp_enhanced_call_mode_t mode, 
     hfp_enhanced_call_mpty_t mpty, uint8_t type, const char * number);
 
+/*
+ * @brief
+ */
 void hfp_ag_send_current_call_status_done(bd_addr_t bd_addr);
+
+/*
+ * @brief
+ */
+void hfp_ag_hold_incoming_call(void);
+
+/*
+ * @brief
+ */
+void hfp_ag_accept_held_incoming_call(void);
+
+/*
+ * @brief
+ */
+void hfp_ag_reject_held_incoming_call(void);
 
 /* API_END */
 

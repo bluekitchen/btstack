@@ -114,6 +114,7 @@ extern "C" {
 #define HFP_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES "+CHLD"
 #define HFP_GENERIC_STATUS_INDICATOR "+BIND"
 #define HFP_TRANSFER_AG_INDICATOR_STATUS "+CIEV" // +CIEV: <index>,<value>
+#define HFP_TRANSFER_HF_INDICATOR_STATUS "+BIEV" // +BIEC: <index>,<value>
 #define HFP_QUERY_OPERATOR_SELECTION "+COPS"     // +COPS: <mode>,0,<opearator>
 #define HFP_ENABLE_EXTENDED_AUDIO_GATEWAY_ERROR "+CMEE"
 #define HFP_EXTENDED_AUDIO_GATEWAY_ERROR "+CME ERROR"
@@ -132,7 +133,7 @@ extern "C" {
 #define HFP_TRANSMIT_DTMF_CODES  "+VTS"
 #define HFP_SUBSCRIBER_NUMBER_INFORMATION "+CNUM"
 #define HFP_LIST_CURRENT_CALLS "+CLCC"
-
+#define HFP_RESPONSE_AND_HOLD "+BTRH"
 
 #define HFP_OK "OK"
 #define HFP_ERROR "ERROR"
@@ -189,8 +190,10 @@ typedef enum {
     HFP_CMD_SET_MICROPHONE_GAIN,
     HFP_CMD_SET_SPEAKER_GAIN,
     HFP_CMD_GET_SUBSCRIBER_NUMBER_INFORMATION,
-    HFP_CMD_LIST_CURRENT_CALLS
-
+    HFP_CMD_LIST_CURRENT_CALLS,
+    HFP_CMD_RESPONSE_AND_HOLD_QUERY,
+    HFP_CMD_RESPONSE_AND_HOLD_COMMAND,
+    HFP_CMD_HF_INDICATOR_STATUS
 } hfp_command_t;
  
 
@@ -263,6 +266,12 @@ typedef enum {
     HFP_AG_TERMINATE_CALL_BY_AG,
     HFP_AG_TERMINATE_CALL_BY_HF,
     HFP_AG_CALL_DROPPED,
+    HFP_AG_RESPONSE_AND_HOLD_ACCEPT_INCOMING_CALL_BY_AG,
+    HFP_AG_RESPONSE_AND_HOLD_ACCEPT_HELD_CALL_BY_AG,
+    HFP_AG_RESPONSE_AND_HOLD_REJECT_HELD_CALL_BY_AG,
+    HFP_AG_RESPONSE_AND_HOLD_ACCEPT_INCOMING_CALL_BY_HF,
+    HFP_AG_RESPONSE_AND_HOLD_ACCEPT_HELD_CALL_BY_HF,
+    HFP_AG_RESPONSE_AND_HOLD_REJECT_HELD_CALL_BY_HF,
 } hfp_ag_call_event_t;
 
 
@@ -375,6 +384,12 @@ typedef enum{
     HFP_ENHANCED_CALL_MPTY_CONFERENCE_CALL
 } hfp_enhanced_call_mpty_t;
 
+typedef enum {
+    HFP_RESPONSE_AND_HOLD_INCOMING_ON_HOLD = 0,
+    HFP_RESPONSE_AND_HOLD_HELD_INCOMING_ACCEPTED,
+    HFP_RESPONSE_AND_HOLD_HELD_INCOMING_REJECTED
+} hfp_response_and_hold_state_t;
+
 typedef enum{
     HFP_NONE_SM,
     HFP_SLC_SM,
@@ -435,6 +450,7 @@ typedef struct hfp_connection {
     hfp_command_t command;
     hfp_parser_state_t parser_state;
     int      parser_item_index;
+    int      parser_indicator_index;
     uint8_t  line_buffer[HFP_MAX_INDICATOR_DESC_SIZE];
     int      line_size;
     
@@ -505,6 +521,10 @@ typedef struct hfp_connection {
     int send_status_of_current_calls;
     
     uint8_t hf_answer_incoming_call;
+
+    int send_ag_status_indicators;
+    int send_response_and_hold_active;
+    int send_response_and_hold_status;
 
     timer_source_t hfp_timeout;
 } hfp_connection_t;

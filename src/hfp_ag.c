@@ -79,6 +79,8 @@ static hfp_callback_t hfp_callback;
 static hfp_call_status_t hfp_ag_call_state;
 static hfp_callsetup_status_t hfp_ag_callsetup_state;
 static hfp_callheld_status_t hfp_ag_callheld_state;
+static hfp_response_and_hold_state_t hfp_ag_response_and_hold_state;
+static int hfp_ag_response_and_hold_active = 0;
 
 // CLIP feature
 static uint8_t clip_type;       // 0 == not set
@@ -91,6 +93,7 @@ static int subscriber_numbers_count = 0;
 static void packet_handler(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static void hfp_run_for_context(hfp_connection_t *context);
 static void hfp_ag_setup_audio_connection(hfp_connection_t * connection);
+static void hfp_ag_hf_start_ringing(hfp_connection_t * context);
 
 hfp_generic_status_indicator_t * get_hfp_generic_status_indicators();
 int get_hfp_generic_status_indicators_nr();
@@ -431,6 +434,12 @@ static int hfp_ag_set_microphone_gain_cmd(uint16_t cid, uint8_t gain){
     return send_str_over_rfcomm(cid, buffer);
 }
             
+static int hfp_ag_set_response_and_hold(uint16_t cid, int state){
+    char buffer[30];
+    sprintf(buffer, "\r\n%s: %d\r\n", HFP_RESPONSE_AND_HOLD, state);
+    return send_str_over_rfcomm(cid, buffer);
+}
+
 
 static uint8_t hfp_ag_suggest_codec(hfp_connection_t *context){
     int i,j;
@@ -527,6 +536,11 @@ static void hfp_ag_slc_established(hfp_connection_t * context){
     if (hfp_ag_call_state == HFP_CALL_STATUS_ACTIVE_OR_HELD_CALL_IS_PRESENT){
         context->call_state = HFP_CALL_W4_AUDIO_CONNECTION_FOR_ACTIVE;
     }
+    // if AG is ringing, also start ringing on the HF
+    if (hfp_ag_call_state == HFP_CALL_STATUS_NO_HELD_OR_ACTIVE_CALLS &&
+        hfp_ag_callsetup_state == HFP_CALLSETUP_STATUS_INCOMING_CALL_SETUP_IN_PROGRESS){
+        hfp_ag_hf_start_ringing(context);
+    }
 }
 
 static int hfp_ag_run_for_context_service_level_connection(hfp_connection_t * context){
@@ -585,10 +599,11 @@ static int hfp_ag_run_for_context_service_level_connection(hfp_connection_t * co
             if (context->state != HFP_W4_RETRIEVE_CAN_HOLD_CALL) break;
             if (has_hf_indicators_feature(context)){
                 context->state = HFP_W4_LIST_GENERIC_STATUS_INDICATORS;
-            } else {
-                hfp_ag_slc_established(context);
             }
             hfp_ag_retrieve_can_hold_call_cmd(context->rfcomm_cid);
+            if (!has_hf_indicators_feature(context)){
+                hfp_ag_slc_established(context);
+            }
             return 1;
         
         case HFP_CMD_LIST_GENERIC_STATUS_INDICATORS:
@@ -903,6 +918,7 @@ static void hfp_ag_trigger_terminate_call(void){
         if (connection->call_state == HFP_CALL_IDLE) continue;
         connection->call_state = HFP_CALL_IDLE;
         connection->ag_indicators_status_update_bitmap = store_bit(connection->ag_indicators_status_update_bitmap, call_indicator_index, 1);
+        connection->release_audio_connection = 1;
         hfp_run_for_context(connection);
     }
     hfp_emit_event(hfp_callback, HFP_SUBEVENT_CALL_TERMINATED, 0);
@@ -954,6 +970,15 @@ static hfp_connection_t * hfp_ag_connection_for_call_state(hfp_call_state_t call
         if (connection->call_state == call_state) return connection;
     }
     return NULL;
+}
+
+static void hfp_ag_send_response_and_hold_state(void){
+    linked_list_iterator_t it;    
+    linked_list_iterator_init(&it, hfp_get_connections());
+    while (linked_list_iterator_has_next(&it)){
+        hfp_connection_t * connection = (hfp_connection_t *)linked_list_iterator_next(&it);
+        connection->send_response_and_hold_status = 1;
+    }
 }
 
 static int call_setup_state_machine(hfp_connection_t * connection){
@@ -1083,6 +1108,76 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * connect
             }
             break;
 
+        case HFP_AG_RESPONSE_AND_HOLD_ACCEPT_INCOMING_CALL_BY_AG:
+             // clear CLIP
+            clip_type = 0;
+            switch (hfp_ag_call_state){
+                case HFP_CALL_STATUS_NO_HELD_OR_ACTIVE_CALLS:
+                    switch (hfp_ag_callsetup_state){
+                        case HFP_CALLSETUP_STATUS_INCOMING_CALL_SETUP_IN_PROGRESS:
+                            hfp_ag_response_and_hold_active = 1;
+                            hfp_ag_response_and_hold_state = HFP_RESPONSE_AND_HOLD_INCOMING_ON_HOLD;
+                            hfp_ag_send_response_and_hold_state();
+                            // as with regualr call
+                            hfp_ag_set_call_state(HFP_CALL_STATUS_ACTIVE_OR_HELD_CALL_IS_PRESENT);
+                            hfp_ag_set_callsetup_state(HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS);
+                            hfp_ag_ag_accept_call();
+                            printf("AG response and hold - hold by AG\n");
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
+                default:
+                    break;
+            }
+            break;
+
+        case HFP_AG_RESPONSE_AND_HOLD_ACCEPT_INCOMING_CALL_BY_HF:
+             // clear CLIP
+            clip_type = 0;
+            switch (hfp_ag_call_state){
+                case HFP_CALL_STATUS_NO_HELD_OR_ACTIVE_CALLS:
+                    switch (hfp_ag_callsetup_state){
+                        case HFP_CALLSETUP_STATUS_INCOMING_CALL_SETUP_IN_PROGRESS:
+                            hfp_ag_response_and_hold_active = 1;
+                            hfp_ag_response_and_hold_state = HFP_RESPONSE_AND_HOLD_INCOMING_ON_HOLD;
+                            hfp_ag_send_response_and_hold_state();
+                            // as with regualr call
+                            hfp_ag_set_call_state(HFP_CALL_STATUS_ACTIVE_OR_HELD_CALL_IS_PRESENT);
+                            hfp_ag_set_callsetup_state(HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS);
+                            hfp_ag_hf_accept_call(connection);
+                            printf("AG response and hold - hold by HF\n");
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
+                default:
+                    break;
+            }
+            break;
+
+        case HFP_AG_RESPONSE_AND_HOLD_ACCEPT_HELD_CALL_BY_AG:
+        case HFP_AG_RESPONSE_AND_HOLD_ACCEPT_HELD_CALL_BY_HF:
+            if (!hfp_ag_response_and_hold_active) break;
+            if (hfp_ag_response_and_hold_state != HFP_RESPONSE_AND_HOLD_INCOMING_ON_HOLD) break;
+            hfp_ag_response_and_hold_state = HFP_RESPONSE_AND_HOLD_HELD_INCOMING_ACCEPTED;
+            hfp_ag_send_response_and_hold_state();
+            printf("Held Call accepted and active\n");
+            break;
+
+        case HFP_AG_RESPONSE_AND_HOLD_REJECT_HELD_CALL_BY_AG:
+        case HFP_AG_RESPONSE_AND_HOLD_REJECT_HELD_CALL_BY_HF:
+            if (!hfp_ag_response_and_hold_active) break;
+            if (hfp_ag_response_and_hold_state != HFP_RESPONSE_AND_HOLD_INCOMING_ON_HOLD) break;
+            hfp_ag_response_and_hold_state = HFP_RESPONSE_AND_HOLD_HELD_INCOMING_REJECTED;
+            hfp_ag_send_response_and_hold_state();
+            // from terminate by ag
+            hfp_ag_set_call_state(HFP_CALL_STATUS_NO_HELD_OR_ACTIVE_CALLS);
+            hfp_ag_trigger_terminate_call();
+            break;
+
         case HFP_AG_TERMINATE_CALL_BY_HF:
             // clear CLIP
             clip_type = 0;
@@ -1158,6 +1253,10 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * connect
                     hfp_ag_transfer_callsetup_state();
                     break;
                 case HFP_CALL_STATUS_ACTIVE_OR_HELD_CALL_IS_PRESENT:
+                    if (hfp_ag_response_and_hold_active) {
+                        hfp_ag_response_and_hold_state = HFP_RESPONSE_AND_HOLD_HELD_INCOMING_REJECTED;
+                        hfp_ag_send_response_and_hold_state();
+                    }
                     hfp_ag_set_callsetup_state(HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS);
                     hfp_ag_set_call_state(HFP_CALL_STATUS_NO_HELD_OR_ACTIVE_CALLS);
                     hfp_ag_trigger_terminate_call();
@@ -1247,6 +1346,7 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * connect
                 hfp_ag_transfer_callheld_state();
             }
             break;
+
         default:
             break;
     }
@@ -1269,17 +1369,30 @@ static void hfp_run_for_context(hfp_connection_t *context){
         return;
     }
 
-    if (context->ok_pending){
-        context->ok_pending = 0;
-        context->command = HFP_CMD_NONE;
-        hfp_ag_ok(context->rfcomm_cid);
-        return;
-    }
-
     if (context->send_error){
         context->send_error = 0;
         context->command = HFP_CMD_NONE;
         hfp_ag_error(context->rfcomm_cid); 
+        return;
+    }
+
+    // note: before update AG indicators and ok_pending 
+    if (context->send_response_and_hold_status){
+        context->send_response_and_hold_status = 0;
+        hfp_ag_set_response_and_hold(context->rfcomm_cid, hfp_ag_response_and_hold_state);
+        return;
+    }
+
+    if (context->send_response_and_hold_active){
+        context->send_response_and_hold_active = 0;
+        hfp_ag_set_response_and_hold(context->rfcomm_cid, 0);
+        return;
+    }
+
+    if (context->ok_pending){
+        context->ok_pending = 0;
+        context->command = HFP_CMD_NONE;
+        hfp_ag_ok(context->rfcomm_cid);
         return;
     }
 
@@ -1288,11 +1401,11 @@ static void hfp_run_for_context(hfp_connection_t *context){
         int i;
         for (i=0;i<context->ag_indicators_nr;i++){
             if (get_bit(context->ag_indicators_status_update_bitmap, i)){
+                context->ag_indicators_status_update_bitmap = store_bit(context->ag_indicators_status_update_bitmap, i, 0);
                 if (!context->enable_status_update_for_ag_indicators) {
-                    printf("+CMER:3,0,0,0 - not sending update for %s\n", hfp_ag_indicators[i].name);
+                    log_info("+CMER:3,0,0,0 - not sending update for '%s'", hfp_ag_indicators[i].name);
                     break;
                 }
-                context->ag_indicators_status_update_bitmap = store_bit(context->ag_indicators_status_update_bitmap, i, 0);
                 hfp_ag_transfer_ag_indicators_status_cmd(context->rfcomm_cid, &hfp_ag_indicators[i]);
                 return;
             }
@@ -1347,6 +1460,12 @@ static void hfp_run_for_context(hfp_connection_t *context){
         return;
     }
     
+    if (context->send_ag_status_indicators){
+        context->send_ag_status_indicators = 0;
+        hfp_ag_retrieve_indicators_cmd(context->rfcomm_cid, context);
+        return;
+    }
+
     int done = hfp_ag_run_for_context_service_level_connection(context);
     if (!done){
         done = hfp_ag_run_for_context_service_level_connection_queries(context);
@@ -1375,6 +1494,16 @@ static void hfp_run_for_context(hfp_connection_t *context){
         context->command = HFP_CMD_NONE;
     }
 }
+static hfp_generic_status_indicator_t *get_hf_indicator_by_number(int number){
+    int i;
+    for (i=0;i< get_hfp_generic_status_indicators_nr();i++){
+        hfp_generic_status_indicator_t * indicator = &get_hfp_generic_status_indicators()[i];
+        if (indicator->uuid == number){
+            return indicator;
+        }
+    }
+    return NULL;
+}
 
 static void hfp_handle_rfcomm_data(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     hfp_connection_t * context = get_hfp_connection_context_for_rfcomm_cid(channel);
@@ -1383,7 +1512,68 @@ static void hfp_handle_rfcomm_data(uint8_t packet_type, uint16_t channel, uint8_
     for (pos = 0; pos < size ; pos++){
         hfp_parse(context, packet[pos], 0);
     }
+    hfp_generic_status_indicator_t * indicator;
+    int value;
     switch(context->command){
+        case HFP_CMD_RESPONSE_AND_HOLD_QUERY:
+            if (hfp_ag_response_and_hold_active){
+                context->send_response_and_hold_active = 1;
+            }
+            context->ok_pending = 1;
+            break;
+        case HFP_CMD_RESPONSE_AND_HOLD_COMMAND:
+            value = atoi((char *)&context->line_buffer[0]);
+            printf("HF Response and Hold: %u\n", value);
+            switch(value){
+                case HFP_RESPONSE_AND_HOLD_INCOMING_ON_HOLD:
+                    hfp_ag_call_sm(HFP_AG_RESPONSE_AND_HOLD_ACCEPT_INCOMING_CALL_BY_HF, context);
+                    break;
+                case HFP_RESPONSE_AND_HOLD_HELD_INCOMING_ACCEPTED:
+                    hfp_ag_call_sm(HFP_AG_RESPONSE_AND_HOLD_ACCEPT_HELD_CALL_BY_HF, context);
+                    break;
+                case HFP_RESPONSE_AND_HOLD_HELD_INCOMING_REJECTED:
+                    hfp_ag_call_sm(HFP_AG_RESPONSE_AND_HOLD_REJECT_HELD_CALL_BY_HF, context);
+                    break;
+                default:
+                    break;
+            }
+            context->ok_pending = 1;
+            break;
+        case HFP_CMD_HF_INDICATOR_STATUS:
+            context->command = HFP_CMD_NONE;
+            // find indicator by assigned number 
+            indicator = get_hf_indicator_by_number(context->parser_indicator_index);
+            if (!indicator){
+                context->send_error = 1;
+                break;
+            }
+            value = atoi((char *)&context->line_buffer[0]);
+            switch (indicator->uuid){
+                case 1: // enhanced security
+                    if (value > 1) {
+                        context->send_error = 1;
+                        return;
+                    }
+                    printf("HF Indicator 'enhanced security' set to %u\n", value);
+                    break;
+                case 2: // battery level
+                    if (value > 100){
+                        context->send_error = 1;
+                        return;
+                    }
+                    printf("HF Indicator 'battery' set to %u\n", value);
+                    break;
+                default:
+                    printf("HF Indicator unknown set to %u\n", value);
+                    break;
+            }
+            context->ok_pending = 1;
+            break;
+        case HFP_CMD_RETRIEVE_AG_INDICATORS_STATUS:
+            // expected by SLC state machine
+            if (context->state < HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED) break;
+            context->send_ag_status_indicators = 1;
+            break;
         case HFP_CMD_LIST_CURRENT_CALLS:   
             context->command = HFP_CMD_NONE;
             context->send_status_of_current_calls = 1;
@@ -1726,6 +1916,19 @@ void hfp_ag_outgoing_call_rejected(void){
 void hfp_ag_outgoing_call_accepted(void){
     hfp_ag_call_sm(HFP_AG_OUTGOING_CALL_ACCEPTED, NULL);
 }
+
+void hfp_ag_hold_incoming_call(void){
+    hfp_ag_call_sm(HFP_AG_RESPONSE_AND_HOLD_ACCEPT_INCOMING_CALL_BY_AG, NULL);
+}
+
+void hfp_ag_accept_held_incoming_call(void) {
+    hfp_ag_call_sm(HFP_AG_RESPONSE_AND_HOLD_ACCEPT_HELD_CALL_BY_AG, NULL);
+}
+
+void hfp_ag_reject_held_incoming_call(void){
+    hfp_ag_call_sm(HFP_AG_RESPONSE_AND_HOLD_REJECT_HELD_CALL_BY_AG, NULL);
+}
+
 static void hfp_ag_set_ag_indicator(const char * name, int value){
     int indicator_index = get_ag_indicator_index_for_name(name);
     if (indicator_index < 0) return;
