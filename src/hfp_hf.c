@@ -73,9 +73,9 @@ static uint8_t hfp_indicators_status;
 
 static hfp_callback_t hfp_callback;
 
-static hfp_call_status_t hfp_call_state;
+// static hfp_call_status_t hfp_call_state;
 static hfp_callsetup_status_t hfp_callsetup_state;
-static hfp_callheld_status_t hfp_callheld_state;
+// static hfp_callheld_status_t hfp_callheld_state;
 
 void hfp_hf_register_packet_handler(hfp_callback_t callback){
     hfp_callback = callback;
