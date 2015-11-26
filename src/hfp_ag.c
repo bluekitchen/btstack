@@ -1381,6 +1381,16 @@ static void hfp_run_for_context(hfp_connection_t *context){
         context->command = HFP_CMD_NONE;
     }
 }
+static hfp_generic_status_indicator_t *get_hf_indicator_by_number(int number){
+    int i;
+    for (i=0;i< get_hfp_generic_status_indicators_nr();i++){
+        hfp_generic_status_indicator_t * indicator = &get_hfp_generic_status_indicators()[i];
+        if (indicator->uuid == number){
+            return indicator;
+        }
+    }
+    return NULL;
+}
 
 static void hfp_handle_rfcomm_data(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     hfp_connection_t * context = get_hfp_connection_context_for_rfcomm_cid(channel);
@@ -1389,7 +1399,39 @@ static void hfp_handle_rfcomm_data(uint8_t packet_type, uint16_t channel, uint8_
     for (pos = 0; pos < size ; pos++){
         hfp_parse(context, packet[pos], 0);
     }
+    hfp_generic_status_indicator_t * indicator;
+    int value;
     switch(context->command){
+        case HFP_CMD_HF_INDICATOR_STATUS:
+            context->command = HFP_CMD_NONE;
+            // find indicator by assigned number 
+            indicator = get_hf_indicator_by_number(context->parser_indicator_index);
+            if (!indicator){
+                context->send_error = 1;
+                break;
+            }
+            value = atoi((char *)&context->line_buffer[0]);
+            switch (indicator->uuid){
+                case 1: // enhanced security
+                    if (value > 1) {
+                        context->send_error = 1;
+                        return;
+                    }
+                    printf("HF Indicator 'enhanced security' set to %u\n", value);
+                    break;
+                case 2: // battery level
+                    if (value > 100){
+                        context->send_error = 1;
+                        return;
+                    }
+                    printf("HF Indicator 'battery' set to %u\n", value);
+                    break;
+                default:
+                    printf("HF Indicator unknown set to %u\n", value);
+                    break;
+            }
+            context->ok_pending = 1;
+            break;
         case HFP_CMD_RETRIEVE_AG_INDICATORS_STATUS:
             // expected by SLC state machine
             if (context->state < HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED) break;

@@ -693,9 +693,22 @@ static hfp_command_t parse_command(const char * line_buffer, int isHandsFree){
         return HFP_CMD_SUPPORTED_FEATURES;
     }
 
+    if (strncmp(line_buffer+offset, HFP_TRANSFER_HF_INDICATOR_STATUS, strlen(HFP_TRANSFER_HF_INDICATOR_STATUS)) == 0){
+        return HFP_CMD_HF_INDICATOR_STATUS;
+    }
+    
+    if (strncmp(line_buffer+offset, HFP_RESPONSE_AND_HOLD, strlen(HFP_RESPONSE_AND_HOLD)) == 0){
+        if (strncmp(line_buffer+strlen(HFP_RESPONSE_AND_HOLD)+offset, "?", 1) == 0){
+            return HFP_CMD_RESPONSE_AND_HOLD_QUERY;
+        }
+
+        if (strncmp(line_buffer+strlen(HFP_RESPONSE_AND_HOLD)+offset, "=", 1) == 0){
+            return HFP_CMD_RESPONSE_AND_HOLD_COMMAND;
+        }
+    }
+
     if (strncmp(line_buffer+offset, HFP_INDICATOR, strlen(HFP_INDICATOR)) == 0){
         if (strncmp(line_buffer+strlen(HFP_INDICATOR)+offset, "?", 1) == 0){
-            printf("HFP_CMD_RETRIEVE_AG_INDICATORS_STATUS\n");
             return HFP_CMD_RETRIEVE_AG_INDICATORS_STATUS;
         }
 
@@ -851,12 +864,9 @@ static void hfp_parser_next_state(hfp_connection_t * context, uint8_t byte){
                 case HFP_CMD_TRANSFER_AG_INDICATOR_STATUS:
                 case HFP_CMD_QUERY_OPERATOR_SELECTION_NAME:
                 case HFP_CMD_QUERY_OPERATOR_SELECTION_NAME_FORMAT:
-                    context->parser_state = HFP_PARSER_SECOND_ITEM;
-                    break;
                 case HFP_CMD_RETRIEVE_AG_INDICATORS:
-                    context->parser_state = HFP_PARSER_SECOND_ITEM;
-                    break;
                 case HFP_CMD_RETRIEVE_GENERIC_STATUS_INDICATORS_STATE:
+                case HFP_CMD_HF_INDICATOR_STATUS:
                     context->parser_state = HFP_PARSER_SECOND_ITEM;
                     break;
                 default:
@@ -1032,6 +1042,10 @@ void hfp_parse(hfp_connection_t * context, uint8_t byte, int isHandsFree){
                     // HF parses inital AG gen. ind. state
                     log_info("Parsed List generic status indicator %s state: ", context->line_buffer);
                     context->parser_item_index = (uint8_t)atoi((char*)context->line_buffer);
+                    break;
+                case HFP_CMD_HF_INDICATOR_STATUS:
+                    context->parser_indicator_index = (uint8_t)atoi((char*)context->line_buffer);
+                    log_info("Parsed HF indicator index %u", context->parser_indicator_index);
                     break;
                 case HFP_CMD_ENABLE_INDIVIDUAL_AG_INDICATOR_STATUS_UPDATE:
                     // AG parses new gen. ind. state

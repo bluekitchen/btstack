@@ -114,6 +114,7 @@ extern "C" {
 #define HFP_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES "+CHLD"
 #define HFP_GENERIC_STATUS_INDICATOR "+BIND"
 #define HFP_TRANSFER_AG_INDICATOR_STATUS "+CIEV" // +CIEV: <index>,<value>
+#define HFP_TRANSFER_HF_INDICATOR_STATUS "+BIEV" // +BIEC: <index>,<value>
 #define HFP_QUERY_OPERATOR_SELECTION "+COPS"     // +COPS: <mode>,0,<opearator>
 #define HFP_ENABLE_EXTENDED_AUDIO_GATEWAY_ERROR "+CMEE"
 #define HFP_EXTENDED_AUDIO_GATEWAY_ERROR "+CME ERROR"
@@ -132,7 +133,7 @@ extern "C" {
 #define HFP_TRANSMIT_DTMF_CODES  "+VTS"
 #define HFP_SUBSCRIBER_NUMBER_INFORMATION "+CNUM"
 #define HFP_LIST_CURRENT_CALLS "+CLCC"
-
+#define HFP_RESPONSE_AND_HOLD "+BTRH"
 
 #define HFP_OK "OK"
 #define HFP_ERROR "ERROR"
@@ -189,8 +190,10 @@ typedef enum {
     HFP_CMD_SET_MICROPHONE_GAIN,
     HFP_CMD_SET_SPEAKER_GAIN,
     HFP_CMD_GET_SUBSCRIBER_NUMBER_INFORMATION,
-    HFP_CMD_LIST_CURRENT_CALLS
-
+    HFP_CMD_LIST_CURRENT_CALLS,
+    HFP_CMD_RESPONSE_AND_HOLD_QUERY,
+    HFP_CMD_RESPONSE_AND_HOLD_COMMAND,
+    HFP_CMD_HF_INDICATOR_STATUS
 } hfp_command_t;
  
 
@@ -435,6 +438,7 @@ typedef struct hfp_connection {
     hfp_command_t command;
     hfp_parser_state_t parser_state;
     int      parser_item_index;
+    int      parser_indicator_index;
     uint8_t  line_buffer[HFP_MAX_INDICATOR_DESC_SIZE];
     int      line_size;
     
