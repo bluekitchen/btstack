@@ -1124,8 +1124,34 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * connect
                     break;
             }
             break;
- 
+
+        case HFP_AG_RESPONSE_AND_HOLD_ACCEPT_INCOMING_CALL_BY_HF:
+             // clear CLIP
+            clip_type = 0;
+            switch (hfp_ag_call_state){
+                case HFP_CALL_STATUS_NO_HELD_OR_ACTIVE_CALLS:
+                    switch (hfp_ag_callsetup_state){
+                        case HFP_CALLSETUP_STATUS_INCOMING_CALL_SETUP_IN_PROGRESS:
+                            hfp_ag_response_and_hold_active = 1;
+                            hfp_ag_response_and_hold_state = HFP_RESPONSE_AND_HOLD_INCOMING_ON_HOLD;
+                            hfp_ag_send_response_and_hold_state();
+                            // as with regualr call
+                            hfp_ag_set_call_state(HFP_CALL_STATUS_ACTIVE_OR_HELD_CALL_IS_PRESENT);
+                            hfp_ag_set_callsetup_state(HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS);
+                            hfp_ag_hf_accept_call(connection);
+                            printf("AG response and hold - hold by HF\n");
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
+                default:
+                    break;
+            }
+            break;
+
         case HFP_AG_RESPONSE_AND_HOLD_ACCEPT_HELD_CALL_BY_AG:
+        case HFP_AG_RESPONSE_AND_HOLD_REJECT_HELD_CALL_BY_HF:
             if (!hfp_ag_response_and_hold_active) break;
             if (hfp_ag_response_and_hold_state != HFP_RESPONSE_AND_HOLD_INCOMING_ON_HOLD) break;
             hfp_ag_response_and_hold_state = HFP_RESPONSE_AND_HOLD_HELD_INCOMING_ACCEPTED;
@@ -1133,6 +1159,7 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * connect
             break;
 
         case HFP_AG_RESPONSE_AND_HOLD_REJECT_HELD_CALL_BY_AG:
+        case HFP_AG_RESPONSE_AND_HOLD_ACCEPT_HELD_CALL_BY_HF:
             if (!hfp_ag_response_and_hold_active) break;
             if (hfp_ag_response_and_hold_state != HFP_RESPONSE_AND_HOLD_INCOMING_ON_HOLD) break;
             hfp_ag_response_and_hold_state = HFP_RESPONSE_AND_HOLD_HELD_INCOMING_REJECTED;
@@ -1329,13 +1356,6 @@ static void hfp_run_for_context(hfp_connection_t *context){
         return;
     }
 
-    if (context->ok_pending){
-        context->ok_pending = 0;
-        context->command = HFP_CMD_NONE;
-        hfp_ag_ok(context->rfcomm_cid);
-        return;
-    }
-
     if (context->send_error){
         context->send_error = 0;
         context->command = HFP_CMD_NONE;
@@ -1343,13 +1363,25 @@ static void hfp_run_for_context(hfp_connection_t *context){
         return;
     }
 
-    // note: before update AG indicators in case of HFP_RESPONSE_AND_HOLD_HELD_INCOMING_REJECTED
+    // note: before update AG indicators and ok_pending 
     if (context->send_response_and_hold_status){
         context->send_response_and_hold_status = 0;
         hfp_ag_set_response_and_hold(context->rfcomm_cid, hfp_ag_response_and_hold_state);
         return;
     }
 
+    if (context->send_response_and_hold_active){
+        context->send_response_and_hold_active = 0;
+        hfp_ag_set_response_and_hold(context->rfcomm_cid, 0);
+        return;
+    }
+
+    if (context->ok_pending){
+        context->ok_pending = 0;
+        context->command = HFP_CMD_NONE;
+        hfp_ag_ok(context->rfcomm_cid);
+        return;
+    }
 
     // update AG indicators
     if (context->ag_indicators_status_update_bitmap){
@@ -1421,13 +1453,6 @@ static void hfp_run_for_context(hfp_connection_t *context){
         return;
     }
 
-    if (context->send_response_and_hold_active){
-        context->send_response_and_hold_active = 0;
-        hfp_ag_set_response_and_hold(context->rfcomm_cid, 0);
-        context->ok_pending = 1;
-        return;
-    }
-
     int done = hfp_ag_run_for_context_service_level_connection(context);
     if (!done){
         done = hfp_ag_run_for_context_service_level_connection_queries(context);
@@ -1480,9 +1505,26 @@ static void hfp_handle_rfcomm_data(uint8_t packet_type, uint16_t channel, uint8_
         case HFP_CMD_RESPONSE_AND_HOLD_QUERY:
             if (hfp_ag_response_and_hold_active){
                 context->send_response_and_hold_active = 1;
-            } else {
-                context->ok_pending = 1;
             }
+            context->ok_pending = 1;
+            break;
+        case HFP_CMD_RESPONSE_AND_HOLD_COMMAND:
+            value = atoi((char *)&context->line_buffer[0]);
+            printf("HF Response and Hold: %u\n", value);
+            switch(value){
+                case HFP_RESPONSE_AND_HOLD_INCOMING_ON_HOLD:
+                    hfp_ag_call_sm(HFP_AG_RESPONSE_AND_HOLD_ACCEPT_INCOMING_CALL_BY_HF, context);
+                    break;
+                case HFP_RESPONSE_AND_HOLD_HELD_INCOMING_ACCEPTED:
+                    hfp_ag_call_sm(HFP_AG_RESPONSE_AND_HOLD_ACCEPT_HELD_CALL_BY_HF, context);
+                    break;
+                case HFP_RESPONSE_AND_HOLD_HELD_INCOMING_REJECTED:
+                    hfp_ag_call_sm(HFP_AG_RESPONSE_AND_HOLD_REJECT_HELD_CALL_BY_HF, context);
+                    break;
+                default:
+                    break;
+            }
+            context->ok_pending = 1;
             break;
         case HFP_CMD_HF_INDICATOR_STATUS:
             context->command = HFP_CMD_NONE;
