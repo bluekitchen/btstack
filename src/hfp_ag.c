@@ -1347,6 +1347,12 @@ static void hfp_run_for_context(hfp_connection_t *context){
         return;
     }
     
+    if (context->send_ag_status_indicators){
+        context->send_ag_status_indicators = 0;
+        hfp_ag_retrieve_indicators_cmd(context->rfcomm_cid, context);
+        return;
+    }
+
     int done = hfp_ag_run_for_context_service_level_connection(context);
     if (!done){
         done = hfp_ag_run_for_context_service_level_connection_queries(context);
@@ -1384,6 +1390,11 @@ static void hfp_handle_rfcomm_data(uint8_t packet_type, uint16_t channel, uint8_
         hfp_parse(context, packet[pos], 0);
     }
     switch(context->command){
+        case HFP_CMD_RETRIEVE_AG_INDICATORS_STATUS:
+            // expected by SLC state machine
+            if (context->state < HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED) break;
+            context->send_ag_status_indicators = 1;
+            break;
         case HFP_CMD_LIST_CURRENT_CALLS:   
             context->command = HFP_CMD_NONE;
             context->send_status_of_current_calls = 1;

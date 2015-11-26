@@ -501,6 +501,9 @@ typedef struct hfp_connection {
     int next_subscriber_number_to_send;
 
     int send_status_of_current_calls;
+
+    int send_ag_status_indicators;
+
     timer_source_t hfp_timeout;
 } hfp_connection_t;
 
