@@ -339,6 +339,9 @@ static void show_usage(void){
     printf("t - terminate connection\n");
     printf("u - join held call\n");
     printf("v - discover nearby HF units\n");
+    printf("w - put incoming call on hold (Response and Hold)\n");
+    printf("x - accept held incoming call (Response and Hold)\n");
+    printf("X - reject held incoming call (Response and Hold)\n");
 
     printf("---\n");
     printf("Ctrl-c - exit\n");
@@ -523,6 +526,18 @@ static int stdin_process(struct data_source *ds){
             break;
         case 'v':
             start_scan();
+            break;
+        case 'w':
+            printf("AG: Put incoming call on hold (Response and Hold)\n");
+            hfp_ag_hold_incoming_call();
+            break;
+        case 'x':
+            printf("AG: Accept held incoming call (Response and Hold)\n");
+            hfp_ag_accept_held_incoming_call();
+            break;
+        case 'X':
+            printf("AG: Reject held incoming call (Response and Hold)\n");
+            hfp_ag_reject_held_incoming_call();
             break;
         default:
             show_usage();

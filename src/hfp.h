@@ -266,6 +266,9 @@ typedef enum {
     HFP_AG_TERMINATE_CALL_BY_AG,
     HFP_AG_TERMINATE_CALL_BY_HF,
     HFP_AG_CALL_DROPPED,
+    HFP_AG_RESPONSE_AND_HOLD_ACCEPT_INCOMING_CALL_BY_AG,
+    HFP_AG_RESPONSE_AND_HOLD_ACCEPT_HELD_CALL_BY_AG,
+    HFP_AG_RESPONSE_AND_HOLD_REJECT_HELD_CALL_BY_AG,
 } hfp_ag_call_event_t;
 
 
@@ -377,6 +380,12 @@ typedef enum{
     HFP_ENHANCED_CALL_MPTY_NOT_A_CONFERENCE_CALL,
     HFP_ENHANCED_CALL_MPTY_CONFERENCE_CALL
 } hfp_enhanced_call_mpty_t;
+
+typedef enum {
+    HFP_RESPONSE_AND_HOLD_INCOMING_ON_HOLD = 0,
+    HFP_RESPONSE_AND_HOLD_HELD_INCOMING_ACCEPTED,
+    HFP_RESPONSE_AND_HOLD_HELD_INCOMING_REJECTED
+} hfp_response_and_hold_state_t;
 
 typedef enum{
     HFP_NONE_SM,
@@ -507,6 +516,8 @@ typedef struct hfp_connection {
     int send_status_of_current_calls;
 
     int send_ag_status_indicators;
+    int send_response_and_hold_active;
+    int send_response_and_hold_status;
 
     timer_source_t hfp_timeout;
 } hfp_connection_t;
