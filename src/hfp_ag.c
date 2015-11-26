@@ -911,6 +911,7 @@ static void hfp_ag_trigger_terminate_call(void){
         if (connection->call_state == HFP_CALL_IDLE) continue;
         connection->call_state = HFP_CALL_IDLE;
         connection->ag_indicators_status_update_bitmap = store_bit(connection->ag_indicators_status_update_bitmap, call_indicator_index, 1);
+        connection->release_audio_connection = 1;
         hfp_run_for_context(connection);
     }
     hfp_emit_event(hfp_callback, HFP_SUBEVENT_CALL_TERMINATED, 0);
@@ -1393,11 +1394,11 @@ static void hfp_run_for_context(hfp_connection_t *context){
         int i;
         for (i=0;i<context->ag_indicators_nr;i++){
             if (get_bit(context->ag_indicators_status_update_bitmap, i)){
+                context->ag_indicators_status_update_bitmap = store_bit(context->ag_indicators_status_update_bitmap, i, 0);
                 if (!context->enable_status_update_for_ag_indicators) {
-                    printf("+CMER:3,0,0,0 - not sending update for %s\n", hfp_ag_indicators[i].name);
+                    log_info("+CMER:3,0,0,0 - not sending update for '%s'", hfp_ag_indicators[i].name);
                     break;
                 }
-                context->ag_indicators_status_update_bitmap = store_bit(context->ag_indicators_status_update_bitmap, i, 0);
                 hfp_ag_transfer_ag_indicators_status_cmd(context->rfcomm_cid, &hfp_ag_indicators[i]);
                 return;
             }
