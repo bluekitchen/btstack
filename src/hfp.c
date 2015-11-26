@@ -1034,14 +1034,18 @@ void hfp_parse(hfp_connection_t * context, uint8_t byte, int isHandsFree){
                     break;
                 case HFP_CMD_ENABLE_INDIVIDUAL_AG_INDICATOR_STATUS_UPDATE:
                     // AG parses new gen. ind. state
-                    value = atoi((char *)&context->line_buffer[0]);
-                    if (!context->ag_indicators[context->parser_item_index].mandatory){
+                    if (context->line_size<1){
+                        log_info("Parsed Enable AG indicator pos %u('%s') - unchanged\n", context->parser_item_index,
+                            context->ag_indicators[context->parser_item_index].name);
+                    }
+                    else if (context->ag_indicators[context->parser_item_index].mandatory){
+                        log_info("Parsed Enable AG indicator pos %u('%s') - ignore (mandatory)\n", 
+                            context->parser_item_index, context->ag_indicators[context->parser_item_index].name);
+                    } else {
+                        value = atoi((char *)&context->line_buffer[0]);
                         context->ag_indicators[context->parser_item_index].enabled = value;
                         log_info("Parsed Enable AG indicator pos %u('%s'): %u\n", context->parser_item_index,
                             context->ag_indicators[context->parser_item_index].name, value);
-                    } else {
-                        log_info("Parsed Enable AG indicator pos %u('%s') - ignore (mandatory)\n", 
-                            context->parser_item_index, context->ag_indicators[context->parser_item_index].name);
                     }
                     context->parser_item_index++;
                     break;
