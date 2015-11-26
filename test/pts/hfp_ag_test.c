@@ -95,7 +95,7 @@ static hfp_ag_indicator_t ag_indicators[] = {
     {2, "call",      0, 1, 0, 1, 1, 0},
     {3, "callsetup", 0, 3, 0, 1, 1, 0},
     {4, "battchg",   0, 5, 3, 0, 0, 0},
-    {5, "signal",    0, 5, 5, 0, 0, 0},
+    {5, "signal",    0, 5, 5, 0, 1, 0},
     {6, "roam",      0, 1, 0, 0, 0, 0},
     {7, "callheld",  0, 2, 0, 1, 1, 0}
 };
