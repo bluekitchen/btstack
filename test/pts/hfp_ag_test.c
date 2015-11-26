@@ -113,6 +113,168 @@ char cmd;
 // prototypes
 static void show_usage();
 
+// GAP INQUIRY
+
+#define MAX_DEVICES 10
+enum DEVICE_STATE { REMOTE_NAME_REQUEST, REMOTE_NAME_INQUIRED, REMOTE_NAME_FETCHED };
+struct device {
+    bd_addr_t  address;
+    uint16_t   clockOffset;
+    uint32_t   classOfDevice;
+    uint8_t    pageScanRepetitionMode;
+    uint8_t    rssi;
+    enum DEVICE_STATE  state; 
+};
+
+#define INQUIRY_INTERVAL 5
+struct device devices[MAX_DEVICES];
+int deviceCount = 0;
+
+
+enum STATE {INIT, W4_INQUIRY_MODE_COMPLETE, ACTIVE} ;
+enum STATE state = INIT;
+
+
+static int getDeviceIndexForAddress( bd_addr_t addr){
+    int j;
+    for (j=0; j< deviceCount; j++){
+        if (BD_ADDR_CMP(addr, devices[j].address) == 0){
+            return j;
+        }
+    }
+    return -1;
+}
+
+static void start_scan(void){
+    printf("Starting inquiry scan..\n");
+    hci_send_cmd(&hci_inquiry, HCI_INQUIRY_LAP, INQUIRY_INTERVAL, 0);
+}
+
+static int has_more_remote_name_requests(void){
+    int i;
+    for (i=0;i<deviceCount;i++) {
+        if (devices[i].state == REMOTE_NAME_REQUEST) return 1;
+    }
+    return 0;
+}
+
+static void do_next_remote_name_request(void){
+    int i;
+    for (i=0;i<deviceCount;i++) {
+        // remote name request
+        if (devices[i].state == REMOTE_NAME_REQUEST){
+            devices[i].state = REMOTE_NAME_INQUIRED;
+            printf("Get remote name of %s...\n", bd_addr_to_str(devices[i].address));
+            hci_send_cmd(&hci_remote_name_request, devices[i].address,
+                        devices[i].pageScanRepetitionMode, 0, devices[i].clockOffset | 0x8000);
+            return;
+        }
+    }
+}
+
+static void continue_remote_names(void){
+    // don't get remote names for testing
+    if (has_more_remote_name_requests()){
+        do_next_remote_name_request();
+        return;
+    } 
+    // try to find PTS
+    int i;
+    for (i=0;i<deviceCount;i++){
+        if (memcmp(devices[i].address, device_addr, 6) == 0){
+            printf("Inquiry scan over, successfully found PTS at index %u\nReady to connect to it.\n", i);
+            return;
+        }
+    }
+    printf("Inquiry scan over but PTS not found :(\n");
+}
+
+static void inquiry_packet_handler (uint8_t packet_type, uint8_t *packet, uint16_t size){
+    bd_addr_t addr;
+    int i;
+    int numResponses;
+    int index;
+
+    // printf("packet_handler: pt: 0x%02x, packet[0]: 0x%02x\n", packet_type, packet[0]);
+    if (packet_type != HCI_EVENT_PACKET) return;
+
+    uint8_t event = packet[0];
+
+    switch(event){
+        case HCI_EVENT_INQUIRY_RESULT:
+        case HCI_EVENT_INQUIRY_RESULT_WITH_RSSI:{
+            numResponses = packet[2];
+            int offset = 3;
+            for (i=0; i<numResponses && deviceCount < MAX_DEVICES;i++){
+                bt_flip_addr(addr, &packet[offset]);
+                offset += 6;
+                index = getDeviceIndexForAddress(addr);
+                if (index >= 0) continue;   // already in our list
+                memcpy(devices[deviceCount].address, addr, 6);
+
+                devices[deviceCount].pageScanRepetitionMode = packet[offset];
+                offset += 1;
+
+                if (event == HCI_EVENT_INQUIRY_RESULT){
+                    offset += 2; // Reserved + Reserved
+                    devices[deviceCount].classOfDevice = READ_BT_24(packet, offset);
+                    offset += 3;
+                    devices[deviceCount].clockOffset =   READ_BT_16(packet, offset) & 0x7fff;
+                    offset += 2;
+                    devices[deviceCount].rssi  = 0;
+                } else {
+                    offset += 1; // Reserved
+                    devices[deviceCount].classOfDevice = READ_BT_24(packet, offset);
+                    offset += 3;
+                    devices[deviceCount].clockOffset =   READ_BT_16(packet, offset) & 0x7fff;
+                    offset += 2;
+                    devices[deviceCount].rssi  = packet[offset];
+                    offset += 1;
+                }
+                devices[deviceCount].state = REMOTE_NAME_REQUEST;
+                printf("Device #%u found: %s with COD: 0x%06x, pageScan %d, clock offset 0x%04x, rssi 0x%02x\n",
+                    deviceCount, bd_addr_to_str(addr),
+                    devices[deviceCount].classOfDevice, devices[deviceCount].pageScanRepetitionMode,
+                    devices[deviceCount].clockOffset, devices[deviceCount].rssi);
+                deviceCount++;
+            }
+
+            break;
+        }
+        case HCI_EVENT_INQUIRY_COMPLETE:
+            for (i=0;i<deviceCount;i++) {
+                // retry remote name request
+                if (devices[i].state == REMOTE_NAME_INQUIRED)
+                    devices[i].state = REMOTE_NAME_REQUEST;
+            }
+            continue_remote_names();
+            break;
+
+        case BTSTACK_EVENT_REMOTE_NAME_CACHED:
+            bt_flip_addr(addr, &packet[3]);
+            printf("Cached remote name for %s: '%s'\n", bd_addr_to_str(addr), &packet[9]);
+            break;
+
+        case HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE:
+            bt_flip_addr(addr, &packet[3]);
+            index = getDeviceIndexForAddress(addr);
+            if (index >= 0) {
+                if (packet[2] == 0) {
+                    printf("Name: '%s'\n", &packet[9]);
+                    devices[index].state = REMOTE_NAME_FETCHED;
+                } else {
+                    printf("Failed to get name: page timeout\n");
+                }
+            }
+            continue_remote_names();
+            break;
+
+        default:
+            break;
+    }
+}
+// GAP INQUIRY END
+
 // Testig User Interface 
 static void show_usage(void){
     printf("\n--- Bluetooth HFP Hands-Free (HF) unit Test Console ---\n");
@@ -176,6 +338,8 @@ static void show_usage(void){
 
     printf("t - terminate connection\n");
     printf("u - join held call\n");
+    printf("v - discover nearby HF units\n");
+
     printf("---\n");
     printf("Ctrl-c - exit\n");
     printf("---\n");
@@ -357,6 +521,9 @@ static int stdin_process(struct data_source *ds){
             current_call_mpty = HFP_ENHANCED_CALL_MPTY_CONFERENCE_CALL;
             hfp_ag_join_held_call();
             break;
+        case 'v':
+            start_scan();
+            break;
         default:
             show_usage();
             break;
@@ -373,6 +540,24 @@ static void packet_handler(uint8_t * event, uint16_t event_size){
         printf("RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE received for handle 0x%04x\n", handle);
         return;
     }
+
+    switch (event[0]){
+        case RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE:
+            handle = READ_BT_16(event, 9);
+            printf("RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE received for handle 0x%04x\n", handle);
+            return;
+
+        case HCI_EVENT_INQUIRY_RESULT:
+        case HCI_EVENT_INQUIRY_RESULT_WITH_RSSI:
+        case HCI_EVENT_INQUIRY_COMPLETE:
+        case HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE:
+            inquiry_packet_handler(HCI_EVENT_PACKET, event, event_size);
+            break;
+
+        default:
+            break;
+    }
+
 
     if (event[0] != HCI_EVENT_HFP_META) return;
 

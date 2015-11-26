@@ -612,7 +612,13 @@ void hfp_handle_hci_event(hfp_callback_t callback, uint8_t packet_type, uint8_t 
             }
             break;
 
-        default:
+        case HCI_EVENT_INQUIRY_RESULT:
+        case HCI_EVENT_INQUIRY_RESULT_WITH_RSSI:
+        case HCI_EVENT_INQUIRY_COMPLETE:
+        case BTSTACK_EVENT_REMOTE_NAME_CACHED:
+        case HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE:
+            // forward inquiry events to app - TODO: replace with new event handler architecture
+            (*callback)(packet, size);
             break;
     }
 }
