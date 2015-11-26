@@ -73,6 +73,10 @@ static uint8_t hfp_indicators_status;
 
 static hfp_callback_t hfp_callback;
 
+static hfp_call_status_t hfp_call_state;
+static hfp_callsetup_status_t hfp_callsetup_state;
+static hfp_callheld_status_t hfp_callheld_state;
+
 void hfp_hf_register_packet_handler(hfp_callback_t callback){
     hfp_callback = callback;
     if (callback == NULL){
@@ -223,6 +227,12 @@ static int hfp_hf_cmd_trigger_codec_connection_setup(uint16_t cid){
 static int hfp_hf_cmd_confirm_codec(uint16_t cid, uint8_t codec){
     char buffer[20];
     sprintf(buffer, "AT%s=%d\r\n", HFP_CONFIRM_COMMON_CODEC, codec);
+    return send_str_over_rfcomm(cid, buffer);
+}
+
+static int hfp_hf_cmd_ata(uint16_t cid){
+    char buffer[10];
+    sprintf(buffer, "%s\r\n", HFP_CALL_ANSWERED);
     return send_str_over_rfcomm(cid, buffer);
 }
 
@@ -416,6 +426,15 @@ static int hfp_hf_run_for_audio_connection(hfp_connection_t * context){
     return codecs_exchange_state_machine(context);
 }
 
+static int call_setup_state_machine(hfp_connection_t * context){
+    if (context->hf_answer_incoming_call){
+        hfp_hf_cmd_ata(context->rfcomm_cid);
+        context->hf_answer_incoming_call = 0;
+        return 1;
+    }
+    return 0;
+}
+
 static void hfp_run_for_context(hfp_connection_t * context){
     if (!context) return;
     if (!rfcomm_can_send_packet_now(context->rfcomm_cid)) return;
@@ -427,7 +446,10 @@ static void hfp_run_for_context(hfp_connection_t * context){
     if (!done){
         done = hfp_hf_run_for_audio_connection(context);
     }
-
+    if (!done){
+        done = call_setup_state_machine(context);
+    }
+    
     if (done) return;
     // deal with disconnect
     switch (context->state){ 
@@ -559,31 +581,32 @@ static void hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8
     //printf("\nHF received: %s", packet+2);
     for (pos = 0; pos < size ; pos++){
         hfp_parse(context, packet[pos], 1);
-        
+    } 
         // emit indicators status changed
-        for (i = 0; i < context->ag_indicators_nr; i++){
-            if (context->ag_indicators[i].status_changed) {
-                context->ag_indicators[i].status_changed = 0;
-                hfp_emit_ag_indicator_event(hfp_callback, 0, context->ag_indicators[i]);
-                break;
-            }
+    for (i = 0; i < context->ag_indicators_nr; i++){
+        if (context->ag_indicators[i].status_changed) {
+            context->ag_indicators[i].status_changed = 0;
+            hfp_emit_ag_indicator_event(hfp_callback, 0, context->ag_indicators[i]);
+            break;
         }
+    }
 
-        if (context->command == HFP_CMD_ERROR){
-            context->ok_pending = 0;
-            hfp_reset_context_flags(context);
-            hfp_emit_event(hfp_callback, HFP_SUBEVENT_COMPLETE, 1); 
-            return;
-        }
-        if (context->command == HFP_CMD_EXTENDED_AUDIO_GATEWAY_ERROR){
+    switch (context->command){
+        case HFP_CMD_EXTENDED_AUDIO_GATEWAY_ERROR:
             context->ok_pending = 0;
             context->extended_audio_gateway_error = 0;
             hfp_emit_event(hfp_callback, HFP_SUBEVENT_EXTENDED_AUDIO_GATEWAY_ERROR, context->extended_audio_gateway_error); 
-            return;   
-        }
-
-        if (context->command != HFP_CMD_OK) continue;
-        hfp_hf_switch_on_ok(context);
+            break;  
+        case HFP_CMD_ERROR:
+            context->ok_pending = 0;
+            hfp_reset_context_flags(context);
+            hfp_emit_event(hfp_callback, HFP_SUBEVENT_COMPLETE, 1); 
+            break;
+        case HFP_CMD_OK:
+            hfp_hf_switch_on_ok(context);
+            break;
+        default:
+            break;
     }
 }
 
@@ -733,4 +756,13 @@ void hfp_hf_release_audio_connection(bd_addr_t bd_addr){
     hfp_run_for_context(connection);
 }
 
-
+void hfp_hf_answer_incoming_call(bd_addr_t bd_addr){
+    hfp_hf_establish_service_level_connection(bd_addr);
+    hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
+    
+    if (hfp_callsetup_state == HFP_CALLSETUP_STATUS_INCOMING_CALL_SETUP_IN_PROGRESS){
+        connection->hf_answer_incoming_call = 1;
+    } else {
+        log_error("HFP HF: answering incoming call in wrong callsetup state %u", hfp_callsetup_state);
+    }
+}
