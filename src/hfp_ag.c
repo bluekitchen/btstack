@@ -1727,10 +1727,16 @@ static void hfp_ag_set_ag_indicator(const char * name, int value){
     if (indicator_index < 0) return;
     hfp_ag_indicators[indicator_index].status = value;
 
+
     linked_list_iterator_t it;    
     linked_list_iterator_init(&it, hfp_get_connections());
     while (linked_list_iterator_has_next(&it)){
         hfp_connection_t * connection = (hfp_connection_t *)linked_list_iterator_next(&it);
+        if (!connection->ag_indicators[indicator_index].enabled) {
+            log_info("AG indicator '%s' changed to %u but not enabled", hfp_ag_indicators[indicator_index].name, value);
+            continue;
+        }
+        log_info("AG indicator '%s' changed to %u, request transfer statur", hfp_ag_indicators[indicator_index].name, value);
         connection->ag_indicators_status_update_bitmap = store_bit(connection->ag_indicators_status_update_bitmap, indicator_index, 1);
         hfp_run_for_context(connection);
     }    
