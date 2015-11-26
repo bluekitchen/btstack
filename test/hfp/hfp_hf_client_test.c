@@ -237,11 +237,9 @@ TEST(HFPClient, HFAudioConnectionEstablishedWithoutCodecNegotiation){
     setup_hfp_codecs_connection(default_cc_setup(), default_cc_setup_size());
     CHECK_EQUAL(codecs_connection_established, 1);
 
-    // hfp_hf_establish_audio_connection(device_addr);
-    // CHECK_EQUAL(audio_connection_established, 1);
-
-    // hfp_hf_release_audio_connection(device_addr);
-    // CHECK_EQUAL(audio_connection_established, 0);
+    hfp_hf_establish_audio_connection(device_addr);
+    hfp_hf_release_audio_connection(device_addr);
+    CHECK_EQUAL(audio_connection_established, 0);
 }
 
 TEST(HFPClient, HFCodecsConnectionEstablished){

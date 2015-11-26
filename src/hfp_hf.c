@@ -398,6 +398,24 @@ static int codecs_exchange_state_machine(hfp_connection_t * context){
     return 0;
 }
 
+static int hfp_hf_run_for_audio_connection(hfp_connection_t * context){
+    if (context->state < HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED ||
+        context->state > HFP_W2_DISCONNECT_SCO) return 0;
+
+
+    if (context->state == HFP_AUDIO_CONNECTION_ESTABLISHED && context->release_audio_connection){
+        context->state = HFP_W4_SCO_DISCONNECTED;
+        context->release_audio_connection = 0;
+        gap_disconnect(context->sco_handle);
+        return 1;
+    }
+
+    if (context->state == HFP_AUDIO_CONNECTION_ESTABLISHED) return 0;
+    
+    // run codecs exchange
+    return codecs_exchange_state_machine(context);
+}
+
 static void hfp_run_for_context(hfp_connection_t * context){
     if (!context) return;
     if (!rfcomm_can_send_packet_now(context->rfcomm_cid)) return;
@@ -407,7 +425,7 @@ static void hfp_run_for_context(hfp_connection_t * context){
         done = hfp_hf_run_for_context_service_level_connection_queries(context);
     }
     if (!done){
-        done = codecs_exchange_state_machine(context);
+        done = hfp_hf_run_for_audio_connection(context);
     }
 
     if (done) return;

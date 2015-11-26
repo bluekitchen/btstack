@@ -169,7 +169,7 @@ TEST(HFPParser, HFP_AG_ENABLE_INDIVIDUAL_INDICATOR_STATUS_UPDATE){
     }
 }
 
-TEST(HFPParser, HFP_AG_ENABLE_INDIVIDUAL_INDICATOR_STATUS_UPDATE_OPT_VALUES){
+TEST(HFPParser, HFP_AG_ENABLE_INDIVIDUAL_INDICATOR_STATUS_UPDATE_OPT_VALUES2){
     set_hfp_ag_indicators((hfp_ag_indicator_t *)&hfp_ag_indicators, hfp_ag_indicators_nr);
     context.ag_indicators_nr = hfp_ag_indicators_nr;
     memcpy(context.ag_indicators, hfp_ag_indicators, hfp_ag_indicators_nr * sizeof(hfp_ag_indicator_t));
@@ -182,6 +182,32 @@ TEST(HFPParser, HFP_AG_ENABLE_INDIVIDUAL_INDICATOR_STATUS_UPDATE_OPT_VALUES){
     }
     
     sprintf(packet, "\r\nAT%s=1,,,1,1,1,\r\n", 
+        HFP_UPDATE_ENABLE_STATUS_FOR_INDIVIDUAL_AG_INDICATORS);
+    for (pos = 0; pos < strlen(packet); pos++){
+        hfp_parse(&context, packet[pos], 0);
+    }
+
+    CHECK_EQUAL(HFP_CMD_ENABLE_INDIVIDUAL_AG_INDICATOR_STATUS_UPDATE, context.command);
+
+    for (pos = 0; pos < hfp_ag_indicators_nr; pos++){
+        CHECK_EQUAL(get_hfp_ag_indicators(&context)[pos].enabled, 1);
+        CHECK_EQUAL(context.ag_indicators[pos].enabled, 1);
+    }
+}
+
+TEST(HFPParser, HFP_AG_ENABLE_INDIVIDUAL_INDICATOR_STATUS_UPDATE_OPT_VALUES1){
+    set_hfp_ag_indicators((hfp_ag_indicator_t *)&hfp_ag_indicators, hfp_ag_indicators_nr);
+    context.ag_indicators_nr = hfp_ag_indicators_nr;
+    memcpy(context.ag_indicators, hfp_ag_indicators, hfp_ag_indicators_nr * sizeof(hfp_ag_indicator_t));
+    
+    for (pos = 0; pos < hfp_ag_indicators_nr; pos++){
+        CHECK_EQUAL(get_hfp_ag_indicators(&context)[pos].index, hfp_ag_indicators[pos].index);
+        CHECK_EQUAL(get_hfp_ag_indicators(&context)[pos].enabled, hfp_ag_indicators[pos].enabled);
+        CHECK_EQUAL(context.ag_indicators[pos].index, hfp_ag_indicators[pos].index);
+        CHECK_EQUAL(context.ag_indicators[pos].enabled, hfp_ag_indicators[pos].enabled);
+    }
+    
+    sprintf(packet, "\r\nAT%s=1,,,1,1,,1\r\n", 
         HFP_UPDATE_ENABLE_STATUS_FOR_INDIVIDUAL_AG_INDICATORS);
     for (pos = 0; pos < strlen(packet); pos++){
         hfp_parse(&context, packet[pos], 0);

@@ -1040,8 +1040,8 @@ void hfp_parse(hfp_connection_t * context, uint8_t byte, int isHandsFree){
                         log_info("Parsed Enable AG indicator %u('%s'): %u\n", context->parser_item_index,
                             context->ag_indicators[context->parser_item_index].name, value);
                     } else {
-                        log_info("Parsed Enable AG indicator %u('%s') - ignore (mandatory)\n", 
-                            context->parser_item_index, context->ag_indicators[context->parser_item_index].name);
+                        log_info("Parsed Enable AG indicator %u('%s') - mandatory indicator, ignore value %u\n", 
+                            context->parser_item_index, context->ag_indicators[context->parser_item_index].name, value);
                     }
                     context->parser_item_index++;
                     break;
