@@ -354,7 +354,6 @@ static int codecs_exchange_state_machine(hfp_connection_t * context){
     */
 
     if (context->ok_pending) return 0;
-    int done = 1;
     printf(" -> State machine: CC\n");
     
     switch (context->command){
