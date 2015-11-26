@@ -658,8 +658,8 @@ static int hfp_ag_run_for_context_service_level_connection_queries(hfp_connectio
                 return 1;
             }
         case HFP_CMD_ENABLE_INDICATOR_STATUS_UPDATE:
-            printf("TODO\n");
-            break;
+            hfp_ag_ok(context->rfcomm_cid);
+            return 1;
         default:
             break;
     }
@@ -1288,6 +1288,10 @@ static void hfp_run_for_context(hfp_connection_t *context){
         int i;
         for (i=0;i<context->ag_indicators_nr;i++){
             if (get_bit(context->ag_indicators_status_update_bitmap, i)){
+                if (!context->enable_status_update_for_ag_indicators) {
+                    printf("+CMER:3,0,0,0 - not sending update for %s\n", hfp_ag_indicators[i].name);
+                    break;
+                }
                 context->ag_indicators_status_update_bitmap = store_bit(context->ag_indicators_status_update_bitmap, i, 0);
                 hfp_ag_transfer_ag_indicators_status_cmd(context->rfcomm_cid, &hfp_ag_indicators[i]);
                 return;
