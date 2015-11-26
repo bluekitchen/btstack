@@ -1123,8 +1123,8 @@ static void parse_sequence(hfp_connection_t * context){
             // AG parses new gen. ind. state
             if (context->ignore_value){
                 context->ignore_value = 0;
-                log_info("Parsed Enable AG indicator pos %u('%s') - unchanged\n", context->parser_item_index,
-                    context->ag_indicators[context->parser_item_index].name);
+                log_info("Parsed Enable AG indicator pos %u('%s') - unchanged (stays %u)\n", context->parser_item_index,
+                    context->ag_indicators[context->parser_item_index].name, context->ag_indicators[context->parser_item_index].enabled);
             }
             else if (context->ag_indicators[context->parser_item_index].mandatory){
                 log_info("Parsed Enable AG indicator pos %u('%s') - ignore (mandatory)\n", 
