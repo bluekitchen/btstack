@@ -91,7 +91,7 @@ static int hfp_hf_supports_codec(uint8_t codec){
     for (i = 0; i < hfp_codecs_nr; i++){
         if (hfp_codecs[i] == codec) return 1;
     }
-    return 0;
+    return HFP_CODEC_CVSD;
 }
 static int has_codec_negotiation_feature(hfp_connection_t * connection){
     int hf = get_bit(hfp_supported_features, HFP_HFSF_CODEC_NEGOTIATION);
@@ -735,19 +735,30 @@ void hfp_hf_enable_report_extended_audio_gateway_error_result_code(bd_addr_t bd_
 void hfp_hf_establish_audio_connection(bd_addr_t bd_addr){
     hfp_hf_establish_service_level_connection(bd_addr);
     hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
-    if (!has_codec_negotiation_feature(connection)) return;
-        connection->establish_audio_connection = 0;
+    connection->establish_audio_connection = 0;
+
     if (connection->state == HFP_AUDIO_CONNECTION_ESTABLISHED) return;
     if (connection->state >= HFP_W2_DISCONNECT_SCO) return;
-    
+
+    // if (!has_codec_negotiation_feature(connection)){
+    //     log_info("hfp_ag_establish_audio_connection - no codec negotiation feature, using defaults");
+    //     connection->codecs_state = HFP_CODECS_EXCHANGED;
+    // } 
+
     connection->establish_audio_connection = 1;
-    switch (connection->codecs_state){
-        case HFP_CODECS_W4_AG_COMMON_CODEC:
-            break;
-        default:
-            connection->command = HFP_CMD_TRIGGER_CODEC_CONNECTION_SETUP;
-            break;
-    } 
+
+    if (has_codec_negotiation_feature(connection)){
+        switch (connection->codecs_state){
+            case HFP_CODECS_W4_AG_COMMON_CODEC:
+                break;
+            default:
+                connection->command = HFP_CMD_TRIGGER_CODEC_CONNECTION_SETUP;
+                break;
+        } 
+    } else {
+        // connection->command = HFP_CMD_AVAILABLE_CODECS;
+    }
+
     hfp_run_for_context(connection);
 }
 
