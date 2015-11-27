@@ -501,6 +501,10 @@ static void hfp_run_for_context(hfp_connection_t * context){
             break;
     }
 }
+static void hfp_ag_slc_established(hfp_connection_t * context){
+    context->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
+    hfp_emit_event(hfp_callback, HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED, 0);
+}
 
 static void hfp_hf_switch_on_ok(hfp_connection_t *context){
     context->ok_pending = 0;
@@ -535,8 +539,7 @@ static void hfp_hf_switch_on_ok(hfp_connection_t *context){
                 context->state = HFP_LIST_GENERIC_STATUS_INDICATORS;
                 break;
             } 
-            context->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
-            hfp_emit_event(hfp_callback, HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED, 0);
+            hfp_ag_slc_established(context);
             break;
         
         case HFP_W4_RETRIEVE_CAN_HOLD_CALL:
@@ -544,8 +547,7 @@ static void hfp_hf_switch_on_ok(hfp_connection_t *context){
                 context->state = HFP_LIST_GENERIC_STATUS_INDICATORS;
                 break;
             } 
-            context->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
-            hfp_emit_event(hfp_callback, HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED, 0);
+            hfp_ag_slc_established(context);
             break;
         
         case HFP_W4_LIST_GENERIC_STATUS_INDICATORS:
@@ -557,8 +559,7 @@ static void hfp_hf_switch_on_ok(hfp_connection_t *context){
             break;
                     
         case HFP_W4_RETRIEVE_INITITAL_STATE_GENERIC_STATUS_INDICATORS:
-            context->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
-            hfp_emit_event(hfp_callback, HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED, 0);
+            hfp_ag_slc_established(context);
             break;
         case HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED:
             if (context->enable_status_update_for_ag_indicators != 0xFF){
