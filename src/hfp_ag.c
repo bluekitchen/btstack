@@ -528,9 +528,23 @@ static int codecs_exchange_state_machine(hfp_connection_t * context){
     return 0;
 }
 
+static void hfp_init_link_settings(hfp_connection_t * context){
+    // determine highest possible link setting
+    context->link_setting = HFP_LINK_SETTINGS_D1;
+    if (hci_remote_eSCO_supported(context->con_handle)){
+        context->link_setting = HFP_LINK_SETTINGS_S3;
+        if ((context->remote_supported_features & (1<<HFP_HFSF_ESCO_S4))
+        &&  (hfp_supported_features             & (1<<HFP_AGSF_ESCO_S4))){
+            context->link_setting = HFP_LINK_SETTINGS_S4;
+        }
+    }
+}
+
 static void hfp_ag_slc_established(hfp_connection_t * context){
     context->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
     hfp_emit_event(hfp_callback, HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED, 0);
+
+    hfp_init_link_settings(context);
 
     // if active call exist, set per-connection state active, too (when audio is on)
     if (hfp_ag_call_state == HFP_CALL_STATUS_ACTIVE_OR_HELD_CALL_IS_PRESENT){
@@ -540,16 +554,6 @@ static void hfp_ag_slc_established(hfp_connection_t * context){
     if (hfp_ag_call_state == HFP_CALL_STATUS_NO_HELD_OR_ACTIVE_CALLS &&
         hfp_ag_callsetup_state == HFP_CALLSETUP_STATUS_INCOMING_CALL_SETUP_IN_PROGRESS){
         hfp_ag_hf_start_ringing(context);
-    }
-
-    // determine highest possible link setting
-    context->link_setting = HFP_LINK_SETTINGS_D1;
-    if (hci_remote_eSCO_supported(context->con_handle)){
-        context->link_setting = HFP_LINK_SETTINGS_S3;
-        if ((context->remote_supported_features & (1<<HFP_HFSF_ESCO_S4))
-        &&  (hfp_supported_features             & (1<<HFP_AGSF_ESCO_S4))){
-            context->link_setting = HFP_LINK_SETTINGS_S4;
-        }
     }
 }
 
