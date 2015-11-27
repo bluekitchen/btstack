@@ -524,7 +524,7 @@ void hfp_handle_hci_event(hfp_callback_t callback, uint8_t packet_type, uint8_t 
             if (status != 0){
                 log_error("(e)SCO Connection failed status %u", status);
                 // if outgoing && link_setting != d0 && appropriate error
-                if (status != 0x11) break;  // invalid params
+                if (status != 0x11 && status != 0x1f) break;  // invalid params / unspecified error
                 context = get_hfp_connection_context_for_bd_addr(event_addr);
                 if (!context) break;
                 switch (context->link_setting){
