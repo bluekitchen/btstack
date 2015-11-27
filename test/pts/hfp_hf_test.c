@@ -129,8 +129,8 @@ static void show_usage(void){
     printf("m - deactivate echo canceling and noise reduction\n");
     printf("M - activate echo canceling and noise reduction\n");
     
-    printf("n - deactivate voice recognition notification\n");
-    printf("N - activate voice recognition notification\n");
+    printf("n - deactivate voice recognition\n");
+    printf("N - activate voice recognition\n");
     
     printf("o - Set speaker volume to 0  (minimum)\n");
     printf("O - Set speaker volume to 9  (default)\n");
@@ -256,11 +256,11 @@ static int stdin_process(struct data_source *ds){
             hfp_hf_activate_echo_canceling_and_noise_reduction(device_addr);
             break;
         case 'n':
-            printf("Deactivate voice recognition notification\n");
+            printf("Deactivate voice recognition\n");
             hfp_hf_deactivate_voice_recognition_notification(device_addr);
             break;
         case 'N':
-            printf("Activate voice recognition notification\n");
+            printf("Activate voice recognition\n");
             hfp_hf_activate_voice_recognition_notification(device_addr);
             break;
         case 'o':
