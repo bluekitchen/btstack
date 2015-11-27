@@ -244,6 +244,12 @@ static int hfp_hf_send_clip_enable(uint16_t cid){
     return send_str_over_rfcomm(cid, buffer);
 }
 
+static int hfp_hf_set_call_waiting_notification_cmd(uint16_t cid, uint8_t activate){
+    char buffer[40];
+    sprintf(buffer, "%s=%d\r\n", HFP_ENABLE_CALL_WAITING_NOTIFICATION, activate);
+    return send_str_over_rfcomm(cid, buffer);
+}
+
 static int hfp_hf_initiate_outgoing_call_cmd(uint16_t cid){
     char buffer[40];
     sprintf(buffer, "%s%s;\r\n", HFP_CALL_PHONE_NUMBER, phone_number);
@@ -495,6 +501,19 @@ static void hfp_run_for_context(hfp_connection_t * context){
         done = call_setup_state_machine(context);
     }
     
+    if (context->hf_deactivate_call_waiting_notification){
+        context->hf_deactivate_call_waiting_notification = 0;
+        context->ok_pending = 1;
+        hfp_hf_set_call_waiting_notification_cmd(context->rfcomm_cid, 0);
+        return;
+    }
+
+    if (context->hf_activate_call_waiting_notification){
+        context->hf_activate_call_waiting_notification = 0;
+        context->ok_pending = 1;
+        hfp_hf_set_call_waiting_notification_cmd(context->rfcomm_cid, 1);
+        return;
+    }
 
     if (context->hf_initiate_outgoing_call){
         context->hf_initiate_outgoing_call = 0;
@@ -951,3 +970,21 @@ void hfp_hf_redial_last_number(bd_addr_t bd_addr){
     connection->hf_initiate_redial_last_number = 1;
     hfp_run_for_context(connection);
 }
+
+void hfp_hf_activate_call_waiting_notification(bd_addr_t bd_addr){
+    hfp_hf_establish_service_level_connection(bd_addr);
+    hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
+
+    connection->hf_activate_call_waiting_notification = 1;
+    hfp_run_for_context(connection);
+}
+
+
+void hfp_hf_deactivate_call_waiting_notification(bd_addr_t bd_addr){
+    hfp_hf_establish_service_level_connection(bd_addr);
+    hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
+
+    connection->hf_deactivate_call_waiting_notification = 1;
+    hfp_run_for_context(connection);
+}
+

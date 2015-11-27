@@ -102,7 +102,7 @@ static void show_usage(void){
     printf("c - disable registration status update for all AG indicators\n");
     printf("C - enable registration status update for all AG indicators\n");
     
-    printf("d - Query network operator.\n");
+    printf("d - query network operator.\n");
     printf("D - set HFP AG registration status update for individual indicators\n");
 
     printf("e - disable reporting of the extended AG error result code\n");
@@ -112,7 +112,7 @@ static void show_usage(void){
     printf("F - Hangup call\n");
 
     printf("g - query network operator name\n");
-    printf("G - Reject call.\n");
+    printf("G - reject call\n");
 
     printf("h - enable Calling Line Identification.\n");
 
@@ -121,6 +121,9 @@ static void show_usage(void){
     
     printf("j - dial #1\n");
     printf("J - dial #99\n");
+    
+    printf("k - deactivate call waiting notification\n");
+    printf("K - activate call waiting notification\n");
     
     printf("t - terminate connection\n");
 
@@ -214,6 +217,14 @@ static int stdin_process(struct data_source *ds){
         case 'J':
             printf("Dial #99\n");
             hfp_hf_dial_memory(device_addr,"#99");
+            break;
+        case 'k':
+            printf("Deactivate call waiting notification\n");
+            hfp_hf_deactivate_call_waiting_notification(device_addr);
+            break;
+        case 'K':
+            printf("Activate call waiting notification\n");
+            hfp_hf_activate_call_waiting_notification(device_addr);
             break;
         default:
             show_usage();

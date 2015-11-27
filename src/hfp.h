@@ -545,7 +545,9 @@ typedef struct hfp_connection {
     
     uint8_t hf_send_clip_enable;
     uint8_t hf_send_chup;
-
+    uint8_t hf_activate_call_waiting_notification;
+    uint8_t hf_deactivate_call_waiting_notification;
+    
 } hfp_connection_t;
 
 // UTILS_START : TODO move to utils
