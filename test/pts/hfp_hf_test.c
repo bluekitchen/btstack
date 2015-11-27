@@ -209,7 +209,7 @@ static void packet_handler(uint8_t * event, uint16_t event_size){
             }
             break;
         case HFP_SUBEVENT_AG_INDICATOR_STATUS_CHANGED:
-            printf("AG_INDICATOR_STATUS_CHANGED, AG indicator index: %d, status: %d\n", event[4], event[5]);
+            printf("AG_INDICATOR_STATUS_CHANGED, AG indicator '%s' (index: %d) to: %d\n", (const char*) &event[6], event[4], event[5]);
             break;
         case HFP_SUBEVENT_NETWORK_OPERATOR_CHANGED:
             printf("NETWORK_OPERATOR_CHANGED, operator mode: %d, format: %d, name: %s\n", event[4], event[5], (char *) &event[6]);

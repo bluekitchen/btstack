@@ -238,13 +238,15 @@ static int hfp_hf_cmd_ata(uint16_t cid){
 
 static void hfp_emit_ag_indicator_event(hfp_callback_t callback, int status, hfp_ag_indicator_t indicator){
     if (!callback) return;
-    uint8_t event[6];
+    uint8_t event[6+HFP_MAX_INDICATOR_DESC_SIZE+1];
     event[0] = HCI_EVENT_HFP_META;
     event[1] = sizeof(event) - 2;
     event[2] = HFP_SUBEVENT_AG_INDICATOR_STATUS_CHANGED;
     event[3] = status;
     event[4] = indicator.index; 
-    event[5] = indicator.status; 
+    event[5] = indicator.status;
+    strncpy((char*)&event[6], indicator.name, HFP_MAX_INDICATOR_DESC_SIZE);
+    event[6+HFP_MAX_INDICATOR_DESC_SIZE] = 0;
     (*callback)(event, sizeof(event));
 }
 
