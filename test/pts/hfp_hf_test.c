@@ -111,6 +111,7 @@ static void show_usage(void){
     printf("f - answer incoming call\n");
 
     printf("g - query network operator name\n");
+    printf("h - enable Calling Line Identification.\n");
 
     printf("t - terminate connection\n");
 
@@ -169,6 +170,10 @@ static int stdin_process(struct data_source *ds){
             printf("Query operator.\n");
             hfp_hf_query_operator_selection(device_addr);
             break;
+        case 'h':
+            printf("Enable Calling Line Identification.\n");
+            hfp_hf_enable_calling_line_identification(device_addr);
+            break;
         case 't':
             printf("Terminate HCI connection.\n");
             gap_disconnect(handle);
@@ -203,6 +208,12 @@ static void packet_handler(uint8_t * event, uint16_t event_size){
             break;
         case HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED:
             printf("Service level connection released.\n\n");
+            break;
+        case HFP_SUBEVENT_AUDIO_CONNECTION_ESTABLISHED:
+            printf("\n** Audio connection established **\n");
+            break;
+        case HFP_SUBEVENT_AUDIO_CONNECTION_RELEASED:
+            printf("\n** Audio connection released **\n");
             break;
         case HFP_SUBEVENT_COMPLETE:
             switch (cmd){

@@ -155,6 +155,11 @@ void hfp_hf_release_audio_connection(bd_addr_t bd_addr);
  */
 void hfp_hf_answer_incoming_call(bd_addr_t bd_addr);
 
+/**
+ * @brief 
+ */
+void hfp_hf_enable_calling_line_identification(bd_addr_t bd_addr);
+
 /* API_END */
 
 #if defined __cplusplus

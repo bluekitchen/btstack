@@ -510,11 +510,7 @@ typedef struct hfp_connection {
     uint8_t establish_audio_connection; 
     uint8_t release_audio_connection; 
 
-    uint8_t change_in_band_ring_tone_setting;
-    uint8_t ag_ring;
-    uint8_t ag_send_clip;
-    uint8_t ag_echo_and_noise_reduction;
-    uint8_t ag_activate_voice_recognition;
+    timer_source_t hfp_timeout;
 
     uint8_t microphone_gain;
     uint8_t send_microphone_gain;
@@ -523,22 +519,26 @@ typedef struct hfp_connection {
     uint8_t send_speaker_gain;
 
     uint8_t send_phone_number_for_voice_tag;
-    
+    uint8_t send_ag_status_indicators;
+    uint8_t send_response_and_hold_active;
+    uint8_t send_response_and_hold_status;
+
+    // AG only
+    uint8_t change_in_band_ring_tone_setting;
+    uint8_t ag_ring;
+    uint8_t ag_send_clip;
+    uint8_t ag_echo_and_noise_reduction;
+    uint8_t ag_activate_voice_recognition;
     uint8_t send_subscriber_number;
-    int next_subscriber_number_to_send;
+    uint8_t next_subscriber_number_to_send;
 
     int send_status_of_current_calls;
-    
-    uint8_t hf_answer_incoming_call;
-
-    int send_ag_status_indicators;
-    int send_response_and_hold_active;
-    int send_response_and_hold_status;
 
     // HF only
     hfp_hf_query_operator_state_t hf_query_operator_state;
+    uint8_t hf_answer_incoming_call;
+    uint8_t hf_send_clip_enable;
 
-    timer_source_t hfp_timeout;
 } hfp_connection_t;
 
 // UTILS_START : TODO move to utils
