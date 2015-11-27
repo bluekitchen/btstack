@@ -1009,12 +1009,12 @@ void hfp_hf_terminate_call(bd_addr_t bd_addr){
     hfp_hf_establish_service_level_connection(bd_addr);
     hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
     
-    if (hfp_call_status == HFP_CALL_STATUS_ACTIVE_OR_HELD_CALL_IS_PRESENT){
-        connection->hf_send_chup = 1;
-        hfp_run_for_context(connection);
-    } else {
-        log_error("HFP HF: terminating incoming call with wrong call status %u", hfp_call_status);
-    }
+    // if (hfp_call_status == HFP_CALL_STATUS_ACTIVE_OR_HELD_CALL_IS_PRESENT){
+    connection->hf_send_chup = 1;
+    hfp_run_for_context(connection);
+    // } else {
+    //     log_error("HFP HF: terminating incoming call with wrong call status %u", hfp_call_status);
+    // }
 }
 
 void hfp_hf_reject_call(bd_addr_t bd_addr){
