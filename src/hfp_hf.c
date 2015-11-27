@@ -422,9 +422,19 @@ static int hfp_hf_run_for_audio_connection(hfp_connection_t * context){
     }
 
     if (context->state == HFP_AUDIO_CONNECTION_ESTABLISHED) return 0;
-    
+
     // run codecs exchange
-    return codecs_exchange_state_machine(context);
+    int done = codecs_exchange_state_machine(context);
+    if (done) return 1;
+        
+    if (context->establish_audio_connection){
+        context->state = HFP_W4_SCO_CONNECTED;
+        context->establish_audio_connection = 0;
+        hci_send_cmd(&hci_setup_synchronous_connection, context->con_handle, 8000, 8000, 0xFFFF, hci_get_sco_voice_setting(), 0xFF, 0x003F);
+        return 1;
+    }
+
+    return 0;
 }
 
 static int call_setup_state_machine(hfp_connection_t * context){
@@ -758,14 +768,11 @@ void hfp_hf_establish_audio_connection(bd_addr_t bd_addr){
     if (connection->state == HFP_AUDIO_CONNECTION_ESTABLISHED) return;
     if (connection->state >= HFP_W2_DISCONNECT_SCO) return;
 
-    // if (!has_codec_negotiation_feature(connection)){
-    //     log_info("hfp_ag_establish_audio_connection - no codec negotiation feature, using defaults");
-    //     connection->codecs_state = HFP_CODECS_EXCHANGED;
-    // } 
-
-    connection->establish_audio_connection = 1;
-
-    if (has_codec_negotiation_feature(connection)){
+    if (!has_codec_negotiation_feature(connection)){
+        log_info("hfp_ag_establish_audio_connection - no codec negotiation feature, using defaults");
+        connection->codecs_state = HFP_CODECS_EXCHANGED;
+        connection->establish_audio_connection = 1;
+    } else {
         switch (connection->codecs_state){
             case HFP_CODECS_W4_AG_COMMON_CODEC:
                 break;
@@ -773,8 +780,6 @@ void hfp_hf_establish_audio_connection(bd_addr_t bd_addr){
                 connection->command = HFP_CMD_TRIGGER_CODEC_CONNECTION_SETUP;
                 break;
         } 
-    } else {
-        // connection->command = HFP_CMD_AVAILABLE_CODECS;
     }
 
     hfp_run_for_context(connection);
@@ -789,10 +794,13 @@ void hfp_hf_release_audio_connection(bd_addr_t bd_addr){
 void hfp_hf_answer_incoming_call(bd_addr_t bd_addr){
     hfp_hf_establish_service_level_connection(bd_addr);
     hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
-    
-    if (hfp_callsetup_state == HFP_CALLSETUP_STATUS_INCOMING_CALL_SETUP_IN_PROGRESS){
-        connection->hf_answer_incoming_call = 1;
-    } else {
-        log_error("HFP HF: answering incoming call in wrong callsetup state %u", hfp_callsetup_state);
-    }
+
+    // HACK - remove after hfp_callsetup_state is updated
+    connection->hf_answer_incoming_call = 1;
+    (void) hfp_callsetup_state;
+    // if (hfp_callsetup_state == HFP_CALLSETUP_STATUS_INCOMING_CALL_SETUP_IN_PROGRESS){
+    //     connection->hf_answer_incoming_call = 1;
+    // } else {
+    //     log_error("HFP HF: answering incoming call in wrong callsetup state %u", hfp_callsetup_state);
+    // }
 }
