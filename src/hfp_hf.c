@@ -77,6 +77,8 @@ static hfp_call_status_t hfp_call_status;
 static hfp_callsetup_status_t hfp_callsetup_status;
 static hfp_callheld_status_t hfp_callheld_status;
 
+static char phone_number[25]; 
+
 void hfp_hf_register_packet_handler(hfp_callback_t callback){
     hfp_callback = callback;
     if (callback == NULL){
@@ -239,6 +241,24 @@ static int hfp_hf_cmd_ata(uint16_t cid){
 static int hfp_hf_send_clip_enable(uint16_t cid){
     char buffer[20];
     sprintf(buffer, "AT%s=1\r\n", HFP_ENABLE_CLIP);
+    return send_str_over_rfcomm(cid, buffer);
+}
+
+static int hfp_hf_initiate_outgoing_call_cmd(uint16_t cid){
+    char buffer[40];
+    sprintf(buffer, "%s%s;\r\n", HFP_CALL_PHONE_NUMBER, phone_number);
+    return send_str_over_rfcomm(cid, buffer);
+}
+
+static int hfp_hf_send_memory_dial_cmd(uint16_t cid){
+    char buffer[40];
+    sprintf(buffer, "%s>%s;\r\n", HFP_CALL_PHONE_NUMBER, phone_number);
+    return send_str_over_rfcomm(cid, buffer);
+}
+
+static int hfp_hf_send_redial_last_number_cmd(uint16_t cid){
+    char buffer[20];
+    sprintf(buffer, "%s\r\n", HFP_REDIAL_LAST_NUMBER);
     return send_str_over_rfcomm(cid, buffer);
 }
 
@@ -475,6 +495,28 @@ static void hfp_run_for_context(hfp_connection_t * context){
         done = call_setup_state_machine(context);
     }
     
+
+    if (context->hf_initiate_outgoing_call){
+        context->hf_initiate_outgoing_call = 0;
+        context->ok_pending = 1;
+        hfp_hf_initiate_outgoing_call_cmd(context->rfcomm_cid);
+        return;
+    }
+    
+    if (context->hf_initiate_memory_dialing){
+        context->hf_initiate_memory_dialing = 0;
+        context->ok_pending = 1;
+        hfp_hf_send_memory_dial_cmd(context->rfcomm_cid);
+        return;
+    }
+
+    if (context->hf_initiate_redial_last_number){
+        context->hf_initiate_redial_last_number = 0;
+        context->ok_pending = 1;
+        hfp_hf_send_redial_last_number_cmd(context->rfcomm_cid);
+        return;
+    }
+
     if (context->hf_send_clip_enable){
         context->hf_send_clip_enable = 0;
         context->ok_pending = 1;
@@ -881,5 +923,31 @@ void hfp_hf_enable_calling_line_identification(bd_addr_t bd_addr){
     hfp_hf_establish_service_level_connection(bd_addr);
     hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
     connection->hf_send_clip_enable = 1;   
+    hfp_run_for_context(connection);
+}
+
+void hfp_hf_dial_number(bd_addr_t bd_addr, char * number){
+    hfp_hf_establish_service_level_connection(bd_addr);
+    hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
+
+    connection->hf_initiate_outgoing_call = 1;
+    snprintf(phone_number, sizeof(phone_number), "%s", number);
+    hfp_run_for_context(connection);
+}
+
+void hfp_hf_dial_memory(bd_addr_t bd_addr, char * number){
+    hfp_hf_establish_service_level_connection(bd_addr);
+    hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
+
+    connection->hf_initiate_memory_dialing = 1;
+    snprintf(phone_number, sizeof(phone_number), "%s", number);
+    hfp_run_for_context(connection);
+}
+
+void hfp_hf_redial_last_number(bd_addr_t bd_addr){
+    hfp_hf_establish_service_level_connection(bd_addr);
+    hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
+
+    connection->hf_initiate_redial_last_number = 1;
     hfp_run_for_context(connection);
 }

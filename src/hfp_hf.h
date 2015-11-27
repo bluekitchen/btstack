@@ -169,6 +169,21 @@ void hfp_hf_terminate_call(bd_addr_t bd_addr);
  */
 void hfp_hf_enable_calling_line_identification(bd_addr_t bd_addr);
 
+/**
+ * @brief 
+ */
+void hfp_hf_dial_number(bd_addr_t bd_addr, char * number);
+
+/**
+ * @brief 
+ */
+void hfp_hf_dial_memory(bd_addr_t bd_addr, char * number);
+
+/**
+ * @brief 
+ */
+void hfp_hf_redial_last_number(bd_addr_t bd_addr);
+
 /* API_END */
 
 #if defined __cplusplus

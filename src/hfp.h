@@ -539,6 +539,10 @@ typedef struct hfp_connection {
     // HF only
     hfp_hf_query_operator_state_t hf_query_operator_state;
     uint8_t hf_answer_incoming_call;
+    uint8_t hf_initiate_outgoing_call;
+    uint8_t hf_initiate_memory_dialing;
+    uint8_t hf_initiate_redial_last_number;
+    
     uint8_t hf_send_clip_enable;
     uint8_t hf_send_chup;
 

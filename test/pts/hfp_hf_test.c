@@ -99,23 +99,29 @@ static void show_usage(void){
     printf("b - establish Audio connection\n");
     printf("B - release Audio connection\n");
     
-    printf("C - enable registration status update for all AG indicators\n");
     printf("c - disable registration status update for all AG indicators\n");
+    printf("C - enable registration status update for all AG indicators\n");
     
-    printf("D - set HFP AG registration status update for individual indicators\n");
     printf("d - Query network operator.\n");
+    printf("D - set HFP AG registration status update for individual indicators\n");
 
-    printf("E - enable reporting of the extended AG error result code\n");
     printf("e - disable reporting of the extended AG error result code\n");
+    printf("E - enable reporting of the extended AG error result code\n");
     
     printf("f - answer incoming call\n");
     printf("F - Hangup call\n");
 
-    printf("G - Reject call.\n");
     printf("g - query network operator name\n");
+    printf("G - Reject call.\n");
 
     printf("h - enable Calling Line Identification.\n");
 
+    printf("i - dial 1234567\n");
+    printf("I - redial\n");
+    
+    printf("j - dial #1\n");
+    printf("J - dial #99\n");
+    
     printf("t - terminate connection\n");
 
     printf("---\n");
@@ -192,6 +198,22 @@ static int stdin_process(struct data_source *ds){
         case 'y':
             memcpy(device_addr, phone_addr, 6);
             printf("Use iPhone %s as Audiogateway.\n", bd_addr_to_str(device_addr));
+            break;
+        case 'i':
+            printf("Dial 1234567\n");
+            hfp_hf_dial_number(device_addr, "1234567");
+            break;
+        case 'I':
+            printf("Redial\n");
+            hfp_hf_redial_last_number(device_addr);
+            break;
+        case 'j':
+            printf("Dial #1\n");
+            hfp_hf_dial_memory(device_addr,"#1");
+            break;
+        case 'J':
+            printf("Dial #99\n");
+            hfp_hf_dial_memory(device_addr,"#99");
             break;
         default:
             show_usage();
