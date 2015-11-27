@@ -71,7 +71,7 @@ extern "C" {
 #define HFP_HFSF_VOICE_RECOGNITION_FUNCTION 3
 #define HFP_HFSF_CODEC_NEGOTIATION  7
 #define HFP_HFSF_HF_INDICATORS      8
-#define HFP_HFSF_ESCO               9
+#define HFP_HFSF_ESCO_S4            9
 
 /* AG Supported Features:
 0: Three-way calling
@@ -94,7 +94,7 @@ extern "C" {
 #define HFP_AGSF_IN_BAND_RING_TONE  3
 #define HFP_AGSF_CODEC_NEGOTIATION  9
 #define HFP_AGSF_HF_INDICATORS      10
-#define HFP_AGSF_ESCO               11
+#define HFP_AGSF_ESCO_S4            11
 
 #define HFP_DEFAULT_HF_SUPPORTED_FEATURES 0x0000
 #define HFP_DEFAULT_AG_SUPPORTED_FEATURES 0x0009
@@ -401,6 +401,17 @@ typedef enum {
     HPF_HF_QUERY_OPERATOR_W4_RESULT
 } hfp_hf_query_operator_state_t;
 
+typedef enum {
+     HFP_LINK_SETTINGS_D0 = 0,
+     HFP_LINK_SETTINGS_D1,
+     HFP_LINK_SETTINGS_S1,
+     HFP_LINK_SETTINGS_S2,
+     HFP_LINK_SETTINGS_S3,
+     HFP_LINK_SETTINGS_S4,
+     HFP_LINK_SETTINGS_T1,
+     HFP_LINK_SETTINGS_T1
+} hfp_link_setttings_t;
+
 typedef enum{
     HFP_NONE_SM,
     HFP_SLC_SM,
@@ -574,6 +585,9 @@ void hfp_release_service_level_connection(hfp_connection_t * connection);
 void hfp_reset_context_flags(hfp_connection_t * context);
 
 void hfp_release_audio_connection(hfp_connection_t * context);
+
+void hfp_setup_synchronous_connection(uint16_t handle, hfp_link_setttings_t link_settings);
+void hfp_accept_synchronous_connection(bd_addr_t addr, hfp_link_setttings_t link_settings);
 
 const char * hfp_hf_feature(int index);
 const char * hfp_ag_feature(int index);
