@@ -94,12 +94,13 @@ void hfp_hf_release_service_level_connection(bd_addr_t bd_addr);
 /**
  * @brief Deactivate/reactivate status update for all indicators in the AG.
  */
-void hfp_hf_enable_status_update_for_all_ag_indicators(bd_addr_t bd_addr, uint8_t enable);
+void hfp_hf_enable_status_update_for_all_ag_indicators(bd_addr_t bd_addr);
+void hfp_hf_disable_status_update_for_all_ag_indicators(bd_addr_t bd_addr);
 
 /**
  * @brief Deactivate/reactivate status update for the individual indicators in the AG using bitmap.
  */
-void hfp_hf_enable_status_update_for_individual_ag_indicators(bd_addr_t bd_addr, uint32_t indicators_status_bitmap);
+void hfp_hf_set_status_update_for_individual_ag_indicators(bd_addr_t bd_addr, uint32_t indicators_status_bitmap);
 
 
 /**
@@ -137,6 +138,7 @@ void hfp_hf_query_operator_selection(bd_addr_t bd_addr);
  * - +CME ERROR: 32 - network not allowed – Emergency calls only
  */
 void hfp_hf_enable_report_extended_audio_gateway_error_result_code(bd_addr_t bd_addr, uint8_t enable);
+void hfp_hf_disable_report_extended_audio_gateway_error_result_code(bd_addr_t bd_addr, uint8_t enable);
 
 /**
  * @brief 

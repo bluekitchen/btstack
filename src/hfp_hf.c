@@ -686,7 +686,7 @@ void hfp_hf_release_service_level_connection(bd_addr_t bd_addr){
     hfp_run_for_context(connection);
 }
 
-void hfp_hf_enable_status_update_for_all_ag_indicators(bd_addr_t bd_addr, uint8_t enable){
+static void hfp_hf_set_status_update_for_all_ag_indicators(bd_addr_t bd_addr, uint8_t enable){
     hfp_hf_establish_service_level_connection(bd_addr);
     hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
     if (!connection){
@@ -697,8 +697,16 @@ void hfp_hf_enable_status_update_for_all_ag_indicators(bd_addr_t bd_addr, uint8_
     hfp_run_for_context(connection);
 }
 
+void hfp_hf_enable_status_update_for_all_ag_indicators(bd_addr_t bd_addr, uint8_t enable){
+    hfp_hf_set_status_update_for_all_ag_indicators(bd_addr, 1);
+}
+
+void hfp_hf_disable_status_update_for_all_ag_indicators(bd_addr_t bd_addr){
+    hfp_hf_set_status_update_for_all_ag_indicators(bd_addr, 0);
+}
+
 // TODO: returned ERROR - wrong format
-void hfp_hf_enable_status_update_for_individual_ag_indicators(bd_addr_t bd_addr, uint32_t indicators_status_bitmap){
+void hfp_hf_set_status_update_for_individual_ag_indicators(bd_addr_t bd_addr, uint32_t indicators_status_bitmap){
     hfp_hf_establish_service_level_connection(bd_addr);
     hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
     if (!connection){
@@ -721,7 +729,7 @@ void hfp_hf_query_operator_selection(bd_addr_t bd_addr){
     hfp_run_for_context(connection);
 }
 
-void hfp_hf_enable_report_extended_audio_gateway_error_result_code(bd_addr_t bd_addr, uint8_t enable){
+static void hfp_hf_set_report_extended_audio_gateway_error_result_code(bd_addr_t bd_addr, uint8_t enable){
     hfp_hf_establish_service_level_connection(bd_addr);
     hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
     if (!connection){
@@ -731,6 +739,16 @@ void hfp_hf_enable_report_extended_audio_gateway_error_result_code(bd_addr_t bd_
     connection->enable_extended_audio_gateway_error_report = enable;
     hfp_run_for_context(connection);
 }
+
+
+void hfp_hf_enable_report_extended_audio_gateway_error_result_code(bd_addr_t bd_addr){
+    hfp_hf_set_report_extended_audio_gateway_error_result_code(bd_addr, 1);
+}
+
+void hfp_hf_disable_report_extended_audio_gateway_error_result_code(bd_addr_t bd_addr){
+    hfp_hf_set_report_extended_audio_gateway_error_result_code(bd_addr, 0);
+}
+
 
 void hfp_hf_establish_audio_connection(bd_addr_t bd_addr){
     hfp_hf_establish_service_level_connection(bd_addr);
