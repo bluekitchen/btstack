@@ -1330,6 +1330,10 @@ static void event_handler(uint8_t *packet, int size){
             }
             conn->role  = HCI_ROLE_SLAVE;
             conn->state = RECEIVED_CONNECTION_REQUEST;
+            // store info about eSCO
+            if (link_type == 0x02){
+                conn->remote_supported_feature_eSCO = 1;
+            }
             hci_run();
             break;
             
@@ -2328,14 +2332,13 @@ void hci_run(void){
                 if (connection->address_type == BD_ADDR_TYPE_CLASSIC){
                     hci_send_cmd(&hci_accept_connection_request, connection->address, 1);
                 } else {
-                    // remote supported features are not set for this hci_connection_t struct, but there must be an existing ACL connection already
-                    hci_connection_t * base_acl_connection = hci_connection_for_bd_addr_and_type(connection->address, BD_ADDR_TYPE_CLASSIC);
-                    if (!base_acl_connection || !base_acl_connection->remote_supported_feature_eSCO){
-                        // max latency, retransmission interval: N/A. any packet type
-                        hci_send_cmd(&hci_accept_synchronous_connection, connection->address, 8000, 8000, 0x000c, hci_stack->sco_voice_setting, 0x02, 0x003f);
-                    } else {
-                        // S4 - max latency == transmission interval = 0x000c == 12 ms, 
+                    // remote supported feature eSCO is set if link type is eSCO
+                    if (connection->remote_supported_feature_eSCO){
+                        // eSCO: S4 - max latency == transmission interval = 0x000c == 12 ms, 
                         hci_send_cmd(&hci_accept_synchronous_connection, connection->address, 8000, 8000, 0x000c, hci_stack->sco_voice_setting, 0x02, 0x388);
+                    } else {
+                        // SCO: max latency, retransmission interval: N/A. any packet type
+                        hci_send_cmd(&hci_accept_synchronous_connection, connection->address, 8000, 8000, 0xffff, hci_stack->sco_voice_setting, 0xff, 0x003f);
                     }
                 }
                 return;
