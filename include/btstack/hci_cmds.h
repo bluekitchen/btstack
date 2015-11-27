@@ -624,7 +624,6 @@ extern "C" {
 #define HSP_SUBEVENT_HS_COMMAND                            0x05
 #define HSP_SUBEVENT_AG_INDICATION                         0x06
 #define HSP_SUBEVENT_ERROR                                 0x07
-#define HSP_SUBEVENT_RING                                  0x08
 
 #define HCI_EVENT_HFP_META                                 0xE9
 
@@ -647,6 +646,7 @@ extern "C" {
 #define HFP_SUBEVENT_TRANSMIT_STATUS_OF_CURRENT_CALL       0x11
 #define HFP_SUBEVENT_CALL_ANSWERED                         0x12
 #define HFP_SUBEVENT_CONFERENCE_CALL                       0x13
+#define HFP_SUBEVENT_RING                                  0x14
 
 // ANCS Client
 #define ANCS_CLIENT_CONNECTED                              0xF0

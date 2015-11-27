@@ -241,6 +241,9 @@ static void packet_handler(uint8_t * event, uint16_t event_size){
             if (event[4])
             printf("EXTENDED_AUDIO_GATEWAY_ERROR_REPORT, status : %d\n", event[3]);
             break;
+        case HFP_SUBEVENT_RING:
+            printf("** Ring **\n");
+            break;
         default:
             printf("event not handled %u\n", event[2]);
             break;

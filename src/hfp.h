@@ -137,6 +137,7 @@ extern "C" {
 
 #define HFP_OK "OK"
 #define HFP_ERROR "ERROR"
+#define HFP_RING "RING"
 
 // Codecs 
 #define HFP_CODEC_CVSD 0x01
@@ -147,6 +148,7 @@ typedef enum {
     HFP_CMD_ERROR,
     HFP_CMD_UNKNOWN,
     HFP_CMD_OK,
+    HFP_CMD_RING,
     HFP_CMD_SUPPORTED_FEATURES,
     HFP_CMD_AVAILABLE_CODECS,
     

@@ -647,6 +647,9 @@ static void hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8
         case HFP_CMD_OK:
             hfp_hf_switch_on_ok(context);
             break;
+        case HFP_CMD_RING:
+            hfp_emit_event(hfp_callback, HFP_SUBEVENT_RING, 0);
+            break;
         default:
             break;
     }

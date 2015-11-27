@@ -686,6 +686,10 @@ static hfp_command_t parse_command(const char * line_buffer, int isHandsFree){
         return HFP_CMD_ERROR;
     }
 
+    if (strncmp(line_buffer+offset, HFP_RING, strlen(HFP_RING)) == 0){
+        return HFP_CMD_RING;
+    }
+
     if (isHandsFree && strncmp(line_buffer+offset, HFP_OK, strlen(HFP_OK)) == 0){
         return HFP_CMD_OK;
     }
