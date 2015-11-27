@@ -520,6 +520,8 @@ typedef struct hfp_connection {
     uint8_t suggested_codec;
     uint8_t codec_confirmed;
 
+    hfp_link_setttings_t link_setting;
+
     uint8_t establish_audio_connection; 
     uint8_t release_audio_connection; 
 
@@ -586,7 +588,7 @@ void hfp_reset_context_flags(hfp_connection_t * context);
 
 void hfp_release_audio_connection(hfp_connection_t * context);
 
-void hfp_setup_synchronous_connection(uint16_t handle, hfp_link_setttings_t link_settings);
+void hfp_setup_synchronous_connection(hci_con_handle_t handle, hfp_link_setttings_t link_settings);
 void hfp_accept_synchronous_connection(bd_addr_t addr, hfp_link_setttings_t link_settings);
 
 const char * hfp_hf_feature(int index);

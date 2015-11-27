@@ -541,6 +541,16 @@ static void hfp_ag_slc_established(hfp_connection_t * context){
         hfp_ag_callsetup_state == HFP_CALLSETUP_STATUS_INCOMING_CALL_SETUP_IN_PROGRESS){
         hfp_ag_hf_start_ringing(context);
     }
+
+    // determine highest possible link setting
+    context->link_setting = HFP_LINK_SETTINGS_D1;
+    if (hci_remote_eSCO_supported(context->con_handle)){
+        context->link_setting = HFP_LINK_SETTINGS_S3;
+        if ((context->remote_supported_features & (1<<HFP_HFSF_ESCO_S4))
+        &&  (hfp_supported_features             & (1<<HFP_AGSF_ESCO_S4))){
+            context->link_setting = HFP_LINK_SETTINGS_S4;
+        }
+    }
 }
 
 static int hfp_ag_run_for_context_service_level_connection(hfp_connection_t * context){
@@ -681,7 +691,6 @@ static int hfp_ag_run_for_context_service_level_connection_queries(hfp_connectio
     return 0;
 }
 
-
 static int hfp_ag_run_for_audio_connection(hfp_connection_t * context){
     if (context->state < HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED ||
         context->state > HFP_W2_DISCONNECT_SCO) return 0;
@@ -705,10 +714,8 @@ static int hfp_ag_run_for_audio_connection(hfp_connection_t * context){
     if (context->establish_audio_connection){
         context->state = HFP_W4_SCO_CONNECTED;
         context->establish_audio_connection = 0;
-        // only support HV1 + HV3 to avoid eSCO
-        hci_send_cmd(&hci_setup_synchronous_connection, context->con_handle, 8000, 8000, 0xFFFF, hci_get_sco_voice_setting(), 0xFF, 0x03c5);
+        hfp_setup_synchronous_connection(context->con_handle, context->link_setting);
         return 1;
-    
     }
     return 0;
 }
@@ -757,13 +764,13 @@ static void hfp_timeout_stop(hfp_connection_t * context){
 //
 
 static void hfp_ag_hf_start_ringing(hfp_connection_t * context){
-    hfp_timeout_start(context);
-    context->ag_ring = 1;
-    context->ag_send_clip = clip_type && context->clip_enabled;
     if (use_in_band_tone()){
         context->call_state = HFP_CALL_W4_AUDIO_CONNECTION_FOR_IN_BAND_RING;
         hfp_ag_establish_audio_connection(context->remote_addr);
     } else {
+        hfp_timeout_start(context);
+        context->ag_ring = 1;
+        context->ag_send_clip = clip_type && context->clip_enabled;
         context->call_state = HFP_CALL_RINGING;
         hfp_emit_event(hfp_callback, HFP_SUBEVENT_START_RINGINIG, 0);
     }
@@ -988,6 +995,10 @@ static int call_setup_state_machine(hfp_connection_t * connection){
         case HFP_CALL_W4_AUDIO_CONNECTION_FOR_IN_BAND_RING:
             if (connection->state != HFP_AUDIO_CONNECTION_ESTABLISHED) return 0;
             // we got event: audio connection established
+            hfp_timeout_start(connection);
+            connection->ag_ring = 1;
+            connection->ag_send_clip = clip_type && connection->clip_enabled;
+            connection->call_state = HFP_CALL_RINGING;
             connection->call_state = HFP_CALL_RINGING;
             hfp_emit_event(hfp_callback, HFP_SUBEVENT_START_RINGINIG, 0);
             break;        

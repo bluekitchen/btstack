@@ -516,12 +516,38 @@ void hfp_handle_hci_event(hfp_callback_t callback, uint8_t packet_type, uint8_t 
             break;
         
         case HCI_EVENT_SYNCHRONOUS_CONNECTION_COMPLETE:{
+
             bt_flip_addr(event_addr, &packet[5]);
             int index = 2;
             uint8_t status = packet[index++];
 
             if (status != 0){
-                log_error("(e)SCO Connection is not established, status %u", status);
+                log_error("(e)SCO Connection failed status %u", status);
+                // if outgoing && link_setting != d0 && appropriate error
+                if (status != 0x11) break;  // invalid params
+                context = get_hfp_connection_context_for_bd_addr(event_addr);
+                if (!context) break;
+                switch (context->link_setting){
+                    case HFP_LINK_SETTINGS_D0:
+                        return; // no other option left
+                    case HFP_LINK_SETTINGS_D1:
+                        // context->link_setting = HFP_LINK_SETTINGS_D0;
+                        // break;
+                    case HFP_LINK_SETTINGS_S1:
+                        // context->link_setting = HFP_LINK_SETTINGS_D1;
+                        // break;                    
+                    case HFP_LINK_SETTINGS_S2:
+                    case HFP_LINK_SETTINGS_S3:
+                    case HFP_LINK_SETTINGS_S4:
+                        // context->link_setting = HFP_LINK_SETTINGS_S1;
+                        // break;
+                    case HFP_LINK_SETTINGS_T1:
+                    case HFP_LINK_SETTINGS_T2:
+                        // context->link_setting = HFP_LINK_SETTINGS_S3;
+                        context->link_setting = HFP_LINK_SETTINGS_D0;
+                        break;
+                }
+                context->establish_audio_connection = 1;
                 break;
             }
             
@@ -1238,4 +1264,24 @@ void hfp_release_audio_connection(hfp_connection_t * context){
     context->release_audio_connection = 1; 
 }
 
+static const struct link_settings {
+    const uint16_t max_latency;
+    const uint8_t  retransmission_effort;
+    const uint16_t packet_types;
+} hfp_link_settings [] = {
+    { 0xffff, 0xff, 0x03c1 }, // HFP_LINK_SETTINGS_D0,   HV1
+    { 0xffff, 0xff, 0x03c4 }, // HFP_LINK_SETTINGS_D1,   HV3
+    { 0x0007, 0x01, 0x03c8 }, // HFP_LINK_SETTINGS_S1,   EV3
+    { 0x0007, 0x01, 0x0380 }, // HFP_LINK_SETTINGS_S2, 2-EV3
+    { 0x000a, 0x01, 0x0380 }, // HFP_LINK_SETTINGS_S3, 2-EV3
+    { 0x000c, 0x02, 0x0380 }, // HFP_LINK_SETTINGS_S4, 2-EV3
+    { 0x0008, 0x02, 0x03c8 }, // HFP_LINK_SETTINGS_T1,   EV3
+    { 0x000d, 0x02, 0x0380 }  // HFP_LINK_SETTINGS_T2, 2-EV3
+};
 
+void hfp_setup_synchronous_connection(hci_con_handle_t handle, hfp_link_setttings_t setting){
+    // all packet types, fixed bandwidth
+    log_info("hfp_setup_synchronous_connection using setting nr %u", setting);
+    hci_send_cmd(&hci_setup_synchronous_connection, handle, 8000, 8000, hfp_link_settings[setting].max_latency,
+        hci_get_sco_voice_setting(), hfp_link_settings[setting].retransmission_effort, hfp_link_settings[setting].packet_types); // all types 0x003f, only 2-ev3 0x380
+}
