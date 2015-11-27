@@ -696,7 +696,7 @@ static hfp_command_t parse_command(const char * line_buffer, int isHandsFree){
         return HFP_CMD_CALL_PHONE_NUMBER;
     }
 
-    if (strncmp(line_buffer, HFP_REDIAL_LAST_NUMBER, strlen(HFP_REDIAL_LAST_NUMBER)) == 0){
+    if (strncmp(line_buffer+offset, HFP_REDIAL_LAST_NUMBER, strlen(HFP_REDIAL_LAST_NUMBER)) == 0){
         return HFP_CMD_REDIAL_LAST_NUMBER;
     }
 
