@@ -111,7 +111,9 @@ static void show_usage(void){
     printf("f - answer incoming call\n");
     printf("F - Hangup call\n");
 
+    printf("G - Reject call.\n");
     printf("g - query network operator name\n");
+
     printf("h - enable Calling Line Identification.\n");
 
     printf("t - terminate connection\n");
@@ -170,6 +172,10 @@ static int stdin_process(struct data_source *ds){
         case 'F':
             printf("Hangup call.\n");
             hfp_hf_terminate_call(device_addr);
+            break;
+        case 'G':
+            printf("Reject call.\n");
+            hfp_hf_reject_call(device_addr);
             break;
         case 'g':
             printf("Query operator.\n");

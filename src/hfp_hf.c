@@ -849,17 +849,32 @@ void hfp_hf_answer_incoming_call(bd_addr_t bd_addr){
 
     if (hfp_callsetup_status == HFP_CALLSETUP_STATUS_INCOMING_CALL_SETUP_IN_PROGRESS){
         connection->hf_answer_incoming_call = 1;
+        hfp_run_for_context(connection);
     } else {
-        log_error("HFP HF: answering incoming call in wrong callsetup state %u", hfp_callsetup_status);
+        log_error("HFP HF: answering incoming call with wrong callsetup status %u", hfp_callsetup_status);
     }
-    hfp_run_for_context(connection);
 }
 
 void hfp_hf_terminate_call(bd_addr_t bd_addr){
     hfp_hf_establish_service_level_connection(bd_addr);
     hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
-    connection->hf_send_chup = 1;
-    hfp_run_for_context(connection);
+    
+    if (hfp_call_status == HFP_CALL_STATUS_ACTIVE_OR_HELD_CALL_IS_PRESENT){
+        connection->hf_send_chup = 1;
+        hfp_run_for_context(connection);
+    } else {
+        log_error("HFP HF: terminating incoming call with wrong call status %u", hfp_call_status);
+    }
+}
+
+void hfp_hf_reject_call(bd_addr_t bd_addr){
+    hfp_hf_establish_service_level_connection(bd_addr);
+    hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
+    
+    if (hfp_callsetup_status == HFP_CALLSETUP_STATUS_INCOMING_CALL_SETUP_IN_PROGRESS){
+        connection->hf_send_chup = 1;
+        hfp_run_for_context(connection);
+    }
 }
 
 void hfp_hf_enable_calling_line_identification(bd_addr_t bd_addr){

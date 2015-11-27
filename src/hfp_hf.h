@@ -157,6 +157,11 @@ void hfp_hf_answer_incoming_call(bd_addr_t bd_addr);
 /**
  * @brief 
  */
+void hfp_hf_reject_call(bd_addr_t bd_addr);
+
+/**
+ * @brief 
+ */
 void hfp_hf_terminate_call(bd_addr_t bd_addr);
 
 /**
