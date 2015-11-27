@@ -164,6 +164,10 @@ static int stdin_process(struct data_source *ds){
             printf("Disable reporting of the extended AG error result code.\n");
             hfp_hf_disable_report_extended_audio_gateway_error_result_code(device_addr);
             break;
+        case 'f':
+            printf("Answer incoming call.\n");
+            hfp_hf_answer_incoming_call(device_addr);
+            break;
         default:
             show_usage();
             break;
