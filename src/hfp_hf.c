@@ -1120,7 +1120,7 @@ void hfp_hf_activate_voice_recognition_notification(bd_addr_t bd_addr){
     hfp_hf_establish_service_level_connection(bd_addr);
     hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
 
-    connection->hf_deactivate_voice_recognition_notification = 1;
+    connection->hf_activate_voice_recognition_notification = 1;
     hfp_run_for_context(connection);
 }
 
