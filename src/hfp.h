@@ -124,7 +124,7 @@ extern "C" {
 #define HFP_HANG_UP_CALL "+CHUP"
 #define HFP_CHANGE_IN_BAND_RING_TONE_SETTING "+BSIR"
 #define HFP_CALL_PHONE_NUMBER "ATD"
-#define HFP_REDIAL_LAST_NUMBER "AT+BLDN"
+#define HFP_REDIAL_LAST_NUMBER "+BLDN"
 #define HFP_TURN_OFF_EC_AND_NR "+NREC" // EC (Echo CAnceling), NR (Noise Reduction)
 #define HFP_ACTIVATE_VOICE_RECOGNITION "+BVRA" // EC (Echo CAnceling), NR (Noise Reduction)
 #define HFP_SET_MICROPHONE_GAIN  "+VGM"
@@ -548,6 +548,13 @@ typedef struct hfp_connection {
     uint8_t hf_activate_call_waiting_notification;
     uint8_t hf_deactivate_call_waiting_notification;
     
+    uint8_t hf_activate_calling_line_notification;
+    uint8_t hf_deactivate_calling_line_notification;
+    uint8_t hf_activate_echo_canceling_and_noise_reduction;
+    uint8_t hf_deactivate_echo_canceling_and_noise_reduction;
+    uint8_t hf_activate_voice_recognition_notification;
+    uint8_t hf_deactivate_voice_recognition_notification;
+  
 } hfp_connection_t;
 
 // UTILS_START : TODO move to utils

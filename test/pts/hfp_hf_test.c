@@ -125,6 +125,25 @@ static void show_usage(void){
     printf("k - deactivate call waiting notification\n");
     printf("K - activate call waiting notification\n");
     
+    printf("l - deactivate calling line notification\n");
+    printf("L - activate calling line notification\n");
+    
+    printf("m - deactivate echo canceling and noise reduction\n");
+    printf("M - activate echo canceling and noise reduction\n");
+    
+    printf("n - deactivate voice recognition notification\n");
+    printf("N - activate voice recognition notification\n");
+    
+    printf("o - Set speaker volume to 0  (minimum)\n");
+    printf("O - Set speaker volume to 9  (default)\n");
+    printf("p - Set speaker volume to 12 (higher)\n");
+    printf("P - Set speaker volume to 15 (maximum)\n");
+
+    printf("q - Set microphone gain to 0  (minimum)\n");
+    printf("Q - Set microphone gain to 9  (default)\n");
+    printf("s - Set microphone gain to 12 (higher)\n");
+    printf("S - Set microphone gain to 15 (maximum)\n");
+    
     printf("t - terminate connection\n");
 
     printf("---\n");
@@ -225,6 +244,54 @@ static int stdin_process(struct data_source *ds){
         case 'K':
             printf("Activate call waiting notification\n");
             hfp_hf_activate_call_waiting_notification(device_addr);
+            break;
+        case 'l':
+            printf("Deactivate calling line notification\n");
+            hfp_hf_deactivate_calling_line_notification(device_addr);
+            break;
+        case 'L':
+            printf("Activate calling line notification\n");
+            hfp_hf_activate_calling_line_notification(device_addr);
+            break;
+        case 'm':
+            printf("Deactivate echo canceling and noise reduction\n");
+            hfp_hf_deactivate_echo_canceling_and_noise_reduction(device_addr);
+            break;
+        case 'M':
+            printf("Activate echo canceling and noise reduction\n");
+            hfp_hf_activate_echo_canceling_and_noise_reduction(device_addr);
+            break;
+        case 'n':
+            printf("Deactivate voice recognition notification\n");
+            hfp_hf_deactivate_voice_recognition_notification(device_addr);
+            break;
+        case 'N':
+            printf("Activate voice recognition notification\n");
+            hfp_hf_activate_voice_recognition_notification(device_addr);
+            break;
+        case 'o':
+            printf("Set speaker gain to 0 (minimum)\n");
+            hfp_hf_set_speaker_gain(device_addr, 0);
+            break;
+        case 'O':
+            printf("Set speaker gain to 9 (default)\n");
+            hfp_hf_set_speaker_gain(device_addr, 9);
+            break;
+        case 'p':
+            printf("Set speaker gain to 12 (higher)\n");
+            hfp_hf_set_speaker_gain(device_addr, 12);
+            break;
+        case 'P':
+            printf("Set speaker gain to 15 (maximum)\n");
+            hfp_hf_set_speaker_gain(device_addr, 15);
+            break;
+        case 'q':
+            printf("Set microphone gain to 0\n");
+            hfp_hf_set_microphone_gain(device_addr, 0);
+            break;
+        case 'Q':
+            printf("Set microphone gain to 9\n");
+            hfp_hf_set_microphone_gain(device_addr, 9);
             break;
         default:
             show_usage();

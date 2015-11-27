@@ -167,11 +167,6 @@ void hfp_hf_terminate_call(bd_addr_t bd_addr);
 /**
  * @brief 
  */
-void hfp_hf_enable_calling_line_identification(bd_addr_t bd_addr);
-
-/**
- * @brief 
- */
 void hfp_hf_dial_number(bd_addr_t bd_addr, char * number);
 
 /**
@@ -194,6 +189,46 @@ void hfp_hf_activate_call_waiting_notification(bd_addr_t bd_addr);
  */
 void hfp_hf_deactivate_call_waiting_notification(bd_addr_t bd_addr);
 
+/*
+ * @brief
+ */
+void hfp_hf_activate_calling_line_notification(bd_addr_t bd_addr);
+
+/*
+ * @brief
+ */
+void hfp_hf_deactivate_calling_line_notification(bd_addr_t bd_addr);
+
+
+/*
+ * @brief
+ */
+void hfp_hf_activate_echo_canceling_and_noise_reduction(bd_addr_t bd_addr);
+
+/*
+ * @brief
+ */
+void hfp_hf_deactivate_echo_canceling_and_noise_reduction(bd_addr_t bd_addr);
+
+/*
+ * @brief
+ */
+void hfp_hf_activate_voice_recognition_notification(bd_addr_t bd_addr);
+
+/*
+ * @brief
+ */
+void hfp_hf_deactivate_voice_recognition_notification(bd_addr_t bd_addr);
+
+/*
+ * @brief
+ */
+void hfp_hf_set_microphone_gain(bd_addr_t bd_addr, int gain);
+
+/*
+ * @brief
+ */
+void hfp_hf_set_speaker_gain(bd_addr_t bd_addr, int gain);
 
 /* API_END */
 

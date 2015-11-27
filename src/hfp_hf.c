@@ -238,15 +238,39 @@ static int hfp_hf_cmd_ata(uint16_t cid){
     return send_str_over_rfcomm(cid, buffer);
 }
 
-static int hfp_hf_send_clip_enable(uint16_t cid){
-    char buffer[20];
-    sprintf(buffer, "AT%s=1\r\n", HFP_ENABLE_CLIP);
+static int hfp_hf_set_microphone_gain_cmd(uint16_t cid, int gain){
+    char buffer[40];
+    sprintf(buffer, "AT%s=%d\r\n", HFP_SET_MICROPHONE_GAIN, gain);
+    return send_str_over_rfcomm(cid, buffer);
+}
+
+static int hfp_hf_set_speaker_gain_cmd(uint16_t cid, int gain){
+    char buffer[40];
+    sprintf(buffer, "AT%s=%d\r\n", HFP_SET_SPEAKER_GAIN, gain);
+    return send_str_over_rfcomm(cid, buffer);
+}
+
+static int hfp_hf_set_calling_line_notification_cmd(uint16_t cid, uint8_t activate){
+    char buffer[40];
+    sprintf(buffer, "AT%s=%d\r\n", HFP_ENABLE_CLIP, activate);
+    return send_str_over_rfcomm(cid, buffer);
+}
+
+static int hfp_hf_set_echo_canceling_and_noise_reduction_cmd(uint16_t cid, uint8_t activate){
+    char buffer[40];
+    sprintf(buffer, "AT%s=%d\r\n", HFP_TURN_OFF_EC_AND_NR, activate);
+    return send_str_over_rfcomm(cid, buffer);
+}
+
+static int hfp_hf_set_voice_recognition_notification_cmd(uint16_t cid, uint8_t activate){
+    char buffer[40];
+    sprintf(buffer, "AT%s=%d\r\n", HFP_ACTIVATE_VOICE_RECOGNITION, activate);
     return send_str_over_rfcomm(cid, buffer);
 }
 
 static int hfp_hf_set_call_waiting_notification_cmd(uint16_t cid, uint8_t activate){
     char buffer[40];
-    sprintf(buffer, "%s=%d\r\n", HFP_ENABLE_CALL_WAITING_NOTIFICATION, activate);
+    sprintf(buffer, "AT%s=%d\r\n", HFP_ENABLE_CALL_WAITING_NOTIFICATION, activate);
     return send_str_over_rfcomm(cid, buffer);
 }
 
@@ -264,7 +288,7 @@ static int hfp_hf_send_memory_dial_cmd(uint16_t cid){
 
 static int hfp_hf_send_redial_last_number_cmd(uint16_t cid){
     char buffer[20];
-    sprintf(buffer, "%s\r\n", HFP_REDIAL_LAST_NUMBER);
+    sprintf(buffer, "AT%s\r\n", HFP_REDIAL_LAST_NUMBER);
     return send_str_over_rfcomm(cid, buffer);
 }
 
@@ -500,7 +524,64 @@ static void hfp_run_for_context(hfp_connection_t * context){
     if (!done){
         done = call_setup_state_machine(context);
     }
+
+    if (context->send_microphone_gain){
+        context->send_microphone_gain = 0;
+        context->ok_pending = 1;
+        hfp_hf_set_microphone_gain_cmd(context->rfcomm_cid, context->microphone_gain);
+        return;
+    }
+
+    if (context->send_speaker_gain){
+        context->send_speaker_gain = 0;
+        context->ok_pending = 1;
+        hfp_hf_set_speaker_gain_cmd(context->rfcomm_cid, context->speaker_gain);
+        return;
+    }
     
+    if (context->hf_deactivate_calling_line_notification){
+        context->hf_deactivate_calling_line_notification = 0;
+        context->ok_pending = 1;
+        hfp_hf_set_calling_line_notification_cmd(context->rfcomm_cid, 0);
+        return;
+    }
+
+    if (context->hf_activate_calling_line_notification){
+        context->hf_activate_calling_line_notification = 0;
+        context->ok_pending = 1;
+        hfp_hf_set_calling_line_notification_cmd(context->rfcomm_cid, 1);
+        return;
+    }
+
+    if (context->hf_deactivate_echo_canceling_and_noise_reduction){
+        context->hf_deactivate_echo_canceling_and_noise_reduction = 0;
+        context->ok_pending = 1;
+        hfp_hf_set_echo_canceling_and_noise_reduction_cmd(context->rfcomm_cid, 0);
+        return;
+    }
+
+    if (context->hf_activate_echo_canceling_and_noise_reduction){
+        context->hf_activate_echo_canceling_and_noise_reduction = 0;
+        context->ok_pending = 1;
+        hfp_hf_set_echo_canceling_and_noise_reduction_cmd(context->rfcomm_cid, 1);
+        return;
+    }
+
+    if (context->hf_deactivate_voice_recognition_notification){
+        context->hf_deactivate_voice_recognition_notification = 0;
+        context->ok_pending = 1;
+        hfp_hf_set_voice_recognition_notification_cmd(context->rfcomm_cid, 0);
+        return;
+    }
+
+    if (context->hf_activate_voice_recognition_notification){
+        context->hf_activate_voice_recognition_notification = 0;
+        context->ok_pending = 1;
+        hfp_hf_set_voice_recognition_notification_cmd(context->rfcomm_cid, 1);
+        return;
+    }
+
+
     if (context->hf_deactivate_call_waiting_notification){
         context->hf_deactivate_call_waiting_notification = 0;
         context->ok_pending = 1;
@@ -533,13 +614,6 @@ static void hfp_run_for_context(hfp_connection_t * context){
         context->hf_initiate_redial_last_number = 0;
         context->ok_pending = 1;
         hfp_hf_send_redial_last_number_cmd(context->rfcomm_cid);
-        return;
-    }
-
-    if (context->hf_send_clip_enable){
-        context->hf_send_clip_enable = 0;
-        context->ok_pending = 1;
-        hfp_hf_send_clip_enable(context->rfcomm_cid);
         return;
     }
 
@@ -696,6 +770,7 @@ static void hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8
             context->ok_pending = 0;
             hfp_reset_context_flags(context);
             hfp_emit_event(hfp_callback, HFP_SUBEVENT_COMPLETE, 1); 
+            context->command = HFP_CMD_NONE;
             break;
         case HFP_CMD_OK:
             hfp_hf_switch_on_ok(context);
@@ -938,13 +1013,6 @@ void hfp_hf_reject_call(bd_addr_t bd_addr){
     }
 }
 
-void hfp_hf_enable_calling_line_identification(bd_addr_t bd_addr){
-    hfp_hf_establish_service_level_connection(bd_addr);
-    hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
-    connection->hf_send_clip_enable = 1;   
-    hfp_run_for_context(connection);
-}
-
 void hfp_hf_dial_number(bd_addr_t bd_addr, char * number){
     hfp_hf_establish_service_level_connection(bd_addr);
     hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
@@ -985,6 +1053,97 @@ void hfp_hf_deactivate_call_waiting_notification(bd_addr_t bd_addr){
     hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
 
     connection->hf_deactivate_call_waiting_notification = 1;
+    hfp_run_for_context(connection);
+}
+
+
+void hfp_hf_activate_calling_line_notification(bd_addr_t bd_addr){
+    hfp_hf_establish_service_level_connection(bd_addr);
+    hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
+
+    connection->hf_deactivate_calling_line_notification = 1;
+    hfp_run_for_context(connection);
+}
+
+/*
+ * @brief
+ */
+void hfp_hf_deactivate_calling_line_notification(bd_addr_t bd_addr){
+    hfp_hf_establish_service_level_connection(bd_addr);
+    hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
+
+    connection->hf_deactivate_calling_line_notification = 1;
+    hfp_run_for_context(connection);
+}
+
+
+/*
+ * @brief
+ */
+void hfp_hf_activate_echo_canceling_and_noise_reduction(bd_addr_t bd_addr){
+    hfp_hf_establish_service_level_connection(bd_addr);
+    hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
+
+    connection->hf_deactivate_echo_canceling_and_noise_reduction = 1;
+    hfp_run_for_context(connection);
+}
+
+/*
+ * @brief
+ */
+void hfp_hf_deactivate_echo_canceling_and_noise_reduction(bd_addr_t bd_addr){
+    hfp_hf_establish_service_level_connection(bd_addr);
+    hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
+
+    connection->hf_deactivate_echo_canceling_and_noise_reduction = 1;
+    hfp_run_for_context(connection);
+}
+
+/*
+ * @brief
+ */
+void hfp_hf_activate_voice_recognition_notification(bd_addr_t bd_addr){
+    hfp_hf_establish_service_level_connection(bd_addr);
+    hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
+
+    connection->hf_deactivate_voice_recognition_notification = 1;
+    hfp_run_for_context(connection);
+}
+
+/*
+ * @brief
+ */
+void hfp_hf_deactivate_voice_recognition_notification(bd_addr_t bd_addr){
+    hfp_hf_establish_service_level_connection(bd_addr);
+    hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
+
+    connection->hf_deactivate_voice_recognition_notification = 1;
+    hfp_run_for_context(connection);
+}
+
+/*
+ * @brief
+ */
+void hfp_hf_set_microphone_gain(bd_addr_t bd_addr, int gain){
+    hfp_hf_establish_service_level_connection(bd_addr);
+    hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
+    if (connection->microphone_gain == gain) return;
+
+    connection->microphone_gain = gain;
+    connection->send_microphone_gain = 1;
+    hfp_run_for_context(connection);
+}
+
+/*
+ * @brief
+ */
+void hfp_hf_set_speaker_gain(bd_addr_t bd_addr, int gain){
+    hfp_hf_establish_service_level_connection(bd_addr);
+    hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
+    if (connection->speaker_gain == gain) return;
+
+    connection->speaker_gain = gain;
+    connection->send_speaker_gain = 1;
     hfp_run_for_context(connection);
 }
 
