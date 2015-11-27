@@ -77,6 +77,7 @@ static bd_addr_t pts_addr = {0x00,0x1b,0xDC,0x07,0x32,0xEF};
 static bd_addr_t phone_addr = {0xD8,0xBb,0x2C,0xDf,0xF1,0x08};
 
 static bd_addr_t device_addr;
+static uint16_t handle = -1;
 static uint8_t codecs[] = {HFP_CODEC_CVSD, HFP_CODEC_MSBC};
 static uint16_t indicators[1] = {0x01};
 
@@ -89,7 +90,7 @@ static void show_usage();
 static void show_usage(void){
     printf("\n--- Bluetooth HFP Hands-Free (HF) unit Test Console ---\n");
     printf("---\n");
-    printf("y - use PTS module as Audiogateway\n");
+
     printf("z - use iPhone as Audiogateway\n");
 
     printf("a - establish SLC connection to device\n");
@@ -108,7 +109,8 @@ static void show_usage(void){
     printf("e - disable reporting of the extended AG error result code\n");
     
     printf("f - answer incoming call\n");
-    
+    printf("t - terminate connection\n");
+
     printf("---\n");
     printf("Ctrl-c - exit\n");
     printf("---\n");
@@ -117,14 +119,6 @@ static void show_usage(void){
 static int stdin_process(struct data_source *ds){
     read(ds->fd, &cmd, 1);
     switch (cmd){
-        case 'y':
-            memcpy(device_addr, phone_addr, 6);
-            printf("Use iPhone %s as Audiogateway.\n", bd_addr_to_str(device_addr));
-            break;
-        case 'z':
-            memcpy(device_addr, pts_addr, 6);
-            printf("Use PTS module %s as Audiogateway.\n", bd_addr_to_str(device_addr));
-            break;
         case 'a':
             printf("Establish Service level connection to device with Bluetooth address %s...\n", bd_addr_to_str(device_addr));
             hfp_hf_establish_service_level_connection(device_addr);
@@ -168,6 +162,14 @@ static int stdin_process(struct data_source *ds){
             printf("Answer incoming call.\n");
             hfp_hf_answer_incoming_call(device_addr);
             break;
+        case 't':
+            printf("Terminate HCI connection.\n");
+            gap_disconnect(handle);
+            break;
+        case 'y':
+            memcpy(device_addr, phone_addr, 6);
+            printf("Use iPhone %s as Audiogateway.\n", bd_addr_to_str(device_addr));
+            break;
         default:
             show_usage();
             break;
@@ -178,6 +180,11 @@ static int stdin_process(struct data_source *ds){
 
 
 static void packet_handler(uint8_t * event, uint16_t event_size){
+    if (event[0] == RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE){
+        handle = READ_BT_16(event, 9);
+        printf("RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE received for handle 0x%04x\n", handle);
+        return;
+    }
     if (event[0] != HCI_EVENT_HFP_META) return;
     if (event[3] && event[2] != HFP_SUBEVENT_EXTENDED_AUDIO_GATEWAY_ERROR){
         printf("ERROR, status: %u\n", event[3]);
