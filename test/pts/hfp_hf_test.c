@@ -225,11 +225,11 @@ static int stdin_process(struct data_source *ds){
             break;
         case 'j':
             printf("Dial #1\n");
-            hfp_hf_dial_memory(device_addr,"#1");
+            hfp_hf_dial_memory(device_addr,"1");
             break;
         case 'J':
             printf("Dial #99\n");
-            hfp_hf_dial_memory(device_addr,"#99");
+            hfp_hf_dial_memory(device_addr,"99");
             break;
         case 'k':
             printf("Deactivate call waiting notification\n");
@@ -357,7 +357,7 @@ int btstack_main(int argc, const char * argv[]){
     rfcomm_init();
     
     // hfp_hf_init(rfcomm_channel_nr, HFP_DEFAULT_HF_SUPPORTED_FEATURES, codecs, sizeof(codecs), indicators, sizeof(indicators)/sizeof(uint16_t), 1);
-    hfp_hf_init(rfcomm_channel_nr, 438 | (1<<HFP_HFSF_ESCO_S4), indicators, sizeof(indicators)/sizeof(uint16_t), 1);
+    hfp_hf_init(rfcomm_channel_nr, 438 | (1<<HFP_HFSF_ESCO_S4) | (1<<HFP_HFSF_EC_NR_FUNCTION), indicators, sizeof(indicators)/sizeof(uint16_t), 1);
     hfp_hf_set_codecs(codecs, sizeof(codecs));
     
     hfp_hf_register_packet_handler(packet_handler);
