@@ -431,7 +431,8 @@ static int hfp_hf_run_for_audio_connection(hfp_connection_t * context){
     if (context->establish_audio_connection){
         context->state = HFP_W4_SCO_CONNECTED;
         context->establish_audio_connection = 0;
-        hci_send_cmd(&hci_setup_synchronous_connection, context->con_handle, 8000, 8000, 0xFFFF, hci_get_sco_voice_setting(), 0xFF, 0x003F);
+        // only support HV1 + HV3 to avoid eSCO
+        hci_send_cmd(&hci_setup_synchronous_connection, context->con_handle, 8000, 8000, 0xFFFF, hci_get_sco_voice_setting(), 0xFF, 0x03c5);
         return 1;
     }
 
