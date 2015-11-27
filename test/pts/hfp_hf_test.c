@@ -109,6 +109,7 @@ static void show_usage(void){
     printf("e - disable reporting of the extended AG error result code\n");
     
     printf("f - answer incoming call\n");
+    printf("F - Hangup call\n");
 
     printf("g - query network operator name\n");
     printf("h - enable Calling Line Identification.\n");
@@ -165,6 +166,10 @@ static int stdin_process(struct data_source *ds){
         case 'f':
             printf("Answer incoming call.\n");
             hfp_hf_answer_incoming_call(device_addr);
+            break;
+        case 'F':
+            printf("Hangup call.\n");
+            hfp_hf_terminate_call(device_addr);
             break;
         case 'g':
             printf("Query operator.\n");

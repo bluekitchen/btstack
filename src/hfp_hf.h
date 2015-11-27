@@ -84,7 +84,6 @@ void hfp_hf_register_packet_handler(hfp_callback_t callback);
  */
 void hfp_hf_establish_service_level_connection(bd_addr_t bd_addr);
 
-
 /**
  * @brief Release the RFCOMM channel and the audio connection between the HF and the AG. 
  * TODO: trigger release of the audio connection
@@ -154,6 +153,11 @@ void hfp_hf_release_audio_connection(bd_addr_t bd_addr);
  * @brief 
  */
 void hfp_hf_answer_incoming_call(bd_addr_t bd_addr);
+
+/**
+ * @brief 
+ */
+void hfp_hf_terminate_call(bd_addr_t bd_addr);
 
 /**
  * @brief 

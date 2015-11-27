@@ -242,6 +242,12 @@ static int hfp_hf_send_clip_enable(uint16_t cid){
     return send_str_over_rfcomm(cid, buffer);
 }
 
+static int hfp_hf_send_chup(uint16_t cid){
+    char buffer[20];
+    sprintf(buffer, "AT%s\r\n", HFP_HANG_UP_CALL);
+    return send_str_over_rfcomm(cid, buffer);
+}
+
 static void hfp_emit_ag_indicator_event(hfp_callback_t callback, int status, hfp_ag_indicator_t indicator){
     if (!callback) return;
     uint8_t event[6+HFP_MAX_INDICATOR_DESC_SIZE+1];
@@ -337,13 +343,6 @@ static int hfp_hf_run_for_context_service_level_connection_queries(hfp_connectio
                 context->ag_indicators_status_update_bitmap,
                 context->ag_indicators_nr);
         return done;
-    }
-
-    if (context->hf_send_clip_enable){
-        context->hf_send_clip_enable = 0;
-        context->ok_pending = 1;
-        hfp_hf_send_clip_enable(context->rfcomm_cid);
-        return 1;
     }
 
     switch (context->hf_query_operator_state){
@@ -476,6 +475,20 @@ static void hfp_run_for_context(hfp_connection_t * context){
         done = call_setup_state_machine(context);
     }
     
+    if (context->hf_send_clip_enable){
+        context->hf_send_clip_enable = 0;
+        context->ok_pending = 1;
+        hfp_hf_send_clip_enable(context->rfcomm_cid);
+        return;
+    }
+
+    if (context->hf_send_chup){
+        context->hf_send_chup = 0;
+        context->ok_pending = 1;
+        hfp_hf_send_chup(context->rfcomm_cid);
+        return;
+    }
+
     if (done) return;
     // deal with disconnect
     switch (context->state){ 
@@ -832,6 +845,13 @@ void hfp_hf_answer_incoming_call(bd_addr_t bd_addr){
     // } else {
     //     log_error("HFP HF: answering incoming call in wrong callsetup state %u", hfp_callsetup_state);
     // }
+}
+
+void hfp_hf_terminate_call(bd_addr_t bd_addr){
+    hfp_hf_establish_service_level_connection(bd_addr);
+    hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
+    connection->hf_send_chup = 1;
+    hfp_run_for_context(connection);
 }
 
 void hfp_hf_enable_calling_line_identification(bd_addr_t bd_addr){

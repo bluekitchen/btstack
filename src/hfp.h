@@ -538,6 +538,7 @@ typedef struct hfp_connection {
     hfp_hf_query_operator_state_t hf_query_operator_state;
     uint8_t hf_answer_incoming_call;
     uint8_t hf_send_clip_enable;
+    uint8_t hf_send_chup;
 
 } hfp_connection_t;
 
