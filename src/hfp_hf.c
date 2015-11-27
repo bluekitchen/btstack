@@ -697,7 +697,7 @@ static void hfp_hf_set_status_update_for_all_ag_indicators(bd_addr_t bd_addr, ui
     hfp_run_for_context(connection);
 }
 
-void hfp_hf_enable_status_update_for_all_ag_indicators(bd_addr_t bd_addr, uint8_t enable){
+void hfp_hf_enable_status_update_for_all_ag_indicators(bd_addr_t bd_addr){
     hfp_hf_set_status_update_for_all_ag_indicators(bd_addr, 1);
 }
 

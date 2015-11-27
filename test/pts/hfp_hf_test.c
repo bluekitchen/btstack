@@ -146,7 +146,7 @@ static int stdin_process(struct data_source *ds){
             hfp_hf_enable_status_update_for_all_ag_indicators(device_addr);
         case 'c':
             printf("Disable registration status update for all AG indicators.\n");
-            hfp_hf_disable_status_update_for_all_ag_indicators(device_addr, 0);
+            hfp_hf_disable_status_update_for_all_ag_indicators(device_addr);
             break;
         case 'D':
             printf("Set HFP AG registration status update for individual indicators (0111111).\n");

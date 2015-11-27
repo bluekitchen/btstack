@@ -137,8 +137,8 @@ void hfp_hf_query_operator_selection(bd_addr_t bd_addr);
  * - +CME ERROR: 31 - network Timeout.
  * - +CME ERROR: 32 - network not allowed – Emergency calls only
  */
-void hfp_hf_enable_report_extended_audio_gateway_error_result_code(bd_addr_t bd_addr, uint8_t enable);
-void hfp_hf_disable_report_extended_audio_gateway_error_result_code(bd_addr_t bd_addr, uint8_t enable);
+void hfp_hf_enable_report_extended_audio_gateway_error_result_code(bd_addr_t bd_addr);
+void hfp_hf_disable_report_extended_audio_gateway_error_result_code(bd_addr_t bd_addr);
 
 /**
  * @brief 
