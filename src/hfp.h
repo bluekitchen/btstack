@@ -409,7 +409,7 @@ typedef enum {
      HFP_LINK_SETTINGS_S3,
      HFP_LINK_SETTINGS_S4,
      HFP_LINK_SETTINGS_T1,
-     HFP_LINK_SETTINGS_T1
+     HFP_LINK_SETTINGS_T2
 } hfp_link_setttings_t;
 
 typedef enum{
