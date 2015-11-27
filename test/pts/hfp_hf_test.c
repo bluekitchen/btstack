@@ -114,8 +114,6 @@ static void show_usage(void){
     printf("g - query network operator name\n");
     printf("G - reject call\n");
 
-    printf("h - enable Calling Line Identification.\n");
-
     printf("i - dial 1234567\n");
     printf("I - redial\n");
     
@@ -208,10 +206,6 @@ static int stdin_process(struct data_source *ds){
         case 'g':
             printf("Query operator.\n");
             hfp_hf_query_operator_selection(device_addr);
-            break;
-        case 'h':
-            printf("Enable Calling Line Identification.\n");
-            hfp_hf_enable_calling_line_identification(device_addr);
             break;
         case 't':
             printf("Terminate HCI connection.\n");
