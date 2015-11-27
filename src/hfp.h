@@ -390,6 +390,15 @@ typedef enum {
     HFP_RESPONSE_AND_HOLD_HELD_INCOMING_REJECTED
 } hfp_response_and_hold_state_t;
 
+typedef enum {
+    HFP_HF_QUERY_OPERATOR_FORMAT_NOT_SET = 0,
+    HFP_HF_QUERY_OPERATOR_SET_FORMAT,
+    HFP_HF_QUERY_OPERATOR_W4_SET_FORMAT_OK,
+    HFP_HF_QUERY_OPERATOR_FORMAT_SET,
+    HFP_HF_QUERY_OPERATOR_SEND_QUERY,
+    HPF_HF_QUERY_OPERATOR_W4_RESULT
+} hfp_hf_query_operator_state_t;
+
 typedef enum{
     HFP_NONE_SM,
     HFP_SLC_SM,
@@ -525,6 +534,9 @@ typedef struct hfp_connection {
     int send_ag_status_indicators;
     int send_response_and_hold_active;
     int send_response_and_hold_status;
+
+    // HF only
+    hfp_hf_query_operator_state_t hf_query_operator_state;
 
     timer_source_t hfp_timeout;
 } hfp_connection_t;

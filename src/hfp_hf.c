@@ -333,17 +333,19 @@ static int hfp_hf_run_for_context_service_level_connection_queries(hfp_connectio
         return done;
     }
 
-    if (context->command == HFP_CMD_QUERY_OPERATOR_SELECTION_NAME_FORMAT){
-        context->ok_pending = 1;
-        done = 1;
-        hfp_hf_cmd_query_operator_name_format(context->rfcomm_cid);
-        return done;
-    }
-    if (context->command == HFP_CMD_QUERY_OPERATOR_SELECTION_NAME){
-        context->ok_pending = 1;
-        done = 1;
-        hfp_hf_cmd_query_operator_name(context->rfcomm_cid);
-        return done;
+    switch (context->hf_query_operator_state){
+        case HFP_HF_QUERY_OPERATOR_SET_FORMAT:
+            context->hf_query_operator_state = HFP_HF_QUERY_OPERATOR_W4_SET_FORMAT_OK;
+            context->ok_pending = 1;
+            hfp_hf_cmd_query_operator_name_format(context->rfcomm_cid);
+            return 1;            
+        case HFP_HF_QUERY_OPERATOR_SEND_QUERY:
+            context->hf_query_operator_state = HPF_HF_QUERY_OPERATOR_W4_RESULT;
+            context->ok_pending = 1;
+            hfp_hf_cmd_query_operator_name(context->rfcomm_cid);
+            return 1;
+        default:
+            break;         
     }
 
     if (context->enable_extended_audio_gateway_error_report){
@@ -366,7 +368,6 @@ static int codecs_exchange_state_machine(hfp_connection_t * context){
     */
 
     if (context->ok_pending) return 0;
-    printf(" -> State machine: CC\n");
     
     switch (context->command){
         case HFP_CMD_AVAILABLE_CODECS:
@@ -545,20 +546,23 @@ static void hfp_hf_switch_on_ok(hfp_connection_t *context){
                 break;
             }
 
-            if (context->command == HFP_CMD_QUERY_OPERATOR_SELECTION_NAME_FORMAT){
-                context->command = HFP_CMD_QUERY_OPERATOR_SELECTION_NAME;
-                break;
+            switch (context->hf_query_operator_state){
+                case HFP_HF_QUERY_OPERATOR_W4_SET_FORMAT_OK:
+                    printf("Format set, querying name\n");
+                    context->hf_query_operator_state = HFP_HF_QUERY_OPERATOR_SEND_QUERY;
+                    break;
+                case HPF_HF_QUERY_OPERATOR_W4_RESULT:
+                    context->hf_query_operator_state = HFP_HF_QUERY_OPERATOR_FORMAT_SET;
+                    hfp_emit_network_operator_event(hfp_callback, 0, context->network_operator);
+                    break;
+                default:
+                    break;
             }
-            
-            if (context->command == HFP_CMD_QUERY_OPERATOR_SELECTION_NAME){
-                hfp_emit_network_operator_event(hfp_callback, 0, context->network_operator);
-                break;
-            }
+
             if (context->enable_extended_audio_gateway_error_report){
                 context->enable_extended_audio_gateway_error_report = 0;
                 break;
             }
-            printf(" CC received ok\n");
         
             switch (context->codecs_state){
                 case HFP_CODECS_RECEIVED_TRIGGER_CODEC_EXCHANGE:
@@ -619,6 +623,7 @@ static void hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8
         default:
             break;
     }
+    hfp_run_for_context(context);
 }
 
 static void hfp_run(){
@@ -735,7 +740,16 @@ void hfp_hf_query_operator_selection(bd_addr_t bd_addr){
         log_error("HFP HF: connection doesn't exist.");
         return;
     }
-    connection->command = HFP_CMD_QUERY_OPERATOR_SELECTION_NAME_FORMAT;
+    switch (connection->hf_query_operator_state){
+        case HFP_HF_QUERY_OPERATOR_FORMAT_NOT_SET:
+            connection->hf_query_operator_state = HFP_HF_QUERY_OPERATOR_SET_FORMAT;
+            break;
+        case HFP_HF_QUERY_OPERATOR_FORMAT_SET:
+            connection->hf_query_operator_state = HFP_HF_QUERY_OPERATOR_SEND_QUERY;
+            break;
+        default:
+            break;
+    }
     hfp_run_for_context(connection);
 }
 

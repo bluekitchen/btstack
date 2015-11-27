@@ -109,6 +109,9 @@ static void show_usage(void){
     printf("e - disable reporting of the extended AG error result code\n");
     
     printf("f - answer incoming call\n");
+
+    printf("g - query network operator name\n");
+
     printf("t - terminate connection\n");
 
     printf("---\n");
@@ -161,6 +164,10 @@ static int stdin_process(struct data_source *ds){
         case 'f':
             printf("Answer incoming call.\n");
             hfp_hf_answer_incoming_call(device_addr);
+            break;
+        case 'g':
+            printf("Query operator.\n");
+            hfp_hf_query_operator_selection(device_addr);
             break;
         case 't':
             printf("Terminate HCI connection.\n");
