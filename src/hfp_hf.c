@@ -443,8 +443,7 @@ static int hfp_hf_run_for_audio_connection(hfp_connection_t * context){
     if (context->establish_audio_connection){
         context->state = HFP_W4_SCO_CONNECTED;
         context->establish_audio_connection = 0;
-        // only support HV1 + HV3 to avoid eSCO
-        hci_send_cmd(&hci_setup_synchronous_connection, context->con_handle, 8000, 8000, 0xFFFF, hci_get_sco_voice_setting(), 0xFF, 0x03c5);
+        hfp_setup_synchronous_connection(context->con_handle, context->link_setting);
         return 1;
     }
 
@@ -501,9 +500,23 @@ static void hfp_run_for_context(hfp_connection_t * context){
             break;
     }
 }
+
+static void hfp_init_link_settings(hfp_connection_t * context){
+    // determine highest possible link setting
+    context->link_setting = HFP_LINK_SETTINGS_D1;
+    if (hci_remote_eSCO_supported(context->con_handle)){
+        context->link_setting = HFP_LINK_SETTINGS_S3;
+        if ((hfp_supported_features             & (1<<HFP_HFSF_ESCO_S4))
+        &&  (context->remote_supported_features & (1<<HFP_AGSF_ESCO_S4))){
+            context->link_setting = HFP_LINK_SETTINGS_S4;
+        }
+    }
+}
+
 static void hfp_ag_slc_established(hfp_connection_t * context){
     context->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
     hfp_emit_event(hfp_callback, HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED, 0);
+    hfp_init_link_settings(context);
 }
 
 static void hfp_hf_switch_on_ok(hfp_connection_t *context){
