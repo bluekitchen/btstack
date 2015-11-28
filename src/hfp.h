@@ -563,8 +563,11 @@ typedef struct hfp_connection {
     uint8_t hf_send_chld_2;
     uint8_t hf_send_chld_3;
     uint8_t hf_send_chld_4;
+    uint8_t hf_send_chld_x;
+    uint8_t hf_send_chld_x_index;
     char    hf_send_dtmf_code; 
     uint8_t hf_send_binp;
+    uint8_t hf_send_clcc;
     uint8_t hf_activate_call_waiting_notification;
     uint8_t hf_deactivate_call_waiting_notification;
     
@@ -575,6 +578,13 @@ typedef struct hfp_connection {
     uint8_t hf_activate_voice_recognition_notification;
     uint8_t hf_deactivate_voice_recognition_notification;
 
+    uint8_t clcc_idx;
+    uint8_t clcc_dir;
+    uint8_t clcc_status;
+    uint8_t clcc_mode;
+    uint8_t clcc_mpty;
+
+    // also used for CLCC if set
     uint8_t bnip_type;       // 0 == not set
     char    bnip_number[25]; // 
 

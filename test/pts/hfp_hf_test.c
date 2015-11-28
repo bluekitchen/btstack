@@ -153,6 +153,9 @@ static void show_usage(void){
     printf("0123456789#*-+ - send DTMF dial tones\n");
 
     printf("x - request phone number for voice tag\n");
+    printf("X - current call status\n");
+    printf("y - release call with index 2 (ECC)\n");
+    printf("Y - private consulation with call 2(ECC)\n");
 
     printf("---\n");
     printf("Ctrl-c - exit\n");
@@ -234,10 +237,6 @@ static int stdin_process(struct data_source *ds){
         case 't':
             printf("Terminate HCI connection.\n");
             gap_disconnect(handle);
-            break;
-        case 'y':
-            memcpy(device_addr, phone_addr, 6);
-            printf("Use iPhone %s as Audiogateway.\n", bd_addr_to_str(device_addr));
             break;
         case 'i':
             printf("Dial 1234567\n");
@@ -346,6 +345,22 @@ static int stdin_process(struct data_source *ds){
         case 'x':
             printf("Request phone number for voice tag\n");
             hfp_hf_request_phone_number_for_voice_tag(device_addr);
+            break;
+        case 'X':
+            printf("Query current call status\n");
+            hfp_hf_query_current_call_status(device_addr);
+            break;
+        case 'y':
+            printf("Release call with index 2\n");
+            hfp_hf_release_call_with_index(device_addr, 2);
+            break;
+        case 'Y':
+            printf("Private consulation with call 2\n");
+            hfp_hf_private_consultation_with_call(device_addr, 2);
+            break;
+        case 'z':
+            memcpy(device_addr, phone_addr, 6);
+            printf("Use iPhone %s as Audiogateway.\n", bd_addr_to_str(device_addr));
             break;
         default:
             show_usage();

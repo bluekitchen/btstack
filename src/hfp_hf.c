@@ -319,6 +319,12 @@ static int hfp_hf_send_binp(uint16_t cid){
     return send_str_over_rfcomm(cid, buffer);
 }
 
+static int hfp_hf_send_clcc(uint16_t cid){
+    char buffer[20];
+    sprintf(buffer, "AT%s\r\n", HFP_LIST_CURRENT_CALLS);
+    return send_str_over_rfcomm(cid, buffer);
+}
+
 static void hfp_emit_ag_indicator_event(hfp_callback_t callback, int status, hfp_ag_indicator_t indicator){
     if (!callback) return;
     uint8_t event[6+HFP_MAX_INDICATOR_DESC_SIZE+1];
@@ -679,6 +685,13 @@ static void hfp_run_for_context(hfp_connection_t * context){
         return;
     }
 
+    if (context->hf_send_chld_x){
+        context->hf_send_chld_x = 0;
+        context->ok_pending = 1;
+        hfp_hf_send_chld(context->rfcomm_cid, context->hf_send_chld_x_index);
+        return;
+    }
+
     if (context->hf_send_dtmf_code){
         char code = context->hf_send_dtmf_code;
         context->hf_send_dtmf_code = 0;
@@ -694,6 +707,13 @@ static void hfp_run_for_context(hfp_connection_t * context){
         return;
     }
     
+    if (context->hf_send_clcc){
+        context->hf_send_clcc = 0;
+        context->ok_pending = 1;
+        hfp_hf_send_clcc(context->rfcomm_cid);
+        return;
+    }
+
     if (done) return;
     // deal with disconnect
     switch (context->state){ 
@@ -853,6 +873,11 @@ static void hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8
     } 
 
     switch (context->command){
+        case HFP_CMD_LIST_CURRENT_CALLS:
+            printf("Enhanced Call Status: idx %u, dir %u, status %u, mpty %u, number %s, type %u\n",
+                context->clcc_idx, context->clcc_dir, context->clcc_status, context->clcc_mpty,
+                context->bnip_number, context->bnip_type);
+            break;
         case HFP_CMD_SET_SPEAKER_GAIN:
             context->command = HFP_CMD_NONE;
             value = atoi((char*)context->line_buffer);
@@ -1176,10 +1201,29 @@ void hfp_hf_connect_calls(bd_addr_t addr){
     }
 }
 
-/**
- * @brief
- */
-void hfp_hf_connect_calls(bd_addr_t addr);
+void hfp_hf_release_call_with_index(bd_addr_t addr, int index){
+    hfp_hf_establish_service_level_connection(addr);
+    hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(addr);
+    
+    if (hfp_callsetup_status == HFP_CALLSETUP_STATUS_INCOMING_CALL_SETUP_IN_PROGRESS ||
+        hfp_call_status == HFP_CALL_STATUS_ACTIVE_OR_HELD_CALL_IS_PRESENT){
+        connection->hf_send_chld_x = 1;
+        connection->hf_send_chld_x_index = 10 + index;
+        hfp_run_for_context(connection);
+    }
+}
+
+void hfp_hf_private_consultation_with_call(bd_addr_t addr, int index){
+    hfp_hf_establish_service_level_connection(addr);
+    hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(addr);
+    
+    if (hfp_callsetup_status == HFP_CALLSETUP_STATUS_INCOMING_CALL_SETUP_IN_PROGRESS ||
+        hfp_call_status == HFP_CALL_STATUS_ACTIVE_OR_HELD_CALL_IS_PRESENT){
+        connection->hf_send_chld_x = 1;
+        connection->hf_send_chld_x_index = 20 + index;
+        hfp_run_for_context(connection);
+    }
+}
 
 void hfp_hf_dial_number(bd_addr_t bd_addr, char * number){
     hfp_hf_establish_service_level_connection(bd_addr);
@@ -1334,4 +1378,15 @@ void hfp_hf_request_phone_number_for_voice_tag(bd_addr_t addr){
     connection->hf_send_binp = 1;
     hfp_run_for_context(connection);
 }
+
+/*
+ * @brief
+ */
+void hfp_hf_query_current_call_status(bd_addr_t addr){
+    hfp_hf_establish_service_level_connection(addr);
+    hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(addr);
+    connection->hf_send_clcc = 1;
+    hfp_run_for_context(connection);
+}
+
 

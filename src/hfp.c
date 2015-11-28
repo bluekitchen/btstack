@@ -1066,6 +1066,37 @@ void hfp_parse(hfp_connection_t * context, uint8_t byte, int isHandsFree){
 static void parse_sequence(hfp_connection_t * context){
     int value;
     switch (context->command){
+        case HFP_CMD_LIST_CURRENT_CALLS:
+            switch(context->parser_item_index){
+                case 0:
+                    value = atoi((char *)&context->line_buffer[0]);
+                    context->clcc_idx = value;
+                    break;
+                case 1:
+                    value = atoi((char *)&context->line_buffer[0]);
+                    context->clcc_dir = value;
+                    break;
+                case 2:
+                    value = atoi((char *)&context->line_buffer[0]);
+                    context->clcc_status = value;
+                    break;
+                case 3:
+                    value = atoi((char *)&context->line_buffer[0]);
+                    context->clcc_mpty = value;
+                    break;
+                case 4:
+                    strncpy(context->bnip_number, (char *)context->line_buffer, sizeof(context->bnip_number));
+                    context->bnip_number[sizeof(context->bnip_number)-1] = 0;
+                    break;
+                case 5:
+                    value = atoi((char *)&context->line_buffer[0]);
+                    context->bnip_type = value;
+                    break;
+                default:
+                    break;
+            }
+            context->parser_item_index++;
+            break;
         case HFP_CMD_SET_MICROPHONE_GAIN:
             value = atoi((char *)&context->line_buffer[0]);
             context->microphone_gain = value;
