@@ -144,18 +144,24 @@ static void show_usage(void){
 
     printf("t - terminate connection\n");
 
-    printf("u - send 'user busy' (Three-Way Call 0)\n");
-    printf("U - end active call and accept other call' (Three-Way Call 1)\n");
-    printf("v - Swap active call and hold/waiting call (Three-Way Call 2)\n");
-    printf("V - Join held call (Three-Way Call 3)\n");
-    printf("w - Connect calls (Three-Way Call 4)\n");
+    printf("u - send 'user busy' (TWC 0)\n");
+    printf("U - end active call and accept other call' (TWC 1)\n");
+    printf("v - Swap active call and hold/waiting call (TWC 2)\n");
+    printf("V - Join held call (TWC 3)\n");
+    printf("w - Connect calls (TWC 4)\n");
     printf("W - redial\n");
+
     printf("0123456789#*-+ - send DTMF dial tones\n");
 
     printf("x - request phone number for voice tag\n");
     printf("X - current call status\n");
     printf("y - release call with index 2 (ECC)\n");
     printf("Y - private consulation with call 2(ECC)\n");
+
+    printf("[ - Query Response and Hold status (RHH ?)\n");
+    printf("] - Place call in a response and held state(RHH 0)\n");
+    printf("{ - Accept held call(RHH 1)\n");
+    printf("} - Reject held call(RHH 2)\n");
 
     printf("---\n");
     printf("Ctrl-c - exit\n");
@@ -361,6 +367,22 @@ static int stdin_process(struct data_source *ds){
         case 'z':
             memcpy(device_addr, phone_addr, 6);
             printf("Use iPhone %s as Audiogateway.\n", bd_addr_to_str(device_addr));
+            break;
+        case '[':
+            printf("Query Response and Hold status (RHH ?)\n");
+            hfp_hf_rrh_query_status(device_addr);
+            break;
+        case ']':
+            printf("Place call in a response and held state (RHH 0)\n");
+            hfp_hf_rrh_hold_call(device_addr);
+           break;
+        case '{':
+            printf("Accept held call (RHH 1)\n");
+            hfp_hf_rrh_accept_held_call(device_addr);
+            break;
+        case '}':
+            printf("Reject held call (RHH 2)\n");
+            hfp_hf_rrh_reject_held_call(device_addr);
             break;
         default:
             show_usage();

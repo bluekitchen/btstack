@@ -714,6 +714,26 @@ static void hfp_run_for_context(hfp_connection_t * context){
         return;
     }
 
+    if (context->hf_send_rrh){
+        context->hf_send_rrh = 0;
+        char buffer[20];
+        switch (context->hf_send_rrh_command){
+            case '?':
+                sprintf(buffer, "AT%s?\r\n", HFP_RESPONSE_AND_HOLD);
+                send_str_over_rfcomm(context->rfcomm_cid, buffer);
+                return;
+            case '0':
+            case '1':
+            case '2':
+                sprintf(buffer, "AT%s=%c\r\n", HFP_RESPONSE_AND_HOLD, context->hf_send_rrh_command);
+                send_str_over_rfcomm(context->rfcomm_cid, buffer);
+                return;
+            default:
+                break;
+        }
+        return;
+    }
+
     if (done) return;
     // deal with disconnect
     switch (context->state){ 
@@ -873,7 +893,12 @@ static void hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8
     } 
 
     switch (context->command){
+        case HFP_CMD_RESPONSE_AND_HOLD_STATUS:
+            context->command = HFP_CMD_NONE;
+            printf("Response and Hold status: %s\n", context->line_buffer);
+            break;
         case HFP_CMD_LIST_CURRENT_CALLS:
+            context->command = HFP_CMD_NONE;
             printf("Enhanced Call Status: idx %u, dir %u, status %u, mpty %u, number %s, type %u\n",
                 context->clcc_idx, context->clcc_dir, context->clcc_status, context->clcc_mpty,
                 context->bnip_number, context->bnip_type);
@@ -1390,3 +1415,47 @@ void hfp_hf_query_current_call_status(bd_addr_t addr){
 }
 
 
+/*
+ * @brief
+ */
+void hfp_hf_rrh_query_status(bd_addr_t addr){
+    hfp_hf_establish_service_level_connection(addr);
+    hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(addr);
+    connection->hf_send_rrh = 1;
+    connection->hf_send_rrh_command = '?';
+    hfp_run_for_context(connection);
+}
+
+/*
+ * @brief
+ */
+void hfp_hf_rrh_hold_call(bd_addr_t addr){
+    hfp_hf_establish_service_level_connection(addr);
+    hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(addr);
+    connection->hf_send_rrh = 1;
+    connection->hf_send_rrh_command = '0';
+    hfp_run_for_context(connection);
+}
+
+/*
+ * @brief
+ */
+void hfp_hf_rrh_accept_held_call(bd_addr_t addr){
+    hfp_hf_establish_service_level_connection(addr);
+    hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(addr);
+    connection->hf_send_rrh = 1;
+    connection->hf_send_rrh_command = '1';
+    hfp_run_for_context(connection);
+}
+
+/*
+ * @brief
+ */
+void hfp_hf_rrh_reject_held_call(bd_addr_t addr)
+{
+    hfp_hf_establish_service_level_connection(addr);
+    hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(addr);
+    connection->hf_send_rrh = 1;
+    connection->hf_send_rrh_command = '2';
+    hfp_run_for_context(connection);
+}

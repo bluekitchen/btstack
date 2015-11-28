@@ -732,10 +732,10 @@ static hfp_command_t parse_command(const char * line_buffer, int isHandsFree){
         if (strncmp(line_buffer+strlen(HFP_RESPONSE_AND_HOLD)+offset, "?", 1) == 0){
             return HFP_CMD_RESPONSE_AND_HOLD_QUERY;
         }
-
         if (strncmp(line_buffer+strlen(HFP_RESPONSE_AND_HOLD)+offset, "=", 1) == 0){
             return HFP_CMD_RESPONSE_AND_HOLD_COMMAND;
         }
+        return HFP_CMD_RESPONSE_AND_HOLD_STATUS;
     }
 
     if (strncmp(line_buffer+offset, HFP_INDICATOR, strlen(HFP_INDICATOR)) == 0){

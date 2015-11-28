@@ -195,6 +195,7 @@ typedef enum {
     HFP_CMD_LIST_CURRENT_CALLS,
     HFP_CMD_RESPONSE_AND_HOLD_QUERY,
     HFP_CMD_RESPONSE_AND_HOLD_COMMAND,
+    HFP_CMD_RESPONSE_AND_HOLD_STATUS,
     HFP_CMD_HF_INDICATOR_STATUS
 } hfp_command_t;
  
@@ -568,6 +569,8 @@ typedef struct hfp_connection {
     char    hf_send_dtmf_code; 
     uint8_t hf_send_binp;
     uint8_t hf_send_clcc;
+    uint8_t hf_send_rrh;
+    char    hf_send_rrh_command;
     uint8_t hf_activate_call_waiting_notification;
     uint8_t hf_deactivate_call_waiting_notification;
     
