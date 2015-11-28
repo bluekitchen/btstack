@@ -311,6 +311,14 @@ static int stdin_process(struct data_source *ds){
             printf("Set microphone gain to 9\n");
             hfp_hf_set_microphone_gain(device_addr, 9);
             break;
+        case 's':
+            printf("Set microphone gain to 12\n");
+            hfp_hf_set_microphone_gain(device_addr, 12);
+            break;
+        case 'S':
+            printf("Set microphone gain to 15\n");
+            hfp_hf_set_microphone_gain(device_addr, 15);
+            break;
         case 'u':
             printf("Send 'user busy' (Three-Way Call 0)\n");
             hfp_hf_user_busy(device_addr);

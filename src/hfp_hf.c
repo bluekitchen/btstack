@@ -71,6 +71,9 @@ static uint8_t hfp_indicators_nr = 0;
 static uint8_t hfp_indicators[HFP_MAX_NUM_HF_INDICATORS];
 static uint8_t hfp_indicators_status;
 
+static uint8_t hfp_hf_speaker_gain = 9;
+static uint8_t hfp_hf_microphone_gain = 9;
+
 static hfp_callback_t hfp_callback;
 
 static hfp_call_status_t hfp_call_status;
@@ -720,6 +723,13 @@ static void hfp_ag_slc_established(hfp_connection_t * context){
     context->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
     hfp_emit_event(hfp_callback, HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED, 0);
     hfp_init_link_settings(context);
+    // restore volume settings
+    context->speaker_gain = hfp_hf_speaker_gain;
+    context->send_speaker_gain = 1;
+    hfp_emit_event(hfp_callback, HFP_SUBEVENT_SPEAKER_VOLUME, hfp_hf_speaker_gain);
+    context->microphone_gain = hfp_hf_microphone_gain;
+    context->send_microphone_gain = 1;
+    hfp_emit_event(hfp_callback, HFP_SUBEVENT_MICROPHONE_VOLUME, hfp_hf_microphone_gain);
 }
 
 static void hfp_hf_switch_on_ok(hfp_connection_t *context){
@@ -836,7 +846,7 @@ static void hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8
     if (!context) return;
 
     packet[size] = 0;
-    int pos, i;
+    int pos, i, value;
     //printf("\nHF received: %s", packet+2);
     for (pos = 0; pos < size ; pos++){
         hfp_parse(context, packet[pos], 1);
@@ -845,11 +855,15 @@ static void hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8
     switch (context->command){
         case HFP_CMD_SET_SPEAKER_GAIN:
             context->command = HFP_CMD_NONE;
-            hfp_emit_event(hfp_callback, HFP_SUBEVENT_SPEAKER_VOLUME, atoi((char*)context->line_buffer));
+            value = atoi((char*)context->line_buffer);
+            hfp_hf_speaker_gain = value;
+            hfp_emit_event(hfp_callback, HFP_SUBEVENT_SPEAKER_VOLUME, value);
             break;
         case HFP_CMD_SET_MICROPHONE_GAIN:
             context->command = HFP_CMD_NONE;
-            hfp_emit_event(hfp_callback, HFP_SUBEVENT_MICROPHONE_VOLUME, atoi((char*)context->line_buffer));
+            value = atoi((char*)context->line_buffer);
+            hfp_hf_microphone_gain = value;
+            hfp_emit_event(hfp_callback, HFP_SUBEVENT_MICROPHONE_VOLUME, value);
             break;
         case HFP_CMD_AG_SENT_PHONE_NUMBER:
             context->command = HFP_CMD_NONE;
