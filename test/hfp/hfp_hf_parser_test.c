@@ -161,22 +161,22 @@ TEST(HFPParser, HFP_HF_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES){
     CHECK_EQUAL(0, strcmp("3", (char*)context.remote_call_services[4].name));
 } 
 
-TEST(HFPParser, HFP_HF_GENERIC_STATUS_INDICATOR){
-    sprintf(packet, "\r\n%s:0,1,2,3,4\r\n\r\nOK\r\n", HFP_GENERIC_STATUS_INDICATOR);
-    //context.command = HFP_CMD_RETRIEVE_GENERIC_STATUS_INDICATORS;
-    context.state = HFP_W4_RETRIEVE_GENERIC_STATUS_INDICATORS;
+// TEST(HFPParser, HFP_HF_GENERIC_STATUS_INDICATOR){
+//     sprintf(packet, "\r\n%s:0,1,2,3,4\r\n\r\nOK\r\n", HFP_GENERIC_STATUS_INDICATOR);
+//     //context.command = HFP_CMD_RETRIEVE_GENERIC_STATUS_INDICATORS;
+//     context.state = HFP_W4_RETRIEVE_GENERIC_STATUS_INDICATORS;
     
-    for (pos = 0; pos < strlen(packet); pos++){
-        hfp_parse(&context, packet[pos], 1);
-    }
+//     for (pos = 0; pos < strlen(packet); pos++){
+//         hfp_parse(&context, packet[pos], 1);
+//     }
     
-    CHECK_EQUAL(HFP_CMD_OK, context.command);
-    CHECK_EQUAL(5, context.generic_status_indicators_nr);
+//     CHECK_EQUAL(HFP_CMD_OK, context.command);
+//     CHECK_EQUAL(5, context.generic_status_indicators_nr);
     
-    for (pos = 0; pos < context.generic_status_indicators_nr; pos++){
-        CHECK_EQUAL(pos, context.generic_status_indicators[pos].uuid);
-    } 
-}
+//     for (pos = 0; pos < context.generic_status_indicators_nr; pos++){
+//         CHECK_EQUAL(pos, context.generic_status_indicators[pos].uuid);
+//     } 
+// }
 
 TEST(HFPParser, HFP_HF_GENERIC_STATUS_INDICATOR_STATE){
     sprintf(packet, "\r\n%s:0,1\r\n\r\nOK\r\n", HFP_GENERIC_STATUS_INDICATOR);
