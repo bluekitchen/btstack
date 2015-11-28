@@ -284,6 +284,10 @@ uint16_t hci_get_sco_voice_setting(){
     return 0x40;
 }
 
+int hci_remote_eSCO_supported(hci_con_handle_t handle){
+    return 0;
+}
+
 void inject_rfcomm_command_to_hf(uint8_t * data, int len){
     if (memcmp((char*)data, "AT", 2) == 0) return;
     
