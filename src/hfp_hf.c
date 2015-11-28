@@ -843,6 +843,14 @@ static void hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8
     } 
 
     switch (context->command){
+        case HFP_CMD_SET_SPEAKER_GAIN:
+            context->command = HFP_CMD_NONE;
+            hfp_emit_event(hfp_callback, HFP_SUBEVENT_SPEAKER_VOLUME, atoi((char*)context->line_buffer));
+            break;
+        case HFP_CMD_SET_MICROPHONE_GAIN:
+            context->command = HFP_CMD_NONE;
+            hfp_emit_event(hfp_callback, HFP_SUBEVENT_MICROPHONE_VOLUME, atoi((char*)context->line_buffer));
+            break;
         case HFP_CMD_AG_SENT_PHONE_NUMBER:
             context->command = HFP_CMD_NONE;
             hfp_emit_string_event(hfp_callback, HFP_SUBEVENT_NUMBER_FOR_VOICE_TAG, context->bnip_number);

@@ -357,7 +357,9 @@ static void packet_handler(uint8_t * event, uint16_t event_size){
     if (event[0] != HCI_EVENT_HFP_META) return;
     if (event[3]
      && event[2] != HFP_SUBEVENT_EXTENDED_AUDIO_GATEWAY_ERROR
-     && event[2] != HFP_SUBEVENT_NUMBER_FOR_VOICE_TAG){
+     && event[2] != HFP_SUBEVENT_NUMBER_FOR_VOICE_TAG
+     && event[2] != HFP_SUBEVENT_SPEAKER_VOLUME
+     && event[2] != HFP_SUBEVENT_MICROPHONE_VOLUME){
         printf("ERROR, status: %u\n", event[3]);
         return;
     }
@@ -400,6 +402,12 @@ static void packet_handler(uint8_t * event, uint16_t event_size){
             break;
         case HFP_SUBEVENT_NUMBER_FOR_VOICE_TAG:
             printf("Phone number for voice tag: %s\n", (const char *) &event[3]);
+            break;
+        case HFP_SUBEVENT_SPEAKER_VOLUME:
+            printf("Speaker volume: %u\n", event[3]);
+            break;
+        case HFP_SUBEVENT_MICROPHONE_VOLUME:
+            printf("Microphone volume: %u\n", event[3]);
             break;
         default:
             printf("event not handled %u\n", event[2]);

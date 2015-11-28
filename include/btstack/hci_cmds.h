@@ -648,6 +648,8 @@ extern "C" {
 #define HFP_SUBEVENT_CALL_ANSWERED                         0x13
 #define HFP_SUBEVENT_CONFERENCE_CALL                       0x14
 #define HFP_SUBEVENT_RING                                  0x15
+#define HFP_SUBEVENT_SPEAKER_VOLUME                        0x16
+#define HFP_SUBEVENT_MICROPHONE_VOLUME                     0x17
 
 // ANCS Client
 #define ANCS_CLIENT_CONNECTED                              0xF0
