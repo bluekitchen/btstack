@@ -771,7 +771,7 @@ static hfp_command_t parse_command(const char * line_buffer, int isHandsFree){
         if (strncmp(line_buffer+strlen(HFP_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES)+offset, "=?", 2) == 0){
             return HFP_CMD_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES;
         }
-        if (strncmp(line_buffer+strlen(HFP_GENERIC_STATUS_INDICATOR)+offset, "=", 1) == 0){
+        if (strncmp(line_buffer+strlen(HFP_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES)+offset, "=", 1) == 0){
             return HFP_CMD_CALL_HOLD;    
         }
 
@@ -779,8 +779,9 @@ static hfp_command_t parse_command(const char * line_buffer, int isHandsFree){
     } 
 
     if (strncmp(line_buffer+offset, HFP_GENERIC_STATUS_INDICATOR, strlen(HFP_GENERIC_STATUS_INDICATOR)) == 0){
-        if (isHandsFree) return HFP_CMD_UNKNOWN;
-
+        if (isHandsFree) {
+            return HFP_CMD_SET_GENERIC_STATUS_INDICATOR_STATUS;
+        }
         if (strncmp(line_buffer+strlen(HFP_GENERIC_STATUS_INDICATOR)+offset, "=?", 2) == 0){
             return HFP_CMD_RETRIEVE_GENERIC_STATUS_INDICATORS;
         } 
@@ -827,12 +828,12 @@ static hfp_command_t parse_command(const char * line_buffer, int isHandsFree){
     } 
     
     if (strncmp(line_buffer+offset, "AT+", 3) == 0){
-        printf(" process unknown HF command %s \n", line_buffer);
+        log_info("process unknown HF command %s \n", line_buffer);
         return HFP_CMD_UNKNOWN;
     } 
     
     if (strncmp(line_buffer+offset, "+", 1) == 0){
-        printf(" process unknown AG command %s \n", line_buffer);
+        log_info(" process unknown AG command %s \n", line_buffer);
         return HFP_CMD_UNKNOWN;
     }
     
@@ -1066,8 +1067,31 @@ void hfp_parse(hfp_connection_t * context, uint8_t byte, int isHandsFree){
 static void parse_sequence(hfp_connection_t * context){
     int value;
     switch (context->command){
+        case HFP_CMD_SET_GENERIC_STATUS_INDICATOR_STATUS:
+            value = atoi((char *)&context->line_buffer[0]);
+            int i;
+            switch (context->parser_item_index){
+                case 0:
+                    for (i=0;i<context->generic_status_indicators_nr;i++){
+                        if (context->generic_status_indicators[i].uuid == value){
+                            context->parser_indicator_index = i;
+                            break;
+                        }
+                    }
+                    break;
+                case 1:
+                    if (context->parser_indicator_index <0) break;
+                    context->generic_status_indicators[context->parser_indicator_index].state = value;
+                    log_info("HFP_CMD_SET_GENERIC_STATUS_INDICATOR_STATUS set indicator at index %u, to %u\n",
+                     context->parser_item_index, value);
+                    break;
+                default:
+                    break;
+            }
+            context->parser_item_index++;
+            break;
+
         case HFP_CMD_GET_SUBSCRIBER_NUMBER_INFORMATION:
-            // printf("HFP_CMD_GET_SUBSCRIBER_NUMBER_INFORMATION (%u), '%s'\n", context->parser_item_index, (char*)context->line_buffer);
             switch(context->parser_item_index){
                 case 0:
                     strncpy(context->bnip_number, (char *)context->line_buffer, sizeof(context->bnip_number));

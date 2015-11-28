@@ -103,7 +103,7 @@ static void show_usage(void){
     printf("C - enable registration status update for all AG indicators\n");
     
     printf("d - query network operator.\n");
-    printf("D - set HFP AG registration status update for individual indicators\n");
+    printf("D - set HFP AG registration status update for individual indicators (IIA)\n");
 
     printf("e - disable reporting of the extended AG error result code\n");
     printf("E - enable reporting of the extended AG error result code\n");
@@ -154,7 +154,7 @@ static void show_usage(void){
     printf("0123456789#*-+ - send DTMF dial tones\n");
 
     printf("x - request phone number for voice tag\n");
-    printf("X - current call status\n");
+    printf("X - current call status (ECS)\n");
     printf("y - release call with index 2 (ECC)\n");
     printf("Y - private consulation with call 2(ECC)\n");
 
@@ -163,7 +163,9 @@ static void show_usage(void){
     printf("{ - Accept held call(RHH 1)\n");
     printf("} - Reject held call(RHH 2)\n");
 
-    printf("? - Query Subscriber Number\n");
+    printf("? - Query Subscriber Number (NUM)\n");
+
+    printf("! - Update HF indicator with assigned number 1 (HFI)\n");
 
     printf("---\n");
     printf("Ctrl-c - exit\n");
@@ -390,6 +392,11 @@ static int stdin_process(struct data_source *ds){
             printf("Query Subscriber Number\n");
             hfp_hf_query_subscriber_number(device_addr);
             break;
+        case '!':
+            printf("Update HF indicator with assigned number 1 (HFI)\n");
+            hfp_hf_set_hf_indicator(device_addr, 1, 1);
+            break;
+
         default:
             show_usage();
             break;

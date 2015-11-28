@@ -305,6 +305,11 @@ void hfp_hf_rrh_reject_held_call(bd_addr_t addr);
  */
 void hfp_hf_query_subscriber_number(bd_addr_t addr);
 
+/*
+ * @brief
+ */
+void hfp_hf_set_hf_indicator(bd_addr_t addr, int assigned_number, int value);
+
 /* API_END */
 
 #if defined __cplusplus

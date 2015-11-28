@@ -69,7 +69,8 @@ static uint8_t hfp_codecs[HFP_MAX_NUM_CODECS];
 
 static uint8_t hfp_indicators_nr = 0;
 static uint8_t hfp_indicators[HFP_MAX_NUM_HF_INDICATORS];
-static uint8_t hfp_indicators_status;
+static uint32_t hfp_indicators_value[HFP_MAX_NUM_HF_INDICATORS];
+static uint16_t hfp_indicators_status;
 
 static uint8_t hfp_hf_speaker_gain = 9;
 static uint8_t hfp_hf_microphone_gain = 9;
@@ -742,6 +743,25 @@ static void hfp_run_for_context(hfp_connection_t * context){
         return;
     }
 
+    // update HF indicators
+    if (context->generic_status_update_bitmap){
+        int i;
+        for (i=0;i<hfp_indicators_nr;i++){
+            if (get_bit(context->generic_status_update_bitmap, i)){
+                if (context->generic_status_indicators[i].state){
+                    context->ok_pending = 1;
+                    context->generic_status_update_bitmap = store_bit(context->generic_status_update_bitmap, i, 0);
+                    char buffer[30];
+                    sprintf(buffer, "AT%s=%u,%u\r\n", HFP_TRANSFER_HF_INDICATOR_STATUS, hfp_indicators[i], hfp_indicators_value[i]);
+                    send_str_over_rfcomm(context->rfcomm_cid, buffer);
+                } else {
+                    printf("Not sending HF indicator %u as it is disabled\n", hfp_indicators[i]);
+                }
+                return;
+            }
+        }
+    }
+
     if (done) return;
     // deal with disconnect
     switch (context->state){ 
@@ -778,6 +798,12 @@ static void hfp_ag_slc_established(hfp_connection_t * context){
     context->microphone_gain = hfp_hf_microphone_gain;
     context->send_microphone_gain = 1;
     hfp_emit_event(hfp_callback, HFP_SUBEVENT_MICROPHONE_VOLUME, hfp_hf_microphone_gain);
+    // enable all indicators
+    int i;
+    for (i=0;i<hfp_indicators_nr;i++){
+        context->generic_status_indicators[i].uuid = hfp_indicators[i];
+        context->generic_status_indicators[i].state = 1;
+    }
 }
 
 static void hfp_hf_switch_on_ok(hfp_connection_t *context){
@@ -1481,5 +1507,26 @@ void hfp_hf_query_subscriber_number(bd_addr_t addr)
     hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(addr);
     connection->hf_send_cnum = 1;
     hfp_run_for_context(connection);
+}
+
+/*
+ * @brief
+ */
+void hfp_hf_set_hf_indicator(bd_addr_t addr, int assigned_number, int value){
+    hfp_hf_establish_service_level_connection(addr);
+    hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(addr);
+    // find index for assigned number
+    int i;
+    for (i = 0; i < hfp_indicators_nr ; i++){
+        if (hfp_indicators[i] == assigned_number){
+            // set value
+            hfp_indicators_value[i] = value;
+            // mark for update
+            connection->generic_status_update_bitmap |= (1<<i);
+            // send update
+            hfp_run_for_context(connection);
+            return;
+        }
+    }
 }
 

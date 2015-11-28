@@ -164,6 +164,7 @@ typedef enum {
     HFP_CMD_LIST_GENERIC_STATUS_INDICATORS,
     HFP_CMD_RETRIEVE_GENERIC_STATUS_INDICATORS,
     HFP_CMD_RETRIEVE_GENERIC_STATUS_INDICATORS_STATE,
+    HFP_CMD_SET_GENERIC_STATUS_INDICATOR_STATUS,
     
     HFP_CMD_TRANSFER_AG_INDICATOR_STATUS,
 
@@ -482,17 +483,20 @@ typedef struct hfp_connection {
     // TODO: rename into hf_codecs_nr
     int      remote_codecs_nr;
     uint16_t remote_codecs[HFP_MAX_INDICATOR_DESC_SIZE];
+
     int      ag_indicators_nr;
     hfp_ag_indicator_t ag_indicators[HFP_MAX_INDICATOR_DESC_SIZE];
+    uint32_t ag_indicators_status_update_bitmap;
+    uint8_t  enable_status_update_for_ag_indicators;
+
     int      remote_call_services_nr;
     hfp_call_service_t remote_call_services[HFP_MAX_INDICATOR_DESC_SIZE];
     
     // TODO: use bitmap.
     int      generic_status_indicators_nr;
+    uint32_t generic_status_update_bitmap;
     hfp_generic_status_indicator_t generic_status_indicators[HFP_MAX_INDICATOR_DESC_SIZE];
-    uint8_t  enable_status_update_for_ag_indicators;
 
-    uint32_t ag_indicators_status_update_bitmap;
     hfp_network_opearator_t network_operator;
     
     // Retrieved during service level connection establishment, not used yet
@@ -572,7 +576,7 @@ typedef struct hfp_connection {
     uint8_t hf_send_rrh;
     char    hf_send_rrh_command;
     uint8_t hf_send_cnum;
-    
+
     uint8_t hf_activate_call_waiting_notification;
     uint8_t hf_deactivate_call_waiting_notification;
     
