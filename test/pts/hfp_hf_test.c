@@ -1,3 +1,4 @@
+
 /*
  * Copyright (C) 2014 BlueKitchen GmbH
  *
@@ -76,6 +77,7 @@ static bd_addr_t pts_addr = {0x00,0x1b,0xDC,0x07,0x32,0xEF};
 static bd_addr_t phone_addr = {0xD8,0xBb,0x2C,0xDf,0xF1,0x08};
 
 static bd_addr_t device_addr;
+static uint16_t handle = -1;
 static uint8_t codecs[] = {HFP_CODEC_CVSD, HFP_CODEC_MSBC};
 static uint16_t indicators[1] = {0x01};
 
@@ -88,28 +90,70 @@ static void show_usage();
 static void show_usage(void){
     printf("\n--- Bluetooth HFP Hands-Free (HF) unit Test Console ---\n");
     printf("---\n");
-    printf("y - use PTS module as Audiogateway\n");
+
     printf("z - use iPhone as Audiogateway\n");
 
-    printf("h - establish HFP connection to device\n");
-    printf("H - release HFP connection to device\n");
+    printf("a - establish SLC connection to device\n");
+    printf("A - release SLC connection to device\n");
     
-    printf("a - establish Audio connection to device\n");
-    printf("A - release Audio connection to device\n");
+    printf("b - establish Audio connection\n");
+    printf("B - release Audio connection\n");
     
-    printf("b - establish AUDIO connection\n");
-    printf("B - release AUDIO connection\n");
+    printf("c - disable registration status update for all AG indicators\n");
+    printf("C - enable registration status update for all AG indicators\n");
     
-    printf("d - enable registration status update\n");
-    printf("D - disable registration status update\n");
+    printf("d - query network operator.\n");
+    printf("D - set HFP AG registration status update for individual indicators\n");
+
+    printf("e - disable reporting of the extended AG error result code\n");
+    printf("E - enable reporting of the extended AG error result code\n");
     
-    printf("e - enable HFP AG registration status update for individual indicators\n");
+    printf("f - answer incoming call\n");
+    printf("F - Hangup call\n");
+
+    printf("g - query network operator name\n");
+    printf("G - reject call\n");
+
+    printf("i - dial 1234567\n");
+    printf("I - dial 7654321\n");
     
-    printf("f - query network operator\n");
+    printf("j - dial #1\n");
+    printf("J - dial #99\n");
     
-    printf("g - enable reporting of the extended AG error result code\n");
-    printf("G - disable reporting of the extended AG error result code\n");
+    printf("k - deactivate call waiting notification\n");
+    printf("K - activate call waiting notification\n");
     
+    printf("l - deactivate calling line notification\n");
+    printf("L - activate calling line notification\n");
+    
+    printf("m - deactivate echo canceling and noise reduction\n");
+    printf("M - activate echo canceling and noise reduction\n");
+    
+    printf("n - deactivate voice recognition\n");
+    printf("N - activate voice recognition\n");
+    
+    printf("o - Set speaker volume to 0  (minimum)\n");
+    printf("O - Set speaker volume to 9  (default)\n");
+    printf("p - Set speaker volume to 12 (higher)\n");
+    printf("P - Set speaker volume to 15 (maximum)\n");
+
+    printf("q - Set microphone gain to 0  (minimum)\n");
+    printf("Q - Set microphone gain to 9  (default)\n");
+    printf("s - Set microphone gain to 12 (higher)\n");
+    printf("S - Set microphone gain to 15 (maximum)\n");
+
+    printf("t - terminate connection\n");
+
+    printf("u - send 'user busy' (Three-Way Call 0)\n");
+    printf("U - end active call and accept other call' (Three-Way Call 1)\n");
+    printf("v - Swap active call and hold/waiting call (Three-Way Call 2)\n");
+    printf("V - Join held call (Three-Way Call 3)\n");
+    printf("w - Connect calls (Three-Way Call 4)\n");
+    printf("W - redial\n");
+    printf("0123456789#*-+ - send DTMF dial tones\n");
+
+    printf("x - request phone number for voice tag\n");
+
     printf("---\n");
     printf("Ctrl-c - exit\n");
     printf("---\n");
@@ -117,64 +161,184 @@ static void show_usage(void){
 
 static int stdin_process(struct data_source *ds){
     read(ds->fd, &cmd, 1);
+
+    if (cmd >= '0' && cmd <= '9'){
+        printf("DTMF Code: %c\n", cmd);
+        hfp_hf_send_dtmf_code(device_addr, cmd);
+        return 0;
+    }
+
     switch (cmd){
+        case '#':
+        case '-':
+        case '+':
+        case '*':
+            printf("DTMF Code: %c\n", cmd);
+            hfp_hf_send_dtmf_code(device_addr, cmd);
+            break;
         case 'a':
-            printf("Establish Audio connection to device with Bluetooth address %s...\n", bd_addr_to_str(device_addr));
-            hfp_hf_establish_audio_connection(device_addr);
-            break;
-        case 'A':
-            printf("Release Audio service level connection.\n");
-            hfp_hf_release_audio_connection(device_addr);
-            break;
-        case 'h':
-            printf("Establish HFP service level connection to device with Bluetooth address %s...\n", bd_addr_to_str(device_addr));
+            printf("Establish Service level connection to device with Bluetooth address %s...\n", bd_addr_to_str(device_addr));
             hfp_hf_establish_service_level_connection(device_addr);
             break;
-        case 'H':
-            printf("Release HFP service level connection.\n");
+        case 'A':
+            printf("Release Service level connection.\n");
             hfp_hf_release_service_level_connection(device_addr);
             break;
         case 'b':
-            printf("Establish Audio connection %s...\n", bd_addr_to_str(device_addr));
+            printf("Establish Audio connection to device with Bluetooth address %s...\n", bd_addr_to_str(device_addr));
             hfp_hf_establish_audio_connection(device_addr);
             break;
         case 'B':
-            printf("Release Audio connection.\n");
+            printf("Release Audio service level connection.\n");
             hfp_hf_release_audio_connection(device_addr);
             break;
-        case 'd':
-            printf("Enable HFP AG registration status update.\n");
-            hfp_hf_enable_status_update_for_all_ag_indicators(device_addr, 1);
+        case 'C':
+            printf("Enable registration status update for all AG indicators.\n");
+            hfp_hf_enable_status_update_for_all_ag_indicators(device_addr);
+        case 'c':
+            printf("Disable registration status update for all AG indicators.\n");
+            hfp_hf_disable_status_update_for_all_ag_indicators(device_addr);
+            break;
         case 'D':
-            printf("Disable HFP AG registration status update.\n");
-            hfp_hf_enable_status_update_for_all_ag_indicators(device_addr, 0);
+            printf("Set HFP AG registration status update for individual indicators (0111111).\n");
+            hfp_hf_set_status_update_for_individual_ag_indicators(device_addr, 63);
             break;
-        case 'e':
-            printf("Enable HFP AG registration status update for individual indicators.\n");
-            hfp_hf_enable_status_update_for_individual_ag_indicators(device_addr, 63);
-            break;
-        case 'f':
+        case 'd':
             printf("Query network operator.\n");
             hfp_hf_query_operator_selection(device_addr);
             break;
-        case 'g':
+        case 'E':
             printf("Enable reporting of the extended AG error result code.\n");
-            hfp_hf_enable_report_extended_audio_gateway_error_result_code(device_addr, 1);
+            hfp_hf_enable_report_extended_audio_gateway_error_result_code(device_addr);
+            break;
+        case 'e':
+            printf("Disable reporting of the extended AG error result code.\n");
+            hfp_hf_disable_report_extended_audio_gateway_error_result_code(device_addr);
+            break;
+        case 'f':
+            printf("Answer incoming call.\n");
+            hfp_hf_answer_incoming_call(device_addr);
+            break;
+        case 'F':
+            printf("Hangup call.\n");
+            hfp_hf_terminate_call(device_addr);
             break;
         case 'G':
-            printf("Disable reporting of the extended AG error result code.\n");
-            hfp_hf_enable_report_extended_audio_gateway_error_result_code(device_addr, 0);
+            printf("Reject call.\n");
+            hfp_hf_reject_call(device_addr);
             break;
-
+        case 'g':
+            printf("Query operator.\n");
+            hfp_hf_query_operator_selection(device_addr);
+            break;
+        case 't':
+            printf("Terminate HCI connection.\n");
+            gap_disconnect(handle);
+            break;
         case 'y':
             memcpy(device_addr, phone_addr, 6);
             printf("Use iPhone %s as Audiogateway.\n", bd_addr_to_str(device_addr));
             break;
-        case 'z':
-            memcpy(device_addr, pts_addr, 6);
-            printf("Use PTS module %s as Audiogateway.\n", bd_addr_to_str(device_addr));
+        case 'i':
+            printf("Dial 1234567\n");
+            hfp_hf_dial_number(device_addr, "1234567");
             break;
-
+        case 'I':
+            printf("Dial 7654321\n");
+            hfp_hf_dial_number(device_addr, "7654321");
+            break;
+        case 'j':
+            printf("Dial #1\n");
+            hfp_hf_dial_memory(device_addr,"1");
+            break;
+        case 'J':
+            printf("Dial #99\n");
+            hfp_hf_dial_memory(device_addr,"99");
+            break;
+        case 'k':
+            printf("Deactivate call waiting notification\n");
+            hfp_hf_deactivate_call_waiting_notification(device_addr);
+            break;
+        case 'K':
+            printf("Activate call waiting notification\n");
+            hfp_hf_activate_call_waiting_notification(device_addr);
+            break;
+        case 'l':
+            printf("Deactivate calling line notification\n");
+            hfp_hf_deactivate_calling_line_notification(device_addr);
+            break;
+        case 'L':
+            printf("Activate calling line notification\n");
+            hfp_hf_activate_calling_line_notification(device_addr);
+            break;
+        case 'm':
+            printf("Deactivate echo canceling and noise reduction\n");
+            hfp_hf_deactivate_echo_canceling_and_noise_reduction(device_addr);
+            break;
+        case 'M':
+            printf("Activate echo canceling and noise reduction\n");
+            hfp_hf_activate_echo_canceling_and_noise_reduction(device_addr);
+            break;
+        case 'n':
+            printf("Deactivate voice recognition\n");
+            hfp_hf_deactivate_voice_recognition_notification(device_addr);
+            break;
+        case 'N':
+            printf("Activate voice recognition\n");
+            hfp_hf_activate_voice_recognition_notification(device_addr);
+            break;
+        case 'o':
+            printf("Set speaker gain to 0 (minimum)\n");
+            hfp_hf_set_speaker_gain(device_addr, 0);
+            break;
+        case 'O':
+            printf("Set speaker gain to 9 (default)\n");
+            hfp_hf_set_speaker_gain(device_addr, 9);
+            break;
+        case 'p':
+            printf("Set speaker gain to 12 (higher)\n");
+            hfp_hf_set_speaker_gain(device_addr, 12);
+            break;
+        case 'P':
+            printf("Set speaker gain to 15 (maximum)\n");
+            hfp_hf_set_speaker_gain(device_addr, 15);
+            break;
+        case 'q':
+            printf("Set microphone gain to 0\n");
+            hfp_hf_set_microphone_gain(device_addr, 0);
+            break;
+        case 'Q':
+            printf("Set microphone gain to 9\n");
+            hfp_hf_set_microphone_gain(device_addr, 9);
+            break;
+        case 'u':
+            printf("Send 'user busy' (Three-Way Call 0)\n");
+            hfp_hf_user_busy(device_addr);
+            break;
+        case 'U':
+            printf("End active call and accept waiting/held call (Three-Way Call 1)\n");
+            hfp_hf_end_active_and_accept_other(device_addr);
+            break;
+        case 'v':
+            printf("Swap active call and hold/waiting call (Three-Way Call 2)\n");
+            hfp_hf_swap_calls(device_addr);
+            break;
+        case 'V':
+            printf("Join hold call (Three-Way Call 3)\n");
+            hfp_hf_join_held_call(device_addr);
+            break;
+        case 'w':
+            printf("Connect calls (Three-Way Call 4)\n");
+            hfp_hf_connect_calls(device_addr);
+            break;
+        case 'W':
+            printf("Redial\n");
+            hfp_hf_redial_last_number(device_addr);
+            break;
+        case 'x':
+            printf("Request phone number for voice tag\n");
+            hfp_hf_request_phone_number_for_voice_tag(device_addr);
+            break;
         default:
             show_usage();
             break;
@@ -185,8 +349,17 @@ static int stdin_process(struct data_source *ds){
 
 
 static void packet_handler(uint8_t * event, uint16_t event_size){
+    if (event[0] == RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE){
+        handle = READ_BT_16(event, 9);
+        printf("RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE received for handle 0x%04x\n", handle);
+        return;
+    }
     if (event[0] != HCI_EVENT_HFP_META) return;
-    if (event[3] && event[2] != HFP_SUBEVENT_EXTENDED_AUDIO_GATEWAY_ERROR){
+    if (event[3]
+     && event[2] != HFP_SUBEVENT_EXTENDED_AUDIO_GATEWAY_ERROR
+     && event[2] != HFP_SUBEVENT_NUMBER_FOR_VOICE_TAG
+     && event[2] != HFP_SUBEVENT_SPEAKER_VOLUME
+     && event[2] != HFP_SUBEVENT_MICROPHONE_VOLUME){
         printf("ERROR, status: %u\n", event[3]);
         return;
     }
@@ -196,6 +369,12 @@ static void packet_handler(uint8_t * event, uint16_t event_size){
             break;
         case HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED:
             printf("Service level connection released.\n\n");
+            break;
+        case HFP_SUBEVENT_AUDIO_CONNECTION_ESTABLISHED:
+            printf("\n** Audio connection established **\n");
+            break;
+        case HFP_SUBEVENT_AUDIO_CONNECTION_RELEASED:
+            printf("\n** Audio connection released **\n");
             break;
         case HFP_SUBEVENT_COMPLETE:
             switch (cmd){
@@ -209,7 +388,7 @@ static void packet_handler(uint8_t * event, uint16_t event_size){
             }
             break;
         case HFP_SUBEVENT_AG_INDICATOR_STATUS_CHANGED:
-            printf("AG_INDICATOR_STATUS_CHANGED, AG indicator index: %d, status: %d\n", event[4], event[5]);
+            printf("AG_INDICATOR_STATUS_CHANGED, AG indicator '%s' (index: %d) to: %d\n", (const char*) &event[6], event[4], event[5]);
             break;
         case HFP_SUBEVENT_NETWORK_OPERATOR_CHANGED:
             printf("NETWORK_OPERATOR_CHANGED, operator mode: %d, format: %d, name: %s\n", event[4], event[5], (char *) &event[6]);
@@ -217,6 +396,18 @@ static void packet_handler(uint8_t * event, uint16_t event_size){
         case HFP_SUBEVENT_EXTENDED_AUDIO_GATEWAY_ERROR:
             if (event[4])
             printf("EXTENDED_AUDIO_GATEWAY_ERROR_REPORT, status : %d\n", event[3]);
+            break;
+        case HFP_SUBEVENT_RING:
+            printf("** Ring **\n");
+            break;
+        case HFP_SUBEVENT_NUMBER_FOR_VOICE_TAG:
+            printf("Phone number for voice tag: %s\n", (const char *) &event[3]);
+            break;
+        case HFP_SUBEVENT_SPEAKER_VOLUME:
+            printf("Speaker volume: %u\n", event[3]);
+            break;
+        case HFP_SUBEVENT_MICROPHONE_VOLUME:
+            printf("Microphone volume: %u\n", event[3]);
             break;
         default:
             printf("event not handled %u\n", event[2]);
@@ -231,7 +422,7 @@ int btstack_main(int argc, const char * argv[]){
     rfcomm_init();
     
     // hfp_hf_init(rfcomm_channel_nr, HFP_DEFAULT_HF_SUPPORTED_FEATURES, codecs, sizeof(codecs), indicators, sizeof(indicators)/sizeof(uint16_t), 1);
-    hfp_hf_init(rfcomm_channel_nr, 438, indicators, sizeof(indicators)/sizeof(uint16_t), 1);
+    hfp_hf_init(rfcomm_channel_nr, 438 | (1<<HFP_HFSF_ESCO_S4) | (1<<HFP_HFSF_EC_NR_FUNCTION), indicators, sizeof(indicators)/sizeof(uint16_t), 1);
     hfp_hf_set_codecs(codecs, sizeof(codecs));
     
     hfp_hf_register_packet_handler(packet_handler);
@@ -241,6 +432,9 @@ int btstack_main(int argc, const char * argv[]){
     memset((uint8_t *)hfp_service_buffer, 0, sizeof(hfp_service_buffer));
     hfp_hf_create_sdp_record((uint8_t *)hfp_service_buffer, 0x10006, rfcomm_channel_nr, hfp_hf_service_name, 0);
     sdp_register_service((uint8_t *)hfp_service_buffer);
+
+    // pre-select pts
+    memcpy(device_addr, pts_addr, 6);
 
     // turn on!
     hci_power_control(HCI_POWER_ON);

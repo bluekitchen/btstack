@@ -71,10 +71,18 @@ const uint8_t    rfcomm_channel_nr = 1;
 static bd_addr_t device_addr = {0xD8,0xBb,0x2C,0xDf,0xF1,0x08};
 
 static uint8_t codecs[2] = {1,2};
+static uint8_t default_codecs[2] = {1};
 static uint16_t indicators[1] = {0x01};
 
 static uint8_t service_level_connection_established = 0;
 static uint8_t codecs_connection_established = 0;
+static uint8_t audio_connection_established = 0;
+static uint8_t start_ringing = 0;
+static uint8_t stop_ringing = 0;
+static uint8_t call_termiated = 0;
+
+static int supported_features_with_codec_negotiation = 438;    // 0001 1011 0110
+static int supported_features_without_codec_negotiation = 310; // 0001 0011 0110
 
 int expected_rfcomm_command(const char * cmd){
     char * ag_cmd = (char *)get_rfcomm_payload();
@@ -143,28 +151,37 @@ void packet_handler(uint8_t * event, uint16_t event_size){
         case HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED:
             printf("\n** SLC established **\n\n");
             service_level_connection_established = 1;
+            codecs_connection_established = 0;
+            audio_connection_established = 0;
             break;
         case HFP_SUBEVENT_CODECS_CONNECTION_COMPLETE:
             printf("\n** CC established **\n\n");
             codecs_connection_established = 1;
+            audio_connection_established = 0;
             break;
-    
         case HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED:
+            printf("\n** SLC released **\n\n");
             service_level_connection_established = 0;
             break;
-
-        case HFP_SUBEVENT_COMPLETE:
-            printf("HFP_SUBEVENT_COMPLETE.\n\n");
+        case HFP_SUBEVENT_AUDIO_CONNECTION_ESTABLISHED:
+            printf("\n** AC established **\n\n");
+            audio_connection_established = 1;
             break;
-        case HFP_SUBEVENT_AG_INDICATOR_STATUS_CHANGED:
-            printf("AG_INDICATOR_STATUS_CHANGED, AG indicator index: %d, status: %d\n", event[4], event[5]);
+        case HFP_SUBEVENT_AUDIO_CONNECTION_RELEASED:
+            printf("\n** AC released **\n\n");
+            audio_connection_established = 0;
             break;
-        case HFP_SUBEVENT_NETWORK_OPERATOR_CHANGED:
-            printf("NETWORK_OPERATOR_CHANGED, operator mode: %d, format: %d, name: %s\n", event[4], event[5], (char *) &event[6]);
+        case HFP_SUBEVENT_START_RINGINIG:
+            printf("\n** Start ringing **\n\n"); 
+            start_ringing = 1;
             break;
-        case HFP_SUBEVENT_EXTENDED_AUDIO_GATEWAY_ERROR:
-            if (event[4])
-            printf("EXTENDED_AUDIO_GATEWAY_ERROR_REPORT, status : %d\n", event[3]);
+        case HFP_SUBEVENT_STOP_RINGINIG:
+            printf("\n** Stop ringing **\n\n"); 
+            stop_ringing = 1;
+            start_ringing = 0;
+            break;
+        case HFP_SUBEVENT_CALL_TERMINATED:
+            call_termiated = 1;
             break;
         default:
             printf("event not handled %u\n", event[2]);
@@ -179,14 +196,22 @@ TEST_GROUP(HFPClient){
     void setup(void){
         service_level_connection_established = 0;
         codecs_connection_established = 0;
+        audio_connection_established = 0;
+        start_ringing = 0;
+        stop_ringing = 0;
+        call_termiated = 0;
+
+        hfp_hf_init(rfcomm_channel_nr, supported_features_with_codec_negotiation, indicators, sizeof(indicators)/sizeof(uint16_t), 1);
+        hfp_hf_set_codecs(codecs, sizeof(codecs));
     }
 
     void teardown(void){
-        if (service_level_connection_established){
-            hfp_hf_release_service_level_connection(device_addr);
-            CHECK_EQUAL(service_level_connection_established, 0);
-        }
+        hfp_hf_release_audio_connection(device_addr);
+        hfp_hf_release_service_level_connection(device_addr);
+        
+        service_level_connection_established = 0;
         codecs_connection_established = 0;
+        audio_connection_established = 0;
     }
 
     void setup_hfp_service_level_connection(char ** test_steps, int nr_test_steps){
@@ -202,6 +227,20 @@ TEST_GROUP(HFPClient){
 
 };
 
+TEST(HFPClient, HFAudioConnectionEstablishedWithoutCodecNegotiation){
+    hfp_hf_init(rfcomm_channel_nr, supported_features_without_codec_negotiation, indicators, sizeof(indicators)/sizeof(uint16_t), 1);
+    hfp_hf_set_codecs(default_codecs, 1);
+    
+    setup_hfp_service_level_connection(hfp_slc_tests()[1].test, hfp_slc_tests()[1].len);
+    CHECK_EQUAL(service_level_connection_established, 1);
+        
+    setup_hfp_codecs_connection(default_cc_setup(), default_cc_setup_size());
+    CHECK_EQUAL(codecs_connection_established, 1);
+
+    hfp_hf_establish_audio_connection(device_addr);
+    hfp_hf_release_audio_connection(device_addr);
+    CHECK_EQUAL(audio_connection_established, 0);
+}
 
 TEST(HFPClient, HFCodecsConnectionEstablished){
     for (int i = 0; i < cc_tests_size(); i++){
@@ -231,9 +270,6 @@ TEST(HFPClient, HFServiceLevelConnectionEstablished){
 
 
 int main (int argc, const char * argv[]){
-    hfp_hf_init(rfcomm_channel_nr, 438, indicators, sizeof(indicators)/sizeof(uint16_t), 1);
-    hfp_hf_set_codecs(codecs, sizeof(codecs));
     hfp_hf_register_packet_handler(packet_handler);
-
     return CommandLineTestRunner::RunAllTests(argc, argv);
 }

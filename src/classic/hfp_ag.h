@@ -54,6 +54,10 @@ extern "C" {
 #endif
 
 /* API_START */
+typedef struct {
+    uint8_t type;
+    const char * number;
+} hfp_phone_number_t;
 
 /**
  * @brief Create HFP Audio Gateway (AG) SDP service record. 
@@ -208,7 +212,12 @@ void hfp_ag_call_dropped(void);
 /**
  * @brief 
  */
- void hfp_ag_answer_incoming_call(void);
+void hfp_ag_answer_incoming_call(void);
+
+/**
+ * @brief 
+ */
+void hfp_ag_join_held_call(void);
 
 /**
  * @brief 
@@ -265,6 +274,38 @@ void hfp_ag_reject_phone_number_for_voice_tag(bd_addr_t bd_addr);
  * @brief
  */
 void hfp_ag_send_dtmf_code_done(bd_addr_t bd_addr);
+
+/*
+ * @brief
+ */
+void hfp_ag_set_subcriber_number_information(hfp_phone_number_t * numbers, int numbers_count);
+
+/*
+ * @brief
+ */
+void hfp_ag_send_current_call_status(bd_addr_t bd_addr, int idx, hfp_enhanced_call_dir_t dir, 
+    hfp_enhanced_call_status_t status, hfp_enhanced_call_mode_t mode, 
+    hfp_enhanced_call_mpty_t mpty, uint8_t type, const char * number);
+
+/*
+ * @brief
+ */
+void hfp_ag_send_current_call_status_done(bd_addr_t bd_addr);
+
+/*
+ * @brief
+ */
+void hfp_ag_hold_incoming_call(void);
+
+/*
+ * @brief
+ */
+void hfp_ag_accept_held_incoming_call(void);
+
+/*
+ * @brief
+ */
+void hfp_ag_reject_held_incoming_call(void);
 
 /* API_END */
 

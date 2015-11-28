@@ -1330,6 +1330,10 @@ static void event_handler(uint8_t *packet, int size){
             }
             conn->role  = HCI_ROLE_SLAVE;
             conn->state = RECEIVED_CONNECTION_REQUEST;
+            // store info about eSCO
+            if (link_type == 0x02){
+                conn->remote_supported_feature_eSCO = 1;
+            }
             hci_run();
             break;
             
@@ -1403,9 +1407,12 @@ static void event_handler(uint8_t *packet, int size){
                 if (features[6] & (1 << 3)){
                     conn->bonding_flags |= BONDING_REMOTE_SUPPORTS_SSP;
                 }
+                if (features[3] & (1<<7)){
+                    conn->remote_supported_feature_eSCO = 1;
+                }
             }
             conn->bonding_flags |= BONDING_RECEIVED_REMOTE_FEATURES;
-            log_info("HCI_EVENT_READ_REMOTE_SUPPORTED_FEATURES_COMPLETE, bonding flags %x", conn->bonding_flags);
+            log_info("HCI_EVENT_READ_REMOTE_SUPPORTED_FEATURES_COMPLETE, bonding flags %x, eSCO %u", conn->bonding_flags, conn->remote_supported_feature_eSCO);
             if (conn->bonding_flags & BONDING_DEDICATED){
                 conn->bonding_flags |= BONDING_SEND_AUTHENTICATE_REQUEST;
             }
@@ -2319,13 +2326,20 @@ void hci_run(void){
                 return;
                
             case RECEIVED_CONNECTION_REQUEST:
-                log_info("sending hci_accept_connection_request");
+                log_info("sending hci_accept_connection_request, remote eSCO %u", connection->remote_supported_feature_eSCO);
                 connection->state = ACCEPTED_CONNECTION_REQUEST;
                 connection->role  = HCI_ROLE_SLAVE;
                 if (connection->address_type == BD_ADDR_TYPE_CLASSIC){
                     hci_send_cmd(&hci_accept_connection_request, connection->address, 1);
                 } else {
-                    hci_send_cmd(&hci_accept_synchronous_connection, connection->address, 8000, 8000, 0xFFFF, hci_stack->sco_voice_setting, 0xFF, 0x003F);
+                    // remote supported feature eSCO is set if link type is eSCO
+                    if (connection->remote_supported_feature_eSCO){
+                        // eSCO: S4 - max latency == transmission interval = 0x000c == 12 ms, 
+                        hci_send_cmd(&hci_accept_synchronous_connection, connection->address, 8000, 8000, 0x000c, hci_stack->sco_voice_setting, 0x02, 0x388);
+                    } else {
+                        // SCO: max latency, retransmission interval: N/A. any packet type
+                        hci_send_cmd(&hci_accept_synchronous_connection, connection->address, 8000, 8000, 0xffff, hci_stack->sco_voice_setting, 0xff, 0x003f);
+                    }
                 }
                 return;
 
@@ -2887,6 +2901,13 @@ void hci_emit_dedicated_bonding_result(bd_addr_t address, uint8_t status){
     pos += 6;
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
     hci_stack->packet_handler(HCI_EVENT_PACKET, event, sizeof(event));
+}
+
+// query if remote side supports eSCO
+int hci_remote_eSCO_supported(hci_con_handle_t con_handle){
+    hci_connection_t * connection = hci_connection_for_handle(con_handle);
+    if (!connection) return 0;
+    return connection->remote_supported_feature_eSCO;
 }
 
 // query if remote side supports SSP

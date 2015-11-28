@@ -84,7 +84,6 @@ void hfp_hf_register_packet_handler(hfp_callback_t callback);
  */
 void hfp_hf_establish_service_level_connection(bd_addr_t bd_addr);
 
-
 /**
  * @brief Release the RFCOMM channel and the audio connection between the HF and the AG. 
  * TODO: trigger release of the audio connection
@@ -94,12 +93,13 @@ void hfp_hf_release_service_level_connection(bd_addr_t bd_addr);
 /**
  * @brief Deactivate/reactivate status update for all indicators in the AG.
  */
-void hfp_hf_enable_status_update_for_all_ag_indicators(bd_addr_t bd_addr, uint8_t enable);
+void hfp_hf_enable_status_update_for_all_ag_indicators(bd_addr_t bd_addr);
+void hfp_hf_disable_status_update_for_all_ag_indicators(bd_addr_t bd_addr);
 
 /**
  * @brief Deactivate/reactivate status update for the individual indicators in the AG using bitmap.
  */
-void hfp_hf_enable_status_update_for_individual_ag_indicators(bd_addr_t bd_addr, uint32_t indicators_status_bitmap);
+void hfp_hf_set_status_update_for_individual_ag_indicators(bd_addr_t bd_addr, uint32_t indicators_status_bitmap);
 
 
 /**
@@ -136,7 +136,8 @@ void hfp_hf_query_operator_selection(bd_addr_t bd_addr);
  * - +CME ERROR: 31 - network Timeout.
  * - +CME ERROR: 32 - network not allowed – Emergency calls only
  */
-void hfp_hf_enable_report_extended_audio_gateway_error_result_code(bd_addr_t bd_addr, uint8_t enable);
+void hfp_hf_enable_report_extended_audio_gateway_error_result_code(bd_addr_t bd_addr);
+void hfp_hf_disable_report_extended_audio_gateway_error_result_code(bd_addr_t bd_addr);
 
 /**
  * @brief 
@@ -148,6 +149,121 @@ void hfp_hf_establish_audio_connection(bd_addr_t bd_addr);
  */
 void hfp_hf_release_audio_connection(bd_addr_t bd_addr);
 
+/**
+ * @brief 
+ */
+void hfp_hf_answer_incoming_call(bd_addr_t bd_addr);
+
+/**
+ * @brief 
+ */
+void hfp_hf_reject_call(bd_addr_t bd_addr);
+
+/**
+ * @brief
+ */
+void hfp_hf_user_busy(bd_addr_t addr);
+
+/**
+ * @brief
+ */
+void hfp_hf_end_active_and_accept_other(bd_addr_t addr);
+
+/**
+ * @brief
+ */
+void hfp_hf_swap_calls(bd_addr_t addr);
+
+/**
+ * @brief
+ */
+void hfp_hf_join_held_call(bd_addr_t addr);
+
+/**
+ * @brief
+ */
+void hfp_hf_connect_calls(bd_addr_t addr);
+
+/**
+ * @brief 
+ */
+void hfp_hf_terminate_call(bd_addr_t bd_addr);
+
+/**
+ * @brief 
+ */
+void hfp_hf_dial_number(bd_addr_t bd_addr, char * number);
+
+/**
+ * @brief 
+ */
+void hfp_hf_dial_memory(bd_addr_t bd_addr, char * number);
+
+/**
+ * @brief 
+ */
+void hfp_hf_redial_last_number(bd_addr_t bd_addr);
+
+/*
+ * @brief
+ */
+void hfp_hf_activate_call_waiting_notification(bd_addr_t bd_addr);
+
+/*
+ * @brief
+ */
+void hfp_hf_deactivate_call_waiting_notification(bd_addr_t bd_addr);
+
+/*
+ * @brief
+ */
+void hfp_hf_activate_calling_line_notification(bd_addr_t bd_addr);
+
+/*
+ * @brief
+ */
+void hfp_hf_deactivate_calling_line_notification(bd_addr_t bd_addr);
+
+
+/*
+ * @brief
+ */
+void hfp_hf_activate_echo_canceling_and_noise_reduction(bd_addr_t bd_addr);
+
+/*
+ * @brief
+ */
+void hfp_hf_deactivate_echo_canceling_and_noise_reduction(bd_addr_t bd_addr);
+
+/*
+ * @brief
+ */
+void hfp_hf_activate_voice_recognition_notification(bd_addr_t bd_addr);
+
+/*
+ * @brief
+ */
+void hfp_hf_deactivate_voice_recognition_notification(bd_addr_t bd_addr);
+
+/*
+ * @brief
+ */
+void hfp_hf_set_microphone_gain(bd_addr_t bd_addr, int gain);
+
+/*
+ * @brief
+ */
+void hfp_hf_set_speaker_gain(bd_addr_t bd_addr, int gain);
+
+/*
+ * @brief
+ */
+void hfp_hf_send_dtmf_code(bd_addr_t bd_addr, char code);
+
+/*
+ * @brief
+ */
+void hfp_hf_request_phone_number_for_voice_tag(bd_addr_t addr);
 
 /* API_END */
 

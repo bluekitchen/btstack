@@ -373,6 +373,9 @@ typedef struct {
     // 
     link_key_type_t link_key_type;
 
+    // remote supported features
+    uint8_t remote_supported_feature_eSCO;
+
     // errands
     uint32_t authentication_flags;
 
@@ -710,6 +713,8 @@ void hci_disconnect_security_block(hci_con_handle_t con_handle);
 // send complete CMD packet
 int hci_send_cmd_packet(uint8_t *packet, int size);
 
+// query if remote side supports eSCO
+int hci_remote_eSCO_supported(hci_con_handle_t con_handle);
 
 /* API_START */
 
