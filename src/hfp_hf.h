@@ -160,6 +160,31 @@ void hfp_hf_answer_incoming_call(bd_addr_t bd_addr);
 void hfp_hf_reject_call(bd_addr_t bd_addr);
 
 /**
+ * @brief
+ */
+void hfp_hf_user_busy(bd_addr_t addr);
+
+/**
+ * @brief
+ */
+void hfp_hf_end_active_and_accept_other(bd_addr_t addr);
+
+/**
+ * @brief
+ */
+void hfp_hf_swap_calls(bd_addr_t addr);
+
+/**
+ * @brief
+ */
+void hfp_hf_join_held_call(bd_addr_t addr);
+
+/**
+ * @brief
+ */
+void hfp_hf_connect_calls(bd_addr_t addr);
+
+/**
  * @brief 
  */
 void hfp_hf_terminate_call(bd_addr_t bd_addr);

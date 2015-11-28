@@ -115,7 +115,7 @@ static void show_usage(void){
     printf("G - reject call\n");
 
     printf("i - dial 1234567\n");
-    printf("I - redial\n");
+    printf("I - dial 7654321\n");
     
     printf("j - dial #1\n");
     printf("J - dial #99\n");
@@ -141,8 +141,15 @@ static void show_usage(void){
     printf("Q - Set microphone gain to 9  (default)\n");
     printf("s - Set microphone gain to 12 (higher)\n");
     printf("S - Set microphone gain to 15 (maximum)\n");
-    
+
     printf("t - terminate connection\n");
+
+    printf("u - send 'user busy' (Three-Way Call 0)\n");
+    printf("U - end active call and accept other call' (Three-Way Call 1)\n");
+    printf("v - Swap active call and hold/waiting call (Three-Way Call 2)\n");
+    printf("V - Join held call (Three-Way Call 3)\n");
+    printf("w - Connect calls (Three-Way Call 4)\n");
+    printf("W - redial\n");
 
     printf("---\n");
     printf("Ctrl-c - exit\n");
@@ -220,8 +227,8 @@ static int stdin_process(struct data_source *ds){
             hfp_hf_dial_number(device_addr, "1234567");
             break;
         case 'I':
-            printf("Redial\n");
-            hfp_hf_redial_last_number(device_addr);
+            printf("Dial 7654321\n");
+            hfp_hf_dial_number(device_addr, "7654321");
             break;
         case 'j':
             printf("Dial #1\n");
@@ -286,6 +293,30 @@ static int stdin_process(struct data_source *ds){
         case 'Q':
             printf("Set microphone gain to 9\n");
             hfp_hf_set_microphone_gain(device_addr, 9);
+            break;
+        case 'u':
+            printf("Send 'user busy' (Three-Way Call 0)\n");
+            hfp_hf_user_busy(device_addr);
+            break;
+        case 'U':
+            printf("End active call and accept waiting/held call (Three-Way Call 1)\n");
+            hfp_hf_end_active_and_accept_other(device_addr);
+            break;
+        case 'v':
+            printf("Swap active call and hold/waiting call (Three-Way Call 2)\n");
+            hfp_hf_swap_calls(device_addr);
+            break;
+        case 'V':
+            printf("Join hold call (Three-Way Call 3)\n");
+            hfp_hf_join_held_call(device_addr);
+            break;
+        case 'w':
+            printf("Connect calls (Three-Way Call 4)\n");
+            hfp_hf_connect_calls(device_addr);
+            break;
+        case 'W':
+            printf("Redial\n");
+            hfp_hf_redial_last_number(device_addr);
             break;
         default:
             show_usage();

@@ -298,6 +298,12 @@ static int hfp_hf_send_chup(uint16_t cid){
     return send_str_over_rfcomm(cid, buffer);
 }
 
+static int hfp_hf_send_chld(uint16_t cid, int number){
+    char buffer[20];
+    sprintf(buffer, "AT%s=%u\r\n", HFP_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES, number);
+    return send_str_over_rfcomm(cid, buffer);
+}
+
 static void hfp_emit_ag_indicator_event(hfp_callback_t callback, int status, hfp_ag_indicator_t indicator){
     if (!callback) return;
     uint8_t event[6+HFP_MAX_INDICATOR_DESC_SIZE+1];
@@ -620,6 +626,41 @@ static void hfp_run_for_context(hfp_connection_t * context){
         context->hf_send_chup = 0;
         context->ok_pending = 1;
         hfp_hf_send_chup(context->rfcomm_cid);
+        return;
+    }
+
+    if (context->hf_send_chld_0){
+        context->hf_send_chld_0 = 0;
+        context->ok_pending = 1;
+        hfp_hf_send_chld(context->rfcomm_cid, 0);
+        return;
+    }
+
+    if (context->hf_send_chld_1){
+        context->hf_send_chld_1 = 0;
+        context->ok_pending = 1;
+        hfp_hf_send_chld(context->rfcomm_cid, 1);
+        return;
+    }
+
+    if (context->hf_send_chld_2){
+        context->hf_send_chld_2 = 0;
+        context->ok_pending = 1;
+        hfp_hf_send_chld(context->rfcomm_cid, 2);
+        return;
+    }
+
+    if (context->hf_send_chld_3){
+        context->hf_send_chld_3 = 0;
+        context->ok_pending = 1;
+        hfp_hf_send_chld(context->rfcomm_cid, 3);
+        return;
+    }
+
+    if (context->hf_send_chld_4){
+        context->hf_send_chld_4 = 0;
+        context->ok_pending = 1;
+        hfp_hf_send_chld(context->rfcomm_cid, 4);
         return;
     }
 
@@ -1026,6 +1067,65 @@ void hfp_hf_reject_call(bd_addr_t bd_addr){
         hfp_run_for_context(connection);
     }
 }
+
+void hfp_hf_user_busy(bd_addr_t addr){
+    hfp_hf_establish_service_level_connection(addr);
+    hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(addr);
+    
+    if (hfp_callsetup_status == HFP_CALLSETUP_STATUS_INCOMING_CALL_SETUP_IN_PROGRESS){
+        connection->hf_send_chld_0 = 1;
+        hfp_run_for_context(connection);
+    }
+}
+
+void hfp_hf_end_active_and_accept_other(bd_addr_t addr){
+    hfp_hf_establish_service_level_connection(addr);
+    hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(addr);
+    
+    if (hfp_callsetup_status == HFP_CALLSETUP_STATUS_INCOMING_CALL_SETUP_IN_PROGRESS ||
+        hfp_call_status == HFP_CALL_STATUS_ACTIVE_OR_HELD_CALL_IS_PRESENT){
+        connection->hf_send_chld_1 = 1;
+        hfp_run_for_context(connection);
+    }
+}
+
+void hfp_hf_swap_calls(bd_addr_t addr){
+    hfp_hf_establish_service_level_connection(addr);
+    hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(addr);
+    
+    if (hfp_callsetup_status == HFP_CALLSETUP_STATUS_INCOMING_CALL_SETUP_IN_PROGRESS ||
+        hfp_call_status == HFP_CALL_STATUS_ACTIVE_OR_HELD_CALL_IS_PRESENT){
+        connection->hf_send_chld_2 = 1;
+        hfp_run_for_context(connection);
+    }
+}
+
+void hfp_hf_join_held_call(bd_addr_t addr){
+    hfp_hf_establish_service_level_connection(addr);
+    hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(addr);
+    
+    if (hfp_callsetup_status == HFP_CALLSETUP_STATUS_INCOMING_CALL_SETUP_IN_PROGRESS ||
+        hfp_call_status == HFP_CALL_STATUS_ACTIVE_OR_HELD_CALL_IS_PRESENT){
+        connection->hf_send_chld_3 = 1;
+        hfp_run_for_context(connection);
+    }
+}
+
+void hfp_hf_connect_calls(bd_addr_t addr){
+    hfp_hf_establish_service_level_connection(addr);
+    hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(addr);
+    
+    if (hfp_callsetup_status == HFP_CALLSETUP_STATUS_INCOMING_CALL_SETUP_IN_PROGRESS ||
+        hfp_call_status == HFP_CALL_STATUS_ACTIVE_OR_HELD_CALL_IS_PRESENT){
+        connection->hf_send_chld_4 = 1;
+        hfp_run_for_context(connection);
+    }
+}
+
+/**
+ * @brief
+ */
+void hfp_hf_connect_calls(bd_addr_t addr);
 
 void hfp_hf_dial_number(bd_addr_t bd_addr, char * number){
     hfp_hf_establish_service_level_connection(bd_addr);
