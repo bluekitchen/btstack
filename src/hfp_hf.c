@@ -734,6 +734,14 @@ static void hfp_run_for_context(hfp_connection_t * context){
         return;
     }
 
+    if (context->hf_send_cnum){
+        context->hf_send_cnum = 0;
+        char buffer[20];
+        sprintf(buffer, "AT%s\r\n", HFP_SUBSCRIBER_NUMBER_INFORMATION);
+        send_str_over_rfcomm(context->rfcomm_cid, buffer);
+        return;
+    }
+
     if (done) return;
     // deal with disconnect
     switch (context->state){ 
@@ -893,6 +901,10 @@ static void hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8
     } 
 
     switch (context->command){
+        case HFP_CMD_GET_SUBSCRIBER_NUMBER_INFORMATION:
+            context->command = HFP_CMD_NONE;
+            printf("Subscriber Number: number %s, type %u\n", context->bnip_number, context->bnip_type);
+            break;
         case HFP_CMD_RESPONSE_AND_HOLD_STATUS:
             context->command = HFP_CMD_NONE;
             printf("Response and Hold status: %s\n", context->line_buffer);
@@ -1459,3 +1471,15 @@ void hfp_hf_rrh_reject_held_call(bd_addr_t addr)
     connection->hf_send_rrh_command = '2';
     hfp_run_for_context(connection);
 }
+
+/*
+ * @brief
+ */
+void hfp_hf_query_subscriber_number(bd_addr_t addr)
+{
+    hfp_hf_establish_service_level_connection(addr);
+    hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(addr);
+    connection->hf_send_cnum = 1;
+    hfp_run_for_context(connection);
+}
+

@@ -163,6 +163,8 @@ static void show_usage(void){
     printf("{ - Accept held call(RHH 1)\n");
     printf("} - Reject held call(RHH 2)\n");
 
+    printf("? - Query Subscriber Number\n");
+
     printf("---\n");
     printf("Ctrl-c - exit\n");
     printf("---\n");
@@ -383,6 +385,10 @@ static int stdin_process(struct data_source *ds){
         case '}':
             printf("Reject held call (RHH 2)\n");
             hfp_hf_rrh_reject_held_call(device_addr);
+            break;
+        case '?':
+            printf("Query Subscriber Number\n");
+            hfp_hf_query_subscriber_number(device_addr);
             break;
         default:
             show_usage();

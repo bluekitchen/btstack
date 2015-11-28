@@ -1066,6 +1066,22 @@ void hfp_parse(hfp_connection_t * context, uint8_t byte, int isHandsFree){
 static void parse_sequence(hfp_connection_t * context){
     int value;
     switch (context->command){
+        case HFP_CMD_GET_SUBSCRIBER_NUMBER_INFORMATION:
+            // printf("HFP_CMD_GET_SUBSCRIBER_NUMBER_INFORMATION (%u), '%s'\n", context->parser_item_index, (char*)context->line_buffer);
+            switch(context->parser_item_index){
+                case 0:
+                    strncpy(context->bnip_number, (char *)context->line_buffer, sizeof(context->bnip_number));
+                    context->bnip_number[sizeof(context->bnip_number)-1] = 0;
+                    break;
+                case 1:
+                    value = atoi((char *)&context->line_buffer[0]);
+                    context->bnip_type = value;
+                    break;
+                default:
+                    break;
+            }
+            context->parser_item_index++;
+            break;            
         case HFP_CMD_LIST_CURRENT_CALLS:
             switch(context->parser_item_index){
                 case 0:

@@ -571,6 +571,8 @@ typedef struct hfp_connection {
     uint8_t hf_send_clcc;
     uint8_t hf_send_rrh;
     char    hf_send_rrh_command;
+    uint8_t hf_send_cnum;
+    
     uint8_t hf_activate_call_waiting_notification;
     uint8_t hf_deactivate_call_waiting_notification;
     
