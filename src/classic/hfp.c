@@ -732,10 +732,10 @@ static hfp_command_t parse_command(const char * line_buffer, int isHandsFree){
         if (strncmp(line_buffer+strlen(HFP_RESPONSE_AND_HOLD)+offset, "?", 1) == 0){
             return HFP_CMD_RESPONSE_AND_HOLD_QUERY;
         }
-
         if (strncmp(line_buffer+strlen(HFP_RESPONSE_AND_HOLD)+offset, "=", 1) == 0){
             return HFP_CMD_RESPONSE_AND_HOLD_COMMAND;
         }
+        return HFP_CMD_RESPONSE_AND_HOLD_STATUS;
     }
 
     if (strncmp(line_buffer+offset, HFP_INDICATOR, strlen(HFP_INDICATOR)) == 0){
@@ -771,7 +771,7 @@ static hfp_command_t parse_command(const char * line_buffer, int isHandsFree){
         if (strncmp(line_buffer+strlen(HFP_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES)+offset, "=?", 2) == 0){
             return HFP_CMD_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES;
         }
-        if (strncmp(line_buffer+strlen(HFP_GENERIC_STATUS_INDICATOR)+offset, "=", 1) == 0){
+        if (strncmp(line_buffer+strlen(HFP_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES)+offset, "=", 1) == 0){
             return HFP_CMD_CALL_HOLD;    
         }
 
@@ -779,8 +779,9 @@ static hfp_command_t parse_command(const char * line_buffer, int isHandsFree){
     } 
 
     if (strncmp(line_buffer+offset, HFP_GENERIC_STATUS_INDICATOR, strlen(HFP_GENERIC_STATUS_INDICATOR)) == 0){
-        if (isHandsFree) return HFP_CMD_UNKNOWN;
-
+        if (isHandsFree) {
+            return HFP_CMD_SET_GENERIC_STATUS_INDICATOR_STATUS;
+        }
         if (strncmp(line_buffer+strlen(HFP_GENERIC_STATUS_INDICATOR)+offset, "=?", 2) == 0){
             return HFP_CMD_RETRIEVE_GENERIC_STATUS_INDICATORS;
         } 
@@ -827,12 +828,12 @@ static hfp_command_t parse_command(const char * line_buffer, int isHandsFree){
     } 
     
     if (strncmp(line_buffer+offset, "AT+", 3) == 0){
-        printf(" process unknown HF command %s \n", line_buffer);
+        log_info("process unknown HF command %s \n", line_buffer);
         return HFP_CMD_UNKNOWN;
     } 
     
     if (strncmp(line_buffer+offset, "+", 1) == 0){
-        printf(" process unknown AG command %s \n", line_buffer);
+        log_info(" process unknown AG command %s \n", line_buffer);
         return HFP_CMD_UNKNOWN;
     }
     
@@ -1066,6 +1067,76 @@ void hfp_parse(hfp_connection_t * context, uint8_t byte, int isHandsFree){
 static void parse_sequence(hfp_connection_t * context){
     int value;
     switch (context->command){
+        case HFP_CMD_SET_GENERIC_STATUS_INDICATOR_STATUS:
+            value = atoi((char *)&context->line_buffer[0]);
+            int i;
+            switch (context->parser_item_index){
+                case 0:
+                    for (i=0;i<context->generic_status_indicators_nr;i++){
+                        if (context->generic_status_indicators[i].uuid == value){
+                            context->parser_indicator_index = i;
+                            break;
+                        }
+                    }
+                    break;
+                case 1:
+                    if (context->parser_indicator_index <0) break;
+                    context->generic_status_indicators[context->parser_indicator_index].state = value;
+                    log_info("HFP_CMD_SET_GENERIC_STATUS_INDICATOR_STATUS set indicator at index %u, to %u\n",
+                     context->parser_item_index, value);
+                    break;
+                default:
+                    break;
+            }
+            context->parser_item_index++;
+            break;
+
+        case HFP_CMD_GET_SUBSCRIBER_NUMBER_INFORMATION:
+            switch(context->parser_item_index){
+                case 0:
+                    strncpy(context->bnip_number, (char *)context->line_buffer, sizeof(context->bnip_number));
+                    context->bnip_number[sizeof(context->bnip_number)-1] = 0;
+                    break;
+                case 1:
+                    value = atoi((char *)&context->line_buffer[0]);
+                    context->bnip_type = value;
+                    break;
+                default:
+                    break;
+            }
+            context->parser_item_index++;
+            break;            
+        case HFP_CMD_LIST_CURRENT_CALLS:
+            switch(context->parser_item_index){
+                case 0:
+                    value = atoi((char *)&context->line_buffer[0]);
+                    context->clcc_idx = value;
+                    break;
+                case 1:
+                    value = atoi((char *)&context->line_buffer[0]);
+                    context->clcc_dir = value;
+                    break;
+                case 2:
+                    value = atoi((char *)&context->line_buffer[0]);
+                    context->clcc_status = value;
+                    break;
+                case 3:
+                    value = atoi((char *)&context->line_buffer[0]);
+                    context->clcc_mpty = value;
+                    break;
+                case 4:
+                    strncpy(context->bnip_number, (char *)context->line_buffer, sizeof(context->bnip_number));
+                    context->bnip_number[sizeof(context->bnip_number)-1] = 0;
+                    break;
+                case 5:
+                    value = atoi((char *)&context->line_buffer[0]);
+                    context->bnip_type = value;
+                    break;
+                default:
+                    break;
+            }
+            context->parser_item_index++;
+            break;
         case HFP_CMD_SET_MICROPHONE_GAIN:
             value = atoi((char *)&context->line_buffer[0]);
             context->microphone_gain = value;

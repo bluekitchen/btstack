@@ -265,6 +265,51 @@ void hfp_hf_send_dtmf_code(bd_addr_t bd_addr, char code);
  */
 void hfp_hf_request_phone_number_for_voice_tag(bd_addr_t addr);
 
+/*
+ * @brief
+ */
+void hfp_hf_query_current_call_status(bd_addr_t addr);
+
+/*
+ * @brief
+ */
+void hfp_hf_release_call_with_index(bd_addr_t addr, int index);
+
+/*
+ * @brief
+ */
+void hfp_hf_private_consultation_with_call(bd_addr_t addr, int index);
+
+/*
+ * @brief
+ */
+void hfp_hf_rrh_query_status(bd_addr_t addr);
+
+/*
+ * @brief
+ */
+void hfp_hf_rrh_hold_call(bd_addr_t addr);
+
+/*
+ * @brief
+ */
+void hfp_hf_rrh_accept_held_call(bd_addr_t addr);
+
+/*
+ * @brief
+ */
+void hfp_hf_rrh_reject_held_call(bd_addr_t addr);
+
+/*
+ * @brief
+ */
+void hfp_hf_query_subscriber_number(bd_addr_t addr);
+
+/*
+ * @brief
+ */
+void hfp_hf_set_hf_indicator(bd_addr_t addr, int assigned_number, int value);
+
 /* API_END */
 
 #if defined __cplusplus

@@ -69,7 +69,11 @@ static uint8_t hfp_codecs[HFP_MAX_NUM_CODECS];
 
 static uint8_t hfp_indicators_nr = 0;
 static uint8_t hfp_indicators[HFP_MAX_NUM_HF_INDICATORS];
-static uint8_t hfp_indicators_status;
+static uint32_t hfp_indicators_value[HFP_MAX_NUM_HF_INDICATORS];
+static uint16_t hfp_indicators_status;
+
+static uint8_t hfp_hf_speaker_gain = 9;
+static uint8_t hfp_hf_microphone_gain = 9;
 
 static hfp_callback_t hfp_callback;
 
@@ -313,6 +317,12 @@ static int hfp_hf_send_dtmf(uint16_t cid, char code){
 static int hfp_hf_send_binp(uint16_t cid){
     char buffer[20];
     sprintf(buffer, "AT%s=1\r\n", HFP_PHONE_NUMBER_FOR_VOICE_TAG);
+    return send_str_over_rfcomm(cid, buffer);
+}
+
+static int hfp_hf_send_clcc(uint16_t cid){
+    char buffer[20];
+    sprintf(buffer, "AT%s\r\n", HFP_LIST_CURRENT_CALLS);
     return send_str_over_rfcomm(cid, buffer);
 }
 
@@ -676,6 +686,13 @@ static void hfp_run_for_context(hfp_connection_t * context){
         return;
     }
 
+    if (context->hf_send_chld_x){
+        context->hf_send_chld_x = 0;
+        context->ok_pending = 1;
+        hfp_hf_send_chld(context->rfcomm_cid, context->hf_send_chld_x_index);
+        return;
+    }
+
     if (context->hf_send_dtmf_code){
         char code = context->hf_send_dtmf_code;
         context->hf_send_dtmf_code = 0;
@@ -691,6 +708,60 @@ static void hfp_run_for_context(hfp_connection_t * context){
         return;
     }
     
+    if (context->hf_send_clcc){
+        context->hf_send_clcc = 0;
+        context->ok_pending = 1;
+        hfp_hf_send_clcc(context->rfcomm_cid);
+        return;
+    }
+
+    if (context->hf_send_rrh){
+        context->hf_send_rrh = 0;
+        char buffer[20];
+        switch (context->hf_send_rrh_command){
+            case '?':
+                sprintf(buffer, "AT%s?\r\n", HFP_RESPONSE_AND_HOLD);
+                send_str_over_rfcomm(context->rfcomm_cid, buffer);
+                return;
+            case '0':
+            case '1':
+            case '2':
+                sprintf(buffer, "AT%s=%c\r\n", HFP_RESPONSE_AND_HOLD, context->hf_send_rrh_command);
+                send_str_over_rfcomm(context->rfcomm_cid, buffer);
+                return;
+            default:
+                break;
+        }
+        return;
+    }
+
+    if (context->hf_send_cnum){
+        context->hf_send_cnum = 0;
+        char buffer[20];
+        sprintf(buffer, "AT%s\r\n", HFP_SUBSCRIBER_NUMBER_INFORMATION);
+        send_str_over_rfcomm(context->rfcomm_cid, buffer);
+        return;
+    }
+
+    // update HF indicators
+    if (context->generic_status_update_bitmap){
+        int i;
+        for (i=0;i<hfp_indicators_nr;i++){
+            if (get_bit(context->generic_status_update_bitmap, i)){
+                if (context->generic_status_indicators[i].state){
+                    context->ok_pending = 1;
+                    context->generic_status_update_bitmap = store_bit(context->generic_status_update_bitmap, i, 0);
+                    char buffer[30];
+                    sprintf(buffer, "AT%s=%u,%u\r\n", HFP_TRANSFER_HF_INDICATOR_STATUS, hfp_indicators[i], hfp_indicators_value[i]);
+                    send_str_over_rfcomm(context->rfcomm_cid, buffer);
+                } else {
+                    printf("Not sending HF indicator %u as it is disabled\n", hfp_indicators[i]);
+                }
+                return;
+            }
+        }
+    }
+
     if (done) return;
     // deal with disconnect
     switch (context->state){ 
@@ -720,6 +791,19 @@ static void hfp_ag_slc_established(hfp_connection_t * context){
     context->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
     hfp_emit_event(hfp_callback, HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED, 0);
     hfp_init_link_settings(context);
+    // restore volume settings
+    context->speaker_gain = hfp_hf_speaker_gain;
+    context->send_speaker_gain = 1;
+    hfp_emit_event(hfp_callback, HFP_SUBEVENT_SPEAKER_VOLUME, hfp_hf_speaker_gain);
+    context->microphone_gain = hfp_hf_microphone_gain;
+    context->send_microphone_gain = 1;
+    hfp_emit_event(hfp_callback, HFP_SUBEVENT_MICROPHONE_VOLUME, hfp_hf_microphone_gain);
+    // enable all indicators
+    int i;
+    for (i=0;i<hfp_indicators_nr;i++){
+        context->generic_status_indicators[i].uuid = hfp_indicators[i];
+        context->generic_status_indicators[i].state = 1;
+    }
 }
 
 static void hfp_hf_switch_on_ok(hfp_connection_t *context){
@@ -836,20 +920,38 @@ static void hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8
     if (!context) return;
 
     packet[size] = 0;
-    int pos, i;
+    int pos, i, value;
     //printf("\nHF received: %s", packet+2);
     for (pos = 0; pos < size ; pos++){
         hfp_parse(context, packet[pos], 1);
     } 
 
     switch (context->command){
+        case HFP_CMD_GET_SUBSCRIBER_NUMBER_INFORMATION:
+            context->command = HFP_CMD_NONE;
+            printf("Subscriber Number: number %s, type %u\n", context->bnip_number, context->bnip_type);
+            break;
+        case HFP_CMD_RESPONSE_AND_HOLD_STATUS:
+            context->command = HFP_CMD_NONE;
+            printf("Response and Hold status: %s\n", context->line_buffer);
+            break;
+        case HFP_CMD_LIST_CURRENT_CALLS:
+            context->command = HFP_CMD_NONE;
+            printf("Enhanced Call Status: idx %u, dir %u, status %u, mpty %u, number %s, type %u\n",
+                context->clcc_idx, context->clcc_dir, context->clcc_status, context->clcc_mpty,
+                context->bnip_number, context->bnip_type);
+            break;
         case HFP_CMD_SET_SPEAKER_GAIN:
             context->command = HFP_CMD_NONE;
-            hfp_emit_event(hfp_callback, HFP_SUBEVENT_SPEAKER_VOLUME, atoi((char*)context->line_buffer));
+            value = atoi((char*)context->line_buffer);
+            hfp_hf_speaker_gain = value;
+            hfp_emit_event(hfp_callback, HFP_SUBEVENT_SPEAKER_VOLUME, value);
             break;
         case HFP_CMD_SET_MICROPHONE_GAIN:
             context->command = HFP_CMD_NONE;
-            hfp_emit_event(hfp_callback, HFP_SUBEVENT_MICROPHONE_VOLUME, atoi((char*)context->line_buffer));
+            value = atoi((char*)context->line_buffer);
+            hfp_hf_microphone_gain = value;
+            hfp_emit_event(hfp_callback, HFP_SUBEVENT_MICROPHONE_VOLUME, value);
             break;
         case HFP_CMD_AG_SENT_PHONE_NUMBER:
             context->command = HFP_CMD_NONE;
@@ -1162,10 +1264,29 @@ void hfp_hf_connect_calls(bd_addr_t addr){
     }
 }
 
-/**
- * @brief
- */
-void hfp_hf_connect_calls(bd_addr_t addr);
+void hfp_hf_release_call_with_index(bd_addr_t addr, int index){
+    hfp_hf_establish_service_level_connection(addr);
+    hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(addr);
+    
+    if (hfp_callsetup_status == HFP_CALLSETUP_STATUS_INCOMING_CALL_SETUP_IN_PROGRESS ||
+        hfp_call_status == HFP_CALL_STATUS_ACTIVE_OR_HELD_CALL_IS_PRESENT){
+        connection->hf_send_chld_x = 1;
+        connection->hf_send_chld_x_index = 10 + index;
+        hfp_run_for_context(connection);
+    }
+}
+
+void hfp_hf_private_consultation_with_call(bd_addr_t addr, int index){
+    hfp_hf_establish_service_level_connection(addr);
+    hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(addr);
+    
+    if (hfp_callsetup_status == HFP_CALLSETUP_STATUS_INCOMING_CALL_SETUP_IN_PROGRESS ||
+        hfp_call_status == HFP_CALL_STATUS_ACTIVE_OR_HELD_CALL_IS_PRESENT){
+        connection->hf_send_chld_x = 1;
+        connection->hf_send_chld_x_index = 20 + index;
+        hfp_run_for_context(connection);
+    }
+}
 
 void hfp_hf_dial_number(bd_addr_t bd_addr, char * number){
     hfp_hf_establish_service_level_connection(bd_addr);
@@ -1319,5 +1440,93 @@ void hfp_hf_request_phone_number_for_voice_tag(bd_addr_t addr){
     hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(addr);
     connection->hf_send_binp = 1;
     hfp_run_for_context(connection);
+}
+
+/*
+ * @brief
+ */
+void hfp_hf_query_current_call_status(bd_addr_t addr){
+    hfp_hf_establish_service_level_connection(addr);
+    hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(addr);
+    connection->hf_send_clcc = 1;
+    hfp_run_for_context(connection);
+}
+
+
+/*
+ * @brief
+ */
+void hfp_hf_rrh_query_status(bd_addr_t addr){
+    hfp_hf_establish_service_level_connection(addr);
+    hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(addr);
+    connection->hf_send_rrh = 1;
+    connection->hf_send_rrh_command = '?';
+    hfp_run_for_context(connection);
+}
+
+/*
+ * @brief
+ */
+void hfp_hf_rrh_hold_call(bd_addr_t addr){
+    hfp_hf_establish_service_level_connection(addr);
+    hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(addr);
+    connection->hf_send_rrh = 1;
+    connection->hf_send_rrh_command = '0';
+    hfp_run_for_context(connection);
+}
+
+/*
+ * @brief
+ */
+void hfp_hf_rrh_accept_held_call(bd_addr_t addr){
+    hfp_hf_establish_service_level_connection(addr);
+    hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(addr);
+    connection->hf_send_rrh = 1;
+    connection->hf_send_rrh_command = '1';
+    hfp_run_for_context(connection);
+}
+
+/*
+ * @brief
+ */
+void hfp_hf_rrh_reject_held_call(bd_addr_t addr)
+{
+    hfp_hf_establish_service_level_connection(addr);
+    hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(addr);
+    connection->hf_send_rrh = 1;
+    connection->hf_send_rrh_command = '2';
+    hfp_run_for_context(connection);
+}
+
+/*
+ * @brief
+ */
+void hfp_hf_query_subscriber_number(bd_addr_t addr)
+{
+    hfp_hf_establish_service_level_connection(addr);
+    hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(addr);
+    connection->hf_send_cnum = 1;
+    hfp_run_for_context(connection);
+}
+
+/*
+ * @brief
+ */
+void hfp_hf_set_hf_indicator(bd_addr_t addr, int assigned_number, int value){
+    hfp_hf_establish_service_level_connection(addr);
+    hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(addr);
+    // find index for assigned number
+    int i;
+    for (i = 0; i < hfp_indicators_nr ; i++){
+        if (hfp_indicators[i] == assigned_number){
+            // set value
+            hfp_indicators_value[i] = value;
+            // mark for update
+            connection->generic_status_update_bitmap |= (1<<i);
+            // send update
+            hfp_run_for_context(connection);
+            return;
+        }
+    }
 }
 
