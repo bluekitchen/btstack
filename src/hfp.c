@@ -663,7 +663,7 @@ static hfp_command_t parse_command(const char * line_buffer, int isHandsFree){
     }
 
     if (strncmp(line_buffer+offset, HFP_PHONE_NUMBER_FOR_VOICE_TAG, strlen(HFP_PHONE_NUMBER_FOR_VOICE_TAG)) == 0){
-        if (isHandsFree) return HFP_CMD_AG_SEND_PHONE_NUMBER;
+        if (isHandsFree) return HFP_CMD_AG_SENT_PHONE_NUMBER;
         return HFP_CMD_HF_REQUEST_PHONE_NUMBER;
     }
 
@@ -843,13 +843,8 @@ static hfp_command_t parse_command(const char * line_buffer, int isHandsFree){
     return HFP_CMD_NONE;
 }
 
-#if 0
-uint32_t fromBinary(char *s) {
-    return (uint32_t) strtol(s, NULL, 2);
-}
-#endif
-
 static void hfp_parser_store_byte(hfp_connection_t * context, uint8_t byte){
+    // printf("hfp_parser_store_byte %c at pos %u\n", (char) byte, context->line_size);
     // TODO: add limit
     context->line_buffer[context->line_size++] = byte;
     context->line_buffer[context->line_size] = 0;
@@ -892,6 +887,7 @@ static void hfp_parser_next_state(hfp_connection_t * context, uint8_t byte){
             break;
         case HFP_PARSER_CMD_SEQUENCE:
             switch (context->command){
+                case HFP_CMD_AG_SENT_PHONE_NUMBER:
                 case HFP_CMD_TRANSFER_AG_INDICATOR_STATUS:
                 case HFP_CMD_QUERY_OPERATOR_SELECTION_NAME:
                 case HFP_CMD_QUERY_OPERATOR_SELECTION_NAME_FORMAT:
@@ -1030,6 +1026,9 @@ void hfp_parse(hfp_connection_t * context, uint8_t byte, int isHandsFree){
                 case HFP_CMD_RETRIEVE_AG_INDICATORS:
                     context->ag_indicators[context->parser_item_index].min_range = atoi((char *)context->line_buffer);
                     log_info("%s, ", context->line_buffer);
+                    break;
+                case HFP_CMD_AG_SENT_PHONE_NUMBER:
+                    context->bnip_type = (uint8_t)atoi((char*)context->line_buffer);
                     break;
                 default:
                     break;
@@ -1193,6 +1192,10 @@ static void parse_sequence(hfp_connection_t * context){
             context->enable_extended_audio_gateway_error_report = (uint8_t)atoi((char*)context->line_buffer);
             context->ok_pending = 1;
             context->extended_audio_gateway_error = 0;
+            break;
+        case HFP_CMD_AG_SENT_PHONE_NUMBER:
+            strncpy(context->bnip_number, (char *)context->line_buffer, sizeof(context->bnip_number));
+            context->bnip_number[sizeof(context->bnip_number)-1] = 0;
             break;
         default:
             break;

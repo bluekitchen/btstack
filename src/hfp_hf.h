@@ -260,6 +260,11 @@ void hfp_hf_set_speaker_gain(bd_addr_t bd_addr, int gain);
  */
 void hfp_hf_send_dtmf_code(bd_addr_t bd_addr, char code);
 
+/*
+ * @brief
+ */
+void hfp_hf_request_phone_number_for_voice_tag(bd_addr_t addr);
+
 /* API_END */
 
 #if defined __cplusplus

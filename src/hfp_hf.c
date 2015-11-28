@@ -310,6 +310,12 @@ static int hfp_hf_send_dtmf(uint16_t cid, char code){
     return send_str_over_rfcomm(cid, buffer);
 }
 
+static int hfp_hf_send_binp(uint16_t cid){
+    char buffer[20];
+    sprintf(buffer, "AT%s=1\r\n", HFP_PHONE_NUMBER_FOR_VOICE_TAG);
+    return send_str_over_rfcomm(cid, buffer);
+}
+
 static void hfp_emit_ag_indicator_event(hfp_callback_t callback, int status, hfp_ag_indicator_t indicator){
     if (!callback) return;
     uint8_t event[6+HFP_MAX_INDICATOR_DESC_SIZE+1];
@@ -678,6 +684,13 @@ static void hfp_run_for_context(hfp_connection_t * context){
         return;
     }
 
+    if (context->hf_send_binp){
+        context->hf_send_binp = 0;
+        context->ok_pending = 1;
+        hfp_hf_send_binp(context->rfcomm_cid);
+        return;
+    }
+    
     if (done) return;
     // deal with disconnect
     switch (context->state){ 
@@ -830,16 +843,21 @@ static void hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8
     } 
 
     switch (context->command){
+        case HFP_CMD_AG_SENT_PHONE_NUMBER:
+            context->command = HFP_CMD_NONE;
+            hfp_emit_string_event(hfp_callback, HFP_SUBEVENT_NUMBER_FOR_VOICE_TAG, context->bnip_number);
+            break;
         case HFP_CMD_EXTENDED_AUDIO_GATEWAY_ERROR:
             context->ok_pending = 0;
             context->extended_audio_gateway_error = 0;
+            context->command = HFP_CMD_NONE;
             hfp_emit_event(hfp_callback, HFP_SUBEVENT_EXTENDED_AUDIO_GATEWAY_ERROR, context->extended_audio_gateway_error); 
             break;  
         case HFP_CMD_ERROR:
             context->ok_pending = 0;
             hfp_reset_context_flags(context);
-            hfp_emit_event(hfp_callback, HFP_SUBEVENT_COMPLETE, 1); 
             context->command = HFP_CMD_NONE;
+            hfp_emit_event(hfp_callback, HFP_SUBEVENT_COMPLETE, 1); 
             break;
         case HFP_CMD_OK:
             hfp_hf_switch_on_ok(context);
@@ -1278,9 +1296,20 @@ void hfp_hf_set_speaker_gain(bd_addr_t bd_addr, int gain){
 /*
  * @brief
  */
-void hfp_hf_send_dtmf_code(bd_addr_t bd_addr, char code){
-    hfp_hf_establish_service_level_connection(bd_addr);
-    hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
+void hfp_hf_send_dtmf_code(bd_addr_t addr, char code){
+    hfp_hf_establish_service_level_connection(addr);
+    hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(addr);
     connection->hf_send_dtmf_code = code;
     hfp_run_for_context(connection);
 }
+
+/*
+ * @brief
+ */
+void hfp_hf_request_phone_number_for_voice_tag(bd_addr_t addr){
+    hfp_hf_establish_service_level_connection(addr);
+    hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(addr);
+    connection->hf_send_binp = 1;
+    hfp_run_for_context(connection);
+}
+

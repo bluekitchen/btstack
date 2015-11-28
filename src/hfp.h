@@ -187,7 +187,7 @@ typedef enum {
     HFP_CMD_AG_ACTIVATE_VOICE_RECOGNITION,
     HFP_CMD_HF_ACTIVATE_VOICE_RECOGNITION,
     HFP_CMD_HF_REQUEST_PHONE_NUMBER,
-    HFP_CMD_AG_SEND_PHONE_NUMBER,
+    HFP_CMD_AG_SENT_PHONE_NUMBER,
     HFP_CMD_TRANSMIT_DTMF_CODES,
     HFP_CMD_SET_MICROPHONE_GAIN,
     HFP_CMD_SET_SPEAKER_GAIN,
@@ -564,6 +564,7 @@ typedef struct hfp_connection {
     uint8_t hf_send_chld_3;
     uint8_t hf_send_chld_4;
     char    hf_send_dtmf_code; 
+    uint8_t hf_send_binp;
     uint8_t hf_activate_call_waiting_notification;
     uint8_t hf_deactivate_call_waiting_notification;
     
@@ -573,7 +574,10 @@ typedef struct hfp_connection {
     uint8_t hf_deactivate_echo_canceling_and_noise_reduction;
     uint8_t hf_activate_voice_recognition_notification;
     uint8_t hf_deactivate_voice_recognition_notification;
-  
+
+    uint8_t bnip_type;       // 0 == not set
+    char    bnip_number[25]; // 
+
 } hfp_connection_t;
 
 // UTILS_START : TODO move to utils

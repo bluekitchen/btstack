@@ -152,6 +152,8 @@ static void show_usage(void){
     printf("W - redial\n");
     printf("0123456789#*-+ - send DTMF dial tones\n");
 
+    printf("x - request phone number for voice tag\n");
+
     printf("---\n");
     printf("Ctrl-c - exit\n");
     printf("---\n");
@@ -333,6 +335,10 @@ static int stdin_process(struct data_source *ds){
             printf("Redial\n");
             hfp_hf_redial_last_number(device_addr);
             break;
+        case 'x':
+            printf("Request phone number for voice tag\n");
+            hfp_hf_request_phone_number_for_voice_tag(device_addr);
+            break;
         default:
             show_usage();
             break;
@@ -349,7 +355,9 @@ static void packet_handler(uint8_t * event, uint16_t event_size){
         return;
     }
     if (event[0] != HCI_EVENT_HFP_META) return;
-    if (event[3] && event[2] != HFP_SUBEVENT_EXTENDED_AUDIO_GATEWAY_ERROR){
+    if (event[3]
+     && event[2] != HFP_SUBEVENT_EXTENDED_AUDIO_GATEWAY_ERROR
+     && event[2] != HFP_SUBEVENT_NUMBER_FOR_VOICE_TAG){
         printf("ERROR, status: %u\n", event[3]);
         return;
     }
@@ -389,6 +397,9 @@ static void packet_handler(uint8_t * event, uint16_t event_size){
             break;
         case HFP_SUBEVENT_RING:
             printf("** Ring **\n");
+            break;
+        case HFP_SUBEVENT_NUMBER_FOR_VOICE_TAG:
+            printf("Phone number for voice tag: %s\n", (const char *) &event[3]);
             break;
         default:
             printf("event not handled %u\n", event[2]);
