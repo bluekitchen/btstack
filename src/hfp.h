@@ -563,6 +563,7 @@ typedef struct hfp_connection {
     uint8_t hf_send_chld_2;
     uint8_t hf_send_chld_3;
     uint8_t hf_send_chld_4;
+    char    hf_send_dtmf_code; 
     uint8_t hf_activate_call_waiting_notification;
     uint8_t hf_deactivate_call_waiting_notification;
     

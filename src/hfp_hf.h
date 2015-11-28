@@ -255,6 +255,11 @@ void hfp_hf_set_microphone_gain(bd_addr_t bd_addr, int gain);
  */
 void hfp_hf_set_speaker_gain(bd_addr_t bd_addr, int gain);
 
+/*
+ * @brief
+ */
+void hfp_hf_send_dtmf_code(bd_addr_t bd_addr, char code);
+
 /* API_END */
 
 #if defined __cplusplus

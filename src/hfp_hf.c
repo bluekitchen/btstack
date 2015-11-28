@@ -304,6 +304,12 @@ static int hfp_hf_send_chld(uint16_t cid, int number){
     return send_str_over_rfcomm(cid, buffer);
 }
 
+static int hfp_hf_send_dtmf(uint16_t cid, char code){
+    char buffer[20];
+    sprintf(buffer, "AT%s=%c\r\n", HFP_TRANSMIT_DTMF_CODES, code);
+    return send_str_over_rfcomm(cid, buffer);
+}
+
 static void hfp_emit_ag_indicator_event(hfp_callback_t callback, int status, hfp_ag_indicator_t indicator){
     if (!callback) return;
     uint8_t event[6+HFP_MAX_INDICATOR_DESC_SIZE+1];
@@ -661,6 +667,14 @@ static void hfp_run_for_context(hfp_connection_t * context){
         context->hf_send_chld_4 = 0;
         context->ok_pending = 1;
         hfp_hf_send_chld(context->rfcomm_cid, 4);
+        return;
+    }
+
+    if (context->hf_send_dtmf_code){
+        char code = context->hf_send_dtmf_code;
+        context->hf_send_dtmf_code = 0;
+        context->ok_pending = 1;
+        hfp_hf_send_dtmf(context->rfcomm_cid, code);
         return;
     }
 
@@ -1261,3 +1275,12 @@ void hfp_hf_set_speaker_gain(bd_addr_t bd_addr, int gain){
     hfp_run_for_context(connection);
 }
 
+/*
+ * @brief
+ */
+void hfp_hf_send_dtmf_code(bd_addr_t bd_addr, char code){
+    hfp_hf_establish_service_level_connection(bd_addr);
+    hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
+    connection->hf_send_dtmf_code = code;
+    hfp_run_for_context(connection);
+}

@@ -150,6 +150,7 @@ static void show_usage(void){
     printf("V - Join held call (Three-Way Call 3)\n");
     printf("w - Connect calls (Three-Way Call 4)\n");
     printf("W - redial\n");
+    printf("0123456789#*-+ - send DTMF dial tones\n");
 
     printf("---\n");
     printf("Ctrl-c - exit\n");
@@ -158,7 +159,21 @@ static void show_usage(void){
 
 static int stdin_process(struct data_source *ds){
     read(ds->fd, &cmd, 1);
+
+    if (cmd >= '0' && cmd <= '9'){
+        printf("DTMF Code: %c\n", cmd);
+        hfp_hf_send_dtmf_code(device_addr, cmd);
+        return 0;
+    }
+
     switch (cmd){
+        case '#':
+        case '-':
+        case '+':
+        case '*':
+            printf("DTMF Code: %c\n", cmd);
+            hfp_hf_send_dtmf_code(device_addr, cmd);
+            break;
         case 'a':
             printf("Establish Service level connection to device with Bluetooth address %s...\n", bd_addr_to_str(device_addr));
             hfp_hf_establish_service_level_connection(device_addr);
