@@ -1218,6 +1218,7 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * connect
                 case HFP_CALL_STATUS_ACTIVE_OR_HELD_CALL_IS_PRESENT:
                     hfp_ag_set_call_state(HFP_CALL_STATUS_NO_HELD_OR_ACTIVE_CALLS);
                     hfp_ag_transfer_call_state();
+                    connection->call_state = HFP_CALL_IDLE;
                     printf("AG terminate call\n");
                     break;
             }
