@@ -540,8 +540,8 @@ typedef struct hfp_connection {
 
     uint8_t send_phone_number_for_voice_tag;
     uint8_t send_ag_status_indicators;
-    uint8_t send_response_and_hold_status;  // 0xff - for don't
-
+    uint8_t send_response_and_hold_status;  // 0 - don't send. BRTH:0 == 1, ..
+    
     // AG only
     uint8_t change_in_band_ring_tone_setting;
     uint8_t ag_ring;

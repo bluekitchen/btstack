@@ -989,7 +989,7 @@ static void hfp_ag_send_response_and_hold_state(hfp_response_and_hold_state_t st
     linked_list_iterator_init(&it, hfp_get_connections());
     while (linked_list_iterator_has_next(&it)){
         hfp_connection_t * connection = (hfp_connection_t *)linked_list_iterator_next(&it);
-        connection->send_response_and_hold_status = state;
+        connection->send_response_and_hold_status = state + 1;
     }
 }
 
@@ -1396,9 +1396,9 @@ static void hfp_run_for_context(hfp_connection_t *context){
     }
 
     // note: before update AG indicators and ok_pending 
-    if (context->send_response_and_hold_status != 0xff){
-        int status = context->send_response_and_hold_status;
-        context->send_response_and_hold_status = 0xff;
+    if (context->send_response_and_hold_status){
+        int status = context->send_response_and_hold_status - 1;
+        context->send_response_and_hold_status = 0;
         hfp_ag_set_response_and_hold(context->rfcomm_cid, status);
         return;
     }
@@ -1531,7 +1531,7 @@ static void hfp_handle_rfcomm_data(uint8_t packet_type, uint16_t channel, uint8_
     switch(context->command){
         case HFP_CMD_RESPONSE_AND_HOLD_QUERY:
             if (hfp_ag_response_and_hold_active){
-                context->send_response_and_hold_status = HFP_RESPONSE_AND_HOLD_INCOMING_ON_HOLD;
+                context->send_response_and_hold_status = HFP_RESPONSE_AND_HOLD_INCOMING_ON_HOLD + 1;
             }
             context->ok_pending = 1;
             break;
