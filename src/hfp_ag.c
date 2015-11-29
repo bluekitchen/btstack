@@ -1092,6 +1092,7 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * connect
                             printf("AG: joining held call with active call\n");
                             hfp_ag_set_callheld_state(HFP_CALLHELD_STATUS_NO_CALLS_HELD);
                             hfp_ag_transfer_callheld_state();
+                            hfp_emit_event(hfp_callback, HFP_SUBEVENT_CONFERENCE_CALL, 0);
                             break;
                         default:
                             break;
