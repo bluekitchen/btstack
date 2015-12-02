@@ -164,7 +164,7 @@ static void hci_event_sco_complete(){
 }
 
 int hci_send_cmd(const hci_cmd_t *cmd, ...){
-	printf("hci_send_cmd opcode 0x%02x\n", cmd->opcode);	
+	//printf("hci_send_cmd opcode 0x%02x\n", cmd->opcode);	
     if (cmd->opcode == 0x428){
         hci_event_sco_complete();
     }
@@ -294,9 +294,10 @@ void inject_rfcomm_command_to_hf(uint8_t * data, int len){
     prepare_rfcomm_buffer(data, len);
     if (data[0] == '+' || (data[0] == 'O' && data[1] == 'K')){
         printf("Send cmd to HF state machine: %s\n", data);
-    } else {
-        printf("Trigger HF state machine - %s", data);
-    }
+    } 
+    //} else {
+    //     printf("Trigger HF state machine - %s", data);
+    // }
     (*registered_rfcomm_packet_handler)(active_connection, RFCOMM_DATA_PACKET, rfcomm_cid, (uint8_t *) &rfcomm_payload[0], rfcomm_payload_len);
 }
 
@@ -306,9 +307,10 @@ void inject_rfcomm_command_to_ag(uint8_t * data, int len){
     prepare_rfcomm_buffer(data, len);
     if (memcmp((char*)data, "AT", 2) == 0){
         printf("Send cmd to AG state machine: %s\n", data);
-    } else {
-        printf("Trigger AG state machine - %s", data);
     }
+    // } else {
+    //     printf("Trigger AG state machine - %s", data);
+    // }
     (*registered_rfcomm_packet_handler)(active_connection, RFCOMM_DATA_PACKET, rfcomm_cid, (uint8_t *) &rfcomm_payload[0], rfcomm_payload_len);
 }
 

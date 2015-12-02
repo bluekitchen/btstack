@@ -1523,6 +1523,12 @@ static hfp_generic_status_indicator_t *get_hf_indicator_by_number(int number){
 static void hfp_handle_rfcomm_data(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     hfp_connection_t * context = get_hfp_connection_context_for_rfcomm_cid(channel);
     if (!context) return;
+    
+    char last_char = packet[size-1];
+    packet[size-1] = 0;
+    log_info("HFP_RX %s", packet);
+    packet[size-1] = last_char;
+    
     int pos;
     for (pos = 0; pos < size ; pos++){
         hfp_parse(context, packet[pos], 0);

@@ -47,39 +47,28 @@
 #include <string.h>
 
 typedef struct hfp_test_item{
+    char * name;
     char ** test;
     int len;
 } hfp_test_item_t;
 
 
 /* Service Level Connection (slc) test sequences */
+int hfp_slc_tests_size();
 hfp_test_item_t * hfp_slc_tests();
-int slc_tests_size();
-char ** default_slc_setup();
-int default_slc_setup_size();
+hfp_test_item_t * default_hfp_slc_test();
 
 /* Service Level Connection (slc) common commands */
+int hfp_slc_cmds_tests_size();
 hfp_test_item_t * hfp_slc_cmds_tests();
-int slc_cmds_tests_size();
-char ** default_slc_cmds_setup();
-int default_slc_cmds_setup_size();
+hfp_test_item_t * deafult_hfp_slc_cmds_test();
 
 /* Codecs Connection (cc) test sequences */
+int hfp_cc_tests_size();
 hfp_test_item_t * hfp_cc_tests();
-int cc_tests_size();
-char ** default_cc_setup();
-int default_cc_setup_size();
+hfp_test_item_t * default_hfp_cc_test();
 
-/* Incoming call (ic) test sequences */
-char ** default_ic_setup();
-int default_ic_setup_size();
-
-char ** alert_ic_setup();
-int alert_ic_setup_size();
-
-char ** terminate_ic_ag_setup();
-int terminate_ic_ag_setup_size();
-
-char ** terminate_ic_hf_setup();
-int terminate_ic_hf_setup_size();
+/* PTS test sequences */
+int hfp_pts_slc_tests_size();
+hfp_test_item_t * hfp_pts_slc_tests();
 

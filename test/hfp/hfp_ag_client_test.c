@@ -84,7 +84,7 @@ static hfp_ag_indicator_t ag_indicators[] = {
     {7, "callheld",  0, 2, 0, 1, 1, 0}
 };
 
-static int supported_features_with_codec_negotiation = 1007;   // 0011 1110 1111
+static int supported_features_with_codec_negotiation = 4079;   // 0011 1110 1111
 static int supported_features_without_codec_negotiation = 495; // 0001 1110 1111
 
 static int call_hold_services_nr = 5;
@@ -118,9 +118,12 @@ int expected_rfcomm_command(const char * expected_cmd){
 }
 
 
-void simulate_test_sequence(char ** test_steps, int nr_test_steps){
+void simulate_test_sequence(hfp_test_item_t * test_item){
+    char ** test_steps = test_item->test;
+    printf("\nSimulate test sequence: \"%s\"\n", test_item->name);
+    
     int i = 0;
-    for (i=0; i < nr_test_steps; i++){
+    for (i=0; i < test_item->len; i++){
         char * cmd = test_steps[i];
         printf("\n---> NEXT STEP %s\n", cmd);
         if (strncmp(cmd, "AT", 2) == 0){
@@ -213,59 +216,31 @@ TEST_GROUP(HFPClient){
         audio_connection_established = 0;
     }
 
-    void setup_hfp_service_level_connection(char ** test_steps, int nr_test_steps){
+    void setup_hfp_service_level_connection(hfp_test_item_t * test_item){
         service_level_connection_established = 0;
         hfp_ag_establish_service_level_connection(device_addr);
-        simulate_test_sequence((char **) test_steps, nr_test_steps);
+        simulate_test_sequence(test_item);
     }
 
-    void setup_hfp_codecs_connection(char ** test_steps, int nr_test_steps){
+    void setup_hfp_codecs_connection(hfp_test_item_t * test_item){
         codecs_connection_established = 0;
-        simulate_test_sequence((char **) test_steps, nr_test_steps);
+        simulate_test_sequence(test_item);
     }
 };
 
-// TEST(HFPClient, HFAnswerIncomingCallWithInBandRingToneHFTermiantesCall){
-//     setup_hfp_service_level_connection(default_slc_setup(), default_slc_setup_size());
-//     CHECK_EQUAL(service_level_connection_established, 1);
-
-//     hfp_ag_set_use_in_band_ring_tone(1);    
-//     hfp_ag_incoming_call();
-//     simulate_test_sequence(default_ic_setup(), default_ic_setup_size());
-//     CHECK_EQUAL(audio_connection_established, 1);
-
-//     simulate_test_sequence(alert_ic_setup(), alert_ic_setup_size());
-//     CHECK_EQUAL(stop_ringing, 1);
-    
-//     simulate_test_sequence(terminate_ic_hf_setup(), terminate_ic_hf_setup_size());
-//     CHECK_EQUAL(call_termiated,1);
-// }
-
-
-// TEST(HFPClient, HFAnswerIncomingCallWithInBandRingToneAGTerminatesCall){
-//     setup_hfp_service_level_connection(default_slc_setup(), default_slc_setup_size());
-//     CHECK_EQUAL(service_level_connection_established, 1);
-
-//     hfp_ag_set_use_in_band_ring_tone(1);    
-//     hfp_ag_incoming_call();
-//     simulate_test_sequence(default_ic_setup(), default_ic_setup_size());
-//     CHECK_EQUAL(audio_connection_established, 1);
-
-//     simulate_test_sequence(alert_ic_setup(), alert_ic_setup_size());
-//     CHECK_EQUAL(stop_ringing, 1);
-
-//     // AG terminates call
-//     hfp_ag_terminate_call();
-//     simulate_test_sequence(terminate_ic_ag_setup(), terminate_ic_ag_setup_size());
-//     CHECK_EQUAL(call_termiated,1);
-// }
+TEST(HFPClient, PTSSLCTests){
+    for (int i = 0; i < hfp_pts_slc_tests_size(); i++){
+        setup_hfp_service_level_connection(&hfp_pts_slc_tests()[i]);
+        teardown();
+    }
+}
 
 
 TEST(HFPClient, HFAudioConnectionEstablishedWithCodecNegotiation){
-    setup_hfp_service_level_connection(default_slc_setup(), default_slc_setup_size());
+    setup_hfp_service_level_connection(default_hfp_slc_test());
     CHECK_EQUAL(service_level_connection_established, 1);
         
-    setup_hfp_codecs_connection(default_cc_setup(), default_cc_setup_size());
+    setup_hfp_codecs_connection(default_hfp_cc_test());
     CHECK_EQUAL(codecs_connection_established, 1);
 
     hfp_ag_establish_audio_connection(device_addr);
@@ -282,10 +257,10 @@ TEST(HFPClient, HFAudioConnectionEstablishedWithoutCodecNegotiation){
         hf_indicators, hf_indicators_nr, 
         call_hold_services, call_hold_services_nr);
 
-    setup_hfp_service_level_connection(hfp_slc_tests()[1].test, hfp_slc_tests()[1].len);
+    setup_hfp_service_level_connection(&hfp_slc_tests()[1]);
     CHECK_EQUAL(service_level_connection_established, 1);
         
-    setup_hfp_codecs_connection(default_cc_setup(), default_cc_setup_size());
+    setup_hfp_codecs_connection(default_hfp_cc_test());
     CHECK_EQUAL(codecs_connection_established, 1);
 
     hfp_ag_establish_audio_connection(device_addr);
@@ -296,21 +271,21 @@ TEST(HFPClient, HFAudioConnectionEstablishedWithoutCodecNegotiation){
 }
 
 TEST(HFPClient, HFCodecsConnectionEstablished){
-    for (int i = 0; i < cc_tests_size(); i++){
-        setup_hfp_service_level_connection(default_slc_setup(), default_slc_setup_size());
+    for (int i = 0; i < hfp_cc_tests_size(); i++){
+        setup_hfp_service_level_connection(default_hfp_slc_test());
         CHECK_EQUAL(service_level_connection_established, 1);
         
-        setup_hfp_codecs_connection(hfp_cc_tests()[i].test, hfp_cc_tests()[i].len);
+        setup_hfp_codecs_connection(&hfp_cc_tests()[i]);
         CHECK_EQUAL(codecs_connection_established, 1);
         teardown();
     }
 }
 
 TEST(HFPClient, HFServiceLevelConnectionCommands){
-    setup_hfp_service_level_connection(default_slc_setup(), default_slc_setup_size());
+    setup_hfp_service_level_connection(default_hfp_slc_test());
     CHECK_EQUAL(service_level_connection_established, 1);
-    for (int i = 0; i < slc_cmds_tests_size(); i++){
-        simulate_test_sequence(hfp_slc_cmds_tests()[i].test, hfp_slc_cmds_tests()[i].len);
+    for (int i = 0; i < hfp_slc_cmds_tests_size(); i++){
+        simulate_test_sequence(&hfp_slc_cmds_tests()[i]);
     }
 }
 
@@ -320,13 +295,14 @@ TEST(HFPClient, HFServiceLevelConnectionEstablishedWithoutCodecNegotiation){
         ag_indicators, ag_indicators_nr, 
         hf_indicators, hf_indicators_nr, 
         call_hold_services, call_hold_services_nr);
-    setup_hfp_service_level_connection(hfp_slc_tests()[1].test, hfp_slc_tests()[1].len);
+    setup_hfp_service_level_connection(&hfp_slc_tests()[1]);
     CHECK_EQUAL(service_level_connection_established, 1);
 }
 
 TEST(HFPClient, HFServiceLevelConnectionEstablishedWithCodecNegotiation){
-    setup_hfp_service_level_connection(hfp_slc_tests()[0].test, hfp_slc_tests()[0].len);
+    setup_hfp_service_level_connection(default_hfp_slc_test());
     CHECK_EQUAL(service_level_connection_established, 1);
+    teardown();
 }
 
 int main (int argc, const char * argv[]){

@@ -919,9 +919,12 @@ static void hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8
     hfp_connection_t * context = get_hfp_connection_context_for_rfcomm_cid(channel);
     if (!context) return;
 
-    packet[size] = 0;
+    char last_char = packet[size-1];
+    packet[size-1] = 0;
+    log_info("HFP_RX %s", packet);
+    packet[size-1] = last_char;
+            
     int pos, i, value;
-    //printf("\nHF received: %s", packet+2);
     for (pos = 0; pos < size ; pos++){
         hfp_parse(context, packet[pos], 1);
     } 

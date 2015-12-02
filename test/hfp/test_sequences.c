@@ -49,14 +49,14 @@
 #include "test_sequences.h"
 
 
-#define TEST_SEQUENCE(name) { (char**)name, sizeof(name) / sizeof(char *)}
+#define TEST_SEQUENCE(test_sequence) { (char *)#test_sequence, (char**)test_sequence, sizeof(test_sequence) / sizeof(char *)}
 
 /* Service Level Connection (slc) test sequences */
 
 // with codec negotiation feature
 const char * slc_test1[] = {
-    "AT+BRSF=438",
-    "+BRSF:1007", 
+    "AT+BRSF=127",
+    "+BRSF:4079", 
     "OK",
     "AT+BAC=1,2", 
     "OK",
@@ -90,6 +90,7 @@ const char * slc_test2[] = {
     "+CHLD:(1,1x,2,2x,3)",
     "OK"
 };
+
 
 hfp_test_item_t slc_tests[] = {
     TEST_SEQUENCE(slc_test1),
@@ -190,44 +191,60 @@ hfp_test_item_t ic_tests[] = {
     TEST_SEQUENCE(ic_test1)
 };
 
+// PTS test sequences
 
+const char * TC_AG_SLC_BV_01_C[] = {
+    "AT+BRSF=127" ,
+    "+BRSF:4079" ,
+    "OK" ,
+    "AT+CIND=?" ,
+    "+CIND:(\"service\",(0,1)),(\"call\",(0,1)),(\"callsetup\",(0,3)),(\"battchg\",(0,5)),(\"signal\",(0,5)),(\"roam\",(0,1)),(\"callheld\",(0,2))" ,
+    "OK" ,
+    "AT+CIND?" ,
+    "+CIND:1,0,0,3,5,0,0" ,
+    "OK" ,
+    "AT+CMER=3,0,0,1" ,
+    "OK" ,
+    "AT+CHLD=?" ,
+    "+CHLD:(1,1x,2,2x,3)" ,
+    "OK" ,
+    "AT+VGS=9" ,
+    "OK" ,
+    "AT+VGM=9" ,
+    "OK" ,
+    "AT+CLIP=1" ,
+    "OK" ,
+    "AT+CCWA=1" ,
+    "OK" ,
+    "AT+CMEE=1" ,
+    "OK"
+};
+
+hfp_test_item_t pts_slc_tests[] = {
+    TEST_SEQUENCE(TC_AG_SLC_BV_01_C)
+};
 
 //////////////
 
 static int test_item_size = sizeof(hfp_test_item_t);
 
 // SLC
+int hfp_slc_tests_size(){ return sizeof(slc_tests)/test_item_size;}
 hfp_test_item_t * hfp_slc_tests(){ return slc_tests;}
-int slc_tests_size(){ return sizeof(slc_tests)/test_item_size;}
-
-char ** default_slc_setup() { return (char **)slc_test1;}
-int default_slc_setup_size(){ return sizeof(slc_test1)/sizeof(char*);}
+hfp_test_item_t * default_hfp_slc_test(){return  &slc_tests[0];}
 
 // SLC commands
+int hfp_slc_cmds_tests_size(){ return sizeof(slc_cmds_tests)/test_item_size;}
 hfp_test_item_t * hfp_slc_cmds_tests(){ return slc_cmds_tests;}
-int slc_cmds_tests_size(){ return sizeof(slc_cmds_tests)/test_item_size;}
-
-char ** default_slc_cmds_setup() { return (char **)slc_cmds_test1;}
-int default_slc_cmds_setup_size(){ return sizeof(slc_cmds_test1)/sizeof(char*);}
+hfp_test_item_t * default_slc_cmds_test() { return  &slc_tests[0];}
 
 // CC
+int hfp_cc_tests_size(){ return sizeof(cc_tests) /test_item_size;}
 hfp_test_item_t * hfp_cc_tests(){ return cc_tests;}
-int cc_tests_size(){ return sizeof(cc_tests) /test_item_size;}
+hfp_test_item_t * default_hfp_cc_test(){ return &cc_tests[0];}
 
-char ** default_cc_setup() { return (char **)cc_test1;}
-int default_cc_setup_size(){ return sizeof(cc_test1)/sizeof(char*);}
+// PTS
+int hfp_pts_slc_tests_size(){ return sizeof(pts_slc_tests)/test_item_size;}
+hfp_test_item_t * hfp_pts_slc_tests(){ return pts_slc_tests;}
 
-// IC
-char ** default_ic_setup() { return (char **)ic_test1;}
-int default_ic_setup_size(){ return sizeof(ic_test1)/sizeof(char*);}
-
-char ** alert_ic_setup() { return (char **)ic_alert_test1;}
-int alert_ic_setup_size(){ return sizeof(ic_alert_test1)/sizeof(char*);}
-
-
-char ** terminate_ic_ag_setup() { return (char **)ic_ag_terminates_call;}
-int terminate_ic_ag_setup_size(){ return sizeof(ic_ag_terminates_call)/sizeof(char*);}
-
-char ** terminate_ic_hf_setup() { return (char **)ic_hf_terminates_call;}
-int terminate_ic_hf_setup_size(){ return sizeof(ic_hf_terminates_call)/sizeof(char*);}
  
