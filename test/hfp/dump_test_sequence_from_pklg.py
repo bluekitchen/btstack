@@ -43,7 +43,8 @@ test_name = sys.argv[2]
 separator = ""
 spaces = "    "
 print "const char * "+test_name+"[] = {"
-    
+
+
 with open (infile, 'rb') as fin:
     try:
         while True:
@@ -55,32 +56,24 @@ with open (infile, 'rb') as fin:
             packet  = fin.read(packet_len)
             time    = "[%s.%03u]" % (datetime.datetime.fromtimestamp(ts_sec).strftime("%Y-%m-%d %H:%M:%S"), ts_usec / 1000)
             if type == 0xfc:
-                packet = packet.replace("\n","\\n");
-                packet = packet.replace("\r","\\r");
-                packet = packet.replace("\"","\\\"");
+                packet = packet.replace("\n","\\n")
+                packet = packet.replace("\r","\\r")
+                packet = packet.replace("\"","\\\"")
                 
                 parts = re.match('HFP_RX(.*)',packet)
                 if not parts:
-                    parts = re.match('PTS_TEST_TX(.*)',packet)
+                    parts = re.match('HFP_TX(.*)',packet)
                 
                 cmd = 0
                 if parts:
-                    cmd = parts.groups()[0].strip()
-                    cmd = cmd.replace("\\n","");
-                    cmd = cmd.replace("\\r","");
-                    
-                if cmd:
-                    #print "CMD ", packet
-                    cmd_parts = re.match('(.*)OK', cmd)
-                    if (cmd_parts):
-                        if cmd_parts.groups()[0] <> "":
-                            print separator+spaces+"\""+cmd_parts.groups()[0]+"\"",
-                        print separator+spaces+"\"OK\"",
-                    else:
-                        print separator+spaces+"\""+cmd+"\"",
+                    hfp_cmds = parts.groups()[0].split('\\r\\n')
+                    for cmd in hfp_cmds:
+                        cmd = cmd.strip()
+                        if cmd <> "":
+                            print separator+spaces+"\""+cmd+"\"",
+                            separator = ",\n"
                         
-                    separator = ",\n"
-                    
+
     except TypeError:
         print "\n};\n"
         exit(0) 

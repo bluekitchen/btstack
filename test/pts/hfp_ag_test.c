@@ -72,7 +72,8 @@ const uint8_t    rfcomm_channel_nr = 1;
 const char hfp_ag_service_name[] = "BTstack HFP AG Test";
 
 static bd_addr_t device_addr;
-static bd_addr_t pts_addr = {0x00,0x1b,0xDC,0x07,0x32,0xEF};
+static bd_addr_t pts_addr = {0x00,0x15,0x83,0x5F,0x9D,0x46};
+//static bd_addr_t pts_addr = {0x00,0x1b,0xDC,0x07,0x32,0xEF};
 static bd_addr_t speaker_addr = {0x00, 0x21, 0x3C, 0xAC, 0xF7, 0x38};
 static uint8_t codecs[1] = {HFP_CODEC_CVSD};
 static uint16_t handle = -1;
