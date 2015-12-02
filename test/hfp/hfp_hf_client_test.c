@@ -134,6 +134,7 @@ void simulate_test_sequence(char ** test_steps, int nr_test_steps){
                     printf("\nError: Expected:'%s', but got:'%s'", cmd, (char *)get_rfcomm_payload());
                     return;
                 }
+                inject_rfcomm_command_to_ag((uint8_t*)"NOP",3); 
             }
         } else {
             inject_rfcomm_command_to_hf((uint8_t*)cmd, strlen(cmd));

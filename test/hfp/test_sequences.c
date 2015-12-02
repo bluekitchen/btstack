@@ -110,7 +110,6 @@ hfp_test_item_t slc_cmds_tests[] = {
 const char * cc_test1[] = {
     "AT+BCC", 
     "OK",
-    "NOP",
     "+BCS:1",
     "AT+BCS=1",
     "OK"
@@ -121,7 +120,6 @@ const char * cc_test2[] = {
     "OK",
     "AT+BCC",
     "OK",
-    "NOP",
     "BCS:1",
     "AT+BCS=1",
     "OK"
@@ -133,11 +131,9 @@ const char * cc_test3[] = {
     "OK",
     "AT+BCC",
     "OK",
-    "NOP",
     "+BCS:1",
     "AT+BAC=2,3", 
     "OK",
-    "NOP",
     "+BCS:3",
     "AT+BCS=3",
     "OK"
@@ -146,11 +142,9 @@ const char * cc_test3[] = {
 const char * cc_test4[] = {
     "AT+BCC", 
     "OK",
-    "NOP",
     "+BCS:1",
     "AT+BAC=2,3", 
     "OK",
-    "NOP",
     "+BCS:3",
     "AT+BCS=3",
     "OK"
@@ -167,7 +161,6 @@ hfp_test_item_t cc_tests[] = {
 /* Incoming call sequence */
 const char * ic_test1[] = {
     "+CIEV:3,1",
-    "NOP",
     "BCS:1",
     "AT+BCS=1",
     "OK",
@@ -175,12 +168,9 @@ const char * ic_test1[] = {
 };
 
 const char * ic_alert_test1[] = {
-    "NOP",
     "ATA",
     "OK",
-    "NOP",
     "+CIEV:2,1", // call = 1
-    "NOP",
     "+CIEV:3,0", 
 };
 
@@ -191,10 +181,8 @@ const char * ic_ag_terminates_call[] = {
 
 const char * ic_hf_terminates_call[] = {
     // HF terminates call
-    "NOP",
     "AT+CHUP",
     "OK",
-    "NOP",
     "+CIEV:2,0"  
 };
 

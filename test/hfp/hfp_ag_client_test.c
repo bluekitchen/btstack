@@ -125,8 +125,6 @@ void simulate_test_sequence(char ** test_steps, int nr_test_steps){
         printf("\n---> NEXT STEP %s\n", cmd);
         if (strncmp(cmd, "AT", 2) == 0){
             inject_rfcomm_command_to_ag((uint8_t*)cmd, strlen(cmd));
-        } else if (strncmp(cmd, "NOP", 3) == 0){
-            inject_rfcomm_command_to_ag((uint8_t*)"NOP",3);
         } else {
             int expected_cmd = expected_rfcomm_command(cmd);
             if (!expected_cmd){
@@ -135,8 +133,10 @@ void simulate_test_sequence(char ** test_steps, int nr_test_steps){
                 return;
             } 
             printf("AG response verified %s\n\n", cmd);
+            inject_rfcomm_command_to_ag((uint8_t*)"NOP",3); 
         }
     }
+       
 }
 
 void packet_handler(uint8_t * event, uint16_t event_size){
