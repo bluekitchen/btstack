@@ -137,10 +137,10 @@ void simulate_test_sequence(hfp_test_item_t * test_item){
                     return;
                 }
                 printf("Command verified: %s\n", cmd);
-                inject_rfcomm_command_to_ag((uint8_t*)"NOP",3); 
+                inject_hfp_command_to_ag((uint8_t*)"NOP",3); 
             }
         } else {
-            inject_rfcomm_command_to_hf((uint8_t*)cmd, strlen(cmd));
+            inject_hfp_command_to_hf((uint8_t*)cmd, strlen(cmd));
         }
     }
 }
@@ -232,8 +232,8 @@ TEST_GROUP(HFPClient){
 };
 
 TEST(HFPClient, PTSSLCTests){
-    for (int i = 0; i < hfp_pts_slc_tests_size(); i++){
-        setup_hfp_service_level_connection(&hfp_pts_slc_tests()[i]);
+    for (int i = 0; i < hfp_pts_hf_slc_tests_size(); i++){
+        setup_hfp_service_level_connection(&hfp_pts_hf_slc_tests()[i]);
         CHECK_EQUAL(service_level_connection_established, 1);
         teardown();
     }

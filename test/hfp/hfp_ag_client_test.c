@@ -104,19 +104,37 @@ static uint8_t start_ringing = 0;
 static uint8_t stop_ringing = 0;
 static uint8_t call_termiated = 0;
 
-int expected_rfcomm_command(const char * expected_cmd){
-    char * ag_cmd = (char *)get_rfcomm_payload();
-    int ag_len = get_rfcomm_payload_len();
-    int expected_len = strlen(expected_cmd);
-    for (int i = 0; i < ag_len; i++){
-        if ( (ag_cmd+i)[0] == '\r' || (ag_cmd+i)[0] == '\n' ) {
-            continue;
-        }
-        if (strncmp(ag_cmd + i, expected_cmd, expected_len) == 0) return 1;
-    }
-    return 0;
+
+static int hfp_command_start_index = 0;
+
+int has_more_hfp_commands(){
+    // \r\nOK\r\n is the smallest AG cmd
+    int has_cmd = get_rfcomm_payload_len() - hfp_command_start_index >= 6;
+    printf("has more: payload len %d, start %d, has more %d\n", get_rfcomm_payload_len(), hfp_command_start_index, has_cmd);
+    return has_cmd; 
 }
 
+char * get_next_hfp_command(){
+    printf("get next: payload len %d, start %d\n", get_rfcomm_payload_len(), hfp_command_start_index);
+    char * data = (char *)(&get_rfcomm_payload()[hfp_command_start_index + 2]);
+    int data_len = get_rfcomm_payload_len() - hfp_command_start_index - 2;
+
+    int i;
+
+    for (i = 0; i < data_len; i++){
+        if ( *(data+i) == '\r' || *(data+i) == '\n' ) {
+            data[i]=0;
+            printf("!!! command: '%s'\n", data);
+            // update state
+            hfp_command_start_index = hfp_command_start_index + i + 4;
+            return data;
+        } else {
+            // printf("check %i '%c'\n",i,*(data+i));
+        }
+    }
+    printf("should not got here\n");
+    return NULL;
+}
 
 void simulate_test_sequence(hfp_test_item_t * test_item){
     char ** test_steps = test_item->test;
@@ -124,22 +142,34 @@ void simulate_test_sequence(hfp_test_item_t * test_item){
     
     int i = 0;
     for (i=0; i < test_item->len; i++){
-        char * cmd = test_steps[i];
-        printf("\n---> NEXT STEP %s\n", cmd);
-        if (strncmp(cmd, "AT", 2) == 0){
-            inject_rfcomm_command_to_ag((uint8_t*)cmd, strlen(cmd));
+        char * expected_cmd = test_steps[i];
+        int expected_cmd_len = strlen(expected_cmd);
+
+        if (strncmp(expected_cmd, "AT", 2) == 0){
+            printf("\n---> NEXT STEP receive from HF: '%s'\n", expected_cmd);
+            hfp_command_start_index = 0;
+            inject_hfp_command_to_ag((uint8_t*)expected_cmd, expected_cmd_len);
         } else {
-            int expected_cmd = expected_rfcomm_command(cmd);
-            if (!expected_cmd){
-                printf("\nError: Expected:'%s', but got:'%s'\n", cmd, (char *)get_rfcomm_payload());
-                CHECK_EQUAL(expected_cmd,1);
-                return;
-            } 
-            printf("AG response verified %s\n\n", cmd);
-            inject_rfcomm_command_to_ag((uint8_t*)"NOP",3); 
+            printf("\n---> NEXT STEP expect from AG: %s\n", expected_cmd);
+                
+            if (has_more_hfp_commands()){
+                char * ag_cmd = get_next_hfp_command();
+                printf("AG response verify %s == %s[%d]\n", expected_cmd, ag_cmd, expected_cmd_len);
+
+                int equal_cmds = strncmp(ag_cmd, expected_cmd, expected_cmd_len) == 0;
+                if (!equal_cmds){
+                    printf("\nError: Expected:'%s', but got:'%s'\n", expected_cmd, ag_cmd);
+                    CHECK_EQUAL(equal_cmds,1);
+                    return;
+                } 
+                printf("AG response verified '%s'\n", expected_cmd);
+            } else {
+                hfp_command_start_index = 0;
+                printf("\n---> NEXT STEP trigger once more AG\n");
+                inject_hfp_command_to_ag((uint8_t*)"NOP",3); 
+            }
         }
-    }
-       
+    }   
 }
 
 void packet_handler(uint8_t * event, uint16_t event_size){
@@ -229,8 +259,8 @@ TEST_GROUP(HFPClient){
 };
 
 TEST(HFPClient, PTSSLCTests){
-    for (int i = 0; i < hfp_pts_slc_tests_size(); i++){
-        setup_hfp_service_level_connection(&hfp_pts_slc_tests()[i]);
+    for (int i = 0; i < hfp_pts_ag_slc_tests_size(); i++){
+        setup_hfp_service_level_connection(&hfp_pts_ag_slc_tests()[i]);
         teardown();
     }
 }

@@ -70,6 +70,7 @@ with open (infile, 'rb') as fin:
                     for cmd in hfp_cmds:
                         cmd = cmd.strip()
                         if cmd <> "":
+                            cmd = cmd.replace("\\r","")
                             print separator+spaces+"\""+cmd+"\"",
                             separator = ",\n"
                         
@@ -79,4 +80,3 @@ with open (infile, 'rb') as fin:
         exit(0) 
 
 print "\n};\n"
-

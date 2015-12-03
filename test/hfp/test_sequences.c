@@ -164,8 +164,7 @@ const char * ic_test1[] = {
     "+CIEV:3,1",
     "BCS:1",
     "AT+BCS=1",
-    "OK",
-    "NOP"
+    "OK"
 };
 
 const char * ic_alert_test1[] = {
@@ -401,7 +400,7 @@ const char * TC_AG_SLC_BV_09_I[] = {
     "+BIND:(1,2,)" ,
     "OK" ,
     "AT+BIND?" ,
-    "+BIND:1,1" ,
+    "+BIND:1,1",
     "+BIND:2,1" ,
     "OK" ,
     "AT+VGS=9" ,
@@ -443,7 +442,7 @@ const char * TC_AG_SLC_BV_10_I[] = {
     "OK"
 };
 
-hfp_test_item_t pts_slc_tests[] = {
+hfp_test_item_t pts_ag_slc_tests[] = {
     TEST_SEQUENCE(TC_AG_SLC_BV_01_C),
     TEST_SEQUENCE(TC_AG_SLC_BV_02_C),
     TEST_SEQUENCE(TC_AG_SLC_BV_03_C),
@@ -453,6 +452,42 @@ hfp_test_item_t pts_slc_tests[] = {
     TEST_SEQUENCE(TC_AG_SLC_BV_07_I),
     TEST_SEQUENCE(TC_AG_SLC_BV_09_I),
     TEST_SEQUENCE(TC_AG_SLC_BV_10_I)
+};
+
+
+const char * TC_HF_SLC_BV_01_C[] = {
+    "AT+BRSF=951" ,
+    "+BRSF: 511" ,
+    "OK" ,
+    "AT+CIND=?" ,
+    "+CIND: (\"service\",(0,1)),(\"call\",(0,1)),(\"callsetup\",(0-3)),(\"callheld\",(0-2)),(\"signal\",(0-5)),(\"roam\",(0-1)),(\"battchg\",(0-5))" ,
+    "OK" ,
+    "AT+CIND?" ,
+    "+CIND: 1,0,0,0,5,0,5" ,
+    "OK" ,
+    "AT+CMER=3,0,0,1" ,
+    "OK" ,
+    "AT+CHLD=?" ,
+    "+CHLD: (0,1,1x,2,2x,3,4)" ,
+    "OK" ,
+    "AT+VGM=9" ,
+    "+BSIR: 0" ,
+    "AT+VGS=9" ,
+    "OK" ,
+    "OK"
+};
+
+
+hfp_test_item_t pts_hf_slc_tests[] = {
+    TEST_SEQUENCE(TC_HF_SLC_BV_01_C),
+//    TEST_SEQUENCE(TC_HF_SLC_BV_02_C),
+//    TEST_SEQUENCE(TC_HF_SLC_BV_03_C),
+//    TEST_SEQUENCE(TC_HF_SLC_BV_04_C),
+//    TEST_SEQUENCE(TC_HF_SLC_BV_05_I),
+//    TEST_SEQUENCE(TC_HF_SLC_BV_06_I),
+//    TEST_SEQUENCE(TC_HF_SLC_BV_07_I),
+//    TEST_SEQUENCE(TC_HF_SLC_BV_09_I),
+//    TEST_SEQUENCE(TC_HF_SLC_BV_10_I),
 };
 
 //////////////
@@ -475,7 +510,10 @@ hfp_test_item_t * hfp_cc_tests(){ return cc_tests;}
 hfp_test_item_t * default_hfp_cc_test(){ return &cc_tests[0];}
 
 // PTS
-int hfp_pts_slc_tests_size(){ return sizeof(pts_slc_tests)/test_item_size;}
-hfp_test_item_t * hfp_pts_slc_tests(){ return pts_slc_tests;}
+int hfp_pts_ag_slc_tests_size(){ return sizeof(pts_ag_slc_tests)/test_item_size;}
+hfp_test_item_t * hfp_pts_ag_slc_tests(){ return pts_ag_slc_tests;}
+
+int hfp_pts_hf_slc_tests_size(){ return sizeof(pts_hf_slc_tests)/test_item_size;}
+hfp_test_item_t * hfp_pts_hf_slc_tests(){ return pts_hf_slc_tests;}
 
  

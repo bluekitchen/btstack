@@ -73,7 +73,8 @@ const uint32_t   hfp_service_buffer[150/4]; // implicit alignment to 4-byte memo
 const uint8_t    rfcomm_channel_nr = 1;
 const char hfp_hf_service_name[] = "BTstack HFP HF Test";
 
-static bd_addr_t pts_addr = {0x00,0x1b,0xDC,0x07,0x32,0xEF};
+static bd_addr_t pts_addr = {0x00,0x15,0x83,0x5F,0x9D,0x46};
+//static bd_addr_t pts_addr = {0x00,0x1b,0xDC,0x07,0x32,0xEF};
 static bd_addr_t phone_addr = {0xD8,0xBb,0x2C,0xDf,0xF1,0x08};
 
 static bd_addr_t device_addr;

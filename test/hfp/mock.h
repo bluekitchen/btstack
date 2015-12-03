@@ -50,5 +50,5 @@
 uint8_t * get_rfcomm_payload();
 uint16_t get_rfcomm_payload_len();
 
-void inject_rfcomm_command_to_ag(uint8_t * data, int len);
-void inject_rfcomm_command_to_hf(uint8_t * data, int len);
+void inject_hfp_command_to_ag(uint8_t * data, int len);
+void inject_hfp_command_to_hf(uint8_t * data, int len);
