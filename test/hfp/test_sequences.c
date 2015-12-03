@@ -121,7 +121,7 @@ const char * cc_test2[] = {
     "OK",
     "AT+BCC",
     "OK",
-    "BCS:1",
+    "+BCS:1",
     "AT+BCS=1",
     "OK"
 };
@@ -671,6 +671,57 @@ hfp_test_item_t pts_hf_slc_tests[] = {
     TEST_SEQUENCE(TC_HF_SLC_BV_10_I),
 };
 
+//// PTS ATA Group
+const char * TC_AG_ATA_BV_01_I[] = {
+    "USER:a",
+    "AT+BRSF=127" ,
+    "+BRSF:4079" ,
+    "OK" ,
+    "AT+CIND=?" ,
+    "+CIND:(\"service\",(0,1)),(\"call\",(0,1)),(\"callsetup\",(0,3)),(\"battchg\",(0,5)),(\"signal\",(0,5)),(\"roam\",(0,1)),(\"callheld\",(0,2))" ,
+    "OK" ,
+    "AT+CIND?" ,
+    "+CIND:1,0,0,3,5,0,0" ,
+    "OK" ,
+    "AT+CMER=3,0,0,1" ,
+    "OK" ,
+    "AT+CHLD=?" ,
+    "+CHLD:(1,1x,2,2x,3)" ,
+    "OK" ,
+    "AT+VGS=9" ,
+    "OK" ,
+    "AT+VGM=9" ,
+    "OK" ,
+    "AT+CLIP=1" ,
+    "OK" ,
+    "AT+CCWA=1" ,
+    "OK" ,
+    "AT+CMEE=1" ,
+    "OK" ,
+    "USER:c",
+    "+CIEV:3,1" ,
+    "RING" ,
+    "+CLIP: \"1234567\",129" ,
+    "ATA" ,
+    "OK" ,
+    "+CIEV:2,1" ,
+    "+CIEV:3,0" ,
+    "USER:C",
+    "USER:B",
+    "USER:t",
+    "+CIEV:2,0"
+};
+
+
+hfp_test_item_t pts_ag_ata_tests[] = {
+    TEST_SEQUENCE(TC_AG_ATA_BV_01_I),
+    // TEST_SEQUENCE(TC_AG_ATA_BV_02_I)
+};
+
+hfp_test_item_t pts_hf_ata_tests[] = {
+    // TEST_SEQUENCE(TC_HF_ATA_BV_01_I),
+    // TEST_SEQUENCE(TC_HF_ATA_BV_02_I)
+};
 //////////////
 
 static int test_item_size = sizeof(hfp_test_item_t);
@@ -690,11 +741,18 @@ int hfp_cc_tests_size(){ return sizeof(cc_tests) /test_item_size;}
 hfp_test_item_t * hfp_cc_tests(){ return cc_tests;}
 hfp_test_item_t * default_hfp_cc_test(){ return &cc_tests[0];}
 
-// PTS
+// PTS - SLC Group
 int hfp_pts_ag_slc_tests_size(){ return sizeof(pts_ag_slc_tests)/test_item_size;}
 hfp_test_item_t * hfp_pts_ag_slc_tests(){ return pts_ag_slc_tests;}
 
 int hfp_pts_hf_slc_tests_size(){ return sizeof(pts_hf_slc_tests)/test_item_size;}
 hfp_test_item_t * hfp_pts_hf_slc_tests(){ return pts_hf_slc_tests;}
+
+// PTS - ATA Group
+int hfp_pts_ag_ata_tests_size(){ return sizeof(pts_ag_ata_tests)/test_item_size;}
+hfp_test_item_t * hfp_pts_ag_ata_tests(){ return pts_ag_ata_tests;}
+
+int hfp_pts_hf_ata_tests_size(){ return sizeof(pts_hf_ata_tests)/test_item_size;}
+hfp_test_item_t * hfp_pts_hf_ata_tests(){ return pts_hf_ata_tests;}
 
  

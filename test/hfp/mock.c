@@ -62,7 +62,11 @@ static uint16_t rfcomm_cid = 1;
 static bd_addr_t dev_addr;
 static uint16_t sco_handle = 10;
 static uint8_t rfcomm_payload[200];
-static uint16_t rfcomm_payload_len;
+static uint16_t rfcomm_payload_len = 0;
+
+static uint8_t outgoing_rfcomm_payload[200];
+static uint16_t outgoing_rfcomm_payload_len = 0;
+
 void * active_connection;
 hfp_connection_t * hfp_context;
 
@@ -77,23 +81,51 @@ uint16_t get_rfcomm_payload_len(){
 	return rfcomm_payload_len;
 }
 
+static int hfp_command_start_index = 0;
 
-static void print_without_newlines(uint8_t *data, uint16_t len){
-    int found_newline = 0;
-    int found_item = 0;
-    
-    for (int i=0; i<len; i++){
-        if (data[i] == '\r' || data[i] == '\n'){
-            if (!found_newline && found_item) printf("\n");
-            found_newline = 1;
-        } else {
-            printf("%c", data[i]);
-            found_newline = 0;
-            found_item = 1;
-        }
-    }
-    printf("\n");
+
+int has_more_hfp_commands(int start_command_offset, int end_command_offset){
+    int has_cmd = get_rfcomm_payload_len() - hfp_command_start_index >= 2 + start_command_offset + end_command_offset;
+    //printf("has more: payload len %d, start %d, has more %d\n", get_rfcomm_payload_len(), hfp_command_start_index, has_cmd);
+    return has_cmd; 
 }
+
+char * get_next_hfp_command(int start_command_offset, int end_command_offset){
+    //printf("get next: payload len %d, start %d\n", get_rfcomm_payload_len(), hfp_command_start_index);
+    char * data = (char *)(&get_rfcomm_payload()[hfp_command_start_index + start_command_offset]);
+    int data_len = get_rfcomm_payload_len() - hfp_command_start_index - start_command_offset;
+
+    int i;
+
+    for (i = 0; i < data_len; i++){
+        if ( *(data+i) == '\r' || *(data+i) == '\n' ) {
+            data[i]=0;
+            // update state
+            // printf("!!! command %s\n", data);
+            hfp_command_start_index = hfp_command_start_index + i + start_command_offset + end_command_offset;
+            return data;
+        } 
+    }
+    printf("should not got here\n");
+    return NULL;
+}
+
+// static void print_without_newlines(uint8_t *data, uint16_t len){
+//     int found_newline = 0;
+//     int found_item = 0;
+    
+//     for (int i=0; i<len; i++){
+//         if (data[i] == '\r' || data[i] == '\n'){
+//             if (!found_newline && found_item) printf("\n");
+//             found_newline = 1;
+//         } else {
+//             printf("%c", data[i]);
+//             found_newline = 0;
+//             found_item = 1;
+//         }
+//     }
+//     printf("\n");
+// }
 
 extern "C" void l2cap_init(void){}
 
@@ -102,16 +134,26 @@ extern "C" void l2cap_register_packet_handler(void (*handler)(void * connection,
 
 
 int  rfcomm_send_internal(uint16_t rfcomm_cid, uint8_t *data, uint16_t len){
-	// if (strncmp((char*)data, "AT", 2) == 0){
-	// 	printf("Verify HF state machine response: ");
- //        print_without_newlines(data,len);
-	// } else {
- //        printf("Verify AG state machine response: ");
- //        print_without_newlines(data,len);
-	// }
-	strncpy((char*)&rfcomm_payload[0], (char*)data, len);
-    rfcomm_payload_len = len;
-	return 0;
+	int start_command_offset = 2;
+    int end_command_offset = 2;
+    
+    if (strncmp((char*)data, "AT", 2) == 0){
+		start_command_offset = 0;
+	} 
+    
+    if (has_more_hfp_commands(start_command_offset, end_command_offset)){
+        // printf("Buffer response: ");
+        strncpy((char*)&rfcomm_payload[rfcomm_payload_len], (char*)data, len);
+        rfcomm_payload_len += len;
+    } else {
+        hfp_command_start_index = 0;
+        // printf("Copy response: ");
+        strncpy((char*)&rfcomm_payload[0], (char*)data, len);
+        rfcomm_payload_len = len;
+    }
+	
+    // print_without_newlines(rfcomm_payload,rfcomm_payload_len);
+    return 0;
 }
 
 static void hci_event_sco_complete(){
@@ -262,57 +304,46 @@ int hci_remote_eSCO_supported(hci_con_handle_t handle){
 
 static void add_new_lines_to_hfp_command(uint8_t * data, int len){
     if (len <= 0) return;
-    memset(&rfcomm_payload, 0, 200);
+    memset(&outgoing_rfcomm_payload, 0, 200);
     int pos = 0;
 
     if (strncmp((char*)data, "AT", 2) == 0){
-        strncpy((char*)&rfcomm_payload[pos], (char*)data, len);
+        strncpy((char*)&outgoing_rfcomm_payload[pos], (char*)data, len);
         pos += len;
     } else {
-        rfcomm_payload[pos++] = '\r';
-        rfcomm_payload[pos++] = '\n';
-        strncpy((char*)&rfcomm_payload[pos], (char*)data, len);
+        outgoing_rfcomm_payload[pos++] = '\r';
+        outgoing_rfcomm_payload[pos++] = '\n';
+        strncpy((char*)&outgoing_rfcomm_payload[pos], (char*)data, len);
         pos += len;
     
         if (memcmp((char*)data, "+BAC", 4) != 0 &&
             memcmp((char*)data, "+BCS", 4) != 0){
-            rfcomm_payload[pos++] = '\r';
-            rfcomm_payload[pos++] = '\n';
-            rfcomm_payload[pos++] = 'O';
-            rfcomm_payload[pos++] = 'K';
+            outgoing_rfcomm_payload[pos++] = '\r';
+            outgoing_rfcomm_payload[pos++] = '\n';
+            outgoing_rfcomm_payload[pos++] = 'O';
+            outgoing_rfcomm_payload[pos++] = 'K';
         }   
     
     }
-    rfcomm_payload[pos++] = '\r';
-    rfcomm_payload[pos++] = '\n';
-    rfcomm_payload[pos] = 0;
-    rfcomm_payload_len = pos;
+    outgoing_rfcomm_payload[pos++] = '\r';
+    outgoing_rfcomm_payload[pos++] = '\n';
+    outgoing_rfcomm_payload[pos] = 0;
+    outgoing_rfcomm_payload_len = pos;
 }   
 
 void inject_hfp_command_to_hf(uint8_t * data, int len){
     if (memcmp((char*)data, "AT", 2) == 0) return;
     
     add_new_lines_to_hfp_command(data, len);
-    // if (data[0] == '+' || (data[0] == 'O' && data[1] == 'K')){
-    //     printf("Send cmd to HF state machine: %s\n", data);
-    // } 
-    //} else {
-    //     printf("Trigger HF state machine - %s", data);
-    // }
-    (*registered_rfcomm_packet_handler)(active_connection, RFCOMM_DATA_PACKET, rfcomm_cid, (uint8_t *) &rfcomm_payload[0], rfcomm_payload_len);
+    (*registered_rfcomm_packet_handler)(active_connection, RFCOMM_DATA_PACKET, rfcomm_cid, (uint8_t *) &outgoing_rfcomm_payload[0], outgoing_rfcomm_payload_len);
+
 }
 
 void inject_hfp_command_to_ag(uint8_t * data, int len){
     if (data[0] == '+') return;
     
     add_new_lines_to_hfp_command(data, len);
-    // if (memcmp((char*)data, "AT", 2) == 0){
-    //     printf("Send cmd to AG state machine: %s\n", data);
-    // }
-    // } else {
-    //     printf("Trigger AG state machine - %s", data);
-    // }
-    (*registered_rfcomm_packet_handler)(active_connection, RFCOMM_DATA_PACKET, rfcomm_cid, (uint8_t *) &rfcomm_payload[0], rfcomm_payload_len);
+    (*registered_rfcomm_packet_handler)(active_connection, RFCOMM_DATA_PACKET, rfcomm_cid, (uint8_t *) &outgoing_rfcomm_payload[0], outgoing_rfcomm_payload_len);
 }
 
 

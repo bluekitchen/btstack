@@ -52,3 +52,6 @@ uint16_t get_rfcomm_payload_len();
 
 void inject_hfp_command_to_ag(uint8_t * data, int len);
 void inject_hfp_command_to_hf(uint8_t * data, int len);
+
+int has_more_hfp_commands(int start_command_offset, int end_command_offset);
+char * get_next_hfp_command(int start_command_offset, int end_command_offset);

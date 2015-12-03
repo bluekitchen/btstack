@@ -113,6 +113,14 @@ int expected_rfcomm_command(const char * cmd){
     return cmd_found && ok_found;
 }
 
+char * get_next_hfp_hf_command(){
+    return get_next_hfp_command(0,2);
+}
+
+int has_more_hfp_hf_commands(){
+    return has_more_hfp_commands(0,2);
+}
+
 void simulate_test_sequence(hfp_test_item_t * test_item){
     char ** test_steps = test_item->test;
     printf("\nSimulate test sequence: \"%s\"\n", test_item->name);
@@ -230,6 +238,13 @@ TEST_GROUP(HFPClient){
     }
 
 };
+
+TEST(HFPClient, PTSATATests){
+    for (int i = 0; i < hfp_pts_hf_ata_tests_size(); i++){
+        simulate_test_sequence(&hfp_pts_hf_ata_tests()[i]);
+        teardown();
+    }
+}
 
 TEST(HFPClient, PTSSLCTests){
     for (int i = 0; i < hfp_pts_hf_slc_tests_size(); i++){

@@ -68,10 +68,15 @@ int hfp_cc_tests_size();
 hfp_test_item_t * hfp_cc_tests();
 hfp_test_item_t * default_hfp_cc_test();
 
-/* PTS test sequences */
+/* PTS test sequences - SLC Group */
 int hfp_pts_ag_slc_tests_size();
 hfp_test_item_t * hfp_pts_ag_slc_tests();
-
 int hfp_pts_hf_slc_tests_size();
 hfp_test_item_t * hfp_pts_hf_slc_tests();
+
+/* PTS test sequences - ATA Group */
+int hfp_pts_ag_ata_tests_size();
+hfp_test_item_t * hfp_pts_ag_ata_tests();
+int hfp_pts_hf_ata_tests_size();
+hfp_test_item_t * hfp_pts_hf_ata_tests();
 
