@@ -51,52 +51,6 @@
 
 #define TEST_SEQUENCE(test_sequence) { (char *)#test_sequence, (char**)test_sequence, sizeof(test_sequence) / sizeof(char *)}
 
-/* Service Level Connection (slc) test sequences */
-
-// with codec negotiation feature
-const char * slc_test1[] = {
-    "AT+BRSF=127",
-    "+BRSF:4079", 
-    "OK",
-    "AT+BAC=1,2", 
-    "OK",
-    "AT+CIND=?",
-    "+CIND:(\"service\",(0,1)),(\"call\",(0,1)),(\"callsetup\",(0,3)),(\"battchg\",(0,5)),(\"signal\",(0,5)),(\"roam\",(0,1)),(\"callheld\",(0,2))",
-    "OK",
-    "AT+CIND?",
-    "+CIND:1,0,0,3,5,0,0",
-    "OK",
-    "AT+CMER=3,0,0,1",
-    "OK",
-    "AT+CHLD=?",
-    "+CHLD:(1,1x,2,2x,3)",
-    "OK"
-};
-
-// without codec negotiation feature
-const char * slc_test2[] = {
-    "AT+BRSF=438",
-    "+BRSF:495", 
-    "OK",
-    "AT+CIND=?",
-    "+CIND:(\"service\",(0,1)),(\"call\",(0,1)),(\"callsetup\",(0,3)),(\"battchg\",(0,5)),(\"signal\",(0,5)),(\"roam\",(0,1)),(\"callheld\",(0,2))",
-    "OK",
-    "AT+CIND?",
-    "+CIND:1,0,0,3,5,0,0",
-    "OK",
-    "AT+CMER=3,0,0,1",
-    "OK",
-    "AT+CHLD=?",
-    "+CHLD:(1,1x,2,2x,3)",
-    "OK"
-};
-
-
-hfp_test_item_t slc_tests[] = {
-    TEST_SEQUENCE(slc_test1),
-    TEST_SEQUENCE(slc_test2)
-};
-
 /* Service Level Connection (slc) common commands */
 const char * slc_cmds_test1[] = {
     "AT+BAC=1,3", 
@@ -193,6 +147,7 @@ hfp_test_item_t ic_tests[] = {
 // PTS test sequences
 
 const char * TC_AG_SLC_BV_01_C[] = {
+    "USER:a",
     "AT+BRSF=127" ,
     "+BRSF:4079" ,
     "OK" ,
@@ -220,6 +175,7 @@ const char * TC_AG_SLC_BV_01_C[] = {
 };
 
 const char * TC_AG_SLC_BV_02_C[] = {
+    "USER:a",
     "AT+BRSF=127" ,
     "+BRSF:4079" ,
     "OK" ,
@@ -247,6 +203,7 @@ const char * TC_AG_SLC_BV_02_C[] = {
 };
 
 const char * TC_AG_SLC_BV_03_C[] = {
+    "USER:a",
     "AT+BRSF=125" ,
     "+BRSF:4079" ,
     "OK" ,
@@ -271,6 +228,7 @@ const char * TC_AG_SLC_BV_03_C[] = {
 };
 
 const char * TC_AG_SLC_BV_04_C[] = {
+    "USER:a",
     "AT+BRSF=125" ,
     "+BRSF:4079" ,
     "OK" ,
@@ -295,6 +253,7 @@ const char * TC_AG_SLC_BV_04_C[] = {
 };
 
 const char * TC_AG_SLC_BV_05_I[] = {
+    "USER:a",
     "AT+BRSF=255" ,
     "+BRSF:4079" ,
     "OK" ,
@@ -324,6 +283,7 @@ const char * TC_AG_SLC_BV_05_I[] = {
 };
 
 const char * TC_AG_SLC_BV_06_I[] = {
+    "USER:a",
     "AT+BRSF=255" ,
     "+BRSF:4079" ,
     "OK" ,
@@ -353,6 +313,7 @@ const char * TC_AG_SLC_BV_06_I[] = {
 };
 
 const char * TC_AG_SLC_BV_07_I[] = {
+    "USER:a",
     "AT+BRSF=127" ,
     "+BRSF:4079" ,
     "OK" ,
@@ -380,6 +341,7 @@ const char * TC_AG_SLC_BV_07_I[] = {
 };
 
 const char * TC_AG_SLC_BV_09_I[] = {
+    "USER:a",
     "AT+BRSF=895" ,
     "+BRSF:4079" ,
     "OK" ,
@@ -416,6 +378,7 @@ const char * TC_AG_SLC_BV_09_I[] = {
 };
 
 const char * TC_AG_SLC_BV_10_I[] = {
+    "USER:a",
     "AT+BRSF=127" ,
     "+BRSF:4079" ,
     "OK" ,
@@ -470,9 +433,9 @@ const char * TC_HF_SLC_BV_01_C[] = {
     "AT+CHLD=?" ,
     "+CHLD: (0,1,1x,2,2x,3,4)" ,
     "OK" ,
-    "AT+VGM=9" ,
+    "USER:Q", 
     "+BSIR: 0" ,
-    "AT+VGS=9" ,
+    "USER:O", // 'AT+VGS=9" ,
     "OK" ,
     "OK"
 };
@@ -492,8 +455,8 @@ const char * TC_HF_SLC_BV_02_C[] = {
     "AT+CHLD=?" ,
     "+CHLD: (0,1,1x,2,2x,3,4)" ,
     "OK" ,
-    "AT+VGM=9" ,
-    "AT+VGS=9" ,
+    "USER:Q", // "AT+VGM=9" ,
+    "USER:O", // 'AT+VGS=9" ,
     "+BSIR: 0" ,
     "OK" ,
     "OK"
@@ -511,8 +474,8 @@ const char * TC_HF_SLC_BV_03_C[] = {
     "OK" ,
     "AT+CMER=3,0,0,1" ,
     "OK" ,
-    "AT+VGM=9" ,
-    "AT+VGS=9" ,
+    "USER:Q", // "AT+VGM=9" ,
+    "USER:O", // 'AT+VGS=9" ,
     "+BSIR: 0" ,
     "OK" ,
     "OK"
@@ -530,8 +493,8 @@ const char * TC_HF_SLC_BV_04_C[] = {
     "OK" ,
     "AT+CMER=3,0,0,1" ,
     "OK" ,
-    "AT+VGM=9" ,
-    "AT+VGS=9" ,
+    "USER:Q", // "AT+VGM=9" ,
+    "USER:O", // 'AT+VGS=9" ,
     "+BSIR: 0" ,
     "OK" ,
     "OK"
@@ -554,8 +517,8 @@ const char * TC_HF_SLC_BV_05_I[] = {
     "AT+CHLD=?" ,
     "+CHLD: (0,1,1x,2,2x,3,4)" ,
     "OK" ,
-    "AT+VGM=9" ,
-    "AT+VGS=9" ,
+    "USER:Q", // "AT+VGM=9" ,
+    "USER:O", // 'AT+VGS=9" ,
     "+BSIR: 0" ,
     "OK" ,
     "OK"
@@ -578,8 +541,8 @@ const char * TC_HF_SLC_BV_06_I[] = {
     "AT+CHLD=?" ,
     "+CHLD: (0,1,1x,2,2x,3,4)" ,
     "OK" ,
-    "AT+VGM=9" ,
-    "AT+VGS=9" ,
+    "USER:Q", // "AT+VGM=9" ,
+    "USER:O", // 'AT+VGS=9" ,
     "+BSIR: 0" ,
     "OK" ,
     "OK"
@@ -600,8 +563,8 @@ const char * TC_HF_SLC_BV_08_I[] = {
     "AT+CHLD=?" ,
     "+CHLD: (0,1,1x,2,2x,3,4)" ,
     "OK" ,
-    "AT+VGM=9" ,
-    "AT+VGS=9" ,
+    "USER:Q", // "AT+VGM=9" ,
+    "USER:O", // 'AT+VGS=9" ,
     "+BSIR: 0" ,
     "OK" ,
     "OK"
@@ -630,8 +593,8 @@ const char * TC_HF_SLC_BV_09_I[] = {
     "AT+BIND?" ,
     "+BIND: 1,1" ,
     "OK" ,
-    "AT+VGM=9" ,
-    "AT+VGS=9" ,
+    "USER:Q", // "AT+VGM=9" ,
+    "USER:O", // 'AT+VGS=9" ,
     "+BSIR: 0" ,
     "OK" ,
     "OK"
@@ -652,8 +615,8 @@ const char * TC_HF_SLC_BV_10_I[] = {
     "AT+CHLD=?" ,
     "+CHLD: (0,1,1x,2,2x,3,4)" ,
     "OK" ,
-    "AT+VGM=9" ,
-    "AT+VGS=9" ,
+    "USER:Q", // "AT+VGM=9" ,
+    "USER:O", // 'AT+VGS=9" ,
     "+BSIR: 0" ,
     "OK" ,
     "OK"
@@ -712,11 +675,50 @@ const char * TC_AG_ATA_BV_01_I[] = {
     "+CIEV:2,0"
 };
 
+const char * TC_AG_ATA_BV_02_I[] = {
+    "USER:a",
+    "AT+BRSF=127" ,
+    "+BRSF:4079" ,
+    "OK" ,
+    "AT+CIND=?" ,
+    "+CIND:(\"service\",(0,1)),(\"call\",(0,1)),(\"callsetup\",(0,3)),(\"battchg\",(0,5)),(\"signal\",(0,5)),(\"roam\",(0,1)),(\"callheld\",(0,2))" ,
+    "OK" ,
+    "AT+CIND?" ,
+    "+CIND:1,0,0,3,5,0,0" ,
+    "OK" ,
+    "AT+CMER=3,0,0,1" ,
+    "OK" ,
+    "AT+CHLD=?" ,
+    "+CHLD:(1,1x,2,2x,3)" ,
+    "OK" ,
+    "AT+VGS=9" ,
+    "OK" ,
+    "AT+VGM=9" ,
+    "OK" ,
+    "AT+CLIP=1" ,
+    "OK" ,
+    "AT+CCWA=1" ,
+    "OK" ,
+    "AT+CMEE=1" ,
+    "OK" ,
+    "USER:c",
+    "+CIEV:3,1" ,
+    "RING" ,
+    "+CLIP: \"1234567\",129" ,
+    "ATA" ,
+    "OK" ,
+    "+CIEV:2,1" ,
+    "+CIEV:3,0" ,
+    "USER:C",
+    "USER:A",
+    "+CIEV:2,0"
+};
 
 hfp_test_item_t pts_ag_ata_tests[] = {
-    TEST_SEQUENCE(TC_AG_ATA_BV_01_I),
+    // TEST_SEQUENCE(TC_AG_ATA_BV_01_I),
     // TEST_SEQUENCE(TC_AG_ATA_BV_02_I)
 };
+
 
 hfp_test_item_t pts_hf_ata_tests[] = {
     // TEST_SEQUENCE(TC_HF_ATA_BV_01_I),
@@ -725,16 +727,6 @@ hfp_test_item_t pts_hf_ata_tests[] = {
 //////////////
 
 static int test_item_size = sizeof(hfp_test_item_t);
-
-// SLC
-int hfp_slc_tests_size(){ return sizeof(slc_tests)/test_item_size;}
-hfp_test_item_t * hfp_slc_tests(){ return slc_tests;}
-hfp_test_item_t * default_hfp_slc_test(){return  &slc_tests[0];}
-
-// SLC commands
-int hfp_slc_cmds_tests_size(){ return sizeof(slc_cmds_tests)/test_item_size;}
-hfp_test_item_t * hfp_slc_cmds_tests(){ return slc_cmds_tests;}
-hfp_test_item_t * default_slc_cmds_test() { return  &slc_tests[0];}
 
 // CC
 int hfp_cc_tests_size(){ return sizeof(cc_tests) /test_item_size;}

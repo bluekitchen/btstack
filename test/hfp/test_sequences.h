@@ -52,17 +52,6 @@ typedef struct hfp_test_item{
     int len;
 } hfp_test_item_t;
 
-
-/* Service Level Connection (slc) test sequences */
-int hfp_slc_tests_size();
-hfp_test_item_t * hfp_slc_tests();
-hfp_test_item_t * default_hfp_slc_test();
-
-/* Service Level Connection (slc) common commands */
-int hfp_slc_cmds_tests_size();
-hfp_test_item_t * hfp_slc_cmds_tests();
-hfp_test_item_t * deafult_hfp_slc_cmds_test();
-
 /* Codecs Connection (cc) test sequences */
 int hfp_cc_tests_size();
 hfp_test_item_t * hfp_cc_tests();

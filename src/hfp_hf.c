@@ -1037,8 +1037,6 @@ void hfp_hf_set_codecs(uint8_t * codecs, int codecs_nr){
     char buffer[30];
     int offset = join(buffer, sizeof(buffer), hfp_codecs, hfp_codecs_nr);
     buffer[offset] = 0;
-    printf("set codecs %s\n", buffer);
-
     linked_list_iterator_t it;    
     linked_list_iterator_init(&it, hfp_get_connections());
     while (linked_list_iterator_has_next(&it)){

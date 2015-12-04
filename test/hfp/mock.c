@@ -101,7 +101,7 @@ char * get_next_hfp_command(int start_command_offset, int end_command_offset){
         if ( *(data+i) == '\r' || *(data+i) == '\n' ) {
             data[i]=0;
             // update state
-            // printf("!!! command %s\n", data);
+            //printf("!!! command %s\n", data);
             hfp_command_start_index = hfp_command_start_index + i + start_command_offset + end_command_offset;
             return data;
         } 
@@ -110,22 +110,22 @@ char * get_next_hfp_command(int start_command_offset, int end_command_offset){
     return NULL;
 }
 
-// static void print_without_newlines(uint8_t *data, uint16_t len){
-//     int found_newline = 0;
-//     int found_item = 0;
+static void print_without_newlines(uint8_t *data, uint16_t len){
+    int found_newline = 0;
+    int found_item = 0;
     
-//     for (int i=0; i<len; i++){
-//         if (data[i] == '\r' || data[i] == '\n'){
-//             if (!found_newline && found_item) printf("\n");
-//             found_newline = 1;
-//         } else {
-//             printf("%c", data[i]);
-//             found_newline = 0;
-//             found_item = 1;
-//         }
-//     }
-//     printf("\n");
-// }
+    for (int i=0; i<len; i++){
+        if (data[i] == '\r' || data[i] == '\n'){
+            if (!found_newline && found_item) printf("\n");
+            found_newline = 1;
+        } else {
+            printf("%c", data[i]);
+            found_newline = 0;
+            found_item = 1;
+        }
+    }
+    printf("\n");
+}
 
 extern "C" void l2cap_init(void){}
 
@@ -142,17 +142,17 @@ int  rfcomm_send_internal(uint16_t rfcomm_cid, uint8_t *data, uint16_t len){
 	} 
     
     if (has_more_hfp_commands(start_command_offset, end_command_offset)){
-        // printf("Buffer response: ");
+        //printf("Buffer response: ");
         strncpy((char*)&rfcomm_payload[rfcomm_payload_len], (char*)data, len);
         rfcomm_payload_len += len;
     } else {
         hfp_command_start_index = 0;
-        // printf("Copy response: ");
+        //printf("Copy response: ");
         strncpy((char*)&rfcomm_payload[0], (char*)data, len);
         rfcomm_payload_len = len;
     }
 	
-    // print_without_newlines(rfcomm_payload,rfcomm_payload_len);
+    //print_without_newlines(rfcomm_payload,rfcomm_payload_len);
     return 0;
 }
 
@@ -315,15 +315,6 @@ static void add_new_lines_to_hfp_command(uint8_t * data, int len){
         outgoing_rfcomm_payload[pos++] = '\n';
         strncpy((char*)&outgoing_rfcomm_payload[pos], (char*)data, len);
         pos += len;
-    
-        if (memcmp((char*)data, "+BAC", 4) != 0 &&
-            memcmp((char*)data, "+BCS", 4) != 0){
-            outgoing_rfcomm_payload[pos++] = '\r';
-            outgoing_rfcomm_payload[pos++] = '\n';
-            outgoing_rfcomm_payload[pos++] = 'O';
-            outgoing_rfcomm_payload[pos++] = 'K';
-        }   
-    
     }
     outgoing_rfcomm_payload[pos++] = '\r';
     outgoing_rfcomm_payload[pos++] = '\n';
@@ -333,8 +324,9 @@ static void add_new_lines_to_hfp_command(uint8_t * data, int len){
 
 void inject_hfp_command_to_hf(uint8_t * data, int len){
     if (memcmp((char*)data, "AT", 2) == 0) return;
-    
     add_new_lines_to_hfp_command(data, len);
+    // printf("inject_hfp_command_to_hf to HF: ");
+    // print_without_newlines(outgoing_rfcomm_payload,outgoing_rfcomm_payload_len);
     (*registered_rfcomm_packet_handler)(active_connection, RFCOMM_DATA_PACKET, rfcomm_cid, (uint8_t *) &outgoing_rfcomm_payload[0], outgoing_rfcomm_payload_len);
 
 }
