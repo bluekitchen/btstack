@@ -54,9 +54,8 @@
 #include "debug.h"
 #include "hci.h"
 #include "hci_transport.h"
-#include "run_loop.h"
-
-#include "hal_uart_dma.h"
+#include <btstack/run_loop.h>
+#include <btstack/hal_uart_dma.h>
 
 // #include <libopencm3/stm32/gpio.h>
 // #define GPIO_DEBUG_0 GPIO1
