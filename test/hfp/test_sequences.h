@@ -69,3 +69,27 @@ hfp_test_item_t * hfp_pts_ag_ata_tests();
 int hfp_pts_hf_ata_tests_size();
 hfp_test_item_t * hfp_pts_hf_ata_tests();
 
+/* PTS test sequences - TWC Group */
+int hfp_pts_ag_twc_tests_size();
+hfp_test_item_t * hfp_pts_ag_twc_tests();
+int hfp_pts_hf_twc_tests_size();
+hfp_test_item_t * hfp_pts_hf_twc_tests();
+
+/* PTS test sequences - ECS Group */
+int hfp_pts_ag_ecs_tests_size();
+hfp_test_item_t * hfp_pts_ag_ecs_tests();
+int hfp_pts_hf_ecs_tests_size();
+hfp_test_item_t * hfp_pts_hf_ecs_tests();
+
+/* PTS test sequences - ECC Group */
+int hfp_pts_ag_ecc_tests_size();
+hfp_test_item_t * hfp_pts_ag_ecc_tests();
+int hfp_pts_hf_ecc_tests_size();
+hfp_test_item_t * hfp_pts_hf_ecc_tests();
+
+/* PTS test sequences - RHH Group */
+int hfp_pts_ag_rhh_tests_size();
+hfp_test_item_t * hfp_pts_ag_rhh_tests();
+int hfp_pts_hf_rhh_tests_size();
+hfp_test_item_t * hfp_pts_hf_rhh_tests();
+
