@@ -187,213 +187,266 @@ static int stdin_process(struct data_source *ds){
         case '-':
         case '+':
         case '*':
+            log_info("USER:\'%c\'", cmd);
             printf("DTMF Code: %c\n", cmd);
             hfp_hf_send_dtmf_code(device_addr, cmd);
             break;
         case 'a':
+            log_info("USER:\'%c\'", cmd);
             printf("Establish Service level connection to device with Bluetooth address %s...\n", bd_addr_to_str(device_addr));
             hfp_hf_establish_service_level_connection(device_addr);
             break;
         case 'A':
+            log_info("USER:\'%c\'", cmd);
             printf("Release Service level connection.\n");
             hfp_hf_release_service_level_connection(device_addr);
             break;
         case 'b':
+            log_info("USER:\'%c\'", cmd);
             printf("Establish Audio connection to device with Bluetooth address %s...\n", bd_addr_to_str(device_addr));
             hfp_hf_establish_audio_connection(device_addr);
             break;
         case 'B':
+            log_info("USER:\'%c\'", cmd);
             printf("Release Audio service level connection.\n");
             hfp_hf_release_audio_connection(device_addr);
             break;
         case 'C':
+            log_info("USER:\'%c\'", cmd);
             printf("Enable registration status update for all AG indicators.\n");
             hfp_hf_enable_status_update_for_all_ag_indicators(device_addr);
         case 'c':
+            log_info("USER:\'%c\'", cmd);
             printf("Disable registration status update for all AG indicators.\n");
             hfp_hf_disable_status_update_for_all_ag_indicators(device_addr);
             break;
         case 'D':
+            log_info("USER:\'%c\'", cmd);
             printf("Set HFP AG registration status update for individual indicators (0111111).\n");
             hfp_hf_set_status_update_for_individual_ag_indicators(device_addr, 63);
             break;
         case 'd':
+            log_info("USER:\'%c\'", cmd);
             printf("Query network operator.\n");
             hfp_hf_query_operator_selection(device_addr);
             break;
         case 'E':
+            log_info("USER:\'%c\'", cmd);
             printf("Enable reporting of the extended AG error result code.\n");
             hfp_hf_enable_report_extended_audio_gateway_error_result_code(device_addr);
             break;
         case 'e':
+            log_info("USER:\'%c\'", cmd);
             printf("Disable reporting of the extended AG error result code.\n");
             hfp_hf_disable_report_extended_audio_gateway_error_result_code(device_addr);
             break;
         case 'f':
+            log_info("USER:\'%c\'", cmd);
             printf("Answer incoming call.\n");
             hfp_hf_answer_incoming_call(device_addr);
             break;
         case 'F':
+            log_info("USER:\'%c\'", cmd);
             printf("Hangup call.\n");
             hfp_hf_terminate_call(device_addr);
             break;
         case 'G':
+            log_info("USER:\'%c\'", cmd);
             printf("Reject call.\n");
             hfp_hf_reject_call(device_addr);
             break;
         case 'g':
+            log_info("USER:\'%c\'", cmd);
             printf("Query operator.\n");
             hfp_hf_query_operator_selection(device_addr);
             break;
         case 't':
+            log_info("USER:\'%c\'", cmd);
             printf("Terminate HCI connection.\n");
             gap_disconnect(handle);
             break;
         case 'i':
+            log_info("USER:\'%c\'", cmd);
             printf("Dial 1234567\n");
             hfp_hf_dial_number(device_addr, "1234567");
             break;
         case 'I':
+            log_info("USER:\'%c\'", cmd);
             printf("Dial 7654321\n");
             hfp_hf_dial_number(device_addr, "7654321");
             break;
         case 'j':
+            log_info("USER:\'%c\'", cmd);
             printf("Dial #1\n");
             hfp_hf_dial_memory(device_addr,"1");
             break;
         case 'J':
+            log_info("USER:\'%c\'", cmd);
             printf("Dial #99\n");
             hfp_hf_dial_memory(device_addr,"99");
             break;
         case 'k':
+            log_info("USER:\'%c\'", cmd);
             printf("Deactivate call waiting notification\n");
             hfp_hf_deactivate_call_waiting_notification(device_addr);
             break;
         case 'K':
+            log_info("USER:\'%c\'", cmd);
             printf("Activate call waiting notification\n");
             hfp_hf_activate_call_waiting_notification(device_addr);
             break;
         case 'l':
+            log_info("USER:\'%c\'", cmd);
             printf("Deactivate calling line notification\n");
             hfp_hf_deactivate_calling_line_notification(device_addr);
             break;
         case 'L':
+            log_info("USER:\'%c\'", cmd);
             printf("Activate calling line notification\n");
             hfp_hf_activate_calling_line_notification(device_addr);
             break;
         case 'm':
+            log_info("USER:\'%c\'", cmd);
             printf("Deactivate echo canceling and noise reduction\n");
             hfp_hf_deactivate_echo_canceling_and_noise_reduction(device_addr);
             break;
         case 'M':
+            log_info("USER:\'%c\'", cmd);
             printf("Activate echo canceling and noise reduction\n");
             hfp_hf_activate_echo_canceling_and_noise_reduction(device_addr);
             break;
         case 'n':
+            log_info("USER:\'%c\'", cmd);
             printf("Deactivate voice recognition\n");
             hfp_hf_deactivate_voice_recognition_notification(device_addr);
             break;
         case 'N':
+            log_info("USER:\'%c\'", cmd);
             printf("Activate voice recognition\n");
             hfp_hf_activate_voice_recognition_notification(device_addr);
             break;
         case 'o':
+            log_info("USER:\'%c\'", cmd);
             printf("Set speaker gain to 0 (minimum)\n");
             hfp_hf_set_speaker_gain(device_addr, 0);
             break;
         case 'O':
+            log_info("USER:\'%c\'", cmd);
             printf("Set speaker gain to 9 (default)\n");
             hfp_hf_set_speaker_gain(device_addr, 9);
             break;
         case 'p':
+            log_info("USER:\'%c\'", cmd);
             printf("Set speaker gain to 12 (higher)\n");
             hfp_hf_set_speaker_gain(device_addr, 12);
             break;
         case 'P':
+            log_info("USER:\'%c\'", cmd);
             printf("Set speaker gain to 15 (maximum)\n");
             hfp_hf_set_speaker_gain(device_addr, 15);
             break;
         case 'q':
+            log_info("USER:\'%c\'", cmd);
             printf("Set microphone gain to 0\n");
             hfp_hf_set_microphone_gain(device_addr, 0);
             break;
         case 'Q':
+            log_info("USER:\'%c\'", cmd);
             printf("Set microphone gain to 9\n");
             hfp_hf_set_microphone_gain(device_addr, 9);
             break;
         case 's':
+            log_info("USER:\'%c\'", cmd);
             printf("Set microphone gain to 12\n");
             hfp_hf_set_microphone_gain(device_addr, 12);
             break;
         case 'S':
+            log_info("USER:\'%c\'", cmd);
             printf("Set microphone gain to 15\n");
             hfp_hf_set_microphone_gain(device_addr, 15);
             break;
         case 'u':
+            log_info("USER:\'%c\'", cmd);
             printf("Send 'user busy' (Three-Way Call 0)\n");
             hfp_hf_user_busy(device_addr);
             break;
         case 'U':
+            log_info("USER:\'%c\'", cmd);
             printf("End active call and accept waiting/held call (Three-Way Call 1)\n");
             hfp_hf_end_active_and_accept_other(device_addr);
             break;
         case 'v':
+            log_info("USER:\'%c\'", cmd);
             printf("Swap active call and hold/waiting call (Three-Way Call 2)\n");
             hfp_hf_swap_calls(device_addr);
             break;
         case 'V':
+            log_info("USER:\'%c\'", cmd);
             printf("Join hold call (Three-Way Call 3)\n");
             hfp_hf_join_held_call(device_addr);
             break;
         case 'w':
+            log_info("USER:\'%c\'", cmd);
             printf("Connect calls (Three-Way Call 4)\n");
             hfp_hf_connect_calls(device_addr);
             break;
         case 'W':
+            log_info("USER:\'%c\'", cmd);
             printf("Redial\n");
             hfp_hf_redial_last_number(device_addr);
             break;
         case 'x':
+            log_info("USER:\'%c\'", cmd);
             printf("Request phone number for voice tag\n");
             hfp_hf_request_phone_number_for_voice_tag(device_addr);
             break;
         case 'X':
+            log_info("USER:\'%c\'", cmd);
             printf("Query current call status\n");
             hfp_hf_query_current_call_status(device_addr);
             break;
         case 'y':
+            log_info("USER:\'%c\'", cmd);
             printf("Release call with index 2\n");
             hfp_hf_release_call_with_index(device_addr, 2);
             break;
         case 'Y':
+            log_info("USER:\'%c\'", cmd);
             printf("Private consulation with call 2\n");
             hfp_hf_private_consultation_with_call(device_addr, 2);
             break;
         case 'z':
             memcpy(device_addr, phone_addr, 6);
+            log_info("USER:\'%c\'", cmd);
             printf("Use iPhone %s as Audiogateway.\n", bd_addr_to_str(device_addr));
             break;
         case '[':
+            log_info("USER:\'%c\'", cmd);
             printf("Query Response and Hold status (RHH ?)\n");
             hfp_hf_rrh_query_status(device_addr);
             break;
         case ']':
+            log_info("USER:\'%c\'", cmd);
             printf("Place call in a response and held state (RHH 0)\n");
             hfp_hf_rrh_hold_call(device_addr);
            break;
         case '{':
+            log_info("USER:\'%c\'", cmd);
             printf("Accept held call (RHH 1)\n");
             hfp_hf_rrh_accept_held_call(device_addr);
             break;
         case '}':
+            log_info("USER:\'%c\'", cmd);
             printf("Reject held call (RHH 2)\n");
             hfp_hf_rrh_reject_held_call(device_addr);
             break;
         case '?':
+            log_info("USER:\'%c\'", cmd);
             printf("Query Subscriber Number\n");
             hfp_hf_query_subscriber_number(device_addr);
             break;
         case '!':
+            log_info("USER:\'%c\'", cmd);
             printf("Update HF indicator with assigned number 1 (HFI)\n");
             hfp_hf_set_hf_indicator(device_addr, 1, 1);
             break;
