@@ -54,9 +54,9 @@
 #include "debug.h"
 #include "hci.h"
 #include "hci_transport.h"
-#include <btstack/run_loop.h>
+#include "run_loop.h"
 
-#include <btstack/hal_uart_dma.h>
+#include "hal_uart_dma.h"
 
 // #include <libopencm3/stm32/gpio.h>
 // #define GPIO_DEBUG_0 GPIO1
@@ -125,9 +125,9 @@ static uint16_t     ehcill_defer_rx_size = 0;
 static uint8_t      ehcill_command_to_send;
 
 // H4: packet reader state machine
-static H4_STATE  h4_state;
-static int       read_pos;
-static int       bytes_to_read;
+static volatile  H4_STATE  h4_state;
+static int read_pos;
+static int bytes_to_read;
 
  // bigger than largest packet
 static uint8_t hci_packet_prefixed[HCI_INCOMING_PRE_BUFFER_SIZE + HCI_PACKET_BUFFER_SIZE];
@@ -136,8 +136,8 @@ static uint8_t * hci_packet = &hci_packet_prefixed[HCI_INCOMING_PRE_BUFFER_SIZE]
 static  void (*packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size) = dummy_handler;
 
 // H4: tx state
-static TX_STATE  tx_state;
-static int       tx_send_packet_sent;
+static volatile TX_STATE  tx_state;				// updated from block_sent callback
+static volatile int       tx_send_packet_sent;	// updated from block_sent callback
 static uint8_t * tx_data;
 static uint16_t  tx_len;
 static uint8_t   tx_packet_type;
@@ -225,11 +225,10 @@ static int h4_close(void *transport_config){
     return 0;
 }
 
+// potentially called from ISR context
 static void h4_block_received(void){
     
-    // gpio_set(GPIOB, GPIO_DEBUG_0);
-
-   read_pos += bytes_to_read;
+	read_pos += bytes_to_read;
     
     // act
     switch (h4_state) {
@@ -300,11 +299,10 @@ static void h4_block_received(void){
 
 static int h4_can_send_packet_now(uint8_t packet_type){
     return tx_state == TX_IDLE;
-    
 }
+
 static void ehcill_sleep_ack_timer_handler(timer_source_t * timer){
     tx_state = TX_W4_EHCILL_SENT;
-    // gpio_clear(GPIOB, GPIO_DEBUG_1);
     hal_uart_dma_send_block(&ehcill_command_to_send, 1);    
 }
 
@@ -316,6 +314,7 @@ static void ehcill_sleep_ack_timer_setup(void){
     embedded_trigger();    
 }
 
+// potentially called from ISR context
 static void h4_block_sent(void){
     switch (tx_state){
         case TX_W4_HEADER_SENT:
@@ -324,22 +323,22 @@ static void h4_block_sent(void){
             hal_uart_dma_send_block(tx_data, tx_len);
             break;
         case TX_W4_PACKET_SENT:
-            // non-ehcill packet sent, confirm
-            tx_send_packet_sent = 1;
-
             // send pending ehcill command if neccessary
             switch (ehcill_command_to_send){
                 case EHCILL_GO_TO_SLEEP_ACK:
                     ehcill_sleep_ack_timer_setup();
+		            tx_send_packet_sent = 1;
                     break;
                 case EHCILL_WAKE_UP_IND:
                     tx_state = TX_W4_EHCILL_SENT;
                     // gpio_clear(GPIOB, GPIO_DEBUG_1);
                     hal_uart_dma_send_block(&ehcill_command_to_send, 1);
+		            tx_send_packet_sent = 1;
                     break;
                 default:
                     // trigger run loop
                     tx_state = TX_DONE;
+		            tx_send_packet_sent = 1;
                     embedded_trigger();
                     break;
             }
@@ -369,6 +368,12 @@ static int h4_process(struct data_source *ds) {
 
     // notify about packet sent
     if (tx_send_packet_sent){
+		// race condition: if tx_state was set after our check, can_send_now will fail, causing a hang
+		// workaround: assert that tx_state is TX_IDLE if it was just set to done by ISR
+		if (tx_state == TX_DONE){
+			tx_state = TX_IDLE;
+		}
+		
         tx_send_packet_sent = 0;
         uint8_t event[] = { DAEMON_EVENT_HCI_PACKET_SENT, 0 };
         packet_handler(HCI_EVENT_PACKET, &event[0], sizeof(event));
