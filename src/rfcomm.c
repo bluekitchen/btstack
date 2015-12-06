@@ -2034,7 +2034,6 @@ int rfcomm_can_send_packet_now(uint16_t rfcomm_cid){
         return 1;
     }
     if (!channel->credits_outgoing) return 0;
-    if (!channel->packets_granted)  return 0;
     if ((channel->multiplexer->fcon & 1) == 0) return 0;
         
     return l2cap_can_send_packet_now(channel->multiplexer->l2cap_cid);
@@ -2048,11 +2047,6 @@ static int rfcomm_assert_send_valid(rfcomm_channel_t * channel , uint16_t len){
     
     if (!channel->credits_outgoing){
         log_info("rfcomm_send_internal cid 0x%02x, no rfcomm outgoing credits!", channel->rfcomm_cid);
-        return RFCOMM_NO_OUTGOING_CREDITS;
-    }
-
-    if (!channel->packets_granted){
-        log_info("rfcomm_send_internal cid 0x%02x, no rfcomm credits granted!", channel->rfcomm_cid);
         return RFCOMM_NO_OUTGOING_CREDITS;
     }
     
