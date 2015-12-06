@@ -103,9 +103,6 @@
 
 #include "l2cap.h"
 
-// used for debugging
-// #define RFCOMM_LOG_CREDITS
-
 // global rfcomm data
 static uint16_t      rfcomm_client_cid_generator;  // used for client channel IDs
 
@@ -180,20 +177,6 @@ static void rfcomm_emit_channel_open_failed_outgoing_memory(void * connection, b
 	bt_store_16(event, pos, 0); pos += 2;   // max frame size
     hci_dump_packet(HCI_EVENT_PACKET, 0, event, sizeof(event));
 	(*app_packet_handler)(connection, HCI_EVENT_PACKET, 0, (uint8_t *) event, pos);
-}
-
-// data: event(8), len(8), creidts incoming(8), new credits incoming(8), credits outgoing(8)
-static inline void rfcomm_emit_credit_status(rfcomm_channel_t * channel) {
-#ifdef RFCOMM_LOG_CREDITS
-    log_info("RFCOMM_LOG_CREDITS incoming %u new_incoming %u outgoing %u", channel->credits_incoming, channel->new_credits_incoming, channel->credits_outgoing);
-    uint8_t event[5];
-    event[0] = 0x88;
-    event[1] = sizeof(event) - 2;
-    event[2] = channel->credits_incoming;
-    event[3] = channel->new_credits_incoming;
-    event[4] = channel->credits_outgoing;
-    hci_dump_packet(HCI_EVENT_PACKET, 0, event, sizeof(event));
-#endif
 }
 
 // data: event(8), len(8), rfcomm_cid(16)
@@ -1220,8 +1203,6 @@ static void rfcomm_hand_out_credits(void){
 static void rfcomm_channel_send_credits(rfcomm_channel_t *channel, uint8_t credits){
     rfcomm_send_uih_credits(channel->multiplexer, channel->dlci, credits);
     channel->credits_incoming += credits;
-    
-    rfcomm_emit_credit_status(channel);
 }
 
 static void rfcomm_channel_opened(rfcomm_channel_t *rfChannel){
@@ -1287,9 +1268,6 @@ static void rfcomm_channel_packet_handler_uih(rfcomm_multiplexer_t *multiplexer,
     if (!channel->incoming_flow_control && channel->credits_incoming < 5){
         channel->new_credits_incoming =RFCOMM_CREDITS;
     }    
-    
-    rfcomm_emit_credit_status(channel);
-    
     // we received new RFCOMM credits, hand them out if possible
     rfcomm_hand_out_credits();
 }
