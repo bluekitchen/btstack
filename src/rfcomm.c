@@ -308,7 +308,6 @@ static void rfcomm_multiplexer_initialize(rfcomm_multiplexer_t *multiplexer){
     memset(multiplexer, 0, sizeof(rfcomm_multiplexer_t));
 
     multiplexer->state = RFCOMM_MULTIPLEXER_CLOSED;
-    multiplexer->l2cap_credits = 0;
     multiplexer->fcon = 1;
     multiplexer->send_dm_for_dlci = 0;
     multiplexer->max_frame_size = rfcomm_max_frame_size_for_l2cap_mtu(l2cap_max_mtu());
@@ -523,20 +522,8 @@ static int rfcomm_send_packet_for_multiplexer(rfcomm_multiplexer_t *multiplexer,
 	}
 	rfcomm_out_buffer[pos++] =  crc8_calc(rfcomm_out_buffer, crc_fields); // calc fcs
 
-    int credits_taken = 0;
-    if (multiplexer->l2cap_credits){
-        credits_taken++;
-        multiplexer->l2cap_credits--;
-    } else {
-        log_info( "rfcomm_send_packet addr %02x, ctrl %02x size %u without l2cap credits", address, control, pos);
-    }
-    
     int err = l2cap_send_prepared(multiplexer->l2cap_cid, pos);
     
-    if (err) {
-        // undo credit counting
-        multiplexer->l2cap_credits += credits_taken;
-    }
     return err;
 }
 
@@ -559,21 +546,9 @@ static int rfcomm_send_uih_prepared(rfcomm_multiplexer_t *multiplexer, uint8_t d
     
     // UIH frames only calc FCS over address + control (5.1.1)
     rfcomm_out_buffer[pos++] =  crc8_calc(rfcomm_out_buffer, 2); // calc fcs
-
-    int credits_taken = 0;
-    if (multiplexer->l2cap_credits){
-        credits_taken++;
-        multiplexer->l2cap_credits--;
-    } else {
-        log_info( "rfcomm_send_uih_prepared addr %02x, ctrl %02x size %u without l2cap credits", address, control, pos);
-    }
     
     int err = l2cap_send_prepared(multiplexer->l2cap_cid, pos);
     
-    if (err) {
-        // undo credit counting
-        multiplexer->l2cap_credits += credits_taken;
-    }
     return err;
 }
 
@@ -983,8 +958,6 @@ static int rfcomm_multiplexer_hci_event_handler(uint8_t *packet, uint16_t size){
             l2cap_cid = READ_BT_16(packet, 2);
             multiplexer = rfcomm_multiplexer_for_l2cap_cid(l2cap_cid);
             if (!multiplexer) break;
-            multiplexer->l2cap_credits += packet[4];
-            
             // log_info("L2CAP_EVENT_CREDITS: %u (now %u)", packet[4], multiplexer->l2cap_credits);
 
             // new credits, continue with signaling
@@ -1235,10 +1208,6 @@ static void rfcomm_hand_out_credits(void){
         }
         if (!channel->credits_outgoing) {
             // log_info("RFCOMM_EVENT_CREDITS: no outgoing credits");
-            continue;
-        }
-        if (!channel->multiplexer->l2cap_credits){
-            // log_info("RFCOMM_EVENT_CREDITS: no l2cap credits");
             continue;
         }
         // channel open, multiplexer has l2cap credits and we didn't hand out credit before -> go!
@@ -1605,7 +1574,8 @@ static int rfcomm_channel_ready_for_open(rfcomm_channel_t *channel){
     // log_info("rfcomm_channel_ready_for_open state %u, flags needed %04x, current %04x, rf credits %u, l2cap credits %u ", channel->state, RFCOMM_CHANNEL_STATE_VAR_RCVD_MSC_RSP|RFCOMM_CHANNEL_STATE_VAR_SENT_MSC_RSP|RFCOMM_CHANNEL_STATE_VAR_SENT_CREDITS, channel->state_var, channel->credits_outgoing, channel->multiplexer->l2cap_credits);
     // if ((channel->state_var & RFCOMM_CHANNEL_STATE_VAR_SENT_MSC_RSP) == 0) return 0;
     // if (channel->credits_outgoing == 0) return 0;
-    log_info("rfcomm_channel_ready_for_open state %u, flags needed %04x, current %04x, rf credits %u, l2cap credits %u ", channel->state, RFCOMM_CHANNEL_STATE_VAR_RCVD_MSC_RSP, channel->state_var, channel->credits_outgoing, channel->multiplexer->l2cap_credits);
+    log_info("rfcomm_channel_ready_for_open state %u, flags needed %04x, current %04x, rf credits %u",
+         channel->state, RFCOMM_CHANNEL_STATE_VAR_RCVD_MSC_RSP, channel->state_var, channel->credits_outgoing);
     if ((channel->state_var & RFCOMM_CHANNEL_STATE_VAR_RCVD_MSC_RSP) == 0) return 0;
     if ((channel->state_var & RFCOMM_CHANNEL_STATE_VAR_SENT_CREDITS) == 0) return 0;
     
