@@ -281,7 +281,6 @@ typedef struct {
 	RFCOMM_MULTIPLEXER_STATE state;	
     
     uint16_t  l2cap_cid;
-    uint8_t   l2cap_credits;
     
     uint8_t   fcon; // only send if fcon & 1, send rsp if fcon & 0x80
 
