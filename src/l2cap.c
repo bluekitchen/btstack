@@ -943,6 +943,9 @@ static void l2cap_event_handler(uint8_t *packet, uint16_t size){
             break;
 
         case DAEMON_EVENT_HCI_PACKET_SENT:
+            l2cap_run();    // try sending signaling packets first
+            l2cap_hand_out_credits();
+
             linked_list_iterator_init(&it, &l2cap_channels);
             while (linked_list_iterator_has_next(&it)){
                 l2cap_channel_t * channel = (l2cap_channel_t *) linked_list_iterator_next(&it);
