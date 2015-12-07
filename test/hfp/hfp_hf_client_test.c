@@ -487,6 +487,34 @@ TEST_GROUP(HFPClient){
     }
 };
 
+TEST(HFPClient, PTSRHHTests){
+    for (int i = 0; i < hfp_pts_hf_rhh_tests_size(); i++){
+        simulate_test_sequence(&hfp_pts_hf_rhh_tests()[i]);
+        teardown();
+    }
+}
+
+TEST(HFPClient, PTSECCTests){
+    for (int i = 0; i < hfp_pts_hf_ecc_tests_size(); i++){
+        simulate_test_sequence(&hfp_pts_hf_ecc_tests()[i]);
+        teardown();
+    }
+}
+
+TEST(HFPClient, PTSECSTests){
+    for (int i = 0; i < hfp_pts_hf_ecs_tests_size(); i++){
+        simulate_test_sequence(&hfp_pts_hf_ecs_tests()[i]);
+        teardown();
+    }
+}
+
+TEST(HFPClient, PTSTWCTests){
+    for (int i = 0; i < hfp_pts_hf_twc_tests_size(); i++){
+        simulate_test_sequence(&hfp_pts_hf_twc_tests()[i]);
+        teardown();
+    }
+}
+
 TEST(HFPClient, PTSATATests){
     for (int i = 0; i < hfp_pts_hf_ata_tests_size(); i++){
         simulate_test_sequence(&hfp_pts_hf_ata_tests()[i]);
@@ -500,8 +528,6 @@ TEST(HFPClient, PTSSLCTests){
         teardown();
     }
 }
-
-
 
 int main (int argc, const char * argv[]){
     hfp_hf_register_packet_handler(packet_handler);

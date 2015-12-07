@@ -1771,6 +1771,11 @@ static void packet_handler(void * connection, uint8_t packet_type, uint16_t chan
     hfp_run();
 }
 
+static void hfp_ag_set_ag_indicators(hfp_ag_indicator_t * ag_indicators, int ag_indicators_nr){
+    hfp_ag_indicators_nr = ag_indicators_nr;
+    memcpy(hfp_ag_indicators, ag_indicators, ag_indicators_nr * sizeof(hfp_ag_indicator_t));
+}
+
 void hfp_ag_init(uint16_t rfcomm_channel_nr, uint32_t supported_features, 
     uint8_t * codecs, int codecs_nr, 
     hfp_ag_indicator_t * ag_indicators, int ag_indicators_nr,
@@ -1795,8 +1800,7 @@ void hfp_ag_init(uint16_t rfcomm_channel_nr, uint32_t supported_features,
         hfp_codecs[i] = codecs[i];
     }
 
-    hfp_ag_indicators_nr = ag_indicators_nr;
-    memcpy(hfp_ag_indicators, ag_indicators, ag_indicators_nr * sizeof(hfp_ag_indicator_t));
+    hfp_ag_set_ag_indicators(ag_indicators, ag_indicators_nr);
 
     set_hfp_generic_status_indicators(hf_indicators, hf_indicators_nr);
 

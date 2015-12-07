@@ -74,6 +74,13 @@ with open (infile, 'rb') as fin:
                             print separator+spaces+"\""+cmd+"\"",
                             separator = ",\n"
                         
+                else:
+                    parts = re.match('USER:\'(.*)\'.*',packet)
+                    if parts:
+                        cmd = 'USER:'+parts.groups()[0]
+                        print separator+spaces+"\""+cmd+"\"",
+                        separator = ",\n"
+
 
     except TypeError:
         print "\n};\n"
