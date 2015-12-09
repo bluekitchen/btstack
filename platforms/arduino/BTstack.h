@@ -57,8 +57,10 @@ private:
 	uint8_t data_length;
 	uint8_t data[10 + LE_ADVERTISING_DATA_SIZE];
 	BD_ADDR  bd_addr;
+	UUID * iBeacon_UUID;
 public:
 	BLEAdvertisement(uint8_t * event_packet);
+	~BLEAdvertisement();
 	BD_ADDR * getBdAddr();
 	BD_ADDR_TYPE getBdAddrType();
 	int getRssi();
