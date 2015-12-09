@@ -1523,6 +1523,12 @@ static hfp_generic_status_indicator_t *get_hf_indicator_by_number(int number){
 static void hfp_handle_rfcomm_data(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     hfp_connection_t * context = get_hfp_connection_context_for_rfcomm_cid(channel);
     if (!context) return;
+    
+    char last_char = packet[size-1];
+    packet[size-1] = 0;
+    log_info("HFP_RX %s", packet);
+    packet[size-1] = last_char;
+    
     int pos;
     for (pos = 0; pos < size ; pos++){
         hfp_parse(context, packet[pos], 0);
@@ -1765,6 +1771,11 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
     hfp_run();
 }
 
+static void hfp_ag_set_ag_indicators(hfp_ag_indicator_t * ag_indicators, int ag_indicators_nr){
+    hfp_ag_indicators_nr = ag_indicators_nr;
+    memcpy(hfp_ag_indicators, ag_indicators, ag_indicators_nr * sizeof(hfp_ag_indicator_t));
+}
+
 void hfp_ag_init(uint16_t rfcomm_channel_nr, uint32_t supported_features, 
     uint8_t * codecs, int codecs_nr, 
     hfp_ag_indicator_t * ag_indicators, int ag_indicators_nr,
@@ -1789,8 +1800,7 @@ void hfp_ag_init(uint16_t rfcomm_channel_nr, uint32_t supported_features,
         hfp_codecs[i] = codecs[i];
     }
 
-    hfp_ag_indicators_nr = ag_indicators_nr;
-    memcpy(hfp_ag_indicators, ag_indicators, ag_indicators_nr * sizeof(hfp_ag_indicator_t));
+    hfp_ag_set_ag_indicators(ag_indicators, ag_indicators_nr);
 
     set_hfp_generic_status_indicators(hf_indicators, hf_indicators_nr);
 

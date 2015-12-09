@@ -72,7 +72,8 @@ const uint8_t    rfcomm_channel_nr = 1;
 const char hfp_ag_service_name[] = "BTstack HFP AG Test";
 
 static bd_addr_t device_addr;
-static bd_addr_t pts_addr = {0x00,0x1b,0xDC,0x07,0x32,0xEF};
+static bd_addr_t pts_addr = {0x00,0x15,0x83,0x5F,0x9D,0x46};
+//static bd_addr_t pts_addr = {0x00,0x1b,0xDC,0x07,0x32,0xEF};
 static bd_addr_t speaker_addr = {0x00, 0x21, 0x3C, 0xAC, 0xF7, 0x38};
 static uint8_t codecs[1] = {HFP_CODEC_CVSD};
 static uint16_t handle = -1;
@@ -353,31 +354,38 @@ static int stdin_process(struct data_source *ds){
     switch (cmd){
         case 'a':
             memcpy(device_addr, pts_addr, 6);
+            log_info("USER:\'%c\'", cmd);
             printf("Establish HFP service level connection to PTS module %s...\n", bd_addr_to_str(device_addr));
             hfp_ag_establish_service_level_connection(device_addr);
             break;
         case 'A':
+            log_info("USER:\'%c\'", cmd);
             printf("Release HFP service level connection.\n");
             hfp_ag_release_service_level_connection(device_addr);
             break;
         case 'z':
             memcpy(device_addr, speaker_addr, 6);
+            log_info("USER:\'%c\'", cmd);
             printf("Establish HFP service level connection to %s...\n", bd_addr_to_str(device_addr));
             hfp_ag_establish_service_level_connection(device_addr);
             break;
         case 'Z':
+            log_info("USER:\'%c\'", cmd);
             printf("Release HFP service level connection to %s...\n", bd_addr_to_str(device_addr));
             hfp_ag_release_service_level_connection(device_addr);
             break;
         case 'b':
+            log_info("USER:\'%c\'", cmd);
             printf("Establish Audio connection %s...\n", bd_addr_to_str(device_addr));
             hfp_ag_establish_audio_connection(device_addr);
             break;
         case 'B':
+            log_info("USER:\'%c\'", cmd);
             printf("Release Audio connection.\n");
             hfp_ag_release_audio_connection(device_addr);
             break;
         case 'c':
+            log_info("USER:\'%c\'", cmd);
             printf("Simulate incoming call from 1234567\n");
             current_call_exists_a = 1;
             current_call_status_a = HFP_ENHANCED_CALL_STATUS_INCOMING;
@@ -386,6 +394,7 @@ static int stdin_process(struct data_source *ds){
             hfp_ag_incoming_call();
             break;
         case 'm':
+            log_info("USER:\'%c\'", cmd);
             printf("Simulate incoming call from 7654321\n");
             current_call_exists_b = 1;
             current_call_status_b = HFP_ENHANCED_CALL_STATUS_INCOMING;
@@ -394,14 +403,17 @@ static int stdin_process(struct data_source *ds){
             hfp_ag_incoming_call();
             break;
         case 'C':
+            log_info("USER:\'%c\'", cmd);
             printf("Simulate terminate call\n");
             hfp_ag_call_dropped();
             break;
         case 'd':
+            log_info("USER:\'%c\'", cmd);
             printf("Report AG failure\n");
             hfp_ag_report_extended_audio_gateway_error_result_code(device_addr, HFP_CME_ERROR_AG_FAILURE);
             break;
         case 'e':
+            log_info("USER:\'%c\'", cmd);
             printf("Answer call on AG\n");
             if (current_call_status_a == HFP_ENHANCED_CALL_STATUS_INCOMING){
                 current_call_status_a = HFP_ENHANCED_CALL_STATUS_ACTIVE;
@@ -412,114 +424,142 @@ static int stdin_process(struct data_source *ds){
             hfp_ag_answer_incoming_call();
             break;
         case 'E':
+            log_info("USER:\'%c\'", cmd);
             printf("Reject call on AG\n");
             hfp_ag_terminate_call();
             break;
         case 'f':
+            log_info("USER:\'%c\'", cmd);
             printf("Disable cellular network\n");
             hfp_ag_set_registration_status(0);
             break;
         case 'F':
+            log_info("USER:\'%c\'", cmd);
             printf("Enable cellular network\n");
             hfp_ag_set_registration_status(1);
             break;
         case 'g':
+            log_info("USER:\'%c\'", cmd);
             printf("Set signal strength to 0\n");
             hfp_ag_set_signal_strength(0);
             break;
         case 'G':
+            log_info("USER:\'%c\'", cmd);
             printf("Set signal strength to 5\n");
             hfp_ag_set_signal_strength(5);
             break;
         case 'h':
+            log_info("USER:\'%c\'", cmd);
             printf("Disable roaming\n");
             hfp_ag_set_roaming_status(0);
             break;
         case 'H':
+            log_info("USER:\'%c\'", cmd);
             printf("Enable roaming\n");
             hfp_ag_set_roaming_status(1);
             break;
         case 'i':
+            log_info("USER:\'%c\'", cmd);
             printf("Set battery level to 3\n");
             hfp_ag_set_battery_level(3);
             break;
         case 'I':
+            log_info("USER:\'%c\'", cmd);
             printf("Set battery level to 5\n");
             hfp_ag_set_battery_level(5);
             break;
         case 'j':
+            log_info("USER:\'%c\'", cmd);
             printf("Answering call on remote side\n");
             hfp_ag_outgoing_call_established();
             break;
         case 'r':
+            log_info("USER:\'%c\'", cmd);
             printf("Disable in-band ring tone\n");
             hfp_ag_set_use_in_band_ring_tone(0);
             break;
         case 'k':
+            log_info("USER:\'%c\'", cmd);
             printf("Memory 1 cleared\n");
             memory_1_enabled = 0;
             break;
         case 'K':
+            log_info("USER:\'%c\'", cmd);
             printf("Memory 1 set\n");
             memory_1_enabled = 1;
             break;
         case 'l':
+            log_info("USER:\'%c\'", cmd);
             printf("Last dialed number cleared\n");
             last_number_exists = 0;
             break;
         case 'L':
+            log_info("USER:\'%c\'", cmd);
             printf("Last dialed number set\n");
             last_number_exists = 1;
             break;
         case 'n':
+            log_info("USER:\'%c\'", cmd);
             printf("Disable Voice Recognition\n");
             hfp_ag_activate_voice_recognition(device_addr, 0);
             break;
         case 'N':
+            log_info("USER:\'%c\'", cmd);
             printf("Enable Voice Recognition\n");
             hfp_ag_activate_voice_recognition(device_addr, 1);
             break;
         case 'o':
+            log_info("USER:\'%c\'", cmd);
             printf("Set speaker gain to 0 (minimum)\n");
             hfp_ag_set_speaker_gain(device_addr, 0);
             break;
         case 'O':
+            log_info("USER:\'%c\'", cmd);
             printf("Set speaker gain to 9 (default)\n");
             hfp_ag_set_speaker_gain(device_addr, 9);
             break;
         case 'p':
+            log_info("USER:\'%c\'", cmd);
             printf("Set speaker gain to 12 (higher)\n");
             hfp_ag_set_speaker_gain(device_addr, 12);
             break;
         case 'P':
+            log_info("USER:\'%c\'", cmd);
             printf("Set speaker gain to 15 (maximum)\n");
             hfp_ag_set_speaker_gain(device_addr, 15);
             break;
         case 'q':
+            log_info("USER:\'%c\'", cmd);
             printf("Set microphone gain to 0\n");
             hfp_ag_set_microphone_gain(device_addr, 0);
             break;
         case 'Q':
+            log_info("USER:\'%c\'", cmd);
             printf("Set microphone gain to 9\n");
             hfp_ag_set_microphone_gain(device_addr, 9);
             break;
         case 's':
+            log_info("USER:\'%c\'", cmd);
             printf("Set microphone gain to 12\n");
             hfp_ag_set_microphone_gain(device_addr, 12);
             break;
         case 'S':
+            log_info("USER:\'%c\'", cmd);
             printf("Set microphone gain to 15\n");
             hfp_ag_set_microphone_gain(device_addr, 15);
             break;
         case 'R':
+            log_info("USER:\'%c\'", cmd);
             printf("Enable in-band ring tone\n");
             hfp_ag_set_use_in_band_ring_tone(1);
             break;
         case 't':
+            log_info("USER:\'%c\'", cmd);
             printf("Terminate HCI connection.\n");
             gap_disconnect(handle);
             break;
         case 'u':
+            log_info("USER:\'%c\'", cmd);
             printf("Join held call\n");
             current_call_mpty = HFP_ENHANCED_CALL_MPTY_CONFERENCE_CALL;
             hfp_ag_join_held_call();
@@ -528,14 +568,17 @@ static int stdin_process(struct data_source *ds){
             start_scan();
             break;
         case 'w':
+            log_info("USER:\'%c\'", cmd);
             printf("AG: Put incoming call on hold (Response and Hold)\n");
             hfp_ag_hold_incoming_call();
             break;
         case 'x':
+            log_info("USER:\'%c\'", cmd);
             printf("AG: Accept held incoming call (Response and Hold)\n");
             hfp_ag_accept_held_incoming_call();
             break;
         case 'X':
+            log_info("USER:\'%c\'", cmd);
             printf("AG: Reject held incoming call (Response and Hold)\n");
             hfp_ag_reject_held_incoming_call();
             break;

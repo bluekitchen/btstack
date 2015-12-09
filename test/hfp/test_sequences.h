@@ -47,39 +47,49 @@
 #include <string.h>
 
 typedef struct hfp_test_item{
+    char * name;
     char ** test;
     int len;
 } hfp_test_item_t;
 
-
-/* Service Level Connection (slc) test sequences */
-hfp_test_item_t * hfp_slc_tests();
-int slc_tests_size();
-char ** default_slc_setup();
-int default_slc_setup_size();
-
-/* Service Level Connection (slc) common commands */
-hfp_test_item_t * hfp_slc_cmds_tests();
-int slc_cmds_tests_size();
-char ** default_slc_cmds_setup();
-int default_slc_cmds_setup_size();
-
 /* Codecs Connection (cc) test sequences */
+int hfp_cc_tests_size();
 hfp_test_item_t * hfp_cc_tests();
-int cc_tests_size();
-char ** default_cc_setup();
-int default_cc_setup_size();
+hfp_test_item_t * default_hfp_cc_test();
 
-/* Incoming call (ic) test sequences */
-char ** default_ic_setup();
-int default_ic_setup_size();
+/* PTS test sequences - SLC Group */
+int hfp_pts_ag_slc_tests_size();
+hfp_test_item_t * hfp_pts_ag_slc_tests();
+int hfp_pts_hf_slc_tests_size();
+hfp_test_item_t * hfp_pts_hf_slc_tests();
 
-char ** alert_ic_setup();
-int alert_ic_setup_size();
+/* PTS test sequences - ATA Group */
+int hfp_pts_ag_ata_tests_size();
+hfp_test_item_t * hfp_pts_ag_ata_tests();
+int hfp_pts_hf_ata_tests_size();
+hfp_test_item_t * hfp_pts_hf_ata_tests();
 
-char ** terminate_ic_ag_setup();
-int terminate_ic_ag_setup_size();
+/* PTS test sequences - TWC Group */
+int hfp_pts_ag_twc_tests_size();
+hfp_test_item_t * hfp_pts_ag_twc_tests();
+int hfp_pts_hf_twc_tests_size();
+hfp_test_item_t * hfp_pts_hf_twc_tests();
 
-char ** terminate_ic_hf_setup();
-int terminate_ic_hf_setup_size();
+/* PTS test sequences - ECS Group */
+int hfp_pts_ag_ecs_tests_size();
+hfp_test_item_t * hfp_pts_ag_ecs_tests();
+int hfp_pts_hf_ecs_tests_size();
+hfp_test_item_t * hfp_pts_hf_ecs_tests();
+
+/* PTS test sequences - ECC Group */
+int hfp_pts_ag_ecc_tests_size();
+hfp_test_item_t * hfp_pts_ag_ecc_tests();
+int hfp_pts_hf_ecc_tests_size();
+hfp_test_item_t * hfp_pts_hf_ecc_tests();
+
+/* PTS test sequences - RHH Group */
+int hfp_pts_ag_rhh_tests_size();
+hfp_test_item_t * hfp_pts_ag_rhh_tests();
+int hfp_pts_hf_rhh_tests_size();
+hfp_test_item_t * hfp_pts_hf_rhh_tests();
 

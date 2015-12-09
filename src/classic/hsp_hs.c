@@ -352,7 +352,7 @@ static void hsp_run(void){
                 int gain = hs_microphone_gain;
                 hs_microphone_gain = -1;
                 char buffer[20];
-                sprintf(buffer, "%s=%d\r\n", HSP_HS_MICROPHONE_GAIN, hs_microphone_gain);
+                sprintf(buffer, "%s=%d\r\n", HSP_HS_MICROPHONE_GAIN, gain);
                 err = hsp_hs_send_str_over_rfcomm(rfcomm_cid, buffer);
                 if (err) {
                     hs_microphone_gain = gain;
@@ -364,7 +364,7 @@ static void hsp_run(void){
                 int gain = hs_speaker_gain;
                 hs_speaker_gain = -1;
                 char buffer[20];
-                sprintf(buffer, "%s=%d\r\n", HSP_HS_SPEAKER_GAIN, hs_speaker_gain);
+                sprintf(buffer, "%s=%d\r\n", HSP_HS_SPEAKER_GAIN, gain);
                 err = hsp_hs_send_str_over_rfcomm(rfcomm_cid, buffer);
                 if (err) {
                     hs_speaker_gain = gain;

@@ -239,7 +239,6 @@ static l2cap_channel_t * l2cap_get_channel_for_local_cid(uint16_t local_cid){
 int  l2cap_can_send_packet_now(uint16_t local_cid){
     l2cap_channel_t *channel = l2cap_get_channel_for_local_cid(local_cid);
     if (!channel) return 0;
-    if (!channel->packets_granted) return 0;
     return hci_can_send_acl_packet_now(channel->handle);
 }
 
@@ -383,17 +382,14 @@ int l2cap_send_prepared(uint16_t local_cid, uint16_t len){
         return -1;   // TODO: define error
     }
 
-    if (channel->packets_granted == 0){
-        log_error("l2cap_send_prepared cid 0x%02x, no credits!", local_cid);
-        return -1;  // TODO: define error
-    }
-
     if (!hci_can_send_prepared_acl_packet_now(channel->handle)){
         log_info("l2cap_send_prepared cid 0x%02x, cannot send", local_cid);
         return BTSTACK_ACL_BUFFERS_FULL;
     }
     
-    --channel->packets_granted;
+    if (channel->packets_granted){
+        --channel->packets_granted;
+    }
 
     log_debug("l2cap_send_prepared cid 0x%02x, handle %u, 1 credit used, credits left %u;",
                   local_cid, channel->handle, channel->packets_granted);
@@ -943,6 +939,9 @@ static void l2cap_event_handler(uint8_t *packet, uint16_t size){
             break;
 
         case DAEMON_EVENT_HCI_PACKET_SENT:
+            l2cap_run();    // try sending signaling packets first
+            l2cap_hand_out_credits();
+
             linked_list_iterator_init(&it, &l2cap_channels);
             while (linked_list_iterator_has_next(&it)){
                 l2cap_channel_t * channel = (l2cap_channel_t *) linked_list_iterator_next(&it);

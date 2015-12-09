@@ -130,6 +130,7 @@ const char * hfp_ag_feature(int index){
 }
 
 int send_str_over_rfcomm(uint16_t cid, char * command){
+    log_info("HFP_TX %s", command);
     if (!rfcomm_can_send_packet_now(cid)) return 1;
     int err = rfcomm_send_internal(cid, (uint8_t*) command, strlen(command));
     if (err){

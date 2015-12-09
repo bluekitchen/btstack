@@ -84,8 +84,18 @@ static hfp_ag_indicator_t ag_indicators[] = {
     {7, "callheld",  0, 2, 0, 1, 1, 0}
 };
 
-static int supported_features_with_codec_negotiation = 1007;   // 0011 1110 1111
-static int supported_features_without_codec_negotiation = 495; // 0001 1110 1111
+hfp_ag_indicator_t ag_indicators_temp[] = {
+    // index, name, min range, max range, status, mandatory, enabled, status changed
+    {1, "service",   0, 1, 1, 0, 0, 0},
+    {2, "call",      0, 1, 0, 1, 1, 0},
+    {3, "callsetup", 0, 3, 0, 1, 1, 0},
+    {4, "battchg",   0, 5, 3, 0, 0, 0},
+    {5, "signal",    0, 5, 5, 0, 0, 0},
+    {6, "roam",      0, 1, 0, 0, 0, 0},
+    {7, "callheld",  0, 2, 0, 1, 1, 0}
+};
+
+static int supported_features_with_codec_negotiation = 4079;   // 0011 1110 1111
 
 static int call_hold_services_nr = 5;
 static const char* call_hold_services[] = {"1", "1x", "2", "2x", "3"};
@@ -104,39 +114,249 @@ static uint8_t start_ringing = 0;
 static uint8_t stop_ringing = 0;
 static uint8_t call_termiated = 0;
 
-int expected_rfcomm_command(const char * expected_cmd){
-    char * ag_cmd = (char *)get_rfcomm_payload();
-    int ag_len = get_rfcomm_payload_len();
-    int expected_len = strlen(expected_cmd);
-    for (int i = 0; i < ag_len; i++){
-        if ( (ag_cmd+i)[0] == '\r' || (ag_cmd+i)[0] == '\n' ) {
-            continue;
-        }
-        if (strncmp(ag_cmd + i, expected_cmd, expected_len) == 0) return 1;
-    }
-    return 0;
+static uint16_t handle = -1;
+static int memory_1_enabled = 1;
+static int last_number_exists = 1;
+
+int has_more_hfp_ag_commands(){
+    return has_more_hfp_commands(2,2);
 }
 
+char * get_next_hfp_ag_command(){
+   return get_next_hfp_command(2,2);
+}
 
-void simulate_test_sequence(char ** test_steps, int nr_test_steps){
-    int i = 0;
-    for (i=0; i < nr_test_steps; i++){
-        char * cmd = test_steps[i];
-        printf("\n---> NEXT STEP %s\n", cmd);
-        if (strncmp(cmd, "AT", 2) == 0){
-            inject_rfcomm_command_to_ag((uint8_t*)cmd, strlen(cmd));
-        } else if (strncmp(cmd, "NOP", 3) == 0){
-            inject_rfcomm_command_to_ag((uint8_t*)"NOP",3);
-        } else {
-            int expected_cmd = expected_rfcomm_command(cmd);
-            if (!expected_cmd){
-                printf("\nError: Expected:'%s', but got:'%s'\n", cmd, (char *)get_rfcomm_payload());
-                CHECK_EQUAL(expected_cmd,1);
-                return;
-            } 
-            printf("AG response verified %s\n\n", cmd);
-        }
+static void user_command(char cmd){
+    switch (cmd){
+        case 'a':
+            printf("Establish HFP service level connection to PTS module %s...\n", bd_addr_to_str(device_addr));
+            hfp_ag_establish_service_level_connection(device_addr);
+            break;
+        case 'A':
+            printf("Release HFP service level connection.\n");
+            hfp_ag_release_service_level_connection(device_addr);
+            break;
+        case 'b':
+            printf("Establish Audio connection %s...\n", bd_addr_to_str(device_addr));
+            hfp_ag_establish_audio_connection(device_addr);
+            break;
+        case 'B':
+            printf("Release Audio connection.\n");
+            hfp_ag_release_audio_connection(device_addr);
+            break;
+        case 'c':
+            printf("Simulate incoming call from 1234567\n");
+            // current_call_exists_a = 1;
+            // current_call_status_a = HFP_ENHANCED_CALL_STATUS_INCOMING;
+            // current_call_dir = HFP_ENHANCED_CALL_DIR_INCOMING;
+            hfp_ag_set_clip(129, "1234567");
+            hfp_ag_incoming_call();
+            break;
+        case 'm':
+            printf("Simulate incoming call from 7654321\n");
+            // current_call_exists_b = 1;
+            // current_call_status_b = HFP_ENHANCED_CALL_STATUS_INCOMING;
+            // current_call_dir = HFP_ENHANCED_CALL_DIR_INCOMING;
+            hfp_ag_set_clip(129, "7654321");
+            hfp_ag_incoming_call();
+            break;
+        case 'C':
+            printf("Simulate terminate call\n");
+            hfp_ag_call_dropped();
+            break;
+        case 'd':
+            printf("Report AG failure\n");
+            hfp_ag_report_extended_audio_gateway_error_result_code(device_addr, HFP_CME_ERROR_AG_FAILURE);
+            break;
+        case 'e':
+            printf("Answer call on AG\n");
+            // if (current_call_status_a == HFP_ENHANCED_CALL_STATUS_INCOMING){
+            //     current_call_status_a = HFP_ENHANCED_CALL_STATUS_ACTIVE;
+            // }
+            // if (current_call_status_b == HFP_ENHANCED_CALL_STATUS_INCOMING){
+            //     current_call_status_b = HFP_ENHANCED_CALL_STATUS_ACTIVE;
+            // }
+            hfp_ag_answer_incoming_call();
+            break;
+        case 'E':
+            printf("Reject call on AG\n");
+            hfp_ag_terminate_call();
+            break;
+        case 'f':
+            printf("Disable cellular network\n");
+            hfp_ag_set_registration_status(0);
+            break;
+        case 'F':
+            printf("Enable cellular network\n");
+            hfp_ag_set_registration_status(1);
+            break;
+        case 'g':
+            printf("Set signal strength to 0\n");
+            hfp_ag_set_signal_strength(0);
+            break;
+        case 'G':
+            printf("Set signal strength to 5\n");
+            hfp_ag_set_signal_strength(5);
+            break;
+        case 'h':
+            printf("Disable roaming\n");
+            hfp_ag_set_roaming_status(0);
+            break;
+        case 'H':
+            printf("Enable roaming\n");
+            hfp_ag_set_roaming_status(1);
+            break;
+        case 'i':
+            printf("Set battery level to 3\n");
+            hfp_ag_set_battery_level(3);
+            break;
+        case 'I':
+            printf("Set battery level to 5\n");
+            hfp_ag_set_battery_level(5);
+            break;
+        case 'j':
+            printf("Answering call on remote side\n");
+            hfp_ag_outgoing_call_established();
+            break;
+        case 'r':
+            printf("Disable in-band ring tone\n");
+            hfp_ag_set_use_in_band_ring_tone(0);
+            break;
+        case 'k':
+            printf("Memory 1 cleared\n");
+            memory_1_enabled = 0;
+            break;
+        case 'K':
+            printf("Memory 1 set\n");
+            memory_1_enabled = 1;
+            break;
+        case 'l':
+            printf("Last dialed number cleared\n");
+            last_number_exists = 0;
+            break;
+        case 'L':
+            printf("Last dialed number set\n");
+            last_number_exists = 1;
+            break;
+        case 'n':
+            printf("Disable Voice Recognition\n");
+            hfp_ag_activate_voice_recognition(device_addr, 0);
+            break;
+        case 'N':
+            printf("Enable Voice Recognition\n");
+            hfp_ag_activate_voice_recognition(device_addr, 1);
+            break;
+        case 'o':
+            printf("Set speaker gain to 0 (minimum)\n");
+            hfp_ag_set_speaker_gain(device_addr, 0);
+            break;
+        case 'O':
+            printf("Set speaker gain to 9 (default)\n");
+            hfp_ag_set_speaker_gain(device_addr, 9);
+            break;
+        case 'p':
+            printf("Set speaker gain to 12 (higher)\n");
+            hfp_ag_set_speaker_gain(device_addr, 12);
+            break;
+        case 'P':
+            printf("Set speaker gain to 15 (maximum)\n");
+            hfp_ag_set_speaker_gain(device_addr, 15);
+            break;
+        case 'q':
+            printf("Set microphone gain to 0\n");
+            hfp_ag_set_microphone_gain(device_addr, 0);
+            break;
+        case 'Q':
+            printf("Set microphone gain to 9\n");
+            hfp_ag_set_microphone_gain(device_addr, 9);
+            break;
+        case 's':
+            printf("Set microphone gain to 12\n");
+            hfp_ag_set_microphone_gain(device_addr, 12);
+            break;
+        case 'S':
+            printf("Set microphone gain to 15\n");
+            hfp_ag_set_microphone_gain(device_addr, 15);
+            break;
+        case 'R':
+            printf("Enable in-band ring tone\n");
+            hfp_ag_set_use_in_band_ring_tone(1);
+            break;
+        case 't':
+            printf("Terminate HCI connection.\n");
+            gap_disconnect(handle);
+            break;
+        case 'u':
+            printf("Join held call\n");
+            // current_call_mpty = HFP_ENHANCED_CALL_MPTY_CONFERENCE_CALL;
+            hfp_ag_join_held_call();
+            break;
+        case 'v':
+            // start_scan();
+            break;
+        case 'w':
+            printf("AG: Put incoming call on hold (Response and Hold)\n");
+            hfp_ag_hold_incoming_call();
+            break;
+        case 'x':
+            printf("AG: Accept held incoming call (Response and Hold)\n");
+            hfp_ag_accept_held_incoming_call();
+            break;
+        case 'X':
+            printf("AG: Reject held incoming call (Response and Hold)\n");
+            hfp_ag_reject_held_incoming_call();
+            break;
+        default:
+            printf("AG: undefined user command\n");
+            break;
     }
+}
+
+static void simulate_test_sequence(hfp_test_item_t * test_item){
+    char ** test_steps = test_item->test;
+    printf("\nSimulate test sequence: \"%s\"\n", test_item->name);
+    
+    int i = 0;
+    static char * previous_cmd = NULL;
+
+    while (i < test_item->len){
+        char * expected_cmd = test_steps[i];
+        int expected_cmd_len = strlen(expected_cmd);
+
+        if (strncmp(expected_cmd, "USER:", 5) == 0){
+            printf("\n---> USER: ");
+            user_command(expected_cmd[5]);
+            i++;
+        } else if (strncmp(expected_cmd, "AT", 2) == 0){
+            // printf("\n---> NEXT STEP receive from HF: '%s'\n", expected_cmd);
+            inject_hfp_command_to_ag((uint8_t*)expected_cmd, expected_cmd_len);
+            i++;
+
+        } else {
+            printf("\n---> NEXT STEP expect from AG: %s\n", expected_cmd);
+
+            while (has_more_hfp_ag_commands()){
+                char * ag_cmd = get_next_hfp_ag_command();
+
+                int equal_cmds = strncmp(ag_cmd, expected_cmd, expected_cmd_len) == 0;
+                if (!equal_cmds){
+                    printf("\nError: Expected:'%s', but got:'%s'\n", expected_cmd, ag_cmd);
+                    CHECK_EQUAL(equal_cmds,1);
+                    return;
+                } 
+                printf("Verified: '%s'\n", expected_cmd);
+                previous_cmd = ag_cmd;
+
+                i++;
+                if (i < test_item->len){
+                    expected_cmd = test_steps[i];
+                    expected_cmd_len = strlen(expected_cmd);
+                } 
+            } 
+            // printf("\n---> NEXT STEP trigger once more AG\n");
+            inject_hfp_command_to_ag((uint8_t*)"NOP",3); 
+        }
+    }   
 }
 
 void packet_handler(uint8_t * event, uint16_t event_size){
@@ -181,8 +401,24 @@ void packet_handler(uint8_t * event, uint16_t event_size){
         case HFP_SUBEVENT_CALL_TERMINATED:
             call_termiated = 1;
             break;
+        case HFP_CMD_CALL_ANSWERED:
+            //printf("HF answers call, accept call by GSM\n");
+            break;
+        case HFP_SUBEVENT_REDIAL_LAST_NUMBER:
+            printf("\n** Redial last number\n");
+            if (last_number_exists){
+                hfp_ag_outgoing_call_accepted();
+                printf("Last number exists: accept call\n");
+                // TODO: calling ringing right away leads to callstatus=2 being skipped. don't call for now
+                // hfp_ag_outgoing_call_ringing();
+            } else {
+                printf("Last number missing: reject call\n");
+                hfp_ag_outgoing_call_rejected();
+            }
+            break;
+
         default:
-            printf("event not handled %u\n", event[2]);
+            printf("hfp_ag_client_test: event not handled %u\n", event[2]);
             break;
     }
 }
@@ -212,121 +448,48 @@ TEST_GROUP(HFPClient){
         codecs_connection_established = 0;
         audio_connection_established = 0;
     }
-
-    void setup_hfp_service_level_connection(char ** test_steps, int nr_test_steps){
-        service_level_connection_established = 0;
-        hfp_ag_establish_service_level_connection(device_addr);
-        simulate_test_sequence((char **) test_steps, nr_test_steps);
-    }
-
-    void setup_hfp_codecs_connection(char ** test_steps, int nr_test_steps){
-        codecs_connection_established = 0;
-        simulate_test_sequence((char **) test_steps, nr_test_steps);
-    }
 };
 
-// TEST(HFPClient, HFAnswerIncomingCallWithInBandRingToneHFTermiantesCall){
-//     setup_hfp_service_level_connection(default_slc_setup(), default_slc_setup_size());
-//     CHECK_EQUAL(service_level_connection_established, 1);
-
-//     hfp_ag_set_use_in_band_ring_tone(1);    
-//     hfp_ag_incoming_call();
-//     simulate_test_sequence(default_ic_setup(), default_ic_setup_size());
-//     CHECK_EQUAL(audio_connection_established, 1);
-
-//     simulate_test_sequence(alert_ic_setup(), alert_ic_setup_size());
-//     CHECK_EQUAL(stop_ringing, 1);
-    
-//     simulate_test_sequence(terminate_ic_hf_setup(), terminate_ic_hf_setup_size());
-//     CHECK_EQUAL(call_termiated,1);
+// TEST(HFPClient, PTSRHHTests){
+//     for (int i = 0; i < hfp_pts_ag_rhh_tests_size(); i++){
+//         simulate_test_sequence(&hfp_pts_ag_rhh_tests()[i]);
+//         teardown();
+//     }
 // }
 
-
-// TEST(HFPClient, HFAnswerIncomingCallWithInBandRingToneAGTerminatesCall){
-//     setup_hfp_service_level_connection(default_slc_setup(), default_slc_setup_size());
-//     CHECK_EQUAL(service_level_connection_established, 1);
-
-//     hfp_ag_set_use_in_band_ring_tone(1);    
-//     hfp_ag_incoming_call();
-//     simulate_test_sequence(default_ic_setup(), default_ic_setup_size());
-//     CHECK_EQUAL(audio_connection_established, 1);
-
-//     simulate_test_sequence(alert_ic_setup(), alert_ic_setup_size());
-//     CHECK_EQUAL(stop_ringing, 1);
-
-//     // AG terminates call
-//     hfp_ag_terminate_call();
-//     simulate_test_sequence(terminate_ic_ag_setup(), terminate_ic_ag_setup_size());
-//     CHECK_EQUAL(call_termiated,1);
+// TEST(HFPClient, PTSECCTests){
+//     for (int i = 0; i < hfp_pts_ag_ecc_tests_size(); i++){
+//         simulate_test_sequence(&hfp_pts_ag_ecc_tests()[i]);
+//         teardown();
+//     }
 // }
 
+// TEST(HFPClient, PTSECSTests){
+//     for (int i = 0; i < hfp_pts_ag_ecs_tests_size(); i++){
+//         simulate_test_sequence(&hfp_pts_ag_ecs_tests()[i]);
+//         teardown();
+//     }
+// }
 
-TEST(HFPClient, HFAudioConnectionEstablishedWithCodecNegotiation){
-    setup_hfp_service_level_connection(default_slc_setup(), default_slc_setup_size());
-    CHECK_EQUAL(service_level_connection_established, 1);
-        
-    setup_hfp_codecs_connection(default_cc_setup(), default_cc_setup_size());
-    CHECK_EQUAL(codecs_connection_established, 1);
-
-    hfp_ag_establish_audio_connection(device_addr);
-    CHECK_EQUAL(audio_connection_established, 1);
-
-    hfp_ag_release_audio_connection(device_addr);
-    CHECK_EQUAL(audio_connection_established, 0);
-}
-
-TEST(HFPClient, HFAudioConnectionEstablishedWithoutCodecNegotiation){
-    hfp_ag_init(rfcomm_channel_nr, supported_features_without_codec_negotiation, 
-        codecs, sizeof(codecs), 
-        ag_indicators, ag_indicators_nr, 
-        hf_indicators, hf_indicators_nr, 
-        call_hold_services, call_hold_services_nr);
-
-    setup_hfp_service_level_connection(hfp_slc_tests()[1].test, hfp_slc_tests()[1].len);
-    CHECK_EQUAL(service_level_connection_established, 1);
-        
-    setup_hfp_codecs_connection(default_cc_setup(), default_cc_setup_size());
-    CHECK_EQUAL(codecs_connection_established, 1);
-
-    hfp_ag_establish_audio_connection(device_addr);
-    CHECK_EQUAL(audio_connection_established, 1);
-
-    hfp_ag_release_audio_connection(device_addr);
-    CHECK_EQUAL(audio_connection_established, 0);
-}
-
-TEST(HFPClient, HFCodecsConnectionEstablished){
-    for (int i = 0; i < cc_tests_size(); i++){
-        setup_hfp_service_level_connection(default_slc_setup(), default_slc_setup_size());
-        CHECK_EQUAL(service_level_connection_established, 1);
-        
-        setup_hfp_codecs_connection(hfp_cc_tests()[i].test, hfp_cc_tests()[i].len);
-        CHECK_EQUAL(codecs_connection_established, 1);
+TEST(HFPClient, PTSTWCTests){
+    for (int i = 0; i < hfp_pts_ag_twc_tests_size(); i++){
+        simulate_test_sequence(&hfp_pts_ag_twc_tests()[i]);
         teardown();
     }
 }
 
-TEST(HFPClient, HFServiceLevelConnectionCommands){
-    setup_hfp_service_level_connection(default_slc_setup(), default_slc_setup_size());
-    CHECK_EQUAL(service_level_connection_established, 1);
-    for (int i = 0; i < slc_cmds_tests_size(); i++){
-        simulate_test_sequence(hfp_slc_cmds_tests()[i].test, hfp_slc_cmds_tests()[i].len);
+TEST(HFPClient, PTSATATests){
+    for (int i = 0; i < hfp_pts_ag_ata_tests_size(); i++){
+        simulate_test_sequence(&hfp_pts_ag_ata_tests()[i]);
+        teardown();
     }
 }
 
-TEST(HFPClient, HFServiceLevelConnectionEstablishedWithoutCodecNegotiation){
-    hfp_ag_init(rfcomm_channel_nr, supported_features_without_codec_negotiation, 
-        codecs, sizeof(codecs), 
-        ag_indicators, ag_indicators_nr, 
-        hf_indicators, hf_indicators_nr, 
-        call_hold_services, call_hold_services_nr);
-    setup_hfp_service_level_connection(hfp_slc_tests()[1].test, hfp_slc_tests()[1].len);
-    CHECK_EQUAL(service_level_connection_established, 1);
-}
-
-TEST(HFPClient, HFServiceLevelConnectionEstablishedWithCodecNegotiation){
-    setup_hfp_service_level_connection(hfp_slc_tests()[0].test, hfp_slc_tests()[0].len);
-    CHECK_EQUAL(service_level_connection_established, 1);
+TEST(HFPClient, PTSSLCTests){
+    for (int i = 0; i < hfp_pts_ag_slc_tests_size(); i++){
+        simulate_test_sequence(&hfp_pts_ag_slc_tests()[i]);
+        teardown();
+    }
 }
 
 int main (int argc, const char * argv[]){
