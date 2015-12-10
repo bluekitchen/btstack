@@ -410,12 +410,17 @@ BD_ADDR_TYPE BD_ADDR::getAddressType(void){
 BLEAdvertisement::BLEAdvertisement(uint8_t * event_packet) : 
 advertising_event_type(event_packet[2]),
 rssi(event_packet[10]),
-data_length(event_packet[11])
+data_length(event_packet[11]),
+iBeacon_UUID(NULL)
 {
     bd_addr_t addr;
     bt_flip_addr(addr, &event_packet[4]);    
     bd_addr = BD_ADDR(addr, (BD_ADDR_TYPE)event_packet[3]);
     memcpy(data, &event_packet[12], LE_ADVERTISING_DATA_SIZE);
+}
+
+BLEAdvertisement::~BLEAdvertisement(){
+    if (iBeacon_UUID) delete(iBeacon_UUID);
 }
 
 const uint8_t * BLEAdvertisement::getAdvData(void){
@@ -462,15 +467,18 @@ bool BLEAdvertisement::isIBeacon(void){
 }
 
 const UUID * BLEAdvertisement::getIBeaconUUID(void){
-    return new UUID(&data[9]);
+    if (!iBeacon_UUID){
+        iBeacon_UUID = new UUID(&data[9]);
+    }
+    return iBeacon_UUID;
 };
-uint16_t     BLEAdvertisement::getIBeaconMajorID(void){
+uint16_t BLEAdvertisement::getIBeaconMajorID(void){
     return READ_NET_16(data, 25);
 };
-uint16_t     BLEAdvertisement::getIBecaonMinorID(void){
+uint16_t BLEAdvertisement::getIBecaonMinorID(void){
     return READ_NET_16(data, 27);
 };
-uint8_t      BLEAdvertisement::getiBeaconMeasuredPower(void){
+uint8_t BLEAdvertisement::getiBeaconMeasuredPower(void){
     return data[29];
 }
 

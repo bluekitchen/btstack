@@ -176,6 +176,7 @@ static void show_usage(void){
     printf("p - establish audio connection to PTS module\n");
     printf("e - establish audio connection to local mac\n");
     printf("d - release audio connection from Bluetooth Speaker\n");
+    printf("b - press user button\n");
     printf("z - set microphone gain 0\n");
     printf("m - set microphone gain 8\n");
     printf("M - set microphone gain 15\n");
@@ -230,6 +231,10 @@ static int stdin_process(struct data_source *ds){
             printf("Setting speaker gain 15\n");
             hsp_hs_set_speaker_gain(15);
             break;
+        case 'b':
+            printf("Press user button\n");
+            hsp_hs_press_button();
+            break;
         default:
             show_usage();
             break;
@@ -244,6 +249,7 @@ static void packet_handler(uint8_t * event, uint16_t event_size){
     switch (event[0]) {
         case BTSTACK_EVENT_STATE:
             if (event[2] != HCI_STATE_WORKING) break;
+            show_usage();
             // request loopback mode
             hci_send_cmd(&hci_write_synchronous_flow_control_enable, 1);
             break;
@@ -283,6 +289,9 @@ static void packet_handler(uint8_t * event, uint16_t event_size){
                     break;
                 case HSP_SUBEVENT_SPEAKER_GAIN_CHANGED:
                     printf("Received speaker gain change %d\n", event[3]);
+                    break;
+                case HSP_SUBEVENT_RING:
+                    printf("HS: RING RING!\n");
                     break;
                 case HSP_SUBEVENT_AG_INDICATION:
                     memset(hs_cmd_buffer, 0, sizeof(hs_cmd_buffer));
