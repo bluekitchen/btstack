@@ -166,7 +166,7 @@ static void panu_setup(void){
  * It is rather low-level as it sets up and configures a network interface.
  */ 
 
-int tap_alloc(char *dev, bd_addr_t bd_addr)
+static int tap_alloc(char *dev, bd_addr_t bd_addr)
 {
     struct ifreq ifr;
     int fd_dev;
@@ -269,7 +269,7 @@ int tap_alloc(char *dev, bd_addr_t bd_addr)
  */
 
 /* LISTING_START(processTapData): Process incoming network packets */
-int process_tap_dev_data(struct data_source *ds) 
+static int process_tap_dev_data(struct data_source *ds) 
 {
     ssize_t len;
     len = read(ds->fd, network_buffer, sizeof(network_buffer));
@@ -291,7 +291,7 @@ int process_tap_dev_data(struct data_source *ds)
 /* LISTING_END */
 
 // PANU client routines 
-char * get_string_from_data_element(uint8_t * element){
+static char * get_string_from_data_element(uint8_t * element){
     de_size_t de_size = de_get_size_type(element);
     int pos     = de_get_header_size(element);
     int len = 0;
@@ -400,7 +400,7 @@ static void handle_sdp_client_query_result(sdp_query_event_t *event)
                                 printf("l2cap_psm 0x%04x, bnep_version 0x%04x\n", bnep_l2cap_psm, bnep_version);
 
                                 /* Create BNEP connection */
-                                bnep_connect(NULL, &remote, bnep_l2cap_psm, bnep_remote_uuid);
+                                bnep_connect(NULL, remote, bnep_l2cap_psm, PANU_UUID, bnep_remote_uuid);
                             }
                             break;
                         default:
@@ -470,41 +470,15 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 
                 /* LISTING_RESUME */
 
-                /* @text In server mode, BNEP_EVENT_INCOMING_CONNECTION is received after a client has connected.
+                /* @text BNEP_EVENT_OPEN_CHANNEL_COMPLETE is received after a BNEP connection was established or 
+                 * or when the connection fails. The status field returns the error code.
+                 * 
                  * The TAP network interface is then configured. A data source is set up and registered with the 
                  * run loop to receive Ethernet packets from the TAP interface.
                  *
                  * The event contains both the source and destination UUIDs, as well as the MTU for this connection and
                  * the BNEP Channel ID, which is used for sending Ethernet packets over BNEP.
-                 */
-                case BNEP_EVENT_INCOMING_CONNECTION:
-					// data: event(8), len(8), bnep source uuid (16), bnep destination uuid (16), remote_address (48)
-                    uuid_source = READ_BT_16(packet, 2);
-                    uuid_dest   = READ_BT_16(packet, 4);
-                    mtu         = READ_BT_16(packet, 6);
-                    bnep_cid    = channel;
-                    memcpy(&event_addr, &packet[8], sizeof(bd_addr_t));
-					printf("BNEP connection from %s source UUID 0x%04x dest UUID: 0x%04x, max frame size: %u\n", bd_addr_to_str(event_addr), uuid_source, uuid_dest, mtu);
-                    /* Create the tap interface */
-                    hci_local_bd_addr(local_addr);
-                    tap_fd = tap_alloc(tap_dev_name, local_addr);
-                    if (tap_fd < 0) {
-                        printf("Creating BNEP tap device failed: %s\n", strerror(errno));
-                    } else {
-                        printf("BNEP device \"%s\" allocated.\n", tap_dev_name);
-                        /* Create and register a new runloop data source */
-                        tap_dev_ds.fd = tap_fd;
-                        tap_dev_ds.process = process_tap_dev_data;
-                        run_loop_add_data_source(&tap_dev_ds);
-                    }
-					break;
-
-                /* LISTING_PAUSE */
-
-                /* @text In client mode, BNEP_EVENT_OPEN_CHANNEL_COMPLETE is received after a client has connected
-                 * or when the connection fails. The status field returns the error code. It is otherwise identical to 
-                 * BNEP_EVENT_INCOMING_CONNECTION before.
-                 */
+                 */  
 				case BNEP_EVENT_OPEN_CHANNEL_COMPLETE:
                     if (packet[2]) {
                         printf("BNEP channel open failed, status %02x\n", packet[2]);
@@ -518,7 +492,8 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                         memcpy(&event_addr, &packet[9], sizeof(bd_addr_t));
                         printf("BNEP connection open succeeded to %s source UUID 0x%04x dest UUID: 0x%04x, max frame size %u\n", bd_addr_to_str(event_addr), uuid_source, uuid_dest, mtu);
                         /* Create the tap interface */
-                        tap_fd = tap_alloc(tap_dev_name, *hci_local_bd_addr());
+                        hci_local_bd_addr(local_addr);
+                        tap_fd = tap_alloc(tap_dev_name, local_addr);
                         if (tap_fd < 0) {
                             printf("Creating BNEP tap device failed: %s\n", strerror(errno));
                         } else {
@@ -531,8 +506,6 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     }
 					break;
                 
-                /* LISTING_RESUME */
-
                 /* @text If there is a timeout during the connection setup, BNEP_EVENT_CHANNEL_TIMEOUT will be received
                  * and the BNEP connection  will be closed
                  */     
