@@ -66,6 +66,11 @@
 
 static void att_run(void);
 
+// max ATT request matches L2CAP PDU -- allow to use smaller buffer
+#ifndef ATT_REQUEST_BUFFER_SIZE
+#define ATT_REQUEST_BUFFER_SIZE HCI_ACL_PAYLOAD_SIZE
+#endif
+
 typedef enum {
     ATT_SERVER_IDLE,
     ATT_SERVER_REQUEST_RECEIVED,
@@ -79,7 +84,7 @@ static att_server_state_t att_server_state;
 static uint8_t   att_client_addr_type;
 static bd_addr_t att_client_address;
 static uint16_t  att_request_size   = 0;
-static uint8_t   att_request_buffer[HCI_ACL_PAYLOAD_SIZE];
+static uint8_t   att_request_buffer[ATT_REQUEST_BUFFER_SIZE];
 
 static int       att_ir_le_device_db_index = -1;
 static int       att_ir_lookup_active = 0;
@@ -146,6 +151,9 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
                             att_connection.con_handle = READ_BT_16(packet, 4);
                             att_connection.mtu = ATT_DEFAULT_MTU;
                             att_connection.max_mtu = l2cap_max_le_mtu();
+                            if (att_connection.max_mtu > ATT_REQUEST_BUFFER_SIZE){
+                                att_connection.max_mtu = ATT_REQUEST_BUFFER_SIZE;
+                            }
                             att_connection.encryption_key_size = 0;
                             att_connection.authenticated = 0;
 		                	att_connection.authorized = 0;
