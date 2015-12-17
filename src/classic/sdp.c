@@ -53,8 +53,10 @@
 // max reserved ServiceRecordHandle
 #define maxReservedServiceRecordHandle 0xffff
 
-// max SDP response
+// max SDP response matches L2CAP PDU -- allow to use smaller buffer
+#ifndef SDP_RESPONSE_BUFFER_SIZE
 #define SDP_RESPONSE_BUFFER_SIZE (HCI_ACL_BUFFER_SIZE-HCI_ACL_HEADER_SIZE)
+#endif
 
 static void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
