@@ -67,6 +67,8 @@ static uint16_t rfcomm_payload_len = 0;
 static uint8_t outgoing_rfcomm_payload[200];
 static uint16_t outgoing_rfcomm_payload_len = 0;
 
+static uint8_t rfcomm_reserved_buffer[1000];
+
 void * active_connection;
 hfp_connection_t * hfp_context;
 
@@ -110,7 +112,8 @@ char * get_next_hfp_command(int start_command_offset, int end_command_offset){
     return NULL;
 }
 
-static void print_without_newlines(uint8_t *data, uint16_t len){
+void print_without_newlines(uint8_t *data, uint16_t len);
+void print_without_newlines(uint8_t *data, uint16_t len){
     int found_newline = 0;
     int found_item = 0;
     
@@ -131,7 +134,6 @@ extern "C" void l2cap_init(void){}
 
 extern "C" void l2cap_register_packet_handler(void (*handler)(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size)){
 }
-
 
 int  rfcomm_send_internal(uint16_t rfcomm_cid, uint8_t *data, uint16_t len){
 	int start_command_offset = 2;
@@ -154,6 +156,21 @@ int  rfcomm_send_internal(uint16_t rfcomm_cid, uint8_t *data, uint16_t len){
 	
     //print_without_newlines(rfcomm_payload,rfcomm_payload_len);
     return 0;
+}
+
+int       rfcomm_reserve_packet_buffer(void){
+    return 1;
+};
+void      rfcomm_release_packet_buffer(void){};
+uint8_t * rfcomm_get_outgoing_buffer(void) {
+    return rfcomm_reserved_buffer;
+}
+uint16_t rfcomm_get_max_frame_size(uint16_t rfcomm_cid){
+    return sizeof(rfcomm_reserved_buffer);
+}
+int rfcomm_send_prepared(uint16_t rfcomm_cid, uint16_t len){
+    printf("--- rfcomm_send_prepared with len %u ---\n", len);
+    return rfcomm_send_internal(rfcomm_cid, rfcomm_reserved_buffer, len);
 }
 
 static void hci_event_sco_complete(){
