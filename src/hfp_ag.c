@@ -383,8 +383,11 @@ static int hfp_ag_call_services_join(char * buffer, int buffer_size){
     return offset;
 }
 
-// returns next segment to store
-static int hfp_ag_retrieve_indicators_cmd_via_generator(uint16_t cid, hfp_connection_t * context, int start_segment){
+static int hfp_ag_cmd_via_generator(uint16_t cid, hfp_connection_t * context,
+    int start_segment, int num_segments,
+    int (*get_segment_len)(hfp_connection_t * context, int segment),
+    void (*store_segment) (hfp_connection_t * context, int segment, uint8_t * buffer)){
+
     // assumes: can send now == true
     // assumes: num segments > 0
     rfcomm_reserve_packet_buffer();
@@ -392,17 +395,23 @@ static int hfp_ag_retrieve_indicators_cmd_via_generator(uint16_t cid, hfp_connec
     uint8_t * data = rfcomm_get_outgoing_buffer();
     int offset = 0;
     int segment = start_segment;
-    int num_segments = hfp_ag_indicators_cmd_generator_num_segments(context);
     while (segment < num_segments){
-        int segment_len = hfp_ag_indicators_cmd_generator_get_segment_len(context, segment);
+        int segment_len = get_segment_len(context, segment);
         if (offset + segment_len <= mtu){
-            hgp_ag_indicators_cmd_generator_store_segment(context, segment, data+offset);
+            store_segment(context, segment, data+offset);
             offset += segment_len;
             segment++;
         }
     }
     rfcomm_send_prepared(cid, offset);
     return segment;
+}
+
+// returns next segment to store
+static int hfp_ag_retrieve_indicators_cmd_via_generator(uint16_t cid, hfp_connection_t * context, int start_segment){
+    int num_segments = hfp_ag_indicators_cmd_generator_num_segments(context);
+    return hfp_ag_cmd_via_generator(cid, context, start_segment, num_segments,
+        hfp_ag_indicators_cmd_generator_get_segment_len, hgp_ag_indicators_cmd_generator_store_segment);
 }
 
 static int hfp_ag_retrieve_indicators_status_cmd(uint16_t cid){
