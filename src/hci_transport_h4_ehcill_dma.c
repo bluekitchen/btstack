@@ -57,9 +57,10 @@
 #include <btstack/run_loop.h>
 #include <btstack/hal_uart_dma.h>
 
-// #include <libopencm3/stm32/gpio.h>
-// #define GPIO_DEBUG_0 GPIO1
-// #define GPIO_DEBUG_1 GPIO2
+// assert pre-buffer for packet type is available
+#if !defined(HCI_OUTGOING_PRE_BUFFER_SIZE) || (HCI_OUTGOING_PRE_BUFFER_SIZE == 0)
+#error HCI_OUTGOING_PRE_BUFFER_SIZE not defined. Please update hci.h
+#endif
 
 // #define LOG_EHCILL
 
@@ -81,7 +82,6 @@ typedef enum {
 typedef enum {
     TX_IDLE = 1,
     TX_W4_WAKEUP,   // eHCILL only
-    TX_W4_HEADER_SENT,
     TX_W4_PACKET_SENT,
     TX_W2_EHCILL_SEND,
     TX_W4_EHCILL_SENT,
@@ -137,9 +137,8 @@ static  void (*packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t si
 // H4: tx state
 static volatile TX_STATE  tx_state;				// updated from block_sent callback
 static volatile int       tx_send_packet_sent;	// updated from block_sent callback
-static uint8_t   tx_packet_type;                // 0 == no outgoing packet
 static uint8_t * tx_data;
-static uint16_t  tx_len;
+static uint16_t  tx_len;                        // 0 == no outgoing packet
 
 // work around for eHCILL problem
 static timer_source_t ehcill_sleep_ack_timer;
@@ -203,7 +202,7 @@ static int h4_open(void *transport_config){
     // init state machines
     h4_rx_init_sm();
     tx_state = TX_IDLE;
-    tx_packet_type = 0;
+    tx_len = 0;
     
     return 0;
 }
@@ -302,7 +301,7 @@ static int h4_can_send_packet_now(uint8_t packet_type){
 }
 
 static int h4_outgoing_packet_ready(void){
-    return tx_packet_type != 0;
+    return tx_len != 0;
 }
 
 static void ehcill_sleep_ack_timer_handler(timer_source_t * timer){
@@ -344,14 +343,9 @@ static void echill_send_wakeup_ind(void){
 static void h4_block_sent(void){
     int command;
     switch (tx_state){
-        case TX_W4_HEADER_SENT:
-            tx_state = TX_W4_PACKET_SENT;
-            // h4 packet type + actual packet
-            hal_uart_dma_send_block(tx_data, tx_len);
-            break;
         case TX_W4_PACKET_SENT:
             // packet fully sent, reset state
-            tx_packet_type = 0;
+            tx_len = 0;
             // now, send pending ehcill command if neccessary
             switch (ehcill_command_to_send){
                 case EHCILL_GO_TO_SLEEP_ACK:
@@ -508,8 +502,8 @@ static void ehcill_handle(uint8_t action){
 #ifdef LOG_EHCILL
                     log_info("EHCILL: WAKE_UP_IND or ACK");
 #endif
-                    tx_state = TX_W4_HEADER_SENT;
-                    hal_uart_dma_send_block(&tx_packet_type, 1);
+                    tx_state = TX_W4_PACKET_SENT;
+                    hal_uart_dma_send_block(tx_data, tx_len);
                     ehcill_state = EHCILL_STATE_AWAKE;
                     
                     break;
@@ -526,7 +520,6 @@ static int ehcill_send_packet(uint8_t packet_type, uint8_t *packet, int size){
     // check for ongoing write
     switch (tx_state){
         case TX_W4_WAKEUP:
-        case TX_W4_HEADER_SENT:
         case TX_W4_PACKET_SENT:
             // we should not arrive here, log state
             log_error("h4_send_packet with tx_state = %u, ehcill_state %u, packet type %u, data %02x %02x %02x", tx_state, ehcill_state, packet_type, packet[0], packet[1], packet[2]);
@@ -538,15 +531,19 @@ static int ehcill_send_packet(uint8_t packet_type, uint8_t *packet, int size){
             break;
     }
     
+    // store packet type before actual data and increase size
+    size++;
+    packet--;
+    *packet = packet_type;
+
     // store request
-    tx_packet_type = packet_type;
     tx_data = packet;
     tx_len  = size;
     
     // if awake, just start sending 
     if (!ehcill_sleep_mode_active()){
-        tx_state = TX_W4_HEADER_SENT;
-        hal_uart_dma_send_block(&tx_packet_type, 1);
+        tx_state = TX_W4_PACKET_SENT;
+        hal_uart_dma_send_block(tx_data, tx_len);
         return 0;
     }
 
