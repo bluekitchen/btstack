@@ -74,6 +74,8 @@
 #include "classic/sdp_query_rfcomm.h"
 #include "socket_connection.h"
 
+#include "btstack_client.h"
+
 #ifdef HAVE_BLE
 #include "ble/gatt_client.h"
 #include "ble/att_server.h"

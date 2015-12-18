@@ -44,7 +44,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "btstack.h"
+#include "btstack_client.h"
 
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
 	

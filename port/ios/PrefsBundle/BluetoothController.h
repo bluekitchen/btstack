@@ -29,7 +29,7 @@
  *
  */
 
-#import "btstack.h"
+#import "btstack_client.h"
 
 typedef enum transitionStates {
     kIdle = 1,

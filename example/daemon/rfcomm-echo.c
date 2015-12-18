@@ -49,7 +49,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#include "btstack.h"
+#include "btstack_client.h"
 #include "classic/sdp_util.h"
 
 // input from command line arguments

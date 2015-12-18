@@ -46,7 +46,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "btstack.h"
+#include "btstack_client.h"
 #include "hci_cmds.h"
 
 // bd_addr_t addr = {0x00, 0x03, 0xc9, 0x3d, 0x77, 0x43 };  // Think Outside Keyboard

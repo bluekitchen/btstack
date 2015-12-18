@@ -44,8 +44,8 @@
  *  
  */
 
-#ifndef __BTSTACK_H
-#define __BTSTACK_H
+#ifndef __BTSTACK_CLIENT_H
+#define __BTSTACK_CLIENT_H
 
 #include "hci_cmds.h"
 #include "daemon_cmds.h"

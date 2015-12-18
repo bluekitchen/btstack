@@ -46,7 +46,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "btstack.h"
+#include "btstack_client.h"
 #include "hci_cmds.h"
 
 #define PSM_TEST 0xdead

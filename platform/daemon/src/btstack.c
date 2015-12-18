@@ -48,7 +48,8 @@
 #include "l2cap.h"
 #include "socket_connection.h"
 #include "run_loop.h"
-
+#include "btstack_client.h"
+ 
 #include <string.h>
 #include <unistd.h>
 #include <stdarg.h>
