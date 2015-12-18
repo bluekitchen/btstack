@@ -78,7 +78,6 @@ static linked_list_t l2cap_services;
 static linked_list_t l2cap_le_channels;
 static linked_list_t l2cap_le_services;
 static void (*packet_handler) (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) = null_packet_handler;
-static int new_credits_blocked = 0;
 
 static btstack_packet_handler_t attribute_protocol_packet_handler;
 static btstack_packet_handler_t security_protocol_packet_handler;
@@ -95,7 +94,6 @@ static int l2cap_channel_ready_for_open(l2cap_channel_t *channel);
 
 
 void l2cap_init(void){
-    new_credits_blocked = 0;
     signaling_responses_pending = 0;
     
     l2cap_channels = NULL;
@@ -213,14 +211,7 @@ static void l2cap_emit_credits(l2cap_channel_t *channel, uint8_t credits) {
     l2cap_dispatch(channel, HCI_EVENT_PACKET, event, sizeof(event));
 }
 
-void l2cap_block_new_credits(uint8_t blocked){
-    new_credits_blocked = blocked;
-}
-
 static void l2cap_hand_out_credits(void){
-
-    if (new_credits_blocked) return;    // we're told not to. used by daemon
-
     linked_list_iterator_t it;    
     linked_list_iterator_init(&it, &l2cap_channels);
     while (linked_list_iterator_has_next(&it)){

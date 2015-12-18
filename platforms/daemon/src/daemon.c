@@ -1112,9 +1112,6 @@ static int daemon_client_handler(connection_t *connection, uint16_t packet_type,
         case L2CAP_DATA_PACKET:
             // process l2cap packet...
             err = l2cap_send_internal(channel, data, length);
-            if (err == BTSTACK_ACL_BUFFERS_FULL) {
-                l2cap_block_new_credits(1);
-            }
             break;
         case RFCOMM_DATA_PACKET:
             // process l2cap packet...
@@ -1234,10 +1231,6 @@ static void daemon_retry_parked(void){
     
     // ... try sending again  
     socket_connection_retry_parked();
-
-    if (!socket_connection_has_parked_connections()){
-        l2cap_block_new_credits(0);
-    }
 
     // unlock mutex
     retry_mutex = 0;

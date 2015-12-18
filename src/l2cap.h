@@ -201,8 +201,6 @@ typedef struct l2cap_signaling_response {
 } l2cap_signaling_response_t;
     
 
-void l2cap_block_new_credits(uint8_t blocked);
-
 int  l2cap_can_send_fixed_channel_packet_now(uint16_t handle);
 
 // @deprecated use l2cap_can_send_fixed_channel_packet_now instead
