@@ -433,7 +433,7 @@ static int hfp_ag_set_indicator_status_update_cmd(uint16_t cid, uint8_t activate
 
 
 static int hfp_ag_retrieve_can_hold_call_cmd(uint16_t cid){
-    char buffer[100];
+    char buffer[40];
     int offset = snprintf(buffer, sizeof(buffer), "\r\n%s:", HFP_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES);
     offset += hfp_ag_call_services_join(buffer+offset, sizeof(buffer)-offset);
     
