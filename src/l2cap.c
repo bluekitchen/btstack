@@ -78,7 +78,6 @@ static linked_list_t l2cap_services;
 static linked_list_t l2cap_le_channels;
 static linked_list_t l2cap_le_services;
 static void (*packet_handler) (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) = null_packet_handler;
-static int new_credits_blocked = 0;
 
 static btstack_packet_handler_t attribute_protocol_packet_handler;
 static btstack_packet_handler_t security_protocol_packet_handler;
@@ -95,7 +94,6 @@ static int l2cap_channel_ready_for_open(l2cap_channel_t *channel);
 
 
 void l2cap_init(void){
-    new_credits_blocked = 0;
     signaling_responses_pending = 0;
     
     l2cap_channels = NULL;
@@ -192,8 +190,6 @@ static void l2cap_emit_connection_parameter_update_response(uint16_t handle, uin
 static void l2cap_emit_credits(l2cap_channel_t *channel, uint8_t credits) {
     
     log_info("L2CAP_EVENT_CREDITS local_cid 0x%x credits %u", channel->local_cid, credits);
-    // track credits
-    channel->packets_granted += credits;
     
     uint8_t event[5];
     event[0] = L2CAP_EVENT_CREDITS;
@@ -204,23 +200,14 @@ static void l2cap_emit_credits(l2cap_channel_t *channel, uint8_t credits) {
     l2cap_dispatch(channel, HCI_EVENT_PACKET, event, sizeof(event));
 }
 
-void l2cap_block_new_credits(uint8_t blocked){
-    new_credits_blocked = blocked;
-}
-
 static void l2cap_hand_out_credits(void){
-
-    if (new_credits_blocked) return;    // we're told not to. used by daemon
-
     linked_list_iterator_t it;    
     linked_list_iterator_init(&it, &l2cap_channels);
     while (linked_list_iterator_has_next(&it)){
         l2cap_channel_t * channel = (l2cap_channel_t *) linked_list_iterator_next(&it);
         if (channel->state != L2CAP_STATE_OPEN) continue;
         if (!hci_number_free_acl_slots_for_handle(channel->handle)) return;
-        if (hci_number_outgoing_packets(channel->handle) < NR_BUFFERED_ACL_PACKETS && channel->packets_granted == 0) {
-            l2cap_emit_credits(channel, 1);
-        }
+        l2cap_emit_credits(channel, 1);
     }
 }
 
@@ -387,12 +374,7 @@ int l2cap_send_prepared(uint16_t local_cid, uint16_t len){
         return BTSTACK_ACL_BUFFERS_FULL;
     }
     
-    if (channel->packets_granted){
-        --channel->packets_granted;
-    }
-
-    log_debug("l2cap_send_prepared cid 0x%02x, handle %u, 1 credit used, credits left %u;",
-                  local_cid, channel->handle, channel->packets_granted);
+    log_debug("l2cap_send_prepared cid 0x%02x, handle %u, 1 credit used", local_cid, channel->handle);
     
     uint8_t *acl_buffer = hci_get_outgoing_packet_buffer();
 
@@ -783,7 +765,6 @@ uint8_t l2cap_create_channel(btstack_packet_handler_t channel_packet_handler, bd
     chan->packet_handler = channel_packet_handler;
     chan->remote_mtu = L2CAP_MINIMAL_MTU;
     chan->local_mtu = mtu;
-    chan->packets_granted = 0;
     chan->local_cid = l2cap_next_local_cid();
 
     // set initial state
@@ -1082,7 +1063,6 @@ static void l2cap_handle_connection_request(hci_con_handle_t handle, uint8_t sig
     channel->remote_cid = source_cid;
     channel->local_mtu  = service->mtu;
     channel->remote_mtu = L2CAP_DEFAULT_MTU;
-    channel->packets_granted = 0;
     channel->remote_sig_id = sig_id; 
     channel->required_security_level = service->required_security_level;
 

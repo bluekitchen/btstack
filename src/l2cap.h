@@ -123,8 +123,6 @@ typedef struct {
     
     gap_security_level_t required_security_level;
 
-    uint8_t   packets_granted;    // number of L2CAP/ACL packets client is allowed to send
-    
     uint8_t   reason; // used in decline internal
     
     timer_source_t rtx; // also used for ertx
@@ -163,8 +161,6 @@ typedef struct l2cap_signaling_response {
     uint16_t data; // infoType for INFORMATION REQUEST, result for CONNECTION request and command unknown
 } l2cap_signaling_response_t;
     
-
-void l2cap_block_new_credits(uint8_t blocked);
 
 int  l2cap_can_send_fixed_channel_packet_now(uint16_t handle);
 

@@ -239,9 +239,6 @@ typedef struct {
     uint8_t  outgoing;
     uint8_t  dlci; 
     
-    // number of packets granted to client
-    uint8_t packets_granted;
-
     // credits for outgoing traffic
     uint8_t credits_outgoing;
     
