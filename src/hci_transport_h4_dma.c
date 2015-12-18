@@ -267,11 +267,8 @@ static int h4_send_packet(uint8_t packet_type, uint8_t *packet, int size){
     packet--;
     *packet = packet_type;
 
-    tx_data = packet;
-    tx_len  = size;
-    
     tx_state = TX_W4_PACKET_SENT;
-	hal_uart_dma_send_block(tx_data, tx_len);
+	hal_uart_dma_send_block(packet, size);
     
     return 0;
 }
