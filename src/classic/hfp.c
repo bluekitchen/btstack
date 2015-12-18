@@ -993,6 +993,7 @@ void hfp_parse(hfp_connection_t * context, uint8_t byte, int isHandsFree){
                             context->command = HFP_CMD_RETRIEVE_AG_INDICATORS_STATUS;
                             break;
                         case HFP_W4_RETRIEVE_INDICATORS:
+                            context->send_ag_indicators_segment = 0;
                             context->command = HFP_CMD_RETRIEVE_AG_INDICATORS;
                             break;
                         default:

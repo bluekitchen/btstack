@@ -256,23 +256,82 @@ static int hfp_ag_report_extended_audio_gateway_error(uint16_t cid, uint8_t erro
     return send_str_over_rfcomm(cid, buffer);
 }
 
-static int hfp_ag_indicators_join(char * buffer, int buffer_size, hfp_connection_t * context){
-    if (buffer_size < get_hfp_ag_indicators_nr(context) * (1 + sizeof(hfp_ag_indicator_t))) return 0;
-    int i;
-    int offset = 0;
-    for (i = 0; i < get_hfp_ag_indicators_nr(context)-1; i++) {
-        offset += snprintf(buffer+offset, buffer_size-offset, "(\"%s\",(%d,%d)),", 
+// fast & small implementation for fixed int size
+static int string_len_for_uint32(uint32_t i){
+    if (i <         10) return 1;
+    if (i <        100) return 2;
+    if (i <       1000) return 3;
+    if (i <      10000) return 4;
+    if (i <      10000) return 5;
+    if (i <    1000000) return 6;      
+    if (i <   10000000) return 7;
+    if (i <  100000000) return 8;
+    if (i < 1000000000) return 9;
+    return 10;
+}
+
+// get size for indicator string
+static int hfp_ag_indicators_string_size(hfp_connection_t * context, int i){
+    // template: ("$NAME",($MIN,$MAX))
+    return 8 + strlen(get_hfp_ag_indicators(context)[i].name)
+         + string_len_for_uint32(get_hfp_ag_indicators(context)[i].min_range)
+         + string_len_for_uint32(get_hfp_ag_indicators(context)[i].min_range); 
+}
+
+// store indicator
+static void hfp_ag_indicators_string_store(hfp_connection * context, int i, uint8_t * buffer){
+    sprintf((char *) buffer, "(\"%s\",(%d,%d)),", 
             get_hfp_ag_indicators(context)[i].name, 
             get_hfp_ag_indicators(context)[i].min_range, 
             get_hfp_ag_indicators(context)[i].max_range);
+}
+
+// structure: header [indicator [comma indicator]] footer
+static int hfp_ag_indicators_cmd_generator_num_segments(hfp_connection_t * context){
+    int num_indicators = get_hfp_ag_indicators_nr(context);
+    if (!num_indicators) return 2;
+    return 3 + (num_indicators-1) * 2;
+}
+
+// get size of individual segment for hfp_ag_retrieve_indicators_cmd
+static int hfp_ag_indicators_cmd_generator_get_segment_len(hfp_connection_t * context, int index){
+    if (index == 0) {
+        return strlen(HFP_INDICATOR) + 3;   // "\n\r%s:""
     }
-    if ( i < get_hfp_ag_indicators_nr(context)){
-        offset += snprintf(buffer+offset, buffer_size-offset, "(\"%s\",(%d,%d))", 
-            get_hfp_ag_indicators(context)[i].name, 
-            get_hfp_ag_indicators(context)[i].min_range, 
-            get_hfp_ag_indicators(context)[i].max_range);
+    index--;
+    int num_indicators = get_hfp_ag_indicators_nr(context);
+    int indicator_index = index >> 1;
+    if ((index & 1) == 0){
+        return hfp_ag_indicators_string_size(context, indicator_index);
     }
-    return offset;
+    if (indicator_index == num_indicators - 1){
+        return 8; // "\r\n\r\nOK\r\n"
+    }
+    return 1; // comma
+}
+
+static void hgp_ag_indicators_cmd_generator_store_segment(hfp_connection_t * context, int index, uint8_t * buffer){
+    if (index == 0){
+        *buffer++ = '\n';
+        *buffer++ = '\r';
+        int len = strlen(HFP_INDICATOR);
+        memcpy(buffer, HFP_INDICATOR, len);
+        buffer += len;
+        *buffer++ = ':';
+        return;
+    }
+    index--;
+    int num_indicators = get_hfp_ag_indicators_nr(context);
+    int indicator_index = index >> 1;
+    if ((index & 1) == 0){
+        hfp_ag_indicators_string_store(context, indicator_index, buffer);
+        return;
+    }
+    if (indicator_index == num_indicators-1){
+        memcpy(buffer, "\r\n\r\nOK\r\n", 8);
+        return;
+    }
+    *buffer = ',';
 }
 
 static int hfp_hf_indicators_join(char * buffer, int buffer_size){
@@ -324,16 +383,35 @@ static int hfp_ag_call_services_join(char * buffer, int buffer_size){
     return offset;
 }
 
-static int hfp_ag_retrieve_indicators_cmd(uint16_t cid, hfp_connection_t * context){
-    char buffer[250];
-    int offset = snprintf(buffer, sizeof(buffer), "\r\n%s:", HFP_INDICATOR);
-    offset += hfp_ag_indicators_join(buffer+offset, sizeof(buffer)-offset, context);
-    
-    buffer[offset] = 0;
-    
-    offset += snprintf(buffer+offset, sizeof(buffer)-offset, "\r\n\r\nOK\r\n");
-    buffer[offset] = 0;
-    return send_str_over_rfcomm(cid, buffer);
+static int hfp_ag_cmd_via_generator(uint16_t cid, hfp_connection_t * context,
+    int start_segment, int num_segments,
+    int (*get_segment_len)(hfp_connection_t * context, int segment),
+    void (*store_segment) (hfp_connection_t * context, int segment, uint8_t * buffer)){
+
+    // assumes: can send now == true
+    // assumes: num segments > 0
+    rfcomm_reserve_packet_buffer();
+    int mtu = rfcomm_get_max_frame_size(cid);
+    uint8_t * data = rfcomm_get_outgoing_buffer();
+    int offset = 0;
+    int segment = start_segment;
+    while (segment < num_segments){
+        int segment_len = get_segment_len(context, segment);
+        if (offset + segment_len <= mtu){
+            store_segment(context, segment, data+offset);
+            offset += segment_len;
+            segment++;
+        }
+    }
+    rfcomm_send_prepared(cid, offset);
+    return segment;
+}
+
+// returns next segment to store
+static int hfp_ag_retrieve_indicators_cmd_via_generator(uint16_t cid, hfp_connection_t * context, int start_segment){
+    int num_segments = hfp_ag_indicators_cmd_generator_num_segments(context);
+    return hfp_ag_cmd_via_generator(cid, context, start_segment, num_segments,
+        hfp_ag_indicators_cmd_generator_get_segment_len, hgp_ag_indicators_cmd_generator_store_segment);
 }
 
 static int hfp_ag_retrieve_indicators_status_cmd(uint16_t cid){
@@ -355,7 +433,7 @@ static int hfp_ag_set_indicator_status_update_cmd(uint16_t cid, uint8_t activate
 
 
 static int hfp_ag_retrieve_can_hold_call_cmd(uint16_t cid){
-    char buffer[100];
+    char buffer[40];
     int offset = snprintf(buffer, sizeof(buffer), "\r\n%s:", HFP_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES);
     offset += hfp_ag_call_services_join(buffer+offset, sizeof(buffer)-offset);
     
@@ -586,10 +664,21 @@ static int hfp_ag_run_for_context_service_level_connection(hfp_connection_t * co
             return done;
 
         case HFP_CMD_RETRIEVE_AG_INDICATORS:
-            if (context->state != HFP_W4_RETRIEVE_INDICATORS) break;
-            context->state = HFP_W4_RETRIEVE_INDICATORS_STATUS;
-            hfp_ag_retrieve_indicators_cmd(context->rfcomm_cid, context);
-            return 1;
+            if (context->state == HFP_W4_RETRIEVE_INDICATORS) {
+                context->command = HFP_CMD_NONE;  // prevent reentrance
+                int next_segment = hfp_ag_retrieve_indicators_cmd_via_generator(context->rfcomm_cid, context, context->send_ag_indicators_segment);
+                if (next_segment < hfp_ag_indicators_cmd_generator_num_segments(context)){
+                    // prepare sending of next segment
+                    context->send_ag_indicators_segment = next_segment;
+                    context->command = HFP_CMD_RETRIEVE_AG_INDICATORS;
+                } else {
+                    // done, go to next state
+                    context->send_ag_indicators_segment = 0;
+                    context->state = HFP_W4_RETRIEVE_INDICATORS_STATUS;
+                }
+                return 1;
+            }
+            break;
         
         case HFP_CMD_RETRIEVE_AG_INDICATORS_STATUS:
             if (context->state != HFP_W4_RETRIEVE_INDICATORS_STATUS) break;
@@ -1477,7 +1566,7 @@ static void hfp_run_for_context(hfp_connection_t *context){
     
     if (context->send_ag_status_indicators){
         context->send_ag_status_indicators = 0;
-        hfp_ag_retrieve_indicators_cmd(context->rfcomm_cid, context);
+        hfp_ag_retrieve_indicators_status_cmd(context->rfcomm_cid);
         return;
     }
 
@@ -1593,6 +1682,7 @@ static void hfp_handle_rfcomm_data(uint8_t packet_type, uint16_t channel, uint8_
         case HFP_CMD_RETRIEVE_AG_INDICATORS_STATUS:
             // expected by SLC state machine
             if (context->state < HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED) break;
+            context->send_ag_indicators_segment = 0;
             context->send_ag_status_indicators = 1;
             break;
         case HFP_CMD_LIST_CURRENT_CALLS:   
