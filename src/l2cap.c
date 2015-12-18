@@ -203,8 +203,6 @@ static void l2cap_emit_service_registered(void *connection, uint8_t status, uint
 static void l2cap_emit_credits(l2cap_channel_t *channel, uint8_t credits) {
     
     log_info("L2CAP_EVENT_CREDITS local_cid 0x%x credits %u", channel->local_cid, credits);
-    // track credits
-    channel->packets_granted += credits;
     
     uint8_t event[5];
     event[0] = L2CAP_EVENT_CREDITS;
@@ -229,9 +227,7 @@ static void l2cap_hand_out_credits(void){
         l2cap_channel_t * channel = (l2cap_channel_t *) linked_list_iterator_next(&it);
         if (channel->state != L2CAP_STATE_OPEN) continue;
         if (!hci_number_free_acl_slots_for_handle(channel->handle)) return;
-        if (hci_number_outgoing_packets(channel->handle) < NR_BUFFERED_ACL_PACKETS && channel->packets_granted == 0) {
-            l2cap_emit_credits(channel, 1);
-        }
+        l2cap_emit_credits(channel, 1);
     }
 }
 
@@ -398,12 +394,7 @@ int l2cap_send_prepared(uint16_t local_cid, uint16_t len){
         return BTSTACK_ACL_BUFFERS_FULL;
     }
     
-    if (channel->packets_granted){
-        --channel->packets_granted;
-    }
-
-    log_debug("l2cap_send_prepared cid 0x%02x, handle %u, 1 credit used, credits left %u;",
-                  local_cid, channel->handle, channel->packets_granted);
+    log_debug("l2cap_send_prepared cid 0x%02x, handle %u, 1 credit used", local_cid, channel->handle);
     
     uint8_t *acl_buffer = hci_get_outgoing_packet_buffer();
 
@@ -795,7 +786,6 @@ void l2cap_create_channel_internal(void * connection, btstack_packet_handler_t c
     chan->packet_handler = channel_packet_handler;
     chan->remote_mtu = L2CAP_MINIMAL_MTU;
     chan->local_mtu = mtu;
-    chan->packets_granted = 0;
     
     // set initial state
     chan->state = L2CAP_STATE_WILL_SEND_CREATE_CONNECTION;
@@ -1087,7 +1077,6 @@ static void l2cap_handle_connection_request(hci_con_handle_t handle, uint8_t sig
     channel->remote_cid = source_cid;
     channel->local_mtu  = service->mtu;
     channel->remote_mtu = L2CAP_DEFAULT_MTU;
-    channel->packets_granted = 0;
     channel->remote_sig_id = sig_id; 
     channel->required_security_level = service->required_security_level;
 

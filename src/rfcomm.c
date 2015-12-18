@@ -380,7 +380,6 @@ static void rfcomm_channel_initialize(rfcomm_channel_t *channel, rfcomm_multiple
 
     channel->credits_incoming = 0;
     channel->credits_outgoing = 0;
-    channel->packets_granted  = 0;
 
     // set defaults for port configuration (even for services)
     rfcomm_rpn_data_set_defaults(&channel->rpn_data);
@@ -941,9 +940,7 @@ static int rfcomm_multiplexer_hci_event_handler(uint8_t *packet, uint16_t size){
             l2cap_cid = READ_BT_16(packet, 2);
             multiplexer = rfcomm_multiplexer_for_l2cap_cid(l2cap_cid);
             if (!multiplexer) break;
-            // log_info("L2CAP_EVENT_CREDITS: %u (now %u)", packet[4], multiplexer->l2cap_credits);
 
-            // new credits, continue with signaling
             rfcomm_run();
             
             if (multiplexer->state != RFCOMM_MULTIPLEXER_OPEN) break;
@@ -1185,17 +1182,12 @@ static void rfcomm_hand_out_credits(void){
             // log_info("RFCOMM_EVENT_CREDITS: multiplexer not open");
             continue;
         }
-        if (channel->packets_granted) {
-            // log_info("RFCOMM_EVENT_CREDITS: already packets granted");
-            continue;
-        }
         if (!channel->credits_outgoing) {
             // log_info("RFCOMM_EVENT_CREDITS: no outgoing credits");
             continue;
         }
         // channel open, multiplexer has l2cap credits and we didn't hand out credit before -> go!
         // log_info("RFCOMM_EVENT_CREDITS: 1");
-        channel->packets_granted += 1;
         rfcomm_emit_credits(channel, 1);
     }        
 }
@@ -2040,17 +2032,11 @@ int rfcomm_send_prepared(uint16_t rfcomm_cid, uint16_t len){
 
     // send might cause l2cap to emit new credits, update counters first
     channel->credits_outgoing--;
-    int packets_granted_decreased = 0;
-    if (channel->packets_granted) {
-        channel->packets_granted--;
-        packets_granted_decreased++;
-    }
         
     int result = rfcomm_send_uih_prepared(channel->multiplexer, channel->dlci, len);
     
     if (result != 0) {
         channel->credits_outgoing++;
-        channel->packets_granted += packets_granted_decreased;
         log_info("rfcomm_send_internal: error %d", result);
         return result;
     }
