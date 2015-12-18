@@ -60,13 +60,13 @@ def updateCopyright(dir_name, file_name):
 	
 	#print "Update copyright: ", infile
 	
-	with open(outfile, 'w') as fout:
+	with open(outfile, 'wt') as fout:
 		fout.write(copyright)
 
 		bufferComment = ""
 		state = State.SearchStartComment
 
-		with open(infile, 'rb') as fin:
+		with open(infile, 'rt') as fin:
 			for line in fin:
 				if state == State.SearchStartComment:
 					parts = re.match('\s*(/\*).*(\*/)',line)
@@ -129,11 +129,11 @@ def requiresCopyrightUpdate(file_name):
 					return True
 			
 			if onlyDumpDifferentCopyright:
-				print file_name, ": Copyrighter not allowed > ", parts.group()
+				print(file_name, ": Copyrighter not allowed > ", parts.group())
 			return False
 				
 	if not exactCopyrightFound:
-		print file_name, ": File has no copyright"
+		print(file_name, ": File has no copyright")
 	
 	return False
 
