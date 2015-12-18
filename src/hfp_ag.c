@@ -334,25 +334,6 @@ static void hgp_ag_indicators_cmd_generator_store_segment(hfp_connection_t * con
     *buffer = ',';
 }
 
-static int hfp_ag_indicators_join(char * buffer, int buffer_size, hfp_connection_t * context){
-    if (buffer_size < get_hfp_ag_indicators_nr(context) * (1 + sizeof(hfp_ag_indicator_t))) return 0;
-    int i;
-    int offset = 0;
-    for (i = 0; i < get_hfp_ag_indicators_nr(context)-1; i++) {
-        offset += snprintf(buffer+offset, buffer_size-offset, "(\"%s\",(%d,%d)),", 
-            get_hfp_ag_indicators(context)[i].name, 
-            get_hfp_ag_indicators(context)[i].min_range, 
-            get_hfp_ag_indicators(context)[i].max_range);
-    }
-    if ( i < get_hfp_ag_indicators_nr(context)){
-        offset += snprintf(buffer+offset, buffer_size-offset, "(\"%s\",(%d,%d))", 
-            get_hfp_ag_indicators(context)[i].name, 
-            get_hfp_ag_indicators(context)[i].min_range, 
-            get_hfp_ag_indicators(context)[i].max_range);
-    }
-    return offset;
-}
-
 static int hfp_hf_indicators_join(char * buffer, int buffer_size){
     if (buffer_size < hfp_ag_indicators_nr * 3) return 0;
     int i;
@@ -400,18 +381,6 @@ static int hfp_ag_call_services_join(char * buffer, int buffer_size){
         offset += snprintf(buffer+offset, buffer_size-offset, "%s)", hfp_ag_call_hold_services[i]);
     }
     return offset;
-}
-
-static int hfp_ag_retrieve_indicators_cmd(uint16_t cid, hfp_connection_t * context){
-    char buffer[250];
-    int offset = snprintf(buffer, sizeof(buffer), "\r\n%s:", HFP_INDICATOR);
-    offset += hfp_ag_indicators_join(buffer+offset, sizeof(buffer)-offset, context);
-    
-    buffer[offset] = 0;
-    
-    offset += snprintf(buffer+offset, sizeof(buffer)-offset, "\r\n\r\nOK\r\n");
-    buffer[offset] = 0;
-    return send_str_over_rfcomm(cid, buffer);
 }
 
 // returns next segment to store
@@ -1588,7 +1557,7 @@ static void hfp_run_for_context(hfp_connection_t *context){
     
     if (context->send_ag_status_indicators){
         context->send_ag_status_indicators = 0;
-        hfp_ag_retrieve_indicators_cmd(context->rfcomm_cid, context);
+        hfp_ag_retrieve_indicators_status_cmd(context->rfcomm_cid);
         return;
     }
 
