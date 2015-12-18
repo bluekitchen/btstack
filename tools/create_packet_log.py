@@ -66,17 +66,17 @@ def dumpPacket(fout, timestamp, type, data):
 
 def handleHexPacket(fout, timestamp, type, text):
 	try:
-		data = bytearray(map(str2hex, text.strip().split()))
+		data = bytearray(list(map(str2hex, text.strip().split())))
 		dumpPacket(fout, timestamp, type, data)
 	except TypeError:
-		print 'Cannot parse hexdump', text.strip()
+		print('Cannot parse hexdump', text.strip())
 
 if len(sys.argv) == 1:
-	print 'BTstack Console to PacketLogger converter'
-	print 'Copyright 2014, BlueKitchen GmbH'
-	print ''
-	print 'Usage: ', sys.argv[0], 'asci-log-file.txt [hci_dump.pkgl]'
-	print 'Converted hci_dump.pklg can be viewed with Wireshark and OS X PacketLogger'
+	print('BTstack Console to PacketLogger converter')
+	print('Copyright 2014, BlueKitchen GmbH')
+	print('')
+	print('Usage: ', sys.argv[0], 'asci-log-file.txt [hci_dump.pkgl]')
+	print('Converted hci_dump.pklg can be viewed with Wireshark and OS X PacketLogger')
 	exit(0)
 
 infile = sys.argv[1]
@@ -86,10 +86,9 @@ if len(sys.argv) > 2:
 
 # with open(outfile, 'w') as fout:
 with open (outfile, 'wb') as fout:
-	with open (infile, 'rb') as fin:
+	with open (infile, 'rt') as fin:
 		packet_counter = 0
 		for line in fin:
-			# print line
 			timestamp = None
 			parts = parts = re.match('\[(.*)\] (.*)', line)
 			if parts and len(parts.groups()) == 2:
@@ -113,4 +112,4 @@ with open (outfile, 'wb') as fout:
 			rest = chop(line,'LOG -- ')
 			if rest:
 				line = rest
-			dumpPacket(fout, timestamp, 0xfc, line)
+			dumpPacket(fout, timestamp, 0xfc, line.encode('ascii'))
