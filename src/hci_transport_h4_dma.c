@@ -53,6 +53,11 @@
 
 #include <btstack/hal_uart_dma.h>
 
+// assert pre-buffer for packet type is available
+#if !defined(HCI_OUTGOING_PRE_BUFFER_SIZE) || (HCI_OUTGOING_PRE_BUFFER_SIZE == 0)
+#error HCI_OUTGOING_PRE_BUFFER_SIZE not defined. Please update hci.h
+#endif
+
 typedef enum {
     H4_W4_PACKET_TYPE = 1,
     H4_W4_EVENT_HEADER,
@@ -63,7 +68,6 @@ typedef enum {
 
 typedef enum {
     TX_IDLE = 1,
-    TX_W4_HEADER_SENT,
     TX_W4_PACKET_SENT,
     TX_DONE
 } TX_STATE;
@@ -97,9 +101,6 @@ static uint8_t * hci_packet = &hci_packet_prefixed[HCI_INCOMING_PRE_BUFFER_SIZE]
 
 // tx state
 static TX_STATE tx_state;
-static uint8_t  tx_packet_type;
-static uint8_t *tx_data;
-static uint16_t tx_len;
 
 // static hci_transport_h4_t * hci_transport_h4 = NULL;
 static  void (*packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size) = dummy_handler;
@@ -220,11 +221,6 @@ static void h4_block_received(void){
 
 static void h4_block_sent(void){
     switch (tx_state){
-        case TX_W4_HEADER_SENT:
-            tx_state = TX_W4_PACKET_SENT;
-            // h4 packet type + actual packet
-            hal_uart_dma_send_block(tx_data, tx_len);
-            break;
         case TX_W4_PACKET_SENT:
             tx_state = TX_DONE;
             // trigger run loop
@@ -266,12 +262,16 @@ static int h4_send_packet(uint8_t packet_type, uint8_t *packet, int size){
         return -1;
     }
     
-    tx_packet_type = packet_type;
+    // store packet type before actual data and increase size
+    size++;
+    packet--;
+    *packet = packet_type;
+
     tx_data = packet;
     tx_len  = size;
     
-    tx_state = TX_W4_HEADER_SENT;
-	hal_uart_dma_send_block(&tx_packet_type, 1);
+    tx_state = TX_W4_PACKET_SENT;
+	hal_uart_dma_send_block(tx_data, tx_len);
     
     return 0;
 }
