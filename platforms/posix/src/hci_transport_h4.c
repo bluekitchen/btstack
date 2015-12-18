@@ -207,11 +207,20 @@ static int h4_send_packet(uint8_t packet_type, uint8_t * packet, int size){
     if (hci_transport_h4->uart_fd == 0) return -1;
 
     char *data = (char*) packet;
-    int bytes_written = write(hci_transport_h4->uart_fd, &packet_type, 1);
+    int bytes_written;
+#if HCI_OUTGOING_PRE_BUFFER_SIZE > 0
+    // just store packet type before actual data and increase size
+    size++;
+    data--;
+    *data = packet_type;
+#else
+    // write out single byte
+    bytes_written = write(hci_transport_h4->uart_fd, &packet_type, 1);
     while (bytes_written < 1) {
         usleep(5000);
         bytes_written = write(hci_transport_h4->uart_fd, &packet_type, 1);
     };
+#endif
     while (size > 0) {
         bytes_written = write(hci_transport_h4->uart_fd, data, size);
         if (bytes_written < 0) {
