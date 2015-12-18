@@ -9,10 +9,10 @@ import re
 import sys
 import os
 
-print '''
+print('''
 CC256x init script conversion tool for use with BTstack, v0.1
 Copyright 2012-2014 BlueKitchen GmbH
-'''
+''')
 
 usage = '''This script perpares init scripts for TI's
 CC256x chipsets for use with BTstack .
@@ -34,7 +34,7 @@ data_indent = '    '
 
 def read_little_endian_16(f):
     low  = f.read(1)
-    if low == "":
+    if len(low) == 0:
         return -1
     high = f.read(1)
     return ord(high) << 8 | ord(low) 
@@ -113,7 +113,7 @@ def convert_bts(main_bts_file, bts_add_on):
         have_power_vector_edr3 = False;
         have_class2_single_power = False;
 
-        print "Creating {0}".format(c_file)
+        print("Creating {0}".format(c_file))
 
         part_size = 0
 
@@ -127,22 +127,23 @@ def convert_bts(main_bts_file, bts_add_on):
 
             with open (bts_file, 'rb') as fin:
         
-                print "- parsing {0:32}".format(bts_file)
+                print("- parsing {0:32}".format(bts_file))
                 
                 header = fin.read(32)
-                if header[0:4] != 'BTSB':
-                    print 'Error', bts_file, 'is not a valid .BTS file'
+                if header[0:4].decode('ascii') != 'BTSB':
+                    print('Error', bts_file, 'is not a valid .BTS file')
                     sys.exit(1)
 
 
                 while True:
                     action_type = read_little_endian_16(fin)
                     action_size = read_little_endian_16(fin)
-                    action_data = fin.read(action_size)
+                    action_data = bytearray(fin.read(action_size))
                     
                     if (action_type == 1):  # hci command
 
-                        opcode = (ord(action_data[2]) << 8) | ord(action_data[1])
+                        # opcode = (ord(action_data[2]) << 8) | ord(action_data[1])
+                        opcode = (action_data[2] << 8) | action_data[1]
                         if opcode == 0xFF36:
                             continue    # skip baud rate command
                         if opcode == 0xFD0C:
@@ -173,7 +174,7 @@ def convert_bts(main_bts_file, bts_add_on):
                         counter = 0
                         str_list.append(data_indent)
                         for byte in action_data:
-                            str_list.append("0x{0:02x}, ".format(ord(byte)))
+                            str_list.append("0x{0:02x}, ".format(byte))
                             counter = counter + 1
                             if (counter != 15):
                                 continue
@@ -196,7 +197,7 @@ def convert_bts(main_bts_file, bts_add_on):
                         part_size = 0
 
                     if (action_type == 6):  # comment
-                        action_data = action_data.rstrip('\0')
+                        action_data = action_data.decode('ascii').rstrip('\0')
                         str_list.append(data_indent)
                         str_list.append("// " + action_data + "\n")
                         
@@ -232,11 +233,11 @@ def convert_bts(main_bts_file, bts_add_on):
         for part_size in part_sizes:
             part += 1
             size += part_size
-            print "- part", part, "size", part_size
+            print("- part", part, "size", part_size)
 
-        print '- total size', size
+        print('- total size', size)
 
-        print "\n".join(additions)
+        print("\n".join(additions))
 
 
         part = 0
@@ -269,7 +270,7 @@ def convert_bts(main_bts_file, bts_add_on):
 # get list of *.bts files
 files =  glob.glob('*.bts')
 if not files:
-    print usage
+    print(usage)
     sys.exit(1) 
 
 # convert each of them
@@ -277,16 +278,17 @@ for name in files:
     name_lower = name.lower()
     # skip BLE and AVRP add-ons
     if name_lower.startswith('ble_init_cc'):
-        print "Skipping BLE add-on", name
+        print("Skipping BLE add-on", name)
         continue
     if name_lower.startswith('avpr_init_cc'):
-        print "Skipping AVPR add-on", name
+        print("Skipping AVPR add-on", name)
         continue
     if re.match("initscripts_tiinit_.*_ble_add-on.bts", name_lower):
-        print "Skipping BLE add-on", name
+        print("Skipping BLE add-on", name)
         continue
     if re.match("initscripts_tiinit_.*_avpr_add-on.bts", name_lower):
-        print "Skipping AVPR add-on", name
+        print("Skipping AVPR add-on", name)
+        continue
 
     # check for BLE add-on
     add_on = ""
@@ -295,19 +297,19 @@ for name in files:
         potential_add_on = 'BLE_init_%s.bts' % name_parts.group(1)
         if os.path.isfile(potential_add_on):
             add_on = potential_add_on
-            print "Found", add_on, "add on for", name
+            print("Found", add_on, "add-on for", name)
 
     name_parts = re.match('initscripts_TIInit_(\d*\.\d*\.\d*)_.*.bts', name)
     if name_parts:
         potential_add_on = 'initscripts_TIInit_%s_ble_add-on.bts' % name_parts.group(1)
         if os.path.isfile(potential_add_on):
             add_on = potential_add_on
-            print "Found", add_on, "add on for", name
+            print("Found", add_on, "add-on for", name)
 
     convert_bts(name, add_on)
 
 # done
-print '\nConversion(s) successful!\n'
+print('\nConversion(s) successful!\n')
     
 
 
