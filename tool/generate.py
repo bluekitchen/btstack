@@ -6,10 +6,10 @@ import re
 import sys
 import os
 
-print '''
+print('''
 Java binding generator for BTstack
 Copyright 2015, BlueKitchen GmbH
-'''
+''')
 
 # com.bluekitchen.btstack.BTstack.java templates
 java_btstack_header = \
@@ -165,7 +165,7 @@ def camel_case_var(name):
 
 def read_defines(infile):
     global defines
-    with open (infile, 'rb') as fin:
+    with open (infile, 'rt') as fin:
 
         for line in fin:
             parts = re.match('#define\s+(\w+)\s+(\w*)',line)
@@ -277,11 +277,11 @@ def parse_commands(infile):
     
     outfile = '%s/BTstack.java' % gen_path
 
-    with open(outfile, 'w') as fout:
+    with open(outfile, 'wt') as fout:
     
         fout.write(java_btstack_header % package)
 
-        with open (infile, 'rb') as fin:
+        with open (infile, 'rt') as fin:
 
             params = []
             for line in fin:
@@ -349,7 +349,7 @@ def create_event(event_name, format, args):
 
     gen_event_path = '%s/event' % gen_path
     outfile = '%s/%s.java' % (gen_event_path, event_name)
-    with open(outfile, 'w') as fout:
+    with open(outfile, 'wt') as fout:
         offset = 2
         getters = ''
         length_name = ''
@@ -402,7 +402,7 @@ def create_event_factory(events, le_events, defines):
         event_name = camel_case(event_name)
         subcases += java_event_factory_subevent.format(event_type, event_name)
 
-    with open(outfile, 'w') as fout:
+    with open(outfile, 'wt') as fout:
         defines_text = java_defines_string(defines)
         fout.write(java_event_factory_template.format(package, defines_text, cases, subcases))
 
@@ -413,7 +413,7 @@ def parse_events(path):
     params = []
     event_types = set()
     format = None
-    with open (path, 'rb') as fin:
+    with open (path, 'rt') as fin:
         for line in fin:
             parts = re.match('.*@format\s*(\w*)\s*', line)
             if parts and len(parts.groups()) == 1:
@@ -460,4 +460,4 @@ create_events(le_events)
 create_event_factory(events, le_events, event_types)
 
 # done
-print 'Done!'
+print('Done!')
