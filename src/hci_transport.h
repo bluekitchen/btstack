@@ -103,6 +103,11 @@ extern hci_transport_t * hci_transport_h5_instance(void);
  */
 extern hci_transport_t * hci_transport_usb_instance(void);
 
+/*
+ * @brief
+ */
+extern hci_transport_t * hci_transport_h4_wiced_instance();
+
 /* API_END */
 
 // support for "enforece wake device" in h4 - used by iOS power management
