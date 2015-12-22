@@ -52,7 +52,7 @@
 #include "classic/remote_device_db.h"
 #include "hci_cmds.h"
 #include "hci_transport.h"
-#include "linked_list.h"
+#include "bk_linked_list.h"
 #include "utils.h"
 
 #include <stdint.h>
@@ -521,7 +521,7 @@ typedef struct {
     bt_control_t     * control;
     
     // list of existing baseband connections
-    linked_list_t     connections;
+    bk_linked_list_t     connections;
 
     // single buffer for HCI packet assembly + additional prebuffer for H4 drivers
     uint8_t   hci_packet_buffer_prefix[HCI_OUTGOING_PRE_BUFFER_SIZE];
@@ -621,7 +621,7 @@ typedef struct {
 
     // LE Whitelist Management
     uint16_t      le_whitelist_capacity;
-    linked_list_t le_whitelist;
+    bk_linked_list_t le_whitelist;
 
     // custom BD ADDR
     bd_addr_t custom_bd_addr; 

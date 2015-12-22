@@ -54,7 +54,7 @@
 
 
 #include "run_loop.h"
-#include "linked_list.h"
+#include "bk_linked_list.h"
 #include "hal_tick.h"
 #include "hal_cpu.h"
 
@@ -76,10 +76,10 @@
 #endif
 
 // the run loop
-static linked_list_t data_sources;
+static bk_linked_list_t data_sources;
 
 #ifdef TIMER_SUPPORT
-static linked_list_t timers;
+static bk_linked_list_t timers;
 #endif
 
 #ifdef HAVE_TICK

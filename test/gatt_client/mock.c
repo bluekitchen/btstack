@@ -14,7 +14,7 @@
 static btstack_packet_handler_t att_packet_handler;
 static void (*registered_l2cap_packet_handler) (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) = NULL;
 
-static linked_list_t     connections;
+static bk_linked_list_t     connections;
 static const uint16_t max_mtu = 23;
 static uint8_t  l2cap_stack_buffer[HCI_INCOMING_PRE_BUFFER_SIZE + 8 + max_mtu];	// pre buffer + HCI Header + L2CAP header
 uint16_t gatt_client_handle = 0x40;

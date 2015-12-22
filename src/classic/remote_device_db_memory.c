@@ -43,12 +43,12 @@
 #include "debug.h"
 
 #include "utils.h"
-#include "linked_list.h"
+#include "bk_linked_list.h"
 
 // This lists should be only accessed by tests.
-linked_list_t db_mem_link_keys = NULL;
-linked_list_t db_mem_names = NULL;
-static linked_list_t db_mem_services = NULL;
+bk_linked_list_t db_mem_link_keys = NULL;
+bk_linked_list_t db_mem_names = NULL;
+static bk_linked_list_t db_mem_services = NULL;
 
 // Device info
 static void db_open(void){
@@ -57,7 +57,7 @@ static void db_open(void){
 static void db_close(void){ 
 }
 
-static db_mem_device_t * get_item(linked_list_t list, bd_addr_t bd_addr) {
+static db_mem_device_t * get_item(bk_linked_list_t list, bd_addr_t bd_addr) {
     linked_item_t *it;
     for (it = (linked_item_t *) list; it ; it = it->next){
         db_mem_device_t * item = (db_mem_device_t *) it;

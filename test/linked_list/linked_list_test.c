@@ -1,8 +1,8 @@
 #include "CppUTest/TestHarness.h"
 #include "CppUTest/CommandLineTestRunner.h"
-#include "linked_list.h"
+#include "bk_linked_list.h"
 
-linked_list_t testList;
+bk_linked_list_t testList;
 linked_item_t itemA;
 linked_item_t itemB;
 linked_item_t itemC;

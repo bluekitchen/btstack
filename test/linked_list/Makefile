@@ -17,14 +17,14 @@ COMMON = \
 
 COMMON_OBJ = $(COMMON:.c=.o)
 
-all: linked_list_test
+all: bk_linked_list_test
 
-linked_list_test: ${COMMON_OBJ} linked_list_test.c
+bk_linked_list_test: ${COMMON_OBJ} bk_linked_list_test.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 test: all
-	./linked_list_test
+	./bk_linked_list_test
 	
 clean:
-	rm -fr linked_list_test *.dSYM *.o ../src/*.o
+	rm -fr bk_linked_list_test *.dSYM *.o ../src/*.o
 	

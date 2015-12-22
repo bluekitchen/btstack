@@ -69,7 +69,7 @@
 #include "debug.h"
 #include "hci_dump.h"
 
-#include "linked_list.h"
+#include "bk_linked_list.h"
 #include "hci_cmds.h"
 
 #define HCI_CONNECTION_TIMEOUT_MS 10000

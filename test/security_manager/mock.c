@@ -19,7 +19,7 @@ static uint16_t packet_buffer_len = 0;
 static uint8_t aes128_cyphertext[16];
 
 static hci_connection_t  the_connection;
-static linked_list_t     connections;
+static bk_linked_list_t     connections;
 
 void mock_init(void){
 	the_connection.item.next = NULL;

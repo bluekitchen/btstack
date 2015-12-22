@@ -38,7 +38,7 @@
 #define __SDP_H
 
 #include <stdint.h>
-#include "linked_list.h"
+#include "bk_linked_list.h"
 
 #include "btstack-config.h"
 

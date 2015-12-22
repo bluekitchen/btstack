@@ -42,7 +42,7 @@
  */
 
 #include "run_loop.h"
-#include "linked_list.h"
+#include "bk_linked_list.h"
 
 #include "debug.h"
 #include "run_loop_private.h"
@@ -61,9 +61,9 @@ static int posix_timeval_compare(struct timeval *a, struct timeval *b);
 static int posix_timer_compare(timer_source_t *a, timer_source_t *b);
 
 // the run loop
-static linked_list_t data_sources;
+static bk_linked_list_t data_sources;
 static int data_sources_modified;
-static linked_list_t timers;
+static bk_linked_list_t timers;
 static struct timeval init_tv;
 /**
  * Add data_source to run_loop

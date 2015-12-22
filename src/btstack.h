@@ -59,7 +59,7 @@
 #include "hci_transport.h"
 #include "l2cap.h"
 #include "l2cap_signaling.h"
-#include "linked_list.h"
+#include "bk_linked_list.h"
 #include "memory_pool.h"
 #include "run_loop.h"
 #include "run_loop_private.h"

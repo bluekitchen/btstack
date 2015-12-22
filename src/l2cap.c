@@ -73,10 +73,10 @@ static void l2cap_packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t 
 static l2cap_signaling_response_t signaling_responses[NR_PENDING_SIGNALING_RESPONSES];
 static int signaling_responses_pending;
 
-static linked_list_t l2cap_channels;
-static linked_list_t l2cap_services;
-static linked_list_t l2cap_le_channels;
-static linked_list_t l2cap_le_services;
+static bk_linked_list_t l2cap_channels;
+static bk_linked_list_t l2cap_services;
+static bk_linked_list_t l2cap_le_channels;
+static bk_linked_list_t l2cap_le_services;
 static void (*packet_handler) (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) = null_packet_handler;
 
 static btstack_packet_handler_t attribute_protocol_packet_handler;
@@ -1486,7 +1486,7 @@ void l2cap_finialize_channel_close(l2cap_channel_t *channel){
     btstack_memory_l2cap_channel_free(channel);
 }
 
-static l2cap_service_t * l2cap_get_service_internal(linked_list_t * services, uint16_t psm){
+static l2cap_service_t * l2cap_get_service_internal(bk_linked_list_t * services, uint16_t psm){
     linked_list_iterator_t it;
     linked_list_iterator_init(&it, services);
     while (linked_list_iterator_has_next(&it)){
