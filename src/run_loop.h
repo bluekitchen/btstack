@@ -46,7 +46,7 @@
 
 #include "btstack-config.h"
 
-#include "linked_list.h"
+#include "bk_linked_list.h"
 
 #include <stdint.h>
 
@@ -61,7 +61,8 @@ extern "C" {
 typedef enum {
 	RUN_LOOP_POSIX = 1,
 	RUN_LOOP_COCOA,
-	RUN_LOOP_EMBEDDED
+	RUN_LOOP_EMBEDDED,
+    RUN_LOOP_WICED,
 } RUN_LOOP_TYPE;
 
 typedef struct data_source {
@@ -152,6 +153,14 @@ void embedded_trigger(void);
  */
 void embedded_execute_once(void);
 #endif
+
+#ifdef HAVE_WICED
+/*
+ * @brief Execute code on BTsatck run loop. Can be used to control BTstack from a different thread
+ */
+void wiced_execute_code_on_run_loop(void (*fn)(void *arg), void * arg);
+#endif
+
 /* API_END */
 
 #if defined __cplusplus

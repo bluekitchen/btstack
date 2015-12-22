@@ -63,6 +63,10 @@ extern run_loop_t run_loop_posix;
 extern run_loop_t run_loop_cocoa;
 #endif
 
+#ifdef HAVE_WICED
+extern run_loop_t run_loop_wiced;
+#endif
+
 // assert run loop initialized
 static void run_loop_assert(void){
 #ifndef EMBEDDED
@@ -167,6 +171,12 @@ void run_loop_init(RUN_LOOP_TYPE type){
             break;
 #endif
         default:
+#ifdef HAVE_WICED
+        case RUN_LOOP_WICED:
+            the_run_loop = &run_loop_wiced;
+            break;
+#endif
+
 #ifndef EMBEDDED
             log_error("ERROR: invalid run loop type %u selected!", type);
             exit(10);
