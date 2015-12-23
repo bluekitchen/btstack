@@ -1,14 +1,20 @@
 
 NAME := BTstack_for_BCM$(BT_CHIP)$(BT_CHIP_REVISION)
 
-GLOBAL_INCLUDES += . ../../src ../../platform/embedded
+GLOBAL_INCLUDES += . ../../src ../../platform/embedded ../../chipset/bcm
 
 $(NAME)_SOURCES += \
 	main.c                                \
 	run_loop_wiced.c                      \
 	hci_transport_h4_wiced.c              \
+	../../chipset/bcm/bt_control_bcm.c    \
 	../../src/bk_linked_list.c            \
 	../../src/btstack_memory.c            \
+	../../src/ble/att.c          		  \
+	../../src/ble/att_dispatch.c 		  \
+	../../src/ble/att_server.c   		  \
+	../../src/ble/le_device_db_memory.c   \
+	../../src/ble/sm.c          		  \
 	../../src/classic/remote_device_db_memory.c \
 	../../src/classic/rfcomm.c            \
 	../../src/classic/sdp.c               \
