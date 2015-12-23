@@ -386,9 +386,12 @@ typedef struct {
     struct timeval timestamp;
 #endif
 #ifdef HAVE_TICK
-    uint32_t timestamp; // timeout in system ticks
+    uint32_t timestamp; // timestamp in system ticks
 #endif
-    
+#ifdef HAVE_TIME_MS
+    uint32_t timestamp; // timestamp in ms
+#endif
+
     // ACL packet recombination - PRE_BUFFER + ACL Header + ACL payload
     uint8_t  acl_recombination_buffer[HCI_INCOMING_PRE_BUFFER_SIZE + 4 + HCI_ACL_BUFFER_SIZE];
     uint16_t acl_recombination_pos;

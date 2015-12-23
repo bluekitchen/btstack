@@ -208,6 +208,12 @@ static void hci_connection_timeout_handler(timer_source_t *timer){
         hci_emit_l2cap_check_timeout(connection);
     }
 #endif
+#ifdef HAVE_TIME_MS
+    if (run_loop_get_time_ms() > connection->timestamp + HCI_CONNECTION_TIMEOUT_MS){
+        // connections might be timed out
+        hci_emit_l2cap_check_timeout(connection);
+    }
+#endif
     run_loop_set_timer(timer, HCI_CONNECTION_TIMEOUT_MS);
     run_loop_add_timer(timer);
 }
@@ -218,6 +224,9 @@ static void hci_connection_timestamp(hci_connection_t *connection){
 #endif
 #ifdef HAVE_TICK
     connection->timestamp = embedded_get_ticks();
+#endif
+#ifdef HAVE_TIME_MS
+    connection->timestamp = run_loop_get_time_ms();
 #endif
 }
 
