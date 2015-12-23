@@ -4,6 +4,7 @@
 #define EMBEDDED
 
 #define HAVE_WICED
+#define WICED_BT_UART_MANUAL_CTS_RTS
 
 #define HAVE_BLE
 

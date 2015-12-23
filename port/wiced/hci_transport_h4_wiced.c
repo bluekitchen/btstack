@@ -53,8 +53,6 @@
 #include "hci.h"
 #include "hci_transport.h"
 
-#define WICED_BT_UART_MANUAL_CTS_RTS
-
 // priority higher than WIFI to make sure RTS is set
 #define WICED_BT_UART_THREAD_PRIORITY        (WICED_NETWORK_WORKER_PRIORITY - 2)
 #define WICED_BT_UART_THREAD_STACK_SIZE      300
