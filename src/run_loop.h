@@ -54,6 +54,10 @@
 #include <sys/time.h>
 #endif
 
+#ifdef HAVE_WICED
+#include "wiced.h"
+#endif
+
 #if defined __cplusplus
 extern "C" {
 #endif
@@ -158,7 +162,7 @@ void embedded_execute_once(void);
 /*
  * @brief Execute code on BTsatck run loop. Can be used to control BTstack from a different thread
  */
-void wiced_execute_code_on_run_loop(void (*fn)(void *arg), void * arg);
+void wiced_execute_code_on_run_loop(wiced_result_t (*fn)(void *arg), void * arg);
 #endif
 
 /* API_END */
