@@ -53,10 +53,22 @@
 #include "hci.h"
 #include "hci_transport.h"
 
+#define WICED_BT_UART_MANUAL_CTS_RTS
+
+// priority higher than WIFI to make sure RTS is set
+#define WICED_BT_UART_THREAD_PRIORITY        (WICED_NETWORK_WORKER_PRIORITY - 2)
+#define WICED_BT_UART_THREAD_STACK_SIZE      300
+
 // assert pre-buffer for packet type is available
 #if !defined(HCI_OUTGOING_PRE_BUFFER_SIZE) || (HCI_OUTGOING_PRE_BUFFER_SIZE == 0)
 #error HCI_OUTGOING_PRE_BUFFER_SIZE not defined. Please update hci.h
 #endif
+
+/* Default of 512 bytes should be fine. Only needed if WICED_BT_UART_MANUAL_CTS_RTS */
+#ifndef RX_RING_BUFFER_SIZE
+#define RX_RING_BUFFER_SIZE 512
+#endif
+
 
 static wiced_result_t h4_rx_worker_receive_packet(void * arg);
 static void dummy_handler(uint8_t packet_type, uint8_t *packet, uint16_t size); 
@@ -84,6 +96,11 @@ static int                   rx_worker_read_pos;
 static uint8_t hci_packet_with_pre_buffer[HCI_INCOMING_PRE_BUFFER_SIZE + 1 + HCI_PACKET_BUFFER_SIZE]; // packet type + max(acl header + acl payload, event header + event data)
 static uint8_t * hci_packet = &hci_packet_with_pre_buffer[HCI_INCOMING_PRE_BUFFER_SIZE];
 
+#ifdef WICED_BT_UART_MANUAL_CTS_RTS
+static volatile wiced_ring_buffer_t rx_ring_buffer;
+static volatile uint8_t             rx_data[RX_RING_BUFFER_SIZE];
+#endif
+
 // executed on main run loop
 static wiced_result_t h4_main_deliver_packet(void *arg){
     // deliver packet
@@ -109,6 +126,11 @@ static void h4_rx_worker_receive_bytes(int bytes_to_read){
     rx_worker_read_pos += bytes_to_read;        
 }
 static wiced_result_t h4_rx_worker_receive_packet(void * arg){
+
+#ifdef WICED_BT_UART_MANUAL_CTS_RTS
+    platform_gpio_output_low(wiced_bt_uart_pins[WICED_BT_PIN_UART_RTS]);
+#endif
+
     while (1){
         rx_worker_read_pos = 0;
         h4_rx_worker_receive_bytes(1);
@@ -130,6 +152,11 @@ static wiced_result_t h4_rx_worker_receive_packet(void * arg){
                 log_error("h4_rx_worker_receive_packet: invalid packet type 0x%02x", hci_packet[0]);
                 continue;
         }
+
+#ifdef WICED_BT_UART_MANUAL_CTS_RTS
+        platform_gpio_output_high(wiced_bt_uart_pins[WICED_BT_PIN_UART_RTS]);
+#endif
+
         // deliver packet on main thread
         wiced_execute_code_on_run_loop(&h4_main_deliver_packet, NULL);
         return WICED_SUCCESS;
@@ -153,6 +180,8 @@ static int h4_set_baudrate(uint32_t baudrate){
 }
 
 static int h4_open(void *transport_config){
+
+    // UART config
     wiced_uart_config_t uart_config =
     {
         .baud_rate    = 115200,
@@ -161,14 +190,34 @@ static int h4_open(void *transport_config){
         .stop_bits    = STOP_BITS_1,
         .flow_control = FLOW_CONTROL_CTS_RTS,
     };
+    wiced_ring_buffer_t * ring_buffer = NULL;
 
     // configure HOST and DEVICE WAKE PINs
-    platform_gpio_init( wiced_bt_control_pins[WICED_BT_PIN_HOST_WAKE], INPUT_HIGH_IMPEDANCE);
-    platform_gpio_init( wiced_bt_control_pins[WICED_BT_PIN_DEVICE_WAKE], OUTPUT_PUSH_PULL);
-    platform_gpio_output_low( wiced_bt_control_pins[WICED_BT_PIN_DEVICE_WAKE]);
+    platform_gpio_init(wiced_bt_control_pins[WICED_BT_PIN_HOST_WAKE], INPUT_HIGH_IMPEDANCE);
+    platform_gpio_init(wiced_bt_control_pins[WICED_BT_PIN_DEVICE_WAKE], OUTPUT_PUSH_PULL);
+    platform_gpio_output_low(wiced_bt_control_pins[WICED_BT_PIN_DEVICE_WAKE]);
     wiced_rtos_delay_milliseconds( 100 );
 
-    // power cycle Bluetooth
+    // init UART
+#ifdef WICED_BT_UART_MANUAL_CTS_RTS
+    // configure RTS pin as output and set to high
+    platform_gpio_init(wiced_bt_uart_pins[WICED_BT_PIN_UART_RTS], OUTPUT_PUSH_PULL);
+    platform_gpio_output_high(wiced_bt_uart_pins[WICED_BT_PIN_UART_RTS]);
+
+    // configure CTS to input, pull-up
+    platform_gpio_init(wiced_bt_uart_pins[WICED_BT_PIN_UART_CTS], INPUT_PULL_UP);
+
+    // use ring buffer to allow to receive RX_RING_BUFFER_SIZE/2 addition bytes before raising RTS
+    // casts avoid warnings because of volatile qualifier
+    ring_buffer_init((wiced_ring_buffer_t *) &rx_ring_buffer, (uint8_t*) rx_data, sizeof( rx_data ) );
+    ring_buffer = (wiced_ring_buffer_t *) &rx_ring_buffer;
+
+    // don't try
+    uart_config.flow_control = FLOW_CONTROL_DISABLED;
+#endif
+    platform_uart_init( wiced_bt_uart_driver, wiced_bt_uart_peripheral, &uart_config, ring_buffer );
+
+    // reset Bluetooth
     platform_gpio_init( wiced_bt_control_pins[ WICED_BT_PIN_POWER ], OUTPUT_PUSH_PULL );
     platform_gpio_output_low( wiced_bt_control_pins[ WICED_BT_PIN_POWER ] );
     wiced_rtos_delay_milliseconds( 100 );
@@ -176,12 +225,9 @@ static int h4_open(void *transport_config){
 
     wiced_rtos_delay_milliseconds( 500 );
 
-    // init UART
-    platform_uart_init( wiced_bt_uart_driver, wiced_bt_uart_peripheral, &uart_config, NULL );
-
-    // create worker threads for rx/tx
-    wiced_rtos_create_worker_thread(&tx_worker_thread, WICED_NETWORK_WORKER_PRIORITY, 1000, 1);
-    wiced_rtos_create_worker_thread(&rx_worker_thread, WICED_NETWORK_WORKER_PRIORITY, 1000, 5);
+    // create worker threads for rx/tx. only single request is posted to their queues
+    wiced_rtos_create_worker_thread(&tx_worker_thread, WICED_BT_UART_THREAD_PRIORITY, WICED_BT_UART_THREAD_STACK_SIZE, 1);
+    wiced_rtos_create_worker_thread(&rx_worker_thread, WICED_BT_UART_THREAD_PRIORITY, WICED_BT_UART_THREAD_STACK_SIZE, 1);
 
     // start receiving packet
     wiced_rtos_send_asynchronous_event(&rx_worker_thread, &h4_rx_worker_receive_packet, NULL);    
