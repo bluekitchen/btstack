@@ -5,8 +5,8 @@ GLOBAL_INCLUDES += . ../../src ../../platform/embedded ../../chipset/bcm
 
 $(NAME)_SOURCES += \
 	main.c                                \
-	run_loop_wiced.c                      \
-	hci_transport_h4_wiced.c              \
+	../../platform/wiced/run_loop_wiced.c \
+	../../platform/wiced/hci_transport_h4_wiced.c \
 	../../chipset/bcm/bt_control_bcm.c    \
 	../../src/bk_linked_list.c            \
 	../../src/btstack_memory.c            \
