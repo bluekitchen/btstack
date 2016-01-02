@@ -903,13 +903,6 @@ static void hci_initializing_run(void){
             hci_stack->substate = HCI_INIT_W4_SEND_RESET_ST_WARM_BOOT;
             hci_send_cmd(&hci_reset);
             break;
-        case HCI_INIT_SET_BD_ADDR:
-            log_info("Set Public BD ADDR to %s", bd_addr_to_str(hci_stack->custom_bd_addr));
-            hci_stack->control->set_bd_addr_cmd(hci_stack->config, hci_stack->custom_bd_addr, hci_stack->hci_packet_buffer);
-            hci_stack->last_cmd_opcode = READ_BT_16(hci_stack->hci_packet_buffer, 0);
-            hci_stack->substate = HCI_INIT_W4_SET_BD_ADDR;
-            hci_send_cmd_packet(hci_stack->hci_packet_buffer, 3 + hci_stack->hci_packet_buffer[2]);
-            break;
         case HCI_INIT_SEND_BAUD_CHANGE:
             hci_stack->control->baudrate_cmd(hci_stack->config, ((hci_uart_config_t *)hci_stack->config)->baudrate_main, hci_stack->hci_packet_buffer);
             hci_stack->last_cmd_opcode = READ_BT_16(hci_stack->hci_packet_buffer, 0);
@@ -950,19 +943,26 @@ static void hci_initializing_run(void){
                log_info("hci_run: init script done");
             }
             // otherwise continue
-            hci_stack->substate = HCI_INIT_W4_READ_BD_ADDR;
-            hci_send_cmd(&hci_read_bd_addr);
-            break;
-        case HCI_INIT_READ_LOCAL_SUPPORTED_COMMANDS:
             hci_stack->substate = HCI_INIT_W4_READ_LOCAL_SUPPORTED_COMMANDS;
             hci_send_cmd(&hci_read_local_supported_commands);
+            break;
+        case HCI_INIT_SET_BD_ADDR:
+            log_info("Set Public BD ADDR to %s", bd_addr_to_str(hci_stack->custom_bd_addr));
+            hci_stack->control->set_bd_addr_cmd(hci_stack->config, hci_stack->custom_bd_addr, hci_stack->hci_packet_buffer);
+            hci_stack->last_cmd_opcode = READ_BT_16(hci_stack->hci_packet_buffer, 0);
+            hci_stack->substate = HCI_INIT_W4_SET_BD_ADDR;
+            hci_send_cmd_packet(hci_stack->hci_packet_buffer, 3 + hci_stack->hci_packet_buffer[2]);
+            break;
+        case HCI_INIT_READ_BD_ADDR:
+            hci_stack->substate = HCI_INIT_W4_READ_BD_ADDR;
+            hci_send_cmd(&hci_read_bd_addr);
             break;
         case HCI_INIT_READ_BUFFER_SIZE:
             hci_stack->substate = HCI_INIT_W4_READ_BUFFER_SIZE;
             hci_send_cmd(&hci_read_buffer_size);
             break;
-        case HCI_INIT_READ_LOCAL_SUPPORTED_FEATUES:
-            hci_stack->substate = HCI_INIT_W4_READ_LOCAL_SUPPORTED_FEATUES;
+        case HCI_INIT_READ_LOCAL_SUPPORTED_FEATURES:
+            hci_stack->substate = HCI_INIT_W4_READ_LOCAL_SUPPORTED_FEATURES;
             hci_send_cmd(&hci_read_local_supported_features);
             break;                
         case HCI_INIT_SET_EVENT_MASK:
@@ -1090,38 +1090,11 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
             run_loop_remove_timer(&hci_stack->timeout);
             break;
         case HCI_INIT_W4_SEND_READ_LOCAL_VERSION_INFORMATION:
-            if (need_addr_change){
-                hci_stack->substate = HCI_INIT_SET_BD_ADDR;
-                return;
-            }
-            // skipping addr change
             if (need_baud_change){
                 hci_stack->substate = HCI_INIT_SEND_BAUD_CHANGE;
                 return;
             }
-            // also skip baud change
-            hci_stack->substate = HCI_INIT_CUSTOM_INIT;
-            return;
-        case HCI_INIT_W4_SET_BD_ADDR:
-            // for STLC2500D, bd addr change only gets active after sending reset command
-            if (hci_stack->manufacturer == 0x0030){
-                hci_stack->substate = HCI_INIT_SEND_RESET_ST_WARM_BOOT;
-                return;
-            }
-            // skipping warm boot on STLC2500D
-            if (need_baud_change){
-                hci_stack->substate = HCI_INIT_SEND_BAUD_CHANGE;
-                return;
-            }
-            // skipping baud change
-            hci_stack->substate = HCI_INIT_CUSTOM_INIT;
-            return;
-        case HCI_INIT_W4_SEND_RESET_ST_WARM_BOOT:
-            if (need_baud_change){
-                hci_stack->substate = HCI_INIT_SEND_BAUD_CHANGE;
-                return;
-            }
-            // skipping baud change
+            // skip baud change
             hci_stack->substate = HCI_INIT_CUSTOM_INIT;
             return;
         case HCI_INIT_W4_SEND_BAUD_CHANGE:
@@ -1143,9 +1116,32 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
             hci_stack->substate = HCI_INIT_CUSTOM_INIT;
             return;
         case HCI_INIT_W4_READ_LOCAL_SUPPORTED_COMMANDS:
-            // skip read buffer size if not supported
-            if (hci_stack->local_supported_commands[0] & 0x01) break;
-            hci_stack->substate = HCI_INIT_READ_LOCAL_SUPPORTED_FEATUES;
+            if (need_addr_change){
+                hci_stack->substate = HCI_INIT_SET_BD_ADDR;
+                return;
+            }
+            hci_stack->substate = HCI_INIT_READ_BD_ADDR;
+            return;
+        case HCI_INIT_W4_SET_BD_ADDR:
+            // for STLC2500D, bd addr change only gets active after sending reset command
+            if (hci_stack->manufacturer == 0x0030){
+                hci_stack->substate = HCI_INIT_SEND_RESET_ST_WARM_BOOT;
+                return;
+            }
+            // skipping st warm boot
+            hci_stack->substate = HCI_INIT_READ_BD_ADDR;
+            return;
+        case HCI_INIT_W4_SEND_RESET_ST_WARM_BOOT:
+            hci_stack->substate = HCI_INIT_READ_BD_ADDR;
+            return;
+        case HCI_INIT_W4_READ_BD_ADDR:
+            // only read buffer size if supported
+            if (hci_stack->local_supported_commands[0] & 0x01) {
+                hci_stack->substate = HCI_INIT_READ_BUFFER_SIZE;
+                return;
+            }
+            // skipping read buffer size
+            hci_stack->substate = HCI_INIT_READ_LOCAL_SUPPORTED_FEATURES;
             return;
         case HCI_INIT_W4_SET_EVENT_MASK:
             // skip Classic init commands for LE only chipsets
