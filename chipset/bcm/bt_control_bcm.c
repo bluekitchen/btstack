@@ -82,6 +82,15 @@ static int bcm_baudrate_cmd(void * config, uint32_t baudrate, uint8_t *hci_cmd_b
 
 #endif
 
+// @note: bd addr has to be set after sending init script (it might just get re-set)
+static int bt_control_bcm_set_bd_addr_cmd(void * config, bd_addr_t addr, uint8_t *hci_cmd_buffer){
+    hci_cmd_buffer[0] = 0x01;
+    hci_cmd_buffer[1] = 0xfc;
+    hci_cmd_buffer[2] = 0x06;
+    bt_flip_addr(&hci_cmd_buffer[3], addr);
+    return 0;
+}
+
 static int bt_control_bcm_next_cmd(void *config, uint8_t *hci_cmd_buffer){
 
     // send download firmware command
@@ -107,7 +116,7 @@ static int bt_control_bcm_next_cmd(void *config, uint8_t *hci_cmd_buffer){
 // MARK: const structs 
 
 static const bt_control_t bt_control_bcm = {
-	bt_control_bcm_on,                  // on
+	bt_control_bcm_on,                     // on
 	NULL,                                  // off
 	NULL,                                  // sleep
 	NULL,                                  // wake
@@ -117,7 +126,7 @@ static const bt_control_t bt_control_bcm = {
 	bt_control_bcm_next_cmd,               // next_cmd
 	NULL,                                  // register_for_power_notifications
     NULL,                                  // hw_error
-    NULL,                                  // set_bd_addr_cmd
+    bt_control_bcm_set_bd_addr_cmd,        // set_bd_addr_cmd
 };
 
 // MARK: public API
