@@ -208,7 +208,7 @@ static int h4_set_baudrate(uint32_t baudrate){
     uart_init_structure.USART_StopBits   = USART_StopBits_1;
     uart_init_structure.USART_Parity     = USART_Parity_No;
     uart_init_structure.USART_HardwareFlowControl = USART_HardwareFlowControl_RTS_CTS;
-#ifdef WICED_BT_UART_MANUAL_CTS_RTS0
+#ifdef WICED_BT_UART_MANUAL_CTS_RTS
     uart_init_structure.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
 #endif
     printf("BRR before 0x%04x\n", wiced_bt_uart_peripheral->port->BRR);
@@ -248,7 +248,7 @@ static int h4_open(void *transport_config){
     wiced_rtos_delay_milliseconds( 100 );
 
     // -- init UART
-#ifdef WICED_BT_UART_MANUAL_CTS_RTS0
+#ifdef WICED_BT_UART_MANUAL_CTS_RTS
     // configure RTS pin as output and set to high
     platform_gpio_init(wiced_bt_uart_pins[WICED_BT_PIN_UART_RTS], OUTPUT_PUSH_PULL);
     platform_gpio_output_high(wiced_bt_uart_pins[WICED_BT_PIN_UART_RTS]);
