@@ -67,20 +67,16 @@ static int bt_control_bcm_on(void *config){
 	return 0;
 }
 
-#if 0
-// UART Baud Rate control
+// @note: Broadcom chips require higher UART clock for baud rate > 3000000 -> limit baud rate in hci.c
 static int bcm_baudrate_cmd(void * config, uint32_t baudrate, uint8_t *hci_cmd_buffer){
-    hci_cmd_buffer[0] = 0x36;
-    hci_cmd_buffer[1] = 0xFF;
-    hci_cmd_buffer[2] = 0x04;
-    hci_cmd_buffer[3] =  baudrate        & 0xff;
-    hci_cmd_buffer[4] = (baudrate >>  8) & 0xff;
-    hci_cmd_buffer[5] = (baudrate >> 16) & 0xff;
-    hci_cmd_buffer[6] = 0;
+    hci_cmd_buffer[0] = 0x18;
+    hci_cmd_buffer[1] = 0xfc;
+    hci_cmd_buffer[2] = 0x06;
+    hci_cmd_buffer[3] = 0x00;
+    hci_cmd_buffer[4] = 0x00;
+    bt_store_32(hci_cmd_buffer, 5, baudrate);
     return 0;
 }
-
-#endif
 
 // @note: bd addr has to be set after sending init script (it might just get re-set)
 static int bt_control_bcm_set_bd_addr_cmd(void * config, bd_addr_t addr, uint8_t *hci_cmd_buffer){
@@ -122,7 +118,7 @@ static const bt_control_t bt_control_bcm = {
 	NULL,                                  // wake
 	NULL,                                  // valid
 	NULL,                                  // name
-	/* bcm_baudrate_cmd */ NULL,           // baudrate_cmd
+	bcm_baudrate_cmd,                      // baudrate_cmd
 	bt_control_bcm_next_cmd,               // next_cmd
 	NULL,                                  // register_for_power_notifications
     NULL,                                  // hw_error
