@@ -180,12 +180,15 @@ static wiced_result_t h4_tx_worker_send_packet(void * arg){
 static int h4_set_baudrate(uint32_t baudrate){
 
 #ifdef _STM32F205RGT6_
-    // directly use STM peripheral functions to change baud rate dynamically
-    log_info("h4_set_baudrate %u", (int) baudrate);
-    
-    const platform_gpio_t* gpio = wiced_bt_uart_pins[WICED_BT_PIN_UART_TX];
 
-    // set TX pin as GPIO
+    // directly use STM peripheral functions to change baud rate dynamically
+    
+    // set TX to high
+    log_info("h4_set_baudrate %u", (int) baudrate);
+    const platform_gpio_t* gpio = wiced_bt_uart_pins[WICED_BT_PIN_UART_TX];
+    platform_gpio_output_high(gpio);
+
+    // reconfigure TX pin as GPIO
     GPIO_InitTypeDef gpio_init_structure;
     gpio_init_structure.GPIO_Speed = GPIO_Speed_50MHz;
     gpio_init_structure.GPIO_Mode  = GPIO_Mode_OUT;
@@ -195,15 +198,22 @@ static int h4_set_baudrate(uint32_t baudrate){
     GPIO_Init( gpio->port, &gpio_init_structure );
 
     // disable USART
-    USART_InitTypeDef uart_init_structure;
     USART_Cmd( wiced_bt_uart_peripheral->port, DISABLE );
 
     // setup init structure
+    USART_InitTypeDef uart_init_structure;
     uart_init_structure.USART_Mode       = USART_Mode_Rx | USART_Mode_Tx;
     uart_init_structure.USART_BaudRate   = baudrate;
     uart_init_structure.USART_WordLength = USART_WordLength_8b;
     uart_init_structure.USART_StopBits   = USART_StopBits_1;
+    uart_init_structure.USART_Parity     = USART_Parity_No;
+    uart_init_structure.USART_HardwareFlowControl = USART_HardwareFlowControl_RTS_CTS;
+#ifdef WICED_BT_UART_MANUAL_CTS_RTS0
+    uart_init_structure.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
+#endif
+    printf("BRR before 0x%04x\n", wiced_bt_uart_peripheral->port->BRR);
     USART_Init(wiced_bt_uart_peripheral->port, &uart_init_structure);
+    printf("BRR after 0x%04x\n", wiced_bt_uart_peripheral->port->BRR);
 
     // enable USART again
     USART_Cmd( wiced_bt_uart_peripheral->port, ENABLE );
@@ -211,7 +221,7 @@ static int h4_set_baudrate(uint32_t baudrate){
     // set TX pin as USART again
     gpio_init_structure.GPIO_Mode  = GPIO_Mode_AF;
     GPIO_Init( gpio->port, &gpio_init_structure );
-    
+
 #else
     log_error("h4_set_baudrate not implemented for this WICED Platform");
 #endif
@@ -238,12 +248,7 @@ static int h4_open(void *transport_config){
     wiced_rtos_delay_milliseconds( 100 );
 
     // -- init UART
-
-    // configure TX pin as output and set to high to prevent dropping it during baud rate change
-    platform_gpio_init(wiced_bt_uart_pins[WICED_BT_PIN_UART_TX], OUTPUT_PUSH_PULL);
-    platform_gpio_output_high(wiced_bt_uart_pins[WICED_BT_PIN_UART_TX]);
-
-#ifdef WICED_BT_UART_MANUAL_CTS_RTS
+#ifdef WICED_BT_UART_MANUAL_CTS_RTS0
     // configure RTS pin as output and set to high
     platform_gpio_init(wiced_bt_uart_pins[WICED_BT_PIN_UART_RTS], OUTPUT_PUSH_PULL);
     platform_gpio_output_high(wiced_bt_uart_pins[WICED_BT_PIN_UART_RTS]);
