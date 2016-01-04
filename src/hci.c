@@ -840,6 +840,16 @@ void le_handle_advertisement_report(uint8_t *packet, int size){
 }
 #endif
 
+static uint32_t hci_transport_uart_get_main_baud_rate(void){
+    if (!hci_stack->config) return 0;
+    uint32_t baud_rate = ((hci_uart_config_t *)hci_stack->config)->baudrate_main;
+    // Limit baud rate for Broadcom chipsets to 3 mbps
+    if (hci_stack->manufacturer == 0x000f && baud_rate > 3000000){
+        baud_rate = 3000000;
+    }
+    return baud_rate;
+}
+
 static void hci_initialization_timeout_handler(timer_source_t * ds){
     switch (hci_stack->substate){
         case HCI_INIT_W4_SEND_RESET:
@@ -855,11 +865,7 @@ static void hci_initialization_timeout_handler(timer_source_t * ds){
             hci_run();
             break;
         case HCI_INIT_W4_SEND_BAUD_CHANGE: {
-            uint32_t baud_rate = ((hci_uart_config_t *)hci_stack->config)->baudrate_main;
-            // Limit baud rate for Broadcom chipsets to 3 mbps
-            if (hci_stack->manufacturer == 0x000f && baud_rate > 3000000){
-                    baud_rate = 3000000;
-            }
+            uint32_t baud_rate = hci_transport_uart_get_main_baud_rate();
             log_info("Local baud rate change to %"PRIu32, baud_rate);
             hci_stack->hci_transport->set_baudrate(baud_rate);
             break;            
@@ -910,11 +916,7 @@ static void hci_initializing_run(void){
             hci_send_cmd(&hci_reset);
             break;
         case HCI_INIT_SEND_BAUD_CHANGE: {
-            uint32_t baud_rate = ((hci_uart_config_t *)hci_stack->config)->baudrate_main;
-            // Limit baud rate for Broadcom chipsets to 3 mbps
-            if (hci_stack->manufacturer == 0x000f && baud_rate > 3000000){
-                    baud_rate = 3000000;
-            }
+            uint32_t baud_rate = hci_transport_uart_get_main_baud_rate();
             hci_stack->control->baudrate_cmd(hci_stack->config, baud_rate, hci_stack->hci_packet_buffer);
             hci_stack->last_cmd_opcode = READ_BT_16(hci_stack->hci_packet_buffer, 0);
             hci_stack->substate = HCI_INIT_W4_SEND_BAUD_CHANGE;
@@ -928,11 +930,7 @@ static void hci_initializing_run(void){
             break;
         }
         case HCI_INIT_SEND_BAUD_CHANGE_BCM: {
-            uint32_t baud_rate = ((hci_uart_config_t *)hci_stack->config)->baudrate_main;
-            // Limit baud rate for Broadcom chipsets to 3 mbps
-            if (hci_stack->manufacturer == 0x000f && baud_rate > 3000000){
-                    baud_rate = 3000000;
-            }
+            uint32_t baud_rate = hci_transport_uart_get_main_baud_rate();
             hci_stack->control->baudrate_cmd(hci_stack->config, baud_rate, hci_stack->hci_packet_buffer);
             hci_stack->last_cmd_opcode = READ_BT_16(hci_stack->hci_packet_buffer, 0);
             hci_stack->substate = HCI_INIT_W4_SEND_BAUD_CHANGE_BCM;
@@ -1139,11 +1137,7 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
             // for STLC2500D, baud rate change already happened.
             // for others, baud rate gets changed now
             if (hci_stack->manufacturer != 0x0030){
-                // Limit baud rate for Broadcom chipsets to 3 mbps
-                uint32_t baud_rate = ((hci_uart_config_t *)hci_stack->config)->baudrate_main;
-                if (hci_stack->manufacturer == 0x000f && baud_rate > 3000000){
-                        baud_rate = 3000000;
-                }
+                uint32_t baud_rate = hci_transport_uart_get_main_baud_rate();
                 log_info("Local baud rate change to %"PRIu32, baud_rate);
                 hci_stack->hci_transport->set_baudrate(baud_rate);
             }   
@@ -1169,11 +1163,7 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
             hci_stack->substate = HCI_INIT_READ_BD_ADDR;
             return;
         case HCI_INIT_W4_SEND_BAUD_CHANGE_BCM: {
-            // Limit baud rate for Broadcom chipsets to 3 mbps
-            uint32_t baud_rate = ((hci_uart_config_t *)hci_stack->config)->baudrate_main;
-            if (hci_stack->manufacturer == 0x000f && baud_rate > 3000000){
-                    baud_rate = 3000000;
-            }
+            uint32_t baud_rate = hci_transport_uart_get_main_baud_rate();
             log_info("Local baud rate change to %"PRIu32" after init script", baud_rate);
             hci_stack->hci_transport->set_baudrate(baud_rate);
             if (need_addr_change){
