@@ -1,7 +1,7 @@
 
 NAME := BTstack_for_BCM$(BT_CHIP)$(BT_CHIP_REVISION)
 
-GLOBAL_INCLUDES += . ../../src ../../platform/embedded ../../chipset/bcm
+GLOBAL_INCLUDES += . ../../src ../../platform/embedded ../../chipset/bcm ../../../../
 
 $(NAME)_SOURCES += \
 	main.c                                \

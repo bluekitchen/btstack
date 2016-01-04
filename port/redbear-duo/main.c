@@ -39,18 +39,41 @@
 #include "platform_bluetooth.h"
 #include "bt_control_bcm.h"
 #include "btstack.h"
+#include "generated_mac_address.txt"
+
+// see generated_mac_address.txt - "macaddr=02:0A:F7:3d:76:be"
+static const char * wifi_mac_address = NVRAM_GENERATED_MAC_ADDRESS;
 
 static const hci_uart_config_t hci_uart_config = {
     NULL,
     115200,
-    0,
+    3000000,
     0
 };
 
 extern int btstack_main(void);
 
-void application_start(void)
-{
+static int main_sscan_bd_addr(const char * addr_string, bd_addr_t addr){
+    unsigned int bd_addr_buffer[BD_ADDR_LEN];  //for sscanf, integer needed
+    // reset result buffer
+    memset(bd_addr_buffer, 0, sizeof(bd_addr_buffer));
+    
+    // parse
+    int result = sscanf(addr_string, "%2x:%2x:%2x:%2x:%2x:%2x", &bd_addr_buffer[0], &bd_addr_buffer[1], &bd_addr_buffer[2],
+                        &bd_addr_buffer[3], &bd_addr_buffer[4], &bd_addr_buffer[5]);
+
+    if (result != BD_ADDR_LEN) return 0;
+
+    // store
+    int i;
+    for (i = 0; i < BD_ADDR_LEN; i++) {
+        addr[i] = (uint8_t) bd_addr_buffer[i];
+    }
+    return 1;
+}
+
+void application_start(void){
+
     /* Initialise the WICED device */
     wiced_init();
 
@@ -69,6 +92,12 @@ void application_start(void)
     remote_device_db_t * remote_db = (remote_device_db_t *) &remote_device_db_memory;
     hci_init(transport, (void*) &hci_uart_config, control, remote_db);
 
+    // use WIFI Mac address + 1 for Bluetooth
+    bd_addr_t dummy = { 1,2,3,4,5,6};
+    main_sscan_bd_addr(&wifi_mac_address[8], dummy);
+    dummy[5]++;
+    hci_set_bd_addr(dummy);
+    
     // hand over to btstack embedded code 
     btstack_main();
 
