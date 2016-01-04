@@ -637,7 +637,7 @@ typedef enum rpn_flow_control {
  */
 
 #ifndef ETHER_ADDR_LEN
-#define ETHER_ADDR_LEN sizeof(bd_addr_t)
+#define ETHER_ADDR_LEN 6
 #endif
 
 #ifndef ETHERTYPE_VLAN
