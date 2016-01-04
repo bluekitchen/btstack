@@ -940,7 +940,21 @@ static void hci_initializing_run(void){
                     hci_stack->hci_transport->send_packet(HCI_COMMAND_DATA_PACKET, hci_stack->hci_packet_buffer, size);
                     break;
                 }
-               log_info("hci_run: init script done");
+                log_info("hci_run: init script done");
+            
+                // Init script download causes baud rate to reset on Broadcom chipsets, restore UART baud rate if needed
+                if (hci_stack->manufacturer == 0x000f){
+                    int need_baud_change = hci_stack->config
+                        && hci_stack->control
+                        && hci_stack->control->baudrate_cmd
+                        && hci_stack->hci_transport->set_baudrate
+                        && ((hci_uart_config_t *)hci_stack->config)->baudrate_main;
+                    if (need_baud_change) {
+                        uint32_t baud_rate = ((hci_uart_config_t *)hci_stack->config)->baudrate_init;
+                        log_info("Local baud rate change to %"PRIu32" after init script", baud_rate);
+                        hci_stack->hci_transport->set_baudrate(baud_rate);
+                    }
+                }
             }
             // otherwise continue
             hci_stack->substate = HCI_INIT_W4_READ_LOCAL_SUPPORTED_COMMANDS;
