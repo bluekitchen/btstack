@@ -211,9 +211,7 @@ static int h4_set_baudrate(uint32_t baudrate){
 #ifdef WICED_BT_UART_MANUAL_CTS_RTS
     uart_init_structure.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
 #endif
-    printf("BRR before 0x%04x\n", wiced_bt_uart_peripheral->port->BRR);
     USART_Init(wiced_bt_uart_peripheral->port, &uart_init_structure);
-    printf("BRR after 0x%04x\n", wiced_bt_uart_peripheral->port->BRR);
 
     // enable USART again
     USART_Cmd( wiced_bt_uart_peripheral->port, ENABLE );
