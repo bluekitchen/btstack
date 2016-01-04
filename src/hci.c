@@ -915,6 +915,12 @@ static void hci_initializing_run(void){
                 run_loop_add_timer(&hci_stack->timeout);
             }
             break;
+        case HCI_INIT_SEND_BAUD_CHANGE_BCM:
+            hci_stack->control->baudrate_cmd(hci_stack->config, ((hci_uart_config_t *)hci_stack->config)->baudrate_main, hci_stack->hci_packet_buffer);
+            hci_stack->last_cmd_opcode = READ_BT_16(hci_stack->hci_packet_buffer, 0);
+            hci_stack->substate = HCI_INIT_W4_SEND_BAUD_CHANGE_BCM;
+            hci_send_cmd_packet(hci_stack->hci_packet_buffer, 3 + hci_stack->hci_packet_buffer[2]);
+            break;
         case HCI_INIT_CUSTOM_INIT:
             log_info("Custom init");
             // Custom initialization
@@ -1130,12 +1136,27 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
             hci_stack->substate = HCI_INIT_CUSTOM_INIT;
             return;
         case HCI_INIT_W4_READ_LOCAL_SUPPORTED_COMMANDS:
+            if (need_baud_change && hci_stack->manufacturer == 0x000f){
+                hci_stack->substate = HCI_INIT_SEND_BAUD_CHANGE_BCM;
+                return;
+            }
             if (need_addr_change){
                 hci_stack->substate = HCI_INIT_SET_BD_ADDR;
                 return;
             }
             hci_stack->substate = HCI_INIT_READ_BD_ADDR;
             return;
+        case HCI_INIT_W4_SEND_BAUD_CHANGE_BCM: {
+            uint32_t new_baud = ((hci_uart_config_t *)hci_stack->config)->baudrate_main;
+            log_info("Local baud rate change to %"PRIu32" after init script", new_baud);
+            hci_stack->hci_transport->set_baudrate(new_baud);
+            if (need_addr_change){
+                hci_stack->substate = HCI_INIT_SET_BD_ADDR;
+                return;
+            }
+            hci_stack->substate = HCI_INIT_READ_BD_ADDR;
+            return;            
+        }
         case HCI_INIT_W4_SET_BD_ADDR:
             // for STLC2500D, bd addr change only gets active after sending reset command
             if (hci_stack->manufacturer == 0x0030){
