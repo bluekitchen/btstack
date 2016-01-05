@@ -84,7 +84,7 @@ void application_start(void){
     run_loop_init(RUN_LOOP_WICED);
     
     // enable full log output while porting
-    hci_dump_open(NULL, HCI_DUMP_STDOUT);
+    // hci_dump_open(NULL, HCI_DUMP_STDOUT);
 
     // init HCI
     hci_transport_t    * transport = hci_transport_h4_wiced_instance();
