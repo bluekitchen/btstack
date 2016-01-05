@@ -187,30 +187,6 @@ static void l2cap_emit_connection_parameter_update_response(uint16_t handle, uin
     (*packet_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-static void l2cap_emit_credits(l2cap_channel_t *channel, uint8_t credits) {
-    
-    log_info("L2CAP_EVENT_CREDITS local_cid 0x%x credits %u", channel->local_cid, credits);
-    
-    uint8_t event[5];
-    event[0] = L2CAP_EVENT_CREDITS;
-    event[1] = sizeof(event) - 2;
-    bt_store_16(event, 2, channel->local_cid);
-    event[4] = credits;
-    hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
-    l2cap_dispatch(channel, HCI_EVENT_PACKET, event, sizeof(event));
-}
-
-static void l2cap_hand_out_credits(void){
-    linked_list_iterator_t it;    
-    linked_list_iterator_init(&it, &l2cap_channels);
-    while (linked_list_iterator_has_next(&it)){
-        l2cap_channel_t * channel = (l2cap_channel_t *) linked_list_iterator_next(&it);
-        if (channel->state != L2CAP_STATE_OPEN) continue;
-        if (!hci_number_free_acl_slots_for_handle(channel->handle)) return;
-        l2cap_emit_credits(channel, 1);
-    }
-}
-
 static l2cap_channel_t * l2cap_get_channel_for_local_cid(uint16_t local_cid){
     linked_list_iterator_t it;    
     linked_list_iterator_init(&it, &l2cap_channels);
@@ -391,8 +367,6 @@ int l2cap_send_prepared(uint16_t local_cid, uint16_t len){
     // send
     int err = hci_send_acl_packet_buffer(len+8);
     
-    l2cap_hand_out_credits();
-    
     return err;
 }
 
@@ -425,8 +399,6 @@ int l2cap_send_prepared_connectionless(uint16_t handle, uint16_t cid, uint16_t l
     // send
     int err = hci_send_acl_packet_buffer(len+8);
     
-    l2cap_hand_out_credits();
-
     return err;
 }
 
@@ -648,7 +620,6 @@ static void l2cap_run(void){
                 if (l2cap_channel_ready_for_open(channel)){
                     channel->state = L2CAP_STATE_OPEN;
                     l2cap_emit_channel_opened(channel, 0);  // success
-                    l2cap_emit_credits(channel, 1);
                 }
                 break;
 
@@ -898,7 +869,6 @@ static void l2cap_event_handler(uint8_t *packet, uint16_t size){
             
         case HCI_EVENT_NUMBER_OF_COMPLETED_PACKETS:
             l2cap_run();    // try sending signaling packets first
-            l2cap_hand_out_credits();
             break;
             
         // HCI Connection Timeouts
@@ -921,7 +891,6 @@ static void l2cap_event_handler(uint8_t *packet, uint16_t size){
 
         case DAEMON_EVENT_HCI_PACKET_SENT:
             l2cap_run();    // try sending signaling packets first
-            l2cap_hand_out_credits();
 
             linked_list_iterator_init(&it, &l2cap_channels);
             while (linked_list_iterator_has_next(&it)){
@@ -1256,7 +1225,6 @@ static void l2cap_signaling_handler_channel(l2cap_channel_t *channel, uint8_t *c
                 // for open:
                 channel->state = L2CAP_STATE_OPEN;
                 l2cap_emit_channel_opened(channel, 0);
-                l2cap_emit_credits(channel, 1);
             }
             break;
             

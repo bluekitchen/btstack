@@ -88,7 +88,6 @@ static void (*app_packet_handler)(uint8_t packet_type,
                                   uint16_t channel, uint8_t *packet, uint16_t size);
 
 static void rfcomm_run(void);
-static void rfcomm_hand_out_credits(void);
 static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, rfcomm_channel_event_t *event);
 static void rfcomm_channel_state_machine_2(rfcomm_multiplexer_t * multiplexer, uint8_t dlci, rfcomm_channel_event_t *event);
 static int rfcomm_channel_ready_for_open(rfcomm_channel_t *channel);
@@ -140,17 +139,6 @@ static void rfcomm_emit_channel_closed(rfcomm_channel_t * channel) {
     event[0] = RFCOMM_EVENT_CHANNEL_CLOSED;
     event[1] = sizeof(event) - 2;
     bt_store_16(event, 2, channel->rfcomm_cid);
-    hci_dump_packet(HCI_EVENT_PACKET, 0, event, sizeof(event));
-	(*app_packet_handler)(HCI_EVENT_PACKET, 0, (uint8_t *) event, sizeof(event));
-}
-
-static void rfcomm_emit_credits(rfcomm_channel_t * channel, uint8_t credits) {
-    log_info("RFCOMM_EVENT_CREDITS cid 0x%02x credits %u", channel->rfcomm_cid, credits);
-    uint8_t event[5];
-    event[0] = RFCOMM_EVENT_CREDITS;
-    event[1] = sizeof(event) - 2;
-    bt_store_16(event, 2, channel->rfcomm_cid);
-    event[4] = credits;
     hci_dump_packet(HCI_EVENT_PACKET, 0, event, sizeof(event));
 	(*app_packet_handler)(HCI_EVENT_PACKET, 0, (uint8_t *) event, sizeof(event));
 }
@@ -877,18 +865,6 @@ static int rfcomm_multiplexer_hci_event_handler(uint8_t *packet, uint16_t size){
             return 1;
             
             // l2cap disconnect -> state = RFCOMM_MULTIPLEXER_CLOSED;
-            
-        case L2CAP_EVENT_CREDITS:
-            // data: event(8), len(8), local_cid(16), credits(8)
-            l2cap_cid = READ_BT_16(packet, 2);
-            multiplexer = rfcomm_multiplexer_for_l2cap_cid(l2cap_cid);
-            if (!multiplexer) break;
-
-            rfcomm_run();
-            
-            if (multiplexer->state != RFCOMM_MULTIPLEXER_OPEN) break;
-            rfcomm_hand_out_credits();
-            return 1;
         
         case DAEMON_EVENT_HCI_PACKET_SENT:
             // testing DMA done code
@@ -1117,24 +1093,6 @@ static void rfcomm_multiplexer_state_machine(rfcomm_multiplexer_t * multiplexer,
 
 // MARK: RFCOMM CHANNEL
 
-static void rfcomm_hand_out_credits(void){
-    linked_item_t * it;
-    for (it = (linked_item_t *) rfcomm_channels; it ; it = it->next){
-        rfcomm_channel_t * channel = (rfcomm_channel_t *) it;
-        if (channel->state != RFCOMM_CHANNEL_OPEN) {
-            // log_info("RFCOMM_EVENT_CREDITS: multiplexer not open");
-            continue;
-        }
-        if (!channel->credits_outgoing) {
-            // log_info("RFCOMM_EVENT_CREDITS: no outgoing credits");
-            continue;
-        }
-        // channel open, multiplexer has l2cap credits and we didn't hand out credit before -> go!
-        // log_info("RFCOMM_EVENT_CREDITS: 1");
-        rfcomm_emit_credits(channel, 1);
-    }        
-}
-
 static void rfcomm_channel_send_credits(rfcomm_channel_t *channel, uint8_t credits){
     rfcomm_send_uih_credits(channel->multiplexer, channel->dlci, credits);
     channel->credits_incoming += credits;
@@ -1147,7 +1105,6 @@ static void rfcomm_channel_opened(rfcomm_channel_t *rfChannel){
     rfChannel->state = RFCOMM_CHANNEL_OPEN;
     rfcomm_emit_channel_opened(rfChannel, 0);
     rfcomm_emit_port_configuration(rfChannel);
-    rfcomm_hand_out_credits();
 
     // remove (potential) timer
     rfcomm_multiplexer_t *multiplexer = rfChannel->multiplexer;
@@ -1203,8 +1160,6 @@ static void rfcomm_channel_packet_handler_uih(rfcomm_multiplexer_t *multiplexer,
     if (!channel->incoming_flow_control && channel->credits_incoming < 5){
         channel->new_credits_incoming =RFCOMM_CREDITS;
     }    
-    // we received new RFCOMM credits, hand them out if possible
-    rfcomm_hand_out_credits();
 }
 
 static void rfcomm_channel_accept_pn(rfcomm_channel_t *channel, rfcomm_channel_event_pn_t *event){
@@ -1982,9 +1937,7 @@ int rfcomm_send_prepared(uint16_t rfcomm_cid, uint16_t len){
         log_info("rfcomm_send_internal: error %d", result);
         return result;
     }
-    
-    rfcomm_hand_out_credits();
-    
+        
     return result;
 }
 

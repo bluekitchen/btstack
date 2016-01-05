@@ -197,6 +197,61 @@ static void * sdp_client_query_connection;
     
 static int loggingEnabled;
 
+// stashed code from l2cap.c and rfcomm.c -- needed for new implementation
+#if 0
+static void l2cap_emit_credits(l2cap_channel_t *channel, uint8_t credits) {
+    
+    log_info("L2CAP_EVENT_CREDITS local_cid 0x%x credits %u", channel->local_cid, credits);
+    
+    uint8_t event[5];
+    event[0] = L2CAP_EVENT_CREDITS;
+    event[1] = sizeof(event) - 2;
+    bt_store_16(event, 2, channel->local_cid);
+    event[4] = credits;
+    hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
+    l2cap_dispatch(channel, HCI_EVENT_PACKET, event, sizeof(event));
+}
+
+static void l2cap_hand_out_credits(void){
+    linked_list_iterator_t it;    
+    linked_list_iterator_init(&it, &l2cap_channels);
+    while (linked_list_iterator_has_next(&it)){
+        l2cap_channel_t * channel = (l2cap_channel_t *) linked_list_iterator_next(&it);
+        if (channel->state != L2CAP_STATE_OPEN) continue;
+        if (!hci_number_free_acl_slots_for_handle(channel->handle)) return;
+        l2cap_emit_credits(channel, 1);
+    }
+}
+static void rfcomm_emit_credits(rfcomm_channel_t * channel, uint8_t credits) {
+    log_info("RFCOMM_EVENT_CREDITS cid 0x%02x credits %u", channel->rfcomm_cid, credits);
+    uint8_t event[5];
+    event[0] = RFCOMM_EVENT_CREDITS;
+    event[1] = sizeof(event) - 2;
+    bt_store_16(event, 2, channel->rfcomm_cid);
+    event[4] = credits;
+    hci_dump_packet(HCI_EVENT_PACKET, 0, event, sizeof(event));
+    (*app_packet_handler)(HCI_EVENT_PACKET, 0, (uint8_t *) event, sizeof(event));
+}
+static void rfcomm_hand_out_credits(void){
+    linked_item_t * it;
+    for (it = (linked_item_t *) rfcomm_channels; it ; it = it->next){
+        rfcomm_channel_t * channel = (rfcomm_channel_t *) it;
+        if (channel->state != RFCOMM_CHANNEL_OPEN) {
+            // log_info("RFCOMM_EVENT_CREDITS: multiplexer not open");
+            continue;
+        }
+        if (!channel->credits_outgoing) {
+            // log_info("RFCOMM_EVENT_CREDITS: no outgoing credits");
+            continue;
+        }
+        // channel open, multiplexer has l2cap credits and we didn't hand out credit before -> go!
+        // log_info("RFCOMM_EVENT_CREDITS: 1");
+        rfcomm_emit_credits(channel, 1);
+    }        
+}
+
+#endif
+
 static void dummy_bluetooth_status_handler(BLUETOOTH_STATE state){
     log_info("Bluetooth status: %u\n", state);
 };
