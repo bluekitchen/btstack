@@ -900,5 +900,12 @@ typedef enum {
 // also, invalid parameters
 // and reserved
 
+// Company identifiers / manufacturers
+#define COMPANY_ID_CAMBRIDGE_SILICON_RADIO     0x000A 
+#define COMPANY_ID_TEXAS_INSTRUMENTS_INC       0x000D
+#define COMPANY_ID_BROADCOM_CORPORATION        0x000F
+#define COMPANY_ID_ST_MICROELECTRONICS         0x0030
+#define COMPANY_ID_EM_MICROELECTRONICS_MARIN   0x005A
+
 
 #endif

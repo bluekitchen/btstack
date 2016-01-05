@@ -844,7 +844,7 @@ static uint32_t hci_transport_uart_get_main_baud_rate(void){
     if (!hci_stack->config) return 0;
     uint32_t baud_rate = ((hci_uart_config_t *)hci_stack->config)->baudrate_main;
     // Limit baud rate for Broadcom chipsets to 3 mbps
-    if (hci_stack->manufacturer == 0x000f && baud_rate > 3000000){
+    if (hci_stack->manufacturer == COMPANY_ID_BROADCOM_CORPORATION && baud_rate > 3000000){
         baud_rate = 3000000;
     }
     return baud_rate;
@@ -923,7 +923,7 @@ static void hci_initializing_run(void){
             hci_send_cmd_packet(hci_stack->hci_packet_buffer, 3 + hci_stack->hci_packet_buffer[2]);
             // STLC25000D: baudrate change happens within 0.5 s after command was send,
             // use timer to update baud rate after 100 ms (knowing exactly, when command was sent is non-trivial)
-            if (hci_stack->manufacturer == 0x0030){
+            if (hci_stack->manufacturer == COMPANY_ID_ST_MICROELECTRONICS){
                 run_loop_set_timer(&hci_stack->timeout, 100);
                 run_loop_add_timer(&hci_stack->timeout);
             }
@@ -965,7 +965,7 @@ static void hci_initializing_run(void){
                 log_info("hci_run: init script done");
             
                 // Init script download causes baud rate to reset on Broadcom chipsets, restore UART baud rate if needed
-                if (hci_stack->manufacturer == 0x000f){
+                if (hci_stack->manufacturer == COMPANY_ID_BROADCOM_CORPORATION){
                     int need_baud_change = hci_stack->config
                         && hci_stack->control
                         && hci_stack->control->baudrate_cmd
@@ -1136,7 +1136,7 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
         case HCI_INIT_W4_SEND_BAUD_CHANGE:
             // for STLC2500D, baud rate change already happened.
             // for others, baud rate gets changed now
-            if (hci_stack->manufacturer != 0x0030){
+            if (hci_stack->manufacturer != COMPANY_ID_ST_MICROELECTRONICS){
                 uint32_t baud_rate = hci_transport_uart_get_main_baud_rate();
                 log_info("Local baud rate change to %"PRIu32, baud_rate);
                 hci_stack->hci_transport->set_baudrate(baud_rate);
@@ -1152,7 +1152,7 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
             hci_stack->substate = HCI_INIT_CUSTOM_INIT;
             return;
         case HCI_INIT_W4_READ_LOCAL_SUPPORTED_COMMANDS:
-            if (need_baud_change && hci_stack->manufacturer == 0x000f){
+            if (need_baud_change && hci_stack->manufacturer == COMPANY_ID_BROADCOM_CORPORATION){
                 hci_stack->substate = HCI_INIT_SEND_BAUD_CHANGE_BCM;
                 return;
             }
@@ -1175,7 +1175,7 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
         }
         case HCI_INIT_W4_SET_BD_ADDR:
             // for STLC2500D, bd addr change only gets active after sending reset command
-            if (hci_stack->manufacturer == 0x0030){
+            if (hci_stack->manufacturer == COMPANY_ID_ST_MICROELECTRONICS){
                 hci_stack->substate = HCI_INIT_SEND_RESET_ST_WARM_BOOT;
                 return;
             }
