@@ -6,6 +6,7 @@ import os
 import shutil
 import sys
 import time
+import subprocess
 
 mk_template = '''#
 # BTstack example 'EXAMPLE' for WICED port
@@ -19,6 +20,13 @@ GLOBAL_INCLUDES += .
 
 $(NAME)_SOURCES := ../../../libraries/btstack/example/embedded/EXAMPLE.c
 $(NAME)_COMPONENTS += btstack/port/wiced
+'''
+
+gatt_update_template = '''#!/bin/sh
+DIR=`dirname $0`
+BTSTACK_ROOT=$DIR/../../../libraries/btstack
+echo "Creating EXAMPLE.h from EXAMPLE.gatt"
+$BTSTACK_ROOT/tool/compile-gatt.py $BTSTACK_ROOT/example/embedded/EXAMPLE.gatt $DIR/EXAMPLE.h
 '''
 
 # get script path
@@ -53,12 +61,6 @@ for file in os.listdir(examples_embedded):
         continue
     example = file[:-2]
 
-    # check for .gatt file
-    gatt_path = examples_embedded + example + ".gatt"
-    if os.path.exists(gatt_path):
-        print ("(Skipping %s example as .gatt -> .h conversion not implemented yet)" % example)
-        continue
-
     # create folder
     apps_folder = apps_btstack + example + "/"
     if not os.path.exists(apps_folder):
@@ -68,10 +70,15 @@ for file in os.listdir(examples_embedded):
     with open(apps_folder + example + ".mk", "wt") as fout:
         fout.write(mk_template.replace("EXAMPLE", example).replace("TOOL", script_path).replace("DATE",time.strftime("%c")))
 
-    # copy .gatt file if present
+    # create update_gatt.sh if .gatt file is present
+    gatt_path = examples_embedded + example + ".gatt"
     if os.path.exists(gatt_path):
-        shutil.copyfile(gatt_path, apps_folder + example + ".gatt")
-
-    print("- %s" % example)
-
+        update_gatt_script = apps_folder + "update_gatt_db.sh"
+        with open(update_gatt_script, "wt") as fout:
+            fout.write(gatt_update_template.replace("EXAMPLE", example))        
+        os.chmod(update_gatt_script, 0o755)
+        subprocess.call(update_gatt_script + "> /dev/null", shell=True)
+        print("- %s including compiled GATT DB" % example)
+    else:
+        print("- %s" % example)
 
