@@ -40,7 +40,7 @@
 #define PIN_LED 13
 
 // prototypes
-extern "C" void embedded_execute_once(void);
+extern "C" void run_loop_embedded_execute_once(void);
 extern "C" void hal_uart_dma_process(void);
 
 enum {
@@ -819,7 +819,7 @@ void BTstackManager::loop(void){
     // process data from/to Bluetooth module
     hal_uart_dma_process();
     // BTstack Run Loop
-    embedded_execute_once();
+    run_loop_embedded_execute_once();
 }
 
 void BTstackManager::bleStartScanning(void){

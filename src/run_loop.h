@@ -131,31 +131,26 @@ int  run_loop_remove_data_source(data_source_t *dataSource);
  */
 void run_loop_execute(void);
 
-
 // hack to fix HCI timer handling
 #ifdef HAVE_TICK
 /**
  * @brief Sets how many milliseconds has one tick.
  */
-uint32_t embedded_ticks_for_ms(uint32_t time_in_ms);
+uint32_t run_loop_embedded_ticks_for_ms(uint32_t time_in_ms);
 /**
  * @brief Queries the current time in ticks.
  */
-uint32_t embedded_get_ticks(void);
-/**
- * @brief Allows to update BTstack system ticks based on another already existing clock.
- */
-void embedded_set_ticks(uint32_t ticks);
+uint32_t run_loop_embedded_get_ticks(void);
 #endif
 #ifdef EMBEDDED
 /**
  * @brief Sets an internal flag that is checked in the critical section just before entering sleep mode. Has to be called by the interrupt handler of a data source to signal the run loop that a new data is available.
  */
-void embedded_trigger(void);    
+void run_loop_embedded_trigger(void);    
 /**
  * @brief Execute run_loop once. It can be used to integrate BTstack's timer and data source processing into a foreign run loop (it is not recommended).
  */
-void embedded_execute_once(void);
+void run_loop_embedded_execute_once(void);
 #endif
 
 #ifdef HAVE_WICED

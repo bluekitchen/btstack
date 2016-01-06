@@ -112,8 +112,8 @@ void sys_tick_handler(void){
 }
 
 static void msleep(uint32_t delay) {
-	uint32_t wake = embedded_get_ticks() + delay / hal_tick_get_tick_period_in_ms();
-	while (wake > embedded_get_ticks());
+	uint32_t wake = run_loop_embedded_get_ticks() + delay / hal_tick_get_tick_period_in_ms();
+	while (wake > run_loop_embedded_get_ticks());
 }
 
 // hal_led.h implementation

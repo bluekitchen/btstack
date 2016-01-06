@@ -78,8 +78,8 @@ void hal_tick_set_handler(void (*handler)(void)){
 }
 
 static void msleep(uint32_t delay) {
-    uint32_t wake = embedded_get_ticks() + delay / hal_tick_get_tick_period_in_ms();
-    while (wake > embedded_get_ticks()){
+    uint32_t wake = run_loop_embedded_get_ticks() + delay / hal_tick_get_tick_period_in_ms();
+    while (wake > run_loop_embedded_get_ticks()){
         SYS_Tasks();
     };
 }
@@ -250,6 +250,6 @@ void BTSTACK_Tasks(void){
     }
 
     // BTstack Run Loop
-    embedded_execute_once();
+    run_loop_embedded_execute_once();
 }
 

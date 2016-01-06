@@ -281,7 +281,7 @@ static void h4_block_received(void){
             bytes_to_read = 0;
             
             // trigger run loop - necessary for use in low power modes
-            embedded_trigger();
+            run_loop_embedded_trigger();
             break;
             
         default:
@@ -315,7 +315,7 @@ static void ehcill_sleep_ack_timer_setup(void){
     ehcill_sleep_ack_timer.process = &ehcill_sleep_ack_timer_handler;
     run_loop_set_timer(&ehcill_sleep_ack_timer, 50);
     run_loop_add_timer(&ehcill_sleep_ack_timer);
-    embedded_trigger();    
+    run_loop_embedded_trigger();    
 }
 
 static void ehcill_reactivate_rx(void){
@@ -363,7 +363,7 @@ static void h4_block_sent(void){
                     // trigger run loop
                     tx_state = TX_DONE;
 		            tx_send_packet_sent = 1;
-                    embedded_trigger();
+                    run_loop_embedded_trigger();
                     break;
             }
             break;
@@ -382,7 +382,7 @@ static void h4_block_sent(void){
                 echill_send_wakeup_ind();
             }
             // trigger run loop
-            embedded_trigger();
+            run_loop_embedded_trigger();
             break;
         default:
             break;

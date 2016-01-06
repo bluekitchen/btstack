@@ -203,7 +203,7 @@ static void hci_connection_timeout_handler(timer_source_t *timer){
     }
 #endif
 #ifdef HAVE_TICK
-    if (embedded_get_ticks() > connection->timestamp + embedded_ticks_for_ms(HCI_CONNECTION_TIMEOUT_MS)){
+    if (run_loop_embedded_ticks_for_ms() > connection->timestamp + run_loop_embedded_ticks_for_ms(HCI_CONNECTION_TIMEOUT_MS)){
         // connections might be timed out
         hci_emit_l2cap_check_timeout(connection);
     }
@@ -223,7 +223,7 @@ static void hci_connection_timestamp(hci_connection_t *connection){
     gettimeofday(&connection->timestamp, NULL);
 #endif
 #ifdef HAVE_TICK
-    connection->timestamp = embedded_get_ticks();
+    connection->timestamp = run_loop_embedded_get_ticks();
 #endif
 #ifdef HAVE_TIME_MS
     connection->timestamp = run_loop_get_time_ms();
