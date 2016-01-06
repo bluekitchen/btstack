@@ -47,6 +47,7 @@
 #include <string.h>
 
 #include "btstack_client.h"
+#include "run_loop_posix.h"
 
 #define MAX_DEVICES 10
 struct device {
@@ -235,7 +236,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 	
 int main (int argc, const char * argv[]){
 	// start stack
-	run_loop_init(RUN_LOOP_POSIX);
+	run_loop_init(run_loop_posix_get_instance());
 	int err = bt_open();
 	if (err) {
 		printf("Failed to open connection to BTdaemon\n");

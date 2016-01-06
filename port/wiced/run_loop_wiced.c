@@ -57,6 +57,8 @@ typedef struct function_call {
     void * arg;
 } function_call_t;
 
+static const run_loop_t run_loop_wiced;
+
 static wiced_queue_t run_loop_queue;
 
 // the run loop
@@ -171,7 +173,14 @@ static void run_loop_wiced_run_loop_init(void){
     wiced_rtos_init_queue(&run_loop_queue, "BTstack Run Loop", sizeof(function_call_t), 5);
 }
 
-const run_loop_t run_loop_wiced = {
+/**
+ * @brief Provide run_loop_posix instance for use with run_loop_init
+ */
+const run_loop_t * run_loop_wiced_get_instance(void){
+    return &run_loop_wiced;
+}
+
+static const run_loop_t run_loop_wiced = {
     &run_loop_wiced_run_loop_init,
     &run_loop_wiced_add_data_source,
     &run_loop_wiced_remove_data_source,

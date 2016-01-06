@@ -47,6 +47,7 @@
 #include <string.h>
 
 #include "btstack_client.h"
+#include "run_loop_posix.h"
 #include "hci_cmds.h"
 
 #define PSM_TEST 0xdead
@@ -200,7 +201,7 @@ int main (int argc, const char * argv[]){
         }
     }
 
-	run_loop_init(RUN_LOOP_POSIX);
+	run_loop_init(run_loop_posix_get_instance());
 	int err = bt_open();
 	if (err) {
 		printf("Failed to open connection to BTdaemon\n");

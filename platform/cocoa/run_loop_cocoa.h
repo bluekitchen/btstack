@@ -36,27 +36,23 @@
  */
 
 /*
- * run_loop_wiced.h
- *
- * Functions relevant for BTstack WICED port 
+ *  run_loop_cocoa.h
+ *  Functionality special to the CoreFoundation run loop
  */
 
-#ifndef __RUN_LOOP_WICED_H
-#define __RUN_LOOP_WICED_H
+#ifndef __RUN_LOOP_COCOA_H
+#define __RUN_LOOP_COCOA_H
 
-#include "btstack-config.h"
 #include "run_loop.h"
-#include "wiced.h"
 
+#if defined __cplusplus
+extern "C" {
+#endif
+	
 /**
- * @brief Provide run_loop_posix instance for use with run_loop_init
+ * Provide run_loop_cocoa instance
  */
-const run_loop_t * run_loop_wiced_get_instance(void);
-
-/*
- * @brief Execute code on BTstack run loop. Can be used to control BTstack from a different thread
- */
-void run_loop_wiced_execute_code_on_main_thread(wiced_result_t (*fn)(void *arg), void * arg);
+const run_loop_t * run_loop_cocoa_get_instance(void){
 
 /* API_END */
 
@@ -64,4 +60,4 @@ void run_loop_wiced_execute_code_on_main_thread(wiced_result_t (*fn)(void *arg),
 }
 #endif
 
-#endif // __RUN_LOOP_WICED_H
+#endif // __RUN_LOOP_COCOA_H

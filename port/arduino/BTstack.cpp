@@ -749,7 +749,7 @@ void BTstackManager::setup(void){
     printf("BTstackManager::setup()\n");
 
 	btstack_memory_init();
-    run_loop_init(RUN_LOOP_EMBEDDED);
+    run_loop_init(run_loop_embedded_get_instance());
 
 	hci_transport_t * transport = hci_transport_h4_dma_instance();
     bt_control_t    * control   = bt_control_em9301_instance();

@@ -47,6 +47,10 @@
 #include "hci.h"
 #include "gap.h"
 
+#ifdef HAVE_TICK
+#include "run_loop_embedded.h"
+#endif
+
 #ifdef HAVE_BLE
 #include "gap.h"
 #endif
@@ -203,7 +207,7 @@ static void hci_connection_timeout_handler(timer_source_t *timer){
     }
 #endif
 #ifdef HAVE_TICK
-    if (run_loop_embedded_ticks_for_ms() > connection->timestamp + run_loop_embedded_ticks_for_ms(HCI_CONNECTION_TIMEOUT_MS)){
+    if (run_loop_embedded_get_ticks() > connection->timestamp + run_loop_embedded_ticks_for_ms(HCI_CONNECTION_TIMEOUT_MS)){
         // connections might be timed out
         hci_emit_l2cap_check_timeout(connection);
     }

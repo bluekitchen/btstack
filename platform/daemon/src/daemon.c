@@ -58,6 +58,7 @@
 #include "btstack.h"
 #include "bk_linked_list.h"
 #include "run_loop.h"
+#include "run_loop_posix.h"
 #include "hci_cmds.h"
 #include "version.h"
 
@@ -1985,7 +1986,7 @@ int main (int argc,  char * const * argv){
     remote_device_db = &REMOTE_DEVICE_DB;
 #endif
 
-    run_loop_init(RUN_LOOP_POSIX);
+    run_loop_init(run_loop_posix_get_instance());
     
     // init power management notifications
     if (control && control->register_for_power_notifications){

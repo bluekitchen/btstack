@@ -35,11 +35,15 @@
  *
  */
 
-#include "wiced.h"
-#include "platform_bluetooth.h"
 #include "bt_control_bcm.h"
 #include "btstack.h"
+#include "run_loop_wiced.h"
+
 #include "generated_mac_address.txt"
+
+#include "platform_bluetooth.h"
+#include "wiced.h"
+
 
 // see generated_mac_address.txt - "macaddr=02:0A:F7:3d:76:be"
 static const char * wifi_mac_address = NVRAM_GENERATED_MAC_ADDRESS;
@@ -81,7 +85,7 @@ void application_start(void){
 
     // start with BTstack init - especially configure HCI Transport
     btstack_memory_init();
-    run_loop_init(RUN_LOOP_WICED);
+    run_loop_init(run_loop_wiced_get_instance());
     
     // enable full log output while porting
     // hci_dump_open(NULL, HCI_DUMP_STDOUT);

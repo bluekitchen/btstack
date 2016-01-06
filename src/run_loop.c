@@ -51,30 +51,20 @@
 #include "debug.h"
 #include "btstack-config.h"
 
-static run_loop_t * the_run_loop = NULL;
+static const run_loop_t * the_run_loop = NULL;
 
 extern const run_loop_t run_loop_embedded;
 
-#ifdef USE_POSIX_RUN_LOOP
-extern run_loop_t run_loop_posix;
-#endif
-
-#ifdef USE_COCOA_RUN_LOOP
-extern run_loop_t run_loop_cocoa;
-#endif
-
-#ifdef HAVE_WICED
-extern run_loop_t run_loop_wiced;
-#endif
-
 // assert run loop initialized
 static void run_loop_assert(void){
-#ifndef EMBEDDED
     if (!the_run_loop){
         log_error("ERROR: run_loop function called before run_loop_init!");
+#ifdef EMBEDDED
         exit(10);
-    }
+#else
+        while(1);
 #endif
+    }
 }
 
 
@@ -147,43 +137,16 @@ void run_loop_execute(void){
 }
 
 // init must be called before any other run_loop call
-void run_loop_init(RUN_LOOP_TYPE type){
-#ifndef EMBEDDED
+void run_loop_init(const run_loop_t * run_loop){
     if (the_run_loop){
         log_error("ERROR: run loop initialized twice!");
-        exit(10);
-    }
-#endif
-    switch (type) {
 #ifdef EMBEDDED
-#ifdef HAVE_WICED
-        case RUN_LOOP_WICED:
-            the_run_loop = &run_loop_wiced;
-            break;
+        while(1);
 #else
-        case RUN_LOOP_EMBEDDED:
-            the_run_loop = &run_loop_embedded;
-            break;
+        exit(10);
 #endif
-#endif            
-#ifdef USE_POSIX_RUN_LOOP
-        case RUN_LOOP_POSIX:
-            the_run_loop = &run_loop_posix;
-            break;
-#endif
-#ifdef USE_COCOA_RUN_LOOP
-        case RUN_LOOP_COCOA:
-            the_run_loop = &run_loop_cocoa;
-            break;
-#endif
-        default:
-
-#ifndef EMBEDDED
-            log_error("ERROR: invalid run loop type %u selected!", type);
-            exit(10);
-#endif
-            break;
     }
+    the_run_loop = run_loop;
     the_run_loop->init();
 }
 

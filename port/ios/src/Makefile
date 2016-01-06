@@ -17,10 +17,10 @@ VPATH += $(BTSTACK_ROOT)/src \
 
 LIBRARY_NAME = libBTstack
 libBTstack_FILES = \
+	bk_linked_list.c \
 	daemon_cmds.c \
 	hci_cmds.c \
 	hci_dump.c \
-	linked_list.c \
 	run_loop.c \
 	sdp_util.c \
 	utils.c \

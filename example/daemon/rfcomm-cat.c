@@ -54,6 +54,7 @@
 #include <sys/stat.h>
 
 #include "btstack_client.h"
+#include "run_loop_posix.h"
 #include "classic/sdp_util.h"
 
 // input from command line arguments
@@ -162,7 +163,7 @@ int main (int argc, const char * argv[]){
 		arg++;
 	}
 		
-	run_loop_init(RUN_LOOP_POSIX);
+	run_loop_init(run_loop_posix_get_instance());
 	int err = bt_open();
 	if (err) {
 		fprintf(stderr,"Failed to open connection to BTdaemon, err %d\n",err);

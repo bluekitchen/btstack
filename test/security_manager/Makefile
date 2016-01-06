@@ -15,15 +15,15 @@ COMMON = \
     utils.c			            \
     btstack_memory.c			\
     memory_pool.c			    \
-    linked_list.c			    \
+    bk_linked_list.c		    \
     run_loop.c					\
     run_loop_posix.c			\
     hci_cmds.c					\
     hci_dump.c					\
     sm.c     					\
     le_device_db_memory.c       \
-    rijndael.c 										\
-    mock.c
+    rijndael.c 					\
+    mock.c 				        \
 	
 COMMON_OBJ = $(COMMON:.c=.o)
 

@@ -49,6 +49,7 @@
 #include <unistd.h>
 
 #include "run_loop.h"
+#include "run_loop_embedded.h"
 #include "hci.h"
 #include "bt_control_cc256x.h"
 #include "btstack_memory.h"
@@ -419,7 +420,7 @@ int main(void)
 
 	// start with BTstack init - especially configure HCI Transport
     btstack_memory_init();
-    run_loop_init(RUN_LOOP_EMBEDDED);
+    run_loop_init(run_loop_embedded_get_instance());
     
     // init HCI
     hci_transport_t    * transport = hci_transport_h4_dma_instance();

@@ -13,7 +13,7 @@ VPATH += ${BTSTACK_ROOT}/src
 VPATH += ${BTSTACK_ROOT}/platform/posix/src
 
 COMMON = \
-    linked_list.c \
+    bk_linked_list.c \
 
 COMMON_OBJ = $(COMMON:.c=.o)
 

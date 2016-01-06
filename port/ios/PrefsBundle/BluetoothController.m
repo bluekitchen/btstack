@@ -30,6 +30,8 @@
  */
 
 #import "BluetoothController.h"
+#include "run_loop.h"
+#include "run_loop_cocoa.h"
 
 #pragma mark callback handler
 static void btstackStoppedCallback(CFNotificationCenterRef  center,
@@ -83,7 +85,7 @@ static BluetoothController* sharedInstance = nil;
                                     CFNotificationSuspensionBehaviorDrop); // suspension behavior
     
     // set up libBTstack
-    run_loop_init(RUN_LOOP_COCOA);
+    run_loop_init(run_loop_cocoa_get_instance());
     bt_register_packet_handler(bt_packet_handler);
     
     return self;

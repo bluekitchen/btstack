@@ -51,6 +51,7 @@
 #include <stdlib.h>
 
 static struct timeval init_tv;
+static const run_loop_t run_loop_cocoa;
 
 static void theCFRunLoopTimerCallBack (CFRunLoopTimerRef timer,void *info){
     timer_source_t * ts = (timer_source_t*)info;
@@ -173,7 +174,14 @@ void run_loop_cocoa_dump_timer(void){
 	return;
 }
 
-run_loop_t run_loop_cocoa = {
+/**
+ * Provide run_loop_embedded instance
+ */
+const run_loop_t * run_loop_cocoa_get_instance(void){
+    return &run_loop_cocoa;
+}
+
+static const run_loop_t run_loop_cocoa = {
     &run_loop_cocoa_init,
     &run_loop_cocoa_add_data_source,
     &run_loop_cocoa_remove_data_source,

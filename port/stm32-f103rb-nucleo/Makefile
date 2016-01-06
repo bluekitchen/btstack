@@ -18,7 +18,7 @@ VPATH += $(BTSTACK_ROOT)/chipset/cc256x
 CORE = \
 	main.c 					  \
     btstack_memory.c          \
-    linked_list.c	          \
+    bk_linked_list.c	      \
     memory_pool.c             \
     run_loop.c		          \
     run_loop_embedded.c

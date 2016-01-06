@@ -12,18 +12,18 @@ VPATH += ${BTSTACK_ROOT}/src/ble
 VPATH += ${BTSTACK_ROOT}/platform/posix/src
 
 COMMON = \
-    utils.c			            \
+    ad_parser.c                 \
+    att.c     					\
+    att_dispatch.c       	    \
+    bk_linked_list.c		    \
     btstack_memory.c			\
-    memory_pool.c			    \
-    linked_list.c			    \
+    gatt_client.c               \
     hci_cmds.c					\
     hci_dump.c     				\
-    att_dispatch.c       	    \
-    att.c     					\
-    ad_parser.c                 \
-    gatt_client.c               \
     le_device_db_memory.c       \
+    memory_pool.c			    \
     mock.c
+    utils.c			            \
 	
 
 COMMON_OBJ = $(COMMON:.c=.o)

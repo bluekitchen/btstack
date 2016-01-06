@@ -58,13 +58,6 @@
 extern "C" {
 #endif
 	
-typedef enum {
-	RUN_LOOP_POSIX = 1,
-	RUN_LOOP_COCOA,
-	RUN_LOOP_EMBEDDED,
-    RUN_LOOP_WICED,
-} RUN_LOOP_TYPE;
-
 typedef struct data_source {
     linked_item_t item;
     int  fd;                                 // <-- file descriptor to watch or 0
@@ -83,6 +76,15 @@ typedef struct timer {
 } timer_source_t;
 
 /* API_START */
+
+typedef struct run_loop run_loop_t;
+
+/**
+ * @brief Init main run loop. Must be called before any other run loop call.
+ *  
+ * Use run_loop_$(RUN_LOOP_TYPE)_get_instance() from run_loop_$(RUN_LOOP_TYPE).h to get instance 
+ */
+void run_loop_init(const run_loop_t * run_loop);
 
 /**
  * @brief Set timer based on current time in milliseconds.
@@ -105,11 +107,6 @@ int  run_loop_remove_timer(timer_source_t *timer);
  * @note 32-bit ms counter will overflow after approx. 52 days
  */
 uint32_t run_loop_get_time_ms(void);
-
-/**
- * @brief Init must be called before any other run_loop call. Use RUN_LOOP_EMBEDDED for embedded devices.
- */
-void run_loop_init(RUN_LOOP_TYPE type);
 
 /**
  * @brief Set data source callback.

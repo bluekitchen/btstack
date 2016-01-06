@@ -76,6 +76,8 @@
 #define TIMER_SUPPORT
 #endif
 
+static const run_loop_t run_loop_embedded;
+
 // the run loop
 static bk_linked_list_t data_sources;
 
@@ -243,7 +245,6 @@ void run_loop_embedded_trigger(void){
 }
 
 static void run_loop_embedded_init(void){
-
     data_sources = NULL;
 
 #ifdef TIMER_SUPPORT
@@ -257,7 +258,14 @@ static void run_loop_embedded_init(void){
 #endif
 }
 
-const run_loop_t run_loop_embedded = {
+/**
+ * Provide run_loop_embedded instance 
+ */
+const run_loop_t * run_loop_embedded_get_instance(void){
+    return &run_loop_embedded;
+}
+
+static const run_loop_t run_loop_embedded = {
     &run_loop_embedded_init,
     &run_loop_embedded_add_data_source,
     &run_loop_embedded_remove_data_source,

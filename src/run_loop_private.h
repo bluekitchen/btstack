@@ -58,7 +58,7 @@ extern "C" {
 void run_loop_timer_dump(void);
 
 // internal use only
-typedef struct {
+struct run_loop {
 	void (*init)(void);
 	void (*add_data_source)(data_source_t *dataSource);
 	int  (*remove_data_source)(data_source_t *dataSource);
@@ -68,7 +68,7 @@ typedef struct {
 	void (*execute)(void);
 	void (*dump_timer)(void);
 	uint32_t (*get_time_ms)(void);
-} run_loop_t;
+};
 
 #if defined __cplusplus
 }

@@ -50,6 +50,7 @@
 #include <sys/stat.h>
 
 #include "btstack_client.h"
+#include "run_loop_posix.h"
 #include "classic/sdp_util.h"
 
 #define NUM_ROWS 25
@@ -176,7 +177,7 @@ int main (int argc, const char * argv[]){
     create_test_data();
     printf("created test data: \n%s\n", test_data);
     
-	run_loop_init(RUN_LOOP_POSIX);
+	run_loop_init(run_loop_posix_get_instance());
 	int err = bt_open();
 	if (err) {
 		fprintf(stderr,"Failed to open connection to BTdaemon, err %d\n",err);

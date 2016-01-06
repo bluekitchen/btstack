@@ -364,7 +364,7 @@ int main(void){
     
 	/// GET STARTED ///
 	btstack_memory_init();
-    run_loop_init(RUN_LOOP_EMBEDDED);
+    run_loop_init(run_loop_embedded_get_instance());
 
     // init HCI
 	hci_transport_t    * transport = hci_transport_h4_dma_instance();

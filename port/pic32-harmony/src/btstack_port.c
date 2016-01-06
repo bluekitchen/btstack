@@ -219,7 +219,7 @@ void BTSTACK_Initialize ( void )
     printf("\n\nBTstack_Initialize()\n");
 
     btstack_memory_init();
-    run_loop_init(RUN_LOOP_EMBEDDED);
+    run_loop_init(run_loop_embedded_get_instance());
 
     hci_dump_open(NULL, HCI_DUMP_STDOUT);
 

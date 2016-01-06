@@ -55,6 +55,10 @@
 extern "C" {
 #endif
 	
+/**
+ * Provide run_loop_embedded instance 
+ */
+const run_loop_t * run_loop_embedded_get_instance(void);
 
 // hack to fix HCI timer handling
 #ifdef HAVE_TICK

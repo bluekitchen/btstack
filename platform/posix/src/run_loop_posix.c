@@ -42,10 +42,10 @@
  */
 
 #include "run_loop.h"
-
+#include "run_loop_private.h"
+#include "run_loop_posix.h"
 #include "bk_linked_list.h"
 #include "debug.h"
-#include "run_loop_private.h"
 
 #ifdef _WIN32
 #include "Winsock2.h"
@@ -263,7 +263,8 @@ static uint32_t run_loop_posix_get_time_ms(void){
          + (current_tv.tv_usec - init_tv.tv_usec) / 1000;
 }
 
-run_loop_t run_loop_posix = {
+
+static const run_loop_t run_loop_posix = {
     &run_loop_posix_init,
     &run_loop_posix_add_data_source,
     &run_loop_posix_remove_data_source,
@@ -274,3 +275,11 @@ run_loop_t run_loop_posix = {
     &run_loop_posix_dump_timer,
     &run_loop_posix_get_time_ms,
 };
+
+/**
+ * Provide run_loop_posix instance
+ */
+const run_loop_t * run_loop_posix_get_instance(void){
+    return &run_loop_posix;
+}
+
