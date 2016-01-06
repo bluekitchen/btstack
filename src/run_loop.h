@@ -54,10 +54,6 @@
 #include <sys/time.h>
 #endif
 
-#ifdef HAVE_WICED
-#include "wiced.h"
-#endif
-
 #if defined __cplusplus
 extern "C" {
 #endif
@@ -151,13 +147,6 @@ void run_loop_embedded_trigger(void);
  * @brief Execute run_loop once. It can be used to integrate BTstack's timer and data source processing into a foreign run loop (it is not recommended).
  */
 void run_loop_embedded_execute_once(void);
-#endif
-
-#ifdef HAVE_WICED
-/*
- * @brief Execute code on BTstack run loop. Can be used to control BTstack from a different thread
- */
-void run_loop_wiced_execute_code_on_main_thread(wiced_result_t (*fn)(void *arg), void * arg);
 #endif
 
 /* API_END */

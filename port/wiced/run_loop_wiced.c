@@ -50,7 +50,8 @@
 #include "debug.h"
 #include "run_loop.h"
 #include "run_loop_private.h"
-
+#include "run_loop_wiced.h"
+ 
 typedef struct function_call {
     wiced_result_t (*fn)(void * arg);
     void * arg;
