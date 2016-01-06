@@ -69,11 +69,6 @@ typedef struct {
 } hci_transport_t;
 
 typedef struct {
-    uint8_t type;
-}
-
-typedef struct {
-    uint8_t type;
     const char *device_name;
     uint32_t   baudrate_init; // initial baud rate
     uint32_t   baudrate_main; // = 0: same as initial baudrate
