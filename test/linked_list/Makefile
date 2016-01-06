@@ -19,7 +19,7 @@ COMMON_OBJ = $(COMMON:.c=.o)
 
 all: bk_linked_list_test
 
-bk_linked_list_test: ${COMMON_OBJ} bk_linked_list_test.c
+bk_linked_list_test: ${COMMON_OBJ} linked_list_test.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 test: all
