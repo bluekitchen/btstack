@@ -68,7 +68,6 @@ static uint16_t outgoing_rfcomm_payload_len = 0;
 
 static uint8_t rfcomm_reserved_buffer[1000];
 
-void * active_connection;
 hfp_connection_t * hfp_context;
 
 void (*registered_rfcomm_packet_handler)(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
@@ -348,7 +347,7 @@ void inject_hfp_command_to_hf(uint8_t * data, int len){
     add_new_lines_to_hfp_command(data, len);
     // printf("inject_hfp_command_to_hf to HF: ");
     // print_without_newlines(outgoing_rfcomm_payload,outgoing_rfcomm_payload_len);
-    (*registered_rfcomm_packet_handler)(active_connection, RFCOMM_DATA_PACKET, rfcomm_cid, (uint8_t *) &outgoing_rfcomm_payload[0], outgoing_rfcomm_payload_len);
+    (*registered_rfcomm_packet_handler)(RFCOMM_DATA_PACKET, rfcomm_cid, (uint8_t *) &outgoing_rfcomm_payload[0], outgoing_rfcomm_payload_len);
 
 }
 
@@ -356,7 +355,7 @@ void inject_hfp_command_to_ag(uint8_t * data, int len){
     if (data[0] == '+') return;
     
     add_new_lines_to_hfp_command(data, len);
-    (*registered_rfcomm_packet_handler)(active_connection, RFCOMM_DATA_PACKET, rfcomm_cid, (uint8_t *) &outgoing_rfcomm_payload[0], outgoing_rfcomm_payload_len);
+    (*registered_rfcomm_packet_handler)(RFCOMM_DATA_PACKET, rfcomm_cid, (uint8_t *) &outgoing_rfcomm_payload[0], outgoing_rfcomm_payload_len);
 }
 
 
