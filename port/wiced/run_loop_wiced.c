@@ -64,21 +64,6 @@ static wiced_queue_t run_loop_queue;
 // the run loop
 static bk_linked_list_t timers;
 
-/**
- * Add data_source to run_loop
- */
-static void run_loop_wiced_add_data_source(data_source_t *ds){
-    log_error("run_loop_add_data_source not supported in run_loop_wiced");
-}
-
-/**
- * Remove data_source from run loop
- */
-static int run_loop_wiced_remove_data_source(data_source_t *ds){
-    log_error("run_loop_add_data_source not supported in run_loop_wiced");
-    return 0;
-}
-
 static uint32_t run_loop_wiced_get_time_ms(void){
     wiced_time_t time;
     wiced_time_get_time(&time);
@@ -182,8 +167,8 @@ const run_loop_t * run_loop_wiced_get_instance(void){
 
 static const run_loop_t run_loop_wiced = {
     &run_loop_wiced_run_loop_init,
-    &run_loop_wiced_add_data_source,
-    &run_loop_wiced_remove_data_source,
+    NULL,
+    NULL,
     &run_loop_wiced_set_timer,
     &run_loop_wiced_add_timer,
     &run_loop_wiced_remove_timer,

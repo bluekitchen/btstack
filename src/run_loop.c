@@ -82,7 +82,11 @@ void run_loop_set_data_source_handler(data_source_t *ds, int (*process)(data_sou
  */
 void run_loop_add_data_source(data_source_t *ds){
     run_loop_assert();
-    the_run_loop->add_data_source(ds);
+    if (the_run_loop->add_data_source){
+        the_run_loop->add_data_source(ds);
+    } else {
+        log_error("run_loop_add_data_source not implemented");
+    }
 }
 
 /**
@@ -90,7 +94,12 @@ void run_loop_add_data_source(data_source_t *ds){
  */
 int run_loop_remove_data_source(data_source_t *ds){
     run_loop_assert();
-    return the_run_loop->remove_data_source(ds);
+    if (the_run_loop->remove_data_source){
+        return the_run_loop->remove_data_source(ds);
+    } else {
+        log_error("run_loop_remove_data_source not implemented");
+        return 0;
+    }
 }
 
 void run_loop_set_timer(timer_source_t *a, uint32_t timeout_in_ms){
