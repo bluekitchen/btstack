@@ -939,17 +939,6 @@ static int get_oob_data_callback(uint8_t addres_type, bd_addr_t addr, uint8_t * 
     return 1;
 }
 
-#if defined(HAVE_UART_CSR) || defined(HAVE_UART_CC256x)
-static hci_uart_config_t hci_uart_config = {
-    // "/dev/tty.usbserial-A40081HW",
-    "/dev/tty.usbserial-AD025KU2",
-    115200,
-    0, // 1000000,
-    1
-};
-#endif
-
-
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
     

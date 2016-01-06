@@ -14,6 +14,8 @@
 #include "CppUTest/TestHarness.h"
 #include "CppUTest/CommandLineTestRunner.h"
 
+#include "run_loop_posix.h"
+
 #include "hci_cmds.h"
 #include "utils.h"
 

@@ -342,6 +342,14 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 	}
 }
 
+static hci_transport_config_uart_t config = {
+    HCI_TRANSPORT_CONFIG_UART,
+    115200,
+    1000000,  // main baudrate
+    1,		  // flow control
+    NULL,
+};
+
 int main(void){
 
     // stop watchdog timer
@@ -369,9 +377,8 @@ int main(void){
     // init HCI
 	hci_transport_t    * transport = hci_transport_h4_dma_instance();
 	bt_control_t       * control   = bt_control_cc256x_instance();
-    hci_uart_config_t  * config    = hci_uart_config_cc256x_instance();
     remote_device_db_t * remote_db = (remote_device_db_t *) &remote_device_db_memory;
-	hci_init(transport, config, control, remote_db);
+	hci_init(transport, &config, control, remote_db);
 
     // use eHCILL
     bt_control_cc256x_enable_ehcill(1);

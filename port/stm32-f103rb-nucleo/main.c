@@ -403,11 +403,12 @@ static void bluetooth_power_cycle(void){
 
 // after HCI Reset, use 115200. Then increase baud reate to 468000.
 // (on nucleo board without external crystall, running at 8 Mhz, 1 mbps was not possible)
-static const hci_uart_config_t hci_uart_config_cc256x = {
-    NULL,
+static const hci_transport_config_uart_t config = {
+	HCI_TRANSPORT_CONFIG_UART,
     115200,
     460800,
-    0
+    1,
+    NULL
 };
 
 int main(void)
@@ -426,7 +427,7 @@ int main(void)
     hci_transport_t    * transport = hci_transport_h4_dma_instance();
     bt_control_t       * control   = bt_control_cc256x_instance();
     remote_device_db_t * remote_db = (remote_device_db_t *) &remote_device_db_memory;
-    hci_init(transport, (void*) &hci_uart_config_cc256x, control, remote_db);
+    hci_init(transport, (void*) &config, control, remote_db);
 
     // enable eHCILL
     bt_control_cc256x_enable_ehcill(1);

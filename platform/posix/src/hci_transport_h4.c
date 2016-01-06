@@ -63,7 +63,7 @@
 
 static int  h4_process(struct data_source *ds);
 static void dummy_handler(uint8_t packet_type, uint8_t *packet, uint16_t size); 
-static      hci_uart_config_t *hci_uart_config;
+static      hci_transport_config_uart_t *hci_transport_config_uart;
 
 typedef enum {
     H4_W4_PACKET_TYPE,
@@ -133,13 +133,13 @@ static int    h4_set_baudrate(uint32_t baudrate){
 }
 
 static int    h4_open(void *transport_config){
-    hci_uart_config = (hci_uart_config_t*) transport_config;
+    hci_transport_config_uart = (hci_transport_config_uart_t*) transport_config;
     struct termios toptions;
     int flags = O_RDWR | O_NOCTTY | O_NONBLOCK;
-    int fd = open(hci_uart_config->device_name, flags);
+    int fd = open(hci_transport_config_uart->device_name, flags);
     if (fd == -1)  {
         perror("init_serialport: Unable to open port ");
-        perror(hci_uart_config->device_name);
+        perror(hci_transport_config_uart->device_name);
         return -1;
     }
     
@@ -154,7 +154,7 @@ static int    h4_open(void *transport_config){
     toptions.c_cflag &= ~CSTOPB;
     toptions.c_cflag |= CS8;
 
-    if (hci_uart_config->flowcontrol) {
+    if (hci_transport_config_uart->flowcontrol) {
         // with flow control
         toptions.c_cflag |= CRTSCTS;
     } else {
@@ -183,7 +183,7 @@ static int    h4_open(void *transport_config){
     run_loop_add_data_source(hci_transport_h4->ds);
     
     // also set baudrate
-    if (h4_set_baudrate(hci_uart_config->baudrate_init) < 0){
+    if (h4_set_baudrate(hci_transport_config_uart->baudrate_init) < 0){
         return -1;
     }
 

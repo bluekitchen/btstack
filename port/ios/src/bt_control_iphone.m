@@ -448,13 +448,13 @@ static void iphone_write_configscript(int fd, int baudrate){
 }
 
 static int iphone_on (void *transport_config){
-    // hci_uart_config->baudrate_init == 0, if using native speed    
+    // hci_transport_config_uart->baudrate_init == 0, if using native speed    
     
     log_info("iphone_on: entered\n");
 
     int err = 0;
 
-    hci_uart_config_t * hci_uart_config = (hci_uart_config_t*) transport_config;
+    hci_transport_config_uart_t * hci_transport_config_uart = (hci_transport_config_uart_t*) transport_config;
 
     // get local-mac-addr and transport-speed from IORegistry 
 	ioregistry_get_info();
@@ -508,23 +508,23 @@ static int iphone_on (void *transport_config){
     }
     
     // quick test if Bluetooth UART can be opened - and try to start cleanly
-    int fd = open(hci_uart_config->device_name, O_RDWR | O_NOCTTY | O_NDELAY);
+    int fd = open(hci_transport_config_uart->device_name, O_RDWR | O_NOCTTY | O_NDELAY);
     if (fd > 0)  {
         // everything's fine
         close(fd);
     } else {
         // no way!
-        log_error( "bt_control.c:iphone_on(): Failed to open '%s', trying killall %s\n", hci_uart_config->device_name, bluetool);
+        log_error( "bt_control.c:iphone_on(): Failed to open '%s', trying killall %s\n", hci_transport_config_uart->device_name, bluetool);
         system("killall -9 BlueToolH4");
         system("killall -9 BlueTool");
         sleep(3); 
         
         // try again
-        fd = open(hci_uart_config->device_name, O_RDWR | O_NOCTTY | O_NDELAY);
+        fd = open(hci_transport_config_uart->device_name, O_RDWR | O_NOCTTY | O_NDELAY);
         if (fd > 0){
             close(fd);
         } else {
-            log_error( "bt_control.c:iphone_on(): Failed to open '%s' again, trying killall BTServer and killall %s\n", hci_uart_config->device_name, bluetool);
+            log_error( "bt_control.c:iphone_on(): Failed to open '%s' again, trying killall BTServer and killall %s\n", hci_transport_config_uart->device_name, bluetool);
             system("killall -9 BTServer");
             system("killall -9 BlueToolH4");
             system("killall -9 BlueTool");
@@ -547,10 +547,10 @@ static int iphone_on (void *transport_config){
     
     if (os4x) {
         // 4.x - send custom config
-        iphone_write_configscript(output, hci_uart_config->baudrate_init);
+        iphone_write_configscript(output, hci_transport_config_uart->baudrate_init);
     } else {
         // 3.x - modify original script on the fly
-        iphone_write_initscript(output, hci_uart_config->baudrate_init);
+        iphone_write_initscript(output, hci_transport_config_uart->baudrate_init);
     }
     
     // log output
@@ -577,8 +577,8 @@ static int iphone_on (void *transport_config){
     power_management_active = bt_control_iphone_power_management_supported();
 
     // if baud == 0, we're using system default: set in transport config
-    if (hci_uart_config->baudrate_init == 0) {
-        hci_uart_config->baudrate_init = transport_speed;
+    if (hci_transport_config_uart->baudrate_init == 0) {
+        hci_transport_config_uart->baudrate_init = transport_speed;
     }
 #endif
     

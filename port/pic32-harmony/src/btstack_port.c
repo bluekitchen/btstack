@@ -207,12 +207,14 @@ void hal_uart_dma_receive_block(uint8_t *data, uint16_t size){
 }
 
 ///
-static const hci_uart_config_t hci_uart_config_csr = {
-    NULL,
+static hci_transport_config_uart_t config = {
+    HCI_TRANSPORT_CONFIG_UART,
     115200,
-    0,  // 1000000,
-    0
+    0,  // main baudrate
+    1,  // flow control
+    NULL,
 };
+
 
 void BTSTACK_Initialize ( void )
 {
@@ -225,7 +227,7 @@ void BTSTACK_Initialize ( void )
 
     hci_transport_t * transport = hci_transport_h4_dma_instance();
     bt_control_t    * control   = bt_control_csr_instance();
-    hci_init(transport, (void*) &hci_uart_config_csr, control, NULL);
+    hci_init(transport, &config, control, NULL);
 
     // hci_power_control(HCI_POWER_ON);
     btstack_main(0, NULL);

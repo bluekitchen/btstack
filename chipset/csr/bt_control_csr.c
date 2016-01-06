@@ -74,7 +74,7 @@ static int bt_control_csr_on(void *config){
 }
 
 // set requested baud rate
-static void bt_control_csr_update_command(hci_uart_config_t *config, uint8_t *hci_cmd_buffer){
+static void bt_control_csr_update_command(hci_transport_config_uart_t *config, uint8_t *hci_cmd_buffer){
     uint16_t varid = READ_BT_16(hci_cmd_buffer, 10);
     if (varid != 0x7003) return;
     uint16_t key = READ_BT_16(hci_cmd_buffer, 14);
@@ -104,7 +104,7 @@ static int bt_control_csr_next_cmd(void *config, uint8_t *hci_cmd_buffer){
     memcpy(&hci_cmd_buffer[3], (uint8_t *) &init_script[init_script_offset], payload_len);
 
     // support for on-the-fly configuration updates
-    bt_control_csr_update_command((hci_uart_config_t*)config, hci_cmd_buffer);
+    bt_control_csr_update_command((hci_transport_config_uart_t*)config, hci_cmd_buffer);
 
     init_script_offset += payload_len;
 
@@ -134,21 +134,10 @@ static const bt_control_t bt_control_csr = {
     NULL,                               // set_bd_addr_cmd
 };
 
-static const hci_uart_config_t hci_uart_config_csr = {
-    NULL,
-    115200,
-    0,  // 1000000,
-    0
-};
-
 // MARK: public API
 void bt_control_csr_set_power(int16_t power_in_dB){
 }
 
 bt_control_t *bt_control_csr_instance(void){
     return (bt_control_t*) &bt_control_csr;
-}
-
-hci_uart_config_t *hci_uart_config_csr_instance(void){
-    return (hci_uart_config_t*) &hci_uart_config_csr;
 }

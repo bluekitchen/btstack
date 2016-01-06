@@ -50,6 +50,7 @@
 #include "btstack-config.h"
 
 #include "run_loop.h"
+#include "run_loop_posix.h"
 
 #include "debug.h"
 #include "btstack_memory.h"
@@ -61,9 +62,13 @@
 
 int btstack_main(int argc, const char * argv[]);
 
-static hci_uart_config_t hci_uart_config_cc256x = {
-    NULL,
+
+static hci_transport_config_uart_t config = {
+    HCI_TRANSPORT_CONFIG_UART,
     115200,
+    0,  // main baudrate
+    1,  // flow control
+    NULL,
 };
 
 static void sigint_handler(int param){
@@ -96,14 +101,14 @@ int main(int argc, const char * argv[]){
     hci_dump_open("/tmp/hci_dump.pklg", HCI_DUMP_PACKETLOGGER);
 
     // pick serial port
-    hci_uart_config_cc256x.device_name = "/dev/tty.usbserial-AD025KU2";
+    config.device_name = "/dev/tty.usbserial-AD025KU2";
 
     // init HCI
 	hci_transport_t    * transport = hci_transport_h4_instance();
 	bt_control_t       * control   = bt_control_cc256x_instance();
     remote_device_db_t * remote_db = (remote_device_db_t *) &remote_device_db_fs;
         
-	hci_init(transport, (void*) &hci_uart_config_cc256x, control, remote_db);
+	hci_init(transport, &config, control, remote_db);
     
     // handle CTRL-c
     signal(SIGINT, sigint_handler);

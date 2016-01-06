@@ -22,7 +22,7 @@ COMMON = \
     hci_dump.c     				\
     le_device_db_memory.c       \
     memory_pool.c			    \
-    mock.c
+    mock.c                      \
     utils.c			            \
 	
 

@@ -84,7 +84,7 @@
 
 static int  h4_process(struct data_source *ds);
 static void dummy_handler(uint8_t packet_type, uint8_t *packet, uint16_t size); 
-static      hci_uart_config_t *hci_uart_config;
+static      hci_transport_config_uart_t *hci_transport_config_uart;
 
 static void h4_enforce_wake_on(void);
 static void h4_enforce_wake_off(void);
@@ -134,7 +134,7 @@ static uint8_t hci_packet[1+HCI_PACKET_BUFFER_SIZE]; // packet type + max(acl he
 
 static int h4_open(void *transport_config)
 {
-    hci_uart_config = (hci_uart_config_t *) transport_config;
+    hci_transport_config_uart = (hci_transport_config_uart_t *) transport_config;
 
     int fd = socket(PF_NETGRAPH, SOCK_STREAM, NG_CONTROL);
     log_info("h4_open: open socket(%u, %u, %u) %d", PF_NETGRAPH, SOCK_STREAM, NG_CONTROL, fd);
@@ -188,7 +188,7 @@ static int h4_open(void *transport_config)
 
     // make raw and set speed
     cfmakeraw(&toptions);
-    speed_t brate = (speed_t) hci_uart_config->baudrate_init;
+    speed_t brate = (speed_t) hci_transport_config_uart->baudrate_init;
     cfsetspeed(&toptions, brate);    
     toptions.c_iflag |=  IGNPAR;
     toptions.c_cflag = 0x00038b00;

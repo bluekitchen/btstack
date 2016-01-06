@@ -57,8 +57,6 @@ void bt_control_cc256x_set_power(int16_t power_in_dB);
 void bt_control_cc256x_enable_ehcill(int on);
 int bt_control_cc256x_ehcill_enabled(void);
 
-hci_uart_config_t *hci_uart_config_cc256x_instance(void);
-
 #if defined __cplusplus
 }
 #endif

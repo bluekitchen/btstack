@@ -724,9 +724,6 @@ void BTstackManager::setPublicBdAddr(bd_addr_t addr){
     memcpy(public_bd_addr, addr ,6);
 }
 
-// static hci_uart_config_t config;
-
-
 void bluetooth_hardware_error(){
     printf("Bluetooth Hardware Error event. Restarting...\n\n\n");
 #ifdef __AVR__

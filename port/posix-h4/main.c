@@ -54,13 +54,17 @@
 #include "hci.h"
 #include "hci_dump.h"
 #include "run_loop.h"
+#include "run_loop_posix.h"
 #include "stdin_support.h"
 
 int btstack_main(int argc, const char * argv[]);
 
-static hci_uart_config_t hci_uart_config_generic = {
-    NULL,
+static hci_transport_config_uart_t config = {
+    HCI_TRANSPORT_CONFIG_UART,
     115200,
+    0,  // main baudrate
+    1,  // flow control
+    NULL,
 };
 
 static void sigint_handler(int param){
@@ -93,13 +97,13 @@ int main(int argc, const char * argv[]){
     hci_dump_open("/tmp/hci_dump.pklg", HCI_DUMP_PACKETLOGGER);
 
     // pick serial port
-    hci_uart_config_generic.device_name = "/dev/tty.usbmodem1413";
+    config.device_name = "/dev/tty.usbmodem1413";
 
     // init HCI
 	hci_transport_t    * transport = hci_transport_h4_instance();
     remote_device_db_t * remote_db = (remote_device_db_t *) &remote_device_db_fs;
         
-	hci_init(transport, (void*) &hci_uart_config_generic, NULL, remote_db);
+	hci_init(transport, (void*) &config, NULL, remote_db);
     
     // handle CTRL-c
     signal(SIGINT, sigint_handler);

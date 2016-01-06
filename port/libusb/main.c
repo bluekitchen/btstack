@@ -92,7 +92,7 @@ int main(int argc, const char * argv[]){
 
     // init HCI
 	hci_transport_t    * transport = hci_transport_usb_instance();
-    hci_uart_config_t * config = NULL;
+    void               * config = NULL;
 	bt_control_t       * control   = NULL;
     remote_device_db_t * remote_db = (remote_device_db_t *) &remote_device_db_fs;
         

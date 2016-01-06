@@ -279,13 +279,6 @@ static const bt_control_t bt_control_cc256x = {
     NULL,                                  // set_bd_addr_cmd
 };
 
-static const hci_uart_config_t hci_uart_config_cc256x = {
-    NULL,
-    115200,
-    1000000,
-    0
-};
-
 // MARK: public API
 
 void bt_control_cc256x_enable_ehcill(int on){
@@ -301,8 +294,4 @@ void bt_control_cc256x_set_power(int16_t power_in_dB){
 
 bt_control_t *bt_control_cc256x_instance(void){
     return (bt_control_t*) &bt_control_cc256x;
-}
-
-hci_uart_config_t *hci_uart_config_cc256x_instance(void){
-    return (hci_uart_config_t*) &hci_uart_config_cc256x;
 }

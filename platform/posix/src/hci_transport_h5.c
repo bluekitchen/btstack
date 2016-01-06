@@ -81,18 +81,18 @@ static hci_transport_h5_t * hci_transport_h5 = NULL;
 
 static int  h5_process(struct data_source *ds);
 static void dummy_handler(uint8_t packet_type, uint8_t *packet, int size); 
-static      hci_uart_config_t *hci_uart_config;
+static      hci_transport_config_uart_t *hci_transport_config_uart;
 
 static  void (*packet_handler)(uint8_t packet_type, uint8_t *packet, int size) = dummy_handler;
 
 // prototypes
 static int    h5_open(void *transport_config){
-    hci_uart_config = (hci_uart_config_t*) transport_config;
+    hci_transport_config_uart = (hci_transport_config_uart_t*) transport_config;
     struct termios toptions;
-    int fd = open(hci_uart_config->device_name, O_RDWR | O_NOCTTY | O_NDELAY);
+    int fd = open(hci_transport_config_uart->device_name, O_RDWR | O_NOCTTY | O_NDELAY);
     if (fd == -1)  {
         perror("init_serialport: Unable to open port ");
-        perror(hci_uart_config->device_name);
+        perror(hci_transport_config_uart->device_name);
         return -1;
     }
     
@@ -100,8 +100,8 @@ static int    h5_open(void *transport_config){
         perror("init_serialport: Couldn't get term attributes");
         return -1;
     }
-    speed_t brate = hci_uart_config->baudrate; // let you override switch below if needed
-    switch(hci_uart_config->baudrate) {
+    speed_t brate = hci_transport_config_uart->baudrate; // let you override switch below if needed
+    switch(hci_transport_config_uart->baudrate) {
         case 57600:  brate=B57600;  break;
         case 115200: brate=B115200; break;
 #ifdef B230400
@@ -123,7 +123,7 @@ static int    h5_open(void *transport_config){
     toptions.c_cflag &= ~CSIZE;
     toptions.c_cflag |= CS8;
 
-    if (hci_uart_config->flowcontrol) {
+    if (hci_transport_config_uart->flowcontrol) {
         // with flow control
         toptions.c_cflag |= CRTSCTS;
     } else {

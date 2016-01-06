@@ -173,7 +173,7 @@ static client_state_t * client_for_connection(connection_t *connection);
 
 // MARK: globals
 static hci_transport_t * transport;
-static hci_uart_config_t config;
+static hci_transport_config_uart_t hci_transport_config_uart;
 static timer_source_t timeout;
 static uint8_t timeout_active = 0;
 static int power_management_sleep = 0;
@@ -1943,16 +1943,18 @@ int main (int argc,  char * const * argv){
 #endif
 
     bt_control_t * control = NULL;
-    
+    void * config;
+
 #ifdef HAVE_TRANSPORT_H4
-    config.device_name   = UART_DEVICE;
-    config.baudrate_init = UART_SPEED;
-    config.baudrate_main = 0;
-    config.flowcontrol = 1;
+    hci_transport_config_uart.type = HCI_TRANSPORT_CONFIG_UART;
+    hci_transport_config_uart.baudrate_init = UART_SPEED;
+    hci_transport_config_uart.baudrate_main = 0;
+    hci_transport_config_uart.flowcontrol = 1;
+    hci_transport_config_uart.device_name   = UART_DEVICE;
 #if defined(USE_BLUETOOL) && defined(USE_POWERMANAGEMENT)
     if (bt_control_iphone_power_management_supported()){
-        // use default (max) UART baudrate over netraph interface
-        config.baudrate_init = 0;
+        // use default (max) UART baudrate over netgraph interface
+        hci_transport_config_uart.baudrate_init = 0;
         transport = hci_transport_h4_iphone_instance();
     } else {
         transport = hci_transport_h4_instance();
@@ -1960,6 +1962,7 @@ int main (int argc,  char * const * argv){
 #else
     transport = hci_transport_h4_instance();
 #endif
+    config = &hci_transport_config_uart;
 #endif
 
 #ifdef HAVE_TRANSPORT_USB
@@ -2007,7 +2010,7 @@ int main (int argc,  char * const * argv){
     log_info("version %s, build %s", BTSTACK_VERSION, BTSTACK_DATE);
 
     // init HCI
-    hci_init(transport, &config, control, remote_device_db);
+    hci_init(transport, config, control, remote_device_db);
 
 #ifdef USE_BLUETOOL
     // iPhone doesn't use SSP yet as there's no UI for it yet and auto accept is not an option

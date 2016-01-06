@@ -48,11 +48,12 @@
 // see generated_mac_address.txt - "macaddr=02:0A:F7:3d:76:be"
 static const char * wifi_mac_address = NVRAM_GENERATED_MAC_ADDRESS;
 
-static const hci_uart_config_t hci_uart_config = {
-    NULL,
+static const hci_transport_config_uart_t hci_transport_config_uart = {
+    HCI_TRANSPORT_CONFIG_UART,
     115200,
     3000000,
-    0
+    1,
+    NULL,
 };
 
 extern int btstack_main(void);
@@ -94,7 +95,7 @@ void application_start(void){
     hci_transport_t    * transport = hci_transport_h4_wiced_instance();
     bt_control_t       * control   = bt_control_bcm_instance();
     remote_device_db_t * remote_db = (remote_device_db_t *) &remote_device_db_memory;
-    hci_init(transport, (void*) &hci_uart_config, control, remote_db);
+    hci_init(transport, (void*) &hci_transport_config_uart, control, remote_db);
 
     // use WIFI Mac address + 1 for Bluetooth
     bd_addr_t dummy = { 1,2,3,4,5,6};

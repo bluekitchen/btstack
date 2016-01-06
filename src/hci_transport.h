@@ -68,12 +68,22 @@ typedef struct {
     int    (*can_send_packet_now)(uint8_t packet_type);
 } hci_transport_t;
 
+typedef enum {
+    HCI_TRANSPORT_CONFIG_UART,
+    HCI_TRANSPORT_CONFIG_USB
+} hci_transport_config_type_t;
+
 typedef struct {
-    const char *device_name;
+    hci_transport_config_type_t type;
+} hci_transport_config_t;
+
+typedef struct {
+    hci_transport_config_type_t type; // == HCI_TRANSPORT_CONFIG_UART
     uint32_t   baudrate_init; // initial baud rate
     uint32_t   baudrate_main; // = 0: same as initial baudrate
-    int   flowcontrol; // 
-} hci_uart_config_t;
+    int        flowcontrol;   // 
+    const char *device_name;
+} hci_transport_config_uart_t;
 
 
 // inline various hci_transport_X.h files
