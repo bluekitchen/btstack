@@ -6,6 +6,7 @@
 #include "system_config.h"
 #include "bt_control_csr.h"
 #include "run_loop.h"
+#include "run_loop_embedded.h"
 #include "hci_dump.h"
 #include "hci.h"
 #include "hci_transport.h"
@@ -18,7 +19,6 @@
 #include "driver/tmr/drv_tmr.h"
 #include "peripheral/usart/plib_usart.h"
 #include "system/ports/sys_ports.h"
-
 
 // 
 int btstack_main(int argc, const char * argv[]);

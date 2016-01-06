@@ -55,6 +55,7 @@
 #include "hci.h"
 #include "hci_transport.h"
 #include "run_loop.h"
+#include "run_loop_embedded.h"
 
 #include "hal_uart_dma.h"
 

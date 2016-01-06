@@ -36,96 +36,48 @@
  */
 
 /*
- *  run_loop.h
- *
- *  Created by Matthias Ringwald on 6/6/09.
+ *  run_loop_embedded.h
+ *  Functionality special to the embedded run loop
  */
 
-#ifndef __RUN_LOOP_H
-#define __RUN_LOOP_H
+#ifndef __RUN_LOOP_EMBEDDED_H
+#define __RUN_LOOP_EMBEDDED_H
 
 #include "btstack-config.h"
-
 #include "bk_linked_list.h"
-
-#include <stdint.h>
 
 #ifdef HAVE_TIME
 #include <sys/time.h>
 #endif
+#include <stdint.h>
 
 #if defined __cplusplus
 extern "C" {
 #endif
 	
-typedef enum {
-	RUN_LOOP_POSIX = 1,
-	RUN_LOOP_COCOA,
-	RUN_LOOP_EMBEDDED,
-    RUN_LOOP_WICED,
-} RUN_LOOP_TYPE;
 
-typedef struct data_source {
-    linked_item_t item;
-    int  fd;                                 // <-- file descriptor to watch or 0
-    int  (*process)(struct data_source *ds); // <-- do processing
-} data_source_t;
-
-typedef struct timer {
-    linked_item_t item; 
-#ifdef HAVE_TIME
-    struct timeval timeout;                  // <-- next timeout
+// hack to fix HCI timer handling
+#ifdef HAVE_TICK
+/**
+ * @brief Sets how many milliseconds has one tick.
+ */
+uint32_t run_loop_embedded_ticks_for_ms(uint32_t time_in_ms);
+/**
+ * @brief Queries the current time in ticks.
+ */
+uint32_t run_loop_embedded_get_ticks(void);
 #endif
-#if defined(HAVE_TICK) || defined(HAVE_TIME_MS)
-    uint32_t timeout;                       // timeout in system ticks (HAVE_TICK) or millis (HAVE_TIME_MS)
+
+#ifdef EMBEDDED
+/**
+ * @brief Sets an internal flag that is checked in the critical section just before entering sleep mode. Has to be called by the interrupt handler of a data source to signal the run loop that a new data is available.
+ */
+void run_loop_embedded_trigger(void);    
+/**
+ * @brief Execute run_loop once. It can be used to integrate BTstack's timer and data source processing into a foreign run loop (it is not recommended).
+ */
+void run_loop_embedded_execute_once(void);
 #endif
-    void  (*process)(struct timer *ts);      // <-- do processing
-} timer_source_t;
-
-/* API_START */
-
-/**
- * @brief Set timer based on current time in milliseconds.
- */
-void run_loop_set_timer(timer_source_t *a, uint32_t timeout_in_ms);
-
-/**
- * @brief Set callback that will be executed when timer expires.
- */
-void run_loop_set_timer_handler(timer_source_t *ts, void (*process)(timer_source_t *_ts));
-
-/**
- * @brief Add/Remove timer source.
- */
-void run_loop_add_timer(timer_source_t *timer); 
-int  run_loop_remove_timer(timer_source_t *timer);
-
-/**
- * @brief Get current time in ms
- * @note 32-bit ms counter will overflow after approx. 52 days
- */
-uint32_t run_loop_get_time_ms(void);
-
-/**
- * @brief Init must be called before any other run_loop call. Use RUN_LOOP_EMBEDDED for embedded devices.
- */
-void run_loop_init(RUN_LOOP_TYPE type);
-
-/**
- * @brief Set data source callback.
- */
-void run_loop_set_data_source_handler(data_source_t *ds, int (*process)(data_source_t *_ds));
-
-/**
- * @brief Add/Remove data source.
- */
-void run_loop_add_data_source(data_source_t *dataSource);
-int  run_loop_remove_data_source(data_source_t *dataSource);
-
-/**
- * @brief Execute configured run loop. This function does not return.
- */
-void run_loop_execute(void);
 
 /* API_END */
 
@@ -133,4 +85,4 @@ void run_loop_execute(void);
 }
 #endif
 
-#endif // __RUN_LOOP_H
+#endif // __RUN_LOOP_EMBEDDED_H

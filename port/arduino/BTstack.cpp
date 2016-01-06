@@ -21,6 +21,7 @@
 #include "hci_cmds.h"
 #include "utils.h"
 #include "run_loop.h"
+#include "run_loop_embedded.h"
 #include "classic/sdp_util.h"
 
 #include "bt_control_em9301.h"
@@ -40,7 +41,6 @@
 #define PIN_LED 13
 
 // prototypes
-extern "C" void run_loop_embedded_execute_once(void);
 extern "C" void hal_uart_dma_process(void);
 
 enum {
