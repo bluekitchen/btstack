@@ -42,8 +42,8 @@
  */
 
 #include "run_loop.h"
-#include "bk_linked_list.h"
 
+#include "bk_linked_list.h"
 #include "debug.h"
 #include "run_loop_private.h"
 
@@ -52,67 +52,67 @@
 #else
 #include <sys/select.h>
 #endif
-
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 
-static void posix_dump_timer(void);
-static int posix_timeval_compare(struct timeval *a, struct timeval *b);
-static int posix_timer_compare(timer_source_t *a, timer_source_t *b);
+static void run_loop_posix_dump_timer(void);
+static int  run_loop_posix_timeval_compare(struct timeval *a, struct timeval *b);
+static int  run_loop_posix_timer_compare(timer_source_t *a, timer_source_t *b);
 
 // the run loop
 static bk_linked_list_t data_sources;
 static int data_sources_modified;
 static bk_linked_list_t timers;
 static struct timeval init_tv;
+
 /**
  * Add data_source to run_loop
  */
-static void posix_add_data_source(data_source_t *ds){
+static void run_loop_posix_add_data_source(data_source_t *ds){
     data_sources_modified = 1;
-    // log_info("posix_add_data_source %x with fd %u\n", (int) ds, ds->fd);
+    // log_info("run_loop_posix_add_data_source %x with fd %u\n", (int) ds, ds->fd);
     linked_list_add(&data_sources, (linked_item_t *) ds);
 }
 
 /**
  * Remove data_source from run loop
  */
-static int posix_remove_data_source(data_source_t *ds){
+static int run_loop_posix_remove_data_source(data_source_t *ds){
     data_sources_modified = 1;
-    // log_info("posix_remove_data_source %x\n", (int) ds);
+    // log_info("run_loop_posix_remove_data_source %x\n", (int) ds);
     return linked_list_remove(&data_sources, (linked_item_t *) ds);
 }
 
 /**
  * Add timer to run_loop (keep list sorted)
  */
-static void posix_add_timer(timer_source_t *ts){
+static void run_loop_posix_add_timer(timer_source_t *ts){
     linked_item_t *it;
     for (it = (linked_item_t *) &timers; it->next ; it = it->next){
         if ((timer_source_t *) it->next == ts){
             log_error( "run_loop_timer_add error: timer to add already in list!");
             return;
         }
-        if (posix_timer_compare( (timer_source_t *) it->next, ts) > 0) {
+        if (run_loop_posix_timer_compare( (timer_source_t *) it->next, ts) > 0) {
             break;
         }
     }
     ts->item.next = it->next;
     it->next = (linked_item_t *) ts;
     // log_info("Added timer %x at %u\n", (int) ts, (unsigned int) ts->timeout.tv_sec);
-    // posix_dump_timer();
+    // run_loop_posix_dump_timer();
 }
 
 /**
  * Remove timer from run loop
  */
-static int posix_remove_timer(timer_source_t *ts){
+static int run_loop_posix_remove_timer(timer_source_t *ts){
     // log_info("Removed timer %x at %u\n", (int) ts, (unsigned int) ts->timeout.tv_sec);
-    // posix_dump_timer();
+    // run_loop_posix_dump_timer();
     return linked_list_remove(&timers, (linked_item_t *) ts);
 }
 
-static void posix_dump_timer(void){
+static void run_loop_posix_dump_timer(void){
     linked_item_t *it;
     int i = 0;
     for (it = (linked_item_t *) timers; it ; it = it->next){
@@ -124,7 +124,7 @@ static void posix_dump_timer(void){
 /**
  * Execute run_loop
  */
-static void posix_execute(void) {
+static void run_loop_posix_execute(void) {
     fd_set descriptors;
     
     timer_source_t       *ts;
@@ -173,18 +173,18 @@ static void posix_execute(void) {
         // process data sources very carefully
         // bt_control.close() triggered from a client can remove a different data source
         
-        // log_info("posix_execute: before ds check\n");
+        // log_info("run_loop_posix_execute: before ds check\n");
         data_sources_modified = 0;
         linked_list_iterator_init(&it, &data_sources);
         while (linked_list_iterator_has_next(&it) && !data_sources_modified){
             data_source_t *ds = (data_source_t*) linked_list_iterator_next(&it);
-            // log_info("posix_execute: check %x with fd %u\n", (int) ds, ds->fd);
+            // log_info("run_loop_posix_execute: check %x with fd %u\n", (int) ds, ds->fd);
             if (FD_ISSET(ds->fd, &descriptors)) {
-                // log_info("posix_execute: process %x with fd %u\n", (int) ds, ds->fd);
+                // log_info("run_loop_posix_execute: process %x with fd %u\n", (int) ds, ds->fd);
                 ds->process(ds);
             }
         }
-        // log_info("posix_execute: after ds check\n");
+        // log_info("run_loop_posix_execute: after ds check\n");
         
         // process timers
         // pre: 0 <= tv_usec < 1000000
@@ -193,7 +193,7 @@ static void posix_execute(void) {
             ts = (timer_source_t *) timers;
             if (ts->timeout.tv_sec  > current_tv.tv_sec) break;
             if (ts->timeout.tv_sec == current_tv.tv_sec && ts->timeout.tv_usec > current_tv.tv_usec) break;
-            // log_info("posix_execute: process times %x\n", (int) ts);
+            // log_info("run_loop_posix_execute: process times %x\n", (int) ts);
             
             // remove timer before processing it to allow handler to re-register with run loop
             run_loop_remove_timer(ts);
@@ -203,7 +203,7 @@ static void posix_execute(void) {
 }
 
 // set timer
-static void posix_set_timer(timer_source_t *a, uint32_t timeout_in_ms){
+static void run_loop_posix_set_timer(timer_source_t *a, uint32_t timeout_in_ms){
     gettimeofday(&a->timeout, NULL);
     a->timeout.tv_sec  +=  timeout_in_ms / 1000;
     a->timeout.tv_usec += (timeout_in_ms % 1000) * 1000;
@@ -215,7 +215,7 @@ static void posix_set_timer(timer_source_t *a, uint32_t timeout_in_ms){
 
 // compare timers - NULL is assumed to be before the Big Bang
 // pre: 0 <= tv_usec < 1000000
-static int posix_timeval_compare(struct timeval *a, struct timeval *b){
+static int run_loop_posix_timeval_compare(struct timeval *a, struct timeval *b){
     if (!a && !b) return 0;
     if (!a) return -1;
     if (!b) return 1;
@@ -240,14 +240,14 @@ static int posix_timeval_compare(struct timeval *a, struct timeval *b){
 
 // compare timers - NULL is assumed to be before the Big Bang
 // pre: 0 <= tv_usec < 1000000
-static int posix_timer_compare(timer_source_t *a, timer_source_t *b){
+static int run_loop_posix_timer_compare(timer_source_t *a, timer_source_t *b){
     if (!a && !b) return 0;
     if (!a) return -1;
     if (!b) return 1;
-    return posix_timeval_compare(&a->timeout, &b->timeout);
+    return run_loop_posix_timeval_compare(&a->timeout, &b->timeout);
 }
 
-static void posix_init(void){
+static void run_loop_posix_init(void){
     data_sources = NULL;
     timers = NULL;
     gettimeofday(&init_tv, NULL);
@@ -256,7 +256,7 @@ static void posix_init(void){
 /**
  * @brief Queries the current time in ms since start
  */
-static uint32_t posix_get_time_ms(void){
+static uint32_t run_loop_posix_get_time_ms(void){
     struct timeval current_tv;
     gettimeofday(&current_tv, NULL);
     return (current_tv.tv_sec  - init_tv.tv_sec)  * 1000
@@ -264,13 +264,13 @@ static uint32_t posix_get_time_ms(void){
 }
 
 run_loop_t run_loop_posix = {
-    &posix_init,
-    &posix_add_data_source,
-    &posix_remove_data_source,
-    &posix_set_timer,
-    &posix_add_timer,
-    &posix_remove_timer,
-    &posix_execute,
-    &posix_dump_timer,
-    &posix_get_time_ms,
+    &run_loop_posix_init,
+    &run_loop_posix_add_data_source,
+    &run_loop_posix_remove_data_source,
+    &run_loop_posix_set_timer,
+    &run_loop_posix_add_timer,
+    &run_loop_posix_remove_timer,
+    &run_loop_posix_execute,
+    &run_loop_posix_dump_timer,
+    &run_loop_posix_get_time_ms,
 };
