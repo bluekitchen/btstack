@@ -42,16 +42,17 @@
  */
 
 #include "btstack-config.h"
-
-#include "wiced.h"
-#include "platform_bluetooth.h"
-
-#include <stdio.h>
-#include <string.h>
+#include "run_loop_wiced.h"
 
 #include "debug.h"
 #include "hci.h"
 #include "hci_transport.h"
+#include "platform_bluetooth.h"
+
+#include "wiced.h"
+
+#include <stdio.h>
+#include <string.h>
 
 // priority higher than WIFI to make sure RTS is set
 #define WICED_BT_UART_THREAD_PRIORITY        (WICED_NETWORK_WORKER_PRIORITY - 2)
