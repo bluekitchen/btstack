@@ -44,11 +44,12 @@
  */
 // *****************************************************************************
 
+#include <inttypes.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
+ 
 #include "btstack-config.h"
 
 #include "run_loop.h"
@@ -204,7 +205,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 
                 case HCI_EVENT_USER_CONFIRMATION_REQUEST:
                     // ssp: inform about user confirmation request
-                    printf("SSP User Confirmation Request with numeric value '%06u'\n", READ_BT_32(packet, 8));
+                    printf("SSP User Confirmation Request with numeric value '%06"PRIu32"'\n", READ_BT_32(packet, 8));
                     printf("SSP User Confirmation Auto accept\n");
                     break;
 
