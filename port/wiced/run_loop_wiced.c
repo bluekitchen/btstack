@@ -64,33 +64,33 @@ static bk_linked_list_t timers;
 /**
  * Add data_source to run_loop
  */
-static void wiced_add_data_source(data_source_t *ds){
+static void run_loop_wiced_add_data_source(data_source_t *ds){
     log_error("run_loop_add_data_source not supported in run_loop_wiced");
 }
 
 /**
  * Remove data_source from run loop
  */
-static int wiced_remove_data_source(data_source_t *ds){
+static int run_loop_wiced_remove_data_source(data_source_t *ds){
     log_error("run_loop_add_data_source not supported in run_loop_wiced");
     return 0;
 }
 
-static uint32_t wiced_get_time_ms(void){
+static uint32_t run_loop_wiced_get_time_ms(void){
     wiced_time_t time;
     wiced_time_get_time(&time);
     return time;
 }
 
 // set timer
-static void wiced_set_timer(timer_source_t *ts, uint32_t timeout_in_ms){
-    ts->timeout = wiced_get_time_ms() + timeout_in_ms + 1;
+static void run_loop_wiced_set_timer(timer_source_t *ts, uint32_t timeout_in_ms){
+    ts->timeout = run_loop_wiced_get_time_ms() + timeout_in_ms + 1;
 }
 
 /**
  * Add timer to run_loop (keep list sorted)
  */
-static void wiced_add_timer(timer_source_t *ts){
+static void run_loop_wiced_add_timer(timer_source_t *ts){
     linked_item_t *it;
     for (it = (linked_item_t *) &timers; it->next ; it = it->next){
         // don't add timer that's already in there
@@ -109,11 +109,11 @@ static void wiced_add_timer(timer_source_t *ts){
 /**
  * Remove timer from run loop
  */
-static int wiced_remove_timer(timer_source_t *ts){
+static int run_loop_wiced_remove_timer(timer_source_t *ts){
     return linked_list_remove(&timers, (linked_item_t *) ts);
 }
 
-static void wiced_dump_timer(void){
+static void run_loop_wiced_dump_timer(void){
 #ifdef ENABLE_LOG_INFO 
     linked_item_t *it;
     int i = 0;
@@ -125,7 +125,7 @@ static void wiced_dump_timer(void){
 }
 
 // schedules execution similar to wiced_rtos_send_asynchronous_event for worker threads
-void wiced_execute_code_on_run_loop(wiced_result_t (*fn)(void *arg), void * arg){
+void run_loop_wiced_execute_code_on_main_thread(wiced_result_t (*fn)(void *arg), void * arg){
     function_call_t message;
     message.fn  = fn;
     message.arg = arg;
@@ -135,13 +135,13 @@ void wiced_execute_code_on_run_loop(wiced_result_t (*fn)(void *arg), void * arg)
 /**
  * Execute run_loop
  */
-static void wiced_execute(void) {
+static void run_loop_wiced_execute(void) {
     while (1) {
         // get next timeout
         uint32_t timeout_ms = WICED_NEVER_TIMEOUT;
         if (timers) {
             timer_source_t * ts = (timer_source_t *) timers;
-            uint32_t now = wiced_get_time_ms();
+            uint32_t now = run_loop_wiced_get_time_ms();
             if (ts->timeout < now){
                 // remove timer before processing it to allow handler to re-register with run loop
                 run_loop_remove_timer(ts);
@@ -163,7 +163,7 @@ static void wiced_execute(void) {
     }
 }
 
-static void wiced_run_loop_init(void){
+static void run_loop_wiced_run_loop_init(void){
     timers = NULL;
 
     // queue to receive events: up to 2 calls from transport, up to 3 for app
@@ -171,13 +171,13 @@ static void wiced_run_loop_init(void){
 }
 
 const run_loop_t run_loop_wiced = {
-    &wiced_run_loop_init,
-    &wiced_add_data_source,
-    &wiced_remove_data_source,
-    &wiced_set_timer,
-    &wiced_add_timer,
-    &wiced_remove_timer,
-    &wiced_execute,
-    &wiced_dump_timer,
-    &wiced_get_time_ms,
+    &run_loop_wiced_run_loop_init,
+    &run_loop_wiced_add_data_source,
+    &run_loop_wiced_remove_data_source,
+    &run_loop_wiced_set_timer,
+    &run_loop_wiced_add_timer,
+    &run_loop_wiced_remove_timer,
+    &run_loop_wiced_execute,
+    &run_loop_wiced_dump_timer,
+    &run_loop_wiced_get_time_ms,
 };

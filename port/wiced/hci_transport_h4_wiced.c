@@ -156,7 +156,7 @@ static wiced_result_t h4_rx_worker_receive_packet(void * arg){
 #endif
 
         // deliver packet on main thread
-        wiced_execute_code_on_run_loop(&h4_main_deliver_packet, NULL);
+        run_loop_wiced_execute_code_on_main_thread(&h4_main_deliver_packet, NULL);
         return WICED_SUCCESS;
     }
 }
@@ -173,7 +173,7 @@ static wiced_result_t h4_tx_worker_send_packet(void * arg){
     // blocking send
     platform_uart_transmit_bytes(wiced_bt_uart_driver, tx_worker_data_buffer, tx_worker_data_size);
     // let stack know
-    wiced_execute_code_on_run_loop(&h4_main_notify_packet_send, NULL);
+    run_loop_wiced_execute_code_on_main_thread(&h4_main_notify_packet_send, NULL);
     return WICED_SUCCESS;
 }
 

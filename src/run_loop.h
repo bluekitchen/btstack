@@ -155,9 +155,9 @@ void run_loop_embedded_execute_once(void);
 
 #ifdef HAVE_WICED
 /*
- * @brief Execute code on BTsatck run loop. Can be used to control BTstack from a different thread
+ * @brief Execute code on BTstack run loop. Can be used to control BTstack from a different thread
  */
-void wiced_execute_code_on_run_loop(wiced_result_t (*fn)(void *arg), void * arg);
+void run_loop_wiced_execute_code_on_main_thread(wiced_result_t (*fn)(void *arg), void * arg);
 #endif
 
 /* API_END */
