@@ -279,7 +279,7 @@ static int hfp_ag_indicators_string_size(hfp_connection_t * context, int i){
 }
 
 // store indicator
-static void hfp_ag_indicators_string_store(hfp_connection * context, int i, uint8_t * buffer){
+static void hfp_ag_indicators_string_store(hfp_connection_t * context, int i, uint8_t * buffer){
     sprintf((char *) buffer, "(\"%s\",(%d,%d)),", 
             get_hfp_ag_indicators(context)[i].name, 
             get_hfp_ag_indicators(context)[i].min_range, 
