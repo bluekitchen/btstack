@@ -15,6 +15,7 @@
 import re
 import sys
 import time
+import os
 
 packet_counter = 0
 last_time = None
@@ -80,7 +81,7 @@ if len(sys.argv) == 1:
 	exit(0)
 
 infile = sys.argv[1]
-outfile = 'hci_dump.pklg'
+outfile = os.path.splitext(infile)[0] + ".pklg"
 if len(sys.argv) > 2:
 	outfile = sys.argv[2]
 
