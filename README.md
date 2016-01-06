@@ -57,6 +57,7 @@ Status               | Platform
 ![buildstatus](http://buildbot.bluekitchen-gmbh.com/btstack/badge.png?builder=platform-msp430f5229lp-cc2564b) | [MSP-EXP430F5529LP LaunchPad](http://www.ti.com/ww/en/launchpad/launchpads-msp430-msp-exp430f5529lp.html#tabs) with [Bluetooth CC2564 Module Evaluation Board](http://www.ti.com/tool/cc2564modnem) and [EM Adapter BoosterPack](http://www.ti.com/tool/boost-ccemadapter) with additional 32768Hz quartz oscillator   
 ![buildstatus](http://buildbot.bluekitchen-gmbh.com/btstack/badge.png?builder=platform-stm32-f103rb-nucleo) | [STM32 Nucleo development board NUCLEO-F103RB](http://www.st.com/web/catalog/tools/FM116/SC959/SS1532/LN1847/PF259875) with [Bluetooth CC2564 Module Evaluation Board](http://www.ti.com/tool/cc2564modnem) and [EM Adapter BoosterPack](http://www.ti.com/tool/boost-ccemadapter) with additional 32768Hz quartz oscillator
 ![buildstatus](http://buildbot.bluekitchen-gmbh.com/btstack/badge.png?builder=platform-pic32-harmony) | [Microchip's PIC32 Bluetooth Audio Development Kit](http://www.microchip.com/Developmenttools/ProductDetails.aspx?PartNO=DV320032)          
+ | [RedBear Duo](https://github.com/redbear/WICED-SDK) with Broadcom BCM43438 A1 
 
 
 #### Other Platforms:     
@@ -68,7 +69,7 @@ Status               | Platform
 ![buildstatus](http://buildbot.bluekitchen-gmbh.com/btstack/badge.png?builder=java)| java: Java wrapper for daemon 
 ![buildstatus](http://buildbot.bluekitchen-gmbh.com/btstack/badge.png?builder=platform-ios)| iOS: daemon for iOS jailbreak devices, C client-server API
 ![buildstatus](http://buildbot.bluekitchen-gmbh.com/btstack/badge.png?builder=platform-mtk)| mtk: daemon for rooted Android devices, based on Mediatek MT65xx processor, Java and C client-server API
-
+ |wiced: Broadcom platforms that support the WICED SDK
 
 ## Supported Chipsets
 Chipsets             | Status
@@ -76,10 +77,10 @@ Chipsets             | Status
 TI CC256x, WL183x    | complete incl. eHCIll support (chipset-cc256x)
 CSR 8811, 8510       | H4 only (chipset-csr)
 STM STLC2500D        | working, no support for custom deep sleep management (chipset-stlc2500d)
-EM 9301              | experimental use on Arduino Shield (chipset-em9301)
+EM 9301              | used on Arduino Shield (chipset-em9301)
 CSR USB Dongles      | complete
 Broadcom USB Dongles | complete
-
+Broadcom BCM43438    | complete. UART baudrate limited to 3 mbps
 
 ## Source Tree Overview
 Path				| Description
@@ -89,7 +90,7 @@ chipset             | Support for individual Bluetooth chipsets
 doc                 | Sources for BTstack documentation
 example             | Example applications available for different ports
 platform            | Support for special OSs and/or MCU architectures
-port                | Complete port for a individual MCU + Chipset combinations
+port                | Complete port for a MCU + Chipset combinations
 src                 | Bluetooth stack implementation
 test                | Unit and PTS tests
 tool                | Helper tools for BTstack
