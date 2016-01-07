@@ -66,44 +66,6 @@
 #include "mock.h"
 #include "test_sequences.h"
 
-/*
-const uint32_t   hfp_service_buffer[150/4]; // implicit alignment to 4-byte memory address
-const uint8_t    rfcomm_channel_nr = 1;
-const char hfp_ag_service_name[] = "BTstack HFP AG Test";
-
-static bd_addr_t device_addr;
-
-//static bd_addr_t pts_addr = {0x00,0x1b,0xDC,0x07,0x32,0xEF};
-static bd_addr_t speaker_addr = {0x00, 0x21, 0x3C, 0xAC, 0xF7, 0x38};
-static uint8_t codecs[1] = {HFP_CODEC_CVSD};
-static uint16_t handle = -1;
-static int memory_1_enabled = 1;
-static int last_number_exists = 1;
-
-
-static int ag_indicators_nr = 7;
-static hfp_ag_indicator_t ag_indicators[] = {
-    // index, name, min range, max range, status, mandatory, enabled, status changed
-    {1, "service",   0, 1, 1, 0, 0, 0},
-    {2, "call",      0, 1, 0, 1, 1, 0},
-    {3, "callsetup", 0, 3, 0, 1, 1, 0},
-    {4, "battchg",   0, 5, 3, 0, 0, 0},
-    {5, "signal",    0, 5, 5, 0, 1, 0},
-    {6, "roam",      0, 1, 0, 0, 1, 0},
-    {7, "callheld",  0, 2, 0, 1, 1, 0}
-};
-
-static int call_hold_services_nr = 5;
-static const char* call_hold_services[] = {"1", "1x", "2", "2x", "3"};
-
-static int hf_indicators_nr = 2;
-static hfp_generic_status_indicator_t hf_indicators[] = {
-    {1, 1},
-    {2, 1},
-};
-
-char cmd;
-*/
 static bd_addr_t pts_addr = {0x00,0x15,0x83,0x5F,0x9D,0x46};
 static int current_call_index = 0;
 static hfp_enhanced_call_dir_t    current_call_dir;
@@ -562,7 +524,7 @@ TEST_GROUP(HFPClient){
     }
 };
 
-/*
+
 TEST(HFPClient, PTSRHHTests){
     for (int i = 0; i < hfp_pts_ag_rhh_tests_size(); i++){
         simulate_test_sequence(&hfp_pts_ag_rhh_tests()[i]);
@@ -603,14 +565,9 @@ TEST(HFPClient, PTSSLCTests){
         simulate_test_sequence(&hfp_pts_ag_slc_tests()[i]);
         teardown();
     }
-}*/
-
-TEST(HFPClient, PTSECSTests){
-    for (int i = 0; i < hfp_pts_ag_ecs_tests_size(); i++){
-        simulate_test_sequence(&hfp_pts_ag_ecs_tests()[i]);
-        teardown();
-    }
 }
+
+
 int main (int argc, const char * argv[]){
     hfp_ag_register_packet_handler(packet_handler);
 
