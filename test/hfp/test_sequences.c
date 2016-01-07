@@ -1923,12 +1923,11 @@ const char * TC_HF_ECS_BV_01_I[] = {
     "+CHLD: (0,1,1x,2,2x,3,4)" ,
     "OK" ,
     "AT+VGM=9" ,
-    "+BSIR: 0" ,
     "AT+VGS=9" ,
+    "+BSIR: 0" ,
     "OK" ,
     "OK" ,
-    "USER:X" ,
-    "AT+CLCC" ,
+    "USER:X" , // "AT+CLCC" ,
     "+CLCC:1,1,1,0,0" ,
     "+CLCC:2,1,0,0,0" ,
     "OK" ,
@@ -1953,8 +1952,8 @@ const char * TC_HF_ECS_BV_02_I[] = {
     "+CHLD: (0,1,1x,2,2x,3,4)" ,
     "OK" ,
     "AT+VGM=9" ,
-    "+BSIR: 0" ,
     "AT+VGS=9" ,
+    "+BSIR: 0" ,
     "OK" ,
     "OK" ,
     "+CIEV: 4,0" ,
@@ -1978,8 +1977,8 @@ const char * TC_HF_ECS_BV_03_I[] = {
     "+CHLD: (0,1,1x,2,2x,3,4)" ,
     "OK" ,
     "AT+VGM=9" ,
-    "+BSIR: 0" ,
     "AT+VGS=9" ,
+    "+BSIR: 0" ,
     "OK" ,
     "OK" ,
     "+CIEV: 4,0" ,
@@ -2021,9 +2020,9 @@ const char * TC_HF_ECS_BV_03_I[] = {
 };
 
 hfp_test_item_t pts_hf_ecs_tests[] = {
-    // TEST_SEQUENCE(TC_HF_ECS_BV_01_I),
-    // TEST_SEQUENCE(TC_HF_ECS_BV_02_I),
-    // TEST_SEQUENCE(TC_HF_ECS_BV_03_I)
+    TEST_SEQUENCE(TC_HF_ECS_BV_01_I),
+    TEST_SEQUENCE(TC_HF_ECS_BV_02_I),
+    TEST_SEQUENCE(TC_HF_ECS_BV_03_I)
 };
 
 
