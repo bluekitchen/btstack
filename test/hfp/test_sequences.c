@@ -2145,8 +2145,8 @@ const char * TC_AG_ECC_BV_02_I[] = {
 
 
 hfp_test_item_t pts_ag_ecc_tests[] = {
-    // TEST_SEQUENCE(TC_AG_ECC_BV_01_I),
-    // TEST_SEQUENCE(TC_AG_ECC_BV_02_I)
+    TEST_SEQUENCE(TC_AG_ECC_BV_01_I),
+    TEST_SEQUENCE(TC_AG_ECC_BV_02_I)
 };
 
 const char * TC_HF_ECC_BV_01_I[] = {
