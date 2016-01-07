@@ -262,7 +262,7 @@ static int string_len_for_uint32(uint32_t i){
     if (i <        100) return 2;
     if (i <       1000) return 3;
     if (i <      10000) return 4;
-    if (i <      10000) return 5;
+    if (i <     100000) return 5;
     if (i <    1000000) return 6;      
     if (i <   10000000) return 7;
     if (i <  100000000) return 8;
@@ -312,8 +312,8 @@ static int hfp_ag_indicators_cmd_generator_get_segment_len(hfp_connection_t * co
 
 static void hgp_ag_indicators_cmd_generator_store_segment(hfp_connection_t * context, int index, uint8_t * buffer){
     if (index == 0){
-        *buffer++ = '\n';
         *buffer++ = '\r';
+        *buffer++ = '\n';
         int len = strlen(HFP_INDICATOR);
         memcpy(buffer, HFP_INDICATOR, len);
         buffer += len;
@@ -2169,6 +2169,7 @@ void hfp_ag_send_current_call_status(bd_addr_t bd_addr, int idx, hfp_enhanced_ca
     hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
     
     char buffer[100];
+    // TODO: check length of a buffer, to fit the MTU
     int offset = snprintf(buffer, sizeof(buffer), "\r\n%s: %d,%d,%d,%d,%d", HFP_LIST_CURRENT_CALLS, idx, dir, status, mode, mpty);
     if (number){
         offset += snprintf(buffer+offset, sizeof(buffer)-offset, ", \"%s\",%u", number, type);
