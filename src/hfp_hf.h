@@ -83,6 +83,7 @@ void hfp_hf_register_packet_handler(hfp_callback_t callback);
  * - retrieve which HF indicators are enabled on the AG, if possible
  */
 void hfp_hf_establish_service_level_connection(bd_addr_t bd_addr);
+void hfp_hf_set_supported_features(uint32_t supported_features);
 
 /**
  * @brief Release the RFCOMM channel and the audio connection between the HF and the AG. 
