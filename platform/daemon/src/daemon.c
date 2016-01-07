@@ -1957,10 +1957,10 @@ int main (int argc,  char * const * argv){
         hci_transport_config_uart.baudrate_init = 0;
         transport = hci_transport_h4_iphone_instance();
     } else {
-        transport = hci_transport_h4_instance();
+        transport = hci_transport_h4_posix_instance();
     }
 #else
-    transport = hci_transport_h4_instance();
+    transport = hci_transport_h4_posix_instance();
 #endif
     config = &hci_transport_config_uart;
 #endif

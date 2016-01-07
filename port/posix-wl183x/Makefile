@@ -4,7 +4,7 @@ POSIX_ROOT= ${BTSTACK_ROOT}/platform/posix
 
 CORE += main.c stdin_support.c bt_control_cc256x.c TIInit_11.8.32.c
 
-COMMON += hci_transport_h4.c run_loop_posix.c remote_device_db_fs.c
+COMMON += hci_transport_h4_posix.c run_loop_posix.c remote_device_db_fs.c
 
 include ${BTSTACK_ROOT}/example/embedded/Makefile.inc
 

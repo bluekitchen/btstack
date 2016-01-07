@@ -46,7 +46,7 @@ BTdaemon_FILES = \
     sdp_query_rfcomm.c      \
     sdp_query_util.c        \
 	daemon.c  				    \
-	hci_transport_h4.c 		 	\
+	hci_transport_h4_posix.c 		 	\
 	bt_control_iphone.m     	\
 	hci_transport_h4_iphone.c   \
 	platform_iphone.m       	\

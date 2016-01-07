@@ -91,7 +91,7 @@ typedef struct {
 /*
  * @brief
  */
-extern hci_transport_t * hci_transport_h4_instance(void);
+extern hci_transport_t * hci_transport_h4_posix_instance(void);
 
 /*
  * @brief
@@ -106,17 +106,13 @@ extern hci_transport_t * hci_transport_h4_iphone_instance(void);
 /*
  * @brief
  */
-extern hci_transport_t * hci_transport_h5_instance(void);
+extern hci_transport_t * hci_transport_h4_wiced_instance();
 
 /*
  * @brief
  */
 extern hci_transport_t * hci_transport_usb_instance(void);
 
-/*
- * @brief
- */
-extern hci_transport_t * hci_transport_h4_wiced_instance();
 
 /* API_END */
 
