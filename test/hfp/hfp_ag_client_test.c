@@ -66,6 +66,53 @@
 #include "mock.h"
 #include "test_sequences.h"
 
+/*
+const uint32_t   hfp_service_buffer[150/4]; // implicit alignment to 4-byte memory address
+const uint8_t    rfcomm_channel_nr = 1;
+const char hfp_ag_service_name[] = "BTstack HFP AG Test";
+
+static bd_addr_t device_addr;
+
+//static bd_addr_t pts_addr = {0x00,0x1b,0xDC,0x07,0x32,0xEF};
+static bd_addr_t speaker_addr = {0x00, 0x21, 0x3C, 0xAC, 0xF7, 0x38};
+static uint8_t codecs[1] = {HFP_CODEC_CVSD};
+static uint16_t handle = -1;
+static int memory_1_enabled = 1;
+static int last_number_exists = 1;
+
+
+static int ag_indicators_nr = 7;
+static hfp_ag_indicator_t ag_indicators[] = {
+    // index, name, min range, max range, status, mandatory, enabled, status changed
+    {1, "service",   0, 1, 1, 0, 0, 0},
+    {2, "call",      0, 1, 0, 1, 1, 0},
+    {3, "callsetup", 0, 3, 0, 1, 1, 0},
+    {4, "battchg",   0, 5, 3, 0, 0, 0},
+    {5, "signal",    0, 5, 5, 0, 1, 0},
+    {6, "roam",      0, 1, 0, 0, 1, 0},
+    {7, "callheld",  0, 2, 0, 1, 1, 0}
+};
+
+static int call_hold_services_nr = 5;
+static const char* call_hold_services[] = {"1", "1x", "2", "2x", "3"};
+
+static int hf_indicators_nr = 2;
+static hfp_generic_status_indicator_t hf_indicators[] = {
+    {1, 1},
+    {2, 1},
+};
+
+char cmd;
+*/
+static bd_addr_t pts_addr = {0x00,0x15,0x83,0x5F,0x9D,0x46};
+static int current_call_index = 0;
+static hfp_enhanced_call_dir_t    current_call_dir;
+static int                        current_call_exists_a = 0;
+static int                        current_call_exists_b = 0;
+static hfp_enhanced_call_status_t current_call_status_a;
+static hfp_enhanced_call_status_t current_call_status_b;
+static hfp_enhanced_call_mpty_t   current_call_mpty   = HFP_ENHANCED_CALL_MPTY_NOT_A_CONFERENCE_CALL;
+
 const uint8_t    rfcomm_channel_nr = 1;
 
 static bd_addr_t device_addr = {0xD8,0xBb,0x2C,0xDf,0xF1,0x08};
@@ -129,11 +176,16 @@ char * get_next_hfp_ag_command(){
 static void user_command(char cmd){
     switch (cmd){
         case 'a':
+            memcpy(device_addr, pts_addr, 6);
             printf("Establish HFP service level connection to PTS module %s...\n", bd_addr_to_str(device_addr));
             hfp_ag_establish_service_level_connection(device_addr);
             break;
         case 'A':
             printf("Release HFP service level connection.\n");
+            hfp_ag_release_service_level_connection(device_addr);
+            break;
+        case 'Z':
+            printf("Release HFP service level connection to %s...\n", bd_addr_to_str(device_addr));
             hfp_ag_release_service_level_connection(device_addr);
             break;
         case 'b':
@@ -146,17 +198,17 @@ static void user_command(char cmd){
             break;
         case 'c':
             printf("Simulate incoming call from 1234567\n");
-            // current_call_exists_a = 1;
-            // current_call_status_a = HFP_ENHANCED_CALL_STATUS_INCOMING;
-            // current_call_dir = HFP_ENHANCED_CALL_DIR_INCOMING;
+            current_call_exists_a = 1;
+            current_call_status_a = HFP_ENHANCED_CALL_STATUS_INCOMING;
+            current_call_dir = HFP_ENHANCED_CALL_DIR_INCOMING;
             hfp_ag_set_clip(129, "1234567");
             hfp_ag_incoming_call();
             break;
         case 'm':
             printf("Simulate incoming call from 7654321\n");
-            // current_call_exists_b = 1;
-            // current_call_status_b = HFP_ENHANCED_CALL_STATUS_INCOMING;
-            // current_call_dir = HFP_ENHANCED_CALL_DIR_INCOMING;
+            current_call_exists_b = 1;
+            current_call_status_b = HFP_ENHANCED_CALL_STATUS_INCOMING;
+            current_call_dir = HFP_ENHANCED_CALL_DIR_INCOMING;
             hfp_ag_set_clip(129, "7654321");
             hfp_ag_incoming_call();
             break;
@@ -170,12 +222,13 @@ static void user_command(char cmd){
             break;
         case 'e':
             printf("Answer call on AG\n");
-            // if (current_call_status_a == HFP_ENHANCED_CALL_STATUS_INCOMING){
-            //     current_call_status_a = HFP_ENHANCED_CALL_STATUS_ACTIVE;
-            // }
-            // if (current_call_status_b == HFP_ENHANCED_CALL_STATUS_INCOMING){
-            //     current_call_status_b = HFP_ENHANCED_CALL_STATUS_ACTIVE;
-            // }
+            if (current_call_status_a == HFP_ENHANCED_CALL_STATUS_INCOMING){
+                current_call_status_a = HFP_ENHANCED_CALL_STATUS_ACTIVE;
+            }
+            if (current_call_status_b == HFP_ENHANCED_CALL_STATUS_INCOMING){
+                current_call_status_b = HFP_ENHANCED_CALL_STATUS_ACTIVE;
+                current_call_status_a = HFP_ENHANCED_CALL_STATUS_HELD;
+            }
             hfp_ag_answer_incoming_call();
             break;
         case 'E':
@@ -288,11 +341,12 @@ static void user_command(char cmd){
             break;
         case 'u':
             printf("Join held call\n");
-            // current_call_mpty = HFP_ENHANCED_CALL_MPTY_CONFERENCE_CALL;
+            current_call_mpty = HFP_ENHANCED_CALL_MPTY_CONFERENCE_CALL;
             hfp_ag_join_held_call();
             break;
         case 'v':
-            // start_scan();
+            printf("Starting inquiry scan..\n");
+            // hci_send_cmd(&hci_inquiry, HCI_INQUIRY_LAP, INQUIRY_INTERVAL, 0);
             break;
         case 'w':
             printf("AG: Put incoming call on hold (Response and Hold)\n");
@@ -307,7 +361,6 @@ static void user_command(char cmd){
             hfp_ag_reject_held_incoming_call();
             break;
         default:
-            printf("AG: undefined user command\n");
             break;
     }
 }
@@ -318,10 +371,14 @@ static void simulate_test_sequence(hfp_test_item_t * test_item){
     
     int i = 0;
     static char * previous_cmd = NULL;
-
-    while (i < test_item->len){
+    
+    int previous_step = -1;
+    while ( i < test_item->len){
+        previous_step++;
+        if (i < previous_step) exit(0);
         char * expected_cmd = test_steps[i];
         int expected_cmd_len = strlen(expected_cmd);
+        printf("\nStep %d, %s \n", i, expected_cmd);
 
         if (strncmp(expected_cmd, "USER:", 5) == 0){
             printf("\n---> USER: ");
@@ -360,49 +417,57 @@ static void simulate_test_sequence(hfp_test_item_t * test_item){
 }
 
 void packet_handler(uint8_t * event, uint16_t event_size){
+    if (event[0] == RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE){
+        handle = READ_BT_16(event, 9);
+        printf("RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE received for handle 0x%04x\n", handle);
+        return;
+    }
+
+
     if (event[0] != HCI_EVENT_HFP_META) return;
-    if (event[3] && event[2] != HFP_SUBEVENT_EXTENDED_AUDIO_GATEWAY_ERROR){
+
+    if (event[3]
+        && event[2] != HFP_SUBEVENT_PLACE_CALL_WITH_NUMBER
+        && event[2] != HFP_SUBEVENT_ATTACH_NUMBER_TO_VOICE_TAG 
+        && event[2] != HFP_SUBEVENT_TRANSMIT_DTMF_CODES
+        && event[2] != HFP_SUBEVENT_TRANSMIT_STATUS_OF_CURRENT_CALL){
         printf("ERROR, status: %u\n", event[3]);
         return;
     }
+
     switch (event[2]) {   
         case HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED:
-            printf("\n** SLC established **\n\n");
-            service_level_connection_established = 1;
-            codecs_connection_established = 0;
-            audio_connection_established = 0;
-            break;
-        case HFP_SUBEVENT_CODECS_CONNECTION_COMPLETE:
-            printf("\n** CC established **\n\n");
-            codecs_connection_established = 1;
-            audio_connection_established = 0;
+            printf("Service level connection established.\n");
             break;
         case HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED:
-            printf("\n** SLC released **\n\n");
-            service_level_connection_established = 0;
+            printf("Service level connection released.\n");
             break;
         case HFP_SUBEVENT_AUDIO_CONNECTION_ESTABLISHED:
-            printf("\n** AC established **\n\n");
-            audio_connection_established = 1;
+            printf("\n** Audio connection established **\n");
             break;
         case HFP_SUBEVENT_AUDIO_CONNECTION_RELEASED:
-            printf("\n** AC released **\n\n");
-            audio_connection_established = 0;
+            printf("\n** Audio connection released **\n");
             break;
         case HFP_SUBEVENT_START_RINGINIG:
-            printf("\n** Start ringing **\n\n"); 
-            start_ringing = 1;
-            break;
+            printf("\n** Start Ringing **\n");
+            break;        
         case HFP_SUBEVENT_STOP_RINGINIG:
-            printf("\n** Stop ringing **\n\n"); 
-            stop_ringing = 1;
-            start_ringing = 0;
+            printf("\n** Stop Ringing **\n");
             break;
-        case HFP_SUBEVENT_CALL_TERMINATED:
-            call_termiated = 1;
-            break;
-        case HFP_CMD_CALL_ANSWERED:
-            //printf("HF answers call, accept call by GSM\n");
+        case HFP_SUBEVENT_PLACE_CALL_WITH_NUMBER:
+            printf("\n** Outgoing call '%s' **\n", &event[3]);
+            // validate number
+            if ( strcmp("1234567", (char*) &event[3]) == 0
+              || strcmp("7654321", (char*) &event[3]) == 0
+              || (memory_1_enabled && strcmp(">1",      (char*) &event[3]) == 0)){
+                printf("Dialstring valid: accept call\n");
+                hfp_ag_outgoing_call_accepted();
+                // TODO: calling ringing right away leads to callstatus=2 being skipped. don't call for now
+                // hfp_ag_outgoing_call_ringing();
+            } else {
+                printf("Dialstring invalid: reject call\n");
+                hfp_ag_outgoing_call_rejected();
+            }
             break;
         case HFP_SUBEVENT_REDIAL_LAST_NUMBER:
             printf("\n** Redial last number\n");
@@ -416,11 +481,51 @@ void packet_handler(uint8_t * event, uint16_t event_size){
                 hfp_ag_outgoing_call_rejected();
             }
             break;
-
+        case HFP_SUBEVENT_ATTACH_NUMBER_TO_VOICE_TAG:
+            printf("\n** Attach number to voice tag. Sending '1234567\n");
+            hfp_ag_send_phone_number_for_voice_tag(device_addr, "1234567");
+            break;
+        case HFP_SUBEVENT_TRANSMIT_DTMF_CODES:
+            printf("\n** Send DTMF Codes: '%s'\n", &event[3]);
+            hfp_ag_send_dtmf_code_done(device_addr);
+            break;
+        case HFP_SUBEVENT_TRANSMIT_STATUS_OF_CURRENT_CALL:
+            if (current_call_index == 0 && current_call_exists_a){
+                printf("HFP_SUBEVENT_TRANSMIT_STATUS_OF_CURRENT_CALL 1\n");
+                hfp_ag_send_current_call_status(device_addr, 1, current_call_dir, current_call_status_a,
+                        HFP_ENHANCED_CALL_MODE_VOICE, current_call_mpty, 129, "1234567");
+                current_call_index = 1;
+                break;
+            }
+            if (current_call_index == 1 && current_call_exists_b){
+                printf("HFP_SUBEVENT_TRANSMIT_STATUS_OF_CURRENT_CALL 2 \n");
+                hfp_ag_send_current_call_status(device_addr, 2, current_call_dir, current_call_status_b,
+                        HFP_ENHANCED_CALL_MODE_VOICE, current_call_mpty, 129, "7654321");
+                current_call_index = 2;
+                break;
+            }
+            printf("HFP_SUBEVENT_TRANSMIT_STATUS_OF_CURRENT_CALL 3\n");
+            hfp_ag_send_current_call_status_done(device_addr);
+            break;
+        case HFP_CMD_CALL_ANSWERED:
+            printf("Call answered by HF\n");
+            if (current_call_status_a == HFP_ENHANCED_CALL_STATUS_INCOMING){
+                current_call_status_a = HFP_ENHANCED_CALL_STATUS_ACTIVE;
+            }
+            if (current_call_status_b == HFP_ENHANCED_CALL_STATUS_INCOMING){
+                current_call_status_b = HFP_ENHANCED_CALL_STATUS_ACTIVE;
+            }
+            break;
+        case HFP_SUBEVENT_CONFERENCE_CALL:
+            current_call_mpty = HFP_ENHANCED_CALL_MPTY_CONFERENCE_CALL;
+            current_call_status_a = HFP_ENHANCED_CALL_STATUS_ACTIVE;
+            current_call_status_b = HFP_ENHANCED_CALL_STATUS_ACTIVE;
+            break;
         default:
-            printf("hfp_ag_client_test: event not handled %u\n", event[2]);
+            printf("Event not handled %u\n", event[2]);
             break;
     }
+
 }
 
 
@@ -444,32 +549,40 @@ TEST_GROUP(HFPClient){
         hfp_ag_release_audio_connection(device_addr);
         hfp_ag_release_service_level_connection(device_addr);
         
+        current_call_exists_a = 0;
+        current_call_exists_b = 0;
+        current_call_status_b = HFP_ENHANCED_CALL_STATUS_ACTIVE;
+        current_call_status_a = HFP_ENHANCED_CALL_STATUS_ACTIVE;
+        current_call_mpty   = HFP_ENHANCED_CALL_MPTY_NOT_A_CONFERENCE_CALL;
+        current_call_index = 0;
+
         service_level_connection_established = 0;
         codecs_connection_established = 0;
         audio_connection_established = 0;
     }
 };
 
-// TEST(HFPClient, PTSRHHTests){
-//     for (int i = 0; i < hfp_pts_ag_rhh_tests_size(); i++){
-//         simulate_test_sequence(&hfp_pts_ag_rhh_tests()[i]);
-//         teardown();
-//     }
-// }
+/*
+TEST(HFPClient, PTSRHHTests){
+    for (int i = 0; i < hfp_pts_ag_rhh_tests_size(); i++){
+        simulate_test_sequence(&hfp_pts_ag_rhh_tests()[i]);
+        teardown();
+    }
+}
 
-// TEST(HFPClient, PTSECCTests){
-//     for (int i = 0; i < hfp_pts_ag_ecc_tests_size(); i++){
-//         simulate_test_sequence(&hfp_pts_ag_ecc_tests()[i]);
-//         teardown();
-//     }
-// }
+TEST(HFPClient, PTSECCTests){
+    for (int i = 0; i < hfp_pts_ag_ecc_tests_size(); i++){
+        simulate_test_sequence(&hfp_pts_ag_ecc_tests()[i]);
+        teardown();
+    }
+}
 
-// TEST(HFPClient, PTSECSTests){
-//     for (int i = 0; i < hfp_pts_ag_ecs_tests_size(); i++){
-//         simulate_test_sequence(&hfp_pts_ag_ecs_tests()[i]);
-//         teardown();
-//     }
-// }
+TEST(HFPClient, PTSECSTests){
+    for (int i = 0; i < hfp_pts_ag_ecs_tests_size(); i++){
+        simulate_test_sequence(&hfp_pts_ag_ecs_tests()[i]);
+        teardown();
+    }
+}
 
 TEST(HFPClient, PTSTWCTests){
     for (int i = 0; i < hfp_pts_ag_twc_tests_size(); i++){
@@ -490,8 +603,14 @@ TEST(HFPClient, PTSSLCTests){
         simulate_test_sequence(&hfp_pts_ag_slc_tests()[i]);
         teardown();
     }
-}
+}*/
 
+TEST(HFPClient, PTSECSTests){
+    for (int i = 0; i < hfp_pts_ag_ecs_tests_size(); i++){
+        simulate_test_sequence(&hfp_pts_ag_ecs_tests()[i]);
+        teardown();
+    }
+}
 int main (int argc, const char * argv[]){
     hfp_ag_register_packet_handler(packet_handler);
 
