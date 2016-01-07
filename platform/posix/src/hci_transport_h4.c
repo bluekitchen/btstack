@@ -63,7 +63,6 @@
 
 static int  h4_process(struct data_source *ds);
 static void dummy_handler(uint8_t packet_type, uint8_t *packet, uint16_t size); 
-static      hci_transport_config_uart_t *hci_transport_config_uart;
 
 typedef enum {
     H4_W4_PACKET_TYPE,
@@ -133,6 +132,18 @@ static int    h4_set_baudrate(uint32_t baudrate){
 }
 
 static int    h4_open(void *transport_config){
+
+    // check for hci_transport_config_uart_t
+    if (!transport_config) {
+        log_error("hci_transport_h4_posix: no config!");
+        return -1;
+    }
+    if (((hci_transport_config_t*)transport_config)->type != HCI_TRANSPORT_CONFIG_UART) {
+        log_error("hci_transport_h4_posix: config not of type != HCI_TRANSPORT_CONFIG_UART!");
+        return -1;
+    }
+    hci_transport_config_uart_t * hci_transport_config_uart = (hci_transport_config_uart_t*) transport_config;
+
     hci_transport_config_uart = (hci_transport_config_uart_t*) transport_config;
     struct termios toptions;
     int flags = O_RDWR | O_NOCTTY | O_NONBLOCK;

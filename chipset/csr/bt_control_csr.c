@@ -74,14 +74,20 @@ static int bt_control_csr_on(void *config){
 }
 
 // set requested baud rate
-static void bt_control_csr_update_command(hci_transport_config_uart_t *config, uint8_t *hci_cmd_buffer){
+static void bt_control_csr_update_command(void *config, uint8_t *hci_cmd_buffer){
     uint16_t varid = READ_BT_16(hci_cmd_buffer, 10);
     if (varid != 0x7003) return;
     uint16_t key = READ_BT_16(hci_cmd_buffer, 14);
     if (key != 0x01ea) return;
-    uint32_t baudrate = config->baudrate_main;
+
+    // check for hci_transport_config_uart_t
+    if (!config) return;
+    if (((hci_transport_config_t*))->type != HCI_TRANSPORT_CONFIG_UART) return;
+    hci_transport_config_uart_t * hci_transport_config_uart = (hci_transport_config_uart_t*) config;
+
+    uint32_t baudrate = hci_transport_config_uart->baudrate_main;
     if (baudrate == 0){
-        baudrate = config->baudrate_init;
+        baudrate = hci_transport_config_uart->baudrate_init;
     }
     // uint32_t is stored as 2 x uint16_t with most important 16 bits first
     bt_store_16(hci_cmd_buffer, 20, baudrate >> 16);
@@ -104,7 +110,7 @@ static int bt_control_csr_next_cmd(void *config, uint8_t *hci_cmd_buffer){
     memcpy(&hci_cmd_buffer[3], (uint8_t *) &init_script[init_script_offset], payload_len);
 
     // support for on-the-fly configuration updates
-    bt_control_csr_update_command((hci_transport_config_uart_t*)config, hci_cmd_buffer);
+    bt_control_csr_update_command(config, hci_cmd_buffer);
 
     init_script_offset += payload_len;
 

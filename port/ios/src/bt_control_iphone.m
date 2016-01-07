@@ -454,6 +454,16 @@ static int iphone_on (void *transport_config){
 
     int err = 0;
 
+    // check for hci_transport_config_uart_t
+    if (!transport_config) {
+        log_error("hci_transport_h5_posix: no config!");
+        return -1;
+    }
+    if (((hci_transport_config_t *)transport_config)->type != HCI_TRANSPORT_CONFIG_UART) {
+        log_error("hci_transport_h5_posix: config not of type != HCI_TRANSPORT_CONFIG_UART!";
+        return -1;
+    }
+
     hci_transport_config_uart_t * hci_transport_config_uart = (hci_transport_config_uart_t*) transport_config;
 
     // get local-mac-addr and transport-speed from IORegistry 
