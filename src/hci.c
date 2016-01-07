@@ -2333,13 +2333,22 @@ void hci_run(void){
                     hci_send_cmd(&hci_accept_connection_request, connection->address, 1);
                 } else {
                     // remote supported feature eSCO is set if link type is eSCO
+                    uint16_t max_latency;
+                    uint8_t  retransmission_effort;
+                    uint16_t packet_types;
+                    // remote supported feature eSCO is set if link type is eSCO
                     if (connection->remote_supported_feature_eSCO){
                         // eSCO: S4 - max latency == transmission interval = 0x000c == 12 ms, 
-                        hci_send_cmd(&hci_accept_synchronous_connection, connection->address, 8000, 8000, 0x000c, hci_stack->sco_voice_setting, 0x02, 0x388);
+                        max_latency = 0x000c;
+                        retransmission_effort = 0x02;
+                        packet_types = 0x388;
                     } else {
                         // SCO: max latency, retransmission interval: N/A. any packet type
-                        hci_send_cmd(&hci_accept_synchronous_connection, connection->address, 8000, 8000, 0xffff, hci_stack->sco_voice_setting, 0xff, 0x003f);
+                        max_latency = 0xffff;
+                        retransmission_effort = 0xff;
+                        packet_types = 0x003f;
                     }
+                    hci_send_cmd(&hci_accept_synchronous_connection, connection->address, 8000, 8000, max_latency, hci_stack->sco_voice_setting, retransmission_effort, packet_types);
                 }
                 return;
 
