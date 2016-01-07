@@ -2345,7 +2345,7 @@ void hci_run(void){
                     } else {
                         // SCO: max latency, retransmission interval: N/A. any packet type
                         max_latency = 0xffff;
-                        retransmission_effort = 0xff
+                        retransmission_effort = 0xff;
                         packet_types = 0x003f;
                     }
                     hci_send_cmd(&hci_accept_synchronous_connection, connection->address, 8000, 8000, max_latency, hci_stack->sco_voice_setting, retransmission_effort, packet_types);
