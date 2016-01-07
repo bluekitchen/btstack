@@ -321,7 +321,7 @@ void simulate_test_sequence(hfp_test_item_t * test_item){
         if (i < previous_step) exit(0);
         char * expected_cmd = test_steps[i];
         int expected_cmd_len = strlen(expected_cmd);
-        // printf("\nStep %d, %s \n", i, expected_cmd);
+        printf("\nStep %d, %s \n", i, expected_cmd);
         
         if (strncmp(expected_cmd, "USER:", 5) == 0){
             user_command(expected_cmd[5]);
