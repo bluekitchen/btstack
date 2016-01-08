@@ -86,6 +86,17 @@ static char hs_cmd_buffer[100];
 // prototypes
 static void show_usage();
 
+#define TABLE_SIZE    (50)
+static uint8_t sine[TABLE_SIZE];
+static void setup_sine(void){
+    // create sine wave table
+    int i;
+    for( i=0; i<TABLE_SIZE; i++ ) {
+        sine[i] = (int8_t) (127.0 * sin( ((double)i/(double)TABLE_SIZE) * M_PI * 2. ));
+        printf("%02u %u\n", i, sine[i]);
+    }
+}
+
 #ifdef HAVE_PORTAUDIO
 #include <portaudio.h>
 
@@ -94,10 +105,8 @@ static void show_usage();
 #define SAMPLE_RATE 8000
 #define FRAMES_PER_BUFFER 1000
 #define PA_SAMPLE_TYPE paInt8
-#define TABLE_SIZE    (50)
 
 // portaudio globals
-static int8_t sine[TABLE_SIZE];
 int phase = 0;
 static  PaStream * stream;
 
@@ -124,12 +133,8 @@ static void try_send_sco(void){
     hci_send_sco_packet_buffer(3 + frames_per_packet);
 }
 
+
 static void setup_audio(void){
-    // create sine wave table
-    int i;
-    for( i=0; i<TABLE_SIZE; i++ ) {
-        sine[i] = (uint8_t) (127.0 * sin( ((double)i/(double)TABLE_SIZE) * M_PI * 2. ));
-    }
 
     int err;
     PaStreamParameters outputParameters;
@@ -311,6 +316,8 @@ static void packet_handler(uint8_t * event, uint16_t event_size){
 
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
+
+    setup_sine();
 
 #ifdef HAVE_PORTAUDIO
     setup_audio();
