@@ -1066,6 +1066,12 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
         command_completed = 1;
     }
 
+    // Vendor == Toshiba
+    if (hci_stack->substate == HCI_INIT_W4_SEND_BAUD_CHANGE && packet[0] == HCI_EVENT_VENDOR_SPECIFIC){
+        // TODO: track actual command
+        command_completed = 1;
+    }
+
     // Late response (> 100 ms) for HCI Reset e.g. on Toshiba TC35661:
     // Command complete for HCI Reset arrives after we've resent the HCI Reset command
     //
