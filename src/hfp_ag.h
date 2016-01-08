@@ -48,6 +48,7 @@
 #include "hci.h"
 #include "sdp_query_rfcomm.h"
 #include "hfp.h"
+#include "hfp_gsm_model.h"
 
 #if defined __cplusplus
 extern "C" {
