@@ -105,7 +105,7 @@ static libusb_device_handle * handle;
 
 #define ASYNC_BUFFERS 2
 #define AYSNC_POLLING_INTERVAL_MS 1
-#define NUM_ISO_PACKETS 4
+#define NUM_ISO_PACKETS 16
 #define SCO_PACKET_SIZE 49
 
 static struct libusb_transfer *command_out_transfer;
