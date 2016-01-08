@@ -3,8 +3,8 @@
 #ifndef __BTSTACK_CONFIG
 #define __BTSTACK_CONFIG
 
-#define HAVE_TRANSPORT_USB
-#define HAVE_BLE
+// #define HAVE_BLE
+
 #define USE_POSIX_RUN_LOOP
 #define HAVE_SDP
 #define HAVE_RFCOMM
