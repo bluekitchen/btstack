@@ -420,6 +420,7 @@ static int stdin_process(struct data_source *ds){
             }
             if (current_call_status_b == HFP_ENHANCED_CALL_STATUS_INCOMING){
                 current_call_status_b = HFP_ENHANCED_CALL_STATUS_ACTIVE;
+                current_call_status_a = HFP_ENHANCED_CALL_STATUS_HELD;
             }
             hfp_ag_answer_incoming_call();
             break;

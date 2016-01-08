@@ -59,6 +59,7 @@
 #include "classic/sdp.h"
 #include "debug.h"
 #include "classic/hfp.h"
+#include "classic/hfp_gsm_model.h"
 #include "classic/hfp_ag.h"
 
 static const char default_hfp_ag_service_name[] = "Voice gateway";
@@ -262,7 +263,7 @@ static int string_len_for_uint32(uint32_t i){
     if (i <        100) return 2;
     if (i <       1000) return 3;
     if (i <      10000) return 4;
-    if (i <      10000) return 5;
+    if (i <     100000) return 5;
     if (i <    1000000) return 6;      
     if (i <   10000000) return 7;
     if (i <  100000000) return 8;
@@ -279,7 +280,7 @@ static int hfp_ag_indicators_string_size(hfp_connection_t * context, int i){
 }
 
 // store indicator
-static void hfp_ag_indicators_string_store(hfp_connection * context, int i, uint8_t * buffer){
+static void hfp_ag_indicators_string_store(hfp_connection_t * context, int i, uint8_t * buffer){
     sprintf((char *) buffer, "(\"%s\",(%d,%d)),", 
             get_hfp_ag_indicators(context)[i].name, 
             get_hfp_ag_indicators(context)[i].min_range, 
@@ -312,8 +313,8 @@ static int hfp_ag_indicators_cmd_generator_get_segment_len(hfp_connection_t * co
 
 static void hgp_ag_indicators_cmd_generator_store_segment(hfp_connection_t * context, int index, uint8_t * buffer){
     if (index == 0){
-        *buffer++ = '\n';
         *buffer++ = '\r';
+        *buffer++ = '\n';
         int len = strlen(HFP_INDICATOR);
         memcpy(buffer, HFP_INDICATOR, len);
         buffer += len;
@@ -1114,6 +1115,7 @@ static int call_setup_state_machine(hfp_connection_t * connection){
 // connection is used to identify originating HF
 static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * connection){
     int indicator_index;
+
     switch (event){
         case HFP_AG_INCOMING_CALL:
             switch (hfp_ag_call_state){
@@ -1377,16 +1379,21 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * connect
             break;
 
         case HFP_AG_OUTGOING_CALL_INITIATED:
+            hfp_gsm_handle_event(HFP_AG_OUTGOING_CALL_INITIATED);
             connection->call_state = HFP_CALL_OUTGOING_INITIATED;
+
             hfp_emit_string_event(hfp_callback, HFP_SUBEVENT_PLACE_CALL_WITH_NUMBER, (const char *) &connection->line_buffer[3]);
             break;
 
         case HFP_AG_OUTGOING_REDIAL_INITIATED:
+            hfp_gsm_handle_event(HFP_AG_OUTGOING_REDIAL_INITIATED);
             connection->call_state = HFP_CALL_OUTGOING_INITIATED;
+
             hfp_emit_event(hfp_callback, HFP_SUBEVENT_REDIAL_LAST_NUMBER, 0);
             break;
 
         case HFP_AG_OUTGOING_CALL_REJECTED:
+            hfp_gsm_handle_event(HFP_AG_OUTGOING_CALL_REJECTED);
             connection = hfp_ag_connection_for_call_state(HFP_CALL_OUTGOING_INITIATED);
             if (!connection){
                 log_info("hfp_ag_call_sm: did not find outgoing connection in initiated state");
@@ -1398,6 +1405,7 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * connect
             break;
 
         case HFP_AG_OUTGOING_CALL_ACCEPTED:
+            // hfp_gsm_handle_event();
             connection = hfp_ag_connection_for_call_state(HFP_CALL_OUTGOING_INITIATED);
             if (!connection){
                 log_info("hfp_ag_call_sm: did not find outgoing connection in initiated state");
@@ -1425,6 +1433,7 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * connect
             break;
 
         case HFP_AG_OUTGOING_CALL_RINGING:
+            // hfp_gsm_handle_event();
             connection = hfp_ag_connection_for_call_state(HFP_CALL_OUTGOING_DIALING);
             if (!connection){
                 log_info("hfp_ag_call_sm: did not find outgoing connection in dialing state");
@@ -1436,6 +1445,7 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * connect
             break;
 
         case HFP_AG_OUTGOING_CALL_ESTABLISHED:
+            // hfp_gsm_handle_event();
             // get outgoing call
             connection = hfp_ag_connection_for_call_state(HFP_CALL_OUTGOING_RINGING);
             if (!connection){
@@ -2169,6 +2179,7 @@ void hfp_ag_send_current_call_status(bd_addr_t bd_addr, int idx, hfp_enhanced_ca
     hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
     
     char buffer[100];
+    // TODO: check length of a buffer, to fit the MTU
     int offset = snprintf(buffer, sizeof(buffer), "\r\n%s: %d,%d,%d,%d,%d", HFP_LIST_CURRENT_CALLS, idx, dir, status, mode, mpty);
     if (number){
         offset += snprintf(buffer+offset, sizeof(buffer)-offset, ", \"%s\",%u", number, type);

@@ -1063,6 +1063,10 @@ void hfp_hf_init(uint16_t rfcomm_channel_nr, uint32_t supported_features, uint16
     }
 }
 
+void hfp_hf_set_supported_features(uint32_t supported_features){
+    hfp_supported_features = supported_features;
+}
+
 void hfp_hf_establish_service_level_connection(bd_addr_t bd_addr){
     hfp_establish_service_level_connection(bd_addr, SDP_HandsfreeAudioGateway);
 }

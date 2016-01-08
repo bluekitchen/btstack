@@ -312,12 +312,16 @@ static void user_command(char cmd){
 
 void simulate_test_sequence(hfp_test_item_t * test_item){
     char ** test_steps = test_item->test;
-    printf("\nSimulate test sequence: \"%s\"\n", test_item->name);
+    printf("\nSimulate test sequence: \"%s\" [%d steps]\n", test_item->name, test_item->len);
 
     int i = 0;
+    int previous_step = -1;
     while ( i < test_item->len){
+        previous_step++;
+        if (i < previous_step) exit(0);
         char * expected_cmd = test_steps[i];
         int expected_cmd_len = strlen(expected_cmd);
+        printf("\nStep %d, %s \n", i, expected_cmd);
         
         if (strncmp(expected_cmd, "USER:", 5) == 0){
             user_command(expected_cmd[5]);
@@ -343,6 +347,7 @@ void simulate_test_sequence(hfp_test_item_t * test_item){
             int supported_features = 0;
             sscanf(&expected_cmd[8],"%d", &supported_features);
             printf("Call hfp_hf_init with SF %d\n", supported_features);
+            hfp_hf_release_service_level_connection(device_addr);
             hfp_hf_init(rfcomm_channel_nr, supported_features, indicators, sizeof(indicators)/sizeof(uint16_t), 1);
             user_command('a');
             while (has_more_hfp_hf_commands()){
@@ -361,7 +366,7 @@ void simulate_test_sequence(hfp_test_item_t * test_item){
             printf("\n---> NEXT STEP expect from HF: %s\n", expected_cmd);
             while (has_more_hfp_hf_commands()){
                 char * ag_cmd = get_next_hfp_hf_command();
-                //printf("HF response verify %s == %s[%d]\n", expected_cmd, ag_cmd, expected_cmd_len);
+                printf("HF response verify %s == %s[%d]\n", expected_cmd, ag_cmd, expected_cmd_len);
 
                 int equal_cmds = strncmp(ag_cmd, expected_cmd, expected_cmd_len) == 0;
                 if (!equal_cmds){
@@ -486,6 +491,7 @@ TEST_GROUP(HFPClient){
         audio_connection_established = 0;
     }
 };
+
 
 TEST(HFPClient, PTSRHHTests){
     for (int i = 0; i < hfp_pts_hf_rhh_tests_size(); i++){

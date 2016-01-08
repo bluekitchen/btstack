@@ -1093,6 +1093,7 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
             log_info("Command complete for opcode %04x, expected %04x", opcode, hci_stack->last_cmd_opcode);
         }
     }
+
     if (packet[0] == HCI_EVENT_COMMAND_STATUS){
         uint8_t  status = packet[2];
         uint16_t opcode = READ_BT_16(packet,4);
@@ -1107,11 +1108,43 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
             log_info("Command status for opcode %04x, expected %04x", opcode, hci_stack->last_cmd_opcode);
         }
     }
+
     // Vendor == CSR
     if (hci_stack->substate == HCI_INIT_W4_CUSTOM_INIT && packet[0] == HCI_EVENT_VENDOR_SPECIFIC){
         // TODO: track actual command
         command_completed = 1;
     }
+
+    // Vendor == Toshiba
+    if (hci_stack->substate == HCI_INIT_W4_SEND_BAUD_CHANGE && packet[0] == HCI_EVENT_VENDOR_SPECIFIC){
+        // TODO: track actual command
+        command_completed = 1;
+    }
+
+    // Late response (> 100 ms) for HCI Reset e.g. on Toshiba TC35661:
+    // Command complete for HCI Reset arrives after we've resent the HCI Reset command
+    //
+    // HCI Reset
+    // Timeout 100 ms
+    // HCI Reset
+    // Command Complete Reset
+    // HCI Read Local Version Information
+    // Command Complete Reset - but we expected Command Complete Read Local Version Information
+    // hang...
+    //
+    // Fix: Command Complete for HCI Reset in HCI_INIT_W4_SEND_READ_LOCAL_VERSION_INFORMATION trigger resend
+    if (!command_completed
+            && packet[0] == HCI_EVENT_COMMAND_COMPLETE
+            && hci_stack->substate == HCI_INIT_W4_SEND_READ_LOCAL_VERSION_INFORMATION){
+
+        uint16_t opcode = READ_BT_16(packet,3);
+        if (opcode == hci_reset.opcode){
+            hci_stack->substate = HCI_INIT_SEND_READ_LOCAL_VERSION_INFORMATION;
+            return;
+        }
+    }
+
+
 
     if (!command_completed) return;
 
@@ -2393,13 +2426,22 @@ void hci_run(void){
                     hci_send_cmd(&hci_accept_connection_request, connection->address, 1);
                 } else {
                     // remote supported feature eSCO is set if link type is eSCO
+                    uint16_t max_latency;
+                    uint8_t  retransmission_effort;
+                    uint16_t packet_types;
+                    // remote supported feature eSCO is set if link type is eSCO
                     if (connection->remote_supported_feature_eSCO){
                         // eSCO: S4 - max latency == transmission interval = 0x000c == 12 ms, 
-                        hci_send_cmd(&hci_accept_synchronous_connection, connection->address, 8000, 8000, 0x000c, hci_stack->sco_voice_setting, 0x02, 0x388);
+                        max_latency = 0x000c;
+                        retransmission_effort = 0x02;
+                        packet_types = 0x388;
                     } else {
                         // SCO: max latency, retransmission interval: N/A. any packet type
-                        hci_send_cmd(&hci_accept_synchronous_connection, connection->address, 8000, 8000, 0xffff, hci_stack->sco_voice_setting, 0xff, 0x003f);
+                        max_latency = 0xffff;
+                        retransmission_effort = 0xff;
+                        packet_types = 0x003f;
                     }
+                    hci_send_cmd(&hci_accept_synchronous_connection, connection->address, 8000, 8000, max_latency, hci_stack->sco_voice_setting, retransmission_effort, packet_types);
                 }
                 return;
 

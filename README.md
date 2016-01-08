@@ -77,6 +77,7 @@ Chipsets             | Status
 TI CC256x, WL183x    | complete incl. eHCIll support (chipset-cc256x)
 CSR 8811, 8510       | H4 only (chipset-csr)
 STM STLC2500D        | working, no support for custom deep sleep management (chipset-stlc2500d)
+TC35661              | working, BLE patches missing (chipset-tc3566x)
 EM 9301              | used on Arduino Shield (chipset-em9301)
 CSR USB Dongles      | complete
 Broadcom USB Dongles | complete
