@@ -1794,6 +1794,7 @@ const char * TC_AG_ECS_BV_01_I[] = {
     "USER:e" ,
     "USER:m" ,
     "USER:e" ,
+    "USER:a" ,
     "AT+BRSF=127" ,
     "+BRSF:4079" ,
     "OK" ,
@@ -1829,6 +1830,7 @@ const char * TC_AG_ECS_BV_02_I[] = {
     "USER:e" ,
     "USER:m" ,
     "USER:e" ,
+    "USER:a" ,
     "AT+BRSF=127" ,
     "+BRSF:4079" ,
     "OK" ,
@@ -1881,8 +1883,7 @@ const char * TC_AG_ECS_BV_03_I[] = {
     "OK" ,
     "AT+CMEE=1" ,
     "OK" ,
-    "USER:c" ,
-    "+CIEV:3,1" ,
+    "USER:c" , // "+CIEV:3,1" ,
     "RING" ,
     "+CLIP: \"1234567\",129" ,
     "ATA" ,
@@ -1894,14 +1895,13 @@ const char * TC_AG_ECS_BV_03_I[] = {
     "+CIEV:3,1" ,
     "USER:w" ,
     "USER:e" ,
-    "USER:e" ,
     "+CIEV:3,0" ,
     "+CIEV:7,1"
 };
 
 hfp_test_item_t pts_ag_ecs_tests[] = {
-    // TEST_SEQUENCE(TC_AG_ECS_BV_01_I),
-    // TEST_SEQUENCE(TC_AG_ECS_BV_02_I),
+    TEST_SEQUENCE(TC_AG_ECS_BV_01_I),
+    TEST_SEQUENCE(TC_AG_ECS_BV_02_I),
     // TEST_SEQUENCE(TC_AG_ECS_BV_03_I)
 };
 
@@ -2143,8 +2143,8 @@ const char * TC_AG_ECC_BV_02_I[] = {
 
 
 hfp_test_item_t pts_ag_ecc_tests[] = {
-    // TEST_SEQUENCE(TC_AG_ECC_BV_01_I),
-    // TEST_SEQUENCE(TC_AG_ECC_BV_02_I)
+    TEST_SEQUENCE(TC_AG_ECC_BV_01_I),
+    TEST_SEQUENCE(TC_AG_ECC_BV_02_I)
 };
 
 const char * TC_HF_ECC_BV_01_I[] = {
@@ -2385,6 +2385,7 @@ hfp_test_item_t pts_hf_ecc_tests[] = {
 const char * TC_AG_RHH_BV_01_I[] = {
     "USER:c" ,
     "USER:w" ,
+    "USER:a",
     "AT+BRSF=127" ,
     "+BRSF:4079" ,
     "OK" ,
@@ -2691,14 +2692,14 @@ const char * TC_AG_RHH_BV_08_I[] = {
 
 
 hfp_test_item_t pts_ag_rhh_tests[] = {
-    // TEST_SEQUENCE(TC_AG_RHH_BV_01_I),
-    // TEST_SEQUENCE(TC_AG_RHH_BV_02_I),
-    // TEST_SEQUENCE(TC_AG_RHH_BV_03_I),
-    // TEST_SEQUENCE(TC_AG_RHH_BV_04_I),
-    // TEST_SEQUENCE(TC_AG_RHH_BV_05_I),
-    // TEST_SEQUENCE(TC_AG_RHH_BV_06_I),
-    // TEST_SEQUENCE(TC_AG_RHH_BV_07_I),
-    // TEST_SEQUENCE(TC_AG_RHH_BV_08_I)
+    TEST_SEQUENCE(TC_AG_RHH_BV_01_I),
+    TEST_SEQUENCE(TC_AG_RHH_BV_02_I),
+    TEST_SEQUENCE(TC_AG_RHH_BV_03_I),
+    TEST_SEQUENCE(TC_AG_RHH_BV_04_I),
+    TEST_SEQUENCE(TC_AG_RHH_BV_05_I),
+    TEST_SEQUENCE(TC_AG_RHH_BV_06_I),
+    TEST_SEQUENCE(TC_AG_RHH_BV_07_I),
+    TEST_SEQUENCE(TC_AG_RHH_BV_08_I)
 };
 
 const char * TC_HF_RHH_BV_01_I[] = {
