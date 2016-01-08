@@ -59,6 +59,7 @@
 #include "sdp.h"
 #include "debug.h"
 #include "hfp.h"
+#include "hfp_gsm_model.h"
 #include "hfp_ag.h"
 
 static const char default_hfp_ag_service_name[] = "Voice gateway";
@@ -1114,6 +1115,7 @@ static int call_setup_state_machine(hfp_connection_t * connection){
 // connection is used to identify originating HF
 static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * connection){
     int indicator_index;
+
     switch (event){
         case HFP_AG_INCOMING_CALL:
             switch (hfp_ag_call_state){
@@ -1377,16 +1379,21 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * connect
             break;
 
         case HFP_AG_OUTGOING_CALL_INITIATED:
+            hfp_gsm_handle_event(HFP_AG_OUTGOING_CALL_INITIATED);
             connection->call_state = HFP_CALL_OUTGOING_INITIATED;
+
             hfp_emit_string_event(hfp_callback, HFP_SUBEVENT_PLACE_CALL_WITH_NUMBER, (const char *) &connection->line_buffer[3]);
             break;
 
         case HFP_AG_OUTGOING_REDIAL_INITIATED:
+            hfp_gsm_handle_event(HFP_AG_OUTGOING_REDIAL_INITIATED);
             connection->call_state = HFP_CALL_OUTGOING_INITIATED;
+
             hfp_emit_event(hfp_callback, HFP_SUBEVENT_REDIAL_LAST_NUMBER, 0);
             break;
 
         case HFP_AG_OUTGOING_CALL_REJECTED:
+            hfp_gsm_handle_event(HFP_AG_OUTGOING_CALL_REJECTED);
             connection = hfp_ag_connection_for_call_state(HFP_CALL_OUTGOING_INITIATED);
             if (!connection){
                 log_info("hfp_ag_call_sm: did not find outgoing connection in initiated state");
@@ -1398,6 +1405,7 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * connect
             break;
 
         case HFP_AG_OUTGOING_CALL_ACCEPTED:
+            // hfp_gsm_handle_event();
             connection = hfp_ag_connection_for_call_state(HFP_CALL_OUTGOING_INITIATED);
             if (!connection){
                 log_info("hfp_ag_call_sm: did not find outgoing connection in initiated state");
@@ -1425,6 +1433,7 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * connect
             break;
 
         case HFP_AG_OUTGOING_CALL_RINGING:
+            // hfp_gsm_handle_event();
             connection = hfp_ag_connection_for_call_state(HFP_CALL_OUTGOING_DIALING);
             if (!connection){
                 log_info("hfp_ag_call_sm: did not find outgoing connection in dialing state");
@@ -1436,6 +1445,7 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * connect
             break;
 
         case HFP_AG_OUTGOING_CALL_ESTABLISHED:
+            // hfp_gsm_handle_event();
             // get outgoing call
             connection = hfp_ag_connection_for_call_state(HFP_CALL_OUTGOING_RINGING);
             if (!connection){
