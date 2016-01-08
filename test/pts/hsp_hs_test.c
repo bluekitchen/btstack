@@ -74,7 +74,7 @@
 #define NUM_CHANNELS 1
 #define SAMPLE_RATE 8000
 #define FRAMES_PER_BUFFER 1000
-#define PA_SAMPLE_TYPE paInt8
+#define PA_SAMPLE_TYPE paInt16
 #define TABLE_SIZE    (50)
 
 const uint32_t   hsp_service_buffer[150/4]; // implicit alignment to 4-byte memory address
@@ -82,8 +82,8 @@ const uint8_t    rfcomm_channel_nr = 1;
 const char hsp_hs_service_name[] = "Headset Test";
 static uint16_t  sco_handle = 0;
 static bd_addr_t pts_addr = {0x00,0x1b,0xDC,0x07,0x32,0xEF};    // PTS dongle
-static bd_addr_t local_mac = {0x04, 0x0C, 0xCE, 0xE4, 0x85, 0xD3}; // MacBook Air 2011
-// static bd_addr_t local_mac = {0x84, 0x38, 0x35, 0x65, 0xD1, 0x15}; // MacBook Air 2013
+// static bd_addr_t local_mac = {0x04, 0x0C, 0xCE, 0xE4, 0x85, 0xD3}; // MacBook Air 2011
+static bd_addr_t local_mac = {0x84, 0x38, 0x35, 0x65, 0xD1, 0x15}; // MacBook Air 2013
 // static bd_addr_t local_mac = {0x54, 0xe4, 0x3a, 0x26, 0xa2, 0x39}; // iPhone 5S
 // static bd_addr_t local_mac = {0x00,0x1a,0x7d,0xda,0x71,0x0a}; // CSR Dongle
 static bd_addr_t current_addr;
@@ -92,7 +92,7 @@ static char hs_cmd_buffer[100];
 
 // portaudio globals
 static  PaStream * stream;
-static int8_t sine[TABLE_SIZE];
+static uint16_t sine[TABLE_SIZE];
 int phase = 0;
 
 // prototypes
@@ -103,7 +103,7 @@ static void setup_audio(void){
     // create sine wave table
     int i;
     for( i=0; i<TABLE_SIZE; i++ ) {
-        sine[i] = (uint8_t) (127.0 * sin( ((double)i/(double)TABLE_SIZE) * M_PI * 2. ));
+        sine[i] = (uint16_t) (30000 * sin( ((double)i/(double)TABLE_SIZE) * M_PI * 2. ));
     }
 
     int err;
@@ -213,34 +213,34 @@ static int stdin_process(struct data_source *ds){
     return 0;
 }
 
-#if 0
+#if 1
 static void try_send_sco(void){
-    printf("try send handle %x\n", sco_handle);
     if (!sco_handle) return;
     if (!hci_can_send_sco_packet_now(sco_handle)) {
-        printf("try_send_sco, cannot send now\n");
+        // printf("try_send_sco, cannot send now\n");
         return;
     }
-    const int frames_per_packet = 9;
+    printf("try send handle %x\n", sco_handle);
+    const int frames_per_packet = 24;
     hci_reserve_packet_buffer();
     uint8_t * sco_packet = hci_get_outgoing_packet_buffer();
     // set handle + flags
     bt_store_16(sco_packet, 0, sco_handle);
     // set len
-    sco_packet[2] = frames_per_packet;
+    sco_packet[2] = frames_per_packet * 2;  // 16 bit PCM
     int i;
     for (i=0;i<frames_per_packet;i++){
-        sco_packet[3+i] = sine[phase];
+        bt_store_16(sco_packet, 3 + 2*i, sine[phase]);
         phase++;
         if (phase >= TABLE_SIZE) phase = 0;
     }
-    hci_send_sco_packet_buffer(3 + frames_per_packet);
+    hci_send_sco_packet_buffer(3 + frames_per_packet * 2);
 }
 #endif
 
 static void packet_handler(uint8_t * event, uint16_t event_size){
     // printf("Packet handler event 0x%02x\n", event[0]);
-    // try_send_sco();
+    try_send_sco();
     switch (event[0]) {
         case BTSTACK_EVENT_STATE:
             if (event[2] != HCI_STATE_WORKING) break;
@@ -310,6 +310,8 @@ static void sco_packet_handler(uint8_t packet_type, uint8_t * packet, uint16_t s
 
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
+
+    hci_set_sco_voice_setting(0x0060);   // PCM, 16 bit, 2's complement, MSB Position 0, 
 
     setup_audio();
     hci_register_sco_packet_handler(&sco_packet_handler);
