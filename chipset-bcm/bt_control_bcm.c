@@ -62,9 +62,9 @@ static int send_download_command;
 
 static int bt_control_bcm_on(void *config){
     log_info("Broadcom init script %s, len %u", brcm_patch_version, brcm_patch_ram_length);
-	init_script_offset = 0;
+    init_script_offset = 0;
     send_download_command = 1;
-	return 0;
+    return 0;
 }
 
 // @note: Broadcom chips require higher UART clock for baud rate > 3000000 -> limit baud rate in hci.c
@@ -112,15 +112,15 @@ static int bt_control_bcm_next_cmd(void *config, uint8_t *hci_cmd_buffer){
 // MARK: const structs 
 
 static const bt_control_t bt_control_bcm = {
-	bt_control_bcm_on,                     // on
-	NULL,                                  // off
-	NULL,                                  // sleep
-	NULL,                                  // wake
-	NULL,                                  // valid
-	NULL,                                  // name
-	bcm_baudrate_cmd,                      // baudrate_cmd
-	bt_control_bcm_next_cmd,               // next_cmd
-	NULL,                                  // register_for_power_notifications
+    bt_control_bcm_on,                     // on
+    NULL,                                  // off
+    NULL,                                  // sleep
+    NULL,                                  // wake
+    NULL,                                  // valid
+    NULL,                                  // name
+    bcm_baudrate_cmd,                      // baudrate_cmd
+    bt_control_bcm_next_cmd,               // next_cmd
+    NULL,                                  // register_for_power_notifications
     NULL,                                  // hw_error
     bt_control_bcm_set_bd_addr_cmd,        // set_bd_addr_cmd
 };
