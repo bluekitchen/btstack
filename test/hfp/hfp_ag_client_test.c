@@ -337,7 +337,8 @@ static void simulate_test_sequence(hfp_test_item_t * test_item){
     int previous_step = -1;
     while ( i < test_item->len){
         previous_step++;
-        if (i < previous_step) exit(0);
+        CHECK_EQUAL(i >= previous_step, 1);
+        
         char * expected_cmd = test_steps[i];
         int expected_cmd_len = strlen(expected_cmd);
         printf("\nStep %d, %s \n", i, expected_cmd);

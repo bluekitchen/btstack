@@ -63,6 +63,8 @@ hfp_callheld_status_t hfp_gsm_callheld_status();
 hfp_call_status_t hfp_gsm_call_status();
 hfp_callsetup_status_t hfp_gsm_callsetup_status();
 
+int hfp_gsm_call_possible(void);
+
 void hfp_gsm_handle_event(hfp_ag_call_event_t event);
 
 // /**

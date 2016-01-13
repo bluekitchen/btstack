@@ -65,6 +65,7 @@
 
 typedef enum{
     CALL_NONE,
+    CALL_INITIATED,
     CALL_ACTIVE,
     CALL_HELD
 } hfp_gsm_call_status_t;
@@ -106,6 +107,10 @@ static inline int get_active_call_index(){
     return get_call_index_with_status(CALL_ACTIVE);
 }
 
+static inline int get_initiated_call_index(){
+    return get_call_index_with_status(CALL_INITIATED);
+}
+
 // static inline int get_number_none_calls(){
 //     return get_number_calls_with_status(CALL_NONE);
 // }
@@ -140,32 +145,50 @@ hfp_callsetup_status_t hfp_gsm_callsetup_status(){
     return callsetup_status;
 }
 
+int hfp_gsm_call_possible(void){
+    int next_free_slot = get_none_call_index();
+    return next_free_slot != -1;
+}
+
 void hfp_gsm_handle_event(hfp_ag_call_event_t event){
     int next_free_slot = get_none_call_index();
     int current_call_index = get_active_call_index();
-                
+    int initiated_call_index = get_initiated_call_index();
+
     switch (event){
         case HFP_AG_OUTGOING_CALL_INITIATED:
         case HFP_AG_OUTGOING_REDIAL_INITIATED:
-
             if (next_free_slot == -1){
-                log_error("max nr gsm call exceeded");
+                log_error("gsm: max call nr exceeded");
                 return;
             }
+            break;
 
+        case HFP_AG_OUTGOING_CALL_REJECTED:
+            if (current_call_index != -1){
+                gsm_calls[current_call_index].status = CALL_NONE;
+            }
+            callsetup_status = HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS;
+            break;
+
+        case HFP_AG_OUTGOING_CALL_ACCEPTED:
             if (current_call_index != -1){
                 gsm_calls[current_call_index].status = CALL_HELD;
             }
-            gsm_calls[next_free_slot].status = CALL_ACTIVE;
+            gsm_calls[next_free_slot].status = CALL_INITIATED;
             callsetup_status = HFP_CALLSETUP_STATUS_OUTGOING_CALL_SETUP_IN_DIALING_STATE;
             break;
-        case HFP_AG_OUTGOING_CALL_REJECTED:
-            break;
-        case HFP_AG_OUTGOING_CALL_ACCEPTED:
-            break;
+        
         case HFP_AG_OUTGOING_CALL_RINGING:
+            if (current_call_index == -1){
+                log_error("gsm: no active call");
+                return;
+            }
+            callsetup_status = HFP_CALLSETUP_STATUS_OUTGOING_CALL_SETUP_IN_ALERTING_STATE;
             break;
         case HFP_AG_OUTGOING_CALL_ESTABLISHED:
+            callsetup_status = HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS;
+            gsm_calls[initiated_call_index].status = CALL_ACTIVE;
             break;
         default:
             break;
