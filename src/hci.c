@@ -376,6 +376,7 @@ static int hci_number_free_sco_slots_for_handle(hci_con_handle_t handle){
         log_info("hci_number_free_sco_slots_for_handle: outgoing packets (%u) > total packets (%u)", num_sco_packets_sent, hci_stack->sco_packets_total_num);
         return 0;
     }
+    // log_info("hci_number_free_sco_slots_for_handle %x: sent %u", handle, num_sco_packets_sent);
     return hci_stack->sco_packets_total_num - num_sco_packets_sent;
 }
 
@@ -1362,6 +1363,12 @@ static void event_handler(uint8_t *packet, int size){
                 hci_stack->local_supported_commands[0] =
                     (packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1+14] & 0X80) >> 7 |  // Octet 14, bit 7
                     (packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1+24] & 0x40) >> 5;   // Octet 24, bit 6 
+            }
+            if (COMMAND_COMPLETE_EVENT(packet, hci_write_synchronous_flow_control_enable)){
+                if (packet[5] == 0){
+                    // @TODO cache value from hci_write_synchronous_flow_control_enable instead of assuming == 1
+                    hci_stack->synchronous_flow_control_enabled = 1;
+                }
             }
             break;
             
