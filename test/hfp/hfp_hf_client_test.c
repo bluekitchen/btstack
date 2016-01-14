@@ -318,7 +318,8 @@ void simulate_test_sequence(hfp_test_item_t * test_item){
     int previous_step = -1;
     while ( i < test_item->len){
         previous_step++;
-        if (i < previous_step) exit(0);
+        CHECK_EQUAL(i >= previous_step, 1);
+        
         char * expected_cmd = test_steps[i];
         int expected_cmd_len = strlen(expected_cmd);
         printf("\nStep %d, %s \n", i, expected_cmd);
@@ -495,6 +496,7 @@ TEST_GROUP(HFPClient){
 
 TEST(HFPClient, PTSRHHTests){
     for (int i = 0; i < hfp_pts_hf_rhh_tests_size(); i++){
+        setup();
         simulate_test_sequence(&hfp_pts_hf_rhh_tests()[i]);
         teardown();
     }
@@ -502,6 +504,7 @@ TEST(HFPClient, PTSRHHTests){
 
 TEST(HFPClient, PTSECCTests){
     for (int i = 0; i < hfp_pts_hf_ecc_tests_size(); i++){
+        setup();
         simulate_test_sequence(&hfp_pts_hf_ecc_tests()[i]);
         teardown();
     }
@@ -509,6 +512,7 @@ TEST(HFPClient, PTSECCTests){
 
 TEST(HFPClient, PTSECSTests){
     for (int i = 0; i < hfp_pts_hf_ecs_tests_size(); i++){
+        setup();
         simulate_test_sequence(&hfp_pts_hf_ecs_tests()[i]);
         teardown();
     }
@@ -516,6 +520,7 @@ TEST(HFPClient, PTSECSTests){
 
 TEST(HFPClient, PTSTWCTests){
     for (int i = 0; i < hfp_pts_hf_twc_tests_size(); i++){
+        setup();
         simulate_test_sequence(&hfp_pts_hf_twc_tests()[i]);
         teardown();
     }
@@ -523,6 +528,7 @@ TEST(HFPClient, PTSTWCTests){
 
 TEST(HFPClient, PTSATATests){
     for (int i = 0; i < hfp_pts_hf_ata_tests_size(); i++){
+        setup();
         simulate_test_sequence(&hfp_pts_hf_ata_tests()[i]);
         teardown();
     }
@@ -530,6 +536,7 @@ TEST(HFPClient, PTSATATests){
 
 TEST(HFPClient, PTSSLCTests){
     for (int i = 0; i < hfp_pts_hf_slc_tests_size(); i++){
+        setup();
         simulate_test_sequence(&hfp_pts_hf_slc_tests()[i]);
         teardown();
     }
