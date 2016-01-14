@@ -93,11 +93,23 @@ int main(int argc, const char * argv[]){
 	btstack_memory_init();
     run_loop_init(RUN_LOOP_POSIX);
 	    
+#if 0
+    // Ubuntu
+
+    // use logger: format HCI_DUMP_PACKETLOGGER, HCI_DUMP_BLUEZ or HCI_DUMP_STDOUT
+    hci_dump_open("hci_dump.pklg", HCI_DUMP_PACKETLOGGER);
+
+    // pick serial port
+    hci_uart_config_cc256x.device_name = "/dev/ttyUSB0";
+#else
+    // OS X
+
     // use logger: format HCI_DUMP_PACKETLOGGER, HCI_DUMP_BLUEZ or HCI_DUMP_STDOUT
     hci_dump_open("/tmp/hci_dump.pklg", HCI_DUMP_PACKETLOGGER);
 
     // pick serial port
     hci_uart_config_cc256x.device_name = "/dev/tty.usbserial-A900K0VK";
+#endif
 
     // init HCI
 	hci_transport_t    * transport = hci_transport_h4_instance();
