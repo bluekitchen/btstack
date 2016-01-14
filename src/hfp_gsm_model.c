@@ -77,17 +77,14 @@ typedef struct {
     uint8_t clip_type;
     char    clip_number[25];
 } hfp_gsm_call_t;
-
-
-// 
+ 
 static hfp_gsm_call_t gsm_calls[HFP_GSM_MAX_NR_CALLS]; 
+static hfp_callsetup_status_t callsetup_status = HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS;
 
 void hfp_gsm_init(void){
     memset(gsm_calls, 0, sizeof(gsm_calls));
-}   
-//
-static hfp_callsetup_status_t callsetup_status = HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS;
-
+    callsetup_status = HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS;
+} 
 
 static int get_number_calls_with_status(hfp_gsm_call_status_t status){
     int i, count = 0;
