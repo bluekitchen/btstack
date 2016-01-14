@@ -1326,7 +1326,6 @@ static void event_handler(uint8_t *packet, int size){
             }
             if (COMMAND_COMPLETE_EVENT(packet, hci_write_synchronous_flow_control_enable)){
                 if (packet[5] == 0){
-                    // @TODO cache value from hci_write_synchronous_flow_control_enable instead of assuming == 1
                     hci_stack->synchronous_flow_control_enabled = 1;
                 }
             } 
