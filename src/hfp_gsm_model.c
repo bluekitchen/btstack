@@ -134,6 +134,10 @@ static inline int get_number_held_calls(){
     return get_number_calls_with_status(CALL_HELD);
 }
 
+static inline int get_number_initiated_calls(){
+    return get_number_calls_with_status(CALL_INITIATED);
+}
+
 static inline int get_number_response_held_calls(){
     return get_number_calls_with_status(CALL_RESPONSE_HOLD);
 }
@@ -234,9 +238,20 @@ void hfp_gsm_handle_event(hfp_ag_call_event_t event){
             break;
 
         case HFP_AG_HELD_CALL_JOINED_BY_AG:
-            if (hfp_gsm_callsetup_status() != HFP_CALLHELD_STATUS_CALL_ON_HOLD_OR_SWAPPED) break;
             if (hfp_gsm_call_status() != HFP_CALL_STATUS_ACTIVE_OR_HELD_CALL_IS_PRESENT) break;
-            gsm_calls[held_call_index].status = CALL_ACTIVE;
+            
+            // TODO: mark joined calls with "multiparty flag" (if we cannot calculate it otherwise)
+            // TODO: is following condition correct? Can we join incoming call before it is answered?
+            if (callsetup_status == HFP_CALLSETUP_STATUS_INCOMING_CALL_SETUP_IN_PROGRESS){
+                gsm_calls[initiated_call_index].status = CALL_ACTIVE;
+                callsetup_status = HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS;
+                break;
+            }
+
+            if (hfp_gsm_callheld_status() == HFP_CALLHELD_STATUS_CALL_ON_HOLD_OR_SWAPPED) {
+                gsm_calls[held_call_index].status = CALL_ACTIVE;
+                break;
+            } 
             break;
 
         case HFP_AG_INCOMING_CALL_ACCEPTED_BY_HF:
