@@ -72,6 +72,7 @@ EXAMPLES = 					\
 	spp_counter 			\
 	spp_streamer			\
     gap_le_advertisements   \
+    hsp_hs_test             \
 
 EXAMPLES_USING_LE =			\
 	ancs_client 			\
@@ -167,6 +168,8 @@ ble_client: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} ${SM_REAL} b
 gap_le_advertisements: ${CORE_OBJ} ${COMMON_OBJ} ad_parser.c gap_le_advertisements.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
+hsp_hs_test: ${CORE_OBJ} ${COMMON_OBJ} ${SDP_CLIENT} hsp_hs.o hsp_hs_test.c
+	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 clean:
 	rm -f ${EXAMPLES}
