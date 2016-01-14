@@ -1391,11 +1391,11 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * connect
 
         case HFP_AG_OUTGOING_CALL_INITIATED:
             // directly reject call if number of free slots is exceeded
-            if (!hfp_gsm_call_possible()){
-                connection->send_error = 1;
-                hfp_run_for_context(connection);  
-                break;
-            }
+            // if (!hfp_gsm_call_possible()){
+            //     connection->send_error = 1;
+            //     hfp_run_for_context(connection);  
+            //     break;
+            // }
             hfp_gsm_handle_event(HFP_AG_OUTGOING_CALL_INITIATED);
             connection->call_state = HFP_CALL_OUTGOING_INITIATED;
 
@@ -1404,11 +1404,11 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * connect
 
         case HFP_AG_OUTGOING_REDIAL_INITIATED:
             // directly reject call if number of free slots is exceeded
-            if (!hfp_gsm_call_possible()){
-                connection->send_error = 1;
-                hfp_run_for_context(connection);  
-                break;
-            }
+            // if (!hfp_gsm_call_possible()){
+            //     connection->send_error = 1;
+            //     hfp_run_for_context(connection);  
+            //     break;
+            // }
 
             hfp_gsm_handle_event(HFP_AG_OUTGOING_REDIAL_INITIATED);
             connection->call_state = HFP_CALL_OUTGOING_INITIATED;
