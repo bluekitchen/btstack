@@ -1060,7 +1060,6 @@ static void hfp_ag_set_callheld_state(hfp_callheld_status_t state){
 }
 
 static void hfp_ag_set_call_state(hfp_call_status_t state){
-    // hfp_ag_call_state = state;
     hfp_ag_indicator_t * indicator = get_ag_indicator_for_name("call");
     if (!indicator){
         log_error("hfp_ag_set_call_state: call indicator is missing");
@@ -1068,8 +1067,15 @@ static void hfp_ag_set_call_state(hfp_call_status_t state){
     indicator->status = state;
 }
 
+static void hfp_ag_set_callheld_indicator(){
+    hfp_ag_indicator_t * indicator = get_ag_indicator_for_name("callheld");
+    if (!indicator){
+        log_error("hfp_ag_set_callheld_state: callheld indicator is missing");
+    };
+    indicator->status = hfp_gsm_callheld_status();
+}
+
 static void hfp_ag_set_call_indicator(){
-    // hfp_ag_call_state = state;
     hfp_ag_indicator_t * indicator = get_ag_indicator_for_name("call");
     if (!indicator){
         log_error("hfp_ag_set_call_state: call indicator is missing");
@@ -1139,6 +1145,10 @@ static int call_setup_state_machine(hfp_connection_t * connection){
 // connection is used to identify originating HF
 static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * connection){
     int indicator_index;
+    int callsetup_indicator_index = get_ag_indicator_index_for_name("callsetup");
+    int callheld_indicator_index = get_ag_indicator_index_for_name("callheld");
+    int call_indicator_index = get_ag_indicator_index_for_name("call");
+    
     //printf("hfp_ag_call_sm event %d \n", event);
     switch (event){
         case HFP_AG_INCOMING_CALL:
@@ -1528,6 +1538,70 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * connect
             }
             break;
         }
+
+        case HFP_AG_CALL_HOLD_USER_BUSY:
+            hfp_gsm_handle_event(HFP_AG_CALL_HOLD_USER_BUSY);
+            hfp_ag_set_callsetup_state(HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS);
+            connection->ag_indicators_status_update_bitmap = store_bit(connection->ag_indicators_status_update_bitmap, callsetup_indicator_index, 1);
+            connection->call_state = HFP_CALL_ACTIVE;
+            printf("AG: Call Waiting, User Busy\n");
+            break;
+        case HFP_AG_CALL_HOLD_RELEASE_ACTIVE_ACCEPT_HELD_OR_WAITING_CALL:
+            // Releases all active calls (if any exist) and accepts the other (held or waiting) call.
+            if (get_hfp_ag_callsetup_state() != HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS){
+                printf("AG: Call Dropped, Accept new call\n");
+                hfp_gsm_handle_event(HFP_AG_CALL_HOLD_RELEASE_ACTIVE_ACCEPT_HELD_OR_WAITING_CALL);
+                hfp_ag_set_callsetup_state(HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS);
+                connection->ag_indicators_status_update_bitmap = store_bit(connection->ag_indicators_status_update_bitmap, callsetup_indicator_index, 1);
+            } else {
+                printf("AG: Call Dropped, Resume held call\n");
+            }
+            if (get_hfp_ag_callheld_state() != HFP_CALLHELD_STATUS_NO_CALLS_HELD){
+                hfp_gsm_handle_event(HFP_AG_CALL_HOLD_RELEASE_ACTIVE_ACCEPT_HELD_OR_WAITING_CALL);
+                hfp_ag_set_callheld_state(HFP_CALLHELD_STATUS_NO_CALLS_HELD);
+                connection->ag_indicators_status_update_bitmap = store_bit(connection->ag_indicators_status_update_bitmap, callheld_indicator_index, 1);
+            }
+            connection->call_state = HFP_CALL_ACTIVE;
+            break;
+        case HFP_AG_CALL_HOLD_PARK_ACTIVE_ACCEPT_HELD_OR_WAITING_CALL:
+            
+            // Places all active calls (if any exist) on hold and accepts the other (held or waiting) call.
+            // only update if callsetup changed
+            if (get_hfp_ag_callsetup_state() != HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS){
+                printf("AG: Call on Hold, Accept new call\n");
+                hfp_gsm_handle_event(HFP_AG_CALL_HOLD_PARK_ACTIVE_ACCEPT_HELD_OR_WAITING_CALL);
+                hfp_ag_set_callsetup_state(HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS);
+                connection->ag_indicators_status_update_bitmap = store_bit(connection->ag_indicators_status_update_bitmap, callsetup_indicator_index, 1);
+            } else {
+                printf("AG: Swap calls\n");
+            }
+            hfp_gsm_handle_event(HFP_AG_CALL_HOLD_PARK_ACTIVE_ACCEPT_HELD_OR_WAITING_CALL);
+            hfp_ag_set_callheld_state(HFP_CALLHELD_STATUS_CALL_ON_HOLD_OR_SWAPPED);
+            connection->ag_indicators_status_update_bitmap = store_bit(connection->ag_indicators_status_update_bitmap, callheld_indicator_index, 1);
+            connection->call_state = HFP_CALL_ACTIVE;
+            break;
+        case HFP_AG_CALL_HOLD_ADD_HELD_CALL:
+            // Adds a held call to the conversation.
+            if (get_hfp_ag_callheld_state() != HFP_CALLHELD_STATUS_NO_CALLS_HELD){
+                printf("AG: Join 3-way-call\n");
+                hfp_gsm_handle_event(HFP_AG_CALL_HOLD_ADD_HELD_CALL);
+                hfp_ag_set_callheld_state(HFP_CALLHELD_STATUS_NO_CALLS_HELD);
+                connection->ag_indicators_status_update_bitmap = store_bit(connection->ag_indicators_status_update_bitmap, callheld_indicator_index, 1);
+                hfp_emit_event(hfp_callback, HFP_SUBEVENT_CONFERENCE_CALL, 0);
+            }
+            connection->call_state = HFP_CALL_ACTIVE;
+            break;
+        case HFP_AG_CALL_HOLD_EXIT_AND_JOIN_CALLS:
+            // Connects the two calls and disconnects the subscriber from both calls (Explicit Call Transfer)
+            hfp_gsm_handle_event(HFP_AG_CALL_HOLD_EXIT_AND_JOIN_CALLS);
+            printf("AG: Transfer call -> Connect two calls and disconnect\n");
+            hfp_ag_set_call_state(HFP_CALL_STATUS_NO_HELD_OR_ACTIVE_CALLS);
+            hfp_ag_set_callheld_state(HFP_CALLHELD_STATUS_NO_CALLS_HELD);
+            connection->ag_indicators_status_update_bitmap = store_bit(connection->ag_indicators_status_update_bitmap, call_indicator_index, 1);
+            connection->ag_indicators_status_update_bitmap = store_bit(connection->ag_indicators_status_update_bitmap, callheld_indicator_index, 1);
+            connection->call_state = HFP_CALL_IDLE;
+            break;
+        
         default:
             break;
     }
@@ -1802,73 +1876,24 @@ static void hfp_handle_rfcomm_data(uint8_t packet_type, uint16_t channel, uint8_
         case HFP_CMD_CALL_HOLD: {
             // TODO: fully implement this
             log_error("HFP: unhandled call hold type %c", context->line_buffer[0]);
-            int callsetup_indicator_index = get_ag_indicator_index_for_name("callsetup");
-            int callheld_indicator_index = get_ag_indicator_index_for_name("callheld");
-            int call_indicator_index = get_ag_indicator_index_for_name("call");
+            context->command = HFP_CMD_NONE;
+            context->ok_pending = 1;
+                    
             switch (context->line_buffer[0]){
                 case '0':
-                    context->command = HFP_CMD_NONE;
-                    context->ok_pending = 1;
-                    hfp_ag_set_callsetup_state(HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS);
-                    context->ag_indicators_status_update_bitmap = store_bit(context->ag_indicators_status_update_bitmap, callsetup_indicator_index, 1);
-                    context->call_state = HFP_CALL_ACTIVE;
-                    printf("AG: Call Waiting, User Busy\n");
+                    hfp_ag_call_sm(HFP_AG_CALL_HOLD_USER_BUSY, context);
                     break;
                 case '1':
-                    // Releases all active calls (if any exist) and accepts the other (held or waiting) call.
-                    context->command = HFP_CMD_NONE;
-                    context->ok_pending = 1;
-                    if (get_hfp_ag_callsetup_state() != HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS){
-                        printf("AG: Call Dropped, Accept new call\n");
-                        hfp_ag_set_callsetup_state(HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS);
-                        context->ag_indicators_status_update_bitmap = store_bit(context->ag_indicators_status_update_bitmap, callsetup_indicator_index, 1);
-                    } else {
-                        printf("AG: Call Dropped, Resume held call\n");
-                    }
-                    if (get_hfp_ag_callheld_state() != HFP_CALLHELD_STATUS_NO_CALLS_HELD){
-                        hfp_ag_set_callheld_state(HFP_CALLHELD_STATUS_NO_CALLS_HELD);
-                        context->ag_indicators_status_update_bitmap = store_bit(context->ag_indicators_status_update_bitmap, callheld_indicator_index, 1);
-                    }
-                    context->call_state = HFP_CALL_ACTIVE;
+                    hfp_ag_call_sm(HFP_AG_CALL_HOLD_RELEASE_ACTIVE_ACCEPT_HELD_OR_WAITING_CALL, context);
                     break;
                 case '2':
-                    // Places all active calls (if any exist) on hold and accepts the other (held or waiting) call.
-                    context->command = HFP_CMD_NONE;
-                    context->ok_pending = 1;
-                    // only update if callsetup changed
-                    if (get_hfp_ag_callsetup_state() != HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS){
-                        printf("AG: Call on Hold, Accept new call\n");
-                        hfp_ag_set_callsetup_state(HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS);
-                        context->ag_indicators_status_update_bitmap = store_bit(context->ag_indicators_status_update_bitmap, callsetup_indicator_index, 1);
-                    } else {
-                        printf("AG: Swap calls\n");
-                    }
-                    hfp_ag_set_callheld_state(HFP_CALLHELD_STATUS_CALL_ON_HOLD_OR_SWAPPED);
-                    context->ag_indicators_status_update_bitmap = store_bit(context->ag_indicators_status_update_bitmap, callheld_indicator_index, 1);
-                    context->call_state = HFP_CALL_ACTIVE;
+                    hfp_ag_call_sm(HFP_AG_CALL_HOLD_PARK_ACTIVE_ACCEPT_HELD_OR_WAITING_CALL, context);
                     break;
                 case '3':
-                    // Adds a held call to the conversation.
-                    context->command = HFP_CMD_NONE;
-                    context->ok_pending = 1;
-                    if (get_hfp_ag_callheld_state() != HFP_CALLHELD_STATUS_NO_CALLS_HELD){
-                        printf("AG: Join 3-way-call\n");
-                        hfp_ag_set_callheld_state(HFP_CALLHELD_STATUS_NO_CALLS_HELD);
-                        context->ag_indicators_status_update_bitmap = store_bit(context->ag_indicators_status_update_bitmap, callheld_indicator_index, 1);
-                        hfp_emit_event(hfp_callback, HFP_SUBEVENT_CONFERENCE_CALL, 0);
-                    }
-                    context->call_state = HFP_CALL_ACTIVE;
+                    hfp_ag_call_sm(HFP_AG_CALL_HOLD_ADD_HELD_CALL, context);
                     break;
                 case '4':
-                    // Connects the two calls and disconnects the subscriber from both calls (Explicit Call Transfer)
-                    context->command = HFP_CMD_NONE;
-                    context->ok_pending = 1;
-                    printf("AG: Transfer call -> Connect two calls and disconnect\n");
-                    hfp_ag_set_call_state(HFP_CALL_STATUS_NO_HELD_OR_ACTIVE_CALLS);
-                    hfp_ag_set_callheld_state(HFP_CALLHELD_STATUS_NO_CALLS_HELD);
-                    context->ag_indicators_status_update_bitmap = store_bit(context->ag_indicators_status_update_bitmap, call_indicator_index, 1);
-                    context->ag_indicators_status_update_bitmap = store_bit(context->ag_indicators_status_update_bitmap, callheld_indicator_index, 1);
-                    context->call_state = HFP_CALL_IDLE;
+                    hfp_ag_call_sm(HFP_AG_CALL_HOLD_EXIT_AND_JOIN_CALLS, context);
                     break;
                 default:
                     break;
