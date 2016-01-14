@@ -140,7 +140,7 @@ static void sco_packet_handler(uint8_t packet_type, uint8_t * packet, uint16_t s
     // hexdumpf(packet, size);
 }
 
-void packet_handler(uint8_t * event, uint16_t event_size){
+static void packet_handler(uint8_t * event, uint16_t event_size){
 
     // printf("Packet handler event 0x%02x\n", event[0]);
     
@@ -208,6 +208,7 @@ void packet_handler(uint8_t * event, uint16_t event_size){
     }
 }
 
+int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
 
 #ifdef TABLE_SIZE
