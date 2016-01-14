@@ -39,4 +39,6 @@ EXAMPLES += ${EXAMPLES_CLI}
 CFLAGS += -I${POSIX_ROOT}/src
 endif
 
+LDFLAGS += -lm
+
 all: ${BTSTACK_ROOT}/src/version.h ${EXAMPLES}
