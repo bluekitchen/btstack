@@ -528,6 +528,7 @@ TEST_GROUP(HFPClient){
 
 TEST(HFPClient, PTSRHHTests){
     for (int i = 0; i < hfp_pts_ag_rhh_tests_size(); i++){
+        setup();
         simulate_test_sequence(&hfp_pts_ag_rhh_tests()[i]);
         teardown();
     }
@@ -535,6 +536,7 @@ TEST(HFPClient, PTSRHHTests){
 
 TEST(HFPClient, PTSECCTests){
     for (int i = 0; i < hfp_pts_ag_ecc_tests_size(); i++){
+        setup();
         simulate_test_sequence(&hfp_pts_ag_ecc_tests()[i]);
         teardown();
     }
@@ -542,6 +544,7 @@ TEST(HFPClient, PTSECCTests){
 
 TEST(HFPClient, PTSECSTests){
     for (int i = 0; i < hfp_pts_ag_ecs_tests_size(); i++){
+        setup();
         simulate_test_sequence(&hfp_pts_ag_ecs_tests()[i]);
         teardown();
     }
@@ -549,6 +552,7 @@ TEST(HFPClient, PTSECSTests){
 
 TEST(HFPClient, PTSTWCTests){
     for (int i = 0; i < hfp_pts_ag_twc_tests_size(); i++){
+        setup();
         simulate_test_sequence(&hfp_pts_ag_twc_tests()[i]);
         teardown();
     }
@@ -556,6 +560,7 @@ TEST(HFPClient, PTSTWCTests){
 
 TEST(HFPClient, PTSATATests){
     for (int i = 0; i < hfp_pts_ag_ata_tests_size(); i++){
+        setup();
         simulate_test_sequence(&hfp_pts_ag_ata_tests()[i]);
         teardown();
     }
@@ -563,6 +568,7 @@ TEST(HFPClient, PTSATATests){
 
 TEST(HFPClient, PTSSLCTests){
     for (int i = 0; i < hfp_pts_ag_slc_tests_size(); i++){
+        setup();
         simulate_test_sequence(&hfp_pts_ag_slc_tests()[i]);
         teardown();
     }
