@@ -1143,7 +1143,6 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * connect
     //printf("hfp_ag_call_sm event %d \n", event);
     switch (event){
         case HFP_AG_INCOMING_CALL:
-            hfp_gsm_handle_event(HFP_AG_INCOMING_CALL);
             switch (get_hfp_ag_call_state()){
                 case HFP_CALL_STATUS_NO_HELD_OR_ACTIVE_CALLS:
                     switch (get_hfp_ag_callsetup_state()){
@@ -1171,7 +1170,6 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * connect
             break;
         case HFP_AG_INCOMING_CALL_ACCEPTED_BY_AG:
             // clear CLIP
-            hfp_gsm_handle_event(HFP_AG_INCOMING_CALL_ACCEPTED_BY_AG);
             clip_type = 0;
             switch (get_hfp_ag_call_state()){
                 case HFP_CALL_STATUS_NO_HELD_OR_ACTIVE_CALLS:
@@ -1203,7 +1201,6 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * connect
             break;
         
         case HFP_AG_HELD_CALL_JOINED_BY_AG:
-            hfp_gsm_handle_event(HFP_AG_HELD_CALL_JOINED_BY_AG);
             switch (get_hfp_ag_call_state()){
                 case HFP_CALL_STATUS_ACTIVE_OR_HELD_CALL_IS_PRESENT:
                     switch (get_hfp_ag_callheld_state()){
@@ -1223,7 +1220,6 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * connect
             break;
 
         case HFP_AG_INCOMING_CALL_ACCEPTED_BY_HF:
-            hfp_gsm_handle_event(HFP_AG_INCOMING_CALL_ACCEPTED_BY_HF);
             // clear CLIP
             clip_type = 0;
             switch (get_hfp_ag_call_state()){
@@ -1246,7 +1242,6 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * connect
             break;
 
         case HFP_AG_RESPONSE_AND_HOLD_ACCEPT_INCOMING_CALL_BY_AG:
-            hfp_gsm_handle_event(HFP_AG_RESPONSE_AND_HOLD_ACCEPT_INCOMING_CALL_BY_AG);
             // clear CLIP
             clip_type = 0;
             switch (get_hfp_ag_call_state()){
@@ -1272,7 +1267,6 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * connect
             break;
 
         case HFP_AG_RESPONSE_AND_HOLD_ACCEPT_INCOMING_CALL_BY_HF:
-            hfp_gsm_handle_event(HFP_AG_RESPONSE_AND_HOLD_ACCEPT_INCOMING_CALL_BY_HF);
             // clear CLIP
             clip_type = 0;
             switch (get_hfp_ag_call_state()){
@@ -1299,7 +1293,6 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * connect
 
         case HFP_AG_RESPONSE_AND_HOLD_ACCEPT_HELD_CALL_BY_AG:
         case HFP_AG_RESPONSE_AND_HOLD_ACCEPT_HELD_CALL_BY_HF:
-            hfp_gsm_handle_event(HFP_AG_RESPONSE_AND_HOLD_ACCEPT_HELD_CALL_BY_AG);
             if (!hfp_ag_response_and_hold_active) break;
             if (hfp_ag_response_and_hold_state != HFP_RESPONSE_AND_HOLD_INCOMING_ON_HOLD) break;
             hfp_ag_response_and_hold_active = 0;
@@ -1310,7 +1303,6 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * connect
 
         case HFP_AG_RESPONSE_AND_HOLD_REJECT_HELD_CALL_BY_AG:
         case HFP_AG_RESPONSE_AND_HOLD_REJECT_HELD_CALL_BY_HF:
-            hfp_gsm_handle_event(HFP_AG_RESPONSE_AND_HOLD_REJECT_HELD_CALL_BY_AG);
             if (!hfp_ag_response_and_hold_active) break;
             if (hfp_ag_response_and_hold_state != HFP_RESPONSE_AND_HOLD_INCOMING_ON_HOLD) break;
             hfp_ag_response_and_hold_active = 0;
@@ -1322,7 +1314,6 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * connect
             break;
 
         case HFP_AG_TERMINATE_CALL_BY_HF:
-            hfp_gsm_handle_event(HFP_AG_TERMINATE_CALL_BY_HF);
             // clear CLIP
             clip_type = 0;
             switch (get_hfp_ag_call_state()){
@@ -1353,7 +1344,6 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * connect
             break;
 
         case HFP_AG_TERMINATE_CALL_BY_AG:
-            hfp_gsm_handle_event(HFP_AG_TERMINATE_CALL_BY_AG);
             // clear CLIP
             clip_type = 0;
             switch (get_hfp_ag_call_state()){
@@ -1378,7 +1368,6 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * connect
             }
             break;
         case HFP_AG_CALL_DROPPED:
-            hfp_gsm_handle_event(HFP_AG_CALL_DROPPED);
             // clear CLIP
             clip_type = 0;
             switch (get_hfp_ag_call_state()){
@@ -1421,7 +1410,6 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * connect
                 hfp_run_for_context(connection);  
                 break;
             }
-            hfp_gsm_handle_event(HFP_AG_OUTGOING_CALL_INITIATED);
             connection->call_state = HFP_CALL_OUTGOING_INITIATED;
 
             hfp_emit_string_event(hfp_callback, HFP_SUBEVENT_PLACE_CALL_WITH_NUMBER, (const char *) &connection->line_buffer[3]);
@@ -1435,7 +1423,6 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * connect
                 break;
             }
 
-            hfp_gsm_handle_event(HFP_AG_OUTGOING_REDIAL_INITIATED);
             connection->call_state = HFP_CALL_OUTGOING_INITIATED;
 
             hfp_emit_event(hfp_callback, HFP_SUBEVENT_REDIAL_LAST_NUMBER, 0);
@@ -1448,7 +1435,6 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * connect
                 break;
             }
             
-            hfp_gsm_handle_event(HFP_AG_OUTGOING_CALL_REJECTED);
             connection->call_state = HFP_CALL_IDLE;
             connection->send_error = 1;
             hfp_run_for_context(connection);
@@ -1461,7 +1447,6 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * connect
                 break;
             }
             
-            hfp_gsm_handle_event(HFP_AG_OUTGOING_CALL_ACCEPTED);
             connection->ok_pending = 1;
             connection->call_state = HFP_CALL_OUTGOING_DIALING;
 
@@ -1483,14 +1468,12 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * connect
             break;
 
         case HFP_AG_OUTGOING_CALL_RINGING:
-            // hfp_gsm_handle_event();
-            connection = hfp_ag_connection_for_call_state(HFP_CALL_OUTGOING_DIALING);
+            // nection = hfp_ag_connection_for_call_state(HFP_CALL_OUTGOING_DIALING);
             if (!connection){
                 log_info("hfp_ag_call_sm: did not find outgoing connection in dialing state");
                 break;
             }
             
-            hfp_gsm_handle_event(HFP_AG_OUTGOING_CALL_RINGING);
             connection->call_state = HFP_CALL_OUTGOING_RINGING;
             hfp_ag_set_callsetup_state(HFP_CALLSETUP_STATUS_OUTGOING_CALL_SETUP_IN_ALERTING_STATE);
             hfp_ag_transfer_callsetup_state();
@@ -1507,7 +1490,6 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * connect
                 break;
             }
 
-            hfp_gsm_handle_event(HFP_AG_OUTGOING_CALL_ESTABLISHED);
             connection->call_state = HFP_CALL_ACTIVE;
             hfp_ag_set_callsetup_state(HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS);
             hfp_ag_set_call_state(HFP_CALL_STATUS_ACTIVE_OR_HELD_CALL_IS_PRESENT);
@@ -1522,7 +1504,7 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * connect
         default:
             break;
     }
-
+    hfp_gsm_handle_event(event);
     if ( (get_hfp_ag_callsetup_state() != hfp_gsm_callsetup_status()) ||
          (get_hfp_ag_callheld_state() != hfp_gsm_callheld_status())   ||
          (get_hfp_ag_call_state() != hfp_gsm_call_status()) ){
