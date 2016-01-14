@@ -1115,7 +1115,7 @@ static int call_setup_state_machine(hfp_connection_t * connection){
 // connection is used to identify originating HF
 static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * connection){
     int indicator_index;
-
+    //printf("hfp_ag_call_sm event %d \n", event);
     switch (event){
         case HFP_AG_INCOMING_CALL:
             hfp_gsm_handle_event(HFP_AG_INCOMING_CALL);
@@ -1146,7 +1146,7 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * connect
             break;
         case HFP_AG_INCOMING_CALL_ACCEPTED_BY_AG:
             // clear CLIP
-            hfp_gsm_handle_event(HFP_AG_INCOMING_CALL);
+            hfp_gsm_handle_event(HFP_AG_INCOMING_CALL_ACCEPTED_BY_AG);
             clip_type = 0;
             switch (hfp_ag_call_state){
                 case HFP_CALL_STATUS_NO_HELD_OR_ACTIVE_CALLS:
