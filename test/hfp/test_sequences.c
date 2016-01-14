@@ -1883,7 +1883,8 @@ const char * TC_AG_ECS_BV_03_I[] = {
     "OK" ,
     "AT+CMEE=1" ,
     "OK" ,
-    "USER:c" , // "+CIEV:3,1" ,
+    "USER:c" , 
+    "+CIEV:3,1" ,
     "RING" ,
     "+CLIP: \"1234567\",129" ,
     "ATA" ,
@@ -1902,7 +1903,7 @@ const char * TC_AG_ECS_BV_03_I[] = {
 hfp_test_item_t pts_ag_ecs_tests[] = {
     TEST_SEQUENCE(TC_AG_ECS_BV_01_I),
     TEST_SEQUENCE(TC_AG_ECS_BV_02_I),
-    // TEST_SEQUENCE(TC_AG_ECS_BV_03_I)
+    TEST_SEQUENCE(TC_AG_ECS_BV_03_I)
 };
 
 

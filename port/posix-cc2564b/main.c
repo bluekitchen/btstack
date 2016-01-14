@@ -63,10 +63,10 @@
 int btstack_main(int argc, const char * argv[]);
 
 
-static hci_transport_config_uart_t config = {
+static hci_transport_config_uart_t hci_uart_config_cc256x = {
     HCI_TRANSPORT_CONFIG_UART,
     115200,
-    0,  // main baudrate
+    921600,  // main baudrate
     1,  // flow control
     NULL,
 };
@@ -97,18 +97,30 @@ int main(int argc, const char * argv[]){
 	btstack_memory_init();
     run_loop_init(run_loop_posix_get_instance());
 	    
+#if 0
+    // Ubuntu
+
+    // use logger: format HCI_DUMP_PACKETLOGGER, HCI_DUMP_BLUEZ or HCI_DUMP_STDOUT
+    hci_dump_open("hci_dump.pklg", HCI_DUMP_PACKETLOGGER);
+
+    // pick serial port
+    hci_uart_config_cc256x.device_name = "/dev/ttyUSB0";
+#else
+    // OS X
+
     // use logger: format HCI_DUMP_PACKETLOGGER, HCI_DUMP_BLUEZ or HCI_DUMP_STDOUT
     hci_dump_open("/tmp/hci_dump.pklg", HCI_DUMP_PACKETLOGGER);
 
     // pick serial port
-    config.device_name = "/dev/tty.usbserial-A900K0VK";
+    hci_uart_config_cc256x.device_name = "/dev/tty.usbserial-A900K0VK";
+#endif
 
     // init HCI
 	hci_transport_t    * transport = hci_transport_h4_posix_instance();
 	bt_control_t       * control   = bt_control_cc256x_instance();
     remote_device_db_t * remote_db = (remote_device_db_t *) &remote_device_db_fs;
         
-	hci_init(transport, &config, control, remote_db);
+	hci_init(transport, &hci_uart_config_cc256x, control, remote_db);
     
     // handle CTRL-c
     signal(SIGINT, sigint_handler);

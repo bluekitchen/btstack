@@ -168,7 +168,7 @@ void hsp_hs_create_service(uint8_t * service, uint32_t service_record_handle, in
     de_add_number(service,  DE_UINT, DE_SIZE_16, SDP_ServiceClassIDList);
     attribute = de_push_sequence(service);
     {
-        //  "UUID for PAN Service" / see Bluetooth Erratum #3507
+        //  see Bluetooth Erratum #3507
         de_add_number(attribute, DE_UUID, DE_SIZE_16, SDP_HSP);          // 0x1108
         de_add_number(attribute, DE_UUID, DE_SIZE_16, SDP_Headset_HS);   // 0x1131
         de_add_number(attribute, DE_UUID, DE_SIZE_16, SDP_GenericAudio); // 0x1203
@@ -206,12 +206,12 @@ void hsp_hs_create_service(uint8_t * service, uint32_t service_record_handle, in
     de_add_number(service,  DE_UINT, DE_SIZE_16, SDP_BluetoothProfileDescriptorList);
     attribute = de_push_sequence(service);
     {
-        uint8_t *sppProfile = de_push_sequence(attribute);
+        uint8_t *hsp_profile = de_push_sequence(attribute);
         {
-            de_add_number(sppProfile,  DE_UUID, DE_SIZE_16, SDP_HSP); 
-            de_add_number(sppProfile,  DE_UINT, DE_SIZE_16, 0x0102); // Verision 1.2
+            de_add_number(hsp_profile,  DE_UUID, DE_SIZE_16, SDP_HSP); 
+            de_add_number(hsp_profile,  DE_UINT, DE_SIZE_16, 0x0102); // Verision 1.2
         }
-        de_pop_sequence(attribute, sppProfile);
+        de_pop_sequence(attribute, hsp_profile);
     }
     de_pop_sequence(service, attribute);
 

@@ -39,6 +39,8 @@
 //
 // Minimal test for HSP Headset (!! UNDER DEVELOPMENT !!)
 //
+// Requires HAVE_SCO and HAVE_SCO_OVER_HCI to be defined
+//
 // Tested working setups: 
 // - Ubuntu 14 64-bit, CC2564B connected via FTDI USB-2-UART adapter, 921600 baud
 //
@@ -57,12 +59,11 @@
 #include <string.h>
 #include <math.h>
 
-#include "hci_cmds.h"
 #include "run_loop.h"
+#include "sdp_util.h"
 
-#include "classic/sdp_util.h"
-#include "classic/sdp.h"
-#include "classic/hsp_hs.h"
+#include "sdp.h"
+#include "hsp_hs.h"
 
 #include "hci.h"
 #include "l2cap.h"
@@ -140,7 +141,7 @@ static void sco_packet_handler(uint8_t packet_type, uint8_t * packet, uint16_t s
     // hexdumpf(packet, size);
 }
 
-void packet_handler(uint8_t * event, uint16_t event_size){
+static void packet_handler(uint8_t * event, uint16_t event_size){
 
     // printf("Packet handler event 0x%02x\n", event[0]);
     
@@ -149,8 +150,7 @@ void packet_handler(uint8_t * event, uint16_t event_size){
     switch (event[0]) {
         case BTSTACK_EVENT_STATE:
             if (event[2] != HCI_STATE_WORKING) break;
-            // request num completed events for SCO packets
-            hci_send_cmd(&hci_write_synchronous_flow_control_enable, 1);
+            printf("Working!\n");
             break;
         case HCI_EVENT_NUMBER_OF_COMPLETED_PACKETS:
             // printf("HCI_EVENT_NUMBER_OF_COMPLETED_PACKETS\n");
@@ -208,6 +208,7 @@ void packet_handler(uint8_t * event, uint16_t event_size){
     }
 }
 
+int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
 
 #ifdef TABLE_SIZE
