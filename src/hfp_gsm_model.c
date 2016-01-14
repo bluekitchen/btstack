@@ -82,6 +82,9 @@ typedef struct {
 // 
 static hfp_gsm_call_t gsm_calls[HFP_GSM_MAX_NR_CALLS]; 
 
+void hfp_gsm_module_init(void){
+    memset(gsm_calls, 0, sizeof(gsm_calls));
+}   
 //
 static hfp_callsetup_status_t callsetup_status = HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS;
 
@@ -122,9 +125,9 @@ static inline int get_response_held_call_index(){
     return get_call_index_with_status(CALL_RESPONSE_HOLD);
 }
 
-// static inline int get_number_none_calls(){
-//     return get_number_calls_with_status(CALL_NONE);
-// }
+static inline int get_number_none_calls(){
+    return get_number_calls_with_status(CALL_NONE);
+}
 
 static inline int get_number_active_calls(){
     return get_number_calls_with_status(CALL_ACTIVE);
@@ -165,8 +168,7 @@ int hfp_gsm_response_held_active(){
 }
 
 int hfp_gsm_call_possible(void){
-    int next_free_slot = get_none_call_index();
-    return next_free_slot != -1;
+    return get_number_none_calls() > 0;
 }
 
 void hfp_gsm_handle_event(hfp_ag_call_event_t event){
@@ -212,19 +214,25 @@ void hfp_gsm_handle_event(hfp_ag_call_event_t event){
             break;
 
         case HFP_AG_INCOMING_CALL:
+            printf("HFP_AG_INCOMING_CALL \n");
             if (hfp_gsm_callsetup_status() != HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS) break;
+            printf("HFP_AG_INCOMING_CALL 1: HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS -> HFP_CALLSETUP_STATUS_INCOMING_CALL_SETUP_IN_PROGRESS, CALL_INITIATED %d\n", next_free_slot);
             callsetup_status = HFP_CALLSETUP_STATUS_INCOMING_CALL_SETUP_IN_PROGRESS;
             gsm_calls[next_free_slot].status = CALL_INITIATED;
             gsm_calls[next_free_slot].clip_type = 0;
             break;
         
         case HFP_AG_INCOMING_CALL_ACCEPTED_BY_AG:
+            printf("HFP_AG_INCOMING_CALL_ACCEPTED_BY_AG \n");
             if (hfp_gsm_callsetup_status() != HFP_CALLSETUP_STATUS_INCOMING_CALL_SETUP_IN_PROGRESS) break;
             callsetup_status = HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS;
-                    
+            
             if (hfp_gsm_call_status() == HFP_CALL_STATUS_ACTIVE_OR_HELD_CALL_IS_PRESENT){
+                printf("HFP_AG_INCOMING_CALL_ACCEPTED_BY_AG 1: HFP_CALL_STATUS_ACTIVE_OR_HELD_CALL_IS_PRESENT,  CALL_HELD %d\n", current_call_index);
                 gsm_calls[current_call_index].status = CALL_HELD;
             }
+            printf("HFP_AG_INCOMING_CALL_ACCEPTED_BY_AG 2: HFP_CALL_STATUS_ACTIVE_OR_HELD_CALL_IS_PRESENT,  CALL_ACTIVE %d\n", initiated_call_index);
+                
             gsm_calls[initiated_call_index].status = CALL_ACTIVE;
             break;
 
@@ -235,8 +243,11 @@ void hfp_gsm_handle_event(hfp_ag_call_event_t event){
             break;
 
         case HFP_AG_INCOMING_CALL_ACCEPTED_BY_HF:
+            printf("HFP_AG_INCOMING_CALL_ACCEPTED_BY_HF \n");
             if (hfp_gsm_callsetup_status() != HFP_CALLSETUP_STATUS_INCOMING_CALL_SETUP_IN_PROGRESS) break;
-            if (hfp_gsm_call_status() != HFP_CALL_STATUS_ACTIVE_OR_HELD_CALL_IS_PRESENT) break;
+            printf("HFP_AG_INCOMING_CALL_ACCEPTED_BY_HF 1: HFP_CALLSETUP_STATUS_INCOMING_CALL_SETUP_IN_PROGRESS\n");
+            if (hfp_gsm_call_status() != HFP_CALL_STATUS_NO_HELD_OR_ACTIVE_CALLS) break;
+            printf("HFP_AG_INCOMING_CALL_ACCEPTED_BY_HF 2\n");
             callsetup_status = HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS;
             gsm_calls[initiated_call_index].status = CALL_ACTIVE;
             break;
@@ -288,14 +299,16 @@ void hfp_gsm_handle_event(hfp_ag_call_event_t event){
             }
             break;
 
-        case HFP_AG_CALL_DROPPED:
-            callsetup_status = HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS;
-            if (hfp_gsm_call_status() != HFP_CALL_STATUS_ACTIVE_OR_HELD_CALL_IS_PRESENT) break;
-            if (hfp_gsm_response_held_active()) {
-                gsm_calls[get_response_held_call_index()].status = CALL_NONE;
-            }
-            if (current_call_index != -1){
-                gsm_calls[current_call_index].status = CALL_NONE;
+        case HFP_AG_CALL_DROPPED:{
+                callsetup_status = HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS;
+                if (hfp_gsm_call_status() != HFP_CALL_STATUS_ACTIVE_OR_HELD_CALL_IS_PRESENT) break;
+                
+                int i ;
+                for (i = 0; i < HFP_GSM_MAX_NR_CALLS; i++){
+                    gsm_calls[i].status = CALL_NONE;
+                    gsm_calls[i].clip_type = 0;
+                    gsm_calls[i].clip_number[0] = '\0';
+                }
             }
             break;
         
