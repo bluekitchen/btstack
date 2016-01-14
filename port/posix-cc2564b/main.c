@@ -101,7 +101,7 @@ int main(int argc, const char * argv[]){
     hci_dump_open("/tmp/hci_dump.pklg", HCI_DUMP_PACKETLOGGER);
 
     // pick serial port
-    config.device_name = "/dev/tty.usbserial-AD025KU2";
+    config.device_name = "/dev/tty.usbserial-A900K0VK";
 
     // init HCI
 	hci_transport_t    * transport = hci_transport_h4_posix_instance();
