@@ -1000,6 +1000,10 @@ static void hci_initializing_run(void){
             hci_send_cmd(&hci_write_scan_enable, (hci_stack->connectable << 1) | hci_stack->discoverable); // page scan
             hci_stack->substate = HCI_INIT_W4_WRITE_SCAN_ENABLE;
             break;
+        case HCI_INIT_WRITE_SYNCHRONOUS_FLOW_CONTROL_ENABLE:
+            hci_stack->substate = HCI_INIT_W4_WRITE_SYNCHRONOUS_FLOW_CONTROL_ENABLE;
+            hci_send_cmd(&hci_write_synchronous_flow_control_enable, 1); // SCO tracking enabled
+            break;
 #ifdef HAVE_BLE
         // LE INIT
         case HCI_INIT_LE_READ_BUFFER_SIZE:
@@ -1188,17 +1192,34 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
                 return;
             }
             break;
+        case HCI_INIT_W4_WRITE_PAGE_TIMEOUT:
+            break;
         case HCI_INIT_W4_LE_READ_BUFFER_SIZE:
             // skip write le host if not supported (e.g. on LE only EM9301)
             if (hci_stack->local_supported_commands[0] & 0x02) break;
             hci_stack->substate = HCI_INIT_LE_SET_SCAN_PARAMETERS;
             return;
+
+#ifdef HAVE_SCO_OVER_HCI
+        case HCI_INIT_W4_WRITE_SCAN_ENABLE:
+            // just go to next state
+            break;
+        case HCI_INIT_W4_WRITE_SYNCHRONOUS_FLOW_CONTROL_ENABLE:
+            if (!hci_le_supported()){
+                // SKIP LE init for Classic only configuration
+                hci_stack->substate = HCI_INIT_DONE;
+                return;
+            }
+            break;
+#else
         case HCI_INIT_W4_WRITE_SCAN_ENABLE:
             if (!hci_le_supported()){
                 // SKIP LE init for Classic only configuration
                 hci_stack->substate = HCI_INIT_DONE;
                 return;
             }
+#endif
+            break;
         default:
             break;
     }
