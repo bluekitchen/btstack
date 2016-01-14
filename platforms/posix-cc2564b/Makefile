@@ -13,9 +13,10 @@ include ${BTSTACK_ROOT}/chipset-cc256x/Makefile.inc
 
 CFLAGS += -I$(BTSTACK_ROOT)/chipset-cc256x
 
-# CC = gcc-fsf-4.9
 CFLAGS  += -g -Wall 
-# CFLAGS += -Werror
+
+# 
+CFLAGS += -Wmissing-prototypes -Wstrict-prototypes -Wshadow -Werror
 
 VPATH += ${BTSTACK_ROOT}/platforms/posix/src
 VPATH += ${BTSTACK_ROOT}/chipset-cc256x
