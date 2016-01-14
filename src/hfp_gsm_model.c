@@ -82,7 +82,7 @@ typedef struct {
 // 
 static hfp_gsm_call_t gsm_calls[HFP_GSM_MAX_NR_CALLS]; 
 
-void hfp_gsm_module_init(void){
+void hfp_gsm_init(void){
     memset(gsm_calls, 0, sizeof(gsm_calls));
 }   
 //

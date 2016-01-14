@@ -1949,6 +1949,8 @@ void hfp_ag_init(uint16_t rfcomm_channel_nr, uint32_t supported_features,
     hfp_ag_call_state = HFP_CALL_STATUS_NO_HELD_OR_ACTIVE_CALLS;
     hfp_ag_callsetup_state = HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS;
     hfp_ag_callheld_state = HFP_CALLHELD_STATUS_NO_CALLS_HELD;
+
+    hfp_gsm_init();
 }
 
 void hfp_ag_establish_service_level_connection(bd_addr_t bd_addr){
