@@ -222,6 +222,8 @@ static int h4_send_packet(uint8_t packet_type, uint8_t * packet, int size){
     if (hci_transport_h4->ds == NULL) return -1;
     if (hci_transport_h4->uart_fd == 0) return -1;
 
+    uint32_t start = run_loop_get_time_ms();
+
     // store packet type before actual data and increase size
     char *data = (char*) packet;
     size++;
@@ -230,12 +232,19 @@ static int h4_send_packet(uint8_t packet_type, uint8_t * packet, int size){
     while (size > 0) {
         int bytes_written = write(hci_transport_h4->uart_fd, data, size);
         if (bytes_written < 0) {
+            log_info("usleep(5000)");
             usleep(5000);
             continue;
         }
         data += bytes_written;
         size -= bytes_written;
     }
+
+    uint32_t end = run_loop_get_time_ms();
+    if (end - start > 10){
+        log_info("h4_send_packet: write took %u ms", end - start);
+    }
+
     return 0;
 }
 
@@ -305,12 +314,19 @@ static int h4_process(struct data_source *ds) {
     if (hci_transport_h4->uart_fd == 0) return -1;
 
     int read_now = bytes_to_read;
+
+    uint32_t start = run_loop_get_time_ms();
     
     // read up to bytes_to_read data in
     ssize_t bytes_read = read(hci_transport_h4->uart_fd, &hci_packet[read_pos], read_now);
     // log_info("h4_process: bytes read %u", bytes_read);
     if (bytes_read < 0) {
         return bytes_read;
+    }
+
+    uint32_t end = run_loop_get_time_ms();
+    if (end - start > 10){
+        log_info("h4_process: read took %u ms", end - start);
     }
     
     bytes_to_read -= bytes_read;
