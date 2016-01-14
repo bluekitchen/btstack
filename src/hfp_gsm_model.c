@@ -315,14 +315,73 @@ void hfp_gsm_handle_event(hfp_ag_call_event_t event){
             }
             break;
         case HFP_AG_CALL_HOLD_USER_BUSY:
+            // Held or waiting call gets active, 
+            callsetup_status = HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS;
+            gsm_calls[initiated_call_index].status = CALL_NONE;
+            gsm_calls[held_call_index].status = CALL_ACTIVE;
             break;
-        case HFP_AG_CALL_HOLD_PARK_ACTIVE_ACCEPT_HELD_OR_WAITING_CALL:
-            break;
-        case HFP_AG_CALL_HOLD_ADD_HELD_CALL:
-            break;
-        case HFP_AG_CALL_HOLD_EXIT_AND_JOIN_CALLS:
-            break;
+        
+        case HFP_AG_CALL_HOLD_RELEASE_ACTIVE_ACCEPT_HELD_OR_WAITING_CALL:{
+            int i ;
+            for (i = 0; i < HFP_GSM_MAX_NR_CALLS; i++){
+                if (gsm_calls[i].status == CALL_ACTIVE){
+                    gsm_calls[i].clip_type = 0;
+                    gsm_calls[i].clip_number[0] = '\0';
+                    gsm_calls[i].status = CALL_NONE;
+                }
+            }
 
+            if (callsetup_status != HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS){
+                gsm_calls[initiated_call_index].status = CALL_ACTIVE;
+            } else {
+                gsm_calls[held_call_index].status = CALL_ACTIVE;
+            }
+            callsetup_status = HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS;
+            break;
+        }
+        case HFP_AG_CALL_HOLD_PARK_ACTIVE_ACCEPT_HELD_OR_WAITING_CALL:{
+            int i ;
+            for (i = 0; i < HFP_GSM_MAX_NR_CALLS; i++){
+                if (gsm_calls[i].status == CALL_ACTIVE){
+                    gsm_calls[i].clip_type = 0;
+                    gsm_calls[i].clip_number[0] = '\0';
+                    gsm_calls[i].status = CALL_HELD;
+                }
+            }
+
+            if (callsetup_status != HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS){
+                gsm_calls[initiated_call_index].status = CALL_ACTIVE;
+            } else {
+                gsm_calls[held_call_index].status = CALL_ACTIVE;
+            }
+            callsetup_status = HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS;
+            break;
+        }            
+        case HFP_AG_CALL_HOLD_ADD_HELD_CALL:{
+            if (hfp_gsm_callheld_status() != HFP_CALLHELD_STATUS_NO_CALLS_HELD){
+                int i ;
+                for (i = 0; i < HFP_GSM_MAX_NR_CALLS; i++){
+                    if (gsm_calls[i].status == CALL_HELD){
+                        gsm_calls[i].clip_type = 0;
+                        gsm_calls[i].clip_number[0] = '\0';
+                        gsm_calls[i].status = CALL_ACTIVE;
+                    }
+                }
+            }
+            gsm_calls[initiated_call_index].status = CALL_ACTIVE;
+
+            break;
+        }
+        case HFP_AG_CALL_HOLD_EXIT_AND_JOIN_CALLS:{
+            int i ;
+            for (i = 0; i < HFP_GSM_MAX_NR_CALLS; i++){
+                gsm_calls[i].clip_type = 0;
+                gsm_calls[i].clip_number[0] = '\0';
+                gsm_calls[i].status = CALL_NONE;
+            }
+        
+            break;
+        }
         default:
             break;
     }
