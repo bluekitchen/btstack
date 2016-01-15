@@ -81,15 +81,22 @@ typedef struct {
 
 static hfp_gsm_call_t gsm_calls[HFP_GSM_MAX_NR_CALLS]; 
 static hfp_callsetup_status_t callsetup_status = HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS;
-static uint8_t call_index = 0;
+
+static uint8_t clip_type;
+static char clip_number[25];
+
+static void hfp_gsm_handler(hfp_ag_call_event_t event, uint8_t index, uint8_t type, const char * number);
 
 void hfp_gsm_init(void){
+    callsetup_status = HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS;
+    clip_type = 0;
+    memset(clip_number, 0, sizeof(clip_number));
+
     memset(gsm_calls, 0, sizeof(gsm_calls));
     int i;
     for (i = 0; i < HFP_GSM_MAX_NR_CALLS; i++){
         gsm_calls[i].status = CALL_NONE;
     }
-    callsetup_status = HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS;
 } 
 
 static int get_number_calls_with_status(hfp_gsm_call_status_t status){
@@ -136,10 +143,6 @@ static inline int get_number_active_calls(){
     return get_number_calls_with_status(CALL_ACTIVE);
 }
 
-static inline int get_number_initiated_calls(){
-    return get_number_calls_with_status(CALL_INITIATED);
-}
-
 static inline int get_number_held_calls(){
     return get_number_calls_with_status(CALL_HELD);
 }
@@ -150,6 +153,14 @@ static inline int get_number_response_held_calls(){
 
 static int next_call_index(){
     return HFP_GSM_MAX_NR_CALLS + 1 - get_number_none_calls();
+}
+
+static void hfp_gsm_set_clip(int index_in_table, uint8_t type, const char * number){
+    gsm_calls[index_in_table].clip_type = type;
+
+    int clip_number_size = sizeof(gsm_calls[index_in_table].clip_number);
+    strncpy(gsm_calls[index_in_table].clip_number, number, clip_number_size);
+    gsm_calls[index_in_table].clip_number[clip_number_size-1] = '\0';
 }
 
 static void delete_call(int delete_index_in_table){
@@ -172,6 +183,51 @@ static void create_call(){
     gsm_calls[next_free_slot].status = CALL_INITIATED;
     gsm_calls[next_free_slot].clip_type = 0;
     gsm_calls[next_free_slot].clip_number[0] = '\0';
+
+    if (clip_type != 0){
+        hfp_gsm_set_clip(next_free_slot, clip_type, clip_number);
+        clip_type = 0;
+        memset(clip_number, 0, sizeof(clip_number));
+    }
+}
+
+uint8_t hfp_gsm_clip_type(){
+    if (clip_type != 0) return clip_type;
+
+    int initiated_call_index = get_initiated_call_index();
+    if (initiated_call_index != -1){
+        if (gsm_calls[initiated_call_index].clip_type != 0) {
+            return gsm_calls[initiated_call_index].clip_type;
+        } 
+    }
+
+    int active_call_index = get_active_call_index();
+    if (active_call_index != -1){
+        if (gsm_calls[active_call_index].clip_type != 0) {
+            return gsm_calls[active_call_index].clip_type;
+        } 
+    }
+    return 0;
+}
+
+char *  hfp_gsm_clip_number(){
+    if (clip_type != 0) return clip_number;
+    
+    int initiated_call_index = get_initiated_call_index();
+    if (initiated_call_index != -1){
+        if (gsm_calls[initiated_call_index].clip_type != 0) {
+            return gsm_calls[initiated_call_index].clip_number;
+        } 
+    }
+
+    int active_call_index = get_active_call_index();
+    if (active_call_index != -1){
+        if (gsm_calls[active_call_index].clip_type != 0) {
+            return gsm_calls[active_call_index].clip_number;
+        } 
+    }
+    clip_number[0] = 0;
+    return clip_number;
 }
 
 hfp_call_status_t hfp_gsm_call_status(){
@@ -205,15 +261,24 @@ int hfp_gsm_call_possible(void){
 }
 
 void hfp_gsm_handle_event(hfp_ag_call_event_t event){
-    hfp_gsm_handle_event_with_call_index(event, 0);
+    hfp_gsm_handler(event, 0, 0, NULL);
+}
+
+void hfp_gsm_handle_event_with_clip(hfp_ag_call_event_t event, uint8_t type, const char * number){
+    hfp_gsm_handler(event, 0, type, number);
 }
 
 void hfp_gsm_handle_event_with_call_index(hfp_ag_call_event_t event, uint8_t index){
+    hfp_gsm_handler(event, index, 0, NULL);
+}
+
+static void hfp_gsm_handler(hfp_ag_call_event_t event, uint8_t index, uint8_t type, const char * number){
     int next_free_slot = get_next_free_slot();
     int current_call_index = get_active_call_index();
     int initiated_call_index = get_initiated_call_index();
     int held_call_index = get_held_call_index();
-    
+    int i;
+
     switch (event){
         case HFP_AG_OUTGOING_CALL_INITIATED:
         case HFP_AG_OUTGOING_REDIAL_INITIATED:
@@ -342,16 +407,15 @@ void hfp_gsm_handle_event_with_call_index(hfp_ag_call_event_t event, uint8_t ind
             }
             break;
 
-        case HFP_AG_CALL_DROPPED:{
-                callsetup_status = HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS;
-                if (hfp_gsm_call_status() != HFP_CALL_STATUS_ACTIVE_OR_HELD_CALL_IS_PRESENT) break;
-                
-                int i ;
-                for (i = 0; i < HFP_GSM_MAX_NR_CALLS; i++){
-                    delete_call(i);
-                }
+        case HFP_AG_CALL_DROPPED:
+            callsetup_status = HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS;
+            if (hfp_gsm_call_status() != HFP_CALL_STATUS_ACTIVE_OR_HELD_CALL_IS_PRESENT) break;
+            
+            for (i = 0; i < HFP_GSM_MAX_NR_CALLS; i++){
+                delete_call(i);
             }
             break;
+        
         case HFP_AG_CALL_HOLD_USER_BUSY:
             // Held or waiting call gets active, 
             callsetup_status = HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS;
@@ -359,8 +423,7 @@ void hfp_gsm_handle_event_with_call_index(hfp_ag_call_event_t event, uint8_t ind
             gsm_calls[held_call_index].status = CALL_ACTIVE;
             break;
         
-        case HFP_AG_CALL_HOLD_RELEASE_ACTIVE_ACCEPT_HELD_OR_WAITING_CALL:{
-            int i ;
+        case HFP_AG_CALL_HOLD_RELEASE_ACTIVE_ACCEPT_HELD_OR_WAITING_CALL:
             if (index != 0 && index <= HFP_GSM_MAX_NR_CALLS ){
                 for (i = 0; i < HFP_GSM_MAX_NR_CALLS; i++){
                     if (gsm_calls[i].index == index){
@@ -384,10 +447,8 @@ void hfp_gsm_handle_event_with_call_index(hfp_ag_call_event_t event, uint8_t ind
             
             callsetup_status = HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS;
             break;
-        }
         
-        case HFP_AG_CALL_HOLD_PARK_ACTIVE_ACCEPT_HELD_OR_WAITING_CALL:{
-            int i ;
+        case HFP_AG_CALL_HOLD_PARK_ACTIVE_ACCEPT_HELD_OR_WAITING_CALL:
             for (i = 0; i < HFP_GSM_MAX_NR_CALLS; i++){
                 if (gsm_calls[i].status == CALL_ACTIVE && gsm_calls[i].index != index){
                     gsm_calls[i].clip_type = 0;
@@ -403,11 +464,9 @@ void hfp_gsm_handle_event_with_call_index(hfp_ag_call_event_t event, uint8_t ind
             }
             callsetup_status = HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS;
             break;
-        }
-
-        case HFP_AG_CALL_HOLD_ADD_HELD_CALL:{
+        
+        case HFP_AG_CALL_HOLD_ADD_HELD_CALL:
             if (hfp_gsm_callheld_status() != HFP_CALLHELD_STATUS_NO_CALLS_HELD){
-                int i ;
                 for (i = 0; i < HFP_GSM_MAX_NR_CALLS; i++){
                     if (gsm_calls[i].status == CALL_HELD){
                         gsm_calls[i].clip_type = 0;
@@ -417,18 +476,28 @@ void hfp_gsm_handle_event_with_call_index(hfp_ag_call_event_t event, uint8_t ind
                 }
             }
             gsm_calls[initiated_call_index].status = CALL_ACTIVE;
-
             break;
-        }
 
-        case HFP_AG_CALL_HOLD_EXIT_AND_JOIN_CALLS:{
-            int i ;
+        case HFP_AG_CALL_HOLD_EXIT_AND_JOIN_CALLS:
             for (i = 0; i < HFP_GSM_MAX_NR_CALLS; i++){
                 delete_call(i);
             }
-        
             break;
-        }
+        
+        case HFP_AG_SET_CLIP:
+            if (initiated_call_index != -1){
+                hfp_gsm_set_clip(initiated_call_index, type, number);
+                break;
+            }
+            if (current_call_index != -1){
+                hfp_gsm_set_clip(current_call_index, type, number);
+                break;
+            }
+            clip_type = type;
+            strncpy(clip_number, number, sizeof(clip_number));
+            clip_number[sizeof(clip_number)-1] = '\0';
+
+            break;
         default:
             break;
     }

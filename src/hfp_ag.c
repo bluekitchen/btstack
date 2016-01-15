@@ -79,10 +79,6 @@ static hfp_callback_t hfp_callback;
 static hfp_response_and_hold_state_t hfp_ag_response_and_hold_state;
 static int hfp_ag_response_and_hold_active = 0;
 
-// CLIP feature
-static uint8_t clip_type;       // 0 == not set
-static char    clip_number[25]; // 
-
 // Subcriber information entries
 static hfp_phone_number_t * subscriber_numbers = NULL;
 static int subscriber_numbers_count = 0;
@@ -212,11 +208,8 @@ static int hfp_ag_ring(uint16_t cid){
 }
 
 static int hfp_ag_send_clip(uint16_t cid){
-    if (!clip_type){
-        clip_number[0] = 0;
-    }
     char buffer[50];
-    sprintf(buffer, "\r\n%s: \"%s\",%u\r\n", HFP_ENABLE_CLIP, clip_number, clip_type);
+    sprintf(buffer, "\r\n%s: \"%s\",%u\r\n", HFP_ENABLE_CLIP, hfp_gsm_clip_number(), hfp_gsm_clip_type());
     return send_str_over_rfcomm(cid, buffer);
 }
 
@@ -228,16 +221,13 @@ static int hfp_send_subscriber_number_cmd(uint16_t cid, uint8_t type, const char
         
 static int hfp_ag_send_phone_number_for_voice_tag_cmd(uint16_t cid){
     char buffer[50];
-    sprintf(buffer, "\r\n%s: %s\r\n", HFP_PHONE_NUMBER_FOR_VOICE_TAG, clip_number);
+    sprintf(buffer, "\r\n%s: %s\r\n", HFP_PHONE_NUMBER_FOR_VOICE_TAG, hfp_gsm_clip_number());
     return send_str_over_rfcomm(cid, buffer);
 }
 
 static int hfp_ag_send_call_waiting_notification(uint16_t cid){
-    if (!clip_type){
-        clip_number[0] = 0;
-    }
     char buffer[50];
-    sprintf(buffer, "\r\n+CCWA: \"%s\",%u\r\n", clip_number, clip_type);
+    sprintf(buffer, "\r\n+CCWA: \"%s\",%u\r\n", hfp_gsm_clip_number(), hfp_gsm_clip_type());
     return send_str_over_rfcomm(cid, buffer);
 }
 
@@ -829,7 +819,7 @@ static void hfp_timeout_handler(timer_source_t * timer){
 
     log_info("HFP start ring timeout, con handle 0x%02x", context->con_handle);
     context->ag_ring = 1;
-    context->ag_send_clip = clip_type && context->clip_enabled;
+    context->ag_send_clip = hfp_gsm_clip_type() && context->clip_enabled;
 
     run_loop_set_timer(&context->hfp_timeout, 2000); // 5 seconds timeout
     run_loop_add_timer(&context->hfp_timeout);
@@ -860,7 +850,7 @@ static void hfp_ag_hf_start_ringing(hfp_connection_t * context){
     } else {
         hfp_timeout_start(context);
         context->ag_ring = 1;
-        context->ag_send_clip = clip_type && context->clip_enabled;
+        context->ag_send_clip = hfp_gsm_clip_type() && context->clip_enabled;
         context->call_state = HFP_CALL_RINGING;
         hfp_emit_event(hfp_callback, HFP_SUBEVENT_START_RINGINIG, 0);
     }
@@ -1084,7 +1074,7 @@ static int call_setup_state_machine(hfp_connection_t * connection){
             // we got event: audio connection established
             hfp_timeout_start(connection);
             connection->ag_ring = 1;
-            connection->ag_send_clip = clip_type && connection->clip_enabled;
+            connection->ag_send_clip = hfp_gsm_clip_type() && connection->clip_enabled;
             connection->call_state = HFP_CALL_RINGING;
             connection->call_state = HFP_CALL_RINGING;
             hfp_emit_event(hfp_callback, HFP_SUBEVENT_START_RINGINIG, 0);
@@ -1143,8 +1133,6 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * connect
             }
             break;
         case HFP_AG_INCOMING_CALL_ACCEPTED_BY_AG:
-            // clear CLIP
-            clip_type = 0;
             switch (hfp_gsm_call_status()){
                 case HFP_CALL_STATUS_NO_HELD_OR_ACTIVE_CALLS:
                     switch (hfp_gsm_callsetup_status()){
@@ -1197,8 +1185,6 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * connect
             break;
 
         case HFP_AG_INCOMING_CALL_ACCEPTED_BY_HF:
-            // clear CLIP
-            clip_type = 0;
             switch (hfp_gsm_call_status()){
                 case HFP_CALL_STATUS_NO_HELD_OR_ACTIVE_CALLS:
                     switch (hfp_gsm_callsetup_status()){
@@ -1220,8 +1206,6 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * connect
             break;
 
         case HFP_AG_RESPONSE_AND_HOLD_ACCEPT_INCOMING_CALL_BY_AG:
-            // clear CLIP
-            clip_type = 0;
             switch (hfp_gsm_call_status()){
                 case HFP_CALL_STATUS_NO_HELD_OR_ACTIVE_CALLS:
                     switch (hfp_gsm_callsetup_status()){
@@ -1246,8 +1230,6 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * connect
             break;
 
         case HFP_AG_RESPONSE_AND_HOLD_ACCEPT_INCOMING_CALL_BY_HF:
-            // clear CLIP
-            clip_type = 0;
             switch (hfp_gsm_call_status()){
                 case HFP_CALL_STATUS_NO_HELD_OR_ACTIVE_CALLS:
                     switch (hfp_gsm_callsetup_status()){
@@ -1296,8 +1278,6 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * connect
             break;
 
         case HFP_AG_TERMINATE_CALL_BY_HF:
-            // clear CLIP
-            clip_type = 0;
             switch (hfp_gsm_call_status()){
                 case HFP_CALL_STATUS_NO_HELD_OR_ACTIVE_CALLS:
                     switch (hfp_gsm_callsetup_status()){
@@ -1329,8 +1309,6 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * connect
             break;
 
         case HFP_AG_TERMINATE_CALL_BY_AG:
-            // clear CLIP
-            clip_type = 0;
             switch (hfp_gsm_call_status()){
                 case HFP_CALL_STATUS_NO_HELD_OR_ACTIVE_CALLS:
                     switch (hfp_gsm_callsetup_status()){
@@ -1355,8 +1333,6 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * connect
             }
             break;
         case HFP_AG_CALL_DROPPED:
-            // clear CLIP
-            clip_type = 0;
             switch (hfp_gsm_call_status()){
                 case HFP_CALL_STATUS_NO_HELD_OR_ACTIVE_CALLS:
                     switch (hfp_gsm_callsetup_status()){
@@ -1988,8 +1964,6 @@ void hfp_ag_init(uint16_t rfcomm_channel_nr, uint32_t supported_features,
     memcpy(hfp_ag_call_hold_services, call_hold_services, call_hold_services_nr * sizeof(char *));
 
     hfp_ag_response_and_hold_active = 0;
-    clip_type = 0;       // 0 == not set
-    memset(clip_number,0,sizeof(clip_number));
     subscriber_numbers = NULL;
     subscriber_numbers_count = 0;
 
@@ -2087,10 +2061,7 @@ void hfp_ag_incoming_call(void){
  * @brief number is stored.
  */
 void hfp_ag_set_clip(uint8_t type, const char * number){
-    clip_type = type;
-    // copy and terminate
-    strncpy(clip_number, number, sizeof(clip_number));
-    clip_number[sizeof(clip_number)-1] = '\0';
+    hfp_gsm_handle_event_with_clip(HFP_AG_SET_CLIP, type, number);
 }
 
 void hfp_ag_call_dropped(void){
