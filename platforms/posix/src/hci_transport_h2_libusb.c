@@ -106,20 +106,23 @@ static libusb_device_handle * handle;
 #define ASYNC_BUFFERS 2
 #define AYSNC_POLLING_INTERVAL_MS 1
 #define NUM_ISO_PACKETS 16
-#define SCO_PACKET_SIZE 49
+#define SCO_PACKET_SIZE 9
+// does not work with size >= 50 - why? Module reports 8 x 64 SCO packets
+// alternate setting "recommends" 49 bytes
 
 static struct libusb_transfer *command_out_transfer;
 static struct libusb_transfer *acl_out_transfer;
 static struct libusb_transfer *event_in_transfer[ASYNC_BUFFERS];
 static struct libusb_transfer *acl_in_transfer[ASYNC_BUFFERS];
 
+// incoming SCO packets
 static H2_SCO_STATE sco_state;
 static uint8_t  sco_buffer[255+3 + SCO_PACKET_SIZE];
 static uint16_t sco_read_pos;
 static uint16_t sco_bytes_to_read;
 
+
 #ifdef HAVE_SCO
-static struct  libusb_transfer *sco_out_transfer;
 static struct  libusb_transfer *sco_in_transfer[ASYNC_BUFFERS];
 static uint8_t hci_sco_in_buffer[ASYNC_BUFFERS][NUM_ISO_PACKETS * SCO_PACKET_SIZE]; 
 #endif
@@ -138,7 +141,6 @@ static timer_source_t usb_timer;
 static int usb_timer_active;
 
 static int usb_acl_out_active = 0;
-static int usb_sco_out_active = 0;
 static int usb_command_active = 0;
 
 // endpoint addresses
@@ -148,7 +150,28 @@ static int acl_out_addr;
 static int sco_in_addr;
 static int sco_out_addr;
 
+// outgoing SCO packets (4 > 2, 64 is size of SCO buffer in PTS Dongle)
+// simplified ring buffer implementation
+#define SCO_RING_PACKET_SIZE  (64)
+#define SCO_RING_BUFFER_COUNT  (8)
+#define SCO_RING_BUFFER_SIZE (SCO_RING_BUFFER_COUNT * SCO_RING_PACKET_SIZE)
 
+static uint8_t  sco_ring_buffer[SCO_RING_BUFFER_SIZE];
+static int      sco_ring_write;  // packet idx
+static int      sco_ring_transfers_active;
+static struct libusb_transfer *sco_ring_transfers[SCO_RING_BUFFER_COUNT];
+
+static void sco_ring_init(void){
+    sco_ring_write = 0;
+    sco_ring_transfers_active = 0;
+}
+
+static int sco_ring_have_space(void){
+    return sco_ring_transfers_active < SCO_RING_BUFFER_COUNT;
+}
+
+
+//
 static void queue_transfer(struct libusb_transfer *transfer){
 
     // log_info("queue_transfer %p, endpoint %x size %u", transfer, transfer->endpoint, transfer->actual_length);
@@ -196,6 +219,52 @@ static void async_callback(struct libusb_transfer *transfer)
         }
     }
     // log_info("end async_callback");
+}
+
+
+static int usb_send_sco_packet(uint8_t *packet, int size){
+#ifdef HAVE_SCO
+    int r;
+
+    if (libusb_state != LIB_USB_TRANSFERS_ALLOCATED) return -1;
+
+    // log_info("usb_send_acl_packet enter, size %u", size);
+
+    // store packet in free slot
+    int tranfer_index = sco_ring_write;
+    uint8_t * data = &sco_ring_buffer[tranfer_index * SCO_RING_PACKET_SIZE];
+    memcpy(&sco_ring_buffer[sco_ring_write * SCO_RING_PACKET_SIZE], data, size);
+
+    // setup transfer
+    struct libusb_transfer * sco_transfer = sco_ring_transfers[tranfer_index];
+
+    // hard-coded for now: num_iso_packets = 3, packet len = 9
+    int num_iso_packets = 3;
+    int iso_packet_size = 9;
+    libusb_fill_iso_transfer(sco_transfer, handle, sco_out_addr, data, size, num_iso_packets, async_callback, NULL, 0);
+    libusb_set_iso_packet_lengths(sco_transfer, iso_packet_size);
+    r = libusb_submit_transfer(sco_transfer);
+    if (r < 0) {
+        log_error("Error submitting sco transfer, %d", r);
+        return -1;
+    }
+
+    // mark slot as full
+    sco_ring_write++;
+    if (sco_ring_write == SCO_RING_BUFFER_COUNT){
+        sco_ring_write = 0;
+    }
+    sco_ring_transfers_active++;
+
+    // log_info("H2: queued packet at index %u, num active %u", tranfer_index, sco_ring_transfers_active);
+
+    // notify upper stack that packet processed and that it might be possible to send again
+    if (sco_ring_have_space()){
+        uint8_t event[] = { DAEMON_EVENT_HCI_PACKET_SENT, 0};
+        packet_handler(HCI_EVENT_PACKET, &event[0], sizeof(event));
+    } 
+#endif
+    return 0;
 }
 
 static void sco_state_machine_init(void){
@@ -258,7 +327,7 @@ static void handle_completed_transfer(struct libusb_transfer *transfer){
             if (!pack->actual_length) continue;
             uint8_t * data = libusb_get_iso_packet_buffer_simple(transfer, i);
             // printf_hexdump(data, pack->actual_length);
-            // log_debug("handle_isochronous_data,size %u/%u", pack->length, pack->actual_length);
+            // log_info("handle_isochronous_data,size %u/%u", pack->length, pack->actual_length);
             handle_isochronous_data(data, pack->actual_length);
         }
         resubmit = 1;
@@ -271,10 +340,17 @@ static void handle_completed_transfer(struct libusb_transfer *transfer){
         usb_acl_out_active = 0;
         signal_done = 1;
     } else if (transfer->endpoint == sco_out_addr){
-        log_info("sco out done, size %u/%u - status %x", transfer->actual_length, 
-            transfer->iso_packet_desc[0].actual_length, transfer->iso_packet_desc[0].status);
-        usb_sco_out_active = 0;
-        signal_done = 1;
+        log_info("sco out done, {{ %u/%u (%x)}, { %u/%u (%x)}, { %u/%u (%x)}}", 
+            transfer->iso_packet_desc[0].actual_length, transfer->iso_packet_desc[0].length, transfer->iso_packet_desc[0].status,
+            transfer->iso_packet_desc[1].actual_length, transfer->iso_packet_desc[1].length, transfer->iso_packet_desc[1].status,
+            transfer->iso_packet_desc[2].actual_length, transfer->iso_packet_desc[2].length, transfer->iso_packet_desc[2].status);
+        if (!sco_ring_have_space()) {
+            // if there isn't space, the last SCO send didn't emit a packet sent event
+            signal_done = 1;
+        }
+        // decrease tab
+        sco_ring_transfers_active--;
+        // log_info("H2: sco out complete, num active num active %u", sco_ring_transfers_active);
     } else {
         log_info("usb_process_ds endpoint unknown %x", transfer->endpoint);
     }
@@ -527,7 +603,7 @@ static int prepare_device(libusb_device_handle * aHandle){
         libusb_close(aHandle);
         return r;
     }
-    r = libusb_set_interface_alt_setting(aHandle, 1, 5); // 3 x 8 kHz voice channels
+    r = libusb_set_interface_alt_setting(aHandle, 1, 1); // 1 x 8 kHz voice channels, 8 bit
     if (r < 0) {
         fprintf(stderr, "Error setting alternative setting 5 for interface 1: %s\n", libusb_error_name(r));
         libusb_close(aHandle);
@@ -542,6 +618,7 @@ static int usb_open(void *transport_config){
     int r;
 
     sco_state_machine_init();
+    sco_ring_init();
     handle_packet = NULL;
 
     // default endpoint addresses
@@ -689,7 +766,9 @@ static int usb_open(void *transport_config){
             return r;
         }
     }
-    sco_out_transfer = libusb_alloc_transfer(1); // 1 isochronous transfers SCO out
+    for (c=0; c < SCO_RING_BUFFER_COUNT ; c++){
+        sco_ring_transfers[c] = libusb_alloc_transfer(3); // 1 isochronous transfers SCO out - up to 3 parts
+    }
 #endif
 
     for (c = 0 ; c < ASYNC_BUFFERS ; c++) {
@@ -876,35 +955,6 @@ static int usb_send_acl_packet(uint8_t *packet, int size){
     return 0;
 }
 
-static int usb_send_sco_packet(uint8_t *packet, int size){
-#ifdef HAVE_SCO
-    int r;
-
-    if (libusb_state != LIB_USB_TRANSFERS_ALLOCATED) return -1;
-
-    // log_info("usb_send_acl_packet enter, size %u", size);
-    
-    // prepare transfer
-    int completed = 0;
-    libusb_fill_iso_transfer(sco_out_transfer, handle, sco_out_addr, packet, size, 1,
-        async_callback, &completed, 0);
-    libusb_set_iso_packet_lengths(sco_out_transfer, size);
-    sco_out_transfer->type = LIBUSB_TRANSFER_TYPE_ISOCHRONOUS;
-    sco_out_transfer->iso_packet_desc[0].length = size;
-
-    // update state before submitting transfer
-    usb_sco_out_active = 1;
-
-    r = libusb_submit_transfer(sco_out_transfer);
-    if (r < 0) {
-        usb_sco_out_active = 0;
-        log_error("Error submitting sco transfer, %d", r);
-        return -1;
-    }
-#endif
-    return 0;
-}
-
 static int usb_can_send_packet_now(uint8_t packet_type){
     switch (packet_type){
         case HCI_COMMAND_DATA_PACKET:
@@ -912,7 +962,7 @@ static int usb_can_send_packet_now(uint8_t packet_type){
         case HCI_ACL_DATA_PACKET:
             return !usb_acl_out_active;
         case HCI_SCO_DATA_PACKET:
-            return !usb_sco_out_active;
+            return sco_ring_have_space();
         default:
             return 0;
     }
