@@ -67,6 +67,7 @@ int hfp_gsm_call_possible(void);
 
 void hfp_gsm_init(void);
 
+void hfp_gsm_handle_event_with_call_index(hfp_ag_call_event_t event, uint8_t index);
 void hfp_gsm_handle_event(hfp_ag_call_event_t event);
 
 // /**

@@ -599,6 +599,7 @@ typedef struct hfp_connection {
     uint8_t clcc_mode;
     uint8_t clcc_mpty;
 
+    uint8_t call_index;
     // also used for CLCC if set
     uint8_t bnip_type;       // 0 == not set
     char    bnip_number[25]; // 
