@@ -86,11 +86,20 @@ static uint32_t init_script_offset  = 0;
 static int16_t  init_power_in_dB    = 13; // 13 dBm
 static int      init_ehcill_enabled = 0;
 
+static int      init_send_route_sco_over_hci = 0;
 
 static int bt_control_cc256x_on(void *config){
 	init_script_offset = 0;
+#ifdef HAVE_SCO_OVER_HCI
+    init_send_route_sco_over_hci = 1;
+#endif
 	return 0;
 }
+
+// route SCO over HCI (connection type=1, tx buffer size = 0x00 (don't change), tx buffer max latency=0x0000(don't chnage)), accept packets - 0)
+static const uint8_t hci_route_sco_over_hci[] = {
+    0x10, 0xfe, 0x05, 0x01, 0x00, 0x00, 0x00, 0x00
+};
 
 // UART Baud Rate control from: http://e2e.ti.com/support/low_power_rf/f/660/p/134850/484763.aspx
 static int cc256x_baudrate_cmd(void * config, uint32_t baudrate, uint8_t *hci_cmd_buffer){
@@ -213,6 +222,12 @@ static int bt_control_cc256x_update_command(uint8_t *hci_cmd_buffer){
 static int bt_control_cc256x_next_cmd(void *config, uint8_t *hci_cmd_buffer){
 
     if (init_script_offset >= cc256x_init_script_size) {
+        // append send route SCO over HCI if requested
+        if (init_send_route_sco_over_hci){
+            init_send_route_sco_over_hci = 0;
+            memcpy(hci_cmd_buffer, hci_route_sco_over_hci, sizeof(hci_route_sco_over_hci));
+            return 1;
+        }
         return 0;
     }
     
