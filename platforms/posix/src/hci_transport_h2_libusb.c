@@ -233,7 +233,7 @@ static int usb_send_sco_packet(uint8_t *packet, int size){
     // store packet in free slot
     int tranfer_index = sco_ring_write;
     uint8_t * data = &sco_ring_buffer[tranfer_index * SCO_RING_PACKET_SIZE];
-    memcpy(&sco_ring_buffer[sco_ring_write * SCO_RING_PACKET_SIZE], data, size);
+    memcpy(data, packet, size);
 
     // setup transfer
     struct libusb_transfer * sco_transfer = sco_ring_transfers[tranfer_index];
