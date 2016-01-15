@@ -115,7 +115,7 @@ static void try_send_sco(void){
         // printf("try_send_sco, cannot send now\n");
         return;
     }
-    const int frames_per_packet = 180;
+    const int frames_per_packet = 24;
     hci_reserve_packet_buffer();
     uint8_t * sco_packet = hci_get_outgoing_packet_buffer();
     // set handle + flags
@@ -215,6 +215,10 @@ int btstack_main(int argc, const char * argv[]){
 #ifdef TABLE_SIZE
     compute_signal();
 #endif
+
+    // 8-bit, 2's complement (== int8_t)
+    // 16-bit samples probably required for USB: 
+    // hci_set_sco_voice_setting(0x0060);
 
     hci_register_sco_packet_handler(&sco_packet_handler);
 
