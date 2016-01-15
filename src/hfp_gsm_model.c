@@ -214,7 +214,6 @@ void hfp_gsm_handle_event_with_call_index(hfp_ag_call_event_t event, uint8_t ind
     int initiated_call_index = get_initiated_call_index();
     int held_call_index = get_held_call_index();
     
-    printf("hfp_gsm_handle_event %d \n", event);
     switch (event){
         case HFP_AG_OUTGOING_CALL_INITIATED:
         case HFP_AG_OUTGOING_REDIAL_INITIATED:
@@ -361,9 +360,7 @@ void hfp_gsm_handle_event_with_call_index(hfp_ag_call_event_t event, uint8_t ind
             break;
         
         case HFP_AG_CALL_HOLD_RELEASE_ACTIVE_ACCEPT_HELD_OR_WAITING_CALL:{
-            printf("HFP_AG_CALL_HOLD_RELEASE_ACTIVE_ACCEPT_HELD_OR_WAITING_CALL \n");
             int i ;
-            printf("Number of calls 1: initiated %d, active %d, held %d\n", get_number_initiated_calls(), get_number_active_calls(), get_number_held_calls());
             if (index != 0 && index <= HFP_GSM_MAX_NR_CALLS ){
                 for (i = 0; i < HFP_GSM_MAX_NR_CALLS; i++){
                     if (gsm_calls[i].index == index){
@@ -379,23 +376,18 @@ void hfp_gsm_handle_event_with_call_index(hfp_ag_call_event_t event, uint8_t ind
                 }    
             }
             
-            printf("Number of calls 2: initiated %d, active %d, held %d\n", get_number_initiated_calls(), get_number_active_calls(), get_number_held_calls());
             if (callsetup_status != HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS){
                 gsm_calls[initiated_call_index].status = CALL_ACTIVE;
-                printf("HFP_AG_CALL_HOLD_RELEASE_ACTIVE_ACCEPT_HELD_OR_WAITING_CALL initiated_call_index %d\n", initiated_call_index);
             } else {
                 gsm_calls[held_call_index].status = CALL_ACTIVE;
-                printf("HFP_AG_CALL_HOLD_RELEASE_ACTIVE_ACCEPT_HELD_OR_WAITING_CALL initiated_call_index %d\n", initiated_call_index);
             }
             
-            printf("Number of calls 3: initiated %d, active %d, held %d\n", get_number_initiated_calls(), get_number_active_calls(), get_number_held_calls());
             callsetup_status = HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS;
             break;
         }
         
         case HFP_AG_CALL_HOLD_PARK_ACTIVE_ACCEPT_HELD_OR_WAITING_CALL:{
             int i ;
-            printf("Number of calls 1: initiated %d, active %d, held %d\n", get_number_initiated_calls(), get_number_active_calls(), get_number_held_calls());
             for (i = 0; i < HFP_GSM_MAX_NR_CALLS; i++){
                 if (gsm_calls[i].status == CALL_ACTIVE && gsm_calls[i].index != index){
                     gsm_calls[i].clip_type = 0;
@@ -403,16 +395,13 @@ void hfp_gsm_handle_event_with_call_index(hfp_ag_call_event_t event, uint8_t ind
                     gsm_calls[i].status = CALL_HELD;
                 }
             }
-            printf("Number of calls 2: initiated %d, active %d, held %d\n", get_number_initiated_calls(), get_number_active_calls(), get_number_held_calls());
-
+            
             if (callsetup_status != HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS){
                 gsm_calls[initiated_call_index].status = CALL_ACTIVE;
             } else {
                 gsm_calls[held_call_index].status = CALL_ACTIVE;
             }
             callsetup_status = HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS;
-            printf("Number of calls 3: initiated %d, active %d, held %d\n", get_number_initiated_calls(), get_number_active_calls(), get_number_held_calls());
-            
             break;
         }
 
