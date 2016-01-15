@@ -603,9 +603,18 @@ static int prepare_device(libusb_device_handle * aHandle){
         libusb_close(aHandle);
         return r;
     }
-    r = libusb_set_interface_alt_setting(aHandle, 1, 1); // 1 x 8 kHz voice channels, 8 bit
+    // Bluetooth USB Transprot Alternate Settings:
+    // 0: No active voice channels (for USB compliance)
+    // 1: One 8 kHz voice channel with 8-bit encoding
+    // 2: Two 8 kHz voice channels with 8-bit encoding or one 8 kHz voice channel with 16-bit encoding
+    // 3: Three 8 kHz voice channels with 8-bit encoding
+    // 4: Two 8 kHz voice channels with 16-bit encoding or one 16 kHz voice channel with 16-bit encoding
+    // 5: Three 8 kHz voice channels with 16-bit encoding or one 8 kHz voice channel with 16-bit encoding and one 16 kHz voice channel with 16-bit encoding
+    int alt_setting = 1;
+    log_info("Switching to setting %u on interface 1..", alt_setting);
+    r = libusb_set_interface_alt_setting(aHandle, 1, alt_setting); 
     if (r < 0) {
-        fprintf(stderr, "Error setting alternative setting 5 for interface 1: %s\n", libusb_error_name(r));
+        fprintf(stderr, "Error setting alternative setting %u for interface 1: %s\n", alt_setting, libusb_error_name(r));
         libusb_close(aHandle);
         return r;
     }
