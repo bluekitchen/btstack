@@ -65,8 +65,6 @@
 #include "hci.h"
 #include "hci_transport.h"
 
-// #define HAVE_SCO
-
 #if (USB_VENDOR_ID != 0) && (USB_PRODUCT_ID != 0)
 #define HAVE_USB_VENDOR_ID_AND_PRODUCT_ID
 #endif
@@ -150,9 +148,10 @@ static int acl_out_addr;
 static int sco_in_addr;
 static int sco_out_addr;
 
-// outgoing SCO packets (4 > 2, 64 is size of SCO buffer in PTS Dongle)
+// Outgoing SCO packet queue
+// 49 bytes is the max usb packet size for alternate setting 5 (3 8-bit channels or 1 8-bit and 1 16-bit channel)
 // simplified ring buffer implementation
-#define SCO_RING_PACKET_SIZE  (64)
+#define SCO_RING_PACKET_SIZE  (49)
 #define SCO_RING_BUFFER_COUNT  (8)
 #define SCO_RING_BUFFER_SIZE (SCO_RING_BUFFER_COUNT * SCO_RING_PACKET_SIZE)
 
@@ -603,14 +602,16 @@ static int prepare_device(libusb_device_handle * aHandle){
         libusb_close(aHandle);
         return r;
     }
+    //
     // Bluetooth USB Transprot Alternate Settings:
+    //
     // 0: No active voice channels (for USB compliance)
     // 1: One 8 kHz voice channel with 8-bit encoding
     // 2: Two 8 kHz voice channels with 8-bit encoding or one 8 kHz voice channel with 16-bit encoding
     // 3: Three 8 kHz voice channels with 8-bit encoding
     // 4: Two 8 kHz voice channels with 16-bit encoding or one 16 kHz voice channel with 16-bit encoding
     // 5: Three 8 kHz voice channels with 16-bit encoding or one 8 kHz voice channel with 16-bit encoding and one 16 kHz voice channel with 16-bit encoding
-    int alt_setting = 1;
+    int alt_setting = 2;  // <-- we support only a single SCO connection
     log_info("Switching to setting %u on interface 1..", alt_setting);
     r = libusb_set_interface_alt_setting(aHandle, 1, alt_setting); 
     if (r < 0) {
