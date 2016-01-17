@@ -82,7 +82,7 @@ static void bt_control_csr_update_command(void *config, uint8_t *hci_cmd_buffer)
 
     // check for hci_transport_config_uart_t
     if (!config) return;
-    if (((hci_transport_config_t*))->type != HCI_TRANSPORT_CONFIG_UART) return;
+    if (((hci_transport_config_t*)config)->type != HCI_TRANSPORT_CONFIG_UART) return;
     hci_transport_config_uart_t * hci_transport_config_uart = (hci_transport_config_uart_t*) config;
 
     uint32_t baudrate = hci_transport_config_uart->baudrate_main;

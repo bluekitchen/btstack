@@ -49,22 +49,23 @@
 
 #include "btstack-config.h"
 
-#include <btstack/run_loop.h>
-
-#include "debug.h"
 #include "btstack_memory.h"
+#include "debug.h"
 #include "hci.h"
 #include "hci_dump.h"
+#include "run_loop.h"
+#include "run_loop_posix.h"
 #include "stdin_support.h"
-#include <btstack/hal_led.h>
 #include "bt_control_csr.h"
 
 int btstack_main(int argc, const char * argv[]);
 
-static hci_uart_config_t hci_uart_config_cc256x = {
-    NULL,
+static hci_transport_config_uart_t config = {
+    HCI_TRANSPORT_CONFIG_UART,
     115200,
-    921600
+    0,  // main baudrate
+    1,  // flow control
+    NULL,
 };
 
 static void sigint_handler(int param){
@@ -91,7 +92,7 @@ int main(int argc, const char * argv[]){
 
 	/// GET STARTED with BTstack ///
 	btstack_memory_init();
-    run_loop_init(RUN_LOOP_POSIX);
+    run_loop_init(run_loop_posix_get_instance());
 	    
 #if 0
     // Ubuntu
@@ -100,7 +101,7 @@ int main(int argc, const char * argv[]){
     hci_dump_open("hci_dump.pklg", HCI_DUMP_PACKETLOGGER);
 
     // pick serial port
-    hci_uart_config_cc256x.device_name = "/dev/ttyUSB0";
+    config.device_name = "/dev/ttyUSB0";
 #else
     // OS X
 
@@ -108,15 +109,15 @@ int main(int argc, const char * argv[]){
     hci_dump_open("/tmp/hci_dump.pklg", HCI_DUMP_PACKETLOGGER);
 
     // pick serial port
-    hci_uart_config_cc256x.device_name = "/dev/tty.usbserial-A900K0VK";
+    config.device_name = "/dev/tty.usbserial-A900K0VK";
 #endif
 
     // init HCI
-	hci_transport_t    * transport = hci_transport_h4_instance();
+	hci_transport_t    * transport = hci_transport_h4_posix_instance();
 	bt_control_t       * control   = bt_control_csr_instance();
     remote_device_db_t * remote_db = (remote_device_db_t *) &remote_device_db_fs;
         
-	hci_init(transport, (void*) &hci_uart_config_cc256x, control, remote_db);
+	hci_init(transport, (void*) &config, control, remote_db);
     
     // handle CTRL-c
     signal(SIGINT, sigint_handler);
