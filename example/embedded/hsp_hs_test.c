@@ -60,10 +60,10 @@
 #include <math.h>
 
 #include "run_loop.h"
-#include "sdp_util.h"
+#include "classic/sdp_util.h"
 
-#include "sdp.h"
-#include "hsp_hs.h"
+#include "classic/sdp.h"
+#include "classic/hsp_hs.h"
 
 #include "hci.h"
 #include "l2cap.h"
