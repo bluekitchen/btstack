@@ -19,6 +19,7 @@ $(NAME)_SOURCES += \
 	../../src/ble/att_server.c   		  \
 	../../src/ble/le_device_db_memory.c   \
 	../../src/ble/sm.c          		  \
+	../../src/classic/hsp_hs.c            \
 	../../src/classic/remote_device_db_memory.c \
 	../../src/classic/rfcomm.c            \
 	../../src/classic/sdp.c               \
