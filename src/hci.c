@@ -874,7 +874,7 @@ static void hci_initialization_timeout_handler(timer_source_t * ds){
             log_info("Local baud rate change to %"PRIu32, baud_rate);
             hci_stack->hci_transport->set_baudrate(baud_rate);
             // For CSR, HCI Reset is sent on new baud rate
-            if (hci_stack->manufacturer == 0x000a){
+            if (hci_stack->manufacturer == COMPANY_ID_CAMBRIDGE_SILICON_RADIO){
                 hci_stack->substate = HCI_INIT_SEND_RESET_CSR_WARM_BOOT;
                 hci_run();
             }
@@ -966,12 +966,12 @@ static void hci_initializing_run(void){
                             run_loop_set_timer(&hci_stack->timeout, 100);
                             run_loop_set_timer_handler(&hci_stack->timeout, hci_initialization_timeout_handler);
                             run_loop_add_timer(&hci_stack->timeout);
-                            if (hci_stack->manufacturer == 0x000a
+                            if (hci_stack->manufacturer == COMPANY_ID_CAMBRIDGE_SILICON_RADIO
                                 && hci_stack->config
                                 && hci_stack->control
                                 // && hci_stack->control->baudrate_cmd -- there's no such command
                                 && hci_stack->hci_transport->set_baudrate
-                                && ((hci_uart_config_t *)hci_stack->config)->baudrate_main){
+                                && hci_transport_uart_get_main_baud_rate()){
                                 hci_stack->substate = HCI_INIT_W4_SEND_BAUD_CHANGE;
                             } else {
                                hci_stack->substate = HCI_INIT_W4_CUSTOM_INIT_CSR_WARM_BOOT;
