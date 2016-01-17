@@ -65,8 +65,13 @@ hfp_callsetup_status_t hfp_gsm_callsetup_status();
 
 int hfp_gsm_call_possible(void);
 
+uint8_t hfp_gsm_clip_type();
+char *  hfp_gsm_clip_number();
+
 void hfp_gsm_init(void);
 
+void hfp_gsm_handle_event_with_clip(hfp_ag_call_event_t event, uint8_t type, const char * number);
+void hfp_gsm_handle_event_with_call_index(hfp_ag_call_event_t event, uint8_t index);
 void hfp_gsm_handle_event(hfp_ag_call_event_t event);
 
 // /**

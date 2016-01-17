@@ -870,10 +870,15 @@ static void hci_initialization_timeout_handler(timer_source_t * ds){
             hci_run();
             break;
         case HCI_INIT_W4_SEND_BAUD_CHANGE: {
-            uint32_t baud_rate = hci_transport_uart_get_main_baud_rate();
+			uint32_t baud_rate = hci_transport_uart_get_main_baud_rate();
             log_info("Local baud rate change to %"PRIu32, baud_rate);
             hci_stack->hci_transport->set_baudrate(baud_rate);
-            break;            
+            // For CSR, HCI Reset is sent on new baud rate
+            if (hci_stack->manufacturer == 0x000a){
+                hci_stack->substate = HCI_INIT_SEND_RESET_CSR_WARM_BOOT;
+                hci_run();
+            }
+            break;
         }
         default:
             break;
@@ -961,7 +966,16 @@ static void hci_initializing_run(void){
                             run_loop_set_timer(&hci_stack->timeout, 100);
                             run_loop_set_timer_handler(&hci_stack->timeout, hci_initialization_timeout_handler);
                             run_loop_add_timer(&hci_stack->timeout);
-                            hci_stack->substate = HCI_INIT_W4_CUSTOM_INIT_CSR_WARM_BOOT;
+                            if (hci_stack->manufacturer == 0x000a
+                                && hci_stack->config
+                                && hci_stack->control
+                                // && hci_stack->control->baudrate_cmd -- there's no such command
+                                && hci_stack->hci_transport->set_baudrate
+                                && ((hci_uart_config_t *)hci_stack->config)->baudrate_main){
+                                hci_stack->substate = HCI_INIT_W4_SEND_BAUD_CHANGE;
+                            } else {
+                               hci_stack->substate = HCI_INIT_W4_CUSTOM_INIT_CSR_WARM_BOOT;
+                            }
                             break;
                     }
                     hci_stack->hci_transport->send_packet(HCI_COMMAND_DATA_PACKET, hci_stack->hci_packet_buffer, size);
@@ -3503,6 +3517,16 @@ void hci_set_sco_voice_setting(uint16_t voice_setting){
  */
 uint16_t hci_get_sco_voice_setting(){
     return hci_stack->sco_voice_setting;
+}
+
+/** @brief Get SCO packet length for current SCO Voice setting
+ *  @note  Using SCO packets of the exact length is required for USB transfer
+ *  @return Length of SCO packets in bytes (not audio frames)
+ */
+int hci_get_sco_packet_length(void){
+    // see Core Spec for H2 USB Transfer. 
+    if (hci_stack->sco_voice_setting & 0x0020) return 51;
+    return 27;
 }
 
 /**
