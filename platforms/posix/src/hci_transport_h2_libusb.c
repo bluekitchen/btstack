@@ -69,10 +69,40 @@
 #define HAVE_USB_VENDOR_ID_AND_PRODUCT_ID
 #endif
 
+#define ASYNC_BUFFERS 2
+#define AYSNC_POLLING_INTERVAL_MS 1
+
+//
+// Bluetooth USB Transprot Alternate Settings:
+//
+// 0: No active voice channels (for USB compliance)
+// 1: One 8 kHz voice channel with 8-bit encoding
+// 2: Two 8 kHz voice channels with 8-bit encoding or one 8 kHz voice channel with 16-bit encoding
+// 3: Three 8 kHz voice channels with 8-bit encoding
+// 4: Two 8 kHz voice channels with 16-bit encoding or one 16 kHz voice channel with 16-bit encoding
+// 5: Three 8 kHz voice channels with 16-bit encoding or one 8 kHz voice channel with 16-bit encoding and one 16 kHz voice channel with 16-bit encoding
+// --> support only a single SCO connection
+#define ALT_SETTING (2)
+
+// for ALT_SETTING >= 1 and 8-bit channel, we need the following isochronous packets
+// One complete SCO packet with 24 frames every 3 frames (== 3 ms)
+#define NUM_ISO_PACKETS (3)
+// results in 9 bytes per frame
+#define ISO_PACKET_SIZE (9)
+
+// 49 bytes is the max usb packet size for alternate setting 5 (Three 8 kHz 16-bit channels or one 8 kHz 16-bit channel and one 16 kHz 16-bit channel)
+// note: alt setting 6 has max packet size of 63 every 7.5 ms = 472.5 bytes / HCI packet, while max SCO packet has 255 byte payload
+#define SCO_PACKET_SIZE  (49)
+
+// Outgoing SCO packet queue
+// simplified ring buffer implementation
+#define SCO_RING_BUFFER_COUNT  (8)
+#define SCO_RING_BUFFER_SIZE (SCO_RING_BUFFER_COUNT * SCO_PACKET_SIZE)
+
 // prototypes
 static void dummy_handler(uint8_t packet_type, uint8_t *packet, uint16_t size); 
-static int usb_close(void *transport_config);
-    
+static int usb_close(void *transport_config);    
+
 typedef enum {
     LIB_USB_CLOSED = 0,
     LIB_USB_OPENED,
@@ -101,31 +131,32 @@ static libusb_device        * dev;
 #endif
 static libusb_device_handle * handle;
 
-#define ASYNC_BUFFERS 2
-#define AYSNC_POLLING_INTERVAL_MS 1
-#define NUM_ISO_PACKETS 16
-#define SCO_PACKET_SIZE 9
-// does not work with size >= 50 - why? Module reports 8 x 64 SCO packets
-// alternate setting "recommends" 49 bytes
-
 static struct libusb_transfer *command_out_transfer;
 static struct libusb_transfer *acl_out_transfer;
 static struct libusb_transfer *event_in_transfer[ASYNC_BUFFERS];
 static struct libusb_transfer *acl_in_transfer[ASYNC_BUFFERS];
 
-// incoming SCO packets
+#ifdef HAVE_SCO
+
+// incoming SCO
 static H2_SCO_STATE sco_state;
 static uint8_t  sco_buffer[255+3 + SCO_PACKET_SIZE];
 static uint16_t sco_read_pos;
 static uint16_t sco_bytes_to_read;
-
-
-#ifdef HAVE_SCO
 static struct  libusb_transfer *sco_in_transfer[ASYNC_BUFFERS];
-static uint8_t hci_sco_in_buffer[ASYNC_BUFFERS][NUM_ISO_PACKETS * SCO_PACKET_SIZE]; 
+static uint8_t hci_sco_in_buffer[ASYNC_BUFFERS][SCO_PACKET_SIZE]; 
+
+// outgoing SCO
+static uint8_t  sco_ring_buffer[SCO_RING_BUFFER_SIZE];
+static int      sco_ring_write;  // packet idx
+static int      sco_ring_transfers_active;
+static struct libusb_transfer *sco_ring_transfers[SCO_RING_BUFFER_COUNT];
 #endif
 
+// outgoing buffer for HCI Command packets
 static uint8_t hci_cmd_buffer[3 + 256 + LIBUSB_CONTROL_SETUP_SIZE];
+
+// incoming buffer for HCI Events and ACL Packets
 static uint8_t hci_event_in_buffer[ASYNC_BUFFERS][HCI_ACL_BUFFER_SIZE]; // bigger than largest packet
 static uint8_t hci_acl_in_buffer[ASYNC_BUFFERS][HCI_INCOMING_PRE_BUFFER_SIZE + HCI_ACL_BUFFER_SIZE]; 
 
@@ -148,17 +179,6 @@ static int acl_out_addr;
 static int sco_in_addr;
 static int sco_out_addr;
 
-// Outgoing SCO packet queue
-// 49 bytes is the max usb packet size for alternate setting 5 (3 8-bit channels or 1 8-bit and 1 16-bit channel)
-// simplified ring buffer implementation
-#define SCO_RING_PACKET_SIZE  (49)
-#define SCO_RING_BUFFER_COUNT  (8)
-#define SCO_RING_BUFFER_SIZE (SCO_RING_BUFFER_COUNT * SCO_RING_PACKET_SIZE)
-
-static uint8_t  sco_ring_buffer[SCO_RING_BUFFER_SIZE];
-static int      sco_ring_write;  // packet idx
-static int      sco_ring_transfers_active;
-static struct libusb_transfer *sco_ring_transfers[SCO_RING_BUFFER_COUNT];
 
 static void sco_ring_init(void){
     sco_ring_write = 0;
@@ -231,17 +251,13 @@ static int usb_send_sco_packet(uint8_t *packet, int size){
 
     // store packet in free slot
     int tranfer_index = sco_ring_write;
-    uint8_t * data = &sco_ring_buffer[tranfer_index * SCO_RING_PACKET_SIZE];
+    uint8_t * data = &sco_ring_buffer[tranfer_index * SCO_PACKET_SIZE];
     memcpy(data, packet, size);
 
     // setup transfer
     struct libusb_transfer * sco_transfer = sco_ring_transfers[tranfer_index];
-
-    // hard-coded for now: num_iso_packets = 3, packet len = 9
-    int num_iso_packets = 3;
-    int iso_packet_size = 9;
-    libusb_fill_iso_transfer(sco_transfer, handle, sco_out_addr, data, size, num_iso_packets, async_callback, NULL, 0);
-    libusb_set_iso_packet_lengths(sco_transfer, iso_packet_size);
+    libusb_fill_iso_transfer(sco_transfer, handle, sco_out_addr, data, size, NUM_ISO_PACKETS, async_callback, NULL, 0);
+    libusb_set_iso_packet_lengths(sco_transfer, ISO_PACKET_SIZE);
     r = libusb_submit_transfer(sco_transfer);
     if (r < 0) {
         log_error("Error submitting sco transfer, %d", r);
@@ -315,7 +331,7 @@ static void handle_completed_transfer(struct libusb_transfer *transfer){
         packet_handler(HCI_ACL_DATA_PACKET, transfer-> buffer, transfer->actual_length);
         resubmit = 1;
     } else if (transfer->endpoint == sco_in_addr) {
-        // log_info("handle_completed_transfer for SCO IN! num packets %u", transfer->num_iso_packets);
+        // log_info("handle_completed_transfer for SCO IN! num packets %u", transfer->NUM_ISO_PACKETS);
         int i;
         for (i = 0; i < transfer->num_iso_packets; i++) {
             struct libusb_iso_packet_descriptor *pack = &transfer->iso_packet_desc[i];
@@ -602,20 +618,10 @@ static int prepare_device(libusb_device_handle * aHandle){
         libusb_close(aHandle);
         return r;
     }
-    //
-    // Bluetooth USB Transprot Alternate Settings:
-    //
-    // 0: No active voice channels (for USB compliance)
-    // 1: One 8 kHz voice channel with 8-bit encoding
-    // 2: Two 8 kHz voice channels with 8-bit encoding or one 8 kHz voice channel with 16-bit encoding
-    // 3: Three 8 kHz voice channels with 8-bit encoding
-    // 4: Two 8 kHz voice channels with 16-bit encoding or one 16 kHz voice channel with 16-bit encoding
-    // 5: Three 8 kHz voice channels with 16-bit encoding or one 8 kHz voice channel with 16-bit encoding and one 16 kHz voice channel with 16-bit encoding
-    int alt_setting = 2;  // <-- we support only a single SCO connection
-    log_info("Switching to setting %u on interface 1..", alt_setting);
-    r = libusb_set_interface_alt_setting(aHandle, 1, alt_setting); 
+    log_info("Switching to setting %u on interface 1..", ALT_SETTING);
+    r = libusb_set_interface_alt_setting(aHandle, 1, ALT_SETTING); 
     if (r < 0) {
-        fprintf(stderr, "Error setting alternative setting %u for interface 1: %s\n", alt_setting, libusb_error_name(r));
+        fprintf(stderr, "Error setting alternative setting %u for interface 1: %s\n", ALT_SETTING, libusb_error_name(r));
         libusb_close(aHandle);
         return r;
     }
@@ -753,6 +759,7 @@ static int usb_open(void *transport_config){
 
 #ifdef HAVE_SCO
 
+    // incoming
     for (c = 0 ; c < ASYNC_BUFFERS ; c++) {
         sco_in_transfer[c] = libusb_alloc_transfer(NUM_ISO_PACKETS); // isochronous transfers SCO in
         log_info("Alloc iso transfer");
@@ -760,14 +767,10 @@ static int usb_open(void *transport_config){
             usb_close(handle);
             return LIBUSB_ERROR_NO_MEM;
         }
-       // configure sco_in handlers
+        // configure sco_in handlers
         libusb_fill_iso_transfer(sco_in_transfer[c], handle, sco_in_addr, 
-                hci_sco_in_buffer[c], NUM_ISO_PACKETS * SCO_PACKET_SIZE, NUM_ISO_PACKETS, async_callback, NULL, 0) ;
-        libusb_set_iso_packet_lengths(sco_in_transfer[c], SCO_PACKET_SIZE);
-        // one of the following is relevant! find out which one
-        sco_in_transfer[c]->type = LIBUSB_TRANSFER_TYPE_ISOCHRONOUS;
-        sco_in_transfer[c]->num_iso_packets = NUM_ISO_PACKETS;
-        // sco_in_transfer[c]->iso_packet_desc[0].length = 300;
+            hci_sco_in_buffer[c], SCO_PACKET_SIZE, NUM_ISO_PACKETS, async_callback, NULL, 0);
+        libusb_set_iso_packet_lengths(sco_in_transfer[c], ISO_PACKET_SIZE);
         r = libusb_submit_transfer(sco_in_transfer[c]);
         log_info("Submit iso transfer res = %d", r);
         if (r) {
@@ -776,8 +779,10 @@ static int usb_open(void *transport_config){
             return r;
         }
     }
+
+    // outgoing
     for (c=0; c < SCO_RING_BUFFER_COUNT ; c++){
-        sco_ring_transfers[c] = libusb_alloc_transfer(3); // 1 isochronous transfers SCO out - up to 3 parts
+        sco_ring_transfers[c] = libusb_alloc_transfer(NUM_ISO_PACKETS); // 1 isochronous transfers SCO out - up to 3 parts
     }
 #endif
 
