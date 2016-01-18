@@ -463,7 +463,26 @@ def parseReportReference(fout, parts):
     fout.write("\n")
     handle = handle + 1
 
-def parse(fname_in, fin, fname_out, fout):
+
+def parseNumberOfDigitals(fout, parts):
+    global handle
+    global total_size
+
+    property_read = property_flags['READ'];
+    size = 2 + 2 + 2 + 2 + 1
+
+    no_of_digitals = parts[1]
+
+    write_indent(fout)
+    fout.write('// 0x%04x NUMBER_OF_DIGITALS-%s\n' % (handle, '-'.join(parts[1:])))
+    write_indent(fout)
+    write_16(fout, size)
+    write_16(fout, property_read)
+    write_16(fout, handle)
+    write_16(fout, 0x2909)
+    write_sequence(fout, no_of_digitals)
+    fout.write("\n")
+    handle = handle + 1def parse(fname_in, fin, fname_out, fout):
     global handle
     global total_size
     
@@ -546,7 +565,7 @@ def parse(fname_in, fin, fname_out, fout):
 
             # 2909
             if parts[0] == 'NUMBER_OF_DIGITALS':
-                print("WARNING: %s not implemented yet\n" % (parts[0]))
+                parseNumberOfDigitals(fout, parts)
                 continue
 
             # 290A
