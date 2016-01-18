@@ -45,16 +45,9 @@
 #define PREFS_REMOTE_NAME  @"RemoteName"
 #define PREFS_LINK_KEY     @"LinkKey"
 
-#define MAX_RFCOMM_CHANNEL_NR 30
-
-#define RFCOMM_SERVICES_KEY "rfcommServices"
-#define PREFS_CHANNEL      @"channel"
-#define PREFS_LAST_USED    @"lastUsed"
-
 static void put_name(bd_addr_t bd_addr, device_name_t *device_name);
 
 static NSMutableDictionary *remote_devices  = nil;
-static NSMutableDictionary *rfcomm_services = nil;
 
 // Device info
 static void db_open(void){
@@ -77,18 +70,7 @@ static void db_open(void){
 		[deviceEntry addEntriesFromDictionary:value];
 		[remote_devices setObject:deviceEntry forKey:key];
 	}
-    
-    dict = (NSDictionary*) CFPreferencesCopyAppValue(CFSTR(RFCOMM_SERVICES_KEY), CFSTR(BTdaemonID));
-    rfcomm_services = [[NSMutableDictionary alloc] initWithCapacity:([dict count]+5)];
-    
-	// copy entries
-	for (id key in dict) {
-		NSDictionary *value = [dict objectForKey:key];
-		NSMutableDictionary *serviceEntry = [NSMutableDictionary dictionaryWithCapacity:[value count]];
-		[serviceEntry addEntriesFromDictionary:value];
-		[rfcomm_services setObject:serviceEntry forKey:key];
-	}
-    
+        
     log_info("read prefs for %u devices\n", (unsigned int) [dict count]);
     
     [pool release];
@@ -101,7 +83,6 @@ static void db_synchronize(void){
     
     // Core Foundation
     CFPreferencesSetValue(CFSTR(DEVICES_KEY), (CFPropertyListRef) remote_devices, CFSTR(BTdaemonID), kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
-    CFPreferencesSetValue(CFSTR(RFCOMM_SERVICES_KEY), (CFPropertyListRef) rfcomm_services, CFSTR(BTdaemonID), kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
     CFPreferencesSynchronize(CFSTR(BTdaemonID), kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
     
     // NSUserDefaults didn't work
@@ -209,83 +190,6 @@ static int  get_name(bd_addr_t bd_addr, device_name_t *device_name) {
     return (remoteName != nil);
 }
 
-// MARK: PERSISTENT RFCOMM CHANNEL ALLOCATION
-
-static int firstFreeChannelNr(void){
-    BOOL channelUsed[MAX_RFCOMM_CHANNEL_NR+1];
-    int i;
-    for (i=0; i<=MAX_RFCOMM_CHANNEL_NR ; i++) channelUsed[i] = NO;
-    channelUsed[0] = YES;
-    channelUsed[1] = YES; // preserve channel #1 for testing
-    for (NSDictionary * serviceEntry in [rfcomm_services allValues]){
-        int channel = [(NSNumber *) [serviceEntry objectForKey:PREFS_CHANNEL] intValue];
-        channelUsed[channel] = YES;
-    }
-    for (i=0;i<=MAX_RFCOMM_CHANNEL_NR;i++) {
-        if (channelUsed[i] == NO) return i;
-    }
-    return -1;
-}
-
-static void deleteLeastUsed(void){
-    NSString * leastUsedName = nil;
-    NSDate *   leastUsedDate = nil;
-    for (NSString * serviceName in [rfcomm_services allKeys]){
-        NSDictionary *service = [rfcomm_services objectForKey:serviceName];
-        NSDate *serviceDate = [service objectForKey:PREFS_LAST_USED];
-        if (leastUsedName == nil || [leastUsedDate compare:serviceDate] == NSOrderedDescending) {
-            leastUsedName = serviceName;
-            leastUsedDate = serviceDate;
-            continue;
-        }
-    }
-    if (leastUsedName){
-        // NSLog(@"removing %@", leastUsedName);
-        [rfcomm_services removeObjectForKey:leastUsedName];
-    }
-}
-
-static void addService(NSString * serviceName, int channel){
-    NSMutableDictionary * serviceEntry = [NSMutableDictionary dictionaryWithCapacity:2];
-    [serviceEntry setObject:[NSNumber numberWithInt:channel] forKey:PREFS_CHANNEL];
-    [serviceEntry setObject:[NSDate date] forKey:PREFS_LAST_USED];
-    [rfcomm_services setObject:serviceEntry forKey:serviceName];
-}
-
-static uint8_t persistent_rfcomm_channel(char *serviceName){
-
-    NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
-
-    NSLog(@"persistent_rfcomm_channel for %s", serviceName);
-
-    // find existing entry
-    NSString *serviceString = [NSString stringWithUTF8String:serviceName];
-    NSMutableDictionary *serviceEntry = [rfcomm_services objectForKey:serviceString];
-    if (serviceEntry){
-        // update timestamp
-        [serviceEntry setObject:[NSDate date] forKey:PREFS_LAST_USED];
-        
-        db_synchronize();
-        
-        return [(NSNumber *) [serviceEntry objectForKey:PREFS_CHANNEL] intValue];
-    }
-    // free channel exist?
-    int channel = firstFreeChannelNr();
-    if (channel < 0){
-        // free channel
-        deleteLeastUsed();
-        channel = firstFreeChannelNr();
-    }
-    addService(serviceString, channel);
-
-    db_synchronize();
-
-    [pool release];
-    
-    return channel;
-}
-
-
 remote_device_db_t remote_device_db_iphone = {
     db_open,
     db_close,
@@ -295,6 +199,5 @@ remote_device_db_t remote_device_db_iphone = {
     get_name,
     put_name,
     delete_name,
-    persistent_rfcomm_channel
 };
 

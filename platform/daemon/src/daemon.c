@@ -67,6 +67,7 @@
 #include "hci_dump.h"
 #include "hci_transport.h"
 #include "l2cap.h"
+#include "classic/remote_device_db.h"
 #include "classic/rfcomm.h"
 #include "classic/sdp.h"
 #include "classic/sdp_parser.h"
@@ -74,6 +75,7 @@
 #include "classic/sdp_query_util.h"
 #include "classic/sdp_query_rfcomm.h"
 #include "socket_connection.h"
+#include "rfcomm_service_db.h"
 
 #include "btstack_client.h"
 
@@ -188,7 +190,7 @@ static void (*bluetooth_status_handler)(BLUETOOTH_STATE state) = dummy_bluetooth
 static int global_enable = 0;
 
 static remote_device_db_t const * remote_device_db = NULL;
-static int rfcomm_channel_generator = 1;
+// static int rfcomm_channel_generator = 1;
 
 static uint8_t   attribute_value[1000];
 static const int attribute_value_buffer_size = sizeof(attribute_value);
@@ -1060,14 +1062,9 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             rfcomm_grant_credits(cid, rfcomm_credits);
             break;
         case RFCOMM_PERSISTENT_CHANNEL: {
-            if (remote_device_db) {
-                // enforce \0
-                packet[3+248] = 0;
-                rfcomm_channel = remote_device_db->persistent_rfcomm_channel((char*)&packet[3]);
-            } else {
-                // NOTE: hack for non-iOS platforms
-                rfcomm_channel = rfcomm_channel_generator++;
-            }
+            // enforce \0
+            packet[3+248] = 0;
+            rfcomm_channel = rfcomm_service_db_channel_for_service((char*)&packet[3]);
             log_info("RFCOMM_EVENT_PERSISTENT_CHANNEL %u", rfcomm_channel);
             uint8_t event[4];
             event[0] = RFCOMM_EVENT_PERSISTENT_CHANNEL;

@@ -48,7 +48,6 @@
 // This lists should be only accessed by tests.
 bk_linked_list_t db_mem_link_keys = NULL;
 bk_linked_list_t db_mem_names = NULL;
-static bk_linked_list_t db_mem_services = NULL;
 
 // Device info
 static void db_open(void){
@@ -172,37 +171,6 @@ static void put_name(bd_addr_t bd_addr, device_name_t *device_name){
     linked_list_add(&db_mem_names, (linked_item_t *) record);
 }
 
-
-// MARK: PERSISTENT RFCOMM CHANNEL ALLOCATION
-
-static uint8_t persistent_rfcomm_channel(char *serviceName){
-    linked_item_t *it;
-    db_mem_service_t * item;
-    uint8_t max_channel = 1;
-
-    for (it = (linked_item_t *) db_mem_services; it ; it = it->next){
-        item = (db_mem_service_t *) it;
-        if (strncmp(item->service_name, serviceName, MAX_NAME_LEN) == 0) {
-            // Match found
-            return item->channel;
-        }
-
-        // TODO prevent overflow
-        if (item->channel >= max_channel) max_channel = item->channel + 1;
-    }
-
-    // Allocate new persistant channel
-    db_mem_service_t * newItem = btstack_memory_db_mem_service_get();
-
-    if (!newItem) return 0;
-    
-    strncpy(newItem->service_name, serviceName, MAX_NAME_LEN);
-    newItem->channel = max_channel;
-    linked_list_add(&db_mem_services, (linked_item_t *) newItem);
-    return max_channel;
-}
-
-
 const remote_device_db_t remote_device_db_memory = {
     db_open,
     db_close,
@@ -212,5 +180,4 @@ const remote_device_db_t remote_device_db_memory = {
     get_name,
     put_name,
     delete_name,
-    persistent_rfcomm_channel
 };
