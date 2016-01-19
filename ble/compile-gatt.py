@@ -482,7 +482,10 @@ def parseNumberOfDigitals(fout, parts):
     write_16(fout, 0x2909)
     write_sequence(fout, no_of_digitals)
     fout.write("\n")
-    handle = handle + 1def parse(fname_in, fin, fname_out, fout):
+    handle = handle + 1
+
+
+def parse(fname_in, fin, fname_out, fout):
     global handle
     global total_size
     
