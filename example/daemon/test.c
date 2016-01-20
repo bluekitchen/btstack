@@ -47,7 +47,7 @@
 #include <string.h>
 
 #include "btstack_client.h"
-#include "run_loop.h"
+#include "btstack_run_loop.h"
 #include "run_loop_posix.h"
 #include "hci_cmds.h"
 

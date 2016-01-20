@@ -48,7 +48,7 @@
 #include <stdint.h>
 #include <stdio.h>
 
-#include "run_loop.h"
+#include "btstack_run_loop.h"
 #include "hal_led.h"
 
 #define HEARTBEAT_PERIOD_MS 1000

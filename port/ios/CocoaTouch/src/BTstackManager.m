@@ -32,7 +32,7 @@
 #import <BTstack/BTstackManager.h>
 
 #import "btstack.h"
-#import "run_loop.h"
+#import "btstack_run_loop.h"
 #import "run_loop_cocoa.h"
 #import <btstack/BTDevice.h>
 

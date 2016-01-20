@@ -63,7 +63,7 @@
 #include "hal_usb.h"
 #include "hal_usb.h"
 
-#include "run_loop.h"
+#include "btstack_run_loop.h"
 
 #include "btstack_memory.h"
 #include "bt_control_cc256x.h"

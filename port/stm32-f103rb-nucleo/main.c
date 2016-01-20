@@ -48,7 +48,7 @@
 #include <errno.h>
 #include <unistd.h>
 
-#include "run_loop.h"
+#include "btstack_run_loop.h"
 #include "run_loop_embedded.h"
 #include "hci.h"
 #include "bt_control_cc256x.h"

@@ -39,7 +39,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "run_loop.h"
+#include "btstack_run_loop.h"
 #include "hci_cmds.h"
 #include "utils.h"
 #include "classic/sdp_util.h"

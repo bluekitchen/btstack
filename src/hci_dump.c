@@ -53,7 +53,7 @@
 #include "hci.h"
 #include "hci_transport.h"
 #include "hci_cmds.h"
-#include "run_loop.h"
+#include "btstack_run_loop.h"
 #include <stdio.h>
 
 #ifndef EMBEDDED

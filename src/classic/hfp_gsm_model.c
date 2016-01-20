@@ -58,7 +58,7 @@
 #include "hci_cmds.h"
 #include "hci_dump.h"
 #include "l2cap.h"
-#include "run_loop.h"
+#include "btstack_run_loop.h"
 
 #define HFP_GSM_MAX_NR_CALLS 3
 

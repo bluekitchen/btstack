@@ -49,7 +49,7 @@
 
 #include "hci_cmds.h"
 #include "daemon_cmds.h"
-#include "run_loop.h"
+#include "btstack_run_loop.h"
 #include "utils.h"
 
 #include "btstack-config.h"

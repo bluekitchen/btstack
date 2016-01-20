@@ -30,7 +30,7 @@
  */
 
 #import "BluetoothController.h"
-#include "run_loop.h"
+#include "btstack_run_loop.h"
 #include "run_loop_cocoa.h"
 
 #pragma mark callback handler

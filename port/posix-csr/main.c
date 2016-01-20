@@ -53,7 +53,7 @@
 #include "btstack_debug.h"
 #include "hci.h"
 #include "hci_dump.h"
-#include "run_loop.h"
+#include "btstack_run_loop.h"
 #include "run_loop_posix.h"
 #include "stdin_support.h"
 #include "bt_control_csr.h"

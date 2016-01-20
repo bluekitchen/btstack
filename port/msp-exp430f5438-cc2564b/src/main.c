@@ -55,7 +55,7 @@
 #include "hal_compat.h"
 #include "hal_usb.h"
 
-#include "run_loop.h"
+#include "btstack_run_loop.h"
 
 #include "hci.h"
 #include "btstack_memory.h"

@@ -43,7 +43,7 @@
 #ifndef __RUN_LOOP_COCOA_H
 #define __RUN_LOOP_COCOA_H
 
-#include "run_loop.h"
+#include "btstack_run_loop.h"
 
 #if defined __cplusplus
 extern "C" {

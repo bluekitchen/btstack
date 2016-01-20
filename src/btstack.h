@@ -61,7 +61,7 @@
 #include "l2cap_signaling.h"
 #include "btstack_linked_list.h"
 #include "btstack_memory_pool.h"
-#include "run_loop.h"
+#include "btstack_run_loop.h"
 #include "utils.h"
 #include "version.h"
 

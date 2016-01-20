@@ -47,7 +47,7 @@
 #define __HCI_TRANSPORT_H
 
 #include <stdint.h>
-#include "run_loop.h"
+#include "btstack_run_loop.h"
 
 #if defined __cplusplus
 extern "C" {

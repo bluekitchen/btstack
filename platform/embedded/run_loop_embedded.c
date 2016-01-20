@@ -53,7 +53,7 @@
  */
 
 
-#include "run_loop.h"
+#include "btstack_run_loop.h"
 #include "run_loop_embedded.h"
 #include "btstack_linked_list.h"
 #include "hal_tick.h"
