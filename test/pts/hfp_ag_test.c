@@ -623,7 +623,7 @@ static void packet_handler(uint8_t * event, uint16_t event_size){
     if (event[3]
         && event[2] != HFP_SUBEVENT_PLACE_CALL_WITH_NUMBER
         && event[2] != HFP_SUBEVENT_ATTACH_NUMBER_TO_VOICE_TAG 
-        && event[2] != HFP_SUBEVENT_TRANSMIT_DTMF_CODES
+        && event[2] != HFP_SUBEVENT_TRANSMIT_DTMF_CODES)
         && event[2] != HFP_SUBEVENT_TRANSMIT_STATUS_OF_CURRENT_CALL){
         printf("ERROR, status: %u\n", event[3]);
         return;
@@ -685,14 +685,19 @@ static void packet_handler(uint8_t * event, uint16_t event_size){
             break;
         case HFP_SUBEVENT_TRANSMIT_STATUS_OF_CURRENT_CALL:
             if (current_call_index == 0 && current_call_exists_a){
-                hfp_ag_send_current_call_status(device_addr, 1, current_call_dir, current_call_status_a,
+                printf("hfp_ag_send_current_call_status 111 index %d, dir %d, status %d, mode %d, mpty %d, type %d, number %s\n", 1, current_call_dir, current_call_status_a,
                         HFP_ENHANCED_CALL_MODE_VOICE, current_call_mpty, 129, "1234567");
+                // hfp_ag_send_current_call_status(device_addr, 1, current_call_dir, current_call_status_a,
+                //         HFP_ENHANCED_CALL_MODE_VOICE, current_call_mpty, 129, "1234567");
                 current_call_index = 1;
                 break;
             }
             if (current_call_index == 1 && current_call_exists_b){
-                hfp_ag_send_current_call_status(device_addr, 2, current_call_dir, current_call_status_b,
+                // hfp_ag_send_current_call_status(device_addr, 2, current_call_dir, current_call_status_b,
+                //         HFP_ENHANCED_CALL_MODE_VOICE, current_call_mpty, 129, "7654321");
+                printf("hfp_ag_send_current_call_status 111 index %d, dir %d, status %d, mode %d, mpty %d, type %d, number %s\n", 2, current_call_dir, current_call_status_a,
                         HFP_ENHANCED_CALL_MODE_VOICE, current_call_mpty, 129, "7654321");
+                
                 current_call_index = 2;
                 break;
             }

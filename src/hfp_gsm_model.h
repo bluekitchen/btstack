@@ -59,14 +59,38 @@ extern "C" {
  * @brief
  */
 
-hfp_callheld_status_t hfp_gsm_callheld_status();
-hfp_call_status_t hfp_gsm_call_status();
-hfp_callsetup_status_t hfp_gsm_callsetup_status();
+typedef enum{
+    CALL_NONE,
+    CALL_INITIATED,
+    CALL_RESPONSE_HOLD,
+    CALL_ACTIVE,
+    CALL_HELD
+} hfp_gsm_call_status_t;
+
+typedef struct {
+    // TODO: use enhanced_status instead of status
+    hfp_gsm_call_status_t status;
+    hfp_enhanced_call_dir_t direction;
+    hfp_enhanced_call_status_t enhanced_status;
+    hfp_enhanced_call_mode_t mode;
+    hfp_enhanced_call_mpty_t mpty;
+    // TODO: sort on drop call, so that index corresponds to table index
+    int index;
+    uint8_t clip_type;
+    char    clip_number[25];
+} hfp_gsm_call_t;
+
+hfp_callheld_status_t hfp_gsm_callheld_status(void);
+hfp_call_status_t hfp_gsm_call_status(void);
+hfp_callsetup_status_t hfp_gsm_callsetup_status(void);
+
+int hfp_gsm_get_number_calls(void);
+hfp_gsm_call_t * hfp_gsm_call(int index);
 
 int hfp_gsm_call_possible(void);
 
-uint8_t hfp_gsm_clip_type();
-char *  hfp_gsm_clip_number();
+uint8_t hfp_gsm_clip_type(void);
+char *  hfp_gsm_clip_number(void);
 
 void hfp_gsm_init(void);
 
