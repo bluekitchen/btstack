@@ -2,7 +2,7 @@
 #include "CppUTest/CommandLineTestRunner.h"
 #include "btstack_linked_list.h"
 
-bk_linked_list_t testList;
+btstack_linked_list_t testList;
 linked_item_t itemA;
 linked_item_t itemB;
 linked_item_t itemC;

@@ -78,9 +78,9 @@
 static uint16_t      rfcomm_client_cid_generator;  // used for client channel IDs
 
 // linked lists for all
-static bk_linked_list_t rfcomm_multiplexers = NULL;
-static bk_linked_list_t rfcomm_channels = NULL;
-static bk_linked_list_t rfcomm_services = NULL;
+static btstack_linked_list_t rfcomm_multiplexers = NULL;
+static btstack_linked_list_t rfcomm_channels = NULL;
+static btstack_linked_list_t rfcomm_services = NULL;
 
 static gap_security_level_t rfcomm_security_level;
 

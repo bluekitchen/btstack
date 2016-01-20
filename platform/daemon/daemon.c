@@ -125,12 +125,12 @@ typedef struct {
     // connection
     connection_t * connection;
 
-    bk_linked_list_t rfcomm_cids;
-    bk_linked_list_t rfcomm_services;
-    bk_linked_list_t l2cap_cids;
-    bk_linked_list_t l2cap_psms;
-    bk_linked_list_t sdp_record_handles;
-    bk_linked_list_t gatt_con_handles;
+    btstack_linked_list_t rfcomm_cids;
+    btstack_linked_list_t rfcomm_services;
+    btstack_linked_list_t l2cap_cids;
+    btstack_linked_list_t l2cap_psms;
+    btstack_linked_list_t sdp_record_handles;
+    btstack_linked_list_t gatt_con_handles;
     // power mode
     HCI_POWER_MODE power_mode;
     
@@ -153,7 +153,7 @@ typedef struct linked_list_gatt_client_helper{
     linked_item_t item;
     uint16_t con_handle;
     connection_t * active_connection;   // the one that started the current query
-    bk_linked_list_t  all_connections;     // list of all connections that ever used this helper
+    btstack_linked_list_t  all_connections;     // list of all connections that ever used this helper
     uint16_t characteristic_length;
     uint16_t characteristic_handle;
     uint8_t  characteristic_buffer[10 + ATT_MAX_LONG_ATTRIBUTE_SIZE];   // header for sending event right away
@@ -179,9 +179,9 @@ static hci_transport_config_uart_t hci_transport_config_uart;
 static timer_source_t timeout;
 static uint8_t timeout_active = 0;
 static int power_management_sleep = 0;
-static bk_linked_list_t clients = NULL;        // list of connected clients `
+static btstack_linked_list_t clients = NULL;        // list of connected clients `
 #ifdef HAVE_BLE
-static bk_linked_list_t gatt_client_helpers = NULL;   // list of used gatt client (helpers)
+static btstack_linked_list_t gatt_client_helpers = NULL;   // list of used gatt client (helpers)
 static uint16_t gatt_client_id = 0;
 #endif
 
@@ -266,7 +266,7 @@ static void daemon_no_connections_timeout(struct timer *ts){
 }
 
 
-static void add_uint32_to_list(bk_linked_list_t *list, uint32_t value){
+static void add_uint32_to_list(btstack_linked_list_t *list, uint32_t value){
     linked_list_iterator_t it;    
     linked_list_iterator_init(&it, list);
     while (linked_list_iterator_has_next(&it)){
@@ -280,7 +280,7 @@ static void add_uint32_to_list(bk_linked_list_t *list, uint32_t value){
     linked_list_add(list, (linked_item_t *) item);
 }
 
-static void remove_and_free_uint32_from_list(bk_linked_list_t *list, uint32_t value){
+static void remove_and_free_uint32_from_list(btstack_linked_list_t *list, uint32_t value){
     linked_list_iterator_t it;    
     linked_list_iterator_init(&it, list);
     while (linked_list_iterator_has_next(&it)){
@@ -509,8 +509,8 @@ static void daemon_remove_gatt_client_helper(uint32_t con_handle){
 
 static void daemon_rfcomm_close_connection(client_state_t * daemon_client){
     linked_list_iterator_t it;  
-    bk_linked_list_t *rfcomm_services = &daemon_client->rfcomm_services;
-    bk_linked_list_t *rfcomm_cids = &daemon_client->rfcomm_cids;
+    btstack_linked_list_t *rfcomm_services = &daemon_client->rfcomm_services;
+    btstack_linked_list_t *rfcomm_cids = &daemon_client->rfcomm_cids;
     
     linked_list_iterator_init(&it, rfcomm_services);
     while (linked_list_iterator_has_next(&it)){
@@ -532,8 +532,8 @@ static void daemon_rfcomm_close_connection(client_state_t * daemon_client){
 
 static void daemon_l2cap_close_connection(client_state_t * daemon_client){
     linked_list_iterator_t it;  
-    bk_linked_list_t *l2cap_psms = &daemon_client->l2cap_psms;
-    bk_linked_list_t *l2cap_cids = &daemon_client->l2cap_cids;
+    btstack_linked_list_t *l2cap_psms = &daemon_client->l2cap_psms;
+    btstack_linked_list_t *l2cap_cids = &daemon_client->l2cap_cids;
     
     linked_list_iterator_init(&it, l2cap_psms);
     while (linked_list_iterator_has_next(&it)){
@@ -553,7 +553,7 @@ static void daemon_l2cap_close_connection(client_state_t * daemon_client){
 }
 
 static void daemon_sdp_close_connection(client_state_t * daemon_client){
-    bk_linked_list_t * list = &daemon_client->sdp_record_handles;
+    btstack_linked_list_t * list = &daemon_client->sdp_record_handles;
     linked_list_iterator_t it;  
     linked_list_iterator_init(&it, list);
     while (linked_list_iterator_has_next(&it)){

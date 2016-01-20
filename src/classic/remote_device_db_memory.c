@@ -46,8 +46,8 @@
 #include "btstack_linked_list.h"
 
 // This lists should be only accessed by tests.
-bk_linked_list_t db_mem_link_keys = NULL;
-bk_linked_list_t db_mem_names = NULL;
+btstack_linked_list_t db_mem_link_keys = NULL;
+btstack_linked_list_t db_mem_names = NULL;
 
 // Device info
 static void db_open(void){
@@ -56,7 +56,7 @@ static void db_open(void){
 static void db_close(void){ 
 }
 
-static db_mem_device_t * get_item(bk_linked_list_t list, bd_addr_t bd_addr) {
+static db_mem_device_t * get_item(btstack_linked_list_t list, bd_addr_t bd_addr) {
     linked_item_t *it;
     for (it = (linked_item_t *) list; it ; it = it->next){
         db_mem_device_t * item = (db_mem_device_t *) it;

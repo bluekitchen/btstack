@@ -46,7 +46,7 @@
 #include "btstack_linked_list.h"
 
 // This lists should be only accessed by tests.
-static bk_linked_list_t db_mem_services = NULL;
+static btstack_linked_list_t db_mem_services = NULL;
 
 // Device info
 static void db_open(void){

@@ -628,7 +628,7 @@ int get_hfp_generic_status_indicators_nr(void);
 hfp_generic_status_indicator_t * get_hfp_generic_status_indicators(void);
 void set_hfp_generic_status_indicators(hfp_generic_status_indicator_t * indicators, int indicator_nr);
 
-bk_linked_list_t * hfp_get_connections(void);
+btstack_linked_list_t * hfp_get_connections(void);
 void hfp_parse(hfp_connection_t * context, uint8_t byte, int isHandsFree);
 
 void hfp_init(uint16_t rfcomm_channel_nr);

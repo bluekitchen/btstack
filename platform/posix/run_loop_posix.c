@@ -60,9 +60,9 @@ static int  run_loop_posix_timeval_compare(struct timeval *a, struct timeval *b)
 static int  run_loop_posix_timer_compare(timer_source_t *a, timer_source_t *b);
 
 // the run loop
-static bk_linked_list_t data_sources;
+static btstack_linked_list_t data_sources;
 static int data_sources_modified;
-static bk_linked_list_t timers;
+static btstack_linked_list_t timers;
 static struct timeval init_tv;
 
 /**

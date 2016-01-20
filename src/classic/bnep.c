@@ -61,8 +61,8 @@
 #define BNEP_CONNECTION_TIMEOUT_MS 10000
 #define BNEP_CONNECTION_MAX_RETRIES 1
 
-static bk_linked_list_t bnep_services = NULL;
-static bk_linked_list_t bnep_channels = NULL;
+static btstack_linked_list_t bnep_services = NULL;
+static btstack_linked_list_t bnep_channels = NULL;
 
 static gap_security_level_t bnep_security_level;
 

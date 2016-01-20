@@ -59,8 +59,8 @@
 #include "ble/sm.h"
 #include "ble/le_device_db.h"
 
-static bk_linked_list_t gatt_client_connections = NULL;
-static bk_linked_list_t gatt_subclients = NULL;
+static btstack_linked_list_t gatt_client_connections = NULL;
+static btstack_linked_list_t gatt_subclients = NULL;
 static uint16_t next_gatt_client_id = 0;
 static uint8_t  pts_suppress_mtu_exchange;
 

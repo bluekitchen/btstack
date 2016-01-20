@@ -9,12 +9,12 @@
 
 #include "btstack-config.h"
 
-extern bk_linked_list_t db_mem_link_keys ;
-extern bk_linked_list_t db_mem_names ;
+extern btstack_linked_list_t db_mem_link_keys ;
+extern btstack_linked_list_t db_mem_names ;
 // const extern "C" db_mem_device_name_t * btstack_memory_db_mem_device_name_get(void);
 // const extern "C" void btstack_memory_init(void);
 
-void dump(bk_linked_list_t list){
+void dump(btstack_linked_list_t list){
     printf("dump:\n");
 
     int i;

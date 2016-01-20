@@ -79,10 +79,10 @@
 static const run_loop_t run_loop_embedded;
 
 // the run loop
-static bk_linked_list_t data_sources;
+static btstack_linked_list_t data_sources;
 
 #ifdef TIMER_SUPPORT
-static bk_linked_list_t timers;
+static btstack_linked_list_t timers;
 #endif
 
 #ifdef HAVE_TICK
