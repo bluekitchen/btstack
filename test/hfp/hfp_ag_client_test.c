@@ -68,9 +68,6 @@
 
 static bd_addr_t pts_addr = {0x00,0x15,0x83,0x5F,0x9D,0x46};
 
-static hfp_enhanced_call_status_t current_call_status_a;
-static hfp_enhanced_call_status_t current_call_status_b;
-
 const uint8_t    rfcomm_channel_nr = 1;
 
 static bd_addr_t device_addr = {0xD8,0xBb,0x2C,0xDf,0xF1,0x08};
@@ -156,13 +153,11 @@ static void user_command(char cmd){
             break;
         case 'c':
             printf("Simulate incoming call from 1234567\n");
-            current_call_status_a = HFP_ENHANCED_CALL_STATUS_INCOMING;
             hfp_ag_set_clip(129, "1234567");
             hfp_ag_incoming_call();
             break;
         case 'm':
             printf("Simulate incoming call from 7654321\n");
-            current_call_status_b = HFP_ENHANCED_CALL_STATUS_INCOMING;
             hfp_ag_set_clip(129, "7654321");
             hfp_ag_incoming_call();
             break;
@@ -176,13 +171,6 @@ static void user_command(char cmd){
             break;
         case 'e':
             printf("Answer call on AG\n");
-            if (current_call_status_a == HFP_ENHANCED_CALL_STATUS_INCOMING){
-                current_call_status_a = HFP_ENHANCED_CALL_STATUS_ACTIVE;
-            }
-            if (current_call_status_b == HFP_ENHANCED_CALL_STATUS_INCOMING){
-                current_call_status_b = HFP_ENHANCED_CALL_STATUS_ACTIVE;
-                current_call_status_a = HFP_ENHANCED_CALL_STATUS_HELD;
-            }
             hfp_ag_answer_incoming_call();
             break;
         case 'E':
@@ -443,20 +431,6 @@ void packet_handler(uint8_t * event, uint16_t event_size){
             printf("\n** Send DTMF Codes: '%s'\n", &event[3]);
             hfp_ag_send_dtmf_code_done(device_addr);
             break;
-
-        case HFP_CMD_CALL_ANSWERED:
-            printf("Call answered by HF\n");
-            if (current_call_status_a == HFP_ENHANCED_CALL_STATUS_INCOMING){
-                current_call_status_a = HFP_ENHANCED_CALL_STATUS_ACTIVE;
-            }
-            if (current_call_status_b == HFP_ENHANCED_CALL_STATUS_INCOMING){
-                current_call_status_b = HFP_ENHANCED_CALL_STATUS_ACTIVE;
-            }
-            break;
-        case HFP_SUBEVENT_CONFERENCE_CALL:
-            current_call_status_a = HFP_ENHANCED_CALL_STATUS_ACTIVE;
-            current_call_status_b = HFP_ENHANCED_CALL_STATUS_ACTIVE;
-            break;
         default:
             printf("Event not handled %u\n", event[2]);
             break;
@@ -484,9 +458,6 @@ TEST_GROUP(HFPClient){
     void teardown(void){
         hfp_ag_release_audio_connection(device_addr);
         hfp_ag_release_service_level_connection(device_addr);
-        
-        current_call_status_b = HFP_ENHANCED_CALL_STATUS_ACTIVE;
-        current_call_status_a = HFP_ENHANCED_CALL_STATUS_ACTIVE;
 
         service_level_connection_established = 0;
         codecs_connection_established = 0;
