@@ -10,7 +10,7 @@ CFLAGS += -I${BTSTACK_ROOT}/src
 
 CORE += \
     btstack_memory.c            \
-    bk_linked_list.c	        \
+    btstack_linked_list.c	        \
     memory_pool.c               \
     run_loop.c		            \
 

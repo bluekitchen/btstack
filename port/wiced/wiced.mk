@@ -12,7 +12,7 @@ GLOBAL_INCLUDES += . ../../src ../../platform/embedded ../../chipset/bcm ../../.
 
 # core BTstack sources
 $(NAME)_SOURCES += \
-	../../src/bk_linked_list.c            \
+	../../src/btstack_linked_list.c            \
 	../../src/btstack_memory.c            \
 	../../src/ble/att.c          		  \
 	../../src/ble/att_dispatch.c 		  \

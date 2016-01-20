@@ -34,7 +34,7 @@ CFLAGS += \
 LDFLAGS = -mmcu=msp430f5438a
 
 CORE   = \
-    bk_linked_list.c          \
+    btstack_linked_list.c          \
     btstack_memory.c          \
     hal_board.c	              \
     hal_compat.c              \

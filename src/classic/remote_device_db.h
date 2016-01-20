@@ -89,7 +89,7 @@ const remote_device_db_t * remote_device_db_fs_instance(void);
 /* API_END */
 
 // MARK: non-persistent implementation
-#include "bk_linked_list.h"
+#include "btstack_linked_list.h"
 #define MAX_NAME_LEN 32
 typedef struct {
     // linked list - assert: first field

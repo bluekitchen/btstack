@@ -46,7 +46,7 @@
 
 #include "btstack-config.h"
 
-#include "bk_linked_list.h"
+#include "btstack_linked_list.h"
 
 #include <stdint.h>
 

@@ -56,7 +56,7 @@
 #include <getopt.h>
 
 #include "btstack.h"
-#include "bk_linked_list.h"
+#include "btstack_linked_list.h"
 #include "run_loop.h"
 #include "run_loop_posix.h"
 #include "hci_cmds.h"

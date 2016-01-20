@@ -52,7 +52,7 @@
 #include "classic/remote_device_db.h"
 #include "hci_cmds.h"
 #include "hci_transport.h"
-#include "bk_linked_list.h"
+#include "btstack_linked_list.h"
 #include "utils.h"
 
 #include <stdint.h>

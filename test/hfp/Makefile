@@ -10,7 +10,7 @@ include ${BTSTACK_ROOT}/example/embedded/Makefile.inc
 COMMON = \
 	sdp.c			            \
 	sdp_query_rfcomm.c		    \
-    bk_linked_list.c	        \
+    btstack_linked_list.c	        \
     btstack_memory.c            \
     hci.c			            \
     hci_cmds.c		            \
@@ -32,7 +32,7 @@ COMMON = \
 MOCK = \
 	mock.c 						\
 	test_sequences.c            \
-    bk_linked_list.c	        \
+    btstack_linked_list.c	        \
     btstack_memory.c            \
     hci_cmds.c					\
     hci_dump.c     				\

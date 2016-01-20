@@ -15,7 +15,7 @@ COMMON = \
     ad_parser.c                 \
     att.c     					\
     att_dispatch.c       	    \
-    bk_linked_list.c		    \
+    btstack_linked_list.c		    \
     btstack_memory.c			\
     gatt_client.c               \
     hci_cmds.c					\

@@ -13,7 +13,7 @@ VPATH += ${BTSTACK_ROOT}/platform/posix
 
 COMMON = \
     ad_parser.c                 \
-    bk_linked_list.c	        \
+    btstack_linked_list.c	        \
     btstack_memory.c			\
     hci.c                       \
     hci_cmds.c					\

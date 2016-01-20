@@ -43,7 +43,7 @@
 #include "debug.h"
 
 #include "utils.h"
-#include "bk_linked_list.h"
+#include "btstack_linked_list.h"
 
 // This lists should be only accessed by tests.
 bk_linked_list_t db_mem_link_keys = NULL;
