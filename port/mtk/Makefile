@@ -14,13 +14,13 @@ CFLAGS += -I$(BTSTACK_ROOT)/include
 CFLAGS += -I$(BTSTACK_ROOT)/src/
 CFLAGS += -I$(BTSTACK_ROOT)/ble
 CFLAGS += -I$(BTSTACK_ROOT)/platform/daemon
-CFLAGS += -I$(BTSTACK_ROOT)/platform/posix/src
+CFLAGS += -I$(BTSTACK_ROOT)/platform/posix
 CFLAGS += -I.
 
 VPATH += $(BTSTACK_ROOT)/src
 VPATH += $(BTSTACK_ROOT)/src/ble
 VPATH += $(BTSTACK_ROOT)/src/classic
-VPATH += $(BTSTACK_ROOT)/platform/posix/src
+VPATH += $(BTSTACK_ROOT)/platform/posix
 VPATH += $(BTSTACK_ROOT)/platform/daemon
 VPATH += $(BTSTACK_ROOT)/example/daemon
 

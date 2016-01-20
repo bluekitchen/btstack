@@ -1,6 +1,5 @@
 # Makefile for libusb based examples
 BTSTACK_ROOT = ../..
-POSIX_ROOT= ${BTSTACK_ROOT}/platform/posix
 
 CORE += main.c stdin_support.c bt_control_cc256x.c bluetooth_init_cc2564B_1.2_BT_Spec_4.1.c
 
@@ -12,14 +11,15 @@ include ${BTSTACK_ROOT}/example/embedded/Makefile.inc
 include ${BTSTACK_ROOT}/chipset/cc256x/Makefile.inc
 
 CFLAGS += -I$(BTSTACK_ROOT)/chipset/cc256x \
-		  -I$(BTSTACK_ROOT)/platform/embedded
+		  -I$(BTSTACK_ROOT)/platform/embedded \
+		  -I$(BTSTACK_ROOT)/platform/posix 
 
 CFLAGS  += -g -Wall 
 
 # 
 CFLAGS += -Wmissing-prototypes -Wstrict-prototypes -Wshadow -Werror
 
-VPATH += ${BTSTACK_ROOT}/platform/posix/src
+VPATH += ${BTSTACK_ROOT}/platform/posix
 VPATH += ${BTSTACK_ROOT}/platform/embedded
 VPATH += ${BTSTACK_ROOT}/chipset/cc256x
 
@@ -37,7 +37,6 @@ endif
 # Command Line examples require porting to win32, so only build on other unix-ish hosts
 ifneq ($(OS),Windows_NT)
 EXAMPLES += ${EXAMPLES_CLI}
-CFLAGS += -I${POSIX_ROOT}/src
 endif
 
 LDFLAGS += -lm

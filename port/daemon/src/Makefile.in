@@ -6,7 +6,7 @@ CC = @CC@
 LDFLAGS = @LDFLAGS@
 CFLAGS = @CFLAGS@ \
     -I $(BTSTACK_ROOT)/platform/daemon \
-    -I $(BTSTACK_ROOT)/platform/posix/src \
+    -I $(BTSTACK_ROOT)/platform/posix \
     -I $(BTSTACK_ROOT)/src \
     -I..
 BTSTACK_LIB_LDFLAGS = @BTSTACK_LIB_LDFLAGS@
@@ -15,7 +15,7 @@ LIBUSB_CFLAGS = @LIBUSB_CFLAGS@
 LIBUSB_LDFLAGS = @LIBUSB_LDFLAGS@
 
 VPATH += ${BTSTACK_ROOT}/platform/daemon
-VPATH += ${BTSTACK_ROOT}/platform/posix/src
+VPATH += ${BTSTACK_ROOT}/platform/posix
 VPATH += ${BTSTACK_ROOT}/platform/cocoa
 VPATH += ${BTSTACK_ROOT}/src
 VPATH += ${BTSTACK_ROOT}/src/ble

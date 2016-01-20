@@ -1,6 +1,5 @@
 # Makefile for libusb based examples
 BTSTACK_ROOT = ../..
-POSIX_ROOT= ${BTSTACK_ROOT}/platform/posix
 
 CORE += main.c stdin_support.c bt_control_csr.c
 
@@ -9,14 +8,15 @@ COMMON += hci_transport_h4.c run_loop_posix.c remote_device_db_fs.c
 include ${BTSTACK_ROOT}/example/embedded/Makefile.inc
 
 CFLAGS += -I$(BTSTACK_ROOT)/chipset/csr \
-		  -I$(BTSTACK_ROOT)/platform/embedded
+		  -I$(BTSTACK_ROOT)/platform/embedded \
+		  -I$(BTSTACK_ROOT)/platform/posix 
 
 CFLAGS  += -g -Wall 
 
 # 
 # CFLAGS += -Wmissing-prototypes -Wstrict-prototypes -Wshadow -Werror
 
-VPATH += ${BTSTACK_ROOT}/platform/posix/src
+VPATH += ${BTSTACK_ROOT}/platform/posix
 VPATH += ${BTSTACK_ROOT}/chipset/csr
 
 ifeq ($(OS),Windows_NT)
@@ -33,7 +33,6 @@ endif
 # Command Line examples require porting to win32, so only build on other unix-ish hosts
 ifneq ($(OS),Windows_NT)
 EXAMPLES += ${EXAMPLES_CLI}
-CFLAGS += -I${POSIX_ROOT}/src
 endif
 
 all: ${BTSTACK_ROOT}/src/version.h ${EXAMPLES}

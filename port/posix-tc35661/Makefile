@@ -1,6 +1,5 @@
 # Makefile for libusb based examples
 BTSTACK_ROOT = ../..
-POSIX_ROOT= ${BTSTACK_ROOT}/platforms/posix
 
 CORE += main.c stdin_support.c bt_control_tc3566x.c
 
@@ -11,16 +10,16 @@ include ${BTSTACK_ROOT}/example/embedded/Makefile.inc
 CFLAGS += -I$(BTSTACK_ROOT)/chipset-tc3566x
 
 # CC = gcc-fsf-4.9
-CFLAGS  += -g -Wall 
-# CFLAGS += -Werror
+CFLAGS  += -g -Wall \
+		   -I$(BTSTACK_ROOT)/platform/embedded \
+		   -I$(BTSTACK_ROOT)/platform/posix 
 
-VPATH += ${BTSTACK_ROOT}/platforms/posix/src
+VPATH += ${BTSTACK_ROOT}/platform/posix
 VPATH += ${BTSTACK_ROOT}/chipset-tc3566x
 
 # Command Line examples require porting to win32, so only build on other unix-ish hosts
 ifneq ($(OS),Windows_NT)
 EXAMPLES += ${EXAMPLES_CLI}
-CFLAGS += -I${POSIX_ROOT}/src
 endif
 
 # no BLE here

@@ -10,7 +10,7 @@ BTSTACK_ROOT=../../..
 
 VPATH += $(BTSTACK_ROOT)/src \
 		 $(BTSTACK_ROOT)/src/classic \
-		 $(BTSTACK_ROOT)/platform/posix/src \
+		 $(BTSTACK_ROOT)/platform/posix \
 		 $(BTSTACK_ROOT)/platform/daemon \
 		 $(BTSTACK_ROOT)/platform/cocoa \
 		 $(BTSTACK_ROOT)/port/ios/SpringBoardAccess

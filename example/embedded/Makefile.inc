@@ -176,6 +176,5 @@ clean:
 	rm -rf *.dSYM
 	rm -rf ${BTSTACK_ROOT}/ble/*.o
 	rm -rf ${BTSTACK_ROOT}/src/*.o
-	rm -rf ${BTSTACK_ROOT}/platform/posix/src/*.o
 	
 	

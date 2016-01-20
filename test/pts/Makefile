@@ -8,11 +8,11 @@ COMMON += hci_transport_h2_libusb.c run_loop_posix.c remote_device_db_fs.c
 include ${BTSTACK_ROOT}/example/embedded/Makefile.inc
 
 CFLAGS += -g -Wall -Wmissing-prototypes -Wstrict-prototypes -Wshadow -Werror \
-          -I${BTSTACK_ROOT}/platform/posix/src \
+          -I${BTSTACK_ROOT}/platform/posix \
           -I${BTSTACK_ROOT}/platform/embedded \
 	      -I${BTSTACK_ROOT}/port/libusb
 
-VPATH += ${BTSTACK_ROOT}/platform/posix/src
+VPATH += ${BTSTACK_ROOT}/platform/posix
 VPATH += ${BTSTACK_ROOT}/port/libusb
 
 # use pkg-config for libusb

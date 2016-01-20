@@ -11,11 +11,11 @@ include ${BTSTACK_ROOT}/example/embedded/Makefile.inc
 CFLAGS  += -g -Wall -Wmissing-prototypes -Wstrict-prototypes -Wshadow -Werror
 # CFLAGS += -Werror
 
-CFLAGS += -I${BTSTACK_ROOT}/platform/posix/src \
+CFLAGS += -I${BTSTACK_ROOT}/platform/posix \
 		  -I${BTSTACK_ROOT}/platform/embedded
 
 VPATH += ${BTSTACK_ROOT}/platform/embedded
-VPATH += ${BTSTACK_ROOT}/platform/posix/src
+VPATH += ${BTSTACK_ROOT}/platform/posix
 
 ifeq ($(OS),Windows_NT)
 LDFLAGS += -lws2_32

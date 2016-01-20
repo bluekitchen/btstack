@@ -11,11 +11,13 @@ include ${BTSTACK_ROOT}/example/embedded/Makefile.inc
 # fetch and convert init scripts
 include ${BTSTACK_ROOT}/chipset/cc256x/Makefile.inc
 
-CFLAGS += -I$(BTSTACK_ROOT)/chipset/cc256x -I$(BTSTACK_ROOT)/platform/embedded
+CFLAGS += -I$(BTSTACK_ROOT)/chipset/cc256x \
+		  -I$(BTSTACK_ROOT)/platform/embedded \
+		  -I$(BTSTACK_ROOT)/platform/posix 
 
 CFLAGS  += -g -Wall 
 
-VPATH += ${BTSTACK_ROOT}/platform/posix/src
+VPATH += ${BTSTACK_ROOT}/platform/posix
 VPATH += ${BTSTACK_ROOT}/platform/embedded
 VPATH += ${BTSTACK_ROOT}/chipset/cc256x
 
