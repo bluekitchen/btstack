@@ -28,4 +28,4 @@ CFLAGS  += $(shell pkg-config libusb-1.0 --cflags)
 LDFLAGS += $(shell pkg-config libusb-1.0 --libs)
 endif
 
-all: ${BTSTACK_ROOT}/src/version.h ${EXAMPLES}
+all: ${BTSTACK_ROOT}/src/btstack_version.h ${EXAMPLES}

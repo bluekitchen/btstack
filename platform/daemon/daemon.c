@@ -60,7 +60,7 @@
 #include "btstack_run_loop.h"
 #include "btstack_run_loop_posix.h"
 #include "hci_cmds.h"
-#include "version.h"
+#include "btstack_version.h"
 
 #include "btstack_debug.h"
 #include "hci.h"

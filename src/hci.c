@@ -66,7 +66,7 @@
 #else
 #include <unistd.h> // gethostbyname
 #endif
-#include "version.h"
+#include "btstack_version.h"
 #endif
 
 #include "btstack_memory.h"

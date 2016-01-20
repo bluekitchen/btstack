@@ -41,4 +41,4 @@ endif
 
 LDFLAGS += -lm
 
-all: ${BTSTACK_ROOT}/src/version.h ${EXAMPLES}
+all: ${BTSTACK_ROOT}/src/btstack_version.h ${EXAMPLES}

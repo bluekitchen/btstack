@@ -95,7 +95,7 @@ PAN_OBJ = $(PAN:.c=.o)
 
 default_target: all
 
-${BTSTACK_ROOT}/src/version.h:
+${BTSTACK_ROOT}/src/btstack_version.h:
 	${BTSTACK_ROOT}/tool/get_version.sh
 
 # compile .gatt descriptions
@@ -171,7 +171,7 @@ hsp_hs_test: ${CORE_OBJ} ${COMMON_OBJ} ${SDP_CLIENT} hsp_hs.o hsp_hs_test.c
 clean:
 	rm -f ${EXAMPLES}
 	rm -f  *.o *.out *.hex 
-	rm -f  ${BTSTACK_ROOT}/src/version.h
+	rm -f  ${BTSTACK_ROOT}/src/btstack_version.h
 	rm -f  ancs_client.h profile.h spp_and_le_counter.h
 	rm -rf *.dSYM
 	rm -rf ${BTSTACK_ROOT}/ble/*.o

@@ -19,7 +19,7 @@ popd
 
 pushd .
 cd $DIR/../..
-VERSION=`sed -n -e 's/^.*BTSTACK_VERSION \"\(.*\)\"/\1/p' src/version.h`
+VERSION=`sed -n -e 's/^.*BTSTACK_VERSION \"\(.*\)\"/\1/p' src/btstack_version.h`
 ARCHIVE=btstack-android-mtk-$VERSION.tar.gz
 echo "Create Archive $ARCHIVE"
 rm -f $ARCHIVE

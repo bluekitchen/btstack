@@ -63,7 +63,7 @@
 #include "btstack_memory_pool.h"
 #include "btstack_run_loop.h"
 #include "btstack_util.h"
-#include "version.h"
+#include "btstack_version.h"
 
 #ifdef HAVE_BLE
 #include "ble/ad_parser.h"

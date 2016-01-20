@@ -5,7 +5,7 @@
 DIR=.
 BTSTACK_ROOT=${DIR}/../..
 DUMMY=$(shell )
-VERSION=`sed -n -e 's/^.*BTSTACK_VERSION \"\(.*\)\"/\1/p' ${BTSTACK_ROOT}/src/version.h`
+VERSION=`sed -n -e 's/^.*BTSTACK_VERSION \"\(.*\)\"/\1/p' ${BTSTACK_ROOT}/src/btstack_version.h`
 BTSTACK_PACKAGE=/tmp/btstack
 ARCHIVE=btstack-arduino-${VERSION}.zip
 

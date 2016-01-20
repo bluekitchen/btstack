@@ -60,7 +60,7 @@ LDFLAGS += -lCppUTest -lCppUTestExt
 
 EXAMPLES = hfp_ag_parser_test hfp_ag_client_test hfp_hf_parser_test hfp_hf_client_test 
 
-all: ${BTSTACK_ROOT}/src/version.h ${EXAMPLES}
+all: ${BTSTACK_ROOT}/src/btstack_version.h ${EXAMPLES}
 
 clean:
 	rm -rf *.o $(EXAMPLES) $(CLIENT_EXAMPLES) *.dSYM

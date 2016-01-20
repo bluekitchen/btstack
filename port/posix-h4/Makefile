@@ -25,4 +25,4 @@ ifneq ($(OS),Windows_NT)
 EXAMPLES += ${EXAMPLES_CLI}
 endif
 
-all: ${BTSTACK_ROOT}/src/version.h ${EXAMPLES}
+all: ${BTSTACK_ROOT}/src/btstack_version.h ${EXAMPLES}
