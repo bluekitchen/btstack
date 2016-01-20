@@ -10,9 +10,9 @@ CFLAGS += -I${BTSTACK_ROOT}/src
 
 CORE += \
     btstack_memory.c            \
-    btstack_linked_list.c	        \
-    btstack_memory_pool.c               \
-    run_loop.c		            \
+    btstack_linked_list.c	    \
+    btstack_memory_pool.c       \
+    btstack_run_loop.c		    \
 
 COMMON += \
     hci.c			            \

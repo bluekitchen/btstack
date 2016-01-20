@@ -36,20 +36,20 @@ CFLAGS += \
 LDFLAGS = -mmcu=${MCU}
 
 CORE   = \
-    hci_dump.c		          \
     btstack_memory.c          \
-    linked_list.c	          \
-    btstack_memory_pool.c             \
-    utils.c			          \
-    main.c 					  \
+    btstack_memory_pool.c       \
+    btstack_run_loop.c		    \
+    btstack_run_loop_embedded.c \
     hal_board.c	              \
-    hal_led.c 				  \
-    hal_usb.c                 \
-    hal_tick.c	              \
-    run_loop.c		          \
-    btstack_run_loop_embedded.c       \
-    hal_cpu.c                 \
     hal_compat.c              \
+    hal_cpu.c                 \
+    hal_led.c 				  \
+    hal_tick.c	              \
+    hal_usb.c                 \
+    hci_dump.c		          \
+    linked_list.c	          \
+    main.c 					  \
+    utils.c			          \
 
 COMMON = \
     hal_uart_dma.c            \

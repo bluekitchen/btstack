@@ -31,7 +31,7 @@ libBTstack_SOURCES =    \
     hci_cmds.c          \
     daemon_cmds.c       \
     btstack_linked_list.c    \
-    run_loop.c          \
+    btstack_run_loop.c  \
     sdp_util.c          \
     utils.c             \
     $(run_loop_sources) \

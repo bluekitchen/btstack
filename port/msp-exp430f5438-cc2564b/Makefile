@@ -34,8 +34,11 @@ CFLAGS += \
 LDFLAGS = -mmcu=msp430f5438a
 
 CORE   = \
-    btstack_linked_list.c	      \
+    btstack_linked_list.c	  \
     btstack_memory.c          \
+    btstack_memory_pool.c        \
+    btstack_run_loop_embedded.c  \
+    btstak_run_loop.c		     \
     hal_board.c	              \
     hal_compat.c              \
     hal_cpu.c                 \
@@ -44,9 +47,6 @@ CORE   = \
     hal_usb.c                 \
     hci_dump.c		          \
     main.c 					  \
-    btstack_memory_pool.c             \
-    run_loop.c		          \
-    btstack_run_loop_embedded.c       \
     utils.c			          \
 
 COMMON = \

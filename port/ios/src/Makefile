@@ -17,17 +17,17 @@ VPATH += $(BTSTACK_ROOT)/src \
 
 LIBRARY_NAME = libBTstack
 libBTstack_FILES = \
+	btstack.c \
 	btstack_linked_list.c \
+	btstack_run_loop.c \
+	btstack_run_loop_cocoa.m \
+	btstack_run_loop_posix.c \
 	daemon_cmds.c \
 	hci_cmds.c \
 	hci_dump.c \
-	run_loop.c \
 	sdp_util.c \
-	utils.c \
-	btstack_run_loop_cocoa.m \
-	btstack_run_loop_posix.c \
-	btstack.c \
 	socket_connection.c \
+	utils.c \
 
 libBTstack_CFLAGS = -I$(BTSTACK_ROOT)/src/ble -I$(BTSTACK_ROOT)/src -I..
 

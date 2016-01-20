@@ -13,18 +13,18 @@ VPATH += ${BTSTACK_ROOT}/src/ble
 VPATH += ${BTSTACK_ROOT}/platform/posix
 
 COMMON = \
-    utils.c			            \
+    btstack_linked_list.c		\
     btstack_memory.c			\
-    btstack_memory_pool.c			    \
-    btstack_linked_list.c		    \
-    run_loop.c					\
-    btstack_run_loop_posix.c			\
+    btstack_memory_pool.c		\
+    btstack_run_loop.c			\
+    btstack_run_loop_posix.c    \
     hci_cmds.c					\
     hci_dump.c					\
-    sm.c     					\
     le_device_db_memory.c       \
-    rijndael.c 					\
     mock.c 				        \
+    rijndael.c 					\
+    sm.c     					\
+    utils.c			            \
 	
 COMMON_OBJ = $(COMMON:.c=.o)
 
