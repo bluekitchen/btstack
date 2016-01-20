@@ -45,7 +45,7 @@
 #include <string.h>
 
 #include "btstack_client.h"
-#include "run_loop_posix.h"
+#include "btstack_run_loop_posix.h"
 
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
 	

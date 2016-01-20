@@ -164,7 +164,7 @@ static uint8_t   sm_address_resolution_addr_type;
 static bd_addr_t sm_address_resolution_address;
 static void *    sm_address_resolution_context;
 static address_resolution_mode_t sm_address_resolution_mode;
-static btstack_btstack_linked_list_t sm_address_resolution_general_queue;
+static btstack_linked_list_t sm_address_resolution_general_queue;
 
 // aes128 crypto engine. store current sm_connection_t in sm_aes128_context
 static sm_aes128_state_t  sm_aes128_state;

@@ -48,7 +48,7 @@
 #include "gap.h"
 
 #ifdef HAVE_TICK
-#include "run_loop_embedded.h"
+#include "btstack_run_loop_embedded.h"
 #endif
 
 #ifdef HAVE_BLE

@@ -21,7 +21,7 @@ CORE = \
     btstack_linked_list.c	      \
     btstack_memory_pool.c             \
     run_loop.c		          \
-    run_loop_embedded.c
+    btstack_run_loop_embedded.c
 
 COMMON = \
 	bt_control_cc256x.c   \

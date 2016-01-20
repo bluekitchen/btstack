@@ -120,8 +120,8 @@ struct connection {
 };
 
 /** list of socket connections */
-static btstack_btstack_linked_list_t connections = NULL;
-static btstack_btstack_linked_list_t parked = NULL;
+static btstack_linked_list_t connections = NULL;
+static btstack_linked_list_t parked = NULL;
 
 
 /** client packet handler */

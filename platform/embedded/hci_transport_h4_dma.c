@@ -50,7 +50,7 @@
 #include "hci.h"
 #include "hci_transport.h"
 #include "btstack_run_loop.h"
-#include "run_loop_embedded.h"
+#include "btstack_run_loop_embedded.h"
 
 #include "hal_uart_dma.h"
 

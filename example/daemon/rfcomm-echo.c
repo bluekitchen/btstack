@@ -50,7 +50,7 @@
 #include <sys/stat.h>
 
 #include "btstack_client.h"
-#include "run_loop_posix.h"
+#include "btstack_run_loop_posix.h"
 #include "classic/sdp_util.h"
 
 // input from command line arguments

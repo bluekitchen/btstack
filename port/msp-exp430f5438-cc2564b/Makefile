@@ -46,7 +46,7 @@ CORE   = \
     main.c 					  \
     btstack_memory_pool.c             \
     run_loop.c		          \
-    run_loop_embedded.c       \
+    btstack_run_loop_embedded.c       \
     utils.c			          \
 
 COMMON = \

@@ -529,7 +529,7 @@ typedef struct {
     bt_control_t     * control;
     
     // list of existing baseband connections
-    btstack_btstack_linked_list_t     connections;
+    btstack_linked_list_t     connections;
 
     // single buffer for HCI packet assembly + additional prebuffer for H4 drivers
     uint8_t   hci_packet_buffer_prefix[HCI_OUTGOING_PRE_BUFFER_SIZE];
@@ -629,7 +629,7 @@ typedef struct {
 
     // LE Whitelist Management
     uint16_t      le_whitelist_capacity;
-    btstack_btstack_linked_list_t le_whitelist;
+    btstack_linked_list_t le_whitelist;
 
     // custom BD ADDR
     bd_addr_t custom_bd_addr; 

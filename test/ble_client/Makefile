@@ -20,7 +20,7 @@ COMMON = \
     hci_dump.c					\
     btstack_memory_pool.c			    \
     run_loop.c					\
-    run_loop_posix.c 			\
+    btstack_run_loop_posix.c 			\
     utils.c			            \
 	
 COMMON_OBJ = $(COMMON:.c=.o)

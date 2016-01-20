@@ -36,7 +36,7 @@
  */
 
 /*
- *  run_loop_embedded.h
+ *  btstack_run_loop_embedded.h
  *  Functionality special to the embedded run loop
  */
 

@@ -25,15 +25,15 @@ VPATH += $(BTSTACK_ROOT)/platform/daemon
 VPATH += $(BTSTACK_ROOT)/example/daemon
 
 libBTstack_OBJS  = 		 \
+	btstack.o            \
+	btstack_linked_list.o   \
+	btstack_run_loop.o      \
+	btstack_run_loop_posix.o     \
 	hci_cmds.o           \
 	hci_dump.o           \
-	btstack_linked_list.o     \
-	run_loop.o           \
 	sdp_util.o           \
-	utils.o 		     \
-	btstack.o            \
-	run_loop_posix.o     \
 	socket_connection.o  \
+	utils.o 		     \
 
 BTdaemon_OBJS = $(libBTstack_OBJS)   \
 	att_dispatch.o              \

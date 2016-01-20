@@ -59,10 +59,10 @@ echo "BTstack configured for HCI $HCI_TRANSPORT Transport"
 
 HAVE_SO_NOSIGPIPE="no"
 
-RUN_LOOP_SOURCES="run_loop_posix.c"
+RUN_LOOP_SOURCES="btstack_run_loop_posix.c"
 case "$host_os" in
     darwin*)
-        RUN_LOOP_SOURCES="$RUN_LOOP_SOURCES run_loop_cocoa.m"
+        RUN_LOOP_SOURCES="$RUN_LOOP_SOURCES btstack_run_loop_cocoa.m"
         LDFLAGS="$LDFLAGS -framework CoreFoundation -framework Foundation"
         USE_COCOA_RUN_LOOP="yes"
         BTSTACK_LIB_LDFLAGS="-dynamiclib -install_name \$(prefix)/lib/libBTstack.dylib"

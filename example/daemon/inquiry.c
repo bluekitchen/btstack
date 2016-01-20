@@ -47,7 +47,7 @@
 #include <string.h>
 
 #include "btstack_client.h"
-#include "run_loop_posix.h"
+#include "btstack_run_loop_posix.h"
 
 #define MAX_DEVICES 10
 struct device {

@@ -21,7 +21,7 @@
 #include "hci_cmds.h"
 #include "utils.h"
 #include "btstack_run_loop.h"
-#include "run_loop_embedded.h"
+#include "btstack_run_loop_embedded.h"
 #include "classic/sdp_util.h"
 
 #include "bt_control_em9301.h"

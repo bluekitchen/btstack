@@ -24,8 +24,8 @@ libBTstack_FILES = \
 	run_loop.c \
 	sdp_util.c \
 	utils.c \
-	run_loop_cocoa.m \
-	run_loop_posix.c \
+	btstack_run_loop_cocoa.m \
+	btstack_run_loop_posix.c \
 	btstack.c \
 	socket_connection.c \
 

@@ -21,7 +21,7 @@ COMMON = \
     remote_device_db_memory.c   \
     rfcomm.c			        \
     run_loop.c		            \
-    run_loop_posix.c            \
+    btstack_run_loop_posix.c            \
     sdp_client.c		        \
     sdp_parser.c		        \
     sdp_query_util.c		    \

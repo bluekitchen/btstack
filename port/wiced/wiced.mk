@@ -40,7 +40,7 @@ $(NAME)_SOURCES += \
 # WICED port incl. support for Broadcom chipset
 $(NAME)_SOURCES += \
 	main.c                                \
-	run_loop_wiced.c                      \
+	btstack_run_loop_wiced.c                      \
 	hci_transport_h4_wiced.c              \
 	../../chipset/bcm/bt_control_bcm.c    \
 	../../../drivers/bluetooth/firmware/$(BT_CHIP)$(BT_CHIP_REVISION)/bt_firmware_image.c \

@@ -36,7 +36,7 @@
  */
 
 /*
- *  run_loop_embedded.c
+ *  btstack_run_loop_embedded.c
  *
  *  For this run loop, we assume that there's no global way to wait for a list
  *  of data sources to get ready. Instead, each data source has to queried
@@ -54,7 +54,7 @@
 
 
 #include "btstack_run_loop.h"
-#include "run_loop_embedded.h"
+#include "btstack_run_loop_embedded.h"
 #include "btstack_linked_list.h"
 #include "hal_tick.h"
 #include "hal_cpu.h"
@@ -78,10 +78,10 @@
 static const run_loop_t run_loop_embedded;
 
 // the run loop
-static btstack_btstack_linked_list_t data_sources;
+static btstack_linked_list_t data_sources;
 
 #ifdef TIMER_SUPPORT
-static btstack_btstack_linked_list_t timers;
+static btstack_linked_list_t timers;
 #endif
 
 #ifdef HAVE_TICK

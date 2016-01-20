@@ -48,14 +48,14 @@
 /**
  * tests if list is empty
  */
-int  btstack_linked_list_empty(btstack_btstack_linked_list_t * list){
+int  btstack_linked_list_empty(btstack_linked_list_t * list){
     return *list == (void *) 0;
 }
 
 /**
  * btstack_linked_list_get_last_item
  */
-btstack_linked_item_t * btstack_linked_list_get_last_item(btstack_btstack_linked_list_t * list){        // <-- find the last item in the list
+btstack_linked_item_t * btstack_linked_list_get_last_item(btstack_linked_list_t * list){        // <-- find the last item in the list
     btstack_linked_item_t *lastItem = NULL;
     btstack_linked_item_t *it;
     for (it = *list; it ; it = it->next){
@@ -70,7 +70,7 @@ btstack_linked_item_t * btstack_linked_list_get_last_item(btstack_btstack_linked
 /**
  * btstack_linked_list_add
  */
-void btstack_linked_list_add(btstack_btstack_linked_list_t * list, btstack_linked_item_t *item){        // <-- add item to list
+void btstack_linked_list_add(btstack_linked_list_t * list, btstack_linked_item_t *item){        // <-- add item to list
     // check if already in list
     btstack_linked_item_t *it;
     for (it = *list; it ; it = it->next){
@@ -83,7 +83,7 @@ void btstack_linked_list_add(btstack_btstack_linked_list_t * list, btstack_linke
     *list = item;
 }
 
-void btstack_linked_list_add_tail(btstack_btstack_linked_list_t * list, btstack_linked_item_t *item){   // <-- add item to list as last element
+void btstack_linked_list_add_tail(btstack_linked_list_t * list, btstack_linked_item_t *item){   // <-- add item to list as last element
     // check if already in list
     btstack_linked_item_t *it;
     for (it = (btstack_linked_item_t *) list; it->next ; it = it->next){
@@ -100,7 +100,7 @@ void btstack_linked_list_add_tail(btstack_btstack_linked_list_t * list, btstack_
  *
  * @note: assumes that data_source_t.next is first element in data_source
  */
-int  btstack_linked_list_remove(btstack_btstack_linked_list_t * list, btstack_linked_item_t *item){    // <-- remove item from list
+int  btstack_linked_list_remove(btstack_linked_list_t * list, btstack_linked_item_t *item){    // <-- remove item from list
     if (!item) return -1;
     btstack_linked_item_t *it;
     for (it = (btstack_linked_item_t *) list; it ; it = it->next){
@@ -115,7 +115,7 @@ int  btstack_linked_list_remove(btstack_btstack_linked_list_t * list, btstack_li
 /**
  * @returns number of items in list
  */
- int btstack_linked_list_count(btstack_btstack_linked_list_t * list){
+ int btstack_linked_list_count(btstack_linked_list_t * list){
     btstack_linked_item_t *it;
     int counter = 0;
     for (it = (btstack_linked_item_t *) list; it ; it = it->next) {
@@ -138,7 +138,7 @@ void * btstack_linked_item_get_user(btstack_linked_item_t *item) {
 // Linked List Iterator implementation
 //
 
-void btstack_linked_list_iterator_init(btstack_linked_list_iterator_t * it, btstack_btstack_linked_list_t * head){
+void btstack_linked_list_iterator_init(btstack_linked_list_iterator_t * it, btstack_linked_list_t * head){
     it->advance_on_next = 0;
     it->prev = (btstack_linked_item_t*) head;
     it->curr = * head;

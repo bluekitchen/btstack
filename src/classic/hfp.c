@@ -100,7 +100,7 @@ static const char * hfp_ag_features[] = {
 static int hfp_generic_status_indicators_nr = 0;
 static hfp_generic_status_indicator_t hfp_generic_status_indicators[HFP_MAX_NUM_HF_INDICATORS];
 
-static btstack_btstack_linked_list_t hfp_connections = NULL;
+static btstack_linked_list_t hfp_connections = NULL;
 static void parse_sequence(hfp_connection_t * context);
 
 hfp_generic_status_indicator_t * get_hfp_generic_status_indicators(void){
@@ -229,8 +229,8 @@ static void hfp_emit_audio_connection_established_event(hfp_callback_t callback,
     (*callback)(event, sizeof(event));
 }
 
-btstack_btstack_linked_list_t * hfp_get_connections(){
-    return (btstack_btstack_linked_list_t *) &hfp_connections;
+btstack_linked_list_t * hfp_get_connections(){
+    return (btstack_linked_list_t *) &hfp_connections;
 } 
 
 hfp_connection_t * get_hfp_connection_context_for_rfcomm_cid(uint16_t cid){

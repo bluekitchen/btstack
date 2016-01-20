@@ -36,7 +36,7 @@
  */
 
 /*
- *  run_loop_cocoa.h
+ *  btstack_run_loop_cocoa.h
  *  Functionality special to the CoreFoundation run loop
  */
 

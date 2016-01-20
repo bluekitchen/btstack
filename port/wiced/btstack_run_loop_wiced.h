@@ -36,7 +36,7 @@
  */
 
 /*
- * run_loop_wiced.h
+ * btstack_run_loop_wiced.h
  *
  * Functions relevant for BTstack WICED port 
  */

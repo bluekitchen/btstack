@@ -47,7 +47,7 @@ CORE   = \
     hal_usb.c                 \
     hal_tick.c	              \
     run_loop.c		          \
-    run_loop_embedded.c       \
+    btstack_run_loop_embedded.c       \
     hal_cpu.c                 \
     hal_compat.c              \
 

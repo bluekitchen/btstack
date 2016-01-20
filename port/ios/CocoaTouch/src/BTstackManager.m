@@ -33,7 +33,7 @@
 
 #import "btstack.h"
 #import "btstack_run_loop.h"
-#import "run_loop_cocoa.h"
+#import "btstack_run_loop_cocoa.h"
 #import <btstack/BTDevice.h>
 
 #define INQUIRY_INTERVAL 3

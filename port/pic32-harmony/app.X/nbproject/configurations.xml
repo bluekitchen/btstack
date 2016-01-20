@@ -132,7 +132,7 @@
           <itemPath>../../../src/classic/remote_device_db_memory.c</itemPath>
           <itemPath>../../../src/classic/rfcomm.c</itemPath>
           <itemPath>../../../src/run_loop.c</itemPath>
-          <itemPath>../../../src/run_loop_embedded.c</itemPath>
+          <itemPath>../../../src/btstack_run_loop_embedded.c</itemPath>
           <itemPath>../../../src/classic/sdp.c</itemPath>
           <itemPath>../../../src/classic/sdp_client.c</itemPath>
           <itemPath>../../../src/classic/sdp_parser.c</itemPath>

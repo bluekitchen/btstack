@@ -5,7 +5,7 @@ adjusted for different hardware platforms.
 ## Time Abstraction Layer {#sec:timeAbstractionPorting}
 
 BTstack requires a way to learn about passing time.
-*run_loop_embedded.c* supports two different modes: system ticks or a
+*btstack_run_loop_embedded.c* supports two different modes: system ticks or a
 system clock with millisecond resolution. BTstack’s timing requirements
 are quite low as only Bluetooth timeouts in the second range need to be
 handled.

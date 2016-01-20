@@ -36,7 +36,7 @@
  */
 
 /*
- *  run_loop_posix.h
+ *  btstack_run_loop_posix.h
  *  Functionality special to the POSIX run loop
  */
 

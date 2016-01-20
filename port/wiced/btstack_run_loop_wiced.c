@@ -36,7 +36,7 @@
  */
 
 /*
- *  run_loop_wiced.c
+ *  btstack_run_loop_wiced.c
  *
  *  Run loop for Broadcom WICED SDK which currently supports FreeRTOS and ThreadX
  *  WICED 3.3.1 does not support Event Flags on FreeRTOS so a queue is used instead
@@ -49,7 +49,7 @@
 #include "btstack_linked_list.h"
 #include "btstack_debug.h"
 #include "btstack_run_loop.h"
-#include "run_loop_wiced.h"
+#include "btstack_run_loop_wiced.h"
  
 typedef struct function_call {
     wiced_result_t (*fn)(void * arg);
@@ -61,7 +61,7 @@ static const run_loop_t run_loop_wiced;
 static wiced_queue_t run_loop_queue;
 
 // the run loop
-static btstack_btstack_linked_list_t timers;
+static btstack_linked_list_t timers;
 
 static uint32_t run_loop_wiced_get_time_ms(void){
     wiced_time_t time;

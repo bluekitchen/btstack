@@ -38,11 +38,11 @@
 /*
  *  hci_h4_transport_wiced.c
  *
- *  HCI Transport API implementation for basic H4 protocol for use with run_loop_wiced.c
+ *  HCI Transport API implementation for basic H4 protocol for use with btstack_run_loop_wiced.c
  */
 
 #include "btstack-config.h"
-#include "run_loop_wiced.h"
+#include "btstack_run_loop_wiced.h"
 
 #include "btstack_debug.h"
 #include "hci.h"

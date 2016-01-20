@@ -50,7 +50,7 @@
 #include "btstack-config.h"
 
 #include "btstack_run_loop.h"
-#include "run_loop_posix.h"
+#include "btstack_run_loop_posix.h"
 
 #include "btstack_debug.h"
 #include "btstack_memory.h"
