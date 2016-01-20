@@ -62,7 +62,6 @@
 #include "btstack_linked_list.h"
 #include "btstack_memory_pool.h"
 #include "run_loop.h"
-#include "run_loop_private.h"
 #include "utils.h"
 #include "version.h"
 

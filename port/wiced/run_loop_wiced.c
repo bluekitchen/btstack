@@ -49,7 +49,6 @@
 #include "btstack_linked_list.h"
 #include "btstack_debug.h"
 #include "run_loop.h"
-#include "run_loop_private.h"
 #include "run_loop_wiced.h"
  
 typedef struct function_call {

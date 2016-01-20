@@ -75,9 +75,23 @@ typedef struct timer {
     void  (*process)(struct timer *ts);      // <-- do processing
 } timer_source_t;
 
-/* API_START */
+// 
+typedef struct run_loop {
+	void (*init)(void);
+	void (*add_data_source)(data_source_t *dataSource);
+	int  (*remove_data_source)(data_source_t *dataSource);
+	void (*set_timer)(timer_source_t * timer, uint32_t timeout_in_ms);
+	void (*add_timer)(timer_source_t *timer);
+	int  (*remove_timer)(timer_source_t *timer); 
+	void (*execute)(void);
+	void (*dump_timer)(void);
+	uint32_t (*get_time_ms)(void);
+} run_loop_t;
 
-typedef struct run_loop run_loop_t;
+void run_loop_timer_dump(void);
+
+
+/* API_START */
 
 /**
  * @brief Init main run loop. Must be called before any other run loop call.

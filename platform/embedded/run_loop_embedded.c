@@ -59,7 +59,6 @@
 #include "hal_tick.h"
 #include "hal_cpu.h"
 
-#include "run_loop_private.h"
 #include "btstack_debug.h"
 
 #include <stddef.h> // NULL
