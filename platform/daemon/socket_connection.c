@@ -112,7 +112,7 @@ typedef enum {
 
 struct connection {
     data_source_t ds;       // used for run loop
-    linked_item_t item;     // used for connection list, user_data points to connection_t base
+    btstack_linked_item_t item;     // used for connection list, user_data points to connection_t base
     SOCKET_STATE state;
     uint16_t bytes_read;
     uint16_t bytes_to_read;
@@ -120,8 +120,8 @@ struct connection {
 };
 
 /** list of socket connections */
-static btstack_linked_list_t connections = NULL;
-static btstack_linked_list_t parked = NULL;
+static btstack_btstack_linked_list_t connections = NULL;
+static btstack_btstack_linked_list_t parked = NULL;
 
 
 /** client packet handler */
@@ -144,7 +144,7 @@ void socket_connection_free_connection(connection_t *conn){
     run_loop_remove_data_source(&conn->ds);
     
     // and from connection list
-    linked_list_remove(&connections, &conn->item);
+    btstack_linked_list_remove(&connections, &conn->item);
     
     // destroy
     free(conn);
@@ -161,7 +161,7 @@ connection_t * socket_connection_register_new_connection(int fd){
     // create connection objec 
     connection_t * conn = malloc( sizeof(connection_t));
     if (conn == NULL) return 0;
-    linked_item_set_user( &conn->item, conn);
+    btstack_linked_item_set_user( &conn->item, conn);
     conn->ds.fd = fd;
     conn->ds.process = socket_connection_hci_process;
     
@@ -172,7 +172,7 @@ connection_t * socket_connection_register_new_connection(int fd){
     run_loop_add_data_source( &conn->ds );
     
     // and the connection list
-    linked_list_add( &connections, &conn->item);
+    btstack_linked_list_add( &connections, &conn->item);
     
     return conn;
 }
@@ -190,9 +190,9 @@ void static socket_connection_emit_connection_closed(connection_t *connection){
 }
 
 void static socket_connection_emit_nr_connections(void){
-    linked_item_t *it;
+    btstack_linked_item_t *it;
     uint8_t nr_connections = 0;
-    for (it = (linked_item_t *) connections; it != NULL ; it = it->next, nr_connections++);
+    for (it = (btstack_linked_item_t *) connections; it != NULL ; it = it->next, nr_connections++);
     
     uint8_t event[2];
     event[0] = DAEMON_NR_CONNECTIONS_CHANGED;
@@ -210,7 +210,7 @@ int socket_connection_hci_process(struct data_source *ds) {
         socket_connection_emit_connection_closed(conn);
         
         // free connection
-        socket_connection_free_connection(linked_item_get_user(&conn->item));
+        socket_connection_free_connection(btstack_linked_item_get_user(&conn->item));
         
         socket_connection_emit_nr_connections();
         return 0;
@@ -250,7 +250,7 @@ int socket_connection_hci_process(struct data_source *ds) {
         if (dispatch_err) {
             log_info("socket_connection_hci_process dispatch failed -> park connection");
             run_loop_remove_data_source(ds);
-            linked_list_add_tail(&parked, (linked_item_t *) ds);
+            btstack_linked_list_add_tail(&parked, (btstack_linked_item_t *) ds);
         }
     }
 	return 0;
@@ -263,7 +263,7 @@ int socket_connection_hci_process(struct data_source *ds) {
  */
 void socket_connection_retry_parked(void){
     // log_info("socket_connection_hci_process retry parked");
-    linked_item_t *it = (linked_item_t *) &parked;
+    btstack_linked_item_t *it = (btstack_linked_item_t *) &parked;
     while (it->next) {
         connection_t * conn = (connection_t *) it->next;
         
@@ -534,11 +534,11 @@ void socket_connection_send_packet(connection_t *conn, uint16_t type, uint16_t c
  * send HCI packet to all connections 
  */
 void socket_connection_send_packet_all(uint16_t type, uint16_t channel, uint8_t *packet, uint16_t size){
-    linked_item_t *next;
-    linked_item_t *it;
-    for (it = (linked_item_t *) connections; it ; it = next){
+    btstack_linked_item_t *next;
+    btstack_linked_item_t *it;
+    for (it = (btstack_linked_item_t *) connections; it ; it = next){
         next = it->next; // cache pointer to next connection_t to allow for removal
-        socket_connection_send_packet( (connection_t *) linked_item_get_user(it), type, channel, packet, size);
+        socket_connection_send_packet( (connection_t *) btstack_linked_item_get_user(it), type, channel, packet, size);
     }
 }
 

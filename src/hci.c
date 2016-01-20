@@ -121,7 +121,7 @@ static hci_connection_t * create_connection_for_bd_addr_and_type(bd_addr_t addr,
     conn->authentication_flags = AUTH_FLAGS_NONE;
     conn->bonding_flags = 0;
     conn->requested_security_level = LEVEL_0;
-    linked_item_set_user(&conn->timeout.item, conn);
+    btstack_linked_item_set_user(&conn->timeout.item, conn);
     conn->timeout.process = hci_connection_timeout_handler;
     hci_connection_timestamp(conn);
     conn->acl_recombination_length = 0;
@@ -129,7 +129,7 @@ static hci_connection_t * create_connection_for_bd_addr_and_type(bd_addr_t addr,
     conn->num_acl_packets_sent = 0;
     conn->num_sco_packets_sent = 0;
     conn->le_con_parameter_update_state = CON_PARAMETER_UPDATE_NONE;
-    linked_list_add(&hci_stack->connections, (linked_item_t *) conn);
+    btstack_linked_list_add(&hci_stack->connections, (btstack_linked_item_t *) conn);
     return conn;
 }
 
@@ -158,8 +158,8 @@ void gap_le_set_connection_parameter_range(le_connection_parameter_range_t range
  * @return hci connections iterator
  */
 
-void hci_connections_get_iterator(linked_list_iterator_t *it){
-    linked_list_iterator_init(it, &hci_stack->connections);
+void hci_connections_get_iterator(btstack_linked_list_iterator_t *it){
+    btstack_linked_list_iterator_init(it, &hci_stack->connections);
 }
 
 /**
@@ -168,10 +168,10 @@ void hci_connections_get_iterator(linked_list_iterator_t *it){
  * @return connection OR NULL, if not found
  */
 hci_connection_t * hci_connection_for_handle(hci_con_handle_t con_handle){
-    linked_list_iterator_t it;
-    linked_list_iterator_init(&it, &hci_stack->connections);
-    while (linked_list_iterator_has_next(&it)){
-        hci_connection_t * item = (hci_connection_t *) linked_list_iterator_next(&it);
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &hci_stack->connections);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        hci_connection_t * item = (hci_connection_t *) btstack_linked_list_iterator_next(&it);
         if ( item->con_handle == con_handle ) {
             return item;
         }
@@ -185,10 +185,10 @@ hci_connection_t * hci_connection_for_handle(hci_con_handle_t con_handle){
  * @return connection OR NULL, if not found
  */
 hci_connection_t * hci_connection_for_bd_addr_and_type(bd_addr_t  addr, bd_addr_type_t addr_type){
-    linked_list_iterator_t it;
-    linked_list_iterator_init(&it, &hci_stack->connections);
-    while (linked_list_iterator_has_next(&it)){
-        hci_connection_t * connection = (hci_connection_t *) linked_list_iterator_next(&it);
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &hci_stack->connections);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        hci_connection_t * connection = (hci_connection_t *) btstack_linked_list_iterator_next(&it);
         if (connection->address_type != addr_type)  continue;
         if (memcmp(addr, connection->address, 6) != 0) continue;
         return connection;   
@@ -197,7 +197,7 @@ hci_connection_t * hci_connection_for_bd_addr_and_type(bd_addr_t  addr, bd_addr_
 }
 
 static void hci_connection_timeout_handler(timer_source_t *timer){
-    hci_connection_t * connection = (hci_connection_t *) linked_item_get_user(&timer->item);
+    hci_connection_t * connection = (hci_connection_t *) btstack_linked_item_get_user(&timer->item);
 #ifdef HAVE_TIME
     struct timeval tv;
     gettimeofday(&tv, NULL);
@@ -284,8 +284,8 @@ int hci_is_le_connection(hci_connection_t * connection){
  */
 static int nr_hci_connections(void){
     int count = 0;
-    linked_item_t *it;
-    for (it = (linked_item_t *) hci_stack->connections; it ; it = it->next, count++);
+    btstack_linked_item_t *it;
+    for (it = (btstack_linked_item_t *) hci_stack->connections; it ; it = it->next, count++);
     return count;
 }
 
@@ -311,8 +311,8 @@ uint8_t hci_number_free_acl_slots_for_handle(hci_con_handle_t con_handle){
 
     bd_addr_type_t address_type = BD_ADDR_TYPE_UNKNOWN;
 
-    linked_item_t *it;
-    for (it = (linked_item_t *) hci_stack->connections; it ; it = it->next){
+    btstack_linked_item_t *it;
+    for (it = (btstack_linked_item_t *) hci_stack->connections; it ; it = it->next){
         hci_connection_t * connection = (hci_connection_t *) it;
         if (connection->address_type == BD_ADDR_TYPE_CLASSIC){
             num_packets_sent_classic += connection->num_acl_packets_sent;
@@ -367,8 +367,8 @@ uint8_t hci_number_free_acl_slots_for_handle(hci_con_handle_t con_handle){
 
 static int hci_number_free_sco_slots_for_handle(hci_con_handle_t handle){
     int num_sco_packets_sent = 0;
-    linked_item_t *it;
-    for (it = (linked_item_t *) hci_stack->connections; it ; it = it->next){
+    btstack_linked_item_t *it;
+    for (it = (btstack_linked_item_t *) hci_stack->connections; it ; it = it->next){
         hci_connection_t * connection = (hci_connection_t *) it;
         num_sco_packets_sent += connection->num_sco_packets_sent;
     }
@@ -716,7 +716,7 @@ static void hci_shutdown_connection(hci_connection_t *conn){
 
     run_loop_remove_timer(&conn->timeout);
     
-    linked_list_remove(&hci_stack->connections, (linked_item_t *) conn);
+    btstack_linked_list_remove(&hci_stack->connections, (btstack_linked_item_t *) conn);
     btstack_memory_hci_connection_free( conn );
     
     // now it's gone
@@ -1497,7 +1497,7 @@ static void event_handler(uint8_t *packet, int size){
                     memcpy(&bd_address, conn->address, 6);
 
                     // connection failed, remove entry
-                    linked_list_remove(&hci_stack->connections, (linked_item_t *) conn);
+                    btstack_linked_list_remove(&hci_stack->connections, (btstack_linked_item_t *) conn);
                     btstack_memory_hci_connection_free( conn );
                     
                     // notify client if dedicated bonding
@@ -1749,7 +1749,7 @@ static void event_handler(uint8_t *packet, int size){
                         hci_stack->le_connecting_state = LE_CONNECTING_IDLE;
                         // remove entry
                         if (conn){
-                            linked_list_remove(&hci_stack->connections, (linked_item_t *) conn);
+                            btstack_linked_list_remove(&hci_stack->connections, (btstack_linked_item_t *) conn);
                             btstack_memory_hci_connection_free( conn );
                         }
                         break;
@@ -2262,7 +2262,7 @@ void hci_local_bd_addr(bd_addr_t address_buffer){
 void hci_run(void){
     
     // log_info("hci_run: entered");
-    linked_item_t * it;
+    btstack_linked_item_t * it;
 
     // send continuation fragments first, as they block the prepared packet buffer
     if (hci_stack->acl_fragmentation_total_size > 0) {
@@ -2360,11 +2360,11 @@ void hci_run(void){
         //
 
         // check if whitelist needs modification
-        linked_list_iterator_t lit;
+        btstack_linked_list_iterator_t lit;
         int modification_pending = 0;
-        linked_list_iterator_init(&lit, &hci_stack->le_whitelist);
-        while (linked_list_iterator_has_next(&lit)){
-            whitelist_entry_t * entry = (whitelist_entry_t*) linked_list_iterator_next(&lit);
+        btstack_linked_list_iterator_init(&lit, &hci_stack->le_whitelist);
+        while (btstack_linked_list_iterator_has_next(&lit)){
+            whitelist_entry_t * entry = (whitelist_entry_t*) btstack_linked_list_iterator_next(&lit);
             if (entry->state & (LE_WHITELIST_REMOVE_FROM_CONTROLLER | LE_WHITELIST_ADD_TO_CONTROLLER)){
                 modification_pending = 1;
                 break;
@@ -2379,9 +2379,9 @@ void hci_run(void){
             }
 
             // add/remove entries
-            linked_list_iterator_init(&lit, &hci_stack->le_whitelist);
-            while (linked_list_iterator_has_next(&lit)){
-                whitelist_entry_t * entry = (whitelist_entry_t*) linked_list_iterator_next(&lit);
+            btstack_linked_list_iterator_init(&lit, &hci_stack->le_whitelist);
+            while (btstack_linked_list_iterator_has_next(&lit)){
+                whitelist_entry_t * entry = (whitelist_entry_t*) btstack_linked_list_iterator_next(&lit);
                 if (entry->state & LE_WHITELIST_ADD_TO_CONTROLLER){
                     entry->state = LE_WHITELIST_ON_CONTROLLER;
                     hci_send_cmd(&hci_le_add_device_to_white_list, entry->address_type, entry->address);
@@ -2392,7 +2392,7 @@ void hci_run(void){
                     bd_addr_t address;
                     bd_addr_type_t address_type = entry->address_type;                    
                     memcpy(address, entry->address, 6);
-                    linked_list_remove(&hci_stack->le_whitelist, (linked_item_t *) entry);
+                    btstack_linked_list_remove(&hci_stack->le_whitelist, (btstack_linked_item_t *) entry);
                     btstack_memory_whitelist_entry_free(entry);
                     hci_send_cmd(&hci_le_remove_device_from_white_list, address_type, address);
                     return;
@@ -2402,7 +2402,7 @@ void hci_run(void){
 
         // start connecting
         if ( hci_stack->le_connecting_state == LE_CONNECTING_IDLE && 
-            !linked_list_empty(&hci_stack->le_whitelist)){
+            !btstack_linked_list_empty(&hci_stack->le_whitelist)){
             bd_addr_t null_addr;
             memset(null_addr, 0, 6);
             hci_send_cmd(&hci_le_create_connection,
@@ -2425,7 +2425,7 @@ void hci_run(void){
 #endif
     
     // send pending HCI commands
-    for (it = (linked_item_t *) hci_stack->connections; it ; it = it->next){
+    for (it = (btstack_linked_item_t *) hci_stack->connections; it ; it = it->next){
         hci_connection_t * connection = (hci_connection_t *) it;
         
         switch(connection->state){
@@ -2609,11 +2609,11 @@ void hci_run(void){
             // free whitelist entries
 #ifdef HAVE_BLE
             {
-                linked_list_iterator_t lit;
-                linked_list_iterator_init(&lit, &hci_stack->le_whitelist);
-                while (linked_list_iterator_has_next(&lit)){
-                    whitelist_entry_t * entry = (whitelist_entry_t*) linked_list_iterator_next(&lit);
-                    linked_list_remove(&hci_stack->le_whitelist, (linked_item_t *) entry);
+                btstack_linked_list_iterator_t lit;
+                btstack_linked_list_iterator_init(&lit, &hci_stack->le_whitelist);
+                while (btstack_linked_list_iterator_has_next(&lit)){
+                    whitelist_entry_t * entry = (whitelist_entry_t*) btstack_linked_list_iterator_next(&lit);
+                    btstack_linked_list_remove(&hci_stack->le_whitelist, (btstack_linked_item_t *) entry);
                     btstack_memory_whitelist_entry_free(entry);
                 }
             }
@@ -3250,8 +3250,8 @@ uint8_t le_central_connect(bd_addr_t addr, bd_addr_type_t addr_type){
 
 // @assumption: only a single outgoing LE Connection exists
 static hci_connection_t * le_central_get_outgoing_connection(void){
-    linked_item_t *it;
-    for (it = (linked_item_t *) hci_stack->connections; it ; it = it->next){
+    btstack_linked_item_t *it;
+    for (it = (btstack_linked_item_t *) hci_stack->connections; it ; it = it->next){
         hci_connection_t * conn = (hci_connection_t *) it;
         if (!hci_is_le_connection(conn)) continue;
         switch (conn->state){
@@ -3272,7 +3272,7 @@ uint8_t le_central_connect_cancel(void){
         case SEND_CREATE_CONNECTION:
             // skip sending create connection and emit event instead
             hci_emit_le_connection_complete(conn->address_type, conn->address, 0, ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER);
-            linked_list_remove(&hci_stack->connections, (linked_item_t *) conn);
+            btstack_linked_list_remove(&hci_stack->connections, (btstack_linked_item_t *) conn);
             btstack_memory_hci_connection_free( conn );
             break;            
         case SENT_CREATE_CONNECTION:
@@ -3439,23 +3439,23 @@ gap_connection_type_t gap_get_connection_type(hci_con_handle_t connection_handle
  */
 int gap_auto_connection_start(bd_addr_type_t address_type, bd_addr_t address){
     // check capacity
-    int num_entries = linked_list_count(&hci_stack->le_whitelist);
+    int num_entries = btstack_linked_list_count(&hci_stack->le_whitelist);
     if (num_entries >= hci_stack->le_whitelist_capacity) return ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
     whitelist_entry_t * entry = btstack_memory_whitelist_entry_get();
     if (!entry) return BTSTACK_MEMORY_ALLOC_FAILED;
     entry->address_type = address_type;
     memcpy(entry->address, address, 6);
     entry->state = LE_WHITELIST_ADD_TO_CONTROLLER;
-    linked_list_add(&hci_stack->le_whitelist, (linked_item_t*) entry);
+    btstack_linked_list_add(&hci_stack->le_whitelist, (btstack_linked_item_t*) entry);
     hci_run();
     return 0;
 }
 
 static void hci_remove_from_whitelist(bd_addr_type_t address_type, bd_addr_t address){
-    linked_list_iterator_t it;
-    linked_list_iterator_init(&it, &hci_stack->le_whitelist);
-    while (linked_list_iterator_has_next(&it)){
-        whitelist_entry_t * entry = (whitelist_entry_t*) linked_list_iterator_next(&it);
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &hci_stack->le_whitelist);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        whitelist_entry_t * entry = (whitelist_entry_t*) btstack_linked_list_iterator_next(&it);
         if (entry->address_type != address_type) continue;
         if (memcmp(entry->address, address, 6) != 0) continue;
         if (entry->state & LE_WHITELIST_ON_CONTROLLER){
@@ -3464,7 +3464,7 @@ static void hci_remove_from_whitelist(bd_addr_type_t address_type, bd_addr_t add
             continue;
         }
         // direclty remove entry from whitelist
-        linked_list_iterator_remove(&it);
+        btstack_linked_list_iterator_remove(&it);
         btstack_memory_whitelist_entry_free(entry);
     }
 }
@@ -3486,17 +3486,17 @@ int gap_auto_connection_stop(bd_addr_type_t address_type, bd_addr_t address){
  * @note  Convenience function to stop all active auto connection attempts
  */
 void gap_auto_connection_stop_all(void){
-    linked_list_iterator_t it;
-    linked_list_iterator_init(&it, &hci_stack->le_whitelist);
-    while (linked_list_iterator_has_next(&it)){
-        whitelist_entry_t * entry = (whitelist_entry_t*) linked_list_iterator_next(&it);
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &hci_stack->le_whitelist);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        whitelist_entry_t * entry = (whitelist_entry_t*) btstack_linked_list_iterator_next(&it);
         if (entry->state & LE_WHITELIST_ON_CONTROLLER){
             // remove from controller if already present
             entry->state |= LE_WHITELIST_REMOVE_FROM_CONTROLLER;
             continue;
         }
         // directly remove entry from whitelist
-        linked_list_iterator_remove(&it);
+        btstack_linked_list_iterator_remove(&it);
         btstack_memory_whitelist_entry_free(entry);
     }
     hci_run();
@@ -3538,10 +3538,10 @@ void hci_set_hardware_error_callback(void (*fn)(void)){
 
 
 void hci_disconnect_all(void){
-    linked_list_iterator_t it;
-    linked_list_iterator_init(&it, &hci_stack->connections);
-    while (linked_list_iterator_has_next(&it)){
-        hci_connection_t * con = (hci_connection_t*) linked_list_iterator_next(&it);
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &hci_stack->connections);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        hci_connection_t * con = (hci_connection_t*) btstack_linked_list_iterator_next(&it);
         if (con->state == SENT_DISCONNECT) continue;
         con->state = SEND_DISCONNECT;
     }

@@ -79,10 +79,10 @@
 static const run_loop_t run_loop_embedded;
 
 // the run loop
-static btstack_linked_list_t data_sources;
+static btstack_btstack_linked_list_t data_sources;
 
 #ifdef TIMER_SUPPORT
-static btstack_linked_list_t timers;
+static btstack_btstack_linked_list_t timers;
 #endif
 
 #ifdef HAVE_TICK
@@ -95,14 +95,14 @@ static int trigger_event_received = 0;
  * Add data_source to run_loop
  */
 static void run_loop_embedded_add_data_source(data_source_t *ds){
-    linked_list_add(&data_sources, (linked_item_t *) ds);
+    btstack_linked_list_add(&data_sources, (btstack_linked_item_t *) ds);
 }
 
 /**
  * Remove data_source from run loop
  */
 static int run_loop_embedded_remove_data_source(data_source_t *ds){
-    return linked_list_remove(&data_sources, (linked_item_t *) ds);
+    return btstack_linked_list_remove(&data_sources, (btstack_linked_item_t *) ds);
 }
 
 // set timer
@@ -123,8 +123,8 @@ static void run_loop_embedded_set_timer(timer_source_t *ts, uint32_t timeout_in_
  */
 static void run_loop_embedded_add_timer(timer_source_t *ts){
 #ifdef TIMER_SUPPORT
-    linked_item_t *it;
-    for (it = (linked_item_t *) &timers; it->next ; it = it->next){
+    btstack_linked_item_t *it;
+    for (it = (btstack_linked_item_t *) &timers; it->next ; it = it->next){
         // don't add timer that's already in there
         if ((timer_source_t *) it->next == ts){
             log_error( "run_loop_timer_add error: timer to add already in list!");
@@ -135,7 +135,7 @@ static void run_loop_embedded_add_timer(timer_source_t *ts){
         }
     }
     ts->item.next = it->next;
-    it->next = (linked_item_t *) ts;
+    it->next = (btstack_linked_item_t *) ts;
 #endif
 }
 
@@ -144,7 +144,7 @@ static void run_loop_embedded_add_timer(timer_source_t *ts){
  */
 static int run_loop_embedded_remove_timer(timer_source_t *ts){
 #ifdef TIMER_SUPPORT
-    return linked_list_remove(&timers, (linked_item_t *) ts);
+    return btstack_linked_list_remove(&timers, (btstack_linked_item_t *) ts);
 #else
     return 0;
 #endif
@@ -153,9 +153,9 @@ static int run_loop_embedded_remove_timer(timer_source_t *ts){
 static void run_loop_embedded_dump_timer(void){
 #ifdef TIMER_SUPPORT
 #ifdef ENABLE_LOG_INFO 
-    linked_item_t *it;
+    btstack_linked_item_t *it;
     int i = 0;
-    for (it = (linked_item_t *) timers; it ; it = it->next){
+    for (it = (btstack_linked_item_t *) timers; it ; it = it->next){
         timer_source_t *ts = (timer_source_t*) it;
         log_info("timer %u, timeout %u\n", i, (unsigned int) ts->timeout);
     }

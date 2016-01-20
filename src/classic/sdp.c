@@ -61,7 +61,7 @@
 static void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
 // registered service records
-static btstack_linked_list_t sdp_service_records = NULL;
+static btstack_btstack_linked_list_t sdp_service_records = NULL;
 
 // our handles start after the reserved range
 static uint32_t sdp_next_service_record_handle = ((uint32_t) maxReservedServiceRecordHandle) + 2;
@@ -86,8 +86,8 @@ uint32_t sdp_get_service_record_handle(const uint8_t * record){
 }
 
 static service_record_item_t * sdp_get_record_item_for_handle(uint32_t handle){
-    linked_item_t *it;
-    for (it = (linked_item_t *) sdp_service_records; it ; it = it->next){
+    btstack_linked_item_t *it;
+    for (it = (btstack_linked_item_t *) sdp_service_records; it ; it = it->next){
         service_record_item_t * item = (service_record_item_t *) it;
         if (item->service_record_handle == handle){
             return item;
@@ -136,7 +136,7 @@ uint8_t sdp_register_service(const uint8_t * record){
     newRecordItem->service_record = (uint8_t*) record;
     
     // add to linked list
-    linked_list_add(&sdp_service_records, (linked_item_t *) newRecordItem);
+    btstack_linked_list_add(&sdp_service_records, (btstack_linked_item_t *) newRecordItem);
     
     return 0;
 }
@@ -147,7 +147,7 @@ uint8_t sdp_register_service(const uint8_t * record){
 void sdp_unregister_service(uint32_t service_record_handle){
     service_record_item_t * record_item = sdp_get_record_item_for_handle(service_record_handle);
     if (!record_item) return;
-    linked_list_remove(&sdp_service_records, (linked_item_t *) record_item);
+    btstack_linked_list_remove(&sdp_service_records, (btstack_linked_item_t *) record_item);
 }
 
 // PDU
@@ -182,9 +182,9 @@ int sdp_handle_service_search_request(uint8_t * packet, uint16_t remote_mtu){
     }
     
     // get and limit total count
-    linked_item_t *it;
+    btstack_linked_item_t *it;
     uint16_t total_service_count   = 0;
-    for (it = (linked_item_t *) sdp_service_records; it ; it = it->next){
+    for (it = (btstack_linked_item_t *) sdp_service_records; it ; it = it->next){
         service_record_item_t * item = (service_record_item_t *) it;
         if (!sdp_record_matches_service_search_pattern(item->service_record, serviceSearchPattern)) continue;
         total_service_count++;
@@ -198,7 +198,7 @@ int sdp_handle_service_search_request(uint8_t * packet, uint16_t remote_mtu){
     uint16_t current_service_count  = 0;
     uint16_t current_service_index  = 0;
     uint16_t matching_service_count = 0;
-    for (it = (linked_item_t *) sdp_service_records; it ; it = it->next, ++current_service_index){
+    for (it = (btstack_linked_item_t *) sdp_service_records; it ; it = it->next, ++current_service_index){
         service_record_item_t * item = (service_record_item_t *) it;
 
         if (!sdp_record_matches_service_search_pattern(item->service_record, serviceSearchPattern)) continue;
@@ -310,8 +310,8 @@ int sdp_handle_service_attribute_request(uint8_t * packet, uint16_t remote_mtu){
 
 static uint16_t sdp_get_size_for_service_search_attribute_response(uint8_t * serviceSearchPattern, uint8_t * attributeIDList){
     uint16_t total_response_size = 0;
-    linked_item_t *it;
-    for (it = (linked_item_t *) sdp_service_records; it ; it = it->next){
+    btstack_linked_item_t *it;
+    for (it = (btstack_linked_item_t *) sdp_service_records; it ; it = it->next){
         service_record_item_t * item = (service_record_item_t *) it;
         
         if (!sdp_record_matches_service_search_pattern(item->service_record, serviceSearchPattern)) continue;
@@ -370,7 +370,7 @@ int sdp_handle_service_search_attribute_request(uint8_t * packet, uint16_t remot
     int      first_answer = 1;
     int      continuation = 0;
     uint16_t current_service_index = 0;
-    linked_item_t *it = (linked_item_t *) sdp_service_records;
+    btstack_linked_item_t *it = (btstack_linked_item_t *) sdp_service_records;
     for ( ; it ; it = it->next, ++current_service_index){
         service_record_item_t * item = (service_record_item_t *) it;
         

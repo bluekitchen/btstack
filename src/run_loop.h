@@ -59,13 +59,13 @@ extern "C" {
 #endif
 	
 typedef struct data_source {
-    linked_item_t item;
+    btstack_linked_item_t item;
     int  fd;                                 // <-- file descriptor to watch or 0
     int  (*process)(struct data_source *ds); // <-- do processing
 } data_source_t;
 
 typedef struct timer {
-    linked_item_t item; 
+    btstack_linked_item_t item; 
 #ifdef HAVE_TIME
     struct timeval timeout;                  // <-- next timeout
 #endif

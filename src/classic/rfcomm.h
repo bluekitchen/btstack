@@ -173,7 +173,7 @@ typedef struct rfcomm_channel_event_msc {
 // info regarding potential connections
 typedef struct {
     // linked list - assert: first field
-    linked_item_t    item;
+    btstack_linked_item_t    item;
 	
     // server channel
     uint8_t server_channel;
@@ -196,7 +196,7 @@ typedef struct {
 // note: spec mandates single multiplexer per device combination
 typedef struct {
     // linked list - assert: first field
-    linked_item_t    item;
+    btstack_linked_item_t    item;
     
     timer_source_t   timer;
     int              timer_active;
@@ -232,7 +232,7 @@ typedef struct {
 // info regarding an actual connection
 typedef struct {
     // linked list - assert: first field
-    linked_item_t    item;
+    btstack_linked_item_t    item;
 	
 	rfcomm_multiplexer_t *multiplexer;
 	uint16_t rfcomm_cid;

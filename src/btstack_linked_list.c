@@ -48,16 +48,16 @@
 /**
  * tests if list is empty
  */
-int  linked_list_empty(btstack_linked_list_t * list){
+int  btstack_linked_list_empty(btstack_btstack_linked_list_t * list){
     return *list == (void *) 0;
 }
 
 /**
- * linked_list_get_last_item
+ * btstack_linked_list_get_last_item
  */
-linked_item_t * linked_list_get_last_item(btstack_linked_list_t * list){        // <-- find the last item in the list
-    linked_item_t *lastItem = NULL;
-    linked_item_t *it;
+btstack_linked_item_t * btstack_linked_list_get_last_item(btstack_btstack_linked_list_t * list){        // <-- find the last item in the list
+    btstack_linked_item_t *lastItem = NULL;
+    btstack_linked_item_t *it;
     for (it = *list; it ; it = it->next){
         if (it) {
             lastItem = it;
@@ -68,11 +68,11 @@ linked_item_t * linked_list_get_last_item(btstack_linked_list_t * list){        
 
 
 /**
- * linked_list_add
+ * btstack_linked_list_add
  */
-void linked_list_add(btstack_linked_list_t * list, linked_item_t *item){        // <-- add item to list
+void btstack_linked_list_add(btstack_btstack_linked_list_t * list, btstack_linked_item_t *item){        // <-- add item to list
     // check if already in list
-    linked_item_t *it;
+    btstack_linked_item_t *it;
     for (it = *list; it ; it = it->next){
         if (it == item) {
             return;
@@ -83,15 +83,15 @@ void linked_list_add(btstack_linked_list_t * list, linked_item_t *item){        
     *list = item;
 }
 
-void linked_list_add_tail(btstack_linked_list_t * list, linked_item_t *item){   // <-- add item to list as last element
+void btstack_linked_list_add_tail(btstack_btstack_linked_list_t * list, btstack_linked_item_t *item){   // <-- add item to list as last element
     // check if already in list
-    linked_item_t *it;
-    for (it = (linked_item_t *) list; it->next ; it = it->next){
+    btstack_linked_item_t *it;
+    for (it = (btstack_linked_item_t *) list; it->next ; it = it->next){
         if (it->next == item) {
             return;
         }
     }
-    item->next = (linked_item_t*) 0;
+    item->next = (btstack_linked_item_t*) 0;
     it->next = item;
 }
 
@@ -100,10 +100,10 @@ void linked_list_add_tail(btstack_linked_list_t * list, linked_item_t *item){   
  *
  * @note: assumes that data_source_t.next is first element in data_source
  */
-int  linked_list_remove(btstack_linked_list_t * list, linked_item_t *item){    // <-- remove item from list
+int  btstack_linked_list_remove(btstack_btstack_linked_list_t * list, btstack_linked_item_t *item){    // <-- remove item from list
     if (!item) return -1;
-    linked_item_t *it;
-    for (it = (linked_item_t *) list; it ; it = it->next){
+    btstack_linked_item_t *it;
+    for (it = (btstack_linked_item_t *) list; it ; it = it->next){
         if (it->next == item){
             it->next =  item->next;
             return 0;
@@ -115,22 +115,22 @@ int  linked_list_remove(btstack_linked_list_t * list, linked_item_t *item){    /
 /**
  * @returns number of items in list
  */
- int linked_list_count(btstack_linked_list_t * list){
-    linked_item_t *it;
+ int btstack_linked_list_count(btstack_btstack_linked_list_t * list){
+    btstack_linked_item_t *it;
     int counter = 0;
-    for (it = (linked_item_t *) list; it ; it = it->next) {
+    for (it = (btstack_linked_item_t *) list; it ; it = it->next) {
         counter++;
     }
     return counter; 
 }
 
 
-void linked_item_set_user(linked_item_t *item, void *user_data){
-    item->next = (linked_item_t *) 0;
+void btstack_linked_item_set_user(btstack_linked_item_t *item, void *user_data){
+    item->next = (btstack_linked_item_t *) 0;
     item->user_data = user_data;
 }
 
-void * linked_item_get_user(linked_item_t *item) {
+void * btstack_linked_item_get_user(btstack_linked_item_t *item) {
     return item->user_data;
 }
 
@@ -138,14 +138,14 @@ void * linked_item_get_user(linked_item_t *item) {
 // Linked List Iterator implementation
 //
 
-void linked_list_iterator_init(linked_list_iterator_t * it, btstack_linked_list_t * head){
+void btstack_linked_list_iterator_init(btstack_linked_list_iterator_t * it, btstack_btstack_linked_list_t * head){
     it->advance_on_next = 0;
-    it->prev = (linked_item_t*) head;
+    it->prev = (btstack_linked_item_t*) head;
     it->curr = * head;
 }
 
-int linked_list_iterator_has_next(linked_list_iterator_t * it){
-    // log_info("linked_list_iterator_has_next: advance on next %u, it->prev %p, it->curr %p", it->advance_on_next, it->prev, it->curr);
+int btstack_linked_list_iterator_has_next(btstack_linked_list_iterator_t * it){
+    // log_info("btstack_linked_list_iterator_has_next: advance on next %u, it->prev %p, it->curr %p", it->advance_on_next, it->prev, it->curr);
     if (!it->advance_on_next){
         return it->curr != NULL;
     }
@@ -157,7 +157,7 @@ int linked_list_iterator_has_next(linked_list_iterator_t * it){
     return it->curr->next != NULL;
 }
 
-linked_item_t * linked_list_iterator_next(linked_list_iterator_t * it){
+btstack_linked_item_t * btstack_linked_list_iterator_next(btstack_linked_list_iterator_t * it){
     if (it->advance_on_next){
         if (it->prev->next == it->curr){
             it->prev = it->curr;
@@ -172,7 +172,7 @@ linked_item_t * linked_list_iterator_next(linked_list_iterator_t * it){
     return it->curr;
 }
 
-void linked_list_iterator_remove(linked_list_iterator_t * it){
+void btstack_linked_list_iterator_remove(btstack_linked_list_iterator_t * it){
     it->curr = it->curr->next;
     it->prev->next = it->curr;
     it->advance_on_next = 0;

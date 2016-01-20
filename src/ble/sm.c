@@ -164,7 +164,7 @@ static uint8_t   sm_address_resolution_addr_type;
 static bd_addr_t sm_address_resolution_address;
 static void *    sm_address_resolution_context;
 static address_resolution_mode_t sm_address_resolution_mode;
-static btstack_linked_list_t sm_address_resolution_general_queue;
+static btstack_btstack_linked_list_t sm_address_resolution_general_queue;
 
 // aes128 crypto engine. store current sm_connection_t in sm_aes128_context
 static sm_aes128_state_t  sm_aes128_state;
@@ -311,7 +311,7 @@ static void sm_truncate_key(sm_key_t key, int max_encryption_size){
 
 static void sm_timeout_handler(timer_source_t * timer){
     log_info("SM timeout");
-    sm_connection_t * sm_conn = (sm_connection_t *) linked_item_get_user((linked_item_t*) timer);
+    sm_connection_t * sm_conn = (sm_connection_t *) btstack_linked_item_get_user((btstack_linked_item_t*) timer);
     sm_conn->sm_engine_state = SM_GENERAL_TIMEOUT;
     sm_done_for_handle(sm_conn->sm_handle);
 
@@ -322,7 +322,7 @@ static void sm_timeout_start(sm_connection_t * sm_conn){
     run_loop_remove_timer(&setup->sm_timeout);
     run_loop_set_timer_handler(&setup->sm_timeout, sm_timeout_handler);
     run_loop_set_timer(&setup->sm_timeout, 30000); // 30 seconds sm timeout
-    linked_item_set_user((linked_item_t*) &setup->sm_timeout, sm_conn);
+    btstack_linked_item_set_user((btstack_linked_item_t*) &setup->sm_timeout, sm_conn);
     run_loop_add_timer(&setup->sm_timeout);
 }
 static void sm_timeout_stop(void){
@@ -587,11 +587,11 @@ static void sm_address_resolution_start_lookup(uint8_t addr_type, uint16_t handl
 
 int sm_address_resolution_lookup(uint8_t address_type, bd_addr_t address){
     // check if already in list
-    linked_list_iterator_t it;
+    btstack_linked_list_iterator_t it;
     sm_lookup_entry_t * entry;
-    linked_list_iterator_init(&it, &sm_address_resolution_general_queue);
-    while(linked_list_iterator_has_next(&it)){
-        entry = (sm_lookup_entry_t *) linked_list_iterator_next(&it);
+    btstack_linked_list_iterator_init(&it, &sm_address_resolution_general_queue);
+    while(btstack_linked_list_iterator_has_next(&it)){
+        entry = (sm_lookup_entry_t *) btstack_linked_list_iterator_next(&it);
         if (entry->address_type != address_type) continue;
         if (memcmp(entry->address, address, 6))  continue;
         // already in list
@@ -601,7 +601,7 @@ int sm_address_resolution_lookup(uint8_t address_type, bd_addr_t address){
     if (!entry) return BTSTACK_MEMORY_ALLOC_FAILED;
     entry->address_type = (bd_addr_type_t) address_type;
     memcpy(entry->address, address, 6);
-    linked_list_add(&sm_address_resolution_general_queue, (linked_item_t *) entry);    
+    btstack_linked_list_add(&sm_address_resolution_general_queue, (btstack_linked_item_t *) entry);    
     sm_run();
     return 0;
 }
@@ -1057,7 +1057,7 @@ static void sm_key_distribution_handle_all_received(sm_connection_t * sm_conn){
 
 static void sm_run(void){
 
-    linked_list_iterator_t it;    
+    btstack_linked_list_iterator_t it;    
 
     // assert that we can send at least commands
     if (!hci_can_send_command_packet_now()) return;
@@ -1136,8 +1136,8 @@ static void sm_run(void){
     // -- if csrk lookup ready, find connection that require csrk lookup
     if (sm_address_resolution_idle()){
         hci_connections_get_iterator(&it);
-        while(linked_list_iterator_has_next(&it)){
-            hci_connection_t * hci_connection = (hci_connection_t *) linked_list_iterator_next(&it);
+        while(btstack_linked_list_iterator_has_next(&it)){
+            hci_connection_t * hci_connection = (hci_connection_t *) btstack_linked_list_iterator_next(&it);
             sm_connection_t  * sm_connection  = &hci_connection->sm_connection;
             if (sm_connection->sm_irk_lookup_state == IRK_LOOKUP_W4_READY){
                 // and start lookup
@@ -1150,9 +1150,9 @@ static void sm_run(void){
 
     // -- if csrk lookup ready, resolved addresses for received addresses
     if (sm_address_resolution_idle()) {
-        if (!linked_list_empty(&sm_address_resolution_general_queue)){
+        if (!btstack_linked_list_empty(&sm_address_resolution_general_queue)){
             sm_lookup_entry_t * entry = (sm_lookup_entry_t *) sm_address_resolution_general_queue;
-            linked_list_remove(&sm_address_resolution_general_queue, (linked_item_t *) entry);
+            btstack_linked_list_remove(&sm_address_resolution_general_queue, (btstack_linked_item_t *) entry);
             sm_address_resolution_start_lookup(entry->address_type, 0, entry->address, ADDRESS_RESOLUTION_GENERAL, NULL);
             btstack_memory_sm_lookup_entry_free(entry);
         }
@@ -1206,8 +1206,8 @@ static void sm_run(void){
 
         // Find connections that requires setup context and make active if no other is locked
         hci_connections_get_iterator(&it);
-        while(!sm_active_connection && linked_list_iterator_has_next(&it)){
-            hci_connection_t * hci_connection = (hci_connection_t *) linked_list_iterator_next(&it);
+        while(!sm_active_connection && btstack_linked_list_iterator_has_next(&it)){
+            hci_connection_t * hci_connection = (hci_connection_t *) btstack_linked_list_iterator_next(&it);
             sm_connection_t  * sm_connection = &hci_connection->sm_connection;
             // - if no connection locked and we're ready/waiting for setup context, fetch it and start
             int done = 1;

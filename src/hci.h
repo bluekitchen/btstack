@@ -347,7 +347,7 @@ typedef struct sm_connection {
 
 typedef struct {
     // linked list - assert: first field
-    linked_item_t    item;
+    btstack_linked_item_t    item;
     
     // remote side
     bd_addr_t address;
@@ -502,7 +502,7 @@ enum {
 };
 
 typedef struct {
-    linked_item_t  item;
+    btstack_linked_item_t  item;
     bd_addr_t      address;
     bd_addr_type_t address_type;
     uint8_t        state;   
@@ -529,7 +529,7 @@ typedef struct {
     bt_control_t     * control;
     
     // list of existing baseband connections
-    btstack_linked_list_t     connections;
+    btstack_btstack_linked_list_t     connections;
 
     // single buffer for HCI packet assembly + additional prebuffer for H4 drivers
     uint8_t   hci_packet_buffer_prefix[HCI_OUTGOING_PRE_BUFFER_SIZE];
@@ -629,7 +629,7 @@ typedef struct {
 
     // LE Whitelist Management
     uint16_t      le_whitelist_capacity;
-    btstack_linked_list_t le_whitelist;
+    btstack_btstack_linked_list_t le_whitelist;
 
     // custom BD ADDR
     bd_addr_t custom_bd_addr; 
@@ -643,7 +643,7 @@ typedef struct {
 /**
  * set connection iterator
  */
-void hci_connections_get_iterator(linked_list_iterator_t *it);
+void hci_connections_get_iterator(btstack_linked_list_iterator_t *it);
 
 // create and send hci command packets based on a template and a list of parameters
 uint16_t hci_create_cmd(uint8_t *hci_cmd_buffer, hci_cmd_t *cmd, ...);

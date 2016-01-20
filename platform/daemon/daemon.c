@@ -120,17 +120,17 @@
 
 typedef struct {
     // linked list - assert: first field
-    linked_item_t    item;
+    btstack_linked_item_t    item;
     
     // connection
     connection_t * connection;
 
-    btstack_linked_list_t rfcomm_cids;
-    btstack_linked_list_t rfcomm_services;
-    btstack_linked_list_t l2cap_cids;
-    btstack_linked_list_t l2cap_psms;
-    btstack_linked_list_t sdp_record_handles;
-    btstack_linked_list_t gatt_con_handles;
+    btstack_btstack_linked_list_t rfcomm_cids;
+    btstack_btstack_linked_list_t rfcomm_services;
+    btstack_btstack_linked_list_t l2cap_cids;
+    btstack_btstack_linked_list_t l2cap_psms;
+    btstack_btstack_linked_list_t sdp_record_handles;
+    btstack_btstack_linked_list_t gatt_con_handles;
     // power mode
     HCI_POWER_MODE power_mode;
     
@@ -139,26 +139,26 @@ typedef struct {
     
 } client_state_t;
 
-typedef struct linked_list_uint32 {
-    linked_item_t   item;
+typedef struct btstack_linked_list_uint32 {
+    btstack_linked_item_t   item;
     uint32_t        value;
-} linked_list_uint32_t;
+} btstack_linked_list_uint32_t;
 
-typedef struct linked_list_connection {
-    linked_item_t   item;
+typedef struct btstack_linked_list_connection {
+    btstack_linked_item_t   item;
     connection_t  * connection;
-} linked_list_connection_t;
+} btstack_linked_list_connection_t;
 
-typedef struct linked_list_gatt_client_helper{
-    linked_item_t item;
+typedef struct btstack_linked_list_gatt_client_helper{
+    btstack_linked_item_t item;
     uint16_t con_handle;
     connection_t * active_connection;   // the one that started the current query
-    btstack_linked_list_t  all_connections;     // list of all connections that ever used this helper
+    btstack_btstack_linked_list_t  all_connections;     // list of all connections that ever used this helper
     uint16_t characteristic_length;
     uint16_t characteristic_handle;
     uint8_t  characteristic_buffer[10 + ATT_MAX_LONG_ATTRIBUTE_SIZE];   // header for sending event right away
     uint8_t  long_query_type;
-} linked_list_gatt_client_helper_t;
+} btstack_linked_list_gatt_client_helper_t;
 
 // MARK: prototypes
 static void handle_sdp_rfcomm_service_result(sdp_query_event_t * event, void * context);
@@ -179,9 +179,9 @@ static hci_transport_config_uart_t hci_transport_config_uart;
 static timer_source_t timeout;
 static uint8_t timeout_active = 0;
 static int power_management_sleep = 0;
-static btstack_linked_list_t clients = NULL;        // list of connected clients `
+static btstack_btstack_linked_list_t clients = NULL;        // list of connected clients `
 #ifdef HAVE_BLE
-static btstack_linked_list_t gatt_client_helpers = NULL;   // list of used gatt client (helpers)
+static btstack_btstack_linked_list_t gatt_client_helpers = NULL;   // list of used gatt client (helpers)
 static uint16_t gatt_client_id = 0;
 #endif
 
@@ -216,10 +216,10 @@ static void l2cap_emit_credits(l2cap_channel_t *channel, uint8_t credits) {
 }
 
 static void l2cap_hand_out_credits(void){
-    linked_list_iterator_t it;    
-    linked_list_iterator_init(&it, &l2cap_channels);
-    while (linked_list_iterator_has_next(&it)){
-        l2cap_channel_t * channel = (l2cap_channel_t *) linked_list_iterator_next(&it);
+    btstack_linked_list_iterator_t it;    
+    btstack_linked_list_iterator_init(&it, &l2cap_channels);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        l2cap_channel_t * channel = (l2cap_channel_t *) btstack_linked_list_iterator_next(&it);
         if (channel->state != L2CAP_STATE_OPEN) continue;
         if (!hci_number_free_acl_slots_for_handle(channel->handle)) return;
         l2cap_emit_credits(channel, 1);
@@ -236,8 +236,8 @@ static void rfcomm_emit_credits(rfcomm_channel_t * channel, uint8_t credits) {
     (*app_packet_handler)(HCI_EVENT_PACKET, 0, (uint8_t *) event, sizeof(event));
 }
 static void rfcomm_hand_out_credits(void){
-    linked_item_t * it;
-    for (it = (linked_item_t *) rfcomm_channels; it ; it = it->next){
+    btstack_linked_item_t * it;
+    for (it = (btstack_linked_item_t *) rfcomm_channels; it ; it = it->next){
         rfcomm_channel_t * channel = (rfcomm_channel_t *) it;
         if (channel->state != RFCOMM_CHANNEL_OPEN) {
             // log_info("RFCOMM_EVENT_CREDITS: multiplexer not open");
@@ -266,27 +266,27 @@ static void daemon_no_connections_timeout(struct timer *ts){
 }
 
 
-static void add_uint32_to_list(btstack_linked_list_t *list, uint32_t value){
-    linked_list_iterator_t it;    
-    linked_list_iterator_init(&it, list);
-    while (linked_list_iterator_has_next(&it)){
-        linked_list_uint32_t * item = (linked_list_uint32_t*) linked_list_iterator_next(&it);
+static void add_uint32_to_list(btstack_btstack_linked_list_t *list, uint32_t value){
+    btstack_linked_list_iterator_t it;    
+    btstack_linked_list_iterator_init(&it, list);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        btstack_linked_list_uint32_t * item = (btstack_linked_list_uint32_t*) btstack_linked_list_iterator_next(&it);
         if ( item->value == value) return; // already in list
     } 
 
-    linked_list_uint32_t * item = malloc(sizeof(linked_list_uint32_t));
+    btstack_linked_list_uint32_t * item = malloc(sizeof(btstack_linked_list_uint32_t));
     if (!item) return; 
     item->value = value;
-    linked_list_add(list, (linked_item_t *) item);
+    btstack_linked_list_add(list, (btstack_linked_item_t *) item);
 }
 
-static void remove_and_free_uint32_from_list(btstack_linked_list_t *list, uint32_t value){
-    linked_list_iterator_t it;    
-    linked_list_iterator_init(&it, list);
-    while (linked_list_iterator_has_next(&it)){
-        linked_list_uint32_t * item = (linked_list_uint32_t*) linked_list_iterator_next(&it);
+static void remove_and_free_uint32_from_list(btstack_btstack_linked_list_t *list, uint32_t value){
+    btstack_linked_list_iterator_t it;    
+    btstack_linked_list_iterator_init(&it, list);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        btstack_linked_list_uint32_t * item = (btstack_linked_list_uint32_t*) btstack_linked_list_iterator_next(&it);
         if ( item->value != value) continue;
-        linked_list_remove(list, (linked_item_t *) item);
+        btstack_linked_list_remove(list, (btstack_linked_item_t *) item);
         free(item);
     } 
 }
@@ -357,11 +357,11 @@ static void daemon_add_gatt_client_handle(connection_t * connection, uint32_t ha
     if (!client_state) return;
     
     // check if handle already exists in the gatt_con_handles list
-    linked_list_iterator_t it;
+    btstack_linked_list_iterator_t it;
     int handle_found = 0;
-    linked_list_iterator_init(&it, &client_state->gatt_con_handles);
-    while (linked_list_iterator_has_next(&it)){
-        linked_list_uint32_t * item = (linked_list_uint32_t*) linked_list_iterator_next(&it);
+    btstack_linked_list_iterator_init(&it, &client_state->gatt_con_handles);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        btstack_linked_list_uint32_t * item = (btstack_linked_list_uint32_t*) btstack_linked_list_iterator_next(&it);
         if (item->value == handle){ 
             handle_found = 1;
             break;
@@ -373,10 +373,10 @@ static void daemon_add_gatt_client_handle(connection_t * connection, uint32_t ha
     }
     
     // check if there is a helper with given handle
-    linked_list_gatt_client_helper_t * gatt_helper = NULL;
-    linked_list_iterator_init(&it, &gatt_client_helpers);
-    while (linked_list_iterator_has_next(&it)){
-        linked_list_gatt_client_helper_t * item = (linked_list_gatt_client_helper_t*) linked_list_iterator_next(&it);
+    btstack_linked_list_gatt_client_helper_t * gatt_helper = NULL;
+    btstack_linked_list_iterator_init(&it, &gatt_client_helpers);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        btstack_linked_list_gatt_client_helper_t * item = (btstack_linked_list_gatt_client_helper_t*) btstack_linked_list_iterator_next(&it);
         if (item->con_handle == handle){
             gatt_helper = item;
             break;
@@ -385,18 +385,18 @@ static void daemon_add_gatt_client_handle(connection_t * connection, uint32_t ha
 
     // if gatt_helper doesn't exist, create it and add it to gatt_client_helpers list
     if (!gatt_helper){
-        gatt_helper = malloc(sizeof(linked_list_gatt_client_helper_t));
+        gatt_helper = malloc(sizeof(btstack_linked_list_gatt_client_helper_t));
         if (!gatt_helper) return; 
-        memset(gatt_helper, 0, sizeof(linked_list_gatt_client_helper_t));
+        memset(gatt_helper, 0, sizeof(btstack_linked_list_gatt_client_helper_t));
         gatt_helper->con_handle = handle;
-        linked_list_add(&gatt_client_helpers, (linked_item_t *) gatt_helper);
+        btstack_linked_list_add(&gatt_client_helpers, (btstack_linked_item_t *) gatt_helper);
     }
 
     // check if connection exists
     int connection_found = 0;
-    linked_list_iterator_init(&it, &gatt_helper->all_connections);
-    while (linked_list_iterator_has_next(&it)){
-        linked_list_connection_t * item = (linked_list_connection_t*) linked_list_iterator_next(&it);
+    btstack_linked_list_iterator_init(&it, &gatt_helper->all_connections);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        btstack_linked_list_connection_t * item = (btstack_linked_list_connection_t*) btstack_linked_list_iterator_next(&it);
         if (item->connection == connection){
             connection_found = 1;
             break;
@@ -405,11 +405,11 @@ static void daemon_add_gatt_client_handle(connection_t * connection, uint32_t ha
 
     // if connection is not found, add it to the all_connections, and set it as active connection
     if (!connection_found){
-        linked_list_connection_t * con = malloc(sizeof(linked_list_connection_t));
+        btstack_linked_list_connection_t * con = malloc(sizeof(btstack_linked_list_connection_t));
         if (!con) return;
-        memset(con, 0, sizeof(linked_list_connection_t));
+        memset(con, 0, sizeof(btstack_linked_list_connection_t));
         con->connection = connection;
-        linked_list_add(&gatt_helper->all_connections, (linked_item_t *)con);
+        btstack_linked_list_add(&gatt_helper->all_connections, (btstack_linked_item_t *)con);
     }
 }
 
@@ -420,13 +420,13 @@ static void daemon_remove_gatt_client_handle(connection_t * connection, uint32_t
     client_state_t * client_state = client_for_connection(connection);
     if (!client_state) return;
     
-    linked_list_iterator_t it;    
+    btstack_linked_list_iterator_t it;    
     // remove handle from gatt_con_handles list
-    linked_list_iterator_init(&it, &client_state->gatt_con_handles);
-    while (linked_list_iterator_has_next(&it)){
-        linked_list_uint32_t * item = (linked_list_uint32_t*) linked_list_iterator_next(&it);
+    btstack_linked_list_iterator_init(&it, &client_state->gatt_con_handles);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        btstack_linked_list_uint32_t * item = (btstack_linked_list_uint32_t*) btstack_linked_list_iterator_next(&it);
         if (item->value == handle){
-            linked_list_remove(&client_state->gatt_con_handles, (linked_item_t *) item);
+            btstack_linked_list_remove(&client_state->gatt_con_handles, (btstack_linked_item_t *) item);
             free(item);
         }
     }
@@ -434,10 +434,10 @@ static void daemon_remove_gatt_client_handle(connection_t * connection, uint32_t
     // PART 2 - only uses handle
 
     // find helper with given handle
-    linked_list_gatt_client_helper_t * helper = NULL;
-    linked_list_iterator_init(&it, &gatt_client_helpers);
-    while (linked_list_iterator_has_next(&it)){
-        linked_list_gatt_client_helper_t * item = (linked_list_gatt_client_helper_t*) linked_list_iterator_next(&it);
+    btstack_linked_list_gatt_client_helper_t * helper = NULL;
+    btstack_linked_list_iterator_init(&it, &gatt_client_helpers);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        btstack_linked_list_gatt_client_helper_t * item = (btstack_linked_list_gatt_client_helper_t*) btstack_linked_list_iterator_next(&it);
         if (item->con_handle == handle){
             helper = item;
             break;
@@ -446,11 +446,11 @@ static void daemon_remove_gatt_client_handle(connection_t * connection, uint32_t
 
     if (!helper) return;
     // remove connection from helper
-    linked_list_iterator_init(&it, &helper->all_connections);
-    while (linked_list_iterator_has_next(&it)){
-        linked_list_connection_t * item = (linked_list_connection_t*) linked_list_iterator_next(&it);
+    btstack_linked_list_iterator_init(&it, &helper->all_connections);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        btstack_linked_list_connection_t * item = (btstack_linked_list_connection_t*) btstack_linked_list_iterator_next(&it);
         if (item->connection == connection){
-            linked_list_remove(&helper->all_connections, (linked_item_t *) item);
+            btstack_linked_list_remove(&helper->all_connections, (btstack_linked_item_t *) item);
             free(item);
             break;
         }
@@ -467,12 +467,12 @@ static void daemon_remove_gatt_client_handle(connection_t * connection, uint32_t
 
 
 static void daemon_remove_gatt_client_helper(uint32_t con_handle){
-    linked_list_iterator_t it, cl;    
+    btstack_linked_list_iterator_t it, cl;    
     // find helper with given handle
-    linked_list_gatt_client_helper_t * helper = NULL;
-    linked_list_iterator_init(&it, &gatt_client_helpers);
-    while (linked_list_iterator_has_next(&it)){
-        linked_list_gatt_client_helper_t * item = (linked_list_gatt_client_helper_t*) linked_list_iterator_next(&it);
+    btstack_linked_list_gatt_client_helper_t * helper = NULL;
+    btstack_linked_list_iterator_init(&it, &gatt_client_helpers);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        btstack_linked_list_gatt_client_helper_t * item = (btstack_linked_list_gatt_client_helper_t*) btstack_linked_list_iterator_next(&it);
         if (item->con_handle == con_handle){
             helper = item;
             break;
@@ -482,24 +482,24 @@ static void daemon_remove_gatt_client_helper(uint32_t con_handle){
     if (!helper) return;
 
     // remove all connection from helper
-    linked_list_iterator_init(&it, &helper->all_connections);
-    while (linked_list_iterator_has_next(&it)){
-        linked_list_connection_t * item = (linked_list_connection_t*) linked_list_iterator_next(&it);
-        linked_list_remove(&helper->all_connections, (linked_item_t *) item);
+    btstack_linked_list_iterator_init(&it, &helper->all_connections);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        btstack_linked_list_connection_t * item = (btstack_linked_list_connection_t*) btstack_linked_list_iterator_next(&it);
+        btstack_linked_list_remove(&helper->all_connections, (btstack_linked_item_t *) item);
         free(item);
     }
 
-    linked_list_remove(&gatt_client_helpers, (linked_item_t *) helper);
+    btstack_linked_list_remove(&gatt_client_helpers, (btstack_linked_item_t *) helper);
     free(helper);
     
-    linked_list_iterator_init(&cl, &clients);
-    while (linked_list_iterator_has_next(&cl)){
-        client_state_t * client_state = (client_state_t *) linked_list_iterator_next(&cl);
-        linked_list_iterator_init(&it, &client_state->gatt_con_handles);
-        while (linked_list_iterator_has_next(&it)){
-            linked_list_uint32_t * item = (linked_list_uint32_t*) linked_list_iterator_next(&it);
+    btstack_linked_list_iterator_init(&cl, &clients);
+    while (btstack_linked_list_iterator_has_next(&cl)){
+        client_state_t * client_state = (client_state_t *) btstack_linked_list_iterator_next(&cl);
+        btstack_linked_list_iterator_init(&it, &client_state->gatt_con_handles);
+        while (btstack_linked_list_iterator_has_next(&it)){
+            btstack_linked_list_uint32_t * item = (btstack_linked_list_uint32_t*) btstack_linked_list_iterator_next(&it);
             if (item->value == con_handle){
-                linked_list_remove(&client_state->gatt_con_handles, (linked_item_t *) item);
+                btstack_linked_list_remove(&client_state->gatt_con_handles, (btstack_linked_item_t *) item);
                 free(item);
             }
         }
@@ -508,71 +508,71 @@ static void daemon_remove_gatt_client_helper(uint32_t con_handle){
 #endif
 
 static void daemon_rfcomm_close_connection(client_state_t * daemon_client){
-    linked_list_iterator_t it;  
-    btstack_linked_list_t *rfcomm_services = &daemon_client->rfcomm_services;
-    btstack_linked_list_t *rfcomm_cids = &daemon_client->rfcomm_cids;
+    btstack_linked_list_iterator_t it;  
+    btstack_btstack_linked_list_t *rfcomm_services = &daemon_client->rfcomm_services;
+    btstack_btstack_linked_list_t *rfcomm_cids = &daemon_client->rfcomm_cids;
     
-    linked_list_iterator_init(&it, rfcomm_services);
-    while (linked_list_iterator_has_next(&it)){
-        linked_list_uint32_t * item = (linked_list_uint32_t*) linked_list_iterator_next(&it);
+    btstack_linked_list_iterator_init(&it, rfcomm_services);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        btstack_linked_list_uint32_t * item = (btstack_linked_list_uint32_t*) btstack_linked_list_iterator_next(&it);
         rfcomm_unregister_service(item->value);
-        linked_list_remove(rfcomm_services, (linked_item_t *) item);
+        btstack_linked_list_remove(rfcomm_services, (btstack_linked_item_t *) item);
         free(item);
     }
 
-    linked_list_iterator_init(&it, rfcomm_cids);
-    while (linked_list_iterator_has_next(&it)){
-        linked_list_uint32_t * item = (linked_list_uint32_t*) linked_list_iterator_next(&it);
+    btstack_linked_list_iterator_init(&it, rfcomm_cids);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        btstack_linked_list_uint32_t * item = (btstack_linked_list_uint32_t*) btstack_linked_list_iterator_next(&it);
         rfcomm_disconnect_internal(item->value);
-        linked_list_remove(rfcomm_cids, (linked_item_t *) item);
+        btstack_linked_list_remove(rfcomm_cids, (btstack_linked_item_t *) item);
         free(item);
     }
 }
 
 
 static void daemon_l2cap_close_connection(client_state_t * daemon_client){
-    linked_list_iterator_t it;  
-    btstack_linked_list_t *l2cap_psms = &daemon_client->l2cap_psms;
-    btstack_linked_list_t *l2cap_cids = &daemon_client->l2cap_cids;
+    btstack_linked_list_iterator_t it;  
+    btstack_btstack_linked_list_t *l2cap_psms = &daemon_client->l2cap_psms;
+    btstack_btstack_linked_list_t *l2cap_cids = &daemon_client->l2cap_cids;
     
-    linked_list_iterator_init(&it, l2cap_psms);
-    while (linked_list_iterator_has_next(&it)){
-        linked_list_uint32_t * item = (linked_list_uint32_t*) linked_list_iterator_next(&it);
+    btstack_linked_list_iterator_init(&it, l2cap_psms);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        btstack_linked_list_uint32_t * item = (btstack_linked_list_uint32_t*) btstack_linked_list_iterator_next(&it);
         l2cap_unregister_service(item->value);
-        linked_list_remove(l2cap_psms, (linked_item_t *) item);
+        btstack_linked_list_remove(l2cap_psms, (btstack_linked_item_t *) item);
         free(item);
     }
 
-    linked_list_iterator_init(&it, l2cap_cids);
-    while (linked_list_iterator_has_next(&it)){
-        linked_list_uint32_t * item = (linked_list_uint32_t*) linked_list_iterator_next(&it);
+    btstack_linked_list_iterator_init(&it, l2cap_cids);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        btstack_linked_list_uint32_t * item = (btstack_linked_list_uint32_t*) btstack_linked_list_iterator_next(&it);
         l2cap_disconnect_internal(item->value, 0); // note: reason isn't used
-        linked_list_remove(l2cap_cids, (linked_item_t *) item);
+        btstack_linked_list_remove(l2cap_cids, (btstack_linked_item_t *) item);
         free(item);
     }
 }
 
 static void daemon_sdp_close_connection(client_state_t * daemon_client){
-    btstack_linked_list_t * list = &daemon_client->sdp_record_handles;
-    linked_list_iterator_t it;  
-    linked_list_iterator_init(&it, list);
-    while (linked_list_iterator_has_next(&it)){
-        linked_list_uint32_t * item = (linked_list_uint32_t*) linked_list_iterator_next(&it);
+    btstack_btstack_linked_list_t * list = &daemon_client->sdp_record_handles;
+    btstack_linked_list_iterator_t it;  
+    btstack_linked_list_iterator_init(&it, list);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        btstack_linked_list_uint32_t * item = (btstack_linked_list_uint32_t*) btstack_linked_list_iterator_next(&it);
         sdp_unregister_service(item->value);
-        linked_list_remove(list, (linked_item_t *) item);
+        btstack_linked_list_remove(list, (btstack_linked_item_t *) item);
         free(item);
     }
 }
 
 static connection_t * connection_for_l2cap_cid(uint16_t cid){
-    linked_list_iterator_t cl;
-    linked_list_iterator_init(&cl, &clients);
-    while (linked_list_iterator_has_next(&cl)){
-        client_state_t * client_state = (client_state_t *) linked_list_iterator_next(&cl);
-        linked_list_iterator_t it;
-        linked_list_iterator_init(&it, &client_state->l2cap_cids);
-        while (linked_list_iterator_has_next(&it)){
-            linked_list_uint32_t * item = (linked_list_uint32_t*) linked_list_iterator_next(&it);
+    btstack_linked_list_iterator_t cl;
+    btstack_linked_list_iterator_init(&cl, &clients);
+    while (btstack_linked_list_iterator_has_next(&cl)){
+        client_state_t * client_state = (client_state_t *) btstack_linked_list_iterator_next(&cl);
+        btstack_linked_list_iterator_t it;
+        btstack_linked_list_iterator_init(&it, &client_state->l2cap_cids);
+        while (btstack_linked_list_iterator_has_next(&it)){
+            btstack_linked_list_uint32_t * item = (btstack_linked_list_uint32_t*) btstack_linked_list_iterator_next(&it);
             if (item->value == cid){
                 return client_state->connection;
             }
@@ -621,14 +621,14 @@ static uint32_t daemon_sdp_create_and_register_service(uint8_t * record){
 }
 
 static connection_t * connection_for_rfcomm_cid(uint16_t cid){
-    linked_list_iterator_t cl;
-    linked_list_iterator_init(&cl, &clients);
-    while (linked_list_iterator_has_next(&cl)){
-        client_state_t * client_state = (client_state_t *) linked_list_iterator_next(&cl);
-        linked_list_iterator_t it;
-        linked_list_iterator_init(&it, &client_state->rfcomm_cids);
-        while (linked_list_iterator_has_next(&it)){
-            linked_list_uint32_t * item = (linked_list_uint32_t*) linked_list_iterator_next(&it);
+    btstack_linked_list_iterator_t cl;
+    btstack_linked_list_iterator_init(&cl, &clients);
+    while (btstack_linked_list_iterator_has_next(&cl)){
+        client_state_t * client_state = (client_state_t *) btstack_linked_list_iterator_next(&cl);
+        btstack_linked_list_iterator_t it;
+        btstack_linked_list_iterator_init(&it, &client_state->rfcomm_cids);
+        while (btstack_linked_list_iterator_has_next(&it)){
+            btstack_linked_list_uint32_t * item = (btstack_linked_list_uint32_t*) btstack_linked_list_iterator_next(&it);
             if (item->value == cid){
                 return client_state->connection;
             }
@@ -642,10 +642,10 @@ static void daemon_gatt_client_close_connection(connection_t * connection){
     client_state_t * client = client_for_connection(connection);
     if (!client) return;
 
-    linked_list_iterator_t it; 
-    linked_list_iterator_init(&it, &client->gatt_con_handles);
-    while (linked_list_iterator_has_next(&it)){
-        linked_list_uint32_t * item = (linked_list_uint32_t*) linked_list_iterator_next(&it);
+    btstack_linked_list_iterator_t it; 
+    btstack_linked_list_iterator_init(&it, &client->gatt_con_handles);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        btstack_linked_list_uint32_t * item = (btstack_linked_list_uint32_t*) btstack_linked_list_iterator_next(&it);
         daemon_remove_gatt_client_handle(connection, item->value);
     }
 }
@@ -666,7 +666,7 @@ static void daemon_disconnect_client(connection_t * connection){
     daemon_gatt_client_close_connection(connection);
 #endif
 
-    linked_list_remove(&clients, (linked_item_t *) client);
+    btstack_linked_list_remove(&clients, (btstack_linked_item_t *) client);
     free(client); 
 }
 
@@ -740,14 +740,14 @@ static void sdp_emit_service_registered(void *connection, uint32_t handle, uint8
 
 #ifdef HAVE_BLE
 
-linked_list_gatt_client_helper_t * daemon_get_gatt_client_helper(uint16_t handle) {
-    linked_list_iterator_t it;  
+btstack_linked_list_gatt_client_helper_t * daemon_get_gatt_client_helper(uint16_t handle) {
+    btstack_linked_list_iterator_t it;  
     if (!gatt_client_helpers) return NULL;
     log_info("daemon_get_gatt_client_helper for handle 0x%02x", handle);
     
-    linked_list_iterator_init(&it, &gatt_client_helpers);
-    while (linked_list_iterator_has_next(&it)){
-        linked_list_gatt_client_helper_t * item = (linked_list_gatt_client_helper_t*) linked_list_iterator_next(&it);
+    btstack_linked_list_iterator_init(&it, &gatt_client_helpers);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        btstack_linked_list_gatt_client_helper_t * item = (btstack_linked_list_gatt_client_helper_t*) btstack_linked_list_iterator_next(&it);
         if (!item ) {
             log_info("daemon_get_gatt_client_helper gatt_client_helpers null item");
             break;
@@ -784,7 +784,7 @@ static void send_gatt_mtu_event(connection_t * connection, uint16_t handle, uint
     socket_connection_send_packet(connection, HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-linked_list_gatt_client_helper_t * daemon_setup_gatt_client_request(connection_t *connection, uint8_t *packet, int track_active_connection) {
+btstack_linked_list_gatt_client_helper_t * daemon_setup_gatt_client_request(connection_t *connection, uint8_t *packet, int track_active_connection) {
     hci_con_handle_t handle = READ_BT_16(packet, 3);    
     log_info("daemon_setup_gatt_client_request for handle 0x%02x", handle);
     hci_connection_t * hci_con = hci_connection_for_handle(handle);
@@ -793,15 +793,15 @@ linked_list_gatt_client_helper_t * daemon_setup_gatt_client_request(connection_t
         return NULL;
     }
 
-    linked_list_gatt_client_helper_t * helper = daemon_get_gatt_client_helper(handle);
+    btstack_linked_list_gatt_client_helper_t * helper = daemon_get_gatt_client_helper(handle);
 
     if (!helper){
         log_info("helper does not exist");
-        helper = malloc(sizeof(linked_list_gatt_client_helper_t));
+        helper = malloc(sizeof(btstack_linked_list_gatt_client_helper_t));
         if (!helper) return NULL; 
-        memset(helper, 0, sizeof(linked_list_gatt_client_helper_t));
+        memset(helper, 0, sizeof(btstack_linked_list_gatt_client_helper_t));
         helper->con_handle = handle;
-        linked_list_add(&gatt_client_helpers, (linked_item_t *) helper);
+        btstack_linked_list_add(&gatt_client_helpers, (btstack_linked_item_t *) helper);
     } 
     
     if (track_active_connection && helper->active_connection){
@@ -884,7 +884,7 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
     le_characteristic_t characteristic;
     le_characteristic_descriptor_t descriptor;
     uint16_t data_length;
-    linked_list_gatt_client_helper_t * gatt_helper;
+    btstack_linked_list_gatt_client_helper_t * gatt_helper;
 #endif
 
     uint16_t serviceSearchPatternLen;
@@ -1322,7 +1322,7 @@ static int daemon_client_handler(connection_t *connection, uint16_t packet_type,
                     client->connection   = connection;
                     client->power_mode   = HCI_POWER_OFF;
                     client->discoverable = 0;
-                    linked_list_add(&clients, (linked_item_t *) client);
+                    btstack_linked_list_add(&clients, (btstack_linked_item_t *) client);
                     break;
                 case DAEMON_EVENT_CONNECTION_CLOSED:
                     log_info("DAEMON_EVENT_CONNECTION_CLOSED %p\n",connection);
@@ -1708,8 +1708,8 @@ static void start_power_off_timer(void){
 
 
 static client_state_t * client_for_connection(connection_t *connection) {
-    linked_item_t *it;
-    for (it = (linked_item_t *) clients; it ; it = it->next){
+    btstack_linked_item_t *it;
+    for (it = (btstack_linked_item_t *) clients; it ; it = it->next){
         client_state_t * client_state = (client_state_t *) it;
         if (client_state->connection == connection) {
             return client_state;
@@ -1719,8 +1719,8 @@ static client_state_t * client_for_connection(connection_t *connection) {
 }
 
 static void clients_clear_power_request(void){
-    linked_item_t *it;
-    for (it = (linked_item_t *) clients; it ; it = it->next){
+    btstack_linked_item_t *it;
+    for (it = (btstack_linked_item_t *) clients; it ; it = it->next){
         client_state_t * client_state = (client_state_t *) it;
         client_state->power_mode = HCI_POWER_OFF;
     }
@@ -1730,8 +1730,8 @@ static int clients_require_power_on(void){
     
     if (global_enable) return 1;
     
-    linked_item_t *it;
-    for (it = (linked_item_t *) clients; it ; it = it->next){
+    btstack_linked_item_t *it;
+    for (it = (btstack_linked_item_t *) clients; it ; it = it->next){
         client_state_t * client_state = (client_state_t *) it;
         if (client_state->power_mode == HCI_POWER_ON) {
             return 1;
@@ -1741,8 +1741,8 @@ static int clients_require_power_on(void){
 }
 
 static int clients_require_discoverable(void){
-    linked_item_t *it;
-    for (it = (linked_item_t *) clients; it ; it = it->next){
+    btstack_linked_item_t *it;
+    for (it = (btstack_linked_item_t *) clients; it ; it = it->next){
         client_state_t * client_state = (client_state_t *) it;
         if (client_state->discoverable) {
             return 1;
@@ -1798,7 +1798,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint8_t * packet, uint
     }
 
     uint16_t con_handle = READ_BT_16(packet, 2);
-    linked_list_gatt_client_helper_t * gatt_client_helper = daemon_get_gatt_client_helper(con_handle);
+    btstack_linked_list_gatt_client_helper_t * gatt_client_helper = daemon_get_gatt_client_helper(con_handle);
     if (!gatt_client_helper){
         log_info("daemon handle_gatt_client_event: gc helper for handle 0x%2x is NULL.", con_handle);
         return;
@@ -1812,8 +1812,8 @@ static void handle_gatt_client_event(uint8_t packet_type, uint8_t * packet, uint
         case GATT_INDICATION:{
             hci_dump_packet(HCI_EVENT_PACKET, 0, packet, size);
             
-            linked_item_t *it;
-            for (it = (linked_item_t *) clients; it ; it = it->next){
+            btstack_linked_item_t *it;
+            for (it = (btstack_linked_item_t *) clients; it ; it = it->next){
                 client_state_t * client_state = (client_state_t *) it;
                 socket_connection_send_packet(client_state->connection, HCI_EVENT_PACKET, 0, packet, size);
             }

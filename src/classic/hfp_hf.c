@@ -1001,10 +1001,10 @@ static void hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8
 }
 
 static void hfp_run(){
-    linked_list_iterator_t it;    
-    linked_list_iterator_init(&it, hfp_get_connections());
-    while (linked_list_iterator_has_next(&it)){
-        hfp_connection_t * connection = (hfp_connection_t *)linked_list_iterator_next(&it);
+    btstack_linked_list_iterator_t it;    
+    btstack_linked_list_iterator_init(&it, hfp_get_connections());
+    while (btstack_linked_list_iterator_has_next(&it)){
+        hfp_connection_t * connection = (hfp_connection_t *)btstack_linked_list_iterator_next(&it);
         hfp_run_for_context(connection);
     }
 }
@@ -1037,10 +1037,10 @@ void hfp_hf_set_codecs(uint8_t * codecs, int codecs_nr){
     char buffer[30];
     int offset = join(buffer, sizeof(buffer), hfp_codecs, hfp_codecs_nr);
     buffer[offset] = 0;
-    linked_list_iterator_t it;    
-    linked_list_iterator_init(&it, hfp_get_connections());
-    while (linked_list_iterator_has_next(&it)){
-        hfp_connection_t * connection = (hfp_connection_t *)linked_list_iterator_next(&it);
+    btstack_linked_list_iterator_t it;    
+    btstack_linked_list_iterator_init(&it, hfp_get_connections());
+    while (btstack_linked_list_iterator_has_next(&it)){
+        hfp_connection_t * connection = (hfp_connection_t *)btstack_linked_list_iterator_next(&it);
         if (!connection) continue;
         connection->command = HFP_CMD_AVAILABLE_CODECS;
         hfp_run_for_context(connection);

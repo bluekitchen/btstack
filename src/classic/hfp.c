@@ -100,7 +100,7 @@ static const char * hfp_ag_features[] = {
 static int hfp_generic_status_indicators_nr = 0;
 static hfp_generic_status_indicator_t hfp_generic_status_indicators[HFP_MAX_NUM_HF_INDICATORS];
 
-static btstack_linked_list_t hfp_connections = NULL;
+static btstack_btstack_linked_list_t hfp_connections = NULL;
 static void parse_sequence(hfp_connection_t * context);
 
 hfp_generic_status_indicator_t * get_hfp_generic_status_indicators(void){
@@ -229,15 +229,15 @@ static void hfp_emit_audio_connection_established_event(hfp_callback_t callback,
     (*callback)(event, sizeof(event));
 }
 
-btstack_linked_list_t * hfp_get_connections(){
-    return (btstack_linked_list_t *) &hfp_connections;
+btstack_btstack_linked_list_t * hfp_get_connections(){
+    return (btstack_btstack_linked_list_t *) &hfp_connections;
 } 
 
 hfp_connection_t * get_hfp_connection_context_for_rfcomm_cid(uint16_t cid){
-    linked_list_iterator_t it;    
-    linked_list_iterator_init(&it, hfp_get_connections());
-    while (linked_list_iterator_has_next(&it)){
-        hfp_connection_t * connection = (hfp_connection_t *)linked_list_iterator_next(&it);
+    btstack_linked_list_iterator_t it;    
+    btstack_linked_list_iterator_init(&it, hfp_get_connections());
+    while (btstack_linked_list_iterator_has_next(&it)){
+        hfp_connection_t * connection = (hfp_connection_t *)btstack_linked_list_iterator_next(&it);
         if (connection->rfcomm_cid == cid){
             return connection;
         }
@@ -246,10 +246,10 @@ hfp_connection_t * get_hfp_connection_context_for_rfcomm_cid(uint16_t cid){
 }
 
 hfp_connection_t * get_hfp_connection_context_for_bd_addr(bd_addr_t bd_addr){
-    linked_list_iterator_t it;  
-    linked_list_iterator_init(&it, hfp_get_connections());
-    while (linked_list_iterator_has_next(&it)){
-        hfp_connection_t * connection = (hfp_connection_t *)linked_list_iterator_next(&it);
+    btstack_linked_list_iterator_t it;  
+    btstack_linked_list_iterator_init(&it, hfp_get_connections());
+    while (btstack_linked_list_iterator_has_next(&it)){
+        hfp_connection_t * connection = (hfp_connection_t *)btstack_linked_list_iterator_next(&it);
         if (memcmp(connection->remote_addr, bd_addr, 6) == 0) {
             return connection;
         }
@@ -258,10 +258,10 @@ hfp_connection_t * get_hfp_connection_context_for_bd_addr(bd_addr_t bd_addr){
 }
 
 hfp_connection_t * get_hfp_connection_context_for_sco_handle(uint16_t handle){
-    linked_list_iterator_t it;    
-    linked_list_iterator_init(&it, hfp_get_connections());
-    while (linked_list_iterator_has_next(&it)){
-        hfp_connection_t * connection = (hfp_connection_t *)linked_list_iterator_next(&it);
+    btstack_linked_list_iterator_t it;    
+    btstack_linked_list_iterator_init(&it, hfp_get_connections());
+    while (btstack_linked_list_iterator_has_next(&it)){
+        hfp_connection_t * connection = (hfp_connection_t *)btstack_linked_list_iterator_next(&it);
         if (connection->sco_handle == handle){
             return connection;
         }
@@ -309,12 +309,12 @@ static hfp_connection_t * create_hfp_connection_context(){
     context->generic_status_indicators_nr = hfp_generic_status_indicators_nr;
     memcpy(context->generic_status_indicators, hfp_generic_status_indicators, hfp_generic_status_indicators_nr * sizeof(hfp_generic_status_indicator_t));
 
-    linked_list_add(&hfp_connections, (linked_item_t*)context);
+    btstack_linked_list_add(&hfp_connections, (btstack_linked_item_t*)context);
     return context;
 }
 
 static void remove_hfp_connection_context(hfp_connection_t * context){
-    linked_list_remove(&hfp_connections, (linked_item_t*)context);   
+    btstack_linked_list_remove(&hfp_connections, (btstack_linked_item_t*)context);   
 }
 
 static hfp_connection_t * provide_hfp_connection_context_for_bd_addr(bd_addr_t bd_addr){

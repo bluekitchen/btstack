@@ -48,7 +48,7 @@ extern "C" {
     
 typedef struct {
     // linked list - assert: first field
-    linked_item_t   item;
+    btstack_linked_item_t   item;
 
     uint32_t        service_record_handle;
     uint8_t *       service_record;

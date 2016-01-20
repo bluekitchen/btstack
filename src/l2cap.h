@@ -100,7 +100,7 @@ typedef enum {
 // info regarding an actual connection
 typedef struct {
     // linked list - assert: first field
-    linked_item_t    item;
+    btstack_linked_item_t    item;
     
     L2CAP_STATE state;
     L2CAP_CHANNEL_STATE_VAR state_var;
@@ -135,7 +135,7 @@ typedef struct {
 // info regarding potential connections
 typedef struct {
     // linked list - assert: first field
-    linked_item_t    item;
+    btstack_linked_item_t    item;
     
     // service id
     uint16_t  psm;

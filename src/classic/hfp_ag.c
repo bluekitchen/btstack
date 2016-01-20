@@ -801,11 +801,11 @@ static int hfp_ag_run_for_audio_connection(hfp_connection_t * context){
 }
 
 static hfp_connection_t * hfp_ag_context_for_timer(timer_source_t * ts){
-    linked_list_iterator_t it;    
-    linked_list_iterator_init(&it, hfp_get_connections());
+    btstack_linked_list_iterator_t it;    
+    btstack_linked_list_iterator_init(&it, hfp_get_connections());
 
-    while (linked_list_iterator_has_next(&it)){
-        hfp_connection_t * connection = (hfp_connection_t *)linked_list_iterator_next(&it);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        hfp_connection_t * connection = (hfp_connection_t *)btstack_linked_list_iterator_next(&it);
         if ( &connection->hfp_timeout == ts) {
             return connection;
         }
@@ -867,10 +867,10 @@ static void hfp_ag_trigger_incoming_call(void){
     int indicator_index = get_ag_indicator_index_for_name("callsetup");
     if (indicator_index < 0) return;
 
-    linked_list_iterator_t it;    
-    linked_list_iterator_init(&it, hfp_get_connections());
-    while (linked_list_iterator_has_next(&it)){
-        hfp_connection_t * connection = (hfp_connection_t *)linked_list_iterator_next(&it);
+    btstack_linked_list_iterator_t it;    
+    btstack_linked_list_iterator_init(&it, hfp_get_connections());
+    while (btstack_linked_list_iterator_has_next(&it)){
+        hfp_connection_t * connection = (hfp_connection_t *)btstack_linked_list_iterator_next(&it);
         hfp_ag_establish_service_level_connection(connection->remote_addr);
         if (connection->call_state == HFP_CALL_IDLE){
             connection->ag_indicators_status_update_bitmap = store_bit(connection->ag_indicators_status_update_bitmap, indicator_index, 1);
@@ -887,10 +887,10 @@ static void hfp_ag_transfer_callsetup_state(void){
     int indicator_index = get_ag_indicator_index_for_name("callsetup");
     if (indicator_index < 0) return;
 
-    linked_list_iterator_t it;    
-    linked_list_iterator_init(&it, hfp_get_connections());
-    while (linked_list_iterator_has_next(&it)){
-        hfp_connection_t * connection = (hfp_connection_t *)linked_list_iterator_next(&it);
+    btstack_linked_list_iterator_t it;    
+    btstack_linked_list_iterator_init(&it, hfp_get_connections());
+    while (btstack_linked_list_iterator_has_next(&it)){
+        hfp_connection_t * connection = (hfp_connection_t *)btstack_linked_list_iterator_next(&it);
         hfp_ag_establish_service_level_connection(connection->remote_addr);
         connection->ag_indicators_status_update_bitmap = store_bit(connection->ag_indicators_status_update_bitmap, indicator_index, 1);
         hfp_run_for_context(connection);
@@ -901,10 +901,10 @@ static void hfp_ag_transfer_call_state(void){
     int indicator_index = get_ag_indicator_index_for_name("call");
     if (indicator_index < 0) return;
 
-    linked_list_iterator_t it;    
-    linked_list_iterator_init(&it, hfp_get_connections());
-    while (linked_list_iterator_has_next(&it)){
-        hfp_connection_t * connection = (hfp_connection_t *)linked_list_iterator_next(&it);
+    btstack_linked_list_iterator_t it;    
+    btstack_linked_list_iterator_init(&it, hfp_get_connections());
+    while (btstack_linked_list_iterator_has_next(&it)){
+        hfp_connection_t * connection = (hfp_connection_t *)btstack_linked_list_iterator_next(&it);
         hfp_ag_establish_service_level_connection(connection->remote_addr);
         connection->ag_indicators_status_update_bitmap = store_bit(connection->ag_indicators_status_update_bitmap, indicator_index, 1);
         hfp_run_for_context(connection);
@@ -915,10 +915,10 @@ static void hfp_ag_transfer_callheld_state(void){
     int indicator_index = get_ag_indicator_index_for_name("callheld");
     if (indicator_index < 0) return;
 
-    linked_list_iterator_t it;    
-    linked_list_iterator_init(&it, hfp_get_connections());
-    while (linked_list_iterator_has_next(&it)){
-        hfp_connection_t * connection = (hfp_connection_t *)linked_list_iterator_next(&it);
+    btstack_linked_list_iterator_t it;    
+    btstack_linked_list_iterator_init(&it, hfp_get_connections());
+    while (btstack_linked_list_iterator_has_next(&it)){
+        hfp_connection_t * connection = (hfp_connection_t *)btstack_linked_list_iterator_next(&it);
         hfp_ag_establish_service_level_connection(connection->remote_addr);
         connection->ag_indicators_status_update_bitmap = store_bit(connection->ag_indicators_status_update_bitmap, indicator_index, 1);
         hfp_run_for_context(connection);
@@ -930,10 +930,10 @@ static void hfp_ag_hf_accept_call(hfp_connection_t * source){
     int call_indicator_index = get_ag_indicator_index_for_name("call");
     int callsetup_indicator_index = get_ag_indicator_index_for_name("callsetup");
 
-    linked_list_iterator_t it;    
-    linked_list_iterator_init(&it, hfp_get_connections());
-    while (linked_list_iterator_has_next(&it)){
-        hfp_connection_t * connection = (hfp_connection_t *)linked_list_iterator_next(&it);
+    btstack_linked_list_iterator_t it;    
+    btstack_linked_list_iterator_init(&it, hfp_get_connections());
+    while (btstack_linked_list_iterator_has_next(&it)){
+        hfp_connection_t * connection = (hfp_connection_t *)btstack_linked_list_iterator_next(&it);
         if (connection->call_state != HFP_CALL_RINGING &&
             connection->call_state != HFP_CALL_W4_AUDIO_CONNECTION_FOR_IN_BAND_RING) continue;
 
@@ -963,10 +963,10 @@ static void hfp_ag_ag_accept_call(void){
     int call_indicator_index = get_ag_indicator_index_for_name("call");
     int callsetup_indicator_index = get_ag_indicator_index_for_name("callsetup");
 
-    linked_list_iterator_t it;    
-    linked_list_iterator_init(&it, hfp_get_connections());
-    while (linked_list_iterator_has_next(&it)){
-        hfp_connection_t * connection = (hfp_connection_t *)linked_list_iterator_next(&it);
+    btstack_linked_list_iterator_t it;    
+    btstack_linked_list_iterator_init(&it, hfp_get_connections());
+    while (btstack_linked_list_iterator_has_next(&it)){
+        hfp_connection_t * connection = (hfp_connection_t *)btstack_linked_list_iterator_next(&it);
         if (connection->call_state != HFP_CALL_RINGING) continue;
 
         hfp_ag_hf_stop_ringing(connection);
@@ -982,10 +982,10 @@ static void hfp_ag_ag_accept_call(void){
 
 static void hfp_ag_trigger_reject_call(void){
     int callsetup_indicator_index = get_ag_indicator_index_for_name("callsetup");
-    linked_list_iterator_t it;    
-    linked_list_iterator_init(&it, hfp_get_connections());
-    while (linked_list_iterator_has_next(&it)){
-        hfp_connection_t * connection = (hfp_connection_t *)linked_list_iterator_next(&it);
+    btstack_linked_list_iterator_t it;    
+    btstack_linked_list_iterator_init(&it, hfp_get_connections());
+    while (btstack_linked_list_iterator_has_next(&it)){
+        hfp_connection_t * connection = (hfp_connection_t *)btstack_linked_list_iterator_next(&it);
         if (connection->call_state != HFP_CALL_RINGING &&
             connection->call_state != HFP_CALL_W4_AUDIO_CONNECTION_FOR_IN_BAND_RING) continue;
         hfp_ag_hf_stop_ringing(connection);
@@ -998,10 +998,10 @@ static void hfp_ag_trigger_reject_call(void){
 static void hfp_ag_trigger_terminate_call(void){
     int call_indicator_index = get_ag_indicator_index_for_name("call");
 
-    linked_list_iterator_t it;    
-    linked_list_iterator_init(&it, hfp_get_connections());
-    while (linked_list_iterator_has_next(&it)){
-        hfp_connection_t * connection = (hfp_connection_t *)linked_list_iterator_next(&it);
+    btstack_linked_list_iterator_t it;    
+    btstack_linked_list_iterator_init(&it, hfp_get_connections());
+    while (btstack_linked_list_iterator_has_next(&it)){
+        hfp_connection_t * connection = (hfp_connection_t *)btstack_linked_list_iterator_next(&it);
         hfp_ag_establish_service_level_connection(connection->remote_addr);
         if (connection->call_state == HFP_CALL_IDLE) continue;
         connection->call_state = HFP_CALL_IDLE;
@@ -1037,10 +1037,10 @@ static void hfp_ag_set_call_indicator(){
 }
 
 static void hfp_ag_stop_ringing(void){
-    linked_list_iterator_t it;    
-    linked_list_iterator_init(&it, hfp_get_connections());
-    while (linked_list_iterator_has_next(&it)){
-        hfp_connection_t * connection = (hfp_connection_t *)linked_list_iterator_next(&it);
+    btstack_linked_list_iterator_t it;    
+    btstack_linked_list_iterator_init(&it, hfp_get_connections());
+    while (btstack_linked_list_iterator_has_next(&it)){
+        hfp_connection_t * connection = (hfp_connection_t *)btstack_linked_list_iterator_next(&it);
         if (connection->call_state != HFP_CALL_RINGING &&
             connection->call_state != HFP_CALL_W4_AUDIO_CONNECTION_FOR_IN_BAND_RING) continue;
         hfp_ag_hf_stop_ringing(connection);
@@ -1048,20 +1048,20 @@ static void hfp_ag_stop_ringing(void){
 }
 
 static hfp_connection_t * hfp_ag_connection_for_call_state(hfp_call_state_t call_state){
-    linked_list_iterator_t it;    
-    linked_list_iterator_init(&it, hfp_get_connections());
-    while (linked_list_iterator_has_next(&it)){
-        hfp_connection_t * connection = (hfp_connection_t *)linked_list_iterator_next(&it);
+    btstack_linked_list_iterator_t it;    
+    btstack_linked_list_iterator_init(&it, hfp_get_connections());
+    while (btstack_linked_list_iterator_has_next(&it)){
+        hfp_connection_t * connection = (hfp_connection_t *)btstack_linked_list_iterator_next(&it);
         if (connection->call_state == call_state) return connection;
     }
     return NULL;
 }
 
 static void hfp_ag_send_response_and_hold_state(hfp_response_and_hold_state_t state){
-    linked_list_iterator_t it;    
-    linked_list_iterator_init(&it, hfp_get_connections());
-    while (linked_list_iterator_has_next(&it)){
-        hfp_connection_t * connection = (hfp_connection_t *)linked_list_iterator_next(&it);
+    btstack_linked_list_iterator_t it;    
+    btstack_linked_list_iterator_init(&it, hfp_get_connections());
+    while (btstack_linked_list_iterator_has_next(&it)){
+        hfp_connection_t * connection = (hfp_connection_t *)btstack_linked_list_iterator_next(&it);
         connection->send_response_and_hold_status = state + 1;
     }
 }
@@ -1904,10 +1904,10 @@ static void hfp_handle_rfcomm_data(uint8_t packet_type, uint16_t channel, uint8_
 }
 
 static void hfp_run(void){
-    linked_list_iterator_t it;    
-    linked_list_iterator_init(&it, hfp_get_connections());
-    while (linked_list_iterator_has_next(&it)){
-        hfp_connection_t * connection = (hfp_connection_t *)linked_list_iterator_next(&it);
+    btstack_linked_list_iterator_t it;    
+    btstack_linked_list_iterator_init(&it, hfp_get_connections());
+    while (btstack_linked_list_iterator_has_next(&it)){
+        hfp_connection_t * connection = (hfp_connection_t *)btstack_linked_list_iterator_next(&it);
         hfp_run_for_context(connection);
     }
 }
@@ -2041,10 +2041,10 @@ void hfp_ag_set_use_in_band_ring_tone(int use_in_band_ring_tone){
     } 
     hfp_supported_features = store_bit(hfp_supported_features, HFP_AGSF_IN_BAND_RING_TONE, use_in_band_ring_tone);
         
-    linked_list_iterator_t it;    
-    linked_list_iterator_init(&it, hfp_get_connections());
-    while (linked_list_iterator_has_next(&it)){
-        hfp_connection_t * connection = (hfp_connection_t *)linked_list_iterator_next(&it);
+    btstack_linked_list_iterator_t it;    
+    btstack_linked_list_iterator_init(&it, hfp_get_connections());
+    while (btstack_linked_list_iterator_has_next(&it)){
+        hfp_connection_t * connection = (hfp_connection_t *)btstack_linked_list_iterator_next(&it);
         connection->command = HFP_CMD_CHANGE_IN_BAND_RING_TONE_SETTING;
         hfp_run_for_context(connection);
     }
@@ -2115,10 +2115,10 @@ static void hfp_ag_set_ag_indicator(const char * name, int value){
     hfp_ag_indicators[indicator_index].status = value;
 
 
-    linked_list_iterator_t it;    
-    linked_list_iterator_init(&it, hfp_get_connections());
-    while (linked_list_iterator_has_next(&it)){
-        hfp_connection_t * connection = (hfp_connection_t *)linked_list_iterator_next(&it);
+    btstack_linked_list_iterator_t it;    
+    btstack_linked_list_iterator_init(&it, hfp_get_connections());
+    while (btstack_linked_list_iterator_has_next(&it)){
+        hfp_connection_t * connection = (hfp_connection_t *)btstack_linked_list_iterator_next(&it);
         if (!connection->ag_indicators[indicator_index].enabled) {
             log_info("AG indicator '%s' changed to %u but not enabled", hfp_ag_indicators[indicator_index].name, value);
             continue;

@@ -100,7 +100,7 @@ typedef struct {
 // note: spec mandates single multplexer per device combination
 typedef struct {
     // linked list - assert: first field
-    linked_item_t      item;
+    btstack_linked_item_t      item;
 
     BNEP_CHANNEL_STATE state;	          // Channel state
 
@@ -141,7 +141,7 @@ typedef struct {
 
 /* Internal BNEP service descriptor */
 typedef struct {
-    linked_item_t    item;           // linked list - assert: first field
+    btstack_linked_item_t    item;           // linked list - assert: first field
     uint16_t         service_uuid;   // Service class: PANU, NAP, GN
     uint16_t         max_frame_size; // incomming max. frame size
     

@@ -60,9 +60,9 @@ static int  run_loop_posix_timeval_compare(struct timeval *a, struct timeval *b)
 static int  run_loop_posix_timer_compare(timer_source_t *a, timer_source_t *b);
 
 // the run loop
-static btstack_linked_list_t data_sources;
+static btstack_btstack_linked_list_t data_sources;
 static int data_sources_modified;
-static btstack_linked_list_t timers;
+static btstack_btstack_linked_list_t timers;
 static struct timeval init_tv;
 
 /**
@@ -71,7 +71,7 @@ static struct timeval init_tv;
 static void run_loop_posix_add_data_source(data_source_t *ds){
     data_sources_modified = 1;
     // log_info("run_loop_posix_add_data_source %x with fd %u\n", (int) ds, ds->fd);
-    linked_list_add(&data_sources, (linked_item_t *) ds);
+    btstack_linked_list_add(&data_sources, (btstack_linked_item_t *) ds);
 }
 
 /**
@@ -80,15 +80,15 @@ static void run_loop_posix_add_data_source(data_source_t *ds){
 static int run_loop_posix_remove_data_source(data_source_t *ds){
     data_sources_modified = 1;
     // log_info("run_loop_posix_remove_data_source %x\n", (int) ds);
-    return linked_list_remove(&data_sources, (linked_item_t *) ds);
+    return btstack_linked_list_remove(&data_sources, (btstack_linked_item_t *) ds);
 }
 
 /**
  * Add timer to run_loop (keep list sorted)
  */
 static void run_loop_posix_add_timer(timer_source_t *ts){
-    linked_item_t *it;
-    for (it = (linked_item_t *) &timers; it->next ; it = it->next){
+    btstack_linked_item_t *it;
+    for (it = (btstack_linked_item_t *) &timers; it->next ; it = it->next){
         if ((timer_source_t *) it->next == ts){
             log_error( "run_loop_timer_add error: timer to add already in list!");
             return;
@@ -98,7 +98,7 @@ static void run_loop_posix_add_timer(timer_source_t *ts){
         }
     }
     ts->item.next = it->next;
-    it->next = (linked_item_t *) ts;
+    it->next = (btstack_linked_item_t *) ts;
     // log_info("Added timer %x at %u\n", (int) ts, (unsigned int) ts->timeout.tv_sec);
     // run_loop_posix_dump_timer();
 }
@@ -109,13 +109,13 @@ static void run_loop_posix_add_timer(timer_source_t *ts){
 static int run_loop_posix_remove_timer(timer_source_t *ts){
     // log_info("Removed timer %x at %u\n", (int) ts, (unsigned int) ts->timeout.tv_sec);
     // run_loop_posix_dump_timer();
-    return linked_list_remove(&timers, (linked_item_t *) ts);
+    return btstack_linked_list_remove(&timers, (btstack_linked_item_t *) ts);
 }
 
 static void run_loop_posix_dump_timer(void){
-    linked_item_t *it;
+    btstack_linked_item_t *it;
     int i = 0;
-    for (it = (linked_item_t *) timers; it ; it = it->next){
+    for (it = (btstack_linked_item_t *) timers; it ; it = it->next){
         timer_source_t *ts = (timer_source_t*) it;
         log_info("timer %u, timeout %u\n", i, (unsigned int) ts->timeout.tv_sec);
     }
@@ -131,15 +131,15 @@ static void run_loop_posix_execute(void) {
     struct timeval current_tv;
     struct timeval next_tv;
     struct timeval *timeout;
-    linked_list_iterator_t it;
+    btstack_linked_list_iterator_t it;
     
     while (1) {
         // collect FDs
         FD_ZERO(&descriptors);
         int highest_fd = 0;
-        linked_list_iterator_init(&it, &data_sources);
-        while (linked_list_iterator_has_next(&it)){
-            data_source_t *ds = (data_source_t*) linked_list_iterator_next(&it);
+        btstack_linked_list_iterator_init(&it, &data_sources);
+        while (btstack_linked_list_iterator_has_next(&it)){
+            data_source_t *ds = (data_source_t*) btstack_linked_list_iterator_next(&it);
             if (ds->fd >= 0) {
                 FD_SET(ds->fd, &descriptors);
                 if (ds->fd > highest_fd) {
@@ -175,9 +175,9 @@ static void run_loop_posix_execute(void) {
         
         // log_info("run_loop_posix_execute: before ds check\n");
         data_sources_modified = 0;
-        linked_list_iterator_init(&it, &data_sources);
-        while (linked_list_iterator_has_next(&it) && !data_sources_modified){
-            data_source_t *ds = (data_source_t*) linked_list_iterator_next(&it);
+        btstack_linked_list_iterator_init(&it, &data_sources);
+        while (btstack_linked_list_iterator_has_next(&it) && !data_sources_modified){
+            data_source_t *ds = (data_source_t*) btstack_linked_list_iterator_next(&it);
             // log_info("run_loop_posix_execute: check %x with fd %u\n", (int) ds, ds->fd);
             if (FD_ISSET(ds->fd, &descriptors)) {
                 // log_info("run_loop_posix_execute: process %x with fd %u\n", (int) ds, ds->fd);

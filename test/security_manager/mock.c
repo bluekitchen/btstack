@@ -19,7 +19,7 @@ static uint16_t packet_buffer_len = 0;
 static uint8_t aes128_cyphertext[16];
 
 static hci_connection_t  the_connection;
-static btstack_linked_list_t     connections;
+static btstack_btstack_linked_list_t     connections;
 
 void mock_init(void){
 	the_connection.item.next = NULL;
@@ -131,8 +131,8 @@ hci_connection_t * hci_connection_for_bd_addr_and_type(bd_addr_t addr, bd_addr_t
 hci_connection_t * hci_connection_for_handle(hci_con_handle_t con_handle){
 	return &the_connection;
 }
-void hci_connections_get_iterator(linked_list_iterator_t *it){
-    linked_list_iterator_init(it, &connections);
+void hci_connections_get_iterator(btstack_linked_list_iterator_t *it){
+    btstack_linked_list_iterator_init(it, &connections);
 }
 
 // get addr type and address used in advertisement packets

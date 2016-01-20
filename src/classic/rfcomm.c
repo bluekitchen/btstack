@@ -78,9 +78,9 @@
 static uint16_t      rfcomm_client_cid_generator;  // used for client channel IDs
 
 // linked lists for all
-static btstack_linked_list_t rfcomm_multiplexers = NULL;
-static btstack_linked_list_t rfcomm_channels = NULL;
-static btstack_linked_list_t rfcomm_services = NULL;
+static btstack_btstack_linked_list_t rfcomm_multiplexers = NULL;
+static btstack_btstack_linked_list_t rfcomm_channels = NULL;
+static btstack_btstack_linked_list_t rfcomm_services = NULL;
 
 static gap_security_level_t rfcomm_security_level;
 
@@ -240,14 +240,14 @@ static rfcomm_multiplexer_t * rfcomm_multiplexer_create_for_addr(bd_addr_t addr)
     BD_ADDR_COPY(&multiplexer->remote_addr, addr);
 
     // add to services list
-    linked_list_add(&rfcomm_multiplexers, (linked_item_t *) multiplexer);
+    btstack_linked_list_add(&rfcomm_multiplexers, (btstack_linked_item_t *) multiplexer);
     
     return multiplexer;
 }
 
 static rfcomm_multiplexer_t * rfcomm_multiplexer_for_addr(bd_addr_t addr){
-    linked_item_t *it;
-    for (it = (linked_item_t *) rfcomm_multiplexers; it ; it = it->next){
+    btstack_linked_item_t *it;
+    for (it = (btstack_linked_item_t *) rfcomm_multiplexers; it ; it = it->next){
         rfcomm_multiplexer_t * multiplexer = ((rfcomm_multiplexer_t *) it);
         if (BD_ADDR_CMP(addr, multiplexer->remote_addr) == 0) {
             return multiplexer;
@@ -257,8 +257,8 @@ static rfcomm_multiplexer_t * rfcomm_multiplexer_for_addr(bd_addr_t addr){
 }
 
 static rfcomm_multiplexer_t * rfcomm_multiplexer_for_l2cap_cid(uint16_t l2cap_cid) {
-    linked_item_t *it;
-    for (it = (linked_item_t *) rfcomm_multiplexers; it ; it = it->next){
+    btstack_linked_item_t *it;
+    for (it = (btstack_linked_item_t *) rfcomm_multiplexers; it ; it = it->next){
         rfcomm_multiplexer_t * multiplexer = ((rfcomm_multiplexer_t *) it);
         if (multiplexer->l2cap_cid == l2cap_cid) {
             return multiplexer;
@@ -268,8 +268,8 @@ static rfcomm_multiplexer_t * rfcomm_multiplexer_for_l2cap_cid(uint16_t l2cap_ci
 }
 
 static int rfcomm_multiplexer_has_channels(rfcomm_multiplexer_t * multiplexer){
-    linked_item_t *it;
-    for (it = (linked_item_t *) rfcomm_channels; it ; it = it->next){
+    btstack_linked_item_t *it;
+    for (it = (btstack_linked_item_t *) rfcomm_channels; it ; it = it->next){
         rfcomm_channel_t * channel = ((rfcomm_channel_t *) it);
         if (channel->multiplexer == multiplexer) {
             return 1;
@@ -282,9 +282,9 @@ static int rfcomm_multiplexer_has_channels(rfcomm_multiplexer_t * multiplexer){
 
 static void rfcomm_dump_channels(void){
 #ifndef EMBEDDED
-    linked_item_t * it;
+    btstack_linked_item_t * it;
     int channels = 0;
-    for (it = (linked_item_t *) rfcomm_channels; it ; it = it->next){
+    for (it = (btstack_linked_item_t *) rfcomm_channels; it ; it = it->next){
         rfcomm_channel_t * channel = (rfcomm_channel_t *) it;
         log_info("Channel #%u: addr %p, state %u", channels, channel, channel->state);
         channels++;
@@ -353,14 +353,14 @@ static rfcomm_channel_t * rfcomm_channel_create(rfcomm_multiplexer_t * multiplex
     rfcomm_channel_initialize(channel, multiplexer, service, server_channel);
     
     // add to services list
-    linked_list_add(&rfcomm_channels, (linked_item_t *) channel);
+    btstack_linked_list_add(&rfcomm_channels, (btstack_linked_item_t *) channel);
     
     return channel;
 }
 
 static rfcomm_channel_t * rfcomm_channel_for_rfcomm_cid(uint16_t rfcomm_cid){
-    linked_item_t *it;
-    for (it = (linked_item_t *) rfcomm_channels; it ; it = it->next){
+    btstack_linked_item_t *it;
+    for (it = (btstack_linked_item_t *) rfcomm_channels; it ; it = it->next){
         rfcomm_channel_t * channel = ((rfcomm_channel_t *) it);
         if (channel->rfcomm_cid == rfcomm_cid) {
             return channel;
@@ -370,8 +370,8 @@ static rfcomm_channel_t * rfcomm_channel_for_rfcomm_cid(uint16_t rfcomm_cid){
 }
 
 static rfcomm_channel_t * rfcomm_channel_for_multiplexer_and_dlci(rfcomm_multiplexer_t * multiplexer, uint8_t dlci){
-    linked_item_t *it;
-    for (it = (linked_item_t *) rfcomm_channels; it ; it = it->next){
+    btstack_linked_item_t *it;
+    for (it = (btstack_linked_item_t *) rfcomm_channels; it ; it = it->next){
         rfcomm_channel_t * channel = ((rfcomm_channel_t *) it);
         if (channel->dlci == dlci && channel->multiplexer == multiplexer) {
             return channel;
@@ -381,8 +381,8 @@ static rfcomm_channel_t * rfcomm_channel_for_multiplexer_and_dlci(rfcomm_multipl
 }
 
 static rfcomm_service_t * rfcomm_service_for_channel(uint8_t server_channel){
-    linked_item_t *it;
-    for (it = (linked_item_t *) rfcomm_services; it ; it = it->next){
+    btstack_linked_item_t *it;
+    for (it = (btstack_linked_item_t *) rfcomm_services; it ; it = it->next){
         rfcomm_service_t * service = ((rfcomm_service_t *) it);
         if ( service->server_channel == server_channel){
             return service;
@@ -684,7 +684,7 @@ static void rfcomm_multiplexer_stop_timer(rfcomm_multiplexer_t * multiplexer){
     }
 }
 static void rfcomm_multiplexer_free(rfcomm_multiplexer_t * multiplexer){
-    linked_list_remove( &rfcomm_multiplexers, (linked_item_t *) multiplexer);
+    btstack_linked_list_remove( &rfcomm_multiplexers, (btstack_linked_item_t *) multiplexer);
     btstack_memory_rfcomm_multiplexer_free(multiplexer);
 }
 
@@ -693,7 +693,7 @@ static void rfcomm_multiplexer_finalize(rfcomm_multiplexer_t * multiplexer){
     rfcomm_multiplexer_stop_timer(multiplexer);
     
     // close and remove all channels
-    linked_item_t *it = (linked_item_t *) &rfcomm_channels;
+    btstack_linked_item_t *it = (btstack_linked_item_t *) &rfcomm_channels;
     while (it->next){
         rfcomm_channel_t * channel = (rfcomm_channel_t *) it->next;
         if (channel->multiplexer == multiplexer) {
@@ -717,7 +717,7 @@ static void rfcomm_multiplexer_finalize(rfcomm_multiplexer_t * multiplexer){
 }
 
 static void rfcomm_multiplexer_timer_handler(timer_source_t *timer){
-    rfcomm_multiplexer_t * multiplexer = (rfcomm_multiplexer_t *) linked_item_get_user( (linked_item_t *) timer);
+    rfcomm_multiplexer_t * multiplexer = (rfcomm_multiplexer_t *) btstack_linked_item_get_user( (btstack_linked_item_t *) timer);
     if (rfcomm_multiplexer_has_channels(multiplexer)) return;
 
     log_info("rfcomm_multiplexer_timer_handler timeout: shutting down multiplexer! (no channels)");
@@ -736,7 +736,7 @@ static void rfcomm_multiplexer_prepare_idle_timer(rfcomm_multiplexer_t * multipl
     // start idle timer for multiplexer timeout check as there are no rfcomm channels yet
     run_loop_set_timer(&multiplexer->timer, RFCOMM_MULIPLEXER_TIMEOUT_MS);
     multiplexer->timer.process = rfcomm_multiplexer_timer_handler;
-    linked_item_set_user((linked_item_t*) &multiplexer->timer, multiplexer);
+    btstack_linked_item_set_user((btstack_linked_item_t*) &multiplexer->timer, multiplexer);
     run_loop_add_timer(&multiplexer->timer);
     multiplexer->timer_active = 1;
 }
@@ -748,8 +748,8 @@ static void rfcomm_multiplexer_opened(rfcomm_multiplexer_t *multiplexer){
     rfcomm_channel_event_t event = { CH_EVT_MULTIPLEXER_READY };
     
     // transition of channels that wait for multiplexer 
-    linked_item_t *it;
-    for (it = (linked_item_t *) rfcomm_channels; it ; it = it->next){
+    btstack_linked_item_t *it;
+    for (it = (btstack_linked_item_t *) rfcomm_channels; it ; it = it->next){
         rfcomm_channel_t * channel = ((rfcomm_channel_t *) it);
         if (channel->multiplexer != multiplexer) continue;
         rfcomm_channel_state_machine(channel, &event);
@@ -832,7 +832,7 @@ static int rfcomm_multiplexer_hci_event_handler(uint8_t *packet, uint16_t size){
                 rfcomm_multiplexer_stop_timer(multiplexer);
 
                 // emit rfcomm_channel_opened with status and free channel
-                linked_item_t * it = (linked_item_t *) &rfcomm_channels;
+                btstack_linked_item_t * it = (btstack_linked_item_t *) &rfcomm_channels;
                 while (it->next) {
                     rfcomm_channel_t * channel = (rfcomm_channel_t *) it->next;
                     if (channel->multiplexer == multiplexer){
@@ -1019,8 +1019,8 @@ static void rfcomm_multiplexer_state_machine(rfcomm_multiplexer_t * multiplexer,
         if (multiplexer->fcon == 0) return;
         // trigger client to send again after sending FCon Response
         uint8_t packet_sent_event[] = { DAEMON_EVENT_HCI_PACKET_SENT, 0};
-        linked_item_t *it;
-        for (it = (linked_item_t *) rfcomm_channels; it ; it = it->next){
+        btstack_linked_item_t *it;
+        for (it = (btstack_linked_item_t *) rfcomm_channels; it ; it = it->next){
             rfcomm_channel_t * channel = ((rfcomm_channel_t *) it);
             if (channel->multiplexer != multiplexer) continue;
             (*app_packet_handler)(HCI_EVENT_PACKET, 0, (uint8_t *) packet_sent_event, sizeof(packet_sent_event));
@@ -1184,7 +1184,7 @@ static void rfcomm_channel_finalize(rfcomm_channel_t *channel){
     rfcomm_multiplexer_t *multiplexer = channel->multiplexer;
 
     // remove from list
-    linked_list_remove( &rfcomm_channels, (linked_item_t *) channel);
+    btstack_linked_list_remove( &rfcomm_channels, (btstack_linked_item_t *) channel);
 
     // free channel
     btstack_memory_rfcomm_channel_free(channel);
@@ -1809,10 +1809,10 @@ static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, rfcomm_chann
 // process outstanding signaling tasks
 static void rfcomm_run(void){
     
-    linked_item_t *it;
-    linked_item_t *next;
+    btstack_linked_item_t *it;
+    btstack_linked_item_t *next;
     
-    for (it = (linked_item_t *) rfcomm_multiplexers; it ; it = next){
+    for (it = (btstack_linked_item_t *) rfcomm_multiplexers; it ; it = next){
 
         next = it->next;    // be prepared for removal of channel in state machine
         
@@ -1827,7 +1827,7 @@ static void rfcomm_run(void){
         rfcomm_multiplexer_state_machine(multiplexer, MULT_EV_READY_TO_SEND);
     }
 
-    for (it = (linked_item_t *) rfcomm_channels; it ; it = next){
+    for (it = (btstack_linked_item_t *) rfcomm_channels; it ; it = next){
 
         next = it->next;    // be prepared for removal of channel in state machine
 
@@ -2097,7 +2097,7 @@ static uint8_t rfcomm_register_service_internal(uint8_t channel, uint16_t max_fr
     }
     
     // register with l2cap if not registered before, max MTU
-    if (linked_list_empty(&rfcomm_services)){
+    if (btstack_linked_list_empty(&rfcomm_services)){
         l2cap_register_service(rfcomm_packet_handler, PSM_RFCOMM, 0xffff, rfcomm_security_level);
     }
     
@@ -2108,7 +2108,7 @@ static uint8_t rfcomm_register_service_internal(uint8_t channel, uint16_t max_fr
     service->incoming_initial_credits = initial_credits;
     
     // add to services list
-    linked_list_add(&rfcomm_services, (linked_item_t *) service);
+    btstack_linked_list_add(&rfcomm_services, (btstack_linked_item_t *) service);
     
     return 0;
 }
@@ -2125,11 +2125,11 @@ void rfcomm_unregister_service(uint8_t service_channel){
     log_info("RFCOMM_UNREGISTER_SERVICE #%u", service_channel);
     rfcomm_service_t *service = rfcomm_service_for_channel(service_channel);
     if (!service) return;
-    linked_list_remove(&rfcomm_services, (linked_item_t *) service);
+    btstack_linked_list_remove(&rfcomm_services, (btstack_linked_item_t *) service);
     btstack_memory_rfcomm_service_free(service);
     
     // unregister if no services active
-    if (linked_list_empty(&rfcomm_services)){
+    if (btstack_linked_list_empty(&rfcomm_services)){
         // bt_send_cmd(&l2cap_unregister_service, PSM_RFCOMM);
         l2cap_unregister_service(PSM_RFCOMM);
     }

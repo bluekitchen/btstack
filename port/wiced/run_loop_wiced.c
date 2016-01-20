@@ -62,7 +62,7 @@ static const run_loop_t run_loop_wiced;
 static wiced_queue_t run_loop_queue;
 
 // the run loop
-static btstack_linked_list_t timers;
+static btstack_btstack_linked_list_t timers;
 
 static uint32_t run_loop_wiced_get_time_ms(void){
     wiced_time_t time;
@@ -79,8 +79,8 @@ static void run_loop_wiced_set_timer(timer_source_t *ts, uint32_t timeout_in_ms)
  * Add timer to run_loop (keep list sorted)
  */
 static void run_loop_wiced_add_timer(timer_source_t *ts){
-    linked_item_t *it;
-    for (it = (linked_item_t *) &timers; it->next ; it = it->next){
+    btstack_linked_item_t *it;
+    for (it = (btstack_linked_item_t *) &timers; it->next ; it = it->next){
         // don't add timer that's already in there
         if ((timer_source_t *) it->next == ts){
             log_error( "run_loop_timer_add error: timer to add already in list!");
@@ -91,21 +91,21 @@ static void run_loop_wiced_add_timer(timer_source_t *ts){
         }
     }
     ts->item.next = it->next;
-    it->next = (linked_item_t *) ts;
+    it->next = (btstack_linked_item_t *) ts;
 }
 
 /**
  * Remove timer from run loop
  */
 static int run_loop_wiced_remove_timer(timer_source_t *ts){
-    return linked_list_remove(&timers, (linked_item_t *) ts);
+    return btstack_linked_list_remove(&timers, (btstack_linked_item_t *) ts);
 }
 
 static void run_loop_wiced_dump_timer(void){
 #ifdef ENABLE_LOG_INFO 
-    linked_item_t *it;
+    btstack_linked_item_t *it;
     int i = 0;
-    for (it = (linked_item_t *) timers; it ; it = it->next){
+    for (it = (btstack_linked_item_t *) timers; it ; it = it->next){
         timer_source_t *ts = (timer_source_t*) it;
         log_info("timer %u, timeout %u\n", i, (unsigned int) ts->timeout);
     }

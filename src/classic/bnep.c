@@ -61,8 +61,8 @@
 #define BNEP_CONNECTION_TIMEOUT_MS 10000
 #define BNEP_CONNECTION_MAX_RETRIES 1
 
-static btstack_linked_list_t bnep_services = NULL;
-static btstack_linked_list_t bnep_channels = NULL;
+static btstack_btstack_linked_list_t bnep_services = NULL;
+static btstack_btstack_linked_list_t bnep_channels = NULL;
 
 static gap_security_level_t bnep_security_level;
 
@@ -612,7 +612,7 @@ int bnep_set_multicast_filter(uint16_t bnep_cid,  bnep_multi_filter_t *filter, u
 /* BNEP timeout timer helper function */
 static void bnep_channel_timer_handler(timer_source_t *timer)
 {
-    bnep_channel_t *channel = (bnep_channel_t *)linked_item_get_user((linked_item_t *) timer);
+    bnep_channel_t *channel = (bnep_channel_t *)btstack_linked_item_get_user((btstack_linked_item_t *) timer);
     // retry send setup connection at least one time
     if (channel->state == BNEP_CHANNEL_STATE_WAIT_FOR_CONNECTION_RESPONSE){
         if (channel->retry_count < BNEP_CONNECTION_MAX_RETRIES){
@@ -646,7 +646,7 @@ static void bnep_channel_start_timer(bnep_channel_t *channel, int timeout)
     /* Start bnep channel timeout check timer */
     run_loop_set_timer(&channel->timer, timeout);
     channel->timer.process = bnep_channel_timer_handler;
-    linked_item_set_user((linked_item_t*) &channel->timer, channel);
+    btstack_linked_item_set_user((btstack_linked_item_t*) &channel->timer, channel);
     run_loop_add_timer(&channel->timer);
     channel->timer_active = 1;    
 }
@@ -692,15 +692,15 @@ static bnep_channel_t * bnep_channel_create_for_addr(bd_addr_t addr)
     channel->retry_count = 0;
 
     /* Finally add it to the channel list */
-    linked_list_add(&bnep_channels, (linked_item_t *) channel);
+    btstack_linked_list_add(&bnep_channels, (btstack_linked_item_t *) channel);
     
     return channel;
 }
 
 static bnep_channel_t* bnep_channel_for_addr(bd_addr_t addr)
 {
-    linked_item_t *it;
-    for (it = (linked_item_t *) bnep_channels; it ; it = it->next){
+    btstack_linked_item_t *it;
+    for (it = (btstack_linked_item_t *) bnep_channels; it ; it = it->next){
         bnep_channel_t *channel = ((bnep_channel_t *) it);
         if (BD_ADDR_CMP(addr, channel->remote_addr) == 0) {
             return channel;
@@ -711,8 +711,8 @@ static bnep_channel_t* bnep_channel_for_addr(bd_addr_t addr)
 
 static bnep_channel_t * bnep_channel_for_l2cap_cid(uint16_t l2cap_cid)
 {
-    linked_item_t *it;
-    for (it = (linked_item_t *) bnep_channels; it ; it = it->next){
+    btstack_linked_item_t *it;
+    for (it = (btstack_linked_item_t *) bnep_channels; it ; it = it->next){
         bnep_channel_t *channel = ((bnep_channel_t *) it);
         if (channel->l2cap_cid == l2cap_cid) {
             return channel;
@@ -723,8 +723,8 @@ static bnep_channel_t * bnep_channel_for_l2cap_cid(uint16_t l2cap_cid)
 
 static bnep_service_t * bnep_service_for_uuid(uint16_t uuid)
 {
-    linked_item_t *it;
-    for (it = (linked_item_t *) bnep_services; it ; it = it->next){
+    btstack_linked_item_t *it;
+    for (it = (btstack_linked_item_t *) bnep_services; it ; it = it->next){
         bnep_service_t * service = ((bnep_service_t *) it);
         if ( service->service_uuid == uuid){
             return service;
@@ -735,7 +735,7 @@ static bnep_service_t * bnep_service_for_uuid(uint16_t uuid)
 
 static void bnep_channel_free(bnep_channel_t *channel)
 {
-    linked_list_remove( &bnep_channels, (linked_item_t *) channel);
+    btstack_linked_list_remove( &bnep_channels, (btstack_linked_item_t *) channel);
     btstack_memory_bnep_channel_free(channel);
 }
 
@@ -1507,10 +1507,10 @@ static void bnep_channel_state_machine(bnep_channel_t* channel, bnep_channel_eve
 /* Process oustanding signaling tasks */
 static void bnep_run(void)
 {
-    linked_item_t *it;
-    linked_item_t *next;
+    btstack_linked_item_t *it;
+    btstack_linked_item_t *next;
     
-    for (it = (linked_item_t *) bnep_channels; it ; it = next){
+    for (it = (btstack_linked_item_t *) bnep_channels; it ; it = next){
 
         next = it->next;    // be prepared for removal of channel in state machine
 
@@ -1607,7 +1607,7 @@ uint8_t bnep_register_service(uint16_t service_uuid, uint16_t max_frame_size)
     service->service_uuid    = service_uuid;
 
     /* Add to services list */
-    linked_list_add(&bnep_services, (linked_item_t *) service);
+    btstack_linked_list_add(&bnep_services, (btstack_linked_item_t *) service);
     
     return 0;
 }
@@ -1621,7 +1621,7 @@ void bnep_unregister_service(uint16_t service_uuid)
         return;
     }
 
-    linked_list_remove(&bnep_services, (linked_item_t *) service);
+    btstack_linked_list_remove(&bnep_services, (btstack_linked_item_t *) service);
     btstack_memory_bnep_service_free(service);
     service = NULL;
     

@@ -36,53 +36,59 @@
  */
 
 /*
- *  linked_list.h
- *
- *  Created by Matthias Ringwald on 7/13/09.
+ *  btstack_linked_list.h
  */
 
-#ifndef __LINKED_LIST_H
-#define __LINKED_LIST_H
+#ifndef __BTSTACK_LINKED_LIST_H
+#define __BTSTACK_LINKED_LIST_H
 
 #if defined __cplusplus
 extern "C" {
 #endif
 	
-typedef struct linked_item {
-    struct linked_item *next; // <-- next element in list, or NULL
+typedef struct btstack_linked_item {
+    struct btstack_linked_item *next; // <-- next element in list, or NULL
     void *user_data;          // <-- pointer to struct base
-} linked_item_t;
+} btstack_linked_item_t;
 
-typedef linked_item_t * btstack_linked_list_t;
+typedef btstack_linked_item_t * btstack_btstack_linked_list_t;
 
 typedef struct {
 	int advance_on_next;
-    linked_item_t * prev;	// points to the item before the current one
-    linked_item_t * curr;	// points to the current item (to detect item removal)
-} linked_list_iterator_t;
+    btstack_linked_item_t * prev;	// points to the item before the current one
+    btstack_linked_item_t * curr;	// points to the current item (to detect item removal)
+} btstack_linked_list_iterator_t;
 
 
-void            linked_item_set_user(linked_item_t *item, void *user_data);        // <-- set user data
-void *          linked_item_get_user(linked_item_t *item);                         // <-- get user data
-int             linked_list_empty(btstack_linked_list_t * list);
-void            linked_list_add(btstack_linked_list_t * list, linked_item_t *item);        // <-- add item to list as first element
-void            linked_list_add_tail(btstack_linked_list_t * list, linked_item_t *item);   // <-- add item to list as last element
-int             linked_list_remove(btstack_linked_list_t * list, linked_item_t *item);     // <-- remove item from list
-linked_item_t * linked_list_get_last_item(btstack_linked_list_t * list);                   // <-- find the last item in the list
+// set user data
+void                    btstack_linked_item_set_user(btstack_linked_item_t *item, void *user_data);
+// get user data
+void *                  btstack_linked_item_get_user(btstack_linked_item_t *item);
+// test if list is empty
+int                     btstack_linked_list_empty(btstack_btstack_linked_list_t * list);
+// add item to list as first element
+void                    btstack_linked_list_add(btstack_btstack_linked_list_t * list, btstack_linked_item_t *item);       
+// add item to list as last element
+void                    btstack_linked_list_add_tail(btstack_btstack_linked_list_t * list, btstack_linked_item_t *item); 
+// remove item from list
+int                     btstack_linked_list_remove(btstack_btstack_linked_list_t * list, btstack_linked_item_t *item); 
+// find the last item in the list
+btstack_linked_item_t * btstack_linked_list_get_last_item(btstack_btstack_linked_list_t * list);   
 
 /**
  * @brief Counts number of items in list
  * @returns number of items in list
  */
-int linked_list_count(btstack_linked_list_t * list);
+int btstack_linked_list_count(btstack_btstack_linked_list_t * list);
 
 //
-// iterator for linked lists. alloes to remove current element. also robust against removal of current element by linked_list_remove
+// iterator for linked lists. allows to remove current element.
+// robust against removal of current element by btstack_linked_list_remove.
 //
-void            linked_list_iterator_init(linked_list_iterator_t * it, btstack_linked_list_t * list);
-int             linked_list_iterator_has_next(linked_list_iterator_t * it);
-linked_item_t * linked_list_iterator_next(linked_list_iterator_t * it);
-void            linked_list_iterator_remove(linked_list_iterator_t * it);
+void            btstack_linked_list_iterator_init(btstack_linked_list_iterator_t * it, btstack_btstack_linked_list_t * list);
+int             btstack_linked_list_iterator_has_next(btstack_linked_list_iterator_t * it);
+btstack_linked_item_t * btstack_linked_list_iterator_next(btstack_linked_list_iterator_t * it);
+void            btstack_linked_list_iterator_remove(btstack_linked_list_iterator_t * it);
 
 void test_linked_list(void);
 
@@ -90,4 +96,4 @@ void test_linked_list(void);
 }
 #endif
 
-#endif // __LINKED_LIST_H
+#endif // __BTSTACK_LINKED_LIST_H

@@ -96,7 +96,7 @@ void run_loop_cocoa_add_data_source(data_source_t *dataSource){
 	// create run loop source
 	CFRunLoopSourceRef socketRunLoop = CFSocketCreateRunLoopSource ( kCFAllocatorDefault, socket, 0);
     
-    // hack: store CFSocketRef in "next" and CFRunLoopSourceRef in "user_data" of linked_item_t
+    // hack: store CFSocketRef in "next" and CFRunLoopSourceRef in "user_data" of btstack_linked_item_t
     dataSource->item.next      = (void *) socket;
     dataSource->item.user_data = (void *) socketRunLoop;
 

@@ -46,7 +46,7 @@
 #include "btstack_linked_list.h"
 
 // This lists should be only accessed by tests.
-static btstack_linked_list_t db_mem_services = NULL;
+static btstack_btstack_linked_list_t db_mem_services = NULL;
 
 // Device info
 static void db_open(void){
@@ -58,11 +58,11 @@ static void db_close(void){
 // MARK: PERSISTENT RFCOMM CHANNEL ALLOCATION
 uint8_t rfcomm_service_db_channel_for_service(const char *serviceName){
     
-    linked_item_t *it;
+    btstack_linked_item_t *it;
     db_mem_service_t * item;
     uint8_t max_channel = 1;
 
-    for (it = (linked_item_t *) db_mem_services; it ; it = it->next){
+    for (it = (btstack_linked_item_t *) db_mem_services; it ; it = it->next){
         item = (db_mem_service_t *) it;
         if (strncmp(item->service_name, serviceName, MAX_NAME_LEN) == 0) {
             // Match found
@@ -80,6 +80,6 @@ uint8_t rfcomm_service_db_channel_for_service(const char *serviceName){
     
     strncpy(newItem->service_name, serviceName, MAX_NAME_LEN);
     newItem->channel = max_channel;
-    linked_list_add(&db_mem_services, (linked_item_t *) newItem);
+    btstack_linked_list_add(&db_mem_services, (btstack_linked_item_t *) newItem);
     return max_channel;
 }

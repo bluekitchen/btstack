@@ -49,7 +49,7 @@ extern "C" {
 void sm_test_set_irk(sm_key_t irk);
 
 typedef struct {
-    linked_item_t  item;
+    btstack_linked_item_t  item;
     bd_addr_t      address;
     bd_addr_type_t address_type;
 } sm_lookup_entry_t;

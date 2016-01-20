@@ -93,7 +93,7 @@ const remote_device_db_t * remote_device_db_fs_instance(void);
 #define MAX_NAME_LEN 32
 typedef struct {
     // linked list - assert: first field
-    linked_item_t    item;
+    btstack_linked_item_t    item;
     
     bd_addr_t bd_addr;
 } db_mem_device_t;
@@ -111,7 +111,7 @@ typedef struct {
 
 typedef struct {
     // linked list - assert: first field
-    linked_item_t    item;
+    btstack_linked_item_t    item;
     
     char service_name[MAX_NAME_LEN];
     uint8_t channel;
