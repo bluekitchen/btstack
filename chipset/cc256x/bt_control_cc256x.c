@@ -74,7 +74,7 @@
 #include <avr/pgmspace.h>
 #endif
 
-#include "bt_control.h"
+#include "btstack_control.h"
 
 
 // actual init script provided by seperate .c file

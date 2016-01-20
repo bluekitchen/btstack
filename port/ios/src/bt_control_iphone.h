@@ -44,7 +44,7 @@
 #ifndef __BT_CONTROL_IPHONE_H
 #define __BT_CONTROL_IPHONE_H
  
-#include "bt_control.h"
+#include "btstack_control.h"
 
 #if defined __cplusplus
 extern "C" {

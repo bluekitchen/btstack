@@ -47,7 +47,7 @@
 #include "btstack-config.h"
 
 #include "bluetooth.h"
-#include "bt_control.h"
+#include "btstack_control.h"
 #include "btstack.h"
 #include "btstack_defines.h"
 #include "btstack_memory.h"

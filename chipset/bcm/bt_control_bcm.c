@@ -48,7 +48,7 @@
 #include <stdio.h> 
 #include <string.h>   /* memcpy */
 
-#include "bt_control.h"
+#include "btstack_control.h"
 #include "btstack_debug.h"
 
 // actual init script provided by separate bt_firmware_image.c from WICED SDK

@@ -48,7 +48,7 @@ extern "C" {
 #endif
 
 #include <stdint.h>
-#include "bt_control.h"
+#include "btstack_control.h"
 
 bt_control_t * bt_control_bcm_instance(void);
 

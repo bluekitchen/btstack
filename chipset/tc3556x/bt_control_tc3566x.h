@@ -52,7 +52,7 @@
 extern "C" {
 #endif
 
-#include "bt_control.h"
+#include "btstack_control.h"
 
 bt_control_t *bt_control_tc3566x_instance(void);
 

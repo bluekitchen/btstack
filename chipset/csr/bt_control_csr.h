@@ -49,7 +49,7 @@ extern "C" {
 #endif
 
 #include <stdint.h>
-#include "bt_control.h"
+#include "btstack_control.h"
 #include "hci_transport.h"
 
 bt_control_t *     bt_control_csr_instance(void);
