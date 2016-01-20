@@ -633,7 +633,7 @@ static void bnep_channel_timer_handler(timer_source_t *timer)
 static void bnep_channel_stop_timer(bnep_channel_t *channel)
 {
     if (channel->timer_active) {
-        run_loop_remove_timer(&channel->timer);
+        btstack_run_loop_remove_timer(&channel->timer);
         channel->timer_active = 0;
     }
 }
@@ -644,10 +644,10 @@ static void bnep_channel_start_timer(bnep_channel_t *channel, int timeout)
     bnep_channel_stop_timer(channel);
 
     /* Start bnep channel timeout check timer */
-    run_loop_set_timer(&channel->timer, timeout);
+    btstack_run_loop_set_timer(&channel->timer, timeout);
     channel->timer.process = bnep_channel_timer_handler;
     btstack_linked_item_set_user((btstack_linked_item_t*) &channel->timer, channel);
-    run_loop_add_timer(&channel->timer);
+    btstack_run_loop_add_timer(&channel->timer);
     channel->timer_active = 1;    
 }
 

@@ -233,8 +233,8 @@ static void heartbeat_handler(struct timer *ts){
             log_error("att_server_notify -> error 0X%02x", err);
         }
     }
-    run_loop_set_timer(ts, HEARTBEAT_PERIOD_MS);
-    run_loop_add_timer(ts);
+    btstack_run_loop_set_timer(ts, HEARTBEAT_PERIOD_MS);
+    btstack_run_loop_add_timer(ts);
 } 
 /* LISTING_END */
 
@@ -277,8 +277,8 @@ int btstack_main(void)
 
     // set one-shot timer
     heartbeat.process = &heartbeat_handler;
-    run_loop_set_timer(&heartbeat, HEARTBEAT_PERIOD_MS);
-    run_loop_add_timer(&heartbeat);
+    btstack_run_loop_set_timer(&heartbeat, HEARTBEAT_PERIOD_MS);
+    btstack_run_loop_add_timer(&heartbeat);
 
     // setup advertisements
     uint16_t adv_int_min = 0x0030;

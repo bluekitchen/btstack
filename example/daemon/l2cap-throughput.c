@@ -73,8 +73,8 @@ void prepare_packet(void){
 }
 void  timer_handler(struct timer *ts){
 	bt_send_cmd(&hci_read_bd_addr);
-	run_loop_set_timer(&timer, 3000);
-	run_loop_add_timer(&timer);
+	btstack_run_loop_set_timer(&timer, 3000);
+	btstack_run_loop_add_timer(&timer);
 };
 
 void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
@@ -107,8 +107,8 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 	                   if (serverMode) {
 						   printf("Waiting for incoming L2CAP connection on PSM %04x...\n", PSM_TEST);
 						   timer.process = timer_handler;
-						   run_loop_set_timer(&timer, 3000);
-						   // run_loop_add_timer(&timer);
+						   btstack_run_loop_set_timer(&timer, 3000);
+						   // btstack_run_loop_add_timer(&timer);
 				        } else {
 				        	bt_send_cmd(&hci_write_class_of_device, 0x38010c);
 				        }
@@ -201,7 +201,7 @@ int main (int argc, const char * argv[]){
         }
     }
 
-	run_loop_init(run_loop_posix_get_instance());
+	btstack_run_loop_init(btstack_run_loop_posix_get_instance());
 	int err = bt_open();
 	if (err) {
 		printf("Failed to open connection to BTdaemon\n");
@@ -218,7 +218,7 @@ int main (int argc, const char * argv[]){
     }
     printf(" * MTU: 1000 bytes\n");
 	
-	run_loop_execute();
+	btstack_run_loop_execute();
 	bt_close();
 	return 0;
 }

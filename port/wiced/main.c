@@ -86,7 +86,7 @@ void application_start(void){
 
     // start with BTstack init - especially configure HCI Transport
     btstack_memory_init();
-    run_loop_init(run_loop_wiced_get_instance());
+    btstack_run_loop_init(btstack_run_loop_wiced_get_instance());
     
     // enable full log output while porting
     // hci_dump_open(NULL, HCI_DUMP_STDOUT);
@@ -107,7 +107,7 @@ void application_start(void){
     btstack_main();
 
     // go
-    run_loop_execute();
+    btstack_run_loop_execute();
 
     while (1){};
 }

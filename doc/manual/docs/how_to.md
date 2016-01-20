@@ -93,12 +93,12 @@ expects to get called periodically to keep its time, see Section
 [on time abstraction](#sec:timeAbstractionPorting) for more on the 
 tick hardware abstraction.
 
-The run loop is set up by calling *run_loop_init* function for
+The run loop is set up by calling *btstack_run_loop_init* function for
 embedded systems:
 
 <!-- -->
 
-    run_loop_init(run_loop_embedded_get_instance());
+    btstack_run_loop_init(btstack_run_loop_embedded_get_instance());
 
 The Run loop API is provided [here](appendix/apis/#sec:runLoopAPIAppendix). To
 enable the use of timers, make sure that you defined HAVE_TICK in the

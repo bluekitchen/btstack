@@ -19,7 +19,7 @@ embedded system with a Bluetooth chipset connected via UART.
       btstack_memory_init();
 
       // select embedded run loop
-      run_loop_init(run_loop_embedded_get_instance());
+      btstack_run_loop_init(btstack_run_loop_embedded_get_instance());
           
       // use logger: format HCI_DUMP_PACKETLOGGER, HCI_DUMP_BLUEZ or HCI_DUMP_STDOUT
       hci_dump_open(NULL, HCI_DUMP_STDOUT);
@@ -33,7 +33,7 @@ embedded system with a Bluetooth chipset connected via UART.
       btstack_main(argc, argv);
 
       // go
-      run_loop_execute();    
+      btstack_run_loop_execute();    
     }
     
 ~~~~ 

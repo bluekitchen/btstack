@@ -334,7 +334,7 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
 
     // handle value indication confirms
     if (packet[0] == ATT_HANDLE_VALUE_CONFIRMATION && att_handle_value_indication_handle){
-        run_loop_remove_timer(&att_handle_value_indication_timer);
+        btstack_run_loop_remove_timer(&att_handle_value_indication_timer);
         uint16_t att_handle = att_handle_value_indication_handle;
         att_handle_value_indication_handle = 0;    
         att_handle_value_indication_notify_client(0, att_connection.con_handle, att_handle);
@@ -392,9 +392,9 @@ int att_server_indicate(uint16_t handle, uint8_t *value, uint16_t value_len){
 
     // track indication
     att_handle_value_indication_handle = handle;
-    run_loop_set_timer_handler(&att_handle_value_indication_timer, att_handle_value_indication_timeout);
-    run_loop_set_timer(&att_handle_value_indication_timer, ATT_TRANSACTION_TIMEOUT_MS);
-    run_loop_add_timer(&att_handle_value_indication_timer);
+    btstack_run_loop_set_timer_handler(&att_handle_value_indication_timer, att_handle_value_indication_timeout);
+    btstack_run_loop_set_timer(&att_handle_value_indication_timer, ATT_TRANSACTION_TIMEOUT_MS);
+    btstack_run_loop_add_timer(&att_handle_value_indication_timer);
 
     l2cap_reserve_packet_buffer();
     uint8_t * packet_buffer = l2cap_get_outgoing_buffer();

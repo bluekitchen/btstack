@@ -689,7 +689,7 @@ registered callback, as shown in Listing [below](#lst:SDPClientRFCOMM).
         // turn on!
         hci_power_control(HCI_POWER_ON);
         // go!
-        run_loop_execute(); 
+        btstack_run_loop_execute(); 
         return 0;
     }
 ~~~~ 

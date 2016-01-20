@@ -254,23 +254,23 @@ static void l2cap_rtx_timeout(timer_source_t * ts){
 
 static void l2cap_stop_rtx(l2cap_channel_t * channel){
     log_info("l2cap_stop_rtx for local cid 0x%02x", channel->local_cid);
-    run_loop_remove_timer(&channel->rtx);
+    btstack_run_loop_remove_timer(&channel->rtx);
 }
 
 static void l2cap_start_rtx(l2cap_channel_t * channel){
     l2cap_stop_rtx(channel);
     log_info("l2cap_start_rtx for local cid 0x%02x", channel->local_cid);
-    run_loop_set_timer_handler(&channel->rtx, l2cap_rtx_timeout);
-    run_loop_set_timer(&channel->rtx, L2CAP_RTX_TIMEOUT_MS);
-    run_loop_add_timer(&channel->rtx);
+    btstack_run_loop_set_timer_handler(&channel->rtx, l2cap_rtx_timeout);
+    btstack_run_loop_set_timer(&channel->rtx, L2CAP_RTX_TIMEOUT_MS);
+    btstack_run_loop_add_timer(&channel->rtx);
 }
 
 static void l2cap_start_ertx(l2cap_channel_t * channel){
     log_info("l2cap_start_ertx for local cid 0x%02x", channel->local_cid);
     l2cap_stop_rtx(channel);
-    run_loop_set_timer_handler(&channel->rtx, l2cap_rtx_timeout);
-    run_loop_set_timer(&channel->rtx, L2CAP_ERTX_TIMEOUT_MS);
-    run_loop_add_timer(&channel->rtx);
+    btstack_run_loop_set_timer_handler(&channel->rtx, l2cap_rtx_timeout);
+    btstack_run_loop_set_timer(&channel->rtx, L2CAP_ERTX_TIMEOUT_MS);
+    btstack_run_loop_add_timer(&channel->rtx);
 }
 
 void l2cap_require_security_level_2_for_outgoing_sdp(void){

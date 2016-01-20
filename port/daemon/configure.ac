@@ -59,10 +59,10 @@ echo "BTstack configured for HCI $HCI_TRANSPORT Transport"
 
 HAVE_SO_NOSIGPIPE="no"
 
-RUN_LOOP_SOURCES="btstack_run_loop_posix.c"
+btstack_run_loop_SOURCES="btstack_run_loop_posix.c"
 case "$host_os" in
     darwin*)
-        RUN_LOOP_SOURCES="$RUN_LOOP_SOURCES btstack_run_loop_cocoa.m"
+        btstack_run_loop_SOURCES="$btstack_run_loop_SOURCES btstack_run_loop_cocoa.m"
         LDFLAGS="$LDFLAGS -framework CoreFoundation -framework Foundation"
         USE_COCOA_RUN_LOOP="yes"
         BTSTACK_LIB_LDFLAGS="-dynamiclib -install_name \$(prefix)/lib/libBTstack.dylib"
@@ -176,7 +176,7 @@ echo "#endif" >> btstack-config.h
 AC_SUBST(HAVE_LIBUSB)
 AC_SUBST(REMOTE_DEVICE_DB_SOURCES)
 AC_SUBST(USB_SOURCES)
-AC_SUBST(RUN_LOOP_SOURCES)
+AC_SUBST(btstack_run_loop_SOURCES)
 AC_SUBST(CFLAGS)
 AC_SUBST(CPPFLAGS)
 AC_SUBST(BTSTACK_LIB_LDFLAGS)

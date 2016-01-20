@@ -264,8 +264,8 @@ static int att_attribute_for_handle(uint16_t aHandle){
 
 static void  heartbeat_handler(struct timer *ts){
     // restart timer
-    run_loop_set_timer(ts, HEARTBEAT_PERIOD_MS);
-    run_loop_add_timer(ts);
+    btstack_run_loop_set_timer(ts, HEARTBEAT_PERIOD_MS);
+    btstack_run_loop_add_timer(ts);
 
     counter++;
     update_client = 1;
@@ -977,8 +977,8 @@ int btstack_main(int argc, const char * argv[]){
 
     // set one-shot timer
     heartbeat.process = &heartbeat_handler;
-    run_loop_set_timer(&heartbeat, HEARTBEAT_PERIOD_MS);
-    run_loop_add_timer(&heartbeat);
+    btstack_run_loop_set_timer(&heartbeat, HEARTBEAT_PERIOD_MS);
+    btstack_run_loop_add_timer(&heartbeat);
 
     // turn on!
     hci_power_control(HCI_POWER_ON);

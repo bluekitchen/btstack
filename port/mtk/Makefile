@@ -28,7 +28,7 @@ libBTstack_OBJS  = 		 \
 	btstack.o            \
 	btstack_linked_list.o   \
 	btstack_run_loop.o      \
-	btstack_run_loop_posix.o     \
+	btstack_run_loop_posix.ho     \
 	hci_cmds.o           \
 	hci_dump.o           \
 	sdp_util.o           \

@@ -431,8 +431,8 @@ static void usb_process_ts(timer_source_t *timer) {
     long msec = AYSNC_POLLING_INTERVAL_MS;
 
     // Activate timer
-    run_loop_set_timer(&usb_timer, msec);
-    run_loop_add_timer(&usb_timer);
+    btstack_run_loop_set_timer(&usb_timer, msec);
+    btstack_run_loop_add_timer(&usb_timer);
     usb_timer_active = 1;
 
     return;
@@ -830,7 +830,7 @@ static int usb_open(void *transport_config){
             data_source_t *ds = &pollfd_data_sources[r];
             ds->fd = pollfd[r]->fd;
             ds->process = usb_process_ds;
-            run_loop_add_data_source(ds);
+            btstack_run_loop_add_data_source(ds);
             log_info("%u: %p fd: %u, events %x", r, pollfd[r], pollfd[r]->fd, pollfd[r]->events);
         }
         free(pollfd);
@@ -838,8 +838,8 @@ static int usb_open(void *transport_config){
         log_info("Async using timers:");
 
         usb_timer.process = usb_process_ts;
-        run_loop_set_timer(&usb_timer, AYSNC_POLLING_INTERVAL_MS);
-        run_loop_add_timer(&usb_timer);
+        btstack_run_loop_set_timer(&usb_timer, AYSNC_POLLING_INTERVAL_MS);
+        btstack_run_loop_add_timer(&usb_timer);
         usb_timer_active = 1;
     }
 
@@ -859,7 +859,7 @@ static int usb_close(void *transport_config){
             libusb_state = LIB_USB_INTERFACE_CLAIMED;
 
             if(usb_timer_active) {
-                run_loop_remove_timer(&usb_timer);
+                btstack_run_loop_remove_timer(&usb_timer);
                 usb_timer_active = 0;
             }
 
@@ -881,7 +881,7 @@ static int usb_close(void *transport_config){
                 int r;
                 for (r = 0 ; r < num_pollfds ; r++) {
                     data_source_t *ds = &pollfd_data_sources[r];
-                    run_loop_remove_data_source(ds);
+                    btstack_run_loop_remove_data_source(ds);
                 }
                 free(pollfd_data_sources);
                 pollfd_data_sources = NULL;

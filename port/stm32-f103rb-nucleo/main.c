@@ -113,8 +113,8 @@ void sys_tick_handler(void){
 }
 
 static void msleep(uint32_t delay) {
-	uint32_t wake = run_loop_embedded_get_ticks() + delay / hal_tick_get_tick_period_in_ms();
-	while (wake > run_loop_embedded_get_ticks());
+	uint32_t wake = btstack_run_loop_embedded_get_ticks() + delay / hal_tick_get_tick_period_in_ms();
+	while (wake > btstack_run_loop_embedded_get_ticks());
 }
 
 // hal_led.h implementation
@@ -421,7 +421,7 @@ int main(void)
 
 	// start with BTstack init - especially configure HCI Transport
     btstack_memory_init();
-    run_loop_init(run_loop_embedded_get_instance());
+    btstack_run_loop_init(btstack_run_loop_embedded_get_instance());
     
     // init HCI
     hci_transport_t    * transport = hci_transport_h4_dma_instance();
@@ -436,7 +436,7 @@ int main(void)
     btstack_main();
 
     // go
-    run_loop_execute();
+    btstack_run_loop_execute();
 
 	return 0;
 }

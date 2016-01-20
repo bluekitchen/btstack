@@ -50,14 +50,14 @@
 #include "btstack_debug.h"
 #include "btstack-config.h"
 
-static const run_loop_t * the_run_loop = NULL;
+static const btstack_run_loop_t * the_run_loop = NULL;
 
-extern const run_loop_t run_loop_embedded;
+extern const btstack_run_loop_t btstack_run_loop_embedded;
 
 // assert run loop initialized
-static void run_loop_assert(void){
+static void btstack_run_loop_assert(void){
     if (!the_run_loop){
-        log_error("ERROR: run_loop function called before run_loop_init!");
+        log_error("ERROR: run_loop function called before btstack_run_loop_init!");
 #ifdef EMBEDDED
         exit(10);
 #else
@@ -67,11 +67,11 @@ static void run_loop_assert(void){
 }
 
 
-void run_loop_set_timer_handler(timer_source_t *ts, void (*process)(timer_source_t *_ts)){
+void btstack_run_loop_set_timer_handler(timer_source_t *ts, void (*process)(timer_source_t *_ts)){
     ts->process = process;
 };
 
-void run_loop_set_data_source_handler(data_source_t *ds, int (*process)(data_source_t *_ds)){
+void btstack_run_loop_set_data_source_handler(data_source_t *ds, int (*process)(data_source_t *_ds)){
     ds->process = process;
 };
 
@@ -79,73 +79,73 @@ void run_loop_set_data_source_handler(data_source_t *ds, int (*process)(data_sou
 /**
  * Add data_source to run_loop
  */
-void run_loop_add_data_source(data_source_t *ds){
-    run_loop_assert();
+void btstack_run_loop_add_data_source(data_source_t *ds){
+    btstack_run_loop_assert();
     if (the_run_loop->add_data_source){
         the_run_loop->add_data_source(ds);
     } else {
-        log_error("run_loop_add_data_source not implemented");
+        log_error("btstack_run_loop_add_data_source not implemented");
     }
 }
 
 /**
  * Remove data_source from run loop
  */
-int run_loop_remove_data_source(data_source_t *ds){
-    run_loop_assert();
+int btstack_run_loop_remove_data_source(data_source_t *ds){
+    btstack_run_loop_assert();
     if (the_run_loop->remove_data_source){
         return the_run_loop->remove_data_source(ds);
     } else {
-        log_error("run_loop_remove_data_source not implemented");
+        log_error("btstack_run_loop_remove_data_source not implemented");
         return 0;
     }
 }
 
-void run_loop_set_timer(timer_source_t *a, uint32_t timeout_in_ms){
-    run_loop_assert();
+void btstack_run_loop_set_timer(timer_source_t *a, uint32_t timeout_in_ms){
+    btstack_run_loop_assert();
     the_run_loop->set_timer(a, timeout_in_ms);
 }
 
 /**
  * Add timer to run_loop (keep list sorted)
  */
-void run_loop_add_timer(timer_source_t *ts){
-    run_loop_assert();
+void btstack_run_loop_add_timer(timer_source_t *ts){
+    btstack_run_loop_assert();
     the_run_loop->add_timer(ts);
 }
 
 /**
  * Remove timer from run loop
  */
-int run_loop_remove_timer(timer_source_t *ts){
-    run_loop_assert();
+int btstack_run_loop_remove_timer(timer_source_t *ts){
+    btstack_run_loop_assert();
     return the_run_loop->remove_timer(ts);
 }
 
 /**
  * @brief Get current time in ms
  */
-uint32_t run_loop_get_time_ms(void){
-    run_loop_assert();
+uint32_t btstack_run_loop_get_time_ms(void){
+    btstack_run_loop_assert();
     return the_run_loop->get_time_ms();
 }
 
 
-void run_loop_timer_dump(void){
-    run_loop_assert();
+void btstack_run_loop_timer_dump(void){
+    btstack_run_loop_assert();
     the_run_loop->dump_timer();
 }
 
 /**
  * Execute run_loop
  */
-void run_loop_execute(void){
-    run_loop_assert();
+void btstack_run_loop_execute(void){
+    btstack_run_loop_assert();
     the_run_loop->execute();
 }
 
 // init must be called before any other run_loop call
-void run_loop_init(const run_loop_t * run_loop){
+void btstack_run_loop_init(const btstack_run_loop_t * run_loop){
     if (the_run_loop){
         log_error("ERROR: run loop initialized twice!");
 #ifdef EMBEDDED

@@ -75,7 +75,7 @@
 #define TIMER_SUPPORT
 #endif
 
-static const run_loop_t run_loop_embedded;
+static const btstack_run_loop_t btstack_run_loop_embedded;
 
 // the run loop
 static btstack_linked_list_t data_sources;
@@ -93,21 +93,21 @@ static int trigger_event_received = 0;
 /**
  * Add data_source to run_loop
  */
-static void run_loop_embedded_add_data_source(data_source_t *ds){
+static void btstack_run_loop_embedded_add_data_source(data_source_t *ds){
     btstack_linked_list_add(&data_sources, (btstack_linked_item_t *) ds);
 }
 
 /**
  * Remove data_source from run loop
  */
-static int run_loop_embedded_remove_data_source(data_source_t *ds){
+static int btstack_run_loop_embedded_remove_data_source(data_source_t *ds){
     return btstack_linked_list_remove(&data_sources, (btstack_linked_item_t *) ds);
 }
 
 // set timer
-static void run_loop_embedded_set_timer(timer_source_t *ts, uint32_t timeout_in_ms){
+static void btstack_run_loop_embedded_set_timer(timer_source_t *ts, uint32_t timeout_in_ms){
 #ifdef HAVE_TICK
-    uint32_t ticks = run_loop_embedded_ticks_for_ms(timeout_in_ms);
+    uint32_t ticks = btstack_run_loop_embedded_ticks_for_ms(timeout_in_ms);
     if (ticks == 0) ticks++;
     // time until next tick is < hal_tick_get_tick_period_in_ms() and we don't know, so we add one
     ts->timeout = system_ticks + 1 + ticks; 
@@ -120,13 +120,13 @@ static void run_loop_embedded_set_timer(timer_source_t *ts, uint32_t timeout_in_
 /**
  * Add timer to run_loop (keep list sorted)
  */
-static void run_loop_embedded_add_timer(timer_source_t *ts){
+static void btstack_run_loop_embedded_add_timer(timer_source_t *ts){
 #ifdef TIMER_SUPPORT
     btstack_linked_item_t *it;
     for (it = (btstack_linked_item_t *) &timers; it->next ; it = it->next){
         // don't add timer that's already in there
         if ((timer_source_t *) it->next == ts){
-            log_error( "run_loop_timer_add error: timer to add already in list!");
+            log_error( "btstack_run_loop_timer_add error: timer to add already in list!");
             return;
         }
         if (ts->timeout < ((timer_source_t *) it->next)->timeout) {
@@ -141,7 +141,7 @@ static void run_loop_embedded_add_timer(timer_source_t *ts){
 /**
  * Remove timer from run loop
  */
-static int run_loop_embedded_remove_timer(timer_source_t *ts){
+static int btstack_run_loop_embedded_remove_timer(timer_source_t *ts){
 #ifdef TIMER_SUPPORT
     return btstack_linked_list_remove(&timers, (btstack_linked_item_t *) ts);
 #else
@@ -149,7 +149,7 @@ static int run_loop_embedded_remove_timer(timer_source_t *ts){
 #endif
 }
 
-static void run_loop_embedded_dump_timer(void){
+static void btstack_run_loop_embedded_dump_timer(void){
 #ifdef TIMER_SUPPORT
 #ifdef ENABLE_LOG_INFO 
     btstack_linked_item_t *it;
@@ -165,7 +165,7 @@ static void run_loop_embedded_dump_timer(void){
 /**
  * Execute run_loop once
  */
-void run_loop_embedded_execute_once(void) {
+void btstack_run_loop_embedded_execute_once(void) {
     data_source_t *ds;
 
     // process data sources
@@ -186,7 +186,7 @@ void run_loop_embedded_execute_once(void) {
     while (timers) {
         timer_source_t *ts = (timer_source_t *) timers;
         if (ts->timeout > now) break;
-        run_loop_remove_timer(ts);
+        btstack_run_loop_remove_timer(ts);
         ts->process(ts);
     }
 #endif
@@ -204,28 +204,28 @@ void run_loop_embedded_execute_once(void) {
 /**
  * Execute run_loop
  */
-static void run_loop_embedded_execute(void) {
+static void btstack_run_loop_embedded_execute(void) {
     while (1) {
-        run_loop_embedded_execute_once();
+        btstack_run_loop_embedded_execute_once();
     }
 }
 
 #ifdef HAVE_TICK
-static void run_loop_embedded_tick_handler(void){
+static void btstack_run_loop_embedded_tick_handler(void){
     system_ticks++;
     trigger_event_received = 1;
 }
 
-uint32_t run_loop_embedded_get_ticks(void){
+uint32_t btstack_run_loop_embedded_get_ticks(void){
     return system_ticks;
 }
 
-uint32_t run_loop_embedded_ticks_for_ms(uint32_t time_in_ms){
+uint32_t btstack_run_loop_embedded_ticks_for_ms(uint32_t time_in_ms){
     return time_in_ms / hal_tick_get_tick_period_in_ms();
 }
 #endif
 
-static uint32_t run_loop_embedded_get_time_ms(void){
+static uint32_t btstack_run_loop_embedded_get_time_ms(void){
 #ifdef HAVE_TIME_MS
     return hal_time_ms();
 #endif
@@ -239,11 +239,11 @@ static uint32_t run_loop_embedded_get_time_ms(void){
 /**
  * trigger run loop iteration
  */
-void run_loop_embedded_trigger(void){
+void btstack_run_loop_embedded_trigger(void){
     trigger_event_received = 1;
 }
 
-static void run_loop_embedded_init(void){
+static void btstack_run_loop_embedded_init(void){
     data_sources = NULL;
 
 #ifdef TIMER_SUPPORT
@@ -253,25 +253,25 @@ static void run_loop_embedded_init(void){
 #ifdef HAVE_TICK
     system_ticks = 0;
     hal_tick_init();
-    hal_tick_set_handler(&run_loop_embedded_tick_handler);
+    hal_tick_set_handler(&btstack_run_loop_embedded_tick_handler);
 #endif
 }
 
 /**
- * Provide run_loop_embedded instance 
+ * Provide btstack_run_loop_embedded instance 
  */
-const run_loop_t * run_loop_embedded_get_instance(void){
-    return &run_loop_embedded;
+const btstack_run_loop_t * btstack_run_loop_embedded_get_instance(void){
+    return &btstack_run_loop_embedded;
 }
 
-static const run_loop_t run_loop_embedded = {
-    &run_loop_embedded_init,
-    &run_loop_embedded_add_data_source,
-    &run_loop_embedded_remove_data_source,
-    &run_loop_embedded_set_timer,
-    &run_loop_embedded_add_timer,
-    &run_loop_embedded_remove_timer,
-    &run_loop_embedded_execute,
-    &run_loop_embedded_dump_timer,
-    &run_loop_embedded_get_time_ms,
+static const btstack_run_loop_t btstack_run_loop_embedded = {
+    &btstack_run_loop_embedded_init,
+    &btstack_run_loop_embedded_add_data_source,
+    &btstack_run_loop_embedded_remove_data_source,
+    &btstack_run_loop_embedded_set_timer,
+    &btstack_run_loop_embedded_add_timer,
+    &btstack_run_loop_embedded_remove_timer,
+    &btstack_run_loop_embedded_execute,
+    &btstack_run_loop_embedded_dump_timer,
+    &btstack_run_loop_embedded_get_time_ms,
 };

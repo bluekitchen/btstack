@@ -80,7 +80,7 @@ int main (int argc, const char * argv[]){
 	printf("le_scan started\n");
 	printf("- connecting to BTstack Daemon\n");
 	// start stack
-	run_loop_init(run_loop_posix_get_instance());
+	btstack_run_loop_init(btstack_run_loop_posix_get_instance());
 	int err = bt_open();
 	if (err) {
 		printf("-> Failed to open connection to BTstack Daemon\n");
@@ -92,7 +92,7 @@ int main (int argc, const char * argv[]){
 
 	bt_register_packet_handler(packet_handler);
 	bt_send_cmd(&btstack_set_power_mode, HCI_POWER_ON );
-	run_loop_execute();
+	btstack_run_loop_execute();
 	bt_close();
 	return 0;
 }

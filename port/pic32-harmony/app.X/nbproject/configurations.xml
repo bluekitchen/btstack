@@ -49,7 +49,7 @@
           <itemPath>../../../src/hci_transport.h</itemPath>
           <itemPath>../../../src/l2cap.h</itemPath>
           <itemPath>../../../src/l2cap_signaling.h</itemPath>
-          <itemPath>../../../src/run_loop_private.h</itemPath>
+          <itemPath>../../../src/btstack_run_loop_private.h</itemPath>
         </logicalFolder>
         <logicalFolder name="classic" displayName="classic" projectFiles="true">
           <itemPath>../../../src/classic/sdp_util.h</itemPath>

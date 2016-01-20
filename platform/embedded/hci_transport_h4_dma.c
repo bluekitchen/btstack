@@ -141,7 +141,7 @@ static int h4_open(void *transport_config){
     hal_uart_dma_set_block_sent(h4_block_sent);
     
 	// set up data_source
-    run_loop_add_data_source(&hci_transport_h4_dma_ds);
+    btstack_run_loop_add_data_source(&hci_transport_h4_dma_ds);
     
     //
     h4_init_sm();
@@ -152,7 +152,7 @@ static int h4_open(void *transport_config){
 
 static int h4_close(void *transport_config){
     // first remove run loop handler
-	run_loop_remove_data_source(&hci_transport_h4_dma_ds);
+	btstack_run_loop_remove_data_source(&hci_transport_h4_dma_ds);
     
     // close device 
     // ...
@@ -206,7 +206,7 @@ static void h4_block_received(void){
             h4_state = H4_PACKET_RECEIVED;
             bytes_to_read = 0;
             // trigger run loop
-            run_loop_embedded_trigger();
+            btstack_run_loop_embedded_trigger();
             break;
             
         default:
@@ -225,7 +225,7 @@ static void h4_block_sent(void){
         case TX_W4_PACKET_SENT:
             tx_state = TX_DONE;
             // trigger run loop
-            run_loop_embedded_trigger();
+            btstack_run_loop_embedded_trigger();
             break;
         default:
             break;

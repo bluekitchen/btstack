@@ -207,19 +207,19 @@ static void hci_connection_timeout_handler(timer_source_t *timer){
     }
 #endif
 #ifdef HAVE_TICK
-    if (run_loop_embedded_get_ticks() > connection->timestamp + run_loop_embedded_ticks_for_ms(HCI_CONNECTION_TIMEOUT_MS)){
+    if (btstack_run_loop_embedded_get_ticks() > connection->timestamp + btstack_run_loop_embedded_ticks_for_ms(HCI_CONNECTION_TIMEOUT_MS)){
         // connections might be timed out
         hci_emit_l2cap_check_timeout(connection);
     }
 #endif
 #ifdef HAVE_TIME_MS
-    if (run_loop_get_time_ms() > connection->timestamp + HCI_CONNECTION_TIMEOUT_MS){
+    if (btstack_run_loop_get_time_ms() > connection->timestamp + HCI_CONNECTION_TIMEOUT_MS){
         // connections might be timed out
         hci_emit_l2cap_check_timeout(connection);
     }
 #endif
-    run_loop_set_timer(timer, HCI_CONNECTION_TIMEOUT_MS);
-    run_loop_add_timer(timer);
+    btstack_run_loop_set_timer(timer, HCI_CONNECTION_TIMEOUT_MS);
+    btstack_run_loop_add_timer(timer);
 }
 
 static void hci_connection_timestamp(hci_connection_t *connection){
@@ -227,10 +227,10 @@ static void hci_connection_timestamp(hci_connection_t *connection){
     gettimeofday(&connection->timestamp, NULL);
 #endif
 #ifdef HAVE_TICK
-    connection->timestamp = run_loop_embedded_get_ticks();
+    connection->timestamp = btstack_run_loop_embedded_get_ticks();
 #endif
 #ifdef HAVE_TIME_MS
-    connection->timestamp = run_loop_get_time_ms();
+    connection->timestamp = btstack_run_loop_get_time_ms();
 #endif
 }
 
@@ -714,7 +714,7 @@ static void acl_handler(uint8_t *packet, int size){
 static void hci_shutdown_connection(hci_connection_t *conn){
     log_info("Connection closed: handle 0x%x, %s", conn->con_handle, bd_addr_to_str(conn->address));
 
-    run_loop_remove_timer(&conn->timeout);
+    btstack_run_loop_remove_timer(&conn->timeout);
     
     btstack_linked_list_remove(&hci_stack->connections, (btstack_linked_item_t *) conn);
     btstack_memory_hci_connection_free( conn );
@@ -898,9 +898,9 @@ static void hci_initializing_run(void){
 
 #ifndef USE_BLUETOOL
             // prepare reset if command complete not received in 100ms
-            run_loop_set_timer(&hci_stack->timeout, 100);
-            run_loop_set_timer_handler(&hci_stack->timeout, hci_initialization_timeout_handler);
-            run_loop_add_timer(&hci_stack->timeout);
+            btstack_run_loop_set_timer(&hci_stack->timeout, 100);
+            btstack_run_loop_set_timer_handler(&hci_stack->timeout, hci_initialization_timeout_handler);
+            btstack_run_loop_add_timer(&hci_stack->timeout);
 #endif
             // send command
             hci_stack->substate = HCI_INIT_W4_SEND_RESET;
@@ -913,9 +913,9 @@ static void hci_initializing_run(void){
         case HCI_INIT_SEND_RESET_CSR_WARM_BOOT:
             hci_state_reset();
             // prepare reset if command complete not received in 100ms
-            run_loop_set_timer(&hci_stack->timeout, 100);
-            run_loop_set_timer_handler(&hci_stack->timeout, hci_initialization_timeout_handler);
-            run_loop_add_timer(&hci_stack->timeout);
+            btstack_run_loop_set_timer(&hci_stack->timeout, 100);
+            btstack_run_loop_set_timer_handler(&hci_stack->timeout, hci_initialization_timeout_handler);
+            btstack_run_loop_add_timer(&hci_stack->timeout);
             // send command
             hci_stack->substate = HCI_INIT_W4_CUSTOM_INIT_CSR_WARM_BOOT;
             hci_send_cmd(&hci_reset);
@@ -934,8 +934,8 @@ static void hci_initializing_run(void){
             // STLC25000D: baudrate change happens within 0.5 s after command was send,
             // use timer to update baud rate after 100 ms (knowing exactly, when command was sent is non-trivial)
             if (hci_stack->manufacturer == COMPANY_ID_ST_MICROELECTRONICS){
-                run_loop_set_timer(&hci_stack->timeout, 100);
-                run_loop_add_timer(&hci_stack->timeout);
+                btstack_run_loop_set_timer(&hci_stack->timeout, 100);
+                btstack_run_loop_add_timer(&hci_stack->timeout);
             }
             break;
         }
@@ -963,9 +963,9 @@ static void hci_initializing_run(void){
                             break;
                         case 2: // CSR Warm Boot: Wait a bit, then send HCI Reset until HCI Command Complete
                             log_info("CSR Warm Boot");
-                            run_loop_set_timer(&hci_stack->timeout, 100);
-                            run_loop_set_timer_handler(&hci_stack->timeout, hci_initialization_timeout_handler);
-                            run_loop_add_timer(&hci_stack->timeout);
+                            btstack_run_loop_set_timer(&hci_stack->timeout, 100);
+                            btstack_run_loop_set_timer_handler(&hci_stack->timeout, hci_initialization_timeout_handler);
+                            btstack_run_loop_add_timer(&hci_stack->timeout);
                             if (hci_stack->manufacturer == COMPANY_ID_CAMBRIDGE_SILICON_RADIO
                                 && hci_stack->config
                                 && hci_stack->control
@@ -1179,7 +1179,7 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
 
     switch(hci_stack->substate){
         case HCI_INIT_W4_SEND_RESET:
-            run_loop_remove_timer(&hci_stack->timeout);
+            btstack_run_loop_remove_timer(&hci_stack->timeout);
             break;
         case HCI_INIT_W4_SEND_READ_LOCAL_VERSION_INFORMATION:
             if (need_baud_change){
@@ -1200,7 +1200,7 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
             hci_stack->substate = HCI_INIT_CUSTOM_INIT;
             return;
         case HCI_INIT_W4_CUSTOM_INIT_CSR_WARM_BOOT:
-            run_loop_remove_timer(&hci_stack->timeout);
+            btstack_run_loop_remove_timer(&hci_stack->timeout);
             hci_stack->substate = HCI_INIT_CUSTOM_INIT;
             return;
         case HCI_INIT_W4_CUSTOM_INIT:
@@ -1484,8 +1484,8 @@ static void event_handler(uint8_t *packet, int size){
                     conn->bonding_flags |= BONDING_REQUEST_REMOTE_FEATURES;
 
                     // restart timer
-                    run_loop_set_timer(&conn->timeout, HCI_CONNECTION_TIMEOUT_MS);
-                    run_loop_add_timer(&conn->timeout);
+                    btstack_run_loop_set_timer(&conn->timeout, HCI_CONNECTION_TIMEOUT_MS);
+                    btstack_run_loop_add_timer(&conn->timeout);
                     
                     log_info("New connection: handle %u, %s", conn->con_handle, bd_addr_to_str(conn->address));
                     
@@ -1778,8 +1778,8 @@ static void event_handler(uint8_t *packet, int size){
                     // TODO: store - role, peer address type, conn_interval, conn_latency, supervision timeout, master clock
 
                     // restart timer
-                    // run_loop_set_timer(&conn->timeout, HCI_CONNECTION_TIMEOUT_MS);
-                    // run_loop_add_timer(&conn->timeout);
+                    // btstack_run_loop_set_timer(&conn->timeout, HCI_CONNECTION_TIMEOUT_MS);
+                    // btstack_run_loop_add_timer(&conn->timeout);
                     
                     log_info("New connection: handle %u, %s", conn->con_handle, bd_addr_to_str(conn->address));
                     

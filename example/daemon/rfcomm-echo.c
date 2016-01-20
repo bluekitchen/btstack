@@ -151,7 +151,7 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 
 int main (int argc, const char * argv[]){
 	
-	run_loop_init(run_loop_posix_get_instance());
+	btstack_run_loop_init(btstack_run_loop_posix_get_instance());
 	int err = bt_open();
 	if (err) {
 		fprintf(stderr,"Failed to open connection to BTdaemon, err %d\n",err);
@@ -160,7 +160,7 @@ int main (int argc, const char * argv[]){
 	bt_register_packet_handler(packet_handler);
 	
 	bt_send_cmd(&btstack_set_power_mode, HCI_POWER_ON );
-	run_loop_execute();
+	btstack_run_loop_execute();
 	bt_close();
     return 0;
 }

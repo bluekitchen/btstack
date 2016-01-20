@@ -177,7 +177,7 @@ void CHECK_EQUAL_ARRAY(uint8_t * expected, uint8_t * actual, int size){
 TEST_GROUP(SecurityManager){
 	void setup(void){
 	    btstack_memory_init();
-	    run_loop_init(run_loop_posix_get_instance());
+	    btstack_run_loop_init(btstack_run_loop_posix_get_instance());
 	    sm_init();
 	    sm_set_io_capabilities(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);
 	    sm_set_authentication_requirements( SM_AUTHREQ_BONDING ); 

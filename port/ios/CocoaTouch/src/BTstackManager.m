@@ -71,7 +71,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 	[self setListeners:[[NSMutableSet alloc] init]];
 	
 	// Use Cocoa run loop
-	run_loop_init(run_loop_cocoa_get_instance());
+	btstack_run_loop_init(btstack_run_loop_cocoa_get_instance());
 	
 	// our packet handler
 	bt_register_packet_handler(packet_handler);

@@ -86,7 +86,7 @@ static int h4_open(void *transport_config){
     if (!hci_transport_h4->ds) return -1;
     hci_transport_h4->ds->fd = fd;
     hci_transport_h4->ds->process = h4_process;
-    run_loop_add_data_source(hci_transport_h4->ds);
+    btstack_run_loop_add_data_source(hci_transport_h4->ds);
     return 0;
 }
 
@@ -95,7 +95,7 @@ static int h4_close(void *transport_config){
     mtk_bt_disable(hci_transport_h4->ds->fd);
 
     // first remove run loop handler
-	run_loop_remove_data_source(hci_transport_h4->ds);
+	btstack_run_loop_remove_data_source(hci_transport_h4->ds);
     
     // free struct
     free(hci_transport_h4->ds);

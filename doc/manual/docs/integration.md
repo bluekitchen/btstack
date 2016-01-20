@@ -30,7 +30,7 @@ system.
 
 Currently, we have two examples for this:
 
--   *run_loop_cocoa.c* is an implementation for the CoreFoundation
+-   *btstack_run_loop_cocoa.c* is an implementation for the CoreFoundation
     Framework used in OS X and iOS. All run loop functions are
     implemented in terms of CoreFoundation calls, data sources and
     timers are modeled as CFSockets and CFRunLoopTimer respectively.

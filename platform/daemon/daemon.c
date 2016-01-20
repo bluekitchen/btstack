@@ -1687,7 +1687,7 @@ static void daemon_sigint_handler(int param){
 static void stop_power_off_timer(void){
 #ifdef USE_POWER_OFF_TIMER
     if (timeout_active) {
-        run_loop_remove_timer(&timeout);
+        btstack_run_loop_remove_timer(&timeout);
         timeout_active = 0;
     }
 #endif
@@ -1696,8 +1696,8 @@ static void stop_power_off_timer(void){
 static void start_power_off_timer(void){
 #ifdef USE_POWER_OFF_TIMER    
     stop_power_off_timer();
-    run_loop_set_timer(&timeout, DAEMON_NO_ACTIVE_CLIENT_TIMEOUT);
-    run_loop_add_timer(&timeout);
+    btstack_run_loop_set_timer(&timeout, DAEMON_NO_ACTIVE_CLIENT_TIMEOUT);
+    btstack_run_loop_add_timer(&timeout);
     timeout_active = 1;
 #else
     hci_power_control(HCI_POWER_OFF);
@@ -1760,8 +1760,8 @@ static void usage(const char * name) {
 }
 
 #ifdef USE_BLUETOOL 
-static void * run_loop_thread(void *context){
-    run_loop_execute();
+static void * btstack_run_loop_thread(void *context){
+    btstack_run_loop_execute();
     return NULL;
 }
 #endif
@@ -1986,7 +1986,7 @@ int main (int argc,  char * const * argv){
     remote_device_db = &REMOTE_DEVICE_DB;
 #endif
 
-    run_loop_init(run_loop_posix_get_instance());
+    btstack_run_loop_init(btstack_run_loop_posix_get_instance());
     
     // init power management notifications
     if (control && control->register_for_power_notifications){
@@ -2061,12 +2061,12 @@ int main (int argc,  char * const * argv){
 
     // spawn thread to have BTstack run loop on new thread, while main thread is used to keep CFRunLoop
     pthread_t run_loop;
-    pthread_create(&run_loop, NULL, &run_loop_thread, NULL);
+    pthread_create(&run_loop, NULL, &btstack_run_loop_thread, NULL);
 
     // needed to receive notifications
     CFRunLoopRun();
 #endif
         // go!
-    run_loop_execute();
+    btstack_run_loop_execute();
     return 0;
 }

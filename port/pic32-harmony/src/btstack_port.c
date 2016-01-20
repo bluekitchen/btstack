@@ -78,8 +78,8 @@ void hal_tick_set_handler(void (*handler)(void)){
 }
 
 static void msleep(uint32_t delay) {
-    uint32_t wake = run_loop_embedded_get_ticks() + delay / hal_tick_get_tick_period_in_ms();
-    while (wake > run_loop_embedded_get_ticks()){
+    uint32_t wake = btstack_run_loop_embedded_get_ticks() + delay / hal_tick_get_tick_period_in_ms();
+    while (wake > btstack_run_loop_embedded_get_ticks()){
         SYS_Tasks();
     };
 }
@@ -221,7 +221,7 @@ void BTSTACK_Initialize ( void )
     printf("\n\nBTstack_Initialize()\n");
 
     btstack_memory_init();
-    run_loop_init(run_loop_embedded_get_instance());
+    btstack_run_loop_init(btstack_run_loop_embedded_get_instance());
 
     hci_dump_open(NULL, HCI_DUMP_STDOUT);
 
@@ -252,6 +252,6 @@ void BTSTACK_Tasks(void){
     }
 
     // BTstack Run Loop
-    run_loop_embedded_execute_once();
+    btstack_run_loop_embedded_execute_once();
 }
 

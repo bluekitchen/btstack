@@ -749,7 +749,7 @@ void iphone_register_for_power_notifications(void (*cb)(POWER_NOTIFICATION_t eve
     // set up data source handler
     power_notification_ds.fd =      power_notification_pipe_fds[0];
     power_notification_ds.process = power_notification_process;
-    run_loop_add_data_source(&power_notification_ds);  
+    btstack_run_loop_add_data_source(&power_notification_ds);  
 }
 
 int bt_control_iphone_power_management_supported(void){

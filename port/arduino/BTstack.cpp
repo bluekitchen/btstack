@@ -176,7 +176,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                         case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
                             handle = READ_BT_16(packet, 4);
                             printf("Connection complete, handle 0x%04x\n", handle);
-                            run_loop_remove_timer(&connection_timer);
+                            btstack_run_loop_remove_timer(&connection_timer);
                             if (!bleDeviceConnectedCallback) break;
                             if (packet[3]){
                                 (*bleDeviceConnectedCallback)(BLE_STATUS_CONNECTION_ERROR, NULL);
@@ -709,13 +709,13 @@ void BTstackManager::bleConnect(BD_ADDR_TYPE address_type, const char * address,
 void BTstackManager::bleConnect(BD_ADDR_TYPE address_type, const uint8_t address[6], int timeout_ms){
     le_central_connect((uint8_t*)address, (bd_addr_type_t) address_type);
     if (!timeout_ms) return;
-    run_loop_set_timer(&connection_timer, timeout_ms);
-    run_loop_set_timer_handler(&connection_timer, connection_timeout_handler);
-    run_loop_add_timer(&connection_timer);
+    btstack_run_loop_set_timer(&connection_timer, timeout_ms);
+    btstack_run_loop_set_timer_handler(&connection_timer, connection_timeout_handler);
+    btstack_run_loop_add_timer(&connection_timer);
 }
 
 void BTstackManager::bleDisconnect(BLEDevice * device){
-    run_loop_remove_timer(&connection_timer);
+    btstack_run_loop_remove_timer(&connection_timer);
     gap_disconnect(device->getHandle());
 }
 
@@ -746,7 +746,7 @@ void BTstackManager::setup(void){
     printf("BTstackManager::setup()\n");
 
 	btstack_memory_init();
-    run_loop_init(run_loop_embedded_get_instance());
+    btstack_run_loop_init(btstack_run_loop_embedded_get_instance());
 
 	hci_transport_t * transport = hci_transport_h4_dma_instance();
     bt_control_t    * control   = bt_control_em9301_instance();
@@ -816,7 +816,7 @@ void BTstackManager::loop(void){
     // process data from/to Bluetooth module
     hal_uart_dma_process();
     // BTstack Run Loop
-    run_loop_embedded_execute_once();
+    btstack_run_loop_embedded_execute_once();
 }
 
 void BTstackManager::bleStartScanning(void){

@@ -679,7 +679,7 @@ static void rfcomm_send_uih_credits(rfcomm_multiplexer_t *multiplexer, uint8_t d
 // MARK: RFCOMM MULTIPLEXER
 static void rfcomm_multiplexer_stop_timer(rfcomm_multiplexer_t * multiplexer){
     if (multiplexer->timer_active) {
-        run_loop_remove_timer(&multiplexer->timer);
+        btstack_run_loop_remove_timer(&multiplexer->timer);
         multiplexer->timer_active = 0;
     }
 }
@@ -728,16 +728,16 @@ static void rfcomm_multiplexer_timer_handler(timer_source_t *timer){
 
 static void rfcomm_multiplexer_prepare_idle_timer(rfcomm_multiplexer_t * multiplexer){
     if (multiplexer->timer_active) {
-        run_loop_remove_timer(&multiplexer->timer);
+        btstack_run_loop_remove_timer(&multiplexer->timer);
         multiplexer->timer_active = 0;
     }    
     if (rfcomm_multiplexer_has_channels(multiplexer)) return;
 
     // start idle timer for multiplexer timeout check as there are no rfcomm channels yet
-    run_loop_set_timer(&multiplexer->timer, RFCOMM_MULIPLEXER_TIMEOUT_MS);
+    btstack_run_loop_set_timer(&multiplexer->timer, RFCOMM_MULIPLEXER_TIMEOUT_MS);
     multiplexer->timer.process = rfcomm_multiplexer_timer_handler;
     btstack_linked_item_set_user((btstack_linked_item_t*) &multiplexer->timer, multiplexer);
-    run_loop_add_timer(&multiplexer->timer);
+    btstack_run_loop_add_timer(&multiplexer->timer);
     multiplexer->timer_active = 1;
 }
 
@@ -1109,7 +1109,7 @@ static void rfcomm_channel_opened(rfcomm_channel_t *rfChannel){
     // remove (potential) timer
     rfcomm_multiplexer_t *multiplexer = rfChannel->multiplexer;
     if (multiplexer->timer_active) {
-        run_loop_remove_timer(&multiplexer->timer);
+        btstack_run_loop_remove_timer(&multiplexer->timer);
         multiplexer->timer_active = 0;
     }
     // hack for problem detecting authentication failure

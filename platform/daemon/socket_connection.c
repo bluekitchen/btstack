@@ -141,7 +141,7 @@ void socket_connection_set_no_sigpipe(int fd){
 
 void socket_connection_free_connection(connection_t *conn){
     // remove from run_loop 
-    run_loop_remove_data_source(&conn->ds);
+    btstack_run_loop_remove_data_source(&conn->ds);
     
     // and from connection list
     btstack_linked_list_remove(&connections, &conn->item);
@@ -169,7 +169,7 @@ connection_t * socket_connection_register_new_connection(int fd){
     socket_connection_init_statemachine(conn);
     
     // add this socket to the run_loop
-    run_loop_add_data_source( &conn->ds );
+    btstack_run_loop_add_data_source( &conn->ds );
     
     // and the connection list
     btstack_linked_list_add( &connections, &conn->item);
@@ -249,7 +249,7 @@ int socket_connection_hci_process(struct data_source *ds) {
         // "park" if dispatch failed
         if (dispatch_err) {
             log_info("socket_connection_hci_process dispatch failed -> park connection");
-            run_loop_remove_data_source(ds);
+            btstack_run_loop_remove_data_source(ds);
             btstack_linked_list_add_tail(&parked, (btstack_linked_item_t *) ds);
         }
     }
@@ -275,7 +275,7 @@ void socket_connection_retry_parked(void){
         if (!dispatch_err) {
             log_info("socket_connection_hci_process dispatch succeeded -> un-park connection %p", conn);
             it->next = it->next->next;
-            run_loop_add_data_source( (data_source_t *) conn);
+            btstack_run_loop_add_data_source( (data_source_t *) conn);
         } else {
             it = it->next;
         }
@@ -351,7 +351,7 @@ int socket_connection_create_tcp(int port){
         return -1;
 	}
     
-    run_loop_add_data_source(ds);
+    btstack_run_loop_add_data_source(ds);
     
 	log_info ("Server up and running ...");
     return 0;
@@ -376,7 +376,7 @@ void socket_connection_launchd_register_fd_array(launch_data_t listening_fd_arra
         if (ds == NULL) return;
         ds->process = socket_connection_accept;
         ds->fd = listening_fd;
-        run_loop_add_data_source(ds);
+        btstack_run_loop_add_data_source(ds);
 	}
 }
 
@@ -498,7 +498,7 @@ int socket_connection_create_unix(char *path){
         return -1;
 	}
     
-    run_loop_add_data_source(ds);
+    btstack_run_loop_add_data_source(ds);
 
 	log_info ("Server up and running ...");
     return 0;

@@ -71,7 +71,7 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 	[window makeKeyAndVisible];
 	
 	// start Bluetooth
-	run_loop_init(run_loop_cocoa_get_instance());
+	btstack_run_loop_init(btstack_run_loop_cocoa_get_instance());
 
 	int res = bt_open();
 	if (res){

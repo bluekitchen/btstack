@@ -821,22 +821,22 @@ static void hfp_timeout_handler(timer_source_t * timer){
     context->ag_ring = 1;
     context->ag_send_clip = hfp_gsm_clip_type() && context->clip_enabled;
 
-    run_loop_set_timer(&context->hfp_timeout, 2000); // 5 seconds timeout
-    run_loop_add_timer(&context->hfp_timeout);
+    btstack_run_loop_set_timer(&context->hfp_timeout, 2000); // 5 seconds timeout
+    btstack_run_loop_add_timer(&context->hfp_timeout);
 
     hfp_run_for_context(context);
 }
 
 static void hfp_timeout_start(hfp_connection_t * context){
-    run_loop_remove_timer(&context->hfp_timeout);
-    run_loop_set_timer_handler(&context->hfp_timeout, hfp_timeout_handler);
-    run_loop_set_timer(&context->hfp_timeout, 2000); // 5 seconds timeout
-    run_loop_add_timer(&context->hfp_timeout);
+    btstack_run_loop_remove_timer(&context->hfp_timeout);
+    btstack_run_loop_set_timer_handler(&context->hfp_timeout, hfp_timeout_handler);
+    btstack_run_loop_set_timer(&context->hfp_timeout, 2000); // 5 seconds timeout
+    btstack_run_loop_add_timer(&context->hfp_timeout);
 }
 
 static void hfp_timeout_stop(hfp_connection_t * context){
     log_info("HFP stop ring timeout, con handle 0x%02x", context->con_handle);
-    run_loop_remove_timer(&context->hfp_timeout);
+    btstack_run_loop_remove_timer(&context->hfp_timeout);
 } 
 
 //

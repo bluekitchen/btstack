@@ -27,7 +27,7 @@ undiscoverable again, once a connection is established. See Listing
         ... 
         // make discoverable
         hci_discoverable_control(1);
-        run_loop_execute(); 
+        btstack_run_loop_execute(); 
         return 0;
     }
     void packet_handler (uint8_t packet_type, uint8_t *packet, uint16_t size){

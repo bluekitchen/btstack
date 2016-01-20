@@ -40,8 +40,8 @@
  *  Functionality special to the CoreFoundation run loop
  */
 
-#ifndef __RUN_LOOP_COCOA_H
-#define __RUN_LOOP_COCOA_H
+#ifndef __btstack_run_loop_COCOA_H
+#define __btstack_run_loop_COCOA_H
 
 #include "btstack_run_loop.h"
 
@@ -50,9 +50,9 @@ extern "C" {
 #endif
 	
 /**
- * Provide run_loop_cocoa instance
+ * Provide btstack_run_loop_cocoa instance
  */
-const run_loop_t * run_loop_cocoa_get_instance(void){
+const btstack_run_loop_t * btstack_run_loop_cocoa_get_instance(void){
 
 /* API_END */
 
@@ -60,4 +60,4 @@ const run_loop_t * run_loop_cocoa_get_instance(void){
 }
 #endif
 
-#endif // __RUN_LOOP_COCOA_H
+#endif // __btstack_run_loop_COCOA_H

@@ -284,7 +284,7 @@ static int process_tap_dev_data(struct data_source *ds)
         network_buffer_len = 0;
     } else {
         // park the current network packet
-        run_loop_remove_data_source(&tap_dev_ds);
+        btstack_run_loop_remove_data_source(&tap_dev_ds);
     }
     return 0;
 }
@@ -501,7 +501,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                             /* Create and register a new runloop data source */
                             tap_dev_ds.fd = tap_fd;
                             tap_dev_ds.process = process_tap_dev_data;
-                            run_loop_add_data_source(&tap_dev_ds);
+                            btstack_run_loop_add_data_source(&tap_dev_ds);
                         }
                     }
 					break;
@@ -517,7 +517,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                  */
                 case BNEP_EVENT_CHANNEL_CLOSED:
                     printf("BNEP channel closed\n");
-                    run_loop_remove_data_source(&tap_dev_ds);
+                    btstack_run_loop_remove_data_source(&tap_dev_ds);
                     if (tap_fd > 0) {
                         close(tap_fd);
                         tap_fd = -1;
@@ -533,7 +533,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                         bnep_send(bnep_cid, network_buffer, network_buffer_len);
                         network_buffer_len = 0;
                         // Re-add the tap device data source
-                        run_loop_add_data_source(&tap_dev_ds);
+                        btstack_run_loop_add_data_source(&tap_dev_ds);
                     }
                     
                     break;

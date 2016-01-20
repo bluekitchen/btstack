@@ -75,8 +75,8 @@ static void heartbeat_handler(timer_source_t *ts){
     hal_led_toggle();
 
     // re-register timer
-    run_loop_set_timer(&heartbeat, HEARTBEAT_PERIOD_MS);
-    run_loop_add_timer(&heartbeat);
+    btstack_run_loop_set_timer(&heartbeat, HEARTBEAT_PERIOD_MS);
+    btstack_run_loop_add_timer(&heartbeat);
 } 
 /* LISTING_END */
 
@@ -92,8 +92,8 @@ int btstack_main(int argc, const char * argv[]){
 
     // set one-shot timer
     heartbeat.process = &heartbeat_handler;
-    run_loop_set_timer(&heartbeat, HEARTBEAT_PERIOD_MS);
-    run_loop_add_timer(&heartbeat);
+    btstack_run_loop_set_timer(&heartbeat, HEARTBEAT_PERIOD_MS);
+    btstack_run_loop_add_timer(&heartbeat);
 
     printf("Running...\n\r");
     return 0;

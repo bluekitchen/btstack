@@ -319,14 +319,14 @@ static void sm_timeout_handler(timer_source_t * timer){
     sm_run();
 }
 static void sm_timeout_start(sm_connection_t * sm_conn){
-    run_loop_remove_timer(&setup->sm_timeout);
-    run_loop_set_timer_handler(&setup->sm_timeout, sm_timeout_handler);
-    run_loop_set_timer(&setup->sm_timeout, 30000); // 30 seconds sm timeout
+    btstack_run_loop_remove_timer(&setup->sm_timeout);
+    btstack_run_loop_set_timer_handler(&setup->sm_timeout, sm_timeout_handler);
+    btstack_run_loop_set_timer(&setup->sm_timeout, 30000); // 30 seconds sm timeout
     btstack_linked_item_set_user((btstack_linked_item_t*) &setup->sm_timeout, sm_conn);
-    run_loop_add_timer(&setup->sm_timeout);
+    btstack_run_loop_add_timer(&setup->sm_timeout);
 }
 static void sm_timeout_stop(void){
-    run_loop_remove_timer(&setup->sm_timeout);
+    btstack_run_loop_remove_timer(&setup->sm_timeout);
 }
 static void sm_timeout_reset(sm_connection_t * sm_conn){
     sm_timeout_stop();
@@ -349,19 +349,19 @@ static void gap_random_address_trigger(void){
 
 static void gap_random_address_update_handler(timer_source_t * timer){
     log_info("GAP Random Address Update due");
-    run_loop_set_timer(&gap_random_address_update_timer, gap_random_adress_update_period);
-    run_loop_add_timer(&gap_random_address_update_timer);
+    btstack_run_loop_set_timer(&gap_random_address_update_timer, gap_random_adress_update_period);
+    btstack_run_loop_add_timer(&gap_random_address_update_timer);
     gap_random_address_trigger();
 }
 
 static void gap_random_address_update_start(void){
-    run_loop_set_timer_handler(&gap_random_address_update_timer, gap_random_address_update_handler);
-    run_loop_set_timer(&gap_random_address_update_timer, gap_random_adress_update_period);
-    run_loop_add_timer(&gap_random_address_update_timer);
+    btstack_run_loop_set_timer_handler(&gap_random_address_update_timer, gap_random_address_update_handler);
+    btstack_run_loop_set_timer(&gap_random_address_update_timer, gap_random_adress_update_period);
+    btstack_run_loop_add_timer(&gap_random_address_update_timer);
 }
 
 static void gap_random_address_update_stop(void){
-    run_loop_remove_timer(&gap_random_address_update_timer);
+    btstack_run_loop_remove_timer(&gap_random_address_update_timer);
 }
 
 

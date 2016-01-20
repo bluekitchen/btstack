@@ -139,14 +139,14 @@ static uint32_t test_data_sent;
 static uint32_t test_data_start;
 
 static void test_reset(void){
-    test_data_start = run_loop_get_time_ms();
+    test_data_start = btstack_run_loop_get_time_ms();
     test_data_sent = 0;
 }
 
 static void test_track_sent(int bytes_sent){
     test_data_sent += test_data_len;
     // evaluate
-    uint32_t now = run_loop_get_time_ms();
+    uint32_t now = btstack_run_loop_get_time_ms();
     uint32_t time_passed = now - test_data_start;
     if (time_passed < REPORT_INTERVAL_MS) return;
     // print speed

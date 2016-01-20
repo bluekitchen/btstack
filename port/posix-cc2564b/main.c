@@ -95,7 +95,7 @@ int main(int argc, const char * argv[]){
 
 	/// GET STARTED with BTstack ///
 	btstack_memory_init();
-    run_loop_init(run_loop_posix_get_instance());
+    btstack_run_loop_init(btstack_run_loop_posix_get_instance());
 	    
 #if 0
     // Ubuntu
@@ -129,7 +129,7 @@ int main(int argc, const char * argv[]){
     btstack_main(argc, argv);
 
     // go
-    run_loop_execute();    
+    btstack_run_loop_execute();    
 
     return 0;
 }

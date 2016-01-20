@@ -199,7 +199,7 @@ static int h4_open(void *transport_config){
     hal_uart_dma_set_csr_irq_handler(ehcill_cts_irq_handler);
     
 	// set up data_source
-    run_loop_add_data_source(&hci_transport_h4_dma_ds);
+    btstack_run_loop_add_data_source(&hci_transport_h4_dma_ds);
     
     // init state machines
     h4_rx_init_sm();
@@ -216,7 +216,7 @@ static int h4_set_baudrate(uint32_t baudrate){
 
 static int h4_close(void *transport_config){
     // first remove run loop handler
-	run_loop_remove_data_source(&hci_transport_h4_dma_ds);
+	btstack_run_loop_remove_data_source(&hci_transport_h4_dma_ds);
     
     // stop IRQ
     hal_uart_dma_set_csr_irq_handler(NULL);
@@ -282,7 +282,7 @@ static void h4_block_received(void){
             bytes_to_read = 0;
             
             // trigger run loop - necessary for use in low power modes
-            run_loop_embedded_trigger();
+            btstack_run_loop_embedded_trigger();
             break;
             
         default:
@@ -314,9 +314,9 @@ static void ehcill_sleep_ack_timer_handler(timer_source_t * timer){
 static void ehcill_sleep_ack_timer_setup(void){
     // setup timer
     ehcill_sleep_ack_timer.process = &ehcill_sleep_ack_timer_handler;
-    run_loop_set_timer(&ehcill_sleep_ack_timer, 50);
-    run_loop_add_timer(&ehcill_sleep_ack_timer);
-    run_loop_embedded_trigger();    
+    btstack_run_loop_set_timer(&ehcill_sleep_ack_timer, 50);
+    btstack_run_loop_add_timer(&ehcill_sleep_ack_timer);
+    btstack_run_loop_embedded_trigger();    
 }
 
 static void ehcill_reactivate_rx(void){
@@ -364,7 +364,7 @@ static void h4_block_sent(void){
                     // trigger run loop
                     tx_state = TX_DONE;
 		            tx_send_packet_sent = 1;
-                    run_loop_embedded_trigger();
+                    btstack_run_loop_embedded_trigger();
                     break;
             }
             break;
@@ -383,7 +383,7 @@ static void h4_block_sent(void){
                 echill_send_wakeup_ind();
             }
             // trigger run loop
-            run_loop_embedded_trigger();
+            btstack_run_loop_embedded_trigger();
             break;
         default:
             break;

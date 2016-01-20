@@ -154,15 +154,15 @@ static void gatt_client_timeout_handler(timer_source_t * timer){
 
 static void gatt_client_timeout_start(gatt_client_t * peripheral){
     log_info("GATT client timeout start, handle 0x%02x", peripheral->handle);
-    run_loop_remove_timer(&peripheral->gc_timeout);
-    run_loop_set_timer_handler(&peripheral->gc_timeout, gatt_client_timeout_handler);
-    run_loop_set_timer(&peripheral->gc_timeout, 30000); // 30 seconds sm timeout
-    run_loop_add_timer(&peripheral->gc_timeout);
+    btstack_run_loop_remove_timer(&peripheral->gc_timeout);
+    btstack_run_loop_set_timer_handler(&peripheral->gc_timeout, gatt_client_timeout_handler);
+    btstack_run_loop_set_timer(&peripheral->gc_timeout, 30000); // 30 seconds sm timeout
+    btstack_run_loop_add_timer(&peripheral->gc_timeout);
 }
 
 static void gatt_client_timeout_stop(gatt_client_t * peripheral){
     log_info("GATT client timeout stop, handle 0x%02x", peripheral->handle);
-    run_loop_remove_timer(&peripheral->gc_timeout);
+    btstack_run_loop_remove_timer(&peripheral->gc_timeout);
 }
 
 static gatt_client_t * get_gatt_client_context_for_handle(uint16_t handle){

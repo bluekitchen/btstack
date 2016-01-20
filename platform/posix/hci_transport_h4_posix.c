@@ -191,7 +191,7 @@ static int    h4_open(void *transport_config){
     hci_transport_h4->uart_fd = fd;
     hci_transport_h4->ds->fd = fd;
     hci_transport_h4->ds->process = h4_process;
-    run_loop_add_data_source(hci_transport_h4->ds);
+    btstack_run_loop_add_data_source(hci_transport_h4->ds);
     
     // also set baudrate
     if (h4_set_baudrate(hci_transport_config_uart->baudrate_init) < 0){
@@ -207,7 +207,7 @@ static int    h4_open(void *transport_config){
 
 static int h4_close(void *transport_config){
     // first remove run loop handler
-	run_loop_remove_data_source(hci_transport_h4->ds);
+	btstack_run_loop_remove_data_source(hci_transport_h4->ds);
     
     // close device 
     close(hci_transport_h4->ds->fd);
@@ -222,7 +222,7 @@ static int h4_send_packet(uint8_t packet_type, uint8_t * packet, int size){
     if (hci_transport_h4->ds == NULL) return -1;
     if (hci_transport_h4->uart_fd == 0) return -1;
 
-    uint32_t start = run_loop_get_time_ms();
+    uint32_t start = btstack_run_loop_get_time_ms();
 
     // store packet type before actual data and increase size
     char *data = (char*) packet;
@@ -240,7 +240,7 @@ static int h4_send_packet(uint8_t packet_type, uint8_t * packet, int size){
         size -= bytes_written;
     }
 
-    uint32_t end = run_loop_get_time_ms();
+    uint32_t end = btstack_run_loop_get_time_ms();
     if (end - start > 10){
         log_info("h4_send_packet: write took %u ms", end - start);
     }
@@ -315,7 +315,7 @@ static int h4_process(struct data_source *ds) {
 
     int read_now = bytes_to_read;
 
-    uint32_t start = run_loop_get_time_ms();
+    uint32_t start = btstack_run_loop_get_time_ms();
     
     // read up to bytes_to_read data in
     ssize_t bytes_read = read(hci_transport_h4->uart_fd, &hci_packet[read_pos], read_now);
@@ -324,7 +324,7 @@ static int h4_process(struct data_source *ds) {
         return bytes_read;
     }
 
-    uint32_t end = run_loop_get_time_ms();
+    uint32_t end = btstack_run_loop_get_time_ms();
     if (end - start > 10){
         log_info("h4_process: read took %u ms", end - start);
     }

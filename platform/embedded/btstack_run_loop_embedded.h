@@ -40,8 +40,8 @@
  *  Functionality special to the embedded run loop
  */
 
-#ifndef __RUN_LOOP_EMBEDDED_H
-#define __RUN_LOOP_EMBEDDED_H
+#ifndef __btstack_run_loop_EMBEDDED_H
+#define __btstack_run_loop_EMBEDDED_H
 
 #include "btstack-config.h"
 #include "btstack_linked_list.h"
@@ -56,31 +56,31 @@ extern "C" {
 #endif
 	
 /**
- * Provide run_loop_embedded instance 
+ * Provide btstack_run_loop_embedded instance 
  */
-const run_loop_t * run_loop_embedded_get_instance(void);
+const btstack_run_loop_t * btstack_run_loop_embedded_get_instance(void);
 
 // hack to fix HCI timer handling
 #ifdef HAVE_TICK
 /**
  * @brief Sets how many milliseconds has one tick.
  */
-uint32_t run_loop_embedded_ticks_for_ms(uint32_t time_in_ms);
+uint32_t btstack_run_loop_embedded_ticks_for_ms(uint32_t time_in_ms);
 /**
  * @brief Queries the current time in ticks.
  */
-uint32_t run_loop_embedded_get_ticks(void);
+uint32_t btstack_run_loop_embedded_get_ticks(void);
 #endif
 
 #ifdef EMBEDDED
 /**
  * @brief Sets an internal flag that is checked in the critical section just before entering sleep mode. Has to be called by the interrupt handler of a data source to signal the run loop that a new data is available.
  */
-void run_loop_embedded_trigger(void);    
+void btstack_run_loop_embedded_trigger(void);    
 /**
  * @brief Execute run_loop once. It can be used to integrate BTstack's timer and data source processing into a foreign run loop (it is not recommended).
  */
-void run_loop_embedded_execute_once(void);
+void btstack_run_loop_embedded_execute_once(void);
 #endif
 
 /* API_END */
@@ -89,4 +89,4 @@ void run_loop_embedded_execute_once(void);
 }
 #endif
 
-#endif // __RUN_LOOP_EMBEDDED_H
+#endif // __btstack_run_loop_EMBEDDED_H

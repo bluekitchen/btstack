@@ -41,22 +41,22 @@
  * Functions relevant for BTstack WICED port 
  */
 
-#ifndef __RUN_LOOP_WICED_H
-#define __RUN_LOOP_WICED_H
+#ifndef __btstack_run_loop_WICED_H
+#define __btstack_run_loop_WICED_H
 
 #include "btstack-config.h"
 #include "btstack_run_loop.h"
 #include "wiced.h"
 
 /**
- * @brief Provide run_loop_posix instance for use with run_loop_init
+ * @brief Provide btstack_run_loop_posix instance for use with btstack_run_loop_init
  */
-const run_loop_t * run_loop_wiced_get_instance(void);
+const btstack_run_loop_t * btstack_run_loop_wiced_get_instance(void);
 
 /*
  * @brief Execute code on BTstack run loop. Can be used to control BTstack from a different thread
  */
-void run_loop_wiced_execute_code_on_main_thread(wiced_result_t (*fn)(void *arg), void * arg);
+void btstack_run_loop_wiced_execute_code_on_main_thread(wiced_result_t (*fn)(void *arg), void * arg);
 
 /* API_END */
 
@@ -64,4 +64,4 @@ void run_loop_wiced_execute_code_on_main_thread(wiced_result_t (*fn)(void *arg),
 }
 #endif
 
-#endif // __RUN_LOOP_WICED_H
+#endif // __btstack_run_loop_WICED_H

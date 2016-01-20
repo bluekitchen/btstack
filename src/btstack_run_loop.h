@@ -41,8 +41,8 @@
  *  Created by Matthias Ringwald on 6/6/09.
  */
 
-#ifndef __RUN_LOOP_H
-#define __RUN_LOOP_H
+#ifndef __btstack_run_loop_H
+#define __btstack_run_loop_H
 
 #include "btstack-config.h"
 
@@ -86,9 +86,9 @@ typedef struct run_loop {
 	void (*execute)(void);
 	void (*dump_timer)(void);
 	uint32_t (*get_time_ms)(void);
-} run_loop_t;
+} btstack_run_loop_t;
 
-void run_loop_timer_dump(void);
+void btstack_run_loop_timer_dump(void);
 
 
 /* API_START */
@@ -96,47 +96,47 @@ void run_loop_timer_dump(void);
 /**
  * @brief Init main run loop. Must be called before any other run loop call.
  *  
- * Use run_loop_$(RUN_LOOP_TYPE)_get_instance() from run_loop_$(RUN_LOOP_TYPE).h to get instance 
+ * Use btstack_run_loop_$(btstack_run_loop_TYPE)_get_instance() from btstack_run_loop_$(btstack_run_loop_TYPE).h to get instance 
  */
-void run_loop_init(const run_loop_t * run_loop);
+void btstack_run_loop_init(const btstack_run_loop_t * run_loop);
 
 /**
  * @brief Set timer based on current time in milliseconds.
  */
-void run_loop_set_timer(timer_source_t *a, uint32_t timeout_in_ms);
+void btstack_run_loop_set_timer(timer_source_t *a, uint32_t timeout_in_ms);
 
 /**
  * @brief Set callback that will be executed when timer expires.
  */
-void run_loop_set_timer_handler(timer_source_t *ts, void (*process)(timer_source_t *_ts));
+void btstack_run_loop_set_timer_handler(timer_source_t *ts, void (*process)(timer_source_t *_ts));
 
 /**
  * @brief Add/Remove timer source.
  */
-void run_loop_add_timer(timer_source_t *timer); 
-int  run_loop_remove_timer(timer_source_t *timer);
+void btstack_run_loop_add_timer(timer_source_t *timer); 
+int  btstack_run_loop_remove_timer(timer_source_t *timer);
 
 /**
  * @brief Get current time in ms
  * @note 32-bit ms counter will overflow after approx. 52 days
  */
-uint32_t run_loop_get_time_ms(void);
+uint32_t btstack_run_loop_get_time_ms(void);
 
 /**
  * @brief Set data source callback.
  */
-void run_loop_set_data_source_handler(data_source_t *ds, int (*process)(data_source_t *_ds));
+void btstack_run_loop_set_data_source_handler(data_source_t *ds, int (*process)(data_source_t *_ds));
 
 /**
  * @brief Add/Remove data source.
  */
-void run_loop_add_data_source(data_source_t *dataSource);
-int  run_loop_remove_data_source(data_source_t *dataSource);
+void btstack_run_loop_add_data_source(data_source_t *dataSource);
+int  btstack_run_loop_remove_data_source(data_source_t *dataSource);
 
 /**
  * @brief Execute configured run loop. This function does not return.
  */
-void run_loop_execute(void);
+void btstack_run_loop_execute(void);
 
 /* API_END */
 
@@ -144,4 +144,4 @@ void run_loop_execute(void);
 }
 #endif
 
-#endif // __RUN_LOOP_H
+#endif // __btstack_run_loop_H

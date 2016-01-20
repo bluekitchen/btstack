@@ -22,7 +22,7 @@ VPATH += ${BTSTACK_ROOT}/src/ble
 VPATH += ${BTSTACK_ROOT}/src/classic
 
 remote_device_db_sources = @REMOTE_DEVICE_DB_SOURCES@
-run_loop_sources = @RUN_LOOP_SOURCES@
+btstack_run_loop_sources = @btstack_run_loop_SOURCES@
 usb_sources = @USB_SOURCES@
 
 libBTstack_SOURCES =    \
@@ -34,7 +34,7 @@ libBTstack_SOURCES =    \
     btstack_run_loop.c  \
     sdp_util.c          \
     utils.c             \
-    $(run_loop_sources) \
+    $(btstack_run_loop_sources) \
 			  
 BTdaemon_SOURCES =      \
     daemon.c            \

@@ -208,7 +208,7 @@ static int h4_open(void *transport_config)
     
     hci_transport_h4->ds->fd = fd;
     hci_transport_h4->ds->process = h4_process;
-    run_loop_add_data_source(hci_transport_h4->ds);
+    btstack_run_loop_add_data_source(hci_transport_h4->ds);
     
     // init state machine
     bytes_to_read = 1;
@@ -230,7 +230,7 @@ err_out0:
 
 static int    h4_close(void *transport_config){
     // first remove run loop handler
-	run_loop_remove_data_source(hci_transport_h4->ds);
+	btstack_run_loop_remove_data_source(hci_transport_h4->ds);
     
     // close device 
     close(hci_transport_h4->ds->fd);
@@ -346,15 +346,15 @@ static void h4_enforce_wake_on(void)
         enforce_wake_fd = open(enforce_wake_device, O_RDWR);
         usleep(HCI_WAKE_DURATION);  // wait until device is ready
     }
-    run_loop_remove_timer(&hci_transport_h4->sleep_timer);
-    run_loop_set_timer(&hci_transport_h4->sleep_timer, HCI_WAKE_TIMER_MS);
+    btstack_run_loop_remove_timer(&hci_transport_h4->sleep_timer);
+    btstack_run_loop_set_timer(&hci_transport_h4->sleep_timer, HCI_WAKE_TIMER_MS);
     hci_transport_h4->sleep_timer.process = h4_enforce_wake_timeout;
-    run_loop_add_timer(&hci_transport_h4->sleep_timer); 
+    btstack_run_loop_add_timer(&hci_transport_h4->sleep_timer); 
 }
 
 static void h4_enforce_wake_off(void)
 {
-    run_loop_remove_timer(&hci_transport_h4->sleep_timer);
+    btstack_run_loop_remove_timer(&hci_transport_h4->sleep_timer);
     
     if (enforce_wake_fd) {
         close(enforce_wake_fd);

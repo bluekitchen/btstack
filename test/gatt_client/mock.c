@@ -123,18 +123,18 @@ int sm_le_device_index(uint16_t handle ){
 	return -1;
 }
 
-void run_loop_set_timer(timer_source_t *a, uint32_t timeout_in_ms){
+void btstack_run_loop_set_timer(timer_source_t *a, uint32_t timeout_in_ms){
 }
 
 // Set callback that will be executed when timer expires.
-void run_loop_set_timer_handler(timer_source_t *ts, void (*process)(timer_source_t *_ts)){
+void btstack_run_loop_set_timer_handler(timer_source_t *ts, void (*process)(timer_source_t *_ts)){
 }
 
 // Add/Remove timer source.
-void run_loop_add_timer(timer_source_t *timer){
+void btstack_run_loop_add_timer(timer_source_t *timer){
 }
 
-int  run_loop_remove_timer(timer_source_t *timer){
+int  btstack_run_loop_remove_timer(timer_source_t *timer){
 	return 1;
 }
 

@@ -309,14 +309,14 @@ static void hsp_timeout_handler(timer_source_t * timer){
 }
 
 static void hsp_timeout_start(void){
-    run_loop_remove_timer(&hs_timeout);
-    run_loop_set_timer_handler(&hs_timeout, hsp_timeout_handler);
-    run_loop_set_timer(&hs_timeout, 2000); // 2 seconds timeout
-    run_loop_add_timer(&hs_timeout);
+    btstack_run_loop_remove_timer(&hs_timeout);
+    btstack_run_loop_set_timer_handler(&hs_timeout, hsp_timeout_handler);
+    btstack_run_loop_set_timer(&hs_timeout, 2000); // 2 seconds timeout
+    btstack_run_loop_add_timer(&hs_timeout);
 }
 
 static void hsp_timeout_stop(void){
-    run_loop_remove_timer(&hs_timeout);
+    btstack_run_loop_remove_timer(&hs_timeout);
 } 
 
 void hsp_ag_start_ringing(void){

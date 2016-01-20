@@ -64,7 +64,7 @@ void btstack_stdin_setup(int (*stdin_process)(data_source_t *_ds)){
 
     stdin_source.fd = 0; // stdin
     stdin_source.process = stdin_process;
-    run_loop_add_data_source(&stdin_source);
+    btstack_run_loop_add_data_source(&stdin_source);
 
     activated = 1;
 }
@@ -73,7 +73,7 @@ void btstack_stdin_reset(void){
     if (!activated) return;
     activated = 0;
     
-    run_loop_remove_data_source(&stdin_source);    
+    btstack_run_loop_remove_data_source(&stdin_source);    
 
 #ifndef _WIN32
     struct termios term = {0};

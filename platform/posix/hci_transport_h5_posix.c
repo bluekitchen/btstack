@@ -160,7 +160,7 @@ static int    h5_open(void *transport_config){
     if (!hci_transport_h5) return -1;
     hci_transport_h5->ds->fd = fd;
     hci_transport_h5->ds->process = h5_process;
-    run_loop_add_data_source(hci_transport_h5->ds);
+    btstack_run_loop_add_data_source(hci_transport_h5->ds);
     
     // init state machine
 	h5_slip_init( &read_sm);
@@ -170,7 +170,7 @@ static int    h5_open(void *transport_config){
 
 static int    h5_close(void *transport_config){
     // first remove run loop handler
-	run_loop_remove_data_source(hci_transport_h5->ds);
+	btstack_run_loop_remove_data_source(hci_transport_h5->ds);
     
     // close device 
     close(hci_transport_h5->ds->fd);

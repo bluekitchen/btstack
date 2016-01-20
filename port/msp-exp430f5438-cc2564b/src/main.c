@@ -95,7 +95,7 @@ static hci_transport_config_uart_t config = {
 static void btstack_setup(void){
     /// GET STARTED with BTstack ///
     btstack_memory_init();
-    run_loop_init(run_loop_embedded_get_instance());
+    btstack_run_loop_init(btstack_run_loop_embedded_get_instance());
     
     // init HCI
     hci_transport_t    * transport = hci_transport_h4_dma_instance();
@@ -117,7 +117,7 @@ int main(void){
     btstack_setup();
     btstack_main(0, NULL);
 
-    run_loop_execute();
+    btstack_run_loop_execute();
 
     return 0;
 }

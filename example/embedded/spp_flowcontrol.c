@@ -119,15 +119,15 @@ static void  heartbeat_handler(struct timer *ts){
         rfcomm_grant_credits(rfcomm_channel_id, 1);
         rfcomm_send_credit = 0;
     }
-    run_loop_set_timer(ts, HEARTBEAT_PERIOD_MS);
-    run_loop_add_timer(ts);
+    btstack_run_loop_set_timer(ts, HEARTBEAT_PERIOD_MS);
+    btstack_run_loop_add_timer(ts);
 } 
 /* LISTING_END */
 
 static void one_shot_timer_setup(void){
     heartbeat.process = &heartbeat_handler;
-    run_loop_set_timer(&heartbeat, HEARTBEAT_PERIOD_MS);
-    run_loop_add_timer(&heartbeat);
+    btstack_run_loop_set_timer(&heartbeat, HEARTBEAT_PERIOD_MS);
+    btstack_run_loop_add_timer(&heartbeat);
 }
 
 /* LISTING_START(phManual): Packet handler with manual credit management */
