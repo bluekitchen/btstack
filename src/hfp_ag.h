@@ -290,11 +290,6 @@ void hfp_ag_send_current_call_status(bd_addr_t bd_addr, int idx);
 /*
  * @brief
  */
-void hfp_ag_send_current_call_status_done(bd_addr_t bd_addr);
-
-/*
- * @brief
- */
 void hfp_ag_hold_incoming_call(void);
 
 /*

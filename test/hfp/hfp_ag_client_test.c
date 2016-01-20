@@ -455,18 +455,14 @@ void packet_handler(uint8_t * event, uint16_t event_size){
         case HFP_SUBEVENT_TRANSMIT_STATUS_OF_CURRENT_CALL:
             if (current_call_index == 0 && current_call_exists_a){
                 printf("HFP_SUBEVENT_TRANSMIT_STATUS_OF_CURRENT_CALL 1\n");
-                hfp_ag_send_current_call_status(device_addr, 1);
                 current_call_index = 1;
                 break;
             }
             if (current_call_index == 1 && current_call_exists_b){
                 printf("HFP_SUBEVENT_TRANSMIT_STATUS_OF_CURRENT_CALL 2 \n");
-                hfp_ag_send_current_call_status(device_addr, 2);
                 current_call_index = 2;
                 break;
             }
-            printf("HFP_SUBEVENT_TRANSMIT_STATUS_OF_CURRENT_CALL 3\n");
-            hfp_ag_send_current_call_status_done(device_addr);
             break;
         case HFP_CMD_CALL_ANSWERED:
             printf("Call answered by HF\n");

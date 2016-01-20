@@ -560,6 +560,7 @@ typedef struct hfp_connection {
     uint8_t next_subscriber_number_to_send;
 
     int send_status_of_current_calls;
+    int next_call_index;
 
     // HF only
     hfp_hf_query_operator_state_t hf_query_operator_state;

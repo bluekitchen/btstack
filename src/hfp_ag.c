@@ -1562,15 +1562,45 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * connect
 
 }
 
+
+static void hfp_ag_send_call_status(hfp_connection_t * connection, int call_index){
+    hfp_gsm_call_t * active_call = hfp_gsm_call(call_index);
+    if (!active_call) return;
+
+    int idx = active_call->index;
+    hfp_enhanced_call_dir_t dir = active_call->direction;
+    hfp_enhanced_call_status_t status = active_call->enhanced_status;
+    hfp_enhanced_call_mode_t mode = active_call->mode;
+    hfp_enhanced_call_mpty_t mpty = active_call->mpty;
+    uint8_t type = active_call->clip_type;
+    char * number = active_call->clip_number;
+
+    char buffer[100];
+    // TODO: check length of a buffer, to fit the MTU
+    int offset = snprintf(buffer, sizeof(buffer), "\r\n%s: %d,%d,%d,%d,%d", HFP_LIST_CURRENT_CALLS, idx, dir, status, mode, mpty);
+    if (number){
+        offset += snprintf(buffer+offset, sizeof(buffer)-offset, ", \"%s\",%u", number, type);
+    } 
+    snprintf(buffer+offset, sizeof(buffer)-offset, "\r\n");
+    printf("hfp_ag_send_current_call_status 000 index %d, dir %d, status %d, mode %d, mpty %d, type %d, number %s\n", idx, dir, status,
+       mode, mpty, type, number);
+    send_str_over_rfcomm(connection->rfcomm_cid, buffer);
+}
+
 static void hfp_run_for_context(hfp_connection_t *context){
     if (!context) return;
     if (!rfcomm_can_send_packet_now(context->rfcomm_cid)) return;
     
     if (context->send_status_of_current_calls){
         context->ok_pending = 0; 
-        // context->send_status_of_current_calls = 0;
-        // _hfp_ag_send_current_call_status(context, 2);
-        hfp_emit_event(hfp_callback, HFP_SUBEVENT_TRANSMIT_STATUS_OF_CURRENT_CALL, 0);
+        if (context->next_call_index < hfp_gsm_get_number_calls()){
+            context->next_call_index++;
+            hfp_ag_send_call_status(context, context->next_call_index);
+        } else {
+            context->next_call_index = 0;
+            context->ok_pending = 1;
+            context->send_status_of_current_calls = 0;
+        }
         return;
     } 
 
@@ -1791,14 +1821,8 @@ static void hfp_handle_rfcomm_data(uint8_t packet_type, uint16_t channel, uint8_
             break;
         case HFP_CMD_LIST_CURRENT_CALLS:   
             context->command = HFP_CMD_NONE;
+            context->next_call_index = 0;
             context->send_status_of_current_calls = 1;
-
-            // for (pos = 0; pos < hfp_gsm_get_number_calls(); pos++){
-                
-            // }
-            
-            hfp_emit_event(hfp_callback, HFP_SUBEVENT_TRANSMIT_STATUS_OF_CURRENT_CALL, 0);
-            //_hfp_ag_send_current_call_status(context, 2);
             break;
         case HFP_CMD_GET_SUBSCRIBER_NUMBER_INFORMATION:
             if (subscriber_numbers_count == 0){
@@ -2237,37 +2261,4 @@ void hfp_ag_set_subcriber_number_information(hfp_phone_number_t * numbers, int n
 }
 
 
-void hfp_ag_send_current_call_status(bd_addr_t bd_addr, int call_index){
-    hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
-    if (!connection) return;
-    
-    hfp_gsm_call_t * active_call = hfp_gsm_call(call_index);
-    if (!active_call) return;
-
-    int idx = active_call->index;
-    hfp_enhanced_call_dir_t dir = active_call->direction;
-    hfp_enhanced_call_status_t status = active_call->enhanced_status;
-    hfp_enhanced_call_mode_t mode = active_call->mode;
-    hfp_enhanced_call_mpty_t mpty = active_call->mpty;
-    uint8_t type = active_call->clip_type;
-    char * number = active_call->clip_number;
-
-    char buffer[100];
-    // TODO: check length of a buffer, to fit the MTU
-    int offset = snprintf(buffer, sizeof(buffer), "\r\n%s: %d,%d,%d,%d,%d", HFP_LIST_CURRENT_CALLS, idx, dir, status, mode, mpty);
-    if (number){
-        offset += snprintf(buffer+offset, sizeof(buffer)-offset, ", \"%s\",%u", number, type);
-    } 
-    snprintf(buffer+offset, sizeof(buffer)-offset, "\r\n");
-    printf("hfp_ag_send_current_call_status 000 index %d, dir %d, status %d, mode %d, mpty %d, type %d, number %s\n", idx, dir, status,
-       mode, mpty, type, number);
-    send_str_over_rfcomm(connection->rfcomm_cid, buffer);
-}
-
-
-void hfp_ag_send_current_call_status_done(bd_addr_t bd_addr){
-    hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
-    connection->ok_pending = 1;
-    connection->send_status_of_current_calls = 0;
-}
 

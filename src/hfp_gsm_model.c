@@ -524,6 +524,7 @@ static void hfp_gsm_handler(hfp_ag_call_event_t event, uint8_t index, uint8_t ty
                 hfp_gsm_set_clip(initiated_call_index, type, number);
                 break;
             }
+
             clip_type = type;
             strncpy(clip_number, number, sizeof(clip_number));
             clip_number[sizeof(clip_number)-1] = '\0';
