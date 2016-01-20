@@ -27,7 +27,7 @@ VPATH += $(BTSTACK_ROOT)/example/daemon
 libBTstack_OBJS  = 		 \
 	hci_cmds.o           \
 	hci_dump.o           \
-	bk_linked_list.o     \
+	btstack_linked_list.o     \
 	run_loop.o           \
 	sdp_util.o           \
 	utils.o 		     \
