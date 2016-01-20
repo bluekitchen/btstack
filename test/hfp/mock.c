@@ -286,16 +286,16 @@ void rfcomm_accept_connection_internal(uint16_t rfcomm_cid){
 	printf("rfcomm_accept_connection_internal \n");
 }
 
-void btstack_run_loop_add_timer(timer_source_t *timer){
+void btstack_run_loop_add_timer(btstack_timer_source_t *timer){
 }
 
-int  btstack_run_loop_remove_timer(timer_source_t *timer){
+int  btstack_run_loop_remove_timer(btstack_timer_source_t *timer){
     return 0;
 }
-void btstack_run_loop_set_timer_handler(timer_source_t *ts, void (*process)(timer_source_t *_ts)){
+void btstack_run_loop_set_timer_handler(btstack_timer_source_t *ts, void (*process)(btstack_timer_source_t *_ts)){
 }
 
-void btstack_run_loop_set_timer(timer_source_t *a, uint32_t timeout_in_ms){
+void btstack_run_loop_set_timer(btstack_timer_source_t *a, uint32_t timeout_in_ms){
 }
 
 

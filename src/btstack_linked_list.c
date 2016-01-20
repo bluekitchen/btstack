@@ -98,7 +98,7 @@ void btstack_linked_list_add_tail(btstack_linked_list_t * list, btstack_linked_i
 /**
  * Remove data_source from run loop
  *
- * @note: assumes that data_source_t.next is first element in data_source
+ * @note: assumes that btstack_data_source_t.next is first element in data_source
  */
 int  btstack_linked_list_remove(btstack_linked_list_t * list, btstack_linked_item_t *item){    // <-- remove item from list
     if (!item) return -1;

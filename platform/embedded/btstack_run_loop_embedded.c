@@ -93,19 +93,19 @@ static int trigger_event_received = 0;
 /**
  * Add data_source to run_loop
  */
-static void btstack_run_loop_embedded_add_data_source(data_source_t *ds){
+static void btstack_run_loop_embedded_add_data_source(btstack_data_source_t *ds){
     btstack_linked_list_add(&data_sources, (btstack_linked_item_t *) ds);
 }
 
 /**
  * Remove data_source from run loop
  */
-static int btstack_run_loop_embedded_remove_data_source(data_source_t *ds){
+static int btstack_run_loop_embedded_remove_data_source(btstack_data_source_t *ds){
     return btstack_linked_list_remove(&data_sources, (btstack_linked_item_t *) ds);
 }
 
 // set timer
-static void btstack_run_loop_embedded_set_timer(timer_source_t *ts, uint32_t timeout_in_ms){
+static void btstack_run_loop_embedded_set_timer(btstack_timer_source_t *ts, uint32_t timeout_in_ms){
 #ifdef HAVE_TICK
     uint32_t ticks = btstack_run_loop_embedded_ticks_for_ms(timeout_in_ms);
     if (ticks == 0) ticks++;
@@ -120,16 +120,16 @@ static void btstack_run_loop_embedded_set_timer(timer_source_t *ts, uint32_t tim
 /**
  * Add timer to run_loop (keep list sorted)
  */
-static void btstack_run_loop_embedded_add_timer(timer_source_t *ts){
+static void btstack_run_loop_embedded_add_timer(btstack_timer_source_t *ts){
 #ifdef TIMER_SUPPORT
     btstack_linked_item_t *it;
     for (it = (btstack_linked_item_t *) &timers; it->next ; it = it->next){
         // don't add timer that's already in there
-        if ((timer_source_t *) it->next == ts){
+        if ((btstack_timer_source_t *) it->next == ts){
             log_error( "btstack_run_loop_timer_add error: timer to add already in list!");
             return;
         }
-        if (ts->timeout < ((timer_source_t *) it->next)->timeout) {
+        if (ts->timeout < ((btstack_timer_source_t *) it->next)->timeout) {
             break;
         }
     }
@@ -141,7 +141,7 @@ static void btstack_run_loop_embedded_add_timer(timer_source_t *ts){
 /**
  * Remove timer from run loop
  */
-static int btstack_run_loop_embedded_remove_timer(timer_source_t *ts){
+static int btstack_run_loop_embedded_remove_timer(btstack_timer_source_t *ts){
 #ifdef TIMER_SUPPORT
     return btstack_linked_list_remove(&timers, (btstack_linked_item_t *) ts);
 #else
@@ -155,7 +155,7 @@ static void btstack_run_loop_embedded_dump_timer(void){
     btstack_linked_item_t *it;
     int i = 0;
     for (it = (btstack_linked_item_t *) timers; it ; it = it->next){
-        timer_source_t *ts = (timer_source_t*) it;
+        btstack_timer_source_t *ts = (btstack_timer_source_t*) it;
         log_info("timer %u, timeout %u\n", i, (unsigned int) ts->timeout);
     }
 #endif
@@ -166,12 +166,12 @@ static void btstack_run_loop_embedded_dump_timer(void){
  * Execute run_loop once
  */
 void btstack_run_loop_embedded_execute_once(void) {
-    data_source_t *ds;
+    btstack_data_source_t *ds;
 
     // process data sources
-    data_source_t *next;
-    for (ds = (data_source_t *) data_sources; ds != NULL ; ds = next){
-        next = (data_source_t *) ds->item.next; // cache pointer to next data_source to allow data source to remove itself
+    btstack_data_source_t *next;
+    for (ds = (btstack_data_source_t *) data_sources; ds != NULL ; ds = next){
+        next = (btstack_data_source_t *) ds->item.next; // cache pointer to next data_source to allow data source to remove itself
         ds->process(ds);
     }
     
@@ -184,7 +184,7 @@ void btstack_run_loop_embedded_execute_once(void) {
 #ifdef TIMER_SUPPORT
     // process timers
     while (timers) {
-        timer_source_t *ts = (timer_source_t *) timers;
+        btstack_timer_source_t *ts = (btstack_timer_source_t *) timers;
         if (ts->timeout > now) break;
         btstack_run_loop_remove_timer(ts);
         ts->process(ts);

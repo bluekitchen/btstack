@@ -181,7 +181,7 @@ typedef struct gatt_client{
     int      le_device_index;
     uint8_t  cmac[8];
 
-    timer_source_t gc_timeout;
+    btstack_timer_source_t gc_timeout;
 } gatt_client_t;
 
 typedef struct gatt_subclient {

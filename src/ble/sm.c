@@ -183,7 +183,7 @@ static void * sm_random_context;
 // data needed for security setup
 typedef struct sm_setup_context {
 
-    timer_source_t sm_timeout;
+    btstack_timer_source_t sm_timeout;
 
     // used in all phases
     uint8_t   sm_pairing_failed_reason;
@@ -309,7 +309,7 @@ static void sm_truncate_key(sm_key_t key, int max_encryption_size){
 // Security Manager Channel. A new SM procedure shall only be performed when a new physical link has been
 // established.
 
-static void sm_timeout_handler(timer_source_t * timer){
+static void sm_timeout_handler(btstack_timer_source_t * timer){
     log_info("SM timeout");
     sm_connection_t * sm_conn = (sm_connection_t *) btstack_linked_item_get_user((btstack_linked_item_t*) timer);
     sm_conn->sm_engine_state = SM_GENERAL_TIMEOUT;
@@ -337,7 +337,7 @@ static void sm_timeout_reset(sm_connection_t * sm_conn){
 
 // GAP Random Address updates
 static gap_random_address_type_t gap_random_adress_type;
-static timer_source_t gap_random_address_update_timer; 
+static btstack_timer_source_t gap_random_address_update_timer; 
 static uint32_t gap_random_adress_update_period;
 
 static void gap_random_address_trigger(void){
@@ -347,7 +347,7 @@ static void gap_random_address_trigger(void){
     sm_run();
 }
 
-static void gap_random_address_update_handler(timer_source_t * timer){
+static void gap_random_address_update_handler(btstack_timer_source_t * timer){
     log_info("GAP Random Address Update due");
     btstack_run_loop_set_timer(&gap_random_address_update_timer, gap_random_adress_update_period);
     btstack_run_loop_add_timer(&gap_random_address_update_timer);

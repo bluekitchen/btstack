@@ -61,7 +61,7 @@ bool sendCounter = false;
 int counter = 0;
 char counterString[20];
 
-static timer_source_t heartbeat;
+static btstack_timer_source_t heartbeat;
 
 /*
  * @section Setup

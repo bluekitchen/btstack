@@ -223,7 +223,7 @@ uint16_t l2cap_get_remote_mtu_for_local_cid(uint16_t local_cid){
     return 0;
 }
 
-static l2cap_channel_t * l2cap_channel_for_rtx_timer(timer_source_t * ts){
+static l2cap_channel_t * l2cap_channel_for_rtx_timer(btstack_timer_source_t * ts){
     btstack_linked_list_iterator_t it;    
     btstack_linked_list_iterator_init(&it, &l2cap_channels);
     while (btstack_linked_list_iterator_has_next(&it)){
@@ -235,7 +235,7 @@ static l2cap_channel_t * l2cap_channel_for_rtx_timer(timer_source_t * ts){
     return NULL;
 }
 
-static void l2cap_rtx_timeout(timer_source_t * ts){
+static void l2cap_rtx_timeout(btstack_timer_source_t * ts){
     l2cap_channel_t * channel = l2cap_channel_for_rtx_timer(ts);
     if (!ts) return;
 

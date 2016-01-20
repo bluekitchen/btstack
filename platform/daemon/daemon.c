@@ -176,7 +176,7 @@ static client_state_t * client_for_connection(connection_t *connection);
 // MARK: globals
 static hci_transport_t * transport;
 static hci_transport_config_uart_t hci_transport_config_uart;
-static timer_source_t timeout;
+static btstack_timer_source_t timeout;
 static uint8_t timeout_active = 0;
 static int power_management_sleep = 0;
 static btstack_linked_list_t clients = NULL;        // list of connected clients `

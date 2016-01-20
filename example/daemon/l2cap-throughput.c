@@ -58,7 +58,7 @@ bd_addr_t addr = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 uint8_t packet[PACKET_SIZE];
 uint32_t counter = 0;
 
-timer_source_t timer;
+btstack_timer_source_t timer;
 
 void update_packet(void){
     net_store_32( packet, 0, counter++);

@@ -74,7 +74,7 @@ static uint16_t le_peripheral_todos = 0;
 static bool have_custom_addr;
 static bd_addr_t public_bd_addr;
 
-static timer_source_t connection_timer;
+static btstack_timer_source_t connection_timer;
 
 static void (*bleAdvertismentCallback)(BLEAdvertisement * bleAdvertisement) = NULL;
 static void (*bleDeviceConnectedCallback)(BLEStatus status, BLEDevice * device)= NULL;
@@ -300,7 +300,7 @@ static void gatt_client_callback(uint8_t packet_type, uint8_t * packet, uint16_t
     }
 }
 
-static void connection_timeout_handler(timer_source_t * timer){
+static void connection_timeout_handler(btstack_timer_source_t * timer){
     // log_info("Cancel outgoing connection");
     le_central_connect_cancel();
     if (!bleDeviceConnectedCallback) return;

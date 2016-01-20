@@ -98,7 +98,7 @@ typedef enum {
 
 typedef struct hci_transport_h4 {
     hci_transport_t transport;
-    data_source_t *ds;
+    btstack_data_source_t *ds;
 } hci_transport_h4_t;
 
 // prototypes
@@ -143,10 +143,10 @@ static uint8_t * tx_data;
 static uint16_t  tx_len;                        // 0 == no outgoing packet
 
 // work around for eHCILL problem
-static timer_source_t ehcill_sleep_ack_timer;
+static btstack_timer_source_t ehcill_sleep_ack_timer;
 
 // data source used in run_loop
-static data_source_t hci_transport_h4_dma_ds = {
+static btstack_data_source_t hci_transport_h4_dma_ds = {
   /*  .item    = */  { NULL, NULL },
   /*  .fd      = */  0,
   /*  .process = */  h4_process
@@ -306,7 +306,7 @@ static int h4_outgoing_packet_ready(void){
     return tx_len != 0;
 }
 
-static void ehcill_sleep_ack_timer_handler(timer_source_t * timer){
+static void ehcill_sleep_ack_timer_handler(btstack_timer_source_t * timer){
     tx_state = TX_W4_EHCILL_SENT;
     hal_uart_dma_send_block(&ehcill_command_to_send, 1);    
 }

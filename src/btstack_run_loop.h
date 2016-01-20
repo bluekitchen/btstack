@@ -58,13 +58,13 @@
 extern "C" {
 #endif
 	
-typedef struct data_source {
+typedef struct btstack_data_source {
     btstack_linked_item_t item;
     int  fd;                                 // <-- file descriptor to watch or 0
     int  (*process)(struct data_source *ds); // <-- do processing
-} data_source_t;
+} btstack_data_source_t;
 
-typedef struct timer {
+typedef struct btstack_timer {
     btstack_linked_item_t item; 
 #ifdef HAVE_TIME
     struct timeval timeout;                  // <-- next timeout
@@ -73,16 +73,16 @@ typedef struct timer {
     uint32_t timeout;                       // timeout in system ticks (HAVE_TICK) or millis (HAVE_TIME_MS)
 #endif
     void  (*process)(struct timer *ts);      // <-- do processing
-} timer_source_t;
+} btstack_timer_source_t;
 
 // 
-typedef struct run_loop {
+typedef struct btstack_run_loop {
 	void (*init)(void);
-	void (*add_data_source)(data_source_t *dataSource);
-	int  (*remove_data_source)(data_source_t *dataSource);
-	void (*set_timer)(timer_source_t * timer, uint32_t timeout_in_ms);
-	void (*add_timer)(timer_source_t *timer);
-	int  (*remove_timer)(timer_source_t *timer); 
+	void (*add_data_source)(btstack_data_source_t *dataSource);
+	int  (*remove_data_source)(btstack_data_source_t *dataSource);
+	void (*set_timer)(btstack_timer_source_t * timer, uint32_t timeout_in_ms);
+	void (*add_timer)(btstack_timer_source_t *timer);
+	int  (*remove_timer)(btstack_timer_source_t *timer); 
 	void (*execute)(void);
 	void (*dump_timer)(void);
 	uint32_t (*get_time_ms)(void);
@@ -103,18 +103,18 @@ void btstack_run_loop_init(const btstack_run_loop_t * run_loop);
 /**
  * @brief Set timer based on current time in milliseconds.
  */
-void btstack_run_loop_set_timer(timer_source_t *a, uint32_t timeout_in_ms);
+void btstack_run_loop_set_timer(btstack_timer_source_t *a, uint32_t timeout_in_ms);
 
 /**
  * @brief Set callback that will be executed when timer expires.
  */
-void btstack_run_loop_set_timer_handler(timer_source_t *ts, void (*process)(timer_source_t *_ts));
+void btstack_run_loop_set_timer_handler(btstack_timer_source_t *ts, void (*process)(btstack_timer_source_t *_ts));
 
 /**
  * @brief Add/Remove timer source.
  */
-void btstack_run_loop_add_timer(timer_source_t *timer); 
-int  btstack_run_loop_remove_timer(timer_source_t *timer);
+void btstack_run_loop_add_timer(btstack_timer_source_t *timer); 
+int  btstack_run_loop_remove_timer(btstack_timer_source_t *timer);
 
 /**
  * @brief Get current time in ms
@@ -125,13 +125,13 @@ uint32_t btstack_run_loop_get_time_ms(void);
 /**
  * @brief Set data source callback.
  */
-void btstack_run_loop_set_data_source_handler(data_source_t *ds, int (*process)(data_source_t *_ds));
+void btstack_run_loop_set_data_source_handler(btstack_data_source_t *ds, int (*process)(btstack_data_source_t *_ds));
 
 /**
  * @brief Add/Remove data source.
  */
-void btstack_run_loop_add_data_source(data_source_t *dataSource);
-int  btstack_run_loop_remove_data_source(data_source_t *dataSource);
+void btstack_run_loop_add_data_source(btstack_data_source_t *dataSource);
+int  btstack_run_loop_remove_data_source(btstack_data_source_t *dataSource);
 
 /**
  * @brief Execute configured run loop. This function does not return.

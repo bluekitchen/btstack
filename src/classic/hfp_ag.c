@@ -800,7 +800,7 @@ static int hfp_ag_run_for_audio_connection(hfp_connection_t * context){
     return 0;
 }
 
-static hfp_connection_t * hfp_ag_context_for_timer(timer_source_t * ts){
+static hfp_connection_t * hfp_ag_context_for_timer(btstack_timer_source_t * ts){
     btstack_linked_list_iterator_t it;    
     btstack_linked_list_iterator_init(&it, hfp_get_connections());
 
@@ -813,7 +813,7 @@ static hfp_connection_t * hfp_ag_context_for_timer(timer_source_t * ts){
     return NULL;
 }
 
-static void hfp_timeout_handler(timer_source_t * timer){
+static void hfp_timeout_handler(btstack_timer_source_t * timer){
     hfp_connection_t * context = hfp_ag_context_for_timer(timer);
     if (!context) return;
 

@@ -63,8 +63,8 @@ an UART or an USB driver. Timers are used by BTstack to implement
 various Bluetooth-related timeouts. They can also be used to handle
 periodic events.
 
-Data sources and timers are represented by the *data_source_t* and
-*timer_source_t* structs respectively. Each of these structs contain a
+Data sources and timers are represented by the *btstack_data_source_t* and
+*btstack_timer_source_t* structs respectively. Each of these structs contain a
 linked list node and a pointer to a callback function. All active timers
 and data sources are kept in link lists. While the list of data sources
 is unsorted, the timers are sorted by expiration timeout for efficient

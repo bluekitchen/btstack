@@ -198,7 +198,7 @@ typedef struct {
     // linked list - assert: first field
     btstack_linked_item_t    item;
     
-    timer_source_t   timer;
+    btstack_timer_source_t   timer;
     int              timer_active;
     
 	RFCOMM_MULTIPLEXER_STATE state;	

@@ -74,10 +74,10 @@ static void dummy_handler(uint8_t packet_type, uint8_t *packet, uint16_t size);
 
 typedef struct hci_transport_h4 {
     hci_transport_t transport;
-    data_source_t *ds;
+    btstack_data_source_t *ds;
     int uart_fd;    // different from ds->fd for HCI reader thread
     /* power management support, e.g. used by iOS */
-    timer_source_t sleep_timer;
+    btstack_timer_source_t sleep_timer;
 } hci_transport_h4_t;
 
 // single instance

@@ -84,7 +84,7 @@
 
 static void hci_update_scan_enable(void);
 static gap_security_level_t gap_security_level_for_connection(hci_connection_t * connection);
-static void hci_connection_timeout_handler(timer_source_t *timer);
+static void hci_connection_timeout_handler(btstack_timer_source_t *timer);
 static void hci_connection_timestamp(hci_connection_t *connection);
 static int  hci_power_control_on(void);
 static void hci_power_control_off(void);
@@ -196,7 +196,7 @@ hci_connection_t * hci_connection_for_bd_addr_and_type(bd_addr_t  addr, bd_addr_
     return NULL;
 }
 
-static void hci_connection_timeout_handler(timer_source_t *timer){
+static void hci_connection_timeout_handler(btstack_timer_source_t *timer){
     hci_connection_t * connection = (hci_connection_t *) btstack_linked_item_get_user(&timer->item);
 #ifdef HAVE_TIME
     struct timeval tv;
@@ -855,7 +855,7 @@ static uint32_t hci_transport_uart_get_main_baud_rate(void){
     return baud_rate;
 }
 
-static void hci_initialization_timeout_handler(timer_source_t * ds){
+static void hci_initialization_timeout_handler(btstack_timer_source_t * ds){
     switch (hci_stack->substate){
         case HCI_INIT_W4_SEND_RESET:
             log_info("Resend HCI Reset");

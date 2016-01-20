@@ -54,7 +54,7 @@
 #define HEARTBEAT_PERIOD_MS 1000
 
 static int counter = 0;
-static timer_source_t heartbeat;
+static btstack_timer_source_t heartbeat;
     
 /* @section Periodic Timer Setup 
  *
@@ -65,7 +65,7 @@ static timer_source_t heartbeat;
  */ 
 
 /* LISTING_START(LEDToggler): Periodic counter */  
-static void heartbeat_handler(timer_source_t *ts){     
+static void heartbeat_handler(btstack_timer_source_t *ts){     
     // increment counter
     char lineBuffer[30];
     sprintf(lineBuffer, "BTstack counter %04u\n\r", ++counter);

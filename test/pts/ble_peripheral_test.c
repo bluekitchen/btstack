@@ -110,7 +110,7 @@ static bd_addr_t master_address;
 static int ui_passkey = 0;
 static int ui_digits_for_passkey = 0;
 
-static timer_source_t heartbeat;
+static btstack_timer_source_t heartbeat;
 static uint8_t counter = 0;
 static int update_client = 0;
 static int client_configuration = 0;

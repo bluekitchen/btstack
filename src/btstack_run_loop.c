@@ -67,11 +67,11 @@ static void btstack_run_loop_assert(void){
 }
 
 
-void btstack_run_loop_set_timer_handler(timer_source_t *ts, void (*process)(timer_source_t *_ts)){
+void btstack_run_loop_set_timer_handler(btstack_timer_source_t *ts, void (*process)(btstack_timer_source_t *_ts)){
     ts->process = process;
 };
 
-void btstack_run_loop_set_data_source_handler(data_source_t *ds, int (*process)(data_source_t *_ds)){
+void btstack_run_loop_set_data_source_handler(btstack_data_source_t *ds, int (*process)(btstack_data_source_t *_ds)){
     ds->process = process;
 };
 
@@ -79,7 +79,7 @@ void btstack_run_loop_set_data_source_handler(data_source_t *ds, int (*process)(
 /**
  * Add data_source to run_loop
  */
-void btstack_run_loop_add_data_source(data_source_t *ds){
+void btstack_run_loop_add_data_source(btstack_data_source_t *ds){
     btstack_run_loop_assert();
     if (the_run_loop->add_data_source){
         the_run_loop->add_data_source(ds);
@@ -91,7 +91,7 @@ void btstack_run_loop_add_data_source(data_source_t *ds){
 /**
  * Remove data_source from run loop
  */
-int btstack_run_loop_remove_data_source(data_source_t *ds){
+int btstack_run_loop_remove_data_source(btstack_data_source_t *ds){
     btstack_run_loop_assert();
     if (the_run_loop->remove_data_source){
         return the_run_loop->remove_data_source(ds);
@@ -101,7 +101,7 @@ int btstack_run_loop_remove_data_source(data_source_t *ds){
     }
 }
 
-void btstack_run_loop_set_timer(timer_source_t *a, uint32_t timeout_in_ms){
+void btstack_run_loop_set_timer(btstack_timer_source_t *a, uint32_t timeout_in_ms){
     btstack_run_loop_assert();
     the_run_loop->set_timer(a, timeout_in_ms);
 }
@@ -109,7 +109,7 @@ void btstack_run_loop_set_timer(timer_source_t *a, uint32_t timeout_in_ms){
 /**
  * Add timer to run_loop (keep list sorted)
  */
-void btstack_run_loop_add_timer(timer_source_t *ts){
+void btstack_run_loop_add_timer(btstack_timer_source_t *ts){
     btstack_run_loop_assert();
     the_run_loop->add_timer(ts);
 }
@@ -117,7 +117,7 @@ void btstack_run_loop_add_timer(timer_source_t *ts){
 /**
  * Remove timer from run loop
  */
-int btstack_run_loop_remove_timer(timer_source_t *ts){
+int btstack_run_loop_remove_timer(btstack_timer_source_t *ts){
     btstack_run_loop_assert();
     return the_run_loop->remove_timer(ts);
 }

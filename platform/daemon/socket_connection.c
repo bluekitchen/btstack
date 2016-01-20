@@ -111,7 +111,7 @@ typedef enum {
 } SOCKET_STATE;
 
 struct connection {
-    data_source_t ds;       // used for run loop
+    btstack_data_source_t ds;       // used for run loop
     btstack_linked_item_t item;     // used for connection list, user_data points to connection_t base
     SOCKET_STATE state;
     uint16_t bytes_read;
@@ -275,7 +275,7 @@ void socket_connection_retry_parked(void){
         if (!dispatch_err) {
             log_info("socket_connection_hci_process dispatch succeeded -> un-park connection %p", conn);
             it->next = it->next->next;
-            btstack_run_loop_add_data_source( (data_source_t *) conn);
+            btstack_run_loop_add_data_source( (btstack_data_source_t *) conn);
         } else {
             it = it->next;
         }
@@ -316,8 +316,8 @@ static int socket_connection_accept(struct data_source *socket_ds) {
  */
 int socket_connection_create_tcp(int port){
     
-    // create data_source_t
-    data_source_t *ds = malloc( sizeof(data_source_t));
+    // create btstack_data_source_t
+    btstack_data_source_t *ds = malloc( sizeof(btstack_data_source_t));
     if (ds == NULL) return -1;
     ds->fd = 0;
     ds->process = socket_connection_accept;
@@ -371,8 +371,8 @@ void socket_connection_launchd_register_fd_array(launch_data_t listening_fd_arra
         launch_data_free (tempi);
 		log_info("file descriptor = %u", listening_fd);
         
-        // create data_source_t for fd
-        data_source_t *ds = malloc( sizeof(data_source_t));
+        // create btstack_data_source_t for fd
+        btstack_data_source_t *ds = malloc( sizeof(btstack_data_source_t));
         if (ds == NULL) return;
         ds->process = socket_connection_accept;
         ds->fd = listening_fd;
@@ -457,8 +457,8 @@ int socket_connection_create_launchd(void){
  */
 int socket_connection_create_unix(char *path){
         
-    // create data_source_t
-    data_source_t *ds = malloc( sizeof(data_source_t));
+    // create btstack_data_source_t
+    btstack_data_source_t *ds = malloc( sizeof(btstack_data_source_t));
     if (ds == NULL) return -1;
     ds->fd = 0;
     ds->process = socket_connection_accept;

@@ -53,7 +53,7 @@ static struct timeval init_tv;
 static const btstack_run_loop_t btstack_run_loop_cocoa;
 
 static void theCFRunLoopTimerCallBack (CFRunLoopTimerRef timer,void *info){
-    timer_source_t * ts = (timer_source_t*)info;
+    btstack_timer_source_t * ts = (btstack_timer_source_t*)info;
     ts->process(ts);
 }
 
@@ -65,13 +65,13 @@ static void socketDataCallback (
 						 void *info) {
 	
     if (callbackType == kCFSocketReadCallBack && info){
-        data_source_t *dataSource = (data_source_t *) info;
+        btstack_data_source_t *dataSource = (btstack_data_source_t *) info;
         // printf("btstack_run_loop_cocoa_data_source %x - fd %u, CFSocket %x, CFRunLoopSource %x\n", (int) dataSource, dataSource->fd, (int) s, (int) dataSource->item.next);
         dataSource->process(dataSource);
     }
 }
 
-void btstack_run_loop_cocoa_add_data_source(data_source_t *dataSource){
+void btstack_run_loop_cocoa_add_data_source(btstack_data_source_t *dataSource){
 
 	// add fd as CFSocket
 	
@@ -105,7 +105,7 @@ void btstack_run_loop_cocoa_add_data_source(data_source_t *dataSource){
     
 }
 
-int  btstack_run_loop_cocoa_remove_data_source(data_source_t *dataSource){
+int  btstack_run_loop_cocoa_remove_data_source(btstack_data_source_t *dataSource){
     // printf("btstack_run_loop_cocoa_remove_data_source %x - fd %u, CFSocket %x, CFRunLoopSource %x\n", (int) dataSource, dataSource->fd, (int) dataSource->item.next, (int) dataSource->item.user_data);
     CFRunLoopRemoveSource( CFRunLoopGetCurrent(), (CFRunLoopSourceRef) dataSource->item.user_data, kCFRunLoopCommonModes);
     CFRelease(dataSource->item.user_data);
@@ -114,7 +114,7 @@ int  btstack_run_loop_cocoa_remove_data_source(data_source_t *dataSource){
 	return 0;
 }
 
-void  btstack_run_loop_cocoa_add_timer(timer_source_t * ts)
+void  btstack_run_loop_cocoa_add_timer(btstack_timer_source_t * ts)
 {
     // note: ts uses unix time: seconds since Jan 1st 1970, CF uses Jan 1st 2001 as reference date
     // printf("kCFAbsoluteTimeIntervalSince1970 = %f\n", kCFAbsoluteTimeIntervalSince1970);
@@ -129,7 +129,7 @@ void  btstack_run_loop_cocoa_add_timer(timer_source_t * ts)
     CFRunLoopAddTimer(CFRunLoopGetCurrent(), timerRef, kCFRunLoopCommonModes);
 }
 
-int  btstack_run_loop_cocoa_remove_timer(timer_source_t * ts){
+int  btstack_run_loop_cocoa_remove_timer(btstack_timer_source_t * ts){
     // printf("btstack_run_loop_cocoa_remove_timer %x -> %x\n", (int) ts, (int) ts->item.next);
 	if (ts->item.next != NULL) {
     	CFRunLoopTimerInvalidate((CFRunLoopTimerRef) ts->item.next);    // also removes timer from run loops + releases it
@@ -139,7 +139,7 @@ int  btstack_run_loop_cocoa_remove_timer(timer_source_t * ts){
 }
 
 // set timer
-static void btstack_run_loop_cocoa_set_timer(timer_source_t *a, uint32_t timeout_in_ms){
+static void btstack_run_loop_cocoa_set_timer(btstack_timer_source_t *a, uint32_t timeout_in_ms){
     gettimeofday(&a->timeout, NULL);
     a->timeout.tv_sec  +=  timeout_in_ms / 1000;
     a->timeout.tv_usec += (timeout_in_ms % 1000) * 1000;

@@ -232,7 +232,7 @@ int btstack_main(int argc, const char * argv[]){
     sdp_register_service(spp_service_buffer);
     
     // set one-shot timer
-    timer_source_t heartbeat;
+    btstack_timer_source_t heartbeat;
     heartbeat.process = &heartbeat_handler;
     btstack_run_loop_set_timer(&heartbeat, HEARTBEAT_PERIOD_MS);
     btstack_run_loop_add_timer(&heartbeat);

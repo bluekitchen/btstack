@@ -610,7 +610,7 @@ int bnep_set_multicast_filter(uint16_t bnep_cid,  bnep_multi_filter_t *filter, u
 }
 
 /* BNEP timeout timer helper function */
-static void bnep_channel_timer_handler(timer_source_t *timer)
+static void bnep_channel_timer_handler(btstack_timer_source_t *timer)
 {
     bnep_channel_t *channel = (bnep_channel_t *)btstack_linked_item_get_user((btstack_linked_item_t *) timer);
     // retry send setup connection at least one time

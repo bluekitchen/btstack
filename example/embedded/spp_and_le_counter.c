@@ -82,7 +82,7 @@ static uint8_t   spp_service_buffer[150];
 static int       le_notification_enabled;
 
 // THE Couner
-static timer_source_t heartbeat;
+static btstack_timer_source_t heartbeat;
 static int  counter = 0;
 static char counter_string[30];
 static int  counter_string_len;

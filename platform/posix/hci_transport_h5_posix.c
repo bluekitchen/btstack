@@ -54,7 +54,7 @@
 
 typedef struct hci_transport_h5 {
     hci_transport_t transport;
-    data_source_t *ds;
+    btstack_data_source_t *ds;
 } hci_transport_h5_t;
 
 // h5 slip state machine
@@ -156,7 +156,7 @@ static int    h5_open(void *transport_config){
     }
     
     // set up data_source
-    hci_transport_h5->ds = malloc(sizeof(data_source_t));
+    hci_transport_h5->ds = malloc(sizeof(btstack_data_source_t));
     if (!hci_transport_h5) return -1;
     hci_transport_h5->ds->fd = fd;
     hci_transport_h5->ds->process = h5_process;

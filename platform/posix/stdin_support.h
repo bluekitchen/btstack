@@ -45,7 +45,7 @@ extern "C" {
 #endif
 
 // setup handler for command line interface
-void btstack_stdin_setup(int (*stdin_handler)(data_source_t *_ds));
+void btstack_stdin_setup(int (*stdin_handler)(btstack_data_source_t *_ds));
 
 // gets called by main.c
 void btstack_stdin_reset(void);

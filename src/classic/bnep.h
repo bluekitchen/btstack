@@ -132,7 +132,7 @@ typedef struct {
     uint16_t             multicast_filter_out_count;
 
 
-    timer_source_t     timer;             // Timeout timer
+    btstack_timer_source_t     timer;             // Timeout timer
     int                timer_active;      // Is a timer running?
     int                retry_count;       // number of retries for CONTROL SETUP MSG
     // l2cap packet handler

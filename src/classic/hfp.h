@@ -537,7 +537,7 @@ typedef struct hfp_connection {
     uint8_t establish_audio_connection; 
     uint8_t release_audio_connection; 
 
-    timer_source_t hfp_timeout;
+    btstack_timer_source_t hfp_timeout;
 
     uint8_t microphone_gain;
     uint8_t send_microphone_gain;

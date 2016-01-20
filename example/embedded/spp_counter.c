@@ -114,7 +114,7 @@ static void spp_service_setup(void){
  */
 
 /* LISTING_START(PeriodicCounter): Periodic Counter */ 
-static timer_source_t heartbeat;
+static btstack_timer_source_t heartbeat;
 
 static void  heartbeat_handler(struct timer *ts){
     static int counter = 0;

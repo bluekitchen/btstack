@@ -46,10 +46,10 @@
 #include <termios.h>
 #endif
 
-static data_source_t stdin_source;
+static btstack_data_source_t stdin_source;
 static int activated = 0;
 
-void btstack_stdin_setup(int (*stdin_process)(data_source_t *_ds)){
+void btstack_stdin_setup(int (*stdin_process)(btstack_data_source_t *_ds)){
 
 #ifndef _WIN32
     struct termios term = {0};

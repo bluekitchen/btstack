@@ -70,22 +70,22 @@ static uint32_t btstack_run_loop_wiced_get_time_ms(void){
 }
 
 // set timer
-static void btstack_run_loop_wiced_set_timer(timer_source_t *ts, uint32_t timeout_in_ms){
+static void btstack_run_loop_wiced_set_timer(btstack_timer_source_t *ts, uint32_t timeout_in_ms){
     ts->timeout = btstack_run_loop_wiced_get_time_ms() + timeout_in_ms + 1;
 }
 
 /**
  * Add timer to run_loop (keep list sorted)
  */
-static void btstack_run_loop_wiced_add_timer(timer_source_t *ts){
+static void btstack_run_loop_wiced_add_timer(btstack_timer_source_t *ts){
     btstack_linked_item_t *it;
     for (it = (btstack_linked_item_t *) &timers; it->next ; it = it->next){
         // don't add timer that's already in there
-        if ((timer_source_t *) it->next == ts){
+        if ((btstack_timer_source_t *) it->next == ts){
             log_error( "btstack_run_loop_timer_add error: timer to add already in list!");
             return;
         }
-        if (ts->timeout < ((timer_source_t *) it->next)->timeout) {
+        if (ts->timeout < ((btstack_timer_source_t *) it->next)->timeout) {
             break;
         }
     }
@@ -96,7 +96,7 @@ static void btstack_run_loop_wiced_add_timer(timer_source_t *ts){
 /**
  * Remove timer from run loop
  */
-static int btstack_run_loop_wiced_remove_timer(timer_source_t *ts){
+static int btstack_run_loop_wiced_remove_timer(btstack_timer_source_t *ts){
     return btstack_linked_list_remove(&timers, (btstack_linked_item_t *) ts);
 }
 
@@ -105,7 +105,7 @@ static void btstack_run_loop_wiced_dump_timer(void){
     btstack_linked_item_t *it;
     int i = 0;
     for (it = (btstack_linked_item_t *) timers; it ; it = it->next){
-        timer_source_t *ts = (timer_source_t*) it;
+        btstack_timer_source_t *ts = (btstack_timer_source_t*) it;
         log_info("timer %u, timeout %u\n", i, (unsigned int) ts->timeout);
     }
 #endif
@@ -127,7 +127,7 @@ static void btstack_run_loop_wiced_execute(void) {
         // get next timeout
         uint32_t timeout_ms = WICED_NEVER_TIMEOUT;
         if (timers) {
-            timer_source_t * ts = (timer_source_t *) timers;
+            btstack_timer_source_t * ts = (btstack_timer_source_t *) timers;
             uint32_t now = btstack_run_loop_wiced_get_time_ms();
             if (ts->timeout < now){
                 // remove timer before processing it to allow handler to re-register with run loop

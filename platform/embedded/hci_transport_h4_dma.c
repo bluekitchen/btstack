@@ -75,7 +75,7 @@ typedef enum {
 
 typedef struct hci_transport_h4 {
     hci_transport_t transport;
-    data_source_t *ds;
+    btstack_data_source_t *ds;
 } hci_transport_h4_t;
 
 // prototypes
@@ -106,7 +106,7 @@ static TX_STATE tx_state;
 // static hci_transport_h4_t * hci_transport_h4 = NULL;
 static  void (*packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size) = dummy_handler;
 
-static data_source_t hci_transport_h4_dma_ds = {
+static btstack_data_source_t hci_transport_h4_dma_ds = {
   /*  .item    = */  { NULL, NULL },
   /*  .fd      = */  0,
   /*  .process = */  h4_process

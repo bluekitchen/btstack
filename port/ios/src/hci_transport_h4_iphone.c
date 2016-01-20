@@ -99,10 +99,10 @@ typedef enum {
 
 typedef struct hci_transport_h4 {
     hci_transport_t transport;
-    data_source_t *ds;
+    btstack_data_source_t *ds;
     int uart_fd;    // different from ds->fd for HCI reader thread
     /* power management support, e.g. used by iOS */
-    timer_source_t sleep_timer;
+    btstack_timer_source_t sleep_timer;
 } hci_transport_h4_t;
 
 
@@ -202,7 +202,7 @@ static int h4_open(void *transport_config)
     }
         
     // set up data_source
-    hci_transport_h4->ds = malloc(sizeof(data_source_t));
+    hci_transport_h4->ds = malloc(sizeof(btstack_data_source_t));
     if (!hci_transport_h4->ds) return -1;
     hci_transport_h4->uart_fd = fd;
     

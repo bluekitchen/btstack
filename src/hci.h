@@ -379,7 +379,7 @@ typedef struct {
     // errands
     uint32_t authentication_flags;
 
-    timer_source_t timeout;
+    btstack_timer_source_t timeout;
     
 #ifdef HAVE_TIME
     // timer
@@ -578,7 +578,7 @@ typedef struct {
     /* hci state machine */
     HCI_STATE      state;
     hci_substate_t substate;
-    timer_source_t timeout;
+    btstack_timer_source_t timeout;
     uint8_t   cmds_ready;
     
     uint16_t  last_cmd_opcode;

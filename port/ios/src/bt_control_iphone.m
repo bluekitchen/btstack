@@ -124,7 +124,7 @@ IOReturn IOCancelPowerChange ( io_connect_t kernelPort, long notificationID );
 // local globals
 static io_connect_t  root_port = 0; // a reference to the Root Power Domain IOService
 static int power_notification_pipe_fds[2];
-static data_source_t power_notification_ds;
+static btstack_data_source_t power_notification_ds;
 
 static void (*power_notification_callback)(POWER_NOTIFICATION_t event) = NULL;
 

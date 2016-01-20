@@ -716,7 +716,7 @@ static void rfcomm_multiplexer_finalize(rfcomm_multiplexer_t * multiplexer){
     rfcomm_multiplexer_free(multiplexer);
 }
 
-static void rfcomm_multiplexer_timer_handler(timer_source_t *timer){
+static void rfcomm_multiplexer_timer_handler(btstack_timer_source_t *timer){
     rfcomm_multiplexer_t * multiplexer = (rfcomm_multiplexer_t *) btstack_linked_item_get_user( (btstack_linked_item_t *) timer);
     if (rfcomm_multiplexer_has_channels(multiplexer)) return;
 

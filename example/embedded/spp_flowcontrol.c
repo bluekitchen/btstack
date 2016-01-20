@@ -111,7 +111,7 @@ static void spp_service_setup(void){
  * second. The heartbeat handler code is shown in Listing hbhManual. 
  */ 
 
-static timer_source_t heartbeat;
+static btstack_timer_source_t heartbeat;
 
 /* LISTING_START(hbhManual): Heartbeat handler with manual credit management */ 
 static void  heartbeat_handler(struct timer *ts){

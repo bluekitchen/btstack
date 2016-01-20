@@ -133,7 +133,7 @@ void gatt_client_init(void){
     att_dispatch_register_client(gatt_client_att_packet_handler);
 }
 
-static gatt_client_t * gatt_client_for_timer(timer_source_t * ts){
+static gatt_client_t * gatt_client_for_timer(btstack_timer_source_t * ts){
     btstack_linked_list_iterator_t it;    
     btstack_linked_list_iterator_init(&it, &gatt_client_connections);
     while (btstack_linked_list_iterator_has_next(&it)){
@@ -145,7 +145,7 @@ static gatt_client_t * gatt_client_for_timer(timer_source_t * ts){
     return NULL;
 }
 
-static void gatt_client_timeout_handler(timer_source_t * timer){
+static void gatt_client_timeout_handler(btstack_timer_source_t * timer){
     gatt_client_t * peripheral = gatt_client_for_timer(timer);
     if (!peripheral) return;
     log_info("GATT client timeout handle, handle 0x%02x", peripheral->handle);

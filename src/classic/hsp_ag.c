@@ -82,7 +82,7 @@ static uint16_t mtu;
 static uint16_t rfcomm_cid = 0;
 static uint16_t sco_handle = 0;
 static uint16_t rfcomm_handle = 0;
-static timer_source_t hs_timeout;
+static btstack_timer_source_t hs_timeout;
 
 // static uint8_t connection_state = 0;
 
@@ -304,7 +304,7 @@ void hsp_ag_set_speaker_gain(uint8_t gain){
     hsp_run();
 }  
 
-static void hsp_timeout_handler(timer_source_t * timer){
+static void hsp_timeout_handler(btstack_timer_source_t * timer){
     ag_ring = 1;
 }
 

@@ -165,8 +165,8 @@ static struct libusb_transfer *handle_packet;
 
 static int doing_pollfds;
 static int num_pollfds;
-static data_source_t * pollfd_data_sources;
-static timer_source_t usb_timer;
+static btstack_data_source_t * pollfd_data_sources;
+static btstack_timer_source_t usb_timer;
 static int usb_timer_active;
 
 static int usb_acl_out_active = 0;
@@ -416,7 +416,7 @@ static int usb_process_ds(struct data_source *ds) {
     return 0;
 }
 
-static void usb_process_ts(timer_source_t *timer) {
+static void usb_process_ts(btstack_timer_source_t *timer) {
     // log_info("in usb_process_ts");
 
     // timer is deactive, when timer callback gets called
@@ -820,14 +820,14 @@ static int usb_open(void *transport_config){
 
         const struct libusb_pollfd ** pollfd = libusb_get_pollfds(NULL);
         for (num_pollfds = 0 ; pollfd[num_pollfds] ; num_pollfds++);
-        pollfd_data_sources = malloc(sizeof(data_source_t) * num_pollfds);
+        pollfd_data_sources = malloc(sizeof(btstack_data_source_t) * num_pollfds);
         if (!pollfd_data_sources){
             log_error("Cannot allocate data sources for pollfds");
             usb_close(handle);
             return 1;            
         }
         for (r = 0 ; r < num_pollfds ; r++) {
-            data_source_t *ds = &pollfd_data_sources[r];
+            btstack_data_source_t *ds = &pollfd_data_sources[r];
             ds->fd = pollfd[r]->fd;
             ds->process = usb_process_ds;
             btstack_run_loop_add_data_source(ds);
@@ -880,7 +880,7 @@ static int usb_close(void *transport_config){
             if (doing_pollfds){
                 int r;
                 for (r = 0 ; r < num_pollfds ; r++) {
-                    data_source_t *ds = &pollfd_data_sources[r];
+                    btstack_data_source_t *ds = &pollfd_data_sources[r];
                     btstack_run_loop_remove_data_source(ds);
                 }
                 free(pollfd_data_sources);

@@ -125,7 +125,7 @@ typedef struct {
 
     uint8_t   reason; // used in decline internal
     
-    timer_source_t rtx; // also used for ertx
+    btstack_timer_source_t rtx; // also used for ertx
 
     // internal connection
     btstack_packet_handler_t packet_handler;

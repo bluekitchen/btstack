@@ -124,7 +124,7 @@ static char tap_dev_name[16] = "bnep%d";
 #endif
 
 
-static data_source_t tap_dev_ds;
+static btstack_data_source_t tap_dev_ds;
 
 /* @section Main application configuration
  *

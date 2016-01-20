@@ -90,7 +90,7 @@ static int       att_ir_le_device_db_index = -1;
 static int       att_ir_lookup_active = 0;
 
 static int       att_handle_value_indication_handle = 0;    
-static timer_source_t att_handle_value_indication_timer;
+static btstack_timer_source_t att_handle_value_indication_timer;
 
 static btstack_packet_handler_t att_client_packet_handler = NULL;
 
@@ -125,7 +125,7 @@ static void att_emit_mtu_event(uint16_t handle, uint16_t mtu){
     (*att_client_packet_handler)(HCI_EVENT_PACKET, 0, &event[0], sizeof(event));
 }
 
-static void att_handle_value_indication_timeout(timer_source_t *ts){
+static void att_handle_value_indication_timeout(btstack_timer_source_t *ts){
     uint16_t att_handle = att_handle_value_indication_handle;
     att_handle_value_indication_notify_client(ATT_HANDLE_VALUE_INDICATION_TIMEOUT, att_connection.con_handle, att_handle);
 }
