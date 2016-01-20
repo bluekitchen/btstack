@@ -46,7 +46,7 @@ This step is platform specific. To compile and run the examples, you
 need to download and install the platform specific toolchain and a flash
 tool. For TI’s CC256x chipsets, you also need the correct init script,
 or “Service Pack” in TI nomenclature. Assuming that these are provided,
-go to folder [btstack/platforms/$PLATFORM$]() in command prompt and run make. 
+go to folder [btstack/port/$PLATFORM$]() in command prompt and run make. 
 If all the paths are correct, it will generate several firmware files. These firmware files
 can be loaded onto the device using platform specific flash programmer.
 For the PIC32-Harmony platform, a project file for the MPLAB X IDE is
