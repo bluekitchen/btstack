@@ -10,36 +10,36 @@ include ${BTSTACK_ROOT}/example/embedded/Makefile.inc
 COMMON = \
 	sdp.c			            \
 	sdp_query_rfcomm.c		    \
-    btstack_linked_list.c	        \
+    btstack_linked_list.c	    \
     btstack_memory.c            \
+    btstack_memory_pool.c       \
+    btstack_run_loop.c		    \
+    btstack_run_loop_posix.c    \
+    btstack_util.c			    \
     hci.c			            \
     hci_cmds.c		            \
     hci_dump.c		            \
     l2cap.c			            \
     l2cap_signaling.c 			\
-    btstack_memory_pool.c               \
     remote_device_db_memory.c   \
     rfcomm.c			        \
-    run_loop.c		            \
-    btstack_run_loop_posix.c            \
     sdp_client.c		        \
     sdp_parser.c		        \
     sdp_query_util.c		    \
     sdp_util.c	                \
-    btstack_util.c			            \
 
 
 MOCK = \
 	mock.c 						\
 	test_sequences.c            \
-    btstack_linked_list.c	        \
+    btstack_linked_list.c	    \
     btstack_memory.c            \
     hci_cmds.c					\
     hci_dump.c     				\
-    btstack_memory_pool.c               \
+    btstack_memory_pool.c       \
     remote_device_db_memory.c   \
     sdp_util.c	                \
-    btstack_util.c			            \
+    btstack_util.c			    \
 	
 COMMON_OBJ  = $(COMMON:.c=.o) 
 MOCK_OBJ  = $(MOCK:.c=.o)

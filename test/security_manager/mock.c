@@ -23,7 +23,7 @@ static btstack_linked_list_t     connections;
 
 void mock_init(void){
 	the_connection.item.next = NULL;
-	connections = (linked_item*) &the_connection;
+	connections = (btstack_linked_item*) &the_connection;
 }
 
 uint8_t * mock_packet_buffer(void){
