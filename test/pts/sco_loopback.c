@@ -48,7 +48,7 @@
 
 #include "hci_cmds.h"
 #include "hci.h"
-#include "debug.h"
+#include "btstack_debug.h"
  
 uint16_t  sco_handle = 0;
 

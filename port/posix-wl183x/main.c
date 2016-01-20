@@ -52,7 +52,7 @@
 #include "run_loop.h"
 #include "run_loop_posix.h"
 
-#include "debug.h"
+#include "btstack_debug.h"
 #include "btstack_memory.h"
 #include "hci.h"
 #include "hci_dump.h"

@@ -60,7 +60,7 @@
 #include "classic/rfcomm.h"
 #include "classic/sdp.h"
 #include "classic/sdp_parser.h"
-#include "debug.h"
+#include "btstack_debug.h"
 #include "classic/hfp_hf.h"
 
 #include "mock.h"

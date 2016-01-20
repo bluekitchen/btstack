@@ -10,7 +10,7 @@
 #include "hci_dump.h"
 #include "hci.h"
 #include "hci_transport.h"
-#include "debug.h"
+#include "btstack_debug.h"
 #include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>

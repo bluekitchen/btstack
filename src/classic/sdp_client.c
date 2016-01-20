@@ -47,7 +47,7 @@
 #include "l2cap.h"
 #include "classic/sdp_parser.h"
 #include "classic/sdp.h"
-#include "debug.h"
+#include "btstack_debug.h"
 
 typedef enum {
     INIT, W4_CONNECT, W2_SEND, W4_RESPONSE, QUERY_COMPLETE

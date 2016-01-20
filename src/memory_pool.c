@@ -47,7 +47,7 @@
 #include "memory_pool.h"
 
 #include <stddef.h>
-#include "debug.h"
+#include "btstack_debug.h"
 
 typedef struct node {
     struct node * next;

@@ -62,7 +62,7 @@
 #include "hci_cmds.h"
 #include "version.h"
 
-#include "debug.h"
+#include "btstack_debug.h"
 #include "hci.h"
 #include "hci_dump.h"
 #include "hci_transport.h"

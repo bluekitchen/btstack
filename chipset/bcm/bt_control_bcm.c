@@ -49,7 +49,7 @@
 #include <string.h>   /* memcpy */
 
 #include "bt_control.h"
-#include "debug.h"
+#include "btstack_debug.h"
 
 // actual init script provided by separate bt_firmware_image.c from WICED SDK
 extern const uint8_t brcm_patchram_buf[];

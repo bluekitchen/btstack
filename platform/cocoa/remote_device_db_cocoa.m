@@ -34,7 +34,7 @@
  *
  */
 #include "classic/remote_device_db.h"
-#include "debug.h"
+#include "btstack_debug.h"
 
 #import <Foundation/Foundation.h>
 

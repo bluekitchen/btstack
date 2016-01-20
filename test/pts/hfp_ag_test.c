@@ -62,7 +62,7 @@
 #include "l2cap.h"
 #include "classic/rfcomm.h"
 #include "classic/sdp.h"
-#include "debug.h"
+#include "btstack_debug.h"
 #include "classic/hfp_ag.h"
 #include "stdin_support.h"
  

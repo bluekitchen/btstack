@@ -42,7 +42,7 @@
 #include "btstack_linked_list.h"
 
 #include "btstack_memory.h"
-#include "debug.h"
+#include "btstack_debug.h"
 #include "hci.h"
 #include "l2cap.h"
 #include "ble/le_device_db.h"

@@ -7,7 +7,7 @@
 #include "peripheral/usart/plib_usart.h"
 #include "system/clk/sys_clk.h"
 #include "system/ports/sys_ports.h"
-#include "app_debug.h"
+#include "app_btstack_debug.h"
 
 /// Debug Output ///
 

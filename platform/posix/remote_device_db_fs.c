@@ -41,7 +41,7 @@
 #include <unistd.h>
 
 #include "classic/remote_device_db.h"
-#include "debug.h"
+#include "btstack_debug.h"
 
 #include "utils.h"
 

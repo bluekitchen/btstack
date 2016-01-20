@@ -43,7 +43,7 @@
 #include "l2cap.h"
 
 #include "att_dispatch.h"
-#include "debug.h"
+#include "btstack_debug.h"
 
 static void dummy_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *packet, uint16_t size);
 

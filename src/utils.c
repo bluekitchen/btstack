@@ -47,7 +47,7 @@
 #include "utils.h"
 #include <stdio.h>
 #include <string.h>
-#include "debug.h"
+#include "btstack_debug.h"
 
 void bt_store_16(uint8_t *buffer, uint16_t pos, uint16_t value){
     buffer[pos++] = value;

@@ -11,7 +11,7 @@
             <itemPath>../src/system_config/bk-audio-dk/system_config.h</itemPath>
           </logicalFolder>
         </logicalFolder>
-        <itemPath>../src/app_debug.h</itemPath>
+        <itemPath>../src/app_btstack_debug.h</itemPath>
         <itemPath>../src/btstack-config.h</itemPath>
         <itemPath>../src/btstack_port.h</itemPath>
         <itemPath>../src/app.h</itemPath>
@@ -42,7 +42,7 @@
           <itemPath>../../../src/bnep.h</itemPath>
           <itemPath>../../../src/bt_control.h</itemPath>
           <itemPath>../../../src/btstack_memory.h</itemPath>
-          <itemPath>../../../src/debug.h</itemPath>
+          <itemPath>../../../src/btstack_debug.h</itemPath>
           <itemPath>../../../src/gap.h</itemPath>
           <itemPath>../../../src/hci.h</itemPath>
           <itemPath>../../../src/hci_dump.h</itemPath>

@@ -49,7 +49,7 @@
 #include <string.h>   /* memcpy */
 
 #include "bt_control.h"
-#include "debug.h"
+#include "btstack_debug.h"
 #include "utils.h"
 
 // minimal CSR init script to configure PSKEYs and activate them

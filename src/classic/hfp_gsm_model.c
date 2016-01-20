@@ -53,7 +53,7 @@
 #include "classic/hfp_gsm_model.h"
 #include "classic/sdp.h"
 #include "classic/sdp_query_rfcomm.h"
-#include "debug.h"
+#include "btstack_debug.h"
 #include "hci.h"
 #include "hci_cmds.h"
 #include "hci_dump.h"

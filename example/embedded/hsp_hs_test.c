@@ -74,7 +74,7 @@
 
 #include "hci.h"
 #include "l2cap.h"
-#include "debug.h"
+#include "btstack_debug.h"
 
 static uint8_t hsp_service_buffer[150]; 
 static const uint8_t rfcomm_channel_nr = 1;

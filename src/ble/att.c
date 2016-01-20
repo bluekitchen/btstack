@@ -41,7 +41,7 @@
 
 #include "bluetooth.h"
 #include "ble/att.h"
-#include "debug.h"
+#include "btstack_debug.h"
 #include "utils.h"
 
 // Buetooth Base UUID 00000000-0000-1000-8000-00805F9B34FB in little endian

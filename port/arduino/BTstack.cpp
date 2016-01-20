@@ -35,7 +35,7 @@
 #include "att_db_util.h"
 #include "ble/le_device_db.h"
 #include "ble/sm.h"
-#include "debug.h"
+#include "btstack_debug.h"
 
 // Pin 13 has an LED connected on most Arduino boards.
 #define PIN_LED 13

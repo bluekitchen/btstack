@@ -70,7 +70,7 @@
 #endif
 
 #include "btstack_memory.h"
-#include "debug.h"
+#include "btstack_debug.h"
 #include "hci_dump.h"
 
 #include "btstack_linked_list.h"

@@ -36,7 +36,7 @@
  */
 
 /*
- *  debug.h
+ *  btstack_debug.h
  *
  *  allow to funnel debug & error messages 
  */

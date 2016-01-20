@@ -49,7 +49,7 @@
 #include "ble/gatt_client.h"
 #include "ble/ad_parser.h"
 
-#include "debug.h"
+#include "btstack_debug.h"
 #include "btstack_memory.h"
 #include "hci.h"
 #include "hci_dump.h"

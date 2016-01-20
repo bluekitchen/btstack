@@ -58,7 +58,7 @@
 #include "l2cap.h"
 #include "classic/sdp_query_rfcomm.h"
 #include "classic/sdp.h"
-#include "debug.h"
+#include "btstack_debug.h"
 
 #define HFP_HF_FEATURES_SIZE 10
 #define HFP_AG_FEATURES_SIZE 12

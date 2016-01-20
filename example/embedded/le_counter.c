@@ -55,7 +55,7 @@
 #include "run_loop.h"
 #include "classic/sdp_util.h"
 
-#include "debug.h"
+#include "btstack_debug.h"
 #include "btstack_memory.h"
 #include "gap.h"
 #include "hci.h"

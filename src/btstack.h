@@ -51,7 +51,7 @@
 #include "btstack.h"
 #include "btstack_defines.h"
 #include "btstack_memory.h"
-#include "debug.h"
+#include "btstack_debug.h"
 #include "gap.h"
 #include "hci.h"
 #include "hci_cmds.h"

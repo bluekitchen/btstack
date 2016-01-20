@@ -50,7 +50,7 @@
 #include "bt_control_iphone.h"
 #include "hci_transport.h"
 #include "hci.h"
-#include "debug.h"
+#include "btstack_debug.h"
 
 #include <errno.h>
 #include <fcntl.h>        // open

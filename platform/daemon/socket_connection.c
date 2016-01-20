@@ -47,7 +47,7 @@
 #include "socket_connection.h"
 
 #include "hci.h"
-#include "debug.h"
+#include "btstack_debug.h"
 
 #include "btstack-config.h"
 

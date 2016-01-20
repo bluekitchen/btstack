@@ -45,7 +45,7 @@
 #include "run_loop_private.h"
 #include "run_loop_posix.h"
 #include "btstack_linked_list.h"
-#include "debug.h"
+#include "btstack_debug.h"
 
 #ifdef _WIN32
 #include "Winsock2.h"

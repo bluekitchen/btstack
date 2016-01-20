@@ -47,7 +47,7 @@
 #include <stddef.h> // NULL
 
 #include "btstack_linked_list.h"
-#include "debug.h"
+#include "btstack_debug.h"
 #include "run_loop.h"
 #include "run_loop_private.h"
 #include "run_loop_wiced.h"

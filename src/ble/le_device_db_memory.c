@@ -39,7 +39,7 @@
 
 #include <stdio.h>
 #include <string.h>
-#include "debug.h"
+#include "btstack_debug.h"
 
 // Central Device db implemenation using static memory
 typedef struct le_device_memory_db {

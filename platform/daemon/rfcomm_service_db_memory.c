@@ -40,7 +40,7 @@
 
 #include "rfcomm_service_db.h"
 #include "btstack_memory.h"
-#include "debug.h"
+#include "btstack_debug.h"
 
 #include "utils.h"
 #include "btstack_linked_list.h"

@@ -52,7 +52,7 @@
 #include <stdio.h> 
 #include <string.h>   /* memcpy */
 #include "hci.h"
-#include "debug.h"
+#include "btstack_debug.h"
 
 // should go to some common place
 #define OPCODE(ogf, ocf) (ocf | ogf << 10)

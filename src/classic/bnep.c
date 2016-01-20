@@ -53,7 +53,7 @@
 #include "btstack_memory.h"
 #include "hci.h"
 #include "hci_dump.h"
-#include "debug.h"
+#include "btstack_debug.h"
 #include "bnep.h"
 
 #include "l2cap.h"

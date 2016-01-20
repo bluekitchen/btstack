@@ -60,7 +60,7 @@
 #include "hal_cpu.h"
 
 #include "run_loop_private.h"
-#include "debug.h"
+#include "btstack_debug.h"
 
 #include <stddef.h> // NULL
 

@@ -42,7 +42,7 @@
 
 #include "run_loop.h"
 #include "run_loop_private.h"
-#include "debug.h"
+#include "btstack_debug.h"
 
 #import <Foundation/Foundation.h>
 #import <CoreFoundation/CoreFoundation.h>

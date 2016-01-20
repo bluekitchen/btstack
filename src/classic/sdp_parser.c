@@ -40,7 +40,7 @@
  */
 #include "hci_cmds.h"
 #include "classic/sdp_parser.h"
-#include "debug.h"
+#include "btstack_debug.h"
 
 typedef enum { 
     GET_LIST_LENGTH = 1,
