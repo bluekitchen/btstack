@@ -21,7 +21,7 @@ COMMON = \
     hci_cmds.c					\
     hci_dump.c     				\
     le_device_db_memory.c       \
-    memory_pool.c			    \
+    btstack_memory_pool.c			    \
     mock.c                      \
     utils.c			            \
 	

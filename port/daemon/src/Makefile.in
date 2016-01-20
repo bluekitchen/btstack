@@ -45,7 +45,7 @@ BTdaemon_SOURCES =      \
     hci_dump.c          \
     l2cap.c             \
     l2cap_signaling.c   \
-    memory_pool.c       \
+    btstack_memory_pool.c       \
     rfcomm.c            \
     bnep.c              \
     sdp.c               \

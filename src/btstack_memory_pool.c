@@ -36,36 +36,62 @@
  */
 
 /*
- *  memory_pool.h
+ *  btstack_memory_pool.c
  *
- *  @Brief Fixed-size block allocation
+ *  Fixed-size block allocation
  *
- *  @Assumption block_size >= sizeof(void *)
- *  @Assumption size of storage >= count * block_size
+ *  Free blocks are kept in singly linked list
  *
- *  @Note minimal implementation, no error checking/handling
  */
 
-#ifndef __MEMORY_POOL_H
-#define __MEMORY_POOL_H
+#include "btstack_memory_pool.h"
 
-#if defined __cplusplus
-extern "C" {
-#endif
+#include <stddef.h>
+#include "btstack_debug.h"
 
-typedef void * memory_pool_t;
+typedef struct node {
+    struct node * next;
+} node_t;
 
-// initialize memory pool with with given storage, block size and count
-void   memory_pool_create(memory_pool_t *pool, void * storage, int count, int block_size);
-
-// get free block from pool, @returns NULL or pointer to block
-void * memory_pool_get(memory_pool_t *pool);
-
-// return previously reserved block to memory pool
-void   memory_pool_free(memory_pool_t *pool, void * block);
-
-#if defined __cplusplus
+void memory_pool_create(memory_pool_t *pool, void * storage, int count, int block_size){
+    node_t *free_blocks = (node_t*) pool;
+    char   *mem_ptr = (char *) storage;
+    int i;
+    
+    // create singly linked list of all available blocks
+    free_blocks->next = NULL;
+    for (i = 0 ; i < count ; i++){
+        memory_pool_free(pool, mem_ptr);
+        mem_ptr += block_size;
+    }
 }
-#endif
 
-#endif // __MEMORY_POOL_H
+void * memory_pool_get(memory_pool_t *pool){
+    node_t *free_blocks = (node_t*) pool;
+    
+    if (!free_blocks->next) return NULL;
+    
+    // remove first
+    node_t *node      = free_blocks->next;
+    free_blocks->next = node->next;
+    
+    return (void*) node;
+}
+
+void memory_pool_free(memory_pool_t *pool, void * block){
+    node_t *free_blocks = (node_t*) pool;
+    node_t *node        = (node_t*) block;
+
+    // raise error and abort if node already in list
+    node_t * it;
+    for (it = free_blocks->next; it ; it = it->next){
+        if (it == node) {
+            log_error("memory_pool_free: block %p freed twice for pool %p", block, pool);
+            return;
+        }
+    }
+
+    // add block as node to list
+    node->next          = free_blocks->next;
+    free_blocks->next   = node;
+}

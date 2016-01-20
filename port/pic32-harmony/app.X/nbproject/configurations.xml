@@ -36,7 +36,7 @@
         <logicalFolder name="src" displayName="src" projectFiles="true">
           <itemPath>../../../src/hci_cmds.h</itemPath>
           <itemPath>../../../src/btstack_linked_list.h</itemPath>
-          <itemPath>../../../src/memory_pool.h</itemPath>
+          <itemPath>../../../src/btstack_memory_pool.h</itemPath>
           <itemPath>../../../src/run_loop.h</itemPath>
           <itemPath>../../../src/utils.h</itemPath>
           <itemPath>../../../src/bnep.h</itemPath>
@@ -128,7 +128,7 @@
           <itemPath>../../../src/l2cap.c</itemPath>
           <itemPath>../../../src/l2cap_signaling.c</itemPath>
           <itemPath>../../../src/btstack_linked_list.c</itemPath>
-          <itemPath>../../../src/memory_pool.c</itemPath>
+          <itemPath>../../../src/btstack_memory_pool.c</itemPath>
           <itemPath>../../../src/classic/remote_device_db_memory.c</itemPath>
           <itemPath>../../../src/classic/rfcomm.c</itemPath>
           <itemPath>../../../src/run_loop.c</itemPath>

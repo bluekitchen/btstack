@@ -24,7 +24,7 @@ FS = \
 
 MEMORY = \
 	utils.c                   \
-	memory_pool.c			  \
+	btstack_memory_pool.c			  \
     btstack_memory.c		  \
     hci_dump.c                \
     remote_device_db_memory.c \

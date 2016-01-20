@@ -46,7 +46,7 @@
  */
 
 #include "btstack_memory.h"
-#include "memory_pool.h"
+#include "btstack_memory_pool.h"
 
 #include <stdlib.h>
 

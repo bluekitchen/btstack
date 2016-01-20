@@ -44,7 +44,7 @@ CORE   = \
     hal_usb.c                 \
     hci_dump.c		          \
     main.c 					  \
-    memory_pool.c             \
+    btstack_memory_pool.c             \
     run_loop.c		          \
     run_loop_embedded.c       \
     utils.c			          \

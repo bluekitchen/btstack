@@ -17,7 +17,7 @@ COMMON = \
     hci_dump.c		            \
     l2cap.c			            \
     l2cap_signaling.c 			\
-    memory_pool.c               \
+    btstack_memory_pool.c               \
     remote_device_db_memory.c   \
     rfcomm.c			        \
     run_loop.c		            \
@@ -36,7 +36,7 @@ MOCK = \
     btstack_memory.c            \
     hci_cmds.c					\
     hci_dump.c     				\
-    memory_pool.c               \
+    btstack_memory_pool.c               \
     remote_device_db_memory.c   \
     sdp_util.c	                \
     utils.c			            \

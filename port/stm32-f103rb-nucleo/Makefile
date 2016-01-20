@@ -19,7 +19,7 @@ CORE = \
 	main.c 					  \
     btstack_memory.c          \
     btstack_linked_list.c	      \
-    memory_pool.c             \
+    btstack_memory_pool.c             \
     run_loop.c		          \
     run_loop_embedded.c
 

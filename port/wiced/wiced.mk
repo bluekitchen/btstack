@@ -33,7 +33,7 @@ $(NAME)_SOURCES += \
 	../../src/hci_dump.c                  \
 	../../src/l2cap.c                     \
 	../../src/l2cap_signaling.c           \
-	../../src/memory_pool.c               \
+	../../src/btstack_memory_pool.c               \
 	../../src/run_loop.c                  \
 	../../src/utils.c                     \
 

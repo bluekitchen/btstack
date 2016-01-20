@@ -39,7 +39,7 @@ CORE   = \
     hci_dump.c		          \
     btstack_memory.c          \
     linked_list.c	          \
-    memory_pool.c             \
+    btstack_memory_pool.c             \
     utils.c			          \
     main.c 					  \
     hal_board.c	              \

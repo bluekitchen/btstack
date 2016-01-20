@@ -38,7 +38,7 @@ BTdaemon_FILES = \
 	hci.c                   \
 	l2cap.c                 \
 	l2cap_signaling.c       \
-	memory_pool.c           \
+	btstack_memory_pool.c           \
 	rfcomm.c                \
 	sdp.c                   \
     sdp_client.c            \

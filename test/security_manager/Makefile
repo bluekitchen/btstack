@@ -15,7 +15,7 @@ VPATH += ${BTSTACK_ROOT}/platform/posix
 COMMON = \
     utils.c			            \
     btstack_memory.c			\
-    memory_pool.c			    \
+    btstack_memory_pool.c			    \
     btstack_linked_list.c		    \
     run_loop.c					\
     run_loop_posix.c			\
