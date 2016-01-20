@@ -11,7 +11,7 @@ BTSTACK_ROOT=../../..
 VPATH += $(BTSTACK_ROOT)/src \
 		 $(BTSTACK_ROOT)/src/classic \
 		 $(BTSTACK_ROOT)/platform/posix/src \
-		 $(BTSTACK_ROOT)/platform/daemon/src \
+		 $(BTSTACK_ROOT)/platform/daemon \
 		 $(BTSTACK_ROOT)/platform/cocoa \
 		 $(BTSTACK_ROOT)/port/ios/SpringBoardAccess
 
@@ -53,7 +53,7 @@ BTdaemon_FILES = \
 	SpringBoardAccess.c         \
 	remote_device_db_cocoa.m  	\
 
-BTdaemon_CFLAGS = -I$(BTSTACK_ROOT)/src -I$(BTSTACK_ROOT)/platform/daemon/src -I..
+BTdaemon_CFLAGS = -I$(BTSTACK_ROOT)/src -I$(BTSTACK_ROOT)/platform/daemon -I..
 BTdaemon_PRIVATE_FRAMEWORKS = IOKIT
 
 before-all::
