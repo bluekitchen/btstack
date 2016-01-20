@@ -5,8 +5,8 @@ It is well suited for small, resource-constraint devices
 such as 8 or 16 bit embedded systems as it is highly configurable and comes with an ultra small memory footprint. 
 A minimal configuration for an SPP server on a MSP430 can run in 32 kB FLASH and only 4 kB of RAM.
 
-It connects to the Bluetooth modules via different Bluetooth HCI transport layers (e.g., HCI H4 UART and 
-H5 the "Tree-Wire" protocol). The various platforms can be easily targeted by providing the necessary 
+It connects to the Bluetooth modules via a different Bluetooth HCI transport layers (e.g., HCI H4 UART and 
+H5 the "Tree-Wire" protocol, HCI H2 USB). Various platforms can be easily targeted by providing the necessary 
 UART, CPU, and CLOCK implementations. 
 
 On smaller embedded systems, a minimal run loop implementation allows to use BTstack without a Real Time OS (RTOS). 
@@ -15,17 +15,15 @@ If a RTOS is already provided, BTstack can be integrated and run as a single thr
 On larger systems, BTstack provides a daemon that connects to a Bluetooth module. 
 Multiple applications can communicate with this daemon over different inter-process communication methods.
 
-BTstack supports both, the Central and the Peripheral Role of Bluetooth 4.0 Low Energy specification. 
+BTstack supports both, the Central and the Peripheral Role of Bluetooth 4.2 Low Energy specification. 
 It can be configures as both a single mode or a dual mode stack.
 
 BTstack is free for non-commercial use. For commercial use, <a href="mailto:contact@bluekitchen-gmbh.com">tell us</a> 
 a bit about your project to get a quote.
-The Serial Port Profile (SPP) and the Bluetooth 4.0 Low Energy Peripheral role (LE Peripheral) have been qualified with 
-the Bluetooth SIG (QD ID 54558). This summer, we plan to qualify for Bluetooth Core 4.2,
-together with LE Central, PAN/BNEP and HSP.
+It has been qualified with the the Bluetooth SIG for GAP, IOP, HFP, HSP, SPP, PAN profiles and 
+GATT, SM of the Bluetooth 4.2 LE Central and Peripheral roles (QD ID 25340).
 
 ## Documentation
-For starters, check the BTstack Manual 
 - [HTML](http://bluekitchen-gmbh.com/btstack/)
 - [PDF](http://bluekitchen-gmbh.com/btstack.pdf)
 
@@ -41,11 +39,13 @@ For starters, check the BTstack Manual
 ## Supported Profiles
 * GAP              
 * IOP              
+* HFP
+* HSP
 * SPP              
 * PAN              
 * GATT             
 
-Coming soon: HSP, HFP, and more.
+Coming next: HID, HOGP, A2DP, and more.
 
 ## Evaluation Platforms
 
@@ -73,13 +73,13 @@ Status               | Platform
 ## Supported Chipsets
 Chipsets             | Status
 --------------       | ------ 
-TI CC256x, WL183x    | complete incl. eHCIll support (chipset-cc256x)
-CSR 8811, 8510       | H4 only (chipset-csr)
+TI CC256x, WL183x    | complete incl. eHCIll support and SCO-over-HCI (chipset-cc256x)
+CSR 8x10, 8x11       | H4 only (chipset-csr), SCO-over-HCI missing
 STM STLC2500D        | working, no support for custom deep sleep management (chipset-stlc2500d)
 TC35661              | working, BLE patches missing (chipset-tc3566x)
-EM 9301              | experimental use on Arduino Shield (chipset-em9301)
-CSR USB Dongles      | complete
-Broadcom USB Dongles | complete
+EM 9301 (LE-only)    | working, used on Arduino Shield (chipset-em9301)
+CSR USB Dongles      | complete, incl. SCO-over-HCI 
+Broadcom USB Dongles | complete, SCO-over-HCI not working
 
 ## Discussion and Community Support
 [BTstack Google Group](http://groups.google.com/group/btstack-dev)

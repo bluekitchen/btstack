@@ -3458,6 +3458,16 @@ uint16_t hci_get_sco_voice_setting(){
     return hci_stack->sco_voice_setting;
 }
 
+/** @brief Get SCO packet length for current SCO Voice setting
+ *  @note  Using SCO packets of the exact length is required for USB transfer
+ *  @return Length of SCO packets in bytes (not audio frames)
+ */
+int hci_get_sco_packet_length(void){
+    // see Core Spec for H2 USB Transfer. 
+    if (hci_stack->sco_voice_setting & 0x0020) return 51;
+    return 27;
+}
+
 /**
  * @brief Set callback for Bluetooth Hardware Error
  */

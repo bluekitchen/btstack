@@ -970,6 +970,12 @@ void hci_set_sco_voice_setting(uint16_t voice_setting);
  */
 uint16_t hci_get_sco_voice_setting(void);
 
+/** @brief Get SCO packet length for current SCO Voice setting
+ *  @note  Using SCO packets of the exact length is required for USB transfer
+ *  @return Length of SCO packets in bytes (not audio frames) incl. 3 byte header
+ */
+int hci_get_sco_packet_length(void);
+
 /* API_END */
 
 /**

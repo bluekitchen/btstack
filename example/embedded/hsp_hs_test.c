@@ -43,12 +43,19 @@
 //
 // Tested working setups: 
 // - Ubuntu 14 64-bit, CC2564B connected via FTDI USB-2-UART adapter, 921600 baud
-//
-// Non working setups:
+// - Ubuntu 14 64-bit, CSR dongle
+// - OS X 10.11, CSR dongle
+
+// Broken setups:
 // - OS X 10.11, CC2564B connected via FDTI USB-2-UART adapter, 921600 baud
 //   - select(..) blocks > 400 ms -> num completed is received to late -> gaps between audio
 //   - looks like bug in select->FTDI driver as it works correct on Linux
-// - OS X 10.11, USB Bluetooth Dongles...
+// 
+// SCO not routed over HCI (yet)
+// - CSR UART dongle 
+// - Broadcom USB dongle
+// - Broadcom UART chipset
+// - ..
 // *****************************************************************************
 
 #include "btstack-config.h"
@@ -115,20 +122,24 @@ static void try_send_sco(void){
         // printf("try_send_sco, cannot send now\n");
         return;
     }
-    const int frames_per_packet = 180;
+
+    const int sco_packet_length = hci_get_sco_packet_length();
+    const int sco_payload_length = sco_packet_length - 3;
+    const int frames_per_packet = sco_payload_length;    // for 8-bit data. for 16-bit data it's /2
+
     hci_reserve_packet_buffer();
     uint8_t * sco_packet = hci_get_outgoing_packet_buffer();
     // set handle + flags
     bt_store_16(sco_packet, 0, sco_handle);
     // set len
-    sco_packet[2] = frames_per_packet;
+    sco_packet[2] = sco_payload_length;
     int i;
     for (i=0;i<frames_per_packet;i++){
         sco_packet[3+i] = sine[phase];
         phase++;
         if (phase >= sizeof(sine)) phase = 0;
     }
-    hci_send_sco_packet_buffer(3 + frames_per_packet);
+    hci_send_sco_packet_buffer(sco_packet_length);
     static int count = 0;
     count++;
     if ((count & 15) == 0) printf("Sent %u\n", count);
@@ -215,6 +226,10 @@ int btstack_main(int argc, const char * argv[]){
 #ifdef TABLE_SIZE
     compute_signal();
 #endif
+
+    // 8-bit, 2's complement (== int8_t)
+    // 16-bit samples probably required for USB: 
+    // hci_set_sco_voice_setting(0x0060);
 
     hci_register_sco_packet_handler(&sco_packet_handler);
 
