@@ -67,13 +67,9 @@
 #include "test_sequences.h"
 
 static bd_addr_t pts_addr = {0x00,0x15,0x83,0x5F,0x9D,0x46};
-static int current_call_index = 0;
-static hfp_enhanced_call_dir_t    current_call_dir;
-static int                        current_call_exists_a = 0;
-static int                        current_call_exists_b = 0;
+
 static hfp_enhanced_call_status_t current_call_status_a;
 static hfp_enhanced_call_status_t current_call_status_b;
-static hfp_enhanced_call_mpty_t   current_call_mpty   = HFP_ENHANCED_CALL_MPTY_NOT_A_CONFERENCE_CALL;
 
 const uint8_t    rfcomm_channel_nr = 1;
 
@@ -160,17 +156,13 @@ static void user_command(char cmd){
             break;
         case 'c':
             printf("Simulate incoming call from 1234567\n");
-            current_call_exists_a = 1;
             current_call_status_a = HFP_ENHANCED_CALL_STATUS_INCOMING;
-            current_call_dir = HFP_ENHANCED_CALL_DIR_INCOMING;
             hfp_ag_set_clip(129, "1234567");
             hfp_ag_incoming_call();
             break;
         case 'm':
             printf("Simulate incoming call from 7654321\n");
-            current_call_exists_b = 1;
             current_call_status_b = HFP_ENHANCED_CALL_STATUS_INCOMING;
-            current_call_dir = HFP_ENHANCED_CALL_DIR_INCOMING;
             hfp_ag_set_clip(129, "7654321");
             hfp_ag_incoming_call();
             break;
@@ -303,7 +295,6 @@ static void user_command(char cmd){
             break;
         case 'u':
             printf("Join held call\n");
-            current_call_mpty = HFP_ENHANCED_CALL_MPTY_CONFERENCE_CALL;
             hfp_ag_join_held_call();
             break;
         case 'v':
@@ -452,18 +443,7 @@ void packet_handler(uint8_t * event, uint16_t event_size){
             printf("\n** Send DTMF Codes: '%s'\n", &event[3]);
             hfp_ag_send_dtmf_code_done(device_addr);
             break;
-        case HFP_SUBEVENT_TRANSMIT_STATUS_OF_CURRENT_CALL:
-            if (current_call_index == 0 && current_call_exists_a){
-                printf("HFP_SUBEVENT_TRANSMIT_STATUS_OF_CURRENT_CALL 1\n");
-                current_call_index = 1;
-                break;
-            }
-            if (current_call_index == 1 && current_call_exists_b){
-                printf("HFP_SUBEVENT_TRANSMIT_STATUS_OF_CURRENT_CALL 2 \n");
-                current_call_index = 2;
-                break;
-            }
-            break;
+
         case HFP_CMD_CALL_ANSWERED:
             printf("Call answered by HF\n");
             if (current_call_status_a == HFP_ENHANCED_CALL_STATUS_INCOMING){
@@ -474,7 +454,6 @@ void packet_handler(uint8_t * event, uint16_t event_size){
             }
             break;
         case HFP_SUBEVENT_CONFERENCE_CALL:
-            current_call_mpty = HFP_ENHANCED_CALL_MPTY_CONFERENCE_CALL;
             current_call_status_a = HFP_ENHANCED_CALL_STATUS_ACTIVE;
             current_call_status_b = HFP_ENHANCED_CALL_STATUS_ACTIVE;
             break;
@@ -506,12 +485,8 @@ TEST_GROUP(HFPClient){
         hfp_ag_release_audio_connection(device_addr);
         hfp_ag_release_service_level_connection(device_addr);
         
-        current_call_exists_a = 0;
-        current_call_exists_b = 0;
         current_call_status_b = HFP_ENHANCED_CALL_STATUS_ACTIVE;
         current_call_status_a = HFP_ENHANCED_CALL_STATUS_ACTIVE;
-        current_call_mpty   = HFP_ENHANCED_CALL_MPTY_NOT_A_CONFERENCE_CALL;
-        current_call_index = 0;
 
         service_level_connection_established = 0;
         codecs_connection_established = 0;
