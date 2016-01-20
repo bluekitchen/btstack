@@ -53,7 +53,7 @@ typedef struct node {
     struct node * next;
 } node_t;
 
-void memory_pool_create(memory_pool_t *pool, void * storage, int count, int block_size){
+void btstack_memory_pool_create(btstack_memory_pool_t *pool, void * storage, int count, int block_size){
     node_t *free_blocks = (node_t*) pool;
     char   *mem_ptr = (char *) storage;
     int i;
@@ -61,12 +61,12 @@ void memory_pool_create(memory_pool_t *pool, void * storage, int count, int bloc
     // create singly linked list of all available blocks
     free_blocks->next = NULL;
     for (i = 0 ; i < count ; i++){
-        memory_pool_free(pool, mem_ptr);
+        btstack_memory_pool_free(pool, mem_ptr);
         mem_ptr += block_size;
     }
 }
 
-void * memory_pool_get(memory_pool_t *pool){
+void * btstack_memory_pool_get(btstack_memory_pool_t *pool){
     node_t *free_blocks = (node_t*) pool;
     
     if (!free_blocks->next) return NULL;
@@ -78,7 +78,7 @@ void * memory_pool_get(memory_pool_t *pool){
     return (void*) node;
 }
 
-void memory_pool_free(memory_pool_t *pool, void * block){
+void btstack_memory_pool_free(btstack_memory_pool_t *pool, void * block){
     node_t *free_blocks = (node_t*) pool;
     node_t *node        = (node_t*) block;
 
@@ -86,7 +86,7 @@ void memory_pool_free(memory_pool_t *pool, void * block){
     node_t * it;
     for (it = free_blocks->next; it ; it = it->next){
         if (it == node) {
-            log_error("memory_pool_free: block %p freed twice for pool %p", block, pool);
+            log_error("btstack_memory_pool_free: block %p freed twice for pool %p", block, pool);
             return;
         }
     }

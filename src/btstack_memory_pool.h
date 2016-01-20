@@ -46,26 +46,26 @@
  *  @Note minimal implementation, no error checking/handling
  */
 
-#ifndef __MEMORY_POOL_H
-#define __MEMORY_POOL_H
+#ifndef __btstack_memory_pool_H
+#define __btstack_memory_pool_H
 
 #if defined __cplusplus
 extern "C" {
 #endif
 
-typedef void * memory_pool_t;
+typedef void * btstack_memory_pool_t;
 
 // initialize memory pool with with given storage, block size and count
-void   memory_pool_create(memory_pool_t *pool, void * storage, int count, int block_size);
+void   btstack_memory_pool_create(btstack_memory_pool_t *pool, void * storage, int count, int block_size);
 
 // get free block from pool, @returns NULL or pointer to block
-void * memory_pool_get(memory_pool_t *pool);
+void * btstack_memory_pool_get(btstack_memory_pool_t *pool);
 
 // return previously reserved block to memory pool
-void   memory_pool_free(memory_pool_t *pool, void * block);
+void   btstack_memory_pool_free(btstack_memory_pool_t *pool, void * block);
 
 #if defined __cplusplus
 }
 #endif
 
-#endif // __MEMORY_POOL_H
+#endif // __btstack_memory_pool_H

@@ -116,12 +116,12 @@ code_template = """
 #ifdef POOL_COUNT
 #if POOL_COUNT > 0
 static STRUCT_TYPE STRUCT_NAME_storage[POOL_COUNT];
-static memory_pool_t STRUCT_NAME_pool;
+static btstack_memory_pool_t STRUCT_NAME_pool;
 STRUCT_NAME_t * btstack_memory_STRUCT_NAME_get(void){
-    return (STRUCT_NAME_t *) memory_pool_get(&STRUCT_NAME_pool);
+    return (STRUCT_NAME_t *) btstack_memory_pool_get(&STRUCT_NAME_pool);
 }
 void btstack_memory_STRUCT_NAME_free(STRUCT_NAME_t *STRUCT_NAME){
-    memory_pool_free(&STRUCT_NAME_pool, STRUCT_NAME);
+    btstack_memory_pool_free(&STRUCT_NAME_pool, STRUCT_NAME);
 }
 #else
 STRUCT_NAME_t * btstack_memory_STRUCT_NAME_get(void){
@@ -145,7 +145,7 @@ void btstack_memory_STRUCT_NAME_free(STRUCT_NAME_t *STRUCT_NAME){
 """
 
 init_template = """#if POOL_COUNT > 0
-    memory_pool_create(&STRUCT_NAME_pool, STRUCT_NAME_storage, POOL_COUNT, sizeof(STRUCT_TYPE));
+    btstack_memory_pool_create(&STRUCT_NAME_pool, STRUCT_NAME_storage, POOL_COUNT, sizeof(STRUCT_TYPE));
 #endif"""
 
 def writeln(f, data):
