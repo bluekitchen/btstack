@@ -40,7 +40,7 @@
  */
 
 #include "classic/sdp_util.h"
-#include "utils.h"
+#include "btstack_util.h"
 #include "btstack-config.h"
 #include "bluetooth.h"
  

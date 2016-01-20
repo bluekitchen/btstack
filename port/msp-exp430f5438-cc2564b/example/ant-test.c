@@ -60,7 +60,7 @@
 #include "hci_cmds.h"
 #include "btstack_run_loop.h"
 #include "classic/sdp_util.h"
-#include "utils.h"
+#include "btstack_util.h"
 
 #include "hci.h"
 #include "l2cap.h"
@@ -193,7 +193,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 	}
 }
 
-static void  heartbeat_handler(struct timer *ts){
+static void  heartbeat_handler(struct btstack_timer_source *ts){
 
     if (rfcomm_channel_id){
         static int counter = 0;

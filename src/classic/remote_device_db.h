@@ -42,7 +42,7 @@
 #ifndef __REMOTE_DEVICE_DB_H
 #define __REMOTE_DEVICE_DB_H
 
-#include "utils.h"
+#include "btstack_util.h"
 #include "gap.h"
 
 #if defined __cplusplus

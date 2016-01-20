@@ -13,6 +13,7 @@ CORE += \
     btstack_linked_list.c	    \
     btstack_memory_pool.c       \
     btstack_run_loop.c		    \
+    btstack_util.c 	            \
 
 COMMON += \
     hci.c			            \
@@ -22,7 +23,6 @@ COMMON += \
     l2cap_signaling.c	        \
 	remote_device_db_memory.c   \
     sdp_util.c	                \
-    utils.c			            \
     rfcomm.c	                \
     bnep.c	                    \
     sdp.c			            \

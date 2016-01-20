@@ -114,7 +114,7 @@ static void spp_service_setup(void){
 static btstack_timer_source_t heartbeat;
 
 /* LISTING_START(hbhManual): Heartbeat handler with manual credit management */ 
-static void  heartbeat_handler(struct timer *ts){
+static void  heartbeat_handler(struct btstack_timer_source *ts){
     if (rfcomm_send_credit){
         rfcomm_grant_credits(rfcomm_channel_id, 1);
         rfcomm_send_credit = 0;

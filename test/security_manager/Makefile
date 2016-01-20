@@ -24,7 +24,7 @@ COMMON = \
     mock.c 				        \
     rijndael.c 					\
     sm.c     					\
-    utils.c			            \
+    btstack_util.c			            \
 	
 COMMON_OBJ = $(COMMON:.c=.o)
 

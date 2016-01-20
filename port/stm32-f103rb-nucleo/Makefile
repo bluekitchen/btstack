@@ -36,7 +36,7 @@ COMMON = \
 	rfcomm.c			      \
     sdp.c			          \
     sdp_util.c                \
-    utils.c			          \
+    btstack_util.c			          \
     sdp_parser.c              \
     sdp_client.c              \
     sdp_query_util.c		  \

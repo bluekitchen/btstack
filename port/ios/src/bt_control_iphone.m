@@ -707,7 +707,7 @@ static void MySleepCallBack( void * refCon, io_service_t service, natural_t mess
     }
 }
 
-static int  power_notification_process(struct data_source *ds) {
+static int  power_notification_process(struct btstack_data_source *ds) {
 
     if (!power_notification_callback) return -1;
 

@@ -14,7 +14,7 @@ VPATH += ${BTSTACK_ROOT}/platform/posix
 COMMON = \
     sdp_util.c	              \
     hci_dump.c    \
-	utils.c			          
+	btstack_util.c			          
  
 COMMON_OBJ = $(COMMON:.c=.o)
 

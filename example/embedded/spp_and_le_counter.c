@@ -212,7 +212,7 @@ static int att_write_callback(uint16_t con_handle, uint16_t att_handle, uint16_t
  */
 
  /* LISTING_START(heartbeat): Combined Heartbeat handler */
-static void heartbeat_handler(struct timer *ts){
+static void heartbeat_handler(struct btstack_timer_source *ts){
 
     counter++;
     counter_string_len = sprintf(counter_string, "BTstack counter %04u\n", counter);

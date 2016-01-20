@@ -92,7 +92,7 @@ struct sockaddr_un {
 #define MAX_PENDING_CONNECTIONS 10
 
 /** prototypes */
-static int socket_connection_hci_process(struct data_source *ds);
+static int socket_connection_hci_process(struct btstack_data_source *ds);
 static int socket_connection_dummy_handler(connection_t *connection, uint16_t packet_type, uint16_t channel, uint8_t *data, uint16_t length);
 
 /** globals */
@@ -201,7 +201,7 @@ void static socket_connection_emit_nr_connections(void){
     // log_info("Nr connections changed,.. new %u", nr_connections); 
 }
 
-int socket_connection_hci_process(struct data_source *ds) {
+int socket_connection_hci_process(struct btstack_data_source *ds) {
     connection_t *conn = (connection_t *) ds;
     
     int bytes_read = read(ds->fd, &conn->buffer[conn->bytes_read], conn->bytes_to_read);
@@ -286,7 +286,7 @@ int  socket_connection_has_parked_connections(void){
     return parked != NULL;
 }
 
-static int socket_connection_accept(struct data_source *socket_ds) {
+static int socket_connection_accept(struct btstack_data_source *socket_ds) {
     struct sockaddr_storage ss;
     socklen_t slen = sizeof(ss);
 

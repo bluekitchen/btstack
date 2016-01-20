@@ -269,7 +269,7 @@ static int tap_alloc(char *dev, bd_addr_t bd_addr)
  */
 
 /* LISTING_START(processTapData): Process incoming network packets */
-static int process_tap_dev_data(struct data_source *ds) 
+static int process_tap_dev_data(struct btstack_data_source *ds) 
 {
     ssize_t len;
     len = read(ds->fd, network_buffer, sizeof(network_buffer));

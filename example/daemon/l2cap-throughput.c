@@ -71,7 +71,7 @@ void prepare_packet(void){
     for (i=4;i<PACKET_SIZE;i++)
         packet[i] = i-4;
 }
-void  timer_handler(struct timer *ts){
+void  timer_handler(struct btstack_timer_source *ts){
 	bt_send_cmd(&hci_read_bd_addr);
 	btstack_run_loop_set_timer(&timer, 3000);
 	btstack_run_loop_add_timer(&timer);

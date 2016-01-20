@@ -50,7 +50,7 @@
 #include <string.h>
 
 #include "classic/sdp_util.h"
-#include "utils.h"
+#include "btstack_util.h"
 
 #if defined __cplusplus
 extern "C" {

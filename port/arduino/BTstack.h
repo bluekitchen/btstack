@@ -4,7 +4,7 @@
 #pragma once
 
 #include "ble/att.h"
-#include "utils.h" 
+#include "btstack_util.h" 
 #include "ble/gatt_client.h"
 #include "hci.h"
 #include <stdint.h>

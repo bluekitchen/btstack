@@ -79,7 +79,7 @@ typedef struct hci_transport_h4 {
 } hci_transport_h4_t;
 
 // prototypes
-static int  h4_process(struct data_source *ds);
+static int  h4_process(struct btstack_data_source *ds);
 static void dummy_handler(uint8_t packet_type, uint8_t *packet, uint16_t size); 
 static void h4_block_received(void);
 static void h4_block_sent(void);
@@ -236,7 +236,7 @@ static void h4_register_packet_handler(void (*handler)(uint8_t packet_type, uint
     packet_handler = handler;
 }
 
-static int h4_process(struct data_source *ds) {
+static int h4_process(struct btstack_data_source *ds) {
     
     // notify about packet sent
     if (tx_state == TX_DONE){

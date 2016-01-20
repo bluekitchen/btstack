@@ -42,7 +42,7 @@
 #include "btstack_memory.h"
 #include "btstack_debug.h"
 
-#include "utils.h"
+#include "btstack_util.h"
 #include "btstack_linked_list.h"
 
 // This lists should be only accessed by tests.

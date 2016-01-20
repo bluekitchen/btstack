@@ -65,7 +65,7 @@ static void show_usage(void){
     printf("---\n");
 }
 
-static int stdin_process(struct data_source *ds){
+static int stdin_process(struct btstack_data_source *ds){
     char buffer;
     read(ds->fd, &buffer, 1);
     switch (buffer){

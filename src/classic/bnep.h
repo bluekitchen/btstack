@@ -44,7 +44,7 @@
 #ifndef __BNEP_H
 #define __BNEP_H
  
-#include "utils.h"
+#include "btstack_util.h"
 
 #include <stdint.h>
 

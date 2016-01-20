@@ -38,7 +38,7 @@
           <itemPath>../../../src/btstack_linked_list.h</itemPath>
           <itemPath>../../../src/btstack_memory_pool.h</itemPath>
           <itemPath>../../../src/run_loop.h</itemPath>
-          <itemPath>../../../src/utils.h</itemPath>
+          <itemPath>../../../src/btstack_util.h</itemPath>
           <itemPath>../../../src/bnep.h</itemPath>
           <itemPath>../../../src/bt_control.h</itemPath>
           <itemPath>../../../src/btstack_memory.h</itemPath>
@@ -139,7 +139,7 @@
           <itemPath>../../../src/classic/sdp_query_rfcomm.c</itemPath>
           <itemPath>../../../src/classic/sdp_query_util.c</itemPath>
           <itemPath>../../../src/classic/sdp_util.c</itemPath>
-          <itemPath>../../../src/utils.c</itemPath>
+          <itemPath>../../../src/btstack_util.c</itemPath>
         </logicalFolder>
       </logicalFolder>
       <logicalFolder name="f2" displayName="framework" projectFiles="true">

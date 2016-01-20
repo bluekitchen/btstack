@@ -21,7 +21,7 @@ COMMON = \
     btstack_memory_pool.c			    \
     run_loop.c					\
     btstack_run_loop_posix.c 			\
-    utils.c			            \
+    btstack_util.c			            \
 	
 COMMON_OBJ = $(COMMON:.c=.o)
 

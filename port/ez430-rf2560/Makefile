@@ -47,7 +47,7 @@ CORE   = \
     btstack_memory_pool.c        \
     btstack_run_loop.c		     \
     btstack_run_loop_embedded.c  \
-    utils.c			          \
+    btstack_util.c			          \
 
 COMMON = \
     hal_uart_dma.c            \

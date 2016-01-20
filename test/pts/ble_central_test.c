@@ -1603,7 +1603,7 @@ static void ui_process_command(char buffer){
     }
 }
 
-static int stdin_process(struct data_source *ds){
+static int stdin_process(struct btstack_data_source *ds){
     char buffer;
     read(ds->fd, &buffer, 1);
 

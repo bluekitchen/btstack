@@ -43,7 +43,7 @@ extern "C" {
 #endif
 
 #include "btstack_defines.h"
-#include "utils.h"
+#include "btstack_util.h"
 	
 typedef enum {
 

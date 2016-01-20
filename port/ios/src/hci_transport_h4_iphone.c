@@ -82,13 +82,13 @@
 #include "hci.h"
 #include "hci_transport.h"
 
-static int  h4_process(struct data_source *ds);
+static int  h4_process(struct btstack_data_source *ds);
 static void dummy_handler(uint8_t packet_type, uint8_t *packet, uint16_t size); 
 static      hci_transport_config_uart_t *hci_transport_config_uart;
 
 static void h4_enforce_wake_on(void);
 static void h4_enforce_wake_off(void);
-static void h4_enforce_wake_timeout(struct timer *ts);
+static void h4_enforce_wake_timeout(struct btstack_timer_source *ts);
 
 typedef enum {
     H4_W4_PACKET_TYPE,
@@ -317,7 +317,7 @@ static void h4_statemachine(void){
     }
 }
 
-static int    h4_process(struct data_source *ds) {
+static int    h4_process(struct btstack_data_source *ds) {
     if (hci_transport_h4->uart_fd == 0) return -1;
 
     int read_now = bytes_to_read;
@@ -362,7 +362,7 @@ static void h4_enforce_wake_off(void)
     }
 }
 
-static void h4_enforce_wake_timeout(struct timer *ts)
+static void h4_enforce_wake_timeout(struct btstack_timer_source *ts)
 {
     h4_enforce_wake_off();
 }

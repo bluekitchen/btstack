@@ -57,7 +57,7 @@
 #include <string.h>
 #include "btstack_run_loop.h"
 #include "hci_cmds.h"
-#include "utils.h"
+#include "btstack_util.h"
 
 #include "btstack-config.h"
 

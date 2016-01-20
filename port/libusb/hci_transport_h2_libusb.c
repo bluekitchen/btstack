@@ -388,7 +388,7 @@ static void handle_completed_transfer(struct libusb_transfer *transfer){
     }   
 }
 
-static int usb_process_ds(struct data_source *ds) {
+static int usb_process_ds(struct btstack_data_source *ds) {
     if (libusb_state != LIB_USB_TRANSFERS_ALLOCATED) return -1;
 
     // log_info("begin usb_process_ds");
@@ -425,7 +425,7 @@ static void usb_process_ts(btstack_timer_source_t *timer) {
     if (libusb_state != LIB_USB_TRANSFERS_ALLOCATED) return;
 
     // actually handled the packet in the pollfds function
-    usb_process_ds((struct data_source *) NULL);
+    usb_process_ds((struct btstack_data_source *) NULL);
 
     // Get the amount of time until next event is due
     long msec = AYSNC_POLLING_INTERVAL_MS;

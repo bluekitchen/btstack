@@ -36,7 +36,7 @@
  */
 
 /*
- *  utils.c
+ *  btstack_util.c
  *
  *  General utility functions
  *
@@ -44,7 +44,7 @@
  */
 
 #include "btstack-config.h"
-#include "utils.h"
+#include "btstack_util.h"
 #include <stdio.h>
 #include <string.h>
 #include "btstack_debug.h"

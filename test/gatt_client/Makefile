@@ -23,7 +23,7 @@ COMMON = \
     le_device_db_memory.c       \
     btstack_memory_pool.c			    \
     mock.c                      \
-    utils.c			            \
+    btstack_util.c			            \
 	
 
 COMMON_OBJ = $(COMMON:.c=.o)

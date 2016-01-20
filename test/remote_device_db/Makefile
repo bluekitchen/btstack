@@ -17,13 +17,13 @@ VPATH += ${BTSTACK_ROOT}/src
 VPATH += ${BTSTACK_ROOT}/platform/posix
 
 FS = \
-    utils.c                   \
+    btstack_util.c                   \
     hci_dump.c                \
 	remote_device_db_fs.c
 
 
 MEMORY = \
-	utils.c                   \
+	btstack_util.c                   \
 	btstack_memory_pool.c			  \
     btstack_memory.c		  \
     hci_dump.c                \

@@ -259,7 +259,7 @@ static void dummy_bluetooth_status_handler(BLUETOOTH_STATE state){
     log_info("Bluetooth status: %u\n", state);
 };
 
-static void daemon_no_connections_timeout(struct timer *ts){
+static void daemon_no_connections_timeout(struct btstack_timer_source *ts){
     if (clients_require_power_on()) return;    // false alarm :)
     log_info("No active client connection for %u seconds -> POWER OFF\n", DAEMON_NO_ACTIVE_CLIENT_TIMEOUT/1000);
     hci_power_control(HCI_POWER_OFF);

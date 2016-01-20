@@ -36,7 +36,7 @@
  */
 
 /*
- *  utils.h
+ *  btstack_util.h
  *
  *  General utility functions
  *

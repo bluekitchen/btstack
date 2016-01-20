@@ -35,7 +35,7 @@ $(NAME)_SOURCES += \
 	../../src/l2cap_signaling.c           \
 	../../src/btstack_memory_pool.c               \
 	../../src/run_loop.c                  \
-	../../src/utils.c                     \
+	../../src/btstack_util.c                     \
 
 # WICED port incl. support for Broadcom chipset
 $(NAME)_SOURCES += \

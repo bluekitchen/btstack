@@ -79,7 +79,7 @@ static int bt_filedesc = 0;
 // single instance
 static hci_transport_h5_t * hci_transport_h5 = NULL;
 
-static int  h5_process(struct data_source *ds);
+static int  h5_process(struct btstack_data_source *ds);
 static void dummy_handler(uint8_t packet_type, uint8_t *packet, int size); 
 
 static  void (*packet_handler)(uint8_t packet_type, uint8_t *packet, int size) = dummy_handler;
@@ -281,7 +281,7 @@ static void h5_slip_process( h5_slip_t * sm, uint8_t input, uint8_t in){
 }
 
 
-static int    h5_process(struct data_source *ds) {
+static int    h5_process(struct btstack_data_source *ds) {
     if (hci_transport_h5->ds->fd == 0) return -1;
 
     // read up to bytes_to_read data in

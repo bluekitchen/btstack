@@ -48,7 +48,7 @@
 
 #include "hci.h"
 #include "l2cap_signaling.h"
-#include "utils.h"
+#include "btstack_util.h"
 #include "bluetooth.h"
 
 #if defined __cplusplus

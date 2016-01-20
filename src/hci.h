@@ -53,7 +53,7 @@
 #include "hci_cmds.h"
 #include "hci_transport.h"
 #include "btstack_linked_list.h"
-#include "utils.h"
+#include "btstack_util.h"
 
 #include <stdint.h>
 #include <stdlib.h>

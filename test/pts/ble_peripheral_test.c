@@ -262,7 +262,7 @@ static int att_attribute_for_handle(uint16_t aHandle){
 }
 
 
-static void  heartbeat_handler(struct timer *ts){
+static void  heartbeat_handler(struct btstack_timer_source *ts){
     // restart timer
     btstack_run_loop_set_timer(ts, HEARTBEAT_PERIOD_MS);
     btstack_run_loop_add_timer(ts);
@@ -711,7 +711,7 @@ static void update_auth_req(void){
     sm_set_authentication_requirements(auth_req);
 }
 
-static int stdin_process(struct data_source *ds){
+static int stdin_process(struct btstack_data_source *ds){
     char buffer;
     read(ds->fd, &buffer, 1);
 

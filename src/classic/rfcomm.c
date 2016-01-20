@@ -45,9 +45,9 @@
 #include <stdint.h>
 
 #include "hci_cmds.h"
-#include "utils.h"
+#include "btstack_util.h"
 
-#include "utils.h"
+#include "btstack_util.h"
 #include "btstack_memory.h"
 #include "hci.h"
 #include "hci_dump.h"

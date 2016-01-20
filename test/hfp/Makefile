@@ -26,7 +26,7 @@ COMMON = \
     sdp_parser.c		        \
     sdp_query_util.c		    \
     sdp_util.c	                \
-    utils.c			            \
+    btstack_util.c			            \
 
 
 MOCK = \
@@ -39,7 +39,7 @@ MOCK = \
     btstack_memory_pool.c               \
     remote_device_db_memory.c   \
     sdp_util.c	                \
-    utils.c			            \
+    btstack_util.c			            \
 	
 COMMON_OBJ  = $(COMMON:.c=.o) 
 MOCK_OBJ  = $(MOCK:.c=.o)

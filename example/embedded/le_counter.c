@@ -89,7 +89,7 @@ static btstack_timer_source_t heartbeat;
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static uint16_t att_read_callback(uint16_t con_handle, uint16_t att_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size);
 static int att_write_callback(uint16_t con_handle, uint16_t att_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size);
-static void  heartbeat_handler(struct timer *ts);
+static void  heartbeat_handler(struct btstack_timer_source *ts);
 
 const uint8_t adv_data[] = {
     // Flags general discoverable
@@ -161,7 +161,7 @@ static int  counter = 0;
 static char counter_string[30];
 static int  counter_string_len;
 
-static void  heartbeat_handler(struct timer *ts){
+static void  heartbeat_handler(struct btstack_timer_source *ts){
     if (le_notification_enabled) {
         counter++;
         counter_string_len = sprintf(counter_string, "BTstack counter %04u", counter);

@@ -42,7 +42,7 @@
 #ifndef __RFCOMM_H
 #define __RFCOMM_H
  
-#include "utils.h"
+#include "btstack_util.h"
 
 #include <stdint.h>
 

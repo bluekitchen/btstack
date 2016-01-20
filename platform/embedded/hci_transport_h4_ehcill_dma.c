@@ -102,7 +102,7 @@ typedef struct hci_transport_h4 {
 } hci_transport_h4_t;
 
 // prototypes
-static int  h4_process(struct data_source *ds);
+static int  h4_process(struct btstack_data_source *ds);
 static void dummy_handler(uint8_t packet_type, uint8_t *packet, uint16_t size); 
 static void h4_block_received(void);
 static void h4_block_sent(void);
@@ -390,7 +390,7 @@ static void h4_block_sent(void){
     }
 }
 
-static int h4_process(struct data_source *ds) {
+static int h4_process(struct btstack_data_source *ds) {
     
     // reset tx state before emitting packet sent event
     // to allow for positive can_send_now

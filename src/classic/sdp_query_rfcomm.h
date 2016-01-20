@@ -42,7 +42,7 @@
 #ifndef __SDP_QUERY_RFCOMM_H
 #define __SDP_QUERY_RFCOMM_H
 
-#include "utils.h"
+#include "btstack_util.h"
 #include "classic/sdp_parser.h"
 #include "classic/sdp_query_util.h"
 

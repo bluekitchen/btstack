@@ -43,7 +43,7 @@
 #ifndef __ATT_DISPATCH_H
 #define __ATT_DISPATCH_H
 
-#include "utils.h"
+#include "btstack_util.h"
 
 #if defined __cplusplus
 extern "C" {

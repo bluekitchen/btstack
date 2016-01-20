@@ -50,7 +50,7 @@
 
 #include "btstack_control.h"
 #include "btstack_debug.h"
-#include "utils.h"
+#include "btstack_util.h"
 
 // minimal CSR init script to configure PSKEYs and activate them
 static const uint8_t init_script[] = { 

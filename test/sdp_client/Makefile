@@ -17,7 +17,7 @@ COMMON = \
     sdp_util.c	              \
 	sdp_parser.c		      \
 	hci_dump.c                \
-    utils.c			          \
+    btstack_util.c			          \
  
 COMMON_OBJ = $(COMMON:.c=.o)
 

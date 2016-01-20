@@ -27,7 +27,7 @@ libBTstack_FILES = \
 	hci_dump.c \
 	sdp_util.c \
 	socket_connection.c \
-	utils.c \
+	btstack_util.c \
 
 libBTstack_CFLAGS = -I$(BTSTACK_ROOT)/src/ble -I$(BTSTACK_ROOT)/src -I..
 

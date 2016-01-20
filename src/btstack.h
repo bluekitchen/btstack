@@ -62,7 +62,7 @@
 #include "btstack_linked_list.h"
 #include "btstack_memory_pool.h"
 #include "btstack_run_loop.h"
-#include "utils.h"
+#include "btstack_util.h"
 #include "version.h"
 
 #ifdef HAVE_BLE

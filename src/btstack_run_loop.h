@@ -61,10 +61,10 @@ extern "C" {
 typedef struct btstack_data_source {
     btstack_linked_item_t item;
     int  fd;                                 // <-- file descriptor to watch or 0
-    int  (*process)(struct data_source *ds); // <-- do processing
+    int  (*process)(struct btstack_data_source *ds); // <-- do processing
 } btstack_data_source_t;
 
-typedef struct btstack_timer {
+typedef struct btstack_timer_source {
     btstack_linked_item_t item; 
 #ifdef HAVE_TIME
     struct timeval timeout;                  // <-- next timeout
@@ -72,7 +72,7 @@ typedef struct btstack_timer {
 #if defined(HAVE_TICK) || defined(HAVE_TIME_MS)
     uint32_t timeout;                       // timeout in system ticks (HAVE_TICK) or millis (HAVE_TIME_MS)
 #endif
-    void  (*process)(struct timer *ts);      // <-- do processing
+    void  (*process)(struct btstack_timer_source *ts);      // <-- do processing
 } btstack_timer_source_t;
 
 // 

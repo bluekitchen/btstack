@@ -52,7 +52,7 @@
 
 #include "ble/att.h"
 #include "ble/att_db_util.h"
-#include "utils.h"
+#include "btstack_util.h"
 #include "bluetooth.h"
  
 #include "le_counter.h"

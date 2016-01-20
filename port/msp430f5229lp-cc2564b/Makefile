@@ -49,7 +49,7 @@ CORE   = \
     hci_dump.c		          \
     linked_list.c	          \
     main.c 					  \
-    utils.c			          \
+    btstack_util.c			          \
 
 COMMON = \
     hal_uart_dma.c            \

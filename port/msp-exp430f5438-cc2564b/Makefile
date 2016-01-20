@@ -47,7 +47,7 @@ CORE   = \
     hal_usb.c                 \
     hci_dump.c		          \
     main.c 					  \
-    utils.c			          \
+    btstack_util.c			          \
 
 COMMON = \
     hal_uart_dma.c            \
