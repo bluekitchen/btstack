@@ -28,7 +28,7 @@ libBTstack_OBJS  = 		 \
 	btstack.o            \
 	btstack_linked_list.o   \
 	btstack_run_loop.o      \
-	btstack_run_loop_posix.ho     \
+	btstack_run_loop_posix.o     \
 	hci_cmd.o           \
 	hci_dump.o           \
 	sdp_util.o           \
@@ -68,8 +68,8 @@ clean:
 $(TOOLCHAIN):
 	$(NDK)/build/tools/make-standalone-toolchain.sh --install-dir=$@
 
-libbluetoothdrv.so: bluetoothdrv-stub.o
-	$(GCC) $(LDFLAGS) -shared -o libbluetoothdrv.so bluetoothdrv-stub.o
+libbluetoothdrv.so: bluetoothdrv_stub.o
+	$(GCC) $(LDFLAGS) -shared -o libbluetoothdrv.so bluetoothdrv_stub.o
 
 .c.o:
 	$(GCC) $(CFLAGS) -o $@ -c $<
