@@ -1287,11 +1287,6 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
     hci_initializing_next_state();
 }
 
-
-// avoid huge local variables
-#ifndef EMBEDDED
-static device_name_t device_name;
-#endif
 static void event_handler(uint8_t *packet, int size){
 
     uint16_t event_length = packet[1];
@@ -1643,10 +1638,9 @@ static void event_handler(uint8_t *packet, int size){
                 }
             }
             packet[9+248] = 0;
-            hci_stack->remote_device_db->put_name(addr, &packet[9]);
+            hci_stack->remote_device_db->put_name(addr, (device_name_t *)&packet[9]);
             break;
 
-#ifndef EMBEDDED
         case HCI_EVENT_INQUIRY_RESULT:
         case HCI_EVENT_INQUIRY_RESULT_WITH_RSSI:{
             if (!hci_stack->remote_device_db) break;
@@ -1656,14 +1650,25 @@ static void event_handler(uint8_t *packet, int size){
             int offset = 3;
             for (i=0; i<packet[2];i++){
                 bt_flip_addr(addr, &packet[offset]);
-                offset += 14; // 6 + 1 + 1 + 1 + 3 + 2; 
-                if (hci_stack->remote_device_db->get_name(addr, &device_name)){
-                    hci_emit_remote_name_cached(addr, &device_name);
+
+                // consider moving this daemon
+                uint8_t event[2+1+6+DEVICE_NAME_LEN+1]; // +1 for \0 in log_info
+                if (hci_stack->remote_device_db->get_name(addr, (device_name_t *) &event[9])){
+                    event[0] = BTSTACK_EVENT_REMOTE_NAME_CACHED;
+                    event[1] = sizeof(event) - 2 - 1;
+                    event[2] = 0;   // just to be compatible with HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE
+                    bt_flip_addr(&event[3], addr);
+                    
+                    event[9+248] = 0;   // assert \0 for log_info
+                    log_info("BTSTACK_EVENT_REMOTE_NAME_CACHED %s = '%s'", bd_addr_to_str(addr), &event[9]);
+
+                    hci_dump_packet(HCI_EVENT_PACKET, 0, event, sizeof(event)-1);
+                    hci_stack->packet_handler(HCI_EVENT_PACKET, event, sizeof(event)-1);
                 }
+                offset += 14; // 6 + 1 + 1 + 1 + 3 + 2; 
             }
             return;
         }
-#endif
         
         // HCI_EVENT_DISCONNECTION_COMPLETE
         // has been split, to first notify stack before shutting connection down
