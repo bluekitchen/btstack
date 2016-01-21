@@ -56,7 +56,7 @@
 #include "btstack_run_loop.h"
 #include <stdio.h>
 
-#ifndef EMBEDDED
+#ifdef HAVE_POSIX_FILE_IO
 #include <fcntl.h>        // open
 #include <unistd.h>       // write 
 #include <time.h>
@@ -88,7 +88,7 @@ pktlog_hdr;
 #define PKTLOG_HDR_SIZE 13
 
 static int dump_file = -1;
-#ifndef EMBEDDED
+#ifdef HAVE_POSIX_FILE_IO
 static int dump_format;
 static uint8_t header_bluez[HCIDUMP_HDR_SIZE];
 static uint8_t header_packetlogger[PKTLOG_HDR_SIZE];
@@ -102,23 +102,25 @@ static char log_message_buffer[256];
 static int log_level_enabled[3] = { 1, 1, 1};
 
 void hci_dump_open(const char *filename, hci_dump_format_t format){
-#ifdef EMBEDDED
-    dump_file = 1;
-#else
+#ifdef HAVE_POSIX_FILE_IO
     dump_format = format;
     if (dump_format == HCI_DUMP_STDOUT) {
         dump_file = fileno(stdout);
     } else {
-#ifdef _WIN32
+
+# ifdef _WIN32
         dump_file = open(filename, O_WRONLY | O_CREAT | O_TRUNC);
-#else
+# else
         dump_file = open(filename, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
-#endif
+# endif
+
     }
+#else
+    dump_file = 1;
 #endif
 }
 
-#ifndef EMBEDDED
+#ifdef HAVE_POSIX_FILE_IO
 void hci_dump_set_max_packets(int packets){
     max_nr_packets = packets;
 }
@@ -152,13 +154,8 @@ void hci_dump_packet(uint8_t packet_type, uint8_t in, uint8_t *packet, uint16_t 
 
     if (dump_file < 0) return; // not activated yet
 
-#ifdef EMBEDDED
-// #ifdef HAVE_TICK
-//     uint32_t time_ms = btstack_run_loop_embedded_get_time_ms();
-//     printf("[%06u] ", time_ms);
-// #endif
-    printf_packet(packet_type, in, packet, len);
-#else
+#ifdef HAVE_POSIX_FILE_IO
+
     // don't grow bigger than max_nr_packets
     if (dump_format != HCI_DUMP_STDOUT && max_nr_packets > 0){
         if (nr_packets >= max_nr_packets){
@@ -239,6 +236,14 @@ void hci_dump_packet(uint8_t packet_type, uint8_t in, uint8_t *packet, uint16_t 
         default:
             break;
     }
+#else
+
+// #ifdef HAVE_TICK
+//     uint32_t time_ms = btstack_run_loop_embedded_get_time_ms();
+//     printf("[%06u] ", time_ms);
+// #endif
+    printf_packet(packet_type, in, packet, len);
+
 #endif
 }
 
@@ -252,14 +257,14 @@ void hci_dump_log(int log_level, const char * format, ...){
     if (!hci_dump_log_level_active(log_level)) return;
     va_list argptr;
     va_start(argptr, format);
-#ifdef EMBEDDED
+#ifdef HAVE_POSIX_FILE_IO
+    int len = vsnprintf(log_message_buffer, sizeof(log_message_buffer), format, argptr);
+    hci_dump_packet(LOG_MESSAGE_PACKET, 0, (uint8_t*) log_message_buffer, len);
+#else
     printf("LOG -- ");
     vprintf(format, argptr);
     printf("\n");
-#else
-    int len = vsnprintf(log_message_buffer, sizeof(log_message_buffer), format, argptr);
-    hci_dump_packet(LOG_MESSAGE_PACKET, 0, (uint8_t*) log_message_buffer, len);
-#endif    
+#endif
     va_end(argptr);
 }
 
@@ -276,10 +281,10 @@ void hci_dump_log_P(int log_level, PGM_P format, ...){
 #endif
 
 void hci_dump_close(void){
-#ifndef EMBEDDED
+#ifdef HAVE_POSIX_FILE_IO
     close(dump_file);
-    dump_file = -1;
 #endif
+    dump_file = -1;
 }
 
 void hci_dump_enable_log_level(int log_level, int enable){

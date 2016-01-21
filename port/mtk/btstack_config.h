@@ -8,9 +8,9 @@
 // Port related features
 #define HAVE_BZERO
 #define HAVE_MALLOC
+#define HAVE_POSIX_FILE_IO
 // #define HAVE_SO_NOSIGPIPE
 #define HAVE_TIME
-#define HAVE_TRANSPORT_H4
 
 // BTstack features that can be enabled
 #define ENABLE_BLE
@@ -25,6 +25,7 @@
 // Daemon configuration
 #define ENABLE_SDP
 #define ENABLE_RFCOMM
+#define HAVE_TRANSPORT_H4
 #define BTSTACK_LOG_FILE "/data/btstack/hci_dump.pklg"
 #define BTSTACK_UNIX "/data/btstack/BTstack"
 #define REMOTE_DEVICE_DB remote_device_db_memory
