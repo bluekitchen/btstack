@@ -339,9 +339,13 @@ uint8_t rfcomm_register_service_with_initial_credits(uint8_t channel, uint16_t m
 void rfcomm_unregister_service(uint8_t service_channel);
 
 /** 
- * @brief Accepts/Deny incoming RFCOMM connection.
+ * @brief Accepts incoming RFCOMM connection.
  */
 void rfcomm_accept_connection(uint16_t rfcomm_cid);
+
+/** 
+ * @brief Deny incoming RFCOMM connection.
+ */
 void rfcomm_decline_connection(uint16_t rfcomm_cid);
 
 /** 
@@ -380,13 +384,24 @@ int rfcomm_send_port_configuration(uint16_t rfcomm_cid, rpn_baud_t baud_rate, rp
 int rfcomm_query_port_configuration(uint16_t rfcomm_cid);
 
 /** 
+ * @brief Query max frame size
+ */
+uint16_t  rfcomm_get_max_frame_size(uint16_t rfcomm_cid);
+
+/** 
  * @brief Allow to create RFCOMM packet in outgoing buffer.
+ * if (rfcomm_can_send_packet_now(cid)){
+ *     rfcomm_reserve_packet_buffer();
+ *     uint8_t * buffer = rfcomm_get_outgoing_buffer();
+ *     uint16_t buffer_size = rfcomm_get_max_frame_size(cid);
+ *     // .. setup data in buffer with len
+ *     rfcomm_send_prepared(cid, len)
+ * }
  */
 int       rfcomm_reserve_packet_buffer(void);
-void      rfcomm_release_packet_buffer(void);
 uint8_t * rfcomm_get_outgoing_buffer(void);
-uint16_t  rfcomm_get_max_frame_size(uint16_t rfcomm_cid);
 int       rfcomm_send_prepared(uint16_t rfcomm_cid, uint16_t len);
+void      rfcomm_release_packet_buffer(void);
 /* API_END */
 
 #if defined __cplusplus
