@@ -78,7 +78,6 @@ static bd_addr_t speaker_addr = {0x00, 0x21, 0x3C, 0xAC, 0xF7, 0x38};
 static uint8_t codecs[1] = {HFP_CODEC_CVSD};
 static uint16_t handle = -1;
 static int memory_1_enabled = 1;
-static int last_number_exists = 1;
 
 static int ag_indicators_nr = 7;
 static hfp_ag_indicator_t ag_indicators[] = {
@@ -470,12 +469,11 @@ static int stdin_process(struct data_source *ds){
         case 'l':
             log_info("USER:\'%c\'", cmd);
             printf("Last dialed number cleared\n");
-            last_number_exists = 0;
+            hfp_gsm_clear_last_dialed_number();
             break;
         case 'L':
             log_info("USER:\'%c\'", cmd);
             printf("Last dialed number set\n");
-            last_number_exists = 1;
             break;
         case 'n':
             log_info("USER:\'%c\'", cmd);
@@ -600,7 +598,7 @@ static void packet_handler(uint8_t * event, uint16_t event_size){
     if (event[3]
         && event[2] != HFP_SUBEVENT_PLACE_CALL_WITH_NUMBER
         && event[2] != HFP_SUBEVENT_ATTACH_NUMBER_TO_VOICE_TAG 
-        && event[2] != HFP_SUBEVENT_TRANSMIT_DTMF_CODES)
+        && event[2] != HFP_SUBEVENT_TRANSMIT_DTMF_CODES
         && event[2] != HFP_SUBEVENT_TRANSMIT_STATUS_OF_CURRENT_CALL){
         printf("ERROR, status: %u\n", event[3]);
         return;
@@ -640,18 +638,7 @@ static void packet_handler(uint8_t * event, uint16_t event_size){
                 hfp_ag_outgoing_call_rejected();
             }
             break;
-        case HFP_SUBEVENT_REDIAL_LAST_NUMBER:
-            printf("\n** Redial last number\n");
-            if (last_number_exists){
-                hfp_ag_outgoing_call_accepted();
-                printf("Last number exists: accept call\n");
-                // TODO: calling ringing right away leads to callstatus=2 being skipped. don't call for now
-                // hfp_ag_outgoing_call_ringing();
-            } else {
-                printf("Last number missing: reject call\n");
-                hfp_ag_outgoing_call_rejected();
-            }
-            break;
+        
         case HFP_SUBEVENT_ATTACH_NUMBER_TO_VOICE_TAG:
             printf("\n** Attach number to voice tag. Sending '1234567\n");
             hfp_ag_send_phone_number_for_voice_tag(device_addr, "1234567");

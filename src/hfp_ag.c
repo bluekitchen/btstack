@@ -1376,13 +1376,14 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * connect
                 hfp_run_for_context(connection);  
                 break;
             }
-            hfp_gsm_handle_event(HFP_AG_OUTGOING_CALL_INITIATED);
+            hfp_gsm_handle_event_with_call_number(HFP_AG_OUTGOING_CALL_INITIATED, (const char *) &connection->line_buffer[3]);
+            
             connection->call_state = HFP_CALL_OUTGOING_INITIATED;
 
             hfp_emit_string_event(hfp_callback, HFP_SUBEVENT_PLACE_CALL_WITH_NUMBER, (const char *) &connection->line_buffer[3]);
             break;
 
-        case HFP_AG_OUTGOING_REDIAL_INITIATED:
+        case HFP_AG_OUTGOING_REDIAL_INITIATED:{
             // directly reject call if number of free slots is exceeded
             if (!hfp_gsm_call_possible()){
                 connection->send_error = 1;
@@ -1394,8 +1395,21 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * connect
             connection->call_state = HFP_CALL_OUTGOING_INITIATED;
 
             hfp_emit_event(hfp_callback, HFP_SUBEVENT_REDIAL_LAST_NUMBER, 0);
+            printf("\n** Redial last number\n");
+            hfp_gsm_call_t * last_dialed_call = hfp_gsm_last_dialed_call();
+            
+            if (last_dialed_call){
+                printf("Last number exists: accept call %s\n", last_dialed_call->clip_number);
+                hfp_emit_string_event(hfp_callback, HFP_SUBEVENT_PLACE_CALL_WITH_NUMBER, last_dialed_call->clip_number);
+                hfp_ag_outgoing_call_accepted();
+                // TODO: calling ringing right away leads to callstatus=2 being skipped. don't call for now
+                // hfp_ag_outgoing_call_ringing();
+            } else {
+                printf("Last number missing: reject call\n");
+                hfp_ag_outgoing_call_rejected();
+            }
             break;
-
+        }
         case HFP_AG_OUTGOING_CALL_REJECTED:
             connection = hfp_ag_connection_for_call_state(HFP_CALL_OUTGOING_INITIATED);
             if (!connection){
@@ -1593,7 +1607,7 @@ static void hfp_run_for_context(hfp_connection_t *context){
     
     if (context->send_status_of_current_calls){
         context->ok_pending = 0; 
-        if (context->next_call_index < hfp_gsm_get_number_calls()){
+        if (context->next_call_index < hfp_gsm_get_number_of_calls()){
             context->next_call_index++;
             hfp_ag_send_call_status(context, context->next_call_index);
         } else {

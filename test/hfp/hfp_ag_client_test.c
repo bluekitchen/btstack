@@ -108,17 +108,8 @@ static hfp_generic_status_indicator_t hf_indicators[] = {
     {2, 1},
 };
 
-
-static uint8_t service_level_connection_established = 0;
-static uint8_t codecs_connection_established = 0;
-static uint8_t audio_connection_established = 0;
-static uint8_t start_ringing = 0;
-static uint8_t stop_ringing = 0;
-static uint8_t call_termiated = 0;
-
 static uint16_t handle = -1;
 static int memory_1_enabled = 1;
-static int last_number_exists = 1;
 
 int has_more_hfp_ag_commands(){
     return has_more_hfp_commands(2,2);
@@ -227,11 +218,10 @@ static void user_command(char cmd){
             break;
         case 'l':
             printf("Last dialed number cleared\n");
-            last_number_exists = 0;
+            hfp_gsm_clear_last_dialed_number();
             break;
         case 'L':
             printf("Last dialed number set\n");
-            last_number_exists = 1;
             break;
         case 'n':
             printf("Disable Voice Recognition\n");
@@ -411,18 +401,6 @@ void packet_handler(uint8_t * event, uint16_t event_size){
                 hfp_ag_outgoing_call_rejected();
             }
             break;
-        case HFP_SUBEVENT_REDIAL_LAST_NUMBER:
-            printf("\n** Redial last number\n");
-            if (last_number_exists){
-                hfp_ag_outgoing_call_accepted();
-                printf("Last number exists: accept call\n");
-                // TODO: calling ringing right away leads to callstatus=2 being skipped. don't call for now
-                // hfp_ag_outgoing_call_ringing();
-            } else {
-                printf("Last number missing: reject call\n");
-                hfp_ag_outgoing_call_rejected();
-            }
-            break;
         case HFP_SUBEVENT_ATTACH_NUMBER_TO_VOICE_TAG:
             printf("\n** Attach number to voice tag. Sending '1234567\n");
             hfp_ag_send_phone_number_for_voice_tag(device_addr, "1234567");
@@ -441,13 +419,6 @@ void packet_handler(uint8_t * event, uint16_t event_size){
 
 TEST_GROUP(HFPClient){
     void setup(void){
-        service_level_connection_established = 0;
-        codecs_connection_established = 0;
-        audio_connection_established = 0;
-        start_ringing = 0;
-        stop_ringing = 0;
-        call_termiated = 0;
-
         hfp_ag_init(rfcomm_channel_nr, supported_features_with_codec_negotiation, 
             codecs, sizeof(codecs), 
             ag_indicators, ag_indicators_nr, 
@@ -458,10 +429,6 @@ TEST_GROUP(HFPClient){
     void teardown(void){
         hfp_ag_release_audio_connection(device_addr);
         hfp_ag_release_service_level_connection(device_addr);
-
-        service_level_connection_established = 0;
-        codecs_connection_established = 0;
-        audio_connection_established = 0;
     }
 };
 
