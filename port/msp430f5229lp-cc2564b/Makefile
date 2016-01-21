@@ -56,7 +56,7 @@ COMMON = \
 	bt_control_cc256x.c       \
     hci.c			          \
     hci_cmds.c		          \
-    hci_transport_h4_ehcill_dma.c \
+    hci_transport_h4_ehcill_embedded.c \
 	remote_device_db_memory.c \
 
 SPP = \

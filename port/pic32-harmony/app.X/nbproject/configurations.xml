@@ -124,7 +124,7 @@
           <itemPath>../../../src/hci.c</itemPath>
           <itemPath>../../../src/hci_cmds.c</itemPath>
           <itemPath>../../../src/hci_dump.c</itemPath>
-          <itemPath>../../../src/hci_transport_h4_dma.c</itemPath>
+          <itemPath>../../../src/hci_transport_h4_embedded.c</itemPath>
           <itemPath>../../../src/l2cap.c</itemPath>
           <itemPath>../../../src/l2cap_signaling.c</itemPath>
           <itemPath>../../../src/btstack_linked_list.c</itemPath>

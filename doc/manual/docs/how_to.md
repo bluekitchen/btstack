@@ -142,7 +142,7 @@ requires four arguments. These are:
     two UART based protocols: HCI UART Transport Layer (H4) and H4 with
     eHCILL support, a lightweight low-power variant by Texas
     Instruments. These are accessed by linking the appropriate file 
-    [src/hci_transport_h4_dma.c]() resp. [src/hci_transport_h4_ehcill_dma.c]()
+    [src/hci_transport_h4_embedded.c]() resp. [src/hci_transport_h4_ehcill_embedded.c]()
     and then getting a pointer to HCI Transport implementation.
     For more information on adapting HCI Transport to different
     environments, see [here](porting/#sec:hciTransportPorting).

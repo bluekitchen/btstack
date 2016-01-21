@@ -29,7 +29,7 @@ COMMON = \
     hci.c			          \
     hci_cmds.c		          \
     hci_dump.c		          \
-    hci_transport_h4_ehcill_dma.c \
+    hci_transport_h4_ehcill_embedded.c \
     l2cap.c			          \
     l2cap_signaling.c         \
 	remote_device_db_memory.c \
