@@ -72,7 +72,6 @@ uint32_t btstack_run_loop_embedded_ticks_for_ms(uint32_t time_in_ms);
 uint32_t btstack_run_loop_embedded_get_ticks(void);
 #endif
 
-#ifdef EMBEDDED
 /**
  * @brief Sets an internal flag that is checked in the critical section just before entering sleep mode. Has to be called by the interrupt handler of a data source to signal the run loop that a new data is available.
  */
@@ -81,7 +80,6 @@ void btstack_run_loop_embedded_trigger(void);
  * @brief Execute run_loop once. It can be used to integrate BTstack's timer and data source processing into a foreign run loop (it is not recommended).
  */
 void btstack_run_loop_embedded_execute_once(void);
-#endif
 
 /* API_END */
 
