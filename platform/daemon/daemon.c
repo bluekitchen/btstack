@@ -1329,7 +1329,6 @@ static int daemon_client_handler(connection_t *connection, uint16_t packet_type,
                 case DAEMON_EVENT_CONNECTION_CLOSED:
                     log_info("DAEMON_EVENT_CONNECTION_CLOSED %p\n",connection);
                     daemon_disconnect_client(connection);
-                    sdp_query_rfcomm_deregister_callback();
                     // no clients -> no HCI connections
                     if (!clients){
                         hci_disconnect_all();

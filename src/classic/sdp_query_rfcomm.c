@@ -317,9 +317,3 @@ void sdp_query_rfcomm_channel_and_name_for_uuid(bd_addr_t remote, uint16_t uuid)
     net_store_16(des_serviceSearchPattern, 3, uuid);
     sdp_query_rfcomm_channel_and_name_for_search_pattern(remote, (uint8_t*)des_serviceSearchPattern);
 }
-
-void sdp_query_rfcomm_deregister_callback(void){
-    sdp_query_rfcomm_init();
-    sdp_app_callback = dummy_notify_app; 
-    sdp_app_context = NULL;
-}
