@@ -1454,7 +1454,6 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * connect
             break;
         }
         case HFP_AG_OUTGOING_CALL_RINGING:
-            // hfp_gsm_handle_event();
             connection = hfp_ag_connection_for_call_state(HFP_CALL_OUTGOING_DIALING);
             if (!connection){
                 log_info("hfp_ag_call_sm: did not find outgoing connection in dialing state");
@@ -2274,5 +2273,8 @@ void hfp_ag_set_subcriber_number_information(hfp_phone_number_t * numbers, int n
     subscriber_numbers_count = numbers_count;
 }
 
+void hfp_ag_clear_last_dialed_number(void){
+    hfp_gsm_clear_last_dialed_number();
+}
 
 

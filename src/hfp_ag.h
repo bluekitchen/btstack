@@ -302,6 +302,11 @@ void hfp_ag_accept_held_incoming_call(void);
  */
 void hfp_ag_reject_held_incoming_call(void);
 
+/*
+ * @brief
+ */
+void hfp_ag_clear_last_dialed_number(void);
+
 /* API_END */
 
 #if defined __cplusplus

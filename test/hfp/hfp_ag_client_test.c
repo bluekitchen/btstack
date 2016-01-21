@@ -218,10 +218,11 @@ static void user_command(char cmd){
             break;
         case 'l':
             printf("Last dialed number cleared\n");
-            hfp_gsm_clear_last_dialed_number();
+            hfp_ag_clear_last_dialed_number();
             break;
         case 'L':
-            printf("Last dialed number set\n");
+            printf("Outgoing call connected, ringing\n");
+            hfp_ag_outgoing_call_ringing();
             break;
         case 'n':
             printf("Disable Voice Recognition\n");
@@ -394,8 +395,6 @@ void packet_handler(uint8_t * event, uint16_t event_size){
               || (memory_1_enabled && strcmp(">1",      (char*) &event[3]) == 0)){
                 printf("Dialstring valid: accept call\n");
                 hfp_ag_outgoing_call_accepted();
-                // TODO: calling ringing right away leads to callstatus=2 being skipped. don't call for now
-                // hfp_ag_outgoing_call_ringing();
             } else {
                 printf("Dialstring invalid: reject call\n");
                 hfp_ag_outgoing_call_rejected();
