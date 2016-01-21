@@ -3,9 +3,6 @@
 
 #define EMBEDDED
 
-// #define HAVE_INIT_SCRIPT
-// #define HAVE_EHCILL
-
 #define HAVE_BZERO
 #define HAVE_TIME_MS
 

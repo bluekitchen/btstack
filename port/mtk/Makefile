@@ -57,13 +57,13 @@ BTdaemon_OBJS = $(libBTstack_OBJS)   \
 	daemon.o 				    \
 	hci_transport_h4_mtk.o      \
 
-all: $(TOOLCHAIN) version BTstackDaemon libBTstack.so BTstackDaemonRespawn inquiry le_scan rfcomm-echo dist
+all: $(TOOLCHAIN) version BTstackDaemon libBTstack.so BTstackDaemonRespawn inquiry le_scan rfcomm_echo dist
 
 dist:
 	rm -f *.o
 
 clean:
-	rm -f BTstackDaemon BTstackDaemonRespawn le_scan inquiry rfcomm-echo *.so *.o
+	rm -f BTstackDaemon BTstackDaemonRespawn le_scan inquiry rfcomm_echo *.so *.o
 
 $(TOOLCHAIN):
 	$(NDK)/build/tools/make-standalone-toolchain.sh --install-dir=$@
@@ -100,8 +100,8 @@ libBTstack.so: $(libBTstack_OBJS)
 inquiry: inquiry.o
 	$(GCC) $(LDFLAGS) -Wl,-rpath,/system/lib libBTstack.so -o $@ inquiry.o
 
-rfcomm-echo: rfcomm-echo.o
-	$(GCC) $(LDFLAGS) -Wl,-rpath,/system/lib libBTstack.so -o $@ rfcomm-echo.o
+rfcomm_echo: rfcomm_echo.o
+	$(GCC) $(LDFLAGS) -Wl,-rpath,/system/lib libBTstack.so -o $@ rfcomm_echo.o
 
 le_scan: le_scan.o
 	$(GCC) $(LDFLAGS) -Wl,-rpath,/system/lib libBTstack.so -o $@ le_scan.o

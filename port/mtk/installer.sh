@@ -30,7 +30,7 @@ adb push $DIR/BTstackDaemonRespawn /system/btstack
 adb push $DIR/libBTstack.so        /system/btstack
 adb push $DIR/inquiry 	           /system/btstack
 adb push $DIR/le_scan 	           /system/btstack
-adb push $DIR/rfcomm-echo          /system/btstack
+adb push $DIR/rfcomm_echo          /system/btstack
 
 echo "- put files in place"
 adb shell su root mv /system/btstack/BTstackDaemon /system/bin
@@ -54,8 +54,8 @@ adb shell su root chmod 755 /system/bin/inquiry
 adb shell su root mv /system/btstack/le_scan       /system/bin
 adb shell su root chmod 755 /system/bin/le_scan
 
-adb shell su root mv /system/btstack/rfcomm-echo       /system/bin
-adb shell su root chmod 755 /system/bin/rfcomm-echo
+adb shell su root mv /system/btstack/rfcomm_echo       /system/bin
+adb shell su root chmod 755 /system/bin/rfcomm_echo
 
 adb shell su root rm -r /system/btstack
 

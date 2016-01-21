@@ -36,7 +36,7 @@
  */
 
 /*
- *  l2cap-server.c
+ *  l2cap_server.c
  * 
  *  Created by Matthias Ringwald on 7/14/09.
  */

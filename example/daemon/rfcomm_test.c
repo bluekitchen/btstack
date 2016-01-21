@@ -36,7 +36,7 @@
  */
 
 /*
- *  rfcomm-echo.c
+ *  rfcomm_echo.c
  */
 
 #include <unistd.h>
@@ -104,7 +104,7 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
                     if (packet[2] == HCI_STATE_WORKING) {
                         // get persistent RFCOMM channel
                         printf("HCI_STATE_WORKING\n");
-                        bt_send_cmd(&rfcomm_persistent_channel_for_service_cmd, "ch.ringwald.btstack.rfcomm-test");
+                        bt_send_cmd(&rfcomm_persistent_channel_for_service_cmd, "ch.ringwald.btstack.rfcomm_test");
                   	}
 					break;
                     

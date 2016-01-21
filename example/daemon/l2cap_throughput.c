@@ -36,7 +36,7 @@
  */
 
 /*
- *  l2cap-troughput.c 
+ *  l2cap_throughput.c 
  * 
  *  Created by Matthias Ringwald on 7/14/09.
  */

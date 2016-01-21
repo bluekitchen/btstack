@@ -1,9 +1,9 @@
 Makefile
 inquiry
-l2cap-server
-l2cap-throughput
+l2cap_server
+l2cap_throughput
 le_scan
-rfcomm-cat
-rfcomm-echo
-rfcomm-test
+rfcomm_cat
+rfcomm_echo
+rfcomm_test
 test

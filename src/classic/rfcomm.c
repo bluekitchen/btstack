@@ -586,7 +586,7 @@ static int rfcomm_send_uih_pn_command(rfcomm_multiplexer_t *multiplexer, uint8_t
 	return rfcomm_send_packet_for_multiplexer(multiplexer, address, BT_RFCOMM_UIH, 0, (uint8_t *) payload, pos);
 }
 
-// "The response may not change the DLCI, the priority, the convergence layer, or the timer value." RFCOMM-tutorial.pdf
+// "The response may not change the DLCI, the priority, the convergence layer, or the timer value." rfcomm_tutorial.pdf
 static int rfcomm_send_uih_pn_response(rfcomm_multiplexer_t *multiplexer, uint8_t dlci,
                                        uint8_t priority, uint16_t max_frame_size){
 	uint8_t payload[10];
