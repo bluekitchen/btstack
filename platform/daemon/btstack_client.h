@@ -47,7 +47,7 @@
 #ifndef __BTSTACK_CLIENT_H
 #define __BTSTACK_CLIENT_H
 
-#include "hci_cmds.h"
+#include "hci_cmd.h"
 #include "daemon_cmds.h"
 #include "btstack_run_loop.h"
 #include "btstack_util.h"

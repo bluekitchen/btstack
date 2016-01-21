@@ -17,7 +17,7 @@ COMMON = \
     btstack_run_loop_posix.c    \
     btstack_util.c			    \
     hci.c			            \
-    hci_cmds.c		            \
+    hci_cmd.c		            \
     hci_dump.c		            \
     l2cap.c			            \
     l2cap_signaling.c 			\
@@ -34,7 +34,7 @@ MOCK = \
 	test_sequences.c            \
     btstack_linked_list.c	    \
     btstack_memory.c            \
-    hci_cmds.c					\
+    hci_cmd.c					\
     hci_dump.c     				\
     btstack_memory_pool.c       \
     remote_device_db_memory.c   \

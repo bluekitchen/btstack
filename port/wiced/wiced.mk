@@ -29,7 +29,7 @@ $(NAME)_SOURCES += \
 	../../src/classic/sdp_query_util.c    \
 	../../src/classic/sdp_util.c          \
 	../../src/hci.c                       \
-	../../src/hci_cmds.c                  \
+	../../src/hci_cmd.c                  \
 	../../src/hci_dump.c                  \
 	../../src/l2cap.c                     \
 	../../src/l2cap_signaling.c           \

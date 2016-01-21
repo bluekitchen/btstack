@@ -36,7 +36,7 @@
  */
 
 /*
- *  hci_cmds.c
+ *  hci_cmd.c
  *
  *  Created by Matthias Ringwald on 7/23/09.
  */

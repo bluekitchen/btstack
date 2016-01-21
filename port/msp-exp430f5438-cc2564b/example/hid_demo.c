@@ -55,7 +55,7 @@
 #include  <msp430x54x.h>
 
 #include "btstack_run_loop.h"
-#include "hci_cmds.h"
+#include "hci_cmd.h"
 #include "btstack_memory.h"
 #include "hci.h"
 #include "l2cap.h"

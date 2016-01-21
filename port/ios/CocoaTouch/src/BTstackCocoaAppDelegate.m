@@ -47,7 +47,7 @@
 #include "btstack_client.h"
 #include "btstack_run_loop.h"
 #include "btstack_run_loop_cocoa.h"
-#include "hci_cmds.h"
+#include "hci_cmd.h"
 
 void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
 }

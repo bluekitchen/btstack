@@ -37,7 +37,7 @@
 
 #import <UIKit/UIKit.h>
 
-#include "hci_cmds.h" // for HCI_STATE
+#include "hci_cmd.h" // for HCI_STATE
 
 #define PREFS_REMOTE_NAME  @"RemoteName"
 #define PREFS_LINK_KEY     @"LinkKey"

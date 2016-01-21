@@ -132,8 +132,8 @@ java_event_to_string = \
 # global variables/defines
 package='com.bluekitchen.btstack'
 gen_path = 'gen/' + package.replace('.', '/')
-hci_cmds_h_path = '../../src/hci_cmds.h'
-hci_cmds_c_path = '../../src/hci_cmds.c'
+hci_cmds_h_path = '../../src/hci_cmd.h'
+hci_cmds_c_path = '../../src/hci_cmd.c'
 daemon_cmds_c_path = '../../platform/daemon/daemon_cmds.c'
 hci_h_path = '../../src/hci.h'
 bluetooth_h_path = '../../src/bluetooth.h'
@@ -435,7 +435,7 @@ def parse_events(path):
                 format = None
     return (events, le_events, event_types)
 
-# read defines from hci_cmds.h and hci.h
+# read defines from hci_cmd.h and hci.h
 read_defines(hci_cmds_h_path)
 read_defines(hci_h_path)
 read_defines(bluetooth_h_path)

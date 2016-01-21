@@ -55,7 +55,7 @@
 #include "classic/sdp_query_rfcomm.h"
 #include "btstack_debug.h"
 #include "hci.h"
-#include "hci_cmds.h"
+#include "hci_cmd.h"
 #include "hci_dump.h"
 #include "l2cap.h"
 #include "btstack_run_loop.h"

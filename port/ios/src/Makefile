@@ -23,7 +23,7 @@ libBTstack_FILES = \
 	btstack_run_loop_cocoa.m \
 	btstack_run_loop_posix.c \
 	daemon_cmds.c \
-	hci_cmds.c \
+	hci_cmd.c \
 	hci_dump.c \
 	sdp_util.c \
 	socket_connection.c \

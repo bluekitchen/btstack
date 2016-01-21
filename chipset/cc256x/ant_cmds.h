@@ -39,7 +39,7 @@
 #define __ANT_CMDS_H
 
 #include <stdint.h>
-#include "hci_cmds.h"
+#include "hci_cmd.h"
 
 #if defined __cplusplus
 extern "C" {

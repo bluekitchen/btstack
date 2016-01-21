@@ -18,7 +18,7 @@ COMMON = \
     btstack_linked_list.c		    \
     btstack_memory.c			\
     gatt_client.c               \
-    hci_cmds.c					\
+    hci_cmd.c					\
     hci_dump.c     				\
     le_device_db_memory.c       \
     btstack_memory_pool.c			    \

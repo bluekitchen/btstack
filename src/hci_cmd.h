@@ -36,7 +36,7 @@
  */
 
 /*
- *  hci_cmds.h
+ *  hci_cmd.h
  *
  *  Created by Matthias Ringwald on 7/23/09.
  */
@@ -84,7 +84,7 @@ typedef enum {
 } hci_cmd_t;
 
 
-// HCI Commands - see hci_cmds.c for info on parameters
+// HCI Commands - see hci_cmd.c for info on parameters
 extern const hci_cmd_t hci_accept_connection_request;
 extern const hci_cmd_t hci_accept_synchronous_connection;
 extern const hci_cmd_t hci_authentication_requested;

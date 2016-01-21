@@ -49,7 +49,7 @@
 #include "btstack_client.h"
 #include "btstack_run_loop.h"
 #include "btstack_run_loop_posix.h"
-#include "hci_cmds.h"
+#include "hci_cmd.h"
 
 // bd_addr_t addr = {0x00, 0x03, 0xc9, 0x3d, 0x77, 0x43 };  // Think Outside Keyboard
 // bd_addr_t addr = {0x00, 0x19, 0x1d, 0x90, 0x44, 0x68 };  // WiiMote

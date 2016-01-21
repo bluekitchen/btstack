@@ -90,7 +90,7 @@ In a HCI command packet, the OpCode is followed by parameter total
 length, and the actual parameters. The OpCode of a command can be
 calculated using the OPCODE macro. BTstack provides the *hci_cmd_t*
 struct as a compact format to define HCI command packets, see 
-Listing [below](#lst:HCIcmdTemplate), and [include/btstack/hci_cmds.h]()
+Listing [below](#lst:HCIcmdTemplate), and [include/btstack/hci_cmd.h]()
 file in the source code. 
 
 ~~~~ {#lst:HCIcmdTemplate .c caption="{HCI command struct.}"}

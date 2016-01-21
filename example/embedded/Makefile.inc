@@ -17,7 +17,7 @@ CORE += \
 
 COMMON += \
     hci.c			            \
-    hci_cmds.c		            \
+    hci_cmd.c		            \
     hci_dump.c		            \
     l2cap.c			            \
     l2cap_signaling.c	        \

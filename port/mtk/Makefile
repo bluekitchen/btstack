@@ -29,7 +29,7 @@ libBTstack_OBJS  = 		 \
 	btstack_linked_list.o   \
 	btstack_run_loop.o      \
 	btstack_run_loop_posix.ho     \
-	hci_cmds.o           \
+	hci_cmd.o           \
 	hci_dump.o           \
 	sdp_util.o           \
 	socket_connection.o  \

@@ -59,7 +59,7 @@
 #include "btstack_version.h"
 #include "gap.h"
 #include "hci.h"
-#include "hci_cmds.h"
+#include "hci_cmd.h"
 #include "hci_dump.h"
 #include "hci_transport.h"
 #include "l2cap.h"

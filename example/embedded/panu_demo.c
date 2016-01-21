@@ -81,7 +81,7 @@
 #include <linux/if_tun.h>
 #endif
 
-#include "hci_cmds.h"
+#include "hci_cmd.h"
 #include "btstack_run_loop.h"
 #include "classic/sdp_util.h"
 

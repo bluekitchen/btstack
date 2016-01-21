@@ -28,7 +28,7 @@ usb_sources = @USB_SOURCES@
 libBTstack_SOURCES =    \
     btstack.c           \
     socket_connection.c \
-    hci_cmds.c          \
+    hci_cmd.c          \
     daemon_cmds.c       \
     btstack_linked_list.c    \
     btstack_run_loop.c  \

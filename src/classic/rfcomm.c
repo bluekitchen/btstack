@@ -44,7 +44,7 @@
 #include <string.h> // memcpy
 #include <stdint.h>
 
-#include "hci_cmds.h"
+#include "hci_cmd.h"
 #include "btstack_util.h"
 
 #include "btstack_util.h"

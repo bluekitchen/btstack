@@ -48,7 +48,7 @@
 
 #include "btstack_client.h"
 #include "btstack_run_loop_posix.h"
-#include "hci_cmds.h"
+#include "hci_cmd.h"
 
 #define PSM_TEST 0xdead
 #define PACKET_SIZE 1000

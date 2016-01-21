@@ -74,7 +74,7 @@
 #include "hci_dump.h"
 
 #include "btstack_linked_list.h"
-#include "hci_cmds.h"
+#include "hci_cmd.h"
 
 #define HCI_CONNECTION_TIMEOUT_MS 10000
 

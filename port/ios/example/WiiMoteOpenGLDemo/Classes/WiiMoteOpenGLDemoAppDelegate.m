@@ -42,7 +42,7 @@
 
 #import "btstack.h"
 #import "btstack_run_loop.h"
-#import <btstack/hci_cmds.h>
+#import <btstack/hci_cmd.h>
 
 @interface UIDevice (privateAPI)
 -(BOOL) isWildcat;

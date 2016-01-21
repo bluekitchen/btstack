@@ -50,7 +50,7 @@
 
 #include "btstack_control.h"
 #include "classic/remote_device_db.h"
-#include "hci_cmds.h"
+#include "hci_cmd.h"
 #include "hci_transport.h"
 #include "btstack_linked_list.h"
 #include "btstack_util.h"

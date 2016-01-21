@@ -27,7 +27,7 @@ COMMON = \
 	bt_control_cc256x.c   \
 	bluetooth_init_cc2564B_1.2_BT_Spec_4.1.c   \
     hci.c			          \
-    hci_cmds.c		          \
+    hci_cmd.c		          \
     hci_dump.c		          \
     hci_transport_h4_ehcill_embedded.c \
     l2cap.c			          \

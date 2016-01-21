@@ -36,7 +36,7 @@
  */
 
 /*
- *  hci_cmds.c
+ *  hci_cmd.c
  *
  *  Created by Matthias Ringwald on 7/23/09.
  */
@@ -45,7 +45,7 @@
 
 #include "classic/sdp_util.h"
 #include "hci.h"
-#include "hci_cmds.h"
+#include "hci_cmd.h"
 
 #include <string.h>
 

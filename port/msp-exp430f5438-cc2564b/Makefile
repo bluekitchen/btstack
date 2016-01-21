@@ -53,7 +53,7 @@ COMMON = \
     hal_uart_dma.c            \
 	bt_control_cc256x.c       \
     hci.c			          \
-    hci_cmds.c		          \
+    hci_cmd.c		          \
     hci_transport_h4_ehcill_embedded.c \
 	remote_device_db_memory.c \
 

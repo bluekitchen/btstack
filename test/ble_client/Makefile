@@ -20,7 +20,7 @@ COMMON = \
     btstack_run_loop_posix.c 	\
     btstack_util.c			    \
     hci.c                       \
-    hci_cmds.c					\
+    hci_cmd.c					\
     hci_dump.c					\
 	
 COMMON_OBJ = $(COMMON:.c=.o)
