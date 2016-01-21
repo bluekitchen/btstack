@@ -5,8 +5,6 @@
 #ifndef __BTSTACK_CONFIG
 #define __BTSTACK_CONFIG
 
-#define EMBEDDED
-
 // Port related features
 #define HAVE_BZERO
 #define HAVE_EHCILL
