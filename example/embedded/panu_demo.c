@@ -48,7 +48,7 @@
  * service and initiates a BNEP connection.
  */
 
-#include "btstack-config.h"
+#include "btstack_config.h"
 
 #include <arpa/inet.h>
 #include <errno.h>

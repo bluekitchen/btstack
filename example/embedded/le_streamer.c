@@ -54,7 +54,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "btstack-config.h"
+#include "btstack_config.h"
 
 #include "btstack_run_loop.h"
 #include "classic/sdp_util.h"

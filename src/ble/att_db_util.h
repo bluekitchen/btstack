@@ -43,7 +43,7 @@
 #ifndef __ATT_DB_UTIL
 #define __ATT_DB_UTIL
 
-#include "btstack-config.h"
+#include "btstack_config.h"
 #
 #ifdef HAVE_MALLOC
 #else

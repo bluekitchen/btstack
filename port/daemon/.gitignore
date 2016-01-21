@@ -2,7 +2,7 @@ Makefile
 Makefile.in
 aclocal.m4
 autom4te.cache
-btstack-config.h
+btstack_config.h
 config.status
 config
 configure

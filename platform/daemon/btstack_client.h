@@ -52,7 +52,7 @@
 #include "btstack_run_loop.h"
 #include "btstack_util.h"
 
-#include "btstack-config.h"
+#include "btstack_config.h"
 
 #include <stdint.h>
 

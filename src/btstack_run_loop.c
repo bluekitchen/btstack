@@ -48,7 +48,7 @@
 
 
 #include "btstack_debug.h"
-#include "btstack-config.h"
+#include "btstack_config.h"
 
 static const btstack_run_loop_t * the_run_loop = NULL;
 

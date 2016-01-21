@@ -45,7 +45,7 @@
 #ifndef __HCI_H
 #define __HCI_H
 
-#include "btstack-config.h"
+#include "btstack_config.h"
 
 
 #include "btstack_control.h"

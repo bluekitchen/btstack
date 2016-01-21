@@ -46,7 +46,7 @@
  *  Created by Matthias Ringwald on 9/16/11.
  */
 
-#include "btstack-config.h"
+#include "btstack_config.h"
 
 #include <stdio.h>
 #include <string.h>

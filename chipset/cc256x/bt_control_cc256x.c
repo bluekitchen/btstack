@@ -59,7 +59,7 @@
  *
  */
 
-#include "btstack-config.h"
+#include "btstack_config.h"
 #include "bt_control_cc256x.h"
 
 #include <stddef.h>   /* NULL */

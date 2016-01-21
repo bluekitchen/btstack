@@ -47,7 +47,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "btstack-config.h"
+#include "btstack_config.h"
 
 #include "btstack_run_loop.h"
 #include "btstack_debug.h"

@@ -47,7 +47,7 @@
  *  Created by Matthias Ringwald on 5/26/09.
  */
 
-#include "btstack-config.h"
+#include "btstack_config.h"
 
 #include "hci_dump.h"
 #include "hci.h"

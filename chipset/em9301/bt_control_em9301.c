@@ -43,7 +43,7 @@
  *  Allows to set public BD ADDR
  */
 
-#include "btstack-config.h"
+#include "btstack_config.h"
 #include "bt_control_em9301.h"
 
 #include <stddef.h>   /* NULL */

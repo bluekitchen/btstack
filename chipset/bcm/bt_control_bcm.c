@@ -41,7 +41,7 @@
  */
 
 
-#include "btstack-config.h"
+#include "btstack_config.h"
 #include "bt_control_bcm.h"
 
 #include <stddef.h>   /* NULL */

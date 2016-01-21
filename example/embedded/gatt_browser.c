@@ -59,7 +59,7 @@
 #include "hci_cmd.h"
 #include "btstack_util.h"
 
-#include "btstack-config.h"
+#include "btstack_config.h"
 
 
 #include "btstack_debug.h"

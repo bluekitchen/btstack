@@ -308,5 +308,5 @@ In addition to the HCI packets, you can also enable BTstack's debug information 
     #define ENABLE_LOG_INFO 
     #define ENABLE_LOG_ERROR
 
-to the btstack-config.h and recompiling your application.
+to the btstack_config.h and recompiling your application.
 

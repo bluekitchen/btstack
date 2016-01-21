@@ -44,7 +44,7 @@
 #ifndef __btstack_run_loop_WICED_H
 #define __btstack_run_loop_WICED_H
 
-#include "btstack-config.h"
+#include "btstack_config.h"
 #include "btstack_run_loop.h"
 #include "wiced.h"
 

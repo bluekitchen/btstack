@@ -41,7 +41,7 @@
  *  Created by Matthias Ringwald on 7/23/09.
  */
 
-#include "btstack-config.h"
+#include "btstack_config.h"
 
 #include "classic/sdp_util.h"
 #include "hci.h"

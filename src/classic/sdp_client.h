@@ -42,7 +42,7 @@
 #ifndef __SDP_CLIENT_H
 #define __SDP_CLIENT_H
 
-#include "btstack-config.h"
+#include "btstack_config.h"
 
 #include "btstack_util.h"
 

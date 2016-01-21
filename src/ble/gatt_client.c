@@ -44,7 +44,7 @@
 #include "btstack_util.h"
 #include "classic/sdp_util.h"
 
-#include "btstack-config.h"
+#include "btstack_config.h"
 
 #include "ble/gatt_client.h"
 #include "ble/ad_parser.h"

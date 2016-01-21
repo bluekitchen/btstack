@@ -43,7 +43,7 @@
  *  Created by Matthias Ringwald on 7/23/09.
  */
 
-#include "btstack-config.h"
+#include "btstack_config.h"
 #include "btstack_util.h"
 #include <stdio.h>
 #include <string.h>

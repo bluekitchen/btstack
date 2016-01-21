@@ -40,7 +40,7 @@
 #include <stdint.h>
 #include "btstack_linked_list.h"
 
-#include "btstack-config.h"
+#include "btstack_config.h"
 
 #if defined __cplusplus
 extern "C" {

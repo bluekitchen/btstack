@@ -1,4 +1,4 @@
-// btstack-config.h created by configure for BTstack  Thu Apr 24 14:34:39 CEST 2014
+// btstack_config.h created by configure for BTstack  Thu Apr 24 14:34:39 CEST 2014
 
 #ifndef __BTSTACK_CONFIG
 #define __BTSTACK_CONFIG

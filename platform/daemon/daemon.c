@@ -44,7 +44,7 @@
  *
  */
 
-#include "btstack-config.h"
+#include "btstack_config.h"
 
 #include <pthread.h>
 #include <signal.h>

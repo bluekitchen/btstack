@@ -117,67 +117,67 @@ echo "HAVE_SO_NOSIGPIPE:   $HAVE_SO_NOSIGPIPE"
 echo
 echo
 
-# create btstack-config.h
-rm -f btstack-config.h
-echo "//"                                       >> btstack-config.h
-echo "// btstack-config.h"                      >> btstack-config.h
-echo "// created by configure for BTstack "     >> btstack-config.h
-echo "//" `date`                                >> btstack-config.h
-echo "//"                                       >> btstack-config.h
-echo                                            >> btstack-config.h
-echo "#ifndef __BTSTACK_CONFIG"                 >> btstack-config.h
-echo "#define __BTSTACK_CONFIG"                 >> btstack-config.h
-echo                                            >> btstack-config.h
+# create btstack_config.h
+rm -f btstack_config.h
+echo "//"                                       >> btstack_config.h
+echo "// btstack_config.h"                      >> btstack_config.h
+echo "// created by configure for BTstack "     >> btstack_config.h
+echo "//" `date`                                >> btstack_config.h
+echo "//"                                       >> btstack_config.h
+echo                                            >> btstack_config.h
+echo "#ifndef __BTSTACK_CONFIG"                 >> btstack_config.h
+echo "#define __BTSTACK_CONFIG"                 >> btstack_config.h
+echo                                            >> btstack_config.h
 
-echo "// Port related features"                 >> btstack-config.h
-echo "#define HAVE_TIME"                        >> btstack-config.h
-echo "#define HAVE_MALLOC"                      >> btstack-config.h
-echo "#define HAVE_BZERO"                       >> btstack-config.h
+echo "// Port related features"                 >> btstack_config.h
+echo "#define HAVE_TIME"                        >> btstack_config.h
+echo "#define HAVE_MALLOC"                      >> btstack_config.h
+echo "#define HAVE_BZERO"                       >> btstack_config.h
 if test "x$HAVE_SO_NOSIGPIPE" == xyes ; then
-    echo "#define HAVE_SO_NOSIGPIPE"            >> btstack-config.h
+    echo "#define HAVE_SO_NOSIGPIPE"            >> btstack_config.h
 fi
-echo                                            >> btstack-config.h
+echo                                            >> btstack_config.h
 
 # todo: HAVE -> ENABLE in features below
 
-echo "// BTstack features that can be enabled"  >> btstack-config.h
-echo "#define ENABLE_BLE"                       >> btstack-config.h
-echo "#define ENABLE_LOG_ERROR"                 >> btstack-config.h
-echo "#define ENABLE_LOG_INFO "                 >> btstack-config.h
-echo "#define ENABLE_RFCOMM"                    >> btstack-config.h
-echo "#define ENABLE_SDP"                       >> btstack-config.h
-echo "#define ENABLE_SDP_DES_DUMP"              >> btstack-config.h
-echo                                            >> btstack-config.h
+echo "// BTstack features that can be enabled"  >> btstack_config.h
+echo "#define ENABLE_BLE"                       >> btstack_config.h
+echo "#define ENABLE_LOG_ERROR"                 >> btstack_config.h
+echo "#define ENABLE_LOG_INFO "                 >> btstack_config.h
+echo "#define ENABLE_RFCOMM"                    >> btstack_config.h
+echo "#define ENABLE_SDP"                       >> btstack_config.h
+echo "#define ENABLE_SDP_DES_DUMP"              >> btstack_config.h
+echo                                            >> btstack_config.h
 
-echo "// BTstack configuration. buffers, sizes, .." >> btstack-config.h
-echo "#define HCI_ACL_PAYLOAD_SIZE 1021" >> btstack-config.h
-echo                                            >> btstack-config.h
+echo "// BTstack configuration. buffers, sizes, .." >> btstack_config.h
+echo "#define HCI_ACL_PAYLOAD_SIZE 1021" >> btstack_config.h
+echo                                            >> btstack_config.h
 
-echo "// Daemon configuration" >> btstack-config.h
+echo "// Daemon configuration" >> btstack_config.h
 # todo: USE_BLUETOOL -> HAVE_BLUETOOL
 # todo: USE_POWERMANAGEMENT -> HAVE_POWERMANAGMENT / ENABLE_POWERMANAGEMENT
 if test "x$HCI_TRANSPORT" = xUSB; then
     USB_SOURCES=hci_transport_h2_libusb.c
-    echo "#define HAVE_TRANSPORT_USB" >> btstack-config.h
-    echo "#define USB_PRODUCT_ID $USB_PRODUCT_ID" >> btstack-config.h
-    echo "#define USB_VENDOR_ID $USB_VENDOR_ID" >> btstack-config.h
+    echo "#define HAVE_TRANSPORT_USB" >> btstack_config.h
+    echo "#define USB_PRODUCT_ID $USB_PRODUCT_ID" >> btstack_config.h
+    echo "#define USB_VENDOR_ID $USB_VENDOR_ID" >> btstack_config.h
 else
-    echo "#define HAVE_TRANSPORT_H4" >> btstack-config.h
-    echo "#define UART_DEVICE \"$UART_DEVICE\"" >> btstack-config.h
-    echo "#define UART_SPEED $UART_SPEED" >> btstack-config.h
+    echo "#define HAVE_TRANSPORT_H4" >> btstack_config.h
+    echo "#define UART_DEVICE \"$UART_DEVICE\"" >> btstack_config.h
+    echo "#define UART_SPEED $UART_SPEED" >> btstack_config.h
     if test "x$USE_BLUETOOL" = xyes; then
-        echo "#define USE_BLUETOOL" >> btstack-config.h
+        echo "#define USE_BLUETOOL" >> btstack_config.h
     fi
     if test "x$USE_POWERMANAGEMENT" = xyes; then
-        echo "#define USE_POWERMANAGEMENT" >> btstack-config.h
+        echo "#define USE_POWERMANAGEMENT" >> btstack_config.h
     fi
 fi
 if test ! -z "$REMOTE_DEVICE_DB" ; then 
-    echo "#define REMOTE_DEVICE_DB $REMOTE_DEVICE_DB" >> btstack-config.h
+    echo "#define REMOTE_DEVICE_DB $REMOTE_DEVICE_DB" >> btstack_config.h
 fi
 
-echo                        >> btstack-config.h
-echo "#endif"               >> btstack-config.h
+echo                        >> btstack_config.h
+echo "#endif"               >> btstack_config.h
 
 AC_SUBST(HAVE_LIBUSB)
 AC_SUBST(REMOTE_DEVICE_DB_SOURCES)

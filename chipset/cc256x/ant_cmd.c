@@ -42,7 +42,7 @@
 
 #include "ant_cmds.h"
 #include "classic/sdp_util.h"
-#include "btstack-config.h"
+#include "btstack_config.h"
 #include "hci.h"
 
 /**

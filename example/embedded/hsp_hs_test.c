@@ -58,7 +58,7 @@
 // - ..
 // *****************************************************************************
 
-#include "btstack-config.h"
+#include "btstack_config.h"
 
 #include <stdint.h>
 #include <stdio.h>

@@ -53,7 +53,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "btstack-config.h"
+#include "btstack_config.h"
 
 #include <msp430x54x.h>
 

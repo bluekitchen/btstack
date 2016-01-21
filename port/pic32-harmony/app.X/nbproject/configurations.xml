@@ -12,7 +12,7 @@
           </logicalFolder>
         </logicalFolder>
         <itemPath>../src/app_btstack_debug.h</itemPath>
-        <itemPath>../src/btstack-config.h</itemPath>
+        <itemPath>../src/btstack_config.h</itemPath>
         <itemPath>../src/btstack_port.h</itemPath>
         <itemPath>../src/app.h</itemPath>
       </logicalFolder>

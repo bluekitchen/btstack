@@ -44,7 +44,7 @@
 #ifndef __BTSTACK_H
 #define __BTSTACK_H
 
-#include "btstack-config.h"
+#include "btstack_config.h"
 
 #include "bluetooth.h"
 #include "btstack.h"

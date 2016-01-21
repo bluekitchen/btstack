@@ -43,7 +43,7 @@
 #ifndef __btstack_run_loop_EMBEDDED_H
 #define __btstack_run_loop_EMBEDDED_H
 
-#include "btstack-config.h"
+#include "btstack_config.h"
 #include "btstack_linked_list.h"
 
 #ifdef HAVE_TIME

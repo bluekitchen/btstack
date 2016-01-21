@@ -47,7 +47,7 @@
 #include <string.h>
 #include <signal.h>
 
-#include "btstack-config.h"
+#include "btstack_config.h"
 
 #include "btstack_run_loop.h"
 #include "btstack_run_loop_posix.h"

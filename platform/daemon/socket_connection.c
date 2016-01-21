@@ -49,7 +49,7 @@
 #include "hci.h"
 #include "btstack_debug.h"
 
-#include "btstack-config.h"
+#include "btstack_config.h"
 
 #include "btstack.h"
 #include "btstack_client.h"

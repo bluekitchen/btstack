@@ -42,7 +42,7 @@
  *  Created by Matthias Ringwald on 4/29/09.
  */
 
-#include "btstack-config.h"
+#include "btstack_config.h"
 
 #include <stdio.h>
 

@@ -42,7 +42,7 @@
  *
  */
 
-#include "btstack-config.h"
+#include "btstack_config.h"
 
 #include "hci.h"
 #include "gap.h"

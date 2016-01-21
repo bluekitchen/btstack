@@ -42,7 +42,7 @@
  *  
  */
 
-#include "btstack-config.h"
+#include "btstack_config.h"
 #include "bt_control_stlc2500d.h"
 
 #include <stddef.h>   /* NULL */

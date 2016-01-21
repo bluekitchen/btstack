@@ -43,7 +43,7 @@
  *  Created by Matthias Ringwald on 4/29/09.
  */
 
-#include "btstack-config.h"
+#include "btstack_config.h"
 
 #include <termios.h>  /* POSIX terminal control definitions */
 #include <fcntl.h>    /* File control definitions */

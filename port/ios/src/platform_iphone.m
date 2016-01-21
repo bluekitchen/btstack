@@ -42,7 +42,7 @@
 
 #include "platform_iphone.h"
 
-#include "btstack-config.h"
+#include "btstack_config.h"
 #include "../port/ios/SpringBoardAccess/SpringBoardAccess.h"
 
 #include <stdio.h>

@@ -40,7 +40,7 @@
  * based on panu_demo implemented by Ole Reinhardt <ole.reinhardt@kernelconcepts.de>
  */
 
-#include "btstack-config.h"
+#include "btstack_config.h"
 
 #include <stdint.h>
 #include <stdio.h>

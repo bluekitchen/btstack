@@ -54,7 +54,7 @@ hfile_header_begin = """
 extern "C" {
 #endif
 
-#include "btstack-config.h"
+#include "btstack_config.h"
     
 // Core
 #include "hci.h"

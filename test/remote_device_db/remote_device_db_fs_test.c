@@ -6,7 +6,7 @@
 
 #include "classic/remote_device_db.h"
 
-#include "btstack-config.h"
+#include "btstack_config.h"
 
 const remote_device_db_t * remote_device_db_fs_instance();
 

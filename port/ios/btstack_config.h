@@ -1,5 +1,5 @@
 //
-// btstack-config.h
+// btstack_config.h
 // created by configure for BTstack 
 // Tue Oct 14 21:52:44 CEST 2014
 //
