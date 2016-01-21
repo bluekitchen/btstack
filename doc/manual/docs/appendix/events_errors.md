@@ -16,13 +16,13 @@ L2CAP_DATA_PACKET packet type. L2CAP provides the following events:
 
 -   L2CAP_EVENT_INCOMING_CONNECTION - received when the connection is
     requested by remote. Connection accept and decline are performed
-    with *l2cap_accept_connection_internal* and
+    with *l2cap_accept_connection* and
     *l2cap_decline_connecti-on_internal* respectively.
 
 -   L2CAP_EVENT_CREDITS - emitted when there is a chance to send a new
     L2CAP packet. BTstack does not buffer packets. Instead, it requires
     the application to retry sending if BTstack cannot deliver a packet
-    to the Bluetooth module. In this case, the l2cap_send_internal
+    to the Bluetooth module. In this case, the l2cap_send
     will return an error.
 
 -   L2CAP_EVENT_SERVICE_REGISTERED - Status not equal zero indicates

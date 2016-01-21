@@ -443,7 +443,7 @@ static void sdp_try_respond(void){
     // update state before sending packet (avoid getting called when new l2cap credit gets emitted)
     uint16_t size = sdp_response_size;
     sdp_response_size = 0;
-    l2cap_send_internal(l2cap_cid, sdp_response_buffer, size);
+    l2cap_send(l2cap_cid, sdp_response_buffer, size);
 }
 
 // we assume that we don't get two requests in a row
@@ -496,13 +496,13 @@ static void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
 				case L2CAP_EVENT_INCOMING_CONNECTION:
                     if (l2cap_cid) {
                         // CONNECTION REJECTED DUE TO LIMITED RESOURCES 
-                        l2cap_decline_connection_internal(channel, 0x04);
+                        l2cap_decline_connection(channel, 0x04);
                         break;
                     }
                     // accept
                     l2cap_cid = channel;
                     sdp_response_size = 0;
-                    l2cap_accept_connection_internal(channel);
+                    l2cap_accept_connection(channel);
 					break;
                     
                 case L2CAP_EVENT_CHANNEL_OPENED:

@@ -548,7 +548,7 @@ static void daemon_l2cap_close_connection(client_state_t * daemon_client){
     btstack_linked_list_iterator_init(&it, l2cap_cids);
     while (btstack_linked_list_iterator_has_next(&it)){
         btstack_linked_list_uint32_t * item = (btstack_linked_list_uint32_t*) btstack_linked_list_iterator_next(&it);
-        l2cap_disconnect_internal(item->value, 0); // note: reason isn't used
+        l2cap_disconnect(item->value, 0); // note: reason isn't used
         btstack_linked_list_remove(l2cap_cids, (btstack_linked_item_t *) item);
         free(item);
     }
@@ -982,7 +982,7 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
         case L2CAP_DISCONNECT:
             cid = READ_BT_16(packet, 3);
             reason = packet[5];
-            l2cap_disconnect_internal(cid, reason);
+            l2cap_disconnect(cid, reason);
             break;
         case L2CAP_REGISTER_SERVICE:
             psm = READ_BT_16(packet, 3);
@@ -998,12 +998,12 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             break;
         case L2CAP_ACCEPT_CONNECTION:
             cid    = READ_BT_16(packet, 3);
-            l2cap_accept_connection_internal(cid);
+            l2cap_accept_connection(cid);
             break;
         case L2CAP_DECLINE_CONNECTION:
             cid    = READ_BT_16(packet, 3);
             reason = packet[7];
-            l2cap_decline_connection_internal(cid, reason);
+            l2cap_decline_connection(cid, reason);
             break;
         case RFCOMM_CREATE_CHANNEL:
             bt_flip_addr(addr, &packet[3]);
@@ -1307,7 +1307,7 @@ static int daemon_client_handler(connection_t *connection, uint16_t packet_type,
             break;
         case L2CAP_DATA_PACKET:
             // process l2cap packet...
-            err = l2cap_send_internal(channel, data, length);
+            err = l2cap_send(channel, data, length);
             break;
         case RFCOMM_DATA_PACKET:
             // process l2cap packet...

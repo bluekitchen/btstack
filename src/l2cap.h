@@ -197,7 +197,7 @@ uint8_t l2cap_create_channel(btstack_packet_handler_t packet_handler, bd_addr_t 
 /** 
  * @brief Disconnects L2CAP channel with given identifier. 
  */
-void l2cap_disconnect_internal(uint16_t local_cid, uint8_t reason);
+void l2cap_disconnect(uint16_t local_cid, uint8_t reason);
 
 /** 
  * @brief Queries the maximal transfer unit (MTU) for L2CAP channel with given identifier. 
@@ -207,7 +207,7 @@ uint16_t l2cap_get_remote_mtu_for_local_cid(uint16_t local_cid);
 /** 
  * @brief Sends L2CAP data packet to the channel with given identifier.
  */
-int l2cap_send_internal(uint16_t local_cid, uint8_t *data, uint16_t len);
+int l2cap_send(uint16_t local_cid, uint8_t *data, uint16_t len);
 
 /** 
  * @brief Registers L2CAP service with given PSM and MTU, and assigns a packet handler.
@@ -222,8 +222,8 @@ void l2cap_unregister_service(uint16_t psm);
 /** 
  * @brief Accepts/Deny incoming L2CAP connection.
  */
-void l2cap_accept_connection_internal(uint16_t local_cid);
-void l2cap_decline_connection_internal(uint16_t local_cid, uint8_t reason);
+void l2cap_accept_connection(uint16_t local_cid);
+void l2cap_decline_connection(uint16_t local_cid, uint8_t reason);
 
 /** 
  * @brief Non-blocking UART write

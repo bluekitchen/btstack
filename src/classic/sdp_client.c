@@ -130,16 +130,16 @@ static void send_request(uint16_t channel){
     // l2cap_send_prepared shouldn't have failed as l2ap_can_send_packet_now() was true
     switch (err){
         case 0:
-            log_debug("l2cap_send_internal() -> OK");
+            log_debug("l2cap_send() -> OK");
             PDU_ID = SDP_Invalid;
             break;
         case BTSTACK_ACL_BUFFERS_FULL:
             sdp_client_state = W2_SEND;
-            log_info("l2cap_send_internal() ->BTSTACK_ACL_BUFFERS_FULL");
+            log_info("l2cap_send() ->BTSTACK_ACL_BUFFERS_FULL");
             break;
         default:
             sdp_client_state = W2_SEND;
-            log_error("l2cap_send_internal() -> err %d", err);
+            log_error("l2cap_send() -> err %d", err);
             break;
     }
 }
@@ -217,7 +217,7 @@ void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, 
         if (continuationStateLen == 0){
             log_info("SDP Client Query DONE! ");
             sdp_client_state = QUERY_COMPLETE;
-            l2cap_disconnect_internal(sdp_cid, 0);
+            l2cap_disconnect(sdp_cid, 0);
             // sdp_parser_handle_done(0);
             return;
         }

@@ -402,21 +402,21 @@ int l2cap_send_prepared_connectionless(uint16_t handle, uint16_t cid, uint16_t l
     return err;
 }
 
-int l2cap_send_internal(uint16_t local_cid, uint8_t *data, uint16_t len){
+int l2cap_send(uint16_t local_cid, uint8_t *data, uint16_t len){
 
     l2cap_channel_t * channel = l2cap_get_channel_for_local_cid(local_cid);
     if (!channel) {
-        log_error("l2cap_send_internal no channel for cid 0x%02x", local_cid);
+        log_error("l2cap_send no channel for cid 0x%02x", local_cid);
         return -1;   // TODO: define error
     }
 
     if (len > channel->remote_mtu){
-        log_error("l2cap_send_internal cid 0x%02x, data length exceeds remote MTU.", local_cid);
+        log_error("l2cap_send cid 0x%02x, data length exceeds remote MTU.", local_cid);
         return L2CAP_DATA_LEN_EXCEEDS_REMOTE_MTU;
     }
 
     if (!hci_can_send_acl_packet_now(channel->handle)){
-        log_info("l2cap_send_internal cid 0x%02x, cannot send", local_cid);
+        log_info("l2cap_send cid 0x%02x, cannot send", local_cid);
         return BTSTACK_ACL_BUFFERS_FULL;
     }
 
@@ -431,7 +431,7 @@ int l2cap_send_internal(uint16_t local_cid, uint8_t *data, uint16_t len){
 int l2cap_send_connectionless(uint16_t handle, uint16_t cid, uint8_t *data, uint16_t len){
     
     if (!hci_can_send_acl_packet_now(handle)){
-        log_info("l2cap_send_internal cid 0x%02x, cannot send", cid);
+        log_info("l2cap_send cid 0x%02x, cannot send", cid);
         return BTSTACK_ACL_BUFFERS_FULL;
     }
     
@@ -769,7 +769,8 @@ uint8_t l2cap_create_channel(btstack_packet_handler_t channel_packet_handler, bd
     return 0;
 }
 
-void l2cap_disconnect_internal(uint16_t local_cid, uint8_t reason){
+void 
+l2cap_disconnect(uint16_t local_cid, uint8_t reason){
     log_info("L2CAP_DISCONNECT local_cid 0x%x reason 0x%x", local_cid, reason);
     // find channel for local_cid
     l2cap_channel_t * channel = l2cap_get_channel_for_local_cid(local_cid);
@@ -1051,11 +1052,11 @@ static void l2cap_handle_connection_request(hci_con_handle_t handle, uint8_t sig
     gap_request_security_level(handle, channel->required_security_level);
 }
 
-void l2cap_accept_connection_internal(uint16_t local_cid){
+void l2cap_accept_connection(uint16_t local_cid){
     log_info("L2CAP_ACCEPT_CONNECTION local_cid 0x%x", local_cid);
     l2cap_channel_t * channel = l2cap_get_channel_for_local_cid(local_cid);
     if (!channel) {
-        log_error("l2cap_accept_connection_internal called but local_cid 0x%x not found", local_cid);
+        log_error("l2cap_accept_connection called but local_cid 0x%x not found", local_cid);
         return;
     }
 
@@ -1065,11 +1066,11 @@ void l2cap_accept_connection_internal(uint16_t local_cid){
     l2cap_run();
 }
 
-void l2cap_decline_connection_internal(uint16_t local_cid, uint8_t reason){
+void l2cap_decline_connection(uint16_t local_cid, uint8_t reason){
     log_info("L2CAP_DECLINE_CONNECTION local_cid 0x%x, reason %x", local_cid, reason);
     l2cap_channel_t * channel = l2cap_get_channel_for_local_cid( local_cid);
     if (!channel) {
-        log_error( "l2cap_decline_connection_internal called but local_cid 0x%x not found", local_cid);
+        log_error( "l2cap_decline_connection called but local_cid 0x%x not found", local_cid);
         return;
     }
     channel->state  = L2CAP_STATE_WILL_SEND_CONNECTION_RESPONSE_DECLINE;

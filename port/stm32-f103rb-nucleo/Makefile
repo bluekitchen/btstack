@@ -68,8 +68,9 @@ include libopencm3.stm32f1.mk
 # fetch and convert init scripts
 include ${BTSTACK_ROOT}/chipset/cc256x/Makefile.inc
 
-# clean:
-#	rm -f *.map *.o *.d *.out *.elf *.bin *.hex ../driver/*.o ../../src/*.o ../../ble/*.o ../firmware/*.o ${BTSTACK_ROOT}/chipset/cc256x/*.o ${BTSTACK_ROOT}/src/*.o
+clean:
+	rm -f *.map *.o *.d *.out *.elf *.bin *.hex 
+	make -C libopencm3 clean
 
 # git clone and compile libopencm3
 libopencm3/lib/libopencm3_stm32f1.a:

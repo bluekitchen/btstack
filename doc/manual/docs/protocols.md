@@ -230,11 +230,11 @@ To provide an L2CAP service, the application on a local Bluetooth device
 must init the L2CAP layer and register the service with
 *l2cap_register_service_internal*. From there on, it can wait for
 incoming L2CAP connections. The application can accept or deny an
-incoming connection by calling the *l2cap_accept_connection_internal*
+incoming connection by calling the *l2cap_accept_connection*
 and *l2cap_deny_connection_internal* functions respectively. If a
 connection is accepted and the incoming L2CAP channel gets successfully
 opened, the L2CAP service can send L2CAP data packets to the connected
-device with *l2cap_send_internal*.
+device with *l2cap_send*.
 
 Sending of L2CAP data packets may fail due to a full internal BTstack
 outgoing packet buffer, or if the ACL buffers in the Bluetooth module
@@ -269,7 +269,7 @@ provides L2CAP service example code.
                 psm        = READ_BT_16(packet, 10); 
                 local_cid  = READ_BT_16(packet, 12); 
                 printf("L2CAP incoming connection requested.");
-                l2cap_accept_connection_internal(local_cid);
+                l2cap_accept_connection(local_cid);
                 break;
             case L2CAP_EVENT_CHANNEL_OPENED:
                 bt_flip_addr(event_addr, &packet[3]);

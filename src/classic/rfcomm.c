@@ -723,7 +723,7 @@ static void rfcomm_multiplexer_timer_handler(btstack_timer_source_t *timer){
     log_info("rfcomm_multiplexer_timer_handler timeout: shutting down multiplexer! (no channels)");
     uint16_t l2cap_cid = multiplexer->l2cap_cid;
     rfcomm_multiplexer_finalize(multiplexer);
-    l2cap_disconnect_internal(l2cap_cid, 0x13);
+    l2cap_disconnect(l2cap_cid, 0x13);
 }
 
 static void rfcomm_multiplexer_prepare_idle_timer(rfcomm_multiplexer_t * multiplexer){
@@ -787,7 +787,7 @@ static int rfcomm_multiplexer_hci_event_handler(uint8_t *packet, uint16_t size){
             
             if (multiplexer) {
                 log_info("INCOMING_CONNECTION (l2cap_cid 0x%02x) for PSM_RFCOMM => decline - multiplexer already exists", l2cap_cid);
-                l2cap_decline_connection_internal(l2cap_cid,  0x04);    // no resources available
+                l2cap_decline_connection(l2cap_cid,  0x04);    // no resources available
                 return 1;
             }
             
@@ -795,7 +795,7 @@ static int rfcomm_multiplexer_hci_event_handler(uint8_t *packet, uint16_t size){
             multiplexer = rfcomm_multiplexer_create_for_addr(event_addr);
             if (!multiplexer){
                 log_info("INCOMING_CONNECTION (l2cap_cid 0x%02x) for PSM_RFCOMM => decline - no memory left", l2cap_cid);
-                l2cap_decline_connection_internal(l2cap_cid,  0x04);    // no resources available
+                l2cap_decline_connection(l2cap_cid,  0x04);    // no resources available
                 return 1;
             }
             
@@ -804,7 +804,7 @@ static int rfcomm_multiplexer_hci_event_handler(uint8_t *packet, uint16_t size){
             multiplexer->state = RFCOMM_MULTIPLEXER_W4_SABM_0;
             
             log_info("L2CAP_EVENT_INCOMING_CONNECTION (l2cap_cid 0x%02x) for PSM_RFCOMM => accept", l2cap_cid);
-            l2cap_accept_connection_internal(l2cap_cid);
+            l2cap_accept_connection(l2cap_cid);
             return 1;
             
         // l2cap connection opened -> store l2cap_cid, remote_addr
@@ -943,7 +943,7 @@ static int rfcomm_multiplexer_l2cap_packet_handler(uint16_t channel, uint8_t *pa
             log_info("Received DM #0");
             log_info("-> Closing down multiplexer");
             rfcomm_multiplexer_finalize(multiplexer);
-            l2cap_disconnect_internal(l2cap_cid, 0x13);
+            l2cap_disconnect(l2cap_cid, 0x13);
             return 1;
             
         case BT_RFCOMM_UIH:
@@ -952,7 +952,7 @@ static int rfcomm_multiplexer_l2cap_packet_handler(uint16_t channel, uint8_t *pa
                 log_info("Received Multiplexer close down command");
                 log_info("-> Closing down multiplexer");
                 rfcomm_multiplexer_finalize(multiplexer);
-                l2cap_disconnect_internal(l2cap_cid, 0x13);
+                l2cap_disconnect(l2cap_cid, 0x13);
                 return 1;
             }
             switch (packet[payload_offset]){
@@ -961,7 +961,7 @@ static int rfcomm_multiplexer_l2cap_packet_handler(uint16_t channel, uint8_t *pa
                     log_info("Received Multiplexer close down command");
                     log_info("-> Closing down multiplexer");
                     rfcomm_multiplexer_finalize(multiplexer);
-                    l2cap_disconnect_internal(l2cap_cid, 0x13);
+                    l2cap_disconnect(l2cap_cid, 0x13);
                     return 1;
 
                 case BT_RFCOMM_FCON_CMD:
@@ -1065,7 +1065,7 @@ static void rfcomm_multiplexer_state_machine(rfcomm_multiplexer_t * multiplexer,
                     multiplexer->state = RFCOMM_MULTIPLEXER_CLOSED;
                     rfcomm_send_ua(multiplexer, 0);
                     rfcomm_multiplexer_finalize(multiplexer);
-                    l2cap_disconnect_internal(l2cap_cid, 0x13);
+                    l2cap_disconnect(l2cap_cid, 0x13);
                 default:
                     break;
             }

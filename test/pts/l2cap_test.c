@@ -98,7 +98,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
         case L2CAP_EVENT_INCOMING_CONNECTION: {
             uint16_t l2cap_cid  = READ_BT_16(packet, 12);
             printf("L2CAP Accepting incoming connection request\n"); 
-            l2cap_accept_connection_internal(l2cap_cid);
+            l2cap_accept_connection(l2cap_cid);
             break;
         }
 
@@ -128,7 +128,7 @@ static int stdin_process(struct btstack_data_source *ds){
             break;
         case 's':
             printf("Send L2CAP Data\n");
-            l2cap_send_internal(local_cid, (uint8_t *) "0123456789", 10);
+            l2cap_send(local_cid, (uint8_t *) "0123456789", 10);
        break;
         case 'e':
             printf("Send L2CAP ECHO Request\n");
@@ -136,7 +136,7 @@ static int stdin_process(struct btstack_data_source *ds){
             break;
         case 'd':
             printf("L2CAP Channel Closed\n");
-            l2cap_disconnect_internal(local_cid, 0);
+            l2cap_disconnect(local_cid, 0);
             break;
         case '\n':
         case '\r':

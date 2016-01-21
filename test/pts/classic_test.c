@@ -338,7 +338,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             psm = READ_BT_16(packet, 10);
             // uint16_t l2cap_cid  = READ_BT_16(packet, 12);
             printf("L2CAP incoming connection request on PSM %u\n", psm); 
-            // l2cap_accept_connection_internal(l2cap_cid);
+            // l2cap_accept_connection(l2cap_cid);
             break;
         }
 
@@ -616,7 +616,7 @@ static int  stdin_process(struct btstack_data_source *ds){
         //     break;
         case 'q':
             printf("Send L2CAP Data\n");
-            l2cap_send_internal(local_cid, (uint8_t *) "0123456789", 10);
+            l2cap_send(local_cid, (uint8_t *) "0123456789", 10);
        break;
         case 'r':
             printf("Send L2CAP ECHO Request\n");
@@ -624,7 +624,7 @@ static int  stdin_process(struct btstack_data_source *ds){
             break;
         case 's':
             printf("L2CAP Channel Closed\n");
-            l2cap_disconnect_internal(local_cid, 0);
+            l2cap_disconnect(local_cid, 0);
             break;
         case 'x':
             printf("Outgoing L2CAP Channels to SDP will also require SSP\n");

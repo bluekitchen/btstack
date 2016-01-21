@@ -755,7 +755,7 @@ static void bnep_channel_finalize(bnep_channel_t *channel)
     
     /* Free ressources and then close the l2cap channel */
     bnep_channel_free(channel);
-    l2cap_disconnect_internal(l2cap_cid, 0x13);
+    l2cap_disconnect(l2cap_cid, 0x13);
 }
 
 static int bnep_handle_connection_request(bnep_channel_t *channel, uint8_t *packet, uint16_t size)
@@ -1173,7 +1173,7 @@ static int bnep_hci_event_handler(uint8_t *packet, uint16_t size)
 
             if (channel) {                
                 log_error("INCOMING_CONNECTION (l2cap_cid 0x%02x) for PSM_BNEP => decline - channel already exists", l2cap_cid);
-                l2cap_decline_connection_internal(l2cap_cid,  0x04);    // no resources available
+                l2cap_decline_connection(l2cap_cid,  0x04);    // no resources available
                 return 1;
             }
             
@@ -1182,7 +1182,7 @@ static int bnep_hci_event_handler(uint8_t *packet, uint16_t size)
 
             if (!channel) {
                 log_error("INCOMING_CONNECTION (l2cap_cid 0x%02x) for PSM_BNEP => decline - no memory left", l2cap_cid);
-                l2cap_decline_connection_internal(l2cap_cid,  0x04);    // no resources available
+                l2cap_decline_connection(l2cap_cid,  0x04);    // no resources available
                 return 1;
             }
 
@@ -1197,7 +1197,7 @@ static int bnep_hci_event_handler(uint8_t *packet, uint16_t size)
             bnep_channel_start_timer(channel, BNEP_CONNECTION_TIMEOUT_MS);
             
             log_info("L2CAP_EVENT_INCOMING_CONNECTION (l2cap_cid 0x%02x) for PSM_BNEP => accept", l2cap_cid);
-            l2cap_accept_connection_internal(l2cap_cid);
+            l2cap_accept_connection(l2cap_cid);
             return 1;
             
         /* Outgoing L2CAP connection has been opened -> store l2cap_cid, remote_addr */
