@@ -14,8 +14,6 @@
 #define USE_POWERMANAGEMENT
 #define USE_SPRINGBOARD
 #define USE_LAUNCHD
-#define USE_COCOA_RUN_LOOP
-#define USE_POSIX_RUN_LOOP
 #define HAVE_SDP
 #define HAVE_RFCOMM
 #define REMOTE_DEVICE_DB remote_device_db_iphone

@@ -5,7 +5,6 @@
 
 #define HAVE_TRANSPORT_USB
 #define HAVE_BLE
-#define USE_POSIX_RUN_LOOP
 #define HAVE_SDP
 #define HAVE_RFCOMM
 #define REMOTE_DEVICE_DB remote_device_db_iphone

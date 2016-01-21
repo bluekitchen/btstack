@@ -7,7 +7,6 @@
 #define UART_DEVICE "/dev/ttyS0"
 #define UART_SPEED 115200
 #define USE_POWERMANAGEMENT
-#define USE_POSIX_RUN_LOOP
 #define HAVE_SDP
 #define HAVE_RFCOMM
 #define HAVE_BLE

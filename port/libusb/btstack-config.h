@@ -20,7 +20,6 @@
 #define REMOTE_DEVICE_DB remote_device_db_iphone
 #define SDP_DES_DUMP
 #define SDP_DES_DUMP
-#define USE_POSIX_RUN_LOOP
 
 #define HAVE_SCO
 

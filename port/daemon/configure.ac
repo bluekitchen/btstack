@@ -64,7 +64,6 @@ case "$host_os" in
     darwin*)
         btstack_run_loop_SOURCES="$btstack_run_loop_SOURCES btstack_run_loop_cocoa.m"
         LDFLAGS="$LDFLAGS -framework CoreFoundation -framework Foundation"
-        USE_COCOA_RUN_LOOP="yes"
         BTSTACK_LIB_LDFLAGS="-dynamiclib -install_name \$(prefix)/lib/libBTstack.dylib"
         BTSTACK_LIB_EXTENSION="dylib"
         REMOTE_DEVICE_DB_SOURCES="remote_device_db_cocoa.m rfcomm_service_db_cocoa.m"
@@ -73,7 +72,6 @@ case "$host_os" in
         ;;
     mingw*)
         echo "Building on mingw32"
-        USE_COCOA_RUN_LOOP="no"
         LDFLAGS="$LDFLAGS -lws2_32"
         BTSTACK_LIB_LDFLAGS="-shared"
         BTSTACK_LIB_EXTENSION="dll"
@@ -81,7 +79,6 @@ case "$host_os" in
         REMOTE_DEVICE_DB="remote_device_db_memory"
         ;;
     *)
-        USE_COCOA_RUN_LOOP="no"
         BTSTACK_LIB_LDFLAGS="-shared -Wl,-rpath,\$(prefix)/lib"
         BTSTACK_LIB_EXTENSION="so"
         REMOTE_DEVICE_DB_SOURCES="remote_device_db_memory.c rfcomm_service_db_memory.c"
@@ -115,7 +112,6 @@ else
 fi
 
 echo "USE_POWERMANAGEMENT: $USE_POWERMANAGEMENT"
-echo "USE_COCOA_RUN_LOOP:  $USE_COCOA_RUN_LOOP"
 echo "REMOTE_DEVICE_DB:    $REMOTE_DEVICE_DB"
 echo "HAVE_SO_NOSIGPIPE:   $HAVE_SO_NOSIGPIPE"
 echo
@@ -132,6 +128,32 @@ echo                                            >> btstack-config.h
 echo "#ifndef __BTSTACK_CONFIG"                 >> btstack-config.h
 echo "#define __BTSTACK_CONFIG"                 >> btstack-config.h
 echo                                            >> btstack-config.h
+
+echo "// Port related features"                 >> btstack-config.h
+echo "#define HAVE_TIME"                        >> btstack-config.h
+echo "#define HAVE_MALLOC"                      >> btstack-config.h
+echo "#define HAVE_BZERO"                       >> btstack-config.h
+if test "x$HAVE_SO_NOSIGPIPE" == xyes ; then
+    echo "#define HAVE_SO_NOSIGPIPE"            >> btstack-config.h
+fi
+
+# todo: HAVE -> ENABLE in features below
+
+echo "// BTstack features that can be enabled"  >> btstack-config.h
+echo "#define HAVE_BLE"                         >> btstack-config.h
+echo "#define ENABLE_LOG_INFO "                 >> btstack-config.h
+echo "#define ENABLE_LOG_ERROR"                 >> btstack-config.h
+echo "#define HAVE_SDP"                         >> btstack-config.h
+echo "#define HAVE_RFCOMM"                      >> btstack-config.h
+
+echo "// BTstack configuration. buffers, sizes, .." >> btstack-config.h
+echo "#define HCI_ACL_PAYLOAD_SIZE 1021" >> btstack-config.h
+echo "#define SDP_DES_DUMP" >> btstack-config.h
+
+# unsorted yet
+# todo: USE_BLUETOOL -> HAVE_BLUETOOL
+# todo: USE_POWERMANAGEMENT -> HAVE_POWERMANAGMENT / ENABLE_POWERMANAGEMENT
+
 if test "x$HCI_TRANSPORT" = xUSB; then
     USB_SOURCES=hci_transport_h2_libusb.c
     echo "#define HAVE_TRANSPORT_USB" >> btstack-config.h
@@ -148,30 +170,13 @@ else
         echo "#define USE_POWERMANAGEMENT" >> btstack-config.h
     fi
 fi
-if test "x$USE_COCOA_RUN_LOOP" = xyes; then
-    echo "#define USE_COCOA_RUN_LOOP" >> btstack-config.h
-fi
-echo "#define USE_POSIX_RUN_LOOP" >> btstack-config.h
-echo "#define HAVE_SDP" >> btstack-config.h
-echo "#define HAVE_RFCOMM" >> btstack-config.h
+# are those still needed?
 if test ! -z "$REMOTE_DEVICE_DB" ; then 
     echo "#define REMOTE_DEVICE_DB $REMOTE_DEVICE_DB" >> btstack-config.h
 fi
-if test "x$HAVE_SO_NOSIGPIPE" == xyes ; then
-    echo "#define HAVE_SO_NOSIGPIPE" >> btstack-config.h
-fi
 
-# often not present for embedded
-echo "#define HAVE_TIME" >> btstack-config.h
-echo "#define HAVE_MALLOC" >> btstack-config.h
-echo "#define HAVE_BZERO" >> btstack-config.h
-echo "#define HAVE_BLE" >> btstack-config.h
-echo "#define ENABLE_LOG_INFO " >> btstack-config.h
-echo "#define ENABLE_LOG_ERROR" >> btstack-config.h
-echo "#define HCI_ACL_PAYLOAD_SIZE 1021" >> btstack-config.h
-echo "#define SDP_DES_DUMP" >> btstack-config.h
-echo >> btstack-config.h
-echo "#endif" >> btstack-config.h
+echo ""                     >> btstack-config.h
+echo "#endif"               >> btstack-config.h
 
 AC_SUBST(HAVE_LIBUSB)
 AC_SUBST(REMOTE_DEVICE_DB_SOURCES)
