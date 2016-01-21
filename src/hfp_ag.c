@@ -1394,18 +1394,14 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * connect
             hfp_gsm_handle_event(HFP_AG_OUTGOING_REDIAL_INITIATED);
             connection->call_state = HFP_CALL_OUTGOING_INITIATED;
 
-            hfp_emit_event(hfp_callback, HFP_SUBEVENT_REDIAL_LAST_NUMBER, 0);
-            printf("\n** Redial last number\n");
-            hfp_gsm_call_t * last_dialed_call = hfp_gsm_last_dialed_call();
+            printf("\nRedial last number");
+            char * last_dialed_number = hfp_gsm_last_dialed_number();
             
-            if (last_dialed_call){
-                printf("Last number exists: accept call %s\n", last_dialed_call->clip_number);
-                hfp_emit_string_event(hfp_callback, HFP_SUBEVENT_PLACE_CALL_WITH_NUMBER, last_dialed_call->clip_number);
-                hfp_ag_outgoing_call_accepted();
-                // TODO: calling ringing right away leads to callstatus=2 being skipped. don't call for now
-                // hfp_ag_outgoing_call_ringing();
+            if (strlen(last_dialed_number) > 0){
+                printf("\nLast number exists: accept call");
+                hfp_emit_string_event(hfp_callback, HFP_SUBEVENT_PLACE_CALL_WITH_NUMBER, last_dialed_number);
             } else {
-                printf("Last number missing: reject call\n");
+                printf("\nLast number missing: reject call");
                 hfp_ag_outgoing_call_rejected();
             }
             break;

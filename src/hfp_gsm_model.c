@@ -62,12 +62,14 @@
 #include "hfp_gsm_model.h"
 
 #define HFP_GSM_MAX_NR_CALLS 3
+#define HFP_GSM_MAX_CALL_NUMBER_SIZE 25
 
 static hfp_gsm_call_t gsm_calls[HFP_GSM_MAX_NR_CALLS]; 
 static hfp_callsetup_status_t callsetup_status = HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS;
 
 static uint8_t clip_type;
-static char clip_number[25];
+static char clip_number[HFP_GSM_MAX_CALL_NUMBER_SIZE];
+static char last_dialed_number[HFP_GSM_MAX_CALL_NUMBER_SIZE];
 
 static void hfp_gsm_handler(hfp_ag_call_event_t event, uint8_t index, uint8_t type, const char * number);
 
@@ -75,7 +77,7 @@ void hfp_gsm_init(void){
     callsetup_status = HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS;
     clip_type = 0;
     memset(clip_number, 0, sizeof(clip_number));
-
+    memset(last_dialed_number, 0, sizeof(last_dialed_number));
     memset(gsm_calls, 0, sizeof(gsm_calls));
     int i;
     for (i = 0; i < HFP_GSM_MAX_NR_CALLS; i++){
@@ -140,14 +142,16 @@ static int next_call_index(void){
 }
 
 static void hfp_gsm_set_clip(int index_in_table, uint8_t type, const char * number){
-    printf("HFP_AG_SET_CLIP index in table %d, index %d, %d, %s, last dialed %d \n", 
-        index_in_table, gsm_calls[index_in_table].index, type, number, gsm_calls[index_in_table].last_dialed);
-           
+    if (strlen(number) == 0) return;
+    
     gsm_calls[index_in_table].clip_type = type;
 
-    int clip_number_size = sizeof(gsm_calls[index_in_table].clip_number);
+    int clip_number_size = strlen(number) < HFP_GSM_MAX_CALL_NUMBER_SIZE ? strlen(number) : HFP_GSM_MAX_CALL_NUMBER_SIZE-1;
     strncpy(gsm_calls[index_in_table].clip_number, number, clip_number_size);
-    gsm_calls[index_in_table].clip_number[clip_number_size-1] = '\0';
+    gsm_calls[index_in_table].clip_number[clip_number_size] = '\0';
+    strncpy(last_dialed_number, number, clip_number_size);
+    last_dialed_number[clip_number_size] = '\0';
+    
     clip_type = 0;
     memset(clip_number, 0, sizeof(clip_number));
 }
@@ -167,15 +171,7 @@ static void delete_call(int delete_index_in_table){
     gsm_calls[delete_index_in_table].mpty = HFP_ENHANCED_CALL_MPTY_NOT_A_CONFERENCE_CALL;
 }
 
-static void set_last_dialed(int index_in_table){
-    hfp_gsm_clear_last_dialed_number();
-    gsm_calls[index_in_table].last_dialed = 1;
-    int i;
-    for (i = 0; i<HFP_GSM_MAX_NR_CALLS; i++){
-        printf("set_last_dialed index in table %d, index %d, %d, %s, last dialed %d \n", 
-            i, gsm_calls[i].index, gsm_calls[i].clip_type, gsm_calls[i].clip_number, gsm_calls[i].last_dialed);
-    }
-}
+
 static void create_call(hfp_enhanced_call_dir_t direction){
     int next_free_slot = get_next_free_slot();
     gsm_calls[next_free_slot].direction = direction;
@@ -184,8 +180,7 @@ static void create_call(hfp_enhanced_call_dir_t direction){
     gsm_calls[next_free_slot].clip_type = 0;
     gsm_calls[next_free_slot].clip_number[0] = '\0';
     gsm_calls[next_free_slot].mpty = HFP_ENHANCED_CALL_MPTY_NOT_A_CONFERENCE_CALL;
-    set_last_dialed(next_free_slot);
-
+    
     hfp_gsm_set_clip(next_free_slot, clip_type, clip_number);
 }
 
@@ -195,24 +190,11 @@ int hfp_gsm_get_number_of_calls(void){
 }
 
 void hfp_gsm_clear_last_dialed_number(void){
-    int i;
-    for (i = 0; i<HFP_GSM_MAX_NR_CALLS; i++){
-        gsm_calls[i].last_dialed = 0;
-    }
+    memset(last_dialed_number, 0, sizeof(last_dialed_number));
 }
 
-hfp_gsm_call_t * hfp_gsm_last_dialed_call(void){
-    hfp_gsm_call_t * call = NULL;
-    int i;
-    for (i = 0; i<HFP_GSM_MAX_NR_CALLS; i++){
-        printf("hfp_gsm_last_dialed_call index in table %d, index %d, %d, %s, last dialed %d \n", 
-            i, gsm_calls[i].index, gsm_calls[i].clip_type, gsm_calls[i].clip_number, gsm_calls[i].last_dialed);
-    
-        if (gsm_calls[i].last_dialed == 1) {
-            call = &gsm_calls[i];
-        }
-    }
-    return call;
+char * hfp_gsm_last_dialed_number(void){
+    return &last_dialed_number[0];
 }
 
 hfp_gsm_call_t * hfp_gsm_call(int call_index){
@@ -266,7 +248,7 @@ uint8_t hfp_gsm_clip_type(void){
 }
 
 char *  hfp_gsm_clip_number(void){
-    if (clip_type != 0) return clip_number;
+    if (strlen(clip_number) != 0) return clip_number;
     
     int initiated_call_index = get_initiated_call_index();
     if (initiated_call_index != -1){
@@ -340,19 +322,13 @@ static void hfp_gsm_handler(hfp_ag_call_event_t event, uint8_t index, uint8_t ty
 
     switch (event){
         case HFP_AG_OUTGOING_CALL_INITIATED:
+        case HFP_AG_OUTGOING_REDIAL_INITIATED:
             if (next_free_slot == -1){
                 log_error("gsm: max call nr exceeded");
                 return;
             }
             create_call(HFP_ENHANCED_CALL_DIR_OUTGOING);
             break;
-        case HFP_AG_OUTGOING_REDIAL_INITIATED:{
-            hfp_gsm_call_t * last_dialed_call = hfp_gsm_last_dialed_call();
-            if (last_dialed_call){
-                gsm_calls[last_dialed_call->index].status = CALL_INITIATED;
-            } 
-            break;
-        }
             
         case HFP_AG_OUTGOING_CALL_REJECTED:
             if (current_call_index != -1){

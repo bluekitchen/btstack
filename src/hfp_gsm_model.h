@@ -70,7 +70,6 @@ typedef struct {
     hfp_enhanced_call_status_t enhanced_status;
     hfp_enhanced_call_mode_t mode;
     hfp_enhanced_call_mpty_t mpty;
-    uint8_t last_dialed;
     // TODO: sort on drop call, so that index corresponds to table index
     int index;
     uint8_t clip_type;
@@ -82,7 +81,7 @@ hfp_call_status_t hfp_gsm_call_status(void);
 hfp_callsetup_status_t hfp_gsm_callsetup_status(void);
 
 int hfp_gsm_get_number_of_calls(void);
-hfp_gsm_call_t * hfp_gsm_last_dialed_call(void);
+char * hfp_gsm_last_dialed_number(void);
 void hfp_gsm_clear_last_dialed_number(void);
 
 
