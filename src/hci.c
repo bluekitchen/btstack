@@ -44,11 +44,13 @@
 
 #include "btstack_config.h"
 
-#include "hci.h"
-#include "gap.h"
 
 #ifdef HAVE_TICK
 #include "btstack_run_loop_embedded.h"
+#endif
+
+#ifdef HAVE_PLATFORM_IPHONE_OS
+#include "../port/ios/src/bt_control_iphone.h"
 #endif
 
 #ifdef ENABLE_BLE
@@ -60,27 +62,17 @@
 #include <stdio.h>
 #include <inttypes.h>
 
-#ifndef EMBEDDED
-#ifdef _WIN32
-#include "Winsock2.h"
-#else
-#include <unistd.h> // gethostbyname
-#endif
-#include "btstack_version.h"
-#endif
-
-#include "btstack_memory.h"
 #include "btstack_debug.h"
+#include "btstack_linked_list.h"
+#include "btstack_memory.h"
+#include "btstack_version.h"
+#include "gap.h"
+#include "hci.h"
+#include "hci_cmd.h"
 #include "hci_dump.h"
 
-#include "btstack_linked_list.h"
-#include "hci_cmd.h"
 
 #define HCI_CONNECTION_TIMEOUT_MS 10000
-
-#ifdef HAVE_PLATFORM_IPHONE_OS
-#include "../port/ios/src/bt_control_iphone.h"
-#endif
 
 static void hci_update_scan_enable(void);
 static gap_security_level_t gap_security_level_for_connection(hci_connection_t * connection);
@@ -1639,7 +1631,6 @@ static void event_handler(uint8_t *packet, int size){
             hci_emit_security_level(handle, gap_security_level_for_connection(conn));
             break;
 
-#ifndef EMBEDDED
         case HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE:
             if (!hci_stack->remote_device_db) break;
             if (packet[2]) break; // status not ok
@@ -1651,11 +1642,11 @@ static void event_handler(uint8_t *packet, int size){
                     break;
                 }
             }
-            memset(&device_name, 0, sizeof(device_name_t));
-            strncpy((char*) device_name, (char*) &packet[9], 248);
-            hci_stack->remote_device_db->put_name(addr, &device_name);
+            packet[9+248] = 0;
+            hci_stack->remote_device_db->put_name(addr, &packet[9]);
             break;
-            
+
+#ifndef EMBEDDED
         case HCI_EVENT_INQUIRY_RESULT:
         case HCI_EVENT_INQUIRY_RESULT_WITH_RSSI:{
             if (!hci_stack->remote_device_db) break;
