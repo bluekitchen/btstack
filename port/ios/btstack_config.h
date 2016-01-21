@@ -10,10 +10,6 @@
 #define HAVE_TRANSPORT_H4
 #define UART_DEVICE "/dev/tty.bluetooth"
 #define UART_SPEED 921600
-#define USE_BLUETOOL
-#define USE_POWERMANAGEMENT
-#define USE_SPRINGBOARD
-#define USE_LAUNCHD
 #define ENABLE_SDP
 #define ENABLE_RFCOMM
 #define REMOTE_DEVICE_DB remote_device_db_iphone
@@ -26,5 +22,9 @@
 #define ENABLE_LOG_ERROR
 #define HCI_ACL_PAYLOAD_SIZE 1021
 #define ENABLE_SDP_DES_DUMP
+
+#define USE_SPRINGBOARD
+#define USE_LAUNCHD
+#define HAVE_PLATFORM_IPHONE_OS
 
 #endif

@@ -87,16 +87,13 @@
 #include "ble/sm.h"
 #endif
 
-#ifdef USE_BLUETOOL
+#ifdef HAVE_PLATFORM_IPHONE_OS
 #include <CoreFoundation/CoreFoundation.h>
-#include "../port/ios/src/bt_control_iphone.h"
 #include <notify.h>
-#endif
-
-#ifdef USE_SPRINGBOARD
+#include "../port/ios/src/bt_control_iphone.h"
+#include "../port/ios/src/platform_iphone.h"
 // support for "enforece wake device" in h4 - used by iOS power management
 extern void hci_transport_h4_iphone_set_enforce_wake_device(char *path);
-#include "../port/ios/src/platform_iphone.h"
 #endif
 
 #ifndef BTSTACK_LOG_FILE
@@ -919,7 +916,7 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             log_info("BTSTACK_GET_VERSION");
             hci_emit_btstack_version();
             break;   
-#ifdef USE_BLUETOOL
+#ifdef HAVE_PLATFORM_IPHONE_OS
         case BTSTACK_SET_SYSTEM_BLUETOOTH_ENABLED:
             log_info("BTSTACK_SET_SYSTEM_BLUETOOTH_ENABLED %u", packet[3]);
             iphone_system_bt_set_enabled(packet[3]);
@@ -1666,7 +1663,7 @@ static void power_notification_callback(POWER_NOTIFICATION_t notification){
 
 static void daemon_sigint_handler(int param){
     
-#ifdef USE_BLUETOOL
+#ifdef HAVE_PLATFORM_IPHONE_OS
     // notify daemons
     notify_post("ch.ringwald.btstack.stopped");
 #endif
@@ -1760,7 +1757,7 @@ static void usage(const char * name) {
     printf("Without the --tcp option, BTstack daemon is listening on unix domain socket %s\n\n", BTSTACK_UNIX);
 }
 
-#ifdef USE_BLUETOOL 
+#ifdef HAVE_PLATFORM_IPHONE_OS 
 static void * btstack_run_loop_thread(void *context){
     btstack_run_loop_execute();
     return NULL;
@@ -1949,17 +1946,13 @@ int main (int argc,  char * const * argv){
     hci_transport_config_uart.baudrate_main = 0;
     hci_transport_config_uart.flowcontrol = 1;
     hci_transport_config_uart.device_name   = UART_DEVICE;
-#if defined(USE_BLUETOOL) && defined(USE_POWERMANAGEMENT)
-    if (bt_control_iphone_power_management_supported()){
-        // use default (max) UART baudrate over netgraph interface
-        hci_transport_config_uart.baudrate_init = 0;
-        transport = hci_transport_h4_instance();
-    } else {
-        transport = hci_transport_h4_instance();
-    }
-#else
     transport = hci_transport_h4_instance();
+
+#ifdef HAVE_PLATFORM_IPHONE_OS
+    // use default (max) UART baudrate over netgraph interface
+    hci_transport_config_uart.baudrate_init = 0;
 #endif
+
     config = &hci_transport_config_uart;
 #endif
 
@@ -1967,17 +1960,11 @@ int main (int argc,  char * const * argv){
     transport = hci_transport_usb_instance();
 #endif
 
-#ifdef USE_BLUETOOL
+#ifdef HAVE_PLATFORM_IPHONE_OS
     control = &bt_control_iphone;
-#endif
-    
-#if defined(USE_BLUETOOL) && defined(USE_POWERMANAGEMENT)
     if (bt_control_iphone_power_management_supported()){
         hci_transport_h4_iphone_set_enforce_wake_device("/dev/btwake");
     }
-#endif
-
-#ifdef USE_SPRINGBOARD
     bluetooth_status_handler = platform_iphone_status_handler;
     platform_iphone_register_window_manager_restart(update_ui_status);
     platform_iphone_register_preferences_changed(preferences_changed_callback);
@@ -1997,7 +1984,7 @@ int main (int argc,  char * const * argv){
     // logging
     loggingEnabled = 0;
     int newLoggingEnabled = 1;
-#ifdef USE_BLUETOOL
+#ifdef HAVE_PLATFORM_IPHONE_OS
     // iPhone has toggle in Preferences.app
     newLoggingEnabled = platform_iphone_logging_enabled();
 #endif
@@ -2010,10 +1997,11 @@ int main (int argc,  char * const * argv){
     // init HCI
     hci_init(transport, config, control, remote_device_db);
 
-#ifdef USE_BLUETOOL
+#ifdef HAVE_PLATFORM_IPHONE_OS
     // iPhone doesn't use SSP yet as there's no UI for it yet and auto accept is not an option
     hci_ssp_set_enable(0);
 #endif
+
     // init L2CAP
     l2cap_init();
     l2cap_register_packet_handler(&l2cap_packet_handler);
@@ -2056,7 +2044,7 @@ int main (int argc,  char * const * argv){
 #endif
     socket_connection_register_packet_callback(&daemon_client_handler);
         
-#ifdef USE_BLUETOOL 
+#ifdef HAVE_PLATFORM_IPHONE_OS 
     // notify daemons
     notify_post("ch.ringwald.btstack.started");
 

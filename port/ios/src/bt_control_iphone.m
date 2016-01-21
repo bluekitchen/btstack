@@ -381,7 +381,6 @@ static int iphone_write_initscript (int output, int baudrate){
     // close input
     close(input);
 
-#ifdef USE_POWERMANAGEMENT
     if (iphone_has_csr()) {
         /* CSR BT module: deactivated since it didn't work on iPhone 3G, 3.1.3
            the first few packets didn't get received when iPhone is sleeping.
@@ -396,7 +395,6 @@ static int iphone_write_initscript (int output, int baudrate){
         // iphone_write_string(output, "bcm -s 0x01,0x00,0x00,0x01,0x01,0x00,0x01,0x00,0x00,0x00,0x00,0x01\n");
         // iphone_write_string(output, "msleep 50\n");
     }
-#endif
 
     return 0;
 }
@@ -419,25 +417,21 @@ static void iphone_write_configscript(int fd, int baudrate){
             iphone_csr_set_baud(fd, baudrate);
         }
         iphone_write_string(fd, "csr -r\n");
-#ifdef USE_POWERMANAGEMENT
         /* CSR BT module: deactivated since untested, but it most likely won't work
            see comments in 3.x init sequence above */
         // iphone_write_string(fd, "msleep 50\n");
         // iphone_write_string(fd, "csr -p 0x01ca=0x0031\n");
         // iphone_write_string(fd, "msleep 50\n");
         // iphone_write_string(fd, "csr -p 0x01c7=0x0001,0x01f4,0x0005,0x0020\n");
-#endif
     } else {
         iphone_bcm_set_bd_addr(fd);
         if (baudrate) {
             iphone_bcm_set_baud(fd, baudrate);
             iphone_write_string(fd, "msleep 200\n");
         }
-#ifdef USE_POWERMANAGEMENT
         // power management only active on 4.x with BCM (iPhone 3GS and higher, all iPads, iPod touch 3G and higher)
         iphone_write_string(fd, "bcm -s 0x01,0x00,0x00,0x01,0x01,0x00,0x01,0x00,0x00,0x00,0x00,0x01\n");
         iphone_write_string(fd, "msleep 50\n");
-#endif
     }
 
     if (os6x){
@@ -581,14 +575,12 @@ static int iphone_on (void *transport_config){
     };
     err = pclose(outputFile);
 
-#ifdef USE_POWERMANAGEMENT
     power_management_active = bt_control_iphone_power_management_supported();
 
     // if baud == 0, we're using system default: set in transport config
     if (hci_transport_config_uart->baudrate_init == 0) {
         hci_transport_config_uart->baudrate_init = transport_speed;
     }
-#endif
     
     // if we sleep for about 3 seconds, we miss a strage packet... but we don't care
     // sleep(3); 

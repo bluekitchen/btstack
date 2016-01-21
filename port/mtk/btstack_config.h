@@ -6,7 +6,6 @@
 #define HAVE_TRANSPORT_H4
 #define UART_DEVICE "/dev/ttyS0"
 #define UART_SPEED 115200
-#define USE_POWERMANAGEMENT
 #define ENABLE_SDP
 #define ENABLE_RFCOMM
 #define ENABLE_BLE

@@ -9,7 +9,6 @@ AM_INIT_AUTOMAKE
 AC_ARG_WITH(hci-transport, [AS_HELP_STRING([--with-hci-transport=transportType], [Specify BT type to use: h4, usb])], HCI_TRANSPORT=$withval, HCI_TRANSPORT="h4")  
 AC_ARG_WITH(uart-device, [AS_HELP_STRING([--with-uart-device=uartDevice], [Specify BT UART device to use])], UART_DEVICE=$withval, UART_DEVICE="DEFAULT")  
 AC_ARG_WITH(uart-speed, [AS_HELP_STRING([--with-uart-speed=uartSpeed], [Specify BT UART speed to use])], UART_SPEED=$withval, UART_SPEED="115200")
-AC_ARG_ENABLE(powermanagement, [AS_HELP_STRING([--disable-powermanagement],[Disable powermanagement])], USE_POWERMANAGEMENT=$enableval, USE_POWERMANAGEMENT="yes")
 AC_ARG_ENABLE(launchd, [AS_HELP_STRING([--enable-launchd],[Compiles BTdaemon for use by launchd])], USE_LAUNCHD=$enableval, USE_LAUNCHD="no")
 AC_ARG_WITH(vendor-id, [AS_HELP_STRING([--with-vendor-id=vendorID], [Specify USB BT Dongle vendorID])], USB_VENDOR_ID=$withval, USB_VENDOR_ID="0")  
 AC_ARG_WITH(product-id, [AS_HELP_STRING([--with-product-id=productID], [Specify USB BT Dongle productID])], USB_PRODUCT_ID=$withval, USB_PRODUCT_ID="0")  
@@ -92,8 +91,6 @@ CFLAGS="$CFLAGS -Werror -Wall -Wpointer-arith"
 # 64-bit compilation requires position independent code (PIC) for libraries
 BTSTACK_LIB_LDFLAGS+=" -fpic"
 
-AM_CONDITIONAL(USE_POWERMANAGEMENT, [test "x$USE_POWERMANAGEMENT" == "xyes"])
-
 # summary
 
 echo "CC:                  $CC"
@@ -111,7 +108,6 @@ else
     echo "UART_SPEED:          $UART_SPEED"
 fi
 
-echo "USE_POWERMANAGEMENT: $USE_POWERMANAGEMENT"
 echo "REMOTE_DEVICE_DB:    $REMOTE_DEVICE_DB"
 echo "HAVE_SO_NOSIGPIPE:   $HAVE_SO_NOSIGPIPE"
 echo
@@ -154,8 +150,6 @@ echo "#define HCI_ACL_PAYLOAD_SIZE 1021" >> btstack_config.h
 echo                                            >> btstack_config.h
 
 echo "// Daemon configuration" >> btstack_config.h
-# todo: USE_BLUETOOL -> HAVE_BLUETOOL
-# todo: USE_POWERMANAGEMENT -> HAVE_POWERMANAGMENT / ENABLE_POWERMANAGEMENT
 if test "x$HCI_TRANSPORT" = xUSB; then
     USB_SOURCES=hci_transport_h2_libusb.c
     echo "#define HAVE_TRANSPORT_USB" >> btstack_config.h
@@ -165,12 +159,6 @@ else
     echo "#define HAVE_TRANSPORT_H4" >> btstack_config.h
     echo "#define UART_DEVICE \"$UART_DEVICE\"" >> btstack_config.h
     echo "#define UART_SPEED $UART_SPEED" >> btstack_config.h
-    if test "x$USE_BLUETOOL" = xyes; then
-        echo "#define USE_BLUETOOL" >> btstack_config.h
-    fi
-    if test "x$USE_POWERMANAGEMENT" = xyes; then
-        echo "#define USE_POWERMANAGEMENT" >> btstack_config.h
-    fi
 fi
 if test ! -z "$REMOTE_DEVICE_DB" ; then 
     echo "#define REMOTE_DEVICE_DB $REMOTE_DEVICE_DB" >> btstack_config.h
