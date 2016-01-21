@@ -647,7 +647,6 @@ void hci_connections_get_iterator(btstack_linked_list_iterator_t *it);
 
 // create and send hci command packets based on a template and a list of parameters
 uint16_t hci_create_cmd(uint8_t *hci_cmd_buffer, hci_cmd_t *cmd, ...);
-uint16_t hci_create_cmd_internal(uint8_t *hci_cmd_buffer, const hci_cmd_t *cmd, va_list argptr);
 
 /**
  * run the hci control loop once

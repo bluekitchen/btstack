@@ -44,10 +44,11 @@
 #ifndef __HCI_CMDS_H
 #define __HCI_CMDS_H
 
-#include <stdint.h>
-
 #include "bluetooth.h"
 #include "btstack_defines.h"
+
+#include <stdint.h>
+#include <stdarg.h>
 
 #if defined __cplusplus
 extern "C" {
@@ -177,6 +178,24 @@ extern const hci_cmd_t hci_le_set_scan_response_data;
 extern const hci_cmd_t hci_le_start_encryption;
 extern const hci_cmd_t hci_le_test_end;
 extern const hci_cmd_t hci_le_transmitter_test;
+
+
+/**
+ * construct HCI Command based on template
+ *
+ * Format:
+ *   1,2,3,4: one to four byte value
+ *   H: HCI connection handle
+ *   B: Bluetooth Baseband Address (BD_ADDR)
+ *   D: 8 byte data block
+ *   E: Extended Inquiry Result
+ *   N: Name up to 248 chars, \0 terminated
+ *   P: 16 byte Pairing code
+ *   A: 31 bytes advertising data
+ *   S: Service Record (Data Element Sequence)
+ */
+ uint16_t hci_cmd_create_from_template(uint8_t *hci_cmd_buffer, const hci_cmd_t *cmd, va_list argptr);
+
     
 #if defined __cplusplus
 }

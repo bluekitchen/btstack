@@ -158,7 +158,7 @@ int  l2cap_can_send_fixed_channel_packet_now(uint16_t handle){
 int hci_send_cmd(const hci_cmd_t *cmd, ...){
     va_list argptr;
     va_start(argptr, cmd);
-    uint16_t len = hci_create_cmd_internal(packet_buffer, cmd, argptr);
+    uint16_t len = hci_cmd_create_from_template(packet_buffer, cmd, argptr);
     va_end(argptr);
 	hci_dump_packet(HCI_COMMAND_DATA_PACKET, 0, packet_buffer, len);
 	dump_packet(HCI_COMMAND_DATA_PACKET, packet_buffer, len);

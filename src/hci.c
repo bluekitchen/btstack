@@ -2880,7 +2880,7 @@ int hci_send_cmd(const hci_cmd_t *cmd, ...){
 
     va_list argptr;
     va_start(argptr, cmd);
-    uint16_t size = hci_create_cmd_internal(packet, cmd, argptr);
+    uint16_t size = hci_cmd_create_from_template(packet, cmd, argptr);
     va_end(argptr);
 
     return hci_send_cmd_packet(packet, size);
