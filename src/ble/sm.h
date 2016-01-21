@@ -45,8 +45,9 @@
 extern "C" {
 #endif
 
-// Only for PTS testing
+// PTS testing
 void sm_test_set_irk(sm_key_t irk);
+void sm_test_use_fixed_local_csrk(void);
 
 typedef struct {
     btstack_linked_item_t  item;
@@ -183,7 +184,7 @@ void sm_authorization_grant(uint16_t handle);
 
 /**
  * @brief Support for signed writes, used by att_server.
- * @note Message and result are in little endian to allows passing in ATT PDU without flipping. 
+ * @note Message is in little endian to allows passing in ATT PDU without flipping. 
  * @note calculated hash in done_callback is big endian
  */
 int  sm_cmac_ready(void);
@@ -203,9 +204,6 @@ int sm_address_resolution_lookup(uint8_t addr_type, bd_addr_t addr);
  */
 int sm_le_device_index(uint16_t handle );
 /* API_END */
-
-// testing only
-void sm_test_use_fixed_local_csrk(void);
 
 #if defined __cplusplus
 }
