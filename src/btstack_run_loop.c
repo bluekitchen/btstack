@@ -58,11 +58,7 @@ extern const btstack_run_loop_t btstack_run_loop_embedded;
 static void btstack_run_loop_assert(void){
     if (!the_run_loop){
         log_error("ERROR: run_loop function called before btstack_run_loop_init!");
-#ifdef EMBEDDED
-        exit(10);
-#else
         while(1);
-#endif
     }
 }
 
@@ -148,11 +144,7 @@ void btstack_run_loop_execute(void){
 void btstack_run_loop_init(const btstack_run_loop_t * run_loop){
     if (the_run_loop){
         log_error("ERROR: run loop initialized twice!");
-#ifdef EMBEDDED
         while(1);
-#else
-        exit(10);
-#endif
     }
     the_run_loop = run_loop;
     the_run_loop->init();
