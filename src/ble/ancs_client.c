@@ -45,7 +45,7 @@
 #include "btstack_run_loop.h"
 #include "classic/sdp_util.h"
 
-#include "ancs_client_lib.h"
+#include "ancs_client.h"
 
 #include "ble/att.h"
 #include "btstack_debug.h"

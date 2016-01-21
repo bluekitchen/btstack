@@ -35,8 +35,8 @@
  *
  */
 
-#ifndef __ANCS_CLIENT_LIB_H
-#define __ANCS_CLIENT_LIB_H
+#ifndef __ANCS_CLIENT_H
+#define __ANCS_CLIENT_H
 
 #if defined __cplusplus
 extern "C" {

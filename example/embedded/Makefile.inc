@@ -56,7 +56,7 @@ PAN += \
 	pan.c \
 
 EXAMPLES = 					\
-	ancs_client 			\
+	ancs_client_demo		\
 	gap_dedicated_bonding	\
 	gap_inquiry 			\
 	gap_inquiry_and_bond 	\
@@ -75,7 +75,7 @@ EXAMPLES = 					\
     hsp_hs_test             \
 
 EXAMPLES_USING_LE =			\
-	ancs_client 			\
+	ancs_client_demo		\
 	gatt_battery_query      \
 	gatt_browser			\
 	le_counter              \
@@ -101,7 +101,7 @@ ${BTSTACK_ROOT}/src/btstack_version.h:
 # compile .gatt descriptions
 profile.h: profile.gatt
 	python ${BTSTACK_ROOT}/tool/compile-gatt.py $< $@ 
-ancs_client.h: ancs_client.gatt
+ancs_client_demo.h: ancs_client_demo.gatt
 	python ${BTSTACK_ROOT}/tool/compile-gatt.py $< $@ 
 spp_and_le_counter.h: spp_and_le_counter.gatt
 	python ${BTSTACK_ROOT}/tool/compile-gatt.py $< $@ 
@@ -156,8 +156,8 @@ gatt_browser: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} ${SM_REAL_
 gatt_battery_query: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} ${SM_REAL_OBJ} gatt_battery_query.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-ancs_client: ancs_client.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${GATT_CLIENT_OBJ} ${SM_REAL_OBJ} ancs_client_lib.c ancs_client.c
-	${CC} $(filter-out ancs_client.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
+ancs_client_demo: ancs_client_demo.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${GATT_CLIENT_OBJ} ${SM_REAL_OBJ} ancs_client.c ancs_client_demo.c
+	${CC} $(filter-out ancs_client_demo.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
 
 led_counter: ${CORE_OBJ} ${COMMON_OBJ} led_counter.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
@@ -172,7 +172,7 @@ clean:
 	rm -f ${EXAMPLES}
 	rm -f  *.o *.out *.hex 
 	rm -f  ${BTSTACK_ROOT}/src/btstack_version.h
-	rm -f  ancs_client.h profile.h spp_and_le_counter.h
+	rm -f  ancs_client_demo.h profile.h spp_and_le_counter.h
 	rm -rf *.dSYM
 	rm -rf ${BTSTACK_ROOT}/ble/*.o
 	rm -rf ${BTSTACK_ROOT}/src/*.o

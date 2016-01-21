@@ -9,7 +9,7 @@ class State:
 # [file_name, api_title, api_label]
 apis = [ 
     ["src/ble/ad_parser.h", "BLE Advertisements Parser", "advParser"],
-    ["src/ble/ancs_client_lib.h", "BLE ANCS Client", "ancsClient"],
+    ["src/ble/ancs_client.h", "BLE ANCS Client", "ancsClient"],
     ["src/ble/att_db_util.h", "BLE ATT Database", "attDb"],
     ["src/ble/att_server.h", "BLE ATT Server", "attServer"],
     ["src/ble/gatt_client.h", "BLE GATT Client", "gattClient"],

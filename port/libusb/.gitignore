@@ -1,5 +1,5 @@
-ancs_client
-ancs_client.h
+ancs_client_demo
+ancs_client_demo.h
 ble_central_test
 ble_peripheral_test
 bnep_test

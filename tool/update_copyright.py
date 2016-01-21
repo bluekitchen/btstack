@@ -46,7 +46,7 @@ copyrighters = ["BlueKitchen", "Matthias Ringwald"]
 
 ignoreFolders = ["cpputest", "test", "msp-exp430f5438-cc2564b", "msp430f5229lp-cc2564b", "ez430-rf2560", "ios", "chipset/cc256x", "docs", "mtk"]
 ignoreFiles = ["ant_cmds.h", "rijndael.c", "btstack-config.h", "btstack_version.h", "profile.h", "bluetoothdrv.h", 
-	"ancs_client.h", "spp_and_le_counter.h", "bluetoothdrv-stub.c", "minimal_peripheral.c", "BTstackDaemonRespawn.c"]
+	"ancs_client_demo.h", "spp_and_le_counter.h", "bluetoothdrv-stub.c", "minimal_peripheral.c", "BTstackDaemonRespawn.c"]
 
 class State:
 	SearchStartComment = 0

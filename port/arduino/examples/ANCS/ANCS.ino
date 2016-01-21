@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include "ble/att_server.h"
 #include "ble/gatt_client.h"
-#include "ancs_client_lib.h"
+#include "ancs_client.h"
 #include "ble/sm.h"
 #include <SPI.h>
 
