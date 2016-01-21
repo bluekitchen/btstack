@@ -1046,18 +1046,12 @@ static void hci_initializing_run(void){
             if (hci_stack->local_name){
                 hci_send_cmd(&hci_write_local_name, hci_stack->local_name);
             } else {
-                char hostname[30];
-#ifdef EMBEDDED
+                char local_name[30];
                 // BTstack-11:22:33:44:55:66
-                strcpy(hostname, "BTstack ");
-                strcat(hostname, bd_addr_to_str(hci_stack->local_bd_addr));
-                log_info("---> Name %s", hostname);
-#else
-                // hostname for POSIX systems
-                gethostname(hostname, 30);
-                hostname[29] = '\0';
-#endif                        
-                hci_send_cmd(&hci_write_local_name, hostname);
+                strcpy(local_name, "BTstack ");
+                strcat(local_name, bd_addr_to_str(hci_stack->local_bd_addr));
+                log_info("---> Name %s", local_name);
+                hci_send_cmd(&hci_write_local_name, local_name);
             }
             break;
         case HCI_INIT_WRITE_SCAN_ENABLE:

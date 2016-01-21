@@ -1876,6 +1876,8 @@ static void handle_gatt_client_event(uint8_t packet_type, uint8_t * packet, uint
 }
 #endif
 
+static char hostname[30];
+
 int main (int argc,  char * const * argv){
     
     static int tcp_flag = 0;
@@ -1996,6 +1998,11 @@ int main (int argc,  char * const * argv){
 
     // init HCI
     hci_init(transport, config, control, remote_device_db);
+
+    // hostname for POSIX systems
+    gethostname(hostname, 30);
+    hostname[29] = '\0';
+    gap_set_local_name(hostname);
 
 #ifdef HAVE_PLATFORM_IPHONE_OS
     // iPhone doesn't use SSP yet as there's no UI for it yet and auto accept is not an option
