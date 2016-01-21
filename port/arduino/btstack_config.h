@@ -1,14 +1,19 @@
+//
+// btstack_config.h for Arduino port
+//
+
 #ifndef __BTSTACK_CONFIG
 #define __BTSTACK_CONFIG
 
 #define EMBEDDED
 
+// Port related features
 #define HAVE_BZERO
 #define HAVE_TIME_MS
 
 #define ENABLE_BLE
 
-#define HAVE_HCI_DUMP
+#define ENABLE_LOG_INTO_HCI_DUMP
 #define ENABLE_LOG_INFO 
 #define ENABLE_LOG_ERROR
 

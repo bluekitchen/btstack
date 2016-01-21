@@ -12,7 +12,7 @@
 
 #define HAVE_EHCILL
 
-#define HAVE_HCI_DUMP
+#define ENABLE_LOG_INTO_HCI_DUMP
 // #define ENABLE_LOG_ERROR
 // #define ENABLE_LOG_INFO 
 

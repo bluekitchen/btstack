@@ -70,7 +70,7 @@ static inline void __log_unused(const char *format, ...) {
 #endif
 
 #ifdef ENABLE_LOG_DEBUG
-#ifdef HAVE_HCI_DUMP
+#ifdef ENABLE_LOG_INTO_HCI_DUMP
 #define log_debug(format, ...)  HCI_DUMP_LOG(LOG_LEVEL_DEBUG, format,  ## __VA_ARGS__)
 #else
 #define log_debug(format, ...)  BTSTACK_PRINTF(format "\n",  ## __VA_ARGS__)
@@ -80,7 +80,7 @@ static inline void __log_unused(const char *format, ...) {
 #endif
 
 #ifdef ENABLE_LOG_INFO
-#ifdef HAVE_HCI_DUMP
+#ifdef ENABLE_LOG_INTO_HCI_DUMP
 #define log_info(format, ...)  HCI_DUMP_LOG(LOG_LEVEL_INFO, format,  ## __VA_ARGS__)
 #else
 #define log_info(format, ...)  BTSTACK_PRINTF(format "\n",  ## __VA_ARGS__)
@@ -90,7 +90,7 @@ static inline void __log_unused(const char *format, ...) {
 #endif
 
 #ifdef ENABLE_LOG_ERROR
-#ifdef HAVE_HCI_DUMP
+#ifdef ENABLE_LOG_INTO_HCI_DUMP
 #define log_error(format, ...)  HCI_DUMP_LOG(LOG_LEVEL_ERROR, format,  ## __VA_ARGS__)
 #else
 #define log_error(format, ...)  BTSTACK_PRINTF(format "\n",  ## __VA_ARGS__)

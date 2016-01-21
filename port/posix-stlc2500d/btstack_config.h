@@ -17,7 +17,7 @@
 #define ENABLE_LOG_ERROR
 #define HCI_INCOMING_PRE_BUFFER_SIZE 14 // sizeof benep heade, avoid memcpy
 #define HCI_ACL_PAYLOAD_SIZE (1691 + 4)
-#define HAVE_HCI_DUMP
+#define ENABLE_LOG_INTO_HCI_DUMP
 #define ENABLE_SDP_DES_DUMP
 
 #endif

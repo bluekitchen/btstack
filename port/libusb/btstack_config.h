@@ -7,7 +7,7 @@
 #define ENABLE_LOG_INFO 
 #define ENABLE_BLE
 #define HAVE_BZERO
-#define HAVE_HCI_DUMP
+#define ENABLE_LOG_INTO_HCI_DUMP
 #define HAVE_MALLOC
 #define ENABLE_RFCOMM
 #define ENABLE_SDP
