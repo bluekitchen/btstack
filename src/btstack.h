@@ -67,7 +67,7 @@
 
 #ifdef HAVE_BLE
 #include "ble/ad_parser.h"
-#include "ble/ancs_client_lib.h"
+#include "ble/ancs_client.h"
 #include "ble/att.h"
 #include "ble/att_db_util.h"
 #include "ble/att_dispatch.h"
