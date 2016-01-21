@@ -11,14 +11,14 @@
 #define HAVE_BZERO
 #define HAVE_TIME_MS
 
+// BTstack features that can be enabled
 #define ENABLE_BLE
-
 #define ENABLE_LOG_INTO_HCI_DUMP
 #define ENABLE_LOG_INFO 
 #define ENABLE_LOG_ERROR
 
+// BTstack configuration. buffers, sizes, ...
 #define HCI_ACL_PAYLOAD_SIZE 200
-
 #define MAX_NO_BNEP_SERVICES 0
 #define MAX_NO_BNEP_CHANNELS 0
 #define MAX_NO_GATT_SUBCLIENTS 2

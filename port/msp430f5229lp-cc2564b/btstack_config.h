@@ -1,26 +1,27 @@
+//
+// btstack_config.h for msp-exp430f5438-cc2564b port
+//
 
 #ifndef __BTSTACK_CONFIG
 #define __BTSTACK_CONFIG
 
 #define EMBEDDED
 
-#define ENABLE_BLE
-
+// Port related features
 #define HAVE_INIT_SCRIPT
 #define HAVE_BZERO
 #define HAVE_TICK
-
 #define HAVE_EHCILL
 
+// BTstack features that can be enabled
+#define ENABLE_BLE
 #define ENABLE_LOG_INTO_HCI_DUMP
 // #define ENABLE_LOG_ERROR
 // #define ENABLE_LOG_INFO 
 
+// BTstack configuration. buffers, sizes, ...
 #define HCI_ACL_PAYLOAD_SIZE 52
-
-// 
 #define MAX_SPP_CONNECTIONS 1
-
 #define MAX_NO_HCI_CONNECTIONS MAX_SPP_CONNECTIONS
 #define MAX_NO_GATT_CLIENTS 0
 #define MAX_NO_GATT_SUBCLIENTS 0

@@ -1,22 +1,25 @@
+//
+// btstack_config.h for STM32F103RB Nucleo + TI CC256B port
+//
+
 #ifndef __BTSTACK_CONFIG
 #define __BTSTACK_CONFIG
 
 #define EMBEDDED
 
-#define ENABLE_BLE
-
+// Port related features
 #define HAVE_INIT_SCRIPT
 #define HAVE_BZERO
 #define HAVE_TICK
-
 #define HAVE_EHCILL
 
+// BTstack features that can be enabled
 // #define ENABLE_LOG_INFO 
 // #define ENABLE_LOG_ERROR
+#define ENABLE_BLE
 
+// BTstack configuration. buffers, sizes, ...
 #define HCI_ACL_PAYLOAD_SIZE 52
-
-// 
 #define MAX_SPP_CONNECTIONS 1
 #define MAX_NO_GATT_CLIENTS 0
 #define MAX_NO_GATT_SUBCLIENTS 0

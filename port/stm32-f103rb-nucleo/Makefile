@@ -74,6 +74,7 @@ clean:
 
 # git clone and compile libopencm3
 libopencm3/lib/libopencm3_stm32f1.a:
+	rm -rf libopencm3
 	git clone https://github.com/libopencm3/libopencm3.git
 	make -C libopencm3
 

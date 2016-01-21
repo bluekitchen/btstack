@@ -1,25 +1,26 @@
+//
+// btstack_config.h for WICED port
+//
+
 #ifndef __BTSTACK_CONFIG
 #define __BTSTACK_CONFIG
 
 #define EMBEDDED
 
-#define HAVE_WICED
+// Port related features
+#define HAVE_BZERO
+#define HAVE_EHCILL
+// #define HAVE_SCO
+#define HAVE_TIME_MS
 #define WICED_BT_UART_MANUAL_CTS_RTS
 
+// BTstack features that can be enabled
 #define ENABLE_BLE
+// #define ENABLE_LOG_INFO
+// #define ENABLE_LOG_ERROR
 
-#define HAVE_INIT_SCRIPT
-#define HAVE_BZERO
-#define HAVE_TIME_MS
-
-#define HAVE_EHCILL
-
-#define ENABLE_LOG_INFO
-#define ENABLE_LOG_ERROR
-
+// BTstack configuration. buffers, sizes, ...
 #define HCI_ACL_PAYLOAD_SIZE 52
-
-// 
 #define MAX_SPP_CONNECTIONS 1
 #define MAX_NO_GATT_CLIENTS 0
 #define MAX_NO_GATT_SUBCLIENTS 0

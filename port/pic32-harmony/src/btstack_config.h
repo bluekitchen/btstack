@@ -1,22 +1,24 @@
+//
+// btstack_config.h for PIC32 port
+//
+
 #ifndef __BTSTACK_CONFIG
 #define __BTSTACK_CONFIG
 
 #define EMBEDDED
 
-#define ENABLE_BLE
-
-#define HAVE_INIT_SCRIPT
+// Port related features
 #define HAVE_BZERO
 #define HAVE_TICK
-
 #define HAVE_EHCILL
 
+// BTstack features that can be enabled
+#define ENABLE_BLE
 #define ENABLE_LOG_INFO
 #define ENABLE_LOG_ERROR
 
+// BTstack configuration. buffers, sizes, ...
 #define HCI_ACL_PAYLOAD_SIZE 52
-
-// 
 #define MAX_SPP_CONNECTIONS 1
 #define MAX_NO_GATT_CLIENTS 0
 #define MAX_NO_GATT_SUBCLIENTS 0

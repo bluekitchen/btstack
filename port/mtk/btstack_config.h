@@ -1,26 +1,34 @@
-// btstack_config.h created by configure for BTstack  Thu Apr 24 14:34:39 CEST 2014
+//
+// btstack_config.h for Android mtk port
+//
 
 #ifndef __BTSTACK_CONFIG
 #define __BTSTACK_CONFIG
 
-#define HAVE_TRANSPORT_H4
-#define UART_DEVICE "/dev/ttyS0"
-#define UART_SPEED 115200
-#define ENABLE_SDP
-#define ENABLE_RFCOMM
-#define ENABLE_BLE
-#define REMOTE_DEVICE_DB remote_device_db_memory
+// Port related features
+#define HAVE_BZERO
+#define HAVE_MALLOC
 // #define HAVE_SO_NOSIGPIPE
 #define HAVE_TIME
-#define HAVE_MALLOC
-#define HAVE_BZERO
-#define ENABLE_LOG_INTO_HCI_DUMP
-#define ENABLE_LOG_INFO 
+#define HAVE_TRANSPORT_H4
+
+// BTstack features that can be enabled
+#define ENABLE_BLE
 #define ENABLE_LOG_ERROR
-#define HCI_ACL_PAYLOAD_SIZE 1021
+#define ENABLE_LOG_INFO 
+#define ENABLE_LOG_INTO_HCI_DUMP
 #define ENABLE_SDP_DES_DUMP
 
-#define BTSTACK_UNIX "/data/btstack/BTstack"
+// BTstack configuration. buffers, sizes, ...
+#define HCI_ACL_PAYLOAD_SIZE 1021
+
+// Daemon configuration
+#define ENABLE_SDP
+#define ENABLE_RFCOMM
 #define BTSTACK_LOG_FILE "/data/btstack/hci_dump.pklg"
+#define BTSTACK_UNIX "/data/btstack/BTstack"
+#define REMOTE_DEVICE_DB remote_device_db_memory
+#define UART_DEVICE "/dev/ttyS0"
+#define UART_SPEED 115200
 
 #endif
