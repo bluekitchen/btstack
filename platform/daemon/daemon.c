@@ -525,7 +525,7 @@ static void daemon_rfcomm_close_connection(client_state_t * daemon_client){
     btstack_linked_list_iterator_init(&it, rfcomm_cids);
     while (btstack_linked_list_iterator_has_next(&it)){
         btstack_linked_list_uint32_t * item = (btstack_linked_list_uint32_t*) btstack_linked_list_iterator_next(&it);
-        rfcomm_disconnect_internal(item->value);
+        rfcomm_disconnect(item->value);
         btstack_linked_list_remove(rfcomm_cids, (btstack_linked_item_t *) item);
         free(item);
     }
@@ -1029,7 +1029,7 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
         case RFCOMM_DISCONNECT:
             cid = READ_BT_16(packet, 3);
             reason = packet[5];
-            rfcomm_disconnect_internal(cid);
+            rfcomm_disconnect(cid);
             break;
         case RFCOMM_REGISTER_SERVICE:
             rfcomm_channel = packet[3];
@@ -1051,12 +1051,12 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             break;
         case RFCOMM_ACCEPT_CONNECTION:
             cid    = READ_BT_16(packet, 3);
-            rfcomm_accept_connection_internal(cid);
+            rfcomm_accept_connection(cid);
             break;
         case RFCOMM_DECLINE_CONNECTION:
             cid    = READ_BT_16(packet, 3);
             reason = packet[7];
-            rfcomm_decline_connection_internal(cid);
+            rfcomm_decline_connection(cid);
             break;            
         case RFCOMM_GRANT_CREDITS:
             cid    = READ_BT_16(packet, 3);
@@ -1311,7 +1311,7 @@ static int daemon_client_handler(connection_t *connection, uint16_t packet_type,
             break;
         case RFCOMM_DATA_PACKET:
             // process l2cap packet...
-            err = rfcomm_send_internal(channel, data, length);
+            err = rfcomm_send(channel, data, length);
             break;
         case DAEMON_EVENT_PACKET:
             switch (data[0]) {

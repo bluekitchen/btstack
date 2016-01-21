@@ -321,7 +321,7 @@ uint8_t rfcomm_create_channel_with_initial_credits(bd_addr_t addr, uint8_t serve
 /** 
  * @brief Disconnects RFCOMM channel with given identifier. 
  */
-void rfcomm_disconnect_internal(uint16_t rfcomm_cid);
+void rfcomm_disconnect(uint16_t rfcomm_cid);
 
 /** 
  * @brief Registers RFCOMM service for a server channel and a maximum frame size, and assigns a packet handler. On embedded systems, use NULL for connection parameter. This channel provides automatically enough credits to the remote side.
@@ -341,8 +341,8 @@ void rfcomm_unregister_service(uint8_t service_channel);
 /** 
  * @brief Accepts/Deny incoming RFCOMM connection.
  */
-void rfcomm_accept_connection_internal(uint16_t rfcomm_cid);
-void rfcomm_decline_connection_internal(uint16_t rfcomm_cid);
+void rfcomm_accept_connection(uint16_t rfcomm_cid);
+void rfcomm_decline_connection(uint16_t rfcomm_cid);
 
 /** 
  * @brief Grant more incoming credits to the remote side for the given RFCOMM channel identifier.
@@ -357,7 +357,7 @@ int rfcomm_can_send_packet_now(uint16_t rfcomm_cid);
 /** 
  * @brief Sends RFCOMM data packet to the RFCOMM channel with given identifier.
  */
-int  rfcomm_send_internal(uint16_t rfcomm_cid, uint8_t *data, uint16_t len);
+int  rfcomm_send(uint16_t rfcomm_cid, uint8_t *data, uint16_t len);
 
 /** 
  * @brief Sends Local Line Status, see LINE_STATUS_..

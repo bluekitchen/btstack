@@ -1689,7 +1689,7 @@ static void hfp_run_for_context(hfp_connection_t *context){
         switch(context->state){
             case HFP_W2_DISCONNECT_RFCOMM:
                 context->state = HFP_W4_RFCOMM_DISCONNECTED;
-                rfcomm_disconnect_internal(context->rfcomm_cid);
+                rfcomm_disconnect(context->rfcomm_cid);
                 break;
             default:
                 break;

@@ -64,7 +64,7 @@ by RFCOMM:
 
 -   RFCOMM_EVENT_INCOMING_CONNECTION - received when the connection
     is requested by remote. Connection accept and decline are performed
-    with *rfcomm_accept_connection_internal* and
+    with *rfcomm_accept_connection* and
     *rfcomm_decline_con-nection_internal* respectively.
 
 -   RFCOMM_EVENT_CHANNEL_CLOSED - emitted when channel is closed. No

@@ -142,7 +142,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 					rfcomm_channel_nr = packet[8];
 					rfcomm_channel_id = READ_BT_16(packet, 9);
 					printf("RFCOMM channel %u requested for %s\n", rfcomm_channel_nr, bd_addr_to_str(event_addr));
-                    rfcomm_accept_connection_internal(rfcomm_channel_id);
+                    rfcomm_accept_connection(rfcomm_channel_id);
 					break;
 					
 				case RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE:
@@ -220,9 +220,9 @@ static void heartbeat_handler(struct btstack_timer_source *ts){
 
     if (rfcomm_channel_id){
         if (rfcomm_can_send_packet_now(rfcomm_channel_id)){
-            int err = rfcomm_send_internal(rfcomm_channel_id, (uint8_t*) counter_string, counter_string_len);
+            int err = rfcomm_send(rfcomm_channel_id, (uint8_t*) counter_string, counter_string_len);
             if (err) {
-                log_error("rfcomm_send_internal -> error 0X%02x", err);
+                log_error("rfcomm_send -> error 0X%02x", err);
             }
         }
     }

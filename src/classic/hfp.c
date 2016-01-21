@@ -132,9 +132,9 @@ const char * hfp_ag_feature(int index){
 int send_str_over_rfcomm(uint16_t cid, char * command){
     if (!rfcomm_can_send_packet_now(cid)) return 1;
     log_info("HFP_TX %s", command);
-    int err = rfcomm_send_internal(cid, (uint8_t*) command, strlen(command));
+    int err = rfcomm_send(cid, (uint8_t*) command, strlen(command));
     if (err){
-        log_error("rfcomm_send_internal -> error 0x%02x \n", err);
+        log_error("rfcomm_send -> error 0x%02x \n", err);
     } 
     return 1;
 }
@@ -478,7 +478,7 @@ void hfp_handle_hci_event(hfp_callback_t callback, uint8_t packet_type, uint8_t 
             context->rfcomm_cid = READ_BT_16(packet, 9);
             context->state = HFP_W4_RFCOMM_CONNECTED;
             printf("RFCOMM channel %u requested for %s\n", context->rfcomm_cid, bd_addr_to_str(context->remote_addr));
-            rfcomm_accept_connection_internal(context->rfcomm_cid);
+            rfcomm_accept_connection(context->rfcomm_cid);
             break;
 
         case RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE:

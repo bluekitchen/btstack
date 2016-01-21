@@ -348,7 +348,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             rfcomm_channel_nr = packet[8];
             rfcomm_channel_id = READ_BT_16(packet, 9);
             printf("RFCOMM channel %u requested for %s\n\r", rfcomm_channel_nr, bd_addr_to_str(remote));
-            rfcomm_accept_connection_internal(rfcomm_channel_id);
+            rfcomm_accept_connection(rfcomm_channel_id);
             break;
             
         case RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE:
@@ -637,7 +637,7 @@ static int  stdin_process(struct btstack_data_source *ds){
             break;
         case 'n':
             printf("Send RFCOMM Data\n");   // mtu < 60 
-            rfcomm_send_internal(rfcomm_channel_id, (uint8_t *) "012345678901234567890123456789012345678901234567890123456789", mtu);
+            rfcomm_send(rfcomm_channel_id, (uint8_t *) "012345678901234567890123456789012345678901234567890123456789", mtu);
             break;
         case 'u':
             printf("Sending RLS indicating framing error\n");   // mtu < 60 
@@ -653,7 +653,7 @@ static int  stdin_process(struct btstack_data_source *ds){
             break;
         case 'o':
             printf("RFCOMM Channel Closed\n");
-            rfcomm_disconnect_internal(rfcomm_channel_id);
+            rfcomm_disconnect(rfcomm_channel_id);
             rfcomm_channel_id = 0;
             break;
 

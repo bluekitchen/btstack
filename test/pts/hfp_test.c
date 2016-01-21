@@ -72,9 +72,9 @@ static uint8_t hfp_service_level_connection_state = 0;
 
 static void send_str_over_rfcomm(uint16_t cid, char * command){
     printf("Send %s.\n", command);
-    int err = rfcomm_send_internal(cid, (uint8_t*) command, strlen(command));
+    int err = rfcomm_send(cid, (uint8_t*) command, strlen(command));
     if (err){
-        printf("rfcomm_send_internal -> error 0X%02x", err);
+        printf("rfcomm_send -> error 0X%02x", err);
     }
 }
 

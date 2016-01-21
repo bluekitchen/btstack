@@ -1867,7 +1867,7 @@ void rfcomm_register_packet_handler(void (*handler)(uint8_t packet_type,
 int rfcomm_can_send_packet_now(uint16_t rfcomm_cid){
     rfcomm_channel_t * channel = rfcomm_channel_for_rfcomm_cid(rfcomm_cid);
     if (!channel){
-        log_error("rfcomm_send_internal cid 0x%02x doesn't exist!", rfcomm_cid);
+        log_error("rfcomm_send cid 0x%02x doesn't exist!", rfcomm_cid);
         return 1;
     }
     if (!channel->credits_outgoing) return 0;
@@ -1878,17 +1878,17 @@ int rfcomm_can_send_packet_now(uint16_t rfcomm_cid){
 
 static int rfcomm_assert_send_valid(rfcomm_channel_t * channel , uint16_t len){
     if (len > channel->max_frame_size){
-        log_error("rfcomm_send_internal cid 0x%02x, rfcomm data lenght exceeds MTU!", channel->rfcomm_cid);
+        log_error("rfcomm_send cid 0x%02x, rfcomm data lenght exceeds MTU!", channel->rfcomm_cid);
         return RFCOMM_DATA_LEN_EXCEEDS_MTU;
     }
     
     if (!channel->credits_outgoing){
-        log_info("rfcomm_send_internal cid 0x%02x, no rfcomm outgoing credits!", channel->rfcomm_cid);
+        log_info("rfcomm_send cid 0x%02x, no rfcomm outgoing credits!", channel->rfcomm_cid);
         return RFCOMM_NO_OUTGOING_CREDITS;
     }
     
     if ((channel->multiplexer->fcon & 1) == 0){
-        log_info("rfcomm_send_internal cid 0x%02x, aggregate flow off!", channel->rfcomm_cid);
+        log_info("rfcomm_send cid 0x%02x, aggregate flow off!", channel->rfcomm_cid);
         return RFCOMM_AGGREGATE_FLOW_OFF;
     }
     return 0;    
@@ -1934,17 +1934,17 @@ int rfcomm_send_prepared(uint16_t rfcomm_cid, uint16_t len){
     
     if (result != 0) {
         channel->credits_outgoing++;
-        log_info("rfcomm_send_internal: error %d", result);
+        log_info("rfcomm_send: error %d", result);
         return result;
     }
         
     return result;
 }
 
-int rfcomm_send_internal(uint16_t rfcomm_cid, uint8_t *data, uint16_t len){
+int rfcomm_send(uint16_t rfcomm_cid, uint8_t *data, uint16_t len){
     rfcomm_channel_t * channel = rfcomm_channel_for_rfcomm_cid(rfcomm_cid);
     if (!channel){
-        log_error("rfcomm_send_internal cid 0x%02x doesn't exist!", rfcomm_cid);
+        log_error("rfcomm_send cid 0x%02x doesn't exist!", rfcomm_cid);
         return 1;
     }
 
@@ -2070,7 +2070,7 @@ uint8_t rfcomm_create_channel(bd_addr_t addr, uint8_t server_channel, uint16_t *
     return rfcomm_create_channel_internal(addr, server_channel, 0, RFCOMM_CREDITS, out_rfcomm_cid);
 }
 
-void rfcomm_disconnect_internal(uint16_t rfcomm_cid){
+void rfcomm_disconnect(uint16_t rfcomm_cid){
     log_info("RFCOMM_DISCONNECT cid 0x%02x", rfcomm_cid);
     rfcomm_channel_t * channel = rfcomm_channel_for_rfcomm_cid(rfcomm_cid);
     if (channel) {
@@ -2135,7 +2135,7 @@ void rfcomm_unregister_service(uint8_t service_channel){
     }
 }
 
-void rfcomm_accept_connection_internal(uint16_t rfcomm_cid){
+void rfcomm_accept_connection(uint16_t rfcomm_cid){
     log_info("RFCOMM_ACCEPT_CONNECTION cid 0x%02x", rfcomm_cid);
     rfcomm_channel_t * channel = rfcomm_channel_for_rfcomm_cid(rfcomm_cid);
     if (!channel) return;
@@ -2159,7 +2159,7 @@ void rfcomm_accept_connection_internal(uint16_t rfcomm_cid){
     rfcomm_run();
 }
 
-void rfcomm_decline_connection_internal(uint16_t rfcomm_cid){
+void rfcomm_decline_connection(uint16_t rfcomm_cid){
     log_info("RFCOMM_DECLINE_CONNECTION cid 0x%02x", rfcomm_cid);
     rfcomm_channel_t * channel = rfcomm_channel_for_rfcomm_cid(rfcomm_cid);
     if (!channel) return;

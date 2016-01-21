@@ -133,7 +133,7 @@ extern "C" void l2cap_init(void){}
 extern "C" void l2cap_register_packet_handler(void (*handler)(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size)){
 }
 
-int  rfcomm_send_internal(uint16_t rfcomm_cid, uint8_t *data, uint16_t len){
+int  rfcomm_send(uint16_t rfcomm_cid, uint8_t *data, uint16_t len){
 	int start_command_offset = 2;
     int end_command_offset = 2;
     
@@ -168,7 +168,7 @@ uint16_t rfcomm_get_max_frame_size(uint16_t rfcomm_cid){
 }
 int rfcomm_send_prepared(uint16_t rfcomm_cid, uint16_t len){
     printf("--- rfcomm_send_prepared with len %u ---\n", len);
-    return rfcomm_send_internal(rfcomm_cid, rfcomm_reserved_buffer, len);
+    return rfcomm_send(rfcomm_cid, rfcomm_reserved_buffer, len);
 }
 
 static void hci_event_sco_complete(){
@@ -259,7 +259,7 @@ int rfcomm_can_send_packet_now(uint16_t rfcomm_cid){
 	return 1;
 }
 
-void rfcomm_disconnect_internal(uint16_t rfcomm_cid){
+void rfcomm_disconnect(uint16_t rfcomm_cid){
 	uint8_t event[4];
 	event[0] = RFCOMM_EVENT_CHANNEL_CLOSED;
     event[1] = sizeof(event) - 2;
@@ -282,8 +282,8 @@ void sdp_query_rfcomm_channel_and_name_for_search_pattern(bd_addr_t remote, uint
 }
 
 
-void rfcomm_accept_connection_internal(uint16_t rfcomm_cid){
-	printf("rfcomm_accept_connection_internal \n");
+void rfcomm_accept_connection(uint16_t rfcomm_cid){
+	printf("rfcomm_accept_connection \n");
 }
 
 void btstack_run_loop_add_timer(btstack_timer_source_t *timer){

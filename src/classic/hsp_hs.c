@@ -136,9 +136,9 @@ static void emit_event(uint8_t event_subtype, uint8_t value){
 
 static int hsp_hs_send_str_over_rfcomm(uint16_t cid, const char * command){
     if (!rfcomm_can_send_packet_now(rfcomm_cid)) return 1;
-    int err = rfcomm_send_internal(cid, (uint8_t*) command, strlen(command));
+    int err = rfcomm_send(cid, (uint8_t*) command, strlen(command));
     if (err){
-        printf("rfcomm_send_internal -> error 0X%02x", err);
+        printf("rfcomm_send -> error 0X%02x", err);
     }
     return err;
 }
@@ -490,7 +490,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             bt_flip_addr(event_addr, &packet[2]); 
             rfcomm_cid = READ_BT_16(packet, 9);
             printf("RFCOMM channel %u requested for %s\n", packet[8], bd_addr_to_str(event_addr));
-            rfcomm_accept_connection_internal(rfcomm_cid);
+            rfcomm_accept_connection(rfcomm_cid);
             
             hsp_state = HSP_W4_RFCOMM_CONNECTED;
             break;

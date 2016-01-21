@@ -384,11 +384,11 @@ device must first init the L2CAP and RFCOMM layers and then register the
 service with *rfcomm_register_service_internal*. From there on, it
 can wait for incoming RFCOMM connections. The application can accept or
 deny an incoming connection by calling the
-*rfcomm_accept_connection_internal* and
+*rfcomm_accept_connection* and
 *rfcomm_deny_connection_internal* functions respectively. If a
 connection is accepted and the incoming RFCOMM channel gets successfully
 opened, the RFCOMM service can send RFCOMM data packets to the connected
-device with *rfcomm_send_internal* and receive data packets by the
+device with *rfcomm_send* and receive data packets by the
 packet handler provided by the *rfcomm_register_service_internal*
 call.
 
@@ -424,7 +424,7 @@ provides the RFCOMM service example code.
                 bt_flip_addr(event_addr, &packet[2]); 
                 rfcomm_channel_nr = packet[8];
                 rfcomm_channel_id = READ_BT_16(packet, 9);
-                rfcomm_accept_connection_internal(rfcomm_channel_id);
+                rfcomm_accept_connection(rfcomm_channel_id);
                 break;
             case RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE:
                // data: event(8), len(8), status (8), address (48), handle(16), server channel(8), rfcomm_cid(16), max frame size(16)
@@ -475,9 +475,9 @@ Before sending data packets, check if RFCOMM can send them by calling rfcomm_can
         if (!rfcomm_channel_id) return;
         if (!rfcomm_can_send_packet_now(rfcomm_channel_id)) return;
 
-        int err = rfcomm_send_internal(rfcomm_channel_id,  dataBuffer, dataLen);
+        int err = rfcomm_send(rfcomm_channel_id,  dataBuffer, dataLen);
         if (err) {
-            log_error("rfcomm_send_internal -> error 0X%02x", err);
+            log_error("rfcomm_send -> error 0X%02x", err);
             return;
         }
         // packet is sent prepare next one
