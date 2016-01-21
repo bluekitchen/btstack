@@ -149,7 +149,7 @@ requires four arguments. These are:
 
 <!-- -->
 
-    hci_transport_t * transport = hci_transport_h4_dma_instance();
+    hci_transport_t * transport = hci_transport_h4_instance();
 
 -   *HCI Transport configuration*: As the configuration of the UART used
     in the H4 transport interface are not standardized, it has to be

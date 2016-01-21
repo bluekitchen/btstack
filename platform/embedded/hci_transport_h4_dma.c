@@ -292,6 +292,6 @@ static void dummy_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
 }
 
 // get h4 singleton
-hci_transport_t * hci_transport_h4_dma_instance(void){ 
+hci_transport_t * hci_transport_h4_instance(void){ 
     return (hci_transport_t *) &hci_transport_h4_dma;
 }

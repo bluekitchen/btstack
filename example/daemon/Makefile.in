@@ -1,7 +1,10 @@
 BTSTACK_ROOT=../..
 CC = @CC@
 LDFLAGS  = @LDFLAGS@ -lBTstack -L../../src
-CFLAGS = @CFLAGS@ -I$(BTSTACK_ROOT)/platform/daemon -I$(BTSTACK_ROOT)/platform/daemon
+CFLAGS = @CFLAGS@ \
+	-I$(BTSTACK_ROOT)/platform/daemon \
+	-I$(BTSTACK_ROOT)/platform/posix
+
 prefix = @prefix@
 
 all: test rfcomm-cat rfcomm-echo rfcomm-test inquiry l2cap-server l2cap-throughput le_scan

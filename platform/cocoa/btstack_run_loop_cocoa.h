@@ -52,7 +52,7 @@ extern "C" {
 /**
  * Provide btstack_run_loop_cocoa instance
  */
-const btstack_run_loop_t * btstack_run_loop_cocoa_get_instance(void){
+const btstack_run_loop_t * btstack_run_loop_cocoa_get_instance(void);
 
 /* API_END */
 

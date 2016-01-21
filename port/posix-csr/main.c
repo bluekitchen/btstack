@@ -113,7 +113,7 @@ int main(int argc, const char * argv[]){
 #endif
 
     // init HCI
-	hci_transport_t    * transport = hci_transport_h4_posix_instance();
+	hci_transport_t    * transport = hci_transport_h4_instance();
 	bt_control_t       * control   = bt_control_csr_instance();
     remote_device_db_t * remote_db = (remote_device_db_t *) &remote_device_db_fs;
         

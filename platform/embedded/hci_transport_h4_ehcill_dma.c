@@ -175,7 +175,7 @@ static const char * h4_get_transport_name(void){
 }
 
 // get h4 singleton
-hci_transport_t * hci_transport_h4_dma_instance(void){ 
+hci_transport_t * hci_transport_h4_instance(void){ 
     return (hci_transport_t *) &hci_transport_h4_ehcill_dma;
 }
 

@@ -225,7 +225,7 @@ void BTSTACK_Initialize ( void )
 
     hci_dump_open(NULL, HCI_DUMP_STDOUT);
 
-    hci_transport_t * transport = hci_transport_h4_dma_instance();
+    hci_transport_t * transport = hci_transport_h4_instance();
     bt_control_t    * control   = bt_control_csr_instance();
     hci_init(transport, &config, control, NULL);
 

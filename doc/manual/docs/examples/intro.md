@@ -25,7 +25,7 @@ embedded system with a Bluetooth chipset connected via UART.
       hci_dump_open(NULL, HCI_DUMP_STDOUT);
 
       // init HCI
-      hci_transport_t    * transport = hci_transport_h4_dma_instance();
+      hci_transport_t    * transport = hci_transport_h4_instance();
       remote_device_db_t * remote_db = (remote_device_db_t *) &remote_device_db_memory;
       hci_init(transport, NULL, NULL, remote_db);
 

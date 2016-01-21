@@ -102,7 +102,7 @@ int main(int argc, const char * argv[]){
     config.device_name = "/dev/tty.usbserial-AD025KU2";
 
     // init HCI
-	hci_transport_t    * transport = hci_transport_h4_posix_instance();
+	hci_transport_t    * transport = hci_transport_h4_instance();
 	bt_control_t       * control   = bt_control_stlc2500d_instance();
     remote_device_db_t * remote_db = (remote_device_db_t *) &remote_device_db_fs;
         

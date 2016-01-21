@@ -100,7 +100,7 @@ int main(int argc, const char * argv[]){
     config.device_name = "/dev/tty.usbmodem1413";
 
     // init HCI
-	hci_transport_t    * transport = hci_transport_h4_posix_instance();
+	hci_transport_t    * transport = hci_transport_h4_instance();
     remote_device_db_t * remote_db = (remote_device_db_t *) &remote_device_db_fs;
         
 	hci_init(transport, (void*) &config, NULL, remote_db);

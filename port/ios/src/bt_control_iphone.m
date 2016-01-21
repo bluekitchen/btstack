@@ -452,15 +452,13 @@ static int iphone_on (void *transport_config){
     
     log_info("iphone_on: entered\n");
 
-    int err = 0;
-
     // check for hci_transport_config_uart_t
     if (!transport_config) {
-        log_error("hci_transport_h5_posix: no config!");
+        log_error("iphone_on: no config!");
         return -1;
     }
     if (((hci_transport_config_t *)transport_config)->type != HCI_TRANSPORT_CONFIG_UART) {
-        log_error("hci_transport_h5_posix: config not of type != HCI_TRANSPORT_CONFIG_UART!";
+        log_error("iphone_on: config not of type != HCI_TRANSPORT_CONFIG_UART!");
         return -1;
     }
 
@@ -501,7 +499,7 @@ static int iphone_on (void *transport_config){
 
     // unload BTServer and BlueTool
     log_info("iphone_on: unload BTServer\n");
-    err = system ("launchctl unload /System/Library/LaunchDaemons/com.apple.BTServer.plist");
+    int err = system ("launchctl unload /System/Library/LaunchDaemons/com.apple.BTServer.plist");
         
     if (iphone_os_at_least_60()) {
         err = system ("launchctl unload /System/Library/LaunchDaemons/com.apple.BTServer.le.plist");

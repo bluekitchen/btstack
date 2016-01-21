@@ -91,22 +91,7 @@ typedef struct {
 /*
  * @brief
  */
-extern hci_transport_t * hci_transport_h4_posix_instance(void);
-
-/*
- * @brief
- */
-extern hci_transport_t * hci_transport_h4_dma_instance(void);
-
-/*
- * @brief
- */
-extern hci_transport_t * hci_transport_h4_iphone_instance(void);
-
-/*
- * @brief
- */
-extern hci_transport_t * hci_transport_h4_wiced_instance();
+extern hci_transport_t * hci_transport_h4_instance(void);
 
 /*
  * @brief
@@ -115,9 +100,6 @@ extern hci_transport_t * hci_transport_usb_instance(void);
 
 
 /* API_END */
-
-// support for "enforece wake device" in h4 - used by iOS power management
-extern void hci_transport_h4_iphone_set_enforce_wake_device(char *path);
     
 #if defined __cplusplus
 }

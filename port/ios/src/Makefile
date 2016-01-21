@@ -33,27 +33,31 @@ libBTstack_CFLAGS = -I$(BTSTACK_ROOT)/src/ble -I$(BTSTACK_ROOT)/src -I..
 
 TOOL_NAME = BTdaemon
 BTdaemon_FILES = \
-	$(libBTstack_FILES)  	\
-	btstack_memory.c        \
-	hci.c                   \
-	l2cap.c                 \
-	l2cap_signaling.c       \
-	btstack_memory_pool.c           \
-	rfcomm.c                \
-	sdp.c                   \
-    sdp_client.c            \
-    sdp_parser.c            \
-    sdp_query_rfcomm.c      \
-    sdp_query_util.c        \
-	daemon.c  				    \
-	hci_transport_h4_posix.c 		 	\
-	bt_control_iphone.m     	\
-	hci_transport_h4_iphone.c   \
-	platform_iphone.m       	\
-	SpringBoardAccess.c         \
-	remote_device_db_cocoa.m  	\
+	$(libBTstack_FILES)  	  \
+	bt_control_iphone.m       \
+	btstack_memory.c          \
+	btstack_memory_pool.c     \
+	daemon.c  				  \
+	hci.c                     \
+	hci_transport_h4_iphone.c \
+	l2cap.c                   \
+	l2cap_signaling.c         \
+	platform_iphone.m         \
+	remote_device_db_cocoa.m  \
+	rfcomm.c                  \
+	sdp.c                     \
+	SpringBoardAccess.c       \
+    rfcomm_service_db_cocoa.m \
+    sdp_client.c              \
+    sdp_parser.c              \
+    sdp_query_rfcomm.c        \
+    sdp_query_util.c          \
 
-BTdaemon_CFLAGS = -I$(BTSTACK_ROOT)/src -I$(BTSTACK_ROOT)/platform/daemon -I..
+BTdaemon_CFLAGS = \
+	-I$(BTSTACK_ROOT)/src \
+	-I$(BTSTACK_ROOT)/platform/posix \
+	-I$(BTSTACK_ROOT)/platform/daemon \
+	-I..
 BTdaemon_PRIVATE_FRAMEWORKS = IOKIT
 
 before-all::

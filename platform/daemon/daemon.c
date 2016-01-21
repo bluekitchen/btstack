@@ -94,6 +94,8 @@
 #endif
 
 #ifdef USE_SPRINGBOARD
+// support for "enforece wake device" in h4 - used by iOS power management
+extern void hci_transport_h4_iphone_set_enforce_wake_device(char *path);
 #include "../port/ios/src/platform_iphone.h"
 #endif
 
@@ -1952,12 +1954,12 @@ int main (int argc,  char * const * argv){
     if (bt_control_iphone_power_management_supported()){
         // use default (max) UART baudrate over netgraph interface
         hci_transport_config_uart.baudrate_init = 0;
-        transport = hci_transport_h4_iphone_instance();
+        transport = hci_transport_h4_instance();
     } else {
-        transport = hci_transport_h4_posix_instance();
+        transport = hci_transport_h4_instance();
     }
 #else
-    transport = hci_transport_h4_posix_instance();
+    transport = hci_transport_h4_instance();
 #endif
     config = &hci_transport_config_uart;
 #endif
