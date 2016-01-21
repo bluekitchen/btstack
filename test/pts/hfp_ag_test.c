@@ -469,7 +469,7 @@ static int stdin_process(struct data_source *ds){
         case 'l':
             log_info("USER:\'%c\'", cmd);
             printf("Last dialed number cleared\n");
-            hfp_af_clear_last_dialed_number();
+            hfp_ag_clear_last_dialed_number();
             break;
         case 'L':
             log_info("USER:\'%c\'", cmd);
