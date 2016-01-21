@@ -2961,7 +2961,6 @@ void hci_emit_hci_open_failed(void){
     hci_stack->packet_handler(HCI_EVENT_PACKET, event, sizeof(event));
 }
 
-#ifndef EMBEDDED
 void hci_emit_btstack_version(void){
     log_info("BTSTACK_EVENT_VERSION %u.%u", BTSTACK_MAJOR, BTSTACK_MINOR);
     uint8_t event[6];
@@ -2973,7 +2972,6 @@ void hci_emit_btstack_version(void){
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
     hci_stack->packet_handler(HCI_EVENT_PACKET, event, sizeof(event));
 }
-#endif
 
 void hci_emit_system_bluetooth_enabled(uint8_t enabled){
     log_info("BTSTACK_EVENT_SYSTEM_BLUETOOTH_ENABLED %u", enabled);
