@@ -53,7 +53,7 @@
  *   1,2,3,4: one to four byte value
  *   D: pointer to 8 bytes of ANT data
  */
-uint16_t ant_create_cmd_internal(uint8_t *hci_cmd_buffer, const ant_cmd_t *cmd, va_list argptr){
+static uint16_t ant_cmd_create_from_template(uint8_t *hci_cmd_buffer, const ant_cmd_t *cmd, va_list argptr){
     
     hci_cmd_buffer[0] = 0xd1;
     hci_cmd_buffer[1] = 0xfd;
@@ -116,12 +116,12 @@ uint16_t ant_create_cmd_internal(uint8_t *hci_cmd_buffer, const ant_cmd_t *cmd, 
 /**
  * construct ANT HCI Command based on template
  *
- * mainly calls ant_create_cmd_internal
+ * mainly calls ant_cmd_create_from_template
  */
 uint16_t ant_create_cmd(uint8_t *hci_cmd_buffer, const ant_cmd_t *cmd, ...){
     va_list argptr;
     va_start(argptr, cmd);
-    uint16_t len = ant_create_cmd_internal(hci_cmd_buffer, cmd, argptr);
+    uint16_t len = ant_cmd_create_from_template(hci_cmd_buffer, cmd, argptr);
     va_end(argptr);
     return len;
 }
@@ -133,7 +133,7 @@ uint8_t ant_packet_buffer[30];
 int ant_send_cmd(const ant_cmd_t *cmd, ...){
     va_list argptr;
     va_start(argptr, cmd);
-    uint16_t size = ant_create_cmd_internal(ant_packet_buffer, cmd, argptr);
+    uint16_t size = ant_cmd_create_from_template(ant_packet_buffer, cmd, argptr);
     va_end(argptr);
     return hci_send_cmd_packet(ant_packet_buffer, size);
 }
