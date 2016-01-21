@@ -240,7 +240,6 @@ void print_bd_addr( bd_addr_t addr){
     log_info("%s", bd_addr_to_str(addr));
 }
 
-#ifndef EMBEDDED
 int sscan_bd_addr(uint8_t * addr_string, bd_addr_t addr){
 	unsigned int bd_addr_buffer[BD_ADDR_LEN];  //for sscanf, integer needed
 	// reset result buffer
@@ -283,8 +282,6 @@ int sscan_link_key(char * addr_string, link_key_t link_key){
     }
     return 1;
 }
-
-#endif
 
 
 // treat standard pairing as Authenticated as it uses a PIN
