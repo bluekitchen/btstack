@@ -58,7 +58,7 @@ extern "C" {
  */
 void sdp_client_query(bd_addr_t remote, uint8_t * des_serviceSearchPattern, uint8_t * des_attributeIDList);
 
-#ifdef HAVE_SDP_EXTRA_QUERIES
+#ifdef ENABLE_SDP_EXTRA_QUERIES
 void sdp_client_service_attribute_search(bd_addr_t remote, uint32_t search_serviceRecordHandle, uint8_t * des_attributeIDList);
 void sdp_client_service_search(bd_addr_t remote, uint8_t * des_serviceSearchPattern);
 #endif

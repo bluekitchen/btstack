@@ -65,7 +65,7 @@
 #include "l2cap.h"
 #include "l2cap_signaling.h"
 
-#ifdef HAVE_BLE
+#ifdef ENABLE_BLE
 #include "ble/ad_parser.h"
 #include "ble/ancs_client.h"
 #include "ble/att.h"

@@ -140,14 +140,14 @@ uint16_t hci_cmd_create_from_template(uint8_t *hci_cmd_buffer, const hci_cmd_t *
                 memcpy(&hci_cmd_buffer[pos], ptr, 16);
                 pos += 16;
                 break;
-#ifdef HAVE_BLE
+#ifdef ENABLE_BLE
             case 'A': // 31 bytes advertising data
                 ptr = va_arg(argptr, uint8_t *);
                 memcpy(&hci_cmd_buffer[pos], ptr, 31);
                 pos += 31;
                 break;
 #endif
-#ifdef HAVE_SDP
+#ifdef ENABLE_SDP
             case 'S': { // Service Record (Data Element Sequence)
                 ptr = va_arg(argptr, uint8_t *);
                 uint16_t len = de_get_len(ptr);
@@ -741,7 +741,7 @@ OPCODE(OGF_STATUS_PARAMETERS, 0x05), "H"
 
 
 
-#ifdef HAVE_BLE
+#ifdef ENABLE_BLE
 /**
  * Low Energy Commands
  */

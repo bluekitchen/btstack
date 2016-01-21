@@ -68,7 +68,7 @@ extern "C" {
 #include "classic/sdp.h"
 
 // BLE
-#ifdef HAVE_BLE
+#ifdef ENABLE_BLE
 #include "ble/gatt_client.h"
 #include "ble/sm.h"
 #endif
@@ -183,7 +183,7 @@ for struct_names in list_of_structs:
     for struct_name in struct_names:
         writeln(f, replacePlaceholder(header_template, struct_name))
     writeln(f, "")
-writeln(f, "#ifdef HAVE_BLE")
+writeln(f, "#ifdef ENABLE_BLE")
 for struct_names in list_of_le_structs:
     writeln(f, "// "+ ", ".join(struct_names))
     for struct_name in struct_names:
@@ -200,7 +200,7 @@ for struct_names in list_of_structs:
     for struct_name in struct_names:
         writeln(f, replacePlaceholder(code_template, struct_name))
     writeln(f, "")
-writeln(f, "#ifdef HAVE_BLE")
+writeln(f, "#ifdef ENABLE_BLE")
 for struct_names in list_of_le_structs:
     for struct_name in struct_names:
         writeln(f, replacePlaceholder(code_template, struct_name))
@@ -213,7 +213,7 @@ writeln(f, "void btstack_memory_init(void){")
 for struct_names in list_of_structs:
     for struct_name in struct_names:
         writeln(f, replacePlaceholder(init_template, struct_name))
-writeln(f, "#ifdef HAVE_BLE")
+writeln(f, "#ifdef ENABLE_BLE")
 for struct_names in list_of_le_structs:
     for struct_name in struct_names:
         writeln(f, replacePlaceholder(init_template, struct_name))

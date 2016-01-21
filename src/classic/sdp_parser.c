@@ -62,7 +62,7 @@ static uint16_t record_size;
 static uint16_t attribute_value_size;
 static int record_counter = 0;
 
-#ifdef HAVE_SDP_EXTRA_QUERIES
+#ifdef ENABLE_SDP_EXTRA_QUERIES
 static uint32_t record_handle;
 #endif
 
@@ -241,7 +241,7 @@ void sdp_parser_handle_chunk(uint8_t * data, uint16_t size){
     }
 }
 
-#ifdef HAVE_SDP_EXTRA_QUERIES
+#ifdef ENABLE_SDP_EXTRA_QUERIES
 void sdp_parser_init_service_attribute_search(void){
     // init
     de_state_init(&de_header_state);

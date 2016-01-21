@@ -51,7 +51,7 @@
 #include "btstack_run_loop_embedded.h"
 #endif
 
-#ifdef HAVE_BLE
+#ifdef ENABLE_BLE
 #include "gap.h"
 #endif
 
@@ -90,7 +90,7 @@ static int  hci_power_control_on(void);
 static void hci_power_control_off(void);
 static void hci_state_reset(void);
 
-#ifdef HAVE_BLE
+#ifdef ENABLE_BLE
 // called from test/ble_client/advertising_data_parser.c
 void le_handle_advertisement_report(uint8_t *packet, int size);
 static void hci_remove_from_whitelist(bd_addr_type_t address_type, bd_addr_t address);
@@ -798,7 +798,7 @@ static int hci_classic_supported(void){
 }
 
 static int hci_le_supported(void){
-#ifdef HAVE_BLE
+#ifdef ENABLE_BLE
     // No. 37, byte 4, bit 6 = LE Supported (Controller)
     return (hci_stack->local_supported_features[4] & (1 << 6)) != 0;
 #else
@@ -816,7 +816,7 @@ void hci_le_advertisement_address(uint8_t * addr_type, bd_addr_t  addr){
     }
 }
 
-#ifdef HAVE_BLE
+#ifdef ENABLE_BLE
 void le_handle_advertisement_report(uint8_t *packet, int size){
     int offset = 3;
     int num_reports = packet[offset];
@@ -1068,7 +1068,7 @@ static void hci_initializing_run(void){
             hci_stack->substate = HCI_INIT_W4_WRITE_SYNCHRONOUS_FLOW_CONTROL_ENABLE;
             hci_send_cmd(&hci_write_synchronous_flow_control_enable, 1); // SCO tracking enabled
             break;
-#ifdef HAVE_BLE
+#ifdef ENABLE_BLE
         // LE INIT
         case HCI_INIT_LE_READ_BUFFER_SIZE:
             hci_stack->substate = HCI_INIT_W4_LE_READ_BUFFER_SIZE;
@@ -1351,7 +1351,7 @@ static void event_handler(uint8_t *packet, int size){
                              hci_stack->sco_data_packet_length, hci_stack->sco_packets_total_num); 
                 }
             }
-#ifdef HAVE_BLE
+#ifdef ENABLE_BLE
             if (COMMAND_COMPLETE_EVENT(packet, hci_le_read_buffer_size)){
                 hci_stack->le_data_packets_length = READ_BT_16(packet, 6);
                 hci_stack->le_acl_packets_total_num  = packet[8];
@@ -1725,7 +1725,7 @@ static void event_handler(uint8_t *packet, int size){
             hci_release_packet_buffer();
             break;
 
-#ifdef HAVE_BLE
+#ifdef ENABLE_BLE
         case HCI_EVENT_LE_META:
             switch (packet[2]){
                 case HCI_SUBEVENT_LE_ADVERTISING_REPORT:
@@ -2298,7 +2298,7 @@ void hci_run(void){
         return;
     }
     
-#ifdef HAVE_BLE
+#ifdef ENABLE_BLE
     if (hci_stack->state == HCI_STATE_WORKING){
         // handle le scan
         switch(hci_stack->le_scanning_state){
@@ -2436,7 +2436,7 @@ void hci_run(void){
                         hci_send_cmd(&hci_create_connection, connection->address, hci_usable_acl_packet_types(), 0, 0, 0, 1);
                         break;
                     default:
-#ifdef HAVE_BLE
+#ifdef ENABLE_BLE
                         log_info("sending hci_le_create_connection");
                         hci_send_cmd(&hci_le_create_connection,
                                      0x0060,    // scan interval: 60 ms
@@ -2486,7 +2486,7 @@ void hci_run(void){
                 }
                 return;
 
-#ifdef HAVE_BLE
+#ifdef ENABLE_BLE
             case SEND_CANCEL_CONNECTION:
                 connection->state = SENT_CANCEL_CONNECTION;
                 hci_send_cmd(&hci_le_create_connection_cancel);
@@ -2583,7 +2583,7 @@ void hci_run(void){
             return;
         }
 
-#ifdef HAVE_BLE
+#ifdef ENABLE_BLE
         if (connection->le_con_parameter_update_state == CON_PARAMETER_UPDATE_CHANGE_HCI_CON_PARAMETERS){
             connection->le_con_parameter_update_state = CON_PARAMETER_UPDATE_NONE; 
             
@@ -2607,7 +2607,7 @@ void hci_run(void){
             log_info("HCI_STATE_HALTING");
 
             // free whitelist entries
-#ifdef HAVE_BLE
+#ifdef ENABLE_BLE
             {
                 btstack_linked_list_iterator_t lit;
                 btstack_linked_list_iterator_init(&lit, &hci_stack->le_whitelist);
@@ -2785,7 +2785,7 @@ int hci_send_cmd_packet(uint8_t *packet, int size){
         hci_stack->loopback_mode = packet[3];
     }
 
-#ifdef HAVE_BLE
+#ifdef ENABLE_BLE
     if (IS_COMMAND(packet, hci_le_set_advertising_parameters)){
         hci_stack->adv_addr_type = packet[8];
     }
@@ -3429,7 +3429,7 @@ gap_connection_type_t gap_get_connection_type(hci_con_handle_t connection_handle
     }
 }
 
-#ifdef HAVE_BLE
+#ifdef ENABLE_BLE
 
 /**
  * @brief Auto Connection Establishment - Start Connecting to device

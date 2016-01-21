@@ -58,7 +58,7 @@ void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, 
 
 static uint16_t setup_service_search_attribute_request(uint8_t * data);
 
-#ifdef HAVE_SDP_EXTRA_QUERIES
+#ifdef ENABLE_SDP_EXTRA_QUERIES
 static uint16_t setup_service_search_request(uint8_t * data);
 static uint16_t setup_service_attribute_request(uint8_t * data);
 static void     parse_service_search_response(uint8_t* packet);
@@ -108,7 +108,7 @@ static void send_request(uint16_t channel){
     uint16_t request_len = 0;
 
     switch (PDU_ID){
-#ifdef HAVE_SDP_EXTRA_QUERIES
+#ifdef ENABLE_SDP_EXTRA_QUERIES
         case SDP_ServiceSearchResponse:
             request_len = setup_service_search_request(data);
             break;
@@ -197,7 +197,7 @@ void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, 
         PDU_ID = (SDP_PDU_ID_t)packet[0];
         log_info("SDP Client :: PDU ID. %u ,%u", PDU_ID, packet[0]);
         switch (PDU_ID){
-#ifdef HAVE_SDP_EXTRA_QUERIES
+#ifdef ENABLE_SDP_EXTRA_QUERIES
             case SDP_ServiceSearchResponse:
                 parse_service_search_response(packet);
                 break;
@@ -311,7 +311,7 @@ static uint16_t setup_service_search_attribute_request(uint8_t * data){
     return offset;
 }
 
-#ifdef HAVE_SDP_EXTRA_QUERIES
+#ifdef ENABLE_SDP_EXTRA_QUERIES
 void parse_service_record_handle_list(uint8_t* packet, uint16_t total_count, uint16_t current_count){
     sdp_parser_handle_service_search(packet, total_count, current_count);
 }

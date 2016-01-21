@@ -409,7 +409,7 @@ typedef struct {
     uint16_t le_conn_latency;
     uint16_t le_supervision_timeout;
 
-#ifdef HAVE_BLE
+#ifdef ENABLE_BLE
     // LE Security Manager
     sm_connection_t sm_connection;
 #endif

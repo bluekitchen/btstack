@@ -9,7 +9,7 @@
 #define HAVE_BZERO
 #define HAVE_TIME_MS
 
-#define HAVE_BLE
+#define ENABLE_BLE
 
 #define HAVE_HCI_DUMP
 #define ENABLE_LOG_INFO 

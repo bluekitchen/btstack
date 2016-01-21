@@ -136,24 +136,26 @@ echo "#define HAVE_BZERO"                       >> btstack-config.h
 if test "x$HAVE_SO_NOSIGPIPE" == xyes ; then
     echo "#define HAVE_SO_NOSIGPIPE"            >> btstack-config.h
 fi
+echo                                            >> btstack-config.h
 
 # todo: HAVE -> ENABLE in features below
 
 echo "// BTstack features that can be enabled"  >> btstack-config.h
-echo "#define HAVE_BLE"                         >> btstack-config.h
-echo "#define ENABLE_LOG_INFO "                 >> btstack-config.h
+echo "#define ENABLE_BLE"                       >> btstack-config.h
 echo "#define ENABLE_LOG_ERROR"                 >> btstack-config.h
-echo "#define HAVE_SDP"                         >> btstack-config.h
-echo "#define HAVE_RFCOMM"                      >> btstack-config.h
+echo "#define ENABLE_LOG_INFO "                 >> btstack-config.h
+echo "#define ENABLE_RFCOMM"                    >> btstack-config.h
+echo "#define ENABLE_SDP"                       >> btstack-config.h
+echo "#define ENABLE_SDP_DES_DUMP"              >> btstack-config.h
+echo                                            >> btstack-config.h
 
 echo "// BTstack configuration. buffers, sizes, .." >> btstack-config.h
 echo "#define HCI_ACL_PAYLOAD_SIZE 1021" >> btstack-config.h
-echo "#define SDP_DES_DUMP" >> btstack-config.h
+echo                                            >> btstack-config.h
 
-# unsorted yet
+echo "// Daemon configuration" >> btstack-config.h
 # todo: USE_BLUETOOL -> HAVE_BLUETOOL
 # todo: USE_POWERMANAGEMENT -> HAVE_POWERMANAGMENT / ENABLE_POWERMANAGEMENT
-
 if test "x$HCI_TRANSPORT" = xUSB; then
     USB_SOURCES=hci_transport_h2_libusb.c
     echo "#define HAVE_TRANSPORT_USB" >> btstack-config.h
@@ -170,12 +172,11 @@ else
         echo "#define USE_POWERMANAGEMENT" >> btstack-config.h
     fi
 fi
-# are those still needed?
 if test ! -z "$REMOTE_DEVICE_DB" ; then 
     echo "#define REMOTE_DEVICE_DB $REMOTE_DEVICE_DB" >> btstack-config.h
 fi
 
-echo ""                     >> btstack-config.h
+echo                        >> btstack-config.h
 echo "#endif"               >> btstack-config.h
 
 AC_SUBST(HAVE_LIBUSB)

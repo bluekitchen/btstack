@@ -79,7 +79,7 @@
 
 #include "btstack_client.h"
 
-#ifdef HAVE_BLE
+#ifdef ENABLE_BLE
 #include "ble/gatt_client.h"
 #include "ble/att_server.h"
 #include "ble/att.h"
@@ -182,7 +182,7 @@ static btstack_timer_source_t timeout;
 static uint8_t timeout_active = 0;
 static int power_management_sleep = 0;
 static btstack_linked_list_t clients = NULL;        // list of connected clients `
-#ifdef HAVE_BLE
+#ifdef ENABLE_BLE
 static btstack_linked_list_t gatt_client_helpers = NULL;   // list of used gatt client (helpers)
 static uint16_t gatt_client_id = 0;
 #endif
@@ -353,7 +353,7 @@ static void daemon_remove_client_sdp_service_record_handle(connection_t * connec
     remove_and_free_uint32_from_list(&client_state->sdp_record_handles, handle);    
 }
 
-#ifdef HAVE_BLE
+#ifdef ENABLE_BLE
 static void daemon_add_gatt_client_handle(connection_t * connection, uint32_t handle){
     client_state_t * client_state = client_for_connection(connection);
     if (!client_state) return;
@@ -639,7 +639,7 @@ static connection_t * connection_for_rfcomm_cid(uint16_t cid){
     return NULL;
 }
 
-#ifdef HAVE_BLE
+#ifdef ENABLE_BLE
 static void daemon_gatt_client_close_connection(connection_t * connection){
     client_state_t * client = client_for_connection(connection);
     if (!client) return;
@@ -662,7 +662,7 @@ static void daemon_disconnect_client(connection_t * connection){
     daemon_sdp_close_connection(client);
     daemon_rfcomm_close_connection(client);
     daemon_l2cap_close_connection(client);
-#ifdef HAVE_BLE
+#ifdef ENABLE_BLE
     // NOTE: experimental - disconnect all LE connections where GATT Client was used
     // gatt_client_disconnect_connection(connection);
     daemon_gatt_client_close_connection(connection);
@@ -740,7 +740,7 @@ static void sdp_emit_service_registered(void *connection, uint32_t handle, uint8
     socket_connection_send_packet(connection, HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-#ifdef HAVE_BLE
+#ifdef ENABLE_BLE
 
 btstack_linked_list_gatt_client_helper_t * daemon_get_gatt_client_helper(uint16_t handle) {
     btstack_linked_list_iterator_t it;  
@@ -880,7 +880,7 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
     client_state_t *client;
     uint8_t status;
     uint8_t  * data;
-#if defined(HAVE_MALLOC) && defined(HAVE_BLE)
+#if defined(HAVE_MALLOC) && defined(ENABLE_BLE)
     uint8_t uuid128[16];
     le_service_t service;
     le_characteristic_t characteristic;
@@ -1144,7 +1144,7 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             handle = READ_BT_16(packet, 3);
             gap_disconnect(handle);
             break;
-#if defined(HAVE_MALLOC) && defined(HAVE_BLE)
+#if defined(HAVE_MALLOC) && defined(ENABLE_BLE)
         case GATT_DISCOVER_ALL_PRIMARY_SERVICES:
             gatt_helper = daemon_setup_gatt_client_request(connection, packet, 1);
             if (!gatt_helper) break;
@@ -1533,7 +1533,7 @@ static void daemon_packet_handler(void * connection, uint8_t packet_type, uint16
                     if (!connection) break;
                     daemon_remove_client_l2cap_channel(connection, cid);
                     break;
-#if defined(HAVE_BLE) && defined(HAVE_MALLOC)
+#if defined(ENABLE_BLE) && defined(HAVE_MALLOC)
                 case HCI_EVENT_DISCONNECTION_COMPLETE:
                     log_info("daemon : ignore HCI_EVENT_DISCONNECTION_COMPLETE ingnoring.");
                     // note: moved to gatt_client_handler because it's received here prematurely
@@ -1767,7 +1767,7 @@ static void * btstack_run_loop_thread(void *context){
 }
 #endif
 
-#ifdef HAVE_BLE
+#ifdef ENABLE_BLE
 
 static void handle_gatt_client_event(uint8_t packet_type, uint8_t * packet, uint16_t size){
 
@@ -2019,17 +2019,17 @@ int main (int argc,  char * const * argv){
     l2cap_register_packet_handler(&l2cap_packet_handler);
     timeout.process = daemon_no_connections_timeout;
 
-#ifdef HAVE_RFCOMM
-    log_info("config.h: HAVE_RFCOMM\n");
+#ifdef ENABLE_RFCOMM
+    log_info("config.h: ENABLE_RFCOMM\n");
     rfcomm_init();
     rfcomm_register_packet_handler(&rfcomm_packet_handler);
 #endif
     
-#ifdef HAVE_SDP
+#ifdef ENABLE_SDP
     sdp_init();
 #endif
 
-#ifdef HAVE_BLE
+#ifdef ENABLE_BLE
     // GATT Client
     gatt_client_init();
     gatt_client_id = gatt_client_register_packet_handler(&handle_gatt_client_event);

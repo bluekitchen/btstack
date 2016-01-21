@@ -96,7 +96,7 @@ typedef struct sdp_query_attribute_value_event {
 } sdp_query_attribute_value_event_t;
 
 
-#ifdef HAVE_SDP_EXTRA_QUERIES
+#ifdef ENABLE_SDP_EXTRA_QUERIES
 typedef struct sdp_query_service_record_handle_event {
     uint8_t type;
     uint16_t total_count;
@@ -127,7 +127,7 @@ void sdp_parser_handle_chunk(uint8_t * data, uint16_t size);
 void sdp_parser_handle_done(uint8_t status);
 
 
-#ifdef HAVE_SDP_EXTRA_QUERIES
+#ifdef ENABLE_SDP_EXTRA_QUERIES
 /*
  * @brief
  */

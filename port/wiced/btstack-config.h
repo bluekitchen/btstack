@@ -6,7 +6,7 @@
 #define HAVE_WICED
 #define WICED_BT_UART_MANUAL_CTS_RTS
 
-#define HAVE_BLE
+#define ENABLE_BLE
 
 #define HAVE_INIT_SCRIPT
 #define HAVE_BZERO

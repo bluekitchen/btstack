@@ -65,7 +65,7 @@ extern "C" {
 #include "classic/sdp.h"
 
 // BLE
-#ifdef HAVE_BLE
+#ifdef ENABLE_BLE
 #include "ble/gatt_client.h"
 #include "ble/sm.h"
 #endif
@@ -119,7 +119,7 @@ void   btstack_memory_hfp_connection_free(hfp_connection_t *hfp_connection);
 service_record_item_t * btstack_memory_service_record_item_get(void);
 void   btstack_memory_service_record_item_free(service_record_item_t *service_record_item);
 
-#ifdef HAVE_BLE
+#ifdef ENABLE_BLE
 // gatt_client, gatt_subclient, whitelist_entry, sm_lookup_entry
 gatt_client_t * btstack_memory_gatt_client_get(void);
 void   btstack_memory_gatt_client_free(gatt_client_t *gatt_client);

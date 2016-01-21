@@ -293,7 +293,7 @@ static int l2cap_send_signaling_packet(hci_con_handle_t handle, L2CAP_SIGNALING_
     return hci_send_acl_packet_buffer(len);
 }
 
-#ifdef HAVE_BLE
+#ifdef ENABLE_BLE
 static int l2cap_send_le_signaling_packet(hci_con_handle_t handle, L2CAP_SIGNALING_COMMANDS cmd, uint8_t identifier, ...){
 
     if (!hci_can_send_acl_packet_now(handle)){
@@ -515,7 +515,7 @@ static void l2cap_run(void){
                 break;
             case COMMAND_REJECT:
                 l2cap_send_signaling_packet(handle, COMMAND_REJECT, sig_id, result, 0, NULL);
-#ifdef HAVE_BLE
+#ifdef ENABLE_BLE
             case COMMAND_REJECT_LE:
                 l2cap_send_le_signaling_packet(handle, COMMAND_REJECT, sig_id, result, 0, NULL);
                 break;
@@ -636,7 +636,7 @@ static void l2cap_run(void){
         }
     }
 
-#ifdef HAVE_BLE
+#ifdef ENABLE_BLE
     // send l2cap con paramter update if necessary
     hci_connections_get_iterator(&it);
     while(btstack_linked_list_iterator_has_next(&it)){
@@ -1530,7 +1530,7 @@ void l2cap_register_fixed_channel(btstack_packet_handler_t the_packet_handler, u
     }
 }
 
-#ifdef HAVE_BLE
+#ifdef ENABLE_BLE
 
 
 #if 0

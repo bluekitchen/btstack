@@ -158,7 +158,7 @@ static void update_set_power_vector(uint8_t *hci_cmd_buffer){
     // f) don't touch level 0
     for ( i = (NUM_POWER_LEVELS-1) ; i >= 1 ; i--){
 
-#ifdef HAVE_BLE
+#ifdef ENABLE_BLE
         // level 1 is BLE transmit power for GFSK
         if (i == 1 && modulation_type == 0) {
             hci_cmd_buffer[4+1] = 2 * get_max_power_for_modulation_type(modulation_type);

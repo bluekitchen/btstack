@@ -14,8 +14,8 @@
 #define USE_POWERMANAGEMENT
 #define USE_SPRINGBOARD
 #define USE_LAUNCHD
-#define HAVE_SDP
-#define HAVE_RFCOMM
+#define ENABLE_SDP
+#define ENABLE_RFCOMM
 #define REMOTE_DEVICE_DB remote_device_db_iphone
 #define HAVE_SO_NOSIGPIPE
 #define HAVE_TIME
@@ -25,6 +25,6 @@
 #define ENABLE_LOG_INFO 
 #define ENABLE_LOG_ERROR
 #define HCI_ACL_PAYLOAD_SIZE 1021
-#define SDP_DES_DUMP
+#define ENABLE_SDP_DES_DUMP
 
 #endif

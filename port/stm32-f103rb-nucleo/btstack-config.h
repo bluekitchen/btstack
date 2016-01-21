@@ -3,7 +3,7 @@
 
 #define EMBEDDED
 
-#define HAVE_BLE
+#define ENABLE_BLE
 
 #define HAVE_INIT_SCRIPT
 #define HAVE_BZERO

@@ -474,7 +474,7 @@ void btstack_memory_service_record_item_free(service_record_item_t *service_reco
 #endif
 
 
-#ifdef HAVE_BLE
+#ifdef ENABLE_BLE
 
 // MARK: gatt_client_t
 #ifdef MAX_NO_GATT_CLIENTS
@@ -646,7 +646,7 @@ void btstack_memory_init(void){
 #if MAX_NO_SERVICE_RECORD_ITEMS > 0
     btstack_memory_pool_create(&service_record_item_pool, service_record_item_storage, MAX_NO_SERVICE_RECORD_ITEMS, sizeof(service_record_item_t));
 #endif
-#ifdef HAVE_BLE
+#ifdef ENABLE_BLE
 #if MAX_NO_GATT_CLIENTS > 0
     btstack_memory_pool_create(&gatt_client_pool, gatt_client_storage, MAX_NO_GATT_CLIENTS, sizeof(gatt_client_t));
 #endif
