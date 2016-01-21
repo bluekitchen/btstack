@@ -19,6 +19,7 @@ all:
 	mv latex/btstack_gettingstarted.pdf btstack.pdf
 	rm -rf latex tmp
 	
-
+clean:
+	rm -rf docs_final btstack
 
 	

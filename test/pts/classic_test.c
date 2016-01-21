@@ -608,11 +608,11 @@ static int  stdin_process(struct btstack_data_source *ds){
             hci_send_cmd(&hci_create_connection, remote, hci_usable_acl_packet_types(), 0, 0, 0, 1);
             break;
             // printf("Creating L2CAP Connection to %s, PSM SDP\n", bd_addr_to_str(remote));
-            // l2cap_create_channel_internal(NULL, packet_handler, remote, PSM_SDP, 100);
+            // l2cap_create_channel(packet_handler, remote, PSM_SDP, 100);
             // break;
         // case 'u':
         //     printf("Creating L2CAP Connection to %s, PSM 3\n", bd_addr_to_str(remote));
-        //     l2cap_create_channel_internal(NULL, packet_handler, remote, 3, 100);
+        //     l2cap_create_channel(packet_handler, remote, 3, 100);
         //     break;
         case 'q':
             printf("Send L2CAP Data\n");

@@ -193,7 +193,7 @@ To provide an SPP Server, you need to provide an RFCOMM service with a
 specific RFCOMM channel number as explained in section on 
 [RFCOMM service](protocols/#sec:rfcommServiceProtocols). Then, you need to create 
 an SDP record for it and publish it with the SDP server by calling
-*sdp_register_service_internal*. BTstack provides the
+*sdp_register_service*. BTstack provides the
 *sdp_create_spp_service* function in that requires an empty buffer of
 approximately 200 bytes, the service channel number, and a service name.
 Have a look at the [SPP Counter example](examples/generated/#sec:sppcounterExample].
@@ -243,7 +243,7 @@ To provide a PANU service, you need to provide a BNEP service with the
 service UUID, e.g. the PANU UUID, and a a maximal ethernet frame size,
 as explained in Section [on BNEP service](protocols/#sec:bnepServiceProtocols). Then, you need to
 create an SDP record for it and publish it with the SDP server by
-calling *sdp_register_service_internal*. BTstack provides the
+calling *sdp_register_service*. BTstack provides the
 *pan_create_panu_service* function in *src/pan.c* that requires an
 empty buffer of approximately 200 bytes, a description, and a security
 description.

@@ -242,8 +242,8 @@ These handlers are registered with the functions listed in Table
                   Packet Handler Registering Function
               HCI packet handler *hci_register_packet_handler*
             L2CAP packet handler *l2cap_register_packet_handler*
-    L2CAP service packet handler *l2cap_register_service_internal*
-    L2CAP channel packet handler *l2cap_create_channel_internal*
+    L2CAP service packet handler *l2cap_register_service*
+    L2CAP channel packet handler *l2cap_create_channel*
            RFCOMM packet handler *rfcomm_register_packet_handler*
   ------------------------------ --------------------------------------
 
@@ -257,7 +257,7 @@ data packets are delivered to different packet handlers. Outgoing
 connections are used access remote services, incoming connections are
 used to provide services. For incoming connections, the packet handler
 specified by *l2cap_register_service* is used. For outgoing
-connections, the handler provided by *l2cap_create_channel_internal*
+connections, the handler provided by *l2cap_create_channel*
 is used. Currently, RFCOMM provides only a single packet handler
 specified by *rfcomm_register_packet_handler* for all RFCOMM
 connections, but this will be fixed in the next API overhaul.
@@ -273,10 +273,10 @@ application could use three packet handlers: one to handle HCI events
 during discovery of a keyboard registered by
 *l2cap_register_packet_handler*; one that will be registered to an
 outgoing L2CAP channel to connect to keyboard and to receive keyboard
-data registered by *l2cap_create_channel_internal*; after that
+data registered by *l2cap_create_channel*; after that
 keyboard can reconnect by itself. For this, you need to register L2CAP
 services for the HID Control and HID Interrupt PSMs using
-*l2cap_register_service_internal*. In this call, you’ll also specify
+*l2cap_register_service*. In this call, you’ll also specify
 a packet handler to accept and receive keyboard data.
 
 

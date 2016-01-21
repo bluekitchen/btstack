@@ -3,7 +3,7 @@
 
 L2CAP events and data packets are delivered to the packet handler
 specified by *l2cap_register_service* resp.
-*l2cap_create_channel_internal*. Data packets have the
+*l2cap_create_channel*. Data packets have the
 L2CAP_DATA_PACKET packet type. L2CAP provides the following events:
 
 -   L2CAP_EVENT_CHANNEL_OPENED - sent if channel establishment is
@@ -17,7 +17,7 @@ L2CAP_DATA_PACKET packet type. L2CAP provides the following events:
 -   L2CAP_EVENT_INCOMING_CONNECTION - received when the connection is
     requested by remote. Connection accept and decline are performed
     with *l2cap_accept_connection* and
-    *l2cap_decline_connecti-on_internal* respectively.
+    *l2cap_decline_connecti-on* respectively.
 
 -   L2CAP_EVENT_CREDITS - emitted when there is a chance to send a new
     L2CAP packet. BTstack does not buffer packets. Instead, it requires
@@ -65,7 +65,7 @@ by RFCOMM:
 -   RFCOMM_EVENT_INCOMING_CONNECTION - received when the connection
     is requested by remote. Connection accept and decline are performed
     with *rfcomm_accept_connection* and
-    *rfcomm_decline_con-nection_internal* respectively.
+    *rfcomm_decline_connection* respectively.
 
 -   RFCOMM_EVENT_CHANNEL_CLOSED - emitted when channel is closed. No
     status information is provided.
