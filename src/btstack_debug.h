@@ -53,13 +53,8 @@
 #include <avr/pgmspace.h>
 #endif
 
-#ifndef EMBEDDED
 // Avoid complaints of unused arguments when log levels are disabled.
-static inline void __log_unused(const char *format, ...) {
-}
-#else
-#define __log_unused(...)
-#endif
+static inline void __log_unused(const char *format, ...) {}
 
 #ifdef __AVR__
 #define HCI_DUMP_LOG(log_level, format, ...) hci_dump_log_P(log_level, PSTR(format), ## __VA_ARGS__)
