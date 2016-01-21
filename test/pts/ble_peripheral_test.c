@@ -274,7 +274,7 @@ static void  heartbeat_handler(struct btstack_timer_source *ts){
 
 static void app_run(void){
     if (!update_client) return;
-    if (!att_server_can_send()) return;
+    if (!att_server_can_send_packet_now()) return;
 
     int result = -1;
     switch (client_configuration){

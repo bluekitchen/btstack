@@ -372,7 +372,7 @@ void att_server_register_packet_handler(btstack_packet_handler_t handler){
     att_client_packet_handler = handler;    
 }
 
-int  att_server_can_send(void){
+int  att_server_can_send_packet_now(void){
 	if (att_connection.con_handle == 0) return 0;
 	return l2cap_can_send_fixed_channel_packet_now(att_connection.con_handle);
 }

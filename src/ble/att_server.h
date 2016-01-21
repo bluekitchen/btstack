@@ -63,7 +63,7 @@ void att_server_register_packet_handler(btstack_packet_handler_t handler);
  * @brief tests if a notification or indication can be send right now
  * @return 1, if packet can be sent
  */
-int  att_server_can_send(void);
+int  att_server_can_send_packet_now(void);
 
 /*
  * @brief notify client about attribute value change

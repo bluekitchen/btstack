@@ -210,7 +210,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 static void streamer(void){
     // check if we can send
     if (!le_notification_enabled) return;
-    if (!att_server_can_send()) return;
+    if (!att_server_can_send_packet_now()) return;
 
     // create test data
     int i;
