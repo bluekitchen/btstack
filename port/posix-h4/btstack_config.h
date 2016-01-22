@@ -9,8 +9,8 @@
 #define HAVE_BZERO
 #define HAVE_MALLOC
 #define HAVE_POSIX_FILE_IO
-// #define HAVE_SCO
-// #define HAVE_SCO_OVER_HCI
+#define HAVE_SCO
+#define HAVE_SCO_OVER_HCI
 #define HAVE_SO_NOSIGPIPE
 #define HAVE_TIME
 

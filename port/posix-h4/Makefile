@@ -17,6 +17,8 @@ CORE += \
 	btstack_chipset_tc3566x.c \
 #	btstack_chipset_bcm.c \
 
+# TI-WL183x requires TIInit_11.8.32.c
+
 # examples
 include ${BTSTACK_ROOT}/example/embedded/Makefile.inc
 

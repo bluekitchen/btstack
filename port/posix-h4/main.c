@@ -93,6 +93,10 @@ void hal_led_toggle(void){
     led_state = 1 - led_state;
     printf("LED State %u\n", led_state);
 }
+static void using_921600_baud(void){
+    printf("Using 921600 baud.\n");
+    config.baudrate_main = 921600;
+}
 
 static void local_version_information_callback(uint8_t * packet){
     printf("Local version information:\n");
@@ -109,12 +113,12 @@ static void local_version_information_callback(uint8_t * packet){
     switch (manufacturer){
         case COMPANY_ID_CAMBRIDGE_SILICON_RADIO:
             printf("Cambridge Silicon Radio CSR chipset.\n");
+            using_921600_baud();
             hci_set_chipset(btstack_chipset_csr_instance());
             break;
         case COMPANY_ID_TEXAS_INSTRUMENTS_INC: 
             printf("Texas Instruments - CC256x compatible chipset.\n");
-            printf("Using 921600 baud.\n");
-            config.baudrate_main = 921600;
+            using_921600_baud();
             hci_set_chipset(btstack_chipset_cc256x_instance());
             break;
         case COMPANY_ID_BROADCOM_CORPORATION:   
@@ -123,6 +127,7 @@ static void local_version_information_callback(uint8_t * packet){
             break;
         case COMPANY_ID_ST_MICROELECTRONICS:   
             printf("ST Microelectronics - using STLC2500d driver.\n");
+            using_921600_baud();
             hci_set_chipset(btstack_chipset_stlc2500d_instance());
             break;
         case COMPANY_ID_EM_MICROELECTRONICS_MARIN:
