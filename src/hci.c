@@ -863,7 +863,7 @@ static void hci_initialization_timeout_handler(btstack_timer_source_t * ds){
             break;
         case HCI_INIT_W4_SEND_BAUD_CHANGE: {
 			uint32_t baud_rate = hci_transport_uart_get_main_baud_rate();
-            log_info("Local baud rate change to %"PRIu32, baud_rate);
+            log_info("Local baud rate change to %"PRIu32"(timeout handler)", baud_rate);
             hci_stack->hci_transport->set_baudrate(baud_rate);
             // For CSR, HCI Reset is sent on new baud rate
             if (hci_stack->manufacturer == COMPANY_ID_CAMBRIDGE_SILICON_RADIO){
@@ -984,7 +984,7 @@ static void hci_initializing_run(void){
                         && ((hci_transport_config_uart_t *)hci_stack->config)->baudrate_main;
                     if (need_baud_change) {
                         uint32_t baud_rate = ((hci_transport_config_uart_t *)hci_stack->config)->baudrate_init;
-                        log_info("Local baud rate change to %"PRIu32" after init script", baud_rate);
+                        log_info("Local baud rate change to %"PRIu32" after init script (bcm)", baud_rate);
                         hci_stack->hci_transport->set_baudrate(baud_rate);
                     }
                 }
@@ -1168,6 +1168,7 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
             btstack_run_loop_remove_timer(&hci_stack->timeout);
             break;
         case HCI_INIT_W4_SEND_READ_LOCAL_VERSION_INFORMATION:
+            log_info("Received local version info, need baud change %u", need_baud_change);
             if (need_baud_change){
                 hci_stack->substate = HCI_INIT_SEND_BAUD_CHANGE;
                 return;
@@ -1180,7 +1181,7 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
             // for others, baud rate gets changed now
             if (hci_stack->manufacturer != COMPANY_ID_ST_MICROELECTRONICS){
                 uint32_t baud_rate = hci_transport_uart_get_main_baud_rate();
-                log_info("Local baud rate change to %"PRIu32, baud_rate);
+                log_info("Local baud rate change to %"PRIu32"(w4_send_baud_change)", baud_rate);
                 hci_stack->hci_transport->set_baudrate(baud_rate);
             }   
             hci_stack->substate = HCI_INIT_CUSTOM_INIT;
@@ -1206,7 +1207,7 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
             return;
         case HCI_INIT_W4_SEND_BAUD_CHANGE_BCM: {
             uint32_t baud_rate = hci_transport_uart_get_main_baud_rate();
-            log_info("Local baud rate change to %"PRIu32" after init script", baud_rate);
+            log_info("Local baud rate change to %"PRIu32"(w4_send_baud_change_bcm))", baud_rate);
             hci_stack->hci_transport->set_baudrate(baud_rate);
             if (need_addr_change){
                 hci_stack->substate = HCI_INIT_SET_BD_ADDR;
