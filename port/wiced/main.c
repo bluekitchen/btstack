@@ -96,6 +96,7 @@ void application_start(void){
     bt_control_t       * control   = bt_control_bcm_instance();
     remote_device_db_t * remote_db = (remote_device_db_t *) &remote_device_db_memory;
     hci_init(transport, (void*) &hci_transport_config_uart, control, remote_db);
+    hci_set_chipset(btstack_chipset_bcm_instance());
 
     // use WIFI Mac address + 1 for Bluetooth
     bd_addr_t dummy = { 1,2,3,4,5,6};

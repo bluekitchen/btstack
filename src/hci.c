@@ -1910,6 +1910,8 @@ void hci_init(hci_transport_t *transport, void *config, bt_control_t *control, r
     // reference to used config
     hci_stack->config = config;
     
+    // init used chipset with NULL for now (already done my memset above)
+
     // higher level handler
     hci_stack->packet_handler = dummy_handler;
 

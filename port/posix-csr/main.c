@@ -118,6 +118,7 @@ int main(int argc, const char * argv[]){
     remote_device_db_t * remote_db = (remote_device_db_t *) &remote_device_db_fs;
         
 	hci_init(transport, (void*) &config, control, remote_db);
+    hci_set_chipset(btstack_chipset_csr_instance());
     
     // handle CTRL-c
     signal(SIGINT, sigint_handler);

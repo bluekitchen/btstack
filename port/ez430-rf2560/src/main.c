@@ -102,9 +102,10 @@ int main(void)
 	bt_control_t       * control   = bt_control_cc256x_instance();
     remote_device_db_t * remote_db = (remote_device_db_t *) &remote_device_db_memory;
 	hci_init(transport, &config, control, remote_db);
+    hci_set_chipset(btstack_chipset_cc256x_instance());
 	
     // use eHCILL
-    bt_control_cc256x_enable_ehcill(1);
+    btstack_chipset_cc256x_enable_ehcill(1);
     
     // ready - enable irq used in h4 task
     __enable_interrupt();   

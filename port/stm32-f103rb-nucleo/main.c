@@ -428,9 +428,10 @@ int main(void)
     bt_control_t       * control   = bt_control_cc256x_instance();
     remote_device_db_t * remote_db = (remote_device_db_t *) &remote_device_db_memory;
     hci_init(transport, (void*) &config, control, remote_db);
+    hci_set_chipset(btstack_chipset_cc256x_instance());
 
     // enable eHCILL
-    bt_control_cc256x_enable_ehcill(1);
+    btstack_chipset_cc256x_enable_ehcill(1);
 
 	// hand over to btstack embedded code 
     btstack_main();

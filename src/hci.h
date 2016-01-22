@@ -514,8 +514,9 @@ typedef struct {
  */
 typedef struct {
     // transport component with configuration
-    hci_transport_t  * hci_transport;
-    void             * config;
+    hci_transport_t   * hci_transport;
+    btstack_chipset_t * chipset;
+    void              * config;
     
     // basic configuration
     const char         * local_name;
@@ -757,6 +758,11 @@ void hci_local_bd_addr(bd_addr_t address_buffer);
  * @brief Set up HCI. Needs to be called before any other function.
  */
 void hci_init(hci_transport_t *transport, void *config, bt_control_t *control, remote_device_db_t const* remote_device_db);
+
+/**
+ * @brief Configure Bluetooth chipset driver. Has to be called before power on, or right after receiving the local version information
+ */
+void hci_set_chipset(btstack_chipset_t *chipset_driver);
 
 /**
  * @brief Set class of device that will be set during Bluetooth init.
