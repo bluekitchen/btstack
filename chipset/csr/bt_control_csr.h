@@ -38,11 +38,11 @@
 /*
  *  bt_control_cc256x.c
  *
- *  Adapter to use cc256x-based chipsets with BTstack
+ *  Adapter to use CSR-based chipsets with BTstack
  */
  
-#ifndef __BT_CONTROL_CC256X_H
-#define __BT_CONTROL_CC256X_H
+#ifndef __BT_CONTROL_CSR_H
+#define __BT_CONTROL_CSR_H
 
 #if defined __cplusplus
 extern "C" {
@@ -50,13 +50,12 @@ extern "C" {
 
 #include <stdint.h>
 #include "btstack_control.h"
-#include "hci_transport.h"
+#include "btstack_chipset.h"
 
 bt_control_t *     bt_control_csr_instance(void);
-void               bt_control_csr_set_power(int16_t power_in_dB);
 
 #if defined __cplusplus
 }
 #endif
 
-#endif // __BT_CONTROL_CC256X_H
+#endif // __BT_CONTROL_CSR_H

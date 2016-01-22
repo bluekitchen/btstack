@@ -49,7 +49,7 @@ extern "C" {
 
 #include <stdint.h>
 #include "btstack_control.h"
-#include "hci_transport.h"
+#include "btstack_chipset.h"
 
 bt_control_t *bt_control_cc256x_instance(void);
 void bt_control_cc256x_set_power(int16_t power_in_dB);

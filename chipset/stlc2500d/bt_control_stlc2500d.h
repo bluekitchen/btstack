@@ -51,6 +51,7 @@ extern "C" {
 #endif
 
 #include "btstack_control.h"
+#include "btstack_chipset.h"
 
 bt_control_t *bt_control_stlc2500d_instance(void);
 

@@ -141,9 +141,6 @@ static const bt_control_t bt_control_csr = {
 };
 
 // MARK: public API
-void bt_control_csr_set_power(int16_t power_in_dB){
-}
-
 bt_control_t *bt_control_csr_instance(void){
     return (bt_control_t*) &bt_control_csr;
 }

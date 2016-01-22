@@ -45,14 +45,15 @@
  *  - Set baud rate
  */
 
-#ifndef __BT_CONTROL_TC3566x_H
-#define __BT_CONTROL_TC3566x_H
+#ifndef __BT_CONTROL_TC3566X_H
+#define __BT_CONTROL_TC3566X_H
 
 #if defined __cplusplus
 extern "C" {
 #endif
 
 #include "btstack_control.h"
+#include "btstack_chipset.h"
 
 bt_control_t *bt_control_tc3566x_instance(void);
 
@@ -60,4 +61,4 @@ bt_control_t *bt_control_tc3566x_instance(void);
 }
 #endif
 
-#endif // __BT_CONTROL_TC3566x_H
+#endif // __BT_CONTROL_TC3566X_H

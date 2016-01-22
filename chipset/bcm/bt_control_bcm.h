@@ -49,6 +49,7 @@ extern "C" {
 
 #include <stdint.h>
 #include "btstack_control.h"
+#include "btstack_chipset.h"
 
 bt_control_t * bt_control_bcm_instance(void);
 

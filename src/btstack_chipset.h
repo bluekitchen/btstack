@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 BlueKitchen GmbH
+ * Copyright (C) 2016 BlueKitchen GmbH
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -36,27 +36,66 @@
  */
 
 /*
- *  bt_control_em9301.c
+ *  btstack_chipset.h
  *
- *  Adapter to use em9301-based chipsets with BTstack
- *  
- *  Allows to set public BD ADDR
+ *  Chipset Driver - implements custom chipset initializtion and support proprietary extensions
+ *  to set UART baud rate, Bluetooth Address, and similar.
  */
 
-#ifndef __BT_CONTROL_EM9301_H
-#define __BT_CONTROL_EM9301_H
+#ifndef __BTSTACK_CHIPSET_H
+#define __BTSTACK_CHIPSET_H
+
+#include <stdint.h>
+#include "btstack_util.h"
 
 #if defined __cplusplus
 extern "C" {
 #endif
 
-#include "btstack_control.h"
-#include "btstack_chipset.h"
+typedef enum {
+  BTSTACK_CHIPSET_DONE = 0,
+  BTSTACK_CHIPSET_VALID_COMMAND,
+  BTSTACK_CHIPSET_WARMSTART_REQUIRED,
+} btstack_chipset_result_t;
 
-bt_control_t *bt_control_em9301_instance(void);
+typedef struct {
+    /**
+     * chipset driver name
+     */
+    const char * name;
+
+    /**
+     * init driver
+     * allows to reset init script index
+     * @param config
+     */
+    void (*init)(void * config);
+
+    /**
+     * support custom init sequences after RESET command
+     * @param  hci_cmd_buffer to store generated command
+     * @return result see btstack_chipset_result_t
+     */
+    btstack_chipset_result_t (*next_cmd)(uint8_t * hci_cmd_buffer); 
+
+    /**
+     * provide UART Baud Rate change command.
+     * @param baudrate
+     * @param hci_cmd_buffer to store generated command
+     */
+    void (*baudrate_cmd)(uint32_t baudrate, uint8_t *hci_cmd_buffer); 
+    
+    /** provide Set BD Addr command
+     * @param baudrate
+     * @param hci_cmd_buffer to store generated command
+     */
+    void (*set_bd_addr_cmd)(void * config, bd_addr_t addr, uint8_t *hci_cmd_buffer); 
+
+
+} btstack_chipset_t;
 
 #if defined __cplusplus
 }
 #endif
 
-#endif // __BT_CONTROL_EM9301_H
+#endif // __BTSTACK_CHIPSET_H
