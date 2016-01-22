@@ -81,28 +81,28 @@
 extern const uint8_t  cc256x_init_script[];
 extern const uint32_t cc256x_init_script_size;
 
-//
+// init script
 static uint32_t init_script_offset  = 0;
 static int16_t  init_power_in_dB    = 13; // 13 dBm
 static int      init_ehcill_enabled = 0;
 
-static int      init_send_route_sco_over_hci = 0;
-
-static int bt_control_cc256x_on(void *config){
-	init_script_offset = 0;
+// support for SCO over HCI
 #ifdef HAVE_SCO_OVER_HCI
-    init_send_route_sco_over_hci = 1;
-#endif
-	return 0;
-}
-
+static int      init_send_route_sco_over_hci = 0;
 // route SCO over HCI (connection type=1, tx buffer size = 0x00 (don't change), tx buffer max latency=0x0000(don't chnage)), accept packets - 0)
 static const uint8_t hci_route_sco_over_hci[] = {
     0x10, 0xfe, 0x05, 0x01, 0x00, 0x00, 0x00, 0x00
 };
+#endif
 
-// UART Baud Rate control from: http://e2e.ti.com/support/low_power_rf/f/660/p/134850/484763.aspx
-static int cc256x_baudrate_cmd(void * config, uint32_t baudrate, uint8_t *hci_cmd_buffer){
+static void chipset_init(void * config){
+    init_script_offset = 0;
+#ifdef HAVE_SCO_OVER_HCI
+    init_send_route_sco_over_hci = 1;
+#endif
+}
+
+static void chipset_set_baudrate_command(uint32_t baudrate, uint8_t *hci_cmd_buffer){
     hci_cmd_buffer[0] = 0x36;
     hci_cmd_buffer[1] = 0xFF;
     hci_cmd_buffer[2] = 0x04;
@@ -110,9 +110,12 @@ static int cc256x_baudrate_cmd(void * config, uint32_t baudrate, uint8_t *hci_cm
     hci_cmd_buffer[4] = (baudrate >>  8) & 0xff;
     hci_cmd_buffer[5] = (baudrate >> 16) & 0xff;
     hci_cmd_buffer[6] = 0;
-    return 0;
 }
 
+#if 0
+static void chipset_set_bd_addr_command(bd_addr_t addr, uint8_t *hci_cmd_buffer){
+}
+#endif
 
 // Output Power control from: http://e2e.ti.com/support/low_power_rf/f/660/p/134853/484767.aspx
 #define NUM_POWER_LEVELS 16
@@ -197,8 +200,7 @@ static void update_sleep_mode_configurations(uint8_t * hci_cmd_buffer){
     }
 }
 
-// @returns 1 if command was injected before this one
-static int bt_control_cc256x_update_command(uint8_t *hci_cmd_buffer){
+static void update_init_script_command(uint8_t *hci_cmd_buffer){
 
     uint16_t opcode = hci_cmd_buffer[0] | (hci_cmd_buffer[1] << 8);
 
@@ -215,25 +217,23 @@ static int bt_control_cc256x_update_command(uint8_t *hci_cmd_buffer){
         default:
             break;
     }
-
-    return 0;
 }
 
-static int bt_control_cc256x_next_cmd(void *config, uint8_t *hci_cmd_buffer){
-
+static btstack_chipset_result_t chipset_next_command(uint8_t * hci_cmd_buffer){
     if (init_script_offset >= cc256x_init_script_size) {
+
+#ifdef HAVE_SCO_OVER_HCI
         // append send route SCO over HCI if requested
         if (init_send_route_sco_over_hci){
             init_send_route_sco_over_hci = 0;
             memcpy(hci_cmd_buffer, hci_route_sco_over_hci, sizeof(hci_route_sco_over_hci));
-            return 1;
+            return BTSTACK_CHIPSET_VALID_COMMAND;
         }
-        return 0;
+#endif
+
+        return BTSTACK_CHIPSET_DONE;
     }
     
-    // store current position in case command needs to get expanded
-    uint32_t current_offset = init_script_offset;
-
     // extracted init script has 0x01 cmd packet type, but BTstack expects them without
     init_script_offset++;
 
@@ -267,15 +267,67 @@ static int bt_control_cc256x_next_cmd(void *config, uint8_t *hci_cmd_buffer){
 
     init_script_offset += payload_len;
 
-    // support for cc256x power commands and ehcill 
-    int command_injected = bt_control_cc256x_update_command(hci_cmd_buffer);
+    // control power commands and ehcill 
+    update_init_script_command(hci_cmd_buffer);
 
-    if (command_injected){
-        // stay at this command
-        init_script_offset = current_offset;
-    }
+    return BTSTACK_CHIPSET_VALID_COMMAND; 
+}
 
-    return 1; 
+
+// MARK: public API
+void btstack_chipset_cc256x_enable_ehcill(int on){
+    init_ehcill_enabled = on;
+}
+
+int btstack_chipset_cc256x_ehcill_enabled(void){
+    return init_ehcill_enabled;
+}
+
+void btstack_chipset_cc256x_set_power(int16_t power_in_dB){
+    init_power_in_dB = power_in_dB;
+}
+
+static const btstack_chipset_t btstack_chipset_cc256x = {
+    "CC256x",
+    chipset_init,
+    chipset_next_command,
+    chipset_set_baudrate_command,
+    NULL,   // set bd addr command not available or impemented
+};
+
+const btstack_chipset_t * btstack_chipset_cc256x_instance(void){
+    return &btstack_chipset_cc256x;
+}
+
+//
+// @deprecated
+//
+
+static int bt_control_cc256x_next_cmd(void *config, uint8_t *hci_cmd_buffer){
+    return (int) chipset_next_command(hci_cmd_buffer);
+}
+
+// UART Baud Rate control from: http://e2e.ti.com/support/low_power_rf/f/660/p/134850/484763.aspx
+static int bt_control_cc256x_baudrate_cmd(void * config, uint32_t baudrate, uint8_t *hci_cmd_buffer){
+    chipset_set_baudrate_command(baudrate, hci_cmd_buffer);
+    return 0;
+}
+
+static int bt_control_cc256x_on(void *config){
+    chipset_init(config);
+    return 0;
+}
+
+void bt_control_cc256x_enable_ehcill(int on){
+    btstack_chipset_cc256x_enable_ehcill(on);
+}
+
+int bt_control_cc256x_ehcill_enabled(void){
+    return btstack_chipset_cc256x_ehcill_enabled();
+}
+
+void bt_control_cc256x_set_power(int16_t power_in_dB){
+    btstack_chipset_cc256x_set_power(power_in_dB);
 }
 
 // MARK: const structs 
@@ -287,25 +339,12 @@ static const bt_control_t bt_control_cc256x = {
 	NULL,                                  // wake
 	NULL,                                  // valid
 	NULL,                                  // name
-	cc256x_baudrate_cmd,                   // baudrate_cmd
+	bt_control_cc256x_baudrate_cmd,                   // baudrate_cmd
 	bt_control_cc256x_next_cmd,            // next_cmd
 	NULL,                                  // register_for_power_notifications
     NULL,                                  // hw_error
     NULL,                                  // set_bd_addr_cmd
 };
-
-// MARK: public API
-
-void bt_control_cc256x_enable_ehcill(int on){
-    init_ehcill_enabled = on;
-}
-
-int bt_control_cc256x_ehcill_enabled(void){
-    return init_ehcill_enabled;
-}
-void bt_control_cc256x_set_power(int16_t power_in_dB){
-    init_power_in_dB = power_in_dB;
-}
 
 bt_control_t *bt_control_cc256x_instance(void){
     return (bt_control_t*) &bt_control_cc256x;

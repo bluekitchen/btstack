@@ -59,8 +59,7 @@
 
 static const uint8_t baudrate_command[] = { 0x08, 0xfc, 0x11, 0x00, 0xa0, 0x00, 0x00, 0x00, 0x14, 0x42, 0xff, 0x10, 0x07, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
-// baud rate command for tc3566x
-static int tc35661_baudrate_cmd(void * config, uint32_t baudrate, uint8_t *hci_cmd_buffer){
+static void chipset_set_baudrate_command(uint32_t baudrate, uint8_t *hci_cmd_buffer){
     uint16_t div1 = 0;
     uint8_t  div2 = 0;
     switch (baudrate) {
@@ -82,21 +81,48 @@ static int tc35661_baudrate_cmd(void * config, uint32_t baudrate, uint8_t *hci_c
             break;
         default:
             log_error("tc3566x_baudrate_cmd baudrate %u not supported", baudrate);
-            return 1;
+            return;
     }
 
     memcpy(hci_cmd_buffer, baudrate_command, sizeof(baudrate_command));
     bt_store_16(hci_cmd_buffer, 13, div1);
     hci_cmd_buffer[15] = div2;
-    return 0;
 }
 
-static int tc3566x_set_bd_addr_cmd(void * config, bd_addr_t addr, uint8_t *hci_cmd_buffer){
+static void chipset_set_bd_addr_command(bd_addr_t addr, uint8_t *hci_cmd_buffer){
     // OGF 0x04 - Informational Parameters, OCF 0x10
     hci_cmd_buffer[0] = 0x13;
     hci_cmd_buffer[1] = 0x10;
     hci_cmd_buffer[2] = 0x06;
     bt_flip_addr(&hci_cmd_buffer[3], addr);
+}
+
+static const btstack_chipset_t btstack_chipset_bcm = {
+    "TC3556x",
+    NULL, // chipset_init,
+    NULL, // chipset_next_command,
+    chipset_set_baudrate_command,
+    chipset_set_bd_addr_command,
+};
+
+// MARK: public API
+const btstack_chipset_t * btstack_chipset_bcm_instance(void){
+    return &btstack_chipset_bcm;
+}
+
+//
+// deprecated
+//
+
+
+// baud rate command for tc3566x
+static int tc35661_baudrate_cmd(void * config, uint32_t baudrate, uint8_t *hci_cmd_buffer){
+    chipset_set_baudrate_command(baudrate, hci_cmd_buffer);
+    return 0;
+}
+
+static int tc3566x_set_bd_addr_cmd(void * config, bd_addr_t addr, uint8_t *hci_cmd_buffer){
+    chipset_set_bd_addr_command(addr, hci_cmd_buffer);
     return 0;
 }
 

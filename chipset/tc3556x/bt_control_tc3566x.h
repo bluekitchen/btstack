@@ -56,6 +56,7 @@ extern "C" {
 #include "btstack_chipset.h"
 
 bt_control_t *bt_control_tc3566x_instance(void);
+const btstack_chipset_t * btstack_chipset_tc3566x_instance(void);
 
 #if defined __cplusplus
 }

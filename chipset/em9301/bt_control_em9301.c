@@ -48,16 +48,38 @@
 
 #include <stddef.h>   /* NULL */
 #include <stdio.h> 
-	#include <string.h>   /* memcpy */
+#include <string.h>   /* memcpy */
 #include "hci.h"
 
 // should go to some common place
 #define OPCODE(ogf, ocf) (ocf | ogf << 10)
 
-static int em9301_set_bd_addr_cmd(void * config, bd_addr_t addr, uint8_t *hci_cmd_buffer){
+
+static void chipset_set_bd_addr_command(bd_addr_t addr, uint8_t *hci_cmd_buffer){
     bt_store_16(hci_cmd_buffer, 0, OPCODE(OGF_VENDOR, 0x02));
     hci_cmd_buffer[2] = 0x06;
     bt_flip_addr(&hci_cmd_buffer[3], addr);
+}
+
+static const btstack_chipset_t btstack_chipset_em9301 = {
+    "EM9301",
+    NULL, // chipset_init not used
+    NULL, // chipset_next_command not used
+    NULL, // chipset_set_baudrate_command not needed as we're connected via SPI
+    chipset_set_bd_addr_command,
+};
+
+// MARK: public API
+const btstack_chipset_t * btstack_chipset_em9301_instance(void){
+    return &btstack_chipset_em9301;
+}
+
+//
+// deprecated
+//
+
+static int em9301_set_bd_addr_cmd(void * config, bd_addr_t addr, uint8_t *hci_cmd_buffer){
+	chipset_set_bd_addr_command(addr, hci_cmd_buffer);
     return 0;
 }
 

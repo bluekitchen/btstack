@@ -51,6 +51,7 @@
 #include "btstack_control.h"
 #include "btstack_debug.h"
 #include "btstack_util.h"
+#include "hci_transport.h"
 
 // minimal CSR init script to configure PSKEYs and activate them
 static const uint8_t init_script[] = { 
@@ -67,24 +68,29 @@ static const uint16_t init_script_size = sizeof(init_script);
 
 //
 static uint32_t init_script_offset  = 0;
+static hci_transport_config_uart_t * hci_transport_config_uart = NULL;
 
-static int bt_control_csr_on(void *config){
-	init_script_offset = 0;
-	return 0;
+static void chipset_init(void * config){
+    init_script_offset = 0;
+    hci_transport_config_uart = NULL;
+    // check for hci_transport_config_uart_t
+    if (!config) return;
+    if (((hci_transport_config_t*)config)->type != HCI_TRANSPORT_CONFIG_UART) return;
+    hci_transport_config_uart = (hci_transport_config_uart_t*) config;
+}
+
+static void chipset_set_baudrate_command(uint32_t baudrate, uint8_t *hci_cmd_buffer){
 }
 
 // set requested baud rate
-static void bt_control_csr_update_command(void *config, uint8_t *hci_cmd_buffer){
+static void update_init_script_command(uint8_t *hci_cmd_buffer){
     uint16_t varid = READ_BT_16(hci_cmd_buffer, 10);
     if (varid != 0x7003) return;
     uint16_t key = READ_BT_16(hci_cmd_buffer, 14);
     if (key != 0x01ea) return;
 
-    // check for hci_transport_config_uart_t
-    if (!config) return;
-    if (((hci_transport_config_t*)config)->type != HCI_TRANSPORT_CONFIG_UART) return;
-    hci_transport_config_uart_t * hci_transport_config_uart = (hci_transport_config_uart_t*) config;
-
+    // check for baud rate
+    if (!hci_transport_config_uart) return;
     uint32_t baudrate = hci_transport_config_uart->baudrate_main;
     if (baudrate == 0){
         baudrate = hci_transport_config_uart->baudrate_init;
@@ -94,10 +100,10 @@ static void bt_control_csr_update_command(void *config, uint8_t *hci_cmd_buffer)
     bt_store_16(hci_cmd_buffer, 22, baudrate &  0xffff);
 }
 
-static int bt_control_csr_next_cmd(void *config, uint8_t *hci_cmd_buffer){
+static btstack_chipset_result_t chipset_next_command(uint8_t * hci_cmd_buffer){
 
     if (init_script_offset >= init_script_size) {
-        return 0;
+        return BTSTACK_CHIPSET_DONE;
     }
 
     // init script is stored with the HCI Command Packet Type
@@ -110,7 +116,7 @@ static int bt_control_csr_next_cmd(void *config, uint8_t *hci_cmd_buffer){
     memcpy(&hci_cmd_buffer[3], (uint8_t *) &init_script[init_script_offset], payload_len);
 
     // support for on-the-fly configuration updates
-    bt_control_csr_update_command(config, hci_cmd_buffer);
+    update_init_script_command(hci_cmd_buffer);
 
     init_script_offset += payload_len;
 
@@ -118,10 +124,35 @@ static int bt_control_csr_next_cmd(void *config, uint8_t *hci_cmd_buffer){
     uint16_t varid = READ_BT_16(hci_cmd_buffer, 10);
     log_info("csr: varid 0x%04x", varid);
     if (varid == 0x4002){
-        return 2;
+        return BTSTACK_CHIPSET_WARMSTART_REQUIRED;
     }
 
-    return 1; 
+    return BTSTACK_CHIPSET_VALID_COMMAND; 
+}
+
+
+static const btstack_chipset_t btstack_chipset_bcm = {
+    "BCM",
+    chipset_init,
+    chipset_next_command,
+    chipset_set_baudrate_command,
+    NULL, // chipset_set_bd_addr_command not supported or implemented
+};
+
+// MARK: public API
+const btstack_chipset_t * btstack_chipset_csr_instance(void){
+    return &btstack_chipset_bcm;
+}
+
+
+// DEPRECATED
+static int bt_control_csr_on(void *config){
+    chipset_init(config);
+	return 0;
+}
+
+static int bt_control_csr_next_cmd(void *config, uint8_t *hci_cmd_buffer){
+    return (int) chipset_next_command(hci_cmd_buffer);
 }
 
 // MARK: const structs 

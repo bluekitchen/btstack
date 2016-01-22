@@ -54,53 +54,78 @@
 // should go to some common place
 #define OPCODE(ogf, ocf) (ocf | ogf << 10)
 
-static int stlc2500d_baudrate_cmd(void * config, uint32_t baudrate, uint8_t *hci_cmd_buffer){
-	// map baud rate to predefined settings
-	int preset = 0;
-	switch (baudrate){
-		case 57600:
-			preset = 0x0e;
-			break;
+static void chipset_set_baudrate_command(uint32_t baudrate, uint8_t *hci_cmd_buffer){
+    // map baud rate to predefined settings
+    int preset = 0;
+    switch (baudrate){
+        case 57600:
+            preset = 0x0e;
+            break;
         case 115200:
-        	preset = 0x10;
-        	break;
+            preset = 0x10;
+            break;
         case 230400:
-        	preset = 0x12;
-        	break;
+            preset = 0x12;
+            break;
         case 460800:
-        	preset = 0x13;
-        	break;
+            preset = 0x13;
+            break;
         case 921600:
-        	preset = 0x14;
-        	break;
+            preset = 0x14;
+            break;
         case 1843200:
-        	preset = 0x16;
-        	break;
+            preset = 0x16;
+            break;
         case 2000000:
-        	preset = 0x19;
-        	break;
+            preset = 0x19;
+            break;
         case 3000000:
-        	preset = 0x1b;
-        	break;
+            preset = 0x1b;
+            break;
         case 4000000:
-        	preset = 0x1f;
-        	break;
+            preset = 0x1f;
+            break;
         default:
-        	log_error("stlc2500d_baudrate_cmd baudrate %u not supported", baudrate);
-        	return 1;
+            log_error("stlc2500d_baudrate_cmd baudrate %u not supported", baudrate);
+            return;
     }
     bt_store_16(hci_cmd_buffer, 0, OPCODE(OGF_VENDOR, 0xfc));
     hci_cmd_buffer[2] = 0x01;
     hci_cmd_buffer[3] = preset;
-    return 0;
 }
 
-static int stlc2500d_set_bd_addr_cmd(void * config, bd_addr_t addr, uint8_t *hci_cmd_buffer){
+static void chipset_set_bd_addr_command(bd_addr_t addr, uint8_t *hci_cmd_buffer){
     bt_store_16(hci_cmd_buffer, 0, OPCODE(OGF_VENDOR, 0x22));
     hci_cmd_buffer[2] = 0x08;
     hci_cmd_buffer[3] = 254;
     hci_cmd_buffer[4] = 0x06;
     bt_flip_addr(&hci_cmd_buffer[5], addr);
+}
+
+static const btstack_chipset_t btstack_chipset_bcm = {
+    "BCM",
+    NULL, // chipset_init,
+    NULL, // chipset_next_command,
+    chipset_set_baudrate_command,
+    chipset_set_bd_addr_command,
+};
+
+// MARK: public API
+const btstack_chipset_t * btstack_chipset_bcm_instance(void){
+    return &btstack_chipset_bcm;
+}
+
+//
+// deprecated
+//
+
+static int stlc2500d_baudrate_cmd(void * config, uint32_t baudrate, uint8_t *hci_cmd_buffer){
+    chipset_set_baudrate_command(baudrate, hci_cmd_buffer);
+    return 0;
+}
+
+static int stlc2500d_set_bd_addr_cmd(void * config, bd_addr_t addr, uint8_t *hci_cmd_buffer){
+    chipset_set_bd_addr_command(addr, hci_cmd_buffer);
     return 0;
 }
 

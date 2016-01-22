@@ -60,67 +60,95 @@ extern const char    brcm_patch_version[];
 static uint32_t init_script_offset;
 static int send_download_command;
 
-static int bt_control_bcm_on(void *config){
+static void chipset_init(void * config){
     log_info("Broadcom init script %s, len %u", brcm_patch_version, brcm_patch_ram_length);
-	init_script_offset = 0;
+    init_script_offset = 0;
     send_download_command = 1;
-	return 0;
 }
 
 // @note: Broadcom chips require higher UART clock for baud rate > 3000000 -> limit baud rate in hci.c
-static int bcm_baudrate_cmd(void * config, uint32_t baudrate, uint8_t *hci_cmd_buffer){
+static void chipset_set_baudrate_command(uint32_t baudrate, uint8_t *hci_cmd_buffer){
     hci_cmd_buffer[0] = 0x18;
     hci_cmd_buffer[1] = 0xfc;
     hci_cmd_buffer[2] = 0x06;
     hci_cmd_buffer[3] = 0x00;
     hci_cmd_buffer[4] = 0x00;
     bt_store_32(hci_cmd_buffer, 5, baudrate);
-    return 0;
 }
 
 // @note: bd addr has to be set after sending init script (it might just get re-set)
-static int bt_control_bcm_set_bd_addr_cmd(void * config, bd_addr_t addr, uint8_t *hci_cmd_buffer){
+static void chipset_set_bd_addr_command(bd_addr_t addr, uint8_t *hci_cmd_buffer){
     hci_cmd_buffer[0] = 0x01;
     hci_cmd_buffer[1] = 0xfc;
     hci_cmd_buffer[2] = 0x06;
     bt_flip_addr(&hci_cmd_buffer[3], addr);
-    return 0;
 }
 
-static int bt_control_bcm_next_cmd(void *config, uint8_t *hci_cmd_buffer){
-
+static btstack_chipset_result_t chipset_next_command(uint8_t * hci_cmd_buffer){
     // send download firmware command
     if (send_download_command){
         send_download_command = 0;
         hci_cmd_buffer[0] = 0x2e;
         hci_cmd_buffer[1] = 0xfc;
         hci_cmd_buffer[2] = 0x00;
-        return 1;
+        return BTSTACK_CHIPSET_VALID_COMMAND;
     }
 
     if (init_script_offset >= brcm_patch_ram_length) {
-        return 0;
+        return BTSTACK_CHIPSET_DONE;
     }
 
-    // use memcpy with pointer
     int cmd_len = 3 + brcm_patchram_buf[init_script_offset+2];
     memcpy(&hci_cmd_buffer[0], &brcm_patchram_buf[init_script_offset], cmd_len); 
     init_script_offset += cmd_len;
-    return 1; 
+    return BTSTACK_CHIPSET_VALID_COMMAND;     
 }
 
-// MARK: const structs 
+
+static const btstack_chipset_t btstack_chipset_bcm = {
+    "BCM",
+    chipset_init,
+    chipset_next_command,
+    chipset_set_baudrate_command,
+    chipset_set_bd_addr_command,
+};
+
+// MARK: public API
+const btstack_chipset_t * btstack_chipset_bcm_instance(void){
+    return &btstack_chipset_bcm;
+}
+
+// deprecated //
+
+static int bt_control_bcm_on(void *config){
+    chipset_init(config);
+    return 0;
+}
+
+static int bt_control_bcm_next_cmd(void *config, uint8_t *hci_cmd_buffer){
+    return (int) chipset_next_command(hci_cmd_buffer);
+}
+
+static int bcm_baudrate_cmd(void * config, uint32_t baudrate, uint8_t *hci_cmd_buffer){
+    chipset_set_baudrate_command(baudrate, hci_cmd_buffer);
+    return 0;
+}
+
+static int bt_control_bcm_set_bd_addr_cmd(void * config, bd_addr_t addr, uint8_t *hci_cmd_buffer){
+    chipset_set_bd_addr_command(addr, hci_cmd_buffer);
+    return 0;
+}
 
 static const bt_control_t bt_control_bcm = {
-	bt_control_bcm_on,                     // on
-	NULL,                                  // off
-	NULL,                                  // sleep
-	NULL,                                  // wake
-	NULL,                                  // valid
-	NULL,                                  // name
-	bcm_baudrate_cmd,                      // baudrate_cmd
-	bt_control_bcm_next_cmd,               // next_cmd
-	NULL,                                  // register_for_power_notifications
+    bt_control_bcm_on,                     // on
+    NULL,                                  // off
+    NULL,                                  // sleep
+    NULL,                                  // wake
+    NULL,                                  // valid
+    NULL,                                  // name
+    bcm_baudrate_cmd,                      // baudrate_cmd
+    bt_control_bcm_next_cmd,               // next_cmd
+    NULL,                                  // register_for_power_notifications
     NULL,                                  // hw_error
     bt_control_bcm_set_bd_addr_cmd,        // set_bd_addr_cmd
 };
@@ -129,3 +157,5 @@ static const bt_control_t bt_control_bcm = {
 bt_control_t * bt_control_bcm_instance(void){
     return (bt_control_t*) &bt_control_bcm;
 }
+
+
