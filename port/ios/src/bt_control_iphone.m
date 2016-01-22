@@ -174,7 +174,7 @@ static char *get_machine_name(void){
 /**
  * on iPhone/iPod touch
  */
-static int iphone_valid(void *config){
+int iphone_system_is_valid(void *config){
 	char * machine = get_machine_name();
 	if (!strncmp("iPod1", machine, strlen("iPod1"))) return 0;     // 1st gen touch no BT
     return 1;
@@ -760,7 +760,6 @@ bt_control_t bt_control_iphone = {
     .off    = iphone_off,
     .sleep  = iphone_sleep,
     .wake   = iphone_wake,
-    .valid  = iphone_valid,
     .name   = iphone_name,
     .register_for_power_notifications = iphone_register_for_power_notifications
 };

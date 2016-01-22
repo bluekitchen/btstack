@@ -59,6 +59,7 @@ int  iphone_system_bt_enabled(void);
 void iphone_system_bt_set_enabled(int enabled);
 
 int  iphone_system_has_csr(void);
+int  iphone_system_is_valid(void);
 
 #if defined __cplusplus
 }
