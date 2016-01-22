@@ -9,7 +9,7 @@ VERSION=`sed -n -e 's/^.*BTSTACK_VERSION \"\(.*\)\"/\1/p' ${BTSTACK_ROOT}/src/bt
 BTSTACK_PACKAGE=/tmp/btstack
 ARCHIVE=btstack-arduino-${VERSION}.zip
 
-SRC_FILES  = btstack_memory.c btstack_linked_list.c btstack_memory_pool.c run_loop.c 
+SRC_FILES  = btstack_memory.c btstack_linked_list.c btstack_memory_pool.c btstack_run_loop.c 
 SRC_FILES += hci_dump.c hci.c hci_cmd.c  btstack_util.c l2cap.c
 BLE_FILES  =  ad_parser.c att.c att_server.c att_dispatch.c att_db_util.c le_device_db_memory.c gatt_client.c
 BLE_FILES += sm.c ancs_client.h ancs_client.c
