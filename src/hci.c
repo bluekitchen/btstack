@@ -1688,8 +1688,6 @@ static void event_handler(uint8_t *packet, int size){
         case HCI_EVENT_HARDWARE_ERROR:
             if (hci_stack->hardware_error_callback){
                 (*hci_stack->hardware_error_callback)();
-            } else if(hci_stack->control && hci_stack->control->hw_error){
-                (*hci_stack->control->hw_error)();
             } else {
                 // if no special requests, just reboot stack
                 hci_power_control_off();

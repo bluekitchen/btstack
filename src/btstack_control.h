@@ -65,10 +65,6 @@ typedef struct {
     int          (*sleep)(void *config);  // <-- put BT module to sleep    - only to be called after ON
     int          (*wake) (void *config);  // <-- wake BT module from sleep - only to be called after SLEEP
     void         (*register_for_power_notifications)(void (*cb)(POWER_NOTIFICATION_t event));
-
-    // move to hci.h
-    void         (*hw_error)(void); 
-
 } bt_control_t;
 
 #if defined __cplusplus
