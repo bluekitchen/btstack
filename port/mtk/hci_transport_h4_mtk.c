@@ -73,7 +73,7 @@ static  void (*packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t si
 static uint8_t hci_packet_out[1+HCI_PACKET_BUFFER_SIZE]; // packet type + max(acl header + acl payload, event header + event data)
 static uint8_t hci_packet_in[1+HCI_PACKET_BUFFER_SIZE]; // packet type + max(acl header + acl payload, event header + event data)
 
-static int h4_open(void *transport_config){
+static int h4_open(const void *transport_config){
     int fd = mtk_bt_enable();
 
     if (fd < 0) {
@@ -90,7 +90,7 @@ static int h4_open(void *transport_config){
     return 0;
 }
 
-static int h4_close(void *transport_config){
+static int h4_close(const void *transport_config){
 
     mtk_bt_disable(hci_transport_h4->ds->fd);
 

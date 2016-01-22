@@ -85,7 +85,7 @@ static void dummy_handler(uint8_t packet_type, uint8_t *packet, int size);
 static  void (*packet_handler)(uint8_t packet_type, uint8_t *packet, int size) = dummy_handler;
 
 // prototypes
-static int    h5_open(void *transport_config){
+static int    h5_open(const void *transport_config){
     // check for hci_transport_config_uart_t
     if (!transport_config) {
         log_error("hci_transport_h5_posix: no config!");
@@ -168,7 +168,7 @@ static int    h5_open(void *transport_config){
     return 0;
 }
 
-static int    h5_close(void *transport_config){
+static int h5_close(const void *transport_config){
     // first remove run loop handler
 	btstack_run_loop_remove_data_source(hci_transport_h5->ds);
     

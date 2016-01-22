@@ -11,18 +11,18 @@
 # - Microchip XC32
 
 SUBDIRS =  \
-			arduino \
-			ez430-rf2560 \
-			libusb \
-			msp-exp430f5438-cc2564b \
-			msp430f5229lp-cc2564b \
-			mtk \
 			posix-cc2564b \
 			posix-csr \
 			posix-h4 \
 			posix-stlc2500d \
 			posix-tc35661 \
 			posix-wl183x \
+			libusb \
+			arduino \
+			ez430-rf2560 \
+			msp-exp430f5438-cc2564b \
+			msp430f5229lp-cc2564b \
+			mtk \
 			stm32-f103rb-nucleo \
 
 EXCLUDED = \

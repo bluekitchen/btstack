@@ -1,4 +1,4 @@
-/*
+const /*
  * Copyright (C) 2015 BlueKitchen GmbH
  *
  * Redistribution and use in source and binary forms, with or without
@@ -227,7 +227,7 @@ static int h4_set_baudrate(uint32_t baudrate){
     return 0;
 }
 
-static int h4_open(void *transport_config){
+static int h4_open(const void *transport_config){
 
     // UART config
     wiced_uart_config_t uart_config =
@@ -285,7 +285,7 @@ static int h4_open(void *transport_config){
     return 0;
 }
 
-static int h4_close(void *transport_config){
+static int h4_close(const void *transport_config){
     // not implementd
     return 0;
 }

@@ -190,7 +190,7 @@ static void h4_register_packet_handler(void (*handler)(uint8_t packet_type, uint
     packet_handler = handler;
 }
 
-static int h4_open(void *transport_config){
+static int h4_open(const void *transport_config){
 
 	// open uart
 	hal_uart_dma_init();
@@ -214,7 +214,7 @@ static int h4_set_baudrate(uint32_t baudrate){
     return hal_uart_dma_set_baud(baudrate);
 }
 
-static int h4_close(void *transport_config){
+static int h4_close(const void *transport_config){
     // first remove run loop handler
 	btstack_run_loop_remove_data_source(&hci_transport_h4_dma_ds);
     
