@@ -35,7 +35,7 @@
  */
 
 /*
- *  bt_control_iphone.c
+ *  btstack_control_iphone.c
  *
  *  control Bluetooth module using BlueTool
  *
@@ -47,7 +47,7 @@
 
 #include "btstack_config.h"
 
-#include "bt_control_iphone.h"
+#include "btstack_control_iphone.h"
 #include "hci_transport.h"
 #include "hci.h"
 #include "btstack_debug.h"
@@ -125,6 +125,7 @@ IOReturn IOCancelPowerChange ( io_connect_t kernelPort, long notificationID );
 static io_connect_t  root_port = 0; // a reference to the Root Power Domain IOService
 static int power_notification_pipe_fds[2];
 static btstack_data_source_t power_notification_ds;
+static const hci_transport_config_uart_t * hci_transport_config_uart = NULL;
 
 static void (*power_notification_callback)(POWER_NOTIFICATION_t event) = NULL;
 
@@ -174,7 +175,7 @@ static char *get_machine_name(void){
 /**
  * on iPhone/iPod touch
  */
-int iphone_system_is_valid(void){
+int btstack_control_iphone_is_valid(void){
 	char * machine = get_machine_name();
 	if (!strncmp("iPod1", machine, strlen("iPod1"))) return 0;     // 1st gen touch no BT
     return 1;
@@ -201,6 +202,10 @@ static void ioregistry_get_info(void){
     // dump info
     log_info("local-mac-address: %s\n", bd_addr_to_str(local_mac_address));
     log_info("transport-speed:   %u\n", transport_speed);
+}
+
+uint32_t btstack_control_iphone_get_transport_speed(void){
+    return transport_speed;
 }
 
 static int iphone_has_csr(void){
@@ -437,22 +442,27 @@ static void iphone_write_configscript(int fd, int baudrate){
     iphone_write_string(fd, "quit\n");
 }
 
-static int iphone_on (const void *transport_config){
-    // hci_transport_config_uart->baudrate_init == 0, if using native speed    
-    
-    log_info("iphone_on: entered\n");
+static void iphone_init(const void *transport_config){
+
+    hci_transport_config_uart = NULL;
 
     // check for hci_transport_config_uart_t
     if (!transport_config) {
-        log_error("iphone_on: no config!");
-        return -1;
+        log_error("iphone_init: no config!");
+        return;
     }
     if (((hci_transport_config_t *)transport_config)->type != HCI_TRANSPORT_CONFIG_UART) {
-        log_error("iphone_on: config not of type != HCI_TRANSPORT_CONFIG_UART!");
-        return -1;
+        log_error("iphone_init: config not of type != HCI_TRANSPORT_CONFIG_UART!");
+        return;
     }
 
-    hci_transport_config_uart_t * hci_transport_config_uart = (hci_transport_config_uart_t*) transport_config;
+    hci_transport_config_uart = (hci_transport_config_uart_t*) transport_config;
+}
+
+static int iphone_on (void){
+    // hci_transport_config_uart->baudrate_init == 0, if using native speed    
+    
+    log_info("iphone_on: entered\n");
 
     // get local-mac-addr and transport-speed from IORegistry 
 	ioregistry_get_info();
@@ -472,7 +482,7 @@ static int iphone_on (const void *transport_config){
     bt_store_16(local_mac_address, 4, random());
 #endif
 
-    if (iphone_system_bt_enabled()){
+    if (btstack_control_iphone_bt_enabled()){
         perror("iphone_on: System Bluetooth enabled!");
         return 1;
     }
@@ -571,12 +581,13 @@ static int iphone_on (const void *transport_config){
     };
     err = pclose(outputFile);
 
-    power_management_active = bt_control_iphone_power_management_supported();
+    power_management_active = btstack_control_iphone_power_management_supported();
 
+    // moved to hci_transport_h4_iphone.c as hci_transport_config_uart is const now
     // if baud == 0, we're using system default: set in transport config
-    if (hci_transport_config_uart->baudrate_init == 0) {
-        hci_transport_config_uart->baudrate_init = transport_speed;
-    }
+    // if (hci_transport_config_uart->baudrate_init == 0) {
+    //    hci_transport_config_uart->baudrate_init = transport_speed;
+    // }
     
     // if we sleep for about 3 seconds, we miss a strage packet... but we don't care
     // sleep(3); 
@@ -584,7 +595,7 @@ static int iphone_on (const void *transport_config){
     return err;
 }
 
-static int iphone_off (void *config){
+static int iphone_off(void){
 	
     // power off (all models)
     log_info("iphone_off: turn off using BlueTool\n");
@@ -615,7 +626,7 @@ static int iphone_off (void *config){
     return 0;
 }
 
-static int iphone_sleep(void *config){
+static int iphone_sleep(void){
 
     // will sleep by itself
     if (power_management_active) return 0;
@@ -625,7 +636,7 @@ static int iphone_sleep(void *config){
     return 0;
 }
 
-static int iphone_wake(void *config){
+static int iphone_wake(void){
 
     // will wake by itself
     if (power_management_active) return 0;
@@ -738,7 +749,7 @@ void iphone_register_for_power_notifications(void (*cb)(POWER_NOTIFICATION_t eve
     btstack_run_loop_add_data_source(&power_notification_ds);  
 }
 
-int bt_control_iphone_power_management_supported(void){
+int btstack_control_iphone_power_management_supported(void){
     // only supported on Broadcom chipsets with iOS 4.0+
     if ( iphone_has_csr()) return 0;
     if (!iphone_os_at_least_40()) return 0;
@@ -746,12 +757,13 @@ int bt_control_iphone_power_management_supported(void){
 }
 
 // direct access
-int bt_control_iphone_power_management_enabled(void){
+int btstack_control_iphone_power_management_enabled(void){
     return power_management_active;
 }
 
 // single instance
-btstack_control_t bt_control_iphone = {
+btstack_control_t btstack_control_iphone = {
+    .init   = iphone_init,
     .on     = iphone_on,
     .off    = iphone_off,
     .sleep  = iphone_sleep,
@@ -759,16 +771,13 @@ btstack_control_t bt_control_iphone = {
     .register_for_power_notifications = iphone_register_for_power_notifications
 };
 
-int iphone_system_bt_enabled(void){
+int btstack_control_iphone_bt_enabled(void){
     return SBA_getBluetoothEnabled();
 }
 
-void iphone_system_bt_set_enabled(int enabled)
+void btstack_control_iphone_bt_set_enabled(int enabled)
 {
     SBA_setBluetoothEnabled(enabled);
     sleep(2); // give change a chance
 }
 
-int iphone_system_has_csr(void){
-    return iphone_has_csr();
-}

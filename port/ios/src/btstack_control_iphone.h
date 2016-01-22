@@ -35,7 +35,7 @@
  */
 
 /*
- *  bt_control_iphone.h
+ *  btstack_control_iphone.h
  *
  *  BT Control API implementation for the iPhone and the iPod Touch
  *
@@ -50,16 +50,21 @@
 extern "C" {
 #endif
 
-extern btstack_control_t bt_control_iphone;
+extern btstack_control_t btstack_control_iphone;
 
-int  bt_control_iphone_power_management_enabled(void);
-int  bt_control_iphone_power_management_supported(void);
+// power management
+int      btstack_control_iphone_power_management_enabled(void);
+int      btstack_control_iphone_power_management_supported(void);
 
-int  iphone_system_bt_enabled(void);
-void iphone_system_bt_set_enabled(int enabled);
+// system bluetooth on/off
+int      btstack_control_iphone_bt_enabled(void);
+void     btstack_control_iphone_bt_set_enabled(int enabled);
 
-int  iphone_system_has_csr(void);
-int  iphone_system_is_valid(void);
+// does device has Bluetooth support
+int      btstack_control_iphone_is_valid(void);
+
+// get default transport speed
+uint32_t btstack_control_iphone_get_transport_speed(void);
 
 #if defined __cplusplus
 }

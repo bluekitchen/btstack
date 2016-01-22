@@ -58,11 +58,12 @@ typedef enum {
 } POWER_NOTIFICATION_t;
 
 typedef struct {
-    int          (*on)   (const void *config);  // <-- turn BT module on and configure
-    int          (*off)  (const void *config);  // <-- turn BT module off
-    int          (*sleep)(const void *config);  // <-- put BT module to sleep    - only to be called after ON
-    int          (*wake) (const void *config);  // <-- wake BT module from sleep - only to be called after SLEEP
-    void         (*register_for_power_notifications)(void (*cb)(POWER_NOTIFICATION_t event));
+	void (*init) (const void *config);
+    int  (*on)   (void);  // <-- turn BT module on and configure
+    int  (*off)  (void);  // <-- turn BT module off
+    int  (*sleep)(void);  // <-- put BT module to sleep    - only to be called after ON
+    int  (*wake) (void);  // <-- wake BT module from sleep - only to be called after SLEEP
+    void (*register_for_power_notifications)(void (*cb)(POWER_NOTIFICATION_t event));
 } btstack_control_t;
 
 #if defined __cplusplus

@@ -50,7 +50,7 @@
 #endif
 
 #ifdef HAVE_PLATFORM_IPHONE_OS
-#include "../port/ios/src/bt_control_iphone.h"
+#include "../port/ios/src/btstack_control_iphone.h"
 #endif
 
 #ifdef ENABLE_BLE
@@ -1956,11 +1956,13 @@ void hci_set_chipset(const btstack_chipset_t *chipset_driver){
 }
 
 /**
- * @brief Configure Bluetooth hardware control. Has to be called before power on.
+ * @brief Configure Bluetooth hardware control. Has to be called after hci_init() but before power on.
  */
 void hci_set_control(const btstack_control_t *hardware_control){
     // references to used control implementation
     hci_stack->control = hardware_control;
+    // init with transport config
+    hardware_control->init(hci_stack->config);
 }
 
 void hci_close(void){
@@ -2008,7 +2010,7 @@ static int hci_power_control_on(void){
     // power on
     int err = 0;
     if (hci_stack->control && hci_stack->control->on){
-        err = (*hci_stack->control->on)(hci_stack->config);
+        err = (*hci_stack->control->on)();
     }
     if (err){
         log_error( "POWER_ON failed");
@@ -2026,7 +2028,7 @@ static int hci_power_control_on(void){
     if (err){
         log_error( "HCI_INIT failed, turning Bluetooth off again");
         if (hci_stack->control && hci_stack->control->off){
-            (*hci_stack->control->off)(hci_stack->config);
+            (*hci_stack->control->off)();
         }
         hci_emit_hci_open_failed();
         return err;
@@ -2045,7 +2047,7 @@ static void hci_power_control_off(void){
     
     // power off
     if (hci_stack->control && hci_stack->control->off){
-        (*hci_stack->control->off)(hci_stack->config);
+        (*hci_stack->control->off)();
     }
     
     log_info("hci_power_control_off - control closed");
@@ -2066,7 +2068,7 @@ static void hci_power_control_sleep(void){
     
     // sleep mode
     if (hci_stack->control && hci_stack->control->sleep){
-        (*hci_stack->control->sleep)(hci_stack->config);
+        (*hci_stack->control->sleep)();
     }
     
     hci_stack->state = HCI_STATE_SLEEPING;
@@ -2078,7 +2080,7 @@ static int hci_power_control_wake(void){
 
     // wake on
     if (hci_stack->control && hci_stack->control->wake){
-        (*hci_stack->control->wake)(hci_stack->config);
+        (*hci_stack->control->wake)();
     }
     
 #if 0
@@ -2087,7 +2089,7 @@ static int hci_power_control_wake(void){
     if (err){
         log_error( "HCI_INIT failed, turning Bluetooth off again");
         if (hci_stack->control && hci_stack->control->off){
-            (*hci_stack->control->off)(hci_stack->config);
+            (*hci_stack->control->off)();
         }
         hci_emit_hci_open_failed();
         return err;
@@ -2186,7 +2188,7 @@ int hci_power_control(HCI_POWER_MODE power_mode){
 
 #ifdef HAVE_PLATFORM_IPHONE_OS
                     // nothing to do, if H4 supports power management
-                    if (bt_control_iphone_power_management_enabled()){
+                    if (btstack_control_iphone_power_management_enabled()){
                         hci_stack->state = HCI_STATE_INITIALIZING;
                         hci_stack->substate = HCI_INIT_WRITE_SCAN_ENABLE;   // init after sleep
                         break;
@@ -2210,7 +2212,7 @@ int hci_power_control(HCI_POWER_MODE power_mode){
                     
 #ifdef HAVE_PLATFORM_IPHONE_OS
                     // nothing to do, if H4 supports power management
-                    if (bt_control_iphone_power_management_enabled()){
+                    if (btstack_control_iphone_power_management_enabled()){
                         hci_stack->state = HCI_STATE_INITIALIZING;
                         hci_stack->substate = HCI_INIT_AFTER_SLEEP;
                         hci_update_scan_enable();
@@ -2668,7 +2670,7 @@ void hci_run(void){
 
 #ifdef HAVE_PLATFORM_IPHONE_OS
                     // don't close connections, if H4 supports power management
-                    if (bt_control_iphone_power_management_enabled()){
+                    if (btstack_control_iphone_power_management_enabled()){
                         connection = NULL;
                     }
 #endif
@@ -2702,7 +2704,7 @@ void hci_run(void){
                     log_info("HCI_STATE_HALTING, calling sleep");
 #ifdef HAVE_PLATFORM_IPHONE_OS
                     // don't actually go to sleep, if H4 supports power management
-                    if (bt_control_iphone_power_management_enabled()){
+                    if (btstack_control_iphone_power_management_enabled()){
                         // SLEEP MODE reached
                         hci_stack->state = HCI_STATE_SLEEPING; 
                         hci_emit_state();

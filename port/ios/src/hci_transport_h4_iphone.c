@@ -46,6 +46,7 @@
  */
 
 #include "btstack_config.h"
+#include "btstack_control_iphone.h"
 
 #define SOCKET_DEVICE "com.apple.uart.bluetooth"
 #include <sys/socket.h>
@@ -132,7 +133,7 @@ static int read_pos;
 
 static uint8_t hci_packet[1+HCI_PACKET_BUFFER_SIZE]; // packet type + max(acl header + acl payload, event header + event data)
 
-static int h4_open(void *transport_config)
+static int h4_open(const void *transport_config)
 {
     hci_transport_config_uart = (hci_transport_config_uart_t *) transport_config;
 
@@ -186,6 +187,12 @@ static int h4_open(void *transport_config)
         goto err_out3;
     }
 
+    uint32_t baud = hci_transport_config_uart->baudrate_init;
+    // if baud == 0, we're using system default: set in transport config
+    if (baud == 0) {
+        baud = btstack_control_iphone_get_transport_speed();
+    }
+
     // make raw and set speed
     cfmakeraw(&toptions);
     speed_t brate = (speed_t) hci_transport_config_uart->baudrate_init;
@@ -228,7 +235,7 @@ err_out0:
     return -1;
 }
 
-static int    h4_close(void *transport_config){
+static int    h4_close(const void *transport_config){
     // first remove run loop handler
 	btstack_run_loop_remove_data_source(hci_transport_h4->ds);
     

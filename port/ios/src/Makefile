@@ -34,7 +34,7 @@ libBTstack_CFLAGS = -I$(BTSTACK_ROOT)/src/ble -I$(BTSTACK_ROOT)/src -I..
 TOOL_NAME = BTdaemon
 BTdaemon_FILES = \
 	$(libBTstack_FILES)  	  \
-	bt_control_iphone.m       \
+	btstack_control_iphone.m  \
 	btstack_memory.c          \
 	btstack_memory_pool.c     \
 	daemon.c  				  \

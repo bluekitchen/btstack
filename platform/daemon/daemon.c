@@ -90,7 +90,7 @@
 #ifdef HAVE_PLATFORM_IPHONE_OS
 #include <CoreFoundation/CoreFoundation.h>
 #include <notify.h>
-#include "../port/ios/src/bt_control_iphone.h"
+#include "../port/ios/src/btstack_control_iphone.h"
 #include "../port/ios/src/platform_iphone.h"
 // support for "enforece wake device" in h4 - used by iOS power management
 extern void hci_transport_h4_iphone_set_enforce_wake_device(char *path);
@@ -919,13 +919,13 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
 #ifdef HAVE_PLATFORM_IPHONE_OS
         case BTSTACK_SET_SYSTEM_BLUETOOTH_ENABLED:
             log_info("BTSTACK_SET_SYSTEM_BLUETOOTH_ENABLED %u", packet[3]);
-            iphone_system_bt_set_enabled(packet[3]);
-            hci_emit_system_bluetooth_enabled(iphone_system_bt_enabled());
+            btstack_control_iphone_bt_set_enabled(packet[3]);
+            hci_emit_system_bluetooth_enabled(btstack_control_iphone_bt_enabled());
             break;
             
         case BTSTACK_GET_SYSTEM_BLUETOOTH_ENABLED:
             log_info("BTSTACK_GET_SYSTEM_BLUETOOTH_ENABLED");
-            hci_emit_system_bluetooth_enabled(iphone_system_bt_enabled());
+            hci_emit_system_bluetooth_enabled(btstack_control_iphone_bt_enabled());
             break;
 #else
         case BTSTACK_SET_SYSTEM_BLUETOOTH_ENABLED:
@@ -1963,8 +1963,8 @@ int main (int argc,  char * const * argv){
 #endif
 
 #ifdef HAVE_PLATFORM_IPHONE_OS
-    control = &bt_control_iphone;
-    if (bt_control_iphone_power_management_supported()){
+    control = &btstack_control_iphone;
+    if (btstack_control_iphone_power_management_supported()){
         hci_transport_h4_iphone_set_enforce_wake_device("/dev/btwake");
     }
     bluetooth_status_handler = platform_iphone_status_handler;
