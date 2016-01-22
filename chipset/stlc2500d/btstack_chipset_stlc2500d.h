@@ -36,15 +36,15 @@
  */
 
 /*
- *  bt_control_em9301.c
+ *  btstack_chipset_em9301.c
  *
  *  Adapter to use em9301-based chipsets with BTstack
  *  
  *  Allows to set public BD ADDR
  */
 
-#ifndef __BT_CONTROL_EM9301_H
-#define __BT_CONTROL_EM9301_H
+#ifndef __BTSTACK_CHIPSET_EM9301_H
+#define __BTSTACK_CHIPSET_EM9301_H
 
 #if defined __cplusplus
 extern "C" {
@@ -58,4 +58,4 @@ const btstack_chipset_t * btstack_chipset_stlc2500d_instance(void);
 }
 #endif
 
-#endif // __BT_CONTROL_EM9301_H
+#endif // __BTSTACK_CHIPSET_EM9301_H

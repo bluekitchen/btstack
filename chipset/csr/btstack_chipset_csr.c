@@ -36,13 +36,13 @@
  */
 
 /*
- *  bt_control_csr.c
+ *  btstack_chipset_csr.c
  *
  *  Adapter to use CSR-based chipsets with BTstack
  *  
  */
 
-#include "bt_control_csr.h"
+#include "btstack_chipset_csr.h"
 
 #include <stddef.h>   /* NULL */
 #include <stdio.h> 
@@ -70,7 +70,7 @@ static const uint16_t init_script_size = sizeof(init_script);
 static uint32_t init_script_offset  = 0;
 static hci_transport_config_uart_t * hci_transport_config_uart = NULL;
 
-static void chipset_init(void * config){
+static void chipset_init(const void * config){
     init_script_offset = 0;
     hci_transport_config_uart = NULL;
     // check for hci_transport_config_uart_t

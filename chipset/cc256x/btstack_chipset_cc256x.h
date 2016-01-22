@@ -35,13 +35,13 @@
  */
 
 /*
- *  bt_control_cc256x.c
+ *  btstack_chipset_cc256x.c
  *
  *  Adapter to use cc256x-based chipsets with BTstack
  */
  
-#ifndef __BT_CONTROL_CC256X_H
-#define __BT_CONTROL_CC256X_H
+#ifndef __BTSTACK_CHIPSET_CC256X_H
+#define __BTSTACK_CHIPSET_CC256X_H
 
 #if defined __cplusplus
 extern "C" {
@@ -59,4 +59,4 @@ const btstack_chipset_t * btstack_chipset_cc256x_instance(void);
 }
 #endif
 
-#endif // __BT_CONTROL_CC256X_H
+#endif // __BTSTACK_CHIPSET_CC256X_H

@@ -66,9 +66,9 @@ to sleep. In addition, it provides an error handler *hw_error* that is
 called when a Hardware Error is reported by the Bluetooth module. The
 callback allows for persistent logging or signaling of this failure.
 
-Overall, the struct *bt_control_t* encapsulates common functionality
+Overall, the struct *btstack_control_t* encapsulates common functionality
 that is not covered by the Bluetooth specification. As an example, the
-*bt_control_cc256x_in-stance* function returns a pointer to a control
+*btstack_chipset_cc256x_in-stance* function returns a pointer to a control
 struct suitable for the CC256x chipset.
 
 

@@ -36,16 +36,14 @@
  */
 
 /*
- *  bt_control.h
+ *  btstack_control.h
  *
- *  BT Control API -- allows BT Daemon to initialize and control differnt hardware
- *
- *  Created by Matthias Ringwald on 5/19/09.
+ *  BTstack Bluetooth Hardware Control API -- allows HCI to manage Bluetooth chipsets via direct hardware controls
  *
  */
 
-#ifndef __BT_CONTROL_H
-#define __BT_CONTROL_H
+#ifndef __BTSTACK_CONTROL_H
+#define __BTSTACK_CONTROL_H
 
 #include <stdint.h>
 #include "btstack_util.h"
@@ -60,15 +58,15 @@ typedef enum {
 } POWER_NOTIFICATION_t;
 
 typedef struct {
-    int          (*on)   (void *config);  // <-- turn BT module on and configure
-    int          (*off)  (void *config);  // <-- turn BT module off
-    int          (*sleep)(void *config);  // <-- put BT module to sleep    - only to be called after ON
-    int          (*wake) (void *config);  // <-- wake BT module from sleep - only to be called after SLEEP
+    int          (*on)   (const void *config);  // <-- turn BT module on and configure
+    int          (*off)  (const void *config);  // <-- turn BT module off
+    int          (*sleep)(const void *config);  // <-- put BT module to sleep    - only to be called after ON
+    int          (*wake) (const void *config);  // <-- wake BT module from sleep - only to be called after SLEEP
     void         (*register_for_power_notifications)(void (*cb)(POWER_NOTIFICATION_t event));
-} bt_control_t;
+} btstack_control_t;
 
 #if defined __cplusplus
 }
 #endif
 
-#endif // __BT_CONTROL_H
+#endif // __BTSTACK_CONTROL_H

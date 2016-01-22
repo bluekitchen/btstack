@@ -36,7 +36,7 @@
  */
 
 /*
- *  bt_control_em9301.c
+ *  btstack_chipset_em9301.c
  *
  *  Adapter to use em9301-based chipsets with BTstack
  *  
@@ -44,7 +44,7 @@
  */
 
 #include "btstack_config.h"
-#include "bt_control_em9301.h"
+#include "btstack_chipset_em9301.h"
 
 #include <stddef.h>   /* NULL */
 #include <stdio.h> 

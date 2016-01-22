@@ -106,7 +106,7 @@ int main(int argc, const char * argv[]){
     // init HCI
 	hci_transport_t    * transport = hci_transport_h4_instance();
     remote_device_db_t * remote_db = (remote_device_db_t *) &remote_device_db_fs;
-	hci_init(transport, (void*) &hci_uart_config, NULL, remote_db);
+	hci_init(transport, (void*) &hci_uart_config, remote_db);
     hci_set_chipset(btstack_chipset_tc3566x_instance());
     
     // handle CTRL-c

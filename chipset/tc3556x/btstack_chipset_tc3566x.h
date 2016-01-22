@@ -36,7 +36,7 @@
  */
 
 /*
- *  bt_control_tc3566x.c
+ *  btstack_chipset_tc3566x.c
  *
  *  Adapter to use Toshiba TC3566x-based chipsets with BTstack
  *  
@@ -45,8 +45,8 @@
  *  - Set baud rate
  */
 
-#ifndef __BT_CONTROL_TC3566X_H
-#define __BT_CONTROL_TC3566X_H
+#ifndef __BTSTACK_CHIPSET_TC3566X_H
+#define __BTSTACK_CHIPSET_TC3566X_H
 
 #if defined __cplusplus
 extern "C" {
@@ -60,4 +60,4 @@ const btstack_chipset_t * btstack_chipset_tc3566x_instance(void);
 }
 #endif
 
-#endif // __BT_CONTROL_TC3566X_H
+#endif // __BTSTACK_CHIPSET_TC3566X_H

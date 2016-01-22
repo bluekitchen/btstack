@@ -1939,7 +1939,7 @@ int main (int argc,  char * const * argv){
     sigaction (SIGPIPE, &act, NULL);
 #endif
 
-    bt_control_t * control = NULL;
+    btstack_control_t * control = NULL;
     void * config;
 
 #ifdef HAVE_TRANSPORT_H4
@@ -1997,7 +1997,10 @@ int main (int argc,  char * const * argv){
     log_info("version %s, build %s", BTSTACK_VERSION, BTSTACK_DATE);
 
     // init HCI
-    hci_init(transport, config, control, remote_device_db);
+    hci_init(transport, config, remote_device_db);
+    if (control){
+        hci_set_control(control);
+    }
 
     // hostname for POSIX systems
     gethostname(hostname, 30);

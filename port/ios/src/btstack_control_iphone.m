@@ -174,7 +174,7 @@ static char *get_machine_name(void){
 /**
  * on iPhone/iPod touch
  */
-int iphone_system_is_valid(void *config){
+int iphone_system_is_valid(void){
 	char * machine = get_machine_name();
 	if (!strncmp("iPod1", machine, strlen("iPod1"))) return 0;     // 1st gen touch no BT
     return 1;
@@ -437,7 +437,7 @@ static void iphone_write_configscript(int fd, int baudrate){
     iphone_write_string(fd, "quit\n");
 }
 
-static int iphone_on (void *transport_config){
+static int iphone_on (const void *transport_config){
     // hci_transport_config_uart->baudrate_init == 0, if using native speed    
     
     log_info("iphone_on: entered\n");

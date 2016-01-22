@@ -514,12 +514,17 @@ typedef struct {
  */
 typedef struct {
     // transport component with configuration
-    hci_transport_t   * hci_transport;
-    const btstack_chipset_t * chipset;
-    void              * config;
+    const hci_transport_t * hci_transport;
+    const void            * config;
     
+    // chipset driver
+    const btstack_chipset_t * chipset;
+
+    // hardware power controller
+    const btstack_control_t * control;
+
     // basic configuration
-    const char         * local_name;
+    const char *       local_name;
     uint32_t           class_of_device;
     bd_addr_t          local_bd_addr;
     uint8_t            ssp_enable;
@@ -527,8 +532,6 @@ typedef struct {
     uint8_t            ssp_authentication_requirement;
     uint8_t            ssp_auto_accept;
 
-    // hardware power controller
-    bt_control_t     * control;
     
     // list of existing baseband connections
     btstack_linked_list_t     connections;
@@ -757,12 +760,17 @@ void hci_local_bd_addr(bd_addr_t address_buffer);
 /**
  * @brief Set up HCI. Needs to be called before any other function.
  */
-void hci_init(hci_transport_t *transport, void *config, bt_control_t *control, remote_device_db_t const* remote_device_db);
+void hci_init(hci_transport_t *transport, void *config, remote_device_db_t const* remote_device_db);
 
 /**
- * @brief Configure Bluetooth chipset driver. Has to be called before power on, or right after receiving the local version information
+ * @brief Configure Bluetooth chipset driver. Has to be called before power on, or right after receiving the local version information.
  */
 void hci_set_chipset(const btstack_chipset_t *chipset_driver);
+
+/**
+ * @brief Configure Bluetooth hardware control. Has to be called before power on.
+ */
+void hci_set_control(const btstack_control_t *hardware_control);
 
 /**
  * @brief Set class of device that will be set during Bluetooth init.

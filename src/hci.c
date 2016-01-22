@@ -1888,7 +1888,7 @@ static void hci_state_reset(void){
     hci_stack->le_connection_parameter_range.le_supervision_timeout_max = 3200;
 }
 
-void hci_init(hci_transport_t *transport, void *config, bt_control_t *control, remote_device_db_t const* remote_device_db){
+void hci_init(hci_transport_t *transport, void *config, remote_device_db_t const* remote_device_db){
     
 #ifdef HAVE_MALLOC
     if (!hci_stack) {
@@ -1901,14 +1901,12 @@ void hci_init(hci_transport_t *transport, void *config, bt_control_t *control, r
 
     // reference to use transport layer implementation
     hci_stack->hci_transport = transport;
-    
-    // references to used control implementation
-    hci_stack->control = control;
-    
+        
     // reference to used config
     hci_stack->config = config;
     
-    // init used chipset with NULL for now (already done my memset above)
+    // init used hardware control with NULL
+    // init used chipset with NULL 
 
     // higher level handler
     hci_stack->packet_handler = dummy_handler;
@@ -1955,6 +1953,14 @@ void hci_set_chipset(const btstack_chipset_t *chipset_driver){
     if (hci_stack->chipset && hci_stack->chipset->init){
         hci_stack->chipset->init(hci_stack->config);
     }
+}
+
+/**
+ * @brief Configure Bluetooth hardware control. Has to be called before power on.
+ */
+void hci_set_control(const btstack_control_t *hardware_control){
+    // references to used control implementation
+    hci_stack->control = hardware_control;
 }
 
 void hci_close(void){

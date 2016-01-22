@@ -36,7 +36,7 @@
  */
 
 /*
- *  bt_control_tc3566x.c
+ *  btstack_chipset_tc3566x.c
  *
  *  Adapter to use Toshiba TC3566x-based chipsets with BTstack
  *  
@@ -46,7 +46,7 @@
  */
 
 #include "btstack_config.h"
-#include "bt_control_tc3566x.h"
+#include "btstack_chipset_tc3566x.h"
 
 #include <stddef.h>   /* NULL */
 #include <stdio.h> 

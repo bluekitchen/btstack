@@ -36,14 +36,14 @@
  */
 
 /*
- *  bt_control_stlc2500d.c
+ *  btstack_chipset_stlc2500d.c
  *
  *  Adapter to use stlc2500d-based chipsets with BTstack
  *  
  */
 
 #include "btstack_config.h"
-#include "bt_control_stlc2500d.h"
+#include "btstack_chipset_stlc2500d.h"
 
 #include <stddef.h>   /* NULL */
 #include <stdio.h> 
@@ -102,7 +102,7 @@ static void chipset_set_bd_addr_command(bd_addr_t addr, uint8_t *hci_cmd_buffer)
     bt_flip_addr(&hci_cmd_buffer[5], addr);
 }
 
-static const btstack_chipset_t btstack_chipset_bcm = {
+static const btstack_chipset_t btstack_chipset_stlc2500d = {
     "BCM",
     NULL, // chipset_init,
     NULL, // chipset_next_command,
@@ -111,6 +111,6 @@ static const btstack_chipset_t btstack_chipset_bcm = {
 };
 
 // MARK: public API
-const btstack_chipset_t * btstack_chipset_bcm_instance(void){
-    return &btstack_chipset_bcm;
+const btstack_chipset_t * btstack_chipset_stlc2500d_instance(void){
+    return &btstack_chipset_stlc2500d;
 }

@@ -70,7 +70,7 @@ typedef struct {
      * allows to reset init script index
      * @param config
      */
-    void (*init)(void * config);
+    void (*init)(const void * config);
 
     /**
      * support custom init sequences after RESET command

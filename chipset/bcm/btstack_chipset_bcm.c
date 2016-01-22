@@ -59,7 +59,7 @@ extern const char    brcm_patch_version[];
 static uint32_t init_script_offset;
 static int send_download_command;
 
-static void chipset_init(void * config){
+static void chipset_init(const void * config){
     log_info("Broadcom init script %s, len %u", brcm_patch_version, brcm_patch_ram_length);
     init_script_offset = 0;
     send_download_command = 1;

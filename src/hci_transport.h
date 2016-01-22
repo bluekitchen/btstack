@@ -57,8 +57,8 @@ extern "C" {
 
 /* HCI packet types */
 typedef struct {
-    int    (*open)(void *transport_config);
-    int    (*close)(void *transport_config);
+    int    (*open)(const void *transport_config);
+    int    (*close)(const void *transport_config);
     int    (*send_packet)(uint8_t packet_type, uint8_t *packet, int size);
     void   (*register_packet_handler)(void (*handler)(uint8_t packet_type, uint8_t *packet, uint16_t size));
     const char * (*get_transport_name)(void);

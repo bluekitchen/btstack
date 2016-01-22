@@ -163,9 +163,9 @@ obtained separately as follows:
     ./convert_bts_init_scripts.py
 
 The common code for all CC256x chipsets is provided by
-*bt_control_cc256x.c*. During the setup,
-*bt_control_cc256x_instance* function is used to get a
-*bt_control_t* instance and passed to *hci_init* function.
+*btstack_chipset_cc256x.c*. During the setup,
+*btstack_chipset_cc256x_instance* function is used to get a
+*btstack_control_t* instance and passed to *hci_init* function.
 
 **Note:** Depending on the CC256x-based module you’re using, you’ll need
 to update the reference in the Makefile to match the downloaded file.

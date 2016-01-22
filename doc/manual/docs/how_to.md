@@ -128,14 +128,14 @@ requires four arguments. These are:
     when a Hardware Error is reported by the Bluetooth module. The
     callback allows for persistent logging or signaling of this failure.
 
-    Overall, the struct *bt_control_t* encapsulates common
+    Overall, the struct *btstack_control_t* encapsulates common
     functionality that is not covered by the Bluetooth specification. As
     an example, the *bt_con-trol_cc256x_in-stance* function returns a
     pointer to a control struct suitable for the CC256x chipset.
 
 <!-- -->
 
-    bt_control_t * control = bt_control_cc256x_instance();
+    btstack_control_t * control = btstack_chipset_cc256x_instance();
 
 -   *HCI Transport implementation*: On embedded systems, a Bluetooth
     module can be connected via USB or an UART port. BTstack implements

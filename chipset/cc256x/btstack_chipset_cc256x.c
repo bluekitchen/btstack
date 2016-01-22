@@ -35,7 +35,7 @@
  */
 
 /*
- *  bt_control_cc256x.c
+ *  btstack_chipset_cc256x.c
  *
  *  Adapter to use cc256x-based chipsets with BTstack
  *  
@@ -60,7 +60,7 @@
  */
 
 #include "btstack_config.h"
-#include "bt_control_cc256x.h"
+#include "btstack_chipset_cc256x.h"
 
 #include <stddef.h>   /* NULL */
 #include <stdio.h> 
@@ -95,7 +95,7 @@ static const uint8_t hci_route_sco_over_hci[] = {
 };
 #endif
 
-static void chipset_init(void * config){
+static void chipset_init(const void * config){
     init_script_offset = 0;
 #ifdef HAVE_SCO_OVER_HCI
     init_send_route_sco_over_hci = 1;

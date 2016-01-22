@@ -36,13 +36,13 @@
  */
 
 /*
- *  bt_control_cc256x.c
+ *  btstack_chipset_cc256x.c
  *
  *  Adapter to use CSR-based chipsets with BTstack
  */
  
-#ifndef __BT_CONTROL_CSR_H
-#define __BT_CONTROL_CSR_H
+#ifndef __BTSTACK_CHIPSET_CSR_H
+#define __BTSTACK_CHIPSET_CSR_H
 
 #if defined __cplusplus
 extern "C" {
@@ -57,4 +57,4 @@ const btstack_chipset_t * btstack_chipset_csr_instance(void);
 }
 #endif
 
-#endif // __BT_CONTROL_CSR_H
+#endif // __BTSTACK_CHIPSET_CSR_H
