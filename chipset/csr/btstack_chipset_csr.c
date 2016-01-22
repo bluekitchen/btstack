@@ -91,9 +91,6 @@ static void chipset_init(const void * config){
     hci_transport_config_uart = (hci_transport_config_uart_t*) config;
 }
 
-static void chipset_set_baudrate_command(uint32_t baudrate, uint8_t *hci_cmd_buffer){
-}
-
 // set requested baud rate
 static void update_init_script_command(uint8_t *hci_cmd_buffer){
     uint16_t varid = READ_BT_16(hci_cmd_buffer, 10);
@@ -144,10 +141,10 @@ static btstack_chipset_result_t chipset_next_command(uint8_t * hci_cmd_buffer){
 
 
 static const btstack_chipset_t btstack_chipset_bcm = {
-    "BCM",
+    "CSR",
     chipset_init,
     chipset_next_command,
-    chipset_set_baudrate_command,
+    NULL, // chipset_set_baudrate_command,
     NULL, // chipset_set_bd_addr_command not supported or implemented
 };
 
