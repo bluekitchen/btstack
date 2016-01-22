@@ -97,7 +97,7 @@ static void chipset_set_bd_addr_command(bd_addr_t addr, uint8_t *hci_cmd_buffer)
     bt_flip_addr(&hci_cmd_buffer[3], addr);
 }
 
-static const btstack_chipset_t btstack_chipset_bcm = {
+static const btstack_chipset_t btstack_chipset_tc3566x = {
     "TC3556x",
     NULL, // chipset_init,
     NULL, // chipset_next_command,
@@ -106,42 +106,6 @@ static const btstack_chipset_t btstack_chipset_bcm = {
 };
 
 // MARK: public API
-const btstack_chipset_t * btstack_chipset_bcm_instance(void){
-    return &btstack_chipset_bcm;
-}
-
-//
-// deprecated
-//
-
-
-// baud rate command for tc3566x
-static int tc35661_baudrate_cmd(void * config, uint32_t baudrate, uint8_t *hci_cmd_buffer){
-    chipset_set_baudrate_command(baudrate, hci_cmd_buffer);
-    return 0;
-}
-
-static int tc3566x_set_bd_addr_cmd(void * config, bd_addr_t addr, uint8_t *hci_cmd_buffer){
-    chipset_set_bd_addr_command(addr, hci_cmd_buffer);
-    return 0;
-}
-
-// MARK: const structs 
-static const bt_control_t bt_control_tc3566x = {
-	NULL,                     // on
-	NULL,                     // off
-	NULL,                     // sleep
-	NULL,                     // wake
-	NULL,                     // valid
-	NULL,                     // name
-	tc35661_baudrate_cmd,     // baudrate_cmd
-	NULL,                     // next_cmd
-	NULL,                     // register_for_power_notifications
-    NULL,                     // hw_error
-    tc3566x_set_bd_addr_cmd,  // set_bd_addr_cmd
-};
-
-// MARK: public API
-bt_control_t *bt_control_tc3566x_instance(void){
-    return (bt_control_t*) &bt_control_tc3566x;
+const btstack_chipset_t * btstack_chipset_tc3566x_instance(void){
+    return &btstack_chipset_tc3566x;
 }

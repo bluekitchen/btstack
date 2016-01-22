@@ -749,7 +749,6 @@ void BTstackManager::setup(void){
     btstack_run_loop_init(btstack_run_loop_embedded_get_instance());
 
 	hci_transport_t * transport = hci_transport_h4_instance();
-    bt_control_t    * control   = bt_control_em9301_instance();
 	hci_init(transport, NULL, control, NULL);
     hci_set_chipset(btstack_chipset_em9301_instance());
     

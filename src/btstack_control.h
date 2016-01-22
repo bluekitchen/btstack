@@ -66,26 +66,8 @@ typedef struct {
     int          (*wake) (void *config);  // <-- wake BT module from sleep - only to be called after SLEEP
     int          (*valid)(void *config);  // <-- test if hardware can be supported
     const char * (*name) (void *config);  // <-- return hardware name
-
-    /** support for UART baud rate changes - cmd has to be stored in hci_cmd_buffer
-     * @return have command
-     */
-    int          (*baudrate_cmd)(void * config, uint32_t baudrate, uint8_t *hci_cmd_buffer); 
-    
-    /** support custom init sequences after RESET command - cmd has to be stored in hci_cmd_buffer
-      * @return have command
-      */
-    int          (*next_cmd)(void *config, uint8_t * hci_cmd_buffer); 
-
     void         (*register_for_power_notifications)(void (*cb)(POWER_NOTIFICATION_t event));
-
     void         (*hw_error)(void); 
-
-    /** support for vendor-specific way to set BD ADDR - cmd has to be stored in hci_cmd_buffer
-     * @return have command
-     */
-    int          (*set_bd_addr_cmd)(void * config, bd_addr_t addr, uint8_t *hci_cmd_buffer); 
-
 } bt_control_t;
 
 #if defined __cplusplus

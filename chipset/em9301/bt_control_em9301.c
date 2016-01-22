@@ -73,33 +73,3 @@ static const btstack_chipset_t btstack_chipset_em9301 = {
 const btstack_chipset_t * btstack_chipset_em9301_instance(void){
     return &btstack_chipset_em9301;
 }
-
-//
-// deprecated
-//
-
-static int em9301_set_bd_addr_cmd(void * config, bd_addr_t addr, uint8_t *hci_cmd_buffer){
-	chipset_set_bd_addr_command(addr, hci_cmd_buffer);
-    return 0;
-}
-
-// MARK: const structs 
-
-static const bt_control_t bt_control_em9301 = {
-	NULL,                                  // on
-	NULL,                                  // off
-	NULL,                                  // sleep
-	NULL,                                  // wake
-	NULL,                                  // valid
-	NULL,                                  // name
-	NULL,                                  // baudrate_cmd
-	NULL,                                  // next_cmd
-	NULL,                                  // register_for_power_notifications
-    NULL,                                  // hw_error
-    em9301_set_bd_addr_cmd,                // set_bd_addr_cmd
-};
-
-// MARK: public API
-bt_control_t *bt_control_em9301_instance(void){
-    return (bt_control_t*) &bt_control_em9301;
-}

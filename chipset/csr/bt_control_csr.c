@@ -143,35 +143,3 @@ static const btstack_chipset_t btstack_chipset_bcm = {
 const btstack_chipset_t * btstack_chipset_csr_instance(void){
     return &btstack_chipset_bcm;
 }
-
-
-// DEPRECATED
-static int bt_control_csr_on(void *config){
-    chipset_init(config);
-	return 0;
-}
-
-static int bt_control_csr_next_cmd(void *config, uint8_t *hci_cmd_buffer){
-    return (int) chipset_next_command(hci_cmd_buffer);
-}
-
-// MARK: const structs 
-
-static const bt_control_t bt_control_csr = {
-    bt_control_csr_on,                  // on
-    NULL,                               // off
-    NULL,                               // sleep
-    NULL,                               // wake
-    NULL,                               // valid
-    NULL,                               // name
-    NULL,                               // baudrate_cmd
-    bt_control_csr_next_cmd,            // next_cmd
-    NULL,                               // register_for_power_notifications
-    NULL,                               // hw_error
-    NULL,                               // set_bd_addr_cmd
-};
-
-// MARK: public API
-bt_control_t *bt_control_csr_instance(void){
-    return (bt_control_t*) &bt_control_csr;
-}

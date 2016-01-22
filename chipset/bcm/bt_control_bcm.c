@@ -42,7 +42,6 @@
 
 
 #include "btstack_config.h"
-#include "bt_control_bcm.h"
 
 #include <stddef.h>   /* NULL */
 #include <stdio.h> 
@@ -117,45 +116,3 @@ static const btstack_chipset_t btstack_chipset_bcm = {
 const btstack_chipset_t * btstack_chipset_bcm_instance(void){
     return &btstack_chipset_bcm;
 }
-
-// deprecated //
-
-static int bt_control_bcm_on(void *config){
-    chipset_init(config);
-    return 0;
-}
-
-static int bt_control_bcm_next_cmd(void *config, uint8_t *hci_cmd_buffer){
-    return (int) chipset_next_command(hci_cmd_buffer);
-}
-
-static int bcm_baudrate_cmd(void * config, uint32_t baudrate, uint8_t *hci_cmd_buffer){
-    chipset_set_baudrate_command(baudrate, hci_cmd_buffer);
-    return 0;
-}
-
-static int bt_control_bcm_set_bd_addr_cmd(void * config, bd_addr_t addr, uint8_t *hci_cmd_buffer){
-    chipset_set_bd_addr_command(addr, hci_cmd_buffer);
-    return 0;
-}
-
-static const bt_control_t bt_control_bcm = {
-    bt_control_bcm_on,                     // on
-    NULL,                                  // off
-    NULL,                                  // sleep
-    NULL,                                  // wake
-    NULL,                                  // valid
-    NULL,                                  // name
-    bcm_baudrate_cmd,                      // baudrate_cmd
-    bt_control_bcm_next_cmd,               // next_cmd
-    NULL,                                  // register_for_power_notifications
-    NULL,                                  // hw_error
-    bt_control_bcm_set_bd_addr_cmd,        // set_bd_addr_cmd
-};
-
-// MARK: public API
-bt_control_t * bt_control_bcm_instance(void){
-    return (bt_control_t*) &bt_control_bcm;
-}
-
-

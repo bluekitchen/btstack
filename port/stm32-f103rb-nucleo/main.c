@@ -425,9 +425,8 @@ int main(void)
     
     // init HCI
     hci_transport_t    * transport = hci_transport_h4_instance();
-    bt_control_t       * control   = bt_control_cc256x_instance();
     remote_device_db_t * remote_db = (remote_device_db_t *) &remote_device_db_memory;
-    hci_init(transport, (void*) &config, control, remote_db);
+    hci_init(transport, (void*) &config, NULL, remote_db);
     hci_set_chipset(btstack_chipset_cc256x_instance());
 
     // enable eHCILL

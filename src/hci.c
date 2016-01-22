@@ -919,7 +919,7 @@ static void hci_initializing_run(void){
             break;
         case HCI_INIT_SEND_BAUD_CHANGE: {
             uint32_t baud_rate = hci_transport_uart_get_main_baud_rate();
-            hci_stack->control->baudrate_cmd(hci_stack->config, baud_rate, hci_stack->hci_packet_buffer);
+            hci_stack->chipset->set_baudrate_command(baud_rate, hci_stack->hci_packet_buffer);
             hci_stack->last_cmd_opcode = READ_BT_16(hci_stack->hci_packet_buffer, 0);
             hci_stack->substate = HCI_INIT_W4_SEND_BAUD_CHANGE;
             hci_send_cmd_packet(hci_stack->hci_packet_buffer, 3 + hci_stack->hci_packet_buffer[2]);
@@ -933,7 +933,7 @@ static void hci_initializing_run(void){
         }
         case HCI_INIT_SEND_BAUD_CHANGE_BCM: {
             uint32_t baud_rate = hci_transport_uart_get_main_baud_rate();
-            hci_stack->control->baudrate_cmd(hci_stack->config, baud_rate, hci_stack->hci_packet_buffer);
+            hci_stack->chipset->set_baudrate_command(baud_rate, hci_stack->hci_packet_buffer);
             hci_stack->last_cmd_opcode = READ_BT_16(hci_stack->hci_packet_buffer, 0);
             hci_stack->substate = HCI_INIT_W4_SEND_BAUD_CHANGE_BCM;
             hci_send_cmd_packet(hci_stack->hci_packet_buffer, 3 + hci_stack->hci_packet_buffer[2]);
@@ -942,8 +942,8 @@ static void hci_initializing_run(void){
         case HCI_INIT_CUSTOM_INIT:
             log_info("Custom init");
             // Custom initialization
-            if (hci_stack->control && hci_stack->control->next_cmd){
-                int valid_cmd = (*hci_stack->control->next_cmd)(hci_stack->config, hci_stack->hci_packet_buffer);
+            if (hci_stack->chipset && hci_stack->chipset->next_command){
+                int valid_cmd = (*hci_stack->chipset->next_command)(hci_stack->hci_packet_buffer);
                 if (valid_cmd){
                     int size = 3 + hci_stack->hci_packet_buffer[2];
                     hci_stack->last_cmd_opcode = READ_BT_16(hci_stack->hci_packet_buffer, 0);
@@ -960,8 +960,8 @@ static void hci_initializing_run(void){
                             btstack_run_loop_add_timer(&hci_stack->timeout);
                             if (hci_stack->manufacturer == COMPANY_ID_CAMBRIDGE_SILICON_RADIO
                                 && hci_stack->config
-                                && hci_stack->control
-                                // && hci_stack->control->baudrate_cmd -- there's no such command
+                                && hci_stack->chipset
+                                // && hci_stack->chipset->set_baudrate_command -- there's no such command
                                 && hci_stack->hci_transport->set_baudrate
                                 && hci_transport_uart_get_main_baud_rate()){
                                 hci_stack->substate = HCI_INIT_W4_SEND_BAUD_CHANGE;
@@ -978,8 +978,8 @@ static void hci_initializing_run(void){
                 // Init script download causes baud rate to reset on Broadcom chipsets, restore UART baud rate if needed
                 if (hci_stack->manufacturer == COMPANY_ID_BROADCOM_CORPORATION){
                     int need_baud_change = hci_stack->config
-                        && hci_stack->control
-                        && hci_stack->control->baudrate_cmd
+                        && hci_stack->chipset
+                        && hci_stack->chipset->set_baudrate_command
                         && hci_stack->hci_transport->set_baudrate
                         && ((hci_transport_config_uart_t *)hci_stack->config)->baudrate_main;
                     if (need_baud_change) {
@@ -995,7 +995,7 @@ static void hci_initializing_run(void){
             break;
         case HCI_INIT_SET_BD_ADDR:
             log_info("Set Public BD ADDR to %s", bd_addr_to_str(hci_stack->custom_bd_addr));
-            hci_stack->control->set_bd_addr_cmd(hci_stack->config, hci_stack->custom_bd_addr, hci_stack->hci_packet_buffer);
+            hci_stack->chipset->set_bd_addr_command(hci_stack->custom_bd_addr, hci_stack->hci_packet_buffer);
             hci_stack->last_cmd_opcode = READ_BT_16(hci_stack->hci_packet_buffer, 0);
             hci_stack->substate = HCI_INIT_W4_SET_BD_ADDR;
             hci_send_cmd_packet(hci_stack->hci_packet_buffer, 3 + hci_stack->hci_packet_buffer[2]);
@@ -1154,14 +1154,14 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
     if (!command_completed) return;
 
     int need_baud_change = hci_stack->config
-                        && hci_stack->control
-                        && hci_stack->control->baudrate_cmd
+                        && hci_stack->chipset
+                        && hci_stack->chipset->set_baudrate_command
                         && hci_stack->hci_transport->set_baudrate
                         && ((hci_transport_config_uart_t *)hci_stack->config)->baudrate_main;
 
     int need_addr_change = hci_stack->custom_bd_addr_set
-                        && hci_stack->control
-                        && hci_stack->control->set_bd_addr_cmd;
+                        && hci_stack->chipset
+                        && hci_stack->chipset->set_bd_addr_command;
 
     switch(hci_stack->substate){
         case HCI_INIT_W4_SEND_RESET:
@@ -1947,6 +1947,18 @@ void hci_init(hci_transport_t *transport, void *config, bt_control_t *control, r
     hci_state_reset();
 }
 
+/**
+ * @brief Configure Bluetooth chipset driver. Has to be called before power on, or right after receiving the local version information
+ */
+void hci_set_chipset(const btstack_chipset_t *chipset_driver){
+    hci_stack->chipset = chipset_driver;
+
+    // reset chipset driver - init is also called on power_up
+    if (hci_stack->chipset && hci_stack->chipset->init){
+        hci_stack->chipset->init(hci_stack->config);
+    }
+}
+
 void hci_close(void){
     // close remote device db
     if (hci_stack->remote_device_db) {
@@ -2000,6 +2012,11 @@ static int hci_power_control_on(void){
         return err;
     }
     
+    // reset chipset driver
+    if (hci_stack->chipset && hci_stack->chipset->init){
+        hci_stack->chipset->init(hci_stack->config);
+    }
+
     // open low-level device
     err = hci_stack->hci_transport->open(hci_stack->config);
     if (err){

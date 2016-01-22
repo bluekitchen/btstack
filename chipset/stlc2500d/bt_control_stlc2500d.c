@@ -114,37 +114,3 @@ static const btstack_chipset_t btstack_chipset_bcm = {
 const btstack_chipset_t * btstack_chipset_bcm_instance(void){
     return &btstack_chipset_bcm;
 }
-
-//
-// deprecated
-//
-
-static int stlc2500d_baudrate_cmd(void * config, uint32_t baudrate, uint8_t *hci_cmd_buffer){
-    chipset_set_baudrate_command(baudrate, hci_cmd_buffer);
-    return 0;
-}
-
-static int stlc2500d_set_bd_addr_cmd(void * config, bd_addr_t addr, uint8_t *hci_cmd_buffer){
-    chipset_set_bd_addr_command(addr, hci_cmd_buffer);
-    return 0;
-}
-
-// MARK: const structs 
-static const bt_control_t bt_control_stlc2500d = {
-	NULL,                                  // on
-	NULL,                                  // off
-	NULL,                                  // sleep
-	NULL,                                  // wake
-	NULL,                                  // valid
-	NULL,                                  // name
-	stlc2500d_baudrate_cmd,                // baudrate_cmd
-	NULL,                                  // next_cmd
-	NULL,                                  // register_for_power_notifications
-    NULL,                                  // hw_error
-    stlc2500d_set_bd_addr_cmd,             // set_bd_addr_cmd
-};
-
-// MARK: public API
-bt_control_t *bt_control_stlc2500d_instance(void){
-    return (bt_control_t*) &bt_control_stlc2500d;
-}

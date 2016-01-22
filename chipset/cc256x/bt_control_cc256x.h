@@ -48,21 +48,12 @@ extern "C" {
 #endif
 
 #include <stdint.h>
-#include "btstack_control.h"
 #include "btstack_chipset.h"
 
-// old
-void bt_control_cc256x_set_power(int16_t power_in_dB);
-void bt_control_cc256x_enable_ehcill(int on);
-int  bt_control_cc256x_ehcill_enabled(void);
-bt_control_t *bt_control_cc256x_instance(void);
-
-// new
 void btstack_chipset_cc256x_enable_ehcill(int on);
 int  btstack_chipset_cc256x_ehcill_enabled(void);
 void btstack_chipset_cc256x_set_power(int16_t power_in_dB);
 const btstack_chipset_t * btstack_chipset_cc256x_instance(void);
-
 
 #if defined __cplusplus
 }

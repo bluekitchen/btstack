@@ -47,13 +47,13 @@
 
 #include "btstack_config.h"
 
-
+#include "btstack_chipset.h"
 #include "btstack_control.h"
+#include "btstack_linked_list.h"
+#include "btstack_util.h"
 #include "classic/remote_device_db.h"
 #include "hci_cmd.h"
 #include "hci_transport.h"
-#include "btstack_linked_list.h"
-#include "btstack_util.h"
 
 #include <stdint.h>
 #include <stdlib.h>
@@ -515,7 +515,7 @@ typedef struct {
 typedef struct {
     // transport component with configuration
     hci_transport_t   * hci_transport;
-    btstack_chipset_t * chipset;
+    const btstack_chipset_t * chipset;
     void              * config;
     
     // basic configuration
@@ -762,7 +762,7 @@ void hci_init(hci_transport_t *transport, void *config, bt_control_t *control, r
 /**
  * @brief Configure Bluetooth chipset driver. Has to be called before power on, or right after receiving the local version information
  */
-void hci_set_chipset(btstack_chipset_t *chipset_driver);
+void hci_set_chipset(const btstack_chipset_t *chipset_driver);
 
 /**
  * @brief Set class of device that will be set during Bluetooth init.
