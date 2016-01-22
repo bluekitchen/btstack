@@ -98,7 +98,7 @@ static void chipset_set_bd_addr_command(bd_addr_t addr, uint8_t *hci_cmd_buffer)
 }
 
 static const btstack_chipset_t btstack_chipset_tc3566x = {
-    "TC3556x",
+    "tc3566x",
     NULL, // chipset_init,
     NULL, // chipset_next_command,
     chipset_set_baudrate_command,

@@ -8,11 +8,11 @@ COMMON += hci_transport_h4_posix.c btstack_run_loop_posix.c remote_device_db_fs.
 include ${BTSTACK_ROOT}/example/embedded/Makefile.inc
 
 CFLAGS  += -g -Wall \
-		   -I$(BTSTACK_ROOT)/chipset/tc3556x   \
+		   -I$(BTSTACK_ROOT)/chipset/tc3566x   \
 		   -I$(BTSTACK_ROOT)/platform/embedded \
 		   -I$(BTSTACK_ROOT)/platform/posix 
 
-VPATH += ${BTSTACK_ROOT}/chipset/tc3556x
+VPATH += ${BTSTACK_ROOT}/chipset/tc3566x
 VPATH += ${BTSTACK_ROOT}/platform/embedded
 VPATH += ${BTSTACK_ROOT}/platform/posix
 

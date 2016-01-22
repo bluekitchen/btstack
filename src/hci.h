@@ -640,8 +640,11 @@ typedef struct {
     bd_addr_t custom_bd_addr; 
     uint8_t   custom_bd_addr_set;
 
-    // hardware error handler
+    // hardware error callback
     void (*hardware_error_callback)(void);
+
+    // local version information callback
+    void (*local_version_information_callback)(uint8_t * local_version_information);
 
 } hci_stack_t;
 
@@ -839,6 +842,12 @@ void hci_le_advertisement_address(uint8_t * addr_type, bd_addr_t addr);
  * @brief Set callback for Bluetooth Hardware Error
  */
 void hci_set_hardware_error_callback(void (*fn)(void));
+
+/**
+ * @brief Set callback for local information from Bluetooth controller right after HCI Reset
+ * @note Can be used to select chipset driver dynamically during startup
+ */
+void hci_set_local_version_information_callback(void (*fn)(uint8_t * local_version_information));
 
 /** 
  * @brief Configure Voice Setting for use with SCO data in HSP/HFP

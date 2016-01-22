@@ -49,6 +49,7 @@
 
 #include "btstack_control.h"
 #include "btstack_debug.h"
+#include "btstack_chipset_bcm.h"
 
 // actual init script provided by separate bt_firmware_image.c from WICED SDK
 extern const uint8_t brcm_patchram_buf[];
