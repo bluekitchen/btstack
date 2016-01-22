@@ -12,8 +12,6 @@ GLOBAL_INCLUDES += . ../../src ../../platform/embedded ../../chipset/bcm ../../.
 
 # core BTstack sources
 $(NAME)_SOURCES += \
-	../../src/btstack_linked_list.c            \
-	../../src/btstack_memory.c            \
 	../../src/ble/att.c          		  \
 	../../src/ble/att_dispatch.c 		  \
 	../../src/ble/att_server.c   		  \
@@ -28,14 +26,16 @@ $(NAME)_SOURCES += \
 	../../src/classic/sdp_query_rfcomm.c  \
 	../../src/classic/sdp_query_util.c    \
 	../../src/classic/sdp_util.c          \
+	../../src/btstack_linked_list.c       \
+	../../src/btstack_memory.c            \
+	../../src/btstack_memory_pool.c       \
+	../../src/btstack_run_loop.c          \
+	../../src/btstack_util.c              \
 	../../src/hci.c                       \
 	../../src/hci_cmd.c                  \
 	../../src/hci_dump.c                  \
 	../../src/l2cap.c                     \
 	../../src/l2cap_signaling.c           \
-	../../src/btstack_memory_pool.c               \
-	../../src/run_loop.c                  \
-	../../src/btstack_util.c                     \
 
 # WICED port incl. support for Broadcom chipset
 $(NAME)_SOURCES += \
