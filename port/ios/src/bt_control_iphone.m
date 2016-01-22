@@ -180,10 +180,6 @@ int iphone_system_is_valid(void *config){
     return 1;
 }
 
-static const char * iphone_name(void *config){
-    return get_machine_name();
-}
-
 // Get BD_ADDR from IORegistry
 static void ioregistry_get_info(void){
     mach_port_t mp;
@@ -760,7 +756,6 @@ bt_control_t bt_control_iphone = {
     .off    = iphone_off,
     .sleep  = iphone_sleep,
     .wake   = iphone_wake,
-    .name   = iphone_name,
     .register_for_power_notifications = iphone_register_for_power_notifications
 };
 

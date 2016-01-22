@@ -64,11 +64,6 @@ typedef struct {
     int          (*off)  (void *config);  // <-- turn BT module off
     int          (*sleep)(void *config);  // <-- put BT module to sleep    - only to be called after ON
     int          (*wake) (void *config);  // <-- wake BT module from sleep - only to be called after SLEEP
-    
-    // check what it is needed for
-    const char * (*name) (void *config);  // <-- return hardware name
-    
-    // stays
     void         (*register_for_power_notifications)(void (*cb)(POWER_NOTIFICATION_t event));
 
     // move to hci.h
