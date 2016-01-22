@@ -48,7 +48,7 @@
 
 #include <msp430x54x.h>
 
-#include "bt_control_cc256x.h"
+#include "btstack_chipset_cc256x.h"
 #include "hal_adc.h"
 #include "hal_board.h"
 #include "hal_compat.h"

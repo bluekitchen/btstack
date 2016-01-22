@@ -24,7 +24,7 @@
 #include "btstack_run_loop_embedded.h"
 #include "classic/sdp_util.h"
 
-#include "bt_control_em9301.h"
+#include "btstack_chipset_em9301.h"
 #include "gap.h"
 #include "hci.h"
 #include "hci_dump.h"

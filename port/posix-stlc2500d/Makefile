@@ -1,7 +1,7 @@
 # Makefile for libusb based examples
 BTSTACK_ROOT = ../..
 
-CORE += main.c stdin_support.c bt_control_stlc2500d.c
+CORE += main.c stdin_support.c btstack_chipset_stlc2500d.c
 
 COMMON += hci_transport_h4_posix.c btstack_run_loop_posix.c remote_device_db_fs.c
 

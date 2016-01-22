@@ -53,7 +53,7 @@ CORE   = \
 
 COMMON = \
     hal_uart_dma.c            \
-	bt_control_cc256x.c       \
+	btstack_chipset_cc256x.c       \
     hci.c			          \
     hci_cmd.c		          \
     hci_transport_h4_ehcill_embedded.c \

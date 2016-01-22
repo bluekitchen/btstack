@@ -117,7 +117,7 @@
           <itemPath>../../../src/ble/sm.c</itemPath>
         </logicalFolder>
         <logicalFolder name="chipset-csr" displayName="chipset-csr" projectFiles="true">
-          <itemPath>../../../chipset/csr/bt_control_csr.c</itemPath>
+          <itemPath>../../../chipset/csr/btstack_chipset_csr.c</itemPath>
         </logicalFolder>
         <logicalFolder name="src" displayName="src" projectFiles="true">
           <itemPath>../../../src/btstack_memory.c</itemPath>

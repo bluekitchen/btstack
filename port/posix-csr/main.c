@@ -56,7 +56,7 @@
 #include "btstack_run_loop.h"
 #include "btstack_run_loop_posix.h"
 #include "stdin_support.h"
-#include "bt_control_csr.h"
+#include "btstack_chipset_csr.h"
 
 int btstack_main(int argc, const char * argv[]);
 

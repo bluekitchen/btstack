@@ -4,7 +4,7 @@
 
 #include "btstack_port.h"
 #include "system_config.h"
-#include "bt_control_csr.h"
+#include "btstack_chipset_csr.h"
 #include "btstack_run_loop.h"
 #include "btstack_run_loop_embedded.h"
 #include "hci_dump.h"

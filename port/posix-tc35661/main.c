@@ -41,19 +41,21 @@
 //
 // *****************************************************************************
 
+#include <signal.h>
+#include <stddef.h>   /* NULL */
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <signal.h>
 
 #include "btstack_config.h"
 
-#include "bt_control_tc3566x.h"
+#include "btstack_chipset_tc3566x.h"
 #include "btstack_debug.h"
 #include "btstack_memory.h"
 #include "hci_transport.h"
 #include "btstack_run_loop.h"
+#include "btstack_run_loop_posix.h"
 #include "hci.h"
 #include "hci_dump.h"
 #include "stdin_support.h"
@@ -61,10 +63,13 @@
 int btstack_main(int argc, const char * argv[]);
 
 static hci_transport_config_uart_t hci_uart_config = {
-    NULL,
+    HCI_TRANSPORT_CONFIG_UART,
     115200,
-    921600,          // main baudrate: set to higher standard values if needed e.g. 460800
+    921600,  // main baudrate
+    1,       // flow control
+    NULL,
 };
+
 
 static void sigint_handler(int param){
 

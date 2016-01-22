@@ -57,7 +57,7 @@
 
 #include <msp430x54x.h>
 
-#include "bt_control_cc256x.h"
+#include "btstack_chipset_cc256x.h"
 #include "hal_board.h"
 #include "hal_compat.h"
 #include "hal_usb.h"
@@ -66,7 +66,7 @@
 #include "btstack_run_loop.h"
 
 #include "btstack_memory.h"
-#include "bt_control_cc256x.h"
+#include "btstack_chipset_cc256x.h"
 #include "hci.h"
 #include "hci_dump.h"
 #include "l2cap.h"

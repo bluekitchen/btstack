@@ -51,7 +51,7 @@
 #include "btstack_run_loop.h"
 #include "btstack_run_loop_embedded.h"
 #include "hci.h"
-#include "bt_control_cc256x.h"
+#include "btstack_chipset_cc256x.h"
 #include "btstack_memory.h"
 #include "classic/remote_device_db.h"
 

@@ -41,8 +41,8 @@
  *
  *  Created by Matthias Ringwald on 5/19/09.
  */
-#ifndef __BT_CONTROL_IPHONE_H
-#define __BT_CONTROL_IPHONE_H
+#ifndef __BTSTACK_CONTROL_IPHONE_H
+#define __BTSTACK_CONTROL_IPHONE_H
  
 #include "btstack_control.h"
 
@@ -50,7 +50,7 @@
 extern "C" {
 #endif
 
-extern bt_control_t bt_control_iphone;
+extern btstack_control_t bt_control_iphone;
 
 int  bt_control_iphone_power_management_enabled(void);
 int  bt_control_iphone_power_management_supported(void);
@@ -65,4 +65,4 @@ int  iphone_system_is_valid(void);
 }
 #endif
 
-#endif // __BT_CONTROL_IPHONE_H
+#endif // __BTSTACK_CONTROL_IPHONE_H

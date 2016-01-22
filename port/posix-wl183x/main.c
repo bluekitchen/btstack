@@ -58,7 +58,7 @@
 #include "hci_dump.h"
 #include "stdin_support.h"
 #include "hal_led.h"
-#include "bt_control_cc256x.h"
+#include "btstack_chipset_cc256x.h"
 
 int btstack_main(int argc, const char * argv[]);
 

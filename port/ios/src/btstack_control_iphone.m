@@ -751,7 +751,7 @@ int bt_control_iphone_power_management_enabled(void){
 }
 
 // single instance
-bt_control_t bt_control_iphone = {
+btstack_control_t bt_control_iphone = {
     .on     = iphone_on,
     .off    = iphone_off,
     .sleep  = iphone_sleep,

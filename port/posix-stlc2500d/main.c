@@ -57,7 +57,7 @@
 #include "hci.h"
 #include "hci_dump.h"
 #include "stdin_support.h"
-#include "bt_control_stlc2500d.h"
+#include "btstack_chipset_stlc2500d.h"
 
 int btstack_main(int argc, const char * argv[]);
 

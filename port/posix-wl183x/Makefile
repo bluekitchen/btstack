@@ -2,7 +2,7 @@
 BTSTACK_ROOT = ../..
 POSIX_ROOT= ${BTSTACK_ROOT}/platform/posix
 
-CORE += main.c stdin_support.c bt_control_cc256x.c TIInit_11.8.32.c
+CORE += main.c stdin_support.c btstack_chipset_cc256x.c TIInit_11.8.32.c
 
 COMMON += hci_transport_h4_posix.c btstack_run_loop_posix.c remote_device_db_fs.c
 

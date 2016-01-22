@@ -35,8 +35,8 @@
  *
  */
 
-#include "bt_control_bcm.h"
 #include "btstack.h"
+#include "btstack_control_bcm.h"
 #include "btstack_run_loop_wiced.h"
 
 #include "generated_mac_address.txt"
