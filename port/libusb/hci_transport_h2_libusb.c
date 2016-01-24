@@ -101,7 +101,7 @@
 
 // prototypes
 static void dummy_handler(uint8_t packet_type, uint8_t *packet, uint16_t size); 
-static int usb_close(void *transport_config);    
+static int usb_close(const void *transport_config);    
 
 typedef enum {
     LIB_USB_CLOSED = 0,
@@ -630,7 +630,7 @@ static int prepare_device(libusb_device_handle * aHandle){
     return 0;
 }
 
-static int usb_open(void *transport_config){
+static int usb_open(const void *transport_config){
     int r;
 
     sco_state_machine_init();
@@ -847,7 +847,7 @@ static int usb_open(void *transport_config){
 }
 
 
-static int usb_close(void *transport_config){
+static int usb_close(const void *transport_config){
     int c;
     // @TODO: remove all run loops!
 
