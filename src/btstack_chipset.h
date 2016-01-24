@@ -68,9 +68,9 @@ typedef struct {
     /**
      * init driver
      * allows to reset init script index
-     * @param config
+     * @param transport_config
      */
-    void (*init)(const void * config);
+    void (*init)(const void * transport_config);
 
     /**
      * support custom init sequences after RESET command

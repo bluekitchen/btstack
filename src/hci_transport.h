@@ -57,15 +57,47 @@ extern "C" {
 
 /* HCI packet types */
 typedef struct {
-    int    (*open)(const void *transport_config);
-    int    (*close)(const void *transport_config);
-    int    (*send_packet)(uint8_t packet_type, uint8_t *packet, int size);
+    /**
+     * transport name 
+     */
+    const char * name;
+
+    /**
+     * init transport
+     * @param transport_config
+     */
+    void   (*init) (const void *transport_config);
+
+    /**
+     * open transport connection
+     */
+    int    (*open)(void);
+
+    /**
+     * close transport connection
+     */
+    int    (*close)(void);
+
+    /**
+     * register packet handler for HCI packets: ACL, SCO, and Events
+     */
     void   (*register_packet_handler)(void (*handler)(uint8_t packet_type, uint8_t *packet, uint16_t size));
-    const char * (*get_transport_name)(void);
-    // custom extension for UART transport implementations
-    int    (*set_baudrate)(uint32_t baudrate);
-    // support async transport layers, e.g. IRQ driven without buffers
+
+    /**
+     * support async transport layers, e.g. IRQ driven without buffers
+     */
     int    (*can_send_packet_now)(uint8_t packet_type);
+
+    /**
+     * send packet
+     */
+    int    (*send_packet)(uint8_t packet_type, uint8_t *packet, int size);
+
+    /**
+     *  extension for UART transport implementations
+     */
+    int    (*set_baudrate)(uint32_t baudrate);
+
 } hci_transport_t;
 
 typedef enum {
@@ -91,12 +123,12 @@ typedef struct {
 /*
  * @brief
  */
-extern hci_transport_t * hci_transport_h4_instance(void);
+extern const hci_transport_t * hci_transport_h4_instance(void);
 
 /*
  * @brief
  */
-extern hci_transport_t * hci_transport_usb_instance(void);
+extern const hci_transport_t * hci_transport_usb_instance(void);
 
 
 /* API_END */

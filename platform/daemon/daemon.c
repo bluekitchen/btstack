@@ -173,7 +173,7 @@ static client_state_t * client_for_connection(connection_t *connection);
 
 
 // MARK: globals
-static hci_transport_t * transport;
+static const hci_transport_t * transport;
 static hci_transport_config_uart_t hci_transport_config_uart;
 static btstack_timer_source_t timeout;
 static uint8_t timeout_active = 0;

@@ -83,13 +83,12 @@ static int  h4_process(struct btstack_data_source *ds);
 static void dummy_handler(uint8_t packet_type, uint8_t *packet, uint16_t size); 
 static void h4_block_received(void);
 static void h4_block_sent(void);
-static int h4_open(void *transport_config);
-static int h4_close(void *transport_config);
+static int h4_open(void);
+static int h4_close(void);
 static void h4_register_packet_handler(void (*handler)(uint8_t packet_type, uint8_t *packet, uint16_t size));
-static int h4_send_packet(uint8_t packet_type, uint8_t *packet, int size);
-static const char * h4_get_transport_name(void);
-static int h4_set_baudrate(uint32_t baudrate);
 static int h4_can_send_packet_now(uint8_t packet_type);
+static int h4_send_packet(uint8_t packet_type, uint8_t *packet, int size);
+static int h4_set_baudrate(uint32_t baudrate);
 
 // packet reader state machine
 static  H4_STATE h4_state;
@@ -112,18 +111,21 @@ static btstack_data_source_t hci_transport_h4_dma_ds = {
   /*  .process = */  h4_process
 };
 
-static hci_transport_h4_t hci_transport_h4_dma = {
+// hci_transport for use by hci
+static const hci_transport_h4_t hci_transport_h4_dma = {
     {
+  /*  .transport.name                          = */  "H4_EMBEDDED",
+  /*  .transport.init                          = */  NULL,
   /*  .transport.open                          = */  h4_open,
   /*  .transport.close                         = */  h4_close,
-  /*  .transport.send_packet                   = */  h4_send_packet,
   /*  .transport.register_packet_handler       = */  h4_register_packet_handler,
-  /*  .transport.get_transport_name            = */  h4_get_transport_name,
-  /*  .transport.set_baudrate                  = */  h4_set_baudrate,
   /*  .transport.can_send_packet_now           = */  h4_can_send_packet_now,
+  /*  .transport.send_packet                   = */  ehcill_send_packet,
+  /*  .transport.set_baudrate                  = */  h4_set_baudrate,
     },
   /*  .ds                                      = */  &hci_transport_h4_dma_ds
 };
+
 
 static void h4_init_sm(void){
     h4_state = H4_W4_PACKET_TYPE;
@@ -133,7 +135,7 @@ static void h4_init_sm(void){
 }
 
 
-static int h4_open(const void *transport_config){
+static int h4_open(void){
 
 	// open uart
 	hal_uart_dma_init();
@@ -150,7 +152,7 @@ static int h4_open(const void *transport_config){
     return 0;
 }
 
-static int h4_close(const void *transport_config){
+static int h4_close(void){
     // first remove run loop handler
 	btstack_run_loop_remove_data_source(&hci_transport_h4_dma_ds);
     
@@ -282,10 +284,6 @@ static int h4_set_baudrate(uint32_t baudrate){
 static int h4_can_send_packet_now(uint8_t packet_type){
     return tx_state == TX_IDLE;
 
-}
-
-static const char * h4_get_transport_name(void){
-    return "H4_DMA";
 }
 
 static void dummy_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){

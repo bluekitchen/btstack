@@ -91,7 +91,7 @@ int main(int argc, const char * argv[]){
     hci_dump_open("/tmp/hci_dump.pklg", HCI_DUMP_PACKETLOGGER);
 
     // init HCI
-	hci_transport_t    * transport = hci_transport_usb_instance();
+	cosnt hci_transport_t * transport = hci_transport_usb_instance();
     remote_device_db_t * remote_db = (remote_device_db_t *) &remote_device_db_fs;
 	hci_init(transport, NULL, remote_db);
     

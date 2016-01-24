@@ -763,7 +763,7 @@ void hci_local_bd_addr(bd_addr_t address_buffer);
 /**
  * @brief Set up HCI. Needs to be called before any other function.
  */
-void hci_init(hci_transport_t *transport, void *config, remote_device_db_t const* remote_device_db);
+void hci_init(const hci_transport_t *transport, void *config, remote_device_db_t const* remote_device_db);
 
 /**
  * @brief Configure Bluetooth chipset driver. Has to be called before power on, or right after receiving the local version information.

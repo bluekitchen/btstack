@@ -153,7 +153,7 @@ int main(int argc, const char * argv[]){
     config.device_name = "/dev/tty.usbserial-A900K0VK";
 
     // init HCI
-	hci_transport_t    * transport = hci_transport_h4_instance();
+	const hci_transport_t * transport = hci_transport_h4_instance();
     remote_device_db_t * remote_db = (remote_device_db_t *) &remote_device_db_fs;
 	hci_init(transport, (void*) &config, remote_db);
     

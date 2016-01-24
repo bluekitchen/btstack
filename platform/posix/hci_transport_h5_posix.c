@@ -84,7 +84,19 @@ static void dummy_handler(uint8_t packet_type, uint8_t *packet, int size);
 
 static  void (*packet_handler)(uint8_t packet_type, uint8_t *packet, int size) = dummy_handler;
 
-// prototypes
+static void h5_init(const void * transport_config){
+    // check for hci_transport_config_uart_t
+    if (!transport_config) {
+        log_error("hci_transport_h4_posix: no config!");
+        return;
+    }
+    if (((hci_transport_config_t*)transport_config)->type != HCI_TRANSPORT_CONFIG_UART) {
+        log_error("hci_transport_h4_posix: config not of type != HCI_TRANSPORT_CONFIG_UART!");
+        return;
+    }
+    hci_transport_config_uart = (hci_transport_config_uart_t*) transport_config;
+}
+
 static int    h5_open(const void *transport_config){
     // check for hci_transport_config_uart_t
     if (!transport_config) {
@@ -302,17 +314,19 @@ static void dummy_handler(uint8_t *packet, int size){
 }
 
 // get h5 singleton
-hci_transport_t * hci_transport_h5_instance() {
-    if (hci_transport_h5 == NULL) {
-        hci_transport_h5 = malloc( sizeof(hci_transport_h5_t));
-        hci_transport_h5->ds                                      = NULL;
-        hci_transport_h5->transport.open                          = h5_open;
-        hci_transport_h5->transport.close                         = h5_close;
-        hci_transport_h5->transport.send_packet                   = h5_send_packet;
-        hci_transport_h5->transport.register_packet_handler       = h5_register_event_packet_handler;
-        hci_transport_h5->transport.get_transport_name            = h5_get_transport_name;
-        hci_transport_h5->transport.set_baudrate                  = NULL;
-        hci_transport_h5->transport.can_send_packet_now           = NULL;
+const hci_transport_t * hci_transport_h5_instance() {
+    if (hci_transport_h4 == NULL) {
+        hci_transport_h4 = (hci_transport_h4_t*)malloc( sizeof(hci_transport_h4_t));
+        memset(hci_transport_h4, 0, sizeof(hci_transport_h4_t));
+        hci_transport_h4->ds                                      = NULL;
+        hci_transport_h4->transport.name                          = "H5_POSIX";
+        hci_transport_h4->transport.init                          = h4_init;
+        hci_transport_h4->transport.open                          = h4_open;
+        hci_transport_h4->transport.close                         = h4_close;
+        hci_transport_h4->transport.register_packet_handler       = h4_register_packet_handler;
+        hci_transport_h4->transport.can_send_packet_now           = NULL;
+        hci_transport_h4->transport.send_packet                   = h4_send_packet;
+        hci_transport_h4->transport.set_baudrate                  = h4_set_baudrate;
     }
-    return (hci_transport_t *) hci_transport_h5;
+    return (const hci_transport_t *) hci_transport_h4;
 }

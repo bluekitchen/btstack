@@ -1894,7 +1894,7 @@ static void hci_state_reset(void){
     hci_stack->le_connection_parameter_range.le_supervision_timeout_max = 3200;
 }
 
-void hci_init(hci_transport_t *transport, void *config, remote_device_db_t const* remote_device_db){
+void hci_init(const hci_transport_t *transport, void *config, remote_device_db_t const* remote_device_db){
     
 #ifdef HAVE_MALLOC
     if (!hci_stack) {
@@ -2024,13 +2024,18 @@ static int hci_power_control_on(void){
         return err;
     }
     
-    // reset chipset driver
+    // int chipset driver
     if (hci_stack->chipset && hci_stack->chipset->init){
         hci_stack->chipset->init(hci_stack->config);
     }
 
-    // open low-level device
-    err = hci_stack->hci_transport->open(hci_stack->config);
+    // init transport
+    if (hci_stack->hci_transport->init){
+        hci_stack->hci_transport->init(hci_stack->config);
+    }
+
+    // open transport
+    err = hci_stack->hci_transport->open();
     if (err){
         log_error( "HCI_INIT failed, turning Bluetooth off again");
         if (hci_stack->control && hci_stack->control->off){
@@ -2047,7 +2052,7 @@ static void hci_power_control_off(void){
     log_info("hci_power_control_off");
 
     // close low-level device
-    hci_stack->hci_transport->close(hci_stack->config);
+    hci_stack->hci_transport->close();
 
     log_info("hci_power_control_off - hci_transport closed");
     
