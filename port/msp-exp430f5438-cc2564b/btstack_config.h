@@ -13,6 +13,7 @@
 
 // BTstack features that can be enabled
 #define ENABLE_BLE
+#define ENABLE_CLASSIC
 // #define ENABLE_LOG_INTO_HCI_DUMP
 // #define ENABLE_LOG_ERROR
 // #define ENABLE_LOG_INFO 

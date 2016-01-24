@@ -9,13 +9,13 @@
 #define HAVE_BZERO
 #define HAVE_MALLOC
 #define HAVE_SCO
-#define HAVE_SCO
 #define HAVE_SCO_OVER_HCI
 #define HAVE_SO_NOSIGPIPE
 #define HAVE_TIME
 
 // BTstack features that can be enabled
 #define ENABLE_BLE
+#define ENABLE_CLASSIC
 #define ENABLE_LOG_ERROR
 #define ENABLE_LOG_INFO 
 #define ENABLE_LOG_INTO_HCI_DUMP
