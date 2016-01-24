@@ -284,14 +284,8 @@ void hfp_ag_set_subcriber_number_information(hfp_phone_number_t * numbers, int n
 /*
  * @brief
  */
-void hfp_ag_send_current_call_status(bd_addr_t bd_addr, int idx, hfp_enhanced_call_dir_t dir, 
-    hfp_enhanced_call_status_t status, hfp_enhanced_call_mode_t mode, 
-    hfp_enhanced_call_mpty_t mpty, uint8_t type, const char * number);
 
-/*
- * @brief
- */
-void hfp_ag_send_current_call_status_done(bd_addr_t bd_addr);
+void hfp_ag_send_current_call_status(bd_addr_t bd_addr, int idx);
 
 /*
  * @brief
@@ -307,6 +301,11 @@ void hfp_ag_accept_held_incoming_call(void);
  * @brief
  */
 void hfp_ag_reject_held_incoming_call(void);
+
+/*
+ * @brief
+ */
+void hfp_ag_clear_last_dialed_number(void);
 
 /* API_END */
 

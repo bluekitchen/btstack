@@ -37,7 +37,7 @@
 
 // *****************************************************************************
 //
-//  GSM model (!! UNDER DEVELOPMENT !!)
+//  GSM model 
 //
 // *****************************************************************************
 
@@ -55,179 +55,49 @@ extern "C" {
 
 /* API_START */
 
-/**
- * @brief
- */
+typedef enum{
+    CALL_NONE,
+    CALL_INITIATED,
+    CALL_RESPONSE_HOLD,
+    CALL_ACTIVE,
+    CALL_HELD
+} hfp_gsm_call_status_t;
 
-hfp_callheld_status_t hfp_gsm_callheld_status();
-hfp_call_status_t hfp_gsm_call_status();
-hfp_callsetup_status_t hfp_gsm_callsetup_status();
+typedef struct {
+    // TODO: use enhanced_status instead of status
+    hfp_gsm_call_status_t status;
+    hfp_enhanced_call_dir_t direction;
+    hfp_enhanced_call_status_t enhanced_status;
+    hfp_enhanced_call_mode_t mode;
+    hfp_enhanced_call_mpty_t mpty;
+    // TODO: sort on drop call, so that index corresponds to table index
+    int index;
+    uint8_t clip_type;
+    char    clip_number[25];
+} hfp_gsm_call_t;
+
+hfp_callheld_status_t hfp_gsm_callheld_status(void);
+hfp_call_status_t hfp_gsm_call_status(void);
+hfp_callsetup_status_t hfp_gsm_callsetup_status(void);
+
+int hfp_gsm_get_number_of_calls(void);
+char * hfp_gsm_last_dialed_number(void);
+void hfp_gsm_clear_last_dialed_number(void);
+
+
+hfp_gsm_call_t * hfp_gsm_call(int index);
 
 int hfp_gsm_call_possible(void);
 
-uint8_t hfp_gsm_clip_type();
-char *  hfp_gsm_clip_number();
+uint8_t hfp_gsm_clip_type(void);
+char *  hfp_gsm_clip_number(void);
 
 void hfp_gsm_init(void);
 
 void hfp_gsm_handle_event_with_clip(hfp_ag_call_event_t event, uint8_t type, const char * number);
 void hfp_gsm_handle_event_with_call_index(hfp_ag_call_event_t event, uint8_t index);
+void hfp_gsm_handle_event_with_call_number(hfp_ag_call_event_t event, const char * number);
 void hfp_gsm_handle_event(hfp_ag_call_event_t event);
-
-// /**
-//  * @brief 
-//  */
-// void hfp_gsm_incoming_call(void);
-
-
-// /
-// /**
-//  * @brief Report the change in AG's call status. 
-//  * Call status:
-//  * - 0 = No calls (held or active)
-//  * - 1 = Call is present (active or held) 
-//  */
-// void hfp_gsm_transfer_call_status(bd_addr_t bd_addr, hfp_call_status_t status);
-
-// /**
-//  * @brief Report the change in AG's call setup status.
-//  * Call setup status:
-//  * - 0 = No call setup in progress 
-//  * - 1 = Incoming call setup in progress
-//  * - 2 = Outgoing call setup in dialing state
-//  * - 3 = Outgoing call setup in alerting state
-//  */
-// void hfp_gsm_transfer_callsetup_status(bd_addr_t bd_addr, hfp_callsetup_status_t status);
-
-// /**
-//  * @brief Report the change in AG's held call status.
-//  * Held call status:
-//  * - 0 = No calls held
-//  * - 1 = Call is placed on hold or active/held calls are swapped
-//  * - 2 = Call on hold, no active calls
-//  */
-// void hfp_gsm_transfer_callheld_status(bd_addr_t bd_addr, hfp_callheld_status_t status);
-
-// /**
-//  * @brief Enable in-band ring tone
-//  */
-// void hfp_gsm_set_use_in_band_ring_tone(int use_in_band_ring_tone);
-
-
-
-// /**
-//  * @brief number is stored.
-//  */
-// void hfp_gsm_set_clip(uint8_t type, const char * number);
-
-// /**
-//  * @brief 
-//  */
-// void hfp_gsm_outgoing_call_rejected(void);
-
-// /**
-//  * @brief 
-//  */
-// void hfp_gsm_outgoing_call_accepted(void);
-
-// /**
-//  * @brief 
-//  */
-// void hfp_gsm_outgoing_call_ringing(void);
-
-// /**
-//  * @brief 
-//  */
-// void hfp_gsm_outgoing_call_established(void);
-
-// *
-//  * @brief 
- 
-// void hfp_gsm_call_dropped(void);
-
-// /**
-//  * @brief 
-//  */
-// void hfp_gsm_answer_incoming_call(void);
-
-// /**
-//  * @brief 
-//  */
-// void hfp_gsm_join_held_call(void);
-
-// /**
-//  * @brief 
-//  */
-// void hfp_gsm_terminate_call(void);
-
-// /*
-//  * @brief
-//  */
-// void hfp_gsm_set_registration_status(int status);
-
-// /*
-//  * @brief
-//  */
-// void hfp_gsm_set_signal_strength(int strength);
-
-// /*
-//  * @brief
-//  */
-// void hfp_gsm_set_roaming_status(int status);
-
-
-// /*
-//  * @brief
-//  */
-// void hfp_gsm_activate_voice_recognition(bd_addr_t bd_addr, int activate);
-
-
-// /*
-//  * @brief
-//  */
-// void hfp_gsm_send_phone_number_for_voice_tag(bd_addr_t bd_addr, const char * number);
-
-// /*
-//  * @brief
-//  */
-// void hfp_gsm_reject_phone_number_for_voice_tag(bd_addr_t bd_addr);
-
-// /*
-//  * @brief
-//  */
-// void hfp_gsm_send_dtmf_code_done(bd_addr_t bd_addr);
-
-// /*
-//  * @brief
-//  */
-// void hfp_gsm_set_subcriber_number_information(hfp_phone_number_t * numbers, int numbers_count);
-
-// /*
-//  * @brief
-//  */
-// void hfp_gsm_send_current_call_status(bd_addr_t bd_addr, int idx, hfp_enhanced_call_dir_t dir, 
-//     hfp_enhanced_call_status_t status, hfp_enhanced_call_mode_t mode, 
-//     hfp_enhanced_call_mpty_t mpty, uint8_t type, const char * number);
-
-// /*
-//  * @brief
-//  */
-// void hfp_gsm_send_current_call_status_done(bd_addr_t bd_addr);
-
-// /*
-//  * @brief
-//  */
-// void hfp_gsm_hold_incoming_call(void);
-
-// /*
-//  * @brief
-//  */
-// void hfp_gsm_accept_held_incoming_call(void);
-
-// /*
-//  * @brief
-//  */
-// void hfp_gsm_reject_held_incoming_call(void);
 
 /* API_END */
 

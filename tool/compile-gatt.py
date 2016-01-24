@@ -441,6 +441,49 @@ def parseCharacteristicAggregateFormat(fout, parts):
     fout.write("\n")
     handle = handle + 1
 
+def parseReportReference(fout, parts):
+    global handle
+    global total_size
+
+    property_read = property_flags['READ'];
+    size = 2 + 2 + 2 + 2 + 1 + 1
+
+    report_id = parts[1]
+    report_type = parts[2]
+
+    write_indent(fout)
+    fout.write('// 0x%04x REPORT_REFERENCE-%s\n' % (handle, '-'.join(parts[1:])))
+    write_indent(fout)
+    write_16(fout, size)
+    write_16(fout, property_read)
+    write_16(fout, handle)
+    write_16(fout, 0x2908)
+    write_sequence(fout, report_id)
+    write_sequence(fout, report_type)
+    fout.write("\n")
+    handle = handle + 1
+
+
+def parseNumberOfDigitals(fout, parts):
+    global handle
+    global total_size
+
+    property_read = property_flags['READ'];
+    size = 2 + 2 + 2 + 2 + 1
+
+    no_of_digitals = parts[1]
+
+    write_indent(fout)
+    fout.write('// 0x%04x NUMBER_OF_DIGITALS-%s\n' % (handle, '-'.join(parts[1:])))
+    write_indent(fout)
+    write_16(fout, size)
+    write_16(fout, property_read)
+    write_16(fout, handle)
+    write_16(fout, 0x2909)
+    write_sequence(fout, no_of_digitals)
+    fout.write("\n")
+    handle = handle + 1
+
 
 def parse(fname_in, fin, fname_out, fout):
     global handle
@@ -478,24 +521,79 @@ def parse(fname_in, fin, fname_out, fout):
                 parseIncludeService(fout, parts)
                 continue
 
+            # 2803
             if parts[0] == 'CHARACTERISTIC':
                 parseCharacteristic(fout, parts)
                 continue
-            
+
+            # 2900 Characteristic Extended Properties
+
+            # 2901
             if parts[0] == 'CHARACTERISTIC_USER_DESCRIPTION':
                 parseCharacteristicUserDescription(fout, parts)
                 continue
 
+            # 2902 Client Characteristic Configuration - included in Characteristic if
+            # notification / indication is supported
+
+            # 2903
             if parts[0] == 'SERVER_CHARACTERISTIC_CONFIGURATION':
                 parseServerCharacteristicConfiguration(fout, parts)
                 continue
 
+            # 2904
             if parts[0] == 'CHARACTERISTIC_FORMAT':
                 parseCharacteristicFormat(fout, parts)
                 continue
 
+            # 2905
             if parts[0] == 'CHARACTERISTIC_AGGREGATE_FORMAT':
                 parseCharacteristicAggregateFormat(fout, parts)
+                continue
+
+            # 2906 
+            if parts[0] == 'VALID_RANGE':
+                print("WARNING: %s not implemented yet\n" % (parts[0]))
+                continue
+
+            # 2907 
+            if parts[0] == 'EXTERNAL_REPORT_REFERENCE':
+                print("WARNING: %s not implemented yet\n" % (parts[0]))
+                continue
+
+            # 2908
+            if parts[0] == 'REPORT_REFERENCE':
+                parseReportReference(fout, parts)
+                continue
+
+            # 2909
+            if parts[0] == 'NUMBER_OF_DIGITALS':
+                parseNumberOfDigitals(fout, parts)
+                continue
+
+            # 290A
+            if parts[0] == 'VALUE_TRIGGER_SETTING':
+                print("WARNING: %s not implemented yet\n" % (parts[0]))
+                continue
+
+            # 290B
+            if parts[0] == 'ENVIRONMENTAL_SENSING_CONFIGURATION':
+                print("WARNING: %s not implemented yet\n" % (parts[0]))
+                continue
+
+            # 290C
+            if parts[0] == 'ENVIRONMENTAL_SENSING_MEASUREMENT':
+                print("WARNING: %s not implemented yet\n" % (parts[0]))
+                continue
+
+            # 290D 
+            if parts[0] == 'ENVIRONMENTAL_SENSING_TRIGGER_SETTING':
+                print("WARNING: %s not implemented yet\n" % (parts[0]))
+                continue
+
+            # 2906 
+            if parts[0] == 'VALID_RANGE':
+                print("WARNING: %s not implemented yet\n" % (parts[0]))
                 continue
 
             print("WARNING: unknown token: %s\n" % (parts[0]))

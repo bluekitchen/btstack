@@ -78,16 +78,6 @@ static bd_addr_t speaker_addr = {0x00, 0x21, 0x3C, 0xAC, 0xF7, 0x38};
 static uint8_t codecs[1] = {HFP_CODEC_CVSD};
 static uint16_t handle = -1;
 static int memory_1_enabled = 1;
-static int last_number_exists = 1;
-
-static int                        current_call_index = 0;
-static hfp_enhanced_call_dir_t    current_call_dir;
-static int                        current_call_exists_a = 0;
-static int                        current_call_exists_b = 0;
-static hfp_enhanced_call_status_t current_call_status_a;
-static hfp_enhanced_call_status_t current_call_status_b;
-static hfp_enhanced_call_mpty_t   current_call_mpty   = HFP_ENHANCED_CALL_MPTY_NOT_A_CONFERENCE_CALL;
-
 
 static int ag_indicators_nr = 7;
 static hfp_ag_indicator_t ag_indicators[] = {
@@ -387,18 +377,12 @@ static int stdin_process(struct btstack_data_source *ds){
         case 'c':
             log_info("USER:\'%c\'", cmd);
             printf("Simulate incoming call from 1234567\n");
-            current_call_exists_a = 1;
-            current_call_status_a = HFP_ENHANCED_CALL_STATUS_INCOMING;
-            current_call_dir = HFP_ENHANCED_CALL_DIR_INCOMING;
             hfp_ag_set_clip(129, "1234567");
             hfp_ag_incoming_call();
             break;
         case 'm':
             log_info("USER:\'%c\'", cmd);
             printf("Simulate incoming call from 7654321\n");
-            current_call_exists_b = 1;
-            current_call_status_b = HFP_ENHANCED_CALL_STATUS_INCOMING;
-            current_call_dir = HFP_ENHANCED_CALL_DIR_INCOMING;
             hfp_ag_set_clip(129, "7654321");
             hfp_ag_incoming_call();
             break;
@@ -415,13 +399,6 @@ static int stdin_process(struct btstack_data_source *ds){
         case 'e':
             log_info("USER:\'%c\'", cmd);
             printf("Answer call on AG\n");
-            if (current_call_status_a == HFP_ENHANCED_CALL_STATUS_INCOMING){
-                current_call_status_a = HFP_ENHANCED_CALL_STATUS_ACTIVE;
-            }
-            if (current_call_status_b == HFP_ENHANCED_CALL_STATUS_INCOMING){
-                current_call_status_b = HFP_ENHANCED_CALL_STATUS_ACTIVE;
-                current_call_status_a = HFP_ENHANCED_CALL_STATUS_HELD;
-            }
             hfp_ag_answer_incoming_call();
             break;
         case 'E':
@@ -492,12 +469,12 @@ static int stdin_process(struct btstack_data_source *ds){
         case 'l':
             log_info("USER:\'%c\'", cmd);
             printf("Last dialed number cleared\n");
-            last_number_exists = 0;
+            hfp_ag_clear_last_dialed_number();
             break;
         case 'L':
             log_info("USER:\'%c\'", cmd);
-            printf("Last dialed number set\n");
-            last_number_exists = 1;
+            printf("Outgoing call connected, ringing\n");
+            hfp_ag_outgoing_call_ringing();
             break;
         case 'n':
             log_info("USER:\'%c\'", cmd);
@@ -562,7 +539,6 @@ static int stdin_process(struct btstack_data_source *ds){
         case 'u':
             log_info("USER:\'%c\'", cmd);
             printf("Join held call\n");
-            current_call_mpty = HFP_ENHANCED_CALL_MPTY_CONFERENCE_CALL;
             hfp_ag_join_held_call();
             break;
         case 'v':
@@ -656,25 +632,12 @@ static void packet_handler(uint8_t * event, uint16_t event_size){
               || (memory_1_enabled && strcmp(">1",      (char*) &event[3]) == 0)){
                 printf("Dialstring valid: accept call\n");
                 hfp_ag_outgoing_call_accepted();
-                // TODO: calling ringing right away leads to callstatus=2 being skipped. don't call for now
-                // hfp_ag_outgoing_call_ringing();
             } else {
                 printf("Dialstring invalid: reject call\n");
                 hfp_ag_outgoing_call_rejected();
             }
             break;
-        case HFP_SUBEVENT_REDIAL_LAST_NUMBER:
-            printf("\n** Redial last number\n");
-            if (last_number_exists){
-                hfp_ag_outgoing_call_accepted();
-                printf("Last number exists: accept call\n");
-                // TODO: calling ringing right away leads to callstatus=2 being skipped. don't call for now
-                // hfp_ag_outgoing_call_ringing();
-            } else {
-                printf("Last number missing: reject call\n");
-                hfp_ag_outgoing_call_rejected();
-            }
-            break;
+        
         case HFP_SUBEVENT_ATTACH_NUMBER_TO_VOICE_TAG:
             printf("\n** Attach number to voice tag. Sending '1234567\n");
             hfp_ag_send_phone_number_for_voice_tag(device_addr, "1234567");
@@ -683,34 +646,8 @@ static void packet_handler(uint8_t * event, uint16_t event_size){
             printf("\n** Send DTMF Codes: '%s'\n", &event[3]);
             hfp_ag_send_dtmf_code_done(device_addr);
             break;
-        case HFP_SUBEVENT_TRANSMIT_STATUS_OF_CURRENT_CALL:
-            if (current_call_index == 0 && current_call_exists_a){
-                hfp_ag_send_current_call_status(device_addr, 1, current_call_dir, current_call_status_a,
-                        HFP_ENHANCED_CALL_MODE_VOICE, current_call_mpty, 129, "1234567");
-                current_call_index = 1;
-                break;
-            }
-            if (current_call_index == 1 && current_call_exists_b){
-                hfp_ag_send_current_call_status(device_addr, 2, current_call_dir, current_call_status_b,
-                        HFP_ENHANCED_CALL_MODE_VOICE, current_call_mpty, 129, "7654321");
-                current_call_index = 2;
-                break;
-            }
-            hfp_ag_send_current_call_status_done(device_addr);
-            break;
         case HFP_CMD_CALL_ANSWERED:
             printf("Call answered by HF\n");
-            if (current_call_status_a == HFP_ENHANCED_CALL_STATUS_INCOMING){
-                current_call_status_a = HFP_ENHANCED_CALL_STATUS_ACTIVE;
-            }
-            if (current_call_status_b == HFP_ENHANCED_CALL_STATUS_INCOMING){
-                current_call_status_b = HFP_ENHANCED_CALL_STATUS_ACTIVE;
-            }
-            break;
-        case HFP_SUBEVENT_CONFERENCE_CALL:
-            current_call_mpty = HFP_ENHANCED_CALL_MPTY_CONFERENCE_CALL;
-            current_call_status_a = HFP_ENHANCED_CALL_STATUS_ACTIVE;
-            current_call_status_b = HFP_ENHANCED_CALL_STATUS_ACTIVE;
             break;
         default:
             printf("Event not handled %u\n", event[2]);
