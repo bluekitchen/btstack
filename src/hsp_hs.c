@@ -131,6 +131,18 @@ static void emit_event(uint8_t event_subtype, uint8_t value){
     event[3] = value; // status 0 == OK
     (*hsp_hs_callback)(event, sizeof(event));
 }
+
+static void emit_event_audio_connected(uint8_t status, uint16_t handle){
+    if (!hsp_hs_callback) return;
+    uint8_t event[6];
+    event[0] = HCI_EVENT_HSP_META;
+    event[1] = sizeof(event) - 2;
+    event[2] = HSP_SUBEVENT_AUDIO_CONNECTION_COMPLETE;
+    event[3] = status;
+    bt_store_16(event, 4, handle);
+    (*hsp_hs_callback)(event, sizeof(event));
+}
+
 // remote audio volume control
 // AG +VGM=13 [0..15] ; HS AT+VGM=6 | AG OK
 
@@ -448,7 +460,8 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
             uint8_t air_mode = packet[index];
 
             if (status != 0){
-                log_error("(e)SCO Connection is not established, status %u", status);
+                log_error("(e)SCO Connection failed, status %u", status);
+                emit_event_audio_connected(status, sco_handle);
                 break;
             }
             switch (link_type){
@@ -479,7 +492,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
             hsp_hs_callback(packet, size);
 
             hsp_state = HSP_ACTIVE;
-            emit_event(HSP_SUBEVENT_AUDIO_CONNECTION_COMPLETE, 0);
+            emit_event_audio_connected(0, sco_handle);
             break;                
         }
 

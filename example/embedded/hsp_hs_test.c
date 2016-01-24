@@ -172,19 +172,16 @@ static void packet_handler(uint8_t * event, uint16_t event_size){
             // printf("DAEMON_EVENT_HCI_PACKET_SENT\n");
             // try_send_sco();
             break;
-        case HCI_EVENT_SYNCHRONOUS_CONNECTION_COMPLETE:
-            // printf("HCI_EVENT_SYNCHRONOUS_CONNECTION_COMPLETE status %u, %x\n", event[2], READ_BT_16(event, 3));
-            if (event[2]) break;
-            sco_handle = READ_BT_16(event, 3);
-            break;  
         case HCI_EVENT_HSP_META:
             switch (event[2]) { 
                 case HSP_SUBEVENT_AUDIO_CONNECTION_COMPLETE:
                     if (event[3] == 0){
+                        sco_handle = READ_BT_16(event, 4);
                         printf("Audio connection established with SCO handle 0x%04x.\n", sco_handle);
                         // try_send_sco();
                     } else {
                         printf("Audio connection establishment failed with status %u\n", event[3]);
+                        sco_handle = 0;
                     }
                     break;
                 case HSP_SUBEVENT_AUDIO_DISCONNECTION_COMPLETE:
