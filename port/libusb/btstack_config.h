@@ -24,6 +24,5 @@
 // BTstack configuration. buffers, sizes, ...
 #define HCI_ACL_PAYLOAD_SIZE (1691 + 4)
 #define HCI_INCOMING_PRE_BUFFER_SIZE 14 // sizeof BNEP header, avoid memcpy
-#define REMOTE_DEVICE_DB remote_device_db_iphone
 
 #endif
