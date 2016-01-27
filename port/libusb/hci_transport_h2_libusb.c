@@ -101,7 +101,7 @@
 
 // prototypes
 static void dummy_handler(uint8_t packet_type, uint8_t *packet, uint16_t size); 
-static int usb_close(const void *transport_config);    
+static int usb_close(void);    
 
 typedef enum {
     LIB_USB_CLOSED = 0,
@@ -180,14 +180,15 @@ static int sco_in_addr;
 static int sco_out_addr;
 
 
+#ifdef HAVE_SCO
 static void sco_ring_init(void){
     sco_ring_write = 0;
     sco_ring_transfers_active = 0;
 }
-
 static int sco_ring_have_space(void){
     return sco_ring_transfers_active < SCO_RING_BUFFER_COUNT;
 }
+#endif
 
 
 //
@@ -241,8 +242,8 @@ static void async_callback(struct libusb_transfer *transfer)
 }
 
 
-static int usb_send_sco_packet(uint8_t *packet, int size){
 #ifdef HAVE_SCO
+static int usb_send_sco_packet(uint8_t *packet, int size){
     int r;
 
     if (libusb_state != LIB_USB_TRANSFERS_ALLOCATED) return -1;
@@ -278,7 +279,6 @@ static int usb_send_sco_packet(uint8_t *packet, int size){
         uint8_t event[] = { DAEMON_EVENT_HCI_PACKET_SENT, 0};
         packet_handler(HCI_EVENT_PACKET, &event[0], sizeof(event));
     } 
-#endif
     return 0;
 }
 
@@ -317,6 +317,7 @@ static void handle_isochronous_data(uint8_t * buffer, uint16_t size){
         }
     }
 }
+#endif
 
 static void handle_completed_transfer(struct libusb_transfer *transfer){
 
@@ -330,6 +331,15 @@ static void handle_completed_transfer(struct libusb_transfer *transfer){
         // log_info("-> acl");
         packet_handler(HCI_ACL_DATA_PACKET, transfer-> buffer, transfer->actual_length);
         resubmit = 1;
+    } else if (transfer->endpoint == 0){
+        // log_info("command done, size %u", transfer->actual_length);
+        usb_command_active = 0;
+        signal_done = 1;
+    } else if (transfer->endpoint == acl_out_addr){
+        // log_info("acl out done, size %u", transfer->actual_length);
+        usb_acl_out_active = 0;
+        signal_done = 1;
+#ifdef HAVE_SCO
     } else if (transfer->endpoint == sco_in_addr) {
         // log_info("handle_completed_transfer for SCO IN! num packets %u", transfer->NUM_ISO_PACKETS);
         int i;
@@ -346,14 +356,6 @@ static void handle_completed_transfer(struct libusb_transfer *transfer){
             handle_isochronous_data(data, pack->actual_length);
         }
         resubmit = 1;
-    } else if (transfer->endpoint == 0){
-        // log_info("command done, size %u", transfer->actual_length);
-        usb_command_active = 0;
-        signal_done = 1;
-    } else if (transfer->endpoint == acl_out_addr){
-        // log_info("acl out done, size %u", transfer->actual_length);
-        usb_acl_out_active = 0;
-        signal_done = 1;
     } else if (transfer->endpoint == sco_out_addr){
         log_info("sco out done, {{ %u/%u (%x)}, { %u/%u (%x)}, { %u/%u (%x)}}", 
             transfer->iso_packet_desc[0].actual_length, transfer->iso_packet_desc[0].length, transfer->iso_packet_desc[0].status,
@@ -366,6 +368,7 @@ static void handle_completed_transfer(struct libusb_transfer *transfer){
         // decrease tab
         sco_ring_transfers_active--;
         // log_info("H2: sco out complete, num active num active %u", sco_ring_transfers_active);
+#endif
     } else {
         log_info("usb_process_ds endpoint unknown %x", transfer->endpoint);
     }
@@ -630,11 +633,14 @@ static int prepare_device(libusb_device_handle * aHandle){
     return 0;
 }
 
-static int usb_open(const void *transport_config){
+static int usb_open(void){
     int r;
 
+#ifdef HAVE_SCO
     sco_state_machine_init();
     sco_ring_init();
+#endif
+
     handle_packet = NULL;
 
     // default endpoint addresses
@@ -661,14 +667,14 @@ static int usb_open(const void *transport_config){
 
     if (!handle){
         log_error("libusb_open_device_with_vid_pid failed!");
-        usb_close(handle);
+        usb_close();
         return -1;
     }
     log_info("libusb open %d, handle %p", r, handle);
 
     r = prepare_device(handle);
     if (r < 0){
-        usb_close(handle);
+        usb_close();
         return -1;
     }
 
@@ -680,7 +686,7 @@ static int usb_open(const void *transport_config){
     log_info("Scanning for USB Bluetooth device");
     cnt = libusb_get_device_list(NULL, &devs);
     if (cnt < 0) {
-        usb_close(handle);
+        usb_close();
         return -1;
     }
 
@@ -745,7 +751,7 @@ static int usb_open(const void *transport_config){
         event_in_transfer[c] = libusb_alloc_transfer(0); // 0 isochronous transfers Events
         acl_in_transfer[c]  =  libusb_alloc_transfer(0); // 0 isochronous transfers ACL in
         if ( !event_in_transfer[c] || !acl_in_transfer[c]) {
-            usb_close(handle);
+            usb_close();
             return LIBUSB_ERROR_NO_MEM;
         }
     }
@@ -764,7 +770,7 @@ static int usb_open(const void *transport_config){
         sco_in_transfer[c] = libusb_alloc_transfer(NUM_ISO_PACKETS); // isochronous transfers SCO in
         log_info("Alloc iso transfer");
         if (!sco_in_transfer[c]) {
-            usb_close(handle);
+            usb_close();
             return LIBUSB_ERROR_NO_MEM;
         }
         // configure sco_in handlers
@@ -775,7 +781,7 @@ static int usb_open(const void *transport_config){
         log_info("Submit iso transfer res = %d", r);
         if (r) {
             log_error("Error submitting isochronous in transfer %d", r);
-            usb_close(handle);
+            usb_close();
             return r;
         }
     }
@@ -793,7 +799,7 @@ static int usb_open(const void *transport_config){
         r = libusb_submit_transfer(event_in_transfer[c]);
         if (r) {
             log_error("Error submitting interrupt transfer %d", r);
-            usb_close(handle);
+            usb_close();
             return r;
         }
  
@@ -803,7 +809,7 @@ static int usb_open(const void *transport_config){
         r = libusb_submit_transfer(acl_in_transfer[c]);
         if (r) {
             log_error("Error submitting bulk in transfer %d", r);
-            usb_close(handle);
+            usb_close();
             return r;
         }
  
@@ -823,7 +829,7 @@ static int usb_open(const void *transport_config){
         pollfd_data_sources = malloc(sizeof(btstack_data_source_t) * num_pollfds);
         if (!pollfd_data_sources){
             log_error("Cannot allocate data sources for pollfds");
-            usb_close(handle);
+            usb_close();
             return 1;            
         }
         for (r = 0 ; r < num_pollfds ; r++) {
@@ -847,7 +853,7 @@ static int usb_open(const void *transport_config){
 }
 
 
-static int usb_close(const void *transport_config){
+static int usb_close(void){
     int c;
     // @TODO: remove all run loops!
 
@@ -976,8 +982,10 @@ static int usb_can_send_packet_now(uint8_t packet_type){
             return !usb_command_active;
         case HCI_ACL_DATA_PACKET:
             return !usb_acl_out_active;
+#ifdef HAVE_SCO
         case HCI_SCO_DATA_PACKET:
             return sco_ring_have_space();
+#endif
         default:
             return 0;
     }
@@ -989,8 +997,10 @@ static int usb_send_packet(uint8_t packet_type, uint8_t * packet, int size){
             return usb_send_cmd_packet(packet, size);
         case HCI_ACL_DATA_PACKET:
             return usb_send_acl_packet(packet, size);
+#ifdef HAVE_SCO
         case HCI_SCO_DATA_PACKET:
             return usb_send_sco_packet(packet, size);
+#endif
         default:
             return -1;
     }
@@ -1001,24 +1011,20 @@ static void usb_register_packet_handler(void (*handler)(uint8_t packet_type, uin
     packet_handler = handler;
 }
 
-static const char * usb_get_transport_name(void){
-    return "USB";
-}
-
 static void dummy_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
 }
 
 // get usb singleton
-hci_transport_t * hci_transport_usb_instance() {
+const hci_transport_t * hci_transport_usb_instance() {
     if (!hci_transport_usb) {
         hci_transport_usb = (hci_transport_t*) malloc( sizeof(hci_transport_t));
+        memset(hci_transport_usb, 0, sizeof(hci_transport_t));
+        hci_transport_usb->name                          = "H2_LIBUSB";
         hci_transport_usb->open                          = usb_open;
         hci_transport_usb->close                         = usb_close;
-        hci_transport_usb->send_packet                   = usb_send_packet;
         hci_transport_usb->register_packet_handler       = usb_register_packet_handler;
-        hci_transport_usb->get_transport_name            = usb_get_transport_name;
-        hci_transport_usb->set_baudrate                  = NULL;
         hci_transport_usb->can_send_packet_now           = usb_can_send_packet_now;
+        hci_transport_usb->send_packet                   = usb_send_packet;
     }
     return hci_transport_usb;
 }
