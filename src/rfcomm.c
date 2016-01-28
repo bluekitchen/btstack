@@ -2029,6 +2029,10 @@ int rfcomm_send_prepared(uint16_t rfcomm_cid, uint16_t len){
 
     int err = rfcomm_assert_send_valid(channel, len);
     if (err) return err;
+    if (l2cap_can_send_prepared_packet_now(channel->multiplexer->l2cap_cid)){
+        log_error("rfcomm_send_prepared: l2cap cannot send now");
+        return BTSTACK_ACL_BUFFERS_FULL;
+    }
 
     // send might cause l2cap to emit new credits, update counters first
     channel->credits_outgoing--;
@@ -2037,12 +2041,11 @@ int rfcomm_send_prepared(uint16_t rfcomm_cid, uint16_t len){
     
     if (result != 0) {
         channel->credits_outgoing++;
-        log_info("rfcomm_send_internal: error %d", result);
+        log_error("rfcomm_send_prepared: error %d", result);
         return result;
     }
     
     rfcomm_hand_out_credits();
-    
     return result;
 }
 
@@ -2055,11 +2058,19 @@ int rfcomm_send_internal(uint16_t rfcomm_cid, uint8_t *data, uint16_t len){
 
     int err = rfcomm_assert_send_valid(channel, len);
     if (err) return err;
+    if (l2cap_can_send_packet_now(channel->multiplexer->l2cap_cid)){
+        log_error("rfcomm_send_internal: l2cap cannot send now");
+        return BTSTACK_ACL_BUFFERS_FULL;
+    }
 
     rfcomm_reserve_packet_buffer();
     uint8_t * rfcomm_payload = rfcomm_get_outgoing_buffer();
     memcpy(rfcomm_payload, data, len);
-    return rfcomm_send_prepared(rfcomm_cid, len);    
+    err = rfcomm_send_prepared(rfcomm_cid, len);    
+    if (err){
+        rfcomm_release_packet_buffer();
+    }
+    return err;
 }
 
 // Sends Local Lnie Status, see LINE_STATUS_..
