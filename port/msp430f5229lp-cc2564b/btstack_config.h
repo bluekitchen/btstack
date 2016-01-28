@@ -9,7 +9,8 @@
 #define HAVE_INIT_SCRIPT
 #define HAVE_BZERO
 #define HAVE_TICK
-#define HAVE_EHCILL
+
+// #define HAVE_EHCILL
 
 // BTstack features that can be enabled
 #define ENABLE_BLE

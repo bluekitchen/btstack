@@ -56,6 +56,10 @@
 #include "hci.h"
 #include "hci_transport.h"
 
+#ifdef HAVE_EHCILL
+#error "HCI Transport H4 POSIX does not support eHCILL yet. Please remove HAVE_EHCILL from your btstack-config.h"
+#endif 
+
 // assert pre-buffer for packet type is available
 #if !defined(HCI_OUTGOING_PRE_BUFFER_SIZE) || (HCI_OUTGOING_PRE_BUFFER_SIZE == 0)
 #error HCI_OUTGOING_PRE_BUFFER_SIZE not defined. Please update hci.h
