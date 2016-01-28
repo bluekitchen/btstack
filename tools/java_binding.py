@@ -1,10 +1,12 @@
 #!/usr/bin/env python
-# BlueKtichen GmbH (c) 2014
+# BlueKitchen GmbH (c) 2014
 
 import glob
 import re
 import sys
 import os
+
+import btstack_parser as parser
 
 print('''
 Java binding generator for BTstack
@@ -130,11 +132,8 @@ java_event_to_string = \
 
 
 # global variables/defines
-package='com.bluekitchen.btstack'
+package  ='com.bluekitchen.btstack'
 gen_path = 'gen/' + package.replace('.', '/')
-hci_cmds_h_path = '../include/btstack/hci_cmds.h'
-hci_cmds_c_path = '../src/hci_cmds.c'
-hci_h_path = '../src/hci.h'
 
 defines = dict()
 defines_used = set()
@@ -153,22 +152,6 @@ def cap(x):
 
 def camel_case(name):
     return ''.join(map(cap, name.split('_')))
-
-def camel_case_var(name):
-    if name in ['uuid128', 'uuid16']:
-        return name
-    camel = camel_case(name)
-    return camel[0].lower() + camel[1:]
-
-def read_defines(infile):
-    global defines
-    with open (infile, 'rt') as fin:
-
-        for line in fin:
-            parts = re.match('#define\s+(\w+)\s+(\w*)',line)
-            if parts and len(parts.groups()) == 2:
-                (key, value) = parts.groups()
-                defines[key] = value
 
 def java_type_for_btstack_type(type):
     param_types = { '1' : 'int', '2' : 'int', '3' : 'int', '4' : 'long', 'H' : 'int', 'B' : 'BD_ADDR',
@@ -267,7 +250,7 @@ def java_define_string(key):
 def java_defines_string(keys):
     return '\n'.join( map(java_define_string, sorted(keys)))
 
-def parse_commands(infile):
+def create_btstack_java(commands):
 
     global gen_path
     assert_dir(gen_path)
@@ -278,39 +261,11 @@ def parse_commands(infile):
     
         fout.write(java_btstack_header % package)
 
-        with open (infile, 'rt') as fin:
-
-            params = []
-            for line in fin:
-
-                parts = re.match('.*@param\s*(\w*)\s*', line)
-                if parts and len(parts.groups()) == 1:
-                    param = parts.groups()[0]
-                    params.append(camel_case_var(param))
-                    continue
-
-                declaration = re.match('const\s+hci_cmd_t\s+(\w+)[\s=]+', line)
-                if declaration:
-                    command_name = camel_case(declaration.groups()[0])
-                    if command_name.endswith('Cmd'):
-                        command_name = command_name[:-len('Cmd')]
-                    continue
-
-                definition = re.match('\s*OPCODE\\(\s*(\w+)\s*,\s+(\w+)\s*\\)\s*,\s\\"(\w*)\\".*', line)
-                if definition:
-                    (ogf, ocf, format) = definition.groups()
-                    if len(params) != len(format):
-                        params = []
-                        arg_counter = 1
-                        for f in format:
-                            arg_name = 'arg%u' % arg_counter
-                            params.append(arg_name)
-                            arg_counter += 1
-                    create_command_java(fout, command_name, ogf, ocf, format, params);
-                    mark_define_as_used(ogf)
-                    mark_define_as_used(ocf)
-                    params = []
-                    continue
+        for command in commands:
+                (command_name, ogf, ocf, format, params) = command
+                create_command_java(fout, command_name, ogf, ocf, format, params);
+                mark_define_as_used(ogf)
+                mark_define_as_used(ocf)
 
         fout.write('\n    /** defines used */\n\n')
         for key in sorted(defines_used):
@@ -403,49 +358,21 @@ def create_event_factory(events, le_events, defines):
         defines_text = java_defines_string(defines)
         fout.write(java_event_factory_template.format(package, defines_text, cases, subcases))
 
-def parse_events(path):
-    global gen_path
-    events = []
-    le_events = []
-    params = []
-    event_types = set()
-    format = None
-    with open (path, 'rt') as fin:
-        for line in fin:
-            parts = re.match('.*@format\s*(\w*)\s*', line)
-            if parts and len(parts.groups()) == 1:
-                format = parts.groups()[0]
-            parts = re.match('.*@param\s*(\w*)\s*', line)
-            if parts and len(parts.groups()) == 1:
-                param = parts.groups()[0]
-                params.append(param)
-            parts = re.match('\s*#define\s+(\w+)\s+(\w*)',line)
-            if parts and len(parts.groups()) == 2:
-                (key, value) = parts.groups()
-                if format != None:
-                    if key.lower().startswith('hci_subevent_'):
-                        le_events.append((value, key.lower().replace('hci_subevent_', 'hci_event_'), format, params))
-                    else:
-                        events.append((value, key, format, params))
-                    event_types.add(key)
-                params = []
-                format = None
-    return (events, le_events, event_types)
 
-# # read defines from hci_cmds.h and hci.h
-read_defines(hci_cmds_h_path)
-read_defines(hci_h_path)
+# read defines from hci_cmds.h and hci.h
+defines = parser.parse_defines()
 
-# # parse commands and generate BTstack.java
-parse_commands(hci_cmds_c_path)
+# # parse commands
+commands = parser.parse_commands()
 
 # parse hci.h to get used events
-(events, le_events, event_types) = parse_events(hci_cmds_h_path)
+(events, le_events, event_types) = parser.parse_events()
 
-# create events, le meta events, and event factory
+# create events, le meta events, event factory, and 
 create_events(events)
 create_events(le_events)
 create_event_factory(events, le_events, event_types)
+create_btstack_java(commands)
 
 # done
 print('Done!')
