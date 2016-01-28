@@ -162,7 +162,7 @@ typedef struct l2cap_signaling_response {
 } l2cap_signaling_response_t;
     
 
-// internal use 
+
 int  l2cap_can_send_fixed_channel_packet_now(uint16_t handle);
 void l2cap_register_fixed_channel(btstack_packet_handler_t packet_handler, uint16_t channel_id);
 int  l2cap_send_connectionless(uint16_t handle, uint16_t cid, uint8_t *data, uint16_t len);
@@ -244,6 +244,7 @@ void l2cap_decline_connection(uint16_t local_cid, uint8_t reason);
  * @brief Check if outgoing buffer is available and that there's space on the Bluetooth module
  */
 int  l2cap_can_send_packet_now(uint16_t local_cid);    
+int  l2cap_can_send_prepared_packet_now(uint16_t local_cid);
 
 /** 
  * @brief Reserve outgoing buffer

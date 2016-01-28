@@ -205,6 +205,12 @@ int  l2cap_can_send_packet_now(uint16_t local_cid){
     return hci_can_send_acl_packet_now(channel->handle);
 }
 
+int  l2cap_can_send_prepared_packet_now(uint16_t local_cid){
+    l2cap_channel_t *channel = l2cap_get_channel_for_local_cid(local_cid);
+    if (!channel) return 0;
+    return hci_can_send_prepared_acl_packet_now(channel->handle);
+}
+
 int  l2cap_can_send_fixed_channel_packet_now(uint16_t handle){
     return hci_can_send_acl_packet_now(handle);
 }
