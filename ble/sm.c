@@ -2506,6 +2506,13 @@ void gap_random_address_set_update_period(int period_ms){
     gap_random_address_update_start();
 }
 
+void gap_random_address_set(bd_addr_t addr){
+    gap_random_address_set_mode(GAP_RANDOM_ADDRESS_TYPE_OFF);
+    memcpy(sm_random_address, addr, 6);
+    rau_state = RAU_SET_ADDRESS;
+    sm_run();
+}
+
 /*
  * @brief Set Advertisement Paramters
  * @param adv_int_min

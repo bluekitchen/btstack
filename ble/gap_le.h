@@ -70,6 +70,13 @@ gap_random_address_type_t gap_random_address_get_mode(void);
  */
  void gap_random_address_set_update_period(int period_ms);
 
+/** 
+ * @brief Sets a fixed random address for advertising
+ * @param addr
+ * @note Sets random address mode to type off
+ */
+void gap_random_address_set(bd_addr_t addr);
+
 /**
  * @brief Updates the connection parameters for a given LE connection
  * @param handle
