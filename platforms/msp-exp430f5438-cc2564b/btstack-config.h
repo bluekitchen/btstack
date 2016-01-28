@@ -10,7 +10,7 @@
 #define HAVE_BZERO
 #define HAVE_TICK
 
-#define HAVE_EHCILL
+// #define HAVE_EHCILL
 
 #define HAVE_HCI_DUMP
 // #define ENABLE_LOG_ERROR

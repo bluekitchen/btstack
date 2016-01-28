@@ -52,6 +52,10 @@
 #include "hci.h"
 #include "hci_transport.h"
 
+#ifdef HAVE_EHCILL
+#error "HCI Transport H5 POSIX does not support eHCILL yet. Please remove HAVE_EHCILL from your btstack-config.h"
+#endif 
+
 typedef struct hci_transport_h5 {
     hci_transport_t transport;
     data_source_t *ds;
