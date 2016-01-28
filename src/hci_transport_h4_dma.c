@@ -58,6 +58,10 @@
 #error HCI_OUTGOING_PRE_BUFFER_SIZE not defined. Please update hci.h
 #endif
 
+#ifdef HAVE_EHCILL
+#error "HCI Transport H4 DMA does not support eHCILL. Please use hci_transport_h4_ehcill_dma.c instead."
+#endif 
+
 typedef enum {
     H4_W4_PACKET_TYPE = 1,
     H4_W4_EVENT_HEADER,
