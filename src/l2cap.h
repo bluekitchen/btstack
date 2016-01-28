@@ -201,6 +201,7 @@ typedef struct l2cap_signaling_response {
 } l2cap_signaling_response_t;
     
 
+
 int  l2cap_can_send_fixed_channel_packet_now(uint16_t handle);
 
 // @deprecated use l2cap_can_send_fixed_channel_packet_now instead
@@ -261,7 +262,9 @@ void l2cap_decline_connection_internal(uint16_t local_cid, uint8_t reason);
 /** 
  * @brief Non-blocking UART write
  */
-int  l2cap_can_send_packet_now(uint16_t local_cid);    
+int  l2cap_can_send_packet_now(uint16_t local_cid); 
+int  l2cap_can_send_prepared_packet_now(uint16_t local_cid);
+ 
 int  l2cap_reserve_packet_buffer(void);
 void l2cap_release_packet_buffer(void);
 
