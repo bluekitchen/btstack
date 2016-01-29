@@ -43,8 +43,8 @@
  *  Created by Matthias Ringwald on 7/23/09.
  */
 
-#ifndef __UTILS_H
-#define __UTILS_H
+#ifndef __BTSTACK_UTIL_H
+#define __BTSTACK_UTIL_H
 
 
 #if defined __cplusplus
@@ -138,11 +138,12 @@ void net_store_32(uint8_t *buffer, uint16_t pos, uint32_t value);
 #undef swap64
 #endif
 
-void swapX(const uint8_t *src, uint8_t *dst, int len);
-void swap24(const uint8_t  src[3],  uint8_t dst[3]);
-void swap56(const uint8_t  src[7],  uint8_t dst[7]);
-void swap64(const uint8_t  src[8],  uint8_t dst[8]);
-void swap128(const uint8_t src[16], uint8_t dst[16]);
+void swapX  (const uint8_t *src, uint8_t * dst, int len);
+void swap24 (const uint8_t *src, uint8_t * dst);
+void swap48 (const uint8_t *src, uint8_t * dst);
+void swap56 (const uint8_t *src, uint8_t * dst);
+void swap64 (const uint8_t *src, uint8_t * dst);
+void swap128(const uint8_t *src, uint8_t * dst);
 
 char char_for_nibble(int nibble);
 
@@ -178,4 +179,4 @@ int is_authenticated_link_key(link_key_type_t link_key_type);
 }
 #endif
 		
-#endif // __UTILS_H
+#endif // __BTSTACK_UTIL_H

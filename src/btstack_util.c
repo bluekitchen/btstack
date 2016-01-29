@@ -88,16 +88,19 @@ void swapX(const uint8_t *src, uint8_t *dst, int len){
     for (i = 0; i < len; i++)
         dst[len - 1 - i] = src[i];
 }
-void swap24(const uint8_t src[3], uint8_t dst[3]){
+void swap24(const uint8_t * src, uint8_t * dst){
     swapX(src, dst, 3);
 }
-void swap56(const uint8_t src[7], uint8_t dst[7]){
+void swap48(const uint8_t * src, uint8_t * dst){
+    swapX(src, dst, 6);
+}
+void swap56(const uint8_t * src, uint8_t * dst){
     swapX(src, dst, 7);
 }
-void swap64(const uint8_t src[8], uint8_t dst[8]){
+void swap64(const uint8_t * src, uint8_t * dst){
     swapX(src, dst, 8);
 }
-void swap128(const uint8_t src[16], uint8_t dst[16]){
+void swap128(const uint8_t * src, uint8_t * dst){
     swapX(src, dst, 16);
 }
 
