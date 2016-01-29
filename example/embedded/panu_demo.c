@@ -320,27 +320,27 @@ static char * get_string_from_data_element(uint8_t * element){
 static void handle_sdp_client_query_result(sdp_query_event_t *event)
 {
     const uint8_t * complete_event;
-    sdp_query_attribute_value_event_t *value_event;
+    const uint8_t  *value_event;
     des_iterator_t des_list_it;
     des_iterator_t prot_it;
     char *str;
 
     switch (event->type){
         case SDP_QUERY_ATTRIBUTE_VALUE:
-            value_event = (sdp_query_attribute_value_event_t*) event;
+            value_event = (const uint8_t *) event;
             
             // Handle new SDP record 
-            if (value_event->record_id != record_id) {
-                record_id = value_event->record_id;
+            if (sdp_query_attribute_value_event_get_record_id(value_event) != record_id) {
+                record_id = sdp_query_attribute_value_event_get_record_id(value_event);
                 printf("SDP Record: Nr: %d\n", record_id);
             }
 
-            if (value_event->attribute_length <= attribute_value_buffer_size) {
-                attribute_value[value_event->data_offset] = value_event->data;
+            if (sdp_query_attribute_value_event_get_attribute_length(value_event) <= attribute_value_buffer_size) {
+                attribute_value[sdp_query_attribute_value_event_get_data_offset(value_event)] = sdp_query_attribute_value_event_get_data(value_event);
                 
-                if ((uint16_t)(value_event->data_offset+1) == value_event->attribute_length) {
+                if ((uint16_t)(sdp_query_attribute_value_event_get_data_offset(value_event)+1) == sdp_query_attribute_value_event_get_attribute_length(value_event)) {
 
-                    switch(value_event->attribute_id) {
+                    switch(sdp_query_attribute_value_event_get_attribute_id(value_event)) {
                         case SDP_ServiceClassIDList:
                             if (de_get_element_type(attribute_value) != DE_DES) break;
                             for (des_iterator_init(&des_list_it, attribute_value); des_iterator_has_more(&des_list_it); des_iterator_next(&des_list_it)) {
@@ -351,7 +351,7 @@ static void handle_sdp_client_query_result(sdp_query_event_t *event)
                                     case SDP_PANU:
                                     case SDP_NAP:
                                     case SDP_GN:
-                                        printf("SDP Attribute 0x%04x: BNEP PAN protocol UUID: %04x\n", value_event->attribute_id, uuid);
+                                        printf("SDP Attribute 0x%04x: BNEP PAN protocol UUID: %04x\n", sdp_query_attribute_value_event_get_attribute_id(value_event), uuid);
                                         bnep_remote_uuid = uuid;
                                         break;
                                     default:
@@ -362,11 +362,11 @@ static void handle_sdp_client_query_result(sdp_query_event_t *event)
                         case 0x0100:
                         case 0x0101:
                             str = get_string_from_data_element(attribute_value);
-                            printf("SDP Attribute: 0x%04x: %s\n", value_event->attribute_id, str);
+                            printf("SDP Attribute: 0x%04x: %s\n", sdp_query_attribute_value_event_get_attribute_id(value_event), str);
                             free(str);
                             break;
                         case 0x0004: {
-                                printf("SDP Attribute: 0x%04x\n", value_event->attribute_id);
+                                printf("SDP Attribute: 0x%04x\n", sdp_query_attribute_value_event_get_attribute_id(value_event));
 
                                 for (des_iterator_init(&des_list_it, attribute_value); des_iterator_has_more(&des_list_it); des_iterator_next(&des_list_it)) {                                    
                                     uint8_t       *des_element;
@@ -400,7 +400,7 @@ static void handle_sdp_client_query_result(sdp_query_event_t *event)
                                 printf("l2cap_psm 0x%04x, bnep_version 0x%04x\n", bnep_l2cap_psm, bnep_version);
 
                                 /* Create BNEP connection */
-                                bnep_connect(NULL, remote, bnep_l2cap_psm, PANU_UUID, bnep_remote_uuid);
+                                bnep_connect(remote, bnep_l2cap_psm, PANU_UUID, bnep_remote_uuid);
                             }
                             break;
                         default:
@@ -408,12 +408,12 @@ static void handle_sdp_client_query_result(sdp_query_event_t *event)
                     }
                 }
             } else {
-                fprintf(stderr, "SDP attribute value buffer size exceeded: available %d, required %d\n", attribute_value_buffer_size, value_event->attribute_length);
+                fprintf(stderr, "SDP attribute value buffer size exceeded: available %d, required %d\n", attribute_value_buffer_size, sdp_query_attribute_value_event_get_attribute_length(value_event));
             }
             break;
             
         case SDP_QUERY_COMPLETE:
-            complete_event = (sdp_query_complete_event_t*) event;
+            complete_event = (const uint8_t *) event;
             fprintf(stderr, "General query done with status %d.\n", sdp_query_complete_event_get_status(complete_event));
 
             break;

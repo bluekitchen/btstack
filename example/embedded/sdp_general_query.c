@@ -145,24 +145,24 @@ static void assertBuffer(int size){
 
 /* LISTING_START(HandleSDPQUeryResult): Handling query result chunks. */
 static void handle_sdp_client_query_result(sdp_query_event_t * event){
-    sdp_query_attribute_value_event_t * ve;
+    const uint8_t * ve;
     const uint8_t * ce;
 
     switch (event->type){
         case SDP_QUERY_ATTRIBUTE_VALUE:
-            ve = (sdp_query_attribute_value_event_t*) event;
+            ve = (const uint8_t *) event;
             
             // handle new record
-            if (ve->record_id != record_id){
-                record_id = ve->record_id;
+            if (sdp_query_attribute_value_event_get_record_id(ve) != record_id){
+                record_id = sdp_query_attribute_value_event_get_record_id(ve);
                 printf("\n---\nRecord nr. %u\n", record_id);
             }
 
-            assertBuffer(ve->attribute_length);
+            assertBuffer(sdp_query_attribute_value_event_get_attribute_length(ve));
 
-            attribute_value[ve->data_offset] = ve->data;
-            if ((uint16_t)(ve->data_offset+1) == ve->attribute_length){
-               printf("Attribute 0x%04x: ", ve->attribute_id);
+            attribute_value[sdp_query_attribute_value_event_get_data_offset(ve)] = sdp_query_attribute_value_event_get_data(ve);
+            if ((uint16_t)(sdp_query_attribute_value_event_get_data_offset(ve)+1) == sdp_query_attribute_value_event_get_attribute_length(ve)){
+               printf("Attribute 0x%04x: ", sdp_query_attribute_value_event_get_attribute_id(ve));
                de_dump_data_element(attribute_value);
             }
             break;

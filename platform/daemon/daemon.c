@@ -1598,28 +1598,28 @@ static void sdp_client_assert_buffer(int size){
 
 // define new packet type SDP_CLIENT_PACKET
 static void handle_sdp_client_query_result(sdp_query_event_t * event){
-    sdp_query_attribute_value_event_t * ve;
+    const uint8_t * ve;
     const uint8_t * complete_event;
     int event_len;
 
     switch (event->type){
         case SDP_QUERY_ATTRIBUTE_VALUE:
-            ve = (sdp_query_attribute_value_event_t*) event;
+            ve = (const uint8_t*) event;
             
-            sdp_client_assert_buffer(ve->attribute_length);
+            sdp_client_assert_buffer(sdp_query_attribute_value_event_get_attribute_length(ve));
 
-            attribute_value[ve->data_offset] = ve->data;
+            attribute_value[sdp_query_attribute_value_event_get_data_offset(ve)] = ve->data;
 
-            if ((uint16_t)(ve->data_offset+1) == ve->attribute_length){
-                hexdump(attribute_value, ve->attribute_length);
+            if ((uint16_t)(sdp_query_attribute_value_event_get_data_offset(ve)+1) == sdp_query_attribute_value_event_get_attribute_length(ve)){
+                hexdump(attribute_value, sdp_query_attribute_value_event_get_attribute_length(ve));
 
-                int event_len = 1 + 3 * 2 + ve->attribute_length; 
+                int event_len = 1 + 3 * 2 + sdp_query_attribute_value_event_get_attribute_length(ve); 
                 uint8_t event[event_len];
                 event[0] = SDP_QUERY_ATTRIBUTE_VALUE;
-                bt_store_16(event, 1, (uint16_t)ve->record_id);
-                bt_store_16(event, 3, ve->attribute_id);
-                bt_store_16(event, 5, (uint16_t)ve->attribute_length);
-                memcpy(&event[7], attribute_value, ve->attribute_length);
+                bt_store_16(event, 1, sdp_query_attribute_value_event_get_record_id(ve));
+                bt_store_16(event, 3, sdp_query_attribute_value_event_get_attribute_id(ve));
+                bt_store_16(event, 5, (uint16_t)sdp_query_attribute_value_event_get_attribute_length(ve));
+                memcpy(&event[7], attribute_value, sdp_query_attribute_value_event_get_attribute_length(ve));
                 hci_dump_packet(SDP_CLIENT_PACKET, 0, event, event_len);
                 socket_connection_send_packet(sdp_client_query_connection, SDP_CLIENT_PACKET, 0, event, event_len);
             }

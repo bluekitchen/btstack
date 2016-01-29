@@ -44,11 +44,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "hci_cmd.h"
-#include "classic/sdp_util.h"
-
+#include "btstack_event.h"
 #include "classic/sdp_client.h"
 #include "classic/sdp_query_rfcomm.h"
+#include "classic/sdp_util.h"
+#include "hci_cmd.h"
 
 // called by test/sdp_client
 void sdp_query_rfcomm_init(void);
@@ -257,7 +257,7 @@ static void handleServiceNameData(uint32_t attribute_value_length, uint32_t data
 }
 
 static void handle_sdp_parser_event(sdp_query_event_t * event){
-    sdp_query_attribute_value_event_t * ve;
+    const uint8_t * ve;
     switch (event->type){
         case SDP_QUERY_SERVICE_RECORD_HANDLE:
             // handle service without a name
@@ -270,18 +270,18 @@ static void handle_sdp_parser_event(sdp_query_event_t * event){
             sdp_service_name[0] = 0;
             break;
         case SDP_QUERY_ATTRIBUTE_VALUE:
-            ve = (sdp_query_attribute_value_event_t*) event;
+            ve = (const uint8_t *) event;
            // log_info("handle_sdp_parser_event [ AID, ALen, DOff, Data] : [%x, %u, %u] BYTE %02x", 
-           //          ve->attribute_id, ve->attribute_length, ve->data_offset, ve->data);
+           //          ve->attribute_id, sdp_query_attribute_value_event_get_attribute_length(ve),sdp_query_attribute_value_event_get_data_offset(ve), sdp_query_attribute_value_event_get_data(ve));
             
-            switch (ve->attribute_id){
+            switch (sdp_query_attribute_value_event_get_attribute_id(ve)){
                 case SDP_ProtocolDescriptorList:
                     // find rfcomm channel
-                    handleProtocolDescriptorListData(ve->attribute_length, ve->data_offset, ve->data);
+                    handleProtocolDescriptorListData(sdp_query_attribute_value_event_get_attribute_length(ve),sdp_query_attribute_value_event_get_data_offset(ve), sdp_query_attribute_value_event_get_data(ve));
                     break;
                 case 0x0100:
                     // get service name
-                    handleServiceNameData(ve->attribute_length, ve->data_offset, ve->data);
+                    handleServiceNameData(sdp_query_attribute_value_event_get_attribute_length(ve),sdp_query_attribute_value_event_get_data_offset(ve), sdp_query_attribute_value_event_get_data(ve));
                     break;
                 default:
                     // give up
@@ -300,7 +300,6 @@ static void handle_sdp_parser_event(sdp_query_event_t * event){
 }
 
 void sdp_query_rfcomm_init(void){
-    printf("sdp_query_rfcomm_init\n");
     // init
     de_state_init(&de_header_state);
     de_state_init(&sn_de_header_state);

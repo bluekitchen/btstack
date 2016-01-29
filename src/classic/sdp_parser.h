@@ -77,28 +77,6 @@ typedef struct sdp_query_event {
     void * dummy;   // force sdp_query_event struct to be word aligned -> avoid -Wcast-align warning
 } sdp_query_event_t;
 
-// SDP Parser event to deliver an attribute value byte by byte
-typedef struct sdp_query_attribute_value_event {
-    uint8_t type;
-    int record_id;
-    uint16_t attribute_id;
-    uint32_t attribute_length;
-    int data_offset;
-    uint8_t data;
-    void * dummy;   // force sdp_query_attribute_value_event struct to be word aligned -> avoid -Wcast-align warning
-} sdp_query_attribute_value_event_t;
-
-
-#ifdef ENABLE_SDP_EXTRA_QUERIES
-typedef struct sdp_query_service_record_handle_event {
-    uint8_t type;
-    uint16_t total_count;
-    uint16_t current_count;
-    uint32_t record_handle;
-    void * dummy;   // force sdp_query_service_record_handle_event struct to be word aligned -> avoid -Wcast-align warning
-} sdp_query_service_record_handle_event_t;
-#endif
-
 /*
  * @brief
  */

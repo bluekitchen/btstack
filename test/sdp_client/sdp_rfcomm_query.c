@@ -94,8 +94,6 @@ void handle_query_rfcomm_event(sdp_query_event_t * event, void * context){
     const uint8_t * ce;
     uint8_t * ve = (uint8_t *) event;
 
-    printf("handle_query_rfcomm_event\n");
-
     switch (event->type){
         case SDP_QUERY_RFCOMM_SERVICE:
             channel_nr[service_index] = sdp_query_rfcomm_service_event_get_rfcomm_channel(ve);

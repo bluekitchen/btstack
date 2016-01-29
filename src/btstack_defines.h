@@ -409,16 +409,24 @@
  */
 #define SDP_QUERY_RFCOMM_SERVICE                           0x92
 
-// data: event(8), len(8), record nr(16), attribute id(16), attribute value(var)
 /**
- * TODO: format for variable data
- * @param record_nr
+ * @format 22221
+ * @param record_id
  * @param attribute_id
- * @param attribute_value
+ * @param attribute_length
+ * @param data_offset
+ * @param data
  */
 #define SDP_QUERY_ATTRIBUTE_VALUE                          0x93
 
-// not provided by daemon, only used for internal testing
+
+/**
+ * @format 224
+ * @param total_count
+ * @param record_index
+ * @param record_handle
+ * @note Not provided by daemon, only used for internal testing
+ */
 #define SDP_QUERY_SERVICE_RECORD_HANDLE                    0x94
 
 /**

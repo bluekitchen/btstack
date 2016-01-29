@@ -164,7 +164,7 @@ static char * get_string_from_data_element(uint8_t * element){
 /* LISTING_START(HandleSDPQUeryResult): Extracting BNEP Protcol UUID and L2CAP PSM */
 static void handle_sdp_client_query_result(sdp_query_event_t * event){
     /* LISTING_PAUSE */
-    sdp_query_attribute_value_event_t * ve;
+    const uint8_t * ve;
     const uint8_t * ce;
     des_iterator_t des_list_it;
     des_iterator_t prot_it;
@@ -172,25 +172,25 @@ static void handle_sdp_client_query_result(sdp_query_event_t * event){
 
     switch (event->type){
         case SDP_QUERY_ATTRIBUTE_VALUE:
-            ve = (sdp_query_attribute_value_event_t*) event;
+            ve = (const uint8_t *) event;
             
             // handle new record
-            if (ve->record_id != record_id){
-                record_id = ve->record_id;
+            if (sdp_query_attribute_value_event_get_record_id(ve) != record_id){
+                record_id = sdp_query_attribute_value_event_get_record_id(ve);
                 printf("\n---\nRecord nr. %u\n", record_id);
             }
 
-            assertBuffer(ve->attribute_length);
+            assertBuffer(sdp_query_attribute_value_event_get_attribute_length(ve));
 
-            attribute_value[ve->data_offset] = ve->data;
-            if ((uint16_t)(ve->data_offset+1) == ve->attribute_length){
+            attribute_value[sdp_query_attribute_value_event_get_data_offset(ve)] = sdp_query_attribute_value_event_get_data(ve);
+            if ((uint16_t)(sdp_query_attribute_value_event_get_data_offset(ve)+1) == sdp_query_attribute_value_event_get_attribute_length(ve)){
 
                 /* LISTING_RESUME */
                 /* @text The Service Class ID List is a Data Element Sequence (DES) of UUIDs. 
                  * The BNEP PAN protocol UUID is within this list.
                  */
 
-                switch(ve->attribute_id){
+                switch(sdp_query_attribute_value_event_get_attribute_id(ve)){
                     // 0x0001 "Service Class ID List"
                     case SDP_ServiceClassIDList:
                         if (de_get_element_type(attribute_value) != DE_DES) break;
@@ -202,7 +202,7 @@ static void handle_sdp_client_query_result(sdp_query_event_t * event){
                                 case PANU_UUID:
                                 case NAP_UUID:
                                 case GN_UUID:
-                                    printf(" ** Attribute 0x%04x: BNEP PAN protocol UUID: %04x\n", ve->attribute_id, uuid);
+                                    printf(" ** Attribute 0x%04x: BNEP PAN protocol UUID: %04x\n", sdp_query_attribute_value_event_get_attribute_id(ve), uuid);
                                     break;
                                 default:
                                     break;
@@ -215,7 +215,7 @@ static void handle_sdp_client_query_result(sdp_query_event_t * event){
                     // 0x0101 "Service Description"
                     case 0x0101:
                         str = get_string_from_data_element(attribute_value);
-                        printf(" ** Attribute 0x%04x: %s\n", ve->attribute_id, str);
+                        printf(" ** Attribute 0x%04x: %s\n", sdp_query_attribute_value_event_get_attribute_id(ve), str);
                         free(str);
                         break;
                     
@@ -226,7 +226,7 @@ static void handle_sdp_client_query_result(sdp_query_event_t * event){
                      * and another DES with the BNEP UUID and the the BNEP version.
                      */
                     case SDP_ProtocolDescriptorList:{
-                            printf(" ** Attribute 0x%04x: ", ve->attribute_id);
+                            printf(" ** Attribute 0x%04x: ", sdp_query_attribute_value_event_get_attribute_id(ve));
                             
                             uint16_t l2cap_psm = 0;
                             uint16_t bnep_version = 0;

@@ -116,6 +116,18 @@ void sdp_parser_register_callback(void (*sdp_callback)(sdp_query_event_t* event)
     } 
 }
 
+static void emit_value_byte(uint8_t event_byte){
+    uint8_t event[11];
+    event[0] = SDP_QUERY_ATTRIBUTE_VALUE;
+    event[1] = 9;
+    bt_store_16(event, 2, record_counter);
+    bt_store_16(event, 4, attribute_id);
+    bt_store_16(event, 6, attribute_value_size);
+    bt_store_16(event, 8, attribute_bytes_delivered);
+    event[10] = event_byte;
+    (*sdp_query_callback)((sdp_query_event_t*)&event); 
+}
+
 static void parse(uint8_t eventByte){
     // count all bytes
     list_offset++;
@@ -164,18 +176,9 @@ static void parse(uint8_t eventByte){
         
         case GET_ATTRIBUTE_VALUE_LENGTH:
             attribute_bytes_received++;
-            {
-            sdp_query_attribute_value_event_t attribute_value_event = {
-                SDP_QUERY_ATTRIBUTE_VALUE, 
-                record_counter, 
-                attribute_id, 
-                attribute_value_size,
-                attribute_bytes_delivered++,
-                eventByte
-            };
-            (*sdp_query_callback)((sdp_query_event_t*)&attribute_value_event);
-            }
-           if (!de_state_size(eventByte, &de_header_state)) break;
+            emit_value_byte(eventByte);
+            attribute_bytes_delivered++;
+            if (!de_state_size(eventByte, &de_header_state)) break;
 
             attribute_value_size = de_header_state.de_size + attribute_bytes_received;
 
@@ -184,18 +187,8 @@ static void parse(uint8_t eventByte){
         
         case GET_ATTRIBUTE_VALUE: 
             attribute_bytes_received++;
-            {
-            sdp_query_attribute_value_event_t attribute_value_event = {
-                SDP_QUERY_ATTRIBUTE_VALUE, 
-                record_counter, 
-                attribute_id, 
-                attribute_value_size,
-                attribute_bytes_delivered++,
-                eventByte
-            };
-
-            (*sdp_query_callback)((sdp_query_event_t*)&attribute_value_event);
-            }
+            emit_value_byte(eventByte);
+            attribute_bytes_delivered++;
             // log_info("paser: attribute_bytes_received %u, attribute_value_size %u", attribute_bytes_received, attribute_value_size);
 
             if (attribute_bytes_received < attribute_value_size) break;
@@ -260,13 +253,13 @@ void sdp_parser_handle_service_search(uint8_t * data, uint16_t total_count, uint
     for (i=0;i<record_handle_count;i++){
         record_handle = READ_NET_32(data, i*4);
         record_counter++;
-        sdp_query_service_record_handle_event_t service_record_handle_event = {
-            SDP_QUERY_SERVICE_RECORD_HANDLE, 
-            total_count, 
-            record_counter, 
-            record_handle
-        };
-        (*sdp_query_callback)((sdp_query_event_t*)&service_record_handle_event);       
+        uint8_t event[10];
+        event[0] = SDP_QUERY_SERVICE_RECORD_HANDLE;
+        event[1] = 8;
+        bt_store_16(event, 2, total_count);
+        bt_store_16(event, 4, record_counter);
+        bt_store_32(event, 6, record_handle);
+        (*sdp_query_callback)((sdp_query_event_t*)&event);       
     }        
 }
 #endif

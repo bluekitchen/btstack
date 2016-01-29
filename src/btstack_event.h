@@ -87,6 +87,86 @@ static inline const char * sdp_query_rfcomm_service_event_get_name(const uint8_t
     return (const char *) &event[3];
 }
 
+/**
+ * @brief Get field record_id from event sdp_query_attribute_value_event
+ * @param Event packet
+ * @return record_id
+ * @note: btstack_type 2
+ */
+static inline uint16_t sdp_query_attribute_value_event_get_record_id(const uint8_t * event){
+    return READ_BT_16(event, 2);
+}
+
+/**
+ * @brief Get field attribute_id from event sdp_query_attribute_value_event
+ * @param Event packet
+ * @return attribute_id
+ * @note: btstack_type 2
+ */
+static inline uint16_t sdp_query_attribute_value_event_get_attribute_id(const uint8_t * event){
+    return READ_BT_16(event, 4);
+}
+
+/**
+ * @brief Get field attribute_length from event sdp_query_attribute_value_event
+ * @param Event packet
+ * @return attribute_length
+ * @note: btstack_type 2
+ */
+static inline uint16_t sdp_query_attribute_value_event_get_attribute_length(const uint8_t * event){
+    return READ_BT_16(event, 6);
+}
+
+/**
+ * @brief Get field data_offset from event sdp_query_attribute_value_event
+ * @param Event packet
+ * @return data_offset
+ * @note: btstack_type 2
+ */
+static inline uint16_t sdp_query_attribute_value_event_get_data_offset(const uint8_t * event){
+    return READ_BT_16(event, 8);
+}
+
+/**
+ * @brief Get field data from event sdp_query_attribute_value_event
+ * @param Event packet
+ * @return data
+ * @note: btstack_type 1
+ */
+static inline uint8_t sdp_query_attribute_value_event_get_data(const uint8_t * event){
+    return event[10];
+}
+
+/**
+ * @brief Get field total_count from event sdp_query_service_record_handle_event
+ * @param Event packet
+ * @return total_count
+ * @note: btstack_type 2
+ */
+static inline uint16_t sdp_query_service_record_handle_event_get_total_count(const uint8_t * event){
+    return READ_BT_16(event, 2);
+}
+
+/**
+ * @brief Get field record_index from event sdp_query_service_record_handle_event
+ * @param Event packet
+ * @return record_index
+ * @note: btstack_type 2
+ */
+static inline uint16_t sdp_query_service_record_handle_event_get_record_index(const uint8_t * event){
+    return READ_BT_16(event, 4);
+}
+
+/**
+ * @brief Get field record_handle from event sdp_query_service_record_handle_event
+ * @param Event packet
+ * @return record_handle
+ * @note: btstack_type 4
+ */
+static inline uint32_t sdp_query_service_record_handle_event_get_record_handle(const uint8_t * event){
+    return READ_BT_32(event, 6);
+}
+
 
 /* API_END */
 
