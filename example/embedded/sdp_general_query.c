@@ -148,16 +148,16 @@ static void handle_sdp_client_query_result(uint8_t packet_type, uint8_t *packet,
     switch (packet[0]){
         case SDP_QUERY_ATTRIBUTE_VALUE:
             // handle new record
-            if (sdp_query_attribute_value_event_get_record_id(packet) != record_id){
-                record_id = sdp_query_attribute_value_event_get_record_id(packet);
+            if (sdp_query_attribute_byte_event_get_record_id(packet) != record_id){
+                record_id = sdp_query_attribute_byte_event_get_record_id(packet);
                 printf("\n---\nRecord nr. %u\n", record_id);
             }
 
-            assertBuffer(sdp_query_attribute_value_event_get_attribute_length(packet));
+            assertBuffer(sdp_query_attribute_byte_event_get_attribute_length(packet));
 
-            attribute_value[sdp_query_attribute_value_event_get_data_offset(packet)] = sdp_query_attribute_value_event_get_data(packet);
-            if ((uint16_t)(sdp_query_attribute_value_event_get_data_offset(packet)+1) == sdp_query_attribute_value_event_get_attribute_length(packet)){
-               printf("Attribute 0x%04x: ", sdp_query_attribute_value_event_get_attribute_id(packet));
+            attribute_value[sdp_query_attribute_byte_event_get_data_offset(packet)] = sdp_query_attribute_byte_event_get_data(packet);
+            if ((uint16_t)(sdp_query_attribute_byte_event_get_data_offset(packet)+1) == sdp_query_attribute_byte_event_get_attribute_length(packet)){
+               printf("Attribute 0x%04x: ", sdp_query_attribute_byte_event_get_attribute_id(packet));
                de_dump_data_element(attribute_value);
             }
             break;

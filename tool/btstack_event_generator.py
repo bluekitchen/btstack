@@ -131,14 +131,15 @@ defines_used = set()
 param_read = {
     '1' : 'return event[{offset}];',
     'J' : 'return event[{offset}];',
-    'L' : 'return event[{offset}];',
     '2' : 'return READ_BT_16(event, {offset});',
+    'L' : 'return READ_BT_16(event, {offset});',
     '3' : 'return READ_BT_24(event, {offset});',
     '4' : 'return READ_BT_32(event, {offset});',
     'H' : 'return READ_BT_16(event, {offset});',
     'B' : 'swap48(&event[{offset}], {result_name});',
     'R' : 'return &event[{offset}];',
-    'T' : 'return (const char *) &event[{offset}];'
+    'T' : 'return (const char *) &event[{offset}];',
+    'V' : 'return &event[{offset}];',
 }
 
 def c_type_for_btstack_type(type):
@@ -202,16 +203,19 @@ def create_events(events):
         fout.write(copyright)
         fout.write(hfile_header_begin)
         for event_type, event_name, format, args in events:
-            if not event_name in ['SDP_QUERY_COMPLETE', 'SDP_QUERY_RFCOMM_SERVICE', 'SDP_QUERY_ATTRIBUTE_VALUE', 'SDP_QUERY_SERVICE_RECORD_HANDLE']:
+            if not event_name in [
+                'SDP_QUERY_COMPLETE',
+                'SDP_QUERY_RFCOMM_SERVICE',
+                'SDP_QUERY_ATTRIBUTE_BYTE',
+                'SDP_QUERY_SERVICE_RECORD_HANDLE']:
                 continue                
             event_name = format_function_name(event_name)
+            length_name = ''
             offset = 2
             supported = all_fields_supported(format)
             for f, arg in zip(format, args):
                 field_name = arg
                 field_type = f 
-                if field_type == 'V':
-                    break
                 text = create_getter(event_name, field_name, field_type, offset, supported)
                 fout.write(text)
                 if field_type in 'RT':

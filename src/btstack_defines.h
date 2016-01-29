@@ -417,8 +417,16 @@
  * @param data_offset
  * @param data
  */
-#define SDP_QUERY_ATTRIBUTE_VALUE                          0x93
+#define SDP_QUERY_ATTRIBUTE_BYTE                           0x93
 
+/**
+ * @format 22LV
+ * @param record_id
+ * @param attribute_id
+ * @param attribute_length
+ * @param attribute_value
+ */
+#define SDP_QUERY_ATTRIBUTE_VALUE                          0x94
 
 /**
  * @format 224
@@ -427,7 +435,7 @@
  * @param record_handle
  * @note Not provided by daemon, only used for internal testing
  */
-#define SDP_QUERY_SERVICE_RECORD_HANDLE                    0x94
+#define SDP_QUERY_SERVICE_RECORD_HANDLE                    0x95
 
 /**
  * @format H1

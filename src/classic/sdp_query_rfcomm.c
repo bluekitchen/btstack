@@ -270,20 +270,20 @@ static void handle_sdp_parser_event(uint8_t packet_type, uint8_t *packet, uint16
             break;
         case SDP_QUERY_ATTRIBUTE_VALUE:
             // log_info("handle_sdp_parser_event [ AID, ALen, DOff, Data] : [%x, %u, %u] BYTE %02x", 
-            //          ve->attribute_id, sdp_query_attribute_value_event_get_attribute_length(packet),
-            //          sdp_query_attribute_value_event_get_data_offset(packet), sdp_query_attribute_value_event_get_data(packet));
-            switch (sdp_query_attribute_value_event_get_attribute_id(packet)){
+            //          ve->attribute_id, sdp_query_attribute_byte_event_get_attribute_length(packet),
+            //          sdp_query_attribute_byte_event_get_data_offset(packet), sdp_query_attribute_byte_event_get_data(packet));
+            switch (sdp_query_attribute_byte_event_get_attribute_id(packet)){
                 case SDP_ProtocolDescriptorList:
                     // find rfcomm channel
-                    handleProtocolDescriptorListData(sdp_query_attribute_value_event_get_attribute_length(packet),
-                        sdp_query_attribute_value_event_get_data_offset(packet),
-                        sdp_query_attribute_value_event_get_data(packet));
+                    handleProtocolDescriptorListData(sdp_query_attribute_byte_event_get_attribute_length(packet),
+                        sdp_query_attribute_byte_event_get_data_offset(packet),
+                        sdp_query_attribute_byte_event_get_data(packet));
                     break;
                 case 0x0100:
                     // get service name
-                    handleServiceNameData(sdp_query_attribute_value_event_get_attribute_length(packet),
-                        sdp_query_attribute_value_event_get_data_offset(packet),
-                        sdp_query_attribute_value_event_get_data(packet));
+                    handleServiceNameData(sdp_query_attribute_byte_event_get_attribute_length(packet),
+                        sdp_query_attribute_byte_event_get_data_offset(packet),
+                        sdp_query_attribute_byte_event_get_data(packet));
                     break;
                 default:
                     // give up

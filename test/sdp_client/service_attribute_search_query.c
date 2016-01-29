@@ -61,29 +61,29 @@ static void test_attribute_value_event(const uint8_t * event){
     CHECK_EQUAL(event[0], SDP_QUERY_ATTRIBUTE_VALUE);
 
     // record ids are sequential
-   // printf("sdp_query_attribute_value_event_get_record_id(event) %d",sdp_query_attribute_value_event_get_record_id(event));
+   // printf("sdp_query_attribute_byte_event_get_record_id(event) %d",sdp_query_attribute_byte_event_get_record_id(event));
 
-    if (sdp_query_attribute_value_event_get_record_id(event) != recordId){
+    if (sdp_query_attribute_byte_event_get_record_id(event) != recordId){
         recordId++;
     }
-    CHECK_EQUAL(sdp_query_attribute_value_event_get_record_id(event), recordId);
+    CHECK_EQUAL(sdp_query_attribute_byte_event_get_record_id(event), recordId);
     
     // is attribute value complete
-    if (sdp_query_attribute_value_event_get_attribute_id(event) != attributeId ){
+    if (sdp_query_attribute_byte_event_get_attribute_id(event) != attributeId ){
         if (attributeLength > 0){
             CHECK_EQUAL(attributeLength, attributeOffset+1);
         }
-        attributeId = sdp_query_attribute_value_event_get_attribute_id(event);
+        attributeId = sdp_query_attribute_byte_event_get_attribute_id(event);
         attributeOffset = 0;
     }
 
     // count attribute value bytes
-    if (sdp_query_attribute_value_event_get_data_offset(event) != attributeOffset){
+    if (sdp_query_attribute_byte_event_get_data_offset(event) != attributeOffset){
         attributeOffset++;
     }
-    attributeLength = sdp_query_attribute_value_event_get_attribute_length(event);
+    attributeLength = sdp_query_attribute_byte_event_get_attribute_length(event);
 
-    CHECK_EQUAL(sdp_query_attribute_value_event_get_data_offset(event), attributeOffset);
+    CHECK_EQUAL(sdp_query_attribute_byte_event_get_data_offset(event), attributeOffset);
 }
 
 
@@ -93,12 +93,12 @@ static void handle_sdp_parser_event(uint8_t packet_type, uint8_t *packet, uint16
             test_attribute_value_event(packet);
             
             // handle new record
-            if (sdp_query_attribute_value_event_get_record_id(packet) != record_id){
-                record_id = sdp_query_attribute_value_event_get_record_id(packet);
+            if (sdp_query_attribute_byte_event_get_record_id(packet) != record_id){
+                record_id = sdp_query_attribute_byte_event_get_record_id(packet);
             }
             // buffer data
-            assertBuffer(sdp_query_attribute_value_event_get_attribute_length(packet));
-            attribute_value[sdp_query_attribute_value_event_get_data_offset(packet)] = sdp_query_attribute_value_event_get_data(packet);
+            assertBuffer(sdp_query_attribute_byte_event_get_attribute_length(packet));
+            attribute_value[sdp_query_attribute_byte_event_get_data_offset(packet)] = sdp_query_attribute_byte_event_get_data(packet);
             
             break;
         case SDP_QUERY_COMPLETE:

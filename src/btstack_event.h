@@ -88,52 +88,52 @@ static inline const char * sdp_query_rfcomm_service_event_get_name(const uint8_t
 }
 
 /**
- * @brief Get field record_id from event sdp_query_attribute_value_event
+ * @brief Get field record_id from event sdp_query_attribute_byte_event
  * @param Event packet
  * @return record_id
  * @note: btstack_type 2
  */
-static inline uint16_t sdp_query_attribute_value_event_get_record_id(const uint8_t * event){
+static inline uint16_t sdp_query_attribute_byte_event_get_record_id(const uint8_t * event){
     return READ_BT_16(event, 2);
 }
 
 /**
- * @brief Get field attribute_id from event sdp_query_attribute_value_event
+ * @brief Get field attribute_id from event sdp_query_attribute_byte_event
  * @param Event packet
  * @return attribute_id
  * @note: btstack_type 2
  */
-static inline uint16_t sdp_query_attribute_value_event_get_attribute_id(const uint8_t * event){
+static inline uint16_t sdp_query_attribute_byte_event_get_attribute_id(const uint8_t * event){
     return READ_BT_16(event, 4);
 }
 
 /**
- * @brief Get field attribute_length from event sdp_query_attribute_value_event
+ * @brief Get field attribute_length from event sdp_query_attribute_byte_event
  * @param Event packet
  * @return attribute_length
  * @note: btstack_type 2
  */
-static inline uint16_t sdp_query_attribute_value_event_get_attribute_length(const uint8_t * event){
+static inline uint16_t sdp_query_attribute_byte_event_get_attribute_length(const uint8_t * event){
     return READ_BT_16(event, 6);
 }
 
 /**
- * @brief Get field data_offset from event sdp_query_attribute_value_event
+ * @brief Get field data_offset from event sdp_query_attribute_byte_event
  * @param Event packet
  * @return data_offset
  * @note: btstack_type 2
  */
-static inline uint16_t sdp_query_attribute_value_event_get_data_offset(const uint8_t * event){
+static inline uint16_t sdp_query_attribute_byte_event_get_data_offset(const uint8_t * event){
     return READ_BT_16(event, 8);
 }
 
 /**
- * @brief Get field data from event sdp_query_attribute_value_event
+ * @brief Get field data from event sdp_query_attribute_byte_event
  * @param Event packet
  * @return data
  * @note: btstack_type 1
  */
-static inline uint8_t sdp_query_attribute_value_event_get_data(const uint8_t * event){
+static inline uint8_t sdp_query_attribute_byte_event_get_data(const uint8_t * event){
     return event[10];
 }
 
