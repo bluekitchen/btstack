@@ -101,13 +101,14 @@ static int dummy_callback(void){
 }
 
 static hci_transport_t dummy_transport = {
+  /*  .transport.name                          = */  "DUMMY",
+  /*  .transport.init                          = */  NULL,
   /*  .transport.open                          = */  NULL,
   /*  .transport.close                         = */  NULL,
-  /*  .transport.send_packet                   = */  NULL,
   /*  .transport.register_packet_handler       = */  (void (*)(void (*)(uint8_t, uint8_t *, uint16_t))) dummy_callback,
-  /*  .transport.get_transport_name            = */  NULL,
-  /*  .transport.set_baudrate                  = */  NULL,
   /*  .transport.can_send_packet_now           = */  NULL,
+  /*  .transport.send_packet                   = */  NULL,
+  /*  .transport.set_baudrate                  = */  NULL,
 };
 
 
@@ -147,7 +148,7 @@ bool nameHasPrefix(const char * name_prefix, uint16_t data_length, uint8_t * dat
 
 TEST_GROUP(ADParser){
     void setup(void){
-        hci_init(&dummy_transport, NULL, NULL, NULL);
+        hci_init(&dummy_transport, NULL, NULL);
         hci_register_packet_handler(packet_handler);
     }
 };
