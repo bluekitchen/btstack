@@ -15,6 +15,7 @@ hci_h_path = 'src/hci.h'
 btstack_root = '../..'
 
 def set_btstack_root(path):
+    global btstack_root
     btstack_root = path
 
 def assert_dir(path):
