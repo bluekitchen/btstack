@@ -396,12 +396,13 @@ static void handle_found_service(char * name, uint8_t port){
 }
 
 static void handle_query_rfcomm_event(sdp_query_event_t * event, void * context){
-    sdp_query_rfcomm_service_event_t * ve;
+    const uint8_t * ve;
             
     switch (event->type){
         case SDP_QUERY_RFCOMM_SERVICE:
-            ve = (sdp_query_rfcomm_service_event_t*) event;
-            handle_found_service((char*) ve->service_name, ve->channel_nr);
+            ve = (const uint8_t*) event;
+            handle_found_service(sdp_query_rfcomm_service_event_get_name(ve),
+                                 sdp_query_rfcomm_service_event_get_rfcomm_channel(ve));
             break;
         case SDP_QUERY_COMPLETE:
             printf("SDP SPP Query complete\n");

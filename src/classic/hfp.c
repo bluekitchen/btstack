@@ -59,6 +59,7 @@
 #include "classic/sdp_query_rfcomm.h"
 #include "classic/sdp.h"
 #include "btstack_debug.h"
+#include "btstack_event.h"
 
 #define HFP_HF_FEATURES_SIZE 10
 #define HFP_AG_FEATURES_SIZE 12
@@ -414,7 +415,7 @@ void hfp_create_sdp_record(uint8_t * service, uint32_t service_record_handle, ui
 
 static hfp_connection_t * connection_doing_sdp_query = NULL;
 static void handle_query_rfcomm_event(sdp_query_event_t * event, void * context){
-    sdp_query_rfcomm_service_event_t * ve;
+    const uint8_t * ve;
     sdp_query_complete_event_t * ce;
     hfp_connection_t * connection = connection_doing_sdp_query;
     
@@ -422,12 +423,12 @@ static void handle_query_rfcomm_event(sdp_query_event_t * event, void * context)
     
     switch (event->type){
         case SDP_QUERY_RFCOMM_SERVICE:
-            ve = (sdp_query_rfcomm_service_event_t*) event;
+            ve = (const uint8_t *) event;
             if (!connection) {
-                log_error("handle_query_rfcomm_event alloc connection for RFCOMM port %u failed", ve->channel_nr);
+                log_error("handle_query_rfcomm_event alloc connection for RFCOMM port %u failed", sdp_query_rfcomm_service_event_get_rfcomm_channel(ve));
                 return;
             }
-            connection->rfcomm_channel_nr = ve->channel_nr;
+            connection->rfcomm_channel_nr = sdp_query_rfcomm_service_event_get_rfcomm_channel(ve);
             break;
         case SDP_QUERY_COMPLETE:
             connection_doing_sdp_query = NULL;

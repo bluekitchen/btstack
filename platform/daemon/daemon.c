@@ -1577,14 +1577,9 @@ static void rfcomm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t
 static void handle_sdp_rfcomm_service_result(sdp_query_event_t * rfcomm_event, void * context){
     switch (rfcomm_event->type){
         case SDP_QUERY_RFCOMM_SERVICE: {
-            sdp_query_rfcomm_service_event_t * service_event = (sdp_query_rfcomm_service_event_t*) rfcomm_event;
-            int name_len = (int)strlen((const char*)service_event->service_name);
-            int event_len = 3 + name_len; 
-            uint8_t event[event_len];
-            event[0] = rfcomm_event->type;
-            event[1] = 1 + name_len;
-            event[2] = service_event->channel_nr;
-            memcpy(&event[3], service_event->service_name, name_len);
+            // already an HCI Event
+            const uint8_t * event = (const uint8_t *) event;
+            int event_len = 2 + event[1];
             hci_dump_packet(HCI_EVENT_PACKET, 0, event, event_len);
             socket_connection_send_packet(context, HCI_EVENT_PACKET, 0, event, event_len);
             break;

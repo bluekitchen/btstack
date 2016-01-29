@@ -215,12 +215,14 @@ static void sdp_query_complete_response(uint8_t status){
 }
 
 static void sdp_query_rfcomm_service_response(uint8_t status){
-    sdp_query_rfcomm_service_event_t service_event = {
-        SDP_QUERY_RFCOMM_SERVICE, 
-        sdp_rfcomm_channel_nr,
-        (uint8_t *)sdp_rfcomm_service_name
-    };
-    (*registered_sdp_app_callback)((sdp_query_event_t*)&service_event, registered_sdp_app_context);
+    int sdp_service_name_len = strlen(sdp_rfcomm_service_name);
+    uint8_t event[3+SDP_SERVICE_NAME_LEN+1];
+    event[0] = SDP_QUERY_RFCOMM_SERVICE;
+    event[1] = sdp_service_name_len + 1;
+    event[2] = sdp_rfcomm_channel_nr;
+    memcpy(&event[3], sdp_rfcomm_service_name, sdp_service_name_len);
+    event[3+sdp_service_name_len] = 0;
+    (*registered_sdp_app_callback)((sdp_query_event_t*)&event, registered_sdp_app_context);
 }
 
 void sdp_query_rfcomm_channel_and_name_for_uuid(bd_addr_t remote, uint16_t uuid){

@@ -48,17 +48,17 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "hci_cmd.h"
-#include "btstack_run_loop.h"
-
-#include "hci.h"
-#include "btstack_memory.h"
-#include "hci_dump.h"
-#include "l2cap.h"
-#include "classic/sdp_query_rfcomm.h"
-#include "classic/sdp.h"
 #include "btstack_debug.h"
+#include "btstack_event.h"
+#include "btstack_memory.h"
+#include "btstack_run_loop.h"
+#include "classic/sdp.h"
+#include "classic/sdp_query_rfcomm.h"
+#include "hci.h"
+#include "hci_cmd.h"
+#include "hci_dump.h"
 #include "hsp_ag.h"
+#include "l2cap.h"
 
 #define RFCOMM_SERVER_CHANNEL 1
 
@@ -626,14 +626,14 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 }
 
 static void handle_query_rfcomm_event(sdp_query_event_t * event, void * context){
-    sdp_query_rfcomm_service_event_t * ve;
+    const uint8_t * ve;
     sdp_query_complete_event_t * ce;
             
     switch (event->type){
         case SDP_QUERY_RFCOMM_SERVICE:
-            ve = (sdp_query_rfcomm_service_event_t*) event;
-            channel_nr = ve->channel_nr;
-            printf("** Service name: '%s', RFCOMM port %u\n", ve->service_name, channel_nr);
+            ve = (const uint8_t *) event;
+            channel_nr = sdp_query_rfcomm_service_event_get_rfcomm_channel(ve);
+            printf("** Service name: '%s', RFCOMM port %u\n", sdp_query_rfcomm_service_event_get_name(ve), channel_nr);
             break;
         case SDP_QUERY_COMPLETE:
             ce = (sdp_query_complete_event_t*) event;

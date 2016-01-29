@@ -374,8 +374,6 @@
  */
 #define RFCOMM_EVENT_PERSISTENT_CHANNEL                    0x86
     
-// data: event (8), len(8), rfcomm_cid (16), modem status (8)
-
 /**
  * @format 21
  * @param rfcomm_cid
@@ -383,31 +381,26 @@
  */
 #define RFCOMM_EVENT_REMOTE_MODEM_STATUS                   0x87
 
-// data: event (8), len(8), rfcomm_cid (16), rpn_data_t (67)
  /**
-  * TODO: format for variable data
+  * TODO: format for variable data 2?
   * @param rfcomm_cid
   * @param rpn_data
   */
 #define RFCOMM_EVENT_PORT_CONFIGURATION                    0x88
 
-    
-// data: event(8), len(8), status(8), service_record_handle(32)
- /**
+/**
   * @format 14
   * @param status
   * @param service_record_handle
   */
 #define SDP_SERVICE_REGISTERED                             0x90
 
-// data: event(8), len(8), status(8)
 /**
  * @format 1
  * @param status
  */
 #define SDP_QUERY_COMPLETE                                 0x91 
 
-// data: event(8), len(8), rfcomm channel(8), name(var)
 /**
  * @format 1T
  * @param rfcomm_channel

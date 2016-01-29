@@ -75,6 +75,7 @@ const uint8_t des_attributeIDList[]    = { 0x35, 0x05, 0x0A, 0x00, 0x01, 0x01, 0
 static uint8_t des_serviceSearchPattern[5] = {0x35, 0x03, 0x19, 0x00, 0x00};
 
 static uint8_t sdp_service_name[SDP_SERVICE_NAME_LEN+1];
+static uint8_t sdp_service_name_len = 0;
 static uint8_t sdp_rfcomm_channel_nr = 0;
 static uint8_t sdp_service_name_header_size;
 
@@ -96,12 +97,13 @@ static void (*sdp_app_callback)(sdp_query_event_t * event, void * context) = dum
 static void dummy_notify_app(sdp_query_event_t* event, void * context){}
 
 static void emit_service(void){
-    sdp_query_rfcomm_service_event_t value_event = {
-        SDP_QUERY_RFCOMM_SERVICE, 
-        sdp_rfcomm_channel_nr,
-        (uint8_t *) sdp_service_name
-    };
-    (*sdp_app_callback)((sdp_query_event_t*)&value_event, sdp_app_context);
+    uint8_t event[3+SDP_SERVICE_NAME_LEN+1];
+    event[0] = SDP_QUERY_RFCOMM_SERVICE;
+    event[1] = sdp_service_name_len + 1;
+    event[2] = sdp_rfcomm_channel_nr;
+    memcpy(&event[3], sdp_service_name, sdp_service_name_len);
+    event[3+sdp_service_name_len] = 0;
+    (*sdp_app_callback)((sdp_query_event_t*)event, sdp_app_context);
     sdp_rfcomm_channel_nr = 0;
 }
 
@@ -237,12 +239,14 @@ static void handleServiceNameData(uint32_t attribute_value_length, uint32_t data
 
         // terminate if name complete
         if (name_pos >= name_len){
-            sdp_service_name[name_pos] = 0;            
+            sdp_service_name[name_pos] = 0;
+            sdp_service_name_len = name_pos;            
         } 
 
         // terminate if buffer full
         if (name_pos == SDP_SERVICE_NAME_LEN){
             sdp_service_name[name_pos] = 0;            
+            sdp_service_name_len = name_pos;            
         }
     }
 
@@ -296,6 +300,7 @@ static void handle_sdp_parser_event(sdp_query_event_t * event){
 }
 
 void sdp_query_rfcomm_init(void){
+    printf("sdp_query_rfcomm_init\n");
     // init
     de_state_init(&de_header_state);
     de_state_init(&sn_de_header_state);

@@ -136,8 +136,9 @@ param_read = {
     '3' : 'return READ_BT_24(event, {offset});',
     '4' : 'return READ_BT_32(event, {offset});',
     'H' : 'return READ_BT_16(event, {offset});',
-    'B' : 'bt_flip_addr({result_name}, (uint8_t*) &event[{offset}]);',
-    'R' : 'return &event[{offset}];'
+    'B' : 'swap48(&event[{offset}], {result_name});',
+    'R' : 'return &event[{offset}];',
+    'T' : 'return (const char *) &event[{offset}];'
 }
 
 def c_type_for_btstack_type(type):
@@ -146,7 +147,7 @@ def c_type_for_btstack_type(type):
                     'R' : 'const uint8_t *', 'S' : 'const uint8_t *',
                     'J' : 'int', 'L' : 'int', 'V' : 'const uint8_t *', 'U' : 'BT_UUID',
                     'X' : 'GATTService', 'Y' : 'GATTCharacteristic', 'Z' : 'GATTCharacteristicDescriptor',
-                    'T' : 'String'}
+                    'T' : 'const char *'}
     return param_types[type]
 
 def size_for_type(type):
@@ -155,7 +156,10 @@ def size_for_type(type):
     return param_sizes[type]
 
 def format_function_name(event_name):
-    return event_name.lower()
+    event_name = event_name.lower()
+    if 'event' in event_name:
+        return event_name;
+    return event_name+'_event'
 
 def template_for_type(field_type):
     global c_prototoype_simple_return
@@ -198,6 +202,8 @@ def create_events(events):
         fout.write(copyright)
         fout.write(hfile_header_begin)
         for event_type, event_name, format, args in events:
+            if not event_name in ['SDP_QUERY_COMPLETE', 'SDP_QUERY_RFCOMM_SERVICE', 'SDP_QUERY_ATTRIBUTE_VALUE', 'SDP_QUERY_SERVICE_RECORD_HANDLE']:
+                continue                
             event_name = format_function_name(event_name)
             offset = 2
             supported = all_fields_supported(format)
@@ -208,7 +214,7 @@ def create_events(events):
                     break
                 text = create_getter(event_name, field_name, field_type, offset, supported)
                 fout.write(text)
-                if field_type == 'R':
+                if field_type in 'RT':
                     break
                 offset += size_for_type(field_type)
 

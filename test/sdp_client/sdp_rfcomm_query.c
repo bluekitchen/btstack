@@ -20,6 +20,7 @@
 #include "btstack_memory.h"
 #include "hci_dump.h"
 #include "l2cap.h"
+#include "btstack_event.h"
 
 #include "CppUTest/TestHarness.h"
 #include "CppUTest/CommandLineTestRunner.h"
@@ -90,15 +91,16 @@ void sdp_query_rfcomm_init();
 
 
 void handle_query_rfcomm_event(sdp_query_event_t * event, void * context){
-    sdp_query_rfcomm_service_event_t * ve;
     sdp_query_complete_event_t * ce;
+    uint8_t * ve = (uint8_t *) event;
+
+    printf("handle_query_rfcomm_event\n");
 
     switch (event->type){
         case SDP_QUERY_RFCOMM_SERVICE:
-            ve = (sdp_query_rfcomm_service_event_t*) event;
-            channel_nr[service_index] = ve->channel_nr;
+            channel_nr[service_index] = sdp_query_rfcomm_service_event_get_rfcomm_channel(ve);
             service_name[service_index] = (char*) malloc(SDP_SERVICE_NAME_LEN+1);
-            strncpy(service_name[service_index], (char*) ve->service_name, SDP_SERVICE_NAME_LEN);
+            strncpy(service_name[service_index], sdp_query_rfcomm_service_event_get_name(ve), SDP_SERVICE_NAME_LEN);
             service_name[service_index][SDP_SERVICE_NAME_LEN] = 0;
             // printf("CALLBACK: Service name: '%s', RFCOMM port %u, service index %d\n", service_name[service_index], channel_nr[service_index], service_index);
             service_index++;

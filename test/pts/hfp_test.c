@@ -140,14 +140,14 @@ static void packet_handler(void * connection, uint8_t packet_type, uint16_t chan
 }
 
 void handle_query_rfcomm_event(sdp_query_event_t * event, void * context){
-    sdp_query_rfcomm_service_event_t * ve;
+    const uint8_t * ve;
     sdp_query_complete_event_t * ce;
             
     switch (event->type){
         case SDP_QUERY_RFCOMM_SERVICE:
-            ve = (sdp_query_rfcomm_service_event_t*) event;
-            channel_nr = ve->channel_nr;
-            printf("** Service name: '%s', RFCOMM port %u\n", ve->service_name, channel_nr);
+            ve = (const uint8_t*) event;
+            channel_nr = sdp_query_rfcomm_service_event_get_name(ve);
+            printf("** Service name: '%s', RFCOMM port %u\n", sdp_query_rfcomm_service_event_get_rfcomm_channel(ve), channel_nr);
             break;
         case SDP_QUERY_COMPLETE:
             ce = (sdp_query_complete_event_t*) event;

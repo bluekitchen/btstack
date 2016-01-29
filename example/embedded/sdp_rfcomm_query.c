@@ -57,6 +57,7 @@
 #include "hci_dump.h"
 #include "l2cap.h"
 #include "classic/sdp_query_rfcomm.h"
+#include "btstack_event.h"
 
 // static bd_addr_t remote = {0x04,0x0C,0xCE,0xE4,0x85,0xD3};
 static bd_addr_t remote = {0x84, 0x38, 0x35, 0x65, 0xD1, 0x15};
@@ -84,7 +85,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
     }
 }
 
-static void store_found_service(uint8_t * name, uint8_t port){
+static void store_found_service(const char * name, uint8_t port){
     printf("APP: Service name: '%s', RFCOMM port %u\n", name, port);
     channel_nr[service_index] = port;
     service_name[service_index] = (char*) malloc(SDP_SERVICE_NAME_LEN+1);
@@ -108,12 +109,13 @@ static void report_found_services(void){
 }
 
 static void handle_query_rfcomm_event(sdp_query_event_t * event, void * context){
-    sdp_query_rfcomm_service_event_t * ve;
+    const uint8_t * ve;
             
     switch (event->type){
         case SDP_QUERY_RFCOMM_SERVICE:
-            ve = (sdp_query_rfcomm_service_event_t*) event;
-            store_found_service(ve->service_name, ve->channel_nr);
+            ve = (const uint8_t *) event;
+            store_found_service(sdp_query_rfcomm_service_event_get_name(ve), 
+                                sdp_query_rfcomm_service_event_get_rfcomm_channel(ve));
             break;
         case SDP_QUERY_COMPLETE:
             report_found_services();

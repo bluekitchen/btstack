@@ -58,6 +58,7 @@
 #include "l2cap.h"
 #include "classic/sdp_query_rfcomm.h"
 #include "classic/rfcomm.h"
+#include "btstack_event.h"
 
 #define NUM_ROWS 25
 #define NUM_COLS 40
@@ -150,7 +151,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
     }
 }
 
-static void handle_found_service(char * name, uint8_t port){
+static void handle_found_service(const char * name, uint8_t port){
     printf("APP: Service name: '%s', RFCOMM port %u\n", name, port);
 
     if (strncmp(name, spp_service_name_prefix, strlen(spp_service_name_prefix)) != 0) return;
@@ -161,12 +162,13 @@ static void handle_found_service(char * name, uint8_t port){
 }
 
 static void handle_query_rfcomm_event(sdp_query_event_t * event, void * context){
-    sdp_query_rfcomm_service_event_t * ve;
+    const uint8_t * ve;
             
     switch (event->type){
         case SDP_QUERY_RFCOMM_SERVICE:
-            ve = (sdp_query_rfcomm_service_event_t*) event;
-            handle_found_service((char*) ve->service_name, ve->channel_nr);
+            ve = (const uint8_t *) event;
+            handle_found_service(sdp_query_rfcomm_service_event_get_name(ve), 
+                                sdp_query_rfcomm_service_event_get_rfcomm_channel(ve));
             break;
         case SDP_QUERY_COMPLETE:
             if (state != W4_SDP_COMPLETE){
