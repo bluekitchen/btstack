@@ -4,7 +4,6 @@
 import glob
 import re
 import sys
-import os
 
 import btstack_parser as parser
 
@@ -138,21 +137,6 @@ gen_path = 'gen/' + package.replace('.', '/')
 defines = dict()
 defines_used = set()
 
-def assert_dir(path):
-    if not os.access(path, os.R_OK):
-        os.makedirs(path)
-
-def cap(x):
-    if x.lower() == 'btstack':
-        return 'BTstack'
-    acronyms = ['GAP', 'GATT', 'HCI', 'L2CAP', 'LE', 'RFCOMM', 'SM', 'SDP', 'UUID16', 'UUID128']
-    if x.upper() in acronyms:
-        return x.upper()
-    return x.capitalize()
-
-def camel_case(name):
-    return ''.join(map(cap, name.split('_')))
-
 def java_type_for_btstack_type(type):
     param_types = { '1' : 'int', '2' : 'int', '3' : 'int', '4' : 'long', 'H' : 'int', 'B' : 'BD_ADDR',
                     'D' : 'byte []', 'E' : 'byte [] ', 'N' : 'String' , 'P' : 'byte []', 'A' : 'byte []',
@@ -251,9 +235,8 @@ def java_defines_string(keys):
     return '\n'.join( map(java_define_string, sorted(keys)))
 
 def create_btstack_java(commands):
-
     global gen_path
-    assert_dir(gen_path)
+    parser.assert_dir(gen_path)
     
     outfile = '%s/BTstack.java' % gen_path
 
@@ -308,7 +291,7 @@ def create_event(event_name, format, args):
         for f, arg in zip(format, args):
             # just remember name
             if f in ['L','J']:
-                length_name = camel_case(arg)
+                length_name = parser.camel_case(arg)
             if f == 'R':    
                 # remaining data
                 access = java_event_getter_remaining_data.format(offset)
@@ -319,22 +302,22 @@ def create_event(event_name, format, args):
             else: 
                 access = param_read[f] % offset
                 size = size_for_type(f)
-            getters += java_event_getter.format(java_type_for_btstack_type(f), camel_case(arg), access)
+            getters += java_event_getter.format(java_type_for_btstack_type(f), parser.camel_case(arg), access)
             offset += size
         to_string_args = ''
         for arg in args:
             to_string_args += '        t.append(", %s = ");\n' % arg
-            to_string_args += '        t.append(get%s());\n' % camel_case(arg)
+            to_string_args += '        t.append(get%s());\n' % parser.camel_case(arg)
         to_string_method = java_event_to_string.format(event_name, to_string_args)
         fout.write(java_event_template.format(package, event_name, getters, to_string_method))
 
 def create_events(events):
     global gen_path
     gen_path_events = gen_path + '/event'
-    assert_dir(gen_path_events)
+    parser.assert_dir(gen_path_events)
 
     for event_type, event_name, format, args in events:
-        event_name = camel_case(event_name)
+        event_name = parser.camel_case(event_name)
         create_event(event_name, format, args)
 
 def create_event_factory(events, le_events, defines):
@@ -347,11 +330,11 @@ def create_event_factory(events, le_events, defines):
 
     cases = ''
     for event_type, event_name, format, args in events:
-        event_name = camel_case(event_name)
+        event_name = parser.camel_case(event_name)
         cases += java_event_factory_event.format(event_type, event_name)
     subcases = ''
     for event_type, event_name, format, args in le_events:
-        event_name = camel_case(event_name)
+        event_name = parser.camel_case(event_name)
         subcases += java_event_factory_subevent.format(event_type, event_name)
 
     with open(outfile, 'wt') as fout:
