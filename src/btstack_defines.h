@@ -708,8 +708,25 @@
 #define HFP_SUBEVENT_MICROPHONE_VOLUME                     0x17
 
 // ANCS Client
+
+/**
+ * @format H
+ * @param handle
+ */ 
 #define ANCS_CLIENT_CONNECTED                              0xF0
+
+/**
+ * @format H2T
+ * @param handle
+ * @param attribute_id
+ * @param text
+ */ 
 #define ANCS_CLIENT_NOTIFICATION                           0xF1
+
+/**
+ * @format H
+ * @param handle
+ */ 
 #define ANCS_CLIENT_DISCONNECTED                           0xF2
 
 // #define HCI_EVENT_HFP_META                                 0xxx

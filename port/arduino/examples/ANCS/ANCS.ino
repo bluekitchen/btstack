@@ -3,6 +3,7 @@
 #include "ble/att_server.h"
 #include "ble/gatt_client.h"
 #include "ancs_client.h"
+#include "btstack_event.h"
 #include "ble/sm.h"
 #include <SPI.h>
 
@@ -69,10 +70,11 @@ void loop(void){
  * the GATT Client needs to be used direclty.
  */
 
+
 /* LISTING_START(ANCSCallback): ANCS Callback */
-void ancs_callback(ancs_event_t * event){
+void ancs_callback(uint8_t packet_type, uint8_t *packet, uint16_t size){
     const char * attribute_name;
-    switch (event->type){
+    switch (packet[0]){
         case ANCS_CLIENT_CONNECTED:
             Serial.println("ANCS Client: Connected");
             break;
@@ -80,12 +82,12 @@ void ancs_callback(ancs_event_t * event){
             Serial.println("ANCS Client: Disconnected");
             break;
         case ANCS_CLIENT_NOTIFICATION:
-            attribute_name = ancs_client_attribute_name_for_id(event->attribute_id);
+            attribute_name = ancs_client_attribute_name_for_id(ancs_client_notification_event_get_attribute_id(packet));
             if (!attribute_name) break;
             Serial.print("Notification: ");
             Serial.print(attribute_name);
             Serial.print(" - ");
-            Serial.println(event->text);
+            Serial.println(ancs_client_notification_event_get_text(packet));
             break;
         default:
             break;

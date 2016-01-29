@@ -102,20 +102,32 @@ static uint16_t ancs_bytes_received;
 static uint16_t ancs_bytes_needed;
 static uint8_t  ancs_attribute_id;
 static uint16_t ancs_attribute_len;
-static void (*client_handler)(ancs_event_t * event);
+static void (*client_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size);
 
-void ancs_client_register_callback(void (*handler)(ancs_event_t * event)){
+void ancs_client_register_callback(void (*handler)(uint8_t packet_type, uint8_t *packet, uint16_t size)){
     client_handler = handler; 
 }
 
-static void notify_client(int event_type){
+static void notify_client_text(int event_type){
     if (!client_handler) return;
-    ancs_event_t event;
-    event.type = event_type;
-    event.handle = gc_handle;
-    event.attribute_id = ancs_attribute_id;
-    event.text = ancs_notification_buffer;
-    (*client_handler)(&event);
+    uint8_t event[6 + sizeof(ancs_notification_buffer) + 1];
+    event[0] = event_type;
+    event[1] = 6 + ancs_attribute_len;
+    bt_store_16(event, 2, gc_handle);
+    bt_store_16(event, 4, ancs_attribute_id);
+    memcpy(&event[6], ancs_notification_buffer, ancs_attribute_len);
+    // we're nice
+    event[6+ancs_attribute_len] = 0;
+    (*client_handler)(HCI_EVENT_PACKET, event, event[1] + 2);
+}
+
+static void notify_client_simple(int event_type){
+    if (!client_handler) return;
+    uint8_t event[4];
+    event[0] = event_type;
+    event[1] = 2;
+    bt_store_16(event, 2, gc_handle);
+    (*client_handler)(HCI_EVENT_PACKET, event, sizeof(event));
 }
 
 static void ancs_chunk_parser_init(void){
@@ -152,7 +164,7 @@ static void ancs_chunk_parser_handle_byte(uint8_t data){
             break;
         case W4_ATTRIBUTE_COMPLETE:
             ancs_notification_buffer[ancs_bytes_received] = 0;
-            notify_client(ANCS_CLIENT_NOTIFICATION);
+            notify_client_text(ANCS_CLIENT_NOTIFICATION);
             ancs_bytes_received = 0;
             ancs_bytes_needed   = 1;
             chunk_parser_state  = W4_ATTRIBUTE_ID;
@@ -217,7 +229,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint8_t *packet, uint1
             return;
             
         case HCI_EVENT_DISCONNECTION_COMPLETE:
-            notify_client(ANCS_CLIENT_DISCONNECTED);
+            notify_client_simple(ANCS_CLIENT_DISCONNECTED);
             return;
 
         default:
@@ -301,7 +313,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint8_t *packet, uint1
                 case GATT_QUERY_COMPLETE:
                     printf("ANCS Data Source subscribed\n");
                     tc_state = TC_SUBSCRIBED;
-                    notify_client(ANCS_CLIENT_CONNECTED);
+                    notify_client_simple(ANCS_CLIENT_CONNECTED);
                     break;
                 default:
                     break;

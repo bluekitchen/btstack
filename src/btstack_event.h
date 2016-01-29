@@ -167,6 +167,56 @@ static inline uint32_t sdp_query_service_record_handle_event_get_record_handle(c
     return READ_BT_32(event, 6);
 }
 
+/**
+ * @brief Get field handle from event ancs_client_connected_event
+ * @param Event packet
+ * @return handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t ancs_client_connected_event_get_handle(const uint8_t * event){
+    return READ_BT_16(event, 2);
+}
+
+/**
+ * @brief Get field handle from event ancs_client_notification_event
+ * @param Event packet
+ * @return handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t ancs_client_notification_event_get_handle(const uint8_t * event){
+    return READ_BT_16(event, 2);
+}
+
+/**
+ * @brief Get field attribute_id from event ancs_client_notification_event
+ * @param Event packet
+ * @return attribute_id
+ * @note: btstack_type 2
+ */
+static inline uint16_t ancs_client_notification_event_get_attribute_id(const uint8_t * event){
+    return READ_BT_16(event, 4);
+}
+
+/**
+ * @brief Get field text from event ancs_client_notification_event
+ * @param Event packet
+ * @return text
+ * @note: btstack_type T
+ */
+static inline const char * ancs_client_notification_event_get_text(const uint8_t * event){
+    return (const char *) &event[6];
+}
+
+/**
+ * @brief Get field handle from event ancs_client_disconnected_event
+ * @param Event packet
+ * @return handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t ancs_client_disconnected_event_get_handle(const uint8_t * event){
+    return READ_BT_16(event, 2);
+}
+
 
 /* API_END */
 

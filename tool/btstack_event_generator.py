@@ -207,7 +207,10 @@ def create_events(events):
                 'SDP_QUERY_COMPLETE',
                 'SDP_QUERY_RFCOMM_SERVICE',
                 'SDP_QUERY_ATTRIBUTE_BYTE',
-                'SDP_QUERY_SERVICE_RECORD_HANDLE']:
+                'SDP_QUERY_SERVICE_RECORD_HANDLE',
+                'ANCS_CLIENT_CONNECTED',
+                'ANCS_CLIENT_NOTIFICATION',
+                'ANCS_CLIENT_DISCONNECTED']:
                 continue                
             event_name = format_function_name(event_name)
             length_name = ''

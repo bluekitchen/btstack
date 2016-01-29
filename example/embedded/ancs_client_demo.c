@@ -55,6 +55,7 @@
 #include "btstack_run_loop.h"
 
 #include "btstack_debug.h"
+#include "btstack_event.h"
 #include "btstack_memory.h"
 #include "gap.h"
 #include "hci.h"
@@ -95,9 +96,9 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
     }
 }
 
-static void ancs_callback(ancs_event_t * event){
+static void ancs_callback(uint8_t packet_type, uint8_t *packet, uint16_t size){
     const char * attribute_name;
-    switch (event->type){
+    switch (packet[0]){
         case ANCS_CLIENT_CONNECTED:
             printf("ANCS Client: Connected\n");
             break;
@@ -105,9 +106,9 @@ static void ancs_callback(ancs_event_t * event){
             printf("ANCS Client: Disconnected\n");
             break;
         case ANCS_CLIENT_NOTIFICATION:
-            attribute_name = ancs_client_attribute_name_for_id(event->attribute_id);
+            attribute_name = ancs_client_attribute_name_for_id(ancs_client_notification_event_get_attribute_id(packet));
             if (!attribute_name) break;
-            printf("Notification: %s - %s\n", attribute_name, event->text);
+            printf("Notification: %s - %s\n", attribute_name, ancs_client_notification_event_get_text(packet));
             break;
         default:
             break;

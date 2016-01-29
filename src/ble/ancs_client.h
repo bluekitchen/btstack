@@ -46,15 +46,8 @@ extern "C" {
 
 /* API_START */
 
-typedef struct ancs_event{
-    uint8_t  type;
-    uint16_t handle;
-    uint16_t attribute_id;
-    const char * text;
-} ancs_event_t;
-
 void ancs_client_init(void);
-void ancs_client_register_callback(void (*handler)(ancs_event_t * event));
+void ancs_client_register_callback(void (*handler)(uint8_t packet_type, uint8_t *packet, uint16_t size));
 const char * ancs_client_attribute_name_for_id(int id);
 
 /* API_END */
