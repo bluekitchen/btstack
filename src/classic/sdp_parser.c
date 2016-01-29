@@ -66,7 +66,7 @@ static int record_counter = 0;
 static uint32_t record_handle;
 #endif
 
-static void (*sdp_query_callback)(sdp_query_event_t * event);
+static void (*sdp_query_callback)(uint8_t packet_type, uint8_t *packet, uint16_t size);
 
 // Low level parser
 static de_state_t de_header_state;
@@ -107,9 +107,9 @@ int de_state_size(uint8_t eventByte, de_state_t *de_state){
     return 1;
 }
 
-static void dummy_notify(sdp_query_event_t* event){}
+static void dummy_notify(uint8_t packet_type, uint8_t *packet, uint16_t size){}
 
-void sdp_parser_register_callback(void (*sdp_callback)(sdp_query_event_t* event)){
+void sdp_parser_register_callback(void (*sdp_callback)(uint8_t packet_type, uint8_t *packet, uint16_t size)){
     sdp_query_callback = dummy_notify;
     if (sdp_callback != NULL){
         sdp_query_callback = sdp_callback;
@@ -125,7 +125,7 @@ static void emit_value_byte(uint8_t event_byte){
     bt_store_16(event, 6, attribute_value_size);
     bt_store_16(event, 8, attribute_bytes_delivered);
     event[10] = event_byte;
-    (*sdp_query_callback)((sdp_query_event_t*)&event); 
+    (*sdp_query_callback)(HCI_EVENT_PACKET, event, sizeof(event)); 
 }
 
 static void parse(uint8_t eventByte){
@@ -259,7 +259,7 @@ void sdp_parser_handle_service_search(uint8_t * data, uint16_t total_count, uint
         bt_store_16(event, 2, total_count);
         bt_store_16(event, 4, record_counter);
         bt_store_32(event, 6, record_handle);
-        (*sdp_query_callback)((sdp_query_event_t*)&event);       
+        (*sdp_query_callback)(HCI_EVENT_PACKET, event, sizeof(event)); 
     }        
 }
 #endif
@@ -269,5 +269,5 @@ void sdp_parser_handle_done(uint8_t status){
     event[0] = SDP_QUERY_COMPLETE;
     event[1] = 1;
     event[2] = status;
-    (*sdp_query_callback)((sdp_query_event_t*)&event);
+    (*sdp_query_callback)(HCI_EVENT_PACKET, event, sizeof(event)); 
 }

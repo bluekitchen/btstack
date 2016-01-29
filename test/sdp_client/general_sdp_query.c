@@ -109,62 +109,55 @@ void assertBuffer(int size){
     }
 }
 
-static void test_attribute_value_event(const uint8_t * ve){
+static void test_attribute_value_event(const uint8_t * event){
     static int recordId = 0;
     static int attributeId = 0;
     static int attributeOffset = 0;
     static int attributeLength = 0;
 
-    CHECK_EQUAL(ve[0], SDP_QUERY_ATTRIBUTE_VALUE);
+    CHECK_EQUAL(event[0], SDP_QUERY_ATTRIBUTE_VALUE);
 
     // record ids are sequential
-    if (sdp_query_attribute_value_event_get_record_id(ve) != recordId){
+    if (sdp_query_attribute_value_event_get_record_id(event) != recordId){
         recordId++;
     }
-    CHECK_EQUAL(sdp_query_attribute_value_event_get_record_id(ve), recordId);
+    CHECK_EQUAL(sdp_query_attribute_value_event_get_record_id(event), recordId);
     
     // is attribute value complete
-    if (sdp_query_attribute_value_event_get_attribute_id(ve) != attributeId ){
+    if (sdp_query_attribute_value_event_get_attribute_id(event) != attributeId ){
         if (attributeLength > 0){
             CHECK_EQUAL(attributeLength, attributeOffset+1);
         }
-        attributeId = sdp_query_attribute_value_event_get_attribute_id(ve);
+        attributeId = sdp_query_attribute_value_event_get_attribute_id(event);
         attributeOffset = 0;
     }
 
     // count attribute value bytes
-    if (sdp_query_attribute_value_event_get_data_offset(ve) != attributeOffset){
+    if (sdp_query_attribute_value_event_get_data_offset(event) != attributeOffset){
         attributeOffset++;
     }
-    attributeLength = sdp_query_attribute_value_event_get_attribute_length(ve);
+    attributeLength = sdp_query_attribute_value_event_get_attribute_length(event);
 
-    CHECK_EQUAL(sdp_query_attribute_value_event_get_data_offset(ve), attributeOffset);
+    CHECK_EQUAL(sdp_query_attribute_value_event_get_data_offset(event), attributeOffset);
 }
 
 
-static void handle_sdp_parser_event(sdp_query_event_t * event){
-
-    const uint8_t * ve;
-    const uint8_t * ce;
-
-    switch (event->type){
+static void handle_sdp_parser_event(uint8_t packet_type, uint8_t *packet, uint16_t size){
+    switch (packet[0]){
         case SDP_QUERY_ATTRIBUTE_VALUE:
-            ve = (const uint8_t*) event;
-            
-            test_attribute_value_event(ve);
+            test_attribute_value_event(packet);
             
             // handle new record
-            if (sdp_query_attribute_value_event_get_record_id(ve) != record_id){
-                record_id = sdp_query_attribute_value_event_get_record_id(ve);
+            if (sdp_query_attribute_value_event_get_record_id(packet) != record_id){
+                record_id = sdp_query_attribute_value_event_get_record_id(packet);
             }
             // buffer data
-            assertBuffer(sdp_query_attribute_value_event_get_attribute_length(ve));
-            attribute_value[sdp_query_attribute_value_event_get_data_offset(ve)] = sdp_query_attribute_value_event_get_data(ve);
+            assertBuffer(sdp_query_attribute_value_event_get_attribute_length(packet));
+            attribute_value[sdp_query_attribute_value_event_get_data_offset(packet)] = sdp_query_attribute_value_event_get_data(packet);
             
             break;
         case SDP_QUERY_COMPLETE:
-            ce = (const uint8_t *) event;
-            printf("General query done with status %d.\n", sdp_query_complete_event_get_status(ce));
+            printf("General query done with status %d.\n", sdp_query_complete_event_get_status(packet));
             break;
     }
 }

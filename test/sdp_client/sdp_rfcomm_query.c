@@ -90,21 +90,17 @@ extern "C" void sdp_client_query(bd_addr_t remote, uint8_t * des_serviceSearchPa
 void sdp_query_rfcomm_init();
 
 
-void handle_query_rfcomm_event(sdp_query_event_t * event, void * context){
-    const uint8_t * ce;
-    uint8_t * ve = (uint8_t *) event;
-
-    switch (event->type){
+void handle_query_rfcomm_event(uint8_t packet_type, uint8_t *packet, uint16_t size, void * context){
+    switch (packet[0]){
         case SDP_QUERY_RFCOMM_SERVICE:
-            channel_nr[service_index] = sdp_query_rfcomm_service_event_get_rfcomm_channel(ve);
+            channel_nr[service_index] = sdp_query_rfcomm_service_event_get_rfcomm_channel(packet);
             service_name[service_index] = (char*) malloc(SDP_SERVICE_NAME_LEN+1);
-            strncpy(service_name[service_index], sdp_query_rfcomm_service_event_get_name(ve), SDP_SERVICE_NAME_LEN);
+            strncpy(service_name[service_index], sdp_query_rfcomm_service_event_get_name(packet), SDP_SERVICE_NAME_LEN);
             service_name[service_index][SDP_SERVICE_NAME_LEN] = 0;
             // printf("CALLBACK: Service name: '%s', RFCOMM port %u, service index %d\n", service_name[service_index], channel_nr[service_index], service_index);
             service_index++;
             break;
         case SDP_QUERY_COMPLETE:
-            ce = (const uint8_t*) event;
             // printf("CALLBACK: Client query response done. \n");
             break;
     }

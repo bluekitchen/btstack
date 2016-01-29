@@ -79,7 +79,7 @@ static const int attribute_value_buffer_size = sizeof(attribute_value);
 
 /* LISTING_START(SDPClientInit): SDP client setup */
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
-static void handle_sdp_client_query_result(sdp_query_event_t * event);
+static void handle_sdp_client_query_result(uint8_t packet_type, uint8_t *packet, uint16_t size);
 
 static void sdp_client_init(void){
     // init L2CAP
@@ -144,31 +144,25 @@ static void assertBuffer(int size){
  */
 
 /* LISTING_START(HandleSDPQUeryResult): Handling query result chunks. */
-static void handle_sdp_client_query_result(sdp_query_event_t * event){
-    const uint8_t * ve;
-    const uint8_t * ce;
-
-    switch (event->type){
+static void handle_sdp_client_query_result(uint8_t packet_type, uint8_t *packet, uint16_t size){
+    switch (packet[0]){
         case SDP_QUERY_ATTRIBUTE_VALUE:
-            ve = (const uint8_t *) event;
-            
             // handle new record
-            if (sdp_query_attribute_value_event_get_record_id(ve) != record_id){
-                record_id = sdp_query_attribute_value_event_get_record_id(ve);
+            if (sdp_query_attribute_value_event_get_record_id(packet) != record_id){
+                record_id = sdp_query_attribute_value_event_get_record_id(packet);
                 printf("\n---\nRecord nr. %u\n", record_id);
             }
 
-            assertBuffer(sdp_query_attribute_value_event_get_attribute_length(ve));
+            assertBuffer(sdp_query_attribute_value_event_get_attribute_length(packet));
 
-            attribute_value[sdp_query_attribute_value_event_get_data_offset(ve)] = sdp_query_attribute_value_event_get_data(ve);
-            if ((uint16_t)(sdp_query_attribute_value_event_get_data_offset(ve)+1) == sdp_query_attribute_value_event_get_attribute_length(ve)){
-               printf("Attribute 0x%04x: ", sdp_query_attribute_value_event_get_attribute_id(ve));
+            attribute_value[sdp_query_attribute_value_event_get_data_offset(packet)] = sdp_query_attribute_value_event_get_data(packet);
+            if ((uint16_t)(sdp_query_attribute_value_event_get_data_offset(packet)+1) == sdp_query_attribute_value_event_get_attribute_length(packet)){
+               printf("Attribute 0x%04x: ", sdp_query_attribute_value_event_get_attribute_id(packet));
                de_dump_data_element(attribute_value);
             }
             break;
         case SDP_QUERY_COMPLETE:
-            ce = (const uint8_t *) event;
-            printf("General query done with status %d.\n\n", sdp_query_complete_event_get_status(ce));
+            printf("General query done with status %d.\n\n", sdp_query_complete_event_get_status(packet));
             exit(0);
             break;
     }

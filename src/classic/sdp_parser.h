@@ -70,13 +70,6 @@ int  de_state_size(uint8_t eventByte, de_state_t *de_state);
 
 /* API_START */
 
-// SDP Parser
-// Basic SDP Query event type
-typedef struct sdp_query_event {
-    uint8_t type;
-    void * dummy;   // force sdp_query_event struct to be word aligned -> avoid -Wcast-align warning
-} sdp_query_event_t;
-
 /*
  * @brief
  */
@@ -85,7 +78,7 @@ void sdp_parser_init(void);
 /*
  * @brief Registers a callback to receive attribute value data and parse complete event.
  */
-void sdp_parser_register_callback(void (*sdp_callback)(sdp_query_event_t * event));
+void sdp_parser_register_callback(void (*sdp_callback)(uint8_t packet_type, uint8_t *packet, uint16_t size));
 
 /*
  * @brief

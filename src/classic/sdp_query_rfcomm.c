@@ -56,7 +56,7 @@ void sdp_query_rfcomm_init(void);
 // called by test/sdp_client
 void sdp_query_rfcomm_init(void);
 
-static void dummy_notify_app(sdp_query_event_t* event, void * context);
+static void dummy_notify_app(uint8_t packet_type, uint8_t *packet, uint16_t size, void * context);
 
 typedef enum { 
     GET_PROTOCOL_LIST_LENGTH = 1,
@@ -90,11 +90,11 @@ static de_state_t de_header_state;
 static de_state_t sn_de_header_state;
 
 static void *sdp_app_context;
-static void (*sdp_app_callback)(sdp_query_event_t * event, void * context) = dummy_notify_app;
+static void (*sdp_app_callback)(uint8_t packet_type, uint8_t *packet, uint16_t size, void * context) = dummy_notify_app;
 
 //
 
-static void dummy_notify_app(sdp_query_event_t* event, void * context){}
+static void dummy_notify_app(uint8_t packet_type, uint8_t *packet, uint16_t size, void * context){}
 
 static void emit_service(void){
     uint8_t event[3+SDP_SERVICE_NAME_LEN+1];
@@ -103,11 +103,11 @@ static void emit_service(void){
     event[2] = sdp_rfcomm_channel_nr;
     memcpy(&event[3], sdp_service_name, sdp_service_name_len);
     event[3+sdp_service_name_len] = 0;
-    (*sdp_app_callback)((sdp_query_event_t*)event, sdp_app_context);
+    (*sdp_app_callback)(HCI_EVENT_PACKET, event, sizeof(event), sdp_app_context); 
     sdp_rfcomm_channel_nr = 0;
 }
 
-void sdp_query_rfcomm_register_callback(void (*sdp_callback)(sdp_query_event_t* event, void * context), void * context){
+void sdp_query_rfcomm_register_callback(void (*sdp_callback)(uint8_t packet_type, uint8_t *packet, uint16_t size, void * context), void * context){
     sdp_app_callback = dummy_notify_app;
     if (sdp_callback != NULL){
         sdp_app_callback = sdp_callback;
@@ -256,9 +256,8 @@ static void handleServiceNameData(uint32_t attribute_value_length, uint32_t data
     }
 }
 
-static void handle_sdp_parser_event(sdp_query_event_t * event){
-    const uint8_t * ve;
-    switch (event->type){
+static void handle_sdp_parser_event(uint8_t packet_type, uint8_t *packet, uint16_t size){
+    switch (packet[0]){
         case SDP_QUERY_SERVICE_RECORD_HANDLE:
             // handle service without a name
             if (sdp_rfcomm_channel_nr){
@@ -270,18 +269,21 @@ static void handle_sdp_parser_event(sdp_query_event_t * event){
             sdp_service_name[0] = 0;
             break;
         case SDP_QUERY_ATTRIBUTE_VALUE:
-            ve = (const uint8_t *) event;
-           // log_info("handle_sdp_parser_event [ AID, ALen, DOff, Data] : [%x, %u, %u] BYTE %02x", 
-           //          ve->attribute_id, sdp_query_attribute_value_event_get_attribute_length(ve),sdp_query_attribute_value_event_get_data_offset(ve), sdp_query_attribute_value_event_get_data(ve));
-            
-            switch (sdp_query_attribute_value_event_get_attribute_id(ve)){
+            // log_info("handle_sdp_parser_event [ AID, ALen, DOff, Data] : [%x, %u, %u] BYTE %02x", 
+            //          ve->attribute_id, sdp_query_attribute_value_event_get_attribute_length(packet),
+            //          sdp_query_attribute_value_event_get_data_offset(packet), sdp_query_attribute_value_event_get_data(packet));
+            switch (sdp_query_attribute_value_event_get_attribute_id(packet)){
                 case SDP_ProtocolDescriptorList:
                     // find rfcomm channel
-                    handleProtocolDescriptorListData(sdp_query_attribute_value_event_get_attribute_length(ve),sdp_query_attribute_value_event_get_data_offset(ve), sdp_query_attribute_value_event_get_data(ve));
+                    handleProtocolDescriptorListData(sdp_query_attribute_value_event_get_attribute_length(packet),
+                        sdp_query_attribute_value_event_get_data_offset(packet),
+                        sdp_query_attribute_value_event_get_data(packet));
                     break;
                 case 0x0100:
                     // get service name
-                    handleServiceNameData(sdp_query_attribute_value_event_get_attribute_length(ve),sdp_query_attribute_value_event_get_data_offset(ve), sdp_query_attribute_value_event_get_data(ve));
+                    handleServiceNameData(sdp_query_attribute_value_event_get_attribute_length(packet),
+                        sdp_query_attribute_value_event_get_data_offset(packet),
+                        sdp_query_attribute_value_event_get_data(packet));
                     break;
                 default:
                     // give up
@@ -293,7 +295,7 @@ static void handle_sdp_parser_event(sdp_query_event_t * event){
             if (sdp_rfcomm_channel_nr){
                 emit_service();
             }
-            (*sdp_app_callback)(event, sdp_app_context);
+            (*sdp_app_callback)(HCI_EVENT_PACKET, packet, size, sdp_app_context); 
             break;
     }
     // insert higher level code HERE

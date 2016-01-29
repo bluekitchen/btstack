@@ -109,7 +109,7 @@ static hsp_state_t hsp_state = HSP_IDLE;
 
 static void hsp_run(void);
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
-static void handle_query_rfcomm_event(sdp_query_event_t * event, void * context);
+static void handle_query_rfcomm_event(uint8_t packet_type, uint8_t *packet, uint16_t size, void * context);
 
 static hsp_hs_callback_t hsp_hs_callback;
 static void dummy_notify(uint8_t * event, uint16_t size){}
@@ -573,19 +573,13 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
     hsp_run();
 }
 
-static void handle_query_rfcomm_event(sdp_query_event_t * event, void * context){
-    const uint8_t * ve;
-    const uint8_t * ce;
-            
-    switch (event->type){
+static void handle_query_rfcomm_event(uint8_t packet_type, uint8_t *packet, uint16_t size, void * context){
+    switch (packet[0]){
         case SDP_QUERY_RFCOMM_SERVICE:
-            ve = (const uint8_t*) event;
-            channel_nr = sdp_query_rfcomm_service_event_get_rfcomm_channel(ve);
-            printf("** Service name: '%s', RFCOMM port %u\n", sdp_query_rfcomm_service_event_get_name(ve), channel_nr);
+            channel_nr = sdp_query_rfcomm_service_event_get_rfcomm_channel(packet);
+            printf("** Service name: '%s', RFCOMM port %u\n", sdp_query_rfcomm_service_event_get_name(packet), channel_nr);
             break;
         case SDP_QUERY_COMPLETE:
-            ce = (const uint8_t*) event;
-            
             if (channel_nr > 0){
                 hsp_state = HSP_W4_RFCOMM_CONNECTED;
                 printf("RFCOMM create channel.\n");
@@ -593,7 +587,7 @@ static void handle_query_rfcomm_event(sdp_query_event_t * event, void * context)
                 break;
             }
             hsp_hs_reset_state();
-            printf("Service not found, status %u.\n", sdp_query_complete_event_get_status(ce));
+            printf("Service not found, status %u.\n", sdp_query_complete_event_get_status(packet));
             exit(0);
             break;
     }

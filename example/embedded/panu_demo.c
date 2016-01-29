@@ -134,7 +134,7 @@ static btstack_data_source_t tap_dev_ds;
 
 /* LISTING_START(PanuSetup): Panu setup */
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
-static void handle_sdp_client_query_result(sdp_query_event_t *event);
+static void handle_sdp_client_query_result(uint8_t packet_type, uint8_t *packet, uint16_t size);
 
 static void panu_setup(void){
     // Initialize L2CAP 
@@ -317,30 +317,26 @@ static char * get_string_from_data_element(uint8_t * element){
  * @text The SDP parsers retrieves the BNEP PAN UUID as explained in  
  * Section [on SDP BNEP Query example](#sec:sdpbnepqueryExample}.
  */
-static void handle_sdp_client_query_result(sdp_query_event_t *event)
-{
-    const uint8_t * complete_event;
-    const uint8_t  *value_event;
+static void handle_sdp_client_query_result(uint8_t packet_type, uint8_t *packet, uint16_t size) {
+
     des_iterator_t des_list_it;
     des_iterator_t prot_it;
     char *str;
 
-    switch (event->type){
+    switch (packet[0]){
         case SDP_QUERY_ATTRIBUTE_VALUE:
-            value_event = (const uint8_t *) event;
-            
             // Handle new SDP record 
-            if (sdp_query_attribute_value_event_get_record_id(value_event) != record_id) {
-                record_id = sdp_query_attribute_value_event_get_record_id(value_event);
+            if (sdp_query_attribute_value_event_get_record_id(packet) != record_id) {
+                record_id = sdp_query_attribute_value_event_get_record_id(packet);
                 printf("SDP Record: Nr: %d\n", record_id);
             }
 
-            if (sdp_query_attribute_value_event_get_attribute_length(value_event) <= attribute_value_buffer_size) {
-                attribute_value[sdp_query_attribute_value_event_get_data_offset(value_event)] = sdp_query_attribute_value_event_get_data(value_event);
+            if (sdp_query_attribute_value_event_get_attribute_length(packet) <= attribute_value_buffer_size) {
+                attribute_value[sdp_query_attribute_value_event_get_data_offset(packet)] = sdp_query_attribute_value_event_get_data(packet);
                 
-                if ((uint16_t)(sdp_query_attribute_value_event_get_data_offset(value_event)+1) == sdp_query_attribute_value_event_get_attribute_length(value_event)) {
+                if ((uint16_t)(sdp_query_attribute_value_event_get_data_offset(packet)+1) == sdp_query_attribute_value_event_get_attribute_length(packet)) {
 
-                    switch(sdp_query_attribute_value_event_get_attribute_id(value_event)) {
+                    switch(sdp_query_attribute_value_event_get_attribute_id(packet)) {
                         case SDP_ServiceClassIDList:
                             if (de_get_element_type(attribute_value) != DE_DES) break;
                             for (des_iterator_init(&des_list_it, attribute_value); des_iterator_has_more(&des_list_it); des_iterator_next(&des_list_it)) {
@@ -351,7 +347,7 @@ static void handle_sdp_client_query_result(sdp_query_event_t *event)
                                     case SDP_PANU:
                                     case SDP_NAP:
                                     case SDP_GN:
-                                        printf("SDP Attribute 0x%04x: BNEP PAN protocol UUID: %04x\n", sdp_query_attribute_value_event_get_attribute_id(value_event), uuid);
+                                        printf("SDP Attribute 0x%04x: BNEP PAN protocol UUID: %04x\n", sdp_query_attribute_value_event_get_attribute_id(packet), uuid);
                                         bnep_remote_uuid = uuid;
                                         break;
                                     default:
@@ -362,11 +358,11 @@ static void handle_sdp_client_query_result(sdp_query_event_t *event)
                         case 0x0100:
                         case 0x0101:
                             str = get_string_from_data_element(attribute_value);
-                            printf("SDP Attribute: 0x%04x: %s\n", sdp_query_attribute_value_event_get_attribute_id(value_event), str);
+                            printf("SDP Attribute: 0x%04x: %s\n", sdp_query_attribute_value_event_get_attribute_id(packet), str);
                             free(str);
                             break;
                         case 0x0004: {
-                                printf("SDP Attribute: 0x%04x\n", sdp_query_attribute_value_event_get_attribute_id(value_event));
+                                printf("SDP Attribute: 0x%04x\n", sdp_query_attribute_value_event_get_attribute_id(packet));
 
                                 for (des_iterator_init(&des_list_it, attribute_value); des_iterator_has_more(&des_list_it); des_iterator_next(&des_list_it)) {                                    
                                     uint8_t       *des_element;
@@ -408,13 +404,12 @@ static void handle_sdp_client_query_result(sdp_query_event_t *event)
                     }
                 }
             } else {
-                fprintf(stderr, "SDP attribute value buffer size exceeded: available %d, required %d\n", attribute_value_buffer_size, sdp_query_attribute_value_event_get_attribute_length(value_event));
+                fprintf(stderr, "SDP attribute value buffer size exceeded: available %d, required %d\n", attribute_value_buffer_size, sdp_query_attribute_value_event_get_attribute_length(packet));
             }
             break;
             
         case SDP_QUERY_COMPLETE:
-            complete_event = (const uint8_t *) event;
-            fprintf(stderr, "General query done with status %d.\n", sdp_query_complete_event_get_status(complete_event));
+            fprintf(stderr, "General query done with status %d.\n", sdp_query_complete_event_get_status(packet));
 
             break;
     }

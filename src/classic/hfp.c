@@ -414,33 +414,29 @@ void hfp_create_sdp_record(uint8_t * service, uint32_t service_record_handle, ui
 }
 
 static hfp_connection_t * connection_doing_sdp_query = NULL;
-static void handle_query_rfcomm_event(sdp_query_event_t * event, void * context){
-    const uint8_t * ve;
-    const uint8_t * ce;
+
+static void handle_query_rfcomm_event(uint8_t packet_type, uint8_t *packet, uint16_t size, void * context){
     hfp_connection_t * connection = connection_doing_sdp_query;
     
     if ( connection->state != HFP_W4_SDP_QUERY_COMPLETE) return;
     
-    switch (event->type){
+    switch (packet[0]){
         case SDP_QUERY_RFCOMM_SERVICE:
-            ve = (const uint8_t *) event;
             if (!connection) {
-                log_error("handle_query_rfcomm_event alloc connection for RFCOMM port %u failed", sdp_query_rfcomm_service_event_get_rfcomm_channel(ve));
+                log_error("handle_query_rfcomm_event alloc connection for RFCOMM port %u failed", sdp_query_rfcomm_service_event_get_rfcomm_channel(packet));
                 return;
             }
-            connection->rfcomm_channel_nr = sdp_query_rfcomm_service_event_get_rfcomm_channel(ve);
+            connection->rfcomm_channel_nr = sdp_query_rfcomm_service_event_get_rfcomm_channel(packet);
             break;
         case SDP_QUERY_COMPLETE:
             connection_doing_sdp_query = NULL;
-            ce = (const uint8_t*) event;
-            
             if (connection->rfcomm_channel_nr > 0){
                 connection->state = HFP_W4_RFCOMM_CONNECTED;
                 log_info("HFP: SDP_QUERY_COMPLETE context %p, addr %s, state %d", connection, bd_addr_to_str( connection->remote_addr),  connection->state);
                 rfcomm_create_channel(connection->remote_addr, connection->rfcomm_channel_nr, NULL); 
                 break;
             }
-            log_info("rfcomm service not found, status %u.", sdp_query_complete_event_get_status(ce));
+            log_info("rfcomm service not found, status %u.", sdp_query_complete_event_get_status(packet));
             break;
         default:
             break;

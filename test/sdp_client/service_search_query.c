@@ -40,24 +40,15 @@ static uint8_t  sdp_test_record_list[] = {
 };
 
 
-static void handle_sdp_parser_event(sdp_query_event_t * event){
-    const uint8_t * ve;
-    const uint8_t * ce;
-
+static void handle_sdp_parser_event(uint8_t packet_type, uint8_t *packet, uint16_t size){
     static uint32_t record_handle = sdp_test_record_list[0];
-
-    switch (event->type){
+    switch (packet[0]){
         case SDP_QUERY_SERVICE_RECORD_HANDLE:
-            ve = (const uint8_t*) event;
-            
-            CHECK_EQUAL(sdp_query_service_record_handle_event_get_record_handle(ve), record_handle);
+            CHECK_EQUAL(sdp_query_service_record_handle_event_get_record_handle(packet), record_handle);
             record_handle++;
-
-            
             break;
         case SDP_QUERY_COMPLETE:
-            ce = (const uint8_t *) event;
-            printf("General query done with status %d.\n", sdp_query_complete_event_get_status(ce));
+            printf("General query done with status %d.\n", sdp_query_complete_event_get_status(packet));
             break;
     }
 }

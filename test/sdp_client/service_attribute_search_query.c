@@ -87,29 +87,22 @@ static void test_attribute_value_event(const uint8_t * event){
 }
 
 
-static void handle_sdp_parser_event(sdp_query_event_t * event){
-
-    const uint8_t * ve;
-    const uint8_t * ce;
-
-    switch (event->type){
+static void handle_sdp_parser_event(uint8_t packet_type, uint8_t *packet, uint16_t size){
+    switch (packet[0]){
         case SDP_QUERY_ATTRIBUTE_VALUE:
-            ve = (const uint8_t *) event;
-            
-            test_attribute_value_event(ve);
+            test_attribute_value_event(packet);
             
             // handle new record
-            if (sdp_query_attribute_value_event_get_record_id(ve) != record_id){
-                record_id = sdp_query_attribute_value_event_get_record_id(ve);
+            if (sdp_query_attribute_value_event_get_record_id(packet) != record_id){
+                record_id = sdp_query_attribute_value_event_get_record_id(packet);
             }
             // buffer data
-            assertBuffer(sdp_query_attribute_value_event_get_attribute_length(ve));
-            attribute_value[sdp_query_attribute_value_event_get_data_offset(ve)] = sdp_query_attribute_value_event_get_data(ve);
+            assertBuffer(sdp_query_attribute_value_event_get_attribute_length(packet));
+            attribute_value[sdp_query_attribute_value_event_get_data_offset(packet)] = sdp_query_attribute_value_event_get_data(packet);
             
             break;
         case SDP_QUERY_COMPLETE:
-            ce = (const uint8_t*) event;
-            printf("General query done with status %d.\n", sdp_query_complete_event_get_status(ce));
+            printf("General query done with status %d.\n", sdp_query_complete_event_get_status(packet));
             break;
     }
 }

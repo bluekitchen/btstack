@@ -160,8 +160,8 @@ typedef struct btstack_linked_list_gatt_client_helper{
 } btstack_linked_list_gatt_client_helper_t;
 
 // MARK: prototypes
-static void handle_sdp_rfcomm_service_result(sdp_query_event_t * event, void * context);
-static void handle_sdp_client_query_result(sdp_query_event_t * event);
+static void handle_sdp_rfcomm_service_result(uint8_t packet_type, uint8_t *packet, uint16_t size, void * context);
+static void handle_sdp_client_query_result(uint8_t packet_type, uint8_t *packet, uint16_t size);
 static void dummy_bluetooth_status_handler(BLUETOOTH_STATE state);
 static client_state_t * client_for_connection(connection_t *connection);
 static int              clients_require_power_on(void);
@@ -1574,15 +1574,13 @@ static void rfcomm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t
     daemon_packet_handler(NULL, packet_type, channel, packet, size);
 }
 
-static void handle_sdp_rfcomm_service_result(sdp_query_event_t * rfcomm_event, void * context){
-    switch (rfcomm_event->type){
+static void handle_sdp_rfcomm_service_result(uint8_t packet_type, uint8_t *packet, uint16_t size, void * context){
+    switch (packet[0]){
         case SDP_QUERY_RFCOMM_SERVICE: {
         case SDP_QUERY_COMPLETE: {
-            // already an HCI Event
-            const uint8_t * event = (const uint8_t *) event;
-            int event_len = 2 + event[1];
-            hci_dump_packet(HCI_EVENT_PACKET, 0, event, event_len);
-            socket_connection_send_packet(context, HCI_EVENT_PACKET, 0, event, event_len);
+            // already HCI Events, just forward them
+            hci_dump_packet(HCI_EVENT_PACKET, 0, packet, size);
+            socket_connection_send_packet(context, HCI_EVENT_PACKET, 0, packet, size);
             break;
         }
         default: 
@@ -1597,39 +1595,32 @@ static void sdp_client_assert_buffer(int size){
 }
 
 // define new packet type SDP_CLIENT_PACKET
-static void handle_sdp_client_query_result(sdp_query_event_t * event){
-    const uint8_t * ve;
-    const uint8_t * complete_event;
+static void handle_sdp_client_query_result(uint8_t packet_type, uint8_t *packet, uint16_t size){
     int event_len;
 
-    switch (event->type){
+    switch (packet[0]){
         case SDP_QUERY_ATTRIBUTE_VALUE:
-            ve = (const uint8_t*) event;
-            
-            sdp_client_assert_buffer(sdp_query_attribute_value_event_get_attribute_length(ve));
+            sdp_client_assert_buffer(sdp_query_attribute_value_event_get_attribute_length(packet));
+            attribute_value[sdp_query_attribute_value_event_get_data_offset(packet)] = sdp_query_attribute_value_event_get_data(packet);
+            if ((uint16_t)(sdp_query_attribute_value_event_get_data_offset(packet)+1) == sdp_query_attribute_value_event_get_attribute_length(packet)){
+                hexdump(attribute_value, sdp_query_attribute_value_event_get_attribute_length(packet));
 
-            attribute_value[sdp_query_attribute_value_event_get_data_offset(ve)] = ve->data;
-
-            if ((uint16_t)(sdp_query_attribute_value_event_get_data_offset(ve)+1) == sdp_query_attribute_value_event_get_attribute_length(ve)){
-                hexdump(attribute_value, sdp_query_attribute_value_event_get_attribute_length(ve));
-
-                int event_len = 1 + 3 * 2 + sdp_query_attribute_value_event_get_attribute_length(ve); 
+                int event_len = 1 + 3 * 2 + sdp_query_attribute_value_event_get_attribute_length(packet); 
                 uint8_t event[event_len];
                 event[0] = SDP_QUERY_ATTRIBUTE_VALUE;
-                bt_store_16(event, 1, sdp_query_attribute_value_event_get_record_id(ve));
-                bt_store_16(event, 3, sdp_query_attribute_value_event_get_attribute_id(ve));
-                bt_store_16(event, 5, (uint16_t)sdp_query_attribute_value_event_get_attribute_length(ve));
-                memcpy(&event[7], attribute_value, sdp_query_attribute_value_event_get_attribute_length(ve));
+                bt_store_16(event, 1, sdp_query_attribute_value_event_get_record_id(packet));
+                bt_store_16(event, 3, sdp_query_attribute_value_event_get_attribute_id(packet));
+                bt_store_16(event, 5, (uint16_t)sdp_query_attribute_value_event_get_attribute_length(packet));
+                memcpy(&event[7], attribute_value, sdp_query_attribute_value_event_get_attribute_length(packet));
                 hci_dump_packet(SDP_CLIENT_PACKET, 0, event, event_len);
                 socket_connection_send_packet(sdp_client_query_connection, SDP_CLIENT_PACKET, 0, event, event_len);
             }
 
             break;
         case SDP_QUERY_COMPLETE:
-            complete_event = (const uint8_t*) event;
-            event_len = complete_event[1] + 2;
-            hci_dump_packet(HCI_EVENT_PACKET, 0, complete_event, event_len);
-            socket_connection_send_packet(sdp_client_query_connection, HCI_EVENT_PACKET, 0, complete_event, event_len);
+            event_len = packet[1] + 2;
+            hci_dump_packet(HCI_EVENT_PACKET, 0, packet, event_len);
+            socket_connection_send_packet(sdp_client_query_connection, HCI_EVENT_PACKET, 0, packet, event_len);
             break;
     }
 }
