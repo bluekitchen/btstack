@@ -91,7 +91,7 @@ void sdp_query_rfcomm_init();
 
 
 void handle_query_rfcomm_event(sdp_query_event_t * event, void * context){
-    sdp_query_complete_event_t * ce;
+    const uint8_t * ce;
     uint8_t * ve = (uint8_t *) event;
 
     printf("handle_query_rfcomm_event\n");
@@ -106,7 +106,7 @@ void handle_query_rfcomm_event(sdp_query_event_t * event, void * context){
             service_index++;
             break;
         case SDP_QUERY_COMPLETE:
-            ce = (sdp_query_complete_event_t*) event;
+            ce = (const uint8_t*) event;
             // printf("CALLBACK: Client query response done. \n");
             break;
     }

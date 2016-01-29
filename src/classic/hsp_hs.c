@@ -575,7 +575,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 
 static void handle_query_rfcomm_event(sdp_query_event_t * event, void * context){
     const uint8_t * ve;
-    sdp_query_complete_event_t * ce;
+    const uint8_t * ce;
             
     switch (event->type){
         case SDP_QUERY_RFCOMM_SERVICE:
@@ -584,7 +584,7 @@ static void handle_query_rfcomm_event(sdp_query_event_t * event, void * context)
             printf("** Service name: '%s', RFCOMM port %u\n", sdp_query_rfcomm_service_event_get_name(ve), channel_nr);
             break;
         case SDP_QUERY_COMPLETE:
-            ce = (sdp_query_complete_event_t*) event;
+            ce = (const uint8_t*) event;
             
             if (channel_nr > 0){
                 hsp_state = HSP_W4_RFCOMM_CONNECTED;
@@ -593,7 +593,7 @@ static void handle_query_rfcomm_event(sdp_query_event_t * event, void * context)
                 break;
             }
             hsp_hs_reset_state();
-            printf("Service not found, status %u.\n", ce->status);
+            printf("Service not found, status %u.\n", sdp_query_complete_event_get_status(ce));
             exit(0);
             break;
     }

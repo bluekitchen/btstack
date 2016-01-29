@@ -77,13 +77,6 @@ typedef struct sdp_query_event {
     void * dummy;   // force sdp_query_event struct to be word aligned -> avoid -Wcast-align warning
 } sdp_query_event_t;
 
-// SDP Query event to indicate that query/parser is complete.
-typedef struct sdp_query_complete_event {
-    uint8_t type;
-    uint8_t status; // 0 == OK
-    void * dummy;   // force sdp_query_complete_event struct to be word aligned -> avoid -Wcast-align warning
-} sdp_query_complete_event_t;
-
 // SDP Parser event to deliver an attribute value byte by byte
 typedef struct sdp_query_attribute_value_event {
     uint8_t type;

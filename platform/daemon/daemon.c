@@ -1577,6 +1577,7 @@ static void rfcomm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t
 static void handle_sdp_rfcomm_service_result(sdp_query_event_t * rfcomm_event, void * context){
     switch (rfcomm_event->type){
         case SDP_QUERY_RFCOMM_SERVICE: {
+        case SDP_QUERY_COMPLETE: {
             // already an HCI Event
             const uint8_t * event = (const uint8_t *) event;
             int event_len = 2 + event[1];
@@ -1584,13 +1585,8 @@ static void handle_sdp_rfcomm_service_result(sdp_query_event_t * rfcomm_event, v
             socket_connection_send_packet(context, HCI_EVENT_PACKET, 0, event, event_len);
             break;
         }
-        case SDP_QUERY_COMPLETE: {
-            sdp_query_complete_event_t * complete_event = (sdp_query_complete_event_t*) rfcomm_event;
-            uint8_t event[] = { rfcomm_event->type, 1, complete_event->status};
-            hci_dump_packet(HCI_EVENT_PACKET, 0, event, sizeof(event));
-            socket_connection_send_packet(context, HCI_EVENT_PACKET, 0, event, sizeof(event));
+        default: 
             break;
-        }
     }
 }
 
@@ -1603,7 +1599,8 @@ static void sdp_client_assert_buffer(int size){
 // define new packet type SDP_CLIENT_PACKET
 static void handle_sdp_client_query_result(sdp_query_event_t * event){
     sdp_query_attribute_value_event_t * ve;
-    sdp_query_complete_event_t * complete_event;
+    const uint8_t * complete_event;
+    int event_len;
 
     switch (event->type){
         case SDP_QUERY_ATTRIBUTE_VALUE:
@@ -1629,10 +1626,10 @@ static void handle_sdp_client_query_result(sdp_query_event_t * event){
 
             break;
         case SDP_QUERY_COMPLETE:
-            complete_event = (sdp_query_complete_event_t*) event;
-            uint8_t event[] = { SDP_QUERY_COMPLETE, 1, complete_event->status};
-            hci_dump_packet(HCI_EVENT_PACKET, 0, event, sizeof(event));
-            socket_connection_send_packet(sdp_client_query_connection, HCI_EVENT_PACKET, 0, event, sizeof(event));
+            complete_event = (const uint8_t*) event;
+            event_len = complete_event[1] + 2;
+            hci_dump_packet(HCI_EVENT_PACKET, 0, complete_event, event_len);
+            socket_connection_send_packet(sdp_client_query_connection, HCI_EVENT_PACKET, 0, complete_event, event_len);
             break;
     }
 }

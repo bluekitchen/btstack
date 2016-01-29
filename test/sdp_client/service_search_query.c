@@ -12,14 +12,14 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "hci_cmd.h"
-#include "btstack_run_loop.h"
-
-#include "hci.h"
+#include "btstack_event.h"
 #include "btstack_memory.h"
+#include "btstack_run_loop.h"
+#include "classic/sdp_parser.h"
+#include "hci.h"
+#include "hci_cmd.h"
 #include "hci_dump.h"
 #include "l2cap.h"
-#include "classic/sdp_parser.h"
 
 #include "CppUTest/TestHarness.h"
 #include "CppUTest/CommandLineTestRunner.h"
@@ -42,7 +42,7 @@ static uint8_t  sdp_test_record_list[] = {
 
 static void handle_sdp_parser_event(sdp_query_event_t * event){
     sdp_query_service_record_handle_event_t * ve;
-    sdp_query_complete_event_t * ce;
+    const uint8_t * ce;
 
     static uint32_t record_handle = sdp_test_record_list[0];
 
@@ -56,8 +56,8 @@ static void handle_sdp_parser_event(sdp_query_event_t * event){
             
             break;
         case SDP_QUERY_COMPLETE:
-            ce = (sdp_query_complete_event_t*) event;
-            printf("General query done with status %d.\n", ce->status);
+            ce = (const uint8_t *) event;
+            printf("General query done with status %d.\n", sdp_query_complete_event_get_status(ce));
             break;
     }
 }

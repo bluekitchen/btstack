@@ -207,11 +207,11 @@ void sdp_query_rfcomm_register_callback(void(*sdp_app_callback)(sdp_query_event_
 }
 
 static void sdp_query_complete_response(uint8_t status){
-    sdp_query_complete_event_t complete_event = {
-        SDP_QUERY_COMPLETE, 
-        status
-    };
-    (*registered_sdp_app_callback)((sdp_query_event_t*)&complete_event, registered_sdp_app_context);
+    uint8_t event[3];
+    event[0] = SDP_QUERY_COMPLETE;
+    event[1] = 1;
+    event[2] = status;
+    (*registered_sdp_app_callback)((sdp_query_event_t*)&event, registered_sdp_app_context);
 }
 
 static void sdp_query_rfcomm_service_response(uint8_t status){

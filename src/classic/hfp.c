@@ -416,7 +416,7 @@ void hfp_create_sdp_record(uint8_t * service, uint32_t service_record_handle, ui
 static hfp_connection_t * connection_doing_sdp_query = NULL;
 static void handle_query_rfcomm_event(sdp_query_event_t * event, void * context){
     const uint8_t * ve;
-    sdp_query_complete_event_t * ce;
+    const uint8_t * ce;
     hfp_connection_t * connection = connection_doing_sdp_query;
     
     if ( connection->state != HFP_W4_SDP_QUERY_COMPLETE) return;
@@ -432,7 +432,7 @@ static void handle_query_rfcomm_event(sdp_query_event_t * event, void * context)
             break;
         case SDP_QUERY_COMPLETE:
             connection_doing_sdp_query = NULL;
-            ce = (sdp_query_complete_event_t*) event;
+            ce = (const uint8_t*) event;
             
             if (connection->rfcomm_channel_nr > 0){
                 connection->state = HFP_W4_RFCOMM_CONNECTED;
@@ -440,7 +440,7 @@ static void handle_query_rfcomm_event(sdp_query_event_t * event, void * context)
                 rfcomm_create_channel(connection->remote_addr, connection->rfcomm_channel_nr, NULL); 
                 break;
             }
-            log_info("rfcomm service not found, status %u.", ce->status);
+            log_info("rfcomm service not found, status %u.", sdp_query_complete_event_get_status(ce));
             break;
         default:
             break;

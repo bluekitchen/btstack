@@ -51,17 +51,17 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "hci_cmd.h"
-#include "btstack_run_loop.h"
-#include "classic/sdp_util.h"
-
-#include "hci.h"
+#include "btstack_event.h"
 #include "btstack_memory.h"
+#include "btstack_run_loop.h"
+#include "classic/sdp_client.h"
+#include "classic/sdp_parser.h"
+#include "classic/sdp_query_util.h"
+#include "classic/sdp_util.h"
+#include "hci.h"
+#include "hci_cmd.h"
 #include "hci_dump.h"
 #include "l2cap.h"
-#include "classic/sdp_parser.h"
-#include "classic/sdp_client.h"
-#include "classic/sdp_query_util.h"
 #include "pan.h"
 
 int record_id = -1;
@@ -165,7 +165,7 @@ static char * get_string_from_data_element(uint8_t * element){
 static void handle_sdp_client_query_result(sdp_query_event_t * event){
     /* LISTING_PAUSE */
     sdp_query_attribute_value_event_t * ve;
-    sdp_query_complete_event_t * ce;
+    const uint8_t * ce;
     des_iterator_t des_list_it;
     des_iterator_t prot_it;
     char *str;
@@ -263,8 +263,8 @@ static void handle_sdp_client_query_result(sdp_query_event_t * event){
             }
             break;
         case SDP_QUERY_COMPLETE:
-            ce = (sdp_query_complete_event_t*) event;
-            printf("General query done with status %d.\n\n", ce->status);
+            ce = (const uint8_t *) event;
+            printf("General query done with status %d.\n\n", sdp_query_complete_event_get_status(ce));
             break;
     }
     /* LISTING_RESUME */

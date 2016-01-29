@@ -141,7 +141,7 @@ static void packet_handler(void * connection, uint8_t packet_type, uint16_t chan
 
 void handle_query_rfcomm_event(sdp_query_event_t * event, void * context){
     const uint8_t * ve;
-    sdp_query_complete_event_t * ce;
+    const uint8_t * ce;
             
     switch (event->type){
         case SDP_QUERY_RFCOMM_SERVICE:
@@ -150,7 +150,7 @@ void handle_query_rfcomm_event(sdp_query_event_t * event, void * context){
             printf("** Service name: '%s', RFCOMM port %u\n", sdp_query_rfcomm_service_event_get_rfcomm_channel(ve), channel_nr);
             break;
         case SDP_QUERY_COMPLETE:
-            ce = (sdp_query_complete_event_t*) event;
+            ce = (const uint8_t*) event;
             
             if (channel_nr > 0) {
                 printf("RFCOMM create channel.\n");

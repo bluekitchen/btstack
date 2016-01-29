@@ -272,9 +272,9 @@ void sdp_parser_handle_service_search(uint8_t * data, uint16_t total_count, uint
 #endif
 
 void sdp_parser_handle_done(uint8_t status){
-    sdp_query_complete_event_t complete_event = {
-        SDP_QUERY_COMPLETE, 
-        status
-    };
-    (*sdp_query_callback)((sdp_query_event_t*)&complete_event);
+    uint8_t event[3];
+    event[0] = SDP_QUERY_COMPLETE;
+    event[1] = 1;
+    event[2] = status;
+    (*sdp_query_callback)((sdp_query_event_t*)&event);
 }
