@@ -204,13 +204,13 @@ def create_events(events):
         fout.write(hfile_header_begin)
         for event_type, event_name, format, args in events:
             if not event_name in [
-                'SDP_QUERY_COMPLETE',
-                'SDP_QUERY_RFCOMM_SERVICE',
-                'SDP_QUERY_ATTRIBUTE_BYTE',
-                'SDP_QUERY_SERVICE_RECORD_HANDLE',
-                'ANCS_CLIENT_CONNECTED',
-                'ANCS_CLIENT_NOTIFICATION',
-                'ANCS_CLIENT_DISCONNECTED']:
+                'SDP_EVENT_QUERY_COMPLETE',
+                'SDP_EVENT_QUERY_RFCOMM_SERVICE',
+                'SDP_EVENT_QUERY_ATTRIBUTE_BYTE',
+                'SDP_EVENT_QUERY_SERVICE_RECORD_HANDLE',
+                'ANCS_EVENT_CLIENT_CONNECTED',
+                'ANCS_EVENT_CLIENT_NOTIFICATION',
+                'ANCS_EVENT_CLIENT_DISCONNECTED']:
                 continue                
             event_name = format_function_name(event_name)
             length_name = ''

@@ -149,15 +149,15 @@ static void handle_ble_client_event(uint8_t packet_type, uint8_t *packet, uint16
 	le_characteristic_t characteristic;
 	le_characteristic_descriptor_t descriptor;
 	switch (packet[0]){
-		case GATT_QUERY_COMPLETE:
+		case GATT_EVENT_QUERY_COMPLETE:
 			status = packet[4];
             gatt_query_complete = 1;
             if (status){
                 gatt_query_complete = 0;
-                printf("GATT_QUERY_COMPLETE failed with status 0x%02X\n", status);
+                printf("GATT_EVENT_QUERY_COMPLETE failed with status 0x%02X\n", status);
             }
             break;
-		case GATT_SERVICE_QUERY_RESULT:
+		case GATT_EVENT_SERVICE_QUERY_RESULT:
 			service.start_group_handle = READ_BT_16(packet, 4);
 			service.end_group_handle   = READ_BT_16(packet, 6);
 			service.uuid16 = 0;
@@ -168,7 +168,7 @@ static void handle_ble_client_event(uint8_t packet_type, uint8_t *packet, uint16
 			services[result_index++] = service;
 			result_counter++;
             break;
-        case GATT_INCLUDED_SERVICE_QUERY_RESULT:
+        case GATT_EVENT_INCLUDED_SERVICE_QUERY_RESULT:
 			service.start_group_handle = READ_BT_16(packet, 6);
 			service.end_group_handle   = READ_BT_16(packet, 8);
 			service.uuid16 = 0;
@@ -179,7 +179,7 @@ static void handle_ble_client_event(uint8_t packet_type, uint8_t *packet, uint16
             included_services[result_index++] = service;
             result_counter++;
             break;
-        case GATT_CHARACTERISTIC_QUERY_RESULT:
+        case GATT_EVENT_CHARACTERISTIC_QUERY_RESULT:
         	characteristic.start_handle = READ_BT_16(packet, 4);
         	characteristic.value_handle = READ_BT_16(packet, 6);
         	characteristic.end_handle =   READ_BT_16(packet, 8);
@@ -192,7 +192,7 @@ static void handle_ble_client_event(uint8_t packet_type, uint8_t *packet, uint16
         	characteristics[result_index++] = characteristic;
         	result_counter++;
             break;
-        case GATT_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY_RESULT:
+        case GATT_EVENT_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY_RESULT:
         	descriptor.handle = READ_BT_16(packet, 4);
 			swap128(&packet[6], descriptor.uuid128);
 			if (sdp_has_blueooth_base_uuid(descriptor.uuid128)){
@@ -201,14 +201,14 @@ static void handle_ble_client_event(uint8_t packet_type, uint8_t *packet, uint16
         	descriptors[result_index++] = descriptor;
         	result_counter++;
         	break;
-        case GATT_CHARACTERISTIC_VALUE_QUERY_RESULT:
-        case GATT_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT:
+        case GATT_EVENT_CHARACTERISTIC_VALUE_QUERY_RESULT:
+        case GATT_EVENT_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT:
         	CHECK_EQUAL(short_value_length, READ_BT_16(packet, 6));
         	CHECK_EQUAL_ARRAY((uint8_t*)short_value, &packet[8], short_value_length);
         	result_counter++;
         	break;
-        case GATT_LONG_CHARACTERISTIC_VALUE_QUERY_RESULT:
-        case GATT_LONG_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT:
+        case GATT_EVENT_LONG_CHARACTERISTIC_VALUE_QUERY_RESULT:
+        case GATT_EVENT_LONG_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT:
         	verify_blob(READ_BT_16(packet, 8), READ_BT_16(packet, 6), &packet[10]);
         	result_counter++;
         	break;

@@ -58,7 +58,7 @@ static void test_attribute_value_event(const uint8_t * event){
     static int attributeOffset = 0;
     static int attributeLength = 0;
 
-    CHECK_EQUAL(event[0], SDP_QUERY_ATTRIBUTE_VALUE);
+    CHECK_EQUAL(event[0], SDP_EVENT_QUERY_ATTRIBUTE_VALUE);
 
     // record ids are sequential
    // printf("sdp_query_attribute_byte_event_get_record_id(event) %d",sdp_query_attribute_byte_event_get_record_id(event));
@@ -89,7 +89,7 @@ static void test_attribute_value_event(const uint8_t * event){
 
 static void handle_sdp_parser_event(uint8_t packet_type, uint8_t *packet, uint16_t size){
     switch (packet[0]){
-        case SDP_QUERY_ATTRIBUTE_VALUE:
+        case SDP_EVENT_QUERY_ATTRIBUTE_VALUE:
             test_attribute_value_event(packet);
             
             // handle new record
@@ -101,7 +101,7 @@ static void handle_sdp_parser_event(uint8_t packet_type, uint8_t *packet, uint16
             attribute_value[sdp_query_attribute_byte_event_get_data_offset(packet)] = sdp_query_attribute_byte_event_get_data(packet);
             
             break;
-        case SDP_QUERY_COMPLETE:
+        case SDP_EVENT_QUERY_COMPLETE:
             printf("General query done with status %d.\n", sdp_query_complete_event_get_status(packet));
             break;
     }

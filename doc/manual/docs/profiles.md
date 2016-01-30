@@ -348,7 +348,7 @@ for the connection MTU with *gatt_client_get_mtu*.
 GATT queries cannot be interleaved. Therefore, you can check if you can
 perform a GATT query on a particular connection using
 *gatt_client_is_ready*. As a result to a GATT query, zero to many
-*le_event*s are returned before a *GATT_QUERY_COMPLETE* event
+*le_event*s are returned before a *GATT_EVENT_QUERY_COMPLETE* event
 completes the query.
 
 For more details on the available GATT queries, please consult 

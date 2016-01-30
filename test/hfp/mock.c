@@ -208,7 +208,7 @@ void sdp_query_rfcomm_register_callback(void(*sdp_app_callback)(uint8_t packet_t
 
 static void sdp_query_complete_response(uint8_t status){
     uint8_t event[3];
-    event[0] = SDP_QUERY_COMPLETE;
+    event[0] = SDP_EVENT_QUERY_COMPLETE;
     event[1] = 1;
     event[2] = status;
     (*registered_sdp_app_callback)(HCI_EVENT_PACKET, event, sizeof(event), registered_sdp_app_context);
@@ -217,7 +217,7 @@ static void sdp_query_complete_response(uint8_t status){
 static void sdp_query_rfcomm_service_response(uint8_t status){
     int sdp_service_name_len = strlen(sdp_rfcomm_service_name);
     uint8_t event[3+SDP_SERVICE_NAME_LEN+1];
-    event[0] = SDP_QUERY_RFCOMM_SERVICE;
+    event[0] = SDP_EVENT_QUERY_RFCOMM_SERVICE;
     event[1] = sdp_service_name_len + 1;
     event[2] = sdp_rfcomm_channel_nr;
     memcpy(&event[3], sdp_rfcomm_service_name, sdp_service_name_len);

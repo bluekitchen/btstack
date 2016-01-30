@@ -921,7 +921,7 @@ static void l2cap_event_handler(uint8_t *packet, uint16_t size){
             }
             break;           
 
-        case GAP_SECURITY_LEVEL:
+        case GAP_EVENT_SECURITY_LEVEL:
             handle = READ_BT_16(packet, 2);
             log_info("l2cap - security level update");
             btstack_linked_list_iterator_init(&it, &l2cap_channels);

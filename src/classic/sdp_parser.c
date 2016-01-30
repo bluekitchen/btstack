@@ -118,7 +118,7 @@ void sdp_parser_register_callback(void (*sdp_callback)(uint8_t packet_type, uint
 
 static void emit_value_byte(uint8_t event_byte){
     uint8_t event[11];
-    event[0] = SDP_QUERY_ATTRIBUTE_VALUE;
+    event[0] = SDP_EVENT_QUERY_ATTRIBUTE_VALUE;
     event[1] = 9;
     bt_store_16(event, 2, record_counter);
     bt_store_16(event, 4, attribute_id);
@@ -254,7 +254,7 @@ void sdp_parser_handle_service_search(uint8_t * data, uint16_t total_count, uint
         record_handle = READ_NET_32(data, i*4);
         record_counter++;
         uint8_t event[10];
-        event[0] = SDP_QUERY_SERVICE_RECORD_HANDLE;
+        event[0] = SDP_EVENT_QUERY_SERVICE_RECORD_HANDLE;
         event[1] = 8;
         bt_store_16(event, 2, total_count);
         bt_store_16(event, 4, record_counter);
@@ -266,7 +266,7 @@ void sdp_parser_handle_service_search(uint8_t * data, uint16_t total_count, uint
 
 void sdp_parser_handle_done(uint8_t status){
     uint8_t event[3];
-    event[0] = SDP_QUERY_COMPLETE;
+    event[0] = SDP_EVENT_QUERY_COMPLETE;
     event[1] = 1;
     event[2] = status;
     (*sdp_query_callback)(HCI_EVENT_PACKET, event, sizeof(event)); 

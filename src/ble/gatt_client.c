@@ -509,7 +509,7 @@ static void emit_event_to_all_subclients_new(uint8_t * packet, uint16_t size){
 static void emit_gatt_complete_event(gatt_client_t * peripheral, uint8_t status){
     // @format H1
     uint8_t packet[5];
-    packet[0] = GATT_QUERY_COMPLETE;
+    packet[0] = GATT_EVENT_QUERY_COMPLETE;
     packet[1] = 3;
     bt_store_16(packet, 2, peripheral->handle);
     packet[4] = status;
@@ -519,7 +519,7 @@ static void emit_gatt_complete_event(gatt_client_t * peripheral, uint8_t status)
 static void emit_gatt_service_query_result_event(gatt_client_t * peripheral, uint16_t start_group_handle, uint16_t end_group_handle, uint8_t * uuid128){
     // @format HX
     uint8_t packet[24];
-    packet[0] = GATT_SERVICE_QUERY_RESULT;
+    packet[0] = GATT_EVENT_SERVICE_QUERY_RESULT;
     packet[1] = sizeof(packet) - 2;
     bt_store_16(packet, 2, peripheral->handle);
     ///
@@ -532,7 +532,7 @@ static void emit_gatt_service_query_result_event(gatt_client_t * peripheral, uin
 static void emit_gatt_included_service_query_result_event(gatt_client_t * peripheral, uint16_t include_handle, uint16_t start_group_handle, uint16_t end_group_handle, uint8_t * uuid128){
     // @format HX
     uint8_t packet[26];
-    packet[0] = GATT_INCLUDED_SERVICE_QUERY_RESULT;
+    packet[0] = GATT_EVENT_INCLUDED_SERVICE_QUERY_RESULT;
     packet[1] = sizeof(packet) - 2;
     bt_store_16(packet, 2, peripheral->handle);
     ///
@@ -548,7 +548,7 @@ static void emit_gatt_characteristic_query_result_event(gatt_client_t * peripher
         uint16_t properties, uint8_t * uuid128){
     // @format HY
     uint8_t packet[28];
-    packet[0] = GATT_CHARACTERISTIC_QUERY_RESULT;
+    packet[0] = GATT_EVENT_CHARACTERISTIC_QUERY_RESULT;
     packet[1] = sizeof(packet) - 2;
     bt_store_16(packet, 2, peripheral->handle);
     ///
@@ -564,7 +564,7 @@ static void emit_gatt_all_characteristic_descriptors_result_event(
     gatt_client_t * peripheral, uint16_t descriptor_handle, uint8_t * uuid128){
     // @format HZ
     uint8_t packet[22];
-    packet[0] = GATT_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY_RESULT;
+    packet[0] = GATT_EVENT_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY_RESULT;
     packet[1] = sizeof(packet) - 2;
     bt_store_16(packet, 2, peripheral->handle);
     ///
@@ -692,36 +692,36 @@ static uint8_t * setup_long_characteristic_value_packet(uint8_t type, uint16_t c
 
 // @note assume that value is part of an l2cap buffer - overwrite parts of the HCI/L2CAP/ATT packet (4/4/3) bytes 
 static void report_gatt_notification(uint16_t con_handle, uint16_t value_handle, uint8_t * value, int length){
-    uint8_t * packet = setup_characteristic_value_packet(GATT_NOTIFICATION, con_handle, value_handle, value, length);
+    uint8_t * packet = setup_characteristic_value_packet(GATT_EVENT_NOTIFICATION, con_handle, value_handle, value, length);
     emit_event_to_all_subclients_new(packet, characteristic_value_event_header_size + length);
 }
 
 // @note assume that value is part of an l2cap buffer - overwrite parts of the HCI/L2CAP/ATT packet (4/4/3) bytes 
 static void report_gatt_indication(uint16_t con_handle, uint16_t value_handle, uint8_t * value, int length){
-    uint8_t * packet = setup_characteristic_value_packet(GATT_INDICATION, con_handle, value_handle, value, length);
+    uint8_t * packet = setup_characteristic_value_packet(GATT_EVENT_INDICATION, con_handle, value_handle, value, length);
     emit_event_to_all_subclients_new(packet, characteristic_value_event_header_size + length);
 }
 
 // @note assume that value is part of an l2cap buffer - overwrite parts of the HCI/L2CAP/ATT packet (4/4/3) bytes 
 static void report_gatt_characteristic_value(gatt_client_t * peripheral, uint16_t attribute_handle, uint8_t * value, uint16_t length){
-    uint8_t * packet = setup_characteristic_value_packet(GATT_CHARACTERISTIC_VALUE_QUERY_RESULT, peripheral->handle, attribute_handle, value, length);
+    uint8_t * packet = setup_characteristic_value_packet(GATT_EVENT_CHARACTERISTIC_VALUE_QUERY_RESULT, peripheral->handle, attribute_handle, value, length);
     emit_event_new(peripheral->subclient_id, packet, characteristic_value_event_header_size + length);
 }
 
 // @note assume that value is part of an l2cap buffer - overwrite parts of the HCI/L2CAP/ATT packet (4/4/3) bytes 
 static void report_gatt_long_characteristic_value_blob(gatt_client_t * peripheral, uint16_t attribute_handle, uint8_t * blob, uint16_t blob_length, int value_offset){
-    uint8_t * packet = setup_long_characteristic_value_packet(GATT_LONG_CHARACTERISTIC_VALUE_QUERY_RESULT, peripheral->handle, attribute_handle, value_offset, blob, blob_length);
+    uint8_t * packet = setup_long_characteristic_value_packet(GATT_EVENT_LONG_CHARACTERISTIC_VALUE_QUERY_RESULT, peripheral->handle, attribute_handle, value_offset, blob, blob_length);
     if (!packet) return;
     emit_event_new(peripheral->subclient_id, packet, blob_length + long_characteristic_value_event_header_size);
 }
 
 static void report_gatt_characteristic_descriptor(gatt_client_t * peripheral, uint16_t descriptor_handle, uint8_t *value, uint16_t value_length, uint16_t value_offset){
-    uint8_t * packet = setup_characteristic_value_packet(GATT_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT, peripheral->handle, descriptor_handle, value, value_length);
+    uint8_t * packet = setup_characteristic_value_packet(GATT_EVENT_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT, peripheral->handle, descriptor_handle, value, value_length);
     emit_event_new(peripheral->subclient_id, packet, value_length + 8);
 }
 
 static void report_gatt_long_characteristic_descriptor(gatt_client_t * peripheral, uint16_t descriptor_handle, uint8_t *blob, uint16_t blob_length, uint16_t value_offset){
-    uint8_t * packet = setup_long_characteristic_value_packet(GATT_LONG_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT, peripheral->handle, descriptor_handle, value_offset, blob, blob_length);
+    uint8_t * packet = setup_long_characteristic_value_packet(GATT_EVENT_LONG_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT, peripheral->handle, descriptor_handle, value_offset, blob, blob_length);
     if (!packet) return;
     emit_event_new(peripheral->subclient_id, packet, blob_length + long_characteristic_value_event_header_size);
 }
@@ -1089,7 +1089,7 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
                 case P_W4_SERVICE_QUERY_RESULT:
                     report_gatt_services(peripheral, packet, size);
                     trigger_next_service_query(peripheral, get_last_result_handle_from_service_list(packet, size));
-                    // GATT_QUERY_COMPLETE is emitted by trigger_next_xxx when done
+                    // GATT_EVENT_QUERY_COMPLETE is emitted by trigger_next_xxx when done
                     break;
                 default:
                     break;
@@ -1105,12 +1105,12 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
                 case P_W4_ALL_CHARACTERISTICS_OF_SERVICE_QUERY_RESULT:
                     report_gatt_characteristics(peripheral, packet, size);
                     trigger_next_characteristic_query(peripheral, get_last_result_handle_from_characteristics_list(packet, size));
-                    // GATT_QUERY_COMPLETE is emitted by trigger_next_xxx when done, or by ATT_ERROR
+                    // GATT_EVENT_QUERY_COMPLETE is emitted by trigger_next_xxx when done, or by ATT_ERROR
                     break;
                 case P_W4_CHARACTERISTIC_WITH_UUID_QUERY_RESULT:
                     report_gatt_characteristics(peripheral, packet, size);
                     trigger_next_characteristic_query(peripheral, get_last_result_handle_from_characteristics_list(packet, size));
-                    // GATT_QUERY_COMPLETE is emitted by trigger_next_xxx when done, or by ATT_ERROR
+                    // GATT_EVENT_QUERY_COMPLETE is emitted by trigger_next_xxx when done, or by ATT_ERROR
                     break;
                 case P_W4_INCLUDED_SERVICE_QUERY_RESULT:
                 {
@@ -1136,7 +1136,7 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
                     }
                     
                     trigger_next_included_service_query(peripheral, get_last_result_handle_from_included_services_list(packet, size));
-                    // GATT_QUERY_COMPLETE is emitted by trigger_next_xxx when done
+                    // GATT_EVENT_QUERY_COMPLETE is emitted by trigger_next_xxx when done
                     break;
                 }
                 case P_W4_READ_CLIENT_CHARACTERISTIC_CONFIGURATION_QUERY_RESULT:
@@ -1166,7 +1166,7 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
                     swap128(&packet[1], uuid128);
                     report_gatt_included_service_uuid128(peripheral, peripheral->start_group_handle, uuid128);
                     trigger_next_included_service_query(peripheral, peripheral->start_group_handle);
-                    // GATT_QUERY_COMPLETE is emitted by trigger_next_xxx when done
+                    // GATT_EVENT_QUERY_COMPLETE is emitted by trigger_next_xxx when done
                     break;
                 }
                 case P_W4_READ_CHARACTERISTIC_VALUE_RESULT:
@@ -1191,14 +1191,14 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
             uint8_t pair_size = 4;
             int i;
             uint16_t start_group_handle;
-            uint16_t   end_group_handle= 0xffff; // asserts GATT_QUERY_COMPLETE is emitted if no results 
+            uint16_t   end_group_handle= 0xffff; // asserts GATT_EVENT_QUERY_COMPLETE is emitted if no results 
             for (i = 1; i<size; i+=pair_size){
                 start_group_handle = READ_BT_16(packet,i);
                 end_group_handle = READ_BT_16(packet,i+2);
                 emit_gatt_service_query_result_event(peripheral, start_group_handle, end_group_handle, peripheral->uuid128);
             }
             trigger_next_service_by_uuid_query(peripheral, end_group_handle);
-            // GATT_QUERY_COMPLETE is emitted by trigger_next_xxx when done
+            // GATT_EVENT_QUERY_COMPLETE is emitted by trigger_next_xxx when done
             break;
         }
         case ATT_FIND_INFORMATION_REPLY:
@@ -1211,7 +1211,7 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
             
             report_gatt_all_characteristic_descriptors(peripheral, &packet[2], size-2, pair_size);
             trigger_next_characteristic_descriptor_query(peripheral, last_descriptor_handle);
-            // GATT_QUERY_COMPLETE is emitted by trigger_next_xxx when done
+            // GATT_EVENT_QUERY_COMPLETE is emitted by trigger_next_xxx when done
             break;
         }
             
@@ -1241,14 +1241,14 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
                 case P_W4_READ_BLOB_RESULT:
                     report_gatt_long_characteristic_value_blob(peripheral, peripheral->attribute_handle, &packet[1], received_blob_length, peripheral->attribute_offset);
                     trigger_next_blob_query(peripheral, P_W2_SEND_READ_BLOB_QUERY, received_blob_length);
-                    // GATT_QUERY_COMPLETE is emitted by trigger_next_xxx when done
+                    // GATT_EVENT_QUERY_COMPLETE is emitted by trigger_next_xxx when done
                     break;
                 case P_W4_READ_BLOB_CHARACTERISTIC_DESCRIPTOR_RESULT:
                     report_gatt_long_characteristic_descriptor(peripheral, peripheral->attribute_handle,
                                                           &packet[1], received_blob_length,
                                                           peripheral->attribute_offset);
                     trigger_next_blob_query(peripheral, P_W2_SEND_READ_BLOB_CHARACTERISTIC_DESCRIPTOR_QUERY, received_blob_length);
-                    // GATT_QUERY_COMPLETE is emitted by trigger_next_xxx when done
+                    // GATT_EVENT_QUERY_COMPLETE is emitted by trigger_next_xxx when done
                     break;
                 default:
                     break;
@@ -1269,20 +1269,20 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
                 case P_W4_PREPARE_WRITE_RESULT:{
                     peripheral->attribute_offset = READ_BT_16(packet, 3);
                     trigger_next_prepare_write_query(peripheral, P_W2_PREPARE_WRITE, P_W2_EXECUTE_PREPARED_WRITE);
-                    // GATT_QUERY_COMPLETE is emitted by trigger_next_xxx when done
+                    // GATT_EVENT_QUERY_COMPLETE is emitted by trigger_next_xxx when done
                     break;
                 }
                 case P_W4_PREPARE_WRITE_CHARACTERISTIC_DESCRIPTOR_RESULT:{
                     peripheral->attribute_offset = READ_BT_16(packet, 3);
                     trigger_next_prepare_write_query(peripheral, P_W2_PREPARE_WRITE_CHARACTERISTIC_DESCRIPTOR, P_W2_EXECUTE_PREPARED_WRITE_CHARACTERISTIC_DESCRIPTOR);
-                    // GATT_QUERY_COMPLETE is emitted by trigger_next_xxx when done
+                    // GATT_EVENT_QUERY_COMPLETE is emitted by trigger_next_xxx when done
                     break;
                 }
                 case P_W4_PREPARE_RELIABLE_WRITE_RESULT:{
                     if (is_value_valid(peripheral, packet, size)){
                         peripheral->attribute_offset = READ_BT_16(packet, 3);
                         trigger_next_prepare_write_query(peripheral, P_W2_PREPARE_RELIABLE_WRITE, P_W2_EXECUTE_PREPARED_WRITE);
-                        // GATT_QUERY_COMPLETE is emitted by trigger_next_xxx when done
+                        // GATT_EVENT_QUERY_COMPLETE is emitted by trigger_next_xxx when done
                         break;
                     }
                     peripheral->gatt_client_state = P_W2_CANCEL_PREPARED_WRITE_DATA_MISMATCH;

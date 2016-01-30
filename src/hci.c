@@ -821,7 +821,7 @@ void le_handle_advertisement_report(uint8_t *packet, int size){
         uint8_t data_length = packet[offset + 8];
         uint8_t event_size = 10 + data_length;
         int pos = 0;
-        event[pos++] = GAP_LE_ADVERTISING_REPORT;
+        event[pos++] = GAP_LE_EVENT_ADVERTISING_REPORT;
         event[pos++] = event_size;
         memcpy(&event[pos], &packet[offset], 1+1+6); // event type + address type + address
         offset += 8;
@@ -3048,7 +3048,7 @@ void hci_emit_security_level(hci_con_handle_t con_handle, gap_security_level_t l
     log_info("hci_emit_security_level %u for handle %x", level, con_handle);
     uint8_t event[5];
     int pos = 0;
-    event[pos++] = GAP_SECURITY_LEVEL;
+    event[pos++] = GAP_EVENT_SECURITY_LEVEL;
     event[pos++] = sizeof(event) - 2;
     bt_store_16(event, 2, con_handle);
     pos += 2;
@@ -3061,7 +3061,7 @@ void hci_emit_dedicated_bonding_result(bd_addr_t address, uint8_t status){
     log_info("hci_emit_dedicated_bonding_result %u ", status);
     uint8_t event[9];
     int pos = 0;
-    event[pos++] = GAP_DEDICATED_BONDING_COMPLETED;
+    event[pos++] = GAP_EVENT_DEDICATED_BONDING_COMPLETED;
     event[pos++] = sizeof(event) - 2;
     event[pos++] = status;
     bt_flip_addr( &event[pos], address);

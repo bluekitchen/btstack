@@ -163,11 +163,11 @@ static void handle_found_service(const char * name, uint8_t port){
 
 static void handle_query_rfcomm_event(uint8_t packet_type, uint8_t *packet, uint16_t size, void * context){            
     switch (packet[0]){
-        case SDP_QUERY_RFCOMM_SERVICE:
+        case SDP_EVENT_QUERY_RFCOMM_SERVICE:
             handle_found_service(sdp_query_rfcomm_service_event_get_name(packet), 
                                  sdp_query_rfcomm_service_event_get_rfcomm_channel(packet));
             break;
-        case SDP_QUERY_COMPLETE:
+        case SDP_EVENT_QUERY_COMPLETE:
             if (state != W4_SDP_COMPLETE){
                 printf("Requested SPP Service %s not found \n", spp_service_name_prefix);
                 break;

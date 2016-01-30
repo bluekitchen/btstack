@@ -59,7 +59,7 @@
 /* @section GAP LE setup for receiving advertisements
  *
  * @text GAP LE advertisements are received as custom HCI events of the 
- * GAP_LE_ADVERTISING_REPORT type. To receive them, you'll need to register
+ * GAP_LE_EVENT_ADVERTISING_REPORT type. To receive them, you'll need to register
  * the HCI packet handler, as shown in Listing GAPLEAdvSetup.
  */
 
@@ -218,7 +218,7 @@ static void dump_advertisement_data(uint8_t * adv_data, uint8_t adv_size){
  * 
  * @text The HCI packet handler has to start the scanning, 
  * and to handle received advertisements. Advertisements are received 
- * as HCI event packets of the GAP_LE_ADVERTISING_REPORT type,
+ * as HCI event packets of the GAP_LE_EVENT_ADVERTISING_REPORT type,
  * see Listing GAPLEAdvPacketHandler.  
  */
 
@@ -236,7 +236,7 @@ static void handle_hci_event(uint8_t packet_type, uint8_t *packet, uint16_t size
                 le_central_start_scan(); 
             }
             break;
-        case GAP_LE_ADVERTISING_REPORT:{
+        case GAP_LE_EVENT_ADVERTISING_REPORT:{
             int pos = 2;
             uint8_t event_type = packet[pos++];
             uint8_t address_type = packet[pos++];

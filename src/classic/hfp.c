@@ -418,21 +418,21 @@ static hfp_connection_t * connection_doing_sdp_query = NULL;
 static void handle_query_rfcomm_event(uint8_t packet_type, uint8_t *packet, uint16_t size, void * context){
     hfp_connection_t * connection = connection_doing_sdp_query;
     
-    if ( connection->state != HFP_W4_SDP_QUERY_COMPLETE) return;
+    if ( connection->state != HFP_W4_SDP_EVENT_QUERY_COMPLETE) return;
     
     switch (packet[0]){
-        case SDP_QUERY_RFCOMM_SERVICE:
+        case SDP_EVENT_QUERY_RFCOMM_SERVICE:
             if (!connection) {
                 log_error("handle_query_rfcomm_event alloc connection for RFCOMM port %u failed", sdp_query_rfcomm_service_event_get_rfcomm_channel(packet));
                 return;
             }
             connection->rfcomm_channel_nr = sdp_query_rfcomm_service_event_get_rfcomm_channel(packet);
             break;
-        case SDP_QUERY_COMPLETE:
+        case SDP_EVENT_QUERY_COMPLETE:
             connection_doing_sdp_query = NULL;
             if (connection->rfcomm_channel_nr > 0){
                 connection->state = HFP_W4_RFCOMM_CONNECTED;
-                log_info("HFP: SDP_QUERY_COMPLETE context %p, addr %s, state %d", connection, bd_addr_to_str( connection->remote_addr),  connection->state);
+                log_info("HFP: SDP_EVENT_QUERY_COMPLETE context %p, addr %s, state %d", connection, bd_addr_to_str( connection->remote_addr),  connection->state);
                 rfcomm_create_channel(connection->remote_addr, connection->rfcomm_channel_nr, NULL); 
                 break;
             }
@@ -1295,7 +1295,7 @@ void hfp_establish_service_level_connection(bd_addr_t bd_addr, uint16_t service_
             return;
         case HFP_IDLE:
             memcpy(context->remote_addr, bd_addr, 6);
-            context->state = HFP_W4_SDP_QUERY_COMPLETE;
+            context->state = HFP_W4_SDP_EVENT_QUERY_COMPLETE;
             connection_doing_sdp_query = context;
             context->service_uuid = service_uuid;
             sdp_query_rfcomm_channel_and_name_for_uuid(context->remote_addr, service_uuid);

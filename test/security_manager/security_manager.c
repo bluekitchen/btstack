@@ -126,27 +126,27 @@ void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet,
     switch (packet_type) {
         case HCI_EVENT_PACKET:
             switch (packet[0]) {
-                case SM_PASSKEY_INPUT_NUMBER: 
+                case SM_EVENT_PASSKEY_INPUT_NUMBER: 
                     // store peer address for input
                     printf("\nGAP Bonding: Enter 6 digit passkey: '");
                     fflush(stdout);
                     break;
 
-                case SM_PASSKEY_DISPLAY_NUMBER:
+                case SM_EVENT_PASSKEY_DISPLAY_NUMBER:
                     printf("\nGAP Bonding: Display Passkey '%06u\n", READ_BT_32(packet, 11));
                     break;
 
-                case SM_PASSKEY_DISPLAY_CANCEL: 
+                case SM_EVENT_PASSKEY_DISPLAY_CANCEL: 
                     printf("\nGAP Bonding: Display cancel\n");
                     break;
 
-                case SM_JUST_WORKS_REQUEST:
+                case SM_EVENT_JUST_WORKS_REQUEST:
                     // auto-authorize connection if requested
                     sm_just_works_confirm(READ_BT_16(packet, 2));
                     printf("Just Works request confirmed\n");
                     break;
 
-                case SM_AUTHORIZATION_REQUEST:
+                case SM_EVENT_AUTHORIZATION_REQUEST:
                     // auto-authorize connection if requested
                     sm_authorization_grant(READ_BT_16(packet, 2));
                     break;

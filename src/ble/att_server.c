@@ -100,7 +100,7 @@ static void att_handle_value_indication_notify_client(uint8_t status, uint16_t c
     
     uint8_t event[7];
     int pos = 0;
-    event[pos++] = ATT_HANDLE_VALUE_INDICATION_COMPLETE;
+    event[pos++] = ATT_EVENT_HANDLE_VALUE_INDICATION_COMPLETE;
     event[pos++] = sizeof(event) - 2;
     event[pos++] = status;
     bt_store_16(event, pos, client_handle);
@@ -116,7 +116,7 @@ static void att_emit_mtu_event(uint16_t handle, uint16_t mtu){
 
     uint8_t event[6];
     int pos = 0;
-    event[pos++] = ATT_MTU_EXCHANGE_COMPLETE;
+    event[pos++] = ATT_EVENT_MTU_EXCHANGE_COMPLETE;
     event[pos++] = sizeof(event) - 2;
     bt_store_16(event, pos, handle);
     pos += 2;
@@ -182,24 +182,24 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
                     att_server_state = ATT_SERVER_IDLE;
                     break;
                     
-                case SM_IDENTITY_RESOLVING_STARTED:
-                    log_info("SM_IDENTITY_RESOLVING_STARTED");
+                case SM_EVENT_IDENTITY_RESOLVING_STARTED:
+                    log_info("SM_EVENT_IDENTITY_RESOLVING_STARTED");
                     att_ir_lookup_active = 1;
                     break;
-                case SM_IDENTITY_RESOLVING_SUCCEEDED:
+                case SM_EVENT_IDENTITY_RESOLVING_SUCCEEDED:
                     att_ir_lookup_active = 0;
                     att_ir_le_device_db_index = READ_BT_16(packet, 11);
-                    log_info("SM_IDENTITY_RESOLVING_SUCCEEDED id %u", att_ir_le_device_db_index);
+                    log_info("SM_EVENT_IDENTITY_RESOLVING_SUCCEEDED id %u", att_ir_le_device_db_index);
                     att_run();
                     break;
-                case SM_IDENTITY_RESOLVING_FAILED:
-                    log_info("SM_IDENTITY_RESOLVING_FAILED");
+                case SM_EVENT_IDENTITY_RESOLVING_FAILED:
+                    log_info("SM_EVENT_IDENTITY_RESOLVING_FAILED");
                     att_ir_lookup_active = 0;
                     att_ir_le_device_db_index = -1;
                     att_run();
                     break;
 
-                case SM_AUTHORIZATION_RESULT: {
+                case SM_EVENT_AUTHORIZATION_RESULT: {
                     if (packet[4] != att_client_addr_type) break;
                     bt_flip_addr(event_address, &packet[5]);
                     if (memcmp(event_address, att_client_address, 6) != 0) break;

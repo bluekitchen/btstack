@@ -287,7 +287,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 show_usage();
             }
             break;
-        case GAP_DEDICATED_BONDING_COMPLETED:
+        case GAP_EVENT_DEDICATED_BONDING_COMPLETED:
             printf("GAP Dedicated Bonding Complete, status %u\n", packet[2]);
             break;
 
@@ -397,11 +397,11 @@ static void handle_found_service(char * name, uint8_t port){
 
 static void handle_query_rfcomm_event(uint8_t packet_type, uint8_t *packet, uint16_t size, void * context){
     switch (packet[0]){
-        case SDP_QUERY_RFCOMM_SERVICE:
+        case SDP_EVENT_QUERY_RFCOMM_SERVICE:
             handle_found_service(sdp_query_rfcomm_service_event_get_name(packet),
                                  sdp_query_rfcomm_service_event_get_rfcomm_channel(packet));
             break;
-        case SDP_QUERY_COMPLETE:
+        case SDP_EVENT_QUERY_COMPLETE:
             printf("SDP SPP Query complete\n");
             break;
         default: 

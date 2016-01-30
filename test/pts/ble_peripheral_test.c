@@ -580,12 +580,12 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                     att_write_queue_init();
                     break;
                     
-                case SM_JUST_WORKS_REQUEST:
-                    printf("SM_JUST_WORKS_REQUEST\n");
+                case SM_EVENT_JUST_WORKS_REQUEST:
+                    printf("SM_EVENT_JUST_WORKS_REQUEST\n");
                     sm_just_works_confirm(READ_BT_16(packet, 2));
                     break;
 
-                case SM_PASSKEY_INPUT_NUMBER:
+                case SM_EVENT_PASSKEY_INPUT_NUMBER:
                     // display number
                     master_addr_type = packet[4];
                     bt_flip_addr(event_address, &packet[5]);
@@ -595,22 +595,22 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                     ui_digits_for_passkey = 6;
                     break;
 
-                case SM_PASSKEY_DISPLAY_NUMBER:
+                case SM_EVENT_PASSKEY_DISPLAY_NUMBER:
                     // display number
                     printf("\nGAP Bonding %s (%u): Display Passkey '%06u\n", bd_addr_to_str(master_address), master_addr_type, READ_BT_32(packet, 11));
                     break;
 
-                case SM_PASSKEY_DISPLAY_CANCEL: 
+                case SM_EVENT_PASSKEY_DISPLAY_CANCEL: 
                     printf("\nGAP Bonding %s (%u): Display cancel\n", bd_addr_to_str(master_address), master_addr_type);
                     break;
 
-                case SM_AUTHORIZATION_REQUEST:
+                case SM_EVENT_AUTHORIZATION_REQUEST:
                     // auto-authorize connection if requested
                     sm_authorization_grant(READ_BT_16(packet, 2));
                     break;
 
-                case ATT_HANDLE_VALUE_INDICATION_COMPLETE:
-                    printf("ATT_HANDLE_VALUE_INDICATION_COMPLETE status %u\n", packet[2]);
+                case ATT_EVENT_HANDLE_VALUE_INDICATION_COMPLETE:
+                    printf("ATT_EVENT_HANDLE_VALUE_INDICATION_COMPLETE status %u\n", packet[2]);
                     break;
 
                 default:

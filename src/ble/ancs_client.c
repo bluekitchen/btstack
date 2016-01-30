@@ -164,7 +164,7 @@ static void ancs_chunk_parser_handle_byte(uint8_t data){
             break;
         case W4_ATTRIBUTE_COMPLETE:
             ancs_notification_buffer[ancs_bytes_received] = 0;
-            notify_client_text(ANCS_CLIENT_NOTIFICATION);
+            notify_client_text(ANCS_EVENT_CLIENT_NOTIFICATION);
             ancs_bytes_received = 0;
             ancs_bytes_needed   = 1;
             chunk_parser_state  = W4_ATTRIBUTE_ID;
@@ -229,7 +229,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint8_t *packet, uint1
             return;
             
         case HCI_EVENT_DISCONNECTION_COMPLETE:
-            notify_client_simple(ANCS_CLIENT_DISCONNECTED);
+            notify_client_simple(ANCS_EVENT_CLIENT_DISCONNECTED);
             return;
 
         default:
@@ -244,11 +244,11 @@ static void handle_gatt_client_event(uint8_t packet_type, uint8_t *packet, uint1
     switch(tc_state){
         case TC_W4_SERVICE_RESULT:
             switch(packet[0]){
-                case GATT_SERVICE_QUERY_RESULT:
+                case GATT_EVENT_SERVICE_QUERY_RESULT:
                     extract_service(&ancs_service, packet);
                     ancs_service_found = 1;
                     break;
-                case GATT_QUERY_COMPLETE:
+                case GATT_EVENT_QUERY_COMPLETE:
                     if (!ancs_service_found){
                         printf("ANCS Service not found");
                         tc_state = TC_IDLE;
@@ -265,7 +265,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint8_t *packet, uint1
             
         case TC_W4_CHARACTERISTIC_RESULT:
             switch(packet[0]){
-                case GATT_CHARACTERISTIC_QUERY_RESULT:
+                case GATT_EVENT_CHARACTERISTIC_QUERY_RESULT:
                     extract_characteristic(&characteristic, packet);
                     if (memcmp(characteristic.uuid128, ancs_notification_source_uuid, 16) == 0){
                         printf("ANCS Notification Source Characterisic found\n");
@@ -286,7 +286,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint8_t *packet, uint1
                         break;                        
                     }
                     break;
-                case GATT_QUERY_COMPLETE:
+                case GATT_EVENT_QUERY_COMPLETE:
                     printf("ANCS Characteristcs count %u\n", ancs_characteristcs);
                     tc_state = TC_W4_NOTIFICATION_SOURCE_SUBSCRIBED;
                     gatt_client_write_client_characteristic_configuration(gc_id, gc_handle, &ancs_notification_source_characteristic,
@@ -298,7 +298,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint8_t *packet, uint1
             break;
         case TC_W4_NOTIFICATION_SOURCE_SUBSCRIBED:
             switch(packet[0]){
-                case GATT_QUERY_COMPLETE:
+                case GATT_EVENT_QUERY_COMPLETE:
                     printf("ANCS Notification Source subscribed\n");
                     tc_state = TC_W4_DATA_SOURCE_SUBSCRIBED;
                     gatt_client_write_client_characteristic_configuration(gc_id, gc_handle, &ancs_data_source_characteristic,
@@ -310,17 +310,17 @@ static void handle_gatt_client_event(uint8_t packet_type, uint8_t *packet, uint1
             break;
         case TC_W4_DATA_SOURCE_SUBSCRIBED:
             switch(packet[0]){
-                case GATT_QUERY_COMPLETE:
+                case GATT_EVENT_QUERY_COMPLETE:
                     printf("ANCS Data Source subscribed\n");
                     tc_state = TC_SUBSCRIBED;
-                    notify_client_simple(ANCS_CLIENT_CONNECTED);
+                    notify_client_simple(ANCS_EVENT_CLIENT_CONNECTED);
                     break;
                 default:
                     break;
             }
             break;
         case TC_SUBSCRIBED:
-            if (packet[0] != GATT_NOTIFICATION && packet[0] != GATT_INDICATION ) break;
+            if (packet[0] != GATT_EVENT_NOTIFICATION && packet[0] != GATT_EVENT_INDICATION ) break;
 
             value_handle = READ_BT_16(packet, 4);
             value_length = READ_BT_16(packet, 6);

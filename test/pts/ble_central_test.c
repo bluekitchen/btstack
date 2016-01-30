@@ -353,7 +353,7 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                     printf("Disconnected from handle 0x%04x\n", aHandle);
                     break;
                     
-                case SM_PASSKEY_INPUT_NUMBER: 
+                case SM_EVENT_PASSKEY_INPUT_NUMBER: 
                     // store peer address for input
                     printf("\nGAP Bonding: Enter 6 digit passkey: '");
                     fflush(stdout);
@@ -361,30 +361,30 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                     ui_digits_for_passkey = 6;
                     break;
 
-                case SM_PASSKEY_DISPLAY_NUMBER:
+                case SM_EVENT_PASSKEY_DISPLAY_NUMBER:
                     printf("\nGAP Bonding: Display Passkey '%06u\n", READ_BT_32(packet, 11));
                     break;
 
-                case SM_PASSKEY_DISPLAY_CANCEL: 
+                case SM_EVENT_PASSKEY_DISPLAY_CANCEL: 
                     printf("\nGAP Bonding: Display cancel\n");
                     break;
 
-                case SM_JUST_WORKS_REQUEST:
+                case SM_EVENT_JUST_WORKS_REQUEST:
                     // auto-authorize connection if requested
                     sm_just_works_confirm(READ_BT_16(packet, 2));
                     printf("Just Works request confirmed\n");
                     break;
 
-                case SM_AUTHORIZATION_REQUEST:
+                case SM_EVENT_AUTHORIZATION_REQUEST:
                     // auto-authorize connection if requested
                     sm_authorization_grant(READ_BT_16(packet, 2));
                     break;
 
-                case GAP_LE_ADVERTISING_REPORT:
+                case GAP_LE_EVENT_ADVERTISING_REPORT:
                     handle_advertising_event(packet, size);
                     break;
 
-                case SM_IDENTITY_RESOLVING_SUCCEEDED:
+                case SM_EVENT_IDENTITY_RESOLVING_SUCCEEDED:
                     bt_flip_addr(event_address, &packet[5]);
                     // skip already detected pts
                     if (memcmp(event_address, current_pts_address, 6) == 0) break;
@@ -442,7 +442,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint8_t *packet, uint1
     uint8_t             status;
 
     switch(packet[0]){
-        case GATT_SERVICE_QUERY_RESULT:
+        case GATT_EVENT_SERVICE_QUERY_RESULT:
             switch (central_state){
                 case CENTRAL_W4_PRIMARY_SERVICES:
                 case CENTRAL_ENTER_SERVICE_UUID_4_DISCOVER_CHARACTERISTICS:
@@ -460,7 +460,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint8_t *packet, uint1
                     break;
                 }
             break;
-        case GATT_INCLUDED_SERVICE_QUERY_RESULT:
+        case GATT_EVENT_INCLUDED_SERVICE_QUERY_RESULT:
             value_handle = READ_BT_16(packet, 4);
             extract_service(&service, &packet[6]);
             printf("Included Service at 0x%004x: ", value_handle);
@@ -468,7 +468,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint8_t *packet, uint1
             printUUID(service.uuid128, service.uuid16);
             printf("\n");
             break;
-        case GATT_CHARACTERISTIC_QUERY_RESULT:
+        case GATT_EVENT_CHARACTERISTIC_QUERY_RESULT:
             extract_characteristic(&characteristic, packet);
             switch (central_state) {
                 case CENTRAL_W4_NAME_QUERY_COMPLETE:
@@ -509,7 +509,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint8_t *packet, uint1
                     break;
             }
             break;
-        case GATT_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY_RESULT: {
+        case GATT_EVENT_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY_RESULT: {
             uint16_t descriptor_handle = READ_BT_16(packet, 4);
             uint8_t uuid128[16];
             swap128(&packet[6], uuid128);
@@ -522,7 +522,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint8_t *packet, uint1
             }
             break;
         }
-        case GATT_CHARACTERISTIC_VALUE_QUERY_RESULT:
+        case GATT_EVENT_CHARACTERISTIC_VALUE_QUERY_RESULT:
             value_handle = READ_BT_16(packet, 4);
             value_length = READ_BT_16(packet, 6);
             value = &packet[8];
@@ -616,7 +616,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint8_t *packet, uint1
                     break;
             }
             break;
-        case GATT_LONG_CHARACTERISTIC_VALUE_QUERY_RESULT:
+        case GATT_EVENT_LONG_CHARACTERISTIC_VALUE_QUERY_RESULT:
             value = &packet[10];
             value_offset = READ_BT_16(packet, 6);
             value_length = READ_BT_16(packet, 8);
@@ -624,7 +624,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint8_t *packet, uint1
             printf("Value (offset %02u): ", value_offset);
             printf_hexdump(value, value_length);
             break;
-        case GATT_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT:
+        case GATT_EVENT_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT:
             value_handle = READ_BT_16(packet, 4);
             value_length = READ_BT_16(packet, 6);
             value = &packet[8];
@@ -653,7 +653,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint8_t *packet, uint1
                     break;
             }
             break;
-        case GATT_LONG_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT:
+        case GATT_EVENT_LONG_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT:
             value = &packet[10];
             value_offset = READ_BT_16(packet, 6);
             value_length = READ_BT_16(packet, 8);
@@ -661,11 +661,11 @@ static void handle_gatt_client_event(uint8_t packet_type, uint8_t *packet, uint1
             printf_hexdump(value, value_length);
             break;
 
-        case GATT_QUERY_COMPLETE:
+        case GATT_EVENT_QUERY_COMPLETE:
             status = packet[4];
             if (status){
                 central_state = CENTRAL_IDLE;
-                printf("GATT_QUERY_COMPLETE: %s 0x%02x\n",
+                printf("GATT_EVENT_QUERY_COMPLETE: %s 0x%02x\n",
                 att_error_string_for_code(status),  status);
                 break;
             }
@@ -768,14 +768,14 @@ static void handle_gatt_client_event(uint8_t packet_type, uint8_t *packet, uint1
                     break;
             }
             break;
-        case GATT_NOTIFICATION:
+        case GATT_EVENT_NOTIFICATION:
             value_handle = READ_BT_16(packet, 4);
             value_length = READ_BT_16(packet, 6);
             value = &packet[8];
             printf("Notification handle 0x%04x, value: ", value_handle);
             printf_hexdump(value, value_length);
             break;
-        case GATT_INDICATION:
+        case GATT_EVENT_INDICATION:
             value_handle = READ_BT_16(packet, 4);
             value_length = READ_BT_16(packet, 6);
             value = &packet[8];

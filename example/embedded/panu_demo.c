@@ -324,7 +324,7 @@ static void handle_sdp_client_query_result(uint8_t packet_type, uint8_t *packet,
     char *str;
 
     switch (packet[0]){
-        case SDP_QUERY_ATTRIBUTE_VALUE:
+        case SDP_EVENT_QUERY_ATTRIBUTE_VALUE:
             // Handle new SDP record 
             if (sdp_query_attribute_byte_event_get_record_id(packet) != record_id) {
                 record_id = sdp_query_attribute_byte_event_get_record_id(packet);
@@ -408,7 +408,7 @@ static void handle_sdp_client_query_result(uint8_t packet_type, uint8_t *packet,
             }
             break;
             
-        case SDP_QUERY_COMPLETE:
+        case SDP_EVENT_QUERY_COMPLETE:
             fprintf(stderr, "General query done with status %d.\n", sdp_query_complete_event_get_status(packet));
 
             break;

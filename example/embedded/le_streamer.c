@@ -187,7 +187,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                             break;
                     }
                     break;  
-                case ATT_MTU_EXCHANGE_COMPLETE:
+                case ATT_EVENT_MTU_EXCHANGE_COMPLETE:
                     mtu = READ_BT_16(packet, 4) - 3;
                     printf("ATT MTU = %u\n", mtu);
                     test_data_len = mtu - 3;

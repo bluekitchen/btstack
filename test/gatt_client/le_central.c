@@ -51,7 +51,7 @@ static void handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *pac
             le_central_start_scan();
             break;
             
-        case GAP_LE_ADVERTISING_REPORT:{
+        case GAP_LE_EVENT_ADVERTISING_REPORT:{
             advertisement_received = 1;
             memcpy(advertisement_packet, packet, size);
             

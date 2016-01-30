@@ -196,7 +196,7 @@ static void packet_handler (uint8_t packet_type, uint8_t *packet, uint16_t size)
                     continue_bonding();
                     break;
 
-                case GAP_DEDICATED_BONDING_COMPLETED:
+                case GAP_EVENT_DEDICATED_BONDING_COMPLETED:
                     // data: event(8), len(8), status (8), bd_addr(48)
                     printf("GAP Dedicated Bonding Complete, status %u\n", packet[2]);
                     bt_flip_addr(addr, &packet[3]);

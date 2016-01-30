@@ -98,7 +98,7 @@ static void dummy_notify_app(uint8_t packet_type, uint8_t *packet, uint16_t size
 
 static void emit_service(void){
     uint8_t event[3+SDP_SERVICE_NAME_LEN+1];
-    event[0] = SDP_QUERY_RFCOMM_SERVICE;
+    event[0] = SDP_EVENT_QUERY_RFCOMM_SERVICE;
     event[1] = sdp_service_name_len + 1;
     event[2] = sdp_rfcomm_channel_nr;
     memcpy(&event[3], sdp_service_name, sdp_service_name_len);
@@ -258,7 +258,7 @@ static void handleServiceNameData(uint32_t attribute_value_length, uint32_t data
 
 static void handle_sdp_parser_event(uint8_t packet_type, uint8_t *packet, uint16_t size){
     switch (packet[0]){
-        case SDP_QUERY_SERVICE_RECORD_HANDLE:
+        case SDP_EVENT_QUERY_SERVICE_RECORD_HANDLE:
             // handle service without a name
             if (sdp_rfcomm_channel_nr){
                 emit_service();
@@ -268,7 +268,7 @@ static void handle_sdp_parser_event(uint8_t packet_type, uint8_t *packet, uint16
             sdp_rfcomm_channel_nr = 0;
             sdp_service_name[0] = 0;
             break;
-        case SDP_QUERY_ATTRIBUTE_VALUE:
+        case SDP_EVENT_QUERY_ATTRIBUTE_VALUE:
             // log_info("handle_sdp_parser_event [ AID, ALen, DOff, Data] : [%x, %u, %u] BYTE %02x", 
             //          ve->attribute_id, sdp_query_attribute_byte_event_get_attribute_length(packet),
             //          sdp_query_attribute_byte_event_get_data_offset(packet), sdp_query_attribute_byte_event_get_data(packet));
@@ -290,7 +290,7 @@ static void handle_sdp_parser_event(uint8_t packet_type, uint8_t *packet, uint16
                     return;
             }
             break;
-        case SDP_QUERY_COMPLETE:
+        case SDP_EVENT_QUERY_COMPLETE:
             // handle service without a name
             if (sdp_rfcomm_channel_nr){
                 emit_service();

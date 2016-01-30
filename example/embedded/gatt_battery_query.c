@@ -164,12 +164,12 @@ static void handle_gatt_client_event(uint8_t packet_type, uint8_t *packet, uint1
     switch(state){
         case TC_W4_SERVICE_RESULT:
             switch(packet[0]){
-                case GATT_SERVICE_QUERY_RESULT:
+                case GATT_EVENT_SERVICE_QUERY_RESULT:
                     extract_service(&battery_service, packet);
                     printf("Battery service found:\n");
                     dump_service(&battery_service);
                     break;
-                case GATT_QUERY_COMPLETE:
+                case GATT_EVENT_QUERY_COMPLETE:
                     if (!packet[4]){
                         printf("Battery service not found. Restart scan.\n");
                         state = TC_W4_SCAN_RESULT;
@@ -187,12 +187,12 @@ static void handle_gatt_client_event(uint8_t packet_type, uint8_t *packet, uint1
             
         case TC_W4_CHARACTERISTIC_RESULT:
             switch(packet[0]){
-                case GATT_CHARACTERISTIC_QUERY_RESULT:
+                case GATT_EVENT_CHARACTERISTIC_QUERY_RESULT:
                     printf("Battery level characteristic found:\n");
                     extract_characteristic(&config_characteristic, packet);
                     dump_characteristic(&config_characteristic);
                     break;
-                case GATT_QUERY_COMPLETE:
+                case GATT_EVENT_QUERY_COMPLETE:
                     state = TC_W4_BATTERY_DATA;
                     printf("\nConfigure battery level characteristic for notify.");
                     gatt_client_write_client_characteristic_configuration(gc_id, gc_handle, &config_characteristic, GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION);
@@ -202,14 +202,14 @@ static void handle_gatt_client_event(uint8_t packet_type, uint8_t *packet, uint1
             }
             break;
         case TC_W4_BATTERY_DATA:
-            if (packet[0] == GATT_QUERY_COMPLETE){
+            if (packet[0] == GATT_EVENT_QUERY_COMPLETE){
                 if (packet[4] != 0){
                     printf("\nNotification is not possible: ");
                     error_code(packet[4]);
                 }
                 break;    
             }
-            if (packet[0] != GATT_NOTIFICATION) break;
+            if (packet[0] != GATT_EVENT_NOTIFICATION) break;
             printf("\nBattery Data:\n");
             dump_characteristic_value(&packet[8], READ_BT_16(packet, 6));
             break;
@@ -253,7 +253,7 @@ static void handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *pac
             le_central_set_scan_parameters(0,0x0030, 0x0030);
             le_central_start_scan();
             break;
-        case GAP_LE_ADVERTISING_REPORT:
+        case GAP_LE_EVENT_ADVERTISING_REPORT:
             if (state != TC_W4_SCAN_RESULT) return;
             fill_advertising_report_from_packet(&report, packet);
             // stop scanning, and connect to the device

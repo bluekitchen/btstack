@@ -728,7 +728,7 @@ static void send_rfcomm_create_channel_failed(void * connection, bd_addr_t addr,
 // data: event(8), len(8), status(8), service_record_handle(32)
 static void sdp_emit_service_registered(void *connection, uint32_t handle, uint8_t status) {
     uint8_t event[7];
-    event[0] = SDP_SERVICE_REGISTERED;
+    event[0] = SDP_EVENT_SERVICE_REGISTERED;
     event[1] = sizeof(event) - 2;
     event[2] = status;
     bt_store_32(event, 3, handle);
@@ -761,7 +761,7 @@ btstack_linked_list_gatt_client_helper_t * daemon_get_gatt_client_helper(uint16_
 static void send_gatt_query_complete(connection_t * connection, uint16_t handle, uint8_t status){
     // @format H1
     uint8_t event[5];
-    event[0] = GATT_QUERY_COMPLETE;
+    event[0] = GATT_EVENT_QUERY_COMPLETE;
     event[1] = 3;
     bt_store_16(event, 2, handle);
     event[4] = status;
@@ -772,7 +772,7 @@ static void send_gatt_query_complete(connection_t * connection, uint16_t handle,
 static void send_gatt_mtu_event(connection_t * connection, uint16_t handle, uint16_t mtu){
     uint8_t event[6];
     int pos = 0;
-    event[pos++] = GATT_MTU;
+    event[pos++] = GATT_EVENT_MTU;
     event[pos++] = sizeof(event) - 2;
     bt_store_16(event, pos, handle);
     pos += 2;
@@ -1575,8 +1575,8 @@ static void rfcomm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t
 
 static void handle_sdp_rfcomm_service_result(uint8_t packet_type, uint8_t *packet, uint16_t size, void * context){
     switch (packet[0]){
-        case SDP_QUERY_RFCOMM_SERVICE:
-        case SDP_QUERY_COMPLETE:
+        case SDP_EVENT_QUERY_RFCOMM_SERVICE:
+        case SDP_EVENT_QUERY_COMPLETE:
             // already HCI Events, just forward them
             hci_dump_packet(HCI_EVENT_PACKET, 0, packet, size);
             socket_connection_send_packet(context, HCI_EVENT_PACKET, 0, packet, size);
@@ -1597,7 +1597,7 @@ static void handle_sdp_client_query_result(uint8_t packet_type, uint8_t *packet,
     int event_len;
 
     switch (packet[0]){
-        case SDP_QUERY_ATTRIBUTE_BYTE:
+        case SDP_EVENT_QUERY_ATTRIBUTE_BYTE:
             sdp_client_assert_buffer(sdp_query_attribute_byte_event_get_attribute_length(packet));
             attribute_value[sdp_query_attribute_byte_event_get_data_offset(packet)] = sdp_query_attribute_byte_event_get_data(packet);
             if ((uint16_t)(sdp_query_attribute_byte_event_get_data_offset(packet)+1) == sdp_query_attribute_byte_event_get_attribute_length(packet)){
@@ -1605,7 +1605,7 @@ static void handle_sdp_client_query_result(uint8_t packet_type, uint8_t *packet,
 
                 int event_len = 1 + 3 * 2 + sdp_query_attribute_byte_event_get_attribute_length(packet); 
                 uint8_t event[event_len];
-                event[0] = SDP_QUERY_ATTRIBUTE_VALUE;
+                event[0] = SDP_EVENT_QUERY_ATTRIBUTE_VALUE;
                 bt_store_16(event, 1, sdp_query_attribute_byte_event_get_record_id(packet));
                 bt_store_16(event, 3, sdp_query_attribute_byte_event_get_attribute_id(packet));
                 bt_store_16(event, 5, (uint16_t)sdp_query_attribute_byte_event_get_attribute_length(packet));
@@ -1614,7 +1614,7 @@ static void handle_sdp_client_query_result(uint8_t packet_type, uint8_t *packet,
                 socket_connection_send_packet(sdp_client_query_connection, SDP_CLIENT_PACKET, 0, event, event_len);
             }
             break;
-        case SDP_QUERY_COMPLETE:
+        case SDP_EVENT_QUERY_COMPLETE:
             event_len = packet[1] + 2;
             hci_dump_packet(HCI_EVENT_PACKET, 0, packet, event_len);
             socket_connection_send_packet(sdp_client_query_connection, HCI_EVENT_PACKET, 0, packet, event_len);
@@ -1759,17 +1759,17 @@ static void handle_gatt_client_event(uint8_t packet_type, uint8_t * packet, uint
 
     // only handle GATT Events
     switch(packet[0]){
-        case GATT_SERVICE_QUERY_RESULT:
-        case GATT_INCLUDED_SERVICE_QUERY_RESULT:
-        case GATT_NOTIFICATION:
-        case GATT_INDICATION:
-        case GATT_CHARACTERISTIC_QUERY_RESULT:
-        case GATT_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY_RESULT:
-        case GATT_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT:
-        case GATT_LONG_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT:
-        case GATT_CHARACTERISTIC_VALUE_QUERY_RESULT:
-        case GATT_LONG_CHARACTERISTIC_VALUE_QUERY_RESULT:
-        case GATT_QUERY_COMPLETE:
+        case GATT_EVENT_SERVICE_QUERY_RESULT:
+        case GATT_EVENT_INCLUDED_SERVICE_QUERY_RESULT:
+        case GATT_EVENT_NOTIFICATION:
+        case GATT_EVENT_INDICATION:
+        case GATT_EVENT_CHARACTERISTIC_QUERY_RESULT:
+        case GATT_EVENT_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY_RESULT:
+        case GATT_EVENT_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT:
+        case GATT_EVENT_LONG_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT:
+        case GATT_EVENT_CHARACTERISTIC_VALUE_QUERY_RESULT:
+        case GATT_EVENT_LONG_CHARACTERISTIC_VALUE_QUERY_RESULT:
+        case GATT_EVENT_QUERY_COMPLETE:
            break;
         default:
             return;
@@ -1786,8 +1786,8 @@ static void handle_gatt_client_event(uint8_t packet_type, uint8_t * packet, uint
 
     // daemon doesn't track which connection subscribed to this particular handle, so we just notify all connections
     switch(packet[0]){
-        case GATT_NOTIFICATION:
-        case GATT_INDICATION:{
+        case GATT_EVENT_NOTIFICATION:
+        case GATT_EVENT_INDICATION:{
             hci_dump_packet(HCI_EVENT_PACKET, 0, packet, size);
             
             btstack_linked_item_t *it;
@@ -1810,18 +1810,18 @@ static void handle_gatt_client_event(uint8_t packet_type, uint8_t * packet, uint
 
     switch(packet[0]){
 
-        case GATT_SERVICE_QUERY_RESULT:
-        case GATT_INCLUDED_SERVICE_QUERY_RESULT:
-        case GATT_CHARACTERISTIC_QUERY_RESULT:
-        case GATT_CHARACTERISTIC_VALUE_QUERY_RESULT:
-        case GATT_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT:
-        case GATT_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY_RESULT:
+        case GATT_EVENT_SERVICE_QUERY_RESULT:
+        case GATT_EVENT_INCLUDED_SERVICE_QUERY_RESULT:
+        case GATT_EVENT_CHARACTERISTIC_QUERY_RESULT:
+        case GATT_EVENT_CHARACTERISTIC_VALUE_QUERY_RESULT:
+        case GATT_EVENT_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT:
+        case GATT_EVENT_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY_RESULT:
             hci_dump_packet(HCI_EVENT_PACKET, 0, packet, size);
             socket_connection_send_packet(connection, HCI_EVENT_PACKET, 0, packet, size);
             break;
             
-        case GATT_LONG_CHARACTERISTIC_VALUE_QUERY_RESULT:
-        case GATT_LONG_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT:
+        case GATT_EVENT_LONG_CHARACTERISTIC_VALUE_QUERY_RESULT:
+        case GATT_EVENT_LONG_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT:
             offset = READ_BT_16(packet, 6);
             length = READ_BT_16(packet, 8);
             gatt_client_helper->characteristic_buffer[0] = packet[0];               // store type (characteristic/descriptor)
@@ -1830,7 +1830,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint8_t * packet, uint
             memcpy(&gatt_client_helper->characteristic_buffer[10 + offset], &packet[10], length);
             break;
 
-        case GATT_QUERY_COMPLETE:{
+        case GATT_EVENT_QUERY_COMPLETE:{
             gatt_client_helper->active_connection = NULL;
             if (gatt_client_helper->characteristic_length){
                 // send re-combined long characteristic value or long characteristic descriptor value

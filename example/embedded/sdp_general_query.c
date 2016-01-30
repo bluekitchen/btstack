@@ -73,8 +73,8 @@ static const int attribute_value_buffer_size = sizeof(attribute_value);
  * @text SDP is based on L2CAP. To receive SDP query events you must register a
  * callback, i.e. query handler, with the SPD parser, as shown in 
  * Listing SDPClientInit. Via this handler, the SDP client will receive the following events:
- * - SDP_QUERY_ATTRIBUTE_VALUE containing the results of the query in chunks,
- * - SDP_QUERY_COMPLETE indicating the end of the query and the status
+ * - SDP_EVENT_QUERY_ATTRIBUTE_VALUE containing the results of the query in chunks,
+ * - SDP_EVENT_QUERY_COMPLETE indicating the end of the query and the status
  */
 
 /* LISTING_START(SDPClientInit): SDP client setup */
@@ -146,7 +146,7 @@ static void assertBuffer(int size){
 /* LISTING_START(HandleSDPQUeryResult): Handling query result chunks. */
 static void handle_sdp_client_query_result(uint8_t packet_type, uint8_t *packet, uint16_t size){
     switch (packet[0]){
-        case SDP_QUERY_ATTRIBUTE_VALUE:
+        case SDP_EVENT_QUERY_ATTRIBUTE_VALUE:
             // handle new record
             if (sdp_query_attribute_byte_event_get_record_id(packet) != record_id){
                 record_id = sdp_query_attribute_byte_event_get_record_id(packet);
@@ -161,7 +161,7 @@ static void handle_sdp_client_query_result(uint8_t packet_type, uint8_t *packet,
                de_dump_data_element(attribute_value);
             }
             break;
-        case SDP_QUERY_COMPLETE:
+        case SDP_EVENT_QUERY_COMPLETE:
             printf("General query done with status %d.\n\n", sdp_query_complete_event_get_status(packet));
             exit(0);
             break;

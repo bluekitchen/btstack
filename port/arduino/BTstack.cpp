@@ -155,7 +155,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     le_peripheral_todos |= SET_ADVERTISEMENT_ENABLED;
                     break;
                 
-                case GAP_LE_ADVERTISING_REPORT: {
+                case GAP_LE_EVENT_ADVERTISING_REPORT: {
                     if (bleAdvertismentCallback) {
                         BLEAdvertisement advertisement(packet);
                         (*bleAdvertismentCallback)(&advertisement);
@@ -222,8 +222,8 @@ static void gatt_client_callback(uint8_t packet_type, uint8_t * packet, uint16_t
 
     // if (hci) event is not 4-byte aligned, event->handle causes crash
     // workaround: check event type, assuming GATT event types are contagious
-    if (packet[0] < GATT_QUERY_COMPLETE) return;
-    if (packet[0] > GATT_MTU) return;
+    if (packet[0] < GATT_EVENT_QUERY_COMPLETE) return;
+    if (packet[0] > GATT_EVENT_MTU) return;
 
     uint16_t  con_handle = READ_BT_16(packet, 2);
     uint8_t   status;
@@ -233,7 +233,7 @@ static void gatt_client_callback(uint8_t packet_type, uint8_t * packet, uint16_t
 
     BLEDevice device(con_handle);
     switch(packet[0]){
-        case GATT_SERVICE_QUERY_RESULT:
+        case GATT_EVENT_SERVICE_QUERY_RESULT:
             if (gattServiceDiscoveredCallback) {
                 le_service_t service;
                 extract_service(&service, packet);
@@ -241,7 +241,7 @@ static void gatt_client_callback(uint8_t packet_type, uint8_t * packet, uint16_t
                 (*gattServiceDiscoveredCallback)(BLE_STATUS_OK, &device, &bleService);
             }
             break;
-        case GATT_CHARACTERISTIC_QUERY_RESULT:
+        case GATT_EVENT_CHARACTERISTIC_QUERY_RESULT:
             if (gattCharacteristicDiscoveredCallback){
                 le_characteristic_t characteristic;
                 extract_characteristic(&characteristic, packet);
@@ -249,7 +249,7 @@ static void gatt_client_callback(uint8_t packet_type, uint8_t * packet, uint16_t
                (*gattCharacteristicDiscoveredCallback)(BLE_STATUS_OK, &device, &bleCharacteristic);
             }
             break;
-        case GATT_QUERY_COMPLETE:
+        case GATT_EVENT_QUERY_COMPLETE:
             status = READ_BT_16(packet, 4);
             switch (gattAction){
                 case gattActionWrite:
@@ -271,7 +271,7 @@ static void gatt_client_callback(uint8_t packet_type, uint8_t * packet, uint16_t
                     break;
             };
             break;
-        case GATT_NOTIFICATION:
+        case GATT_EVENT_NOTIFICATION:
             if (gattCharacteristicNotificationCallback) {
                 value_handle = READ_BT_16(packet, 4);
                 value_length = READ_BT_16(packet, 6);
@@ -279,7 +279,7 @@ static void gatt_client_callback(uint8_t packet_type, uint8_t * packet, uint16_t
                 (*gattCharacteristicNotificationCallback)(&device, value_handle, value, value_length);
             }
             break;
-        case GATT_INDICATION:
+        case GATT_EVENT_INDICATION:
             if (gattCharacteristicIndicationCallback) {
                 value_handle = READ_BT_16(packet, 4);
                 value_length = READ_BT_16(packet, 6);
@@ -287,7 +287,7 @@ static void gatt_client_callback(uint8_t packet_type, uint8_t * packet, uint16_t
                 (*gattCharacteristicIndicationCallback)(&device, value_handle, value, value_length);
             }
             break;
-        case GATT_CHARACTERISTIC_VALUE_QUERY_RESULT:
+        case GATT_EVENT_CHARACTERISTIC_VALUE_QUERY_RESULT:
             if (gattCharacteristicReadCallback) {
                 value_handle = READ_BT_16(packet, 4);
                 value_length = READ_BT_16(packet, 6);

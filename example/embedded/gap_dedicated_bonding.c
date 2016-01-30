@@ -67,7 +67,7 @@ static void packet_handler (uint8_t packet_type, uint8_t *packet, uint16_t size)
                 gap_dedicated_bonding(remote, 1);
             }
             break;
-        case GAP_DEDICATED_BONDING_COMPLETED:
+        case GAP_EVENT_DEDICATED_BONDING_COMPLETED:
             printf("GAP Dedicated Bonding Complete, status %u\n", packet[2]);
         default:
             break;

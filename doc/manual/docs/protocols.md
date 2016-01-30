@@ -667,11 +667,11 @@ registered callback, as shown in Listing [below](#lst:SDPClientRFCOMM).
         sdp_query_rfcomm_service_event_t * ve;
                 
         switch (event->type){
-            case SDP_QUERY_RFCOMM_SERVICE:
+            case SDP_EVENT_QUERY_RFCOMM_SERVICE:
                 ve = (sdp_query_rfcomm_service_event_t*) event;
                 printf("Service name: '%s', RFCOMM port %u\n", ve->service_name, ve->channel_nr);
                 break;
-            case SDP_QUERY_COMPLETE:
+            case SDP_EVENT_QUERY_COMPLETE:
                 report_found_services();
                 printf("Client query response done with status %d. \n", ce->status);
                 break;
@@ -824,13 +824,13 @@ Resolving (IR) key. After an LE connection gets established, BTstack
 automatically tries to resolve the address of this device. During this
 lookup, BTstack will emit the following events:
 
--   *SM_IDENTITY_RESOLVING_STARTED* to mark the start of a lookup,
+-   *SM_EVENT_IDENTITY_RESOLVING_STARTED* to mark the start of a lookup,
 
 and later:
 
--   *SM_IDENTITY_RESOLVING_SUCCEEDED* on lookup success, or
+-   *SM_EVENT_IDENTITY_RESOLVING_SUCCEEDED* on lookup success, or
 
--   *SM_IDENTITY_RESOLVING_FAILED* on lookup failure.
+-   *SM_EVENT_IDENTITY_RESOLVING_FAILED* on lookup failure.
 
 ### Bonding process
 
@@ -851,16 +851,16 @@ Depending on the authentication requirements, available OOB data, and
 the enabled STK generation methods, BTstack will request feedback from
 the app in the form of an event:
 
--   *SM_PASSKEY_INPUT_NUMBER*: request user to input a passkey
+-   *SM_EVENT_PASSKEY_INPUT_NUMBER*: request user to input a passkey
 
--   *SM_PASSKEY_DISPLAY_NUMBER*: show a passkey to the user
+-   *SM_EVENT_PASSKEY_DISPLAY_NUMBER*: show a passkey to the user
 
--   *SM_JUST_WORKS_REQUEST*: request a user to accept a Just Works
+-   *SM_EVENT_JUST_WORKS_REQUEST*: request a user to accept a Just Works
     pairing
 
 To stop the bonding process, *sm_bonding_decline* should be called.
 Otherwise, *sm_just_works_confirm* or *sm_passkey_input* can be
 called.
 
-After the bonding process, *SM_PASSKEY_DISPLAY_CANCEL* is emitted to
+After the bonding process, *SM_EVENT_PASSKEY_DISPLAY_CANCEL* is emitted to
 update the user interface.

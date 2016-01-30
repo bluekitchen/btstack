@@ -198,7 +198,7 @@ static void handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *pac
             le_central_set_scan_parameters(0,0x0030, 0x0030);
             le_central_start_scan();
             break;
-        case GAP_LE_ADVERTISING_REPORT:
+        case GAP_LE_EVENT_ADVERTISING_REPORT:
             fill_advertising_report_from_packet(&report, packet);
             // stop scanning, and connect to the device
             le_central_stop_scan();
@@ -261,25 +261,25 @@ void handle_gatt_client_event(uint8_t packet_type, uint8_t *packet, uint16_t siz
     le_service_t service;
     le_characteristic_t characteristic;
     switch(packet[0]){
-        case GATT_SERVICE_QUERY_RESULT:\
+        case GATT_EVENT_SERVICE_QUERY_RESULT:\
             extract_service(&service, packet);
             dump_service(&service);
             services[service_count++] = service;
             break;
-        case GATT_CHARACTERISTIC_QUERY_RESULT:
+        case GATT_EVENT_CHARACTERISTIC_QUERY_RESULT:
             extract_characteristic(&characteristic, packet);
             dump_characteristic(&characteristic);
             break;
-        case GATT_QUERY_COMPLETE:
+        case GATT_EVENT_QUERY_COMPLETE:
             if (search_services){
-                // GATT_QUERY_COMPLETE of search services 
+                // GATT_EVENT_QUERY_COMPLETE of search services 
                 service_index = 0;
                 printf("\nGATT browser - CHARACTERISTIC for SERVICE ");
                 printUUID128(service.uuid128); printf("\n");
                 search_services = 0;
                 gatt_client_discover_characteristics_for_service(gc_id, gc_handle, &services[service_index]);
             } else {
-                // GATT_QUERY_COMPLETE of search characteristics
+                // GATT_EVENT_QUERY_COMPLETE of search characteristics
                 if (service_index < service_count) {
                     service = services[service_index++];
                     printf("\nGATT browser - CHARACTERISTIC for SERVICE ");

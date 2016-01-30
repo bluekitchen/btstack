@@ -393,21 +393,20 @@
   * @param status
   * @param service_record_handle
   */
-#define SDP_SERVICE_REGISTERED                             0x90
+#define SDP_EVENT_SERVICE_REGISTERED                             0x90
 
 /**
  * @format 1
  * @param status
  */
-#define SDP_QUERY_COMPLETE                                 0x91 
+#define SDP_EVENT_QUERY_COMPLETE                                 0x91 
 
 /**
  * @format 1T
  * @param rfcomm_channel
  * @param name
- * @brief SDP_QUERY_RFCOMM_SERVICE 0x92
  */
-#define SDP_QUERY_RFCOMM_SERVICE                           0x92
+#define SDP_EVENT_QUERY_RFCOMM_SERVICE                           0x92
 
 /**
  * @format 22221
@@ -417,7 +416,7 @@
  * @param data_offset
  * @param data
  */
-#define SDP_QUERY_ATTRIBUTE_BYTE                           0x93
+#define SDP_EVENT_QUERY_ATTRIBUTE_BYTE                           0x93
 
 /**
  * @format 22LV
@@ -426,7 +425,7 @@
  * @param attribute_length
  * @param attribute_value
  */
-#define SDP_QUERY_ATTRIBUTE_VALUE                          0x94
+#define SDP_EVENT_QUERY_ATTRIBUTE_VALUE                          0x94
 
 /**
  * @format 224
@@ -435,28 +434,28 @@
  * @param record_handle
  * @note Not provided by daemon, only used for internal testing
  */
-#define SDP_QUERY_SERVICE_RECORD_HANDLE                    0x95
+#define SDP_EVENT_QUERY_SERVICE_RECORD_HANDLE                    0x95
 
 /**
  * @format H1
  * @param handle
  * @param status
  */
-#define GATT_QUERY_COMPLETE                                0xA0
+#define GATT_EVENT_QUERY_COMPLETE                                0xA0
 
 /**
  * @format HX
  * @param handle
  * @param service
  */
-#define GATT_SERVICE_QUERY_RESULT                          0xA1
+#define GATT_EVENT_SERVICE_QUERY_RESULT                          0xA1
 
 /**
  * @format HY
  * @param handle
  * @param characteristic
  */
-#define GATT_CHARACTERISTIC_QUERY_RESULT                   0xA2
+#define GATT_EVENT_CHARACTERISTIC_QUERY_RESULT                   0xA2
 
 /**
  * @format H2X
@@ -464,14 +463,14 @@
  * @param include_handle
  * @param service
  */
-#define GATT_INCLUDED_SERVICE_QUERY_RESULT                 0xA3
+#define GATT_EVENT_INCLUDED_SERVICE_QUERY_RESULT                 0xA3
 
 /**
  * @format HZ
  * @param handle
  * @param characteristic_descriptor
  */
-#define GATT_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY_RESULT   0xA4
+#define GATT_EVENT_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY_RESULT   0xA4
 
 /**
  * @format H2LV
@@ -480,7 +479,7 @@
  * @param value_length
  * @param value
  */
-#define GATT_CHARACTERISTIC_VALUE_QUERY_RESULT             0xA5
+#define GATT_EVENT_CHARACTERISTIC_VALUE_QUERY_RESULT             0xA5
 
 /**
  * @format H22LV
@@ -490,7 +489,7 @@
  * @param value_length
  * @param value
  */
-#define GATT_LONG_CHARACTERISTIC_VALUE_QUERY_RESULT        0xA6
+#define GATT_EVENT_LONG_CHARACTERISTIC_VALUE_QUERY_RESULT        0xA6
 
 /**
  * @format H2LV
@@ -499,7 +498,7 @@
  * @param value_length
  * @param value
  */
-#define GATT_NOTIFICATION                                  0xA7
+#define GATT_EVENT_NOTIFICATION                                  0xA7
 
 /**
  * @format H2LV
@@ -508,7 +507,7 @@
  * @param value_length
  * @param value
  */
-#define GATT_INDICATION                                    0xA8
+#define GATT_EVENT_INDICATION                                    0xA8
 
 /**
  * @format H2LV
@@ -516,7 +515,7 @@
  * @param descriptor_length
  * @param descriptor
  */
-#define GATT_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT        0xA9
+#define GATT_EVENT_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT        0xA9
 
 /**
  * @format H2LV
@@ -525,24 +524,24 @@
  * @param descriptor_length
  * @param descriptor
  */
-#define GATT_LONG_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT   0xAA
+#define GATT_EVENT_LONG_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT   0xAA
 
 /** 
  * @format H2
  * @param handle
  * @param MTU
  */    
-#define GATT_MTU                                           0xAB
+#define GATT_EVENT_MTU                                           0xAB
 
 /** 
  * @format H2
  * @param handle
  * @param MTU
  */    
-#define ATT_MTU_EXCHANGE_COMPLETE                          0xB5
+#define ATT_EVENT_MTU_EXCHANGE_COMPLETE                          0xB5
 
 // data: event(8), len(8), status (8), hci_handle (16), attribute_handle (16)
-#define ATT_HANDLE_VALUE_INDICATION_COMPLETE               0xB6
+#define ATT_EVENT_HANDLE_VALUE_INDICATION_COMPLETE               0xB6
 
 
 // data: event(8), len(8), status (8), bnep service uuid (16) 
@@ -566,7 +565,7 @@
   * @param addr_type
   * @param address
   */
-#define SM_JUST_WORKS_REQUEST                              0xD0
+#define SM_EVENT_JUST_WORKS_REQUEST                              0xD0
 
  /**
   * @format H1B
@@ -574,7 +573,7 @@
   * @param addr_type
   * @param address
   */
-#define SM_JUST_WORKS_CANCEL                               0xD1 
+#define SM_EVENT_JUST_WORKS_CANCEL                               0xD1 
 
  /**
   * @format H1B4
@@ -583,7 +582,7 @@
   * @param address
   * @param passkey
   */
-#define SM_PASSKEY_DISPLAY_NUMBER                          0xD2
+#define SM_EVENT_PASSKEY_DISPLAY_NUMBER                          0xD2
 
  /**
   * @format H1B
@@ -591,7 +590,7 @@
   * @param addr_type
   * @param address
   */
-#define SM_PASSKEY_DISPLAY_CANCEL                          0xD3
+#define SM_EVENT_PASSKEY_DISPLAY_CANCEL                          0xD3
 
  /**
   * @format H1B421
@@ -599,7 +598,7 @@
   * @param addr_type
   * @param address
   */
-#define SM_PASSKEY_INPUT_NUMBER                            0xD4
+#define SM_EVENT_PASSKEY_INPUT_NUMBER                            0xD4
 
  /**
   * @format H1B
@@ -607,7 +606,7 @@
   * @param addr_type
   * @param address
   */
-#define SM_PASSKEY_INPUT_CANCEL                            0xD5
+#define SM_EVENT_PASSKEY_INPUT_CANCEL                            0xD5
 
  /**
   * @format H1B
@@ -615,7 +614,7 @@
   * @param addr_type
   * @param address
   */
-#define SM_IDENTITY_RESOLVING_STARTED                      0xD6
+#define SM_EVENT_IDENTITY_RESOLVING_STARTED                      0xD6
 
  /**
   * @format H1B
@@ -623,7 +622,7 @@
   * @param addr_type
   * @param address
   */
-#define SM_IDENTITY_RESOLVING_FAILED                       0xD7
+#define SM_EVENT_IDENTITY_RESOLVING_FAILED                       0xD7
 
  /**
   * @format H1B2
@@ -632,7 +631,7 @@
   * @param address
   * @param le_device_db_index
   */
-#define SM_IDENTITY_RESOLVING_SUCCEEDED                    0xD8
+#define SM_EVENT_IDENTITY_RESOLVING_SUCCEEDED                    0xD8
 
  /**
   * @format H1B
@@ -640,7 +639,7 @@
   * @param addr_type
   * @param address
   */
-#define SM_AUTHORIZATION_REQUEST                           0xD9
+#define SM_EVENT_AUTHORIZATION_REQUEST                           0xD9
 
  /**
   * @format H1B1
@@ -649,15 +648,15 @@
   * @param address
   * @param authorization_result
   */
-#define SM_AUTHORIZATION_RESULT                            0xDA
+#define SM_EVENT_AUTHORIZATION_RESULT                            0xDA
 
 // GAP
 
 // data: event(8), len(8), hci_handle (16), security_level (8)
-#define GAP_SECURITY_LEVEL                                 0xE0
+#define GAP_EVENT_SECURITY_LEVEL                                 0xE0
 
 // data: event(8), len(8), status (8), bd_addr(48)
-#define GAP_DEDICATED_BONDING_COMPLETED                    0xE1
+#define GAP_EVENT_DEDICATED_BONDING_COMPLETED                    0xE1
 
 /**
  * @format 11B1JV
@@ -668,7 +667,7 @@
  * @param data_length
  * @param data
  */
-#define GAP_LE_ADVERTISING_REPORT                          0xE2
+#define GAP_LE_EVENT_ADVERTISING_REPORT                          0xE2
 
 #define HCI_EVENT_HSP_META                                 0xE8
 
@@ -713,7 +712,7 @@
  * @format H
  * @param handle
  */ 
-#define ANCS_CLIENT_CONNECTED                              0xF0
+#define ANCS_EVENT_CLIENT_CONNECTED                              0xF0
 
 /**
  * @format H2T
@@ -721,13 +720,13 @@
  * @param attribute_id
  * @param text
  */ 
-#define ANCS_CLIENT_NOTIFICATION                           0xF1
+#define ANCS_EVENT_CLIENT_NOTIFICATION                           0xF1
 
 /**
  * @format H
  * @param handle
  */ 
-#define ANCS_CLIENT_DISCONNECTED                           0xF2
+#define ANCS_EVENT_CLIENT_DISCONNECTED                           0xF2
 
 // #define HCI_EVENT_HFP_META                                 0xxx
 // #define HCI_EVENT_GATT_META                                0xxx

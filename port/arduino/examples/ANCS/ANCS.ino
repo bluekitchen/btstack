@@ -75,13 +75,13 @@ void loop(void){
 void ancs_callback(uint8_t packet_type, uint8_t *packet, uint16_t size){
     const char * attribute_name;
     switch (packet[0]){
-        case ANCS_CLIENT_CONNECTED:
+        case ANCS_EVENT_CLIENT_CONNECTED:
             Serial.println("ANCS Client: Connected");
             break;
-        case ANCS_CLIENT_DISCONNECTED:
+        case ANCS_EVENT_CLIENT_DISCONNECTED:
             Serial.println("ANCS Client: Disconnected");
             break;
-        case ANCS_CLIENT_NOTIFICATION:
+        case ANCS_EVENT_CLIENT_NOTIFICATION:
             attribute_name = ancs_client_attribute_name_for_id(ancs_client_notification_event_get_attribute_id(packet));
             if (!attribute_name) break;
             Serial.print("Notification: ");

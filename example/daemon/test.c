@@ -77,14 +77,14 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 					}
 					break;
 
-				case SDP_QUERY_COMPLETE:
+				case SDP_EVENT_QUERY_COMPLETE:
 					// data: event(8), len(8), status(8)
-					printf("SDP_QUERY_COMPLETE, status %u\n", packet[2]);
+					printf("SDP_EVENT_QUERY_COMPLETE, status %u\n", packet[2]);
 					break;
 
-				case SDP_QUERY_RFCOMM_SERVICE:
+				case SDP_EVENT_QUERY_RFCOMM_SERVICE:
 					// data: event(8), len(8), rfcomm channel(8), name(var)
-					printf("SDP_QUERY_RFCOMM_SERVICE, rfcomm channel %u, name '%s'\n", packet[2], (const char*)&packet[3]);
+					printf("SDP_EVENT_QUERY_RFCOMM_SERVICE, rfcomm channel %u, name '%s'\n", packet[2], (const char*)&packet[3]);
 					break;
 
 				default:
