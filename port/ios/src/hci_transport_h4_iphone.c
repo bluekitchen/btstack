@@ -323,7 +323,7 @@ static void h4_statemachine(void){
             break;
             
         case H4_W4_ACL_HEADER:
-            bytes_to_read = READ_BT_16( hci_packet, 3);
+            bytes_to_read = little_endian_read_16( hci_packet, 3);
             h4_state = H4_W4_PAYLOAD;
             break;
             

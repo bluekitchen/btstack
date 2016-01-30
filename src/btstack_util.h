@@ -98,40 +98,40 @@ typedef uint8_t device_name_t[DEVICE_NAME_LEN+1];
 typedef void (*btstack_packet_handler_t) (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 	
 // helper for BT little endian format
-#define READ_BT_16( buffer, pos) ( ((uint16_t) buffer[pos]) | (((uint16_t)buffer[(pos)+1]) << 8))
-#define READ_BT_24( buffer, pos) ( ((uint32_t) buffer[pos]) | (((uint32_t)buffer[(pos)+1]) << 8) | (((uint32_t)buffer[(pos)+2]) << 16))
-#define READ_BT_32( buffer, pos) ( ((uint32_t) buffer[pos]) | (((uint32_t)buffer[(pos)+1]) << 8) | (((uint32_t)buffer[(pos)+2]) << 16) | (((uint32_t) buffer[(pos)+3])) << 24)
+#define little_endian_read_16( buffer, pos) ( ((uint16_t) buffer[pos]) | (((uint16_t)buffer[(pos)+1]) << 8))
+#define little_endian_read_24( buffer, pos) ( ((uint32_t) buffer[pos]) | (((uint32_t)buffer[(pos)+1]) << 8) | (((uint32_t)buffer[(pos)+2]) << 16))
+#define little_endian_read_32( buffer, pos) ( ((uint32_t) buffer[pos]) | (((uint32_t)buffer[(pos)+1]) << 8) | (((uint32_t)buffer[(pos)+2]) << 16) | (((uint32_t) buffer[(pos)+3])) << 24)
 
 // helper for SDP big endian format
-#define READ_NET_16( buffer, pos) ( ((uint16_t) buffer[(pos)+1]) | (((uint16_t)buffer[ pos   ]) << 8))
-#define READ_NET_32( buffer, pos) ( ((uint32_t) buffer[(pos)+3]) | (((uint32_t)buffer[(pos)+2]) << 8) | (((uint32_t)buffer[(pos)+1]) << 16) | (((uint32_t) buffer[pos])) << 24)
+#define big_endian_read_16( buffer, pos) ( ((uint16_t) buffer[(pos)+1]) | (((uint16_t)buffer[ pos   ]) << 8))
+#define bit_endian_read_32( buffer, pos) ( ((uint32_t) buffer[(pos)+3]) | (((uint32_t)buffer[(pos)+2]) << 8) | (((uint32_t)buffer[(pos)+1]) << 16) | (((uint32_t) buffer[pos])) << 24)
 
 // HCI CMD OGF/OCF
 #define READ_CMD_OGF(buffer) (buffer[1] >> 2)
 #define READ_CMD_OCF(buffer) ((buffer[1] & 0x03) << 8 | buffer[0])
 
 // check if command complete event for given command
-#define COMMAND_COMPLETE_EVENT(event,cmd) ( event[0] == HCI_EVENT_COMMAND_COMPLETE && READ_BT_16(event,3) == cmd.opcode)
-#define COMMAND_STATUS_EVENT(event,cmd) ( event[0] == HCI_EVENT_COMMAND_STATUS && READ_BT_16(event,4) == cmd.opcode)
+#define COMMAND_COMPLETE_EVENT(event,cmd) ( event[0] == HCI_EVENT_COMMAND_COMPLETE && little_endian_read_16(event,3) == cmd.opcode)
+#define COMMAND_STATUS_EVENT(event,cmd) ( event[0] == HCI_EVENT_COMMAND_STATUS && little_endian_read_16(event,4) == cmd.opcode)
 
 // Code+Len=2, Pkts+Opcode=3; total=5
 #define OFFSET_OF_DATA_IN_COMMAND_COMPLETE 5
 
 // ACL Packet
-#define READ_ACL_CONNECTION_HANDLE( buffer ) ( READ_BT_16(buffer,0) & 0x0fff)
+#define READ_ACL_CONNECTION_HANDLE( buffer ) ( little_endian_read_16(buffer,0) & 0x0fff)
 #define READ_ACL_FLAGS( buffer )      ( buffer[1] >> 4 )
-#define READ_ACL_LENGTH( buffer )     (READ_BT_16(buffer, 2))
+#define READ_ACL_LENGTH( buffer )     (little_endian_read_16(buffer, 2))
 
 // L2CAP Packet
-#define READ_L2CAP_LENGTH(buffer)     ( READ_BT_16(buffer, 4))
-#define READ_L2CAP_CHANNEL_ID(buffer) ( READ_BT_16(buffer, 6))
+#define READ_L2CAP_LENGTH(buffer)     ( little_endian_read_16(buffer, 4))
+#define READ_L2CAP_CHANNEL_ID(buffer) ( little_endian_read_16(buffer, 6))
 
-void bt_store_16(uint8_t *buffer, uint16_t pos, uint16_t value);
-void bt_store_32(uint8_t *buffer, uint16_t pos, uint32_t value);
+void little_endian_store_16(uint8_t *buffer, uint16_t pos, uint16_t value);
+void little_endian_store_32(uint8_t *buffer, uint16_t pos, uint32_t value);
 void bt_flip_addr(bd_addr_t dest, bd_addr_t src);
 
-void net_store_16(uint8_t *buffer, uint16_t pos, uint16_t value);
-void net_store_32(uint8_t *buffer, uint16_t pos, uint32_t value);
+void big_endian_store_16(uint8_t *buffer, uint16_t pos, uint16_t value);
+void big_endian_store_32(uint8_t *buffer, uint16_t pos, uint32_t value);
 
 // hack: compilation with the android ndk causes an error as there's a swap64 macro
 #ifdef swap64

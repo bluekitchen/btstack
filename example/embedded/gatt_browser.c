@@ -207,7 +207,7 @@ static void handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *pac
         case HCI_EVENT_LE_META:
             // wait for connection complete
             if (packet[2] !=  HCI_SUBEVENT_LE_CONNECTION_COMPLETE) break;
-            gc_handle = READ_BT_16(packet, 4);
+            gc_handle = little_endian_read_16(packet, 4);
             // query primary services
             gatt_client_discover_primary_services(gc_id, gc_handle);
             break;
@@ -236,24 +236,24 @@ static void handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *pac
 static int search_services = 1;
 
 static void extract_service(le_service_t * service, uint8_t * packet){
-    service->start_group_handle = READ_BT_16(packet, 4);
-    service->end_group_handle   = READ_BT_16(packet, 6);
+    service->start_group_handle = little_endian_read_16(packet, 4);
+    service->end_group_handle   = little_endian_read_16(packet, 6);
     service->uuid16 = 0;
     swap128(&packet[8], service->uuid128);
     if (sdp_has_blueooth_base_uuid(service->uuid128)){
-        service->uuid16 = READ_NET_32(service->uuid128, 0);
+        service->uuid16 = bit_endian_read_32(service->uuid128, 0);
     }
 }
 
 static void extract_characteristic(le_characteristic_t * characteristic, uint8_t * packet){
-    characteristic->start_handle = READ_BT_16(packet, 4);
-    characteristic->value_handle = READ_BT_16(packet, 6);
-    characteristic->end_handle =   READ_BT_16(packet, 8);
-    characteristic->properties =   READ_BT_16(packet, 10);
+    characteristic->start_handle = little_endian_read_16(packet, 4);
+    characteristic->value_handle = little_endian_read_16(packet, 6);
+    characteristic->end_handle =   little_endian_read_16(packet, 8);
+    characteristic->properties =   little_endian_read_16(packet, 10);
     characteristic->uuid16 = 0;
     swap128(&packet[12], characteristic->uuid128);
     if (sdp_has_blueooth_base_uuid(characteristic->uuid128)){
-        characteristic->uuid16 = READ_NET_32(characteristic->uuid128, 0);
+        characteristic->uuid16 = bit_endian_read_32(characteristic->uuid128, 0);
     }
 }
 

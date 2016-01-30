@@ -202,16 +202,16 @@ static void inquiry_packet_handler (uint8_t packet_type, uint8_t *packet, uint16
 
                 if (event == HCI_EVENT_INQUIRY_RESULT){
                     offset += 2; // Reserved + Reserved
-                    devices[deviceCount].classOfDevice = READ_BT_24(packet, offset);
+                    devices[deviceCount].classOfDevice = little_endian_read_24(packet, offset);
                     offset += 3;
-                    devices[deviceCount].clockOffset =   READ_BT_16(packet, offset) & 0x7fff;
+                    devices[deviceCount].clockOffset =   little_endian_read_16(packet, offset) & 0x7fff;
                     offset += 2;
                     devices[deviceCount].rssi  = 0;
                 } else {
                     offset += 1; // Reserved
-                    devices[deviceCount].classOfDevice = READ_BT_24(packet, offset);
+                    devices[deviceCount].classOfDevice = little_endian_read_24(packet, offset);
                     offset += 3;
-                    devices[deviceCount].clockOffset =   READ_BT_16(packet, offset) & 0x7fff;
+                    devices[deviceCount].clockOffset =   little_endian_read_16(packet, offset) & 0x7fff;
                     offset += 2;
                     devices[deviceCount].rssi  = packet[offset];
                     offset += 1;
@@ -266,7 +266,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
     uint32_t passkey;
 
     if (packet_type == UCD_DATA_PACKET){
-        printf("UCD Data for PSM %04x received, size %u\n", READ_BT_16(packet, 0), size - 2);
+        printf("UCD Data for PSM %04x received, size %u\n", little_endian_read_16(packet, 0), size - 2);
     }
 
     if (packet_type != HCI_EVENT_PACKET) return;
@@ -293,7 +293,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 
         case HCI_EVENT_CONNECTION_COMPLETE:
             if (!packet[2]){
-                handle = READ_BT_16(packet, 3);
+                handle = little_endian_read_16(packet, 3);
                 bt_flip_addr(remote, &packet[5]);
                 printf("HCI_EVENT_CONNECTION_COMPLETE: handle 0x%04x\n", handle);
             }
@@ -308,7 +308,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 
         case HCI_EVENT_USER_CONFIRMATION_REQUEST:
             bt_flip_addr(remote, &packet[2]);
-            passkey = READ_BT_32(packet, 8);
+            passkey = little_endian_read_32(packet, 8);
             printf("GAP User Confirmation Request for %s, number '%06u'\n", bd_addr_to_str(remote),passkey);
             break;
 
@@ -322,12 +322,12 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
         case L2CAP_EVENT_CHANNEL_OPENED:
             // inform about new l2cap connection
             bt_flip_addr(remote, &packet[3]);
-            psm = READ_BT_16(packet, 11); 
-            local_cid = READ_BT_16(packet, 13); 
-            handle = READ_BT_16(packet, 9);
+            psm = little_endian_read_16(packet, 11); 
+            local_cid = little_endian_read_16(packet, 13); 
+            handle = little_endian_read_16(packet, 9);
             if (packet[2] == 0) {
                 printf("L2CAP Channel successfully opened: %s, handle 0x%02x, psm 0x%02x, local cid 0x%02x, remote cid 0x%02x\n",
-                       bd_addr_to_str(remote), handle, psm, local_cid,  READ_BT_16(packet, 15));
+                       bd_addr_to_str(remote), handle, psm, local_cid,  little_endian_read_16(packet, 15));
             } else {
                 printf("L2CAP connection to device %s failed. status code %u\n", bd_addr_to_str(remote), packet[2]);
             }
@@ -335,8 +335,8 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 
         case L2CAP_EVENT_INCOMING_CONNECTION: {
             // data: event (8), len(8), address(48), handle (16), psm (16), local_cid(16), remote_cid (16) 
-            psm = READ_BT_16(packet, 10);
-            // uint16_t l2cap_cid  = READ_BT_16(packet, 12);
+            psm = little_endian_read_16(packet, 10);
+            // uint16_t l2cap_cid  = little_endian_read_16(packet, 12);
             printf("L2CAP incoming connection request on PSM %u\n", psm); 
             // l2cap_accept_connection(l2cap_cid);
             break;
@@ -346,7 +346,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             // data: event (8), len(8), address(48), channel (8), rfcomm_cid (16)
             bt_flip_addr(remote, &packet[2]); 
             rfcomm_channel_nr = packet[8];
-            rfcomm_channel_id = READ_BT_16(packet, 9);
+            rfcomm_channel_id = little_endian_read_16(packet, 9);
             printf("RFCOMM channel %u requested for %s\n\r", rfcomm_channel_nr, bd_addr_to_str(remote));
             rfcomm_accept_connection(rfcomm_channel_id);
             break;
@@ -356,8 +356,8 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             if (packet[2]) {
                 printf("RFCOMM channel open failed, status %u\n\r", packet[2]);
             } else {
-                rfcomm_channel_id = READ_BT_16(packet, 12);
-                mtu = READ_BT_16(packet, 14);
+                rfcomm_channel_id = little_endian_read_16(packet, 12);
+                mtu = little_endian_read_16(packet, 14);
                 if (mtu > 60){
                     printf("BTstack libusb hack: using reduced MTU for sending instead of %u\n", mtu);
                     mtu = 60;
@@ -413,7 +413,7 @@ static void send_ucd_packet(void){
     l2cap_reserve_packet_buffer();
     int ucd_size = 50;
     uint8_t * ucd_buffer = l2cap_get_outgoing_buffer();
-    bt_store_16(ucd_buffer, 0, 0x2211);
+    little_endian_store_16(ucd_buffer, 0, 0x2211);
     int i; 
     for (i=2; i< ucd_size ; i++){
         ucd_buffer[i] = i;

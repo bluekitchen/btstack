@@ -474,13 +474,13 @@ static int hci_send_acl_packet_fragments(hci_connection_t *connection){
 
         // copy handle_and_flags if not first fragment and update packet boundary flags to be 01 (continuing fragmnent)
         if (acl_header_pos > 0){
-            uint16_t handle_and_flags = READ_BT_16(hci_stack->hci_packet_buffer, 0);
+            uint16_t handle_and_flags = little_endian_read_16(hci_stack->hci_packet_buffer, 0);
             handle_and_flags = (handle_and_flags & 0xcfff) | (1 << 12);
-            bt_store_16(hci_stack->hci_packet_buffer, acl_header_pos, handle_and_flags);
+            little_endian_store_16(hci_stack->hci_packet_buffer, acl_header_pos, handle_and_flags);
         }
 
         // update header len
-        bt_store_16(hci_stack->hci_packet_buffer, acl_header_pos + 2, current_acl_data_packet_length);
+        little_endian_store_16(hci_stack->hci_packet_buffer, acl_header_pos + 2, current_acl_data_packet_length);
 
         // count packet
         connection->num_acl_packets_sent++;
@@ -689,7 +689,7 @@ static void acl_handler(uint8_t *packet, int size){
                 memcpy(&conn->acl_recombination_buffer[HCI_INCOMING_PRE_BUFFER_SIZE], packet, acl_length + 4);
                 conn->acl_recombination_pos    = acl_length + 4;
                 conn->acl_recombination_length = l2cap_length;
-                bt_store_16(conn->acl_recombination_buffer, HCI_INCOMING_PRE_BUFFER_SIZE + 2, l2cap_length +4);
+                little_endian_store_16(conn->acl_recombination_buffer, HCI_INCOMING_PRE_BUFFER_SIZE + 2, l2cap_length +4);
             }
             break;
             
@@ -920,7 +920,7 @@ static void hci_initializing_run(void){
         case HCI_INIT_SEND_BAUD_CHANGE: {
             uint32_t baud_rate = hci_transport_uart_get_main_baud_rate();
             hci_stack->chipset->set_baudrate_command(baud_rate, hci_stack->hci_packet_buffer);
-            hci_stack->last_cmd_opcode = READ_BT_16(hci_stack->hci_packet_buffer, 0);
+            hci_stack->last_cmd_opcode = little_endian_read_16(hci_stack->hci_packet_buffer, 0);
             hci_stack->substate = HCI_INIT_W4_SEND_BAUD_CHANGE;
             hci_send_cmd_packet(hci_stack->hci_packet_buffer, 3 + hci_stack->hci_packet_buffer[2]);
             // STLC25000D: baudrate change happens within 0.5 s after command was send,
@@ -934,7 +934,7 @@ static void hci_initializing_run(void){
         case HCI_INIT_SEND_BAUD_CHANGE_BCM: {
             uint32_t baud_rate = hci_transport_uart_get_main_baud_rate();
             hci_stack->chipset->set_baudrate_command(baud_rate, hci_stack->hci_packet_buffer);
-            hci_stack->last_cmd_opcode = READ_BT_16(hci_stack->hci_packet_buffer, 0);
+            hci_stack->last_cmd_opcode = little_endian_read_16(hci_stack->hci_packet_buffer, 0);
             hci_stack->substate = HCI_INIT_W4_SEND_BAUD_CHANGE_BCM;
             hci_send_cmd_packet(hci_stack->hci_packet_buffer, 3 + hci_stack->hci_packet_buffer[2]);
             break;
@@ -946,7 +946,7 @@ static void hci_initializing_run(void){
                 int valid_cmd = (*hci_stack->chipset->next_command)(hci_stack->hci_packet_buffer);
                 if (valid_cmd){
                     int size = 3 + hci_stack->hci_packet_buffer[2];
-                    hci_stack->last_cmd_opcode = READ_BT_16(hci_stack->hci_packet_buffer, 0);
+                    hci_stack->last_cmd_opcode = little_endian_read_16(hci_stack->hci_packet_buffer, 0);
                     hci_dump_packet(HCI_COMMAND_DATA_PACKET, 0, hci_stack->hci_packet_buffer, size);
                     switch (valid_cmd) {
                         case 1:
@@ -996,7 +996,7 @@ static void hci_initializing_run(void){
         case HCI_INIT_SET_BD_ADDR:
             log_info("Set Public BD ADDR to %s", bd_addr_to_str(hci_stack->custom_bd_addr));
             hci_stack->chipset->set_bd_addr_command(hci_stack->custom_bd_addr, hci_stack->hci_packet_buffer);
-            hci_stack->last_cmd_opcode = READ_BT_16(hci_stack->hci_packet_buffer, 0);
+            hci_stack->last_cmd_opcode = little_endian_read_16(hci_stack->hci_packet_buffer, 0);
             hci_stack->substate = HCI_INIT_W4_SET_BD_ADDR;
             hci_send_cmd_packet(hci_stack->hci_packet_buffer, 3 + hci_stack->hci_packet_buffer[2]);
             break;
@@ -1090,7 +1090,7 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
     uint8_t command_completed = 0;
 
     if (packet[0] == HCI_EVENT_COMMAND_COMPLETE){
-        uint16_t opcode = READ_BT_16(packet,3);
+        uint16_t opcode = little_endian_read_16(packet,3);
         if (opcode == hci_stack->last_cmd_opcode){
             command_completed = 1;
             log_info("Command complete for expected opcode %04x at substate %u", opcode, hci_stack->substate);
@@ -1101,7 +1101,7 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
 
     if (packet[0] == HCI_EVENT_COMMAND_STATUS){
         uint8_t  status = packet[2];
-        uint16_t opcode = READ_BT_16(packet,4);
+        uint16_t opcode = little_endian_read_16(packet,4);
         if (opcode == hci_stack->last_cmd_opcode){
             if (status){
                 command_completed = 1;
@@ -1142,7 +1142,7 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
             && packet[0] == HCI_EVENT_COMMAND_COMPLETE
             && hci_stack->substate == HCI_INIT_W4_SEND_READ_LOCAL_VERSION_INFORMATION){
 
-        uint16_t opcode = READ_BT_16(packet,3);
+        uint16_t opcode = little_endian_read_16(packet,3);
         if (opcode == hci_reset.opcode){
             hci_stack->substate = HCI_INIT_SEND_READ_LOCAL_VERSION_INFORMATION;
             return;
@@ -1318,10 +1318,10 @@ static void event_handler(uint8_t *packet, int size){
                 // from offset 5
                 // status 
                 // "The HC_ACL_Data_Packet_Length return parameter will be used to determine the size of the L2CAP segments contained in ACL Data Packets"
-                hci_stack->acl_data_packet_length = READ_BT_16(packet, 6);
+                hci_stack->acl_data_packet_length = little_endian_read_16(packet, 6);
                 hci_stack->sco_data_packet_length = packet[8];
-                hci_stack->acl_packets_total_num  = READ_BT_16(packet, 9);
-                hci_stack->sco_packets_total_num  = READ_BT_16(packet, 11); 
+                hci_stack->acl_packets_total_num  = little_endian_read_16(packet, 9);
+                hci_stack->sco_packets_total_num  = little_endian_read_16(packet, 11); 
 
                 if (hci_stack->state == HCI_STATE_INITIALIZING){
                     // determine usable ACL payload size
@@ -1335,7 +1335,7 @@ static void event_handler(uint8_t *packet, int size){
             }
 #ifdef ENABLE_BLE
             if (COMMAND_COMPLETE_EVENT(packet, hci_le_read_buffer_size)){
-                hci_stack->le_data_packets_length = READ_BT_16(packet, 6);
+                hci_stack->le_data_packets_length = little_endian_read_16(packet, 6);
                 hci_stack->le_acl_packets_total_num  = packet[8];
                     // determine usable ACL payload size
                     if (HCI_ACL_PAYLOAD_SIZE < hci_stack->le_data_packets_length){
@@ -1344,7 +1344,7 @@ static void event_handler(uint8_t *packet, int size){
                 log_info("hci_le_read_buffer_size: size %u, count %u", hci_stack->le_data_packets_length, hci_stack->le_acl_packets_total_num);
             }         
             if (COMMAND_COMPLETE_EVENT(packet, hci_le_read_white_list_size)){
-                hci_stack->le_whitelist_capacity = READ_BT_16(packet, 6);
+                hci_stack->le_whitelist_capacity = little_endian_read_16(packet, 6);
                 log_info("hci_le_read_white_list_size: size %u", hci_stack->le_whitelist_capacity);
             }   
 #endif
@@ -1369,11 +1369,11 @@ static void event_handler(uint8_t *packet, int size){
                 log_info("BR/EDR support %u, LE support %u", hci_classic_supported(), hci_le_supported());
             }
             if (COMMAND_COMPLETE_EVENT(packet, hci_read_local_version_information)){
-                // hci_stack->hci_version    = READ_BT_16(packet, 4);
-                // hci_stack->hci_revision   = READ_BT_16(packet, 6);
-                // hci_stack->lmp_version    = READ_BT_16(packet, 8);
-                hci_stack->manufacturer   = READ_BT_16(packet, 10);
-                // hci_stack->lmp_subversion = READ_BT_16(packet, 12);
+                // hci_stack->hci_version    = little_endian_read_16(packet, 4);
+                // hci_stack->hci_revision   = little_endian_read_16(packet, 6);
+                // hci_stack->lmp_version    = little_endian_read_16(packet, 8);
+                hci_stack->manufacturer   = little_endian_read_16(packet, 10);
+                // hci_stack->lmp_subversion = little_endian_read_16(packet, 12);
                 log_info("Manufacturer: 0x%04x", hci_stack->manufacturer);
 
                 // notify app
@@ -1402,9 +1402,9 @@ static void event_handler(uint8_t *packet, int size){
         case HCI_EVENT_NUMBER_OF_COMPLETED_PACKETS:{
             int offset = 3;
             for (i=0; i<packet[2];i++){
-                handle = READ_BT_16(packet, offset);
+                handle = little_endian_read_16(packet, offset);
                 offset += 2;
-                uint16_t num_packets = READ_BT_16(packet, offset);
+                uint16_t num_packets = little_endian_read_16(packet, offset);
                 offset += 2;
                 
                 conn = hci_connection_for_handle(handle);
@@ -1467,7 +1467,7 @@ static void event_handler(uint8_t *packet, int size){
             if (conn) {
                 if (!packet[2]){
                     conn->state = OPEN;
-                    conn->con_handle = READ_BT_16(packet, 3);
+                    conn->con_handle = little_endian_read_16(packet, 3);
                     conn->bonding_flags |= BONDING_REQUEST_REMOTE_FEATURES;
 
                     // restart timer
@@ -1516,11 +1516,11 @@ static void event_handler(uint8_t *packet, int size){
                 break;
             }
             conn->state = OPEN;
-            conn->con_handle = READ_BT_16(packet, 3);            
+            conn->con_handle = little_endian_read_16(packet, 3);            
             break;
 
         case HCI_EVENT_READ_REMOTE_SUPPORTED_FEATURES_COMPLETE:
-            handle = READ_BT_16(packet, 3);
+            handle = little_endian_read_16(packet, 3);
             conn = hci_connection_for_handle(handle);
             if (!conn) break;
             if (!packet[2]){
@@ -1597,7 +1597,7 @@ static void event_handler(uint8_t *packet, int size){
             break;
 
         case HCI_EVENT_ENCRYPTION_CHANGE:
-            handle = READ_BT_16(packet, 3);
+            handle = little_endian_read_16(packet, 3);
             conn = hci_connection_for_handle(handle);
             if (!conn) break;
             if (packet[2] == 0) {
@@ -1611,7 +1611,7 @@ static void event_handler(uint8_t *packet, int size){
             break;
 
         case HCI_EVENT_AUTHENTICATION_COMPLETE_EVENT:
-            handle = READ_BT_16(packet, 3);
+            handle = little_endian_read_16(packet, 3);
             conn = hci_connection_for_handle(handle);
             if (!conn) break;
 
@@ -1681,7 +1681,7 @@ static void event_handler(uint8_t *packet, int size){
         // see end of function, too.
         case HCI_EVENT_DISCONNECTION_COMPLETE:
             if (packet[2]) break;   // status != 0
-            handle = READ_BT_16(packet, 3);
+            handle = little_endian_read_16(packet, 3);
             conn = hci_connection_for_handle(handle);
             if (!conn) break;       // no conn struct anymore
             // re-enable advertisements for le connections if active
@@ -1703,7 +1703,7 @@ static void event_handler(uint8_t *packet, int size){
 
         case HCI_EVENT_ROLE_CHANGE:
             if (packet[2]) break;   // status != 0
-            handle = READ_BT_16(packet, 3);
+            handle = little_endian_read_16(packet, 3);
             conn = hci_connection_for_handle(handle);
             if (!conn) break;       // no conn
             conn->role = packet[9];
@@ -1767,7 +1767,7 @@ static void event_handler(uint8_t *packet, int size){
                     
                     conn->state = OPEN;
                     conn->role  = packet[6];
-                    conn->con_handle = READ_BT_16(packet, 4);
+                    conn->con_handle = little_endian_read_16(packet, 4);
                     
                     // TODO: store - role, peer address type, conn_interval, conn_latency, supervision timeout, master clock
 
@@ -1780,7 +1780,7 @@ static void event_handler(uint8_t *packet, int size){
                     hci_emit_nr_connections_changed();
                     break;
 
-            // log_info("LE buffer size: %u, count %u", READ_BT_16(packet,6), packet[8]);
+            // log_info("LE buffer size: %u, count %u", little_endian_read_16(packet,6), packet[8]);
                     
                 default:
                     break;
@@ -1809,7 +1809,7 @@ static void event_handler(uint8_t *packet, int size){
     // moved here to give upper stack a chance to close down everything with hci_connection_t intact
     if (packet[0] == HCI_EVENT_DISCONNECTION_COMPLETE){
         if (!packet[2]){
-            handle = READ_BT_16(packet, 3);
+            handle = little_endian_read_16(packet, 3);
             hci_connection_t * aConn = hci_connection_for_handle(handle);
             if (aConn) {
                 uint8_t status = aConn->bonding_status;
@@ -2930,7 +2930,7 @@ void hci_emit_connection_complete(hci_connection_t *conn, uint8_t status){
     event[0] = HCI_EVENT_CONNECTION_COMPLETE;
     event[1] = sizeof(event) - 2;
     event[2] = status;
-    bt_store_16(event, 3, conn->con_handle);
+    little_endian_store_16(event, 3, conn->con_handle);
     bt_flip_addr(&event[5], conn->address);
     event[11] = 1; // ACL connection
     event[12] = 0; // encryption disabled
@@ -2944,13 +2944,13 @@ static void hci_emit_le_connection_complete(uint8_t address_type, bd_addr_t addr
     event[1] = sizeof(event) - 2;
     event[2] = HCI_SUBEVENT_LE_CONNECTION_COMPLETE;
     event[3] = status;
-    bt_store_16(event, 4, conn_handle);
+    little_endian_store_16(event, 4, conn_handle);
     event[6] = 0; // TODO: role
     event[7] = address_type;
     bt_flip_addr(&event[8], address);
-    bt_store_16(event, 14, 0); // interval
-    bt_store_16(event, 16, 0); // latency
-    bt_store_16(event, 18, 0); // supervision timeout
+    little_endian_store_16(event, 14, 0); // interval
+    little_endian_store_16(event, 16, 0); // latency
+    little_endian_store_16(event, 18, 0); // supervision timeout
     event[20] = 0; // master clock accuracy
     hci_dump_packet(HCI_EVENT_PACKET, 0, event, sizeof(event));
     hci_stack->packet_handler(HCI_EVENT_PACKET, event, sizeof(event));
@@ -2961,7 +2961,7 @@ void hci_emit_disconnection_complete(uint16_t handle, uint8_t reason){
     event[0] = HCI_EVENT_DISCONNECTION_COMPLETE;
     event[1] = sizeof(event) - 2;
     event[2] = 0; // status = OK
-    bt_store_16(event, 3, handle);
+    little_endian_store_16(event, 3, handle);
     event[5] = reason;
     hci_dump_packet(HCI_EVENT_PACKET, 0, event, sizeof(event));
     hci_stack->packet_handler(HCI_EVENT_PACKET, event, sizeof(event));
@@ -2973,7 +2973,7 @@ void hci_emit_l2cap_check_timeout(hci_connection_t *conn){
     uint8_t event[4];
     event[0] = L2CAP_EVENT_TIMEOUT_CHECK;
     event[1] = sizeof(event) - 2;
-    bt_store_16(event, 2, conn->con_handle);
+    little_endian_store_16(event, 2, conn->con_handle);
     hci_dump_packet(HCI_EVENT_PACKET, 0, event, sizeof(event));
     hci_stack->packet_handler(HCI_EVENT_PACKET, event, sizeof(event));
 }
@@ -3004,7 +3004,7 @@ void hci_emit_btstack_version(void){
     event[1] = sizeof(event) - 2;
     event[2] = BTSTACK_MAJOR;
     event[3] = BTSTACK_MINOR;
-    bt_store_16(event, 4, 3257);    // last SVN commit on Google Code + 1
+    little_endian_store_16(event, 4, 3257);    // last SVN commit on Google Code + 1
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
     hci_stack->packet_handler(HCI_EVENT_PACKET, event, sizeof(event));
 }
@@ -3050,7 +3050,7 @@ void hci_emit_security_level(hci_con_handle_t con_handle, gap_security_level_t l
     int pos = 0;
     event[pos++] = GAP_EVENT_SECURITY_LEVEL;
     event[pos++] = sizeof(event) - 2;
-    bt_store_16(event, 2, con_handle);
+    little_endian_store_16(event, 2, con_handle);
     pos += 2;
     event[pos++] = level;
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));

@@ -100,11 +100,11 @@ static void using_921600_baud(void){
 
 static void local_version_information_callback(uint8_t * packet){
     printf("Local version information:\n");
-    uint16_t hci_version    = READ_BT_16(packet, 4);
-    uint16_t hci_revision   = READ_BT_16(packet, 6);
-    uint16_t lmp_version    = READ_BT_16(packet, 8);
-    uint16_t manufacturer   = READ_BT_16(packet, 10);
-    uint16_t lmp_subversion = READ_BT_16(packet, 12);
+    uint16_t hci_version    = little_endian_read_16(packet, 4);
+    uint16_t hci_revision   = little_endian_read_16(packet, 6);
+    uint16_t lmp_version    = little_endian_read_16(packet, 8);
+    uint16_t manufacturer   = little_endian_read_16(packet, 10);
+    uint16_t lmp_subversion = little_endian_read_16(packet, 12);
     printf("- HCI Version  0x%04x\n", hci_version);
     printf("- HCI Revision 0x%04x\n", hci_revision);
     printf("- LMP Version  0x%04x\n", lmp_version);

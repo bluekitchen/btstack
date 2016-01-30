@@ -175,16 +175,16 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                         switch (packet[0]) {
                             case HCI_EVENT_INQUIRY_RESULT:
                             	offset += 2; // Reserved + Reserved
-                                [dev setClassOfDevice:READ_BT_24(packet, 3 + numResponses*(6+1+1+1)   + i*3)];
+                                [dev setClassOfDevice:little_endian_read_24(packet, 3 + numResponses*(6+1+1+1)   + i*3)];
                                 offset += 3;
-                                [dev setClockOffset:( READ_BT_16(packet, 3 + numResponses*(6+1+1+1+3) + i*2) & 0x7fff)];
+                                [dev setClockOffset:( little_endian_read_16(packet, 3 + numResponses*(6+1+1+1+3) + i*2) & 0x7fff)];
                                 offset += 2;
                                 break;
                             case HCI_EVENT_INQUIRY_RESULT_WITH_RSSI:
                             	offset += 1; // Reserved
-                                [dev setClassOfDevice:READ_BT_24(packet, 3 + numResponses*(6+1+1)   + i*3)];
+                                [dev setClassOfDevice:little_endian_read_24(packet, 3 + numResponses*(6+1+1)   + i*3)];
                                 offset += 3;
-                                [dev setClockOffset:( READ_BT_16(packet, 3 + numResponses*(6+1+1+3) + i*2) & 0x7fff)];
+                                [dev setClockOffset:( little_endian_read_16(packet, 3 + numResponses*(6+1+1+3) + i*2) & 0x7fff)];
                                 offset += 3; // setClockOffset(2) + RSSI(1)
                                 break;
                             default:

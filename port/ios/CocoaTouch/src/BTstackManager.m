@@ -426,8 +426,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 						}
 						// update
 						device.pageScanRepetitionMode =   packet [3 + numResponses*(6)         + i*1];
-						device.classOfDevice = READ_BT_24(packet, 3 + numResponses*(6+1+1+1)   + i*3);
-						device.clockOffset =   READ_BT_16(packet, 3 + numResponses*(6+1+1+1+3) + i*2) & 0x7fff;
+						device.classOfDevice = little_endian_read_24(packet, 3 + numResponses*(6+1+1+1)   + i*3);
+						device.clockOffset =   little_endian_read_16(packet, 3 + numResponses*(6+1+1+1+3) + i*2) & 0x7fff;
 						device.rssi  = 0;
 						[self sendDeviceInfo:device];
 					}
@@ -448,9 +448,9 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 						}
 						device.pageScanRepetitionMode =   packet [offset];
 						offset += 2; // pageScanRepetitionMode + Reserved
-						device.classOfDevice = READ_BT_24(packet, offset);
+						device.classOfDevice = little_endian_read_24(packet, offset);
 						offset += 3;
-						device.clockOffset = READ_BT_16(packet, offset) & 0x7fff;
+						device.clockOffset = little_endian_read_16(packet, offset) & 0x7fff;
 						offset += 2;
 						device.rssi = packet[offset];
 						offset += 1;

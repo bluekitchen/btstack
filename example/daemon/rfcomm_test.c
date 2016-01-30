@@ -139,7 +139,7 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 					// data: event (8), len(8), address(48), channel (8), rfcomm_cid (16)
 					bt_flip_addr(event_addr, &packet[2]); 
 					rfcomm_channel_nr = packet[8];
-					rfcomm_channel_id = READ_BT_16(packet, 9);
+					rfcomm_channel_id = little_endian_read_16(packet, 9);
 					printf("RFCOMM channel %u requested for %s\n", rfcomm_channel_nr, bd_addr_to_str(event_addr));
 					bt_send_cmd(&rfcomm_accept_connection_cmd, rfcomm_channel_id);
 					break;
@@ -150,8 +150,8 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 						printf("RFCOMM channel open failed, status %u\n", packet[2]);
 					} else {
                         // data: event(8), len(8), status (8), address (48), handle (16), server channel(8), rfcomm_cid(16), max frame size(16)
-						rfcomm_channel_id = READ_BT_16(packet, 12);
-						mtu = READ_BT_16(packet, 14);
+						rfcomm_channel_id = little_endian_read_16(packet, 12);
+						mtu = little_endian_read_16(packet, 14);
                         
 						printf("RFCOMM channel open succeeded. New RFCOMM Channel ID %u, max frame size %u\n", rfcomm_channel_id, mtu);
                     }

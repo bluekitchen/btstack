@@ -158,58 +158,58 @@ static void handle_ble_client_event(uint8_t packet_type, uint8_t *packet, uint16
             }
             break;
 		case GATT_EVENT_SERVICE_QUERY_RESULT:
-			service.start_group_handle = READ_BT_16(packet, 4);
-			service.end_group_handle   = READ_BT_16(packet, 6);
+			service.start_group_handle = little_endian_read_16(packet, 4);
+			service.end_group_handle   = little_endian_read_16(packet, 6);
 			service.uuid16 = 0;
 			swap128(&packet[8], service.uuid128);
 			if (sdp_has_blueooth_base_uuid(service.uuid128)){
-				service.uuid16 = READ_NET_32(service.uuid128, 0);
+				service.uuid16 = bit_endian_read_32(service.uuid128, 0);
 			}
 			services[result_index++] = service;
 			result_counter++;
             break;
         case GATT_EVENT_INCLUDED_SERVICE_QUERY_RESULT:
-			service.start_group_handle = READ_BT_16(packet, 6);
-			service.end_group_handle   = READ_BT_16(packet, 8);
+			service.start_group_handle = little_endian_read_16(packet, 6);
+			service.end_group_handle   = little_endian_read_16(packet, 8);
 			service.uuid16 = 0;
 			swap128(&packet[10], service.uuid128);
 			if (sdp_has_blueooth_base_uuid(service.uuid128)){
-				service.uuid16 = READ_NET_32(service.uuid128, 0);
+				service.uuid16 = bit_endian_read_32(service.uuid128, 0);
 			}
             included_services[result_index++] = service;
             result_counter++;
             break;
         case GATT_EVENT_CHARACTERISTIC_QUERY_RESULT:
-        	characteristic.start_handle = READ_BT_16(packet, 4);
-        	characteristic.value_handle = READ_BT_16(packet, 6);
-        	characteristic.end_handle =   READ_BT_16(packet, 8);
-        	characteristic.properties =   READ_BT_16(packet, 10);
+        	characteristic.start_handle = little_endian_read_16(packet, 4);
+        	characteristic.value_handle = little_endian_read_16(packet, 6);
+        	characteristic.end_handle =   little_endian_read_16(packet, 8);
+        	characteristic.properties =   little_endian_read_16(packet, 10);
 			characteristic.uuid16 = 0;
 			swap128(&packet[12], characteristic.uuid128);
 			if (sdp_has_blueooth_base_uuid(characteristic.uuid128)){
-				characteristic.uuid16 = READ_NET_32(characteristic.uuid128, 0);
+				characteristic.uuid16 = bit_endian_read_32(characteristic.uuid128, 0);
 			}
         	characteristics[result_index++] = characteristic;
         	result_counter++;
             break;
         case GATT_EVENT_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY_RESULT:
-        	descriptor.handle = READ_BT_16(packet, 4);
+        	descriptor.handle = little_endian_read_16(packet, 4);
 			swap128(&packet[6], descriptor.uuid128);
 			if (sdp_has_blueooth_base_uuid(descriptor.uuid128)){
-				descriptor.uuid16 = READ_NET_32(descriptor.uuid128, 0);
+				descriptor.uuid16 = bit_endian_read_32(descriptor.uuid128, 0);
 			}
         	descriptors[result_index++] = descriptor;
         	result_counter++;
         	break;
         case GATT_EVENT_CHARACTERISTIC_VALUE_QUERY_RESULT:
         case GATT_EVENT_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT:
-        	CHECK_EQUAL(short_value_length, READ_BT_16(packet, 6));
+        	CHECK_EQUAL(short_value_length, little_endian_read_16(packet, 6));
         	CHECK_EQUAL_ARRAY((uint8_t*)short_value, &packet[8], short_value_length);
         	result_counter++;
         	break;
         case GATT_EVENT_LONG_CHARACTERISTIC_VALUE_QUERY_RESULT:
         case GATT_EVENT_LONG_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT:
-        	verify_blob(READ_BT_16(packet, 8), READ_BT_16(packet, 6), &packet[10]);
+        	verify_blob(little_endian_read_16(packet, 8), little_endian_read_16(packet, 6), &packet[10]);
         	result_counter++;
         	break;
 	}

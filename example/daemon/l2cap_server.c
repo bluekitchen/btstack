@@ -96,7 +96,7 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 
 				case L2CAP_EVENT_SERVICE_REGISTERED:
 					status = packet[2];
-					psm = READ_BT_16(packet, 3); 
+					psm = little_endian_read_16(packet, 3); 
 					printf("L2CAP_EVENT_SERVICE_REGISTERED psm: 0x%02x, status: 0x%02x\n", psm, status);
 					if (status) {
 						l2cap_reg_fail = 1;
@@ -111,10 +111,10 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 				case L2CAP_EVENT_INCOMING_CONNECTION:
 					// data: event(8), len(8), address(48), handle (16),  psm (16), source cid(16) dest cid(16)
 					bt_flip_addr(event_addr, &packet[2]);
-					handle     = READ_BT_16(packet, 8); 
-					psm        = READ_BT_16(packet, 10); 
-					local_cid  = READ_BT_16(packet, 12); 
-					remote_cid = READ_BT_16(packet, 14); 
+					handle     = little_endian_read_16(packet, 8); 
+					psm        = little_endian_read_16(packet, 10); 
+					local_cid  = little_endian_read_16(packet, 12); 
+					remote_cid = little_endian_read_16(packet, 14); 
 					printf("L2CAP_EVENT_INCOMING_CONNECTION %s, handle 0x%02x, psm 0x%02x, local cid 0x%02x, remote cid 0x%02x\n",
 						bd_addr_to_str(event_addr), handle, psm, local_cid, remote_cid);
 
@@ -144,12 +144,12 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 				case L2CAP_EVENT_CHANNEL_OPENED:
 					// inform about new l2cap connection
 					bt_flip_addr(event_addr, &packet[3]);
-					psm = READ_BT_16(packet, 11); 
-					local_cid = READ_BT_16(packet, 13); 
-					handle = READ_BT_16(packet, 9);
+					psm = little_endian_read_16(packet, 11); 
+					local_cid = little_endian_read_16(packet, 13); 
+					handle = little_endian_read_16(packet, 9);
 					if (packet[2] == 0) {
 						printf("Channel successfully opened: %s, handle 0x%02x, psm 0x%02x, local cid 0x%02x, remote cid 0x%02x\n",
-							   bd_addr_to_str(event_addr), handle, psm, local_cid,  READ_BT_16(packet, 15));
+							   bd_addr_to_str(event_addr), handle, psm, local_cid,  little_endian_read_16(packet, 15));
 						
 						if (psm == PSM_HID_CONTROL){
 							hid_control = local_cid;

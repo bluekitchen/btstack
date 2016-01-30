@@ -132,8 +132,8 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 printf("RFCOMM channel open failed, status %u\n", packet[2]);
             } else {
                 // data: event(8), len(8), status (8), address (48), handle (16), server channel(8), rfcomm_cid(16), max frame size(16)
-                rfcomm_cid = READ_BT_16(packet, 12);
-                mtu = READ_BT_16(packet, 14);
+                rfcomm_cid = little_endian_read_16(packet, 12);
+                mtu = little_endian_read_16(packet, 14);
                 printf("RFCOMM channel open succeeded. New RFCOMM Channel ID %u, max frame size %u\n", rfcomm_cid, mtu);
                 if ((test_data_len > mtu)) {
                     test_data_len = mtu;

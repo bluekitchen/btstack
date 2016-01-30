@@ -478,8 +478,8 @@ static int iphone_on (void){
     // Use with caution!
     
     srandom(time(NULL));
-    bt_store_32(local_mac_address, 0, random());
-    bt_store_16(local_mac_address, 4, random());
+    little_endian_store_32(local_mac_address, 0, random());
+    little_endian_store_16(local_mac_address, 4, random());
 #endif
 
     if (btstack_control_iphone_bt_enabled()){

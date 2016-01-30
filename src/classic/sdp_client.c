@@ -147,10 +147,10 @@ static void send_request(uint16_t channel){
 
 static void parse_service_search_attribute_response(uint8_t* packet){
     uint16_t offset = 3;
-    uint16_t parameterLength = READ_NET_16(packet,offset);
+    uint16_t parameterLength = big_endian_read_16(packet,offset);
     offset+=2;
     // AttributeListByteCount <= mtu
-    uint16_t attributeListByteCount = READ_NET_16(packet,offset);
+    uint16_t attributeListByteCount = big_endian_read_16(packet,offset);
     offset+=2;
 
     if (attributeListByteCount > mtu){
@@ -180,7 +180,7 @@ static void parse_service_search_attribute_response(uint8_t* packet){
 void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     // uint16_t handle;
     if (packet_type == L2CAP_DATA_PACKET){
-        uint16_t responseTransactionID = READ_NET_16(packet,1);
+        uint16_t responseTransactionID = big_endian_read_16(packet,1);
         if ( responseTransactionID != transactionID){
             log_error("Missmatching transaction ID, expected %u, found %u.", transactionID, responseTransactionID);
             return;
@@ -242,8 +242,8 @@ void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, 
                 break;
             }
             sdp_cid = channel;
-            mtu = READ_BT_16(packet, 17);
-            // handle = READ_BT_16(packet, 9);
+            mtu = little_endian_read_16(packet, 17);
+            // handle = little_endian_read_16(packet, 9);
             log_info("SDP Client Connected, cid %x, mtu %u.", sdp_cid, mtu);
 
             sdp_client_state = W2_SEND;
@@ -255,8 +255,8 @@ void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, 
             if (can_send_now(sdp_cid)) send_request(sdp_cid);
             break;
         case L2CAP_EVENT_CHANNEL_CLOSED: {
-            if (sdp_cid != READ_BT_16(packet, 2)) {
-                // log_info("Received L2CAP_EVENT_CHANNEL_CLOSED for cid %x, current cid %x\n",  READ_BT_16(packet, 2),sdp_cid);
+            if (sdp_cid != little_endian_read_16(packet, 2)) {
+                // log_info("Received L2CAP_EVENT_CHANNEL_CLOSED for cid %x, current cid %x\n",  little_endian_read_16(packet, 2),sdp_cid);
                 break;
             }
             log_info("SDP Client disconnected.");
@@ -278,7 +278,7 @@ static uint16_t setup_service_search_attribute_request(uint8_t * data){
     // uint8_t SDP_PDU_ID_t.SDP_ServiceSearchRequest;
     data[offset++] = SDP_ServiceSearchAttributeRequest;
     // uint16_t transactionID
-    net_store_16(data, offset, transactionID);
+    big_endian_store_16(data, offset, transactionID);
     offset += 2;
 
     // param legnth
@@ -291,7 +291,7 @@ static uint16_t setup_service_search_attribute_request(uint8_t * data){
     offset += serviceSearchPatternLen;
 
     //     MaximumAttributeByteCount - uint16_t  0x0007 - 0xffff -> mtu
-    net_store_16(data, offset, mtu);
+    big_endian_store_16(data, offset, mtu);
     offset += 2;
 
     //     AttibuteIDList  
@@ -306,7 +306,7 @@ static uint16_t setup_service_search_attribute_request(uint8_t * data){
     offset += continuationStateLen;
 
     // uint16_t paramLength 
-    net_store_16(data, 3, offset - 5);
+    big_endian_store_16(data, 3, offset - 5);
 
     return offset;
 }
@@ -322,7 +322,7 @@ static uint16_t setup_service_search_request(uint8_t * data){
     // uint8_t SDP_PDU_ID_t.SDP_ServiceSearchRequest;
     data[offset++] = SDP_ServiceSearchRequest;
     // uint16_t transactionID
-    net_store_16(data, offset, transactionID);
+    big_endian_store_16(data, offset, transactionID);
     offset += 2;
 
     // param legnth
@@ -335,7 +335,7 @@ static uint16_t setup_service_search_request(uint8_t * data){
     offset += serviceSearchPatternLen;
 
     //     MaximumAttributeByteCount - uint16_t  0x0007 - 0xffff -> mtu
-    net_store_16(data, offset, mtu);
+    big_endian_store_16(data, offset, mtu);
     offset += 2;
 
     //     ContinuationState - uint8_t number of cont. bytes N<=16 
@@ -345,7 +345,7 @@ static uint16_t setup_service_search_request(uint8_t * data){
     offset += continuationStateLen;
 
     // uint16_t paramLength 
-    net_store_16(data, 3, offset - 5);
+    big_endian_store_16(data, 3, offset - 5);
 
     return offset;
 }
@@ -358,7 +358,7 @@ static uint16_t setup_service_attribute_request(uint8_t * data){
     // uint8_t SDP_PDU_ID_t.SDP_ServiceSearchRequest;
     data[offset++] = SDP_ServiceAttributeRequest;
     // uint16_t transactionID
-    net_store_16(data, offset, transactionID);
+    big_endian_store_16(data, offset, transactionID);
     offset += 2;
 
     // param legnth
@@ -366,11 +366,11 @@ static uint16_t setup_service_attribute_request(uint8_t * data){
 
     // parameters: 
     //     ServiceRecordHandle
-    net_store_32(data, offset, serviceRecordHandle);
+    big_endian_store_32(data, offset, serviceRecordHandle);
     offset += 4;
 
     //     MaximumAttributeByteCount - uint16_t  0x0007 - 0xffff -> mtu
-    net_store_16(data, offset, mtu);
+    big_endian_store_16(data, offset, mtu);
     offset += 2;
 
     //     AttibuteIDList  
@@ -385,20 +385,20 @@ static uint16_t setup_service_attribute_request(uint8_t * data){
     offset += continuationStateLen;
 
     // uint16_t paramLength 
-    net_store_16(data, 3, offset - 5);
+    big_endian_store_16(data, 3, offset - 5);
 
     return offset;
 }
 
 static void parse_service_search_response(uint8_t* packet){
     uint16_t offset = 3;
-    uint16_t parameterLength = READ_NET_16(packet,offset);
+    uint16_t parameterLength = big_endian_read_16(packet,offset);
     offset+=2;
 
-    uint16_t totalServiceRecordCount = READ_NET_16(packet,offset);
+    uint16_t totalServiceRecordCount = big_endian_read_16(packet,offset);
     offset+=2;
 
-    uint16_t currentServiceRecordCount = READ_NET_16(packet,offset);
+    uint16_t currentServiceRecordCount = big_endian_read_16(packet,offset);
     offset+=2;
     if (currentServiceRecordCount > totalServiceRecordCount){
         log_error("CurrentServiceRecordCount is larger then TotalServiceRecordCount.");
@@ -424,11 +424,11 @@ static void parse_service_search_response(uint8_t* packet){
 
 static void parse_service_attribute_response(uint8_t* packet){
     uint16_t offset = 3;
-    uint16_t parameterLength = READ_NET_16(packet,offset);
+    uint16_t parameterLength = big_endian_read_16(packet,offset);
     offset+=2;
 
     // AttributeListByteCount <= mtu
-    uint16_t attributeListByteCount = READ_NET_16(packet,offset);
+    uint16_t attributeListByteCount = big_endian_read_16(packet,offset);
     offset+=2;
 
     if (attributeListByteCount > mtu){

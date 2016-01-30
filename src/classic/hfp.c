@@ -226,7 +226,7 @@ static void hfp_emit_audio_connection_established_event(hfp_callback_t callback,
     event[1] = sizeof(event) - 2;
     event[2] = HFP_SUBEVENT_AUDIO_CONNECTION_ESTABLISHED;
     event[3] = value; // status 0 == OK
-    bt_store_16(event, 4, sco_handle);
+    little_endian_store_16(event, 4, sco_handle);
     (*callback)(event, sizeof(event));
 }
 
@@ -472,7 +472,7 @@ void hfp_handle_hci_event(hfp_callback_t callback, uint8_t packet_type, uint8_t 
             
             if (!context || context->state != HFP_IDLE) return;
 
-            context->rfcomm_cid = READ_BT_16(packet, 9);
+            context->rfcomm_cid = little_endian_read_16(packet, 9);
             context->state = HFP_W4_RFCOMM_CONNECTED;
             printf("RFCOMM channel %u requested for %s\n", context->rfcomm_cid, bd_addr_to_str(context->remote_addr));
             rfcomm_accept_connection(context->rfcomm_cid);
@@ -490,11 +490,11 @@ void hfp_handle_hci_event(hfp_callback_t callback, uint8_t packet_type, uint8_t 
                 hfp_emit_event(callback, HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED, packet[2]);
                 remove_hfp_connection_context(context);
             } else {
-                context->con_handle = READ_BT_16(packet, 9);
+                context->con_handle = little_endian_read_16(packet, 9);
                 printf("RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE con_handle 0x%02x\n", context->con_handle);
             
-                context->rfcomm_cid = READ_BT_16(packet, 12);
-                uint16_t mtu = READ_BT_16(packet, 14);
+                context->rfcomm_cid = little_endian_read_16(packet, 12);
+                uint16_t mtu = little_endian_read_16(packet, 14);
                 printf("RFCOMM channel open succeeded. Context %p, RFCOMM Channel ID 0x%02x, max frame size %u\n", context, context->rfcomm_cid, mtu);
                         
                 switch (context->state){
@@ -549,7 +549,7 @@ void hfp_handle_hci_event(hfp_callback_t callback, uint8_t packet_type, uint8_t 
                 break;
             }
             
-            uint16_t sco_handle = READ_BT_16(packet, index);
+            uint16_t sco_handle = little_endian_read_16(packet, index);
             index+=2;
 
             bt_flip_addr(event_addr, &packet[index]);
@@ -558,9 +558,9 @@ void hfp_handle_hci_event(hfp_callback_t callback, uint8_t packet_type, uint8_t 
             uint8_t link_type = packet[index++];
             uint8_t transmission_interval = packet[index++];  // measured in slots
             uint8_t retransmission_interval = packet[index++];// measured in slots
-            uint16_t rx_packet_length = READ_BT_16(packet, index); // measured in bytes
+            uint16_t rx_packet_length = little_endian_read_16(packet, index); // measured in bytes
             index+=2;
-            uint16_t tx_packet_length = READ_BT_16(packet, index); // measured in bytes
+            uint16_t tx_packet_length = little_endian_read_16(packet, index); // measured in bytes
             index+=2;
             uint8_t air_mode = packet[index];
 
@@ -603,7 +603,7 @@ void hfp_handle_hci_event(hfp_callback_t callback, uint8_t packet_type, uint8_t 
         }
 
         case RFCOMM_EVENT_CHANNEL_CLOSED:
-            rfcomm_cid = READ_BT_16(packet,2);
+            rfcomm_cid = little_endian_read_16(packet,2);
             context = get_hfp_connection_context_for_rfcomm_cid(rfcomm_cid);
             if (!context) break;
             if (context->state == HFP_W4_RFCOMM_DISCONNECTED_AND_RESTART){
@@ -617,7 +617,7 @@ void hfp_handle_hci_event(hfp_callback_t callback, uint8_t packet_type, uint8_t 
             break;
 
         case HCI_EVENT_DISCONNECTION_COMPLETE:
-            handle = READ_BT_16(packet,3);
+            handle = little_endian_read_16(packet,3);
             context = get_hfp_connection_context_for_sco_handle(handle);
             
             if (!context) break;

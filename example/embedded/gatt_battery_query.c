@@ -138,24 +138,24 @@ static void error_code(int status){
 }
 
 static void extract_service(le_service_t * service, uint8_t * packet){
-    service->start_group_handle = READ_BT_16(packet, 4);
-    service->end_group_handle   = READ_BT_16(packet, 6);
+    service->start_group_handle = little_endian_read_16(packet, 4);
+    service->end_group_handle   = little_endian_read_16(packet, 6);
     service->uuid16 = 0;
     swap128(&packet[8], service->uuid128);
     if (sdp_has_blueooth_base_uuid(service->uuid128)){
-        service->uuid16 = READ_NET_32(service->uuid128, 0);
+        service->uuid16 = bit_endian_read_32(service->uuid128, 0);
     }
 }
 
 static void extract_characteristic(le_characteristic_t * characteristic, uint8_t * packet){
-    characteristic->start_handle = READ_BT_16(packet, 4);
-    characteristic->value_handle = READ_BT_16(packet, 6);
-    characteristic->end_handle =   READ_BT_16(packet, 8);
-    characteristic->properties =   READ_BT_16(packet, 10);
+    characteristic->start_handle = little_endian_read_16(packet, 4);
+    characteristic->value_handle = little_endian_read_16(packet, 6);
+    characteristic->end_handle =   little_endian_read_16(packet, 8);
+    characteristic->properties =   little_endian_read_16(packet, 10);
     characteristic->uuid16 = 0;
     swap128(&packet[12], characteristic->uuid128);
     if (sdp_has_blueooth_base_uuid(characteristic->uuid128)){
-        characteristic->uuid16 = READ_NET_32(characteristic->uuid128, 0);
+        characteristic->uuid16 = bit_endian_read_32(characteristic->uuid128, 0);
     }
 }
 
@@ -211,7 +211,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint8_t *packet, uint1
             }
             if (packet[0] != GATT_EVENT_NOTIFICATION) break;
             printf("\nBattery Data:\n");
-            dump_characteristic_value(&packet[8], READ_BT_16(packet, 6));
+            dump_characteristic_value(&packet[8], little_endian_read_16(packet, 6));
             break;
 
         default:
@@ -266,7 +266,7 @@ static void handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *pac
             // wait for connection complete
             if (packet[2] !=  HCI_SUBEVENT_LE_CONNECTION_COMPLETE) break;
             if (state != TC_W4_CONNECT) return;
-            gc_handle = READ_BT_16(packet, 4);
+            gc_handle = little_endian_read_16(packet, 4);
             // initialize gatt client context with handle, and add it to the list of active clients
             // query primary services
             printf("\nSearch for battery service. ");

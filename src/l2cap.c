@@ -141,13 +141,13 @@ void l2cap_emit_channel_opened(l2cap_channel_t *channel, uint8_t status) {
     event[1] = sizeof(event) - 2;
     event[2] = status;
     bt_flip_addr(&event[3], channel->address);
-    bt_store_16(event,  9, channel->handle);
-    bt_store_16(event, 11, channel->psm);
-    bt_store_16(event, 13, channel->local_cid);
-    bt_store_16(event, 15, channel->remote_cid);
-    bt_store_16(event, 17, channel->local_mtu);
-    bt_store_16(event, 19, channel->remote_mtu); 
-    bt_store_16(event, 21, channel->flush_timeout); 
+    little_endian_store_16(event,  9, channel->handle);
+    little_endian_store_16(event, 11, channel->psm);
+    little_endian_store_16(event, 13, channel->local_cid);
+    little_endian_store_16(event, 15, channel->remote_cid);
+    little_endian_store_16(event, 17, channel->local_mtu);
+    little_endian_store_16(event, 19, channel->remote_mtu); 
+    little_endian_store_16(event, 21, channel->flush_timeout); 
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
     l2cap_dispatch(channel, HCI_EVENT_PACKET, event, sizeof(event));
 }
@@ -157,7 +157,7 @@ void l2cap_emit_channel_closed(l2cap_channel_t *channel) {
     uint8_t event[4];
     event[0] = L2CAP_EVENT_CHANNEL_CLOSED;
     event[1] = sizeof(event) - 2;
-    bt_store_16(event, 2, channel->local_cid);
+    little_endian_store_16(event, 2, channel->local_cid);
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
     l2cap_dispatch(channel, HCI_EVENT_PACKET, event, sizeof(event));
 }
@@ -169,10 +169,10 @@ void l2cap_emit_connection_request(l2cap_channel_t *channel) {
     event[0] = L2CAP_EVENT_INCOMING_CONNECTION;
     event[1] = sizeof(event) - 2;
     bt_flip_addr(&event[2], channel->address);
-    bt_store_16(event,  8, channel->handle);
-    bt_store_16(event, 10, channel->psm);
-    bt_store_16(event, 12, channel->local_cid);
-    bt_store_16(event, 14, channel->remote_cid);
+    little_endian_store_16(event,  8, channel->handle);
+    little_endian_store_16(event, 10, channel->psm);
+    little_endian_store_16(event, 12, channel->local_cid);
+    little_endian_store_16(event, 14, channel->remote_cid);
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
     l2cap_dispatch(channel, HCI_EVENT_PACKET, event, sizeof(event));
 }
@@ -181,8 +181,8 @@ static void l2cap_emit_connection_parameter_update_response(uint16_t handle, uin
     uint8_t event[6];
     event[0] = L2CAP_EVENT_CONNECTION_PARAMETER_UPDATE_RESPONSE;
     event[1] = 4;
-    bt_store_16(event, 2, handle);
-    bt_store_16(event, 4, result);
+    little_endian_store_16(event, 2, handle);
+    little_endian_store_16(event, 4, result);
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
     (*packet_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
@@ -357,13 +357,13 @@ int l2cap_send_prepared(uint16_t local_cid, uint16_t len){
     int pb = hci_non_flushable_packet_boundary_flag_supported() ? 0x00 : 0x02;
 
     // 0 - Connection handle : PB=pb : BC=00 
-    bt_store_16(acl_buffer, 0, channel->handle | (pb << 12) | (0 << 14));
+    little_endian_store_16(acl_buffer, 0, channel->handle | (pb << 12) | (0 << 14));
     // 2 - ACL length
-    bt_store_16(acl_buffer, 2,  len + 4);
+    little_endian_store_16(acl_buffer, 2,  len + 4);
     // 4 - L2CAP packet length
-    bt_store_16(acl_buffer, 4,  len + 0);
+    little_endian_store_16(acl_buffer, 4,  len + 0);
     // 6 - L2CAP channel DEST
-    bt_store_16(acl_buffer, 6, channel->remote_cid);    
+    little_endian_store_16(acl_buffer, 6, channel->remote_cid);    
     // send
     int err = hci_send_acl_packet_buffer(len+8);
     
@@ -389,13 +389,13 @@ int l2cap_send_prepared_connectionless(uint16_t handle, uint16_t cid, uint16_t l
     int pb = hci_non_flushable_packet_boundary_flag_supported() ? 0x00 : 0x02;
 
     // 0 - Connection handle : PB=pb : BC=00 
-    bt_store_16(acl_buffer, 0, handle | (pb << 12) | (0 << 14));
+    little_endian_store_16(acl_buffer, 0, handle | (pb << 12) | (0 << 14));
     // 2 - ACL length
-    bt_store_16(acl_buffer, 2,  len + 4);
+    little_endian_store_16(acl_buffer, 2,  len + 4);
     // 4 - L2CAP packet length
-    bt_store_16(acl_buffer, 4,  len + 0);
+    little_endian_store_16(acl_buffer, 4,  len + 0);
     // 6 - L2CAP channel DEST
-    bt_store_16(acl_buffer, 6, cid);    
+    little_endian_store_16(acl_buffer, 6, cid);    
     // send
     int err = hci_send_acl_packet_buffer(len+8);
     
@@ -599,7 +599,7 @@ static void l2cap_run(void){
                     } else if (channel->state_var & L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_MTU){
                         config_options[0] = 1; // MTU
                         config_options[1] = 2; // len param
-                        bt_store_16( (uint8_t*)&config_options, 2, channel->remote_mtu);
+                        little_endian_store_16( (uint8_t*)&config_options, 2, channel->remote_mtu);
                         l2cap_send_signaling_packet(channel->handle, CONFIGURE_RESPONSE, channel->remote_sig_id, channel->remote_cid, flags, 0, 4, &config_options);
                         channelStateVarClearFlag(channel,L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_MTU);
                     } else {
@@ -613,7 +613,7 @@ static void l2cap_run(void){
                     channel->local_sig_id = l2cap_next_sig_id();
                     config_options[0] = 1; // MTU
                     config_options[1] = 2; // len param
-                    bt_store_16( (uint8_t*)&config_options, 2, channel->local_mtu);
+                    little_endian_store_16( (uint8_t*)&config_options, 2, channel->local_mtu);
                     l2cap_send_signaling_packet(channel->handle, CONFIGURE_REQUEST, channel->local_sig_id, channel->remote_cid, 0, 4, &config_options);
                     l2cap_start_rtx(channel);
                 }
@@ -830,7 +830,7 @@ static void l2cap_event_handler(uint8_t *packet, uint16_t size){
         case HCI_EVENT_CONNECTION_COMPLETE:
             bt_flip_addr(address, &packet[5]);
             if (packet[2] == 0){
-                handle = READ_BT_16(packet, 3);
+                handle = little_endian_read_16(packet, 3);
                 l2cap_handle_connection_success_for_addr(address, handle);
             } else {
                 l2cap_handle_connection_failed_for_addr(address, packet[2]);
@@ -856,7 +856,7 @@ static void l2cap_event_handler(uint8_t *packet, uint16_t size){
         // handle disconnection complete events
         case HCI_EVENT_DISCONNECTION_COMPLETE:
             // send l2cap disconnect events for all channels on this handle and free them
-            handle = READ_BT_16(packet, 3);
+            handle = little_endian_read_16(packet, 3);
             btstack_linked_list_iterator_init(&it, &l2cap_channels);
             while (btstack_linked_list_iterator_has_next(&it)){
                 l2cap_channel_t * channel = (l2cap_channel_t *) btstack_linked_list_iterator_next(&it);
@@ -874,7 +874,7 @@ static void l2cap_event_handler(uint8_t *packet, uint16_t size){
             
         // HCI Connection Timeouts
         case L2CAP_EVENT_TIMEOUT_CHECK:
-            handle = READ_BT_16(packet, 2);
+            handle = little_endian_read_16(packet, 2);
             if (gap_get_connection_type(handle) != GAP_CONNECTION_ACL) break;
             if (hci_authentication_active_for_handle(handle)) break;
             hci_con_used = 0;
@@ -911,7 +911,7 @@ static void l2cap_event_handler(uint8_t *packet, uint16_t size){
             break;
 
         case HCI_EVENT_READ_REMOTE_SUPPORTED_FEATURES_COMPLETE:
-            handle = READ_BT_16(packet, 3);
+            handle = little_endian_read_16(packet, 3);
             btstack_linked_list_iterator_init(&it, &l2cap_channels);
             while (btstack_linked_list_iterator_has_next(&it)){
                 l2cap_channel_t * channel = (l2cap_channel_t *) btstack_linked_list_iterator_next(&it);
@@ -922,7 +922,7 @@ static void l2cap_event_handler(uint8_t *packet, uint16_t size){
             break;           
 
         case GAP_EVENT_SECURITY_LEVEL:
-            handle = READ_BT_16(packet, 2);
+            handle = little_endian_read_16(packet, 2);
             log_info("l2cap - security level update");
             btstack_linked_list_iterator_init(&it, &l2cap_channels);
             while (btstack_linked_list_iterator_has_next(&it)){
@@ -1082,13 +1082,13 @@ static void l2cap_signaling_handle_configure_request(l2cap_channel_t *channel, u
 
     channel->remote_sig_id = command[L2CAP_SIGNALING_COMMAND_SIGID_OFFSET];
 
-    uint16_t flags = READ_BT_16(command, 6);
+    uint16_t flags = little_endian_read_16(command, 6);
     if (flags & 1) {
         channelStateVarSetFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_CONT);
     }
 
     // accept the other's configuration options
-    uint16_t end_pos = 4 + READ_BT_16(command, L2CAP_SIGNALING_COMMAND_LENGTH_OFFSET);
+    uint16_t end_pos = 4 + little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_LENGTH_OFFSET);
     uint16_t pos     = 8;
     while (pos < end_pos){
         uint8_t option_hint = command[pos] >> 7;
@@ -1098,13 +1098,13 @@ static void l2cap_signaling_handle_configure_request(l2cap_channel_t *channel, u
         uint8_t length = command[pos++];
         // MTU { type(8): 1, len(8):2, MTU(16) }
         if (option_type == 1 && length == 2){
-            channel->remote_mtu = READ_BT_16(command, pos);
+            channel->remote_mtu = little_endian_read_16(command, pos);
             // log_info("l2cap cid 0x%02x, remote mtu %u", channel->local_cid, channel->remote_mtu);
             channelStateVarSetFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_MTU);
         }
         // Flush timeout { type(8):2, len(8): 2, Flush Timeout(16)}
         if (option_type == 2 && length == 2){
-            channel->flush_timeout = READ_BT_16(command, pos);
+            channel->flush_timeout = little_endian_read_16(command, pos);
         }
         // check for unknown options
         if (option_hint == 0 && (option_type == 0 || option_type >= 0x07)){
@@ -1157,11 +1157,11 @@ static void l2cap_signaling_handler_channel(l2cap_channel_t *channel, uint8_t *c
             switch (code){
                 case CONNECTION_RESPONSE:
                     l2cap_stop_rtx(channel);
-                    result = READ_BT_16 (command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET+4);
+                    result = little_endian_read_16 (command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET+4);
                     switch (result) {
                         case 0:
                             // successful connection
-                            channel->remote_cid = READ_BT_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET);
+                            channel->remote_cid = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET);
                             channel->state = L2CAP_STATE_CONFIG;
                             channelStateVarSetFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONF_REQ);
                             break;
@@ -1194,7 +1194,7 @@ static void l2cap_signaling_handler_channel(l2cap_channel_t *channel, uint8_t *c
             break;
 
         case L2CAP_STATE_CONFIG:
-            result = READ_BT_16 (command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET+4);
+            result = little_endian_read_16 (command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET+4);
             switch (code) {
                 case CONFIGURE_REQUEST:
                     channelStateVarSetFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP);
@@ -1270,8 +1270,8 @@ static void l2cap_signaling_handler_dispatch( hci_con_handle_t handle, uint8_t *
     switch(code) {
             
         case CONNECTION_REQUEST: {
-            uint16_t psm =        READ_BT_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET);
-            uint16_t source_cid = READ_BT_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET+2);
+            uint16_t psm =        little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET);
+            uint16_t source_cid = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET+2);
             l2cap_handle_connection_request(handle, sig_id, psm, source_cid);
             return;
         }
@@ -1281,7 +1281,7 @@ static void l2cap_signaling_handler_dispatch( hci_con_handle_t handle, uint8_t *
             return;
             
         case INFORMATION_REQUEST: {
-            uint16_t infoType = READ_BT_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET);
+            uint16_t infoType = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET);
             l2cap_register_signaling_response(handle, code, sig_id, infoType);
             return;
         }
@@ -1292,7 +1292,7 @@ static void l2cap_signaling_handler_dispatch( hci_con_handle_t handle, uint8_t *
     
     
     // Get potential destination CID
-    uint16_t dest_cid = READ_BT_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET);
+    uint16_t dest_cid = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET);
     
     // Find channel for this sig_id and connection handle
     btstack_linked_list_iterator_t it;    
@@ -1333,7 +1333,7 @@ static void l2cap_acl_handler( uint8_t *packet, uint16_t size ){
                 l2cap_signaling_handler_dispatch(handle, &packet[command_offset]);
                 
                 // increment command_offset
-                command_offset += L2CAP_SIGNALING_COMMAND_DATA_OFFSET + READ_BT_16(packet, command_offset + L2CAP_SIGNALING_COMMAND_LENGTH_OFFSET);
+                command_offset += L2CAP_SIGNALING_COMMAND_DATA_OFFSET + little_endian_read_16(packet, command_offset + L2CAP_SIGNALING_COMMAND_LENGTH_OFFSET);
             }
             break;
         }
@@ -1359,7 +1359,7 @@ static void l2cap_acl_handler( uint8_t *packet, uint16_t size ){
         case L2CAP_CID_SIGNALING_LE: {
             switch (packet[8]){
                 case CONNECTION_PARAMETER_UPDATE_RESPONSE: {
-                    uint16_t result = READ_BT_16(packet, 12);
+                    uint16_t result = little_endian_read_16(packet, 12);
                     l2cap_emit_connection_parameter_update_response(handle, result);
                     break;
                 }
@@ -1380,10 +1380,10 @@ static void l2cap_acl_handler( uint8_t *packet, uint16_t size ){
                         int update_parameter = 1;
                         le_connection_parameter_range_t existing_range;
                         gap_le_get_connection_parameter_range(existing_range);
-                        uint16_t le_conn_interval_min = READ_BT_16(packet,12);
-                        uint16_t le_conn_interval_max = READ_BT_16(packet,14);
-                        uint16_t le_conn_latency = READ_BT_16(packet,16);
-                        uint16_t le_supervision_timeout = READ_BT_16(packet,18);
+                        uint16_t le_conn_interval_min = little_endian_read_16(packet,12);
+                        uint16_t le_conn_interval_max = little_endian_read_16(packet,14);
+                        uint16_t le_conn_latency = little_endian_read_16(packet,16);
+                        uint16_t le_supervision_timeout = little_endian_read_16(packet,18);
 
                         if (le_conn_interval_min < existing_range.le_conn_interval_min) update_parameter = 0;
                         if (le_conn_interval_max > existing_range.le_conn_interval_max) update_parameter = 0;

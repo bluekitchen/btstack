@@ -113,8 +113,8 @@ static void notify_client_text(int event_type){
     uint8_t event[6 + sizeof(ancs_notification_buffer) + 1];
     event[0] = event_type;
     event[1] = 6 + ancs_attribute_len;
-    bt_store_16(event, 2, gc_handle);
-    bt_store_16(event, 4, ancs_attribute_id);
+    little_endian_store_16(event, 2, gc_handle);
+    little_endian_store_16(event, 4, ancs_attribute_id);
     memcpy(&event[6], ancs_notification_buffer, ancs_attribute_len);
     // we're nice
     event[6+ancs_attribute_len] = 0;
@@ -126,7 +126,7 @@ static void notify_client_simple(int event_type){
     uint8_t event[4];
     event[0] = event_type;
     event[1] = 2;
-    bt_store_16(event, 2, gc_handle);
+    little_endian_store_16(event, 2, gc_handle);
     (*client_handler)(HCI_EVENT_PACKET, event, sizeof(event));
 }
 
@@ -152,7 +152,7 @@ static void ancs_chunk_parser_handle_byte(uint8_t data){
             chunk_parser_state  = W4_ATTRIBUTE_LEN;
             break;
         case W4_ATTRIBUTE_LEN:
-            ancs_attribute_len  = READ_BT_16(ancs_notification_buffer, ancs_bytes_received-2);
+            ancs_attribute_len  = little_endian_read_16(ancs_notification_buffer, ancs_bytes_received-2);
             ancs_bytes_received = 0;
             ancs_bytes_needed   = ancs_attribute_len;
             if (ancs_attribute_len == 0) {
@@ -173,24 +173,24 @@ static void ancs_chunk_parser_handle_byte(uint8_t data){
 }
 
 static void extract_service(le_service_t * service, uint8_t * packet){
-    service->start_group_handle = READ_BT_16(packet, 4);
-    service->end_group_handle   = READ_BT_16(packet, 6);
+    service->start_group_handle = little_endian_read_16(packet, 4);
+    service->end_group_handle   = little_endian_read_16(packet, 6);
     service->uuid16 = 0;
     swap128(&packet[8], service->uuid128);
     if (sdp_has_blueooth_base_uuid(service->uuid128)){
-        service->uuid16 = READ_NET_32(service->uuid128, 0);
+        service->uuid16 = bit_endian_read_32(service->uuid128, 0);
     }
 }
 
 static void extract_characteristic(le_characteristic_t * characteristic, uint8_t * packet){
-    characteristic->start_handle = READ_BT_16(packet, 4);
-    characteristic->value_handle = READ_BT_16(packet, 6);
-    characteristic->end_handle =   READ_BT_16(packet, 8);
-    characteristic->properties =   READ_BT_16(packet, 10);
+    characteristic->start_handle = little_endian_read_16(packet, 4);
+    characteristic->value_handle = little_endian_read_16(packet, 6);
+    characteristic->end_handle =   little_endian_read_16(packet, 8);
+    characteristic->properties =   little_endian_read_16(packet, 10);
     characteristic->uuid16 = 0;
     swap128(&packet[12], characteristic->uuid128);
     if (sdp_has_blueooth_base_uuid(characteristic->uuid128)){
-        characteristic->uuid16 = READ_NET_32(characteristic->uuid128, 0);
+        characteristic->uuid16 = bit_endian_read_32(characteristic->uuid128, 0);
     }
 }
 
@@ -203,7 +203,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint8_t *packet, uint1
         case HCI_EVENT_LE_META:
             switch (packet[2]) {
                 case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
-                    gc_handle = READ_BT_16(packet, 4);
+                    gc_handle = little_endian_read_16(packet, 4);
                     printf("Connection handle 0x%04x, request encryption\n", gc_handle);
 
                     // we need to be paired to enable notifications
@@ -216,7 +216,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint8_t *packet, uint1
             return;
 
         case HCI_EVENT_ENCRYPTION_CHANGE: 
-            if (gc_handle != READ_BT_16(packet, 3)) return;
+            if (gc_handle != little_endian_read_16(packet, 3)) return;
             connection_encrypted = packet[5];
             log_info("Encryption state change: %u", connection_encrypted);
             if (!connection_encrypted) return;
@@ -322,8 +322,8 @@ static void handle_gatt_client_event(uint8_t packet_type, uint8_t *packet, uint1
         case TC_SUBSCRIBED:
             if (packet[0] != GATT_EVENT_NOTIFICATION && packet[0] != GATT_EVENT_INDICATION ) break;
 
-            value_handle = READ_BT_16(packet, 4);
-            value_length = READ_BT_16(packet, 6);
+            value_handle = little_endian_read_16(packet, 4);
+            value_length = little_endian_read_16(packet, 6);
             value = &packet[8];
 
             if (value_handle == ancs_data_source_characteristic.value_handle){
@@ -332,11 +332,11 @@ static void handle_gatt_client_event(uint8_t packet_type, uint8_t *packet, uint1
                     ancs_chunk_parser_handle_byte(value[i]);
                 }
             } else if (value_handle == ancs_notification_source_characteristic.value_handle){
-                ancs_notification_uid = READ_BT_32(value, 4);
+                ancs_notification_uid = little_endian_read_32(value, 4);
                 printf("Notification received: EventID %02x, EventFlags %02x, CategoryID %02x, CategoryCount %u, UID %04x\n",
                     value[0], value[1], value[2], value[3], (int) ancs_notification_uid);
                 static uint8_t get_notification_attributes[] = {0, 0,0,0,0,  0,  1,32,0,  2,32,0, 3,32,0, 4, 5};
-                bt_store_32(get_notification_attributes, 1, ancs_notification_uid);
+                little_endian_store_32(get_notification_attributes, 1, ancs_notification_uid);
                 ancs_notification_uid = 0;
                 ancs_chunk_parser_init();
                 gatt_client_write_value_of_characteristic(gc_id, gc_handle, ancs_control_point_characteristic.value_handle, 

@@ -138,7 +138,7 @@ static int h4_process(struct btstack_data_source *ds) {
                 packet_len = hci_packet_in[pos+2] + 3;
                 break;
             case HCI_ACL_DATA_PACKET:
-                 packet_len = READ_BT_16(hci_packet_in, pos + 3) + 5;
+                 packet_len = little_endian_read_16(hci_packet_in, pos + 3) + 5;
                  break;
             default:
                 log_error("h4_process: invalid packet type 0x%02x\n", hci_packet_in[pos]);

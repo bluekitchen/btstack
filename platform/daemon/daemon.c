@@ -207,7 +207,7 @@ static void l2cap_emit_credits(l2cap_channel_t *channel, uint8_t credits) {
     uint8_t event[5];
     event[0] = L2CAP_EVENT_CREDITS;
     event[1] = sizeof(event) - 2;
-    bt_store_16(event, 2, channel->local_cid);
+    little_endian_store_16(event, 2, channel->local_cid);
     event[4] = credits;
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
     l2cap_dispatch(channel, HCI_EVENT_PACKET, event, sizeof(event));
@@ -228,7 +228,7 @@ static void rfcomm_emit_credits(rfcomm_channel_t * channel, uint8_t credits) {
     uint8_t event[5];
     event[0] = RFCOMM_EVENT_CREDITS;
     event[1] = sizeof(event) - 2;
-    bt_store_16(event, 2, channel->rfcomm_cid);
+    little_endian_store_16(event, 2, channel->rfcomm_cid);
     event[4] = credits;
     hci_dump_packet(HCI_EVENT_PACKET, 0, event, sizeof(event));
     (*app_packet_handler)(HCI_EVENT_PACKET, 0, (uint8_t *) event, sizeof(event));
@@ -677,13 +677,13 @@ static void send_l2cap_connection_open_failed(connection_t * connection, bd_addr
     event[1] = sizeof(event) - 2;
     event[2] = status;
     bt_flip_addr(&event[3], address);
-    // bt_store_16(event,  9, channel->handle);
-    bt_store_16(event, 11, psm);
-    // bt_store_16(event, 13, channel->local_cid);
-    // bt_store_16(event, 15, channel->remote_cid);
-    // bt_store_16(event, 17, channel->local_mtu);
-    // bt_store_16(event, 19, channel->remote_mtu); 
-    // bt_store_16(event, 21, channel->flush_timeout); 
+    // little_endian_store_16(event,  9, channel->handle);
+    little_endian_store_16(event, 11, psm);
+    // little_endian_store_16(event, 13, channel->local_cid);
+    // little_endian_store_16(event, 15, channel->remote_cid);
+    // little_endian_store_16(event, 17, channel->local_mtu);
+    // little_endian_store_16(event, 19, channel->remote_mtu); 
+    // little_endian_store_16(event, 21, channel->flush_timeout); 
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
     socket_connection_send_packet(connection, HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
@@ -693,7 +693,7 @@ static void l2cap_emit_service_registered(void *connection, uint8_t status, uint
     event[0] = L2CAP_EVENT_SERVICE_REGISTERED;
     event[1] = sizeof(event) - 2;
     event[2] = status;
-    bt_store_16(event, 3, psm);
+    little_endian_store_16(event, 3, psm);
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
     socket_connection_send_packet(connection, HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
@@ -717,10 +717,10 @@ static void send_rfcomm_create_channel_failed(void * connection, bd_addr_t addr,
     event[pos++] = sizeof(event) - 2;
     event[pos++] = status;
     bt_flip_addr(&event[pos], addr); pos += 6;
-    bt_store_16(event,  pos, 0);   pos += 2;
+    little_endian_store_16(event,  pos, 0);   pos += 2;
     event[pos++] = server_channel;
-    bt_store_16(event, pos, 0); pos += 2;   // channel ID
-    bt_store_16(event, pos, 0); pos += 2;   // max frame size
+    little_endian_store_16(event, pos, 0); pos += 2;   // channel ID
+    little_endian_store_16(event, pos, 0); pos += 2;   // max frame size
     hci_dump_packet(HCI_EVENT_PACKET, 0, event, sizeof(event));
     socket_connection_send_packet(connection, HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
@@ -731,7 +731,7 @@ static void sdp_emit_service_registered(void *connection, uint32_t handle, uint8
     event[0] = SDP_EVENT_SERVICE_REGISTERED;
     event[1] = sizeof(event) - 2;
     event[2] = status;
-    bt_store_32(event, 3, handle);
+    little_endian_store_32(event, 3, handle);
     hci_dump_packet(HCI_EVENT_PACKET, 0, event, sizeof(event));
     socket_connection_send_packet(connection, HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
@@ -763,7 +763,7 @@ static void send_gatt_query_complete(connection_t * connection, uint16_t handle,
     uint8_t event[5];
     event[0] = GATT_EVENT_QUERY_COMPLETE;
     event[1] = 3;
-    bt_store_16(event, 2, handle);
+    little_endian_store_16(event, 2, handle);
     event[4] = status;
     hci_dump_packet(HCI_EVENT_PACKET, 0, event, sizeof(event));
     socket_connection_send_packet(connection, HCI_EVENT_PACKET, 0, event, sizeof(event));
@@ -774,16 +774,16 @@ static void send_gatt_mtu_event(connection_t * connection, uint16_t handle, uint
     int pos = 0;
     event[pos++] = GATT_EVENT_MTU;
     event[pos++] = sizeof(event) - 2;
-    bt_store_16(event, pos, handle);
+    little_endian_store_16(event, pos, handle);
     pos += 2;
-    bt_store_16(event, pos, mtu);
+    little_endian_store_16(event, pos, mtu);
     pos += 2;
     hci_dump_packet(HCI_EVENT_PACKET, 0, event, sizeof(event));
     socket_connection_send_packet(connection, HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
 btstack_linked_list_gatt_client_helper_t * daemon_setup_gatt_client_request(connection_t *connection, uint8_t *packet, int track_active_connection) {
-    hci_con_handle_t handle = READ_BT_16(packet, 3);    
+    hci_con_handle_t handle = little_endian_read_16(packet, 3);    
     log_info("daemon_setup_gatt_client_request for handle 0x%02x", handle);
     hci_connection_t * hci_con = hci_connection_for_handle(handle);
     if ((hci_con == NULL) || (hci_con->state != OPEN)){
@@ -820,41 +820,41 @@ btstack_linked_list_gatt_client_helper_t * daemon_setup_gatt_client_request(conn
 // (de)serialize structs from/to HCI commands/events
 
 void daemon_gatt_deserialize_service(uint8_t *packet, int offset, le_service_t *service){
-    service->start_group_handle = READ_BT_16(packet, offset);
-    service->end_group_handle = READ_BT_16(packet, offset + 2);
+    service->start_group_handle = little_endian_read_16(packet, offset);
+    service->end_group_handle = little_endian_read_16(packet, offset + 2);
     swap128(&packet[offset + 4], service->uuid128);
 }
 
 void daemon_gatt_serialize_service(le_service_t * service, uint8_t * event, int offset){
-    bt_store_16(event, offset, service->start_group_handle);
-    bt_store_16(event, offset+2, service->end_group_handle);
+    little_endian_store_16(event, offset, service->start_group_handle);
+    little_endian_store_16(event, offset+2, service->end_group_handle);
     swap128(service->uuid128, &event[offset + 4]);
 }
 
 void daemon_gatt_deserialize_characteristic(uint8_t * packet, int offset, le_characteristic_t * characteristic){
-    characteristic->start_handle = READ_BT_16(packet, offset);
-    characteristic->value_handle = READ_BT_16(packet, offset + 2);
-    characteristic->end_handle = READ_BT_16(packet, offset + 4);
-    characteristic->properties = READ_BT_16(packet, offset + 6);
-    characteristic->uuid16 = READ_BT_16(packet, offset + 8);
+    characteristic->start_handle = little_endian_read_16(packet, offset);
+    characteristic->value_handle = little_endian_read_16(packet, offset + 2);
+    characteristic->end_handle = little_endian_read_16(packet, offset + 4);
+    characteristic->properties = little_endian_read_16(packet, offset + 6);
+    characteristic->uuid16 = little_endian_read_16(packet, offset + 8);
     swap128(&packet[offset+10], characteristic->uuid128);
 }
 
 void daemon_gatt_serialize_characteristic(le_characteristic_t * characteristic, uint8_t * event, int offset){
-    bt_store_16(event, offset, characteristic->start_handle);
-    bt_store_16(event, offset+2, characteristic->value_handle);
-    bt_store_16(event, offset+4, characteristic->end_handle);
-    bt_store_16(event, offset+6, characteristic->properties);
+    little_endian_store_16(event, offset, characteristic->start_handle);
+    little_endian_store_16(event, offset+2, characteristic->value_handle);
+    little_endian_store_16(event, offset+4, characteristic->end_handle);
+    little_endian_store_16(event, offset+6, characteristic->properties);
     swap128(characteristic->uuid128, &event[offset+8]);
 }
 
 void daemon_gatt_deserialize_characteristic_descriptor(uint8_t * packet, int offset, le_characteristic_descriptor_t * descriptor){
-    descriptor->handle = READ_BT_16(packet, offset);
+    descriptor->handle = little_endian_read_16(packet, offset);
     swap128(&packet[offset+2], descriptor->uuid128);
 }
 
 void daemon_gatt_serialize_characteristic_descriptor(le_characteristic_descriptor_t * characteristic_descriptor, uint8_t * event, int offset){
-    bt_store_16(event, offset, characteristic_descriptor->handle);
+    little_endian_store_16(event, offset, characteristic_descriptor->handle);
     swap128(characteristic_descriptor->uuid128, &event[offset+2]);
 }
 
@@ -955,8 +955,8 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             break;
         case L2CAP_CREATE_CHANNEL_MTU:
             bt_flip_addr(addr, &packet[3]);
-            psm = READ_BT_16(packet, 9);
-            mtu = READ_BT_16(packet, 11);
+            psm = little_endian_read_16(packet, 9);
+            mtu = little_endian_read_16(packet, 11);
             status = l2cap_create_channel(NULL, addr, psm, mtu, &cid);
             if (status){
                 send_l2cap_connection_open_failed(connection, addr, psm, status);
@@ -966,7 +966,7 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             break;
         case L2CAP_CREATE_CHANNEL:
             bt_flip_addr(addr, &packet[3]);
-            psm = READ_BT_16(packet, 9);
+            psm = little_endian_read_16(packet, 9);
             mtu = 150; // until r865
             status = l2cap_create_channel(NULL, addr, psm, mtu, &cid);
             if (status){
@@ -976,28 +976,28 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             }
             break;
         case L2CAP_DISCONNECT:
-            cid = READ_BT_16(packet, 3);
+            cid = little_endian_read_16(packet, 3);
             reason = packet[5];
             l2cap_disconnect(cid, reason);
             break;
         case L2CAP_REGISTER_SERVICE:
-            psm = READ_BT_16(packet, 3);
-            mtu = READ_BT_16(packet, 5);
+            psm = little_endian_read_16(packet, 3);
+            mtu = little_endian_read_16(packet, 5);
             status = l2cap_register_service(NULL, psm, mtu, LEVEL_0);
-            daemon_add_client_l2cap_service(connection, READ_BT_16(packet, 3));
+            daemon_add_client_l2cap_service(connection, little_endian_read_16(packet, 3));
             l2cap_emit_service_registered(connection, status, psm);
             break;
         case L2CAP_UNREGISTER_SERVICE:
-            psm = READ_BT_16(packet, 3);
+            psm = little_endian_read_16(packet, 3);
             daemon_remove_client_l2cap_service(connection, psm);
             l2cap_unregister_service(psm);
             break;
         case L2CAP_ACCEPT_CONNECTION:
-            cid    = READ_BT_16(packet, 3);
+            cid    = little_endian_read_16(packet, 3);
             l2cap_accept_connection(cid);
             break;
         case L2CAP_DECLINE_CONNECTION:
-            cid    = READ_BT_16(packet, 3);
+            cid    = little_endian_read_16(packet, 3);
             reason = packet[7];
             l2cap_decline_connection(cid, reason);
             break;
@@ -1023,39 +1023,39 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             }
             break;
         case RFCOMM_DISCONNECT:
-            cid = READ_BT_16(packet, 3);
+            cid = little_endian_read_16(packet, 3);
             reason = packet[5];
             rfcomm_disconnect(cid);
             break;
         case RFCOMM_REGISTER_SERVICE:
             rfcomm_channel = packet[3];
-            mtu = READ_BT_16(packet, 4);
+            mtu = little_endian_read_16(packet, 4);
             status = rfcomm_register_service(rfcomm_channel, mtu);
             rfcomm_emit_service_registered(connection, status, rfcomm_channel);
             break;
         case RFCOMM_REGISTER_SERVICE_WITH_CREDITS:
             rfcomm_channel = packet[3];
-            mtu = READ_BT_16(packet, 4);
+            mtu = little_endian_read_16(packet, 4);
             rfcomm_credits = packet[6];
             status = rfcomm_register_service_with_initial_credits(rfcomm_channel, mtu, rfcomm_credits);
             rfcomm_emit_service_registered(connection, status, rfcomm_channel);
             break;
         case RFCOMM_UNREGISTER_SERVICE:
-            service_channel = READ_BT_16(packet, 3);
+            service_channel = little_endian_read_16(packet, 3);
             daemon_remove_client_rfcomm_service(connection, service_channel);
             rfcomm_unregister_service(service_channel);
             break;
         case RFCOMM_ACCEPT_CONNECTION:
-            cid    = READ_BT_16(packet, 3);
+            cid    = little_endian_read_16(packet, 3);
             rfcomm_accept_connection(cid);
             break;
         case RFCOMM_DECLINE_CONNECTION:
-            cid    = READ_BT_16(packet, 3);
+            cid    = little_endian_read_16(packet, 3);
             reason = packet[7];
             rfcomm_decline_connection(cid);
             break;            
         case RFCOMM_GRANT_CREDITS:
-            cid    = READ_BT_16(packet, 3);
+            cid    = little_endian_read_16(packet, 3);
             rfcomm_credits = packet[5];
             rfcomm_grant_credits(cid, rfcomm_credits);
             break;
@@ -1084,7 +1084,7 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             }
             break;
         case SDP_UNREGISTER_SERVICE_RECORD:
-            service_record_handle = READ_BT_32(packet, 3);
+            service_record_handle = little_endian_read_32(packet, 3);
             log_info("SDP_UNREGISTER_SERVICE_RECORD handle 0x%x ", service_record_handle);
             data = sdp_get_record_for_handle(service_record_handle);
             sdp_unregister_service(service_record_handle);
@@ -1126,7 +1126,7 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             le_central_stop_scan();
             break;
         case GAP_LE_SET_SCAN_PARAMETERS:
-            le_central_set_scan_parameters(packet[3], READ_BT_16(packet, 4), READ_BT_16(packet, 6));
+            le_central_set_scan_parameters(packet[3], little_endian_read_16(packet, 4), little_endian_read_16(packet, 6));
             break;
         case GAP_LE_CONNECT:
             bt_flip_addr(addr, &packet[4]);
@@ -1137,7 +1137,7 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             le_central_connect_cancel();
             break;
         case GAP_DISCONNECT:
-            handle = READ_BT_16(packet, 3);
+            handle = little_endian_read_16(packet, 3);
             gap_disconnect(handle);
             break;
 #if defined(HAVE_MALLOC) && defined(ENABLE_BLE)
@@ -1149,7 +1149,7 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
         case GATT_DISCOVER_PRIMARY_SERVICES_BY_UUID16:
             gatt_helper = daemon_setup_gatt_client_request(connection, packet, 1);
             if (!gatt_helper) break;
-            gatt_client_discover_primary_services_by_uuid16(gatt_client_id, gatt_helper->con_handle, READ_BT_16(packet, 5));
+            gatt_client_discover_primary_services_by_uuid16(gatt_client_id, gatt_helper->con_handle, little_endian_read_16(packet, 5));
             break;
         case GATT_DISCOVER_PRIMARY_SERVICES_BY_UUID128:
             gatt_helper = daemon_setup_gatt_client_request(connection, packet, 1);
@@ -1201,7 +1201,7 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             gatt_helper = daemon_setup_gatt_client_request(connection, packet, 0);  // note: don't track active connection
             if (!gatt_helper) break;
             daemon_gatt_deserialize_characteristic(packet, 5, &characteristic);
-            data_length = READ_BT_16(packet, 5 + CHARACTERISTIC_LENGTH);
+            data_length = little_endian_read_16(packet, 5 + CHARACTERISTIC_LENGTH);
             data = gatt_helper->characteristic_buffer;
             memcpy(data, &packet[7 + CHARACTERISTIC_LENGTH], data_length);
             gatt_client_write_value_of_characteristic_without_response(gatt_client_id, gatt_helper->con_handle, characteristic.value_handle, data_length, data);
@@ -1210,7 +1210,7 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             gatt_helper = daemon_setup_gatt_client_request(connection, packet, 1);
             if (!gatt_helper) break;
             daemon_gatt_deserialize_characteristic(packet, 5, &characteristic);
-            data_length = READ_BT_16(packet, 5 + CHARACTERISTIC_LENGTH);
+            data_length = little_endian_read_16(packet, 5 + CHARACTERISTIC_LENGTH);
             data = gatt_helper->characteristic_buffer;
             memcpy(data, &packet[7 + CHARACTERISTIC_LENGTH], data_length);
             gatt_client_write_value_of_characteristic(gatt_client_id, gatt_helper->con_handle, characteristic.value_handle, data_length, data);
@@ -1219,7 +1219,7 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             gatt_helper = daemon_setup_gatt_client_request(connection, packet, 1);
             if (!gatt_helper) break;
             daemon_gatt_deserialize_characteristic(packet, 5, &characteristic);
-            data_length = READ_BT_16(packet, 5 + CHARACTERISTIC_LENGTH);
+            data_length = little_endian_read_16(packet, 5 + CHARACTERISTIC_LENGTH);
             data = gatt_helper->characteristic_buffer;
             memcpy(data, &packet[7 + CHARACTERISTIC_LENGTH], data_length);
             gatt_client_write_long_value_of_characteristic(gatt_client_id, gatt_helper->con_handle, characteristic.value_handle, data_length, data);
@@ -1228,7 +1228,7 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             gatt_helper = daemon_setup_gatt_client_request(connection, packet, 1);
             if (!gatt_helper) break;
             daemon_gatt_deserialize_characteristic(packet, 5, &characteristic);
-            data_length = READ_BT_16(packet, 5 + CHARACTERISTIC_LENGTH);
+            data_length = little_endian_read_16(packet, 5 + CHARACTERISTIC_LENGTH);
             data = gatt_helper->characteristic_buffer;
             memcpy(data, &packet[7 + CHARACTERISTIC_LENGTH], data_length);
             gatt_client_write_long_value_of_characteristic(gatt_client_id, gatt_helper->con_handle, characteristic.value_handle, data_length, data);
@@ -1236,7 +1236,7 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
         case GATT_READ_CHARACTERISTIC_DESCRIPTOR:
             gatt_helper = daemon_setup_gatt_client_request(connection, packet, 1);
             if (!gatt_helper) break;
-            handle = READ_BT_16(packet, 3);
+            handle = little_endian_read_16(packet, 3);
             daemon_gatt_deserialize_characteristic_descriptor(packet, 5, &descriptor);
             gatt_client_read_characteristic_descriptor(gatt_client_id, gatt_helper->con_handle, &descriptor);
             break;
@@ -1252,7 +1252,7 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             if (!gatt_helper) break;
             daemon_gatt_deserialize_characteristic_descriptor(packet, 5, &descriptor);
             data = gatt_helper->characteristic_buffer;
-            data_length = READ_BT_16(packet, 5 + CHARACTERISTIC_DESCRIPTOR_LENGTH);
+            data_length = little_endian_read_16(packet, 5 + CHARACTERISTIC_DESCRIPTOR_LENGTH);
             gatt_client_write_characteristic_descriptor(gatt_client_id, gatt_helper->con_handle, &descriptor, data_length, data);
             break;
         case GATT_WRITE_LONG_CHARACTERISTIC_DESCRIPTOR:
@@ -1260,11 +1260,11 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             if (!gatt_helper) break;
             daemon_gatt_deserialize_characteristic_descriptor(packet, 5, &descriptor);
             data = gatt_helper->characteristic_buffer;
-            data_length = READ_BT_16(packet, 5 + CHARACTERISTIC_DESCRIPTOR_LENGTH);
+            data_length = little_endian_read_16(packet, 5 + CHARACTERISTIC_DESCRIPTOR_LENGTH);
             gatt_client_write_long_characteristic_descriptor(gatt_client_id, gatt_helper->con_handle, &descriptor, data_length, data);
             break;
         case GATT_WRITE_CLIENT_CHARACTERISTIC_CONFIGURATION:{
-            uint16_t configuration = READ_BT_16(packet, 5 + CHARACTERISTIC_LENGTH);
+            uint16_t configuration = little_endian_read_16(packet, 5 + CHARACTERISTIC_LENGTH);
             gatt_helper = daemon_setup_gatt_client_request(connection, packet, 1);
             if (!gatt_helper) break;
             data = gatt_helper->characteristic_buffer;
@@ -1272,7 +1272,7 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             gatt_client_write_client_characteristic_configuration(gatt_client_id, gatt_helper->con_handle, &characteristic, configuration);
             break;
         case GATT_GET_MTU:
-            handle = READ_BT_16(packet, 3);
+            handle = little_endian_read_16(packet, 3);
             gatt_client_get_mtu(handle, &mtu);
             send_gatt_mtu_event(connection, handle, mtu);
             break;
@@ -1494,7 +1494,7 @@ static void daemon_packet_handler(void * connection, uint8_t packet_type, uint16
                     daemon_retry_parked();
                     break;
                  case RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE:
-                    cid = READ_BT_16(packet, 13);
+                    cid = little_endian_read_16(packet, 13);
                     connection = connection_for_rfcomm_cid(cid);
                     if (!connection) break;
                     if (packet[2]) {
@@ -1504,7 +1504,7 @@ static void daemon_packet_handler(void * connection, uint8_t packet_type, uint16
                     }
                     break;
                 case RFCOMM_EVENT_CHANNEL_CLOSED:
-                    cid = READ_BT_16(packet, 2);
+                    cid = little_endian_read_16(packet, 2);
                     connection = connection_for_rfcomm_cid(cid);
                     if (!connection) break;
                     daemon_remove_client_rfcomm_channel(connection, cid);
@@ -1514,7 +1514,7 @@ static void daemon_packet_handler(void * connection, uint8_t packet_type, uint16
                     daemon_add_client_rfcomm_service(connection, packet[3]);
                     break;
                 case L2CAP_EVENT_CHANNEL_OPENED:
-                    cid = READ_BT_16(packet, 13);
+                    cid = little_endian_read_16(packet, 13);
                     connection = connection_for_l2cap_cid(cid);
                     if (!connection) break;
                     if (packet[2]) {
@@ -1524,7 +1524,7 @@ static void daemon_packet_handler(void * connection, uint8_t packet_type, uint16
                     }
                     break;
                 case L2CAP_EVENT_CHANNEL_CLOSED:
-                    cid = READ_BT_16(packet, 2);
+                    cid = little_endian_read_16(packet, 2);
                     connection = connection_for_l2cap_cid(cid);
                     if (!connection) break;
                     daemon_remove_client_l2cap_channel(connection, cid);
@@ -1533,7 +1533,7 @@ static void daemon_packet_handler(void * connection, uint8_t packet_type, uint16
                 case HCI_EVENT_DISCONNECTION_COMPLETE:
                     log_info("daemon : ignore HCI_EVENT_DISCONNECTION_COMPLETE ingnoring.");
                     // note: moved to gatt_client_handler because it's received here prematurely
-                    // daemon_remove_gatt_client_helper(READ_BT_16(packet, 3));
+                    // daemon_remove_gatt_client_helper(little_endian_read_16(packet, 3));
                     break;
 #endif
                 default:
@@ -1606,9 +1606,9 @@ static void handle_sdp_client_query_result(uint8_t packet_type, uint8_t *packet,
                 int event_len = 1 + 3 * 2 + sdp_query_attribute_byte_event_get_attribute_length(packet); 
                 uint8_t event[event_len];
                 event[0] = SDP_EVENT_QUERY_ATTRIBUTE_VALUE;
-                bt_store_16(event, 1, sdp_query_attribute_byte_event_get_record_id(packet));
-                bt_store_16(event, 3, sdp_query_attribute_byte_event_get_attribute_id(packet));
-                bt_store_16(event, 5, (uint16_t)sdp_query_attribute_byte_event_get_attribute_length(packet));
+                little_endian_store_16(event, 1, sdp_query_attribute_byte_event_get_record_id(packet));
+                little_endian_store_16(event, 3, sdp_query_attribute_byte_event_get_attribute_id(packet));
+                little_endian_store_16(event, 5, (uint16_t)sdp_query_attribute_byte_event_get_attribute_length(packet));
                 memcpy(&event[7], attribute_value, sdp_query_attribute_byte_event_get_attribute_length(packet));
                 hci_dump_packet(SDP_CLIENT_PACKET, 0, event, event_len);
                 socket_connection_send_packet(sdp_client_query_connection, SDP_CLIENT_PACKET, 0, event, event_len);
@@ -1752,7 +1752,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint8_t * packet, uint
     // we receive a HCI event packet in disguise
     if (packet[0] == HCI_EVENT_DISCONNECTION_COMPLETE){
         log_info("daemon hack: handle disconnection_complete in handle_gatt_client_event instead of main hci event packet handler");
-        uint16_t handle = READ_BT_16(packet, 3);
+        uint16_t handle = little_endian_read_16(packet, 3);
         daemon_remove_gatt_client_helper(handle);
         return;
     }
@@ -1775,7 +1775,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint8_t * packet, uint
             return;
     }
 
-    uint16_t con_handle = READ_BT_16(packet, 2);
+    uint16_t con_handle = little_endian_read_16(packet, 2);
     btstack_linked_list_gatt_client_helper_t * gatt_client_helper = daemon_get_gatt_client_helper(con_handle);
     if (!gatt_client_helper){
         log_info("daemon handle_gatt_client_event: gc helper for handle 0x%2x is NULL.", con_handle);
@@ -1822,10 +1822,10 @@ static void handle_gatt_client_event(uint8_t packet_type, uint8_t * packet, uint
             
         case GATT_EVENT_LONG_CHARACTERISTIC_VALUE_QUERY_RESULT:
         case GATT_EVENT_LONG_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT:
-            offset = READ_BT_16(packet, 6);
-            length = READ_BT_16(packet, 8);
+            offset = little_endian_read_16(packet, 6);
+            length = little_endian_read_16(packet, 8);
             gatt_client_helper->characteristic_buffer[0] = packet[0];               // store type (characteristic/descriptor)
-            gatt_client_helper->characteristic_handle    = READ_BT_16(packet, 4);   // store attribute handle
+            gatt_client_helper->characteristic_handle    = little_endian_read_16(packet, 4);   // store attribute handle
             gatt_client_helper->characteristic_length = offset + length;            // update length
             memcpy(&gatt_client_helper->characteristic_buffer[10 + offset], &packet[10], length);
             break;
@@ -1838,10 +1838,10 @@ static void handle_gatt_client_event(uint8_t packet_type, uint8_t * packet, uint
                 uint16_t event_size = 10 + gatt_client_helper->characteristic_length;
                 // event[0] == already set by previsous case
                 event[1] = 8 + gatt_client_helper->characteristic_length;
-                bt_store_16(event, 2, READ_BT_16(packet, 2));
-                bt_store_16(event, 4, gatt_client_helper->characteristic_handle);
-                bt_store_16(event, 6, 0);   // offset
-                bt_store_16(event, 8, gatt_client_helper->characteristic_length);
+                little_endian_store_16(event, 2, little_endian_read_16(packet, 2));
+                little_endian_store_16(event, 4, gatt_client_helper->characteristic_handle);
+                little_endian_store_16(event, 6, 0);   // offset
+                little_endian_store_16(event, 8, gatt_client_helper->characteristic_length);
                 hci_dump_packet(HCI_EVENT_PACKET, 0, event, event_size);
                 socket_connection_send_packet(connection, HCI_EVENT_PACKET, 0, event, event_size);
                 gatt_client_helper->characteristic_length = 0;

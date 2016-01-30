@@ -62,7 +62,7 @@ static void try_send_sco(void){
     hci_reserve_packet_buffer();
     uint8_t * sco_packet = hci_get_outgoing_packet_buffer();
     // set handle + flags
-    bt_store_16(sco_packet, 0, sco_handle);
+    little_endian_store_16(sco_packet, 0, sco_handle);
     // set len
     sco_packet[2] = frames_per_packet;
     int i;
@@ -81,7 +81,7 @@ static void packet_handler(uint8_t packet_type, uint8_t * packet, uint16_t event
             break;
         case HCI_EVENT_CONNECTION_COMPLETE:
             if (packet[11]) break;
-            sco_handle = READ_BT_16(packet, 3);
+            sco_handle = little_endian_read_16(packet, 3);
             printf("SCO handle 0x%04x\n", sco_handle);
             try_send_sco();
             break;

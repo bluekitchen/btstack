@@ -133,7 +133,7 @@ void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet,
                     break;
 
                 case SM_EVENT_PASSKEY_DISPLAY_NUMBER:
-                    printf("\nGAP Bonding: Display Passkey '%06u\n", READ_BT_32(packet, 11));
+                    printf("\nGAP Bonding: Display Passkey '%06u\n", little_endian_read_32(packet, 11));
                     break;
 
                 case SM_EVENT_PASSKEY_DISPLAY_CANCEL: 
@@ -142,13 +142,13 @@ void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet,
 
                 case SM_EVENT_JUST_WORKS_REQUEST:
                     // auto-authorize connection if requested
-                    sm_just_works_confirm(READ_BT_16(packet, 2));
+                    sm_just_works_confirm(little_endian_read_16(packet, 2));
                     printf("Just Works request confirmed\n");
                     break;
 
                 case SM_EVENT_AUTHORIZATION_REQUEST:
                     // auto-authorize connection if requested
-                    sm_authorization_grant(READ_BT_16(packet, 2));
+                    sm_authorization_grant(little_endian_read_16(packet, 2));
                     break;
 
                 default:

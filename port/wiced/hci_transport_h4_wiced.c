@@ -140,7 +140,7 @@ static wiced_result_t h4_rx_worker_receive_packet(void * arg){
                 break;
             case HCI_ACL_DATA_PACKET:
                 h4_rx_worker_receive_bytes(HCI_ACL_HEADER_SIZE);
-                h4_rx_worker_receive_bytes(READ_BT_16( hci_packet, 3));
+                h4_rx_worker_receive_bytes(little_endian_read_16( hci_packet, 3));
                 break;
             case HCI_SCO_DATA_PACKET:
                 h4_rx_worker_receive_bytes(HCI_SCO_HEADER_SIZE);

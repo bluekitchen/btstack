@@ -69,12 +69,12 @@ Extended Inquiry Result (EIR). A code snippet is shown in Listing
             bt_flip_addr(addr, &packet[3+i*6]);
             pageScanRepetitionMode = packet [3 + numResponses*6 + i];
             if (event == HCI_EVENT_INQUIRY_RESULT){
-                classOfDevice = READ_BT_24(packet, 3 + numResponses*(6+1+1+1) + i*3);
-                clockOffset =   READ_BT_16(packet, 3 + numResponses*(6+1+1+1+3) + i*2) & 0x7fff;
+                classOfDevice = little_endian_read_24(packet, 3 + numResponses*(6+1+1+1) + i*3);
+                clockOffset =   little_endian_read_16(packet, 3 + numResponses*(6+1+1+1+3) + i*2) & 0x7fff;
                 rssi  = 0;
             } else {
-                classOfDevice = READ_BT_24(packet, 3 + numResponses*(6+1+1)     + i*3);
-                clockOffset =   READ_BT_16(packet, 3 + numResponses*(6+1+1+3)   + i*2) & 0x7fff;
+                classOfDevice = little_endian_read_24(packet, 3 + numResponses*(6+1+1)     + i*3);
+                clockOffset =   little_endian_read_16(packet, 3 + numResponses*(6+1+1+3)   + i*2) & 0x7fff;
                 rssi  = packet [3 + numResponses*(6+1+1+3+2) + i*1];
             }
             printf("Device found: %s with COD: 0x%06x, pageScan %u, clock offset 0x%04x, rssi 0x%02x\n", bd_addr_to_str(addr), classOfDevice, pageScanRepetitionMode, clockOffset, rssi);

@@ -73,7 +73,7 @@ static void chipset_set_baudrate_command(uint32_t baudrate, uint8_t *hci_cmd_buf
     hci_cmd_buffer[2] = 0x06;
     hci_cmd_buffer[3] = 0x00;
     hci_cmd_buffer[4] = 0x00;
-    bt_store_32(hci_cmd_buffer, 5, baudrate);
+    little_endian_store_32(hci_cmd_buffer, 5, baudrate);
 }
 
 // @note: bd addr has to be set after sending init script (it might just get re-set)

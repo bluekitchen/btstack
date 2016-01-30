@@ -205,7 +205,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 
                 case HCI_EVENT_USER_CONFIRMATION_REQUEST:
                     // ssp: inform about user confirmation request
-                    printf("SSP User Confirmation Request with numeric value '%06"PRIu32"'\n", READ_BT_32(packet, 8));
+                    printf("SSP User Confirmation Request with numeric value '%06"PRIu32"'\n", little_endian_read_32(packet, 8));
                     printf("SSP User Confirmation Auto accept\n");
                     break;
 
@@ -213,7 +213,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     // data: event (8), len(8), address(48), channel (8), rfcomm_cid (16)
                     bt_flip_addr(event_addr, &packet[2]); 
                     rfcomm_channel_nr = packet[8];
-                    rfcomm_channel_id = READ_BT_16(packet, 9);
+                    rfcomm_channel_id = little_endian_read_16(packet, 9);
                     printf("RFCOMM channel %u requested for %s\n", rfcomm_channel_nr, bd_addr_to_str(event_addr));
                     rfcomm_accept_connection(rfcomm_channel_id);
                     break;
@@ -223,8 +223,8 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     if (packet[2]) {
                         printf("RFCOMM channel open failed, status %u\n", packet[2]);
                     } else {
-                        rfcomm_channel_id = READ_BT_16(packet, 12);
-                        mtu = READ_BT_16(packet, 14);
+                        rfcomm_channel_id = little_endian_read_16(packet, 12);
+                        mtu = little_endian_read_16(packet, 14);
                         printf("RFCOMM channel open succeeded. New RFCOMM Channel ID %u, max frame size %u\n", rfcomm_channel_id, mtu);
                     }
                     break;

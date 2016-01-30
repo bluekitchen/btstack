@@ -180,7 +180,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     switch (packet[2]) {
                         case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
                             test_data_len = ATT_DEFAULT_MTU - 3;
-                            conn_handle = READ_BT_16(packet, 4);
+                            conn_handle = little_endian_read_16(packet, 4);
                             // min con interval 20 ms 
                             // gap_request_connection_parameter_update(conn_handle, 0x10, 0x18, 0, 0x0048);
                             // printf("Connected, requesting conn param update for handle 0x%04x\n", conn_handle);
@@ -188,7 +188,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     }
                     break;  
                 case ATT_EVENT_MTU_EXCHANGE_COMPLETE:
-                    mtu = READ_BT_16(packet, 4) - 3;
+                    mtu = little_endian_read_16(packet, 4) - 3;
                     printf("ATT MTU = %u\n", mtu);
                     test_data_len = mtu - 3;
                     break;
@@ -239,7 +239,7 @@ static void streamer(void){
 /* LISTING_START(attWrite): ATT Write */
 static int att_write_callback(uint16_t con_handle, uint16_t att_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size){
     if (att_handle != ATT_CHARACTERISTIC_0000FF11_0000_1000_8000_00805F9B34FB_01_CLIENT_CONFIGURATION_HANDLE) return 0;
-    le_notification_enabled = READ_BT_16(buffer, 0) == GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION;
+    le_notification_enabled = little_endian_read_16(buffer, 0) == GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION;
     test_reset();
     return 0;
 }

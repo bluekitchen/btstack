@@ -339,7 +339,7 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                 case HCI_EVENT_LE_META:
                     switch (packet[2]) {
                         case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
-                            handle = READ_BT_16(packet, 4);
+                            handle = little_endian_read_16(packet, 4);
                             printf("Connection complete, handle 0x%04x\n", handle);
                             break;
 
@@ -349,7 +349,7 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                     break;
 
                 case HCI_EVENT_DISCONNECTION_COMPLETE:
-                    aHandle = READ_BT_16(packet, 3);
+                    aHandle = little_endian_read_16(packet, 3);
                     printf("Disconnected from handle 0x%04x\n", aHandle);
                     break;
                     
@@ -362,7 +362,7 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                     break;
 
                 case SM_EVENT_PASSKEY_DISPLAY_NUMBER:
-                    printf("\nGAP Bonding: Display Passkey '%06u\n", READ_BT_32(packet, 11));
+                    printf("\nGAP Bonding: Display Passkey '%06u\n", little_endian_read_32(packet, 11));
                     break;
 
                 case SM_EVENT_PASSKEY_DISPLAY_CANCEL: 
@@ -371,13 +371,13 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
 
                 case SM_EVENT_JUST_WORKS_REQUEST:
                     // auto-authorize connection if requested
-                    sm_just_works_confirm(READ_BT_16(packet, 2));
+                    sm_just_works_confirm(little_endian_read_16(packet, 2));
                     printf("Just Works request confirmed\n");
                     break;
 
                 case SM_EVENT_AUTHORIZATION_REQUEST:
                     // auto-authorize connection if requested
-                    sm_authorization_grant(READ_BT_16(packet, 2));
+                    sm_authorization_grant(little_endian_read_16(packet, 2));
                     break;
 
                 case GAP_LE_EVENT_ADVERTISING_REPORT:
@@ -390,7 +390,7 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                     if (memcmp(event_address, current_pts_address, 6) == 0) break;
                     memcpy(current_pts_address, event_address, 6);
                     current_pts_address_type =  packet[4];
-                    le_device_db_index       =  READ_BT_16(packet, 11);
+                    le_device_db_index       =  little_endian_read_16(packet, 11);
                     printf("Address resolving succeeded: resolvable address %s, addr type %u\n",
                         bd_addr_to_str(current_pts_address), current_pts_address_type);
                     break;
@@ -407,24 +407,24 @@ static void use_public_pts_address(void){
 }
 
 static void extract_service(le_service_t * aService, uint8_t * data){
-    aService->start_group_handle = READ_BT_16(data, 0);
-    aService->end_group_handle   = READ_BT_16(data, 2);
+    aService->start_group_handle = little_endian_read_16(data, 0);
+    aService->end_group_handle   = little_endian_read_16(data, 2);
     aService->uuid16 = 0;
     swap128(&data[4], aService->uuid128);
     if (sdp_has_blueooth_base_uuid(aService->uuid128)){
-        aService->uuid16 = READ_NET_32(aService->uuid128, 0);
+        aService->uuid16 = bit_endian_read_32(aService->uuid128, 0);
     }
 }
 
 static void extract_characteristic(le_characteristic_t * characteristic, uint8_t * packet){
-    characteristic->start_handle = READ_BT_16(packet, 4);
-    characteristic->value_handle = READ_BT_16(packet, 6);
-    characteristic->end_handle =   READ_BT_16(packet, 8);
-    characteristic->properties =   READ_BT_16(packet, 10);
+    characteristic->start_handle = little_endian_read_16(packet, 4);
+    characteristic->value_handle = little_endian_read_16(packet, 6);
+    characteristic->end_handle =   little_endian_read_16(packet, 8);
+    characteristic->properties =   little_endian_read_16(packet, 10);
     characteristic->uuid16 = 0;
     swap128(&packet[12], characteristic->uuid128);
     if (sdp_has_blueooth_base_uuid(characteristic->uuid128)){
-        characteristic->uuid16 = READ_NET_32(characteristic->uuid128, 0);
+        characteristic->uuid16 = bit_endian_read_32(characteristic->uuid128, 0);
     }
 }
 
@@ -461,7 +461,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint8_t *packet, uint1
                 }
             break;
         case GATT_EVENT_INCLUDED_SERVICE_QUERY_RESULT:
-            value_handle = READ_BT_16(packet, 4);
+            value_handle = little_endian_read_16(packet, 4);
             extract_service(&service, &packet[6]);
             printf("Included Service at 0x%004x: ", value_handle);
             printf("start group handle 0x%04x, end group handle 0x%04x with UUID ", service.start_group_handle, service.end_group_handle);
@@ -510,11 +510,11 @@ static void handle_gatt_client_event(uint8_t packet_type, uint8_t *packet, uint1
             }
             break;
         case GATT_EVENT_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY_RESULT: {
-            uint16_t descriptor_handle = READ_BT_16(packet, 4);
+            uint16_t descriptor_handle = little_endian_read_16(packet, 4);
             uint8_t uuid128[16];
             swap128(&packet[6], uuid128);
             if (sdp_has_blueooth_base_uuid(uuid128)){
-                printf("Characteristic descriptor at 0x%04x with UUID %04x\n", descriptor_handle, READ_NET_32(uuid128, 0));
+                printf("Characteristic descriptor at 0x%04x with UUID %04x\n", descriptor_handle, bit_endian_read_32(uuid128, 0));
             } else {
                 printf("Characteristic descriptor at 0x%04x with UUID ", descriptor_handle);
                 printUUID128(uuid128);
@@ -523,8 +523,8 @@ static void handle_gatt_client_event(uint8_t packet_type, uint8_t *packet, uint1
             break;
         }
         case GATT_EVENT_CHARACTERISTIC_VALUE_QUERY_RESULT:
-            value_handle = READ_BT_16(packet, 4);
-            value_length = READ_BT_16(packet, 6);
+            value_handle = little_endian_read_16(packet, 4);
+            value_length = little_endian_read_16(packet, 6);
             value = &packet[8];
             switch (central_state){
                 case CENTRAL_W4_NAME_VALUE:
@@ -540,20 +540,20 @@ static void handle_gatt_client_event(uint8_t packet_type, uint8_t *packet, uint1
                 case CENTRAL_GPA_W4_RESPONSE:
                     switch (ui_uuid16){
                         case GATT_PRIMARY_SERVICE_UUID:
-                            printf ("Attribute handle 0x%04x, primary service 0x%04x\n", value_handle, READ_BT_16(value,0));
+                            printf ("Attribute handle 0x%04x, primary service 0x%04x\n", value_handle, little_endian_read_16(value,0));
                             break;
                         case GATT_SECONDARY_SERVICE_UUID:
-                            printf ("Attribute handle 0x%04x, secondary service 0x%04x\n", value_handle, READ_BT_16(value,0));
+                            printf ("Attribute handle 0x%04x, secondary service 0x%04x\n", value_handle, little_endian_read_16(value,0));
                             break;
                         case GATT_INCLUDE_SERVICE_UUID:
                             printf ("Attribute handle 0x%04x, included service attribute handle 0x%04x, end group handle 0x%04x, uuid %04x\n",
-                             value_handle, READ_BT_16(value,0), READ_BT_16(value,2), READ_BT_16(value,4));
+                             value_handle, little_endian_read_16(value,0), little_endian_read_16(value,2), little_endian_read_16(value,4));
                             break;
                         case GATT_CHARACTERISTICS_UUID:
                             printf ("Attribute handle 0x%04x, properties 0x%02x, value handle 0x%04x, uuid ",
-                             value_handle, value[0], READ_BT_16(value,1));
+                             value_handle, value[0], little_endian_read_16(value,1));
                             if (value_length < 19){
-                                printf("%04x\n", READ_BT_16(value, 3));
+                                printf("%04x\n", little_endian_read_16(value, 3));
                             } else {
                                 uint8_t uuid128[16];
                                 swap128(&value[3], uuid128);
@@ -562,7 +562,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint8_t *packet, uint1
                             }
                             break;
                         case GATT_CHARACTERISTIC_EXTENDED_PROPERTIES:
-                            printf ("Attribute handle 0x%04x, gatt characteristic properties 0x%04x\n", value_handle, READ_BT_16(value,0));
+                            printf ("Attribute handle 0x%04x, gatt characteristic properties 0x%04x\n", value_handle, little_endian_read_16(value,0));
                             break;
                         case GATT_CHARACTERISTIC_USER_DESCRIPTION:
                             // go the value, but PTS 6.3 requires another request
@@ -570,13 +570,13 @@ static void handle_gatt_client_event(uint8_t packet_type, uint8_t *packet, uint1
                             ui_attribute_handle = value_handle;
                             break;                            
                         case GATT_CLIENT_CHARACTERISTICS_CONFIGURATION:
-                            printf ("Attribute handle 0x%04x, gatt client characteristic configuration 0x%04x\n", value_handle, READ_BT_16(value,0));
+                            printf ("Attribute handle 0x%04x, gatt client characteristic configuration 0x%04x\n", value_handle, little_endian_read_16(value,0));
                             break;
                         case GATT_CHARACTERISTIC_AGGREGATE_FORMAT:
                             ui_handles_count = value_length >> 1;
                             printf ("Attribute handle 0x%04x, gatt characteristic aggregate format. Handles: ", value_handle);
                             for (ui_handles_index = 0; ui_handles_index < ui_handles_count ; ui_handles_index++){
-                                ui_handles[ui_handles_index] = READ_BT_16(value, (ui_handles_index << 1));
+                                ui_handles[ui_handles_index] = little_endian_read_16(value, (ui_handles_index << 1));
                                 printf("0x%04x, ", ui_handles[ui_handles_index]);
                             }
                             printf("\n");
@@ -600,7 +600,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint8_t *packet, uint1
                             printf("Value: ");
                             printf_hexdump(value, value_length);
                             printf("Format 0x%02x, Exponent 0x%02x, Unit 0x%04x\n",
-                                ui_presentation_format[0], ui_presentation_format[1], READ_BT_16(ui_presentation_format, 2));                            
+                                ui_presentation_format[0], ui_presentation_format[1], little_endian_read_16(ui_presentation_format, 2));                            
                             break;
                         case GATT_CHARACTERISTIC_AGGREGATE_FORMAT:
                             printf("Aggregated value: ");
@@ -618,15 +618,15 @@ static void handle_gatt_client_event(uint8_t packet_type, uint8_t *packet, uint1
             break;
         case GATT_EVENT_LONG_CHARACTERISTIC_VALUE_QUERY_RESULT:
             value = &packet[10];
-            value_offset = READ_BT_16(packet, 6);
-            value_length = READ_BT_16(packet, 8);
+            value_offset = little_endian_read_16(packet, 6);
+            value_length = little_endian_read_16(packet, 8);
             central_state = CENTRAL_IDLE;
             printf("Value (offset %02u): ", value_offset);
             printf_hexdump(value, value_length);
             break;
         case GATT_EVENT_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT:
-            value_handle = READ_BT_16(packet, 4);
-            value_length = READ_BT_16(packet, 6);
+            value_handle = little_endian_read_16(packet, 4);
+            value_length = little_endian_read_16(packet, 6);
             value = &packet[8];
             switch (central_state){
                 case CENTRAL_GPA_W4_RESPONSE2:
@@ -645,7 +645,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint8_t *packet, uint1
                     printf_hexdump(&ui_value_data[ui_value_pos], gpa_format_type_len[value[0]]);
                     ui_value_pos +=  gpa_format_type_len[value[0]];
                     printf("Format 0x%02x, Exponent 0x%02x, Unit 0x%04x\n",
-                        value[0], value[1], READ_BT_16(value, 2));                            
+                        value[0], value[1], little_endian_read_16(value, 2));                            
                     break;
                 default:
                     printf("Value: ");
@@ -655,8 +655,8 @@ static void handle_gatt_client_event(uint8_t packet_type, uint8_t *packet, uint1
             break;
         case GATT_EVENT_LONG_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT:
             value = &packet[10];
-            value_offset = READ_BT_16(packet, 6);
-            value_length = READ_BT_16(packet, 8);
+            value_offset = little_endian_read_16(packet, 6);
+            value_length = little_endian_read_16(packet, 8);
             printf("Value (offset %02u): ", value_offset);
             printf_hexdump(value, value_length);
             break;
@@ -769,15 +769,15 @@ static void handle_gatt_client_event(uint8_t packet_type, uint8_t *packet, uint1
             }
             break;
         case GATT_EVENT_NOTIFICATION:
-            value_handle = READ_BT_16(packet, 4);
-            value_length = READ_BT_16(packet, 6);
+            value_handle = little_endian_read_16(packet, 4);
+            value_length = little_endian_read_16(packet, 6);
             value = &packet[8];
             printf("Notification handle 0x%04x, value: ", value_handle);
             printf_hexdump(value, value_length);
             break;
         case GATT_EVENT_INDICATION:
-            value_handle = READ_BT_16(packet, 4);
-            value_length = READ_BT_16(packet, 6);
+            value_handle = little_endian_read_16(packet, 4);
+            value_length = little_endian_read_16(packet, 6);
             value = &packet[8];
             printf("Indication handle 0x%04x, value: ", value_handle);
             printf_hexdump(value, value_length);
@@ -949,9 +949,9 @@ static void att_signed_write_handle_cmac_result(uint8_t hash[8]){
     l2cap_reserve_packet_buffer();
     uint8_t * request = l2cap_get_outgoing_buffer();
     request[0] = ATT_SIGNED_WRITE_COMMAND;
-    bt_store_16(request, 1, pts_signed_write_characteristic_handle);
+    little_endian_store_16(request, 1, pts_signed_write_characteristic_handle);
     memcpy(&request[3], signed_write_value, value_length);
-    bt_store_32(request, 3 + value_length, 0);
+    little_endian_store_32(request, 3 + value_length, 0);
     swap64(hash, &request[3 + value_length + 4]);
     l2cap_send_prepared_connectionless(handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, 3 + value_length + 12);
 }

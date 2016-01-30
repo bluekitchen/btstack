@@ -85,7 +85,7 @@ static void chipset_set_baudrate_command(uint32_t baudrate, uint8_t *hci_cmd_buf
     }
 
     memcpy(hci_cmd_buffer, baudrate_command, sizeof(baudrate_command));
-    bt_store_16(hci_cmd_buffer, 13, div1);
+    little_endian_store_16(hci_cmd_buffer, 13, div1);
     hci_cmd_buffer[15] = div2;
 }
 

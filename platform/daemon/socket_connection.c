@@ -226,7 +226,7 @@ int socket_connection_hci_process(struct btstack_data_source *ds) {
     switch (conn->state){
         case SOCKET_W4_HEADER:
             conn->state = SOCKET_W4_DATA;
-            conn->bytes_to_read = READ_BT_16( conn->buffer, 4);
+            conn->bytes_to_read = little_endian_read_16( conn->buffer, 4);
             if (conn->bytes_to_read == 0){
                 dispatch = 1;
             }
@@ -240,8 +240,8 @@ int socket_connection_hci_process(struct btstack_data_source *ds) {
     
     if (dispatch){
         // dispatch packet !!! connection, type, channel, data, size
-        int dispatch_err = (*socket_connection_packet_callback)(conn, READ_BT_16( conn->buffer, 0), READ_BT_16( conn->buffer, 2),
-                                                            &conn->buffer[sizeof(packet_header_t)], READ_BT_16( conn->buffer, 4));
+        int dispatch_err = (*socket_connection_packet_callback)(conn, little_endian_read_16( conn->buffer, 0), little_endian_read_16( conn->buffer, 2),
+                                                            &conn->buffer[sizeof(packet_header_t)], little_endian_read_16( conn->buffer, 4));
         
         // reset state machine
         socket_connection_init_statemachine(conn);
@@ -269,8 +269,8 @@ void socket_connection_retry_parked(void){
         
         // dispatch packet !!! connection, type, channel, data, size
         log_info("socket_connection_hci_process retry parked %p", conn);
-        int dispatch_err = (*socket_connection_packet_callback)(conn, READ_BT_16( conn->buffer, 0), READ_BT_16( conn->buffer, 2),
-                                                            &conn->buffer[sizeof(packet_header_t)], READ_BT_16( conn->buffer, 4));
+        int dispatch_err = (*socket_connection_packet_callback)(conn, little_endian_read_16( conn->buffer, 0), little_endian_read_16( conn->buffer, 2),
+                                                            &conn->buffer[sizeof(packet_header_t)], little_endian_read_16( conn->buffer, 4));
         // "un-park" if successful
         if (!dispatch_err) {
             log_info("socket_connection_hci_process dispatch succeeded -> un-park connection %p", conn);
@@ -516,9 +516,9 @@ void socket_connection_register_packet_callback( int (*packet_callback)(connecti
  */
 void socket_connection_send_packet(connection_t *conn, uint16_t type, uint16_t channel, uint8_t *packet, uint16_t size){
     uint8_t header[sizeof(packet_header_t)];
-    bt_store_16(header, 0, type);
-    bt_store_16(header, 2, channel);
-    bt_store_16(header, 4, size);
+    little_endian_store_16(header, 0, type);
+    little_endian_store_16(header, 2, channel);
+    little_endian_store_16(header, 4, size);
 #if defined(HAVE_SO_NOSIGPIPE) || defined (_WIN32)
     // BSD Variants like Darwin and iOS
     write(conn->ds.fd, header, 6);

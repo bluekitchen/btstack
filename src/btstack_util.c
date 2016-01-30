@@ -49,24 +49,24 @@
 #include <string.h>
 #include "btstack_debug.h"
 
-void bt_store_16(uint8_t *buffer, uint16_t pos, uint16_t value){
+void little_endian_store_16(uint8_t *buffer, uint16_t pos, uint16_t value){
     buffer[pos++] = value;
     buffer[pos++] = value >> 8;
 }
 
-void bt_store_32(uint8_t *buffer, uint16_t pos, uint32_t value){
+void little_endian_store_32(uint8_t *buffer, uint16_t pos, uint32_t value){
     buffer[pos++] = value;
     buffer[pos++] = value >> 8;
     buffer[pos++] = value >> 16;
     buffer[pos++] = value >> 24;
 }
 
-void net_store_16(uint8_t *buffer, uint16_t pos, uint16_t value){
+void big_endian_store_16(uint8_t *buffer, uint16_t pos, uint16_t value){
     buffer[pos++] = value >> 8;
     buffer[pos++] = value;
 }
 
-void net_store_32(uint8_t *buffer, uint16_t pos, uint32_t value){
+void big_endian_store_32(uint8_t *buffer, uint16_t pos, uint32_t value){
     buffer[pos++] = value >> 24;
     buffer[pos++] = value >> 16;
     buffer[pos++] = value >> 8;
@@ -187,7 +187,7 @@ const uint8_t sdp_bluetooth_base_uuid[] = { 0x00, 0x00, 0x00, 0x00, /* - */ 0x00
 
 void sdp_normalize_uuid(uint8_t *uuid, uint32_t shortUUID){
     memcpy(uuid, sdp_bluetooth_base_uuid, 16);
-    net_store_32(uuid, 0, shortUUID);
+    big_endian_store_32(uuid, 0, shortUUID);
 }
 
 int sdp_has_blueooth_base_uuid(uint8_t * uuid128){

@@ -178,15 +178,15 @@ static void hci_event_sco_complete(){
     event[pos++] = sizeof(event) - 2;
 
     event[pos++] = 0; //status
-    bt_store_16(event,  pos, sco_handle);   pos += 2; // sco handle
+    little_endian_store_16(event,  pos, sco_handle);   pos += 2; // sco handle
     bt_flip_addr(&event[pos], dev_addr);    pos += 6;
 
     event[pos++] = 0; // link_type
     event[pos++] = 0; // transmission_interval
     event[pos++] = 0; // retransmission_interval
 
-    bt_store_16(event,  pos, 0);   pos += 2; // rx_packet_length
-    bt_store_16(event,  pos, 0);   pos += 2; // tx_packet_length
+    little_endian_store_16(event,  pos, 0);   pos += 2; // rx_packet_length
+    little_endian_store_16(event,  pos, 0);   pos += 2; // tx_packet_length
 
     event[pos++] = 0; // air_mode
     (*registered_rfcomm_packet_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
@@ -244,11 +244,11 @@ uint8_t rfcomm_create_channel(bd_addr_t addr, uint8_t channel, uint16_t * out_ci
     memcpy(dev_addr, addr, 6);
     pos += 6;
     
-    bt_store_16(event,  pos, 1);   pos += 2;
+    little_endian_store_16(event,  pos, 1);   pos += 2;
 	event[pos++] = 0;
 	
-	bt_store_16(event, pos, rfcomm_cid); pos += 2;       // channel ID
-	bt_store_16(event, pos, 200); pos += 2;   // max frame size
+	little_endian_store_16(event, pos, rfcomm_cid); pos += 2;       // channel ID
+	little_endian_store_16(event, pos, 200); pos += 2;   // max frame size
     (*registered_rfcomm_packet_handler)(HCI_EVENT_PACKET, 0, (uint8_t *) event, pos);
 
     if (out_cid){
@@ -265,7 +265,7 @@ void rfcomm_disconnect(uint16_t rfcomm_cid){
 	uint8_t event[4];
 	event[0] = RFCOMM_EVENT_CHANNEL_CLOSED;
     event[1] = sizeof(event) - 2;
-    bt_store_16(event, 2, rfcomm_cid);
+    little_endian_store_16(event, 2, rfcomm_cid);
     (*registered_rfcomm_packet_handler)(HCI_EVENT_PACKET, 0, (uint8_t *) event, sizeof(event));
 }
 
@@ -306,7 +306,7 @@ void hci_emit_disconnection_complete(uint16_t handle, uint8_t reason){
     event[0] = HCI_EVENT_DISCONNECTION_COMPLETE;
     event[1] = sizeof(event) - 2;
     event[2] = 0; // status = OK
-    bt_store_16(event, 3, handle);
+    little_endian_store_16(event, 3, handle);
     event[5] = reason;
     (*registered_rfcomm_packet_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }

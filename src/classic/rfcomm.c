@@ -105,7 +105,7 @@ static void rfcomm_emit_connection_request(rfcomm_channel_t *channel) {
     event[1] = sizeof(event) - 2;
     bt_flip_addr(&event[2], channel->multiplexer->remote_addr);
     event[8] = channel->dlci >> 1;
-    bt_store_16(event, 9, channel->rfcomm_cid);
+    little_endian_store_16(event, 9, channel->rfcomm_cid);
     hci_dump_packet(HCI_EVENT_PACKET, 0, event, sizeof(event));
 	(*app_packet_handler)(HCI_EVENT_PACKET, 0, (uint8_t *) event, sizeof(event));
 }
@@ -124,10 +124,10 @@ static void rfcomm_emit_channel_opened(rfcomm_channel_t *channel, uint8_t status
     event[pos++] = sizeof(event) - 2;                   // 1
     event[pos++] = status;                              // 2
     bt_flip_addr(&event[pos], channel->multiplexer->remote_addr); pos += 6; // 3
-    bt_store_16(event,  pos, channel->multiplexer->con_handle);   pos += 2; // 9
+    little_endian_store_16(event,  pos, channel->multiplexer->con_handle);   pos += 2; // 9
 	event[pos++] = channel->dlci >> 1;                                      // 11
-	bt_store_16(event, pos, channel->rfcomm_cid); pos += 2;                 // 12 - channel ID
-	bt_store_16(event, pos, channel->max_frame_size); pos += 2;   // max frame size
+	little_endian_store_16(event, pos, channel->rfcomm_cid); pos += 2;                 // 12 - channel ID
+	little_endian_store_16(event, pos, channel->max_frame_size); pos += 2;   // max frame size
     hci_dump_packet(HCI_EVENT_PACKET, 0, event, sizeof(event));
 	(*app_packet_handler)(HCI_EVENT_PACKET, 0, (uint8_t *) event, pos);
 }
@@ -138,7 +138,7 @@ static void rfcomm_emit_channel_closed(rfcomm_channel_t * channel) {
     uint8_t event[4];
     event[0] = RFCOMM_EVENT_CHANNEL_CLOSED;
     event[1] = sizeof(event) - 2;
-    bt_store_16(event, 2, channel->rfcomm_cid);
+    little_endian_store_16(event, 2, channel->rfcomm_cid);
     hci_dump_packet(HCI_EVENT_PACKET, 0, event, sizeof(event));
 	(*app_packet_handler)(HCI_EVENT_PACKET, 0, (uint8_t *) event, sizeof(event));
 }
@@ -148,7 +148,7 @@ static void rfcomm_emit_remote_line_status(rfcomm_channel_t *channel, uint8_t li
     uint8_t event[5];
     event[0] = RFCOMM_EVENT_REMOTE_LINE_STATUS;
     event[1] = sizeof(event) - 2;
-    bt_store_16(event, 2, channel->rfcomm_cid);
+    little_endian_store_16(event, 2, channel->rfcomm_cid);
     event[4] = line_status;
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
     (*app_packet_handler)(HCI_EVENT_PACKET, 0, (uint8_t *) event, sizeof(event));
@@ -775,9 +775,9 @@ static int rfcomm_multiplexer_hci_event_handler(uint8_t *packet, uint16_t size){
         case L2CAP_EVENT_INCOMING_CONNECTION:
             // data: event(8), len(8), address(48), handle (16),  psm (16), source cid(16) dest cid(16)
             bt_flip_addr(event_addr, &packet[2]);
-            con_handle = READ_BT_16(packet,  8);
-            psm        = READ_BT_16(packet, 10); 
-            l2cap_cid  = READ_BT_16(packet, 12); 
+            con_handle = little_endian_read_16(packet,  8);
+            psm        = little_endian_read_16(packet, 10); 
+            l2cap_cid  = little_endian_read_16(packet, 12); 
 
             if (psm != PSM_RFCOMM) break;
 
@@ -808,14 +808,14 @@ static int rfcomm_multiplexer_hci_event_handler(uint8_t *packet, uint16_t size){
         // l2cap connection opened -> store l2cap_cid, remote_addr
         case L2CAP_EVENT_CHANNEL_OPENED: 
 
-            if (READ_BT_16(packet, 11) != PSM_RFCOMM) break;
+            if (little_endian_read_16(packet, 11) != PSM_RFCOMM) break;
             
             status = packet[2];
             log_info("L2CAP_EVENT_CHANNEL_OPENED for PSM_RFCOMM, status %u", status);
             
             // get multiplexer for remote addr
-            con_handle = READ_BT_16(packet, 9);
-            l2cap_cid = READ_BT_16(packet, 13);
+            con_handle = little_endian_read_16(packet, 9);
+            l2cap_cid = little_endian_read_16(packet, 13);
             bt_flip_addr(event_addr, &packet[3]);
             multiplexer = rfcomm_multiplexer_for_addr(event_addr);
             if (!multiplexer) {
@@ -858,7 +858,7 @@ static int rfcomm_multiplexer_hci_event_handler(uint8_t *packet, uint16_t size){
             } else { // multiplexer->state == RFCOMM_MULTIPLEXER_W4_SABM_0
                 
                 // set max frame size based on l2cap MTU
-                multiplexer->max_frame_size = rfcomm_max_frame_size_for_l2cap_mtu(READ_BT_16(packet, 17));
+                multiplexer->max_frame_size = rfcomm_max_frame_size_for_l2cap_mtu(little_endian_read_16(packet, 17));
             }
             return 1;
             
@@ -871,7 +871,7 @@ static int rfcomm_multiplexer_hci_event_handler(uint8_t *packet, uint16_t size){
             
         case L2CAP_EVENT_CHANNEL_CLOSED:
             // data: event (8), len(8), channel (16)
-            l2cap_cid = READ_BT_16(packet, 2);
+            l2cap_cid = little_endian_read_16(packet, 2);
             multiplexer = rfcomm_multiplexer_for_l2cap_cid(l2cap_cid);
             log_info("L2CAP_EVENT_CHANNEL_CLOSED cid 0x%0x, mult %p", l2cap_cid, multiplexer);
             if (!multiplexer) break;
@@ -1297,7 +1297,7 @@ static void rfcomm_channel_packet_handler(rfcomm_multiplexer_t * multiplexer,  u
                     message_dlci = packet[payload_offset+2];
                     event_pn.super.type = CH_EVT_RCVD_PN;
                     event_pn.priority = packet[payload_offset+4];
-                    event_pn.max_frame_size = READ_BT_16(packet, payload_offset+6);
+                    event_pn.max_frame_size = little_endian_read_16(packet, payload_offset+6);
                     event_pn.credits_outgoing = packet[payload_offset+9];
                     log_info("Received UIH Parameter Negotiation Command for #%u, credits %u",
                         message_dlci, event_pn.credits_outgoing);
@@ -1308,7 +1308,7 @@ static void rfcomm_channel_packet_handler(rfcomm_multiplexer_t * multiplexer,  u
                     message_dlci = packet[payload_offset+2];
                     event_pn.super.type = CH_EVT_RCVD_PN_RSP;
                     event_pn.priority = packet[payload_offset+4];
-                    event_pn.max_frame_size = READ_BT_16(packet, payload_offset+6);
+                    event_pn.max_frame_size = little_endian_read_16(packet, payload_offset+6);
                     event_pn.credits_outgoing = packet[payload_offset+9];
                     log_info("Received UIH Parameter Negotiation Response max frame %u, credits %u",
                             event_pn.max_frame_size, event_pn.credits_outgoing);

@@ -188,20 +188,20 @@ void hci_dump_packet(uint8_t packet_type, uint8_t in, uint8_t *packet, uint16_t 
         }
             
         case HCI_DUMP_BLUEZ:
-            bt_store_16( header_bluez, 0, 1 + len);
+            little_endian_store_16( header_bluez, 0, 1 + len);
             header_bluez[2] = in;
             header_bluez[3] = 0;
-            bt_store_32( header_bluez, 4, curr_time.tv_sec);
-            bt_store_32( header_bluez, 8, curr_time.tv_usec);
+            little_endian_store_32( header_bluez, 4, curr_time.tv_sec);
+            little_endian_store_32( header_bluez, 8, curr_time.tv_usec);
             header_bluez[12] = packet_type;
             write (dump_file, header_bluez, HCIDUMP_HDR_SIZE);
             write (dump_file, packet, len );
             break;
             
         case HCI_DUMP_PACKETLOGGER:
-            net_store_32( header_packetlogger, 0, PKTLOG_HDR_SIZE - 4 + len);
-            net_store_32( header_packetlogger, 4, curr_time.tv_sec);
-            net_store_32( header_packetlogger, 8, curr_time.tv_usec);
+            big_endian_store_32( header_packetlogger, 0, PKTLOG_HDR_SIZE - 4 + len);
+            big_endian_store_32( header_packetlogger, 4, curr_time.tv_sec);
+            big_endian_store_32( header_packetlogger, 8, curr_time.tv_usec);
             switch (packet_type){
                 case HCI_COMMAND_DATA_PACKET:
                     header_packetlogger[12] = 0x00;

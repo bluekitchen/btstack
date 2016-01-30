@@ -182,12 +182,12 @@ static void packet_handler (uint8_t packet_type, uint8_t *packet, uint16_t size)
                         memcpy(devices[deviceCount].address, addr, 6);
                         devices[deviceCount].pageScanRepetitionMode =   packet [3 + numResponses*(6)         + i*1];
                         if (event == HCI_EVENT_INQUIRY_RESULT){
-                            devices[deviceCount].classOfDevice = READ_BT_24(packet, 3 + numResponses*(6+1+1+1)   + i*3);
-                            devices[deviceCount].clockOffset =   READ_BT_16(packet, 3 + numResponses*(6+1+1+1+3) + i*2) & 0x7fff;
+                            devices[deviceCount].classOfDevice = little_endian_read_24(packet, 3 + numResponses*(6+1+1+1)   + i*3);
+                            devices[deviceCount].clockOffset =   little_endian_read_16(packet, 3 + numResponses*(6+1+1+1+3) + i*2) & 0x7fff;
                             devices[deviceCount].rssi  = 0;
                         } else {
-                            devices[deviceCount].classOfDevice = READ_BT_24(packet, 3 + numResponses*(6+1+1)     + i*3);
-                            devices[deviceCount].clockOffset =   READ_BT_16(packet, 3 + numResponses*(6+1+1+3)   + i*2) & 0x7fff;
+                            devices[deviceCount].classOfDevice = little_endian_read_24(packet, 3 + numResponses*(6+1+1)     + i*3);
+                            devices[deviceCount].clockOffset =   little_endian_read_16(packet, 3 + numResponses*(6+1+1+3)   + i*2) & 0x7fff;
                             devices[deviceCount].rssi  =                    packet [3 + numResponses*(6+1+1+3+2) + i*1];
                         }
                         devices[deviceCount].state = REMOTE_NAME_REQUEST;

@@ -148,7 +148,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 
                 case HCI_EVENT_DISCONNECTION_COMPLETE:
                     if (bleDeviceDisconnectedCallback) {
-                        handle = READ_BT_16(packet, 3);
+                        handle = little_endian_read_16(packet, 3);
                         BLEDevice device(handle);
                         (*bleDeviceDisconnectedCallback)(&device);
                     }
@@ -174,7 +174,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 case HCI_EVENT_LE_META:
                     switch (packet[2]) {
                         case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
-                            handle = READ_BT_16(packet, 4);
+                            handle = little_endian_read_16(packet, 4);
                             printf("Connection complete, handle 0x%04x\n", handle);
                             btstack_run_loop_remove_timer(&connection_timer);
                             if (!bleDeviceConnectedCallback) break;
@@ -197,24 +197,24 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 }
 
 static void extract_service(le_service_t * service, uint8_t * packet){
-    service->start_group_handle = READ_BT_16(packet, 4);
-    service->end_group_handle   = READ_BT_16(packet, 6);
+    service->start_group_handle = little_endian_read_16(packet, 4);
+    service->end_group_handle   = little_endian_read_16(packet, 6);
     service->uuid16 = 0;
     swap128(&packet[8], service->uuid128);
     if (sdp_has_blueooth_base_uuid(service->uuid128)){
-        service->uuid16 = READ_NET_32(service->uuid128, 0);
+        service->uuid16 = bit_endian_read_32(service->uuid128, 0);
     }
 }
 
 static void extract_characteristic(le_characteristic_t * characteristic, uint8_t * packet){
-    characteristic->start_handle = READ_BT_16(packet, 4);
-    characteristic->value_handle = READ_BT_16(packet, 6);
-    characteristic->end_handle =   READ_BT_16(packet, 8);
-    characteristic->properties =   READ_BT_16(packet, 10);
+    characteristic->start_handle = little_endian_read_16(packet, 4);
+    characteristic->value_handle = little_endian_read_16(packet, 6);
+    characteristic->end_handle =   little_endian_read_16(packet, 8);
+    characteristic->properties =   little_endian_read_16(packet, 10);
     characteristic->uuid16 = 0;
     swap128(&packet[12], characteristic->uuid128);
     if (sdp_has_blueooth_base_uuid(characteristic->uuid128)){
-        characteristic->uuid16 = READ_NET_32(characteristic->uuid128, 0);
+        characteristic->uuid16 = bit_endian_read_32(characteristic->uuid128, 0);
     }
 }
 
@@ -225,7 +225,7 @@ static void gatt_client_callback(uint8_t packet_type, uint8_t * packet, uint16_t
     if (packet[0] < GATT_EVENT_QUERY_COMPLETE) return;
     if (packet[0] > GATT_EVENT_MTU) return;
 
-    uint16_t  con_handle = READ_BT_16(packet, 2);
+    uint16_t  con_handle = little_endian_read_16(packet, 2);
     uint8_t   status;
     uint8_t * value;
     uint16_t  value_handle;
@@ -250,7 +250,7 @@ static void gatt_client_callback(uint8_t packet_type, uint8_t * packet, uint16_t
             }
             break;
         case GATT_EVENT_QUERY_COMPLETE:
-            status = READ_BT_16(packet, 4);
+            status = little_endian_read_16(packet, 4);
             switch (gattAction){
                 case gattActionWrite:
                     if (gattCharacteristicWrittenCallback) gattCharacteristicWrittenCallback(status ? BLE_STATUS_OTHER_ERROR : BLE_STATUS_OK, &device);
@@ -273,24 +273,24 @@ static void gatt_client_callback(uint8_t packet_type, uint8_t * packet, uint16_t
             break;
         case GATT_EVENT_NOTIFICATION:
             if (gattCharacteristicNotificationCallback) {
-                value_handle = READ_BT_16(packet, 4);
-                value_length = READ_BT_16(packet, 6);
+                value_handle = little_endian_read_16(packet, 4);
+                value_length = little_endian_read_16(packet, 6);
                 value = &packet[8];
                 (*gattCharacteristicNotificationCallback)(&device, value_handle, value, value_length);
             }
             break;
         case GATT_EVENT_INDICATION:
             if (gattCharacteristicIndicationCallback) {
-                value_handle = READ_BT_16(packet, 4);
-                value_length = READ_BT_16(packet, 6);
+                value_handle = little_endian_read_16(packet, 4);
+                value_length = little_endian_read_16(packet, 6);
                 value = &packet[8];
                 (*gattCharacteristicIndicationCallback)(&device, value_handle, value, value_length);
             }
             break;
         case GATT_EVENT_CHARACTERISTIC_VALUE_QUERY_RESULT:
             if (gattCharacteristicReadCallback) {
-                value_handle = READ_BT_16(packet, 4);
-                value_length = READ_BT_16(packet, 6);
+                value_handle = little_endian_read_16(packet, 4);
+                value_length = little_endian_read_16(packet, 6);
                 value = &packet[8];
                 (*gattCharacteristicReadCallback)(BLE_STATUS_OK, &device, value, value_length);
             }
@@ -364,7 +364,7 @@ static char uuid16_buffer[5];
 const char * UUID::getUuidString() const {
     // TODO: fix sdp_has_blueooth_base_uuid call to use const 
     if (sdp_has_blueooth_base_uuid((uint8_t*)uuid)){
-        sprintf(uuid16_buffer, "%04x", (uint16_t) READ_NET_32(uuid, 0));
+        sprintf(uuid16_buffer, "%04x", (uint16_t) bit_endian_read_32(uuid, 0));
         return uuid16_buffer;
     }  else {
         // TODO: fix uuid128_to_str
@@ -473,10 +473,10 @@ const UUID * BLEAdvertisement::getIBeaconUUID(void){
     return iBeacon_UUID;
 };
 uint16_t BLEAdvertisement::getIBeaconMajorID(void){
-    return READ_NET_16(data, 25);
+    return big_endian_read_16(data, 25);
 };
 uint16_t BLEAdvertisement::getIBecaonMinorID(void){
-    return READ_NET_16(data, 27);
+    return big_endian_read_16(data, 27);
 };
 uint8_t BLEAdvertisement::getiBeaconMeasuredPower(void){
     return data[29];
@@ -859,8 +859,8 @@ void BTstackManager::iBeaconConfigure(UUID * uuid, uint16_t major_id, uint16_t m
     adv_data[2] = 0x06;
     memcpy(&adv_data[3], iBeaconAdvertisement38, sizeof(iBeaconAdvertisement38));
     memcpy(&adv_data[9], uuid->getUuid(), 16);
-    net_store_16(adv_data, 25, major_id);
-    net_store_16(adv_data, 27, minor_id);
+    big_endian_store_16(adv_data, 25, major_id);
+    big_endian_store_16(adv_data, 27, minor_id);
     adv_data[29] = measured_power;
     adv_data_len = 30;
     gap_advertisements_set_data(adv_data_len, adv_data);

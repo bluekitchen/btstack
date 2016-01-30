@@ -94,7 +94,7 @@ static inline const char * sdp_query_rfcomm_service_event_get_name(const uint8_t
  * @note: btstack_type 2
  */
 static inline uint16_t sdp_query_attribute_byte_event_get_record_id(const uint8_t * event){
-    return READ_BT_16(event, 2);
+    return little_endian_read_16(event, 2);
 }
 
 /**
@@ -104,7 +104,7 @@ static inline uint16_t sdp_query_attribute_byte_event_get_record_id(const uint8_
  * @note: btstack_type 2
  */
 static inline uint16_t sdp_query_attribute_byte_event_get_attribute_id(const uint8_t * event){
-    return READ_BT_16(event, 4);
+    return little_endian_read_16(event, 4);
 }
 
 /**
@@ -114,7 +114,7 @@ static inline uint16_t sdp_query_attribute_byte_event_get_attribute_id(const uin
  * @note: btstack_type 2
  */
 static inline uint16_t sdp_query_attribute_byte_event_get_attribute_length(const uint8_t * event){
-    return READ_BT_16(event, 6);
+    return little_endian_read_16(event, 6);
 }
 
 /**
@@ -124,7 +124,7 @@ static inline uint16_t sdp_query_attribute_byte_event_get_attribute_length(const
  * @note: btstack_type 2
  */
 static inline uint16_t sdp_query_attribute_byte_event_get_data_offset(const uint8_t * event){
-    return READ_BT_16(event, 8);
+    return little_endian_read_16(event, 8);
 }
 
 /**
@@ -144,7 +144,7 @@ static inline uint8_t sdp_query_attribute_byte_event_get_data(const uint8_t * ev
  * @note: btstack_type 2
  */
 static inline uint16_t sdp_query_service_record_handle_event_get_total_count(const uint8_t * event){
-    return READ_BT_16(event, 2);
+    return little_endian_read_16(event, 2);
 }
 
 /**
@@ -154,7 +154,7 @@ static inline uint16_t sdp_query_service_record_handle_event_get_total_count(con
  * @note: btstack_type 2
  */
 static inline uint16_t sdp_query_service_record_handle_event_get_record_index(const uint8_t * event){
-    return READ_BT_16(event, 4);
+    return little_endian_read_16(event, 4);
 }
 
 /**
@@ -164,7 +164,7 @@ static inline uint16_t sdp_query_service_record_handle_event_get_record_index(co
  * @note: btstack_type 4
  */
 static inline uint32_t sdp_query_service_record_handle_event_get_record_handle(const uint8_t * event){
-    return READ_BT_32(event, 6);
+    return little_endian_read_32(event, 6);
 }
 
 /**
@@ -174,7 +174,7 @@ static inline uint32_t sdp_query_service_record_handle_event_get_record_handle(c
  * @note: btstack_type H
  */
 static inline hci_con_handle_t ancs_client_connected_event_get_handle(const uint8_t * event){
-    return READ_BT_16(event, 2);
+    return little_endian_read_16(event, 2);
 }
 
 /**
@@ -184,7 +184,7 @@ static inline hci_con_handle_t ancs_client_connected_event_get_handle(const uint
  * @note: btstack_type H
  */
 static inline hci_con_handle_t ancs_client_notification_event_get_handle(const uint8_t * event){
-    return READ_BT_16(event, 2);
+    return little_endian_read_16(event, 2);
 }
 
 /**
@@ -194,7 +194,7 @@ static inline hci_con_handle_t ancs_client_notification_event_get_handle(const u
  * @note: btstack_type 2
  */
 static inline uint16_t ancs_client_notification_event_get_attribute_id(const uint8_t * event){
-    return READ_BT_16(event, 4);
+    return little_endian_read_16(event, 4);
 }
 
 /**
@@ -214,7 +214,7 @@ static inline const char * ancs_client_notification_event_get_text(const uint8_t
  * @note: btstack_type H
  */
 static inline hci_con_handle_t ancs_client_disconnected_event_get_handle(const uint8_t * event){
-    return READ_BT_16(event, 2);
+    return little_endian_read_16(event, 2);
 }
 
 

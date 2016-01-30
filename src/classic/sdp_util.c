@@ -86,10 +86,10 @@ int de_get_data_size(uint8_t * header){
             result = header[1];
             break;
         case DE_SIZE_VAR_16:
-            result = READ_NET_16(header,1);
+            result = big_endian_read_16(header,1);
             break;
         case DE_SIZE_VAR_32:
-            result = READ_NET_32(header,1);
+            result = bit_endian_read_32(header,1);
             break;
         default:
         // case DE_SIZE_8:
@@ -110,7 +110,7 @@ int de_get_len(uint8_t *header){
 // @returns OK, if UINT16 value was read
 int de_element_get_uint16(uint8_t * element, uint16_t * value){
     if (de_get_size_type(element) != DE_SIZE_16) return 0;
-    *value = READ_NET_16(element, de_get_header_size(element));
+    *value = big_endian_read_16(element, de_get_header_size(element));
     return 1;
 }
 
@@ -122,10 +122,10 @@ int de_get_normalized_uuid(uint8_t *uuid128, uint8_t *element){
     uint32_t shortUUID;
     switch (uuidSize){
         case DE_SIZE_16:
-            shortUUID = READ_NET_16(element, 1);
+            shortUUID = big_endian_read_16(element, 1);
             break;
         case DE_SIZE_32:
-            shortUUID = READ_NET_32(element, 1);
+            shortUUID = bit_endian_read_32(element, 1);
             break;
         case DE_SIZE_128:
             memcpy(uuid128, element+1, 16);
@@ -144,7 +144,7 @@ uint32_t de_get_uuid32(uint8_t * element){
     if (!validUuid128) return 0;
     int hasBlueoothBaseUuid = sdp_has_blueooth_base_uuid(uuid128);
     if (!hasBlueoothBaseUuid) return 0;
-    return READ_NET_32(uuid128, 0);
+    return bit_endian_read_32(uuid128, 0);
 }
 
 // functions to create record
@@ -159,10 +159,10 @@ void de_store_descriptor_with_len(uint8_t * header, de_type_t type, de_size_t si
             header[1] = len;
             break;
         case DE_SIZE_VAR_16:
-            net_store_16(header, 1, len);
+            big_endian_store_16(header, 1, len);
             break;
         case DE_SIZE_VAR_32:
-            net_store_32(header, 1, len);
+            big_endian_store_32(header, 1, len);
             break;
         default:
             break;
@@ -186,13 +186,13 @@ uint8_t * de_push_sequence(uint8_t *header){
 /* closes the current sequence and updates the parent sequence */
 void de_pop_sequence(uint8_t * parent, uint8_t * child){
     int child_len = de_get_len(child);
-    int data_size_parent = READ_NET_16(parent,1);
-    net_store_16(parent, 1, data_size_parent + child_len);
+    int data_size_parent = big_endian_read_16(parent,1);
+    big_endian_store_16(parent, 1, data_size_parent + child_len);
 }
 
 /* adds a single number value and 16+32 bit UUID to the sequence */
 void de_add_number(uint8_t *seq, de_type_t type, de_size_t size, uint32_t value){
-    int data_size   = READ_NET_16(seq,1);
+    int data_size   = big_endian_read_16(seq,1);
     int element_size = 1;   // e.g. for DE_TYPE_NIL
     de_store_descriptor(seq+3+data_size, type, size); 
     switch (size){
@@ -203,22 +203,22 @@ void de_add_number(uint8_t *seq, de_type_t type, de_size_t size, uint32_t value)
             }
             break;
         case DE_SIZE_16:
-            net_store_16(seq, 4+data_size, value);
+            big_endian_store_16(seq, 4+data_size, value);
             element_size = 3;
             break;
         case DE_SIZE_32:
-            net_store_32(seq, 4+data_size, value);
+            big_endian_store_32(seq, 4+data_size, value);
             element_size = 5;
             break;
         default:
             break;
     }
-    net_store_16(seq, 1, data_size+element_size);
+    big_endian_store_16(seq, 1, data_size+element_size);
 }
 
 /* add a single block of data, e.g. as DE_STRING, DE_URL */
 void de_add_data( uint8_t *seq, de_type_t type, uint16_t size, uint8_t *data){
-    int data_size   = READ_NET_16(seq,1);
+    int data_size   = big_endian_read_16(seq,1);
     if (size > 0xff) {
         // use 16-bit lengh information (3 byte header)
         de_store_descriptor_with_len(seq+3+data_size, type, DE_SIZE_VAR_16, size); 
@@ -230,14 +230,14 @@ void de_add_data( uint8_t *seq, de_type_t type, uint16_t size, uint8_t *data){
     }
     memcpy( seq + 3 + data_size, data, size);
     data_size += size;
-    net_store_16(seq, 1, data_size);
+    big_endian_store_16(seq, 1, data_size);
 }
 
 void de_add_uuid128(uint8_t * seq, uint8_t * uuid){
-    int data_size   = READ_NET_16(seq,1);
+    int data_size   = big_endian_read_16(seq,1);
     de_store_descriptor(seq+3+data_size, DE_UUID, DE_SIZE_128); 
     memcpy( seq + 4 + data_size, uuid, 16);
-    net_store_16(seq, 1, data_size+1+16);
+    big_endian_store_16(seq, 1, data_size+1+16);
 }
 
 // MARK: DES iterator
@@ -304,7 +304,7 @@ static void sdp_attribute_list_traverse_sequence(uint8_t * element, sdp_attribut
         de_type_t idType = de_get_element_type(element + pos);
         de_size_t idSize = de_get_size_type(element + pos);
         if (idType != DE_UINT || idSize != DE_SIZE_16) break; // wrong type
-        uint16_t attribute_id = READ_NET_16(element, pos + 1);
+        uint16_t attribute_id = big_endian_read_16(element, pos + 1);
         pos += 3;
         if (pos >= end_pos) break; // array out of bounds
         de_type_t valueType = de_get_element_type(element + pos);
@@ -327,14 +327,14 @@ static int sdp_traversal_attributeID_search(uint8_t * element, de_type_t type, d
     if (type != DE_UINT) return 0;
     switch (size) {
         case DE_SIZE_16:
-            if (READ_NET_16(element, 1) == context->attributeID) {
+            if (big_endian_read_16(element, 1) == context->attributeID) {
                 context->result = 1;
                 return 1;
             }
             break;
         case DE_SIZE_32:
-            if (READ_NET_16(element, 1) <= context->attributeID
-            &&  context->attributeID <= READ_NET_16(element, 3)) {
+            if (big_endian_read_16(element, 1) <= context->attributeID
+            &&  context->attributeID <= big_endian_read_16(element, 3)) {
                 context->result = 1;
                 return 1;
             }
@@ -367,14 +367,14 @@ static int sdp_traversal_append_attributes(uint16_t attributeID, uint8_t * attri
     struct sdp_context_append_attributes * context = (struct sdp_context_append_attributes *) my_context;
     if (sdp_attribute_list_constains_id(context->attributeIDList, attributeID)) {
         // DES_HEADER(3) + DES_DATA + (UINT16(3) + attribute)
-        uint16_t data_size = READ_NET_16(context->buffer, 1);
+        uint16_t data_size = big_endian_read_16(context->buffer, 1);
         int attribute_len = de_get_len(attributeValue);
         if (3 + data_size + (3 + attribute_len) <= context->maxBytes) {
             // copy Attribute
             de_add_number(context->buffer, DE_UINT, DE_SIZE_16, attributeID);   
             data_size += 3; // 3 bytes
             memcpy(context->buffer + 3 + data_size, attributeValue, attribute_len);
-            net_store_16(context->buffer,1,data_size+attribute_len);
+            big_endian_store_16(context->buffer,1,data_size+attribute_len);
         } else {
             // not enought space left -> continue with previous element
             return 1;
@@ -434,7 +434,7 @@ static int sdp_traversal_filter_attributes(uint16_t attributeID, uint8_t * attri
     } else {
         uint8_t idBuffer[3];
         de_store_descriptor(idBuffer, DE_UINT,  DE_SIZE_16);
-        net_store_16(idBuffer,1,attributeID);
+        big_endian_store_16(idBuffer,1,attributeID);
         
         int ok = spd_append_range(context, 3, idBuffer);
         if (!ok) {
@@ -536,10 +536,10 @@ static int sdp_traversal_set_attribute_for_id(uint16_t attributeID, uint8_t * at
                 }
                 break;
             case DE_SIZE_16:
-                net_store_16(attributeValue, 1, context->attributeValue);
+                big_endian_store_16(attributeValue, 1, context->attributeValue);
                 break;
             case DE_SIZE_32:
-                net_store_32(attributeValue, 1, context->attributeValue);
+                big_endian_store_32(attributeValue, 1, context->attributeValue);
                 break;
                 // Might want to support STRINGS to, copy upto original length
             default:
@@ -637,7 +637,7 @@ static int de_traversal_dump_data(uint8_t * element, de_type_t de_type, de_size_
                 len = element[1];
                 break;
             case DE_SIZE_VAR_16:
-                len = READ_NET_16(element, 1);
+                len = big_endian_read_16(element, 1);
                 break;
             default:
                 break;
@@ -653,10 +653,10 @@ static int de_traversal_dump_data(uint8_t * element, de_type_t de_type, de_size_
                 }
                 break;
             case DE_SIZE_16:
-				value = READ_NET_16(element,pos);
+				value = big_endian_read_16(element,pos);
                 break;
             case DE_SIZE_32:
-				value = READ_NET_32(element,pos);
+				value = bit_endian_read_32(element,pos);
                 break;
             default:
                 break;

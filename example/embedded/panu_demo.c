@@ -300,7 +300,7 @@ static char * get_string_from_data_element(uint8_t * element){
             len = element[1];
             break;
         case DE_SIZE_VAR_16:
-            len = READ_NET_16(element, 1);
+            len = big_endian_read_16(element, 1);
             break;
         default:
             break;
@@ -459,7 +459,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 
                 case HCI_EVENT_USER_CONFIRMATION_REQUEST:
                     // inform about user confirmation request
-                    printf("SSP User Confirmation Request with numeric value '%06u'\n", READ_BT_32(packet, 8));
+                    printf("SSP User Confirmation Request with numeric value '%06u'\n", little_endian_read_32(packet, 8));
                     printf("SSP User Confirmation Auto accept\n");
                     break;
 
@@ -479,9 +479,9 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                         printf("BNEP channel open failed, status %02x\n", packet[2]);
                     } else {
                         // data: event(8), len(8), status (8), bnep source uuid (16), bnep destination uuid (16), remote_address (48)
-                        uuid_source = READ_BT_16(packet, 3);
-                        uuid_dest   = READ_BT_16(packet, 5);
-                        mtu         = READ_BT_16(packet, 7);
+                        uuid_source = little_endian_read_16(packet, 3);
+                        uuid_dest   = little_endian_read_16(packet, 5);
+                        mtu         = little_endian_read_16(packet, 7);
                         bnep_cid    = channel;
                         //bt_flip_addr(event_addr, &packet[9]); 
                         memcpy(&event_addr, &packet[9], sizeof(bd_addr_t));

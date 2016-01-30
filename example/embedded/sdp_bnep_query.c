@@ -138,7 +138,7 @@ static char * get_string_from_data_element(uint8_t * element){
             len = element[1];
             break;
         case DE_SIZE_VAR_16:
-            len = READ_NET_16(element, 1);
+            len = big_endian_read_16(element, 1);
             break;
         default:
             break;

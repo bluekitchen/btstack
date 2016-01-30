@@ -208,16 +208,16 @@ static void inquiry_packet_handler (uint8_t packet_type, uint8_t *packet, uint16
 
                 if (event == HCI_EVENT_INQUIRY_RESULT){
                     offset += 2; // Reserved + Reserved
-                    devices[deviceCount].classOfDevice = READ_BT_24(packet, offset);
+                    devices[deviceCount].classOfDevice = little_endian_read_24(packet, offset);
                     offset += 3;
-                    devices[deviceCount].clockOffset =   READ_BT_16(packet, offset) & 0x7fff;
+                    devices[deviceCount].clockOffset =   little_endian_read_16(packet, offset) & 0x7fff;
                     offset += 2;
                     devices[deviceCount].rssi  = 0;
                 } else {
                     offset += 1; // Reserved
-                    devices[deviceCount].classOfDevice = READ_BT_24(packet, offset);
+                    devices[deviceCount].classOfDevice = little_endian_read_24(packet, offset);
                     offset += 3;
-                    devices[deviceCount].clockOffset =   READ_BT_16(packet, offset) & 0x7fff;
+                    devices[deviceCount].clockOffset =   little_endian_read_16(packet, offset) & 0x7fff;
                     offset += 2;
                     devices[deviceCount].rssi  = packet[offset];
                     offset += 1;
@@ -571,14 +571,14 @@ static int stdin_process(struct btstack_data_source *ds){
 static void packet_handler(uint8_t * event, uint16_t event_size){
 
     if (event[0] == RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE){
-        handle = READ_BT_16(event, 9);
+        handle = little_endian_read_16(event, 9);
         printf("RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE received for handle 0x%04x\n", handle);
         return;
     }
 
     switch (event[0]){
         case RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE:
-            handle = READ_BT_16(event, 9);
+            handle = little_endian_read_16(event, 9);
             printf("RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE received for handle 0x%04x\n", handle);
             return;
 

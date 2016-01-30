@@ -121,7 +121,7 @@ static void try_send_sco(void){
     hci_reserve_packet_buffer();
     uint8_t * sco_packet = hci_get_outgoing_packet_buffer();
     // set handle + flags
-    bt_store_16(sco_packet, 0, sco_handle);
+    little_endian_store_16(sco_packet, 0, sco_handle);
     // set len
     sco_packet[2] = frames_per_packet;
     int i;
@@ -267,9 +267,9 @@ static void packet_handler(uint8_t * event, uint16_t event_size){
             // try_send_sco();
             break;
         case HCI_EVENT_SYNCHRONOUS_CONNECTION_COMPLETE:
-            // printf("HCI_EVENT_SYNCHRONOUS_CONNECTION_COMPLETE status %u, %x\n", event[2], READ_BT_16(event, 3));
+            // printf("HCI_EVENT_SYNCHRONOUS_CONNECTION_COMPLETE status %u, %x\n", event[2], little_endian_read_16(event, 3));
             if (event[2]) break;
-            sco_handle = READ_BT_16(event, 3);
+            sco_handle = little_endian_read_16(event, 3);
             break;  
         case HCI_EVENT_HSP_META:
             switch (event[2]) { 

@@ -120,10 +120,10 @@ static void emit_value_byte(uint8_t event_byte){
     uint8_t event[11];
     event[0] = SDP_EVENT_QUERY_ATTRIBUTE_VALUE;
     event[1] = 9;
-    bt_store_16(event, 2, record_counter);
-    bt_store_16(event, 4, attribute_id);
-    bt_store_16(event, 6, attribute_value_size);
-    bt_store_16(event, 8, attribute_bytes_delivered);
+    little_endian_store_16(event, 2, record_counter);
+    little_endian_store_16(event, 4, attribute_id);
+    little_endian_store_16(event, 6, attribute_value_size);
+    little_endian_store_16(event, 8, attribute_bytes_delivered);
     event[10] = event_byte;
     (*sdp_query_callback)(HCI_EVENT_PACKET, event, sizeof(event)); 
 }
@@ -251,14 +251,14 @@ void sdp_parser_init_service_search(void){
 void sdp_parser_handle_service_search(uint8_t * data, uint16_t total_count, uint16_t record_handle_count){
     int i;
     for (i=0;i<record_handle_count;i++){
-        record_handle = READ_NET_32(data, i*4);
+        record_handle = bit_endian_read_32(data, i*4);
         record_counter++;
         uint8_t event[10];
         event[0] = SDP_EVENT_QUERY_SERVICE_RECORD_HANDLE;
         event[1] = 8;
-        bt_store_16(event, 2, total_count);
-        bt_store_16(event, 4, record_counter);
-        bt_store_32(event, 6, record_handle);
+        little_endian_store_16(event, 2, total_count);
+        little_endian_store_16(event, 4, record_counter);
+        little_endian_store_32(event, 6, record_handle);
         (*sdp_query_callback)(HCI_EVENT_PACKET, event, sizeof(event)); 
     }        
 }

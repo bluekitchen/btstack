@@ -94,9 +94,9 @@ static void chipset_init(const void * config){
 
 // set requested baud rate
 static void update_init_script_command(uint8_t *hci_cmd_buffer){
-    uint16_t varid = READ_BT_16(hci_cmd_buffer, 10);
+    uint16_t varid = little_endian_read_16(hci_cmd_buffer, 10);
     if (varid != 0x7003) return;
-    uint16_t key = READ_BT_16(hci_cmd_buffer, 14);
+    uint16_t key = little_endian_read_16(hci_cmd_buffer, 14);
     log_info("csr: pskey 0x%04x", key);
     if (key != 0x01ea) return;
 
@@ -107,8 +107,8 @@ static void update_init_script_command(uint8_t *hci_cmd_buffer){
         baudrate = hci_transport_config_uart->baudrate_init;
     }
     // uint32_t is stored as 2 x uint16_t with most important 16 bits first
-    bt_store_16(hci_cmd_buffer, 20, baudrate >> 16);
-    bt_store_16(hci_cmd_buffer, 22, baudrate &  0xffff);
+    little_endian_store_16(hci_cmd_buffer, 20, baudrate >> 16);
+    little_endian_store_16(hci_cmd_buffer, 22, baudrate &  0xffff);
 }
 
 static btstack_chipset_result_t chipset_next_command(uint8_t * hci_cmd_buffer){
@@ -132,7 +132,7 @@ static btstack_chipset_result_t chipset_next_command(uint8_t * hci_cmd_buffer){
     init_script_offset += payload_len;
 
     // support for warm boot command
-    uint16_t varid = READ_BT_16(hci_cmd_buffer, 10);
+    uint16_t varid = little_endian_read_16(hci_cmd_buffer, 10);
     if (varid == 0x4002){
         return BTSTACK_CHIPSET_WARMSTART_REQUIRED;
     }

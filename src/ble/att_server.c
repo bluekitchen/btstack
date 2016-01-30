@@ -103,9 +103,9 @@ static void att_handle_value_indication_notify_client(uint8_t status, uint16_t c
     event[pos++] = ATT_EVENT_HANDLE_VALUE_INDICATION_COMPLETE;
     event[pos++] = sizeof(event) - 2;
     event[pos++] = status;
-    bt_store_16(event, pos, client_handle);
+    little_endian_store_16(event, pos, client_handle);
     pos += 2;
-    bt_store_16(event, pos, attribute_handle);
+    little_endian_store_16(event, pos, attribute_handle);
     pos += 2;
     (*att_client_packet_handler)(HCI_EVENT_PACKET, 0, &event[0], sizeof(event));
 }
@@ -118,9 +118,9 @@ static void att_emit_mtu_event(uint16_t handle, uint16_t mtu){
     int pos = 0;
     event[pos++] = ATT_EVENT_MTU_EXCHANGE_COMPLETE;
     event[pos++] = sizeof(event) - 2;
-    bt_store_16(event, pos, handle);
+    little_endian_store_16(event, pos, handle);
     pos += 2;
-    bt_store_16(event, pos, mtu);
+    little_endian_store_16(event, pos, mtu);
     pos += 2;
     (*att_client_packet_handler)(HCI_EVENT_PACKET, 0, &event[0], sizeof(event));
 }
@@ -149,7 +149,7 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
                         	att_client_addr_type = packet[7];
                             bt_flip_addr(att_client_address, &packet[8]);
                             // reset connection properties
-                            att_connection.con_handle = READ_BT_16(packet, 4);
+                            att_connection.con_handle = little_endian_read_16(packet, 4);
                             att_connection.mtu = ATT_DEFAULT_MTU;
                             att_connection.max_mtu = l2cap_max_le_mtu();
                             if (att_connection.max_mtu > ATT_REQUEST_BUFFER_SIZE){
@@ -168,7 +168,7 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
                 case HCI_EVENT_ENCRYPTION_CHANGE: 
                 case HCI_EVENT_ENCRYPTION_KEY_REFRESH_COMPLETE: 
                 	// check handle
-                	if (att_connection.con_handle != READ_BT_16(packet, 3)) break;
+                	if (att_connection.con_handle != little_endian_read_16(packet, 3)) break;
                 	att_connection.encryption_key_size = sm_encryption_key_size(att_connection.con_handle);
                 	att_connection.authenticated = sm_authenticated(att_connection.con_handle);
                 	break;
@@ -188,7 +188,7 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
                     break;
                 case SM_EVENT_IDENTITY_RESOLVING_SUCCEEDED:
                     att_ir_lookup_active = 0;
-                    att_ir_le_device_db_index = READ_BT_16(packet, 11);
+                    att_ir_le_device_db_index = little_endian_read_16(packet, 11);
                     log_info("SM_EVENT_IDENTITY_RESOLVING_SUCCEEDED id %u", att_ir_le_device_db_index);
                     att_run();
                     break;
@@ -231,7 +231,7 @@ static void att_signed_write_handle_cmac_result(uint8_t hash[8]){
     log_info("ATT Signed Write, valid signature");
 
     // update sequence number
-    uint32_t counter_packet = READ_BT_32(att_request_buffer, att_request_size-12);
+    uint32_t counter_packet = little_endian_read_32(att_request_buffer, att_request_size-12);
     le_device_db_remote_counter_set(att_ir_le_device_db_index, counter_packet+1);
     att_server_state = ATT_SERVER_REQUEST_RECEIVED_AND_VALIDATED;
     att_run();
@@ -265,7 +265,7 @@ static void att_run(void){
                 }
 
                 // check counter
-                uint32_t counter_packet = READ_BT_32(att_request_buffer, att_request_size-12);
+                uint32_t counter_packet = little_endian_read_32(att_request_buffer, att_request_size-12);
                 uint32_t counter_db     = le_device_db_remote_counter_get(att_ir_le_device_db_index);
                 log_info("ATT Signed Write, DB counter %"PRIu32", packet counter %"PRIu32, counter_db, counter_packet);
                 if (counter_packet < counter_db){
@@ -280,7 +280,7 @@ static void att_run(void){
                 att_server_state = ATT_SERVER_W4_SIGNED_WRITE_VALIDATION;
                 log_info("Orig Signature: ");
                 hexdump( &att_request_buffer[att_request_size-8], 8);
-                uint16_t attribute_handle = READ_BT_16(att_request_buffer, 1);
+                uint16_t attribute_handle = little_endian_read_16(att_request_buffer, 1);
                 sm_cmac_start(csrk, att_request_buffer[0], attribute_handle, att_request_size - 15, &att_request_buffer[3], counter_packet, att_signed_write_handle_cmac_result);
                 return;
             } 

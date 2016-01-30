@@ -99,7 +99,7 @@ extern "C" {
 #endif
 
 // 
-#define IS_COMMAND(packet, command) (READ_BT_16(packet,0) == command.opcode)
+#define IS_COMMAND(packet, command) (little_endian_read_16(packet,0) == command.opcode)
 
 
 /**

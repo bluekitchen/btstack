@@ -82,13 +82,13 @@ void mock_simulate_sm_data_packet(uint8_t * packet, uint16_t len){
 	uint8_t acl_buffer[len + 8];
 
 	// 0 - Connection handle : PB=10 : BC=00 
-    bt_store_16(acl_buffer, 0, handle | (0 << 12) | (0 << 14));
+    little_endian_store_16(acl_buffer, 0, handle | (0 << 12) | (0 << 14));
     // 2 - ACL length
-    bt_store_16(acl_buffer, 2,  len + 4);
+    little_endian_store_16(acl_buffer, 2,  len + 4);
     // 4 - L2CAP packet length
-    bt_store_16(acl_buffer, 4,  len + 0);
+    little_endian_store_16(acl_buffer, 4,  len + 0);
     // 6 - L2CAP channel DEST
-    bt_store_16(acl_buffer, 6, cid);  
+    little_endian_store_16(acl_buffer, 6, cid);  
 
 	memcpy(&acl_buffer[8], packet, len);
 	hci_dump_packet(HCI_ACL_DATA_PACKET, 1, &acl_buffer[0], len + 8);
@@ -208,13 +208,13 @@ int l2cap_send_connectionless(uint16_t handle, uint16_t cid, uint8_t * buffer, u
     int pb = hci_non_flushable_packet_boundary_flag_supported() ? 0x00 : 0x02;
 
 	// 0 - Connection handle : PB=pb : BC=00 
-    bt_store_16(packet_buffer, 0, handle | (pb << 12) | (0 << 14));
+    little_endian_store_16(packet_buffer, 0, handle | (pb << 12) | (0 << 14));
     // 2 - ACL length
-    bt_store_16(packet_buffer, 2,  len + 4);
+    little_endian_store_16(packet_buffer, 2,  len + 4);
     // 4 - L2CAP packet length
-    bt_store_16(packet_buffer, 4,  len + 0);
+    little_endian_store_16(packet_buffer, 4,  len + 0);
     // 6 - L2CAP channel DEST
-    bt_store_16(packet_buffer, 6, cid);  
+    little_endian_store_16(packet_buffer, 6, cid);  
 
 	memcpy(&packet_buffer[8], buffer, len);
 	hci_dump_packet(HCI_ACL_DATA_PACKET, 0, &packet_buffer[0], len + 8);

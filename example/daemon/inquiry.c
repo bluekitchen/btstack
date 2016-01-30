@@ -164,16 +164,16 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 
                         if (event == HCI_EVENT_INQUIRY_RESULT){
                             offset += 2; // Reserved + Reserved
-                            devices[deviceCount].classOfDevice = READ_BT_24(packet, offset);
+                            devices[deviceCount].classOfDevice = little_endian_read_24(packet, offset);
                             offset += 3;
-                            devices[deviceCount].clockOffset =   READ_BT_16(packet, offset) & 0x7fff;
+                            devices[deviceCount].clockOffset =   little_endian_read_16(packet, offset) & 0x7fff;
                             offset += 2;
                             devices[deviceCount].rssi  = 0;
                         } else {
                             offset += 1; // Reserved
-                            devices[deviceCount].classOfDevice = READ_BT_24(packet, offset);
+                            devices[deviceCount].classOfDevice = little_endian_read_24(packet, offset);
                             offset += 3;
-                            devices[deviceCount].clockOffset =   READ_BT_16(packet, offset) & 0x7fff;
+                            devices[deviceCount].clockOffset =   little_endian_read_16(packet, offset) & 0x7fff;
                             offset += 2;
                             devices[deviceCount].rssi  = packet[offset];
                             offset += 1;

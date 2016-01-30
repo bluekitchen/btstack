@@ -320,6 +320,6 @@ void sdp_query_rfcomm_channel_and_name_for_search_pattern(bd_addr_t remote, uint
 }
 
 void sdp_query_rfcomm_channel_and_name_for_uuid(bd_addr_t remote, uint16_t uuid){
-    net_store_16(des_serviceSearchPattern, 3, uuid);
+    big_endian_store_16(des_serviceSearchPattern, 3, uuid);
     sdp_query_rfcomm_channel_and_name_for_search_pattern(remote, (uint8_t*)des_serviceSearchPattern);
 }

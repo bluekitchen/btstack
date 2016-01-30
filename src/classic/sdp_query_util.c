@@ -55,7 +55,7 @@ static uint8_t* create_service_search_pattern_for_uuid128(uint8_t* uuid){
 }
 
 uint8_t* create_service_search_pattern_for_uuid(uint16_t uuid){
-	net_store_16(des_serviceSearchPattern, 3, uuid);
+	big_endian_store_16(des_serviceSearchPattern, 3, uuid);
 	return (uint8_t*)des_serviceSearchPattern;
 }
 

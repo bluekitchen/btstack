@@ -89,13 +89,13 @@ static void chipset_set_baudrate_command(uint32_t baudrate, uint8_t *hci_cmd_buf
             log_error("stlc2500d_baudrate_cmd baudrate %u not supported", baudrate);
             return;
     }
-    bt_store_16(hci_cmd_buffer, 0, OPCODE(OGF_VENDOR, 0xfc));
+    little_endian_store_16(hci_cmd_buffer, 0, OPCODE(OGF_VENDOR, 0xfc));
     hci_cmd_buffer[2] = 0x01;
     hci_cmd_buffer[3] = preset;
 }
 
 static void chipset_set_bd_addr_command(bd_addr_t addr, uint8_t *hci_cmd_buffer){
-    bt_store_16(hci_cmd_buffer, 0, OPCODE(OGF_VENDOR, 0x22));
+    little_endian_store_16(hci_cmd_buffer, 0, OPCODE(OGF_VENDOR, 0x22));
     hci_cmd_buffer[2] = 0x08;
     hci_cmd_buffer[3] = 254;
     hci_cmd_buffer[4] = 0x06;

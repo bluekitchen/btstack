@@ -314,7 +314,7 @@ static uint16_t att_read_callback(uint16_t con_handle, uint16_t attribute_handle
             return att_value_len; 
         case ATT_CHARACTERISTIC_GAP_APPEARANCE_01_VALUE_HANDLE:
             if (buffer){
-                bt_store_16(buffer, 0, gap_appearance);
+                little_endian_store_16(buffer, 0, gap_appearance);
             }
             return 2;
         case ATT_CHARACTERISTIC_GAP_PERIPHERAL_PRIVACY_FLAG_01_VALUE_HANDLE:
@@ -390,7 +390,7 @@ static int att_write_callback(uint16_t con_handle, uint16_t attribute_handle, ui
             printf("Setting device name to '%s'\n", gap_device_name);
             return 0;
         case ATT_CHARACTERISTIC_GAP_APPEARANCE_01_VALUE_HANDLE:
-            gap_appearance = READ_BT_16(buffer, 0);
+            gap_appearance = little_endian_read_16(buffer, 0);
             printf("Setting appearance to 0x%04x'\n", gap_appearance);
             return 0;
         case ATT_CHARACTERISTIC_GAP_PERIPHERAL_PRIVACY_FLAG_01_VALUE_HANDLE:
@@ -561,10 +561,10 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                     switch (packet[2]) {
                         case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
                             advertisements_enabled = 0;
-                            handle = READ_BT_16(packet, 4);
+                            handle = little_endian_read_16(packet, 4);
                             printf("Connection handle 0x%04x\n", handle);
                             // request connection parameter update - test parameters
-                            // l2cap_le_request_connection_parameter_update(READ_BT_16(packet, 4), 20, 1000, 100, 100);
+                            // l2cap_le_request_connection_parameter_update(little_endian_read_16(packet, 4), 20, 1000, 100, 100);
                             break;
 
                         default:
@@ -582,7 +582,7 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                     
                 case SM_EVENT_JUST_WORKS_REQUEST:
                     printf("SM_EVENT_JUST_WORKS_REQUEST\n");
-                    sm_just_works_confirm(READ_BT_16(packet, 2));
+                    sm_just_works_confirm(little_endian_read_16(packet, 2));
                     break;
 
                 case SM_EVENT_PASSKEY_INPUT_NUMBER:
@@ -597,7 +597,7 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
 
                 case SM_EVENT_PASSKEY_DISPLAY_NUMBER:
                     // display number
-                    printf("\nGAP Bonding %s (%u): Display Passkey '%06u\n", bd_addr_to_str(master_address), master_addr_type, READ_BT_32(packet, 11));
+                    printf("\nGAP Bonding %s (%u): Display Passkey '%06u\n", bd_addr_to_str(master_address), master_addr_type, little_endian_read_32(packet, 11));
                     break;
 
                 case SM_EVENT_PASSKEY_DISPLAY_CANCEL: 
@@ -606,7 +606,7 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
 
                 case SM_EVENT_AUTHORIZATION_REQUEST:
                     // auto-authorize connection if requested
-                    sm_authorization_grant(READ_BT_16(packet, 2));
+                    sm_authorization_grant(little_endian_read_16(packet, 2));
                     break;
 
                 case ATT_EVENT_HANDLE_VALUE_INDICATION_COMPLETE:

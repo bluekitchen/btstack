@@ -85,18 +85,18 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
         case L2CAP_EVENT_CHANNEL_OPENED:
             // inform about new l2cap connection
             bt_flip_addr(event_addr, &packet[3]);
-            psm = READ_BT_16(packet, 11); 
-            local_cid = READ_BT_16(packet, 13); 
-            handle = READ_BT_16(packet, 9);
+            psm = little_endian_read_16(packet, 11); 
+            local_cid = little_endian_read_16(packet, 13); 
+            handle = little_endian_read_16(packet, 9);
             if (packet[2] == 0) {
                 printf("Channel successfully opened: %s, handle 0x%02x, psm 0x%02x, local cid 0x%02x, remote cid 0x%02x\n",
-                       bd_addr_to_str(event_addr), handle, psm, local_cid,  READ_BT_16(packet, 15));
+                       bd_addr_to_str(event_addr), handle, psm, local_cid,  little_endian_read_16(packet, 15));
             } else {
                 printf("L2CAP connection to device %s failed. status code %u\n", bd_addr_to_str(event_addr), packet[2]);
             }
             break;
         case L2CAP_EVENT_INCOMING_CONNECTION: {
-            uint16_t l2cap_cid  = READ_BT_16(packet, 12);
+            uint16_t l2cap_cid  = little_endian_read_16(packet, 12);
             printf("L2CAP Accepting incoming connection request\n"); 
             l2cap_accept_connection(l2cap_cid);
             break;
