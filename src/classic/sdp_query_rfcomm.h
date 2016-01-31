@@ -57,7 +57,7 @@ extern "C" {
 /** 
  * @brief Registers a callback to receive RFCOMM service and query complete event. 
  */
-void sdp_query_rfcomm_register_callback(void(*sdp_app_callback)(uint8_t packet_type, uint8_t *packet, uint16_t size, void * context), void * context);
+void sdp_query_rfcomm_register_callback(void(*sdp_app_callback)(uint8_t packet_type, uint8_t *packet, uint16_t size));
 
 /** 
  * @brief Searches SDP records on a remote device for RFCOMM services with a given UUID.

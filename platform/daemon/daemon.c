@@ -159,7 +159,7 @@ typedef struct btstack_linked_list_gatt_client_helper{
 } btstack_linked_list_gatt_client_helper_t;
 
 // MARK: prototypes
-static void handle_sdp_rfcomm_service_result(uint8_t packet_type, uint8_t *packet, uint16_t size, void * context);
+static void handle_sdp_rfcomm_service_result(uint8_t packet_type, uint8_t *packet, uint16_t size);
 static void handle_sdp_client_query_result(uint8_t packet_type, uint8_t *packet, uint16_t size);
 static void dummy_bluetooth_status_handler(BLUETOOTH_STATE state);
 static client_state_t * client_for_connection(connection_t *connection);
@@ -1099,7 +1099,8 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             serviceSearchPatternLen = de_get_len(&packet[9]);
             memcpy(serviceSearchPattern, &packet[9], serviceSearchPatternLen);
 
-            sdp_query_rfcomm_register_callback(handle_sdp_rfcomm_service_result, connection);
+            sdp_client_query_connection = connection;
+            sdp_query_rfcomm_register_callback(handle_sdp_rfcomm_service_result);
             sdp_query_rfcomm_channel_and_name_for_search_pattern(addr, serviceSearchPattern);
 
             break;
@@ -1573,13 +1574,13 @@ static void rfcomm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t
     daemon_packet_handler(NULL, packet_type, channel, packet, size);
 }
 
-static void handle_sdp_rfcomm_service_result(uint8_t packet_type, uint8_t *packet, uint16_t size, void * context){
+static void handle_sdp_rfcomm_service_result(uint8_t packet_type, uint8_t *packet, uint16_t size){
     switch (packet[0]){
         case SDP_EVENT_QUERY_RFCOMM_SERVICE:
         case SDP_EVENT_QUERY_COMPLETE:
             // already HCI Events, just forward them
             hci_dump_packet(HCI_EVENT_PACKET, 0, packet, size);
-            socket_connection_send_packet(context, HCI_EVENT_PACKET, 0, packet, size);
+            socket_connection_send_packet(sdp_client_query_connection, HCI_EVENT_PACKET, 0, packet, size);
             break;
         default: 
             break;
