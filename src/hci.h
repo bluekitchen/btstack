@@ -703,7 +703,6 @@ void hci_emit_l2cap_check_timeout(hci_connection_t *conn);
 void hci_emit_disconnection_complete(uint16_t handle, uint8_t reason);
 void hci_emit_nr_connections_changed(void);
 void hci_emit_hci_open_failed(void);
-void hci_emit_btstack_version(void);
 void hci_emit_system_bluetooth_enabled(uint8_t enabled);
 void hci_emit_remote_name_cached(bd_addr_t addr, device_name_t *name);
 void hci_emit_discoverable_enabled(uint8_t enabled);

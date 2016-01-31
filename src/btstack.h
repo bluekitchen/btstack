@@ -56,7 +56,6 @@
 #include "btstack_memory_pool.h"
 #include "btstack_run_loop.h"
 #include "btstack_util.h"
-#include "btstack_version.h"
 #include "gap.h"
 #include "hci.h"
 #include "hci_cmd.h"

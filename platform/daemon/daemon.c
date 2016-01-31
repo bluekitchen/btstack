@@ -668,6 +668,16 @@ static void daemon_disconnect_client(connection_t * connection){
     free(client); 
 }
 
+static void hci_emit_btstack_version(void){
+    log_info("BTSTACK_EVENT_VERSION %u.%u", BTSTACK_MAJOR, BTSTACK_MINOR);
+    uint8_t event[6];
+    event[0] = BTSTACK_EVENT_VERSION;
+    event[1] = sizeof(event) - 2;
+    event[2] = BTSTACK_MAJOR;
+    event[3] = BTSTACK_MINOR;
+    little_endian_store_16(event, 4, 3257);    // last SVN commit on Google Code + 1
+    socket_connection_send_packet_all(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
 
 static void send_l2cap_connection_open_failed(connection_t * connection, bd_addr_t address, uint16_t psm, uint8_t status){
     // emit error - see l2cap.c:l2cap_emit_channel_opened(..)

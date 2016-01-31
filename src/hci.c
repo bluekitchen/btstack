@@ -65,7 +65,6 @@
 #include "btstack_debug.h"
 #include "btstack_linked_list.h"
 #include "btstack_memory.h"
-#include "btstack_version.h"
 #include "gap.h"
 #include "hci.h"
 #include "hci_cmd.h"
@@ -2993,18 +2992,6 @@ void hci_emit_hci_open_failed(void){
     uint8_t event[2];
     event[0] = BTSTACK_EVENT_POWERON_FAILED;
     event[1] = sizeof(event) - 2;
-    hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
-    hci_stack->packet_handler(HCI_EVENT_PACKET, event, sizeof(event));
-}
-
-void hci_emit_btstack_version(void){
-    log_info("BTSTACK_EVENT_VERSION %u.%u", BTSTACK_MAJOR, BTSTACK_MINOR);
-    uint8_t event[6];
-    event[0] = BTSTACK_EVENT_VERSION;
-    event[1] = sizeof(event) - 2;
-    event[2] = BTSTACK_MAJOR;
-    event[3] = BTSTACK_MINOR;
-    little_endian_store_16(event, 4, 3257);    // last SVN commit on Google Code + 1
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
     hci_stack->packet_handler(HCI_EVENT_PACKET, event, sizeof(event));
 }

@@ -31,7 +31,7 @@ LDFLAGS += $(shell pkg-config libusb-1.0 --libs)
 
 EXAMPLES = iopt hfp_hf_test hfp_ag_test ble_peripheral_test ble_central_test l2cap_test classic_test bnep_test hsp_ag_test hsp_hs_test sco_loopback
 
-all: ${BTSTACK_ROOT}/src/btstack_version.h ${EXAMPLES}
+all: ${EXAMPLES}
 
 # compile .gatt descriptions
 ble_peripheral_test.h: ble_peripheral_test.gatt
