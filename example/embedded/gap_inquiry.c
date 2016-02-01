@@ -207,11 +207,6 @@ static void packet_handler (uint8_t packet_type, uint8_t *packet, uint16_t size)
                     continue_remote_names();
                     break;
 
-                case BTSTACK_EVENT_REMOTE_NAME_CACHED:
-                    bt_flip_addr(addr, &packet[3]);
-                    printf("Cached remote name for %s: '%s'\n", bd_addr_to_str(addr), &packet[9]);
-                    break;
-
                 case HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE:
                     bt_flip_addr(addr, &packet[3]);
                     index = getDeviceIndexForAddress(addr);

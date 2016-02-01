@@ -1488,8 +1488,19 @@ static void app_run(void){
 }
 #endif 
 
+static void daemon_emit_packet(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    if (connection) {
+        socket_connection_send_packet(connection, packet_type, channel, packet, size);
+    } else {
+        socket_connection_send_packet_all(packet_type, channel, packet, size);
+    }
+}
+
+static uint8_t remote_name_event[2+1+6+DEVICE_NAME_LEN+1]; // +1 for \0 in log_info
 static void daemon_packet_handler(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     uint16_t cid;
+    int i;
+    bd_addr_t addr;
     switch (packet_type) {
         case HCI_EVENT_PACKET:
             deamon_status_event_handler(packet, size);
@@ -1500,11 +1511,56 @@ static void daemon_packet_handler(void * connection, uint8_t packet_type, uint16
                     daemon_retry_parked();
                     // no need to tell clients
                     return;
+
+                case HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE:
+                    if (!remote_device_db) break;
+                    if (packet[2]) break; // status not ok
+
+                    bt_flip_addr(addr, &packet[3]);
+                    // fix for invalid remote names - terminate on 0xff
+                    for (i=0; i<248;i++){
+                        if (packet[9+i] == 0xff){
+                            packet[9+i] = 0;
+                            break;
+                        }
+                    }
+                    packet[9+248] = 0;
+                    remote_device_db->put_name(addr, (device_name_t *)&packet[9]);
+                    break;
+                
+                case HCI_EVENT_INQUIRY_RESULT:
+                case HCI_EVENT_INQUIRY_RESULT_WITH_RSSI:{
+                    if (!remote_device_db) break;
+                    
+                    // first send inq result packet
+                    daemon_emit_packet(connection, packet_type, channel, packet, size);
+
+                    // then send cached remote names
+                    int offset = 3;
+                    for (i=0; i<packet[2];i++){
+                        bt_flip_addr(addr, &packet[offset]);
+                        if (remote_device_db->get_name(addr, (device_name_t *) &remote_name_event[9])){
+                            remote_name_event[0] = BTSTACK_EVENT_REMOTE_NAME_CACHED;
+                            remote_name_event[1] = sizeof(remote_name_event) - 2 - 1;
+                            remote_name_event[2] = 0;   // just to be compatible with HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE
+                            bt_flip_addr(&remote_name_event[3], addr);
+                            
+                            remote_name_event[9+248] = 0;   // assert \0 for log_info
+                            log_info("BTSTACK_EVENT_REMOTE_NAME_CACHED %s = '%s'", bd_addr_to_str(addr), &remote_name_event[9]);
+                            hci_dump_packet(HCI_EVENT_PACKET, 0, remote_name_event, sizeof(remote_name_event)-1);
+                            daemon_emit_packet(connection, HCI_EVENT_PACKET, channel, remote_name_event, sizeof(remote_name_event) -1);
+                        }
+                        offset += 14; // 6 + 1 + 1 + 1 + 3 + 2; 
+                    }
+                    return;
+                }
+                
                 case RFCOMM_EVENT_CREDITS:
                     // RFCOMM CREDITS received...
                     daemon_retry_parked();
                     break;
-                 case RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE:
+                
+                case RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE:
                     cid = little_endian_read_16(packet, 13);
                     connection = connection_for_rfcomm_cid(cid);
                     if (!connection) break;
@@ -1570,11 +1626,7 @@ static void daemon_packet_handler(void * connection, uint8_t packet_type, uint16
             break;
     }
     
-    if (connection) {
-        socket_connection_send_packet(connection, packet_type, channel, packet, size);
-    } else {
-        socket_connection_send_packet_all(packet_type, channel, packet, size);
-    }
+    daemon_emit_packet(connection, packet_type, channel, packet, size);
 }
 
 static void l2cap_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * packet, uint16_t size){
