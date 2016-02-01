@@ -72,7 +72,9 @@ typedef struct btstack_timer_source {
 #if defined(HAVE_TICK) || defined(HAVE_TIME_MS)
     uint32_t timeout;                       // timeout in system ticks (HAVE_TICK) or millis (HAVE_TIME_MS)
 #endif
-    void  (*process)(struct btstack_timer_source *ts);      // <-- do processing
+    // will be called when timer fired
+    void  (*process)(struct btstack_timer_source *ts); 
+    void * context;
 } btstack_timer_source_t;
 
 // 
@@ -111,9 +113,23 @@ void btstack_run_loop_set_timer(btstack_timer_source_t *a, uint32_t timeout_in_m
 void btstack_run_loop_set_timer_handler(btstack_timer_source_t *ts, void (*process)(btstack_timer_source_t *_ts));
 
 /**
- * @brief Add/Remove timer source.
+ * @brief Set context for this timer
+ */
+void btstack_run_loop_set_timer_context(btstack_timer_source_t *ts, void * context);
+
+/**
+ * @brief Get context for this timer
+ */
+void * btstack_run_loop_get_timer_context(btstack_timer_source_t *ts);
+
+/**
+ * @brief Add timer source.
  */
 void btstack_run_loop_add_timer(btstack_timer_source_t *timer); 
+
+/**
+ * @brief Remove timer source.
+ */
 int  btstack_run_loop_remove_timer(btstack_timer_source_t *timer);
 
 /**

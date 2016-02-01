@@ -103,6 +103,20 @@ void btstack_run_loop_set_timer(btstack_timer_source_t *a, uint32_t timeout_in_m
 }
 
 /**
+ * @brief Set context for this timer
+ */
+void btstack_run_loop_set_timer_context(btstack_timer_source_t *ts, void * context){
+    ts->context = context;
+}
+
+/**
+ * @brief Get context for this timer
+ */
+void * btstack_run_loop_get_timer_context(btstack_timer_source_t *ts){
+    return ts->context;
+}
+
+/**
  * Add timer to run_loop (keep list sorted)
  */
 void btstack_run_loop_add_timer(btstack_timer_source_t *ts){
