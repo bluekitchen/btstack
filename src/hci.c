@@ -112,8 +112,8 @@ static hci_connection_t * create_connection_for_bd_addr_and_type(bd_addr_t addr,
     conn->authentication_flags = AUTH_FLAGS_NONE;
     conn->bonding_flags = 0;
     conn->requested_security_level = LEVEL_0;
-    btstack_linked_item_set_user(&conn->timeout.item, conn);
-    conn->timeout.process = hci_connection_timeout_handler;
+    btstack_run_loop_set_timer_handler(&conn->timeout, hci_connection_timeout_handler);
+    btstack_run_loop_set_timer_context(&conn->timeout, conn);
     hci_connection_timestamp(conn);
     conn->acl_recombination_length = 0;
     conn->acl_recombination_pos = 0;
@@ -188,7 +188,7 @@ hci_connection_t * hci_connection_for_bd_addr_and_type(bd_addr_t  addr, bd_addr_
 }
 
 static void hci_connection_timeout_handler(btstack_timer_source_t *timer){
-    hci_connection_t * connection = (hci_connection_t *) btstack_linked_item_get_user(&timer->item);
+    hci_connection_t * connection = (hci_connection_t *) btstack_run_loop_get_timer_context(timer);
 #ifdef HAVE_TIME
     struct timeval tv;
     gettimeofday(&tv, NULL);

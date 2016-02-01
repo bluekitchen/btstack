@@ -612,7 +612,7 @@ int bnep_set_multicast_filter(uint16_t bnep_cid,  bnep_multi_filter_t *filter, u
 /* BNEP timeout timer helper function */
 static void bnep_channel_timer_handler(btstack_timer_source_t *timer)
 {
-    bnep_channel_t *channel = (bnep_channel_t *)btstack_linked_item_get_user((btstack_linked_item_t *) timer);
+    bnep_channel_t *channel = btstack_run_loop_get_timer_context(timer);
     // retry send setup connection at least one time
     if (channel->state == BNEP_CHANNEL_STATE_WAIT_FOR_CONNECTION_RESPONSE){
         if (channel->retry_count < BNEP_CONNECTION_MAX_RETRIES){
@@ -645,8 +645,8 @@ static void bnep_channel_start_timer(bnep_channel_t *channel, int timeout)
 
     /* Start bnep channel timeout check timer */
     btstack_run_loop_set_timer(&channel->timer, timeout);
-    channel->timer.process = bnep_channel_timer_handler;
-    btstack_linked_item_set_user((btstack_linked_item_t*) &channel->timer, channel);
+    btstack_run_loop_set_timer_handler(&channel->timer, bnep_channel_timer_handler);
+    btstack_run_loop_set_timer_context(&channel->timer, channel);
     btstack_run_loop_add_timer(&channel->timer);
     channel->timer_active = 1;    
 }

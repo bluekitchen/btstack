@@ -715,7 +715,7 @@ static void rfcomm_multiplexer_finalize(rfcomm_multiplexer_t * multiplexer){
 }
 
 static void rfcomm_multiplexer_timer_handler(btstack_timer_source_t *timer){
-    rfcomm_multiplexer_t * multiplexer = (rfcomm_multiplexer_t *) btstack_linked_item_get_user( (btstack_linked_item_t *) timer);
+    rfcomm_multiplexer_t * multiplexer = btstack_run_loop_get_timer_context(timer);
     if (rfcomm_multiplexer_has_channels(multiplexer)) return;
 
     log_info("rfcomm_multiplexer_timer_handler timeout: shutting down multiplexer! (no channels)");
@@ -733,8 +733,8 @@ static void rfcomm_multiplexer_prepare_idle_timer(rfcomm_multiplexer_t * multipl
 
     // start idle timer for multiplexer timeout check as there are no rfcomm channels yet
     btstack_run_loop_set_timer(&multiplexer->timer, RFCOMM_MULIPLEXER_TIMEOUT_MS);
-    multiplexer->timer.process = rfcomm_multiplexer_timer_handler;
-    btstack_linked_item_set_user((btstack_linked_item_t*) &multiplexer->timer, multiplexer);
+    btstack_run_loop_set_timer_handler(&multiplexer->timer, rfcomm_multiplexer_timer_handler);
+    btstack_run_loop_set_timer_context(&multiplexer->timer, multiplexer);
     btstack_run_loop_add_timer(&multiplexer->timer);
     multiplexer->timer_active = 1;
 }

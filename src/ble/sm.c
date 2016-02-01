@@ -311,7 +311,7 @@ static void sm_truncate_key(sm_key_t key, int max_encryption_size){
 
 static void sm_timeout_handler(btstack_timer_source_t * timer){
     log_info("SM timeout");
-    sm_connection_t * sm_conn = (sm_connection_t *) btstack_linked_item_get_user((btstack_linked_item_t*) timer);
+    sm_connection_t * sm_conn = btstack_run_loop_get_timer_context(timer);
     sm_conn->sm_engine_state = SM_GENERAL_TIMEOUT;
     sm_done_for_handle(sm_conn->sm_handle);
 
@@ -320,9 +320,9 @@ static void sm_timeout_handler(btstack_timer_source_t * timer){
 }
 static void sm_timeout_start(sm_connection_t * sm_conn){
     btstack_run_loop_remove_timer(&setup->sm_timeout);
+    btstack_run_loop_set_timer_context(&setup->sm_timeout, sm_conn);
     btstack_run_loop_set_timer_handler(&setup->sm_timeout, sm_timeout_handler);
     btstack_run_loop_set_timer(&setup->sm_timeout, 30000); // 30 seconds sm timeout
-    btstack_linked_item_set_user((btstack_linked_item_t*) &setup->sm_timeout, sm_conn);
     btstack_run_loop_add_timer(&setup->sm_timeout);
 }
 static void sm_timeout_stop(void){
