@@ -110,9 +110,14 @@ typedef enum {
     SOCKET_W4_DATA
 } SOCKET_STATE;
 
+typedef struct linked_connection {
+    btstack_linked_item_t item;
+    connection_t * connection;
+} linked_connection_t;
+
 struct connection {
-    btstack_data_source_t ds;       // used for run loop
-    btstack_linked_item_t item;     // used for connection list, user_data points to connection_t base
+    btstack_data_source_t ds;                // used for run loop
+    linked_connection_t linked_connection;   // used for connection list
     SOCKET_STATE state;
     uint16_t bytes_read;
     uint16_t bytes_to_read;
@@ -144,7 +149,7 @@ void socket_connection_free_connection(connection_t *conn){
     btstack_run_loop_remove_data_source(&conn->ds);
     
     // and from connection list
-    btstack_linked_list_remove(&connections, &conn->item);
+    btstack_linked_list_remove(&connections, &conn->linked_connection.item);
     
     // destroy
     free(conn);
@@ -161,7 +166,10 @@ connection_t * socket_connection_register_new_connection(int fd){
     // create connection objec 
     connection_t * conn = malloc( sizeof(connection_t));
     if (conn == NULL) return 0;
-    btstack_linked_item_set_user( &conn->item, conn);
+
+    // store reference from linked item to base object
+    conn->linked_connection.connection = conn;
+
     conn->ds.fd = fd;
     conn->ds.process = socket_connection_hci_process;
     
@@ -172,7 +180,7 @@ connection_t * socket_connection_register_new_connection(int fd){
     btstack_run_loop_add_data_source( &conn->ds );
     
     // and the connection list
-    btstack_linked_list_add( &connections, &conn->item);
+    btstack_linked_list_add( &connections, &conn->linked_connection.item);
     
     return conn;
 }
@@ -210,7 +218,7 @@ int socket_connection_hci_process(struct btstack_data_source *ds) {
         socket_connection_emit_connection_closed(conn);
         
         // free connection
-        socket_connection_free_connection(btstack_linked_item_get_user(&conn->item));
+        socket_connection_free_connection(conn);
         
         socket_connection_emit_nr_connections();
         return 0;
@@ -538,7 +546,8 @@ void socket_connection_send_packet_all(uint16_t type, uint16_t channel, uint8_t 
     btstack_linked_item_t *it;
     for (it = (btstack_linked_item_t *) connections; it ; it = next){
         next = it->next; // cache pointer to next connection_t to allow for removal
-        socket_connection_send_packet( (connection_t *) btstack_linked_item_get_user(it), type, channel, packet, size);
+        linked_connection_t * linked_connection = (linked_connection_t *) it;
+        socket_connection_send_packet( linked_connection->connection, type, channel, packet, size);
     }
 }
 

@@ -124,16 +124,6 @@ int  btstack_linked_list_remove(btstack_linked_list_t * list, btstack_linked_ite
     return counter; 
 }
 
-
-void btstack_linked_item_set_user(btstack_linked_item_t *item, void *user_data){
-    item->next = (btstack_linked_item_t *) 0;
-    item->user_data = user_data;
-}
-
-void * btstack_linked_item_get_user(btstack_linked_item_t *item) {
-    return item->user_data;
-}
-
 //
 // Linked List Iterator implementation
 //

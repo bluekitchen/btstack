@@ -60,10 +60,6 @@ typedef struct {
 } btstack_linked_list_iterator_t;
 
 
-// set user data
-void                    btstack_linked_item_set_user(btstack_linked_item_t *item, void *user_data);
-// get user data
-void *                  btstack_linked_item_get_user(btstack_linked_item_t *item);
 // test if list is empty
 int                     btstack_linked_list_empty(btstack_linked_list_t * list);
 // add item to list as first element
