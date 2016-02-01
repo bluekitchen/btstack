@@ -161,7 +161,7 @@ static void handle_found_service(const char * name, uint8_t port){
     state = W4_SDP_COMPLETE;
 }
 
-static void handle_query_rfcomm_event(uint8_t packet_type, uint8_t *packet, uint16_t size, void * context){            
+static void handle_query_rfcomm_event(uint8_t packet_type, uint8_t *packet, uint16_t size){            
     switch (packet[0]){
         case SDP_EVENT_QUERY_RFCOMM_SERVICE:
             handle_found_service(sdp_query_rfcomm_service_event_get_name(packet), 
@@ -195,7 +195,7 @@ int btstack_main(int argc, const char * argv[]){
 
     rfcomm_register_packet_handler(packet_handler);
 
-    sdp_query_rfcomm_register_callback(handle_query_rfcomm_event, NULL);
+    sdp_query_rfcomm_register_callback(handle_query_rfcomm_event);
 
     // turn on!
     hci_power_control(HCI_POWER_ON);

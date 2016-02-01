@@ -108,7 +108,7 @@ static void report_found_services(void){
     printf(" ***\n\n");
 }
 
-static void handle_query_rfcomm_event(uint8_t packet_type, uint8_t *packet, uint16_t size, void * context){
+static void handle_query_rfcomm_event(uint8_t packet_type, uint8_t *packet, uint16_t size){
     switch (packet[0]){
         case SDP_EVENT_QUERY_RFCOMM_SERVICE:
             store_found_service(sdp_query_rfcomm_service_event_get_name(packet), 
@@ -129,7 +129,7 @@ int btstack_main(int argc, const char * argv[]){
     l2cap_init();
     l2cap_register_packet_handler(packet_handler);
 
-    sdp_query_rfcomm_register_callback(handle_query_rfcomm_event, NULL);
+    sdp_query_rfcomm_register_callback(handle_query_rfcomm_event);
 
     // turn on!
     hci_power_control(HCI_POWER_ON);

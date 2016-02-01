@@ -109,7 +109,7 @@ static hsp_state_t hsp_state = HSP_IDLE;
 
 static void hsp_run(void);
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
-static void handle_query_rfcomm_event(uint8_t packet_type, uint8_t *packet, uint16_t size, void * context);
+static void handle_query_rfcomm_event(uint8_t packet_type, uint8_t *packet, uint16_t size);
 
 static hsp_hs_callback_t hsp_hs_callback;
 static void dummy_notify(uint8_t * event, uint16_t size){}
@@ -262,7 +262,7 @@ void hsp_hs_init(uint8_t rfcomm_channel_nr){
     rfcomm_register_packet_handler(packet_handler);
     rfcomm_register_service(rfcomm_channel_nr, 0xffff);  // reserved channel, mtu limited by l2cap
 
-    sdp_query_rfcomm_register_callback(handle_query_rfcomm_event, NULL);
+    sdp_query_rfcomm_register_callback(handle_query_rfcomm_event);
 
     hsp_hs_reset_state();
 }
@@ -573,7 +573,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
     hsp_run();
 }
 
-static void handle_query_rfcomm_event(uint8_t packet_type, uint8_t *packet, uint16_t size, void * context){
+static void handle_query_rfcomm_event(uint8_t packet_type, uint8_t *packet, uint16_t size){
     switch (packet[0]){
         case SDP_EVENT_QUERY_RFCOMM_SERVICE:
             channel_nr = sdp_query_rfcomm_service_event_get_rfcomm_channel(packet);
