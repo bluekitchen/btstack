@@ -23,13 +23,14 @@
 #define HCI_ACL_PAYLOAD_SIZE 1021
 
 // Daemon configuration
+#define BTSTACK_DEVICE_NAME_DB_INSTANCE btstack_device_name_db_cocoa_instance
+#define BTSTACK_LINK_KEY_DB_INSTANCE btstack_link_key_db_cocoa_instance
 #define ENABLE_RFCOMM
 #define ENABLE_SDP
 #define HAVE_TRANSPORT_H4
 #define UART_DEVICE "/dev/tty.bluetooth"
 #define UART_SPEED 921600
-#define REMOTE_DEVICE_DB remote_device_db_iphone
-#define USE_SPRINGBOARD
 #define USE_LAUNCHD
+#define USE_SPRINGBOARD
 
 #endif

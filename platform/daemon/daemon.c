@@ -96,6 +96,12 @@
 extern void hci_transport_h4_iphone_set_enforce_wake_device(char *path);
 #endif
 
+// copy of prototypes
+const btstack_device_name_db_t * btstack_device_name_db_cocoa_instance(void);
+const btstack_device_name_db_t * btstack_device_name_db_fs_instance(void);
+const btstack_link_key_db_t * btstack_link_key_db_cocoa_instance(void);
+const btstack_link_key_db_t * btstack_link_key_db_fs_instance(void);
+
 #ifndef BTSTACK_LOG_FILE
 #define BTSTACK_LOG_FILE "/tmp/hci_dump.pklg"
 #endif
@@ -2017,8 +2023,12 @@ int main (int argc,  char * const * argv){
     platform_iphone_register_preferences_changed(preferences_changed_callback);
 #endif
     
-#ifdef btstack_link_key_db
-    btstack_link_key_db = &btstack_link_key_db;
+#ifdef BTSTACK_LINK_KEY_DB_INSTANCE
+    btstack_link_key_db = BTSTACK_LINK_KEY_DB_INSTANCE();
+#endif
+
+#ifdef BTSTACK_DEVICE_NAME_DB_INSTANCE
+    btstack_device_name_db = BTSTACK_DEVICE_NAME_DB_INSTANCE();
 #endif
 
     btstack_run_loop_init(btstack_run_loop_posix_get_instance());

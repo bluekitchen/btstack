@@ -65,8 +65,9 @@ case "$host_os" in
         LDFLAGS="$LDFLAGS -framework CoreFoundation -framework Foundation"
         BTSTACK_LIB_LDFLAGS="-dynamiclib -install_name \$(prefix)/lib/libBTstack.dylib"
         BTSTACK_LIB_EXTENSION="dylib"
-        REMOTE_DEVICE_DB_SOURCES="btstack_link_key_db_cocoa.m rfcomm_service_db_cocoa.m"
-        REMOTE_DEVICE_DB="remote_device_db_cocoa"
+        REMOTE_DEVICE_DB_SOURCES="btstack_link_key_db_cocoa.m btstack_device_name_db_cocoa.m rfcomm_service_db_cocoa.m"
+        BTSTACK_LINK_KEY_DB_INSTANCE="btstack_link_key_db_cocoa_instance"
+        BTSTACK_DEVICE_NAME_DB_INSTANCE="btstack_device_name_db_cocoa_instance"
         HAVE_SO_NOSIGPIPE="yes";
         ;;
     mingw*)
@@ -75,13 +76,15 @@ case "$host_os" in
         BTSTACK_LIB_LDFLAGS="-shared"
         BTSTACK_LIB_EXTENSION="dll"
         REMOTE_DEVICE_DB_SOURCES="btstack_link_key_db_memory.c rfcomm_service_db_memory.c"
-        REMOTE_DEVICE_DB="btstack_link_key_db_memory"
+        BTSTACK_LINK_KEY_DB_INSTANCE="btstack_link_key_db_memory_instance"
+        # BTSTACK_DEVICE_NAME_DB_INSTANCE="btstack_device_name_db_memory_instance"
         ;;
     *)
         BTSTACK_LIB_LDFLAGS="-shared -Wl,-rpath,\$(prefix)/lib"
         BTSTACK_LIB_EXTENSION="so"
-        REMOTE_DEVICE_DB_SOURCES="btstack_link_key_db_memory.c rfcomm_service_db_memory.c"
-        REMOTE_DEVICE_DB="btstack_link_key_db_memory"
+        REMOTE_DEVICE_DB_SOURCES="btstack_link_key_db_memory.c btstack_device_name_db_fs.c rfcomm_service_db_memory.c"
+        BTSTACK_LINK_KEY_DB_INSTANCE="btstack_link_key_db_memory_instance"
+        BTSTACK_DEVICE_NAME_DB_INSTANCE="btstack_device_name_db_fs_instance"
     ;;
 esac
 
@@ -108,8 +111,9 @@ else
     echo "UART_SPEED:          $UART_SPEED"
 fi
 
-echo "REMOTE_DEVICE_DB:    $REMOTE_DEVICE_DB"
-echo "HAVE_SO_NOSIGPIPE:   $HAVE_SO_NOSIGPIPE"
+echo "BTSTACK_LINK_KEY_DB:     $BTSTACK_LINK_KEY_DB_INSTANCE"
+echo "BTSTACK_DEVICE_NAME_DB:  $BTSTACK_DEVICE_NAME_DB_INSTANCE"
+echo "HAVE_SO_NOSIGPIPE:       $HAVE_SO_NOSIGPIPE"
 echo
 echo
 
@@ -163,8 +167,11 @@ else
     echo "#define UART_DEVICE \"$UART_DEVICE\"" >> btstack_config.h
     echo "#define UART_SPEED $UART_SPEED" >> btstack_config.h
 fi
-if test ! -z "$REMOTE_DEVICE_DB" ; then 
-    echo "#define REMOTE_DEVICE_DB $REMOTE_DEVICE_DB" >> btstack_config.h
+if test ! -z "$BTSTACK_LINK_KEY_DB_INSTANCE" ; then 
+    echo "#define BTSTACK_LINK_KEY_DB_INSTANCE $BTSTACK_LINK_KEY_DB_INSTANCE" >> btstack_config.h
+fi
+if test ! -z "$BTSTACK_DEVICE_NAME_DB_INSTANCE" ; then 
+    echo "#define BTSTACK_DEVICE_NAME_DB_INSTANCE $BTSTACK_DEVICE_NAME_DB_INSTANCE" >> btstack_config.h
 fi
 
 echo                        >> btstack_config.h
