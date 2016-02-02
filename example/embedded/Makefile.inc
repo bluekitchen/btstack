@@ -21,7 +21,7 @@ COMMON += \
     hci_dump.c		            \
     l2cap.c			            \
     l2cap_signaling.c	        \
-	remote_device_db_memory.c   \
+	btstack_link_key_db_memory.c   \
     sdp_util.c	                \
     rfcomm.c	                \
     bnep.c	                    \

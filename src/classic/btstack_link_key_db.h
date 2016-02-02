@@ -35,64 +35,39 @@
  *
  */
 
-/*
- *  btstack.h
- *  Convenience header to include all public APIs
+/**
+ * interface to provide link key storage
  */
 
+#ifndef __BTSTACK_LINK_KEY_DB_H
+#define __BTSTACK_LINK_KEY_DB_H
 
-#ifndef __BTSTACK_H
-#define __BTSTACK_H
-
-#include "btstack_config.h"
-
-#include "bluetooth.h"
-#include "btstack.h"
-#include "btstack_control.h"
-#include "btstack_debug.h"
-#include "btstack_defines.h"
-#include "btstack_linked_list.h"
-#include "btstack_memory.h"
-#include "btstack_memory_pool.h"
-#include "btstack_run_loop.h"
 #include "btstack_util.h"
 #include "gap.h"
-#include "hci.h"
-#include "hci_cmd.h"
-#include "hci_dump.h"
-#include "hci_transport.h"
-#include "l2cap.h"
-#include "l2cap_signaling.h"
 
-#ifdef ENABLE_BLE
-#include "ble/ad_parser.h"
-#include "ble/ancs_client.h"
-#include "ble/att.h"
-#include "ble/att_db_util.h"
-#include "ble/att_dispatch.h"
-#include "ble/att_server.h"
-#include "ble/gatt_client.h"
-#include "ble/le_device_db.h"
-#include "ble/sm.h"
+#if defined __cplusplus
+extern "C" {
 #endif
 
-// #ifdef HAVE_CLASSIC
-#include "classic/bnep.h"
-#include "classic/hfp.h"
-#include "classic/hfp_ag.h"
-#include "classic/hfp_hf.h"
-#include "classic/hsp_ag.h"
-#include "classic/hsp_hs.h"
-#include "classic/pan.h"
-#include "classic/btstack_link_key_db.h"
-#include "classic/rfcomm.h"
-#include "classic/sdp.h"
-#include "classic/sdp_client.h"
-#include "classic/sdp_parser.h"
-#include "classic/sdp_query_rfcomm.h"
-#include "classic/sdp_query_util.h"
-#include "classic/sdp_util.h"
-// #endif
+/* API_START */
 
-#endif  // __BTSTACK_H
- 
+typedef struct {
+
+    // management
+    void (*open)(void);
+    void (*close)(void);
+    
+    // link key
+    int  (*get_link_key)(bd_addr_t bd_addr, link_key_t link_key, link_key_type_t * type);
+    void (*put_link_key)(bd_addr_t bd_addr, link_key_t link_key, link_key_type_t   type);
+    void (*delete_link_key)(bd_addr_t bd_addr);
+
+} btstack_link_key_db_t;
+
+/* API_END */
+
+#if defined __cplusplus
+}
+#endif
+
+#endif // __BTSTACK_LINK_KEY_DB_H

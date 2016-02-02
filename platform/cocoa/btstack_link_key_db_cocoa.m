@@ -33,7 +33,7 @@
  * Please inquire about commercial licensing options at btstack@ringwald.ch
  *
  */
-#include "classic/btstack_link_key_db.h"
+#include "btstack_link_key_db_cocoa.h"
 #include "btstack_debug.h"
 
 #import <Foundation/Foundation.h>
@@ -42,10 +42,7 @@
 #define BTDaemonPrefsPath  "Library/Preferences/ch.ringwald.btdaemon.plist"
 
 #define DEVICES_KEY        "devices"
-#define PREFS_REMOTE_NAME  @"RemoteName"
 #define PREFS_LINK_KEY     @"LinkKey"
-
-static void put_name(bd_addr_t bd_addr, device_name_t *device_name);
 
 static NSMutableDictionary *remote_devices  = nil;
 
@@ -161,43 +158,14 @@ static void delete_link_key(bd_addr_t bd_addr){
     [pool release];
 }
 
-static void put_name(bd_addr_t bd_addr, device_name_t *device_name){
-    NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
-	NSString *remoteName = [NSString stringWithUTF8String:(char*)device_name];
-	if (!remoteName){
-        remoteName = [NSString stringWithCString:(char*)device_name encoding:NSISOLatin1StringEncoding];
-    }
-    if (remoteName) {
-        set_value(bd_addr, PREFS_REMOTE_NAME, remoteName);
-    }
-    [pool release];
-}
-
-static void delete_name(bd_addr_t bd_addr){
-	NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
-    delete_value(bd_addr, PREFS_REMOTE_NAME);
-    [pool release];
-}
-
-static int  get_name(bd_addr_t bd_addr, device_name_t *device_name) {
-    NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
-    NSString *remoteName = get_value(bd_addr, PREFS_REMOTE_NAME);
-    if (remoteName){
-        memset(device_name, 0, sizeof(device_name_t));
-        strncpy((char*) device_name, [remoteName UTF8String], sizeof(device_name_t)-1);
-    }
-    [pool release];
-    return (remoteName != nil);
-}
-
-remote_device_db_t remote_device_db_iphone = {
+const btstack_link_key_db_t btstack_link_key_db_cocoa = {
     db_open,
     db_close,
     get_link_key,
     put_link_key,
     delete_link_key,
-    get_name,
-    put_name,
-    delete_name,
 };
 
+const btstack_link_key_db_t * btstack_link_key_db_cocoa_instance(void){
+    return &btstack_link_key_db_cocoa;
+}

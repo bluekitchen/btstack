@@ -65,7 +65,7 @@
 #include "hci.h"
 #include "l2cap.h"
 #include "btstack_memory.h"
-#include "classic/remote_device_db.h"
+#include "classic/btstack_link_key_db.h"
 #include "classic/rfcomm.h"
 #include "classic/sdp.h"
 #include "btstack_config.h"

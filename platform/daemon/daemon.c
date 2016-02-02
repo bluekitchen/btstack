@@ -58,12 +58,13 @@
 #include "btstack.h"
 #include "btstack_client.h"
 #include "btstack_debug.h"
+#include "btstack_device_name_db.h"
 #include "btstack_event.h"
 #include "btstack_linked_list.h"
 #include "btstack_run_loop.h"
 #include "btstack_run_loop_posix.h"
 #include "btstack_version.h"
-#include "classic/remote_device_db.h"
+#include "classic/btstack_link_key_db.h"
 #include "classic/rfcomm.h"
 #include "classic/sdp.h"
 #include "classic/sdp_client.h"
@@ -187,7 +188,8 @@ static void (*bluetooth_status_handler)(BLUETOOTH_STATE state) = dummy_bluetooth
 
 static int global_enable = 0;
 
-static remote_device_db_t const * remote_device_db = NULL;
+static btstack_link_key_db_t    const * btstack_link_key_db = NULL;
+static btstack_device_name_db_t const * btstack_device_name_db = NULL;
 // static int rfcomm_channel_generator = 1;
 
 static uint8_t   attribute_value[1000];
@@ -1513,7 +1515,7 @@ static void daemon_packet_handler(void * connection, uint8_t packet_type, uint16
                     return;
 
                 case HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE:
-                    if (!remote_device_db) break;
+                    if (!btstack_device_name_db) break;
                     if (packet[2]) break; // status not ok
 
                     bt_flip_addr(addr, &packet[3]);
@@ -1525,12 +1527,12 @@ static void daemon_packet_handler(void * connection, uint8_t packet_type, uint16
                         }
                     }
                     packet[9+248] = 0;
-                    remote_device_db->put_name(addr, (device_name_t *)&packet[9]);
+                    btstack_device_name_db->put_name(addr, (device_name_t *)&packet[9]);
                     break;
                 
                 case HCI_EVENT_INQUIRY_RESULT:
                 case HCI_EVENT_INQUIRY_RESULT_WITH_RSSI:{
-                    if (!remote_device_db) break;
+                    if (!btstack_device_name_db) break;
                     
                     // first send inq result packet
                     daemon_emit_packet(connection, packet_type, channel, packet, size);
@@ -1539,7 +1541,7 @@ static void daemon_packet_handler(void * connection, uint8_t packet_type, uint16
                     int offset = 3;
                     for (i=0; i<packet[2];i++){
                         bt_flip_addr(addr, &packet[offset]);
-                        if (remote_device_db->get_name(addr, (device_name_t *) &remote_name_event[9])){
+                        if (btstack_device_name_db->get_name(addr, (device_name_t *) &remote_name_event[9])){
                             remote_name_event[0] = BTSTACK_EVENT_REMOTE_NAME_CACHED;
                             remote_name_event[1] = sizeof(remote_name_event) - 2 - 1;
                             remote_name_event[2] = 0;   // just to be compatible with HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE
@@ -2015,8 +2017,8 @@ int main (int argc,  char * const * argv){
     platform_iphone_register_preferences_changed(preferences_changed_callback);
 #endif
     
-#ifdef REMOTE_DEVICE_DB
-    remote_device_db = &REMOTE_DEVICE_DB;
+#ifdef btstack_link_key_db
+    btstack_link_key_db = &btstack_link_key_db;
 #endif
 
     btstack_run_loop_init(btstack_run_loop_posix_get_instance());
@@ -2040,7 +2042,7 @@ int main (int argc,  char * const * argv){
     log_info("version %s, build %s", BTSTACK_VERSION, BTSTACK_DATE);
 
     // init HCI
-    hci_init(transport, config, remote_device_db);
+    hci_init(transport, config, btstack_link_key_db);
     if (control){
         hci_set_control(control);
     }

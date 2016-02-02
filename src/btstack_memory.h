@@ -60,7 +60,8 @@ extern "C" {
 // Classic
 #include "classic/bnep.h"
 #include "classic/hfp.h"
-#include "classic/remote_device_db.h"
+#include "classic/btstack_link_key_db.h"
+#include "classic/btstack_link_key_db_memory.h"
 #include "classic/rfcomm.h"
 #include "classic/sdp.h"
 
@@ -97,13 +98,9 @@ void   btstack_memory_rfcomm_service_free(rfcomm_service_t *rfcomm_service);
 rfcomm_channel_t * btstack_memory_rfcomm_channel_get(void);
 void   btstack_memory_rfcomm_channel_free(rfcomm_channel_t *rfcomm_channel);
 
-// db_mem_device_name, db_mem_device_link_key, db_mem_service
-db_mem_device_name_t * btstack_memory_db_mem_device_name_get(void);
-void   btstack_memory_db_mem_device_name_free(db_mem_device_name_t *db_mem_device_name);
-db_mem_device_link_key_t * btstack_memory_db_mem_device_link_key_get(void);
-void   btstack_memory_db_mem_device_link_key_free(db_mem_device_link_key_t *db_mem_device_link_key);
-db_mem_service_t * btstack_memory_db_mem_service_get(void);
-void   btstack_memory_db_mem_service_free(db_mem_service_t *db_mem_service);
+// btstack_link_key_db_memory
+btstack_link_key_db_memory_t * btstack_memory_btstack_link_key_db_memory_get(void);
+void   btstack_memory_btstack_link_key_db_memory_free(btstack_link_key_db_memory_t *btstack_link_key_db_memory);
 
 // bnep_service, bnep_channel
 bnep_service_t * btstack_memory_bnep_service_get(void);

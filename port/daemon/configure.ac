@@ -65,8 +65,8 @@ case "$host_os" in
         LDFLAGS="$LDFLAGS -framework CoreFoundation -framework Foundation"
         BTSTACK_LIB_LDFLAGS="-dynamiclib -install_name \$(prefix)/lib/libBTstack.dylib"
         BTSTACK_LIB_EXTENSION="dylib"
-        REMOTE_DEVICE_DB_SOURCES="remote_device_db_cocoa.m rfcomm_service_db_cocoa.m"
-        REMOTE_DEVICE_DB="remote_device_db_iphone"
+        REMOTE_DEVICE_DB_SOURCES="btstack_link_key_db_cocoa.m rfcomm_service_db_cocoa.m"
+        REMOTE_DEVICE_DB="remote_device_db_cocoa"
         HAVE_SO_NOSIGPIPE="yes";
         ;;
     mingw*)
@@ -74,14 +74,14 @@ case "$host_os" in
         LDFLAGS="$LDFLAGS -lws2_32"
         BTSTACK_LIB_LDFLAGS="-shared"
         BTSTACK_LIB_EXTENSION="dll"
-        REMOTE_DEVICE_DB_SOURCES="remote_device_db_memory.c rfcomm_service_db_memory.c"
-        REMOTE_DEVICE_DB="remote_device_db_memory"
+        REMOTE_DEVICE_DB_SOURCES="btstack_link_key_db_memory.c rfcomm_service_db_memory.c"
+        REMOTE_DEVICE_DB="btstack_link_key_db_memory"
         ;;
     *)
         BTSTACK_LIB_LDFLAGS="-shared -Wl,-rpath,\$(prefix)/lib"
         BTSTACK_LIB_EXTENSION="so"
-        REMOTE_DEVICE_DB_SOURCES="remote_device_db_memory.c rfcomm_service_db_memory.c"
-        REMOTE_DEVICE_DB="remote_device_db_memory"
+        REMOTE_DEVICE_DB_SOURCES="btstack_link_key_db_memory.c rfcomm_service_db_memory.c"
+        REMOTE_DEVICE_DB="btstack_link_key_db_memory"
     ;;
 esac
 

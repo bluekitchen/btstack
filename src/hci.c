@@ -259,8 +259,8 @@ int  hci_authentication_active_for_handle(hci_con_handle_t handle){
 }
 
 void hci_drop_link_key_for_bd_addr(bd_addr_t addr){
-    if (hci_stack->remote_device_db) {
-        hci_stack->remote_device_db->delete_link_key(addr);
+    if (hci_stack->link_key_db) {
+        hci_stack->link_key_db->delete_link_key(addr);
     }
 }
 
@@ -1542,7 +1542,7 @@ static void event_handler(uint8_t *packet, int size){
             log_info("HCI_EVENT_LINK_KEY_REQUEST");
             hci_add_connection_flags_for_flipped_bd_addr(&packet[2], RECV_LINK_KEY_REQUEST);
             // non-bondable mode: link key negative reply will be sent by HANDLE_LINK_KEY_REQUEST
-            if (hci_stack->bondable && !hci_stack->remote_device_db) break;
+            if (hci_stack->bondable && !hci_stack->link_key_db) break;
             hci_add_connection_flags_for_flipped_bd_addr(&packet[2], HANDLE_LINK_KEY_REQUEST);
             hci_run();
             // request handled by hci_run() as HANDLE_LINK_KEY_REQUEST gets set
@@ -1558,8 +1558,8 @@ static void event_handler(uint8_t *packet, int size){
             if (link_key_type != CHANGED_COMBINATION_KEY){
                 conn->link_key_type = link_key_type;
             }
-            if (!hci_stack->remote_device_db) break;
-            hci_stack->remote_device_db->put_link_key(addr, &packet[8], conn->link_key_type);
+            if (!hci_stack->link_key_db) break;
+            hci_stack->link_key_db->put_link_key(addr, &packet[8], conn->link_key_type);
             // still forward event to allow dismiss of pairing dialog
             break;
         }
@@ -1573,9 +1573,9 @@ static void event_handler(uint8_t *packet, int size){
                 return;
             }
             // PIN CODE REQUEST means the link key request didn't succee -> delete stored link key
-            if (!hci_stack->remote_device_db) break;
+            if (!hci_stack->link_key_db) break;
             bt_flip_addr(addr, &packet[2]);
-            hci_stack->remote_device_db->delete_link_key(addr);
+            hci_stack->link_key_db->delete_link_key(addr);
             break;
             
         case HCI_EVENT_IO_CAPABILITY_REQUEST:
@@ -1849,7 +1849,7 @@ static void hci_state_reset(void){
     hci_stack->le_connection_parameter_range.le_supervision_timeout_max = 3200;
 }
 
-void hci_init(const hci_transport_t *transport, void *config, remote_device_db_t const* remote_device_db){
+void hci_init(const hci_transport_t *transport, void *config, btstack_link_key_db_t const * link_key_db){
     
 #ifdef HAVE_MALLOC
     if (!hci_stack) {
@@ -1873,9 +1873,9 @@ void hci_init(const hci_transport_t *transport, void *config, remote_device_db_t
     hci_stack->packet_handler = dummy_handler;
 
     // store and open remote device db
-    hci_stack->remote_device_db = remote_device_db;
-    if (hci_stack->remote_device_db) {
-        hci_stack->remote_device_db->open();
+    hci_stack->link_key_db = link_key_db;
+    if (hci_stack->link_key_db) {
+        hci_stack->link_key_db->open();
     }
     
     // max acl payload size defined in config.h
@@ -1928,8 +1928,8 @@ void hci_set_control(const btstack_control_t *hardware_control){
 
 void hci_close(void){
     // close remote device db
-    if (hci_stack->remote_device_db) {
-        hci_stack->remote_device_db->close();
+    if (hci_stack->link_key_db) {
+        hci_stack->link_key_db->close();
     }
     while (hci_stack->connections) {
         // cancel all l2cap connections
@@ -2487,8 +2487,8 @@ void hci_run(void){
             connectionClearAuthenticationFlags(connection, HANDLE_LINK_KEY_REQUEST);
             link_key_t link_key;
             link_key_type_t link_key_type;
-            if ( hci_stack->remote_device_db
-              && hci_stack->remote_device_db->get_link_key(connection->address, link_key, &link_key_type)
+            if ( hci_stack->link_key_db
+              && hci_stack->link_key_db->get_link_key(connection->address, link_key, &link_key_type)
               && gap_security_level_for_link_key_type(link_key_type) >= connection->requested_security_level){
                connection->link_key_type = link_key_type;
                hci_send_cmd(&hci_link_key_request_reply, connection->address, &link_key);
@@ -2736,9 +2736,9 @@ int hci_send_cmd_packet(uint8_t *packet, int size){
     }
     
     if (IS_COMMAND(packet, hci_delete_stored_link_key)){
-        if (hci_stack->remote_device_db){
+        if (hci_stack->link_key_db){
             bt_flip_addr(addr, &packet[3]);
-            hci_stack->remote_device_db->delete_link_key(addr);
+            hci_stack->link_key_db->delete_link_key(addr);
         }
     }
 
@@ -3107,10 +3107,10 @@ void gap_request_security_level(hci_con_handle_t con_handle, gap_security_level_
     // TODO: figure out how to use it properly
 
     // would enabling ecnryption suffice (>= LEVEL_2)?
-    if (hci_stack->remote_device_db){
+    if (hci_stack->link_key_db){
         link_key_type_t link_key_type;
         link_key_t      link_key;
-        if (hci_stack->remote_device_db->get_link_key( &connection->address, &link_key, &link_key_type)){
+        if (hci_stack->link_key_db->get_link_key( &connection->address, &link_key, &link_key_type)){
             if (gap_security_level_for_link_key_type(link_key_type) >= requested_level){
                 connection->bonding_flags |= BONDING_SEND_ENCRYPTION_REQUEST;
                 return;

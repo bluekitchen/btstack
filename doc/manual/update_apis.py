@@ -18,7 +18,7 @@ apis = [
 
     ["src/classic/bnep.h", "BNEP", "bnep"],
     ["src/classic/pan.h", "PAN", "pan"],
-    ["src/classic/remote_device_db.h","Remote Device DB","rdevDb"],
+    ["src/classic/btstack_link_key_db.h","Remote Device DB","rdevDb"],
     ["src/classic/rfcomm.h", "RFCOMM", "rfcomm"],
     ["src/classic/sdp.h", "SDP", "sdp"],
     ["src/classic/sdp_client.h", "SDP Client", "sdpClient"],

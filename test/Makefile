@@ -8,7 +8,7 @@ SUBDIRS =  \
 	gatt_client \
 	hfp \
 	linked_list \
-	remote_device_db \
+	btstack_link_key_db \
 	sdp_client \
 	security_manager \
 
