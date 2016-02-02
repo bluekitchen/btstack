@@ -35,19 +35,18 @@
  *
  */
 
-#ifndef __BTSTACK_LINK_KEY_DB_FS_H
-#define __BTSTACK_LINK_KEY_DB_FS_H
+#ifndef __BTSTACK_DEVICE_NAME_DB_COCOA_H
+#define __BTSTACK_DEVICE_NAME_DB_COCOA_H
 
-#include "classic/btstack_link_key_db.h"
+#include "btstack_device_name_db.h"
 
 #if defined __cplusplus
 extern "C" {
 #endif
 
 /*
- * @brief Get basic link key db implementation that stores link keys in /tmp
  */
-const btstack_link_key_db_t * btstack_link_key_db_fs_instance(void);
+const btstack_device_name_db_t * btstack_device_name_db_cocoa_instance(void);
 
 /* API_END */
 
@@ -55,4 +54,4 @@ const btstack_link_key_db_t * btstack_link_key_db_fs_instance(void);
 }
 #endif
 
-#endif // __BTSTACK_LINK_KEY_DB_FS_H
+#endif // __BTSTACK_DEVICE_NAME_DB_COCOA_H

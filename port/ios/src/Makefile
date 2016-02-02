@@ -35,6 +35,8 @@ TOOL_NAME = BTdaemon
 BTdaemon_FILES = \
 	$(libBTstack_FILES)  	  \
 	btstack_control_iphone.m  \
+	btstack_device_name_db_cocoa.m  \
+	btstack_link_key_db_cocoa.m  \
 	btstack_memory.c          \
 	btstack_memory_pool.c     \
 	daemon.c  				  \
@@ -43,7 +45,6 @@ BTdaemon_FILES = \
 	l2cap.c                   \
 	l2cap_signaling.c         \
 	platform_iphone.m         \
-	remote_device_db_cocoa.m  \
 	rfcomm.c                  \
 	sdp.c                     \
 	SpringBoardAccess.c       \

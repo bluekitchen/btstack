@@ -33,7 +33,7 @@
  * Please inquire about commercial licensing options at btstack@ringwald.ch
  *
  */
-#include "classic/btstack_link_key_db.h"
+#include "btstack_device_name_db_cocoa.h"
 #include "btstack_debug.h"
 
 #import <Foundation/Foundation.h>
@@ -135,32 +135,6 @@ static id get_value(bd_addr_t bd_addr, NSString *key){
     return [deviceDict objectForKey:key];
 }
 
-static int get_link_key(bd_addr_t bd_addr, link_key_t link_key, link_key_type_t * link_key_type) {
-	NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
-    NSData *linkKey = get_value(bd_addr, PREFS_LINK_KEY);
-    if ([linkKey length] == LINK_KEY_LEN){
-        memcpy(link_key, [linkKey bytes], LINK_KEY_LEN);
-        if (link_key_type){
-            *link_key_type = COMBINATION_KEY;
-        }
-    }
-    [pool release];
-    return (linkKey != nil);
-}
-
-static void put_link_key(bd_addr_t bd_addr, link_key_t link_key, link_key_type_t link_key_type){
-	NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
-	NSData *linkKey = [NSData dataWithBytes:link_key length:16];
-    set_value(bd_addr, PREFS_LINK_KEY, linkKey);
-    [pool release];
-}
-
-static void delete_link_key(bd_addr_t bd_addr){
-	NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
-    delete_value(bd_addr, PREFS_LINK_KEY);
-    [pool release];
-}
-
 static void put_name(bd_addr_t bd_addr, device_name_t *device_name){
     NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
 	NSString *remoteName = [NSString stringWithUTF8String:(char*)device_name];
@@ -190,14 +164,15 @@ static int  get_name(bd_addr_t bd_addr, device_name_t *device_name) {
     return (remoteName != nil);
 }
 
-remote_device_db_t remote_device_db_iphone = {
+btstack_device_name_db_t btstack_device_name_db_cocoa = {
     db_open,
     db_close,
-    get_link_key,
-    put_link_key,
-    delete_link_key,
     get_name,
     put_name,
     delete_name,
 };
+
+const btstack_device_name_db_t * btstack_device_name_db_cocoa_instance(void) {
+    return &btstack_device_name_db_cocoa;
+}
 
