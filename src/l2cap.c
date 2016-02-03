@@ -905,9 +905,6 @@ static void l2cap_event_handler(uint8_t *packet, uint16_t size){
                 if (!channel->packet_handler) continue;
                 (* (channel->packet_handler))(HCI_EVENT_PACKET, channel->local_cid, packet, size);
             }
-            if (connectionless_channel_packet_handler) {
-                (*connectionless_channel_packet_handler)(HCI_EVENT_PACKET, 0, packet, size);
-            }
             break;
 
         case HCI_EVENT_READ_REMOTE_SUPPORTED_FEATURES_COMPLETE:
@@ -964,11 +961,8 @@ static void l2cap_event_handler(uint8_t *packet, uint16_t size){
             break;
     }
     
-    // pass on: main packet handler, att and sm packet handlers
+    // pass on: main packet handler
     (*packet_handler)(HCI_EVENT_PACKET, 0, packet, size);
-    if (connectionless_channel_packet_handler) {
-        (*connectionless_channel_packet_handler)(HCI_EVENT_PACKET, 0, packet, size);
-    }
 
     l2cap_run();
 }

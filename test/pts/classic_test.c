@@ -55,6 +55,7 @@
 #include "hci.h"
 #include "gap.h"
 #include "btstack_memory.h"
+#include "btstack_event.h"
 #include "hci_dump.h"
 #include "l2cap.h"
 #include "classic/rfcomm.h"
@@ -98,6 +99,8 @@ static uint32_t  spp_service_buffer[150/4];    // implicit alignment to 4-byte m
 static uint32_t  dummy_service_buffer[150/4];  // implicit alignment to 4-byte memory address
 static uint8_t   dummy_uuid128[] = { 1,1,1,1, 1,1,1,1,  1,1,1,1, 1,1,1,1, 1,1,1,1};
 static uint16_t  mtu;
+
+static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 // GAP INQUIRY
 
@@ -390,12 +393,12 @@ static void update_auth_req(void){
     hci_ssp_set_authentication_requirement(gap_auth_req);
 }
 
-static void handle_found_service(char * name, uint8_t port){
+static void handle_found_service(const char * name, uint8_t port){
     printf("SDP: Service name: '%s', RFCOMM port %u\n", name, port);
     rfcomm_channel_nr = port;
 }
 
-static void handle_query_rfcomm_event(uint8_t packet_type, uint8_t *packet, uint16_t size, void * context){
+static void handle_query_rfcomm_event(uint8_t packet_type, uint8_t *packet, uint16_t size){
     switch (packet[0]){
         case SDP_EVENT_QUERY_RFCOMM_SERVICE:
             handle_found_service(sdp_event_query_rfcomm_service_get_name(packet),
@@ -752,6 +755,10 @@ static void sdp_create_dummy_service(uint8_t *service, const char *name){
     de_add_data(service,  DE_STRING, strlen(name), (uint8_t *) name);
 }
 
+static void hci_event_handler(uint8_t packet_type, uint8_t * packet, uint16_t size){
+    packet_handler(packet_type, 0, packet, size);
+}
+
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
 
@@ -764,6 +771,10 @@ int btstack_main(int argc, const char * argv[]){
     hci_ssp_set_authentication_requirement(0);
     hci_ssp_set_auto_accept(0);
     update_auth_req();
+
+    // register for HCI events
+    hci_event_callback_registration.callback = &hci_event_handler;
+    hci_add_event_handler(&hci_event_callback_registration);
 
     l2cap_init();
     l2cap_register_packet_handler(&packet_handler);
@@ -786,7 +797,7 @@ int btstack_main(int argc, const char * argv[]){
     printf("Dummy service record size: %u\n\r", de_get_len((uint8_t*)dummy_service_buffer));
     sdp_register_service((uint8_t*)dummy_service_buffer);
 
-    sdp_query_rfcomm_register_callback(handle_query_rfcomm_event, NULL);
+    sdp_query_rfcomm_register_callback(handle_query_rfcomm_event);
     
     hci_discoverable_control(0);
     hci_connectable_control(0);
