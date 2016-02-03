@@ -101,7 +101,6 @@ extern "C" {
 // 
 #define IS_COMMAND(packet, command) (little_endian_read_16(packet,0) == command.opcode)
 
-
 /**
  * LE connection parameter update state
  */ 
@@ -523,6 +522,9 @@ typedef struct {
     // hardware power controller
     const btstack_control_t * control;
 
+    /* link key db */
+    const btstack_link_key_db_t * link_key_db;
+
     // basic configuration
     const char *       local_name;
     uint32_t           class_of_device;
@@ -531,7 +533,6 @@ typedef struct {
     uint8_t            ssp_io_capability;
     uint8_t            ssp_authentication_requirement;
     uint8_t            ssp_auto_accept;
-
     
     // list of existing baseband connections
     btstack_linked_list_t     connections;
@@ -577,8 +578,8 @@ typedef struct {
     /* callback for SCO data */
     void (*sco_packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size);
 
-    /* link key db */
-    btstack_link_key_db_t const * link_key_db;
+    /* callbacks for events */
+    btstack_linked_list_t event_handlers;
     
     /* hci state machine */
     HCI_STATE      state;
@@ -783,6 +784,11 @@ void hci_set_class_of_device(uint32_t class_of_device);
  * @brief Set Public BD ADDR - passed on to Bluetooth chipset if supported in bt_control_h
  */
 void hci_set_bd_addr(bd_addr_t addr);
+
+/**
+ * @brief Add event packet handler. 
+ */
+void hci_add_event_handler(btstack_packet_callback_registration_t * callback_handler);
 
 /**
  * @brief Registers a packet handler. Used if L2CAP is not used (rarely). 
