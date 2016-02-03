@@ -135,12 +135,13 @@ static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 /* LISTING_START(PanuSetup): Panu setup */
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+static void hci_event_handler(uint8_t packet_type, uint8_t * packet, uint16_t size);
 static void handle_sdp_client_query_result(uint8_t packet_type, uint8_t *packet, uint16_t size);
 
 static void panu_setup(void){
 
     // register for HCI events
-    hci_event_callback_registration.callback = &packet_handler;
+    hci_event_callback_registration.callback = &hci_event_handler;
     hci_add_event_handler(&hci_event_callback_registration);
 
     // Initialize L2CAP 
@@ -418,6 +419,10 @@ static void handle_sdp_client_query_result(uint8_t packet_type, uint8_t *packet,
 
             break;
     }
+}
+
+static void hci_event_handler(uint8_t packet_type, uint8_t * packet, uint16_t size){
+    packet_handler(packet_type, 0, packet, size);
 }
 
 /*
