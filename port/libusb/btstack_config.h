@@ -12,6 +12,7 @@
 #define HAVE_SCO_OVER_HCI
 #define HAVE_SO_NOSIGPIPE
 #define HAVE_TIME
+#define HAVE_POSIX_FILE_IO
 
 // BTstack features that can be enabled
 #define ENABLE_BLE
