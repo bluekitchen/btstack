@@ -90,6 +90,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 static uint16_t att_read_callback(uint16_t con_handle, uint16_t att_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size);
 static int att_write_callback(uint16_t con_handle, uint16_t att_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size);
 static void  heartbeat_handler(struct btstack_timer_source *ts);
+static void beat(void);
 
 const uint8_t adv_data[] = {
     // Flags general discoverable
@@ -140,6 +141,12 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 	switch (packet_type) {
 		case HCI_EVENT_PACKET:
 			switch (packet[0]) {
+                case BTSTACK_EVENT_STATE:
+                    if (packet[2] == HCI_STATE_WORKING) {
+                        printf("LE Counter Demo ready.\n");
+                        beat();
+                    }
+                    break;
                 case HCI_EVENT_DISCONNECTION_COMPLETE:
                     le_notification_enabled = 0;
                     break;
@@ -161,11 +168,15 @@ static int  counter = 0;
 static char counter_string[30];
 static int  counter_string_len;
 
-static void  heartbeat_handler(struct btstack_timer_source *ts){
+static void beat(void){
+    counter++;
+    counter_string_len = sprintf(counter_string, "BTstack counter %04u", counter);
+    puts(counter_string);
+}
+
+static void heartbeat_handler(struct btstack_timer_source *ts){
     if (le_notification_enabled) {
-        counter++;
-        counter_string_len = sprintf(counter_string, "BTstack counter %04u", counter);
-        puts(counter_string);
+        beat();
         att_server_notify(ATT_CHARACTERISTIC_0000FF11_0000_1000_8000_00805F9B34FB_01_VALUE_HANDLE, (uint8_t*) counter_string, counter_string_len);
     }
     btstack_run_loop_set_timer(ts, HEARTBEAT_PERIOD_MS);
