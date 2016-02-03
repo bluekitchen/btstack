@@ -50,27 +50,36 @@ static void dummy_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *
 static btstack_packet_handler_t att_client_handler = &dummy_packet_handler;
 static btstack_packet_handler_t att_server_handler = &dummy_packet_handler;
 
+static btstack_packet_callback_registration_t hci_event_callback_registration;
+
+static int registered_for_hci_events = 0;
+
 static void dummy_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *packet, uint16_t size){
 }
 
+static void att_hci_event_handler(uint8_t packet_type, uint8_t * packet, uint16_t size){
+	att_client_handler(packet_type, 0, packet, size);
+	att_server_handler(packet_type, 0, packet, size);
+}
+
+static void att_dispatch_register_for_hci_events(void){
+	if (registered_for_hci_events) return;
+	registered_for_hci_events = 1;
+    hci_event_callback_registration.callback = &att_hci_event_handler;
+    hci_add_event_handler(&hci_event_callback_registration);
+}
+
 static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *packet, uint16_t size){
-	switch (packet_type){
-		case ATT_DATA_PACKET: {
-			// log_info("att_data_packet with opcode 0x%x", packet[0]);
-			uint8_t att_pdu_odd = packet[0] & 1;
-			if (att_pdu_odd){
-				// odd PDUs are sent from server to client
-				att_client_handler(packet_type, handle, packet, size);
-			} else {
-				// even PDUs are sent from client to server
-				att_server_handler(packet_type, handle, packet, size);
-			}
-			break;
-		}
-		default:
-			att_client_handler(packet_type, handle, packet, size);
-			att_server_handler(packet_type, handle, packet, size);
-			break;	
+	if (packet_type != ATT_DATA_PACKET) return;
+
+	// log_info("att_data_packet with opcode 0x%x", packet[0]);
+	uint8_t att_pdu_odd = packet[0] & 1;
+	if (att_pdu_odd){
+		// odd PDUs are sent from server to client
+		att_client_handler(packet_type, handle, packet, size);
+	} else {
+		// even PDUs are sent from client to server
+		att_server_handler(packet_type, handle, packet, size);
 	}
 }
 
@@ -79,6 +88,7 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
  * @param packet_hander for ATT client packets
  */
 void att_dispatch_register_client(btstack_packet_handler_t packet_handler){
+	att_dispatch_register_for_hci_events();
 	if (packet_handler == NULL){
 		packet_handler = dummy_packet_handler;
 	}
@@ -91,6 +101,7 @@ void att_dispatch_register_client(btstack_packet_handler_t packet_handler){
  * @param packet_hander for ATT server packets
  */
 void att_dispatch_register_server(btstack_packet_handler_t packet_handler){
+	att_dispatch_register_for_hci_events();
 	if (packet_handler == NULL){
 		packet_handler = dummy_packet_handler;
 	}
