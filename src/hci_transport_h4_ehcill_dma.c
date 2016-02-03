@@ -246,19 +246,23 @@ static void h4_block_received(void){
                 case EHCILL_WAKE_UP_IND:
                 case EHCILL_WAKE_UP_ACK:
                     ehcill_handle(hci_packet[0]);
-                    read_pos = 0;
-                    bytes_to_read = 1;
-                    break;
+                    h4_rx_init_sm();
+                    return;
                 default:
                     log_error("h4_process: invalid packet type 0x%02x", hci_packet[0]);
-                    read_pos = 0;
-                    bytes_to_read = 1;
-                    break;
+                    h4_rx_init_sm();
+                    return;
             }
             break;
             
         case H4_W4_EVENT_HEADER:
             bytes_to_read = hci_packet[2];
+            // check ACL length
+            if (HCI_ACL_HEADER_SIZE + bytes_to_read >  HCI_PACKET_BUFFER_SIZE){
+                log_error("h4_process: invalid ACL payload len %u - only space for %u", bytes_to_read, HCI_PACKET_BUFFER_SIZE - HCI_ACL_HEADER_SIZE);
+                h4_rx_init_sm();
+                return;              
+            }
             if (bytes_to_read) {
                 h4_state = H4_W4_PAYLOAD;
                 break;

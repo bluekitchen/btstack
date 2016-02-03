@@ -180,10 +180,8 @@ static void h4_block_received(void){
                     break;
                 default:
                     log_error("h4_process: invalid packet type 0x%02x", hci_packet[0]);
-                    read_pos = 0;
-                    h4_state = H4_W4_PACKET_TYPE;
-                    bytes_to_read = 1;
-                    break;
+                    h4_init_sm();
+                    return;
             }
             break;
             
@@ -198,6 +196,12 @@ static void h4_block_received(void){
             
         case H4_W4_ACL_HEADER:
             bytes_to_read = READ_BT_16( hci_packet, 3);
+            // check ACL length
+            if (HCI_ACL_HEADER_SIZE + bytes_to_read >  HCI_PACKET_BUFFER_SIZE){
+                log_error("h4_process: invalid ACL payload len %u - only space for %u", bytes_to_read, HCI_PACKET_BUFFER_SIZE - HCI_ACL_HEADER_SIZE);
+                h4_init_sm();
+                return;              
+            }
             if (bytes_to_read == 0) {
                 h4_state = H4_PACKET_RECEIVED; 
                 break;
