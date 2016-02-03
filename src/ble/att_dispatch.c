@@ -50,22 +50,7 @@ static void dummy_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *
 static btstack_packet_handler_t att_client_handler = &dummy_packet_handler;
 static btstack_packet_handler_t att_server_handler = &dummy_packet_handler;
 
-static btstack_packet_callback_registration_t hci_event_callback_registration;
-
-static int registered_for_hci_events = 0;
-
 static void dummy_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *packet, uint16_t size){
-}
-
-static void att_hci_event_handler(uint8_t packet_type, uint8_t * packet, uint16_t size){
-	att_server_handler(packet_type, 0, packet, size);
-}
-
-static void att_dispatch_register_for_hci_events(void){
-	if (registered_for_hci_events) return;
-	registered_for_hci_events = 1;
-    hci_event_callback_registration.callback = &att_hci_event_handler;
-    hci_add_event_handler(&hci_event_callback_registration);
 }
 
 static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *packet, uint16_t size){
@@ -87,7 +72,6 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
  * @param packet_hander for ATT client packets
  */
 void att_dispatch_register_client(btstack_packet_handler_t packet_handler){
-	att_dispatch_register_for_hci_events();
 	if (packet_handler == NULL){
 		packet_handler = dummy_packet_handler;
 	}
@@ -100,7 +84,6 @@ void att_dispatch_register_client(btstack_packet_handler_t packet_handler){
  * @param packet_hander for ATT server packets
  */
 void att_dispatch_register_server(btstack_packet_handler_t packet_handler){
-	att_dispatch_register_for_hci_events();
 	if (packet_handler == NULL){
 		packet_handler = dummy_packet_handler;
 	}

@@ -91,7 +91,7 @@ static int       att_ir_lookup_active = 0;
 
 static int       att_handle_value_indication_handle = 0;    
 static btstack_timer_source_t att_handle_value_indication_timer;
-
+static btstack_packet_callback_registration_t hci_event_callback_registration;
 static btstack_packet_handler_t att_client_packet_handler = NULL;
 
 static void att_handle_value_indication_notify_client(uint8_t status, uint16_t client_handle, uint16_t attribute_handle){
@@ -355,10 +355,20 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
     att_run();
 }
 
+static void att_event_packet_handler2(uint8_t packet_type, uint8_t * packet, uint16_t size){
+    att_event_packet_handler(packet_type, 0, packet, size);
+}
+
 void att_server_init(uint8_t const * db, att_read_callback_t read_callback, att_write_callback_t write_callback){
 
+    // register for HCI Events
+    hci_event_callback_registration.callback = &att_event_packet_handler2;
+    hci_add_event_handler(&hci_event_callback_registration);
+
+    // SM events
     sm_register_packet_handler(att_event_packet_handler);
 
+    // and L2CAP ATT Server PDUs
     att_dispatch_register_server(att_packet_handler);
 
     att_server_state = ATT_SERVER_IDLE;
