@@ -48,7 +48,7 @@ static void handle_sdp_parser_event(uint8_t packet_type, uint8_t *packet, uint16
             record_handle++;
             break;
         case SDP_EVENT_QUERY_COMPLETE:
-            printf("General query done with status %d.\n", sdp_query_complete_event_get_status(packet));
+            printf("General query done with status %d.\n", sdp_event_query_complete_get_status(packet));
             break;
     }
 }

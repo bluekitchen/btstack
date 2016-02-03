@@ -1669,18 +1669,18 @@ static void handle_sdp_client_query_result(uint8_t packet_type, uint8_t *packet,
 
     switch (packet[0]){
         case SDP_EVENT_QUERY_ATTRIBUTE_BYTE:
-            sdp_client_assert_buffer(sdp_query_attribute_byte_event_get_attribute_length(packet));
-            attribute_value[sdp_query_attribute_byte_event_get_data_offset(packet)] = sdp_query_attribute_byte_event_get_data(packet);
-            if ((uint16_t)(sdp_query_attribute_byte_event_get_data_offset(packet)+1) == sdp_query_attribute_byte_event_get_attribute_length(packet)){
-                hexdump(attribute_value, sdp_query_attribute_byte_event_get_attribute_length(packet));
+            sdp_client_assert_buffer(sdp_event_query_attribute_byte_get_attribute_length(packet));
+            attribute_value[sdp_event_query_attribute_byte_get_data_offset(packet)] = sdp_event_query_attribute_byte_get_data(packet);
+            if ((uint16_t)(sdp_event_query_attribute_byte_get_data_offset(packet)+1) == sdp_event_query_attribute_byte_get_attribute_length(packet)){
+                hexdump(attribute_value, sdp_event_query_attribute_byte_get_attribute_length(packet));
 
-                int event_len = 1 + 3 * 2 + sdp_query_attribute_byte_event_get_attribute_length(packet); 
+                int event_len = 1 + 3 * 2 + sdp_event_query_attribute_byte_get_attribute_length(packet); 
                 uint8_t event[event_len];
                 event[0] = SDP_EVENT_QUERY_ATTRIBUTE_VALUE;
-                little_endian_store_16(event, 1, sdp_query_attribute_byte_event_get_record_id(packet));
-                little_endian_store_16(event, 3, sdp_query_attribute_byte_event_get_attribute_id(packet));
-                little_endian_store_16(event, 5, (uint16_t)sdp_query_attribute_byte_event_get_attribute_length(packet));
-                memcpy(&event[7], attribute_value, sdp_query_attribute_byte_event_get_attribute_length(packet));
+                little_endian_store_16(event, 1, sdp_event_query_attribute_byte_get_record_id(packet));
+                little_endian_store_16(event, 3, sdp_event_query_attribute_byte_get_attribute_id(packet));
+                little_endian_store_16(event, 5, (uint16_t)sdp_event_query_attribute_byte_get_attribute_length(packet));
+                memcpy(&event[7], attribute_value, sdp_event_query_attribute_byte_get_attribute_length(packet));
                 hci_dump_packet(SDP_CLIENT_PACKET, 0, event, event_len);
                 socket_connection_send_packet(sdp_client_query_connection, SDP_CLIENT_PACKET, 0, event, event_len);
             }

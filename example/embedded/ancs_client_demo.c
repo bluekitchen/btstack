@@ -83,7 +83,6 @@ const uint8_t adv_data[] = {
 uint8_t adv_data_len = sizeof(adv_data);
 
 static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    sm_event_t * sm_event;
     switch (packet_type) {
         case HCI_EVENT_PACKET:
             switch (packet[0]) {
@@ -92,14 +91,12 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                         printf("ANCS Client Demo ready.\n");
                     }
                     break;
-                case SM_JUST_WORKS_REQUEST:
-                    sm_event = (sm_event_t *) packet;
-                    sm_just_works_confirm(sm_event->addr_type, sm_event->address);
+                case SM_EVENT_JUST_WORKS_REQUEST:
+                    sm_just_works_confirm(sm_event_just_works_request_get_handle(packet));
                     printf("Just Works Confirmed.\n");
                     break;
-                case SM_PASSKEY_DISPLAY_NUMBER:
-                    sm_event = (sm_event_t *) packet;
-                    printf("Passkey display: %06u.\n", sm_event->passkey);
+                case SM_EVENT_PASSKEY_DISPLAY_NUMBER:
+                    printf("Passkey display: %06u.\n", sm_event_passkey_display_number_get_passkey(packet));
                     break;
             }
             break;
@@ -116,9 +113,9 @@ static void ancs_callback(uint8_t packet_type, uint8_t *packet, uint16_t size){
             printf("ANCS Client: Disconnected\n");
             break;
         case ANCS_EVENT_CLIENT_NOTIFICATION:
-            attribute_name = ancs_client_attribute_name_for_id(ancs_client_notification_event_get_attribute_id(packet));
+            attribute_name = ancs_client_attribute_name_for_id(ancs_event_client_notification_get_attribute_id(packet));
             if (!attribute_name) break;
-            printf("Notification: %s - %s\n", attribute_name, ancs_client_notification_event_get_text(packet));
+            printf("Notification: %s - %s\n", attribute_name, ancs_event_client_notification_get_text(packet));
             break;
         default:
             break;

@@ -423,10 +423,10 @@ static void handle_query_rfcomm_event(uint8_t packet_type, uint8_t *packet, uint
     switch (packet[0]){
         case SDP_EVENT_QUERY_RFCOMM_SERVICE:
             if (!connection) {
-                log_error("handle_query_rfcomm_event alloc connection for RFCOMM port %u failed", sdp_query_rfcomm_service_event_get_rfcomm_channel(packet));
+                log_error("handle_query_rfcomm_event alloc connection for RFCOMM port %u failed", sdp_event_query_rfcomm_service_get_rfcomm_channel(packet));
                 return;
             }
-            connection->rfcomm_channel_nr = sdp_query_rfcomm_service_event_get_rfcomm_channel(packet);
+            connection->rfcomm_channel_nr = sdp_event_query_rfcomm_service_get_rfcomm_channel(packet);
             break;
         case SDP_EVENT_QUERY_COMPLETE:
             connection_doing_sdp_query = NULL;
@@ -436,7 +436,7 @@ static void handle_query_rfcomm_event(uint8_t packet_type, uint8_t *packet, uint
                 rfcomm_create_channel(connection->remote_addr, connection->rfcomm_channel_nr, NULL); 
                 break;
             }
-            log_info("rfcomm service not found, status %u.", sdp_query_complete_event_get_status(packet));
+            log_info("rfcomm service not found, status %u.", sdp_event_query_complete_get_status(packet));
             break;
         default:
             break;

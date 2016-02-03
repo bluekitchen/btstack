@@ -169,22 +169,22 @@ static void handle_sdp_client_query_result(uint8_t packet_type, uint8_t *packet,
     switch (packet[0]){
         case SDP_EVENT_QUERY_ATTRIBUTE_VALUE:
             // handle new record
-            if (sdp_query_attribute_byte_event_get_record_id(packet) != record_id){
-                record_id = sdp_query_attribute_byte_event_get_record_id(packet);
+            if (sdp_event_query_attribute_byte_get_record_id(packet) != record_id){
+                record_id = sdp_event_query_attribute_byte_get_record_id(packet);
                 printf("\n---\nRecord nr. %u\n", record_id);
             }
 
-            assertBuffer(sdp_query_attribute_byte_event_get_attribute_length(packet));
+            assertBuffer(sdp_event_query_attribute_byte_get_attribute_length(packet));
 
-            attribute_value[sdp_query_attribute_byte_event_get_data_offset(packet)] = sdp_query_attribute_byte_event_get_data(packet);
-            if ((uint16_t)(sdp_query_attribute_byte_event_get_data_offset(packet)+1) == sdp_query_attribute_byte_event_get_attribute_length(packet)){
+            attribute_value[sdp_event_query_attribute_byte_get_data_offset(packet)] = sdp_event_query_attribute_byte_get_data(packet);
+            if ((uint16_t)(sdp_event_query_attribute_byte_get_data_offset(packet)+1) == sdp_event_query_attribute_byte_get_attribute_length(packet)){
 
                 /* LISTING_RESUME */
                 /* @text The Service Class ID List is a Data Element Sequence (DES) of UUIDs. 
                  * The BNEP PAN protocol UUID is within this list.
                  */
 
-                switch(sdp_query_attribute_byte_event_get_attribute_id(packet)){
+                switch(sdp_event_query_attribute_byte_get_attribute_id(packet)){
                     // 0x0001 "Service Class ID List"
                     case SDP_ServiceClassIDList:
                         if (de_get_element_type(attribute_value) != DE_DES) break;
@@ -196,7 +196,7 @@ static void handle_sdp_client_query_result(uint8_t packet_type, uint8_t *packet,
                                 case PANU_UUID:
                                 case NAP_UUID:
                                 case GN_UUID:
-                                    printf(" ** Attribute 0x%04x: BNEP PAN protocol UUID: %04x\n", sdp_query_attribute_byte_event_get_attribute_id(packet), uuid);
+                                    printf(" ** Attribute 0x%04x: BNEP PAN protocol UUID: %04x\n", sdp_event_query_attribute_byte_get_attribute_id(packet), uuid);
                                     break;
                                 default:
                                     break;
@@ -209,7 +209,7 @@ static void handle_sdp_client_query_result(uint8_t packet_type, uint8_t *packet,
                     // 0x0101 "Service Description"
                     case 0x0101:
                         str = get_string_from_data_element(attribute_value);
-                        printf(" ** Attribute 0x%04x: %s\n", sdp_query_attribute_byte_event_get_attribute_id(packet), str);
+                        printf(" ** Attribute 0x%04x: %s\n", sdp_event_query_attribute_byte_get_attribute_id(packet), str);
                         free(str);
                         break;
                     
@@ -220,7 +220,7 @@ static void handle_sdp_client_query_result(uint8_t packet_type, uint8_t *packet,
                      * and another DES with the BNEP UUID and the the BNEP version.
                      */
                     case SDP_ProtocolDescriptorList:{
-                            printf(" ** Attribute 0x%04x: ", sdp_query_attribute_byte_event_get_attribute_id(packet));
+                            printf(" ** Attribute 0x%04x: ", sdp_event_query_attribute_byte_get_attribute_id(packet));
                             
                             uint16_t l2cap_psm = 0;
                             uint16_t bnep_version = 0;
@@ -257,7 +257,7 @@ static void handle_sdp_client_query_result(uint8_t packet_type, uint8_t *packet,
             }
             break;
         case SDP_EVENT_QUERY_COMPLETE:
-            printf("General query done with status %d.\n\n", sdp_query_complete_event_get_status(packet));
+            printf("General query done with status %d.\n\n", sdp_event_query_complete_get_status(packet));
             break;
     }
     /* LISTING_RESUME */
