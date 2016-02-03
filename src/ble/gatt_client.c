@@ -63,8 +63,10 @@ static btstack_linked_list_t gatt_client_connections = NULL;
 static btstack_linked_list_t gatt_subclients = NULL;
 static uint16_t next_gatt_client_id = 0;
 static uint8_t  pts_suppress_mtu_exchange;
+static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *packet, uint16_t size);
+static void gatt_client_hci_event_packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t size);
 static void gatt_client_report_error_if_pending(gatt_client_t *peripheral, uint8_t error_code);
 static void att_signed_write_handle_cmac_result(uint8_t hash[8]);
 
@@ -130,6 +132,12 @@ void gatt_client_unregister_packet_handler(uint16_t gatt_client_id){
 void gatt_client_init(void){
     gatt_client_connections = NULL;
     pts_suppress_mtu_exchange = 0;
+
+    // regsister for HCI Events
+    hci_event_callback_registration.callback = &gatt_client_hci_event_packet_handler;
+    hci_add_event_handler(&hci_event_callback_registration);
+
+    // and ATT Client PDUs
     att_dispatch_register_client(gatt_client_att_packet_handler);
 }
 
@@ -1027,6 +1035,8 @@ static void gatt_client_report_error_if_pending(gatt_client_t *peripheral, uint8
 }
 
 static void gatt_client_hci_event_packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
+    if (packet_type != HCI_EVENT_PACKET) return;
+
     switch (packet[0]) {
         case HCI_EVENT_DISCONNECTION_COMPLETE:
         {
@@ -1046,15 +1056,11 @@ static void gatt_client_hci_event_packet_handler(uint8_t packet_type, uint8_t *p
 
     // forward all hci events
     emit_event_to_all_subclients_new(packet, size);
+
+    gatt_client_run();
 }
 
 static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *packet, uint16_t size){
-
-    if (packet_type == HCI_EVENT_PACKET) {
-        gatt_client_hci_event_packet_handler(packet_type, packet, size);
-        gatt_client_run();
-        return;
-    }
 
     if (packet_type != ATT_DATA_PACKET) return;
 

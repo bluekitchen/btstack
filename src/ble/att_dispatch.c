@@ -58,7 +58,6 @@ static void dummy_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *
 }
 
 static void att_hci_event_handler(uint8_t packet_type, uint8_t * packet, uint16_t size){
-	att_client_handler(packet_type, 0, packet, size);
 	att_server_handler(packet_type, 0, packet, size);
 }
 
