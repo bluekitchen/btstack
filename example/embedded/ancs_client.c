@@ -84,13 +84,23 @@ const uint8_t adv_data[] = {
 uint8_t adv_data_len = sizeof(adv_data);
 
 static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    sm_event_t * sm_event;
     switch (packet_type) {
         case HCI_EVENT_PACKET:
             switch (packet[0]) {
                 case BTSTACK_EVENT_STATE:
                     if (packet[2] == HCI_STATE_WORKING) {
-                        printf("SM Init completed\n");
+                        printf("ANCS Client Demo ready.\n");
                     }
+                    break;
+                case SM_JUST_WORKS_REQUEST:
+                    sm_event = (sm_event_t *) packet;
+                    sm_just_works_confirm(sm_event->addr_type, sm_event->address);
+                    printf("Just Works Confirmed.\n");
+                    break;
+                case SM_PASSKEY_DISPLAY_NUMBER:
+                    sm_event = (sm_event_t *) packet;
+                    printf("Passkey display: %06u.\n", sm_event->passkey);
                     break;
             }
             break;
