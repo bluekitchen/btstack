@@ -1420,17 +1420,6 @@ void bnep_packet_handler(uint8_t packet_type, uint16_t l2cap_cid, uint8_t *packe
             break;
     }
     
-    if (handled) {
-        bnep_run();
-        return;
-    }
-
-    /* Forward non l2cap packages to application handler */
-    if (packet_type != L2CAP_DATA_PACKET) {
-        (*app_packet_handler)(packet_type, l2cap_cid, packet, size);
-        return;
-    }
-
     bnep_run();
 }
 
