@@ -84,6 +84,7 @@ static uint16_t mtu;
 static uint16_t rfcomm_cid = 0;
 static uint32_t data_to_send =  DATA_VOLUME;
 static state_t state = W4_SDP_RESULT;
+static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 static void create_test_data(void){
     int x,y;
@@ -150,6 +151,9 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             break;
     }
 }
+static void hci_event_handler(uint8_t packet_type, uint8_t * packet, uint16_t size){
+    packet_handler(packet_type, 0, packet, size);
+}
 
 static void handle_found_service(const char * name, uint8_t port){
     printf("APP: Service name: '%s', RFCOMM port %u\n", name, port);
@@ -189,9 +193,12 @@ int btstack_main(int argc, const char * argv[]){
 
     printf("Client HCI init done\r\n");
     
+    // register for HCI events
+    hci_event_callback_registration.callback = &hci_event_handler;
+    hci_add_event_handler(&hci_event_callback_registration);
+
     // init L2CAP
     l2cap_init();
-    l2cap_register_packet_handler(packet_handler);
 
     rfcomm_register_packet_handler(packet_handler);
 

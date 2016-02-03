@@ -24,6 +24,7 @@
 static uint8_t advertisement_received;
 static uint8_t connected;
 static uint8_t advertisement_packet[150];
+static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 void mock_simulate_hci_state_working();
 void mock_simulate_command_complete(const hci_cmd_t *cmd);
@@ -39,7 +40,7 @@ void CHECK_EQUAL_ARRAY(const uint8_t * expected, uint8_t * actual, int size){
 
 // -----------------------------------------------------
 
-static void handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+static void handle_hci_event(uint8_t packet_type, uint8_t *packet, uint16_t size){
     if (packet_type != HCI_EVENT_PACKET) return;
     
     bd_addr_t address;
@@ -77,8 +78,11 @@ TEST_GROUP(LECentral){
 	void setup(void){
 		advertisement_received = 0;
 		connected = 0;
+        // register for HCI events
+        hci_event_callback_registration.callback = &handle_hci_event;
+        hci_add_event_handler(&hci_event_callback_registration);
+
 		l2cap_init();
-        l2cap_register_packet_handler(&handle_hci_event);
 		
 		mock().expectOneCall("hci_can_send_packet_now_using_packet_buffer").andReturnValue(1);
 		mock_simulate_hci_state_working();

@@ -72,6 +72,7 @@ static void gap_le_advertisements_setup(void){
     hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
 }
+
 /* LISTING_END */
 
 /* @section GAP LE Advertising Data Dumper

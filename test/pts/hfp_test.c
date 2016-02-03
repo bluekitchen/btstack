@@ -70,6 +70,8 @@ static int send_err = 0;
 
 static uint8_t hfp_service_level_connection_state = 0;
 
+static btstack_packet_callback_registration_t hci_event_callback_registration;
+
 static void send_str_over_rfcomm(uint16_t cid, char * command){
     printf("Send %s.\n", command);
     int err = rfcomm_send(cid, (uint8_t*) command, strlen(command));
@@ -139,6 +141,12 @@ static void packet_handler(void * connection, uint8_t packet_type, uint16_t chan
     }
 }
 
+
+static void hci_event_handler(uint8_t packet_type, uint8_t * packet, uint16_t size){
+    packet_handler(packet_type, 0, packet, size);
+}
+
+
 void handle_query_rfcomm_event(uint8_t packet_type, uint8_t *packet, uint16_t size, void * context){
     switch (event->type){
         case SDP_EVENT_QUERY_RFCOMM_SERVICE:
@@ -162,9 +170,12 @@ int btstack_main(int argc, const char * argv[]){
 
     printf("Client HCI init done\r\n");
         
+    /* Register for HCI events */
+    hci_event_callback_registration.callback = &hci_event_handler;
+    hci_add_event_handler(&hci_event_callback_registration);
+
     // init L2CAP
     l2cap_init();
-    l2cap_register_packet_handler(packet_handler);
     rfcomm_init();
     rfcomm_register_packet_handler(packet_handler);
 

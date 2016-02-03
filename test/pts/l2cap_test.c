@@ -67,6 +67,8 @@ static bd_addr_t remote = {0x84, 0x38, 0x35, 0x65, 0xD1, 0x15};
 static uint16_t handle;
 static uint16_t local_cid;
 
+static btstack_packet_callback_registration_t hci_event_callback_registration;
+
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
 
     bd_addr_t event_addr;
@@ -107,6 +109,11 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             break;
     }
 }
+
+static void hci_event_handler(uint8_t packet_type, uint8_t * packet, uint16_t size){
+    packet_handler(packet_type, 0, packet, size);
+}
+
 
 static void show_usage(void){
     printf("\n--- CLI for L2CAP TEST ---\n");
@@ -156,8 +163,11 @@ int btstack_main(int argc, const char * argv[]){
     hci_set_class_of_device(0x220404);
     hci_discoverable_control(1);
 
+    /* Register for HCI events */
+    hci_event_callback_registration.callback = &hci_event_handler;
+    hci_add_event_handler(&hci_event_callback_registration);
+
     l2cap_init();
-    l2cap_register_packet_handler(&packet_handler);
     l2cap_register_service(packet_handler, PSM_SDP, 100, LEVEL_0);
     
     // turn on!

@@ -135,6 +135,8 @@ static size_t  network_buffer_len = 0;
 
 static uint8_t panu_sdp_record[200];
 
+static btstack_packet_callback_registration_t hci_event_callback_registration;
+
 static uint16_t setup_ethernet_header(int src_compressed, int dst_compressed, int broadcast, uint16_t network_protocol_type){
     // setup packet
     int pos = 0;
@@ -782,13 +784,19 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
     }
 }
 
+static void hci_event_handler(uint8_t packet_type, uint8_t * packet, uint16_t size){
+    packet_handler(packet_type, 0, packet, size);
+}
+
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
     
+    /* Register for HCI events */
+    hci_event_callback_registration.callback = &hci_event_handler;
+    hci_add_event_handler(&hci_event_callback_registration);
 
     /* Initialize L2CAP */
     l2cap_init();
-    l2cap_register_packet_handler(packet_handler);
 
     /* Initialise BNEP */
     bnep_init();

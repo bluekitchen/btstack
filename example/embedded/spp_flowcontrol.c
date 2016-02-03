@@ -68,6 +68,7 @@ static uint8_t  rfcomm_channel_nr = 1;
 static uint16_t rfcomm_channel_id;
 static uint8_t  rfcomm_send_credit = 0;
 static uint8_t  spp_service_buffer[150];
+static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 /* @section SPP Service Setup   
  *
@@ -80,9 +81,13 @@ static uint8_t  spp_service_buffer[150];
 
 /* LISTING_START(explicitFlowControl): Providing one initial credit during RFCOMM service initialization */
 static void spp_service_setup(void){     
+
+    // register for HCI events
+    hci_event_callback_registration.callback = &packet_handler;
+    hci_add_event_handler(&hci_event_callback_registration);
+
     // init L2CAP
     l2cap_init();
-    l2cap_register_packet_handler(packet_handler);
     
     // init RFCOMM
     rfcomm_init();

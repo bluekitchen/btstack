@@ -54,7 +54,6 @@
 
 #include "mock.h"
 
-static void *registered_sdp_app_context;
 static uint8_t sdp_rfcomm_channel_nr = 1;
 const char sdp_rfcomm_service_name[] = "BTstackMock";
 static uint16_t rfcomm_cid = 1;
@@ -71,7 +70,7 @@ static uint8_t rfcomm_reserved_buffer[1000];
 hfp_connection_t * hfp_context;
 
 void (*registered_rfcomm_packet_handler)(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
-void (*registered_sdp_app_callback)(uint8_t packet_type, uint8_t *packet, uint16_t size, void * context);
+void (*registered_sdp_app_callback)(uint8_t packet_type, uint8_t *packet, uint16_t size);
 
 uint8_t * get_rfcomm_payload(){
 	return &rfcomm_payload[0];
@@ -129,8 +128,7 @@ void print_without_newlines(uint8_t *data, uint16_t len){
 }
 
 extern "C" void l2cap_init(void){}
-
-extern "C" void l2cap_register_packet_handler(void (*handler)(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size)){
+extern "C" void hci_add_event_handler(btstack_packet_callback_registration_t * callback_handler){
 }
 
 int  rfcomm_send(uint16_t rfcomm_cid, uint8_t *data, uint16_t len){
@@ -201,9 +199,8 @@ int hci_send_cmd(const hci_cmd_t *cmd, ...){
 }
 
 
-void sdp_query_rfcomm_register_callback(void(*sdp_app_callback)(uint8_t packet_type, uint8_t *packet, uint16_t size, void * context), void * context){
+void sdp_query_rfcomm_register_callback(void(*sdp_app_callback)(uint8_t packet_type, uint8_t *packet, uint16_t size)){
 	registered_sdp_app_callback = sdp_app_callback;
-	registered_sdp_app_context = context;
 }
 
 static void sdp_query_complete_response(uint8_t status){
@@ -211,7 +208,7 @@ static void sdp_query_complete_response(uint8_t status){
     event[0] = SDP_EVENT_QUERY_COMPLETE;
     event[1] = 1;
     event[2] = status;
-    (*registered_sdp_app_callback)(HCI_EVENT_PACKET, event, sizeof(event), registered_sdp_app_context);
+    (*registered_sdp_app_callback)(HCI_EVENT_PACKET, event, sizeof(event));
 }
 
 static void sdp_query_rfcomm_service_response(uint8_t status){
@@ -222,7 +219,7 @@ static void sdp_query_rfcomm_service_response(uint8_t status){
     event[2] = sdp_rfcomm_channel_nr;
     memcpy(&event[3], sdp_rfcomm_service_name, sdp_service_name_len);
     event[3+sdp_service_name_len] = 0;
-    (*registered_sdp_app_callback)(HCI_EVENT_PACKET, event, sizeof(event), registered_sdp_app_context);
+    (*registered_sdp_app_callback)(HCI_EVENT_PACKET, event, sizeof(event));
 }
 
 void sdp_query_rfcomm_channel_and_name_for_uuid(bd_addr_t remote, uint16_t uuid){

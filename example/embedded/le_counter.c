@@ -85,8 +85,9 @@
 /* LISTING_START(MainConfiguration): Init L2CAP SM ATT Server and start heartbeat timer */
 static int  le_notification_enabled;
 static btstack_timer_source_t heartbeat;
+static btstack_packet_callback_registration_t hci_event_callback_registration;
 
-static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+static void packet_handler (uint8_t packet_type, uint8_t *packet, uint16_t size);
 static uint16_t att_read_callback(uint16_t con_handle, uint16_t att_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size);
 static int att_write_callback(uint16_t con_handle, uint16_t att_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size);
 static void  heartbeat_handler(struct btstack_timer_source *ts);
@@ -101,8 +102,12 @@ const uint8_t adv_data[] = {
 const uint8_t adv_data_len = sizeof(adv_data);
 
 static void le_counter_setup(void){
+
+    // register for HCI events
+    hci_event_callback_registration.callback = &packet_handler;
+    hci_add_event_handler(&hci_event_callback_registration);
+
     l2cap_init();
-    l2cap_register_packet_handler(packet_handler);
 
     // setup le device db
     le_device_db_init();
@@ -137,7 +142,7 @@ static void le_counter_setup(void){
  */
 
 /* LISTING_START(packetHandler): Packet Handler */
-static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+static void packet_handler (uint8_t packet_type, uint8_t *packet, uint16_t size){
 	switch (packet_type) {
 		case HCI_EVENT_PACKET:
 			switch (packet[0]) {

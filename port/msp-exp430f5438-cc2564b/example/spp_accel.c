@@ -80,6 +80,8 @@ static uint8_t   spp_service_buffer[150];
 // SPP description
 static uint8_t accel_buffer[6];
 
+static btstack_packet_callback_registration_t hci_event_callback_registration;
+
 static void  prepare_accel_packet(void){
     int16_t accl_x;
     int16_t accl_y;
@@ -197,6 +199,9 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             break;
     }
 }
+static void hci_event_handler(uint8_t packet_type, uint8_t * packet, uint16_t size){
+    packet_handler(packet, size);
+}
 
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
@@ -205,9 +210,12 @@ int btstack_main(int argc, const char * argv[]){
     halAccelerometerInit(); 
     prepare_accel_packet();
 
+    // register for HCI events
+    hci_event_callback_registration.callback = &hci_event_handler;
+    hci_add_event_handler(&hci_event_callback_registration);
+
     // init L2CAP
     l2cap_init();
-    l2cap_register_packet_handler(packet_handler);
     
     // init RFCOMM
     rfcomm_init();

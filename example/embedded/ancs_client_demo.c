@@ -72,7 +72,7 @@
 // ancs client demo profile
 #include "ancs_client_demo.h"
 
-const uint8_t adv_data[] = {
+static const uint8_t adv_data[] = {
     // Flags general discoverable
     0x02, 0x01, 0x02, 
     // Name
@@ -80,7 +80,8 @@ const uint8_t adv_data[] = {
     // Service Solicitation, 128-bit UUIDs - ANCS (little endian)
     0x11,0x15,0xD0,0x00,0x2D,0x12,0x1E,0x4B,0x0F,0xA4,0x99,0x4E,0xCE,0xB5,0x31,0xF4,0x05,0x79
 };
-uint8_t adv_data_len = sizeof(adv_data);
+static uint8_t adv_data_len = sizeof(adv_data);
+static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     switch (packet_type) {
@@ -122,10 +123,18 @@ static void ancs_callback(uint8_t packet_type, uint8_t *packet, uint16_t size){
     }
 }
 
+static void hci_event_handler(uint8_t packet_type, uint8_t * packet, uint16_t size){
+    app_packet_handler(packet_type, 0, packet, size);
+}
+
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
     
     printf("BTstack ANCS Client starting up...\n");
+
+    // register for HCI events
+    hci_event_callback_registration.callback = &hci_event_handler;
+    hci_add_event_handler(&hci_event_callback_registration);
 
     // set up l2cap_le
     l2cap_init();

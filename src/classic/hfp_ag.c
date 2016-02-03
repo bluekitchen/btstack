@@ -62,6 +62,21 @@
 #include "classic/hfp_gsm_model.h"
 #include "classic/hfp_ag.h"
 
+// private prototypes
+static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+static void hfp_run_for_context(hfp_connection_t *context);
+static void hfp_ag_setup_audio_connection(hfp_connection_t * connection);
+static void hfp_ag_hf_start_ringing(hfp_connection_t * context);
+
+// public prototypes
+hfp_generic_status_indicator_t * get_hfp_generic_status_indicators();
+int get_hfp_generic_status_indicators_nr();
+void set_hfp_generic_status_indicators(hfp_generic_status_indicator_t * indicators, int indicator_nr);
+void set_hfp_ag_indicators(hfp_ag_indicator_t * indicators, int indicator_nr);
+int get_hfp_ag_indicators_nr(hfp_connection_t * context);
+hfp_ag_indicator_t * get_hfp_ag_indicators(hfp_connection_t * context);
+
+// gobals
 static const char default_hfp_ag_service_name[] = "Voice gateway";
 
 static uint16_t hfp_supported_features = HFP_DEFAULT_AG_SUPPORTED_FEATURES;
@@ -83,17 +98,8 @@ static int hfp_ag_response_and_hold_active = 0;
 static hfp_phone_number_t * subscriber_numbers = NULL;
 static int subscriber_numbers_count = 0;
 
-static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
-static void hfp_run_for_context(hfp_connection_t *context);
-static void hfp_ag_setup_audio_connection(hfp_connection_t * connection);
-static void hfp_ag_hf_start_ringing(hfp_connection_t * context);
+static btstack_packet_callback_registration_t hci_event_callback_registration;
 
-hfp_generic_status_indicator_t * get_hfp_generic_status_indicators();
-int get_hfp_generic_status_indicators_nr();
-void set_hfp_generic_status_indicators(hfp_generic_status_indicator_t * indicators, int indicator_nr);
-void set_hfp_ag_indicators(hfp_ag_indicator_t * indicators, int indicator_nr);
-int get_hfp_ag_indicators_nr(hfp_connection_t * context);
-hfp_ag_indicator_t * get_hfp_ag_indicators(hfp_connection_t * context);
 
 hfp_ag_indicator_t * get_hfp_ag_indicators(hfp_connection_t * context){
     // TODO: save only value, and value changed in the context?
@@ -1969,6 +1975,10 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
     hfp_run();
 }
 
+static void hci_event_handler(uint8_t packet_type, uint8_t * packet, uint16_t size){
+    packet_handler(packet_type, 0, packet, size);
+}
+
 static void hfp_ag_set_ag_indicators(hfp_ag_indicator_t * ag_indicators, int ag_indicators_nr){
     hfp_ag_indicators_nr = ag_indicators_nr;
     memcpy(hfp_ag_indicators, ag_indicators, ag_indicators_nr * sizeof(hfp_ag_indicator_t));
@@ -1983,8 +1993,12 @@ void hfp_ag_init(uint16_t rfcomm_channel_nr, uint32_t supported_features,
         log_error("hfp_init: codecs_nr (%d) > HFP_MAX_NUM_CODECS (%d)", codecs_nr, HFP_MAX_NUM_CODECS);
         return;
     }
+
+    // register for HCI events
+    hci_event_callback_registration.callback = &hci_event_handler;
+    hci_add_event_handler(&hci_event_callback_registration);
+
     l2cap_init();
-    l2cap_register_packet_handler(packet_handler);
 
     rfcomm_register_packet_handler(packet_handler);
 

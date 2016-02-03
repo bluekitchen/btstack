@@ -86,6 +86,8 @@ typedef enum {
 
 static state_t state = 0;
 
+static btstack_packet_callback_registration_t hci_event_callback_registration;
+
 #define KEYCODE_RETURN     '\n'
 #define KEYCODE_ESCAPE      27
 #define KEYCODE_TAB			'\t'
@@ -341,6 +343,9 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 			}
 	}
 }
+static void hci_event_handler(uint8_t packet_type, uint8_t * packet, uint16_t size){
+    packet_handler(packet, size);
+}
 
 static hci_transport_config_uart_t config = {
     HCI_TRANSPORT_CONFIG_UART,
@@ -383,9 +388,12 @@ int main(void){
     // use eHCILL
     btstack_chipset_cc256x_enable_ehcill(1);
 
+    // register for HCI events
+    hci_event_callback_registration.callback = &hci_event_handler;
+    hci_add_event_handler(&hci_event_callback_registration);
+
     // init L2CAP
     l2cap_init();
-    l2cap_register_packet_handler(packet_handler);
 		
     // ready - enable irq used in h4 task
     __enable_interrupt();   

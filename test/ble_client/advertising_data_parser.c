@@ -88,6 +88,7 @@ static uint8_t adv_multi_packet[] = {
 };
 
 static int adv_index = 0;
+static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 void CHECK_EQUAL_ARRAY(const uint8_t * expected, uint8_t * actual, int size){
     for (int i=0; i<size; i++){
@@ -149,7 +150,8 @@ bool nameHasPrefix(const char * name_prefix, uint16_t data_length, uint8_t * dat
 TEST_GROUP(ADParser){
     void setup(void){
         hci_init(&dummy_transport, NULL, NULL);
-        hci_register_packet_handler(packet_handler);
+        hci_event_callback_registration.callback = &packet_handler;
+        hci_add_event_handler(&hci_event_callback_registration);
     }
 };
 

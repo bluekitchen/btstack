@@ -83,6 +83,8 @@ static hfp_callheld_status_t hfp_callheld_status;
 
 static char phone_number[25]; 
 
+static btstack_packet_callback_registration_t hci_event_callback_registration;
+
 void hfp_hf_register_packet_handler(hfp_callback_t callback){
     hfp_callback = callback;
     if (callback == NULL){
@@ -1022,6 +1024,10 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
     hfp_run();
 }
 
+static void hci_event_handler(uint8_t packet_type, uint8_t * packet, uint16_t size){
+    packet_handler(packet_type, 0, packet, size);
+}
+
 void hfp_hf_set_codecs(uint8_t * codecs, int codecs_nr){
     if (codecs_nr > HFP_MAX_NUM_CODECS){
         log_error("hfp_hf_set_codecs: codecs_nr (%d) > HFP_MAX_NUM_CODECS (%d)", codecs_nr, HFP_MAX_NUM_CODECS);
@@ -1048,8 +1054,12 @@ void hfp_hf_set_codecs(uint8_t * codecs, int codecs_nr){
 }
 
 void hfp_hf_init(uint16_t rfcomm_channel_nr, uint32_t supported_features, uint16_t * indicators, int indicators_nr, uint32_t indicators_status){
+
+    // register for HCI events
+    hci_event_callback_registration.callback = &hci_event_handler;
+    hci_add_event_handler(&hci_event_callback_registration);
+
     l2cap_init();
-    l2cap_register_packet_handler(packet_handler);
     rfcomm_register_packet_handler(packet_handler);
     hfp_init(rfcomm_channel_nr);
     

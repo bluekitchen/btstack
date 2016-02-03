@@ -125,6 +125,7 @@ static char tap_dev_name[16] = "bnep%d";
 
 
 static btstack_data_source_t tap_dev_ds;
+static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 /* @section Main application configuration
  *
@@ -137,9 +138,13 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 static void handle_sdp_client_query_result(uint8_t packet_type, uint8_t *packet, uint16_t size);
 
 static void panu_setup(void){
+
+    // register for HCI events
+    hci_event_callback_registration.callback = &packet_handler;
+    hci_add_event_handler(&hci_event_callback_registration);
+
     // Initialize L2CAP 
     l2cap_init();
-    l2cap_register_packet_handler(packet_handler);
 
     // Initialise BNEP
     bnep_init();

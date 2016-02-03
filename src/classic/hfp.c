@@ -415,7 +415,7 @@ void hfp_create_sdp_record(uint8_t * service, uint32_t service_record_handle, ui
 
 static hfp_connection_t * connection_doing_sdp_query = NULL;
 
-static void handle_query_rfcomm_event(uint8_t packet_type, uint8_t *packet, uint16_t size, void * context){
+static void handle_query_rfcomm_event(uint8_t packet_type, uint8_t *packet, uint16_t size){
     hfp_connection_t * connection = connection_doing_sdp_query;
     
     if ( connection->state != HFP_W4_SDP_EVENT_QUERY_COMPLETE) return;
@@ -1274,7 +1274,7 @@ static void parse_sequence(hfp_connection_t * context){
 
 void hfp_init(uint16_t rfcomm_channel_nr){
     rfcomm_register_service(rfcomm_channel_nr, 0xffff);  
-    sdp_query_rfcomm_register_callback(handle_query_rfcomm_event, NULL);
+    sdp_query_rfcomm_register_callback(handle_query_rfcomm_event);
 }
 
 void hfp_establish_service_level_connection(bd_addr_t bd_addr, uint16_t service_uuid){

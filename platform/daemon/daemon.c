@@ -192,6 +192,8 @@ static uint16_t gatt_client_id = 0;
 
 static void (*bluetooth_status_handler)(BLUETOOTH_STATE state) = dummy_bluetooth_status_handler;
 
+static btstack_packet_callback_registration_t hci_event_callback_registration;
+
 static int global_enable = 0;
 
 static btstack_link_key_db_t    const * btstack_link_key_db = NULL;
@@ -1637,6 +1639,9 @@ static void daemon_packet_handler(void * connection, uint8_t packet_type, uint16
     daemon_emit_packet(connection, packet_type, channel, packet, size);
 }
 
+static void hci_packet_handler(uint8_t packet_type, uint8_t * packet, uint16_t size){
+    daemon_packet_handler(NULL, packet_type, 0, packet, size);
+}
 static void l2cap_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * packet, uint16_t size){
     daemon_packet_handler(NULL, packet_type, channel, packet, size);
 }
@@ -2066,6 +2071,10 @@ int main (int argc,  char * const * argv){
     // iPhone doesn't use SSP yet as there's no UI for it yet and auto accept is not an option
     hci_ssp_set_enable(0);
 #endif
+
+    // register for HCI events
+    hci_event_callback_registration.callback = &hci_packet_handler;
+    hci_add_event_handler(&hci_event_callback_registration);
 
     // init L2CAP
     l2cap_init();

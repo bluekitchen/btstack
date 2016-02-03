@@ -956,9 +956,6 @@ static void l2cap_event_handler(uint8_t *packet, uint16_t size){
             break;
     }
     
-    // pass on: main packet handler
-    (*packet_handler)(HCI_EVENT_PACKET, 0, packet, size);
-
     l2cap_run();
 }
 

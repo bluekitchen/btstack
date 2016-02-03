@@ -314,7 +314,7 @@ static void sm_truncate_key(sm_key_t key, int max_encryption_size){
 
 static void sm_timeout_handler(btstack_timer_source_t * timer){
     log_info("SM timeout");
-    sm_connection_t * sm_conn = btstack_run_loop_get_timer_context(timer);
+    sm_connection_t * sm_conn = (sm_connection_t*) btstack_run_loop_get_timer_context(timer);
     sm_conn->sm_engine_state = SM_GENERAL_TIMEOUT;
     sm_done_for_handle(sm_conn->sm_handle);
 

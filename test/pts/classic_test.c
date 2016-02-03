@@ -777,7 +777,6 @@ int btstack_main(int argc, const char * argv[]){
     hci_add_event_handler(&hci_event_callback_registration);
 
     l2cap_init();
-    l2cap_register_packet_handler(&packet_handler);
     l2cap_register_fixed_channel(&packet_handler, L2CAP_CID_CONNECTIONLESS_CHANNEL);
 
     rfcomm_init();

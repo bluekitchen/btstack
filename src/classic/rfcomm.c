@@ -715,7 +715,7 @@ static void rfcomm_multiplexer_finalize(rfcomm_multiplexer_t * multiplexer){
 }
 
 static void rfcomm_multiplexer_timer_handler(btstack_timer_source_t *timer){
-    rfcomm_multiplexer_t * multiplexer = btstack_run_loop_get_timer_context(timer);
+    rfcomm_multiplexer_t * multiplexer = (rfcomm_multiplexer_t*) btstack_run_loop_get_timer_context(timer);
     if (rfcomm_multiplexer_has_channels(multiplexer)) return;
 
     log_info("rfcomm_multiplexer_timer_handler timeout: shutting down multiplexer! (no channels)");

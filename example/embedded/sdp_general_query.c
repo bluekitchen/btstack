@@ -67,6 +67,7 @@ int attribute_id = -1;
 
 static uint8_t   attribute_value[1000];
 static const int attribute_value_buffer_size = sizeof(attribute_value);
+static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 /* @section SDP Client Setup
  *
@@ -78,13 +79,17 @@ static const int attribute_value_buffer_size = sizeof(attribute_value);
  */
 
 /* LISTING_START(SDPClientInit): SDP client setup */
-static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+static void packet_handler (uint8_t packet_type, uint8_t *packet, uint16_t size);
 static void handle_sdp_client_query_result(uint8_t packet_type, uint8_t *packet, uint16_t size);
 
 static void sdp_client_init(void){
+
+    // register for HCI events
+    hci_event_callback_registration.callback = &packet_handler;
+    hci_add_event_handler(&hci_event_callback_registration);
+
     // init L2CAP
     l2cap_init();
-    l2cap_register_packet_handler(packet_handler);
 
     sdp_parser_init();
     sdp_parser_register_callback(handle_sdp_client_query_result);
@@ -106,7 +111,7 @@ static bd_addr_t remote = {0x04,0x0C,0xCE,0xE4,0x85,0xD3};
 /* LISTING_END */
 
 /* LISTING_START(SDPQueryUUID): Querying a list of service records on a remote device. */
-static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+static void packet_handler (uint8_t packet_type, uint8_t *packet, uint16_t size){
     // printf("packet_handler type %u, packet[0] %x\n", packet_type, packet[0]);
 
     if (packet_type != HCI_EVENT_PACKET) return;

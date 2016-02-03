@@ -70,9 +70,11 @@
 #define HEARTBEAT_PERIOD_MS 1000
 
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+static void hci_event_handler(uint8_t packet_type, uint8_t * packet, uint16_t size);
 
 static uint16_t rfcomm_channel_id;
 static uint8_t  spp_service_buffer[150];
+static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 
 /* @section SPP Service Setup 
@@ -91,8 +93,12 @@ static uint8_t  spp_service_buffer[150];
 
 /* LISTING_START(SPPSetup): SPP service setup */ 
 static void spp_service_setup(void){
+
+    // register for HCI events
+    hci_event_callback_registration.callback = &hci_event_handler;
+    hci_add_event_handler(&hci_event_callback_registration);
+
     l2cap_init();
-    l2cap_register_packet_handler(packet_handler);
 
     rfcomm_init();
     rfcomm_register_packet_handler(packet_handler);
@@ -251,6 +257,9 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             break;
     }
 /* LISTING_RESUME */ 
+}
+static void hci_event_handler(uint8_t packet_type, uint8_t * packet, uint16_t size){
+    packet_handler(packet_type, 0, packet, size);
 }
 /* LISTING_END */
 

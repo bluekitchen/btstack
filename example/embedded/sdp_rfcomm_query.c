@@ -65,9 +65,10 @@ static bd_addr_t remote = {0x84, 0x38, 0x35, 0x65, 0xD1, 0x15};
 static uint8_t  service_index = 0;
 static uint8_t  channel_nr[10];
 static char*    service_name[10];
+static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 
-static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+static void packet_handler (uint8_t packet_type, uint8_t *packet, uint16_t size){
     // printf("packet_handler type %u, packet[0] %x\n", packet_type, packet[0]);
 
     if (packet_type != HCI_EVENT_PACKET) return;
@@ -125,9 +126,12 @@ int btstack_main(int argc, const char * argv[]){
 
     printf("Client HCI init done\r\n");
         
+    // register for HCI events
+    hci_event_callback_registration.callback = &packet_handler;
+    hci_add_event_handler(&hci_event_callback_registration);
+
     // init L2CAP
     l2cap_init();
-    l2cap_register_packet_handler(packet_handler);
 
     sdp_query_rfcomm_register_callback(handle_query_rfcomm_event);
 

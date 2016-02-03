@@ -76,6 +76,8 @@
 #include "l2cap.h"
 #include "btstack_debug.h"
 
+static btstack_packet_callback_registration_t hci_event_callback_registration;
+
 static uint8_t hsp_service_buffer[150]; 
 static const uint8_t rfcomm_channel_nr = 1;
 static const char    hsp_hs_service_name[] = "Headset Test";
@@ -215,6 +217,9 @@ static void packet_handler(uint8_t * event, uint16_t event_size){
             break;
     }
 }
+static void hci_event_handler(uint8_t packet_type, uint8_t * packet, uint16_t size){
+    packet_handler(packet, size);
+}
 
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
@@ -223,15 +228,16 @@ int btstack_main(int argc, const char * argv[]){
     compute_signal();
 #endif
 
-    // 8-bit, 2's complement (== int8_t)
-    // 16-bit samples probably required for USB: 
-    // hci_set_sco_voice_setting(0x0060);
-
-    hci_register_sco_packet_handler(&sco_packet_handler);
-
     hci_discoverable_control(1);
     hci_ssp_set_io_capability(SSP_IO_CAPABILITY_DISPLAY_YES_NO);
     gap_set_local_name("BTstack HSP HS");
+
+    // register for HCI events
+    hci_event_callback_registration.callback = &hci_event_handler;
+    hci_add_event_handler(&hci_event_callback_registration);
+
+    // register for SCO packets
+    hci_register_sco_packet_handler(&sco_packet_handler);
 
     hsp_hs_init(rfcomm_channel_nr);
     hsp_hs_register_packet_handler(packet_handler);

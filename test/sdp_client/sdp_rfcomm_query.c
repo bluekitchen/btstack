@@ -90,7 +90,7 @@ extern "C" void sdp_client_query(bd_addr_t remote, uint8_t * des_serviceSearchPa
 void sdp_query_rfcomm_init();
 
 
-void handle_query_rfcomm_event(uint8_t packet_type, uint8_t *packet, uint16_t size, void * context){
+void handle_query_rfcomm_event(uint8_t packet_type, uint8_t *packet, uint16_t size){
     switch (packet[0]){
         case SDP_EVENT_QUERY_RFCOMM_SERVICE:
             channel_nr[service_index] = sdp_event_query_rfcomm_service_get_rfcomm_channel(packet);
@@ -112,7 +112,7 @@ TEST_GROUP(SDPClient){
 
     void setup(void){
         service_index = 0;
-        sdp_query_rfcomm_register_callback(handle_query_rfcomm_event, NULL);
+        sdp_query_rfcomm_register_callback(handle_query_rfcomm_event);
         sdp_parser_init();
         sdp_query_rfcomm_init();
     }

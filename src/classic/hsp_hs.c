@@ -89,6 +89,8 @@ static uint8_t hs_send_button_press = 0;
 static uint8_t hs_support_custom_indications = 0;
 static uint8_t hs_outgoing_connection = 0;
 
+static btstack_packet_callback_registration_t hci_event_callback_registration;
+
 typedef enum {
     HSP_IDLE,
     HSP_SDP_QUERY_RFCOMM_CHANNEL,
@@ -253,10 +255,17 @@ static void hsp_hs_reset_state(void){
     hs_support_custom_indications = 0;
 }
 
+static void hci_event_handler(uint8_t packet_type, uint8_t * packet, uint16_t size){
+    packet_handler(packet, size);
+}
+
 void hsp_hs_init(uint8_t rfcomm_channel_nr){
+    // register for HCI events
+    hci_event_callback_registration.callback = &hci_event_handler;
+    hci_add_event_handler(&hci_event_callback_registration);
+
     // init L2CAP
     l2cap_init();
-    l2cap_register_packet_handler(packet_handler);
 
     rfcomm_init();
     rfcomm_register_packet_handler(packet_handler);

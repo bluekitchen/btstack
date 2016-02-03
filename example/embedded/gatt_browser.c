@@ -85,11 +85,12 @@ typedef struct advertising_report {
 static bd_addr_t cmdline_addr = { };
 static int cmdline_addr_found = 0;
 
-uint16_t gc_handle;
+static uint16_t gc_handle;
 static le_service_t services[40];
 static int service_count = 0;
 static int service_index = 0;
 
+static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 /* @section GATT client setup
  *
@@ -105,16 +106,20 @@ static uint16_t gc_id;
 
 // Handles connect, disconnect, and advertising report events,  
 // starts the GATT client, and sends the first query.
-static void handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+static void handle_hci_event(uint8_t packet_type, uint8_t *packet, uint16_t size);
 
 // Handles GATT client query results, sends queries and the 
 // GAP disconnect command when the querying is done.
 void handle_gatt_client_event(uint8_t packet_type, uint8_t *packet, uint16_t size);
 
 static void gatt_client_setup(void){
+
+    // register for HCI events
+    hci_event_callback_registration.callback = &handle_hci_event;
+    hci_add_event_handler(&hci_event_callback_registration);
+
     // Initialize L2CAP and register HCI event handler
     l2cap_init();
-    l2cap_register_packet_handler(&handle_hci_event);
 
     // Initialize GATT client 
     gatt_client_init();
@@ -180,7 +185,7 @@ static void fill_advertising_report_from_packet(advertising_report_t * report, u
  */
 
 /* LISTING_START(GATTBrowserHCIPacketHandler): Connecting and disconnecting from the GATT client */
-static void handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+static void handle_hci_event(uint8_t packet_type, uint8_t *packet, uint16_t size){
     if (packet_type != HCI_EVENT_PACKET) return;
     advertising_report_t report;
     

@@ -91,6 +91,7 @@ static le_service_t battery_service;
 static le_characteristic_t config_characteristic;
     
 static gc_state_t state = TC_IDLE;
+static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 static void printUUID(uint8_t * uuid128, uint16_t uuid16){
     if (uuid16){
@@ -234,7 +235,7 @@ static void fill_advertising_report_from_packet(advertising_report_t * report, u
     dump_advertising_report(report);
 }
 
-static void handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+static void hci_event_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
     if (packet_type != HCI_EVENT_PACKET) return;
     advertising_report_t report;
     uint8_t event = packet[0];
@@ -304,8 +305,10 @@ int btstack_main(int argc, const char * argv[]){
         return 0;
 	}
 
+    hci_event_callback_registration.callback = &hci_event_handler;
+    hci_add_event_handler(&hci_event_callback_registration);
+
     l2cap_init();
-    l2cap_register_packet_handler(&handle_hci_event);
 
     gatt_client_init();
     gc_id = gatt_client_register_packet_handler(&handle_gatt_client_event);
