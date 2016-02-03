@@ -129,13 +129,8 @@ void l2cap_register_packet_handler(void (*handler)(uint8_t packet_type, uint16_t
     packet_handler = handler;
 }
 
-//  notify client/protocol handler
-static void l2cap_dispatch(l2cap_channel_t *channel, uint8_t type, uint8_t * data, uint16_t size){
-    if (channel->packet_handler) {
-        (* (channel->packet_handler))(type, channel->local_cid, data, size);
-    } else {
-        (*packet_handler)(type, channel->local_cid, data, size);
-    }
+static void l2cap_dispatch_to_channel(l2cap_channel_t *channel, uint8_t type, uint8_t * data, uint16_t size){
+    (* (channel->packet_handler))(type, channel->local_cid, data, size);
 }
 
 void l2cap_emit_channel_opened(l2cap_channel_t *channel, uint8_t status) {
@@ -155,7 +150,7 @@ void l2cap_emit_channel_opened(l2cap_channel_t *channel, uint8_t status) {
     little_endian_store_16(event, 19, channel->remote_mtu); 
     little_endian_store_16(event, 21, channel->flush_timeout); 
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
-    l2cap_dispatch(channel, HCI_EVENT_PACKET, event, sizeof(event));
+    l2cap_dispatch_to_channel(channel, HCI_EVENT_PACKET, event, sizeof(event));
 }
 
 void l2cap_emit_channel_closed(l2cap_channel_t *channel) {
@@ -165,7 +160,7 @@ void l2cap_emit_channel_closed(l2cap_channel_t *channel) {
     event[1] = sizeof(event) - 2;
     little_endian_store_16(event, 2, channel->local_cid);
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
-    l2cap_dispatch(channel, HCI_EVENT_PACKET, event, sizeof(event));
+    l2cap_dispatch_to_channel(channel, HCI_EVENT_PACKET, event, sizeof(event));
 }
 
 void l2cap_emit_connection_request(l2cap_channel_t *channel) {
@@ -180,7 +175,7 @@ void l2cap_emit_connection_request(l2cap_channel_t *channel) {
     little_endian_store_16(event, 12, channel->local_cid);
     little_endian_store_16(event, 14, channel->remote_cid);
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
-    l2cap_dispatch(channel, HCI_EVENT_PACKET, event, sizeof(event));
+    l2cap_dispatch_to_channel(channel, HCI_EVENT_PACKET, event, sizeof(event));
 }
 
 static void l2cap_emit_connection_parameter_update_response(uint16_t handle, uint16_t result){
@@ -1412,7 +1407,7 @@ static void l2cap_acl_handler( uint8_t *packet, uint16_t size ){
             // Find channel for this channel_id and connection handle
             l2cap_channel_t * channel = l2cap_get_channel_for_local_cid(channel_id);
             if (channel) {
-                l2cap_dispatch(channel, L2CAP_DATA_PACKET, &packet[COMPLETE_L2CAP_HEADER], size-COMPLETE_L2CAP_HEADER);
+                l2cap_dispatch_to_channel(channel, L2CAP_DATA_PACKET, &packet[COMPLETE_L2CAP_HEADER], size-COMPLETE_L2CAP_HEADER);
             }
             break;
         }
