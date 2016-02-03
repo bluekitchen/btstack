@@ -78,6 +78,7 @@ int deviceCount = 0;
 enum STATE {INIT, W4_INQUIRY_MODE_COMPLETE, ACTIVE} ;
 enum STATE state = INIT;
 
+static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 static int getDeviceIndexForAddress( bd_addr_t addr){
     int j;
@@ -221,7 +222,8 @@ static void packet_handler (uint8_t packet_type, uint8_t *packet, uint16_t size)
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]) {
     
-    hci_register_packet_handler(packet_handler);
+    hci_event_callback_registration.callback = &packet_handler;
+    hci_add_event_handler(&hci_event_callback_registration);
 
     // turn on!
 	hci_power_control(HCI_POWER_ON);

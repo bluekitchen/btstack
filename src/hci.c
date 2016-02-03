@@ -284,12 +284,6 @@ static int nr_hci_connections(void){
     return count;
 }
 
-/** 
- * Dummy handler called by HCI
- */
-static void dummy_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
-}
-
 uint8_t hci_number_outgoing_packets(hci_con_handle_t handle){
     hci_connection_t * connection = hci_connection_for_handle(handle);
     if (!connection) {
@@ -1814,8 +1808,8 @@ void hci_add_event_handler(btstack_packet_callback_registration_t * callback_han
 
 
 /** Register HCI packet handlers */
-void hci_register_packet_handler(void (*handler)(uint8_t packet_type, uint8_t *packet, uint16_t size)){
-    hci_stack->packet_handler = handler;
+void hci_register_acl_packet_handler(void (*handler)(uint8_t packet_type, uint8_t *packet, uint16_t size)){
+    hci_stack->acl_packet_handler = handler;
 }
 
 /**
@@ -1876,9 +1870,6 @@ void hci_init(const hci_transport_t *transport, void *config, btstack_link_key_d
     
     // init used hardware control with NULL
     // init used chipset with NULL 
-
-    // higher level handler
-    hci_stack->packet_handler = dummy_handler;
 
     // store and open remote device db
     hci_stack->link_key_db = link_key_db;
@@ -2879,11 +2870,12 @@ int hci_send_cmd(const hci_cmd_t *cmd, ...){
 // TODO: generalize, use table similar to hci_create_command
 
 static void hci_emit_event(uint8_t * event, uint16_t size, int dump){
+    // dump packet
     if (dump) {
         hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
     } 
-    hci_stack->packet_handler(HCI_EVENT_PACKET, event, sizeof(event));
 
+    // dispatch to all event handlers
     btstack_linked_list_iterator_t it;
     btstack_linked_list_iterator_init(&it, &hci_stack->event_handlers);
     while (btstack_linked_list_iterator_has_next(&it)){
@@ -2893,7 +2885,8 @@ static void hci_emit_event(uint8_t * event, uint16_t size, int dump){
 }
 
 static void hci_emit_acl_packet(uint8_t * packet, uint16_t size){
-    hci_stack->packet_handler(HCI_ACL_DATA_PACKET, packet, size);
+    if (!hci_stack->acl_packet_handler) return;
+    hci_stack->acl_packet_handler(HCI_ACL_DATA_PACKET, packet, size);
 }
 
 void hci_emit_state(void){

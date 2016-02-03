@@ -56,6 +56,8 @@
 #include "hci.h"
 #include "ble/ad_parser.h"
 
+static btstack_packet_callback_registration_t hci_event_callback_registration;
+
 /* @section GAP LE setup for receiving advertisements
  *
  * @text GAP LE advertisements are received as custom HCI events of the 
@@ -64,10 +66,11 @@
  */
 
 /* LISTING_START(GAPLEAdvSetup): Setting up GAP LE client for receiving advertisements */
-static void handle_hci_event(uint8_t packet_type, uint8_t *packet, uint16_t size);
+static void packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t size);
 
 static void gap_le_advertisements_setup(void){
-    hci_register_packet_handler(handle_hci_event);
+    hci_event_callback_registration.callback = &packet_handler;
+    hci_add_event_handler(&hci_event_callback_registration);
 }
 /* LISTING_END */
 
@@ -224,7 +227,7 @@ static void dump_advertisement_data(uint8_t * adv_data, uint8_t adv_size){
 
 /* LISTING_START(GAPLEAdvPacketHandler): Scanning and receiving advertisements */
 
-static void handle_hci_event(uint8_t packet_type, uint8_t *packet, uint16_t size){
+static void packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
     if (packet_type != HCI_EVENT_PACKET) return;
     
     switch (packet[0]) {

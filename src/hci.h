@@ -573,7 +573,7 @@ typedef struct {
     uint16_t packet_types;
     
     /* callback to L2CAP layer */
-    void (*packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size);
+    void (*acl_packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size);
 
     /* callback for SCO data */
     void (*sco_packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size);
@@ -791,9 +791,9 @@ void hci_set_bd_addr(bd_addr_t addr);
 void hci_add_event_handler(btstack_packet_callback_registration_t * callback_handler);
 
 /**
- * @brief Registers a packet handler. Used if L2CAP is not used (rarely). 
+ * @brief Registers a packet handler for ACL data. Used by L2CAP
  */
-void hci_register_packet_handler(void (*handler)(uint8_t packet_type, uint8_t *packet, uint16_t size));
+void hci_register_acl_packet_handler(void (*handler)(uint8_t packet_type, uint8_t *packet, uint16_t size));
 
 /**
  * @brief Registers a packet handler for SCO data. Used for HSP and HFP profiles.

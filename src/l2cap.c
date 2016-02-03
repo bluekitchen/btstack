@@ -73,6 +73,8 @@ static void l2cap_packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t 
 static l2cap_signaling_response_t signaling_responses[NR_PENDING_SIGNALING_RESPONSES];
 static int signaling_responses_pending;
 
+static btstack_packet_callback_registration_t hci_event_callback_registration;
+
 static btstack_linked_list_t l2cap_channels;
 static btstack_linked_list_t l2cap_services;
 static btstack_linked_list_t l2cap_le_channels;
@@ -111,7 +113,11 @@ void l2cap_init(void){
     // 
     // register callback with HCI
     //
-    hci_register_packet_handler(&l2cap_packet_handler);
+    hci_event_callback_registration.callback = &l2cap_packet_handler;
+    hci_add_event_handler(&hci_event_callback_registration);
+
+    hci_register_acl_packet_handler(&l2cap_packet_handler);
+
     hci_connectable_control(0); // no services yet
 }
 
