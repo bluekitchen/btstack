@@ -173,6 +173,9 @@ static void *             sm_aes128_context;
 // random engine. store context (ususally sm_connection_t)
 static void * sm_random_context;
 
+// to receive hci events
+static btstack_packet_callback_registration_t hci_event_callback_registration;
+
 //
 // Volume 3, Part H, Chapter 24
 // "Security shall be initiated by the Security Manager in the device in the master role.
@@ -1815,7 +1818,7 @@ static void sm_handle_random_result(uint8_t * data){
     }
 }
 
-static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+static void sm_event_packet_handler (uint8_t packet_type, uint8_t *packet, uint16_t size){
 
     sm_connection_t  * sm_conn;
     uint16_t handle;
@@ -2037,19 +2040,14 @@ static int sm_validate_stk_generation_method(void){
     }
 }
 
-// helper for sm_packet_handler, calls sm_run on exit
+// helper for sm_pdu_handler, calls sm_run on exit
 static void sm_pdu_received_in_wrong_state(sm_connection_t * sm_conn){
     setup->sm_pairing_failed_reason = SM_REASON_UNSPECIFIED_REASON;
     sm_conn->sm_engine_state = sm_conn->sm_role ? SM_RESPONDER_IDLE : SM_INITIATOR_CONNECTED;
     sm_done_for_handle(sm_conn->sm_handle);
 }
 
-static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *packet, uint16_t size){
-
-    if (packet_type == HCI_EVENT_PACKET) {
-        sm_event_packet_handler(packet_type, handle, packet, size);
-        return;
-    }
+static void sm_pdu_handler(uint8_t packet_type, uint16_t handle, uint8_t *packet, uint16_t size){
 
     if (packet_type != SM_DATA_PACKET) return;
 
@@ -2061,7 +2059,7 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
         return;
     }
 
-    log_debug("sm_packet_handler: state %u, pdu 0x%02x", sm_conn->sm_engine_state, packet[0]);
+    log_debug("sm_pdu_handler: state %u, pdu 0x%02x", sm_conn->sm_engine_state, packet[0]);
 
     int err;
 
@@ -2337,8 +2335,12 @@ void sm_init(void){
 
     test_use_fixed_local_csrk = 0;
 
-    // attach to lower layers
-    l2cap_register_fixed_channel(sm_packet_handler, L2CAP_CID_SECURITY_MANAGER_PROTOCOL);
+    // register for HCI Events from HCI
+    hci_event_callback_registration.callback = &sm_event_packet_handler;
+    hci_add_event_handler(&hci_event_callback_registration);
+    
+    // and L2CAP PDUs
+    l2cap_register_fixed_channel(sm_pdu_handler, L2CAP_CID_SECURITY_MANAGER_PROTOCOL);
 }
 
 static sm_connection_t * sm_get_connection_for_handle(uint16_t con_handle){
