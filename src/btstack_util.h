@@ -52,6 +52,7 @@ extern "C" {
 #endif
 
 #include <stdint.h>
+#include "btstack_linked_list.h"
 
 /**
  * @brief hci connection handle type
@@ -96,6 +97,13 @@ typedef uint8_t device_name_t[DEVICE_NAME_LEN+1];
 	
 // packet handler
 typedef void (*btstack_packet_handler_t) (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+
+// new packet callback supporting multiple registration
+typedef struct {
+    btstack_linked_item_t item;
+    void (*callback)(uint8_t packet_type, uint8_t * packet, uint16_t size);
+} btstack_packet_callback_registration_t;
+
 	
 // helper for BT little endian format
 #define little_endian_read_16( buffer, pos) ( ((uint16_t) buffer[pos]) | (((uint16_t)buffer[(pos)+1]) << 8))
