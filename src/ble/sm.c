@@ -1599,13 +1599,7 @@ static void sm_handle_encryption_result(uint8_t * data){
             swap128(data, sm_persistent_dhk);
             log_key("dhk", sm_persistent_dhk);
             dkg_next_state();
-
-            // SM INIT FINISHED, start application code - TODO untangle that
-            if (sm_client_packet_handler)
-            {
-                uint8_t event[] = { BTSTACK_EVENT_STATE, 1, HCI_STATE_WORKING };
-                sm_client_packet_handler(HCI_EVENT_PACKET, 0, (uint8_t*) event, sizeof(event));
-            }
+            // SM Init Finished
             return;
         default:
             break;
@@ -1837,9 +1831,7 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                         log_info("HCI Working!");
                         dkg_state = sm_persistent_irk_ready ? DKG_CALC_DHK : DKG_CALC_IRK;
                         rau_state = RAU_IDLE;
-
                         sm_run();
-                        return; // don't notify app packet handler just yet
 					}
 					break;
                 
