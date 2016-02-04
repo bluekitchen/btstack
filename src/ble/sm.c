@@ -176,6 +176,9 @@ static void * sm_random_context;
 // to receive hci events
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
+/* to dispatch sm event */
+static btstack_linked_list_t sm_event_handlers;
+
 //
 // Volume 3, Part H, Chapter 24
 // "Security shall be initiated by the Security Manager in the device in the master role.
@@ -474,30 +477,37 @@ static void sm_setup_event_base(uint8_t * event, int event_size, uint8_t type, u
     bt_flip_addr(&event[5], address);
 }
 
+static void sm_dispatch_event(uint8_t packet_type, uint16_t channel, uint8_t * packet, uint16_t size){
+    if (sm_client_packet_handler) {
+        sm_client_packet_handler(HCI_EVENT_PACKET, 0, packet, size);
+    }
+    // dispatch to all event handlers
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &sm_event_handlers);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        btstack_packet_callback_registration_t * entry = (btstack_packet_callback_registration_t*) btstack_linked_list_iterator_next(&it);
+        entry->callback(packet_type, packet, size);
+    }
+}
+
 static void sm_notify_client_base(uint8_t type, uint16_t handle, uint8_t addr_type, bd_addr_t address){
     uint8_t event[11];
     sm_setup_event_base(event, sizeof(event), type, handle, addr_type, address);
-
-    if (!sm_client_packet_handler) return;
-    sm_client_packet_handler(HCI_EVENT_PACKET, 0, event, sizeof(event));
+    sm_dispatch_event(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
 static void sm_notify_client_passkey(uint8_t type, uint16_t handle, uint8_t addr_type, bd_addr_t address, uint32_t passkey){
     uint8_t event[15];
     sm_setup_event_base(event, sizeof(event), type, handle, addr_type, address);
     little_endian_store_32(event, 11, passkey);
-
-    if (!sm_client_packet_handler) return;
-    sm_client_packet_handler(HCI_EVENT_PACKET, 0, event, sizeof(event));
+    sm_dispatch_event(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
 static void sm_notify_client_index(uint8_t type, uint16_t handle, uint8_t addr_type, bd_addr_t address, uint16_t index){
     uint8_t event[13];
     sm_setup_event_base(event, sizeof(event), type, handle, addr_type, address);
     little_endian_store_16(event, 11, index);
-
-    if (!sm_client_packet_handler) return;
-    sm_client_packet_handler(HCI_EVENT_PACKET, 0, event, sizeof(event));
+    sm_dispatch_event(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
 static void sm_notify_client_authorization(uint8_t type, uint16_t handle, uint8_t addr_type, bd_addr_t address, uint8_t result){
@@ -505,9 +515,7 @@ static void sm_notify_client_authorization(uint8_t type, uint16_t handle, uint8_
     uint8_t event[18];
     sm_setup_event_base(event, sizeof(event), type, handle, addr_type, address); 
     event[11] = result;
-
-    if (!sm_client_packet_handler) return;
-    sm_client_packet_handler(HCI_EVENT_PACKET, 0, (uint8_t*) &event, sizeof(event));
+    sm_dispatch_event(HCI_EVENT_PACKET, 0, (uint8_t*) &event, sizeof(event));
 }
 
 // decide on stk generation based on
@@ -2007,9 +2015,7 @@ static void sm_event_packet_handler (uint8_t packet_type, uint8_t *packet, uint1
 			}
 
             // forward packet to higher layer
-            if (sm_client_packet_handler){
-                sm_client_packet_handler(packet_type, 0, packet, size);
-            }
+            sm_dispatch_event(packet_type, 0, packet, size);
 	}
 
     sm_run();
@@ -2261,6 +2267,10 @@ void sm_register_oob_data_callback( int (*get_oob_data_callback)(uint8_t addres_
 
 void sm_register_packet_handler(btstack_packet_handler_t handler){
     sm_client_packet_handler = handler;    
+}
+
+void sm_add_event_handler(btstack_packet_callback_registration_t * callback_handler){
+    btstack_linked_list_add_tail(&sm_event_handlers, (btstack_linked_item_t*) callback_handler);
 }
 
 void sm_set_accepted_stk_generation_methods(uint8_t accepted_stk_generation_methods){

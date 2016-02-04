@@ -87,6 +87,11 @@ void sm_register_oob_data_callback( int (*get_oob_data_callback)(uint8_t addres_
 void sm_register_packet_handler(btstack_packet_handler_t handler);
 
 /**
+ * @brief Add event packet handler. 
+ */
+void sm_add_event_handler(btstack_packet_callback_registration_t * callback_handler);
+
+/**
  * @brief Limit the STK generation methods. Bonding is stopped if the resulting one isn't in the list
  * @param OR combination of SM_STK_GENERATION_METHOD_ 
  */
