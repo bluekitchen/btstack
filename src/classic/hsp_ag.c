@@ -120,7 +120,7 @@ static hsp_ag_callback_t hsp_ag_callback;
 
 static void hsp_run();
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
-static void handle_query_rfcomm_event(uint8_t packet_type, uint8_t *packet, uint16_t size, void * context);
+static void handle_query_rfcomm_event(uint8_t packet_type, uint8_t *packet, uint16_t size);
 
 static void dummy_notify(uint8_t * event, uint16_t size){}
 
@@ -142,17 +142,17 @@ static void emit_event(uint8_t event_subtype, uint8_t value){
 }
 
 static void emit_event_audio_connected(uint8_t status, uint16_t handle){
-    if (!hsp_hs_callback) return;
+    if (!hsp_ag_callback) return;
     uint8_t event[6];
     event[0] = HCI_EVENT_HSP_META;
     event[1] = sizeof(event) - 2;
     event[2] = HSP_SUBEVENT_AUDIO_CONNECTION_COMPLETE;
     event[3] = status;
     little_endian_store_16(event, 4, handle);
-    (*hsp_hs_callback)(event, sizeof(event));
+    (*hsp_ag_callback)(event, sizeof(event));
 }
 
-void hsp_ag_create_service(uint8_t * service, int rfcomm_channel_nr, const char * name){
+void hsp_ag_create_service(uint8_t * service, uint32_t service_record_handle, int rfcomm_channel_nr, const char * name){
     uint8_t* attribute;
     de_create_sequence(service);
 
@@ -258,7 +258,7 @@ static void hsp_ag_reset_state(void){
 }
 
 static void hci_event_handler(uint8_t packet_type, uint8_t * packet, uint16_t size){
-    packet_handler(packet, size);
+    packet_handler(packet_type, 0, packet, size);
 }
 
 void hsp_ag_init(uint8_t rfcomm_channel_nr){
@@ -273,7 +273,7 @@ void hsp_ag_init(uint8_t rfcomm_channel_nr){
     rfcomm_register_packet_handler(packet_handler);
     rfcomm_register_service(rfcomm_channel_nr, 0xffff);  // reserved channel, mtu limited by l2cap
 
-    sdp_query_rfcomm_register_callback(handle_query_rfcomm_event, NULL);
+    sdp_query_rfcomm_register_callback(handle_query_rfcomm_event);
 
     hsp_ag_reset_state();
 }
@@ -633,8 +633,8 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
     hsp_run();
 }
 
-static void handle_query_rfcomm_event(uint8_t packet_type, uint8_t *packet, uint16_t size, void * context){
-    switch (event->type){
+static void handle_query_rfcomm_event(uint8_t packet_type, uint8_t *packet, uint16_t size){
+    switch (packet[0]){
         case SDP_EVENT_QUERY_RFCOMM_SERVICE:
             channel_nr = sdp_event_query_rfcomm_service_get_rfcomm_channel(packet);
             printf("** Service name: '%s', RFCOMM port %u\n", sdp_event_query_rfcomm_service_get_name(packet), channel_nr);
