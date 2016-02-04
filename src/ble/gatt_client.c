@@ -87,7 +87,7 @@ static uint16_t gatt_client_next_id(void){
     return next_gatt_client_id;
 }
 
-static gatt_client_callback_t gatt_client_callback_for_id_new(uint16_t id){
+static btstack_packet_handler_t gatt_client_callback_for_id_new(uint16_t id){
     btstack_linked_list_iterator_t it;    
     btstack_linked_list_iterator_init(&it, &gatt_subclients);
     while (btstack_linked_list_iterator_has_next(&it)){
@@ -98,7 +98,7 @@ static gatt_client_callback_t gatt_client_callback_for_id_new(uint16_t id){
     return NULL;
 }
 
-uint16_t gatt_client_register_packet_handler(gatt_client_callback_t gatt_callback){
+uint16_t gatt_client_register_packet_handler(btstack_packet_handler_t gatt_callback){
     if (gatt_callback == NULL){
         log_error("gatt_client_register_packet_handler called with NULL callback");
         return 0;
@@ -500,9 +500,9 @@ static void gatt_client_handle_transaction_complete(gatt_client_t * peripheral){
 }
 
 static void emit_event_new(uint16_t gatt_client_id, uint8_t * packet, uint16_t size){
-    gatt_client_callback_t gatt_client_callback = gatt_client_callback_for_id_new(gatt_client_id); 
+    btstack_packet_handler_t gatt_client_callback = gatt_client_callback_for_id_new(gatt_client_id); 
     if (!gatt_client_callback) return;
-    (*gatt_client_callback)(HCI_EVENT_PACKET, packet, size);
+    (*gatt_client_callback)(HCI_EVENT_PACKET, 0, packet, size);
 }
 
 static void emit_event_to_all_subclients_new(uint8_t * packet, uint16_t size){
@@ -510,7 +510,7 @@ static void emit_event_to_all_subclients_new(uint8_t * packet, uint16_t size){
     btstack_linked_list_iterator_init(&it, &gatt_subclients);
     while (btstack_linked_list_iterator_has_next(&it)){
         gatt_subclient_t * subclient = (gatt_subclient_t*) btstack_linked_list_iterator_next(&it);
-        (*subclient->callback)(HCI_EVENT_PACKET, packet, size);
+        (*subclient->callback)(HCI_EVENT_PACKET, 0, packet, size);
     } 
 }
 

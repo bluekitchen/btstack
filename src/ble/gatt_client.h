@@ -50,8 +50,6 @@ typedef struct le_event {
     uint16_t handle;
 } le_event_t;
 
-typedef void (*gatt_client_callback_t)(uint8_t packet_type, uint8_t *packet, uint16_t size);
-
 typedef enum {
     P_READY,
     P_W2_SEND_SERVICE_QUERY,
@@ -185,9 +183,9 @@ typedef struct gatt_client{
 } gatt_client_t;
 
 typedef struct gatt_subclient {
-    btstack_linked_item_t   item;
-    uint16_t        id;
-    gatt_client_callback_t callback;
+    btstack_linked_item_t    item;
+    uint16_t                 id;
+    btstack_packet_handler_t callback;
 } gatt_subclient_t;
 
 /* API_START */
@@ -222,7 +220,7 @@ void gatt_client_init(void);
 /** 
  * @brief Register callback (packet handler) for GATT client. Returns GATT client ID.
  */
-uint16_t gatt_client_register_packet_handler (gatt_client_callback_t callback);
+uint16_t gatt_client_register_packet_handler (btstack_packet_handler_t callback);
 
 /** 
  * @brief Unregister callback (packet handler) for GATT client.

@@ -142,7 +142,7 @@ static void verify_blob(uint16_t value_length, uint16_t value_offset, uint8_t * 
     result_counter++;
 }
 
-static void handle_ble_client_event(uint8_t packet_type, uint8_t *packet, uint16_t size){
+static void handle_ble_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
 	if (packet_type != HCI_EVENT_PACKET) return;
 	uint8_t status;
 	le_service_t service;

@@ -110,7 +110,7 @@ static void handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *pac
 
 // Handles GATT client query results, sends queries and the 
 // GAP disconnect command when the querying is done.
-void handle_gatt_client_event(uint8_t packet_type, uint8_t *packet, uint16_t size);
+void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
 static void gatt_client_setup(void){
 
@@ -262,7 +262,7 @@ static void extract_characteristic(le_characteristic_t * characteristic, uint8_t
     }
 }
 
-void handle_gatt_client_event(uint8_t packet_type, uint8_t *packet, uint16_t size){
+void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     le_service_t service;
     le_characteristic_t characteristic;
     switch(packet[0]){

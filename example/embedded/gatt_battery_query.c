@@ -160,7 +160,7 @@ static void extract_characteristic(le_characteristic_t * characteristic, uint8_t
     }
 }
 
-static void handle_gatt_client_event(uint8_t packet_type, uint8_t *packet, uint16_t size){
+static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
 
     switch(state){
         case TC_W4_SERVICE_RESULT:
