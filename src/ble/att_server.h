@@ -54,7 +54,9 @@ extern "C" {
 void att_server_init(uint8_t const * db, att_read_callback_t read_callback, att_write_callback_t write_callback);
 
 /*
- * @brief register packet handler for general HCI Events like connect, diconnect, etc.
+ * @brief register packet handler for ATT server events:
+ *        - ATT_EVENT_MTU_EXCHANGE_COMPLETE 
+ *        - ATT_EVENT_HANDLE_VALUE_INDICATION_COMPLETE
  * @param handler
  */
 void att_server_register_packet_handler(btstack_packet_handler_t handler);
