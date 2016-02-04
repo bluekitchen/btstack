@@ -69,6 +69,6 @@ bnep_test: ${CORE_OBJ} ${COMMON_OBJ} pan.o bnep_test.c
 sco_loopback: ${CORE_OBJ} ${COMMON_OBJ} sco_loopback.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-iopt: ${CORE_OBJ} ${COMMON_OBJ} pan.o hsp_ag.o hsp_hs.o hfp_ag.o hfp_hf.o iopt.c hfp.o ${SDP_CLIENT}
+iopt: ${CORE_OBJ} ${COMMON_OBJ} pan.o hsp_ag.o hsp_hs.o hfp_ag.o hfp_hf.o hfp_gsm_model.o iopt.c hfp.o ${SDP_CLIENT}
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 	
