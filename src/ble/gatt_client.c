@@ -1054,9 +1054,6 @@ static void gatt_client_hci_event_packet_handler(uint8_t packet_type, uint8_t *p
             break;
     }
 
-    // forward all hci events
-    emit_event_to_all_subclients_new(packet, size);
-
     gatt_client_run();
 }
 

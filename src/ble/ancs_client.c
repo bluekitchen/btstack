@@ -104,6 +104,8 @@ static uint8_t  ancs_attribute_id;
 static uint16_t ancs_attribute_len;
 static void (*client_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size);
 
+static btstack_packet_callback_registration_t hci_event_callback_registration;
+
 void ancs_client_register_callback(void (*handler)(uint8_t packet_type, uint8_t *packet, uint16_t size)){
     client_handler = handler; 
 }
@@ -353,5 +355,8 @@ static void handle_gatt_client_event(uint8_t packet_type, uint8_t *packet, uint1
 }
 
 void ancs_client_init(void){
+    hci_event_callback_registration.callback = &handle_gatt_client_event;
+    hci_add_event_handler(&hci_event_callback_registration);
+
     gc_id = gatt_client_register_packet_handler(&handle_gatt_client_event);
 }
