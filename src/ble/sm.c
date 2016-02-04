@@ -2265,10 +2265,6 @@ void sm_register_oob_data_callback( int (*get_oob_data_callback)(uint8_t addres_
     sm_get_oob_data = get_oob_data_callback;
 }
 
-void sm_register_packet_handler(btstack_packet_handler_t handler){
-    sm_client_packet_handler = handler;    
-}
-
 void sm_add_event_handler(btstack_packet_callback_registration_t * callback_handler){
     btstack_linked_list_add_tail(&sm_event_handlers, (btstack_linked_item_t*) callback_handler);
 }

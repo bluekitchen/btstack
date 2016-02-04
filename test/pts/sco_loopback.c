@@ -50,7 +50,9 @@
 #include "hci.h"
 #include "btstack_debug.h"
  
-uint16_t  sco_handle = 0;
+static uint16_t  sco_handle = 0;
+
+static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 static void try_send_sco(void){
     if (!sco_handle) return;
@@ -94,7 +96,8 @@ static void packet_handler(uint8_t packet_type, uint8_t * packet, uint16_t event
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
 
-    hci_register_packet_handler(&packet_handler);
+    hci_event_callback_registration.callback = &packet_handler;
+    hci_add_event_handler(&hci_event_callback_registration);
 
     // turn on!
     hci_power_control(HCI_POWER_ON);

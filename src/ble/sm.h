@@ -81,12 +81,6 @@ void sm_set_ir(sm_key_t ir);
 void sm_register_oob_data_callback( int (*get_oob_data_callback)(uint8_t addres_type, bd_addr_t addr, uint8_t * oob_data));
 
 /**
- *
- * @brief Registers packet handler. Called by att_server.c
- */
-void sm_register_packet_handler(btstack_packet_handler_t handler);
-
-/**
  * @brief Add event packet handler. 
  */
 void sm_add_event_handler(btstack_packet_callback_registration_t * callback_handler);

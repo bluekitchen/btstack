@@ -198,6 +198,9 @@ static le_characteristic_t gap_peripheral_privacy_flag_characteristic;
 static le_characteristic_t signed_write_characteristic;
 static le_service_t        service;
 
+static btstack_packet_callback_registration_t hci_event_callback_registration;
+static btstack_packet_callback_registration_t sm_event_callback_registration;
+
 static void show_usage();
 ///
 
@@ -330,7 +333,7 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                 case BTSTACK_EVENT_STATE:
                     // bt stack activated, get started
                     if (packet[2] == HCI_STATE_WORKING) {
-                        printf("SM Init completed\n");
+                        printf("Central test ready\n");
                         show_usage();
                         gap_run();
                     }
@@ -1664,6 +1667,10 @@ static uint16_t att_read_callback(uint16_t con_handle, uint16_t attribute_handle
     return 0;
 }
 
+static void att_event_packet_handler2(uint8_t packet_type, uint8_t * packet, uint16_t size){
+    app_packet_handler(packet_type, 0, packet, size);
+}
+
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
     
@@ -1674,12 +1681,19 @@ int btstack_main(int argc, const char * argv[]){
 
     strcpy(gap_device_name, "BTstack");
 
+    // register for HCI Events
+    hci_event_callback_registration.callback = &att_event_packet_handler2;
+    hci_add_event_handler(&hci_event_callback_registration);
+
+    // register for SM events
+    sm_event_callback_registration.callback = &att_event_packet_handler2;
+    sm_add_event_handler(&sm_event_callback_registration);
+
     // set up l2cap_le
     l2cap_init();
     
     // Setup SM: Display only
     sm_init();
-    sm_register_packet_handler(app_packet_handler);
     sm_register_oob_data_callback(get_oob_data_callback);
     sm_set_io_capabilities(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);
     sm_io_capabilities =  "IO_CAPABILITY_NO_INPUT_NO_OUTPUT";
