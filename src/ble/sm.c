@@ -486,7 +486,7 @@ static void sm_dispatch_event(uint8_t packet_type, uint16_t channel, uint8_t * p
     btstack_linked_list_iterator_init(&it, &sm_event_handlers);
     while (btstack_linked_list_iterator_has_next(&it)){
         btstack_packet_callback_registration_t * entry = (btstack_packet_callback_registration_t*) btstack_linked_list_iterator_next(&it);
-        entry->callback(packet_type, packet, size);
+        entry->callback(packet_type, 0, packet, size);
     }
 }
 
@@ -1826,7 +1826,7 @@ static void sm_handle_random_result(uint8_t * data){
     }
 }
 
-static void sm_event_packet_handler (uint8_t packet_type, uint8_t *packet, uint16_t size){
+static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
 
     sm_connection_t  * sm_conn;
     uint16_t handle;

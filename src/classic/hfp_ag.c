@@ -1975,10 +1975,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
     hfp_run();
 }
 
-static void hci_event_handler(uint8_t packet_type, uint8_t * packet, uint16_t size){
-    packet_handler(packet_type, 0, packet, size);
-}
-
 static void hfp_ag_set_ag_indicators(hfp_ag_indicator_t * ag_indicators, int ag_indicators_nr){
     hfp_ag_indicators_nr = ag_indicators_nr;
     memcpy(hfp_ag_indicators, ag_indicators, ag_indicators_nr * sizeof(hfp_ag_indicator_t));
@@ -1995,7 +1991,7 @@ void hfp_ag_init(uint16_t rfcomm_channel_nr, uint32_t supported_features,
     }
 
     // register for HCI events
-    hci_event_callback_registration.callback = &hci_event_handler;
+    hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
 
     l2cap_init();

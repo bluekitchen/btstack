@@ -2880,7 +2880,7 @@ static void hci_emit_event(uint8_t * event, uint16_t size, int dump){
     btstack_linked_list_iterator_init(&it, &hci_stack->event_handlers);
     while (btstack_linked_list_iterator_has_next(&it)){
         btstack_packet_callback_registration_t * entry = (btstack_packet_callback_registration_t*) btstack_linked_list_iterator_next(&it);
-        entry->callback(HCI_EVENT_PACKET, event, size);
+        entry->callback(HCI_EVENT_PACKET, 0, event, size);
     }
 }
 

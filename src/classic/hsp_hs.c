@@ -255,13 +255,9 @@ static void hsp_hs_reset_state(void){
     hs_support_custom_indications = 0;
 }
 
-static void hci_event_handler(uint8_t packet_type, uint8_t * packet, uint16_t size){
-    packet_handler(packet_type, 0, packet, size);
-}
-
 void hsp_hs_init(uint8_t rfcomm_channel_nr){
     // register for HCI events
-    hci_event_callback_registration.callback = &hci_event_handler;
+    hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
 
     // init L2CAP

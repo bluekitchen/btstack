@@ -11,7 +11,7 @@
 
 
 static btstack_packet_handler_t le_data_handler;
-static void (*event_packet_handler) (uint8_t packet_type, uint8_t *packet, uint16_t size) = NULL;
+static btstack_packet_handler_t event_packet_handler;
 
 static uint8_t packet_buffer[256];
 static uint16_t packet_buffer_len = 0;
@@ -59,10 +59,10 @@ void aes128_calc_cyphertext(uint8_t key[16], uint8_t plaintext[16], uint8_t cyph
 void mock_simulate_hci_event(uint8_t * packet, uint16_t size){
 	hci_dump_packet(HCI_EVENT_PACKET, 1, packet, size);
 	if (event_packet_handler){
-		event_packet_handler(HCI_EVENT_PACKET, packet, size);
+		event_packet_handler(HCI_EVENT_PACKET, 0, packet, size);
 	}
 	if (le_data_handler){
-		le_data_handler(HCI_EVENT_PACKET, NULL, packet, size);
+		le_data_handler(HCI_EVENT_PACKET, 0, packet, size);
 	}
 }
 

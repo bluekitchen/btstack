@@ -217,7 +217,8 @@ static void packet_handler(uint8_t * event, uint16_t event_size){
             break;
     }
 }
-static void hci_event_handler(uint8_t packet_type, uint8_t * packet, uint16_t size){
+
+static void handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t * packet, uint16_t size){
     packet_handler(packet, size);
 }
 
@@ -233,7 +234,7 @@ int btstack_main(int argc, const char * argv[]){
     gap_set_local_name("BTstack HSP HS");
 
     // register for HCI events
-    hci_event_callback_registration.callback = &hci_event_handler;
+    hci_event_callback_registration.callback = &handle_hci_event;
     hci_add_event_handler(&hci_event_callback_registration);
 
     // register for SCO packets

@@ -66,7 +66,7 @@ static uint8_t  pts_suppress_mtu_exchange;
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *packet, uint16_t size);
-static void gatt_client_hci_event_packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t size);
+static void gatt_client_hci_event_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static void gatt_client_report_error_if_pending(gatt_client_t *peripheral, uint8_t error_code);
 static void att_signed_write_handle_cmac_result(uint8_t hash[8]);
 
@@ -1034,7 +1034,7 @@ static void gatt_client_report_error_if_pending(gatt_client_t *peripheral, uint8
     emit_gatt_complete_event(peripheral, error_code);
 }
 
-static void gatt_client_hci_event_packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
+static void gatt_client_hci_event_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     if (packet_type != HCI_EVENT_PACKET) return;
 
     switch (packet[0]) {

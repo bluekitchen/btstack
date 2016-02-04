@@ -74,7 +74,6 @@
 
 static int   le_notification_enabled;
 static void  packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
-static void hci_event_handler(uint8_t packet_type, uint8_t * packet, uint16_t size);
 static int   att_write_callback(uint16_t con_handle, uint16_t att_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size);
 static void  streamer(void);
 static btstack_packet_callback_registration_t hci_event_callback_registration;
@@ -106,7 +105,7 @@ static uint16_t conn_handle;
 static void le_streamer_setup(void){
 
     // register for HCI events
-    hci_event_callback_registration.callback = &hci_event_handler;
+    hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
 
     l2cap_init();
@@ -203,10 +202,6 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
     }
     // try sending whenever something happens
     streamer();
-}
-
-static void hci_event_handler(uint8_t packet_type, uint8_t * packet, uint16_t size){
-    packet_handler(packet_type, 0, packet, size);
 }
 
 /* LISTING_END */

@@ -151,9 +151,6 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             break;
     }
 }
-static void hci_event_handler(uint8_t packet_type, uint8_t * packet, uint16_t size){
-    packet_handler(packet_type, 0, packet, size);
-}
 
 static void handle_found_service(const char * name, uint8_t port){
     printf("APP: Service name: '%s', RFCOMM port %u\n", name, port);
@@ -194,7 +191,7 @@ int btstack_main(int argc, const char * argv[]){
     printf("Client HCI init done\r\n");
     
     // register for HCI events
-    hci_event_callback_registration.callback = &hci_event_handler;
+    hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
 
     // init L2CAP

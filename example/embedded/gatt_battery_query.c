@@ -235,7 +235,7 @@ static void fill_advertising_report_from_packet(advertising_report_t * report, u
     dump_advertising_report(report);
 }
 
-static void hci_event_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
+static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     if (packet_type != HCI_EVENT_PACKET) return;
     advertising_report_t report;
     uint8_t event = packet[0];

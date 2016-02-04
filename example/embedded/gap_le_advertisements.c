@@ -66,7 +66,7 @@ static btstack_packet_callback_registration_t hci_event_callback_registration;
  */
 
 /* LISTING_START(GAPLEAdvSetup): Setting up GAP LE client for receiving advertisements */
-static void packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t size);
+static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
 static void gap_le_advertisements_setup(void){
     hci_event_callback_registration.callback = &packet_handler;
@@ -228,7 +228,7 @@ static void dump_advertisement_data(uint8_t * adv_data, uint8_t adv_size){
 
 /* LISTING_START(GAPLEAdvPacketHandler): Scanning and receiving advertisements */
 
-static void packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
+static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     if (packet_type != HCI_EVENT_PACKET) return;
     
     switch (packet[0]) {

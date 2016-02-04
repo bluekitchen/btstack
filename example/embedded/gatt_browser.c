@@ -106,7 +106,7 @@ static uint16_t gc_id;
 
 // Handles connect, disconnect, and advertising report events,  
 // starts the GATT client, and sends the first query.
-static void handle_hci_event(uint8_t packet_type, uint8_t *packet, uint16_t size);
+static void handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
 // Handles GATT client query results, sends queries and the 
 // GAP disconnect command when the querying is done.
@@ -185,7 +185,7 @@ static void fill_advertising_report_from_packet(advertising_report_t * report, u
  */
 
 /* LISTING_START(GATTBrowserHCIPacketHandler): Connecting and disconnecting from the GATT client */
-static void handle_hci_event(uint8_t packet_type, uint8_t *packet, uint16_t size){
+static void handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     if (packet_type != HCI_EVENT_PACKET) return;
     advertising_report_t report;
     

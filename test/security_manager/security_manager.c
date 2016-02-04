@@ -159,10 +159,6 @@ void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet,
     }
 }
 
-static void att_event_packet_handler2(uint8_t packet_type, uint8_t * packet, uint16_t size){
-    app_packet_handler(packet_type, 0, packet, size);
-}
-
 void CHECK_EQUAL_ARRAY(uint8_t * expected, uint8_t * actual, int size){
 	int i;
 	for (i=0; i<size; i++){
@@ -186,7 +182,7 @@ TEST_GROUP(SecurityManager){
 	    sm_init();
 	    sm_set_io_capabilities(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);
 	    sm_set_authentication_requirements( SM_AUTHREQ_BONDING ); 
-        sm_event_callback_registration.callback = &att_event_packet_handler2;
+        sm_event_callback_registration.callback = &app_packet_handler;
         sm_add_event_handler(&sm_event_callback_registration);	}
 };
 

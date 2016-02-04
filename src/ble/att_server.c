@@ -354,18 +354,14 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
     att_run();
 }
 
-static void att_event_packet_handler2(uint8_t packet_type, uint8_t * packet, uint16_t size){
-    att_event_packet_handler(packet_type, 0, packet, size);
-}
-
 void att_server_init(uint8_t const * db, att_read_callback_t read_callback, att_write_callback_t write_callback){
 
     // register for HCI Events
-    hci_event_callback_registration.callback = &att_event_packet_handler2;
+    hci_event_callback_registration.callback = &att_event_packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
 
     // register for SM events
-    sm_event_callback_registration.callback = &att_event_packet_handler2;
+    sm_event_callback_registration.callback = &att_event_packet_handler;
     sm_add_event_handler(&sm_event_callback_registration);
 
     // and L2CAP ATT Server PDUs

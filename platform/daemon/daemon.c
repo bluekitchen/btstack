@@ -1639,9 +1639,6 @@ static void daemon_packet_handler(void * connection, uint8_t packet_type, uint16
     daemon_emit_packet(connection, packet_type, channel, packet, size);
 }
 
-static void hci_packet_handler(uint8_t packet_type, uint8_t * packet, uint16_t size){
-    daemon_packet_handler(NULL, packet_type, 0, packet, size);
-}
 static void l2cap_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * packet, uint16_t size){
     daemon_packet_handler(NULL, packet_type, channel, packet, size);
 }
@@ -2073,7 +2070,7 @@ int main (int argc,  char * const * argv){
 #endif
 
     // register for HCI events
-    hci_event_callback_registration.callback = &hci_packet_handler;
+    hci_event_callback_registration.callback = &l2cap_packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
 
     // init L2CAP

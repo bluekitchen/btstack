@@ -68,7 +68,7 @@ static char*    service_name[10];
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 
-static void packet_handler (uint8_t packet_type, uint8_t *packet, uint16_t size){
+static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     // printf("packet_handler type %u, packet[0] %x\n", packet_type, packet[0]);
 
     if (packet_type != HCI_EVENT_PACKET) return;

@@ -193,9 +193,6 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             break;
 	}
 }
-static void hci_event_handler(uint8_t packet_type, uint8_t * packet, uint16_t size){
-    packet_handler(packet, size);
-}
 
 static void  heartbeat_handler(struct btstack_timer_source *ts){
 
@@ -220,7 +217,7 @@ int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
 
     // register for HCI events
-    hci_event_callback_registration.callback = &hci_event_handler;
+    hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
 
     // init L2CAP

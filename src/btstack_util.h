@@ -98,10 +98,10 @@ typedef uint8_t device_name_t[DEVICE_NAME_LEN+1];
 // packet handler
 typedef void (*btstack_packet_handler_t) (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
-// new packet callback supporting multiple registration
+// packet callback supporting multiple registrations
 typedef struct {
-    btstack_linked_item_t item;
-    void (*callback)(uint8_t packet_type, uint8_t * packet, uint16_t size);
+    btstack_linked_item_t    item;
+    btstack_packet_handler_t callback;
 } btstack_packet_callback_registration_t;
 
 	

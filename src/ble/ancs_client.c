@@ -196,7 +196,7 @@ static void extract_characteristic(le_characteristic_t * characteristic, uint8_t
     }
 }
 
-static void handle_gatt_client_event(uint8_t packet_type, uint8_t *packet, uint16_t size){
+static void handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
 
     int connection_encrypted;
 
@@ -353,9 +353,12 @@ static void handle_gatt_client_event(uint8_t packet_type, uint8_t *packet, uint1
     }    
     // app_run();
 }
+static void handle_gatt_client_event(uint8_t packet_type, uint8_t * packet, uint16_t size){
+    handle_hci_event(packet_type, 0, packet, size);
+}    
 
 void ancs_client_init(void){
-    hci_event_callback_registration.callback = &handle_gatt_client_event;
+    hci_event_callback_registration.callback = &handle_hci_event;
     hci_add_event_handler(&hci_event_callback_registration);
 
     gc_id = gatt_client_register_packet_handler(&handle_gatt_client_event);

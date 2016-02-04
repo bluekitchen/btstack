@@ -137,7 +137,7 @@ static void continue_remote_names(void){
  * INIT, and ACTIVE.
  */ 
 
-static void packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
+static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     bd_addr_t addr;
     int i;
     int numResponses;

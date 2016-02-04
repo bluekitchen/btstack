@@ -67,7 +67,6 @@
 #define L2CAP_SIGNALING_COMMAND_DATA_OFFSET   4
 
 static void null_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
-static void l2cap_packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t size);
 
 // used to cache l2cap rejects, echo, and informational requests
 static l2cap_signaling_response_t signaling_responses[NR_PENDING_SIGNALING_RESPONSES];
@@ -93,6 +92,8 @@ static void l2cap_emit_channel_opened(l2cap_channel_t *channel, uint8_t status);
 static void l2cap_emit_channel_closed(l2cap_channel_t *channel);
 static void l2cap_emit_connection_request(l2cap_channel_t *channel);
 static int l2cap_channel_ready_for_open(l2cap_channel_t *channel);
+static void l2cap_hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+static void l2cap_acl_handler(uint8_t packet_type, uint8_t *packet, uint16_t size );
 
 
 void l2cap_init(void){
@@ -113,10 +114,10 @@ void l2cap_init(void){
     // 
     // register callback with HCI
     //
-    hci_event_callback_registration.callback = &l2cap_packet_handler;
+    hci_event_callback_registration.callback = &l2cap_hci_event_handler;
     hci_add_event_handler(&hci_event_callback_registration);
 
-    hci_register_acl_packet_handler(&l2cap_packet_handler);
+    hci_register_acl_packet_handler(&l2cap_acl_handler);
 
     hci_connectable_control(0); // no services yet
 }
@@ -818,7 +819,7 @@ static void l2cap_handle_connection_success_for_addr(bd_addr_t address, hci_con_
     l2cap_run();
 }
 
-static void l2cap_event_handler(uint8_t *packet, uint16_t size){
+static void l2cap_hci_event_handler(uint8_t packet_type, uint16_t cid, uint8_t *packet, uint16_t size){
     
     bd_addr_t address;
     hci_con_handle_t handle;
@@ -1296,7 +1297,7 @@ static void l2cap_signaling_handler_dispatch( hci_con_handle_t handle, uint8_t *
     }
 }
 
-static void l2cap_acl_handler( uint8_t *packet, uint16_t size ){
+static void l2cap_acl_handler(uint8_t packet_type, uint8_t *packet, uint16_t size ){
         
     // Get Channel ID
     uint16_t channel_id = READ_L2CAP_CHANNEL_ID(packet); 
@@ -1409,19 +1410,7 @@ static void l2cap_acl_handler( uint8_t *packet, uint16_t size ){
             break;
         }
     }
-}
 
-static void l2cap_packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
-    switch (packet_type) {
-        case HCI_EVENT_PACKET:
-            l2cap_event_handler(packet, size);
-            break;
-        case HCI_ACL_DATA_PACKET:
-            l2cap_acl_handler(packet, size);
-            break;
-        default:
-            break;
-    }
     l2cap_run();
 }
 

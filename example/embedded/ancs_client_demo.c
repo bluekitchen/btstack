@@ -124,17 +124,13 @@ static void ancs_callback(uint8_t packet_type, uint8_t *packet, uint16_t size){
     }
 }
 
-static void hci_event_handler(uint8_t packet_type, uint8_t * packet, uint16_t size){
-    app_packet_handler(packet_type, 0, packet, size);
-}
-
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
     
     printf("BTstack ANCS Client starting up...\n");
 
     // register for HCI events
-    hci_event_callback_registration.callback = &hci_event_handler;
+    hci_event_callback_registration.callback = &app_packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
 
     // set up l2cap_le
@@ -149,7 +145,7 @@ int btstack_main(int argc, const char * argv[]){
     sm_set_authentication_requirements( SM_AUTHREQ_BONDING ); 
 
     // register for SM events
-    sm_event_callback_registration.callback = &hci_event_handler;
+    sm_event_callback_registration.callback = &app_packet_handler;
     hci_add_event_handler(&sm_event_callback_registration);
 
     // setup ATT server
