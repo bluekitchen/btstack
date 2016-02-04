@@ -49,12 +49,13 @@
 
 #include "btstack_config.h"
 
-#include "btstack_memory.h"
 #include "btstack_debug.h"
-#include "hci.h"
-#include "hci_dump.h"
+#include "btstack_link_key_db_fs.h"
+#include "btstack_memory.h"
 #include "btstack_run_loop.h"
 #include "btstack_run_loop_posix.h"
+#include "hci.h"
+#include "hci_dump.h"
 #include "stdin_support.h"
 
 #include "btstack_chipset_bcm.h"
@@ -73,6 +74,8 @@ static hci_transport_config_uart_t config = {
     1,  // flow control
     NULL,
 };
+
+static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 static void sigint_handler(int param){
 
@@ -98,7 +101,11 @@ static void using_921600_baud(void){
     config.baudrate_main = 921600;
 }
 
-static void local_version_information_callback(uint8_t * packet){
+static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t * packet, uint16_t size){
+
+    if (packet_type != HCI_EVENT_PACKET) return;
+    if (!COMMAND_COMPLETE_EVENT(packet, hci_read_local_version_information)) return;
+
     printf("Local version information:\n");
     uint16_t hci_version    = little_endian_read_16(packet, 4);
     uint16_t hci_revision   = little_endian_read_16(packet, 6);
@@ -154,11 +161,12 @@ int main(int argc, const char * argv[]){
 
     // init HCI
 	const hci_transport_t * transport = hci_transport_h4_instance();
-    remote_device_db_t * remote_db = (remote_device_db_t *) &remote_device_db_fs;
-	hci_init(transport, (void*) &config, remote_db);
+    const btstack_link_key_db_t * link_key_db = btstack_link_key_db_fs_instance();
+	hci_init(transport, (void*) &config, link_key_db);
     
-    // setup dynamic chipset driver setup
-    hci_set_local_version_information_callback(&local_version_information_callback);
+    // register for HCI events
+    hci_event_callback_registration.callback = &hci_event_handler;
+    hci_add_event_handler(&hci_event_callback_registration);
 
     // handle CTRL-c
     signal(SIGINT, sigint_handler);

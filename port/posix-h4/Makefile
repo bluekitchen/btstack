@@ -4,9 +4,9 @@ BTSTACK_ROOT = ../..
 CORE += main.c stdin_support.c
 
 COMMON += \
-	hci_transport_h4_posix.c  \
+	hci_transport_h4_posix.c \
 	btstack_run_loop_posix.c \
-	remote_device_db_fs.c \
+	btstack_link_key_db_fs.c \
 
 CORE += \
 	bluetooth_init_cc2564B_1.2_BT_Spec_4.1.c \
