@@ -256,7 +256,7 @@ static void hsp_hs_reset_state(void){
 }
 
 static void hci_event_handler(uint8_t packet_type, uint8_t * packet, uint16_t size){
-    packet_handler(packet, size);
+    packet_handler(packet_type, 0, packet, size);
 }
 
 void hsp_hs_init(uint8_t rfcomm_channel_nr){
