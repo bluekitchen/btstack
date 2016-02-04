@@ -82,6 +82,7 @@ static const uint8_t adv_data[] = {
 };
 static uint8_t adv_data_len = sizeof(adv_data);
 static btstack_packet_callback_registration_t hci_event_callback_registration;
+static btstack_packet_callback_registration_t sm_event_callback_registration;
 
 static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     switch (packet_type) {
@@ -146,6 +147,10 @@ int btstack_main(int argc, const char * argv[]){
     sm_init();
     sm_set_io_capabilities(IO_CAPABILITY_DISPLAY_ONLY);
     sm_set_authentication_requirements( SM_AUTHREQ_BONDING ); 
+
+    // register for SM events
+    sm_event_callback_registration.callback = &hci_event_handler;
+    hci_add_event_handler(&sm_event_callback_registration);
 
     // setup ATT server
     att_server_init(profile_data, NULL, NULL);    

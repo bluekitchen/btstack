@@ -2012,10 +2012,13 @@ static void sm_event_packet_handler (uint8_t packet_type, uint8_t *packet, uint1
                         sm_handle_random_result(&packet[6]);
                         break;
                     }
+                    break;
+                default:
+                    break;
 			}
-
-            // forward packet to higher layer
-            sm_dispatch_event(packet_type, 0, packet, size);
+            break;
+        default:
+            break;
 	}
 
     sm_run();

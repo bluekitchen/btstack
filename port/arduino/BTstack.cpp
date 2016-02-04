@@ -191,9 +191,6 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     break;                    
             }
     }
-    // if (client_packet_handler){
-    //     (*client_packet_handler)(packet_type, channel, packet, size);
-    // }
 }
 
 static void extract_service(le_service_t * service, uint8_t * packet){

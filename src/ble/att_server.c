@@ -199,7 +199,6 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
                     att_ir_le_device_db_index = -1;
                     att_run();
                     break;
-
                 case SM_EVENT_AUTHORIZATION_RESULT: {
                     if (packet[4] != att_client_addr_type) break;
                     bt_flip_addr(event_address, &packet[5]);
@@ -208,13 +207,12 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
                     att_run();
                 	break;
                 }
-
                 default:
                     break;
             }
-    }
-    if (att_client_packet_handler){
-        att_client_packet_handler(packet_type, channel, packet, size);
+            break;
+        default:
+            break;
     }
 }
 
