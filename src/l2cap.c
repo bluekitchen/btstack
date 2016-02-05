@@ -76,7 +76,7 @@
 static void l2cap_finialize_channel_close(l2cap_channel_t *channel);
 static inline l2cap_service_t * l2cap_get_service(uint16_t psm);
 static void l2cap_emit_channel_opened(l2cap_channel_t *channel, uint8_t status);
-static void l2cap_emit_can_send_now(l2cap_channel_t *channel);
+static void l2cap_emit_can_send_now(btstack_packet_handler_t packet_handler, uint16_t channel);
 static void l2cap_emit_channel_closed(l2cap_channel_t *channel);
 static void l2cap_emit_connection_request(l2cap_channel_t *channel);
 static int  l2cap_channel_ready_for_open(l2cap_channel_t *channel);
@@ -104,10 +104,18 @@ static btstack_packet_callback_registration_t hci_event_callback_registration;
 static btstack_packet_handler_t l2cap_event_packet_handler;
 static l2cap_fixed_channel_t fixed_channels[L2CAP_FIXED_CHANNEL_TABLE_SIZE];
 
-// static btstack_packet_handler_t fixed_channels[L2CAP_FIXED_CHANNEL_TABLE_INDEX_ATTRIBUTE_PROTOCOL];
-// static btstack_packet_handler_t fixed_channels[L2CAP_FIXED_CHANNEL_TABLE_INDEX_SECURITY_MANAGER_PROTOCOL];
-// static btstack_packet_handler_t fixed_channels[L2CAP_FIXED_CHANNEL_TABLE_INDEX_CONNECTIONLESS_CHANNEL];
-
+static uint16_t l2cap_fixed_channel_table_channel_id_for_index(int index){
+    switch (index){
+        case L2CAP_FIXED_CHANNEL_TABLE_INDEX_ATTRIBUTE_PROTOCOL:
+            return L2CAP_CID_ATTRIBUTE_PROTOCOL;
+        case L2CAP_FIXED_CHANNEL_TABLE_INDEX_SECURITY_MANAGER_PROTOCOL:
+            return L2CAP_CID_SECURITY_MANAGER_PROTOCOL;
+        case L2CAP_FIXED_CHANNEL_TABLE_INDEX_CONNECTIONLESS_CHANNEL:
+            return L2CAP_CID_CONNECTIONLESS_CHANNEL;
+        default:
+            return 0;
+    }  
+}
 static int l2cap_fixed_channel_table_index_for_channel_id(uint16_t channel_id){
     switch (channel_id){
         case L2CAP_CID_ATTRIBUTE_PROTOCOL:
@@ -119,6 +127,11 @@ static int l2cap_fixed_channel_table_index_for_channel_id(uint16_t channel_id){
         default:
             return -1;
         }
+}
+
+static int l2cap_fixed_channel_table_index_is_le(int index){
+    if (index == L2CAP_CID_CONNECTIONLESS_CHANNEL) return 0;
+    return 1;
 }
 
 void l2cap_init(void){
@@ -175,7 +188,7 @@ void l2cap_emit_channel_opened(l2cap_channel_t *channel, uint8_t status) {
     // if channel opened successfully, also send can send now if possible
     if (status) return;
     if (hci_can_send_acl_packet_now(channel->handle)){
-        l2cap_emit_can_send_now(channel);
+        l2cap_emit_can_send_now(channel->packet_handler, channel->local_cid);
     } else {
         channel->waiting_for_can_send_now = 1;
     }
@@ -206,14 +219,14 @@ void l2cap_emit_connection_request(l2cap_channel_t *channel) {
     l2cap_dispatch_to_channel(channel, HCI_EVENT_PACKET, event, sizeof(event));
 }
 
-static void l2cap_emit_can_send_now(l2cap_channel_t *channel) {
-    log_info("L2CAP_EVENT_CHANNEL_CAN_SEND_NOW local_cid 0x%x", channel->local_cid);
+static void l2cap_emit_can_send_now(btstack_packet_handler_t packet_handler, uint16_t channel) {
+    log_info("L2CAP_EVENT_CHANNEL_CAN_SEND_NOW local_cid 0x%x", channel);
     uint8_t event[4];
     event[0] = L2CAP_EVENT_CAN_SEND_NOW;
     event[1] = sizeof(event) - 2;
-    little_endian_store_16(event, 2, channel->local_cid);
+    little_endian_store_16(event, 2, channel);
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
-    l2cap_dispatch_to_channel(channel, HCI_EVENT_PACKET, event, sizeof(event));
+    packet_handler(HCI_EVENT_PACKET, channel, event, sizeof(event));
 }
 
 static void l2cap_emit_connection_parameter_update_response(uint16_t handle, uint16_t result){
@@ -880,15 +893,22 @@ static void l2cap_notify_channel_can_send(void){
         if (!channel->waiting_for_can_send_now) continue;
         if (!hci_can_send_acl_packet_now(channel->handle)) continue;
         channel->waiting_for_can_send_now = 0;
-        l2cap_emit_can_send_now(channel);
+        l2cap_emit_can_send_now(channel->packet_handler, channel->local_cid);
     }
 
     int i;
     for (i=0;i<L2CAP_FIXED_CHANNEL_TABLE_SIZE;i++){
+        if (!fixed_channels[i].packet_handler) continue;
         if (!fixed_channels[i].waiting_for_can_send_now) continue;
-        // can we send now?
-        // 
-        
+        int can_send;
+        if (l2cap_fixed_channel_table_index_is_le(i)){
+            can_send = hci_can_send_acl_le_packet_now();
+        } else {
+            can_send = hci_can_send_acl_classic_packet_now();
+        } 
+        if (!can_send) continue;
+        fixed_channels[i].waiting_for_can_send_now = 0;
+        l2cap_emit_can_send_now(fixed_channels[i].callback, l2cap_fixed_channel_table_channel_id_for_index(i));
     }
 }
 
