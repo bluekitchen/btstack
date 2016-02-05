@@ -45,13 +45,10 @@
 #include "att_dispatch.h"
 #include "btstack_debug.h"
 
-static void dummy_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *packet, uint16_t size);
-
-static btstack_packet_handler_t att_client_handler = &dummy_packet_handler;
-static btstack_packet_handler_t att_server_handler = &dummy_packet_handler;
-
-static void dummy_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *packet, uint16_t size){
-}
+static btstack_packet_handler_t att_client_handler;
+static btstack_packet_handler_t att_server_handler;
+// static uint8_t att_client_waiting_for_can_send;
+// static uint8_t att_server_waiting_for_can_send;
 
 static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *packet, uint16_t size){
 	if (packet_type != ATT_DATA_PACKET) return;
@@ -60,9 +57,11 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
 	uint8_t att_pdu_odd = packet[0] & 1;
 	if (att_pdu_odd){
 		// odd PDUs are sent from server to client
+		if (!att_client_handler) return;
 		att_client_handler(packet_type, handle, packet, size);
 	} else {
 		// even PDUs are sent from client to server
+		if (!att_server_handler) return;
 		att_server_handler(packet_type, handle, packet, size);
 	}
 }
@@ -72,9 +71,6 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
  * @param packet_hander for ATT client packets
  */
 void att_dispatch_register_client(btstack_packet_handler_t packet_handler){
-	if (packet_handler == NULL){
-		packet_handler = dummy_packet_handler;
-	}
 	att_client_handler = packet_handler;
 	l2cap_register_fixed_channel(att_packet_handler, L2CAP_CID_ATTRIBUTE_PROTOCOL);
 }
@@ -84,9 +80,30 @@ void att_dispatch_register_client(btstack_packet_handler_t packet_handler){
  * @param packet_hander for ATT server packets
  */
 void att_dispatch_register_server(btstack_packet_handler_t packet_handler){
-	if (packet_handler == NULL){
-		packet_handler = dummy_packet_handler;
-	}
 	att_server_handler = packet_handler;
 	l2cap_register_fixed_channel(att_packet_handler, L2CAP_CID_ATTRIBUTE_PROTOCOL);
+}
+
+/**
+ * @brief can send packet for client
+ * @param handle
+ */
+int att_dispatch_client_can_send_now(uint16_t handle){
+	int res = l2cap_can_send_fixed_channel_packet_now(handle);
+	// if (!res){
+	// 	att_client_waiting_for_can_send =1;
+	// }
+	return res;
+}
+
+/**
+ * @brief can send packet for server
+ * @param handle
+ */
+int att_dispatch_server_can_send_now(uint16_t handle){
+	int res = l2cap_can_send_fixed_channel_packet_now(handle);
+	// if (!res){
+	// 	att_server_waiting_for_can_send =1;
+	// }
+	return res;
 }

@@ -836,7 +836,7 @@ static void gatt_client_run(void){
 
         gatt_client_t * peripheral = (gatt_client_t *) it;
 
-        if (!l2cap_can_send_fixed_channel_packet_now(peripheral->handle)) return;
+        if (!att_dispatch_server_can_send_now(peripheral->handle)) return;
 
         // log_info("- handle_peripheral_list, mtu state %u, client state %u", peripheral->mtu_state, peripheral->gatt_client_state);
         
@@ -1651,7 +1651,7 @@ uint8_t gatt_client_write_value_of_characteristic_without_response(uint16_t gatt
     if (!is_ready(peripheral)) return GATT_CLIENT_IN_WRONG_STATE;
     
     if (value_length > peripheral_mtu(peripheral) - 3) return GATT_CLIENT_VALUE_TOO_LONG;
-    if (!l2cap_can_send_fixed_channel_packet_now(peripheral->handle)) return GATT_CLIENT_BUSY;
+    if (!att_dispatch_server_can_send_now(peripheral->handle)) return GATT_CLIENT_BUSY;
 
     peripheral->subclient_id = gatt_client_id;
     att_write_request(ATT_WRITE_COMMAND, peripheral->handle, value_handle, value_length, value);

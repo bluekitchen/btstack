@@ -61,6 +61,19 @@ void att_dispatch_register_client(btstack_packet_handler_t packet_handler);
  */
 void att_dispatch_register_server(btstack_packet_handler_t packet_handler);
 
+/**
+ * @brief can send packet for client
+ * @param handle
+ */
+int att_dispatch_client_can_send_now(uint16_t handle);
+
+/**
+ * @brief can send packet for server
+ * @param handle
+ */
+int att_dispatch_server_can_send_now(uint16_t handle);
+
+
 #if defined __cplusplus
 }
 #endif
