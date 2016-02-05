@@ -284,7 +284,7 @@ static int nr_hci_connections(void){
     return count;
 }
 
-uint8_t hci_number_outgoing_packets(hci_con_handle_t handle){
+int hci_number_outgoing_packets(hci_con_handle_t handle){
     hci_connection_t * connection = hci_connection_for_handle(handle);
     if (!connection) {
         log_error("hci_number_outgoing_packets: connection for handle %u does not exist!", handle);
@@ -293,12 +293,10 @@ uint8_t hci_number_outgoing_packets(hci_con_handle_t handle){
     return connection->num_acl_packets_sent;
 }
 
-uint8_t hci_number_free_acl_slots_for_handle(hci_con_handle_t con_handle){
+int hci_number_free_acl_slots_for_connection_type(bd_addr_type_t address_type){
     
     int num_packets_sent_classic = 0;
     int num_packets_sent_le = 0;
-
-    bd_addr_type_t address_type = BD_ADDR_TYPE_UNKNOWN;
 
     btstack_linked_item_t *it;
     for (it = (btstack_linked_item_t *) hci_stack->connections; it ; it = it->next){
@@ -307,10 +305,6 @@ uint8_t hci_number_free_acl_slots_for_handle(hci_con_handle_t con_handle){
             num_packets_sent_classic += connection->num_acl_packets_sent;
         } else {
             num_packets_sent_le += connection->num_acl_packets_sent;
-        }
-        // ignore connections that are not open, e.g., in state RECEIVED_DISCONNECTION_COMPLETE
-        if (connection->con_handle == con_handle && connection->state == OPEN){
-            address_type = connection->address_type;
         }
     }
 
@@ -340,7 +334,7 @@ uint8_t hci_number_free_acl_slots_for_handle(hci_con_handle_t con_handle){
 
     switch (address_type){
         case BD_ADDR_TYPE_UNKNOWN:
-            log_error("hci_number_free_acl_slots: handle 0x%04x not in connection list", con_handle);
+            log_error("hci_number_free_acl_slots: unknown address type");
             return 0;
 
         case BD_ADDR_TYPE_CLASSIC:
@@ -352,6 +346,16 @@ uint8_t hci_number_free_acl_slots_for_handle(hci_con_handle_t con_handle){
            }
            return free_slots_classic; 
     }
+}
+
+int hci_number_free_acl_slots_for_handle(hci_con_handle_t con_handle){
+    // get connection type
+    hci_connection_t * connection = hci_connection_for_handle(con_handle);
+    if (!connection){
+        log_error("hci_number_free_acl_slots: handle 0x%04x not in connection list", con_handle);
+        return 0;
+    }
+    return hci_number_free_acl_slots_for_connection_type(connection->address_type);
 }
 
 static int hci_number_free_sco_slots_for_handle(hci_con_handle_t handle){

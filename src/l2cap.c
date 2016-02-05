@@ -85,7 +85,7 @@ static void l2cap_acl_handler(uint8_t packet_type, uint8_t *packet, uint16_t siz
 
 typedef struct l2cap_fixed_channel {
     btstack_packet_handler_t callback;
-    // uint8_t waiting_for_can_send_now;
+    uint8_t waiting_for_can_send_now;
 } l2cap_fixed_channel_t;
 
 static btstack_linked_list_t l2cap_channels;
@@ -260,7 +260,14 @@ int  l2cap_can_send_prepared_packet_now(uint16_t local_cid){
 }
 
 int  l2cap_can_send_fixed_channel_packet_now(uint16_t handle, uint16_t channel_id){
-    return hci_can_send_acl_packet_now(handle);
+    int can_send = hci_can_send_acl_packet_now(handle);
+    if (!can_send){
+        int index = l2cap_fixed_channel_table_index_for_channel_id(channel_id);
+        if (index >= 0){
+            fixed_channels[index].waiting_for_can_send_now = 1;
+        }
+    }
+    return can_send;
 }
 
 uint16_t l2cap_get_remote_mtu_for_local_cid(uint16_t local_cid){
@@ -874,6 +881,14 @@ static void l2cap_notify_channel_can_send(void){
         if (!hci_can_send_acl_packet_now(channel->handle)) continue;
         channel->waiting_for_can_send_now = 0;
         l2cap_emit_can_send_now(channel);
+    }
+
+    int i;
+    for (i=0;i<L2CAP_FIXED_CHANNEL_TABLE_SIZE;i++){
+        if (!fixed_channels[i].waiting_for_can_send_now) continue;
+        // can we send now?
+        // 
+        
     }
 }
 
