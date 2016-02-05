@@ -47,22 +47,38 @@
 
 static btstack_packet_handler_t att_client_handler;
 static btstack_packet_handler_t att_server_handler;
-// static uint8_t att_client_waiting_for_can_send;
-// static uint8_t att_server_waiting_for_can_send;
+
+static uint8_t att_client_waiting_for_can_send;
+static uint8_t att_server_waiting_for_can_send;
 
 static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *packet, uint16_t size){
-	if (packet_type != ATT_DATA_PACKET) return;
-
-	// log_info("att_data_packet with opcode 0x%x", packet[0]);
-	uint8_t att_pdu_odd = packet[0] & 1;
-	if (att_pdu_odd){
-		// odd PDUs are sent from server to client
-		if (!att_client_handler) return;
-		att_client_handler(packet_type, handle, packet, size);
-	} else {
-		// even PDUs are sent from client to server
-		if (!att_server_handler) return;
-		att_server_handler(packet_type, handle, packet, size);
+	switch (packet_type){
+		case ATT_DATA_PACKET:
+			// log_info("att_data_packet with opcode 0x%x", packet[0]);
+			if (packet[0] & 1){
+				// odd PDUs are sent from server to client
+				if (!att_client_handler) return;
+				att_client_handler(packet_type, handle, packet, size);
+			} else {
+				// even PDUs are sent from client to server
+				if (!att_server_handler) return;
+				att_server_handler(packet_type, handle, packet, size);
+			}
+		case HCI_EVENT_PACKET:
+			if (packet[0] != L2CAP_EVENT_CAN_SEND_NOW) break;
+			if (att_server_handler && att_server_waiting_for_can_send){
+				att_server_waiting_for_can_send = 0;
+				att_server_handler(packet_type, handle, packet, size);
+				// stop if client cannot send anymore
+				if (!l2cap_can_send_fixed_channel_packet_now(handle, L2CAP_CID_ATTRIBUTE_PROTOCOL)) break;
+			}
+			if (att_client_handler && att_client_waiting_for_can_send){
+				att_client_waiting_for_can_send = 0;
+				att_client_handler(packet_type, handle, packet, size);
+			}
+			break;
+		default:
+			break;
 	}
 }
 
@@ -90,9 +106,9 @@ void att_dispatch_register_server(btstack_packet_handler_t packet_handler){
  */
 int att_dispatch_client_can_send_now(uint16_t handle){
 	int res = l2cap_can_send_fixed_channel_packet_now(handle, L2CAP_CID_ATTRIBUTE_PROTOCOL);
-	// if (!res){
-	// 	att_client_waiting_for_can_send =1;
-	// }
+	if (!res){
+		att_client_waiting_for_can_send =1;
+	}
 	return res;
 }
 
@@ -102,8 +118,8 @@ int att_dispatch_client_can_send_now(uint16_t handle){
  */
 int att_dispatch_server_can_send_now(uint16_t handle){
 	int res = l2cap_can_send_fixed_channel_packet_now(handle, L2CAP_CID_ATTRIBUTE_PROTOCOL);
-	// if (!res){
-	// 	att_server_waiting_for_can_send =1;
-	// }
+	if (!res){
+		att_server_waiting_for_can_send =1;
+	}
 	return res;
 }

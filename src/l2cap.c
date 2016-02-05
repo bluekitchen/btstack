@@ -898,7 +898,7 @@ static void l2cap_notify_channel_can_send(void){
 
     int i;
     for (i=0;i<L2CAP_FIXED_CHANNEL_TABLE_SIZE;i++){
-        if (!fixed_channels[i].packet_handler) continue;
+        if (!fixed_channels[i].callback) continue;
         if (!fixed_channels[i].waiting_for_can_send_now) continue;
         int can_send;
         if (l2cap_fixed_channel_table_index_is_le(i)){
