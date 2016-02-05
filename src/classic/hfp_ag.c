@@ -1996,7 +1996,6 @@ void hfp_ag_init(uint16_t rfcomm_channel_nr, uint32_t supported_features,
 
     l2cap_init();
 
-    rfcomm_register_packet_handler(packet_handler);
     rfcomm_register_service(packet_handler, rfcomm_channel_nr, 0xffff);  
     hfp_init();
         

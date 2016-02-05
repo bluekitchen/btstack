@@ -259,7 +259,6 @@ int btstack_main(void)
     l2cap_init();
 
     rfcomm_init();
-    rfcomm_register_packet_handler(packet_handler);
     rfcomm_register_service(packet_handler, RFCOMM_SERVER_CHANNEL, 0xffff);
 
     // init SDP, create record for SPP and register with SDP

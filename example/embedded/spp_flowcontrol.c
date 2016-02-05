@@ -91,7 +91,6 @@ static void spp_service_setup(void){
     
     // init RFCOMM
     rfcomm_init();
-    rfcomm_register_packet_handler(packet_handler);
     // reserved channel, mtu limited by l2cap, 1 credit
     rfcomm_register_service_with_initial_credits(rfcomm_channel_nr, 0xffff, 1);  
 

@@ -266,10 +266,6 @@ void rfcomm_disconnect(uint16_t rfcomm_cid){
     (*registered_rfcomm_packet_handler)(HCI_EVENT_PACKET, 0, (uint8_t *) event, sizeof(event));
 }
 
-void rfcomm_register_packet_handler(void (*handler)(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size)){
-	registered_rfcomm_packet_handler = handler;
-}
-
 uint8_t rfcomm_register_service(btstack_packet_handler_t packet_handler, uint8_t channel, uint16_t max_frame_size){
 	printf("rfcomm_register_service\n");
     registered_rfcomm_packet_handler = handler;

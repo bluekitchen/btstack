@@ -177,7 +177,6 @@ int btstack_main(int argc, const char * argv[]){
     // init L2CAP
     l2cap_init();
     rfcomm_init();
-    rfcomm_register_packet_handler(packet_handler);
 
     sdp_query_rfcomm_register_callback(handle_query_rfcomm_event);
 

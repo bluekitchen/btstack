@@ -2081,7 +2081,6 @@ int main (int argc,  char * const * argv){
 #ifdef ENABLE_RFCOMM
     log_info("config.h: ENABLE_RFCOMM\n");
     rfcomm_init();
-    rfcomm_register_packet_handler(&rfcomm_packet_handler);
 #endif
     
 #ifdef ENABLE_SDP

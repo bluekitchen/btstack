@@ -264,7 +264,6 @@ void hsp_hs_init(uint8_t rfcomm_channel_nr){
     l2cap_init();
 
     rfcomm_init();
-    rfcomm_register_packet_handler(packet_handler);
     rfcomm_register_service(packet_handler, rfcomm_channel_nr, 0xffff);  // reserved channel, mtu limited by l2cap
 
     sdp_query_rfcomm_register_callback(handle_query_rfcomm_event);
