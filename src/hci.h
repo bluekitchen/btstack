@@ -666,9 +666,11 @@ int hci_send_acl_packet_buffer(int size);
 int hci_send_sco_packet_buffer(int size);
 
 
+int hci_can_send_acl_classic_packet_now(void);
+int hci_can_send_acl_le_packet_now(void);
 int hci_can_send_acl_packet_now(hci_con_handle_t con_handle);
-int hci_can_send_prepared_acl_packet_now(hci_con_handle_t con_handle);
 int hci_can_send_sco_packet_now(hci_con_handle_t con_handle);
+int hci_can_send_prepared_acl_packet_now(hci_con_handle_t con_handle);
 int hci_can_send_prepared_sco_packet_now(hci_con_handle_t con_handle);
 
 // reserves outgoing packet buffer. @returns 1 if successful

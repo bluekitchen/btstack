@@ -387,13 +387,29 @@ int hci_can_send_command_packet_now(void){
     return hci_stack->num_cmd_packets > 0;
 }
 
-int hci_can_send_prepared_acl_packet_now(hci_con_handle_t con_handle) {
+static int hci_transport_can_send_prepared_packet_now(uint8_t packet_type){
     // check for async hci transport implementations
-    if (hci_stack->hci_transport->can_send_packet_now){
-        if (!hci_stack->hci_transport->can_send_packet_now(HCI_ACL_DATA_PACKET)){
-            return 0;
-        }
-    }
+    if (!hci_stack->hci_transport->can_send_packet_now) return 1;
+    return hci_stack->hci_transport->can_send_packet_now(packet_type);
+}
+
+static int hci_can_send_prepared_acl_packet_for_address_type(bd_addr_type_t address_type){
+    if (!hci_transport_can_send_prepared_packet_now(HCI_ACL_DATA_PACKET)) return 0;
+    return hci_number_free_acl_slots_for_connection_type(address_type) > 0;
+}
+
+int hci_can_send_acl_classic_packet_now(void){
+    if (hci_stack->hci_packet_buffer_reserved) return 0;
+    return hci_can_send_prepared_acl_packet_for_address_type(BD_ADDR_TYPE_CLASSIC);
+}
+
+int hci_can_send_acl_le_packet_now(void){
+    if (hci_stack->hci_packet_buffer_reserved) return 0;
+    return hci_can_send_prepared_acl_packet_for_address_type(BD_ADDR_TYPE_LE_PUBLIC);
+}
+
+int hci_can_send_prepared_acl_packet_now(hci_con_handle_t con_handle) {
+    if (!hci_transport_can_send_prepared_packet_now(HCI_ACL_DATA_PACKET)) return 0;
     return hci_number_free_acl_slots_for_handle(con_handle) > 0;
 }
 
@@ -403,11 +419,7 @@ int hci_can_send_acl_packet_now(hci_con_handle_t con_handle){
 }
 
 int hci_can_send_prepared_sco_packet_now(hci_con_handle_t con_handle){
-    if (hci_stack->hci_transport->can_send_packet_now){
-        if (!hci_stack->hci_transport->can_send_packet_now(HCI_SCO_DATA_PACKET)){
-            return 0;
-        }
-    }
+    if (!hci_transport_can_send_prepared_packet_now(HCI_SCO_DATA_PACKET)) return 0;
     if (!hci_stack->synchronous_flow_control_enabled) return 1;
     return hci_number_free_sco_slots_for_handle(con_handle) > 0;    
 }
