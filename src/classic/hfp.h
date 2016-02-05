@@ -632,7 +632,7 @@ void set_hfp_generic_status_indicators(hfp_generic_status_indicator_t * indicato
 btstack_linked_list_t * hfp_get_connections(void);
 void hfp_parse(hfp_connection_t * context, uint8_t byte, int isHandsFree);
 
-void hfp_init(uint16_t rfcomm_channel_nr);
+void hfp_init(void);
 void hfp_establish_service_level_connection(bd_addr_t bd_addr, uint16_t service_uuid);
 void hfp_release_service_level_connection(hfp_connection_t * connection);
 void hfp_reset_context_flags(hfp_connection_t * context);

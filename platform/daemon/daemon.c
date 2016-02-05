@@ -1050,7 +1050,7 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
         case RFCOMM_REGISTER_SERVICE:
             rfcomm_channel = packet[3];
             mtu = little_endian_read_16(packet, 4);
-            status = rfcomm_register_service(rfcomm_channel, mtu);
+            status = rfcomm_register_service(rfcomm_packet_handler, rfcomm_channel, mtu);
             rfcomm_emit_service_registered(connection, status, rfcomm_channel);
             break;
         case RFCOMM_REGISTER_SERVICE_WITH_CREDITS:

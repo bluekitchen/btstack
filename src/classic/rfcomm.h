@@ -175,6 +175,9 @@ typedef struct {
     // linked list - assert: first field
     btstack_linked_item_t    item;
 	
+    // packet handler
+    btstack_packet_handler_t packet_handler;
+
     // server channel
     uint8_t server_channel;
     
@@ -187,8 +190,6 @@ typedef struct {
     // initial incoming credits
     uint8_t incoming_initial_credits;
     
-    // internal connection
-    btstack_packet_handler_t packet_handler;
     
 } rfcomm_service_t;
 
@@ -231,12 +232,23 @@ typedef struct {
 
 // info regarding an actual connection
 typedef struct {
+
     // linked list - assert: first field
     btstack_linked_item_t    item;
 	
-	rfcomm_multiplexer_t *multiplexer;
-	uint16_t rfcomm_cid;
-    uint8_t  outgoing;
+    // packet handler
+    btstack_packet_handler_t packet_handler;
+
+    // server channel (see rfcomm_service_t) - NULL => outgoing channel
+    rfcomm_service_t * service;
+
+	// muliplexer for this channel
+    rfcomm_multiplexer_t *multiplexer;
+	
+    // RFCOMM Channel ID
+    uint16_t rfcomm_cid;
+        
+    // 
     uint8_t  dlci; 
     
     // credits for outgoing traffic
@@ -271,12 +283,6 @@ typedef struct {
 
     // msc modem status.
     uint8_t msc_modem_status;
-
-	// server channel (see rfcomm_service_t) - NULL => outgoing channel
-	rfcomm_service_t * service;
-    
-    // internal connection
-    btstack_packet_handler_t packet_handler;
         
 } rfcomm_channel_t;
 
@@ -305,7 +311,7 @@ void rfcomm_register_packet_handler(void (*handler)(uint8_t packet_type, uint16_
  * @param out_cid
  * @result status
  */
-uint8_t rfcomm_create_channel(bd_addr_t addr, uint8_t server_channel, uint16_t * out_cid);
+uint8_t rfcomm_create_channel(btstack_packet_handler_t packet_handler, bd_addr_t addr, uint8_t server_channel, uint16_t * out_cid);
 
 /* 
  * @brief Create RFCOMM connection to a given server channel on a remote deivce.
@@ -316,7 +322,7 @@ uint8_t rfcomm_create_channel(bd_addr_t addr, uint8_t server_channel, uint16_t *
  * @param out_cid
  * @result status
  */
-uint8_t rfcomm_create_channel_with_initial_credits(bd_addr_t addr, uint8_t server_channel, uint8_t initial_credits, uint16_t * out_cid);
+uint8_t rfcomm_create_channel_with_initial_credits(btstack_packet_handler_t packet_handler, bd_addr_t addr, uint8_t server_channel, uint8_t initial_credits, uint16_t * out_cid);
 
 /** 
  * @brief Disconnects RFCOMM channel with given identifier. 
@@ -324,14 +330,23 @@ uint8_t rfcomm_create_channel_with_initial_credits(bd_addr_t addr, uint8_t serve
 void rfcomm_disconnect(uint16_t rfcomm_cid);
 
 /** 
- * @brief Registers RFCOMM service for a server channel and a maximum frame size, and assigns a packet handler. On embedded systems, use NULL for connection parameter. This channel provides automatically enough credits to the remote side.
+ * @brief Registers RFCOMM service for a server channel and a maximum frame size, and assigns a packet handler.
+ * This channel provides credits automatically to the remote side -> no flow control
+ * @param packet handler for all channels of this service
+ * @param channel 
+ * @param max_frame_size
  */
-uint8_t rfcomm_register_service(uint8_t channel, uint16_t max_frame_size);
+uint8_t rfcomm_register_service(btstack_packet_handler_t packet_handler, uint8_t channel, uint16_t max_frame_size);
 
 /** 
- * @brief Registers RFCOMM service for a server channel and a maximum frame size, and assigns a packet handler. On embedded systems, use NULL for connection parameter. This channel will use explicit credit management. During channel establishment, an initial amount of credits is provided.
+ * @brief Registers RFCOMM service for a server channel and a maximum frame size, and assigns a packet handler. 
+ * This channel will use explicit credit management. During channel establishment, an initial amount of credits is provided.
+ * @param packet handler for all channels of this service
+ * @param channel 
+ * @param max_frame_size
+ * @param initial_credits
  */
-uint8_t rfcomm_register_service_with_initial_credits(uint8_t channel, uint16_t max_frame_size, uint8_t initial_credits);
+uint8_t rfcomm_register_service_with_initial_credits(btstack_packet_handler_t packet_handler, uint8_t channel, uint16_t max_frame_size, uint8_t initial_credits);
 
 /** 
  * @brief Unregister RFCOMM service.

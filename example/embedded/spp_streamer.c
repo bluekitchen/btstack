@@ -176,7 +176,7 @@ static void handle_query_rfcomm_event(uint8_t packet_type, uint8_t *packet, uint
             // connect
             printf("Requested SPP Service found, creating RFCOMM channel\n");
             state = W4_RFCOMM_CHANNEL;
-            rfcomm_create_channel(remote, channel_nr, NULL); 
+            rfcomm_create_channel(packet_handler, remote, channel_nr, NULL); 
             break;
         default: 
             break;

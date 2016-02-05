@@ -147,7 +147,7 @@ static void hci_event_handler(uint8_t packet_type, uint8_t * packet, uint16_t si
 }
 
 
-void handle_query_rfcomm_event(uint8_t packet_type, uint8_t *packet, uint16_t size, void * context){
+void handle_query_rfcomm_event(uint8_t packet_type, uint8_t *packet, uint16_t size){
     switch (event->type){
         case SDP_EVENT_QUERY_RFCOMM_SERVICE:
             channel_nr = sdp_event_query_rfcomm_service_get_name(packet);
@@ -156,7 +156,7 @@ void handle_query_rfcomm_event(uint8_t packet_type, uint8_t *packet, uint16_t si
         case SDP_EVENT_QUERY_COMPLETE:
             if (channel_nr > 0) {
                 printf("RFCOMM create channel.\n");
-                rfcomm_create_channel_internal(NULL, remote, channel_nr); 
+                rfcomm_create_channel(packet_handler, remote, channel_nr); 
                 break;
             }
             printf("Service not found.\n");
@@ -179,7 +179,7 @@ int btstack_main(int argc, const char * argv[]){
     rfcomm_init();
     rfcomm_register_packet_handler(packet_handler);
 
-    sdp_query_rfcomm_register_callback(handle_query_rfcomm_event, NULL);
+    sdp_query_rfcomm_register_callback(handle_query_rfcomm_event);
 
     // turn on!
     hci_power_control(HCI_POWER_ON);

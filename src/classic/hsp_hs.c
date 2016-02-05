@@ -265,7 +265,7 @@ void hsp_hs_init(uint8_t rfcomm_channel_nr){
 
     rfcomm_init();
     rfcomm_register_packet_handler(packet_handler);
-    rfcomm_register_service(rfcomm_channel_nr, 0xffff);  // reserved channel, mtu limited by l2cap
+    rfcomm_register_service(packet_handler, rfcomm_channel_nr, 0xffff);  // reserved channel, mtu limited by l2cap
 
     sdp_query_rfcomm_register_callback(handle_query_rfcomm_event);
 
@@ -588,7 +588,7 @@ static void handle_query_rfcomm_event(uint8_t packet_type, uint8_t *packet, uint
             if (channel_nr > 0){
                 hsp_state = HSP_W4_RFCOMM_CONNECTED;
                 printf("RFCOMM create channel.\n");
-                rfcomm_create_channel(remote, channel_nr, NULL); 
+                rfcomm_create_channel(packet_handler, remote, channel_nr, NULL); 
                 break;
             }
             hsp_hs_reset_state();
@@ -602,7 +602,3 @@ void hsp_hs_press_button(void){
     hs_send_button_press = 1;
     hsp_run();
 }
-
-
-
-

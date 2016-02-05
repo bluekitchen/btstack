@@ -1272,8 +1272,7 @@ static void parse_sequence(hfp_connection_t * context){
     }  
 }
 
-void hfp_init(uint16_t rfcomm_channel_nr){
-    rfcomm_register_service(rfcomm_channel_nr, 0xffff);  
+void hfp_init(void){
     sdp_query_rfcomm_register_callback(handle_query_rfcomm_event);
 }
 

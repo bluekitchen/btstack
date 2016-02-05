@@ -781,7 +781,7 @@ int btstack_main(int argc, const char * argv[]){
 
     rfcomm_init();
     rfcomm_register_packet_handler(packet_handler);
-    rfcomm_register_service(RFCOMM_SERVER_CHANNEL, 150);  // reserved channel, mtu=100
+    rfcomm_register_service(packet_handler, RFCOMM_SERVER_CHANNEL, 150);  // reserved channel, mtu=100
 
     // init SDP, create record for SPP and register with SDP
     sdp_init();

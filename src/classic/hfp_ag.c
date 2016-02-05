@@ -1997,8 +1997,8 @@ void hfp_ag_init(uint16_t rfcomm_channel_nr, uint32_t supported_features,
     l2cap_init();
 
     rfcomm_register_packet_handler(packet_handler);
-
-    hfp_init(rfcomm_channel_nr);
+    rfcomm_register_service(packet_handler, rfcomm_channel_nr, 0xffff);  
+    hfp_init();
         
     hfp_supported_features = supported_features;
     hfp_codecs_nr = codecs_nr;

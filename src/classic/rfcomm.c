@@ -299,40 +299,38 @@ static void rfcomm_channel_initialize(rfcomm_channel_t *channel, rfcomm_multiple
     // setup channel
     memset(channel, 0, sizeof(rfcomm_channel_t));
     
-    channel->state             = RFCOMM_CHANNEL_CLOSED;
-    channel->state_var         = RFCOMM_CHANNEL_STATE_VAR_NONE;
+    // set defaults for port configuration (even for services)
+    rfcomm_rpn_data_set_defaults(&channel->rpn_data);
+
+    channel->state            = RFCOMM_CHANNEL_CLOSED;
+    channel->state_var        = RFCOMM_CHANNEL_STATE_VAR_NONE;
     
     channel->multiplexer      = multiplexer;
-    channel->service          = service;
     channel->rfcomm_cid       = rfcomm_client_cid_generator++;
     channel->max_frame_size   = multiplexer->max_frame_size;
 
     channel->credits_incoming = 0;
     channel->credits_outgoing = 0;
 
-    // set defaults for port configuration (even for services)
-    rfcomm_rpn_data_set_defaults(&channel->rpn_data);
-
     // incoming flow control not active
-    channel->new_credits_incoming  =RFCOMM_CREDITS;
+    channel->new_credits_incoming  = RFCOMM_CREDITS;
     channel->incoming_flow_control = 0;
-    
-    channel->rls_line_status = RFCOMM_RLS_STATUS_INVALID;
 
+    channel->rls_line_status       = RFCOMM_RLS_STATUS_INVALID;
+
+    channel->service = service;
 	if (service) {
 		// incoming connection
-		channel->outgoing = 0;
-		channel->dlci = (server_channel << 1) |  multiplexer->outgoing;
+    	channel->dlci = (server_channel << 1) |  multiplexer->outgoing;
         if (channel->max_frame_size > service->max_frame_size) {
             channel->max_frame_size = service->max_frame_size;
         }
         channel->incoming_flow_control = service->incoming_flow_control;
         channel->new_credits_incoming  = service->incoming_initial_credits;
+        channel->packet_handler        = service->packet_handler;
 	} else {
 		// outgoing connection
-		channel->outgoing = 1;
 		channel->dlci = (server_channel << 1) | (multiplexer->outgoing ^ 1);
-
 	}
 }
 
@@ -2016,7 +2014,7 @@ int rfcomm_query_port_configuration(uint16_t rfcomm_cid){
 }
 
 
-static uint8_t rfcomm_create_channel_internal(bd_addr_t addr, uint8_t server_channel, uint8_t incoming_flow_control, uint8_t initial_credits, uint16_t * out_rfcomm_cid){
+static uint8_t rfcomm_channel_create_internal(btstack_packet_handler_t packet_handler, bd_addr_t addr, uint8_t server_channel, uint8_t incoming_flow_control, uint8_t initial_credits, uint16_t * out_rfcomm_cid){
     log_info("RFCOMM_CREATE_CHANNEL addr %s channel #%u init credits %u",  bd_addr_to_str(addr), server_channel, initial_credits);
     
     // create new multiplexer if necessary
@@ -2041,9 +2039,11 @@ static uint8_t rfcomm_create_channel_internal(bd_addr_t addr, uint8_t server_cha
         status = BTSTACK_MEMORY_ALLOC_FAILED;
         goto fail;
     }
+
     // rfcomm_cid is already assigned by rfcomm_channel_create
     channel->incoming_flow_control = incoming_flow_control;
     channel->new_credits_incoming  = initial_credits;
+    channel->packet_handler = packet_handler;
     
     // return rfcomm_cid
     if (out_rfcomm_cid){
@@ -2072,12 +2072,12 @@ fail:
     return status;
 }
 
-uint8_t rfcomm_create_channel_with_initial_credits(bd_addr_t addr, uint8_t server_channel, uint8_t initial_credits, uint16_t * out_rfcomm_cid){
-    return rfcomm_create_channel_internal(addr, server_channel, 1, initial_credits, out_rfcomm_cid);
+uint8_t rfcomm_create_channel_with_initial_credits(btstack_packet_handler_t packet_handler, bd_addr_t addr, uint8_t server_channel, uint8_t initial_credits, uint16_t * out_rfcomm_cid){
+    return rfcomm_channel_create_internal(packet_handler, addr, server_channel, 1, initial_credits, out_rfcomm_cid);
 }
 
-uint8_t rfcomm_create_channel(bd_addr_t addr, uint8_t server_channel, uint16_t * out_rfcomm_cid){
-    return rfcomm_create_channel_internal(addr, server_channel, 0, RFCOMM_CREDITS, out_rfcomm_cid);
+uint8_t rfcomm_create_channel(btstack_packet_handler_t packet_handler, bd_addr_t addr, uint8_t server_channel, uint16_t * out_rfcomm_cid){
+    return rfcomm_channel_create_internal(packet_handler, addr, server_channel, 0, RFCOMM_CREDITS, out_rfcomm_cid);
 }
 
 void rfcomm_disconnect(uint16_t rfcomm_cid){
@@ -2091,7 +2091,10 @@ void rfcomm_disconnect(uint16_t rfcomm_cid){
     rfcomm_run();
 }
 
-static uint8_t rfcomm_register_service_internal(uint8_t channel, uint16_t max_frame_size, uint8_t incoming_flow_control, uint8_t initial_credits){    log_info("RFCOMM_REGISTER_SERVICE channel #%u mtu %u flow_control %u credits %u",
+static uint8_t rfcomm_register_service_internal(btstack_packet_handler_t packet_handler, 
+    uint8_t channel, uint16_t max_frame_size, uint8_t incoming_flow_control, uint8_t initial_credits){
+
+    log_info("RFCOMM_REGISTER_SERVICE channel #%u mtu %u flow_control %u credits %u",
              channel, max_frame_size, incoming_flow_control, initial_credits);
 
     // check if already registered
@@ -2112,6 +2115,7 @@ static uint8_t rfcomm_register_service_internal(uint8_t channel, uint16_t max_fr
     }
     
     // fill in 
+    service->packet_handler = packet_handler;
     service->server_channel = channel;
     service->max_frame_size = max_frame_size;
     service->incoming_flow_control = incoming_flow_control;
@@ -2123,12 +2127,16 @@ static uint8_t rfcomm_register_service_internal(uint8_t channel, uint16_t max_fr
     return 0;
 }
 
-uint8_t rfcomm_register_service_with_initial_credits(uint8_t channel, uint16_t max_frame_size, uint8_t initial_credits){
-    return rfcomm_register_service_internal(channel, max_frame_size, 1, initial_credits);
+uint8_t rfcomm_register_service_with_initial_credits(btstack_packet_handler_t packet_handler, 
+    uint8_t channel, uint16_t max_frame_size, uint8_t initial_credits){
+
+    return rfcomm_register_service_internal(packet_handler, channel, max_frame_size, 1, initial_credits);
 }
 
-uint8_t rfcomm_register_service(uint8_t channel, uint16_t max_frame_size){
-    return rfcomm_register_service_internal(channel, max_frame_size, 0,RFCOMM_CREDITS);
+uint8_t rfcomm_register_service(btstack_packet_handler_t packet_handler, uint8_t channel, 
+    uint16_t max_frame_size){
+    
+    return rfcomm_register_service_internal(packet_handler, channel, max_frame_size, 0,RFCOMM_CREDITS);
 }
 
 void rfcomm_unregister_service(uint8_t service_channel){

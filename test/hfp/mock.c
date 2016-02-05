@@ -270,8 +270,9 @@ void rfcomm_register_packet_handler(void (*handler)(uint8_t packet_type, uint16_
 	registered_rfcomm_packet_handler = handler;
 }
 
-uint8_t rfcomm_register_service(uint8_t channel, uint16_t max_frame_size){
+uint8_t rfcomm_register_service(btstack_packet_handler_t packet_handler, uint8_t channel, uint16_t max_frame_size){
 	printf("rfcomm_register_service\n");
+    registered_rfcomm_packet_handler = handler;
     return 0;
 }
 
