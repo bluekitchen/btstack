@@ -1229,7 +1229,7 @@ static void sm_run(void){
             switch (sm_connection->sm_engine_state) {
                 case SM_RESPONDER_SEND_SECURITY_REQUEST:
                     // send packet if possible,
-                    if (l2cap_can_send_fixed_channel_packet_now(sm_connection->sm_handle)){
+                    if (l2cap_can_send_fixed_channel_packet_now(sm_connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL)){
                         uint8_t buffer[2];
                         buffer[0] = SM_CODE_SECURITY_REQUEST;
                         buffer[1] = SM_AUTHREQ_BONDING;
@@ -1302,7 +1302,7 @@ static void sm_run(void){
         if (sm_active_connection == 0) return;
 
         // assert that we could send a SM PDU - not needed for all of the following
-        if (!l2cap_can_send_fixed_channel_packet_now(sm_active_connection)) return;
+        if (!l2cap_can_send_fixed_channel_packet_now(sm_active_connection, L2CAP_CID_SECURITY_MANAGER_PROTOCOL)) return;
 
         sm_connection_t * connection = sm_get_connection_for_handle(sm_active_connection);
         if (!connection) return;

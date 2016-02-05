@@ -151,7 +151,7 @@ int  l2cap_can_send_connectionless_packet_now(void){
 	return packet_buffer_len == 0;
 }
 
-int  l2cap_can_send_fixed_channel_packet_now(uint16_t handle){
+int  l2cap_can_send_fixed_channel_packet_now(uint16_t handle, uint16_t channel_id){
 	return packet_buffer_len == 0;
 }
 

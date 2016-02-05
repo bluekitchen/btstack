@@ -259,7 +259,7 @@ int  l2cap_can_send_prepared_packet_now(uint16_t local_cid){
     return can_send;
 }
 
-int  l2cap_can_send_fixed_channel_packet_now(uint16_t handle){
+int  l2cap_can_send_fixed_channel_packet_now(uint16_t handle, uint16_t channel_id){
     return hci_can_send_acl_packet_now(handle);
 }
 

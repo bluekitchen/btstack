@@ -165,9 +165,8 @@ typedef struct l2cap_signaling_response {
 } l2cap_signaling_response_t;
     
 
-
-int  l2cap_can_send_fixed_channel_packet_now(uint16_t handle);
 void l2cap_register_fixed_channel(btstack_packet_handler_t packet_handler, uint16_t channel_id);
+int  l2cap_can_send_fixed_channel_packet_now(uint16_t handle, uint16_t channel_id);
 int  l2cap_send_connectionless(uint16_t handle, uint16_t cid, uint8_t *data, uint16_t len);
 int  l2cap_send_prepared_connectionless(uint16_t handle, uint16_t cid, uint16_t len);
 
