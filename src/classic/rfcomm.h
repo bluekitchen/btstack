@@ -283,6 +283,9 @@ typedef struct {
 
     // msc modem status.
     uint8_t msc_modem_status;
+
+    //
+    uint8_t   waiting_for_can_send_now;
         
 } rfcomm_channel_t;
 
