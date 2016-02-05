@@ -66,6 +66,12 @@
 #define L2CAP_SIGNALING_COMMAND_LENGTH_OFFSET 2
 #define L2CAP_SIGNALING_COMMAND_DATA_OFFSET   4
 
+// internal table
+#define L2CAP_FIXED_CHANNEL_TABLE_INDEX_ATTRIBUTE_PROTOCOL 0
+#define L2CAP_FIXED_CHANNEL_TABLE_INDEX_SECURITY_MANAGER_PROTOCOL  1
+#define L2CAP_FIXED_CHANNEL_TABLE_INDEX_CONNECTIONLESS_CHANNEL 2
+#define L2CAP_FIXED_CHANNEL_TABLE_SIZE (L2CAP_FIXED_CHANNEL_TABLE_INDEX_CONNECTIONLESS_CHANNEL+1)
+
 // prototypes
 static void l2cap_finialize_channel_close(l2cap_channel_t *channel);
 static inline l2cap_service_t * l2cap_get_service(uint16_t psm);
@@ -77,6 +83,15 @@ static int  l2cap_channel_ready_for_open(l2cap_channel_t *channel);
 static void l2cap_hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static void l2cap_acl_handler(uint8_t packet_type, uint8_t *packet, uint16_t size );
 
+typedef struct l2cap_fixed_channel {
+    btstack_packet_handler_t callback;
+    // uint8_t waiting_for_can_send_now;
+} l2cap_fixed_channel_t;
+
+static btstack_linked_list_t l2cap_channels;
+static btstack_linked_list_t l2cap_services;
+static btstack_linked_list_t l2cap_le_channels;
+static btstack_linked_list_t l2cap_le_services;
 
 // used to cache l2cap rejects, echo, and informational requests
 static l2cap_signaling_response_t signaling_responses[NR_PENDING_SIGNALING_RESPONSES];
@@ -86,16 +101,25 @@ static uint8_t require_security_level2_for_outgoing_sdp;
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
-static btstack_linked_list_t l2cap_channels;
-static btstack_linked_list_t l2cap_services;
-static btstack_linked_list_t l2cap_le_channels;
-static btstack_linked_list_t l2cap_le_services;
-
-static btstack_packet_handler_t attribute_protocol_packet_handler;
-static btstack_packet_handler_t security_protocol_packet_handler;
-static btstack_packet_handler_t connectionless_channel_packet_handler;
 static btstack_packet_handler_t l2cap_event_packet_handler;
+static l2cap_fixed_channel_t fixed_channels[L2CAP_FIXED_CHANNEL_TABLE_SIZE];
 
+// static btstack_packet_handler_t fixed_channels[L2CAP_FIXED_CHANNEL_TABLE_INDEX_ATTRIBUTE_PROTOCOL];
+// static btstack_packet_handler_t fixed_channels[L2CAP_FIXED_CHANNEL_TABLE_INDEX_SECURITY_MANAGER_PROTOCOL];
+// static btstack_packet_handler_t fixed_channels[L2CAP_FIXED_CHANNEL_TABLE_INDEX_CONNECTIONLESS_CHANNEL];
+
+static int l2cap_fixed_channel_table_index_for_channel_id(uint16_t channel_id){
+    switch (channel_id){
+        case L2CAP_CID_ATTRIBUTE_PROTOCOL:
+            return L2CAP_FIXED_CHANNEL_TABLE_INDEX_ATTRIBUTE_PROTOCOL;
+        case L2CAP_CID_SECURITY_MANAGER_PROTOCOL:
+            return  L2CAP_FIXED_CHANNEL_TABLE_INDEX_SECURITY_MANAGER_PROTOCOL;
+        case L2CAP_CID_CONNECTIONLESS_CHANNEL:
+            return  L2CAP_FIXED_CHANNEL_TABLE_INDEX_CONNECTIONLESS_CHANNEL;
+        default:
+            return -1;
+        }
+}
 
 void l2cap_init(void){
     signaling_responses_pending = 0;
@@ -106,9 +130,7 @@ void l2cap_init(void){
     l2cap_le_channels = NULL;
 
     l2cap_event_packet_handler = NULL;
-    attribute_protocol_packet_handler = NULL;
-    security_protocol_packet_handler = NULL;
-    connectionless_channel_packet_handler = NULL;
+    memset(fixed_channels, 0, sizeof(fixed_channels));
 
     require_security_level2_for_outgoing_sdp = 0;
 
@@ -1348,20 +1370,20 @@ static void l2cap_acl_handler(uint8_t packet_type, uint8_t *packet, uint16_t siz
         }
             
         case L2CAP_CID_ATTRIBUTE_PROTOCOL:
-            if (attribute_protocol_packet_handler) {
-                (*attribute_protocol_packet_handler)(ATT_DATA_PACKET, handle, &packet[COMPLETE_L2CAP_HEADER], size-COMPLETE_L2CAP_HEADER);
+            if (fixed_channels[L2CAP_FIXED_CHANNEL_TABLE_INDEX_ATTRIBUTE_PROTOCOL].callback) {
+                (*fixed_channels[L2CAP_FIXED_CHANNEL_TABLE_INDEX_ATTRIBUTE_PROTOCOL].callback)(ATT_DATA_PACKET, handle, &packet[COMPLETE_L2CAP_HEADER], size-COMPLETE_L2CAP_HEADER);
             }
             break;
 
         case L2CAP_CID_SECURITY_MANAGER_PROTOCOL:
-            if (security_protocol_packet_handler) {
-                (*security_protocol_packet_handler)(SM_DATA_PACKET, handle, &packet[COMPLETE_L2CAP_HEADER], size-COMPLETE_L2CAP_HEADER);
+            if (fixed_channels[L2CAP_FIXED_CHANNEL_TABLE_INDEX_SECURITY_MANAGER_PROTOCOL].callback) {
+                (*fixed_channels[L2CAP_FIXED_CHANNEL_TABLE_INDEX_SECURITY_MANAGER_PROTOCOL].callback)(SM_DATA_PACKET, handle, &packet[COMPLETE_L2CAP_HEADER], size-COMPLETE_L2CAP_HEADER);
             }
             break;
 
         case L2CAP_CID_CONNECTIONLESS_CHANNEL:
-            if (connectionless_channel_packet_handler) {
-                (*connectionless_channel_packet_handler)(UCD_DATA_PACKET, handle, &packet[COMPLETE_L2CAP_HEADER], size-COMPLETE_L2CAP_HEADER);
+            if (fixed_channels[L2CAP_FIXED_CHANNEL_TABLE_INDEX_CONNECTIONLESS_CHANNEL].callback) {
+                (*fixed_channels[L2CAP_FIXED_CHANNEL_TABLE_INDEX_CONNECTIONLESS_CHANNEL].callback)(UCD_DATA_PACKET, handle, &packet[COMPLETE_L2CAP_HEADER], size-COMPLETE_L2CAP_HEADER);
             }
             break;
         
@@ -1520,17 +1542,9 @@ void l2cap_unregister_service(uint16_t psm){
 
 // Bluetooth 4.0 - allows to register handler for Attribute Protocol and Security Manager Protocol
 void l2cap_register_fixed_channel(btstack_packet_handler_t the_packet_handler, uint16_t channel_id) {
-    switch(channel_id){
-        case L2CAP_CID_ATTRIBUTE_PROTOCOL:
-            attribute_protocol_packet_handler = the_packet_handler;
-            break;
-        case L2CAP_CID_SECURITY_MANAGER_PROTOCOL:
-            security_protocol_packet_handler = the_packet_handler;
-            break;
-        case L2CAP_CID_CONNECTIONLESS_CHANNEL:
-            connectionless_channel_packet_handler = the_packet_handler;
-            break;
-    }
+    int index = l2cap_fixed_channel_table_index_for_channel_id(channel_id);
+    if (index < 0) return;
+    fixed_channels[index].callback = the_packet_handler;
 }
 
 #ifdef ENABLE_BLE
