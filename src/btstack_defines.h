@@ -296,31 +296,78 @@
 
 // L2CAP EVENTS
     
-// data: event (8), len(8), status (8), address(48), handle (16), psm (16), local_cid(16), remote_cid (16), local_mtu(16), remote_mtu(16), flush_timeout(16)
+/**
+ * @format 1BH222222
+ * @param status
+ * @param address
+ * @param handle
+ * @param psm
+ * @param local_cid
+ * @param remote_cid
+ * @param local_mtu
+ * @param remote_mtu
+ * @param flush_timeout
+ */
 #define L2CAP_EVENT_CHANNEL_OPENED                         0x70
 
-// data: event (8), len(8), channel (16)
+/*
+ * @format 2
+ * @param local_cid
+ */
 #define L2CAP_EVENT_CHANNEL_CLOSED                         0x71
 
-// data: event (8), len(8), address(48), handle (16), psm (16), local_cid(16), remote_cid (16) 
+/**
+ * @format 1BH222
+ * @param status
+ * @param address
+ * @param handle
+ * @param psm
+ * @param local_cid
+ * @param remote_cid
+ */
 #define L2CAP_EVENT_INCOMING_CONNECTION                    0x72
 
+// ??
 // data: event(8), len(8), handle(16)
 #define L2CAP_EVENT_TIMEOUT_CHECK                          0x73
 
+// ??
 // data: event(8), len(8), local_cid(16), credits(8)
 #define L2CAP_EVENT_CREDITS                                0x74
 
-// data: event(8), len(8), status (8), psm (16)
+/**
+ * @format 12
+ * @param status
+ * @param psm
+ */
 #define L2CAP_EVENT_SERVICE_REGISTERED                     0x75
 
-// data: event(8), len(8), handle(16), interval min(16), interval max(16), latency(16), timeout multiplier(16)
+/**
+ * @format H2222
+ * @param handle
+ * @param interval_min
+ * @param interval_max
+ * @param latencey
+ * @param timeout_multiplier
+ */
 #define L2CAP_EVENT_CONNECTION_PARAMETER_UPDATE_REQUEST    0x76
 
 // data: event(8), len(8), handle(16), result (16) (0 == ok, 1 == fail)
+ /** 
+  * @format H2
+  * @param handle
+  * @result
+  */
 #define L2CAP_EVENT_CONNECTION_PARAMETER_UPDATE_RESPONSE   0x77
 
+/**
+ * @format 2
+ * @param local_cid
+ */
+#define L2CAP_EVENT_CAN_SEND_NOW                           0x78
+
 // RFCOMM EVENTS
+
 /**
  * @format 1B2122
  * @param status
@@ -387,6 +434,13 @@
   * @param rpn_data
   */
 #define RFCOMM_EVENT_PORT_CONFIGURATION                    0x88
+
+/**
+ * @format 2
+ * @param local_cid
+ */
+#define RFCOMM_EVENT_CAN_SEND_NOW                          0x89
+
 
 /**
   * @format 14

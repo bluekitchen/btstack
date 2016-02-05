@@ -204,7 +204,7 @@ def create_events(events):
         fout.write(hfile_header_begin)
         for event_type, event_name, format, args in events:
             parts = event_name.split("_")
-            if not parts[0] in [ 'SDP', 'ANCS', 'SM']:
+            if not parts[0] in [ 'SDP', 'ANCS', 'SM', 'L2CAP', 'RFCOMM']:
                 continue
             event_name = format_function_name(event_name)
             length_name = ''
