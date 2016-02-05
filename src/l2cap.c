@@ -66,11 +66,23 @@
 #define L2CAP_SIGNALING_COMMAND_LENGTH_OFFSET 2
 #define L2CAP_SIGNALING_COMMAND_DATA_OFFSET   4
 
-static void null_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+// prototypes
+static void l2cap_finialize_channel_close(l2cap_channel_t *channel);
+static inline l2cap_service_t * l2cap_get_service(uint16_t psm);
+static void l2cap_emit_channel_opened(l2cap_channel_t *channel, uint8_t status);
+static void l2cap_emit_can_send_now(l2cap_channel_t *channel);
+static void l2cap_emit_channel_closed(l2cap_channel_t *channel);
+static void l2cap_emit_connection_request(l2cap_channel_t *channel);
+static int  l2cap_channel_ready_for_open(l2cap_channel_t *channel);
+static void l2cap_hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+static void l2cap_acl_handler(uint8_t packet_type, uint8_t *packet, uint16_t size );
+
 
 // used to cache l2cap rejects, echo, and informational requests
 static l2cap_signaling_response_t signaling_responses[NR_PENDING_SIGNALING_RESPONSES];
 static int signaling_responses_pending;
+
+static uint8_t require_security_level2_for_outgoing_sdp;
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
@@ -78,22 +90,11 @@ static btstack_linked_list_t l2cap_channels;
 static btstack_linked_list_t l2cap_services;
 static btstack_linked_list_t l2cap_le_channels;
 static btstack_linked_list_t l2cap_le_services;
-static void (*packet_handler) (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) = null_packet_handler;
 
 static btstack_packet_handler_t attribute_protocol_packet_handler;
 static btstack_packet_handler_t security_protocol_packet_handler;
 static btstack_packet_handler_t connectionless_channel_packet_handler;
-static uint8_t require_security_level2_for_outgoing_sdp;
-
-// prototypes
-static void l2cap_finialize_channel_close(l2cap_channel_t *channel);
-static inline l2cap_service_t * l2cap_get_service(uint16_t psm);
-static void l2cap_emit_channel_opened(l2cap_channel_t *channel, uint8_t status);
-static void l2cap_emit_channel_closed(l2cap_channel_t *channel);
-static void l2cap_emit_connection_request(l2cap_channel_t *channel);
-static int l2cap_channel_ready_for_open(l2cap_channel_t *channel);
-static void l2cap_hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
-static void l2cap_acl_handler(uint8_t packet_type, uint8_t *packet, uint16_t size );
+static btstack_packet_handler_t l2cap_event_packet_handler;
 
 
 void l2cap_init(void){
@@ -104,7 +105,7 @@ void l2cap_init(void){
     l2cap_le_services = NULL;
     l2cap_le_channels = NULL;
 
-    packet_handler = null_packet_handler;
+    l2cap_event_packet_handler = NULL;
     attribute_protocol_packet_handler = NULL;
     security_protocol_packet_handler = NULL;
     connectionless_channel_packet_handler = NULL;
@@ -122,12 +123,8 @@ void l2cap_init(void){
     hci_connectable_control(0); // no services yet
 }
 
-
-/** Register L2CAP packet handlers */
-static void null_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-}
 void l2cap_register_packet_handler(void (*handler)(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size)){
-    packet_handler = handler;
+    l2cap_event_packet_handler = handler;
 }
 
 static void l2cap_dispatch_to_channel(l2cap_channel_t *channel, uint8_t type, uint8_t * data, uint16_t size){
@@ -152,6 +149,14 @@ void l2cap_emit_channel_opened(l2cap_channel_t *channel, uint8_t status) {
     little_endian_store_16(event, 21, channel->flush_timeout); 
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
     l2cap_dispatch_to_channel(channel, HCI_EVENT_PACKET, event, sizeof(event));
+
+    // if channel opened successfully, also send can send now if possible
+    if (status) return;
+    if (hci_can_send_acl_packet_now(channel->handle)){
+        l2cap_emit_can_send_now(channel);
+    } else {
+        channel->waiting_for_can_send_now = 1;
+    }
 }
 
 void l2cap_emit_channel_closed(l2cap_channel_t *channel) {
@@ -179,6 +184,16 @@ void l2cap_emit_connection_request(l2cap_channel_t *channel) {
     l2cap_dispatch_to_channel(channel, HCI_EVENT_PACKET, event, sizeof(event));
 }
 
+static void l2cap_emit_can_send_now(l2cap_channel_t *channel) {
+    log_info("L2CAP_EVENT_CHANNEL_CAN_SEND_NOW local_cid 0x%x", channel->local_cid);
+    uint8_t event[4];
+    event[0] = L2CAP_EVENT_CAN_SEND_NOW;
+    event[1] = sizeof(event) - 2;
+    little_endian_store_16(event, 2, channel->local_cid);
+    hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
+    l2cap_dispatch_to_channel(channel, HCI_EVENT_PACKET, event, sizeof(event));
+}
+
 static void l2cap_emit_connection_parameter_update_response(uint16_t handle, uint16_t result){
     uint8_t event[6];
     event[0] = L2CAP_EVENT_CONNECTION_PARAMETER_UPDATE_RESPONSE;
@@ -186,7 +201,8 @@ static void l2cap_emit_connection_parameter_update_response(uint16_t handle, uin
     little_endian_store_16(event, 2, handle);
     little_endian_store_16(event, 4, result);
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
-    (*packet_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+    if (!l2cap_event_packet_handler) return;
+    (*l2cap_event_packet_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
 static l2cap_channel_t * l2cap_get_channel_for_local_cid(uint16_t local_cid){
@@ -204,13 +220,21 @@ static l2cap_channel_t * l2cap_get_channel_for_local_cid(uint16_t local_cid){
 int  l2cap_can_send_packet_now(uint16_t local_cid){
     l2cap_channel_t *channel = l2cap_get_channel_for_local_cid(local_cid);
     if (!channel) return 0;
-    return hci_can_send_acl_packet_now(channel->handle);
+    int can_send = hci_can_send_acl_packet_now(channel->handle);
+    if (!can_send){
+        channel->waiting_for_can_send_now = 1;
+    }
+    return can_send;
 }
 
 int  l2cap_can_send_prepared_packet_now(uint16_t local_cid){
     l2cap_channel_t *channel = l2cap_get_channel_for_local_cid(local_cid);
     if (!channel) return 0;
-    return hci_can_send_prepared_acl_packet_now(channel->handle);
+    int can_send = hci_can_send_prepared_acl_packet_now(channel->handle);
+    if (!can_send){
+        channel->waiting_for_can_send_now = 1;
+    }
+    return can_send;
 }
 
 int  l2cap_can_send_fixed_channel_packet_now(uint16_t handle){
@@ -819,6 +843,18 @@ static void l2cap_handle_connection_success_for_addr(bd_addr_t address, hci_con_
     l2cap_run();
 }
 
+static void l2cap_notify_channel_can_send(void){
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &l2cap_channels);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        l2cap_channel_t * channel = (l2cap_channel_t *) btstack_linked_list_iterator_next(&it);
+        if (!channel->waiting_for_can_send_now) continue;
+        if (!hci_can_send_acl_packet_now(channel->handle)) continue;
+        channel->waiting_for_can_send_now = 0;
+        l2cap_emit_can_send_now(channel);
+    }
+}
+
 static void l2cap_hci_event_handler(uint8_t packet_type, uint16_t cid, uint8_t *packet, uint16_t size){
     
     bd_addr_t address;
@@ -870,10 +906,13 @@ static void l2cap_hci_event_handler(uint8_t packet_type, uint16_t cid, uint8_t *
             }
             break;
             
+        // Notify channel packet handler if they can send now
+        case DAEMON_EVENT_HCI_PACKET_SENT:
         case HCI_EVENT_NUMBER_OF_COMPLETED_PACKETS:
             l2cap_run();    // try sending signaling packets first
+            l2cap_notify_channel_can_send();
             break;
-            
+
         // HCI Connection Timeouts
         case L2CAP_EVENT_TIMEOUT_CHECK:
             handle = little_endian_read_16(packet, 2);
@@ -890,17 +929,6 @@ static void l2cap_hci_event_handler(uint8_t packet_type, uint16_t cid, uint8_t *
             if (hci_con_used) break;
             if (!hci_can_send_command_packet_now()) break;
             hci_send_cmd(&hci_disconnect, handle, 0x13); // remote closed connection             
-            break;
-
-        case DAEMON_EVENT_HCI_PACKET_SENT:
-            l2cap_run();    // try sending signaling packets first
-
-            btstack_linked_list_iterator_init(&it, &l2cap_channels);
-            while (btstack_linked_list_iterator_has_next(&it)){
-                l2cap_channel_t * channel = (l2cap_channel_t *) btstack_linked_list_iterator_next(&it);
-                if (!channel->packet_handler) continue;
-                (* (channel->packet_handler))(HCI_EVENT_PACKET, channel->local_cid, packet, size);
-            }
             break;
 
         case HCI_EVENT_READ_REMOTE_SUPPORTED_FEATURES_COMPLETE:
@@ -1388,8 +1416,8 @@ static void l2cap_acl_handler(uint8_t packet_type, uint8_t *packet, uint16_t siz
                     }
                 
                     hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
-                    (*packet_handler)( HCI_EVENT_PACKET, 0, event, sizeof(event));
-
+                    if (!l2cap_event_packet_handler) break;
+                    (*l2cap_event_packet_handler)( HCI_EVENT_PACKET, 0, event, sizeof(event));
                     break;
                 }
                 default: {

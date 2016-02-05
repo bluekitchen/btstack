@@ -102,9 +102,16 @@ typedef struct {
     // linked list - assert: first field
     btstack_linked_item_t    item;
     
+    // packet handler
+    btstack_packet_handler_t packet_handler;
+
+    // timer
+    btstack_timer_source_t rtx; // also used for ertx
+
     L2CAP_STATE state;
     L2CAP_CHANNEL_STATE_VAR state_var;
-    
+
+    // info
     bd_addr_t address;
     hci_con_handle_t handle;
     
@@ -124,11 +131,7 @@ typedef struct {
     gap_security_level_t required_security_level;
 
     uint8_t   reason; // used in decline internal
-    
-    btstack_timer_source_t rtx; // also used for ertx
-
-    // internal connection
-    btstack_packet_handler_t packet_handler;
+    uint8_t   waiting_for_can_send_now;
     
 } l2cap_channel_t;
 
@@ -244,6 +247,10 @@ void l2cap_decline_connection(uint16_t local_cid, uint8_t reason);
  * @brief Check if outgoing buffer is available and that there's space on the Bluetooth module
  */
 int  l2cap_can_send_packet_now(uint16_t local_cid);    
+
+/** 
+ * @brief Check if there's space on the Bluetooth module
+ */
 int  l2cap_can_send_prepared_packet_now(uint16_t local_cid);
 
 /** 
