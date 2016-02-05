@@ -139,7 +139,7 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
         case HCI_EVENT_PACKET:
             switch (packet[0]) {
                 
-                case DAEMON_EVENT_HCI_PACKET_SENT:
+                case L2CAP_EVENT_CAN_SEND_NOW:
                     att_run();
                     break;
                     

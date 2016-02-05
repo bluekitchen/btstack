@@ -166,9 +166,6 @@ static void packet_handler(uint8_t * event, uint16_t event_size){
             printf("Working!\n");
             break;
         case HCI_EVENT_NUMBER_OF_COMPLETED_PACKETS:
-            // printf("HCI_EVENT_NUMBER_OF_COMPLETED_PACKETS\n");
-            // try_send_sco();
-            break;
         case DAEMON_EVENT_HCI_PACKET_SENT:
             // printf("DAEMON_EVENT_HCI_PACKET_SENT\n");
             // try_send_sco();

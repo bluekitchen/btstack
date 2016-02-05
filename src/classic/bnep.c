@@ -1256,7 +1256,7 @@ static int bnep_hci_event_handler(uint8_t *packet, uint16_t size)
             }
             return 1;
                     
-        case DAEMON_EVENT_HCI_PACKET_SENT:
+        case L2CAP_EVENT_CAN_SEND_NOW:
             bnep_run();
             break;
             

@@ -598,9 +598,6 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 }
             }
             break;
-        case DAEMON_EVENT_HCI_PACKET_SENT:
-        case RFCOMM_EVENT_CREDITS:
-            break;
         
         case HCI_EVENT_DISCONNECTION_COMPLETE:
             if (hsp_state != HSP_W4_SCO_DISCONNECTED){
@@ -614,6 +611,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 break;
             }
             break;
+            
         case RFCOMM_EVENT_CHANNEL_CLOSED:
             if (hsp_state != HSP_W4_RFCOMM_DISCONNECTED){
                 log_info("received RFCOMM disconnect in wrong hsp state");

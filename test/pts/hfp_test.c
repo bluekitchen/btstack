@@ -131,8 +131,7 @@ static void packet_handler(void * connection, uint8_t packet_type, uint16_t chan
                 break;
             }
             break;
-        case DAEMON_EVENT_HCI_PACKET_SENT:
-        case RFCOMM_EVENT_CREDITS:
+        case RFCOMM_EVENT_CAN_SEND_NOW:
             if (!rfcomm_cid) break;
             if (rfcomm_can_send_packet_now(rfcomm_cid)) send_packet();
             break;

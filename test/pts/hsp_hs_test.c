@@ -258,14 +258,6 @@ static void packet_handler(uint8_t * event, uint16_t event_size){
             // request loopback mode
             hci_send_cmd(&hci_write_synchronous_flow_control_enable, 1);
             break;
-        case HCI_EVENT_NUMBER_OF_COMPLETED_PACKETS:
-            // printf("HCI_EVENT_NUMBER_OF_COMPLETED_PACKETS\n");
-            // try_send_sco();
-            break;
-        case DAEMON_EVENT_HCI_PACKET_SENT:
-            // printf("DAEMON_EVENT_HCI_PACKET_SENT\n");
-            // try_send_sco();
-            break;
         case HCI_EVENT_SYNCHRONOUS_CONNECTION_COMPLETE:
             // printf("HCI_EVENT_SYNCHRONOUS_CONNECTION_COMPLETE status %u, %x\n", event[2], little_endian_read_16(event, 3));
             if (event[2]) break;

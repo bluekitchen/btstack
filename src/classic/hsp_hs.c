@@ -543,9 +543,8 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 }
             }
             break;
-        case DAEMON_EVENT_HCI_PACKET_SENT:
-        case HCI_EVENT_NUMBER_OF_COMPLETED_PACKETS:
-        case RFCOMM_EVENT_CREDITS:
+
+        case RFCOMM_EVENT_CAN_SEND_NOW:
             hsp_hs_callback(packet, size);
             break;
         

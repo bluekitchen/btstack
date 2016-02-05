@@ -180,8 +180,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     }
                     break;
                     
-                case DAEMON_EVENT_HCI_PACKET_SENT:
-                case RFCOMM_EVENT_CREDITS:
+                case RFCOMM_EVENT_CAN_SEND_NOW:
                     if (rfcomm_can_send_packet_now(rfcomm_channel_id)) send_packet();
                     break;
                     

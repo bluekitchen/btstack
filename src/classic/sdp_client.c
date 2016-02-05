@@ -250,8 +250,7 @@ void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, 
             if (can_send_now(sdp_cid)) send_request(sdp_cid);
         
             break;
-        case L2CAP_EVENT_CREDITS:
-        case DAEMON_EVENT_HCI_PACKET_SENT:
+        case L2CAP_EVENT_CAN_SEND_NOW:
             if (can_send_now(sdp_cid)) send_request(sdp_cid);
             break;
         case L2CAP_EVENT_CHANNEL_CLOSED: {
