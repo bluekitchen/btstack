@@ -180,7 +180,7 @@ void l2cap_require_security_level_2_for_outgoing_sdp(void);
 void l2cap_init(void);
 
 /** 
- * @brief Registers a packet handler that handles HCI and general BTstack events.
+ * @brief Registers packet handler for LE Connection Parameter Update events
  */
 void l2cap_register_packet_handler(void (*handler)(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size));
 
