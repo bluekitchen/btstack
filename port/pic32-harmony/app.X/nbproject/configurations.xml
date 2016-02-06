@@ -55,7 +55,7 @@
           <itemPath>../../../src/classic/sdp_util.h</itemPath>
           <itemPath>../../../src/remote_device_db.h</itemPath>
           <itemPath>../../../src/rfcomm.h</itemPath>
-          <itemPath>../../../src/sdp.h</itemPath>
+          <itemPath>../../../src/sdp_server.h</itemPath>
           <itemPath>../../../src/sdp_client.h</itemPath>
           <itemPath>../../../src/sdp_parser.h</itemPath>
           <itemPath>../../../src/sdp_query_rfcomm.h</itemPath>
@@ -133,7 +133,7 @@
           <itemPath>../../../src/classic/rfcomm.c</itemPath>
           <itemPath>../../../src/btstack_run_loop.c</itemPath>
           <itemPath>../../../src/btstack_run_loop_embedded.c</itemPath>
-          <itemPath>../../../src/classic/sdp.c</itemPath>
+          <itemPath>../../../src/classic/sdp_server.c</itemPath>
           <itemPath>../../../src/classic/sdp_client.c</itemPath>
           <itemPath>../../../src/classic/sdp_parser.c</itemPath>
           <itemPath>../../../src/classic/sdp_query_rfcomm.c</itemPath>

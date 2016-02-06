@@ -25,7 +25,7 @@ COMMON += \
     sdp_util.c	                \
     rfcomm.c	                \
     bnep.c	                    \
-    sdp.c			            \
+    sdp_server.c			            \
 
 SDP_CLIENT += \
     sdp_client.o		        \

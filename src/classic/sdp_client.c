@@ -46,7 +46,7 @@
 
 #include "l2cap.h"
 #include "classic/sdp_parser.h"
-#include "classic/sdp.h"
+#include "classic/sdp_server.h"
 #include "btstack_debug.h"
 
 typedef enum {

@@ -20,7 +20,7 @@ $(NAME)_SOURCES += \
 	../../src/classic/hsp_hs.c            \
 	../../src/classic/remote_device_db_memory.c \
 	../../src/classic/rfcomm.c            \
-	../../src/classic/sdp.c               \
+	../../src/classic/sdp_server.c               \
 	../../src/classic/sdp_client.c        \
 	../../src/classic/sdp_parser.c        \
 	../../src/classic/sdp_query_rfcomm.c  \

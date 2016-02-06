@@ -64,7 +64,7 @@
 
 #include "classic/rfcomm.h"
 
-#include "classic/sdp.h"
+#include "classic/sdp_server.h"
 
 #define RFCOMM_SERVER_CHANNEL 1
 #define HEARTBEAT_PERIOD_MS 1000

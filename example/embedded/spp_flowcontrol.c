@@ -57,7 +57,7 @@
 #include "l2cap.h"
 #include "btstack_memory.h"
 #include "classic/rfcomm.h"
-#include "classic/sdp.h"
+#include "classic/sdp_server.h"
 #include "btstack_config.h"
 
 #define HEARTBEAT_PERIOD_MS 500

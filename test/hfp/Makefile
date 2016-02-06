@@ -8,7 +8,7 @@ CPPUTEST_HOME = ${BTSTACK_ROOT}/test/cpputest
 include ${BTSTACK_ROOT}/example/embedded/Makefile.inc
 
 COMMON = \
-	sdp.c			            \
+	sdp_server.c			            \
 	sdp_query_rfcomm.c		    \
     btstack_link_key_db_memory.c \
     btstack_linked_list.c	    \

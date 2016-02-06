@@ -67,7 +67,7 @@
 #include "btstack_memory.h"
 #include "classic/btstack_link_key_db.h"
 #include "classic/rfcomm.h"
-#include "classic/sdp.h"
+#include "classic/sdp_server.h"
 #include "btstack_config.h"
 
 #define HEARTBEAT_PERIOD_MS 1000

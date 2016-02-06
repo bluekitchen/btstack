@@ -47,7 +47,7 @@
 #include "hci_dump.h"
 #include "l2cap.h"
 
-#include "classic/sdp.h"
+#include "classic/sdp_server.h"
 #include "classic/sdp_util.h"
 
 // max reserved ServiceRecordHandle

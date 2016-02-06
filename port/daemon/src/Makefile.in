@@ -48,7 +48,7 @@ BTdaemon_SOURCES =      \
     btstack_memory_pool.c       \
     rfcomm.c            \
     bnep.c              \
-    sdp.c               \
+    sdp_server.c               \
     sdp_client.c        \
     sdp_parser.c        \
     sdp_query_rfcomm.c  \

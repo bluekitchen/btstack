@@ -60,7 +60,7 @@
 
 #include "hci.h"
 #include "l2cap.h"
-#include "classic/sdp.h"
+#include "classic/sdp_server.h"
 #include "btstack_debug.h"
 #include "hsp_ag.h"
 #include "stdin_support.h"

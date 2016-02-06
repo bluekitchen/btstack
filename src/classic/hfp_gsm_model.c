@@ -51,7 +51,7 @@
 #include "btstack_memory.h"
 #include "classic/hfp.h"
 #include "classic/hfp_gsm_model.h"
-#include "classic/sdp.h"
+#include "classic/sdp_server.h"
 #include "classic/sdp_query_rfcomm.h"
 #include "btstack_debug.h"
 #include "hci.h"

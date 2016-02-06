@@ -66,7 +66,7 @@
 #include "btstack_version.h"
 #include "classic/btstack_link_key_db.h"
 #include "classic/rfcomm.h"
-#include "classic/sdp.h"
+#include "classic/sdp_server.h"
 #include "classic/sdp_client.h"
 #include "classic/sdp_parser.h"
 #include "classic/sdp_query_rfcomm.h"

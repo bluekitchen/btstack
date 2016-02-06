@@ -63,7 +63,7 @@
 #include "btstack_memory.h"
 #include "hci_dump.h"
 #include "l2cap.h"
-#include "classic/sdp.h"
+#include "classic/sdp_server.h"
 #include "pan.h"
 #include "stdin_support.h"
 

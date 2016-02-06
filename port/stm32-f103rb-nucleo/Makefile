@@ -34,7 +34,7 @@ COMMON = \
     l2cap_signaling.c         \
 	remote_device_db_memory.c \
 	rfcomm.c			      \
-    sdp.c			          \
+    sdp_server.c			          \
     sdp_util.c                \
     btstack_util.c			          \
     sdp_parser.c              \

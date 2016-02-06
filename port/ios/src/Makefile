@@ -46,7 +46,7 @@ BTdaemon_FILES = \
 	l2cap_signaling.c         \
 	platform_iphone.m         \
 	rfcomm.c                  \
-	sdp.c                     \
+	sdp_server.c                     \
 	SpringBoardAccess.c       \
     rfcomm_service_db_cocoa.m \
     sdp_client.c              \

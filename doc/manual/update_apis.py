@@ -20,7 +20,7 @@ apis = [
     ["src/classic/pan.h", "PAN", "pan"],
     ["src/classic/btstack_link_key_db.h","Remote Device DB","rdevDb"],
     ["src/classic/rfcomm.h", "RFCOMM", "rfcomm"],
-    ["src/classic/sdp.h", "SDP", "sdp"],
+    ["src/classic/sdp_server.h", "SDP", "sdp"],
     ["src/classic/sdp_client.h", "SDP Client", "sdpClient"],
     ["src/classic/sdp_parser.h","SDP Parser","sdpParser"],
     ["src/classic/sdp_query_rfcomm.h", "SDP RFCOMM Query", "sdpQueries"],

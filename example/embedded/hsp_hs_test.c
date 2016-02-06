@@ -69,7 +69,7 @@
 #include "btstack_run_loop.h"
 #include "classic/sdp_util.h"
 
-#include "classic/sdp.h"
+#include "classic/sdp_server.h"
 #include "classic/hsp_hs.h"
 
 #include "hci.h"
