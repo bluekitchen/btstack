@@ -419,13 +419,19 @@ int hci_can_send_acl_packet_now(hci_con_handle_t con_handle){
 }
 
 int hci_can_send_prepared_sco_packet_now(hci_con_handle_t con_handle){
-    if (!hci_transport_can_send_prepared_packet_now(HCI_SCO_DATA_PACKET)) return 0;
+    if (!hci_transport_can_send_prepared_packet_now(HCI_SCO_DATA_PACKET)) {
+        hci_stack->sco_waiting_for_can_send_now = 1;
+        return 0;
+    }
     if (!hci_stack->synchronous_flow_control_enabled) return 1;
     return hci_number_free_sco_slots_for_handle(con_handle) > 0;    
 }
 
 int hci_can_send_sco_packet_now(hci_con_handle_t con_handle){
-    if (hci_stack->hci_packet_buffer_reserved) return 0;
+    if (hci_stack->hci_packet_buffer_reserved) {
+        hci_stack->sco_waiting_for_can_send_now = 1;
+        return 0;
+    }
     return hci_can_send_prepared_sco_packet_now(con_handle);
 }
 
@@ -1424,7 +1430,7 @@ static void event_handler(uint8_t *packet, int size){
                         log_error("hci_number_completed_packets, more sco slots freed then sent.");
                         conn->num_sco_packets_sent = 0;
                     }
-
+                    hci_notify_sco_can_send_now(handle);
                 } else {
                     if (conn->num_acl_packets_sent >= num_packets){
                         conn->num_acl_packets_sent -= num_packets;
@@ -2898,6 +2904,23 @@ static void hci_emit_event(uint8_t * event, uint16_t size, int dump){
 static void hci_emit_acl_packet(uint8_t * packet, uint16_t size){
     if (!hci_stack->acl_packet_handler) return;
     hci_stack->acl_packet_handler(HCI_ACL_DATA_PACKET, packet, size);
+}
+
+static void hci_emit_sco_can_send_now(uint16_t handle){
+    uint8_t event[4];
+    event[0] = HCI_EVENT_SCO_CAN_SEND_NOW;
+    event[1] = 2;
+    little_endian_store_16(event, 2, handle);
+    hci_dump_packet(HCI_EVENT_PACKET, 1, event, sizeof(event));
+    hci_stack->sco_packet_handler(HCI_EVENT_PACKET, handle, event, sizeof(event));
+}
+
+static void hci_notify_sco_can_send_now(uint16_t handle){
+    // notify SCO sender if waiting
+    if (hci_stack->sco_waiting_for_can_send_now){
+        hci_stack->sco_waiting_for_can_send_now = 0;
+        hci_emit_sco_can_send_now(handle);
+    }
 }
 
 void hci_emit_state(void){

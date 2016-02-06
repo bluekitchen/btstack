@@ -294,6 +294,13 @@
 // data: event(8)
 #define DAEMON_EVENT_HCI_PACKET_SENT                       0x6C
 
+// additional HCI events
+/**
+ * @format B
+ * @param handle
+ */
+#define HCI_EVENT_SCO_CAN_SEND_NOW                         0x6F
+
 // L2CAP EVENTS
     
 /**

@@ -525,6 +525,21 @@ typedef struct {
     /* link key db */
     const btstack_link_key_db_t * link_key_db;
 
+    // list of existing baseband connections
+    btstack_linked_list_t     connections;
+
+    /* callback to L2CAP layer */
+    void (*acl_packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size);
+
+    /* callback for SCO data */
+    void (*sco_packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size);
+
+    /* callbacks for events */
+    btstack_linked_list_t event_handlers;
+
+    // hardware error callback
+    void (*hardware_error_callback)(void);
+
     // basic configuration
     const char *       local_name;
     uint32_t           class_of_device;
@@ -534,9 +549,6 @@ typedef struct {
     uint8_t            ssp_authentication_requirement;
     uint8_t            ssp_auto_accept;
     
-    // list of existing baseband connections
-    btstack_linked_list_t     connections;
-
     // single buffer for HCI packet assembly + additional prebuffer for H4 drivers
     uint8_t   hci_packet_buffer_prefix[HCI_OUTGOING_PRE_BUFFER_SIZE];
     uint8_t   hci_packet_buffer[HCI_PACKET_BUFFER_SIZE]; // opcode (16), len(8)
@@ -553,6 +565,7 @@ typedef struct {
     uint8_t  synchronous_flow_control_enabled;
     uint8_t  le_acl_packets_total_num;
     uint16_t le_data_packets_length;
+    uint8_t  sco_waiting_for_can_send_now;
 
     /* local supported features */
     uint8_t local_supported_features[8];
@@ -572,14 +585,6 @@ typedef struct {
     // usable packet types given acl_data_packet_length and HCI_ACL_BUFFER_SIZE
     uint16_t packet_types;
     
-    /* callback to L2CAP layer */
-    void (*acl_packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size);
-
-    /* callback for SCO data */
-    void (*sco_packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size);
-
-    /* callbacks for events */
-    btstack_linked_list_t event_handlers;
     
     /* hci state machine */
     HCI_STATE      state;
@@ -640,9 +645,6 @@ typedef struct {
     // custom BD ADDR
     bd_addr_t custom_bd_addr; 
     uint8_t   custom_bd_addr_set;
-
-    // hardware error callback
-    void (*hardware_error_callback)(void);
 
 } hci_stack_t;
 
