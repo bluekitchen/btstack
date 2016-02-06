@@ -119,7 +119,7 @@ static void compute_signal(void){
 
 static void try_send_sco(void){
     if (!sco_handle) return;
-    if (!hci_can_send_sco_packet_now(sco_handle)) {
+    if (!hci_can_send_sco_packet_now()) {
         // printf("try_send_sco, cannot send now\n");
         return;
     }

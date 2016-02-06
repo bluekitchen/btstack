@@ -90,6 +90,7 @@ static void hci_remove_from_whitelist(bd_addr_type_t address_type, bd_addr_t add
 // prototypes
 static void hci_emit_event(uint8_t * event, uint16_t size, int dump);
 static void hci_emit_acl_packet(uint8_t * packet, uint16_t size);
+static void hci_notify_if_sco_can_send_now(void);
 
 // the STACK is here
 #ifndef HAVE_MALLOC
@@ -358,7 +359,7 @@ int hci_number_free_acl_slots_for_handle(hci_con_handle_t con_handle){
     return hci_number_free_acl_slots_for_connection_type(connection->address_type);
 }
 
-static int hci_number_free_sco_slots_for_handle(hci_con_handle_t handle){
+static int hci_number_free_sco_slots(void){
     int num_sco_packets_sent = 0;
     btstack_linked_item_t *it;
     for (it = (btstack_linked_item_t *) hci_stack->connections; it ; it = it->next){
@@ -366,10 +367,10 @@ static int hci_number_free_sco_slots_for_handle(hci_con_handle_t handle){
         num_sco_packets_sent += connection->num_sco_packets_sent;
     }
     if (num_sco_packets_sent > hci_stack->sco_packets_total_num){
-        log_info("hci_number_free_sco_slots_for_handle: outgoing packets (%u) > total packets (%u)", num_sco_packets_sent, hci_stack->sco_packets_total_num);
+        log_info("hci_number_free_sco_slots:packets (%u) > total packets (%u)", num_sco_packets_sent, hci_stack->sco_packets_total_num);
         return 0;
     }
-    // log_info("hci_number_free_sco_slots_for_handle %x: sent %u", handle, num_sco_packets_sent);
+    // log_info("hci_number_free_sco_slots u", handle, num_sco_packets_sent);
     return hci_stack->sco_packets_total_num - num_sco_packets_sent;
 }
 
@@ -418,21 +419,21 @@ int hci_can_send_acl_packet_now(hci_con_handle_t con_handle){
     return hci_can_send_prepared_acl_packet_now(con_handle);
 }
 
-int hci_can_send_prepared_sco_packet_now(hci_con_handle_t con_handle){
+int hci_can_send_prepared_sco_packet_now(void){
     if (!hci_transport_can_send_prepared_packet_now(HCI_SCO_DATA_PACKET)) {
         hci_stack->sco_waiting_for_can_send_now = 1;
         return 0;
     }
     if (!hci_stack->synchronous_flow_control_enabled) return 1;
-    return hci_number_free_sco_slots_for_handle(con_handle) > 0;    
+    return hci_number_free_sco_slots() > 0;    
 }
 
-int hci_can_send_sco_packet_now(hci_con_handle_t con_handle){
+int hci_can_send_sco_packet_now(void){
     if (hci_stack->hci_packet_buffer_reserved) {
         hci_stack->sco_waiting_for_can_send_now = 1;
         return 0;
     }
-    return hci_can_send_prepared_sco_packet_now(con_handle);
+    return hci_can_send_prepared_sco_packet_now();
 }
 
 // used for internal checks in l2cap[-le].c
@@ -589,7 +590,7 @@ int hci_send_sco_packet_buffer(int size){
         hci_con_handle_t con_handle = READ_ACL_CONNECTION_HANDLE(packet);   // same for ACL and SCO
 
         // check for free places on Bluetooth module
-        if (!hci_can_send_prepared_sco_packet_now(con_handle)) {
+        if (!hci_can_send_prepared_sco_packet_now()) {
             log_error("hci_send_sco_packet_buffer called but no free ACL buffers on controller");
             hci_release_packet_buffer();
             return BTSTACK_ACL_BUFFERS_FULL;
@@ -1430,7 +1431,7 @@ static void event_handler(uint8_t *packet, int size){
                         log_error("hci_number_completed_packets, more sco slots freed then sent.");
                         conn->num_sco_packets_sent = 0;
                     }
-                    hci_notify_sco_can_send_now(handle);
+                    hci_notify_if_sco_can_send_now();
                 } else {
                     if (conn->num_acl_packets_sent >= num_packets){
                         conn->num_acl_packets_sent -= num_packets;
@@ -1683,6 +1684,10 @@ static void event_handler(uint8_t *packet, int size){
             }
             if (hci_stack->acl_fragmentation_total_size) break;
             hci_release_packet_buffer();
+            
+            // L2CAP receives this event via the hci_add_event_handler
+            // For SCO, we do the can send now check here
+            hci_notify_if_sco_can_send_now();
             break;
 
 #ifdef ENABLE_BLE
@@ -2906,20 +2911,14 @@ static void hci_emit_acl_packet(uint8_t * packet, uint16_t size){
     hci_stack->acl_packet_handler(HCI_ACL_DATA_PACKET, packet, size);
 }
 
-static void hci_emit_sco_can_send_now(uint16_t handle){
-    uint8_t event[4];
-    event[0] = HCI_EVENT_SCO_CAN_SEND_NOW;
-    event[1] = 2;
-    little_endian_store_16(event, 2, handle);
-    hci_dump_packet(HCI_EVENT_PACKET, 1, event, sizeof(event));
-    hci_stack->sco_packet_handler(HCI_EVENT_PACKET, handle, event, sizeof(event));
-}
-
-static void hci_notify_sco_can_send_now(uint16_t handle){
+static void hci_notify_if_sco_can_send_now(void){
     // notify SCO sender if waiting
-    if (hci_stack->sco_waiting_for_can_send_now){
+    if (!hci_stack->sco_waiting_for_can_send_now) return;
+    if (hci_can_send_sco_packet_now()){
         hci_stack->sco_waiting_for_can_send_now = 0;
-        hci_emit_sco_can_send_now(handle);
+        uint8_t event[2] = { HCI_EVENT_SCO_CAN_SEND_NOW, 0 };
+        hci_dump_packet(HCI_EVENT_PACKET, 1, event, sizeof(event));
+        hci_stack->sco_packet_handler(HCI_EVENT_PACKET, event, sizeof(event));
     }
 }
 
