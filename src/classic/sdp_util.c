@@ -133,7 +133,7 @@ int de_get_normalized_uuid(uint8_t *uuid128, uint8_t *element){
         default:
             return 0;
     }
-    sdp_normalize_uuid(uuid128, shortUUID);
+    uuid_add_bluetooth_prefix(uuid128, shortUUID);
     return 1;
 }
 
@@ -142,7 +142,7 @@ uint32_t de_get_uuid32(uint8_t * element){
     uint8_t uuid128[16];
     int validUuid128 = de_get_normalized_uuid(uuid128, element);
     if (!validUuid128) return 0;
-    int hasBlueoothBaseUuid = sdp_has_blueooth_base_uuid(uuid128);
+    int hasBlueoothBaseUuid = uuid_has_bluetooth_prefix(uuid128);
     if (!hasBlueoothBaseUuid) return 0;
     return big_endian_read_32(uuid128, 0);
 }

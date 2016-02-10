@@ -595,7 +595,7 @@ static void report_gatt_services(gatt_client_t * peripheral, uint8_t * packet,  
 
         if (uuid_length == 2){
             uuid16 = little_endian_read_16(packet, i+4);
-            sdp_normalize_uuid((uint8_t*) &uuid128, uuid16);
+            uuid_add_bluetooth_prefix((uint8_t*) &uuid128, uuid16);
         } else {
             swap128(&packet[i+4], uuid128);
         }
@@ -610,7 +610,7 @@ static void characteristic_start_found(gatt_client_t * peripheral, uint16_t star
     uint16_t uuid16 = 0;
     if (uuid_length == 2){
         uuid16 = little_endian_read_16(uuid, 0);
-        sdp_normalize_uuid((uint8_t*) uuid128, uuid16);
+        uuid_add_bluetooth_prefix((uint8_t*) uuid128, uuid16);
     } else {
         swap128(uuid, uuid128);
     }
@@ -653,7 +653,7 @@ static void report_gatt_characteristics(gatt_client_t * peripheral, uint8_t * pa
 
 static void report_gatt_included_service_uuid16(gatt_client_t * peripheral, uint16_t include_handle, uint16_t uuid16){
     uint8_t normalized_uuid128[16];
-    sdp_normalize_uuid(normalized_uuid128, uuid16);
+    uuid_add_bluetooth_prefix(normalized_uuid128, uuid16);
     emit_gatt_included_service_query_result_event(peripheral, include_handle, peripheral->query_start_handle,
         peripheral->query_end_handle, normalized_uuid128);
 }
@@ -742,7 +742,7 @@ static void report_gatt_all_characteristic_descriptors(gatt_client_t * periphera
         uint16_t uuid16 = 0;
         if (pair_size == 4){
             uuid16 = little_endian_read_16(packet,i+2);
-            sdp_normalize_uuid(uuid128, uuid16);
+            uuid_add_bluetooth_prefix(uuid128, uuid16);
         } else {
             swap128(&packet[i+2], uuid128);
         }        
@@ -1435,7 +1435,7 @@ uint8_t gatt_client_discover_primary_services_by_uuid16(uint16_t gatt_client_id,
     peripheral->end_group_handle   = 0xffff;
     peripheral->gatt_client_state = P_W2_SEND_SERVICE_WITH_UUID_QUERY;
     peripheral->uuid16 = uuid16;
-    sdp_normalize_uuid((uint8_t*) &(peripheral->uuid128), peripheral->uuid16);
+    uuid_add_bluetooth_prefix((uint8_t*) &(peripheral->uuid128), peripheral->uuid16);
     gatt_client_run();
     return 0;
 }
@@ -1498,7 +1498,7 @@ uint8_t gatt_client_discover_characteristics_for_handle_range_by_uuid16(uint16_t
     peripheral->end_group_handle   = end_handle;
     peripheral->filter_with_uuid = 1;
     peripheral->uuid16 = uuid16;
-    sdp_normalize_uuid((uint8_t*) &(peripheral->uuid128), uuid16);
+    uuid_add_bluetooth_prefix((uint8_t*) &(peripheral->uuid128), uuid16);
     peripheral->characteristic_start_handle = 0;
     peripheral->gatt_client_state = P_W2_SEND_CHARACTERISTIC_WITH_UUID_QUERY;
     
@@ -1579,7 +1579,7 @@ uint8_t gatt_client_read_value_of_characteristics_by_uuid16(uint16_t gatt_client
     peripheral->query_start_handle = start_handle;
     peripheral->query_end_handle = end_handle;
     peripheral->uuid16 = uuid16;
-    sdp_normalize_uuid((uint8_t*) &(peripheral->uuid128), uuid16);
+    uuid_add_bluetooth_prefix((uint8_t*) &(peripheral->uuid128), uuid16);
     peripheral->gatt_client_state = P_W2_SEND_READ_BY_TYPE_REQUEST;
     gatt_client_run();
     return 0;

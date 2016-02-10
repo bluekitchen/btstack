@@ -189,12 +189,12 @@ void log_key(const char * name, sm_key_t key){
 const uint8_t sdp_bluetooth_base_uuid[] = { 0x00, 0x00, 0x00, 0x00, /* - */ 0x00, 0x00, /* - */ 0x10, 0x00, /* - */
     0x80, 0x00, /* - */ 0x00, 0x80, 0x5F, 0x9B, 0x34, 0xFB };
 
-void sdp_normalize_uuid(uint8_t *uuid, uint32_t shortUUID){
+void uuid_add_bluetooth_prefix(uint8_t *uuid, uint32_t shortUUID){
     memcpy(uuid, sdp_bluetooth_base_uuid, 16);
     big_endian_store_32(uuid, 0, shortUUID);
 }
 
-int sdp_has_blueooth_base_uuid(uint8_t * uuid128){
+int uuid_has_bluetooth_prefix(uint8_t * uuid128){
     return memcmp(&uuid128[4], &sdp_bluetooth_base_uuid[4], 12) == 0;
 }
 

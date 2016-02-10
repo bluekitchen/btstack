@@ -154,8 +154,8 @@ char * bd_addr_to_str(bd_addr_t addr);
 int sscan_bd_addr(uint8_t * addr_string, bd_addr_t addr);
 
 
-void sdp_normalize_uuid(uint8_t *uuid, uint32_t shortUUID);
-int  sdp_has_blueooth_base_uuid(uint8_t * uuid128);
+void uuid_add_bluetooth_prefix(uint8_t *uuid, uint32_t shortUUID);
+int  uuid_has_bluetooth_prefix(uint8_t * uuid128);
 
 #if defined __cplusplus
 }

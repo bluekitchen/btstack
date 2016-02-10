@@ -162,7 +162,7 @@ static void handle_ble_client_event(uint8_t packet_type, uint16_t channel, uint8
 			service.end_group_handle   = little_endian_read_16(packet, 6);
 			service.uuid16 = 0;
 			swap128(&packet[8], service.uuid128);
-			if (sdp_has_blueooth_base_uuid(service.uuid128)){
+			if (uuid_has_bluetooth_prefix(service.uuid128)){
 				service.uuid16 = big_endian_read_32(service.uuid128, 0);
 			}
 			services[result_index++] = service;
@@ -173,7 +173,7 @@ static void handle_ble_client_event(uint8_t packet_type, uint16_t channel, uint8
 			service.end_group_handle   = little_endian_read_16(packet, 8);
 			service.uuid16 = 0;
 			swap128(&packet[10], service.uuid128);
-			if (sdp_has_blueooth_base_uuid(service.uuid128)){
+			if (uuid_has_bluetooth_prefix(service.uuid128)){
 				service.uuid16 = big_endian_read_32(service.uuid128, 0);
 			}
             included_services[result_index++] = service;
@@ -186,7 +186,7 @@ static void handle_ble_client_event(uint8_t packet_type, uint16_t channel, uint8
         	characteristic.properties =   little_endian_read_16(packet, 10);
 			characteristic.uuid16 = 0;
 			swap128(&packet[12], characteristic.uuid128);
-			if (sdp_has_blueooth_base_uuid(characteristic.uuid128)){
+			if (uuid_has_bluetooth_prefix(characteristic.uuid128)){
 				characteristic.uuid16 = big_endian_read_32(characteristic.uuid128, 0);
 			}
         	characteristics[result_index++] = characteristic;
@@ -195,7 +195,7 @@ static void handle_ble_client_event(uint8_t packet_type, uint16_t channel, uint8
         case GATT_EVENT_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY_RESULT:
         	descriptor.handle = little_endian_read_16(packet, 4);
 			swap128(&packet[6], descriptor.uuid128);
-			if (sdp_has_blueooth_base_uuid(descriptor.uuid128)){
+			if (uuid_has_bluetooth_prefix(descriptor.uuid128)){
 				descriptor.uuid16 = big_endian_read_32(descriptor.uuid128, 0);
 			}
         	descriptors[result_index++] = descriptor;

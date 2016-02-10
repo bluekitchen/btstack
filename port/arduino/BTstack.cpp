@@ -198,7 +198,7 @@ static void extract_service(le_service_t * service, uint8_t * packet){
     service->end_group_handle   = little_endian_read_16(packet, 6);
     service->uuid16 = 0;
     swap128(&packet[8], service->uuid128);
-    if (sdp_has_blueooth_base_uuid(service->uuid128)){
+    if (uuid_has_bluetooth_prefix(service->uuid128)){
         service->uuid16 = big_endian_read_32(service->uuid128, 0);
     }
 }
@@ -210,7 +210,7 @@ static void extract_characteristic(le_characteristic_t * characteristic, uint8_t
     characteristic->properties =   little_endian_read_16(packet, 10);
     characteristic->uuid16 = 0;
     swap128(&packet[12], characteristic->uuid128);
-    if (sdp_has_blueooth_base_uuid(characteristic->uuid128)){
+    if (uuid_has_bluetooth_prefix(characteristic->uuid128)){
         characteristic->uuid16 = big_endian_read_32(characteristic->uuid128, 0);
     }
 }
@@ -330,7 +330,7 @@ UUID::UUID(const char * uuidStr){
         uint16_t uuid16;
         int result = sscanf( (char *) uuidStr, "%x", &uuid16);
         if (result == 1){
-            sdp_normalize_uuid(uuid, uuid16);
+            uuid_add_bluetooth_prefix(uuid, uuid16);
         }
         return;
     }
@@ -359,8 +359,8 @@ const uint8_t * UUID::getUuid(void) const {
 
 static char uuid16_buffer[5];
 const char * UUID::getUuidString() const {
-    // TODO: fix sdp_has_blueooth_base_uuid call to use const 
-    if (sdp_has_blueooth_base_uuid((uint8_t*)uuid)){
+    // TODO: fix uuid_has_bluetooth_prefix call to use const 
+    if (uuid_has_bluetooth_prefix((uint8_t*)uuid)){
         sprintf(uuid16_buffer, "%04x", (uint16_t) big_endian_read_32(uuid, 0));
         return uuid16_buffer;
     }  else {

@@ -414,7 +414,7 @@ static void extract_service(le_service_t * aService, uint8_t * data){
     aService->end_group_handle   = little_endian_read_16(data, 2);
     aService->uuid16 = 0;
     swap128(&data[4], aService->uuid128);
-    if (sdp_has_blueooth_base_uuid(aService->uuid128)){
+    if (uuid_has_bluetooth_prefix(aService->uuid128)){
         aService->uuid16 = big_endian_read_32(aService->uuid128, 0);
     }
 }
@@ -426,7 +426,7 @@ static void extract_characteristic(le_characteristic_t * characteristic, uint8_t
     characteristic->properties =   little_endian_read_16(packet, 10);
     characteristic->uuid16 = 0;
     swap128(&packet[12], characteristic->uuid128);
-    if (sdp_has_blueooth_base_uuid(characteristic->uuid128)){
+    if (uuid_has_bluetooth_prefix(characteristic->uuid128)){
         characteristic->uuid16 = big_endian_read_32(characteristic->uuid128, 0);
     }
 }
@@ -516,7 +516,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint8_t *packet, uint1
             uint16_t descriptor_handle = little_endian_read_16(packet, 4);
             uint8_t uuid128[16];
             swap128(&packet[6], uuid128);
-            if (sdp_has_blueooth_base_uuid(uuid128)){
+            if (uuid_has_bluetooth_prefix(uuid128)){
                 printf("Characteristic descriptor at 0x%04x with UUID %04x\n", descriptor_handle, big_endian_read_32(uuid128, 0));
             } else {
                 printf("Characteristic descriptor at 0x%04x with UUID %s\n", descriptor_handle, uuid128_to_str(uuid128));
