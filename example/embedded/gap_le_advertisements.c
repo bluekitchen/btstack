@@ -133,6 +133,7 @@ static char * flags[] = {
 /* LISTING_START(GAPLEAdvDataParsing): Parsing advertising data */
 static void dump_advertisement_data(uint8_t * adv_data, uint8_t adv_size){
     ad_context_t context;
+    bd_addr_t address;
     for (ad_iterator_init(&context, adv_size, adv_data) ; ad_iterator_has_more(&context) ; ad_iterator_next(&context)){
         uint8_t data_type = ad_iterator_get_data_type(&context);
         uint8_t size      = ad_iterator_get_data_len(&context);
@@ -189,7 +190,8 @@ static void dump_advertisement_data(uint8_t * adv_data, uint8_t adv_size){
                 break;
             case 0x17: // Public Target Address
             case 0x18: // Random Target Address
-                print_bd_addr(data);
+                bt_flip_addr(address, data);
+                printf("%s", bd_addr_to_str(address));
                 break;
             case 0x19: // Appearance 
                 // https://developer.bluetooth.org/gatt/characteristics/Pages/CharacteristicViewer.aspx?u=org.bluetooth.characteristic.gap.appearance.xml

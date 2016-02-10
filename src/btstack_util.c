@@ -225,10 +225,6 @@ char * bd_addr_to_str(bd_addr_t addr){
     return (char *) bd_addr_to_str_buffer;
 }
 
-void print_bd_addr( bd_addr_t addr){
-    log_info("%s", bd_addr_to_str(addr));
-}
-
 int sscan_bd_addr(uint8_t * addr_string, bd_addr_t addr){
 	unsigned int bd_addr_buffer[BD_ADDR_LEN];  //for sscanf, integer needed
 	// reset result buffer

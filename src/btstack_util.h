@@ -118,10 +118,6 @@ char char_for_nibble(int nibble);
  */
 #define BD_ADDR_COPY(dest,src) memcpy(dest,src,BD_ADDR_LEN)
 
-
-// @deprecated please use more convenient bd_addr_to_str
-void print_bd_addr( bd_addr_t addr);
-
 /**
  * @brief Use printf to write hexdump as single line of data
  */
