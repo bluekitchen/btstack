@@ -82,7 +82,7 @@ uint32_t sdp_get_service_record_handle(const uint8_t * record){
     if (!serviceRecordHandleAttribute) return 0;
     if (de_get_element_type(serviceRecordHandleAttribute) != DE_UINT) return 0;
     if (de_get_size_type(serviceRecordHandleAttribute) != DE_SIZE_32) return 0;
-    return bit_endian_read_32(serviceRecordHandleAttribute, 1); 
+    return big_endian_read_32(serviceRecordHandleAttribute, 1); 
 }
 
 static service_record_item_t * sdp_get_record_item_for_handle(uint32_t handle){
@@ -243,7 +243,7 @@ int sdp_handle_service_attribute_request(uint8_t * packet, uint16_t remote_mtu){
     // get request details
     uint16_t  transaction_id = big_endian_read_16(packet, 1);
     // not used yet - uint16_t  param_len = big_endian_read_16(packet, 3);
-    uint32_t  serviceRecordHandle = bit_endian_read_32(packet, 5);
+    uint32_t  serviceRecordHandle = big_endian_read_32(packet, 5);
     uint16_t  maximumAttributeByteCount = big_endian_read_16(packet, 9);
     uint8_t * attributeIDList = &packet[11];
     uint16_t  attributeIDListLen = de_get_len(attributeIDList);

@@ -75,7 +75,7 @@ void little_endian_store_32(uint8_t *buffer, uint16_t pos, uint32_t value);
 
 // helper for big endian format
 #define big_endian_read_16( buffer, pos) ( ((uint16_t) buffer[(pos)+1]) | (((uint16_t)buffer[ pos   ]) << 8))
-#define bit_endian_read_32( buffer, pos) ( ((uint32_t) buffer[(pos)+3]) | (((uint32_t)buffer[(pos)+2]) << 8) | (((uint32_t)buffer[(pos)+1]) << 16) | (((uint32_t) buffer[pos])) << 24)
+#define big_endian_read_32( buffer, pos) ( ((uint32_t) buffer[(pos)+3]) | (((uint32_t)buffer[(pos)+2]) << 8) | (((uint32_t)buffer[(pos)+1]) << 16) | (((uint32_t) buffer[pos])) << 24)
 
 void big_endian_store_16(uint8_t *buffer, uint16_t pos, uint16_t value);
 void big_endian_store_32(uint8_t *buffer, uint16_t pos, uint32_t value);

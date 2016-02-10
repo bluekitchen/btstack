@@ -246,7 +246,7 @@ static void extract_service(le_service_t * service, uint8_t * packet){
     service->uuid16 = 0;
     swap128(&packet[8], service->uuid128);
     if (sdp_has_blueooth_base_uuid(service->uuid128)){
-        service->uuid16 = bit_endian_read_32(service->uuid128, 0);
+        service->uuid16 = big_endian_read_32(service->uuid128, 0);
     }
 }
 
@@ -258,7 +258,7 @@ static void extract_characteristic(le_characteristic_t * characteristic, uint8_t
     characteristic->uuid16 = 0;
     swap128(&packet[12], characteristic->uuid128);
     if (sdp_has_blueooth_base_uuid(characteristic->uuid128)){
-        characteristic->uuid16 = bit_endian_read_32(characteristic->uuid128, 0);
+        characteristic->uuid16 = big_endian_read_32(characteristic->uuid128, 0);
     }
 }
 

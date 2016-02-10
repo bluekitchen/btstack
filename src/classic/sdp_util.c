@@ -89,7 +89,7 @@ int de_get_data_size(uint8_t * header){
             result = big_endian_read_16(header,1);
             break;
         case DE_SIZE_VAR_32:
-            result = bit_endian_read_32(header,1);
+            result = big_endian_read_32(header,1);
             break;
         default:
         // case DE_SIZE_8:
@@ -125,7 +125,7 @@ int de_get_normalized_uuid(uint8_t *uuid128, uint8_t *element){
             shortUUID = big_endian_read_16(element, 1);
             break;
         case DE_SIZE_32:
-            shortUUID = bit_endian_read_32(element, 1);
+            shortUUID = big_endian_read_32(element, 1);
             break;
         case DE_SIZE_128:
             memcpy(uuid128, element+1, 16);
@@ -144,7 +144,7 @@ uint32_t de_get_uuid32(uint8_t * element){
     if (!validUuid128) return 0;
     int hasBlueoothBaseUuid = sdp_has_blueooth_base_uuid(uuid128);
     if (!hasBlueoothBaseUuid) return 0;
-    return bit_endian_read_32(uuid128, 0);
+    return big_endian_read_32(uuid128, 0);
 }
 
 // functions to create record
@@ -654,7 +654,7 @@ static int de_traversal_dump_data(uint8_t * element, de_type_t de_type, de_size_
 				value = big_endian_read_16(element,pos);
                 break;
             case DE_SIZE_32:
-				value = bit_endian_read_32(element,pos);
+				value = big_endian_read_32(element,pos);
                 break;
             default:
                 break;

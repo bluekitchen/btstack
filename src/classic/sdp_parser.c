@@ -251,7 +251,7 @@ void sdp_parser_init_service_search(void){
 void sdp_parser_handle_service_search(uint8_t * data, uint16_t total_count, uint16_t record_handle_count){
     int i;
     for (i=0;i<record_handle_count;i++){
-        record_handle = bit_endian_read_32(data, i*4);
+        record_handle = big_endian_read_32(data, i*4);
         record_counter++;
         uint8_t event[10];
         event[0] = SDP_EVENT_QUERY_SERVICE_RECORD_HANDLE;

@@ -804,12 +804,12 @@ static void sm_trigger_user_response(sm_connection_t * sm_conn){
                 setup->sm_user_response = SM_USER_RESPONSE_PENDING;
                 sm_notify_client_base(SM_EVENT_PASSKEY_INPUT_NUMBER, sm_conn->sm_handle, sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address); 
             } else {
-                sm_notify_client_passkey(SM_EVENT_PASSKEY_DISPLAY_NUMBER, sm_conn->sm_handle, sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address, bit_endian_read_32(setup->sm_tk, 12)); 
+                sm_notify_client_passkey(SM_EVENT_PASSKEY_DISPLAY_NUMBER, sm_conn->sm_handle, sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address, big_endian_read_32(setup->sm_tk, 12)); 
             }
             break;
         case PK_INIT_INPUT:
             if (sm_conn->sm_role){
-                sm_notify_client_passkey(SM_EVENT_PASSKEY_DISPLAY_NUMBER, sm_conn->sm_handle, sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address, bit_endian_read_32(setup->sm_tk, 12)); 
+                sm_notify_client_passkey(SM_EVENT_PASSKEY_DISPLAY_NUMBER, sm_conn->sm_handle, sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address, big_endian_read_32(setup->sm_tk, 12)); 
             } else {
                 setup->sm_user_response = SM_USER_RESPONSE_PENDING;
                 sm_notify_client_base(SM_EVENT_PASSKEY_INPUT_NUMBER, sm_conn->sm_handle, sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address); 
@@ -1332,8 +1332,8 @@ static void sm_run(void){
                 swap128(setup->sm_peer_ltk, peer_ltk_flipped);
                 connection->sm_engine_state = SM_INITIATOR_PH0_W4_CONNECTION_ENCRYPTED;
                 log_info("sm: hci_le_start_encryption ediv 0x%04x", setup->sm_peer_ediv);
-                uint32_t rand_high = bit_endian_read_32(setup->sm_peer_rand, 0);
-                uint32_t rand_low  = bit_endian_read_32(setup->sm_peer_rand, 4);
+                uint32_t rand_high = big_endian_read_32(setup->sm_peer_rand, 0);
+                uint32_t rand_low  = big_endian_read_32(setup->sm_peer_rand, 4);
                 hci_send_cmd(&hci_le_start_encryption, connection->sm_handle,rand_low, rand_high, setup->sm_peer_ediv, peer_ltk_flipped);
                 return;
             }

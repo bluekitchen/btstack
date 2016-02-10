@@ -163,7 +163,7 @@ static void handle_ble_client_event(uint8_t packet_type, uint16_t channel, uint8
 			service.uuid16 = 0;
 			swap128(&packet[8], service.uuid128);
 			if (sdp_has_blueooth_base_uuid(service.uuid128)){
-				service.uuid16 = bit_endian_read_32(service.uuid128, 0);
+				service.uuid16 = big_endian_read_32(service.uuid128, 0);
 			}
 			services[result_index++] = service;
 			result_counter++;
@@ -174,7 +174,7 @@ static void handle_ble_client_event(uint8_t packet_type, uint16_t channel, uint8
 			service.uuid16 = 0;
 			swap128(&packet[10], service.uuid128);
 			if (sdp_has_blueooth_base_uuid(service.uuid128)){
-				service.uuid16 = bit_endian_read_32(service.uuid128, 0);
+				service.uuid16 = big_endian_read_32(service.uuid128, 0);
 			}
             included_services[result_index++] = service;
             result_counter++;
@@ -187,7 +187,7 @@ static void handle_ble_client_event(uint8_t packet_type, uint16_t channel, uint8
 			characteristic.uuid16 = 0;
 			swap128(&packet[12], characteristic.uuid128);
 			if (sdp_has_blueooth_base_uuid(characteristic.uuid128)){
-				characteristic.uuid16 = bit_endian_read_32(characteristic.uuid128, 0);
+				characteristic.uuid16 = big_endian_read_32(characteristic.uuid128, 0);
 			}
         	characteristics[result_index++] = characteristic;
         	result_counter++;
@@ -196,7 +196,7 @@ static void handle_ble_client_event(uint8_t packet_type, uint16_t channel, uint8
         	descriptor.handle = little_endian_read_16(packet, 4);
 			swap128(&packet[6], descriptor.uuid128);
 			if (sdp_has_blueooth_base_uuid(descriptor.uuid128)){
-				descriptor.uuid16 = bit_endian_read_32(descriptor.uuid128, 0);
+				descriptor.uuid16 = big_endian_read_32(descriptor.uuid128, 0);
 			}
         	descriptors[result_index++] = descriptor;
         	result_counter++;

@@ -49,6 +49,6 @@ void bt_store_32(uint8_t *buffer, uint16_t pos, uint32_t value);
 void net_store_16(uint8_t *buffer, uint16_t pos, uint16_t value);
 void net_store_32(uint8_t *buffer, uint16_t pos, uint32_t value);
 
-find . -type f -print0 | xargs -0 sed -i -e 's/READ_BT_16/little_endian_read_16/g' -e 's/READ_BT_24/little_endian_read_24/g' -e 's/READ_BT_32/little_endian_read_32/g' -e 's/READ_NET_16/big_endian_read_16/g' -e 's/READ_NET_32/bit_endian_read_32/g' -e 's/bt_store_16/little_endian_store_16/g' -e 's/bt_store_32/little_endian_store_32/g' -e 's/net_store_16/big_endian_store_16/g' -e 's/net_store_32/big_endian_store_32/g' 
+find . -type f -print0 | xargs -0 sed -i -e 's/READ_BT_16/little_endian_read_16/g' -e 's/READ_BT_24/little_endian_read_24/g' -e 's/READ_BT_32/little_endian_read_32/g' -e 's/READ_NET_16/big_endian_read_16/g' -e 's/READ_NET_32/big_endian_read_32/g' -e 's/bt_store_16/little_endian_store_16/g' -e 's/bt_store_32/little_endian_store_32/g' -e 's/net_store_16/big_endian_store_16/g' -e 's/net_store_32/big_endian_store_32/g' 
 
 
