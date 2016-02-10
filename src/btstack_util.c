@@ -205,9 +205,6 @@ char * uuid128_to_str(uint8_t * uuid){
            uuid[8], uuid[9], uuid[10], uuid[11], uuid[12], uuid[13], uuid[14], uuid[15]);
     return uuid128_to_str_buffer;
 }
-void printUUID128(uint8_t *uuid) {
-    printf("%s", uuid128_to_str(uuid));
-}
 
 static char bd_addr_to_str_buffer[6*3];  // 12:45:78:01:34:67\0
 char * bd_addr_to_str(bd_addr_t addr){

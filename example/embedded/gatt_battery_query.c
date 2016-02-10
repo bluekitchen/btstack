@@ -97,7 +97,7 @@ static void printUUID(uint8_t * uuid128, uint16_t uuid16){
     if (uuid16){
         printf("%04x",uuid16);
     } else {
-        printUUID128(uuid128);
+        printf("%s", uuid128_to_str(uuid128));
     }
 }
 

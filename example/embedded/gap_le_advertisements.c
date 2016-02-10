@@ -171,7 +171,7 @@ static void dump_advertisement_data(uint8_t * adv_data, uint8_t adv_size){
             case 0x06: // Incomplete List of 128-bit Service Class UUIDs
             case 0x07: // Complete List of 128-bit Service Class UUIDs
             case 0x15: // List of 128-bit Service Solicitation UUIDs
-                printUUID128(data);
+                printf("%s", uuid128_to_str(data));
                 break;
             case 0x08: // Shortened Local Name
             case 0x09: // Complete Local Name

@@ -139,12 +139,6 @@ void hexdumpf(const void *data, int size);
 char * uuid128_to_str(uint8_t * uuid);
 
 /**
- * @brief Print UUID128
- * @note uses fixed global buffer
- */
-void printUUID128(uint8_t *uuid);
-
-/**
  * @brief Create human readable represenationt of Bluetooth address
  * @note uses fixed global buffer
  * @return pointer to Bluetooth address string

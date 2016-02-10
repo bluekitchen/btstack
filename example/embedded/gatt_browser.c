@@ -136,7 +136,7 @@ static void printUUID(uint8_t * uuid128, uint16_t uuid16){
     if (uuid16){
         printf("%04x",uuid16);
     } else {
-        printUUID128(uuid128);
+        printf("%s", uuid128_to_str(uuid128));
     }
 }
 
@@ -279,18 +279,15 @@ void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *pa
             if (search_services){
                 // GATT_EVENT_QUERY_COMPLETE of search services 
                 service_index = 0;
-                printf("\nGATT browser - CHARACTERISTIC for SERVICE ");
-                printUUID128(service.uuid128); printf("\n");
+                printf("\nGATT browser - CHARACTERISTIC for SERVICE %s\n", uuid128_to_str(service.uuid128));
                 search_services = 0;
                 gatt_client_discover_characteristics_for_service(gc_id, gc_handle, &services[service_index]);
             } else {
                 // GATT_EVENT_QUERY_COMPLETE of search characteristics
                 if (service_index < service_count) {
                     service = services[service_index++];
-                    printf("\nGATT browser - CHARACTERISTIC for SERVICE ");
-                    printUUID128(service.uuid128);
-                    printf(", [0x%04x-0x%04x]\n", service.start_group_handle, service.end_group_handle);
-                    
+                    printf("\nGATT browser - CHARACTERISTIC for SERVICE %s, [0x%04x-0x%04x]\n",
+                        uuid128_to_str(service.uuid128), service.start_group_handle, service.end_group_handle);
                     gatt_client_discover_characteristics_for_service(gc_id, gc_handle, &service);
                     break;
                 }

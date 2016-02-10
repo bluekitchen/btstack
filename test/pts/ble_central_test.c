@@ -208,7 +208,7 @@ static void printUUID(uint8_t * uuid128, uint16_t uuid16){
     if (uuid16){
         printf("%04x",uuid16);
     } else {
-        printUUID128(uuid128);
+        printf("%s", uuid128_to_str(uuid128));
     }
 }
 
@@ -519,9 +519,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint8_t *packet, uint1
             if (sdp_has_blueooth_base_uuid(uuid128)){
                 printf("Characteristic descriptor at 0x%04x with UUID %04x\n", descriptor_handle, bit_endian_read_32(uuid128, 0));
             } else {
-                printf("Characteristic descriptor at 0x%04x with UUID ", descriptor_handle);
-                printUUID128(uuid128);
-                printf("\n");
+                printf("Characteristic descriptor at 0x%04x with UUID %s\n", descriptor_handle, uuid128_to_str(uuid128));
             }
             break;
         }
@@ -1219,15 +1217,11 @@ static int ui_process_uuid128_request(char buffer){
         printf("\n");
         switch (central_state){
             case CENTRAL_W4_PRIMARY_SERVICES:
-                printf("Discover Primary Services with UUID128 ");
-                printUUID128(ui_uuid128);
-                printf("\n");
+                printf("Discover Primary Services with UUID128 %s\n", uuid128_to_str(ui_uuid128));
                 gatt_client_discover_primary_services_by_uuid128(gc_id, handle, ui_uuid128);
                 return 0;
             case CENTRAL_W4_READ_CHARACTERISTIC_VALUE_BY_UUID:
-                printf("Read Characteristic Value with UUID128 ");
-                printUUID128(ui_uuid128);
-                printf("\n");
+                printf("Read Characteristic Value with UUID128 %s\n", uuid128_to_str(ui_uuid128));
                 gatt_client_read_value_of_characteristics_by_uuid128(gc_id, handle, 0x0001, 0xffff, ui_uuid128);
                 return 0;
             default:
