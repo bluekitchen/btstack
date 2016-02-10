@@ -118,13 +118,6 @@ char char_for_nibble(int nibble);
  */
 #define BD_ADDR_COPY(dest,src) memcpy(dest,src,BD_ADDR_LEN)
 
-/**
- * CRC8 functions using ETSI TS 101 369 V6.3.0.
- * Only needed by RFCOMM
- */
-uint8_t crc8_check(uint8_t *data, uint16_t len, uint8_t check_sum);
-uint8_t crc8_calc(uint8_t *data, uint16_t len);
-
 
 // @deprecated please use more convenient bd_addr_to_str
 void print_bd_addr( bd_addr_t addr);
