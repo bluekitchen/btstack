@@ -52,42 +52,11 @@ extern "C" {
 #endif
 
 #include <stdint.h>
+#include "bluetooth.h"
+#include "btstack_defines.h"
 #include "btstack_linked_list.h"
-
-/**
- * @brief hci connection handle type
- */
-typedef uint16_t hci_con_handle_t;
-
-/**
- * @brief Length of a bluetooth device address.
- */
-#define BD_ADDR_LEN 6
-typedef uint8_t bd_addr_t[BD_ADDR_LEN];
-
-/**
- * @brief link key and its type
- */
-#define LINK_KEY_LEN 16
-#define LINK_KEY_STR_LEN (LINK_KEY_LEN*2)
-typedef uint8_t link_key_t[LINK_KEY_LEN]; 
-
-typedef enum {
-	COMBINATION_KEY = 0,	// standard pairing
-	LOCAL_UNIT_KEY,			// ?
-	REMOTE_UNIT_KEY,		// ?
-	DEBUG_COMBINATION_KEY,	// SSP with debug
-	UNAUTHENTICATED_COMBINATION_KEY_GENERATED_FROM_P192, // SSP Simple Pairing
-	AUTHENTICATED_COMBINATION_KEY_GENERATED_FROM_P192,	 // SSP Passkey, Number confirm, OOB
-	CHANGED_COMBINATION_KEY,							 // Link key changed using Change Connection Lnk Key
-	UNAUTHENTICATED_COMBINATION_KEY_GENERATED_FROM_P256, // SSP Simpe Pairing
-	AUTHENTICATED_COMBINATION_KEY_GENERATED_FROM_P256,   // SSP Passkey, Number confirm, OOB
-} link_key_type_t;
-
-/**
- * @brief 128 bit key used with AES128 in Security Manager
- */
-typedef uint8_t sm_key_t[16];
+	
+// will be moved to daemon/btstack_device_name_db.h
 
 /**
  * @brief The device name type
@@ -95,16 +64,7 @@ typedef uint8_t sm_key_t[16];
 #define DEVICE_NAME_LEN 248
 typedef uint8_t device_name_t[DEVICE_NAME_LEN+1]; 
 	
-// packet handler
-typedef void (*btstack_packet_handler_t) (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
-// packet callback supporting multiple registrations
-typedef struct {
-    btstack_linked_item_t    item;
-    btstack_packet_handler_t callback;
-} btstack_packet_callback_registration_t;
-
-	
 // helper for BT little endian format
 #define little_endian_read_16( buffer, pos) ( ((uint16_t) buffer[pos]) | (((uint16_t)buffer[(pos)+1]) << 8))
 #define little_endian_read_24( buffer, pos) ( ((uint32_t) buffer[pos]) | (((uint32_t)buffer[(pos)+1]) << 8) | (((uint32_t)buffer[(pos)+2]) << 16))

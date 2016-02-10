@@ -43,17 +43,24 @@
 #ifndef __BTSTACK_DEFINES_H
 #define __BTSTACK_DEFINES_H
 
+#include <stdint.h>
+#include "btstack_linked_list.h" 
+
+// TYPES
+
+// packet handler
+typedef void (*btstack_packet_handler_t) (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+
+// packet callback supporting multiple registrations
+typedef struct {
+    btstack_linked_item_t    item;
+    btstack_packet_handler_t callback;
+} btstack_packet_callback_registration_t;
+
 /**
- * Address types
- * @note: BTstack uses a custom addr type to refer to classic ACL and SCO devices
+ * @brief 128 bit key used with AES128 in Security Manager
  */
- typedef enum {
-    BD_ADDR_TYPE_LE_PUBLIC = 0,
-    BD_ADDR_TYPE_LE_RANDOM = 1,
-    BD_ADDR_TYPE_SCO       = 0xfe,
-    BD_ADDR_TYPE_CLASSIC   = 0xff,
-    BD_ADDR_TYPE_UNKNOWN   = 0xfe
- } bd_addr_type_t;
+typedef uint8_t sm_key_t[16];
 
 // DEFINES
 

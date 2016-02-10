@@ -42,8 +42,7 @@
 #ifndef __BTSTACK_LINK_KEY_DB_H
 #define __BTSTACK_LINK_KEY_DB_H
 
-#include "btstack_util.h"
-#include "gap.h"
+#include "bluetooth.h"
 
 #if defined __cplusplus
 extern "C" {

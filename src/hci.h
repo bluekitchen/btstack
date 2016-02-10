@@ -53,6 +53,7 @@
 #include "btstack_util.h"
 #include "classic/btstack_link_key_db.h"
 #include "hci_cmd.h"
+#include "gap.h"
 #include "hci_transport.h"
 
 #include <stdint.h>

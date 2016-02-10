@@ -38,16 +38,14 @@
 #ifndef __SM_H
 #define __SM_H
 
-#include <stdint.h>
-#include "btstack_util.h"
-
-#if defined __cplusplus
+ #if defined __cplusplus
 extern "C" {
 #endif
 
-// PTS testing
-void sm_test_set_irk(sm_key_t irk);
-void sm_test_use_fixed_local_csrk(void);
+#include <stdint.h>
+#include "btstack_util.h"
+#include "btstack_defines.h"
+#include "hci.h"
 
 typedef struct {
     btstack_linked_item_t  item;
@@ -203,6 +201,10 @@ int sm_address_resolution_lookup(uint8_t addr_type, bd_addr_t addr);
  */
 int sm_le_device_index(uint16_t handle );
 /* API_END */
+
+// PTS testing
+void sm_test_set_irk(sm_key_t irk);
+void sm_test_use_fixed_local_csrk(void);
 
 #if defined __cplusplus
 }

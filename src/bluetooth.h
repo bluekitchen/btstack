@@ -47,6 +47,55 @@
 #include <stdint.h>
 
 /**
+ * @brief hci connection handle type
+ */
+typedef uint16_t hci_con_handle_t;
+
+/**
+ * @brief Length of a bluetooth device address.
+ */
+#define BD_ADDR_LEN 6
+
+/**
+ * @brief Bluetooth address
+ */
+typedef uint8_t bd_addr_t[BD_ADDR_LEN];
+
+/**
+ * Address types
+ * @note: BTstack uses a custom addr type to refer to classic ACL and SCO devices
+ */
+ typedef enum {
+    BD_ADDR_TYPE_LE_PUBLIC = 0,
+    BD_ADDR_TYPE_LE_RANDOM = 1,
+    BD_ADDR_TYPE_SCO       = 0xfe,
+    BD_ADDR_TYPE_CLASSIC   = 0xff,
+    BD_ADDR_TYPE_UNKNOWN   = 0xfe
+} bd_addr_type_t;
+
+/**
+ * @brief link key
+ */
+#define LINK_KEY_LEN 16
+#define LINK_KEY_STR_LEN (LINK_KEY_LEN*2)
+typedef uint8_t link_key_t[LINK_KEY_LEN]; 
+
+/**
+ * @brief link key type
+ */
+typedef enum {
+  COMBINATION_KEY = 0,  // standard pairing
+  LOCAL_UNIT_KEY,     // ?
+  REMOTE_UNIT_KEY,    // ?
+  DEBUG_COMBINATION_KEY,  // SSP with debug
+  UNAUTHENTICATED_COMBINATION_KEY_GENERATED_FROM_P192, // SSP Simple Pairing
+  AUTHENTICATED_COMBINATION_KEY_GENERATED_FROM_P192,   // SSP Passkey, Number confirm, OOB
+  CHANGED_COMBINATION_KEY,               // Link key changed using Change Connection Lnk Key
+  UNAUTHENTICATED_COMBINATION_KEY_GENERATED_FROM_P256, // SSP Simpe Pairing
+  AUTHENTICATED_COMBINATION_KEY_GENERATED_FROM_P256,   // SSP Passkey, Number confirm, OOB
+} link_key_type_t;
+
+/**
  * HCI Transport 
  */
 
