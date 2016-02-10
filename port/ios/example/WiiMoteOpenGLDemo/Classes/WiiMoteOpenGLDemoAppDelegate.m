@@ -168,7 +168,7 @@ static float addToHistory(int history[histSize], int value){
 
 				case HCI_EVENT_PIN_CODE_REQUEST:
 					bt_flip_addr(event_addr, &packet[2]);
-					if (BD_ADDR_CMP([device address], event_addr)) break;
+					if (bd_addr_cmp([device address], event_addr)) break;
                     
 					// inform about pin code request
 					NSLog(@"HCI_EVENT_PIN_CODE_REQUEST\n");

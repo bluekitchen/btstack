@@ -39,9 +39,9 @@ TEST_GROUP(RemoteDeviceDB){
         bd_addr_t addr_1 = {0x00, 0x01, 0x02, 0x03, 0x04, 0x01 };
         bd_addr_t addr_2 = {0x00, 0x01, 0x02, 0x03, 0x04, 0x02 };
         bd_addr_t addr_3 = {0x00, 0x01, 0x02, 0x03, 0x04, 0x03 };
-        BD_ADDR_COPY(addr1, addr_1); 
-        BD_ADDR_COPY(addr2, addr_2); 
-        BD_ADDR_COPY(addr3, addr_3); 
+        bd_addr_copy(addr1, addr_1); 
+        bd_addr_copy(addr2, addr_2); 
+        bd_addr_copy(addr3, addr_3); 
        
         link_key_type = (link_key_type_t)4;
         sprintf((char*)link_key, "%d", 100);

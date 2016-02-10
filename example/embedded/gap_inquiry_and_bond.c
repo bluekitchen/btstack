@@ -83,7 +83,7 @@ static btstack_packet_callback_registration_t hci_event_callback_registration;
 static int getDeviceIndexForAddress( bd_addr_t addr){
     int j;
     for (j=0; j< deviceCount; j++){
-        if (BD_ADDR_CMP(addr, devices[j].address) == 0){
+        if (bd_addr_cmp(addr, devices[j].address) == 0){
             return j;
         }
     }

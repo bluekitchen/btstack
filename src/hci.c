@@ -111,7 +111,7 @@ static hci_connection_t * create_connection_for_bd_addr_and_type(bd_addr_t addr,
     hci_connection_t * conn = btstack_memory_hci_connection_get();
     if (!conn) return NULL;
     memset(conn, 0, sizeof(hci_connection_t));
-    BD_ADDR_COPY(conn->address, addr);
+    bd_addr_copy(conn->address, addr);
     conn->address_type = addr_type;
     conn->con_handle = 0xffff;
     conn->authentication_flags = AUTH_FLAGS_NONE;
@@ -1457,7 +1457,7 @@ static void event_handler(uint8_t *packet, int size){
             if (!conn) {
                 // CONNECTION REJECTED DUE TO LIMITED RESOURCES (0X0D)
                 hci_stack->decline_reason = 0x0d;
-                BD_ADDR_COPY(hci_stack->decline_addr, addr);
+                bd_addr_copy(hci_stack->decline_addr, addr);
                 break;
             }
             conn->role  = HCI_ROLE_SLAVE;

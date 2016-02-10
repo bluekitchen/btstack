@@ -59,7 +59,7 @@ static btstack_link_key_db_memory_t * get_item(btstack_linked_list_t list, bd_ad
     btstack_linked_item_t *it;
     for (it = (btstack_linked_item_t *) list; it ; it = it->next){
         btstack_link_key_db_memory_t * item = (btstack_link_key_db_memory_t *) it;
-        if (BD_ADDR_CMP(item->bd_addr, bd_addr) == 0) {
+        if (bd_addr_cmp(item->bd_addr, bd_addr) == 0) {
             return item;
         }
     }

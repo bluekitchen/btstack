@@ -250,7 +250,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 -(BTDevice*) deviceForAddress:(bd_addr_t) address{
 	for (BTDevice *device in discoveredDevices){
 		// NSLog(@"compare %@ to %@", [BTDevice stringForAddress:address], [device addressString]); 
-		if ( BD_ADDR_CMP(address, [device address]) == 0){
+		if ( bd_addr_cmp(address, [device address]) == 0){
 			return device;
 		}
 	}
@@ -555,7 +555,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 	// ...f (state 
 	// store params
 	connType = 0;
-	BD_ADDR_COPY(&connAddr, address);
+	bd_addr_copy(&connAddr, address);
 	connPSM = psm;
 	connAuth = authentication;
 #endif
@@ -576,7 +576,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 #if 0
 	// store params
 	connType = 1;
-	BD_ADDR_COPY(&connAddr, address);
+	bd_addr_copy(&connAddr, address);
 	connChan = channel;
 	connAuth = authentication;
 #endif

@@ -253,7 +253,7 @@ static rfcomm_multiplexer_t * rfcomm_multiplexer_create_for_addr(bd_addr_t addr)
     
     // fill in 
     rfcomm_multiplexer_initialize(multiplexer);
-    BD_ADDR_COPY(&multiplexer->remote_addr, addr);
+    bd_addr_copy(&multiplexer->remote_addr, addr);
 
     // add to services list
     btstack_linked_list_add(&rfcomm_multiplexers, (btstack_linked_item_t *) multiplexer);
@@ -265,7 +265,7 @@ static rfcomm_multiplexer_t * rfcomm_multiplexer_for_addr(bd_addr_t addr){
     btstack_linked_item_t *it;
     for (it = (btstack_linked_item_t *) rfcomm_multiplexers; it ; it = it->next){
         rfcomm_multiplexer_t * multiplexer = ((rfcomm_multiplexer_t *) it);
-        if (BD_ADDR_CMP(addr, multiplexer->remote_addr) == 0) {
+        if (bd_addr_cmp(addr, multiplexer->remote_addr) == 0) {
             return multiplexer;
         };
     }
@@ -877,7 +877,7 @@ static int rfcomm_multiplexer_hci_event_handler(uint8_t *packet, uint16_t size){
             if (multiplexer->state == RFCOMM_MULTIPLEXER_W4_CONNECT) {
                 log_info("L2CAP_EVENT_CHANNEL_OPENED: outgoing connection");
                 // wrong remote addr
-                if (BD_ADDR_CMP(event_addr, multiplexer->remote_addr)) break;
+                if (bd_addr_cmp(event_addr, multiplexer->remote_addr)) break;
                 multiplexer->l2cap_cid = l2cap_cid;
                 multiplexer->con_handle = con_handle;
                 // send SABM #0

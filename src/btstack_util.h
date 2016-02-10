@@ -109,14 +109,14 @@ char char_for_nibble(int nibble);
  * @param b
  * @return true if equal
  */
-#define BD_ADDR_CMP(a,b) memcmp(a,b, BD_ADDR_LEN)
+#define bd_addr_cmp(a,b) memcmp(a,b, BD_ADDR_LEN)
 
 /**
  * @brief Copy Bluetooth address
  * @param dest
  * @param src
  */
-#define BD_ADDR_COPY(dest,src) memcpy(dest,src,BD_ADDR_LEN)
+#define bd_addr_copy(dest,src) memcpy(dest,src,BD_ADDR_LEN)
 
 /**
  * @brief Use printf to write hexdump as single line of data

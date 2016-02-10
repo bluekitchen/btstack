@@ -338,7 +338,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 	uint8_t j;
 	for (j=0; j<[devices count]; j++){
 		BTDevice *dev = [devices objectAtIndex:j];
-		if (BD_ADDR_CMP(addr, [dev address]) == 0){
+		if (bd_addr_cmp(addr, [dev address]) == 0){
 			return dev;
 		}
 	}

@@ -142,13 +142,13 @@ static uint16_t setup_ethernet_header(int src_compressed, int dst_compressed, in
     int pos = 0;
     // destination
     if (broadcast){
-        BD_ADDR_COPY(&network_buffer[pos], broadcast_addr);
+        bd_addr_copy(&network_buffer[pos], broadcast_addr);
     } else {
-        BD_ADDR_COPY(&network_buffer[pos], dst_compressed ? pts_addr : other_addr);
+        bd_addr_copy(&network_buffer[pos], dst_compressed ? pts_addr : other_addr);
     }
     pos += 6;
     // source
-    BD_ADDR_COPY(&network_buffer[pos], src_compressed ? local_addr   : other_addr);
+    bd_addr_copy(&network_buffer[pos], src_compressed ? local_addr   : other_addr);
     pos += 6;
     big_endian_store_16(network_buffer, pos, network_protocol_type);
     pos += 2;
@@ -214,11 +214,11 @@ static void send_arp_probe_ipv4(void){
     network_buffer[pos++] = 4; // Protocol length (PLEN) - 4 IPv4 Address
     big_endian_store_16(network_buffer, pos, ARP_OPERATION_REQUEST); 
     pos += 2;
-    BD_ADDR_COPY(&network_buffer[pos], local_addr); // Sender Hardware Address (SHA)
+    bd_addr_copy(&network_buffer[pos], local_addr); // Sender Hardware Address (SHA)
     pos += 6;
     bzero(&network_buffer[pos], 4);                 // Sender Protocol Adress (SPA)
     pos += 4;
-    BD_ADDR_COPY(&network_buffer[pos], other_addr); // Target Hardware Address (THA) (ignored for requests)
+    bd_addr_copy(&network_buffer[pos], other_addr); // Target Hardware Address (THA) (ignored for requests)
     pos += 6;
     memcpy(&network_buffer[pos], requested_address, 4);
     pos += 4;

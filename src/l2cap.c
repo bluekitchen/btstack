@@ -798,7 +798,7 @@ uint8_t l2cap_create_channel(btstack_packet_handler_t channel_packet_handler, bd
     }
         
     // fill in 
-    BD_ADDR_COPY(chan->address, address);
+    bd_addr_copy(chan->address, address);
     chan->psm = psm;
     chan->handle = 0;
     chan->packet_handler = channel_packet_handler;
@@ -854,7 +854,7 @@ static void l2cap_handle_connection_failed_for_addr(bd_addr_t address, uint8_t s
     btstack_linked_list_iterator_init(&it, &l2cap_channels);
     while (btstack_linked_list_iterator_has_next(&it)){
         l2cap_channel_t * channel = (l2cap_channel_t *) btstack_linked_list_iterator_next(&it);
-        if ( BD_ADDR_CMP( channel->address, address) != 0) continue;
+        if ( bd_addr_cmp( channel->address, address) != 0) continue;
         // channel for this address found
         switch (channel->state){
             case L2CAP_STATE_WAIT_CONNECTION_COMPLETE:
@@ -877,7 +877,7 @@ static void l2cap_handle_connection_success_for_addr(bd_addr_t address, hci_con_
     btstack_linked_list_iterator_init(&it, &l2cap_channels);
     while (btstack_linked_list_iterator_has_next(&it)){
         l2cap_channel_t * channel = (l2cap_channel_t *) btstack_linked_list_iterator_next(&it);
-        if ( ! BD_ADDR_CMP( channel->address, address) ){
+        if ( ! bd_addr_cmp( channel->address, address) ){
             l2cap_handle_connection_complete(handle, channel);
         }
     }
@@ -1091,7 +1091,7 @@ static void l2cap_handle_connection_request(hci_con_handle_t handle, uint8_t sig
     // Init memory (make valgrind happy)
     memset(channel, 0, sizeof(l2cap_channel_t));
     // fill in 
-    BD_ADDR_COPY(channel->address, hci_connection->address);
+    bd_addr_copy(channel->address, hci_connection->address);
     channel->psm = psm;
     channel->handle = handle;
     channel->packet_handler = service->packet_handler;

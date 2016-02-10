@@ -55,7 +55,7 @@
 }
 
 - (void) setAddress:(bd_addr_t)newAddr{
-	BD_ADDR_COPY(_address, newAddr);
+	bd_addr_copy(_address, newAddr);
 }
 
 - (BOOL) setAddressFromString:(NSString *) addressString{
