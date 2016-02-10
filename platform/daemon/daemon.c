@@ -123,6 +123,10 @@ const btstack_link_key_db_t * btstack_link_key_db_fs_instance(void);
 // ATT_MTU - 1
 #define ATT_MAX_ATTRIBUTE_SIZE 22
 
+// HCI CMD OGF/OCF
+#define READ_CMD_OGF(buffer) (buffer[1] >> 2)
+#define READ_CMD_OCF(buffer) ((buffer[1] & 0x03) << 8 | buffer[0])
+
 typedef struct {
     // linked list - assert: first field
     btstack_linked_item_t    item;

@@ -120,6 +120,37 @@ void printf_hexdump(const void *data, int size){
     printf("\n");
 }
 
+void hexdumpf(const void *data, int size){
+    char buffer[6*16+1];
+    int i, j;
+
+    uint8_t low = 0x0F;
+    uint8_t high = 0xF0;
+    j = 0;
+    for (i=0; i<size;i++){
+        uint8_t byte = ((uint8_t *)data)[i];
+        buffer[j++] = '0';
+        buffer[j++] = 'x';
+        buffer[j++] = char_for_nibble((byte & high) >> 4);
+        buffer[j++] = char_for_nibble(byte & low);
+        buffer[j++] = ',';
+        buffer[j++] = ' ';     
+        if (j >= 6*16 ){
+            buffer[j] = 0;
+            printf("%s\n", buffer);
+            j = 0;
+        }
+    }
+    if (j != 0){
+        buffer[j] = 0;
+        printf("%s\n", buffer);
+    }
+}
+
+//  void log_info_hexdump(..){
+//  
+//  }
+
 void hexdump(const void *data, int size){
 #ifdef ENABLE_LOG_INFO
     char buffer[6*16+1];
@@ -147,33 +178,6 @@ void hexdump(const void *data, int size){
         log_info("%s", buffer);
     }
 #endif
-}
-
-void hexdumpf(const void *data, int size){
-    char buffer[6*16+1];
-    int i, j;
-
-    uint8_t low = 0x0F;
-    uint8_t high = 0xF0;
-    j = 0;
-    for (i=0; i<size;i++){
-        uint8_t byte = ((uint8_t *)data)[i];
-        buffer[j++] = '0';
-        buffer[j++] = 'x';
-        buffer[j++] = char_for_nibble((byte & high) >> 4);
-        buffer[j++] = char_for_nibble(byte & low);
-        buffer[j++] = ',';
-        buffer[j++] = ' ';     
-        if (j >= 6*16 ){
-            buffer[j] = 0;
-            printf("%s\n", buffer);
-            j = 0;
-        }
-    }
-    if (j != 0){
-        buffer[j] = 0;
-        printf("%s\n", buffer);
-    }
 }
 
 void log_key(const char * name, sm_key_t key){
@@ -221,24 +225,6 @@ char * bd_addr_to_str(bd_addr_t addr){
     return (char *) bd_addr_to_str_buffer;
 }
 
-static char link_key_to_str_buffer[LINK_KEY_STR_LEN+1];  // 11223344556677889900112233445566\0
-char *link_key_to_str(link_key_t link_key){
-    char * p = link_key_to_str_buffer;
-    int i;
-    for (i = 0; i < LINK_KEY_LEN ; i++) {
-        *p++ = char_for_nibble((link_key[i] >> 4) & 0x0F);
-        *p++ = char_for_nibble((link_key[i] >> 0) & 0x0F);
-    }
-    *p = 0;
-    return (char *) link_key_to_str_buffer;
-}
-
-static char link_key_type_to_str_buffer[2];
-char *link_key_type_to_str(link_key_type_t link_key){
-    snprintf(link_key_type_to_str_buffer, sizeof(link_key_type_to_str_buffer), "%d", link_key);
-    return (char *) link_key_type_to_str_buffer;
-}
-
 void print_bd_addr( bd_addr_t addr){
     log_info("%s", bd_addr_to_str(addr));
 }
@@ -262,42 +248,6 @@ int sscan_bd_addr(uint8_t * addr_string, bd_addr_t addr){
 	return 1;
 }
 
-int sscan_link_key(char * addr_string, link_key_t link_key){
-    unsigned int buffer[LINK_KEY_LEN];
-
-    // reset result buffer
-    memset(&buffer, 0, sizeof(buffer));
-
-    // parse
-    int result = sscanf( (char *) addr_string, "%2x%2x%2x%2x%2x%2x%2x%2x%2x%2x%2x%2x%2x%2x%2x%2x",
-                                    &buffer[0], &buffer[1], &buffer[2], &buffer[3],
-                                    &buffer[4], &buffer[5], &buffer[6], &buffer[7],
-                                    &buffer[8], &buffer[9], &buffer[10], &buffer[11],
-                                    &buffer[12], &buffer[13], &buffer[14], &buffer[15] );
-
-    if (result != LINK_KEY_LEN) return 0;
-
-    // store
-    int i;
-    uint8_t *p = (uint8_t *) link_key;
-    for (i=0; i<LINK_KEY_LEN; i++ ) {
-        *p++ = (uint8_t) buffer[i];
-    }
-    return 1;
-}
-
-
-// treat standard pairing as Authenticated as it uses a PIN
-int is_authenticated_link_key(link_key_type_t link_key_type){
-    switch (link_key_type){
-        case COMBINATION_KEY:
-        case AUTHENTICATED_COMBINATION_KEY_GENERATED_FROM_P192:
-        case AUTHENTICATED_COMBINATION_KEY_GENERATED_FROM_P256:
-            return 1;
-        default:
-            return 0;
-    }
-}
 
 /*  
  * CRC (reversed crc) lookup table as calculated by the table generator in ETSI TS 101 369 V6.3.0.

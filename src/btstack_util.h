@@ -65,38 +65,17 @@ extern "C" {
 typedef uint8_t device_name_t[DEVICE_NAME_LEN+1]; 
 	
 
-// helper for BT little endian format
+// helper for little endian format
 #define little_endian_read_16( buffer, pos) ( ((uint16_t) buffer[pos]) | (((uint16_t)buffer[(pos)+1]) << 8))
 #define little_endian_read_24( buffer, pos) ( ((uint32_t) buffer[pos]) | (((uint32_t)buffer[(pos)+1]) << 8) | (((uint32_t)buffer[(pos)+2]) << 16))
 #define little_endian_read_32( buffer, pos) ( ((uint32_t) buffer[pos]) | (((uint32_t)buffer[(pos)+1]) << 8) | (((uint32_t)buffer[(pos)+2]) << 16) | (((uint32_t) buffer[(pos)+3])) << 24)
 
-// helper for SDP big endian format
-#define big_endian_read_16( buffer, pos) ( ((uint16_t) buffer[(pos)+1]) | (((uint16_t)buffer[ pos   ]) << 8))
-#define bit_endian_read_32( buffer, pos) ( ((uint32_t) buffer[(pos)+3]) | (((uint32_t)buffer[(pos)+2]) << 8) | (((uint32_t)buffer[(pos)+1]) << 16) | (((uint32_t) buffer[pos])) << 24)
-
-// HCI CMD OGF/OCF
-#define READ_CMD_OGF(buffer) (buffer[1] >> 2)
-#define READ_CMD_OCF(buffer) ((buffer[1] & 0x03) << 8 | buffer[0])
-
-// check if command complete event for given command
-#define COMMAND_COMPLETE_EVENT(event,cmd) ( event[0] == HCI_EVENT_COMMAND_COMPLETE && little_endian_read_16(event,3) == cmd.opcode)
-#define COMMAND_STATUS_EVENT(event,cmd) ( event[0] == HCI_EVENT_COMMAND_STATUS && little_endian_read_16(event,4) == cmd.opcode)
-
-// Code+Len=2, Pkts+Opcode=3; total=5
-#define OFFSET_OF_DATA_IN_COMMAND_COMPLETE 5
-
-// ACL Packet
-#define READ_ACL_CONNECTION_HANDLE( buffer ) ( little_endian_read_16(buffer,0) & 0x0fff)
-#define READ_ACL_FLAGS( buffer )      ( buffer[1] >> 4 )
-#define READ_ACL_LENGTH( buffer )     (little_endian_read_16(buffer, 2))
-
-// L2CAP Packet
-#define READ_L2CAP_LENGTH(buffer)     ( little_endian_read_16(buffer, 4))
-#define READ_L2CAP_CHANNEL_ID(buffer) ( little_endian_read_16(buffer, 6))
-
 void little_endian_store_16(uint8_t *buffer, uint16_t pos, uint16_t value);
 void little_endian_store_32(uint8_t *buffer, uint16_t pos, uint32_t value);
-void bt_flip_addr(bd_addr_t dest, bd_addr_t src);
+
+// helper for big endian format
+#define big_endian_read_16( buffer, pos) ( ((uint16_t) buffer[(pos)+1]) | (((uint16_t)buffer[ pos   ]) << 8))
+#define bit_endian_read_32( buffer, pos) ( ((uint32_t) buffer[(pos)+3]) | (((uint32_t)buffer[(pos)+2]) << 8) | (((uint32_t)buffer[(pos)+1]) << 16) | (((uint32_t) buffer[pos])) << 24)
 
 void big_endian_store_16(uint8_t *buffer, uint16_t pos, uint16_t value);
 void big_endian_store_32(uint8_t *buffer, uint16_t pos, uint32_t value);
@@ -106,6 +85,9 @@ void big_endian_store_32(uint8_t *buffer, uint16_t pos, uint32_t value);
 #undef swap64
 #endif
 
+/**
+ * @brief Copy from source to destination and reverse byte order
+ */
 void swapX  (const uint8_t *src, uint8_t * dst, int len);
 void swap24 (const uint8_t *src, uint8_t * dst);
 void swap48 (const uint8_t *src, uint8_t * dst);
@@ -113,35 +95,84 @@ void swap56 (const uint8_t *src, uint8_t * dst);
 void swap64 (const uint8_t *src, uint8_t * dst);
 void swap128(const uint8_t *src, uint8_t * dst);
 
+void bt_flip_addr(bd_addr_t dest, bd_addr_t src);
+
+/** 
+ * @brief 4-bit nibble
+ * @return ASCII character for 4-bit nibble
+ */
 char char_for_nibble(int nibble);
 
-void printf_hexdump(const void *data, int size);
-void hexdump(const void *data, int size);
-void hexdumpf(const void *data, int size);
-char * uuid128_to_str(uint8_t * uuid);
-void printUUID128(uint8_t *uuid);
-void log_key(const char * name, sm_key_t key);
+/**
+ * @brief Compare two Bluetooth addresses
+ * @param a
+ * @param b
+ * @return true if equal
+ */
+#define BD_ADDR_CMP(a,b) memcmp(a,b, BD_ADDR_LEN)
+
+/**
+ * @brief Copy Bluetooth address
+ * @param dest
+ * @param src
+ */
+#define BD_ADDR_COPY(dest,src) memcpy(dest,src,BD_ADDR_LEN)
+
+/**
+ * CRC8 functions using ETSI TS 101 369 V6.3.0.
+ * Only needed by RFCOMM
+ */
+uint8_t crc8_check(uint8_t *data, uint16_t len, uint8_t check_sum);
+uint8_t crc8_calc(uint8_t *data, uint16_t len);
+
 
 // @deprecated please use more convenient bd_addr_to_str
 void print_bd_addr( bd_addr_t addr);
 
+/**
+ * @brief Use printf to write hexdump as single line of data
+ */
+void printf_hexdump(const void *data, int size);
+
+// move to btstack_debug.h
+// void log_info_hexdump(..) either log or hci_dump or off
+void log_key(const char * name, sm_key_t key);
+
+//
+void hexdump(const void *data, int size);
+void hexdumpf(const void *data, int size);
+
+/**
+ * @brief Create human readable representation for UUID128
+ * @note uses fixed global buffer
+ * @return pointer to UUID128 string
+ */
+char * uuid128_to_str(uint8_t * uuid);
+
+/**
+ * @brief Print UUID128
+ * @note uses fixed global buffer
+ */
+void printUUID128(uint8_t *uuid);
+
+/**
+ * @brief Create human readable represenationt of Bluetooth address
+ * @note uses fixed global buffer
+ * @return pointer to Bluetooth address string
+ */
 char * bd_addr_to_str(bd_addr_t addr);
-char * link_key_to_str(link_key_t link_key);
-char *link_key_type_to_str(link_key_type_t link_key);
+
+/** 
+ * @brief Parse Bluetooth address
+ * @param address_string
+ * @param buffer for parsed address
+ * @return 1 if string was parsed successfully
+ */
+int sscan_bd_addr(uint8_t * addr_string, bd_addr_t addr);
+
 
 void sdp_normalize_uuid(uint8_t *uuid, uint32_t shortUUID);
 int  sdp_has_blueooth_base_uuid(uint8_t * uuid128);
-
-int sscan_bd_addr(uint8_t * addr_string, bd_addr_t addr);
-int sscan_link_key(char * addr_string, link_key_t link_key);
-
-uint8_t crc8_check(uint8_t *data, uint16_t len, uint8_t check_sum);
-uint8_t crc8_calc(uint8_t *data, uint16_t len);
-
-#define BD_ADDR_CMP(a,b) memcmp(a,b, BD_ADDR_LEN)
-#define BD_ADDR_COPY(dest,src) memcpy(dest,src,BD_ADDR_LEN)
-
-int is_authenticated_link_key(link_key_type_t link_key_type);
 
 #if defined __cplusplus
 }

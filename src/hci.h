@@ -102,6 +102,22 @@ extern "C" {
 // 
 #define IS_COMMAND(packet, command) (little_endian_read_16(packet,0) == command.opcode)
 
+// check if command complete event for given command
+#define COMMAND_COMPLETE_EVENT(event,cmd) ( event[0] == HCI_EVENT_COMMAND_COMPLETE && little_endian_read_16(event,3) == cmd.opcode)
+#define COMMAND_STATUS_EVENT(event,cmd) ( event[0] == HCI_EVENT_COMMAND_STATUS && little_endian_read_16(event,4) == cmd.opcode)
+
+// Code+Len=2, Pkts+Opcode=3; total=5
+#define OFFSET_OF_DATA_IN_COMMAND_COMPLETE 5
+
+// ACL Packet
+#define READ_ACL_CONNECTION_HANDLE( buffer ) ( little_endian_read_16(buffer,0) & 0x0fff)
+#define READ_ACL_FLAGS( buffer )      ( buffer[1] >> 4 )
+#define READ_ACL_LENGTH( buffer )     (little_endian_read_16(buffer, 2))
+
+// Sneak peak into L2CAP Packet
+#define READ_L2CAP_LENGTH(buffer)     ( little_endian_read_16(buffer, 4))
+#define READ_L2CAP_CHANNEL_ID(buffer) ( little_endian_read_16(buffer, 6))
+
 /**
  * LE connection parameter update state
  */ 
