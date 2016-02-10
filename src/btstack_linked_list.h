@@ -48,7 +48,6 @@ extern "C" {
 	
 typedef struct btstack_linked_item {
     struct btstack_linked_item *next; // <-- next element in list, or NULL
-    void *user_data;          // <-- pointer to struct base
 } btstack_linked_item_t;
 
 typedef btstack_linked_item_t * btstack_linked_list_t;
