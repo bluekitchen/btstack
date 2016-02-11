@@ -166,20 +166,6 @@ uint16_t hci_cmd_create_from_template(uint8_t *hci_cmd_buffer, const hci_cmd_t *
 }
 
 /**
- * construct HCI Command based on template
- *
- * mainly calls hci_cmd_create_from_template
- */
-uint16_t hci_create_cmd(uint8_t *hci_cmd_buffer, hci_cmd_t *cmd, ...){
-    va_list argptr;
-    va_start(argptr, cmd);
-    uint16_t len = hci_cmd_create_from_template(hci_cmd_buffer, cmd, argptr);
-    va_end(argptr);
-    return len;
-}
-
-
-/**
  *  Link Control Commands 
  */
 

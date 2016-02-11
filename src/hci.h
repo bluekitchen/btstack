@@ -656,89 +656,35 @@ typedef struct {
 
 } hci_stack_t;
 
-/**
- * set connection iterator
- */
-void hci_connections_get_iterator(btstack_linked_list_iterator_t *it);
-
-// create and send hci command packets based on a template and a list of parameters
-uint16_t hci_create_cmd(uint8_t *hci_cmd_buffer, hci_cmd_t *cmd, ...);
-
-/**
- * run the hci control loop once
- */
-void hci_run(void);
-
-// send ACL packet prepared in hci packet buffer
-int hci_send_acl_packet_buffer(int size);
-
-// send SCO packet prepared in hci packet buffer
-int hci_send_sco_packet_buffer(int size);
-
-
-int hci_can_send_acl_classic_packet_now(void);
-int hci_can_send_acl_le_packet_now(void);
-int hci_can_send_acl_packet_now(hci_con_handle_t con_handle);
-int hci_can_send_prepared_acl_packet_now(hci_con_handle_t con_handle);
-int hci_can_send_sco_packet_now(void);
-int hci_can_send_prepared_sco_packet_now(void);
-
-// reserves outgoing packet buffer. @returns 1 if successful
-int  hci_reserve_packet_buffer(void);
-void hci_release_packet_buffer(void);
-
-// used for internal checks in l2cap[-le].c
-int hci_is_packet_buffer_reserved(void);
-
-// get point to packet buffer
-uint8_t* hci_get_outgoing_packet_buffer(void);
-
-
-hci_connection_t * hci_connection_for_handle(hci_con_handle_t con_handle);
-hci_connection_t * hci_connection_for_bd_addr_and_type(bd_addr_t addr, bd_addr_type_t addr_type);
-int      hci_is_le_connection(hci_connection_t * connection);
-int      hci_number_outgoing_packets(hci_con_handle_t handle);
-int      hci_number_free_acl_slots_for_connection_type( bd_addr_type_t address_type);
-int      hci_number_free_acl_slots_for_handle(hci_con_handle_t con_handle);
-int      hci_authentication_active_for_handle(hci_con_handle_t handle);
-uint16_t hci_max_acl_data_packet_length(void);
-uint16_t hci_max_acl_le_data_packet_length(void);
-uint16_t hci_usable_acl_packet_types(void);
-int      hci_non_flushable_packet_boundary_flag_supported(void);
-
-void hci_disconnect_all(void);
-
-// emit current HCI state
-void hci_emit_state(void);
-
-// query if the local side supports SSP
-int hci_local_ssp_activated(void);
-
-// query if the remote side supports SSP
-int hci_remote_ssp_supported(hci_con_handle_t con_handle);
-
-// query if both sides support SSP
-int hci_ssp_supported_on_both_sides(hci_con_handle_t handle);
-
-// disable automatic L2CAP disconnect for testing
-void hci_disable_l2cap_timeout_check(void);
-
-// disconnect because of security block
-void hci_disconnect_security_block(hci_con_handle_t con_handle);
-
-// send complete CMD packet
-int hci_send_cmd_packet(uint8_t *packet, int size);
-
-// query if remote side supports eSCO
-int hci_remote_esco_supported(hci_con_handle_t con_handle);
-
 /* API_START */
     
+/**
+ * @brief Check hci packet buffer and if SCO packet can be sent to controller
+ */
+int hci_can_send_sco_packet_now(void);
+
+/**
+ * @brief Check if SCO packet can be sent to controller
+ */
+int hci_can_send_prepared_sco_packet_now(void);
+
+/**
+ * @brief Send SCO packet prepared in hci packet buffer
+ */
+int hci_send_sco_packet_buffer(int size);
+
+/**
+ * @brief Override page scan mode
+ */
 void hci_connectable_control(uint8_t enable);
+
+/**
+ * @brief Shutdown HCI
+ */
 void hci_close(void);
 
 /** 
- * @note New functions replacing: hci_can_send_packet_now[_using_packet_buffer]
+ * @brief Check if CMD packet can be sent to controller
  */
 int hci_can_send_command_packet_now(void);
     
@@ -815,9 +761,13 @@ void hci_drop_link_key_for_bd_addr(bd_addr_t addr);
 void hci_ssp_set_enable(int enable);
 
 /**
- * @brief If set, BTstack will respond to io capability request using authentication requirement.
+ * @brief Set IO Capability. BTstack will return capability to SSP requests
  */
 void hci_ssp_set_io_capability(int ssp_io_capability);
+
+/**
+ * @brief Set Authentication Requirements using during SSP
+ */
 void hci_ssp_set_authentication_requirement(int authentication_requirement);
 
 /**
@@ -852,7 +802,126 @@ uint16_t hci_get_sco_voice_setting(void);
  */
 int hci_get_sco_packet_length(void);
 
+/**
+ * Reserves outgoing packet buffer.
+ * @return 1 on success
+ */
+int hci_reserve_packet_buffer(void);
+
+/**
+ * Get pointer for outgoing packet buffer
+ */
+uint8_t* hci_get_outgoing_packet_buffer(void);
+
+/**
+ * Release outgoing packet buffer\
+ * @note only called instead of hci_send_preparared
+ */
+void hci_release_packet_buffer(void);
+
+
 /* API_END */
+
+/**
+ * Get connection iterator. Only used by l2cap.c and sm.c
+ */
+void hci_connections_get_iterator(btstack_linked_list_iterator_t *it);
+
+/**
+ * Check hci packet buffer is free and a classic acl packet can be sent to controller
+ */
+int hci_can_send_acl_classic_packet_now(void);
+
+/**
+ * Check hci packet buffer is free and an LE acl packet can be sent to controller
+ */
+int hci_can_send_acl_le_packet_now(void);
+
+/**
+ * Check hci packet buffer is free and an acl packet for the given handle can be sent to controller
+ */
+int hci_can_send_acl_packet_now(hci_con_handle_t con_handle);
+
+/**
+ * Check if acl packet for the given handle can be sent to controller
+ */
+int hci_can_send_prepared_acl_packet_now(hci_con_handle_t con_handle);
+
+/**
+ * Send acl packet prepared in hci packet buffer
+ */
+int hci_send_acl_packet_buffer(int size);
+
+/**
+ * Check if outgoing packet buffer is reserved. Used for internal checks in l2cap.c
+ */
+int hci_is_packet_buffer_reserved(void);
+
+/**
+ * Get internal hci_connection_t for given handle. Used by L2CAP, SM, daemon
+ */
+hci_connection_t * hci_connection_for_handle(hci_con_handle_t con_handle);
+
+/**
+ * Get internal hci_connection_t for given Bluetooth addres. Called by L2CAP
+ */
+hci_connection_t * hci_connection_for_bd_addr_and_type(bd_addr_t addr, bd_addr_type_t addr_type);
+
+/**
+ * Check if authentication is active. It delays automatic disconnect while no L2CAP connection
+ * Called by l2cap.
+ */
+int hci_authentication_active_for_handle(hci_con_handle_t handle);
+
+/**
+ * Get maximal ACL Classic data packet length based on used buffer size. Called by L2CAP
+ */
+uint16_t hci_max_acl_data_packet_length(void);
+
+/**
+ * Get supported packet types. Called by L2CAP
+ */
+uint16_t hci_usable_acl_packet_types(void);
+
+/**
+ * Check if ACL packets marked as non flushable can be sent. Called by L2CAP
+ */
+int hci_non_flushable_packet_boundary_flag_supported(void);
+
+/**
+ * Check if SSP is supported on both sides. Called by L2CAP
+ */
+int hci_ssp_supported_on_both_sides(hci_con_handle_t handle);
+
+/**
+ * Disconn because of security block. Called by L2CAP
+ */
+void hci_disconnect_security_block(hci_con_handle_t con_handle);
+
+/**
+ * Query if remote side supports eSCO
+ */
+int hci_remote_esco_supported(hci_con_handle_t con_handle);
+
+/**
+ * Emit current HCI state. Called by daemon
+ */
+void hci_emit_state(void);
+
+/** 
+ * Send complete CMD packet. Called by daemon
+ */
+int hci_send_cmd_packet(uint8_t *packet, int size);
+
+/**
+ * Disconnect all HCI connections. Called by daemon
+ */
+void hci_disconnect_all(void);
+
+/**
+ * Get number of free acl slots for packets of given handle. Called by daemon
+ */
+int hci_number_free_acl_slots_for_handle(hci_con_handle_t con_handle);
 
 /**
  * @brief Set Advertisement Parameters
@@ -870,6 +939,14 @@ int hci_get_sco_packet_length(void);
 void hci_le_advertisements_set_params(uint16_t adv_int_min, uint16_t adv_int_max, uint8_t adv_type,
     uint8_t own_address_type, uint8_t direct_address_typ, bd_addr_t direct_address,
     uint8_t channel_map, uint8_t filter_policy);
+
+
+// Only for PTS testing
+
+/** 
+ * Disable automatic L2CAP disconnect if no L2CAP connection is established
+ */
+void hci_disable_l2cap_timeout_check(void);
 
 #if defined __cplusplus
 }

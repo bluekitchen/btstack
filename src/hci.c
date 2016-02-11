@@ -92,6 +92,11 @@ static void hci_emit_dedicated_bonding_result(bd_addr_t address, uint8_t status)
 static void hci_emit_event(uint8_t * event, uint16_t size, int dump);
 static void hci_emit_acl_packet(uint8_t * packet, uint16_t size);
 static void hci_notify_if_sco_can_send_now(void);
+static void hci_run(void);
+static int  hci_is_le_connection(hci_connection_t * connection);
+static int  hci_number_free_acl_slots_for_connection_type( bd_addr_type_t address_type);
+static int  hci_local_ssp_activated(void);
+static int  hci_remote_ssp_supported(hci_con_handle_t con_handle);
 
 #ifdef ENABLE_BLE
 // called from test/ble_client/advertising_data_parser.c
@@ -276,7 +281,7 @@ void hci_drop_link_key_for_bd_addr(bd_addr_t addr){
     }
 }
 
-int hci_is_le_connection(hci_connection_t * connection){
+static int hci_is_le_connection(hci_connection_t * connection){
     return  connection->address_type == BD_ADDR_TYPE_LE_PUBLIC ||
     connection->address_type == BD_ADDR_TYPE_LE_RANDOM;
 }
@@ -292,16 +297,7 @@ static int nr_hci_connections(void){
     return count;
 }
 
-int hci_number_outgoing_packets(hci_con_handle_t handle){
-    hci_connection_t * connection = hci_connection_for_handle(handle);
-    if (!connection) {
-        log_error("hci_number_outgoing_packets: connection for handle %u does not exist!", handle);
-        return 0;
-    }
-    return connection->num_acl_packets_sent;
-}
-
-int hci_number_free_acl_slots_for_connection_type(bd_addr_type_t address_type){
+static int hci_number_free_acl_slots_for_connection_type(bd_addr_type_t address_type){
     
     int num_packets_sent_classic = 0;
     int num_packets_sent_le = 0;
@@ -443,7 +439,7 @@ int hci_can_send_sco_packet_now(void){
     return hci_can_send_prepared_sco_packet_now();
 }
 
-// used for internal checks in l2cap[-le].c
+// used for internal checks in l2cap.c
 int hci_is_packet_buffer_reserved(void){
     return hci_stack->hci_packet_buffer_reserved;
 }
@@ -465,10 +461,6 @@ void hci_release_packet_buffer(void){
 // assumption: synchronous implementations don't provide can_send_packet_now as they don't keep the buffer after the call
 static int hci_transport_synchronous(void){
     return hci_stack->hci_transport->can_send_packet_now == NULL;
-}
-
-uint16_t hci_max_acl_le_data_packet_length(void){
-    return hci_stack->le_data_packets_length > 0 ? hci_stack->le_data_packets_length : hci_stack->acl_data_packet_length;
 }
 
 static int hci_send_acl_packet_fragments(hci_connection_t *connection){
@@ -2276,7 +2268,7 @@ void hci_local_bd_addr(bd_addr_t address_buffer){
     memcpy(address_buffer, hci_stack->local_bd_addr, 6);
 }
 
-void hci_run(void){
+static void hci_run(void){
     
     // log_info("hci_run: entered");
     btstack_linked_item_t * it;
@@ -2861,7 +2853,7 @@ void hci_ssp_set_enable(int enable){
     hci_stack->ssp_enable = enable;
 }
 
-int hci_local_ssp_activated(void){
+static int hci_local_ssp_activated(void){
     return hci_ssp_supported() && hci_stack->ssp_enable;
 }
 
