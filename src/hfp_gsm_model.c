@@ -73,6 +73,15 @@ static char last_dialed_number[HFP_GSM_MAX_CALL_NUMBER_SIZE];
 
 static void hfp_gsm_handler(hfp_ag_call_event_t event, uint8_t index, uint8_t type, const char * number);
 
+static void set_call_status_none(int index_in_table){
+    gsm_calls[index_in_table].status = CALL_NONE;
+    gsm_calls[index_in_table].used_slot = 0;
+}
+
+static int is_call_status_none(int index_in_table){
+    return gsm_calls[index_in_table].status == CALL_NONE;
+}
+
 void hfp_gsm_init(void){
     callsetup_status = HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS;
     clip_type = 0;
@@ -81,7 +90,7 @@ void hfp_gsm_init(void){
     memset(gsm_calls, 0, sizeof(gsm_calls));
     int i;
     for (i = 0; i < HFP_GSM_MAX_NR_CALLS; i++){
-        gsm_calls[i].status = CALL_NONE;
+        set_call_status_none(i);
     }
 } 
 
@@ -163,8 +172,8 @@ static void delete_call(int delete_index_in_table){
             gsm_calls[i].index--;
         }
     }
-
-    gsm_calls[delete_index_in_table].status = CALL_NONE;
+    set_call_status_none(delete_index_in_table);
+    
     gsm_calls[delete_index_in_table].clip_type = 0;
     gsm_calls[delete_index_in_table].index = 0;
     gsm_calls[delete_index_in_table].clip_number[0] = '\0';
@@ -456,7 +465,8 @@ static void hfp_gsm_handler(hfp_ag_call_event_t event, uint8_t index, uint8_t ty
         case HFP_AG_CALL_HOLD_USER_BUSY:
             // Held or waiting call gets active, 
             callsetup_status = HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS;
-            gsm_calls[initiated_call_index].status = CALL_NONE;
+            set_call_status_none(initiated_call_index);
+
             gsm_calls[held_call_index].status = CALL_ACTIVE;
             break;
         
@@ -503,7 +513,7 @@ static void hfp_gsm_handler(hfp_ag_call_event_t event, uint8_t index, uint8_t ty
         case HFP_AG_CALL_HOLD_ADD_HELD_CALL:
             if (hfp_gsm_callheld_status() != HFP_CALLHELD_STATUS_NO_CALLS_HELD){
                 for (i = 0; i < HFP_GSM_MAX_NR_CALLS; i++){
-                    if (gsm_calls[i].status != CALL_NONE){
+                    if (!is_call_status_none(i)){
                         gsm_calls[i].status = CALL_ACTIVE;
                         gsm_calls[i].mpty = HFP_ENHANCED_CALL_MPTY_CONFERENCE_CALL;
                     }
