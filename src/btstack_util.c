@@ -191,17 +191,19 @@ void log_info_key(const char * name, sm_key_t key){
     // hexdump(key, 16);
 }
 
+// UUIDs are stored in big endian, similar to bd_addr_t
+
 // Bluetooth Base UUID: 00000000-0000-1000-8000- 00805F9B34FB
-const uint8_t sdp_bluetooth_base_uuid[] = { 0x00, 0x00, 0x00, 0x00, /* - */ 0x00, 0x00, /* - */ 0x10, 0x00, /* - */
+const uint8_t bluetooth_base_uuid[] = { 0x00, 0x00, 0x00, 0x00, /* - */ 0x00, 0x00, /* - */ 0x10, 0x00, /* - */
     0x80, 0x00, /* - */ 0x00, 0x80, 0x5F, 0x9B, 0x34, 0xFB };
 
 void uuid_add_bluetooth_prefix(uint8_t *uuid, uint32_t shortUUID){
-    memcpy(uuid, sdp_bluetooth_base_uuid, 16);
+    memcpy(uuid, bluetooth_base_uuid, 16);
     big_endian_store_32(uuid, 0, shortUUID);
 }
 
 int uuid_has_bluetooth_prefix(uint8_t * uuid128){
-    return memcmp(&uuid128[4], &sdp_bluetooth_base_uuid[4], 12) == 0;
+    return memcmp(&uuid128[4], &bluetooth_base_uuid[4], 12) == 0;
 }
 
 static char uuid128_to_str_buffer[32+4+1];

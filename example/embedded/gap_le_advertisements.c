@@ -134,6 +134,7 @@ static char * flags[] = {
 static void dump_advertisement_data(uint8_t * adv_data, uint8_t adv_size){
     ad_context_t context;
     bd_addr_t address;
+    uint8_t uuid_128[16];
     for (ad_iterator_init(&context, adv_size, adv_data) ; ad_iterator_has_more(&context) ; ad_iterator_next(&context)){
         uint8_t data_type = ad_iterator_get_data_type(&context);
         uint8_t size      = ad_iterator_get_data_len(&context);
@@ -171,7 +172,8 @@ static void dump_advertisement_data(uint8_t * adv_data, uint8_t adv_size){
             case 0x06: // Incomplete List of 128-bit Service Class UUIDs
             case 0x07: // Complete List of 128-bit Service Class UUIDs
             case 0x15: // List of 128-bit Service Solicitation UUIDs
-                printf("%s", uuid128_to_str(data));
+                reverse_128(data, uuid_128);
+                printf("%s", uuid128_to_str(uuid_128));
                 break;
             case 0x08: // Shortened Local Name
             case 0x09: // Complete Local Name
