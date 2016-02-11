@@ -67,7 +67,7 @@
 #include "hci.h"
 #include "hci_dump.h"
 #include "l2cap.h"
-#include "ble/att.h"
+#include "ble/att_db.h"
 #include "ble/gatt_client.h"
 #include "ble/ad_parser.h"
 #include "ble/sm.h"

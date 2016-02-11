@@ -47,7 +47,7 @@
 
 #include "ancs_client.h"
 
-#include "ble/att.h"
+#include "ble/att_db.h"
 #include "btstack_debug.h"
 #include "gap.h"
 #include "ble/gatt_client.h"

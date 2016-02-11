@@ -63,7 +63,7 @@
 #include "l2cap.h"
 
 #include "ble/ancs_client.h"
-#include "ble/att.h"
+#include "ble/att_db.h"
 #include "ble/att_server.h"
 #include "ble/gatt_client.h"
 #include "ble/le_device_db.h"

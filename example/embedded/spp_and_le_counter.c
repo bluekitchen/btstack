@@ -69,7 +69,7 @@
 #include "classic/sdp_server.h"
 #include "spp_and_le_counter.h"
 
-#include "ble/att.h"
+#include "ble/att_db.h"
 #include "ble/att_server.h"
 #include "ble/le_device_db.h"
 #include "ble/sm.h"

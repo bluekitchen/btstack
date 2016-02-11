@@ -82,7 +82,7 @@
 #ifdef ENABLE_BLE
 #include "ble/gatt_client.h"
 #include "ble/att_server.h"
-#include "ble/att.h"
+#include "ble/att_db.h"
 #include "ble/le_device_db.h"
 #include "ble/sm.h"
 #endif

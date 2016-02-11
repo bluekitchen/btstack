@@ -20,7 +20,7 @@
 #include "hci.h"
 #include "hci_dump.h"
 #include "ble/gatt_client.h"
-#include "ble/att.h"
+#include "ble/att_db.h"
 #include "profile.h"
 #include "expected_results.h"
 

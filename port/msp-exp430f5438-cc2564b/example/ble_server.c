@@ -75,7 +75,7 @@
 #include "l2cap.h"
 
 #include "ble/sm.h"
-#include "ble/att.h"
+#include "ble/att_db.h"
 #include "ble/att_server.h"
 #include "ble/le_device_db.h"
 

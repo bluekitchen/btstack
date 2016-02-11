@@ -54,7 +54,7 @@
 #include "hci.h"
 #include "hci_dump.h"
 #include "l2cap.h"
-#include "ble/att.h"
+#include "ble/att_db.h"
 #include "att_dispatch.h"
 #include "ble/sm.h"
 #include "ble/le_device_db.h"

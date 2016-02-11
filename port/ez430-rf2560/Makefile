@@ -70,7 +70,7 @@ SDP_CLIENT += \
 	sdp_query_rfcomm.o		  \
 
 BLE = \
-	att.c 					  \
+	att_db.c 					  \
 	att_server.c     		  \
 	le_device_db_memory.c     \
 	sm.c                      \

@@ -8,7 +8,7 @@
 extern "C" {
 #endif
 
-#include "ble/att.h"
+#include "ble/att_db.h"
 #include "btstack_util.h" 
 #include "ble/gatt_client.h"
 #include "hci.h"

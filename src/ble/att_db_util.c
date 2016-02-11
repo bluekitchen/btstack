@@ -39,7 +39,7 @@
 #include <string.h>
 
 #include "att_db_util.h"
-#include "ble/att.h"
+#include "ble/att_db.h"
 #include "btstack_util.h"
 #include "btstack_debug.h"
 #include "bluetooth.h"

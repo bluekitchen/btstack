@@ -50,7 +50,7 @@
 #include "CppUTest/TestHarness.h"
 #include "CppUTest/CommandLineTestRunner.h"
 
-#include "ble/att.h"
+#include "ble/att_db.h"
 #include "ble/att_db_util.h"
 #include "btstack_util.h"
 #include "bluetooth.h"

@@ -38,7 +38,7 @@
 #define __ATT_SERVER_H
 
 #include <stdint.h>
-#include "ble/att.h"
+#include "ble/att_db.h"
 
 #if defined __cplusplus
 extern "C" {
@@ -48,7 +48,7 @@ extern "C" {
 /*
  * @brief setup ATT server
  * @param db attribute database created by compile-gatt.ph
- * @param read_callback, see att.h, can be NULL
+ * @param read_callback, see att_db.h, can be NULL
  * @param write_callback, see attl.h, can be NULL
  */
 void att_server_init(uint8_t const * db, att_read_callback_t read_callback, att_write_callback_t write_callback);

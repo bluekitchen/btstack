@@ -75,14 +75,14 @@ void att_db_util_add_service_uuid128(uint8_t * udid128);
 /**
  * @brief Add Characteristic with 16-bit UUID, properties, and data
  * @returns attribute value handle
- * @see ATT_PROPERTY_* in ble/att.h
+ * @see ATT_PROPERTY_* in ble/att_db.h
  */
 uint16_t att_db_util_add_characteristic_uuid16(uint16_t   udid16,  uint16_t properties, uint8_t * data, uint16_t data_len);
 
 /**
  * @brief Add Characteristic with 128-bit UUID, properties, and data
  * @returns attribute value handle
- * @see ATT_PROPERTY_* in ble/att.h
+ * @see ATT_PROPERTY_* in ble/att_db.h
  */
 uint16_t att_db_util_add_characteristic_uuid128(uint8_t * udid128, uint16_t properties, uint8_t * data, uint16_t data_len);
 

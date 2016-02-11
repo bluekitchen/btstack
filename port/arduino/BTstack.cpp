@@ -30,7 +30,7 @@
 #include "hci_dump.h"
 #include "l2cap.h"
 #include "ble/ad_parser.h"
-#include "ble/att.h"
+#include "ble/att_db.h"
 #include "ble/att_server.h"
 #include "att_db_util.h"
 #include "ble/le_device_db.h"

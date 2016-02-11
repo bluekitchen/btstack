@@ -57,7 +57,7 @@
 #include "l2cap.h"
 
 #include "ble/sm.h"
-#include "ble/att.h"
+#include "ble/att_db.h"
 #include "att_dispatch.h"
 #include "gap.h"
 #include "ble/le_device_db.h"

@@ -37,7 +37,7 @@ ATT	+= \
     att_dispatch.c       	    \
 
 GATT_SERVER += \
-    att.c 				 	    \
+    att_db.c 				 	    \
     att_server.c        	    \
 
 GATT_CLIENT += \
