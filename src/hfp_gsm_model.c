@@ -488,7 +488,6 @@ static void hfp_gsm_handler(hfp_ag_call_event_t event, uint8_t index, uint8_t ty
         case HFP_AG_CALL_HOLD_USER_BUSY:
             // Held or waiting call gets active, 
             callsetup_status = HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS;
-            // set_call_status(initiated_call_index, CALL_NONE);
             free_call_slot(initiated_call_index);
             set_call_status(held_call_index, CALL_ACTIVE);
             break;
@@ -536,7 +535,7 @@ static void hfp_gsm_handler(hfp_ag_call_event_t event, uint8_t index, uint8_t ty
         case HFP_AG_CALL_HOLD_ADD_HELD_CALL:
             if (hfp_gsm_callheld_status() != HFP_CALLHELD_STATUS_NO_CALLS_HELD){
                 for (i = 0; i < HFP_GSM_MAX_NR_CALLS; i++){
-                    if (get_call_status(i) != CALL_NONE){
+                    if (gsm_calls[i].used_slot){
                         set_call_status(i, CALL_ACTIVE);
                         gsm_calls[i].mpty = HFP_ENHANCED_CALL_MPTY_CONFERENCE_CALL;
                     }
