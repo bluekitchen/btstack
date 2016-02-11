@@ -122,40 +122,8 @@ static void sm_pdu_received_in_wrong_state(void){
     sm_state_responding = SM_GENERAL_SEND_PAIRING_FAILED;
 }
 
-static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *packet, uint16_t size){
 
-    if (packet_type != SM_DATA_PACKET) return;
-
-    if (handle != sm_response_handle){
-        log_info("sm_packet_handler: packet from handle %u, but expecting from %u", handle, sm_response_handle);
-        return;
-    }
-
-    if (packet[0] == SM_CODE_PAIRING_FAILED){
-        sm_state_responding = SM_GENERAL_SEND_PAIRING_FAILED;
-        return;
-    }
-
-    switch (sm_state_responding){
-        
-        case SM_GENERAL_IDLE: {
-            if (packet[0] != SM_CODE_PAIRING_REQUEST){
-                sm_pdu_received_in_wrong_state();
-                break;;
-            }
-           	sm_state_responding = SM_GENERAL_SEND_PAIRING_FAILED;
-            sm_pairing_failed_reason = SM_REASON_PAIRING_NOT_SUPPORTED;
-            break;
-        }
-        default:
-        	break;
-    }
-
-    // try to send preparared packet
-    sm_run();
-}
-
-static void sm_event_packet_handler (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
 
     switch (packet_type) {
             
@@ -199,6 +167,44 @@ static void sm_event_packet_handler (void * connection, uint8_t packet_type, uin
     sm_run();
 }
 
+static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *packet, uint16_t size){
+
+    if (packet_type == HCI_EVENT_PACKET) {
+        sm_event_packet_handler(packet_type, handle, packet, size);
+        return;
+    }
+
+    if (packet_type != SM_DATA_PACKET) return;
+
+    if (handle != sm_response_handle){
+        log_info("sm_packet_handler: packet from handle %u, but expecting from %u", handle, sm_response_handle);
+        return;
+    }
+
+    if (packet[0] == SM_CODE_PAIRING_FAILED){
+        sm_state_responding = SM_GENERAL_SEND_PAIRING_FAILED;
+        return;
+    }
+
+    switch (sm_state_responding){
+        
+        case SM_GENERAL_IDLE: {
+            if (packet[0] != SM_CODE_PAIRING_REQUEST){
+                sm_pdu_received_in_wrong_state();
+                break;;
+            }
+            sm_state_responding = SM_GENERAL_SEND_PAIRING_FAILED;
+            sm_pairing_failed_reason = SM_REASON_PAIRING_NOT_SUPPORTED;
+            break;
+        }
+        default:
+            break;
+    }
+
+    // try to send preparared packet
+    sm_run();
+}
+
 static void sm_run(void){
 
     // assert that we can send either one
@@ -225,7 +231,6 @@ static void sm_run(void){
 void sm_init(void){
     // attach to lower layers
     l2cap_register_fixed_channel(sm_packet_handler, L2CAP_CID_SECURITY_MANAGER_PROTOCOL);
-    l2cap_register_packet_handler(sm_event_packet_handler);
 }
 
 // GAP LE
