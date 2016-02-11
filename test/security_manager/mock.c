@@ -70,7 +70,7 @@ void aes128_report_result(void){
 	uint8_t le_enc_result[22];
 	uint8_t enc1_data[] = { 0x0e, 0x14, 0x01, 0x17, 0x20, 0x00 };
 	memcpy (le_enc_result, enc1_data, 6);
-	swap128(aes128_cyphertext, &le_enc_result[6]);
+	reverse_128(aes128_cyphertext, &le_enc_result[6]);
 	mock_simulate_hci_event(&le_enc_result[0], sizeof(le_enc_result));
 }
 
@@ -168,12 +168,12 @@ int hci_send_cmd(const hci_cmd_t *cmd, ...){
 	if (cmd->opcode ==  hci_le_encrypt.opcode){
 	    uint8_t * key_flipped = &packet_buffer[3];
 	    uint8_t key[16];
-		swap128(key_flipped, key);
+		reverse_128(key_flipped, key);
 	    // printf("le_encrypt key ");
 	    // hexdump(key, 16);
 	    uint8_t * plaintext_flipped = &packet_buffer[19];
 	    uint8_t plaintext[16];
- 		swap128(plaintext_flipped, plaintext);
+ 		reverse_128(plaintext_flipped, plaintext);
 	    // printf("le_encrypt txt ");
 	    // hexdump(plaintext, 16);
 	    aes128_calc_cyphertext(key, plaintext, aes128_cyphertext);

@@ -846,13 +846,13 @@ btstack_linked_list_gatt_client_helper_t * daemon_setup_gatt_client_request(conn
 void daemon_gatt_deserialize_service(uint8_t *packet, int offset, le_service_t *service){
     service->start_group_handle = little_endian_read_16(packet, offset);
     service->end_group_handle = little_endian_read_16(packet, offset + 2);
-    swap128(&packet[offset + 4], service->uuid128);
+    reverse_128(&packet[offset + 4], service->uuid128);
 }
 
 void daemon_gatt_serialize_service(le_service_t * service, uint8_t * event, int offset){
     little_endian_store_16(event, offset, service->start_group_handle);
     little_endian_store_16(event, offset+2, service->end_group_handle);
-    swap128(service->uuid128, &event[offset + 4]);
+    reverse_128(service->uuid128, &event[offset + 4]);
 }
 
 void daemon_gatt_deserialize_characteristic(uint8_t * packet, int offset, le_characteristic_t * characteristic){
@@ -861,7 +861,7 @@ void daemon_gatt_deserialize_characteristic(uint8_t * packet, int offset, le_cha
     characteristic->end_handle = little_endian_read_16(packet, offset + 4);
     characteristic->properties = little_endian_read_16(packet, offset + 6);
     characteristic->uuid16 = little_endian_read_16(packet, offset + 8);
-    swap128(&packet[offset+10], characteristic->uuid128);
+    reverse_128(&packet[offset+10], characteristic->uuid128);
 }
 
 void daemon_gatt_serialize_characteristic(le_characteristic_t * characteristic, uint8_t * event, int offset){
@@ -869,17 +869,17 @@ void daemon_gatt_serialize_characteristic(le_characteristic_t * characteristic, 
     little_endian_store_16(event, offset+2, characteristic->value_handle);
     little_endian_store_16(event, offset+4, characteristic->end_handle);
     little_endian_store_16(event, offset+6, characteristic->properties);
-    swap128(characteristic->uuid128, &event[offset+8]);
+    reverse_128(characteristic->uuid128, &event[offset+8]);
 }
 
 void daemon_gatt_deserialize_characteristic_descriptor(uint8_t * packet, int offset, le_characteristic_descriptor_t * descriptor){
     descriptor->handle = little_endian_read_16(packet, offset);
-    swap128(&packet[offset+2], descriptor->uuid128);
+    reverse_128(&packet[offset+2], descriptor->uuid128);
 }
 
 void daemon_gatt_serialize_characteristic_descriptor(le_characteristic_descriptor_t * characteristic_descriptor, uint8_t * event, int offset){
     little_endian_store_16(event, offset, characteristic_descriptor->handle);
-    swap128(characteristic_descriptor->uuid128, &event[offset+2]);
+    reverse_128(characteristic_descriptor->uuid128, &event[offset+2]);
 }
 
 #endif
@@ -1179,7 +1179,7 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
         case GATT_DISCOVER_PRIMARY_SERVICES_BY_UUID128:
             gatt_helper = daemon_setup_gatt_client_request(connection, packet, 1);
             if (!gatt_helper) break;
-            swap128(&packet[5], uuid128);
+            reverse_128(&packet[5], uuid128);
             gatt_client_discover_primary_services_by_uuid128(gatt_client_id, gatt_helper->con_handle, uuid128);
             break;
         case GATT_FIND_INCLUDED_SERVICES_FOR_SERVICE:
@@ -1199,7 +1199,7 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             gatt_helper = daemon_setup_gatt_client_request(connection, packet, 1);
             if (!gatt_helper) break;
             daemon_gatt_deserialize_service(packet, 5, &service);
-            swap128(&packet[5 + SERVICE_LENGTH], uuid128);
+            reverse_128(&packet[5 + SERVICE_LENGTH], uuid128);
             gatt_client_discover_characteristics_for_service_by_uuid128(gatt_client_id, gatt_helper->con_handle, &service, uuid128);
             break;
         case GATT_DISCOVER_CHARACTERISTIC_DESCRIPTORS:

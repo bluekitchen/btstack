@@ -208,7 +208,7 @@ void att_dump_attributes(void){
         }
         log_info("Handle: 0x%04x, flags: 0x%04x, uuid: ", it.handle, it.flags);
         if (it.flags & ATT_PROPERTY_UUID128){
-            swap128(it.uuid, uuid128);
+            reverse_128(it.uuid, uuid128);
             log_info("%s", uuid128_to_str(uuid128));
         } else {
             log_info("%04x", little_endian_read_16(it.uuid, 0));

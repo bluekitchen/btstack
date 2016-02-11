@@ -151,7 +151,6 @@ static void sco_packet_handler(uint8_t packet_type, uint8_t * packet, uint16_t s
     count++;
     if ((count & 15)) return;
     printf("SCO packets %u\n", count);
-    // hexdumpf(packet, size);
 }
 
 static void packet_handler(uint8_t * event, uint16_t event_size){

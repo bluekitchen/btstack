@@ -381,8 +381,8 @@ static void sm_random_start(void * context){
 static void sm_aes128_start(sm_key_t key, sm_key_t plaintext, void * context){
     sm_aes128_state = SM_AES128_ACTIVE;
     sm_key_t key_flipped, plaintext_flipped;
-    swap128(key, key_flipped);
-    swap128(plaintext, plaintext_flipped);
+    reverse_128(key, key_flipped);
+    reverse_128(plaintext, plaintext_flipped);
     sm_aes128_context = context;
     hci_send_cmd(&hci_le_encrypt, key_flipped, plaintext_flipped);
 }
@@ -425,8 +425,8 @@ static void sm_c1_t1(sm_key_t r, uint8_t preq[7], uint8_t pres[7], uint8_t iat, 
     // p1 is 0x05000800000302070710000001010001."
     
     sm_key_t p1;
-    swap56(pres, &p1[0]);
-    swap56(preq, &p1[7]);
+    reverse_56(pres, &p1[0]);
+    reverse_56(preq, &p1[7]);
     p1[14] = rat;
     p1[15] = iat;
     log_key("p1", p1);
@@ -1329,7 +1329,7 @@ static void sm_run(void){
             // initiator side
             case SM_INITIATOR_PH0_SEND_START_ENCRYPTION: {
                 sm_key_t peer_ltk_flipped;
-                swap128(setup->sm_peer_ltk, peer_ltk_flipped);
+                reverse_128(setup->sm_peer_ltk, peer_ltk_flipped);
                 connection->sm_engine_state = SM_INITIATOR_PH0_W4_CONNECTION_ENCRYPTED;
                 log_info("sm: hci_le_start_encryption ediv 0x%04x", setup->sm_peer_ediv);
                 uint32_t rand_high = big_endian_read_32(setup->sm_peer_rand, 0);
@@ -1366,7 +1366,7 @@ static void sm_run(void){
             case SM_PH2_SEND_PAIRING_RANDOM: {
                 uint8_t buffer[17];
                 buffer[0] = SM_CODE_PAIRING_RANDOM;
-                swap128(setup->sm_local_random, &buffer[1]);
+                reverse_128(setup->sm_local_random, &buffer[1]);
                 if (connection->sm_role){
                     connection->sm_engine_state = SM_RESPONDER_PH2_W4_LTK_REQUEST;
                 } else {
@@ -1457,7 +1457,7 @@ static void sm_run(void){
             case SM_PH2_C1_SEND_PAIRING_CONFIRM: {
                 uint8_t buffer[17];
                 buffer[0] = SM_CODE_PAIRING_CONFIRM;
-                swap128(setup->sm_local_confirm, &buffer[1]);
+                reverse_128(setup->sm_local_confirm, &buffer[1]);
                 if (connection->sm_role){
                     connection->sm_engine_state = SM_RESPONDER_PH2_W4_PAIRING_RANDOM;
                 } else {
@@ -1469,21 +1469,21 @@ static void sm_run(void){
             }
             case SM_RESPONDER_PH2_SEND_LTK_REPLY: {
                 sm_key_t stk_flipped;
-                swap128(setup->sm_ltk, stk_flipped);
+                reverse_128(setup->sm_ltk, stk_flipped);
                 connection->sm_engine_state = SM_PH2_W4_CONNECTION_ENCRYPTED;
                 hci_send_cmd(&hci_le_long_term_key_request_reply, connection->sm_handle, stk_flipped);
                 return;
             }
             case SM_INITIATOR_PH3_SEND_START_ENCRYPTION: {
                 sm_key_t stk_flipped;
-                swap128(setup->sm_ltk, stk_flipped);
+                reverse_128(setup->sm_ltk, stk_flipped);
                 connection->sm_engine_state = SM_PH2_W4_CONNECTION_ENCRYPTED;
                 hci_send_cmd(&hci_le_start_encryption, connection->sm_handle, 0, 0, 0, stk_flipped);
                 return;
             }
             case SM_RESPONDER_PH4_SEND_LTK: {
                 sm_key_t ltk_flipped;
-                swap128(setup->sm_ltk, ltk_flipped);
+                reverse_128(setup->sm_ltk, ltk_flipped);
                 connection->sm_engine_state = SM_RESPONDER_IDLE;
                 hci_send_cmd(&hci_le_long_term_key_request_reply, connection->sm_handle, ltk_flipped);
                 return;
@@ -1503,7 +1503,7 @@ static void sm_run(void){
                     setup->sm_key_distribution_send_set &= ~SM_KEYDIST_FLAG_ENCRYPTION_INFORMATION;
                     uint8_t buffer[17];
                     buffer[0] = SM_CODE_ENCRYPTION_INFORMATION;
-                    swap128(setup->sm_ltk, &buffer[1]);
+                    reverse_128(setup->sm_ltk, &buffer[1]);
                     l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
                     sm_timeout_reset(connection);
                     return;
@@ -1513,7 +1513,7 @@ static void sm_run(void){
                     uint8_t buffer[11];
                     buffer[0] = SM_CODE_MASTER_IDENTIFICATION;
                     little_endian_store_16(buffer, 1, setup->sm_local_ediv);
-                    swap64(setup->sm_local_rand, &buffer[3]);
+                    reverse_64(setup->sm_local_rand, &buffer[3]);
                     l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
                     sm_timeout_reset(connection);
                     return;
@@ -1522,7 +1522,7 @@ static void sm_run(void){
                     setup->sm_key_distribution_send_set &= ~SM_KEYDIST_FLAG_IDENTITY_INFORMATION;
                     uint8_t buffer[17];
                     buffer[0] = SM_CODE_IDENTITY_INFORMATION;
-                    swap128(sm_persistent_irk, &buffer[1]);
+                    reverse_128(sm_persistent_irk, &buffer[1]);
                     l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
                     sm_timeout_reset(connection);
                     return;
@@ -1548,7 +1548,7 @@ static void sm_run(void){
 
                     uint8_t buffer[17];
                     buffer[0] = SM_CODE_SIGNING_INFORMATION;
-                    swap128(setup->sm_local_csrk, &buffer[1]);
+                    reverse_128(setup->sm_local_csrk, &buffer[1]);
                     l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
                     sm_timeout_reset(connection);
                     return;
@@ -1589,7 +1589,7 @@ static void sm_handle_encryption_result(uint8_t * data){
         sm_address_resolution_ah_calculation_active = 0;
         // compare calulated address against connecting device
         uint8_t hash[3];
-        swap24(data, hash);
+        reverse_24(data, hash);
         if (memcmp(&sm_address_resolution_address[3], hash, 3) == 0){
             log_info("LE Device Lookup: matched resolvable private address");
             sm_address_resolution_handle_event(ADDRESS_RESOLUTION_SUCEEDED);
@@ -1602,12 +1602,12 @@ static void sm_handle_encryption_result(uint8_t * data){
 
     switch (dkg_state){
         case DKG_W4_IRK:
-            swap128(data, sm_persistent_irk);
+            reverse_128(data, sm_persistent_irk);
             log_key("irk", sm_persistent_irk);
             dkg_next_state();
             return;
         case DKG_W4_DHK:
-            swap128(data, sm_persistent_dhk);
+            reverse_128(data, sm_persistent_dhk);
             log_key("dhk", sm_persistent_dhk);
             dkg_next_state();
             // SM Init Finished
@@ -1618,7 +1618,7 @@ static void sm_handle_encryption_result(uint8_t * data){
 
     switch (rau_state){
         case RAU_W4_ENC:
-            swap24(data, &sm_random_address[3]);
+            reverse_24(data, &sm_random_address[3]);
             rau_next_state();
             return;
         default:
@@ -1631,7 +1631,7 @@ static void sm_handle_encryption_result(uint8_t * data){
         case CMAC_W4_MLAST:
             {
             sm_key_t t;
-            swap128(data, t);
+            reverse_128(data, t);
             sm_cmac_handle_encryption_result(t);
             }
             return;
@@ -1647,20 +1647,20 @@ static void sm_handle_encryption_result(uint8_t * data){
         case SM_PH2_C1_W4_ENC_C:
             {
             sm_key_t t2;
-            swap128(data, t2);
+            reverse_128(data, t2);
             sm_c1_t3(t2, setup->sm_m_address, setup->sm_s_address, setup->sm_c1_t3_value);
             }
             sm_next_responding_state(connection);
             return;
         case SM_PH2_C1_W4_ENC_B:
-            swap128(data, setup->sm_local_confirm);
+            reverse_128(data, setup->sm_local_confirm);
             log_key("c1!", setup->sm_local_confirm);
             connection->sm_engine_state = SM_PH2_C1_SEND_PAIRING_CONFIRM;
             return;
         case SM_PH2_C1_W4_ENC_D:
             {
             sm_key_t peer_confirm_test;
-            swap128(data, peer_confirm_test);
+            reverse_128(data, peer_confirm_test);
             log_key("c1!", peer_confirm_test);
             if (memcmp(setup->sm_peer_confirm, peer_confirm_test, 16) != 0){
                 setup->sm_pairing_failed_reason = SM_REASON_CONFIRM_VALUE_FAILED;
@@ -1675,7 +1675,7 @@ static void sm_handle_encryption_result(uint8_t * data){
             }
             return;
         case SM_PH2_W4_STK:
-            swap128(data, setup->sm_ltk);
+            reverse_128(data, setup->sm_ltk);
             sm_truncate_key(setup->sm_ltk, connection->sm_actual_encryption_key_size);
             log_key("stk", setup->sm_ltk);
             if (connection->sm_role){
@@ -1686,7 +1686,7 @@ static void sm_handle_encryption_result(uint8_t * data){
             return;
         case SM_PH3_Y_W4_ENC:{
             sm_key_t y128;
-            swap128(data, y128);
+            reverse_128(data, y128);
             setup->sm_local_y = big_endian_read_16(y128, 14);
             log_info_hex16("y", setup->sm_local_y);
             // PH3B3 - calculate EDIV
@@ -1699,7 +1699,7 @@ static void sm_handle_encryption_result(uint8_t * data){
         }
         case SM_RESPONDER_PH4_Y_W4_ENC:{
             sm_key_t y128;
-            swap128(data, y128);
+            reverse_128(data, y128);
             setup->sm_local_y = big_endian_read_16(y128, 14);
             log_info_hex16("y", setup->sm_local_y);
 
@@ -1712,13 +1712,13 @@ static void sm_handle_encryption_result(uint8_t * data){
             return;
         }
         case SM_PH3_LTK_W4_ENC:
-            swap128(data, setup->sm_ltk);
+            reverse_128(data, setup->sm_ltk);
             log_key("ltk", setup->sm_ltk);
             // calc CSRK next
             connection->sm_engine_state = SM_PH3_CSRK_GET_ENC;
             return;
         case SM_PH3_CSRK_W4_ENC:
-            swap128(data, setup->sm_local_csrk);
+            reverse_128(data, setup->sm_local_csrk);
             log_key("csrk", setup->sm_local_csrk);
             if (setup->sm_key_distribution_send_set){
                 connection->sm_engine_state = SM_PH3_DISTRIBUTE_KEYS;
@@ -1735,7 +1735,7 @@ static void sm_handle_encryption_result(uint8_t * data){
             }
             return;                                
         case SM_RESPONDER_PH4_LTK_W4_ENC:
-            swap128(data, setup->sm_ltk);
+            reverse_128(data, setup->sm_ltk);
             sm_truncate_key(setup->sm_ltk, connection->sm_actual_encryption_key_size);
             log_key("ltk", setup->sm_ltk);
             connection->sm_engine_state = SM_RESPONDER_PH4_SEND_LTK;
@@ -1808,7 +1808,7 @@ static void sm_handle_random_result(uint8_t * data){
             connection->sm_engine_state = SM_PH2_C1_GET_ENC_A;
             return;
         case SM_PH3_W4_RANDOM:
-            swap64(data, setup->sm_local_rand);
+            reverse_64(data, setup->sm_local_rand);
             // no db for encryption size hack: encryption size is stored in lowest nibble of setup->sm_local_rand
             setup->sm_local_rand[7] = (setup->sm_local_rand[7] & 0xf0) + (connection->sm_actual_encryption_key_size - 1);
             // no db for authenticated flag hack: store flag in bit 4 of LSB
@@ -1912,7 +1912,7 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                             }
 
                             // store rand and ediv
-                            swap64(&packet[5], sm_conn->sm_local_rand);
+                            reverse_64(&packet[5], sm_conn->sm_local_rand);
                             sm_conn->sm_local_ediv   = little_endian_read_16(packet, 13);
                             sm_conn->sm_engine_state = SM_RESPONDER_PH0_RECEIVED_LTK;
                             break;
@@ -2136,7 +2136,7 @@ static void sm_pdu_handler(uint8_t packet_type, uint16_t handle, uint8_t *packet
             }
 
             // store s_confirm
-            swap128(&packet[1], setup->sm_peer_confirm);
+            reverse_128(&packet[1], setup->sm_peer_confirm);
             sm_conn->sm_engine_state = SM_PH2_SEND_PAIRING_RANDOM;
             break;
 
@@ -2147,7 +2147,7 @@ static void sm_pdu_handler(uint8_t packet_type, uint16_t handle, uint8_t *packet
             }
 
             // received random value
-            swap128(&packet[1], setup->sm_peer_random);
+            reverse_128(&packet[1], setup->sm_peer_random);
             sm_conn->sm_engine_state = SM_PH2_C1_GET_ENC_C;
             break;
 
@@ -2172,7 +2172,7 @@ static void sm_pdu_handler(uint8_t packet_type, uint16_t handle, uint8_t *packet
             }
 
             // received confirm value
-            swap128(&packet[1], setup->sm_peer_confirm);
+            reverse_128(&packet[1], setup->sm_peer_confirm);
 
             // notify client to hide shown passkey
             if (setup->sm_stk_generation_method == PK_INIT_INPUT){
@@ -2203,7 +2203,7 @@ static void sm_pdu_handler(uint8_t packet_type, uint16_t handle, uint8_t *packet
             }
 
             // received random value
-            swap128(&packet[1], setup->sm_peer_random);
+            reverse_128(&packet[1], setup->sm_peer_random);
             sm_conn->sm_engine_state = SM_PH2_C1_GET_ENC_C;
             break;
 
@@ -2211,18 +2211,18 @@ static void sm_pdu_handler(uint8_t packet_type, uint16_t handle, uint8_t *packet
             switch(packet[0]){
                 case SM_CODE_ENCRYPTION_INFORMATION:
                     setup->sm_key_distribution_received_set |= SM_KEYDIST_FLAG_ENCRYPTION_INFORMATION;
-                    swap128(&packet[1], setup->sm_peer_ltk);
+                    reverse_128(&packet[1], setup->sm_peer_ltk);
                     break;
 
                 case SM_CODE_MASTER_IDENTIFICATION:
                     setup->sm_key_distribution_received_set |= SM_KEYDIST_FLAG_MASTER_IDENTIFICATION;
                     setup->sm_peer_ediv = little_endian_read_16(packet, 1);
-                    swap64(&packet[3], setup->sm_peer_rand);
+                    reverse_64(&packet[3], setup->sm_peer_rand);
                     break;
 
                 case SM_CODE_IDENTITY_INFORMATION:
                     setup->sm_key_distribution_received_set |= SM_KEYDIST_FLAG_IDENTITY_INFORMATION;
-                    swap128(&packet[1], setup->sm_peer_irk);
+                    reverse_128(&packet[1], setup->sm_peer_irk);
                     break;
 
                 case SM_CODE_IDENTITY_ADDRESS_INFORMATION:
@@ -2233,7 +2233,7 @@ static void sm_pdu_handler(uint8_t packet_type, uint16_t handle, uint8_t *packet
 
                 case SM_CODE_SIGNING_INFORMATION:
                     setup->sm_key_distribution_received_set |= SM_KEYDIST_FLAG_SIGNING_IDENTIFICATION;
-                    swap128(&packet[1], setup->sm_peer_csrk);
+                    reverse_128(&packet[1], setup->sm_peer_csrk);
                     break;
                 default:
                     // Unexpected PDU

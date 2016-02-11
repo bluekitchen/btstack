@@ -413,7 +413,7 @@ static void extract_service(le_service_t * aService, uint8_t * data){
     aService->start_group_handle = little_endian_read_16(data, 0);
     aService->end_group_handle   = little_endian_read_16(data, 2);
     aService->uuid16 = 0;
-    swap128(&data[4], aService->uuid128);
+    reverse_128(&data[4], aService->uuid128);
     if (uuid_has_bluetooth_prefix(aService->uuid128)){
         aService->uuid16 = big_endian_read_32(aService->uuid128, 0);
     }
@@ -425,7 +425,7 @@ static void extract_characteristic(le_characteristic_t * characteristic, uint8_t
     characteristic->end_handle =   little_endian_read_16(packet, 8);
     characteristic->properties =   little_endian_read_16(packet, 10);
     characteristic->uuid16 = 0;
-    swap128(&packet[12], characteristic->uuid128);
+    reverse_128(&packet[12], characteristic->uuid128);
     if (uuid_has_bluetooth_prefix(characteristic->uuid128)){
         characteristic->uuid16 = big_endian_read_32(characteristic->uuid128, 0);
     }
@@ -515,7 +515,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint8_t *packet, uint1
         case GATT_EVENT_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY_RESULT: {
             uint16_t descriptor_handle = little_endian_read_16(packet, 4);
             uint8_t uuid128[16];
-            swap128(&packet[6], uuid128);
+            reverse_128(&packet[6], uuid128);
             if (uuid_has_bluetooth_prefix(uuid128)){
                 printf("Characteristic descriptor at 0x%04x with UUID %04x\n", descriptor_handle, big_endian_read_32(uuid128, 0));
             } else {
@@ -557,7 +557,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint8_t *packet, uint1
                                 printf("%04x\n", little_endian_read_16(value, 3));
                             } else {
                                 uint8_t uuid128[16];
-                                swap128(&value[3], uuid128);
+                                reverse_128(&value[3], uuid128);
                                 printUUID128(uuid128);
                                 printf("\n");
                             }
@@ -953,7 +953,7 @@ static void att_signed_write_handle_cmac_result(uint8_t hash[8]){
     little_endian_store_16(request, 1, pts_signed_write_characteristic_handle);
     memcpy(&request[3], signed_write_value, value_length);
     little_endian_store_32(request, 3 + value_length, 0);
-    swap64(hash, &request[3 + value_length + 4]);
+    reverse_64(hash, &request[3 + value_length + 4]);
     l2cap_send_prepared_connectionless(handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, 3 + value_length + 12);
 }
 

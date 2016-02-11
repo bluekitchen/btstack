@@ -137,6 +137,33 @@ static uint8_t panu_sdp_record[200];
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
+static void hexdumpf(const void *data, int size){
+    char buffer[6*16+1];
+    int i, j;
+
+    uint8_t low = 0x0F;
+    uint8_t high = 0xF0;
+    j = 0;
+    for (i=0; i<size;i++){
+        uint8_t byte = ((uint8_t *)data)[i];
+        buffer[j++] = '0';
+        buffer[j++] = 'x';
+        buffer[j++] = char_for_nibble((byte & high) >> 4);
+        buffer[j++] = char_for_nibble(byte & low);
+        buffer[j++] = ',';
+        buffer[j++] = ' ';     
+        if (j >= 6*16 ){
+            buffer[j] = 0;
+            printf("%s\n", buffer);
+            j = 0;
+        }
+    }
+    if (j != 0){
+        buffer[j] = 0;
+        printf("%s\n", buffer);
+    }
+}
+
 static uint16_t setup_ethernet_header(int src_compressed, int dst_compressed, int broadcast, uint16_t network_protocol_type){
     // setup packet
     int pos = 0;

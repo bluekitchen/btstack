@@ -58,9 +58,9 @@ extern "C" {
 #include "btstack_defines.h"
 #include "btstack_linked_list.h"
 	
-// hack: compilation with the android ndk causes an error as there's a swap64 macro
-#ifdef swap64
-#undef swap64
+// hack: compilation with the android ndk causes an error as there's a reverse_64 macro
+#ifdef reverse_64
+#undef reverse_64
 #endif
 
 // will be moved to daemon/btstack_device_name_db.h
@@ -112,13 +112,23 @@ void big_endian_store_32(uint8_t *buffer, uint16_t pos, uint32_t value);
 
 /**
  * @brief Copy from source to destination and reverse byte order
+ * @param src
+ * @param dest
+ * @param len
  */
-void swapX  (const uint8_t *src, uint8_t * dst, int len);
-void swap24 (const uint8_t *src, uint8_t * dst);
-void swap48 (const uint8_t *src, uint8_t * dst);
-void swap56 (const uint8_t *src, uint8_t * dst);
-void swap64 (const uint8_t *src, uint8_t * dst);
-void swap128(const uint8_t *src, uint8_t * dst);
+void reverse_bytes  (const uint8_t *src, uint8_t * dest, int len);
+
+/**
+ * @brief Wrapper around reverse_bytes for common buffer sizes
+ * @param src
+ * @param dest
+ */
+void reverse_24 (const uint8_t *src, uint8_t * dest);
+void reverse_48 (const uint8_t *src, uint8_t * dest);
+void reverse_56 (const uint8_t *src, uint8_t * dest);
+void reverse_64 (const uint8_t *src, uint8_t * dest);
+void reverse_128(const uint8_t *src, uint8_t * dest);
+
 void bt_flip_addr(bd_addr_t dest, bd_addr_t src);
 
 /** 
@@ -153,7 +163,6 @@ void log_key(const char * name, sm_key_t key);
 
 //
 void hexdump(const void *data, int size);
-void hexdumpf(const void *data, int size);
 
 /**
  * @brief Create human readable representation for UUID128

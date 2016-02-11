@@ -287,7 +287,7 @@ static void att_read_by_type_or_group_request_for_uuid128(uint16_t request_type,
     request[0] = request_type;
     little_endian_store_16(request, 1, start_handle);
     little_endian_store_16(request, 3, end_handle);
-    swap128(uuid128, &request[5]);
+    reverse_128(uuid128, &request[5]);
     
     l2cap_send_prepared_connectionless(peripheral_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, 21);
 }
@@ -334,7 +334,7 @@ static void att_signed_write_request(uint16_t request_type, uint16_t peripheral_
     little_endian_store_16(request, 1, attribute_handle);
     memcpy(&request[3], value, value_length);
     little_endian_store_32(request, 3 + value_length, sign_counter);
-    swap64(sgn, &request[3 + value_length + 4]);
+    reverse_64(sgn, &request[3 + value_length + 4]);
     l2cap_send_prepared_connectionless(peripheral_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, 3 + value_length + 12);
 }
 
@@ -403,7 +403,7 @@ static void send_gatt_by_uuid_request(gatt_client_t *peripheral, uint16_t attrib
         return;
     }
     uint8_t uuid128[16];
-    swap128(peripheral->uuid128, uuid128);
+    reverse_128(peripheral->uuid128, uuid128);
     att_find_by_type_value_request(ATT_FIND_BY_TYPE_VALUE_REQUEST, attribute_group_type, peripheral->handle, peripheral->start_group_handle, peripheral->end_group_handle, uuid128, 16);
 }
 
@@ -533,7 +533,7 @@ static void emit_gatt_service_query_result_event(gatt_client_t * peripheral, uin
     ///
     little_endian_store_16(packet, 4, start_group_handle);
     little_endian_store_16(packet, 6, end_group_handle);
-    swap128(uuid128, &packet[8]);
+    reverse_128(uuid128, &packet[8]);
     emit_event_new(peripheral->subclient_id, packet, sizeof(packet));
 }
 
@@ -548,7 +548,7 @@ static void emit_gatt_included_service_query_result_event(gatt_client_t * periph
     //
     little_endian_store_16(packet, 6, start_group_handle);
     little_endian_store_16(packet, 8, end_group_handle);
-    swap128(uuid128, &packet[10]);
+    reverse_128(uuid128, &packet[10]);
     emit_event_new(peripheral->subclient_id, packet, sizeof(packet));
 }
 
@@ -564,7 +564,7 @@ static void emit_gatt_characteristic_query_result_event(gatt_client_t * peripher
     little_endian_store_16(packet, 6,  value_handle);
     little_endian_store_16(packet, 8,  end_handle);
     little_endian_store_16(packet, 10, properties);
-    swap128(uuid128, &packet[12]);
+    reverse_128(uuid128, &packet[12]);
     emit_event_new(peripheral->subclient_id, packet, sizeof(packet));
 }
 
@@ -577,7 +577,7 @@ static void emit_gatt_all_characteristic_descriptors_result_event(
     little_endian_store_16(packet, 2, peripheral->handle);
     ///
     little_endian_store_16(packet, 4,  descriptor_handle);
-    swap128(uuid128, &packet[6]);
+    reverse_128(uuid128, &packet[6]);
     emit_event_new(peripheral->subclient_id, packet, sizeof(packet));
 }
 ///
@@ -597,7 +597,7 @@ static void report_gatt_services(gatt_client_t * peripheral, uint8_t * packet,  
             uuid16 = little_endian_read_16(packet, i+4);
             uuid_add_bluetooth_prefix((uint8_t*) &uuid128, uuid16);
         } else {
-            swap128(&packet[i+4], uuid128);
+            reverse_128(&packet[i+4], uuid128);
         }
         emit_gatt_service_query_result_event(peripheral, start_group_handle, end_group_handle, uuid128);
     }
@@ -612,7 +612,7 @@ static void characteristic_start_found(gatt_client_t * peripheral, uint16_t star
         uuid16 = little_endian_read_16(uuid, 0);
         uuid_add_bluetooth_prefix((uint8_t*) uuid128, uuid16);
     } else {
-        swap128(uuid, uuid128);
+        reverse_128(uuid, uuid128);
     }
     
     if (peripheral->filter_with_uuid && memcmp(peripheral->uuid128, uuid128, 16) != 0) return;
@@ -744,7 +744,7 @@ static void report_gatt_all_characteristic_descriptors(gatt_client_t * periphera
             uuid16 = little_endian_read_16(packet,i+2);
             uuid_add_bluetooth_prefix(uuid128, uuid16);
         } else {
-            swap128(&packet[i+2], uuid128);
+            reverse_128(&packet[i+2], uuid128);
         }        
         emit_gatt_all_characteristic_descriptors_result_event(peripheral, descriptor_handle, uuid128);
     }
@@ -1166,7 +1166,7 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
             switch (peripheral->gatt_client_state){
                 case P_W4_INCLUDED_SERVICE_UUID_WITH_QUERY_RESULT: {
                     uint8_t uuid128[16];
-                    swap128(&packet[1], uuid128);
+                    reverse_128(&packet[1], uuid128);
                     report_gatt_included_service_uuid128(peripheral, peripheral->start_group_handle, uuid128);
                     trigger_next_included_service_query(peripheral, peripheral->start_group_handle);
                     // GATT_EVENT_QUERY_COMPLETE is emitted by trigger_next_xxx when done
@@ -1385,7 +1385,7 @@ static void att_signed_write_handle_cmac_result(uint8_t hash[8]){
         if (peripheral->gatt_client_state == P_W4_CMAC_RESULT){
             // store result
             memcpy(peripheral->cmac, hash, 8);
-            // swap64(hash, peripheral->cmac);
+            // reverse_64(hash, peripheral->cmac);
             peripheral->gatt_client_state = P_W2_SEND_SIGNED_WRITE;
             gatt_client_run();
             return;

@@ -74,7 +74,7 @@ static inline uint8_t l2cap_event_channel_opened_get_status(const uint8_t * even
  * @note: btstack_type B
  */
 static inline void l2cap_event_channel_opened_get_address(const uint8_t * event, bd_addr_t address){
-    swap48(&event[3], address);    
+    reverse_48(&event[3], address);    
 }
 
 /**
@@ -174,7 +174,7 @@ static inline uint8_t l2cap_event_incoming_connection_get_status(const uint8_t *
  * @note: btstack_type B
  */
 static inline void l2cap_event_incoming_connection_get_address(const uint8_t * event, bd_addr_t address){
-    swap48(&event[3], address);    
+    reverse_48(&event[3], address);    
 }
 
 /**
@@ -324,7 +324,7 @@ static inline uint8_t rfcomm_event_open_channel_complete_get_status(const uint8_
  * @note: btstack_type B
  */
 static inline void rfcomm_event_open_channel_complete_get_bd_addr(const uint8_t * event, bd_addr_t bd_addr){
-    swap48(&event[3], bd_addr);    
+    reverse_48(&event[3], bd_addr);    
 }
 
 /**
@@ -384,7 +384,7 @@ static inline uint16_t rfcomm_event_channel_closed_get_rfcomm_cid(const uint8_t 
  * @note: btstack_type B
  */
 static inline void rfcomm_event_incoming_connection_get_bd_addr(const uint8_t * event, bd_addr_t bd_addr){
-    swap48(&event[2], bd_addr);    
+    reverse_48(&event[2], bd_addr);    
 }
 
 /**
@@ -714,7 +714,7 @@ static inline uint8_t sm_event_just_works_request_get_addr_type(const uint8_t * 
  * @note: btstack_type B
  */
 static inline void sm_event_just_works_request_get_address(const uint8_t * event, bd_addr_t address){
-    swap48(&event[5], address);    
+    reverse_48(&event[5], address);    
 }
 
 /**
@@ -744,7 +744,7 @@ static inline uint8_t sm_event_just_works_cancel_get_addr_type(const uint8_t * e
  * @note: btstack_type B
  */
 static inline void sm_event_just_works_cancel_get_address(const uint8_t * event, bd_addr_t address){
-    swap48(&event[5], address);    
+    reverse_48(&event[5], address);    
 }
 
 /**
@@ -774,7 +774,7 @@ static inline uint8_t sm_event_passkey_display_number_get_addr_type(const uint8_
  * @note: btstack_type B
  */
 static inline void sm_event_passkey_display_number_get_address(const uint8_t * event, bd_addr_t address){
-    swap48(&event[5], address);    
+    reverse_48(&event[5], address);    
 }
 
 /**
@@ -814,7 +814,7 @@ static inline uint8_t sm_event_passkey_display_cancel_get_addr_type(const uint8_
  * @note: btstack_type B
  */
 static inline void sm_event_passkey_display_cancel_get_address(const uint8_t * event, bd_addr_t address){
-    swap48(&event[5], address);    
+    reverse_48(&event[5], address);    
 }
 
 /**
@@ -844,7 +844,7 @@ static inline uint8_t sm_event_passkey_input_number_get_addr_type(const uint8_t 
  * @note: btstack_type B
  */
 static inline void sm_event_passkey_input_number_get_address(const uint8_t * event, bd_addr_t address){
-    swap48(&event[5], address);    
+    reverse_48(&event[5], address);    
 }
 
 /**
@@ -874,7 +874,7 @@ static inline uint8_t sm_event_passkey_input_cancel_get_addr_type(const uint8_t 
  * @note: btstack_type B
  */
 static inline void sm_event_passkey_input_cancel_get_address(const uint8_t * event, bd_addr_t address){
-    swap48(&event[5], address);    
+    reverse_48(&event[5], address);    
 }
 
 /**
@@ -904,7 +904,7 @@ static inline uint8_t sm_event_identity_resolving_started_get_addr_type(const ui
  * @note: btstack_type B
  */
 static inline void sm_event_identity_resolving_started_get_address(const uint8_t * event, bd_addr_t address){
-    swap48(&event[5], address);    
+    reverse_48(&event[5], address);    
 }
 
 /**
@@ -934,7 +934,7 @@ static inline uint8_t sm_event_identity_resolving_failed_get_addr_type(const uin
  * @note: btstack_type B
  */
 static inline void sm_event_identity_resolving_failed_get_address(const uint8_t * event, bd_addr_t address){
-    swap48(&event[5], address);    
+    reverse_48(&event[5], address);    
 }
 
 /**
@@ -964,7 +964,7 @@ static inline uint8_t sm_event_identity_resolving_succeeded_get_addr_type(const 
  * @note: btstack_type B
  */
 static inline void sm_event_identity_resolving_succeeded_get_address(const uint8_t * event, bd_addr_t address){
-    swap48(&event[5], address);    
+    reverse_48(&event[5], address);    
 }
 
 /**
@@ -1004,7 +1004,7 @@ static inline uint8_t sm_event_authorization_request_get_addr_type(const uint8_t
  * @note: btstack_type B
  */
 static inline void sm_event_authorization_request_get_address(const uint8_t * event, bd_addr_t address){
-    swap48(&event[5], address);    
+    reverse_48(&event[5], address);    
 }
 
 /**
@@ -1034,7 +1034,7 @@ static inline uint8_t sm_event_authorization_result_get_addr_type(const uint8_t 
  * @note: btstack_type B
  */
 static inline void sm_event_authorization_result_get_address(const uint8_t * event, bd_addr_t address){
-    swap48(&event[5], address);    
+    reverse_48(&event[5], address);    
 }
 
 /**

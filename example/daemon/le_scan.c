@@ -67,7 +67,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             switch (packet[2]) {
                 case HCI_SUBEVENT_LE_ADVERTISING_REPORT: 
                 	printf("\n- ADV: ");
-                	hexdumpf(packet, size);
+                	printf_hexdump(packet, size);
                     break;
                 }
                 break;

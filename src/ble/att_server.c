@@ -221,7 +221,7 @@ static void att_signed_write_handle_cmac_result(uint8_t hash[8]){
     if (att_server_state != ATT_SERVER_W4_SIGNED_WRITE_VALIDATION) return;
 
     uint8_t hash_flipped[8];
-    swap64(hash, hash_flipped);
+    reverse_64(hash, hash_flipped);
     if (memcmp(hash_flipped, &att_request_buffer[att_request_size-8], 8)){
         log_info("ATT Signed Write, invalid signature");
         att_server_state = ATT_SERVER_IDLE;

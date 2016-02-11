@@ -122,25 +122,25 @@ void bt_flip_addr(bd_addr_t dest, bd_addr_t src){
 }
 
 // general swap/endianess utils
-void swapX(const uint8_t *src, uint8_t *dst, int len){
+void reverse_bytes(const uint8_t *src, uint8_t *dst, int len){
     int i;
     for (i = 0; i < len; i++)
         dst[len - 1 - i] = src[i];
 }
-void swap24(const uint8_t * src, uint8_t * dst){
-    swapX(src, dst, 3);
+void reverse_24(const uint8_t * src, uint8_t * dst){
+    reverse_bytes(src, dst, 3);
 }
-void swap48(const uint8_t * src, uint8_t * dst){
-    swapX(src, dst, 6);
+void reverse_48(const uint8_t * src, uint8_t * dst){
+    reverse_bytes(src, dst, 6);
 }
-void swap56(const uint8_t * src, uint8_t * dst){
-    swapX(src, dst, 7);
+void reverse_56(const uint8_t * src, uint8_t * dst){
+    reverse_bytes(src, dst, 7);
 }
-void swap64(const uint8_t * src, uint8_t * dst){
-    swapX(src, dst, 8);
+void reverse_64(const uint8_t * src, uint8_t * dst){
+    reverse_bytes(src, dst, 8);
 }
-void swap128(const uint8_t * src, uint8_t * dst){
-    swapX(src, dst, 16);
+void reverse_128(const uint8_t * src, uint8_t * dst){
+    reverse_bytes(src, dst, 16);
 }
 
 char char_for_nibble(int nibble){
@@ -157,33 +157,6 @@ void printf_hexdump(const void *data, int size){
         printf("%02X ", ((uint8_t *)data)[i]);
     }
     printf("\n");
-}
-
-void hexdumpf(const void *data, int size){
-    char buffer[6*16+1];
-    int i, j;
-
-    uint8_t low = 0x0F;
-    uint8_t high = 0xF0;
-    j = 0;
-    for (i=0; i<size;i++){
-        uint8_t byte = ((uint8_t *)data)[i];
-        buffer[j++] = '0';
-        buffer[j++] = 'x';
-        buffer[j++] = char_for_nibble((byte & high) >> 4);
-        buffer[j++] = char_for_nibble(byte & low);
-        buffer[j++] = ',';
-        buffer[j++] = ' ';     
-        if (j >= 6*16 ){
-            buffer[j] = 0;
-            printf("%s\n", buffer);
-            j = 0;
-        }
-    }
-    if (j != 0){
-        buffer[j] = 0;
-        printf("%s\n", buffer);
-    }
 }
 
 //  void log_info_hexdump(..){

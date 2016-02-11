@@ -136,7 +136,7 @@ param_read = {
     '3' : 'return little_endian_read_24(event, {offset});',
     '4' : 'return little_endian_read_32(event, {offset});',
     'H' : 'return little_endian_read_16(event, {offset});',
-    'B' : 'swap48(&event[{offset}], {result_name});',
+    'B' : 'reverse_48(&event[{offset}], {result_name});',
     'R' : 'return &event[{offset}];',
     'T' : 'return (const char *) &event[{offset}];',
     'V' : 'return &event[{offset}];',
