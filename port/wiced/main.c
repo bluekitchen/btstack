@@ -92,9 +92,8 @@ void application_start(void){
     // hci_dump_open(NULL, HCI_DUMP_STDOUT);
 
     // init HCI
-    const hci_transport_t * transport = hci_transport_h4_instance();
-    remote_device_db_t * remote_db = (remote_device_db_t *) &remote_device_db_memory;
-    hci_init(transport, (void*) &hci_transport_config_uart, remote_db);
+    hci_init(hci_transport_h4_instance, (void*) &hci_transport_config_uart);
+    hci_set_link_key_db(btstack_link_key_db_memory_instance());
     hci_set_chipset(btstack_chipset_bcm_instance());
 
     // use WIFI Mac address + 1 for Bluetooth

@@ -2068,7 +2068,10 @@ int main (int argc,  char * const * argv){
     log_info("version %s, build %s", BTSTACK_VERSION, BTSTACK_DATE);
 
     // init HCI
-    hci_init(transport, config, btstack_link_key_db);
+    hci_init(transport, config)
+    if (btstack_link_key_db){
+        hci_set_link_key_db(btstack_link_key_db);
+    }
     if (control){
         hci_set_control(control);
     }

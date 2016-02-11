@@ -91,8 +91,8 @@ int main(int argc, const char * argv[]){
     hci_dump_open("/tmp/hci_dump.pklg", HCI_DUMP_PACKETLOGGER);
 
     // init HCI
-	const hci_transport_t * transport = hci_transport_usb_instance();
-	hci_init(transport, NULL, btstack_link_key_db_fs_instance());
+	hci_init(hci_transport_usb_instance(), NULL);
+    hci_set_link_key_db(btstack_link_key_db_fs_instance());
     
     // handle CTRL-c
     signal(SIGINT, sigint_handler);

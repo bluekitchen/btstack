@@ -162,7 +162,8 @@ int main(int argc, const char * argv[]){
     // init HCI
 	const hci_transport_t * transport = hci_transport_h4_instance();
     const btstack_link_key_db_t * link_key_db = btstack_link_key_db_fs_instance();
-	hci_init(transport, (void*) &config, link_key_db);
+	hci_init(transport, (void*) &config);
+    hci_set_link_key_db(link_key_db);
     
     // register for HCI events
     hci_event_callback_registration.callback = &hci_event_handler;

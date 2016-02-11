@@ -226,7 +226,7 @@ void BTSTACK_Initialize ( void )
     hci_dump_open(NULL, HCI_DUMP_STDOUT);
 
     const hci_transport_t * transport = hci_transport_h4_instance();
-    hci_init(transport, &config, NULL);
+    hci_init(transport, &config);
     hci_set_chipset(btstack_chipset_csr_instance());
 
     // hci_power_control(HCI_POWER_ON);

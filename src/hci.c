@@ -1880,7 +1880,18 @@ static void hci_state_reset(void){
     hci_stack->le_connection_parameter_range.le_supervision_timeout_max = 3200;
 }
 
-void hci_init(const hci_transport_t *transport, const void *config, btstack_link_key_db_t const * link_key_db){
+/**
+ * @brief Configure Bluetooth hardware control. Has to be called before power on.
+ */
+void hci_set_link_key_db(btstack_link_key_db_t const * link_key_db){
+    // store and open remote device db
+    hci_stack->link_key_db = link_key_db;
+    if (hci_stack->link_key_db) {
+        hci_stack->link_key_db->open();
+    }
+}
+
+void hci_init(const hci_transport_t *transport, const void *config){
     
 #ifdef HAVE_MALLOC
     if (!hci_stack) {
@@ -1896,15 +1907,6 @@ void hci_init(const hci_transport_t *transport, const void *config, btstack_link
         
     // reference to used config
     hci_stack->config = config;
-    
-    // init used hardware control with NULL
-    // init used chipset with NULL 
-
-    // store and open remote device db
-    hci_stack->link_key_db = link_key_db;
-    if (hci_stack->link_key_db) {
-        hci_stack->link_key_db->open();
-    }
     
     // max acl payload size defined in config.h
     hci_stack->acl_data_packet_length = HCI_ACL_PAYLOAD_SIZE;

@@ -149,7 +149,7 @@ bool nameHasPrefix(const char * name_prefix, uint16_t data_length, uint8_t * dat
 
 TEST_GROUP(ADParser){
     void setup(void){
-        hci_init(&dummy_transport, NULL, NULL);
+        hci_init(&dummy_transport, NULL);
         hci_event_callback_registration.callback = &packet_handler;
         hci_add_event_handler(&hci_event_callback_registration);
     }
