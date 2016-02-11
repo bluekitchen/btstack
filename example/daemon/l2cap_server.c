@@ -185,7 +185,7 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 					break;
 					
 				case HCI_EVENT_COMMAND_COMPLETE:
-					if ( COMMAND_COMPLETE_EVENT(packet, hci_write_class_of_device) ) {
+					if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_write_class_of_device)) {
 						printf("Ready\n");
 					}
 				default:

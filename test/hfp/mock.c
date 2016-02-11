@@ -177,7 +177,7 @@ static void hci_event_sco_complete(){
 
     event[pos++] = 0; //status
     little_endian_store_16(event,  pos, sco_handle);   pos += 2; // sco handle
-    bt_flip_addr(&event[pos], dev_addr);    pos += 6;
+    reverse_bd_addr(dev_addr, &event[pos]);    pos += 6;
 
     event[pos++] = 0; // link_type
     event[pos++] = 0; // transmission_interval
@@ -237,7 +237,7 @@ uint8_t rfcomm_create_channel(bd_addr_t addr, uint8_t channel, uint16_t * out_ci
     event[pos++] = sizeof(event) - 2;
     event[pos++] = 0;
     
-    bt_flip_addr(&event[pos], addr);
+    reverse_bd_addr(addr, &event[pos]);
     memcpy(dev_addr, addr, 6);
     pos += 6;
     

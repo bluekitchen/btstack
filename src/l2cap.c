@@ -934,7 +934,7 @@ static void l2cap_hci_event_handler(uint8_t packet_type, uint16_t cid, uint8_t *
             
         // handle successful create connection cancel command
         case HCI_EVENT_COMMAND_COMPLETE:
-            if ( COMMAND_COMPLETE_EVENT(packet, hci_create_connection_cancel) ) {
+            if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_create_connection_cancel)) {
                 if (packet[5] == 0){
                     reverse_bd_addr(&packet[6], address);
                     // CONNECTION TERMINATED BY LOCAL HOST (0X16)

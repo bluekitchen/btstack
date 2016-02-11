@@ -146,7 +146,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             break;
 
         case W4_INQUIRY_MODE_COMPLETE:
-            if ( COMMAND_COMPLETE_EVENT(packet, hci_write_inquiry_mode) ) {
+            if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_write_inquiry_mode)) {
                 start_scan();
                 state = ACTIVE;
             }

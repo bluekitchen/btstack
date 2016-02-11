@@ -257,7 +257,7 @@ const char * ad_event_types[] = {
 static void handle_advertising_event(uint8_t * packet, int size){
     // filter PTS
     bd_addr_t addr;
-    bt_flip_addr(addr, &packet[4]);
+    reverse_bd_addr(&packet[4], addr);
 
     // always request address resolution
     sm_address_resolution_lookup(packet[3], addr);
@@ -388,7 +388,7 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                     break;
 
                 case SM_EVENT_IDENTITY_RESOLVING_SUCCEEDED:
-                    bt_flip_addr(event_address, &packet[5]);
+                    reverse_bd_addr(&packet[5], event_address);
                     // skip already detected pts
                     if (memcmp(event_address, current_pts_address, 6) == 0) break;
                     memcpy(current_pts_address, event_address, 6);
@@ -679,7 +679,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint8_t *packet, uint1
                     central_state = CENTRAL_IDLE;
                     hci_le_advertisement_address(&address_type, our_private_address);
                     printf("Our private address: %s\n", bd_addr_to_str(our_private_address));
-                    bt_flip_addr(flipped_address, our_private_address);
+                    reverse_bd_addr(our_private_address, flipped_address);
                     gatt_client_write_value_of_characteristic(gc_id, handle, gap_reconnection_address_characteristic.value_handle, 6, flipped_address);
                     reconnection_address_set = 1;
 #ifdef PTS_USES_RECONNECTION_ADDRESS_FOR_ITSELF

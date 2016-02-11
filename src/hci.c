@@ -1344,7 +1344,7 @@ static void event_handler(uint8_t *packet, int size){
             // log_info("HCI_EVENT_COMMAND_COMPLETE cmds old %u - new %u", hci_stack->num_cmd_packets, packet[2]);
             hci_stack->num_cmd_packets = packet[2];
 
-            if (COMMAND_COMPLETE_EVENT(packet, hci_read_buffer_size)){
+            if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_read_buffer_size)){
                 // from offset 5
                 // status 
                 // "The HC_ACL_Data_Packet_Length return parameter will be used to determine the size of the L2CAP segments contained in ACL Data Packets"
@@ -1364,7 +1364,7 @@ static void event_handler(uint8_t *packet, int size){
                 }
             }
 #ifdef ENABLE_BLE
-            if (COMMAND_COMPLETE_EVENT(packet, hci_le_read_buffer_size)){
+            if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_le_read_buffer_size)){
                 hci_stack->le_data_packets_length = little_endian_read_16(packet, 6);
                 hci_stack->le_acl_packets_total_num  = packet[8];
                     // determine usable ACL payload size
@@ -1373,23 +1373,23 @@ static void event_handler(uint8_t *packet, int size){
                     }
                 log_info("hci_le_read_buffer_size: size %u, count %u", hci_stack->le_data_packets_length, hci_stack->le_acl_packets_total_num);
             }         
-            if (COMMAND_COMPLETE_EVENT(packet, hci_le_read_white_list_size)){
+            if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_le_read_white_list_size)){
                 hci_stack->le_whitelist_capacity = little_endian_read_16(packet, 6);
                 log_info("hci_le_read_white_list_size: size %u", hci_stack->le_whitelist_capacity);
             }   
 #endif
             // Dump local address
-            if (COMMAND_COMPLETE_EVENT(packet, hci_read_bd_addr)) {
+            if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_read_bd_addr)) {
                 reverse_bd_addr(&packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE + 1],
 				hci_stack->local_bd_addr);
                 log_info("Local Address, Status: 0x%02x: Addr: %s",
                     packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE], bd_addr_to_str(hci_stack->local_bd_addr));
             }
-            if (COMMAND_COMPLETE_EVENT(packet, hci_write_scan_enable)){
+            if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_write_scan_enable)){
                 hci_emit_discoverable_enabled(hci_stack->discoverable);
             }
             // Note: HCI init checks 
-            if (COMMAND_COMPLETE_EVENT(packet, hci_read_local_supported_features)){
+            if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_read_local_supported_features)){
                 memcpy(hci_stack->local_supported_features, &packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1], 8);
 
                 // determine usable ACL packet types based on host buffer size and supported features
@@ -1399,7 +1399,7 @@ static void event_handler(uint8_t *packet, int size){
                 // Classic/LE
                 log_info("BR/EDR support %u, LE support %u", hci_classic_supported(), hci_le_supported());
             }
-            if (COMMAND_COMPLETE_EVENT(packet, hci_read_local_version_information)){
+            if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_read_local_version_information)){
                 // hci_stack->hci_version    = little_endian_read_16(packet, 4);
                 // hci_stack->hci_revision   = little_endian_read_16(packet, 6);
                 // hci_stack->lmp_version    = little_endian_read_16(packet, 8);
@@ -1407,12 +1407,12 @@ static void event_handler(uint8_t *packet, int size){
                 // hci_stack->lmp_subversion = little_endian_read_16(packet, 12);
                 log_info("Manufacturer: 0x%04x", hci_stack->manufacturer);
             }
-            if (COMMAND_COMPLETE_EVENT(packet, hci_read_local_supported_commands)){
+            if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_read_local_supported_commands)){
                 hci_stack->local_supported_commands[0] =
                     (packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1+14] & 0X80) >> 7 |  // Octet 14, bit 7
                     (packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1+24] & 0x40) >> 5;   // Octet 24, bit 6 
             }
-            if (COMMAND_COMPLETE_EVENT(packet, hci_write_synchronous_flow_control_enable)){
+            if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_write_synchronous_flow_control_enable)){
                 if (packet[5] == 0){
                     hci_stack->synchronous_flow_control_enabled = 1;
                 }
@@ -1785,7 +1785,7 @@ static void event_handler(uint8_t *packet, int size){
     // help with BT sleep
     if (hci_stack->state == HCI_STATE_FALLING_ASLEEP
         && hci_stack->substate == HCI_FALLING_ASLEEP_W4_WRITE_SCAN_ENABLE
-        && COMMAND_COMPLETE_EVENT(packet, hci_write_scan_enable)){
+        && HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_write_scan_enable)){
         hci_initializing_next_state();
     }
     
@@ -3046,7 +3046,7 @@ static void hci_emit_dedicated_bonding_result(bd_addr_t address, uint8_t status)
 }
 
 // query if remote side supports eSCO
-int hci_remote_eSCO_supported(hci_con_handle_t con_handle){
+int hci_remote_esco_supported(hci_con_handle_t con_handle){
     hci_connection_t * connection = hci_connection_for_handle(con_handle);
     if (!connection) return 0;
     return connection->remote_supported_feature_eSCO;

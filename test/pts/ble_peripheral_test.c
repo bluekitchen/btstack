@@ -324,7 +324,7 @@ static uint16_t att_read_callback(uint16_t con_handle, uint16_t attribute_handle
             return 1;
         case ATT_CHARACTERISTIC_GAP_RECONNECTION_ADDRESS_01_VALUE_HANDLE:
             if (buffer) {
-                bt_flip_addr(buffer, gap_reconnection_address);
+                reverse_bd_addr(gap_reconnection_address, buffer);
             }
             return 6;
 
@@ -399,7 +399,7 @@ static int att_write_callback(uint16_t con_handle, uint16_t attribute_handle, ui
             update_advertisements();
             return 0;
         case ATT_CHARACTERISTIC_GAP_RECONNECTION_ADDRESS_01_VALUE_HANDLE:
-            bt_flip_addr(gap_reconnection_address, buffer);
+            reverse_bd_addr(buffer, gap_reconnection_address);
             printf("Setting Reconnection Address to %s\n", bd_addr_to_str(gap_reconnection_address));
             return 0;
         default:
@@ -588,7 +588,7 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                 case SM_EVENT_PASSKEY_INPUT_NUMBER:
                     // display number
                     master_addr_type = packet[4];
-                    bt_flip_addr(event_address, &packet[5]);
+                    reverse_bd_addr(&packet[5], event_address);
                     printf("\nGAP Bonding %s (%u): Enter 6 digit passkey: '", bd_addr_to_str(master_address), master_addr_type);
                     fflush(stdout);
                     ui_passkey = 0;

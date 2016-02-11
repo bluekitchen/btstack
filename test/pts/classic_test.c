@@ -194,7 +194,7 @@ static void inquiry_packet_handler (uint8_t packet_type, uint8_t *packet, uint16
             numResponses = packet[2];
             int offset = 3;
             for (i=0; i<numResponses && deviceCount < MAX_DEVICES;i++){
-                bt_flip_addr(addr, &packet[offset]);
+                reverse_bd_addr(&packet[offset], addr);
                 offset += 6;
                 index = getDeviceIndexForAddress(addr);
                 if (index >= 0) continue;   // already in our list
@@ -238,12 +238,12 @@ static void inquiry_packet_handler (uint8_t packet_type, uint8_t *packet, uint16
             break;
 
         case BTSTACK_EVENT_REMOTE_NAME_CACHED:
-            bt_flip_addr(addr, &packet[3]);
+            reverse_bd_addr(&packet[3], addr);
             printf("Cached remote name for %s: '%s'\n", bd_addr_to_str(addr), &packet[9]);
             break;
 
         case HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE:
-            bt_flip_addr(addr, &packet[3]);
+            reverse_bd_addr(&packet[3], addr);
             index = getDeviceIndexForAddress(addr);
             if (index >= 0) {
                 if (packet[2] == 0) {
@@ -297,26 +297,26 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
         case HCI_EVENT_CONNECTION_COMPLETE:
             if (!packet[2]){
                 handle = little_endian_read_16(packet, 3);
-                bt_flip_addr(remote, &packet[5]);
+                reverse_bd_addr(&packet[5], remote);
                 printf("HCI_EVENT_CONNECTION_COMPLETE: handle 0x%04x\n", handle);
             }
             break;
 
         case HCI_EVENT_USER_PASSKEY_REQUEST:
-            bt_flip_addr(remote, &packet[2]);
+            reverse_bd_addr(&packet[2], remote);
             printf("GAP User Passkey Request for %s\nPasskey:", bd_addr_to_str(remote));
             fflush(stdout);
             ui_digits_for_passkey = 6;
             break;
 
         case HCI_EVENT_USER_CONFIRMATION_REQUEST:
-            bt_flip_addr(remote, &packet[2]);
+            reverse_bd_addr(&packet[2], remote);
             passkey = little_endian_read_32(packet, 8);
             printf("GAP User Confirmation Request for %s, number '%06u'\n", bd_addr_to_str(remote),passkey);
             break;
 
         case HCI_EVENT_PIN_CODE_REQUEST:
-            bt_flip_addr(remote, &packet[2]);
+            reverse_bd_addr(&packet[2], remote);
             printf("GAP Legacy PIN Request for %s (press ENTER to send)\nPasskey:", bd_addr_to_str(remote));
             fflush(stdout);
             ui_chars_for_pin = 1;
@@ -324,7 +324,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 
         case L2CAP_EVENT_CHANNEL_OPENED:
             // inform about new l2cap connection
-            bt_flip_addr(remote, &packet[3]);
+            reverse_bd_addr(&packet[3], remote);
             psm = little_endian_read_16(packet, 11); 
             local_cid = little_endian_read_16(packet, 13); 
             handle = little_endian_read_16(packet, 9);
@@ -347,7 +347,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 
         case RFCOMM_EVENT_INCOMING_CONNECTION:
             // data: event (8), len(8), address(48), channel (8), rfcomm_cid (16)
-            bt_flip_addr(remote, &packet[2]); 
+            reverse_bd_addr(&packet[2], remote); 
             rfcomm_channel_nr = packet[8];
             rfcomm_channel_id = little_endian_read_16(packet, 9);
             printf("RFCOMM channel %u requested for %s\n\r", rfcomm_channel_nr, bd_addr_to_str(remote));

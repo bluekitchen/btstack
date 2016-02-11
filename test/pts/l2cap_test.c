@@ -86,7 +86,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             break;
         case L2CAP_EVENT_CHANNEL_OPENED:
             // inform about new l2cap connection
-            bt_flip_addr(event_addr, &packet[3]);
+            reverse_bd_addr(&packet[3], event_addr);
             psm = little_endian_read_16(packet, 11); 
             local_cid = little_endian_read_16(packet, 13); 
             handle = little_endian_read_16(packet, 9);

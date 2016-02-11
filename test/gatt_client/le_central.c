@@ -56,7 +56,7 @@ static void handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *pac
             advertisement_received = 1;
             memcpy(advertisement_packet, packet, size);
             
-            bt_flip_addr(address, &packet[4]);
+            reverse_bd_addr(&packet[4], address);
             le_central_connect(address, (bd_addr_type_t)packet[3]);
             break;
         }
