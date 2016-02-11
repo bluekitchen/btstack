@@ -130,15 +130,6 @@ typedef enum {
     CON_PARAMETER_UPDATE_DENY
 } le_con_parameter_update_state_t;
 
-typedef struct le_connection_parameter_range{
-    uint16_t le_conn_interval_min;
-    uint16_t le_conn_interval_max;
-    uint16_t le_conn_latency_min;
-    uint16_t le_conn_latency_max;
-    uint16_t le_supervision_timeout_min;
-    uint16_t le_supervision_timeout_max;
-} le_connection_parameter_range_t;
-
 // Authentication flags
 typedef enum {
     AUTH_FLAGS_NONE                = 0x0000,
@@ -742,20 +733,6 @@ int hci_send_cmd_packet(uint8_t *packet, int size);
 int hci_remote_esco_supported(hci_con_handle_t con_handle);
 
 /* API_START */
-
-void gap_le_get_connection_parameter_range(le_connection_parameter_range_t range);
-void gap_le_set_connection_parameter_range(le_connection_parameter_range_t range);
-
-/* LE Client Start */
-
-uint8_t le_central_start_scan(void);
-uint8_t le_central_stop_scan(void);
-uint8_t le_central_connect(bd_addr_t addr, bd_addr_type_t addr_type);
-uint8_t le_central_connect_cancel(void);
-uint8_t gap_disconnect(hci_con_handle_t handle);
-void    le_central_set_scan_parameters(uint8_t scan_type, uint16_t scan_interval, uint16_t scan_window);
-
-/* LE Client End */
     
 void hci_connectable_control(uint8_t enable);
 void hci_close(void);

@@ -87,6 +87,21 @@ typedef enum {
 	GAP_CONNECTION_LE
 } gap_connection_type_t;
 
+typedef struct le_connection_parameter_range{
+    uint16_t le_conn_interval_min;
+    uint16_t le_conn_interval_max;
+    uint16_t le_conn_latency_min;
+    uint16_t le_conn_latency_max;
+    uint16_t le_supervision_timeout_min;
+    uint16_t le_supervision_timeout_max;
+} le_connection_parameter_range_t;
+
+typedef enum {
+    GAP_RANDOM_ADDRESS_TYPE_OFF = 0,
+    GAP_RANDOM_ADDRESS_NON_RESOLVABLE,
+    GAP_RANDOM_ADDRESS_RESOLVABLE,
+} gap_random_address_type_t;
+
 /* API_START */
 
 /**
@@ -130,12 +145,6 @@ void gap_set_local_name(const char * local_name);
  * @result connection_type
  */
 gap_connection_type_t gap_get_connection_type(hci_con_handle_t connection_handle);
-
-typedef enum {
-    GAP_RANDOM_ADDRESS_TYPE_OFF = 0,
-    GAP_RANDOM_ADDRESS_NON_RESOLVABLE,
-    GAP_RANDOM_ADDRESS_RESOLVABLE,
-} gap_random_address_type_t;
 
 /**
  * @brief Enable privacy by using random addresses
@@ -234,6 +243,18 @@ int gap_auto_connection_stop(bd_addr_type_t address_typ, bd_addr_t address);
  * @note  Convenience function to stop all active auto connection attempts
  */
 void gap_auto_connection_stop_all(void);
+
+void gap_le_get_connection_parameter_range(le_connection_parameter_range_t range);
+void gap_le_set_connection_parameter_range(le_connection_parameter_range_t range);
+
+/* LE Client Start */
+
+uint8_t le_central_start_scan(void);
+uint8_t le_central_stop_scan(void);
+uint8_t le_central_connect(bd_addr_t addr, bd_addr_type_t addr_type);
+uint8_t le_central_connect_cancel(void);
+uint8_t gap_disconnect(hci_con_handle_t handle);
+void    le_central_set_scan_parameters(uint8_t scan_type, uint16_t scan_interval, uint16_t scan_window);
 
 #if defined __cplusplus
 }
