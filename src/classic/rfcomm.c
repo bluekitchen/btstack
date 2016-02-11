@@ -253,7 +253,7 @@ static rfcomm_multiplexer_t * rfcomm_multiplexer_create_for_addr(bd_addr_t addr)
     
     // fill in 
     rfcomm_multiplexer_initialize(multiplexer);
-    bd_addr_copy(&multiplexer->remote_addr, addr);
+    bd_addr_copy(multiplexer->remote_addr, addr);
 
     // add to services list
     btstack_linked_list_add(&rfcomm_multiplexers, (btstack_linked_item_t *) multiplexer);

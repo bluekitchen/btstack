@@ -58,6 +58,11 @@ extern "C" {
 #include "btstack_defines.h"
 #include "btstack_linked_list.h"
 	
+// hack: compilation with the android ndk causes an error as there's a swap64 macro
+#ifdef swap64
+#undef swap64
+#endif
+
 // will be moved to daemon/btstack_device_name_db.h
 
 /**
@@ -65,36 +70,45 @@ extern "C" {
  */
 #define DEVICE_NAME_LEN 248
 typedef uint8_t device_name_t[DEVICE_NAME_LEN+1]; 
+
+
 	
-// helper for little endian format
-static inline uint16_t little_endian_read_16(const uint8_t * buffer, int pos){
-	return ((uint16_t) buffer[pos]) | (((uint16_t)buffer[(pos)+1]) << 8);
-}
-static inline uint32_t little_endian_read_24(const uint8_t * buffer, int pos){
-	return ((uint32_t) buffer[pos]) | (((uint32_t)buffer[(pos)+1]) << 8) | (((uint32_t)buffer[(pos)+2]) << 16);
-}
-static inline uint32_t little_endian_read_32(const uint8_t * buffer, int pos){
-	return ((uint32_t) buffer[pos]) | (((uint32_t)buffer[(pos)+1]) << 8) | (((uint32_t)buffer[(pos)+2]) << 16) | (((uint32_t) buffer[(pos)+3]) << 24);
-}
-void little_endian_store_16(uint8_t *buffer, uint16_t pos, uint16_t value);
-void little_endian_store_32(uint8_t *buffer, uint16_t pos, uint32_t value);
+/** 
+ * @brief Read 16/24/32 bit little endian value from buffer
+ * @param buffer
+ * @param position in buffer
+ * @return value
+ */
+uint16_t little_endian_read_16(const uint8_t * buffer, int position);
+uint32_t little_endian_read_24(const uint8_t * buffer, int position);
+uint32_t little_endian_read_32(const uint8_t * buffer, int position);
 
-// helper for big endian format
-static inline uint32_t big_endian_read_16( const uint8_t * buffer, int pos) {
-	return ((uint16_t) buffer[(pos)+1]) | (((uint16_t)buffer[ pos   ]) << 8);
-}
+/** 
+ * @brief Write 16/32 bit little endian value into buffer
+ * @param buffer
+ * @param position in buffer
+ * @param value
+ */
+void little_endian_store_16(uint8_t *buffer, uint16_t position, uint16_t value);
+void little_endian_store_32(uint8_t *buffer, uint16_t position, uint32_t value);
 
-static inline uint32_t big_endian_read_32( const uint8_t * buffer, int pos) {
-	return ((uint32_t) buffer[(pos)+3]) | (((uint32_t)buffer[(pos)+2]) << 8) | (((uint32_t)buffer[(pos)+1]) << 16) | (((uint32_t) buffer[pos]) << 24);
-}
+/** 
+ * @brief Read 16/24/32 bit big endian value from buffer
+ * @param buffer
+ * @param position in buffer
+ * @return value
+ */
+uint32_t big_endian_read_16( const uint8_t * buffer, int pos);
+uint32_t big_endian_read_32( const uint8_t * buffer, int pos);
 
+/** 
+ * @brief Write 16/32 bit big endian value into buffer
+ * @param buffer
+ * @param position in buffer
+ * @param value
+ */
 void big_endian_store_16(uint8_t *buffer, uint16_t pos, uint16_t value);
 void big_endian_store_32(uint8_t *buffer, uint16_t pos, uint32_t value);
-
-// hack: compilation with the android ndk causes an error as there's a swap64 macro
-#ifdef swap64
-#undef swap64
-#endif
 
 /**
  * @brief Copy from source to destination and reverse byte order
@@ -105,7 +119,6 @@ void swap48 (const uint8_t *src, uint8_t * dst);
 void swap56 (const uint8_t *src, uint8_t * dst);
 void swap64 (const uint8_t *src, uint8_t * dst);
 void swap128(const uint8_t *src, uint8_t * dst);
-
 void bt_flip_addr(bd_addr_t dest, bd_addr_t src);
 
 /** 
@@ -120,18 +133,14 @@ char char_for_nibble(int nibble);
  * @param b
  * @return true if equal
  */
-static inline int bd_addr_cmp(bd_addr_t a, bd_addr_t b){
-	return memcmp(a,b, BD_ADDR_LEN);
-}
+int bd_addr_cmp(bd_addr_t a, bd_addr_t b);
 
 /**
  * @brief Copy Bluetooth address
-s * @param dest
+ * @param dest
  * @param src
  */
-static inline void bd_addr_copy(bd_addr_t dest, bd_addr_t src){
-	memcpy(dest,src,BD_ADDR_LEN);
-}
+void bd_addr_copy(bd_addr_t dest, bd_addr_t src);
 
 /**
  * @brief Use printf to write hexdump as single line of data
@@ -166,10 +175,20 @@ char * bd_addr_to_str(bd_addr_t addr);
  * @param buffer for parsed address
  * @return 1 if string was parsed successfully
  */
-int sscan_bd_addr(uint8_t * addr_string, bd_addr_t addr);
+int sscanf_bd_addr(uint8_t * addr_string, bd_addr_t addr);
 
+/**
+ * @brief Constructs UUID128 from 16 or 32 bit UUID using Bluetooth base UUID
+ * @param uuid128 output buffer
+ * @param short_uuid
+ */
+void uuid_add_bluetooth_prefix(uint8_t * uuid128, uint32_t short_uuid);
 
-void uuid_add_bluetooth_prefix(uint8_t *uuid, uint32_t shortUUID);
+/**
+ * @brief Checks if UUID128 has Bluetooth base UUID prefix
+ * @param uui128 to test
+ * @return 1 if it can be expressed as UUID32
+ */
 int  uuid_has_bluetooth_prefix(uint8_t * uuid128);
 
 #if defined __cplusplus

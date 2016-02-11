@@ -297,7 +297,7 @@ int btstack_main(int argc, const char * argv[]){
     while (arg < argc) {
 		if(!strcmp(argv[arg], "-a") || !strcmp(argv[arg], "--address")){
 			arg++;
-			cmdline_addr_found = sscan_bd_addr((uint8_t *)argv[arg], cmdline_addr);
+			cmdline_addr_found = sscanf_bd_addr((uint8_t *)argv[arg], cmdline_addr);
             arg++;
             continue;
         }

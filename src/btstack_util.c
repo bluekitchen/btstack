@@ -49,6 +49,36 @@
 #include <string.h>
 #include "btstack_debug.h"
 
+
+/**
+ * @brief Compare two Bluetooth addresses
+ * @param a
+ * @param b
+ * @return true if equal
+ */
+int bd_addr_cmp(bd_addr_t a, bd_addr_t b){
+    return memcmp(a,b, BD_ADDR_LEN);
+}
+
+/**
+ * @brief Copy Bluetooth address
+ * @param dest
+ * @param src
+ */
+void bd_addr_copy(bd_addr_t dest, bd_addr_t src){
+    memcpy(dest,src,BD_ADDR_LEN);
+}
+
+uint16_t little_endian_read_16(const uint8_t * buffer, int pos){
+    return ((uint16_t) buffer[pos]) | (((uint16_t)buffer[(pos)+1]) << 8);
+}
+uint32_t little_endian_read_24(const uint8_t * buffer, int pos){
+    return ((uint32_t) buffer[pos]) | (((uint32_t)buffer[(pos)+1]) << 8) | (((uint32_t)buffer[(pos)+2]) << 16);
+}
+uint32_t little_endian_read_32(const uint8_t * buffer, int pos){
+    return ((uint32_t) buffer[pos]) | (((uint32_t)buffer[(pos)+1]) << 8) | (((uint32_t)buffer[(pos)+2]) << 16) | (((uint32_t) buffer[(pos)+3]) << 24);
+}
+
 void little_endian_store_16(uint8_t *buffer, uint16_t pos, uint16_t value){
     buffer[pos++] = value;
     buffer[pos++] = value >> 8;
@@ -59,6 +89,14 @@ void little_endian_store_32(uint8_t *buffer, uint16_t pos, uint32_t value){
     buffer[pos++] = value >> 8;
     buffer[pos++] = value >> 16;
     buffer[pos++] = value >> 24;
+}
+
+uint32_t big_endian_read_16( const uint8_t * buffer, int pos) {
+    return ((uint16_t) buffer[(pos)+1]) | (((uint16_t)buffer[ pos   ]) << 8);
+}
+
+uint32_t big_endian_read_32( const uint8_t * buffer, int pos) {
+    return ((uint32_t) buffer[(pos)+3]) | (((uint32_t)buffer[(pos)+2]) << 8) | (((uint32_t)buffer[(pos)+1]) << 16) | (((uint32_t) buffer[pos]) << 24);
 }
 
 void big_endian_store_16(uint8_t *buffer, uint16_t pos, uint16_t value){
@@ -72,6 +110,7 @@ void big_endian_store_32(uint8_t *buffer, uint16_t pos, uint32_t value){
     buffer[pos++] = value >> 8;
     buffer[pos++] = value;
 }
+
 
 void bt_flip_addr(bd_addr_t dest, bd_addr_t src){
     dest[0] = src[5];
@@ -222,7 +261,7 @@ char * bd_addr_to_str(bd_addr_t addr){
     return (char *) bd_addr_to_str_buffer;
 }
 
-int sscan_bd_addr(uint8_t * addr_string, bd_addr_t addr){
+int sscanf_bd_addr(uint8_t * addr_string, bd_addr_t addr){
 	unsigned int bd_addr_buffer[BD_ADDR_LEN];  //for sscanf, integer needed
 	// reset result buffer
     memset(bd_addr_buffer, 0, sizeof(bd_addr_buffer));
