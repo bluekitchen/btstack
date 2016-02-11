@@ -65,7 +65,8 @@ typedef enum{
 
 typedef struct {
     // TODO: use enhanced_status instead of status
-    //uint8_t used_slot;
+    uint8_t initiated;
+    uint8_t used_slot;
     hfp_gsm_call_status_t status;
     hfp_enhanced_call_dir_t direction;
     hfp_enhanced_call_status_t enhanced_status;
