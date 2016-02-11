@@ -73,6 +73,7 @@
 
 #define HCI_CONNECTION_TIMEOUT_MS 10000
 
+// prototypes
 static void hci_update_scan_enable(void);
 static gap_security_level_t gap_security_level_for_connection(hci_connection_t * connection);
 static void hci_connection_timeout_handler(btstack_timer_source_t *timer);
@@ -80,17 +81,23 @@ static void hci_connection_timestamp(hci_connection_t *connection);
 static int  hci_power_control_on(void);
 static void hci_power_control_off(void);
 static void hci_state_reset(void);
+static void hci_emit_connection_complete(hci_connection_t *conn, uint8_t status);
+static void hci_emit_l2cap_check_timeout(hci_connection_t *conn);
+static void hci_emit_disconnection_complete(uint16_t handle, uint8_t reason);
+static void hci_emit_nr_connections_changed(void);
+static void hci_emit_hci_open_failed(void);
+static void hci_emit_discoverable_enabled(uint8_t enabled);
+static void hci_emit_security_level(hci_con_handle_t con_handle, gap_security_level_t level);
+static void hci_emit_dedicated_bonding_result(bd_addr_t address, uint8_t status);
+static void hci_emit_event(uint8_t * event, uint16_t size, int dump);
+static void hci_emit_acl_packet(uint8_t * packet, uint16_t size);
+static void hci_notify_if_sco_can_send_now(void);
 
 #ifdef ENABLE_BLE
 // called from test/ble_client/advertising_data_parser.c
 void le_handle_advertisement_report(uint8_t *packet, int size);
 static void hci_remove_from_whitelist(bd_addr_type_t address_type, bd_addr_t address);
 #endif
-
-// prototypes
-static void hci_emit_event(uint8_t * event, uint16_t size, int dump);
-static void hci_emit_acl_packet(uint8_t * packet, uint16_t size);
-static void hci_notify_if_sco_can_send_now(void);
 
 // the STACK is here
 #ifndef HAVE_MALLOC
@@ -2939,7 +2946,7 @@ void hci_emit_state(void){
     hci_emit_event(event, sizeof(event), 1);
 }
 
-void hci_emit_connection_complete(hci_connection_t *conn, uint8_t status){
+static void hci_emit_connection_complete(hci_connection_t *conn, uint8_t status){
     uint8_t event[13];
     event[0] = HCI_EVENT_CONNECTION_COMPLETE;
     event[1] = sizeof(event) - 2;
@@ -2968,7 +2975,7 @@ static void hci_emit_le_connection_complete(uint8_t address_type, bd_addr_t addr
     hci_emit_event(event, sizeof(event), 1);
 }
 
-void hci_emit_disconnection_complete(uint16_t handle, uint8_t reason){
+static void hci_emit_disconnection_complete(uint16_t handle, uint8_t reason){
     uint8_t event[6];
     event[0] = HCI_EVENT_DISCONNECTION_COMPLETE;
     event[1] = sizeof(event) - 2;
@@ -2978,7 +2985,7 @@ void hci_emit_disconnection_complete(uint16_t handle, uint8_t reason){
     hci_emit_event(event, sizeof(event), 1);
 }
 
-void hci_emit_l2cap_check_timeout(hci_connection_t *conn){
+static void hci_emit_l2cap_check_timeout(hci_connection_t *conn){
     if (disable_l2cap_timeouts) return;
     log_info("L2CAP_EVENT_TIMEOUT_CHECK");
     uint8_t event[4];
@@ -2988,7 +2995,7 @@ void hci_emit_l2cap_check_timeout(hci_connection_t *conn){
     hci_emit_event(event, sizeof(event), 1);
 }
 
-void hci_emit_nr_connections_changed(void){
+static void hci_emit_nr_connections_changed(void){
     log_info("BTSTACK_EVENT_NR_CONNECTIONS_CHANGED %u", nr_hci_connections());
     uint8_t event[3];
     event[0] = BTSTACK_EVENT_NR_CONNECTIONS_CHANGED;
@@ -2997,7 +3004,7 @@ void hci_emit_nr_connections_changed(void){
     hci_emit_event(event, sizeof(event), 1);
 }
 
-void hci_emit_hci_open_failed(void){
+static void hci_emit_hci_open_failed(void){
     log_info("BTSTACK_EVENT_POWERON_FAILED");
     uint8_t event[2];
     event[0] = BTSTACK_EVENT_POWERON_FAILED;
@@ -3005,30 +3012,7 @@ void hci_emit_hci_open_failed(void){
     hci_emit_event(event, sizeof(event), 1);
 }
 
-void hci_emit_system_bluetooth_enabled(uint8_t enabled){
-    log_info("BTSTACK_EVENT_SYSTEM_BLUETOOTH_ENABLED %u", enabled);
-    uint8_t event[3];
-    event[0] = BTSTACK_EVENT_SYSTEM_BLUETOOTH_ENABLED;
-    event[1] = sizeof(event) - 2;
-    event[2] = enabled;
-    hci_emit_event(event, sizeof(event), 1);
-}
-
-void hci_emit_remote_name_cached(bd_addr_t addr, device_name_t *name){
-    uint8_t event[2+1+6+248+1]; // +1 for \0 in log_info
-    event[0] = BTSTACK_EVENT_REMOTE_NAME_CACHED;
-    event[1] = sizeof(event) - 2 - 1;
-    event[2] = 0;   // just to be compatible with HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE
-    reverse_bd_addr(addr, &event[3]);
-    memcpy(&event[9], name, 248);
-    
-    event[9+248] = 0;   // assert \0 for log_info
-    log_info("BTSTACK_EVENT_REMOTE_NAME_CACHED %s = '%s'", bd_addr_to_str(addr), &event[9]);
-
-    hci_emit_event(event, sizeof(event), 1);
-}
-
-void hci_emit_discoverable_enabled(uint8_t enabled){
+static void hci_emit_discoverable_enabled(uint8_t enabled){
     log_info("BTSTACK_EVENT_DISCOVERABLE_ENABLED %u", enabled);
     uint8_t event[3];
     event[0] = BTSTACK_EVENT_DISCOVERABLE_ENABLED;
@@ -3037,7 +3021,7 @@ void hci_emit_discoverable_enabled(uint8_t enabled){
     hci_emit_event(event, sizeof(event), 1);
 }
 
-void hci_emit_security_level(hci_con_handle_t con_handle, gap_security_level_t level){
+static void hci_emit_security_level(hci_con_handle_t con_handle, gap_security_level_t level){
     log_info("hci_emit_security_level %u for handle %x", level, con_handle);
     uint8_t event[5];
     int pos = 0;
@@ -3049,7 +3033,7 @@ void hci_emit_security_level(hci_con_handle_t con_handle, gap_security_level_t l
     hci_emit_event(event, sizeof(event), 1);
 }
 
-void hci_emit_dedicated_bonding_result(bd_addr_t address, uint8_t status){
+static void hci_emit_dedicated_bonding_result(bd_addr_t address, uint8_t status){
     log_info("hci_emit_dedicated_bonding_result %u ", status);
     uint8_t event[9];
     int pos = 0;

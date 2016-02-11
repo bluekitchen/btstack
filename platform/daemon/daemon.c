@@ -180,6 +180,7 @@ static void              clients_clear_power_request(void);
 static void start_power_off_timer(void);
 static void stop_power_off_timer(void);
 static client_state_t * client_for_connection(connection_t *connection);
+static void hci_emit_system_bluetooth_enabled(uint8_t enabled);
 
 
 // MARK: globals
@@ -691,6 +692,15 @@ static void hci_emit_btstack_version(void){
     event[3] = BTSTACK_MINOR;
     little_endian_store_16(event, 4, 3257);    // last SVN commit on Google Code + 1
     socket_connection_send_packet_all(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
+static void hci_emit_system_bluetooth_enabled(uint8_t enabled){
+    log_info("BTSTACK_EVENT_SYSTEM_BLUETOOTH_ENABLED %u", enabled);
+    uint8_t event[3];
+    event[0] = BTSTACK_EVENT_SYSTEM_BLUETOOTH_ENABLED;
+    event[1] = sizeof(event) - 2;
+    event[2] = enabled;
+    hci_emit_event(event, sizeof(event), 1);
 }
 
 static void send_l2cap_connection_open_failed(connection_t * connection, bd_addr_t address, uint16_t psm, uint8_t status){
