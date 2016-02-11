@@ -1162,7 +1162,7 @@ static int bnep_hci_event_handler(uint8_t *packet, uint16_t size)
         /* Accept an incoming L2CAP connection on PSM_BNEP */
         case L2CAP_EVENT_INCOMING_CONNECTION:
             /* L2CAP event data: event(8), len(8), address(48), handle (16),  psm (16), source cid(16) dest cid(16) */
-            bt_flip_addr(event_addr, &packet[2]);
+            reverse_bd_addr(&packet[2], event_addr);
             con_handle = little_endian_read_16(packet,  8);
             psm        = little_endian_read_16(packet, 10); 
             l2cap_cid  = little_endian_read_16(packet, 12); 
@@ -1213,7 +1213,7 @@ static int bnep_hci_event_handler(uint8_t *packet, uint16_t size)
             /* Get the bnep channel fpr remote address */
             con_handle = little_endian_read_16(packet, 9);
             l2cap_cid  = little_endian_read_16(packet, 13);
-            bt_flip_addr(event_addr, &packet[3]);
+            reverse_bd_addr(&packet[3], event_addr);
             channel = bnep_channel_for_addr(event_addr);
             if (!channel) {
                 log_error("L2CAP_EVENT_CHANNEL_OPENED but no BNEP channel prepared");

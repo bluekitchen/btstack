@@ -461,13 +461,13 @@ void hfp_handle_hci_event(hfp_callback_t callback, uint8_t packet_type, uint8_t 
         case HCI_EVENT_PIN_CODE_REQUEST:
             // inform about pin code request
             printf("Pin code request - using '0000'\n\r");
-            bt_flip_addr(event_addr, &packet[2]);
+            reverse_bd_addr(&packet[2], event_addr);
             hci_send_cmd(&hci_pin_code_request_reply, &event_addr, 4, "0000");
             break;
         
         case RFCOMM_EVENT_INCOMING_CONNECTION:
             // data: event (8), len(8), address(48), channel (8), rfcomm_cid (16)
-            bt_flip_addr(event_addr, &packet[2]); 
+            reverse_bd_addr(&packet[2], event_addr); 
             context = provide_hfp_connection_context_for_bd_addr(event_addr);
             
             if (!context || context->state != HFP_IDLE) return;
@@ -482,7 +482,7 @@ void hfp_handle_hci_event(hfp_callback_t callback, uint8_t packet_type, uint8_t 
             // data: event(8), len(8), status (8), address (48), handle(16), server channel(8), rfcomm_cid(16), max frame size(16)
             printf("RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE packet_handler type %u, packet[0] %x, size %u\n", packet_type, packet[0], size);
 
-            bt_flip_addr(event_addr, &packet[3]); 
+            reverse_bd_addr(&packet[3], event_addr); 
             context = get_hfp_connection_context_for_bd_addr(event_addr);
             if (!context || context->state != HFP_W4_RFCOMM_CONNECTED) return;
             
@@ -515,7 +515,7 @@ void hfp_handle_hci_event(hfp_callback_t callback, uint8_t packet_type, uint8_t 
         
         case HCI_EVENT_SYNCHRONOUS_CONNECTION_COMPLETE:{
 
-            bt_flip_addr(event_addr, &packet[5]);
+            reverse_bd_addr(&packet[5], event_addr);
             int index = 2;
             uint8_t status = packet[index++];
 
@@ -552,7 +552,7 @@ void hfp_handle_hci_event(hfp_callback_t callback, uint8_t packet_type, uint8_t 
             uint16_t sco_handle = little_endian_read_16(packet, index);
             index+=2;
 
-            bt_flip_addr(event_addr, &packet[index]);
+            reverse_bd_addr(&packet[index], event_addr);
             index+=6;
 
             uint8_t link_type = packet[index++];

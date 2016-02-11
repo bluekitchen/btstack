@@ -111,16 +111,6 @@ void big_endian_store_32(uint8_t *buffer, uint16_t pos, uint32_t value){
     buffer[pos++] = value;
 }
 
-
-void bt_flip_addr(bd_addr_t dest, bd_addr_t src){
-    dest[0] = src[5];
-    dest[1] = src[4];
-    dest[2] = src[3];
-    dest[3] = src[2];
-    dest[4] = src[1];
-    dest[5] = src[0];
-}
-
 // general swap/endianess utils
 void reverse_bytes(const uint8_t *src, uint8_t *dst, int len){
     int i;
@@ -141,6 +131,10 @@ void reverse_64(const uint8_t * src, uint8_t * dst){
 }
 void reverse_128(const uint8_t * src, uint8_t * dst){
     reverse_bytes(src, dst, 16);
+}
+
+void reverse_bd_addr(const bd_addr_t src, bd_addr_t dest){
+    reverse_bytes(src, dest, 6);
 }
 
 char char_for_nibble(int nibble){

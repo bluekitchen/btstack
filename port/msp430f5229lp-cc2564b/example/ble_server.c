@@ -115,7 +115,7 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
             
         case HCI_EVENT_COMMAND_COMPLETE:
             if (COMMAND_COMPLETE_EVENT(packet, hci_read_bd_addr)){
-                bt_flip_addr(addr, &packet[6]);
+                reverse_bd_addr(&packet[6], addr);
                 printf("BD ADDR: %s\n", bd_addr_to_str(addr));
                 break;
             }

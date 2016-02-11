@@ -129,7 +129,7 @@ void reverse_56 (const uint8_t *src, uint8_t * dest);
 void reverse_64 (const uint8_t *src, uint8_t * dest);
 void reverse_128(const uint8_t *src, uint8_t * dest);
 
-void bt_flip_addr(bd_addr_t dest, bd_addr_t src);
+void reverse_bd_addr(const bd_addr_t src, bd_addr_t dest);
 
 /** 
  * @brief 4-bit nibble

@@ -174,7 +174,7 @@ void l2cap_emit_channel_opened(l2cap_channel_t *channel, uint8_t status) {
     event[0] = L2CAP_EVENT_CHANNEL_OPENED;
     event[1] = sizeof(event) - 2;
     event[2] = status;
-    bt_flip_addr(&event[3], channel->address);
+    reverse_bd_addr(channel->address, &event[3]);
     little_endian_store_16(event,  9, channel->handle);
     little_endian_store_16(event, 11, channel->psm);
     little_endian_store_16(event, 13, channel->local_cid);
@@ -210,7 +210,7 @@ void l2cap_emit_connection_request(l2cap_channel_t *channel) {
     uint8_t event[16];
     event[0] = L2CAP_EVENT_INCOMING_CONNECTION;
     event[1] = sizeof(event) - 2;
-    bt_flip_addr(&event[2], channel->address);
+    reverse_bd_addr(channel->address, &event[2]);
     little_endian_store_16(event,  8, channel->handle);
     little_endian_store_16(event, 10, channel->psm);
     little_endian_store_16(event, 12, channel->local_cid);
@@ -923,7 +923,7 @@ static void l2cap_hci_event_handler(uint8_t packet_type, uint16_t cid, uint8_t *
             
         // handle connection complete events
         case HCI_EVENT_CONNECTION_COMPLETE:
-            bt_flip_addr(address, &packet[5]);
+            reverse_bd_addr(&packet[5], address);
             if (packet[2] == 0){
                 handle = little_endian_read_16(packet, 3);
                 l2cap_handle_connection_success_for_addr(address, handle);
@@ -936,7 +936,7 @@ static void l2cap_hci_event_handler(uint8_t packet_type, uint16_t cid, uint8_t *
         case HCI_EVENT_COMMAND_COMPLETE:
             if ( COMMAND_COMPLETE_EVENT(packet, hci_create_connection_cancel) ) {
                 if (packet[5] == 0){
-                    bt_flip_addr(address, &packet[6]);
+                    reverse_bd_addr(&packet[6], address);
                     // CONNECTION TERMINATED BY LOCAL HOST (0X16)
                     l2cap_handle_connection_failed_for_addr(address, 0x16);
                 }

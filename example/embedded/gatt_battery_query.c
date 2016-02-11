@@ -226,7 +226,7 @@ static void fill_advertising_report_from_packet(advertising_report_t * report, u
     int pos = 2;
     report->event_type = packet[pos++];
     report->address_type = packet[pos++];
-    bt_flip_addr(report->address, &packet[pos]);
+    reverse_bd_addr(&packet[pos], report->address);
     pos += 6;
     report->rssi = packet[pos++];
     report->length = packet[pos++];

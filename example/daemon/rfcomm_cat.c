@@ -94,7 +94,8 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 				case HCI_EVENT_PIN_CODE_REQUEST:
 					// inform about pin code request
 					printf("Using PIN 0000\n");
-					bt_flip_addr(event_addr, &packet[2]); 
+					reverse_bd_addr(&packet[2],
+							event_addr); 
 					bt_send_cmd(&hci_pin_code_request_reply, &event_addr, 4, "0000");
 					break;
 										

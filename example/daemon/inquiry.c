@@ -153,7 +153,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     numResponses = packet[2];
                     int offset = 3;
                     for (i=0; i<numResponses && deviceCount < MAX_DEVICES;i++){
-                        bt_flip_addr(addr, &packet[offset]);
+                        reverse_bd_addr(&packet[offset], addr);
                         offset += 6;
                         index = getDeviceIndexForAddress(addr);
                         if (index >= 0) continue;   // already in our list
@@ -202,12 +202,12 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 					break;
 
 				case BTSTACK_EVENT_REMOTE_NAME_CACHED:
-					bt_flip_addr(addr, &packet[3]);
+					reverse_bd_addr(&packet[3], addr);
 					printf("Cached remote name for %s: '%s'\n", bd_addr_to_str(addr), &packet[9]);
 					break;
 
 				case HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE:
-					bt_flip_addr(addr, &packet[3]);
+					reverse_bd_addr(&packet[3], addr);
 					index = getDeviceIndexForAddress(addr);
 					if (index >= 0) {
 						if (packet[2] == 0) {

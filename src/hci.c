@@ -247,7 +247,7 @@ inline static void connectionClearAuthenticationFlags(hci_connection_t * conn, h
  */
 static void hci_add_connection_flags_for_flipped_bd_addr(uint8_t *bd_addr, hci_authentication_flags_t flags){
     bd_addr_t addr;
-    bt_flip_addr(addr, bd_addr);
+    reverse_bd_addr(bd_addr, addr);
     hci_connection_t * conn = hci_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_CLASSIC);
     if (conn) {
         connectionSetAuthenticationFlags(conn, flags);
@@ -1373,7 +1373,8 @@ static void event_handler(uint8_t *packet, int size){
 #endif
             // Dump local address
             if (COMMAND_COMPLETE_EVENT(packet, hci_read_bd_addr)) {
-                bt_flip_addr(hci_stack->local_bd_addr, &packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE + 1]);
+                reverse_bd_addr(&packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE + 1],
+				hci_stack->local_bd_addr);
                 log_info("Local Address, Status: 0x%02x: Addr: %s",
                     packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE], bd_addr_to_str(hci_stack->local_bd_addr));
             }
@@ -1452,7 +1453,7 @@ static void event_handler(uint8_t *packet, int size){
             break;
         }
         case HCI_EVENT_CONNECTION_REQUEST:
-            bt_flip_addr(addr, &packet[2]);
+            reverse_bd_addr(&packet[2], addr);
             // TODO: eval COD 8-10
             link_type = packet[11];
             log_info("Connection_incoming: %s, type %u", bd_addr_to_str(addr), link_type);
@@ -1478,7 +1479,7 @@ static void event_handler(uint8_t *packet, int size){
             
         case HCI_EVENT_CONNECTION_COMPLETE:
             // Connection management
-            bt_flip_addr(addr, &packet[5]);
+            reverse_bd_addr(&packet[5], addr);
             log_info("Connection_complete (status=%u) %s", packet[2], bd_addr_to_str(addr));
             addr_type = BD_ADDR_TYPE_CLASSIC;
             conn = hci_connection_for_bd_addr_and_type(addr, addr_type);
@@ -1520,7 +1521,7 @@ static void event_handler(uint8_t *packet, int size){
             break;
 
         case HCI_EVENT_SYNCHRONOUS_CONNECTION_COMPLETE:
-            bt_flip_addr(addr, &packet[5]);
+            reverse_bd_addr(&packet[5], addr);
             log_info("Synchronous Connection Complete (status=%u) %s", packet[2], bd_addr_to_str(addr));
             if (packet[2]){
                 // connection failed
@@ -1568,7 +1569,7 @@ static void event_handler(uint8_t *packet, int size){
             return;
             
         case HCI_EVENT_LINK_KEY_NOTIFICATION: {
-            bt_flip_addr(addr, &packet[2]);
+            reverse_bd_addr(&packet[2], addr);
             conn = hci_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_CLASSIC);
             if (!conn) break;
             conn->authentication_flags |= RECV_LINK_KEY_NOTIFICATION;
@@ -1593,7 +1594,7 @@ static void event_handler(uint8_t *packet, int size){
             }
             // PIN CODE REQUEST means the link key request didn't succee -> delete stored link key
             if (!hci_stack->link_key_db) break;
-            bt_flip_addr(addr, &packet[2]);
+            reverse_bd_addr(&packet[2], addr);
             hci_stack->link_key_db->delete_link_key(addr);
             break;
             
@@ -1707,7 +1708,7 @@ static void event_handler(uint8_t *packet, int size){
                     break;
                 case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
                     // Connection management
-                    bt_flip_addr(addr, &packet[8]);
+                    reverse_bd_addr(&packet[8], addr);
                     addr_type = (bd_addr_type_t)packet[7];
                     log_info("LE Connection_complete (status=%u) type %u, %s", packet[3], addr_type, bd_addr_to_str(addr));
                     conn = hci_connection_for_bd_addr_and_type(addr, addr_type);
@@ -2727,7 +2728,7 @@ int hci_send_cmd_packet(uint8_t *packet, int size){
     
     // create_connection?
     if (IS_COMMAND(packet, hci_create_connection)){
-        bt_flip_addr(addr, &packet[3]);
+        reverse_bd_addr(&packet[3], addr);
         log_info("Create_connection to %s", bd_addr_to_str(addr));
 
         conn = hci_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_CLASSIC);
@@ -2765,14 +2766,14 @@ int hci_send_cmd_packet(uint8_t *packet, int size){
     
     if (IS_COMMAND(packet, hci_delete_stored_link_key)){
         if (hci_stack->link_key_db){
-            bt_flip_addr(addr, &packet[3]);
+            reverse_bd_addr(&packet[3], addr);
             hci_stack->link_key_db->delete_link_key(addr);
         }
     }
 
     if (IS_COMMAND(packet, hci_pin_code_request_negative_reply)
     ||  IS_COMMAND(packet, hci_pin_code_request_reply)){
-        bt_flip_addr(addr, &packet[3]);
+        reverse_bd_addr(&packet[3], addr);
         conn = hci_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_CLASSIC);
         if (conn){
             connectionClearAuthenticationFlags(conn, LEGACY_PAIRING_ACTIVE);
@@ -2783,7 +2784,7 @@ int hci_send_cmd_packet(uint8_t *packet, int size){
     ||  IS_COMMAND(packet, hci_user_confirmation_request_reply)
     ||  IS_COMMAND(packet, hci_user_passkey_request_negative_reply)
     ||  IS_COMMAND(packet, hci_user_passkey_request_reply)) {
-        bt_flip_addr(addr, &packet[3]);
+        reverse_bd_addr(&packet[3], addr);
         conn = hci_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_CLASSIC);
         if (conn){
             connectionClearAuthenticationFlags(conn, SSP_PAIRING_ACTIVE);
@@ -2799,7 +2800,7 @@ int hci_send_cmd_packet(uint8_t *packet, int size){
         hci_stack->adv_addr_type = packet[8];
     }
     if (IS_COMMAND(packet, hci_le_set_random_address)){
-        bt_flip_addr(hci_stack->adv_address, &packet[3]);
+        reverse_bd_addr(&packet[3], hci_stack->adv_address);
     }
     if (IS_COMMAND(packet, hci_le_set_advertise_enable)){
         hci_stack->le_advertisements_active = packet[3];
@@ -2944,7 +2945,7 @@ void hci_emit_connection_complete(hci_connection_t *conn, uint8_t status){
     event[1] = sizeof(event) - 2;
     event[2] = status;
     little_endian_store_16(event, 3, conn->con_handle);
-    bt_flip_addr(&event[5], conn->address);
+    reverse_bd_addr(conn->address, &event[5]);
     event[11] = 1; // ACL connection
     event[12] = 0; // encryption disabled
     hci_emit_event(event, sizeof(event), 1);
@@ -2959,7 +2960,7 @@ static void hci_emit_le_connection_complete(uint8_t address_type, bd_addr_t addr
     little_endian_store_16(event, 4, conn_handle);
     event[6] = 0; // TODO: role
     event[7] = address_type;
-    bt_flip_addr(&event[8], address);
+    reverse_bd_addr(address, &event[8]);
     little_endian_store_16(event, 14, 0); // interval
     little_endian_store_16(event, 16, 0); // latency
     little_endian_store_16(event, 18, 0); // supervision timeout
@@ -3018,7 +3019,7 @@ void hci_emit_remote_name_cached(bd_addr_t addr, device_name_t *name){
     event[0] = BTSTACK_EVENT_REMOTE_NAME_CACHED;
     event[1] = sizeof(event) - 2 - 1;
     event[2] = 0;   // just to be compatible with HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE
-    bt_flip_addr(&event[3], addr);
+    reverse_bd_addr(addr, &event[3]);
     memcpy(&event[9], name, 248);
     
     event[9+248] = 0;   // assert \0 for log_info
@@ -3055,7 +3056,7 @@ void hci_emit_dedicated_bonding_result(bd_addr_t address, uint8_t status){
     event[pos++] = GAP_EVENT_DEDICATED_BONDING_COMPLETED;
     event[pos++] = sizeof(event) - 2;
     event[pos++] = status;
-    bt_flip_addr( &event[pos], address);
+    reverse_bd_addr(address, &event[pos]);
     pos += 6;
     hci_emit_event(event, sizeof(event), 1);
 }

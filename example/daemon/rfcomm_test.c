@@ -131,13 +131,15 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 				case HCI_EVENT_PIN_CODE_REQUEST:
 					// inform about pin code request
 					printf("Using PIN 0000\n");
-					bt_flip_addr(event_addr, &packet[2]); 
+					reverse_bd_addr(&packet[2],
+							event_addr); 
 					bt_send_cmd(&hci_pin_code_request_reply, &event_addr, 4, "0000");
 					break;
 					
 				case RFCOMM_EVENT_INCOMING_CONNECTION:
 					// data: event (8), len(8), address(48), channel (8), rfcomm_cid (16)
-					bt_flip_addr(event_addr, &packet[2]); 
+					reverse_bd_addr(&packet[2],
+							event_addr); 
 					rfcomm_channel_nr = packet[8];
 					rfcomm_channel_id = little_endian_read_16(packet, 9);
 					printf("RFCOMM channel %u requested for %s\n", rfcomm_channel_nr, bd_addr_to_str(event_addr));

@@ -503,7 +503,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
         case HCI_EVENT_PIN_CODE_REQUEST:
             // inform about pin code request
             printf("Pin code request - using '0000'\n\r");
-            bt_flip_addr(event_addr, &packet[2]);
+            reverse_bd_addr(&packet[2], event_addr);
             hci_send_cmd(&hci_pin_code_request_reply, &event_addr, 4, "0000");
             break;
         case HCI_EVENT_SYNCHRONOUS_CONNECTION_COMPLETE:{
@@ -561,7 +561,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             // data: event (8), len(8), address(48), channel (8), rfcomm_cid (16)
             if (hsp_state != HSP_IDLE) return;
 
-            bt_flip_addr(event_addr, &packet[2]); 
+            reverse_bd_addr(&packet[2], event_addr); 
             rfcomm_cid = little_endian_read_16(packet, 9);
             printf("RFCOMM channel %u requested for %s\n", packet[8], bd_addr_to_str(event_addr));
             rfcomm_accept_connection(rfcomm_cid);

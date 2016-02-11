@@ -190,7 +190,7 @@ static void dump_advertisement_data(uint8_t * adv_data, uint8_t adv_size){
                 break;
             case 0x17: // Public Target Address
             case 0x18: // Random Target Address
-                bt_flip_addr(address, data);
+                reverse_bd_addr(data, address);
                 printf("%s", bd_addr_to_str(address));
                 break;
             case 0x19: // Appearance 
@@ -247,7 +247,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             uint8_t event_type = packet[pos++];
             uint8_t address_type = packet[pos++];
             bd_addr_t address;
-            bt_flip_addr(address, &packet[pos]);
+            reverse_bd_addr(&packet[pos], address);
             pos += 6;
             uint8_t rssi = packet[pos++];
             uint8_t length = packet[pos++];

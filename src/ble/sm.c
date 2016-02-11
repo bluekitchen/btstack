@@ -474,7 +474,7 @@ static void sm_setup_event_base(uint8_t * event, int event_size, uint8_t type, u
     event[1] = event_size - 2;
     little_endian_store_16(event, 2, handle);
     event[4] = addr_type;
-    bt_flip_addr(&event[5], address);
+    reverse_bd_addr(address, &event[5]);
 }
 
 static void sm_dispatch_event(uint8_t packet_type, uint16_t channel, uint8_t * packet, uint16_t size){
@@ -1533,7 +1533,7 @@ static void sm_run(void){
                     uint8_t buffer[8];
                     buffer[0] = SM_CODE_IDENTITY_ADDRESS_INFORMATION;
                     hci_le_advertisement_address(&buffer[1], local_address);
-                    bt_flip_addr(&buffer[2], local_address);
+                    reverse_bd_addr(local_address, &buffer[2]);
                     l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
                     sm_timeout_reset(connection);
                     return;
@@ -1861,7 +1861,8 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                             sm_conn->sm_handle = handle;
                             sm_conn->sm_role = packet[6];
                             sm_conn->sm_peer_addr_type = packet[7];
-                            bt_flip_addr(sm_conn->sm_peer_address, &packet[8]);
+                            reverse_bd_addr(&packet[8],
+                                            sm_conn->sm_peer_address);
 
                             log_info("New sm_conn, role %s", sm_conn->sm_role ? "slave" : "master");
 
@@ -2228,7 +2229,7 @@ static void sm_pdu_handler(uint8_t packet_type, uint16_t handle, uint8_t *packet
                 case SM_CODE_IDENTITY_ADDRESS_INFORMATION:
                     setup->sm_key_distribution_received_set |= SM_KEYDIST_FLAG_IDENTITY_ADDRESS_INFORMATION;
                     setup->sm_peer_addr_type = packet[1];
-                    bt_flip_addr(setup->sm_peer_address, &packet[2]); 
+                    reverse_bd_addr(&packet[2], setup->sm_peer_address); 
                     break;
 
                 case SM_CODE_SIGNING_INFORMATION:

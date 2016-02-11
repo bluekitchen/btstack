@@ -298,7 +298,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 					if ((packet[12] & 0x40) != 0x40 || packet[13] != 0x25) break;
 
 					// flip addr
-					bt_flip_addr(keyboard, &packet[3]);
+					reverse_bd_addr(&packet[3], keyboard);
 					
 					// show
 					printf("Keyboard:\n\r");

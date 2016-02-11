@@ -101,7 +101,7 @@ static void rfcomm_emit_connection_request(rfcomm_channel_t *channel) {
     uint8_t event[11];
     event[0] = RFCOMM_EVENT_INCOMING_CONNECTION;
     event[1] = sizeof(event) - 2;
-    bt_flip_addr(&event[2], channel->multiplexer->remote_addr);
+    reverse_bd_addr(channel->multiplexer->remote_addr, &event[2]);
     event[8] = channel->dlci >> 1;
     little_endian_store_16(event, 9, channel->rfcomm_cid);
     hci_dump_packet(HCI_EVENT_PACKET, 0, event, sizeof(event));
@@ -121,7 +121,7 @@ static void rfcomm_emit_channel_opened(rfcomm_channel_t *channel, uint8_t status
     event[pos++] = RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE;  // 0
     event[pos++] = sizeof(event) - 2;                   // 1
     event[pos++] = status;                              // 2
-    bt_flip_addr(&event[pos], channel->multiplexer->remote_addr); pos += 6; // 3
+    reverse_bd_addr(channel->multiplexer->remote_addr, &event[pos]); pos += 6; // 3
     little_endian_store_16(event,  pos, channel->multiplexer->con_handle);   pos += 2; // 9
 	event[pos++] = channel->dlci >> 1;                                      // 11
 	little_endian_store_16(event, pos, channel->rfcomm_cid); pos += 2;                 // 12 - channel ID
@@ -801,7 +801,7 @@ static int rfcomm_multiplexer_hci_event_handler(uint8_t *packet, uint16_t size){
         // accept incoming PSM_RFCOMM connection if no multiplexer exists yet
         case L2CAP_EVENT_INCOMING_CONNECTION:
             // data: event(8), len(8), address(48), handle (16),  psm (16), source cid(16) dest cid(16)
-            bt_flip_addr(event_addr, &packet[2]);
+            reverse_bd_addr(&packet[2], event_addr);
             con_handle = little_endian_read_16(packet,  8);
             psm        = little_endian_read_16(packet, 10); 
             l2cap_cid  = little_endian_read_16(packet, 12); 
@@ -843,7 +843,7 @@ static int rfcomm_multiplexer_hci_event_handler(uint8_t *packet, uint16_t size){
             // get multiplexer for remote addr
             con_handle = little_endian_read_16(packet, 9);
             l2cap_cid = little_endian_read_16(packet, 13);
-            bt_flip_addr(event_addr, &packet[3]);
+            reverse_bd_addr(&packet[3], event_addr);
             multiplexer = rfcomm_multiplexer_for_addr(event_addr);
             if (!multiplexer) {
                 log_error("L2CAP_EVENT_CHANNEL_OPENED but no multiplexer prepared");

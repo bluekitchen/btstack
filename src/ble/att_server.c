@@ -148,7 +148,7 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
                         case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
                         	// store connection info 
                         	att_client_addr_type = packet[7];
-                            bt_flip_addr(att_client_address, &packet[8]);
+                            reverse_bd_addr(&packet[8], att_client_address);
                             // reset connection properties
                             att_connection.con_handle = little_endian_read_16(packet, 4);
                             att_connection.mtu = ATT_DEFAULT_MTU;
@@ -201,7 +201,7 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
                     break;
                 case SM_EVENT_AUTHORIZATION_RESULT: {
                     if (packet[4] != att_client_addr_type) break;
-                    bt_flip_addr(event_address, &packet[5]);
+                    reverse_bd_addr(&packet[5], event_address);
                     if (memcmp(event_address, att_client_address, 6) != 0) break;
                     att_connection.authorized = packet[11];
                     att_run();

@@ -110,7 +110,8 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 					
 				case L2CAP_EVENT_INCOMING_CONNECTION:
 					// data: event(8), len(8), address(48), handle (16),  psm (16), source cid(16) dest cid(16)
-					bt_flip_addr(event_addr, &packet[2]);
+					reverse_bd_addr(&packet[2],
+							event_addr);
 					handle     = little_endian_read_16(packet, 8); 
 					psm        = little_endian_read_16(packet, 10); 
 					local_cid  = little_endian_read_16(packet, 12); 
@@ -124,7 +125,8 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 					
 				case HCI_EVENT_LINK_KEY_REQUEST:
 					// link key request
-					bt_flip_addr(event_addr, &packet[2]); 
+					reverse_bd_addr(&packet[2],
+							event_addr); 
 					bt_send_cmd(&hci_link_key_request_negative_reply, &event_addr);
 					break;
 					
@@ -137,13 +139,15 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 						pin[i] = '\0';
 					}
 					printf("PIN = '%s'\n", pin);
-					bt_flip_addr(event_addr, &packet[2]); 
+					reverse_bd_addr(&packet[2],
+							event_addr); 
 					bt_send_cmd(&hci_pin_code_request_reply, &event_addr, strlen(pin), pin);
 					break;
 					
 				case L2CAP_EVENT_CHANNEL_OPENED:
 					// inform about new l2cap connection
-					bt_flip_addr(event_addr, &packet[3]);
+					reverse_bd_addr(&packet[3],
+							event_addr);
 					psm = little_endian_read_16(packet, 11); 
 					local_cid = little_endian_read_16(packet, 13); 
 					handle = little_endian_read_16(packet, 9);
