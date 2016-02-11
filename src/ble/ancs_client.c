@@ -97,7 +97,7 @@ static int ancs_characteristcs;
 static tc_state_t tc_state = TC_IDLE;
 
 static ancs_chunk_parser_state_t chunk_parser_state;
-static char  ancs_notification_buffer[50];
+static uint8_t  ancs_notification_buffer[50];
 static uint16_t ancs_bytes_received;
 static uint16_t ancs_bytes_needed;
 static uint8_t  ancs_attribute_id;

@@ -52,6 +52,8 @@ extern "C" {
 #endif
 
 #include <stdint.h>
+#include <string.h>
+
 #include "bluetooth.h"
 #include "btstack_defines.h"
 #include "btstack_linked_list.h"
@@ -64,18 +66,27 @@ extern "C" {
 #define DEVICE_NAME_LEN 248
 typedef uint8_t device_name_t[DEVICE_NAME_LEN+1]; 
 	
-
 // helper for little endian format
-#define little_endian_read_16( buffer, pos) ( ((uint16_t) buffer[pos]) | (((uint16_t)buffer[(pos)+1]) << 8))
-#define little_endian_read_24( buffer, pos) ( ((uint32_t) buffer[pos]) | (((uint32_t)buffer[(pos)+1]) << 8) | (((uint32_t)buffer[(pos)+2]) << 16))
-#define little_endian_read_32( buffer, pos) ( ((uint32_t) buffer[pos]) | (((uint32_t)buffer[(pos)+1]) << 8) | (((uint32_t)buffer[(pos)+2]) << 16) | (((uint32_t) buffer[(pos)+3])) << 24)
-
+static inline uint16_t little_endian_read_16(const uint8_t * buffer, int pos){
+	return ((uint16_t) buffer[pos]) | (((uint16_t)buffer[(pos)+1]) << 8);
+}
+static inline uint32_t little_endian_read_24(const uint8_t * buffer, int pos){
+	return ((uint32_t) buffer[pos]) | (((uint32_t)buffer[(pos)+1]) << 8) | (((uint32_t)buffer[(pos)+2]) << 16);
+}
+static inline uint32_t little_endian_read_32(const uint8_t * buffer, int pos){
+	return ((uint32_t) buffer[pos]) | (((uint32_t)buffer[(pos)+1]) << 8) | (((uint32_t)buffer[(pos)+2]) << 16) | (((uint32_t) buffer[(pos)+3]) << 24);
+}
 void little_endian_store_16(uint8_t *buffer, uint16_t pos, uint16_t value);
 void little_endian_store_32(uint8_t *buffer, uint16_t pos, uint32_t value);
 
 // helper for big endian format
-#define big_endian_read_16( buffer, pos) ( ((uint16_t) buffer[(pos)+1]) | (((uint16_t)buffer[ pos   ]) << 8))
-#define big_endian_read_32( buffer, pos) ( ((uint32_t) buffer[(pos)+3]) | (((uint32_t)buffer[(pos)+2]) << 8) | (((uint32_t)buffer[(pos)+1]) << 16) | (((uint32_t) buffer[pos])) << 24)
+static inline uint32_t big_endian_read_16( const uint8_t * buffer, int pos) {
+	return ((uint16_t) buffer[(pos)+1]) | (((uint16_t)buffer[ pos   ]) << 8);
+}
+
+static inline uint32_t big_endian_read_32( const uint8_t * buffer, int pos) {
+	return ((uint32_t) buffer[(pos)+3]) | (((uint32_t)buffer[(pos)+2]) << 8) | (((uint32_t)buffer[(pos)+1]) << 16) | (((uint32_t) buffer[pos]) << 24);
+}
 
 void big_endian_store_16(uint8_t *buffer, uint16_t pos, uint16_t value);
 void big_endian_store_32(uint8_t *buffer, uint16_t pos, uint32_t value);
@@ -109,14 +120,18 @@ char char_for_nibble(int nibble);
  * @param b
  * @return true if equal
  */
-#define bd_addr_cmp(a,b) memcmp(a,b, BD_ADDR_LEN)
+static inline int bd_addr_cmp(bd_addr_t a, bd_addr_t b){
+	return memcmp(a,b, BD_ADDR_LEN);
+}
 
 /**
  * @brief Copy Bluetooth address
- * @param dest
+s * @param dest
  * @param src
  */
-#define bd_addr_copy(dest,src) memcpy(dest,src,BD_ADDR_LEN)
+static inline void bd_addr_copy(bd_addr_t dest, bd_addr_t src){
+	memcpy(dest,src,BD_ADDR_LEN);
+}
 
 /**
  * @brief Use printf to write hexdump as single line of data
