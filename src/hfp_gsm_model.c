@@ -79,12 +79,12 @@ static void set_call_status(int index_in_table, hfp_gsm_call_status_t status){
 }
 
 static int get_call_status(int index_in_table){
+    if (!gsm_calls[index_in_table].used_slot) return -1;
     return gsm_calls[index_in_table].status;
 }
 
 static void free_call_slot(int index_in_table){
     gsm_calls[index_in_table].used_slot = 0;
-    gsm_calls[index_in_table].status = CALL_NONE;
 }
 
 void hfp_gsm_init(void){

@@ -56,7 +56,6 @@ extern "C" {
 /* API_START */
 
 typedef enum{
-    CALL_NONE,
     CALL_INITIATED,
     CALL_RESPONSE_HOLD,
     CALL_ACTIVE,
