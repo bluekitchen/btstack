@@ -163,7 +163,7 @@ void printf_hexdump(const void *data, int size){
 //  
 //  }
 
-void hexdump(const void *data, int size){
+void log_info_hexdump(const void *data, int size){
 #ifdef ENABLE_LOG_INFO
     char buffer[6*16+1];
     int i, j;
@@ -189,12 +189,12 @@ void hexdump(const void *data, int size){
         buffer[j] = 0;
         log_info("%s", buffer);
     }
-#endif
 }
+#endif
 
-void log_key(const char * name, sm_key_t key){
-    log_info("%-6s ", name);
-    hexdump(key, 16);
+void log_info_key(const char * name, sm_key_t key){
+    // log_info("%-6s ", name);
+    // hexdump(key, 16);
 }
 
 // Bluetooth Base UUID: 00000000-0000-1000-8000- 00805F9B34FB

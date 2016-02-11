@@ -157,13 +157,6 @@ void bd_addr_copy(bd_addr_t dest, bd_addr_t src);
  */
 void printf_hexdump(const void *data, int size);
 
-// move to btstack_debug.h
-// void log_info_hexdump(..) either log or hci_dump or off
-void log_key(const char * name, sm_key_t key);
-
-//
-void hexdump(const void *data, int size);
-
 /**
  * @brief Create human readable representation for UUID128
  * @note uses fixed global buffer

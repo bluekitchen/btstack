@@ -45,6 +45,7 @@
 #define __DEBUG_H
 
 #include "btstack_config.h"
+#include "btstack_defines.h"
 #include "hci_dump.h"
 
 #include <stdio.h>
@@ -93,5 +94,18 @@ static inline void __log_unused(const char *format, ...) {}
 #else
 #define log_error(...) __log_unused(__VA_ARGS__)
 #endif
+
+/** 
+ * @brief Log Security Manager key via log_info
+ * @param key to log
+ */
+void log_info_key(const char * name, sm_key_t key);
+
+/**
+ * @brief Hexdump via log_info
+ * @param data
+ * @param size
+ */
+void log_info_hexdump(const void *data, int size);
 
 #endif // __DEBUG_H

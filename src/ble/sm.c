@@ -429,15 +429,15 @@ static void sm_c1_t1(sm_key_t r, uint8_t preq[7], uint8_t pres[7], uint8_t iat, 
     reverse_56(preq, &p1[7]);
     p1[14] = rat;
     p1[15] = iat;
-    log_key("p1", p1);
-    log_key("r", r);
+    log_info_key("p1", p1);
+    log_info_key("r", r);
     
     // t1 = r xor p1
     int i;
     for (i=0;i<16;i++){
         t1[i] = r[i] ^ p1[i];
     }
-    log_key("t1", t1);
+    log_info_key("t1", t1);
 }
 
 // calculate arguments for second AES128 operation in C1 function
@@ -452,19 +452,19 @@ static void sm_c1_t3(sm_key_t t2, bd_addr_t ia, bd_addr_t ra, sm_key_t t3){
     memset(p2, 0, 16);
     memcpy(&p2[4],  ia, 6);
     memcpy(&p2[10], ra, 6);
-    log_key("p2", p2);
+    log_info_key("p2", p2);
 
     // c1 = e(k, t2_xor_p2)
     int i;
     for (i=0;i<16;i++){
         t3[i] = t2[i] ^ p2[i];
     }
-    log_key("t3", t3);
+    log_info_key("t3", t3);
 }
 
 static void sm_s1_r_prime(sm_key_t r1, sm_key_t r2, sm_key_t r_prime){
-    log_key("r1", r1);
-    log_key("r2", r2);
+    log_info_key("r1", r1);
+    log_info_key("r2", r2);
     memcpy(&r_prime[8], &r2[8], 8);
     memcpy(&r_prime[0], &r1[8], 8);
 }
@@ -532,7 +532,7 @@ static void sm_setup_tk(void){
     // Out of Band pairing method shall be used.
     if (setup->sm_m_preq.oob_data_flag && setup->sm_s_pres.oob_data_flag){
         log_info("SM: have OOB data");
-        log_key("OOB", setup->sm_tk);
+        log_info_key("OOB", setup->sm_tk);
         setup->sm_stk_generation_method = OOB;
         return;
     }
@@ -722,7 +722,7 @@ static void sm_cmac_handle_aes_engine_ready(void){
             for (i=0;i<16;i++){
                 y[i] = sm_cmac_x[i] ^ sm_cmac_m_last[i]; 
             }
-            log_key("Y", y);
+            log_info_key("Y", y);
             sm_cmac_block_current++;
             sm_cmac_next_state();
             sm_aes128_start(sm_cmac_k, y, NULL);
@@ -750,9 +750,9 @@ static void sm_cmac_handle_encryption_result(sm_key_t data){
                 k2[15] ^= 0x87;
             } 
 
-            log_key("k", sm_cmac_k);
-            log_key("k1", k1);
-            log_key("k2", k2);
+            log_info_key("k", sm_cmac_k);
+            log_info_key("k1", k1);
+            log_info_key("k2", k2);
 
             // step 4: set m_last
             int i;
@@ -785,7 +785,7 @@ static void sm_cmac_handle_encryption_result(sm_key_t data){
             break;
         case CMAC_W4_MLAST:
             // done
-            log_key("CMAC", data);
+            log_info_key("CMAC", data);
             sm_cmac_done_handler(data);
             sm_cmac_state = CMAC_IDLE;
             break;
@@ -1193,7 +1193,7 @@ static void sm_run(void){
             if (sm_aes128_state == SM_AES128_ACTIVE) break;
 
             log_info("LE Device Lookup: calculate AH");
-            log_key("IRK", irk);
+            log_info_key("IRK", irk);
 
             sm_key_t r_prime;
             sm_ah_r_prime(sm_address_resolution_address, r_prime);
@@ -1603,12 +1603,12 @@ static void sm_handle_encryption_result(uint8_t * data){
     switch (dkg_state){
         case DKG_W4_IRK:
             reverse_128(data, sm_persistent_irk);
-            log_key("irk", sm_persistent_irk);
+            log_info_key("irk", sm_persistent_irk);
             dkg_next_state();
             return;
         case DKG_W4_DHK:
             reverse_128(data, sm_persistent_dhk);
-            log_key("dhk", sm_persistent_dhk);
+            log_info_key("dhk", sm_persistent_dhk);
             dkg_next_state();
             // SM Init Finished
             return;
@@ -1654,14 +1654,14 @@ static void sm_handle_encryption_result(uint8_t * data){
             return;
         case SM_PH2_C1_W4_ENC_B:
             reverse_128(data, setup->sm_local_confirm);
-            log_key("c1!", setup->sm_local_confirm);
+            log_info_key("c1!", setup->sm_local_confirm);
             connection->sm_engine_state = SM_PH2_C1_SEND_PAIRING_CONFIRM;
             return;
         case SM_PH2_C1_W4_ENC_D:
             {
             sm_key_t peer_confirm_test;
             reverse_128(data, peer_confirm_test);
-            log_key("c1!", peer_confirm_test);
+            log_info_key("c1!", peer_confirm_test);
             if (memcmp(setup->sm_peer_confirm, peer_confirm_test, 16) != 0){
                 setup->sm_pairing_failed_reason = SM_REASON_CONFIRM_VALUE_FAILED;
                 connection->sm_engine_state = SM_GENERAL_SEND_PAIRING_FAILED;
@@ -1677,7 +1677,7 @@ static void sm_handle_encryption_result(uint8_t * data){
         case SM_PH2_W4_STK:
             reverse_128(data, setup->sm_ltk);
             sm_truncate_key(setup->sm_ltk, connection->sm_actual_encryption_key_size);
-            log_key("stk", setup->sm_ltk);
+            log_info_key("stk", setup->sm_ltk);
             if (connection->sm_role){
                 connection->sm_engine_state = SM_RESPONDER_PH2_SEND_LTK_REPLY;
             } else {
@@ -1713,13 +1713,13 @@ static void sm_handle_encryption_result(uint8_t * data){
         }
         case SM_PH3_LTK_W4_ENC:
             reverse_128(data, setup->sm_ltk);
-            log_key("ltk", setup->sm_ltk);
+            log_info_key("ltk", setup->sm_ltk);
             // calc CSRK next
             connection->sm_engine_state = SM_PH3_CSRK_GET_ENC;
             return;
         case SM_PH3_CSRK_W4_ENC:
             reverse_128(data, setup->sm_local_csrk);
-            log_key("csrk", setup->sm_local_csrk);
+            log_info_key("csrk", setup->sm_local_csrk);
             if (setup->sm_key_distribution_send_set){
                 connection->sm_engine_state = SM_PH3_DISTRIBUTE_KEYS;
             } else {
@@ -1737,7 +1737,7 @@ static void sm_handle_encryption_result(uint8_t * data){
         case SM_RESPONDER_PH4_LTK_W4_ENC:
             reverse_128(data, setup->sm_ltk);
             sm_truncate_key(setup->sm_ltk, connection->sm_actual_encryption_key_size);
-            log_key("ltk", setup->sm_ltk);
+            log_info_key("ltk", setup->sm_ltk);
             connection->sm_engine_state = SM_RESPONDER_PH4_SEND_LTK;
             return;                                
         default:

@@ -225,7 +225,6 @@ int socket_connection_hci_process(struct btstack_data_source *ds) {
     }
     conn->bytes_read += bytes_read;
     conn->bytes_to_read -= bytes_read;
-    // hexdump( conn->buffer, conn->bytes_read);
     if (conn->bytes_to_read > 0) {
         return 0;
     }

@@ -108,7 +108,7 @@ int le_device_db_add(int addr_type, bd_addr_t addr, sm_key_t irk){
     if (index < 0) return -1;
 
     log_info("Central Device DB adding type %u - %s", addr_type, bd_addr_to_str(addr));
-    log_key("irk", irk);
+    log_info_key("irk", irk);
 
     le_devices[index].addr_type = addr_type;
     memcpy(le_devices[index].addr, addr, 6);
@@ -209,8 +209,8 @@ void le_device_db_dump(void){
     for (i=0;i<LE_DEVICE_MEMORY_SIZE;i++){
         if (le_devices[i].addr_type == INVALID_ENTRY_ADDR_TYPE) continue;
         log_info("%u: %u %s", i, le_devices[i].addr_type, bd_addr_to_str(le_devices[i].addr));
-        log_key("irk", le_devices[i].irk);
-        log_key("local csrk", le_devices[i].local_csrk);
-        log_key("remote csrk", le_devices[i].remote_csrk);
+        log_info_key("irk", le_devices[i].irk);
+        log_info_key("local csrk", le_devices[i].local_csrk);
+        log_info_key("remote csrk", le_devices[i].remote_csrk);
     }
 }

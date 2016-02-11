@@ -214,7 +214,7 @@ void att_dump_attributes(void){
             log_info("%04x", little_endian_read_16(it.uuid, 0));
         }
         log_info(", value_len: %u, value: ", it.value_len);
-        hexdump(it.value, it.value_len);
+        log_info_hexdump(it.value, it.value_len);
     }
 }
 
@@ -393,7 +393,7 @@ static uint16_t handle_find_by_type_value_request2(att_connection_t * att_connec
                                            uint16_t attribute_type, uint16_t attribute_len, uint8_t* attribute_value){
     
     log_info("ATT_FIND_BY_TYPE_VALUE_REQUEST: from %04X to %04X, type %04X, value: ", start_handle, end_handle, attribute_type);
-    hexdump(attribute_value, attribute_len);
+    log_info_hexdump(attribute_value, attribute_len);
     uint8_t request_type = ATT_FIND_BY_TYPE_VALUE_REQUEST;
 
     if (start_handle > end_handle || start_handle == 0){
@@ -462,7 +462,7 @@ static uint16_t handle_read_by_type_request2(att_connection_t * att_connection, 
                                       uint16_t attribute_type_len, uint8_t * attribute_type){
     
     log_info("ATT_READ_BY_TYPE_REQUEST: from %04X to %04X, type: ", start_handle, end_handle); 
-    hexdump(attribute_type, attribute_type_len);
+    log_info_hexdump(attribute_type, attribute_type_len);
     uint8_t request_type = ATT_READ_BY_TYPE_REQUEST;
 
     if (start_handle > end_handle || start_handle == 0){
@@ -743,7 +743,7 @@ static uint16_t handle_read_by_group_type_request2(att_connection_t * att_connec
                                             uint16_t attribute_type_len, uint8_t * attribute_type){
     
     log_info("ATT_READ_BY_GROUP_TYPE_REQUEST: from %04X to %04X, buffer size %u, type: ", start_handle, end_handle, response_buffer_size);
-    hexdump(attribute_type, attribute_type_len);
+    log_info_hexdump(attribute_type, attribute_type_len);
     uint8_t request_type = ATT_READ_BY_GROUP_TYPE_REQUEST;
     
     if (start_handle > end_handle || start_handle == 0){
@@ -1061,7 +1061,7 @@ uint16_t att_handle_request(att_connection_t * att_connection,
             break;
         default:
             log_info("Unhandled ATT Command: %02X, DATA: ", request_buffer[0]);
-            hexdump(&request_buffer[9], request_len-9);
+            log_info_hexdump(&request_buffer[9], request_len-9);
             break;
     }
     return response_len;
@@ -1080,28 +1080,28 @@ int main(void){
 
     uint8_t uuid_1[] = { 0x00, 0x18};
     acl_buffer_size = handle_find_by_type_value_request2(acl_buffer, 19, 0, 0xffff, 0x2800, 2, (uint8_t *) &uuid_1);
-    hexdump(acl_buffer, acl_buffer_size);
+    log_info_hexdump(acl_buffer, acl_buffer_size);
     
     uint8_t uuid_3[] = { 0x00, 0x2a};
     acl_buffer_size = handle_read_by_type_request2(acl_buffer, 19, 0, 0xffff, 2, (uint8_t *) &uuid_3);
-    hexdump(acl_buffer, acl_buffer_size);
+    log_info_hexdump(acl_buffer, acl_buffer_size);
         
     acl_buffer_size = handle_find_by_type_value_request2(acl_buffer, 19, 0, 0xffff, 0x2800, 2, (uint8_t *) &uuid_1);
-    hexdump(acl_buffer, acl_buffer_size);
+    log_info_hexdump(acl_buffer, acl_buffer_size);
 
     uint8_t uuid_4[] = { 0x00, 0x28};
     acl_buffer_size = handle_read_by_group_type_request2(acl_buffer, 20, 0, 0xffff, 2, (uint8_t *) &uuid_4);
-    hexdump(acl_buffer, acl_buffer_size);
+    log_info_hexdump(acl_buffer, acl_buffer_size);
     
     acl_buffer_size = handle_find_information_request2(acl_buffer, 20, 0, 0xffff);
-    hexdump(acl_buffer, acl_buffer_size);
+    log_info_hexdump(acl_buffer, acl_buffer_size);
     acl_buffer_size = handle_find_information_request2(acl_buffer, 20, 3, 0xffff);
-    hexdump(acl_buffer, acl_buffer_size);
+    log_info_hexdump(acl_buffer, acl_buffer_size);
     acl_buffer_size = handle_find_information_request2(acl_buffer, 20, 5, 0xffff);
-    hexdump(acl_buffer, acl_buffer_size);
+    log_info_hexdump(acl_buffer, acl_buffer_size);
 
     acl_buffer_size = handle_read_request2(acl_buffer, 19, 0x0003);
-    hexdump(acl_buffer, acl_buffer_size);
+    log_info_hexdump(acl_buffer, acl_buffer_size);
 
     return 0;
 }
