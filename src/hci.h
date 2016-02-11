@@ -739,7 +739,7 @@ void hci_disconnect_security_block(hci_con_handle_t con_handle);
 int hci_send_cmd_packet(uint8_t *packet, int size);
 
 // query if remote side supports eSCO
-int hci_remote_eSCO_supported(hci_con_handle_t con_handle);
+int hci_remote_esco_supported(hci_con_handle_t con_handle);
 
 /* API_START */
 

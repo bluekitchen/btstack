@@ -602,7 +602,7 @@ static int codecs_exchange_state_machine(hfp_connection_t * context){
 static void hfp_init_link_settings(hfp_connection_t * context){
     // determine highest possible link setting
     context->link_setting = HFP_LINK_SETTINGS_D1;
-    if (hci_remote_eSCO_supported(context->con_handle)){
+    if (hci_remote_esco_supported(context->con_handle)){
         context->link_setting = HFP_LINK_SETTINGS_S3;
         if ((context->remote_supported_features & (1<<HFP_HFSF_ESCO_S4))
         &&  (hfp_supported_features             & (1<<HFP_AGSF_ESCO_S4))){
