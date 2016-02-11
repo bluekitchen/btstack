@@ -1880,7 +1880,7 @@ static void hci_state_reset(void){
     hci_stack->le_connection_parameter_range.le_supervision_timeout_max = 3200;
 }
 
-void hci_init(const hci_transport_t *transport, void *config, btstack_link_key_db_t const * link_key_db){
+void hci_init(const hci_transport_t *transport, const void *config, btstack_link_key_db_t const * link_key_db){
     
 #ifdef HAVE_MALLOC
     if (!hci_stack) {

@@ -696,7 +696,7 @@ void hci_local_bd_addr(bd_addr_t address_buffer);
 /**
  * @brief Set up HCI. Needs to be called before any other function.
  */
-void hci_init(const hci_transport_t *transport, void *config, btstack_link_key_db_t const * btstack_link_key_db);
+void hci_init(const hci_transport_t *transport, const void *config, btstack_link_key_db_t const * btstack_link_key_db);
 
 /**
  * @brief Configure Bluetooth chipset driver. Has to be called before power on, or right after receiving the local version information.
