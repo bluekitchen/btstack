@@ -123,14 +123,6 @@ static inline int is_enhanced_call_status_active(int index_in_table){
     return get_enhanced_call_status(index_in_table) == HFP_ENHANCED_CALL_STATUS_ACTIVE;
 }
 
-static inline int is_enhanced_call_status_held(int index_in_table){
-    return get_enhanced_call_status(index_in_table) == HFP_ENHANCED_CALL_STATUS_HELD;
-}
-
-static inline int is_enhanced_call_status_response_hold(int index_in_table){
-    return get_enhanced_call_status(index_in_table) == HFP_ENHANCED_CALL_STATUS_CALL_HELD_BY_RESPONSE_AND_HOLD;
-}
-
 static inline int is_enhanced_call_status_initiated(int index_in_table){
     switch (get_enhanced_call_status(index_in_table)){
         case HFP_ENHANCED_CALL_STATUS_OUTGOING_DIALING:
