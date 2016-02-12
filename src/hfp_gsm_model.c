@@ -74,9 +74,39 @@ static char last_dialed_number[HFP_GSM_MAX_CALL_NUMBER_SIZE];
 static void hfp_gsm_handler(hfp_ag_call_event_t event, uint8_t index, uint8_t type, const char * number);
 
 static void set_call_status(int index_in_table, hfp_gsm_call_status_t status){
+    switch (status){
+        case CALL_RESPONSE_HOLD:
+            gsm_calls[index_in_table].enhanced_status = HFP_ENHANCED_CALL_STATUS_CALL_HELD_BY_RESPONSE_AND_HOLD;
+            break;
+        case CALL_ACTIVE:
+            gsm_calls[index_in_table].enhanced_status = HFP_ENHANCED_CALL_STATUS_ACTIVE;
+            break;
+        case CALL_HELD:
+            gsm_calls[index_in_table].enhanced_status = HFP_ENHANCED_CALL_STATUS_HELD;
+            break;
+        default:
+            break;
+    }
     gsm_calls[index_in_table].status = status;
     gsm_calls[index_in_table].used_slot = 1;
 }
+
+static int get_call_status_for_enhanced_status(hfp_enhanced_call_status_t enhanced_status){
+    switch(enhanced_status){
+        case HFP_ENHANCED_CALL_STATUS_OUTGOING_DIALING:
+        case HFP_ENHANCED_CALL_STATUS_OUTGOING_ALERTING:
+        case HFP_ENHANCED_CALL_STATUS_INCOMING:
+        case HFP_ENHANCED_CALL_STATUS_INCOMING_WAITING:
+            return CALL_INITIATED;
+        case HFP_ENHANCED_CALL_STATUS_ACTIVE:
+            return CALL_ACTIVE;
+        case HFP_ENHANCED_CALL_STATUS_HELD:
+            return CALL_HELD;
+        case HFP_ENHANCED_CALL_STATUS_CALL_HELD_BY_RESPONSE_AND_HOLD:
+            return CALL_RESPONSE_HOLD;
+    }
+}
+
 
 static int get_call_status(int index_in_table){
     if (!gsm_calls[index_in_table].used_slot) return -1;
@@ -228,12 +258,6 @@ hfp_gsm_call_t * hfp_gsm_call(int call_index){
         if (call->index != call_index) continue;
     
         switch (call->status){
-            case CALL_ACTIVE:
-                call->enhanced_status = HFP_ENHANCED_CALL_STATUS_ACTIVE;
-                break;
-            case CALL_HELD:
-                call->enhanced_status = HFP_ENHANCED_CALL_STATUS_HELD;
-                break;
             case CALL_INITIATED:
                 if (call->direction == HFP_ENHANCED_CALL_DIR_OUTGOING){
                     if (callsetup_status == HFP_CALLSETUP_STATUS_OUTGOING_CALL_SETUP_IN_ALERTING_STATE){
@@ -246,9 +270,6 @@ hfp_gsm_call_t * hfp_gsm_call(int call_index){
                     }
                     call->enhanced_status = HFP_ENHANCED_CALL_STATUS_INCOMING;
                 } 
-                break;
-            case CALL_RESPONSE_HOLD:
-                call->enhanced_status = HFP_ENHANCED_CALL_STATUS_CALL_HELD_BY_RESPONSE_AND_HOLD;
                 break;
             default:
                 log_error("no call status");

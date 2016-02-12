@@ -57,18 +57,25 @@ extern "C" {
 
 typedef enum{
     CALL_INITIATED,
+    
+    // CALL_ENHANCED_CALL_STATUS_OUTGOING_DIALING,
+    // CALL_ENHANCED_CALL_STATUS_OUTGOING_ALERTING,
+    // CALL_ENHANCED_CALL_STATUS_INCOMING,
+    // CALL_ENHANCED_CALL_STATUS_INCOMING_WAITING,
+
     CALL_RESPONSE_HOLD,
     CALL_ACTIVE,
     CALL_HELD
 } hfp_gsm_call_status_t;
 
 typedef struct {
-    // TODO: use enhanced_status instead of status
-    uint8_t initiated;
     uint8_t used_slot;
+    
+    // TODO: use enhanced_status instead of status
     hfp_gsm_call_status_t status;
-    hfp_enhanced_call_dir_t direction;
     hfp_enhanced_call_status_t enhanced_status;
+    
+    hfp_enhanced_call_dir_t direction;
     hfp_enhanced_call_mode_t mode;
     hfp_enhanced_call_mpty_t mpty;
     // TODO: sort on drop call, so that index corresponds to table index
