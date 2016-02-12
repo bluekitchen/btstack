@@ -150,6 +150,7 @@ void hfp_ag_register_packet_handler(hfp_callback_t callback){
         return;
     }
     hfp_callback = callback;
+    hfp_set_callback(callback); 
 }
 
 static int use_in_band_tone(){
@@ -1966,7 +1967,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             hfp_handle_rfcomm_data(packet_type, channel, packet, size);
             break;
         case HCI_EVENT_PACKET:
-            hfp_handle_hci_event(hfp_callback, packet_type, packet, size);
+            hfp_handle_hci_event(packet_type, packet, size);
             break;
         default:
             break;
@@ -1998,7 +1999,7 @@ void hfp_ag_init(uint16_t rfcomm_channel_nr, uint32_t supported_features,
 
     rfcomm_register_service(packet_handler, rfcomm_channel_nr, 0xffff);  
     hfp_init();
-        
+    
     hfp_supported_features = supported_features;
     hfp_codecs_nr = codecs_nr;
 

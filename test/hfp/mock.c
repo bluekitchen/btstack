@@ -229,7 +229,7 @@ void sdp_query_rfcomm_channel_and_name_for_uuid(bd_addr_t remote, uint16_t uuid)
 }
 
 
-uint8_t rfcomm_create_channel(bd_addr_t addr, uint8_t channel, uint16_t * out_cid){
+uint8_t rfcomm_create_channel(btstack_packet_handler_t handler, bd_addr_t addr, uint8_t channel, uint16_t * out_cid){
 	// RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE
     uint8_t event[16];
     uint8_t pos = 0;
@@ -266,7 +266,7 @@ void rfcomm_disconnect(uint16_t rfcomm_cid){
     (*registered_rfcomm_packet_handler)(HCI_EVENT_PACKET, 0, (uint8_t *) event, sizeof(event));
 }
 
-uint8_t rfcomm_register_service(btstack_packet_handler_t packet_handler, uint8_t channel, uint16_t max_frame_size){
+uint8_t rfcomm_register_service(btstack_packet_handler_t handler, uint8_t channel, uint16_t max_frame_size){
 	printf("rfcomm_register_service\n");
     registered_rfcomm_packet_handler = handler;
     return 0;
@@ -314,7 +314,7 @@ uint16_t hci_get_sco_voice_setting(){
     return 0x40;
 }
 
-int hci_remote_eSCO_supported(hci_con_handle_t handle){
+int hci_remote_esco_supported(hci_con_handle_t handle){
     return 0;
 }
 

@@ -92,6 +92,7 @@ void hfp_hf_register_packet_handler(hfp_callback_t callback){
         return;
     }
     hfp_callback = callback;
+    hfp_set_callback(callback); 
 }
 
 static int hfp_hf_supports_codec(uint8_t codec){
@@ -1017,7 +1018,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             hfp_handle_rfcomm_event(packet_type, channel, packet, size);
             break;
         case HCI_EVENT_PACKET:
-            hfp_handle_hci_event(hfp_callback, packet_type, packet, size);
+            hfp_handle_hci_event(packet_type, packet, size);
         default:
             break;
     }
