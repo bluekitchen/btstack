@@ -84,6 +84,14 @@ static void set_call_status(int index_in_table, hfp_gsm_call_status_t status){
         case CALL_HELD:
             gsm_calls[index_in_table].enhanced_status = HFP_ENHANCED_CALL_STATUS_HELD;
             break;
+        case CALL_INITIATED:
+                if (gsm_calls[index_in_table].direction == HFP_ENHANCED_CALL_DIR_OUTGOING){
+                    if (callsetup_status == HFP_CALLSETUP_STATUS_OUTGOING_CALL_SETUP_IN_ALERTING_STATE){
+                        gsm_calls[index_in_table].enhanced_status = HFP_ENHANCED_CALL_STATUS_OUTGOING_ALERTING;
+                    } 
+                    gsm_calls[index_in_table].enhanced_status = HFP_ENHANCED_CALL_STATUS_OUTGOING_DIALING;
+                } 
+                break;
         default:
             break;
     }
@@ -259,12 +267,7 @@ hfp_gsm_call_t * hfp_gsm_call(int call_index){
     
         switch (call->status){
             case CALL_INITIATED:
-                if (call->direction == HFP_ENHANCED_CALL_DIR_OUTGOING){
-                    if (callsetup_status == HFP_CALLSETUP_STATUS_OUTGOING_CALL_SETUP_IN_ALERTING_STATE){
-                        call->enhanced_status = HFP_ENHANCED_CALL_STATUS_OUTGOING_ALERTING;
-                    } 
-                    call->enhanced_status = HFP_ENHANCED_CALL_STATUS_OUTGOING_DIALING;
-                } else {
+                if (call->direction == HFP_ENHANCED_CALL_DIR_INCOMING){
                     if (get_number_active_calls() > 0){
                         call->enhanced_status = HFP_ENHANCED_CALL_STATUS_INCOMING_WAITING;
                     }
