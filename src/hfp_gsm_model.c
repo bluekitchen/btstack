@@ -64,13 +64,6 @@
 #define HFP_GSM_MAX_NR_CALLS 3
 #define HFP_GSM_MAX_CALL_NUMBER_SIZE 25
 
-typedef enum{
-    CALL_INITIATED,
-    CALL_RESPONSE_HOLD,
-    CALL_ACTIVE,
-    CALL_HELD
-} hfp_gsm_call_status_t;
-
 static hfp_gsm_call_t gsm_calls[HFP_GSM_MAX_NR_CALLS]; 
 static hfp_callsetup_status_t callsetup_status = HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS;
 
@@ -121,20 +114,25 @@ static inline void set_enhanced_call_status_initiated(int index_in_table){
     gsm_calls[index_in_table].used_slot = 1;
 }
 
+static int get_enhanced_call_status(int index_in_table){
+    if (!gsm_calls[index_in_table].used_slot) return -1;
+    return gsm_calls[index_in_table].enhanced_status;
+}
+
 static inline int is_enhanced_call_status_active(int index_in_table){
-    return gsm_calls[index_in_table].enhanced_status == HFP_ENHANCED_CALL_STATUS_ACTIVE;
+    return get_enhanced_call_status(index_in_table) == HFP_ENHANCED_CALL_STATUS_ACTIVE;
 }
 
 static inline int is_enhanced_call_status_held(int index_in_table){
-    return gsm_calls[index_in_table].enhanced_status == HFP_ENHANCED_CALL_STATUS_HELD;
+    return get_enhanced_call_status(index_in_table) == HFP_ENHANCED_CALL_STATUS_HELD;
 }
 
 static inline int is_enhanced_call_status_response_hold(int index_in_table){
-    return gsm_calls[index_in_table].enhanced_status == HFP_ENHANCED_CALL_STATUS_CALL_HELD_BY_RESPONSE_AND_HOLD;
+    return get_enhanced_call_status(index_in_table) == HFP_ENHANCED_CALL_STATUS_CALL_HELD_BY_RESPONSE_AND_HOLD;
 }
 
 static inline int is_enhanced_call_status_initiated(int index_in_table){
-    switch (gsm_calls[index_in_table].enhanced_status){
+    switch (get_enhanced_call_status(index_in_table)){
         case HFP_ENHANCED_CALL_STATUS_OUTGOING_DIALING:
         case HFP_ENHANCED_CALL_STATUS_OUTGOING_ALERTING:
         case HFP_ENHANCED_CALL_STATUS_INCOMING:
@@ -143,32 +141,6 @@ static inline int is_enhanced_call_status_initiated(int index_in_table){
         default:
             return 0; 
     }
-}
-
-static int get_call_status_for_enhanced_status(hfp_enhanced_call_status_t enhanced_status){
-    switch(enhanced_status){
-        case HFP_ENHANCED_CALL_STATUS_OUTGOING_DIALING:
-        case HFP_ENHANCED_CALL_STATUS_OUTGOING_ALERTING:
-        case HFP_ENHANCED_CALL_STATUS_INCOMING:
-        case HFP_ENHANCED_CALL_STATUS_INCOMING_WAITING:
-            return CALL_INITIATED;
-        case HFP_ENHANCED_CALL_STATUS_ACTIVE:
-            return CALL_ACTIVE;
-        case HFP_ENHANCED_CALL_STATUS_HELD:
-            return CALL_HELD;
-        case HFP_ENHANCED_CALL_STATUS_CALL_HELD_BY_RESPONSE_AND_HOLD:
-            return CALL_RESPONSE_HOLD;
-    }
-}
-
-static int get_enhanced_call_status(int index_in_table){
-    if (!gsm_calls[index_in_table].used_slot) return -1;
-    return gsm_calls[index_in_table].enhanced_status;
-}
-
-static int get_call_status(int index_in_table){
-    if (!gsm_calls[index_in_table].used_slot) return -1;
-    return get_call_status_for_enhanced_status(gsm_calls[index_in_table].enhanced_status);
 }
 
 static void free_call_slot(int index_in_table){
@@ -187,26 +159,26 @@ void hfp_gsm_init(void){
     }
 } 
 
-static int get_number_calls_with_status(hfp_gsm_call_status_t status){
+static int get_number_calls_with_enhanced_status(hfp_enhanced_call_status_t enhanced_status){
     int i, count = 0;
     for (i = 0; i < HFP_GSM_MAX_NR_CALLS; i++){
-        if (get_call_status(i) == status) count++;
+        if (get_enhanced_call_status(i) == enhanced_status) count++;
     }
     return count;
 }
 
-static int get_call_index_with_status(hfp_gsm_call_status_t status){
+static int get_call_index_with_enhanced_status(hfp_enhanced_call_status_t enhanced_status){
     int i ;
     for (i = 0; i < HFP_GSM_MAX_NR_CALLS; i++){
-        if (get_call_status(i) == status) return i;
+        if (get_enhanced_call_status(i) == enhanced_status) return i;
     }
     return -1;
 }
 
-static int get_enhanced_call_index_with_status(hfp_enhanced_call_status_t enhanced_status){
+static inline int get_initiated_call_index(void){
     int i ;
     for (i = 0; i < HFP_GSM_MAX_NR_CALLS; i++){
-        if (get_enhanced_call_status(i) == enhanced_status) return i;
+        if (is_enhanced_call_status_initiated(i)) return i;
     }
     return -1;
 }
@@ -220,19 +192,15 @@ static inline int get_next_free_slot(void){
 }
 
 static inline int get_active_call_index(void){
-    return get_call_index_with_status(CALL_ACTIVE);
-}
-
-static inline int get_initiated_call_index(void){
-    return get_call_index_with_status(CALL_INITIATED);
+    return get_call_index_with_enhanced_status(HFP_ENHANCED_CALL_STATUS_ACTIVE);
 }
 
 static inline int get_held_call_index(void){
-    return get_call_index_with_status(CALL_HELD);
+    return get_call_index_with_enhanced_status(HFP_ENHANCED_CALL_STATUS_HELD);
 }
 
 static inline int get_response_held_call_index(void){
-    return get_call_index_with_status(CALL_RESPONSE_HOLD);
+    return get_call_index_with_enhanced_status(HFP_ENHANCED_CALL_STATUS_CALL_HELD_BY_RESPONSE_AND_HOLD);
 }
 
 static inline int get_number_none_calls(void){
@@ -244,15 +212,15 @@ static inline int get_number_none_calls(void){
 }
 
 static inline int get_number_active_calls(void){
-    return get_number_calls_with_status(CALL_ACTIVE);
+    return get_number_calls_with_enhanced_status(HFP_ENHANCED_CALL_STATUS_ACTIVE);
 }
 
 static inline int get_number_held_calls(void){
-    return get_number_calls_with_status(CALL_HELD);
+    return get_number_calls_with_enhanced_status(HFP_ENHANCED_CALL_STATUS_HELD);
 }
 
 static inline int get_number_response_held_calls(void){
-    return get_number_calls_with_status(CALL_RESPONSE_HOLD);
+    return get_number_calls_with_enhanced_status(HFP_ENHANCED_CALL_STATUS_CALL_HELD_BY_RESPONSE_AND_HOLD);
 }
 
 static int next_call_index(void){
@@ -482,7 +450,7 @@ static void hfp_gsm_handler(hfp_ag_call_event_t event, uint8_t index, uint8_t ty
             } 
 
             for (i = 0; i < HFP_GSM_MAX_NR_CALLS; i++){
-                if (get_call_status(i) == CALL_ACTIVE){
+                if (is_enhanced_call_status_active(i)){
                     gsm_calls[i].mpty = HFP_ENHANCED_CALL_MPTY_CONFERENCE_CALL;
                 }
             }
@@ -568,7 +536,7 @@ static void hfp_gsm_handler(hfp_ag_call_event_t event, uint8_t index, uint8_t ty
                 }
             } else {
                 for (i = 0; i < HFP_GSM_MAX_NR_CALLS; i++){
-                    if (get_call_status(i) == CALL_ACTIVE){
+                    if (is_enhanced_call_status_active(i)){
                         delete_call(i);
                     }
                 }    
@@ -585,7 +553,7 @@ static void hfp_gsm_handler(hfp_ag_call_event_t event, uint8_t index, uint8_t ty
         
         case HFP_AG_CALL_HOLD_PARK_ACTIVE_ACCEPT_HELD_OR_WAITING_CALL:
             for (i = 0; i < HFP_GSM_MAX_NR_CALLS; i++){
-                if (get_call_status(i) == CALL_ACTIVE && gsm_calls[i].index != index){
+                if (is_enhanced_call_status_active(i) && gsm_calls[i].index != index){
                     set_enhanced_call_status_held(i);
                 }
             }
