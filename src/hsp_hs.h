@@ -37,7 +37,7 @@
 
 // *****************************************************************************
 //
-// HSP Headset (!! UNDER DEVELOPMENT !!)
+// HSP Headset
 //
 // *****************************************************************************
 
@@ -53,26 +53,32 @@ extern "C" {
 #endif
 
 typedef void (*hsp_hs_callback_t)(uint8_t * event, uint16_t event_size);
-// Register callback (packet handler) for hsp headset
-void hsp_hs_register_packet_handler(hsp_hs_callback_t callback);
-void hsp_hs_create_service(uint8_t * service, int rfcomm_channel_nr, const char * name, uint8_t have_remote_audio_control);
 
 void hsp_hs_init(uint8_t rfcomm_channel_nr);
+
+void hsp_hs_create_service(uint8_t * service, int rfcomm_channel_nr, const char * name, uint8_t have_remote_audio_control);
+
+// Register callback (packet handler) for hsp headset
+void hsp_hs_register_packet_handler(hsp_hs_callback_t callback);
+
 void hsp_hs_connect(bd_addr_t bd_addr);
+
 void hsp_hs_disconnect(bd_addr_t bd_addr);
 
 // AT+VGM=[0..15]
 void hsp_hs_set_microphone_gain(uint8_t gain);
+
 // AT+VGS=[0..15]
 void hsp_hs_set_speaker_gain(uint8_t gain);
 
-void hsp_hs_support_custom_indications(int enable);
+void hsp_hs_send_button_press(void);
 
-void hsp_hs_press_button(void);
-
-// When support custom commands is enabled, AG will send HSP_SUBEVENT_AG_INDICATION.
+// When support custom indications is enabled, HS will send HSP_SUBEVENT_HS_INDICATION.
 // On occurance of this event, client's packet handler must send the result back
 // by calling hsp_hs_send_result function.
+
+void hsp_hs_enable_custom_indications(int enable);
+
 int hsp_hs_send_result(char * indication);
 
 #if defined __cplusplus

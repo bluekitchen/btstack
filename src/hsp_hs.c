@@ -37,7 +37,7 @@
  
 // *****************************************************************************
 //
-// Minimal setup for HSP Headset (!! UNDER DEVELOPMENT !!)
+// HSP Headset
 //
 // *****************************************************************************
 
@@ -155,13 +155,10 @@ static int hsp_hs_send_str_over_rfcomm(uint16_t cid, const char * command){
     return err;
 }
 
-void hsp_hs_support_custom_indications(int enable){
+void hsp_hs_enable_custom_indications(int enable){
     hs_support_custom_indications = enable;
 }
 
-// When support custom commands is enabled, AG will send HSP_SUBEVENT_HS_COMMAND.
-// On occurance of this event, client's packet handler must send the result back
-// by calling hsp_hs_send_result function.
 int hsp_hs_send_result(char * result){
     if (!hs_support_custom_indications) return 1;
     return hsp_hs_send_str_over_rfcomm(rfcomm_cid, result);
@@ -547,10 +544,6 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
             break;
         
         case HCI_EVENT_DISCONNECTION_COMPLETE:
-            printf("HCI_EVENT_DISCONNECTION_COMPLETE \n");
-            // if (hsp_state != HSP_W4_SCO_DISCONNECTED){
-            //     printf("received gap disconnect in wrong hsp state\n");
-            // }
             handle = READ_BT_16(packet,3);
             if (handle == sco_handle){
                 sco_handle = 0;
@@ -560,10 +553,6 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
             }
             break;
         case RFCOMM_EVENT_CHANNEL_CLOSED:
-            printf("RFCOMM_EVENT_CHANNEL_CLOSED\n");
-            // if (hsp_state != HSP_W4_RFCOMM_DISCONNECTED){
-            //     printf("received RFCOMM disconnect in wrong hsp state\n");
-            // }
             printf("RFCOMM channel closed\n");
             hsp_hs_reset_state();
             emit_event(HSP_SUBEVENT_AUDIO_DISCONNECTION_COMPLETE,0);
@@ -600,7 +589,7 @@ static void handle_query_rfcomm_event(sdp_query_event_t * event, void * context)
     }
 }
 
-void hsp_hs_press_button(void){
+void hsp_hs_send_button_press(void){
     hs_send_button_press = 1;
     hsp_run();
 }
