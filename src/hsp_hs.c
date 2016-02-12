@@ -159,7 +159,7 @@ void hsp_hs_enable_custom_indications(int enable){
     hs_support_custom_indications = enable;
 }
 
-int hsp_hs_send_result(char * result){
+int hsp_hs_send_result(const char * result){
     if (!hs_support_custom_indications) return 1;
     return hsp_hs_send_str_over_rfcomm(rfcomm_cid, result);
 }
