@@ -95,14 +95,17 @@ static void set_callsetup_status(hfp_callsetup_status_t status){
 
 static inline void set_enhanced_call_status_active(int index_in_table){
     gsm_calls[index_in_table].enhanced_status = HFP_ENHANCED_CALL_STATUS_ACTIVE;
+    gsm_calls[index_in_table].used_slot = 1;
 }
 
 static inline void set_enhanced_call_status_held(int index_in_table){
     gsm_calls[index_in_table].enhanced_status = HFP_ENHANCED_CALL_STATUS_HELD;
+    gsm_calls[index_in_table].used_slot = 1;
 }
 
 static inline void set_enhanced_call_status_response_hold(int index_in_table){
     gsm_calls[index_in_table].enhanced_status = HFP_ENHANCED_CALL_STATUS_CALL_HELD_BY_RESPONSE_AND_HOLD;
+    gsm_calls[index_in_table].used_slot = 1;
 }
 
 static inline void set_enhanced_call_status_initiated(int index_in_table){
@@ -115,33 +118,6 @@ static inline void set_enhanced_call_status_initiated(int index_in_table){
             gsm_calls[index_in_table].enhanced_status = HFP_ENHANCED_CALL_STATUS_INCOMING;
         }
     } 
-}
-
-static void set_call_status(int index_in_table, hfp_gsm_call_status_t status){
-    switch (status){
-        case CALL_RESPONSE_HOLD:
-            gsm_calls[index_in_table].enhanced_status = HFP_ENHANCED_CALL_STATUS_CALL_HELD_BY_RESPONSE_AND_HOLD;
-            break;
-        case CALL_ACTIVE:
-            gsm_calls[index_in_table].enhanced_status = HFP_ENHANCED_CALL_STATUS_ACTIVE;
-            break;
-        case CALL_HELD:
-            gsm_calls[index_in_table].enhanced_status = HFP_ENHANCED_CALL_STATUS_HELD;
-            break;
-        case CALL_INITIATED:
-            if (gsm_calls[index_in_table].direction == HFP_ENHANCED_CALL_DIR_OUTGOING){
-                gsm_calls[index_in_table].enhanced_status = HFP_ENHANCED_CALL_STATUS_OUTGOING_DIALING;
-            } else {
-                if (get_number_active_calls() > 0){
-                    gsm_calls[index_in_table].enhanced_status = HFP_ENHANCED_CALL_STATUS_INCOMING_WAITING;
-                } else {
-                    gsm_calls[index_in_table].enhanced_status = HFP_ENHANCED_CALL_STATUS_INCOMING;
-                }
-            } 
-            break;
-        default:
-            break;
-    }
     gsm_calls[index_in_table].used_slot = 1;
 }
 
@@ -282,7 +258,7 @@ static void create_call(hfp_enhanced_call_dir_t direction){
     int next_free_slot = get_next_free_slot();
     gsm_calls[next_free_slot].direction = direction;
     gsm_calls[next_free_slot].index = next_call_index();
-    set_call_status(next_free_slot, CALL_INITIATED);
+    set_enhanced_call_status_initiated(next_free_slot);
     gsm_calls[next_free_slot].clip_type = 0;
     gsm_calls[next_free_slot].clip_number[0] = '\0';
     gsm_calls[next_free_slot].mpty = HFP_ENHANCED_CALL_MPTY_NOT_A_CONFERENCE_CALL;
