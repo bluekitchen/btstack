@@ -1039,15 +1039,17 @@ static void hci_initializing_run(void){
             hci_send_cmd(&hci_le_set_scan_parameters, 1, 0x1e0, 0x30, 0, 0);
             break;
 #endif
-        // DONE
-        case HCI_INIT_DONE:
-            // done.
-            hci_stack->state = HCI_STATE_WORKING;
-            hci_emit_state();
-            return;
         default:
             return;
     }
+}
+
+static void hci_init_done(void){
+    // done. tell the app
+    log_info("hci_init_done -> HCI_STATE_WORKING");
+    hci_stack->state = HCI_STATE_WORKING;
+    hci_emit_state();
+    hci_run();
 }
 
 static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
@@ -1197,7 +1199,7 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
                     return;
                 } else {
                     log_error("Neither BR/EDR nor LE supported");
-                    hci_stack->substate = HCI_INIT_DONE; // skip all
+                    hci_init_done();
                     return;
                 }
             }
@@ -1221,7 +1223,7 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
         case HCI_INIT_W4_WRITE_SYNCHRONOUS_FLOW_CONTROL_ENABLE:
             if (!hci_le_supported()){
                 // SKIP LE init for Classic only configuration
-                hci_stack->substate = HCI_INIT_DONE;
+                hci_init_done();
                 return;
             }
             break;
@@ -1229,11 +1231,16 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
         case HCI_INIT_W4_WRITE_SCAN_ENABLE:
             if (!hci_le_supported()){
                 // SKIP LE init for Classic only configuration
-                hci_stack->substate = HCI_INIT_DONE;
+                hci_init_done();
                 return;
             }
 #endif
             break;
+        // Response to command before init done state -> init done
+        case (HCI_INIT_DONE-1):
+            hci_init_done();
+            return;
+
         default:
             break;
     }
