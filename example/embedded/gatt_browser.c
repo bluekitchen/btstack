@@ -102,7 +102,6 @@ static btstack_packet_callback_registration_t hci_event_callback_registration;
  */
 
 /* LISTING_START(GATTClientSetup): Setting up GATT client */
-static uint16_t gc_id;
 
 // Handles connect, disconnect, and advertising report events,  
 // starts the GATT client, and sends the first query.
@@ -110,7 +109,7 @@ static void handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *pac
 
 // Handles GATT client query results, sends queries and the 
 // GAP disconnect command when the querying is done.
-void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
 static void gatt_client_setup(void){
 
@@ -123,8 +122,6 @@ static void gatt_client_setup(void){
 
     // Initialize GATT client 
     gatt_client_init();
-    // Register handler for GATT client events
-    gc_id = gatt_client_register_packet_handler(&handle_gatt_client_event);
 
     // Optinoally, Setup security manager
     sm_init();
@@ -214,7 +211,7 @@ static void handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *pac
             if (packet[2] !=  HCI_SUBEVENT_LE_CONNECTION_COMPLETE) break;
             gc_handle = little_endian_read_16(packet, 4);
             // query primary services
-            gatt_client_discover_primary_services(gc_id, gc_handle);
+            gatt_client_discover_primary_services(handle_gatt_client_event, gc_handle);
             break;
         case HCI_EVENT_DISCONNECTION_COMPLETE:
             printf("\nGATT browser - DISCONNECTED\n");
@@ -262,7 +259,7 @@ static void extract_characteristic(le_characteristic_t * characteristic, uint8_t
     }
 }
 
-void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     le_service_t service;
     le_characteristic_t characteristic;
     switch(packet[0]){
@@ -281,14 +278,14 @@ void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *pa
                 service_index = 0;
                 printf("\nGATT browser - CHARACTERISTIC for SERVICE %s\n", uuid128_to_str(service.uuid128));
                 search_services = 0;
-                gatt_client_discover_characteristics_for_service(gc_id, gc_handle, &services[service_index]);
+                gatt_client_discover_characteristics_for_service(handle_gatt_client_event, gc_handle, &services[service_index]);
             } else {
                 // GATT_EVENT_QUERY_COMPLETE of search characteristics
                 if (service_index < service_count) {
                     service = services[service_index++];
                     printf("\nGATT browser - CHARACTERISTIC for SERVICE %s, [0x%04x-0x%04x]\n",
                         uuid128_to_str(service.uuid128), service.start_group_handle, service.end_group_handle);
-                    gatt_client_discover_characteristics_for_service(gc_id, gc_handle, &service);
+                    gatt_client_discover_characteristics_for_service(handle_gatt_client_event, gc_handle, &service);
                     break;
                 }
                 service_index = 0;

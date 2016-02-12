@@ -444,38 +444,6 @@ void btstack_memory_gatt_client_free(gatt_client_t *gatt_client){
 #endif
 
 
-// MARK: gatt_subclient_t
-#ifdef MAX_NO_GATT_SUBCLIENTS
-#if MAX_NO_GATT_SUBCLIENTS > 0
-static gatt_subclient_t gatt_subclient_storage[MAX_NO_GATT_SUBCLIENTS];
-static btstack_memory_pool_t gatt_subclient_pool;
-gatt_subclient_t * btstack_memory_gatt_subclient_get(void){
-    return (gatt_subclient_t *) btstack_memory_pool_get(&gatt_subclient_pool);
-}
-void btstack_memory_gatt_subclient_free(gatt_subclient_t *gatt_subclient){
-    btstack_memory_pool_free(&gatt_subclient_pool, gatt_subclient);
-}
-#else
-gatt_subclient_t * btstack_memory_gatt_subclient_get(void){
-    return NULL;
-}
-void btstack_memory_gatt_subclient_free(gatt_subclient_t *gatt_subclient){
-    // silence compiler warning about unused parameter in a portable way
-    (void) gatt_subclient;
-};
-#endif
-#elif defined(HAVE_MALLOC)
-gatt_subclient_t * btstack_memory_gatt_subclient_get(void){
-    return (gatt_subclient_t*) malloc(sizeof(gatt_subclient_t));
-}
-void btstack_memory_gatt_subclient_free(gatt_subclient_t *gatt_subclient){
-    free(gatt_subclient);
-}
-#else
-#error "Neither HAVE_MALLOC nor MAX_NO_GATT_SUBCLIENTS for struct gatt_subclient is defined. Please, edit the config file."
-#endif
-
-
 // MARK: whitelist_entry_t
 #ifdef MAX_NO_WHITELIST_ENTRIES
 #if MAX_NO_WHITELIST_ENTRIES > 0
@@ -579,9 +547,6 @@ void btstack_memory_init(void){
 #ifdef ENABLE_BLE
 #if MAX_NO_GATT_CLIENTS > 0
     btstack_memory_pool_create(&gatt_client_pool, gatt_client_storage, MAX_NO_GATT_CLIENTS, sizeof(gatt_client_t));
-#endif
-#if MAX_NO_GATT_SUBCLIENTS > 0
-    btstack_memory_pool_create(&gatt_subclient_pool, gatt_subclient_storage, MAX_NO_GATT_SUBCLIENTS, sizeof(gatt_subclient_t));
 #endif
 #if MAX_NO_WHITELIST_ENTRIES > 0
     btstack_memory_pool_create(&whitelist_entry_pool, whitelist_entry_storage, MAX_NO_WHITELIST_ENTRIES, sizeof(whitelist_entry_t));

@@ -171,7 +171,7 @@ list_of_structs = [
     ["hfp_connection"],
     ["service_record_item"]
 ]
-list_of_le_structs = [["gatt_client", "gatt_subclient", "whitelist_entry", "sm_lookup_entry"]]
+list_of_le_structs = [["gatt_client", "whitelist_entry", "sm_lookup_entry"]]
 
 file_name = "../src/btstack_memory"
 

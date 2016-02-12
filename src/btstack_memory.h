@@ -117,11 +117,9 @@ service_record_item_t * btstack_memory_service_record_item_get(void);
 void   btstack_memory_service_record_item_free(service_record_item_t *service_record_item);
 
 #ifdef ENABLE_BLE
-// gatt_client, gatt_subclient, whitelist_entry, sm_lookup_entry
+// gatt_client, whitelist_entry, sm_lookup_entry
 gatt_client_t * btstack_memory_gatt_client_get(void);
 void   btstack_memory_gatt_client_free(gatt_client_t *gatt_client);
-gatt_subclient_t * btstack_memory_gatt_subclient_get(void);
-void   btstack_memory_gatt_subclient_free(gatt_subclient_t *gatt_subclient);
 whitelist_entry_t * btstack_memory_whitelist_entry_get(void);
 void   btstack_memory_whitelist_entry_free(whitelist_entry_t *whitelist_entry);
 sm_lookup_entry_t * btstack_memory_sm_lookup_entry_get(void);
