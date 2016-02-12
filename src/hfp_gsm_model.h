@@ -54,25 +54,8 @@ extern "C" {
 #endif
 
 /* API_START */
-
-typedef enum{
-    CALL_INITIATED,
-    
-    // CALL_ENHANCED_CALL_STATUS_OUTGOING_DIALING,
-    // CALL_ENHANCED_CALL_STATUS_OUTGOING_ALERTING,
-    // CALL_ENHANCED_CALL_STATUS_INCOMING,
-    // CALL_ENHANCED_CALL_STATUS_INCOMING_WAITING,
-
-    CALL_RESPONSE_HOLD,
-    CALL_ACTIVE,
-    CALL_HELD
-} hfp_gsm_call_status_t;
-
 typedef struct {
     uint8_t used_slot;
-    
-    // TODO: use enhanced_status instead of status
-    hfp_gsm_call_status_t status;
     hfp_enhanced_call_status_t enhanced_status;
     
     hfp_enhanced_call_dir_t direction;

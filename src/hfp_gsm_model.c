@@ -64,6 +64,13 @@
 #define HFP_GSM_MAX_NR_CALLS 3
 #define HFP_GSM_MAX_CALL_NUMBER_SIZE 25
 
+typedef enum{
+    CALL_INITIATED,
+    CALL_RESPONSE_HOLD,
+    CALL_ACTIVE,
+    CALL_HELD
+} hfp_gsm_call_status_t;
+
 static hfp_gsm_call_t gsm_calls[HFP_GSM_MAX_NR_CALLS]; 
 static hfp_callsetup_status_t callsetup_status = HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS;
 
@@ -76,6 +83,14 @@ static inline int get_number_active_calls(void);
 
 static void set_callsetup_status(hfp_callsetup_status_t status){
     callsetup_status = status;
+    if (callsetup_status != HFP_CALLSETUP_STATUS_OUTGOING_CALL_SETUP_IN_ALERTING_STATE) return;
+    
+    int i ;
+    for (i = 0; i < HFP_GSM_MAX_NR_CALLS; i++){
+        if (gsm_calls[i].direction == HFP_ENHANCED_CALL_DIR_OUTGOING){
+            gsm_calls[i].enhanced_status = HFP_ENHANCED_CALL_STATUS_OUTGOING_ALERTING;
+        }
+    }
 }
 
 static void set_call_status(int index_in_table, hfp_gsm_call_status_t status){
@@ -103,7 +118,6 @@ static void set_call_status(int index_in_table, hfp_gsm_call_status_t status){
         default:
             break;
     }
-    gsm_calls[index_in_table].status = status;
     gsm_calls[index_in_table].used_slot = 1;
 }
 
@@ -126,7 +140,7 @@ static int get_call_status_for_enhanced_status(hfp_enhanced_call_status_t enhanc
 
 static int get_call_status(int index_in_table){
     if (!gsm_calls[index_in_table].used_slot) return -1;
-    return gsm_calls[index_in_table].status;
+    return get_call_status_for_enhanced_status(gsm_calls[index_in_table].enhanced_status);
 }
 
 static void free_call_slot(int index_in_table){
@@ -270,29 +284,7 @@ hfp_gsm_call_t * hfp_gsm_call(int call_index){
 
     for (i = 0; i < HFP_GSM_MAX_NR_CALLS; i++){
         hfp_gsm_call_t * call = &gsm_calls[i];
-
         if (call->index != call_index) continue;
-    
-        switch (call->status){
-            case CALL_INITIATED:
-                if (call->direction == HFP_ENHANCED_CALL_DIR_OUTGOING){
-                    if (callsetup_status == HFP_CALLSETUP_STATUS_OUTGOING_CALL_SETUP_IN_ALERTING_STATE){
-                        call->enhanced_status = HFP_ENHANCED_CALL_STATUS_OUTGOING_ALERTING;
-                    } 
-                }
-                // } else {
-                //     if (get_number_active_calls() > 0){
-                //         call->enhanced_status = HFP_ENHANCED_CALL_STATUS_INCOMING_WAITING;
-                //     } else {
-                //         call->enhanced_status = HFP_ENHANCED_CALL_STATUS_INCOMING;
-                //     }
-                // } 
-                break;
-            default:
-                log_error("no call status");
-                break;
-
-        }
         return call;
     }
     return NULL;
