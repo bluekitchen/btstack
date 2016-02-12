@@ -634,7 +634,7 @@ static int  stdin_process(struct btstack_data_source *ds){
 
         case 'l':
             printf("Creating RFCOMM Channel to %s #%u\n", bd_addr_to_str(remote_rfcomm), rfcomm_channel_nr);
-            rfcomm_create_channel(remote_rfcomm, rfcomm_channel_nr, NULL);
+            rfcomm_create_channel(packet_handler, remote_rfcomm, rfcomm_channel_nr, NULL);
             break;
         case 'n':
             printf("Send RFCOMM Data\n");   // mtu < 60 
@@ -755,10 +755,6 @@ static void sdp_create_dummy_service(uint8_t *service, const char *name){
     de_add_data(service,  DE_STRING, strlen(name), (uint8_t *) name);
 }
 
-static void hci_event_handler(uint8_t packet_type, uint8_t * packet, uint16_t size){
-    packet_handler(packet_type, 0, packet, size);
-}
-
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
 
@@ -773,7 +769,7 @@ int btstack_main(int argc, const char * argv[]){
     update_auth_req();
 
     // register for HCI events
-    hci_event_callback_registration.callback = &hci_event_handler;
+    hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
 
     l2cap_init();

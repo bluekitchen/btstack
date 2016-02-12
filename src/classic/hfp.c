@@ -420,7 +420,7 @@ void hfp_create_sdp_record(uint8_t * service, uint32_t service_record_handle, ui
 
 static hfp_connection_t * connection_doing_sdp_query = NULL;
 
-void handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+static void handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     hfp_handle_hci_event(packet_type, packet, size);
 }
 

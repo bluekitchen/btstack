@@ -176,7 +176,6 @@ static uint16_t ui_end_handle;
 static uint8_t ui_presentation_format[7];
 static uint16_t ui_aggregate_handle;
 static uint16_t handle = 0;
-static uint16_t gc_id;
 
 static bd_addr_t public_pts_address = {0x00, 0x1B, 0xDC, 0x07, 0x32, 0xef};
 static int       public_pts_address_type = 0;
@@ -431,7 +430,7 @@ static void extract_characteristic(le_characteristic_t * characteristic, uint8_t
     }
 }
 
-static void handle_gatt_client_event(uint8_t packet_type, uint8_t *packet, uint16_t size){
+static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
 
     if (packet_type != HCI_EVENT_PACKET) return;
 
@@ -558,8 +557,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint8_t *packet, uint1
                             } else {
                                 uint8_t uuid128[16];
                                 reverse_128(&value[3], uuid128);
-                                printUUID128(uuid128);
-                                printf("\n");
+                                printf("%s\n", uuid128_to_str(uuid128));
                             }
                             break;
                         case GATT_CHARACTERISTIC_EXTENDED_PROPERTIES:
@@ -673,14 +671,14 @@ static void handle_gatt_client_event(uint8_t packet_type, uint8_t *packet, uint1
             switch (central_state){
                 case CENTRAL_W4_NAME_QUERY_COMPLETE:
                     central_state = CENTRAL_W4_NAME_VALUE;
-                    gatt_client_read_value_of_characteristic(gc_id, handle, &gap_name_characteristic);
+                    gatt_client_read_value_of_characteristic(handle_gatt_client_event, handle, &gap_name_characteristic);
                     break;
                 case CENTRAL_W4_RECONNECTION_ADDRESS_QUERY_COMPLETE:
                     central_state = CENTRAL_IDLE;
                     hci_le_advertisement_address(&address_type, our_private_address);
                     printf("Our private address: %s\n", bd_addr_to_str(our_private_address));
                     reverse_bd_addr(our_private_address, flipped_address);
-                    gatt_client_write_value_of_characteristic(gc_id, handle, gap_reconnection_address_characteristic.value_handle, 6, flipped_address);
+                    gatt_client_write_value_of_characteristic(handle_gatt_client_event, handle, gap_reconnection_address_characteristic.value_handle, 6, flipped_address);
                     reconnection_address_set = 1;
 #ifdef PTS_USES_RECONNECTION_ADDRESS_FOR_ITSELF
                     memcpy(current_pts_address, our_private_address, 6);
@@ -693,11 +691,11 @@ static void handle_gatt_client_event(uint8_t packet_type, uint8_t *packet, uint1
                         case 0:
                             use_public_pts_address();
                             printf("Peripheral Privacy Flag set to FALSE, connecting to public PTS address again\n");
-                            gatt_client_write_value_of_characteristic(gc_id, handle, gap_peripheral_privacy_flag_characteristic.value_handle, 1, &pts_privacy_flag);
+                            gatt_client_write_value_of_characteristic(handle_gatt_client_event, handle, gap_peripheral_privacy_flag_characteristic.value_handle, 1, &pts_privacy_flag);
                             break;
                         case 1:
                             printf("Peripheral Privacy Flag set to TRUE\n");
-                            gatt_client_write_value_of_characteristic(gc_id, handle, gap_peripheral_privacy_flag_characteristic.value_handle, 1, &pts_privacy_flag);
+                            gatt_client_write_value_of_characteristic(handle_gatt_client_event, handle, gap_peripheral_privacy_flag_characteristic.value_handle, 1, &pts_privacy_flag);
                             break;
                         default:
                             break;
@@ -705,14 +703,14 @@ static void handle_gatt_client_event(uint8_t packet_type, uint8_t *packet, uint1
                     break;
                 case CENTRAL_W4_SIGNED_WRITE_QUERY_COMPLETE:
                     printf("Signed write on Characteristic with UUID 0x%04x\n", pts_signed_write_characteristic_uuid);
-                    gatt_client_signed_write_without_response(gc_id, handle, signed_write_characteristic.value_handle, sizeof(signed_write_value), signed_write_value);
+                    gatt_client_signed_write_without_response(handle_gatt_client_event, handle, signed_write_characteristic.value_handle, sizeof(signed_write_value), signed_write_value);
                     break;
                 case CENTRAL_W4_PRIMARY_SERVICES:
                     printf("Primary Service Discovery complete\n");
                     central_state = CENTRAL_IDLE;
                     break;
                 case CENTRAL_ENTER_SERVICE_UUID_4_DISCOVER_CHARACTERISTICS:
-                    gatt_client_discover_characteristics_for_service(gc_id, handle, &service);
+                    gatt_client_discover_characteristics_for_service(handle_gatt_client_event, handle, &service);
                     central_state =  CENTRAL_W4_CHARACTERISTICS;                  
                     break;
                 case CENTRAL_GPA_W4_RESPONSE:
@@ -720,7 +718,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint8_t *packet, uint1
                         case GATT_CHARACTERISTIC_USER_DESCRIPTION:
                             central_state = CENTRAL_GPA_W4_RESPONSE2;
                             printf("Sending Read Characteristic Descriptor at 0x%04x\n", ui_attribute_handle);
-                            gatt_client_read_characteristic_descriptor_using_descriptor_handle(gc_id, handle, ui_attribute_handle);
+                            gatt_client_read_characteristic_descriptor_using_descriptor_handle(handle_gatt_client_event, handle, ui_attribute_handle);
                             break;
                         case GATT_CHARACTERISTIC_PRESENTATION_FORMAT:
                         case GATT_CHARACTERISTIC_AGGREGATE_FORMAT:
@@ -730,7 +728,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint8_t *packet, uint1
                                 le_service_t aService;                  
                                 aService.start_group_handle = ui_start_handle;
                                 aService.end_group_handle   = ui_end_handle;
-                                gatt_client_discover_characteristics_for_service(gc_id, handle, &aService);
+                                gatt_client_discover_characteristics_for_service(handle_gatt_client_event, handle, &aService);
                                 break;
                             }
                             break;
@@ -744,7 +742,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint8_t *packet, uint1
                         case GATT_CHARACTERISTIC_AGGREGATE_FORMAT:
                             printf("Reading characteristic value at 0x%04x\n", ui_attribute_handle);
                             central_state = CENTRAL_GPA_W4_RESPONSE3;
-                            gatt_client_read_value_of_characteristic_using_value_handle(gc_id, handle, ui_attribute_handle);
+                            gatt_client_read_value_of_characteristic_using_value_handle(handle_gatt_client_event, handle, ui_attribute_handle);
                             break;
                         default:
                             break;
@@ -754,13 +752,13 @@ static void handle_gatt_client_event(uint8_t packet_type, uint8_t *packet, uint1
                     // so far, only GATT_CHARACTERISTIC_AGGREGATE_FORMAT
                     if (ui_handles_index < ui_handles_count) {
                         printf("Reading Characteristic Presentation Format at 0x%04x\n", ui_handles[ui_handles_index]);
-                        gatt_client_read_characteristic_descriptor_using_descriptor_handle(gc_id, handle, ui_handles[ui_handles_index]);
+                        gatt_client_read_characteristic_descriptor_using_descriptor_handle(handle_gatt_client_event, handle, ui_handles[ui_handles_index]);
                         ui_handles_index++;
                         break;
                     }
                     if (ui_handles_index == ui_handles_count ) {
                         // PTS rqequires to read the characteristic aggregate descriptor again (no idea why)
-                        gatt_client_read_value_of_characteristic_using_value_handle(gc_id, handle, ui_aggregate_handle);
+                        gatt_client_read_value_of_characteristic_using_value_handle(handle_gatt_client_event, handle, ui_aggregate_handle);
                         ui_handles_index++;
                     }
                     break;
@@ -1025,11 +1023,11 @@ static int ui_process_uint16_request(char buffer){
         switch (central_state){
             case CENTRAL_W4_PRIMARY_SERVICES:
                 printf("Discover Primary Services with UUID16 %04x\n", ui_uint16);
-                gatt_client_discover_primary_services_by_uuid16(gc_id, handle, ui_uint16);
+                gatt_client_discover_primary_services_by_uuid16(handle_gatt_client_event, handle, ui_uint16);
                 return 0;
             case CENTRAL_ENTER_SERVICE_UUID_4_DISCOVER_CHARACTERISTICS:
                 printf("Discover Primary Services with UUID16 %04x\n", ui_uint16);
-                gatt_client_discover_primary_services_by_uuid16(gc_id, handle, ui_uint16);
+                gatt_client_discover_primary_services_by_uuid16(handle_gatt_client_event, handle, ui_uint16);
                 return 0;
             case CENTRAL_ENTER_START_HANDLE_4_DISCOVER_CHARACTERISTICS:
                 ui_attribute_handle = ui_uint16;
@@ -1042,23 +1040,23 @@ static int ui_process_uint16_request(char buffer){
                 le_service_t aService;
                 aService.start_group_handle = ui_attribute_handle;
                 aService.end_group_handle   = ui_uint16;
-                gatt_client_discover_characteristics_for_service(gc_id, handle, &aService);
+                gatt_client_discover_characteristics_for_service(handle_gatt_client_event, handle, &aService);
                 return 0;
             }
             case CENTRAL_W4_CHARACTERISTICS:
                 printf("Discover Characteristics with UUID16 %04x\n", ui_uint16);
-                gatt_client_discover_characteristics_for_handle_range_by_uuid16(gc_id, handle, 0x0001, 0xffff, ui_uint16);
+                gatt_client_discover_characteristics_for_handle_range_by_uuid16(handle_gatt_client_event, handle, 0x0001, 0xffff, ui_uint16);
                 return 0;
             case CENTRAL_W4_DISCOVER_CHARACTERISTIC_DESCRIPTORS: {
                 le_characteristic_t characteristic;
                 characteristic.value_handle = ui_uint16 - 1;
                 characteristic.end_handle = ui_uint16;
-                gatt_client_discover_characteristic_descriptors(gc_id, handle, &characteristic);
+                gatt_client_discover_characteristic_descriptors(handle_gatt_client_event, handle, &characteristic);
                 break;
             }
             case CENTRAL_W4_READ_CHARACTERISTIC_VALUE_BY_HANDLE:
                 printf("Read Characteristic Value with handle 0x%04x\n", ui_uint16);
-                gatt_client_read_value_of_characteristic_using_value_handle(gc_id, handle, ui_uint16);
+                gatt_client_read_value_of_characteristic_using_value_handle(handle_gatt_client_event, handle, ui_uint16);
                 return 0;
             case CENTRAL_ENTER_OFFSET_4_READ_LONG_CHARACTERISTIC_VALUE_BY_HANDLE:
                 ui_attribute_handle = ui_uint16;
@@ -1067,11 +1065,11 @@ static int ui_process_uint16_request(char buffer){
                 return 0;
             case CENTRAL_W4_READ_LONG_CHARACTERISTIC_VALUE_BY_HANDLE:
                 printf("Read Long Characteristic Value with handle 0x%04x, offset 0x%04x\n", ui_attribute_handle, ui_uint16);
-                gatt_client_read_long_value_of_characteristic_using_value_handle_with_offset(gc_id, handle, ui_attribute_handle, ui_uint16);
+                gatt_client_read_long_value_of_characteristic_using_value_handle_with_offset(handle_gatt_client_event, handle, ui_attribute_handle, ui_uint16);
                 return 0;
             case CENTRAL_W4_READ_CHARACTERISTIC_DESCRIPTOR_BY_HANDLE:
                 printf("Read Characteristic Descriptor with handle 0x%04x\n", ui_uint16);
-                gatt_client_read_characteristic_descriptor_using_descriptor_handle(gc_id, handle, ui_uint16);
+                gatt_client_read_characteristic_descriptor_using_descriptor_handle(handle_gatt_client_event, handle, ui_uint16);
                 return 0;
             case CENTRAL_ENTER_OFFSET_4_READ_LONG_CHARACTERISTIC_DESCRIPTOR_BY_HANDLE:
                 ui_attribute_handle = ui_uint16;
@@ -1080,7 +1078,7 @@ static int ui_process_uint16_request(char buffer){
                 return 0;
             case CENTRAL_W4_READ_LONG_CHARACTERISTIC_DESCRIPTOR_BY_HANDLE:
                 printf("Read Long Characteristic Descriptor with handle 0x%04x, offset 0x%04x\n", ui_attribute_handle, ui_uint16);
-                gatt_client_read_long_characteristic_descriptor_using_descriptor_handle_with_offset(gc_id, handle, ui_attribute_handle, ui_uint16);
+                gatt_client_read_long_characteristic_descriptor_using_descriptor_handle_with_offset(handle_gatt_client_event, handle, ui_attribute_handle, ui_uint16);
                 return 0;
             case CENTRAL_ENTER_HANDLE_4_READ_CHARACTERISTIC_VALUE_BY_UUID:
                 ui_uuid16 = ui_uint16;
@@ -1089,7 +1087,7 @@ static int ui_process_uint16_request(char buffer){
                 return 0;
             case CENTRAL_W4_READ_CHARACTERISTIC_VALUE_BY_UUID:
                 printf("Read Characteristic Value with UUID16 0x%04x\n", ui_uint16);
-                gatt_client_read_value_of_characteristics_by_uuid16(gc_id, handle, ui_uint16, 0xffff, ui_uuid16);
+                gatt_client_read_value_of_characteristics_by_uuid16(handle_gatt_client_event, handle, ui_uint16, 0xffff, ui_uuid16);
                 return 0;
             case CENTRAL_W4_READ_MULTIPLE_CHARACTERISTIC_VALUES:
                 if (ui_uint16){
@@ -1102,7 +1100,7 @@ static int ui_process_uint16_request(char buffer){
                         printf("0x%04x, ", ui_handles[i]);
                     }
                     printf("\n");
-                    gatt_client_read_multiple_characteristic_values(gc_id, handle, ui_handles_count, ui_handles);
+                    gatt_client_read_multiple_characteristic_values(handle_gatt_client_event, handle, ui_handles_count, ui_handles);
                 }
                 return 0;
 
@@ -1151,7 +1149,7 @@ static int ui_process_uint16_request(char buffer){
             case CENTRAL_GPA_W4_RESPONSE:
                 ui_uuid16 = ui_uint16;
                 printf("Read by type: range 0x%04x-0x%04x, uuid %04x\n", ui_start_handle, ui_end_handle, ui_uuid16);
-                gatt_client_read_value_of_characteristics_by_uuid16(gc_id, handle, ui_start_handle, ui_end_handle, ui_uuid16);
+                gatt_client_read_value_of_characteristics_by_uuid16(handle_gatt_client_event, handle, ui_start_handle, ui_end_handle, ui_uuid16);
                 return 0;
             default:
                 return 0;
@@ -1218,11 +1216,11 @@ static int ui_process_uuid128_request(char buffer){
         switch (central_state){
             case CENTRAL_W4_PRIMARY_SERVICES:
                 printf("Discover Primary Services with UUID128 %s\n", uuid128_to_str(ui_uuid128));
-                gatt_client_discover_primary_services_by_uuid128(gc_id, handle, ui_uuid128);
+                gatt_client_discover_primary_services_by_uuid128(handle_gatt_client_event, handle, ui_uuid128);
                 return 0;
             case CENTRAL_W4_READ_CHARACTERISTIC_VALUE_BY_UUID:
                 printf("Read Characteristic Value with UUID128 %s\n", uuid128_to_str(ui_uuid128));
-                gatt_client_read_value_of_characteristics_by_uuid128(gc_id, handle, 0x0001, 0xffff, ui_uuid128);
+                gatt_client_read_value_of_characteristics_by_uuid128(handle_gatt_client_event, handle, 0x0001, 0xffff, ui_uuid128);
                 return 0;
             default:
                 return 0;
@@ -1260,35 +1258,35 @@ static int ui_process_data_request(char buffer){
         switch (central_state){
             case CENTRAL_W4_WRITE_WITHOUT_RESPONSE:
                 ui_announce_write("Write without response");
-                gatt_client_write_value_of_characteristic_without_response(gc_id, handle, ui_attribute_handle, value_len, ui_value_data);
+                gatt_client_write_value_of_characteristic_without_response(handle_gatt_client_event, handle, ui_attribute_handle, value_len, ui_value_data);
                 break;
             case CENTRAL_W4_WRITE_CHARACTERICISTIC_VALUE:
                 ui_announce_write("Write Characteristic Value");
-                gatt_client_write_value_of_characteristic(gc_id, handle, ui_attribute_handle, value_len, ui_value_data);
+                gatt_client_write_value_of_characteristic(handle_gatt_client_event, handle, ui_attribute_handle, value_len, ui_value_data);
                 break;
             case CENTRAL_W4_WRITE_LONG_CHARACTERISTIC_VALUE:
                 ui_announce_write("Write Long Characteristic Value");
-                gatt_client_write_long_value_of_characteristic_with_offset(gc_id, handle, ui_attribute_handle, ui_attribute_offset, value_len, ui_value_data);
+                gatt_client_write_long_value_of_characteristic_with_offset(handle_gatt_client_event, handle, ui_attribute_handle, ui_attribute_offset, value_len, ui_value_data);
                 break;
             case CENTRAL_W4_RELIABLE_WRITE:
                 ui_announce_write("Reliabe Write");
-                gatt_client_reliable_write_long_value_of_characteristic(gc_id, handle, ui_attribute_handle, value_len, ui_value_data);
+                gatt_client_reliable_write_long_value_of_characteristic(handle_gatt_client_event, handle, ui_attribute_handle, value_len, ui_value_data);
                 break;
             case CENTRAL_W4_WRITE_CHARACTERISTIC_DESCRIPTOR:
                 ui_announce_write("Write Characteristic Descriptor");
-                gatt_client_write_characteristic_descriptor_using_descriptor_handle(gc_id, handle, ui_attribute_handle, value_len, ui_value_data);
+                gatt_client_write_characteristic_descriptor_using_descriptor_handle(handle_gatt_client_event, handle, ui_attribute_handle, value_len, ui_value_data);
                 break;
             case CENTRAL_W4_WRITE_LONG_CHARACTERISTIC_DESCRIPTOR:
                 ui_announce_write("Write Long Characteristic Descriptor");
-                gatt_client_write_long_characteristic_descriptor_using_descriptor_handle_with_offset(gc_id, handle, ui_attribute_handle, ui_attribute_offset, value_len, ui_value_data);
+                gatt_client_write_long_characteristic_descriptor_using_descriptor_handle_with_offset(handle_gatt_client_event, handle, ui_attribute_handle, ui_attribute_offset, value_len, ui_value_data);
                 break;
             case CENTRAL_W4_SIGNED_WRITE:
                 ui_announce_write("Signed Write");
-                gatt_client_signed_write_without_response(gc_id, handle, ui_attribute_handle, value_len, ui_value_data);
+                gatt_client_signed_write_without_response(handle_gatt_client_event, handle, ui_attribute_handle, value_len, ui_value_data);
                 break;
             case CENTRAL_W4_ENTER_OFFSET_4_PREPARE_WRITE:
                 ui_announce_write("Preprare Write");
-                gatt_client_prepare_write(gc_id, handle, ui_attribute_handle, ui_attribute_offset, value_len, ui_value_data);
+                gatt_client_prepare_write(handle_gatt_client_event, handle, ui_attribute_handle, ui_attribute_offset, value_len, ui_value_data);
                 break;
             default:
                 break;
@@ -1331,12 +1329,12 @@ static void ui_process_command(char buffer){
         case '2':
             pts_privacy_flag = 0;
             central_state = CENTRAL_W4_PERIPHERAL_PRIVACY_FLAG_QUERY_COMPLETE;
-            gatt_client_discover_characteristics_for_handle_range_by_uuid16(gc_id, handle, 1, 0xffff, GAP_PERIPHERAL_PRIVACY_FLAG);
+            gatt_client_discover_characteristics_for_handle_range_by_uuid16(handle_gatt_client_event, handle, 1, 0xffff, GAP_PERIPHERAL_PRIVACY_FLAG);
             break;
         case '3':
             pts_privacy_flag = 1;
             central_state = CENTRAL_W4_PERIPHERAL_PRIVACY_FLAG_QUERY_COMPLETE;
-            gatt_client_discover_characteristics_for_handle_range_by_uuid16(gc_id, handle, 1, 0xffff, GAP_PERIPHERAL_PRIVACY_FLAG);
+            gatt_client_discover_characteristics_for_handle_range_by_uuid16(handle_gatt_client_event, handle, 1, 0xffff, GAP_PERIPHERAL_PRIVACY_FLAG);
             break;
         case '4':
             sm_io_capabilities = "IO_CAPABILITY_DISPLAY_ONLY";
@@ -1408,11 +1406,11 @@ static void ui_process_command(char buffer){
             break;
         case 'n':
             central_state = CENTRAL_W4_NAME_QUERY_COMPLETE;
-            gatt_client_discover_characteristics_for_handle_range_by_uuid16(gc_id, handle, 1, 0xffff, GAP_DEVICE_NAME_UUID);
+            gatt_client_discover_characteristics_for_handle_range_by_uuid16(handle_gatt_client_event, handle, 1, 0xffff, GAP_DEVICE_NAME_UUID);
             break;
         case 'o':
             central_state = CENTRAL_W4_RECONNECTION_ADDRESS_QUERY_COMPLETE;
-            gatt_client_discover_characteristics_for_handle_range_by_uuid16(gc_id, handle, 1, 0xffff, GAP_RECONNECTION_ADDRESS_UUID);
+            gatt_client_discover_characteristics_for_handle_range_by_uuid16(handle_gatt_client_event, handle, 1, 0xffff, GAP_RECONNECTION_ADDRESS_UUID);
             break;
         case 'p':
             res = gap_auto_connection_start(current_pts_address_type, current_pts_address);
@@ -1454,7 +1452,7 @@ static void ui_process_command(char buffer){
         case 'w':
             pts_privacy_flag = 2;
             central_state = CENTRAL_W4_SIGNED_WRITE_QUERY_COMPLETE;
-            gatt_client_discover_characteristics_for_handle_range_by_uuid16(gc_id, handle, 1, 0xffff, pts_signed_write_characteristic_uuid);
+            gatt_client_discover_characteristics_for_handle_range_by_uuid16(handle_gatt_client_event, handle, 1, 0xffff, pts_signed_write_characteristic_uuid);
             break;
         case 'W':
             // fetch csrk
@@ -1492,7 +1490,7 @@ static void ui_process_command(char buffer){
         // GATT commands
         case 'e':
             central_state = CENTRAL_W4_PRIMARY_SERVICES;
-            gatt_client_discover_primary_services(gc_id, handle);
+            gatt_client_discover_primary_services(handle_gatt_client_event, handle);
             break;
         case 'f':
             central_state = CENTRAL_W4_PRIMARY_SERVICES;
@@ -1516,7 +1514,7 @@ static void ui_process_command(char buffer){
                 le_service_t aService;
                 aService.start_group_handle = 0x0001;
                 aService.end_group_handle   = 0xffff;
-                gatt_client_find_included_services_for_service(gc_id, handle, &aService);
+                gatt_client_find_included_services_for_service(handle_gatt_client_event, handle, &aService);
             }
             break;
         case 'h':
@@ -1573,10 +1571,10 @@ static void ui_process_command(char buffer){
             ui_request_uint16("Please enter handle: ");
             break;
         case 'v':
-            gatt_client_execute_write(gc_id, handle);
+            gatt_client_execute_write(handle_gatt_client_event, handle);
             break;
         case 'V':
-            gatt_client_cancel_write(gc_id, handle);
+            gatt_client_cancel_write(handle_gatt_client_event, handle);
             break;
         case 'u':
             central_state = CENTRAL_W4_WRITE_CHARACTERISTIC_DESCRIPTOR;
@@ -1661,10 +1659,6 @@ static uint16_t att_read_callback(uint16_t con_handle, uint16_t attribute_handle
     return 0;
 }
 
-static void att_event_packet_handler2(uint8_t packet_type, uint8_t * packet, uint16_t size){
-    app_packet_handler(packet_type, 0, packet, size);
-}
-
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
     
@@ -1676,11 +1670,11 @@ int btstack_main(int argc, const char * argv[]){
     strcpy(gap_device_name, "BTstack");
 
     // register for HCI Events
-    hci_event_callback_registration.callback = &att_event_packet_handler2;
+    hci_event_callback_registration.callback = &app_packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
 
     // register for SM events
-    sm_event_callback_registration.callback = &att_event_packet_handler2;
+    sm_event_callback_registration.callback = &app_packet_handler;
     sm_add_event_handler(&sm_event_callback_registration);
 
     // set up l2cap_le
@@ -1699,7 +1693,6 @@ int btstack_main(int argc, const char * argv[]){
 
     // setup GATT Client
     gatt_client_init();
-    gc_id = gatt_client_register_packet_handler(handle_gatt_client_event);;
 
     // Setup ATT/GATT Server
     att_server_init(profile_data, att_read_callback, NULL);    

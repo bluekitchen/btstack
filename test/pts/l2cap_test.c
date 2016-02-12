@@ -110,11 +110,6 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
     }
 }
 
-static void hci_event_handler(uint8_t packet_type, uint8_t * packet, uint16_t size){
-    packet_handler(packet_type, 0, packet, size);
-}
-
-
 static void show_usage(void){
     printf("\n--- CLI for L2CAP TEST ---\n");
     printf("c      - create connection to SDP at addr %s\n", bd_addr_to_str(remote));
@@ -164,7 +159,7 @@ int btstack_main(int argc, const char * argv[]){
     hci_discoverable_control(1);
 
     /* Register for HCI events */
-    hci_event_callback_registration.callback = &hci_event_handler;
+    hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
 
     l2cap_init();
