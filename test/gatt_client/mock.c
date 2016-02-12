@@ -43,16 +43,14 @@ void mock_simulate_scan_response(void){
 	registered_hci_event_handler(HCI_EVENT_PACKET, 0, (uint8_t *)&packet, sizeof(packet));
 }
 
-uint8_t le_central_start_scan(void){
-	return 0; 
+void gap_start_scan(void){
 }
-uint8_t le_central_stop_scan(void){
+void gap_stop_scan(void){
+}
+uint8_t gap_connect(bd_addr_t addr, bd_addr_type_t addr_type){
 	return 0;
 }
-uint8_t le_central_connect(bd_addr_t addr, bd_addr_type_t addr_type){
-	return 0;
-}
-void le_central_set_scan_parameters(uint8_t scan_type, uint16_t scan_interval, uint16_t scan_window){
+void gap_set_scan_parameters(uint8_t scan_type, uint16_t scan_interval, uint16_t scan_window){
 }
 
 static void att_init_connection(att_connection_t * att_connection){

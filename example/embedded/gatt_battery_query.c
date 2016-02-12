@@ -176,7 +176,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                     if (!packet[4]){
                         printf("Battery service not found. Restart scan.\n");
                         state = TC_W4_SCAN_RESULT;
-                        le_central_start_scan();
+                        gap_start_scan();
                         break;  
                     } 
                     state = TC_W4_CHARACTERISTIC_RESULT;
@@ -248,22 +248,22 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
             if (cmdline_addr_found){
                 printf("Start connect to %s\n", bd_addr_to_str(cmdline_addr));
                 state = TC_W4_CONNECT;
-                le_central_connect(cmdline_addr, 0);
+                gap_connect(cmdline_addr, 0);
                 break;
             }
             printf("BTstack activated, start scanning!\n");
             state = TC_W4_SCAN_RESULT;
-            le_central_set_scan_parameters(0,0x0030, 0x0030);
-            le_central_start_scan();
+            gap_set_scan_parameters(0,0x0030, 0x0030);
+            gap_start_scan();
             break;
         case GAP_LE_EVENT_ADVERTISING_REPORT:
             if (state != TC_W4_SCAN_RESULT) return;
             fill_advertising_report_from_packet(&report, packet);
             // stop scanning, and connect to the device
             state = TC_W4_CONNECT;
-            le_central_stop_scan();
+            gap_stop_scan();
             printf("Stop scan. Start connect to device with addr %s.\n", bd_addr_to_str(report.address));
-            le_central_connect(report.address,report.address_type);
+            gap_connect(report.address,report.address_type);
             break;
         case HCI_EVENT_LE_META:
             // wait for connection complete

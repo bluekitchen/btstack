@@ -299,7 +299,7 @@ static void gatt_client_callback(uint8_t packet_type, uint8_t * packet, uint16_t
 
 static void connection_timeout_handler(btstack_timer_source_t * timer){
     // log_info("Cancel outgoing connection");
-    le_central_connect_cancel();
+    gap_le_connect_cancel();
     if (!bleDeviceConnectedCallback) return;
     (*bleDeviceConnectedCallback)(BLE_STATUS_CONNECTION_TIMEOUT, NULL);  // page timeout 0x04
 }
@@ -704,7 +704,7 @@ void BTstackManager::bleConnect(BD_ADDR_TYPE address_type, const char * address,
     // log_error("BTstackManager::bleConnect(BD_ADDR_TYPE address_type, const char * address, int timeout_ms) not implemented");
 }
 void BTstackManager::bleConnect(BD_ADDR_TYPE address_type, const uint8_t address[6], int timeout_ms){
-    le_central_connect((uint8_t*)address, (bd_addr_type_t) address_type);
+    gap_le_connect((uint8_t*)address, (bd_addr_type_t) address_type);
     if (!timeout_ms) return;
     btstack_run_loop_set_timer(&connection_timer, timeout_ms);
     btstack_run_loop_set_timer_handler(&connection_timer, connection_timeout_handler);
@@ -818,10 +818,10 @@ void BTstackManager::loop(void){
 
 void BTstackManager::bleStartScanning(void){
     printf("Start scanning\n");
-    le_central_start_scan();
+    gap_le_start_scan();
 }
 void BTstackManager::bleStopScanning(void){
-    le_central_stop_scan();
+    gap_le_stop_scan();
 }
 
 void BTstackManager::setGATTCharacteristicRead(uint16_t (*cb)(uint16_t characteristic_id, uint8_t * buffer, uint16_t buffer_size)){

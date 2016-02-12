@@ -147,7 +147,7 @@ static hci_connection_t * create_connection_for_bd_addr_and_type(bd_addr_t addr,
 *
  * @return le connection parameter range struct
  */
-void gap_le_get_connection_parameter_range(le_connection_parameter_range_t range){
+void gap_get_connection_parameter_range(le_connection_parameter_range_t range){
     range = hci_stack->le_connection_parameter_range;
 }
 
@@ -156,7 +156,7 @@ void gap_le_get_connection_parameter_range(le_connection_parameter_range_t range
  *
  */
 
-void gap_le_set_connection_parameter_range(le_connection_parameter_range_t range){
+void gap_set_connection_parameter_range(le_connection_parameter_range_t range){
     hci_stack->le_connection_parameter_range = range;
 }
 
@@ -3189,40 +3189,38 @@ void gap_set_local_name(const char * local_name){
     hci_stack->local_name = local_name;
 }
 
-uint8_t le_central_start_scan(void){
-    if (hci_stack->le_scanning_state == LE_SCANNING) return 0;
+void gap_start_scan(void){
+    if (hci_stack->le_scanning_state == LE_SCANNING) return;
     hci_stack->le_scanning_state = LE_START_SCAN;
     hci_run();
-    return 0;
 }
 
-uint8_t le_central_stop_scan(void){
-    if ( hci_stack->le_scanning_state == LE_SCAN_IDLE) return 0;
+void gap_stop_scan(void){
+    if ( hci_stack->le_scanning_state == LE_SCAN_IDLE) return;
     hci_stack->le_scanning_state = LE_STOP_SCAN;
     hci_run();
-    return 0;
 }
 
-void le_central_set_scan_parameters(uint8_t scan_type, uint16_t scan_interval, uint16_t scan_window){
+void gap_set_scan_parameters(uint8_t scan_type, uint16_t scan_interval, uint16_t scan_window){
     hci_stack->le_scan_type     = scan_type;
     hci_stack->le_scan_interval = scan_interval;
     hci_stack->le_scan_window   = scan_window;
     hci_run();
 }
 
-uint8_t le_central_connect(bd_addr_t addr, bd_addr_type_t addr_type){
+uint8_t gap_connect(bd_addr_t addr, bd_addr_type_t addr_type){
     hci_connection_t * conn = hci_connection_for_bd_addr_and_type(addr, addr_type);
     if (!conn){
-        log_info("le_central_connect: no connection exists yet, creating context");
+        log_info("gap_connect: no connection exists yet, creating context");
         conn = create_connection_for_bd_addr_and_type(addr, addr_type);
         if (!conn){
             // notify client that alloc failed
             hci_emit_le_connection_complete(addr_type, addr, 0, BTSTACK_MEMORY_ALLOC_FAILED);
-            log_info("le_central_connect: failed to alloc hci_connection_t");
+            log_info("gap_connect: failed to alloc hci_connection_t");
             return GATT_CLIENT_NOT_CONNECTED; // don't sent packet to controller
         }
         conn->state = SEND_CREATE_CONNECTION;
-        log_info("le_central_connect: send create connection next");
+        log_info("gap_connect: send create connection next");
         hci_run();
         return 0;
     }
@@ -3231,18 +3229,18 @@ uint8_t le_central_connect(bd_addr_t addr, bd_addr_type_t addr_type){
         conn->state == SEND_CREATE_CONNECTION ||
         conn->state == SENT_CREATE_CONNECTION) {
         hci_emit_le_connection_complete(conn->address_type, conn->address, 0, ERROR_CODE_COMMAND_DISALLOWED);
-        log_error("le_central_connect: classic connection or connect is already being created");
+        log_error("gap_connect: classic connection or connect is already being created");
         return GATT_CLIENT_IN_WRONG_STATE;
     }
     
-    log_info("le_central_connect: context exists with state %u", conn->state);
+    log_info("gap_connect: context exists with state %u", conn->state);
     hci_emit_le_connection_complete(conn->address_type, conn->address, conn->con_handle, 0);
     hci_run();
     return 0;
 }
 
 // @assumption: only a single outgoing LE Connection exists
-static hci_connection_t * le_central_get_outgoing_connection(void){
+static hci_connection_t * gap_get_outgoing_connection(void){
     btstack_linked_item_t *it;
     for (it = (btstack_linked_item_t *) hci_stack->connections; it ; it = it->next){
         hci_connection_t * conn = (hci_connection_t *) it;
@@ -3258,8 +3256,8 @@ static hci_connection_t * le_central_get_outgoing_connection(void){
     return NULL;
 }
 
-uint8_t le_central_connect_cancel(void){
-    hci_connection_t * conn = le_central_get_outgoing_connection();
+uint8_t gap_connect_cancel(void){
+    hci_connection_t * conn = gap_get_outgoing_connection();
     if (!conn) return 0;
     switch (conn->state){
         case SEND_CREATE_CONNECTION:

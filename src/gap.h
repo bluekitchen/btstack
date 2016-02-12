@@ -104,6 +104,30 @@ typedef enum {
 
 /* API_START */
 
+// Classic + LE
+
+/**
+ * @brief Disconnect connection with handle
+ * @param handle
+ */
+uint8_t gap_disconnect(hci_con_handle_t handle);
+
+/**
+ * @brief Get connection type
+ * @param con_handle
+ * @result connection_type
+ */
+gap_connection_type_t gap_get_connection_type(hci_con_handle_t connection_handle);
+
+// Classic
+
+/** 
+ * @brief Sets local name.
+ * @note has to be done before stack starts up
+ * @param name is not copied, make sure memory is accessible during stack startup
+ */
+void gap_set_local_name(const char * local_name);
+
 /**
  * @brief Enable/disable bonding. Default is enabled.
  * @param enabled
@@ -129,22 +153,25 @@ gap_security_level_t gap_security_level_for_link_key_type(link_key_type_t link_k
 gap_security_level_t gap_security_level(hci_con_handle_t con_handle);
 
 void gap_request_security_level(hci_con_handle_t con_handle, gap_security_level_t level);
+
 int  gap_mitm_protection_required_for_security_level(gap_security_level_t level);
 
-/** 
- * @brief Sets local name.
- * @note has to be done before stack starts up
- * @param name is not copied, make sure memory is accessible during stack startup
- */
-void gap_set_local_name(const char * local_name);
-/* API_END*/
+// LE
 
 /**
- * @brief Get connection type
- * @param con_handle
- * @result connection_type
+ * @brief Set parameters for LE Scan
  */
-gap_connection_type_t gap_get_connection_type(hci_con_handle_t connection_handle);
+void gap_set_scan_parameters(uint8_t scan_type, uint16_t scan_interval, uint16_t scan_window);
+
+/**
+ * @brief Start LE Scan 
+ */
+void gap_start_scan(void);
+
+/**
+ * @brief Stop LE Scan
+ */
+void gap_stop_scan(void);
 
 /**
  * @brief Enable privacy by using random addresses
@@ -169,30 +196,6 @@ gap_random_address_type_t gap_random_address_get_mode(void);
  * @note Sets random address mode to type off
  */
 void gap_random_address_set(bd_addr_t addr);
-
-/**
- * @brief Updates the connection parameters for a given LE connection
- * @param handle
- * @param conn_interval_min (unit: 1.25ms)
- * @param conn_interval_max (unit: 1.25ms)
- * @param conn_latency
- * @param supervision_timeout (unit: 10ms)
- * @returns 0 if ok
- */
-int gap_update_connection_parameters(hci_con_handle_t con_handle, uint16_t conn_interval_min,
-	uint16_t conn_interval_max, uint16_t conn_latency, uint16_t supervision_timeout);
-
-/**
- * @brief Request an update of the connection parameter for a given LE connection
- * @param handle
- * @param conn_interval_min (unit: 1.25ms)
- * @param conn_interval_max (unit: 1.25ms)
- * @param conn_latency
- * @param supervision_timeout (unit: 10ms)
- * @returns 0 if ok
- */
-int gap_request_connection_parameter_update(hci_con_handle_t con_handle, uint16_t conn_interval_min,
-	uint16_t conn_interval_max, uint16_t conn_latency, uint16_t supervision_timeout);
 
 /**
  * @brief Set Advertisement Data
@@ -221,6 +224,51 @@ void gap_advertisements_set_params(uint16_t adv_int_min, uint16_t adv_int_max, u
  * @param enabled
  */
 void gap_advertisements_enable(int enabled);
+/**
+ * @brief Request an update of the connection parameter for a given LE connection
+ * @param handle
+ * @param conn_interval_min (unit: 1.25ms)
+ * @param conn_interval_max (unit: 1.25ms)
+ * @param conn_latency
+ * @param supervision_timeout (unit: 10ms)
+ * @returns 0 if ok
+ */
+int gap_request_connection_parameter_update(hci_con_handle_t con_handle, uint16_t conn_interval_min,
+	uint16_t conn_interval_max, uint16_t conn_latency, uint16_t supervision_timeout);
+
+/**
+ * @brief Updates the connection parameters for a given LE connection
+ * @param handle
+ * @param conn_interval_min (unit: 1.25ms)
+ * @param conn_interval_max (unit: 1.25ms)
+ * @param conn_latency
+ * @param supervision_timeout (unit: 10ms)
+ * @returns 0 if ok
+ */
+int gap_update_connection_parameters(hci_con_handle_t con_handle, uint16_t conn_interval_min,
+	uint16_t conn_interval_max, uint16_t conn_latency, uint16_t supervision_timeout);
+
+/**
+ * @brief Set accepted connection parameter range
+ * @param range
+ */
+void gap_get_connection_parameter_range(le_connection_parameter_range_t range);
+
+/**
+ * @brief Get accepted connection parameter range
+ * @param range
+ */
+void gap_set_connection_parameter_range(le_connection_parameter_range_t range);
+
+/**
+ * @brief Connect to remote LE device
+ */
+uint8_t gap_connect(bd_addr_t addr, bd_addr_type_t addr_type);
+
+/**
+ * @brief Cancel connection process initiated by gap_connect
+ */
+uint8_t gap_connect_cancel(void);
 
 /**
  * @brief Auto Connection Establishment - Start Connecting to device
@@ -244,17 +292,8 @@ int gap_auto_connection_stop(bd_addr_type_t address_typ, bd_addr_t address);
  */
 void gap_auto_connection_stop_all(void);
 
-void gap_le_get_connection_parameter_range(le_connection_parameter_range_t range);
-void gap_le_set_connection_parameter_range(le_connection_parameter_range_t range);
 
-/* LE Client Start */
-
-uint8_t le_central_start_scan(void);
-uint8_t le_central_stop_scan(void);
-uint8_t le_central_connect(bd_addr_t addr, bd_addr_type_t addr_type);
-uint8_t le_central_connect_cancel(void);
-uint8_t gap_disconnect(hci_con_handle_t handle);
-void    le_central_set_scan_parameters(uint8_t scan_type, uint16_t scan_interval, uint16_t scan_window);
+/* API_END*/
 
 #if defined __cplusplus
 }

@@ -240,8 +240,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             // BTstack activated, get started
             if (packet[2] == HCI_STATE_WORKING) {
                 printf("BTstack activated, start scaning!\n");
-                le_central_set_scan_parameters(0,0x0030, 0x0030);
-                le_central_start_scan(); 
+                gap_set_scan_parameters(0,0x0030, 0x0030);
+                gap_start_scan(); 
             }
             break;
         case GAP_LE_EVENT_ADVERTISING_REPORT:{

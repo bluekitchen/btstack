@@ -6,9 +6,9 @@
 
 #include "classic/btstack_link_key_db.h"
 #include "btstack_link_key_db_fs.h"
+#include "btstack_util.h"
 
 #include "btstack_config.h"
-
 TEST_GROUP(RemoteDeviceDB){
     bd_addr_t bd_addr;
     link_key_t link_key;

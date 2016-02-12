@@ -1417,37 +1417,37 @@ static void ui_process_command(char buffer){
             printf("Auto Connection Establishment to type %u, addr %s -> %x\n", current_pts_address_type, bd_addr_to_str(current_pts_address), res);
             break;
         case 'P':
-            le_central_connect(current_pts_address, current_pts_address_type);
+            gap_connect(current_pts_address, current_pts_address_type);
             printf("Direct Connection Establishment to type %u, addr %s\n", current_pts_address_type, bd_addr_to_str(current_pts_address));
             break;
         case 's':
             if (scanning_active){
-                le_central_stop_scan();
+                gap_stop_scan();
                 scanning_active = 0;
                 break;
             }
             printf("Start passive scanning\n");
-            le_central_set_scan_parameters(0, 48, 48);
-            le_central_start_scan();
+            gap_set_scan_parameters(0, 48, 48);
+            gap_start_scan();
             scanning_active = 1;
             break;
         case 'S':
             if (scanning_active){
                 printf("Stop scanning\n");
-                le_central_stop_scan();
+                gap_stop_scan();
                 scanning_active = 0;
                 break;
             }
             printf("Start active scanning\n");
-            le_central_set_scan_parameters(1, 48, 48);
-            le_central_start_scan();
+            gap_set_scan_parameters(1, 48, 48);
+            gap_start_scan();
             scanning_active = 1;
             break;
         case 't':
             printf("Terminating connection\n");
             hci_send_cmd(&hci_disconnect, handle, 0x13);
             gap_auto_connection_stop_all();
-            le_central_connect_cancel();
+            gap_connect_cancel();
             break;
         case 'w':
             pts_privacy_flag = 2;

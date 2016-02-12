@@ -48,8 +48,8 @@ static void handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *pac
     switch (event) {
         case BTSTACK_EVENT_STATE:
             if (packet[2] != HCI_STATE_WORKING) break;
-            le_central_set_scan_parameters(0,0x0030, 0x0030);
-            le_central_start_scan();
+            gap_set_scan_parameters(0,0x0030, 0x0030);
+            gap_start_scan();
             break;
             
         case GAP_LE_EVENT_ADVERTISING_REPORT:{
@@ -57,7 +57,7 @@ static void handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *pac
             memcpy(advertisement_packet, packet, size);
             
             reverse_bd_addr(&packet[4], address);
-            le_central_connect(address, (bd_addr_type_t)packet[3]);
+            gap_connect(address, (bd_addr_type_t)packet[3]);
             break;
         }
         case HCI_EVENT_LE_META:

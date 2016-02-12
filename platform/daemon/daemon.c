@@ -1155,21 +1155,21 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             // sdp_general_query_for_uuid(addr, SDP_PublicBrowseGroup);
             break;
         case GAP_LE_SCAN_START:
-            le_central_start_scan();
+            gap_start_scan();
             break;
         case GAP_LE_SCAN_STOP:
-            le_central_stop_scan();
+            gap_stop_scan();
             break;
         case GAP_LE_SET_SCAN_PARAMETERS:
-            le_central_set_scan_parameters(packet[3], little_endian_read_16(packet, 4), little_endian_read_16(packet, 6));
+            gap_set_scan_parameters(packet[3], little_endian_read_16(packet, 4), little_endian_read_16(packet, 6));
             break;
         case GAP_LE_CONNECT:
             bt_flip_addr(addr, &packet[4]);
             addr_type = packet[3];
-            le_central_connect(addr, addr_type);
+            gap_connect(addr, addr_type);
             break;
         case GAP_LE_CONNECT_CANCEL:
-            le_central_connect_cancel();
+            gap_connect_cancel();
             break;
         case GAP_DISCONNECT:
             handle = little_endian_read_16(packet, 3);

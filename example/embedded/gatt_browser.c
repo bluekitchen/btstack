@@ -193,18 +193,18 @@ static void handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *pac
             if (packet[2] != HCI_STATE_WORKING) break;
             if (cmdline_addr_found){
                 printf("Trying to connect to %s\n", bd_addr_to_str(cmdline_addr));
-                le_central_connect(cmdline_addr, 0);
+                gap_connect(cmdline_addr, 0);
                 break;
             }
             printf("BTstack activated, start scanning!\n");
-            le_central_set_scan_parameters(0,0x0030, 0x0030);
-            le_central_start_scan();
+            gap_set_scan_parameters(0,0x0030, 0x0030);
+            gap_start_scan();
             break;
         case GAP_LE_EVENT_ADVERTISING_REPORT:
             fill_advertising_report_from_packet(&report, packet);
             // stop scanning, and connect to the device
-            le_central_stop_scan();
-            le_central_connect(report.address,report.address_type);
+            gap_stop_scan();
+            gap_connect(report.address,report.address_type);
             break;
         case HCI_EVENT_LE_META:
             // wait for connection complete

@@ -1678,11 +1678,11 @@ uint8_t gatt_client_write_client_characteristic_configuration(btstack_packet_han
     
     if ( (configuration & GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION) &&
         (characteristic->properties & ATT_PROPERTY_NOTIFY) == 0) {
-        log_info("le_central_write_client_characteristic_configuration: GATT_CLIENT_CHARACTERISTIC_NOTIFICATION_NOT_SUPPORTED");
+        log_info("gatt_client_write_client_characteristic_configuration: GATT_CLIENT_CHARACTERISTIC_NOTIFICATION_NOT_SUPPORTED");
         return GATT_CLIENT_CHARACTERISTIC_NOTIFICATION_NOT_SUPPORTED;
     } else if ( (configuration & GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_INDICATION) &&
                (characteristic->properties & ATT_PROPERTY_INDICATE) == 0){
-        log_info("le_central_write_client_characteristic_configuration: GATT_CLIENT_CHARACTERISTIC_INDICATION_NOT_SUPPORTED");
+        log_info("gatt_client_write_client_characteristic_configuration: GATT_CLIENT_CHARACTERISTIC_INDICATION_NOT_SUPPORTED");
         return GATT_CLIENT_CHARACTERISTIC_INDICATION_NOT_SUPPORTED;
     }
     
