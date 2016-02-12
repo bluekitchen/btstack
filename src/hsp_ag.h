@@ -54,9 +54,11 @@ extern "C" {
 
 typedef void (*hsp_ag_callback_t)(uint8_t * event, uint16_t event_size);
 
-void hsp_ag_init(uint8_t rfcomm_channel_nr);
 
-void hsp_ag_create_service(uint8_t * service, int rfcomm_channel_nr, const char * name);
+void hsp_ag_create_sdp_record(uint8_t * service, int rfcomm_channel_nr, const char * name);
+
+
+void hsp_ag_init(uint8_t rfcomm_channel_nr);
 
 // Register callback (packet handler) for hsp audio gateway
 void hsp_ag_register_packet_handler(hsp_ag_callback_t callback);

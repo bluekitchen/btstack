@@ -37,7 +37,7 @@
  
 // *****************************************************************************
 //
-// Minimal setup for HFP Audio Gateway (AG) unit (!! UNDER DEVELOPMENT !!)
+// HFP Audio Gateway (AG) unit
 //
 // *****************************************************************************
 
@@ -51,16 +51,16 @@
 #include <btstack/hci_cmds.h>
 #include <btstack/run_loop.h>
 
-#include "hci.h"
 #include "btstack_memory.h"
-#include "hci_dump.h"
-#include "l2cap.h"
-#include "sdp_query_rfcomm.h"
-#include "sdp.h"
 #include "debug.h"
+#include "hci.h"
+#include "hci_dump.h"
 #include "hfp.h"
-#include "hfp_gsm_model.h"
 #include "hfp_ag.h"
+#include "hfp_gsm_model.h"
+#include "l2cap.h"
+#include "sdp.h"
+#include "sdp_query_rfcomm.h"
 
 static const char default_hfp_ag_service_name[] = "Voice gateway";
 

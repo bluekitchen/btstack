@@ -239,7 +239,7 @@ int btstack_main(int argc, const char * argv[]){
     
     sdp_init();
 	memset((uint8_t *)hsp_service_buffer, 0, sizeof(hsp_service_buffer));
-    hsp_hs_create_service((uint8_t *)hsp_service_buffer, rfcomm_channel_nr, hsp_hs_service_name, 0);
+    hsp_hs_create_sdp_record((uint8_t *)hsp_service_buffer, rfcomm_channel_nr, hsp_hs_service_name, 0);
 
     sdp_register_service_internal(NULL, (uint8_t *)hsp_service_buffer);
 

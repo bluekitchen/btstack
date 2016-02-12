@@ -146,7 +146,7 @@ static void emit_event_audio_connected(uint8_t status, uint16_t handle){
     (*hsp_hs_callback)(event, sizeof(event));
 }
 
-void hsp_ag_create_service(uint8_t * service, int rfcomm_channel_nr, const char * name){
+void hsp_ag_create_sdp_record(uint8_t * service, int rfcomm_channel_nr, const char * name){
     uint8_t* attribute;
     de_create_sequence(service);
 

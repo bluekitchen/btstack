@@ -56,7 +56,7 @@ typedef void (*hsp_hs_callback_t)(uint8_t * event, uint16_t event_size);
 
 void hsp_hs_init(uint8_t rfcomm_channel_nr);
 
-void hsp_hs_create_service(uint8_t * service, int rfcomm_channel_nr, const char * name, uint8_t have_remote_audio_control);
+void hsp_hs_create_sdp_record(uint8_t * service, int rfcomm_channel_nr, const char * name, uint8_t have_remote_audio_control);
 
 // Register callback (packet handler) for hsp headset
 void hsp_hs_register_packet_handler(hsp_hs_callback_t callback);
