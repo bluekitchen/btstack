@@ -121,6 +121,30 @@ static inline void set_enhanced_call_status_initiated(int index_in_table){
     gsm_calls[index_in_table].used_slot = 1;
 }
 
+static inline int is_enhanced_call_status_active(int index_in_table){
+    return gsm_calls[index_in_table].enhanced_status == HFP_ENHANCED_CALL_STATUS_ACTIVE;
+}
+
+static inline int is_enhanced_call_status_held(int index_in_table){
+    return gsm_calls[index_in_table].enhanced_status == HFP_ENHANCED_CALL_STATUS_HELD;
+}
+
+static inline int is_enhanced_call_status_response_hold(int index_in_table){
+    return gsm_calls[index_in_table].enhanced_status == HFP_ENHANCED_CALL_STATUS_CALL_HELD_BY_RESPONSE_AND_HOLD;
+}
+
+static inline int is_enhanced_call_status_initiated(int index_in_table){
+    switch (gsm_calls[index_in_table].enhanced_status){
+        case HFP_ENHANCED_CALL_STATUS_OUTGOING_DIALING:
+        case HFP_ENHANCED_CALL_STATUS_OUTGOING_ALERTING:
+        case HFP_ENHANCED_CALL_STATUS_INCOMING:
+        case HFP_ENHANCED_CALL_STATUS_INCOMING_WAITING:
+            return 1;
+        default:
+            return 0; 
+    }
+}
+
 static int get_call_status_for_enhanced_status(hfp_enhanced_call_status_t enhanced_status){
     switch(enhanced_status){
         case HFP_ENHANCED_CALL_STATUS_OUTGOING_DIALING:
@@ -137,6 +161,10 @@ static int get_call_status_for_enhanced_status(hfp_enhanced_call_status_t enhanc
     }
 }
 
+static int get_enhanced_call_status(int index_in_table){
+    if (!gsm_calls[index_in_table].used_slot) return -1;
+    return gsm_calls[index_in_table].enhanced_status;
+}
 
 static int get_call_status(int index_in_table){
     if (!gsm_calls[index_in_table].used_slot) return -1;
@@ -171,6 +199,14 @@ static int get_call_index_with_status(hfp_gsm_call_status_t status){
     int i ;
     for (i = 0; i < HFP_GSM_MAX_NR_CALLS; i++){
         if (get_call_status(i) == status) return i;
+    }
+    return -1;
+}
+
+static int get_enhanced_call_index_with_status(hfp_enhanced_call_status_t enhanced_status){
+    int i ;
+    for (i = 0; i < HFP_GSM_MAX_NR_CALLS; i++){
+        if (get_enhanced_call_status(i) == enhanced_status) return i;
     }
     return -1;
 }
