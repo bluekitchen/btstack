@@ -57,7 +57,6 @@ extern "C" {
 typedef struct {
     uint8_t used_slot;
     hfp_enhanced_call_status_t enhanced_status;
-    
     hfp_enhanced_call_dir_t direction;
     hfp_enhanced_call_mode_t mode;
     hfp_enhanced_call_mpty_t mpty;

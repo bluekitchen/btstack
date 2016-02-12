@@ -93,6 +93,30 @@ static void set_callsetup_status(hfp_callsetup_status_t status){
     }
 }
 
+static inline void set_enhanced_call_status_active(int index_in_table){
+    gsm_calls[index_in_table].enhanced_status = HFP_ENHANCED_CALL_STATUS_ACTIVE;
+}
+
+static inline void set_enhanced_call_status_held(int index_in_table){
+    gsm_calls[index_in_table].enhanced_status = HFP_ENHANCED_CALL_STATUS_HELD;
+}
+
+static inline void set_enhanced_call_status_response_hold(int index_in_table){
+    gsm_calls[index_in_table].enhanced_status = HFP_ENHANCED_CALL_STATUS_CALL_HELD_BY_RESPONSE_AND_HOLD;
+}
+
+static inline void set_enhanced_call_status_initiated(int index_in_table){
+    if (gsm_calls[index_in_table].direction == HFP_ENHANCED_CALL_DIR_OUTGOING){
+        gsm_calls[index_in_table].enhanced_status = HFP_ENHANCED_CALL_STATUS_OUTGOING_DIALING;
+    } else {
+        if (get_number_active_calls() > 0){
+            gsm_calls[index_in_table].enhanced_status = HFP_ENHANCED_CALL_STATUS_INCOMING_WAITING;
+        } else {
+            gsm_calls[index_in_table].enhanced_status = HFP_ENHANCED_CALL_STATUS_INCOMING;
+        }
+    } 
+}
+
 static void set_call_status(int index_in_table, hfp_gsm_call_status_t status){
     switch (status){
         case CALL_RESPONSE_HOLD:
@@ -415,7 +439,7 @@ static void hfp_gsm_handler(hfp_ag_call_event_t event, uint8_t index, uint8_t ty
             break;
         case HFP_AG_OUTGOING_CALL_ESTABLISHED:
             set_callsetup_status(HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS);
-            set_call_status(initiated_call_index, CALL_ACTIVE);
+            set_enhanced_call_status_active(initiated_call_index);
             break;
 
         case HFP_AG_INCOMING_CALL:
@@ -431,7 +455,7 @@ static void hfp_gsm_handler(hfp_ag_call_event_t event, uint8_t index, uint8_t ty
             if (hfp_gsm_call_status() == HFP_CALL_STATUS_ACTIVE_OR_HELD_CALL_IS_PRESENT){
                 set_call_status(current_call_index, CALL_HELD);
             }
-            set_call_status(initiated_call_index, CALL_ACTIVE);
+            set_enhanced_call_status_active(initiated_call_index);
             break;
 
         case HFP_AG_HELD_CALL_JOINED_BY_AG:
@@ -439,10 +463,10 @@ static void hfp_gsm_handler(hfp_ag_call_event_t event, uint8_t index, uint8_t ty
             
             // TODO: is following condition correct? Can we join incoming call before it is answered?
             if (callsetup_status == HFP_CALLSETUP_STATUS_INCOMING_CALL_SETUP_IN_PROGRESS){
-                set_call_status(initiated_call_index, CALL_ACTIVE);
+                set_enhanced_call_status_active(initiated_call_index);
                 set_callsetup_status(HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS);
             } else if (hfp_gsm_callheld_status() == HFP_CALLHELD_STATUS_CALL_ON_HOLD_OR_SWAPPED) {
-                set_call_status(held_call_index, CALL_ACTIVE);
+                set_enhanced_call_status_active(held_call_index);
             } 
 
             for (i = 0; i < HFP_GSM_MAX_NR_CALLS; i++){
@@ -456,7 +480,7 @@ static void hfp_gsm_handler(hfp_ag_call_event_t event, uint8_t index, uint8_t ty
             if (hfp_gsm_callsetup_status() != HFP_CALLSETUP_STATUS_INCOMING_CALL_SETUP_IN_PROGRESS) break;
             if (hfp_gsm_call_status() != HFP_CALL_STATUS_NO_HELD_OR_ACTIVE_CALLS) break;
             set_callsetup_status(HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS);
-            set_call_status(initiated_call_index, CALL_ACTIVE);
+            set_enhanced_call_status_active(initiated_call_index);
             break;
 
         case HFP_AG_RESPONSE_AND_HOLD_ACCEPT_INCOMING_CALL_BY_AG:
@@ -470,7 +494,7 @@ static void hfp_gsm_handler(hfp_ag_call_event_t event, uint8_t index, uint8_t ty
         case HFP_AG_RESPONSE_AND_HOLD_ACCEPT_HELD_CALL_BY_AG:
         case HFP_AG_RESPONSE_AND_HOLD_ACCEPT_HELD_CALL_BY_HF:
             if (!hfp_gsm_response_held_active()) break;
-            set_call_status(get_response_held_call_index(), CALL_ACTIVE);
+            set_enhanced_call_status_active(get_response_held_call_index());
             break;
 
         case HFP_AG_RESPONSE_AND_HOLD_REJECT_HELD_CALL_BY_AG:
@@ -519,7 +543,7 @@ static void hfp_gsm_handler(hfp_ag_call_event_t event, uint8_t index, uint8_t ty
             // Held or waiting call gets active, 
             set_callsetup_status(HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS);
             free_call_slot(initiated_call_index);
-            set_call_status(held_call_index, CALL_ACTIVE);
+            set_enhanced_call_status_active(held_call_index);
             break;
         
         case HFP_AG_CALL_HOLD_RELEASE_ACTIVE_ACCEPT_HELD_OR_WAITING_CALL:
@@ -539,9 +563,9 @@ static void hfp_gsm_handler(hfp_ag_call_event_t event, uint8_t index, uint8_t ty
             }
             
             if (callsetup_status != HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS){
-                set_call_status(initiated_call_index, CALL_ACTIVE);
+                set_enhanced_call_status_active(initiated_call_index);
             } else {
-                set_call_status(held_call_index, CALL_ACTIVE);
+                set_enhanced_call_status_active(held_call_index);
             }
             
             set_callsetup_status(HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS);
@@ -555,9 +579,9 @@ static void hfp_gsm_handler(hfp_ag_call_event_t event, uint8_t index, uint8_t ty
             }
             
             if (callsetup_status != HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS){
-                set_call_status(initiated_call_index, CALL_ACTIVE);
+                set_enhanced_call_status_active(initiated_call_index);
             } else {
-                set_call_status(held_call_index, CALL_ACTIVE);
+                set_enhanced_call_status_active(held_call_index);
             }
             set_callsetup_status(HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS);
             break;
@@ -566,7 +590,7 @@ static void hfp_gsm_handler(hfp_ag_call_event_t event, uint8_t index, uint8_t ty
             if (hfp_gsm_callheld_status() != HFP_CALLHELD_STATUS_NO_CALLS_HELD){
                 for (i = 0; i < HFP_GSM_MAX_NR_CALLS; i++){
                     if (gsm_calls[i].used_slot){
-                        set_call_status(i, CALL_ACTIVE);
+                        set_enhanced_call_status_active(i);
                         gsm_calls[i].mpty = HFP_ENHANCED_CALL_MPTY_CONFERENCE_CALL;
                     }
                 }
