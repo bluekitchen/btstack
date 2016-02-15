@@ -211,8 +211,9 @@ static void queue_transfer(struct libusb_transfer *transfer){
     temp->user_data = transfer;
 }
 
-static void async_callback(struct libusb_transfer *transfer)
-{
+// LIBUSB_CALL is needed on WIN32 (and resolveds to nothing on other platforms)
+static void LIBUSB_CALL async_callback(struct libusb_transfer *transfer) {
+
     if (libusb_state != LIB_USB_TRANSFERS_ALLOCATED)  return;
     int r;
     // log_info("begin async_callback endpoint %x, status %x, actual length %u", transfer->endpoint, transfer->status, transfer->actual_length );
