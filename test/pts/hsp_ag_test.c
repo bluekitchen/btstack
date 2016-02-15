@@ -191,7 +191,7 @@ int btstack_main(int argc, const char * argv[]){
     // init SDP, create record for SPP and register with SDP
     sdp_init();
     memset((uint8_t *)hsp_service_buffer, 0, sizeof(hsp_service_buffer));
-    hsp_ag_create_service((uint8_t *)hsp_service_buffer, 0x10003, rfcomm_channel_nr, hsp_ag_service_name);
+    hsp_ag_create_sdp_record((uint8_t *)hsp_service_buffer, 0x10003, rfcomm_channel_nr, hsp_ag_service_name);
     sdp_register_service((uint8_t *)hsp_service_buffer);
 
     // turn on!

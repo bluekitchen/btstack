@@ -167,7 +167,7 @@ hsp_hs_test: ${CORE_OBJ} ${COMMON_OBJ} ${SDP_CLIENT} hsp_hs.o hsp_hs_test.c
 
 clean:
 	rm -f ${EXAMPLES}
-	rm -f  *.o *.out *.hex 
+	rm -f  *.o *.out *.hex *.exe
 	rm -f  ancs_client_demo.h profile.h spp_and_le_counter.h
 	rm -rf *.dSYM
 	rm -rf ${BTSTACK_ROOT}/ble/*.o

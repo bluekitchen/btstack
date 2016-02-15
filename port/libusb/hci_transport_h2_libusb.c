@@ -138,6 +138,10 @@ static struct libusb_transfer *acl_in_transfer[ASYNC_BUFFERS];
 
 #ifdef HAVE_SCO
 
+#ifdef _WIN32
+#error "SCO not working on Win32 (Windows 8, libusb 1.0.19, Zadic WinUSB), please uncomment HAVE_SCO in btstack-config.h for now"
+#endif
+
 // incoming SCO
 static H2_SCO_STATE sco_state;
 static uint8_t  sco_buffer[255+3 + SCO_PACKET_SIZE];

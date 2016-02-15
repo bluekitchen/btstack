@@ -37,7 +37,7 @@
 
 // *****************************************************************************
 //
-//  Minimal setup for HFP Audio Gateway (AG) unit (!! UNDER DEVELOPMENT !!)
+// HFP Audio Gateway (AG) unit
 //
 // *****************************************************************************
 
@@ -81,6 +81,14 @@ void hfp_ag_init(uint16_t rfcomm_channel_nr, uint32_t supported_features,
 void hfp_ag_register_packet_handler(hfp_callback_t callback);
 
 /**
+ * @brief Enable in-band ring tone
+ */
+void hfp_ag_set_use_in_band_ring_tone(int use_in_band_ring_tone);
+
+
+// actions used by local device / user
+
+/**
  * @brief Establish RFCOMM connection, and perform service level connection agreement:
  * - exchange of supported features
  * - report Audio Gateway (AG) indicators and their status 
@@ -93,71 +101,9 @@ void hfp_ag_establish_service_level_connection(bd_addr_t bd_addr);
 
 /**
  * @brief Release the RFCOMM channel and the audio connection between the HF and the AG. 
- * TODO: trigger release of the audio connection
+ * TODO: trigger release of the audio connection ??
  */
 void hfp_ag_release_service_level_connection(bd_addr_t bd_addr);
-
-/**
- * @brief Report Extended Audio Gateway Error result codes in the AG.
- * Whenever there is an error relating to the functionality of the AG as a 
- * result of AT command, the AG shall send +CME ERROR:
- * - +CME ERROR: 0  - AG failure
- * - +CME ERROR: 1  - no connection to phone 
- * - +CME ERROR: 3  - operation not allowed 
- * - +CME ERROR: 4  - operation not supported 
- * - +CME ERROR: 5  - PH-SIM PIN required 
- * - +CME ERROR: 10 - SIM not inserted 
- * - +CME ERROR: 11 - SIM PIN required 
- * - +CME ERROR: 12 - SIM PUK required 
- * - +CME ERROR: 13 - SIM failure
- * - +CME ERROR: 14 - SIM busy
- * - +CME ERROR: 16 - incorrect password 
- * - +CME ERROR: 17 - SIM PIN2 required 
- * - +CME ERROR: 18 - SIM PUK2 required 
- * - +CME ERROR: 20 - memory full
- * - +CME ERROR: 21 - invalid index
- * - +CME ERROR: 23 - memory failure
- * - +CME ERROR: 24 - text string too long
- * - +CME ERROR: 25 - invalid characters in text string
- * - +CME ERROR: 26 - dial string too long
- * - +CME ERROR: 27 - invalid characters in dial string
- * - +CME ERROR: 30 - no network service
- * - +CME ERROR: 31 - network Timeout.
- * - +CME ERROR: 32 - network not allowed – Emergency calls only
- */
-void hfp_ag_report_extended_audio_gateway_error_result_code(bd_addr_t bd_addr, hfp_cme_error_t error);
-
-/**
- * @brief Report the change in AG's call status. 
- * Call status:
- * - 0 = No calls (held or active)
- * - 1 = Call is present (active or held) 
- */
-void hfp_ag_transfer_call_status(bd_addr_t bd_addr, hfp_call_status_t status);
-
-/**
- * @brief Report the change in AG's call setup status.
- * Call setup status:
- * - 0 = No call setup in progress 
- * - 1 = Incoming call setup in progress
- * - 2 = Outgoing call setup in dialing state
- * - 3 = Outgoing call setup in alerting state
- */
-void hfp_ag_transfer_callsetup_status(bd_addr_t bd_addr, hfp_callsetup_status_t status);
-
-/**
- * @brief Report the change in AG's held call status.
- * Held call status:
- * - 0 = No calls held
- * - 1 = Call is placed on hold or active/held calls are swapped
- * - 2 = Call on hold, no active calls
- */
-void hfp_ag_transfer_callheld_status(bd_addr_t bd_addr, hfp_callheld_status_t status);
-
-/**
- * @brief 
- */
-void hfp_ag_negotiate_codecs(bd_addr_t bd_addr);
 
 /**
  * @brief 
@@ -169,11 +115,76 @@ void hfp_ag_establish_audio_connection(bd_addr_t bd_addr);
  */
 void hfp_ag_release_audio_connection(bd_addr_t bd_addr);
 
+/**
+ * @brief 
+ */
+void hfp_ag_answer_incoming_call(void);
 
 /**
- * @brief Enable in-band ring tone
+ * @brief 
  */
-void hfp_ag_set_use_in_band_ring_tone(int use_in_band_ring_tone);
+void hfp_ag_join_held_call(void);
+
+/**
+ * @brief 
+ */
+void hfp_ag_terminate_call(void);
+
+/*
+ * @brief
+ */
+void hfp_ag_hold_incoming_call(void);
+
+/*
+ * @brief
+ */
+void hfp_ag_accept_held_incoming_call(void);
+
+/*
+ * @brief
+ */
+void hfp_ag_reject_held_incoming_call(void);
+
+/*
+ * @brief
+ */
+void hfp_ag_set_microphone_gain(bd_addr_t bd_addr, int gain);
+
+/*
+ * @brief
+ */
+void hfp_ag_set_speaker_gain(bd_addr_t bd_addr, int gain);
+
+/*
+ * @brief
+ */
+void hfp_ag_set_battery_level(int level);
+
+/*
+ * @brief
+ */
+void hfp_ag_clear_last_dialed_number(void);
+
+
+// Voice Recognition
+
+/*
+ * @brief
+ */
+void hfp_ag_activate_voice_recognition(bd_addr_t bd_addr, int activate);
+
+/*
+ * @brief
+ */
+void hfp_ag_send_phone_number_for_voice_tag(bd_addr_t bd_addr, const char * number);
+
+/*
+ * @brief
+ */
+void hfp_ag_reject_phone_number_for_voice_tag(bd_addr_t bd_addr);
+
+
+// Cellular Actions
 
 /**
  * @brief 
@@ -209,22 +220,6 @@ void hfp_ag_outgoing_call_established(void);
  * @brief 
  */
 void hfp_ag_call_dropped(void);
-
-/**
- * @brief 
- */
-void hfp_ag_answer_incoming_call(void);
-
-/**
- * @brief 
- */
-void hfp_ag_join_held_call(void);
-
-/**
- * @brief 
- */
-void hfp_ag_terminate_call(void);
-
 /*
  * @brief
  */
@@ -243,71 +238,45 @@ void hfp_ag_set_roaming_status(int status);
 /*
  * @brief
  */
-void hfp_ag_set_battery_level(int level);
-
-
-/*
- * @brief
- */
-void hfp_ag_activate_voice_recognition(bd_addr_t bd_addr, int activate);
-
-/*
- * @brief
- */
-void hfp_ag_set_microphone_gain(bd_addr_t bd_addr, int gain);
-
-/*
- * @brief
- */
-void hfp_ag_set_speaker_gain(bd_addr_t bd_addr, int gain);
-
-/*
- * @brief
- */
-void hfp_ag_send_phone_number_for_voice_tag(bd_addr_t bd_addr, const char * number);
-
-/*
- * @brief
- */
-void hfp_ag_reject_phone_number_for_voice_tag(bd_addr_t bd_addr);
-
-/*
- * @brief
- */
-void hfp_ag_send_dtmf_code_done(bd_addr_t bd_addr);
-
-/*
- * @brief
- */
 void hfp_ag_set_subcriber_number_information(hfp_phone_number_t * numbers, int numbers_count);
 
 /*
- * @brief
+ * @brief Called by cellular unit after a DTMF code was transmitted, so that the next one can be emitted
  */
+void hfp_ag_send_dtmf_code_done(bd_addr_t bd_addr);
 
-void hfp_ag_send_current_call_status(bd_addr_t bd_addr, int idx);
-
-/*
- * @brief
+/**
+ * @brief Report Extended Audio Gateway Error result codes in the AG.
+ * Whenever there is an error relating to the functionality of the AG as a 
+ * result of AT command, the AG shall send +CME ERROR:
+ * - +CME ERROR: 0  - AG failure
+ * - +CME ERROR: 1  - no connection to phone 
+ * - +CME ERROR: 3  - operation not allowed 
+ * - +CME ERROR: 4  - operation not supported 
+ * - +CME ERROR: 5  - PH-SIM PIN required 
+ * - +CME ERROR: 10 - SIM not inserted 
+ * - +CME ERROR: 11 - SIM PIN required 
+ * - +CME ERROR: 12 - SIM PUK required 
+ * - +CME ERROR: 13 - SIM failure
+ * - +CME ERROR: 14 - SIM busy
+ * - +CME ERROR: 16 - incorrect password 
+ * - +CME ERROR: 17 - SIM PIN2 required 
+ * - +CME ERROR: 18 - SIM PUK2 required 
+ * - +CME ERROR: 20 - memory full
+ * - +CME ERROR: 21 - invalid index
+ * - +CME ERROR: 23 - memory failure
+ * - +CME ERROR: 24 - text string too long
+ * - +CME ERROR: 25 - invalid characters in text string
+ * - +CME ERROR: 26 - dial string too long
+ * - +CME ERROR: 27 - invalid characters in dial string
+ * - +CME ERROR: 30 - no network service
+ * - +CME ERROR: 31 - network Timeout.
+ * - +CME ERROR: 32 - network not allowed – Emergency calls only
  */
-void hfp_ag_hold_incoming_call(void);
-
-/*
- * @brief
- */
-void hfp_ag_accept_held_incoming_call(void);
-
-/*
- * @brief
- */
-void hfp_ag_reject_held_incoming_call(void);
-
-/*
- * @brief
- */
-void hfp_ag_clear_last_dialed_number(void);
+void hfp_ag_report_extended_audio_gateway_error_result_code(bd_addr_t bd_addr, hfp_cme_error_t error);
 
 /* API_END */
+
 
 #if defined __cplusplus
 }

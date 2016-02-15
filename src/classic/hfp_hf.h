@@ -37,13 +37,13 @@
 
 // *****************************************************************************
 //
-//  Minimal setup for HFP Hands-Free (HF) unit (!! UNDER DEVELOPMENT !!)
+//  HFP Hands-Free (HF) unit
 //
 // *****************************************************************************
 
 
-#ifndef btstack_hfp_hf_h
-#define btstack_hfp_hf_h
+#ifndef __BTSTACK_HFP_HF_H
+#define __BTSTACK_HFP_HF_H
 
 #include "hci.h"
 #include "classic/sdp_query_rfcomm.h"
@@ -55,7 +55,6 @@ extern "C" {
 
 /* API_START */
 
-
 /**
  * @brief Create HFP Hands-Free (HF) SDP service record. 
  */
@@ -66,7 +65,10 @@ void hfp_hf_create_sdp_record(uint8_t * service, uint32_t service_record_handle,
  * TODO:  move optional params into setters
  */
 void hfp_hf_init(uint16_t rfcomm_channel_nr, uint32_t supported_features, uint16_t * indicators, int indicators_nr, uint32_t indicators_status);
+
 void hfp_hf_set_codecs(uint8_t * codecs, int codecs_nr);
+
+void hfp_hf_set_supported_features(uint32_t supported_features);
 
 /**
  * @brief Register callback for the HFP Hands-Free (HF) client. 
@@ -83,7 +85,6 @@ void hfp_hf_register_packet_handler(hfp_callback_t callback);
  * - retrieve which HF indicators are enabled on the AG, if possible
  */
 void hfp_hf_establish_service_level_connection(bd_addr_t bd_addr);
-void hfp_hf_set_supported_features(uint32_t supported_features);
 
 /**
  * @brief Release the RFCOMM channel and the audio connection between the HF and the AG. 
@@ -95,6 +96,7 @@ void hfp_hf_release_service_level_connection(bd_addr_t bd_addr);
  * @brief Deactivate/reactivate status update for all indicators in the AG.
  */
 void hfp_hf_enable_status_update_for_all_ag_indicators(bd_addr_t bd_addr);
+
 void hfp_hf_disable_status_update_for_all_ag_indicators(bd_addr_t bd_addr);
 
 /**
@@ -106,6 +108,8 @@ void hfp_hf_set_status_update_for_individual_ag_indicators(bd_addr_t bd_addr, ui
 /**
  * @brief Find out the name of the currently selected Network operator by AG. 
  * The name is restricted to max 16 characters.
+ *
+ * TODO: what is the result of this?
  */
 void hfp_hf_query_operator_selection(bd_addr_t bd_addr);
 
@@ -196,7 +200,8 @@ void hfp_hf_terminate_call(bd_addr_t bd_addr);
 void hfp_hf_dial_number(bd_addr_t bd_addr, char * number);
 
 /**
- * @brief 
+ * @brief
+ * TODO: use int for number instead of string? 
  */
 void hfp_hf_dial_memory(bd_addr_t bd_addr, char * number);
 
@@ -317,4 +322,4 @@ void hfp_hf_set_hf_indicator(bd_addr_t addr, int assigned_number, int value);
 }
 #endif
 
-#endif
+#endif // __BTSTACK_HFP_HF_H

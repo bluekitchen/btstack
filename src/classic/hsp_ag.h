@@ -37,7 +37,7 @@
 
 // *****************************************************************************
 //
-// HSP Audio Gateway (!! UNDER DEVELOPMENT !!)
+// HSP Audio Gateway
 //
 // *****************************************************************************
 
@@ -53,27 +53,36 @@ extern "C" {
 #endif
 
 typedef void (*hsp_ag_callback_t)(uint8_t * event, uint16_t event_size);
-// Register callback (packet handler) for hsp audio gateway
-void hsp_ag_register_packet_handler(hsp_ag_callback_t callback);
-void hsp_ag_create_service(uint8_t * service, uint32_t service_record_handle, int rfcomm_channel_nr, const char * name);
+
+
+void hsp_ag_create_sdp_record(uint8_t * service, int rfcomm_channel_nr, const char * name);
+
 
 void hsp_ag_init(uint8_t rfcomm_channel_nr);
+
+// Register callback (packet handler) for hsp audio gateway
+void hsp_ag_register_packet_handler(hsp_ag_callback_t callback);
+
 void hsp_ag_connect(bd_addr_t bd_addr);
+
 void hsp_ag_disconnect(void);
 
 // +VGM=[0..15]
 void hsp_ag_set_microphone_gain(uint8_t gain);
+
 // +VGS=[0..15]
 void hsp_ag_set_speaker_gain(uint8_t gain);
 
 void hsp_ag_start_ringing(void);
+
 void hsp_ag_stop_ringing(void);
 
-void hsp_ag_support_custom_commands(int enable);
-
-// When support custom commands is enabled, AG will send HSP_SUBEVENT_HS_COMMAND.
+// When support custom commands is enabled, AG will emit HSP_SUBEVENT_HS_COMMAND.
 // On occurance of this event, client's packet handler must send the result back
 // by calling hsp_ag_send_result function.
+
+void hsp_ag_enable_custom_commands(int enable);
+
 int hsp_ag_send_result(char * result);
 
 #if defined __cplusplus
