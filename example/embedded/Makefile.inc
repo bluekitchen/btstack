@@ -173,7 +173,7 @@ hsp_hs_test: ${CORE_OBJ} ${COMMON_OBJ} ${SDP_CLIENT} hsp_hs.o hsp_hs_test.c
 
 clean:
 	rm -f ${EXAMPLES}
-	rm -f  *.o *.out *.hex 
+	rm -f  *.o *.out *.hex *.exe
 	rm -f  ${BTSTACK_ROOT}/include/btstack/version.h
 	rm -f  ancs_client.h profile.h spp_and_le_counter.h
 	rm -rf *.dSYM
