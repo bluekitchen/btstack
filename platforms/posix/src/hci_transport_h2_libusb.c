@@ -256,7 +256,7 @@ static int usb_send_sco_packet(uint8_t *packet, int size){
 
     // setup transfer
     struct libusb_transfer * sco_transfer = sco_ring_transfers[tranfer_index];
-    libusb_fill_iso_transfer(sco_transfer, handle, sco_out_addr, data, size, NUM_ISO_PACKETS, async_callback, NULL, 0);
+    libusb_fill_iso_transfer(sco_transfer, handle, sco_out_addr, data, size, NUM_ISO_PACKETS, &async_callback, NULL, 0);
     libusb_set_iso_packet_lengths(sco_transfer, ISO_PACKET_SIZE);
     r = libusb_submit_transfer(sco_transfer);
     if (r < 0) {
@@ -769,7 +769,7 @@ static int usb_open(void *transport_config){
         }
         // configure sco_in handlers
         libusb_fill_iso_transfer(sco_in_transfer[c], handle, sco_in_addr, 
-            hci_sco_in_buffer[c], SCO_PACKET_SIZE, NUM_ISO_PACKETS, async_callback, NULL, 0);
+            hci_sco_in_buffer[c], SCO_PACKET_SIZE, NUM_ISO_PACKETS, &async_callback, NULL, 0);
         libusb_set_iso_packet_lengths(sco_in_transfer[c], ISO_PACKET_SIZE);
         r = libusb_submit_transfer(sco_in_transfer[c]);
         log_info("Submit iso transfer res = %d", r);
@@ -789,7 +789,7 @@ static int usb_open(void *transport_config){
     for (c = 0 ; c < ASYNC_BUFFERS ; c++) {
         // configure event_in handlers
         libusb_fill_interrupt_transfer(event_in_transfer[c], handle, event_in_addr, 
-                hci_event_in_buffer[c], HCI_ACL_BUFFER_SIZE, async_callback, NULL, 0) ;
+                hci_event_in_buffer[c], HCI_ACL_BUFFER_SIZE, &async_callback, NULL, 0) ;
         r = libusb_submit_transfer(event_in_transfer[c]);
         if (r) {
             log_error("Error submitting interrupt transfer %d", r);
@@ -799,7 +799,7 @@ static int usb_open(void *transport_config){
  
         // configure acl_in handlers
         libusb_fill_bulk_transfer(acl_in_transfer[c], handle, acl_in_addr, 
-                hci_acl_in_buffer[c] + HCI_INCOMING_PRE_BUFFER_SIZE, HCI_ACL_BUFFER_SIZE, async_callback, NULL, 0) ;
+                hci_acl_in_buffer[c] + HCI_INCOMING_PRE_BUFFER_SIZE, HCI_ACL_BUFFER_SIZE, &async_callback, NULL, 0) ;
         r = libusb_submit_transfer(acl_in_transfer[c]);
         if (r) {
             log_error("Error submitting bulk in transfer %d", r);
@@ -926,7 +926,7 @@ static int usb_send_cmd_packet(uint8_t *packet, int size){
 
     // prepare transfer
     int completed = 0;
-    libusb_fill_control_transfer(command_out_transfer, handle, hci_cmd_buffer, async_callback, &completed, 0);
+    libusb_fill_control_transfer(command_out_transfer, handle, hci_cmd_buffer, &async_callback, &completed, 0);
     command_out_transfer->flags = LIBUSB_TRANSFER_FREE_BUFFER;
 
     // update stata before submitting transfer
@@ -953,8 +953,7 @@ static int usb_send_acl_packet(uint8_t *packet, int size){
     
     // prepare transfer
     int completed = 0;
-    libusb_fill_bulk_transfer(acl_out_transfer, handle, acl_out_addr, packet, size,
-        async_callback, &completed, 0);
+    libusb_fill_bulk_transfer(acl_out_transfer, handle, acl_out_addr, packet, size, &async_callback, &completed, 0);
     acl_out_transfer->type = LIBUSB_TRANSFER_TYPE_BULK;
 
     // update stata before submitting transfer
