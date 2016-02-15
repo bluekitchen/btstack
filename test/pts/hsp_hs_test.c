@@ -203,7 +203,7 @@ static int stdin_process(struct data_source *ds){
             break;
         case 'b':
             printf("Press user button\n");
-            hsp_hs_press_button();
+            hsp_hs_send_button_press();
             break;
         default:
             show_usage();
