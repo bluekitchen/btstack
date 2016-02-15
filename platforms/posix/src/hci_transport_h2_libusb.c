@@ -179,16 +179,20 @@ static int acl_out_addr;
 static int sco_in_addr;
 static int sco_out_addr;
 
-
+#ifdef HAVE_SCO
 static void sco_ring_init(void){
     sco_ring_write = 0;
     sco_ring_transfers_active = 0;
 }
+#endif
 
 static int sco_ring_have_space(void){
+#ifdef HAVE_SCO
     return sco_ring_transfers_active < SCO_RING_BUFFER_COUNT;
+#else
+    return 0;
+#endif
 }
-
 
 //
 static void queue_transfer(struct libusb_transfer *transfer){
@@ -283,6 +287,7 @@ static int usb_send_sco_packet(uint8_t *packet, int size){
     return 0;
 }
 
+#ifdef HAVE_SCO
 static void sco_state_machine_init(void){
     sco_state = H2_W4_SCO_HEADER;
     sco_read_pos = 0;
@@ -318,6 +323,7 @@ static void handle_isochronous_data(uint8_t * buffer, uint16_t size){
         }
     }
 }
+#endif
 
 static void handle_completed_transfer(struct libusb_transfer *transfer){
 
@@ -332,6 +338,7 @@ static void handle_completed_transfer(struct libusb_transfer *transfer){
         packet_handler(HCI_ACL_DATA_PACKET, transfer-> buffer, transfer->actual_length);
         resubmit = 1;
     } else if (transfer->endpoint == sco_in_addr) {
+#ifdef HAVE_SCO
         // log_info("handle_completed_transfer for SCO IN! num packets %u", transfer->NUM_ISO_PACKETS);
         int i;
         for (i = 0; i < transfer->num_iso_packets; i++) {
@@ -347,6 +354,7 @@ static void handle_completed_transfer(struct libusb_transfer *transfer){
             handle_isochronous_data(data, pack->actual_length);
         }
         resubmit = 1;
+#endif
     } else if (transfer->endpoint == 0){
         // log_info("command done, size %u", transfer->actual_length);
         usb_command_active = 0;
@@ -356,6 +364,7 @@ static void handle_completed_transfer(struct libusb_transfer *transfer){
         usb_acl_out_active = 0;
         signal_done = 1;
     } else if (transfer->endpoint == sco_out_addr){
+#ifdef HAVE_SCO
         log_info("sco out done, {{ %u/%u (%x)}, { %u/%u (%x)}, { %u/%u (%x)}}", 
             transfer->iso_packet_desc[0].actual_length, transfer->iso_packet_desc[0].length, transfer->iso_packet_desc[0].status,
             transfer->iso_packet_desc[1].actual_length, transfer->iso_packet_desc[1].length, transfer->iso_packet_desc[1].status,
@@ -367,6 +376,7 @@ static void handle_completed_transfer(struct libusb_transfer *transfer){
         // decrease tab
         sco_ring_transfers_active--;
         // log_info("H2: sco out complete, num active num active %u", sco_ring_transfers_active);
+#endif
     } else {
         log_info("usb_process_ds endpoint unknown %x", transfer->endpoint);
     }
@@ -634,8 +644,10 @@ static int prepare_device(libusb_device_handle * aHandle){
 static int usb_open(void *transport_config){
     int r;
 
+#ifdef HAVE_SCO
     sco_state_machine_init();
     sco_ring_init();
+#endif
     handle_packet = NULL;
 
     // default endpoint addresses
