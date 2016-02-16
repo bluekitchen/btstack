@@ -17,23 +17,28 @@ apis = [
     ["src/ble/sm.h", "BLE Security Manager", "sm"],
 
     ["src/classic/bnep.h", "BNEP", "bnep"],
+    ["src/classic/btstack_link_key_db.h","Link Key DB","lkDb"],
     ["src/classic/pan.h", "PAN", "pan"],
-    ["src/classic/btstack_link_key_db.h","Remote Device DB","rdevDb"],
     ["src/classic/rfcomm.h", "RFCOMM", "rfcomm"],
-    ["src/classic/sdp_server.h", "SDP", "sdp"],
     ["src/classic/sdp_client.h", "SDP Client", "sdpClient"],
     ["src/classic/sdp_parser.h","SDP Parser","sdpParser"],
     ["src/classic/sdp_query_rfcomm.h", "SDP RFCOMM Query", "sdpQueries"],
     ["src/classic/sdp_query_util.h","SDP Query Utils","sdpQueryUtil"],
+    ["src/classic/sdp_server.h", "SDP Server", "sdpSrv"],
     ["src/classic/sdp_util.h","SDP Utils", "sdpUtil"],
 
+    ["src/btstack_chipset.h","BTstack Chipset","btMemory"],
+    ["src/btstack_control.h","BTstack Hardware Control","btControl"],
+    ["src/btstack_event.h","HCI Event Getter","btEvent"],
     ["src/btstack_memory.h","BTstack Memory Management","btMemory"],
+    ["src/btstack_linked_list.h","BTstack Linked List","btList"],
+    ["src/btstack_run_loop.h", "Run Loop", "runLoop"],
+    ["src/btstack_util.h", "Common Utils", "btUtil"],
     ["src/gap.h", "GAP", "gap"],
     ["src/hci.h", "HCI", "hci"],
     ["src/hci_dump.h","HCI Logging","hciTrace"],
     ["src/hci_transport.h","HCI Transport","hciTransport"],
     ["src/l2cap.h", "L2CAP", "l2cap"],
-    ["src/run_loop.h", "Run Loop", "runLoop"],
 ]
 
 functions = {}
