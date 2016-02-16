@@ -166,7 +166,7 @@ int hsp_hs_send_result(const char * result){
 }
 
 
-void hsp_hs_create_sdp_record(uint8_t * service, int rfcomm_channel_nr, const char * name, uint8_t have_remote_audio_control){
+void hsp_hs_create_sdp_record(uint8_t * service,  uint32_t service_record_handle, int rfcomm_channel_nr, const char * name, uint8_t have_remote_audio_control){
     uint8_t* attribute;
     de_create_sequence(service);
 
