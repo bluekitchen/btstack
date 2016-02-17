@@ -534,8 +534,11 @@ int btstack_main(int argc, const char * argv[]){
     rfcomm_init();
     
     // hfp_hf_init(rfcomm_channel_nr, HFP_DEFAULT_HF_SUPPORTED_FEATURES, codecs, sizeof(codecs), indicators, sizeof(indicators)/sizeof(uint16_t), 1);
-    hfp_hf_init(rfcomm_channel_nr, 438 | (1<<HFP_HFSF_ESCO_S4) | (1<<HFP_HFSF_EC_NR_FUNCTION), indicators, sizeof(indicators)/sizeof(uint16_t), 1);
-    hfp_hf_set_codecs(codecs, sizeof(codecs));
+    hfp_hf_init(rfcomm_channel_nr);
+    hfp_hf_set_supported_features(438 | (1<<HFP_HFSF_ESCO_S4) | (1<<HFP_HFSF_EC_NR_FUNCTION)); 
+    hfp_hf_set_indicators(sizeof(indicators)/sizeof(uint16_t), indicators);
+    hfp_hf_set_codecs(sizeof(codecs), codecs);
+    hfp_hf_set_indicators_status(1);
     
     hfp_hf_register_packet_handler(packet_handler);
 

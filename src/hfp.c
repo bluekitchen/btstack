@@ -1310,6 +1310,7 @@ void hfp_establish_service_level_connection(bd_addr_t bd_addr, uint16_t service_
 
 void hfp_release_service_level_connection(hfp_connection_t * context){
     if (!context) return;
+    hfp_release_audio_connection(context);
     
     if (context->state < HFP_W4_RFCOMM_CONNECTED){
         context->state = HFP_IDLE;

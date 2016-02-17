@@ -120,7 +120,7 @@ static int has_hf_indicators_feature(hfp_connection_t * connection){
 
 static void packet_handler(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
-void hfp_hf_create_sdp_record(uint8_t * service, int rfcomm_channel_nr, const char * name, uint16_t supported_features){
+void hfp_hf_create_sdp_record(uint8_t * service, int rfcomm_channel_nr, const char * name, uint32_t supported_features){
     if (!name){
         name = default_hfp_hf_service_name;
     }
@@ -1022,7 +1022,20 @@ static void packet_handler(void * connection, uint8_t packet_type, uint16_t chan
     hfp_run();
 }
 
-void hfp_hf_set_codecs(uint8_t * codecs, int codecs_nr){
+void hfp_hf_init(uint16_t rfcomm_channel_nr){
+    l2cap_init();
+    l2cap_register_packet_handler(packet_handler);
+    rfcomm_register_packet_handler(packet_handler);
+    hfp_init(rfcomm_channel_nr);
+
+    hfp_supported_features = HFP_DEFAULT_HF_SUPPORTED_FEATURES;
+    hfp_codecs_nr = 0;
+    hfp_indicators_nr = 0;
+    hfp_hf_speaker_gain = 9;
+    hfp_hf_microphone_gain = 9;
+}
+
+void hfp_hf_set_codecs(int codecs_nr, uint8_t * codecs){
     if (codecs_nr > HFP_MAX_NUM_CODECS){
         log_error("hfp_hf_set_codecs: codecs_nr (%d) > HFP_MAX_NUM_CODECS (%d)", codecs_nr, HFP_MAX_NUM_CODECS);
         return;
@@ -1047,25 +1060,22 @@ void hfp_hf_set_codecs(uint8_t * codecs, int codecs_nr){
     }
 }
 
-void hfp_hf_init(uint16_t rfcomm_channel_nr, uint32_t supported_features, uint16_t * indicators, int indicators_nr, uint32_t indicators_status){
-    l2cap_init();
-    l2cap_register_packet_handler(packet_handler);
-    rfcomm_register_packet_handler(packet_handler);
-    hfp_init(rfcomm_channel_nr);
-    
+void hfp_hf_set_supported_features(uint32_t supported_features){
     hfp_supported_features = supported_features;
+}
 
+void hfp_hf_set_indicators(int indicators_nr, uint16_t * indicators){
     hfp_indicators_nr = indicators_nr;
-    hfp_indicators_status = indicators_status;
     int i;
     for (i=0; i<indicators_nr; i++){
         hfp_indicators[i] = indicators[i];
     }
 }
 
-void hfp_hf_set_supported_features(uint32_t supported_features){
-    hfp_supported_features = supported_features;
+void hfp_hf_set_indicators_status(uint32_t indicators_status){
+    hfp_indicators_status = indicators_status;
 }
+
 
 void hfp_hf_establish_service_level_connection(bd_addr_t bd_addr){
     hfp_establish_service_level_connection(bd_addr, SDP_HandsfreeAudioGateway);

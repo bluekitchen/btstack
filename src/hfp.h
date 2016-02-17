@@ -37,13 +37,13 @@
 
 // *****************************************************************************
 //
-//  HFP Hands-Free (HF) unit and Audio-Gateway Commons
+//  HFP Hands-Free (HF) unit and Audio Gateway Commons
 //
 // *****************************************************************************
 
 
-#ifndef btstack_hfp_h
-#define btstack_hfp_h
+#ifndef __BTSTACK_HFP_H
+#define __BTSTACK_HFP_H
 
 #include "hci.h"
 #include "sdp_query_rfcomm.h"
