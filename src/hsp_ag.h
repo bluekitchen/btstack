@@ -57,8 +57,7 @@ extern "C" {
 /**
  * @brief Packet handler for HSP Audio Gateway (AG) events. 
  * 
- * The HSP AG event has type HCI_EVENT_HSP_META with following subtypes:
- * - HSP_SUBEVENT_ERROR                        
+ * The HSP AG event has type HCI_EVENT_HSP_META with following subtypes:  
  * - HSP_SUBEVENT_AUDIO_CONNECTION_COMPLETE    
  * - HSP_SUBEVENT_AUDIO_DISCONNECTION_COMPLETE                       
  * - HSP_SUBEVENT_MICROPHONE_GAIN_CHANGED      

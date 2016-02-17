@@ -132,6 +132,15 @@ static void emit_event(uint8_t event_subtype, uint8_t value){
     (*hsp_hs_callback)(event, sizeof(event));
 }
 
+static void emit_ring_event(void){
+    if (!hsp_hs_callback) return;
+    uint8_t event[3];
+    event[0] = HCI_EVENT_HSP_META;
+    event[1] = sizeof(event) - 2;
+    event[2] = HSP_SUBEVENT_RING;
+    (*hsp_hs_callback)(event, sizeof(event));
+}
+
 static void emit_event_audio_connected(uint8_t status, uint16_t handle){
     if (!hsp_hs_callback) return;
     uint8_t event[6];
@@ -380,7 +389,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
             packet++;
         }
         if (strncmp((char *)packet, HSP_AG_RING, strlen(HSP_AG_RING)) == 0){
-            emit_event(HSP_SUBEVENT_RING, 0);
+            emit_ring_event();
         } else if (strncmp((char *)packet, HSP_AG_OK, strlen(HSP_AG_OK)) == 0){
             printf("OK RECEIVED\n");
             switch (hsp_state){
@@ -409,11 +418,12 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
             // add trailing \0
             packet[size] = 0;
             // re-use incoming buffer to avoid reserving large buffers - ugly but efficient
-            uint8_t * event = packet - 3;
+            uint8_t * event = packet - 4;
             event[0] = HCI_EVENT_HSP_META;
-            event[1] = size + 1;
+            event[1] = size + 2;
             event[2] = HSP_SUBEVENT_AG_INDICATION;
-            (*hsp_hs_callback)(event, size+3);
+            event[3] = size;
+            (*hsp_hs_callback)(event, size+4);
         }
         hsp_run();
         return;

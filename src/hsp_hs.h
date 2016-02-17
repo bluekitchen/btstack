@@ -57,8 +57,7 @@ extern "C" {
 /**
  * @brief Packet handler for HSP Headset (HS) events. 
  * 
- * The HSP HS event has type HCI_EVENT_HSP_META with following subtypes:
- * - HSP_SUBEVENT_ERROR                        
+ * The HSP HS event has type HCI_EVENT_HSP_META with following subtypes:                      
  * - HSP_SUBEVENT_AUDIO_CONNECTION_COMPLETE    
  * - HSP_SUBEVENT_AUDIO_DISCONNECTION_COMPLETE 
  * - HSP_SUBEVENT_RING                         
@@ -93,7 +92,7 @@ void hsp_hs_create_sdp_record(uint8_t * service, int rfcomm_channel_nr, const ch
 void hsp_hs_register_packet_handler(hsp_hs_callback_t callback);
 
 /**
- * @brief Connect to HSP Audio Gateway
+ * @brief Connect to HSP Audio Gateway.
  *
  * Perform SDP query for an RFCOMM service on a remote device, 
  * and establish an RFCOMM connection if such service is found. The reception of the  
@@ -138,7 +137,7 @@ void hsp_hs_set_speaker_gain(uint8_t gain);
 void hsp_hs_send_button_press(void);
 
 /**
- * @brief Enable custom indications
+ * @brief Enable custom indications.
  * 
  * Custom indications are disabled by default. 
  * When enabled, custom indications are received via the HSP_SUBEVENT_AG_INDICATION.
@@ -147,7 +146,7 @@ void hsp_hs_send_button_press(void);
 void hsp_hs_enable_custom_indications(int enable);
 
 /**
- * @brief Send answer to custom indication
+ * @brief Send answer to custom indication.
  *
  * On HSP_SUBEVENT_AG_INDICATION, the client needs to respond
  * with this function with the result to the custom indication

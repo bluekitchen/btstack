@@ -470,11 +470,12 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
             ag_send_error = 1;
             if (!hsp_ag_callback) return;
             // re-use incoming buffer to avoid reserving large buffers - ugly but efficient
-            uint8_t * event = packet - 3;
+            uint8_t * event = packet - 4;
             event[0] = HCI_EVENT_HSP_META;
-            event[1] = size + 1;
+            event[1] = size + 2;
             event[2] = HSP_SUBEVENT_HS_COMMAND;
-            (*hsp_ag_callback)(event, size+3);
+            event[3] = size;
+            (*hsp_ag_callback)(event, size+4);
         }
 
         hsp_run();
