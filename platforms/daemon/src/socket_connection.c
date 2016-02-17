@@ -267,9 +267,11 @@ void socket_connection_retry_parked(void){
         connection_t * conn = (connection_t *) it->next;
         
         // dispatch packet !!! connection, type, channel, data, size
-        log_info("socket_connection_hci_process retry parked %p", conn);
-        int dispatch_err = (*socket_connection_packet_callback)(conn, READ_BT_16( conn->buffer, 0), READ_BT_16( conn->buffer, 2),
-                                                            &conn->buffer[sizeof(packet_header_t)], READ_BT_16( conn->buffer, 4));
+        uint16_t packet_type = READ_BT_16( conn->buffer, 0);
+        uint16_t channel     = READ_BT_16( conn->buffer, 2);
+        uint16_t length      = READ_BT_16( conn->buffer, 4);
+        log_info("socket_connection_hci_process retry parked %p (type %u, channel %04x, length %u", conn, packet_type, channel, length);
+        int dispatch_err = (*socket_connection_packet_callback)(conn, packet_type, channel, &conn->buffer[sizeof(packet_header_t)], length);
         // "un-park" if successful
         if (!dispatch_err) {
             log_info("socket_connection_hci_process dispatch succeeded -> un-park connection %p", conn);
