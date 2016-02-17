@@ -33,6 +33,10 @@ apis = [
     ["src/sdp_query_rfcomm.h", "SDP RFCOMM Query", "sdpQueries"],
     ["src/sdp_query_util.h","SDP Query Utils","sdpQueryUtil"],
     ["include/btstack/sdp_util.h","SDP Utils", "sdpUtil"]
+    ["src/hsp_hf.h","HSP Headset","hspHF"],
+    ["src/hsp_ag.h","HSP Audio Gateway","hspAG"],   
+    ["src/hsp_hf.h","HFP Headset","hfpHF"],
+    ["src/hsp_ag.h","HFP Audio Gateway","hfpAG"]
 ]
 
 functions = {}

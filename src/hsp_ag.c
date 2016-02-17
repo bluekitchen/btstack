@@ -310,18 +310,20 @@ void hsp_ag_set_speaker_gain(uint8_t gain){
     hsp_run();
 }  
 
-static void hsp_timeout_handler(timer_source_t * timer){
+static void hsp_ringing_timeout_handler(timer_source_t * timer){
     ag_ring = 1;
-}
-
-static void hsp_timeout_start(void){
-    run_loop_remove_timer(&hs_timeout);
-    run_loop_set_timer_handler(&hs_timeout, hsp_timeout_handler);
     run_loop_set_timer(&hs_timeout, 2000); // 2 seconds timeout
     run_loop_add_timer(&hs_timeout);
 }
 
-static void hsp_timeout_stop(void){
+static void hsp_ringing_timer_start(void){
+    run_loop_remove_timer(&hs_timeout);
+    run_loop_set_timer_handler(&hs_timeout, hsp_ringing_timeout_handler);
+    run_loop_set_timer(&hs_timeout, 2000); // 2 seconds timeout
+    run_loop_add_timer(&hs_timeout);
+}
+
+static void hsp_ringing_timer_stop(void){
     run_loop_remove_timer(&hs_timeout);
 } 
 
@@ -329,14 +331,14 @@ void hsp_ag_start_ringing(void){
     if (hsp_state != HSP_W2_CONNECT_SCO) return;
     ag_ring = 1;
     hsp_state = HSP_W4_RING_ANSWER;
-    hsp_timeout_start();
+    hsp_ringing_timer_start();
 }
 
 void hsp_ag_stop_ringing(void){
     ag_ring = 0;
     ag_num_button_press_received = 0;
     hsp_state = HSP_W2_CONNECT_SCO;
-    hsp_timeout_stop();
+    hsp_ringing_timer_stop();
 }
 
 static void hsp_run(void){
