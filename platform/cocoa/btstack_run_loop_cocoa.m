@@ -52,6 +52,11 @@
 static struct timeval init_tv;
 static const btstack_run_loop_t btstack_run_loop_cocoa;
 
+typedef struct  {
+    CFSocketRef socket;
+    CFRunLoopSourceRef socketRunLoop;
+} btstack_cocoa_data_source_helper_t;
+
 static void theCFRunLoopTimerCallBack (CFRunLoopTimerRef timer,void *info){
     btstack_timer_source_t * ts = (btstack_timer_source_t*)info;
     ts->process(ts);
@@ -74,7 +79,14 @@ static void socketDataCallback (
 void btstack_run_loop_cocoa_add_data_source(btstack_data_source_t *dataSource){
 
 	// add fd as CFSocket
-	
+
+    // allocate memory for Core Foundation references	
+    btstack_cocoa_data_source_helper_t * references = malloc(sizeof(btstack_cocoa_data_source_helper_t));
+    if (!references){
+        log_error("btstack_run_loop_cocoa_add_data_source could not allocate btstack_cocoa_data_source_helper_t");
+        return;
+    }
+
 	// store our dataSource in socket context
 	CFSocketContext socketContext;
 	memset(&socketContext, 0, sizeof(CFSocketContext));
@@ -95,9 +107,12 @@ void btstack_run_loop_cocoa_add_data_source(btstack_data_source_t *dataSource){
 	// create run loop source
 	CFRunLoopSourceRef socketRunLoop = CFSocketCreateRunLoopSource ( kCFAllocatorDefault, socket, 0);
     
-    // hack: store CFSocketRef in "next" and CFRunLoopSourceRef in "user_data" of btstack_linked_item_t
-    dataSource->item.next      = (void *) socket;
-    dataSource->item.user_data = (void *) socketRunLoop;
+    // store CFSocketRef and CFRunLoopSource in struct on heap
+    references->socket = socket;
+    references->socketRunLoop = socketRunLoop;
+
+    // hack: store btstack_cocoa_data_source_helper_t in "next" of btstack_linked_item_t
+    dataSource->item.next      = (void *) references;
 
     // add to run loop
 	CFRunLoopAddSource( CFRunLoopGetCurrent(), socketRunLoop, kCFRunLoopCommonModes);
@@ -106,11 +121,15 @@ void btstack_run_loop_cocoa_add_data_source(btstack_data_source_t *dataSource){
 }
 
 int  btstack_run_loop_cocoa_remove_data_source(btstack_data_source_t *dataSource){
+    btstack_cocoa_data_source_helper_t * references = (btstack_cocoa_data_source_helper_t *) dataSource->item.next;
     // printf("btstack_run_loop_cocoa_remove_data_source %x - fd %u, CFSocket %x, CFRunLoopSource %x\n", (int) dataSource, dataSource->fd, (int) dataSource->item.next, (int) dataSource->item.user_data);
-    CFRunLoopRemoveSource( CFRunLoopGetCurrent(), (CFRunLoopSourceRef) dataSource->item.user_data, kCFRunLoopCommonModes);
-    CFRelease(dataSource->item.user_data);
-    CFSocketInvalidate((CFSocketRef) dataSource->item.next);
-    CFRelease(dataSource->item.next);
+    CFRunLoopRemoveSource( CFRunLoopGetCurrent(), references->socketRunLoop, kCFRunLoopCommonModes);
+    CFRelease(references->socketRunLoop);
+
+    CFSocketInvalidate(references->socket);
+    CFRelease(references->socket);
+
+    free(references);
 	return 0;
 }
 
