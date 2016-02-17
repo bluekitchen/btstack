@@ -55,6 +55,7 @@
 #include "btstack_run_loop.h"
 #include "classic/sdp_client.h"
 #include "classic/sdp_query_util.h"
+#include "classic/sdp_util.h"
 #include "hci.h"
 #include "hci_cmd.h"
 #include "hci_dump.h"

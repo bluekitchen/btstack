@@ -87,7 +87,7 @@ static de_state_t sn_de_header_state;
 static btstack_packet_handler_t sdp_app_callback;
 //
 
-static void emit_service(void){
+static void sdp_rfcomm_query_emit_service(void){
     uint8_t event[3+SDP_SERVICE_NAME_LEN+1];
     event[0] = SDP_EVENT_QUERY_RFCOMM_SERVICE;
     event[1] = sdp_service_name_len + 1;
@@ -96,6 +96,12 @@ static void emit_service(void){
     event[3+sdp_service_name_len] = 0;
     (*sdp_app_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event)); 
     sdp_rfcomm_channel_nr = 0;
+}
+
+static void sdp_query_rfcomm_emit_busy(btstack_packet_handler_t callback){
+    log_error("sdp_query_rfcomm initiated when not ready");
+    uint8_t event[] = { SDP_EVENT_QUERY_COMPLETE, 1, SDP_QUERY_BUSY};
+    (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
 static void handleProtocolDescriptorListData(uint32_t attribute_value_length, uint32_t data_offset, uint8_t data){
@@ -235,7 +241,7 @@ static void handleServiceNameData(uint32_t attribute_value_length, uint32_t data
 
     // notify on last char
     if (data_offset == attribute_value_length - 1 && sdp_rfcomm_channel_nr!=0){
-        emit_service();
+        sdp_rfcomm_query_emit_service();
     }
 }
 
@@ -244,7 +250,7 @@ static void handle_sdp_parser_event(uint8_t packet_type, uint16_t channel, uint8
         case SDP_EVENT_QUERY_SERVICE_RECORD_HANDLE:
             // handle service without a name
             if (sdp_rfcomm_channel_nr){
-                emit_service();
+                sdp_rfcomm_query_emit_service();
             }
 
             // prepare for new record
@@ -276,7 +282,7 @@ static void handle_sdp_parser_event(uint8_t packet_type, uint16_t channel, uint8
         case SDP_EVENT_QUERY_COMPLETE:
             // handle service without a name
             if (sdp_rfcomm_channel_nr){
-                emit_service();
+                sdp_rfcomm_query_emit_service();
             }
             (*sdp_app_callback)(HCI_EVENT_PACKET, 0, packet, size); 
             break;
@@ -302,7 +308,7 @@ int sdp_query_rfcomm_ready(void){
 
 void sdp_query_rfcomm_channel_and_name_for_search_pattern(btstack_packet_handler_t callback, bd_addr_t remote, uint8_t * serviceSearchPattern){
     if (!sdp_query_rfcomm_ready()){
-        log_error("sdp_query_rfcomm_channel_and_name_for_search_pattern called when not readdy");
+        sdp_query_rfcomm_emit_busy(callback);
         return;
     }
     sdp_app_callback = callback;
@@ -312,7 +318,7 @@ void sdp_query_rfcomm_channel_and_name_for_search_pattern(btstack_packet_handler
 
 void sdp_query_rfcomm_channel_and_name_for_uuid(btstack_packet_handler_t callback, bd_addr_t remote, uint16_t uuid){
     if (!sdp_query_rfcomm_ready()){
-        log_error("sdp_query_rfcomm_channel_and_name_for_uuid called when not readdy");
+        sdp_query_rfcomm_emit_busy(callback);
         return;
     }
     big_endian_store_16(des_serviceSearchPattern, 3, uuid);

@@ -46,6 +46,7 @@
 
 #include "l2cap.h"
 #include "classic/sdp_server.h"
+#include "classic/sdp_util.h"
 #include "btstack_debug.h"
 
 // Types SDP Parser - Data Element stream helper
@@ -306,6 +307,11 @@ void sdp_parser_handle_done(uint8_t status){
     (*sdp_parser_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event)); 
 }
 
+static void sdp_client_emit_busy(btstack_packet_handler_t callback){
+    log_error("sdp_client query initiated when not ready");
+    uint8_t event[] = { SDP_EVENT_QUERY_COMPLETE, 1, SDP_QUERY_BUSY};
+    (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
 
 // SDP Client
 
@@ -688,7 +694,7 @@ int sdp_client_ready(void){
 
 void sdp_client_query(btstack_packet_handler_t callback, bd_addr_t remote, const uint8_t * des_service_search_pattern, const uint8_t * des_attribute_id_list){
     if (!sdp_client_ready()) {
-        log_error("sdp_client_query called when not ready");
+        sdp_client_emit_busy(callback);
         return;
     }
     sdp_parser_init(callback);
@@ -704,7 +710,7 @@ void sdp_client_query(btstack_packet_handler_t callback, bd_addr_t remote, const
 #ifdef ENABLE_SDP_EXTRA_QUERIES
 void sdp_client_service_attribute_search(btstack_packet_handler_t callback, bd_addr_t remote, uint32_t search_service_record_handle, uint8_t * des_attribute_id_list){
     if (!sdp_client_ready()) {
-        log_error("sdp_client_query called when not ready");
+        sdp_client_emit_busy(callback);
         return;
     }
     sdp_parser_init(callback);
@@ -719,7 +725,7 @@ void sdp_client_service_attribute_search(btstack_packet_handler_t callback, bd_a
 
 void sdp_client_service_search(btstack_packet_handler_t callback, bd_addr_t remote, uint8_t * des_service_search_pattern){
     if (!sdp_client_ready()) {
-        log_error("sdp_client_query called when not ready");
+        sdp_client_emit_busy(callback);
         return;
     }
     sdp_parser_init(callback);

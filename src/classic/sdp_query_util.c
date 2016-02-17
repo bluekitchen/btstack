@@ -54,6 +54,12 @@ static uint8_t* create_service_search_pattern_for_uuid128(uint8_t* uuid){
 	return (uint8_t*)des_serviceSearchPatternUUID128;
 }
 
+static void sdp_general_query_emit_busy(btstack_packet_handler_t callback){
+    log_error("sdp_general_query initiated when not ready");
+    uint8_t event[] = { SDP_EVENT_QUERY_COMPLETE, 1, SDP_QUERY_BUSY};
+    (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
 /** 
  * @brief Checks if the SDP Client is ready
  * @return 1 when no query is active
@@ -67,9 +73,10 @@ uint8_t* create_service_search_pattern_for_uuid(uint16_t uuid){
 	return (uint8_t*)des_serviceSearchPattern;
 }
 
+
 void sdp_general_query_for_uuid(btstack_packet_handler_t callback, bd_addr_t remote, uint16_t uuid){
 	if (!sdp_client_ready()){
-		log_error("sdp_general_query_for_uuid called when not readdy");
+		sdp_general_query_emit_busy(callback);
 		return;
 	}
     create_service_search_pattern_for_uuid(uuid);
@@ -78,7 +85,7 @@ void sdp_general_query_for_uuid(btstack_packet_handler_t callback, bd_addr_t rem
 
 void sdp_general_query_for_uuid128(btstack_packet_handler_t callback, bd_addr_t remote, uint8_t* uuid){
 	if (!sdp_client_ready()){
-		log_error("sdp_general_query_for_uuid called when not readdy");
+		sdp_general_query_emit_busy(callback);
 		return;
 	}
     create_service_search_pattern_for_uuid128(uuid);
