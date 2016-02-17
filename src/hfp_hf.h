@@ -246,13 +246,14 @@ Transfer).
 void hfp_hf_connect_calls(bd_addr_t addr);
 
 /**
- * @brief Terminates an incoming or an outgoing call.
+ * @brief Terminates an incoming or an outgoing call. 
+ * HFP_SUBEVENT_CALL_TERMINATED is sent upon call termination.
  * @param bd_addr Bluetooth address of the AG
  */
 void hfp_hf_terminate_call(bd_addr_t bd_addr);
 
 /**
- * @brief Initiate outgoing voice call by providing the destination phone number to the AG.
+ * @brief Initiate outgoing voice call by providing the destination phone number to the AG. 
  * @param bd_addr Bluetooth address of the AG
  * @param number
  */
@@ -266,103 +267,124 @@ void hfp_hf_dial_number(bd_addr_t bd_addr, char * number);
 void hfp_hf_dial_memory(bd_addr_t bd_addr, int memory_id);
 
 /**
- * @brief 
+ * @brief Initiate outgoing voice call by recalling the last number dialed by the AG.
  * @param bd_addr Bluetooth address of the AG
  */
 void hfp_hf_redial_last_number(bd_addr_t bd_addr);
 
 /*
- * @brief
+ * @brief Enable the “Call Waiting notification” function in the AG. 
+ * The AG shall send the corresponding result code to the HF whenever 
+ * an incoming call is waiting during an ongoing call. In that event,
+ * the HFP_SUBEVENT_CALL_WAITING_NOTIFICATION is emitted.
+ *
  * @param bd_addr Bluetooth address of the AG
  */
 void hfp_hf_activate_call_waiting_notification(bd_addr_t bd_addr);
 
 /*
- * @brief
+ * @brief Disable the “Call Waiting notification” function in the AG.
  * @param bd_addr Bluetooth address of the AG
  */
 void hfp_hf_deactivate_call_waiting_notification(bd_addr_t bd_addr);
 
 /*
- * @brief
+ * @brief Enable the “Calling Line Identification notification” function in the AG. 
+ * The AG shall issue the corresponding result code just after every RING indication,
+ * when the HF is alerted in an incoming call. In that event,
+ * the HFP_SUBEVENT_CALLING_LINE_INDETIFICATION_NOTIFICATION is emitted.
  * @param bd_addr Bluetooth address of the AG
  */
 void hfp_hf_activate_calling_line_notification(bd_addr_t bd_addr);
 
 /*
- * @brief
+ * @brief Disable the “Calling Line Identification notification” function in the AG.
  * @param bd_addr Bluetooth address of the AG
  */
 void hfp_hf_deactivate_calling_line_notification(bd_addr_t bd_addr);
 
 
 /*
- * @brief
+ * @brief Activate echo canceling and noise reduction in the AG. By default, 
+ * if the AG supports its own embedded echo canceling and/or noise reduction 
+ * functions, it shall have them activated until this function is called.
+ * If the AG does not support any echo canceling and noise reduction functions, 
+ * it shall respond with the ERROR indicator (TODO)
  * @param bd_addr Bluetooth address of the AG
  */
 void hfp_hf_activate_echo_canceling_and_noise_reduction(bd_addr_t bd_addr);
 
 /*
- * @brief
+ * @brief Deactivate echo canceling and noise reduction in the AG.
  */
 void hfp_hf_deactivate_echo_canceling_and_noise_reduction(bd_addr_t bd_addr);
 
 /*
- * @brief
+ * @brief Activate voice recognition function.
  * @param bd_addr Bluetooth address of the AG
  */
 void hfp_hf_activate_voice_recognition_notification(bd_addr_t bd_addr);
 
 /*
- * @brief
+ * @brief Dectivate voice recognition function.
  * @param bd_addr Bluetooth address of the AG
  */
 void hfp_hf_deactivate_voice_recognition_notification(bd_addr_t bd_addr);
 
 /*
- * @brief
+ * @brief Set microphone gain. 
  * @param bd_addr Bluetooth address of the AG
+ * @param gain Valid range: [0,15]
  */
 void hfp_hf_set_microphone_gain(bd_addr_t bd_addr, int gain);
 
 /*
- * @brief
+ * @brief Set speaker gain.
  * @param bd_addr Bluetooth address of the AG
+ * @param gain Valid range: [0,15]
  */
 void hfp_hf_set_speaker_gain(bd_addr_t bd_addr, int gain);
 
 /*
- * @brief
+ * @brief Instruct the AG to transmit a DTMF code.
  * @param bd_addr Bluetooth address of the AG
+ * @param dtmf_code
  */
 void hfp_hf_send_dtmf_code(bd_addr_t bd_addr, char code);
 
 /*
- * @brief
+ * @brief Read numbers from the AG for the purpose of creating 
+ * a unique voice tag and storing the number and its linked voice
+ * tag in the HF’s memory. The number is recived via 
+ * HFP_SUBEVENT_NUMBER_FOR_VOICE_TAG.
  * @param bd_addr Bluetooth address of the AG
  */
 void hfp_hf_request_phone_number_for_voice_tag(bd_addr_t addr);
 
 /*
- * @brief
+ * @brief Query the list of current calls in AG. 
+ * The result is received via HFP_SUBEVENT_ENHANCED_CALL_STATUS (TODO).
  * @param bd_addr Bluetooth address of the AG
  */
 void hfp_hf_query_current_call_status(bd_addr_t addr);
 
 /*
- * @brief
+ * @brief Release a call with index in the AG.
  * @param bd_addr Bluetooth address of the AG
+ * @param index
  */
 void hfp_hf_release_call_with_index(bd_addr_t addr, int index);
 
 /*
- * @brief
+ * @brief Place all parties of a multiparty call on hold with the 
+ * exception of the specified call.
  * @param bd_addr Bluetooth address of the AG
+ * @param index
  */
 void hfp_hf_private_consultation_with_call(bd_addr_t addr, int index);
 
 /*
- * @brief
+ * @brief 
  * @param bd_addr Bluetooth address of the AG
  */
 void hfp_hf_rrh_query_status(bd_addr_t addr);

@@ -1418,7 +1418,10 @@ void hfp_hf_set_microphone_gain(bd_addr_t bd_addr, int gain){
     hfp_hf_establish_service_level_connection(bd_addr);
     hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
     if (connection->microphone_gain == gain) return;
-
+    if (gain < 0 || gain > 15){
+        log_info("Valid range for a gain is [0..15]. Currently sent: %d", gain);
+        return;
+    }
     connection->microphone_gain = gain;
     connection->send_microphone_gain = 1;
     hfp_run_for_context(connection);
@@ -1431,7 +1434,10 @@ void hfp_hf_set_speaker_gain(bd_addr_t bd_addr, int gain){
     hfp_hf_establish_service_level_connection(bd_addr);
     hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
     if (connection->speaker_gain == gain) return;
-
+    if (gain < 0 || gain > 15){
+        log_info("Valid range for a gain is [0..15]. Currently sent: %d", gain);
+        return;
+    }
     connection->speaker_gain = gain;
     connection->send_speaker_gain = 1;
     hfp_run_for_context(connection);
