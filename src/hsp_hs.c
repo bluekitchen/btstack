@@ -159,7 +159,7 @@ static int hsp_hs_send_str_over_rfcomm(uint16_t cid, const char * command){
     if (!rfcomm_can_send_packet_now(rfcomm_cid)) return 1;
     int err = rfcomm_send_internal(cid, (uint8_t*) command, strlen(command));
     if (err){
-        printf("rfcomm_send_internal -> error 0X%02x", err);
+        log_info("rfcomm_send_internal -> error 0X%02x", err);
     }
     return err;
 }
@@ -286,12 +286,10 @@ void hsp_hs_connect(bd_addr_t bd_addr){
 void hsp_hs_disconnect(bd_addr_t bd_addr){
     switch (hsp_state){
         case HSP_ACTIVE:
-            printf("HSP_W4_USER_ACTION\n");
             hsp_state = HSP_W4_USER_ACTION;
             hs_send_button_press = 1;
             break;
         case HSP_W4_RFCOMM_CONNECTED:
-            printf("HSP_W4_CONNECTION_ESTABLISHED_TO_SHUTDOWN \n");
             hsp_state = HSP_W4_CONNECTION_ESTABLISHED_TO_SHUTDOWN;
             break;
         default:
@@ -303,7 +301,7 @@ void hsp_hs_disconnect(bd_addr_t bd_addr){
 
 void hsp_hs_set_microphone_gain(uint8_t gain){
     if (gain < 0 || gain >15) {
-        printf("Gain must be in interval [0..15], it is given %d\n", gain);
+        log_info("Gain must be in interval [0..15], it is given %d", gain);
         return; 
     }
     hs_microphone_gain = gain;
@@ -313,7 +311,7 @@ void hsp_hs_set_microphone_gain(uint8_t gain){
 // AG +VGS=5  [0..15] ; HS AT+VGM=6 | AG OK
 void hsp_hs_set_speaker_gain(uint8_t gain){
     if (gain < 0 || gain >15) {
-        printf("Gain must be in interval [0..15], it is given %d\n", gain);
+        log_info("Gain must be in interval [0..15], it is given %d", gain);
         return; 
     }
     hs_speaker_gain = gain;
@@ -391,7 +389,6 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
         if (strncmp((char *)packet, HSP_AG_RING, strlen(HSP_AG_RING)) == 0){
             emit_ring_event();
         } else if (strncmp((char *)packet, HSP_AG_OK, strlen(HSP_AG_OK)) == 0){
-            printf("OK RECEIVED\n");
             switch (hsp_state){
                 case HSP_W4_RFCOMM_CONNECTED:
                     hsp_state = HSP_W2_CONNECT_SCO;
@@ -435,20 +432,6 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
     uint16_t handle;
 
     switch (event) {
-        case BTSTACK_EVENT_STATE:
-            // bt stack activated, get started 
-            if (packet[2] == HCI_STATE_WORKING){
-                printf("BTstack activated, get started .\n");
-            }
-            hsp_hs_callback(packet, size);
-            break;
-
-        case HCI_EVENT_PIN_CODE_REQUEST:
-            // inform about pin code request
-            printf("Pin code request - using '0000'\n\r");
-            bt_flip_addr(event_addr, &packet[2]);
-            hci_send_cmd(&hci_pin_code_request_reply, &event_addr, 4, "0000");
-            break;
         case HCI_EVENT_SYNCHRONOUS_CONNECTION_COMPLETE:{
             int index = 2;
             uint8_t status = packet[index++];
@@ -473,14 +456,14 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
             }
             switch (link_type){
                 case 0x00:
-                    printf("SCO Connection established. \n");
+                    log_info("SCO Connection established.");
                     if (transmission_interval != 0) log_error("SCO Connection: transmission_interval not zero: %d.", transmission_interval);
                     if (retransmission_interval != 0) log_error("SCO Connection: retransmission_interval not zero: %d.", retransmission_interval);
                     if (rx_packet_length != 0) log_error("SCO Connection: rx_packet_length not zero: %d.", rx_packet_length);
                     if (tx_packet_length != 0) log_error("SCO Connection: tx_packet_length not zero: %d.", tx_packet_length);
                     break;
                 case 0x02:
-                    printf("eSCO Connection established. \n");
+                    log_info("eSCO Connection established.");
                     break;
                 default:
                     log_error("(e)SCO reserved link_type 0x%2x", link_type);
@@ -509,17 +492,17 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
 
             bt_flip_addr(event_addr, &packet[2]); 
             rfcomm_cid = READ_BT_16(packet, 9);
-            printf("RFCOMM channel %u requested for %s\n", packet[8], bd_addr_to_str(event_addr));
+            log_info("RFCOMM channel %u requested for %s", packet[8], bd_addr_to_str(event_addr));
             rfcomm_accept_connection_internal(rfcomm_cid);
             
             hsp_state = HSP_W4_RFCOMM_CONNECTED;
             break;
 
         case RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE:
-            printf("RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE packet_handler type %u, packet[0] %x\n", packet_type, packet[0]);
+            // printf("RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE packet_handler type %u, packet[0] %x\n", packet_type, packet[0]);
             // data: event(8), len(8), status (8), address (48), handle(16), server channel(8), rfcomm_cid(16), max frame size(16)
             if (packet[2]) {
-                printf("RFCOMM channel open failed, status %u\n", packet[2]);
+                log_info("RFCOMM channel open failed, status %u", packet[2]);
                 hsp_hs_reset_state();
                 emit_event(HSP_SUBEVENT_AUDIO_CONNECTION_COMPLETE, packet[2]);
                 hs_outgoing_connection = 0;
@@ -528,7 +511,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                 rfcomm_handle = READ_BT_16(packet, 9);
                 rfcomm_cid = READ_BT_16(packet, 12);
                 mtu = READ_BT_16(packet, 14);
-                printf("RFCOMM channel open succeeded. New RFCOMM Channel ID %u, max frame size %u\n", rfcomm_cid, mtu);
+                log_info("RFCOMM channel open succeeded. New RFCOMM Channel ID %u, max frame size %u", rfcomm_cid, mtu);
 
                 if (hs_outgoing_connection){
                     hs_outgoing_connection = 0;
@@ -558,12 +541,10 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
             if (handle == sco_handle){
                 sco_handle = 0;
                 hsp_state = HSP_W2_DISCONNECT_RFCOMM;
-                printf(" HSP_W2_DISCONNECT_RFCOMM\n");
                 break;
             }
             break;
         case RFCOMM_EVENT_CHANNEL_CLOSED:
-            printf("RFCOMM channel closed\n");
             hsp_hs_reset_state();
             emit_event(HSP_SUBEVENT_AUDIO_DISCONNECTION_COMPLETE,0);
             break;
@@ -581,19 +562,19 @@ static void handle_query_rfcomm_event(sdp_query_event_t * event, void * context)
         case SDP_QUERY_RFCOMM_SERVICE:
             ve = (sdp_query_rfcomm_service_event_t*) event;
             channel_nr = ve->channel_nr;
-            printf("** Service name: '%s', RFCOMM port %u\n", ve->service_name, channel_nr);
+            log_info("** Service name: '%s', RFCOMM port %u", ve->service_name, channel_nr);
             break;
         case SDP_QUERY_COMPLETE:
             ce = (sdp_query_complete_event_t*) event;
             
             if (channel_nr > 0){
                 hsp_state = HSP_W4_RFCOMM_CONNECTED;
-                printf("RFCOMM create channel.\n");
+                log_info("RFCOMM create channel.log_info");
                 rfcomm_create_channel_internal(NULL, remote, channel_nr); 
                 break;
             }
             hsp_hs_reset_state();
-            printf("Service not found, status %u.\n", ce->status);
+            log_info("Service not found, status %u.", ce->status);
             exit(0);
             break;
     }
