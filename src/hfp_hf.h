@@ -203,49 +203,50 @@ void hfp_hf_establish_audio_connection(bd_addr_t bd_addr);
 void hfp_hf_release_audio_connection(bd_addr_t bd_addr);
 
 /**
- * @brief 
+ * @brief Answer incoming call.
  * @param bd_addr Bluetooth address of the AG
  */
 void hfp_hf_answer_incoming_call(bd_addr_t bd_addr);
 
 /**
- * @brief 
+ * @brief Reject incoming call.
  * @param bd_addr Bluetooth address of the AG
  */
-void hfp_hf_reject_call(bd_addr_t bd_addr);
+void hfp_hf_reject_incoming_call(bd_addr_t bd_addr);
 
 /**
- * @brief
+ * @brief Releases all held calls or sets User Determined User Busy (UDUB) for a waiting call.
  * @param bd_addr Bluetooth address of the AG
  */
 void hfp_hf_user_busy(bd_addr_t addr);
 
 /**
- * @brief
+ * @brief Releases all active calls (if any exist) and accepts the other (held or waiting) call.
  * @param bd_addr Bluetooth address of the AG
  */
 void hfp_hf_end_active_and_accept_other(bd_addr_t addr);
 
 /**
- * @brief
+ * @brief Places all active calls (if any exist) on hold and accepts the other (held or waiting) call.
  * @param bd_addr Bluetooth address of the AG
  */
 void hfp_hf_swap_calls(bd_addr_t addr);
 
 /**
- * @brief
+ * @brief Adds a held call to the conversation.
  * @param bd_addr Bluetooth address of the AG
  */
 void hfp_hf_join_held_call(bd_addr_t addr);
 
 /**
- * @brief
+ * @brief Connects the two calls and disconnects the subscriber from both calls (Explicit Call
+Transfer).
  * @param bd_addr Bluetooth address of the AG
  */
 void hfp_hf_connect_calls(bd_addr_t addr);
 
 /**
- * @brief 
+ * @brief Terminates an incoming or an outgoing call.
  * @param bd_addr Bluetooth address of the AG
  */
 void hfp_hf_terminate_call(bd_addr_t bd_addr);

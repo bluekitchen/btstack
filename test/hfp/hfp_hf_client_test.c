@@ -149,8 +149,8 @@ static void user_command(char cmd){
             hfp_hf_terminate_call(device_addr);
             break;
         case 'G':
-            printf("Reject call.\n");
-            hfp_hf_reject_call(device_addr);
+            printf("Reject incoming call.\n");
+            hfp_hf_reject_incoming_call(device_addr);
             break;
         case 'g':
             printf("Query operator.\n");

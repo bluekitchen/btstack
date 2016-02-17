@@ -113,7 +113,7 @@ static void show_usage(void){
     printf("F - Hangup call\n");
 
     printf("g - query network operator name\n");
-    printf("G - reject call\n");
+    printf("G - reject incoming call\n");
 
     printf("i - dial 1234567\n");
     printf("I - dial 7654321\n");
@@ -252,8 +252,8 @@ static int stdin_process(struct data_source *ds){
             break;
         case 'G':
             log_info("USER:\'%c\'", cmd);
-            printf("Reject call.\n");
-            hfp_hf_reject_call(device_addr);
+            printf("Reject incoming call.\n");
+            hfp_hf_reject_incoming_call(device_addr);
             break;
         case 'g':
             log_info("USER:\'%c\'", cmd);
@@ -537,7 +537,7 @@ int btstack_main(int argc, const char * argv[]){
     hfp_hf_init(rfcomm_channel_nr);
     hfp_hf_set_supported_features(438 | (1<<HFP_HFSF_ESCO_S4) | (1<<HFP_HFSF_EC_NR_FUNCTION)); 
     hfp_hf_set_indicators(sizeof(indicators)/sizeof(uint16_t), indicators);
-    hfp_hf_set_codecs(sizeof(codecs), );
+    hfp_hf_set_codecs(sizeof(codecs), codecs);
     hfp_hf_set_indicators_status(1);
     
     hfp_hf_register_packet_handler(packet_handler);

@@ -1214,7 +1214,7 @@ void hfp_hf_terminate_call(bd_addr_t bd_addr){
     // }
 }
 
-void hfp_hf_reject_call(bd_addr_t bd_addr){
+void hfp_hf_reject_incoming_call(bd_addr_t bd_addr){
     hfp_hf_establish_service_level_connection(bd_addr);
     hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
     
