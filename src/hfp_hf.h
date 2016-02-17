@@ -252,17 +252,18 @@ void hfp_hf_connect_calls(bd_addr_t addr);
 void hfp_hf_terminate_call(bd_addr_t bd_addr);
 
 /**
- * @brief 
+ * @brief Initiate outgoing voice call by providing the destination phone number to the AG.
  * @param bd_addr Bluetooth address of the AG
+ * @param number
  */
 void hfp_hf_dial_number(bd_addr_t bd_addr, char * number);
 
 /**
- * @brief
- * TODO: use int for number instead of string? 
+ * @brief Initiate outgoing voice call using the memory dialing feature of the AG.
  * @param bd_addr Bluetooth address of the AG
+ * @param memory_id
  */
-void hfp_hf_dial_memory(bd_addr_t bd_addr, char * number);
+void hfp_hf_dial_memory(bd_addr_t bd_addr, int memory_id);
 
 /**
  * @brief 

@@ -284,9 +284,9 @@ static int hfp_hf_initiate_outgoing_call_cmd(uint16_t cid){
     return send_str_over_rfcomm(cid, buffer);
 }
 
-static int hfp_hf_send_memory_dial_cmd(uint16_t cid){
+static int hfp_hf_send_memory_dial_cmd(uint16_t cid, int memory_id){
     char buffer[40];
-    sprintf(buffer, "%s>%s;\r\n", HFP_CALL_PHONE_NUMBER, phone_number);
+    sprintf(buffer, "%s>%d;\r\n", HFP_CALL_PHONE_NUMBER, memory_id);
     return send_str_over_rfcomm(cid, buffer);
 }
 
@@ -632,7 +632,7 @@ static void hfp_run_for_context(hfp_connection_t * context){
     if (context->hf_initiate_memory_dialing){
         context->hf_initiate_memory_dialing = 0;
         context->ok_pending = 1;
-        hfp_hf_send_memory_dial_cmd(context->rfcomm_cid);
+        hfp_hf_send_memory_dial_cmd(context->rfcomm_cid, context->memory_id);
         return;
     }
 
@@ -1311,12 +1311,13 @@ void hfp_hf_dial_number(bd_addr_t bd_addr, char * number){
     hfp_run_for_context(connection);
 }
 
-void hfp_hf_dial_memory(bd_addr_t bd_addr, char * number){
+void hfp_hf_dial_memory(bd_addr_t bd_addr, int memory_id){
     hfp_hf_establish_service_level_connection(bd_addr);
     hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
 
     connection->hf_initiate_memory_dialing = 1;
-    snprintf(phone_number, sizeof(phone_number), "%s", number);
+    connection->memory_id = memory_id;
+
     hfp_run_for_context(connection);
 }
 

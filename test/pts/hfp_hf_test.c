@@ -278,12 +278,12 @@ static int stdin_process(struct data_source *ds){
         case 'j':
             log_info("USER:\'%c\'", cmd);
             printf("Dial #1\n");
-            hfp_hf_dial_memory(device_addr,"1");
+            hfp_hf_dial_memory(device_addr,1);
             break;
         case 'J':
             log_info("USER:\'%c\'", cmd);
             printf("Dial #99\n");
-            hfp_hf_dial_memory(device_addr,"99");
+            hfp_hf_dial_memory(device_addr,99);
             break;
         case 'k':
             log_info("USER:\'%c\'", cmd);

@@ -569,6 +569,7 @@ typedef struct hfp_connection {
     uint8_t hf_initiate_outgoing_call;
     uint8_t hf_initiate_memory_dialing;
     uint8_t hf_initiate_redial_last_number;
+    int memory_id;
     
     uint8_t hf_send_clip_enable;
     uint8_t hf_send_chup;

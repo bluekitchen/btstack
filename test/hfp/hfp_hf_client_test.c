@@ -170,11 +170,11 @@ static void user_command(char cmd){
             break;
         case 'j':
             printf("Dial #1\n");
-            hfp_hf_dial_memory(device_addr, (char *)"1");
+            hfp_hf_dial_memory(device_addr, 1);
             break;
         case 'J':
             printf("Dial #99\n");
-            hfp_hf_dial_memory(device_addr, (char *)"99");
+            hfp_hf_dial_memory(device_addr, 99);
             break;
         case 'k':
             printf("Deactivate call waiting notification\n");
