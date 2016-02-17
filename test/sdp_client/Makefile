@@ -15,7 +15,8 @@ VPATH += ${BTSTACK_ROOT}/platform/posix
 
 COMMON = \
     sdp_util.c	              \
-	sdp_parser.c		      \
+	sdp_client.c		      \
+	mock.c 					  \
 	hci_dump.c                \
     btstack_util.c			          \
  

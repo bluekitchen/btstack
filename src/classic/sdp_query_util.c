@@ -38,7 +38,7 @@
 /*
  *  sdp_query_util.c
  */
-#include "classic/sdp_parser.h"
+#include "btstack_debug.h"
 #include "classic/sdp_client.h"
 #include "classic/sdp_query_util.h"
  
@@ -54,21 +54,35 @@ static uint8_t* create_service_search_pattern_for_uuid128(uint8_t* uuid){
 	return (uint8_t*)des_serviceSearchPatternUUID128;
 }
 
+/** 
+ * @brief Checks if the SDP Client is ready
+ * @return 1 when no query is active
+ */
+int sdp_general_query_ready(void){
+	return sdp_client_ready();
+}
+
 uint8_t* create_service_search_pattern_for_uuid(uint16_t uuid){
 	big_endian_store_16(des_serviceSearchPattern, 3, uuid);
 	return (uint8_t*)des_serviceSearchPattern;
 }
 
-void sdp_general_query_for_uuid(bd_addr_t remote, uint16_t uuid){
+void sdp_general_query_for_uuid(btstack_packet_handler_t callback, bd_addr_t remote, uint16_t uuid){
+	if (!sdp_client_ready()){
+		log_error("sdp_general_query_for_uuid called when not readdy");
+		return;
+	}
     create_service_search_pattern_for_uuid(uuid);
-    sdp_parser_init();
-    sdp_client_query(remote, (uint8_t*)&des_serviceSearchPattern[0], (uint8_t*)&des_attributeIDList[0]);
+    sdp_client_query(callback, remote, (uint8_t*)&des_serviceSearchPattern[0], (uint8_t*)&des_attributeIDList[0]);
 }
 
-void sdp_general_query_for_uuid128(bd_addr_t remote, uint8_t* uuid){
+void sdp_general_query_for_uuid128(btstack_packet_handler_t callback, bd_addr_t remote, uint8_t* uuid){
+	if (!sdp_client_ready()){
+		log_error("sdp_general_query_for_uuid called when not readdy");
+		return;
+	}
     create_service_search_pattern_for_uuid128(uuid);
-    sdp_parser_init();
-    sdp_client_query(remote, (uint8_t*)&des_serviceSearchPatternUUID128[0], (uint8_t*)&des_attributeIDList[0]);
+    sdp_client_query(callback, remote, (uint8_t*)&des_serviceSearchPatternUUID128[0], (uint8_t*)&des_attributeIDList[0]);
 }
 
 

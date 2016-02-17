@@ -85,7 +85,6 @@
 #include "btstack_event.h"
 #include "btstack_run_loop.h"
 #include "classic/sdp_client.h"
-#include "classic/sdp_parser.h"
 #include "classic/sdp_query_util.h"
 #include "classic/sdp_util.h"
 #include "hci.h"
@@ -151,10 +150,6 @@ static void panu_setup(void){
     bnep_register_packet_handler(packet_handler);
     // Minimum L2CAP MTU for bnep is 1691 bytes
     bnep_register_service(SDP_PANU, 1691);  
-
-    // Initialise SDP 
-    sdp_parser_init();
-    sdp_parser_register_callback(handle_sdp_client_query_result);
 }
 /* LISTING_END */
 

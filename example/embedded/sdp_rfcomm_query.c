@@ -59,6 +59,8 @@
 #include "classic/sdp_query_rfcomm.h"
 #include "btstack_event.h"
 
+static void handle_query_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+
 // static bd_addr_t remote = {0x04,0x0C,0xCE,0xE4,0x85,0xD3};
 static bd_addr_t remote = {0x84, 0x38, 0x35, 0x65, 0xD1, 0x15};
 
@@ -78,7 +80,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
         case BTSTACK_EVENT_STATE:
             // bt stack activated, get started 
             if (packet[2] == HCI_STATE_WORKING){
-                sdp_query_rfcomm_channel_and_name_for_uuid(remote, SDP_PublicBrowseGroup);
+                sdp_query_rfcomm_channel_and_name_for_uuid(&handle_query_rfcomm_event, remote, SDP_PublicBrowseGroup);
             }
             break;
         default:
@@ -109,7 +111,7 @@ static void report_found_services(void){
     printf(" ***\n\n");
 }
 
-static void handle_query_rfcomm_event(uint8_t packet_type, uint8_t *packet, uint16_t size){
+static void handle_query_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     switch (packet[0]){
         case SDP_EVENT_QUERY_RFCOMM_SERVICE:
             store_found_service(sdp_event_query_rfcomm_service_get_name(packet), 
@@ -132,8 +134,6 @@ int btstack_main(int argc, const char * argv[]){
 
     // init L2CAP
     l2cap_init();
-
-    sdp_query_rfcomm_register_callback(handle_query_rfcomm_event);
 
     // turn on!
     hci_power_control(HCI_POWER_ON);

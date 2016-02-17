@@ -398,7 +398,7 @@ static void handle_found_service(const char * name, uint8_t port){
     rfcomm_channel_nr = port;
 }
 
-static void handle_query_rfcomm_event(uint8_t packet_type, uint8_t *packet, uint16_t size){
+static void handle_query_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     switch (packet[0]){
         case SDP_EVENT_QUERY_RFCOMM_SERVICE:
             handle_found_service(sdp_event_query_rfcomm_service_get_name(packet),
@@ -596,7 +596,7 @@ static int  stdin_process(struct btstack_data_source *ds){
 
         case 'k':
             printf("Start SDP query for SPP service\n");
-            sdp_query_rfcomm_channel_and_name_for_uuid(remote_rfcomm, 0x1101);
+            sdp_query_rfcomm_channel_and_name_for_uuid(&handle_query_rfcomm_event, remote_rfcomm, 0x1101);
             break;
 
         case 't':
@@ -790,8 +790,6 @@ int btstack_main(int argc, const char * argv[]){
     de_dump_data_element((uint8_t*)dummy_service_buffer);
     printf("Dummy service record size: %u\n\r", de_get_len((uint8_t*)dummy_service_buffer));
     sdp_register_service((uint8_t*)dummy_service_buffer);
-
-    sdp_query_rfcomm_register_callback(handle_query_rfcomm_event);
     
     hci_discoverable_control(0);
     hci_connectable_control(0);

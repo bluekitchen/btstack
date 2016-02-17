@@ -111,7 +111,7 @@ static hsp_state_t hsp_state = HSP_IDLE;
 
 static void hsp_run(void);
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
-static void handle_query_rfcomm_event(uint8_t packet_type, uint8_t *packet, uint16_t size);
+static void handle_query_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
 static hsp_hs_callback_t hsp_hs_callback;
 static void dummy_notify(uint8_t * event, uint16_t size){}
@@ -263,8 +263,6 @@ void hsp_hs_init(uint8_t rfcomm_channel_nr){
     rfcomm_init();
     rfcomm_register_service(packet_handler, rfcomm_channel_nr, 0xffff);  // reserved channel, mtu limited by l2cap
 
-    sdp_query_rfcomm_register_callback(handle_query_rfcomm_event);
-
     hsp_hs_reset_state();
 }
 
@@ -330,7 +328,7 @@ static void hsp_run(void){
     switch (hsp_state){
         case HSP_SDP_QUERY_RFCOMM_CHANNEL:
             hsp_state = HSP_W4_SDP_EVENT_QUERY_COMPLETE;
-            sdp_query_rfcomm_channel_and_name_for_uuid(remote, SDP_Headset_AG);
+            sdp_query_rfcomm_channel_and_name_for_uuid(&handle_query_rfcomm_event, remote, SDP_Headset_AG);
             break;
         
         case HSP_W2_CONNECT_SCO:
@@ -565,7 +563,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
     hsp_run();
 }
 
-static void handle_query_rfcomm_event(uint8_t packet_type, uint8_t *packet, uint16_t size){
+static void handle_query_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     switch (packet[0]){
         case SDP_EVENT_QUERY_RFCOMM_SERVICE:
             channel_nr = sdp_event_query_rfcomm_service_get_rfcomm_channel(packet);

@@ -68,7 +68,6 @@
 #include "classic/rfcomm.h"
 #include "classic/sdp_server.h"
 #include "classic/sdp_client.h"
-#include "classic/sdp_parser.h"
 #include "classic/sdp_query_rfcomm.h"
 #include "classic/sdp_query_util.h"
 #include "hci.h"
@@ -1134,13 +1133,11 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             memcpy(serviceSearchPattern, &packet[9], serviceSearchPatternLen);
 
             sdp_client_query_connection = connection;
-            sdp_query_rfcomm_register_callback(handle_sdp_rfcomm_service_result);
             sdp_query_rfcomm_channel_and_name_for_search_pattern(addr, serviceSearchPattern);
 
             break;
         case SDP_CLIENT_QUERY_SERVICES:
             bt_flip_addr(addr, &packet[3]);
-            sdp_parser_init();
             sdp_client_query_connection = connection;
             sdp_parser_register_callback(handle_sdp_client_query_result);
 

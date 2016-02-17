@@ -59,7 +59,6 @@
 #include "l2cap.h"
 #include "classic/rfcomm.h"
 #include "classic/sdp_server.h"
-#include "classic/sdp_parser.h"
 #include "btstack_debug.h"
 #include "classic/hfp_ag.h"
 

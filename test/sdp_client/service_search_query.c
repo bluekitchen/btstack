@@ -15,11 +15,11 @@
 #include "btstack_event.h"
 #include "btstack_memory.h"
 #include "btstack_run_loop.h"
-#include "classic/sdp_parser.h"
 #include "hci.h"
 #include "hci_cmd.h"
 #include "hci_dump.h"
 #include "l2cap.h"
+#include "mock.h"
 
 #include "CppUTest/TestHarness.h"
 #include "CppUTest/CommandLineTestRunner.h"
@@ -39,8 +39,7 @@ static uint8_t  sdp_test_record_list[] = {
 0x00, 0x00, 0x00, 0x0A
 };
 
-
-static void handle_sdp_parser_event(uint8_t packet_type, uint8_t *packet, uint16_t size){
+static void handle_sdp_parser_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     static uint32_t record_handle = sdp_test_record_list[0];
     switch (packet[0]){
         case SDP_EVENT_QUERY_SERVICE_RECORD_HANDLE:
@@ -56,8 +55,8 @@ static void handle_sdp_parser_event(uint8_t packet_type, uint8_t *packet, uint16
 
 TEST_GROUP(SDPClient){
     void setup(void){
+        sdp_parser_init(&handle_sdp_parser_event);
         sdp_parser_init_service_search();
-        sdp_parser_register_callback(handle_sdp_parser_event);
     }
 };
 

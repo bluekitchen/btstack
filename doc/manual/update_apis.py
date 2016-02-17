@@ -21,7 +21,6 @@ apis = [
     ["src/classic/pan.h", "PAN", "pan"],
     ["src/classic/rfcomm.h", "RFCOMM", "rfcomm"],
     ["src/classic/sdp_client.h", "SDP Client", "sdpClient"],
-    ["src/classic/sdp_parser.h","SDP Parser","sdpParser"],
     ["src/classic/sdp_query_rfcomm.h", "SDP RFCOMM Query", "sdpQueries"],
     ["src/classic/sdp_query_util.h","SDP Query Utils","sdpQueryUtil"],
     ["src/classic/sdp_server.h", "SDP Server", "sdpSrv"],

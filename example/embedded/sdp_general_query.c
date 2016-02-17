@@ -54,8 +54,6 @@
 #include "btstack_memory.h"
 #include "btstack_run_loop.h"
 #include "classic/sdp_client.h"
-#include "classic/sdp_parser.h"
-#include "classic/sdp_parser.h"
 #include "classic/sdp_query_util.h"
 #include "hci.h"
 #include "hci_cmd.h"
@@ -80,7 +78,7 @@ static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 /* LISTING_START(SDPClientInit): SDP client setup */
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
-static void handle_sdp_client_query_result(uint8_t packet_type, uint8_t *packet, uint16_t size);
+static void handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
 static void sdp_client_init(void){
 
@@ -90,9 +88,6 @@ static void sdp_client_init(void){
 
     // init L2CAP
     l2cap_init();
-
-    sdp_parser_init();
-    sdp_parser_register_callback(handle_sdp_client_query_result);
 }
 /* LISTING_END */
 
@@ -120,7 +115,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
     switch (event) {
         case BTSTACK_EVENT_STATE:
             if (packet[2] == HCI_STATE_WORKING){
-                sdp_general_query_for_uuid(remote, SDP_PublicBrowseGroup);
+                sdp_general_query_for_uuid(&handle_sdp_client_query_result, remote, SDP_PublicBrowseGroup);
             }
             break;
         default:
@@ -149,7 +144,7 @@ static void assertBuffer(int size){
  */
 
 /* LISTING_START(HandleSDPQUeryResult): Handling query result chunks. */
-static void handle_sdp_client_query_result(uint8_t packet_type, uint8_t *packet, uint16_t size){
+static void handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     switch (packet[0]){
         case SDP_EVENT_QUERY_ATTRIBUTE_VALUE:
             // handle new record

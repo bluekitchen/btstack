@@ -424,7 +424,7 @@ static void handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *pac
     hfp_handle_hci_event(packet_type, packet, size);
 }
 
-static void handle_query_rfcomm_event(uint8_t packet_type, uint8_t *packet, uint16_t size){
+static void handle_query_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     hfp_connection_t * connection = connection_doing_sdp_query;
     
     if ( connection->state != HFP_W4_SDP_EVENT_QUERY_COMPLETE) return;
@@ -1268,10 +1268,6 @@ static void parse_sequence(hfp_connection_t * context){
     }  
 }
 
-void hfp_init(void){
-    sdp_query_rfcomm_register_callback(handle_query_rfcomm_event);
-}
-
 void hfp_establish_service_level_connection(bd_addr_t bd_addr, uint16_t service_uuid){
     hfp_connection_t * context = provide_hfp_connection_context_for_bd_addr(bd_addr);
     log_info("hfp_connect %s, context %p", bd_addr_to_str(bd_addr), context);
@@ -1293,7 +1289,7 @@ void hfp_establish_service_level_connection(bd_addr_t bd_addr, uint16_t service_
             context->state = HFP_W4_SDP_EVENT_QUERY_COMPLETE;
             connection_doing_sdp_query = context;
             context->service_uuid = service_uuid;
-            sdp_query_rfcomm_channel_and_name_for_uuid(context->remote_addr, service_uuid);
+            sdp_query_rfcomm_channel_and_name_for_uuid(&handle_query_rfcomm_event, context->remote_addr, service_uuid);
             break;
         default:
             break;

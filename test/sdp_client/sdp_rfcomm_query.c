@@ -21,6 +21,7 @@
 #include "hci_dump.h"
 #include "l2cap.h"
 #include "btstack_event.h"
+#include "mock.h"
 
 #include "CppUTest/TestHarness.h"
 #include "CppUTest/CommandLineTestRunner.h"
@@ -82,15 +83,8 @@ static uint8_t  sdp_test_record_list[] = { 0x36, 0x02, 0xE7, 0x35, 0x48,
 0x6B, 0x20, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65
 };
 
-// dummy function to allow compile without the stack
-extern "C" void sdp_client_query(bd_addr_t remote, uint8_t * des_serviceSearchPattern, uint8_t * des_attributeIDList){
-}
 
-// for test purposes
-void sdp_query_rfcomm_init();
-
-
-void handle_query_rfcomm_event(uint8_t packet_type, uint8_t *packet, uint16_t size){
+void handle_query_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     switch (packet[0]){
         case SDP_EVENT_QUERY_RFCOMM_SERVICE:
             channel_nr[service_index] = sdp_event_query_rfcomm_service_get_rfcomm_channel(packet);
@@ -109,12 +103,13 @@ void handle_query_rfcomm_event(uint8_t packet_type, uint8_t *packet, uint16_t si
 
 TEST_GROUP(SDPClient){
     uint8_t spp_buffer[sizeof(sdp_test_record_list)];
+    bd_addr_t address;
 
     void setup(void){
         service_index = 0;
-        sdp_query_rfcomm_register_callback(handle_query_rfcomm_event);
-        sdp_parser_init();
-        sdp_query_rfcomm_init();
+        sdp_client_reset(); // avoid "not ready" warning
+        // start query using public API although data will be injected
+        sdp_query_rfcomm_channel_and_name_for_uuid(&handle_query_rfcomm_event, address, 0x1234);
     }
 };
 
@@ -148,7 +143,6 @@ TEST(SDPClient, QueryRFCOMMWithMacOSXData){
                                     "Bluetooth-PDA-Sync", "Headset Audio Gatewa"};
     uint8_t expected_channel[] = {10, 2, 15, 3, 4};
     // de_dump_data_element(sdp_test_record_list);
-
     sdp_parser_handle_chunk(sdp_test_record_list, de_get_len(sdp_test_record_list));
    
     CHECK_EQUAL(service_index, 5);

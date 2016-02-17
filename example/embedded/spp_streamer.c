@@ -70,6 +70,8 @@ typedef enum {
     DONE
 } state_t;
 
+static void handle_query_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+
 #define DATA_VOLUME (1000 * 1000)
 
 // configuration area {
@@ -124,7 +126,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
         case BTSTACK_EVENT_STATE:
             // bt stack activated, get started 
             if (packet[2] == HCI_STATE_WORKING){
-                sdp_query_rfcomm_channel_and_name_for_uuid(remote, SDP_PublicBrowseGroup);
+                sdp_query_rfcomm_channel_and_name_for_uuid(&handle_query_rfcomm_event, remote, SDP_PublicBrowseGroup);
             }
             break;
         case RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE:
@@ -161,7 +163,7 @@ static void handle_found_service(const char * name, uint8_t port){
     state = W4_SDP_COMPLETE;
 }
 
-static void handle_query_rfcomm_event(uint8_t packet_type, uint8_t *packet, uint16_t size){            
+static void handle_query_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){            
     switch (packet[0]){
         case SDP_EVENT_QUERY_RFCOMM_SERVICE:
             handle_found_service(sdp_event_query_rfcomm_service_get_name(packet), 
@@ -195,8 +197,6 @@ int btstack_main(int argc, const char * argv[]){
 
     // init L2CAP
     l2cap_init();
-
-    sdp_query_rfcomm_register_callback(handle_query_rfcomm_event);
 
     // turn on!
     hci_power_control(HCI_POWER_ON);

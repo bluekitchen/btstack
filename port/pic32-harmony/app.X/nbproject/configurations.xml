@@ -57,7 +57,6 @@
           <itemPath>../../../src/rfcomm.h</itemPath>
           <itemPath>../../../src/sdp_server.h</itemPath>
           <itemPath>../../../src/sdp_client.h</itemPath>
-          <itemPath>../../../src/sdp_parser.h</itemPath>
           <itemPath>../../../src/sdp_query_rfcomm.h</itemPath>
           <itemPath>../../../src/sdp_query_util.h</itemPath>
         </logicalFolder>

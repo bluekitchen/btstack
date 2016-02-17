@@ -15,11 +15,11 @@
 #include "btstack_event.h"
 #include "btstack_memory.h"
 #include "btstack_run_loop.h"
-#include "classic/sdp_parser.h"
 #include "hci.h"
 #include "hci_cmd.h"
 #include "hci_dump.h"
 #include "l2cap.h"
+#include "mock.h"
 
 #include "CppUTest/TestHarness.h"
 #include "CppUTest/CommandLineTestRunner.h"
@@ -95,7 +95,6 @@ static uint8_t  sdp_test_record_list[] = {
 0x09, 0x03, 0x0A, 0x09, 0x00, 0x01, 0x09, 0x03, 0x0B, 0x09, 0x00, 0x05
 };
 
-
 uint16_t attribute_id = -1;
 uint16_t record_id = -1;
 
@@ -142,7 +141,7 @@ static void test_attribute_value_event(const uint8_t * event){
 }
 
 
-static void handle_sdp_parser_event(uint8_t packet_type, uint8_t *packet, uint16_t size){
+static void handle_sdp_parser_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     switch (packet[0]){
         case SDP_EVENT_QUERY_ATTRIBUTE_VALUE:
             test_attribute_value_event(packet);
@@ -168,8 +167,7 @@ TEST_GROUP(SDPClient){
         attribute_value_buffer_size = 1000;
         attribute_value = (uint8_t*) malloc(attribute_value_buffer_size);
         record_id = -1;
-        sdp_parser_init();
-        sdp_parser_register_callback(handle_sdp_parser_event);
+        sdp_parser_init(&handle_sdp_parser_event);
     }
 };
 

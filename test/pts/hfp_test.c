@@ -107,7 +107,7 @@ static void packet_handler(void * connection, uint8_t packet_type, uint16_t chan
             // bt stack activated, get started 
             if (packet[2] == HCI_STATE_WORKING){
                 printf("Start SDP RFCOMM Query for UUID 0x%02x\n", SDP_Handsfree);
-                // sdp_query_rfcomm_channel_and_name_for_uuid(remote, SDP_Handsfree);
+                sdp_query_rfcomm_channel_and_name_for_uuid(&handle_query_rfcomm_event, remote, SDP_Handsfree);
             }
             break;
 
@@ -146,7 +146,7 @@ static void hci_event_handler(uint8_t packet_type, uint8_t * packet, uint16_t si
 }
 
 
-void handle_query_rfcomm_event(uint8_t packet_type, uint8_t *packet, uint16_t size){
+static void handle_query_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     switch (event->type){
         case SDP_EVENT_QUERY_RFCOMM_SERVICE:
             channel_nr = sdp_event_query_rfcomm_service_get_name(packet);
@@ -176,8 +176,6 @@ int btstack_main(int argc, const char * argv[]){
     // init L2CAP
     l2cap_init();
     rfcomm_init();
-
-    sdp_query_rfcomm_register_callback(handle_query_rfcomm_event);
 
     // turn on!
     hci_power_control(HCI_POWER_ON);

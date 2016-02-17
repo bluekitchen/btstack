@@ -116,7 +116,7 @@ static hsp_ag_callback_t hsp_ag_callback;
 
 static void hsp_run();
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
-static void handle_query_rfcomm_event(uint8_t packet_type, uint8_t *packet, uint16_t size);
+static void handle_query_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
 static void dummy_notify(uint8_t * event, uint16_t size){}
 
@@ -263,8 +263,6 @@ void hsp_ag_init(uint8_t rfcomm_channel_nr){
     rfcomm_init();
     rfcomm_register_service(packet_handler, rfcomm_channel_nr, 0xffff);  // reserved channel, mtu limited by l2cap
 
-    sdp_query_rfcomm_register_callback(handle_query_rfcomm_event);
-
     hsp_ag_reset_state();
 }
 
@@ -367,7 +365,7 @@ static void hsp_run(void){
         case HSP_SDP_QUERY_RFCOMM_CHANNEL:
             hsp_state = HSP_W4_SDP_EVENT_QUERY_COMPLETE;
             log_info("Start SDP query %s, 0x%02x", bd_addr_to_str(remote), SDP_HSP);
-            sdp_query_rfcomm_channel_and_name_for_uuid(remote, SDP_HSP);
+            sdp_query_rfcomm_channel_and_name_for_uuid(&handle_query_rfcomm_event, remote, SDP_HSP);
             break;
 
         case HSP_W4_RING_ANSWER:
@@ -441,7 +439,7 @@ static void hsp_run(void){
 }
 
 
-static void packet_handler (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     // log_info("packet_handler type %u, packet[0] %x", packet_type, packet[0]);
     if (packet_type == RFCOMM_DATA_PACKET){
         while (size > 0 && (packet[0] == '\n' || packet[0] == '\r')){
@@ -601,7 +599,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
     hsp_run();
 }
 
-static void handle_query_rfcomm_event(uint8_t packet_type, uint8_t *packet, uint16_t size){
+static void handle_query_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     switch (packet[0]){
         case SDP_EVENT_QUERY_RFCOMM_SERVICE:
             channel_nr = sdp_event_query_rfcomm_service_get_rfcomm_channel(packet);

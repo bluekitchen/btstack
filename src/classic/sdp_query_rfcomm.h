@@ -43,7 +43,6 @@
 #define __SDP_QUERY_RFCOMM_H
 
 #include "btstack_util.h"
-#include "classic/sdp_parser.h"
 #include "classic/sdp_query_util.h"
 
 #define SDP_SERVICE_NAME_LEN 20
@@ -55,19 +54,20 @@ extern "C" {
 /* API_START */
 
 /** 
- * @brief Registers a callback to receive RFCOMM service and query complete event. 
+ * @brief Checks if the SDP Client is ready
+ * @return 1 when no query is active
  */
-void sdp_query_rfcomm_register_callback(void(*sdp_app_callback)(uint8_t packet_type, uint8_t *packet, uint16_t size));
+int sdp_query_rfcomm_ready(void);
 
 /** 
  * @brief Searches SDP records on a remote device for RFCOMM services with a given UUID.
  */
-void sdp_query_rfcomm_channel_and_name_for_uuid(bd_addr_t remote, uint16_t uuid);
+void sdp_query_rfcomm_channel_and_name_for_uuid(btstack_packet_handler_t callback, bd_addr_t remote, uint16_t uuid);
 
 /** 
  * @brief Searches SDP records on a remote device for RFCOMM services with a given service search pattern.
  */
-void sdp_query_rfcomm_channel_and_name_for_search_pattern(bd_addr_t remote, uint8_t * des_serviceSearchPattern);
+void sdp_query_rfcomm_channel_and_name_for_search_pattern(btstack_packet_handler_t callback, bd_addr_t remote, uint8_t * des_serviceSearchPattern);
 /* API_END */
 
 #if defined __cplusplus

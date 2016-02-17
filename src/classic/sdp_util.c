@@ -61,15 +61,15 @@ const char * const type_names[] = { "NIL", "UINT", "INT", "UUID", "STRING", "BOO
 #endif
 
 // MARK: DataElement getter
-de_size_t de_get_size_type(uint8_t *header){
+de_size_t de_get_size_type(const uint8_t *header){
     return (de_size_t) (header[0] & 7);
 }
 
-de_type_t de_get_element_type(uint8_t *header){
+de_type_t de_get_element_type(const uint8_t *header){
     return (de_type_t) (header[0] >> 3);
 }
 
-int de_get_header_size(uint8_t * header){
+int de_get_header_size(const uint8_t * header){
     de_size_t de_size = de_get_size_type(header);
     if (de_size <= DE_SIZE_128) {
         return 1;
@@ -77,7 +77,7 @@ int de_get_header_size(uint8_t * header){
     return 1 + (1 << (de_size-DE_SIZE_VAR_8));
 }
 
-int de_get_data_size(uint8_t * header){
+int de_get_data_size(const uint8_t * header){
     uint32_t result = 0;
     de_type_t de_type = de_get_element_type(header);
     de_size_t de_size = de_get_size_type(header);
@@ -103,19 +103,19 @@ int de_get_data_size(uint8_t * header){
     return result;    
 }
 
-int de_get_len(uint8_t *header){
+int de_get_len(const uint8_t *header){
     return de_get_header_size(header) + de_get_data_size(header); 
 }
 
 // @returns OK, if UINT16 value was read
-int de_element_get_uint16(uint8_t * element, uint16_t * value){
+int de_element_get_uint16(const uint8_t * element, uint16_t * value){
     if (de_get_size_type(element) != DE_SIZE_16) return 0;
     *value = big_endian_read_16(element, de_get_header_size(element));
     return 1;
 }
 
 // @returns: element is valid UUID
-int de_get_normalized_uuid(uint8_t *uuid128, uint8_t *element){
+int de_get_normalized_uuid(uint8_t *uuid128, const uint8_t *element){
     de_type_t uuidType = de_get_element_type(element);
     de_size_t uuidSize = de_get_size_type(element);
     if (uuidType != DE_UUID) return 0;
@@ -138,7 +138,7 @@ int de_get_normalized_uuid(uint8_t *uuid128, uint8_t *element){
 }
 
 // @returns 0 if no UUID16 or UUID32 is present, and UUID32 otherwise
-uint32_t de_get_uuid32(uint8_t * element){
+uint32_t de_get_uuid32(const uint8_t * element){
     uint8_t uuid128[16];
     int validUuid128 = de_get_normalized_uuid(uuid128, element);
     if (!validUuid128) return 0;
@@ -665,13 +665,13 @@ static int de_traversal_dump_data(uint8_t * element, de_type_t de_type, de_size_
 }
 #endif
 
-void de_dump_data_element(uint8_t * record){
+void de_dump_data_element(const uint8_t * record){
 #ifdef ENABLE_SDP_DES_DUMP
     int indent = 0;
     // hack to get root DES, too.
     de_type_t type = de_get_element_type(record);
     de_size_t size = de_get_size_type(record);
-    de_traversal_dump_data(record, type, size, (void*) &indent);
+    de_traversal_dump_data((uint8_t *) record, type, size, (void*) &indent);
 #endif
 }
 
