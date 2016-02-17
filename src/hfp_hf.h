@@ -107,53 +107,63 @@ void hfp_hf_set_indicators_status(uint32_t indicators_status);
 void hfp_hf_register_packet_handler(hfp_callback_t callback);
 
 /**
- * @brief Establish RFCOMM connection with the AG with given Bluetooth address, and perform service level connection agreement:
+ * @brief Establish RFCOMM connection with the AG with given Bluetooth address, 
+ * and perform service level connection (SLC) agreement:
  * - exchange supported features
  * - retrieve Audio Gateway (AG) indicators and their status 
  * - enable indicator status update in the AG
  * - notify the AG about its own available codecs, if possible
  * - retrieve the AG information describing the call hold and multiparty services, if possible
  * - retrieve which HF indicators are enabled on the AG, if possible
- *
+ * The status of SLC connection establishment is reported via
+ * HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED.
  * @param bd_addr Bluetooth address of the AG
  */
 void hfp_hf_establish_service_level_connection(bd_addr_t bd_addr);
 
 /**
  * @brief Release the RFCOMM channel and the audio connection between the HF and the AG. 
+ * The status of releasing the SLC connection is reported via
+ * HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED.
+ *
  * @param bd_addr Bluetooth address of the AG
  */
 void hfp_hf_release_service_level_connection(bd_addr_t bd_addr);
 
 /**
  * @brief Enable status update for all indicators in the AG.
+ * The status field of the HFP_SUBEVENT_COMPLETE reports if the command was accepted.
+ * The status of an AG indicator is reported via HFP_SUBEVENT_AG_INDICATOR_STATUS_CHANGED.
+ *
  * @param bd_addr Bluetooth address of the AG
  */
 void hfp_hf_enable_status_update_for_all_ag_indicators(bd_addr_t bd_addr);
 
 /**
  * @brief Disable status update for all indicators in the AG.
+ * The status field of the HFP_SUBEVENT_COMPLETE reports if the command was accepted.
  * @param bd_addr Bluetooth address of the AG
  */
 void hfp_hf_disable_status_update_for_all_ag_indicators(bd_addr_t bd_addr);
 
 /**
  * @brief Enable or disable status update for the individual indicators in the AG using bitmap.
- *
+ * The status field of the HFP_SUBEVENT_COMPLETE reports if the command was accepted.
+ * The status of an AG indicator is reported via HFP_SUBEVENT_AG_INDICATOR_STATUS_CHANGED.
+ * 
  * @param bd_addr Bluetooth address of the AG
  * @param indicators_status_bitmap 32-bit bitmap, 0 - indicator is disabled, 1 - indicator is enabled
  */
 void hfp_hf_set_status_update_for_individual_ag_indicators(bd_addr_t bd_addr, uint32_t indicators_status_bitmap);
 
-
 /**
  * @brief Find out the name of the currently selected Network operator by AG. 
  * 
- * The name is restricted to max 16 characters. If the operator is selected, a 
- * HCI_EVENT_HFP_META event with HFP_SUBEVENT_NETWORK_OPERATOR_CHANGED subtype 
- * containing network operator mode, format and name, is sent.
+ * The name is restricted to max 16 characters. The result is reported via 
+ * HFP_SUBEVENT_NETWORK_OPERATOR_CHANGED subtype 
+ * containing network operator mode, format and name.
  * If no operator is selected, format and operator are omitted.
- *
+ * 
  * @param bd_addr Bluetooth address of the AG
  */
 void hfp_hf_query_operator_selection(bd_addr_t bd_addr);
@@ -161,7 +171,8 @@ void hfp_hf_query_operator_selection(bd_addr_t bd_addr);
 /**
  * @brief Enable Extended Audio Gateway Error result codes in the AG.
  * Whenever there is an error relating to the functionality of the AG as a 
- * result of AT command, the AG shall send +CME ERROR, see hfp_cme_error_t in hfp.h
+ * result of AT command, the AG shall send +CME ERROR. This error is reported via 
+ * HFP_SUBEVENT_EXTENDED_AUDIO_GATEWAY_ERROR, see hfp_cme_error_t in hfp.h
  *
  * @param bd_addr Bluetooth address of the AG
  */
@@ -175,13 +186,18 @@ void hfp_hf_enable_report_extended_audio_gateway_error_result_code(bd_addr_t bd_
  void hfp_hf_disable_report_extended_audio_gateway_error_result_code(bd_addr_t bd_addr);
 
 /**
- * @brief 
+ * @brief Establish audio connection. 
+ * The status of audio connection establishment is reported via
+ * HFP_SUBEVENT_AUDIO_CONNECTION_ESTABLISHED.
  * @param bd_addr Bluetooth address of the AG
  */
 void hfp_hf_establish_audio_connection(bd_addr_t bd_addr);
 
 /**
- * @brief 
+ * @brief Release audio connection.
+ * The status of releasing of the audio connection is reported via
+ * HFP_SUBEVENT_AUDIO_CONNECTION_RELEASED.
+ *
  * @param bd_addr Bluetooth address of the AG
  */
 void hfp_hf_release_audio_connection(bd_addr_t bd_addr);

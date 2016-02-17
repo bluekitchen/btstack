@@ -239,7 +239,7 @@ TEST(HFPParser, HFP_HF_EXTENDED_AUDIO_GATEWAY_ERROR){
     }
 
     CHECK_EQUAL(context.command, HFP_CMD_EXTENDED_AUDIO_GATEWAY_ERROR);
-    CHECK_EQUAL(context.extended_audio_gateway_error, HFP_CME_ERROR_NO_NETWORK_SERVICE);       
+    CHECK_EQUAL(context.extended_audio_gateway_error_value, HFP_CME_ERROR_NO_NETWORK_SERVICE);       
 }
 
 

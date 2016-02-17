@@ -526,6 +526,7 @@ typedef struct hfp_connection {
     uint8_t operator_name_changed;      
 
     uint8_t enable_extended_audio_gateway_error_report;
+    uint8_t extended_audio_gateway_error_value;
     uint8_t extended_audio_gateway_error;
 
     // establish codecs connection

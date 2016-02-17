@@ -759,7 +759,7 @@ static int hfp_ag_run_for_context_service_level_connection_queries(hfp_connectio
         case HFP_CMD_ENABLE_EXTENDED_AUDIO_GATEWAY_ERROR:
             if (context->extended_audio_gateway_error){
                 context->extended_audio_gateway_error = 0;
-                hfp_ag_report_extended_audio_gateway_error(context->rfcomm_cid, context->extended_audio_gateway_error);
+                hfp_ag_report_extended_audio_gateway_error(context->rfcomm_cid, context->extended_audio_gateway_error_value);
                 return 1;
             }
         case HFP_CMD_ENABLE_INDICATOR_STATUS_UPDATE:

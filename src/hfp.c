@@ -1259,7 +1259,8 @@ static void parse_sequence(hfp_connection_t * context){
         case HFP_CMD_ERROR:
             break;
         case HFP_CMD_EXTENDED_AUDIO_GATEWAY_ERROR:
-            context->extended_audio_gateway_error = (uint8_t)atoi((char*)context->line_buffer);
+            context->extended_audio_gateway_error = 1;
+            context->extended_audio_gateway_error_value = (uint8_t)atoi((char*)context->line_buffer);
             break;
         case HFP_CMD_ENABLE_EXTENDED_AUDIO_GATEWAY_ERROR:
             context->enable_extended_audio_gateway_error_report = (uint8_t)atoi((char*)context->line_buffer);
@@ -1311,7 +1312,7 @@ void hfp_establish_service_level_connection(bd_addr_t bd_addr, uint16_t service_
 void hfp_release_service_level_connection(hfp_connection_t * context){
     if (!context) return;
     hfp_release_audio_connection(context);
-    
+
     if (context->state < HFP_W4_RFCOMM_CONNECTED){
         context->state = HFP_IDLE;
         return;

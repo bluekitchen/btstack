@@ -340,13 +340,12 @@ static void hfp_emit_ag_indicator_event(hfp_callback_t callback, int status, hfp
     (*callback)(event, sizeof(event));
 }
 
-static void hfp_emit_network_operator_event(hfp_callback_t callback, int status, hfp_network_opearator_t network_operator){
+static void hfp_emit_network_operator_event(hfp_callback_t callback, hfp_network_opearator_t network_operator){
     if (!callback) return;
     uint8_t event[24];
     event[0] = HCI_EVENT_HFP_META;
     event[1] = sizeof(event) - 2;
     event[2] = HFP_SUBEVENT_NETWORK_OPERATOR_CHANGED;
-    event[3] = status;
     event[4] = network_operator.mode;
     event[5] = network_operator.format;
     strcpy((char*)&event[6], network_operator.name); 
@@ -881,7 +880,7 @@ static void hfp_hf_switch_on_ok(hfp_connection_t *context){
                     break;
                 case HPF_HF_QUERY_OPERATOR_W4_RESULT:
                     context->hf_query_operator_state = HFP_HF_QUERY_OPERATOR_FORMAT_SET;
-                    hfp_emit_network_operator_event(hfp_callback, 0, context->network_operator);
+                    hfp_emit_network_operator_event(hfp_callback, context->network_operator);
                     break;
                 default:
                     break;
@@ -962,9 +961,9 @@ static void hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8
             break;
         case HFP_CMD_EXTENDED_AUDIO_GATEWAY_ERROR:
             context->ok_pending = 0;
-            context->extended_audio_gateway_error = 0;
             context->command = HFP_CMD_NONE;
-            hfp_emit_event(hfp_callback, HFP_SUBEVENT_EXTENDED_AUDIO_GATEWAY_ERROR, context->extended_audio_gateway_error); 
+            context->extended_audio_gateway_error = 0;
+            hfp_emit_event(hfp_callback, HFP_SUBEVENT_EXTENDED_AUDIO_GATEWAY_ERROR, context->extended_audio_gateway_error_value); 
             break;  
         case HFP_CMD_ERROR:
             context->ok_pending = 0;

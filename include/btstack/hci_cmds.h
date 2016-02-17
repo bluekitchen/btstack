@@ -671,14 +671,68 @@ extern "C" {
 
 #define HCI_EVENT_HFP_META                                 0xE9
 
+/**
+ * @format 11
+ * @param subevent_code
+ * @param status 0 == OK
+ */
 #define HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED  0x01
+
+/**
+ * @format 11
+ * @param subevent_code
+ * @param status 0 == OK
+ */
 #define HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED     0x02
+
+/**
+ * @format 11
+ * @param subevent_code
+ * @param status 0 == OK
+ */
 #define HFP_SUBEVENT_AUDIO_CONNECTION_ESTABLISHED          0x03
+
+/**
+ * @format 11
+ * @param subevent_code
+ * @param status 0 == OK
+ */
 #define HFP_SUBEVENT_AUDIO_CONNECTION_RELEASED             0x04
+
+/**
+ * @format 11
+ * @param subevent_code
+ * @param status 0 == OK
+ */
 #define HFP_SUBEVENT_COMPLETE                              0x05
+
+/**
+ * @format 1111T
+ * @param subevent_code
+ * @param status
+ * @param indicator_index
+ * @param indicator_status
+ * @param indicator_name
+ */
 #define HFP_SUBEVENT_AG_INDICATOR_STATUS_CHANGED           0x06
+
+/**
+ * @format 1111T
+ * @param subevent_code
+ * @param status
+ * @param network_operator_mode
+ * @param network_operator_format
+ * @param network_operator_name
+ */
 #define HFP_SUBEVENT_NETWORK_OPERATOR_CHANGED              0x07
+
+/**
+ * @format 11
+ * @param subevent_code
+ * @param error
+ */
 #define HFP_SUBEVENT_EXTENDED_AUDIO_GATEWAY_ERROR          0x08
+
 #define HFP_SUBEVENT_CODECS_CONNECTION_COMPLETE            0x09
 #define HFP_SUBEVENT_START_RINGINIG                        0x0A
 #define HFP_SUBEVENT_STOP_RINGINIG                         0x0B
