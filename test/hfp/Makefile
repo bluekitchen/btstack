@@ -24,7 +24,6 @@ COMMON = \
     l2cap_signaling.c 			\
     rfcomm.c			        \
     sdp_client.c		        \
-    sdp_parser.c		        \
     sdp_query_util.c		    \
     sdp_util.c	                \
 

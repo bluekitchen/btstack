@@ -50,7 +50,6 @@ BTdaemon_FILES = \
 	SpringBoardAccess.c       \
     rfcomm_service_db_cocoa.m \
     sdp_client.c              \
-    sdp_parser.c              \
     sdp_query_rfcomm.c        \
     sdp_query_util.c          \
 

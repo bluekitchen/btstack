@@ -134,7 +134,6 @@
           <itemPath>../../../src/btstack_run_loop_embedded.c</itemPath>
           <itemPath>../../../src/classic/sdp_server.c</itemPath>
           <itemPath>../../../src/classic/sdp_client.c</itemPath>
-          <itemPath>../../../src/classic/sdp_parser.c</itemPath>
           <itemPath>../../../src/classic/sdp_query_rfcomm.c</itemPath>
           <itemPath>../../../src/classic/sdp_query_util.c</itemPath>
           <itemPath>../../../src/classic/sdp_util.c</itemPath>
