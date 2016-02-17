@@ -169,8 +169,9 @@ typedef struct btstack_linked_list_gatt_client_helper{
 } btstack_linked_list_gatt_client_helper_t;
 
 // MARK: prototypes
-static void handle_sdp_rfcomm_service_result(uint8_t packet_type, uint8_t *packet, uint16_t size);
-static void handle_sdp_client_query_result(uint8_t packet_type, uint8_t *packet, uint16_t size);
+static void handle_sdp_rfcomm_service_result(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+static void handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t * packet, uint16_t size);
 static void dummy_bluetooth_status_handler(BLUETOOTH_STATE state);
 static client_state_t * client_for_connection(connection_t *connection);
 static int              clients_require_power_on(void);
@@ -180,6 +181,7 @@ static void start_power_off_timer(void);
 static void stop_power_off_timer(void);
 static client_state_t * client_for_connection(connection_t *connection);
 static void hci_emit_system_bluetooth_enabled(uint8_t enabled);
+static void rfcomm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * packet, uint16_t size);
 
 
 // MARK: globals
@@ -191,7 +193,6 @@ static int power_management_sleep = 0;
 static btstack_linked_list_t clients = NULL;        // list of connected clients `
 #ifdef ENABLE_BLE
 static btstack_linked_list_t gatt_client_helpers = NULL;   // list of used gatt client (helpers)
-static uint16_t gatt_client_id = 0;
 #endif
 
 static void (*bluetooth_status_handler)(BLUETOOTH_STATE state) = dummy_bluetooth_status_handler;
@@ -699,7 +700,8 @@ static void hci_emit_system_bluetooth_enabled(uint8_t enabled){
     event[0] = BTSTACK_EVENT_SYSTEM_BLUETOOTH_ENABLED;
     event[1] = sizeof(event) - 2;
     event[2] = enabled;
-    hci_emit_event(event, sizeof(event), 1);
+    hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
+    socket_connection_send_packet_all(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
 static void send_l2cap_connection_open_failed(connection_t * connection, bd_addr_t address, uint16_t psm, uint8_t status){
@@ -709,7 +711,7 @@ static void send_l2cap_connection_open_failed(connection_t * connection, bd_addr
     event[0] = L2CAP_EVENT_CHANNEL_OPENED;
     event[1] = sizeof(event) - 2;
     event[2] = status;
-    bt_flip_addr(&event[3], address);
+    reverse_bd_addr(address, &event[3]);
     // little_endian_store_16(event,  9, channel->handle);
     little_endian_store_16(event, 11, psm);
     // little_endian_store_16(event, 13, channel->local_cid);
@@ -749,7 +751,7 @@ static void send_rfcomm_create_channel_failed(void * connection, bd_addr_t addr,
     event[pos++] = RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE;
     event[pos++] = sizeof(event) - 2;
     event[pos++] = status;
-    bt_flip_addr(&event[pos], addr); pos += 6;
+    reverse_bd_addr(addr, &event[pos]); pos += 6;
     little_endian_store_16(event,  pos, 0);   pos += 2;
     event[pos++] = server_channel;
     little_endian_store_16(event, pos, 0); pos += 2;   // channel ID
@@ -987,7 +989,7 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             }
             break;
         case L2CAP_CREATE_CHANNEL_MTU:
-            bt_flip_addr(addr, &packet[3]);
+            reverse_bd_addr(&packet[3], addr);
             psm = little_endian_read_16(packet, 9);
             mtu = little_endian_read_16(packet, 11);
             status = l2cap_create_channel(NULL, addr, psm, mtu, &cid);
@@ -998,7 +1000,7 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             }
             break;
         case L2CAP_CREATE_CHANNEL:
-            bt_flip_addr(addr, &packet[3]);
+            reverse_bd_addr(&packet[3], addr);
             psm = little_endian_read_16(packet, 9);
             mtu = 150; // until r865
             status = l2cap_create_channel(NULL, addr, psm, mtu, &cid);
@@ -1035,9 +1037,9 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             l2cap_decline_connection(cid, reason);
             break;
         case RFCOMM_CREATE_CHANNEL:
-            bt_flip_addr(addr, &packet[3]);
+            reverse_bd_addr(&packet[3], addr);
             rfcomm_channel = packet[9];
-            status = rfcomm_create_channel(addr, rfcomm_channel, &cid);
+            status = rfcomm_create_channel(&rfcomm_packet_handler, addr, rfcomm_channel, &cid);
             if (status){
                 send_rfcomm_create_channel_failed(connection, addr, rfcomm_channel, status);
             } else {
@@ -1045,10 +1047,10 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             }
             break;
         case RFCOMM_CREATE_CHANNEL_WITH_CREDITS:
-            bt_flip_addr(addr, &packet[3]);
+            reverse_bd_addr(&packet[3], addr);
             rfcomm_channel = packet[9];
             rfcomm_credits = packet[10];
-            status = rfcomm_create_channel_with_initial_credits(addr, rfcomm_channel, rfcomm_credits, &cid );
+            status = rfcomm_create_channel_with_initial_credits(&rfcomm_packet_handler, addr, rfcomm_channel, rfcomm_credits, &cid );
             if (status){
                 send_rfcomm_create_channel_failed(connection, addr, rfcomm_channel, status);
             } else {
@@ -1063,14 +1065,14 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
         case RFCOMM_REGISTER_SERVICE:
             rfcomm_channel = packet[3];
             mtu = little_endian_read_16(packet, 4);
-            status = rfcomm_register_service(rfcomm_packet_handler, rfcomm_channel, mtu);
+            status = rfcomm_register_service(&rfcomm_packet_handler, rfcomm_channel, mtu);
             rfcomm_emit_service_registered(connection, status, rfcomm_channel);
             break;
         case RFCOMM_REGISTER_SERVICE_WITH_CREDITS:
             rfcomm_channel = packet[3];
             mtu = little_endian_read_16(packet, 4);
             rfcomm_credits = packet[6];
-            status = rfcomm_register_service_with_initial_credits(rfcomm_channel, mtu, rfcomm_credits);
+            status = rfcomm_register_service_with_initial_credits(&rfcomm_packet_handler, rfcomm_channel, mtu, rfcomm_credits);
             rfcomm_emit_service_registered(connection, status, rfcomm_channel);
             break;
         case RFCOMM_UNREGISTER_SERVICE:
@@ -1127,19 +1129,18 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             }
             break;
         case SDP_CLIENT_QUERY_RFCOMM_SERVICES: 
-            bt_flip_addr(addr, &packet[3]);
+            reverse_bd_addr(&packet[3], addr);
 
             serviceSearchPatternLen = de_get_len(&packet[9]);
             memcpy(serviceSearchPattern, &packet[9], serviceSearchPatternLen);
 
             sdp_client_query_connection = connection;
-            sdp_query_rfcomm_channel_and_name_for_search_pattern(addr, serviceSearchPattern);
+            sdp_query_rfcomm_channel_and_name_for_search_pattern(&handle_sdp_rfcomm_service_result, addr, serviceSearchPattern);
 
             break;
         case SDP_CLIENT_QUERY_SERVICES:
-            bt_flip_addr(addr, &packet[3]);
+            reverse_bd_addr(&packet[3], addr);
             sdp_client_query_connection = connection;
-            sdp_parser_register_callback(handle_sdp_client_query_result);
 
             serviceSearchPatternLen = de_get_len(&packet[9]);
             memcpy(serviceSearchPattern, &packet[9], serviceSearchPatternLen);
@@ -1147,9 +1148,7 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             attributeIDListLen = de_get_len(&packet[9+serviceSearchPatternLen]); 
             memcpy(attributeIDList, &packet[9+serviceSearchPatternLen], attributeIDListLen);
             
-            sdp_client_query(addr, (uint8_t*)&serviceSearchPattern[0], (uint8_t*)&attributeIDList[0]);
-
-            // sdp_general_query_for_uuid(addr, SDP_PublicBrowseGroup);
+            sdp_client_query(&handle_sdp_client_query_result, addr, (uint8_t*)&serviceSearchPattern[0], (uint8_t*)&attributeIDList[0]);
             break;
         case GAP_LE_SCAN_START:
             gap_start_scan();
@@ -1161,7 +1160,7 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             gap_set_scan_parameters(packet[3], little_endian_read_16(packet, 4), little_endian_read_16(packet, 6));
             break;
         case GAP_LE_CONNECT:
-            bt_flip_addr(addr, &packet[4]);
+            reverse_bd_addr(&packet[4], addr);
             addr_type = packet[3];
             gap_connect(addr, addr_type);
             break;
@@ -1176,57 +1175,57 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
         case GATT_DISCOVER_ALL_PRIMARY_SERVICES:
             gatt_helper = daemon_setup_gatt_client_request(connection, packet, 1);
             if (!gatt_helper) break;
-            gatt_client_discover_primary_services(gatt_client_id, gatt_helper->con_handle);
+            gatt_client_discover_primary_services(&handle_gatt_client_event, gatt_helper->con_handle);
             break;
         case GATT_DISCOVER_PRIMARY_SERVICES_BY_UUID16:
             gatt_helper = daemon_setup_gatt_client_request(connection, packet, 1);
             if (!gatt_helper) break;
-            gatt_client_discover_primary_services_by_uuid16(gatt_client_id, gatt_helper->con_handle, little_endian_read_16(packet, 5));
+            gatt_client_discover_primary_services_by_uuid16(&handle_gatt_client_event, gatt_helper->con_handle, little_endian_read_16(packet, 5));
             break;
         case GATT_DISCOVER_PRIMARY_SERVICES_BY_UUID128:
             gatt_helper = daemon_setup_gatt_client_request(connection, packet, 1);
             if (!gatt_helper) break;
             reverse_128(&packet[5], uuid128);
-            gatt_client_discover_primary_services_by_uuid128(gatt_client_id, gatt_helper->con_handle, uuid128);
+            gatt_client_discover_primary_services_by_uuid128(&handle_gatt_client_event, gatt_helper->con_handle, uuid128);
             break;
         case GATT_FIND_INCLUDED_SERVICES_FOR_SERVICE:
             gatt_helper = daemon_setup_gatt_client_request(connection, packet, 1);
             if (!gatt_helper) break;
             daemon_gatt_deserialize_service(packet, 5, &service);
-            gatt_client_find_included_services_for_service(gatt_client_id, gatt_helper->con_handle, &service);
+            gatt_client_find_included_services_for_service(&handle_gatt_client_event, gatt_helper->con_handle, &service);
             break;
         
         case GATT_DISCOVER_CHARACTERISTICS_FOR_SERVICE:
             gatt_helper = daemon_setup_gatt_client_request(connection, packet, 1);
             if (!gatt_helper) break;
             daemon_gatt_deserialize_service(packet, 5, &service);
-            gatt_client_discover_characteristics_for_service(gatt_client_id, gatt_helper->con_handle, &service);
+            gatt_client_discover_characteristics_for_service(&handle_gatt_client_event, gatt_helper->con_handle, &service);
             break;
         case GATT_DISCOVER_CHARACTERISTICS_FOR_SERVICE_BY_UUID128:
             gatt_helper = daemon_setup_gatt_client_request(connection, packet, 1);
             if (!gatt_helper) break;
             daemon_gatt_deserialize_service(packet, 5, &service);
             reverse_128(&packet[5 + SERVICE_LENGTH], uuid128);
-            gatt_client_discover_characteristics_for_service_by_uuid128(gatt_client_id, gatt_helper->con_handle, &service, uuid128);
+            gatt_client_discover_characteristics_for_service_by_uuid128(&handle_gatt_client_event, gatt_helper->con_handle, &service, uuid128);
             break;
         case GATT_DISCOVER_CHARACTERISTIC_DESCRIPTORS:
             gatt_helper = daemon_setup_gatt_client_request(connection, packet, 1);
             if (!gatt_helper) break;
             daemon_gatt_deserialize_characteristic(packet, 5, &characteristic);
-            gatt_client_discover_characteristic_descriptors(gatt_client_id, gatt_helper->con_handle, &characteristic);
+            gatt_client_discover_characteristic_descriptors(&handle_gatt_client_event, gatt_helper->con_handle, &characteristic);
             break;
         
         case GATT_READ_VALUE_OF_CHARACTERISTIC:
             gatt_helper = daemon_setup_gatt_client_request(connection, packet, 1);
             if (!gatt_helper) break;
             daemon_gatt_deserialize_characteristic(packet, 5, &characteristic);
-            gatt_client_read_value_of_characteristic(gatt_client_id, gatt_helper->con_handle, &characteristic);
+            gatt_client_read_value_of_characteristic(&handle_gatt_client_event, gatt_helper->con_handle, &characteristic);
             break;
         case GATT_READ_LONG_VALUE_OF_CHARACTERISTIC:
             gatt_helper = daemon_setup_gatt_client_request(connection, packet, 1);
             if (!gatt_helper) break;
             daemon_gatt_deserialize_characteristic(packet, 5, &characteristic);
-            gatt_client_read_long_value_of_characteristic(gatt_client_id, gatt_helper->con_handle, &characteristic);
+            gatt_client_read_long_value_of_characteristic(&handle_gatt_client_event, gatt_helper->con_handle, &characteristic);
             break;
         
         case GATT_WRITE_VALUE_OF_CHARACTERISTIC_WITHOUT_RESPONSE:
@@ -1236,7 +1235,7 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             data_length = little_endian_read_16(packet, 5 + CHARACTERISTIC_LENGTH);
             data = gatt_helper->characteristic_buffer;
             memcpy(data, &packet[7 + CHARACTERISTIC_LENGTH], data_length);
-            gatt_client_write_value_of_characteristic_without_response(gatt_client_id, gatt_helper->con_handle, characteristic.value_handle, data_length, data);
+            gatt_client_write_value_of_characteristic_without_response(&handle_gatt_client_event, gatt_helper->con_handle, characteristic.value_handle, data_length, data);
             break;
         case GATT_WRITE_VALUE_OF_CHARACTERISTIC:
             gatt_helper = daemon_setup_gatt_client_request(connection, packet, 1);
@@ -1245,7 +1244,7 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             data_length = little_endian_read_16(packet, 5 + CHARACTERISTIC_LENGTH);
             data = gatt_helper->characteristic_buffer;
             memcpy(data, &packet[7 + CHARACTERISTIC_LENGTH], data_length);
-            gatt_client_write_value_of_characteristic(gatt_client_id, gatt_helper->con_handle, characteristic.value_handle, data_length, data);
+            gatt_client_write_value_of_characteristic(&handle_gatt_client_event, gatt_helper->con_handle, characteristic.value_handle, data_length, data);
             break;
         case GATT_WRITE_LONG_VALUE_OF_CHARACTERISTIC:
             gatt_helper = daemon_setup_gatt_client_request(connection, packet, 1);
@@ -1254,7 +1253,7 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             data_length = little_endian_read_16(packet, 5 + CHARACTERISTIC_LENGTH);
             data = gatt_helper->characteristic_buffer;
             memcpy(data, &packet[7 + CHARACTERISTIC_LENGTH], data_length);
-            gatt_client_write_long_value_of_characteristic(gatt_client_id, gatt_helper->con_handle, characteristic.value_handle, data_length, data);
+            gatt_client_write_long_value_of_characteristic(&handle_gatt_client_event, gatt_helper->con_handle, characteristic.value_handle, data_length, data);
             break;
         case GATT_RELIABLE_WRITE_LONG_VALUE_OF_CHARACTERISTIC:
             gatt_helper = daemon_setup_gatt_client_request(connection, packet, 1);
@@ -1263,20 +1262,20 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             data_length = little_endian_read_16(packet, 5 + CHARACTERISTIC_LENGTH);
             data = gatt_helper->characteristic_buffer;
             memcpy(data, &packet[7 + CHARACTERISTIC_LENGTH], data_length);
-            gatt_client_write_long_value_of_characteristic(gatt_client_id, gatt_helper->con_handle, characteristic.value_handle, data_length, data);
+            gatt_client_write_long_value_of_characteristic(&handle_gatt_client_event, gatt_helper->con_handle, characteristic.value_handle, data_length, data);
             break;
         case GATT_READ_CHARACTERISTIC_DESCRIPTOR:
             gatt_helper = daemon_setup_gatt_client_request(connection, packet, 1);
             if (!gatt_helper) break;
             handle = little_endian_read_16(packet, 3);
             daemon_gatt_deserialize_characteristic_descriptor(packet, 5, &descriptor);
-            gatt_client_read_characteristic_descriptor(gatt_client_id, gatt_helper->con_handle, &descriptor);
+            gatt_client_read_characteristic_descriptor(&handle_gatt_client_event, gatt_helper->con_handle, &descriptor);
             break;
         case GATT_READ_LONG_CHARACTERISTIC_DESCRIPTOR:
             gatt_helper = daemon_setup_gatt_client_request(connection, packet, 1);
             if (!gatt_helper) break;
             daemon_gatt_deserialize_characteristic_descriptor(packet, 5, &descriptor);
-            gatt_client_read_long_characteristic_descriptor(gatt_client_id, gatt_helper->con_handle, &descriptor);
+            gatt_client_read_long_characteristic_descriptor(&handle_gatt_client_event, gatt_helper->con_handle, &descriptor);
             break;
             
         case GATT_WRITE_CHARACTERISTIC_DESCRIPTOR:
@@ -1285,7 +1284,7 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             daemon_gatt_deserialize_characteristic_descriptor(packet, 5, &descriptor);
             data = gatt_helper->characteristic_buffer;
             data_length = little_endian_read_16(packet, 5 + CHARACTERISTIC_DESCRIPTOR_LENGTH);
-            gatt_client_write_characteristic_descriptor(gatt_client_id, gatt_helper->con_handle, &descriptor, data_length, data);
+            gatt_client_write_characteristic_descriptor(&handle_gatt_client_event, gatt_helper->con_handle, &descriptor, data_length, data);
             break;
         case GATT_WRITE_LONG_CHARACTERISTIC_DESCRIPTOR:
             gatt_helper = daemon_setup_gatt_client_request(connection, packet, 1);
@@ -1293,7 +1292,7 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             daemon_gatt_deserialize_characteristic_descriptor(packet, 5, &descriptor);
             data = gatt_helper->characteristic_buffer;
             data_length = little_endian_read_16(packet, 5 + CHARACTERISTIC_DESCRIPTOR_LENGTH);
-            gatt_client_write_long_characteristic_descriptor(gatt_client_id, gatt_helper->con_handle, &descriptor, data_length, data);
+            gatt_client_write_long_characteristic_descriptor(&handle_gatt_client_event, gatt_helper->con_handle, &descriptor, data_length, data);
             break;
         case GATT_WRITE_CLIENT_CHARACTERISTIC_CONFIGURATION:{
             uint16_t configuration = little_endian_read_16(packet, 5 + CHARACTERISTIC_LENGTH);
@@ -1301,7 +1300,7 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             if (!gatt_helper) break;
             data = gatt_helper->characteristic_buffer;
             daemon_gatt_deserialize_characteristic(packet, 5, &characteristic);
-            gatt_client_write_client_characteristic_configuration(gatt_client_id, gatt_helper->con_handle, &characteristic, configuration);
+            gatt_client_write_client_characteristic_configuration(&handle_gatt_client_event, gatt_helper->con_handle, &characteristic, configuration);
             break;
         case GATT_GET_MTU:
             handle = little_endian_read_16(packet, 3);
@@ -1537,7 +1536,7 @@ static void daemon_packet_handler(void * connection, uint8_t packet_type, uint16
                     if (!btstack_device_name_db) break;
                     if (packet[2]) break; // status not ok
 
-                    bt_flip_addr(addr, &packet[3]);
+                    reverse_bd_addr(&packet[3], addr);
                     // fix for invalid remote names - terminate on 0xff
                     for (i=0; i<248;i++){
                         if (packet[9+i] == 0xff){
@@ -1559,12 +1558,12 @@ static void daemon_packet_handler(void * connection, uint8_t packet_type, uint16
                     // then send cached remote names
                     int offset = 3;
                     for (i=0; i<packet[2];i++){
-                        bt_flip_addr(addr, &packet[offset]);
+                        reverse_bd_addr(&packet[offset], addr);
                         if (btstack_device_name_db->get_name(addr, (device_name_t *) &remote_name_event[9])){
                             remote_name_event[0] = BTSTACK_EVENT_REMOTE_NAME_CACHED;
                             remote_name_event[1] = sizeof(remote_name_event) - 2 - 1;
                             remote_name_event[2] = 0;   // just to be compatible with HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE
-                            bt_flip_addr(&remote_name_event[3], addr);
+                            reverse_bd_addr(addr, &remote_name_event[3]);
                             
                             remote_name_event[9+248] = 0;   // assert \0 for log_info
                             log_info("BTSTACK_EVENT_REMOTE_NAME_CACHED %s = '%s'", bd_addr_to_str(addr), &remote_name_event[9]);
@@ -1657,7 +1656,7 @@ static void rfcomm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t
     daemon_packet_handler(NULL, packet_type, channel, packet, size);
 }
 
-static void handle_sdp_rfcomm_service_result(uint8_t packet_type, uint8_t *packet, uint16_t size){
+static void handle_sdp_rfcomm_service_result(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     switch (packet[0]){
         case SDP_EVENT_QUERY_RFCOMM_SERVICE:
         case SDP_EVENT_QUERY_COMPLETE:
@@ -1677,7 +1676,7 @@ static void sdp_client_assert_buffer(int size){
 }
 
 // define new packet type SDP_CLIENT_PACKET
-static void handle_sdp_client_query_result(uint8_t packet_type, uint8_t *packet, uint16_t size){
+static void handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     int event_len;
 
     switch (packet[0]){
@@ -1685,7 +1684,7 @@ static void handle_sdp_client_query_result(uint8_t packet_type, uint8_t *packet,
             sdp_client_assert_buffer(sdp_event_query_attribute_byte_get_attribute_length(packet));
             attribute_value[sdp_event_query_attribute_byte_get_data_offset(packet)] = sdp_event_query_attribute_byte_get_data(packet);
             if ((uint16_t)(sdp_event_query_attribute_byte_get_data_offset(packet)+1) == sdp_event_query_attribute_byte_get_attribute_length(packet)){
-                hexdump(attribute_value, sdp_event_query_attribute_byte_get_attribute_length(packet));
+                log_info_hexdump(attribute_value, sdp_event_query_attribute_byte_get_attribute_length(packet));
 
                 int event_len = 1 + 3 * 2 + sdp_event_query_attribute_byte_get_attribute_length(packet); 
                 uint8_t event[event_len];
@@ -1830,7 +1829,7 @@ static void * btstack_run_loop_thread(void *context){
 
 #ifdef ENABLE_BLE
 
-static void handle_gatt_client_event(uint8_t packet_type, uint8_t * packet, uint16_t size){
+static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t * packet, uint16_t size){
 
     // hack: handle disconnection_complete_here instead of main hci event packet handler
     // we receive a HCI event packet in disguise
@@ -2065,7 +2064,7 @@ int main (int argc,  char * const * argv){
     log_info("version %s, build %s", BTSTACK_VERSION, BTSTACK_DATE);
 
     // init HCI
-    hci_init(transport, config)
+    hci_init(transport, config);
     if (btstack_link_key_db){
         hci_set_link_key_db(btstack_link_key_db);
     }
@@ -2104,7 +2103,6 @@ int main (int argc,  char * const * argv){
 #ifdef ENABLE_BLE
     // GATT Client
     gatt_client_init();
-    gatt_client_id = gatt_client_register_packet_handler(&handle_gatt_client_event);
 
     // sm_init();
     // sm_set_io_capabilities(IO_CAPABILITY_DISPLAY_ONLY);
