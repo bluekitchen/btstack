@@ -1194,7 +1194,7 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * hfp_con
                             hfp_ag_set_call_indicator();
                             hfp_ag_hf_accept_call(hfp_connection);
                             printf("HF answers call, accept call by GSM\n");
-                            hfp_emit_event(hfp_callback, HFP_CMD_CALL_ANSWERED, 0);
+                            hfp_emit_simple_event(hfp_callback, HFP_SUBEVENT_CALL_ANSWERED);
                             break;
                         default:
                             break;

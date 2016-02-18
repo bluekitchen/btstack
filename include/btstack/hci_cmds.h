@@ -752,7 +752,7 @@ extern "C" {
  * @format 1
  * @param subevent_code
  */
- #define HFP_SUBEVENT_CALL_TERMINATED                          0x0C
+#define HFP_SUBEVENT_CALL_TERMINATED                          0x0C
 
 /**
  * @format 1T
