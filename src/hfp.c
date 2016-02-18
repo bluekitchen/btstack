@@ -762,6 +762,7 @@ static hfp_command_t parse_command(const char * line_buffer, int isHandsFree){
     }
 
     if (strncmp(line_buffer+offset, HFP_ENABLE_CALL_WAITING_NOTIFICATION, strlen(HFP_ENABLE_CALL_WAITING_NOTIFICATION)) == 0){
+        if (isHandsFree) return HFP_CMD_AG_SENT_CALL_WAITING_NOTIFICATION_UPDATE;
         return HFP_CMD_ENABLE_CALL_WAITING_NOTIFICATION;
     }
 
@@ -890,6 +891,7 @@ static void hfp_parser_next_state(hfp_connection_t * hfp_connection, uint8_t byt
         case HFP_PARSER_CMD_SEQUENCE:
             switch (hfp_connection->command){
                 case HFP_CMD_AG_SENT_PHONE_NUMBER:
+                case HFP_CMD_AG_SENT_CALL_WAITING_NOTIFICATION_UPDATE:
                 case HFP_CMD_TRANSFER_AG_INDICATOR_STATUS:
                 case HFP_CMD_QUERY_OPERATOR_SELECTION_NAME:
                 case HFP_CMD_QUERY_OPERATOR_SELECTION_NAME_FORMAT:
@@ -1031,6 +1033,7 @@ void hfp_parse(hfp_connection_t * hfp_connection, uint8_t byte, int isHandsFree)
                     log_info("%s, ", hfp_connection->line_buffer);
                     break;
                 case HFP_CMD_AG_SENT_PHONE_NUMBER:
+                case HFP_CMD_AG_SENT_CALL_WAITING_NOTIFICATION_UPDATE:
                     hfp_connection->bnip_type = (uint8_t)atoi((char*)hfp_connection->line_buffer);
                     break;
                 default:
@@ -1268,6 +1271,7 @@ static void parse_sequence(hfp_connection_t * hfp_connection){
             hfp_connection->extended_audio_gateway_error = 0;
             break;
         case HFP_CMD_AG_SENT_PHONE_NUMBER:
+        case HFP_CMD_AG_SENT_CALL_WAITING_NOTIFICATION_UPDATE:
             strncpy(hfp_connection->bnip_number, (char *)hfp_connection->line_buffer, sizeof(hfp_connection->bnip_number));
             hfp_connection->bnip_number[sizeof(hfp_connection->bnip_number)-1] = 0;
             break;

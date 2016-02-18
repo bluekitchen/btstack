@@ -91,12 +91,12 @@ void hfp_hf_register_packet_handler(hfp_callback_t callback){
     hfp_callback = callback;
 }
 
-static void hfp_hf_emit_subscriber_number(hfp_callback_t callback, uint8_t bnip_type, const char * bnip_number){
+static void hfp_hf_emit_type_and_number(hfp_callback_t callback, uint8_t event_subtype, uint8_t bnip_type, const char * bnip_number){
     if (!callback) return;
     uint8_t event[30];
     event[0] = HCI_EVENT_HFP_META;
     event[1] = sizeof(event) - 2;
-    event[2] = HFP_SUBEVENT_SUBSCRIBER_NUMBER_INFORMATION;
+    event[2] = event_subtype;
     event[3] = bnip_type;
     int size = (strlen(bnip_number) < sizeof(event) - 5) ? strlen(bnip_number) : sizeof(event) - 5;
     strncpy((char*)&event[4], bnip_number, size);
@@ -962,7 +962,7 @@ static void hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8
         case HFP_CMD_GET_SUBSCRIBER_NUMBER_INFORMATION:
             hfp_connection->command = HFP_CMD_NONE;
             // printf("Subscriber Number: number %s, type %u\n", hfp_connection->bnip_number, hfp_connection->bnip_type);
-            hfp_hf_emit_subscriber_number(hfp_callback, hfp_connection->bnip_type, hfp_connection->bnip_number);
+            hfp_hf_emit_type_and_number(hfp_callback, HFP_SUBEVENT_SUBSCRIBER_NUMBER_INFORMATION, hfp_connection->bnip_type, hfp_connection->bnip_number);
             break;
         case HFP_CMD_RESPONSE_AND_HOLD_STATUS:
             hfp_connection->command = HFP_CMD_NONE;
@@ -994,6 +994,11 @@ static void hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8
             hfp_connection->command = HFP_CMD_NONE;
             hfp_emit_string_event(hfp_callback, HFP_SUBEVENT_NUMBER_FOR_VOICE_TAG, hfp_connection->bnip_number);
             break;
+        case HFP_CMD_AG_SENT_CALL_WAITING_NOTIFICATION_UPDATE:
+            hfp_connection->command = HFP_CMD_NONE;
+            hfp_hf_emit_type_and_number(hfp_callback, HFP_SUBEVENT_CALL_WAITING_NOTIFICATION, hfp_connection->bnip_type, hfp_connection->bnip_number);
+            break;
+        
         case HFP_CMD_EXTENDED_AUDIO_GATEWAY_ERROR:
             hfp_connection->ok_pending = 0;
             hfp_connection->command = HFP_CMD_NONE;

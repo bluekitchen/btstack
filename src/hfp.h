@@ -160,6 +160,7 @@ typedef enum {
     HFP_CMD_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES,
     HFP_CMD_ENABLE_CLIP,
     HFP_CMD_ENABLE_CALL_WAITING_NOTIFICATION,
+    HFP_CMD_AG_SENT_CALL_WAITING_NOTIFICATION_UPDATE,
 
     HFP_CMD_LIST_GENERIC_STATUS_INDICATORS,
     HFP_CMD_RETRIEVE_GENERIC_STATUS_INDICATORS,
@@ -604,7 +605,7 @@ typedef struct hfp_connection {
     uint8_t clcc_mpty;
 
     uint8_t call_index;
-    // also used for CLCC if set
+    // also used for CLCC, CCWA if set
     uint8_t bnip_type;       // 0 == not set
     char    bnip_number[25]; // 
 

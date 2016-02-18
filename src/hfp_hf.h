@@ -151,7 +151,7 @@ void hfp_hf_disable_status_update_for_all_ag_indicators(bd_addr_t bd_addr);
 void hfp_hf_set_status_update_for_individual_ag_indicators(bd_addr_t bd_addr, uint32_t indicators_status_bitmap);
 
 /**
- * @brief Find out the name of the currently selected Network operator by AG. 
+ * @brief Query the name of the currently selected Network operator by AG. 
  * 
  * The name is restricted to max 16 characters. The result is reported via 
  * HFP_SUBEVENT_NETWORK_OPERATOR_CHANGED subtype 
@@ -209,38 +209,38 @@ void hfp_hf_answer_incoming_call(bd_addr_t bd_addr);
 void hfp_hf_reject_incoming_call(bd_addr_t bd_addr);
 
 /**
- * @brief Releases all held calls or sets User Determined User Busy (UDUB) for a waiting call.
+ * @brief Release all held calls or sets User Determined User Busy (UDUB) for a waiting call.
  * @param bd_addr Bluetooth address of the AG
  */
 void hfp_hf_user_busy(bd_addr_t addr);
 
 /**
- * @brief Releases all active calls (if any exist) and accepts the other (held or waiting) call.
+ * @brief Release all active calls (if any exist) and accepts the other (held or waiting) call.
  * @param bd_addr Bluetooth address of the AG
  */
 void hfp_hf_end_active_and_accept_other(bd_addr_t addr);
 
 /**
- * @brief Places all active calls (if any exist) on hold and accepts the other (held or waiting) call.
+ * @brief Place all active calls (if any exist) on hold and accepts the other (held or waiting) call.
  * @param bd_addr Bluetooth address of the AG
  */
 void hfp_hf_swap_calls(bd_addr_t addr);
 
 /**
- * @brief Adds a held call to the conversation.
+ * @brief Add a held call to the conversation.
  * @param bd_addr Bluetooth address of the AG
  */
 void hfp_hf_join_held_call(bd_addr_t addr);
 
 /**
- * @brief Connects the two calls and disconnects the subscriber from both calls (Explicit Call
+ * @brief Connect the two calls and disconnects the subscriber from both calls (Explicit Call
 Transfer).
  * @param bd_addr Bluetooth address of the AG
  */
 void hfp_hf_connect_calls(bd_addr_t addr);
 
 /**
- * @brief Terminates an incoming or an outgoing call. 
+ * @brief Terminate an incoming or an outgoing call. 
  * HFP_SUBEVENT_CALL_TERMINATED is sent upon call termination.
  * @param bd_addr Bluetooth address of the AG
  */
@@ -349,15 +349,15 @@ void hfp_hf_send_dtmf_code(bd_addr_t bd_addr, char code);
 /*
  * @brief Read numbers from the AG for the purpose of creating 
  * a unique voice tag and storing the number and its linked voice
- * tag in the HF’s memory. The number is recived via 
- * HFP_SUBEVENT_NUMBER_FOR_VOICE_TAG.
+ * tag in the HF’s memory. 
+ * The number is reported via HFP_SUBEVENT_NUMBER_FOR_VOICE_TAG.
  * @param bd_addr Bluetooth address of the AG
  */
 void hfp_hf_request_phone_number_for_voice_tag(bd_addr_t addr);
 
 /*
  * @brief Query the list of current calls in AG. 
- * The result is received via HFP_SUBEVENT_ENHANCED_CALL_STATUS (TODO).
+ * The result is received via HFP_SUBEVENT_ENHANCED_CALL_STATUS.
  * @param bd_addr Bluetooth address of the AG
  */
 void hfp_hf_query_current_call_status(bd_addr_t addr);
@@ -379,6 +379,7 @@ void hfp_hf_private_consultation_with_call(bd_addr_t addr, int index);
 
 /*
  * @brief Query the status of the “Response and Hold” state of the AG.
+ * The result is reported via HFP_SUBEVENT_RESPONSE_AND_HOLD_STATUS.
  * @param bd_addr Bluetooth address of the AG
  */
 void hfp_hf_rrh_query_status(bd_addr_t addr);
@@ -403,6 +404,7 @@ void hfp_hf_rrh_reject_held_call(bd_addr_t addr);
 
 /*
  * @brief Query the AG subscriber number.
+ * The result is reported via HFP_SUBEVENT_SUBSCRIBER_NUMBER_INFORMATION.
  * @param bd_addr Bluetooth address of the AG
  */
 void hfp_hf_query_subscriber_number(bd_addr_t addr);
