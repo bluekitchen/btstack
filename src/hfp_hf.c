@@ -91,18 +91,35 @@ void hfp_hf_register_packet_handler(hfp_callback_t callback){
     hfp_callback = callback;
 }
 
-static void hfp_hf_emit_subscriber_number(hfp_connection_t * hfp_connection){
-    printf("Subscriber Number: number %s, type %u\n", hfp_connection->bnip_number, hfp_connection->bnip_type);
+static void hfp_hf_emit_subscriber_number(hfp_callback_t callback, uint8_t bnip_type, const char * bnip_number){
+    if (!callback) return;
+    uint8_t event[30];
+    event[0] = HCI_EVENT_HFP_META;
+    event[1] = sizeof(event) - 2;
+    event[2] = HFP_SUBEVENT_SUBSCRIBER_NUMBER_INFORMATION;
+    event[3] = bnip_type;
+    int size = (strlen(bnip_number) < sizeof(event) - 5) ? strlen(bnip_number) : sizeof(event) - 5;
+    strncpy((char*)&event[4], bnip_number, size);
+    event[4 + size] = 0;
+    (*callback)(event, sizeof(event));
 }
 
-static void hfp_hf_emit_response_and_hold_status(hfp_connection_t * hfp_connection){
-    printf("Response and Hold status: %s\n", hfp_connection->line_buffer);
-}
-
-static void hfp_hf_emit_enhanced_call_status(hfp_connection_t * hfp_connection){
-    printf("Enhanced Call Status: idx %u, dir %u, status %u, mpty %u, number %s, type %u\n",
-                hfp_connection->clcc_idx, hfp_connection->clcc_dir, hfp_connection->clcc_status, hfp_connection->clcc_mpty,
-                hfp_connection->bnip_number, hfp_connection->bnip_type);
+static void hfp_hf_emit_enhanced_call_status(hfp_callback_t callback, uint8_t clcc_idx, uint8_t clcc_dir,
+                uint8_t clcc_status, uint8_t clcc_mpty, uint8_t bnip_type, const char * bnip_number){
+    if (!callback) return;
+    uint8_t event[35];
+    event[0] = HCI_EVENT_HFP_META;
+    event[1] = sizeof(event) - 2;
+    event[2] = HFP_SUBEVENT_ENHANCED_CALL_STATUS;
+    event[3] = clcc_idx;
+    event[4] = clcc_dir;
+    event[6] = clcc_status;
+    event[7] = clcc_mpty;
+    event[8] = bnip_type;
+    int size = (strlen(bnip_number) < sizeof(event) - 10) ? strlen(bnip_number) : sizeof(event) - 10;
+    strncpy((char*)&event[9], bnip_number, size);
+    event[9 + size] = 0;
+    (*callback)(event, sizeof(event));
 }
 
 static int hfp_hf_supports_codec(uint8_t codec){
@@ -944,15 +961,22 @@ static void hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8
     switch (hfp_connection->command){
         case HFP_CMD_GET_SUBSCRIBER_NUMBER_INFORMATION:
             hfp_connection->command = HFP_CMD_NONE;
-            hfp_hf_emit_subscriber_number(hfp_connection);
+            // printf("Subscriber Number: number %s, type %u\n", hfp_connection->bnip_number, hfp_connection->bnip_type);
+            hfp_hf_emit_subscriber_number(hfp_callback, hfp_connection->bnip_type, hfp_connection->bnip_number);
             break;
         case HFP_CMD_RESPONSE_AND_HOLD_STATUS:
             hfp_connection->command = HFP_CMD_NONE;
-            hfp_hf_emit_response_and_hold_status(hfp_connection);
+            // printf("Response and Hold status: %s\n", hfp_connection->line_buffer);
+            hfp_emit_event(hfp_callback, HFP_SUBEVENT_RESPONSE_AND_HOLD_STATUS, atoi((char *)&hfp_connection->line_buffer[0]));
             break;
         case HFP_CMD_LIST_CURRENT_CALLS:
             hfp_connection->command = HFP_CMD_NONE;
-            hfp_hf_emit_enhanced_call_status(hfp_connection);
+            // printf("Enhanced Call Status: idx %u, dir %u, status %u, mpty %u, number %s, type %u\n",
+            //      hfp_connection->clcc_idx, hfp_connection->clcc_dir, hfp_connection->clcc_status, hfp_connection->clcc_mpty,
+            //      hfp_connection->bnip_number, hfp_connection->bnip_type);
+            hfp_hf_emit_enhanced_call_status(hfp_callback, hfp_connection->clcc_idx, 
+                hfp_connection->clcc_dir, hfp_connection->clcc_status, hfp_connection->clcc_mpty, 
+                hfp_connection->bnip_type, hfp_connection->bnip_number);
             break;
         case HFP_CMD_SET_SPEAKER_GAIN:
             hfp_connection->command = HFP_CMD_NONE;

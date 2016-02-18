@@ -753,12 +753,54 @@ extern "C" {
 #define HFP_SUBEVENT_CALL_ANSWERED                            0x13
 #define HFP_SUBEVENT_CONFERENCE_CALL                          0x14
 #define HFP_SUBEVENT_RING                                     0x15
-#define HFP_SUBEVENT_SPEAKER_VOLUME                           0x16
+
+/**
+ * @format 111
+ * @param subevent_code
+ * @param status
+ * @param gain
+ */
+ #define HFP_SUBEVENT_SPEAKER_VOLUME                           0x16
+
+/**
+ * @format 111
+ * @param subevent_code
+ * @param status
+ * @param gain
+ */
 #define HFP_SUBEVENT_MICROPHONE_VOLUME                        0x17
 #define HFP_SUBEVENT_CALL_WAITING_NOTIFICATION                0x18
 #define HFP_SUBEVENT_CALLING_LINE_INDETIFICATION_NOTIFICATION 0x19
+
+/**
+ * @format 1111111T
+ * @param subevent_code
+ * @param status
+ * @param clcc_idx
+ * @param clcc_dir
+ * @param clcc_status
+ * @param clcc_mpty
+ * @param bnip_type
+ * @param bnip_number
+ */
 #define HFP_SUBEVENT_ENHANCED_CALL_STATUS                     0x1A
-#define HFP_SUBEVENT_SUBSCRIBER_NUMBER_INFORMATION            0x1B
+
+/**
+ * @format 111T
+ * @param subevent_code
+ * @param status
+ * @param bnip_type
+ * @param bnip_number
+ */
+ #define HFP_SUBEVENT_SUBSCRIBER_NUMBER_INFORMATION            0x1B
+
+/**
+ * @format 11T
+ * @param subevent_code
+ * @param status
+ * @param value
+ */
+#define HFP_SUBEVENT_RESPONSE_AND_HOLD_STATUS                 0x1C
 
 // ANCS Client
 #define ANCS_CLIENT_CONNECTED                              0xF0
