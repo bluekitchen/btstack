@@ -91,15 +91,16 @@ void hfp_hf_set_supported_features(uint32_t supported_features);
  * 
  * @param indicators_nr
  * @param indicators
+ * @param values
  */
-void hfp_hf_set_indicators(int indicators_nr, uint16_t * indicators);
+void hfp_hf_set_hf_indicators(int indicators_nr, uint16_t * indicators);
 
 /**
  * @brief Set HF indicators status bitmap. 
  * 
  * @param indicators_status 32-bit bitmap, 0 - indicator is disabled, 1 - indicator is enabled
  */
-void hfp_hf_set_indicators_status(uint32_t indicators_status);
+void hfp_hf_set_hf_indicators_status(uint32_t indicators_status);
 
 /**
  * @brief Register callback for the HFP Hands-Free (HF) client. 
@@ -384,38 +385,40 @@ void hfp_hf_release_call_with_index(bd_addr_t addr, int index);
 void hfp_hf_private_consultation_with_call(bd_addr_t addr, int index);
 
 /*
- * @brief 
+ * @brief Query the status of the “Response and Hold” state of the AG.
  * @param bd_addr Bluetooth address of the AG
  */
 void hfp_hf_rrh_query_status(bd_addr_t addr);
 
 /*
- * @brief
+ * @brief Put an incoming call on hold in the AG.
  * @param bd_addr Bluetooth address of the AG
  */
 void hfp_hf_rrh_hold_call(bd_addr_t addr);
 
 /*
- * @brief
+ * @brief Accept held incoming call in the AG.
  * @param bd_addr Bluetooth address of the AG
  */
 void hfp_hf_rrh_accept_held_call(bd_addr_t addr);
 
 /*
- * @brief
+ * @brief Reject held incoming call in the AG.
  * @param bd_addr Bluetooth address of the AG
  */
 void hfp_hf_rrh_reject_held_call(bd_addr_t addr);
 
 /*
- * @brief
+ * @brief Query the AG subscriber number.
  * @param bd_addr Bluetooth address of the AG
  */
 void hfp_hf_query_subscriber_number(bd_addr_t addr);
 
 /*
- * @brief
+ * @brief Set HF indicator.
  * @param bd_addr Bluetooth address of the AG
+ * @param assigned_number
+ * @param value
  */
 void hfp_hf_set_hf_indicator(bd_addr_t addr, int assigned_number, int value);
 

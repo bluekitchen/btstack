@@ -483,8 +483,8 @@ TEST_GROUP(HFPClient){
 
         hfp_hf_init(rfcomm_channel_nr);
         hfp_hf_set_supported_features(supported_features_with_codec_negotiation);
-        hfp_hf_set_indicators(sizeof(indicators)/sizeof(uint16_t), indicators);
-        hfp_hf_set_indicators_status(1);
+        hfp_hf_set_hf_indicators(sizeof(indicators)/sizeof(uint16_t), indicators);
+        hfp_hf_set_hf_indicators_status(1);
 
         hfp_hf_set_codecs(sizeof(codecs), codecs);
     }

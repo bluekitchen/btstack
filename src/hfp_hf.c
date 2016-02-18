@@ -1063,15 +1063,15 @@ void hfp_hf_set_supported_features(uint32_t supported_features){
     hfp_supported_features = supported_features;
 }
 
-void hfp_hf_set_indicators(int indicators_nr, uint16_t * indicators){
+void hfp_hf_set_hf_indicators(int indicators_nr, uint16_t * indicators){
     hfp_indicators_nr = indicators_nr;
     int i;
-    for (i=0; i<indicators_nr; i++){
+    for (i = 0; i < hfp_indicators_nr ; i++){
         hfp_indicators[i] = indicators[i];
     }
 }
 
-void hfp_hf_set_indicators_status(uint32_t indicators_status){
+void hfp_hf_set_hf_indicators_status(uint32_t indicators_status){
     hfp_indicators_status = indicators_status;
 }
 
@@ -1543,9 +1543,11 @@ void hfp_hf_set_hf_indicator(bd_addr_t addr, int assigned_number, int value){
             // set value
             hfp_indicators_value[i] = value;
             // mark for update
-            connection->generic_status_update_bitmap |= (1<<i);
-            // send update
-            hfp_run_for_context(connection);
+            if (connection->state > HFP_LIST_GENERIC_STATUS_INDICATORS){
+                connection->generic_status_update_bitmap |= (1<<i);
+                // send update
+                hfp_run_for_context(connection);
+            }
             return;
         }
     }
