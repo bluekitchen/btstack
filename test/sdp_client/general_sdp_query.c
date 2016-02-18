@@ -20,6 +20,7 @@
 #include "hci_dump.h"
 #include "l2cap.h"
 #include "mock.h"
+#include "classic/sdp_util.h"
 
 #include "CppUTest/TestHarness.h"
 #include "CppUTest/CommandLineTestRunner.h"

@@ -55,41 +55,52 @@ extern "C" {
 /* API_START */
 
 /**
- * @brief Packet handler for HSP Headset (HS) events. The HSP HS event has type HCI_EVENT_HSP_META with following subtypes:
- * - HSP_SUBEVENT_ERROR                        
+ * @brief Packet handler for HSP Headset (HS) events. 
+ * 
+ * The HSP HS event has type HCI_EVENT_HSP_META with following subtypes:                      
  * - HSP_SUBEVENT_AUDIO_CONNECTION_COMPLETE    
  * - HSP_SUBEVENT_AUDIO_DISCONNECTION_COMPLETE 
  * - HSP_SUBEVENT_RING                         
  * - HSP_SUBEVENT_MICROPHONE_GAIN_CHANGED      
  * - HSP_SUBEVENT_SPEAKER_GAIN_CHANGED         
- * - HSP_SUBEVENT_AG_INDICATION                
+ * - HSP_SUBEVENT_AG_INDICATION      
+ *
+ * @param event See include/btstack/hci_cmds.h
+ * @param event_size
  */
 typedef void (*hsp_hs_callback_t)(uint8_t * event, uint16_t event_size);
 
 /**
- * @brief Set up HSP HS
+ * @brief Set up HSP HS.
  * @param rfcomm_channel_nr
  */
 void hsp_hs_init(uint8_t rfcomm_channel_nr);
 
 /**
- * @brief Create HSP Headset (HS) SDP service record. have_remote_audio_control?
+ * @brief Create HSP Headset (HS) SDP service record. 
+ * @param service Empty buffer in which a new service record will be stored.
+ * @param rfcomm_channel_nr
+ * @param name
+ * @param have_remote_audio_control 
  */
 void hsp_hs_create_sdp_record(uint8_t * service, uint32_t service_record_handle, int rfcomm_channel_nr, const char * name, uint8_t have_remote_audio_control);
 
 /**
  * @brief Register packet handler to receive HSP HS events.
+ * @param callback 
  */
 void hsp_hs_register_packet_handler(hsp_hs_callback_t callback);
 
 /**
- * @brief Connect to HSP Audio Gateway
+ * @brief Connect to HSP Audio Gateway.
  *
  * Perform SDP query for an RFCOMM service on a remote device, 
  * and establish an RFCOMM connection if such service is found. The reception of the  
  * HSP_SUBEVENT_AUDIO_CONNECTION_COMPLETE or 
  * HSP_SUBEVENT_AUDIO_DISCONNECTION_COMPLETE event
  * indicate if the connection is successfully established or not. 
+ *
+ * @param bd_addr
  */
 void hsp_hs_connect(bd_addr_t bd_addr);
 
@@ -97,6 +108,7 @@ void hsp_hs_connect(bd_addr_t bd_addr);
  * @brief Disconnect from HSP Audio Gateway
  *
  * Releases the RFCOMM channel.
+ * @param bd_addr
  */
 void hsp_hs_disconnect(bd_addr_t bd_addr);
 
@@ -105,7 +117,7 @@ void hsp_hs_disconnect(bd_addr_t bd_addr);
  * 
  * The new gain value will be confirmed by the HSP Audio Gateway. 
  * A HSP_SUBEVENT_MICROPHONE_GAIN_CHANGED event will be received.
- * @param gain - valid range: [0,15]
+ * @param gain Valid range: [0,15]
  */
 void hsp_hs_set_microphone_gain(uint8_t gain);
 
@@ -120,24 +132,27 @@ void hsp_hs_set_speaker_gain(uint8_t gain);
 
 /**
  * @brief Send button press action. 
+ * @param gain Valid range: [0,15]
  */
 void hsp_hs_send_button_press(void);
 
 /**
- * @brief Enable custom indications
+ * @brief Enable custom indications.
  * 
- * Custom indications are disable by default. 
+ * Custom indications are disabled by default. 
  * When enabled, custom indications are received via the HSP_SUBEVENT_AG_INDICATION.
+ * @param enable
  */
 void hsp_hs_enable_custom_indications(int enable);
 
 /**
- * @brief Send answer to custom command
+ * @brief Send answer to custom indication.
  *
  * On HSP_SUBEVENT_AG_INDICATION, the client needs to respond
  * with this function with the result to the custom indication
+ * @param result 
  */
-int hsp_hs_send_result(const char * indication);
+int hsp_hs_send_result(const char * result);
 
 /* API_END */
 

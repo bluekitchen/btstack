@@ -18,6 +18,10 @@ apis = [
 
     ["src/classic/bnep.h", "BNEP", "bnep"],
     ["src/classic/btstack_link_key_db.h","Link Key DB","lkDb"],
+    ["src/classic/hsp_hs.h","HSP Headset","hspHS"],
+    ["src/classic/hsp_ag.h","HSP Audio Gateway","hspAG"],   
+    ["src/classic/hfp_hf.h","HFP Hands-Free","hfpHF"],
+    ["src/classic/hfp_ag.h","HFP Audio Gateway","hfpAG"],
     ["src/classic/pan.h", "PAN", "pan"],
     ["src/classic/rfcomm.h", "RFCOMM", "rfcomm"],
     ["src/classic/sdp_client.h", "SDP Client", "sdpClient"],

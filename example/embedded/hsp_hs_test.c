@@ -200,8 +200,8 @@ static void packet_handler(uint8_t * event, uint16_t event_size){
                     break;
                 case HSP_SUBEVENT_AG_INDICATION:
                     memset(hs_cmd_buffer, 0, sizeof(hs_cmd_buffer));
-                    int size = event_size <= sizeof(hs_cmd_buffer)? event_size : sizeof(hs_cmd_buffer); 
-                    memcpy(hs_cmd_buffer, &event[3], size - 1);
+                    int size = event[3] <= sizeof(hs_cmd_buffer)? event[3] : sizeof(hs_cmd_buffer); 
+                    memcpy(hs_cmd_buffer, &event[4], size - 1);
                     printf("Received custom indication: \"%s\". \nExit code or call hsp_hs_send_result.\n", hs_cmd_buffer);
                     break;
                 default:

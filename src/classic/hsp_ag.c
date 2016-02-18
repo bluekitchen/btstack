@@ -311,18 +311,20 @@ void hsp_ag_set_speaker_gain(uint8_t gain){
     hsp_run();
 }  
 
-static void hsp_timeout_handler(btstack_timer_source_t * timer){
+static void hsp_ringing_timeout_handler(btstack_timer_source_t * timer){
     ag_ring = 1;
-}
-
-static void hsp_timeout_start(void){
-    btstack_run_loop_remove_timer(&hs_timeout);
-    btstack_run_loop_set_timer_handler(&hs_timeout, hsp_timeout_handler);
     btstack_run_loop_set_timer(&hs_timeout, 2000); // 2 seconds timeout
     btstack_run_loop_add_timer(&hs_timeout);
 }
 
-static void hsp_timeout_stop(void){
+static void hsp_ringing_timer_start(void){
+    btstack_run_loop_remove_timer(&hs_timeout);
+    btstack_run_loop_set_timer_handler(&hs_timeout, hsp_ringing_timeout_handler);
+    btstack_run_loop_set_timer(&hs_timeout, 2000); // 2 seconds timeout
+    btstack_run_loop_add_timer(&hs_timeout);
+}
+
+static void hsp_ringing_timer_stop(void){
     btstack_run_loop_remove_timer(&hs_timeout);
 } 
 
@@ -330,14 +332,14 @@ void hsp_ag_start_ringing(void){
     if (hsp_state != HSP_W2_CONNECT_SCO) return;
     ag_ring = 1;
     hsp_state = HSP_W4_RING_ANSWER;
-    hsp_timeout_start();
+    hsp_ringing_timer_start();
 }
 
 void hsp_ag_stop_ringing(void){
     ag_ring = 0;
     ag_num_button_press_received = 0;
     hsp_state = HSP_W2_CONNECT_SCO;
-    hsp_timeout_stop();
+    hsp_ringing_timer_stop();
 }
 
 static void hsp_run(void){
@@ -469,11 +471,12 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             ag_send_error = 1;
             if (!hsp_ag_callback) return;
             // re-use incoming buffer to avoid reserving large buffers - ugly but efficient
-            uint8_t * event = packet - 3;
+            uint8_t * event = packet - 4;
             event[0] = HCI_EVENT_HSP_META;
-            event[1] = size + 1;
+            event[1] = size + 2;
             event[2] = HSP_SUBEVENT_HS_COMMAND;
-            (*hsp_ag_callback)(event, size+3);
+            event[3] = size;
+            (*hsp_ag_callback)(event, size+4);
         }
 
         hsp_run();

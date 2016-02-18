@@ -1,3 +1,4 @@
+
 #!/usr/bin/env python
 # BlueKitchen GmbH (c) 2014
 
@@ -61,6 +62,8 @@ def parse_defines():
 def my_parse_events(path):
     events = []
     le_events = []
+    hfp_events = []
+    hsp_events = []
     params = []
     event_types = set()
     format = None
@@ -79,6 +82,10 @@ def my_parse_events(path):
                 if format != None:
                     if key.lower().startswith('hci_subevent_'):
                         le_events.append((value, key.lower().replace('hci_subevent_', 'hci_event_'), format, params))
+                    elif key.lower().startswith('hsp_subevent_'):
+                        hsp_events.append((value, key.lower().replace('hsp_subevent_', 'hsp_event_'), format, params))
+                    elif key.lower().startswith('hfp_subevent_'):
+                        hfp.append((value, key.lower().replace('hfp_subevent_', 'hfp_event_'), format, params))
                     else:
                         events.append((value, key, format, params))
                     event_types.add(key)
