@@ -50,6 +50,7 @@
 #include "btstack.h"
 #include "btstack_control.h"
 #include "btstack_debug.h"
+#include "btstack_event.h"
 #include "btstack_defines.h"
 #include "btstack_linked_list.h"
 #include "btstack_memory.h"

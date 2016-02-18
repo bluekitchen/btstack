@@ -55,22 +55,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "btstack_run_loop.h"
-#include "hci_cmd.h"
-#include "btstack_util.h"
 
-#include "btstack_config.h"
-
-
-#include "btstack_debug.h"
-#include "btstack_memory.h"
-#include "hci.h"
-#include "hci_dump.h"
-#include "l2cap.h"
-#include "ble/att_db.h"
-#include "ble/gatt_client.h"
-#include "ble/ad_parser.h"
-#include "ble/sm.h"
+#include "btstack.h"
 
 typedef struct advertising_report {
     uint8_t   type;
@@ -242,12 +228,12 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
     gatt_client_characteristic_t characteristic;
     switch(packet[0]){
         case GATT_EVENT_SERVICE_QUERY_RESULT:\
-            gatt_client_deserialize_service(packet, 4, &service);
+            gatt_event_service_query_result_get_service(packet, &service);
             dump_service(&service);
             services[service_count++] = service;
             break;
         case GATT_EVENT_CHARACTERISTIC_QUERY_RESULT:
-            gatt_client_deserialize_characteristic(packet, 4, &characteristic);
+            gatt_event_characteristic_query_result_get_characteristic(packet, &characteristic);
             dump_characteristic(&characteristic);
             break;
         case GATT_EVENT_QUERY_COMPLETE:

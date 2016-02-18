@@ -359,9 +359,9 @@ uint8_t gatt_client_cancel_write(btstack_packet_handler_t callback, uint16_t con
 
 // used by generated btstack_event.c
 
-void gatt_client_deserialize_service(uint8_t *packet, int offset, gatt_client_service_t *service);
-void gatt_client_deserialize_characteristic(uint8_t * packet, int offset, gatt_client_characteristic_t * characteristic);
-void gatt_client_deserialize_characteristic_descriptor(uint8_t * packet, int offset, gatt_client_characteristic_descriptor_t * descriptor);
+void gatt_client_deserialize_service(const uint8_t *packet, int offset, gatt_client_service_t *service);
+void gatt_client_deserialize_characteristic(const uint8_t * packet, int offset, gatt_client_characteristic_t * characteristic);
+void gatt_client_deserialize_characteristic_descriptor(const uint8_t * packet, int offset, gatt_client_characteristic_descriptor_t * descriptor);
 
 // only used for testing
 void gatt_client_pts_suppress_mtu_exchange(void);

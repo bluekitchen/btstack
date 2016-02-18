@@ -71,6 +71,10 @@ extern "C" {
 #include "btstack_util.h"
 #include <stdint.h>
 
+#ifdef ENABLE_BLE
+#include "ble/gatt_client.h"
+#endif
+
 /* API_START */
 
 """
@@ -86,8 +90,7 @@ hfile_header_end = """
 #endif // __BTSTACK_EVENT_H
 """
 
-c_prototoype_simple_return = '''
-/**
+c_prototoype_simple_return = '''/**
  * @brief {description}
  * @param Event packet
  * @return {result_name}
@@ -98,8 +101,7 @@ static inline {result_type} {fn_name}(const uint8_t * event){{
 }}
 '''
 
-c_prototoype_struct_return = '''
-/**
+c_prototoype_struct_return = '''/**
  * @brief {description}
  * @param Event packet
  * @param Pointer to storage for {result_name}
@@ -110,8 +112,7 @@ static inline void {fn_name}(const uint8_t * event, {result_type} {result_name})
 }}
 '''
 
-c_prototoype_unsupported = '''
-/**
+c_prototoype_unsupported = '''/**
  * @brief {description}
  * @param Event packet
  * @return {result_name}
@@ -136,10 +137,13 @@ param_read = {
     '3' : 'return little_endian_read_24(event, {offset});',
     '4' : 'return little_endian_read_32(event, {offset});',
     'H' : 'return little_endian_read_16(event, {offset});',
-    'B' : 'reverse_48(&event[{offset}], {result_name});',
+    'B' : 'reverse_bd_addr(&event[{offset}], {result_name});',
     'R' : 'return &event[{offset}];',
     'T' : 'return (const char *) &event[{offset}];',
     'V' : 'return &event[{offset}];',
+    'X' : 'gatt_client_deserialize_service(event, {offset}, {result_name});',
+    'Y' : 'gatt_client_deserialize_characteristic(event, {offset}, {result_name});',
+    'Z' : 'gatt_client_deserialize_characteristic_descriptor(event, {offset}, {result_name});',
 }
 
 def c_type_for_btstack_type(type):
@@ -147,7 +151,7 @@ def c_type_for_btstack_type(type):
                     'D' : 'const uint8_t *', 'E' : 'const uint8_t * ', 'N' : 'String' , 'P' : 'const uint8_t *', 'A' : 'const uint8_t *',
                     'R' : 'const uint8_t *', 'S' : 'const uint8_t *',
                     'J' : 'int', 'L' : 'int', 'V' : 'const uint8_t *', 'U' : 'BT_UUID',
-                    'X' : 'GATTService', 'Y' : 'GATTCharacteristic', 'Z' : 'GATTCharacteristicDescriptor',
+                    'X' : 'gatt_client_service_t *', 'Y' : 'gatt_client_characteristic_t *', 'Z' : 'gatt_client_characteristic_descriptor_t *',
                     'T' : 'const char *'}
     return param_types[type]
 
@@ -165,7 +169,7 @@ def format_function_name(event_name):
 def template_for_type(field_type):
     global c_prototoype_simple_return
     global c_prototoype_struct_return
-    types_with_struct_return = "B"
+    types_with_struct_return = "BXYZ"
     if field_type in types_with_struct_return:
         return c_prototoype_struct_return
     else:
@@ -193,6 +197,9 @@ def create_getter(event_name, field_name, field_type, offset, supported):
         code = param_read[field_type].format(offset=offset, result_name=result_name)
     return template.format(description=description, fn_name=fn_name, result_name=result_name, result_type=result_type, code=code, format=field_type)
 
+def is_le_event(event_group):
+    return event_group in ['GATT', 'ANCS', 'SM']
+
 def create_events(events):
     global gen_path
     global copyright
@@ -204,12 +211,15 @@ def create_events(events):
         fout.write(hfile_header_begin)
         for event_type, event_name, format, args in events:
             parts = event_name.split("_")
-            if not parts[0] in [ 'SDP', 'ANCS', 'SM', 'L2CAP', 'RFCOMM']:
+            event_group = parts[0]
+            if not event_group in [ 'SDP', 'ANCS', 'SM', 'L2CAP', 'RFCOMM', 'GATT']:
                 continue
             event_name = format_function_name(event_name)
             length_name = ''
             offset = 2
             supported = all_fields_supported(format)
+            if is_le_event(event_group):
+                fout.write("#ifdef ENABLE_BLE\n")
             for f, arg in zip(format, args):
                 field_name = arg
                 field_type = f 
@@ -218,6 +228,9 @@ def create_events(events):
                 if field_type in 'RT':
                     break
                 offset += size_for_type(field_type)
+            if is_le_event(event_group):
+                fout.write("#endif\n")
+            fout.write("\n")
 
         fout.write(hfile_header_end)
 

@@ -51,11 +51,15 @@
 extern "C" {
 #endif
 
+#include "btstack_config.h"
 #include "btstack_util.h"
 #include <stdint.h>
 
-/* API_START */
+#ifdef ENABLE_BLE
+#include "ble/gatt_client.h"
+#endif
 
+/* API_START */
 
 /**
  * @brief Get field status from event l2cap_event_channel_opened
@@ -66,7 +70,6 @@ extern "C" {
 static inline uint8_t l2cap_event_channel_opened_get_status(const uint8_t * event){
     return event[2];
 }
-
 /**
  * @brief Get field address from event l2cap_event_channel_opened
  * @param Event packet
@@ -74,9 +77,8 @@ static inline uint8_t l2cap_event_channel_opened_get_status(const uint8_t * even
  * @note: btstack_type B
  */
 static inline void l2cap_event_channel_opened_get_address(const uint8_t * event, bd_addr_t address){
-    reverse_48(&event[3], address);    
+    reverse_bd_addr(&event[3], address);    
 }
-
 /**
  * @brief Get field handle from event l2cap_event_channel_opened
  * @param Event packet
@@ -86,7 +88,6 @@ static inline void l2cap_event_channel_opened_get_address(const uint8_t * event,
 static inline hci_con_handle_t l2cap_event_channel_opened_get_handle(const uint8_t * event){
     return little_endian_read_16(event, 9);
 }
-
 /**
  * @brief Get field psm from event l2cap_event_channel_opened
  * @param Event packet
@@ -96,7 +97,6 @@ static inline hci_con_handle_t l2cap_event_channel_opened_get_handle(const uint8
 static inline uint16_t l2cap_event_channel_opened_get_psm(const uint8_t * event){
     return little_endian_read_16(event, 11);
 }
-
 /**
  * @brief Get field local_cid from event l2cap_event_channel_opened
  * @param Event packet
@@ -106,7 +106,6 @@ static inline uint16_t l2cap_event_channel_opened_get_psm(const uint8_t * event)
 static inline uint16_t l2cap_event_channel_opened_get_local_cid(const uint8_t * event){
     return little_endian_read_16(event, 13);
 }
-
 /**
  * @brief Get field remote_cid from event l2cap_event_channel_opened
  * @param Event packet
@@ -116,7 +115,6 @@ static inline uint16_t l2cap_event_channel_opened_get_local_cid(const uint8_t * 
 static inline uint16_t l2cap_event_channel_opened_get_remote_cid(const uint8_t * event){
     return little_endian_read_16(event, 15);
 }
-
 /**
  * @brief Get field local_mtu from event l2cap_event_channel_opened
  * @param Event packet
@@ -126,7 +124,6 @@ static inline uint16_t l2cap_event_channel_opened_get_remote_cid(const uint8_t *
 static inline uint16_t l2cap_event_channel_opened_get_local_mtu(const uint8_t * event){
     return little_endian_read_16(event, 17);
 }
-
 /**
  * @brief Get field remote_mtu from event l2cap_event_channel_opened
  * @param Event packet
@@ -136,7 +133,6 @@ static inline uint16_t l2cap_event_channel_opened_get_local_mtu(const uint8_t * 
 static inline uint16_t l2cap_event_channel_opened_get_remote_mtu(const uint8_t * event){
     return little_endian_read_16(event, 19);
 }
-
 /**
  * @brief Get field flush_timeout from event l2cap_event_channel_opened
  * @param Event packet
@@ -166,7 +162,6 @@ static inline uint16_t l2cap_event_channel_closed_get_local_cid(const uint8_t * 
 static inline uint8_t l2cap_event_incoming_connection_get_status(const uint8_t * event){
     return event[2];
 }
-
 /**
  * @brief Get field address from event l2cap_event_incoming_connection
  * @param Event packet
@@ -174,9 +169,8 @@ static inline uint8_t l2cap_event_incoming_connection_get_status(const uint8_t *
  * @note: btstack_type B
  */
 static inline void l2cap_event_incoming_connection_get_address(const uint8_t * event, bd_addr_t address){
-    reverse_48(&event[3], address);    
+    reverse_bd_addr(&event[3], address);    
 }
-
 /**
  * @brief Get field handle from event l2cap_event_incoming_connection
  * @param Event packet
@@ -186,7 +180,6 @@ static inline void l2cap_event_incoming_connection_get_address(const uint8_t * e
 static inline hci_con_handle_t l2cap_event_incoming_connection_get_handle(const uint8_t * event){
     return little_endian_read_16(event, 9);
 }
-
 /**
  * @brief Get field psm from event l2cap_event_incoming_connection
  * @param Event packet
@@ -196,7 +189,6 @@ static inline hci_con_handle_t l2cap_event_incoming_connection_get_handle(const 
 static inline uint16_t l2cap_event_incoming_connection_get_psm(const uint8_t * event){
     return little_endian_read_16(event, 11);
 }
-
 /**
  * @brief Get field local_cid from event l2cap_event_incoming_connection
  * @param Event packet
@@ -206,7 +198,6 @@ static inline uint16_t l2cap_event_incoming_connection_get_psm(const uint8_t * e
 static inline uint16_t l2cap_event_incoming_connection_get_local_cid(const uint8_t * event){
     return little_endian_read_16(event, 13);
 }
-
 /**
  * @brief Get field remote_cid from event l2cap_event_incoming_connection
  * @param Event packet
@@ -226,7 +217,6 @@ static inline uint16_t l2cap_event_incoming_connection_get_remote_cid(const uint
 static inline uint8_t l2cap_event_service_registered_get_status(const uint8_t * event){
     return event[2];
 }
-
 /**
  * @brief Get field psm from event l2cap_event_service_registered
  * @param Event packet
@@ -246,7 +236,6 @@ static inline uint16_t l2cap_event_service_registered_get_psm(const uint8_t * ev
 static inline hci_con_handle_t l2cap_event_connection_parameter_update_request_get_handle(const uint8_t * event){
     return little_endian_read_16(event, 2);
 }
-
 /**
  * @brief Get field interval_min from event l2cap_event_connection_parameter_update_request
  * @param Event packet
@@ -256,7 +245,6 @@ static inline hci_con_handle_t l2cap_event_connection_parameter_update_request_g
 static inline uint16_t l2cap_event_connection_parameter_update_request_get_interval_min(const uint8_t * event){
     return little_endian_read_16(event, 4);
 }
-
 /**
  * @brief Get field interval_max from event l2cap_event_connection_parameter_update_request
  * @param Event packet
@@ -266,7 +254,6 @@ static inline uint16_t l2cap_event_connection_parameter_update_request_get_inter
 static inline uint16_t l2cap_event_connection_parameter_update_request_get_interval_max(const uint8_t * event){
     return little_endian_read_16(event, 6);
 }
-
 /**
  * @brief Get field latencey from event l2cap_event_connection_parameter_update_request
  * @param Event packet
@@ -276,7 +263,6 @@ static inline uint16_t l2cap_event_connection_parameter_update_request_get_inter
 static inline uint16_t l2cap_event_connection_parameter_update_request_get_latencey(const uint8_t * event){
     return little_endian_read_16(event, 8);
 }
-
 /**
  * @brief Get field timeout_multiplier from event l2cap_event_connection_parameter_update_request
  * @param Event packet
@@ -316,7 +302,6 @@ static inline uint16_t l2cap_event_can_send_now_get_local_cid(const uint8_t * ev
 static inline uint8_t rfcomm_event_open_channel_complete_get_status(const uint8_t * event){
     return event[2];
 }
-
 /**
  * @brief Get field bd_addr from event rfcomm_event_open_channel_complete
  * @param Event packet
@@ -324,9 +309,8 @@ static inline uint8_t rfcomm_event_open_channel_complete_get_status(const uint8_
  * @note: btstack_type B
  */
 static inline void rfcomm_event_open_channel_complete_get_bd_addr(const uint8_t * event, bd_addr_t bd_addr){
-    reverse_48(&event[3], bd_addr);    
+    reverse_bd_addr(&event[3], bd_addr);    
 }
-
 /**
  * @brief Get field con_handle from event rfcomm_event_open_channel_complete
  * @param Event packet
@@ -336,7 +320,6 @@ static inline void rfcomm_event_open_channel_complete_get_bd_addr(const uint8_t 
 static inline uint16_t rfcomm_event_open_channel_complete_get_con_handle(const uint8_t * event){
     return little_endian_read_16(event, 9);
 }
-
 /**
  * @brief Get field server_channel from event rfcomm_event_open_channel_complete
  * @param Event packet
@@ -346,7 +329,6 @@ static inline uint16_t rfcomm_event_open_channel_complete_get_con_handle(const u
 static inline uint8_t rfcomm_event_open_channel_complete_get_server_channel(const uint8_t * event){
     return event[11];
 }
-
 /**
  * @brief Get field rfcomm_cid from event rfcomm_event_open_channel_complete
  * @param Event packet
@@ -356,7 +338,6 @@ static inline uint8_t rfcomm_event_open_channel_complete_get_server_channel(cons
 static inline uint16_t rfcomm_event_open_channel_complete_get_rfcomm_cid(const uint8_t * event){
     return little_endian_read_16(event, 12);
 }
-
 /**
  * @brief Get field max_frame_size from event rfcomm_event_open_channel_complete
  * @param Event packet
@@ -384,9 +365,8 @@ static inline uint16_t rfcomm_event_channel_closed_get_rfcomm_cid(const uint8_t 
  * @note: btstack_type B
  */
 static inline void rfcomm_event_incoming_connection_get_bd_addr(const uint8_t * event, bd_addr_t bd_addr){
-    reverse_48(&event[2], bd_addr);    
+    reverse_bd_addr(&event[2], bd_addr);    
 }
-
 /**
  * @brief Get field server_channel from event rfcomm_event_incoming_connection
  * @param Event packet
@@ -396,7 +376,6 @@ static inline void rfcomm_event_incoming_connection_get_bd_addr(const uint8_t * 
 static inline uint8_t rfcomm_event_incoming_connection_get_server_channel(const uint8_t * event){
     return event[8];
 }
-
 /**
  * @brief Get field rfcomm_cid from event rfcomm_event_incoming_connection
  * @param Event packet
@@ -416,7 +395,6 @@ static inline uint16_t rfcomm_event_incoming_connection_get_rfcomm_cid(const uin
 static inline uint16_t rfcomm_event_remote_line_status_get_rfcomm_cid(const uint8_t * event){
     return little_endian_read_16(event, 2);
 }
-
 /**
  * @brief Get field line_status from event rfcomm_event_remote_line_status
  * @param Event packet
@@ -436,7 +414,6 @@ static inline uint8_t rfcomm_event_remote_line_status_get_line_status(const uint
 static inline uint16_t rfcomm_event_credits_get_rfcomm_cid(const uint8_t * event){
     return little_endian_read_16(event, 2);
 }
-
 /**
  * @brief Get field credits from event rfcomm_event_credits
  * @param Event packet
@@ -456,7 +433,6 @@ static inline uint8_t rfcomm_event_credits_get_credits(const uint8_t * event){
 static inline uint8_t rfcomm_event_service_registered_get_status(const uint8_t * event){
     return event[2];
 }
-
 /**
  * @brief Get field channel_id from event rfcomm_event_service_registered
  * @param Event packet
@@ -476,7 +452,6 @@ static inline uint8_t rfcomm_event_service_registered_get_channel_id(const uint8
 static inline uint8_t rfcomm_event_persistent_channel_get_status(const uint8_t * event){
     return event[2];
 }
-
 /**
  * @brief Get field server_channel_id from event rfcomm_event_persistent_channel
  * @param Event packet
@@ -496,7 +471,6 @@ static inline uint8_t rfcomm_event_persistent_channel_get_server_channel_id(cons
 static inline uint16_t rfcomm_event_remote_modem_status_get_rfcomm_cid(const uint8_t * event){
     return little_endian_read_16(event, 2);
 }
-
 /**
  * @brief Get field modem_status from event rfcomm_event_remote_modem_status
  * @param Event packet
@@ -526,7 +500,6 @@ static inline uint16_t rfcomm_event_can_send_now_get_local_cid(const uint8_t * e
 static inline uint8_t sdp_event_service_registered_get_status(const uint8_t * event){
     return event[2];
 }
-
 /**
  * @brief Get field service_record_handle from event sdp_event_service_registered
  * @param Event packet
@@ -556,7 +529,6 @@ static inline uint8_t sdp_event_query_complete_get_status(const uint8_t * event)
 static inline uint8_t sdp_event_query_rfcomm_service_get_rfcomm_channel(const uint8_t * event){
     return event[2];
 }
-
 /**
  * @brief Get field name from event sdp_event_query_rfcomm_service
  * @param Event packet
@@ -576,7 +548,6 @@ static inline const char * sdp_event_query_rfcomm_service_get_name(const uint8_t
 static inline uint16_t sdp_event_query_attribute_byte_get_record_id(const uint8_t * event){
     return little_endian_read_16(event, 2);
 }
-
 /**
  * @brief Get field attribute_id from event sdp_event_query_attribute_byte
  * @param Event packet
@@ -586,7 +557,6 @@ static inline uint16_t sdp_event_query_attribute_byte_get_record_id(const uint8_
 static inline uint16_t sdp_event_query_attribute_byte_get_attribute_id(const uint8_t * event){
     return little_endian_read_16(event, 4);
 }
-
 /**
  * @brief Get field attribute_length from event sdp_event_query_attribute_byte
  * @param Event packet
@@ -596,7 +566,6 @@ static inline uint16_t sdp_event_query_attribute_byte_get_attribute_id(const uin
 static inline uint16_t sdp_event_query_attribute_byte_get_attribute_length(const uint8_t * event){
     return little_endian_read_16(event, 6);
 }
-
 /**
  * @brief Get field data_offset from event sdp_event_query_attribute_byte
  * @param Event packet
@@ -606,7 +575,6 @@ static inline uint16_t sdp_event_query_attribute_byte_get_attribute_length(const
 static inline uint16_t sdp_event_query_attribute_byte_get_data_offset(const uint8_t * event){
     return little_endian_read_16(event, 8);
 }
-
 /**
  * @brief Get field data from event sdp_event_query_attribute_byte
  * @param Event packet
@@ -626,7 +594,6 @@ static inline uint8_t sdp_event_query_attribute_byte_get_data(const uint8_t * ev
 static inline uint16_t sdp_event_query_attribute_value_get_record_id(const uint8_t * event){
     return little_endian_read_16(event, 2);
 }
-
 /**
  * @brief Get field attribute_id from event sdp_event_query_attribute_value
  * @param Event packet
@@ -636,7 +603,6 @@ static inline uint16_t sdp_event_query_attribute_value_get_record_id(const uint8
 static inline uint16_t sdp_event_query_attribute_value_get_attribute_id(const uint8_t * event){
     return little_endian_read_16(event, 4);
 }
-
 /**
  * @brief Get field attribute_length from event sdp_event_query_attribute_value
  * @param Event packet
@@ -646,7 +612,6 @@ static inline uint16_t sdp_event_query_attribute_value_get_attribute_id(const ui
 static inline int sdp_event_query_attribute_value_get_attribute_length(const uint8_t * event){
     return little_endian_read_16(event, 6);
 }
-
 /**
  * @brief Get field attribute_value from event sdp_event_query_attribute_value
  * @param Event packet
@@ -666,7 +631,6 @@ static inline const uint8_t * sdp_event_query_attribute_value_get_attribute_valu
 static inline uint16_t sdp_event_query_service_record_handle_get_total_count(const uint8_t * event){
     return little_endian_read_16(event, 2);
 }
-
 /**
  * @brief Get field record_index from event sdp_event_query_service_record_handle
  * @param Event packet
@@ -676,7 +640,6 @@ static inline uint16_t sdp_event_query_service_record_handle_get_total_count(con
 static inline uint16_t sdp_event_query_service_record_handle_get_record_index(const uint8_t * event){
     return little_endian_read_16(event, 4);
 }
-
 /**
  * @brief Get field record_handle from event sdp_event_query_service_record_handle
  * @param Event packet
@@ -687,6 +650,376 @@ static inline uint32_t sdp_event_query_service_record_handle_get_record_handle(c
     return little_endian_read_32(event, 6);
 }
 
+#ifdef ENABLE_BLE
+/**
+ * @brief Get field handle from event gatt_event_query_complete
+ * @param Event packet
+ * @return handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t gatt_event_query_complete_get_handle(const uint8_t * event){
+    return little_endian_read_16(event, 2);
+}
+/**
+ * @brief Get field status from event gatt_event_query_complete
+ * @param Event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t gatt_event_query_complete_get_status(const uint8_t * event){
+    return event[4];
+}
+#endif
+
+#ifdef ENABLE_BLE
+/**
+ * @brief Get field handle from event gatt_event_service_query_result
+ * @param Event packet
+ * @return handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t gatt_event_service_query_result_get_handle(const uint8_t * event){
+    return little_endian_read_16(event, 2);
+}
+/**
+ * @brief Get field service from event gatt_event_service_query_result
+ * @param Event packet
+ * @param Pointer to storage for service
+ * @note: btstack_type X
+ */
+static inline void gatt_event_service_query_result_get_service(const uint8_t * event, gatt_client_service_t * service){
+    gatt_client_deserialize_service(event, 4, service);    
+}
+#endif
+
+#ifdef ENABLE_BLE
+/**
+ * @brief Get field handle from event gatt_event_characteristic_query_result
+ * @param Event packet
+ * @return handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t gatt_event_characteristic_query_result_get_handle(const uint8_t * event){
+    return little_endian_read_16(event, 2);
+}
+/**
+ * @brief Get field characteristic from event gatt_event_characteristic_query_result
+ * @param Event packet
+ * @param Pointer to storage for characteristic
+ * @note: btstack_type Y
+ */
+static inline void gatt_event_characteristic_query_result_get_characteristic(const uint8_t * event, gatt_client_characteristic_t * characteristic){
+    gatt_client_deserialize_characteristic(event, 4, characteristic);    
+}
+#endif
+
+#ifdef ENABLE_BLE
+/**
+ * @brief Get field handle from event gatt_event_included_service_query_result
+ * @param Event packet
+ * @return handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t gatt_event_included_service_query_result_get_handle(const uint8_t * event){
+    return little_endian_read_16(event, 2);
+}
+/**
+ * @brief Get field include_handle from event gatt_event_included_service_query_result
+ * @param Event packet
+ * @return include_handle
+ * @note: btstack_type 2
+ */
+static inline uint16_t gatt_event_included_service_query_result_get_include_handle(const uint8_t * event){
+    return little_endian_read_16(event, 4);
+}
+/**
+ * @brief Get field service from event gatt_event_included_service_query_result
+ * @param Event packet
+ * @param Pointer to storage for service
+ * @note: btstack_type X
+ */
+static inline void gatt_event_included_service_query_result_get_service(const uint8_t * event, gatt_client_service_t * service){
+    gatt_client_deserialize_service(event, 6, service);    
+}
+#endif
+
+#ifdef ENABLE_BLE
+/**
+ * @brief Get field handle from event gatt_event_all_characteristic_descriptors_query_result
+ * @param Event packet
+ * @return handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t gatt_event_all_characteristic_descriptors_query_result_get_handle(const uint8_t * event){
+    return little_endian_read_16(event, 2);
+}
+/**
+ * @brief Get field characteristic_descriptor from event gatt_event_all_characteristic_descriptors_query_result
+ * @param Event packet
+ * @param Pointer to storage for characteristic_descriptor
+ * @note: btstack_type Z
+ */
+static inline void gatt_event_all_characteristic_descriptors_query_result_get_characteristic_descriptor(const uint8_t * event, gatt_client_characteristic_descriptor_t * characteristic_descriptor){
+    gatt_client_deserialize_characteristic_descriptor(event, 4, characteristic_descriptor);    
+}
+#endif
+
+#ifdef ENABLE_BLE
+/**
+ * @brief Get field handle from event gatt_event_characteristic_value_query_result
+ * @param Event packet
+ * @return handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t gatt_event_characteristic_value_query_result_get_handle(const uint8_t * event){
+    return little_endian_read_16(event, 2);
+}
+/**
+ * @brief Get field value_handle from event gatt_event_characteristic_value_query_result
+ * @param Event packet
+ * @return value_handle
+ * @note: btstack_type 2
+ */
+static inline uint16_t gatt_event_characteristic_value_query_result_get_value_handle(const uint8_t * event){
+    return little_endian_read_16(event, 4);
+}
+/**
+ * @brief Get field value_length from event gatt_event_characteristic_value_query_result
+ * @param Event packet
+ * @return value_length
+ * @note: btstack_type L
+ */
+static inline int gatt_event_characteristic_value_query_result_get_value_length(const uint8_t * event){
+    return little_endian_read_16(event, 6);
+}
+/**
+ * @brief Get field value from event gatt_event_characteristic_value_query_result
+ * @param Event packet
+ * @return value
+ * @note: btstack_type V
+ */
+static inline const uint8_t * gatt_event_characteristic_value_query_result_get_value(const uint8_t * event){
+    return &event[8];
+}
+#endif
+
+#ifdef ENABLE_BLE
+/**
+ * @brief Get field handle from event gatt_event_long_characteristic_value_query_result
+ * @param Event packet
+ * @return handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t gatt_event_long_characteristic_value_query_result_get_handle(const uint8_t * event){
+    return little_endian_read_16(event, 2);
+}
+/**
+ * @brief Get field value_handle from event gatt_event_long_characteristic_value_query_result
+ * @param Event packet
+ * @return value_handle
+ * @note: btstack_type 2
+ */
+static inline uint16_t gatt_event_long_characteristic_value_query_result_get_value_handle(const uint8_t * event){
+    return little_endian_read_16(event, 4);
+}
+/**
+ * @brief Get field value_offset from event gatt_event_long_characteristic_value_query_result
+ * @param Event packet
+ * @return value_offset
+ * @note: btstack_type 2
+ */
+static inline uint16_t gatt_event_long_characteristic_value_query_result_get_value_offset(const uint8_t * event){
+    return little_endian_read_16(event, 6);
+}
+/**
+ * @brief Get field value_length from event gatt_event_long_characteristic_value_query_result
+ * @param Event packet
+ * @return value_length
+ * @note: btstack_type L
+ */
+static inline int gatt_event_long_characteristic_value_query_result_get_value_length(const uint8_t * event){
+    return little_endian_read_16(event, 8);
+}
+/**
+ * @brief Get field value from event gatt_event_long_characteristic_value_query_result
+ * @param Event packet
+ * @return value
+ * @note: btstack_type V
+ */
+static inline const uint8_t * gatt_event_long_characteristic_value_query_result_get_value(const uint8_t * event){
+    return &event[10];
+}
+#endif
+
+#ifdef ENABLE_BLE
+/**
+ * @brief Get field handle from event gatt_event_notification
+ * @param Event packet
+ * @return handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t gatt_event_notification_get_handle(const uint8_t * event){
+    return little_endian_read_16(event, 2);
+}
+/**
+ * @brief Get field value_handle from event gatt_event_notification
+ * @param Event packet
+ * @return value_handle
+ * @note: btstack_type 2
+ */
+static inline uint16_t gatt_event_notification_get_value_handle(const uint8_t * event){
+    return little_endian_read_16(event, 4);
+}
+/**
+ * @brief Get field value_length from event gatt_event_notification
+ * @param Event packet
+ * @return value_length
+ * @note: btstack_type L
+ */
+static inline int gatt_event_notification_get_value_length(const uint8_t * event){
+    return little_endian_read_16(event, 6);
+}
+/**
+ * @brief Get field value from event gatt_event_notification
+ * @param Event packet
+ * @return value
+ * @note: btstack_type V
+ */
+static inline const uint8_t * gatt_event_notification_get_value(const uint8_t * event){
+    return &event[8];
+}
+#endif
+
+#ifdef ENABLE_BLE
+/**
+ * @brief Get field handle from event gatt_event_indication
+ * @param Event packet
+ * @return handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t gatt_event_indication_get_handle(const uint8_t * event){
+    return little_endian_read_16(event, 2);
+}
+/**
+ * @brief Get field value_handle from event gatt_event_indication
+ * @param Event packet
+ * @return value_handle
+ * @note: btstack_type 2
+ */
+static inline uint16_t gatt_event_indication_get_value_handle(const uint8_t * event){
+    return little_endian_read_16(event, 4);
+}
+/**
+ * @brief Get field value_length from event gatt_event_indication
+ * @param Event packet
+ * @return value_length
+ * @note: btstack_type L
+ */
+static inline int gatt_event_indication_get_value_length(const uint8_t * event){
+    return little_endian_read_16(event, 6);
+}
+/**
+ * @brief Get field value from event gatt_event_indication
+ * @param Event packet
+ * @return value
+ * @note: btstack_type V
+ */
+static inline const uint8_t * gatt_event_indication_get_value(const uint8_t * event){
+    return &event[8];
+}
+#endif
+
+#ifdef ENABLE_BLE
+/**
+ * @brief Get field descriptor_handle from event gatt_event_characteristic_descriptor_query_result
+ * @param Event packet
+ * @return descriptor_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t gatt_event_characteristic_descriptor_query_result_get_descriptor_handle(const uint8_t * event){
+    return little_endian_read_16(event, 2);
+}
+/**
+ * @brief Get field descriptor_length from event gatt_event_characteristic_descriptor_query_result
+ * @param Event packet
+ * @return descriptor_length
+ * @note: btstack_type 2
+ */
+static inline uint16_t gatt_event_characteristic_descriptor_query_result_get_descriptor_length(const uint8_t * event){
+    return little_endian_read_16(event, 4);
+}
+/**
+ * @brief Get field descriptor from event gatt_event_characteristic_descriptor_query_result
+ * @param Event packet
+ * @return descriptor
+ * @note: btstack_type L
+ */
+static inline int gatt_event_characteristic_descriptor_query_result_get_descriptor(const uint8_t * event){
+    return little_endian_read_16(event, 6);
+}
+#endif
+
+#ifdef ENABLE_BLE
+/**
+ * @brief Get field handle from event gatt_event_long_characteristic_descriptor_query_result
+ * @param Event packet
+ * @return handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t gatt_event_long_characteristic_descriptor_query_result_get_handle(const uint8_t * event){
+    return little_endian_read_16(event, 2);
+}
+/**
+ * @brief Get field descriptor_offset from event gatt_event_long_characteristic_descriptor_query_result
+ * @param Event packet
+ * @return descriptor_offset
+ * @note: btstack_type 2
+ */
+static inline uint16_t gatt_event_long_characteristic_descriptor_query_result_get_descriptor_offset(const uint8_t * event){
+    return little_endian_read_16(event, 4);
+}
+/**
+ * @brief Get field descriptor_length from event gatt_event_long_characteristic_descriptor_query_result
+ * @param Event packet
+ * @return descriptor_length
+ * @note: btstack_type L
+ */
+static inline int gatt_event_long_characteristic_descriptor_query_result_get_descriptor_length(const uint8_t * event){
+    return little_endian_read_16(event, 6);
+}
+/**
+ * @brief Get field descriptor from event gatt_event_long_characteristic_descriptor_query_result
+ * @param Event packet
+ * @return descriptor
+ * @note: btstack_type V
+ */
+static inline const uint8_t * gatt_event_long_characteristic_descriptor_query_result_get_descriptor(const uint8_t * event){
+    return &event[8];
+}
+#endif
+
+#ifdef ENABLE_BLE
+/**
+ * @brief Get field handle from event gatt_event_mtu
+ * @param Event packet
+ * @return handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t gatt_event_mtu_get_handle(const uint8_t * event){
+    return little_endian_read_16(event, 2);
+}
+/**
+ * @brief Get field MTU from event gatt_event_mtu
+ * @param Event packet
+ * @return MTU
+ * @note: btstack_type 2
+ */
+static inline uint16_t gatt_event_mtu_get_MTU(const uint8_t * event){
+    return little_endian_read_16(event, 4);
+}
+#endif
+
+#ifdef ENABLE_BLE
 /**
  * @brief Get field handle from event sm_event_just_works_request
  * @param Event packet
@@ -696,7 +1029,6 @@ static inline uint32_t sdp_event_query_service_record_handle_get_record_handle(c
 static inline hci_con_handle_t sm_event_just_works_request_get_handle(const uint8_t * event){
     return little_endian_read_16(event, 2);
 }
-
 /**
  * @brief Get field addr_type from event sm_event_just_works_request
  * @param Event packet
@@ -706,7 +1038,6 @@ static inline hci_con_handle_t sm_event_just_works_request_get_handle(const uint
 static inline uint8_t sm_event_just_works_request_get_addr_type(const uint8_t * event){
     return event[4];
 }
-
 /**
  * @brief Get field address from event sm_event_just_works_request
  * @param Event packet
@@ -714,9 +1045,11 @@ static inline uint8_t sm_event_just_works_request_get_addr_type(const uint8_t * 
  * @note: btstack_type B
  */
 static inline void sm_event_just_works_request_get_address(const uint8_t * event, bd_addr_t address){
-    reverse_48(&event[5], address);    
+    reverse_bd_addr(&event[5], address);    
 }
+#endif
 
+#ifdef ENABLE_BLE
 /**
  * @brief Get field handle from event sm_event_just_works_cancel
  * @param Event packet
@@ -726,7 +1059,6 @@ static inline void sm_event_just_works_request_get_address(const uint8_t * event
 static inline hci_con_handle_t sm_event_just_works_cancel_get_handle(const uint8_t * event){
     return little_endian_read_16(event, 2);
 }
-
 /**
  * @brief Get field addr_type from event sm_event_just_works_cancel
  * @param Event packet
@@ -736,7 +1068,6 @@ static inline hci_con_handle_t sm_event_just_works_cancel_get_handle(const uint8
 static inline uint8_t sm_event_just_works_cancel_get_addr_type(const uint8_t * event){
     return event[4];
 }
-
 /**
  * @brief Get field address from event sm_event_just_works_cancel
  * @param Event packet
@@ -744,9 +1075,11 @@ static inline uint8_t sm_event_just_works_cancel_get_addr_type(const uint8_t * e
  * @note: btstack_type B
  */
 static inline void sm_event_just_works_cancel_get_address(const uint8_t * event, bd_addr_t address){
-    reverse_48(&event[5], address);    
+    reverse_bd_addr(&event[5], address);    
 }
+#endif
 
+#ifdef ENABLE_BLE
 /**
  * @brief Get field handle from event sm_event_passkey_display_number
  * @param Event packet
@@ -756,7 +1089,6 @@ static inline void sm_event_just_works_cancel_get_address(const uint8_t * event,
 static inline hci_con_handle_t sm_event_passkey_display_number_get_handle(const uint8_t * event){
     return little_endian_read_16(event, 2);
 }
-
 /**
  * @brief Get field addr_type from event sm_event_passkey_display_number
  * @param Event packet
@@ -766,7 +1098,6 @@ static inline hci_con_handle_t sm_event_passkey_display_number_get_handle(const 
 static inline uint8_t sm_event_passkey_display_number_get_addr_type(const uint8_t * event){
     return event[4];
 }
-
 /**
  * @brief Get field address from event sm_event_passkey_display_number
  * @param Event packet
@@ -774,9 +1105,8 @@ static inline uint8_t sm_event_passkey_display_number_get_addr_type(const uint8_
  * @note: btstack_type B
  */
 static inline void sm_event_passkey_display_number_get_address(const uint8_t * event, bd_addr_t address){
-    reverse_48(&event[5], address);    
+    reverse_bd_addr(&event[5], address);    
 }
-
 /**
  * @brief Get field passkey from event sm_event_passkey_display_number
  * @param Event packet
@@ -786,7 +1116,9 @@ static inline void sm_event_passkey_display_number_get_address(const uint8_t * e
 static inline uint32_t sm_event_passkey_display_number_get_passkey(const uint8_t * event){
     return little_endian_read_32(event, 11);
 }
+#endif
 
+#ifdef ENABLE_BLE
 /**
  * @brief Get field handle from event sm_event_passkey_display_cancel
  * @param Event packet
@@ -796,7 +1128,6 @@ static inline uint32_t sm_event_passkey_display_number_get_passkey(const uint8_t
 static inline hci_con_handle_t sm_event_passkey_display_cancel_get_handle(const uint8_t * event){
     return little_endian_read_16(event, 2);
 }
-
 /**
  * @brief Get field addr_type from event sm_event_passkey_display_cancel
  * @param Event packet
@@ -806,7 +1137,6 @@ static inline hci_con_handle_t sm_event_passkey_display_cancel_get_handle(const 
 static inline uint8_t sm_event_passkey_display_cancel_get_addr_type(const uint8_t * event){
     return event[4];
 }
-
 /**
  * @brief Get field address from event sm_event_passkey_display_cancel
  * @param Event packet
@@ -814,9 +1144,11 @@ static inline uint8_t sm_event_passkey_display_cancel_get_addr_type(const uint8_
  * @note: btstack_type B
  */
 static inline void sm_event_passkey_display_cancel_get_address(const uint8_t * event, bd_addr_t address){
-    reverse_48(&event[5], address);    
+    reverse_bd_addr(&event[5], address);    
 }
+#endif
 
+#ifdef ENABLE_BLE
 /**
  * @brief Get field handle from event sm_event_passkey_input_number
  * @param Event packet
@@ -826,7 +1158,6 @@ static inline void sm_event_passkey_display_cancel_get_address(const uint8_t * e
 static inline hci_con_handle_t sm_event_passkey_input_number_get_handle(const uint8_t * event){
     return little_endian_read_16(event, 2);
 }
-
 /**
  * @brief Get field addr_type from event sm_event_passkey_input_number
  * @param Event packet
@@ -836,7 +1167,6 @@ static inline hci_con_handle_t sm_event_passkey_input_number_get_handle(const ui
 static inline uint8_t sm_event_passkey_input_number_get_addr_type(const uint8_t * event){
     return event[4];
 }
-
 /**
  * @brief Get field address from event sm_event_passkey_input_number
  * @param Event packet
@@ -844,9 +1174,11 @@ static inline uint8_t sm_event_passkey_input_number_get_addr_type(const uint8_t 
  * @note: btstack_type B
  */
 static inline void sm_event_passkey_input_number_get_address(const uint8_t * event, bd_addr_t address){
-    reverse_48(&event[5], address);    
+    reverse_bd_addr(&event[5], address);    
 }
+#endif
 
+#ifdef ENABLE_BLE
 /**
  * @brief Get field handle from event sm_event_passkey_input_cancel
  * @param Event packet
@@ -856,7 +1188,6 @@ static inline void sm_event_passkey_input_number_get_address(const uint8_t * eve
 static inline hci_con_handle_t sm_event_passkey_input_cancel_get_handle(const uint8_t * event){
     return little_endian_read_16(event, 2);
 }
-
 /**
  * @brief Get field addr_type from event sm_event_passkey_input_cancel
  * @param Event packet
@@ -866,7 +1197,6 @@ static inline hci_con_handle_t sm_event_passkey_input_cancel_get_handle(const ui
 static inline uint8_t sm_event_passkey_input_cancel_get_addr_type(const uint8_t * event){
     return event[4];
 }
-
 /**
  * @brief Get field address from event sm_event_passkey_input_cancel
  * @param Event packet
@@ -874,9 +1204,11 @@ static inline uint8_t sm_event_passkey_input_cancel_get_addr_type(const uint8_t 
  * @note: btstack_type B
  */
 static inline void sm_event_passkey_input_cancel_get_address(const uint8_t * event, bd_addr_t address){
-    reverse_48(&event[5], address);    
+    reverse_bd_addr(&event[5], address);    
 }
+#endif
 
+#ifdef ENABLE_BLE
 /**
  * @brief Get field handle from event sm_event_identity_resolving_started
  * @param Event packet
@@ -886,7 +1218,6 @@ static inline void sm_event_passkey_input_cancel_get_address(const uint8_t * eve
 static inline hci_con_handle_t sm_event_identity_resolving_started_get_handle(const uint8_t * event){
     return little_endian_read_16(event, 2);
 }
-
 /**
  * @brief Get field addr_type from event sm_event_identity_resolving_started
  * @param Event packet
@@ -896,7 +1227,6 @@ static inline hci_con_handle_t sm_event_identity_resolving_started_get_handle(co
 static inline uint8_t sm_event_identity_resolving_started_get_addr_type(const uint8_t * event){
     return event[4];
 }
-
 /**
  * @brief Get field address from event sm_event_identity_resolving_started
  * @param Event packet
@@ -904,9 +1234,11 @@ static inline uint8_t sm_event_identity_resolving_started_get_addr_type(const ui
  * @note: btstack_type B
  */
 static inline void sm_event_identity_resolving_started_get_address(const uint8_t * event, bd_addr_t address){
-    reverse_48(&event[5], address);    
+    reverse_bd_addr(&event[5], address);    
 }
+#endif
 
+#ifdef ENABLE_BLE
 /**
  * @brief Get field handle from event sm_event_identity_resolving_failed
  * @param Event packet
@@ -916,7 +1248,6 @@ static inline void sm_event_identity_resolving_started_get_address(const uint8_t
 static inline hci_con_handle_t sm_event_identity_resolving_failed_get_handle(const uint8_t * event){
     return little_endian_read_16(event, 2);
 }
-
 /**
  * @brief Get field addr_type from event sm_event_identity_resolving_failed
  * @param Event packet
@@ -926,7 +1257,6 @@ static inline hci_con_handle_t sm_event_identity_resolving_failed_get_handle(con
 static inline uint8_t sm_event_identity_resolving_failed_get_addr_type(const uint8_t * event){
     return event[4];
 }
-
 /**
  * @brief Get field address from event sm_event_identity_resolving_failed
  * @param Event packet
@@ -934,9 +1264,11 @@ static inline uint8_t sm_event_identity_resolving_failed_get_addr_type(const uin
  * @note: btstack_type B
  */
 static inline void sm_event_identity_resolving_failed_get_address(const uint8_t * event, bd_addr_t address){
-    reverse_48(&event[5], address);    
+    reverse_bd_addr(&event[5], address);    
 }
+#endif
 
+#ifdef ENABLE_BLE
 /**
  * @brief Get field handle from event sm_event_identity_resolving_succeeded
  * @param Event packet
@@ -946,7 +1278,6 @@ static inline void sm_event_identity_resolving_failed_get_address(const uint8_t 
 static inline hci_con_handle_t sm_event_identity_resolving_succeeded_get_handle(const uint8_t * event){
     return little_endian_read_16(event, 2);
 }
-
 /**
  * @brief Get field addr_type from event sm_event_identity_resolving_succeeded
  * @param Event packet
@@ -956,7 +1287,6 @@ static inline hci_con_handle_t sm_event_identity_resolving_succeeded_get_handle(
 static inline uint8_t sm_event_identity_resolving_succeeded_get_addr_type(const uint8_t * event){
     return event[4];
 }
-
 /**
  * @brief Get field address from event sm_event_identity_resolving_succeeded
  * @param Event packet
@@ -964,9 +1294,8 @@ static inline uint8_t sm_event_identity_resolving_succeeded_get_addr_type(const 
  * @note: btstack_type B
  */
 static inline void sm_event_identity_resolving_succeeded_get_address(const uint8_t * event, bd_addr_t address){
-    reverse_48(&event[5], address);    
+    reverse_bd_addr(&event[5], address);    
 }
-
 /**
  * @brief Get field le_device_db_index from event sm_event_identity_resolving_succeeded
  * @param Event packet
@@ -976,7 +1305,9 @@ static inline void sm_event_identity_resolving_succeeded_get_address(const uint8
 static inline uint16_t sm_event_identity_resolving_succeeded_get_le_device_db_index(const uint8_t * event){
     return little_endian_read_16(event, 11);
 }
+#endif
 
+#ifdef ENABLE_BLE
 /**
  * @brief Get field handle from event sm_event_authorization_request
  * @param Event packet
@@ -986,7 +1317,6 @@ static inline uint16_t sm_event_identity_resolving_succeeded_get_le_device_db_in
 static inline hci_con_handle_t sm_event_authorization_request_get_handle(const uint8_t * event){
     return little_endian_read_16(event, 2);
 }
-
 /**
  * @brief Get field addr_type from event sm_event_authorization_request
  * @param Event packet
@@ -996,7 +1326,6 @@ static inline hci_con_handle_t sm_event_authorization_request_get_handle(const u
 static inline uint8_t sm_event_authorization_request_get_addr_type(const uint8_t * event){
     return event[4];
 }
-
 /**
  * @brief Get field address from event sm_event_authorization_request
  * @param Event packet
@@ -1004,9 +1333,11 @@ static inline uint8_t sm_event_authorization_request_get_addr_type(const uint8_t
  * @note: btstack_type B
  */
 static inline void sm_event_authorization_request_get_address(const uint8_t * event, bd_addr_t address){
-    reverse_48(&event[5], address);    
+    reverse_bd_addr(&event[5], address);    
 }
+#endif
 
+#ifdef ENABLE_BLE
 /**
  * @brief Get field handle from event sm_event_authorization_result
  * @param Event packet
@@ -1016,7 +1347,6 @@ static inline void sm_event_authorization_request_get_address(const uint8_t * ev
 static inline hci_con_handle_t sm_event_authorization_result_get_handle(const uint8_t * event){
     return little_endian_read_16(event, 2);
 }
-
 /**
  * @brief Get field addr_type from event sm_event_authorization_result
  * @param Event packet
@@ -1026,7 +1356,6 @@ static inline hci_con_handle_t sm_event_authorization_result_get_handle(const ui
 static inline uint8_t sm_event_authorization_result_get_addr_type(const uint8_t * event){
     return event[4];
 }
-
 /**
  * @brief Get field address from event sm_event_authorization_result
  * @param Event packet
@@ -1034,9 +1363,8 @@ static inline uint8_t sm_event_authorization_result_get_addr_type(const uint8_t 
  * @note: btstack_type B
  */
 static inline void sm_event_authorization_result_get_address(const uint8_t * event, bd_addr_t address){
-    reverse_48(&event[5], address);    
+    reverse_bd_addr(&event[5], address);    
 }
-
 /**
  * @brief Get field authorization_result from event sm_event_authorization_result
  * @param Event packet
@@ -1046,7 +1374,9 @@ static inline void sm_event_authorization_result_get_address(const uint8_t * eve
 static inline uint8_t sm_event_authorization_result_get_authorization_result(const uint8_t * event){
     return event[11];
 }
+#endif
 
+#ifdef ENABLE_BLE
 /**
  * @brief Get field handle from event ancs_event_client_connected
  * @param Event packet
@@ -1056,7 +1386,9 @@ static inline uint8_t sm_event_authorization_result_get_authorization_result(con
 static inline hci_con_handle_t ancs_event_client_connected_get_handle(const uint8_t * event){
     return little_endian_read_16(event, 2);
 }
+#endif
 
+#ifdef ENABLE_BLE
 /**
  * @brief Get field handle from event ancs_event_client_notification
  * @param Event packet
@@ -1066,7 +1398,6 @@ static inline hci_con_handle_t ancs_event_client_connected_get_handle(const uint
 static inline hci_con_handle_t ancs_event_client_notification_get_handle(const uint8_t * event){
     return little_endian_read_16(event, 2);
 }
-
 /**
  * @brief Get field attribute_id from event ancs_event_client_notification
  * @param Event packet
@@ -1076,7 +1407,6 @@ static inline hci_con_handle_t ancs_event_client_notification_get_handle(const u
 static inline uint16_t ancs_event_client_notification_get_attribute_id(const uint8_t * event){
     return little_endian_read_16(event, 4);
 }
-
 /**
  * @brief Get field text from event ancs_event_client_notification
  * @param Event packet
@@ -1086,7 +1416,9 @@ static inline uint16_t ancs_event_client_notification_get_attribute_id(const uin
 static inline const char * ancs_event_client_notification_get_text(const uint8_t * event){
     return (const char *) &event[6];
 }
+#endif
 
+#ifdef ENABLE_BLE
 /**
  * @brief Get field handle from event ancs_event_client_disconnected
  * @param Event packet
@@ -1096,6 +1428,8 @@ static inline const char * ancs_event_client_notification_get_text(const uint8_t
 static inline hci_con_handle_t ancs_event_client_disconnected_get_handle(const uint8_t * event){
     return little_endian_read_16(event, 2);
 }
+#endif
+
 
 
 /* API_END */

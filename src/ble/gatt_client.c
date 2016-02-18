@@ -1833,7 +1833,7 @@ void gatt_client_pts_suppress_mtu_exchange(void){
     pts_suppress_mtu_exchange = 1;
 }
 
-void gatt_client_deserialize_service(uint8_t *packet, int offset, gatt_client_service_t *service){
+void gatt_client_deserialize_service(const uint8_t *packet, int offset, gatt_client_service_t *service){
     service->start_group_handle = little_endian_read_16(packet, offset);
     service->end_group_handle = little_endian_read_16(packet, offset + 2);
     reverse_128(&packet[offset + 4], service->uuid128);
@@ -1842,7 +1842,7 @@ void gatt_client_deserialize_service(uint8_t *packet, int offset, gatt_client_se
     }
 }
 
-void gatt_client_deserialize_characteristic(uint8_t * packet, int offset, gatt_client_characteristic_t * characteristic){
+void gatt_client_deserialize_characteristic(const uint8_t * packet, int offset, gatt_client_characteristic_t * characteristic){
     characteristic->start_handle = little_endian_read_16(packet, offset);
     characteristic->value_handle = little_endian_read_16(packet, offset + 2);
     characteristic->end_handle = little_endian_read_16(packet, offset + 4);
@@ -1854,7 +1854,7 @@ void gatt_client_deserialize_characteristic(uint8_t * packet, int offset, gatt_c
     }
 }
 
-void gatt_client_deserialize_characteristic_descriptor(uint8_t * packet, int offset, gatt_client_characteristic_descriptor_t * descriptor){
+void gatt_client_deserialize_characteristic_descriptor(const uint8_t * packet, int offset, gatt_client_characteristic_descriptor_t * descriptor){
     descriptor->handle = little_endian_read_16(packet, offset);
     reverse_128(&packet[offset+2], descriptor->uuid128);
 }
