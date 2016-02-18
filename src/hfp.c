@@ -237,9 +237,9 @@ hfp_connection_t * get_hfp_connection_context_for_rfcomm_cid(uint16_t cid){
     linked_list_iterator_t it;    
     linked_list_iterator_init(&it, hfp_get_connections());
     while (linked_list_iterator_has_next(&it)){
-        hfp_connection_t * connection = (hfp_connection_t *)linked_list_iterator_next(&it);
-        if (connection->rfcomm_cid == cid){
-            return connection;
+        hfp_connection_t * hfp_connection = (hfp_connection_t *)linked_list_iterator_next(&it);
+        if (hfp_connection->rfcomm_cid == cid){
+            return hfp_connection;
         }
     }
     return NULL;
@@ -249,9 +249,9 @@ hfp_connection_t * get_hfp_connection_context_for_bd_addr(bd_addr_t bd_addr){
     linked_list_iterator_t it;  
     linked_list_iterator_init(&it, hfp_get_connections());
     while (linked_list_iterator_has_next(&it)){
-        hfp_connection_t * connection = (hfp_connection_t *)linked_list_iterator_next(&it);
-        if (memcmp(connection->remote_addr, bd_addr, 6) == 0) {
-            return connection;
+        hfp_connection_t * hfp_connection = (hfp_connection_t *)linked_list_iterator_next(&it);
+        if (memcmp(hfp_connection->remote_addr, bd_addr, 6) == 0) {
+            return hfp_connection;
         }
     }
     return NULL;
@@ -261,9 +261,9 @@ hfp_connection_t * get_hfp_connection_context_for_sco_handle(uint16_t handle){
     linked_list_iterator_t it;    
     linked_list_iterator_init(&it, hfp_get_connections());
     while (linked_list_iterator_has_next(&it)){
-        hfp_connection_t * connection = (hfp_connection_t *)linked_list_iterator_next(&it);
-        if (connection->sco_handle == handle){
-            return connection;
+        hfp_connection_t * hfp_connection = (hfp_connection_t *)linked_list_iterator_next(&it);
+        if (hfp_connection->sco_handle == handle){
+            return hfp_connection;
         }
     }
     return NULL;
@@ -282,7 +282,7 @@ void hfp_reset_context_flags(hfp_connection_t * context){
     context->enable_extended_audio_gateway_error_report = 0;
     context->extended_audio_gateway_error = 0;
 
-    // establish codecs connection
+    // establish codecs hfp_connection
     context->suggested_codec = 0;
     context->negotiated_codec = 0;
     context->codec_confirmed = 0;
@@ -416,27 +416,27 @@ static hfp_connection_t * connection_doing_sdp_query = NULL;
 static void handle_query_rfcomm_event(sdp_query_event_t * event, void * context){
     sdp_query_rfcomm_service_event_t * ve;
     sdp_query_complete_event_t * ce;
-    hfp_connection_t * connection = connection_doing_sdp_query;
+    hfp_connection_t * hfp_connection = connection_doing_sdp_query;
     
-    if ( connection->state != HFP_W4_SDP_QUERY_COMPLETE) return;
+    if ( hfp_connection->state != HFP_W4_SDP_QUERY_COMPLETE) return;
     
     switch (event->type){
         case SDP_QUERY_RFCOMM_SERVICE:
             ve = (sdp_query_rfcomm_service_event_t*) event;
-            if (!connection) {
-                log_error("handle_query_rfcomm_event alloc connection for RFCOMM port %u failed", ve->channel_nr);
+            if (!hfp_connection) {
+                log_error("handle_query_rfcomm_event alloc hfp_connection for RFCOMM port %u failed", ve->channel_nr);
                 return;
             }
-            connection->rfcomm_channel_nr = ve->channel_nr;
+            hfp_connection->rfcomm_channel_nr = ve->channel_nr;
             break;
         case SDP_QUERY_COMPLETE:
             connection_doing_sdp_query = NULL;
             ce = (sdp_query_complete_event_t*) event;
             
-            if (connection->rfcomm_channel_nr > 0){
-                connection->state = HFP_W4_RFCOMM_CONNECTED;
-                log_info("HFP: SDP_QUERY_COMPLETE context %p, addr %s, state %d", connection, bd_addr_to_str( connection->remote_addr),  connection->state);
-                rfcomm_create_channel_internal(NULL, connection->remote_addr, connection->rfcomm_channel_nr); 
+            if (hfp_connection->rfcomm_channel_nr > 0){
+                hfp_connection->state = HFP_W4_RFCOMM_CONNECTED;
+                log_info("HFP: SDP_QUERY_COMPLETE context %p, addr %s, state %d", hfp_connection, bd_addr_to_str( hfp_connection->remote_addr),  hfp_connection->state);
+                rfcomm_create_channel_internal(NULL, hfp_connection->remote_addr, hfp_connection->rfcomm_channel_nr); 
                 break;
             }
             log_info("rfcomm service not found, status %u.", ce->status);
@@ -523,7 +523,7 @@ void hfp_handle_hci_event(hfp_callback_t callback, uint8_t packet_type, uint8_t 
             uint8_t status = packet[index++];
 
             if (status != 0){
-                log_error("(e)SCO Connection failed status %u", status);
+                log_error("(e)SCO hfp_connection failed status %u", status);
                 // if outgoing && link_setting != d0 && appropriate error
                 if (status != 0x11 && status != 0x1f) break;  // invalid params / unspecified error
                 context = get_hfp_connection_context_for_bd_addr(event_addr);
@@ -569,14 +569,14 @@ void hfp_handle_hci_event(hfp_callback_t callback, uint8_t packet_type, uint8_t 
 
             switch (link_type){
                 case 0x00:
-                    log_info("SCO Connection established.");
-                    if (transmission_interval != 0) log_error("SCO Connection: transmission_interval not zero: %d.", transmission_interval);
-                    if (retransmission_interval != 0) log_error("SCO Connection: retransmission_interval not zero: %d.", retransmission_interval);
-                    if (rx_packet_length != 0) log_error("SCO Connection: rx_packet_length not zero: %d.", rx_packet_length);
-                    if (tx_packet_length != 0) log_error("SCO Connection: tx_packet_length not zero: %d.", tx_packet_length);
+                    log_info("SCO hfp_connection established.");
+                    if (transmission_interval != 0) log_error("SCO hfp_connection: transmission_interval not zero: %d.", transmission_interval);
+                    if (retransmission_interval != 0) log_error("SCO hfp_connection: retransmission_interval not zero: %d.", retransmission_interval);
+                    if (rx_packet_length != 0) log_error("SCO hfp_connection: rx_packet_length not zero: %d.", rx_packet_length);
+                    if (tx_packet_length != 0) log_error("SCO hfp_connection: tx_packet_length not zero: %d.", tx_packet_length);
                     break;
                 case 0x02:
-                    log_info("eSCO Connection established. \n");
+                    log_info("eSCO hfp_connection established. \n");
                     break;
                 default:
                     log_error("(e)SCO reserved link_type 0x%2x", link_type);

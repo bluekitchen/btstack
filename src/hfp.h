@@ -632,14 +632,14 @@ hfp_generic_status_indicator_t * get_hfp_generic_status_indicators(void);
 void set_hfp_generic_status_indicators(hfp_generic_status_indicator_t * indicators, int indicator_nr);
 
 linked_list_t * hfp_get_connections(void);
-void hfp_parse(hfp_connection_t * context, uint8_t byte, int isHandsFree);
+void hfp_parse(hfp_connection_t * connection, uint8_t byte, int isHandsFree);
 
 void hfp_init(uint16_t rfcomm_channel_nr);
 void hfp_establish_service_level_connection(bd_addr_t bd_addr, uint16_t service_uuid);
 void hfp_release_service_level_connection(hfp_connection_t * connection);
-void hfp_reset_context_flags(hfp_connection_t * context);
+void hfp_reset_context_flags(hfp_connection_t * connection);
 
-void hfp_release_audio_connection(hfp_connection_t * context);
+void hfp_release_audio_connection(hfp_connection_t * connection);
 
 void hfp_setup_synchronous_connection(hci_con_handle_t handle, hfp_link_setttings_t link_settings);
 
