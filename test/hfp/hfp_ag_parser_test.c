@@ -78,8 +78,7 @@ static  hfp_connection_t context;
 
 TEST_GROUP(HFPParser){
     char packet[200];
-    int pos;
-    int offset;
+    uint16_t pos;
 
     void setup(void){
         context.parser_state = HFP_PARSER_CMD_HEADER;

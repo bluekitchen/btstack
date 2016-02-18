@@ -263,7 +263,7 @@ void sdp_parser_handle_service_search(uint8_t * data, uint16_t total_count, uint
         sdp_query_service_record_handle_event_t service_record_handle_event = {
             SDP_QUERY_SERVICE_RECORD_HANDLE, 
             total_count, 
-            record_counter, 
+            (uint16_t) record_counter, 
             record_handle
         };
         (*sdp_query_callback)((sdp_query_event_t*)&service_record_handle_event);       

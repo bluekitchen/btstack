@@ -45,7 +45,7 @@ COMMON_OBJ  = $(COMMON:.c=.o)
 MOCK_OBJ  = $(MOCK:.c=.o)
 
 # CC = gcc-fsf-4.9
-CFLAGS  = -g -Wall -Wmissing-prototype -I. -I../ -I${BTSTACK_ROOT}/src -I${BTSTACK_ROOT}/include
+CFLAGS  = -g -Wall -Wmissing-prototype -Wnarrowing -I. -I../ -I${BTSTACK_ROOT}/src -I${BTSTACK_ROOT}/include
 CFLAGS += -Werror
 
 VPATH += ${BTSTACK_ROOT}/src

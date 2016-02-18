@@ -24,7 +24,7 @@ uint16_t get_gatt_client_handle(void){
 }
 
 void mock_simulate_command_complete(const hci_cmd_t *cmd){
-	uint8_t packet[] = {HCI_EVENT_COMMAND_COMPLETE, 4, 1, cmd->opcode & 0xff, cmd->opcode >> 8, 0};
+	uint8_t packet[] = {HCI_EVENT_COMMAND_COMPLETE, 4, 1, (uint8_t) (cmd->opcode & 0xff), (uint8_t) (cmd->opcode >> 8), 0};
 	registered_l2cap_packet_handler(NULL, HCI_EVENT_PACKET, NULL, (uint8_t *)&packet, sizeof(packet));
 }
 
