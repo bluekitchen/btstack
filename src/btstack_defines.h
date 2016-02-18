@@ -285,22 +285,29 @@ typedef uint8_t sm_key_t[16];
 #define DAEMON_EVENT_VERSION                               0x63
 
 // data: system bluetooth on/off (bool)
+/**
+ * @format 1
+ * param system_bluetooth_enabled
+ */
 #define DAEMON_EVENT_SYSTEM_BLUETOOTH_ENABLED              0x64
 
 // data: event (8), len(8), status (8) == 0, address (48), name (1984 bits = 248 bytes)
+
+/* 
+ * @format 1BT
+ * @param status == 0 to match read_remote_name_request
+ * @param address
+ * @param name
+ */
 #define DAEMON_EVENT_REMOTE_NAME_CACHED                    0x65
 
-// data: event(8)
-#define DAEMON_EVENT_CONNECTION_OPENED                     0x68
+// internal daemon events
 
 // data: event(8)
-#define DAEMON_EVENT_CONNECTION_CLOSED                     0x69
-
-// data: event(8), nr_connections(8)
-#define DAEMON_NR_CONNECTIONS_CHANGED                      0x6A
+#define DAEMON_EVENT_CONNECTION_OPENED                     0x67
 
 // data: event(8)
-#define DAEMON_EVENT_NEW_RFCOMM_CREDITS                    0x6B
+#define DAEMON_EVENT_CONNECTION_CLOSED                     0x68
 
 
 // additional HCI events

@@ -197,18 +197,6 @@ void static socket_connection_emit_connection_closed(connection_t *connection){
     (*socket_connection_packet_callback)(connection, DAEMON_EVENT_PACKET, 0, (uint8_t *) &event, 1);
 }
 
-void static socket_connection_emit_nr_connections(void){
-    btstack_linked_item_t *it;
-    uint8_t nr_connections = 0;
-    for (it = (btstack_linked_item_t *) connections; it != NULL ; it = it->next, nr_connections++);
-    
-    uint8_t event[2];
-    event[0] = DAEMON_NR_CONNECTIONS_CHANGED;
-    event[1] = nr_connections;
-    (*socket_connection_packet_callback)(NULL, DAEMON_EVENT_PACKET, 0, (uint8_t *) &event, 2);
-    // log_info("Nr connections changed,.. new %u", nr_connections); 
-}
-
 int socket_connection_hci_process(struct btstack_data_source *ds) {
     connection_t *conn = (connection_t *) ds;
     
@@ -220,7 +208,6 @@ int socket_connection_hci_process(struct btstack_data_source *ds) {
         // free connection
         socket_connection_free_connection(conn);
         
-        socket_connection_emit_nr_connections();
         return 0;
     }
     conn->bytes_read += bytes_read;
@@ -313,7 +300,6 @@ static int socket_connection_accept(struct btstack_data_source *socket_ds) {
     
     connection_t * connection = socket_connection_register_new_connection(fd);
     socket_connection_emit_connection_opened(connection);
-    socket_connection_emit_nr_connections();
     
     return 0;
 }

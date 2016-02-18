@@ -1347,9 +1347,6 @@ static int daemon_client_handler(connection_t *connection, uint16_t packet_type,
                         start_power_off_timer();
                     }
                     break;
-                case DAEMON_NR_CONNECTIONS_CHANGED:
-                    log_info("Nr Connections changed, new %u\n",data[1]);
-                    break;
                 default:
                     break;
             }
@@ -1605,14 +1602,7 @@ static void daemon_packet_handler(void * connection, uint8_t packet_type, uint16
                 default:
                     break;
             }
-        case DAEMON_EVENT_PACKET:
-            switch (packet[0]){
-                case DAEMON_EVENT_NEW_RFCOMM_CREDITS:
-                    daemon_retry_parked();
-                    break;
-                default:
-                    break;
-            }
+            break;
         case L2CAP_DATA_PACKET:
             connection = connection_for_l2cap_cid(channel);
             if (!connection) return;
