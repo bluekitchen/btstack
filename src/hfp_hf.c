@@ -1033,9 +1033,9 @@ void hfp_hf_init(uint16_t rfcomm_channel_nr){
     hfp_hf_microphone_gain = 9;
 }
 
-void hfp_hf_set_codecs(int codecs_nr, uint8_t * codecs){
+void hfp_hf_init_codecs(int codecs_nr, uint8_t * codecs){
     if (codecs_nr > HFP_MAX_NUM_CODECS){
-        log_error("hfp_hf_set_codecs: codecs_nr (%d) > HFP_MAX_NUM_CODECS (%d)", codecs_nr, HFP_MAX_NUM_CODECS);
+        log_error("hfp_hf_init_codecs: codecs_nr (%d) > HFP_MAX_NUM_CODECS (%d)", codecs_nr, HFP_MAX_NUM_CODECS);
         return;
     }
 
@@ -1058,11 +1058,11 @@ void hfp_hf_set_codecs(int codecs_nr, uint8_t * codecs){
     }
 }
 
-void hfp_hf_set_supported_features(uint32_t supported_features){
+void hfp_hf_init_supported_features(uint32_t supported_features){
     hfp_supported_features = supported_features;
 }
 
-void hfp_hf_set_hf_indicators(int indicators_nr, uint16_t * indicators){
+void hfp_hf_init_hf_indicators(int indicators_nr, uint16_t * indicators){
     hfp_indicators_nr = indicators_nr;
     int i;
     for (i = 0; i < hfp_indicators_nr ; i++){

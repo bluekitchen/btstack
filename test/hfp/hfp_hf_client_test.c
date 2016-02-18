@@ -338,7 +338,7 @@ void simulate_test_sequence(hfp_test_item_t * test_item){
             sscanf(&expected_cmd[7],"%d,%d", &parsed_codecs[0], &parsed_codecs[1]);
             new_codecs[0] = parsed_codecs[0];
             new_codecs[1] = parsed_codecs[1];
-            hfp_hf_set_codecs(2, (uint8_t*)new_codecs);
+            hfp_hf_init_codecs(2, (uint8_t*)new_codecs);
             while (has_more_hfp_hf_commands()){
                 // empty rfcomm payload buffer
                 get_next_hfp_hf_command();
@@ -350,7 +350,7 @@ void simulate_test_sequence(hfp_test_item_t * test_item){
             printf("Call hfp_hf_init with SF %d\n", supported_features);
             hfp_hf_release_service_level_connection(device_addr);
             
-            hfp_hf_set_supported_features(supported_features);
+            hfp_hf_init_supported_features(supported_features);
             
             user_command('a');
             while (has_more_hfp_hf_commands()){
@@ -482,11 +482,10 @@ TEST_GROUP(HFPClient){
         call_termiated = 0;
 
         hfp_hf_init(rfcomm_channel_nr);
-        hfp_hf_set_supported_features(supported_features_with_codec_negotiation);
-        hfp_hf_set_hf_indicators(sizeof(indicators)/sizeof(uint16_t), indicators);
-        hfp_hf_set_hf_indicators_status(1);
+        hfp_hf_init_supported_features(supported_features_with_codec_negotiation);
+        hfp_hf_init_hf_indicators(sizeof(indicators)/sizeof(uint16_t), indicators);
 
-        hfp_hf_set_codecs(sizeof(codecs), codecs);
+        hfp_hf_init_codecs(sizeof(codecs), codecs);
     }
 
     void teardown(void){
