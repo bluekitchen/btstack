@@ -679,9 +679,8 @@ extern "C" {
 #define HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED  0x01
 
 /**
- * @format 11
+ * @format 1
  * @param subevent_code
- * @param status 0 == OK
  */
 #define HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED     0x02
 
@@ -693,9 +692,8 @@ extern "C" {
 #define HFP_SUBEVENT_AUDIO_CONNECTION_ESTABLISHED          0x03
 
 /**
- * @format 11
+ * @format 1
  * @param subevent_code
- * @param status 0 == OK
  */
 #define HFP_SUBEVENT_AUDIO_CONNECTION_RELEASED             0x04
 
@@ -707,9 +705,8 @@ extern "C" {
 #define HFP_SUBEVENT_COMPLETE                              0x05
 
 /**
- * @format 1111T
+ * @format 111T
  * @param subevent_code
- * @param status
  * @param indicator_index
  * @param indicator_status
  * @param indicator_name
@@ -719,7 +716,6 @@ extern "C" {
 /**
  * @format 1111T
  * @param subevent_code
- * @param status
  * @param network_operator_mode
  * @param network_operator_format
  * @param network_operator_name
@@ -741,74 +737,67 @@ extern "C" {
 #define HFP_SUBEVENT_CODECS_CONNECTION_COMPLETE               0x09
 
 /**
- * @format 11
+ * @format 1
  * @param subevent_code
- * @param status
  */
- #define HFP_SUBEVENT_START_RINGINIG                           0x0A
+#define HFP_SUBEVENT_START_RINGINIG                           0x0A
 
 /**
- * @format 11
+ * @format 1
  * @param subevent_code
- * @param status
  */
 #define HFP_SUBEVENT_STOP_RINGINIG                            0x0B
 
 /**
- * @format 11
+ * @format 1
  * @param subevent_code
- * @param status
  */
  #define HFP_SUBEVENT_CALL_TERMINATED                          0x0C
 
 /**
- * @format 11T
+ * @format 1T
  * @param subevent_code
- * @param status
  * @param number
  */
 #define HFP_SUBEVENT_PLACE_CALL_WITH_NUMBER                   0x0D
-#define HFP_SUBEVENT_REDIAL_LAST_NUMBER                       0x0E
 
 /**
- * @format 11
+ * @format 1
  * @param subevent_code
- * @param status
  */
-#define HFP_SUBEVENT_ATTACH_NUMBER_TO_VOICE_TAG               0x0F
+#define HFP_SUBEVENT_ATTACH_NUMBER_TO_VOICE_TAG               0x0E
 
 /**
- * @format 11T
+ * @format 1T
  * @param subevent_code
- * @param status
  * @param number
  */
-#define HFP_SUBEVENT_NUMBER_FOR_VOICE_TAG                     0x10
+#define HFP_SUBEVENT_NUMBER_FOR_VOICE_TAG                     0x0F
 
 /**
- * @format 11T
+ * @format 1T
  * @param subevent_code
- * @param status
  * @param dtmf code
  */
-#define HFP_SUBEVENT_TRANSMIT_DTMF_CODES                      0x11
-
-#define HFP_SUBEVENT_TRANSMIT_STATUS_OF_CURRENT_CALL          0x12
-#define HFP_SUBEVENT_CALL_ANSWERED                            0x13
+#define HFP_SUBEVENT_TRANSMIT_DTMF_CODES                      0x10
 
 /**
- * @format 11
+ * @format 1
  * @param subevent_code
- * @param status
  */
-#define HFP_SUBEVENT_CONFERENCE_CALL                          0x14
+ #define HFP_SUBEVENT_CALL_ANSWERED                            0x11
 
 /**
- * @format 11
+ * @format 1
  * @param subevent_code
- * @param status
  */
-#define HFP_SUBEVENT_RING                                     0x15
+#define HFP_SUBEVENT_CONFERENCE_CALL                          0x12
+
+/**
+ * @format 1
+ * @param subevent_code
+ */
+#define HFP_SUBEVENT_RING                                     0x13
 
 /**
  * @format 111
@@ -816,7 +805,7 @@ extern "C" {
  * @param status
  * @param gain
  */
- #define HFP_SUBEVENT_SPEAKER_VOLUME                           0x16
+ #define HFP_SUBEVENT_SPEAKER_VOLUME                           0x14
 
 /**
  * @format 111
@@ -824,30 +813,27 @@ extern "C" {
  * @param status
  * @param gain
  */
-#define HFP_SUBEVENT_MICROPHONE_VOLUME                        0x17
+#define HFP_SUBEVENT_MICROPHONE_VOLUME                        0x15
 
 /**
- * @format 111T
+ * @format 11T
  * @param subevent_code
- * @param status
  * @param type
  * @param number
  */
-#define HFP_SUBEVENT_CALL_WAITING_NOTIFICATION                0x18
+#define HFP_SUBEVENT_CALL_WAITING_NOTIFICATION                0x16
 
 /**
- * @format 111T
+ * @format 11T
  * @param subevent_code
- * @param status
  * @param type
  * @param number
  */
-#define HFP_SUBEVENT_CALLING_LINE_INDETIFICATION_NOTIFICATION 0x19
+#define HFP_SUBEVENT_CALLING_LINE_INDETIFICATION_NOTIFICATION 0x17
 
 /**
- * @format 1111111T
+ * @format 111111T
  * @param subevent_code
- * @param status
  * @param clcc_idx
  * @param clcc_dir
  * @param clcc_status
@@ -855,7 +841,7 @@ extern "C" {
  * @param bnip_type
  * @param bnip_number
  */
-#define HFP_SUBEVENT_ENHANCED_CALL_STATUS                     0x1A
+#define HFP_SUBEVENT_ENHANCED_CALL_STATUS                     0x18
 
 /**
  * @format 111T
@@ -864,15 +850,14 @@ extern "C" {
  * @param bnip_type
  * @param bnip_number
  */
- #define HFP_SUBEVENT_SUBSCRIBER_NUMBER_INFORMATION            0x1B
+ #define HFP_SUBEVENT_SUBSCRIBER_NUMBER_INFORMATION            0x19
 
 /**
- * @format 11T
+ * @format 1T
  * @param subevent_code
- * @param status
  * @param value
  */
-#define HFP_SUBEVENT_RESPONSE_AND_HOLD_STATUS                 0x1C
+#define HFP_SUBEVENT_RESPONSE_AND_HOLD_STATUS                 0x1A
 
 // ANCS Client
 #define ANCS_CLIENT_CONNECTED                              0xF0

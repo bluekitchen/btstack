@@ -623,6 +623,7 @@ int store_bit(uint32_t bitmap, int position, uint8_t value);
 void hfp_create_sdp_record(uint8_t * service, uint16_t service_uuid, int rfcomm_channel_nr, const char * name);
 void hfp_handle_hci_event(hfp_callback_t callback, uint8_t packet_type, uint8_t *packet, uint16_t size);
 void hfp_emit_event(hfp_callback_t callback, uint8_t event_subtype, uint8_t value);
+void hfp_emit_simple_event(hfp_callback_t callback, uint8_t event_subtype);
 void hfp_emit_string_event(hfp_callback_t callback, uint8_t event_subtype, const char * value);
 
 hfp_connection_t * get_hfp_connection_context_for_rfcomm_cid(uint16_t cid);

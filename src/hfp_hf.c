@@ -91,6 +91,20 @@ void hfp_hf_register_packet_handler(hfp_callback_t callback){
     hfp_callback = callback;
 }
 
+static void hfp_hf_emit_subscriber_information(hfp_callback_t callback, uint8_t event_subtype, uint8_t status, uint8_t bnip_type, const char * bnip_number){
+    if (!callback) return;
+    uint8_t event[31];
+    event[0] = HCI_EVENT_HFP_META;
+    event[1] = sizeof(event) - 2;
+    event[2] = event_subtype;
+    event[3] = status;
+    event[4] = bnip_type;
+    int size = (strlen(bnip_number) < sizeof(event) - 6) ? strlen(bnip_number) : sizeof(event) - 6;
+    strncpy((char*)&event[5], bnip_number, size);
+    event[5 + size] = 0;
+    (*callback)(event, sizeof(event));
+}
+
 static void hfp_hf_emit_type_and_number(hfp_callback_t callback, uint8_t event_subtype, uint8_t bnip_type, const char * bnip_number){
     if (!callback) return;
     uint8_t event[30];
@@ -356,17 +370,16 @@ static int hfp_hf_send_clcc(uint16_t cid){
     return send_str_over_rfcomm(cid, buffer);
 }
 
-static void hfp_emit_ag_indicator_event(hfp_callback_t callback, int status, hfp_ag_indicator_t indicator){
+static void hfp_emit_ag_indicator_event(hfp_callback_t callback, hfp_ag_indicator_t indicator){
     if (!callback) return;
-    uint8_t event[6+HFP_MAX_INDICATOR_DESC_SIZE+1];
+    uint8_t event[5+HFP_MAX_INDICATOR_DESC_SIZE+1];
     event[0] = HCI_EVENT_HFP_META;
     event[1] = sizeof(event) - 2;
     event[2] = HFP_SUBEVENT_AG_INDICATOR_STATUS_CHANGED;
-    event[3] = status;
-    event[4] = indicator.index; 
-    event[5] = indicator.status;
-    strncpy((char*)&event[6], indicator.name, HFP_MAX_INDICATOR_DESC_SIZE);
-    event[6+HFP_MAX_INDICATOR_DESC_SIZE] = 0;
+    event[3] = indicator.index; 
+    event[4] = indicator.status;
+    strncpy((char*)&event[5], indicator.name, HFP_MAX_INDICATOR_DESC_SIZE);
+    event[5+HFP_MAX_INDICATOR_DESC_SIZE] = 0;
     (*callback)(event, sizeof(event));
 }
 
@@ -376,9 +389,9 @@ static void hfp_emit_network_operator_event(hfp_callback_t callback, hfp_network
     event[0] = HCI_EVENT_HFP_META;
     event[1] = sizeof(event) - 2;
     event[2] = HFP_SUBEVENT_NETWORK_OPERATOR_CHANGED;
-    event[4] = network_operator.mode;
-    event[5] = network_operator.format;
-    strcpy((char*)&event[6], network_operator.name); 
+    event[3] = network_operator.mode;
+    event[4] = network_operator.format;
+    strcpy((char*)&event[5], network_operator.name); 
     (*callback)(event, sizeof(event));
 }
 
@@ -962,7 +975,7 @@ static void hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8
         case HFP_CMD_GET_SUBSCRIBER_NUMBER_INFORMATION:
             hfp_connection->command = HFP_CMD_NONE;
             // printf("Subscriber Number: number %s, type %u\n", hfp_connection->bnip_number, hfp_connection->bnip_type);
-            hfp_hf_emit_type_and_number(hfp_callback, HFP_SUBEVENT_SUBSCRIBER_NUMBER_INFORMATION, hfp_connection->bnip_type, hfp_connection->bnip_number);
+            hfp_hf_emit_subscriber_information(hfp_callback, HFP_SUBEVENT_SUBSCRIBER_NUMBER_INFORMATION, 0, hfp_connection->bnip_type, hfp_connection->bnip_number);
             break;
         case HFP_CMD_RESPONSE_AND_HOLD_STATUS:
             hfp_connection->command = HFP_CMD_NONE;
@@ -1018,7 +1031,7 @@ static void hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8
             hfp_hf_switch_on_ok(hfp_connection);
             break;
         case HFP_CMD_RING:
-            hfp_emit_event(hfp_callback, HFP_SUBEVENT_RING, 0);
+            hfp_emit_simple_event(hfp_callback, HFP_SUBEVENT_RING);
             break;
         case HFP_CMD_TRANSFER_AG_INDICATOR_STATUS:
             for (i = 0; i < hfp_connection->ag_indicators_nr; i++){
@@ -1031,7 +1044,7 @@ static void hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8
                         hfp_call_status = (hfp_call_status_t) hfp_connection->ag_indicators[i].status;
                     }
                     hfp_connection->ag_indicators[i].status_changed = 0;
-                    hfp_emit_ag_indicator_event(hfp_callback, 0, hfp_connection->ag_indicators[i]);
+                    hfp_emit_ag_indicator_event(hfp_callback, hfp_connection->ag_indicators[i]);
                     break;
                 }
             }

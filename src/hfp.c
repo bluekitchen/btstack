@@ -196,6 +196,15 @@ int join_bitmap(char * buffer, int buffer_size, uint32_t values, int values_nr){
     return offset;
 }
 
+void hfp_emit_simple_event(hfp_callback_t callback, uint8_t event_subtype){
+    if (!callback) return;
+    uint8_t event[3];
+    event[0] = HCI_EVENT_HFP_META;
+    event[1] = sizeof(event) - 2;
+    event[2] = event_subtype;
+    (*callback)(event, sizeof(event));
+}
+
 void hfp_emit_event(hfp_callback_t callback, uint8_t event_subtype, uint8_t value){
     if (!callback) return;
     uint8_t event[4];
@@ -615,7 +624,7 @@ void hfp_handle_hci_event(hfp_callback_t callback, uint8_t packet_type, uint8_t 
                 break;
             }
             
-            hfp_emit_event(callback, HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED, 0);
+            hfp_emit_simple_event(callback, HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED);
             remove_hfp_connection_context(hfp_connection);
             break;
 
@@ -635,7 +644,7 @@ void hfp_handle_hci_event(hfp_callback_t callback, uint8_t packet_type, uint8_t 
                 hfp_connection->sco_handle = 0;
                 hfp_connection->release_audio_connection = 0;
                 hfp_connection->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
-                hfp_emit_event(callback, HFP_SUBEVENT_AUDIO_CONNECTION_RELEASED, 0);
+                hfp_emit_simple_event(callback, HFP_SUBEVENT_AUDIO_CONNECTION_RELEASED);
                 break;
             }
             break;

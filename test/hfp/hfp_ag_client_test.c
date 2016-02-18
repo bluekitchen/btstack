@@ -362,8 +362,7 @@ void packet_handler(uint8_t * event, uint16_t event_size){
     if (event[3]
         && event[2] != HFP_SUBEVENT_PLACE_CALL_WITH_NUMBER
         && event[2] != HFP_SUBEVENT_ATTACH_NUMBER_TO_VOICE_TAG 
-        && event[2] != HFP_SUBEVENT_TRANSMIT_DTMF_CODES
-        && event[2] != HFP_SUBEVENT_TRANSMIT_STATUS_OF_CURRENT_CALL){
+        && event[2] != HFP_SUBEVENT_TRANSMIT_DTMF_CODES){
         printf("ERROR, status: %u\n", event[3]);
         return;
     }
