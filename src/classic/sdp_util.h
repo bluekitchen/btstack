@@ -119,6 +119,18 @@ int       sdp_traversal_match_pattern(uint8_t * element, de_type_t attributeType
 
 void      sdp_create_spp_service(uint8_t *service, uint32_t service_record_handle, int service_id, const char *name);
 
+/*
+ * @brief Returns service search pattern for given UUID-16
+ * @note Uses fixed buffer
+ */
+uint8_t* sdp_service_search_pattern_for_uuid16(uint16_t uuid16);
+
+/*
+ * @brief Returns service search pattern for given UUID-128
+ * @note Uses fixed buffer
+ */
+uint8_t* sdp_service_search_pattern_for_uuid128(const uint8_t * uuid128);
+
 /* API_END */
 
 #if defined __cplusplus

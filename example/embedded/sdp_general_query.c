@@ -54,7 +54,6 @@
 #include "btstack_memory.h"
 #include "btstack_run_loop.h"
 #include "classic/sdp_client.h"
-#include "classic/sdp_query_util.h"
 #include "classic/sdp_util.h"
 #include "hci.h"
 #include "hci_cmd.h"
@@ -95,7 +94,7 @@ static void sdp_client_init(void){
 /* @section SDP Client Query 
  *
  * @text To trigger an SDP query to get the a list of service records on a remote device,
- * you need to call sdp_general_query_for_uuid() with the remote address and the
+ * you need to call sdp_client_query_uuid16() with the remote address and the
  * UUID of the public browse group, as shown in Listing SDPQueryUUID. 
  * In this example we used fixed address of the remote device shown in Listing Remote.
  * Please update it with the address of a device in your vicinity, e.g., one reported
@@ -116,7 +115,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
     switch (event) {
         case BTSTACK_EVENT_STATE:
             if (packet[2] == HCI_STATE_WORKING){
-                sdp_general_query_for_uuid(&handle_sdp_client_query_result, remote, SDP_PublicBrowseGroup);
+                sdp_client_query_uuid16(&handle_sdp_client_query_result, remote, SDP_PublicBrowseGroup);
             }
             break;
         default:

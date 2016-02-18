@@ -29,8 +29,6 @@ COMMON += \
 
 SDP_CLIENT += \
     sdp_client.o		        \
-    sdp_parser.o		        \
-    sdp_query_util.o		    \
 	sdp_query_rfcomm.o		    \
 
 ATT	+= \

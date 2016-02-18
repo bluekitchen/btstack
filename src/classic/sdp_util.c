@@ -60,6 +60,12 @@
 const char * const type_names[] = { "NIL", "UINT", "INT", "UUID", "STRING", "BOOL", "DES", "DEA", "URL"};
 #endif
 
+static uint8_t des_serviceSearchPattern[] = {0x35, 0x03, 0x19, 0x00, 0x00};
+static uint8_t des_serviceSearchPatternUUID128[] = {
+    0x35, 0x10, 0x19, 
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+
 // MARK: DataElement getter
 de_size_t de_get_size_type(const uint8_t *header){
     return (de_size_t) (header[0] & 7);
@@ -746,3 +752,14 @@ void sdp_create_spp_service(uint8_t *service, uint32_t service_record_handle, in
 	de_add_number(service,  DE_UINT, DE_SIZE_16, 0x0100);
 	de_add_data(service,  DE_STRING, strlen(name), (uint8_t *) name);
 }
+
+uint8_t* sdp_service_search_pattern_for_uuid16(uint16_t uuid16){
+    big_endian_store_16(des_serviceSearchPattern, 3, uuid16);
+    return (uint8_t*)des_serviceSearchPattern;
+}
+
+uint8_t* sdp_service_search_pattern_for_uuid128(const uint8_t * uuid128){
+    memcpy(&des_serviceSearchPatternUUID128[3], uuid128, 16);
+    return (uint8_t*)des_serviceSearchPatternUUID128;
+}
+

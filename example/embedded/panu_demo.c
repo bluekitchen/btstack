@@ -85,7 +85,6 @@
 #include "btstack_event.h"
 #include "btstack_run_loop.h"
 #include "classic/sdp_client.h"
-#include "classic/sdp_query_util.h"
 #include "classic/sdp_util.h"
 #include "hci.h"
 #include "hci_cmd.h"
@@ -445,7 +444,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 case BTSTACK_EVENT_STATE:
                     if (packet[2] == HCI_STATE_WORKING) {
                         printf("Start SDP BNEP query.\n");
-                        sdp_general_query_for_uuid(remote, SDP_BNEPProtocol);
+                        sdp_client_query_uuid16(remote, SDP_BNEPProtocol);
                     }
                     break;
 

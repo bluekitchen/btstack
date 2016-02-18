@@ -51,7 +51,6 @@ BTdaemon_FILES = \
     rfcomm_service_db_cocoa.m \
     sdp_client.c              \
     sdp_query_rfcomm.c        \
-    sdp_query_util.c          \
 
 BTdaemon_CFLAGS = \
 	-I$(BTSTACK_ROOT)/src \

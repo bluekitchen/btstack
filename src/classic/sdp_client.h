@@ -78,6 +78,19 @@ int sdp_client_ready(void);
  */
 void sdp_client_query(btstack_packet_handler_t callback, bd_addr_t remote, const uint8_t * des_service_search_pattern, const uint8_t * des_attribute_id_list);
 
+/*
+ * @brief Searches SDP records on a remote device for all services with a given UUID.
+ * @note calls sdp_client_query with service search pattern based on uuid16
+ */
+void sdp_client_query_uuid16(btstack_packet_handler_t callback, bd_addr_t remote, uint16_t uuid16);
+
+/*
+ * @brief Searches SDP records on a remote device for all services with a given UUID.
+ * @note calls sdp_client_query with service search pattern based on uuid128
+ */
+void sdp_client_query_uuid128(btstack_packet_handler_t callback, bd_addr_t remote, const uint8_t* uuid128);
+
+
 /** 
  * @brief Retrieves all attribute IDs of a SDP record specified by its service record handle and a list of attribute IDs. 
  * The remote data is handled by the SDP parser. The SDP parser delivers attribute values and done event via the callback.

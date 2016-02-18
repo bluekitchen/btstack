@@ -55,7 +55,6 @@
 #include "btstack_memory.h"
 #include "btstack_run_loop.h"
 #include "classic/sdp_client.h"
-#include "classic/sdp_query_util.h"
 #include "classic/sdp_util.h"
 #include "hci.h"
 #include "hci_cmd.h"
@@ -105,7 +104,7 @@ static void sdp_client_init(void){
 
 /* @section SDP Client Query 
  * To trigger an SDP query to get the a list of service records on a remote device,
- * you need to call sdp_general_query_for_uuid() with the remote address and the
+ * you need to call sdp_client_query_uuid16() with the remote address and the
  * BNEP protocol UUID, as shown in Listing SDPQueryUUID. 
  * In this example we again used fixed address of the remote device. Please update
  * for your environment.
@@ -121,7 +120,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             // BTstack activated, get started 
             if (packet[2] == HCI_STATE_WORKING){
                 printf("Start SDP BNEP query.\n");
-                sdp_general_query_for_uuid(&handle_sdp_client_query_result, remote, SDP_BNEPProtocol);
+                sdp_client_query_uuid16(&handle_sdp_client_query_result, remote, SDP_BNEPProtocol);
             }
             break;
         default:

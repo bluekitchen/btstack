@@ -43,7 +43,6 @@
 #define __SDP_QUERY_RFCOMM_H
 
 #include "btstack_util.h"
-#include "classic/sdp_query_util.h"
 
 #define SDP_SERVICE_NAME_LEN 20
 

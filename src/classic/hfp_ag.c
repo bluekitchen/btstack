@@ -55,12 +55,13 @@
 #include "btstack_memory.h"
 #include "hci_dump.h"
 #include "l2cap.h"
-#include "classic/sdp_query_rfcomm.h"
-#include "classic/sdp_server.h"
 #include "btstack_debug.h"
 #include "classic/hfp.h"
-#include "classic/hfp_gsm_model.h"
 #include "classic/hfp_ag.h"
+#include "classic/hfp_gsm_model.h"
+#include "classic/sdp_query_rfcomm.h"
+#include "classic/sdp_server.h"
+#include "classic/sdp_util.h"
 
 // private prototypes
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);

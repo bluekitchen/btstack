@@ -38,7 +38,6 @@ COMMON = \
     sdp_util.c                \
     btstack_util.c			          \
     sdp_client.c              \
-    sdp_query_util.c		  \
 	sdp_query_rfcomm.c 		  \
 
 BLE = \

@@ -89,7 +89,6 @@
 #include "classic/sdp_server.h"
 #include "classic/sdp_client.h"
 #include "classic/sdp_query_rfcomm.h"
-#include "classic/sdp_query_util.h"
 #include "classic/sdp_util.h"
 // #endif
 

@@ -82,9 +82,9 @@ static uint16_t sdp_client_setup_service_search_request(uint8_t * data);
 static uint16_t sdp_client_setup_service_attribute_request(uint8_t * data);
 static void     sdp_client_parse_service_search_response(uint8_t* packet);
 static void     sdp_client_parse_service_attribute_response(uint8_t* packet);
-static uint32_t serviceRecordHandle;
-static uint32_t record_handle;
 #endif
+
+static uint8_t des_attributeIDList[] = { 0x35, 0x05, 0x0A, 0x00, 0x01, 0xff, 0xff};  // Attribute: 0x0001 - 0x0100
 
 // State DES Parser
 static de_state_t de_header_state;
@@ -112,6 +112,10 @@ static uint8_t   continuationState[16];
 static uint8_t   continuationStateLen;
 static sdp_client_state_t sdp_client_state = INIT;
 static SDP_PDU_ID_t PDU_ID = SDP_Invalid;
+#ifdef ENABLE_SDP_EXTRA_QUERIES
+static uint32_t serviceRecordHandle;
+static uint32_t record_handle;
+#endif
 
 // DES Parser
 void de_state_init(de_state_t * de_state){
@@ -705,6 +709,24 @@ void sdp_client_query(btstack_packet_handler_t callback, bd_addr_t remote, const
 
     sdp_client_state = W4_CONNECT;
     l2cap_create_channel(sdp_client_packet_handler, remote, PSM_SDP, l2cap_max_mtu(), NULL);
+}
+
+void sdp_client_query_uuid16(btstack_packet_handler_t callback, bd_addr_t remote, uint16_t uuid){
+    if (!sdp_client_ready()){
+        sdp_client_emit_busy(callback);
+        return;
+    }
+    uint8_t * service_service_search_pattern = sdp_service_search_pattern_for_uuid16(uuid);
+    sdp_client_query(callback, remote, service_service_search_pattern, des_attributeIDList);
+}
+
+void sdp_client_query_uuid128(btstack_packet_handler_t callback, bd_addr_t remote, const uint8_t* uuid){
+    if (!sdp_client_ready()){
+        sdp_client_emit_busy(callback);
+        return;
+    }
+    uint8_t * service_service_search_pattern = sdp_service_search_pattern_for_uuid128(uuid);
+    sdp_client_query(callback, remote, service_service_search_pattern, des_attributeIDList);
 }
 
 #ifdef ENABLE_SDP_EXTRA_QUERIES

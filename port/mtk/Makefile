@@ -51,9 +51,7 @@ BTdaemon_OBJS = $(libBTstack_OBJS)   \
 	rfcomm.o                    \
 	sdp.o                       \
     sdp_client.o                \
-    sdp_parser.o                \
     sdp_query_rfcomm.o          \
-    sdp_query_util.o            \
 	daemon.o 				    \
 	hci_transport_h4_mtk.o      \
 
