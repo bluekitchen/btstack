@@ -755,6 +755,11 @@ typedef uint8_t sm_key_t[16];
 
 #define HCI_EVENT_HSP_META                                 0xE8
 
+#define HCI_EVENT_HFP_META                                 0xE9
+
+
+// HSP Subevents
+
 /**
  * @format 11
  * @param subevent_code
@@ -806,7 +811,7 @@ typedef uint8_t sm_key_t[16];
 #define HSP_SUBEVENT_AG_INDICATION                         0x07
 
 
-#define HCI_EVENT_HFP_META                                 0xE9
+// HFP Subevents
 
 #define HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED  0x01
 #define HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED     0x02
