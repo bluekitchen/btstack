@@ -65,7 +65,7 @@ extern "C" {
 void hfp_hf_create_sdp_record(uint8_t * service, int rfcomm_channel_nr, const char * name, uint32_t supported_features);
 
 /**
- * @brief Set up HFP Hands-Free (HF) device. 
+ * @brief Set up HFP Hands-Free (HF) device without additional supported features 
  * 
  * @param rfcomm_channel_nr
  */
@@ -77,30 +77,23 @@ void hfp_hf_init(uint16_t rfcomm_channel_nr);
  * @param codecs_nr
  * @param codecs
  */
-void hfp_hf_set_codecs(int codecs_nr, uint8_t * codecs);
+void hfp_hf_init_codecs(int codecs_nr, uint8_t * codecs);
 
 /**
- * @brief Set supported feature bitmap. 
+ * @brief Set supported features.
  * 
  * @param supported_features 32-bit bitmap, see HFP_HFSF_* values in hfp.h
  */
-void hfp_hf_set_supported_features(uint32_t supported_features);
+void hfp_hf_init_supported_features(uint32_t supported_features);
 
 /**
  * @brief Set HF indicators. 
  * 
  * @param indicators_nr
  * @param indicators
- * @param values
  */
-void hfp_hf_set_hf_indicators(int indicators_nr, uint16_t * indicators);
+void hfp_hf_init_hf_indicators(int indicators_nr, uint16_t * indicators);
 
-/**
- * @brief Set HF indicators status bitmap. 
- * 
- * @param indicators_status 32-bit bitmap, 0 - indicator is disabled, 1 - indicator is enabled
- */
-void hfp_hf_set_hf_indicators_status(uint32_t indicators_status);
 
 /**
  * @brief Register callback for the HFP Hands-Free (HF) client. 

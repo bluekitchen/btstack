@@ -70,7 +70,6 @@ static uint8_t hfp_codecs[HFP_MAX_NUM_CODECS];
 static uint8_t hfp_indicators_nr = 0;
 static uint8_t hfp_indicators[HFP_MAX_NUM_HF_INDICATORS];
 static uint32_t hfp_indicators_value[HFP_MAX_NUM_HF_INDICATORS];
-static uint16_t hfp_indicators_status;
 
 static uint8_t hfp_hf_speaker_gain = 9;
 static uint8_t hfp_hf_microphone_gain = 9;
@@ -1070,11 +1069,6 @@ void hfp_hf_set_hf_indicators(int indicators_nr, uint16_t * indicators){
         hfp_indicators[i] = indicators[i];
     }
 }
-
-void hfp_hf_set_hf_indicators_status(uint32_t indicators_status){
-    hfp_indicators_status = indicators_status;
-}
-
 
 void hfp_hf_establish_service_level_connection(bd_addr_t bd_addr){
     hfp_establish_service_level_connection(bd_addr, SDP_HandsfreeAudioGateway);
