@@ -65,7 +65,7 @@ extern "C" {
 void hfp_hf_create_sdp_record(uint8_t * service, int rfcomm_channel_nr, const char * name, uint32_t supported_features);
 
 /**
- * @brief Set up HFP Hands-Free (HF) device without additional supported features 
+ * @brief Set up HFP Hands-Free (HF) device without additional supported features. 
  * 
  * @param rfcomm_channel_nr
  */
