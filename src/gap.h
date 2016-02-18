@@ -140,6 +140,28 @@ void gap_set_bondable_mode(int enabled);
  */
 int gap_get_bondable_mode(void);
 
+/* Configure Secure Simple Pairing */
+
+/**
+ * @brief Enable will enable SSP during init.
+ */
+void gap_ssp_set_enable(int enable);
+
+/**
+ * @brief Set IO Capability. BTstack will return capability to SSP requests
+ */
+void gap_ssp_set_io_capability(int ssp_io_capability);
+
+/**
+ * @brief Set Authentication Requirements using during SSP
+ */
+void gap_ssp_set_authentication_requirement(int authentication_requirement);
+
+/**
+ * @brief If set, BTstack will confirm a numeric comparison and enter '000000' if requested.
+ */
+void gap_ssp_set_auto_accept(int auto_accept);
+
 /**
  * @brief Start dedicated bonding with device. Disconnect after bonding.
  * @param device
@@ -291,6 +313,37 @@ int gap_auto_connection_stop(bd_addr_type_t address_typ, bd_addr_t address);
  * @note  Convenience function to stop all active auto connection attempts
  */
 void gap_auto_connection_stop_all(void);
+
+// Classic
+
+/**
+ * @brief Override page scan mode. Page scan mode enabled by l2cap when services are registered
+ * @note Might be used to reduce power consumption while Bluetooth module stays powered but no (new)
+ *       connections are expected
+ */
+void gap_connectable_control(uint8_t enable);
+
+/**
+ * @brief Allows to control if device is discoverable. OFF by default.
+ */
+void gap_discoverable_control(uint8_t enable);
+
+/**
+ * @brief Gets local address.
+ */
+void gap_local_bd_addr(bd_addr_t address_buffer);
+
+/**
+ * @brief Deletes link key for remote device with baseband address.
+ */
+void gap_drop_link_key_for_bd_addr(bd_addr_t addr);
+
+// LE
+
+/**
+ * @brief Get addr type and address used in advertisement packets.
+ */
+void gap_advertisements_get_address(uint8_t * addr_type, bd_addr_t addr);
 
 
 /* API_END*/

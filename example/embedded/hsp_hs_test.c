@@ -220,8 +220,8 @@ int btstack_main(int argc, const char * argv[]){
     compute_signal();
 #endif
 
-    hci_discoverable_control(1);
-    hci_ssp_set_io_capability(SSP_IO_CAPABILITY_DISPLAY_YES_NO);
+    gap_discoverable_control(1);
+    gap_ssp_set_io_capability(SSP_IO_CAPABILITY_DISPLAY_YES_NO);
     gap_set_local_name("BTstack HSP HS");
 
     // register for HCI events

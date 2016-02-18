@@ -14,7 +14,7 @@ functionality is split between and . Please check both.
 
 A remote unconnected Bluetooth device must be set as “discoverable” in
 order to be seen by a device performing the inquiry scan. To become
-discoverable, an application can call *hci_discoverable_control* with
+discoverable, an application can call *gap_discoverable_control* with
 input parameter 1. If you want to provide a helpful name for your
 device, the application can set its local name by calling
 $gap_set_local_name$. To save energy, you may set the device as
@@ -26,7 +26,7 @@ undiscoverable again, once a connection is established. See Listing
     int main(void){
         ... 
         // make discoverable
-        hci_discoverable_control(1);
+        gap_discoverable_control(1);
         btstack_run_loop_execute(); 
         return 0;
     }
@@ -35,7 +35,7 @@ undiscoverable again, once a connection is established. See Listing
          switch(state){
               case W4_CHANNEL_COMPLETE:
                   // if connection is successful, make device undiscoverable
-                  hci_discoverable_control(0);
+                  gap_discoverable_control(0);
               ...
          }
      }

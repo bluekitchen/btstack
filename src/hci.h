@@ -656,42 +656,12 @@ typedef struct {
 
 } hci_stack_t;
 
+
 /* API_START */
+
     
-/**
- * @brief Check hci packet buffer and if SCO packet can be sent to controller
- */
-int hci_can_send_sco_packet_now(void);
+// HCI init and configuration
 
-/**
- * @brief Check if SCO packet can be sent to controller
- */
-int hci_can_send_prepared_sco_packet_now(void);
-
-/**
- * @brief Send SCO packet prepared in hci packet buffer
- */
-int hci_send_sco_packet_buffer(int size);
-
-/**
- * @brief Override page scan mode
- */
-void hci_connectable_control(uint8_t enable);
-
-/**
- * @brief Shutdown HCI
- */
-void hci_close(void);
-
-/** 
- * @brief Check if CMD packet can be sent to controller
- */
-int hci_can_send_command_packet_now(void);
-    
-/**
- * @brief Gets local address.
- */
-void hci_local_bd_addr(bd_addr_t address_buffer);
 
 /**
  * @brief Set up HCI. Needs to be called before any other function.
@@ -719,9 +689,39 @@ void hci_set_link_key_db(btstack_link_key_db_t const * link_key_db);
 void hci_set_class_of_device(uint32_t class_of_device);
 
 /**
- * @brief Set Public BD ADDR - passed on to Bluetooth chipset if supported in bt_control_h
+ * @brief Set callback for Bluetooth Hardware Error
+ */
+void hci_set_hardware_error_callback(void (*fn)(void));
+
+/**
+ * @brief Set Public BD ADDR - passed on to Bluetooth chipset during init if supported in bt_control_h
  */
 void hci_set_bd_addr(bd_addr_t addr);
+
+/** 
+ * @brief Configure Voice Setting for use with SCO data in HSP/HFP
+ */
+void hci_set_sco_voice_setting(uint16_t voice_setting);
+
+/**
+ * @brief Get SCO Voice Setting
+ * @return current voice setting
+ */
+uint16_t hci_get_sco_voice_setting(void);
+
+/**
+ * @brief Requests the change of BTstack power mode.
+ */
+int  hci_power_control(HCI_POWER_MODE mode);
+
+/**
+ * @brief Shutdown HCI
+ */
+void hci_close(void);
+
+
+// Callback registration
+
 
 /**
  * @brief Add event packet handler. 
@@ -738,74 +738,46 @@ void hci_register_acl_packet_handler(void (*handler)(uint8_t packet_type, uint8_
  */
 void hci_register_sco_packet_handler(void (*handler)(uint8_t packet_type, uint8_t *packet, uint16_t size));
 
-/**
- * @brief Requests the change of BTstack power mode.
- */
-int  hci_power_control(HCI_POWER_MODE mode);
 
-/**
- * @brief Allows to control if device is discoverable. OFF by default.
+// Sending HCI Commands
+
+/** 
+ * @brief Check if CMD packet can be sent to controller
  */
-void hci_discoverable_control(uint8_t enable);
+int hci_can_send_command_packet_now(void);
 
 /**
  * @brief Creates and sends HCI command packets based on a template and a list of parameters. Will return error if outgoing data buffer is occupied. 
  */
 int hci_send_cmd(const hci_cmd_t *cmd, ...);
 
-/**
- * @brief Deletes link key for remote device with baseband address.
- */
-void hci_drop_link_key_for_bd_addr(bd_addr_t addr);
 
-/* Configure Secure Simple Pairing */
-
-/**
- * @brief Enable will enable SSP during init.
- */
-void hci_ssp_set_enable(int enable);
-
-/**
- * @brief Set IO Capability. BTstack will return capability to SSP requests
- */
-void hci_ssp_set_io_capability(int ssp_io_capability);
-
-/**
- * @brief Set Authentication Requirements using during SSP
- */
-void hci_ssp_set_authentication_requirement(int authentication_requirement);
-
-/**
- * @brief If set, BTstack will confirm a numeric comparison and enter '000000' if requested.
- */
-void hci_ssp_set_auto_accept(int auto_accept);
-
-/**
- * @brief Get addr type and address used in advertisement packets.
- */
-void hci_le_advertisement_address(uint8_t * addr_type, bd_addr_t addr);
-
-/**
- * @brief Set callback for Bluetooth Hardware Error
- */
-void hci_set_hardware_error_callback(void (*fn)(void));
-
-/** 
- * @brief Configure Voice Setting for use with SCO data in HSP/HFP
- */
-void hci_set_sco_voice_setting(uint16_t voice_setting);
-
-/**
- * @brief Get SCO Voice Setting
- * @return current voice setting
- */
-uint16_t hci_get_sco_voice_setting(void);
+// Sending SCO Packets
 
 /** @brief Get SCO packet length for current SCO Voice setting
  *  @note  Using SCO packets of the exact length is required for USB transfer
  *  @return Length of SCO packets in bytes (not audio frames) incl. 3 byte header
  */
 int hci_get_sco_packet_length(void);
+
+/**
+ * @brief Check hci packet buffer and if SCO packet can be sent to controller
+ */
+int hci_can_send_sco_packet_now(void);
+
+/**
+ * @brief Check if SCO packet can be sent to controller
+ */
+int hci_can_send_prepared_sco_packet_now(void);
+
+/**
+ * @brief Send SCO packet prepared in hci packet buffer
+ */
+int hci_send_sco_packet_buffer(int size);
+
+
+// Outgoing packet buffer, also used for SCO packets
+// see hci_can_send_prepared_sco_packet_now amn hci_send_sco_packet_buffer
 
 /**
  * Reserves outgoing packet buffer.
@@ -827,10 +799,27 @@ void hci_release_packet_buffer(void);
 
 /* API_END */
 
+
+
 /**
  * Get connection iterator. Only used by l2cap.c and sm.c
  */
 void hci_connections_get_iterator(btstack_linked_list_iterator_t *it);
+
+/**
+ * Get internal hci_connection_t for given handle. Used by L2CAP, SM, daemon
+ */
+hci_connection_t * hci_connection_for_handle(hci_con_handle_t con_handle);
+
+/**
+ * Get internal hci_connection_t for given Bluetooth addres. Called by L2CAP
+ */
+hci_connection_t * hci_connection_for_bd_addr_and_type(bd_addr_t addr, bd_addr_type_t addr_type);
+
+/**
+ * Check if outgoing packet buffer is reserved. Used for internal checks in l2cap.c
+ */
+int hci_is_packet_buffer_reserved(void);
 
 /**
  * Check hci packet buffer is free and a classic acl packet can be sent to controller
@@ -858,21 +847,6 @@ int hci_can_send_prepared_acl_packet_now(hci_con_handle_t con_handle);
 int hci_send_acl_packet_buffer(int size);
 
 /**
- * Check if outgoing packet buffer is reserved. Used for internal checks in l2cap.c
- */
-int hci_is_packet_buffer_reserved(void);
-
-/**
- * Get internal hci_connection_t for given handle. Used by L2CAP, SM, daemon
- */
-hci_connection_t * hci_connection_for_handle(hci_con_handle_t con_handle);
-
-/**
- * Get internal hci_connection_t for given Bluetooth addres. Called by L2CAP
- */
-hci_connection_t * hci_connection_for_bd_addr_and_type(bd_addr_t addr, bd_addr_type_t addr_type);
-
-/**
  * Check if authentication is active. It delays automatic disconnect while no L2CAP connection
  * Called by l2cap.
  */
@@ -896,7 +870,7 @@ int hci_non_flushable_packet_boundary_flag_supported(void);
 /**
  * Check if SSP is supported on both sides. Called by L2CAP
  */
-int hci_ssp_supported_on_both_sides(hci_con_handle_t handle);
+int gap_ssp_supported_on_both_sides(hci_con_handle_t handle);
 
 /**
  * Disconn because of security block. Called by L2CAP

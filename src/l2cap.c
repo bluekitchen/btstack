@@ -155,7 +155,7 @@ void l2cap_init(void){
 
     hci_register_acl_packet_handler(&l2cap_acl_handler);
 
-    hci_connectable_control(0); // no services yet
+    gap_connectable_control(0); // no services yet
 }
 
 void l2cap_register_packet_handler(void (*handler)(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size)){
@@ -763,7 +763,7 @@ static void l2cap_handle_remote_supported_features_received(l2cap_channel_t * ch
 
     // we have been waiting for remote supported features, if both support SSP, 
     log_info("l2cap received remote supported features, sec_level_0_allowed for psm %u = %u", channel->psm, l2cap_security_level_0_allowed_for_PSM(channel->psm));
-    if (hci_ssp_supported_on_both_sides(channel->handle) && !l2cap_security_level_0_allowed_for_PSM(channel->psm)){
+    if (gap_ssp_supported_on_both_sides(channel->handle) && !l2cap_security_level_0_allowed_for_PSM(channel->psm)){
         // request security level 2
         channel->state = L2CAP_STATE_WAIT_OUTGOING_SECURITY_LEVEL_UPDATE;
         gap_request_security_level(channel->handle, LEVEL_2);
@@ -1243,7 +1243,7 @@ static void l2cap_signaling_handler_channel(l2cap_channel_t *channel, uint8_t *c
                             
                             // drop link key if security block
                             if (L2CAP_CONNECTION_RESPONSE_RESULT_SUCCESSFUL + result == L2CAP_CONNECTION_RESPONSE_RESULT_REFUSED_SECURITY){
-                                hci_drop_link_key_for_bd_addr(channel->address);
+                                gap_drop_link_key_for_bd_addr(channel->address);
                             }
                             
                             // discard channel
@@ -1556,7 +1556,7 @@ uint8_t l2cap_register_service(btstack_packet_handler_t service_packet_handler, 
     btstack_linked_list_add(&l2cap_services, (btstack_linked_item_t *) service);
     
     // enable page scan
-    hci_connectable_control(1);
+    gap_connectable_control(1);
 
     return 0;
 }
@@ -1572,7 +1572,7 @@ void l2cap_unregister_service(uint16_t psm){
     
     // disable page scan when no services registered
     if (!btstack_linked_list_empty(&l2cap_services)) return;
-    hci_connectable_control(0);
+    gap_connectable_control(0);
 }
 
 // Bluetooth 4.0 - allows to register handler for Attribute Protocol and Security Manager Protocol

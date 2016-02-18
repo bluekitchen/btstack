@@ -390,7 +390,7 @@ static void update_auth_req(void){
         gap_auth_req |= 4;  // General bonding
     }
     printf("Authentication Requirements: %u\n", gap_auth_req);
-    hci_ssp_set_authentication_requirement(gap_auth_req);
+    gap_ssp_set_authentication_requirement(gap_auth_req);
 }
 
 static void handle_found_service(const char * name, uint8_t port){
@@ -504,22 +504,22 @@ static int  stdin_process(struct btstack_data_source *ds){
     switch (buffer){
         case 'c':
             gap_connectable = 0;
-            hci_connectable_control(0);
+            gap_connectable_control(0);
             show_usage();
             break;
         case 'C':
             gap_connectable = 1;
-            hci_connectable_control(1);
+            gap_connectable_control(1);
             show_usage();
             break;
         case 'd':
             gap_discoverable = 0;
-            hci_discoverable_control(0);
+            gap_discoverable_control(0);
             show_usage();
             break;
         case 'D':
             gap_discoverable = 1;
-            hci_discoverable_control(1);
+            gap_discoverable_control(1);
             show_usage();
             break;
         case 'b':
@@ -556,22 +556,22 @@ static int  stdin_process(struct btstack_data_source *ds){
 
         case 'e':
             gap_io_capabilities = "IO_CAPABILITY_DISPLAY_ONLY";
-            hci_ssp_set_io_capability(IO_CAPABILITY_DISPLAY_ONLY);
+            gap_ssp_set_io_capability(IO_CAPABILITY_DISPLAY_ONLY);
             show_usage();
             break;
         case 'f':
             gap_io_capabilities = "IO_CAPABILITY_DISPLAY_YES_NO";
-            hci_ssp_set_io_capability(IO_CAPABILITY_DISPLAY_YES_NO);
+            gap_ssp_set_io_capability(IO_CAPABILITY_DISPLAY_YES_NO);
             show_usage();
             break;
         case 'g':
             gap_io_capabilities = "IO_CAPABILITY_NO_INPUT_NO_OUTPUT";
-            hci_ssp_set_io_capability(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);
+            gap_ssp_set_io_capability(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);
             show_usage();
             break;
         case 'h':
             gap_io_capabilities = "IO_CAPABILITY_KEYBOARD_ONLY";
-            hci_ssp_set_io_capability(IO_CAPABILITY_KEYBOARD_ONLY);
+            gap_ssp_set_io_capability(IO_CAPABILITY_KEYBOARD_ONLY);
             show_usage();
             break;
 
@@ -670,7 +670,7 @@ static int  stdin_process(struct btstack_data_source *ds){
 
         case '=':
             printf("Deleting Link Key for %s\n", bd_addr_to_str(remote));
-            hci_drop_link_key_for_bd_addr(remote);
+            gap_drop_link_key_for_bd_addr(remote);
             break;
 
         case 'U':
@@ -762,10 +762,10 @@ int btstack_main(int argc, const char * argv[]){
 
     hci_set_class_of_device(0x220404);
     hci_disable_l2cap_timeout_check();
-    hci_ssp_set_io_capability(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);
+    gap_ssp_set_io_capability(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);
     gap_io_capabilities =  "IO_CAPABILITY_NO_INPUT_NO_OUTPUT";
-    hci_ssp_set_authentication_requirement(0);
-    hci_ssp_set_auto_accept(0);
+    gap_ssp_set_authentication_requirement(0);
+    gap_ssp_set_auto_accept(0);
     update_auth_req();
 
     // register for HCI events
@@ -791,8 +791,8 @@ int btstack_main(int argc, const char * argv[]){
     printf("Dummy service record size: %u\n\r", de_get_len((uint8_t*)dummy_service_buffer));
     sdp_register_service((uint8_t*)dummy_service_buffer);
     
-    hci_discoverable_control(0);
-    hci_connectable_control(0);
+    gap_discoverable_control(0);
+    gap_connectable_control(0);
 
     // turn on!
     hci_power_control(HCI_POWER_ON);

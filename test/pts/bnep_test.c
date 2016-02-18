@@ -836,7 +836,7 @@ int btstack_main(int argc, const char * argv[]){
 
     /* Turn on the device */
     hci_power_control(HCI_POWER_ON);
-    hci_discoverable_control(1);
+    gap_discoverable_control(1);
 
     btstack_stdin_setup(stdin_process);
 

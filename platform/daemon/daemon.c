@@ -953,7 +953,7 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             if (!client) break;
             client->discoverable = packet[3];
             // merge state
-            hci_discoverable_control(clients_require_discoverable());
+            gap_discoverable_control(clients_require_discoverable());
             break;
         case BTSTACK_SET_BLUETOOTH_ENABLED:
             log_info("BTSTACK_SET_BLUETOOTH_ENABLED: %u\n", packet[3]);
@@ -1341,7 +1341,7 @@ static int daemon_client_handler(connection_t *connection, uint16_t packet_type,
                     }
 
                     // update discoverable mode
-                    hci_discoverable_control(clients_require_discoverable());
+                    gap_discoverable_control(clients_require_discoverable());
                     // start power off, if last active client
                     if (!clients_require_power_on()){
                         start_power_off_timer();
@@ -2058,7 +2058,7 @@ int main (int argc,  char * const * argv){
 
 #ifdef HAVE_PLATFORM_IPHONE_OS
     // iPhone doesn't use SSP yet as there's no UI for it yet and auto accept is not an option
-    hci_ssp_set_enable(0);
+    gap_ssp_set_enable(0);
 #endif
 
     // register for HCI events

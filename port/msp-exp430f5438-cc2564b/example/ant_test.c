@@ -244,7 +244,7 @@ int btstack_main(int argc, const char * argv[]){
     // set local name
     gap_set_local_name("BlueMSP-Demo");
     // make discoverable
-    hci_discoverable_control(1);
+    gap_discoverable_control(1);
                     
  	printf("Run...\n\r");
     // turn on!

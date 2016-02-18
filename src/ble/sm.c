@@ -876,13 +876,13 @@ static void sm_init_setup(sm_connection_t * sm_conn){
     if (sm_conn->sm_role){
         // slave
         local_packet = &setup->sm_s_pres;
-        hci_le_advertisement_address(&setup->sm_s_addr_type, setup->sm_s_address);
+        gap_advertisements_get_address(&setup->sm_s_addr_type, setup->sm_s_address);
         setup->sm_m_addr_type = sm_conn->sm_peer_addr_type;
         memcpy(setup->sm_m_address, sm_conn->sm_peer_address, 6);
     } else {
         // master
         local_packet = &setup->sm_m_preq;
-        hci_le_advertisement_address(&setup->sm_m_addr_type, setup->sm_m_address);
+        gap_advertisements_get_address(&setup->sm_m_addr_type, setup->sm_m_address);
         setup->sm_s_addr_type = sm_conn->sm_peer_addr_type;
         memcpy(setup->sm_s_address, sm_conn->sm_peer_address, 6);
 
@@ -1532,7 +1532,7 @@ static void sm_run(void){
                     bd_addr_t local_address;
                     uint8_t buffer[8];
                     buffer[0] = SM_CODE_IDENTITY_ADDRESS_INFORMATION;
-                    hci_le_advertisement_address(&buffer[1], local_address);
+                    gap_advertisements_get_address(&buffer[1], local_address);
                     reverse_bd_addr(local_address, &buffer[2]);
                     l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
                     sm_timeout_reset(connection);

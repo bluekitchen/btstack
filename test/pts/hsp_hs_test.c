@@ -174,7 +174,7 @@ static void sco_packet_handler(uint8_t packet_type, uint8_t * packet, uint16_t s
 static void show_usage(void){
     uint8_t iut_address_type;
     bd_addr_t      iut_address;
-    hci_le_advertisement_address(&iut_address_type, iut_address);
+    gap_advertisements_get_address(&iut_address_type, iut_address);
 
     printf("\n--- Bluetooth HSP Headset Test Console %s ---\n", bd_addr_to_str(iut_address));
     printf("---\n");
@@ -324,7 +324,7 @@ int btstack_main(int argc, const char * argv[]){
     hsp_hs_create_sdp_record((uint8_t *)hsp_service_buffer, 0x10004, rfcomm_channel_nr, hsp_hs_service_name, 0);
     sdp_register_service((uint8_t *)hsp_service_buffer);
 
-    hci_discoverable_control(1);
+    gap_discoverable_control(1);
     hci_set_class_of_device(0x200418);
     
     btstack_stdin_setup(stdin_process);

@@ -230,7 +230,7 @@ int btstack_main(int argc, const char * argv[]){
     // set local name
     gap_set_local_name("BTstack SPP Sensor");
     // make discoverable
-    hci_discoverable_control(1);
+    gap_discoverable_control(1);
                     
     // turn on!
     hci_power_control(HCI_POWER_ON);

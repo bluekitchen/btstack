@@ -275,7 +275,7 @@ int  hci_authentication_active_for_handle(hci_con_handle_t handle){
     return 0;
 }
 
-void hci_drop_link_key_for_bd_addr(bd_addr_t addr){
+void gap_drop_link_key_for_bd_addr(bd_addr_t addr){
     if (hci_stack->link_key_db) {
         hci_stack->link_key_db->delete_link_key(addr);
     }
@@ -795,7 +795,7 @@ int hci_non_flushable_packet_boundary_flag_supported(void){
     return (hci_stack->local_supported_features[6] & (1 << 6)) != 0;
 }
 
-static int hci_ssp_supported(void){
+static int gap_ssp_supported(void){
     // No. 51, byte 6, bit 3
     return (hci_stack->local_supported_features[6] & (1 << 3)) != 0;
 }
@@ -815,7 +815,7 @@ static int hci_le_supported(void){
 }
 
 // get addr type and address used in advertisement packets
-void hci_le_advertisement_address(uint8_t * addr_type, bd_addr_t  addr){
+void gap_advertisements_get_address(uint8_t * addr_type, bd_addr_t  addr){
     *addr_type = hci_stack->adv_addr_type;
     if (hci_stack->adv_addr_type){
         memcpy(addr, hci_stack->adv_address, 6);
@@ -1266,7 +1266,7 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
                     return;
                 }
             }
-            if (!hci_ssp_supported()){
+            if (!gap_ssp_supported()){
                 hci_stack->substate = HCI_INIT_WRITE_PAGE_TIMEOUT;
                 return;
             }
@@ -1513,7 +1513,7 @@ static void event_handler(uint8_t *packet, int size){
 
                     // if authentication error, also delete link key
                     if (packet[2] == 0x05) {
-                        hci_drop_link_key_for_bd_addr(addr);
+                        gap_drop_link_key_for_bd_addr(addr);
                     }
                 }
             }
@@ -2250,7 +2250,7 @@ static void hci_update_scan_enable(void){
     hci_run();
 }
 
-void hci_discoverable_control(uint8_t enable){
+void gap_discoverable_control(uint8_t enable){
     if (enable) enable = 1; // normalize argument
     
     if (hci_stack->discoverable == enable){
@@ -2262,7 +2262,7 @@ void hci_discoverable_control(uint8_t enable){
     hci_update_scan_enable();
 }
 
-void hci_connectable_control(uint8_t enable){
+void gap_connectable_control(uint8_t enable){
     if (enable) enable = 1; // normalize argument
     
     // don't emit event
@@ -2272,7 +2272,7 @@ void hci_connectable_control(uint8_t enable){
     hci_update_scan_enable();
 }
 
-void hci_local_bd_addr(bd_addr_t address_buffer){
+void gap_local_bd_addr(bd_addr_t address_buffer){
     memcpy(address_buffer, hci_stack->local_bd_addr, 6);
 }
 
@@ -2857,24 +2857,24 @@ void hci_disconnect_security_block(hci_con_handle_t con_handle){
 // Configure Secure Simple Pairing
 
 // enable will enable SSP during init
-void hci_ssp_set_enable(int enable){
+void gap_ssp_set_enable(int enable){
     hci_stack->ssp_enable = enable;
 }
 
 static int hci_local_ssp_activated(void){
-    return hci_ssp_supported() && hci_stack->ssp_enable;
+    return gap_ssp_supported() && hci_stack->ssp_enable;
 }
 
 // if set, BTstack will respond to io capability request using authentication requirement
-void hci_ssp_set_io_capability(int io_capability){
+void gap_ssp_set_io_capability(int io_capability){
     hci_stack->ssp_io_capability = io_capability;
 }
-void hci_ssp_set_authentication_requirement(int authentication_requirement){
+void gap_ssp_set_authentication_requirement(int authentication_requirement){
     hci_stack->ssp_authentication_requirement = authentication_requirement;
 }
 
 // if set, BTstack will confirm a numberic comparion and enter '000000' if requested
-void hci_ssp_set_auto_accept(int auto_accept){
+void gap_ssp_set_auto_accept(int auto_accept){
     hci_stack->ssp_auto_accept = auto_accept;
 }
 
@@ -3059,7 +3059,7 @@ int hci_remote_ssp_supported(hci_con_handle_t con_handle){
     return (connection->bonding_flags & BONDING_REMOTE_SUPPORTS_SSP) ? 1 : 0;
 }
 
-int hci_ssp_supported_on_both_sides(hci_con_handle_t handle){
+int gap_ssp_supported_on_both_sides(hci_con_handle_t handle){
     return hci_local_ssp_activated() && hci_remote_ssp_supported(handle);
 }
 
@@ -3172,7 +3172,7 @@ int gap_dedicated_bonding(bd_addr_t device, int mitm_protection_required){
     }
 
     // delete linkn key
-    hci_drop_link_key_for_bd_addr(device);
+    gap_drop_link_key_for_bd_addr(device);
 
     // configure LEVEL_2/3, dedicated bonding
     connection->state = SEND_CREATE_CONNECTION;    

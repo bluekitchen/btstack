@@ -136,7 +136,7 @@ void hci_connections_get_iterator(btstack_linked_list_iterator_t *it){
 }
 
 // get addr type and address used in advertisement packets
-void hci_le_advertisement_address(uint8_t * addr_type, bd_addr_t addr){
+void gap_advertisements_get_address(uint8_t * addr_type, bd_addr_t addr){
     *addr_type = 0;
     uint8_t dummy[] = { 0x00, 0x1b, 0xdc, 0x07, 0x32, 0xef };
     memcpy(addr, dummy, 6);

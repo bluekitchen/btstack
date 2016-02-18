@@ -675,7 +675,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                     break;
                 case CENTRAL_W4_RECONNECTION_ADDRESS_QUERY_COMPLETE:
                     central_state = CENTRAL_IDLE;
-                    hci_le_advertisement_address(&address_type, our_private_address);
+                    gap_advertisements_get_address(&address_type, our_private_address);
                     printf("Our private address: %s\n", bd_addr_to_str(our_private_address));
                     reverse_bd_addr(our_private_address, flipped_address);
                     gatt_client_write_value_of_characteristic(handle_gatt_client_event, handle, gap_reconnection_address_characteristic.value_handle, 6, flipped_address);
@@ -864,7 +864,7 @@ static void print_screen(void){
 static void show_usage(void){
     uint8_t iut_address_type;
     bd_addr_t      iut_address;
-    hci_le_advertisement_address(&iut_address_type, iut_address);
+    gap_advertisements_get_address(&iut_address_type, iut_address);
 
     reset_screen();
 
@@ -1375,13 +1375,13 @@ static void ui_process_command(char buffer){
         case 'c':
             gap_connectable = 0;
             update_advertisment_params();
-            hci_connectable_control(gap_connectable);
+            gap_connectable_control(gap_connectable);
             show_usage();
             break;
         case 'C':
             gap_connectable = 1;
             update_advertisment_params();
-            hci_connectable_control(gap_connectable);
+            gap_connectable_control(gap_connectable);
             show_usage();
             break;
         case 'd':
@@ -1712,8 +1712,8 @@ int btstack_main(int argc, const char * argv[]){
     current_pts_address_type = public_pts_address_type;
 
     // classic discoverable / connectable
-    hci_connectable_control(0);
-    hci_discoverable_control(1);
+    gap_connectable_control(0);
+    gap_discoverable_control(1);
 
     // allow foor terminal input
     btstack_stdin_setup(stdin_process);

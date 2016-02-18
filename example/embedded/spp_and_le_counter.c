@@ -262,7 +262,7 @@ static void heartbeat_handler(struct btstack_timer_source *ts){
 int btstack_main(void);
 int btstack_main(void)
 {
-    hci_discoverable_control(1);
+    gap_discoverable_control(1);
 
     // register for HCI events
     hci_event_callback_registration.callback = &packet_handler;
@@ -280,7 +280,7 @@ int btstack_main(void)
     sdp_register_service(spp_service_buffer);
     printf("SDP service record size: %u\n", de_get_len(spp_service_buffer));
 
-    hci_ssp_set_io_capability(SSP_IO_CAPABILITY_DISPLAY_YES_NO);
+    gap_ssp_set_io_capability(SSP_IO_CAPABILITY_DISPLAY_YES_NO);
 
     // setup le device db
     le_device_db_init();
