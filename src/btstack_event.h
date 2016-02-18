@@ -51,7 +51,6 @@
 extern "C" {
 #endif
 
-#include "btstack_config.h"
 #include "btstack_util.h"
 #include <stdint.h>
 
@@ -1378,55 +1377,82 @@ static inline uint8_t sm_event_authorization_result_get_authorization_result(con
 
 #ifdef ENABLE_BLE
 /**
- * @brief Get field handle from event ancs_event_client_connected
+ * @brief Get field subevent_code from event ancs_subevent_client_connected
+ * @param Event packet
+ * @return subevent_code
+ * @note: btstack_type 1
+ */
+static inline uint8_t ancs_subevent_client_connected_get_subevent_code(const uint8_t * event){
+    return event[2];
+}
+/**
+ * @brief Get field handle from event ancs_subevent_client_connected
  * @param Event packet
  * @return handle
  * @note: btstack_type H
  */
-static inline hci_con_handle_t ancs_event_client_connected_get_handle(const uint8_t * event){
-    return little_endian_read_16(event, 2);
+static inline hci_con_handle_t ancs_subevent_client_connected_get_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
 }
 #endif
 
 #ifdef ENABLE_BLE
 /**
- * @brief Get field handle from event ancs_event_client_notification
+ * @brief Get field subevent_code from event ancs_subevent_client_notification
+ * @param Event packet
+ * @return subevent_code
+ * @note: btstack_type 1
+ */
+static inline uint8_t ancs_subevent_client_notification_get_subevent_code(const uint8_t * event){
+    return event[2];
+}
+/**
+ * @brief Get field handle from event ancs_subevent_client_notification
  * @param Event packet
  * @return handle
  * @note: btstack_type H
  */
-static inline hci_con_handle_t ancs_event_client_notification_get_handle(const uint8_t * event){
-    return little_endian_read_16(event, 2);
+static inline hci_con_handle_t ancs_subevent_client_notification_get_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
 }
 /**
- * @brief Get field attribute_id from event ancs_event_client_notification
+ * @brief Get field attribute_id from event ancs_subevent_client_notification
  * @param Event packet
  * @return attribute_id
  * @note: btstack_type 2
  */
-static inline uint16_t ancs_event_client_notification_get_attribute_id(const uint8_t * event){
-    return little_endian_read_16(event, 4);
+static inline uint16_t ancs_subevent_client_notification_get_attribute_id(const uint8_t * event){
+    return little_endian_read_16(event, 5);
 }
 /**
- * @brief Get field text from event ancs_event_client_notification
+ * @brief Get field text from event ancs_subevent_client_notification
  * @param Event packet
  * @return text
  * @note: btstack_type T
  */
-static inline const char * ancs_event_client_notification_get_text(const uint8_t * event){
-    return (const char *) &event[6];
+static inline const char * ancs_subevent_client_notification_get_text(const uint8_t * event){
+    return (const char *) &event[7];
 }
 #endif
 
 #ifdef ENABLE_BLE
 /**
- * @brief Get field handle from event ancs_event_client_disconnected
+ * @brief Get field subevent_code from event ancs_subevent_client_disconnected
+ * @param Event packet
+ * @return subevent_code
+ * @note: btstack_type 1
+ */
+static inline uint8_t ancs_subevent_client_disconnected_get_subevent_code(const uint8_t * event){
+    return event[2];
+}
+/**
+ * @brief Get field handle from event ancs_subevent_client_disconnected
  * @param Event packet
  * @return handle
  * @note: btstack_type H
  */
-static inline hci_con_handle_t ancs_event_client_disconnected_get_handle(const uint8_t * event){
-    return little_endian_read_16(event, 2);
+static inline hci_con_handle_t ancs_subevent_client_disconnected_get_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
 }
 #endif
 

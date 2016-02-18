@@ -74,20 +74,21 @@ void loop(void){
 /* LISTING_START(ANCSCallback): ANCS Callback */
 void ancs_callback(uint8_t packet_type, uint8_t *packet, uint16_t size){
     const char * attribute_name;
+    if (packet[0] != HCI_EVENT_ANCS_META) return;
     switch (packet[0]){
-        case ANCS_EVENT_CLIENT_CONNECTED:
+        case ANCS_SUBEVENT_CLIENT_CONNECTED:
             Serial.println("ANCS Client: Connected");
             break;
-        case ANCS_EVENT_CLIENT_DISCONNECTED:
+        case ANCS_SUBEVENT_CLIENT_DISCONNECTED:
             Serial.println("ANCS Client: Disconnected");
             break;
-        case ANCS_EVENT_CLIENT_NOTIFICATION:
-            attribute_name = ancs_client_attribute_name_for_id(ancs_client_notification_event_get_attribute_id(packet));
+        case ANCS_SUBEVENT_CLIENT_NOTIFICATION:
+            attribute_name = ancs_client_attribute_name_for_id(ancs_subevent_client_notification_get_attribute_id(packet));
             if (!attribute_name) break;
             Serial.print("Notification: ");
             Serial.print(attribute_name);
             Serial.print(" - ");
-            Serial.println(ancs_client_notification_event_get_text(packet));
+            Serial.println(ancs_subevent_client_notification_get_text(packet));
             break;
         default:
             break;

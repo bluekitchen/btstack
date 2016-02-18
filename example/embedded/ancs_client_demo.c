@@ -107,17 +107,18 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
 
 static void ancs_callback(uint8_t packet_type, uint8_t *packet, uint16_t size){
     const char * attribute_name;
-    switch (packet[0]){
-        case ANCS_EVENT_CLIENT_CONNECTED:
+    if (packet[0] != HCI_EVENT_ANCS_META) return;
+    switch (packet[2]){
+        case ANCS_SUBEVENT_CLIENT_CONNECTED:
             printf("ANCS Client: Connected\n");
             break;
-        case ANCS_EVENT_CLIENT_DISCONNECTED:
+        case ANCS_SUBEVENT_CLIENT_DISCONNECTED:
             printf("ANCS Client: Disconnected\n");
             break;
-        case ANCS_EVENT_CLIENT_NOTIFICATION:
-            attribute_name = ancs_client_attribute_name_for_id(ancs_event_client_notification_get_attribute_id(packet));
+        case ANCS_SUBEVENT_CLIENT_NOTIFICATION:
+            attribute_name = ancs_client_attribute_name_for_id(ancs_subevent_client_notification_get_attribute_id(packet));
             if (!attribute_name) break;
-            printf("Notification: %s - %s\n", attribute_name, ancs_event_client_notification_get_text(packet));
+            printf("Notification: %s - %s\n", attribute_name, ancs_subevent_client_notification_get_text(packet));
             break;
         default:
             break;

@@ -753,12 +753,18 @@ typedef uint8_t sm_key_t[16];
 #define GAP_LE_EVENT_ADVERTISING_REPORT                          0xE2
 
 
+// Meta Events, see below for sub events
 #define HCI_EVENT_HSP_META                                 0xE8
-
 #define HCI_EVENT_HFP_META                                 0xE9
+#define HCI_EVENT_ANCS_META                                0xEA
 
-
-// HSP Subevents
+// Potential other meta groups
+ // #define HCI_EVENT_BNEP_META                                0xxx
+// #define HCI_EVENT_GAP_META                                 0xxx
+// #define HCI_EVENT_GATT_META                                0xxx
+// #define HCI_EVENT_PAN_META                                 0xxx
+// #define HCI_EVENT_SDP_META                                 0xxx
+// #define HCI_EVENT_SM_META                                  0xxx
 
 /**
  * @format 11
@@ -840,32 +846,26 @@ typedef uint8_t sm_key_t[16];
 // ANCS Client
 
 /**
- * @format H
+ * @format 1H
+ * @param subevent_code
  * @param handle
  */ 
-#define ANCS_EVENT_CLIENT_CONNECTED                              0xF0
+#define ANCS_SUBEVENT_CLIENT_CONNECTED                              0xF0
 
 /**
- * @format H2T
+ * @format 1H2T
+ * @param subevent_code
  * @param handle
  * @param attribute_id
  * @param text
  */ 
-#define ANCS_EVENT_CLIENT_NOTIFICATION                           0xF1
+#define ANCS_SUBEVENT_CLIENT_NOTIFICATION                           0xF1
 
 /**
- * @format H
+ * @format 1H
+ * @param subevent_code
  * @param handle
  */ 
-#define ANCS_EVENT_CLIENT_DISCONNECTED                           0xF2
-
-// #define HCI_EVENT_HFP_META                                 0xxx
-// #define HCI_EVENT_GATT_META                                0xxx
-// #define HCI_EVENT_SDP_META                                 0xxx
-// #define HCI_EVENT_ANCS_META                                0xxx
-// #define HCI_EVENT_SM_META                                  0xxx
-// #define HCI_EVENT_GAP_META                                 0xxx
-// #define HCI_EVENT_BNEP_META                                0xxx
-// #define HCI_EVENT_PAN_META                                 0xxx
+#define ANCS_SUBEVENT_CLIENT_DISCONNECTED                           0xF2
 
 #endif
