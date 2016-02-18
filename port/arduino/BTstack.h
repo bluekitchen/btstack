@@ -81,27 +81,27 @@ public:
 
 class BLECharacteristic {
 private:
-	le_characteristic_t characteristic;
+	gatt_client_characteristic_t characteristic;
 	UUID uuid;
 public:
 	BLECharacteristic();
-	BLECharacteristic(le_characteristic_t characteristic);
+	BLECharacteristic(gatt_client_characteristic_t characteristic);
 	const UUID * getUUID();
 	bool matches(UUID * uuid);
 	bool isValueHandle(uint16_t value_handle);
-	const le_characteristic_t * getCharacteristic();
+	const gatt_client_characteristic_t * getCharacteristic();
 };
 
 class BLEService {
 private:
-	le_service_t service;
+	gatt_client_service_t service;
 	UUID uuid;
 public:
 	BLEService();
-	BLEService(le_service_t service);
+	BLEService(gatt_client_service_t service);
 	const UUID * getUUID();
 	bool matches(UUID * uuid);
-	const le_service_t * getService();
+	const gatt_client_service_t * getService();
 };
 
 class BLEDevice {

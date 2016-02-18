@@ -90,10 +90,10 @@ static uint32_t ancs_notification_uid;
 static uint16_t gc_handle;
 static gatt_client_notification_t client_notification;
 static int ancs_service_found;
-static le_service_t  ancs_service;
-static le_characteristic_t ancs_notification_source_characteristic;
-static le_characteristic_t ancs_control_point_characteristic;
-static le_characteristic_t ancs_data_source_characteristic;
+static gatt_client_service_t  ancs_service;
+static gatt_client_characteristic_t ancs_notification_source_characteristic;
+static gatt_client_characteristic_t ancs_control_point_characteristic;
+static gatt_client_characteristic_t ancs_data_source_characteristic;
 static int ancs_characteristcs;
 static tc_state_t tc_state = TC_IDLE;
 
@@ -175,7 +175,7 @@ static void ancs_chunk_parser_handle_byte(uint8_t data){
     }
 }
 
-static void extract_service(le_service_t * service, uint8_t * packet){
+static void extract_service(gatt_client_service_t * service, uint8_t * packet){
     service->start_group_handle = little_endian_read_16(packet, 4);
     service->end_group_handle   = little_endian_read_16(packet, 6);
     service->uuid16 = 0;
@@ -185,7 +185,7 @@ static void extract_service(le_service_t * service, uint8_t * packet){
     }
 }
 
-static void extract_characteristic(le_characteristic_t * characteristic, uint8_t * packet){
+static void extract_characteristic(gatt_client_characteristic_t * characteristic, uint8_t * packet){
     characteristic->start_handle = little_endian_read_16(packet, 4);
     characteristic->value_handle = little_endian_read_16(packet, 6);
     characteristic->end_handle =   little_endian_read_16(packet, 8);
@@ -239,7 +239,7 @@ static void handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *pac
             break;
     }
 
-    le_characteristic_t characteristic;
+    gatt_client_characteristic_t characteristic;
     uint8_t *           value;
     uint16_t            value_handle;
     uint16_t            value_length;

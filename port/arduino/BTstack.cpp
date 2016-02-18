@@ -193,7 +193,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
     }
 }
 
-static void extract_service(le_service_t * service, uint8_t * packet){
+static void extract_service(gatt_client_service_t * service, uint8_t * packet){
     service->start_group_handle = little_endian_read_16(packet, 4);
     service->end_group_handle   = little_endian_read_16(packet, 6);
     service->uuid16 = 0;
@@ -203,7 +203,7 @@ static void extract_service(le_service_t * service, uint8_t * packet){
     }
 }
 
-static void extract_characteristic(le_characteristic_t * characteristic, uint8_t * packet){
+static void extract_characteristic(gatt_client_characteristic_t * characteristic, uint8_t * packet){
     characteristic->start_handle = little_endian_read_16(packet, 4);
     characteristic->value_handle = little_endian_read_16(packet, 6);
     characteristic->end_handle =   little_endian_read_16(packet, 8);
@@ -232,7 +232,7 @@ static void gatt_client_callback(uint8_t packet_type, uint8_t * packet, uint16_t
     switch(packet[0]){
         case GATT_EVENT_SERVICE_QUERY_RESULT:
             if (gattServiceDiscoveredCallback) {
-                le_service_t service;
+                gatt_client_service_t service;
                 extract_service(&service, packet);
                 BLEService bleService(service);
                 (*gattServiceDiscoveredCallback)(BLE_STATUS_OK, &device, &bleService);
@@ -240,7 +240,7 @@ static void gatt_client_callback(uint8_t packet_type, uint8_t * packet, uint16_t
             break;
         case GATT_EVENT_CHARACTERISTIC_QUERY_RESULT:
             if (gattCharacteristicDiscoveredCallback){
-                le_characteristic_t characteristic;
+                gatt_client_characteristic_t characteristic;
                 extract_characteristic(&characteristic, packet);
                 BLECharacteristic bleCharacteristic(characteristic);
                (*gattCharacteristicDiscoveredCallback)(BLE_STATUS_OK, &device, &bleCharacteristic);
@@ -483,7 +483,7 @@ uint8_t BLEAdvertisement::getiBeaconMeasuredPower(void){
 BLECharacteristic::BLECharacteristic(void){
 }
 
-BLECharacteristic::BLECharacteristic(le_characteristic_t characteristic)
+BLECharacteristic::BLECharacteristic(gatt_client_characteristic_t characteristic)
 : characteristic(characteristic), uuid(characteristic.uuid128) {        
 }
 
@@ -499,7 +499,7 @@ bool BLECharacteristic::isValueHandle(uint16_t value_handle){
     return characteristic.value_handle == value_handle;
 }
 
-const le_characteristic_t * BLECharacteristic::getCharacteristic(void){
+const gatt_client_characteristic_t * BLECharacteristic::getCharacteristic(void){
     return &characteristic; 
 }
 
@@ -507,7 +507,7 @@ const le_characteristic_t * BLECharacteristic::getCharacteristic(void){
 BLEService::BLEService(void){
 }
 
-BLEService::BLEService(le_service_t service)
+BLEService::BLEService(gatt_client_service_t service)
 : service(service), uuid(service.uuid128){
 }
 
@@ -519,7 +519,7 @@ bool BLEService::matches(UUID * uuid){
     return this->uuid.matches(uuid);
 }
 
-const le_service_t * BLEService::getService(void){
+const gatt_client_service_t * BLEService::getService(void){
     return &service;
 }
 
@@ -659,10 +659,10 @@ int BTstackManager::discoverGATTServices(BLEDevice * device){
 }
 int BTstackManager::discoverCharacteristicsForService(BLEDevice * device, BLEService * service){
     gattAction = gattActionCharacteristicQuery;
-    return gatt_client_discover_characteristics_for_service(gatt_client_id, device->getHandle(), (le_service_t*) service->getService());
+    return gatt_client_discover_characteristics_for_service(gatt_client_id, device->getHandle(), (gatt_client_service_t*) service->getService());
 }
 int  BTstackManager::readCharacteristic(BLEDevice * device, BLECharacteristic * characteristic){
-    return gatt_client_read_value_of_characteristic(gatt_client_id, device->getHandle(), (le_characteristic_t*) characteristic->getCharacteristic());
+    return gatt_client_read_value_of_characteristic(gatt_client_id, device->getHandle(), (gatt_client_characteristic_t*) characteristic->getCharacteristic());
 }
 int  BTstackManager::writeCharacteristic(BLEDevice * device, BLECharacteristic * characteristic, uint8_t * data, uint16_t size){
     gattAction = gattActionWrite;
@@ -675,22 +675,22 @@ int  BTstackManager::writeCharacteristicWithoutResponse(BLEDevice * device, BLEC
 }
 int BTstackManager::subscribeForNotifications(BLEDevice * device, BLECharacteristic * characteristic){
     gattAction = gattActionSubscribe;
-    return gatt_client_write_client_characteristic_configuration(gatt_client_id, device->getHandle(), (le_characteristic_t*) characteristic->getCharacteristic(),
+    return gatt_client_write_client_characteristic_configuration(gatt_client_id, device->getHandle(), (gatt_client_characteristic_t*) characteristic->getCharacteristic(),
      GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION);
 }
 int BTstackManager::subscribeForIndications(BLEDevice * device, BLECharacteristic * characteristic){
     gattAction = gattActionSubscribe;
-    return gatt_client_write_client_characteristic_configuration(gatt_client_id, device->getHandle(), (le_characteristic_t*) characteristic->getCharacteristic(),
+    return gatt_client_write_client_characteristic_configuration(gatt_client_id, device->getHandle(), (gatt_client_characteristic_t*) characteristic->getCharacteristic(),
      GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_INDICATION);
 }
 int BTstackManager::unsubscribeFromNotifications(BLEDevice * device, BLECharacteristic * characteristic){
     gattAction = gattActionUnsubscribe;
-    return gatt_client_write_client_characteristic_configuration(gatt_client_id, device->getHandle(), (le_characteristic_t*) characteristic->getCharacteristic(),
+    return gatt_client_write_client_characteristic_configuration(gatt_client_id, device->getHandle(), (gatt_client_characteristic_t*) characteristic->getCharacteristic(),
      GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NONE);
 }
 int BTstackManager::unsubscribeFromIndications(BLEDevice * device, BLECharacteristic * characteristic){
     gattAction = gattActionUnsubscribe;
-    return gatt_client_write_client_characteristic_configuration(gatt_client_id, device->getHandle(), (le_characteristic_t*) characteristic->getCharacteristic(),
+    return gatt_client_write_client_characteristic_configuration(gatt_client_id, device->getHandle(), (gatt_client_characteristic_t*) characteristic->getCharacteristic(),
      GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NONE);
 }
 void BTstackManager::bleConnect(BLEAdvertisement * advertisement, int timeout_ms){

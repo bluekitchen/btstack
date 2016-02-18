@@ -89,8 +89,8 @@ static int cmdline_addr_found = 0;
 uint16_t gc_handle;
 static uint16_t battery_service_uuid = 0x180F;
 static uint16_t battery_level_characteristic_uuid = 0x2a19;
-static le_service_t battery_service;
-static le_characteristic_t config_characteristic;
+static gatt_client_service_t battery_service;
+static gatt_client_characteristic_t config_characteristic;
     
 static gc_state_t state = TC_IDLE;
 static btstack_packet_callback_registration_t hci_event_callback_registration;
@@ -116,14 +116,14 @@ static void dump_characteristic_value(uint8_t * blob, uint16_t blob_length){
     printf("\n");
 }
 
-static void dump_characteristic(le_characteristic_t * characteristic){
+static void dump_characteristic(gatt_client_characteristic_t * characteristic){
     printf("    * characteristic: [0x%04x-0x%04x-0x%04x], properties 0x%02x, uuid ",
                             characteristic->start_handle, characteristic->value_handle, characteristic->end_handle, characteristic->properties);
     printUUID(characteristic->uuid128, characteristic->uuid16);
     printf("\n");
 }
 
-static void dump_service(le_service_t * service){
+static void dump_service(gatt_client_service_t * service){
     printf("    * service: [0x%04x-0x%04x], uuid ", service->start_group_handle, service->end_group_handle);
     printUUID(service->uuid128, service->uuid16);
     printf("\n");
@@ -140,7 +140,7 @@ static void error_code(int status){
     }
 }
 
-static void extract_service(le_service_t * service, uint8_t * packet){
+static void extract_service(gatt_client_service_t * service, uint8_t * packet){
     service->start_group_handle = little_endian_read_16(packet, 4);
     service->end_group_handle   = little_endian_read_16(packet, 6);
     service->uuid16 = 0;
@@ -150,7 +150,7 @@ static void extract_service(le_service_t * service, uint8_t * packet){
     }
 }
 
-static void extract_characteristic(le_characteristic_t * characteristic, uint8_t * packet){
+static void extract_characteristic(gatt_client_characteristic_t * characteristic, uint8_t * packet){
     characteristic->start_handle = little_endian_read_16(packet, 4);
     characteristic->value_handle = little_endian_read_16(packet, 6);
     characteristic->end_handle =   little_endian_read_16(packet, 8);

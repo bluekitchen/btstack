@@ -191,11 +191,11 @@ static int le_device_db_index;
 static sm_key_t signing_csrk;
 
 static central_state_t central_state = CENTRAL_IDLE;
-static le_characteristic_t gap_name_characteristic;
-static le_characteristic_t gap_reconnection_address_characteristic;
-static le_characteristic_t gap_peripheral_privacy_flag_characteristic;
-static le_characteristic_t signed_write_characteristic;
-static le_service_t        service;
+static gatt_client_characteristic_t gap_name_characteristic;
+static gatt_client_characteristic_t gap_reconnection_address_characteristic;
+static gatt_client_characteristic_t gap_peripheral_privacy_flag_characteristic;
+static gatt_client_characteristic_t signed_write_characteristic;
+static gatt_client_service_t        service;
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 static btstack_packet_callback_registration_t sm_event_callback_registration;
@@ -408,7 +408,7 @@ static void use_public_pts_address(void){
     current_pts_address_type = public_pts_address_type;                    
 }
 
-static void extract_service(le_service_t * aService, uint8_t * data){
+static void extract_service(gatt_client_service_t * aService, uint8_t * data){
     aService->start_group_handle = little_endian_read_16(data, 0);
     aService->end_group_handle   = little_endian_read_16(data, 2);
     aService->uuid16 = 0;
@@ -418,7 +418,7 @@ static void extract_service(le_service_t * aService, uint8_t * data){
     }
 }
 
-static void extract_characteristic(le_characteristic_t * characteristic, uint8_t * packet){
+static void extract_characteristic(gatt_client_characteristic_t * characteristic, uint8_t * packet){
     characteristic->start_handle = little_endian_read_16(packet, 4);
     characteristic->value_handle = little_endian_read_16(packet, 6);
     characteristic->end_handle =   little_endian_read_16(packet, 8);
@@ -436,7 +436,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
 
     uint8_t address_type;
     bd_addr_t flipped_address;
-    le_characteristic_t characteristic;
+    gatt_client_characteristic_t characteristic;
     uint8_t *           value;
     uint16_t            value_handle;
     uint16_t            value_length;
@@ -725,7 +725,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                             {
                                 printf("Searching Characteristic Declaration\n");
                                 central_state = CENTRAL_GPA_W4_RESPONSE2;
-                                le_service_t aService;                  
+                                gatt_client_service_t aService;                  
                                 aService.start_group_handle = ui_start_handle;
                                 aService.end_group_handle   = ui_end_handle;
                                 gatt_client_discover_characteristics_for_service(handle_gatt_client_event, handle, &aService);
@@ -1037,7 +1037,7 @@ static int ui_process_uint16_request(char buffer){
             case CENTRAL_ENTER_END_HANDLE_4_DISCOVER_CHARACTERISTICS: {
                 printf("Discover Characteristics from 0x%04x to 0x%04x\n", ui_attribute_handle, ui_uint16);
                 central_state = CENTRAL_W4_CHARACTERISTICS;
-                le_service_t aService;
+                gatt_client_service_t aService;
                 aService.start_group_handle = ui_attribute_handle;
                 aService.end_group_handle   = ui_uint16;
                 gatt_client_discover_characteristics_for_service(handle_gatt_client_event, handle, &aService);
@@ -1048,7 +1048,7 @@ static int ui_process_uint16_request(char buffer){
                 gatt_client_discover_characteristics_for_handle_range_by_uuid16(handle_gatt_client_event, handle, 0x0001, 0xffff, ui_uint16);
                 return 0;
             case CENTRAL_W4_DISCOVER_CHARACTERISTIC_DESCRIPTORS: {
-                le_characteristic_t characteristic;
+                gatt_client_characteristic_t characteristic;
                 characteristic.value_handle = ui_uint16 - 1;
                 characteristic.end_handle = ui_uint16;
                 gatt_client_discover_characteristic_descriptors(handle_gatt_client_event, handle, &characteristic);
@@ -1511,7 +1511,7 @@ static void ui_process_command(char buffer){
         case 'i':
             {
                 central_state = CENTRAL_W4_CHARACTERISTICS;
-                le_service_t aService;
+                gatt_client_service_t aService;
                 aService.start_group_handle = 0x0001;
                 aService.end_group_handle   = 0xffff;
                 gatt_client_find_included_services_for_service(handle_gatt_client_event, handle, &aService);

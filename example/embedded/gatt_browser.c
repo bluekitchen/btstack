@@ -86,7 +86,7 @@ static bd_addr_t cmdline_addr = { };
 static int cmdline_addr_found = 0;
 
 static uint16_t gc_handle;
-static le_service_t services[40];
+static gatt_client_service_t services[40];
 static int service_count = 0;
 static int service_index = 0;
 
@@ -144,14 +144,14 @@ static void dump_advertising_report(advertising_report_t * e){
     
 }
 
-static void dump_characteristic(le_characteristic_t * characteristic){
+static void dump_characteristic(gatt_client_characteristic_t * characteristic){
     printf("    * characteristic: [0x%04x-0x%04x-0x%04x], properties 0x%02x, uuid ",
                             characteristic->start_handle, characteristic->value_handle, characteristic->end_handle, characteristic->properties);
     printUUID(characteristic->uuid128, characteristic->uuid16);
     printf("\n");
 }
 
-static void dump_service(le_service_t * service){
+static void dump_service(gatt_client_service_t * service){
     printf("    * service: [0x%04x-0x%04x], uuid ", service->start_group_handle, service->end_group_handle);
     printUUID(service->uuid128, service->uuid16);
     printf("\n");
@@ -237,7 +237,7 @@ static void handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *pac
 /* LISTING_START(GATTBrowserQueryHandler): Handling of the GATT client queries */
 static int search_services = 1;
 
-static void extract_service(le_service_t * service, uint8_t * packet){
+static void extract_service(gatt_client_service_t * service, uint8_t * packet){
     service->start_group_handle = little_endian_read_16(packet, 4);
     service->end_group_handle   = little_endian_read_16(packet, 6);
     service->uuid16 = 0;
@@ -247,7 +247,7 @@ static void extract_service(le_service_t * service, uint8_t * packet){
     }
 }
 
-static void extract_characteristic(le_characteristic_t * characteristic, uint8_t * packet){
+static void extract_characteristic(gatt_client_characteristic_t * characteristic, uint8_t * packet){
     characteristic->start_handle = little_endian_read_16(packet, 4);
     characteristic->value_handle = little_endian_read_16(packet, 6);
     characteristic->end_handle =   little_endian_read_16(packet, 8);
@@ -260,8 +260,8 @@ static void extract_characteristic(le_characteristic_t * characteristic, uint8_t
 }
 
 static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    le_service_t service;
-    le_characteristic_t characteristic;
+    gatt_client_service_t service;
+    gatt_client_characteristic_t characteristic;
     switch(packet[0]){
         case GATT_EVENT_SERVICE_QUERY_RESULT:\
             extract_service(&service, packet);

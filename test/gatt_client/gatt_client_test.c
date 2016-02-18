@@ -65,11 +65,11 @@ uint16_t characteristic_uuid16 = 0xF000;
 static int result_index;
 static uint8_t result_counter;
 
-static le_service_t services[50];
-static le_service_t included_services[50];
+static gatt_client_service_t services[50];
+static gatt_client_service_t included_services[50];
 
-static le_characteristic_t characteristics[50];
-static le_characteristic_descriptor_t descriptors[50];
+static gatt_client_characteristic_t characteristics[50];
+static gatt_client_characteristic_descriptor_t descriptors[50];
 
 void mock_simulate_discover_primary_services_response();
 void mock_simulate_att_exchange_mtu_response();
@@ -144,9 +144,9 @@ static void verify_blob(uint16_t value_length, uint16_t value_offset, uint8_t * 
 static void handle_ble_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
 	if (packet_type != HCI_EVENT_PACKET) return;
 	uint8_t status;
-	le_service_t service;
-	le_characteristic_t characteristic;
-	le_characteristic_descriptor_t descriptor;
+	gatt_client_service_t service;
+	gatt_client_characteristic_t characteristic;
+	gatt_client_characteristic_descriptor_t descriptor;
 	switch (packet[0]){
 		case GATT_EVENT_QUERY_COMPLETE:
 			status = packet[4];
