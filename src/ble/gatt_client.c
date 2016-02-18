@@ -1833,3 +1833,28 @@ void gatt_client_pts_suppress_mtu_exchange(void){
     pts_suppress_mtu_exchange = 1;
 }
 
+void gatt_client_deserialize_service(uint8_t *packet, int offset, gatt_client_service_t *service){
+    service->start_group_handle = little_endian_read_16(packet, offset);
+    service->end_group_handle = little_endian_read_16(packet, offset + 2);
+    reverse_128(&packet[offset + 4], service->uuid128);
+    if (uuid_has_bluetooth_prefix(service->uuid128)){
+        service->uuid16 = big_endian_read_32(service->uuid128, 0);
+    }
+}
+
+void gatt_client_deserialize_characteristic(uint8_t * packet, int offset, gatt_client_characteristic_t * characteristic){
+    characteristic->start_handle = little_endian_read_16(packet, offset);
+    characteristic->value_handle = little_endian_read_16(packet, offset + 2);
+    characteristic->end_handle = little_endian_read_16(packet, offset + 4);
+    characteristic->properties = little_endian_read_16(packet, offset + 6);
+    characteristic->uuid16 = little_endian_read_16(packet, offset + 8);
+    reverse_128(&packet[offset+10], characteristic->uuid128);
+    if (uuid_has_bluetooth_prefix(characteristic->uuid128)){
+        characteristic->uuid16 = big_endian_read_32(characteristic->uuid128, 0);
+    }
+}
+
+void gatt_client_deserialize_characteristic_descriptor(uint8_t * packet, int offset, gatt_client_characteristic_descriptor_t * descriptor){
+    descriptor->handle = little_endian_read_16(packet, offset);
+    reverse_128(&packet[offset+2], descriptor->uuid128);
+}

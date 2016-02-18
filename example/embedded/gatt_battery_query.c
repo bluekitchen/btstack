@@ -140,35 +140,13 @@ static void error_code(int status){
     }
 }
 
-static void extract_service(gatt_client_service_t * service, uint8_t * packet){
-    service->start_group_handle = little_endian_read_16(packet, 4);
-    service->end_group_handle   = little_endian_read_16(packet, 6);
-    service->uuid16 = 0;
-    reverse_128(&packet[8], service->uuid128);
-    if (uuid_has_bluetooth_prefix(service->uuid128)){
-        service->uuid16 = big_endian_read_32(service->uuid128, 0);
-    }
-}
-
-static void extract_characteristic(gatt_client_characteristic_t * characteristic, uint8_t * packet){
-    characteristic->start_handle = little_endian_read_16(packet, 4);
-    characteristic->value_handle = little_endian_read_16(packet, 6);
-    characteristic->end_handle =   little_endian_read_16(packet, 8);
-    characteristic->properties =   little_endian_read_16(packet, 10);
-    characteristic->uuid16 = 0;
-    reverse_128(&packet[12], characteristic->uuid128);
-    if (uuid_has_bluetooth_prefix(characteristic->uuid128)){
-        characteristic->uuid16 = big_endian_read_32(characteristic->uuid128, 0);
-    }
-}
-
 static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
 
     switch(state){
         case TC_W4_SERVICE_RESULT:
             switch(packet[0]){
                 case GATT_EVENT_SERVICE_QUERY_RESULT:
-                    extract_service(&battery_service, packet);
+                    gatt_client_deserialize_service(packet, 4, &battery_service);
                     printf("Battery service found:\n");
                     dump_service(&battery_service);
                     break;
@@ -192,7 +170,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
             switch(packet[0]){
                 case GATT_EVENT_CHARACTERISTIC_QUERY_RESULT:
                     printf("Battery level characteristic found:\n");
-                    extract_characteristic(&config_characteristic, packet);
+                    gatt_client_deserialize_characteristic(packet, 4, &config_characteristic);
                     dump_characteristic(&config_characteristic);
                     break;
                 case GATT_EVENT_QUERY_COMPLETE:

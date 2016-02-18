@@ -237,39 +237,17 @@ static void handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *pac
 /* LISTING_START(GATTBrowserQueryHandler): Handling of the GATT client queries */
 static int search_services = 1;
 
-static void extract_service(gatt_client_service_t * service, uint8_t * packet){
-    service->start_group_handle = little_endian_read_16(packet, 4);
-    service->end_group_handle   = little_endian_read_16(packet, 6);
-    service->uuid16 = 0;
-    reverse_128(&packet[8], service->uuid128);
-    if (uuid_has_bluetooth_prefix(service->uuid128)){
-        service->uuid16 = big_endian_read_32(service->uuid128, 0);
-    }
-}
-
-static void extract_characteristic(gatt_client_characteristic_t * characteristic, uint8_t * packet){
-    characteristic->start_handle = little_endian_read_16(packet, 4);
-    characteristic->value_handle = little_endian_read_16(packet, 6);
-    characteristic->end_handle =   little_endian_read_16(packet, 8);
-    characteristic->properties =   little_endian_read_16(packet, 10);
-    characteristic->uuid16 = 0;
-    reverse_128(&packet[12], characteristic->uuid128);
-    if (uuid_has_bluetooth_prefix(characteristic->uuid128)){
-        characteristic->uuid16 = big_endian_read_32(characteristic->uuid128, 0);
-    }
-}
-
 static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     gatt_client_service_t service;
     gatt_client_characteristic_t characteristic;
     switch(packet[0]){
         case GATT_EVENT_SERVICE_QUERY_RESULT:\
-            extract_service(&service, packet);
+            gatt_client_deserialize_service(packet, 4, &service);
             dump_service(&service);
             services[service_count++] = service;
             break;
         case GATT_EVENT_CHARACTERISTIC_QUERY_RESULT:
-            extract_characteristic(&characteristic, packet);
+            gatt_client_deserialize_characteristic(packet, 4, &characteristic);
             dump_characteristic(&characteristic);
             break;
         case GATT_EVENT_QUERY_COMPLETE:

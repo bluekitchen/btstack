@@ -853,25 +853,10 @@ btstack_linked_list_gatt_client_helper_t * daemon_setup_gatt_client_request(conn
 
 // (de)serialize structs from/to HCI commands/events
 
-void daemon_gatt_deserialize_service(uint8_t *packet, int offset, gatt_client_service_t *service){
-    service->start_group_handle = little_endian_read_16(packet, offset);
-    service->end_group_handle = little_endian_read_16(packet, offset + 2);
-    reverse_128(&packet[offset + 4], service->uuid128);
-}
-
 void daemon_gatt_serialize_service(gatt_client_service_t * service, uint8_t * event, int offset){
     little_endian_store_16(event, offset, service->start_group_handle);
     little_endian_store_16(event, offset+2, service->end_group_handle);
     reverse_128(service->uuid128, &event[offset + 4]);
-}
-
-void daemon_gatt_deserialize_characteristic(uint8_t * packet, int offset, gatt_client_characteristic_t * characteristic){
-    characteristic->start_handle = little_endian_read_16(packet, offset);
-    characteristic->value_handle = little_endian_read_16(packet, offset + 2);
-    characteristic->end_handle = little_endian_read_16(packet, offset + 4);
-    characteristic->properties = little_endian_read_16(packet, offset + 6);
-    characteristic->uuid16 = little_endian_read_16(packet, offset + 8);
-    reverse_128(&packet[offset+10], characteristic->uuid128);
 }
 
 void daemon_gatt_serialize_characteristic(gatt_client_characteristic_t * characteristic, uint8_t * event, int offset){
@@ -880,11 +865,6 @@ void daemon_gatt_serialize_characteristic(gatt_client_characteristic_t * charact
     little_endian_store_16(event, offset+4, characteristic->end_handle);
     little_endian_store_16(event, offset+6, characteristic->properties);
     reverse_128(characteristic->uuid128, &event[offset+8]);
-}
-
-void daemon_gatt_deserialize_characteristic_descriptor(uint8_t * packet, int offset, gatt_client_characteristic_descriptor_t * descriptor){
-    descriptor->handle = little_endian_read_16(packet, offset);
-    reverse_128(&packet[offset+2], descriptor->uuid128);
 }
 
 void daemon_gatt_serialize_characteristic_descriptor(gatt_client_characteristic_descriptor_t * characteristic_descriptor, uint8_t * event, int offset){
@@ -1190,47 +1170,47 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
         case GATT_FIND_INCLUDED_SERVICES_FOR_SERVICE:
             gatt_helper = daemon_setup_gatt_client_request(connection, packet, 1);
             if (!gatt_helper) break;
-            daemon_gatt_deserialize_service(packet, 5, &service);
+            gatt_client_deserialize_service(packet, 5, &service);
             gatt_client_find_included_services_for_service(&handle_gatt_client_event, gatt_helper->con_handle, &service);
             break;
         
         case GATT_DISCOVER_CHARACTERISTICS_FOR_SERVICE:
             gatt_helper = daemon_setup_gatt_client_request(connection, packet, 1);
             if (!gatt_helper) break;
-            daemon_gatt_deserialize_service(packet, 5, &service);
+            gatt_client_deserialize_service(packet, 5, &service);
             gatt_client_discover_characteristics_for_service(&handle_gatt_client_event, gatt_helper->con_handle, &service);
             break;
         case GATT_DISCOVER_CHARACTERISTICS_FOR_SERVICE_BY_UUID128:
             gatt_helper = daemon_setup_gatt_client_request(connection, packet, 1);
             if (!gatt_helper) break;
-            daemon_gatt_deserialize_service(packet, 5, &service);
+            gatt_client_deserialize_service(packet, 5, &service);
             reverse_128(&packet[5 + SERVICE_LENGTH], uuid128);
             gatt_client_discover_characteristics_for_service_by_uuid128(&handle_gatt_client_event, gatt_helper->con_handle, &service, uuid128);
             break;
         case GATT_DISCOVER_CHARACTERISTIC_DESCRIPTORS:
             gatt_helper = daemon_setup_gatt_client_request(connection, packet, 1);
             if (!gatt_helper) break;
-            daemon_gatt_deserialize_characteristic(packet, 5, &characteristic);
+            gatt_client_deserialize_characteristic(packet, 5, &characteristic);
             gatt_client_discover_characteristic_descriptors(&handle_gatt_client_event, gatt_helper->con_handle, &characteristic);
             break;
         
         case GATT_READ_VALUE_OF_CHARACTERISTIC:
             gatt_helper = daemon_setup_gatt_client_request(connection, packet, 1);
             if (!gatt_helper) break;
-            daemon_gatt_deserialize_characteristic(packet, 5, &characteristic);
+            gatt_client_deserialize_characteristic(packet, 5, &characteristic);
             gatt_client_read_value_of_characteristic(&handle_gatt_client_event, gatt_helper->con_handle, &characteristic);
             break;
         case GATT_READ_LONG_VALUE_OF_CHARACTERISTIC:
             gatt_helper = daemon_setup_gatt_client_request(connection, packet, 1);
             if (!gatt_helper) break;
-            daemon_gatt_deserialize_characteristic(packet, 5, &characteristic);
+            gatt_client_deserialize_characteristic(packet, 5, &characteristic);
             gatt_client_read_long_value_of_characteristic(&handle_gatt_client_event, gatt_helper->con_handle, &characteristic);
             break;
         
         case GATT_WRITE_VALUE_OF_CHARACTERISTIC_WITHOUT_RESPONSE:
             gatt_helper = daemon_setup_gatt_client_request(connection, packet, 0);  // note: don't track active connection
             if (!gatt_helper) break;
-            daemon_gatt_deserialize_characteristic(packet, 5, &characteristic);
+            gatt_client_deserialize_characteristic(packet, 5, &characteristic);
             data_length = little_endian_read_16(packet, 5 + CHARACTERISTIC_LENGTH);
             data = gatt_helper->characteristic_buffer;
             memcpy(data, &packet[7 + CHARACTERISTIC_LENGTH], data_length);
@@ -1239,7 +1219,7 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
         case GATT_WRITE_VALUE_OF_CHARACTERISTIC:
             gatt_helper = daemon_setup_gatt_client_request(connection, packet, 1);
             if (!gatt_helper) break;
-            daemon_gatt_deserialize_characteristic(packet, 5, &characteristic);
+            gatt_client_deserialize_characteristic(packet, 5, &characteristic);
             data_length = little_endian_read_16(packet, 5 + CHARACTERISTIC_LENGTH);
             data = gatt_helper->characteristic_buffer;
             memcpy(data, &packet[7 + CHARACTERISTIC_LENGTH], data_length);
@@ -1248,7 +1228,7 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
         case GATT_WRITE_LONG_VALUE_OF_CHARACTERISTIC:
             gatt_helper = daemon_setup_gatt_client_request(connection, packet, 1);
             if (!gatt_helper) break;
-            daemon_gatt_deserialize_characteristic(packet, 5, &characteristic);
+            gatt_client_deserialize_characteristic(packet, 5, &characteristic);
             data_length = little_endian_read_16(packet, 5 + CHARACTERISTIC_LENGTH);
             data = gatt_helper->characteristic_buffer;
             memcpy(data, &packet[7 + CHARACTERISTIC_LENGTH], data_length);
@@ -1257,7 +1237,7 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
         case GATT_RELIABLE_WRITE_LONG_VALUE_OF_CHARACTERISTIC:
             gatt_helper = daemon_setup_gatt_client_request(connection, packet, 1);
             if (!gatt_helper) break;
-            daemon_gatt_deserialize_characteristic(packet, 5, &characteristic);
+            gatt_client_deserialize_characteristic(packet, 5, &characteristic);
             data_length = little_endian_read_16(packet, 5 + CHARACTERISTIC_LENGTH);
             data = gatt_helper->characteristic_buffer;
             memcpy(data, &packet[7 + CHARACTERISTIC_LENGTH], data_length);
@@ -1267,20 +1247,20 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             gatt_helper = daemon_setup_gatt_client_request(connection, packet, 1);
             if (!gatt_helper) break;
             handle = little_endian_read_16(packet, 3);
-            daemon_gatt_deserialize_characteristic_descriptor(packet, 5, &descriptor);
+            gatt_client_deserialize_characteristic_descriptor(packet, 5, &descriptor);
             gatt_client_read_characteristic_descriptor(&handle_gatt_client_event, gatt_helper->con_handle, &descriptor);
             break;
         case GATT_READ_LONG_CHARACTERISTIC_DESCRIPTOR:
             gatt_helper = daemon_setup_gatt_client_request(connection, packet, 1);
             if (!gatt_helper) break;
-            daemon_gatt_deserialize_characteristic_descriptor(packet, 5, &descriptor);
+            gatt_client_deserialize_characteristic_descriptor(packet, 5, &descriptor);
             gatt_client_read_long_characteristic_descriptor(&handle_gatt_client_event, gatt_helper->con_handle, &descriptor);
             break;
             
         case GATT_WRITE_CHARACTERISTIC_DESCRIPTOR:
             gatt_helper = daemon_setup_gatt_client_request(connection, packet, 1);
             if (!gatt_helper) break;
-            daemon_gatt_deserialize_characteristic_descriptor(packet, 5, &descriptor);
+            gatt_client_deserialize_characteristic_descriptor(packet, 5, &descriptor);
             data = gatt_helper->characteristic_buffer;
             data_length = little_endian_read_16(packet, 5 + CHARACTERISTIC_DESCRIPTOR_LENGTH);
             gatt_client_write_characteristic_descriptor(&handle_gatt_client_event, gatt_helper->con_handle, &descriptor, data_length, data);
@@ -1288,7 +1268,7 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
         case GATT_WRITE_LONG_CHARACTERISTIC_DESCRIPTOR:
             gatt_helper = daemon_setup_gatt_client_request(connection, packet, 1);
             if (!gatt_helper) break;
-            daemon_gatt_deserialize_characteristic_descriptor(packet, 5, &descriptor);
+            gatt_client_deserialize_characteristic_descriptor(packet, 5, &descriptor);
             data = gatt_helper->characteristic_buffer;
             data_length = little_endian_read_16(packet, 5 + CHARACTERISTIC_DESCRIPTOR_LENGTH);
             gatt_client_write_long_characteristic_descriptor(&handle_gatt_client_event, gatt_helper->con_handle, &descriptor, data_length, data);
@@ -1298,7 +1278,7 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             gatt_helper = daemon_setup_gatt_client_request(connection, packet, 1);
             if (!gatt_helper) break;
             data = gatt_helper->characteristic_buffer;
-            daemon_gatt_deserialize_characteristic(packet, 5, &characteristic);
+            gatt_client_deserialize_characteristic(packet, 5, &characteristic);
             gatt_client_write_client_characteristic_configuration(&handle_gatt_client_event, gatt_helper->con_handle, &characteristic, configuration);
             break;
         case GATT_GET_MTU:
