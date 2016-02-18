@@ -278,11 +278,9 @@ static int usb_send_sco_packet(uint8_t *packet, int size){
 
     // log_info("H2: queued packet at index %u, num active %u", tranfer_index, sco_ring_transfers_active);
 
-    // notify upper stack that packet processed and that it might be possible to send again
-    if (sco_ring_have_space()){
-        uint8_t event[] = { DAEMON_EVENT_HCI_PACKET_SENT, 0};
-        packet_handler(HCI_EVENT_PACKET, &event[0], sizeof(event));
-    } 
+    // notify upper stack that provided buffer can be used again
+    uint8_t event[] = { HCI_EVENT_TRANSPORT_PACKET_SENT, 0};
+    packet_handler(HCI_EVENT_PACKET, &event[0], sizeof(event));
     return 0;
 }
 
@@ -365,9 +363,10 @@ static void handle_completed_transfer(struct libusb_transfer *transfer){
             transfer->iso_packet_desc[0].actual_length, transfer->iso_packet_desc[0].length, transfer->iso_packet_desc[0].status,
             transfer->iso_packet_desc[1].actual_length, transfer->iso_packet_desc[1].length, transfer->iso_packet_desc[1].status,
             transfer->iso_packet_desc[2].actual_length, transfer->iso_packet_desc[2].length, transfer->iso_packet_desc[2].status);
-        if (!sco_ring_have_space()) {
-            // if there isn't space, the last SCO send didn't emit a packet sent event
-            signal_done = 1;
+        // notify upper layer if there's space for new SCO packets
+        if (sco_ring_have_space()) {
+            uint8_t event[] = { HCI_EVENT_SCO_CAN_SEND_NOW, 0};
+            packet_handler(HCI_EVENT_PACKET, &event[0], sizeof(event));
         }
         // decrease tab
         sco_ring_transfers_active--;
@@ -378,8 +377,8 @@ static void handle_completed_transfer(struct libusb_transfer *transfer){
     }
 
     if (signal_done){
-        // notify upper stack that iit might be possible to send again
-        uint8_t event[] = { DAEMON_EVENT_HCI_PACKET_SENT, 0};
+        // notify upper stack that provided buffer can be used again
+        uint8_t event[] = { HCI_EVENT_TRANSPORT_PACKET_SENT, 0};
         packet_handler(HCI_EVENT_PACKET, &event[0], sizeof(event));
     }
 

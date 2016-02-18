@@ -302,11 +302,14 @@ typedef uint8_t sm_key_t[16];
 // data: event(8)
 #define DAEMON_EVENT_NEW_RFCOMM_CREDITS                    0x6B
 
-// data: event(8)
-#define DAEMON_EVENT_HCI_PACKET_SENT                       0x6C
-
 
 // additional HCI events
+
+/**
+ * @brief Outgoing packet 
+ */
+#define HCI_EVENT_TRANSPORT_PACKET_SENT                    0x6E
+
 /**
  * @format B
  * @param handle

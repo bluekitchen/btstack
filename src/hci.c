@@ -527,8 +527,8 @@ static int hci_send_acl_packet_fragments(hci_connection_t *connection){
     // release buffer now for synchronous transport
     if (hci_transport_synchronous()){
         hci_release_packet_buffer();
-        // notify upper stack that iit might be possible to send again
-        uint8_t event[] = { DAEMON_EVENT_HCI_PACKET_SENT, 0};
+        // notify upper stack that it might be possible to send again
+        uint8_t event[] = { HCI_EVENT_TRANSPORT_PACKET_SENT, 0};
         hci_emit_event(&event[0], sizeof(event), 0);  // don't dump
     }
 
@@ -610,8 +610,8 @@ int hci_send_sco_packet_buffer(int size){
 
     if (hci_transport_synchronous()){
         hci_release_packet_buffer();
-        // notify upper stack that iit might be possible to send again
-        uint8_t event[] = { DAEMON_EVENT_HCI_PACKET_SENT, 0};
+        // notify upper stack that it might be possible to send again
+        uint8_t event[] = { HCI_EVENT_TRANSPORT_PACKET_SENT, 0};
         hci_emit_event(&event[0], sizeof(event), 0);    // don't dump
     }
 
@@ -1683,19 +1683,25 @@ static void event_handler(uint8_t *packet, int size){
             conn->role = packet[9];
             break;
 
-        case DAEMON_EVENT_HCI_PACKET_SENT:
+        case HCI_EVENT_TRANSPORT_PACKET_SENT:
             // release packet buffer only for asynchronous transport and if there are not further fragements
             if (hci_transport_synchronous()) {
-                log_error("Synchronous HCI Transport shouldn't send DAEMON_EVENT_HCI_PACKET_SENT");
+                log_error("Synchronous HCI Transport shouldn't send HCI_EVENT_TRANSPORT_PACKET_SENT");
                 return; // instead of break: to avoid re-entering hci_run()
             }
             if (hci_stack->acl_fragmentation_total_size) break;
             hci_release_packet_buffer();
             
-            // L2CAP receives this event via the hci_add_event_handler
-            // For SCO, we do the can send now check here
+            // L2CAP receives this event via the hci_emit_event below
+
+            // For SCO, we do the can_send_now_check here
             hci_notify_if_sco_can_send_now();
             break;
+
+        case HCI_EVENT_SCO_CAN_SEND_NOW:
+            // For SCO, we do the can_send_now_check here
+            hci_notify_if_sco_can_send_now();
+            return;
 
 #ifdef ENABLE_BLE
         case HCI_EVENT_LE_META:

@@ -407,7 +407,7 @@ static int h4_process(struct btstack_data_source *ds) {
 		}
 		
         tx_send_packet_sent = 0;
-        uint8_t event[] = { DAEMON_EVENT_HCI_PACKET_SENT, 0 };
+        uint8_t event[] = { HCI_EVENT_TRANSPORT_PACKET_SENT, 0 };
         packet_handler(HCI_EVENT_PACKET, &event[0], sizeof(event));
     }
 
