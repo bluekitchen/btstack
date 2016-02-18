@@ -281,6 +281,12 @@ static int usb_send_sco_packet(uint8_t *packet, int size){
     // notify upper stack that provided buffer can be used again
     uint8_t event[] = { HCI_EVENT_TRANSPORT_PACKET_SENT, 0};
     packet_handler(HCI_EVENT_PACKET, &event[0], sizeof(event));
+
+    // and if we have more space for SCO packets
+    if (sco_ring_have_space()) {
+        uint8_t event_sco[] = { HCI_EVENT_SCO_CAN_SEND_NOW, 0};
+        packet_handler(HCI_EVENT_PACKET, &event_sco[0], sizeof(event_sco));
+    }
     return 0;
 }
 
