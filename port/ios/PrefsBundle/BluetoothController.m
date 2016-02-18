@@ -184,9 +184,9 @@ static BluetoothController* sharedInstance = nil;
             hci_state = packet[2];
             // NSLog(@"new BTSTACK_EVENT_STATE %u", hci_state);
             break;
-        case BTSTACK_EVENT_SYSTEM_BLUETOOTH_ENABLED:
+        case DAEMON_EVENT_SYSTEM_BLUETOOTH_ENABLED:
             system_bluetooth = packet[2];
-            // NSLog(@"new BTSTACK_EVENT_SYSTEM_BLUETOOTH_ENABLED %u", system_bluetooth);
+            // NSLog(@"new DAEMON_EVENT_SYSTEM_BLUETOOTH_ENABLED %u", system_bluetooth);
             break;
         default:
             break;
@@ -205,7 +205,7 @@ static BluetoothController* sharedInstance = nil;
             break;
             
         case kW4SystemOffToEnableBTstack:
-            if (packet[0] == BTSTACK_EVENT_SYSTEM_BLUETOOTH_ENABLED) {
+            if (packet[0] == DAEMON_EVENT_SYSTEM_BLUETOOTH_ENABLED) {
                 if (system_bluetooth == 0){
                     bt_send_cmd(&btstack_set_power_mode, HCI_POWER_ON);
                     state = kIdle;
@@ -220,7 +220,7 @@ static BluetoothController* sharedInstance = nil;
                     bt_send_cmd(&btstack_set_system_bluetooth_enabled, 1);
                 }
             }
-            if (packet[0] == BTSTACK_EVENT_SYSTEM_BLUETOOTH_ENABLED) {
+            if (packet[0] == DAEMON_EVENT_SYSTEM_BLUETOOTH_ENABLED) {
                 if (system_bluetooth == 0){
                     // NSLog(@"Sending set system bluetooth enable B");
                     bt_send_cmd(&btstack_set_system_bluetooth_enabled, 1);

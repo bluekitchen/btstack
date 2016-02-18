@@ -263,8 +263,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 		case kW4SysBTState:
 		case kW4SysBTDisabled:
 			
-			// BTSTACK_EVENT_SYSTEM_BLUETOOTH_ENABLED
-			if ( packet[0] == BTSTACK_EVENT_SYSTEM_BLUETOOTH_ENABLED){
+			// DAEMON_EVENT_SYSTEM_BLUETOOTH_ENABLED
+			if ( packet[0] == DAEMON_EVENT_SYSTEM_BLUETOOTH_ENABLED){
 				if (packet[2]){
 					// system bt on - first time try to disable it
 					if ( state == kW4SysBTState) {
@@ -458,7 +458,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 					}
 					break;
 				}
-				case BTSTACK_EVENT_REMOTE_NAME_CACHED:
+				case DAEMON_EVENT_REMOTE_NAME_CACHED:
                     [self handleRemoteNameCached:packet];
 					break;
 					

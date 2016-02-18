@@ -269,23 +269,26 @@ typedef uint8_t sm_key_t[16];
 #define BTSTACK_EVENT_POWERON_FAILED                       0x62
 
 /**
+ * @format 1
+ * @param discoverable
+ */
+#define BTSTACK_EVENT_DISCOVERABLE_ENABLED                 0x66
+
+// Daemon Events
+
+/**
  * @format 112
  * @param major
  * @param minor
  @ @param revision
  */
-#define BTSTACK_EVENT_VERSION                              0x63
+#define DAEMON_EVENT_VERSION                               0x63
 
 // data: system bluetooth on/off (bool)
-#define BTSTACK_EVENT_SYSTEM_BLUETOOTH_ENABLED             0x64
+#define DAEMON_EVENT_SYSTEM_BLUETOOTH_ENABLED              0x64
 
 // data: event (8), len(8), status (8) == 0, address (48), name (1984 bits = 248 bytes)
-#define BTSTACK_EVENT_REMOTE_NAME_CACHED                   0x65
-
-// data: discoverable enabled (bool)
-#define BTSTACK_EVENT_DISCOVERABLE_ENABLED                 0x66
-
-// Daemon Events used internally
+#define DAEMON_EVENT_REMOTE_NAME_CACHED                    0x65
 
 // data: event(8)
 #define DAEMON_EVENT_CONNECTION_OPENED                     0x68
@@ -301,6 +304,7 @@ typedef uint8_t sm_key_t[16];
 
 // data: event(8)
 #define DAEMON_EVENT_HCI_PACKET_SENT                       0x6C
+
 
 // additional HCI events
 /**
@@ -738,16 +742,59 @@ typedef uint8_t sm_key_t[16];
  */
 #define GAP_LE_EVENT_ADVERTISING_REPORT                          0xE2
 
+
 #define HCI_EVENT_HSP_META                                 0xE8
 
-#define HSP_SUBEVENT_ERROR                                 0x01
-#define HSP_SUBEVENT_AUDIO_CONNECTION_COMPLETE             0x02
-#define HSP_SUBEVENT_AUDIO_DISCONNECTION_COMPLETE          0x03
-#define HSP_SUBEVENT_RING                                  0x04
-#define HSP_SUBEVENT_MICROPHONE_GAIN_CHANGED               0x05
-#define HSP_SUBEVENT_SPEAKER_GAIN_CHANGED                  0x06
-#define HSP_SUBEVENT_HS_COMMAND                            0x07
-#define HSP_SUBEVENT_AG_INDICATION                         0x08
+/**
+ * @format 11
+ * @param subevent_code
+ * @param status 0 == OK
+ */
+#define HSP_SUBEVENT_AUDIO_CONNECTION_COMPLETE             0x01
+
+/**
+ * @format 11
+ * @param subevent_code
+ * @param status 0 == OK
+ */
+#define HSP_SUBEVENT_AUDIO_DISCONNECTION_COMPLETE          0x02
+
+/**
+ * @format 1
+ * @param subevent_code
+ */
+#define HSP_SUBEVENT_RING                                  0x03
+
+/**
+ * @format 11
+ * @param subevent_code
+ * @param gain Valid range: [0,15]
+ */
+#define HSP_SUBEVENT_MICROPHONE_GAIN_CHANGED               0x04
+
+/**
+ * @format 11
+ * @param subevent_code
+ * @param gain Valid range: [0,15]
+ */
+#define HSP_SUBEVENT_SPEAKER_GAIN_CHANGED                  0x05
+
+/**
+ * @format 1JV
+ * @param subevent_code
+ * @param value_length
+ * @param value
+ */
+#define HSP_SUBEVENT_HS_COMMAND                            0x06
+
+/**
+ * @format 1JV
+ * @param subevent_code
+ * @param value_length
+ * @param value
+ */
+#define HSP_SUBEVENT_AG_INDICATION                         0x07
+
 
 #define HCI_EVENT_HFP_META                                 0xE9
 

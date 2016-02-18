@@ -201,7 +201,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 					start_scan();
 					break;
 
-				case BTSTACK_EVENT_REMOTE_NAME_CACHED:
+				case DAEMON_EVENT_REMOTE_NAME_CACHED:
 					reverse_bd_addr(&packet[3], addr);
 					printf("Cached remote name for %s: '%s'\n", bd_addr_to_str(addr), &packet[9]);
 					break;

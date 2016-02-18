@@ -683,9 +683,9 @@ static void daemon_disconnect_client(connection_t * connection){
 }
 
 static void hci_emit_btstack_version(void){
-    log_info("BTSTACK_EVENT_VERSION %u.%u", BTSTACK_MAJOR, BTSTACK_MINOR);
+    log_info("DAEMON_EVENT_VERSION %u.%u", BTSTACK_MAJOR, BTSTACK_MINOR);
     uint8_t event[6];
-    event[0] = BTSTACK_EVENT_VERSION;
+    event[0] = DAEMON_EVENT_VERSION;
     event[1] = sizeof(event) - 2;
     event[2] = BTSTACK_MAJOR;
     event[3] = BTSTACK_MINOR;
@@ -694,9 +694,9 @@ static void hci_emit_btstack_version(void){
 }
 
 static void hci_emit_system_bluetooth_enabled(uint8_t enabled){
-    log_info("BTSTACK_EVENT_SYSTEM_BLUETOOTH_ENABLED %u", enabled);
+    log_info("DAEMON_EVENT_SYSTEM_BLUETOOTH_ENABLED %u", enabled);
     uint8_t event[3];
-    event[0] = BTSTACK_EVENT_SYSTEM_BLUETOOTH_ENABLED;
+    event[0] = DAEMON_EVENT_SYSTEM_BLUETOOTH_ENABLED;
     event[1] = sizeof(event) - 2;
     event[2] = enabled;
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
@@ -1559,13 +1559,13 @@ static void daemon_packet_handler(void * connection, uint8_t packet_type, uint16
                     for (i=0; i<packet[2];i++){
                         reverse_bd_addr(&packet[offset], addr);
                         if (btstack_device_name_db->get_name(addr, (device_name_t *) &remote_name_event[9])){
-                            remote_name_event[0] = BTSTACK_EVENT_REMOTE_NAME_CACHED;
+                            remote_name_event[0] = DAEMON_EVENT_REMOTE_NAME_CACHED;
                             remote_name_event[1] = sizeof(remote_name_event) - 2 - 1;
                             remote_name_event[2] = 0;   // just to be compatible with HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE
                             reverse_bd_addr(addr, &remote_name_event[3]);
                             
                             remote_name_event[9+248] = 0;   // assert \0 for log_info
-                            log_info("BTSTACK_EVENT_REMOTE_NAME_CACHED %s = '%s'", bd_addr_to_str(addr), &remote_name_event[9]);
+                            log_info("DAEMON_EVENT_REMOTE_NAME_CACHED %s = '%s'", bd_addr_to_str(addr), &remote_name_event[9]);
                             hci_dump_packet(HCI_EVENT_PACKET, 0, remote_name_event, sizeof(remote_name_event)-1);
                             daemon_emit_packet(connection, HCI_EVENT_PACKET, channel, remote_name_event, sizeof(remote_name_event) -1);
                         }

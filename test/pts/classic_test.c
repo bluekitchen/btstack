@@ -237,7 +237,7 @@ static void inquiry_packet_handler (uint8_t packet_type, uint8_t *packet, uint16
             continue_remote_names();
             break;
 
-        case BTSTACK_EVENT_REMOTE_NAME_CACHED:
+        case DAEMON_EVENT_REMOTE_NAME_CACHED:
             reverse_bd_addr(&packet[3], addr);
             printf("Cached remote name for %s: '%s'\n", bd_addr_to_str(addr), &packet[9]);
             break;
