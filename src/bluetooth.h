@@ -885,7 +885,8 @@ typedef enum {
 #define GAP_PERIPHERAL_PRIVACY_FLAG    0x2a02
 #define GAP_RECONNECTION_ADDRESS_UUID  0x2a03
 #define GAP_PERIPHERAL_PREFERRED_CONNECTION_PARAMETERS_UUID 0x2a04
-
+#define GAP_SERVICE_CHANGED            0x2a05
+ 
 /**
  * SM - LE Security Manager 
  */
