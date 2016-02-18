@@ -998,7 +998,10 @@ static void hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8
             hfp_connection->command = HFP_CMD_NONE;
             hfp_hf_emit_type_and_number(hfp_callback, HFP_SUBEVENT_CALL_WAITING_NOTIFICATION, hfp_connection->bnip_type, hfp_connection->bnip_number);
             break;
-        
+        case HFP_CMD_AG_SENT_CLIP_INFORMATION:
+            hfp_connection->command = HFP_CMD_NONE;
+            hfp_hf_emit_type_and_number(hfp_callback, HFP_SUBEVENT_CALLING_LINE_INDETIFICATION_NOTIFICATION, hfp_connection->bnip_type, hfp_connection->bnip_number);
+            break;
         case HFP_CMD_EXTENDED_AUDIO_GATEWAY_ERROR:
             hfp_connection->ok_pending = 0;
             hfp_connection->command = HFP_CMD_NONE;

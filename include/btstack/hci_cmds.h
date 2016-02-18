@@ -825,7 +825,23 @@ extern "C" {
  * @param gain
  */
 #define HFP_SUBEVENT_MICROPHONE_VOLUME                        0x17
+
+/**
+ * @format 111T
+ * @param subevent_code
+ * @param status
+ * @param type
+ * @param number
+ */
 #define HFP_SUBEVENT_CALL_WAITING_NOTIFICATION                0x18
+
+/**
+ * @format 111T
+ * @param subevent_code
+ * @param status
+ * @param type
+ * @param number
+ */
 #define HFP_SUBEVENT_CALLING_LINE_INDETIFICATION_NOTIFICATION 0x19
 
 /**
