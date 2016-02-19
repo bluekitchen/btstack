@@ -44,15 +44,14 @@
 #include <string.h> // memcpy
 #include <stdint.h>
 
-#include "hci_cmd.h"
-#include "btstack_util.h"
-
-#include "btstack_util.h"
-#include "btstack_memory.h"
-#include "hci.h"
-#include "hci_dump.h"
 #include "btstack_debug.h"
+#include "btstack_memory.h"
+#include "btstack_util.h"
 #include "classic/rfcomm.h"
+#include "hci.h"
+#include "hci_cmd.h"
+#include "hci_dump.h"
+#include "l2cap.h"
 
 // workaround for missing PRIxPTR on mspgcc (16/20-bit MCU)
 #ifndef PRIxPTR
@@ -72,7 +71,53 @@
 #define BT_RFCOMM_CRC_CHECK_LEN     3
 #define BT_RFCOMM_UIHCRC_CHECK_LEN  2
 
-#include "l2cap.h"
+
+typedef enum {
+    CH_EVT_RCVD_SABM = 1,
+    CH_EVT_RCVD_UA,
+    CH_EVT_RCVD_PN,
+    CH_EVT_RCVD_PN_RSP,
+    CH_EVT_RCVD_DISC,
+    CH_EVT_RCVD_DM,
+    CH_EVT_RCVD_MSC_CMD,
+    CH_EVT_RCVD_MSC_RSP,
+    CH_EVT_RCVD_NSC_RSP,
+    CH_EVT_RCVD_RLS_CMD,
+    CH_EVT_RCVD_RLS_RSP,
+    CH_EVT_RCVD_RPN_CMD,
+    CH_EVT_RCVD_RPN_REQ,
+    CH_EVT_RCVD_CREDITS,
+    CH_EVT_MULTIPLEXER_READY,
+    CH_EVT_READY_TO_SEND,
+} RFCOMM_CHANNEL_EVENT;
+
+typedef struct rfcomm_channel_event {
+    RFCOMM_CHANNEL_EVENT type;
+    uint16_t dummy; // force rfcomm_channel_event to be 2-byte aligned -> avoid -Wcast-align warning
+} rfcomm_channel_event_t;
+
+typedef struct rfcomm_channel_event_pn {
+    rfcomm_channel_event_t super;
+    uint16_t max_frame_size;
+    uint8_t  priority;
+    uint8_t  credits_outgoing;
+} rfcomm_channel_event_pn_t;
+
+typedef struct rfcomm_channel_event_rpn {
+    rfcomm_channel_event_t super;
+    rfcomm_rpn_data_t data;
+} rfcomm_channel_event_rpn_t;
+
+typedef struct rfcomm_channel_event_rls {
+    rfcomm_channel_event_t super;
+    uint8_t line_status;
+} rfcomm_channel_event_rls_t;
+
+typedef struct rfcomm_channel_event_msc {
+    rfcomm_channel_event_t super;
+    uint8_t modem_status;
+} rfcomm_channel_event_msc_t;
+
 
 // global rfcomm data
 static uint16_t      rfcomm_client_cid_generator;  // used for client channel IDs

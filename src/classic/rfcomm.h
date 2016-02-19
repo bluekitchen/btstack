@@ -71,7 +71,6 @@ typedef enum {
 
 typedef enum {
     MULT_EV_READY_TO_SEND = 1,
-    
 } RFCOMM_MULTIPLEXER_EVENT;
 
 typedef enum {
@@ -88,7 +87,6 @@ typedef enum {
     RFCOMM_CHANNEL_SEND_DISC,
     RFCOMM_CHANNEL_W4_UA_AFTER_UA,
     RFCOMM_CHANNEL_SEND_DM,
-    
 } RFCOMM_CHANNEL_STATE;
 
 typedef enum {
@@ -114,37 +112,6 @@ typedef enum {
     RFCOMM_CHANNEL_STATE_VAR_SENT_CREDITS    = 1 << 15,
 } RFCOMM_CHANNEL_STATE_VAR;
 
-typedef enum {
-    CH_EVT_RCVD_SABM = 1,
-    CH_EVT_RCVD_UA,
-    CH_EVT_RCVD_PN,
-    CH_EVT_RCVD_PN_RSP,
-    CH_EVT_RCVD_DISC,
-    CH_EVT_RCVD_DM,
-    CH_EVT_RCVD_MSC_CMD,
-    CH_EVT_RCVD_MSC_RSP,
-    CH_EVT_RCVD_NSC_RSP,
-    CH_EVT_RCVD_RLS_CMD,
-    CH_EVT_RCVD_RLS_RSP,
-    CH_EVT_RCVD_RPN_CMD,
-    CH_EVT_RCVD_RPN_REQ,
-    CH_EVT_RCVD_CREDITS,
-    CH_EVT_MULTIPLEXER_READY,
-    CH_EVT_READY_TO_SEND,
-} RFCOMM_CHANNEL_EVENT;
-
-typedef struct rfcomm_channel_event {
-    RFCOMM_CHANNEL_EVENT type;
-    uint16_t dummy; // force rfcomm_channel_event to be 2-byte aligned -> avoid -Wcast-align warning
-} rfcomm_channel_event_t;
-
-typedef struct rfcomm_channel_event_pn {
-    rfcomm_channel_event_t super;
-    uint16_t max_frame_size;
-    uint8_t  priority;
-    uint8_t  credits_outgoing;
-} rfcomm_channel_event_pn_t;
-
 typedef struct rfcomm_rpn_data {
     uint8_t baud_rate;
     uint8_t flags;
@@ -154,21 +121,6 @@ typedef struct rfcomm_rpn_data {
     uint8_t parameter_mask_0;   // first byte
     uint8_t parameter_mask_1;   // second byte
 } rfcomm_rpn_data_t;
-
-typedef struct rfcomm_channel_event_rpn {
-    rfcomm_channel_event_t super;
-    rfcomm_rpn_data_t data;
-} rfcomm_channel_event_rpn_t;
-
-typedef struct rfcomm_channel_event_rls {
-    rfcomm_channel_event_t super;
-    uint8_t line_status;
-} rfcomm_channel_event_rls_t;
-
-typedef struct rfcomm_channel_event_msc {
-    rfcomm_channel_event_t super;
-    uint8_t modem_status;
-} rfcomm_channel_event_msc_t;
 
 // info regarding potential connections
 typedef struct {
