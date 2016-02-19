@@ -26,7 +26,7 @@ def assert_dir(path):
 def cap(x):
     if x.lower() == 'btstack':
         return 'BTstack'
-    acronyms = ['GAP', 'GATT', 'HCI', 'L2CAP', 'LE', 'RFCOMM', 'SM', 'SDP', 'UUID16', 'UUID128']
+    acronyms = ['GAP', 'GATT', 'HCI', 'L2CAP', 'LE', 'RFCOMM', 'SM', 'SDP', 'UUID16', 'UUID128', 'HSP', 'HFP', 'ANCS']
     if x.upper() in acronyms:
         return x.upper()
     return x.capitalize()
@@ -61,9 +61,7 @@ def parse_defines():
 
 def my_parse_events(path):
     events = []
-    le_events = []
-    hfp_events = []
-    hsp_events = []
+    subevents = []
     params = []
     event_types = set()
     format = None
@@ -81,25 +79,28 @@ def my_parse_events(path):
                 (key, value) = parts.groups()
                 if format != None:
                     # renaming needed by Java Binding (... subevents are just enumerated with others due to event factory)
-                    events.append((value, key, format, params))
+                    if "_subevent_" in key.lower():
+                        subevents.append((value, key, format, params))
+                    else:
+                        events.append((value, key, format, params))
                     event_types.add(key)
-                params = []
-                format = None
-    return (events, le_events, event_types)
+                    params = []
+                    format = None
+    return (events, subevents, event_types)
 
 def parse_events():
     global btstack_root
     
     # parse bluetooth.h to get used events
-    (bluetooth_events, bluetooth_le_events, bluetooth_event_types) = my_parse_events(btstack_root + '/' + bluetooth_h_path)
+    (bluetooth_events, bluetooth_subevents, bluetooth_event_types) = my_parse_events(btstack_root + '/' + bluetooth_h_path)
 
     # parse btstack_defines to get events
-    (btstack_events, btstack_le_events, btstack_event_types) = my_parse_events(btstack_root + '/' + btstack_defines_h_path)
+    (btstack_events, btstack_subevents, btstack_event_types) = my_parse_events(btstack_root + '/' + btstack_defines_h_path)
 
     # concat lists
-    (events, le_events, event_types) = (bluetooth_events + btstack_events, bluetooth_le_events + btstack_le_events, bluetooth_event_types | btstack_event_types)
+    (events, subvents, event_types) = (bluetooth_events + btstack_events, bluetooth_subevents + btstack_subevents, bluetooth_event_types | btstack_event_types)
 
-    return (events, le_events, event_types)
+    return (events, subvents, event_types)
 
 def my_parse_commands(infile):
     commands = []

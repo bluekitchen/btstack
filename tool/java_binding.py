@@ -320,7 +320,7 @@ def create_events(events):
         event_name = parser.camel_case(event_name)
         create_event(event_name, format, args)
 
-def create_event_factory(events, le_events, defines):
+def create_event_factory(events, subevents, defines):
     global gen_path
     global package
     global java_event_factory_event
@@ -333,8 +333,12 @@ def create_event_factory(events, le_events, defines):
         event_name = parser.camel_case(event_name)
         cases += java_event_factory_event.format(event_type, event_name)
     subcases = ''
-    for event_type, event_name, format, args in le_events:
-        event_name = parser.camel_case(event_name)
+    for event_type, event_name, format, args in subevents:
+        # replace subevent with event as we just enumerate all events
+        event_name = parser.camel_case(event_name.replace('SUBEVENT','EVENT'))
+        # subevents besides le_events are not handled yet
+        if not event_name.startswith("HCIEvent"):
+            continue
         subcases += java_event_factory_subevent.format(event_type, event_name)
 
     with open(outfile, 'wt') as fout:
