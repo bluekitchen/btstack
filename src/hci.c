@@ -2638,7 +2638,7 @@ static void hci_run(void){
             // close all open connections
             connection =  (hci_connection_t *) hci_stack->connections;
             if (connection){
-                uint16_t con_handle = (uint16_t) connection->con_handle;
+                hci_con_handle_t con_handle = (uint16_t) connection->con_handle;
                 if (!hci_can_send_command_packet_now()) return;
 
                 log_info("HCI_STATE_HALTING, connection %p, handle %u", connection, con_handle);

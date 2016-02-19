@@ -118,26 +118,26 @@ void sm_set_request_security(int enable);
  * @brief Trigger Security Request
  * @note Not used normally. Bonding is triggered by access to protected attributes in ATT Server
  */
-void sm_send_security_request(uint16_t handle);
+void sm_send_security_request(hci_con_handle_t con_handle);
 
 /**
  * @brief Decline bonding triggered by event before
  * @param addr_type and address
  */
-void sm_bonding_decline(uint16_t handle);
+void sm_bonding_decline(hci_con_handle_t con_handle);
 
 /**
  * @brief Confirm Just Works bonding 
  * @param addr_type and address
  */
-void sm_just_works_confirm(uint16_t handle);
+void sm_just_works_confirm(hci_con_handle_t con_handle);
 
 /**
  * @brief Reports passkey input by user
  * @param addr_type and address
  * @param passkey in [0..999999]
  */
-void sm_passkey_input(uint16_t handle, uint32_t passkey);
+void sm_passkey_input(hci_con_handle_t con_handle, uint32_t passkey);
 
 /**
  *
@@ -145,39 +145,39 @@ void sm_passkey_input(uint16_t handle, uint32_t passkey);
  * @param addr_type and address
  * @return 0 if not encrypted, 7-16 otherwise
  */
-int sm_encryption_key_size(uint16_t handle);
+int sm_encryption_key_size(hci_con_handle_t con_handle);
 
 /**
  * @brief Get authentication property.
  * @param addr_type and address
  * @return 1 if bonded with OOB/Passkey (AND MITM protection)
  */
-int sm_authenticated(uint16_t handle);
+int sm_authenticated(hci_con_handle_t con_handle);
 
 /**
  * @brief Queries authorization state.
  * @param addr_type and address
  * @return authorization_state for the current session
  */
-authorization_state_t sm_authorization_state(uint16_t handle);
+authorization_state_t sm_authorization_state(hci_con_handle_t con_handle);
 
 /**
  * @brief Used by att_server.c to request user authorization.
  * @param addr_type and address
  */
-void sm_request_pairing(uint16_t handle);
+void sm_request_pairing(hci_con_handle_t con_handle);
 
 /**
  * @brief Report user authorization decline.
  * @param addr_type and address
  */
-void sm_authorization_decline(uint16_t handle);
+void sm_authorization_decline(hci_con_handle_t con_handle);
 
 /**
  * @brief Report user authorization grant.
  * @param addr_type and address
  */
-void sm_authorization_grant(uint16_t handle);
+void sm_authorization_grant(hci_con_handle_t con_handle);
 
 /**
  * @brief Support for signed writes, used by att_server.
@@ -199,7 +199,7 @@ int sm_address_resolution_lookup(uint8_t addr_type, bd_addr_t addr);
  * @param handle
  * @return index from le_device_db or -1 if not found/identified
  */
-int sm_le_device_index(uint16_t handle );
+int sm_le_device_index(hci_con_handle_t con_handle );
 /* API_END */
 
 // PTS testing

@@ -40,7 +40,8 @@
 #define __ATT_H
 
 #include <stdint.h>
-
+#include "bluetooth.h"
+ 
 #if defined __cplusplus
 extern "C" {
 #endif
@@ -53,7 +54,7 @@ extern "C" {
 #define ATT_ERROR_TIMEOUT                          0x7F
     
 typedef struct att_connection {
-    uint16_t con_handle;
+    hci_con_handle_t con_handle;
     uint16_t mtu;       // initialized to ATT_DEFAULT_MTU (23), negotiated during MTU exchange
     uint16_t max_mtu;   // local maximal L2CAP_MTU, set to l2cap_max_le_mtu()
     uint8_t  encryption_key_size;
@@ -69,7 +70,7 @@ typedef struct att_connection {
 // @param offset defines start of attribute value
 // @param buffer 
 // @param buffer_size
-typedef uint16_t (*att_read_callback_t)(uint16_t con_handle, uint16_t attribute_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size);
+typedef uint16_t (*att_read_callback_t)(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size);
 
 // ATT Client Write Callback for Dynamic Data
 // @param con_handle of hci le connection
@@ -80,7 +81,7 @@ typedef uint16_t (*att_read_callback_t)(uint16_t con_handle, uint16_t attribute_
 // @param buffer_size
 // @param signature used for signed write commmands
 // @returns 0 if write was ok, ATT_ERROR_PREPARE_QUEUE_FULL if no space in queue, ATT_ERROR_INVALID_OFFSET if offset is larger than max buffer
-typedef int (*att_write_callback_t)(uint16_t con_handle, uint16_t attribute_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size);
+typedef int (*att_write_callback_t)(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size);
 
 // MARK: ATT Operations
 

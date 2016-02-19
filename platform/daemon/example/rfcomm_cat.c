@@ -59,7 +59,7 @@
 
 // input from command line arguments
 bd_addr_t addr = { };
-uint16_t con_handle;
+hci_con_handle_t con_handle;
 int rfcomm_channel = 1;
 char pin[17];
 

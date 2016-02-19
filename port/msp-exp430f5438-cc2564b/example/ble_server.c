@@ -203,7 +203,7 @@ static uint16_t get_bytes_to_copy(uint16_t value_len, uint16_t offset, uint16_t 
     return bytes_to_copy;
 }
 
-uint16_t att_read_callback(uint16_t con_handle, uint16_t att_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
+uint16_t att_read_callback(hci_con_handle_t con_handle, uint16_t att_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
     printf("READ Callback, handle %04x\n", att_handle);
     uint16_t value_len = get_read_att_value_len(att_handle);
     if (!buffer) return value_len;
@@ -223,7 +223,7 @@ uint16_t att_read_callback(uint16_t con_handle, uint16_t att_handle, uint16_t of
 }
 
 // write requests
-static int att_write_callback(uint16_t con_handle, uint16_t att_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size){
+static int att_write_callback(hci_con_handle_t con_handle, uint16_t att_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size){
     printf("WRITE Callback, handle %04x\n", att_handle);
     
     uint16_t value_len = get_write_att_value_len(att_handle);

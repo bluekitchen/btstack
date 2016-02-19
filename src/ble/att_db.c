@@ -161,14 +161,14 @@ uint16_t att_uuid_for_handle(uint16_t handle){
 }
 // end of client API
 
-static void att_update_value_len(att_iterator_t *it, uint16_t con_handle){
+static void att_update_value_len(att_iterator_t *it, hci_con_handle_t con_handle){
     if ((it->flags & ATT_PROPERTY_DYNAMIC) == 0 || !att_read_callback) return;
     it->value_len = (*att_read_callback)(con_handle, it->handle, 0, NULL, 0);
     return;
 }
 
 // copy attribute value from offset into buffer with given size
-static int att_copy_value(att_iterator_t *it, uint16_t offset, uint8_t * buffer, uint16_t buffer_size, uint16_t con_handle){
+static int att_copy_value(att_iterator_t *it, uint16_t offset, uint8_t * buffer, uint16_t buffer_size, hci_con_handle_t con_handle){
     
     // DYNAMIC 
     if ((it->flags & ATT_PROPERTY_DYNAMIC) && att_read_callback) {

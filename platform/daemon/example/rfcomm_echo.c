@@ -55,7 +55,7 @@
 
 // input from command line arguments
 bd_addr_t addr = { };
-uint16_t con_handle;
+hci_con_handle_t con_handle;
 uint16_t mtu;
 char pin[17];
 int counter = 0;

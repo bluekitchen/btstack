@@ -158,7 +158,7 @@ typedef struct btstack_linked_list_connection {
 
 typedef struct btstack_linked_list_gatt_client_helper{
     btstack_linked_item_t item;
-    uint16_t con_handle;
+    hci_con_handle_t con_handle;
     connection_t * active_connection;   // the one that started the current query
     btstack_linked_list_t  all_connections;     // list of all connections that ever used this helper
     uint16_t characteristic_length;
@@ -1829,7 +1829,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
             return;
     }
 
-    uint16_t con_handle = little_endian_read_16(packet, 2);
+    hci_con_handle_t con_handle = little_endian_read_16(packet, 2);
     btstack_linked_list_gatt_client_helper_t * gatt_client_helper = daemon_get_gatt_client_helper(con_handle);
     if (!gatt_client_helper){
         log_info("daemon handle_gatt_client_event: gc helper for handle 0x%2x is NULL.", con_handle);

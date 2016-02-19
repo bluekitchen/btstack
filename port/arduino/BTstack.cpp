@@ -569,7 +569,7 @@ static int (*gattWriteCallback)(uint16_t characteristic_id, uint8_t *buffer, uin
 // - if buffer == NULL, don't copy data, just return size of value
 // - if buffer != NULL, copy data and return number bytes copied
 // @param offset defines start of attribute value
-static uint16_t att_read_callback(uint16_t con_handle, uint16_t att_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
+static uint16_t att_read_callback(hci_con_handle_t con_handle, uint16_t att_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
     if (gattReadCallback){
         return gattReadCallback(att_handle, buffer, buffer_size);
     }
@@ -587,7 +587,7 @@ static uint16_t att_read_callback(uint16_t con_handle, uint16_t att_handle, uint
  */
 
 /* LISTING_START(attWrite): ATT Write */
-static int att_write_callback(uint16_t con_handle, uint16_t att_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size){
+static int att_write_callback(hci_con_handle_t con_handle, uint16_t att_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size){
     if (gattWriteCallback){
         gattWriteCallback(att_handle, buffer, buffer_size);
     }
