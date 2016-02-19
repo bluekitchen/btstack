@@ -108,6 +108,7 @@ void hfp_hf_register_packet_handler(hfp_callback_t callback);
  * - retrieve which HF indicators are enabled on the AG, if possible
  * The status of SLC connection establishment is reported via
  * HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED.
+ *
  * @param bd_addr Bluetooth address of the AG
  */
 void hfp_hf_establish_service_level_connection(bd_addr_t bd_addr);

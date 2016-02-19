@@ -132,6 +132,8 @@ void hfp_ag_set_use_in_band_ring_tone(int use_in_band_ring_tone);
  * - accept the information about available codecs in the Hands-Free (HF), if sent
  * - report own information describing the call hold and multiparty services, if possible
  * - report which HF indicators are enabled on the AG, if possible
+ * The status of SLC connection establishment is reported via
+ * HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED.
  *
  * @param bd_addr Bluetooth address of the HF
  */
@@ -139,50 +141,57 @@ void hfp_ag_establish_service_level_connection(bd_addr_t bd_addr);
 
 /**
  * @brief Release the RFCOMM channel and the audio connection between the HF and the AG. 
- * TODO: trigger release of the audio connection ??
+ * If the audio connection exists, it will be released.
+ * The status of releasing the SLC connection is reported via
+ * HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED.
+ *
  * @param bd_addr Bluetooth address of the HF
  */
 void hfp_ag_release_service_level_connection(bd_addr_t bd_addr);
 
 /**
- * @brief 
+ * @brief Establish audio connection.
+ * The status of Audio connection establishment is reported via is reported via
+ * HSP_SUBEVENT_AUDIO_CONNECTION_COMPLETE.
  * @param bd_addr Bluetooth address of the HF
  */
 void hfp_ag_establish_audio_connection(bd_addr_t bd_addr);
 
 /**
- * @brief 
+ * @brief Release audio connection.
+ * The status of releasing the Audio connection is reported via is reported via
+ * HSP_SUBEVENT_AUDIO_DISCONNECTION_COMPLETE.
  * @param bd_addr Bluetooth address of the HF
  */
 void hfp_ag_release_audio_connection(bd_addr_t bd_addr);
 
 /**
- * @brief 
+ * @brief Put the current call on hold, if it exists, and accept incoming call. 
  */
 void hfp_ag_answer_incoming_call(void);
 
 /**
- * @brief 
+ * @brief Join held call with active call.
  */
 void hfp_ag_join_held_call(void);
 
 /**
- * @brief 
+ * @brief Reject incoming call, if exists, or terminate active call.
  */
 void hfp_ag_terminate_call(void);
 
 /*
- * @brief
+ * @brief Put incoming call on hold.
  */
 void hfp_ag_hold_incoming_call(void);
 
 /*
- * @brief
+ * @brief Accept the held incoming call.
  */
 void hfp_ag_accept_held_incoming_call(void);
 
 /*
- * @brief
+ * @brief Reject the held incoming call.
  */
 void hfp_ag_reject_held_incoming_call(void);
 
@@ -201,13 +210,13 @@ void hfp_ag_set_microphone_gain(bd_addr_t bd_addr, int gain);
 void hfp_ag_set_speaker_gain(bd_addr_t bd_addr, int gain);
 
 /*
- * @brief
- * @param level
+ * @brief Set battery level.
+ * @param level Valid range: [0,5]
  */
 void hfp_ag_set_battery_level(int level);
 
 /*
- * @brief
+ * @brief Clear last dialed number.
  */
 void hfp_ag_clear_last_dialed_number(void);
 
@@ -215,7 +224,7 @@ void hfp_ag_clear_last_dialed_number(void);
 // Voice Recognition
 
 /*
- * @brief
+ * @brief Activate voice recognition.
  * @param bd_addr Bluetooth address of the HF
  * @param activate
  */
