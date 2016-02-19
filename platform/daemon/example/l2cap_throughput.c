@@ -80,7 +80,7 @@ void  timer_handler(struct btstack_timer_source *ts){
 void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
 	
 	bd_addr_t event_addr;
-	uint16_t handle;
+	hci_con_handle_t con_handle;
 	uint16_t psm;
 	uint16_t local_cid;
 	char pin[20];
@@ -126,11 +126,11 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 					// data: event(8), len(8), address(48), handle (16),  psm (16), source cid(16) dest cid(16)
 					reverse_bd_addr(&packet[2],
 							event_addr);
-					handle     = little_endian_read_16(packet, 8); 
+					con_handle     = little_endian_read_16(packet, 8); 
 					psm        = little_endian_read_16(packet, 10); 
 					local_cid  = little_endian_read_16(packet, 12); 
 					// remote_cid = little_endian_read_16(packet, 14); 
-					printf("L2CAP_EVENT_INCOMING_CONNECTION %s, handle 0x%02x, psm 0x%02x, local cid 0x%02x\n", bd_addr_to_str(event_addr), handle, psm, local_cid);
+					printf("L2CAP_EVENT_INCOMING_CONNECTION %s, handle 0x%02x, psm 0x%02x, local cid 0x%02x\n", bd_addr_to_str(event_addr), con_handle, psm, local_cid);
 					// accept
 					bt_send_cmd(&l2cap_accept_connection_cmd, local_cid);
 					break;
@@ -163,10 +163,10 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 							event_addr);
 					psm = little_endian_read_16(packet, 11); 
 					local_cid = little_endian_read_16(packet, 13); 
-					handle = little_endian_read_16(packet, 9);
+					con_handle = little_endian_read_16(packet, 9);
 					if (packet[2] == 0) {
 						printf("Channel successfully opened: %s, handle 0x%02x, psm 0x%02x, local cid 0x%02x, remote cid 0x%02x\n",
-							   bd_addr_to_str(event_addr), handle, psm, local_cid,  little_endian_read_16(packet, 15));
+							   bd_addr_to_str(event_addr), con_handle, psm, local_cid,  little_endian_read_16(packet, 15));
 					} else {
 						printf("L2CAP connection to device %s failed. status code %u\n", bd_addr_to_str(event_addr), packet[2]);
 					}

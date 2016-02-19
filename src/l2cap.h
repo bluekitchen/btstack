@@ -113,7 +113,7 @@ typedef struct {
 
     // info
     bd_addr_t address;
-    hci_con_handle_t handle;
+    hci_con_handle_t con_handle;
     
     uint8_t   remote_sig_id;    // used by other side, needed for delayed response
     uint8_t   local_sig_id;     // own signaling identifier
@@ -166,12 +166,12 @@ typedef struct l2cap_signaling_response {
     
 
 void l2cap_register_fixed_channel(btstack_packet_handler_t packet_handler, uint16_t channel_id);
-int  l2cap_can_send_fixed_channel_packet_now(uint16_t handle, uint16_t channel_id);
-int  l2cap_send_connectionless(uint16_t handle, uint16_t cid, uint8_t *data, uint16_t len);
-int  l2cap_send_prepared_connectionless(uint16_t handle, uint16_t cid, uint16_t len);
+int  l2cap_can_send_fixed_channel_packet_now(hci_con_handle_t con_handle, uint16_t channel_id);
+int  l2cap_send_connectionless(hci_con_handle_t con_handle, uint16_t cid, uint8_t *data, uint16_t len);
+int  l2cap_send_prepared_connectionless(hci_con_handle_t con_handle, uint16_t cid, uint16_t len);
 
 // PTS Testing
-int l2cap_send_echo_request(uint16_t handle, uint8_t *data, uint16_t len);
+int l2cap_send_echo_request(hci_con_handle_t con_handle, uint8_t *data, uint16_t len);
 void l2cap_require_security_level_2_for_outgoing_sdp(void);
 
 /* API_START */

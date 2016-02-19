@@ -104,8 +104,8 @@ void att_dispatch_register_server(btstack_packet_handler_t packet_handler){
  * @brief can send packet for client
  * @param handle
  */
-int att_dispatch_client_can_send_now(uint16_t handle){
-	int res = l2cap_can_send_fixed_channel_packet_now(handle, L2CAP_CID_ATTRIBUTE_PROTOCOL);
+int att_dispatch_client_can_send_now(hci_con_handle_t con_handle){
+	int res = l2cap_can_send_fixed_channel_packet_now(con_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL);
 	if (!res){
 		att_client_waiting_for_can_send =1;
 	}
@@ -116,8 +116,8 @@ int att_dispatch_client_can_send_now(uint16_t handle){
  * @brief can send packet for server
  * @param handle
  */
-int att_dispatch_server_can_send_now(uint16_t handle){
-	int res = l2cap_can_send_fixed_channel_packet_now(handle, L2CAP_CID_ATTRIBUTE_PROTOCOL);
+int att_dispatch_server_can_send_now(hci_con_handle_t con_handle){
+	int res = l2cap_can_send_fixed_channel_packet_now(con_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL);
 	if (!res){
 		att_server_waiting_for_can_send =1;
 	}

@@ -137,7 +137,7 @@ typedef struct gatt_client{
     // user callback 
     btstack_packet_handler_t callback;
     
-    uint16_t handle;
+    hci_con_handle_t con_handle;
     
     uint8_t   address_type;
     bd_addr_t address;
@@ -216,12 +216,12 @@ void gatt_client_init(void);
 /** 
  * @brief MTU is available after the first query has completed. If status is equal to 0, it returns the real value, otherwise the default value of 23. 
  */
-uint8_t gatt_client_get_mtu(uint16_t handle, uint16_t * mtu);
+uint8_t gatt_client_get_mtu(hci_con_handle_t con_handle, uint16_t * mtu);
 
 /** 
  * @brief Returns if the GATT client is ready to receive a query. It is used with daemon. 
  */
-int gatt_client_is_ready(uint16_t handle);
+int gatt_client_is_ready(hci_con_handle_t con_handle);
 
 /** 
  * @brief Discovers all primary services. For each found service, an le_service_event_t with type set to GATT_EVENT_SERVICE_QUERY_RESULT will be generated and passed to the registered callback. The gatt_complete_event_t, with type set to GATT_EVENT_QUERY_COMPLETE, marks the end of discovery. 

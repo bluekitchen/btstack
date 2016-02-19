@@ -122,11 +122,13 @@ uint16_t att_handle_request(att_connection_t * att_connection,
 /*
  * @brief setup value notification in response buffer for a given handle and value
  * @param att_connection
- * @param value, value_len: new attribute value
+ * @param attribute_handle
+ * @param value
+ * @param value_len
  * @param response_buffer for notification
  */
 uint16_t att_prepare_handle_value_notification(att_connection_t * att_connection,
-                                               uint16_t handle,
+                                               uint16_t attribute_handle,
                                                uint8_t *value,
                                                uint16_t value_len, 
                                                uint8_t * response_buffer);
@@ -134,11 +136,13 @@ uint16_t att_prepare_handle_value_notification(att_connection_t * att_connection
 /*
  * @brief setup value indication in response buffer for a given handle and value
  * @param att_connection
- * @param value, value_len: new attribute value
+ * @param attribute_handle
+ * @param value
+ * @param value_len
  * @param response_buffer for indication
  */
 uint16_t att_prepare_handle_value_indication(att_connection_t * att_connection,
-                                             uint16_t handle,
+                                             uint16_t attribute_handle,
                                              uint8_t *value,
                                              uint16_t value_len, 
                                              uint8_t * response_buffer);
@@ -149,7 +153,7 @@ uint16_t att_prepare_handle_value_indication(att_connection_t * att_connection,
 void att_clear_transaction_queue(att_connection_t * att_connection);
 
 // experimental client API
-uint16_t att_uuid_for_handle(uint16_t handle);
+uint16_t att_uuid_for_handle(uint16_t attribute_handle);
 
 #if defined __cplusplus
 }

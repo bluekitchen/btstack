@@ -152,9 +152,9 @@ static int att_find_handle(att_iterator_t *it, uint16_t handle){
 }
 
 // experimental client API
-uint16_t att_uuid_for_handle(uint16_t handle){
+uint16_t att_uuid_for_handle(uint16_t attribute_handle){
     att_iterator_t it;
-    int ok = att_find_handle(&it, handle);
+    int ok = att_find_handle(&it, attribute_handle);
     if (!ok) return 0;
     if (it.flags & ATT_PROPERTY_UUID128) return 0;
     return little_endian_read_16(it.uuid, 0);

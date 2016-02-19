@@ -487,8 +487,8 @@ void hfp_handle_hci_event(uint8_t packet_type, uint8_t *packet, uint16_t size){
                 hfp_emit_event(hfp_callback, HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED, packet[2]);
                 remove_hfp_connection_context(context);
             } else {
-                context->con_handle = little_endian_read_16(packet, 9);
-                printf("RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE con_handle 0x%02x\n", context->con_handle);
+                context->acl_handle = little_endian_read_16(packet, 9);
+                printf("RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE con_handle 0x%02x\n", context->acl_handle);
             
                 context->rfcomm_cid = little_endian_read_16(packet, 12);
                 uint16_t mtu = little_endian_read_16(packet, 14);
@@ -505,8 +505,6 @@ void hfp_handle_hci_event(uint8_t packet_type, uint8_t *packet, uint16_t size){
                     default:
                         break;
                 }
-                // forward event to app, to learn about con_handle
-                (*hfp_callback)(packet, size);
             }
             break;
         
@@ -634,13 +632,7 @@ void hfp_handle_hci_event(uint8_t packet_type, uint8_t *packet, uint16_t size){
             }
             break;
 
-        case HCI_EVENT_INQUIRY_RESULT:
-        case HCI_EVENT_INQUIRY_RESULT_WITH_RSSI:
-        case HCI_EVENT_INQUIRY_COMPLETE:
-        case DAEMON_EVENT_REMOTE_NAME_CACHED:
-        case HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE:
-            // forward inquiry events to app - TODO: replace with new event handler architecture
-            (*hfp_callback)(packet, size);
+        default:
             break;
     }
 }

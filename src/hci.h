@@ -335,7 +335,7 @@ typedef struct sm_pairing_packet {
 
 // connection info available as long as connection exists
 typedef struct sm_connection {
-    uint16_t                 sm_handle;
+    hci_con_handle_t         sm_handle;
     uint8_t                  sm_role;   // 0 - IamMaster, 1 = IamSlave
     uint8_t                  sm_security_request_received;
     uint8_t                  sm_bonding_requested;

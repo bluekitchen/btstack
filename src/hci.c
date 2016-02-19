@@ -83,7 +83,7 @@ static void hci_power_control_off(void);
 static void hci_state_reset(void);
 static void hci_emit_connection_complete(hci_connection_t *conn, uint8_t status);
 static void hci_emit_l2cap_check_timeout(hci_connection_t *conn);
-static void hci_emit_disconnection_complete(uint16_t handle, uint8_t reason);
+static void hci_emit_disconnection_complete(hci_con_handle_t con_handle, uint8_t reason);
 static void hci_emit_nr_connections_changed(void);
 static void hci_emit_hci_open_failed(void);
 static void hci_emit_discoverable_enabled(uint8_t enabled);
@@ -2958,13 +2958,13 @@ static void hci_emit_connection_complete(hci_connection_t *conn, uint8_t status)
     hci_emit_event(event, sizeof(event), 1);
 }
 
-static void hci_emit_le_connection_complete(uint8_t address_type, bd_addr_t address, uint16_t conn_handle, uint8_t status){
+static void hci_emit_le_connection_complete(uint8_t address_type, bd_addr_t address, hci_con_handle_t con_handle, uint8_t status){
     uint8_t event[21];
     event[0] = HCI_EVENT_LE_META;
     event[1] = sizeof(event) - 2;
     event[2] = HCI_SUBEVENT_LE_CONNECTION_COMPLETE;
     event[3] = status;
-    little_endian_store_16(event, 4, conn_handle);
+    little_endian_store_16(event, 4, con_handle);
     event[6] = 0; // TODO: role
     event[7] = address_type;
     reverse_bd_addr(address, &event[8]);
@@ -2975,12 +2975,12 @@ static void hci_emit_le_connection_complete(uint8_t address_type, bd_addr_t addr
     hci_emit_event(event, sizeof(event), 1);
 }
 
-static void hci_emit_disconnection_complete(uint16_t handle, uint8_t reason){
+static void hci_emit_disconnection_complete(hci_con_handle_t con_handle, uint8_t reason){
     uint8_t event[6];
     event[0] = HCI_EVENT_DISCONNECTION_COMPLETE;
     event[1] = sizeof(event) - 2;
     event[2] = 0; // status = OK
-    little_endian_store_16(event, 3, handle);
+    little_endian_store_16(event, 3, con_handle);
     event[5] = reason;
     hci_emit_event(event, sizeof(event), 1);
 }

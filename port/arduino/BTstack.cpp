@@ -129,7 +129,7 @@ extern "C" void hal_cpu_enable_irqs_and_sleep(void) { }
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
 
     bd_addr_t addr;
-    uint16_t handle;
+    hci_con_handle_t con_handle;
 
     switch (packet_type) {
             
@@ -148,8 +148,8 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 
                 case HCI_EVENT_DISCONNECTION_COMPLETE:
                     if (bleDeviceDisconnectedCallback) {
-                        handle = little_endian_read_16(packet, 3);
-                        BLEDevice device(handle);
+                        con_handle = little_endian_read_16(packet, 3);
+                        BLEDevice device(con_handle);
                         (*bleDeviceDisconnectedCallback)(&device);
                     }
                     le_peripheral_todos |= SET_ADVERTISEMENT_ENABLED;
@@ -174,14 +174,14 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 case HCI_EVENT_LE_META:
                     switch (packet[2]) {
                         case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
-                            handle = little_endian_read_16(packet, 4);
-                            printf("Connection complete, handle 0x%04x\n", handle);
+                            con_handle = little_endian_read_16(packet, 4);
+                            printf("Connection complete, con_handle 0x%04x\n", con_handle);
                             btstack_run_loop_remove_timer(&connection_timer);
                             if (!bleDeviceConnectedCallback) break;
                             if (packet[3]){
                                 (*bleDeviceConnectedCallback)(BLE_STATUS_CONNECTION_ERROR, NULL);
                             } else {
-                                BLEDevice device(handle);
+                                BLEDevice device(con_handle);
                                 (*bleDeviceConnectedCallback)(BLE_STATUS_OK, &device);
                             }
                             break;
@@ -222,7 +222,7 @@ static void gatt_client_callback(uint8_t packet_type, uint8_t * packet, uint16_t
     if (packet[0] < GATT_EVENT_QUERY_COMPLETE) return;
     if (packet[0] > GATT_EVENT_MTU) return;
 
-    uint16_t  con_handle = little_endian_read_16(packet, 2);
+    hci_con_handle_t con_handle = little_endian_read_16(packet, 2);
     uint8_t   status;
     uint8_t * value;
     uint16_t  value_handle;
@@ -526,7 +526,7 @@ const gatt_client_service_t * BLEService::getService(void){
 // discovery of services and characteristics
 BLEDevice::BLEDevice(void){
 }
-BLEDevice::BLEDevice(uint16_t handle)
+BLEDevice::BLEDevice(hci_con_handle_t handle)
 : handle(handle){
 }
 uint16_t BLEDevice::getHandle(void){

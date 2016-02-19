@@ -604,7 +604,7 @@ static int codecs_exchange_state_machine(hfp_connection_t * context){
 static void hfp_init_link_settings(hfp_connection_t * context){
     // determine highest possible link setting
     context->link_setting = HFP_LINK_SETTINGS_D1;
-    if (hci_remote_esco_supported(context->con_handle)){
+    if (hci_remote_esco_supported(context->acl_handle)){
         context->link_setting = HFP_LINK_SETTINGS_S3;
         if ((context->remote_supported_features & (1<<HFP_HFSF_ESCO_S4))
         &&  (hfp_supported_features             & (1<<HFP_AGSF_ESCO_S4))){
@@ -802,7 +802,7 @@ static int hfp_ag_run_for_audio_connection(hfp_connection_t * context){
     if (context->establish_audio_connection){
         context->state = HFP_W4_SCO_CONNECTED;
         context->establish_audio_connection = 0;
-        hfp_setup_synchronous_connection(context->con_handle, context->link_setting);
+        hfp_setup_synchronous_connection(context->acl_handle, context->link_setting);
         return 1;
     }
     return 0;
@@ -825,7 +825,7 @@ static void hfp_timeout_handler(btstack_timer_source_t * timer){
     hfp_connection_t * context = hfp_ag_context_for_timer(timer);
     if (!context) return;
 
-    log_info("HFP start ring timeout, con handle 0x%02x", context->con_handle);
+    log_info("HFP start ring timeout, con handle 0x%02x", context->acl_handle);
     context->ag_ring = 1;
     context->ag_send_clip = hfp_gsm_clip_type() && context->clip_enabled;
 
@@ -843,7 +843,7 @@ static void hfp_timeout_start(hfp_connection_t * context){
 }
 
 static void hfp_timeout_stop(hfp_connection_t * context){
-    log_info("HFP stop ring timeout, con handle 0x%02x", context->con_handle);
+    log_info("HFP stop ring timeout, con handle 0x%02x", context->acl_handle);
     btstack_run_loop_remove_timer(&context->hfp_timeout);
 } 
 

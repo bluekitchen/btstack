@@ -111,7 +111,7 @@ static void att_handle_value_indication_notify_client(uint8_t status, uint16_t c
     (*att_client_packet_handler)(HCI_EVENT_PACKET, 0, &event[0], sizeof(event));
 }
 
-static void att_emit_mtu_event(uint16_t handle, uint16_t mtu){
+static void att_emit_mtu_event(hci_con_handle_t con_handle, uint16_t mtu){
 
     if (!att_client_packet_handler) return;
 
@@ -119,7 +119,7 @@ static void att_emit_mtu_event(uint16_t handle, uint16_t mtu){
     int pos = 0;
     event[pos++] = ATT_EVENT_MTU_EXCHANGE_COMPLETE;
     event[pos++] = sizeof(event) - 2;
-    little_endian_store_16(event, pos, handle);
+    little_endian_store_16(event, pos, con_handle);
     pos += 2;
     little_endian_store_16(event, pos, mtu);
     pos += 2;
@@ -383,28 +383,28 @@ int  att_server_can_send_packet_now(void){
 	return att_dispatch_server_can_send_now(att_connection.con_handle);
 }
 
-int att_server_notify(uint16_t handle, uint8_t *value, uint16_t value_len){
+int att_server_notify(uint16_t attribute_handle, uint8_t *value, uint16_t value_len){
     if (!att_dispatch_server_can_send_now(att_connection.con_handle)) return BTSTACK_ACL_BUFFERS_FULL;
 
     l2cap_reserve_packet_buffer();
     uint8_t * packet_buffer = l2cap_get_outgoing_buffer();
-    uint16_t size = att_prepare_handle_value_notification(&att_connection, handle, value, value_len, packet_buffer);
+    uint16_t size = att_prepare_handle_value_notification(&att_connection, attribute_handle, value, value_len, packet_buffer);
 	return l2cap_send_prepared_connectionless(att_connection.con_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, size);
 }
 
-int att_server_indicate(uint16_t handle, uint8_t *value, uint16_t value_len){
+int att_server_indicate(uint16_t attribute_handle, uint8_t *value, uint16_t value_len){
     if (att_handle_value_indication_handle) return ATT_HANDLE_VALUE_INDICATION_IN_PORGRESS;
     if (!att_dispatch_server_can_send_now(att_connection.con_handle)) return BTSTACK_ACL_BUFFERS_FULL;
 
     // track indication
-    att_handle_value_indication_handle = handle;
+    att_handle_value_indication_handle = attribute_handle;
     btstack_run_loop_set_timer_handler(&att_handle_value_indication_timer, att_handle_value_indication_timeout);
     btstack_run_loop_set_timer(&att_handle_value_indication_timer, ATT_TRANSACTION_TIMEOUT_MS);
     btstack_run_loop_add_timer(&att_handle_value_indication_timer);
 
     l2cap_reserve_packet_buffer();
     uint8_t * packet_buffer = l2cap_get_outgoing_buffer();
-    uint16_t size = att_prepare_handle_value_indication(&att_connection, handle, value, value_len, packet_buffer);
+    uint16_t size = att_prepare_handle_value_indication(&att_connection, attribute_handle, value, value_len, packet_buffer);
 	l2cap_send_prepared_connectionless(att_connection.con_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, size);
     return 0;
 }

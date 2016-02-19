@@ -69,15 +69,21 @@ int  att_server_can_send_packet_now(void);
 
 /*
  * @brief notify client about attribute value change
+ * @param attribute_handle
+ * @param value
+ * @param value_len
  * @return 0 if ok, error otherwise
  */
-int att_server_notify(uint16_t handle, uint8_t *value, uint16_t value_len);
+int att_server_notify(uint16_t attribute_handle, uint8_t *value, uint16_t value_len);
 
 /*
  * @brief indicate value change to client. client is supposed to reply with an indication_response
+ * @param attribute_handle
+ * @param value
+ * @param value_len
  * @return 0 if ok, error otherwise
  */
-int att_server_indicate(uint16_t handle, uint8_t *value, uint16_t value_len);
+int att_server_indicate(uint16_t attribute_handle, uint8_t *value, uint16_t value_len);
 
 /* API_END */
 

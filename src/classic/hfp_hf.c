@@ -525,7 +525,7 @@ static int hfp_hf_run_for_audio_connection(hfp_connection_t * context){
     if (context->establish_audio_connection){
         context->state = HFP_W4_SCO_CONNECTED;
         context->establish_audio_connection = 0;
-        hfp_setup_synchronous_connection(context->con_handle, context->link_setting);
+        hfp_setup_synchronous_connection(context->acl_handle, context->link_setting);
         return 1;
     }
 
@@ -782,7 +782,7 @@ static void hfp_run_for_context(hfp_connection_t * context){
 static void hfp_init_link_settings(hfp_connection_t * context){
     // determine highest possible link setting
     context->link_setting = HFP_LINK_SETTINGS_D1;
-    if (hci_remote_esco_supported(context->con_handle)){
+    if (hci_remote_esco_supported(context->acl_handle)){
         context->link_setting = HFP_LINK_SETTINGS_S3;
         if ((hfp_supported_features             & (1<<HFP_HFSF_ESCO_S4))
         &&  (context->remote_supported_features & (1<<HFP_AGSF_ESCO_S4))){

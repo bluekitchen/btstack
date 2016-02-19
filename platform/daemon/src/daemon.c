@@ -774,10 +774,10 @@ static void sdp_emit_service_registered(void *connection, uint32_t handle, uint8
 
 #ifdef ENABLE_BLE
 
-btstack_linked_list_gatt_client_helper_t * daemon_get_gatt_client_helper(uint16_t handle) {
+btstack_linked_list_gatt_client_helper_t * daemon_get_gatt_client_helper(hci_con_handle_t con_handle) {
     btstack_linked_list_iterator_t it;  
     if (!gatt_client_helpers) return NULL;
-    log_info("daemon_get_gatt_client_helper for handle 0x%02x", handle);
+    log_info("daemon_get_gatt_client_helper for handle 0x%02x", con_handle);
     
     btstack_linked_list_iterator_init(&it, &gatt_client_helpers);
     while (btstack_linked_list_iterator_has_next(&it)){
@@ -786,31 +786,31 @@ btstack_linked_list_gatt_client_helper_t * daemon_get_gatt_client_helper(uint16_
             log_info("daemon_get_gatt_client_helper gatt_client_helpers null item");
             break;
         } 
-        if (item->con_handle == handle){
+        if (item->con_handle == con_handle){
             return item;
         }
     }
-    log_info("daemon_get_gatt_client_helper for handle 0x%02x is NULL.", handle);
+    log_info("daemon_get_gatt_client_helper for handle 0x%02x is NULL.", con_handle);
     return NULL;
 }
 
-static void send_gatt_query_complete(connection_t * connection, uint16_t handle, uint8_t status){
+static void send_gatt_query_complete(connection_t * connection, hci_con_handle_t con_handle, uint8_t status){
     // @format H1
     uint8_t event[5];
     event[0] = GATT_EVENT_QUERY_COMPLETE;
     event[1] = 3;
-    little_endian_store_16(event, 2, handle);
+    little_endian_store_16(event, 2, con_handle);
     event[4] = status;
     hci_dump_packet(HCI_EVENT_PACKET, 0, event, sizeof(event));
     socket_connection_send_packet(connection, HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-static void send_gatt_mtu_event(connection_t * connection, uint16_t handle, uint16_t mtu){
+static void send_gatt_mtu_event(connection_t * connection, hci_con_handle_t con_handle, uint16_t mtu){
     uint8_t event[6];
     int pos = 0;
     event[pos++] = GATT_EVENT_MTU;
     event[pos++] = sizeof(event) - 2;
-    little_endian_store_16(event, pos, handle);
+    little_endian_store_16(event, pos, con_handle);
     pos += 2;
     little_endian_store_16(event, pos, mtu);
     pos += 2;
@@ -819,31 +819,31 @@ static void send_gatt_mtu_event(connection_t * connection, uint16_t handle, uint
 }
 
 btstack_linked_list_gatt_client_helper_t * daemon_setup_gatt_client_request(connection_t *connection, uint8_t *packet, int track_active_connection) {
-    hci_con_handle_t handle = little_endian_read_16(packet, 3);    
-    log_info("daemon_setup_gatt_client_request for handle 0x%02x", handle);
-    hci_connection_t * hci_con = hci_connection_for_handle(handle);
+    hci_con_handle_t con_handle = little_endian_read_16(packet, 3);    
+    log_info("daemon_setup_gatt_client_request for handle 0x%02x", con_handle);
+    hci_connection_t * hci_con = hci_connection_for_handle(con_handle);
     if ((hci_con == NULL) || (hci_con->state != OPEN)){
-        send_gatt_query_complete(connection, handle, GATT_CLIENT_NOT_CONNECTED);
+        send_gatt_query_complete(connection, con_handle, GATT_CLIENT_NOT_CONNECTED);
         return NULL;
     }
 
-    btstack_linked_list_gatt_client_helper_t * helper = daemon_get_gatt_client_helper(handle);
+    btstack_linked_list_gatt_client_helper_t * helper = daemon_get_gatt_client_helper(con_handle);
 
     if (!helper){
         log_info("helper does not exist");
         helper = malloc(sizeof(btstack_linked_list_gatt_client_helper_t));
         if (!helper) return NULL; 
         memset(helper, 0, sizeof(btstack_linked_list_gatt_client_helper_t));
-        helper->con_handle = handle;
+        helper->con_handle = con_handle;
         btstack_linked_list_add(&gatt_client_helpers, (btstack_linked_item_t *) helper);
     } 
     
     if (track_active_connection && helper->active_connection){
-        send_gatt_query_complete(connection, handle, GATT_CLIENT_BUSY);
+        send_gatt_query_complete(connection, con_handle, GATT_CLIENT_BUSY);
         return NULL;
     }
 
-    daemon_add_gatt_client_handle(connection, handle);
+    daemon_add_gatt_client_handle(connection, con_handle);
     
     if (track_active_connection){
         // remember connection responsible for this request
@@ -1806,8 +1806,8 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
     // we receive a HCI event packet in disguise
     if (packet[0] == HCI_EVENT_DISCONNECTION_COMPLETE){
         log_info("daemon hack: handle disconnection_complete in handle_gatt_client_event instead of main hci event packet handler");
-        uint16_t handle = little_endian_read_16(packet, 3);
-        daemon_remove_gatt_client_helper(handle);
+        hci_con_handle_t con_handle = little_endian_read_16(packet, 3);
+        daemon_remove_gatt_client_helper(con_handle);
         return;
     }
 

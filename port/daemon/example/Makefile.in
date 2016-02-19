@@ -3,7 +3,7 @@ BTSTACK_ROOT=../../..
 CC = @CC@
 LDFLAGS  = @LDFLAGS@ -lBTstack -L../src
 CFLAGS = @CFLAGS@ \
-	-I$(BTSTACK_ROOT)/platform/daemon \
+	-I$(BTSTACK_ROOT)/platform/daemon/src \
 	-I$(BTSTACK_ROOT)/platform/posix \
 	-I$(BTSTACK_ROOT)/src \
 	-I..
