@@ -496,7 +496,7 @@ static void packet_handler(uint8_t * event, uint16_t event_size){
             printf("AG_INDICATOR_STATUS_CHANGED, AG indicator '%s' (index: %d) to: %d\n", (const char*) &event[5], event[3], event[4]);
             break;
         case HFP_SUBEVENT_NETWORK_OPERATOR_CHANGED:
-            printf("NETWORK_OPERATOR_CHANGED, operator mode: %d, format: %d, name: %s\n", event[3], event[4]], (char *) &event[5]);
+            printf("NETWORK_OPERATOR_CHANGED, operator mode: %d, format: %d, name: %s\n", event[3], event[4], (char *) &event[5]);
             break;
         case HFP_SUBEVENT_EXTENDED_AUDIO_GATEWAY_ERROR:
             if (event[4])

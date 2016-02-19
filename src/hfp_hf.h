@@ -66,14 +66,12 @@ void hfp_hf_create_sdp_record(uint8_t * service, int rfcomm_channel_nr, const ch
 
 /**
  * @brief Set up HFP Hands-Free (HF) device without additional supported features. 
- * 
  * @param rfcomm_channel_nr
  */
 void hfp_hf_init(uint16_t rfcomm_channel_nr);
 
 /**
  * @brief Set codecs. 
- * 
  * @param codecs_nr
  * @param codecs
  */
@@ -81,14 +79,12 @@ void hfp_hf_init_codecs(int codecs_nr, uint8_t * codecs);
 
 /**
  * @brief Set supported features.
- * 
  * @param supported_features 32-bit bitmap, see HFP_HFSF_* values in hfp.h
  */
 void hfp_hf_init_supported_features(uint32_t supported_features);
 
 /**
  * @brief Set HF indicators. 
- * 
  * @param indicators_nr
  * @param indicators
  */
@@ -97,6 +93,7 @@ void hfp_hf_init_hf_indicators(int indicators_nr, uint16_t * indicators);
 
 /**
  * @brief Register callback for the HFP Hands-Free (HF) client. 
+ * @param callback
  */
 void hfp_hf_register_packet_handler(hfp_callback_t callback);
 

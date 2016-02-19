@@ -630,10 +630,6 @@ hfp_connection_t * get_hfp_connection_context_for_rfcomm_cid(uint16_t cid);
 hfp_connection_t * get_hfp_connection_context_for_bd_addr(bd_addr_t bd_addr);
 hfp_connection_t * get_hfp_connection_context_for_sco_handle(uint16_t handle);
 
-int get_hfp_generic_status_indicators_nr(void);
-hfp_generic_status_indicator_t * get_hfp_generic_status_indicators(void);
-void set_hfp_generic_status_indicators(hfp_generic_status_indicator_t * indicators, int indicator_nr);
-
 linked_list_t * hfp_get_connections(void);
 void hfp_parse(hfp_connection_t * connection, uint8_t byte, int isHandsFree);
 

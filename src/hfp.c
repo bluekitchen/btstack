@@ -97,23 +97,8 @@ static const char * hfp_ag_features[] = {
     "Reserved for future definition"
 };
 
-static int hfp_generic_status_indicators_nr = 0;
-static hfp_generic_status_indicator_t hfp_generic_status_indicators[HFP_MAX_NUM_HF_INDICATORS];
-
 static linked_list_t hfp_connections = NULL;
 static void parse_sequence(hfp_connection_t * hfp_connection);
-
-hfp_generic_status_indicator_t * get_hfp_generic_status_indicators(void){
-    return (hfp_generic_status_indicator_t *) &hfp_generic_status_indicators;
-}
-int get_hfp_generic_status_indicators_nr(void){
-    return hfp_generic_status_indicators_nr;
-}
-void set_hfp_generic_status_indicators(hfp_generic_status_indicator_t * indicators, int indicator_nr){
-    if (indicator_nr > HFP_MAX_NUM_HF_INDICATORS) return;
-    hfp_generic_status_indicators_nr = indicator_nr;
-    memcpy(hfp_generic_status_indicators, indicators, indicator_nr * sizeof(hfp_generic_status_indicator_t));
-}
 
 const char * hfp_hf_feature(int index){
     if (index > HFP_HF_FEATURES_SIZE){
@@ -314,9 +299,6 @@ static hfp_connection_t * create_hfp_connection_context(){
     hfp_connection->negotiated_codec = 0;
     
     hfp_connection->enable_status_update_for_ag_indicators = 0xFF;
-
-    hfp_connection->generic_status_indicators_nr = hfp_generic_status_indicators_nr;
-    memcpy(hfp_connection->generic_status_indicators, hfp_generic_status_indicators, hfp_generic_status_indicators_nr * sizeof(hfp_generic_status_indicator_t));
 
     linked_list_add(&hfp_connections, (linked_item_t*)hfp_connection);
     return hfp_connection;
