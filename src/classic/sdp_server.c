@@ -44,6 +44,7 @@
 
 #include "btstack_memory.h"
 #include "btstack_debug.h"
+#include "btstack_event.h"
 #include "hci_dump.h"
 #include "l2cap.h"
 
@@ -491,7 +492,7 @@ static void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
 			
 		case HCI_EVENT_PACKET:
 			
-			switch (packet[0]) {
+			switch (hci_event_packet_get_type(packet)) {
 
 				case L2CAP_EVENT_INCOMING_CONNECTION:
                     if (l2cap_cid) {

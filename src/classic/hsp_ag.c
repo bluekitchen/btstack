@@ -443,7 +443,6 @@ static void hsp_run(void){
 
 
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    // log_info("packet_handler type %u, packet[0] %x", packet_type, packet[0]);
     if (packet_type == RFCOMM_DATA_PACKET){
         while (size > 0 && (packet[0] == '\n' || packet[0] == '\r')){
             size--;
@@ -485,7 +484,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
     }
 
     if (packet_type != HCI_EVENT_PACKET) return;
-    uint8_t event = packet[0];
+    uint8_t event = hci_event_packet_get_type(packet);
     bd_addr_t event_addr;
     uint16_t handle;
 

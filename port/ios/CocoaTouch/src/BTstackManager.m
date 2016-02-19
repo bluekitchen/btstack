@@ -264,7 +264,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 		case kW4SysBTDisabled:
 			
 			// DAEMON_EVENT_SYSTEM_BLUETOOTH_ENABLED
-			if ( packet[0] == DAEMON_EVENT_SYSTEM_BLUETOOTH_ENABLED){
+			if ( hci_event_packet_get_type(packet) == DAEMON_EVENT_SYSTEM_BLUETOOTH_ENABLED){
 				if (packet[2]){
 					// system bt on - first time try to disable it
 					if ( state == kW4SysBTState) {
@@ -289,7 +289,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 			break;
 			
 		case kW4Activated:
-			switch (packet[0]){
+			switch (hci_event_packet_get_type(packet)){
 				case BTSTACK_EVENT_STATE:
 					if (packet[2] == HCI_STATE_WORKING) {
 						state = kActivated;
@@ -307,21 +307,21 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 			break;
 			
 		case kW4Deactivated:
-			if (packet[0] != BTSTACK_EVENT_STATE && packet[2] == HCI_STATE_OFF){
+			if (hci_event_packet_get_type(packet) != BTSTACK_EVENT_STATE && packet[2] == HCI_STATE_OFF){
 				state = kDeactivated;
 				[self sendDeactivated];
 			}
 			break;
 		
 		case kActivated:
-			if (packet[0] != BTSTACK_EVENT_STATE && packet[2] == HCI_STATE_FALLING_ASLEEP){
+			if (hci_event_packet_get_type(packet) != BTSTACK_EVENT_STATE && packet[2] == HCI_STATE_FALLING_ASLEEP){
 				state = kSleeping;
 				[self sendSleepEnter];
 			}
 			break;
 			
 		case kSleeping:
-			if (packet[0] != BTSTACK_EVENT_STATE && packet[2] == HCI_STATE_WORKING){
+			if (hci_event_packet_get_type(packet) != BTSTACK_EVENT_STATE && packet[2] == HCI_STATE_WORKING){
 				state = kActivated;
 				[self sendSleepExit];
 			}
@@ -403,7 +403,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 			break;
 			
 		case kW4InquiryMode:
-			if (packet[0] == HCI_EVENT_COMMAND_COMPLETE && COMMAND_COMPLETE_EVENT(packet, hci_write_inquiry_mode) ) {
+			if (hci_event_packet_get_type(packet) == HCI_EVENT_COMMAND_COMPLETE && COMMAND_COMPLETE_EVENT(packet, hci_write_inquiry_mode) ) {
 				discoveryState = kInquiry;
 				bt_send_cmd(&hci_inquiry, HCI_INQUIRY_LAP, INQUIRY_INTERVAL, 0);
 				[self sendDiscoveryInquiry];
@@ -412,7 +412,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 		
 		case kInquiry:
 			
-			switch (packet[0]){
+			switch (hci_event_packet_get_type(packet)){
 				case HCI_EVENT_INQUIRY_RESULT:
 					numResponses = packet[2];
 					for (i=0; i<numResponses ; i++){
@@ -472,20 +472,20 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 			break;
 			
 		case kRemoteName:
-			if (packet[0] == HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE){
+			if (hci_event_packet_get_type(packet) == HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE){
 				[self handleRemoteName:packet];
 			}
 			break;
 
 		case kW4InquiryModeBeforeStop:
-			if (packet[0] == HCI_EVENT_COMMAND_COMPLETE && COMMAND_COMPLETE_EVENT(packet, hci_write_inquiry_mode) ) {
+			if (hci_event_packet_get_type(packet) == HCI_EVENT_COMMAND_COMPLETE && COMMAND_COMPLETE_EVENT(packet, hci_write_inquiry_mode) ) {
 				discoveryState = kInactive;
 				[self sendDiscoveryStoppedEvent];
 			}
 			break;
 			
 		case kW4InquiryStop:
-			if (packet[0] == HCI_EVENT_INQUIRY_COMPLETE
+			if (hci_event_packet_get_type(packet) == HCI_EVENT_INQUIRY_COMPLETE
 			||	COMMAND_COMPLETE_EVENT(packet, hci_inquiry_cancel)) {
 				discoveryState = kInactive;
 				[self sendDiscoveryStoppedEvent];
@@ -493,7 +493,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 			break;
 			
 		case kW4RemoteNameBeforeStop:
-			if (packet[0] == HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE
+			if (hci_event_packet_get_type(packet) == HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE
 			||  COMMAND_COMPLETE_EVENT(packet, hci_remote_name_request_cancel)){
 				discoveryState = kInactive;
 				[self sendDiscoveryStoppedEvent];

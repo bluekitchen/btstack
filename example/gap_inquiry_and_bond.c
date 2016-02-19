@@ -46,17 +46,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "btstack_config.h"
-
-#include "btstack_run_loop.h"
-
-#include "btstack_debug.h"
-#include "btstack_memory.h"
-#include "hci.h"
-#include "hci_dump.h"
-#include "gap.h"
-
-#include "classic/sdp_util.h"
+#include "btstack.h"
 
 #define MAX_DEVICES 10
 enum DEVICE_STATE { BONDING_REQUEST, BONDING_REQUESTED, BONDING_COMPLETED };
@@ -131,10 +121,9 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
     int i;
     int numResponses;
 
-    // printf("packet_handler: pt: 0x%02x, packet[0]: 0x%02x\n", packet_type, packet[0]);
     if (packet_type != HCI_EVENT_PACKET) return;
 
-    uint8_t event = packet[0];
+    uint8_t event = hci_event_packet_get_type(packet);
 
     switch(state){
 

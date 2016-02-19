@@ -113,7 +113,7 @@ static void sdp_client_init(void){
 /* LISTING_START(SDPQueryUUID): Querying the a list of service records on a remote device. */
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     if (packet_type != HCI_EVENT_PACKET) return;
-    uint8_t event = packet[0];
+    uint8_t event = hci_event_packet_get_type(packet);
 
     switch (event) {
         case BTSTACK_EVENT_STATE:
@@ -166,7 +166,7 @@ static void handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel
     des_iterator_t prot_it;
     char *str;
 
-    switch (packet[0]){
+    switch (hci_event_packet_get_type(packet)){
         case SDP_EVENT_QUERY_ATTRIBUTE_VALUE:
             // handle new record
             if (sdp_event_query_attribute_byte_get_record_id(packet) != record_id){

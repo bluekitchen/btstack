@@ -46,16 +46,15 @@
 #include <string.h> // memcpy
 #include <stdint.h>
 
-#include "hci_cmd.h"
+#include "bnep.h"
+#include "btstack_debug.h"
+#include "btstack_event.h"
+#include "btstack_memory.h"
 #include "btstack_util.h"
 #include "classic/sdp_util.h"
-
-#include "btstack_memory.h"
 #include "hci.h"
+#include "hci_cmd.h"
 #include "hci_dump.h"
-#include "btstack_debug.h"
-#include "bnep.h"
-
 #include "l2cap.h"
 
 #define BNEP_CONNECTION_TIMEOUT_MS 10000
@@ -1157,7 +1156,7 @@ static int bnep_hci_event_handler(uint8_t *packet, uint16_t size)
     bnep_channel_t  *channel = NULL;
     uint8_t   status;
     
-    switch (packet[0]) {
+    switch (hci_event_packet_get_type(packet)) {
             
         /* Accept an incoming L2CAP connection on PSM_BNEP */
         case L2CAP_EVENT_INCOMING_CONNECTION:

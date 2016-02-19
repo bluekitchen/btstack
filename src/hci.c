@@ -63,6 +63,7 @@
 #include <inttypes.h>
 
 #include "btstack_debug.h"
+#include "btstack_event.h"
 #include "btstack_linked_list.h"
 #include "btstack_memory.h"
 #include "gap.h"
@@ -1106,7 +1107,7 @@ static void hci_init_done(void){
 static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
     uint8_t command_completed = 0;
 
-    if (packet[0] == HCI_EVENT_COMMAND_COMPLETE){
+    if (hci_event_packet_get_type(packet) == HCI_EVENT_COMMAND_COMPLETE){
         uint16_t opcode = little_endian_read_16(packet,3);
         if (opcode == hci_stack->last_cmd_opcode){
             command_completed = 1;
@@ -1116,7 +1117,7 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
         }
     }
 
-    if (packet[0] == HCI_EVENT_COMMAND_STATUS){
+    if (hci_event_packet_get_type(packet) == HCI_EVENT_COMMAND_STATUS){
         uint8_t  status = packet[2];
         uint16_t opcode = little_endian_read_16(packet,4);
         if (opcode == hci_stack->last_cmd_opcode){
@@ -1132,13 +1133,13 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
     }
 
     // Vendor == CSR
-    if (hci_stack->substate == HCI_INIT_W4_CUSTOM_INIT && packet[0] == HCI_EVENT_VENDOR_SPECIFIC){
+    if (hci_stack->substate == HCI_INIT_W4_CUSTOM_INIT && hci_event_packet_get_type(packet) == HCI_EVENT_VENDOR_SPECIFIC){
         // TODO: track actual command
         command_completed = 1;
     }
 
     // Vendor == Toshiba
-    if (hci_stack->substate == HCI_INIT_W4_SEND_BAUD_CHANGE && packet[0] == HCI_EVENT_VENDOR_SPECIFIC){
+    if (hci_stack->substate == HCI_INIT_W4_SEND_BAUD_CHANGE && hci_event_packet_get_type(packet) == HCI_EVENT_VENDOR_SPECIFIC){
         // TODO: track actual command
         command_completed = 1;
     }
@@ -1156,7 +1157,7 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
     //
     // Fix: Command Complete for HCI Reset in HCI_INIT_W4_SEND_READ_LOCAL_VERSION_INFORMATION trigger resend
     if (!command_completed
-            && packet[0] == HCI_EVENT_COMMAND_COMPLETE
+            && hci_event_packet_get_type(packet) == HCI_EVENT_COMMAND_COMPLETE
             && hci_stack->substate == HCI_INIT_W4_SEND_READ_LOCAL_VERSION_INFORMATION){
 
         uint16_t opcode = little_endian_read_16(packet,3);
@@ -1327,9 +1328,9 @@ static void event_handler(uint8_t *packet, int size){
     hci_connection_t * conn;
     int i;
         
-    // log_info("HCI:EVENT:%02x", packet[0]);
+    // log_info("HCI:EVENT:%02x", hci_event_packet_get_type(packet));
     
-    switch (packet[0]) {
+    switch (hci_event_packet_get_type(packet)) {
                         
         case HCI_EVENT_COMMAND_COMPLETE:
             // get num cmd packets
@@ -1791,7 +1792,7 @@ static void event_handler(uint8_t *packet, int size){
 	hci_emit_event(packet, size, 0);   // don't dump, already happened in packet handler
 
     // moved here to give upper stack a chance to close down everything with hci_connection_t intact
-    if (packet[0] == HCI_EVENT_DISCONNECTION_COMPLETE){
+    if (hci_event_packet_get_type(packet) == HCI_EVENT_DISCONNECTION_COMPLETE){
         if (!packet[2]){
             handle = little_endian_read_16(packet, 3);
             hci_connection_t * aConn = hci_connection_for_handle(handle);

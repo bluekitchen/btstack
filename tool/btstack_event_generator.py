@@ -77,6 +77,15 @@ extern "C" {
 
 /* API_START */
 
+/**
+ * @brief Get event type
+ * @param event
+ * @return type of event
+ */
+static inline uint8_t hci_event_packet_get_type(const uint8_t * event){
+    return event[0];
+}
+
 """
 
 hfile_header_end = """
@@ -92,7 +101,7 @@ hfile_header_end = """
 
 c_prototoype_simple_return = '''/**
  * @brief {description}
- * @param Event packet
+ * @param event packet
  * @return {result_name}
  * @note: btstack_type {format}
  */
@@ -103,7 +112,7 @@ static inline {result_type} {fn_name}(const uint8_t * event){{
 
 c_prototoype_struct_return = '''/**
  * @brief {description}
- * @param Event packet
+ * @param event packet
  * @param Pointer to storage for {result_name}
  * @note: btstack_type {format}
  */
@@ -114,13 +123,23 @@ static inline void {fn_name}(const uint8_t * event, {result_type} {result_name})
 
 c_prototoype_unsupported = '''/**
  * @brief {description}
- * @param Event packet
+ * @param event packet
  * @return {result_name}
  * @note: btstack_type {format}
  */
 //  static inline {result_type} {fn_name}(const uint8_t * event){{
 //      not implemented yet
 //  }}
+'''
+
+meta_event_template = '''/***
+ * @brief Get subevent code for {meta_event} event
+ * @param event packet
+ * @return subevent_code
+ */
+static inline uint8_t hci_event_{meta_event}_meta_get_subevent_code(const uint8_t * event){{
+    return event[2];
+}}
 '''
 
 # global variables/defines
@@ -205,10 +224,16 @@ def create_events(events):
     global copyright
     global hfile_header_begin
     global hfile_header_end
+    global meta_event_template
 
     with open(gen_path, 'wt') as fout:
         fout.write(copyright)
         fout.write(hfile_header_begin)
+
+        meta_events = ['HSP', 'HFP', 'ANCS'];
+        for meta_event in meta_events:
+            fout.write(meta_event_template.format(meta_event=meta_event.lower()))
+
         for event_type, event_name, format, args in events:
             parts = event_name.split("_")
             event_group = parts[0]

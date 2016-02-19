@@ -172,7 +172,7 @@ static void handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *pac
     if (packet_type != HCI_EVENT_PACKET) return;
     advertising_report_t report;
     
-    uint8_t event = packet[0];
+    uint8_t event = hci_event_packet_get_type(packet);
     switch (event) {
         case BTSTACK_EVENT_STATE:
             // BTstack activated, get started
@@ -226,7 +226,7 @@ static int search_services = 1;
 static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     gatt_client_service_t service;
     gatt_client_characteristic_t characteristic;
-    switch(packet[0]){
+    switch(hci_event_packet_get_type(packet)){
         case GATT_EVENT_SERVICE_QUERY_RESULT:\
             gatt_event_service_query_result_get_service(packet, &service);
             dump_service(&service);

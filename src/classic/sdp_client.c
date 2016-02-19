@@ -44,6 +44,7 @@
 
 #include "hci_cmd.h"
 
+#include "btstack_event.h"
 #include "l2cap.h"
 #include "classic/sdp_server.h"
 #include "classic/sdp_util.h"
@@ -459,10 +460,7 @@ void sdp_client_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
     
     if (packet_type != HCI_EVENT_PACKET) return;
     
-    switch(packet[0]){
-        case L2CAP_EVENT_TIMEOUT_CHECK:
-            log_info("sdp client: L2CAP_EVENT_TIMEOUT_CHECK");
-            break;
+    switch(hci_event_packet_get_type(packet)){
         case L2CAP_EVENT_CHANNEL_OPENED:
             if (sdp_client_state != W4_CONNECT) break;
             // data: event (8), len(8), status (8), address(48), handle (16), psm (16), local_cid(16), remote_cid (16), local_mtu(16), remote_mtu(16) 

@@ -45,7 +45,9 @@
 #define __BNEP_H
  
 #include "btstack_util.h"
-
+#include "btstack_run_loop.h"
+#include "gap.h"
+ 
 #include <stdint.h>
 
 #if defined __cplusplus

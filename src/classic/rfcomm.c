@@ -45,6 +45,7 @@
 #include <stdint.h>
 
 #include "btstack_debug.h"
+#include "btstack_event.h"
 #include "btstack_memory.h"
 #include "btstack_util.h"
 #include "classic/rfcomm.h"
@@ -841,7 +842,7 @@ static int rfcomm_multiplexer_hci_event_handler(uint8_t *packet, uint16_t size){
     rfcomm_multiplexer_t *multiplexer = NULL;
     uint8_t status;
     
-    switch (packet[0]) {
+    switch (hci_event_packet_get_type(packet)) {
             
         // accept incoming PSM_RFCOMM connection if no multiplexer exists yet
         case L2CAP_EVENT_INCOMING_CONNECTION:

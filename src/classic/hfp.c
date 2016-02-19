@@ -430,7 +430,7 @@ static void handle_query_rfcomm_event(uint8_t packet_type, uint16_t channel, uin
     
     if ( connection->state != HFP_W4_SDP_EVENT_QUERY_COMPLETE) return;
     
-    switch (packet[0]){
+    switch (hci_event_packet_get_type(packet)){
         case SDP_EVENT_QUERY_RFCOMM_SERVICE:
             if (!connection) {
                 log_error("handle_query_rfcomm_event alloc connection for RFCOMM port %u failed", sdp_event_query_rfcomm_service_get_rfcomm_channel(packet));
@@ -458,9 +458,9 @@ void hfp_handle_hci_event(uint8_t packet_type, uint8_t *packet, uint16_t size){
     uint16_t rfcomm_cid, handle;
     hfp_connection_t * context = NULL;
 
-    // printf("AG packet_handler type %u, packet[0] %x, size %u\n", packet_type, packet[0], size);
+    // printf("AG packet_handler type %u, event type %x, size %u\n", packet_type, hci_event_packet_get_type(packet), size);
 
-    switch (packet[0]) {
+    switch (hci_event_packet_get_type(packet)) {
         
         case RFCOMM_EVENT_INCOMING_CONNECTION:
             // data: event (8), len(8), address(48), channel (8), rfcomm_cid (16)
@@ -477,7 +477,7 @@ void hfp_handle_hci_event(uint8_t packet_type, uint8_t *packet, uint16_t size){
 
         case RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE:
             // data: event(8), len(8), status (8), address (48), handle(16), server channel(8), rfcomm_cid(16), max frame size(16)
-            printf("RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE packet_handler type %u, packet[0] %x, size %u\n", packet_type, packet[0], size);
+            printf("RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE packet_handler type %u, size %u\n", packet_type, size);
 
             reverse_bd_addr(&packet[3], event_addr); 
             context = get_hfp_connection_context_for_bd_addr(event_addr);

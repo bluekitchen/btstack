@@ -229,7 +229,7 @@ unsigned char hid_process_packet(unsigned char *hid_report, uint16_t *buffer, ui
 
 static void l2cap_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
 	
-	if (packet_type == HCI_EVENT_PACKET && packet[0] == L2CAP_EVENT_CHANNEL_OPENED){
+	if (packet_type == HCI_EVENT_PACKET && hci_event_packet_get_type(packet) == L2CAP_EVENT_CHANNEL_OPENED){
         if (packet[2]) {
             printf("Connection failed\n\r");
             return;
@@ -277,7 +277,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 	int i,j;
 	switch (packet_type) {
 		case HCI_EVENT_PACKET:
-			switch (packet[0]) {
+			switch (hci_event_packet_get_type(packet)) {
 					
 				case BTSTACK_EVENT_STATE:
 					// bt stack activated, get started - set local name

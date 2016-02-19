@@ -54,23 +54,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "btstack_config.h"
-
-#include "btstack_run_loop.h"
-#include "classic/sdp_util.h"
-
-#include "btstack_debug.h"
-#include "btstack_memory.h"
-#include "hci.h"
-#include "hci_dump.h"
-#include "l2cap.h"
-
+#include "btstack.h"
 #include "le_streamer.h"
-
-#include "ble/att_db.h"
-#include "ble/att_server.h"
-#include "ble/le_device_db.h"
-#include "ble/sm.h"
 
 static int   le_notification_enabled;
 static void  packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
@@ -178,7 +163,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
     int mtu;
     switch (packet_type) {
         case HCI_EVENT_PACKET:
-            switch (packet[0]) {
+            switch (hci_event_packet_get_type(packet)) {
                 case HCI_EVENT_DISCONNECTION_COMPLETE:
                     le_notification_enabled = 0;
                     break;

@@ -246,7 +246,7 @@ static void handleServiceNameData(uint32_t attribute_value_length, uint32_t data
 }
 
 static void handle_sdp_parser_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    switch (packet[0]){
+    switch (hci_event_packet_get_type(packet)){
         case SDP_EVENT_QUERY_SERVICE_RECORD_HANDLE:
             // handle service without a name
             if (sdp_rfcomm_channel_nr){

@@ -322,7 +322,7 @@ static void handle_sdp_client_query_result(uint8_t packet_type, uint8_t *packet,
     des_iterator_t prot_it;
     char *str;
 
-    switch (packet[0]){
+    switch (hci_event_packet_get_type(packet)){
         case SDP_EVENT_QUERY_ATTRIBUTE_VALUE:
             // Handle new SDP record 
             if (sdp_event_query_attribute_byte_get_record_id(packet) != record_id) {
@@ -436,7 +436,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
     /* LISTING_RESUME */
     switch (packet_type) {
 		case HCI_EVENT_PACKET:
-            event = packet[0];
+            event = hci_event_packet_get_type(packet);
             switch (event) {            
                 /* @text When BTSTACK_EVENT_STATE with state HCI_STATE_WORKING
                  * is received and the example is started in client mode, the remote SDP BNEP query is started.

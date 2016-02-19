@@ -39,25 +39,25 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "btstack_run_loop.h"
-#include "hci_cmd.h"
-#include "btstack_util.h"
-#include "classic/sdp_util.h"
 
 #include "btstack_config.h"
 
-#include "ble/gatt_client.h"
+#include "att_dispatch.h"
 #include "ble/ad_parser.h"
-
+#include "ble/att_db.h"
+#include "ble/gatt_client.h"
+#include "ble/le_device_db.h"
+#include "ble/sm.h"
 #include "btstack_debug.h"
+#include "btstack_event.h"
 #include "btstack_memory.h"
+#include "btstack_run_loop.h"
+#include "btstack_util.h"
+#include "classic/sdp_util.h"
 #include "hci.h"
+#include "hci_cmd.h"
 #include "hci_dump.h"
 #include "l2cap.h"
-#include "ble/att_db.h"
-#include "att_dispatch.h"
-#include "ble/sm.h"
-#include "ble/le_device_db.h"
 
 static btstack_linked_list_t gatt_client_connections;
 static btstack_linked_list_t gatt_client_value_listeners;
@@ -998,7 +998,7 @@ static void gatt_client_report_error_if_pending(gatt_client_t *peripheral, uint8
 static void gatt_client_hci_event_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     if (packet_type != HCI_EVENT_PACKET) return;
 
-    switch (packet[0]) {
+    switch (hci_event_packet_get_type(packet)) {
         case HCI_EVENT_DISCONNECTION_COMPLETE:
         {
             log_info("GATT Client: HCI_EVENT_DISCONNECTION_COMPLETE");

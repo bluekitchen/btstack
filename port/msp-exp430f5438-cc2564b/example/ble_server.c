@@ -116,7 +116,7 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
     bd_addr_t addr;
     uint8_t adv_data[] = { 02, 01, 05,   03, 02, 0xf0, 0xff }; 
     
-    switch (packet[0]) {
+    switch (hci_event_packet_get_type(packet)) {
         case BTSTACK_EVENT_STATE:
             // bt stack activated, get started - set local name
             if (packet[2] == HCI_STATE_WORKING) {

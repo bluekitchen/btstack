@@ -131,7 +131,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
 
     switch(state){
         case TC_W4_SERVICE_RESULT:
-            switch(packet[0]){
+            switch(hci_event_packet_get_type(packet)){
                 case GATT_EVENT_SERVICE_QUERY_RESULT:
                     gatt_event_service_query_result_get_service(packet, &battery_service);
                     printf("Battery service found:\n");
@@ -154,7 +154,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
             break;
             
         case TC_W4_CHARACTERISTIC_RESULT:
-            switch(packet[0]){
+            switch(hci_event_packet_get_type(packet)){
                 case GATT_EVENT_CHARACTERISTIC_QUERY_RESULT:
                     printf("Battery level characteristic found:\n");
                     gatt_event_characteristic_query_result_get_characteristic(packet, &config_characteristic);
@@ -170,14 +170,14 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
             }
             break;
         case TC_W4_BATTERY_DATA:
-            if (packet[0] == GATT_EVENT_QUERY_COMPLETE){
+            if (hci_event_packet_get_type(packet) == GATT_EVENT_QUERY_COMPLETE){
                 if (packet[4] != 0){
                     printf("\nNotification is not possible: ");
                     error_code(packet[4]);
                 }
                 break;    
             }
-            if (packet[0] != GATT_EVENT_NOTIFICATION) break;
+            if (hci_event_packet_get_type(packet) != GATT_EVENT_NOTIFICATION) break;
             printf("\nBattery Data:\n");
             dump_characteristic_value(&packet[8], little_endian_read_16(packet, 6));
             break;
@@ -205,7 +205,7 @@ static void fill_advertising_report_from_packet(advertising_report_t * report, u
 static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     if (packet_type != HCI_EVENT_PACKET) return;
     advertising_report_t report;
-    uint8_t event = packet[0];
+    uint8_t event = hci_event_packet_get_type(packet);
     switch (event) {
         case BTSTACK_EVENT_STATE:
             // BTstack activated, get started

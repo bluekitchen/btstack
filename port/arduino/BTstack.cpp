@@ -229,7 +229,7 @@ static void gatt_client_callback(uint8_t packet_type, uint8_t * packet, uint16_t
     uint16_t  value_length;
 
     BLEDevice device(con_handle);
-    switch(packet[0]){
+    switch(hci_event_packet_get_type(packet)){
         case GATT_EVENT_SERVICE_QUERY_RESULT:
             if (gattServiceDiscoveredCallback) {
                 gatt_client_service_t service;

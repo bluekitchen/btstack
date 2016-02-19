@@ -39,15 +39,15 @@
 #include <string.h>
 #include <inttypes.h>
 
-#include "btstack_linked_list.h"
-
-#include "btstack_memory.h"
-#include "btstack_debug.h"
-#include "hci.h"
-#include "l2cap.h"
 #include "ble/le_device_db.h"
 #include "ble/sm.h"
+#include "btstack_debug.h"
+#include "btstack_event.h"
+#include "btstack_linked_list.h"
+#include "btstack_memory.h"
 #include "gap.h"
+#include "hci.h"
+#include "l2cap.h"
 
 //
 // SM internal types and globals
@@ -1834,7 +1834,7 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
     switch (packet_type) {
             
 		case HCI_EVENT_PACKET:
-			switch (packet[0]) {
+			switch (hci_event_packet_get_type(packet)) {
 				
                 case BTSTACK_EVENT_STATE:
 					// bt stack activated, get started

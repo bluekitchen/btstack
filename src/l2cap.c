@@ -47,6 +47,7 @@
 #include "hci.h"
 #include "hci_dump.h"
 #include "btstack_debug.h"
+#include "btstack_event.h"
 #include "btstack_memory.h"
 
 #include <stdarg.h>
@@ -919,7 +920,7 @@ static void l2cap_hci_event_handler(uint8_t packet_type, uint16_t cid, uint8_t *
     btstack_linked_list_iterator_t it;
     int hci_con_used;
     
-    switch(packet[0]){
+    switch(hci_event_packet_get_type(packet)){
             
         // handle connection complete events
         case HCI_EVENT_CONNECTION_COMPLETE:

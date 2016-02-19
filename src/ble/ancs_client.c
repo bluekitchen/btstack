@@ -182,7 +182,7 @@ static void handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *pac
     int connection_encrypted;
 
     // handle connect / disconncet events first
-    switch (packet[0]) {
+    switch (hci_event_packet_get_type(packet)) {
         case HCI_EVENT_LE_META:
             switch (packet[2]) {
                 case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
@@ -226,7 +226,7 @@ static void handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *pac
 
     switch(tc_state){
         case TC_W4_SERVICE_RESULT:
-            switch(packet[0]){
+            switch(hci_event_packet_get_type(packet)){
                 case GATT_EVENT_SERVICE_QUERY_RESULT:
                     gatt_event_service_query_result_get_service(packet, &ancs_service);
                     ancs_service_found = 1;
@@ -247,7 +247,7 @@ static void handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *pac
             break;
             
         case TC_W4_CHARACTERISTIC_RESULT:
-            switch(packet[0]){
+            switch(hci_event_packet_get_type(packet)){
                 case GATT_EVENT_CHARACTERISTIC_QUERY_RESULT:
                     gatt_event_characteristic_query_result_get_characteristic(packet, &characteristic);
                     if (memcmp(characteristic.uuid128, ancs_notification_source_uuid, 16) == 0){
@@ -280,7 +280,7 @@ static void handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *pac
             }
             break;
         case TC_W4_NOTIFICATION_SOURCE_SUBSCRIBED:
-            switch(packet[0]){
+            switch(hci_event_packet_get_type(packet)){
                 case GATT_EVENT_QUERY_COMPLETE:
                     log_info("ANCS Notification Source subscribed");
                     tc_state = TC_W4_DATA_SOURCE_SUBSCRIBED;
@@ -293,7 +293,7 @@ static void handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *pac
             }
             break;
         case TC_W4_DATA_SOURCE_SUBSCRIBED:
-            switch(packet[0]){
+            switch(hci_event_packet_get_type(packet)){
                 case GATT_EVENT_QUERY_COMPLETE:
                     log_info("ANCS Data Source subscribed");
                     tc_state = TC_SUBSCRIBED;
@@ -304,7 +304,7 @@ static void handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *pac
             }
             break;
         case TC_SUBSCRIBED:
-            if (packet[0] != GATT_EVENT_NOTIFICATION && packet[0] != GATT_EVENT_INDICATION ) break;
+            if (hci_event_packet_get_type(packet) != GATT_EVENT_NOTIFICATION && hci_event_packet_get_type(packet) != GATT_EVENT_INDICATION ) break;
 
             value_handle = little_endian_read_16(packet, 4);
             value_length = little_endian_read_16(packet, 6);

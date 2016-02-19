@@ -76,7 +76,7 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 			break;
 			
 		case HCI_EVENT_PACKET:
-			switch (packet[0]) {
+			switch (hci_event_packet_get_type(packet)) {
 					
 				case BTSTACK_EVENT_POWERON_FAILED:
 					// handle HCI init failure

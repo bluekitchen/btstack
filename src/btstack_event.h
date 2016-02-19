@@ -61,8 +61,41 @@ extern "C" {
 /* API_START */
 
 /**
+ * @brief Get event type
+ * @param event
+ * @return type of event
+ */
+static inline uint8_t hci_event_packet_get_type(const uint8_t * event){
+    return event[0];
+}
+
+/***
+ * @brief Get subevent code for hsp event
+ * @param event packet
+ * @return subevent_code
+ */
+static inline uint8_t hci_event_hsp_meta_get_subevent_code(const uint8_t * event){
+    return event[2];
+}
+/***
+ * @brief Get subevent code for hfp event
+ * @param event packet
+ * @return subevent_code
+ */
+static inline uint8_t hci_event_hfp_meta_get_subevent_code(const uint8_t * event){
+    return event[2];
+}
+/***
+ * @brief Get subevent code for ancs event
+ * @param event packet
+ * @return subevent_code
+ */
+static inline uint8_t hci_event_ancs_meta_get_subevent_code(const uint8_t * event){
+    return event[2];
+}
+/**
  * @brief Get field status from event hci_event_inquiry_complete
- * @param Event packet
+ * @param event packet
  * @return status
  * @note: btstack_type 1
  */
@@ -72,7 +105,7 @@ static inline uint8_t hci_event_inquiry_complete_get_status(const uint8_t * even
 
 /**
  * @brief Get field num_responses from event hci_event_inquiry_result
- * @param Event packet
+ * @param event packet
  * @return num_responses
  * @note: btstack_type 1
  */
@@ -81,7 +114,7 @@ static inline uint8_t hci_event_inquiry_result_get_num_responses(const uint8_t *
 }
 /**
  * @brief Get field bd_addr from event hci_event_inquiry_result
- * @param Event packet
+ * @param event packet
  * @param Pointer to storage for bd_addr
  * @note: btstack_type B
  */
@@ -90,7 +123,7 @@ static inline void hci_event_inquiry_result_get_bd_addr(const uint8_t * event, b
 }
 /**
  * @brief Get field page_scan_repetition_mode from event hci_event_inquiry_result
- * @param Event packet
+ * @param event packet
  * @return page_scan_repetition_mode
  * @note: btstack_type 1
  */
@@ -99,7 +132,7 @@ static inline uint8_t hci_event_inquiry_result_get_page_scan_repetition_mode(con
 }
 /**
  * @brief Get field reserved1 from event hci_event_inquiry_result
- * @param Event packet
+ * @param event packet
  * @return reserved1
  * @note: btstack_type 1
  */
@@ -108,7 +141,7 @@ static inline uint8_t hci_event_inquiry_result_get_reserved1(const uint8_t * eve
 }
 /**
  * @brief Get field reserved2 from event hci_event_inquiry_result
- * @param Event packet
+ * @param event packet
  * @return reserved2
  * @note: btstack_type 1
  */
@@ -117,7 +150,7 @@ static inline uint8_t hci_event_inquiry_result_get_reserved2(const uint8_t * eve
 }
 /**
  * @brief Get field class_of_device from event hci_event_inquiry_result
- * @param Event packet
+ * @param event packet
  * @return class_of_device
  * @note: btstack_type 3
  */
@@ -126,7 +159,7 @@ static inline uint32_t hci_event_inquiry_result_get_class_of_device(const uint8_
 }
 /**
  * @brief Get field clock_offset from event hci_event_inquiry_result
- * @param Event packet
+ * @param event packet
  * @return clock_offset
  * @note: btstack_type 2
  */
@@ -136,7 +169,7 @@ static inline uint16_t hci_event_inquiry_result_get_clock_offset(const uint8_t *
 
 /**
  * @brief Get field status from event hci_event_connection_complete
- * @param Event packet
+ * @param event packet
  * @return status
  * @note: btstack_type 1
  */
@@ -145,7 +178,7 @@ static inline uint8_t hci_event_connection_complete_get_status(const uint8_t * e
 }
 /**
  * @brief Get field connection_handle from event hci_event_connection_complete
- * @param Event packet
+ * @param event packet
  * @return connection_handle
  * @note: btstack_type 2
  */
@@ -154,7 +187,7 @@ static inline uint16_t hci_event_connection_complete_get_connection_handle(const
 }
 /**
  * @brief Get field bd_addr from event hci_event_connection_complete
- * @param Event packet
+ * @param event packet
  * @param Pointer to storage for bd_addr
  * @note: btstack_type B
  */
@@ -163,7 +196,7 @@ static inline void hci_event_connection_complete_get_bd_addr(const uint8_t * eve
 }
 /**
  * @brief Get field link_type from event hci_event_connection_complete
- * @param Event packet
+ * @param event packet
  * @return link_type
  * @note: btstack_type 1
  */
@@ -172,7 +205,7 @@ static inline uint8_t hci_event_connection_complete_get_link_type(const uint8_t 
 }
 /**
  * @brief Get field encryption_enabled from event hci_event_connection_complete
- * @param Event packet
+ * @param event packet
  * @return encryption_enabled
  * @note: btstack_type 1
  */
@@ -182,7 +215,7 @@ static inline uint8_t hci_event_connection_complete_get_encryption_enabled(const
 
 /**
  * @brief Get field bd_addr from event hci_event_connection_request
- * @param Event packet
+ * @param event packet
  * @param Pointer to storage for bd_addr
  * @note: btstack_type B
  */
@@ -191,7 +224,7 @@ static inline void hci_event_connection_request_get_bd_addr(const uint8_t * even
 }
 /**
  * @brief Get field class_of_device from event hci_event_connection_request
- * @param Event packet
+ * @param event packet
  * @return class_of_device
  * @note: btstack_type 3
  */
@@ -200,7 +233,7 @@ static inline uint32_t hci_event_connection_request_get_class_of_device(const ui
 }
 /**
  * @brief Get field link_type from event hci_event_connection_request
- * @param Event packet
+ * @param event packet
  * @return link_type
  * @note: btstack_type 1
  */
@@ -210,7 +243,7 @@ static inline uint8_t hci_event_connection_request_get_link_type(const uint8_t *
 
 /**
  * @brief Get field status from event hci_event_disconnection_complete
- * @param Event packet
+ * @param event packet
  * @return status
  * @note: btstack_type 1
  */
@@ -219,7 +252,7 @@ static inline uint8_t hci_event_disconnection_complete_get_status(const uint8_t 
 }
 /**
  * @brief Get field connection_handle from event hci_event_disconnection_complete
- * @param Event packet
+ * @param event packet
  * @return connection_handle
  * @note: btstack_type 2
  */
@@ -228,7 +261,7 @@ static inline uint16_t hci_event_disconnection_complete_get_connection_handle(co
 }
 /**
  * @brief Get field reason from event hci_event_disconnection_complete
- * @param Event packet
+ * @param event packet
  * @return reason
  * @note: btstack_type 1
  */
@@ -238,7 +271,7 @@ static inline uint8_t hci_event_disconnection_complete_get_reason(const uint8_t 
 
 /**
  * @brief Get field status from event hci_event_authentication_complete_event
- * @param Event packet
+ * @param event packet
  * @return status
  * @note: btstack_type 1
  */
@@ -247,7 +280,7 @@ static inline uint8_t hci_event_authentication_complete_event_get_status(const u
 }
 /**
  * @brief Get field connection_handle from event hci_event_authentication_complete_event
- * @param Event packet
+ * @param event packet
  * @return connection_handle
  * @note: btstack_type 2
  */
@@ -257,7 +290,7 @@ static inline uint16_t hci_event_authentication_complete_event_get_connection_ha
 
 /**
  * @brief Get field status from event hci_event_remote_name_request_complete
- * @param Event packet
+ * @param event packet
  * @return status
  * @note: btstack_type 1
  */
@@ -266,7 +299,7 @@ static inline uint16_t hci_event_authentication_complete_event_get_connection_ha
 //  }
 /**
  * @brief Get field bd_addr from event hci_event_remote_name_request_complete
- * @param Event packet
+ * @param event packet
  * @return bd_addr
  * @note: btstack_type B
  */
@@ -275,7 +308,7 @@ static inline uint16_t hci_event_authentication_complete_event_get_connection_ha
 //  }
 /**
  * @brief Get field remote_name from event hci_event_remote_name_request_complete
- * @param Event packet
+ * @param event packet
  * @return remote_name
  * @note: btstack_type N
  */
@@ -285,7 +318,7 @@ static inline uint16_t hci_event_authentication_complete_event_get_connection_ha
 
 /**
  * @brief Get field status from event hci_event_encryption_change
- * @param Event packet
+ * @param event packet
  * @return status
  * @note: btstack_type 1
  */
@@ -294,7 +327,7 @@ static inline uint8_t hci_event_encryption_change_get_status(const uint8_t * eve
 }
 /**
  * @brief Get field connection_handle from event hci_event_encryption_change
- * @param Event packet
+ * @param event packet
  * @return connection_handle
  * @note: btstack_type 2
  */
@@ -303,7 +336,7 @@ static inline uint16_t hci_event_encryption_change_get_connection_handle(const u
 }
 /**
  * @brief Get field encryption_enabled from event hci_event_encryption_change
- * @param Event packet
+ * @param event packet
  * @return encryption_enabled
  * @note: btstack_type 1
  */
@@ -313,7 +346,7 @@ static inline uint8_t hci_event_encryption_change_get_encryption_enabled(const u
 
 /**
  * @brief Get field status from event hci_event_change_connection_link_key_complete
- * @param Event packet
+ * @param event packet
  * @return status
  * @note: btstack_type 1
  */
@@ -322,7 +355,7 @@ static inline uint8_t hci_event_change_connection_link_key_complete_get_status(c
 }
 /**
  * @brief Get field connection_handle from event hci_event_change_connection_link_key_complete
- * @param Event packet
+ * @param event packet
  * @return connection_handle
  * @note: btstack_type 2
  */
@@ -332,7 +365,7 @@ static inline uint16_t hci_event_change_connection_link_key_complete_get_connect
 
 /**
  * @brief Get field status from event hci_event_master_link_key_complete
- * @param Event packet
+ * @param event packet
  * @return status
  * @note: btstack_type 1
  */
@@ -341,7 +374,7 @@ static inline uint8_t hci_event_master_link_key_complete_get_status(const uint8_
 }
 /**
  * @brief Get field connection_handle from event hci_event_master_link_key_complete
- * @param Event packet
+ * @param event packet
  * @return connection_handle
  * @note: btstack_type 2
  */
@@ -350,7 +383,7 @@ static inline uint16_t hci_event_master_link_key_complete_get_connection_handle(
 }
 /**
  * @brief Get field key_flag from event hci_event_master_link_key_complete
- * @param Event packet
+ * @param event packet
  * @return key_flag
  * @note: btstack_type 1
  */
@@ -360,7 +393,7 @@ static inline uint8_t hci_event_master_link_key_complete_get_key_flag(const uint
 
 /**
  * @brief Get field num_hci_command_packets from event hci_event_command_complete
- * @param Event packet
+ * @param event packet
  * @return num_hci_command_packets
  * @note: btstack_type 1
  */
@@ -369,7 +402,7 @@ static inline uint8_t hci_event_command_complete_get_num_hci_command_packets(con
 }
 /**
  * @brief Get field command_opcode from event hci_event_command_complete
- * @param Event packet
+ * @param event packet
  * @return command_opcode
  * @note: btstack_type 2
  */
@@ -378,7 +411,7 @@ static inline uint16_t hci_event_command_complete_get_command_opcode(const uint8
 }
 /**
  * @brief Get field return_parameters from event hci_event_command_complete
- * @param Event packet
+ * @param event packet
  * @return return_parameters
  * @note: btstack_type R
  */
@@ -388,7 +421,7 @@ static inline const uint8_t * hci_event_command_complete_get_return_parameters(c
 
 /**
  * @brief Get field status from event hci_event_command_status
- * @param Event packet
+ * @param event packet
  * @return status
  * @note: btstack_type 1
  */
@@ -397,7 +430,7 @@ static inline uint8_t hci_event_command_status_get_status(const uint8_t * event)
 }
 /**
  * @brief Get field num_hci_command_packets from event hci_event_command_status
- * @param Event packet
+ * @param event packet
  * @return num_hci_command_packets
  * @note: btstack_type 1
  */
@@ -406,7 +439,7 @@ static inline uint8_t hci_event_command_status_get_num_hci_command_packets(const
 }
 /**
  * @brief Get field command_opcode from event hci_event_command_status
- * @param Event packet
+ * @param event packet
  * @return command_opcode
  * @note: btstack_type 2
  */
@@ -416,7 +449,7 @@ static inline uint16_t hci_event_command_status_get_command_opcode(const uint8_t
 
 /**
  * @brief Get field hardware_code from event hci_event_hardware_error
- * @param Event packet
+ * @param event packet
  * @return hardware_code
  * @note: btstack_type 1
  */
@@ -426,7 +459,7 @@ static inline uint8_t hci_event_hardware_error_get_hardware_code(const uint8_t *
 
 /**
  * @brief Get field status from event hci_event_role_change
- * @param Event packet
+ * @param event packet
  * @return status
  * @note: btstack_type 1
  */
@@ -435,7 +468,7 @@ static inline uint8_t hci_event_role_change_get_status(const uint8_t * event){
 }
 /**
  * @brief Get field bd_addr from event hci_event_role_change
- * @param Event packet
+ * @param event packet
  * @param Pointer to storage for bd_addr
  * @note: btstack_type B
  */
@@ -444,7 +477,7 @@ static inline void hci_event_role_change_get_bd_addr(const uint8_t * event, bd_a
 }
 /**
  * @brief Get field role from event hci_event_role_change
- * @param Event packet
+ * @param event packet
  * @return role
  * @note: btstack_type 1
  */
@@ -454,7 +487,7 @@ static inline uint8_t hci_event_role_change_get_role(const uint8_t * event){
 
 /**
  * @brief Get field num_responses from event hci_event_inquiry_result_with_rssi
- * @param Event packet
+ * @param event packet
  * @return num_responses
  * @note: btstack_type 1
  */
@@ -463,7 +496,7 @@ static inline uint8_t hci_event_inquiry_result_with_rssi_get_num_responses(const
 }
 /**
  * @brief Get field bd_addr from event hci_event_inquiry_result_with_rssi
- * @param Event packet
+ * @param event packet
  * @param Pointer to storage for bd_addr
  * @note: btstack_type B
  */
@@ -472,7 +505,7 @@ static inline void hci_event_inquiry_result_with_rssi_get_bd_addr(const uint8_t 
 }
 /**
  * @brief Get field page_scan_repetition_mode from event hci_event_inquiry_result_with_rssi
- * @param Event packet
+ * @param event packet
  * @return page_scan_repetition_mode
  * @note: btstack_type 1
  */
@@ -481,7 +514,7 @@ static inline uint8_t hci_event_inquiry_result_with_rssi_get_page_scan_repetitio
 }
 /**
  * @brief Get field reserved from event hci_event_inquiry_result_with_rssi
- * @param Event packet
+ * @param event packet
  * @return reserved
  * @note: btstack_type 1
  */
@@ -490,7 +523,7 @@ static inline uint8_t hci_event_inquiry_result_with_rssi_get_reserved(const uint
 }
 /**
  * @brief Get field class_of_device from event hci_event_inquiry_result_with_rssi
- * @param Event packet
+ * @param event packet
  * @return class_of_device
  * @note: btstack_type 3
  */
@@ -499,7 +532,7 @@ static inline uint32_t hci_event_inquiry_result_with_rssi_get_class_of_device(co
 }
 /**
  * @brief Get field clock_offset from event hci_event_inquiry_result_with_rssi
- * @param Event packet
+ * @param event packet
  * @return clock_offset
  * @note: btstack_type 2
  */
@@ -508,7 +541,7 @@ static inline uint16_t hci_event_inquiry_result_with_rssi_get_clock_offset(const
 }
 /**
  * @brief Get field rssi from event hci_event_inquiry_result_with_rssi
- * @param Event packet
+ * @param event packet
  * @return rssi
  * @note: btstack_type 1
  */
@@ -518,7 +551,7 @@ static inline uint8_t hci_event_inquiry_result_with_rssi_get_rssi(const uint8_t 
 
 /**
  * @brief Get field status from event hci_event_synchronous_connection_complete
- * @param Event packet
+ * @param event packet
  * @return status
  * @note: btstack_type 1
  */
@@ -527,7 +560,7 @@ static inline uint8_t hci_event_synchronous_connection_complete_get_status(const
 }
 /**
  * @brief Get field handle from event hci_event_synchronous_connection_complete
- * @param Event packet
+ * @param event packet
  * @return handle
  * @note: btstack_type H
  */
@@ -536,7 +569,7 @@ static inline hci_con_handle_t hci_event_synchronous_connection_complete_get_han
 }
 /**
  * @brief Get field bd_addr from event hci_event_synchronous_connection_complete
- * @param Event packet
+ * @param event packet
  * @param Pointer to storage for bd_addr
  * @note: btstack_type B
  */
@@ -545,7 +578,7 @@ static inline void hci_event_synchronous_connection_complete_get_bd_addr(const u
 }
 /**
  * @brief Get field link_type from event hci_event_synchronous_connection_complete
- * @param Event packet
+ * @param event packet
  * @return link_type
  * @note: btstack_type 1
  */
@@ -554,7 +587,7 @@ static inline uint8_t hci_event_synchronous_connection_complete_get_link_type(co
 }
 /**
  * @brief Get field transmission_interval from event hci_event_synchronous_connection_complete
- * @param Event packet
+ * @param event packet
  * @return transmission_interval
  * @note: btstack_type 1
  */
@@ -563,7 +596,7 @@ static inline uint8_t hci_event_synchronous_connection_complete_get_transmission
 }
 /**
  * @brief Get field retransmission_interval from event hci_event_synchronous_connection_complete
- * @param Event packet
+ * @param event packet
  * @return retransmission_interval
  * @note: btstack_type 1
  */
@@ -572,7 +605,7 @@ static inline uint8_t hci_event_synchronous_connection_complete_get_retransmissi
 }
 /**
  * @brief Get field rx_packet_length from event hci_event_synchronous_connection_complete
- * @param Event packet
+ * @param event packet
  * @return rx_packet_length
  * @note: btstack_type 2
  */
@@ -581,7 +614,7 @@ static inline uint16_t hci_event_synchronous_connection_complete_get_rx_packet_l
 }
 /**
  * @brief Get field tx_packet_length from event hci_event_synchronous_connection_complete
- * @param Event packet
+ * @param event packet
  * @return tx_packet_length
  * @note: btstack_type 2
  */
@@ -590,7 +623,7 @@ static inline uint16_t hci_event_synchronous_connection_complete_get_tx_packet_l
 }
 /**
  * @brief Get field air_mode from event hci_event_synchronous_connection_complete
- * @param Event packet
+ * @param event packet
  * @return air_mode
  * @note: btstack_type 1
  */
@@ -600,7 +633,7 @@ static inline uint8_t hci_event_synchronous_connection_complete_get_air_mode(con
 
 /**
  * @brief Get field num_responses from event hci_event_extended_inquiry_response
- * @param Event packet
+ * @param event packet
  * @return num_responses
  * @note: btstack_type 1
  */
@@ -609,7 +642,7 @@ static inline uint8_t hci_event_extended_inquiry_response_get_num_responses(cons
 }
 /**
  * @brief Get field bd_addr from event hci_event_extended_inquiry_response
- * @param Event packet
+ * @param event packet
  * @param Pointer to storage for bd_addr
  * @note: btstack_type B
  */
@@ -618,7 +651,7 @@ static inline void hci_event_extended_inquiry_response_get_bd_addr(const uint8_t
 }
 /**
  * @brief Get field page_scan_repetition_mode from event hci_event_extended_inquiry_response
- * @param Event packet
+ * @param event packet
  * @return page_scan_repetition_mode
  * @note: btstack_type 1
  */
@@ -627,7 +660,7 @@ static inline uint8_t hci_event_extended_inquiry_response_get_page_scan_repetiti
 }
 /**
  * @brief Get field reserved from event hci_event_extended_inquiry_response
- * @param Event packet
+ * @param event packet
  * @return reserved
  * @note: btstack_type 1
  */
@@ -636,7 +669,7 @@ static inline uint8_t hci_event_extended_inquiry_response_get_reserved(const uin
 }
 /**
  * @brief Get field class_of_device from event hci_event_extended_inquiry_response
- * @param Event packet
+ * @param event packet
  * @return class_of_device
  * @note: btstack_type 3
  */
@@ -645,7 +678,7 @@ static inline uint32_t hci_event_extended_inquiry_response_get_class_of_device(c
 }
 /**
  * @brief Get field clock_offset from event hci_event_extended_inquiry_response
- * @param Event packet
+ * @param event packet
  * @return clock_offset
  * @note: btstack_type 2
  */
@@ -654,7 +687,7 @@ static inline uint16_t hci_event_extended_inquiry_response_get_clock_offset(cons
 }
 /**
  * @brief Get field rssi from event hci_event_extended_inquiry_response
- * @param Event packet
+ * @param event packet
  * @return rssi
  * @note: btstack_type 1
  */
@@ -664,7 +697,7 @@ static inline uint8_t hci_event_extended_inquiry_response_get_rssi(const uint8_t
 
 /**
  * @brief Get field status from event hci_event_encryption_key_refresh_complete
- * @param Event packet
+ * @param event packet
  * @return status
  * @note: btstack_type 1
  */
@@ -673,7 +706,7 @@ static inline uint8_t hci_event_encryption_key_refresh_complete_get_status(const
 }
 /**
  * @brief Get field handle from event hci_event_encryption_key_refresh_complete
- * @param Event packet
+ * @param event packet
  * @return handle
  * @note: btstack_type H
  */
@@ -683,7 +716,7 @@ static inline hci_con_handle_t hci_event_encryption_key_refresh_complete_get_han
 
 /**
  * @brief Get field subevent_code from event hci_subevent_le_connection_complete
- * @param Event packet
+ * @param event packet
  * @return subevent_code
  * @note: btstack_type 1
  */
@@ -692,7 +725,7 @@ static inline uint8_t hci_subevent_le_connection_complete_get_subevent_code(cons
 }
 /**
  * @brief Get field status from event hci_subevent_le_connection_complete
- * @param Event packet
+ * @param event packet
  * @return status
  * @note: btstack_type 1
  */
@@ -701,7 +734,7 @@ static inline uint8_t hci_subevent_le_connection_complete_get_status(const uint8
 }
 /**
  * @brief Get field connection_handle from event hci_subevent_le_connection_complete
- * @param Event packet
+ * @param event packet
  * @return connection_handle
  * @note: btstack_type H
  */
@@ -710,7 +743,7 @@ static inline hci_con_handle_t hci_subevent_le_connection_complete_get_connectio
 }
 /**
  * @brief Get field role from event hci_subevent_le_connection_complete
- * @param Event packet
+ * @param event packet
  * @return role
  * @note: btstack_type 1
  */
@@ -719,7 +752,7 @@ static inline uint8_t hci_subevent_le_connection_complete_get_role(const uint8_t
 }
 /**
  * @brief Get field peer_address_type from event hci_subevent_le_connection_complete
- * @param Event packet
+ * @param event packet
  * @return peer_address_type
  * @note: btstack_type 1
  */
@@ -728,7 +761,7 @@ static inline uint8_t hci_subevent_le_connection_complete_get_peer_address_type(
 }
 /**
  * @brief Get field peer_address from event hci_subevent_le_connection_complete
- * @param Event packet
+ * @param event packet
  * @param Pointer to storage for peer_address
  * @note: btstack_type B
  */
@@ -737,7 +770,7 @@ static inline void hci_subevent_le_connection_complete_get_peer_address(const ui
 }
 /**
  * @brief Get field conn_interval from event hci_subevent_le_connection_complete
- * @param Event packet
+ * @param event packet
  * @return conn_interval
  * @note: btstack_type 2
  */
@@ -746,7 +779,7 @@ static inline uint16_t hci_subevent_le_connection_complete_get_conn_interval(con
 }
 /**
  * @brief Get field conn_latency from event hci_subevent_le_connection_complete
- * @param Event packet
+ * @param event packet
  * @return conn_latency
  * @note: btstack_type 2
  */
@@ -755,7 +788,7 @@ static inline uint16_t hci_subevent_le_connection_complete_get_conn_latency(cons
 }
 /**
  * @brief Get field supervision_timeout from event hci_subevent_le_connection_complete
- * @param Event packet
+ * @param event packet
  * @return supervision_timeout
  * @note: btstack_type 2
  */
@@ -764,7 +797,7 @@ static inline uint16_t hci_subevent_le_connection_complete_get_supervision_timeo
 }
 /**
  * @brief Get field master_clock_accuracy from event hci_subevent_le_connection_complete
- * @param Event packet
+ * @param event packet
  * @return master_clock_accuracy
  * @note: btstack_type 1
  */
@@ -774,7 +807,7 @@ static inline uint8_t hci_subevent_le_connection_complete_get_master_clock_accur
 
 /**
  * @brief Get field state from event btstack_event_state
- * @param Event packet
+ * @param event packet
  * @return state
  * @note: btstack_type 1
  */
@@ -785,7 +818,7 @@ static inline uint8_t btstack_event_state_get_state(const uint8_t * event){
 
 /**
  * @brief Get field discoverable from event btstack_event_discoverable_enabled
- * @param Event packet
+ * @param event packet
  * @return discoverable
  * @note: btstack_type 1
  */
@@ -795,7 +828,7 @@ static inline uint8_t btstack_event_discoverable_enabled_get_discoverable(const 
 
 /**
  * @brief Get field handle from event hci_event_sco_can_send_now
- * @param Event packet
+ * @param event packet
  * @param Pointer to storage for handle
  * @note: btstack_type B
  */
@@ -805,7 +838,7 @@ static inline void hci_event_sco_can_send_now_get_handle(const uint8_t * event, 
 
 /**
  * @brief Get field status from event l2cap_event_channel_opened
- * @param Event packet
+ * @param event packet
  * @return status
  * @note: btstack_type 1
  */
@@ -814,7 +847,7 @@ static inline uint8_t l2cap_event_channel_opened_get_status(const uint8_t * even
 }
 /**
  * @brief Get field address from event l2cap_event_channel_opened
- * @param Event packet
+ * @param event packet
  * @param Pointer to storage for address
  * @note: btstack_type B
  */
@@ -823,7 +856,7 @@ static inline void l2cap_event_channel_opened_get_address(const uint8_t * event,
 }
 /**
  * @brief Get field handle from event l2cap_event_channel_opened
- * @param Event packet
+ * @param event packet
  * @return handle
  * @note: btstack_type H
  */
@@ -832,7 +865,7 @@ static inline hci_con_handle_t l2cap_event_channel_opened_get_handle(const uint8
 }
 /**
  * @brief Get field psm from event l2cap_event_channel_opened
- * @param Event packet
+ * @param event packet
  * @return psm
  * @note: btstack_type 2
  */
@@ -841,7 +874,7 @@ static inline uint16_t l2cap_event_channel_opened_get_psm(const uint8_t * event)
 }
 /**
  * @brief Get field local_cid from event l2cap_event_channel_opened
- * @param Event packet
+ * @param event packet
  * @return local_cid
  * @note: btstack_type 2
  */
@@ -850,7 +883,7 @@ static inline uint16_t l2cap_event_channel_opened_get_local_cid(const uint8_t * 
 }
 /**
  * @brief Get field remote_cid from event l2cap_event_channel_opened
- * @param Event packet
+ * @param event packet
  * @return remote_cid
  * @note: btstack_type 2
  */
@@ -859,7 +892,7 @@ static inline uint16_t l2cap_event_channel_opened_get_remote_cid(const uint8_t *
 }
 /**
  * @brief Get field local_mtu from event l2cap_event_channel_opened
- * @param Event packet
+ * @param event packet
  * @return local_mtu
  * @note: btstack_type 2
  */
@@ -868,7 +901,7 @@ static inline uint16_t l2cap_event_channel_opened_get_local_mtu(const uint8_t * 
 }
 /**
  * @brief Get field remote_mtu from event l2cap_event_channel_opened
- * @param Event packet
+ * @param event packet
  * @return remote_mtu
  * @note: btstack_type 2
  */
@@ -877,7 +910,7 @@ static inline uint16_t l2cap_event_channel_opened_get_remote_mtu(const uint8_t *
 }
 /**
  * @brief Get field flush_timeout from event l2cap_event_channel_opened
- * @param Event packet
+ * @param event packet
  * @return flush_timeout
  * @note: btstack_type 2
  */
@@ -887,7 +920,7 @@ static inline uint16_t l2cap_event_channel_opened_get_flush_timeout(const uint8_
 
 /**
  * @brief Get field local_cid from event l2cap_event_channel_closed
- * @param Event packet
+ * @param event packet
  * @return local_cid
  * @note: btstack_type 2
  */
@@ -897,7 +930,7 @@ static inline uint16_t l2cap_event_channel_closed_get_local_cid(const uint8_t * 
 
 /**
  * @brief Get field status from event l2cap_event_incoming_connection
- * @param Event packet
+ * @param event packet
  * @return status
  * @note: btstack_type 1
  */
@@ -906,7 +939,7 @@ static inline uint8_t l2cap_event_incoming_connection_get_status(const uint8_t *
 }
 /**
  * @brief Get field address from event l2cap_event_incoming_connection
- * @param Event packet
+ * @param event packet
  * @param Pointer to storage for address
  * @note: btstack_type B
  */
@@ -915,7 +948,7 @@ static inline void l2cap_event_incoming_connection_get_address(const uint8_t * e
 }
 /**
  * @brief Get field handle from event l2cap_event_incoming_connection
- * @param Event packet
+ * @param event packet
  * @return handle
  * @note: btstack_type H
  */
@@ -924,7 +957,7 @@ static inline hci_con_handle_t l2cap_event_incoming_connection_get_handle(const 
 }
 /**
  * @brief Get field psm from event l2cap_event_incoming_connection
- * @param Event packet
+ * @param event packet
  * @return psm
  * @note: btstack_type 2
  */
@@ -933,7 +966,7 @@ static inline uint16_t l2cap_event_incoming_connection_get_psm(const uint8_t * e
 }
 /**
  * @brief Get field local_cid from event l2cap_event_incoming_connection
- * @param Event packet
+ * @param event packet
  * @return local_cid
  * @note: btstack_type 2
  */
@@ -942,7 +975,7 @@ static inline uint16_t l2cap_event_incoming_connection_get_local_cid(const uint8
 }
 /**
  * @brief Get field remote_cid from event l2cap_event_incoming_connection
- * @param Event packet
+ * @param event packet
  * @return remote_cid
  * @note: btstack_type 2
  */
@@ -952,7 +985,7 @@ static inline uint16_t l2cap_event_incoming_connection_get_remote_cid(const uint
 
 /**
  * @brief Get field status from event l2cap_event_service_registered
- * @param Event packet
+ * @param event packet
  * @return status
  * @note: btstack_type 1
  */
@@ -961,7 +994,7 @@ static inline uint8_t l2cap_event_service_registered_get_status(const uint8_t * 
 }
 /**
  * @brief Get field psm from event l2cap_event_service_registered
- * @param Event packet
+ * @param event packet
  * @return psm
  * @note: btstack_type 2
  */
@@ -971,7 +1004,7 @@ static inline uint16_t l2cap_event_service_registered_get_psm(const uint8_t * ev
 
 /**
  * @brief Get field handle from event l2cap_event_connection_parameter_update_request
- * @param Event packet
+ * @param event packet
  * @return handle
  * @note: btstack_type H
  */
@@ -980,7 +1013,7 @@ static inline hci_con_handle_t l2cap_event_connection_parameter_update_request_g
 }
 /**
  * @brief Get field interval_min from event l2cap_event_connection_parameter_update_request
- * @param Event packet
+ * @param event packet
  * @return interval_min
  * @note: btstack_type 2
  */
@@ -989,7 +1022,7 @@ static inline uint16_t l2cap_event_connection_parameter_update_request_get_inter
 }
 /**
  * @brief Get field interval_max from event l2cap_event_connection_parameter_update_request
- * @param Event packet
+ * @param event packet
  * @return interval_max
  * @note: btstack_type 2
  */
@@ -998,7 +1031,7 @@ static inline uint16_t l2cap_event_connection_parameter_update_request_get_inter
 }
 /**
  * @brief Get field latencey from event l2cap_event_connection_parameter_update_request
- * @param Event packet
+ * @param event packet
  * @return latencey
  * @note: btstack_type 2
  */
@@ -1007,7 +1040,7 @@ static inline uint16_t l2cap_event_connection_parameter_update_request_get_laten
 }
 /**
  * @brief Get field timeout_multiplier from event l2cap_event_connection_parameter_update_request
- * @param Event packet
+ * @param event packet
  * @return timeout_multiplier
  * @note: btstack_type 2
  */
@@ -1017,7 +1050,7 @@ static inline uint16_t l2cap_event_connection_parameter_update_request_get_timeo
 
 /**
  * @brief Get field handle from event l2cap_event_connection_parameter_update_response
- * @param Event packet
+ * @param event packet
  * @return handle
  * @note: btstack_type H
  */
@@ -1027,7 +1060,7 @@ static inline hci_con_handle_t l2cap_event_connection_parameter_update_response_
 
 /**
  * @brief Get field local_cid from event l2cap_event_can_send_now
- * @param Event packet
+ * @param event packet
  * @return local_cid
  * @note: btstack_type 2
  */
@@ -1037,7 +1070,7 @@ static inline uint16_t l2cap_event_can_send_now_get_local_cid(const uint8_t * ev
 
 /**
  * @brief Get field status from event rfcomm_event_open_channel_complete
- * @param Event packet
+ * @param event packet
  * @return status
  * @note: btstack_type 1
  */
@@ -1046,7 +1079,7 @@ static inline uint8_t rfcomm_event_open_channel_complete_get_status(const uint8_
 }
 /**
  * @brief Get field bd_addr from event rfcomm_event_open_channel_complete
- * @param Event packet
+ * @param event packet
  * @param Pointer to storage for bd_addr
  * @note: btstack_type B
  */
@@ -1055,7 +1088,7 @@ static inline void rfcomm_event_open_channel_complete_get_bd_addr(const uint8_t 
 }
 /**
  * @brief Get field con_handle from event rfcomm_event_open_channel_complete
- * @param Event packet
+ * @param event packet
  * @return con_handle
  * @note: btstack_type 2
  */
@@ -1064,7 +1097,7 @@ static inline uint16_t rfcomm_event_open_channel_complete_get_con_handle(const u
 }
 /**
  * @brief Get field server_channel from event rfcomm_event_open_channel_complete
- * @param Event packet
+ * @param event packet
  * @return server_channel
  * @note: btstack_type 1
  */
@@ -1073,7 +1106,7 @@ static inline uint8_t rfcomm_event_open_channel_complete_get_server_channel(cons
 }
 /**
  * @brief Get field rfcomm_cid from event rfcomm_event_open_channel_complete
- * @param Event packet
+ * @param event packet
  * @return rfcomm_cid
  * @note: btstack_type 2
  */
@@ -1082,7 +1115,7 @@ static inline uint16_t rfcomm_event_open_channel_complete_get_rfcomm_cid(const u
 }
 /**
  * @brief Get field max_frame_size from event rfcomm_event_open_channel_complete
- * @param Event packet
+ * @param event packet
  * @return max_frame_size
  * @note: btstack_type 2
  */
@@ -1092,7 +1125,7 @@ static inline uint16_t rfcomm_event_open_channel_complete_get_max_frame_size(con
 
 /**
  * @brief Get field rfcomm_cid from event rfcomm_event_channel_closed
- * @param Event packet
+ * @param event packet
  * @return rfcomm_cid
  * @note: btstack_type 2
  */
@@ -1102,7 +1135,7 @@ static inline uint16_t rfcomm_event_channel_closed_get_rfcomm_cid(const uint8_t 
 
 /**
  * @brief Get field bd_addr from event rfcomm_event_incoming_connection
- * @param Event packet
+ * @param event packet
  * @param Pointer to storage for bd_addr
  * @note: btstack_type B
  */
@@ -1111,7 +1144,7 @@ static inline void rfcomm_event_incoming_connection_get_bd_addr(const uint8_t * 
 }
 /**
  * @brief Get field server_channel from event rfcomm_event_incoming_connection
- * @param Event packet
+ * @param event packet
  * @return server_channel
  * @note: btstack_type 1
  */
@@ -1120,7 +1153,7 @@ static inline uint8_t rfcomm_event_incoming_connection_get_server_channel(const 
 }
 /**
  * @brief Get field rfcomm_cid from event rfcomm_event_incoming_connection
- * @param Event packet
+ * @param event packet
  * @return rfcomm_cid
  * @note: btstack_type 2
  */
@@ -1130,7 +1163,7 @@ static inline uint16_t rfcomm_event_incoming_connection_get_rfcomm_cid(const uin
 
 /**
  * @brief Get field rfcomm_cid from event rfcomm_event_remote_line_status
- * @param Event packet
+ * @param event packet
  * @return rfcomm_cid
  * @note: btstack_type 2
  */
@@ -1139,7 +1172,7 @@ static inline uint16_t rfcomm_event_remote_line_status_get_rfcomm_cid(const uint
 }
 /**
  * @brief Get field line_status from event rfcomm_event_remote_line_status
- * @param Event packet
+ * @param event packet
  * @return line_status
  * @note: btstack_type 1
  */
@@ -1149,7 +1182,7 @@ static inline uint8_t rfcomm_event_remote_line_status_get_line_status(const uint
 
 /**
  * @brief Get field rfcomm_cid from event rfcomm_event_credits
- * @param Event packet
+ * @param event packet
  * @return rfcomm_cid
  * @note: btstack_type 2
  */
@@ -1158,7 +1191,7 @@ static inline uint16_t rfcomm_event_credits_get_rfcomm_cid(const uint8_t * event
 }
 /**
  * @brief Get field credits from event rfcomm_event_credits
- * @param Event packet
+ * @param event packet
  * @return credits
  * @note: btstack_type 1
  */
@@ -1168,7 +1201,7 @@ static inline uint8_t rfcomm_event_credits_get_credits(const uint8_t * event){
 
 /**
  * @brief Get field status from event rfcomm_event_service_registered
- * @param Event packet
+ * @param event packet
  * @return status
  * @note: btstack_type 1
  */
@@ -1177,7 +1210,7 @@ static inline uint8_t rfcomm_event_service_registered_get_status(const uint8_t *
 }
 /**
  * @brief Get field channel_id from event rfcomm_event_service_registered
- * @param Event packet
+ * @param event packet
  * @return channel_id
  * @note: btstack_type 1
  */
@@ -1187,7 +1220,7 @@ static inline uint8_t rfcomm_event_service_registered_get_channel_id(const uint8
 
 /**
  * @brief Get field status from event rfcomm_event_persistent_channel
- * @param Event packet
+ * @param event packet
  * @return status
  * @note: btstack_type 1
  */
@@ -1196,7 +1229,7 @@ static inline uint8_t rfcomm_event_persistent_channel_get_status(const uint8_t *
 }
 /**
  * @brief Get field server_channel_id from event rfcomm_event_persistent_channel
- * @param Event packet
+ * @param event packet
  * @return server_channel_id
  * @note: btstack_type 1
  */
@@ -1206,7 +1239,7 @@ static inline uint8_t rfcomm_event_persistent_channel_get_server_channel_id(cons
 
 /**
  * @brief Get field rfcomm_cid from event rfcomm_event_remote_modem_status
- * @param Event packet
+ * @param event packet
  * @return rfcomm_cid
  * @note: btstack_type 2
  */
@@ -1215,7 +1248,7 @@ static inline uint16_t rfcomm_event_remote_modem_status_get_rfcomm_cid(const uin
 }
 /**
  * @brief Get field modem_status from event rfcomm_event_remote_modem_status
- * @param Event packet
+ * @param event packet
  * @return modem_status
  * @note: btstack_type 1
  */
@@ -1225,7 +1258,7 @@ static inline uint8_t rfcomm_event_remote_modem_status_get_modem_status(const ui
 
 /**
  * @brief Get field local_cid from event rfcomm_event_can_send_now
- * @param Event packet
+ * @param event packet
  * @return local_cid
  * @note: btstack_type 2
  */
@@ -1235,7 +1268,7 @@ static inline uint16_t rfcomm_event_can_send_now_get_local_cid(const uint8_t * e
 
 /**
  * @brief Get field status from event sdp_event_service_registered
- * @param Event packet
+ * @param event packet
  * @return status
  * @note: btstack_type 1
  */
@@ -1244,7 +1277,7 @@ static inline uint8_t sdp_event_service_registered_get_status(const uint8_t * ev
 }
 /**
  * @brief Get field service_record_handle from event sdp_event_service_registered
- * @param Event packet
+ * @param event packet
  * @return service_record_handle
  * @note: btstack_type 4
  */
@@ -1254,7 +1287,7 @@ static inline uint32_t sdp_event_service_registered_get_service_record_handle(co
 
 /**
  * @brief Get field status from event sdp_event_query_complete
- * @param Event packet
+ * @param event packet
  * @return status
  * @note: btstack_type 1
  */
@@ -1264,7 +1297,7 @@ static inline uint8_t sdp_event_query_complete_get_status(const uint8_t * event)
 
 /**
  * @brief Get field rfcomm_channel from event sdp_event_query_rfcomm_service
- * @param Event packet
+ * @param event packet
  * @return rfcomm_channel
  * @note: btstack_type 1
  */
@@ -1273,7 +1306,7 @@ static inline uint8_t sdp_event_query_rfcomm_service_get_rfcomm_channel(const ui
 }
 /**
  * @brief Get field name from event sdp_event_query_rfcomm_service
- * @param Event packet
+ * @param event packet
  * @return name
  * @note: btstack_type T
  */
@@ -1283,7 +1316,7 @@ static inline const char * sdp_event_query_rfcomm_service_get_name(const uint8_t
 
 /**
  * @brief Get field record_id from event sdp_event_query_attribute_byte
- * @param Event packet
+ * @param event packet
  * @return record_id
  * @note: btstack_type 2
  */
@@ -1292,7 +1325,7 @@ static inline uint16_t sdp_event_query_attribute_byte_get_record_id(const uint8_
 }
 /**
  * @brief Get field attribute_id from event sdp_event_query_attribute_byte
- * @param Event packet
+ * @param event packet
  * @return attribute_id
  * @note: btstack_type 2
  */
@@ -1301,7 +1334,7 @@ static inline uint16_t sdp_event_query_attribute_byte_get_attribute_id(const uin
 }
 /**
  * @brief Get field attribute_length from event sdp_event_query_attribute_byte
- * @param Event packet
+ * @param event packet
  * @return attribute_length
  * @note: btstack_type 2
  */
@@ -1310,7 +1343,7 @@ static inline uint16_t sdp_event_query_attribute_byte_get_attribute_length(const
 }
 /**
  * @brief Get field data_offset from event sdp_event_query_attribute_byte
- * @param Event packet
+ * @param event packet
  * @return data_offset
  * @note: btstack_type 2
  */
@@ -1319,7 +1352,7 @@ static inline uint16_t sdp_event_query_attribute_byte_get_data_offset(const uint
 }
 /**
  * @brief Get field data from event sdp_event_query_attribute_byte
- * @param Event packet
+ * @param event packet
  * @return data
  * @note: btstack_type 1
  */
@@ -1329,7 +1362,7 @@ static inline uint8_t sdp_event_query_attribute_byte_get_data(const uint8_t * ev
 
 /**
  * @brief Get field record_id from event sdp_event_query_attribute_value
- * @param Event packet
+ * @param event packet
  * @return record_id
  * @note: btstack_type 2
  */
@@ -1338,7 +1371,7 @@ static inline uint16_t sdp_event_query_attribute_value_get_record_id(const uint8
 }
 /**
  * @brief Get field attribute_id from event sdp_event_query_attribute_value
- * @param Event packet
+ * @param event packet
  * @return attribute_id
  * @note: btstack_type 2
  */
@@ -1347,7 +1380,7 @@ static inline uint16_t sdp_event_query_attribute_value_get_attribute_id(const ui
 }
 /**
  * @brief Get field attribute_length from event sdp_event_query_attribute_value
- * @param Event packet
+ * @param event packet
  * @return attribute_length
  * @note: btstack_type L
  */
@@ -1356,7 +1389,7 @@ static inline int sdp_event_query_attribute_value_get_attribute_length(const uin
 }
 /**
  * @brief Get field attribute_value from event sdp_event_query_attribute_value
- * @param Event packet
+ * @param event packet
  * @return attribute_value
  * @note: btstack_type V
  */
@@ -1366,7 +1399,7 @@ static inline const uint8_t * sdp_event_query_attribute_value_get_attribute_valu
 
 /**
  * @brief Get field total_count from event sdp_event_query_service_record_handle
- * @param Event packet
+ * @param event packet
  * @return total_count
  * @note: btstack_type 2
  */
@@ -1375,7 +1408,7 @@ static inline uint16_t sdp_event_query_service_record_handle_get_total_count(con
 }
 /**
  * @brief Get field record_index from event sdp_event_query_service_record_handle
- * @param Event packet
+ * @param event packet
  * @return record_index
  * @note: btstack_type 2
  */
@@ -1384,7 +1417,7 @@ static inline uint16_t sdp_event_query_service_record_handle_get_record_index(co
 }
 /**
  * @brief Get field record_handle from event sdp_event_query_service_record_handle
- * @param Event packet
+ * @param event packet
  * @return record_handle
  * @note: btstack_type 4
  */
@@ -1395,7 +1428,7 @@ static inline uint32_t sdp_event_query_service_record_handle_get_record_handle(c
 #ifdef ENABLE_BLE
 /**
  * @brief Get field handle from event gatt_event_query_complete
- * @param Event packet
+ * @param event packet
  * @return handle
  * @note: btstack_type H
  */
@@ -1404,7 +1437,7 @@ static inline hci_con_handle_t gatt_event_query_complete_get_handle(const uint8_
 }
 /**
  * @brief Get field status from event gatt_event_query_complete
- * @param Event packet
+ * @param event packet
  * @return status
  * @note: btstack_type 1
  */
@@ -1416,7 +1449,7 @@ static inline uint8_t gatt_event_query_complete_get_status(const uint8_t * event
 #ifdef ENABLE_BLE
 /**
  * @brief Get field handle from event gatt_event_service_query_result
- * @param Event packet
+ * @param event packet
  * @return handle
  * @note: btstack_type H
  */
@@ -1425,7 +1458,7 @@ static inline hci_con_handle_t gatt_event_service_query_result_get_handle(const 
 }
 /**
  * @brief Get field service from event gatt_event_service_query_result
- * @param Event packet
+ * @param event packet
  * @param Pointer to storage for service
  * @note: btstack_type X
  */
@@ -1437,7 +1470,7 @@ static inline void gatt_event_service_query_result_get_service(const uint8_t * e
 #ifdef ENABLE_BLE
 /**
  * @brief Get field handle from event gatt_event_characteristic_query_result
- * @param Event packet
+ * @param event packet
  * @return handle
  * @note: btstack_type H
  */
@@ -1446,7 +1479,7 @@ static inline hci_con_handle_t gatt_event_characteristic_query_result_get_handle
 }
 /**
  * @brief Get field characteristic from event gatt_event_characteristic_query_result
- * @param Event packet
+ * @param event packet
  * @param Pointer to storage for characteristic
  * @note: btstack_type Y
  */
@@ -1458,7 +1491,7 @@ static inline void gatt_event_characteristic_query_result_get_characteristic(con
 #ifdef ENABLE_BLE
 /**
  * @brief Get field handle from event gatt_event_included_service_query_result
- * @param Event packet
+ * @param event packet
  * @return handle
  * @note: btstack_type H
  */
@@ -1467,7 +1500,7 @@ static inline hci_con_handle_t gatt_event_included_service_query_result_get_hand
 }
 /**
  * @brief Get field include_handle from event gatt_event_included_service_query_result
- * @param Event packet
+ * @param event packet
  * @return include_handle
  * @note: btstack_type 2
  */
@@ -1476,7 +1509,7 @@ static inline uint16_t gatt_event_included_service_query_result_get_include_hand
 }
 /**
  * @brief Get field service from event gatt_event_included_service_query_result
- * @param Event packet
+ * @param event packet
  * @param Pointer to storage for service
  * @note: btstack_type X
  */
@@ -1488,7 +1521,7 @@ static inline void gatt_event_included_service_query_result_get_service(const ui
 #ifdef ENABLE_BLE
 /**
  * @brief Get field handle from event gatt_event_all_characteristic_descriptors_query_result
- * @param Event packet
+ * @param event packet
  * @return handle
  * @note: btstack_type H
  */
@@ -1497,7 +1530,7 @@ static inline hci_con_handle_t gatt_event_all_characteristic_descriptors_query_r
 }
 /**
  * @brief Get field characteristic_descriptor from event gatt_event_all_characteristic_descriptors_query_result
- * @param Event packet
+ * @param event packet
  * @param Pointer to storage for characteristic_descriptor
  * @note: btstack_type Z
  */
@@ -1509,7 +1542,7 @@ static inline void gatt_event_all_characteristic_descriptors_query_result_get_ch
 #ifdef ENABLE_BLE
 /**
  * @brief Get field handle from event gatt_event_characteristic_value_query_result
- * @param Event packet
+ * @param event packet
  * @return handle
  * @note: btstack_type H
  */
@@ -1518,7 +1551,7 @@ static inline hci_con_handle_t gatt_event_characteristic_value_query_result_get_
 }
 /**
  * @brief Get field value_handle from event gatt_event_characteristic_value_query_result
- * @param Event packet
+ * @param event packet
  * @return value_handle
  * @note: btstack_type 2
  */
@@ -1527,7 +1560,7 @@ static inline uint16_t gatt_event_characteristic_value_query_result_get_value_ha
 }
 /**
  * @brief Get field value_length from event gatt_event_characteristic_value_query_result
- * @param Event packet
+ * @param event packet
  * @return value_length
  * @note: btstack_type L
  */
@@ -1536,7 +1569,7 @@ static inline int gatt_event_characteristic_value_query_result_get_value_length(
 }
 /**
  * @brief Get field value from event gatt_event_characteristic_value_query_result
- * @param Event packet
+ * @param event packet
  * @return value
  * @note: btstack_type V
  */
@@ -1548,7 +1581,7 @@ static inline const uint8_t * gatt_event_characteristic_value_query_result_get_v
 #ifdef ENABLE_BLE
 /**
  * @brief Get field handle from event gatt_event_long_characteristic_value_query_result
- * @param Event packet
+ * @param event packet
  * @return handle
  * @note: btstack_type H
  */
@@ -1557,7 +1590,7 @@ static inline hci_con_handle_t gatt_event_long_characteristic_value_query_result
 }
 /**
  * @brief Get field value_handle from event gatt_event_long_characteristic_value_query_result
- * @param Event packet
+ * @param event packet
  * @return value_handle
  * @note: btstack_type 2
  */
@@ -1566,7 +1599,7 @@ static inline uint16_t gatt_event_long_characteristic_value_query_result_get_val
 }
 /**
  * @brief Get field value_offset from event gatt_event_long_characteristic_value_query_result
- * @param Event packet
+ * @param event packet
  * @return value_offset
  * @note: btstack_type 2
  */
@@ -1575,7 +1608,7 @@ static inline uint16_t gatt_event_long_characteristic_value_query_result_get_val
 }
 /**
  * @brief Get field value_length from event gatt_event_long_characteristic_value_query_result
- * @param Event packet
+ * @param event packet
  * @return value_length
  * @note: btstack_type L
  */
@@ -1584,7 +1617,7 @@ static inline int gatt_event_long_characteristic_value_query_result_get_value_le
 }
 /**
  * @brief Get field value from event gatt_event_long_characteristic_value_query_result
- * @param Event packet
+ * @param event packet
  * @return value
  * @note: btstack_type V
  */
@@ -1596,7 +1629,7 @@ static inline const uint8_t * gatt_event_long_characteristic_value_query_result_
 #ifdef ENABLE_BLE
 /**
  * @brief Get field handle from event gatt_event_notification
- * @param Event packet
+ * @param event packet
  * @return handle
  * @note: btstack_type H
  */
@@ -1605,7 +1638,7 @@ static inline hci_con_handle_t gatt_event_notification_get_handle(const uint8_t 
 }
 /**
  * @brief Get field value_handle from event gatt_event_notification
- * @param Event packet
+ * @param event packet
  * @return value_handle
  * @note: btstack_type 2
  */
@@ -1614,7 +1647,7 @@ static inline uint16_t gatt_event_notification_get_value_handle(const uint8_t * 
 }
 /**
  * @brief Get field value_length from event gatt_event_notification
- * @param Event packet
+ * @param event packet
  * @return value_length
  * @note: btstack_type L
  */
@@ -1623,7 +1656,7 @@ static inline int gatt_event_notification_get_value_length(const uint8_t * event
 }
 /**
  * @brief Get field value from event gatt_event_notification
- * @param Event packet
+ * @param event packet
  * @return value
  * @note: btstack_type V
  */
@@ -1635,7 +1668,7 @@ static inline const uint8_t * gatt_event_notification_get_value(const uint8_t * 
 #ifdef ENABLE_BLE
 /**
  * @brief Get field handle from event gatt_event_indication
- * @param Event packet
+ * @param event packet
  * @return handle
  * @note: btstack_type H
  */
@@ -1644,7 +1677,7 @@ static inline hci_con_handle_t gatt_event_indication_get_handle(const uint8_t * 
 }
 /**
  * @brief Get field value_handle from event gatt_event_indication
- * @param Event packet
+ * @param event packet
  * @return value_handle
  * @note: btstack_type 2
  */
@@ -1653,7 +1686,7 @@ static inline uint16_t gatt_event_indication_get_value_handle(const uint8_t * ev
 }
 /**
  * @brief Get field value_length from event gatt_event_indication
- * @param Event packet
+ * @param event packet
  * @return value_length
  * @note: btstack_type L
  */
@@ -1662,7 +1695,7 @@ static inline int gatt_event_indication_get_value_length(const uint8_t * event){
 }
 /**
  * @brief Get field value from event gatt_event_indication
- * @param Event packet
+ * @param event packet
  * @return value
  * @note: btstack_type V
  */
@@ -1674,7 +1707,7 @@ static inline const uint8_t * gatt_event_indication_get_value(const uint8_t * ev
 #ifdef ENABLE_BLE
 /**
  * @brief Get field descriptor_handle from event gatt_event_characteristic_descriptor_query_result
- * @param Event packet
+ * @param event packet
  * @return descriptor_handle
  * @note: btstack_type H
  */
@@ -1683,7 +1716,7 @@ static inline hci_con_handle_t gatt_event_characteristic_descriptor_query_result
 }
 /**
  * @brief Get field descriptor_length from event gatt_event_characteristic_descriptor_query_result
- * @param Event packet
+ * @param event packet
  * @return descriptor_length
  * @note: btstack_type 2
  */
@@ -1692,7 +1725,7 @@ static inline uint16_t gatt_event_characteristic_descriptor_query_result_get_des
 }
 /**
  * @brief Get field descriptor from event gatt_event_characteristic_descriptor_query_result
- * @param Event packet
+ * @param event packet
  * @return descriptor
  * @note: btstack_type L
  */
@@ -1704,7 +1737,7 @@ static inline int gatt_event_characteristic_descriptor_query_result_get_descript
 #ifdef ENABLE_BLE
 /**
  * @brief Get field handle from event gatt_event_long_characteristic_descriptor_query_result
- * @param Event packet
+ * @param event packet
  * @return handle
  * @note: btstack_type H
  */
@@ -1713,7 +1746,7 @@ static inline hci_con_handle_t gatt_event_long_characteristic_descriptor_query_r
 }
 /**
  * @brief Get field descriptor_offset from event gatt_event_long_characteristic_descriptor_query_result
- * @param Event packet
+ * @param event packet
  * @return descriptor_offset
  * @note: btstack_type 2
  */
@@ -1722,7 +1755,7 @@ static inline uint16_t gatt_event_long_characteristic_descriptor_query_result_ge
 }
 /**
  * @brief Get field descriptor_length from event gatt_event_long_characteristic_descriptor_query_result
- * @param Event packet
+ * @param event packet
  * @return descriptor_length
  * @note: btstack_type L
  */
@@ -1731,7 +1764,7 @@ static inline int gatt_event_long_characteristic_descriptor_query_result_get_des
 }
 /**
  * @brief Get field descriptor from event gatt_event_long_characteristic_descriptor_query_result
- * @param Event packet
+ * @param event packet
  * @return descriptor
  * @note: btstack_type V
  */
@@ -1743,7 +1776,7 @@ static inline const uint8_t * gatt_event_long_characteristic_descriptor_query_re
 #ifdef ENABLE_BLE
 /**
  * @brief Get field handle from event gatt_event_mtu
- * @param Event packet
+ * @param event packet
  * @return handle
  * @note: btstack_type H
  */
@@ -1752,7 +1785,7 @@ static inline hci_con_handle_t gatt_event_mtu_get_handle(const uint8_t * event){
 }
 /**
  * @brief Get field MTU from event gatt_event_mtu
- * @param Event packet
+ * @param event packet
  * @return MTU
  * @note: btstack_type 2
  */
@@ -1764,7 +1797,7 @@ static inline uint16_t gatt_event_mtu_get_MTU(const uint8_t * event){
 #ifdef ENABLE_BLE
 /**
  * @brief Get field handle from event sm_event_just_works_request
- * @param Event packet
+ * @param event packet
  * @return handle
  * @note: btstack_type H
  */
@@ -1773,7 +1806,7 @@ static inline hci_con_handle_t sm_event_just_works_request_get_handle(const uint
 }
 /**
  * @brief Get field addr_type from event sm_event_just_works_request
- * @param Event packet
+ * @param event packet
  * @return addr_type
  * @note: btstack_type 1
  */
@@ -1782,7 +1815,7 @@ static inline uint8_t sm_event_just_works_request_get_addr_type(const uint8_t * 
 }
 /**
  * @brief Get field address from event sm_event_just_works_request
- * @param Event packet
+ * @param event packet
  * @param Pointer to storage for address
  * @note: btstack_type B
  */
@@ -1794,7 +1827,7 @@ static inline void sm_event_just_works_request_get_address(const uint8_t * event
 #ifdef ENABLE_BLE
 /**
  * @brief Get field handle from event sm_event_just_works_cancel
- * @param Event packet
+ * @param event packet
  * @return handle
  * @note: btstack_type H
  */
@@ -1803,7 +1836,7 @@ static inline hci_con_handle_t sm_event_just_works_cancel_get_handle(const uint8
 }
 /**
  * @brief Get field addr_type from event sm_event_just_works_cancel
- * @param Event packet
+ * @param event packet
  * @return addr_type
  * @note: btstack_type 1
  */
@@ -1812,7 +1845,7 @@ static inline uint8_t sm_event_just_works_cancel_get_addr_type(const uint8_t * e
 }
 /**
  * @brief Get field address from event sm_event_just_works_cancel
- * @param Event packet
+ * @param event packet
  * @param Pointer to storage for address
  * @note: btstack_type B
  */
@@ -1824,7 +1857,7 @@ static inline void sm_event_just_works_cancel_get_address(const uint8_t * event,
 #ifdef ENABLE_BLE
 /**
  * @brief Get field handle from event sm_event_passkey_display_number
- * @param Event packet
+ * @param event packet
  * @return handle
  * @note: btstack_type H
  */
@@ -1833,7 +1866,7 @@ static inline hci_con_handle_t sm_event_passkey_display_number_get_handle(const 
 }
 /**
  * @brief Get field addr_type from event sm_event_passkey_display_number
- * @param Event packet
+ * @param event packet
  * @return addr_type
  * @note: btstack_type 1
  */
@@ -1842,7 +1875,7 @@ static inline uint8_t sm_event_passkey_display_number_get_addr_type(const uint8_
 }
 /**
  * @brief Get field address from event sm_event_passkey_display_number
- * @param Event packet
+ * @param event packet
  * @param Pointer to storage for address
  * @note: btstack_type B
  */
@@ -1851,7 +1884,7 @@ static inline void sm_event_passkey_display_number_get_address(const uint8_t * e
 }
 /**
  * @brief Get field passkey from event sm_event_passkey_display_number
- * @param Event packet
+ * @param event packet
  * @return passkey
  * @note: btstack_type 4
  */
@@ -1863,7 +1896,7 @@ static inline uint32_t sm_event_passkey_display_number_get_passkey(const uint8_t
 #ifdef ENABLE_BLE
 /**
  * @brief Get field handle from event sm_event_passkey_display_cancel
- * @param Event packet
+ * @param event packet
  * @return handle
  * @note: btstack_type H
  */
@@ -1872,7 +1905,7 @@ static inline hci_con_handle_t sm_event_passkey_display_cancel_get_handle(const 
 }
 /**
  * @brief Get field addr_type from event sm_event_passkey_display_cancel
- * @param Event packet
+ * @param event packet
  * @return addr_type
  * @note: btstack_type 1
  */
@@ -1881,7 +1914,7 @@ static inline uint8_t sm_event_passkey_display_cancel_get_addr_type(const uint8_
 }
 /**
  * @brief Get field address from event sm_event_passkey_display_cancel
- * @param Event packet
+ * @param event packet
  * @param Pointer to storage for address
  * @note: btstack_type B
  */
@@ -1893,7 +1926,7 @@ static inline void sm_event_passkey_display_cancel_get_address(const uint8_t * e
 #ifdef ENABLE_BLE
 /**
  * @brief Get field handle from event sm_event_passkey_input_number
- * @param Event packet
+ * @param event packet
  * @return handle
  * @note: btstack_type H
  */
@@ -1902,7 +1935,7 @@ static inline hci_con_handle_t sm_event_passkey_input_number_get_handle(const ui
 }
 /**
  * @brief Get field addr_type from event sm_event_passkey_input_number
- * @param Event packet
+ * @param event packet
  * @return addr_type
  * @note: btstack_type 1
  */
@@ -1911,7 +1944,7 @@ static inline uint8_t sm_event_passkey_input_number_get_addr_type(const uint8_t 
 }
 /**
  * @brief Get field address from event sm_event_passkey_input_number
- * @param Event packet
+ * @param event packet
  * @param Pointer to storage for address
  * @note: btstack_type B
  */
@@ -1923,7 +1956,7 @@ static inline void sm_event_passkey_input_number_get_address(const uint8_t * eve
 #ifdef ENABLE_BLE
 /**
  * @brief Get field handle from event sm_event_passkey_input_cancel
- * @param Event packet
+ * @param event packet
  * @return handle
  * @note: btstack_type H
  */
@@ -1932,7 +1965,7 @@ static inline hci_con_handle_t sm_event_passkey_input_cancel_get_handle(const ui
 }
 /**
  * @brief Get field addr_type from event sm_event_passkey_input_cancel
- * @param Event packet
+ * @param event packet
  * @return addr_type
  * @note: btstack_type 1
  */
@@ -1941,7 +1974,7 @@ static inline uint8_t sm_event_passkey_input_cancel_get_addr_type(const uint8_t 
 }
 /**
  * @brief Get field address from event sm_event_passkey_input_cancel
- * @param Event packet
+ * @param event packet
  * @param Pointer to storage for address
  * @note: btstack_type B
  */
@@ -1953,7 +1986,7 @@ static inline void sm_event_passkey_input_cancel_get_address(const uint8_t * eve
 #ifdef ENABLE_BLE
 /**
  * @brief Get field handle from event sm_event_identity_resolving_started
- * @param Event packet
+ * @param event packet
  * @return handle
  * @note: btstack_type H
  */
@@ -1962,7 +1995,7 @@ static inline hci_con_handle_t sm_event_identity_resolving_started_get_handle(co
 }
 /**
  * @brief Get field addr_type from event sm_event_identity_resolving_started
- * @param Event packet
+ * @param event packet
  * @return addr_type
  * @note: btstack_type 1
  */
@@ -1971,7 +2004,7 @@ static inline uint8_t sm_event_identity_resolving_started_get_addr_type(const ui
 }
 /**
  * @brief Get field address from event sm_event_identity_resolving_started
- * @param Event packet
+ * @param event packet
  * @param Pointer to storage for address
  * @note: btstack_type B
  */
@@ -1983,7 +2016,7 @@ static inline void sm_event_identity_resolving_started_get_address(const uint8_t
 #ifdef ENABLE_BLE
 /**
  * @brief Get field handle from event sm_event_identity_resolving_failed
- * @param Event packet
+ * @param event packet
  * @return handle
  * @note: btstack_type H
  */
@@ -1992,7 +2025,7 @@ static inline hci_con_handle_t sm_event_identity_resolving_failed_get_handle(con
 }
 /**
  * @brief Get field addr_type from event sm_event_identity_resolving_failed
- * @param Event packet
+ * @param event packet
  * @return addr_type
  * @note: btstack_type 1
  */
@@ -2001,7 +2034,7 @@ static inline uint8_t sm_event_identity_resolving_failed_get_addr_type(const uin
 }
 /**
  * @brief Get field address from event sm_event_identity_resolving_failed
- * @param Event packet
+ * @param event packet
  * @param Pointer to storage for address
  * @note: btstack_type B
  */
@@ -2013,7 +2046,7 @@ static inline void sm_event_identity_resolving_failed_get_address(const uint8_t 
 #ifdef ENABLE_BLE
 /**
  * @brief Get field handle from event sm_event_identity_resolving_succeeded
- * @param Event packet
+ * @param event packet
  * @return handle
  * @note: btstack_type H
  */
@@ -2022,7 +2055,7 @@ static inline hci_con_handle_t sm_event_identity_resolving_succeeded_get_handle(
 }
 /**
  * @brief Get field addr_type from event sm_event_identity_resolving_succeeded
- * @param Event packet
+ * @param event packet
  * @return addr_type
  * @note: btstack_type 1
  */
@@ -2031,7 +2064,7 @@ static inline uint8_t sm_event_identity_resolving_succeeded_get_addr_type(const 
 }
 /**
  * @brief Get field address from event sm_event_identity_resolving_succeeded
- * @param Event packet
+ * @param event packet
  * @param Pointer to storage for address
  * @note: btstack_type B
  */
@@ -2040,7 +2073,7 @@ static inline void sm_event_identity_resolving_succeeded_get_address(const uint8
 }
 /**
  * @brief Get field le_device_db_index from event sm_event_identity_resolving_succeeded
- * @param Event packet
+ * @param event packet
  * @return le_device_db_index
  * @note: btstack_type 2
  */
@@ -2052,7 +2085,7 @@ static inline uint16_t sm_event_identity_resolving_succeeded_get_le_device_db_in
 #ifdef ENABLE_BLE
 /**
  * @brief Get field handle from event sm_event_authorization_request
- * @param Event packet
+ * @param event packet
  * @return handle
  * @note: btstack_type H
  */
@@ -2061,7 +2094,7 @@ static inline hci_con_handle_t sm_event_authorization_request_get_handle(const u
 }
 /**
  * @brief Get field addr_type from event sm_event_authorization_request
- * @param Event packet
+ * @param event packet
  * @return addr_type
  * @note: btstack_type 1
  */
@@ -2070,7 +2103,7 @@ static inline uint8_t sm_event_authorization_request_get_addr_type(const uint8_t
 }
 /**
  * @brief Get field address from event sm_event_authorization_request
- * @param Event packet
+ * @param event packet
  * @param Pointer to storage for address
  * @note: btstack_type B
  */
@@ -2082,7 +2115,7 @@ static inline void sm_event_authorization_request_get_address(const uint8_t * ev
 #ifdef ENABLE_BLE
 /**
  * @brief Get field handle from event sm_event_authorization_result
- * @param Event packet
+ * @param event packet
  * @return handle
  * @note: btstack_type H
  */
@@ -2091,7 +2124,7 @@ static inline hci_con_handle_t sm_event_authorization_result_get_handle(const ui
 }
 /**
  * @brief Get field addr_type from event sm_event_authorization_result
- * @param Event packet
+ * @param event packet
  * @return addr_type
  * @note: btstack_type 1
  */
@@ -2100,7 +2133,7 @@ static inline uint8_t sm_event_authorization_result_get_addr_type(const uint8_t 
 }
 /**
  * @brief Get field address from event sm_event_authorization_result
- * @param Event packet
+ * @param event packet
  * @param Pointer to storage for address
  * @note: btstack_type B
  */
@@ -2109,7 +2142,7 @@ static inline void sm_event_authorization_result_get_address(const uint8_t * eve
 }
 /**
  * @brief Get field authorization_result from event sm_event_authorization_result
- * @param Event packet
+ * @param event packet
  * @return authorization_result
  * @note: btstack_type 1
  */
@@ -2119,8 +2152,63 @@ static inline uint8_t sm_event_authorization_result_get_authorization_result(con
 #endif
 
 /**
+ * @brief Get field advertising_event_type from event gap_le_event_advertising_report
+ * @param event packet
+ * @return advertising_event_type
+ * @note: btstack_type 1
+ */
+static inline uint8_t gap_le_event_advertising_report_get_advertising_event_type(const uint8_t * event){
+    return event[2];
+}
+/**
+ * @brief Get field address_type from event gap_le_event_advertising_report
+ * @param event packet
+ * @return address_type
+ * @note: btstack_type 1
+ */
+static inline uint8_t gap_le_event_advertising_report_get_address_type(const uint8_t * event){
+    return event[3];
+}
+/**
+ * @brief Get field address from event gap_le_event_advertising_report
+ * @param event packet
+ * @param Pointer to storage for address
+ * @note: btstack_type B
+ */
+static inline void gap_le_event_advertising_report_get_address(const uint8_t * event, bd_addr_t address){
+    reverse_bd_addr(&event[4], address);    
+}
+/**
+ * @brief Get field rssi from event gap_le_event_advertising_report
+ * @param event packet
+ * @return rssi
+ * @note: btstack_type 1
+ */
+static inline uint8_t gap_le_event_advertising_report_get_rssi(const uint8_t * event){
+    return event[10];
+}
+/**
+ * @brief Get field data_length from event gap_le_event_advertising_report
+ * @param event packet
+ * @return data_length
+ * @note: btstack_type J
+ */
+static inline int gap_le_event_advertising_report_get_data_length(const uint8_t * event){
+    return event[11];
+}
+/**
+ * @brief Get field data from event gap_le_event_advertising_report
+ * @param event packet
+ * @return data
+ * @note: btstack_type V
+ */
+static inline const uint8_t * gap_le_event_advertising_report_get_data(const uint8_t * event){
+    return &event[12];
+}
+
+/**
  * @brief Get field subevent_code from event hsp_subevent_audio_connection_complete
- * @param Event packet
+ * @param event packet
  * @return subevent_code
  * @note: btstack_type 1
  */
@@ -2129,7 +2217,7 @@ static inline uint8_t hsp_subevent_audio_connection_complete_get_subevent_code(c
 }
 /**
  * @brief Get field status from event hsp_subevent_audio_connection_complete
- * @param Event packet
+ * @param event packet
  * @return status
  * @note: btstack_type 1
  */
@@ -2138,7 +2226,7 @@ static inline uint8_t hsp_subevent_audio_connection_complete_get_status(const ui
 }
 /**
  * @brief Get field handle from event hsp_subevent_audio_connection_complete
- * @param Event packet
+ * @param event packet
  * @return handle
  * @note: btstack_type H
  */
@@ -2148,7 +2236,7 @@ static inline hci_con_handle_t hsp_subevent_audio_connection_complete_get_handle
 
 /**
  * @brief Get field subevent_code from event hsp_subevent_audio_disconnection_complete
- * @param Event packet
+ * @param event packet
  * @return subevent_code
  * @note: btstack_type 1
  */
@@ -2157,7 +2245,7 @@ static inline uint8_t hsp_subevent_audio_disconnection_complete_get_subevent_cod
 }
 /**
  * @brief Get field status from event hsp_subevent_audio_disconnection_complete
- * @param Event packet
+ * @param event packet
  * @return status
  * @note: btstack_type 1
  */
@@ -2167,7 +2255,7 @@ static inline uint8_t hsp_subevent_audio_disconnection_complete_get_status(const
 
 /**
  * @brief Get field subevent_code from event hsp_subevent_ring
- * @param Event packet
+ * @param event packet
  * @return subevent_code
  * @note: btstack_type 1
  */
@@ -2177,7 +2265,7 @@ static inline uint8_t hsp_subevent_ring_get_subevent_code(const uint8_t * event)
 
 /**
  * @brief Get field subevent_code from event hsp_subevent_microphone_gain_changed
- * @param Event packet
+ * @param event packet
  * @return subevent_code
  * @note: btstack_type 1
  */
@@ -2186,7 +2274,7 @@ static inline uint8_t hsp_subevent_microphone_gain_changed_get_subevent_code(con
 }
 /**
  * @brief Get field gain from event hsp_subevent_microphone_gain_changed
- * @param Event packet
+ * @param event packet
  * @return gain
  * @note: btstack_type 1
  */
@@ -2196,7 +2284,7 @@ static inline uint8_t hsp_subevent_microphone_gain_changed_get_gain(const uint8_
 
 /**
  * @brief Get field subevent_code from event hsp_subevent_speaker_gain_changed
- * @param Event packet
+ * @param event packet
  * @return subevent_code
  * @note: btstack_type 1
  */
@@ -2205,7 +2293,7 @@ static inline uint8_t hsp_subevent_speaker_gain_changed_get_subevent_code(const 
 }
 /**
  * @brief Get field gain from event hsp_subevent_speaker_gain_changed
- * @param Event packet
+ * @param event packet
  * @return gain
  * @note: btstack_type 1
  */
@@ -2215,7 +2303,7 @@ static inline uint8_t hsp_subevent_speaker_gain_changed_get_gain(const uint8_t *
 
 /**
  * @brief Get field subevent_code from event hsp_subevent_hs_command
- * @param Event packet
+ * @param event packet
  * @return subevent_code
  * @note: btstack_type 1
  */
@@ -2224,7 +2312,7 @@ static inline uint8_t hsp_subevent_hs_command_get_subevent_code(const uint8_t * 
 }
 /**
  * @brief Get field value_length from event hsp_subevent_hs_command
- * @param Event packet
+ * @param event packet
  * @return value_length
  * @note: btstack_type J
  */
@@ -2233,7 +2321,7 @@ static inline int hsp_subevent_hs_command_get_value_length(const uint8_t * event
 }
 /**
  * @brief Get field value from event hsp_subevent_hs_command
- * @param Event packet
+ * @param event packet
  * @return value
  * @note: btstack_type V
  */
@@ -2243,7 +2331,7 @@ static inline const uint8_t * hsp_subevent_hs_command_get_value(const uint8_t * 
 
 /**
  * @brief Get field subevent_code from event hsp_subevent_ag_indication
- * @param Event packet
+ * @param event packet
  * @return subevent_code
  * @note: btstack_type 1
  */
@@ -2252,7 +2340,7 @@ static inline uint8_t hsp_subevent_ag_indication_get_subevent_code(const uint8_t
 }
 /**
  * @brief Get field value_length from event hsp_subevent_ag_indication
- * @param Event packet
+ * @param event packet
  * @return value_length
  * @note: btstack_type J
  */
@@ -2261,7 +2349,7 @@ static inline int hsp_subevent_ag_indication_get_value_length(const uint8_t * ev
 }
 /**
  * @brief Get field value from event hsp_subevent_ag_indication
- * @param Event packet
+ * @param event packet
  * @return value
  * @note: btstack_type V
  */
@@ -2272,7 +2360,7 @@ static inline const uint8_t * hsp_subevent_ag_indication_get_value(const uint8_t
 #ifdef ENABLE_BLE
 /**
  * @brief Get field subevent_code from event ancs_subevent_client_connected
- * @param Event packet
+ * @param event packet
  * @return subevent_code
  * @note: btstack_type 1
  */
@@ -2281,7 +2369,7 @@ static inline uint8_t ancs_subevent_client_connected_get_subevent_code(const uin
 }
 /**
  * @brief Get field handle from event ancs_subevent_client_connected
- * @param Event packet
+ * @param event packet
  * @return handle
  * @note: btstack_type H
  */
@@ -2293,7 +2381,7 @@ static inline hci_con_handle_t ancs_subevent_client_connected_get_handle(const u
 #ifdef ENABLE_BLE
 /**
  * @brief Get field subevent_code from event ancs_subevent_client_notification
- * @param Event packet
+ * @param event packet
  * @return subevent_code
  * @note: btstack_type 1
  */
@@ -2302,7 +2390,7 @@ static inline uint8_t ancs_subevent_client_notification_get_subevent_code(const 
 }
 /**
  * @brief Get field handle from event ancs_subevent_client_notification
- * @param Event packet
+ * @param event packet
  * @return handle
  * @note: btstack_type H
  */
@@ -2311,7 +2399,7 @@ static inline hci_con_handle_t ancs_subevent_client_notification_get_handle(cons
 }
 /**
  * @brief Get field attribute_id from event ancs_subevent_client_notification
- * @param Event packet
+ * @param event packet
  * @return attribute_id
  * @note: btstack_type 2
  */
@@ -2320,7 +2408,7 @@ static inline uint16_t ancs_subevent_client_notification_get_attribute_id(const 
 }
 /**
  * @brief Get field text from event ancs_subevent_client_notification
- * @param Event packet
+ * @param event packet
  * @return text
  * @note: btstack_type T
  */
@@ -2332,7 +2420,7 @@ static inline const char * ancs_subevent_client_notification_get_text(const uint
 #ifdef ENABLE_BLE
 /**
  * @brief Get field subevent_code from event ancs_subevent_client_disconnected
- * @param Event packet
+ * @param event packet
  * @return subevent_code
  * @note: btstack_type 1
  */
@@ -2341,7 +2429,7 @@ static inline uint8_t ancs_subevent_client_disconnected_get_subevent_code(const 
 }
 /**
  * @brief Get field handle from event ancs_subevent_client_disconnected
- * @param Event packet
+ * @param event packet
  * @return handle
  * @note: btstack_type H
  */

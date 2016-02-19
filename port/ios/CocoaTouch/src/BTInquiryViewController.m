@@ -127,7 +127,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 			
 		case HCI_EVENT_PACKET:
 			
-			switch (packet[0]){
+			switch (hci_event_packet_get_type(packet)){
 					
 				case BTSTACK_EVENT_STATE:
 					// bt stack activated
@@ -172,7 +172,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 						[dev setAddress:addr];
 						[dev setPageScanRepetitionMode:packet[offset]];
 						offset += 1;
-                        switch (packet[0]) {
+                        switch (hci_event_packet_get_type(packet)) {
                             case HCI_EVENT_INQUIRY_RESULT:
                             	offset += 2; // Reserved + Reserved
                                 [dev setClassOfDevice:little_endian_read_24(packet, 3 + numResponses*(6+1+1+1)   + i*3)];

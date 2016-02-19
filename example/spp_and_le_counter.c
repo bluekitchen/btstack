@@ -52,27 +52,8 @@
 #include <string.h>
 #include <inttypes.h>
  
-#include "btstack_config.h"
-
-#include "btstack_run_loop.h"
-#include "classic/sdp_util.h"
-
-#include "btstack_debug.h"
-#include "btstack_memory.h"
-#include "hci.h"
-#include "hci_dump.h"
-
-#include "l2cap.h"
-
-#include "classic/rfcomm.h"
-
-#include "classic/sdp_server.h"
+#include "btstack.h"
 #include "spp_and_le_counter.h"
-
-#include "ble/att_db.h"
-#include "ble/att_server.h"
-#include "ble/le_device_db.h"
-#include "ble/sm.h"
 
 #define RFCOMM_SERVER_CHANNEL 1
 #define HEARTBEAT_PERIOD_MS 1000
@@ -120,7 +101,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 
 	switch (packet_type) {
 		case HCI_EVENT_PACKET:
-			switch (packet[0]) {
+			switch (hci_event_packet_get_type(packet)) {
 				case HCI_EVENT_PIN_CODE_REQUEST:
 					// inform about pin code request
                     printf("Pin code request - using '0000'\n");

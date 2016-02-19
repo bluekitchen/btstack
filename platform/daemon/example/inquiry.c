@@ -114,7 +114,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 	// printf("packet_handler: pt: 0x%02x, packet[0]: 0x%02x\n", packet_type, packet[0]);
 	if (packet_type != HCI_EVENT_PACKET) return;
 
-	uint8_t event = packet[0];
+	uint8_t event = hci_event_packet_get_type(packet);
 
 	switch(state){
 

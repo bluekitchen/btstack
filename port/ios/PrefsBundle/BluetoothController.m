@@ -32,6 +32,7 @@
 #import "BluetoothController.h"
 #include "btstack_run_loop.h"
 #include "btstack_run_loop_cocoa.h"
+#include "btstack_event.h"
 
 #pragma mark callback handler
 static void btstackStoppedCallback(CFNotificationCenterRef  center,
@@ -179,7 +180,7 @@ static BluetoothController* sharedInstance = nil;
     // NSLog(@"bt_packet_handler event: %u, state %u", packet[0], state);
     
     // update state
-    switch(packet[0]){
+    switch(hci_event_packet_get_type(packet)){
         case BTSTACK_EVENT_STATE:
             hci_state = packet[2];
             // NSLog(@"new BTSTACK_EVENT_STATE %u", hci_state);
@@ -195,7 +196,7 @@ static BluetoothController* sharedInstance = nil;
     switch(state){
             
         case kIdle:
-            if (packet[0] == BTSTACK_EVENT_STATE) {
+            if (hci_event_packet_get_type(packet) == BTSTACK_EVENT_STATE) {
                 if (hci_state == HCI_STATE_OFF) {
                     bt_send_cmd(&btstack_get_system_bluetooth_enabled);
                 } else {
@@ -205,7 +206,7 @@ static BluetoothController* sharedInstance = nil;
             break;
             
         case kW4SystemOffToEnableBTstack:
-            if (packet[0] == DAEMON_EVENT_SYSTEM_BLUETOOTH_ENABLED) {
+            if (hci_event_packet_get_type(packet) == DAEMON_EVENT_SYSTEM_BLUETOOTH_ENABLED) {
                 if (system_bluetooth == 0){
                     bt_send_cmd(&btstack_set_power_mode, HCI_POWER_ON);
                     state = kIdle;
@@ -214,13 +215,13 @@ static BluetoothController* sharedInstance = nil;
             break;
             
         case kW4BTstackOffToEnableSystem:
-            if (packet[0] == BTSTACK_EVENT_STATE) {
+            if (hci_event_packet_get_type(packet) == BTSTACK_EVENT_STATE) {
                 if (hci_state == HCI_STATE_OFF) {
                     // NSLog(@"Sending set system bluetooth enable A");
                     bt_send_cmd(&btstack_set_system_bluetooth_enabled, 1);
                 }
             }
-            if (packet[0] == DAEMON_EVENT_SYSTEM_BLUETOOTH_ENABLED) {
+            if (hci_event_packet_get_type(packet) == DAEMON_EVENT_SYSTEM_BLUETOOTH_ENABLED) {
                 if (system_bluetooth == 0){
                     // NSLog(@"Sending set system bluetooth enable B");
                     bt_send_cmd(&btstack_set_system_bluetooth_enabled, 1);

@@ -157,7 +157,7 @@ static float addToHistory(int history[histSize], int value){
 
 		case HCI_EVENT_PACKET:
 			
-			switch (packet[0]){
+			switch (hci_event_packet_get_type(packet)){
 
 				case HCI_EVENT_COMMAND_COMPLETE:
 					if ( COMMAND_COMPLETE_EVENT(packet, hci_write_authentication_enable) ) {

@@ -1399,7 +1399,7 @@ static void deamon_status_event_handler(uint8_t *packet, uint16_t size){
     uint8_t update_status = 0;
     
     // handle state event
-    switch (packet[0]) {
+    switch (hci_event_packet_get_type(packet)) {
         case BTSTACK_EVENT_STATE:
             hci_state = packet[2];
             log_info("New state: %u\n", hci_state);
@@ -1502,7 +1502,7 @@ static void daemon_packet_handler(void * connection, uint8_t packet_type, uint16
     switch (packet_type) {
         case HCI_EVENT_PACKET:
             deamon_status_event_handler(packet, size);
-            switch (packet[0]){
+            switch (hci_event_packet_get_type(packet)){
 
                 case HCI_EVENT_NUMBER_OF_COMPLETED_PACKETS:
                     // ACL buffer freed...
@@ -1628,7 +1628,7 @@ static void rfcomm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t
 }
 
 static void handle_sdp_rfcomm_service_result(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    switch (packet[0]){
+    switch (hci_event_packet_get_type(packet)){
         case SDP_EVENT_QUERY_RFCOMM_SERVICE:
         case SDP_EVENT_QUERY_COMPLETE:
             // already HCI Events, just forward them
@@ -1650,7 +1650,7 @@ static void sdp_client_assert_buffer(int size){
 static void handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     int event_len;
 
-    switch (packet[0]){
+    switch (hci_event_packet_get_type(packet)){
         case SDP_EVENT_QUERY_ATTRIBUTE_BYTE:
             sdp_client_assert_buffer(sdp_event_query_attribute_byte_get_attribute_length(packet));
             attribute_value[sdp_event_query_attribute_byte_get_data_offset(packet)] = sdp_event_query_attribute_byte_get_data(packet);
@@ -1804,7 +1804,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
 
     // hack: handle disconnection_complete_here instead of main hci event packet handler
     // we receive a HCI event packet in disguise
-    if (packet[0] == HCI_EVENT_DISCONNECTION_COMPLETE){
+    if (hci_event_packet_get_type(packet) == HCI_EVENT_DISCONNECTION_COMPLETE){
         log_info("daemon hack: handle disconnection_complete in handle_gatt_client_event instead of main hci event packet handler");
         hci_con_handle_t con_handle = little_endian_read_16(packet, 3);
         daemon_remove_gatt_client_helper(con_handle);
@@ -1812,7 +1812,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
     }
 
     // only handle GATT Events
-    switch(packet[0]){
+    switch(hci_event_packet_get_type(packet)){
         case GATT_EVENT_SERVICE_QUERY_RESULT:
         case GATT_EVENT_INCLUDED_SERVICE_QUERY_RESULT:
         case GATT_EVENT_NOTIFICATION:
@@ -1839,7 +1839,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
     connection_t *connection = NULL;
 
     // daemon doesn't track which connection subscribed to this particular handle, so we just notify all connections
-    switch(packet[0]){
+    switch(hci_event_packet_get_type(packet)){
         case GATT_EVENT_NOTIFICATION:
         case GATT_EVENT_INDICATION:{
             hci_dump_packet(HCI_EVENT_PACKET, 0, packet, size);
@@ -1862,7 +1862,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
 
     if (!connection) return;
 
-    switch(packet[0]){
+    switch(hci_event_packet_get_type(packet)){
 
         case GATT_EVENT_SERVICE_QUERY_RESULT:
         case GATT_EVENT_INCLUDED_SERVICE_QUERY_RESULT:
@@ -1878,7 +1878,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
         case GATT_EVENT_LONG_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT:
             offset = little_endian_read_16(packet, 6);
             length = little_endian_read_16(packet, 8);
-            gatt_client_helper->characteristic_buffer[0] = packet[0];               // store type (characteristic/descriptor)
+            gatt_client_helper->characteristic_buffer[0] = hci_event_packet_get_type(packet);  // store type (characteristic/descriptor)
             gatt_client_helper->characteristic_handle    = little_endian_read_16(packet, 4);   // store attribute handle
             gatt_client_helper->characteristic_length = offset + length;            // update length
             memcpy(&gatt_client_helper->characteristic_buffer[10 + offset], &packet[10], length);

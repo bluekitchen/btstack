@@ -50,11 +50,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "hci_cmd.h"
-
-#include "btstack_memory.h"
-#include "hci.h"
-#include "ble/ad_parser.h"
+#include "btstack.h"
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
@@ -235,7 +231,7 @@ static void dump_advertisement_data(uint8_t * adv_data, uint8_t adv_size){
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     if (packet_type != HCI_EVENT_PACKET) return;
     
-    switch (packet[0]) {
+    switch (hci_event_packet_get_type(packet)) {
         case BTSTACK_EVENT_STATE:
             // BTstack activated, get started
             if (packet[2] == HCI_STATE_WORKING) {

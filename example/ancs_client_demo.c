@@ -87,9 +87,9 @@ static btstack_packet_callback_registration_t sm_event_callback_registration;
 static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     switch (packet_type) {
         case HCI_EVENT_PACKET:
-            switch (packet[0]) {
+            switch (hci_event_packet_get_type(packet)) {
                 case BTSTACK_EVENT_STATE:
-                    if (packet[2] == HCI_STATE_WORKING) {
+                    if (btstack_event_state_get_state(packet) == HCI_STATE_WORKING) {
                         printf("ANCS Client Demo ready.\n");
                     }
                     break;
@@ -107,8 +107,8 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
 
 static void ancs_callback(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     const char * attribute_name;
-    if (packet[0] != HCI_EVENT_ANCS_META) return;
-    switch (packet[2]){
+    if (hci_event_packet_get_type(packet) != HCI_EVENT_ANCS_META) return;
+    switch (hci_event_ancs_meta_get_subevent_code(packet)){
         case ANCS_SUBEVENT_CLIENT_CONNECTED:
             printf("ANCS Client: Connected\n");
             break;

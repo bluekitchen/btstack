@@ -69,7 +69,6 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 	int i;
 	uint8_t status;
 	
-	//printf("packet_handler: pt: 0x%02x, packet[0]: 0x%02x\n", packet_type, packet[0]);
 	switch (packet_type) {
 			
 		case L2CAP_DATA_PACKET:
@@ -80,7 +79,7 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 			
 		case HCI_EVENT_PACKET:
 			
-			switch (packet[0]) {
+			switch (hci_event_packet_get_type(packet)) {
 
 				case BTSTACK_EVENT_POWERON_FAILED:
 					printf("HCI Init failed - make sure you have turned off Bluetooth in the System Settings\n");
