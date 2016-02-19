@@ -715,15 +715,6 @@ static inline hci_con_handle_t hci_event_encryption_key_refresh_complete_get_han
 }
 
 /**
- * @brief Get field subevent_code from event hci_subevent_le_connection_complete
- * @param event packet
- * @return subevent_code
- * @note: btstack_type 1
- */
-static inline uint8_t hci_subevent_le_connection_complete_get_subevent_code(const uint8_t * event){
-    return event[2];
-}
-/**
  * @brief Get field status from event hci_subevent_le_connection_complete
  * @param event packet
  * @return status
@@ -2207,15 +2198,6 @@ static inline const uint8_t * gap_le_event_advertising_report_get_data(const uin
 }
 
 /**
- * @brief Get field subevent_code from event hsp_subevent_audio_connection_complete
- * @param event packet
- * @return subevent_code
- * @note: btstack_type 1
- */
-static inline uint8_t hsp_subevent_audio_connection_complete_get_subevent_code(const uint8_t * event){
-    return event[2];
-}
-/**
  * @brief Get field status from event hsp_subevent_audio_connection_complete
  * @param event packet
  * @return status
@@ -2235,15 +2217,6 @@ static inline hci_con_handle_t hsp_subevent_audio_connection_complete_get_handle
 }
 
 /**
- * @brief Get field subevent_code from event hsp_subevent_audio_disconnection_complete
- * @param event packet
- * @return subevent_code
- * @note: btstack_type 1
- */
-static inline uint8_t hsp_subevent_audio_disconnection_complete_get_subevent_code(const uint8_t * event){
-    return event[2];
-}
-/**
  * @brief Get field status from event hsp_subevent_audio_disconnection_complete
  * @param event packet
  * @return status
@@ -2253,25 +2226,7 @@ static inline uint8_t hsp_subevent_audio_disconnection_complete_get_status(const
     return event[3];
 }
 
-/**
- * @brief Get field subevent_code from event hsp_subevent_ring
- * @param event packet
- * @return subevent_code
- * @note: btstack_type 1
- */
-static inline uint8_t hsp_subevent_ring_get_subevent_code(const uint8_t * event){
-    return event[2];
-}
 
-/**
- * @brief Get field subevent_code from event hsp_subevent_microphone_gain_changed
- * @param event packet
- * @return subevent_code
- * @note: btstack_type 1
- */
-static inline uint8_t hsp_subevent_microphone_gain_changed_get_subevent_code(const uint8_t * event){
-    return event[2];
-}
 /**
  * @brief Get field gain from event hsp_subevent_microphone_gain_changed
  * @param event packet
@@ -2283,15 +2238,6 @@ static inline uint8_t hsp_subevent_microphone_gain_changed_get_gain(const uint8_
 }
 
 /**
- * @brief Get field subevent_code from event hsp_subevent_speaker_gain_changed
- * @param event packet
- * @return subevent_code
- * @note: btstack_type 1
- */
-static inline uint8_t hsp_subevent_speaker_gain_changed_get_subevent_code(const uint8_t * event){
-    return event[2];
-}
-/**
  * @brief Get field gain from event hsp_subevent_speaker_gain_changed
  * @param event packet
  * @return gain
@@ -2301,15 +2247,6 @@ static inline uint8_t hsp_subevent_speaker_gain_changed_get_gain(const uint8_t *
     return event[3];
 }
 
-/**
- * @brief Get field subevent_code from event hsp_subevent_hs_command
- * @param event packet
- * @return subevent_code
- * @note: btstack_type 1
- */
-static inline uint8_t hsp_subevent_hs_command_get_subevent_code(const uint8_t * event){
-    return event[2];
-}
 /**
  * @brief Get field value_length from event hsp_subevent_hs_command
  * @param event packet
@@ -2329,15 +2266,6 @@ static inline const uint8_t * hsp_subevent_hs_command_get_value(const uint8_t * 
     return &event[4];
 }
 
-/**
- * @brief Get field subevent_code from event hsp_subevent_ag_indication
- * @param event packet
- * @return subevent_code
- * @note: btstack_type 1
- */
-static inline uint8_t hsp_subevent_ag_indication_get_subevent_code(const uint8_t * event){
-    return event[2];
-}
 /**
  * @brief Get field value_length from event hsp_subevent_ag_indication
  * @param event packet
@@ -2359,15 +2287,6 @@ static inline const uint8_t * hsp_subevent_ag_indication_get_value(const uint8_t
 
 #ifdef ENABLE_BLE
 /**
- * @brief Get field subevent_code from event ancs_subevent_client_connected
- * @param event packet
- * @return subevent_code
- * @note: btstack_type 1
- */
-static inline uint8_t ancs_subevent_client_connected_get_subevent_code(const uint8_t * event){
-    return event[2];
-}
-/**
  * @brief Get field handle from event ancs_subevent_client_connected
  * @param event packet
  * @return handle
@@ -2379,15 +2298,6 @@ static inline hci_con_handle_t ancs_subevent_client_connected_get_handle(const u
 #endif
 
 #ifdef ENABLE_BLE
-/**
- * @brief Get field subevent_code from event ancs_subevent_client_notification
- * @param event packet
- * @return subevent_code
- * @note: btstack_type 1
- */
-static inline uint8_t ancs_subevent_client_notification_get_subevent_code(const uint8_t * event){
-    return event[2];
-}
 /**
  * @brief Get field handle from event ancs_subevent_client_notification
  * @param event packet
@@ -2418,15 +2328,6 @@ static inline const char * ancs_subevent_client_notification_get_text(const uint
 #endif
 
 #ifdef ENABLE_BLE
-/**
- * @brief Get field subevent_code from event ancs_subevent_client_disconnected
- * @param event packet
- * @return subevent_code
- * @note: btstack_type 1
- */
-static inline uint8_t ancs_subevent_client_disconnected_get_subevent_code(const uint8_t * event){
-    return event[2];
-}
 /**
  * @brief Get field handle from event ancs_subevent_client_disconnected
  * @param event packet

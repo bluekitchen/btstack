@@ -249,6 +249,9 @@ def create_events(events):
                 fout.write("#ifdef ENABLE_BLE\n")
             for f, arg in zip(format, args):
                 field_name = arg
+                if field_name.lower() == 'subevent_code':
+                    offset += 1
+                    continue
                 field_type = f 
                 text = create_getter(event_name, field_name, field_type, offset, supported)
                 fout.write(text)
