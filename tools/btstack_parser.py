@@ -74,7 +74,7 @@ def my_parse_events(path):
                     elif key.lower().startswith('hsp_subevent_'):
                         hsp_events.append((value, key.lower().replace('hsp_subevent_', 'hsp_event_'), format, params))
                     elif key.lower().startswith('hfp_subevent_'):
-                        hfp.append((value, key.lower().replace('hfp_subevent_', 'hfp_event_'), format, params))
+                        hfp_events.append((value, key.lower().replace('hfp_subevent_', 'hfp_event_'), format, params))
                     else:
                         events.append((value, key, format, params))
                     event_types.add(key)
