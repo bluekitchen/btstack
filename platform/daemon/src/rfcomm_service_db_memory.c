@@ -48,13 +48,6 @@
 // This lists should be only accessed by tests.
 static btstack_linked_list_t db_mem_services = NULL;
 
-// Device info
-static void db_open(void){
-}
-
-static void db_close(void){ 
-}
-
 // MARK: PERSISTENT RFCOMM CHANNEL ALLOCATION
 uint8_t rfcomm_service_db_channel_for_service(const char *serviceName){
     

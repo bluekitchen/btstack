@@ -1,6 +1,6 @@
 #!/bin/sh
 DIR=`dirname $0`
-FILE=$DIR/../platform/daemon/btstack_version.h
+FILE=$DIR/../platform/daemon/src/btstack_version.h
 COMMIT=`git log -1 --pretty=format:%h`
 MAJOR=0
 MINOR=9

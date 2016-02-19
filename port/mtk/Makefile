@@ -13,7 +13,7 @@ BTSTACK_ROOT = ../..
 CFLAGS += -I$(BTSTACK_ROOT)/include
 CFLAGS += -I$(BTSTACK_ROOT)/src/
 CFLAGS += -I$(BTSTACK_ROOT)/ble
-CFLAGS += -I$(BTSTACK_ROOT)/platform/daemon
+CFLAGS += -I$(BTSTACK_ROOT)/platform/daemon/src
 CFLAGS += -I$(BTSTACK_ROOT)/platform/posix
 CFLAGS += -I.
 
@@ -21,39 +21,41 @@ VPATH += $(BTSTACK_ROOT)/src
 VPATH += $(BTSTACK_ROOT)/src/ble
 VPATH += $(BTSTACK_ROOT)/src/classic
 VPATH += $(BTSTACK_ROOT)/platform/posix
-VPATH += $(BTSTACK_ROOT)/platform/daemon
-VPATH += $(BTSTACK_ROOT)/example/daemon
+VPATH += $(BTSTACK_ROOT)/platform/daemon/src
+VPATH += $(BTSTACK_ROOT)/platform/daemon/example
 
-libBTstack_OBJS  = 		 \
-	btstack.o            \
-	btstack_linked_list.o   \
-	btstack_run_loop.o      \
-	btstack_run_loop_posix.o     \
-	hci_cmd.o           \
-	hci_dump.o           \
-	sdp_util.o           \
-	socket_connection.o  \
-	utils.o 		     \
+libBTstack_OBJS  = 		           \
+	btstack.o                      \
+	btstack_linked_list.o          \
+	btstack_run_loop.o             \
+	btstack_run_loop_posix.o       \
+	btstack_util.o 	               \
+	hci_cmd.o                      \
+	daemon_cmds.o                  \
+	hci_dump.o                     \
+	sdp_util.o                     \
+	socket_connection.o            \
 
-BTdaemon_OBJS = $(libBTstack_OBJS)   \
-	att_dispatch.o              \
-	le_device_db_memory.o        \
-    att.o                       \
-    att_server.o                \
-	gatt_client.o               \
-	sm.o                        \
-	btstack_memory.o            \
-	hci.o                       \
-	l2cap.o                     \
-	l2cap_signaling.o           \
-	memory_pool.o               \
-	remote_device_db_memory.o   \
-	rfcomm.o                    \
-	sdp.o                       \
-    sdp_client.o                \
-    sdp_query_rfcomm.o          \
-	daemon.o 				    \
-	hci_transport_h4_mtk.o      \
+BTdaemon_OBJS = $(libBTstack_OBJS) \
+	att_dispatch.o                 \
+	btstack_link_key_db_memory.o   \
+	btstack_memory.o               \
+	btstack_memory_pool.o          \
+	daemon.o 				       \
+	gatt_client.o                  \
+	hci.o                          \
+	hci_transport_h4_mtk.o         \
+	l2cap.o                        \
+	l2cap_signaling.o              \
+	le_device_db_memory.o          \
+	rfcomm.o                       \
+	rfcomm_service_db_hash.o       \
+	sdp_server.o                   \
+	sm.o                           \
+    att_db.o                       \
+    att_server.o                   \
+    sdp_client.o                   \
+    sdp_query_rfcomm.o             \
 
 all: $(TOOLCHAIN) version BTstackDaemon libBTstack.so BTstackDaemonRespawn inquiry le_scan rfcomm_echo dist
 
@@ -83,7 +85,7 @@ shell:
 
 version:
 	$(BTSTACK_ROOT)/tool/get_version.sh
-	grep BTSTACK_DATE $(BTSTACK_ROOT)/src/btstack_version.h
+	grep BTSTACK_DATE $(BTSTACK_ROOT)/platform/daemon/src/btstack_version.h
 
 BTstackDaemon: $(BTdaemon_OBJS) libbluetoothdrv.so
 	$(GCC) $(LDFLAGS) -o $@ libbluetoothdrv.so $^

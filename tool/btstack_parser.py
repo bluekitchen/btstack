@@ -8,7 +8,7 @@ import os
 # paths
 bluetooth_h_path = 'src/bluetooth.h'
 btstack_defines_h_path = 'src/btstack_defines.h'
-daemon_cmds_c_path = 'platform/daemon/daemon_cmds.c'
+daemon_cmds_c_path = 'platform/daemon/src/daemon_cmds.c'
 hci_cmds_c_path = 'src/hci_cmd.c'
 hci_cmds_h_path = 'src/hci_cmd.h'
 hci_h_path = 'src/hci.h'

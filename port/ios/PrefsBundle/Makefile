@@ -13,7 +13,7 @@ BTstack_INSTALL_PATH = /Library/PreferenceBundles
 BTstack_FRAMEWORKS = UIKit
 BTstack_CFLAGS =  -g -I.. \
 	-I$(BTSTACK_ROOT)/src \
-	-I$(BTSTACK_ROOT)/platform/daemon \
+	-I$(BTSTACK_ROOT)/platform/daemon/src \
 	-I$(BTSTACK_ROOT)/platform/cocoa \
 
 BTstack_LDFLAGS = -L../src/.theos/obj -lBTstack

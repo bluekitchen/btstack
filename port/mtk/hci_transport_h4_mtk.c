@@ -73,7 +73,7 @@ static  void (*packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t si
 static uint8_t hci_packet_out[1+HCI_PACKET_BUFFER_SIZE]; // packet type + max(acl header + acl payload, event header + event data)
 static uint8_t hci_packet_in[1+HCI_PACKET_BUFFER_SIZE]; // packet type + max(acl header + acl payload, event header + event data)
 
-static int h4_open(const void *transport_config){
+static int h4_open(void){
     int fd = mtk_bt_enable();
 
     if (fd < 0) {
@@ -90,7 +90,7 @@ static int h4_open(const void *transport_config){
     return 0;
 }
 
-static int h4_close(const void *transport_config){
+static int h4_close(void){
 
     mtk_bt_disable(hci_transport_h4->ds->fd);
 
@@ -152,25 +152,19 @@ static int h4_process(struct btstack_data_source *ds) {
     return 0;
 }
 
-static const char * h4_get_transport_name(void){
-    return "H4 MTK";
-}
-
 static void dummy_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
 }
 
 // get h4 singleton
-hci_transport_t * hci_transport_h4_instance(void){
+const hci_transport_t * hci_transport_h4_instance(void){
     if (hci_transport_h4 == NULL) {
         hci_transport_h4 = (hci_transport_h4_t*)malloc( sizeof(hci_transport_h4_t));
-        hci_transport_h4->ds                                      = NULL;
+        memset(hci_transport_h4, 0, sizeof(hci_transport_h4_t));
+        hci_transport_h4->transport.name                          = "H4 MTK";
         hci_transport_h4->transport.open                          = h4_open;
         hci_transport_h4->transport.close                         = h4_close;
         hci_transport_h4->transport.send_packet                   = h4_send_packet;
         hci_transport_h4->transport.register_packet_handler       = h4_register_packet_handler;
-        hci_transport_h4->transport.get_transport_name            = h4_get_transport_name;
-        hci_transport_h4->transport.set_baudrate                  = NULL;
-        hci_transport_h4->transport.can_send_packet_now           = NULL;
     }
     return (hci_transport_t *) hci_transport_h4;
 }

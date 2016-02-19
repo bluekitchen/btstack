@@ -170,7 +170,9 @@ typedef struct btstack_linked_list_gatt_client_helper{
 // MARK: prototypes
 static void handle_sdp_rfcomm_service_result(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static void handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+#ifdef ENABLE_BLE
 static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t * packet, uint16_t size);
+#endif
 static void dummy_bluetooth_status_handler(BLUETOOTH_STATE state);
 static client_state_t * client_for_connection(connection_t *connection);
 static int              clients_require_power_on(void);

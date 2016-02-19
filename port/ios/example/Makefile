@@ -8,11 +8,11 @@ TARGET_IPHONEOS_DEPLOYMENT_VERSION_arm64 = 7.0
 ARCHS = armv6 arm64
 
 BTSTACK_ROOT=../../..
-VPATH += $(BTSTACK_ROOT)/example/daemon
+VPATH += $(BTSTACK_ROOT)/platform/daemon/example
 
 ADDITIONAL_CFLAGS  = -I.. \
 	-I$(BTSTACK_ROOT)/src \
-	-I$(BTSTACK_ROOT)/platform/daemon \
+	-I$(BTSTACK_ROOT)/platform/daemon/src \
 	-I$(BTSTACK_ROOT)/platform/posix  \
 
 ADDITIONAL_LDFLAGS = -L../src/.theos/obj -lBTstack
