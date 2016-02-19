@@ -106,11 +106,11 @@ public:
 
 class BLEDevice {
 private:
-	uint16_t handle;
+	hci_con_handle_t handle;
 public:
 	BLEDevice();
-	BLEDevice(uint16_t handle);
-	uint16_t getHandle();
+	BLEDevice(hci_con_handle_t handle);
+	hci_con_handle_t getHandle();
 
 	// discovery of services and characteristics
 	int discoverGATTServices();

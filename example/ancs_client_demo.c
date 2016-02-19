@@ -105,7 +105,7 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
     }
 }
 
-static void ancs_callback(uint8_t packet_type, uint8_t *packet, uint16_t size){
+static void ancs_callback(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     const char * attribute_name;
     if (packet[0] != HCI_EVENT_ANCS_META) return;
     switch (packet[2]){

@@ -103,11 +103,11 @@ static uint16_t ancs_bytes_received;
 static uint16_t ancs_bytes_needed;
 static uint8_t  ancs_attribute_id;
 static uint16_t ancs_attribute_len;
-static void (*client_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size);
 
+static btstack_packet_handler_t client_handler;
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
-void ancs_client_register_callback(void (*handler)(uint8_t packet_type, uint8_t *packet, uint16_t size)){
+void ancs_client_register_callback(btstack_packet_handler_t handler){
     client_handler = handler; 
 }
 
@@ -122,7 +122,7 @@ static void notify_client_text(int event_type){
     memcpy(&event[7], ancs_notification_buffer, ancs_attribute_len);
     // we're nice
     event[7+ancs_attribute_len] = 0;
-    (*client_handler)(HCI_EVENT_PACKET, event, event[1] + 2);
+    (*client_handler)(HCI_EVENT_PACKET, 0, event, event[1] + 2);
 }
 
 static void notify_client_simple(int event_type){
@@ -132,7 +132,7 @@ static void notify_client_simple(int event_type){
     event[1] = 3;
     event[2] = event_type;
     little_endian_store_16(event, 3, gc_handle);
-    (*client_handler)(HCI_EVENT_PACKET, event, sizeof(event));
+    (*client_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
 static void ancs_chunk_parser_init(void){

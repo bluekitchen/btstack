@@ -43,11 +43,12 @@ extern "C" {
 #endif
 
 #include <stdint.h>
-
+#include "btstack_defines.h"
+	
 /* API_START */
 
 void ancs_client_init(void);
-void ancs_client_register_callback(void (*handler)(uint8_t packet_type, uint8_t *packet, uint16_t size));
+void ancs_client_register_callback(btstack_packet_handler_t callback);
 const char * ancs_client_attribute_name_for_id(int id);
 
 /* API_END */
