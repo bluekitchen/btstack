@@ -8,7 +8,7 @@ OPENCM3_DIR = libopencm3
 LDSCRIPT = stm32f1-nucleo.ld
 
 BTSTACK_ROOT = ../..
-VPATH  = $(BTSTACK_ROOT)/example/embedded
+VPATH  = $(BTSTACK_ROOT)/example
 VPATH += $(BTSTACK_ROOT)/src
 VPATH += $(BTSTACK_ROOT)/src/ble
 VPATH += $(BTSTACK_ROOT)/src/classic

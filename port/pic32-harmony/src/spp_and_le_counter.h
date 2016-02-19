@@ -1,5 +1,5 @@
 
-// spp_and_le_counter.h generated from ../../example/embedded/spp_and_le_counter.gatt for BTstack
+// spp_and_le_counter.h generated from ../../example/spp_and_le_counter.gatt for BTstack
 
 // binary representation
 // attribute size in bytes (16), flags(16), handle (16), uuid (16/128), value(...)

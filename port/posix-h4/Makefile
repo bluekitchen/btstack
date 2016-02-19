@@ -20,7 +20,7 @@ CORE += \
 # TI-WL183x requires TIInit_11.8.32.c
 
 # examples
-include ${BTSTACK_ROOT}/example/embedded/Makefile.inc
+include ${BTSTACK_ROOT}/example/Makefile.inc
 
 # fetch and convert TI init scripts
 include ${BTSTACK_ROOT}/chipset/cc256x/Makefile.inc

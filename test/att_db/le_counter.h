@@ -1,5 +1,5 @@
 
-// le_counter.h generated from ../../example/embedded/le_counter.gatt for BTstack
+// le_counter.h generated from ../../example/le_counter.gatt for BTstack
 
 // binary representation
 // attribute size in bytes (16), flags(16), handle (16), uuid (16/128), value(...)

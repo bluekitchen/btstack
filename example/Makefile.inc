@@ -1,7 +1,7 @@
 VPATH += ${BTSTACK_ROOT}/src
 VPATH += ${BTSTACK_ROOT}/src/ble
 VPATH += ${BTSTACK_ROOT}/src/classic
-VPATH += ${BTSTACK_ROOT}/example/embedded
+VPATH += ${BTSTACK_ROOT}/example
 
 CFLAGS += -I.
 CFLAGS += -I${BTSTACK_ROOT}/src/ble

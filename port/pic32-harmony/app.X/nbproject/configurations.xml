@@ -103,7 +103,7 @@
         <itemPath>../src/app_debug.c</itemPath>
         <itemPath>../src/app.c</itemPath>
         <itemPath>../src/main.c</itemPath>
-        <itemPath>../../../example/embedded/spp_and_le_counter.c</itemPath>
+        <itemPath>../../../example/spp_and_le_counter.c</itemPath>
       </logicalFolder>
       <logicalFolder name="f3" displayName="btstack" projectFiles="true">
         <logicalFolder name="ble" displayName="ble" projectFiles="true">
@@ -189,7 +189,7 @@
     <Elem>../../../src</Elem>
     <Elem>../../../ble</Elem>
     <Elem>../../../chipset/csr</Elem>
-    <Elem>../../../example/embedded</Elem>
+    <Elem>../../../example</Elem>
   </sourceRootList>
   <projectmakefile>Makefile</projectmakefile>
   <confs>

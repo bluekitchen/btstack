@@ -18,7 +18,7 @@ VPATH += $(BTSTACK_ROOT)/src/ble
 VPATH += $(BTSTACK_ROOT)/src/classic
 VPATH += $(BTSTACK_ROOT)/chipset/cc256x
 VPATH += $(BTSTACK_ROOT)/platform/embedded
-VPATH += $(BTSTACK_ROOT)/example/embedded
+VPATH += $(BTSTACK_ROOT)/example
 
 MCU = msp430f5529
 

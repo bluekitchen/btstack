@@ -18,7 +18,7 @@ NAME := EXAMPLE
 
 GLOBAL_INCLUDES += .
 
-$(NAME)_SOURCES := ../../../libraries/btstack/example/embedded/EXAMPLE.c
+$(NAME)_SOURCES := ../../../libraries/btstack/example/EXAMPLE.c
 $(NAME)_COMPONENTS += btstack/port/wiced
 '''
 
@@ -26,7 +26,7 @@ gatt_update_template = '''#!/bin/sh
 DIR=`dirname $0`
 BTSTACK_ROOT=$DIR/../../../libraries/btstack
 echo "Creating EXAMPLE.h from EXAMPLE.gatt"
-$BTSTACK_ROOT/tool/compile-gatt.py $BTSTACK_ROOT/example/embedded/EXAMPLE.gatt $DIR/EXAMPLE.h
+$BTSTACK_ROOT/tool/compile-gatt.py $BTSTACK_ROOT/example/EXAMPLE.gatt $DIR/EXAMPLE.h
 '''
 
 # get script path
@@ -48,7 +48,7 @@ if not "WICED Version" in wiced_version:
 print("Found %s" % wiced_version)
 
 # path to examples
-examples_embedded = script_path + "/../../example/embedded/"
+examples_embedded = script_path + "/../../example/"
 
 # path to WICED/apps/btstack
 apps_btstack = wiced_root + "/apps/btstack/"

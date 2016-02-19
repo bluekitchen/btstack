@@ -304,7 +304,7 @@ def main(argv):
     btstackfolder = "../../"
     docsfolder    = "docs/"
     
-    inputfolder = btstackfolder + "example/embedded/"
+    inputfolder = btstackfolder + "example/"
     introfile   = docsfolder + "examples/intro.md"
     outputfile  = docsfolder + "examples/examples.md"
     

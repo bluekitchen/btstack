@@ -138,9 +138,9 @@ def requiresCopyrightUpdate(file_name):
 	return False
 
 
-# if requiresCopyrightUpdate("../example/embedded/panu_demo.c"):
+# if requiresCopyrightUpdate("../example/panu_demo.c"):
 # 	print "UPdate"
-# 	updateCopyright("../example/embedded", "panu_demo.c")
+# 	updateCopyright("../example", "panu_demo.c")
 
 
 for root, dirs, files in os.walk('../', topdown=True):

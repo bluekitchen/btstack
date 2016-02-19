@@ -18,7 +18,7 @@ VPATH += $(BTSTACK_ROOT)/src/classic
 VPATH += $(BTSTACK_ROOT)/chipset/cc256x
 VPATH += ${BTSTACK_ROOT}/platform/msp430
 VPATH += ${BTSTACK_ROOT}/platform/embedded
-VPATH += $(BTSTACK_ROOT)/example/embedded
+VPATH += $(BTSTACK_ROOT)/example
 
 CC      = msp430-gcc
 CFLAGS  = -mmcu=msp430f5438a -Os -Wall -fno-toplevel-reorder

@@ -5,7 +5,7 @@ BTSTACK_ROOT = ../..
 POSIX_ROOT= ${BTSTACK_ROOT}/platform/posix
 CPPUTEST_HOME = ${BTSTACK_ROOT}/test/cpputest
 
-include ${BTSTACK_ROOT}/example/embedded/Makefile.inc
+include ${BTSTACK_ROOT}/example/Makefile.inc
 
 COMMON = \
 	sdp_server.c			            \

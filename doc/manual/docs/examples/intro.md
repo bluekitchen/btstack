@@ -1,6 +1,6 @@
 
 In this section, we will describe a number of examples from the
-*example/embedded* folder. To allow code-reuse with different platforms
+*example* folder. To allow code-reuse with different platforms
 as well as with new ports, the low-level initialization of BTstack and
 the hardware configuration has been extracted to the various
 *platforms/PLATFORM/main.c* files. The examples only contain the
