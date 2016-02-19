@@ -467,14 +467,7 @@ static void packet_handler(uint8_t * event, uint16_t event_size){
         return;
     }
     if (event[0] != HCI_EVENT_HFP_META) return;
-    if (event[3]
-     && event[2] != HFP_SUBEVENT_EXTENDED_AUDIO_GATEWAY_ERROR
-     && event[2] != HFP_SUBEVENT_NUMBER_FOR_VOICE_TAG
-     && event[2] != HFP_SUBEVENT_SPEAKER_VOLUME
-     && event[2] != HFP_SUBEVENT_MICROPHONE_VOLUME){
-        printf("ERROR, status: %u\n", event[3]);
-        return;
-    }
+
     switch (event[2]) {   
         case HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED:
             printf("Service level connection established.\n\n");
@@ -500,10 +493,10 @@ static void packet_handler(uint8_t * event, uint16_t event_size){
             }
             break;
         case HFP_SUBEVENT_AG_INDICATOR_STATUS_CHANGED:
-            printf("AG_INDICATOR_STATUS_CHANGED, AG indicator '%s' (index: %d) to: %d\n", (const char*) &event[6], event[4], event[5]);
+            printf("AG_INDICATOR_STATUS_CHANGED, AG indicator '%s' (index: %d) to: %d\n", (const char*) &event[5], event[3], event[4]);
             break;
         case HFP_SUBEVENT_NETWORK_OPERATOR_CHANGED:
-            printf("NETWORK_OPERATOR_CHANGED, operator mode: %d, format: %d, name: %s\n", event[4], event[5], (char *) &event[6]);
+            printf("NETWORK_OPERATOR_CHANGED, operator mode: %d, format: %d, name: %s\n", event[3], event[4], (char *) &event[5]);
             break;
         case HFP_SUBEVENT_EXTENDED_AUDIO_GATEWAY_ERROR:
             if (event[4])
@@ -536,9 +529,8 @@ int btstack_main(int argc, const char * argv[]){
     // hfp_hf_init(rfcomm_channel_nr, HFP_DEFAULT_HF_SUPPORTED_FEATURES, codecs, sizeof(codecs), indicators, sizeof(indicators)/sizeof(uint16_t), 1);
     hfp_hf_init(rfcomm_channel_nr);
     hfp_hf_init_supported_features(438 | (1<<HFP_HFSF_ESCO_S4) | (1<<HFP_HFSF_EC_NR_FUNCTION)); 
-    hfp_hf_init_hf_indicators(sizeof(indicators)/sizeof(uint16_t), indicators, hf_indicators_values);
+    hfp_hf_init_hf_indicators(sizeof(indicators)/sizeof(uint16_t), indicators);
     hfp_hf_init_codecs(sizeof(codecs), codecs);
-    hfp_hf_set_indicators_status(1);
     
     hfp_hf_register_packet_handler(packet_handler);
 

@@ -599,8 +599,7 @@ static void packet_handler(uint8_t * event, uint16_t event_size){
     if (event[3]
         && event[2] != HFP_SUBEVENT_PLACE_CALL_WITH_NUMBER
         && event[2] != HFP_SUBEVENT_ATTACH_NUMBER_TO_VOICE_TAG 
-        && event[2] != HFP_SUBEVENT_TRANSMIT_DTMF_CODES
-        && event[2] != HFP_SUBEVENT_TRANSMIT_STATUS_OF_CURRENT_CALL){
+        && event[2] != HFP_SUBEVENT_TRANSMIT_DTMF_CODES){
         printf("ERROR, status: %u\n", event[3]);
         return;
     }
@@ -665,10 +664,13 @@ int btstack_main(int argc, const char * argv[]){
     l2cap_init();
     rfcomm_init();
     
-    hfp_ag_init(rfcomm_channel_nr, 0x3ef | (1<<HFP_AGSF_HF_INDICATORS) | (1<<HFP_AGSF_ESCO_S4), codecs, sizeof(codecs), 
-        ag_indicators, ag_indicators_nr, 
-        hf_indicators, hf_indicators_nr, 
-        call_hold_services, call_hold_services_nr);
+    hfp_ag_init(rfcomm_channel_nr);
+    hfp_ag_init_supported_features(0x3ef | (1<<HFP_AGSF_HF_INDICATORS) | (1<<HFP_AGSF_ESCO_S4)); 
+    hfp_ag_init_codecs(sizeof(codecs), codecs);
+    hfp_ag_init_ag_indicators(ag_indicators_nr, ag_indicators);
+    hfp_ag_init_hf_indicators(hf_indicators_nr, hf_indicators); 
+    hfp_ag_init_call_hold_services(call_hold_services_nr, call_hold_services);
+
     hfp_ag_set_subcriber_number_information(&subscriber_number, 1);
     hfp_ag_register_packet_handler(packet_handler);
 

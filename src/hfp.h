@@ -159,7 +159,9 @@ typedef enum {
     HFP_CMD_ENABLE_INDIVIDUAL_AG_INDICATOR_STATUS_UPDATE,
     HFP_CMD_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES,
     HFP_CMD_ENABLE_CLIP,
+    HFP_CMD_AG_SENT_CLIP_INFORMATION,
     HFP_CMD_ENABLE_CALL_WAITING_NOTIFICATION,
+    HFP_CMD_AG_SENT_CALL_WAITING_NOTIFICATION_UPDATE,
 
     HFP_CMD_LIST_GENERIC_STATUS_INDICATORS,
     HFP_CMD_RETRIEVE_GENERIC_STATUS_INDICATORS,
@@ -604,7 +606,7 @@ typedef struct hfp_connection {
     uint8_t clcc_mpty;
 
     uint8_t call_index;
-    // also used for CLCC if set
+    // also used for CLCC, CCWA, CLIP if set
     uint8_t bnip_type;       // 0 == not set
     char    bnip_number[25]; // 
 
@@ -621,25 +623,22 @@ int store_bit(uint32_t bitmap, int position, uint8_t value);
 void hfp_create_sdp_record(uint8_t * service, uint16_t service_uuid, int rfcomm_channel_nr, const char * name);
 void hfp_handle_hci_event(hfp_callback_t callback, uint8_t packet_type, uint8_t *packet, uint16_t size);
 void hfp_emit_event(hfp_callback_t callback, uint8_t event_subtype, uint8_t value);
+void hfp_emit_simple_event(hfp_callback_t callback, uint8_t event_subtype);
 void hfp_emit_string_event(hfp_callback_t callback, uint8_t event_subtype, const char * value);
 
 hfp_connection_t * get_hfp_connection_context_for_rfcomm_cid(uint16_t cid);
 hfp_connection_t * get_hfp_connection_context_for_bd_addr(bd_addr_t bd_addr);
 hfp_connection_t * get_hfp_connection_context_for_sco_handle(uint16_t handle);
 
-int get_hfp_generic_status_indicators_nr(void);
-hfp_generic_status_indicator_t * get_hfp_generic_status_indicators(void);
-void set_hfp_generic_status_indicators(hfp_generic_status_indicator_t * indicators, int indicator_nr);
-
 linked_list_t * hfp_get_connections(void);
-void hfp_parse(hfp_connection_t * context, uint8_t byte, int isHandsFree);
+void hfp_parse(hfp_connection_t * connection, uint8_t byte, int isHandsFree);
 
 void hfp_init(uint16_t rfcomm_channel_nr);
 void hfp_establish_service_level_connection(bd_addr_t bd_addr, uint16_t service_uuid);
 void hfp_release_service_level_connection(hfp_connection_t * connection);
-void hfp_reset_context_flags(hfp_connection_t * context);
+void hfp_reset_context_flags(hfp_connection_t * connection);
 
-void hfp_release_audio_connection(hfp_connection_t * context);
+void hfp_release_audio_connection(hfp_connection_t * connection);
 
 void hfp_setup_synchronous_connection(hci_con_handle_t handle, hfp_link_setttings_t link_settings);
 

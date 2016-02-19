@@ -394,14 +394,6 @@ void simulate_test_sequence(hfp_test_item_t * test_item){
 
 void packet_handler(uint8_t * event, uint16_t event_size){
     if (event[0] != HCI_EVENT_HFP_META) return;
-    if (event[3]
-     && event[2] != HFP_SUBEVENT_EXTENDED_AUDIO_GATEWAY_ERROR
-     && event[2] != HFP_SUBEVENT_NUMBER_FOR_VOICE_TAG
-     && event[2] != HFP_SUBEVENT_SPEAKER_VOLUME
-     && event[2] != HFP_SUBEVENT_MICROPHONE_VOLUME){
-        printf("ERROR, status: %u\n", event[3]);
-        return;
-    }
 
     switch (event[2]) {   
         case HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED:
@@ -443,10 +435,10 @@ void packet_handler(uint8_t * event, uint16_t event_size){
             printf("HFP AG HFP_SUBEVENT_COMPLETE.\n");
             break;
         case HFP_SUBEVENT_AG_INDICATOR_STATUS_CHANGED:
-            printf("AG_INDICATOR_STATUS_CHANGED, AG indicator '%s' (index: %d) to: %d\n", (const char*) &event[6], event[4], event[5]);
+            printf("AG_INDICATOR_STATUS_CHANGED, AG indicator '%s' (index: %d) to: %d\n", (const char*) &event[5], event[3], event[4]);
             break;
         case HFP_SUBEVENT_NETWORK_OPERATOR_CHANGED:
-            printf("NETWORK_OPERATOR_CHANGED, operator mode: %d, format: %d, name: %s\n", event[4], event[5], (char *) &event[6]);
+            printf("NETWORK_OPERATOR_CHANGED, operator mode: %d, format: %d, name: %s\n", event[3], event[4], (char *) &event[5]);
             break;
         case HFP_SUBEVENT_EXTENDED_AUDIO_GATEWAY_ERROR:
             if (event[4])
