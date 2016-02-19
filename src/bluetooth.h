@@ -441,7 +441,7 @@ typedef enum {
 #define HCI_EVENT_VENDOR_SPECIFIC                          0xFF
 
 /** 
- * @format 11211B2221
+ * @format 11H11B2221
  * @param subevent_code
  * @param status
  * @param connection_handle

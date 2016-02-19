@@ -767,9 +767,10 @@ typedef uint8_t sm_key_t[16];
 // #define HCI_EVENT_SM_META                                  0xxx
 
 /**
- * @format 11
+ * @format 11H
  * @param subevent_code
  * @param status 0 == OK
+ * @param handle
  */
 #define HSP_SUBEVENT_AUDIO_CONNECTION_COMPLETE             0x01
 
