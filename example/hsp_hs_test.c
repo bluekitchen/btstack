@@ -66,22 +66,14 @@
 #include <string.h>
 #include <math.h>
 
-#include "btstack_run_loop.h"
-#include "classic/sdp_util.h"
-
-#include "classic/sdp_server.h"
-#include "classic/hsp_hs.h"
-
-#include "hci.h"
-#include "l2cap.h"
-#include "btstack_debug.h"
+#include "btstack.h"
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 static uint8_t hsp_service_buffer[150]; 
 static const uint8_t rfcomm_channel_nr = 1;
 static const char    hsp_hs_service_name[] = "Headset Test";
-static uint16_t      sco_handle = 0;
+static hci_con_handle_t sco_handle = 0;
 
 static char hs_cmd_buffer[100];
 
@@ -158,7 +150,7 @@ static void packet_handler(uint8_t * event, uint16_t event_size){
         
     switch (event[0]) {
         case BTSTACK_EVENT_STATE:
-            if (event[2] != HCI_STATE_WORKING) break;
+            if (btstack_event_state_get_state(event) != HCI_STATE_WORKING) break;
             printf("Working!\n");
             break;
         case HCI_EVENT_SCO_CAN_SEND_NOW:
@@ -167,37 +159,38 @@ static void packet_handler(uint8_t * event, uint16_t event_size){
         case HCI_EVENT_HSP_META:
             switch (event[2]) { 
                 case HSP_SUBEVENT_AUDIO_CONNECTION_COMPLETE:
-                    if (event[3] == 0){
-                        sco_handle = little_endian_read_16(event, 4);
+                    if (hsp_subevent_audio_connection_complete_get_status(event)){
+                        sco_handle = hsp_subevent_audio_connection_complete_get_handle(event);
                         printf("Audio connection established with SCO handle 0x%04x.\n", sco_handle);
                         try_send_sco();
                     } else {
-                        printf("Audio connection establishment failed with status %u\n", event[3]);
+                        printf("Audio connection establishment failed with status %u\n", hsp_subevent_audio_connection_complete_get_status(event));
                         sco_handle = 0;
                     }
                     break;
                 case HSP_SUBEVENT_AUDIO_DISCONNECTION_COMPLETE:
-                    if (event[3] == 0){
-                        printf("Audio connection released.\n\n");
-                        sco_handle = 0;
-                    } else {
-                        printf("Audio connection releasing failed with status %u\n", event[3]);
-                    }
+                    printf("Audio connection released.\n\n");
+                    sco_handle = 0;
                     break;
                 case HSP_SUBEVENT_MICROPHONE_GAIN_CHANGED:
-                    printf("Received microphone gain change %d\n", event[3]);
+                    printf("Received microphone gain change %d\n", hsp_subevent_microphone_gain_changed_get_gain(event));
                     break;
                 case HSP_SUBEVENT_SPEAKER_GAIN_CHANGED:
-                    printf("Received speaker gain change %d\n", event[3]);
+                    printf("Received speaker gain change %d\n", hsp_subevent_speaker_gain_changed_get_gain(event));
                     break;
                 case HSP_SUBEVENT_RING:
                     printf("HS: RING RING!\n");
                     break;
-                case HSP_SUBEVENT_AG_INDICATION:
+                case HSP_SUBEVENT_AG_INDICATION: {
                     memset(hs_cmd_buffer, 0, sizeof(hs_cmd_buffer));
-                    int size = event[3] <= sizeof(hs_cmd_buffer)? event[3] : sizeof(hs_cmd_buffer); 
-                    memcpy(hs_cmd_buffer, &event[4], size - 1);
+                    int size = hsp_subevent_ag_indication_get_value_length(event);
+                    if (size >= sizeof(hs_cmd_buffer)-1){
+                        size =  sizeof(hs_cmd_buffer)-1;
+                    }
+                    memcpy(hs_cmd_buffer, hsp_subevent_ag_indication_get_value(event), size);
                     printf("Received custom indication: \"%s\". \nExit code or call hsp_hs_send_result.\n", hs_cmd_buffer);
+
+                }
                     break;
                 default:
                     printf("event not handled %u\n", event[2]);

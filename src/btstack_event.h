@@ -61,6 +61,749 @@ extern "C" {
 /* API_START */
 
 /**
+ * @brief Get field status from event hci_event_inquiry_complete
+ * @param Event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_event_inquiry_complete_get_status(const uint8_t * event){
+    return event[2];
+}
+
+/**
+ * @brief Get field num_responses from event hci_event_inquiry_result
+ * @param Event packet
+ * @return num_responses
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_event_inquiry_result_get_num_responses(const uint8_t * event){
+    return event[2];
+}
+/**
+ * @brief Get field bd_addr from event hci_event_inquiry_result
+ * @param Event packet
+ * @param Pointer to storage for bd_addr
+ * @note: btstack_type B
+ */
+static inline void hci_event_inquiry_result_get_bd_addr(const uint8_t * event, bd_addr_t bd_addr){
+    reverse_bd_addr(&event[3], bd_addr);    
+}
+/**
+ * @brief Get field page_scan_repetition_mode from event hci_event_inquiry_result
+ * @param Event packet
+ * @return page_scan_repetition_mode
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_event_inquiry_result_get_page_scan_repetition_mode(const uint8_t * event){
+    return event[9];
+}
+/**
+ * @brief Get field reserved1 from event hci_event_inquiry_result
+ * @param Event packet
+ * @return reserved1
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_event_inquiry_result_get_reserved1(const uint8_t * event){
+    return event[10];
+}
+/**
+ * @brief Get field reserved2 from event hci_event_inquiry_result
+ * @param Event packet
+ * @return reserved2
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_event_inquiry_result_get_reserved2(const uint8_t * event){
+    return event[11];
+}
+/**
+ * @brief Get field class_of_device from event hci_event_inquiry_result
+ * @param Event packet
+ * @return class_of_device
+ * @note: btstack_type 3
+ */
+static inline uint32_t hci_event_inquiry_result_get_class_of_device(const uint8_t * event){
+    return little_endian_read_24(event, 12);
+}
+/**
+ * @brief Get field clock_offset from event hci_event_inquiry_result
+ * @param Event packet
+ * @return clock_offset
+ * @note: btstack_type 2
+ */
+static inline uint16_t hci_event_inquiry_result_get_clock_offset(const uint8_t * event){
+    return little_endian_read_16(event, 15);
+}
+
+/**
+ * @brief Get field status from event hci_event_connection_complete
+ * @param Event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_event_connection_complete_get_status(const uint8_t * event){
+    return event[2];
+}
+/**
+ * @brief Get field connection_handle from event hci_event_connection_complete
+ * @param Event packet
+ * @return connection_handle
+ * @note: btstack_type 2
+ */
+static inline uint16_t hci_event_connection_complete_get_connection_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field bd_addr from event hci_event_connection_complete
+ * @param Event packet
+ * @param Pointer to storage for bd_addr
+ * @note: btstack_type B
+ */
+static inline void hci_event_connection_complete_get_bd_addr(const uint8_t * event, bd_addr_t bd_addr){
+    reverse_bd_addr(&event[5], bd_addr);    
+}
+/**
+ * @brief Get field link_type from event hci_event_connection_complete
+ * @param Event packet
+ * @return link_type
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_event_connection_complete_get_link_type(const uint8_t * event){
+    return event[11];
+}
+/**
+ * @brief Get field encryption_enabled from event hci_event_connection_complete
+ * @param Event packet
+ * @return encryption_enabled
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_event_connection_complete_get_encryption_enabled(const uint8_t * event){
+    return event[12];
+}
+
+/**
+ * @brief Get field bd_addr from event hci_event_connection_request
+ * @param Event packet
+ * @param Pointer to storage for bd_addr
+ * @note: btstack_type B
+ */
+static inline void hci_event_connection_request_get_bd_addr(const uint8_t * event, bd_addr_t bd_addr){
+    reverse_bd_addr(&event[2], bd_addr);    
+}
+/**
+ * @brief Get field class_of_device from event hci_event_connection_request
+ * @param Event packet
+ * @return class_of_device
+ * @note: btstack_type 3
+ */
+static inline uint32_t hci_event_connection_request_get_class_of_device(const uint8_t * event){
+    return little_endian_read_24(event, 8);
+}
+/**
+ * @brief Get field link_type from event hci_event_connection_request
+ * @param Event packet
+ * @return link_type
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_event_connection_request_get_link_type(const uint8_t * event){
+    return event[11];
+}
+
+/**
+ * @brief Get field status from event hci_event_disconnection_complete
+ * @param Event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_event_disconnection_complete_get_status(const uint8_t * event){
+    return event[2];
+}
+/**
+ * @brief Get field connection_handle from event hci_event_disconnection_complete
+ * @param Event packet
+ * @return connection_handle
+ * @note: btstack_type 2
+ */
+static inline uint16_t hci_event_disconnection_complete_get_connection_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field reason from event hci_event_disconnection_complete
+ * @param Event packet
+ * @return reason
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_event_disconnection_complete_get_reason(const uint8_t * event){
+    return event[5];
+}
+
+/**
+ * @brief Get field status from event hci_event_authentication_complete_event
+ * @param Event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_event_authentication_complete_event_get_status(const uint8_t * event){
+    return event[2];
+}
+/**
+ * @brief Get field connection_handle from event hci_event_authentication_complete_event
+ * @param Event packet
+ * @return connection_handle
+ * @note: btstack_type 2
+ */
+static inline uint16_t hci_event_authentication_complete_event_get_connection_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+
+/**
+ * @brief Get field status from event hci_event_remote_name_request_complete
+ * @param Event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+//  static inline uint8_t hci_event_remote_name_request_complete_get_status(const uint8_t * event){
+//      not implemented yet
+//  }
+/**
+ * @brief Get field bd_addr from event hci_event_remote_name_request_complete
+ * @param Event packet
+ * @return bd_addr
+ * @note: btstack_type B
+ */
+//  static inline bd_addr_t hci_event_remote_name_request_complete_get_bd_addr(const uint8_t * event){
+//      not implemented yet
+//  }
+/**
+ * @brief Get field remote_name from event hci_event_remote_name_request_complete
+ * @param Event packet
+ * @return remote_name
+ * @note: btstack_type N
+ */
+//  static inline String hci_event_remote_name_request_complete_get_remote_name(const uint8_t * event){
+//      not implemented yet
+//  }
+
+/**
+ * @brief Get field status from event hci_event_encryption_change
+ * @param Event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_event_encryption_change_get_status(const uint8_t * event){
+    return event[2];
+}
+/**
+ * @brief Get field connection_handle from event hci_event_encryption_change
+ * @param Event packet
+ * @return connection_handle
+ * @note: btstack_type 2
+ */
+static inline uint16_t hci_event_encryption_change_get_connection_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field encryption_enabled from event hci_event_encryption_change
+ * @param Event packet
+ * @return encryption_enabled
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_event_encryption_change_get_encryption_enabled(const uint8_t * event){
+    return event[5];
+}
+
+/**
+ * @brief Get field status from event hci_event_change_connection_link_key_complete
+ * @param Event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_event_change_connection_link_key_complete_get_status(const uint8_t * event){
+    return event[2];
+}
+/**
+ * @brief Get field connection_handle from event hci_event_change_connection_link_key_complete
+ * @param Event packet
+ * @return connection_handle
+ * @note: btstack_type 2
+ */
+static inline uint16_t hci_event_change_connection_link_key_complete_get_connection_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+
+/**
+ * @brief Get field status from event hci_event_master_link_key_complete
+ * @param Event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_event_master_link_key_complete_get_status(const uint8_t * event){
+    return event[2];
+}
+/**
+ * @brief Get field connection_handle from event hci_event_master_link_key_complete
+ * @param Event packet
+ * @return connection_handle
+ * @note: btstack_type 2
+ */
+static inline uint16_t hci_event_master_link_key_complete_get_connection_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field key_flag from event hci_event_master_link_key_complete
+ * @param Event packet
+ * @return key_flag
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_event_master_link_key_complete_get_key_flag(const uint8_t * event){
+    return event[5];
+}
+
+/**
+ * @brief Get field num_hci_command_packets from event hci_event_command_complete
+ * @param Event packet
+ * @return num_hci_command_packets
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_event_command_complete_get_num_hci_command_packets(const uint8_t * event){
+    return event[2];
+}
+/**
+ * @brief Get field command_opcode from event hci_event_command_complete
+ * @param Event packet
+ * @return command_opcode
+ * @note: btstack_type 2
+ */
+static inline uint16_t hci_event_command_complete_get_command_opcode(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field return_parameters from event hci_event_command_complete
+ * @param Event packet
+ * @return return_parameters
+ * @note: btstack_type R
+ */
+static inline const uint8_t * hci_event_command_complete_get_return_parameters(const uint8_t * event){
+    return &event[5];
+}
+
+/**
+ * @brief Get field status from event hci_event_command_status
+ * @param Event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_event_command_status_get_status(const uint8_t * event){
+    return event[2];
+}
+/**
+ * @brief Get field num_hci_command_packets from event hci_event_command_status
+ * @param Event packet
+ * @return num_hci_command_packets
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_event_command_status_get_num_hci_command_packets(const uint8_t * event){
+    return event[3];
+}
+/**
+ * @brief Get field command_opcode from event hci_event_command_status
+ * @param Event packet
+ * @return command_opcode
+ * @note: btstack_type 2
+ */
+static inline uint16_t hci_event_command_status_get_command_opcode(const uint8_t * event){
+    return little_endian_read_16(event, 4);
+}
+
+/**
+ * @brief Get field hardware_code from event hci_event_hardware_error
+ * @param Event packet
+ * @return hardware_code
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_event_hardware_error_get_hardware_code(const uint8_t * event){
+    return event[2];
+}
+
+/**
+ * @brief Get field status from event hci_event_role_change
+ * @param Event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_event_role_change_get_status(const uint8_t * event){
+    return event[2];
+}
+/**
+ * @brief Get field bd_addr from event hci_event_role_change
+ * @param Event packet
+ * @param Pointer to storage for bd_addr
+ * @note: btstack_type B
+ */
+static inline void hci_event_role_change_get_bd_addr(const uint8_t * event, bd_addr_t bd_addr){
+    reverse_bd_addr(&event[3], bd_addr);    
+}
+/**
+ * @brief Get field role from event hci_event_role_change
+ * @param Event packet
+ * @return role
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_event_role_change_get_role(const uint8_t * event){
+    return event[9];
+}
+
+/**
+ * @brief Get field num_responses from event hci_event_inquiry_result_with_rssi
+ * @param Event packet
+ * @return num_responses
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_event_inquiry_result_with_rssi_get_num_responses(const uint8_t * event){
+    return event[2];
+}
+/**
+ * @brief Get field bd_addr from event hci_event_inquiry_result_with_rssi
+ * @param Event packet
+ * @param Pointer to storage for bd_addr
+ * @note: btstack_type B
+ */
+static inline void hci_event_inquiry_result_with_rssi_get_bd_addr(const uint8_t * event, bd_addr_t bd_addr){
+    reverse_bd_addr(&event[3], bd_addr);    
+}
+/**
+ * @brief Get field page_scan_repetition_mode from event hci_event_inquiry_result_with_rssi
+ * @param Event packet
+ * @return page_scan_repetition_mode
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_event_inquiry_result_with_rssi_get_page_scan_repetition_mode(const uint8_t * event){
+    return event[9];
+}
+/**
+ * @brief Get field reserved from event hci_event_inquiry_result_with_rssi
+ * @param Event packet
+ * @return reserved
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_event_inquiry_result_with_rssi_get_reserved(const uint8_t * event){
+    return event[10];
+}
+/**
+ * @brief Get field class_of_device from event hci_event_inquiry_result_with_rssi
+ * @param Event packet
+ * @return class_of_device
+ * @note: btstack_type 3
+ */
+static inline uint32_t hci_event_inquiry_result_with_rssi_get_class_of_device(const uint8_t * event){
+    return little_endian_read_24(event, 11);
+}
+/**
+ * @brief Get field clock_offset from event hci_event_inquiry_result_with_rssi
+ * @param Event packet
+ * @return clock_offset
+ * @note: btstack_type 2
+ */
+static inline uint16_t hci_event_inquiry_result_with_rssi_get_clock_offset(const uint8_t * event){
+    return little_endian_read_16(event, 14);
+}
+/**
+ * @brief Get field rssi from event hci_event_inquiry_result_with_rssi
+ * @param Event packet
+ * @return rssi
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_event_inquiry_result_with_rssi_get_rssi(const uint8_t * event){
+    return event[16];
+}
+
+/**
+ * @brief Get field status from event hci_event_synchronous_connection_complete
+ * @param Event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_event_synchronous_connection_complete_get_status(const uint8_t * event){
+    return event[2];
+}
+/**
+ * @brief Get field handle from event hci_event_synchronous_connection_complete
+ * @param Event packet
+ * @return handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t hci_event_synchronous_connection_complete_get_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field bd_addr from event hci_event_synchronous_connection_complete
+ * @param Event packet
+ * @param Pointer to storage for bd_addr
+ * @note: btstack_type B
+ */
+static inline void hci_event_synchronous_connection_complete_get_bd_addr(const uint8_t * event, bd_addr_t bd_addr){
+    reverse_bd_addr(&event[5], bd_addr);    
+}
+/**
+ * @brief Get field link_type from event hci_event_synchronous_connection_complete
+ * @param Event packet
+ * @return link_type
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_event_synchronous_connection_complete_get_link_type(const uint8_t * event){
+    return event[11];
+}
+/**
+ * @brief Get field transmission_interval from event hci_event_synchronous_connection_complete
+ * @param Event packet
+ * @return transmission_interval
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_event_synchronous_connection_complete_get_transmission_interval(const uint8_t * event){
+    return event[12];
+}
+/**
+ * @brief Get field retransmission_interval from event hci_event_synchronous_connection_complete
+ * @param Event packet
+ * @return retransmission_interval
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_event_synchronous_connection_complete_get_retransmission_interval(const uint8_t * event){
+    return event[13];
+}
+/**
+ * @brief Get field rx_packet_length from event hci_event_synchronous_connection_complete
+ * @param Event packet
+ * @return rx_packet_length
+ * @note: btstack_type 2
+ */
+static inline uint16_t hci_event_synchronous_connection_complete_get_rx_packet_length(const uint8_t * event){
+    return little_endian_read_16(event, 14);
+}
+/**
+ * @brief Get field tx_packet_length from event hci_event_synchronous_connection_complete
+ * @param Event packet
+ * @return tx_packet_length
+ * @note: btstack_type 2
+ */
+static inline uint16_t hci_event_synchronous_connection_complete_get_tx_packet_length(const uint8_t * event){
+    return little_endian_read_16(event, 16);
+}
+/**
+ * @brief Get field air_mode from event hci_event_synchronous_connection_complete
+ * @param Event packet
+ * @return air_mode
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_event_synchronous_connection_complete_get_air_mode(const uint8_t * event){
+    return event[18];
+}
+
+/**
+ * @brief Get field num_responses from event hci_event_extended_inquiry_response
+ * @param Event packet
+ * @return num_responses
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_event_extended_inquiry_response_get_num_responses(const uint8_t * event){
+    return event[2];
+}
+/**
+ * @brief Get field bd_addr from event hci_event_extended_inquiry_response
+ * @param Event packet
+ * @param Pointer to storage for bd_addr
+ * @note: btstack_type B
+ */
+static inline void hci_event_extended_inquiry_response_get_bd_addr(const uint8_t * event, bd_addr_t bd_addr){
+    reverse_bd_addr(&event[3], bd_addr);    
+}
+/**
+ * @brief Get field page_scan_repetition_mode from event hci_event_extended_inquiry_response
+ * @param Event packet
+ * @return page_scan_repetition_mode
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_event_extended_inquiry_response_get_page_scan_repetition_mode(const uint8_t * event){
+    return event[9];
+}
+/**
+ * @brief Get field reserved from event hci_event_extended_inquiry_response
+ * @param Event packet
+ * @return reserved
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_event_extended_inquiry_response_get_reserved(const uint8_t * event){
+    return event[10];
+}
+/**
+ * @brief Get field class_of_device from event hci_event_extended_inquiry_response
+ * @param Event packet
+ * @return class_of_device
+ * @note: btstack_type 3
+ */
+static inline uint32_t hci_event_extended_inquiry_response_get_class_of_device(const uint8_t * event){
+    return little_endian_read_24(event, 11);
+}
+/**
+ * @brief Get field clock_offset from event hci_event_extended_inquiry_response
+ * @param Event packet
+ * @return clock_offset
+ * @note: btstack_type 2
+ */
+static inline uint16_t hci_event_extended_inquiry_response_get_clock_offset(const uint8_t * event){
+    return little_endian_read_16(event, 14);
+}
+/**
+ * @brief Get field rssi from event hci_event_extended_inquiry_response
+ * @param Event packet
+ * @return rssi
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_event_extended_inquiry_response_get_rssi(const uint8_t * event){
+    return event[16];
+}
+
+/**
+ * @brief Get field status from event hci_event_encryption_key_refresh_complete
+ * @param Event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_event_encryption_key_refresh_complete_get_status(const uint8_t * event){
+    return event[2];
+}
+/**
+ * @brief Get field handle from event hci_event_encryption_key_refresh_complete
+ * @param Event packet
+ * @return handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t hci_event_encryption_key_refresh_complete_get_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+
+/**
+ * @brief Get field subevent_code from event hci_subevent_le_connection_complete
+ * @param Event packet
+ * @return subevent_code
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_subevent_le_connection_complete_get_subevent_code(const uint8_t * event){
+    return event[2];
+}
+/**
+ * @brief Get field status from event hci_subevent_le_connection_complete
+ * @param Event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_subevent_le_connection_complete_get_status(const uint8_t * event){
+    return event[3];
+}
+/**
+ * @brief Get field connection_handle from event hci_subevent_le_connection_complete
+ * @param Event packet
+ * @return connection_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t hci_subevent_le_connection_complete_get_connection_handle(const uint8_t * event){
+    return little_endian_read_16(event, 4);
+}
+/**
+ * @brief Get field role from event hci_subevent_le_connection_complete
+ * @param Event packet
+ * @return role
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_subevent_le_connection_complete_get_role(const uint8_t * event){
+    return event[6];
+}
+/**
+ * @brief Get field peer_address_type from event hci_subevent_le_connection_complete
+ * @param Event packet
+ * @return peer_address_type
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_subevent_le_connection_complete_get_peer_address_type(const uint8_t * event){
+    return event[7];
+}
+/**
+ * @brief Get field peer_address from event hci_subevent_le_connection_complete
+ * @param Event packet
+ * @param Pointer to storage for peer_address
+ * @note: btstack_type B
+ */
+static inline void hci_subevent_le_connection_complete_get_peer_address(const uint8_t * event, bd_addr_t peer_address){
+    reverse_bd_addr(&event[8], peer_address);    
+}
+/**
+ * @brief Get field conn_interval from event hci_subevent_le_connection_complete
+ * @param Event packet
+ * @return conn_interval
+ * @note: btstack_type 2
+ */
+static inline uint16_t hci_subevent_le_connection_complete_get_conn_interval(const uint8_t * event){
+    return little_endian_read_16(event, 14);
+}
+/**
+ * @brief Get field conn_latency from event hci_subevent_le_connection_complete
+ * @param Event packet
+ * @return conn_latency
+ * @note: btstack_type 2
+ */
+static inline uint16_t hci_subevent_le_connection_complete_get_conn_latency(const uint8_t * event){
+    return little_endian_read_16(event, 16);
+}
+/**
+ * @brief Get field supervision_timeout from event hci_subevent_le_connection_complete
+ * @param Event packet
+ * @return supervision_timeout
+ * @note: btstack_type 2
+ */
+static inline uint16_t hci_subevent_le_connection_complete_get_supervision_timeout(const uint8_t * event){
+    return little_endian_read_16(event, 18);
+}
+/**
+ * @brief Get field master_clock_accuracy from event hci_subevent_le_connection_complete
+ * @param Event packet
+ * @return master_clock_accuracy
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_subevent_le_connection_complete_get_master_clock_accuracy(const uint8_t * event){
+    return event[20];
+}
+
+/**
+ * @brief Get field state from event btstack_event_state
+ * @param Event packet
+ * @return state
+ * @note: btstack_type 1
+ */
+static inline uint8_t btstack_event_state_get_state(const uint8_t * event){
+    return event[2];
+}
+
+
+/**
+ * @brief Get field discoverable from event btstack_event_discoverable_enabled
+ * @param Event packet
+ * @return discoverable
+ * @note: btstack_type 1
+ */
+static inline uint8_t btstack_event_discoverable_enabled_get_discoverable(const uint8_t * event){
+    return event[2];
+}
+
+/**
+ * @brief Get field handle from event hci_event_sco_can_send_now
+ * @param Event packet
+ * @param Pointer to storage for handle
+ * @note: btstack_type B
+ */
+static inline void hci_event_sco_can_send_now_get_handle(const uint8_t * event, bd_addr_t handle){
+    reverse_bd_addr(&event[2], handle);    
+}
+
+/**
  * @brief Get field status from event l2cap_event_channel_opened
  * @param Event packet
  * @return status
@@ -1374,6 +2117,157 @@ static inline uint8_t sm_event_authorization_result_get_authorization_result(con
     return event[11];
 }
 #endif
+
+/**
+ * @brief Get field subevent_code from event hsp_subevent_audio_connection_complete
+ * @param Event packet
+ * @return subevent_code
+ * @note: btstack_type 1
+ */
+static inline uint8_t hsp_subevent_audio_connection_complete_get_subevent_code(const uint8_t * event){
+    return event[2];
+}
+/**
+ * @brief Get field status from event hsp_subevent_audio_connection_complete
+ * @param Event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t hsp_subevent_audio_connection_complete_get_status(const uint8_t * event){
+    return event[3];
+}
+/**
+ * @brief Get field handle from event hsp_subevent_audio_connection_complete
+ * @param Event packet
+ * @return handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t hsp_subevent_audio_connection_complete_get_handle(const uint8_t * event){
+    return little_endian_read_16(event, 4);
+}
+
+/**
+ * @brief Get field subevent_code from event hsp_subevent_audio_disconnection_complete
+ * @param Event packet
+ * @return subevent_code
+ * @note: btstack_type 1
+ */
+static inline uint8_t hsp_subevent_audio_disconnection_complete_get_subevent_code(const uint8_t * event){
+    return event[2];
+}
+/**
+ * @brief Get field status from event hsp_subevent_audio_disconnection_complete
+ * @param Event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t hsp_subevent_audio_disconnection_complete_get_status(const uint8_t * event){
+    return event[3];
+}
+
+/**
+ * @brief Get field subevent_code from event hsp_subevent_ring
+ * @param Event packet
+ * @return subevent_code
+ * @note: btstack_type 1
+ */
+static inline uint8_t hsp_subevent_ring_get_subevent_code(const uint8_t * event){
+    return event[2];
+}
+
+/**
+ * @brief Get field subevent_code from event hsp_subevent_microphone_gain_changed
+ * @param Event packet
+ * @return subevent_code
+ * @note: btstack_type 1
+ */
+static inline uint8_t hsp_subevent_microphone_gain_changed_get_subevent_code(const uint8_t * event){
+    return event[2];
+}
+/**
+ * @brief Get field gain from event hsp_subevent_microphone_gain_changed
+ * @param Event packet
+ * @return gain
+ * @note: btstack_type 1
+ */
+static inline uint8_t hsp_subevent_microphone_gain_changed_get_gain(const uint8_t * event){
+    return event[3];
+}
+
+/**
+ * @brief Get field subevent_code from event hsp_subevent_speaker_gain_changed
+ * @param Event packet
+ * @return subevent_code
+ * @note: btstack_type 1
+ */
+static inline uint8_t hsp_subevent_speaker_gain_changed_get_subevent_code(const uint8_t * event){
+    return event[2];
+}
+/**
+ * @brief Get field gain from event hsp_subevent_speaker_gain_changed
+ * @param Event packet
+ * @return gain
+ * @note: btstack_type 1
+ */
+static inline uint8_t hsp_subevent_speaker_gain_changed_get_gain(const uint8_t * event){
+    return event[3];
+}
+
+/**
+ * @brief Get field subevent_code from event hsp_subevent_hs_command
+ * @param Event packet
+ * @return subevent_code
+ * @note: btstack_type 1
+ */
+static inline uint8_t hsp_subevent_hs_command_get_subevent_code(const uint8_t * event){
+    return event[2];
+}
+/**
+ * @brief Get field value_length from event hsp_subevent_hs_command
+ * @param Event packet
+ * @return value_length
+ * @note: btstack_type J
+ */
+static inline int hsp_subevent_hs_command_get_value_length(const uint8_t * event){
+    return event[3];
+}
+/**
+ * @brief Get field value from event hsp_subevent_hs_command
+ * @param Event packet
+ * @return value
+ * @note: btstack_type V
+ */
+static inline const uint8_t * hsp_subevent_hs_command_get_value(const uint8_t * event){
+    return &event[4];
+}
+
+/**
+ * @brief Get field subevent_code from event hsp_subevent_ag_indication
+ * @param Event packet
+ * @return subevent_code
+ * @note: btstack_type 1
+ */
+static inline uint8_t hsp_subevent_ag_indication_get_subevent_code(const uint8_t * event){
+    return event[2];
+}
+/**
+ * @brief Get field value_length from event hsp_subevent_ag_indication
+ * @param Event packet
+ * @return value_length
+ * @note: btstack_type J
+ */
+static inline int hsp_subevent_ag_indication_get_value_length(const uint8_t * event){
+    return event[3];
+}
+/**
+ * @brief Get field value from event hsp_subevent_ag_indication
+ * @param Event packet
+ * @return value
+ * @note: btstack_type V
+ */
+static inline const uint8_t * hsp_subevent_ag_indication_get_value(const uint8_t * event){
+    return &event[4];
+}
 
 #ifdef ENABLE_BLE
 /**

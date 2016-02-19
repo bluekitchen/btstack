@@ -90,7 +90,7 @@ static int  counter = 'A';
 static char test_data[200];
 static int  test_data_len;
 
-static uint16_t conn_handle;
+static hci_con_handle_t connection_handle;
 
 /* @section Main Application Setup
  *
@@ -186,10 +186,10 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     switch (packet[2]) {
                         case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
                             test_data_len = ATT_DEFAULT_MTU - 3;
-                            conn_handle = little_endian_read_16(packet, 4);
+                            connection_handle = little_endian_read_16(packet, 4);
                             // min con interval 20 ms 
-                            // gap_request_connection_parameter_update(conn_handle, 0x10, 0x18, 0, 0x0048);
-                            // printf("Connected, requesting conn param update for handle 0x%04x\n", conn_handle);
+                            // gap_request_connection_parameter_update(connection_handle, 0x10, 0x18, 0, 0x0048);
+                            // printf("Connected, requesting conn param update for handle 0x%04x\n", connection_handle);
                             break;
                     }
                     break;  
