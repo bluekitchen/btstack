@@ -53,99 +53,226 @@
 #include "hci_transport.h"
 
 #ifdef HAVE_EHCILL
-#error "HCI Transport H5 POSIX does not support eHCILL yet. Please remove HAVE_EHCILL from your btstack-config.h"
+#error "HCI Transport H5 POSIX does not support eHCILL. Please either use HAVE_EHCILL or H5 Transport"
 #endif 
 
-typedef struct hci_transport_h5 {
-    hci_transport_t transport;
-    btstack_data_source_t *ds;
-} hci_transport_h5_t;
+/// newer
 
 // h5 slip state machine
 typedef enum {
-	unknown = 1,
-	decoding,
-	x_c0,
-	x_db
-} H5_STATE;
+    SLIP_UNKNOWN = 1,
+    SLIP_DECODING,
+    SLIP_X_C0,
+    SLIP_X_DB
+} hci_transport_slip_state_t;
 
-typedef struct h5_slip {
-	state_t state;
-	uint16_t length;
-	uint8_t data[HCI_ACL_BUFFER_SIZE];
-} h5_slip_t;
+static const uint8_t slip_c0_encoded[] = { 0xdb, 0xdc };
+static const uint8_t slip_db_encoded[] = { 0xdb, 0xdd };
 
-// Global State
-static h5_slip_t read_sm;
-static h5_slip_t write_sm;
-static int bt_filedesc = 0;
+static uint8_t   hci_packet_with_pre_buffer[HCI_INCOMING_PRE_BUFFER_SIZE + 1 + HCI_PACKET_BUFFER_SIZE]; // packet type + max(acl header + acl payload, event header + event data)
 
-// single instance
-static hci_transport_h5_t * hci_transport_h5 = NULL;
+static hci_transport_slip_state_t slip_state;
+static uint8_t * slip_payload = &hci_packet_with_pre_buffer[HCI_INCOMING_PRE_BUFFER_SIZE];
+static int       slip_payload_pos;
+static uint8_t   slip_header[4];
+static int       slip_header_pos;
 
-static int  h5_process(struct btstack_data_source *ds);
-static void dummy_handler(uint8_t packet_type, uint8_t *packet, int size); 
+static hci_transport_config_uart_t * hci_transport_config_uart;
+static hci_transport_t *             h5_hci_transport;
+static btstack_data_source_t *       h5_data_source;
 
-static  void (*packet_handler)(uint8_t packet_type, uint8_t *packet, int size) = dummy_handler;
+// Prototypes
+static void hci_transport_h5_process_frame(void);
 
-static void h5_init(const void * transport_config){
+// Generic helper
+static void hci_transport_h5_send_really(uint8_t * data, int size){
+    while (size > 0) {
+        int bytes_written = write(hci_transport_h5_data_source->fd, data, size);
+        if (bytes_written < 0) {
+            usleep(5000);
+            continue;
+        }
+        data += bytes_written;
+        size -= bytes_written;
+    }
+}
+
+// SLIP 
+static inline void hci_transport_slip_send_eof(void){
+    uint8_t data = 0xc0;
+    hci_transport_h5_send_really(&data, 1);
+}
+
+static inline void hci_transport_slip_send_byte(uint8_t data){
+    switch (data){
+        case 0xc0:
+            hci_transport_h5_send_really(slip_c0_encoded, sizeof(slip_c0_encoded));
+            break;
+        case 0xdb:
+            hci_transport_h5_send_really(slip_db_encoded, sizeof(slip_db_encoded));
+            break;
+        default:
+            hci_transport_h5_send_really(&data, 1);
+            break;
+    }
+}
+
+static inline void hci_transport_slip_send_block(uint8_t * data, uint16_t size){
+    uint16_t i;
+    for (i=0;i<size;i++){
+        hci_transport_slip_send_byte(data++);
+    }
+}
+
+// format: 0xc0 HEADER PACKER 0xc0
+static void hci_transport_slip_send_frame(uint32_t header, uint8_t * packet, uint16_t packet_size){
+    // reset data integrity flag
+        if (header & 0x040){
+        log_error("hci_transport_slip_send_frame: data integrity not supported, dropping flag");
+        header &= ~0x40;
+    }
+    
+    // Start of Frame
+    hci_transport_slip_send_eof();
+
+    // Header
+    uint8_t header_buffer[4];
+    little_endian_store_32(header_buffer, 0, header);
+    hci_transport_slip_send_block(header_buffer, sizeof(header_buffer));
+
+    // Packet
+    hci_transport_slip_send_block(packet, packet_size);
+
+    // Endo of frame
+    hci_transport_slip_send_eof();
+}
+
+static void hci_transport_h5_slip_reset(void){
+    slip_header_pos = 0;
+    slip_payload_pos = 0;
+}
+
+static void hci_transport_h5_slip_init(void){
+    slip_state = SLIP_UNKNOWN;
+    hci_transport_h5_slip_reset();
+}
+
+static void hci_transport_h5_slip_store_byte(uint8_t input){
+    if (slip_header_pos < 4){
+        slip_header[slip_header_pos++] = input;
+        return;
+    }
+    if (slip_packet_pos < HCI_PACKET_BUFFER_SIZE){
+        slip_packet[slip_packet_pos++] = input;
+    }
+    log_error("hci_transport_h5_slip_store_byte: packet to long");
+    hci_transport_h5_slip_init();
+}
+
+static void hci_transport_slip_process(uint8_t input){
+    switch(slip_state){
+        case SLIP_UNKNOWN:
+            if (input != 0xc0) break;
+            hci_transport_h5_slip_reset();
+            slip_state = SLIP_X_C0;
+            break;
+        case SLIP_X_C0:
+            switch(input){
+                case 0xc0:
+                    break;
+                case 0xdb:
+                    slip_state = SLIP_X_DB;
+                    break;
+                default:
+                    hci_transport_h5_slip_store_byte(input);
+                    slip_state = SLIP_DECODING;
+                    break; 
+            }                   
+            break;
+        case SLIP_X_DB:
+            switch(input){
+                case 0xdc:
+                    hci_transport_h5_slip_store_byte(0xc0);
+                    slip_state = SLIP_DECODING;
+                    break;
+                case 0xdd;
+                    hci_transport_h5_slip_store_byte(0xdb);
+                    slip_state = SLIP_DECODING;
+                    break;
+                default:
+                    hci_transport_h5_slip_init();
+                    break;
+            }
+            break;
+        case SLIP_DECODING:
+            switch(input){
+                case 0xc0:
+                    if (slip_payload_pos){
+                        hci_transport_h5_process_frame();
+                    }
+                    hci_transport_h5_slip_init();
+                    break;
+                case 0xdb:
+                    slip_state = SLIP_X_DB;
+                    break;
+                default:
+                    hci_transport_h5_slip_store_byte(input);
+                    break;
+            }
+            break;
+    }
+}
+
+// Three-Wire Implementation
+
+static void hci_transport_h5_process_frame(void){
+    // TODO...
+}
+
+///
+static int hci_transport_h5_send_packet(uint8_t packet_type, uint8_t *packet, int size){
+    // TODO...
+}
+
+/// H5 Interface
+
+static void hci_transport_h5_register_packet_handler(void (*handler)(uint8_t packet_type, uint8_t *packet, int size)){
+    packet_handler = handler;
+}
+
+static void hci_transport_h5_init(const void * transport_config){
     // check for hci_transport_config_uart_t
     if (!transport_config) {
-        log_error("hci_transport_h4_posix: no config!");
+        log_error("hci_transport_h5_posix: no config!");
         return;
     }
     if (((hci_transport_config_t*)transport_config)->type != HCI_TRANSPORT_CONFIG_UART) {
-        log_error("hci_transport_h4_posix: config not of type != HCI_TRANSPORT_CONFIG_UART!");
+        log_error("hci_transport_h5_posix: config not of type != HCI_TRANSPORT_CONFIG_UART!");
         return;
     }
     hci_transport_config_uart = (hci_transport_config_uart_t*) transport_config;
 }
 
-static int    h5_open(const void *transport_config){
-    // check for hci_transport_config_uart_t
-    if (!transport_config) {
-        log_error("hci_transport_h5_posix: no config!");
-        return -1;
-    }
-    if (((hci_transport_config_t*)transport_config)->type != HCI_TRANSPORT_CONFIG_UART) {
-        log_error("hci_transport_h5_posix: config not of type != HCI_TRANSPORT_CONFIG_UART!");
-        return -1;
-    }
+static int hci_transport_h5_open(void){
 
-    hci_transport_config_uart = (hci_transport_config_uart_t*) transport_config;
     struct termios toptions;
-    int fd = open(hci_transport_config_uart->device_name, O_RDWR | O_NOCTTY | O_NDELAY);
+    int flags = O_RDWR | O_NOCTTY | O_NONBLOCK;
+    int fd = open(hci_transport_config_uart->device_name, flags);
     if (fd == -1)  {
-        perror("init_serialport: Unable to open port ");
+        perror("h5_open: Unable to open port ");
         perror(hci_transport_config_uart->device_name);
         return -1;
     }
     
     if (tcgetattr(fd, &toptions) < 0) {
-        perror("init_serialport: Couldn't get term attributes");
+        perror("h5_open: Couldn't get term attributes");
         return -1;
     }
-    speed_t brate = hci_transport_config_uart->baudrate; // let you override switch below if needed
-    switch(hci_transport_config_uart->baudrate) {
-        case 57600:  brate=B57600;  break;
-        case 115200: brate=B115200; break;
-#ifdef B230400
-        case 230400: brate=B230400; break;
-#endif
-#ifdef B460800
-        case 460800: brate=B460800; break;
-#endif
-#ifdef B921600
-        case 921600: brate=B921600; break;
-#endif
-    }
-    cfsetispeed(&toptions, brate);
-    cfsetospeed(&toptions, brate);
     
+    cfmakeraw(&toptions);   // make raw
+
     // 8N1
-    toptions.c_cflag &= ~PARENB;
     toptions.c_cflag &= ~CSTOPB;
-    toptions.c_cflag &= ~CSIZE;
     toptions.c_cflag |= CS8;
 
     if (hci_transport_config_uart->flowcontrol) {
@@ -159,9 +286,6 @@ static int    h5_open(const void *transport_config){
     toptions.c_cflag |= CREAD | CLOCAL;  // turn on READ & ignore ctrl lines
     toptions.c_iflag &= ~(IXON | IXOFF | IXANY); // turn off s/w flow ctrl
     
-    toptions.c_lflag &= ~(ICANON | ECHO | ECHOE | ISIG); // make raw
-    toptions.c_oflag &= ~OPOST; // make raw
-    
     // see: http://unixwiz.net/techtips/termios-vmin-vtime.html
     toptions.c_cc[VMIN]  = 1;
     toptions.c_cc[VTIME] = 0;
@@ -172,165 +296,56 @@ static int    h5_open(const void *transport_config){
     }
     
     // set up data_source
-    hci_transport_h5->ds = malloc(sizeof(btstack_data_source_t));
-    if (!hci_transport_h5) return -1;
-    hci_transport_h5->ds->fd = fd;
-    hci_transport_h5->ds->process = h5_process;
-    btstack_run_loop_add_data_source(hci_transport_h5->ds);
+    hci_transport_h5_data_source->fd = fd;
+    hci_transport_h5_data_source->process = h4_process;
+    btstack_run_loop_add_data_source(&h5_data_source);
     
-    // init state machine
-	h5_slip_init( &read_sm);
-	h5_slip_init( &write_sm);
-    return 0;
-}
-
-static int h5_close(const void *transport_config){
-    // first remove run loop handler
-	btstack_run_loop_remove_data_source(hci_transport_h5->ds);
-    
-    // close device 
-    close(hci_transport_h5->ds->fd);
-    free(hci_transport_h5->ds);
-    
-    // free struct
-    hci_transport_h5->ds = NULL;
-    return 0;
-}
-
-static int    h5_send_packet(uint8_t packet_type, uint8_t *packet, int size){
-    if (hci_transport_h5->ds == NULL) return -1;
-    if (hci_transport_h5->ds->fd == 0) return -1;
-    char *data = (char*) packet;
-    
-    write(hci_transport_h5->ds->fd, &packet_type, 1);
-    while (size > 0) {
-        int bytes_written = write(hci_transport_h5->ds->fd, data, size);
-        if (bytes_written < 0) {
-            usleep(5000);
-            continue;
-        }
-        data += bytes_written;
-        size -= bytes_written;
+    // also set baudrate
+    if (h5_set_baudrate(hci_transport_config_uart->baudrate_init) < 0){
+        return -1;
     }
+
+    // init slip parser state machine
+    hci_transport_h5_slip_init();
+    
+    // h5 link layer
     return 0;
 }
 
-static void   h5_register_packet_handler(void (*handler)(uint8_t packet_type, uint8_t *packet, int size)){
-    packet_handler = handler;
+static int hci_transport_h5_close(const void *transport_config){
+    // first remove run loop handler
+    btstack_run_loop_remove_data_source(h5_data_source);
+    
+    // then close device 
+    close(hci_transport_h5_data_source->fd);
+    return 0;
 }
 
-static void h5_slip_init( h5_slip_t * sm){
-	sm->state = unknown;
-}
-
-static void h5_slip_process( h5_slip_t * sm, uint8_t input, uint8_t in){
-	uint8_t type;
-	switch (sm->state) {
-		case unknown:
-			if (input == 0xc0){
-				sm->length = 0;
-				sm->state  = x_c0;
-			}
-			break;
-		case x_c0:
-			switch (input ){
-				case 0xc0:
-					break;
-				case 0xdb:
-					sm->state = x_db;
-					break;
-				default:
-					sm->data[sm->length] = input;
-					++sm->length;
-					sm->state   = decoding;
-					break;
-			}
-			break;
-		case decoding:
-			switch (input ){
-				case 0xc0:
-					sm->state = unknown;
-					// packet done - check if valid HCI packet
-					if (sm->length < 6) break;
-					type = sm->data[1] & 0x0f;
-					if (type < 1 || type > 4) break;
-					switch (type) {
-						case HCI_ACL_DATA_PACKET:
-							acl_packet_handler( &sm->data[4], sm->length-4-2);
-							break;
-						case HCI_EVENT_PACKET:
-							event_packet_handler( &sm->data[4], sm->length-4-2);
-							break;
-						default:
-							break;
-					}
-					break;
-				case 0xdb:
-					sm->state = x_db;
-					break;
-				default:
-					sm->data[sm->length] = input;
-					++sm->length;
-					break;
-			}
-			break;
-		case x_db:
-			switch (input) {
-				case 0xdc:
-					sm->data[sm->length] = 0xc0;
-					++sm->length;
-					sm->state = decoding;
-					break;
-				case 0xdd:
-					sm->data[sm->length] = 0xdb;
-					++sm->length;
-					sm->state = decoding;
-					break;
-				default:
-					sm->state = unknown;
-					break;
-			}
-			break;
-		default:
-			break;
-	}
-}
-
-
-static int    h5_process(struct btstack_data_source *ds) {
-    if (hci_transport_h5->ds->fd == 0) return -1;
+static int hci_transport_h5_process(struct btstack_data_source *ds) {
+    if (hci_transport_h5_data_source->fd) return -1;
 
     // read up to bytes_to_read data in
-	uint8_t data;
-	while (1) {
-		int bytes_read = read(hci_transport_h5->ds->fd, &data, 1);
-		if (bytes_read < 1) break;
-		h5_slip_process( &read_sm, data, 1);
-	};
+    uint8_t data;
+    while (1) {
+        int bytes_read = read(hci_transport_h5_data_source->fd, &data, 1);
+        if (bytes_read < 1) break;
+        hci_transport_slip_process(data);
+    };
     return 0;
 }
-
-static const char * h5_get_transport_name(void){
-    return "H5";
-}
-
-static void dummy_handler(uint8_t *packet, int size){
-}
-
 // get h5 singleton
 const hci_transport_t * hci_transport_h5_instance() {
-    if (hci_transport_h4 == NULL) {
-        hci_transport_h4 = (hci_transport_h4_t*)malloc( sizeof(hci_transport_h4_t));
-        memset(hci_transport_h4, 0, sizeof(hci_transport_h4_t));
-        hci_transport_h4->ds                                      = NULL;
-        hci_transport_h4->transport.name                          = "H5_POSIX";
-        hci_transport_h4->transport.init                          = h4_init;
-        hci_transport_h4->transport.open                          = h4_open;
-        hci_transport_h4->transport.close                         = h4_close;
-        hci_transport_h4->transport.register_packet_handler       = h4_register_packet_handler;
-        hci_transport_h4->transport.can_send_packet_now           = NULL;
-        hci_transport_h4->transport.send_packet                   = h4_send_packet;
-        hci_transport_h4->transport.set_baudrate                  = h4_set_baudrate;
+    if (hci_transport_h5 == NULL) {
+        hci_transport_h5 = (hci_transport_h5_t*)malloc( sizeof(hci_transport_t));
+        memset(hci_transport_h5, 0, sizeof(hci_transport_t));
+        hci_transport_h5->name                          = "H5_POSIX";
+        hci_transport_h5->init                          = hci_transport_h5_init;
+        hci_transport_h5->open                          = hci_transport_h5_open;
+        hci_transport_h5->close                         = hci_transport_h5_close;
+        hci_transport_h5->register_packet_handler       = hci_transport_h5_register_packet_handler;
+        hci_transport_h5->can_send_packet_now           = NULL;
+        hci_transport_h5->send_packet                   = hci_transport_h5_send_packet;
+        hci_transport_h5->set_baudrate                  = hci_transport_h5_set_baudrate;
     }
-    return (const hci_transport_t *) hci_transport_h4;
+    return (const hci_transport_t *) hci_transport_h5;
 }
