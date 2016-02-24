@@ -139,16 +139,16 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
             break;
             
         case HCI_EVENT_COMMAND_COMPLETE:
-            if (COMMAND_COMPLETE_EVENT(packet, hci_read_bd_addr)){
+            if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_read_bd_addr)){
                 reverse_bd_addr(&packet[6], addr);
                 printf("BD ADDR: %s\n", bd_addr_to_str(addr));
                 break;
             }
-            if (COMMAND_COMPLETE_EVENT(packet, hci_le_set_advertising_data)){
+            if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_le_set_advertising_data)){
                hci_send_cmd(&hci_le_set_scan_response_data, 10, adv_data);
                break;
             }
-            if (COMMAND_COMPLETE_EVENT(packet, hci_le_set_scan_response_data)){
+            if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_le_set_scan_response_data)){
                hci_send_cmd(&hci_le_set_advertise_enable, 1);
                break;
             }

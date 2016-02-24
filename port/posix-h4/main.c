@@ -104,7 +104,7 @@ static void using_921600_baud(void){
 static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t * packet, uint16_t size){
 
     if (packet_type != HCI_EVENT_PACKET) return;
-    if (!COMMAND_COMPLETE_EVENT(packet, hci_read_local_version_information)) return;
+    if (!HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_read_local_version_information)) return;
 
     printf("Local version information:\n");
     uint16_t hci_version    = little_endian_read_16(packet, 4);
