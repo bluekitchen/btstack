@@ -58,7 +58,7 @@
 static void chipset_set_bd_addr_command(bd_addr_t addr, uint8_t *hci_cmd_buffer){
     little_endian_store_16(hci_cmd_buffer, 0, OPCODE(OGF_VENDOR, 0x02));
     hci_cmd_buffer[2] = 0x06;
-    bt_flip_addr(&hci_cmd_buffer[3], addr);
+    reverse_bd_addr(addr, &hci_cmd_buffer[3]);
 }
 
 static const btstack_chipset_t btstack_chipset_em9301 = {
