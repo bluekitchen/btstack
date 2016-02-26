@@ -83,6 +83,9 @@ typedef enum {
 // periodic sending during link establishment
 #define LINK_PERIOD_MS 250
 
+// resend wakeup
+#define LINK_WAKEUP_MS 50
+
 // additional packet types
 #define LINK_ACKNOWLEDGEMENT_TYPE 0x00
 #define LINK_CONTROL_PACKET_TYPE 0x0f
@@ -97,7 +100,7 @@ static const uint8_t link_control_config_response[] = { 0x04, 0x7b, LINK_CONFIG_
 static const uint8_t link_control_config_response_prefix_len  = 2;
 static const uint8_t link_control_wakeup[] = { 0x05, 0xfa};
 static const uint8_t link_control_woken[] =  { 0x06, 0xf9};
-// static const uint8_t link_control_sleep[] =  { 0x07, 0x78};
+static const uint8_t link_control_sleep[] =  { 0x07, 0x78};
 
 static uint8_t   hci_packet_with_pre_buffer[HCI_INCOMING_PRE_BUFFER_SIZE + 1 + HCI_PACKET_BUFFER_SIZE]; // packet type + max(acl header + acl payload, event header + event data)
 
@@ -114,6 +117,7 @@ static btstack_timer_source_t link_timer;
 static uint8_t  link_seq_nr;
 static uint8_t  link_ack_nr;
 static uint16_t link_resend_timeout_ms;
+static uint8_t  link_peer_asleep;
 
 // Outgoing packet
 static uint8_t   hci_packet_type;
@@ -335,6 +339,11 @@ static void hci_transport_link_send_woken(void){
     hci_transport_link_send_control(link_control_woken, sizeof(link_control_woken));
 }
 
+static void hci_transport_link_send_wakeup(void){
+    log_info("link: send wakeup");
+    hci_transport_link_send_control(link_control_wakeup, sizeof(link_control_wakeup));
+}
+
 static void hci_transport_link_send_ack_packet(void){
     log_info("link: send ack %u", link_ack_nr);
     uint8_t header[4];
@@ -363,9 +372,15 @@ static void hci_transport_link_timeout_handler(btstack_timer_source_t * timer){
                 log_info("h5 timeout while active, but no outgoing packet");
                 return;
             }
+            if (link_peer_asleep){
+                hci_transport_link_send_wakeup();
+                hci_transport_link_set_timer(LINK_WAKEUP_MS);
+                return;
+            }
             // resend packet
             hci_transport_h5_send_queued_packet();
             hci_transport_link_set_timer(link_resend_timeout_ms);
+            break;
         default:
             break;
     }
@@ -373,6 +388,7 @@ static void hci_transport_link_timeout_handler(btstack_timer_source_t * timer){
 
 static void hci_transport_link_init(void){
     link_state = LINK_UNINITIALIZED;
+    link_peer_asleep = 0;
 
     // get started
     hci_transport_link_send_sync();
@@ -500,14 +516,29 @@ static void hci_transport_h5_process_frame(void){
                     if (memcmp(slip_payload, link_control_config, sizeof(link_control_config)) == 0){
                         log_info("link: received config");
                         hci_transport_link_send_config_response();
+                        break;
                     }
                     if (memcmp(slip_payload, link_control_sync, sizeof(link_control_sync)) == 0){
                         log_info("link: received sync in ACTIVE STATE!");
                         // TODO sync during active indicates peer reset -> full upper layer reset necessary
+                        break;
+                    }
+                    if (memcmp(slip_payload, link_control_sleep, sizeof(link_control_sleep)) == 0){
+                        log_info("link: received sleep message");
+                        link_peer_asleep = 1;
+                        break;
                     }
                     if (memcmp(slip_payload, link_control_wakeup, sizeof(link_control_wakeup)) == 0){
                         log_info("link: received wakupe message -> send woken");
+                        link_peer_asleep = 0;
                         hci_transport_link_send_woken();
+                        break;
+                    }
+                    if (memcmp(slip_payload, link_control_woken, sizeof(link_control_woken)) == 0){
+                        log_info("link: received woken message");
+                        link_peer_asleep = 0;
+                        // TODO: send packet if queued....
+                        break;
                     }
                     break;
                 case HCI_EVENT_PACKET:
@@ -546,6 +577,15 @@ static int hci_transport_h5_send_packet(uint8_t packet_type, uint8_t *packet, in
 
     // store request
     hci_transport_h5_queue_packet(packet_type, packet, size);
+
+    // check peer sleep mode
+    if (link_peer_asleep){
+        hci_transport_link_send_wakeup();
+        hci_transport_link_set_timer(LINK_WAKEUP_MS);
+        return 0;        
+    }
+
+    // otherwise, send packet right away
     hci_transport_h5_send_queued_packet();
 
     // set timer for retransmit
