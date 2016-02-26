@@ -410,17 +410,30 @@ static void hci_transport_h5_process_frame(void){
 
     int     seq_nr =  slip_header[0] & 0x07;
     int     ack_nr = (slip_header[0] >> 3)    & 0x07;
+    int     data_integrity_check_present = (slip_header[0] & 0x40) != 0;
     int     reliable_packet  = (slip_header[0] & 0x80) != 0;
-    uint8_t link_packet_type = slip_header[1] & 0x0f;
-
+    uint8_t  link_packet_type = slip_header[1] & 0x0f;
+    uint16_t link_payload_len = (slip_header[1] >> 4) | (slip_header[2] << 8);
     log_info("hci_transport_h5_process_frame, reliable %u, packet type %u, seq_nr %u, ack_nr %u", link_packet_type, reliable_packet, seq_nr, ack_nr);
     log_info_hexdump(slip_header, 4);
     log_info_hexdump(slip_payload, slip_payload_pos);
 
-    // TODO validate header checksum
-    // TODO validate payload length
-    // (TODO data integrity check)
+    // validate header checksum
+    uint8_t header_checksum = slip_header[0] + slip_header[1] + slip_header[2] + slip_header[3];
+    if (header_checksum != 0xff){
+        log_info("h5: header checksum 0x%02x (instead of 0xff)", header_checksum);
+        return;
+    }
 
+    // validate payload length
+    int data_integrity_len = data_integrity_check_present ? 2 : 0;
+    uint16_t expected_payload_len = link_payload_len + data_integrity_len;
+    if (expected_payload_len != slip_payload_pos){
+        log_info("h5: expected payload len %u but got %u", expected_payload_len, slip_payload_pos);
+        return;
+    }
+
+    // (TODO data integrity check)
 
     switch (link_state){
         case LINK_UNINITIALIZED:
