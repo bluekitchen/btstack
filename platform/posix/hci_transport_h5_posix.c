@@ -481,6 +481,7 @@ static void hci_transport_h5_process_frame(void){
                 // validate packet sequence nr (out of sequence error)
                 if (seq_nr != link_ack_nr){
                     log_info("expected seq nr %u, but received %u", link_ack_nr, seq_nr);
+                    hci_transport_link_send_ack_packet();
                     return;
                 }
                 // ack packet right away
@@ -511,7 +512,7 @@ static void hci_transport_h5_process_frame(void){
                 // our packet is good if the remote expects our seq nr + 1
                 int next_seq_nr = hci_transport_h5_inc_seq_nr(link_seq_nr);
                 if (hci_transport_h5_outgoing_packet() && next_seq_nr == ack_nr){
-                    log_info("outoing packet with seq %u ack'ed", link_seq_nr);
+                    log_info("h5: outoing packet with seq %u ack'ed", link_seq_nr);
                     link_seq_nr = next_seq_nr;
                     hci_transport_h5_clear_queue();
 
