@@ -196,20 +196,14 @@ static inline void hci_transport_slip_send_block(const uint8_t * data, uint16_t 
 }
 
 // format: 0xc0 HEADER PACKER 0xc0
-static void hci_transport_slip_send_frame(uint32_t header, const uint8_t * packet, uint16_t packet_size){
-    // reset data integrity flag
-        if (header & 0x040){
-        log_error("hci_transport_slip_send_frame: data integrity not supported, dropping flag");
-        header &= ~0x40;
-    }
+// @param uint8_t header[4]
+static void hci_transport_slip_send_frame(const uint8_t * header, const uint8_t * packet, uint16_t packet_size){
     
     // Start of Frame
     hci_transport_slip_send_eof();
 
     // Header
-    uint8_t header_buffer[4];
-    little_endian_store_32(header_buffer, 0, header);
-    hci_transport_slip_send_block(header_buffer, sizeof(header_buffer));
+    hci_transport_slip_send_block(header, 4);
 
     // Packet
     hci_transport_slip_send_block(packet, packet_size);
@@ -287,7 +281,7 @@ static void hci_transport_slip_process(uint8_t input){
 
 // H5 Three-Wire Implementation
 
-static uint32_t hci_transport_link_calc_header(
+static void hci_transport_link_calc_header(uint8_t * header,
     uint8_t  sequence_nr,
     uint8_t  acknowledgement_nr,
     uint8_t  data_integrity_check_present,
@@ -295,41 +289,50 @@ static uint32_t hci_transport_link_calc_header(
     uint8_t  packet_type,
     uint16_t payload_length){
 
-    uint8_t byte_0 = sequence_nr | (acknowledgement_nr << 3) | (data_integrity_check_present << 6) | (reliable_packet << 7);
-    uint8_t byte_1 = packet_type | ((payload_length & 0x0f) << 4);
-    uint8_t byte_2 = payload_length >> 4;
-    uint8_t byte_3 = 0xff - (byte_0 + byte_1 + byte_2);
+    // reset data integrity flag
+    if (data_integrity_check_present){
+        log_error("hci_transport_link_calc_header: data integrity not supported, dropping flag");
+        data_integrity_check_present = 0;
+    }
 
-    return ((uint32_t) byte_0) | (((uint32_t) byte_1) << 8) | (((uint32_t) byte_2) << 16) | (((uint32_t) byte_3) << 24);
+    header[0] = sequence_nr | (acknowledgement_nr << 3) | (data_integrity_check_present << 6) | (reliable_packet << 7);
+    header[1] = packet_type | ((payload_length & 0x0f) << 4);
+    header[2] = payload_length >> 4;
+    header[3] = 0xff - (header[0] + header[1] + header[2]);
 }
 
 static void hci_transport_link_send_sync(void){
     log_info("link: send sync");
-    uint32_t header = hci_transport_link_calc_header(0, 0, 0, 0, LINK_CONTROL_PACKET_TYPE, sizeof(link_control_sync));
+    uint8_t header[4];
+    hci_transport_link_calc_header(header, 0, 0, 0, 0, LINK_CONTROL_PACKET_TYPE, sizeof(link_control_sync));
     hci_transport_slip_send_frame(header, link_control_sync, sizeof(link_control_sync));
 }
 
 static void hci_transport_link_send_sync_response(void){
     log_info("link: send sync response");
-    uint32_t header = hci_transport_link_calc_header(0, 0, 0, 0, LINK_CONTROL_PACKET_TYPE, sizeof(link_control_sync_response));
+    uint8_t header[4];
+    hci_transport_link_calc_header(header, 0, 0, 0, 0, LINK_CONTROL_PACKET_TYPE, sizeof(link_control_sync_response));
     hci_transport_slip_send_frame(header, link_control_sync_response, sizeof(link_control_sync_response));
 }
 
 static void hci_transport_link_send_config(void){
     log_info("link: send config");
-    uint32_t header = hci_transport_link_calc_header(0, 0, 0, 0, LINK_CONTROL_PACKET_TYPE, sizeof(link_control_config));
+    uint8_t header[4];
+    hci_transport_link_calc_header(header, 0, 0, 0, 0, LINK_CONTROL_PACKET_TYPE, sizeof(link_control_config));
     hci_transport_slip_send_frame(header, link_control_config, sizeof(link_control_config));
 }
 
 static void hci_transport_link_send_config_response(void){
     log_info("link: send config response");
-    uint32_t header = hci_transport_link_calc_header(0, 0, 0, 0, LINK_CONTROL_PACKET_TYPE, sizeof(link_control_config_response));
+    uint8_t header[4];
+    hci_transport_link_calc_header(header, 0, 0, 0, 0, LINK_CONTROL_PACKET_TYPE, sizeof(link_control_config_response));
     hci_transport_slip_send_frame(header, link_control_config_response, sizeof(link_control_config_response));
 }
 
 static void hci_transport_link_send_ack_packet(void){
     log_info("link: send ack %u", link_ack_nr);
-    uint32_t header = hci_transport_link_calc_header(0, link_ack_nr, 0, 0, LINK_ACKNOWLEDGEMENT_TYPE, sizeof(link_control_sync_response));
+    uint8_t header[4];
+    hci_transport_link_calc_header(header, 0, link_ack_nr, 0, 0, LINK_ACKNOWLEDGEMENT_TYPE, sizeof(link_control_sync_response));
     hci_transport_slip_send_frame(header, NULL, 0);
 }
 
@@ -393,7 +396,8 @@ static void hci_transport_h5_send_queued_packet(void){
     log_info("hci_transport_h5_send_queued_packet: seq %u, ack %u, size %u", link_seq_nr, link_ack_nr, hci_packet_size);
     log_info_hexdump(hci_packet, hci_packet_size);
 
-    uint32_t header = hci_transport_link_calc_header(link_seq_nr, link_ack_nr, 0, 1, hci_packet_type, hci_packet_size);
+    uint8_t header[4];
+    hci_transport_link_calc_header(header, link_seq_nr, link_ack_nr, 0, 1, hci_packet_type, hci_packet_size);
     hci_transport_slip_send_frame(header, hci_packet, hci_packet_size);
 }
 
