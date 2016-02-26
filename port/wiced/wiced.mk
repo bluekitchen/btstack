@@ -18,7 +18,7 @@ $(NAME)_SOURCES += \
 	../../src/ble/le_device_db_memory.c   \
 	../../src/ble/sm.c          		  \
 	../../src/classic/hsp_hs.c            \
-	../../src/classic/remote_device_db_memory.c \
+	../../src/classic/btstack_link_key_db_memory.c \
 	../../src/classic/rfcomm.c            \
 	../../src/classic/sdp_server.c               \
 	../../src/classic/sdp_client.c        \
@@ -40,5 +40,5 @@ $(NAME)_SOURCES += \
 	main.c                                \
 	btstack_run_loop_wiced.c                      \
 	hci_transport_h4_wiced.c              \
-	../../chipset/bcm/bt_control_bcm.c    \
+	../../chipset/bcm/btstack_chipset_bcm.c    \
 	../../../drivers/bluetooth/firmware/$(BT_CHIP)$(BT_CHIP_REVISION)/bt_firmware_image.c \
