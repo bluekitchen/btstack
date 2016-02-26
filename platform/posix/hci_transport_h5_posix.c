@@ -90,11 +90,14 @@ typedef enum {
 static const uint8_t slip_c0_encoded[] = { 0xdb, 0xdc };
 static const uint8_t slip_db_encoded[] = { 0xdb, 0xdd };
 
-static const uint8_t link_control_sync[] = { 0x01, 0x7e};
+static const uint8_t link_control_sync[] =   { 0x01, 0x7e};
 static const uint8_t link_control_sync_response[] = { 0x02, 0x7d};
 static const uint8_t link_control_config[] = { 0x03, 0xfc, LINK_CONFIG_FIELD};
 static const uint8_t link_control_config_response[] = { 0x04, 0x7b, LINK_CONFIG_FIELD};
 static const uint8_t link_control_config_response_prefix_len  = 2;
+static const uint8_t link_control_wakeup[] = { 0x05, 0xfa};
+static const uint8_t link_control_woken[] =  { 0x06, 0xf9};
+// static const uint8_t link_control_sleep[] =  { 0x07, 0x78};
 
 static uint8_t   hci_packet_with_pre_buffer[HCI_INCOMING_PRE_BUFFER_SIZE + 1 + HCI_PACKET_BUFFER_SIZE]; // packet type + max(acl header + acl payload, event header + event data)
 
@@ -301,32 +304,35 @@ static void hci_transport_link_calc_header(uint8_t * header,
     header[3] = 0xff - (header[0] + header[1] + header[2]);
 }
 
+static void hci_transport_link_send_control(const uint8_t * message, int message_len){
+    uint8_t header[4];
+    hci_transport_link_calc_header(header, 0, 0, 0, 0, LINK_CONTROL_PACKET_TYPE, message_len);
+    hci_transport_slip_send_frame(header, message, message_len);
+}
+
 static void hci_transport_link_send_sync(void){
     log_info("link: send sync");
-    uint8_t header[4];
-    hci_transport_link_calc_header(header, 0, 0, 0, 0, LINK_CONTROL_PACKET_TYPE, sizeof(link_control_sync));
-    hci_transport_slip_send_frame(header, link_control_sync, sizeof(link_control_sync));
+    hci_transport_link_send_control(link_control_sync, sizeof(link_control_sync));
 }
 
 static void hci_transport_link_send_sync_response(void){
     log_info("link: send sync response");
-    uint8_t header[4];
-    hci_transport_link_calc_header(header, 0, 0, 0, 0, LINK_CONTROL_PACKET_TYPE, sizeof(link_control_sync_response));
-    hci_transport_slip_send_frame(header, link_control_sync_response, sizeof(link_control_sync_response));
+    hci_transport_link_send_control(link_control_sync_response, sizeof(link_control_sync_response));
 }
 
 static void hci_transport_link_send_config(void){
     log_info("link: send config");
-    uint8_t header[4];
-    hci_transport_link_calc_header(header, 0, 0, 0, 0, LINK_CONTROL_PACKET_TYPE, sizeof(link_control_config));
-    hci_transport_slip_send_frame(header, link_control_config, sizeof(link_control_config));
+    hci_transport_link_send_control(link_control_config, sizeof(link_control_config));
 }
 
 static void hci_transport_link_send_config_response(void){
     log_info("link: send config response");
-    uint8_t header[4];
-    hci_transport_link_calc_header(header, 0, 0, 0, 0, LINK_CONTROL_PACKET_TYPE, sizeof(link_control_config_response));
-    hci_transport_slip_send_frame(header, link_control_config_response, sizeof(link_control_config_response));
+    hci_transport_link_send_control(link_control_config_response, sizeof(link_control_config_response));
+}
+
+static void hci_transport_link_send_woken(void){
+    log_info("link: send woken");
+    hci_transport_link_send_control(link_control_woken, sizeof(link_control_woken));
 }
 
 static void hci_transport_link_send_ack_packet(void){
@@ -498,6 +504,10 @@ static void hci_transport_h5_process_frame(void){
                     if (memcmp(slip_payload, link_control_sync, sizeof(link_control_sync)) == 0){
                         log_info("link: received sync in ACTIVE STATE!");
                         // TODO sync during active indicates peer reset -> full upper layer reset necessary
+                    }
+                    if (memcmp(slip_payload, link_control_wakeup, sizeof(link_control_wakeup)) == 0){
+                        log_info("link: received wakupe message -> send woken");
+                        hci_transport_link_send_woken();
                     }
                     break;
                 case HCI_EVENT_PACKET:
