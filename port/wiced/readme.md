@@ -7,7 +7,7 @@ Then create projects for BTstack examples in WICED/apps/btstack by running:
 
 Now, the BTstack examples can be build from the WICED root in the same way as other examples, e.g.:
 
-	./make btstack.spp_and_le_counter-RB_Duo
+	./make btstack.spp_and_le_counter-RB_DUO
 
 to build the SPP-and-LE-Counter example.
 
