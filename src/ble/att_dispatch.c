@@ -70,7 +70,7 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
 				att_server_waiting_for_can_send = 0;
 				att_server_handler(packet_type, handle, packet, size);
 				// stop if client cannot send anymore
-				if (!l2cap_can_send_fixed_channel_packet_now(handle, L2CAP_CID_ATTRIBUTE_PROTOCOL)) break;
+				if (!hci_can_send_acl_le_packet_now()) break;
 			}
 			if (att_client_handler && att_client_waiting_for_can_send){
 				att_client_waiting_for_can_send = 0;
