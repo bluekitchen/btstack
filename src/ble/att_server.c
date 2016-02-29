@@ -329,29 +329,36 @@ static void att_run(void){
 }
 
 static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *packet, uint16_t size){
-    if (packet_type != ATT_DATA_PACKET) return;
+    switch (packet_type){
+        case HCI_EVENT_PACKET:
+            if (packet[0] != L2CAP_EVENT_CAN_SEND_NOW) break;
+            att_run();
+            break;
 
-    // handle value indication confirms
-    if (packet[0] == ATT_HANDLE_VALUE_CONFIRMATION && att_handle_value_indication_handle){
-        btstack_run_loop_remove_timer(&att_handle_value_indication_timer);
-        uint16_t att_handle = att_handle_value_indication_handle;
-        att_handle_value_indication_handle = 0;    
-        att_handle_value_indication_notify_client(0, att_connection.con_handle, att_handle);
-        return;
+        case ATT_DATA_PACKET:
+            // handle value indication confirms
+            if (packet[0] == ATT_HANDLE_VALUE_CONFIRMATION && att_handle_value_indication_handle){
+                btstack_run_loop_remove_timer(&att_handle_value_indication_timer);
+                uint16_t att_handle = att_handle_value_indication_handle;
+                att_handle_value_indication_handle = 0;    
+                att_handle_value_indication_notify_client(0, att_connection.con_handle, att_handle);
+                return;
+            }
+
+            // check size
+            if (size > sizeof(att_request_buffer)) return;
+
+            // last request still in processing?
+            if (att_server_state != ATT_SERVER_IDLE) return;
+
+            // store request
+            att_server_state = ATT_SERVER_REQUEST_RECEIVED;
+            att_request_size = size;
+            memcpy(att_request_buffer, packet, size);
+        
+            att_run();
+            break;
     }
-
-    // check size
-    if (size > sizeof(att_request_buffer)) return;
-
-    // last request still in processing?
-    if (att_server_state != ATT_SERVER_IDLE) return;
-
-    // store request
-    att_server_state = ATT_SERVER_REQUEST_RECEIVED;
-    att_request_size = size;
-    memcpy(att_request_buffer, packet, size);
-
-    att_run();
 }
 
 void att_server_init(uint8_t const * db, att_read_callback_t read_callback, att_write_callback_t write_callback){
