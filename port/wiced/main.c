@@ -51,7 +51,7 @@ static const char * wifi_mac_address = NVRAM_GENERATED_MAC_ADDRESS;
 static const hci_transport_config_uart_t hci_transport_config_uart = {
     HCI_TRANSPORT_CONFIG_UART,
     115200,
-    3000000,
+    0, // 3000000,
     1,
     NULL,
 };
