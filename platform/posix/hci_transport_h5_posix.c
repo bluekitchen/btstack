@@ -347,7 +347,7 @@ static void hci_transport_link_send_wakeup(void){
 static void hci_transport_link_send_ack_packet(void){
     log_info("link: send ack %u", link_ack_nr);
     uint8_t header[4];
-    hci_transport_link_calc_header(header, 0, link_ack_nr, 0, 0, LINK_ACKNOWLEDGEMENT_TYPE, sizeof(link_control_sync_response));
+    hci_transport_link_calc_header(header, 0, link_ack_nr, 0, 0, LINK_ACKNOWLEDGEMENT_TYPE, 0);
     hci_transport_slip_send_frame(header, NULL, 0);
 }
 
@@ -435,8 +435,8 @@ static void hci_transport_h5_process_frame(void){
     int     data_integrity_check_present = (slip_header[0] & 0x40) != 0;
     int     reliable_packet  = (slip_header[0] & 0x80) != 0;
     uint8_t  link_packet_type = slip_header[1] & 0x0f;
-    uint16_t link_payload_len = (slip_header[1] >> 4) | (slip_header[2] << 8);
-    log_info("hci_transport_h5_process_frame, reliable %u, packet type %u, seq_nr %u, ack_nr %u", link_packet_type, reliable_packet, seq_nr, ack_nr);
+    uint16_t link_payload_len = (slip_header[1] >> 4) | (slip_header[2] << 4);
+    log_info("hci_transport_h5_process_frame, reliable %u, packet type %u, seq_nr %u, ack_nr %u", reliable_packet, link_packet_type, seq_nr, ack_nr);
     log_info_hexdump(slip_header, 4);
     log_info_hexdump(slip_payload, slip_payload_pos);
 
