@@ -136,10 +136,10 @@ static struct libusb_transfer *acl_out_transfer;
 static struct libusb_transfer *event_in_transfer[ASYNC_BUFFERS];
 static struct libusb_transfer *acl_in_transfer[ASYNC_BUFFERS];
 
-#ifdef HAVE_SCO
+#ifdef HAVE_SCO_OVER_HCI
 
 #ifdef _WIN32
-#error "SCO not working on Win32 (Windows 8, libusb 1.0.19, Zadic WinUSB), please uncomment HAVE_SCO in btstack-config.h for now"
+#error "SCO not working on Win32 (Windows 8, libusb 1.0.19, Zadic WinUSB), please uncomment HAVE_SCO_OVER_HCI in btstack-config.h for now"
 #endif
 
 // incoming SCO
@@ -184,7 +184,7 @@ static int sco_in_addr;
 static int sco_out_addr;
 
 
-#ifdef HAVE_SCO
+#ifdef HAVE_SCO_OVER_HCI
 static void sco_ring_init(void){
     sco_ring_write = 0;
     sco_ring_transfers_active = 0;
@@ -246,7 +246,7 @@ static void async_callback(struct libusb_transfer *transfer)
 }
 
 
-#ifdef HAVE_SCO
+#ifdef HAVE_SCO_OVER_HCI
 static int usb_send_sco_packet(uint8_t *packet, int size){
     int r;
 
@@ -347,7 +347,7 @@ static void handle_completed_transfer(struct libusb_transfer *transfer){
         // log_info("acl out done, size %u", transfer->actual_length);
         usb_acl_out_active = 0;
         signal_done = 1;
-#ifdef HAVE_SCO
+#ifdef HAVE_SCO_OVER_HCI
     } else if (transfer->endpoint == sco_in_addr) {
         // log_info("handle_completed_transfer for SCO IN! num packets %u", transfer->NUM_ISO_PACKETS);
         int i;
@@ -619,7 +619,7 @@ static int prepare_device(libusb_device_handle * aHandle){
         return r;
     }
 
-#ifdef HAVE_SCO
+#ifdef HAVE_SCO_OVER_HCI
     log_info("claiming interface 1...");
     r = libusb_claim_interface(aHandle, 1);
     if (r < 0) {
@@ -645,7 +645,7 @@ static int prepare_device(libusb_device_handle * aHandle){
 static int usb_open(void){
     int r;
 
-#ifdef HAVE_SCO
+#ifdef HAVE_SCO_OVER_HCI
     sco_state_machine_init();
     sco_ring_init();
 #endif
@@ -772,7 +772,7 @@ static int usb_open(void){
 
     libusb_state = LIB_USB_TRANSFERS_ALLOCATED;
 
-#ifdef HAVE_SCO
+#ifdef HAVE_SCO_OVER_HCI
 
     // incoming
     for (c = 0 ; c < ASYNC_BUFFERS ; c++) {
@@ -882,7 +882,7 @@ static int usb_close(void){
             for (c = 0 ; c < ASYNC_BUFFERS ; c++) {
                 libusb_cancel_transfer(event_in_transfer[c]);
                 libusb_cancel_transfer(acl_in_transfer[c]);
-#ifdef HAVE_SCO
+#ifdef HAVE_SCO_OVER_HCI
                 libusb_cancel_transfer(sco_in_transfer[c]);
 #endif
             }
@@ -908,7 +908,7 @@ static int usb_close(void){
             for (c = 0 ; c < ASYNC_BUFFERS ; c++) {
                 if (event_in_transfer[c]) libusb_free_transfer(event_in_transfer[c]);
                 if (acl_in_transfer[c])   libusb_free_transfer(acl_in_transfer[c]);
-#ifdef HAVE_SCO
+#ifdef HAVE_SCO_OVER_HCI
                 if (sco_in_transfer[c])   libusb_free_transfer(sco_in_transfer[c]);
 #endif
             }
@@ -991,7 +991,7 @@ static int usb_can_send_packet_now(uint8_t packet_type){
             return !usb_command_active;
         case HCI_ACL_DATA_PACKET:
             return !usb_acl_out_active;
-#ifdef HAVE_SCO
+#ifdef HAVE_SCO_OVER_HCI
         case HCI_SCO_DATA_PACKET:
             return sco_ring_have_space();
 #endif
@@ -1006,7 +1006,7 @@ static int usb_send_packet(uint8_t packet_type, uint8_t * packet, int size){
             return usb_send_cmd_packet(packet, size);
         case HCI_ACL_DATA_PACKET:
             return usb_send_acl_packet(packet, size);
-#ifdef HAVE_SCO
+#ifdef HAVE_SCO_OVER_HCI
         case HCI_SCO_DATA_PACKET:
             return usb_send_sco_packet(packet, size);
 #endif

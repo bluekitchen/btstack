@@ -8,7 +8,6 @@
 // Port related features
 #define HAVE_BZERO
 #define HAVE_MALLOC
-#define HAVE_SCO
 #define HAVE_SCO_OVER_HCI
 #define HAVE_SO_NOSIGPIPE
 #define HAVE_TIME
