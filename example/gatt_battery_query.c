@@ -237,7 +237,7 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
             connection_handle = hci_subevent_le_connection_complete_get_connection_handle(packet);
             // initialize gatt client context with handle, and add it to the list of active clients
             // query primary services
-            printf("\nSearch for battery service. ");
+            printf("\nSearch for battery service.\n");
             state = TC_W4_SERVICE_RESULT;
             gatt_client_discover_primary_services_by_uuid16(handle_gatt_client_event, connection_handle, battery_service_uuid);
             break;
