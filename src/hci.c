@@ -1280,7 +1280,7 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
             hci_stack->substate = HCI_INIT_LE_SET_SCAN_PARAMETERS;
             return;
 
-#ifdef HAVE_SCO_OVER_HCI
+#ifdef ENABLE_SCO_OVER_HCI
         case HCI_INIT_W4_WRITE_SCAN_ENABLE:
             // just go to next state
             break;

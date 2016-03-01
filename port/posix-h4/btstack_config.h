@@ -9,7 +9,6 @@
 #define HAVE_BZERO
 #define HAVE_MALLOC
 #define HAVE_POSIX_FILE_IO
-#define HAVE_SCO_OVER_HCI
 #define HAVE_SO_NOSIGPIPE
 #define HAVE_TIME
 
@@ -19,6 +18,7 @@
 #define ENABLE_LOG_ERROR
 #define ENABLE_LOG_INFO 
 #define ENABLE_LOG_INTO_HCI_DUMP
+#define ENABLE_SCO_OVER_HCI
 #define ENABLE_SDP_DES_DUMP
 
 // BTstack configuration. buffers, sizes, ...

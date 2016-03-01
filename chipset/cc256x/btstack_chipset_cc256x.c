@@ -87,7 +87,7 @@ static int16_t  init_power_in_dB    = 13; // 13 dBm
 static int      init_ehcill_enabled = 0;
 
 // support for SCO over HCI
-#ifdef HAVE_SCO_OVER_HCI
+#ifdef ENABLE_SCO_OVER_HCI
 static int      init_send_route_sco_over_hci = 0;
 // route SCO over HCI (connection type=1, tx buffer size = 0x00 (don't change), tx buffer max latency=0x0000(don't chnage)), accept packets - 0)
 static const uint8_t hci_route_sco_over_hci[] = {
@@ -97,7 +97,7 @@ static const uint8_t hci_route_sco_over_hci[] = {
 
 static void chipset_init(const void * config){
     init_script_offset = 0;
-#ifdef HAVE_SCO_OVER_HCI
+#ifdef ENABLE_SCO_OVER_HCI
     init_send_route_sco_over_hci = 1;
 #endif
 }
@@ -222,7 +222,7 @@ static void update_init_script_command(uint8_t *hci_cmd_buffer){
 static btstack_chipset_result_t chipset_next_command(uint8_t * hci_cmd_buffer){
     if (init_script_offset >= cc256x_init_script_size) {
 
-#ifdef HAVE_SCO_OVER_HCI
+#ifdef ENABLE_SCO_OVER_HCI
         // append send route SCO over HCI if requested
         if (init_send_route_sco_over_hci){
             init_send_route_sco_over_hci = 0;
