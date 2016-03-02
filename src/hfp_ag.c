@@ -219,7 +219,7 @@ static int hfp_ag_send_phone_number_for_voice_tag_cmd(uint16_t cid){
 
 static int hfp_ag_send_call_waiting_notification(uint16_t cid){
     char buffer[50];
-    sprintf(buffer, "\r\n+CCWA: \"%s\",%u\r\n", hfp_gsm_clip_number(), hfp_gsm_clip_type());
+    sprintf(buffer, "\r\n%s: \"%s\",%u\r\n", HFP_ENABLE_CALL_WAITING_NOTIFICATION, hfp_gsm_clip_number(), hfp_gsm_clip_type());
     return send_str_over_rfcomm(cid, buffer);
 }
 
@@ -1605,6 +1605,12 @@ static void hfp_run_for_context(hfp_connection_t *hfp_connection){
         return;
     } 
 
+    if (hfp_connection->ag_notify_incoming_call_waiting){
+        hfp_connection->ag_notify_incoming_call_waiting = 0;
+        hfp_ag_send_call_waiting_notification(hfp_connection->rfcomm_cid);
+        return;
+    }
+
     if (hfp_connection->command == HFP_CMD_UNKNOWN){
         hfp_connection->ok_pending = 0;
         hfp_connection->send_error = 0;
@@ -2245,4 +2251,11 @@ void hfp_ag_clear_last_dialed_number(void){
     hfp_gsm_clear_last_dialed_number();
 }
 
+void hfp_ag_notify_incoming_call_waiting(bd_addr_t bd_addr){
+    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_bd_addr(bd_addr);
+    if (!hfp_connection->call_waiting_notification_enabled) return;
+    
+    hfp_connection->ag_notify_incoming_call_waiting = 1;
+    hfp_run_for_context(hfp_connection);
+}
 
