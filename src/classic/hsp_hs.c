@@ -559,7 +559,7 @@ static void handle_query_rfcomm_event(uint8_t packet_type, uint16_t channel, uin
     switch (hci_event_packet_get_type(packet)){
         case SDP_EVENT_QUERY_RFCOMM_SERVICE:
             channel_nr = sdp_event_query_rfcomm_service_get_rfcomm_channel(packet);
-			log_info("** Service name: '%s', RFCOMM port %u", ve->service_name, channel_nr);
+            log_info("** Service name: '%s', RFCOMM port %u", sdp_event_query_rfcomm_service_get_name(packet), channel_nr);
             break;
         case SDP_EVENT_QUERY_COMPLETE:
             if (channel_nr > 0){

@@ -1082,10 +1082,13 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 }
 
 void hfp_hf_init(uint16_t rfcomm_channel_nr){
+    // register for HCI events
+    hci_event_callback_registration.callback = &packet_handler;
+    hci_add_event_handler(&hci_event_callback_registration);
+
     l2cap_init();
-    l2cap_register_packet_handler(packet_handler);
-    rfcomm_register_packet_handler(packet_handler);
-    hfp_init(rfcomm_channel_nr);
+
+    rfcomm_register_service(packet_handler, rfcomm_channel_nr, 0xffff);  
 
     hfp_supported_features = HFP_DEFAULT_HF_SUPPORTED_FEATURES;
     hfp_codecs_nr = 0;

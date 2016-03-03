@@ -800,7 +800,7 @@ static int hfp_ag_run_for_audio_connection(hfp_connection_t * hfp_connection){
     if (hfp_connection->establish_audio_connection){
         hfp_connection->state = HFP_W4_SCO_CONNECTED;
         hfp_connection->establish_audio_connection = 0;
-        hfp_setup_synchronous_connection(hfp_connection->acl_handle, context->link_setting);
+        hfp_setup_synchronous_connection(hfp_connection->acl_handle, hfp_connection->link_setting);
         return 1;
     }
     return 0;
@@ -820,10 +820,10 @@ static hfp_connection_t * hfp_ag_context_for_timer(btstack_timer_source_t * ts){
 }
 
 static void hfp_timeout_handler(btstack_timer_source_t * timer){
-    hfp_connection_t * context = hfp_ag_context_for_timer(timer);
-    if (!context) return;
+    hfp_connection_t * hfp_connection = hfp_ag_context_for_timer(timer);
+    if (!hfp_connection) return;
 
-    log_info("HFP start ring timeout, con handle 0x%02x", hfp_connection->con_handle);
+    log_info("HFP start ring timeout, con handle 0x%02x", hfp_connection->acl_handle);
     hfp_connection->ag_ring = 1;
     hfp_connection->ag_send_clip = hfp_gsm_clip_type() && hfp_connection->clip_enabled;
 
@@ -880,7 +880,7 @@ static void hfp_ag_trigger_incoming_call(void){
         hfp_ag_establish_service_level_connection(hfp_connection->remote_addr);
         if (hfp_connection->call_state == HFP_CALL_IDLE){
             hfp_connection->ag_indicators_status_update_bitmap = store_bit(hfp_connection->ag_indicators_status_update_bitmap, indicator_index, 1);
-            hfp_ag_hf_start_ringing(connection);
+            hfp_ag_hf_start_ringing(hfp_connection);
         }
         if (hfp_connection->call_state == HFP_CALL_ACTIVE){
             hfp_connection->call_state = HFP_CALL_W2_SEND_CALL_WAITING;
@@ -1008,7 +1008,7 @@ static void hfp_ag_trigger_terminate_call(void){
     btstack_linked_list_iterator_init(&it, hfp_get_connections());
     while (btstack_linked_list_iterator_has_next(&it)){
         hfp_connection_t * hfp_connection = (hfp_connection_t *)btstack_linked_list_iterator_next(&it);
-        hfp_ag_establish_service_level_connection(connection->remote_addr);
+        hfp_ag_establish_service_level_connection(hfp_connection->remote_addr);
         if (hfp_connection->call_state == HFP_CALL_IDLE) continue;
         hfp_connection->call_state = HFP_CALL_IDLE;
         hfp_connection->ag_indicators_status_update_bitmap = store_bit(hfp_connection->ag_indicators_status_update_bitmap, call_indicator_index, 1);
@@ -1958,10 +1958,10 @@ static void hfp_handle_rfcomm_data(uint8_t packet_type, uint16_t channel, uint8_
 }
 
 static void hfp_run(void){
-    linked_list_iterator_t it;    
-    linked_list_iterator_init(&it, hfp_get_connections());
-    while (linked_list_iterator_has_next(&it)){
-        hfp_connection_t * hfp_connection = (hfp_connection_t *)linked_list_iterator_next(&it);
+    btstack_linked_list_iterator_t it;    
+    btstack_linked_list_iterator_init(&it, hfp_get_connections());
+    while (btstack_linked_list_iterator_has_next(&it)){
+        hfp_connection_t * hfp_connection = (hfp_connection_t *)btstack_linked_list_iterator_next(&it);
         hfp_run_for_context(hfp_connection);
     }
 }
@@ -2016,10 +2016,13 @@ void hfp_ag_init_call_hold_services(int call_hold_services_nr, const char * call
 
 
 void hfp_ag_init(uint16_t rfcomm_channel_nr){
+    // register for HCI events
+    hci_event_callback_registration.callback = &packet_handler;
+    hci_add_event_handler(&hci_event_callback_registration);
+
     l2cap_init();
-    l2cap_register_packet_handler(packet_handler);
-    rfcomm_register_packet_handler(packet_handler);
-    hfp_init(rfcomm_channel_nr);
+
+    rfcomm_register_service(packet_handler, rfcomm_channel_nr, 0xffff);  
     
     hfp_ag_response_and_hold_active = 0;
     subscriber_numbers = NULL;

@@ -61,10 +61,13 @@ static void att_init_connection(att_connection_t * att_connection){
 	att_connection->authorized = 0;
 }
 
+int hci_can_send_acl_le_packet_now(void){
+	return 1;
+}
+
 int  l2cap_can_send_connectionless_packet_now(void){
 	return 1;	
 }
-
 
 uint8_t *l2cap_get_outgoing_buffer(void){
 	// printf("l2cap_get_outgoing_buffer\n");
