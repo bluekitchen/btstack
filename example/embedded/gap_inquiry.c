@@ -150,10 +150,16 @@ static void packet_handler (uint8_t packet_type, uint8_t *packet, uint16_t size)
         /* @text In INIT, an inquiry  scan is started, and the application transits to 
          * ACTIVE state.
          */
-        case INIT: 
-            if (packet[2] == HCI_STATE_WORKING) {
-                start_scan();
-                state = ACTIVE;
+        case INIT:
+            switch(event){
+                case BTSTACK_EVENT_STATE:
+                    if (packet[2] == HCI_STATE_WORKING){
+                        start_scan();
+                        state = ACTIVE;
+                    }
+                    break;
+                default:
+                    break;
             }
             break;
 
