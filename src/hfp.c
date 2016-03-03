@@ -282,6 +282,9 @@ void hfp_reset_context_flags(hfp_connection_t * hfp_connection){
     hfp_connection->codec_confirmed = 0;
 
     hfp_connection->establish_audio_connection = 0; 
+    hfp_connection->call_waiting_notification_enabled = 0;
+    hfp_connection->command = HFP_CMD_NONE;
+    hfp_connection->enable_status_update_for_ag_indicators = 0xFF;
 }
 
 static hfp_connection_t * create_hfp_connection_context(){
@@ -296,9 +299,8 @@ static hfp_connection_t * create_hfp_connection_context(){
 
     hfp_connection->parser_state = HFP_PARSER_CMD_HEADER;
     hfp_connection->command = HFP_CMD_NONE;
-    hfp_connection->negotiated_codec = 0;
     
-    hfp_connection->enable_status_update_for_ag_indicators = 0xFF;
+    hfp_reset_context_flags(hfp_connection);
 
     linked_list_add(&hfp_connections, (linked_item_t*)hfp_connection);
     return hfp_connection;

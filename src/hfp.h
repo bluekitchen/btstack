@@ -559,6 +559,7 @@ typedef struct hfp_connection {
     uint8_t ag_send_clip;
     uint8_t ag_echo_and_noise_reduction;
     uint8_t ag_activate_voice_recognition;
+    uint8_t ag_notify_incoming_call_waiting;
     uint8_t send_subscriber_number;
     uint8_t next_subscriber_number_to_send;
 

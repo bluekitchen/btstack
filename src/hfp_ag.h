@@ -220,6 +220,13 @@ void hfp_ag_set_battery_level(int level);
  */
 void hfp_ag_clear_last_dialed_number(void);
 
+/*
+ * @brief Notify the HF that an incoming call is waiting 
+ * during an ongoing call. The notification will be sent only if the HF has
+ * has previously enabled the "Call Waiting notification" in the AG. 
+ * @param bd_addr Bluetooth address of the HF
+ */
+void hfp_ag_notify_incoming_call_waiting(bd_addr_t bd_addr);
 
 // Voice Recognition
 
@@ -231,85 +238,85 @@ void hfp_ag_clear_last_dialed_number(void);
 void hfp_ag_activate_voice_recognition(bd_addr_t bd_addr, int activate);
 
 /*
- * @brief
+ * @brief Send a phone number back to the HF.
  * @param bd_addr Bluetooth address of the HF
- * @param number
+ * @param phone_number
  */
-void hfp_ag_send_phone_number_for_voice_tag(bd_addr_t bd_addr, const char * number);
+void hfp_ag_send_phone_number_for_voice_tag(bd_addr_t bd_addr, const char * phone_number);
 
 /*
- * @brief
+ * @brief Reject sending a phone number to the HF.
  * @param bd_addr Bluetooth address of the HF
  */
 void hfp_ag_reject_phone_number_for_voice_tag(bd_addr_t bd_addr);
 
-
-// Cellular Actions
-
 /**
- * @brief 
- */
-void hfp_ag_incoming_call(void);
-
-/**
- * @brief number is stored.
+ * @brief Store phone number with initiated call.
  * @param type
  * @param number
  */
 void hfp_ag_set_clip(uint8_t type, const char * number);
 
+
+// Cellular Actions
+
 /**
- * @brief 
+ * @brief Pass the accept incoming call event to the AG.
+ */
+void hfp_ag_incoming_call(void);
+
+/**
+ * @brief Pass the reject outgoing call event to the AG.
  */
 void hfp_ag_outgoing_call_rejected(void);
 
 /**
- * @brief 
+ * @brief Pass the accept outgoing call event to the AG.
  */
 void hfp_ag_outgoing_call_accepted(void);
 
 /**
- * @brief 
+ * @brief Pass the outgoing call ringing event to the AG.
  */
 void hfp_ag_outgoing_call_ringing(void);
 
 /**
- * @brief 
+ * @brief Pass the outgoing call established event to the AG.
  */
 void hfp_ag_outgoing_call_established(void);
 
 /**
- * @brief 
+ * @brief Pass the call droped event to the AG.
  */
 void hfp_ag_call_dropped(void);
 
 /*
- * @brief
- * @param status
+ * @brief Set network registration status.  
+ * @param status 0 - not registered, 1 - registered 
  */
 void hfp_ag_set_registration_status(int status);
 
 /*
- * @brief
- * @param strength
+ * @brief Set network signal strength.
+ * @param strength [0-5]
  */
 void hfp_ag_set_signal_strength(int strength);
 
 /*
- * @brief
- * @param status
+ * @brief Set roaming status.
+ * @param status 0 - no roaming, 1 - roaming active
  */
 void hfp_ag_set_roaming_status(int status);
 
 /*
- * @brief
+ * @brief Set subcriber number information, e.g. the phone number 
  * @param numbers
  * @param numbers_count
  */
 void hfp_ag_set_subcriber_number_information(hfp_phone_number_t * numbers, int numbers_count);
 
 /*
- * @brief Called by cellular unit after a DTMF code was transmitted, so that the next one can be emitted
+ * @brief Called by cellular unit after a DTMF code was transmitted, so that the next one can be emitted.
  * @param bd_addr Bluetooth address of the HF 
  */
 void hfp_ag_send_dtmf_code_done(bd_addr_t bd_addr);
