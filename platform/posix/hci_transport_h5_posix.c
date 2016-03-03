@@ -497,10 +497,10 @@ static void hci_transport_h5_process_frame(void){
                 packet_handler(HCI_EVENT_PACKET, &event[0], sizeof(event));
             }
             break;
-        case LINK_ACTIVE:
 
+        case LINK_ACTIVE:
+            // validate packet sequence nr for reliable packets (out of sequence error)
             if (reliable_packet){
-                // validate packet sequence nr (out of sequence error)
                 if (seq_nr != link_ack_nr){
                     log_info("expected seq nr %u, but received %u", link_ack_nr, seq_nr);
                     hci_transport_link_send_ack_packet();
@@ -510,7 +510,23 @@ static void hci_transport_h5_process_frame(void){
                 link_ack_nr = hci_transport_h5_inc_seq_nr(link_ack_nr);
                 hci_transport_link_send_ack_packet();
             }
-          
+
+            // Process ACKs in reliable and explicit ack packets
+            if (reliable_packet || link_packet_type == LINK_ACKNOWLEDGEMENT_TYPE){
+                // our packet is good if the remote expects our seq nr + 1
+                int next_seq_nr = hci_transport_h5_inc_seq_nr(link_seq_nr);
+                if (hci_transport_h5_outgoing_packet() && next_seq_nr == ack_nr){
+                    log_info("h5: outoing packet with seq %u ack'ed", link_seq_nr);
+                    link_seq_nr = next_seq_nr;
+                    hci_transport_h5_clear_queue();
+
+                    // notify upper stack that it can send again
+                    uint8_t event[] = { HCI_EVENT_TRANSPORT_PACKET_SENT, 0};
+                    packet_handler(HCI_EVENT_PACKET, &event[0], sizeof(event));
+                }
+            } 
+            
+            // handle actual packet
             switch (link_packet_type){
                 case LINK_CONTROL_PACKET_TYPE:
                     if (memcmp(slip_payload, link_control_config, sizeof(link_control_config)) == 0){
@@ -547,21 +563,6 @@ static void hci_transport_h5_process_frame(void){
                     packet_handler(link_packet_type, slip_payload, slip_payload_pos);
                     break;
             }
-
-            // ACKs are in reliable packet and explicit ack packets
-            if (reliable_packet || link_packet_type == LINK_ACKNOWLEDGEMENT_TYPE){
-                // our packet is good if the remote expects our seq nr + 1
-                int next_seq_nr = hci_transport_h5_inc_seq_nr(link_seq_nr);
-                if (hci_transport_h5_outgoing_packet() && next_seq_nr == ack_nr){
-                    log_info("h5: outoing packet with seq %u ack'ed", link_seq_nr);
-                    link_seq_nr = next_seq_nr;
-                    hci_transport_h5_clear_queue();
-
-                    // notify upper stack that it can send again
-                    uint8_t event[] = { HCI_EVENT_TRANSPORT_PACKET_SENT, 0};
-                    packet_handler(HCI_EVENT_PACKET, &event[0], sizeof(event));
-                }
-            } 
             break;
         default:
             break;
