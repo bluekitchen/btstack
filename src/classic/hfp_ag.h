@@ -62,26 +62,64 @@ typedef struct {
 
 /**
  * @brief Create HFP Audio Gateway (AG) SDP service record. 
+ * @param service
+ * @param rfcomm_channel_nr
+ * @param name
+ * @param ability_to_reject_call
+ * @param suported_features 32-bit bitmap, see HFP_AGSF_* values in hfp.h
  */
 void hfp_ag_create_sdp_record(uint8_t * service, uint32_t service_record_handle, int rfcomm_channel_nr, const char * name, uint8_t ability_to_reject_call, uint16_t supported_features);;
 
 /**
- * @brief Intialize HFP Audio Gateway (AG) device. 
- * TODO:  move optional params into setters
+ * @brief Set up HFP Audio Gateway (AG) device without additional supported features.
+ * @param rfcomm_channel_nr
  */
-void hfp_ag_init(uint16_t rfcomm_channel_nr, uint32_t supported_features, 
-    uint8_t * codecs, int codecs_nr, 
-    hfp_ag_indicator_t * ag_indicators, int ag_indicators_nr,
-    hfp_generic_status_indicator_t * hf_indicators, int hf_indicators_nr,
-    const char *call_hold_services[], int call_hold_services_nr);
+void hfp_ag_init(uint16_t rfcomm_channel_nr);
+
+/**
+ * @brief Set codecs. 
+ * @param codecs_nr
+ * @param codecs
+ */
+void hfp_ag_init_codecs(int codecs_nr, uint8_t * codecs);
+
+/**
+ * @brief Set supported features.
+ * @param supported_features 32-bit bitmap, see HFP_AGSF_* values in hfp.h
+ */
+void hfp_ag_init_supported_features(uint32_t supported_features);
+
+/**
+ * @brief Set AG indicators. 
+ * @param indicators_nr
+ * @param indicators
+ */
+void hfp_ag_init_ag_indicators(int ag_indicators_nr, hfp_ag_indicator_t * ag_indicators);
+
+/**
+ * @brief Set HF indicators. 
+ * @param indicators_nr
+ * @param indicators
+ */
+void hfp_ag_init_hf_indicators(int hf_indicators_nr, hfp_generic_status_indicator_t * hf_indicators);
+
+/**
+ * @brief Set Call Hold services. 
+ * @param indicators_nr
+ * @param indicators
+ */
+void hfp_ag_init_call_hold_services(int call_hold_services_nr, const char * call_hold_services[]);
+
 
 /**
  * @brief Register callback for the HFP Audio Gateway (AG) client. 
+ * @param callback
  */
 void hfp_ag_register_packet_handler(hfp_callback_t callback);
 
 /**
- * @brief Enable in-band ring tone
+ * @brief Enable in-band ring tone.
+ * @param use_in_band_ring_tone
  */
 void hfp_ag_set_use_in_band_ring_tone(int use_in_band_ring_tone);
 
@@ -96,152 +134,192 @@ void hfp_ag_set_use_in_band_ring_tone(int use_in_band_ring_tone);
  * - accept the information about available codecs in the Hands-Free (HF), if sent
  * - report own information describing the call hold and multiparty services, if possible
  * - report which HF indicators are enabled on the AG, if possible
+ * The status of SLC connection establishment is reported via
+ * HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED.
+ *
+ * @param bd_addr Bluetooth address of the HF
  */
 void hfp_ag_establish_service_level_connection(bd_addr_t bd_addr);
 
 /**
  * @brief Release the RFCOMM channel and the audio connection between the HF and the AG. 
- * TODO: trigger release of the audio connection ??
+ * If the audio connection exists, it will be released.
+ * The status of releasing the SLC connection is reported via
+ * HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED.
+ *
+ * @param bd_addr Bluetooth address of the HF
  */
 void hfp_ag_release_service_level_connection(bd_addr_t bd_addr);
 
 /**
- * @brief 
+ * @brief Establish audio connection.
+ * The status of Audio connection establishment is reported via is reported via
+ * HSP_SUBEVENT_AUDIO_CONNECTION_COMPLETE.
+ * @param bd_addr Bluetooth address of the HF
  */
 void hfp_ag_establish_audio_connection(bd_addr_t bd_addr);
 
 /**
- * @brief 
+ * @brief Release audio connection.
+ * The status of releasing the Audio connection is reported via is reported via
+ * HSP_SUBEVENT_AUDIO_DISCONNECTION_COMPLETE.
+ * @param bd_addr Bluetooth address of the HF
  */
 void hfp_ag_release_audio_connection(bd_addr_t bd_addr);
 
 /**
- * @brief 
+ * @brief Put the current call on hold, if it exists, and accept incoming call. 
  */
 void hfp_ag_answer_incoming_call(void);
 
 /**
- * @brief 
+ * @brief Join held call with active call.
  */
 void hfp_ag_join_held_call(void);
 
 /**
- * @brief 
+ * @brief Reject incoming call, if exists, or terminate active call.
  */
 void hfp_ag_terminate_call(void);
 
 /*
- * @brief
+ * @brief Put incoming call on hold.
  */
 void hfp_ag_hold_incoming_call(void);
 
 /*
- * @brief
+ * @brief Accept the held incoming call.
  */
 void hfp_ag_accept_held_incoming_call(void);
 
 /*
- * @brief
+ * @brief Reject the held incoming call.
  */
 void hfp_ag_reject_held_incoming_call(void);
 
 /*
- * @brief
+ * @brief Set microphone gain. 
+ * @param bd_addr Bluetooth address of the HF
+ * @param gain Valid range: [0,15]
  */
 void hfp_ag_set_microphone_gain(bd_addr_t bd_addr, int gain);
 
 /*
- * @brief
+ * @brief Set speaker gain.
+ * @param bd_addr Bluetooth address of the HF
+ * @param gain Valid range: [0,15]
  */
 void hfp_ag_set_speaker_gain(bd_addr_t bd_addr, int gain);
 
 /*
- * @brief
+ * @brief Set battery level.
+ * @param level Valid range: [0,5]
  */
 void hfp_ag_set_battery_level(int level);
 
 /*
- * @brief
+ * @brief Clear last dialed number.
  */
 void hfp_ag_clear_last_dialed_number(void);
 
+/*
+ * @brief Notify the HF that an incoming call is waiting 
+ * during an ongoing call. The notification will be sent only if the HF has
+ * has previously enabled the "Call Waiting notification" in the AG. 
+ * @param bd_addr Bluetooth address of the HF
+ */
+void hfp_ag_notify_incoming_call_waiting(bd_addr_t bd_addr);
 
 // Voice Recognition
 
 /*
- * @brief
+ * @brief Activate voice recognition.
+ * @param bd_addr Bluetooth address of the HF
+ * @param activate
  */
 void hfp_ag_activate_voice_recognition(bd_addr_t bd_addr, int activate);
 
 /*
- * @brief
+ * @brief Send a phone number back to the HF.
+ * @param bd_addr Bluetooth address of the HF
+ * @param phone_number
  */
-void hfp_ag_send_phone_number_for_voice_tag(bd_addr_t bd_addr, const char * number);
+void hfp_ag_send_phone_number_for_voice_tag(bd_addr_t bd_addr, const char * phone_number);
 
 /*
- * @brief
+ * @brief Reject sending a phone number to the HF.
+ * @param bd_addr Bluetooth address of the HF
  */
 void hfp_ag_reject_phone_number_for_voice_tag(bd_addr_t bd_addr);
+
+/**
+ * @brief Store phone number with initiated call.
+ * @param type
+ * @param number
+ */
+void hfp_ag_set_clip(uint8_t type, const char * number);
 
 
 // Cellular Actions
 
 /**
- * @brief 
+ * @brief Pass the accept incoming call event to the AG.
  */
 void hfp_ag_incoming_call(void);
 
 /**
- * @brief number is stored.
- */
-void hfp_ag_set_clip(uint8_t type, const char * number);
-
-/**
- * @brief 
+ * @brief Pass the reject outgoing call event to the AG.
  */
 void hfp_ag_outgoing_call_rejected(void);
 
 /**
- * @brief 
+ * @brief Pass the accept outgoing call event to the AG.
  */
 void hfp_ag_outgoing_call_accepted(void);
 
 /**
- * @brief 
+ * @brief Pass the outgoing call ringing event to the AG.
  */
 void hfp_ag_outgoing_call_ringing(void);
 
 /**
- * @brief 
+ * @brief Pass the outgoing call established event to the AG.
  */
 void hfp_ag_outgoing_call_established(void);
 
 /**
- * @brief 
+ * @brief Pass the call droped event to the AG.
  */
 void hfp_ag_call_dropped(void);
+
 /*
- * @brief
+ * @brief Set network registration status.  
+ * @param status 0 - not registered, 1 - registered 
  */
 void hfp_ag_set_registration_status(int status);
 
 /*
- * @brief
+ * @brief Set network signal strength.
+ * @param strength [0-5]
  */
 void hfp_ag_set_signal_strength(int strength);
 
 /*
- * @brief
+ * @brief Set roaming status.
+ * @param status 0 - no roaming, 1 - roaming active
  */
 void hfp_ag_set_roaming_status(int status);
 
 /*
- * @brief
+ * @brief Set subcriber number information, e.g. the phone number 
+ * @param numbers
+ * @param numbers_count
  */
 void hfp_ag_set_subcriber_number_information(hfp_phone_number_t * numbers, int numbers_count);
 
 /*
- * @brief Called by cellular unit after a DTMF code was transmitted, so that the next one can be emitted
+ * @brief Called by cellular unit after a DTMF code was transmitted, so that the next one can be emitted.
+ * @param bd_addr Bluetooth address of the HF 
  */
 void hfp_ag_send_dtmf_code_done(bd_addr_t bd_addr);
 
@@ -272,6 +350,9 @@ void hfp_ag_send_dtmf_code_done(bd_addr_t bd_addr);
  * - +CME ERROR: 30 - no network service
  * - +CME ERROR: 31 - network Timeout.
  * - +CME ERROR: 32 - network not allowed – Emergency calls only
+ *
+ * @param bd_addr Bluetooth address of the HF
+ * @param error
  */
 void hfp_ag_report_extended_audio_gateway_error_result_code(bd_addr_t bd_addr, hfp_cme_error_t error);
 

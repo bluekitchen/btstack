@@ -128,9 +128,15 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
     switch(state){
 
         case INIT: 
-            if (packet[2] == HCI_STATE_WORKING) {
-                hci_send_cmd(&hci_write_inquiry_mode, 0x01); // with RSSI
-                state = W4_INQUIRY_MODE_COMPLETE;
+            switch(event){
+                case BTSTACK_EVENT_STATE:
+                    if (packet[2] == HCI_STATE_WORKING){
+                        hci_send_cmd(&hci_write_inquiry_mode, 0x01); // with RSSI
+                        state = W4_INQUIRY_MODE_COMPLETE;
+                    }
+                    break;
+                default:
+                    break;
             }
             break;
 

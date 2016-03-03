@@ -47,12 +47,8 @@
 #include "classic/hfp.h"
 
 void hfp_parse(hfp_connection_t * context, uint8_t byte, int isHandsFree);
-hfp_generic_status_indicator_t * get_hfp_generic_status_indicators();
-void set_hfp_generic_status_indicators(hfp_generic_status_indicator_t * indicators, int indicator_nr);
 
-hfp_ag_indicator_t * get_hfp_ag_indicators(hfp_connection_t * context);
-int get_hfp_ag_indicators_nr(hfp_connection_t * context);
-void set_hfp_ag_indicators(hfp_ag_indicator_t * indicators, int indicator_nr);
+hfp_ag_indicator_t * hfp_ag_get_ag_indicators(hfp_connection_t * hfp_connection);
 
 // static int hf_indicators_nr = 3;
 // static hfp_generic_status_indicator_t hf_indicators[] = {
@@ -78,8 +74,7 @@ static  hfp_connection_t context;
 
 TEST_GROUP(HFPParser){
     char packet[200];
-    int pos;
-    int offset;
+    uint16_t pos;
 
     void setup(void){
         context.parser_state = HFP_PARSER_CMD_HEADER;
@@ -140,13 +135,13 @@ TEST(HFPParser, HFP_AG_ENABLE_INDICATOR_STATUS_UPDATE){
 
 
 TEST(HFPParser, HFP_AG_ENABLE_INDIVIDUAL_INDICATOR_STATUS_UPDATE){
-    set_hfp_ag_indicators((hfp_ag_indicator_t *)&hfp_ag_indicators, hfp_ag_indicators_nr);
+    hfp_ag_init_ag_indicators(hfp_ag_indicators_nr, (hfp_ag_indicator_t *)&hfp_ag_indicators);
     context.ag_indicators_nr = hfp_ag_indicators_nr;
     memcpy(context.ag_indicators, hfp_ag_indicators, hfp_ag_indicators_nr * sizeof(hfp_ag_indicator_t));
     
     for (pos = 0; pos < hfp_ag_indicators_nr; pos++){
-        CHECK_EQUAL(get_hfp_ag_indicators(&context)[pos].index, hfp_ag_indicators[pos].index);
-        CHECK_EQUAL(get_hfp_ag_indicators(&context)[pos].enabled, hfp_ag_indicators[pos].enabled);
+        CHECK_EQUAL(hfp_ag_get_ag_indicators(&context)[pos].index, hfp_ag_indicators[pos].index);
+        CHECK_EQUAL(hfp_ag_get_ag_indicators(&context)[pos].enabled, hfp_ag_indicators[pos].enabled);
         CHECK_EQUAL(context.ag_indicators[pos].index, hfp_ag_indicators[pos].index);
         CHECK_EQUAL(context.ag_indicators[pos].enabled, hfp_ag_indicators[pos].enabled);
     }
@@ -159,18 +154,18 @@ TEST(HFPParser, HFP_AG_ENABLE_INDIVIDUAL_INDICATOR_STATUS_UPDATE){
     CHECK_EQUAL(HFP_CMD_ENABLE_INDIVIDUAL_AG_INDICATOR_STATUS_UPDATE, context.command);
 
     for (pos = 0; pos < hfp_ag_indicators_nr; pos++){
-        if (get_hfp_ag_indicators(&context)[pos].mandatory){
-            CHECK_EQUAL(get_hfp_ag_indicators(&context)[pos].enabled, 1);
+        if (hfp_ag_get_ag_indicators(&context)[pos].mandatory){
+            CHECK_EQUAL(hfp_ag_get_ag_indicators(&context)[pos].enabled, 1);
             CHECK_EQUAL(context.ag_indicators[pos].enabled, 1);
         } else {
-            CHECK_EQUAL(get_hfp_ag_indicators(&context)[pos].enabled, 0);
+            CHECK_EQUAL(hfp_ag_get_ag_indicators(&context)[pos].enabled, 0);
             CHECK_EQUAL(context.ag_indicators[pos].enabled, 0);
         }
     }
 }
 
 TEST(HFPParser, HFP_AG_ENABLE_INDIVIDUAL_INDICATOR_STATUS_UPDATE_OPT_VALUES3){
-    set_hfp_ag_indicators((hfp_ag_indicator_t *)&hfp_ag_indicators, hfp_ag_indicators_nr);
+    hfp_ag_init_ag_indicators(hfp_ag_indicators_nr, (hfp_ag_indicator_t *)&hfp_ag_indicators);
     context.ag_indicators_nr = hfp_ag_indicators_nr;
     memcpy(context.ag_indicators, hfp_ag_indicators, hfp_ag_indicators_nr * sizeof(hfp_ag_indicator_t));
 
@@ -183,15 +178,15 @@ TEST(HFPParser, HFP_AG_ENABLE_INDIVIDUAL_INDICATOR_STATUS_UPDATE_OPT_VALUES3){
     CHECK_EQUAL(HFP_CMD_ENABLE_INDIVIDUAL_AG_INDICATOR_STATUS_UPDATE, context.command);
 
     for (pos = 0; pos < hfp_ag_indicators_nr; pos++){
-        CHECK_EQUAL(get_hfp_ag_indicators(&context)[pos].index, hfp_ag_indicators[pos].index);
-        CHECK_EQUAL(get_hfp_ag_indicators(&context)[pos].enabled, hfp_ag_indicators[pos].enabled);
+        CHECK_EQUAL(hfp_ag_get_ag_indicators(&context)[pos].index, hfp_ag_indicators[pos].index);
+        CHECK_EQUAL(hfp_ag_get_ag_indicators(&context)[pos].enabled, hfp_ag_indicators[pos].enabled);
         CHECK_EQUAL(context.ag_indicators[pos].index, hfp_ag_indicators[pos].index);
         CHECK_EQUAL(context.ag_indicators[pos].enabled, hfp_ag_indicators[pos].enabled);
     }
 }
 
 TEST(HFPParser, HFP_AG_ENABLE_INDIVIDUAL_INDICATOR_STATUS_UPDATE_OPT_VALUES2){
-    set_hfp_ag_indicators((hfp_ag_indicator_t *)&hfp_ag_indicators, hfp_ag_indicators_nr);
+    hfp_ag_init_ag_indicators(hfp_ag_indicators_nr, (hfp_ag_indicator_t *)&hfp_ag_indicators);
     context.ag_indicators_nr = hfp_ag_indicators_nr;
     memcpy(context.ag_indicators, hfp_ag_indicators, hfp_ag_indicators_nr * sizeof(hfp_ag_indicator_t));
 
@@ -204,13 +199,13 @@ TEST(HFPParser, HFP_AG_ENABLE_INDIVIDUAL_INDICATOR_STATUS_UPDATE_OPT_VALUES2){
     CHECK_EQUAL(HFP_CMD_ENABLE_INDIVIDUAL_AG_INDICATOR_STATUS_UPDATE, context.command);
 
     for (pos = 0; pos < hfp_ag_indicators_nr; pos++){
-        CHECK_EQUAL(get_hfp_ag_indicators(&context)[pos].enabled, 1);
+        CHECK_EQUAL(hfp_ag_get_ag_indicators(&context)[pos].enabled, 1);
         CHECK_EQUAL(context.ag_indicators[pos].enabled, 1);
     }
 }
 
 TEST(HFPParser, HFP_AG_ENABLE_INDIVIDUAL_INDICATOR_STATUS_UPDATE_OPT_VALUES1){
-    set_hfp_ag_indicators((hfp_ag_indicator_t *)&hfp_ag_indicators, hfp_ag_indicators_nr);
+    hfp_ag_init_ag_indicators(hfp_ag_indicators_nr, (hfp_ag_indicator_t *)&hfp_ag_indicators);
     context.ag_indicators_nr = hfp_ag_indicators_nr;
     memcpy(context.ag_indicators, hfp_ag_indicators, hfp_ag_indicators_nr * sizeof(hfp_ag_indicator_t));
 
@@ -223,7 +218,7 @@ TEST(HFPParser, HFP_AG_ENABLE_INDIVIDUAL_INDICATOR_STATUS_UPDATE_OPT_VALUES1){
     CHECK_EQUAL(HFP_CMD_ENABLE_INDIVIDUAL_AG_INDICATOR_STATUS_UPDATE, context.command);
 
     for (pos = 0; pos < hfp_ag_indicators_nr; pos++){
-        CHECK_EQUAL(get_hfp_ag_indicators(&context)[pos].enabled, 1);
+        CHECK_EQUAL(hfp_ag_get_ag_indicators(&context)[pos].enabled, 1);
         CHECK_EQUAL(context.ag_indicators[pos].enabled, 1);
     }
 }

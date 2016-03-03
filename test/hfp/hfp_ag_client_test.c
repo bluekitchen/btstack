@@ -361,8 +361,7 @@ void packet_handler(uint8_t * event, uint16_t event_size){
     if (event[3]
         && event[2] != HFP_SUBEVENT_PLACE_CALL_WITH_NUMBER
         && event[2] != HFP_SUBEVENT_ATTACH_NUMBER_TO_VOICE_TAG 
-        && event[2] != HFP_SUBEVENT_TRANSMIT_DTMF_CODES
-        && event[2] != HFP_SUBEVENT_TRANSMIT_STATUS_OF_CURRENT_CALL){
+        && event[2] != HFP_SUBEVENT_TRANSMIT_DTMF_CODES){
         printf("ERROR, status: %u\n", event[3]);
         return;
     }
@@ -417,11 +416,12 @@ void packet_handler(uint8_t * event, uint16_t event_size){
 
 TEST_GROUP(HFPClient){
     void setup(void){
-        hfp_ag_init(rfcomm_channel_nr, supported_features_with_codec_negotiation, 
-            codecs, sizeof(codecs), 
-            ag_indicators, ag_indicators_nr, 
-            hf_indicators, hf_indicators_nr, 
-            call_hold_services, call_hold_services_nr);
+        hfp_ag_init(rfcomm_channel_nr);
+        hfp_ag_init_supported_features(supported_features_with_codec_negotiation); 
+        hfp_ag_init_codecs(sizeof(codecs), codecs);
+        hfp_ag_init_ag_indicators(ag_indicators_nr, ag_indicators);
+        hfp_ag_init_hf_indicators(hf_indicators_nr, hf_indicators); 
+        hfp_ag_init_call_hold_services(call_hold_services_nr, call_hold_services);
     }
 
     void teardown(void){

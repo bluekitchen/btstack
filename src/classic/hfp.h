@@ -37,7 +37,7 @@
 
 // *****************************************************************************
 //
-//  HFP Hands-Free (HF) unit and Audio-Gateway Commons
+//  HFP Hands-Free (HF) unit and Audio Gateway Commons
 //
 // *****************************************************************************
 
@@ -159,7 +159,9 @@ typedef enum {
     HFP_CMD_ENABLE_INDIVIDUAL_AG_INDICATOR_STATUS_UPDATE,
     HFP_CMD_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES,
     HFP_CMD_ENABLE_CLIP,
+    HFP_CMD_AG_SENT_CLIP_INFORMATION,
     HFP_CMD_ENABLE_CALL_WAITING_NOTIFICATION,
+    HFP_CMD_AG_SENT_CALL_WAITING_NOTIFICATION_UPDATE,
 
     HFP_CMD_LIST_GENERIC_STATUS_INDICATORS,
     HFP_CMD_RETRIEVE_GENERIC_STATUS_INDICATORS,
@@ -297,7 +299,7 @@ typedef enum {
 typedef enum {
     HFP_IDLE = 0, //0
     HFP_SDP_QUERY_RFCOMM_CHANNEL,
-    HFP_W4_SDP_EVENT_QUERY_COMPLETE,
+    HFP_W4_SDP_QUERY_COMPLETE,
     HFP_W4_RFCOMM_CONNECTED,
     
     HFP_EXCHANGE_SUPPORTED_FEATURES,
@@ -526,6 +528,7 @@ typedef struct hfp_connection {
     uint8_t operator_name_changed;      
 
     uint8_t enable_extended_audio_gateway_error_report;
+    uint8_t extended_audio_gateway_error_value;
     uint8_t extended_audio_gateway_error;
 
     // establish codecs connection
@@ -556,6 +559,7 @@ typedef struct hfp_connection {
     uint8_t ag_send_clip;
     uint8_t ag_echo_and_noise_reduction;
     uint8_t ag_activate_voice_recognition;
+    uint8_t ag_notify_incoming_call_waiting;
     uint8_t send_subscriber_number;
     uint8_t next_subscriber_number_to_send;
 
@@ -568,6 +572,7 @@ typedef struct hfp_connection {
     uint8_t hf_initiate_outgoing_call;
     uint8_t hf_initiate_memory_dialing;
     uint8_t hf_initiate_redial_last_number;
+    int memory_id;
     
     uint8_t hf_send_clip_enable;
     uint8_t hf_send_chup;
@@ -602,7 +607,7 @@ typedef struct hfp_connection {
     uint8_t clcc_mpty;
 
     uint8_t call_index;
-    // also used for CLCC if set
+    // also used for CLCC, CCWA, CLIP if set
     uint8_t bnip_type;       // 0 == not set
     char    bnip_number[25]; // 
 
@@ -621,24 +626,21 @@ void hfp_set_callback(hfp_callback_t callback);
 void hfp_create_sdp_record(uint8_t * service, uint32_t service_record_handle, uint16_t service_uuid, int rfcomm_channel_nr, const char * name);
 void hfp_handle_hci_event(uint8_t packet_type, uint8_t *packet, uint16_t size);
 void hfp_emit_event(hfp_callback_t callback, uint8_t event_subtype, uint8_t value);
+void hfp_emit_simple_event(hfp_callback_t callback, uint8_t event_subtype);
 void hfp_emit_string_event(hfp_callback_t callback, uint8_t event_subtype, const char * value);
 
 hfp_connection_t * get_hfp_connection_context_for_rfcomm_cid(uint16_t cid);
 hfp_connection_t * get_hfp_connection_context_for_bd_addr(bd_addr_t bd_addr);
 hfp_connection_t * get_hfp_connection_context_for_sco_handle(uint16_t handle);
 
-int get_hfp_generic_status_indicators_nr(void);
-hfp_generic_status_indicator_t * get_hfp_generic_status_indicators(void);
-void set_hfp_generic_status_indicators(hfp_generic_status_indicator_t * indicators, int indicator_nr);
-
 btstack_linked_list_t * hfp_get_connections(void);
-void hfp_parse(hfp_connection_t * context, uint8_t byte, int isHandsFree);
+void hfp_parse(hfp_connection_t * connection, uint8_t byte, int isHandsFree);
 
 void hfp_establish_service_level_connection(bd_addr_t bd_addr, uint16_t service_uuid);
 void hfp_release_service_level_connection(hfp_connection_t * connection);
-void hfp_reset_context_flags(hfp_connection_t * context);
+void hfp_reset_context_flags(hfp_connection_t * connection);
 
-void hfp_release_audio_connection(hfp_connection_t * context);
+void hfp_release_audio_connection(hfp_connection_t * connection);
 
 void hfp_setup_synchronous_connection(hci_con_handle_t handle, hfp_link_setttings_t link_settings);
 

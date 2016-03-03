@@ -148,8 +148,8 @@ static void user_command(char cmd){
             hfp_hf_terminate_call(device_addr);
             break;
         case 'G':
-            printf("Reject call.\n");
-            hfp_hf_reject_call(device_addr);
+            printf("Reject incoming call.\n");
+            hfp_hf_reject_incoming_call(device_addr);
             break;
         case 'g':
             printf("Query operator.\n");
@@ -169,11 +169,11 @@ static void user_command(char cmd){
             break;
         case 'j':
             printf("Dial #1\n");
-            hfp_hf_dial_memory(device_addr, (char *)"1");
+            hfp_hf_dial_memory(device_addr, 1);
             break;
         case 'J':
             printf("Dial #99\n");
-            hfp_hf_dial_memory(device_addr, (char *)"99");
+            hfp_hf_dial_memory(device_addr, 99);
             break;
         case 'k':
             printf("Deactivate call waiting notification\n");
@@ -337,7 +337,7 @@ void simulate_test_sequence(hfp_test_item_t * test_item){
             sscanf(&expected_cmd[7],"%d,%d", &parsed_codecs[0], &parsed_codecs[1]);
             new_codecs[0] = parsed_codecs[0];
             new_codecs[1] = parsed_codecs[1];
-            hfp_hf_set_codecs((uint8_t*)new_codecs, 2);
+            hfp_hf_init_codecs(2, (uint8_t*)new_codecs);
             while (has_more_hfp_hf_commands()){
                 // empty rfcomm payload buffer
                 get_next_hfp_hf_command();
@@ -348,7 +348,9 @@ void simulate_test_sequence(hfp_test_item_t * test_item){
             sscanf(&expected_cmd[8],"%d", &supported_features);
             printf("Call hfp_hf_init with SF %d\n", supported_features);
             hfp_hf_release_service_level_connection(device_addr);
-            hfp_hf_init(rfcomm_channel_nr, supported_features, indicators, sizeof(indicators)/sizeof(uint16_t), 1);
+            
+            hfp_hf_init_supported_features(supported_features);
+            
             user_command('a');
             while (has_more_hfp_hf_commands()){
                 // empty rfcomm payload buffer
@@ -391,14 +393,6 @@ void simulate_test_sequence(hfp_test_item_t * test_item){
 
 void packet_handler(uint8_t * event, uint16_t event_size){
     if (event[0] != HCI_EVENT_HFP_META) return;
-    if (event[3]
-     && event[2] != HFP_SUBEVENT_EXTENDED_AUDIO_GATEWAY_ERROR
-     && event[2] != HFP_SUBEVENT_NUMBER_FOR_VOICE_TAG
-     && event[2] != HFP_SUBEVENT_SPEAKER_VOLUME
-     && event[2] != HFP_SUBEVENT_MICROPHONE_VOLUME){
-        printf("ERROR, status: %u\n", event[3]);
-        return;
-    }
 
     switch (event[2]) {   
         case HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED:
@@ -440,10 +434,10 @@ void packet_handler(uint8_t * event, uint16_t event_size){
             printf("HFP AG HFP_SUBEVENT_COMPLETE.\n");
             break;
         case HFP_SUBEVENT_AG_INDICATOR_STATUS_CHANGED:
-            printf("AG_INDICATOR_STATUS_CHANGED, AG indicator '%s' (index: %d) to: %d\n", (const char*) &event[6], event[4], event[5]);
+            printf("AG_INDICATOR_STATUS_CHANGED, AG indicator '%s' (index: %d) to: %d\n", (const char*) &event[5], event[3], event[4]);
             break;
         case HFP_SUBEVENT_NETWORK_OPERATOR_CHANGED:
-            printf("NETWORK_OPERATOR_CHANGED, operator mode: %d, format: %d, name: %s\n", event[4], event[5], (char *) &event[6]);
+            printf("NETWORK_OPERATOR_CHANGED, operator mode: %d, format: %d, name: %s\n", event[3], event[4], (char *) &event[5]);
             break;
         case HFP_SUBEVENT_EXTENDED_AUDIO_GATEWAY_ERROR:
             if (event[4])
@@ -478,8 +472,11 @@ TEST_GROUP(HFPClient){
         stop_ringing = 0;
         call_termiated = 0;
 
-        hfp_hf_init(rfcomm_channel_nr, supported_features_with_codec_negotiation, indicators, sizeof(indicators)/sizeof(uint16_t), 1);
-        hfp_hf_set_codecs(codecs, sizeof(codecs));
+        hfp_hf_init(rfcomm_channel_nr);
+        hfp_hf_init_supported_features(supported_features_with_codec_negotiation);
+        hfp_hf_init_hf_indicators(sizeof(indicators)/sizeof(uint16_t), indicators);
+
+        hfp_hf_init_codecs(sizeof(codecs), codecs);
     }
 
     void teardown(void){
