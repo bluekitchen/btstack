@@ -1407,13 +1407,12 @@ static int bnep_l2cap_packet_handler(uint16_t l2cap_cid, uint8_t *packet, uint16
 
 void bnep_packet_handler(uint8_t packet_type, uint16_t l2cap_cid, uint8_t *packet, uint16_t size)
 {
-    int handled = 0;
     switch (packet_type) {
         case HCI_EVENT_PACKET:
-            handled = bnep_hci_event_handler(packet, size);
+            bnep_hci_event_handler(packet, size);
             break;
         case L2CAP_DATA_PACKET:
-            handled = bnep_l2cap_packet_handler(l2cap_cid, packet, size);
+            bnep_l2cap_packet_handler(l2cap_cid, packet, size);
             break;
         default:
             break;
