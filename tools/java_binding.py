@@ -245,7 +245,10 @@ def mark_define_as_used(term):
 
 def java_define_string(key):
     global defines
-    return '    public static final int %s = %s;\n' % (key, defines[key])
+    if key in defines:
+        return '    public static final int %s = %s;\n' % (key, defines[key])
+    else:
+        return '    // defines[%s] not set\n' % key
 
 def java_defines_string(keys):
     return '\n'.join( map(java_define_string, sorted(keys)))
