@@ -47,6 +47,11 @@
 
 // This lists should be only accessed by tests.
 static btstack_linked_list_t db_mem_services = NULL;
+#define MAX_NAME_LEN 30
+typedef struct {
+    char service_name[MAX_NAME_LEN+1];
+    int  channel;
+} db_mem_service_t;
 
 // MARK: PERSISTENT RFCOMM CHANNEL ALLOCATION
 uint8_t rfcomm_service_db_channel_for_service(const char *serviceName){
@@ -67,11 +72,12 @@ uint8_t rfcomm_service_db_channel_for_service(const char *serviceName){
     }
 
     // Allocate new persistant channel
-    db_mem_service_t * newItem = btstack_memory_db_mem_service_get();
+    db_mem_service_t * newItem = malloc(sizeof(db_mem_service_t));
 
     if (!newItem) return 0;
     
     strncpy(newItem->service_name, serviceName, MAX_NAME_LEN);
+    newItem->service_name[MAX_NAME_LEN] = 0;
     newItem->channel = max_channel;
     btstack_linked_list_add(&db_mem_services, (btstack_linked_item_t *) newItem);
     return max_channel;
