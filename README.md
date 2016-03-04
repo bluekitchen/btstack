@@ -24,8 +24,8 @@ It has been qualified with the the Bluetooth SIG for GAP, IOP, HFP, HSP, SPP, PA
 GATT, SM of the Bluetooth 4.2 LE Central and Peripheral roles (QD ID 25340).
 
 ## Documentation
-- [HTML](http://bluekitchen-gmbh.com/btstack/)
-- [PDF](http://bluekitchen-gmbh.com/btstack.pdf)
+- [HTML](http://bluekitchen-gmbh.com/btstack/v1.0)
+- [PDF](http://bluekitchen-gmbh.com/btstack_v1.0.pdf)
 
 ## Supported Protocols
 * L2CAP            
