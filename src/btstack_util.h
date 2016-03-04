@@ -177,7 +177,7 @@ char * bd_addr_to_str(bd_addr_t addr);
  * @param buffer for parsed address
  * @return 1 if string was parsed successfully
  */
-int sscanf_bd_addr(uint8_t * addr_string, bd_addr_t addr);
+int sscanf_bd_addr(const char * addr_string, bd_addr_t addr);
 
 /**
  * @brief Constructs UUID128 from 16 or 32 bit UUID using Bluetooth base UUID

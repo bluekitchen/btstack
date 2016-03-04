@@ -139,7 +139,7 @@ int main (int argc, const char * argv[]){
 	while (arg < argc) {
 		if(!strcmp(argv[arg], "-a") || !strcmp(argv[arg], "--address")){
 			arg++;
-			if(arg >= argc || !sscanf_bd_addr((uint8_t *)argv[arg], addr)){
+			if(arg >= argc || !sscanf_bd_addr(argv[arg], addr)){
 				usage(argv[0]);
 				return 1;
 			}

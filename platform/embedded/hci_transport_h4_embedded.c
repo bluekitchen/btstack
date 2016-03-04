@@ -110,7 +110,7 @@ static TX_STATE tx_state;
 static  void (*packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size) = dummy_handler;
 
 static btstack_data_source_t hci_transport_h4_dma_ds = {
-  /*  .item    = */  { NULL, NULL },
+  /*  .item    = */  { NULL },
   /*  .fd      = */  0,
   /*  .process = */  h4_process
 };
@@ -298,6 +298,6 @@ static void dummy_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
 }
 
 // get h4 singleton
-hci_transport_t * hci_transport_h4_instance(void){ 
-    return (hci_transport_t *) &hci_transport_h4_dma;
+const hci_transport_t * hci_transport_h4_instance(void){ 
+    return &hci_transport_h4_ehcill_dma.transport;
 }

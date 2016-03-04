@@ -146,7 +146,7 @@ static btstack_timer_source_t ehcill_sleep_ack_timer;
 
 // data source used in run_loop
 static btstack_data_source_t hci_transport_h4_dma_ds = {
-  /*  .item    = */  { NULL, NULL },
+  /*  .item    = */  { NULL },
   /*  .fd      = */  0,
   /*  .process = */  h4_process
 };
@@ -171,8 +171,8 @@ static void dummy_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
 }
 
 // get h4 singleton
-hci_transport_t * hci_transport_h4_instance(void){ 
-    return (hci_transport_t *) &hci_transport_h4_ehcill_dma;
+const hci_transport_t * hci_transport_h4_instance(void){ 
+    return &hci_transport_h4_ehcill_dma.transport;
 }
 
 static void h4_rx_init_sm(void){
@@ -210,7 +210,7 @@ static int h4_set_baudrate(uint32_t baudrate){
     return hal_uart_dma_set_baud(baudrate);
 }
 
-static int h4_close(const void *transport_config){
+static int h4_close(void){
     // first remove run loop handler
 	btstack_run_loop_remove_data_source(&hci_transport_h4_dma_ds);
     

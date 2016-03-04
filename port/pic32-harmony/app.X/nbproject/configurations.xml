@@ -127,7 +127,7 @@
           <itemPath>../../../src/l2cap_signaling.c</itemPath>
           <itemPath>../../../src/btstack_linked_list.c</itemPath>
           <itemPath>../../../src/btstack_memory_pool.c</itemPath>
-          <itemPath>../../../src/classic/remote_device_db_memory.c</itemPath>
+          <itemPath>../../../src/classic/btstack_link_key_db_memory.c</itemPath>
           <itemPath>../../../src/classic/rfcomm.c</itemPath>
           <itemPath>../../../src/btstack_run_loop.c</itemPath>
           <itemPath>../../../src/btstack_run_loop_embedded.c</itemPath>

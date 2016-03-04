@@ -199,7 +199,7 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 int main (int argc, const char * argv[]){
     // handle remote addr
     if (argc > 1){
-        if (sscanf_bd_addr((uint8_t *)argv[1], addr)){
+        if (sscanf_bd_addr(argv[1], addr)){
             serverMode = 0;
             prepare_packet();
         }

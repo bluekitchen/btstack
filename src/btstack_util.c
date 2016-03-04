@@ -144,6 +144,13 @@ char char_for_nibble(int nibble){
     return '?';
 }
 
+int nibble_for_char(char c){
+    if (c >= '0' && c <= '9') return c - '0';
+    if (c >= 'a' && c <= 'f') return c - 'a';
+    if (c >= 'A' && c <= 'F') return c - 'F';
+    return -1;
+}
+
 void printf_hexdump(const void *data, int size){
     if (size <= 0) return;
     int i;
@@ -230,21 +237,34 @@ char * bd_addr_to_str(bd_addr_t addr){
     return (char *) bd_addr_to_str_buffer;
 }
 
-int sscanf_bd_addr(uint8_t * addr_string, bd_addr_t addr){
-	unsigned int bd_addr_buffer[BD_ADDR_LEN];  //for sscanf, integer needed
-	// reset result buffer
-    memset(bd_addr_buffer, 0, sizeof(bd_addr_buffer));
-    
-	// parse
-    int result = sscanf( (char *) addr_string, "%2x:%2x:%2x:%2x:%2x:%2x", &bd_addr_buffer[0], &bd_addr_buffer[1], &bd_addr_buffer[2],
-						&bd_addr_buffer[3], &bd_addr_buffer[4], &bd_addr_buffer[5]);
+static int scan_hex_byte(const char * byte_string){
+    int upper_nibble = nibble_for_char(*byte_string++);
+    if (upper_nibble < 0) return -1;
+    int lower_nibble = nibble_for_char(*byte_string);
+    if (lower_nibble < 0) return -1;
+    return (upper_nibble << 4) | lower_nibble;
+}
 
-    if (result != BD_ADDR_LEN) return 0;
-
-	// store
+int sscanf_bd_addr(const char * addr_string, bd_addr_t addr){
+    uint8_t buffer[BD_ADDR_LEN];
+    int result = 0;
     int i;
-	for (i = 0; i < BD_ADDR_LEN; i++) {
-		addr[i] = (uint8_t) bd_addr_buffer[i];
-	}
-	return 1;
+    for (i = 0; i < BD_ADDR_LEN; i++) {
+        int single_byte = scan_hex_byte(addr_string);
+        if (single_byte < 0) break;
+        addr_string += 2;
+        addr[i] = single_byte;
+        // don't check seperator after last byte
+        if (i == BD_ADDR_LEN - 1) {
+            result = 1;
+            break;
+        }
+        char separator = *addr_string++;
+        if (separator != ':' && separator != '-' && separator != ' ') break;
+    }
+
+    if (result){
+        bd_addr_copy(addr, buffer);
+    }
+	return result;
 }

@@ -189,7 +189,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                         }
                         devices[deviceCount].state = REMOTE_NAME_REQUEST;
                         printf("Device found: %s with COD: 0x%06x, pageScan %d, clock offset 0x%04x, rssi 0x%02x\n", bd_addr_to_str(addr),
-                                devices[deviceCount].classOfDevice, devices[deviceCount].pageScanRepetitionMode,
+                                (unsigned int) devices[deviceCount].classOfDevice, devices[deviceCount].pageScanRepetitionMode,
                                 devices[deviceCount].clockOffset, devices[deviceCount].rssi);
                         deviceCount++;
                     }

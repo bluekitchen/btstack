@@ -40,11 +40,12 @@
  *  Functionality special to the embedded run loop
  */
 
-#ifndef __btstack_run_loop_EMBEDDED_H
-#define __btstack_run_loop_EMBEDDED_H
+#ifndef __BTSTACK_RUN_LOOP_EMBEDDED_H
+#define __BTSTACK_RUN_LOOP_EMBEDDED_H
 
 #include "btstack_config.h"
 #include "btstack_linked_list.h"
+#include "btstack_run_loop.h"
 
 #ifdef HAVE_TIME
 #include <sys/time.h>
@@ -87,4 +88,4 @@ void btstack_run_loop_embedded_execute_once(void);
 }
 #endif
 
-#endif // __btstack_run_loop_EMBEDDED_H
+#endif // __BTSTACK_RUN_LOOP_EMBEDDED_H

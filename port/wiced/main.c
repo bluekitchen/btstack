@@ -58,25 +58,6 @@ static const hci_transport_config_uart_t hci_transport_config_uart = {
 
 extern int btstack_main(void);
 
-static int main_sscanf_bd_addr(const char * addr_string, bd_addr_t addr){
-    unsigned int bd_addr_buffer[BD_ADDR_LEN];  //for sscanf, integer needed
-    // reset result buffer
-    memset(bd_addr_buffer, 0, sizeof(bd_addr_buffer));
-    
-    // parse
-    int result = sscanf(addr_string, "%2x:%2x:%2x:%2x:%2x:%2x", &bd_addr_buffer[0], &bd_addr_buffer[1], &bd_addr_buffer[2],
-                        &bd_addr_buffer[3], &bd_addr_buffer[4], &bd_addr_buffer[5]);
-
-    if (result != BD_ADDR_LEN) return 0;
-
-    // store
-    int i;
-    for (i = 0; i < BD_ADDR_LEN; i++) {
-        addr[i] = (uint8_t) bd_addr_buffer[i];
-    }
-    return 1;
-}
-
 void application_start(void){
 
     /* Initialise the WICED device */
@@ -98,7 +79,7 @@ void application_start(void){
 
     // use WIFI Mac address + 1 for Bluetooth
     bd_addr_t dummy = { 1,2,3,4,5,6};
-    main_sscanf_bd_addr(&wifi_mac_address[8], dummy);
+    sscanf_bd_addr(&wifi_mac_address[8], dummy);
     dummy[5]++;
     hci_set_bd_addr(dummy);
     

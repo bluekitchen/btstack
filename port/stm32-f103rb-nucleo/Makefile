@@ -32,7 +32,7 @@ COMMON = \
     hci_transport_h4_ehcill_embedded.c \
     l2cap.c			          \
     l2cap_signaling.c         \
-	remote_device_db_memory.c \
+	btstack_link_key_db_memory.c \
 	rfcomm.c			      \
     sdp_server.c			          \
     sdp_util.c                \

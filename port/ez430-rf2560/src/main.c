@@ -51,17 +51,16 @@
 #include <msp430x54x.h>
 
 #include "btstack_chipset_cc256x.h"
+#include "btstack_config.h"
+#include "btstack_memory.h"
+#include "btstack_run_loop.h"
+#include "btstack_run_loop_embedded.h"
+#include "classic/btstack_link_key_db.h"
 #include "hal_board.h"
 #include "hal_compat.h"
 #include "hal_usb.h"
-
-#include "hci_cmd.h"
-#include "btstack_run_loop.h"
-
 #include "hci.h"
-#include "btstack_memory.h"
-#include "classic/btstack_link_key_db.h"
-#include "btstack_config.h"
+#include "hci_cmd.h"
 
 int btstack_main(int argc, const char * argv[]);
 
