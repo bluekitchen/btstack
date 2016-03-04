@@ -12,12 +12,16 @@ SUBDIRS =  \
 	sdp_client \
 	security_manager \
 
-subdirs:
+
+subdirs: ../include/btstack/version.h
 	echo Building all tests
 	@set -e; \
 	for dir in $(SUBDIRS); do \
 	  $(MAKE) -C $$dir; \
 	done
+
+../include/btstack/version.h:
+	../tools/get_version.sh
 
 clean:
 	echo Clean all test
@@ -26,7 +30,7 @@ clean:
 	  $(MAKE) -C $$dir clean; \
 	done
 
-test:
+test: ../include/btstack/version.h
 	echo Run all test
 	@set -e; \
 	for dir in $(SUBDIRS); do \
