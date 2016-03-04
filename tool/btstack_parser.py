@@ -1,9 +1,9 @@
-
 #!/usr/bin/env python
 # BlueKitchen GmbH (c) 2014
 
 import re
 import os
+import sys
 
 # paths
 bluetooth_h_path = 'src/bluetooth.h'
@@ -13,7 +13,8 @@ hci_cmds_c_path = 'src/hci_cmd.c'
 hci_cmds_h_path = 'src/hci_cmd.h'
 hci_h_path = 'src/hci.h'
 
-btstack_root = '../..'
+btstack_root = os.path.abspath(os.path.dirname(sys.argv[0]) + '/..')
+print ("BTstack root %s" % btstack_root)
 
 def set_btstack_root(path):
     global btstack_root
