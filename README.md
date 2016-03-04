@@ -63,9 +63,9 @@ Status               | Platform
 #### Other Platforms:     
 Status               | Platform
 --------------       | ------ 
-![buildstatus](http://buildbot.bluekitchen-gmbh.com/btstack/badge.png?builder=port-posix-stlc2500d-develop)| posix: Unix-based system talking to Bluetooth module via serial port   
+![buildstatus](http://buildbot.bluekitchen-gmbh.com/btstack/badge.png?builder=port-posix-h4-develop)| posix: Unix-based system talking to Bluetooth module via serial port   
 ![buildstatus](http://buildbot.bluekitchen-gmbh.com/btstack/badge.png?builder=port-libusb-develop)| libusb: Unix-based system talking via USB Bluetooth dongle
-![buildstatus](http://buildbot.bluekitchen-gmbh.com/btstack/badge.png?builder=port-daemon)| daemon: TCP and Unix domain named socket client-server architecture supporting multiple clients
+![buildstatus](http://buildbot.bluekitchen-gmbh.com/btstack/badge.png?builder=port-daemon-develop)| daemon: TCP and Unix domain named socket client-server architecture supporting multiple clients
 ![buildstatus](http://buildbot.bluekitchen-gmbh.com/btstack/badge.png?builder=java-develop)| java: Java wrapper for daemon 
 ![buildstatus](http://buildbot.bluekitchen-gmbh.com/btstack/badge.png?builder=port-ios-develop)| iOS: daemon for iOS jailbreak devices, C client-server API
 ![buildstatus](http://buildbot.bluekitchen-gmbh.com/btstack/badge.png?builder=port-mtk-develop)| mtk: daemon for rooted Android devices, based on Mediatek MT65xx processor, Java and C client-server API
