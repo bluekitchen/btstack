@@ -132,10 +132,16 @@ void reverse_128(const uint8_t *src, uint8_t * dest);
 void reverse_bd_addr(const bd_addr_t src, bd_addr_t dest);
 
 /** 
- * @brief 4-bit nibble
- * @return ASCII character for 4-bit nibble
+ * @brief ASCII character for 4-bit nibble
+ * @return character
  */
 char char_for_nibble(int nibble);
+
+/**
+ * @brif 4-bit nibble from ASCII character
+ * @return value
+ */
+int nibble_for_char(char c);
 
 /**
  * @brief Compare two Bluetooth addresses
