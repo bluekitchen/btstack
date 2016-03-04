@@ -26,7 +26,7 @@ api_ending = """
 
 # [file_name, api_title, api_lable]
 list_of_apis = [ 
-    [btstack_folder+"platforms/arduino/BTstack.h", "BTstack", "api_btstack"],
+    [btstack_folder+"port/arduino/BTstack.h", "BTstack", "api_btstack"],
 ]
 
 def replacePlaceholder(template, title, lable):

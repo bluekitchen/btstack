@@ -312,7 +312,7 @@ def processExamples(intro_file, examples_folder, examples_ofile):
 def main(argv):
     btstack_folder = "../../../"
     docs_folder = "docs/examples/"
-    inputfolder = btstack_folder + "platforms/arduino/examples/"
+    inputfolder = btstack_folder + "port/arduino/examples/"
     outputfile = docs_folder + "generated.md"
     intro_file = "docs/examples/intro.md"
 
