@@ -49,16 +49,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "hci_cmd.h"
-#include "btstack_run_loop.h"
-#include "classic/sdp_util.h"
-
-#include "hci.h"
-#include "l2cap.h"
-#include "btstack_memory.h"
-#include "classic/rfcomm.h"
-#include "classic/sdp_server.h"
-#include "btstack_config.h"
+#include "btstack.h"
 
 #define HEARTBEAT_PERIOD_MS 500
 
@@ -92,7 +83,7 @@ static void spp_service_setup(void){
     // init RFCOMM
     rfcomm_init();
     // reserved channel, mtu limited by l2cap, 1 credit
-    rfcomm_register_service_with_initial_credits(rfcomm_channel_nr, 0xffff, 1);  
+    rfcomm_register_service_with_initial_credits(&packet_handler, rfcomm_channel_nr, 0xffff, 1);  
 
     // init SDP, create record for SPP and register with SDP
     sdp_init();

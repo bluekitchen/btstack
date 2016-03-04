@@ -36,6 +36,7 @@ CFLAGS += \
 LDFLAGS = -mmcu=${MCU}
 
 CORE   = \
+    btstack_linked_list.c     \
     btstack_memory.c          \
     btstack_memory_pool.c       \
     btstack_run_loop.c		    \
@@ -47,7 +48,6 @@ CORE   = \
     hal_tick.c	              \
     hal_usb.c                 \
     hci_dump.c		          \
-    linked_list.c	          \
     main.c 					  \
     btstack_util.c			          \
 
@@ -114,19 +114,19 @@ include ${BTSTACK_ROOT}/chipset/cc256x/Makefile.inc
 led_counter.out: ${CORE_OBJ} ${COMMON_OBJ} ${CC2560B} led_counter.o 
 	${CC} $^ ${LDFLAGS} -o $@
 
-ant-test.out: ${CORE_OBJ} ${COMMON_OBJ} ${SPP_OBJ} profile.h sdp.o ant_cmds.o ${CC2567} ant-test.o
+ant-test.out: ${CORE_OBJ} ${COMMON_OBJ} ${SPP_OBJ} profile.h ant_cmds.o ${CC2567} ant-test.o
 	${CC} $^ ${LDFLAGS} -o $@
 
 ble_server.out: ${CORE_OBJ} ${COMMON_OBJ} ${BLE_OBJ} profile.h ble_server.o
 	${CC} $^ ${LDFLAGS} -o $@
 
-spp_and_le_counter.out: ${CORE_OBJ} ${COMMON_OBJ} ${SPP_OBJ} ${BLE_OBJ} spp_and_le_counter.h spp_and_le_counter.o sdp.o
+spp_and_le_counter.out: ${CORE_OBJ} ${COMMON_OBJ} ${SPP_OBJ} ${BLE_OBJ} spp_and_le_counter.h spp_and_le_counter.o sdp_server.o
 	${CC} $^ ${LDFLAGS} -o $@
 
-spp_counter.out: ${CORE_OBJ} ${COMMON_OBJ} ${SPP_OBJ} ${CC2560B} spp_counter.o sdp.o
+spp_counter.out: ${CORE_OBJ} ${COMMON_OBJ} ${SPP_OBJ} ${CC2560B} spp_counter.o sdp_server.o
 	${CC} $^ ${LDFLAGS} -o $@
 
-spp_flowcontrol.out: ${CORE_OBJ} ${COMMON_OBJ} ${SPP_OBJ} ${CC2560B} spp_flowcontrol.o sdp.o
+spp_flowcontrol.out: ${CORE_OBJ} ${COMMON_OBJ} ${SPP_OBJ} ${CC2560B} spp_flowcontrol.o sdp_server.o
 	${CC} $^ ${LDFLAGS} -o $@
 
 gap_inquiry.out: ${CORE_OBJ} ${COMMON_OBJ} ${SPP_OBJ} ${CC2560B} gap_inquiry.o

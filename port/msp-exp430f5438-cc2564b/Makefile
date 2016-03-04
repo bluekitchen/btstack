@@ -38,7 +38,7 @@ CORE   = \
     btstack_memory.c          \
     btstack_memory_pool.c        \
     btstack_run_loop_embedded.c  \
-    btstak_run_loop.c		     \
+    btstack_run_loop.c		     \
     hal_board.c	              \
     hal_compat.c              \
     hal_cpu.c                 \

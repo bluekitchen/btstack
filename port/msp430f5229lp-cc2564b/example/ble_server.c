@@ -63,19 +63,8 @@
 #include "hal_usb.h"
 #include "hal_usb.h"
 
-#include "btstack_run_loop.h"
+#include "btstack.h"
 
-#include "btstack_memory.h"
-#include "btstack_chipset_cc256x.h"
-#include "hci.h"
-#include "hci_dump.h"
-#include "l2cap.h"
-
-#include "ble/sm.h"
-#include "ble/att_db.h"
-#include "ble/att_server.h"
-#include "gap.h"
-#include "ble/le_device_db.h"
 
 #define FONT_HEIGHT		12                    // Each character has 13 lines 
 #define FONT_WIDTH       8
