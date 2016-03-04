@@ -62,12 +62,12 @@ Status               | Platform
 #### Other Platforms:     
 Status               | Platform
 --------------       | ------ 
-![buildstatus](http://buildbot.bluekitchen-gmbh.com/btstack/badge.png?builder=platform-posix-stlc2500d)| posix: Unix-based system talking to Bluetooth module via serial port   
-![buildstatus](http://buildbot.bluekitchen-gmbh.com/btstack/badge.png?builder=platform-libusb)| libusb: Unix-based system talking via USB Bluetooth dongle
-![buildstatus](http://buildbot.bluekitchen-gmbh.com/btstack/badge.png?builder=platform-daemon)| daemon: TCP and Unix domain named socket client-server architecture supporting multiple clients
-![buildstatus](http://buildbot.bluekitchen-gmbh.com/btstack/badge.png?builder=java)| java: Java wrapper for daemon 
-![buildstatus](http://buildbot.bluekitchen-gmbh.com/btstack/badge.png?builder=platform-ios)| iOS: daemon for iOS jailbreak devices, C client-server API
-![buildstatus](http://buildbot.bluekitchen-gmbh.com/btstack/badge.png?builder=platform-mtk)| mtk: daemon for rooted Android devices, based on Mediatek MT65xx processor, Java and C client-server API
+![buildstatus](http://buildbot.bluekitchen-gmbh.com/btstack/badge.png?builder=platform-posix-stlc2500d-master)| posix: Unix-based system talking to Bluetooth module via serial port   
+![buildstatus](http://buildbot.bluekitchen-gmbh.com/btstack/badge.png?builder=platform-libusb-master)| libusb: Unix-based system talking via USB Bluetooth dongle
+![buildstatus](http://buildbot.bluekitchen-gmbh.com/btstack/badge.png?builder=platform-daemon-master)| daemon: TCP and Unix domain named socket client-server architecture supporting multiple clients
+![buildstatus](http://buildbot.bluekitchen-gmbh.com/btstack/badge.png?builder=java-master)| java: Java wrapper for daemon 
+![buildstatus](http://buildbot.bluekitchen-gmbh.com/btstack/badge.png?builder=platform-ios-master)| iOS: daemon for iOS jailbreak devices, C client-server API
+![buildstatus](http://buildbot.bluekitchen-gmbh.com/btstack/badge.png?builder=platform-mtk-master)| mtk: daemon for rooted Android devices, based on Mediatek MT65xx processor, Java and C client-server API
 
 
 ## Supported Chipsets
