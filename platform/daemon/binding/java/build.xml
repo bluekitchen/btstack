@@ -17,7 +17,7 @@
 
     <target name="generate">
         <mkdir dir="${gen.dir}"/>
-        <exec executable="../../tool/java_binding.py"/>
+        <exec executable="../../../../tool/java_binding.py"/>
     </target>
 
     <target name="compile" depends="generate">
