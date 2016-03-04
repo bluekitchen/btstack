@@ -82,9 +82,9 @@ case "$host_os" in
     *)
         BTSTACK_LIB_LDFLAGS="-shared -Wl,-rpath,\$(prefix)/lib"
         BTSTACK_LIB_EXTENSION="so"
-        REMOTE_DEVICE_DB_SOURCES="btstack_link_key_db_memory.c btstack_device_name_db_fs.c rfcomm_service_db_memory.c"
+        REMOTE_DEVICE_DB_SOURCES="btstack_link_key_db_memory.c rfcomm_service_db_memory.c"
         BTSTACK_LINK_KEY_DB_INSTANCE="btstack_link_key_db_memory_instance"
-        BTSTACK_DEVICE_NAME_DB_INSTANCE="btstack_device_name_db_fs_instance"
+        # BTSTACK_DEVICE_NAME_DB_INSTANCE="btstack_device_name_db_fs_instance"
     ;;
 esac
 
