@@ -41,6 +41,7 @@
           <itemPath>../../../platform/embedded/hal_led.h</itemPath>
           <itemPath>../../../platform/embedded/hal_tick.h</itemPath>
           <itemPath>../../../platform/embedded/hal_uart_dma.h</itemPath>
+          <itemPath>../../../platform/embedded/btstack_run_loop_embedded.h</itemPath>
         </logicalFolder>
         <logicalFolder name="src" displayName="src" projectFiles="true">
           <itemPath>../../../src/hci_cmd.h</itemPath>
@@ -188,6 +189,7 @@
     <Elem>../../../ble</Elem>
     <Elem>../../../chipset/csr</Elem>
     <Elem>../../../example</Elem>
+    <Elem>../../../platform/embedded</Elem>
   </sourceRootList>
   <projectmakefile>Makefile</projectmakefile>
   <confs>
@@ -233,7 +235,7 @@
         <property key="enable-unroll-loops" value="false"/>
         <property key="exclude-floating-point" value="false"/>
         <property key="extra-include-directories"
-                  value=".;../../../..;../src;../src/system_config/bk-audio-dk;../../../include;../../../src;../../../ble;../../../chipset/csr"/>
+                  value=".;../../../..;../src;../src/system_config/bk-audio-dk;../../../include;../../../src;../../../ble;../../../chipset/csr;../../../platform/embedded"/>
         <property key="generate-16-bit-code" value="false"/>
         <property key="generate-micro-compressed-code" value="false"/>
         <property key="isolate-each-function" value="false"/>
@@ -374,7 +376,7 @@
         <property key="UART3" value="true"/>
         <property key="UART4" value="true"/>
         <property key="UART5" value="true"/>
-        <property key="firmware.download.all" value="false"/>
+        <property key="USB" value="true"/>
         <property key="hwtoolclock.frcindebug" value="false"/>
         <property key="memories.aux" value="false"/>
         <property key="memories.bootflash" value="true"/>

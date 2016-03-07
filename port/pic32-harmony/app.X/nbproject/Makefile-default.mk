@@ -98,470 +98,470 @@ ${OBJECTDIR}/_ext/2048875307/system_init.o: ../src/system_config/bk-audio-dk/sys
 	@${MKDIR} "${OBJECTDIR}/_ext/2048875307" 
 	@${RM} ${OBJECTDIR}/_ext/2048875307/system_init.o.d 
 	@${RM} ${OBJECTDIR}/_ext/2048875307/system_init.o 
-	@${FIXDEPS} "${OBJECTDIR}/_ext/2048875307/system_init.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -MMD -MF "${OBJECTDIR}/_ext/2048875307/system_init.o.d" -o ${OBJECTDIR}/_ext/2048875307/system_init.o ../src/system_config/bk-audio-dk/system_init.c     
+	@${FIXDEPS} "${OBJECTDIR}/_ext/2048875307/system_init.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -I"../../../platform/embedded" -MMD -MF "${OBJECTDIR}/_ext/2048875307/system_init.o.d" -o ${OBJECTDIR}/_ext/2048875307/system_init.o ../src/system_config/bk-audio-dk/system_init.c     
 	
 ${OBJECTDIR}/_ext/2048875307/system_tasks.o: ../src/system_config/bk-audio-dk/system_tasks.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}/_ext/2048875307" 
 	@${RM} ${OBJECTDIR}/_ext/2048875307/system_tasks.o.d 
 	@${RM} ${OBJECTDIR}/_ext/2048875307/system_tasks.o 
-	@${FIXDEPS} "${OBJECTDIR}/_ext/2048875307/system_tasks.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -MMD -MF "${OBJECTDIR}/_ext/2048875307/system_tasks.o.d" -o ${OBJECTDIR}/_ext/2048875307/system_tasks.o ../src/system_config/bk-audio-dk/system_tasks.c     
+	@${FIXDEPS} "${OBJECTDIR}/_ext/2048875307/system_tasks.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -I"../../../platform/embedded" -MMD -MF "${OBJECTDIR}/_ext/2048875307/system_tasks.o.d" -o ${OBJECTDIR}/_ext/2048875307/system_tasks.o ../src/system_config/bk-audio-dk/system_tasks.c     
 	
 ${OBJECTDIR}/_ext/1360937237/btstack_port.o: ../src/btstack_port.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}/_ext/1360937237" 
 	@${RM} ${OBJECTDIR}/_ext/1360937237/btstack_port.o.d 
 	@${RM} ${OBJECTDIR}/_ext/1360937237/btstack_port.o 
-	@${FIXDEPS} "${OBJECTDIR}/_ext/1360937237/btstack_port.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -MMD -MF "${OBJECTDIR}/_ext/1360937237/btstack_port.o.d" -o ${OBJECTDIR}/_ext/1360937237/btstack_port.o ../src/btstack_port.c     
+	@${FIXDEPS} "${OBJECTDIR}/_ext/1360937237/btstack_port.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -I"../../../platform/embedded" -MMD -MF "${OBJECTDIR}/_ext/1360937237/btstack_port.o.d" -o ${OBJECTDIR}/_ext/1360937237/btstack_port.o ../src/btstack_port.c     
 	
 ${OBJECTDIR}/_ext/1360937237/app_debug.o: ../src/app_debug.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}/_ext/1360937237" 
 	@${RM} ${OBJECTDIR}/_ext/1360937237/app_debug.o.d 
 	@${RM} ${OBJECTDIR}/_ext/1360937237/app_debug.o 
-	@${FIXDEPS} "${OBJECTDIR}/_ext/1360937237/app_debug.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -MMD -MF "${OBJECTDIR}/_ext/1360937237/app_debug.o.d" -o ${OBJECTDIR}/_ext/1360937237/app_debug.o ../src/app_debug.c     
+	@${FIXDEPS} "${OBJECTDIR}/_ext/1360937237/app_debug.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -I"../../../platform/embedded" -MMD -MF "${OBJECTDIR}/_ext/1360937237/app_debug.o.d" -o ${OBJECTDIR}/_ext/1360937237/app_debug.o ../src/app_debug.c     
 	
 ${OBJECTDIR}/_ext/1360937237/app.o: ../src/app.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}/_ext/1360937237" 
 	@${RM} ${OBJECTDIR}/_ext/1360937237/app.o.d 
 	@${RM} ${OBJECTDIR}/_ext/1360937237/app.o 
-	@${FIXDEPS} "${OBJECTDIR}/_ext/1360937237/app.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -MMD -MF "${OBJECTDIR}/_ext/1360937237/app.o.d" -o ${OBJECTDIR}/_ext/1360937237/app.o ../src/app.c     
+	@${FIXDEPS} "${OBJECTDIR}/_ext/1360937237/app.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -I"../../../platform/embedded" -MMD -MF "${OBJECTDIR}/_ext/1360937237/app.o.d" -o ${OBJECTDIR}/_ext/1360937237/app.o ../src/app.c     
 	
 ${OBJECTDIR}/_ext/1360937237/main.o: ../src/main.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}/_ext/1360937237" 
 	@${RM} ${OBJECTDIR}/_ext/1360937237/main.o.d 
 	@${RM} ${OBJECTDIR}/_ext/1360937237/main.o 
-	@${FIXDEPS} "${OBJECTDIR}/_ext/1360937237/main.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -MMD -MF "${OBJECTDIR}/_ext/1360937237/main.o.d" -o ${OBJECTDIR}/_ext/1360937237/main.o ../src/main.c     
+	@${FIXDEPS} "${OBJECTDIR}/_ext/1360937237/main.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -I"../../../platform/embedded" -MMD -MF "${OBJECTDIR}/_ext/1360937237/main.o.d" -o ${OBJECTDIR}/_ext/1360937237/main.o ../src/main.c     
 	
 ${OBJECTDIR}/_ext/97075643/spp_and_le_counter.o: ../../../example/spp_and_le_counter.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}/_ext/97075643" 
 	@${RM} ${OBJECTDIR}/_ext/97075643/spp_and_le_counter.o.d 
 	@${RM} ${OBJECTDIR}/_ext/97075643/spp_and_le_counter.o 
-	@${FIXDEPS} "${OBJECTDIR}/_ext/97075643/spp_and_le_counter.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -MMD -MF "${OBJECTDIR}/_ext/97075643/spp_and_le_counter.o.d" -o ${OBJECTDIR}/_ext/97075643/spp_and_le_counter.o ../../../example/spp_and_le_counter.c     
+	@${FIXDEPS} "${OBJECTDIR}/_ext/97075643/spp_and_le_counter.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -I"../../../platform/embedded" -MMD -MF "${OBJECTDIR}/_ext/97075643/spp_and_le_counter.o.d" -o ${OBJECTDIR}/_ext/97075643/spp_and_le_counter.o ../../../example/spp_and_le_counter.c     
 	
 ${OBJECTDIR}/_ext/534563071/ad_parser.o: ../../../src/ble/ad_parser.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}/_ext/534563071" 
 	@${RM} ${OBJECTDIR}/_ext/534563071/ad_parser.o.d 
 	@${RM} ${OBJECTDIR}/_ext/534563071/ad_parser.o 
-	@${FIXDEPS} "${OBJECTDIR}/_ext/534563071/ad_parser.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -MMD -MF "${OBJECTDIR}/_ext/534563071/ad_parser.o.d" -o ${OBJECTDIR}/_ext/534563071/ad_parser.o ../../../src/ble/ad_parser.c     
+	@${FIXDEPS} "${OBJECTDIR}/_ext/534563071/ad_parser.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -I"../../../platform/embedded" -MMD -MF "${OBJECTDIR}/_ext/534563071/ad_parser.o.d" -o ${OBJECTDIR}/_ext/534563071/ad_parser.o ../../../src/ble/ad_parser.c     
 	
 ${OBJECTDIR}/_ext/534563071/att_db.o: ../../../src/ble/att_db.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}/_ext/534563071" 
 	@${RM} ${OBJECTDIR}/_ext/534563071/att_db.o.d 
 	@${RM} ${OBJECTDIR}/_ext/534563071/att_db.o 
-	@${FIXDEPS} "${OBJECTDIR}/_ext/534563071/att_db.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -MMD -MF "${OBJECTDIR}/_ext/534563071/att_db.o.d" -o ${OBJECTDIR}/_ext/534563071/att_db.o ../../../src/ble/att_db.c     
+	@${FIXDEPS} "${OBJECTDIR}/_ext/534563071/att_db.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -I"../../../platform/embedded" -MMD -MF "${OBJECTDIR}/_ext/534563071/att_db.o.d" -o ${OBJECTDIR}/_ext/534563071/att_db.o ../../../src/ble/att_db.c     
 	
 ${OBJECTDIR}/_ext/534563071/att_dispatch.o: ../../../src/ble/att_dispatch.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}/_ext/534563071" 
 	@${RM} ${OBJECTDIR}/_ext/534563071/att_dispatch.o.d 
 	@${RM} ${OBJECTDIR}/_ext/534563071/att_dispatch.o 
-	@${FIXDEPS} "${OBJECTDIR}/_ext/534563071/att_dispatch.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -MMD -MF "${OBJECTDIR}/_ext/534563071/att_dispatch.o.d" -o ${OBJECTDIR}/_ext/534563071/att_dispatch.o ../../../src/ble/att_dispatch.c     
+	@${FIXDEPS} "${OBJECTDIR}/_ext/534563071/att_dispatch.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -I"../../../platform/embedded" -MMD -MF "${OBJECTDIR}/_ext/534563071/att_dispatch.o.d" -o ${OBJECTDIR}/_ext/534563071/att_dispatch.o ../../../src/ble/att_dispatch.c     
 	
 ${OBJECTDIR}/_ext/534563071/att_server.o: ../../../src/ble/att_server.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}/_ext/534563071" 
 	@${RM} ${OBJECTDIR}/_ext/534563071/att_server.o.d 
 	@${RM} ${OBJECTDIR}/_ext/534563071/att_server.o 
-	@${FIXDEPS} "${OBJECTDIR}/_ext/534563071/att_server.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -MMD -MF "${OBJECTDIR}/_ext/534563071/att_server.o.d" -o ${OBJECTDIR}/_ext/534563071/att_server.o ../../../src/ble/att_server.c     
+	@${FIXDEPS} "${OBJECTDIR}/_ext/534563071/att_server.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -I"../../../platform/embedded" -MMD -MF "${OBJECTDIR}/_ext/534563071/att_server.o.d" -o ${OBJECTDIR}/_ext/534563071/att_server.o ../../../src/ble/att_server.c     
 	
 ${OBJECTDIR}/_ext/534563071/le_device_db_memory.o: ../../../src/ble/le_device_db_memory.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}/_ext/534563071" 
 	@${RM} ${OBJECTDIR}/_ext/534563071/le_device_db_memory.o.d 
 	@${RM} ${OBJECTDIR}/_ext/534563071/le_device_db_memory.o 
-	@${FIXDEPS} "${OBJECTDIR}/_ext/534563071/le_device_db_memory.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -MMD -MF "${OBJECTDIR}/_ext/534563071/le_device_db_memory.o.d" -o ${OBJECTDIR}/_ext/534563071/le_device_db_memory.o ../../../src/ble/le_device_db_memory.c     
+	@${FIXDEPS} "${OBJECTDIR}/_ext/534563071/le_device_db_memory.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -I"../../../platform/embedded" -MMD -MF "${OBJECTDIR}/_ext/534563071/le_device_db_memory.o.d" -o ${OBJECTDIR}/_ext/534563071/le_device_db_memory.o ../../../src/ble/le_device_db_memory.c     
 	
 ${OBJECTDIR}/_ext/534563071/sm.o: ../../../src/ble/sm.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}/_ext/534563071" 
 	@${RM} ${OBJECTDIR}/_ext/534563071/sm.o.d 
 	@${RM} ${OBJECTDIR}/_ext/534563071/sm.o 
-	@${FIXDEPS} "${OBJECTDIR}/_ext/534563071/sm.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -MMD -MF "${OBJECTDIR}/_ext/534563071/sm.o.d" -o ${OBJECTDIR}/_ext/534563071/sm.o ../../../src/ble/sm.c     
+	@${FIXDEPS} "${OBJECTDIR}/_ext/534563071/sm.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -I"../../../platform/embedded" -MMD -MF "${OBJECTDIR}/_ext/534563071/sm.o.d" -o ${OBJECTDIR}/_ext/534563071/sm.o ../../../src/ble/sm.c     
 	
 ${OBJECTDIR}/_ext/1768064806/btstack_chipset_csr.o: ../../../chipset/csr/btstack_chipset_csr.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}/_ext/1768064806" 
 	@${RM} ${OBJECTDIR}/_ext/1768064806/btstack_chipset_csr.o.d 
 	@${RM} ${OBJECTDIR}/_ext/1768064806/btstack_chipset_csr.o 
-	@${FIXDEPS} "${OBJECTDIR}/_ext/1768064806/btstack_chipset_csr.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -MMD -MF "${OBJECTDIR}/_ext/1768064806/btstack_chipset_csr.o.d" -o ${OBJECTDIR}/_ext/1768064806/btstack_chipset_csr.o ../../../chipset/csr/btstack_chipset_csr.c     
+	@${FIXDEPS} "${OBJECTDIR}/_ext/1768064806/btstack_chipset_csr.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -I"../../../platform/embedded" -MMD -MF "${OBJECTDIR}/_ext/1768064806/btstack_chipset_csr.o.d" -o ${OBJECTDIR}/_ext/1768064806/btstack_chipset_csr.o ../../../chipset/csr/btstack_chipset_csr.c     
 	
 ${OBJECTDIR}/_ext/1386528437/btstack_memory.o: ../../../src/btstack_memory.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}/_ext/1386528437" 
 	@${RM} ${OBJECTDIR}/_ext/1386528437/btstack_memory.o.d 
 	@${RM} ${OBJECTDIR}/_ext/1386528437/btstack_memory.o 
-	@${FIXDEPS} "${OBJECTDIR}/_ext/1386528437/btstack_memory.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -MMD -MF "${OBJECTDIR}/_ext/1386528437/btstack_memory.o.d" -o ${OBJECTDIR}/_ext/1386528437/btstack_memory.o ../../../src/btstack_memory.c     
+	@${FIXDEPS} "${OBJECTDIR}/_ext/1386528437/btstack_memory.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -I"../../../platform/embedded" -MMD -MF "${OBJECTDIR}/_ext/1386528437/btstack_memory.o.d" -o ${OBJECTDIR}/_ext/1386528437/btstack_memory.o ../../../src/btstack_memory.c     
 	
 ${OBJECTDIR}/_ext/1386528437/hci.o: ../../../src/hci.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}/_ext/1386528437" 
 	@${RM} ${OBJECTDIR}/_ext/1386528437/hci.o.d 
 	@${RM} ${OBJECTDIR}/_ext/1386528437/hci.o 
-	@${FIXDEPS} "${OBJECTDIR}/_ext/1386528437/hci.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -MMD -MF "${OBJECTDIR}/_ext/1386528437/hci.o.d" -o ${OBJECTDIR}/_ext/1386528437/hci.o ../../../src/hci.c     
+	@${FIXDEPS} "${OBJECTDIR}/_ext/1386528437/hci.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -I"../../../platform/embedded" -MMD -MF "${OBJECTDIR}/_ext/1386528437/hci.o.d" -o ${OBJECTDIR}/_ext/1386528437/hci.o ../../../src/hci.c     
 	
 ${OBJECTDIR}/_ext/1386528437/hci_cmd.o: ../../../src/hci_cmd.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}/_ext/1386528437" 
 	@${RM} ${OBJECTDIR}/_ext/1386528437/hci_cmd.o.d 
 	@${RM} ${OBJECTDIR}/_ext/1386528437/hci_cmd.o 
-	@${FIXDEPS} "${OBJECTDIR}/_ext/1386528437/hci_cmd.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -MMD -MF "${OBJECTDIR}/_ext/1386528437/hci_cmd.o.d" -o ${OBJECTDIR}/_ext/1386528437/hci_cmd.o ../../../src/hci_cmd.c     
+	@${FIXDEPS} "${OBJECTDIR}/_ext/1386528437/hci_cmd.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -I"../../../platform/embedded" -MMD -MF "${OBJECTDIR}/_ext/1386528437/hci_cmd.o.d" -o ${OBJECTDIR}/_ext/1386528437/hci_cmd.o ../../../src/hci_cmd.c     
 	
 ${OBJECTDIR}/_ext/1386528437/hci_dump.o: ../../../src/hci_dump.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}/_ext/1386528437" 
 	@${RM} ${OBJECTDIR}/_ext/1386528437/hci_dump.o.d 
 	@${RM} ${OBJECTDIR}/_ext/1386528437/hci_dump.o 
-	@${FIXDEPS} "${OBJECTDIR}/_ext/1386528437/hci_dump.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -MMD -MF "${OBJECTDIR}/_ext/1386528437/hci_dump.o.d" -o ${OBJECTDIR}/_ext/1386528437/hci_dump.o ../../../src/hci_dump.c     
+	@${FIXDEPS} "${OBJECTDIR}/_ext/1386528437/hci_dump.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -I"../../../platform/embedded" -MMD -MF "${OBJECTDIR}/_ext/1386528437/hci_dump.o.d" -o ${OBJECTDIR}/_ext/1386528437/hci_dump.o ../../../src/hci_dump.c     
 	
 ${OBJECTDIR}/_ext/1386528437/l2cap.o: ../../../src/l2cap.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}/_ext/1386528437" 
 	@${RM} ${OBJECTDIR}/_ext/1386528437/l2cap.o.d 
 	@${RM} ${OBJECTDIR}/_ext/1386528437/l2cap.o 
-	@${FIXDEPS} "${OBJECTDIR}/_ext/1386528437/l2cap.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -MMD -MF "${OBJECTDIR}/_ext/1386528437/l2cap.o.d" -o ${OBJECTDIR}/_ext/1386528437/l2cap.o ../../../src/l2cap.c     
+	@${FIXDEPS} "${OBJECTDIR}/_ext/1386528437/l2cap.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -I"../../../platform/embedded" -MMD -MF "${OBJECTDIR}/_ext/1386528437/l2cap.o.d" -o ${OBJECTDIR}/_ext/1386528437/l2cap.o ../../../src/l2cap.c     
 	
 ${OBJECTDIR}/_ext/1386528437/l2cap_signaling.o: ../../../src/l2cap_signaling.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}/_ext/1386528437" 
 	@${RM} ${OBJECTDIR}/_ext/1386528437/l2cap_signaling.o.d 
 	@${RM} ${OBJECTDIR}/_ext/1386528437/l2cap_signaling.o 
-	@${FIXDEPS} "${OBJECTDIR}/_ext/1386528437/l2cap_signaling.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -MMD -MF "${OBJECTDIR}/_ext/1386528437/l2cap_signaling.o.d" -o ${OBJECTDIR}/_ext/1386528437/l2cap_signaling.o ../../../src/l2cap_signaling.c     
+	@${FIXDEPS} "${OBJECTDIR}/_ext/1386528437/l2cap_signaling.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -I"../../../platform/embedded" -MMD -MF "${OBJECTDIR}/_ext/1386528437/l2cap_signaling.o.d" -o ${OBJECTDIR}/_ext/1386528437/l2cap_signaling.o ../../../src/l2cap_signaling.c     
 	
 ${OBJECTDIR}/_ext/1386528437/btstack_linked_list.o: ../../../src/btstack_linked_list.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}/_ext/1386528437" 
 	@${RM} ${OBJECTDIR}/_ext/1386528437/btstack_linked_list.o.d 
 	@${RM} ${OBJECTDIR}/_ext/1386528437/btstack_linked_list.o 
-	@${FIXDEPS} "${OBJECTDIR}/_ext/1386528437/btstack_linked_list.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -MMD -MF "${OBJECTDIR}/_ext/1386528437/btstack_linked_list.o.d" -o ${OBJECTDIR}/_ext/1386528437/btstack_linked_list.o ../../../src/btstack_linked_list.c     
+	@${FIXDEPS} "${OBJECTDIR}/_ext/1386528437/btstack_linked_list.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -I"../../../platform/embedded" -MMD -MF "${OBJECTDIR}/_ext/1386528437/btstack_linked_list.o.d" -o ${OBJECTDIR}/_ext/1386528437/btstack_linked_list.o ../../../src/btstack_linked_list.c     
 	
 ${OBJECTDIR}/_ext/1386528437/btstack_memory_pool.o: ../../../src/btstack_memory_pool.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}/_ext/1386528437" 
 	@${RM} ${OBJECTDIR}/_ext/1386528437/btstack_memory_pool.o.d 
 	@${RM} ${OBJECTDIR}/_ext/1386528437/btstack_memory_pool.o 
-	@${FIXDEPS} "${OBJECTDIR}/_ext/1386528437/btstack_memory_pool.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -MMD -MF "${OBJECTDIR}/_ext/1386528437/btstack_memory_pool.o.d" -o ${OBJECTDIR}/_ext/1386528437/btstack_memory_pool.o ../../../src/btstack_memory_pool.c     
+	@${FIXDEPS} "${OBJECTDIR}/_ext/1386528437/btstack_memory_pool.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -I"../../../platform/embedded" -MMD -MF "${OBJECTDIR}/_ext/1386528437/btstack_memory_pool.o.d" -o ${OBJECTDIR}/_ext/1386528437/btstack_memory_pool.o ../../../src/btstack_memory_pool.c     
 	
 ${OBJECTDIR}/_ext/1386327864/btstack_link_key_db_memory.o: ../../../src/classic/btstack_link_key_db_memory.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}/_ext/1386327864" 
 	@${RM} ${OBJECTDIR}/_ext/1386327864/btstack_link_key_db_memory.o.d 
 	@${RM} ${OBJECTDIR}/_ext/1386327864/btstack_link_key_db_memory.o 
-	@${FIXDEPS} "${OBJECTDIR}/_ext/1386327864/btstack_link_key_db_memory.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -MMD -MF "${OBJECTDIR}/_ext/1386327864/btstack_link_key_db_memory.o.d" -o ${OBJECTDIR}/_ext/1386327864/btstack_link_key_db_memory.o ../../../src/classic/btstack_link_key_db_memory.c     
+	@${FIXDEPS} "${OBJECTDIR}/_ext/1386327864/btstack_link_key_db_memory.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -I"../../../platform/embedded" -MMD -MF "${OBJECTDIR}/_ext/1386327864/btstack_link_key_db_memory.o.d" -o ${OBJECTDIR}/_ext/1386327864/btstack_link_key_db_memory.o ../../../src/classic/btstack_link_key_db_memory.c     
 	
 ${OBJECTDIR}/_ext/1386327864/rfcomm.o: ../../../src/classic/rfcomm.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}/_ext/1386327864" 
 	@${RM} ${OBJECTDIR}/_ext/1386327864/rfcomm.o.d 
 	@${RM} ${OBJECTDIR}/_ext/1386327864/rfcomm.o 
-	@${FIXDEPS} "${OBJECTDIR}/_ext/1386327864/rfcomm.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -MMD -MF "${OBJECTDIR}/_ext/1386327864/rfcomm.o.d" -o ${OBJECTDIR}/_ext/1386327864/rfcomm.o ../../../src/classic/rfcomm.c     
+	@${FIXDEPS} "${OBJECTDIR}/_ext/1386327864/rfcomm.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -I"../../../platform/embedded" -MMD -MF "${OBJECTDIR}/_ext/1386327864/rfcomm.o.d" -o ${OBJECTDIR}/_ext/1386327864/rfcomm.o ../../../src/classic/rfcomm.c     
 	
 ${OBJECTDIR}/_ext/1386528437/btstack_run_loop.o: ../../../src/btstack_run_loop.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}/_ext/1386528437" 
 	@${RM} ${OBJECTDIR}/_ext/1386528437/btstack_run_loop.o.d 
 	@${RM} ${OBJECTDIR}/_ext/1386528437/btstack_run_loop.o 
-	@${FIXDEPS} "${OBJECTDIR}/_ext/1386528437/btstack_run_loop.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -MMD -MF "${OBJECTDIR}/_ext/1386528437/btstack_run_loop.o.d" -o ${OBJECTDIR}/_ext/1386528437/btstack_run_loop.o ../../../src/btstack_run_loop.c     
+	@${FIXDEPS} "${OBJECTDIR}/_ext/1386528437/btstack_run_loop.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -I"../../../platform/embedded" -MMD -MF "${OBJECTDIR}/_ext/1386528437/btstack_run_loop.o.d" -o ${OBJECTDIR}/_ext/1386528437/btstack_run_loop.o ../../../src/btstack_run_loop.c     
 	
 ${OBJECTDIR}/_ext/1386327864/sdp_server.o: ../../../src/classic/sdp_server.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}/_ext/1386327864" 
 	@${RM} ${OBJECTDIR}/_ext/1386327864/sdp_server.o.d 
 	@${RM} ${OBJECTDIR}/_ext/1386327864/sdp_server.o 
-	@${FIXDEPS} "${OBJECTDIR}/_ext/1386327864/sdp_server.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -MMD -MF "${OBJECTDIR}/_ext/1386327864/sdp_server.o.d" -o ${OBJECTDIR}/_ext/1386327864/sdp_server.o ../../../src/classic/sdp_server.c     
+	@${FIXDEPS} "${OBJECTDIR}/_ext/1386327864/sdp_server.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -I"../../../platform/embedded" -MMD -MF "${OBJECTDIR}/_ext/1386327864/sdp_server.o.d" -o ${OBJECTDIR}/_ext/1386327864/sdp_server.o ../../../src/classic/sdp_server.c     
 	
 ${OBJECTDIR}/_ext/1386327864/sdp_client.o: ../../../src/classic/sdp_client.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}/_ext/1386327864" 
 	@${RM} ${OBJECTDIR}/_ext/1386327864/sdp_client.o.d 
 	@${RM} ${OBJECTDIR}/_ext/1386327864/sdp_client.o 
-	@${FIXDEPS} "${OBJECTDIR}/_ext/1386327864/sdp_client.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -MMD -MF "${OBJECTDIR}/_ext/1386327864/sdp_client.o.d" -o ${OBJECTDIR}/_ext/1386327864/sdp_client.o ../../../src/classic/sdp_client.c     
+	@${FIXDEPS} "${OBJECTDIR}/_ext/1386327864/sdp_client.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -I"../../../platform/embedded" -MMD -MF "${OBJECTDIR}/_ext/1386327864/sdp_client.o.d" -o ${OBJECTDIR}/_ext/1386327864/sdp_client.o ../../../src/classic/sdp_client.c     
 	
 ${OBJECTDIR}/_ext/1386327864/sdp_query_rfcomm.o: ../../../src/classic/sdp_query_rfcomm.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}/_ext/1386327864" 
 	@${RM} ${OBJECTDIR}/_ext/1386327864/sdp_query_rfcomm.o.d 
 	@${RM} ${OBJECTDIR}/_ext/1386327864/sdp_query_rfcomm.o 
-	@${FIXDEPS} "${OBJECTDIR}/_ext/1386327864/sdp_query_rfcomm.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -MMD -MF "${OBJECTDIR}/_ext/1386327864/sdp_query_rfcomm.o.d" -o ${OBJECTDIR}/_ext/1386327864/sdp_query_rfcomm.o ../../../src/classic/sdp_query_rfcomm.c     
+	@${FIXDEPS} "${OBJECTDIR}/_ext/1386327864/sdp_query_rfcomm.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -I"../../../platform/embedded" -MMD -MF "${OBJECTDIR}/_ext/1386327864/sdp_query_rfcomm.o.d" -o ${OBJECTDIR}/_ext/1386327864/sdp_query_rfcomm.o ../../../src/classic/sdp_query_rfcomm.c     
 	
 ${OBJECTDIR}/_ext/1386327864/sdp_util.o: ../../../src/classic/sdp_util.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}/_ext/1386327864" 
 	@${RM} ${OBJECTDIR}/_ext/1386327864/sdp_util.o.d 
 	@${RM} ${OBJECTDIR}/_ext/1386327864/sdp_util.o 
-	@${FIXDEPS} "${OBJECTDIR}/_ext/1386327864/sdp_util.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -MMD -MF "${OBJECTDIR}/_ext/1386327864/sdp_util.o.d" -o ${OBJECTDIR}/_ext/1386327864/sdp_util.o ../../../src/classic/sdp_util.c     
+	@${FIXDEPS} "${OBJECTDIR}/_ext/1386327864/sdp_util.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -I"../../../platform/embedded" -MMD -MF "${OBJECTDIR}/_ext/1386327864/sdp_util.o.d" -o ${OBJECTDIR}/_ext/1386327864/sdp_util.o ../../../src/classic/sdp_util.c     
 	
 ${OBJECTDIR}/_ext/1386528437/btstack_util.o: ../../../src/btstack_util.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}/_ext/1386528437" 
 	@${RM} ${OBJECTDIR}/_ext/1386528437/btstack_util.o.d 
 	@${RM} ${OBJECTDIR}/_ext/1386528437/btstack_util.o 
-	@${FIXDEPS} "${OBJECTDIR}/_ext/1386528437/btstack_util.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -MMD -MF "${OBJECTDIR}/_ext/1386528437/btstack_util.o.d" -o ${OBJECTDIR}/_ext/1386528437/btstack_util.o ../../../src/btstack_util.c     
+	@${FIXDEPS} "${OBJECTDIR}/_ext/1386528437/btstack_util.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -I"../../../platform/embedded" -MMD -MF "${OBJECTDIR}/_ext/1386528437/btstack_util.o.d" -o ${OBJECTDIR}/_ext/1386528437/btstack_util.o ../../../src/btstack_util.c     
 	
 ${OBJECTDIR}/_ext/993942601/btstack_run_loop_embedded.o: ../../../platform/embedded/btstack_run_loop_embedded.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}/_ext/993942601" 
 	@${RM} ${OBJECTDIR}/_ext/993942601/btstack_run_loop_embedded.o.d 
 	@${RM} ${OBJECTDIR}/_ext/993942601/btstack_run_loop_embedded.o 
-	@${FIXDEPS} "${OBJECTDIR}/_ext/993942601/btstack_run_loop_embedded.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -MMD -MF "${OBJECTDIR}/_ext/993942601/btstack_run_loop_embedded.o.d" -o ${OBJECTDIR}/_ext/993942601/btstack_run_loop_embedded.o ../../../platform/embedded/btstack_run_loop_embedded.c     
+	@${FIXDEPS} "${OBJECTDIR}/_ext/993942601/btstack_run_loop_embedded.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -I"../../../platform/embedded" -MMD -MF "${OBJECTDIR}/_ext/993942601/btstack_run_loop_embedded.o.d" -o ${OBJECTDIR}/_ext/993942601/btstack_run_loop_embedded.o ../../../platform/embedded/btstack_run_loop_embedded.c     
 	
 ${OBJECTDIR}/_ext/993942601/hci_transport_h4_embedded.o: ../../../platform/embedded/hci_transport_h4_embedded.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}/_ext/993942601" 
 	@${RM} ${OBJECTDIR}/_ext/993942601/hci_transport_h4_embedded.o.d 
 	@${RM} ${OBJECTDIR}/_ext/993942601/hci_transport_h4_embedded.o 
-	@${FIXDEPS} "${OBJECTDIR}/_ext/993942601/hci_transport_h4_embedded.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -MMD -MF "${OBJECTDIR}/_ext/993942601/hci_transport_h4_embedded.o.d" -o ${OBJECTDIR}/_ext/993942601/hci_transport_h4_embedded.o ../../../platform/embedded/hci_transport_h4_embedded.c     
+	@${FIXDEPS} "${OBJECTDIR}/_ext/993942601/hci_transport_h4_embedded.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -I"../../../platform/embedded" -MMD -MF "${OBJECTDIR}/_ext/993942601/hci_transport_h4_embedded.o.d" -o ${OBJECTDIR}/_ext/993942601/hci_transport_h4_embedded.o ../../../platform/embedded/hci_transport_h4_embedded.c     
 	
 ${OBJECTDIR}/_ext/1880736137/drv_tmr.o: ../../../../driver/tmr/src/dynamic/drv_tmr.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}/_ext/1880736137" 
 	@${RM} ${OBJECTDIR}/_ext/1880736137/drv_tmr.o.d 
 	@${RM} ${OBJECTDIR}/_ext/1880736137/drv_tmr.o 
-	@${FIXDEPS} "${OBJECTDIR}/_ext/1880736137/drv_tmr.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -MMD -MF "${OBJECTDIR}/_ext/1880736137/drv_tmr.o.d" -o ${OBJECTDIR}/_ext/1880736137/drv_tmr.o ../../../../driver/tmr/src/dynamic/drv_tmr.c     
+	@${FIXDEPS} "${OBJECTDIR}/_ext/1880736137/drv_tmr.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -I"../../../platform/embedded" -MMD -MF "${OBJECTDIR}/_ext/1880736137/drv_tmr.o.d" -o ${OBJECTDIR}/_ext/1880736137/drv_tmr.o ../../../../driver/tmr/src/dynamic/drv_tmr.c     
 	
 ${OBJECTDIR}/_ext/1112166103/sys_clk.o: ../../../../system/clk/src/sys_clk.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}/_ext/1112166103" 
 	@${RM} ${OBJECTDIR}/_ext/1112166103/sys_clk.o.d 
 	@${RM} ${OBJECTDIR}/_ext/1112166103/sys_clk.o 
-	@${FIXDEPS} "${OBJECTDIR}/_ext/1112166103/sys_clk.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -MMD -MF "${OBJECTDIR}/_ext/1112166103/sys_clk.o.d" -o ${OBJECTDIR}/_ext/1112166103/sys_clk.o ../../../../system/clk/src/sys_clk.c     
+	@${FIXDEPS} "${OBJECTDIR}/_ext/1112166103/sys_clk.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -I"../../../platform/embedded" -MMD -MF "${OBJECTDIR}/_ext/1112166103/sys_clk.o.d" -o ${OBJECTDIR}/_ext/1112166103/sys_clk.o ../../../../system/clk/src/sys_clk.c     
 	
 ${OBJECTDIR}/_ext/1112166103/sys_clk_pic32mx.o: ../../../../system/clk/src/sys_clk_pic32mx.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}/_ext/1112166103" 
 	@${RM} ${OBJECTDIR}/_ext/1112166103/sys_clk_pic32mx.o.d 
 	@${RM} ${OBJECTDIR}/_ext/1112166103/sys_clk_pic32mx.o 
-	@${FIXDEPS} "${OBJECTDIR}/_ext/1112166103/sys_clk_pic32mx.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -MMD -MF "${OBJECTDIR}/_ext/1112166103/sys_clk_pic32mx.o.d" -o ${OBJECTDIR}/_ext/1112166103/sys_clk_pic32mx.o ../../../../system/clk/src/sys_clk_pic32mx.c     
+	@${FIXDEPS} "${OBJECTDIR}/_ext/1112166103/sys_clk_pic32mx.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -I"../../../platform/embedded" -MMD -MF "${OBJECTDIR}/_ext/1112166103/sys_clk_pic32mx.o.d" -o ${OBJECTDIR}/_ext/1112166103/sys_clk_pic32mx.o ../../../../system/clk/src/sys_clk_pic32mx.c     
 	
 ${OBJECTDIR}/_ext/1510368962/sys_devcon.o: ../../../../system/devcon/src/sys_devcon.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}/_ext/1510368962" 
 	@${RM} ${OBJECTDIR}/_ext/1510368962/sys_devcon.o.d 
 	@${RM} ${OBJECTDIR}/_ext/1510368962/sys_devcon.o 
-	@${FIXDEPS} "${OBJECTDIR}/_ext/1510368962/sys_devcon.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -MMD -MF "${OBJECTDIR}/_ext/1510368962/sys_devcon.o.d" -o ${OBJECTDIR}/_ext/1510368962/sys_devcon.o ../../../../system/devcon/src/sys_devcon.c     
+	@${FIXDEPS} "${OBJECTDIR}/_ext/1510368962/sys_devcon.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -I"../../../platform/embedded" -MMD -MF "${OBJECTDIR}/_ext/1510368962/sys_devcon.o.d" -o ${OBJECTDIR}/_ext/1510368962/sys_devcon.o ../../../../system/devcon/src/sys_devcon.c     
 	
 ${OBJECTDIR}/_ext/1510368962/sys_devcon_pic32mx.o: ../../../../system/devcon/src/sys_devcon_pic32mx.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}/_ext/1510368962" 
 	@${RM} ${OBJECTDIR}/_ext/1510368962/sys_devcon_pic32mx.o.d 
 	@${RM} ${OBJECTDIR}/_ext/1510368962/sys_devcon_pic32mx.o 
-	@${FIXDEPS} "${OBJECTDIR}/_ext/1510368962/sys_devcon_pic32mx.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -MMD -MF "${OBJECTDIR}/_ext/1510368962/sys_devcon_pic32mx.o.d" -o ${OBJECTDIR}/_ext/1510368962/sys_devcon_pic32mx.o ../../../../system/devcon/src/sys_devcon_pic32mx.c     
+	@${FIXDEPS} "${OBJECTDIR}/_ext/1510368962/sys_devcon_pic32mx.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -I"../../../platform/embedded" -MMD -MF "${OBJECTDIR}/_ext/1510368962/sys_devcon_pic32mx.o.d" -o ${OBJECTDIR}/_ext/1510368962/sys_devcon_pic32mx.o ../../../../system/devcon/src/sys_devcon_pic32mx.c     
 	
 ${OBJECTDIR}/_ext/2087176412/sys_int_pic32.o: ../../../../system/int/src/sys_int_pic32.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}/_ext/2087176412" 
 	@${RM} ${OBJECTDIR}/_ext/2087176412/sys_int_pic32.o.d 
 	@${RM} ${OBJECTDIR}/_ext/2087176412/sys_int_pic32.o 
-	@${FIXDEPS} "${OBJECTDIR}/_ext/2087176412/sys_int_pic32.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -MMD -MF "${OBJECTDIR}/_ext/2087176412/sys_int_pic32.o.d" -o ${OBJECTDIR}/_ext/2087176412/sys_int_pic32.o ../../../../system/int/src/sys_int_pic32.c     
+	@${FIXDEPS} "${OBJECTDIR}/_ext/2087176412/sys_int_pic32.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -I"../../../platform/embedded" -MMD -MF "${OBJECTDIR}/_ext/2087176412/sys_int_pic32.o.d" -o ${OBJECTDIR}/_ext/2087176412/sys_int_pic32.o ../../../../system/int/src/sys_int_pic32.c     
 	
 ${OBJECTDIR}/_ext/2147153351/sys_ports.o: ../../../../system/ports/src/sys_ports.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}/_ext/2147153351" 
 	@${RM} ${OBJECTDIR}/_ext/2147153351/sys_ports.o.d 
 	@${RM} ${OBJECTDIR}/_ext/2147153351/sys_ports.o 
-	@${FIXDEPS} "${OBJECTDIR}/_ext/2147153351/sys_ports.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -MMD -MF "${OBJECTDIR}/_ext/2147153351/sys_ports.o.d" -o ${OBJECTDIR}/_ext/2147153351/sys_ports.o ../../../../system/ports/src/sys_ports.c     
+	@${FIXDEPS} "${OBJECTDIR}/_ext/2147153351/sys_ports.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -I"../../../platform/embedded" -MMD -MF "${OBJECTDIR}/_ext/2147153351/sys_ports.o.d" -o ${OBJECTDIR}/_ext/2147153351/sys_ports.o ../../../../system/ports/src/sys_ports.c     
 	
 else
 ${OBJECTDIR}/_ext/2048875307/system_init.o: ../src/system_config/bk-audio-dk/system_init.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}/_ext/2048875307" 
 	@${RM} ${OBJECTDIR}/_ext/2048875307/system_init.o.d 
 	@${RM} ${OBJECTDIR}/_ext/2048875307/system_init.o 
-	@${FIXDEPS} "${OBJECTDIR}/_ext/2048875307/system_init.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -MMD -MF "${OBJECTDIR}/_ext/2048875307/system_init.o.d" -o ${OBJECTDIR}/_ext/2048875307/system_init.o ../src/system_config/bk-audio-dk/system_init.c     
+	@${FIXDEPS} "${OBJECTDIR}/_ext/2048875307/system_init.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -I"../../../platform/embedded" -MMD -MF "${OBJECTDIR}/_ext/2048875307/system_init.o.d" -o ${OBJECTDIR}/_ext/2048875307/system_init.o ../src/system_config/bk-audio-dk/system_init.c     
 	
 ${OBJECTDIR}/_ext/2048875307/system_tasks.o: ../src/system_config/bk-audio-dk/system_tasks.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}/_ext/2048875307" 
 	@${RM} ${OBJECTDIR}/_ext/2048875307/system_tasks.o.d 
 	@${RM} ${OBJECTDIR}/_ext/2048875307/system_tasks.o 
-	@${FIXDEPS} "${OBJECTDIR}/_ext/2048875307/system_tasks.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -MMD -MF "${OBJECTDIR}/_ext/2048875307/system_tasks.o.d" -o ${OBJECTDIR}/_ext/2048875307/system_tasks.o ../src/system_config/bk-audio-dk/system_tasks.c     
+	@${FIXDEPS} "${OBJECTDIR}/_ext/2048875307/system_tasks.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -I"../../../platform/embedded" -MMD -MF "${OBJECTDIR}/_ext/2048875307/system_tasks.o.d" -o ${OBJECTDIR}/_ext/2048875307/system_tasks.o ../src/system_config/bk-audio-dk/system_tasks.c     
 	
 ${OBJECTDIR}/_ext/1360937237/btstack_port.o: ../src/btstack_port.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}/_ext/1360937237" 
 	@${RM} ${OBJECTDIR}/_ext/1360937237/btstack_port.o.d 
 	@${RM} ${OBJECTDIR}/_ext/1360937237/btstack_port.o 
-	@${FIXDEPS} "${OBJECTDIR}/_ext/1360937237/btstack_port.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -MMD -MF "${OBJECTDIR}/_ext/1360937237/btstack_port.o.d" -o ${OBJECTDIR}/_ext/1360937237/btstack_port.o ../src/btstack_port.c     
+	@${FIXDEPS} "${OBJECTDIR}/_ext/1360937237/btstack_port.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -I"../../../platform/embedded" -MMD -MF "${OBJECTDIR}/_ext/1360937237/btstack_port.o.d" -o ${OBJECTDIR}/_ext/1360937237/btstack_port.o ../src/btstack_port.c     
 	
 ${OBJECTDIR}/_ext/1360937237/app_debug.o: ../src/app_debug.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}/_ext/1360937237" 
 	@${RM} ${OBJECTDIR}/_ext/1360937237/app_debug.o.d 
 	@${RM} ${OBJECTDIR}/_ext/1360937237/app_debug.o 
-	@${FIXDEPS} "${OBJECTDIR}/_ext/1360937237/app_debug.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -MMD -MF "${OBJECTDIR}/_ext/1360937237/app_debug.o.d" -o ${OBJECTDIR}/_ext/1360937237/app_debug.o ../src/app_debug.c     
+	@${FIXDEPS} "${OBJECTDIR}/_ext/1360937237/app_debug.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -I"../../../platform/embedded" -MMD -MF "${OBJECTDIR}/_ext/1360937237/app_debug.o.d" -o ${OBJECTDIR}/_ext/1360937237/app_debug.o ../src/app_debug.c     
 	
 ${OBJECTDIR}/_ext/1360937237/app.o: ../src/app.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}/_ext/1360937237" 
 	@${RM} ${OBJECTDIR}/_ext/1360937237/app.o.d 
 	@${RM} ${OBJECTDIR}/_ext/1360937237/app.o 
-	@${FIXDEPS} "${OBJECTDIR}/_ext/1360937237/app.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -MMD -MF "${OBJECTDIR}/_ext/1360937237/app.o.d" -o ${OBJECTDIR}/_ext/1360937237/app.o ../src/app.c     
+	@${FIXDEPS} "${OBJECTDIR}/_ext/1360937237/app.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -I"../../../platform/embedded" -MMD -MF "${OBJECTDIR}/_ext/1360937237/app.o.d" -o ${OBJECTDIR}/_ext/1360937237/app.o ../src/app.c     
 	
 ${OBJECTDIR}/_ext/1360937237/main.o: ../src/main.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}/_ext/1360937237" 
 	@${RM} ${OBJECTDIR}/_ext/1360937237/main.o.d 
 	@${RM} ${OBJECTDIR}/_ext/1360937237/main.o 
-	@${FIXDEPS} "${OBJECTDIR}/_ext/1360937237/main.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -MMD -MF "${OBJECTDIR}/_ext/1360937237/main.o.d" -o ${OBJECTDIR}/_ext/1360937237/main.o ../src/main.c     
+	@${FIXDEPS} "${OBJECTDIR}/_ext/1360937237/main.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -I"../../../platform/embedded" -MMD -MF "${OBJECTDIR}/_ext/1360937237/main.o.d" -o ${OBJECTDIR}/_ext/1360937237/main.o ../src/main.c     
 	
 ${OBJECTDIR}/_ext/97075643/spp_and_le_counter.o: ../../../example/spp_and_le_counter.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}/_ext/97075643" 
 	@${RM} ${OBJECTDIR}/_ext/97075643/spp_and_le_counter.o.d 
 	@${RM} ${OBJECTDIR}/_ext/97075643/spp_and_le_counter.o 
-	@${FIXDEPS} "${OBJECTDIR}/_ext/97075643/spp_and_le_counter.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -MMD -MF "${OBJECTDIR}/_ext/97075643/spp_and_le_counter.o.d" -o ${OBJECTDIR}/_ext/97075643/spp_and_le_counter.o ../../../example/spp_and_le_counter.c     
+	@${FIXDEPS} "${OBJECTDIR}/_ext/97075643/spp_and_le_counter.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -I"../../../platform/embedded" -MMD -MF "${OBJECTDIR}/_ext/97075643/spp_and_le_counter.o.d" -o ${OBJECTDIR}/_ext/97075643/spp_and_le_counter.o ../../../example/spp_and_le_counter.c     
 	
 ${OBJECTDIR}/_ext/534563071/ad_parser.o: ../../../src/ble/ad_parser.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}/_ext/534563071" 
 	@${RM} ${OBJECTDIR}/_ext/534563071/ad_parser.o.d 
 	@${RM} ${OBJECTDIR}/_ext/534563071/ad_parser.o 
-	@${FIXDEPS} "${OBJECTDIR}/_ext/534563071/ad_parser.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -MMD -MF "${OBJECTDIR}/_ext/534563071/ad_parser.o.d" -o ${OBJECTDIR}/_ext/534563071/ad_parser.o ../../../src/ble/ad_parser.c     
+	@${FIXDEPS} "${OBJECTDIR}/_ext/534563071/ad_parser.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -I"../../../platform/embedded" -MMD -MF "${OBJECTDIR}/_ext/534563071/ad_parser.o.d" -o ${OBJECTDIR}/_ext/534563071/ad_parser.o ../../../src/ble/ad_parser.c     
 	
 ${OBJECTDIR}/_ext/534563071/att_db.o: ../../../src/ble/att_db.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}/_ext/534563071" 
 	@${RM} ${OBJECTDIR}/_ext/534563071/att_db.o.d 
 	@${RM} ${OBJECTDIR}/_ext/534563071/att_db.o 
-	@${FIXDEPS} "${OBJECTDIR}/_ext/534563071/att_db.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -MMD -MF "${OBJECTDIR}/_ext/534563071/att_db.o.d" -o ${OBJECTDIR}/_ext/534563071/att_db.o ../../../src/ble/att_db.c     
+	@${FIXDEPS} "${OBJECTDIR}/_ext/534563071/att_db.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -I"../../../platform/embedded" -MMD -MF "${OBJECTDIR}/_ext/534563071/att_db.o.d" -o ${OBJECTDIR}/_ext/534563071/att_db.o ../../../src/ble/att_db.c     
 	
 ${OBJECTDIR}/_ext/534563071/att_dispatch.o: ../../../src/ble/att_dispatch.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}/_ext/534563071" 
 	@${RM} ${OBJECTDIR}/_ext/534563071/att_dispatch.o.d 
 	@${RM} ${OBJECTDIR}/_ext/534563071/att_dispatch.o 
-	@${FIXDEPS} "${OBJECTDIR}/_ext/534563071/att_dispatch.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -MMD -MF "${OBJECTDIR}/_ext/534563071/att_dispatch.o.d" -o ${OBJECTDIR}/_ext/534563071/att_dispatch.o ../../../src/ble/att_dispatch.c     
+	@${FIXDEPS} "${OBJECTDIR}/_ext/534563071/att_dispatch.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -I"../../../platform/embedded" -MMD -MF "${OBJECTDIR}/_ext/534563071/att_dispatch.o.d" -o ${OBJECTDIR}/_ext/534563071/att_dispatch.o ../../../src/ble/att_dispatch.c     
 	
 ${OBJECTDIR}/_ext/534563071/att_server.o: ../../../src/ble/att_server.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}/_ext/534563071" 
 	@${RM} ${OBJECTDIR}/_ext/534563071/att_server.o.d 
 	@${RM} ${OBJECTDIR}/_ext/534563071/att_server.o 
-	@${FIXDEPS} "${OBJECTDIR}/_ext/534563071/att_server.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -MMD -MF "${OBJECTDIR}/_ext/534563071/att_server.o.d" -o ${OBJECTDIR}/_ext/534563071/att_server.o ../../../src/ble/att_server.c     
+	@${FIXDEPS} "${OBJECTDIR}/_ext/534563071/att_server.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -I"../../../platform/embedded" -MMD -MF "${OBJECTDIR}/_ext/534563071/att_server.o.d" -o ${OBJECTDIR}/_ext/534563071/att_server.o ../../../src/ble/att_server.c     
 	
 ${OBJECTDIR}/_ext/534563071/le_device_db_memory.o: ../../../src/ble/le_device_db_memory.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}/_ext/534563071" 
 	@${RM} ${OBJECTDIR}/_ext/534563071/le_device_db_memory.o.d 
 	@${RM} ${OBJECTDIR}/_ext/534563071/le_device_db_memory.o 
-	@${FIXDEPS} "${OBJECTDIR}/_ext/534563071/le_device_db_memory.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -MMD -MF "${OBJECTDIR}/_ext/534563071/le_device_db_memory.o.d" -o ${OBJECTDIR}/_ext/534563071/le_device_db_memory.o ../../../src/ble/le_device_db_memory.c     
+	@${FIXDEPS} "${OBJECTDIR}/_ext/534563071/le_device_db_memory.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -I"../../../platform/embedded" -MMD -MF "${OBJECTDIR}/_ext/534563071/le_device_db_memory.o.d" -o ${OBJECTDIR}/_ext/534563071/le_device_db_memory.o ../../../src/ble/le_device_db_memory.c     
 	
 ${OBJECTDIR}/_ext/534563071/sm.o: ../../../src/ble/sm.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}/_ext/534563071" 
 	@${RM} ${OBJECTDIR}/_ext/534563071/sm.o.d 
 	@${RM} ${OBJECTDIR}/_ext/534563071/sm.o 
-	@${FIXDEPS} "${OBJECTDIR}/_ext/534563071/sm.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -MMD -MF "${OBJECTDIR}/_ext/534563071/sm.o.d" -o ${OBJECTDIR}/_ext/534563071/sm.o ../../../src/ble/sm.c     
+	@${FIXDEPS} "${OBJECTDIR}/_ext/534563071/sm.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -I"../../../platform/embedded" -MMD -MF "${OBJECTDIR}/_ext/534563071/sm.o.d" -o ${OBJECTDIR}/_ext/534563071/sm.o ../../../src/ble/sm.c     
 	
 ${OBJECTDIR}/_ext/1768064806/btstack_chipset_csr.o: ../../../chipset/csr/btstack_chipset_csr.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}/_ext/1768064806" 
 	@${RM} ${OBJECTDIR}/_ext/1768064806/btstack_chipset_csr.o.d 
 	@${RM} ${OBJECTDIR}/_ext/1768064806/btstack_chipset_csr.o 
-	@${FIXDEPS} "${OBJECTDIR}/_ext/1768064806/btstack_chipset_csr.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -MMD -MF "${OBJECTDIR}/_ext/1768064806/btstack_chipset_csr.o.d" -o ${OBJECTDIR}/_ext/1768064806/btstack_chipset_csr.o ../../../chipset/csr/btstack_chipset_csr.c     
+	@${FIXDEPS} "${OBJECTDIR}/_ext/1768064806/btstack_chipset_csr.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -I"../../../platform/embedded" -MMD -MF "${OBJECTDIR}/_ext/1768064806/btstack_chipset_csr.o.d" -o ${OBJECTDIR}/_ext/1768064806/btstack_chipset_csr.o ../../../chipset/csr/btstack_chipset_csr.c     
 	
 ${OBJECTDIR}/_ext/1386528437/btstack_memory.o: ../../../src/btstack_memory.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}/_ext/1386528437" 
 	@${RM} ${OBJECTDIR}/_ext/1386528437/btstack_memory.o.d 
 	@${RM} ${OBJECTDIR}/_ext/1386528437/btstack_memory.o 
-	@${FIXDEPS} "${OBJECTDIR}/_ext/1386528437/btstack_memory.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -MMD -MF "${OBJECTDIR}/_ext/1386528437/btstack_memory.o.d" -o ${OBJECTDIR}/_ext/1386528437/btstack_memory.o ../../../src/btstack_memory.c     
+	@${FIXDEPS} "${OBJECTDIR}/_ext/1386528437/btstack_memory.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -I"../../../platform/embedded" -MMD -MF "${OBJECTDIR}/_ext/1386528437/btstack_memory.o.d" -o ${OBJECTDIR}/_ext/1386528437/btstack_memory.o ../../../src/btstack_memory.c     
 	
 ${OBJECTDIR}/_ext/1386528437/hci.o: ../../../src/hci.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}/_ext/1386528437" 
 	@${RM} ${OBJECTDIR}/_ext/1386528437/hci.o.d 
 	@${RM} ${OBJECTDIR}/_ext/1386528437/hci.o 
-	@${FIXDEPS} "${OBJECTDIR}/_ext/1386528437/hci.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -MMD -MF "${OBJECTDIR}/_ext/1386528437/hci.o.d" -o ${OBJECTDIR}/_ext/1386528437/hci.o ../../../src/hci.c     
+	@${FIXDEPS} "${OBJECTDIR}/_ext/1386528437/hci.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -I"../../../platform/embedded" -MMD -MF "${OBJECTDIR}/_ext/1386528437/hci.o.d" -o ${OBJECTDIR}/_ext/1386528437/hci.o ../../../src/hci.c     
 	
 ${OBJECTDIR}/_ext/1386528437/hci_cmd.o: ../../../src/hci_cmd.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}/_ext/1386528437" 
 	@${RM} ${OBJECTDIR}/_ext/1386528437/hci_cmd.o.d 
 	@${RM} ${OBJECTDIR}/_ext/1386528437/hci_cmd.o 
-	@${FIXDEPS} "${OBJECTDIR}/_ext/1386528437/hci_cmd.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -MMD -MF "${OBJECTDIR}/_ext/1386528437/hci_cmd.o.d" -o ${OBJECTDIR}/_ext/1386528437/hci_cmd.o ../../../src/hci_cmd.c     
+	@${FIXDEPS} "${OBJECTDIR}/_ext/1386528437/hci_cmd.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -I"../../../platform/embedded" -MMD -MF "${OBJECTDIR}/_ext/1386528437/hci_cmd.o.d" -o ${OBJECTDIR}/_ext/1386528437/hci_cmd.o ../../../src/hci_cmd.c     
 	
 ${OBJECTDIR}/_ext/1386528437/hci_dump.o: ../../../src/hci_dump.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}/_ext/1386528437" 
 	@${RM} ${OBJECTDIR}/_ext/1386528437/hci_dump.o.d 
 	@${RM} ${OBJECTDIR}/_ext/1386528437/hci_dump.o 
-	@${FIXDEPS} "${OBJECTDIR}/_ext/1386528437/hci_dump.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -MMD -MF "${OBJECTDIR}/_ext/1386528437/hci_dump.o.d" -o ${OBJECTDIR}/_ext/1386528437/hci_dump.o ../../../src/hci_dump.c     
+	@${FIXDEPS} "${OBJECTDIR}/_ext/1386528437/hci_dump.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -I"../../../platform/embedded" -MMD -MF "${OBJECTDIR}/_ext/1386528437/hci_dump.o.d" -o ${OBJECTDIR}/_ext/1386528437/hci_dump.o ../../../src/hci_dump.c     
 	
 ${OBJECTDIR}/_ext/1386528437/l2cap.o: ../../../src/l2cap.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}/_ext/1386528437" 
 	@${RM} ${OBJECTDIR}/_ext/1386528437/l2cap.o.d 
 	@${RM} ${OBJECTDIR}/_ext/1386528437/l2cap.o 
-	@${FIXDEPS} "${OBJECTDIR}/_ext/1386528437/l2cap.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -MMD -MF "${OBJECTDIR}/_ext/1386528437/l2cap.o.d" -o ${OBJECTDIR}/_ext/1386528437/l2cap.o ../../../src/l2cap.c     
+	@${FIXDEPS} "${OBJECTDIR}/_ext/1386528437/l2cap.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -I"../../../platform/embedded" -MMD -MF "${OBJECTDIR}/_ext/1386528437/l2cap.o.d" -o ${OBJECTDIR}/_ext/1386528437/l2cap.o ../../../src/l2cap.c     
 	
 ${OBJECTDIR}/_ext/1386528437/l2cap_signaling.o: ../../../src/l2cap_signaling.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}/_ext/1386528437" 
 	@${RM} ${OBJECTDIR}/_ext/1386528437/l2cap_signaling.o.d 
 	@${RM} ${OBJECTDIR}/_ext/1386528437/l2cap_signaling.o 
-	@${FIXDEPS} "${OBJECTDIR}/_ext/1386528437/l2cap_signaling.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -MMD -MF "${OBJECTDIR}/_ext/1386528437/l2cap_signaling.o.d" -o ${OBJECTDIR}/_ext/1386528437/l2cap_signaling.o ../../../src/l2cap_signaling.c     
+	@${FIXDEPS} "${OBJECTDIR}/_ext/1386528437/l2cap_signaling.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -I"../../../platform/embedded" -MMD -MF "${OBJECTDIR}/_ext/1386528437/l2cap_signaling.o.d" -o ${OBJECTDIR}/_ext/1386528437/l2cap_signaling.o ../../../src/l2cap_signaling.c     
 	
 ${OBJECTDIR}/_ext/1386528437/btstack_linked_list.o: ../../../src/btstack_linked_list.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}/_ext/1386528437" 
 	@${RM} ${OBJECTDIR}/_ext/1386528437/btstack_linked_list.o.d 
 	@${RM} ${OBJECTDIR}/_ext/1386528437/btstack_linked_list.o 
-	@${FIXDEPS} "${OBJECTDIR}/_ext/1386528437/btstack_linked_list.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -MMD -MF "${OBJECTDIR}/_ext/1386528437/btstack_linked_list.o.d" -o ${OBJECTDIR}/_ext/1386528437/btstack_linked_list.o ../../../src/btstack_linked_list.c     
+	@${FIXDEPS} "${OBJECTDIR}/_ext/1386528437/btstack_linked_list.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -I"../../../platform/embedded" -MMD -MF "${OBJECTDIR}/_ext/1386528437/btstack_linked_list.o.d" -o ${OBJECTDIR}/_ext/1386528437/btstack_linked_list.o ../../../src/btstack_linked_list.c     
 	
 ${OBJECTDIR}/_ext/1386528437/btstack_memory_pool.o: ../../../src/btstack_memory_pool.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}/_ext/1386528437" 
 	@${RM} ${OBJECTDIR}/_ext/1386528437/btstack_memory_pool.o.d 
 	@${RM} ${OBJECTDIR}/_ext/1386528437/btstack_memory_pool.o 
-	@${FIXDEPS} "${OBJECTDIR}/_ext/1386528437/btstack_memory_pool.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -MMD -MF "${OBJECTDIR}/_ext/1386528437/btstack_memory_pool.o.d" -o ${OBJECTDIR}/_ext/1386528437/btstack_memory_pool.o ../../../src/btstack_memory_pool.c     
+	@${FIXDEPS} "${OBJECTDIR}/_ext/1386528437/btstack_memory_pool.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -I"../../../platform/embedded" -MMD -MF "${OBJECTDIR}/_ext/1386528437/btstack_memory_pool.o.d" -o ${OBJECTDIR}/_ext/1386528437/btstack_memory_pool.o ../../../src/btstack_memory_pool.c     
 	
 ${OBJECTDIR}/_ext/1386327864/btstack_link_key_db_memory.o: ../../../src/classic/btstack_link_key_db_memory.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}/_ext/1386327864" 
 	@${RM} ${OBJECTDIR}/_ext/1386327864/btstack_link_key_db_memory.o.d 
 	@${RM} ${OBJECTDIR}/_ext/1386327864/btstack_link_key_db_memory.o 
-	@${FIXDEPS} "${OBJECTDIR}/_ext/1386327864/btstack_link_key_db_memory.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -MMD -MF "${OBJECTDIR}/_ext/1386327864/btstack_link_key_db_memory.o.d" -o ${OBJECTDIR}/_ext/1386327864/btstack_link_key_db_memory.o ../../../src/classic/btstack_link_key_db_memory.c     
+	@${FIXDEPS} "${OBJECTDIR}/_ext/1386327864/btstack_link_key_db_memory.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -I"../../../platform/embedded" -MMD -MF "${OBJECTDIR}/_ext/1386327864/btstack_link_key_db_memory.o.d" -o ${OBJECTDIR}/_ext/1386327864/btstack_link_key_db_memory.o ../../../src/classic/btstack_link_key_db_memory.c     
 	
 ${OBJECTDIR}/_ext/1386327864/rfcomm.o: ../../../src/classic/rfcomm.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}/_ext/1386327864" 
 	@${RM} ${OBJECTDIR}/_ext/1386327864/rfcomm.o.d 
 	@${RM} ${OBJECTDIR}/_ext/1386327864/rfcomm.o 
-	@${FIXDEPS} "${OBJECTDIR}/_ext/1386327864/rfcomm.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -MMD -MF "${OBJECTDIR}/_ext/1386327864/rfcomm.o.d" -o ${OBJECTDIR}/_ext/1386327864/rfcomm.o ../../../src/classic/rfcomm.c     
+	@${FIXDEPS} "${OBJECTDIR}/_ext/1386327864/rfcomm.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -I"../../../platform/embedded" -MMD -MF "${OBJECTDIR}/_ext/1386327864/rfcomm.o.d" -o ${OBJECTDIR}/_ext/1386327864/rfcomm.o ../../../src/classic/rfcomm.c     
 	
 ${OBJECTDIR}/_ext/1386528437/btstack_run_loop.o: ../../../src/btstack_run_loop.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}/_ext/1386528437" 
 	@${RM} ${OBJECTDIR}/_ext/1386528437/btstack_run_loop.o.d 
 	@${RM} ${OBJECTDIR}/_ext/1386528437/btstack_run_loop.o 
-	@${FIXDEPS} "${OBJECTDIR}/_ext/1386528437/btstack_run_loop.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -MMD -MF "${OBJECTDIR}/_ext/1386528437/btstack_run_loop.o.d" -o ${OBJECTDIR}/_ext/1386528437/btstack_run_loop.o ../../../src/btstack_run_loop.c     
+	@${FIXDEPS} "${OBJECTDIR}/_ext/1386528437/btstack_run_loop.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -I"../../../platform/embedded" -MMD -MF "${OBJECTDIR}/_ext/1386528437/btstack_run_loop.o.d" -o ${OBJECTDIR}/_ext/1386528437/btstack_run_loop.o ../../../src/btstack_run_loop.c     
 	
 ${OBJECTDIR}/_ext/1386327864/sdp_server.o: ../../../src/classic/sdp_server.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}/_ext/1386327864" 
 	@${RM} ${OBJECTDIR}/_ext/1386327864/sdp_server.o.d 
 	@${RM} ${OBJECTDIR}/_ext/1386327864/sdp_server.o 
-	@${FIXDEPS} "${OBJECTDIR}/_ext/1386327864/sdp_server.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -MMD -MF "${OBJECTDIR}/_ext/1386327864/sdp_server.o.d" -o ${OBJECTDIR}/_ext/1386327864/sdp_server.o ../../../src/classic/sdp_server.c     
+	@${FIXDEPS} "${OBJECTDIR}/_ext/1386327864/sdp_server.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -I"../../../platform/embedded" -MMD -MF "${OBJECTDIR}/_ext/1386327864/sdp_server.o.d" -o ${OBJECTDIR}/_ext/1386327864/sdp_server.o ../../../src/classic/sdp_server.c     
 	
 ${OBJECTDIR}/_ext/1386327864/sdp_client.o: ../../../src/classic/sdp_client.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}/_ext/1386327864" 
 	@${RM} ${OBJECTDIR}/_ext/1386327864/sdp_client.o.d 
 	@${RM} ${OBJECTDIR}/_ext/1386327864/sdp_client.o 
-	@${FIXDEPS} "${OBJECTDIR}/_ext/1386327864/sdp_client.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -MMD -MF "${OBJECTDIR}/_ext/1386327864/sdp_client.o.d" -o ${OBJECTDIR}/_ext/1386327864/sdp_client.o ../../../src/classic/sdp_client.c     
+	@${FIXDEPS} "${OBJECTDIR}/_ext/1386327864/sdp_client.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -I"../../../platform/embedded" -MMD -MF "${OBJECTDIR}/_ext/1386327864/sdp_client.o.d" -o ${OBJECTDIR}/_ext/1386327864/sdp_client.o ../../../src/classic/sdp_client.c     
 	
 ${OBJECTDIR}/_ext/1386327864/sdp_query_rfcomm.o: ../../../src/classic/sdp_query_rfcomm.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}/_ext/1386327864" 
 	@${RM} ${OBJECTDIR}/_ext/1386327864/sdp_query_rfcomm.o.d 
 	@${RM} ${OBJECTDIR}/_ext/1386327864/sdp_query_rfcomm.o 
-	@${FIXDEPS} "${OBJECTDIR}/_ext/1386327864/sdp_query_rfcomm.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -MMD -MF "${OBJECTDIR}/_ext/1386327864/sdp_query_rfcomm.o.d" -o ${OBJECTDIR}/_ext/1386327864/sdp_query_rfcomm.o ../../../src/classic/sdp_query_rfcomm.c     
+	@${FIXDEPS} "${OBJECTDIR}/_ext/1386327864/sdp_query_rfcomm.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -I"../../../platform/embedded" -MMD -MF "${OBJECTDIR}/_ext/1386327864/sdp_query_rfcomm.o.d" -o ${OBJECTDIR}/_ext/1386327864/sdp_query_rfcomm.o ../../../src/classic/sdp_query_rfcomm.c     
 	
 ${OBJECTDIR}/_ext/1386327864/sdp_util.o: ../../../src/classic/sdp_util.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}/_ext/1386327864" 
 	@${RM} ${OBJECTDIR}/_ext/1386327864/sdp_util.o.d 
 	@${RM} ${OBJECTDIR}/_ext/1386327864/sdp_util.o 
-	@${FIXDEPS} "${OBJECTDIR}/_ext/1386327864/sdp_util.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -MMD -MF "${OBJECTDIR}/_ext/1386327864/sdp_util.o.d" -o ${OBJECTDIR}/_ext/1386327864/sdp_util.o ../../../src/classic/sdp_util.c     
+	@${FIXDEPS} "${OBJECTDIR}/_ext/1386327864/sdp_util.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -I"../../../platform/embedded" -MMD -MF "${OBJECTDIR}/_ext/1386327864/sdp_util.o.d" -o ${OBJECTDIR}/_ext/1386327864/sdp_util.o ../../../src/classic/sdp_util.c     
 	
 ${OBJECTDIR}/_ext/1386528437/btstack_util.o: ../../../src/btstack_util.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}/_ext/1386528437" 
 	@${RM} ${OBJECTDIR}/_ext/1386528437/btstack_util.o.d 
 	@${RM} ${OBJECTDIR}/_ext/1386528437/btstack_util.o 
-	@${FIXDEPS} "${OBJECTDIR}/_ext/1386528437/btstack_util.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -MMD -MF "${OBJECTDIR}/_ext/1386528437/btstack_util.o.d" -o ${OBJECTDIR}/_ext/1386528437/btstack_util.o ../../../src/btstack_util.c     
+	@${FIXDEPS} "${OBJECTDIR}/_ext/1386528437/btstack_util.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -I"../../../platform/embedded" -MMD -MF "${OBJECTDIR}/_ext/1386528437/btstack_util.o.d" -o ${OBJECTDIR}/_ext/1386528437/btstack_util.o ../../../src/btstack_util.c     
 	
 ${OBJECTDIR}/_ext/993942601/btstack_run_loop_embedded.o: ../../../platform/embedded/btstack_run_loop_embedded.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}/_ext/993942601" 
 	@${RM} ${OBJECTDIR}/_ext/993942601/btstack_run_loop_embedded.o.d 
 	@${RM} ${OBJECTDIR}/_ext/993942601/btstack_run_loop_embedded.o 
-	@${FIXDEPS} "${OBJECTDIR}/_ext/993942601/btstack_run_loop_embedded.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -MMD -MF "${OBJECTDIR}/_ext/993942601/btstack_run_loop_embedded.o.d" -o ${OBJECTDIR}/_ext/993942601/btstack_run_loop_embedded.o ../../../platform/embedded/btstack_run_loop_embedded.c     
+	@${FIXDEPS} "${OBJECTDIR}/_ext/993942601/btstack_run_loop_embedded.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -I"../../../platform/embedded" -MMD -MF "${OBJECTDIR}/_ext/993942601/btstack_run_loop_embedded.o.d" -o ${OBJECTDIR}/_ext/993942601/btstack_run_loop_embedded.o ../../../platform/embedded/btstack_run_loop_embedded.c     
 	
 ${OBJECTDIR}/_ext/993942601/hci_transport_h4_embedded.o: ../../../platform/embedded/hci_transport_h4_embedded.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}/_ext/993942601" 
 	@${RM} ${OBJECTDIR}/_ext/993942601/hci_transport_h4_embedded.o.d 
 	@${RM} ${OBJECTDIR}/_ext/993942601/hci_transport_h4_embedded.o 
-	@${FIXDEPS} "${OBJECTDIR}/_ext/993942601/hci_transport_h4_embedded.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -MMD -MF "${OBJECTDIR}/_ext/993942601/hci_transport_h4_embedded.o.d" -o ${OBJECTDIR}/_ext/993942601/hci_transport_h4_embedded.o ../../../platform/embedded/hci_transport_h4_embedded.c     
+	@${FIXDEPS} "${OBJECTDIR}/_ext/993942601/hci_transport_h4_embedded.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -I"../../../platform/embedded" -MMD -MF "${OBJECTDIR}/_ext/993942601/hci_transport_h4_embedded.o.d" -o ${OBJECTDIR}/_ext/993942601/hci_transport_h4_embedded.o ../../../platform/embedded/hci_transport_h4_embedded.c     
 	
 ${OBJECTDIR}/_ext/1880736137/drv_tmr.o: ../../../../driver/tmr/src/dynamic/drv_tmr.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}/_ext/1880736137" 
 	@${RM} ${OBJECTDIR}/_ext/1880736137/drv_tmr.o.d 
 	@${RM} ${OBJECTDIR}/_ext/1880736137/drv_tmr.o 
-	@${FIXDEPS} "${OBJECTDIR}/_ext/1880736137/drv_tmr.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -MMD -MF "${OBJECTDIR}/_ext/1880736137/drv_tmr.o.d" -o ${OBJECTDIR}/_ext/1880736137/drv_tmr.o ../../../../driver/tmr/src/dynamic/drv_tmr.c     
+	@${FIXDEPS} "${OBJECTDIR}/_ext/1880736137/drv_tmr.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -I"../../../platform/embedded" -MMD -MF "${OBJECTDIR}/_ext/1880736137/drv_tmr.o.d" -o ${OBJECTDIR}/_ext/1880736137/drv_tmr.o ../../../../driver/tmr/src/dynamic/drv_tmr.c     
 	
 ${OBJECTDIR}/_ext/1112166103/sys_clk.o: ../../../../system/clk/src/sys_clk.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}/_ext/1112166103" 
 	@${RM} ${OBJECTDIR}/_ext/1112166103/sys_clk.o.d 
 	@${RM} ${OBJECTDIR}/_ext/1112166103/sys_clk.o 
-	@${FIXDEPS} "${OBJECTDIR}/_ext/1112166103/sys_clk.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -MMD -MF "${OBJECTDIR}/_ext/1112166103/sys_clk.o.d" -o ${OBJECTDIR}/_ext/1112166103/sys_clk.o ../../../../system/clk/src/sys_clk.c     
+	@${FIXDEPS} "${OBJECTDIR}/_ext/1112166103/sys_clk.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -I"../../../platform/embedded" -MMD -MF "${OBJECTDIR}/_ext/1112166103/sys_clk.o.d" -o ${OBJECTDIR}/_ext/1112166103/sys_clk.o ../../../../system/clk/src/sys_clk.c     
 	
 ${OBJECTDIR}/_ext/1112166103/sys_clk_pic32mx.o: ../../../../system/clk/src/sys_clk_pic32mx.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}/_ext/1112166103" 
 	@${RM} ${OBJECTDIR}/_ext/1112166103/sys_clk_pic32mx.o.d 
 	@${RM} ${OBJECTDIR}/_ext/1112166103/sys_clk_pic32mx.o 
-	@${FIXDEPS} "${OBJECTDIR}/_ext/1112166103/sys_clk_pic32mx.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -MMD -MF "${OBJECTDIR}/_ext/1112166103/sys_clk_pic32mx.o.d" -o ${OBJECTDIR}/_ext/1112166103/sys_clk_pic32mx.o ../../../../system/clk/src/sys_clk_pic32mx.c     
+	@${FIXDEPS} "${OBJECTDIR}/_ext/1112166103/sys_clk_pic32mx.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -I"../../../platform/embedded" -MMD -MF "${OBJECTDIR}/_ext/1112166103/sys_clk_pic32mx.o.d" -o ${OBJECTDIR}/_ext/1112166103/sys_clk_pic32mx.o ../../../../system/clk/src/sys_clk_pic32mx.c     
 	
 ${OBJECTDIR}/_ext/1510368962/sys_devcon.o: ../../../../system/devcon/src/sys_devcon.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}/_ext/1510368962" 
 	@${RM} ${OBJECTDIR}/_ext/1510368962/sys_devcon.o.d 
 	@${RM} ${OBJECTDIR}/_ext/1510368962/sys_devcon.o 
-	@${FIXDEPS} "${OBJECTDIR}/_ext/1510368962/sys_devcon.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -MMD -MF "${OBJECTDIR}/_ext/1510368962/sys_devcon.o.d" -o ${OBJECTDIR}/_ext/1510368962/sys_devcon.o ../../../../system/devcon/src/sys_devcon.c     
+	@${FIXDEPS} "${OBJECTDIR}/_ext/1510368962/sys_devcon.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -I"../../../platform/embedded" -MMD -MF "${OBJECTDIR}/_ext/1510368962/sys_devcon.o.d" -o ${OBJECTDIR}/_ext/1510368962/sys_devcon.o ../../../../system/devcon/src/sys_devcon.c     
 	
 ${OBJECTDIR}/_ext/1510368962/sys_devcon_pic32mx.o: ../../../../system/devcon/src/sys_devcon_pic32mx.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}/_ext/1510368962" 
 	@${RM} ${OBJECTDIR}/_ext/1510368962/sys_devcon_pic32mx.o.d 
 	@${RM} ${OBJECTDIR}/_ext/1510368962/sys_devcon_pic32mx.o 
-	@${FIXDEPS} "${OBJECTDIR}/_ext/1510368962/sys_devcon_pic32mx.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -MMD -MF "${OBJECTDIR}/_ext/1510368962/sys_devcon_pic32mx.o.d" -o ${OBJECTDIR}/_ext/1510368962/sys_devcon_pic32mx.o ../../../../system/devcon/src/sys_devcon_pic32mx.c     
+	@${FIXDEPS} "${OBJECTDIR}/_ext/1510368962/sys_devcon_pic32mx.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -I"../../../platform/embedded" -MMD -MF "${OBJECTDIR}/_ext/1510368962/sys_devcon_pic32mx.o.d" -o ${OBJECTDIR}/_ext/1510368962/sys_devcon_pic32mx.o ../../../../system/devcon/src/sys_devcon_pic32mx.c     
 	
 ${OBJECTDIR}/_ext/2087176412/sys_int_pic32.o: ../../../../system/int/src/sys_int_pic32.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}/_ext/2087176412" 
 	@${RM} ${OBJECTDIR}/_ext/2087176412/sys_int_pic32.o.d 
 	@${RM} ${OBJECTDIR}/_ext/2087176412/sys_int_pic32.o 
-	@${FIXDEPS} "${OBJECTDIR}/_ext/2087176412/sys_int_pic32.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -MMD -MF "${OBJECTDIR}/_ext/2087176412/sys_int_pic32.o.d" -o ${OBJECTDIR}/_ext/2087176412/sys_int_pic32.o ../../../../system/int/src/sys_int_pic32.c     
+	@${FIXDEPS} "${OBJECTDIR}/_ext/2087176412/sys_int_pic32.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -I"../../../platform/embedded" -MMD -MF "${OBJECTDIR}/_ext/2087176412/sys_int_pic32.o.d" -o ${OBJECTDIR}/_ext/2087176412/sys_int_pic32.o ../../../../system/int/src/sys_int_pic32.c     
 	
 ${OBJECTDIR}/_ext/2147153351/sys_ports.o: ../../../../system/ports/src/sys_ports.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}/_ext/2147153351" 
 	@${RM} ${OBJECTDIR}/_ext/2147153351/sys_ports.o.d 
 	@${RM} ${OBJECTDIR}/_ext/2147153351/sys_ports.o 
-	@${FIXDEPS} "${OBJECTDIR}/_ext/2147153351/sys_ports.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -MMD -MF "${OBJECTDIR}/_ext/2147153351/sys_ports.o.d" -o ${OBJECTDIR}/_ext/2147153351/sys_ports.o ../../../../system/ports/src/sys_ports.c     
+	@${FIXDEPS} "${OBJECTDIR}/_ext/2147153351/sys_ports.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -Os -I"." -I"../../../.." -I"../src" -I"../src/system_config/bk-audio-dk" -I"../../../include" -I"../../../src" -I"../../../ble" -I"../../../chipset/csr" -I"../../../platform/embedded" -MMD -MF "${OBJECTDIR}/_ext/2147153351/sys_ports.o.d" -o ${OBJECTDIR}/_ext/2147153351/sys_ports.o ../../../../system/ports/src/sys_ports.c     
 	
 endif
 

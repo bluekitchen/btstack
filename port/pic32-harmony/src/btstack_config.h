@@ -8,7 +8,6 @@
 // Port related features
 #define HAVE_BZERO
 #define HAVE_TICK
-#define HAVE_EHCILL
 
 // BTstack features that can be enabled
 #define ENABLE_BLE
