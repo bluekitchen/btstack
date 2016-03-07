@@ -838,7 +838,7 @@ void le_handle_advertisement_report(uint8_t *packet, int size){
         uint8_t data_length = packet[offset + 8];
         uint8_t event_size = 10 + data_length;
         int pos = 0;
-        event[pos++] = GAP_LE_EVENT_ADVERTISING_REPORT;
+        event[pos++] = GAP_EVENT_ADVERTISING_REPORT;
         event[pos++] = event_size;
         memcpy(&event[pos], &packet[offset], 1+1+6); // event type + address type + address
         offset += 8;

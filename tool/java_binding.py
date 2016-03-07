@@ -314,14 +314,25 @@ def create_event(event_name, format, args):
         to_string_method = java_event_to_string.format(event_name, to_string_args)
         fout.write(java_event_template.format(package, event_name, getters, to_string_method))
 
+def event_supported(event_name):
+    parts = event_name.split('_')
+    if parts[0] in ['ATT', 'BTSTACK', 'DAEMON', 'L2CAP', 'RFCOMM', 'SDP', 'GATT', 'GAP', 'HCI', 'SM']:
+        return True
+
+def class_name_for_event(event_name):
+    return parser.camel_case(event_name.replace('SUBEVENT','EVENT'))
+
 def create_events(events):
     global gen_path
     gen_path_events = gen_path + '/event'
     parser.assert_dir(gen_path_events)
 
     for event_type, event_name, format, args in events:
-        event_name = parser.camel_case(event_name)
-        create_event(event_name, format, args)
+        if not event_supported(event_name):
+            continue
+        class_name = class_name_for_event(event_name)
+        create_event(class_name, format, args)
+
 
 def create_event_factory(events, subevents, defines):
     global gen_path
@@ -337,12 +348,11 @@ def create_event_factory(events, subevents, defines):
         cases += java_event_factory_event.format(event_type, event_name)
     subcases = ''
     for event_type, event_name, format, args in subevents:
-        # replace subevent with event as we just enumerate all events
-        event_name = parser.camel_case(event_name.replace('SUBEVENT','EVENT'))
-        # subevents besides le_events are not handled yet
-        if not event_name.startswith("HCIEvent"):
+        if not event_supported(event_name):
             continue
-        subcases += java_event_factory_subevent.format(event_type, event_name)
+        class_name = class_name_for_event(event_name)
+        print class_name
+        subcases += java_event_factory_subevent.format(event_type, class_name)
 
     with open(outfile, 'wt') as fout:
         defines_text = java_defines_string(defines)

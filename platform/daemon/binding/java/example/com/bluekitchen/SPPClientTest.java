@@ -12,8 +12,8 @@ import com.bluekitchen.btstack.Util;
 import com.bluekitchen.btstack.event.BTstackEventState;
 import com.bluekitchen.btstack.event.HCIEventDisconnectionComplete;
 import com.bluekitchen.btstack.event.RFCOMMEventOpenChannelComplete;
-import com.bluekitchen.btstack.event.SDPQueryComplete;
-import com.bluekitchen.btstack.event.SDPQueryRFCOMMService;
+import com.bluekitchen.btstack.event.SDPEventQueryComplete;
+import com.bluekitchen.btstack.event.SDPEventQueryRFCOMMService;
 
 public class SPPClientTest implements PacketHandler {
 
@@ -58,11 +58,11 @@ public class SPPClientTest implements PacketHandler {
 			break;
 
 		case w4_query_result:
-			if (packet instanceof SDPQueryRFCOMMService){
-				SDPQueryRFCOMMService service = (SDPQueryRFCOMMService) packet;
+			if (packet instanceof SDPEventQueryRFCOMMService){
+				SDPEventQueryRFCOMMService service = (SDPEventQueryRFCOMMService) packet;
 				services.add(service.getRFCOMMChannel());
 			}
-			if (packet instanceof SDPQueryComplete){
+			if (packet instanceof SDPEventQueryComplete){
 				for  (Integer channel_nr : services){
 					System.out.println("Found rfcomm channel nr: " + channel_nr);
 					if (channel_nr == btIncomingChannelNr){

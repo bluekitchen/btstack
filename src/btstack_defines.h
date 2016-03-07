@@ -154,10 +154,10 @@ typedef uint8_t sm_key_t[16];
 // get state: @returns HCI_STATE
 #define BTSTACK_GET_STATE                                  0x01
 
-// set power mode: @param HCI_POWER_MODE
+// set power mode: param HCI_POWER_MODE
 #define BTSTACK_SET_POWER_MODE                             0x02
 
-// set capture mode: @param on
+// set capture mode: param on
 #define BTSTACK_SET_ACL_CAPTURE_MODE                       0x03
 
 // get BTstack version
@@ -175,25 +175,25 @@ typedef uint8_t sm_key_t[16];
 // set global Bluetooth state
 #define BTSTACK_SET_BLUETOOTH_ENABLED                      0x08
 
-// create l2cap channel: @param bd_addr(48), psm (16)
+// create l2cap channel: param bd_addr(48), psm (16)
 #define L2CAP_CREATE_CHANNEL                               0x20
 
-// disconnect l2cap disconnect, @param channel(16), reason(8)
+// disconnect l2cap disconnect, param channel(16), reason(8)
 #define L2CAP_DISCONNECT                                   0x21
 
-// register l2cap service: @param psm(16), mtu (16)
+// register l2cap service: param psm(16), mtu (16)
 #define L2CAP_REGISTER_SERVICE                             0x22
 
-// unregister l2cap disconnect, @param psm(16)
+// unregister l2cap disconnect, param psm(16)
 #define L2CAP_UNREGISTER_SERVICE                           0x23
 
-// accept connection @param bd_addr(48), dest cid (16)
+// accept connection param bd_addr(48), dest cid (16)
 #define L2CAP_ACCEPT_CONNECTION                            0x24
 
-// decline l2cap disconnect,@param bd_addr(48), dest cid (16), reason(8)
+// decline l2cap disconnect,param bd_addr(48), dest cid (16), reason(8)
 #define L2CAP_DECLINE_CONNECTION                           0x25
 
-// create l2cap channel: @param bd_addr(48), psm (16), mtu (16)
+// create l2cap channel: param bd_addr(48), psm (16), mtu (16)
 #define L2CAP_CREATE_CHANNEL_MTU                           0x26
 
 // register SDP Service Record: service record (size)
@@ -459,8 +459,8 @@ typedef uint8_t sm_key_t[16];
 
  /**
   * TODO: format for variable data 2?
-  * @param rfcomm_cid
-  * @param rpn_data
+  * param rfcomm_cid
+  * param rpn_data
   */
 #define RFCOMM_EVENT_PORT_CONFIGURATION                    0x88
 
@@ -750,7 +750,7 @@ typedef uint8_t sm_key_t[16];
  * @param data_length
  * @param data
  */
-#define GAP_LE_EVENT_ADVERTISING_REPORT                          0xE2
+#define GAP_EVENT_ADVERTISING_REPORT                          0xE2
 
 
 // Meta Events, see below for sub events

@@ -155,7 +155,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     le_peripheral_todos |= SET_ADVERTISEMENT_ENABLED;
                     break;
                 
-                case GAP_LE_EVENT_ADVERTISING_REPORT: {
+                case GAP_EVENT_ADVERTISING_REPORT: {
                     if (bleAdvertismentCallback) {
                         BLEAdvertisement advertisement(packet);
                         (*bleAdvertismentCallback)(&advertisement);

@@ -715,88 +715,6 @@ static inline hci_con_handle_t hci_event_encryption_key_refresh_complete_get_han
 }
 
 /**
- * @brief Get field status from event hci_subevent_le_connection_complete
- * @param event packet
- * @return status
- * @note: btstack_type 1
- */
-static inline uint8_t hci_subevent_le_connection_complete_get_status(const uint8_t * event){
-    return event[3];
-}
-/**
- * @brief Get field connection_handle from event hci_subevent_le_connection_complete
- * @param event packet
- * @return connection_handle
- * @note: btstack_type H
- */
-static inline hci_con_handle_t hci_subevent_le_connection_complete_get_connection_handle(const uint8_t * event){
-    return little_endian_read_16(event, 4);
-}
-/**
- * @brief Get field role from event hci_subevent_le_connection_complete
- * @param event packet
- * @return role
- * @note: btstack_type 1
- */
-static inline uint8_t hci_subevent_le_connection_complete_get_role(const uint8_t * event){
-    return event[6];
-}
-/**
- * @brief Get field peer_address_type from event hci_subevent_le_connection_complete
- * @param event packet
- * @return peer_address_type
- * @note: btstack_type 1
- */
-static inline uint8_t hci_subevent_le_connection_complete_get_peer_address_type(const uint8_t * event){
-    return event[7];
-}
-/**
- * @brief Get field peer_address from event hci_subevent_le_connection_complete
- * @param event packet
- * @param Pointer to storage for peer_address
- * @note: btstack_type B
- */
-static inline void hci_subevent_le_connection_complete_get_peer_address(const uint8_t * event, bd_addr_t peer_address){
-    reverse_bd_addr(&event[8], peer_address);    
-}
-/**
- * @brief Get field conn_interval from event hci_subevent_le_connection_complete
- * @param event packet
- * @return conn_interval
- * @note: btstack_type 2
- */
-static inline uint16_t hci_subevent_le_connection_complete_get_conn_interval(const uint8_t * event){
-    return little_endian_read_16(event, 14);
-}
-/**
- * @brief Get field conn_latency from event hci_subevent_le_connection_complete
- * @param event packet
- * @return conn_latency
- * @note: btstack_type 2
- */
-static inline uint16_t hci_subevent_le_connection_complete_get_conn_latency(const uint8_t * event){
-    return little_endian_read_16(event, 16);
-}
-/**
- * @brief Get field supervision_timeout from event hci_subevent_le_connection_complete
- * @param event packet
- * @return supervision_timeout
- * @note: btstack_type 2
- */
-static inline uint16_t hci_subevent_le_connection_complete_get_supervision_timeout(const uint8_t * event){
-    return little_endian_read_16(event, 18);
-}
-/**
- * @brief Get field master_clock_accuracy from event hci_subevent_le_connection_complete
- * @param event packet
- * @return master_clock_accuracy
- * @note: btstack_type 1
- */
-static inline uint8_t hci_subevent_le_connection_complete_get_master_clock_accuracy(const uint8_t * event){
-    return event[20];
-}
-
-/**
  * @brief Get field state from event btstack_event_state
  * @param event packet
  * @return state
@@ -2143,58 +2061,140 @@ static inline uint8_t sm_event_authorization_result_get_authorization_result(con
 #endif
 
 /**
- * @brief Get field advertising_event_type from event gap_le_event_advertising_report
+ * @brief Get field advertising_event_type from event gap_event_advertising_report
  * @param event packet
  * @return advertising_event_type
  * @note: btstack_type 1
  */
-static inline uint8_t gap_le_event_advertising_report_get_advertising_event_type(const uint8_t * event){
+static inline uint8_t gap_event_advertising_report_get_advertising_event_type(const uint8_t * event){
     return event[2];
 }
 /**
- * @brief Get field address_type from event gap_le_event_advertising_report
+ * @brief Get field address_type from event gap_event_advertising_report
  * @param event packet
  * @return address_type
  * @note: btstack_type 1
  */
-static inline uint8_t gap_le_event_advertising_report_get_address_type(const uint8_t * event){
+static inline uint8_t gap_event_advertising_report_get_address_type(const uint8_t * event){
     return event[3];
 }
 /**
- * @brief Get field address from event gap_le_event_advertising_report
+ * @brief Get field address from event gap_event_advertising_report
  * @param event packet
  * @param Pointer to storage for address
  * @note: btstack_type B
  */
-static inline void gap_le_event_advertising_report_get_address(const uint8_t * event, bd_addr_t address){
+static inline void gap_event_advertising_report_get_address(const uint8_t * event, bd_addr_t address){
     reverse_bd_addr(&event[4], address);    
 }
 /**
- * @brief Get field rssi from event gap_le_event_advertising_report
+ * @brief Get field rssi from event gap_event_advertising_report
  * @param event packet
  * @return rssi
  * @note: btstack_type 1
  */
-static inline uint8_t gap_le_event_advertising_report_get_rssi(const uint8_t * event){
+static inline uint8_t gap_event_advertising_report_get_rssi(const uint8_t * event){
     return event[10];
 }
 /**
- * @brief Get field data_length from event gap_le_event_advertising_report
+ * @brief Get field data_length from event gap_event_advertising_report
  * @param event packet
  * @return data_length
  * @note: btstack_type J
  */
-static inline int gap_le_event_advertising_report_get_data_length(const uint8_t * event){
+static inline int gap_event_advertising_report_get_data_length(const uint8_t * event){
     return event[11];
 }
 /**
- * @brief Get field data from event gap_le_event_advertising_report
+ * @brief Get field data from event gap_event_advertising_report
  * @param event packet
  * @return data
  * @note: btstack_type V
  */
-static inline const uint8_t * gap_le_event_advertising_report_get_data(const uint8_t * event){
+static inline const uint8_t * gap_event_advertising_report_get_data(const uint8_t * event){
     return &event[12];
+}
+
+/**
+ * @brief Get field status from event hci_subevent_le_connection_complete
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_subevent_le_connection_complete_get_status(const uint8_t * event){
+    return event[3];
+}
+/**
+ * @brief Get field connection_handle from event hci_subevent_le_connection_complete
+ * @param event packet
+ * @return connection_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t hci_subevent_le_connection_complete_get_connection_handle(const uint8_t * event){
+    return little_endian_read_16(event, 4);
+}
+/**
+ * @brief Get field role from event hci_subevent_le_connection_complete
+ * @param event packet
+ * @return role
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_subevent_le_connection_complete_get_role(const uint8_t * event){
+    return event[6];
+}
+/**
+ * @brief Get field peer_address_type from event hci_subevent_le_connection_complete
+ * @param event packet
+ * @return peer_address_type
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_subevent_le_connection_complete_get_peer_address_type(const uint8_t * event){
+    return event[7];
+}
+/**
+ * @brief Get field peer_address from event hci_subevent_le_connection_complete
+ * @param event packet
+ * @param Pointer to storage for peer_address
+ * @note: btstack_type B
+ */
+static inline void hci_subevent_le_connection_complete_get_peer_address(const uint8_t * event, bd_addr_t peer_address){
+    reverse_bd_addr(&event[8], peer_address);    
+}
+/**
+ * @brief Get field conn_interval from event hci_subevent_le_connection_complete
+ * @param event packet
+ * @return conn_interval
+ * @note: btstack_type 2
+ */
+static inline uint16_t hci_subevent_le_connection_complete_get_conn_interval(const uint8_t * event){
+    return little_endian_read_16(event, 14);
+}
+/**
+ * @brief Get field conn_latency from event hci_subevent_le_connection_complete
+ * @param event packet
+ * @return conn_latency
+ * @note: btstack_type 2
+ */
+static inline uint16_t hci_subevent_le_connection_complete_get_conn_latency(const uint8_t * event){
+    return little_endian_read_16(event, 16);
+}
+/**
+ * @brief Get field supervision_timeout from event hci_subevent_le_connection_complete
+ * @param event packet
+ * @return supervision_timeout
+ * @note: btstack_type 2
+ */
+static inline uint16_t hci_subevent_le_connection_complete_get_supervision_timeout(const uint8_t * event){
+    return little_endian_read_16(event, 18);
+}
+/**
+ * @brief Get field master_clock_accuracy from event hci_subevent_le_connection_complete
+ * @param event packet
+ * @return master_clock_accuracy
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_subevent_le_connection_complete_get_master_clock_accuracy(const uint8_t * event){
+    return event[20];
 }
 
 /**
@@ -2205,15 +2205,6 @@ static inline const uint8_t * gap_le_event_advertising_report_get_data(const uin
  */
 static inline uint8_t hsp_subevent_audio_connection_complete_get_status(const uint8_t * event){
     return event[3];
-}
-/**
- * @brief Get field handle from event hsp_subevent_audio_connection_complete
- * @param event packet
- * @return handle
- * @note: btstack_type H
- */
-static inline hci_con_handle_t hsp_subevent_audio_connection_complete_get_handle(const uint8_t * event){
-    return little_endian_read_16(event, 4);
 }
 
 /**
@@ -2283,6 +2274,320 @@ static inline int hsp_subevent_ag_indication_get_value_length(const uint8_t * ev
  */
 static inline const uint8_t * hsp_subevent_ag_indication_get_value(const uint8_t * event){
     return &event[4];
+}
+
+/**
+ * @brief Get field status from event hfp_subevent_service_level_connection_established
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t hfp_subevent_service_level_connection_established_get_status(const uint8_t * event){
+    return event[3];
+}
+
+
+/**
+ * @brief Get field status from event hfp_subevent_audio_connection_established
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t hfp_subevent_audio_connection_established_get_status(const uint8_t * event){
+    return event[3];
+}
+
+
+/**
+ * @brief Get field status from event hfp_subevent_complete
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t hfp_subevent_complete_get_status(const uint8_t * event){
+    return event[3];
+}
+
+/**
+ * @brief Get field indicator_index from event hfp_subevent_ag_indicator_status_changed
+ * @param event packet
+ * @return indicator_index
+ * @note: btstack_type 1
+ */
+static inline uint8_t hfp_subevent_ag_indicator_status_changed_get_indicator_index(const uint8_t * event){
+    return event[3];
+}
+/**
+ * @brief Get field indicator_status from event hfp_subevent_ag_indicator_status_changed
+ * @param event packet
+ * @return indicator_status
+ * @note: btstack_type 1
+ */
+static inline uint8_t hfp_subevent_ag_indicator_status_changed_get_indicator_status(const uint8_t * event){
+    return event[4];
+}
+/**
+ * @brief Get field indicator_name from event hfp_subevent_ag_indicator_status_changed
+ * @param event packet
+ * @return indicator_name
+ * @note: btstack_type T
+ */
+static inline const char * hfp_subevent_ag_indicator_status_changed_get_indicator_name(const uint8_t * event){
+    return (const char *) &event[5];
+}
+
+/**
+ * @brief Get field network_operator_mode from event hfp_subevent_network_operator_changed
+ * @param event packet
+ * @return network_operator_mode
+ * @note: btstack_type 1
+ */
+static inline uint8_t hfp_subevent_network_operator_changed_get_network_operator_mode(const uint8_t * event){
+    return event[3];
+}
+/**
+ * @brief Get field network_operator_format from event hfp_subevent_network_operator_changed
+ * @param event packet
+ * @return network_operator_format
+ * @note: btstack_type 1
+ */
+static inline uint8_t hfp_subevent_network_operator_changed_get_network_operator_format(const uint8_t * event){
+    return event[4];
+}
+/**
+ * @brief Get field network_operator_name from event hfp_subevent_network_operator_changed
+ * @param event packet
+ * @return network_operator_name
+ * @note: btstack_type 1
+ */
+static inline uint8_t hfp_subevent_network_operator_changed_get_network_operator_name(const uint8_t * event){
+    return event[5];
+}
+
+/**
+ * @brief Get field error from event hfp_subevent_extended_audio_gateway_error
+ * @param event packet
+ * @return error
+ * @note: btstack_type 1
+ */
+static inline uint8_t hfp_subevent_extended_audio_gateway_error_get_error(const uint8_t * event){
+    return event[3];
+}
+
+/**
+ * @brief Get field status from event hfp_subevent_codecs_connection_complete
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t hfp_subevent_codecs_connection_complete_get_status(const uint8_t * event){
+    return event[3];
+}
+
+
+
+
+/**
+ * @brief Get field number from event hfp_subevent_place_call_with_number
+ * @param event packet
+ * @return number
+ * @note: btstack_type T
+ */
+static inline const char * hfp_subevent_place_call_with_number_get_number(const uint8_t * event){
+    return (const char *) &event[3];
+}
+
+
+/**
+ * @brief Get field number from event hfp_subevent_number_for_voice_tag
+ * @param event packet
+ * @return number
+ * @note: btstack_type T
+ */
+static inline const char * hfp_subevent_number_for_voice_tag_get_number(const uint8_t * event){
+    return (const char *) &event[3];
+}
+
+/**
+ * @brief Get field dtmf from event hfp_subevent_transmit_dtmf_codes
+ * @param event packet
+ * @return dtmf
+ * @note: btstack_type T
+ */
+static inline const char * hfp_subevent_transmit_dtmf_codes_get_dtmf(const uint8_t * event){
+    return (const char *) &event[3];
+}
+
+
+
+
+/**
+ * @brief Get field status from event hfp_subevent_speaker_volume
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t hfp_subevent_speaker_volume_get_status(const uint8_t * event){
+    return event[3];
+}
+/**
+ * @brief Get field gain from event hfp_subevent_speaker_volume
+ * @param event packet
+ * @return gain
+ * @note: btstack_type 1
+ */
+static inline uint8_t hfp_subevent_speaker_volume_get_gain(const uint8_t * event){
+    return event[4];
+}
+
+/**
+ * @brief Get field status from event hfp_subevent_microphone_volume
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t hfp_subevent_microphone_volume_get_status(const uint8_t * event){
+    return event[3];
+}
+/**
+ * @brief Get field gain from event hfp_subevent_microphone_volume
+ * @param event packet
+ * @return gain
+ * @note: btstack_type 1
+ */
+static inline uint8_t hfp_subevent_microphone_volume_get_gain(const uint8_t * event){
+    return event[4];
+}
+
+/**
+ * @brief Get field type from event hfp_subevent_call_waiting_notification
+ * @param event packet
+ * @return type
+ * @note: btstack_type 1
+ */
+static inline uint8_t hfp_subevent_call_waiting_notification_get_type(const uint8_t * event){
+    return event[3];
+}
+/**
+ * @brief Get field number from event hfp_subevent_call_waiting_notification
+ * @param event packet
+ * @return number
+ * @note: btstack_type T
+ */
+static inline const char * hfp_subevent_call_waiting_notification_get_number(const uint8_t * event){
+    return (const char *) &event[4];
+}
+
+/**
+ * @brief Get field type from event hfp_subevent_calling_line_indetification_notification
+ * @param event packet
+ * @return type
+ * @note: btstack_type 1
+ */
+static inline uint8_t hfp_subevent_calling_line_indetification_notification_get_type(const uint8_t * event){
+    return event[3];
+}
+/**
+ * @brief Get field number from event hfp_subevent_calling_line_indetification_notification
+ * @param event packet
+ * @return number
+ * @note: btstack_type T
+ */
+static inline const char * hfp_subevent_calling_line_indetification_notification_get_number(const uint8_t * event){
+    return (const char *) &event[4];
+}
+
+/**
+ * @brief Get field clcc_idx from event hfp_subevent_enhanced_call_status
+ * @param event packet
+ * @return clcc_idx
+ * @note: btstack_type 1
+ */
+static inline uint8_t hfp_subevent_enhanced_call_status_get_clcc_idx(const uint8_t * event){
+    return event[3];
+}
+/**
+ * @brief Get field clcc_dir from event hfp_subevent_enhanced_call_status
+ * @param event packet
+ * @return clcc_dir
+ * @note: btstack_type 1
+ */
+static inline uint8_t hfp_subevent_enhanced_call_status_get_clcc_dir(const uint8_t * event){
+    return event[4];
+}
+/**
+ * @brief Get field clcc_status from event hfp_subevent_enhanced_call_status
+ * @param event packet
+ * @return clcc_status
+ * @note: btstack_type 1
+ */
+static inline uint8_t hfp_subevent_enhanced_call_status_get_clcc_status(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field clcc_mpty from event hfp_subevent_enhanced_call_status
+ * @param event packet
+ * @return clcc_mpty
+ * @note: btstack_type 1
+ */
+static inline uint8_t hfp_subevent_enhanced_call_status_get_clcc_mpty(const uint8_t * event){
+    return event[6];
+}
+/**
+ * @brief Get field bnip_type from event hfp_subevent_enhanced_call_status
+ * @param event packet
+ * @return bnip_type
+ * @note: btstack_type 1
+ */
+static inline uint8_t hfp_subevent_enhanced_call_status_get_bnip_type(const uint8_t * event){
+    return event[7];
+}
+/**
+ * @brief Get field bnip_number from event hfp_subevent_enhanced_call_status
+ * @param event packet
+ * @return bnip_number
+ * @note: btstack_type T
+ */
+static inline const char * hfp_subevent_enhanced_call_status_get_bnip_number(const uint8_t * event){
+    return (const char *) &event[8];
+}
+
+/**
+ * @brief Get field status from event hfp_subevent_subscriber_number_information
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t hfp_subevent_subscriber_number_information_get_status(const uint8_t * event){
+    return event[3];
+}
+/**
+ * @brief Get field bnip_type from event hfp_subevent_subscriber_number_information
+ * @param event packet
+ * @return bnip_type
+ * @note: btstack_type 1
+ */
+static inline uint8_t hfp_subevent_subscriber_number_information_get_bnip_type(const uint8_t * event){
+    return event[4];
+}
+/**
+ * @brief Get field bnip_number from event hfp_subevent_subscriber_number_information
+ * @param event packet
+ * @return bnip_number
+ * @note: btstack_type T
+ */
+static inline const char * hfp_subevent_subscriber_number_information_get_bnip_number(const uint8_t * event){
+    return (const char *) &event[5];
+}
+
+/**
+ * @brief Get field value from event hfp_subevent_response_and_hold_status
+ * @param event packet
+ * @return value
+ * @note: btstack_type T
+ */
+static inline const char * hfp_subevent_response_and_hold_status_get_value(const uint8_t * event){
+    return (const char *) &event[3];
 }
 
 #ifdef ENABLE_BLE

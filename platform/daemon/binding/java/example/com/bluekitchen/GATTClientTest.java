@@ -9,12 +9,12 @@ import com.bluekitchen.btstack.Packet;
 import com.bluekitchen.btstack.PacketHandler;
 import com.bluekitchen.btstack.Util;
 import com.bluekitchen.btstack.event.BTstackEventState;
-import com.bluekitchen.btstack.event.GAPLEAdvertisingReport;
-import com.bluekitchen.btstack.event.GATTCharacteristicQueryResult;
-import com.bluekitchen.btstack.event.GATTCharacteristicValueQueryResult;
-import com.bluekitchen.btstack.event.GATTNotification;
-import com.bluekitchen.btstack.event.GATTQueryComplete;
-import com.bluekitchen.btstack.event.GATTServiceQueryResult;
+import com.bluekitchen.btstack.event.GAPEventAdvertisingReport;
+import com.bluekitchen.btstack.event.GATTEventCharacteristicQueryResult;
+import com.bluekitchen.btstack.event.GATTEventCharacteristicValueQueryResult;
+import com.bluekitchen.btstack.event.GATTEventNotification;
+import com.bluekitchen.btstack.event.GATTEventQueryComplete;
+import com.bluekitchen.btstack.event.GATTEventServiceQueryResult;
 import com.bluekitchen.btstack.event.HCIEventDisconnectionComplete;
 import com.bluekitchen.btstack.event.HCIEventLEConnectionComplete;
 
@@ -50,7 +50,7 @@ public class GATTClientTest implements PacketHandler {
 	private GATTService batteryService;
 	private GATTCharacteristic batteryLevelCharacteristic;
 	private byte[] battery_level_chr_uuid = new byte[] {0, 0, (byte)0x2a, (byte)0x19, 0, 0, (byte)0x10, 0, (byte)0x80, 0, 0, (byte)0x80, (byte)0x5f, (byte)0x9b, (byte)0x34, (byte)0xfb}; 
-	GATTCharacteristicValueQueryResult battery;
+	GATTEventCharacteristicValueQueryResult battery;
 	
 	private BT_UUID uuid128(byte[] att_uuid) {
 		byte [] uuid = new byte[16];
@@ -66,8 +66,8 @@ public class GATTClientTest implements PacketHandler {
 			return;
 		}
 		
-		if (packet instanceof GATTQueryComplete){
-			GATTQueryComplete event = (GATTQueryComplete) packet;
+		if (packet instanceof GATTEventQueryComplete){
+			GATTEventQueryComplete event = (GATTEventQueryComplete) packet;
 			System.out.println(testAddr + " battery data");
 			if (event.getStatus() != 0){
 				System.out.println("Battery data could not be read.\nRestart scanning.");
@@ -89,9 +89,9 @@ public class GATTClientTest implements PacketHandler {
 				}
 				break;
 			case w4_scan_result:
-				if (packet instanceof GAPLEAdvertisingReport){
+				if (packet instanceof GAPEventAdvertisingReport){
 					// Advertisement received. Connect to the found BT address.
-					GAPLEAdvertisingReport report = (GAPLEAdvertisingReport) packet;
+					GAPEventAdvertisingReport report = (GAPEventAdvertisingReport) packet;
 					testAddrType = report.getAddressType();
 					testAddr = report.getAddress();
 					System.out.println(String.format("Adv: type %d, addr %s\ndata: %s \n Stop scan, initiate connect.", testAddrType, testAddr, Util.asHexdump(report.getData())));
@@ -118,14 +118,14 @@ public class GATTClientTest implements PacketHandler {
 				}
 				break;
 			case w4_services_complete:
-				if (packet instanceof GATTServiceQueryResult){
-					// Store battery service. Wait for GATTQueryComplete event to send next GATT command.
-					GATTServiceQueryResult event = (GATTServiceQueryResult) packet;
+				if (packet instanceof GATTEventServiceQueryResult){
+					// Store battery service. Wait for GATTEventQueryComplete event to send next GATT command.
+					GATTEventServiceQueryResult event = (GATTEventServiceQueryResult) packet;
 					System.out.println(testAddr + String.format(" - battery service %s", event.getService().getUUID()));
 					batteryService = event.getService();
 					break;
 				}
-				if (packet instanceof GATTQueryComplete){
+				if (packet instanceof GATTEventQueryComplete){
 					// Check if battery service is found.
 					if (batteryService == null) {
 						System.out.println(testAddr + " - no battery service. \nRestart scanning.");
@@ -139,15 +139,15 @@ public class GATTClientTest implements PacketHandler {
 				}
 				break;
 			case w4_characteristic_complete:
-				if (packet instanceof GATTCharacteristicQueryResult){
-					// Store battery level characteristic. Wait for GATTQueryComplete event to send next GATT command.
-					GATTCharacteristicQueryResult event = (GATTCharacteristicQueryResult) packet;
+				if (packet instanceof GATTEventCharacteristicQueryResult){
+					// Store battery level characteristic. Wait for GATTEventQueryComplete event to send next GATT command.
+					GATTEventCharacteristicQueryResult event = (GATTEventCharacteristicQueryResult) packet;
 					batteryLevelCharacteristic = event.getCharacteristic();
 					System.out.println(testAddr + " - battery level found.");
 					break;
 				}
 				
-				if (!(packet instanceof GATTQueryComplete)) break;
+				if (!(packet instanceof GATTEventQueryComplete)) break;
 				if (batteryLevelCharacteristic == null) {
 					System.out.println("No battery level characteristic found");
 					break;
@@ -168,8 +168,8 @@ public class GATTClientTest implements PacketHandler {
 				}).start();
 				break;
 			case battery_data:
-				if (packet instanceof GATTCharacteristicValueQueryResult){
-					GATTCharacteristicValueQueryResult battery = (GATTCharacteristicValueQueryResult) packet;
+				if (packet instanceof GATTEventCharacteristicValueQueryResult){
+					GATTEventCharacteristicValueQueryResult battery = (GATTEventCharacteristicValueQueryResult) packet;
 					
 					if (battery.getValueLength() != 1) break;
 					byte[] data = battery.getValue();
@@ -207,8 +207,8 @@ public class GATTClientTest implements PacketHandler {
 			}
 			break;
 		case w4_scan_result:
-			if (packet instanceof GAPLEAdvertisingReport){
-				GAPLEAdvertisingReport report = (GAPLEAdvertisingReport) packet;
+			if (packet instanceof GAPEventAdvertisingReport){
+				GAPEventAdvertisingReport report = (GAPEventAdvertisingReport) packet;
 				testAddrType = report.getAddressType();
 				testAddr = report.getAddress();
 				System.out.println(String.format("Adv: type %d, addr %s", testAddrType, testAddr));
@@ -232,8 +232,8 @@ public class GATTClientTest implements PacketHandler {
 			}
 			break;
 		case w4_services_complete:
-			if (packet instanceof GATTServiceQueryResult){
-				GATTServiceQueryResult event = (GATTServiceQueryResult) packet;
+			if (packet instanceof GATTEventServiceQueryResult){
+				GATTEventServiceQueryResult event = (GATTEventServiceQueryResult) packet;
 				if (testService == null){
 					System.out.println(String.format("First service UUID %s", event.getService().getUUID()));
 					testService = event.getService();
@@ -241,7 +241,7 @@ public class GATTClientTest implements PacketHandler {
 				System.out.println("Service: " + event.getService());
 				service_count++;
 			}
-			if (packet instanceof GATTQueryComplete){
+			if (packet instanceof GATTEventQueryComplete){
 				System.out.println(String.format("Service query complete, total %d services", service_count));
 				state = STATE.w4_characteristic_complete;
 				btstack.GATTDiscoverCharacteristicsForService(testHandle, testService);
@@ -249,8 +249,8 @@ public class GATTClientTest implements PacketHandler {
 			break;
 				
 		case w4_characteristic_complete:
-			if (packet instanceof GATTCharacteristicQueryResult){
-				GATTCharacteristicQueryResult event = (GATTCharacteristicQueryResult) packet;
+			if (packet instanceof GATTEventCharacteristicQueryResult){
+				GATTEventCharacteristicQueryResult event = (GATTEventCharacteristicQueryResult) packet;
 				if (testCharacteristic == null){
 					System.out.println(String.format("First characteristic UUID %s", event.getCharacteristic().getUUID()));
 					testCharacteristic = event.getCharacteristic();
@@ -258,7 +258,7 @@ public class GATTClientTest implements PacketHandler {
 				System.out.println("Characteristic: " + event.getCharacteristic());
 				characteristic_count++;
 			}
-			if (packet instanceof GATTQueryComplete){
+			if (packet instanceof GATTEventQueryComplete){
 				System.out.println(String.format("Characteristic query complete, total %d characteristics", characteristic_count));
 				state = STATE.w4_characteristic_read;
 				btstack.GATTReadValueOfCharacteristic(testHandle, testCharacteristic);
@@ -266,7 +266,7 @@ public class GATTClientTest implements PacketHandler {
 			break;
 
 		case w4_characteristic_read:
-			if (packet instanceof GATTCharacteristicValueQueryResult){
+			if (packet instanceof GATTEventCharacteristicValueQueryResult){
 				System.out.println("Read complete");
 				System.out.println( packet.toString());
 				state = STATE.w4_characteristic_write;
@@ -275,7 +275,7 @@ public class GATTClientTest implements PacketHandler {
 			}
 			break;
 		case w4_characteristic_write:
-			if (packet instanceof GATTQueryComplete){
+			if (packet instanceof GATTEventQueryComplete){
 				System.out.println("Write complete, search for ACC service");
 				state = STATE.w4_acc_service_result;
 				btstack.GATTDiscoverPrimaryServicesByUUID128(testHandle, new BT_UUID(this.acc_service_uuid)); // not working
@@ -297,13 +297,13 @@ public class GATTClientTest implements PacketHandler {
 		
 		 case w4_acc_service_result:
 			System.out.println(String.format("w4_acc_service_result state"));
-			if (packet instanceof GATTServiceQueryResult){
-				GATTServiceQueryResult event = (GATTServiceQueryResult) packet;
+			if (packet instanceof GATTEventServiceQueryResult){
+				GATTEventServiceQueryResult event = (GATTEventServiceQueryResult) packet;
 				System.out.println(String.format("ACC service found %s", event.getService().getUUID()));
 				accService = event.getService();
 				break;
 			}
-			if (packet instanceof GATTQueryComplete){
+			if (packet instanceof GATTEventQueryComplete){
 				if (accService == null) {
 					System.out.println("No acc service found");
 					break;
@@ -317,12 +317,12 @@ public class GATTClientTest implements PacketHandler {
 			break;
 		
 		case w4_acc_enable_characteristic_result:
-			if (packet instanceof GATTCharacteristicQueryResult){
-				GATTCharacteristicQueryResult event = (GATTCharacteristicQueryResult) packet;
+			if (packet instanceof GATTEventCharacteristicQueryResult){
+				GATTEventCharacteristicQueryResult event = (GATTEventCharacteristicQueryResult) packet;
 				enableCharacteristic = event.getCharacteristic();
 				System.out.println("Enable ACC Characteristic found ");
 			}
-			if (packet instanceof GATTQueryComplete){
+			if (packet instanceof GATTEventQueryComplete){
 				if (enableCharacteristic == null) {
 					System.out.println("No acc enable chr found");
 					break;
@@ -333,7 +333,7 @@ public class GATTClientTest implements PacketHandler {
 			}	
 			break;
 		case w4_write_acc_enable_result:
-			if (packet instanceof GATTQueryComplete){
+			if (packet instanceof GATTEventQueryComplete){
 				System.out.println("Acc enabled,searching for acc client config characteristic");
 				byte [] uuid = new byte[16];
 				Util.flipX(this.acc_chr_client_config_uuid, uuid);
@@ -343,12 +343,12 @@ public class GATTClientTest implements PacketHandler {
 			break;
 			
 		case w4_acc_client_config_characteristic_result:
-			if (packet instanceof GATTCharacteristicQueryResult){
-				GATTCharacteristicQueryResult event = (GATTCharacteristicQueryResult) packet;
+			if (packet instanceof GATTEventCharacteristicQueryResult){
+				GATTEventCharacteristicQueryResult event = (GATTEventCharacteristicQueryResult) packet;
 				configCharacteristic = event.getCharacteristic();
 				System.out.println("ACC Client Config Characteristic found");
 			}
-			if (packet instanceof GATTQueryComplete){
+			if (packet instanceof GATTEventQueryComplete){
 				if (configCharacteristic == null) {
 					System.out.println("No acc config chr found");
 					break;
@@ -360,12 +360,12 @@ public class GATTClientTest implements PacketHandler {
 			break;
 		
 		case w4_acc_data:
-			if (packet instanceof GATTQueryComplete){
+			if (packet instanceof GATTEventQueryComplete){
 				System.out.println("Acc configured for notification");
 				break;
 			}
 			
-			if (packet instanceof GATTNotification){
+			if (packet instanceof GATTEventNotification){
 				System.out.println("Acc Value");
 				System.out.println(packet.toString());
 				btstack.GAPDisconnect(testHandle);

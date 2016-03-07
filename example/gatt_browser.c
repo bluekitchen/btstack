@@ -186,7 +186,7 @@ static void handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *pac
             gap_set_scan_parameters(0,0x0030, 0x0030);
             gap_start_scan();
             break;
-        case GAP_LE_EVENT_ADVERTISING_REPORT:
+        case GAP_EVENT_ADVERTISING_REPORT:
             fill_advertising_report_from_packet(&report, packet);
             // stop scanning, and connect to the device
             gap_stop_scan();

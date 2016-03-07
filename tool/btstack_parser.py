@@ -27,7 +27,7 @@ def assert_dir(path):
 def cap(x):
     if x.lower() == 'btstack':
         return 'BTstack'
-    acronyms = ['GAP', 'GATT', 'HCI', 'L2CAP', 'LE', 'RFCOMM', 'SM', 'SDP', 'UUID16', 'UUID128', 'HSP', 'HFP', 'ANCS']
+    acronyms = ['ATT', 'GAP', 'GATT', 'HCI', 'L2CAP', 'LE', 'RFCOMM', 'SM', 'SDP', 'UUID16', 'UUID128', 'HSP', 'HFP', 'ANCS']
     if x.upper() in acronyms:
         return x.upper()
     return x.capitalize()

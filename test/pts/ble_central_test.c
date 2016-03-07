@@ -382,7 +382,7 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                     sm_authorization_grant(little_endian_read_16(packet, 2));
                     break;
 
-                case GAP_LE_EVENT_ADVERTISING_REPORT:
+                case GAP_EVENT_ADVERTISING_REPORT:
                     handle_advertising_event(packet, size);
                     break;
 

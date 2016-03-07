@@ -25,8 +25,8 @@ import com.bluekitchen.btstack.event.HCIEventInquiryComplete;
 import com.bluekitchen.btstack.event.HCIEventInquiryResultWithRssi;
 import com.bluekitchen.btstack.event.HCIEventRemoteNameRequestComplete;
 import com.bluekitchen.btstack.event.RFCOMMEventOpenChannelComplete;
-import com.bluekitchen.btstack.event.SDPQueryComplete;
-import com.bluekitchen.btstack.event.SDPQueryRFCOMMService;
+import com.bluekitchen.btstack.event.SDPEventQueryComplete;
+import com.bluekitchen.btstack.event.SDPEventQueryRFCOMMService;
 
 
 public class MainActivity extends Activity implements PacketHandler {
@@ -149,7 +149,7 @@ public class MainActivity extends Activity implements PacketHandler {
 	private int mtu = 0;
 	private BD_ADDR remoteBDAddr;
 	
-	List<SDPQueryRFCOMMService> services = new ArrayList<SDPQueryRFCOMMService>(10);
+	List<SDPEventQueryRFCOMMService> services = new ArrayList<SDPEventQueryRFCOMMService>(10);
 	List<RemoteDevice> devices = new ArrayList<RemoteDevice>(10);
 
 	private int counter;
@@ -282,15 +282,15 @@ public class MainActivity extends Activity implements PacketHandler {
 			break;
 			
 		case w4_sdp_query_result:
-			if (packet instanceof SDPQueryRFCOMMService){
-				SDPQueryRFCOMMService service = (SDPQueryRFCOMMService) packet;
+			if (packet instanceof SDPEventQueryRFCOMMService){
+				SDPEventQueryRFCOMMService service = (SDPEventQueryRFCOMMService) packet;
 				services.add(service);
 				addMessage(String.format("Found \"%s\", channel %d", service.getName(), service.getRFCOMMChannel()));
 			}
-			if (packet instanceof SDPQueryComplete){
+			if (packet instanceof SDPEventQueryComplete){
 				// find service with "SPP" prefix
-				SDPQueryRFCOMMService selectedService = null;
-				for  (SDPQueryRFCOMMService service : services){
+				SDPEventQueryRFCOMMService selectedService = null;
+				for  (SDPEventQueryRFCOMMService service : services){
 					if (service.getName().startsWith(RFCOMM_SERVICE_PREFIX)){
 						selectedService = service;
 						break;
