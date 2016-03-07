@@ -2206,6 +2206,15 @@ static inline uint8_t hci_subevent_le_connection_complete_get_master_clock_accur
 static inline uint8_t hsp_subevent_audio_connection_complete_get_status(const uint8_t * event){
     return event[3];
 }
+/**
+ * @brief Get field handle from event hsp_subevent_audio_connection_complete
+ * @param event packet
+ * @return handle
+ * @note: btstack_type 2
+ */
+static inline uint16_t hsp_subevent_audio_connection_complete_get_handle(const uint8_t * event){
+    return little_endian_read_16(event, 4);
+}
 
 /**
  * @brief Get field status from event hsp_subevent_audio_disconnection_complete
