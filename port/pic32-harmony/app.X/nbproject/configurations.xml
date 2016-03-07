@@ -11,7 +11,7 @@
             <itemPath>../src/system_config/bk-audio-dk/system_config.h</itemPath>
           </logicalFolder>
         </logicalFolder>
-        <itemPath>../src/app_btstack_debug.h</itemPath>
+        <itemPath>../../../src/btstack_debug.h</itemPath>
         <itemPath>../src/btstack_config.h</itemPath>
         <itemPath>../src/btstack_port.h</itemPath>
         <itemPath>../src/app.h</itemPath>
@@ -23,10 +23,19 @@
           <itemPath>../../../src/ble/att_db.h</itemPath>
           <itemPath>../../../src/ble/att_dispatch.h</itemPath>
           <itemPath>../../../src/ble/att_server.h</itemPath>
-          <itemPath>../../../src/ble/gap_le.h</itemPath>
           <itemPath>../../../src/ble/gatt_client.h</itemPath>
           <itemPath>../../../src/ble/le_device_db.h</itemPath>
           <itemPath>../../../src/ble/sm.h</itemPath>
+        </logicalFolder>
+        <logicalFolder name="classic" displayName="classic" projectFiles="true">
+          <itemPath>../../../src/classic/bnep.h</itemPath>
+          <itemPath>../../../src/classic/sdp_util.h</itemPath>
+          <itemPath>../../../src/classic/btstack_link_key_db.h</itemPath>
+          <itemPath>../../../src/classic/rfcomm.h</itemPath>
+          <itemPath>../../../src/classic/sdp_server.h</itemPath>
+          <itemPath>../../../src/classic/sdp_client.h</itemPath>
+          <itemPath>../../../src/classic/sdp_query_rfcomm.h</itemPath>
+        </logicalFolder>
         <logicalFolder name="embedded" displayName="embedded" projectFiles="true">
           <itemPath>../../../platform/embedded/hal_cpu.h</itemPath>
           <itemPath>../../../platform/embedded/hal_led.h</itemPath>
@@ -37,27 +46,16 @@
           <itemPath>../../../src/hci_cmd.h</itemPath>
           <itemPath>../../../src/btstack_linked_list.h</itemPath>
           <itemPath>../../../src/btstack_memory_pool.h</itemPath>
-          <itemPath>../../../src/run_loop.h</itemPath>
+          <itemPath>../../../src/btstack_run_loop.h</itemPath>
           <itemPath>../../../src/btstack_util.h</itemPath>
-          <itemPath>../../../src/bnep.h</itemPath>
-          <itemPath>../../../src/bt_control.h</itemPath>
+          <itemPath>../../../src/btstack_control.h</itemPath>
           <itemPath>../../../src/btstack_memory.h</itemPath>
-          <itemPath>../../../src/btstack_debug.h</itemPath>
           <itemPath>../../../src/gap.h</itemPath>
           <itemPath>../../../src/hci.h</itemPath>
           <itemPath>../../../src/hci_dump.h</itemPath>
           <itemPath>../../../src/hci_transport.h</itemPath>
           <itemPath>../../../src/l2cap.h</itemPath>
           <itemPath>../../../src/l2cap_signaling.h</itemPath>
-          <itemPath>../../../src/btstack_run_loop_private.h</itemPath>
-        </logicalFolder>
-        <logicalFolder name="classic" displayName="classic" projectFiles="true">
-          <itemPath>../../../src/classic/sdp_util.h</itemPath>
-          <itemPath>../../../src/remote_device_db.h</itemPath>
-          <itemPath>../../../src/rfcomm.h</itemPath>
-          <itemPath>../../../src/sdp_server.h</itemPath>
-          <itemPath>../../../src/sdp_client.h</itemPath>
-          <itemPath>../../../src/sdp_query_rfcomm.h</itemPath>
         </logicalFolder>
       </logicalFolder>
       <logicalFolder name="f2" displayName="framework" projectFiles="true">
@@ -122,7 +120,6 @@
           <itemPath>../../../src/hci.c</itemPath>
           <itemPath>../../../src/hci_cmd.c</itemPath>
           <itemPath>../../../src/hci_dump.c</itemPath>
-          <itemPath>../../../src/hci_transport_h4_embedded.c</itemPath>
           <itemPath>../../../src/l2cap.c</itemPath>
           <itemPath>../../../src/l2cap_signaling.c</itemPath>
           <itemPath>../../../src/btstack_linked_list.c</itemPath>
@@ -130,12 +127,13 @@
           <itemPath>../../../src/classic/btstack_link_key_db_memory.c</itemPath>
           <itemPath>../../../src/classic/rfcomm.c</itemPath>
           <itemPath>../../../src/btstack_run_loop.c</itemPath>
-          <itemPath>../../../src/btstack_run_loop_embedded.c</itemPath>
           <itemPath>../../../src/classic/sdp_server.c</itemPath>
           <itemPath>../../../src/classic/sdp_client.c</itemPath>
           <itemPath>../../../src/classic/sdp_query_rfcomm.c</itemPath>
           <itemPath>../../../src/classic/sdp_util.c</itemPath>
           <itemPath>../../../src/btstack_util.c</itemPath>
+          <itemPath>../../../platform/embedded/btstack_run_loop_embedded.c</itemPath>
+          <itemPath>../../../platform/embedded/hci_transport_h4_embedded.c</itemPath>
         </logicalFolder>
       </logicalFolder>
       <logicalFolder name="f2" displayName="framework" projectFiles="true">
@@ -201,7 +199,7 @@
         <targetPluginBoard></targetPluginBoard>
         <platformTool>PICkit3PlatformTool</platformTool>
         <languageToolchain>XC32</languageToolchain>
-        <languageToolchainVersion>1.34</languageToolchainVersion>
+        <languageToolchainVersion></languageToolchainVersion>
         <platform>4</platform>
       </toolsSet>
       <compileType>
