@@ -9,8 +9,6 @@
 #define HAVE_BZERO
 #define HAVE_TICK
 
-#define HAVE_EHCILL
-
 #define ENABLE_LOG_INFO
 #define ENABLE_LOG_ERROR
 
