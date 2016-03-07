@@ -16,36 +16,36 @@ VPATH += $(BTSTACK_ROOT)/platform/embedded
 VPATH += $(BTSTACK_ROOT)/chipset/cc256x
 
 CORE = \
-	main.c 					  \
-    btstack_memory.c          \
-    btstack_linked_list.c	      \
-    btstack_memory_pool.c             \
-    run_loop.c		          \
-    btstack_run_loop_embedded.c
+	main.c 					    \
+    btstack_linked_list.c	    \
+    btstack_memory.c            \
+    btstack_memory_pool.c       \
+    btstack_run_loop.c	        \
+    btstack_run_loop_embedded.c \
 
 COMMON = \
-	btstack_chipset_cc256x.c   \
 	bluetooth_init_cc2564B_1.2_BT_Spec_4.1.c   \
+	btstack_chipset_cc256x.c   \
+	btstack_link_key_db_memory.c \
+	rfcomm.c			      \
+	sdp_query_rfcomm.c 		  \
+    btstack_util.c			  \
     hci.c			          \
     hci_cmd.c		          \
     hci_dump.c		          \
     hci_transport_h4_ehcill_embedded.c \
     l2cap.c			          \
     l2cap_signaling.c         \
-	btstack_link_key_db_memory.c \
-	rfcomm.c			      \
-    sdp_server.c			          \
-    sdp_util.c                \
-    btstack_util.c			          \
     sdp_client.c              \
-	sdp_query_rfcomm.c 		  \
+    sdp_server.c			  \
+    sdp_util.c                \
 
 BLE = \
-	att_db.c 					  \
-	att_server.c     		  \
-	le_device_db_memory.c  \
-	sm.c                      \
+	att_db.c 				  \
 	att_dispatch.c            \
+	att_server.c     		  \
+	le_device_db_memory.c     \
+	sm.c                      \
 #	gatt_client.c             \
 
 CORE_OBJ   = $(CORE:.c=.o)
