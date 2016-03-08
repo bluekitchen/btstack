@@ -1,5 +1,4 @@
 #include "app.h"
-#include "app_btstack_debug.h"
 #include "btstack_port.h"
 
 /* Application State Machine */
