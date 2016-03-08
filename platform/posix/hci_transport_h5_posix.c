@@ -50,6 +50,7 @@
 #include <string.h>
 
 #include "hci.h"
+#include "btstack_slip.h"
 #include "btstack_debug.h"
 #include "hci_transport.h"
 
@@ -58,14 +59,6 @@
 #endif 
 
 /// newer
-
-// h5 slip state machine
-typedef enum {
-    SLIP_UNKNOWN = 1,
-    SLIP_DECODING,
-    SLIP_X_C0,
-    SLIP_X_DB
-} hci_transport_slip_state_t;
 
 typedef enum {
     LINK_UNINITIALIZED,
@@ -90,9 +83,6 @@ typedef enum {
 #define LINK_ACKNOWLEDGEMENT_TYPE 0x00
 #define LINK_CONTROL_PACKET_TYPE 0x0f
 
-static const uint8_t slip_c0_encoded[] = { 0xdb, 0xdc };
-static const uint8_t slip_db_encoded[] = { 0xdb, 0xdd };
-
 static const uint8_t link_control_sync[] =   { 0x01, 0x7e};
 static const uint8_t link_control_sync_response[] = { 0x02, 0x7d};
 static const uint8_t link_control_config[] = { 0x03, 0xfc, LINK_CONFIG_FIELD};
@@ -102,14 +92,11 @@ static const uint8_t link_control_wakeup[] = { 0x05, 0xfa};
 static const uint8_t link_control_woken[] =  { 0x06, 0xf9};
 static const uint8_t link_control_sleep[] =  { 0x07, 0x78};
 
-static uint8_t   hci_packet_with_pre_buffer[HCI_INCOMING_PRE_BUFFER_SIZE + 1 + HCI_PACKET_BUFFER_SIZE]; // packet type + max(acl header + acl payload, event header + event data)
+// incoming pre-bufffer + 4 bytes H5 header + max(acl header + acl payload, event header + event data) + 2 bytes opt CRC
+static uint8_t   hci_packet_with_pre_buffer[HCI_INCOMING_PRE_BUFFER_SIZE + 6 + HCI_PACKET_BUFFER_SIZE];
 
-// SLIP state
-static hci_transport_slip_state_t slip_state;
-static uint8_t * slip_payload = &hci_packet_with_pre_buffer[HCI_INCOMING_PRE_BUFFER_SIZE];
-static int       slip_payload_pos;
-static uint8_t   slip_header[4];
-static int       slip_header_pos;
+// Non-optimized outgoing buffer (EOF, 4 bytes header, payload, EOF)
+static uint8_t slip_outgoing_buffer[2 + 2 * (HCI_PACKET_BUFFER_SIZE + 4)];
 
 // H5 Link State
 static hci_transport_link_state_t link_state;
@@ -139,7 +126,6 @@ static  void (*packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t si
 
 // Prototypes
 static int  hci_transport_h5_process(struct btstack_data_source *ds);
-static void hci_transport_h5_process_frame(void);
 static void hci_transport_link_set_timer(uint16_t timeout_ms);
 static void hci_transport_link_timeout_handler(btstack_timer_source_t * timer);
 static int  hci_transport_h5_outgoing_packet(void);
@@ -160,130 +146,39 @@ static void hci_transport_h5_send_really(const uint8_t * data, int size){
     }
 }
 
-// SLIP 
-
-static void hci_transport_slip_reset(void){
-    slip_header_pos = 0;
-    slip_payload_pos = 0;
-}
-
-static void hci_transport_slip_init(void){
-    slip_state = SLIP_UNKNOWN;
-    hci_transport_slip_reset();
-}
-
-static inline void hci_transport_slip_send_eof(void){
-    uint8_t data = 0xc0;
-    // log_info("SLIP: 0xc0");
-    hci_transport_h5_send_really(&data, 1);
-}
-
-static inline void hci_transport_slip_send_byte(uint8_t data){
-    switch (data){
-        case 0xc0:
-            // log_info("SLIP: 0xdb 0xdc");
-            hci_transport_h5_send_really(slip_c0_encoded, sizeof(slip_c0_encoded));
-            break;
-        case 0xdb:
-            // log_info("SLIP: 0xdb 0xdd");
-            hci_transport_h5_send_really(slip_db_encoded, sizeof(slip_db_encoded));
-            break;
-        default:
-            // log_info("SLIP: 0x%02x", data);
-            hci_transport_h5_send_really(&data, 1);
-            break;
-    }
-}
-
-static inline void hci_transport_slip_send_block(const uint8_t * data, uint16_t size){
-    uint16_t i;
-    for (i=0;i<size;i++){
-        hci_transport_slip_send_byte(*data++);
-    }
-}
+// SLIP Outgoing
 
 // format: 0xc0 HEADER PACKER 0xc0
 // @param uint8_t header[4]
 static void hci_transport_slip_send_frame(const uint8_t * header, const uint8_t * packet, uint16_t packet_size){
     
+    int pos = 0;
+
     // Start of Frame
-    hci_transport_slip_send_eof();
+    slip_outgoing_buffer[pos++] = BTSTACK_SLIP_SOF;
 
     // Header
-    hci_transport_slip_send_block(header, 4);
+    btstack_slip_encoder_start(header, 4);
+    while (btstack_slip_encoder_has_data()){
+        slip_outgoing_buffer[pos++] = btstack_slip_encoder_get_byte();
+    }
 
     // Packet
-    hci_transport_slip_send_block(packet, packet_size);
+    btstack_slip_encoder_start(packet, packet_size);
+    while (btstack_slip_encoder_has_data()){
+        slip_outgoing_buffer[pos++] = btstack_slip_encoder_get_byte();
+    }
 
-    // Endo of frame
-    hci_transport_slip_send_eof();
+    // Start of Frame
+    slip_outgoing_buffer[pos++] = BTSTACK_SLIP_SOF;
+
+    hci_transport_h5_send_really(slip_outgoing_buffer, pos);
 }
 
-static void hci_transport_slip_store_byte(uint8_t input){
-    if (slip_header_pos < 4){
-        slip_header[slip_header_pos++] = input;
-        return;
-    }
-    if (slip_payload_pos < HCI_PACKET_BUFFER_SIZE){
-        slip_payload[slip_payload_pos++] = input;
-        return;
-    }
-    log_error("hci_transport_slip_store_byte: packet to long");
-    hci_transport_slip_init();
-}
+// SLIP Incoming
 
-static void hci_transport_slip_process(uint8_t input){
-    switch(slip_state){
-        case SLIP_UNKNOWN:
-            if (input != 0xc0) break;
-            hci_transport_slip_reset();
-            slip_state = SLIP_X_C0;
-            break;
-        case SLIP_X_C0:
-            switch(input){
-                case 0xc0:
-                    break;
-                case 0xdb:
-                    slip_state = SLIP_X_DB;
-                    break;
-                default:
-                    hci_transport_slip_store_byte(input);
-                    slip_state = SLIP_DECODING;
-                    break; 
-            }                   
-            break;
-        case SLIP_X_DB:
-            switch(input){
-                case 0xdc:
-                    hci_transport_slip_store_byte(0xc0);
-                    slip_state = SLIP_DECODING;
-                    break;
-                case 0xdd:
-                    hci_transport_slip_store_byte(0xdb);
-                    slip_state = SLIP_DECODING;
-                    break;
-                default:
-                    hci_transport_slip_init();
-                    break;
-            }
-            break;
-        case SLIP_DECODING:
-            switch(input){
-                case 0xc0:
-                    if (slip_payload_pos){
-                        hci_transport_h5_process_frame();
-                    }
-                    hci_transport_slip_init();
-                    break;
-                case 0xdb:
-                    slip_state = SLIP_X_DB;
-                    break;
-                default:
-                    hci_transport_slip_store_byte(input);
-                    break;
-            }
-            break;
-    }
+static void hci_transport_slip_init(void){
+    btstack_slip_decoder_init(&hci_packet_with_pre_buffer[HCI_INCOMING_PRE_BUFFER_SIZE], 6 + HCI_PACKET_BUFFER_SIZE);
 }
 
 // H5 Three-Wire Implementation
@@ -389,7 +284,7 @@ static void hci_transport_link_timeout_handler(btstack_timer_source_t * timer){
 static void hci_transport_link_init(void){
     link_state = LINK_UNINITIALIZED;
     link_peer_asleep = 0;
-
+ 
     // get started
     hci_transport_link_send_sync();
     hci_transport_link_set_timer(LINK_PERIOD_MS);
@@ -428,17 +323,24 @@ static int hci_transport_h5_can_send_packet_now(uint8_t packet_type){
     return link_state == LINK_ACTIVE;
 }
 
-static void hci_transport_h5_process_frame(void){
+static void hci_transport_h5_process_frame(uint16_t frame_size){
 
-    int     seq_nr =  slip_header[0] & 0x07;
-    int     ack_nr = (slip_header[0] >> 3)    & 0x07;
-    int     data_integrity_check_present = (slip_header[0] & 0x40) != 0;
-    int     reliable_packet  = (slip_header[0] & 0x80) != 0;
+    if (frame_size < 4) return;
+
+    uint8_t * slip_header  = &hci_packet_with_pre_buffer[HCI_INCOMING_PRE_BUFFER_SIZE];
+    uint8_t * slip_payload = &hci_packet_with_pre_buffer[HCI_INCOMING_PRE_BUFFER_SIZE + 4];
+    int       frame_size_without_header = frame_size - 4;
+
+    int      seq_nr =  slip_header[0] & 0x07;
+    int      ack_nr = (slip_header[0] >> 3)    & 0x07;
+    int      data_integrity_check_present = (slip_header[0] & 0x40) != 0;
+    int      reliable_packet  = (slip_header[0] & 0x80) != 0;
     uint8_t  link_packet_type = slip_header[1] & 0x0f;
     uint16_t link_payload_len = (slip_header[1] >> 4) | (slip_header[2] << 4);
+
     log_info("hci_transport_h5_process_frame, reliable %u, packet type %u, seq_nr %u, ack_nr %u", reliable_packet, link_packet_type, seq_nr, ack_nr);
     log_info_hexdump(slip_header, 4);
-    log_info_hexdump(slip_payload, slip_payload_pos);
+    log_info_hexdump(slip_payload, frame_size_without_header);
 
     // validate header checksum
     uint8_t header_checksum = slip_header[0] + slip_header[1] + slip_header[2] + slip_header[3];
@@ -449,9 +351,9 @@ static void hci_transport_h5_process_frame(void){
 
     // validate payload length
     int data_integrity_len = data_integrity_check_present ? 2 : 0;
-    uint16_t expected_payload_len = link_payload_len + data_integrity_len;
-    if (expected_payload_len != slip_payload_pos){
-        log_info("h5: expected payload len %u but got %u", expected_payload_len, slip_payload_pos);
+    uint16_t received_payload_len = frame_size_without_header - data_integrity_len;
+    if (link_payload_len != received_payload_len){
+        log_info("h5: expected payload len %u but got %u", link_payload_len, received_payload_len);
         return;
     }
 
@@ -497,9 +399,9 @@ static void hci_transport_h5_process_frame(void){
                 packet_handler(HCI_EVENT_PACKET, &event[0], sizeof(event));
             }
             break;
-
         case LINK_ACTIVE:
-            // validate packet sequence nr for reliable packets (out of sequence error)
+
+            // validate packet sequence nr in reliable packets (check for out of sequence error)
             if (reliable_packet){
                 if (seq_nr != link_ack_nr){
                     log_info("expected seq nr %u, but received %u", link_ack_nr, seq_nr);
@@ -510,8 +412,8 @@ static void hci_transport_h5_process_frame(void){
                 link_ack_nr = hci_transport_h5_inc_seq_nr(link_ack_nr);
                 hci_transport_link_send_ack_packet();
             }
-
-            // Process ACKs in reliable and explicit ack packets
+          
+            // Process ACKs in reliable packet and explicit ack packets
             if (reliable_packet || link_packet_type == LINK_ACKNOWLEDGEMENT_TYPE){
                 // our packet is good if the remote expects our seq nr + 1
                 int next_seq_nr = hci_transport_h5_inc_seq_nr(link_seq_nr);
@@ -525,8 +427,7 @@ static void hci_transport_h5_process_frame(void){
                     packet_handler(HCI_EVENT_PACKET, &event[0], sizeof(event));
                 }
             } 
-            
-            // handle actual packet
+
             switch (link_packet_type){
                 case LINK_CONTROL_PACKET_TYPE:
                     if (memcmp(slip_payload, link_control_config, sizeof(link_control_config)) == 0){
@@ -560,9 +461,10 @@ static void hci_transport_h5_process_frame(void){
                 case HCI_EVENT_PACKET:
                 case HCI_ACL_DATA_PACKET:
                 case HCI_SCO_DATA_PACKET:
-                    packet_handler(link_packet_type, slip_payload, slip_payload_pos);
+                    packet_handler(link_packet_type, slip_payload, link_payload_len);
                     break;
             }
+
             break;
         default:
             break;
@@ -693,6 +595,9 @@ static int hci_transport_h5_open(void){
     }
     
     toptions.c_cflag |= CREAD | CLOCAL;  // turn on READ & ignore ctrl lines
+    //
+    // toptions.c_cflag |= PARENB; // enable even parity
+    //
     toptions.c_iflag &= ~(IXON | IXOFF | IXANY); // turn off s/w flow ctrl
     
     // see: http://unixwiz.net/techtips/termios-vmin-vtime.html
@@ -723,6 +628,20 @@ static int hci_transport_h5_open(void){
     return 0;
 }
 
+void hci_transport_h5_reset_link(void){
+
+    log_info("hci_transport_h5_reset_link");
+
+    // clear outgoing queue
+    hci_transport_h5_clear_queue();
+
+    // init slip parser state machine
+    hci_transport_slip_init();
+    
+    // init link management - already starts syncing
+    hci_transport_link_init();
+}
+
 static int hci_transport_h5_close(void){
     // first remove run loop handler
     btstack_run_loop_remove_data_source(&hci_transport_h5_data_source);
@@ -736,13 +655,18 @@ static int hci_transport_h5_close(void){
 static int hci_transport_h5_process(struct btstack_data_source *ds) {
     if (hci_transport_h5_data_source.fd < 0) return -1;
 
-    // read up to bytes_to_read data in
+    // process data byte by byte
     uint8_t data;
     while (1) {
         int bytes_read = read(hci_transport_h5_data_source.fd, &data, 1);
         if (bytes_read < 1) break;
         // log_info("slip: process 0x%02x", data);
-        hci_transport_slip_process(data);
+        btstack_slip_decoder_process(data);
+        uint16_t frame_size = btstack_slip_decoder_frame_size();
+        if (frame_size) {
+            hci_transport_h5_process_frame(frame_size);
+            hci_transport_slip_init();
+        }
     };
     return 0;
 }
