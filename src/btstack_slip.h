@@ -72,6 +72,29 @@ int  btstack_slip_encoder_has_data(void);
  */
 uint8_t btstack_slip_encoder_get_byte(void);
 
+// DECODER
+
+/**
+ * @brief Initialise SLIP decoder with buffer
+ * @param buffer to store received data
+ * @param max_size of buffer
+ */
+void btstack_slip_decoder_init(uint8_t * buffer, uint16_t max_size);
+
+/**
+ * @brief Process received byte
+ * @param input
+ */
+
+void btstack_slip_decoder_process(uint8_t input);
+
+/**
+ * @brief Get size of decoded frame
+ * @return size of frame. Size = 0 => frame not complete
+ */
+
+uint16_t btstack_slip_decoder_frame_size(void);
+
 #if defined __cplusplus
 }
 #endif
