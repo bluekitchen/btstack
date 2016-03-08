@@ -102,7 +102,7 @@ uint8_t btstack_slip_encoder_get_byte(void){
 	switch (encoder_state){
 		case SLIP_ENCODER_DEFAULT:
 			next_byte = *encoder_data++;
-			encoder_len++;
+			encoder_len--;
 			switch (next_byte){
 				case BTSTACK_SLIP_SOF:
 					encoder_state = SLIP_ENCODER_SEND_DC;
@@ -115,8 +115,10 @@ uint8_t btstack_slip_encoder_get_byte(void){
 			}
 			break;
 		case SLIP_ENCODER_SEND_DC:
+			encoder_state = SLIP_ENCODER_DEFAULT;
 			return 0x0dc;
 		case SLIP_ENCODER_SEND_DD:
+			encoder_state = SLIP_ENCODER_DEFAULT;
 			return 0x0dd;
 	}
 }
