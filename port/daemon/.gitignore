@@ -6,3 +6,10 @@ btstack_config.h
 config.status
 config
 configure
+l2cap-server
+l2cap-throughput
+rfcomm-cat
+rfcomm-echo
+rfcomm-test
+src/BTdaemon
+

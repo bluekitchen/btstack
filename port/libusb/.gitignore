@@ -7,6 +7,7 @@ classic_test
 gap_dedicated_bonding
 gap_inquiry
 gap_inquiry_and_bond
+gap_le_advertisements
 gatt_battery_query
 gatt_browser
 hsp_ag_test
@@ -14,7 +15,10 @@ hsp_hs_test
 l2cap_test
 le_counter
 le_counter.h
+le_streamer
+le_streamer.h
 led_counter
+panu_demo
 profile.h
 sdp_bnep_query
 sdp_general_query
@@ -22,8 +26,5 @@ sdp_rfcomm_query
 spp_and_le_counter
 spp_and_le_counter.h
 spp_counter
-spp_streamerle_streamer
-le_streamer.h
-gap_le_advertisements
-le_streamer
 spp_streamer
+spp_streamerle_streamer
