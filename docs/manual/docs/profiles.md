@@ -248,6 +248,39 @@ calling *sdp_register_service_internal*. BTstack provides the
 empty buffer of approximately 200 bytes, a description, and a security
 description.
 
+## HSP - Headset Profile
+
+The HSP profile defines how a Bluetooth-enabled headset should communicate 
+with another Bluetooth enabled device. It relies on SCO for audio encoded 
+in 64 kbit/s CVSD and a subset of AT commands from GSM 07.07 for
+minimal controls including the ability to ring, answer a call, hang up and adjust the volume.
+
+The HSP defines two roles:
+ - Audio Gateway (AG) - a device that acts as the gateway of the audio, typically a mobile phone or PC.
+ - Headset (HS) - a device that acts as the AG's remote audio input and output control.
+
+There are following restrictions:
+- The CVSD is used for audio transmission.
+- Between headset and audio gateway, only one audio connection at a time is supported.
+- The profile offers only basic interoperability – for example, handling of multiple calls at the audio gateway is not included.
+- The only assumption on the headset’s user interface is the possibility to detect a user initiated action (e.g. pressing a button).
+
+%TODO: audio paths
+
+
+## HFP - Hands-Free Profile
+
+The HFP profile defines how a Bluetooth-enabled device, e.g. a car kit or a headset, can be used to place and receive calls via a audio gateway device, typically a mobile phone.
+It relies on SCO for audio encoded in 64 kbit/s CVSD and a bigger subset of AT commands from GSM 07.07 then HSP for
+controls including the ability to ring, to place and receive calls, join a conference call, to answer, hold or reject a call, and adjust the volume.
+
+The HFP defines two roles:
+- Audio Gateway (AG) – a device that acts as the gateway of the audio,, typically a mobile phone.
+- Hands-Free Unit (HF) – a device that acts as the AG's remote audio input and output control.
+
+%TODO: audio paths
+
+
 ## GAP LE - Generic Access Profile for Low Energy
 
 
@@ -413,3 +446,4 @@ mainly provided by the GATT compiler. While GATT identifies
 Characteristics by UUIDs, ATT uses Handles (16 bit values). To allow to
 identify a Characteristic without hard-coding the attribute ID, the GATT
 compiler creates a list of defines in the generated \*.h file.
+
