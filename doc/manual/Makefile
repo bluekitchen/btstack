@@ -22,5 +22,7 @@ all:
 clean:
 	rm -rf docs_final tmp btstack *.pdf latex/btstack_generated.* latex/btstack_final.tex
 	rm -rf docs/appendix/apis.md docs/appendix/index.md docs/examples/examples.md 
+	rm -rf docs_tmp latex btstack help
+	
 
 	
