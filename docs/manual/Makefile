@@ -20,5 +20,8 @@ all:
 	rm -rf latex tmp
 	
 
+clean:
+	rm -rf tmp docs_tmp docs_final latex btstack help
+	
 
 	
