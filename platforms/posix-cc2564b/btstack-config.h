@@ -13,7 +13,6 @@
 #define HAVE_SDP
 #define HAVE_SO_NOSIGPIPE
 #define HAVE_TIME
-#define HAVE_SCO
 #define HAVE_SCO_OVER_HCI
 #define HCI_ACL_PAYLOAD_SIZE (1691 + 4)
 #define HCI_INCOMING_PRE_BUFFER_SIZE 14 // sizeof BNEP header, avoid memcpy

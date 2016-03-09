@@ -39,7 +39,7 @@
 //
 // Minimal test for HSP Headset (!! UNDER DEVELOPMENT !!)
 //
-// Requires HAVE_SCO and HAVE_SCO_OVER_HCI to be defined
+// Requires HAVE_SCO_OVER_HCI to be defined
 //
 // Tested working setups: 
 // - Ubuntu 14 64-bit, CC2564B connected via FTDI USB-2-UART adapter, 921600 baud
