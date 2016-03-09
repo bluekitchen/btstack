@@ -1,6 +1,6 @@
 site_name: BTstack Manual v1.0
 site_dir: btstack
-docs_dir: docs_final
+docs_dir: docs
 pages:
 - [index.md, Welcome]
 - [quick_start.md, Quick Start]
@@ -13,4 +13,5 @@ pages:
 - [integration.md, Integrating with Existing Systems]
 - [appendix/apis.md, APIs]
 - [appendix/events_errors.md, Events and Errors]
+- [appendix/migration.md, Migration to v1.0]
 theme: readthedocs
