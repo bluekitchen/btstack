@@ -2361,10 +2361,16 @@ static void hci_run(void){
                  hci_stack->le_advertisements_filter_policy);
             return;
         }
-        if (hci_stack->le_advertisements_todo & LE_ADVERTISEMENT_TASKS_SET_DATA){
-            hci_stack->le_advertisements_todo &= ~LE_ADVERTISEMENT_TASKS_SET_DATA;
+        if (hci_stack->le_advertisements_todo & LE_ADVERTISEMENT_TASKS_SET_ADV_DATA){
+            hci_stack->le_advertisements_todo &= ~LE_ADVERTISEMENT_TASKS_SET_ADV_DATA;
             hci_send_cmd(&hci_le_set_advertising_data, hci_stack->le_advertisements_data_len,
                 hci_stack->le_advertisements_data);
+            return;
+        }
+        if (hci_stack->le_advertisements_todo & LE_ADVERTISEMENT_TASKS_SET_SCAN_DATA){
+            hci_stack->le_advertisements_todo &= ~LE_ADVERTISEMENT_TASKS_SET_SCAN_DATA;
+            hci_send_cmd(&hci_le_set_scan_response_data, hci_stack->le_scan_response_data_len,
+                hci_stack->le_scan_response_data);
             return;
         }
         if (hci_stack->le_advertisements_todo & LE_ADVERTISEMENT_TASKS_ENABLE){
@@ -3328,6 +3334,14 @@ int gap_request_connection_parameter_update(hci_con_handle_t con_handle, uint16_
     return 0;
 }
 
+static void gap_advertisments_changed(void){
+    // disable advertisements before updating adv, scan data, or adv params
+    if (hci_stack->le_advertisements_active){
+        hci_stack->le_advertisements_todo |= LE_ADVERTISEMENT_TASKS_DISABLE | LE_ADVERTISEMENT_TASKS_ENABLE;
+    }
+    hci_run();
+}
+
 /**
  * @brief Set Advertisement Data
  * @param advertising_data_length
@@ -3337,12 +3351,21 @@ int gap_request_connection_parameter_update(hci_con_handle_t con_handle, uint16_
 void gap_advertisements_set_data(uint8_t advertising_data_length, uint8_t * advertising_data){
     hci_stack->le_advertisements_data_len = advertising_data_length;
     hci_stack->le_advertisements_data = advertising_data;
-    hci_stack->le_advertisements_todo |= LE_ADVERTISEMENT_TASKS_SET_DATA;
-    // disable advertisements before setting data
-    if (hci_stack->le_advertisements_active){
-        hci_stack->le_advertisements_todo |= LE_ADVERTISEMENT_TASKS_DISABLE | LE_ADVERTISEMENT_TASKS_ENABLE;
-    }
-    hci_run();
+    hci_stack->le_advertisements_todo |= LE_ADVERTISEMENT_TASKS_SET_ADV_DATA;
+    gap_advertisments_changed();
+}
+
+/** 
+ * @brief Set Scan Response Data
+ * @param advertising_data_length
+ * @param advertising_data (max 31 octets)
+ * @note data is not copied, pointer has to stay valid
+ */
+void gap_scan_response_set_data(uint8_t scan_response_data_length, uint8_t * scan_response_data){
+    hci_stack->le_scan_response_data_len = scan_response_data_length;
+    hci_stack->le_scan_response_data = scan_response_data;
+    hci_stack->le_advertisements_todo |= LE_ADVERTISEMENT_TASKS_SET_SCAN_DATA;
+    gap_advertisments_changed();
 }
 
 /**
@@ -3372,11 +3395,7 @@ void gap_advertisements_set_data(uint8_t advertising_data_length, uint8_t * adve
     memcpy(hci_stack->le_advertisements_direct_address, direct_address, 6);
 
     hci_stack->le_advertisements_todo |= LE_ADVERTISEMENT_TASKS_SET_PARAMS;
-    // disable advertisements before changing params
-    if (hci_stack->le_advertisements_active){
-        hci_stack->le_advertisements_todo |= LE_ADVERTISEMENT_TASKS_DISABLE | LE_ADVERTISEMENT_TASKS_ENABLE;
-    }
-    hci_run();
+    gap_advertisments_changed();
  }
 
 /**

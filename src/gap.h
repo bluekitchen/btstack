@@ -246,6 +246,18 @@ void gap_advertisements_set_params(uint16_t adv_int_min, uint16_t adv_int_max, u
  * @param enabled
  */
 void gap_advertisements_enable(int enabled);
+
+/** 
+ * @brief Set Scan Response Data
+ *
+ * @note For scan response data, scannable undirected advertising (ADV_SCAN_IND) need to be used
+ *
+ * @param advertising_data_length
+ * @param advertising_data (max 31 octets)
+ * @note data is not copied, pointer has to stay valid
+ */
+void gap_scan_response_set_data(uint8_t scan_response_data_length, uint8_t * scan_response_data);
+
 /**
  * @brief Request an update of the connection parameter for a given LE connection
  * @param handle
