@@ -1,6 +1,6 @@
 site_name: BTstack Manual v1.0
 site_dir: btstack
-docs_dir: docs
+docs_dir: docs_final
 pages:
 - [index.md, Welcome]
 - [quick_start.md, Quick Start]
