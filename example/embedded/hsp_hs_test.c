@@ -34,29 +34,21 @@
  * contact@bluekitchen-gmbh.com
  *
  */
- 
-// *****************************************************************************
-//
-// Minimal test for HSP Headset (!! UNDER DEVELOPMENT !!)
-//
-// Requires HAVE_SCO_OVER_HCI to be defined
-//
-// Tested working setups: 
-// - Ubuntu 14 64-bit, CC2564B connected via FTDI USB-2-UART adapter, 921600 baud
-// - Ubuntu 14 64-bit, CSR dongle
-// - OS X 10.11, CSR dongle
 
-// Broken setups:
-// - OS X 10.11, CC2564B connected via FDTI USB-2-UART adapter, 921600 baud
-//   - select(..) blocks > 400 ms -> num completed is received to late -> gaps between audio
-//   - looks like bug in select->FTDI driver as it works correct on Linux
-// 
-// SCO not routed over HCI (yet)
-// - CSR UART dongle 
-// - Broadcom USB dongle
-// - Broadcom UART chipset
-// - ..
+/*
+ * hsp_hs_demo.c
+ */
+
 // *****************************************************************************
+/* EXAMPLE_START(hsp_hs_demo): HSP Headset Demo
+ *
+ * @text This example implements a HSP Headset device that sends and receives 
+ * audio signal over HCI SCO. It demonstrates how to receive 
+ * an output from a remote audio gateway (AG), and, 
+ * if HAVE_STDIO is defined, how to control the AG. 
+ */
+// *****************************************************************************
+
 
 #include "btstack-config.h"
 
@@ -86,6 +78,29 @@ static char hs_cmd_buffer[100];
 
 static int phase = 0;
 
+/* @section Audio Transfer Setup 
+ *
+ * @text A pre-computed sine wave (160Hz) is used as the input audio signal. 160 Hz. 
+ * To send and receive an audio signal, HAVE_SCO_OVER_HCI has to be defined. 
+ *
+ * Tested working setups: 
+ * - Ubuntu 14 64-bit, CC2564B connected via FTDI USB-2-UART adapter, 921600 baud
+ * - Ubuntu 14 64-bit, CSR dongle
+ * - OS X 10.11, CSR dongle
+ *
+ * Broken setups:
+ * - OS X 10.11, CC2564B connected via FDTI USB-2-UART adapter, 921600 baud
+ * - select(..) blocks > 400 ms -> num completed is received to late -> gaps between audio
+ * - looks like bug in select->FTDI driver as it works correct on Linux
+ *
+ * SCO not routed over HCI yet:
+ * - CSR UART dongle 
+ * - Broadcom USB dongle
+ * - Broadcom UART chipset
+ * - ..
+ *
+ */ 
+
 // input signal: pre-computed sine wave, 160 Hz
 static const uint8_t sine[] = {
       0,  15,  31,  46,  61,  74,  86,  97, 107, 114,
@@ -95,26 +110,6 @@ static const uint8_t sine[] = {
     136, 142, 149, 159, 170, 182, 195, 210, 225, 241,
 };
 
-#if 0
-//
-// re-compute sine table for input signal
-//
-#include <math.h>
-#define TABLE_SIZE 50
-static uint8_t sine[TABLE_SIZE];
-static void compute_signal(void){
-    #define TABLE_SIZE    (50)
-    // create sine wave table
-    int i;
-    printf("static const uint8_t sine[] = {");
-    for( i=0; i<TABLE_SIZE; i++ ) {
-        if ((i % 10) == 0) printf("\n    ");
-        sine[i] = (int8_t) (127.0 * sin( ((double)i/(double)TABLE_SIZE) * M_PI * 2. ));
-        printf("%3u, ", sine[i]);
-    }
-    printf("\n};\n");
-}
-#endif
 
 static void try_send_sco(void){
     if (!sco_handle) return;
@@ -217,32 +212,35 @@ static void packet_handler(uint8_t * event, uint16_t event_size){
     }
 }
 
+/* @section Main Application Setup
+ *
+ * @text Listing MainConfiguration shows main application code. 
+ * To run a HSP Headset service you need to initialize the SDP, and to create and register HSP HS record with it. 
+ * In this example, the SCO over HCI is used to receive and send an audio signal.
+ * 
+ * Two packet handlers are registered:
+ * - The HCI SCO packet handler receives audio data.
+ * - The HSP HS packet handler is used to trigger sending of audio data and commands to the AG. It also receives the AG's answers.
+ * 
+ * At the end the Bluetooth stack is started.
+ */
+
+/* LISTING_START(MainConfiguration): Setup packet handlers and audio data channel for HSP Headset */
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
-
-#ifdef TABLE_SIZE
-    compute_signal();
-#endif
-
-    // 8-bit, 2's complement (== int8_t)
-    // 16-bit samples probably required for USB: 
-    // hci_set_sco_voice_setting(0x0060);
-
-    hci_register_sco_packet_handler(&sco_packet_handler);
-
-    hci_discoverable_control(1);
-    hci_ssp_set_io_capability(SSP_IO_CAPABILITY_DISPLAY_YES_NO);
-    gap_set_local_name("BTstack HSP HS");
-
-    hsp_hs_init(rfcomm_channel_nr);
-    hsp_hs_register_packet_handler(packet_handler);
-    
     sdp_init();
-	memset((uint8_t *)hsp_service_buffer, 0, sizeof(hsp_service_buffer));
+    memset((uint8_t *)hsp_service_buffer, 0, sizeof(hsp_service_buffer));
     hsp_hs_create_sdp_record((uint8_t *)hsp_service_buffer, rfcomm_channel_nr, hsp_hs_service_name, 0);
-
     sdp_register_service_internal(NULL, (uint8_t *)hsp_service_buffer);
 
+    hci_register_sco_packet_handler(&sco_packet_handler);
+    
+    hsp_hs_init(rfcomm_channel_nr);
+    hsp_hs_register_packet_handler(packet_handler);
+
+    gap_set_local_name("BTstack HSP HS");
+    hci_discoverable_control(1);
+    hci_ssp_set_io_capability(SSP_IO_CAPABILITY_DISPLAY_YES_NO);
     // turn on!
     hci_power_control(HCI_POWER_ON);
     
