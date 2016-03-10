@@ -289,22 +289,21 @@ functions can be used:
 
 -   *gap_advertisements_enable*
 
+In addition to the Advertisement data, a device in the peripheral role
+can also provide Scan Response data, which has to be explicitly queried
+by the central device. It can be set with *gap_scan_response_set_data*.
+
 Please have a look at the [SPP and LE
 Counter example](examples/generated/#sec:sppandlecounterExample).
 
-In addition to the Advertisement data, a device in the peripheral role
-can also provide Scan Response data, which has to be explicitly queried
-by the central device. It can be provided with the
-*hci_le_set_scan_response_data*.
-
 The scan parameters can be set with
-*le_central_set_scan_parameters*. The scan can be started/stopped
-with *le_central_start_scan*/*le_central_stop_scan*.
+*gap_set_scan_parameters*. The scan can be started/stopped
+with *gap_start_scan*/*gap_stop_scan*.
 
 Finally, if a suitable device is found, a connection can be initiated by
-calling *le_central_connect*. In contrast to Bluetooth classic, there
+calling *gap_connect*. In contrast to Bluetooth classic, there
 is no timeout for an LE connection establishment. To cancel such an
-attempt, *le_central_connect_cancel* has be be called.
+attempt, *gap_connect_cancel* has be be called.
 
 By default, a Bluetooth device stops sending Advertisements when it gets
 into the Connected state. However, it does not start broadcasting
