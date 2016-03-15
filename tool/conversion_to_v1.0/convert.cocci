@@ -168,6 +168,19 @@ expression E1, E2;
 - sdp_register_service(E1, E2)
 + sdp_register_service(E2)
 
+// L2CAP - just drop connection param
+@@
+expression E1, E2, E3, E4, E5;
+@@
+- l2cap_create_channel(E1, E2, E3, E4, E5)
++ l2cap_create_channel(E2, E3, E4, E5)
+
+@@
+expression E1, E2, E3, E4, E5;
+@@
+- l2cap_create_service(E1, E2, E3, E4, E5)
++ l2cap_create_service(E2, E3, E4, E5)
+
 // RFCOMM
 
 // track calls to rfcomm_register_packet_handler
@@ -222,7 +235,7 @@ expression E1, E2, E3, E4;
 + hsp_hs_create_sdp_record(E1, 0x10002, E2, E3, E4)
 
 @@
-expression E1, E2, E3, E4;
+expression E1, E2, E3;
 @@
 - hsp_ag_create_sdp_record(E1, E2, E3)
 + // MIGRATION: using 0x10002 as Service Record Handle. Please fix if using multiple services
