@@ -222,10 +222,6 @@ expression E1, E2, E3, E4;
 - rfcomm_create_channel_with_initial_creditis(E1, E2, E3, E4)
 + rfcomm_create_channel_with_initial_creditis(rfcomm_callback, E2, E3, E4)
 
-
-
-// GATT Client
-
 // HSP
 @@
 expression E1, E2, E3, E4;
@@ -241,8 +237,293 @@ expression E1, E2, E3;
 + // MIGRATION: using 0x10002 as Service Record Handle. Please fix if using multiple services
 + hsp_ag_create_sdp_record(E1, 0x10002, E2, E3)
 
+// GATT Client
 
+// track callback registration
+@gatt_client_register_packet_handler@
+expression gatt_callback;
+identifier gc_id;
+@@
+- gc_id = gatt_client_register_packet_handler(gatt_callback);
 
+// update all calls
+@@
+expression gc_id, gatt_client_register_packet_handler.gatt_callback;
+@@
+gatt_client_discover_primary_services(
+- gc_id,
++ gatt_callback,
+... );
 
+@@
+expression gc_id, gatt_client_register_packet_handler.gatt_callback;
+@@
+gatt_client_discover_primary_services_by_uuid16(
+- gc_id,
++ gatt_callback,
+... );
 
+@@
+expression gc_id, gatt_client_register_packet_handler.gatt_callback;
+@@
+gatt_client_discover_primary_services_by_uuid128(
+- gc_id,
++ gatt_callback,
+... )
+
+@@
+expression gc_id, gatt_client_register_packet_handler.gatt_callback;
+@@
+gatt_client_find_included_services_for_service(
+- gc_id,
++ gatt_callback,
+... )
+
+@@
+expression gc_id, gatt_client_register_packet_handler.gatt_callback;
+@@
+gatt_client_discover_characteristics_for_service(
+- gc_id,
++ gatt_callback,
+... );
+
+@@
+expression gc_id, gatt_client_register_packet_handler.gatt_callback;
+@@
+gatt_client_discover_characteristics_for_handle_range_by_uuid16(
+- gc_id,
++ gatt_callback,
+... );
+
+@@
+expression gc_id, gatt_client_register_packet_handler.gatt_callback;
+@@
+gatt_client_discover_characteristics_for_handle_range_by_uuid128(
+- gc_id,
++ gatt_callback,
+... );
+
+@@
+expression gc_id, gatt_client_register_packet_handler.gatt_callback;
+@@
+gatt_client_discover_characteristics_for_service_by_uuid16 (
+- gc_id,
++ gatt_callback,
+... );
+
+@@
+expression gc_id, gatt_client_register_packet_handler.gatt_callback;
+@@
+gatt_client_discover_characteristics_for_service_by_uuid128(
+- gc_id,
++ gatt_callback,
+... );
+
+@@
+expression gc_id, gatt_client_register_packet_handler.gatt_callback;
+@@
+gatt_client_discover_characteristic_descriptors(
+- gc_id,
++ gatt_callback,
+... );
+
+@@
+expression gc_id, gatt_client_register_packet_handler.gatt_callback;
+@@
+gatt_client_read_value_of_characteristic(
+- gc_id,
++ gatt_callback,
+... );
+
+@@
+expression gc_id, gatt_client_register_packet_handler.gatt_callback;
+@@
+gatt_client_read_value_of_characteristic_using_value_handle(
+- gc_id,
++ gatt_callback,
+... );
+
+@@
+expression gc_id, gatt_client_register_packet_handler.gatt_callback;
+@@
+gatt_client_read_value_of_characteristics_by_uuid16(
+- gc_id,
++ gatt_callback,
+... );
+
+@@
+expression gc_id, gatt_client_register_packet_handler.gatt_callback;
+@@
+gatt_client_read_value_of_characteristics_by_uuid128(
+- gc_id,
++ gatt_callback,
+... );
+
+@@
+expression gc_id, gatt_client_register_packet_handler.gatt_callback;
+@@
+gatt_client_read_long_value_of_characteristic(
+- gc_id,
++ gatt_callback,
+... );
+
+@@
+expression gc_id, gatt_client_register_packet_handler.gatt_callback;
+@@
+gatt_client_read_long_value_of_characteristic_using_value_handle(
+- gc_id,
++ gatt_callback,
+... );
+
+@@
+expression gc_id, gatt_client_register_packet_handler.gatt_callback;
+@@
+gatt_client_read_long_value_of_characteristic_using_value_handle_with_offset(
+- gc_id,
++ gatt_callback,
+... );
+
+@@
+expression gc_id, gatt_client_register_packet_handler.gatt_callback;
+@@
+gatt_client_read_multiple_characteristic_values(
+- gc_id,
++ gatt_callback,
+... );
+
+@@
+expression gc_id, gatt_client_register_packet_handler.gatt_callback;
+@@
+gatt_client_write_value_of_characteristic_without_response(
+- gc_id,
++ gatt_callback,
+... );
+
+@@
+expression gc_id, gatt_client_register_packet_handler.gatt_callback;
+@@
+gatt_client_signed_write_without_response(
+- gc_id,
++ gatt_callback,
+... );
+
+@@
+expression gc_id, gatt_client_register_packet_handler.gatt_callback;
+@@
+gatt_client_write_value_of_characteristic(
+- gc_id,
++ gatt_callback,
+... );
+
+@@
+expression gc_id, gatt_client_register_packet_handler.gatt_callback;
+@@
+gatt_client_write_long_value_of_characteristic(
+- gc_id,
++ gatt_callback,
+... );
+
+@@
+expression gc_id, gatt_client_register_packet_handler.gatt_callback;
+@@
+gatt_client_write_long_value_of_characteristic_with_offset(
+- gc_id,
++ gatt_callback,
+... );
+
+@@
+expression gc_id, gatt_client_register_packet_handler.gatt_callback;
+@@
+gatt_client_reliable_write_long_value_of_characteristic(
+- gc_id,
++ gatt_callback,
+... );
+
+@@
+expression gc_id, gatt_client_register_packet_handler.gatt_callback;
+@@
+gatt_client_read_characteristic_descriptor(
+- gc_id,
++ gatt_callback,
+... );
+
+@@
+expression gc_id, gatt_client_register_packet_handler.gatt_callback;
+@@
+gatt_client_read_characteristic_descriptor_using_descriptor_handle(
+- gc_id,
++ gatt_callback,
+... );
+
+@@
+expression gc_id, gatt_client_register_packet_handler.gatt_callback;
+@@
+gatt_client_read_long_characteristic_descriptor(
+- gc_id,
++ gatt_callback,
+... );
+
+@@
+expression gc_id, gatt_client_register_packet_handler.gatt_callback;
+@@
+gatt_client_read_long_characteristic_descriptor_using_descriptor_handle(
+- gc_id,
++ gatt_callback,
+... );
+
+@@
+expression gc_id, gatt_client_register_packet_handler.gatt_callback;
+@@
+gatt_client_read_long_characteristic_descriptor_using_descriptor_handle_with_offset(
+- gc_id,
++ gatt_callback,
+... );
+
+@@
+expression gc_id, gatt_client_register_packet_handler.gatt_callback;
+@@
+gatt_client_write_characteristic_descriptor(
+- gc_id,
++ gatt_callback,
+... );
+
+@@
+expression gc_id, gatt_client_register_packet_handler.gatt_callback;
+@@
+gatt_client_write_characteristic_descriptor_using_descriptor_handle(
+- gc_id,
++ gatt_callback,
+... );
+
+@@
+expression gc_id, gatt_client_register_packet_handler.gatt_callback;
+@@
+gatt_client_write_long_characteristic_descriptor(
+- gc_id,
++ gatt_callback,
+... );
+
+@@
+expression gc_id, gatt_client_register_packet_handler.gatt_callback;
+@@
+gatt_client_write_long_characteristic_descriptor_using_descriptor_handle(
+- gc_id,
++ gatt_callback,
+... );
+
+@@
+expression gc_id, gatt_client_register_packet_handler.gatt_callback;
+@@
+gatt_client_write_long_characteristic_descriptor_using_descriptor_handle_with_offset(
+- gc_id,
++ gatt_callback,
+... );
+
+@@
+expression gc_id, gatt_client_register_packet_handler.gatt_callback;
+@@
+gatt_client_write_client_characteristic_configuration(
+- gc_id,
++ gatt_callback,
+... );
 

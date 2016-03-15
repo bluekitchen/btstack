@@ -123,6 +123,12 @@ s|<btstack/run_loop.h>|"btstack_run_loop.h"|g
 s|<btstack/sdp_util.h>|"classic/sdp_util.h"|g
 s|<btstack/utils.h>|"btstack_util.h"|g
 
+# type changes
+s|le_command_status_t|uint8_t|g
+s|le_service_t|gatt_client_service_t|g
+s|le_characteristic_t|gatt_client_characteristic_t|g
+s|le_characteristic_descriptor_t|gatt_client_characteristic_descriptor_t|g
+
 # File renames
 s|debug.h|btstack_debug.h|g
 s|btstack-config.h|btstack_config.h|g
