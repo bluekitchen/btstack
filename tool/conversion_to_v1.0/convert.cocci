@@ -152,6 +152,15 @@ type T;
 + T fn(uint8_t packet_type, uint16_t channel, uint8_t * packet, uint16_t size)
 { ... }
 
+// RFCOMM
+
+// track calls to rfcomm_register_packet_handler
+@rfcomm_register_packet_handler@
+identifier sdp_client_callback;
+expression E1, E2, E3, E4;
+@@
+- sdp_query_rfcomm_register_callback(rfcomm_callback);
+
 
 // GATT Client
 
