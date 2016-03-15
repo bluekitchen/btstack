@@ -68,18 +68,23 @@ identifier fn, ts;
 + fn(btstack_timer_source_t * ts)
 { ... }
 
+// SDP Client
+
 // propagate sdp client callback into individual sdp client calls
 // add warning that type doesn't match
 
+// remove sdp_parser_init()
 @@
 @@
 - sdp_parser_init();
 
-@sdp_parser_register_callback @
+// track calls to sdp_parser_register_callback
+@sdp_parser_register_callback@
 identifier sdp_client_callback;
 @@
 - sdp_parser_register_callback(sdp_client_callback);
 
+// fix calls for sdp_query_util.h 
 @@
 identifier sdp_parser_register_callback.sdp_client_callback;
 expression E1, E2;
@@ -94,6 +99,7 @@ expression E1, E2;
 - sdp_general_query_for_uuid128(E1, E2)
 + sdp_client_query_uuid128(sdp_client_callback, E1, E2)
 
+// fix calls for sdp_client.h
 @@
 identifier sdp_parser_register_callback.sdp_client_callback;
 expression E1, E2, E3;
@@ -101,40 +107,53 @@ expression E1, E2, E3;
 + sdp_client_query(E1, E2, E3)
 - sdp_client_query(sdp_client_callback, E1, E2, E3)
 
+// track calls to sdp_query_rfcomm_register_callback
+@sdp_query_rfcomm_register_callback @
+identifier sdp_client_callback;
+expression E1;
 @@
-identifier sdp_parser_register_callback.sdp_client_callback;
-expression E1, E2;
-@@
-- sdp_query_rfcomm_channel_and_name_for_uuid(E1, E2)
-+ sdp_client_query_uuid16(sdp_client_callback, E1, E2)
+- sdp_query_rfcomm_register_callback(sdp_client_callback, E1);
 
 @@
-identifier sdp_parser_register_callback.sdp_client_callback;
+typedef sdp_query_event_t;
+identifier fn, event;
+type T;
+@@
+- T fn(sdp_query_event_t * event)
++
++ // MIGRATION: SDP Client callback changed to btstack_packet_handler_t
++ // Please  use sdp_client_X functions from btstack_event.h to access event fields
++ T fn(uint8_t packet_type, uint16_t channel, uint8_t * packet, uint16_t size)
+{ ... }
+
+// fix calls to sdp_query_rfcomm 
+@@
+identifier sdp_query_rfcomm_register_callback.sdp_client_callback;
 expression E1, E2;
 @@
 - sdp_query_rfcomm_channel_and_name_for_uuid(E1, E2)
 + sdp_query_rfcomm_channel_and_name_for_uuid(sdp_client_callback, E1, E2)
 
 @@
-identifier sdp_parser_register_callback.sdp_client_callback;
+identifier sdp_query_rfcomm_register_callback.sdp_client_callback;
 expression E1, E2;
 @@
 - sdp_query_rfcomm_channel_and_name_for_search_pattern(E1, E2)
 + sdp_query_rfcomm_channel_and_name_for_search_pattern(sdp_client_callback, E1, E2)
 
 @@
-identifier fn, event;
-typedef sdp_query_event_t;
-typedef sdp_query_attribute_value_event_t;
-typedef sdp_query_complete_event_t;
+identifier fn, event, context;
 type T;
 @@
-- T fn(sdp_query_event_t * event)
+- T fn(sdp_query_event_t * event, void * context)
 +
 + // MIGRATION: SDP Client callback changed to btstack_packet_handler_t
-+ // Please  use sdp_client_X functions to access event fields
++ // Please  use sdp_client_X functions from btstack_event.h to access event fields
 + T fn(uint8_t packet_type, uint16_t channel, uint8_t * packet, uint16_t size)
 { ... }
+
+
+// GATT Client
 
 
 

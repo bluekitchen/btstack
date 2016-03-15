@@ -96,7 +96,7 @@ s|"hsp_hs.h"|"classic/hsp_hs.h"|g
 s|"pan.h"|"classic/pan.h"|g
 s|"rfcomm.h"|"classic/rfcomm.h"|g
 s|"sdp.h"|"classic/sdp_server.h"|g
-s|#include "sdp_client.h"|#include "classic/sdp_client.h"\n#include "btstack_event.h"|g
+s|#include "sdp_client.h"|#include "classic/sdp_client.h"|g
 s|"sdp_parser.h"|"classic/sdp_client.h"|g
 s|"sdp_query_rfcomm.h"|"classic/sdp_query_rfcomm.h"|g
 s|#include "sdp_query_util.h"|// sdp_query_util doens not exist anymore|g
