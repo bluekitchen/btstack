@@ -42,6 +42,28 @@ s/SM_EVENT_PASSKEY_INPUT_CANCEL/SM_EVENT_PASSKEY_INPUT_CANCEL/g
 s/SM_EVENT_PASSKEY_INPUT_NUMBER/SM_EVENT_PASSKEY_INPUT_NUMBER/g
 s/BTSTACK_EVENT_REMOTE_NAME_CACHED/DAEMON_EVENT_REMOTE_NAME_CACHED/g
 
+# Functions ending with _internal
+s/l2cap_accept_connection_internal/l2cap_accept_connection/g
+s/l2cap_create_channel_internal/l2cap_create_channel/g
+s/l2cap_decline_connection_internal/l2cap_decline_connection/g
+s/l2cap_disconnect_internal/l2cap_disconnect/g
+s/l2cap_le_register_service_internal/l2cap_le_register_service/g
+s/l2cap_le_unregister_service_internal/l2cap_le_unregister_service/g
+s/l2cap_register_service_internal/l2cap_register_service/g
+s/l2cap_send_internal/l2cap_send/g
+s/l2cap_unregister_service_internal/l2cap_unregister_service/g
+s/rfcomm_accept_connection_internal/rfcomm_accept_connection/g
+s/rfcomm_create_channel_internal/rfcomm_create_channel/g
+s/rfcomm_create_channel_with_initial_credits_internal/rfcomm_create_channel_with_initial_credits/g
+s/rfcomm_decline_connection_internal/rfcomm_decline_connection/g
+s/rfcomm_disconnect_internal/rfcomm_disconnect/g
+s/rfcomm_register_service_internal/rfcomm_register_service/g
+s/rfcomm_register_service_with_initial_credits_internal/rfcomm_register_service_with_initial_credits/g
+s/rfcomm_send_internal/rfcomm_send/g
+s/rfcomm_unregister_service_internal/rfcomm_unregister_service/g
+s/sdp_register_service_internal/sdp_register_service/g
+s/sdp_unregister_service_internal/sdp_unregister_service/g
+
 # Functions/Macros
 s/att_server_can_send/att_server_can_send_packet_now/g
 s/BD_ADDR_CMP/bd_addr_cmp/g
@@ -63,14 +85,9 @@ s/READ_BT_32/little_endian_read_32/g
 s/READ_NET_16/big_endian_read_16/g
 s/READ_NET_24/big_endian_read_24/g
 s/READ_NET_32/big_endian_read_32/g
-s/rfcomm_accept_connection_internal/rfcomm_accept_connection/g
-s/rfcomm_register_service_internal/rfcomm_register_service/g
-s/rfcomm_send_internal/rfcomm_send/g
-s/rfcomm_disconnect_internal/rfcomm_disconnect/g
 s/run_loop_add_timer/btstack_run_loop_add_timer/g
 s/run_loop_get_time_ms/btstack_run_loop_get_time_ms/g
 s/run_loop_set_timer/btstack_run_loop_set_timer/g
-s/sdp_register_service_internal/sdp_register_service/g
 s/swap32/reverse_32/g
 s/swap48/reverse_48/g
 s/swap64/reverse_64/g
