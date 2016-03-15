@@ -152,17 +152,81 @@ type T;
 + T fn(uint8_t packet_type, uint16_t channel, uint8_t * packet, uint16_t size)
 { ... }
 
+// SDP Util
+
+@@
+expression E1, E2, E3;
+@@
+- sdp_create_spp_service(E1, E2, E3)
++ // MIGRATION: using 0x10001 as Service Record Handle. Please fix if using multiple services
++ sdp_create_spp_service(E1, 0x10001, E2, E3)
+
+// SDP Server
+@@
+expression E1, E2;
+@@
+- sdp_register_service(E1, E2)
++ sdp_register_service(E2)
+
 // RFCOMM
 
 // track calls to rfcomm_register_packet_handler
 @rfcomm_register_packet_handler@
-identifier sdp_client_callback;
+identifier rfcomm_callback;
+@@
+- rfcomm_register_packet_handler(rfcomm_callback);
+
+// fix calls to 
+// rfcomm_register_service
+@@
+identifier rfcomm_register_packet_handler.rfcomm_callback;
+expression E1, E2, E3;
+@@
+- rfcomm_register_service(E1, E2, E3)
++ rfcomm_register_service(rfcomm_callback, E2, E3)
+
+// rfcomm_register_service_with_initial_credits,
+@@
+identifier rfcomm_register_packet_handler.rfcomm_callback;
 expression E1, E2, E3, E4;
 @@
-- sdp_query_rfcomm_register_callback(rfcomm_callback);
+- rfcomm_register_service_with_initial_credits(E1, E2, E3, E4)
++ rfcomm_register_service_with_initial_credits(rfcomm_callback, E2, E3, E4)
+
+// rfcomm_create_channel
+@@
+identifier rfcomm_register_packet_handler.rfcomm_callback;
+expression E1, E2, E3;
+@@
+- rfcomm_create_channel(E1, E2, E3)
++ rfcomm_create_channel(rfcomm_callback, E2, E3)
+
+// rfcomm_create_channel_with_initial_credits
+@@
+identifier rfcomm_register_packet_handler.rfcomm_callback;
+expression E1, E2, E3, E4;
+@@
+- rfcomm_create_channel_with_initial_creditis(E1, E2, E3, E4)
++ rfcomm_create_channel_with_initial_creditis(rfcomm_callback, E2, E3, E4)
+
 
 
 // GATT Client
+
+// HSP
+@@
+expression E1, E2, E3, E4;
+@@
+- hsp_hs_create_sdp_record(E1, E2, E3, E4)
++ // MIGRATION: using 0x10002 as Service Record Handle. Please fix if using multiple services
++ hsp_hs_create_sdp_record(E1, 0x10002, E2, E3, E4)
+
+@@
+expression E1, E2, E3, E4;
+@@
+- hsp_ag_create_sdp_record(E1, E2, E3)
++ // MIGRATION: using 0x10002 as Service Record Handle. Please fix if using multiple services
++ hsp_ag_create_sdp_record(E1, 0x10002, E2, E3)
 
 
 
