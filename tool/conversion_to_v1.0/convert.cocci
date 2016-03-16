@@ -166,6 +166,7 @@ type T;
 +
 + // MIGRATION: SDP Client callback changed to btstack_packet_handler_t
 + // Please  use sdp_client_X functions from btstack_event.h to access event fields
++
 + T fn(uint8_t packet_type, uint16_t channel, uint8_t * packet, uint16_t size)
 { ... }
 
@@ -192,6 +193,7 @@ type T;
 +
 + // MIGRATION: SDP Client callback changed to btstack_packet_handler_t
 + // Please  use sdp_client_X functions from btstack_event.h to access event fields
++
 + T fn(uint8_t packet_type, uint16_t channel, uint8_t * packet, uint16_t size)
 { ... }
 
@@ -300,6 +302,20 @@ identifier gatt_callback;
 identifier gc_id;
 @@
 - gc_id = gatt_client_register_packet_handler(&gatt_callback);
+
+// update callback
+@@
+identifier gatt_client_register_packet_handler.gatt_callback;
+identifier event;
+typedef le_event_t;
+@@
+- gatt_callback(le_event_t * event)
++
++ // MIGRATION: GATT Client callback changed to btstack_packet_handler_t
++ // Please  use gatt_event_X functions from btstack_event.h to access event fields
++
++ gatt_callback(uint8_t packet_type, uint16_t channel, uint8_t * packet, uint16_t size)
+{ ... }
 
 // update all calls
 @@
