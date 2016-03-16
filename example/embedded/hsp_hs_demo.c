@@ -149,23 +149,14 @@ static void sco_packet_handler(uint8_t packet_type, uint8_t * packet, uint16_t s
 }
 
 static void packet_handler(uint8_t * event, uint16_t event_size){
-
-    // printf("Packet handler event 0x%02x\n", event[0]);
-    
-    try_send_sco();
-    
     switch (event[0]) {
         case BTSTACK_EVENT_STATE:
             if (event[2] != HCI_STATE_WORKING) break;
             printf("Working!\n");
             break;
         case HCI_EVENT_NUMBER_OF_COMPLETED_PACKETS:
-            // printf("HCI_EVENT_NUMBER_OF_COMPLETED_PACKETS\n");
-            // try_send_sco();
-            break;
         case DAEMON_EVENT_HCI_PACKET_SENT:
-            // printf("DAEMON_EVENT_HCI_PACKET_SENT\n");
-            // try_send_sco();
+            try_send_sco();
             break;
         case HCI_EVENT_HSP_META:
             switch (event[2]) { 
@@ -173,7 +164,7 @@ static void packet_handler(uint8_t * event, uint16_t event_size){
                     if (event[3] == 0){
                         sco_handle = READ_BT_16(event, 4);
                         printf("Audio connection established with SCO handle 0x%04x.\n", sco_handle);
-                        // try_send_sco();
+                        try_send_sco();
                     } else {
                         printf("Audio connection establishment failed with status %u\n", event[3]);
                         sco_handle = 0;
