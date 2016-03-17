@@ -49,19 +49,20 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "hci_cmd.h"
-#include "btstack_run_loop.h"
-
-#include "hci.h"
-#include "gap.h"
-#include "btstack_memory.h"
+#include "ble/sm.h"
 #include "btstack_event.h"
+#include "btstack_memory.h"
+#include "btstack_run_loop.h"
+#include "classic/rfcomm.h"
+#include "classic/sdp_client_rfcomm.h"
+#include "classic/sdp_server.h"
+#include "classic/sdp_util.h"
+#include "classic/spp_server.h"
+#include "gap.h"
+#include "hci.h"
+#include "hci_cmd.h"
 #include "hci_dump.h"
 #include "l2cap.h"
-#include "classic/rfcomm.h"
-#include "classic/sdp_server.h"
-#include "classic/sdp_client_rfcomm.h"
-#include "ble/sm.h"
 #include "stdin_support.h"
 
 static void show_usage();

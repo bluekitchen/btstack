@@ -110,7 +110,27 @@ void hsp_hs_connect(bd_addr_t bd_addr);
  * Releases the RFCOMM channel.
  * @param bd_addr
  */
-void hsp_hs_disconnect(bd_addr_t bd_addr);
+void hsp_hs_disconnect(void);
+
+
+/**
+ * @brief Send button press action. Toggle establish/release of audio connection. 
+ */
+void hsp_hs_send_button_press(void);
+
+/**
+ * @brief Triger establishing audio connection.
+ *
+ * @param bd_addr
+ */
+void hsp_hs_establish_audio_connection(void);
+
+/**
+ * @brief Trigger releasing audio connection.
+ *
+ * @param bd_addr
+ */
+void hsp_hs_release_audio_connection(void);
 
 /**
  * @brief Set microphone gain. 
@@ -130,11 +150,7 @@ void hsp_hs_set_microphone_gain(uint8_t gain);
  */
 void hsp_hs_set_speaker_gain(uint8_t gain);
 
-/**
- * @brief Send button press action. 
- * @param gain Valid range: [0,15]
- */
-void hsp_hs_send_button_press(void);
+
 
 /**
  * @brief Enable custom indications.
