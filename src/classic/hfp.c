@@ -1284,7 +1284,7 @@ void hfp_establish_service_level_connection(bd_addr_t bd_addr, uint16_t service_
             hfp_connection->state = HFP_W4_SDP_QUERY_COMPLETE;
             connection_doing_sdp_query = hfp_connection;
             hfp_connection->service_uuid = service_uuid;
-            sdp_query_rfcomm_channel_and_name_for_uuid(&handle_query_rfcomm_event, hfp_connection->remote_addr, service_uuid);
+            sdp_client_query_rfcomm_channel_and_name_for_uuid(&handle_query_rfcomm_event, hfp_connection->remote_addr, service_uuid);
             break;
         default:
             break;

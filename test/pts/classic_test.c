@@ -596,7 +596,7 @@ static int  stdin_process(struct btstack_data_source *ds){
 
         case 'k':
             printf("Start SDP query for SPP service\n");
-            sdp_query_rfcomm_channel_and_name_for_uuid(&handle_query_rfcomm_event, remote_rfcomm, 0x1101);
+            sdp_client_query_rfcomm_channel_and_name_for_uuid(&handle_query_rfcomm_event, remote_rfcomm, 0x1101);
             break;
 
         case 't':

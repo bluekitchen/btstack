@@ -368,7 +368,7 @@ static void hsp_run(void){
         case HSP_SDP_QUERY_RFCOMM_CHANNEL:
             hsp_state = HSP_W4_SDP_EVENT_QUERY_COMPLETE;
             log_info("Start SDP query %s, 0x%02x", bd_addr_to_str(remote), SDP_HSP);
-            sdp_query_rfcomm_channel_and_name_for_uuid(&handle_query_rfcomm_event, remote, SDP_HSP);
+            sdp_client_query_rfcomm_channel_and_name_for_uuid(&handle_query_rfcomm_event, remote, SDP_HSP);
             break;
 
         case HSP_W4_RING_ANSWER:

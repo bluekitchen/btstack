@@ -1116,7 +1116,7 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             memcpy(serviceSearchPattern, &packet[9], serviceSearchPatternLen);
 
             sdp_client_query_connection = connection;
-            sdp_query_rfcomm_channel_and_name_for_search_pattern(&handle_sdp_rfcomm_service_result, addr, serviceSearchPattern);
+            sdp_client_query_rfcomm_channel_and_name_for_search_pattern(&handle_sdp_rfcomm_service_result, addr, serviceSearchPattern);
 
             break;
         case SDP_CLIENT_QUERY_SERVICES:

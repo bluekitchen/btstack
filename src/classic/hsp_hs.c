@@ -336,7 +336,7 @@ static void hsp_run(void){
     switch (hsp_state){
         case HSP_SDP_QUERY_RFCOMM_CHANNEL:
             hsp_state = HSP_W4_SDP_EVENT_QUERY_COMPLETE;
-            sdp_query_rfcomm_channel_and_name_for_uuid(&handle_query_rfcomm_event, remote, SDP_Headset_AG);
+            sdp_client_query_rfcomm_channel_and_name_for_uuid(&handle_query_rfcomm_event, remote, SDP_Headset_AG);
             break;
         
         case HSP_W2_CONNECT_SCO:

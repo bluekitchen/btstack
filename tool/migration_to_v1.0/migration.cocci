@@ -143,19 +143,19 @@ expression E1, E2, E3;
 + sdp_client_query(E1, E2, E3)
 - sdp_client_query(sdp_client_callback, E1, E2, E3)
 
-// track calls to sdp_query_rfcomm_register_callback
+// track calls to sdp_client_query_rfcomm_register_callback
 @@
 identifier sdp_client_callback;
 expression E1;
 @@
-- sdp_query_rfcomm_register_callback(sdp_client_callback, E1);
-+ sdp_query_rfcomm_register_callback(&sdp_client_callback, E1);
+- sdp_client_query_rfcomm_register_callback(sdp_client_callback, E1);
++ sdp_client_query_rfcomm_register_callback(&sdp_client_callback, E1);
 
-@sdp_query_rfcomm_register_callback @
+@sdp_client_query_rfcomm_register_callback @
 identifier sdp_client_callback;
 expression E1;
 @@
-- sdp_query_rfcomm_register_callback(&sdp_client_callback, E1);
+- sdp_client_query_rfcomm_register_callback(&sdp_client_callback, E1);
 
 @@
 typedef sdp_query_event_t;
@@ -172,18 +172,18 @@ type T;
 
 // fix calls to sdp_query_rfcomm 
 @@
-identifier sdp_query_rfcomm_register_callback.sdp_client_callback;
+identifier sdp_client_query_rfcomm_register_callback.sdp_client_callback;
 expression E1, E2;
 @@
-- sdp_query_rfcomm_channel_and_name_for_uuid(E1, E2)
-+ sdp_query_rfcomm_channel_and_name_for_uuid(sdp_client_callback, E1, E2)
+- sdp_client_query_rfcomm_channel_and_name_for_uuid(E1, E2)
++ sdp_client_query_rfcomm_channel_and_name_for_uuid(sdp_client_callback, E1, E2)
 
 @@
-identifier sdp_query_rfcomm_register_callback.sdp_client_callback;
+identifier sdp_client_query_rfcomm_register_callback.sdp_client_callback;
 expression E1, E2;
 @@
-- sdp_query_rfcomm_channel_and_name_for_search_pattern(E1, E2)
-+ sdp_query_rfcomm_channel_and_name_for_search_pattern(sdp_client_callback, E1, E2)
+- sdp_client_query_rfcomm_channel_and_name_for_search_pattern(E1, E2)
++ sdp_client_query_rfcomm_channel_and_name_for_search_pattern(sdp_client_callback, E1, E2)
 
 @@
 identifier fn, event, context;

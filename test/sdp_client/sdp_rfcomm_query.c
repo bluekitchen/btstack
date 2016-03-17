@@ -110,7 +110,7 @@ TEST_GROUP(SDPClient){
         service_index = 0;
         sdp_client_reset(); // avoid "not ready" warning
         // start query using public API although data will be injected
-        sdp_query_rfcomm_channel_and_name_for_uuid(&handle_query_rfcomm_event, address, 0x1234);
+        sdp_client_query_rfcomm_channel_and_name_for_uuid(&handle_query_rfcomm_event, address, 0x1234);
     }
 };
 

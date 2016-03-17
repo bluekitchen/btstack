@@ -206,7 +206,7 @@ static void sdp_query_complete_response(uint8_t status){
     (*registered_sdp_app_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-static void sdp_query_rfcomm_service_response(uint8_t status){
+static void sdp_client_query_rfcomm_service_response(uint8_t status){
     int sdp_service_name_len = strlen(sdp_rfcomm_service_name);
     uint8_t event[3+SDP_SERVICE_NAME_LEN+1];
     event[0] = SDP_EVENT_QUERY_RFCOMM_SERVICE;
@@ -217,10 +217,10 @@ static void sdp_query_rfcomm_service_response(uint8_t status){
     (*registered_sdp_app_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-void sdp_query_rfcomm_channel_and_name_for_uuid(btstack_packet_handler_t callback, bd_addr_t remote, uint16_t uuid){
-	// printf("sdp_query_rfcomm_channel_and_name_for_uuid %p\n", registered_sdp_app_callback);
+void sdp_client_query_rfcomm_channel_and_name_for_uuid(btstack_packet_handler_t callback, bd_addr_t remote, uint16_t uuid){
+	// printf("sdp_client_query_rfcomm_channel_and_name_for_uuid %p\n", registered_sdp_app_callback);
     registered_sdp_app_callback = callback;
-	sdp_query_rfcomm_service_response(0);
+	sdp_client_query_rfcomm_service_response(0);
 	sdp_query_complete_response(0);
 }
 
@@ -269,8 +269,8 @@ uint8_t rfcomm_register_service(btstack_packet_handler_t handler, uint8_t channe
 }
 
 
-void sdp_query_rfcomm_channel_and_name_for_search_pattern(bd_addr_t remote, uint8_t * des_serviceSearchPattern){
-	printf("sdp_query_rfcomm_channel_and_name_for_search_pattern\n");
+void sdp_client_query_rfcomm_channel_and_name_for_search_pattern(bd_addr_t remote, uint8_t * des_serviceSearchPattern){
+	printf("sdp_client_query_rfcomm_channel_and_name_for_search_pattern\n");
 }
 
 

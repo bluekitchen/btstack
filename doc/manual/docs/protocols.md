@@ -648,7 +648,7 @@ registered callback, as shown in Listing [below](#lst:SDPClientRFCOMM).
             case BTSTACK_EVENT_STATE:
                 // bt stack activated, get started 
                 if (packet[2] == HCI_STATE_WORKING){
-                      sdp_query_rfcomm_channel_and_name_for_uuid(remote, 0x0003);
+                      sdp_client_query_rfcomm_channel_and_name_for_uuid(remote, 0x0003);
                 }
                 break;
             default:
@@ -664,11 +664,11 @@ registered callback, as shown in Listing [below](#lst:SDPClientRFCOMM).
     }
 
     void handle_query_rfcomm_event(sdp_query_event_t * event, void * context){
-        sdp_query_rfcomm_service_event_t * ve;
+        sdp_client_query_rfcomm_service_event_t * ve;
                 
         switch (event->type){
             case SDP_EVENT_QUERY_RFCOMM_SERVICE:
-                ve = (sdp_query_rfcomm_service_event_t*) event;
+                ve = (sdp_client_query_rfcomm_service_event_t*) event;
                 printf("Service name: '%s', RFCOMM port %u\n", ve->service_name, ve->channel_nr);
                 break;
             case SDP_EVENT_QUERY_COMPLETE:
@@ -684,7 +684,7 @@ registered callback, as shown in Listing [below](#lst:SDPClientRFCOMM).
         
         // register callback to receive matching RFCOMM Services and 
         // query complete event 
-        sdp_query_rfcomm_register_callback(handle_query_rfcomm_event, NULL);
+        sdp_client_query_rfcomm_register_callback(handle_query_rfcomm_event, NULL);
 
         // turn on!
         hci_power_control(HCI_POWER_ON);
