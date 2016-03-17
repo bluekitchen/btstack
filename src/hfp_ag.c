@@ -90,6 +90,7 @@ static void packet_handler(void * hfp_connection, uint8_t packet_type, uint16_t 
 static void hfp_run_for_context(hfp_connection_t *hfp_connection);
 static void hfp_ag_setup_audio_connection(hfp_connection_t * hfp_connection);
 static void hfp_ag_hf_start_ringing(hfp_connection_t * hfp_connection);
+hfp_ag_indicator_t * hfp_ag_get_ag_indicators(hfp_connection_t * hfp_connection);
 
 
 static int hfp_ag_get_ag_indicators_nr(hfp_connection_t * hfp_connection){
@@ -100,7 +101,7 @@ static int hfp_ag_get_ag_indicators_nr(hfp_connection_t * hfp_connection){
     return hfp_connection->ag_indicators_nr;
 }
 
-static hfp_ag_indicator_t * hfp_ag_get_ag_indicators(hfp_connection_t * hfp_connection){
+hfp_ag_indicator_t * hfp_ag_get_ag_indicators(hfp_connection_t * hfp_connection){
     // TODO: save only value, and value changed in the hfp_connection?
     if (hfp_connection->ag_indicators_nr != hfp_ag_indicators_nr){
         hfp_connection->ag_indicators_nr = hfp_ag_indicators_nr;
