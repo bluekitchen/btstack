@@ -65,6 +65,7 @@
 
 #include "hci.h"
 #include "l2cap.h"
+#include "rfcomm.h"
 #include "sdp.h"
 #include "debug.h"
 #include "hsp_hs.h"
@@ -225,18 +226,21 @@ static void packet_handler(uint8_t * event, uint16_t event_size){
 
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
+    l2cap_init();
+    rfcomm_init();
+    sdp_init();
+
     memset((uint8_t *)hsp_service_buffer, 0, sizeof(hsp_service_buffer));
     hsp_hs_create_sdp_record((uint8_t *)hsp_service_buffer, rfcomm_channel_nr, hsp_hs_service_name, 0);
 
     hsp_hs_init(rfcomm_channel_nr);
     hsp_hs_register_packet_handler(packet_handler);
     
-    sdp_init();
     sdp_register_service_internal(NULL, (uint8_t *)hsp_service_buffer);
 
     hci_discoverable_control(1);
     hci_set_class_of_device(0x200418);
-    
+    gap_set_local_name("BTstack HSP HS PTS");
     btstack_stdin_setup(stdin_process);
 
     // turn on!
