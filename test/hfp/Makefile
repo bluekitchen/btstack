@@ -9,7 +9,7 @@ include ${BTSTACK_ROOT}/example/Makefile.inc
 
 COMMON = \
 	sdp_server.c			            \
-	sdp_query_rfcomm.c		    \
+	sdp_client_query_rfcomm.c		    \
     btstack_link_key_db_memory.c \
     btstack_linked_list.c	    \
     btstack_memory.c            \

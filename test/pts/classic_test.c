@@ -60,7 +60,7 @@
 #include "l2cap.h"
 #include "classic/rfcomm.h"
 #include "classic/sdp_server.h"
-#include "classic/sdp_query_rfcomm.h"
+#include "classic/sdp_client_query_rfcomm.h"
 #include "ble/sm.h"
 #include "stdin_support.h"
 

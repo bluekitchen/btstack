@@ -12,7 +12,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "classic/sdp_query_rfcomm.h"
+#include "classic/sdp_client_query_rfcomm.h"
 #include "classic/sdp_util.h"
 #include "hci_cmd.h"
 #include "btstack_run_loop.h"

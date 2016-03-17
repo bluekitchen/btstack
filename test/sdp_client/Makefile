@@ -24,7 +24,7 @@ COMMON_OBJ = $(COMMON:.c=.o)
 
 all: sdp_rfcomm_query general_sdp_query service_attribute_search_query service_search_query
 
-sdp_rfcomm_query: ${COMMON_OBJ} sdp_query_rfcomm.c sdp_rfcomm_query.c
+sdp_rfcomm_query: ${COMMON_OBJ} sdp_client_query_rfcomm.c sdp_rfcomm_query.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 general_sdp_query: ${COMMON_OBJ} general_sdp_query.c

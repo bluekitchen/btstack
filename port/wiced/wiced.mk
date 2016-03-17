@@ -22,7 +22,7 @@ $(NAME)_SOURCES += \
 	../../src/classic/rfcomm.c            \
 	../../src/classic/sdp_server.c               \
 	../../src/classic/sdp_client.c        \
-	../../src/classic/sdp_query_rfcomm.c  \
+	../../src/classic/sdp_client_query_rfcomm.c  \
 	../../src/classic/sdp_util.c          \
 	../../src/btstack_linked_list.c       \
 	../../src/btstack_memory.c            \

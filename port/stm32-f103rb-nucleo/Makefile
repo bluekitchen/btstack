@@ -28,7 +28,7 @@ COMMON = \
 	btstack_chipset_cc256x.c   \
 	btstack_link_key_db_memory.c \
 	rfcomm.c			      \
-	sdp_query_rfcomm.c 		  \
+	sdp_client_query_rfcomm.c 		  \
     btstack_util.c			  \
     hci.c			          \
     hci_cmd.c		          \

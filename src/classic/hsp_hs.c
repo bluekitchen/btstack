@@ -53,7 +53,7 @@
 #include "btstack_memory.h"
 #include "btstack_run_loop.h"
 #include "classic/sdp_server.h"
-#include "classic/sdp_query_rfcomm.h"
+#include "classic/sdp_client_query_rfcomm.h"
 #include "classic/sdp_util.h"
 #include "hci.h"
 #include "hci_cmd.h"

@@ -67,7 +67,7 @@ SPP = \
 
 SDP_CLIENT += \
     sdp_client.o		      \
-	sdp_query_rfcomm.o		  \
+	sdp_client_query_rfcomm.o		  \
 
 BLE = \
 	att_db.c 					  \

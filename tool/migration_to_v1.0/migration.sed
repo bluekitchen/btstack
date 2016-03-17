@@ -115,7 +115,7 @@ s|"rfcomm.h"|"classic/rfcomm.h"|g
 s|"sdp.h"|"classic/sdp_server.h"|g
 s|#include "sdp_client.h"|#include "classic/sdp_client.h"|g
 s|"sdp_parser.h"|"classic/sdp_client.h"|g
-s|"sdp_query_rfcomm.h"|"classic/sdp_query_rfcomm.h"|g
+s|"sdp_client_query_rfcomm.h"|"classic/sdp_client_query_rfcomm.h"|g
 s|#include "sdp_query_util.h"|// sdp_query_util doens not exist anymore|g
 s|<btstack/hal_led.h>|"hal_led.h"|g
 s|<btstack/hci_cmds.h>|"hci_cmd.h"|g
