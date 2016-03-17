@@ -95,6 +95,9 @@ s/swap128/reverse_128/g
 s/swap32/reverse_32/g
 s/swap48/reverse_48/g
 s/swap64/reverse_64/g
+s/pan_create_panu_service/pan_create_panu_sdp_record/g
+s/pan_create_gn_service/pan_create_gn_sdp_record/g
+s/pan_create_nap_service/pan_create_nap_sdp_record/g
 
 # Folder structure
 s|/example/embedded|/example|g

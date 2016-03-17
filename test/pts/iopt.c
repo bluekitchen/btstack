@@ -100,7 +100,7 @@ int btstack_main(int argc, const char * argv[]){
     sdp_register_service((uint8_t*)spp_service_buffer);
 
     uint16_t network_packet_types[] = { NETWORK_TYPE_IPv4, NETWORK_TYPE_ARP, 0};    // 0 as end of list
-    pan_create_panu_service(pan_service_buffer, 0x10002, network_packet_types, NULL, NULL, BNEP_SECURITY_NONE);
+    pan_create_panu_sdp_record(pan_service_buffer, 0x10002, network_packet_types, NULL, NULL, BNEP_SECURITY_NONE);
     sdp_register_service((uint8_t*)pan_service_buffer);
 
     hsp_ag_create_sdp_record((uint8_t *)hsp_ag_service_buffer, 0x10003,  2, "HSP AG");

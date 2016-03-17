@@ -244,7 +244,7 @@ service UUID, e.g. the PANU UUID, and a a maximal ethernet frame size,
 as explained in Section [on BNEP service](protocols/#sec:bnepServiceProtocols). Then, you need to
 create an SDP record for it and publish it with the SDP server by
 calling *sdp_register_service*. BTstack provides the
-*pan_create_panu_service* function in *src/pan.c* that requires an
+*pan_create_panu_sdp_record* function in *src/pan.c* that requires an
 empty buffer of approximately 200 bytes, a description, and a security
 description.
 
