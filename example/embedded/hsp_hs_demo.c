@@ -327,8 +327,21 @@ int btstack_main(int argc, const char * argv[]){
     sdp_init();
 
     memset((uint8_t *)hsp_service_buffer, 0, sizeof(hsp_service_buffer));
-    hsp_hs_create_sdp_record((uint8_t *)hsp_service_buffer, rfcomm_channel_nr, hsp_hs_service_name, 0);
-    sdp_register_service_internal(NULL, (uint8_t *)hsp_service_buffer);
+
+/* LISTING_PAUSE */
+#ifdef EMBEDDED
+/* LISTING_RESUME */
+    service_record_item_t * service_record_item = (service_record_item_t *) hsp_service_buffer;
+    hsp_hs_create_sdp_record((uint8_t*) &service_record_item->service_record, rfcomm_channel_nr, hsp_hs_service_name, 0);
+    printf("SDP service buffer size: %u\n", (uint16_t) (sizeof(service_record_item_t) + de_get_len((uint8_t*) &service_record_item->service_record)));
+    sdp_register_service_internal(NULL, service_record_item);
+/* LISTING_PAUSE */
+#else
+    hsp_hs_create_sdp_record((uint8_t *) hsp_service_buffer, rfcomm_channel_nr, hsp_hs_service_name, 0);
+    printf("SDP service record size: %u\n", de_get_len((uint8_t*) hsp_service_buffer));
+    sdp_register_service_internal(NULL, (uint8_t*)hsp_service_buffer);
+#endif
+/* LISTING_RESUME */
 
     hci_register_sco_packet_handler(&sco_packet_handler);
     
