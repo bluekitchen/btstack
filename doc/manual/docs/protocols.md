@@ -596,7 +596,7 @@ that are stored in a Data Element Sequence (DES). The Attribute ID is a
 strings or can itselff contain other DES.
 
 To create an SDP record for an SPP service, you can call
-*sdp_create_spp_service* from with a pointer to a buffer to store the
+*spp_create_sdp_record* from with a pointer to a buffer to store the
 record, the server channel number, and a record name.
 
 For other types of records, you can use the other functions in , using

@@ -55,7 +55,7 @@ BTdaemon_OBJS = $(libBTstack_OBJS) \
     att_db.o                       \
     att_server.o                   \
     sdp_client.o                   \
-    sdp_client_query_rfcomm.o             \
+    sdp_client_rfcomm.o             \
 
 all: $(TOOLCHAIN) version BTstackDaemon libBTstack.so BTstackDaemonRespawn inquiry le_scan rfcomm_echo dist
 

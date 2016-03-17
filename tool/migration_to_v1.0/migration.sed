@@ -71,6 +71,7 @@ s/bt_store_16/little_endian_store_16/g
 s/bt_store_24/little_endian_store_24/g
 s/bt_store_32/little_endian_store_32/g
 s/hci_discoverable_control/gap_discoverable_control/g
+s/hci_ssp_set_io_capability/gap_ssp_set_io_capability/g
 s/le_central_connect/gap_connect/g
 s/le_central_connect_cancel/gap_connect_cancel/g
 s/le_central_set_scan_parameters/gap_set_scan_parameters/g
@@ -88,11 +89,12 @@ s/READ_NET_32/big_endian_read_32/g
 s/run_loop_add_timer/btstack_run_loop_add_timer/g
 s/run_loop_get_time_ms/btstack_run_loop_get_time_ms/g
 s/run_loop_set_timer/btstack_run_loop_set_timer/g
+s/sdp_client_query_rfcomm_ready/sdp_client_ready/g
+s/spp_create_sdp_record/spp_create_sdp_record/g
+s/swap128/reverse_128/g
 s/swap32/reverse_32/g
 s/swap48/reverse_48/g
 s/swap64/reverse_64/g
-s/swap128/reverse_128/g
-s/hci_ssp_set_io_capability/gap_ssp_set_io_capability/g
 
 # Folder structure
 s|/example/embedded|/example|g
@@ -115,7 +117,7 @@ s|"rfcomm.h"|"classic/rfcomm.h"|g
 s|"sdp.h"|"classic/sdp_server.h"|g
 s|#include "sdp_client.h"|#include "classic/sdp_client.h"|g
 s|"sdp_parser.h"|"classic/sdp_client.h"|g
-s|"sdp_client_query_rfcomm.h"|"classic/sdp_client_query_rfcomm.h"|g
+s|"sdp_client_rfcomm.h"|"classic/sdp_client_rfcomm.h"|g
 s|#include "sdp_query_util.h"|// sdp_query_util doens not exist anymore|g
 s|<btstack/hal_led.h>|"hal_led.h"|g
 s|<btstack/hci_cmds.h>|"hci_cmd.h"|g
@@ -130,20 +132,20 @@ s|le_characteristic_t|gatt_client_characteristic_t|g
 s|le_characteristic_descriptor_t|gatt_client_characteristic_descriptor_t|g
 
 # File renames
-s|debug.h|btstack_debug.h|g
+s|ancs_client_lib|ancs_client|g
+s|att\.c|att_db\.c|g
 s|btstack-config.h|btstack_config.h|g
+s|debug.h|btstack_debug.h|g
 s|hci_cmds\.c|hci_cmd\.c|g
 s|linked_list|btstack_linked_list|g
 s|memory_pool|btstack_memory_pool|g
 s|remote_device_db_memory|btstack_link_key_db_memory|g
 s|run_loop\.c|btstack_run_loop\.c|g
-s|timer_source_t|btstack_timer_source_t|g
 s|sdp\.c|sdp_server\.c|g
-s|utils|btstack_util|g
-s|att\.c|att_db\.c|g
-s|ancs_client_lib|ancs_client|g
 s|sdp_parser.[c|o]||g
 s|sdp_query_util.[c|o]||g
+s|timer_source_t|btstack_timer_source_t|g
+s|utils|btstack_util|g
 
 # Makefile hacks: fix path to src/ble
 s|/ble|/src/ble|g

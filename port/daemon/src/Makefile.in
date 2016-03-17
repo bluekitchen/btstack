@@ -50,7 +50,7 @@ BTdaemon_SOURCES =      \
     bnep.c              \
     sdp_server.c               \
     sdp_client.c        \
-    sdp_client_query_rfcomm.c  \
+    sdp_client_rfcomm.c  \
     att_dispatch.c      \
     gatt_client.c       \
     att_db.c               \

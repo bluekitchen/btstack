@@ -48,7 +48,7 @@
 
 #include "hci.h"
 #include "hci_dump.h"
-#include "classic/sdp_client_query_rfcomm.h"
+#include "classic/sdp_client_rfcomm.h"
 #include "classic/rfcomm.h"
 #include "classic/hfp_hf.h"
 

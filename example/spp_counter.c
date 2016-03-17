@@ -69,7 +69,7 @@ static btstack_packet_callback_registration_t hci_event_callback_registration;
  * RFCOMM_SERVER_CHANNEL, an SDP record is created and registered with the SDP server.
  * Example code for SPP service setup is
  * provided in Listing SPPSetup. The SDP record created by function
- * sdp_create_spp_service consists of a basic SPP definition that uses the provided
+ * spp_create_sdp_record consists of a basic SPP definition that uses the provided
  * RFCOMM channel ID and service name. For more details, please have a look at it
  * in \path{src/sdp_util.c}. 
  * The SDP record is created on the fly in RAM and is deterministic.
@@ -91,7 +91,7 @@ static void spp_service_setup(void){
     // init SDP, create record for SPP and register with SDP
     sdp_init();
     memset(spp_service_buffer, 0, sizeof(spp_service_buffer));
-    sdp_create_spp_service(spp_service_buffer, 0x10001, RFCOMM_SERVER_CHANNEL, "SPP Counter");
+    spp_create_sdp_record(spp_service_buffer, 0x10001, RFCOMM_SERVER_CHANNEL, "SPP Counter");
     sdp_register_service(spp_service_buffer);
     printf("SDP service record size: %u\n", de_get_len(spp_service_buffer));
 }

@@ -34,7 +34,7 @@
           <itemPath>../../../src/classic/rfcomm.h</itemPath>
           <itemPath>../../../src/classic/sdp_server.h</itemPath>
           <itemPath>../../../src/classic/sdp_client.h</itemPath>
-          <itemPath>../../../src/classic/sdp_client_query_rfcomm.h</itemPath>
+          <itemPath>../../../src/classic/sdp_client_rfcomm.h</itemPath>
         </logicalFolder>
         <logicalFolder name="embedded" displayName="embedded" projectFiles="true">
           <itemPath>../../../platform/embedded/hal_cpu.h</itemPath>
@@ -130,7 +130,7 @@
           <itemPath>../../../src/btstack_run_loop.c</itemPath>
           <itemPath>../../../src/classic/sdp_server.c</itemPath>
           <itemPath>../../../src/classic/sdp_client.c</itemPath>
-          <itemPath>../../../src/classic/sdp_client_query_rfcomm.c</itemPath>
+          <itemPath>../../../src/classic/sdp_client_rfcomm.c</itemPath>
           <itemPath>../../../src/classic/sdp_util.c</itemPath>
           <itemPath>../../../src/btstack_util.c</itemPath>
           <itemPath>../../../platform/embedded/btstack_run_loop_embedded.c</itemPath>

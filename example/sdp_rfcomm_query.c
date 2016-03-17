@@ -56,7 +56,7 @@
 #include "btstack_memory.h"
 #include "hci_dump.h"
 #include "l2cap.h"
-#include "classic/sdp_client_query_rfcomm.h"
+#include "classic/sdp_client_rfcomm.h"
 #include "btstack_event.h"
 
 static void handle_query_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);

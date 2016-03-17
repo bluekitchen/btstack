@@ -202,9 +202,9 @@ type T;
 @@
 expression E1, E2, E3;
 @@
-- sdp_create_spp_service(E1, E2, E3)
+- spp_create_sdp_record(E1, E2, E3)
 + // MIGRATION: using 0x10001 as Service Record Handle. Please fix if using multiple services
-+ sdp_create_spp_service(E1, 0x10001, E2, E3)
++ spp_create_sdp_record(E1, 0x10001, E2, E3)
 
 // SDP Server
 @@

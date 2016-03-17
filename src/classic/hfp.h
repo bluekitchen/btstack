@@ -46,7 +46,7 @@
 #define __BTSTACK_HFP_H
 
 #include "hci.h"
-#include "classic/sdp_client_query_rfcomm.h"
+#include "classic/sdp_client_rfcomm.h"
 
 #if defined __cplusplus
 extern "C" {

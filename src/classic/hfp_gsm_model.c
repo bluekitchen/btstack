@@ -52,7 +52,7 @@
 #include "classic/hfp.h"
 #include "classic/hfp_gsm_model.h"
 #include "classic/sdp_server.h"
-#include "classic/sdp_client_query_rfcomm.h"
+#include "classic/sdp_client_rfcomm.h"
 #include "btstack_debug.h"
 #include "hci.h"
 #include "hci_cmd.h"

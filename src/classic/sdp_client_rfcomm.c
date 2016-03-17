@@ -47,7 +47,7 @@
 #include "btstack_debug.h"
 #include "btstack_event.h"
 #include "classic/sdp_client.h"
-#include "classic/sdp_client_query_rfcomm.h"
+#include "classic/sdp_client_rfcomm.h"
 #include "classic/sdp_util.h"
 #include "hci_cmd.h"
 
@@ -99,7 +99,7 @@ static void sdp_rfcomm_query_emit_service(void){
 }
 
 static void sdp_client_query_rfcomm_emit_busy(btstack_packet_handler_t callback){
-    log_error("sdp_query_rfcomm initiated when not ready");
+    log_error("sdp_client_query_rfcomm started when not ready");
     uint8_t event[] = { SDP_EVENT_QUERY_COMPLETE, 1, SDP_QUERY_BUSY};
     (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
@@ -303,7 +303,7 @@ void sdp_client_query_rfcomm_init(void){
 // Public API
 
 void sdp_client_query_rfcomm_channel_and_name_for_search_pattern(btstack_packet_handler_t callback, bd_addr_t remote, uint8_t * serviceSearchPattern){
-    if (!sdp_client_query_rfcomm_ready()){
+    if (!sdp_client_ready()){
         sdp_client_query_rfcomm_emit_busy(callback);
         return;
     }
@@ -313,7 +313,7 @@ void sdp_client_query_rfcomm_channel_and_name_for_search_pattern(btstack_packet_
 }
 
 void sdp_client_query_rfcomm_channel_and_name_for_uuid(btstack_packet_handler_t callback, bd_addr_t remote, uint16_t uuid){
-    if (!sdp_client_query_rfcomm_ready()){
+    if (!sdp_client_ready()){
         sdp_client_query_rfcomm_emit_busy(callback);
         return;
     }

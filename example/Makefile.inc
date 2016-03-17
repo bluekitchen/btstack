@@ -23,13 +23,14 @@ COMMON += \
     l2cap_signaling.c	        \
 	btstack_link_key_db_memory.c   \
     sdp_util.c	                \
+    spp_server.c  				\
     rfcomm.c	                \
     bnep.c	                    \
     sdp_server.c			            \
 
 SDP_CLIENT += \
     sdp_client.o		        \
-	sdp_client_query_rfcomm.o		    \
+	sdp_client_rfcomm.o		    \
 
 ATT	+= \
     att_dispatch.c       	    \

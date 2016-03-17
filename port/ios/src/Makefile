@@ -50,7 +50,7 @@ BTdaemon_FILES = \
 	SpringBoardAccess.c       \
     rfcomm_service_db_cocoa.m \
     sdp_client.c              \
-    sdp_client_query_rfcomm.c        \
+    sdp_client_rfcomm.c        \
 
 BTdaemon_CFLAGS = \
 	-I$(BTSTACK_ROOT)/src \

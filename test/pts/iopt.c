@@ -96,7 +96,7 @@ int btstack_main(int argc, const char * argv[]){
 
     // Create and register SDP records
     
-    sdp_create_spp_service((uint8_t*) spp_service_buffer, 0x10001, 1, "SPP");
+    spp_create_sdp_record((uint8_t*) spp_service_buffer, 0x10001, 1, "SPP");
     sdp_register_service((uint8_t*)spp_service_buffer);
 
     uint16_t network_packet_types[] = { NETWORK_TYPE_IPv4, NETWORK_TYPE_ARP, 0};    // 0 as end of list

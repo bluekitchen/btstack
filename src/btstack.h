@@ -79,18 +79,19 @@
 
 // #ifdef HAVE_CLASSIC
 #include "classic/bnep.h"
+#include "classic/btstack_link_key_db.h"
 #include "classic/hfp.h"
 #include "classic/hfp_ag.h"
 #include "classic/hfp_hf.h"
 #include "classic/hsp_ag.h"
 #include "classic/hsp_hs.h"
 #include "classic/pan.h"
-#include "classic/btstack_link_key_db.h"
 #include "classic/rfcomm.h"
-#include "classic/sdp_server.h"
 #include "classic/sdp_client.h"
-#include "classic/sdp_client_query_rfcomm.h"
+#include "classic/sdp_client_rfcomm.h"
+#include "classic/sdp_server.h"
 #include "classic/sdp_util.h"
+#include "classic/spp_server.h"
 // #endif
 
 #endif  // __BTSTACK_H

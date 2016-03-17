@@ -194,7 +194,7 @@ specific RFCOMM channel number as explained in section on
 [RFCOMM service](protocols/#sec:rfcommServiceProtocols). Then, you need to create 
 an SDP record for it and publish it with the SDP server by calling
 *sdp_register_service*. BTstack provides the
-*sdp_create_spp_service* function in that requires an empty buffer of
+*spp_create_sdp_record* function in that requires an empty buffer of
 approximately 200 bytes, the service channel number, and a service name.
 Have a look at the [SPP Counter example](examples/generated/#sec:sppcounterExample].
 

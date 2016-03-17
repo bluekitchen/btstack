@@ -12,7 +12,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "classic/sdp_client_query_rfcomm.h"
+#include "classic/sdp_client_rfcomm.h"
 #include "classic/sdp_util.h"
 #include "hci_cmd.h"
 #include "btstack_run_loop.h"
@@ -125,7 +125,7 @@ TEST(SDPClient, QueryRFCOMMWithSyntheticData){
     de_create_sequence(spp_buffer);
     for (i=0; i<record_nr; i++){
         uint8_t * record_start = de_push_sequence(spp_buffer);
-        sdp_create_spp_service(record_start, 0x10001, expected_channel[i], expected_name[i]);
+        spp_create_sdp_record(record_start, 0x10001, expected_channel[i], expected_name[i]);
         de_pop_sequence(spp_buffer, record_start);
     }
     

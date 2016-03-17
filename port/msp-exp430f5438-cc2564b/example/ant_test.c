@@ -231,7 +231,7 @@ int btstack_main(int argc, const char * argv[]){
     // init SDP, create record for SPP and register with SDP
     sdp_init();
 	memset(spp_service_buffer, 0, sizeof(spp_service_buffer));
-    sdp_create_spp_service( (uint8_t*) spp_service_buffer, 0x10001, 1, "SPP Counter");
+    spp_create_sdp_record( (uint8_t*) spp_service_buffer, 0x10001, 1, "SPP Counter");
     printf("SDP service buffer size: %u\n\r", (uint16_t) de_get_len((uint8_t*) spp_service_buffer));
     sdp_register_service(spp_service_buffer);
     
