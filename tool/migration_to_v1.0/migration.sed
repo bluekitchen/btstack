@@ -90,7 +90,7 @@ s/run_loop_add_timer/btstack_run_loop_add_timer/g
 s/run_loop_get_time_ms/btstack_run_loop_get_time_ms/g
 s/run_loop_set_timer/btstack_run_loop_set_timer/g
 s/sdp_client_query_rfcomm_ready/sdp_client_ready/g
-s/spp_create_sdp_record/spp_create_sdp_record/g
+s/sdp_create_spp_service/spp_create_sdp_record/g
 s/swap128/reverse_128/g
 s/swap32/reverse_32/g
 s/swap48/reverse_48/g
@@ -118,14 +118,14 @@ s|"hsp_hs.h"|"classic/hsp_hs.h"|g
 s|"pan.h"|"classic/pan.h"|g
 s|"rfcomm.h"|"classic/rfcomm.h"|g
 s|"sdp.h"|"classic/sdp_server.h"|g
-s|#include "sdp_client.h"|#include "classic/sdp_client.h"|g
-s|"sdp_parser.h"|"classic/sdp_client.h"|g
 s|"sdp_client_rfcomm.h"|"classic/sdp_client_rfcomm.h"|g
-s|#include "sdp_query_util.h"|// sdp_query_util doens not exist anymore|g
+s|"sdp_parser.h"|"classic/sdp_client.h"|g
+s|#include "sdp_client.h"|#include "classic/sdp_client.h"|g
+s|#include "sdp_query_util.h"|// sdp_query_util does not exist anymore|g
+s|#include <btstack/sdp_util.h>|#include "classic/sdp_util.h"\n#include "classic/spp_server.h"|g
 s|<btstack/hal_led.h>|"hal_led.h"|g
 s|<btstack/hci_cmds.h>|"hci_cmd.h"|g
 s|<btstack/run_loop.h>|"btstack_run_loop.h"|g
-s|<btstack/sdp_util.h>|"classic/sdp_util.h"|g
 s|<btstack/utils.h>|"btstack_util.h"|g
 
 # type changes
