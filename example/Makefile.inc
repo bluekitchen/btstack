@@ -71,7 +71,7 @@ EXAMPLES = 					\
 	spp_counter 			\
 	spp_streamer			\
     gap_le_advertisements   \
-    hsp_hs_test             \
+    hsp_hs_demo             \
 
 EXAMPLES_USING_LE =			\
 	ancs_client_demo		\
@@ -161,7 +161,7 @@ led_counter: ${CORE_OBJ} ${COMMON_OBJ} led_counter.c
 gap_le_advertisements: ${CORE_OBJ} ${COMMON_OBJ} ad_parser.c gap_le_advertisements.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-hsp_hs_test: ${CORE_OBJ} ${COMMON_OBJ} ${SDP_CLIENT} hsp_hs.o hsp_hs_test.c
+hsp_hs_demo: ${CORE_OBJ} ${COMMON_OBJ} ${SDP_CLIENT} hsp_hs.o hsp_hs_demo.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 clean:
