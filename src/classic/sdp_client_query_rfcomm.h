@@ -53,12 +53,6 @@ extern "C" {
 /* API_START */
 
 /** 
- * @brief Checks if the SDP Client is ready
- * @return 1 when no query is active
- */
-int sdp_client_query_rfcomm_ready(void);
-
-/** 
  * @brief Searches SDP records on a remote device for RFCOMM services with a given UUID.
  */
 void sdp_client_query_rfcomm_channel_and_name_for_uuid(btstack_packet_handler_t callback, bd_addr_t remote, uint16_t uuid);

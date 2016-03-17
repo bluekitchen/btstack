@@ -302,10 +302,6 @@ void sdp_client_query_rfcomm_init(void){
 
 // Public API
 
-int sdp_client_query_rfcomm_ready(void){
-    return sdp_client_ready();
-}
-
 void sdp_client_query_rfcomm_channel_and_name_for_search_pattern(btstack_packet_handler_t callback, bd_addr_t remote, uint8_t * serviceSearchPattern){
     if (!sdp_client_query_rfcomm_ready()){
         sdp_client_query_rfcomm_emit_busy(callback);
