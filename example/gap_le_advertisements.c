@@ -46,6 +46,7 @@
 
 
 #include <stdint.h>
+#include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -162,7 +163,7 @@ static void dump_advertisement_data(uint8_t * adv_data, uint8_t adv_size){
             case 0x04: // Incomplete List of 32-bit Service Class UUIDs
             case 0x05: // Complete List of 32-bit Service Class UUIDs
                 for (i=0; i<size;i+=4){
-                    printf("%04X ", little_endian_read_32(data, i));
+                    printf("%04"PRIX32, little_endian_read_32(data, i));
                 }
                 break;
             case 0x06: // Incomplete List of 128-bit Service Class UUIDs
