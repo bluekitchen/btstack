@@ -57,6 +57,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <unistd.h>
 
 #include <btstack/hci_cmds.h>
 #include <btstack/run_loop.h>
@@ -64,10 +65,14 @@
 
 #include "sdp.h"
 #include "hsp_hs.h"
+#include "stdin_support.h"
 
 #include "hci.h"
 #include "l2cap.h"
+#include "rfcomm.h"
 #include "debug.h"
+
+#define SCO_REPORT_PERIOD 255
 
 static uint32_t      hsp_service_buffer[150/4]; // implicit alignment to 4-byte memory address
 static const uint8_t rfcomm_channel_nr = 1;
@@ -75,8 +80,19 @@ static const char    hsp_hs_service_name[] = "Headset Test";
 static uint16_t      sco_handle = 0;
 
 static char hs_cmd_buffer[100];
+// static bd_addr_t current_addr = {0x04,0x0C,0xCE,0xE4,0x85,0xD3};
+static bd_addr_t current_addr = {0x00,0x1b,0xDC,0x07,0x32,0xEF};
 
 static int phase = 0;
+
+// input signal: pre-computed sine wave, 160 Hz
+static const uint8_t sine[] = {
+      0,  15,  31,  46,  61,  74,  86,  97, 107, 114,
+    120, 124, 126, 126, 124, 120, 114, 107,  97,  86,
+     74,  61,  46,  31,  15,   0, 241, 225, 210, 195,
+    182, 170, 159, 149, 142, 136, 132, 130, 130, 132,
+    136, 142, 149, 159, 170, 182, 195, 210, 225, 241,
+};
 
 /* @section Audio Transfer Setup 
  *
@@ -85,8 +101,8 @@ static int phase = 0;
  *
  * Tested working setups: 
  * - Ubuntu 14 64-bit, CC2564B connected via FTDI USB-2-UART adapter, 921600 baud
- * - Ubuntu 14 64-bit, CSR dongle
- * - OS X 10.11, CSR dongle
+ * - Ubuntu 14 64-bit, CSR USB dongle
+ * - OS X 10.11, CSR USB dongle
  *
  * Broken setups:
  * - OS X 10.11, CC2564B connected via FDTI USB-2-UART adapter, 921600 baud
@@ -101,15 +117,86 @@ static int phase = 0;
  *
  */ 
 
-// input signal: pre-computed sine wave, 160 Hz
-static const uint8_t sine[] = {
-      0,  15,  31,  46,  61,  74,  86,  97, 107, 114,
-    120, 124, 126, 126, 124, 120, 114, 107,  97,  86,
-     74,  61,  46,  31,  15,   0, 241, 225, 210, 195,
-    182, 170, 159, 149, 142, 136, 132, 130, 130, 132,
-    136, 142, 149, 159, 170, 182, 195, 210, 225, 241,
-};
+static void show_usage(void){
+    uint8_t iut_address_type;
+    bd_addr_t      iut_address;
+    hci_le_advertisement_address(&iut_address_type, iut_address);
 
+    printf("\n--- Bluetooth HSP Headset Test Console %s ---\n", bd_addr_to_str(iut_address));
+    printf("---\n");
+    printf("c - Connect to %s\n", bd_addr_to_str(current_addr));
+    printf("C - Disconnect\n");
+    printf("a - establish audio connection\n");
+    printf("A - release audio connection\n");
+    printf("b - press user button\n");
+    printf("z - set microphone gain 0\n");
+    printf("m - set microphone gain 8\n");
+    printf("M - set microphone gain 15\n");
+    printf("o - set speaker gain 0\n");
+    printf("s - set speaker gain 8\n");
+    printf("S - set speaker gain 15\n");
+    printf("---\n");
+    printf("Ctrl-c - exit\n");
+    printf("---\n");
+}
+
+
+static int stdin_process(struct data_source *ds){
+    char buffer;
+    read(ds->fd, &buffer, 1);
+
+    switch (buffer){
+        case 'c':
+            printf("Connect to %s\n", bd_addr_to_str(current_addr));
+            hsp_hs_connect(current_addr);
+            break;
+        case 'C':
+            printf("Disconnect.\n");
+            hsp_hs_disconnect();
+            break;
+        case 'a':
+            printf("Establish audio connection\n");
+            hsp_hs_establish_audio_connection();
+            break;
+        case 'A': 
+            printf("Release audio connection\n");
+            hsp_hs_release_audio_connection();
+            break;
+    
+        case 'z':
+            printf("Setting microphone gain 0\n");
+            hsp_hs_set_microphone_gain(0);
+            break;
+        case 'm':
+            printf("Setting microphone gain 8\n");
+            hsp_hs_set_microphone_gain(8);
+            break;
+        case 'M':
+            printf("Setting microphone gain 15\n");
+            hsp_hs_set_microphone_gain(15);
+            break;
+        case 'o':
+            printf("Setting speaker gain 0\n");
+            hsp_hs_set_speaker_gain(0);
+            break;
+        case 's':
+            printf("Setting speaker gain 8\n");
+            hsp_hs_set_speaker_gain(8);
+            break;
+        case 'S':
+            printf("Setting speaker gain 15\n");
+            hsp_hs_set_speaker_gain(15);
+            break;
+        case 'b':
+            printf("Press user button\n");
+            hsp_hs_send_button_press();
+            break;
+        default:
+            show_usage();
+            break;
+    }
+    return 0;
+}
 
 static void try_send_sco(void){
     if (!sco_handle) return;
@@ -137,27 +224,28 @@ static void try_send_sco(void){
     hci_send_sco_packet_buffer(sco_packet_length);
     static int count = 0;
     count++;
-    if ((count & 15) == 0) printf("Sent %u\n", count);
+    if ((count & SCO_REPORT_PERIOD) == 0) printf("Sent %u\n", count);
 }
 
 static void sco_packet_handler(uint8_t packet_type, uint8_t * packet, uint16_t size){
     static int count = 0;
     count++;
-    if ((count & 15)) return;
+    if ((count & SCO_REPORT_PERIOD)) return;
     printf("SCO packets %u\n", count);
-    // hexdumpf(packet, size);
+    hexdumpf(packet, size);
 }
 
 static void packet_handler(uint8_t * event, uint16_t event_size){
 
-    // printf("Packet handler event 0x%02x\n", event[0]);
+    //printf("Packet handler event 0x%02x / BTSTACK_EVENT_STATE 0x%02x\n", event[0], BTSTACK_EVENT_STATE);
     
     try_send_sco();
     
     switch (event[0]) {
         case BTSTACK_EVENT_STATE:
             if (event[2] != HCI_STATE_WORKING) break;
-            printf("Working!\n");
+            printf("HCI_STATE_WORKING\n");
+            show_usage();
             break;
         case HCI_EVENT_NUMBER_OF_COMPLETED_PACKETS:
             // printf("HCI_EVENT_NUMBER_OF_COMPLETED_PACKETS\n");
@@ -169,6 +257,20 @@ static void packet_handler(uint8_t * event, uint16_t event_size){
             break;
         case HCI_EVENT_HSP_META:
             switch (event[2]) { 
+                case HSP_SUBEVENT_RFCOMM_CONNECTION_COMPLETE:
+                    if (event[3] == 0){
+                        printf("RFCOMM connection established.\n");
+                    } else {
+                        printf("RFCOMM connection establishement failed.\n");
+                    }
+                    break;
+                case HSP_SUBEVENT_RFCOMM_DISCONNECTION_COMPLETE:
+                    if (event[3] == 0){
+                        printf("RFCOMM disconnected.\n");
+                    } else {
+                        printf("RFCOMM disconnection failed.\n");
+                    }
+                    break;
                 case HSP_SUBEVENT_AUDIO_CONNECTION_COMPLETE:
                     if (event[3] == 0){
                         sco_handle = READ_BT_16(event, 4);
@@ -222,13 +324,17 @@ static void packet_handler(uint8_t * event, uint16_t event_size){
  * - The HCI SCO packet handler receives audio data.
  * - The HSP HS packet handler is used to trigger sending of audio data and commands to the AG. It also receives the AG's answers.
  * 
+ * The stdin_process callback allows for sending commands to the AG. 
  * At the end the Bluetooth stack is started.
  */
 
 /* LISTING_START(MainConfiguration): Setup packet handlers and audio data channel for HSP Headset */
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
+    l2cap_init();
+    rfcomm_init();
     sdp_init();
+
     memset((uint8_t *)hsp_service_buffer, 0, sizeof(hsp_service_buffer));
     hsp_hs_create_sdp_record((uint8_t *)hsp_service_buffer, rfcomm_channel_nr, hsp_hs_service_name, 0);
     sdp_register_service_internal(NULL, (uint8_t *)hsp_service_buffer);
@@ -238,10 +344,14 @@ int btstack_main(int argc, const char * argv[]){
     hsp_hs_init(rfcomm_channel_nr);
     hsp_hs_register_packet_handler(packet_handler);
 
+    btstack_stdin_setup(stdin_process);
+
     gap_set_local_name("BTstack HSP HS");
     hci_discoverable_control(1);
     hci_ssp_set_io_capability(SSP_IO_CAPABILITY_DISPLAY_YES_NO);
     // turn on!
+    hci_set_class_of_device(0x240404);
+
     hci_power_control(HCI_POWER_ON);
     
     return 0;

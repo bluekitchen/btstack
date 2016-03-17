@@ -623,34 +623,51 @@ extern "C" {
  * @param subevent_code
  * @param status 0 == OK
  */
-#define HSP_SUBEVENT_AUDIO_CONNECTION_COMPLETE             0x01
+#define HSP_SUBEVENT_RFCOMM_CONNECTION_COMPLETE             0x01
+
+// data: event(8), len(8), subevent(8), status(8) 
+/**
+ * @format 11
+ * @param subevent_code
+ * @param status 0 == OK
+ */
+#define HSP_SUBEVENT_RFCOMM_DISCONNECTION_COMPLETE           0x02
+
+
+// data: event(8), len(8), subevent(8), status(8) 
+/**
+ * @format 11
+ * @param subevent_code
+ * @param status 0 == OK
+ */
+#define HSP_SUBEVENT_AUDIO_CONNECTION_COMPLETE             0x03
 
 /**
  * @format 11
  * @param subevent_code
  * @param status 0 == OK
  */
-#define HSP_SUBEVENT_AUDIO_DISCONNECTION_COMPLETE          0x02
+#define HSP_SUBEVENT_AUDIO_DISCONNECTION_COMPLETE          0x04
 
 /**
  * @format 1
  * @param subevent_code
  */
-#define HSP_SUBEVENT_RING                                  0x03
+#define HSP_SUBEVENT_RING                                  0x05
 
 /**
  * @format 11
  * @param subevent_code
  * @param gain Valid range: [0,15]
  */
-#define HSP_SUBEVENT_MICROPHONE_GAIN_CHANGED               0x04
+#define HSP_SUBEVENT_MICROPHONE_GAIN_CHANGED               0x06
 
 /**
  * @format 11
  * @param subevent_code
  * @param gain Valid range: [0,15]
  */
-#define HSP_SUBEVENT_SPEAKER_GAIN_CHANGED                  0x05
+#define HSP_SUBEVENT_SPEAKER_GAIN_CHANGED                  0x07
 
 /**
  * @format 1JV
@@ -658,7 +675,7 @@ extern "C" {
  * @param value_length
  * @param value
  */
-#define HSP_SUBEVENT_HS_COMMAND                            0x06
+#define HSP_SUBEVENT_HS_COMMAND                            0x08
 
 /**
  * @format 1JV
@@ -666,7 +683,7 @@ extern "C" {
  * @param value_length
  * @param value
  */
-#define HSP_SUBEVENT_AG_INDICATION                         0x07
+#define HSP_SUBEVENT_AG_INDICATION                         0x09
 
 
 #define HCI_EVENT_HFP_META                                 0xE9

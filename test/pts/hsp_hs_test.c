@@ -175,7 +175,7 @@ static int stdin_process(struct data_source *ds){
             break;
         case 'd':
             printf("Releasing audio connection.\n");
-            hsp_hs_disconnect(current_addr);
+            hsp_hs_disconnect();
             break;
         case 'z':
             printf("Setting microphone gain 0\n");
@@ -245,8 +245,6 @@ static void packet_handler(uint8_t * event, uint16_t event_size){
         case BTSTACK_EVENT_STATE:
             if (event[2] != HCI_STATE_WORKING) break;
             show_usage();
-            // request loopback mode
-            hci_send_cmd(&hci_write_synchronous_flow_control_enable, 1);
             break;
         case HCI_EVENT_NUMBER_OF_COMPLETED_PACKETS:
             // printf("HCI_EVENT_NUMBER_OF_COMPLETED_PACKETS\n");

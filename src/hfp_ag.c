@@ -100,7 +100,7 @@ static int hfp_ag_get_ag_indicators_nr(hfp_connection_t * hfp_connection){
     return hfp_connection->ag_indicators_nr;
 }
 
-hfp_ag_indicator_t * hfp_ag_get_ag_indicators(hfp_connection_t * hfp_connection){
+static hfp_ag_indicator_t * hfp_ag_get_ag_indicators(hfp_connection_t * hfp_connection){
     // TODO: save only value, and value changed in the hfp_connection?
     if (hfp_connection->ag_indicators_nr != hfp_ag_indicators_nr){
         hfp_connection->ag_indicators_nr = hfp_ag_indicators_nr;
