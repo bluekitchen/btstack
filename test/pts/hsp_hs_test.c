@@ -90,50 +90,8 @@ static bd_addr_t current_addr;
 
 static char hs_cmd_buffer[100];
 
-// portaudio globals
-static  PaStream * stream;
-static uint16_t sine[TABLE_SIZE];
-int phase = 0;
-
 // prototypes
 static void show_usage();
-
-static void setup_audio(void){
-
-    // create sine wave table
-    int i;
-    for( i=0; i<TABLE_SIZE; i++ ) {
-        sine[i] = (uint16_t) (30000 * sin( ((double)i/(double)TABLE_SIZE) * M_PI * 2. ));
-    }
-
-    int err;
-    PaStreamParameters outputParameters;
-
-    /* -- initialize PortAudio -- */
-    err = Pa_Initialize();
-    if( err != paNoError ) return;
-    /* -- setup input and output -- */
-    outputParameters.device = Pa_GetDefaultOutputDevice(); /* default output device */
-    outputParameters.channelCount = NUM_CHANNELS;
-    outputParameters.sampleFormat = PA_SAMPLE_TYPE;
-    outputParameters.suggestedLatency = Pa_GetDeviceInfo( outputParameters.device )->defaultHighOutputLatency;
-    outputParameters.hostApiSpecificStreamInfo = NULL;
-    /* -- setup stream -- */
-    err = Pa_OpenStream(
-              &stream,
-              NULL, // &inputParameters,
-              &outputParameters,
-              SAMPLE_RATE,
-              FRAMES_PER_BUFFER,
-              paClipOff,      /* we won't output out of range samples so don't bother clipping them */
-              NULL, /* no callback, use blocking API */
-              NULL ); /* no callback, so no callback userData */
-    if( err != paNoError ) return;
-    /* -- start stream -- */
-    err = Pa_StartStream( stream );
-    if( err != paNoError ) return;
-    printf("Portaudio setup\n");
-}
 
 // Testig User Interface 
 static void show_usage(void){
@@ -213,66 +171,29 @@ static int stdin_process(struct data_source *ds){
     return 0;
 }
 
-#if 1
-static void try_send_sco(void){
-    if (!sco_handle) return;
-    if (!hci_can_send_sco_packet_now(sco_handle)) {
-        // printf("try_send_sco, cannot send now\n");
-        return;
-    }
-    printf("try send handle %x\n", sco_handle);
-    const int frames_per_packet = 24;
-    hci_reserve_packet_buffer();
-    uint8_t * sco_packet = hci_get_outgoing_packet_buffer();
-    // set handle + flags
-    bt_store_16(sco_packet, 0, sco_handle);
-    // set len
-    sco_packet[2] = frames_per_packet * 2;  // 16 bit PCM
-    int i;
-    for (i=0;i<frames_per_packet;i++){
-        bt_store_16(sco_packet, 3 + 2*i, sine[phase]);
-        phase++;
-        if (phase >= TABLE_SIZE) phase = 0;
-    }
-    hci_send_sco_packet_buffer(3 + frames_per_packet * 2);
-}
-#endif
 
 static void packet_handler(uint8_t * event, uint16_t event_size){
     // printf("Packet handler event 0x%02x\n", event[0]);
-    try_send_sco();
     switch (event[0]) {
         case BTSTACK_EVENT_STATE:
             if (event[2] != HCI_STATE_WORKING) break;
             show_usage();
             break;
-        case HCI_EVENT_NUMBER_OF_COMPLETED_PACKETS:
-            // printf("HCI_EVENT_NUMBER_OF_COMPLETED_PACKETS\n");
-            // try_send_sco();
-            break;
-        case DAEMON_EVENT_HCI_PACKET_SENT:
-            // printf("DAEMON_EVENT_HCI_PACKET_SENT\n");
-            // try_send_sco();
-            break;
-        case HCI_EVENT_SYNCHRONOUS_CONNECTION_COMPLETE:
-            // printf("HCI_EVENT_SYNCHRONOUS_CONNECTION_COMPLETE status %u, %x\n", event[2], READ_BT_16(event, 3));
-            if (event[2]) break;
-            sco_handle = READ_BT_16(event, 3);
-            break;  
         case HCI_EVENT_HSP_META:
             switch (event[2]) { 
                 case HSP_SUBEVENT_AUDIO_CONNECTION_COMPLETE:
                     if (event[3] == 0){
+                        sco_handle = READ_BT_16(event, 4);
                         printf("Audio connection established with SCO handle 0x%04x.\n", sco_handle);
-                        // try_send_sco();
                     } else {
                         printf("Audio connection establishment failed with status %u\n", event[3]);
+                        sco_handle = 0;
                     }
                     break;
                 case HSP_SUBEVENT_AUDIO_DISCONNECTION_COMPLETE:
                     if (event[3] == 0){
                         printf("Audio connection released.\n\n");
-                        sco_handle = 0;
+                        sco_handle = 0;    
                     } else {
                         printf("Audio connection releasing failed with status %u\n", event[3]);
                     }
@@ -302,18 +223,8 @@ static void packet_handler(uint8_t * event, uint16_t event_size){
     }
 }
 
-static void sco_packet_handler(uint8_t packet_type, uint8_t * packet, uint16_t size){
-    Pa_WriteStream( stream, &packet[3], size -3);
-}
-
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
-
-    hci_set_sco_voice_setting(0x0060);   // PCM, 16 bit, 2's complement, MSB Position 0, 
-
-    setup_audio();
-    hci_register_sco_packet_handler(&sco_packet_handler);
-
     memset((uint8_t *)hsp_service_buffer, 0, sizeof(hsp_service_buffer));
     hsp_hs_create_sdp_record((uint8_t *)hsp_service_buffer, rfcomm_channel_nr, hsp_hs_service_name, 0);
 

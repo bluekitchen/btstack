@@ -275,7 +275,7 @@ static void packet_handler(uint8_t * event, uint16_t event_size){
                 case HSP_SUBEVENT_AUDIO_DISCONNECTION_COMPLETE:
                     if (event[3] == 0){
                         printf("Audio connection released.\n\n");
-                        sco_handle = 0;
+                        sco_handle = 0;    
                     } else {
                         printf("Audio connection releasing failed with status %u\n", event[3]);
                     }
