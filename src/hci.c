@@ -832,7 +832,7 @@ void le_handle_advertisement_report(uint8_t *packet, int size){
     offset += 1;
 
     int i;
-    log_info("HCI: handle adv report with num reports: %d", num_reports);
+    // log_info("HCI: handle adv report with num reports: %d", num_reports);
     uint8_t event[12 + LE_ADVERTISING_DATA_SIZE]; // use upper bound to avoid var size automatic var
     for (i=0; i<num_reports;i++){
         uint8_t data_length = packet[offset + 8];
@@ -1708,7 +1708,7 @@ static void event_handler(uint8_t *packet, int size){
         case HCI_EVENT_LE_META:
             switch (packet[2]){
                 case HCI_SUBEVENT_LE_ADVERTISING_REPORT:
-                    log_info("advertising report received");
+                    // log_info("advertising report received");
                     if (hci_stack->le_scanning_state != LE_SCANNING) break;
                     le_handle_advertisement_report(packet, size);
                     break;
