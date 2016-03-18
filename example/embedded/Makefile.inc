@@ -9,48 +9,48 @@ CFLAGS += -I${BTSTACK_ROOT}/include
 CFLAGS += -I${BTSTACK_ROOT}/src
 
 CORE += \
-    btstack_memory.c            \
-    linked_list.c	            \
-    memory_pool.c               \
-    run_loop.c		            \
+	btstack_memory.c            \
+	linked_list.c	            \
+	memory_pool.c               \
+	run_loop.c		            \
 
 COMMON += \
-    hci.c			            \
-    hci_cmds.c		            \
-    hci_dump.c		            \
-    l2cap.c			            \
-    l2cap_signaling.c	        \
+	hci.c			            \
+	hci_cmds.c		            \
+	hci_dump.c		            \
+	l2cap.c			            \
+	l2cap_signaling.c	        \
 	remote_device_db_memory.c   \
-    sdp_util.c	                \
-    utils.c			            \
-    rfcomm.c	                \
-    bnep.c	                    \
-    sdp.c			            \
+	sdp_util.c	                \
+	utils.c			            \
+	rfcomm.c	                \
+	bnep.c	                    \
+	sdp.c			            \
 
 SDP_CLIENT += \
-    sdp_client.o		        \
-    sdp_parser.o		        \
-    sdp_query_util.o		    \
+	sdp_client.o		        \
+	sdp_parser.o		        \
+	sdp_query_util.o		    \
 	sdp_query_rfcomm.o		    \
 
 ATT	+= \
-    att_dispatch.c       	    \
+	att_dispatch.c       	    \
 
 GATT_SERVER += \
-    att.c 				 	    \
-    att_server.c        	    \
+	att.c 				 	    \
+	att_server.c        	    \
 
 GATT_CLIENT += \
-    ad_parser.c                 \
-    gatt_client.c        	    \
+	ad_parser.c                 \
+	gatt_client.c        	    \
 
 SM_REAL += \
 	sm.c 				 	    \
-    le_device_db_memory.c       \
+	le_device_db_memory.c       \
 
 SM_MINIMAL += \
 	sm_minimal.c  		 	    \
-    le_device_db_dummy.c        \
+	le_device_db_dummy.c        \
 
 PAN += \
 	pan.c \
@@ -71,8 +71,9 @@ EXAMPLES = 					\
 	spp_and_le_counter 		\
 	spp_counter 			\
 	spp_streamer			\
-    gap_le_advertisements   \
-    hsp_hs_demo             \
+	gap_le_advertisements   \
+	hsp_hs_demo             \
+	hsp_ag_demo             \
 
 EXAMPLES_USING_LE =			\
 	ancs_client 			\
@@ -81,7 +82,7 @@ EXAMPLES_USING_LE =			\
 	le_counter              \
 	le_streamer				\
 	spp_and_le_counter	    \
-    gap_le_advertisements   \
+	gap_le_advertisements   \
 
 # .o for .c
 CORE_OBJ    = $(CORE:.c=.o)
@@ -169,6 +170,9 @@ gap_le_advertisements: ${CORE_OBJ} ${COMMON_OBJ} ad_parser.c gap_le_advertisemen
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 hsp_hs_demo: ${CORE_OBJ} ${COMMON_OBJ} ${SDP_CLIENT} hsp_hs.o hsp_hs_demo.c
+	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+
+hsp_ag_demo: ${CORE_OBJ} ${COMMON_OBJ} ${SDP_CLIENT} hsp_ag.o hsp_ag_demo.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 clean:

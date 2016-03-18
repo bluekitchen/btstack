@@ -112,8 +112,7 @@ typedef enum {
     HSP_W4_SCO_DISCONNECTED, 
 
     HSP_W2_DISCONNECT_RFCOMM,
-    HSP_W4_RFCOMM_DISCONNECTED, 
-    HSP_W4_RFCOMM_DISCONNECTED_AND_RESTART, 
+    HSP_W4_RFCOMM_DISCONNECTED,  
     HSP_W4_CONNECTION_ESTABLISHED_TO_SHUTDOWN
 } hsp_state_t;
 
@@ -264,6 +263,10 @@ static void hsp_hs_reset_state(void){
     hs_send_button_press = 0;
     wait_ok = 0;
     hs_support_custom_indications = 0;
+
+    hsp_disconnect_rfcomm = 0;
+    hsp_establish_audio_connection = 0;
+    hsp_release_audio_connection = 0;
 }
 
 void hsp_hs_init(uint8_t rfcomm_channel_nr){
@@ -304,10 +307,6 @@ void hsp_hs_disconnect(void){
         return;
     }
 
-    if (hsp_state < HSP_W4_SCO_DISCONNECTED){
-        hsp_state = HSP_W2_DISCONNECT_SCO;
-        return;
-    }
     hsp_disconnect_rfcomm = 1;
     hsp_run();
 }
@@ -394,7 +393,7 @@ static void hsp_run(void){
             break;
         
         case HSP_AUDIO_CONNECTION_ESTABLISHED:
-        case HSP_RFCOMM_CONNECTION_ESTABLISHED :
+        case HSP_RFCOMM_CONNECTION_ESTABLISHED:
 
             if (hs_microphone_gain >= 0){
                 char buffer[20];
@@ -558,15 +557,14 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
             handle = READ_BT_16(packet,3);
             if (handle == sco_handle){
                 sco_handle = 0;
-                hsp_state = HSP_RFCOMM_CONNECTION_ESTABLISHED ;
-                hsp_hs_reset_state();
+                hsp_state = HSP_RFCOMM_CONNECTION_ESTABLISHED;
                 emit_event(HSP_SUBEVENT_AUDIO_DISCONNECTION_COMPLETE,0);
                 break;
             } 
             if (handle == rfcomm_handle) {
                 rfcomm_handle = 0;
                 hsp_state = HSP_IDLE;
-                hsp_hs_callback(packet, size);
+                emit_event(HSP_SUBEVENT_RFCOMM_DISCONNECTION_COMPLETE,0);
                 hsp_hs_reset_state();
             }
             break;
