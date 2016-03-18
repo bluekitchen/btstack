@@ -35,12 +35,17 @@
  * contact@bluekitchen-gmbh.com
  *
  */
- 
+
+/*
+ * hfp_hs_demo.c
+ */
+
 // *****************************************************************************
-//
-// HFP Hands-Free (HF) unit PTS Test
-//
+/* EXAMPLE_START(hfp_hs_demo): HFP Hands-Free (HF) Demo
+ *
+ */
 // *****************************************************************************
+
 
 #include "btstack-config.h"
 

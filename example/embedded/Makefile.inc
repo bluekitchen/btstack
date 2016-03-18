@@ -74,6 +74,9 @@ EXAMPLES = 					\
 	gap_le_advertisements   \
 	hsp_hs_demo             \
 	hsp_ag_demo             \
+	hfp_hf_demo             \
+	hfp_ag_demo             \
+
 
 EXAMPLES_USING_LE =			\
 	ancs_client 			\
@@ -173,6 +176,12 @@ hsp_hs_demo: ${CORE_OBJ} ${COMMON_OBJ} ${SDP_CLIENT} hsp_hs.o hsp_hs_demo.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 hsp_ag_demo: ${CORE_OBJ} ${COMMON_OBJ} ${SDP_CLIENT} hsp_ag.o hsp_ag_demo.c
+	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+
+hfp_ag_demo: ${CORE_OBJ} ${COMMON_OBJ} ${SDP_CLIENT} hfp.o hfp_gsm_model.o hfp_ag.o hfp_ag_demo.c
+	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+
+hfp_hf_demo: ${CORE_OBJ} ${COMMON_OBJ} ${SDP_CLIENT} hfp.o hfp_hf.o hfp_hf_demo.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 clean:

@@ -27,4 +27,5 @@ le_streamer.h
 gap_le_advertisements
 le_streamer
 spp_streamer
-
+hfp_ag_demo
+hfp_hf_demo

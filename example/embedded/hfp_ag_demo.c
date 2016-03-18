@@ -35,11 +35,16 @@
  *
  */
  
+/*
+ * hfp_ag_demo.c
+ */
+
 // *****************************************************************************
-//
-// HFP Audio Gateway PTS Test
-//
+/* EXAMPLE_START(hfp_ag_demo): HFP Audio Gateway (AG) Demo
+ *
+ */
 // *****************************************************************************
+
 
 #include <stdint.h>
 #include <stdio.h>
