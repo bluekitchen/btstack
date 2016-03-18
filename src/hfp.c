@@ -282,7 +282,7 @@ void hfp_reset_context_flags(hfp_connection_t * hfp_connection){
     hfp_connection->enable_status_update_for_ag_indicators = 0xFF;
 }
 
-static hfp_connection_t * create_hfp_connection_context(){
+static hfp_connection_t * create_hfp_connection_context(void){
     hfp_connection_t * hfp_connection = btstack_memory_hfp_connection_get();
     if (!hfp_connection) return NULL;
     // init state
