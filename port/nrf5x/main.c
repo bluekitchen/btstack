@@ -1,0 +1,531 @@
+/* Copyright (c) 2014 Nordic Semiconductor. All Rights Reserved.
+ *
+ * The information contained herein is property of Nordic Semiconductor ASA.
+ * Terms and conditions of usage are described in detail in NORDIC
+ * SEMICONDUCTOR STANDARD SOFTWARE LICENSE AGREEMENT.
+ *
+ * Licensees are granted free, non-transferable use of the information. NO
+ * WARRANTY of ANY KIND is provided. This heading must NOT be removed from
+ * the file.
+ *
+ */
+
+/** 
+ * BTstack Link Layer implementation
+ */
+
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdio.h>
+
+#include "app_uart.h"
+#include "app_error.h"
+#include "nrf_delay.h"
+#include "nrf.h"
+#include "bsp.h"
+
+#include "btstack_config.h"
+#include "btstack_memory.h"
+#include "btstack_run_loop.h"
+#include "btstack_run_loop_embedded.h"
+#include "hci_transport.h"
+#include "hci_dump.h"
+#include "hal_cpu.h"
+#include "hal_time_ms.h"
+
+// bluetooth.h
+#define ADVERTISING_RADIO_ACCESS_ADDRESS 0x8E89BED6
+#define ADVERTISING_CRC_INIT             0x555555
+
+typedef enum {
+    LL_STATE_STANDBY,
+    LL_STATE_SCANNING,
+    LL_STATE_ADVERTISING,
+    LL_STATE_INITIATING,
+    LL_STATE_CONNECTED
+} ll_state_t;
+
+// from SDK UART exzmple
+#define UART_TX_BUF_SIZE 128                         /**< UART TX buffer size. */
+#define UART_RX_BUF_SIZE 1                           /**< UART RX buffer size. */
+
+// packet receive buffer
+#define MAXLEN 255
+static uint8_t rx_adv_buffer[2 + MAXLEN];
+
+// hci transport
+static void (*packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size);
+static hci_transport_t hci_transport;
+static uint8_t hci_outgoing_event[258];
+static uint8_t hci_outgoing_event_ready;
+static btstack_data_source_t hci_transport_data_source;
+
+// Link Layer State
+static ll_state_t ll_state;
+static uint32_t ll_scan_interval_us;
+static uint32_t ll_scan_window_us;
+
+
+void uart_error_handle(app_uart_evt_t * p_event)
+{
+    if (p_event->evt_type == APP_UART_COMMUNICATION_ERROR)
+    {
+        APP_ERROR_HANDLER(p_event->data.error_communication);
+    }
+    else if (p_event->evt_type == APP_UART_FIFO_ERROR)
+    {
+        APP_ERROR_HANDLER(p_event->data.error_code);
+    }
+}
+
+static void init_timer() {
+
+#if 1
+    // start high frequency clock source if not done yet
+    if ( !NRF_CLOCK->EVENTS_HFCLKSTARTED ) {
+        printf("1\n");
+        NRF_CLOCK->TASKS_HFCLKSTART = 1;
+        while ( !NRF_CLOCK->EVENTS_HFCLKSTARTED ){
+            // just wait
+        }
+    }
+#endif
+
+    NRF_TIMER0->MODE        = TIMER_MODE_MODE_Timer << TIMER_MODE_MODE_Pos;
+    NRF_TIMER0->BITMODE     = TIMER_BITMODE_BITMODE_32Bit;
+    NRF_TIMER0->PRESCALER   = 4; // 16 Mhz / (2 ^ 4) = 1 Mhz == 1 us
+
+    NRF_TIMER0->TASKS_STOP  = 1;
+    NRF_TIMER0->TASKS_CLEAR = 1;
+#if 0
+    NRF_TIMER0->EVENTS_COMPARE[ 0 ] = 0;
+    NRF_TIMER0->EVENTS_COMPARE[ 1 ] = 0;
+    NRF_TIMER0->EVENTS_COMPARE[ 2 ] = 0;
+    NRF_TIMER0->EVENTS_COMPARE[ 3 ] = 0;
+    NRF_TIMER0->INTENCLR    = 0xffffffff;
+#endif
+    NRF_TIMER0->TASKS_START = 1;
+}
+
+static void radio_set_access_address(uint32_t access_address) {
+    NRF_RADIO->BASE0     = ( access_address << 8 ) & 0xFFFFFF00;
+    NRF_RADIO->PREFIX0   = ( access_address >> 24 ) & RADIO_PREFIX0_AP0_Msk;
+}
+
+static void radio_set_crc_init(uint32_t crc_init){
+    NRF_RADIO->CRCINIT   = crc_init;
+}
+
+// look up RF Center Frequency for data channels 0..36 and advertising channels 37..39 
+static uint8_t radio_frequency_for_channel(uint8_t channel){
+    if (channel <= 10){
+        return 4 + 2 * channel;
+    }
+    if (channel <= 36){
+        return 6 + 2 * channel;
+    }
+    if (channel == 37){
+        return 2;
+    }
+    if (channel == 38){
+        return 26;
+    }
+    return 80;
+}
+
+static void radio_init(void){
+
+#ifdef NRF51
+    // Handle BLE Radio tuning parameters from production if required.
+    // Does not exist on NRF52
+    // See PCN-083.
+    if (NRF_FICR->OVERRIDEEN & FICR_OVERRIDEEN_BLE_1MBIT_Msk){
+        NRF_RADIO->OVERRIDE0 = NRF_FICR->BLE_1MBIT[0];
+        NRF_RADIO->OVERRIDE1 = NRF_FICR->BLE_1MBIT[1];
+        NRF_RADIO->OVERRIDE2 = NRF_FICR->BLE_1MBIT[2];
+        NRF_RADIO->OVERRIDE3 = NRF_FICR->BLE_1MBIT[3];
+        NRF_RADIO->OVERRIDE4 = NRF_FICR->BLE_1MBIT[4] | 0x80000000;
+    }
+#endif // NRF51
+
+    // Mode: BLE 1 Mbps
+    NRF_RADIO->MODE  = RADIO_MODE_MODE_Ble_1Mbit << RADIO_MODE_MODE_Pos;
+
+    // PacketConfig 0: 
+    // ---
+    // LENGTH field in bits = 8
+    // S0 field in bytes = 1
+    // S1 field not used
+    // 8 bit preamble
+    NRF_RADIO->PCNF0 =
+        ( 8 << RADIO_PCNF0_LFLEN_Pos ) |
+        ( 1 << RADIO_PCNF0_S0LEN_Pos ) |
+        ( 0 << RADIO_PCNF0_S1LEN_Pos );
+
+    // PacketConfig 1:
+    // --- 
+    // Payload MAXLEN = MAXLEN
+    // No additional bytes
+    // 4 address bytes (1 + 3)
+    // S0, LENGTH, S1, PAYLOAD in little endian
+    // Packet whitening enabled
+    NRF_RADIO->PCNF1 =
+        ( MAXLEN << RADIO_PCNF1_MAXLEN_Pos) |
+        ( 0 << RADIO_PCNF1_STATLEN_Pos ) |
+        ( 3 << RADIO_PCNF1_BALEN_Pos ) |
+        ( RADIO_PCNF1_ENDIAN_Little << RADIO_PCNF1_ENDIAN_Pos ) |
+        ( RADIO_PCNF1_WHITEEN_Enabled << RADIO_PCNF1_WHITEEN_Pos );
+
+    // Use logical address 0 for sending and receiving
+    NRF_RADIO->TXADDRESS   = 0;
+    NRF_RADIO->RXADDRESSES = 1 << 0;
+
+    // 24 bit CRC, skip address field
+    NRF_RADIO->CRCCNF    =
+    ( RADIO_CRCCNF_SKIPADDR_Skip << RADIO_CRCCNF_SKIPADDR_Pos ) |
+    ( RADIO_CRCCNF_LEN_Three << RADIO_CRCCNF_LEN_Pos );
+
+    // The polynomial has the form of x^24 +x^10 +x^9 +x^6 +x^4 +x^3 +x+1
+    NRF_RADIO->CRCPOLY   = 0x100065B;
+
+    // Inter frame spacing 150 us
+    NRF_RADIO->TIFS      = 150;
+
+    // Shorts:
+    // - READY->START
+    NRF_RADIO->SHORTS = RADIO_SHORTS_READY_START_Enabled << RADIO_SHORTS_READY_START_Pos;
+}
+
+
+void radio_dump_state(void){
+    printf("Radio state: %lx\n", NRF_RADIO->STATE);
+}
+
+// static 
+void radio_receive_on_channel(int channel){
+    // set frequency based on channel
+    NRF_RADIO->FREQUENCY   = radio_frequency_for_channel( channel );
+
+    // initializes data whitening with channel index
+    NRF_RADIO->DATAWHITEIV = channel & 0x3F;
+
+    // set receive buffer
+    NRF_RADIO->PACKETPTR   = (uintptr_t) rx_adv_buffer;
+
+    // set MAXLEN based on receive buffer size
+    NRF_RADIO->PCNF1       = ( NRF_RADIO->PCNF1 & ~RADIO_PCNF1_MAXLEN_Msk ) | ( MAXLEN << RADIO_PCNF1_MAXLEN_Pos );
+
+    // clear events
+    NRF_RADIO->EVENTS_END       = 0;
+    NRF_RADIO->EVENTS_DISABLED  = 0;
+    NRF_RADIO->EVENTS_READY     = 0;
+    NRF_RADIO->EVENTS_ADDRESS   = 0;
+
+    radio_set_access_address(ADVERTISING_RADIO_ACCESS_ADDRESS);
+    radio_set_crc_init(ADVERTISING_CRC_INIT);
+
+    // ramp up receiver
+    NRF_RADIO->TASKS_RXEN = 1;    
+}
+
+// static 
+void radio_disable(void){
+    // testing
+    NRF_RADIO->TASKS_DISABLE = 1;
+
+    // wait for ready
+    while (!NRF_RADIO->EVENTS_DISABLED) {
+        // just wait
+    }
+}
+
+// static
+void radio_dump_packet(void){
+    // print data
+    int len = rx_adv_buffer[1] & 0x3f;
+    int i;
+    for (i=0;i<len;i++){
+        printf("%02x ", rx_adv_buffer[i]);
+    }
+    printf("\n");
+}
+
+void RADIO_IRQHandler(void){
+    // packet received?
+}
+
+static uint8_t random_generator_next(void){
+    NRF_RNG->SHORTS = RNG_SHORTS_VALRDY_STOP_Enabled << RNG_SHORTS_VALRDY_STOP_Pos;
+    NRF_RNG->TASKS_START = 1;
+    while (!NRF_RNG->EVENTS_VALRDY){
+    }
+    return NRF_RNG->VALUE;
+}
+
+static uint32_t get_time_us(void){
+    NRF_TIMER0->TASKS_CAPTURE[0] = 1;
+    return NRF_TIMER0->CC[0]; 
+}
+
+// static 
+void tick(void){
+    uint32_t now = 0;
+    while (1){
+        uint8_t random = random_generator_next();
+        printf("Tick %02x\n", random);
+        now = get_time_us();
+        uint32_t tick_at = now + 1000000;
+        while (now < tick_at){
+            now = get_time_us();
+        }
+    }
+}
+
+// static
+void ll_set_scan_params(uint8_t le_scan_type, uint16_t le_scan_interval, uint16_t le_scan_window, uint8_t own_address_type, uint8_t scanning_filter_policy){
+    // TODO .. store other params
+    ll_scan_interval_us = ((uint32_t) le_scan_interval) * 625;
+    ll_scan_window_us   = ((uint32_t) le_scan_window)   * 625;
+}
+
+static uint8_t ll_start_scanning(uint8_t filter_duplicates){
+    // COMMAND DISALLOWED if wrong state.
+    if (ll_state != LL_STATE_STANDBY)  return 0x0c;
+
+    ll_state = LL_STATE_SCANNING;
+
+    // reset timer
+    NRF_TIMER0->TASKS_CLEAR;
+
+    // set timer to disable radio after end of scan_window
+
+    // set timer to trigger IRQ for next scan interval
+
+    // start receive
+    // ..
+
+    // TODO: use all channels
+    radio_receive_on_channel(37);
+
+    return 0;
+}
+
+static uint8_t ll_stop_scanning(void){
+    // COMMAND DISALLOWED if wrong state.
+    if (ll_state != LL_STATE_SCANNING)  return 0x0c;
+
+    ll_state = LL_STATE_STANDBY;
+
+    // stop radio
+    radio_disable();
+
+    return 0;
+}
+
+// static 
+uint8_t ll_set_scan_enable(uint8_t le_scan_enable, uint8_t filter_duplicates){
+    if (le_scan_enable){
+        return ll_start_scanning(filter_duplicates);
+    } else {
+        return ll_stop_scanning();
+    }
+}
+
+
+static int transport_run(btstack_data_source_t * ds){
+
+    // ad-hoc way to trigger stuff
+    if (hci_outgoing_event_ready){
+        hci_outgoing_event_ready = 0;
+        packet_handler(HCI_EVENT_PACKET, hci_outgoing_event, hci_outgoing_event[1]+2);
+        return 0;
+    }
+
+    if (ll_state == LL_STATE_SCANNING && NRF_RADIO->EVENTS_END){
+        // adv received
+        int len = rx_adv_buffer[1] & 0x3f;
+        hci_outgoing_event[0] = HCI_EVENT_LE_META;
+        hci_outgoing_event[1] = 11 + len - 6;
+        hci_outgoing_event[2] = HCI_SUBEVENT_LE_ADVERTISING_REPORT;
+        hci_outgoing_event[3] = 1;
+        hci_outgoing_event[4] = rx_adv_buffer[0] & 0x0f;
+        hci_outgoing_event[5] = (rx_adv_buffer[0] & 0x40) ? 1 : 0;
+        memcpy(&hci_outgoing_event[6], &rx_adv_buffer[2], 6);
+        hci_outgoing_event[12] = len - 6;   // rest after bd addr
+        memcpy(&hci_outgoing_event[13], &rx_adv_buffer[8], len - 6);
+        hci_outgoing_event[13 + len - 6] = 0;   // TODO: measure RSSI and set here
+        hci_outgoing_event_ready = 1;
+        packet_handler(HCI_EVENT_PACKET, hci_outgoing_event, hci_outgoing_event[1]+2);
+        // restart receiving
+        NRF_RADIO->TASKS_START = 1;
+        return 0;
+    }
+    return 0;
+}
+
+/**
+ * init transport
+ * @param transport_config
+ */
+void transport_init(const void *transport_config){
+
+}
+
+/**
+ * open transport connection
+ */
+static int transport_open(void){
+    btstack_run_loop_set_data_source_handler(&hci_transport_data_source, &transport_run);
+    btstack_run_loop_add_data_source(&hci_transport_data_source);
+    return 0;
+}
+
+/**
+ * close transport connection
+ */
+static int transport_close(void){
+    btstack_run_loop_remove_data_source(&hci_transport_data_source);
+    return 0;
+}
+
+/**
+ * register packet handler for HCI packets: ACL, SCO, and Events
+ */
+static void transport_register_packet_handler(void (*handler)(uint8_t packet_type, uint8_t *packet, uint16_t size)){
+    packet_handler = handler;
+}
+
+// /**
+//  * support async transport layers, e.g. IRQ driven without buffers
+//  */
+// int transport_can_send_packet_now(uint8_t packet_type){
+//     return 1;
+// }
+
+// TODO: implement
+void hal_cpu_disable_irqs(void){}
+void hal_cpu_enable_irqs(void){}
+void hal_cpu_enable_irqs_and_sleep(void){}
+
+
+// TODO: get time from RTC
+uint32_t hal_time_ms(void){
+    return 999;
+}
+
+static void fake_command_complete(uint16_t opcode){
+    hci_outgoing_event[0] = HCI_EVENT_COMMAND_COMPLETE;
+    hci_outgoing_event[1] = 4;
+    hci_outgoing_event[2] = 1;
+    little_endian_store_16(hci_outgoing_event, 3, opcode);
+    hci_outgoing_event[5] = 0;
+    hci_outgoing_event_ready = 1;
+}
+
+int transport_send_packet(uint8_t packet_type, uint8_t *packet, int size){
+    // process packet
+    uint16_t opcode = little_endian_read_16(packet, 0);
+    if (opcode == hci_reset.opcode) {
+        fake_command_complete(opcode);
+        return 0;
+    }
+    if (opcode == hci_le_set_scan_enable.opcode){
+        ll_set_scan_enable(packet[3], packet[4]);
+        fake_command_complete(opcode);
+        return 0;
+    }
+    // try with "OK" 
+    printf("CMD opcode %02x not handled yet\n", opcode);
+    fake_command_complete(opcode);
+    return 0;    
+}
+
+int btstack_main(void);
+
+/**
+ * @brief Function for main application entry.
+ */
+int main(void)
+{
+
+    LEDS_CONFIGURE(LEDS_MASK);
+    LEDS_OFF(LEDS_MASK);
+    uint32_t err_code;
+    const app_uart_comm_params_t comm_params = {
+          RX_PIN_NUMBER,
+          TX_PIN_NUMBER,
+          RTS_PIN_NUMBER,
+          CTS_PIN_NUMBER,
+          APP_UART_FLOW_CONTROL_ENABLED,
+          false,
+          UART_BAUDRATE_BAUDRATE_Baud115200
+    };
+
+    APP_UART_FIFO_INIT(&comm_params,
+                         UART_RX_BUF_SIZE,
+                         UART_TX_BUF_SIZE,
+                         uart_error_handle,
+                         APP_IRQ_PRIORITY_LOW,
+                         err_code);
+
+    APP_ERROR_CHECK(err_code);
+
+    init_timer();
+    radio_init();
+
+    // Bring up BTstack
+
+    printf("BTstack on Nordic nRF5 SDK\n");
+
+    btstack_memory_init();
+    btstack_run_loop_init(btstack_run_loop_embedded_get_instance());
+
+    // setup hci transport wrapper
+    hci_transport.name                          = "nRF5";
+    hci_transport.init                          = transport_init;
+    hci_transport.open                          = transport_open;
+    hci_transport.close                         = transport_close;
+    hci_transport.register_packet_handler       = transport_register_packet_handler;
+    hci_transport.can_send_packet_now           = NULL;
+    hci_transport.send_packet                   = transport_send_packet;
+    hci_transport.set_baudrate                  = NULL;
+
+    // init HCI
+    hci_init(&hci_transport, NULL);
+    
+    // enable full log output while porting
+    hci_dump_open(NULL, HCI_DUMP_STDOUT);
+
+    // hand over to btstack embedded code 
+    btstack_main();
+
+    // go
+    btstack_run_loop_execute();
+
+    while (1){};
+
+#if 0
+    // enable Radio IRQs
+    // NVIC_SetPriority( RADIO_IRQn, 0 );
+    // NVIC_ClearPendingIRQ( RADIO_IRQn );
+    // NVIC_EnableIRQ( RADIO_IRQn );
+
+    // start listening
+    radio_receive_on_channel(37);
+
+    while (1){
+        if (NRF_RADIO->EVENTS_END){
+            NRF_RADIO->EVENTS_END = 0;
+            // process packet
+            radio_dump_packet();
+            // receive next packet
+            NRF_RADIO->TASKS_START = 1;
+        }
+    }
+
+    radio_disable();
+#endif
+}
+
+
+/** @} */
