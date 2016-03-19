@@ -57,7 +57,8 @@ static uint8_t rx_adv_buffer[2 + MAXLEN];
 static void (*packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size);
 static hci_transport_t hci_transport;
 static uint8_t hci_outgoing_event[258];
-static uint8_t hci_outgoing_event_ready;
+static volatile uint8_t hci_outgoing_event_ready;
+static volatile uint8_t hci_outgoing_event_free;
 static btstack_data_source_t hci_transport_data_source;
 
 // Link Layer State
@@ -258,13 +259,14 @@ void radio_dump_packet(void){
 
 void RADIO_IRQHandler(void){
 
-    if (ll_state == LL_STATE_SCANNING && NRF_RADIO->EVENTS_END){
+    // IRQ only triggered on EVENTS_END so far
+    NRF_RADIO->EVENTS_END = 0;
+
+    if (ll_state == LL_STATE_SCANNING){
         // adv received
 
         // check if outgoing buffer available
-        if (hci_outgoing_event_ready){
-            // ... for now, we just throw the adv away and try to receive the next one
-        } else {
+        if (hci_outgoing_event_free){
             int len = rx_adv_buffer[1] & 0x3f;
             hci_outgoing_event[0] = HCI_EVENT_LE_META;
             hci_outgoing_event[1] = 11 + len - 6;
@@ -277,11 +279,12 @@ void RADIO_IRQHandler(void){
             memcpy(&hci_outgoing_event[13], &rx_adv_buffer[8], len - 6);
             hci_outgoing_event[13 + len - 6] = 0;   // TODO: measure RSSI and set here
             hci_outgoing_event_ready = 1;
+        } else {
+            // ... for now, we just throw the adv away and try to receive the next one
         }
         // restart receiving
         NRF_RADIO->TASKS_START = 1;
     }
-    NRF_RADIO->EVENTS_END = 0;
 }
 
 static uint8_t random_generator_next(void){
@@ -367,6 +370,7 @@ static int transport_run(btstack_data_source_t * ds){
     if (hci_outgoing_event_ready){
         hci_outgoing_event_ready = 0;
         packet_handler(HCI_EVENT_PACKET, hci_outgoing_event, hci_outgoing_event[1]+2);
+        hci_outgoing_event_free = 1;
         return 0;
     }
     return 0;
@@ -481,6 +485,7 @@ int main(void)
 
     init_timer();
     radio_init();
+    hci_outgoing_event_free = 1;
 
     // enable Radio IRQs
     NVIC_SetPriority( RADIO_IRQn, 0 );
