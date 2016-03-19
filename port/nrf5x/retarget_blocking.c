@@ -10,6 +10,8 @@
  *
  */
 
+// BTstack patch: block on full outgoing buffer
+
 #if !defined(NRF_LOG_USES_RTT) || NRF_LOG_USES_RTT != 1
 
 #include <stdio.h>
@@ -45,7 +47,11 @@ int fputc(int ch, FILE * p_file)
 {
     UNUSED_PARAMETER(p_file);
 
-    UNUSED_VARIABLE(app_uart_put((uint8_t)ch));
+    int res;
+    do {
+        res = app_uart_put((uint8_t)ch);
+    } while (res);
+
     return ch;
 }
 
@@ -60,7 +66,11 @@ int _write(int file, const char * p_char, int len)
 
     for (i = 0; i < len; i++)
     {
-        UNUSED_VARIABLE(app_uart_put(*p_char++));
+        int res;
+        do {
+            res = app_uart_put((uint8_t)*p_char);
+        } while (res);
+        p_char++;
     }
 
     return len;
@@ -89,7 +99,11 @@ __ATTRIBUTES size_t __write(int file, const unsigned char * p_char, size_t len)
 
     for (i = 0; i < len; i++)
     {
-        UNUSED_VARIABLE(app_uart_put(*p_char++));
+        int res;
+        do {
+            res = app_uart_put((uint8_t)*p_char);
+        } while (res);
+        p_char++;
     }
 
     return len;

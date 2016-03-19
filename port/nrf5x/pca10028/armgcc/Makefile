@@ -71,7 +71,7 @@ INC_PATHS += -I$(abspath ../../../../../components/toolchain/gcc)
 # BTstack territory
 BTSTACK_ROOT = ../../../../../components/btstack
 C_SOURCE_FILES +=   $(abspath $(BTSTACK_ROOT)/port/nrf5x/main.c)
-C_SOURCE_FILES +=   $(abspath $(BTSTACK_ROOT)/port/retarget.c)
+C_SOURCE_FILES +=   $(abspath $(BTSTACK_ROOT)/port/retarget_blocking.c)
 C_SOURCE_FILES +=   $(abspath $(BTSTACK_ROOT)/platform/embedded/btstack_run_loop_embedded.c)
 C_SOURCE_FILES +=   $(abspath $(BTSTACK_ROOT)/src/ble/ad_parser.c)
 C_SOURCE_FILES +=   $(abspath $(BTSTACK_ROOT)/src/btstack_linked_list.c)
