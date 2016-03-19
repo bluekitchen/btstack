@@ -194,6 +194,9 @@ static void radio_init(void){
     // Shorts:
     // - READY->START
     NRF_RADIO->SHORTS = RADIO_SHORTS_READY_START_Enabled << RADIO_SHORTS_READY_START_Pos;
+
+    // Disable all interrrupts
+    NRF_RADIO->INTENCLR    = 0xffffffff;
 }
 
 
@@ -226,6 +229,9 @@ void radio_receive_on_channel(int channel){
 
     // ramp up receiver
     NRF_RADIO->TASKS_RXEN = 1;    
+
+    // enable IRQ for END event
+    NRF_RADIO->INTENSET = RADIO_INTENSET_END_Enabled << RADIO_INTENSET_END_Pos;
 }
 
 // static 
@@ -251,7 +257,31 @@ void radio_dump_packet(void){
 }
 
 void RADIO_IRQHandler(void){
-    // packet received?
+
+    if (ll_state == LL_STATE_SCANNING && NRF_RADIO->EVENTS_END){
+        // adv received
+
+        // check if outgoing buffer available
+        if (hci_outgoing_event_ready){
+            // ... for now, we just throw the adv away and try to receive the next one
+        } else {
+            int len = rx_adv_buffer[1] & 0x3f;
+            hci_outgoing_event[0] = HCI_EVENT_LE_META;
+            hci_outgoing_event[1] = 11 + len - 6;
+            hci_outgoing_event[2] = HCI_SUBEVENT_LE_ADVERTISING_REPORT;
+            hci_outgoing_event[3] = 1;
+            hci_outgoing_event[4] = rx_adv_buffer[0] & 0x0f;
+            hci_outgoing_event[5] = (rx_adv_buffer[0] & 0x40) ? 1 : 0;
+            memcpy(&hci_outgoing_event[6], &rx_adv_buffer[2], 6);
+            hci_outgoing_event[12] = len - 6;   // rest after bd addr
+            memcpy(&hci_outgoing_event[13], &rx_adv_buffer[8], len - 6);
+            hci_outgoing_event[13 + len - 6] = 0;   // TODO: measure RSSI and set here
+            hci_outgoing_event_ready = 1;
+        }
+        // restart receiving
+        NRF_RADIO->TASKS_START = 1;
+    }
+    NRF_RADIO->EVENTS_END = 0;
 }
 
 static uint8_t random_generator_next(void){
@@ -333,31 +363,10 @@ uint8_t ll_set_scan_enable(uint8_t le_scan_enable, uint8_t filter_duplicates){
 
 
 static int transport_run(btstack_data_source_t * ds){
-
-    // ad-hoc way to trigger stuff
+    // deliver hci packet on main thread
     if (hci_outgoing_event_ready){
         hci_outgoing_event_ready = 0;
         packet_handler(HCI_EVENT_PACKET, hci_outgoing_event, hci_outgoing_event[1]+2);
-        return 0;
-    }
-
-    if (ll_state == LL_STATE_SCANNING && NRF_RADIO->EVENTS_END){
-        // adv received
-        int len = rx_adv_buffer[1] & 0x3f;
-        hci_outgoing_event[0] = HCI_EVENT_LE_META;
-        hci_outgoing_event[1] = 11 + len - 6;
-        hci_outgoing_event[2] = HCI_SUBEVENT_LE_ADVERTISING_REPORT;
-        hci_outgoing_event[3] = 1;
-        hci_outgoing_event[4] = rx_adv_buffer[0] & 0x0f;
-        hci_outgoing_event[5] = (rx_adv_buffer[0] & 0x40) ? 1 : 0;
-        memcpy(&hci_outgoing_event[6], &rx_adv_buffer[2], 6);
-        hci_outgoing_event[12] = len - 6;   // rest after bd addr
-        memcpy(&hci_outgoing_event[13], &rx_adv_buffer[8], len - 6);
-        hci_outgoing_event[13 + len - 6] = 0;   // TODO: measure RSSI and set here
-        hci_outgoing_event_ready = 1;
-        packet_handler(HCI_EVENT_PACKET, hci_outgoing_event, hci_outgoing_event[1]+2);
-        // restart receiving
-        NRF_RADIO->TASKS_START = 1;
         return 0;
     }
     return 0;
@@ -473,6 +482,11 @@ int main(void)
     init_timer();
     radio_init();
 
+    // enable Radio IRQs
+    NVIC_SetPriority( RADIO_IRQn, 0 );
+    NVIC_ClearPendingIRQ( RADIO_IRQn );
+    NVIC_EnableIRQ( RADIO_IRQn );
+
     // Bring up BTstack
 
     printf("BTstack on Nordic nRF5 SDK\n");
@@ -505,10 +519,6 @@ int main(void)
     while (1){};
 
 #if 0
-    // enable Radio IRQs
-    // NVIC_SetPriority( RADIO_IRQn, 0 );
-    // NVIC_ClearPendingIRQ( RADIO_IRQn );
-    // NVIC_EnableIRQ( RADIO_IRQn );
 
     // start listening
     radio_receive_on_channel(37);
