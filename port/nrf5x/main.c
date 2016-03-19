@@ -267,6 +267,7 @@ void RADIO_IRQHandler(void){
 
         // check if outgoing buffer available
         if (hci_outgoing_event_free){
+            hci_outgoing_event_free = 0;
             int len = rx_adv_buffer[1] & 0x3f;
             hci_outgoing_event[0] = HCI_EVENT_LE_META;
             hci_outgoing_event[1] = 11 + len - 6;
@@ -282,9 +283,9 @@ void RADIO_IRQHandler(void){
         } else {
             // ... for now, we just throw the adv away and try to receive the next one
         }
-        // restart receiving
-        NRF_RADIO->TASKS_START = 1;
     }
+    // restart receiving
+    NRF_RADIO->TASKS_START = 1;
 }
 
 static uint8_t random_generator_next(void){
