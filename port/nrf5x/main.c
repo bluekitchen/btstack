@@ -17,6 +17,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <inttypes.h>
 
 #include "app_uart.h"
 #include "app_error.h"
@@ -263,10 +264,10 @@ void RADIO_IRQHandler(void){
     NRF_RADIO->EVENTS_END = 0;
 
     if (ll_state == LL_STATE_SCANNING){
-        // adv received
 
-        // check if outgoing buffer available
-        if (hci_outgoing_event_free){
+        // check if outgoing buffer available and if CRC was ok
+        if (hci_outgoing_event_free && 
+            ((NRF_RADIO->CRCSTATUS & RADIO_CRCSTATUS_CRCSTATUS_Msk) == (RADIO_CRCSTATUS_CRCSTATUS_CRCOk << RADIO_CRCSTATUS_CRCSTATUS_Pos))){
             hci_outgoing_event_free = 0;
             int len = rx_adv_buffer[1] & 0x3f;
             hci_outgoing_event[0] = HCI_EVENT_LE_META;
@@ -364,7 +365,6 @@ uint8_t ll_set_scan_enable(uint8_t le_scan_enable, uint8_t filter_duplicates){
         return ll_stop_scanning();
     }
 }
-
 
 static int transport_run(btstack_data_source_t * ds){
     // deliver hci packet on main thread
