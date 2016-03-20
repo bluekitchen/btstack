@@ -195,7 +195,9 @@ static void radio_init(void){
 
     // Shorts:
     // - READY->START
-    NRF_RADIO->SHORTS = RADIO_SHORTS_READY_START_Enabled << RADIO_SHORTS_READY_START_Pos;
+    // - ADDRESS0>RSSISTART
+    NRF_RADIO->SHORTS = RADIO_SHORTS_READY_START_Enabled << RADIO_SHORTS_READY_START_Pos
+                      | RADIO_SHORTS_ADDRESS_RSSISTART_Enabled << RADIO_SHORTS_ADDRESS_RSSISTART_Pos;
 
     // Disable all interrrupts
     NRF_RADIO->INTENCLR    = 0xffffffff;
@@ -279,7 +281,7 @@ void RADIO_IRQHandler(void){
             memcpy(&hci_outgoing_event[6], &rx_adv_buffer[2], 6);
             hci_outgoing_event[12] = len - 6;   // rest after bd addr
             memcpy(&hci_outgoing_event[13], &rx_adv_buffer[8], len - 6);
-            hci_outgoing_event[13 + len - 6] = 0;   // TODO: measure RSSI and set here
+            hci_outgoing_event[13 + len - 6] = -NRF_RADIO->RSSISAMPLE; // RSSI is stored without sign but is negative
             hci_outgoing_event_ready = 1;
         } else {
             // ... for now, we just throw the adv away and try to receive the next one
