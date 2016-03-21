@@ -46,8 +46,9 @@ Utils has been renamed into btstack_util to avoid compile issues with other fram
 
 ## btstack_config.h
 - *btstack-config.h* is now *btstack_config.h*
-- Defines have been sorted. HAVE_ specify features that are particular to your port. ENABLE_ features can then be added as needed
-- The #define EMBEDDED dropped. The signature for sdp_register_service did differ with/without EMBEDDED being defined or not.
+- Defines have been sorted: HAVE_ specify features that are particular to your port. ENABLE_ features can then be added as needed.
+- _NO_ has been replaced with _NR_ for the BTstack static memory allocation, e.g., *MAX_NO_HCI_CONNECTIONS8 -> *MAX_NR_HCI_CONNECTIONS*
+- The #define EMBEDDED was dropped. The signature for sdp_register_service did differ with/without EMBEDDED being defined or not.
 
 ## Linked List
 - The file has been renamed to btstack_linked_list.
