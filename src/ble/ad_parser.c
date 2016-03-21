@@ -72,8 +72,13 @@ int  ad_iterator_has_more(ad_context_t * context){
 }
 
 void ad_iterator_next(ad_context_t * context){
-    uint8_t chunk_len = context->data[context->offset];
-    context->offset += 1 + chunk_len;
+    int chunk_len = context->data[context->offset];
+    int new_offset = context->offset + 1 + chunk_len;
+    // avoid uint8_t overrun
+    if (new_offset > 0xff){
+        new_offset = 0xff;
+    }
+    context->offset = new_offset;
 }
 
 uint8_t   ad_iterator_get_data_len(ad_context_t * context){

@@ -248,11 +248,11 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             bd_addr_t address;
             reverse_bd_addr(&packet[pos], address);
             pos += 6;
-            uint8_t rssi = packet[pos++];
+            int8_t rssi = (int8_t) packet[pos++];
             uint8_t length = packet[pos++];
             uint8_t * data = &packet[pos];
             
-            printf("Advertisement event: evt-type %u, addr-type %u, addr %s, rssi %u, data[%u] ", event_type,
+            printf("Advertisement event: evt-type %u, addr-type %u, addr %s, rssi %d, data[%u] ", event_type,
                address_type, bd_addr_to_str(address), rssi, length);
             printf_hexdump(data, length);
             dump_advertisement_data(data, length);
