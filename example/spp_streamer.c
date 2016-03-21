@@ -72,7 +72,7 @@ typedef enum {
 
 static void handle_query_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
-#define DATA_VOLUME (1000 * 1000)
+#define DATA_VOLUME (10 * 1000 * 1000)
 
 // configuration area {
 static bd_addr_t remote = {0x84, 0x38, 0x35, 0x65, 0xD1, 0x15};     // address of remote device
@@ -88,6 +88,40 @@ static uint32_t data_to_send =  DATA_VOLUME;
 static state_t state = W4_SDP_RESULT;
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
+/*
+ * @section Track throughput
+ * @text We calculate the throughput by setting a start time and measuring the amount of 
+ * data sent. After a configurable REPORT_INTERVAL_MS, we print the throughput in kB/s
+ * and reset the counter and start time.
+ */
+
+/* LISTING_START(tracking): Tracking throughput */
+#define REPORT_INTERVAL_MS 3000
+static uint32_t test_data_sent;
+static uint32_t test_data_start;
+
+static void test_reset(void){
+    test_data_start = btstack_run_loop_get_time_ms();
+    test_data_sent = 0;
+}
+
+static void test_track_sent(int bytes_sent){
+    test_data_sent += test_data_len;
+    // evaluate
+    uint32_t now = btstack_run_loop_get_time_ms();
+    uint32_t time_passed = now - test_data_start;
+    if (time_passed < REPORT_INTERVAL_MS) return;
+    // print speed
+    int bytes_per_second = test_data_sent * 1000 / time_passed;
+    printf("%u bytes sent-> %u.%03u kB/s\n", test_data_sent, bytes_per_second / 1000, bytes_per_second % 1000);
+
+    // restart
+    test_data_start = now;
+    test_data_sent  = 0;
+}
+/* LISTING_END(tracking): Tracking throughput */
+
+
 static void create_test_data(void){
     int x,y;
     for (y=0;y<NUM_ROWS;y++){
@@ -99,21 +133,23 @@ static void create_test_data(void){
     }
 }
 
-static void send_packet(void){
-    int err = rfcomm_send(rfcomm_cid, (uint8_t*) test_data, test_data_len);
-    if (err){
-        printf("rfcomm_send -> error 0X%02x", err);
-        return;
+static void try_send_packets(void){
+    while (rfcomm_can_send_packet_now(rfcomm_cid)){
+        int err = rfcomm_send(rfcomm_cid, (uint8_t*) test_data, test_data_len);
+        if (err){
+            printf("rfcomm_send -> error 0X%02x", err);
+            return;
+        }
+        test_track_sent(test_data_len);
+        if (data_to_send < test_data_len){
+            rfcomm_disconnect(rfcomm_cid);
+            rfcomm_cid = 0;
+            state = DONE;
+            printf("SPP Streamer: enough data send, closing DLC\n");
+            return;
+        }
+        data_to_send -= test_data_len;
     }
-    
-    if (data_to_send < test_data_len){
-        rfcomm_disconnect(rfcomm_cid);
-        rfcomm_cid = 0;
-        state = DONE;
-        printf("SPP Streamer: enough data send, closing DLC\n");
-        return;
-    }
-    data_to_send -= test_data_len;
 }
 
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
@@ -139,12 +175,13 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 if ((test_data_len > mtu)) {
                     test_data_len = mtu;
                 }
-                if (rfcomm_can_send_packet_now(rfcomm_cid)) send_packet();
+                test_reset();
+                try_send_packets();
                 break;
             }
             break;
         case RFCOMM_EVENT_CAN_SEND_NOW:
-            if (rfcomm_can_send_packet_now(rfcomm_cid)) send_packet();
+            try_send_packets();
             break;
         default:
             break;
