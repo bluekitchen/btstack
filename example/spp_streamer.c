@@ -113,7 +113,7 @@ static void test_track_sent(int bytes_sent){
     if (time_passed < REPORT_INTERVAL_MS) return;
     // print speed
     int bytes_per_second = test_data_sent * 1000 / time_passed;
-    printf("%u bytes sent-> %u.%03u kB/s\n", test_data_sent, bytes_per_second / 1000, bytes_per_second % 1000);
+    printf("%u bytes sent-> %u.%03u kB/s\n", (int) test_data_sent, (int) bytes_per_second / 1000, bytes_per_second % 1000);
 
     // restart
     test_data_start = now;
