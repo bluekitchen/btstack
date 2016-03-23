@@ -80,8 +80,8 @@ static const char    hsp_ag_service_name[] = "Audio Gateway Test";
 static uint16_t      sco_handle = 0;
 
 static char hs_cmd_buffer[100];
-// static bd_addr_t current_addr = {0x04,0x0C,0xCE,0xE4,0x85,0xD3};
-static bd_addr_t current_addr = {0x00,0x1b,0xDC,0x07,0x32,0xEF};
+
+static bd_addr_t device_addr = {0x00,0x1b,0xDC,0x07,0x32,0xEF};
 
 static int phase = 0;
 
@@ -126,7 +126,7 @@ static void show_usage(void){
     printf("\n--- Bluetooth HSP Audio Gateway Test Console %s ---\n", bd_addr_to_str(iut_address));
    
     printf("---\n");
-    printf("c - Connect to %s\n", bd_addr_to_str(current_addr));
+    printf("c - Connect to %s\n", bd_addr_to_str(device_addr));
     printf("C - Disconnect\n");
     printf("a - establish audio connection\n");
     printf("A - release audio connection\n");
@@ -142,15 +142,15 @@ static void show_usage(void){
     printf("---\n");
 }
 
-
+#ifdef HAVE_STDIO
 static int stdin_process(struct data_source *ds){
     char buffer;
     read(ds->fd, &buffer, 1);
 
     switch (buffer){
         case 'c':
-            printf("Connect to %s\n", bd_addr_to_str(current_addr));
-            hsp_ag_connect(current_addr);
+            printf("Connect to %s\n", bd_addr_to_str(device_addr));
+            hsp_ag_connect(device_addr);
             break;
         case 'C':
             printf("Disconnect.\n");
@@ -199,6 +199,7 @@ static int stdin_process(struct data_source *ds){
     }
     return 0;
 }
+#endif
 
 static void try_send_sco(void){
     return;
@@ -350,7 +351,9 @@ int btstack_main(int argc, const char * argv[]){
    
     hsp_ag_register_packet_handler(packet_handler);
 
+#ifdef HAVE_STDIO
     btstack_stdin_setup(stdin_process);
+#endif
 
     gap_set_local_name("BTstack HSP AG");
     hci_discoverable_control(1);

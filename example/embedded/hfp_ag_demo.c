@@ -76,10 +76,8 @@ const uint32_t   hfp_service_buffer[150/4]; // implicit alignment to 4-byte memo
 const uint8_t    rfcomm_channel_nr = 1;
 const char hfp_ag_service_name[] = "BTstack HFP AG Test";
 
-static bd_addr_t device_addr;
-static bd_addr_t pts_addr = {0x00,0x15,0x83,0x5F,0x9D,0x46};
-//static bd_addr_t pts_addr = {0x00,0x1b,0xDC,0x07,0x32,0xEF};
-static bd_addr_t speaker_addr = {0x00, 0x21, 0x3C, 0xAC, 0xF7, 0x38};
+static bd_addr_t device_addr = {0x00,0x15,0x83,0x5F,0x9D,0x46};
+
 static uint8_t codecs[1] = {HFP_CODEC_CVSD};
 static uint16_t handle = -1;
 static int memory_1_enabled = 1;
@@ -279,9 +277,6 @@ static void show_usage(void){
     printf("a - establish HFP connection to PTS module\n");
     // printf("A - release HFP connection to PTS module\n");
     
-    printf("z - establish HFP connection to speaker\n");
-    // printf("Z - release HFP connection to speaker\n");
-    
     printf("b - establish AUDIO connection\n");
     printf("B - release AUDIO connection\n");
     
@@ -344,11 +339,11 @@ static void show_usage(void){
     printf("---\n");
 }
 
+#ifdef HAVE_STDIO
 static int stdin_process(struct data_source *ds){
     read(ds->fd, &cmd, 1);
     switch (cmd){
         case 'a':
-            memcpy(device_addr, pts_addr, 6);
             log_info("USER:\'%c\'", cmd);
             printf("Establish HFP service level connection to PTS module %s...\n", bd_addr_to_str(device_addr));
             hfp_ag_establish_service_level_connection(device_addr);
@@ -357,12 +352,6 @@ static int stdin_process(struct data_source *ds){
             log_info("USER:\'%c\'", cmd);
             printf("Release HFP service level connection.\n");
             hfp_ag_release_service_level_connection(device_addr);
-            break;
-        case 'z':
-            memcpy(device_addr, speaker_addr, 6);
-            log_info("USER:\'%c\'", cmd);
-            printf("Establish HFP service level connection to %s...\n", bd_addr_to_str(device_addr));
-            hfp_ag_establish_service_level_connection(device_addr);
             break;
         case 'Z':
             log_info("USER:\'%c\'", cmd);
@@ -571,7 +560,7 @@ static int stdin_process(struct data_source *ds){
 
     return 0;
 }
-
+#endif
 
 static void packet_handler(uint8_t * event, uint16_t event_size){
 
@@ -665,6 +654,8 @@ static hfp_phone_number_t subscriber_number = {
 
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
+    // HFP HS address is hardcoded, please change it
+
     // init L2CAP
     l2cap_init();
     rfcomm_init();
@@ -686,13 +677,10 @@ int btstack_main(int argc, const char * argv[]){
 
     sdp_register_service_internal(NULL, (uint8_t *)hfp_service_buffer);
     
-
-    // pre-select pts
-    memcpy(device_addr, pts_addr, 6);
-
+#ifdef HAVE_STDIO
+    btstack_stdin_setup(stdin_process);
+#endif  
     // turn on!
     hci_power_control(HCI_POWER_ON);
-    
-    btstack_stdin_setup(stdin_process);
     return 0;
 }

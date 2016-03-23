@@ -80,8 +80,7 @@ static const char    hsp_hs_service_name[] = "Headset Test";
 static uint16_t      sco_handle = 0;
 
 static char hs_cmd_buffer[100];
-// static bd_addr_t current_addr = {0x04,0x0C,0xCE,0xE4,0x85,0xD3};
-static bd_addr_t current_addr = {0x00,0x1b,0xDC,0x07,0x32,0xEF};
+static bd_addr_t device_addr = {0x00,0x1b,0xDC,0x07,0x32,0xEF};
 
 static int phase = 0;
 
@@ -117,6 +116,7 @@ static const uint8_t sine[] = {
  *
  */ 
 
+
 static void show_usage(void){
     uint8_t iut_address_type;
     bd_addr_t      iut_address;
@@ -124,7 +124,7 @@ static void show_usage(void){
 
     printf("\n--- Bluetooth HSP Headset Test Console %s ---\n", bd_addr_to_str(iut_address));
     printf("---\n");
-    printf("c - Connect to %s\n", bd_addr_to_str(current_addr));
+    printf("c - Connect to %s\n", bd_addr_to_str(device_addr));
     printf("C - Disconnect\n");
     printf("a - establish audio connection\n");
     printf("A - release audio connection\n");
@@ -140,15 +140,15 @@ static void show_usage(void){
     printf("---\n");
 }
 
-
+#ifdef HAVE_STDIO
 static int stdin_process(struct data_source *ds){
     char buffer;
     read(ds->fd, &buffer, 1);
 
     switch (buffer){
         case 'c':
-            printf("Connect to %s\n", bd_addr_to_str(current_addr));
-            hsp_hs_connect(current_addr);
+            printf("Connect to %s\n", bd_addr_to_str(device_addr));
+            hsp_hs_connect(device_addr);
             break;
         case 'C':
             printf("Disconnect.\n");
@@ -197,6 +197,7 @@ static int stdin_process(struct data_source *ds){
     }
     return 0;
 }
+#endif
 
 static void try_send_sco(void){
     if (!sco_handle) return;
@@ -239,7 +240,6 @@ static void packet_handler(uint8_t * event, uint16_t event_size){
     switch (event[0]) {
         case BTSTACK_EVENT_STATE:
             if (event[2] != HCI_STATE_WORKING) break;
-            printf("HCI_STATE_WORKING\n");
             show_usage();
             break;
         case HCI_EVENT_NUMBER_OF_COMPLETED_PACKETS:
@@ -348,7 +348,9 @@ int btstack_main(int argc, const char * argv[]){
     hsp_hs_init(rfcomm_channel_nr);
     hsp_hs_register_packet_handler(packet_handler);
 
+#ifdef HAVE_STDIO
     btstack_stdin_setup(stdin_process);
+#endif
 
     gap_set_local_name("BTstack HSP HS");
     hci_discoverable_control(1);

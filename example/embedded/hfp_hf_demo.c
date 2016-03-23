@@ -78,11 +78,7 @@ const uint32_t   hfp_service_buffer[150/4]; // implicit alignment to 4-byte memo
 const uint8_t    rfcomm_channel_nr = 1;
 const char hfp_hf_service_name[] = "BTstack HFP HF Test";
 
-static bd_addr_t pts_addr = {0x00,0x15,0x83,0x5F,0x9D,0x46};
-//static bd_addr_t pts_addr = {0x00,0x1b,0xDC,0x07,0x32,0xEF};
-static bd_addr_t phone_addr = {0xD8,0xBb,0x2C,0xDf,0xF1,0x08};
-
-static bd_addr_t device_addr;
+static bd_addr_t device_addr = {0xD8,0xBb,0x2C,0xDf,0xF1,0x08};
 static uint16_t handle = -1;
 static uint8_t codecs[] = {HFP_CODEC_CVSD, HFP_CODEC_MSBC};
 static uint16_t indicators[1] = {0x01};
@@ -96,8 +92,6 @@ static void show_usage();
 static void show_usage(void){
     printf("\n--- Bluetooth HFP Hands-Free (HF) unit Test Console ---\n");
     printf("---\n");
-
-    printf("z - use iPhone as Audiogateway\n");
 
     printf("a - establish SLC connection to device\n");
     printf("A - release SLC connection to device\n");
@@ -178,6 +172,7 @@ static void show_usage(void){
     printf("---\n");
 }
 
+#ifdef HAVE_STDIO
 static int stdin_process(struct data_source *ds){
     read(ds->fd, &cmd, 1);
 
@@ -420,11 +415,6 @@ static int stdin_process(struct data_source *ds){
             printf("Private consulation with call 2\n");
             hfp_hf_private_consultation_with_call(device_addr, 2);
             break;
-        case 'z':
-            memcpy(device_addr, phone_addr, 6);
-            log_info("USER:\'%c\'", cmd);
-            printf("Use iPhone %s as Audiogateway.\n", bd_addr_to_str(device_addr));
-            break;
         case '[':
             log_info("USER:\'%c\'", cmd);
             printf("Query Response and Hold status (RHH ?)\n");
@@ -463,7 +453,7 @@ static int stdin_process(struct data_source *ds){
 
     return 0;
 }
-
+#endif
 
 static void packet_handler(uint8_t * event, uint16_t event_size){
     if (event[0] == RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE){
@@ -527,6 +517,8 @@ static void packet_handler(uint8_t * event, uint16_t event_size){
 
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
+    // HFP AG address is hardcoded, please change it
+
     // init L2CAP
     l2cap_init();
     rfcomm_init();
@@ -545,14 +537,10 @@ int btstack_main(int argc, const char * argv[]){
     hfp_hf_create_sdp_record((uint8_t *)hfp_service_buffer, rfcomm_channel_nr, hfp_hf_service_name, 0);
     sdp_register_service_internal(NULL, (uint8_t *)hfp_service_buffer);
 
-    // pre-select pts
-    memcpy(device_addr, pts_addr, 6);
-
+#ifdef HAVE_STDIO
+    btstack_stdin_setup(stdin_process);
+#endif    
     // turn on!
     hci_power_control(HCI_POWER_ON);
-    
-    btstack_stdin_setup(stdin_process);
-    // printf("Establishing HFP connection to %s...\n", bd_addr_to_str(phone_addr));
-    // hfp_hf_connect(phone_addr);
     return 0;
 }
