@@ -20,5 +20,6 @@
 #define HCI_ACL_PAYLOAD_SIZE (1691 + 4)
 #define HAVE_HCI_DUMP
 #define SDP_DES_DUMP
+#define HAVE_STDIO
 
 #endif

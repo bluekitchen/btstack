@@ -20,5 +20,6 @@
 #define SDP_DES_DUMP
 #define SDP_DES_DUMP
 #define USE_POSIX_RUN_LOOP
+#define HAVE_STDIO
 
 #endif
