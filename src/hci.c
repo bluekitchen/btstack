@@ -312,6 +312,7 @@ static int hci_number_free_acl_slots_for_connection_type(bd_addr_type_t address_
             num_packets_sent_le += connection->num_acl_packets_sent;
         }
     }
+    log_info("ACL classic buffers: %u used of %u", num_packets_sent_classic, hci_stack->acl_packets_total_num);
     int free_slots_classic = hci_stack->acl_packets_total_num - num_packets_sent_classic;
     int free_slots_le = 0;
 
