@@ -43,6 +43,9 @@
 // *****************************************************************************
 /* EXAMPLE_START(hfp_hs_demo): HFP Hands-Free (HF) Demo
  *
+ * @text This  HFP Hands-Free example demonstrates how to receive 
+ * an output from a remote HFP audio gateway (AG), and, 
+ * if HAVE_STDIO is defined, how to control the HFP AG. 
  */
 // *****************************************************************************
 
@@ -515,15 +518,24 @@ static void packet_handler(uint8_t * event, uint16_t event_size){
     }
 }
 
+/* @section Main Application Setup
+ *
+ * @text Listing MainConfiguration shows main application code. 
+ * To run a HFP HF service you need to initialize the SDP, and to create and register HFP HF record with it. 
+ * The packet_handler is used for sending commands to the HFP AG. It also receives the HFP AG's answers.
+ * The stdin_process callback allows for sending commands to the HFP AG. 
+ * At the end the Bluetooth stack is started.
+ */
+
+/* LISTING_START(MainConfiguration): Setup HFP Hands-Free unit */
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
     // HFP AG address is hardcoded, please change it
-
     // init L2CAP
     l2cap_init();
     rfcomm_init();
-    
-    // hfp_hf_init(rfcomm_channel_nr, HFP_DEFAULT_HF_SUPPORTED_FEATURES, codecs, sizeof(codecs), indicators, sizeof(indicators)/sizeof(uint16_t), 1);
+    sdp_init();    
+
     hfp_hf_init(rfcomm_channel_nr);
     hfp_hf_init_supported_features(438 | (1<<HFP_HFSF_ESCO_S4) | (1<<HFP_HFSF_EC_NR_FUNCTION)); 
     hfp_hf_init_hf_indicators(sizeof(indicators)/sizeof(uint16_t), indicators);
@@ -531,11 +543,21 @@ int btstack_main(int argc, const char * argv[]){
     
     hfp_hf_register_packet_handler(packet_handler);
 
-    sdp_init();
-    // init SDP, create record for SPP and register with SDP
     memset((uint8_t *)hfp_service_buffer, 0, sizeof(hfp_service_buffer));
-    hfp_hf_create_sdp_record((uint8_t *)hfp_service_buffer, rfcomm_channel_nr, hfp_hf_service_name, 0);
-    sdp_register_service_internal(NULL, (uint8_t *)hfp_service_buffer);
+/* LISTING_PAUSE */
+#ifdef EMBEDDED
+/* LISTING_RESUME */
+    service_record_item_t * service_record_item = (service_record_item_t *) hfp_service_buffer;
+    hfp_hf_create_sdp_record((uint8_t*) &service_record_item->service_record, rfcomm_channel_nr, hfp_hf_service_name, 0);
+    printf("SDP service buffer size: %u\n", (uint16_t) (sizeof(service_record_item_t) + de_get_len((uint8_t*) &service_record_item->service_record)));
+    sdp_register_service_internal(NULL, service_record_item);
+/* LISTING_PAUSE */
+#else
+    hfp_hf_create_sdp_record((uint8_t *) hfp_service_buffer, rfcomm_channel_nr, hfp_hf_service_name, 0);
+    printf("SDP service record size: %u\n", de_get_len((uint8_t*) hfp_service_buffer));
+    sdp_register_service_internal(NULL, (uint8_t*)hfp_service_buffer);
+#endif
+/* LISTING_RESUME */
 
 #ifdef HAVE_STDIO
     btstack_stdin_setup(stdin_process);
@@ -544,3 +566,4 @@ int btstack_main(int argc, const char * argv[]){
     hci_power_control(HCI_POWER_ON);
     return 0;
 }
+/* LISTING_END */

@@ -319,7 +319,7 @@ static void packet_handler(uint8_t * event, uint16_t event_size){
  * At the end the Bluetooth stack is started.
  */
 
-/* LISTING_START(MainConfiguration): Setup packet handlers and audio data channel for HSP Headset */
+/* LISTING_START(MainConfiguration): Setup HSP Headset */
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
     l2cap_init();
@@ -327,7 +327,6 @@ int btstack_main(int argc, const char * argv[]){
     sdp_init();
 
     memset((uint8_t *)hsp_service_buffer, 0, sizeof(hsp_service_buffer));
-
 /* LISTING_PAUSE */
 #ifdef EMBEDDED
 /* LISTING_RESUME */
@@ -355,10 +354,10 @@ int btstack_main(int argc, const char * argv[]){
     gap_set_local_name("BTstack HSP HS");
     hci_discoverable_control(1);
     hci_ssp_set_io_capability(SSP_IO_CAPABILITY_DISPLAY_YES_NO);
-    // turn on!
     hci_set_class_of_device(0x240404);
 
+    // turn on!
     hci_power_control(HCI_POWER_ON);
-    
     return 0;
 }
+/* LISTING_END */
