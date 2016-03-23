@@ -94,9 +94,17 @@ void hal_led_toggle(void){
     led_state = 1 - led_state;
     printf("LED State %u\n", led_state);
 }
-static void using_921600_baud(void){
+static void use_fast_uart(void){
+#if defined(HAVE_B1200_MAPPED_TO_3000000) || defined(HAVE_B300_MAPPED_TO_3000000)
+    printf("Using 3000000 baud.\n");
+    config.baudrate_main = 3000000;
+#elif defined(HAVE_B1200_MAPPED_TO_2000000) || defined(HAVE_B300_MAPPED_TO_2000000)
+    printf("Using 2000000 baud.\n");
+    config.baudrate_main = 2000000;
+#else
     printf("Using 921600 baud.\n");
     config.baudrate_main = 921600;
+#endif
 }
 
 static void local_version_information_callback(uint8_t * packet){
@@ -114,12 +122,12 @@ static void local_version_information_callback(uint8_t * packet){
     switch (manufacturer){
         case COMPANY_ID_CAMBRIDGE_SILICON_RADIO:
             printf("Cambridge Silicon Radio CSR chipset.\n");
-            using_921600_baud();
+            use_fast_uart();
             hci_set_chipset(btstack_chipset_csr_instance());
             break;
         case COMPANY_ID_TEXAS_INSTRUMENTS_INC: 
             printf("Texas Instruments - CC256x compatible chipset.\n");
-            using_921600_baud();
+            use_fast_uart();
             hci_set_chipset(btstack_chipset_cc256x_instance());
             break;
         case COMPANY_ID_BROADCOM_CORPORATION:   
@@ -128,7 +136,7 @@ static void local_version_information_callback(uint8_t * packet){
             break;
         case COMPANY_ID_ST_MICROELECTRONICS:   
             printf("ST Microelectronics - using STLC2500d driver.\n");
-            using_921600_baud();
+            use_fast_uart();
             hci_set_chipset(btstack_chipset_stlc2500d_instance());
             break;
         case COMPANY_ID_EM_MICROELECTRONICS_MARIN:

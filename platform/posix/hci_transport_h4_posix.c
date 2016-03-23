@@ -125,6 +125,22 @@ static int    h4_set_baudrate(uint32_t baudrate){
 #ifdef B921600
         case 921600: brate=B921600; break;
 #endif
+// Hacks to switch to 2/3 mbps on FTDI FT232 chipsets
+// requires special config in Info.plist or Registry
+#ifdef HAVE_B300_MAPPED_TO_2000000
+        case 2000000: brate=B300; break;
+#endif
+#ifdef HAVE_B600_MAPPED_TO_3000000
+        case 3000000: brate=B600; break;
+#endif
+#ifdef HAVE_B1200_MAPPED_TO_2000000
+        case 2000000: brate=B1200; break;
+#endif
+#ifdef HAVE_B2400_MAPPED_TO_3000000
+        case 3000000: brate=B2400; break;
+#endif
+        default:
+            break;
     }
     cfsetospeed(&toptions, brate);
     cfsetispeed(&toptions, brate);
