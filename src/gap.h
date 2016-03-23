@@ -286,13 +286,13 @@ int gap_update_connection_parameters(hci_con_handle_t con_handle, uint16_t conn_
  * @brief Set accepted connection parameter range
  * @param range
  */
-void gap_get_connection_parameter_range(le_connection_parameter_range_t range);
+void gap_get_connection_parameter_range(le_connection_parameter_range_t * range);
 
 /**
  * @brief Get accepted connection parameter range
  * @param range
  */
-void gap_set_connection_parameter_range(le_connection_parameter_range_t range);
+void gap_set_connection_parameter_range(le_connection_parameter_range_t * range);
 
 /**
  * @brief Connect to remote LE device

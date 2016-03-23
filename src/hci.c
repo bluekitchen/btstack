@@ -148,8 +148,8 @@ static hci_connection_t * create_connection_for_bd_addr_and_type(bd_addr_t addr,
 *
  * @return le connection parameter range struct
  */
-void gap_get_connection_parameter_range(le_connection_parameter_range_t range){
-    range = hci_stack->le_connection_parameter_range;
+void gap_get_connection_parameter_range(le_connection_parameter_range_t * range){
+    *range = hci_stack->le_connection_parameter_range;
 }
 
 /**
@@ -157,8 +157,8 @@ void gap_get_connection_parameter_range(le_connection_parameter_range_t range){
  *
  */
 
-void gap_set_connection_parameter_range(le_connection_parameter_range_t range){
-    hci_stack->le_connection_parameter_range = range;
+void gap_set_connection_parameter_range(le_connection_parameter_range_t *range){
+    hci_stack->le_connection_parameter_range = *range;
 }
 
 /**
@@ -312,7 +312,6 @@ static int hci_number_free_acl_slots_for_connection_type(bd_addr_type_t address_
             num_packets_sent_le += connection->num_acl_packets_sent;
         }
     }
-
     int free_slots_classic = hci_stack->acl_packets_total_num - num_packets_sent_classic;
     int free_slots_le = 0;
 
