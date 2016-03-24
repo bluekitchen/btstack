@@ -145,11 +145,7 @@ static uint16_t  tx_len;                        // 0 == no outgoing packet
 static btstack_timer_source_t ehcill_sleep_ack_timer;
 
 // data source used in run_loop
-static btstack_data_source_t hci_transport_h4_dma_ds = {
-  /*  .item    = */  { NULL },
-  /*  .fd      = */  0,
-  /*  .process = */  h4_process
-};
+static btstack_data_source_t hci_transport_h4_dma_ds;
 
 // hci_transport for use by hci
 static const hci_transport_h4_t hci_transport_h4_ehcill_dma = {
@@ -195,6 +191,7 @@ static int h4_open(void){
     hal_uart_dma_set_csr_irq_handler(ehcill_cts_irq_handler);
     
 	// set up data_source
+    btstack_run_loop_set_data_source_handler(&hci_transport_h4_dma_ds);
     btstack_run_loop_add_data_source(&hci_transport_h4_dma_ds);
     
     // init state machines
