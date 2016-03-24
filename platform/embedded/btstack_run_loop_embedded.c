@@ -268,6 +268,8 @@ static const btstack_run_loop_t btstack_run_loop_embedded = {
     &btstack_run_loop_embedded_init,
     &btstack_run_loop_embedded_add_data_source,
     &btstack_run_loop_embedded_remove_data_source,
+    NULL,
+    NULL,
     &btstack_run_loop_embedded_set_timer,
     &btstack_run_loop_embedded_add_timer,
     &btstack_run_loop_embedded_remove_timer,

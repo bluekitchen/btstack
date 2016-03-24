@@ -79,10 +79,22 @@ int btstack_run_loop_get_data_source_fd(btstack_data_source_t *ds){
     return ds->fd;
 }
 
-void btstack_run_loop_enable_data_source_callbacks(btstack_data_source_t *data_source, uint16_t callbacks){
+void btstack_run_loop_enable_data_source_callbacks(btstack_data_source_t *ds, uint16_t callbacks){
+    btstack_run_loop_assert();
+    if (the_run_loop->enable_data_source_callbacks){
+        return the_run_loop->enable_data_source_callbacks(ds, callbacks);
+    } else {
+        log_error("btstack_run_loop_remove_data_source not implemented");
+    }
 }
 
-void btstack_run_loop_disable_data_source_callbacks(btstack_data_source_t *data_source, uint16_t callbacks){
+void btstack_run_loop_disable_data_source_callbacks(btstack_data_source_t *ds, uint16_t callbacks){
+    btstack_run_loop_assert();
+    if (the_run_loop->disable_data_source_callbacks){
+        return the_run_loop->disable_data_source_callbacks(ds, callbacks);
+    } else {
+        log_error("btstack_run_loop_disable_data_source_callbacks not implemented");
+    }
 }
 
 /**

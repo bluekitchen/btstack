@@ -168,6 +168,8 @@ static const btstack_run_loop_t btstack_run_loop_wiced = {
     &btstack_run_loop_wiced_btstack_run_loop_init,
     NULL,
     NULL,
+    NULL,
+    NULL,
     &btstack_run_loop_wiced_set_timer,
     &btstack_run_loop_wiced_add_timer,
     &btstack_run_loop_wiced_remove_timer,

@@ -267,6 +267,8 @@ static const btstack_run_loop_t btstack_run_loop_posix = {
     &btstack_run_loop_posix_init,
     &btstack_run_loop_posix_add_data_source,
     &btstack_run_loop_posix_remove_data_source,
+    NULL,
+    NULL,
     &btstack_run_loop_posix_set_timer,
     &btstack_run_loop_posix_add_timer,
     &btstack_run_loop_posix_remove_timer,

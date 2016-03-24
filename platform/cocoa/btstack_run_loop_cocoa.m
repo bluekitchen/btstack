@@ -203,6 +203,8 @@ static const btstack_run_loop_t btstack_run_loop_cocoa = {
     &btstack_run_loop_cocoa_init,
     &btstack_run_loop_cocoa_add_data_source,
     &btstack_run_loop_cocoa_remove_data_source,
+    NULL,
+    NULL,
     &btstack_run_loop_cocoa_set_timer,
     &btstack_run_loop_cocoa_add_timer,
     &btstack_run_loop_cocoa_remove_timer,
