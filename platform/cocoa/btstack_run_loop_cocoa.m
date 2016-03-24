@@ -120,10 +120,8 @@ static void btstack_run_loop_cocoa_add_data_source(btstack_data_source_t *data_s
     
     // configure options:
     // - don't close native fd on CFSocketInvalidate
-    // - automatically reenable write callback (to match posix run loop implementation)
     CFOptionFlags socket_options = CFSocketGetSocketFlags(socket);
     socket_options &= ~kCFSocketCloseOnInvalidate;
-    socket_options |= kCFSocketAutomaticallyReenableWriteCallBack
     CFSocketSetSocketFlags(socket, socket_options);
     
 	// create run loop source

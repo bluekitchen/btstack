@@ -97,6 +97,11 @@ static  H4_STATE h4_state;
 static int bytes_to_read;
 static int read_pos;
 
+// packet writer state
+static int             write_bytes_len;
+static const uint8_t * write_bytes_data;
+
+
 static uint8_t hci_packet_with_pre_buffer[HCI_INCOMING_PRE_BUFFER_SIZE + 1 + HCI_PACKET_BUFFER_SIZE]; // packet type + max(acl header + acl payload, event header + event data)
 static uint8_t * hci_packet = &hci_packet_with_pre_buffer[HCI_INCOMING_PRE_BUFFER_SIZE];
 
@@ -243,37 +248,7 @@ static int h4_close(void){
     return 0;
 }
 
-static int h4_send_packet(uint8_t packet_type, uint8_t * packet, int size){
-    if (hci_transport_h4->ds == NULL) return -1;
-    if (hci_transport_h4->uart_fd == 0) return -1;
-
-    uint32_t start = btstack_run_loop_get_time_ms();
-
-    // store packet type before actual data and increase size
-    char *data = (char*) packet;
-    size++;
-    data--;
-    *data = packet_type;
-    while (size > 0) {
-        int bytes_written = write(hci_transport_h4->uart_fd, data, size);
-        if (bytes_written < 0) {
-            log_info("usleep(5000)");
-            usleep(5000);
-            continue;
-        }
-        data += bytes_written;
-        size -= bytes_written;
-    }
-
-    uint32_t end = btstack_run_loop_get_time_ms();
-    if (end - start > 10){
-        log_info("h4_send_packet: write took %u ms", end - start);
-    }
-
-    return 0;
-}
-
-static void   h4_register_packet_handler(void (*handler)(uint8_t packet_type, uint8_t *packet, uint16_t size)){
+static void h4_register_packet_handler(void (*handler)(uint8_t packet_type, uint8_t *packet, uint16_t size)){
     packet_handler = handler;
 }
 
@@ -342,8 +317,7 @@ static void h4_statemachine(void){
             break;
     }
 }
-
-static void h4_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type) {
+static void h4_process_read(btstack_data_source_t *ds){
     if (hci_transport_h4->uart_fd == 0) return;
 
     int read_now = bytes_to_read;
@@ -367,6 +341,75 @@ static void h4_process(btstack_data_source_t *ds, btstack_data_source_callback_t
     h4_statemachine();
 }
 
+static void h4_process_write(btstack_data_source_t * ds){
+    if (hci_transport_h4->uart_fd == 0) return;
+    if (write_bytes_len == 0) return;
+
+    uint32_t start = btstack_run_loop_get_time_ms();
+
+    // write up to write_bytes_len to fd
+    int bytes_written = write(hci_transport_h4->uart_fd, write_bytes_data, write_bytes_len);
+    if (bytes_written < 0) {
+        btstack_run_loop_enable_data_source_callbacks(ds, DATA_SOURCE_CALLBACK_WRITE);
+        return;
+    }
+
+    uint32_t end = btstack_run_loop_get_time_ms();
+    if (end - start > 10){
+        log_info("h4_process: write took %u ms", end - start);
+    }
+
+    write_bytes_data += bytes_written;
+    write_bytes_len  -= bytes_written;
+
+    if (write_bytes_len){
+        btstack_run_loop_enable_data_source_callbacks(ds, DATA_SOURCE_CALLBACK_WRITE);
+        return;
+    }
+
+    btstack_run_loop_disable_data_source_callbacks(ds, DATA_SOURCE_CALLBACK_WRITE);
+
+    // notify upper stack that it can send again
+    uint8_t event[] = { HCI_EVENT_TRANSPORT_PACKET_SENT, 0};
+    packet_handler(HCI_EVENT_PACKET, &event[0], sizeof(event));
+}
+
+static void h4_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type) {
+    switch (callback_type){
+        case DATA_SOURCE_CALLBACK_READ:
+            h4_process_read(ds);
+            break;
+        case DATA_SOURCE_CALLBACK_WRITE:
+            h4_process_write(ds);
+        default:
+            break;
+    }
+}
+
+static int h4_send_packet(uint8_t packet_type, uint8_t * packet, int size){
+    if (hci_transport_h4->ds == NULL) return -1;
+    if (hci_transport_h4->uart_fd == 0) return -1;
+
+    // store packet type before actual data and increase size
+    size++;
+    packet--;
+    *packet = packet_type;
+
+    // register outgoing request
+    write_bytes_data = packet;
+    write_bytes_len = size;
+
+    // start sending
+    // h4_process_write(hci_transport_h4->ds);
+    btstack_run_loop_enable_data_source_callbacks(hci_transport_h4->ds, DATA_SOURCE_CALLBACK_WRITE);
+
+    return 0;
+}
+
+static int h4_can_send_now(uint8_t packet_type){
+    return write_bytes_len == 0;
+}
+
 static void dummy_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
 }
 
@@ -381,7 +424,7 @@ const hci_transport_t * hci_transport_h4_instance() {
         hci_transport_h4->transport.open                          = h4_open;
         hci_transport_h4->transport.close                         = h4_close;
         hci_transport_h4->transport.register_packet_handler       = h4_register_packet_handler;
-        hci_transport_h4->transport.can_send_packet_now           = NULL;
+        hci_transport_h4->transport.can_send_packet_now           = h4_can_send_now;
         hci_transport_h4->transport.send_packet                   = h4_send_packet;
         hci_transport_h4->transport.set_baudrate                  = h4_set_baudrate;
     }
