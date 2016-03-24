@@ -409,13 +409,11 @@ static void h4_process(btstack_data_source_t *ds, btstack_data_source_callback_t
         packet_handler(HCI_EVENT_PACKET, &event[0], sizeof(event));
     }
 
-    if (h4_state != H4_PACKET_RECEIVED) return 0;
-            
+    if (h4_state != H4_PACKET_RECEIVED) return;
+
     packet_handler(hci_packet[0], &hci_packet[1], read_pos-1);
 
     h4_rx_init_sm();
-                                
-    return 0;
 }
 
 //////////////////////////
