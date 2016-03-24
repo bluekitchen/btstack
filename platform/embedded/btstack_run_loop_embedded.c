@@ -162,6 +162,14 @@ static void btstack_run_loop_embedded_dump_timer(void){
 #endif
 }
 
+static void btstack_run_loop_embedded_enable_data_source_callbacks(btstack_data_source_t * ds, uint16_t callback_types){
+    ds->flags |= callback_types;
+}
+
+static void btstack_run_loop_embedded_disable_data_source_callbacks(btstack_data_source_t * ds, uint16_t callback_types){
+    ds->flags &= ~callback_types;
+}
+
 /**
  * Execute run_loop once
  */
@@ -172,7 +180,9 @@ void btstack_run_loop_embedded_execute_once(void) {
     btstack_data_source_t *next;
     for (ds = (btstack_data_source_t *) data_sources; ds != NULL ; ds = next){
         next = (btstack_data_source_t *) ds->item.next; // cache pointer to next data_source to allow data source to remove itself
-        ds->process(ds, DATA_SOURCE_CALLBACK_POLL);
+        if (ds->flags & DATA_SOURCE_CALLBACK_POLL){
+            ds->process(ds, DATA_SOURCE_CALLBACK_POLL);
+        }
     }
     
 #ifdef HAVE_TICK
@@ -268,8 +278,8 @@ static const btstack_run_loop_t btstack_run_loop_embedded = {
     &btstack_run_loop_embedded_init,
     &btstack_run_loop_embedded_add_data_source,
     &btstack_run_loop_embedded_remove_data_source,
-    NULL,
-    NULL,
+    &btstack_run_loop_embedded_enable_data_source_callbacks,
+    &btstack_run_loop_embedded_disable_data_source_callbacks,
     &btstack_run_loop_embedded_set_timer,
     &btstack_run_loop_embedded_add_timer,
     &btstack_run_loop_embedded_remove_timer,
