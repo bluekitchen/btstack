@@ -120,11 +120,20 @@ static void btstack_run_loop_posix_dump_timer(void){
     }
 }
 
+static void btstack_run_loop_posix_enable_data_source_callbacks(btstack_data_source_t * ds, uint16_t callback_types){
+    ds->flags |= callback_types;
+}
+
+static void btstack_run_loop_posix_disable_data_source_callbacks(btstack_data_source_t * ds, uint16_t callback_types){
+    ds->flags &= ~callback_types;
+}
+
 /**
  * Execute run_loop
  */
 static void btstack_run_loop_posix_execute(void) {
-    fd_set descriptors;
+    fd_set descriptors_read;
+    fd_set descriptors_write;
     
     btstack_timer_source_t       *ts;
     struct timeval current_tv;
@@ -134,13 +143,21 @@ static void btstack_run_loop_posix_execute(void) {
     
     while (1) {
         // collect FDs
-        FD_ZERO(&descriptors);
+        FD_ZERO(&descriptors_read);
+        FD_ZERO(&descriptors_write);
         int highest_fd = 0;
         btstack_linked_list_iterator_init(&it, &data_sources);
         while (btstack_linked_list_iterator_has_next(&it)){
             btstack_data_source_t *ds = (btstack_data_source_t*) btstack_linked_list_iterator_next(&it);
-            if (ds->fd >= 0) {
-                FD_SET(ds->fd, &descriptors);
+            if (ds->fd < 0) continue;
+            if (ds->flags & DATA_SOURCE_CALLBACK_READ){
+                FD_SET(ds->fd, &descriptors_read);
+                if (ds->fd > highest_fd) {
+                    highest_fd = ds->fd;
+                }
+            }
+            if (ds->flags & DATA_SOURCE_CALLBACK_WRITE){
+                FD_SET(ds->fd, &descriptors_write);
                 if (ds->fd > highest_fd) {
                     highest_fd = ds->fd;
                 }
@@ -167,7 +184,7 @@ static void btstack_run_loop_posix_execute(void) {
         }
                 
         // wait for ready FDs
-        select( highest_fd+1 , &descriptors, NULL, NULL, timeout);
+        select( highest_fd+1 , &descriptors_read, &descriptors_write, NULL, timeout);
         
         // process data sources very carefully
         // bt_control.close() triggered from a client can remove a different data source
@@ -178,9 +195,13 @@ static void btstack_run_loop_posix_execute(void) {
         while (btstack_linked_list_iterator_has_next(&it) && !data_sources_modified){
             btstack_data_source_t *ds = (btstack_data_source_t*) btstack_linked_list_iterator_next(&it);
             // log_info("btstack_run_loop_posix_execute: check %x with fd %u\n", (int) ds, ds->fd);
-            if (FD_ISSET(ds->fd, &descriptors)) {
-                // log_info("btstack_run_loop_posix_execute: process %x with fd %u\n", (int) ds, ds->fd);
+            if (FD_ISSET(ds->fd, &descriptors_read)) {
+                // log_info("btstack_run_loop_posix_execute: process read %x with fd %u\n", (int) ds, ds->fd);
                 ds->process(ds, DATA_SOURCE_CALLBACK_READ);
+            }
+            if (FD_ISSET(ds->fd, &descriptors_write)) {
+                // log_info("btstack_run_loop_posix_execute: process write %x with fd %u\n", (int) ds, ds->fd);
+                ds->process(ds, DATA_SOURCE_CALLBACK_WRITE);
             }
         }
         // log_info("btstack_run_loop_posix_execute: after ds check\n");
@@ -267,8 +288,8 @@ static const btstack_run_loop_t btstack_run_loop_posix = {
     &btstack_run_loop_posix_init,
     &btstack_run_loop_posix_add_data_source,
     &btstack_run_loop_posix_remove_data_source,
-    NULL,
-    NULL,
+    &btstack_run_loop_posix_enable_data_source_callbacks,
+    &btstack_run_loop_posix_disable_data_source_callbacks,
     &btstack_run_loop_posix_set_timer,
     &btstack_run_loop_posix_add_timer,
     &btstack_run_loop_posix_remove_timer,
