@@ -401,7 +401,7 @@ static void handle_completed_transfer(struct libusb_transfer *transfer){
 }
 
 static void usb_process_ds(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type) {
-    if (libusb_state != LIB_USB_TRANSFERS_ALLOCATED) return -1;
+    if (libusb_state != LIB_USB_TRANSFERS_ALLOCATED) return;
 
     // log_info("begin usb_process_ds");
     // always handling an event as we're called when data is ready
@@ -415,7 +415,7 @@ static void usb_process_ds(btstack_data_source_t *ds, btstack_data_source_callba
         void * next = handle_packet->user_data;
         handle_completed_transfer(handle_packet);
         // handle case where libusb_close might be called by hci packet handler        
-        if (libusb_state != LIB_USB_TRANSFERS_ALLOCATED) return -1;
+        if (libusb_state != LIB_USB_TRANSFERS_ALLOCATED) return;
 
         // Move to next in the list of packets to handle
         if (next) {
@@ -425,7 +425,6 @@ static void usb_process_ds(btstack_data_source_t *ds, btstack_data_source_callba
         }
     }
     // log_info("end usb_process_ds");
-    return 0;
 }
 
 static void usb_process_ts(btstack_timer_source_t *timer) {
@@ -437,7 +436,7 @@ static void usb_process_ts(btstack_timer_source_t *timer) {
     if (libusb_state != LIB_USB_TRANSFERS_ALLOCATED) return;
 
     // actually handled the packet in the pollfds function
-    usb_process_ds((struct btstack_data_source *) NULL);
+    usb_process_ds((struct btstack_data_source *) NULL, DATA_SOURCE_CALLBACK_READ);
 
     // Get the amount of time until next event is due
     long msec = AYSNC_POLLING_INTERVAL_MS;

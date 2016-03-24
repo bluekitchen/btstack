@@ -172,7 +172,7 @@ void btstack_run_loop_embedded_execute_once(void) {
     btstack_data_source_t *next;
     for (ds = (btstack_data_source_t *) data_sources; ds != NULL ; ds = next){
         next = (btstack_data_source_t *) ds->item.next; // cache pointer to next data_source to allow data source to remove itself
-        ds->process(ds);
+        ds->process(ds, DATA_SOURCE_CALLBACK_POLL);
     }
     
 #ifdef HAVE_TICK
@@ -187,7 +187,7 @@ void btstack_run_loop_embedded_execute_once(void) {
         btstack_timer_source_t *ts = (btstack_timer_source_t *) timers;
         if (ts->timeout > now) break;
         btstack_run_loop_remove_timer(ts);
-        ts->process(ts, DATA_SOURCE_CALLBACK_POLL);
+        ts->process(ts);
     }
 #endif
     
