@@ -610,8 +610,9 @@ static int hci_transport_h5_open(void){
     }
     
     // set up data_source
-    hci_transport_h5_data_source.fd = fd;
-    hci_transport_h5_data_source.process = &hci_transport_h5_process;
+    btstack_run_loop_set_data_source_fd(&hci_transport_h5_data_source, fd);
+    btstack_run_loop_set_data_source_handler(&hci_transport_h5_data_source, &hci_transport_h5_process);
+    btstack_run_loop_enable_data_source_callbacks(&hci_transport_h5_data_source, DATA_SOURCE_CALLBACK_READ);
     btstack_run_loop_add_data_source(&hci_transport_h5_data_source);
     
     // also set baudrate
@@ -652,8 +653,8 @@ static int hci_transport_h5_close(void){
     return 0;
 }
 
-static int hci_transport_h5_process(btstack_data_source_t *ds) {
-    if (hci_transport_h5_data_source.fd < 0) return -1;
+static void hci_transport_h5_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type) {
+    if (hci_transport_h5_data_source.fd < 0) return;
 
     // process data byte by byte
     uint8_t data;
@@ -668,8 +669,8 @@ static int hci_transport_h5_process(btstack_data_source_t *ds) {
             hci_transport_slip_init();
         }
     };
-    return 0;
 }
+
 // get h5 singleton
 const hci_transport_t * hci_transport_h5_instance() {
     if (hci_transport_h5 == NULL) {

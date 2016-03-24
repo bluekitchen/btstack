@@ -49,7 +49,7 @@
 static btstack_data_source_t stdin_source;
 static int activated = 0;
 
-void btstack_stdin_setup(int (*stdin_process)(btstack_data_source_t *_ds)){
+void btstack_stdin_setup(void (*stdin_process)(btstack_data_source_t *_ds, btstack_data_source_callback_type_t callback_type)){
 
 #ifndef _WIN32
     struct termios term = {0};
@@ -64,6 +64,7 @@ void btstack_stdin_setup(int (*stdin_process)(btstack_data_source_t *_ds)){
 
     btstack_run_loop_set_data_source_fd(&stdin_source, 0); // stdin
     btstack_run_loop_set_data_source_handler(&stdin_source, stdin_process);
+    btstack_run_loop_enable_data_source_callbacks(&stdin_source, DATA_SOURCE_CALLBACK_READ);
     btstack_run_loop_add_data_source(&stdin_source);
 
     activated = 1;

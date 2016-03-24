@@ -192,6 +192,7 @@ static int h4_open(void){
     
 	// set up data_source
     btstack_run_loop_set_data_source_handler(&hci_transport_h4_dma_ds, &h4_process);
+    btstack_run_loop_enable_data_source_callbacks(&hci_transport_h4_dma_ds, DATA_SOURCE_CALLBACK_POLL);
     btstack_run_loop_add_data_source(&hci_transport_h4_dma_ds);
     
     // init state machines

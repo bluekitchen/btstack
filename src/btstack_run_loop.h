@@ -175,14 +175,14 @@ int btstack_run_loop_get_data_source_fd(btstack_data_source_t * data_source);
  * @param data_source to remove
  * @param callback types to enable
  */
-void btstack_run_loop_enable_data_source_callback(btstack_data_source_t * data_source, uint16_t callbacks);
+void btstack_run_loop_enable_data_source_callbacks(btstack_data_source_t * data_source, uint16_t callbacks);
 
 /**
  * @brief Enable callbacks for a data source
  * @param data_source to remove
  * @param callback types to disable
  */
-void btstack_run_loop_disable_data_source_callback(btstack_data_source_t * data_source, uint16_t callbacks);
+void btstack_run_loop_disable_data_source_callbacks(btstack_data_source_t * data_source, uint16_t callbacks);
 
 /**
  * @brief Add data source to run loop

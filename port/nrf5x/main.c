@@ -392,6 +392,7 @@ void transport_init(const void *transport_config){
  */
 static int transport_open(void){
     btstack_run_loop_set_data_source_handler(&hci_transport_data_source, &transport_run);
+    btstack_run_loop_enable_data_source_callbacks(&hci_transport_data_source, DATA_SOURCE_CALLBACK_POLL);
     btstack_run_loop_add_data_source(&hci_transport_data_source);
     return 0;
 }
