@@ -59,9 +59,14 @@ extern "C" {
 #endif
 	
 typedef struct btstack_data_source {
+	// 
     btstack_linked_item_t item;
-    int  fd;                                 // <-- file descriptor to watch or 0
-    int  (*process)(struct btstack_data_source *ds); // <-- do processing
+    // file descriptor to watch for run loops that support file descriptors
+    int  fd;
+    // callback to call for enabled callback types
+    int  (*process)(struct btstack_data_source *ds);
+    // flags storing enabled callback types
+    uint16_t flags;
 } btstack_data_source_t;
 
 typedef struct btstack_timer_source {
@@ -92,8 +97,16 @@ typedef struct btstack_run_loop {
 
 void btstack_run_loop_timer_dump(void);
 
-
 /* API_START */
+
+/**
+ * possible callback types for run loop data sources
+ */
+typedef enum {
+	DATA_SOURCE_CALLBACK_POLL  = 1 << 0,
+	DATA_SOURCE_CALLBACK_READ  = 1 << 1,
+	DATA_SOURCE_CALLBACK_WRITE = 1 << 2,
+} btstack_data_source_callback_type_t;
 
 /**
  * @brief Init main run loop. Must be called before any other run loop call.
