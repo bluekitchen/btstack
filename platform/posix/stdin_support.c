@@ -63,7 +63,7 @@ void btstack_stdin_setup(int (*stdin_process)(btstack_data_source_t *_ds)){
 #endif
 
     stdin_source.fd = 0; // stdin
-    btstack_run_loop_set_data_source_handler(&stdin_source, &stdin_process);
+    btstack_run_loop_set_data_source_handler(&stdin_source, stdin_process);
     btstack_run_loop_add_data_source(&stdin_source);
 
     activated = 1;
