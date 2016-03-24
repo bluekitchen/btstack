@@ -109,11 +109,7 @@ static TX_STATE tx_state;
 // static hci_transport_h4_t * hci_transport_h4 = NULL;
 static  void (*packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size) = dummy_handler;
 
-static btstack_data_source_t hci_transport_h4_dma_ds = {
-  /*  .item    = */  { NULL },
-  /*  .fd      = */  0,
-  /*  .process = */  h4_process
-};
+static btstack_data_source_t hci_transport_h4_dma_ds;
 
 // hci_transport for use by hci
 static const hci_transport_h4_t hci_transport_h4_dma = {
@@ -147,6 +143,7 @@ static int h4_open(void){
     hal_uart_dma_set_block_sent(h4_block_sent);
     
 	// set up data_source
+    btstack_run_loop_set_data_source_handler(&hci_transport_h4_dma_ds, &h4_process);
     btstack_run_loop_add_data_source(&hci_transport_h4_dma_ds);
     
     //
