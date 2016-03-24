@@ -315,7 +315,7 @@ int socket_connection_create_tcp(int port){
     btstack_data_source_t *ds = malloc( sizeof(btstack_data_source_t));
     if (ds == NULL) return -1;
     ds->fd = 0;
-    ds->process = socket_connection_accept;
+    btstack_run_loop_set_data_source_handler(ds, &socket_connection_accept);
     
 	// create tcp socket
 	if ((ds->fd = socket (PF_INET, SOCK_STREAM, 0)) < 0) {
@@ -369,7 +369,7 @@ void socket_connection_launchd_register_fd_array(launch_data_t listening_fd_arra
         // create btstack_data_source_t for fd
         btstack_data_source_t *ds = malloc( sizeof(btstack_data_source_t));
         if (ds == NULL) return;
-        ds->process = socket_connection_accept;
+        btstack_run_loop_set_data_source_handler(ds, &socket_connection_accept);
         ds->fd = listening_fd;
         btstack_run_loop_add_data_source(ds);
 	}
@@ -456,7 +456,7 @@ int socket_connection_create_unix(char *path){
     btstack_data_source_t *ds = malloc( sizeof(btstack_data_source_t));
     if (ds == NULL) return -1;
     ds->fd = 0;
-    ds->process = socket_connection_accept;
+    btstack_run_loop_set_data_source_handler(ds, &socket_connection_accept);
 
 	// create unix socket
 	if ((ds->fd = socket (AF_UNIX, SOCK_STREAM, 0)) < 0) {

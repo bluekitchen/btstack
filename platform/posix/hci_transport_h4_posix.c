@@ -213,7 +213,7 @@ static int h4_open(void){
     if (!hci_transport_h4->ds) return -1;
     hci_transport_h4->uart_fd = fd;
     hci_transport_h4->ds->fd = fd;
-    hci_transport_h4->ds->process = h4_process;
+    btstack_run_loop_set_data_source_handler(hci_transport_h4, &h4_process);
     btstack_run_loop_add_data_source(hci_transport_h4->ds);
     
     // also set baudrate
