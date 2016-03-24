@@ -72,7 +72,7 @@ static void socketDataCallback (
     if (callbackType == kCFSocketReadCallBack && info){
         btstack_data_source_t *dataSource = (btstack_data_source_t *) info;
         // printf("btstack_run_loop_cocoa_data_source %x - fd %u, CFSocket %x, CFRunLoopSource %x\n", (int) dataSource, dataSource->fd, (int) s, (int) dataSource->item.next);
-        dataSource->process(dataSource);
+        dataSource->process(dataSource, DATA_SOURCE_CALLBACK_READ);
     }
 }
 

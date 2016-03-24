@@ -400,7 +400,7 @@ static void handle_completed_transfer(struct libusb_transfer *transfer){
     }   
 }
 
-static int usb_process_ds(btstack_data_source_t *ds) {
+static void usb_process_ds(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type) {
     if (libusb_state != LIB_USB_TRANSFERS_ALLOCATED) return -1;
 
     // log_info("begin usb_process_ds");

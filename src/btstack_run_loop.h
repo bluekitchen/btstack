@@ -58,13 +58,23 @@
 extern "C" {
 #endif
 	
+
+/**
+ * Callback types for run loop data sources
+ */
+typedef enum {
+	DATA_SOURCE_CALLBACK_POLL  = 1 << 0,
+	DATA_SOURCE_CALLBACK_READ  = 1 << 1,
+	DATA_SOURCE_CALLBACK_WRITE = 1 << 2,
+} btstack_data_source_callback_type_t;
+
 typedef struct btstack_data_source {
 	// 
     btstack_linked_item_t item;
     // file descriptor to watch for run loops that support file descriptors
     int  fd;
     // callback to call for enabled callback types
-    int  (*process)(struct btstack_data_source *ds);
+    void  (*process)(struct btstack_data_source *ds, btstack_data_source_callback_type_t callback_type);
     // flags storing enabled callback types
     uint16_t flags;
 } btstack_data_source_t;
@@ -82,7 +92,6 @@ typedef struct btstack_timer_source {
     void * context;
 } btstack_timer_source_t;
 
-// 
 typedef struct btstack_run_loop {
 	void (*init)(void);
 	void (*add_data_source)(btstack_data_source_t *dataSource);
@@ -98,15 +107,6 @@ typedef struct btstack_run_loop {
 void btstack_run_loop_timer_dump(void);
 
 /* API_START */
-
-/**
- * possible callback types for run loop data sources
- */
-typedef enum {
-	DATA_SOURCE_CALLBACK_POLL  = 1 << 0,
-	DATA_SOURCE_CALLBACK_READ  = 1 << 1,
-	DATA_SOURCE_CALLBACK_WRITE = 1 << 2,
-} btstack_data_source_callback_type_t;
 
 /**
  * @brief Init main run loop. Must be called before any other run loop call.
@@ -154,7 +154,7 @@ uint32_t btstack_run_loop_get_time_ms(void);
 /**
  * @brief Set data source callback.
  */
-void btstack_run_loop_set_data_source_handler(btstack_data_source_t *ds, int (*process)(btstack_data_source_t *_ds));
+void btstack_run_loop_set_data_source_handler(btstack_data_source_t *ds, void (*process)(btstack_data_source_t *_ds, btstack_data_source_callback_type_t callback_type));
 
 /**
  * @brief Set data source file descriptor. 

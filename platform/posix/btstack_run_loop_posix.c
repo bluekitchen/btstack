@@ -180,7 +180,7 @@ static void btstack_run_loop_posix_execute(void) {
             // log_info("btstack_run_loop_posix_execute: check %x with fd %u\n", (int) ds, ds->fd);
             if (FD_ISSET(ds->fd, &descriptors)) {
                 // log_info("btstack_run_loop_posix_execute: process %x with fd %u\n", (int) ds, ds->fd);
-                ds->process(ds);
+                ds->process(ds, DATA_SOURCE_CALLBACK_READ);
             }
         }
         // log_info("btstack_run_loop_posix_execute: after ds check\n");

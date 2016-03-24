@@ -187,7 +187,7 @@ void btstack_run_loop_embedded_execute_once(void) {
         btstack_timer_source_t *ts = (btstack_timer_source_t *) timers;
         if (ts->timeout > now) break;
         btstack_run_loop_remove_timer(ts);
-        ts->process(ts);
+        ts->process(ts, DATA_SOURCE_CALLBACK_POLL);
     }
 #endif
     

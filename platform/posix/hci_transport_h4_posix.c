@@ -65,7 +65,7 @@
 #error HCI_OUTGOING_PRE_BUFFER_SIZE not defined. Please update hci.h
 #endif
 
-static int h4_process(btstack_data_source_t *ds);
+static void h4_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type);
 static void dummy_handler(uint8_t packet_type, uint8_t *packet, uint16_t size); 
 
 typedef enum {
@@ -342,8 +342,8 @@ static void h4_statemachine(void){
     }
 }
 
-static int h4_process(btstack_data_source_t *ds) {
-    if (hci_transport_h4->uart_fd == 0) return -1;
+static void h4_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type) {
+    if (hci_transport_h4->uart_fd == 0) return;
 
     int read_now = bytes_to_read;
 
@@ -352,9 +352,7 @@ static int h4_process(btstack_data_source_t *ds) {
     // read up to bytes_to_read data in
     ssize_t bytes_read = read(hci_transport_h4->uart_fd, &hci_packet[read_pos], read_now);
     // log_info("h4_process: bytes read %u", bytes_read);
-    if (bytes_read < 0) {
-        return bytes_read;
-    }
+    if (bytes_read < 0) return;
 
     uint32_t end = btstack_run_loop_get_time_ms();
     if (end - start > 10){
@@ -363,12 +361,9 @@ static int h4_process(btstack_data_source_t *ds) {
     
     bytes_to_read -= bytes_read;
     read_pos      += bytes_read;
-    if (bytes_to_read > 0) {
-        return 0;
-    }
+    if (bytes_to_read > 0) return;
     
     h4_statemachine();
-    return 0;
 }
 
 static void dummy_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){

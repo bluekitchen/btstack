@@ -83,7 +83,7 @@
 #include "hci.h"
 #include "hci_transport.h"
 
-static int h4_process(btstack_data_source_t *ds);
+static void h4_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type);
 static void dummy_handler(uint8_t packet_type, uint8_t *packet, uint16_t size); 
 static      hci_transport_config_uart_t *hci_transport_config_uart;
 
@@ -336,7 +336,7 @@ static void h4_statemachine(void){
     }
 }
 
-static int h4_process(btstack_data_source_t *ds) {
+static void h4_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type) {
     if (hci_transport_h4->uart_fd == 0) return -1;
 
     int read_now = bytes_to_read;

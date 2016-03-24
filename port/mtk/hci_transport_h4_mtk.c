@@ -54,7 +54,7 @@
 #include "hci.h"
 #include "hci_transport.h"
 
-static int h4_process(btstack_data_source_t *ds);
+static void h4_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type);
 static void dummy_handler(uint8_t packet_type, uint8_t *packet, uint16_t size); 
 
 typedef struct hci_transport_h4 {
@@ -122,7 +122,7 @@ static void   h4_register_packet_handler(void (*handler)(uint8_t packet_type, ui
     packet_handler = handler;
 }
 
-static int h4_process(btstack_data_source_t *ds) {
+static void h4_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type) {
     if (hci_transport_h4->ds->fd == 0) return -1;
 
     // read up to bytes_to_read data in

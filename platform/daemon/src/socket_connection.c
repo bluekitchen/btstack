@@ -282,7 +282,7 @@ int  socket_connection_has_parked_connections(void){
     return parked != NULL;
 }
 
-static int socket_connection_accept(btstack_data_source_t *socket_ds) {
+static void socket_connection_accept(btstack_data_source_t *socket_ds, btstack_data_source_callback_type_t callback_type) {
     struct sockaddr_storage ss;
     socklen_t slen = sizeof(ss);
     int socket_fd = btstack_run_loop_get_data_source_fd(ds);

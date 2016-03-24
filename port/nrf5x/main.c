@@ -368,7 +368,7 @@ uint8_t ll_set_scan_enable(uint8_t le_scan_enable, uint8_t filter_duplicates){
     }
 }
 
-static int transport_run(btstack_data_source_t * ds){
+static void transport_run(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type){
     // deliver hci packet on main thread
     if (hci_outgoing_event_ready){
         hci_outgoing_event_ready = 0;
