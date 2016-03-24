@@ -67,7 +67,7 @@ void btstack_run_loop_set_timer_handler(btstack_timer_source_t *ts, void (*proce
     ts->process = process;
 };
 
-void btstack_run_loop_set_data_source_handler(btstack_data_source_t *ds, int (*process)(btstack_data_source_t *_ds)){
+void btstack_run_loop_set_data_source_handler(btstack_data_source_t *ds, void (*process)(btstack_data_source_t *_ds,  btstack_data_source_callback_type_t callback_type)){
     ds->process = process;
 };
 
@@ -79,6 +79,11 @@ int btstack_run_loop_get_data_source_fd(btstack_data_source_t *ds){
     return ds->fd;
 }
 
+void btstack_run_loop_enable_data_source_callback(btstack_data_source_t *data_source, uint16_t callbacks){
+}
+
+void btstack_run_loop_disable_data_source_callback(btstack_data_source_t *data_source, uint16_t callbacks){
+}
 
 /**
  * Add data_source to run_loop

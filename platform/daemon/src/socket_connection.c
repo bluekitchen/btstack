@@ -92,7 +92,7 @@ struct sockaddr_un {
 #define MAX_PENDING_CONNECTIONS 10
 
 /** prototypes */
-static int socket_connection_hci_process(btstack_data_source_t *ds);
+static void socket_connection_hci_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type);
 static int socket_connection_dummy_handler(connection_t *connection, uint16_t packet_type, uint16_t channel, uint8_t *data, uint16_t length);
 
 /** globals */
@@ -170,8 +170,8 @@ connection_t * socket_connection_register_new_connection(int fd){
     // store reference from linked item to base object
     conn->linked_connection.connection = conn;
 
-    conn->ds.fd = fd;
-    conn->ds.process = socket_connection_hci_process;
+    btstack_run_loop_set_data_source_handler(&conn->ds, &socket_connection_hci_process);
+    btstack_run_loop_set_data_source_fd(&conn->ds, fd);
     
     // prepare state machine and
     socket_connection_init_statemachine(conn);
@@ -197,7 +197,7 @@ void static socket_connection_emit_connection_closed(connection_t *connection){
     (*socket_connection_packet_callback)(connection, DAEMON_EVENT_PACKET, 0, (uint8_t *) &event, 1);
 }
 
-int socket_connection_hci_process(btstack_data_source_t *ds) {
+void socket_connection_hci_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type) {
     connection_t *conn = (connection_t *) ds;
     int fd = btstack_run_loop_get_data_source_fd(ds);
     int bytes_read = read(fd, &conn->buffer[conn->bytes_read], conn->bytes_to_read);
@@ -208,13 +208,11 @@ int socket_connection_hci_process(btstack_data_source_t *ds) {
         // free connection
         socket_connection_free_connection(conn);
         
-        return 0;
+        return;
     }
     conn->bytes_read += bytes_read;
     conn->bytes_to_read -= bytes_read;
-    if (conn->bytes_to_read > 0) {
-        return 0;
-    }
+    if (conn->bytes_to_read > 0) return;
     
     int dispatch = 0;
     switch (conn->state){
@@ -247,7 +245,6 @@ int socket_connection_hci_process(btstack_data_source_t *ds) {
             btstack_linked_list_add_tail(&parked, (btstack_linked_item_t *) ds);
         }
     }
-	return 0;
 }
 
 /**
@@ -285,13 +282,13 @@ int  socket_connection_has_parked_connections(void){
 static void socket_connection_accept(btstack_data_source_t *socket_ds, btstack_data_source_callback_type_t callback_type) {
     struct sockaddr_storage ss;
     socklen_t slen = sizeof(ss);
-    int socket_fd = btstack_run_loop_get_data_source_fd(ds);
+    int socket_fd = btstack_run_loop_get_data_source_fd(socket_ds);
 
 	/* New connection coming in! */
 	int fd = accept(socket_fd, (struct sockaddr *)&ss, &slen);
 	if (fd < 0) {
 		perror("accept");
-        return 0;
+        return;
 	}
         
     // no sigpipe
@@ -301,8 +298,6 @@ static void socket_connection_accept(btstack_data_source_t *socket_ds, btstack_d
     
     connection_t * connection = socket_connection_register_new_connection(fd);
     socket_connection_emit_connection_opened(connection);
-    
-    return 0;
 }
 
 /** 
@@ -461,7 +456,7 @@ int socket_connection_create_unix(char *path){
     btstack_run_loop_set_data_source_handler(ds, &socket_connection_accept);
 
 	// create unix socket
-    int fd = socket (AF_UNIX, SOCK_STREAM, 0));
+    int fd = socket (AF_UNIX, SOCK_STREAM, 0);
 	if (fd < 0) {
 		log_error( "Error creating socket ...(%s)", strerror(errno));
 		free(ds);
