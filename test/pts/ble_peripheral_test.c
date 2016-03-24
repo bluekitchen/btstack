@@ -711,7 +711,7 @@ static void update_auth_req(void){
     sm_set_authentication_requirements(auth_req);
 }
 
-static int stdin_process(struct btstack_data_source *ds){
+static int stdin_process(btstack_data_source_t *ds){
     char buffer;
     read(ds->fd, &buffer, 1);
 

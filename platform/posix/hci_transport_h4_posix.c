@@ -65,7 +65,7 @@
 #error HCI_OUTGOING_PRE_BUFFER_SIZE not defined. Please update hci.h
 #endif
 
-static int  h4_process(struct btstack_data_source *ds);
+static int h4_process(btstack_data_source_t *ds);
 static void dummy_handler(uint8_t packet_type, uint8_t *packet, uint16_t size); 
 
 typedef enum {
@@ -342,7 +342,7 @@ static void h4_statemachine(void){
     }
 }
 
-static int h4_process(struct btstack_data_source *ds) {
+static int h4_process(btstack_data_source_t *ds) {
     if (hci_transport_h4->uart_fd == 0) return -1;
 
     int read_now = bytes_to_read;

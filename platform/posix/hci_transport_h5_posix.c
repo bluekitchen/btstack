@@ -125,7 +125,7 @@ static  void (*packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t si
 
 
 // Prototypes
-static int  hci_transport_h5_process(struct btstack_data_source *ds);
+static int hci_transport_h5_process(btstack_data_source_t *ds);
 static void hci_transport_link_set_timer(uint16_t timeout_ms);
 static void hci_transport_link_timeout_handler(btstack_timer_source_t * timer);
 static int  hci_transport_h5_outgoing_packet(void);
@@ -652,7 +652,7 @@ static int hci_transport_h5_close(void){
     return 0;
 }
 
-static int hci_transport_h5_process(struct btstack_data_source *ds) {
+static int hci_transport_h5_process(btstack_data_source_t *ds) {
     if (hci_transport_h5_data_source.fd < 0) return -1;
 
     // process data byte by byte
