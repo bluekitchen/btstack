@@ -191,7 +191,7 @@ static int h4_open(void){
     hal_uart_dma_set_csr_irq_handler(ehcill_cts_irq_handler);
     
 	// set up data_source
-    btstack_run_loop_set_data_source_handler(&hci_transport_h4_dma_ds);
+    btstack_run_loop_set_data_source_handler(&hci_transport_h4_dma_ds, &h4_process);
     btstack_run_loop_add_data_source(&hci_transport_h4_dma_ds);
     
     // init state machines
