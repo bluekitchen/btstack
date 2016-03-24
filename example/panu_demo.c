@@ -268,7 +268,7 @@ static int tap_alloc(char *dev, bd_addr_t bd_addr)
  */
 
 /* LISTING_START(processTapData): Process incoming network packets */
-static int process_tap_dev_data(btstack_data_source_t *ds) 
+static int process_tap_dev_data(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type) 
 {
     ssize_t len;
     len = read(ds->fd, network_buffer, sizeof(network_buffer));
@@ -493,8 +493,8 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                         } else {
                             printf("BNEP device \"%s\" allocated.\n", tap_dev_name);
                             /* Create and register a new runloop data source */
-                            tap_dev_ds.fd = tap_fd;
-                            tap_dev_ds.process = process_tap_dev_data;
+                            btstack_run_loop_set_data_source_fd(&tap_dev_ds, tap_fd);
+                            btstack_run_loop_set_data_source_handler(&tap_dev_ds, process_tap_dev_data);
                             btstack_run_loop_add_data_source(&tap_dev_ds);
                         }
                     }
