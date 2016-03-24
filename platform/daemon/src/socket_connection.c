@@ -199,8 +199,8 @@ void static socket_connection_emit_connection_closed(connection_t *connection){
 
 int socket_connection_hci_process(struct btstack_data_source *ds) {
     connection_t *conn = (connection_t *) ds;
-    
-    int bytes_read = read(ds->fd, &conn->buffer[conn->bytes_read], conn->bytes_to_read);
+    int fd = btstack_run_loop_get_data_source_fd(ds);
+    int bytes_read = read(fd, &conn->buffer[conn->bytes_read], conn->bytes_to_read);
     if (bytes_read <= 0){
         // connection broken (no particular channel, no date yet)
         socket_connection_emit_connection_closed(conn);
@@ -285,9 +285,10 @@ int  socket_connection_has_parked_connections(void){
 static int socket_connection_accept(struct btstack_data_source *socket_ds) {
     struct sockaddr_storage ss;
     socklen_t slen = sizeof(ss);
+    int socket_fd = btstack_run_loop_get_data_source_fd(ds);
 
 	/* New connection coming in! */
-	int fd = accept(socket_ds->fd, (struct sockaddr *)&ss, &slen);
+	int fd = accept(socket_fd, (struct sockaddr *)&ss, &slen);
 	if (fd < 0) {
 		perror("accept");
         return 0;
@@ -314,7 +315,7 @@ int socket_connection_create_tcp(int port){
     // create btstack_data_source_t
     btstack_data_source_t *ds = malloc( sizeof(btstack_data_source_t));
     if (ds == NULL) return -1;
-    ds->fd = 0;
+    memset(ds, 0, sizeof(btstack_data_source_t));
     btstack_run_loop_set_data_source_handler(ds, &socket_connection_accept);
     
 	// create tcp socket
@@ -369,8 +370,9 @@ void socket_connection_launchd_register_fd_array(launch_data_t listening_fd_arra
         // create btstack_data_source_t for fd
         btstack_data_source_t *ds = malloc( sizeof(btstack_data_source_t));
         if (ds == NULL) return;
+        memset(ds, 0, sizeof(btstack_data_source_t));
         btstack_run_loop_set_data_source_handler(ds, &socket_connection_accept);
-        ds->fd = listening_fd;
+        btstack_run_loop_set_data_source_fd(ds, listening_fd);
         btstack_run_loop_add_data_source(ds);
 	}
 }
@@ -455,16 +457,17 @@ int socket_connection_create_unix(char *path){
     // create btstack_data_source_t
     btstack_data_source_t *ds = malloc( sizeof(btstack_data_source_t));
     if (ds == NULL) return -1;
-    ds->fd = 0;
+    memset(ds, 0, sizeof(btstack_data_source_t));
     btstack_run_loop_set_data_source_handler(ds, &socket_connection_accept);
 
 	// create unix socket
-	if ((ds->fd = socket (AF_UNIX, SOCK_STREAM, 0)) < 0) {
+    int fd = socket (AF_UNIX, SOCK_STREAM, 0));
+	if (fd < 0) {
 		log_error( "Error creating socket ...(%s)", strerror(errno));
 		free(ds);
         return -1;
 	}
-    
+    btstack_run_loop_set_data_source_fd(ds, fd);
 	log_info ("Socket created at %s", path);
 	
     struct sockaddr_un addr;
@@ -474,9 +477,9 @@ int socket_connection_create_unix(char *path){
     unlink(path);
     
 	const int y = 1;
-	setsockopt(ds->fd, SOL_SOCKET, SO_REUSEADDR, (void*) &y, sizeof(int));
+	setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (void*) &y, sizeof(int));
     
-	if (bind ( ds->fd, (struct sockaddr *) &addr, sizeof (addr) ) ) {
+	if (bind (fd, (struct sockaddr *) &addr, sizeof (addr) ) ) {
 		log_error( "Error on bind() ...(%s)", strerror(errno));
 		free(ds);
         return -1;
@@ -487,7 +490,7 @@ int socket_connection_create_unix(char *path){
     chmod(path, S_IRWXU | S_IRWXG | S_IRWXO);
     //
 
-	if (listen (ds->fd, MAX_PENDING_CONNECTIONS)) {
+	if (listen(fd, MAX_PENDING_CONNECTIONS)) {
 		log_error( "Error on listen() ...(%s)", strerror(errno));
 		free(ds);
         return -1;

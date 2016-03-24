@@ -157,6 +157,17 @@ uint32_t btstack_run_loop_get_time_ms(void);
 void btstack_run_loop_set_data_source_handler(btstack_data_source_t *ds, int (*process)(btstack_data_source_t *_ds));
 
 /**
+ * @brief Set data source file descriptor. 
+ * @note No effect if port doensn't have file descriptors
+ */
+void btstack_run_loop_set_data_source_fd(btstack_data_source_t *ds, int fd);
+
+/**
+ * @brief Get data source file descriptor. 
+ */
+int btstack_run_loop_get_data_source_fd(btstack_data_source_t *ds);
+
+/**
  * @brief Add/Remove data source.
  */
 void btstack_run_loop_add_data_source(btstack_data_source_t *dataSource);

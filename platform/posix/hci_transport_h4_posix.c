@@ -105,7 +105,7 @@ static int    h4_set_baudrate(uint32_t baudrate){
     log_info("h4_set_baudrate %u", baudrate);
 
     struct termios toptions;
-    int fd = hci_transport_h4->ds->fd;
+    int fd = btstack_run_loop_get_data_source_fd(hci_transport_h4->ds);
 
     if (tcgetattr(fd, &toptions) < 0) {
         perror("init_serialport: Couldn't get term attributes");
@@ -212,7 +212,7 @@ static int h4_open(void){
     hci_transport_h4->ds = (btstack_data_source_t*) malloc(sizeof(btstack_data_source_t));
     if (!hci_transport_h4->ds) return -1;
     hci_transport_h4->uart_fd = fd;
-    hci_transport_h4->ds->fd = fd;
+    btstack_run_loop_set_data_source_fd(hci_transport_h4->ds, fd);
     btstack_run_loop_set_data_source_handler(hci_transport_h4->ds, &h4_process);
     btstack_run_loop_add_data_source(hci_transport_h4->ds);
     
@@ -233,7 +233,8 @@ static int h4_close(void){
 	btstack_run_loop_remove_data_source(hci_transport_h4->ds);
     
     // close device 
-    close(hci_transport_h4->ds->fd);
+    int fd = btstack_run_loop_get_data_source_fd(hci_transport_h4->ds);
+    close(fd);
 
     // free struct
     free(hci_transport_h4->ds);

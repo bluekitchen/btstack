@@ -843,7 +843,7 @@ static int usb_open(void){
         }
         for (r = 0 ; r < num_pollfds ; r++) {
             btstack_data_source_t *ds = &pollfd_data_sources[r];
-            ds->fd = pollfd[r]->fd;
+            btstack_run_loop_set_data_source_fd(ds, pollfd[r]->fd);
             btstack_run_loop_set_data_source_handler(ds, &usb_process_ds);
             btstack_run_loop_add_data_source(ds);
             log_info("%u: %p fd: %u, events %x", r, pollfd[r], pollfd[r]->fd, pollfd[r]->events);

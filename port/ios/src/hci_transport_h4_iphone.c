@@ -219,13 +219,14 @@ static int h4_open(void)
         goto err_out4;
     }
         
+    hci_transport_h4->uart_fd = fd;
+
     // set up data_source
     hci_transport_h4->ds = malloc(sizeof(btstack_data_source_t));
     if (!hci_transport_h4->ds) return -1;
-    hci_transport_h4->uart_fd = fd;
-    
-    hci_transport_h4->ds->fd = fd;
-    btstack_run_loop_set_data_source_handler(hci_transport_h4, &h4_process);
+    memset(hci_transport_h4->ds, 0, sizeof(btstack_data_source_t));
+    btstack_run_loop_set_data_source_fd(hci_transport_h4->ds, fd);
+    btstack_run_loop_set_data_source_handler(hci_transport_h4->ds, &h4_process);
     btstack_run_loop_add_data_source(hci_transport_h4->ds);
     
     // init state machine

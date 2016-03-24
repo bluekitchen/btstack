@@ -71,6 +71,14 @@ void btstack_run_loop_set_data_source_handler(btstack_data_source_t *ds, int (*p
     ds->process = process;
 };
 
+void btstack_run_loop_set_data_source_fd(btstack_data_source_t *ds, int fd){
+    ds->fd = fd;
+}
+
+int btstack_run_loop_get_data_source_fd(btstack_data_source_t *ds){
+    return ds->fd;
+}
+
 
 /**
  * Add data_source to run_loop
