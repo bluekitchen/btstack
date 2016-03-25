@@ -400,8 +400,7 @@ static int h4_send_packet(uint8_t packet_type, uint8_t * packet, int size){
     write_bytes_len = size;
 
     // start sending
-    // h4_process_write(hci_transport_h4->ds);
-    btstack_run_loop_enable_data_source_callbacks(hci_transport_h4->ds, DATA_SOURCE_CALLBACK_WRITE);
+    h4_process_write(hci_transport_h4->ds);
 
     return 0;
 }
