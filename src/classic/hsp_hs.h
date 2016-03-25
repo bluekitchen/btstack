@@ -58,6 +58,8 @@ extern "C" {
  * @brief Packet handler for HSP Headset (HS) events. 
  * 
  * The HSP HS event has type HCI_EVENT_HSP_META with following subtypes:                      
+ * - HSP_SUBEVENT_RFCOMM_CONNECTION_COMPLETE
+ * - HSP_SUBEVENT_RFCOMM_DISCONNECTION_COMPLETE
  * - HSP_SUBEVENT_AUDIO_CONNECTION_COMPLETE    
  * - HSP_SUBEVENT_AUDIO_DISCONNECTION_COMPLETE 
  * - HSP_SUBEVENT_RING                         
@@ -95,10 +97,9 @@ void hsp_hs_register_packet_handler(hsp_hs_callback_t callback);
  * @brief Connect to HSP Audio Gateway.
  *
  * Perform SDP query for an RFCOMM service on a remote device, 
- * and establish an RFCOMM connection if such service is found. The reception of the  
- * HSP_SUBEVENT_AUDIO_CONNECTION_COMPLETE or 
- * HSP_SUBEVENT_AUDIO_DISCONNECTION_COMPLETE event
- * indicate if the connection is successfully established or not. 
+ * and establish an RFCOMM connection if such service is found. Reception of the  
+ * HSP_SUBEVENT_RFCOMM_CONNECTION_COMPLETE with status 0
+ * indicates if the connection is successfully established. 
  *
  * @param bd_addr
  */
@@ -107,7 +108,9 @@ void hsp_hs_connect(bd_addr_t bd_addr);
 /**
  * @brief Disconnect from HSP Audio Gateway
  *
- * Releases the RFCOMM channel.
+ * Releases the RFCOMM channel. Reception of the  
+ * HSP_SUBEVENT_RFCOMM_DISCONNECTION_COMPLETE with status 0
+ * indicates if the connection is successfully released. 
  * @param bd_addr
  */
 void hsp_hs_disconnect(void);
@@ -120,7 +123,9 @@ void hsp_hs_send_button_press(void);
 
 /**
  * @brief Triger establishing audio connection.
- *
+ * 
+ * Reception of the HSP_SUBEVENT_AUDIO_CONNECTION_COMPLETE with status 0
+ * indicates if the audio connection is successfully established. 
  * @param bd_addr
  */
 void hsp_hs_establish_audio_connection(void);
@@ -128,6 +133,8 @@ void hsp_hs_establish_audio_connection(void);
 /**
  * @brief Trigger releasing audio connection.
  *
+ * Reception of the HSP_SUBEVENT_AUDIO_DISCONNECTION_COMPLETE with status 0
+ * indicates if the connection is successfully released. 
  * @param bd_addr
  */
 void hsp_hs_release_audio_connection(void);

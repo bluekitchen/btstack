@@ -35,46 +35,36 @@
  *
  */
  
+/*
+ * hfp_ag_demo.c
+ */
+
 // *****************************************************************************
-//
-// HFP Audio Gateway PTS Test
-//
+/* EXAMPLE_START(hfp_ag_demo): HFP Audio Gateway (AG) Demo
+ *
+ * @text This HFP Audio Gateway example demonstrates how to receive 
+ * an output from a remote HFP Hands-Free (HF) unit, and, 
+ * if HAVE_STDIO is defined, how to control the HFP HF. 
+ */
 // *****************************************************************************
+
 
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/socket.h>
-#include <net/if_arp.h>
-#include <sys/ioctl.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
 #include <unistd.h>
-#include <errno.h>
 
-#include "hci_cmd.h"
-#include "btstack_run_loop.h"
-#include "classic/sdp_util.h"
-
-#include "hci.h"
-#include "l2cap.h"
-#include "classic/rfcomm.h"
-#include "classic/sdp_server.h"
-#include "btstack_debug.h"
-#include "classic/hfp_ag.h"
+#include "btstack.h"
 #include "stdin_support.h"
  
 
-const uint32_t   hfp_service_buffer[150/4]; // implicit alignment to 4-byte memory address
+uint8_t hfp_service_buffer[150];
 const uint8_t    rfcomm_channel_nr = 1;
 const char hfp_ag_service_name[] = "BTstack HFP AG Test";
 
-static bd_addr_t device_addr;
-static bd_addr_t pts_addr = {0x00,0x15,0x83,0x5F,0x9D,0x46};
-//static bd_addr_t pts_addr = {0x00,0x1b,0xDC,0x07,0x32,0xEF};
-static bd_addr_t speaker_addr = {0x00, 0x21, 0x3C, 0xAC, 0xF7, 0x38};
+static bd_addr_t device_addr = {0x00,0x15,0x83,0x5F,0x9D,0x46};
+
 static uint8_t codecs[1] = {HFP_CODEC_CVSD};
 static uint16_t handle = -1;
 static int memory_1_enabled = 1;
@@ -101,8 +91,6 @@ static hfp_generic_status_indicator_t hf_indicators[] = {
 };
 
 char cmd;
-// prototypes
-static void show_usage();
 
 // GAP INQUIRY
 
@@ -136,10 +124,12 @@ static int getDeviceIndexForAddress( bd_addr_t addr){
     return -1;
 }
 
+#ifdef HAVE_STDIO
 static void start_scan(void){
     printf("Starting inquiry scan..\n");
     hci_send_cmd(&hci_inquiry, HCI_INQUIRY_LAP, INQUIRY_INTERVAL, 0);
 }
+#endif
 
 static int has_more_remote_name_requests(void){
     int i;
@@ -197,7 +187,7 @@ static void inquiry_packet_handler (uint8_t packet_type, uint8_t *packet, uint16
             numResponses = packet[2];
             int offset = 3;
             for (i=0; i<numResponses && deviceCount < MAX_DEVICES;i++){
-                reverse_bd_addr(&packet[offset], addr);
+                reverse_bd_addr(addr, &packet[offset]);
                 offset += 6;
                 index = getDeviceIndexForAddress(addr);
                 if (index >= 0) continue;   // already in our list
@@ -241,13 +231,8 @@ static void inquiry_packet_handler (uint8_t packet_type, uint8_t *packet, uint16
             continue_remote_names();
             break;
 
-        case DAEMON_EVENT_REMOTE_NAME_CACHED:
-            reverse_bd_addr(&packet[3], addr);
-            printf("Cached remote name for %s: '%s'\n", bd_addr_to_str(addr), &packet[9]);
-            break;
-
         case HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE:
-            reverse_bd_addr(&packet[3], addr);
+            reverse_bd_addr(addr, &packet[3]);
             index = getDeviceIndexForAddress(addr);
             if (index >= 0) {
                 if (packet[2] == 0) {
@@ -265,6 +250,10 @@ static void inquiry_packet_handler (uint8_t packet_type, uint8_t *packet, uint16
     }
 }
 // GAP INQUIRY END
+#ifdef HAVE_STDIO
+
+// prototypes
+static void show_usage();
 
 // Testig User Interface 
 static void show_usage(void){
@@ -273,9 +262,6 @@ static void show_usage(void){
     
     printf("a - establish HFP connection to PTS module\n");
     // printf("A - release HFP connection to PTS module\n");
-    
-    printf("z - establish HFP connection to speaker\n");
-    // printf("Z - release HFP connection to speaker\n");
     
     printf("b - establish AUDIO connection\n");
     printf("B - release AUDIO connection\n");
@@ -339,11 +325,10 @@ static void show_usage(void){
     printf("---\n");
 }
 
-static int stdin_process(btstack_data_source_t *ds){
+static int stdin_process(struct data_source *ds){
     read(ds->fd, &cmd, 1);
     switch (cmd){
         case 'a':
-            memcpy(device_addr, pts_addr, 6);
             log_info("USER:\'%c\'", cmd);
             printf("Establish HFP service level connection to PTS module %s...\n", bd_addr_to_str(device_addr));
             hfp_ag_establish_service_level_connection(device_addr);
@@ -352,12 +337,6 @@ static int stdin_process(btstack_data_source_t *ds){
             log_info("USER:\'%c\'", cmd);
             printf("Release HFP service level connection.\n");
             hfp_ag_release_service_level_connection(device_addr);
-            break;
-        case 'z':
-            memcpy(device_addr, speaker_addr, 6);
-            log_info("USER:\'%c\'", cmd);
-            printf("Establish HFP service level connection to %s...\n", bd_addr_to_str(device_addr));
-            hfp_ag_establish_service_level_connection(device_addr);
             break;
         case 'Z':
             log_info("USER:\'%c\'", cmd);
@@ -566,7 +545,7 @@ static int stdin_process(btstack_data_source_t *ds){
 
     return 0;
 }
-
+#endif
 
 static void packet_handler(uint8_t * event, uint16_t event_size){
 
@@ -658,12 +637,25 @@ static hfp_phone_number_t subscriber_number = {
     129, "225577"
 };
 
+/* @section Main Application Setup
+ *
+ * @text Listing MainConfiguration shows main application code. 
+ * To run a HFP AG service you need to initialize the SDP, and to create and register HFP AG record with it. 
+ * The packet_handler is used for sending commands to the HFP HF. It also receives the HFP HF's answers.
+ * The stdin_process callback allows for sending commands to the HFP HF. 
+ * At the end the Bluetooth stack is started.
+ */
+
+/* LISTING_START(MainConfiguration): Setup HFP Audio Gateway */
+
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
+    // HFP HS address is hardcoded, please change it
     // init L2CAP
     l2cap_init();
     rfcomm_init();
-    
+    sdp_init();
+
     hfp_ag_init(rfcomm_channel_nr);
     hfp_ag_init_supported_features(0x3ef | (1<<HFP_AGSF_HF_INDICATORS) | (1<<HFP_AGSF_ESCO_S4)); 
     hfp_ag_init_codecs(sizeof(codecs), codecs);
@@ -674,20 +666,16 @@ int btstack_main(int argc, const char * argv[]){
     hfp_ag_set_subcriber_number_information(&subscriber_number, 1);
     hfp_ag_register_packet_handler(packet_handler);
 
-    // init SDP, create record for SPP and register with SDP
-    sdp_init();
-    memset((uint8_t *)hfp_service_buffer, 0, sizeof(hfp_service_buffer));
-    hfp_ag_create_sdp_record((uint8_t *)hfp_service_buffer, 0x10005, rfcomm_channel_nr, hfp_ag_service_name, 0, 0);
-
-    sdp_register_service((uint8_t *)hfp_service_buffer);
+    memset(hfp_service_buffer, 0, sizeof(hfp_service_buffer));
+    hfp_ag_create_sdp_record( hfp_service_buffer, 0x10001, rfcomm_channel_nr, hfp_ag_service_name, 0, 0);
+    printf("SDP service record size: %u\n", de_get_len( hfp_service_buffer));
+    sdp_register_service(hfp_service_buffer);
     
-
-    // pre-select pts
-    memcpy(device_addr, pts_addr, 6);
-
+#ifdef HAVE_STDIO
+    btstack_stdin_setup(stdin_process);
+#endif  
     // turn on!
     hci_power_control(HCI_POWER_ON);
-    
-    btstack_stdin_setup(stdin_process);
     return 0;
 }
+/* LISTING_END */

@@ -37,7 +37,7 @@
  
 // *****************************************************************************
 //
-// Minimal test for HSP Headset (!! UNDER DEVELOPMENT !!)
+// HSP Headset PTS Test
 //
 // *****************************************************************************
 
@@ -64,8 +64,9 @@
 
 #include "hci.h"
 #include "l2cap.h"
-#include "classic/sdp_server.h"
-#include "btstack_debug.h"
+#include "rfcomm.h"
+#include "sdp.h"
+#include "debug.h"
 #include "hsp_hs.h"
 #include "stdin_support.h"
 
@@ -228,7 +229,7 @@ int btstack_main(int argc, const char * argv[]){
 
     gap_discoverable_control(1);
     hci_set_class_of_device(0x200418);
-    
+    gap_set_local_name("BTstack HSP HS PTS");
     btstack_stdin_setup(stdin_process);
 
     // turn on!

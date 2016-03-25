@@ -10,8 +10,8 @@ gap_inquiry_and_bond
 gap_le_advertisements
 gatt_battery_query
 gatt_browser
-hsp_ag_test
-hsp_hs_test
+hsp_ag_demo
+hsp_hs_demo
 l2cap_test
 le_counter
 le_counter.h
@@ -27,4 +27,10 @@ spp_and_le_counter
 spp_and_le_counter.h
 spp_counter
 spp_streamer
-spp_streamerle_streamer
+le_streamer
+le_streamer.h
+gap_le_advertisements
+le_streamer
+spp_streamer
+hfp_ag_demo
+hfp_hf_demo
