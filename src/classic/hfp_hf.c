@@ -854,7 +854,6 @@ static void hfp_ag_slc_established(hfp_connection_t * hfp_connection){
 
 static void hfp_hf_switch_on_ok(hfp_connection_t *hfp_connection){
     hfp_connection->ok_pending = 0;
-    int done = 1;
     switch (hfp_connection->state){
         case HFP_W4_EXCHANGE_SUPPORTED_FEATURES:
             if (has_codec_negotiation_feature(hfp_connection)){
@@ -947,12 +946,10 @@ static void hfp_hf_switch_on_ok(hfp_connection_t *hfp_connection){
                     hfp_emit_event(hfp_callback, HFP_SUBEVENT_CODECS_CONNECTION_COMPLETE, 0);
                     break;
                 default:
-                    done = 0;
                     break;
             }
             break;
         default:
-            done = 0;
             break;
     }
 
