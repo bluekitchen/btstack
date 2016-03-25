@@ -312,7 +312,7 @@ static int hci_number_free_acl_slots_for_connection_type(bd_addr_type_t address_
             num_packets_sent_le += connection->num_acl_packets_sent;
         }
     }
-    log_info("ACL classic buffers: %u used of %u", num_packets_sent_classic, hci_stack->acl_packets_total_num);
+    log_debug("ACL classic buffers: %u used of %u", num_packets_sent_classic, hci_stack->acl_packets_total_num);
     int free_slots_classic = hci_stack->acl_packets_total_num - num_packets_sent_classic;
     int free_slots_le = 0;
 
@@ -477,9 +477,13 @@ static int hci_send_acl_packet_fragments(hci_connection_t *connection){
     // testing: reduce buffer to minimum
     // max_acl_data_packet_length = 52;
 
+    log_debug("hci_send_acl_packet_fragments entered");
+
     int err;
     // multiple packets could be send on a synchronous HCI transport
     while (1){
+
+        log_debug("hci_send_acl_packet_fragments loop entered");
 
         // get current data
         const uint16_t acl_header_pos = hci_stack->acl_fragmentation_pos - 4;
@@ -504,6 +508,17 @@ static int hci_send_acl_packet_fragments(hci_connection_t *connection){
 
         // count packet
         connection->num_acl_packets_sent++;
+        log_debug("hci_send_acl_packet_fragments loop before send (more fragments %u)", more_fragments);
+
+        // update state for next fragment (if any) as "transport done" might be sent during send_packet already
+        if (more_fragments){
+            // update start of next fragment to send
+            hci_stack->acl_fragmentation_pos += current_acl_data_packet_length;
+        } else {
+            // done
+            hci_stack->acl_fragmentation_pos = 0;
+            hci_stack->acl_fragmentation_total_size = 0;
+        }
 
         // send packet
         uint8_t * packet = &hci_stack->hci_packet_buffer[acl_header_pos];
@@ -511,19 +526,16 @@ static int hci_send_acl_packet_fragments(hci_connection_t *connection){
         hci_dump_packet(HCI_ACL_DATA_PACKET, 0, packet, size);
         err = hci_stack->hci_transport->send_packet(HCI_ACL_DATA_PACKET, packet, size);
 
+        log_debug("hci_send_acl_packet_fragments loop after send (more fragments %u)", more_fragments);
+
         // done yet?
         if (!more_fragments) break;
-
-        // update start of next fragment to send
-        hci_stack->acl_fragmentation_pos += current_acl_data_packet_length;
 
         // can send more?
         if (!hci_can_send_prepared_acl_packet_now(connection->con_handle)) return err;
     }
 
-    // done    
-    hci_stack->acl_fragmentation_pos = 0;
-    hci_stack->acl_fragmentation_total_size = 0;
+    log_debug("hci_send_acl_packet_fragments loop over");
 
     // release buffer now for synchronous transport
     if (hci_transport_synchronous()){
