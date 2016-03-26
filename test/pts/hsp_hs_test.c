@@ -89,10 +89,8 @@ static void show_usage();
 
 // Testig User Interface 
 static void show_usage(void){
-    uint8_t iut_address_type;
     bd_addr_t      iut_address;
-    gap_advertisements_get_address(&iut_address_type, iut_address);
-
+    gap_local_bd_addr(iut_address);
     printf("\n--- Bluetooth HSP Headset Test Console %s ---\n", bd_addr_to_str(iut_address));
     printf("---\n");
     printf("p - establish audio connection to PTS module\n");
