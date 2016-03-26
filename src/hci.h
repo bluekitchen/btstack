@@ -691,11 +691,6 @@ void hci_set_control(const btstack_control_t *hardware_control);
 void hci_set_link_key_db(btstack_link_key_db_t const * link_key_db);
 
 /**
- * @brief Set class of device that will be set during Bluetooth init.
- */
-void hci_set_class_of_device(uint32_t class_of_device);
-
-/**
  * @brief Set callback for Bluetooth Hardware Error
  */
 void hci_set_hardware_error_callback(void (*fn)(void));

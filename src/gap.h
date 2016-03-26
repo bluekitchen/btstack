@@ -129,6 +129,12 @@ gap_connection_type_t gap_get_connection_type(hci_con_handle_t connection_handle
 void gap_set_local_name(const char * local_name);
 
 /**
+ * @brief Set class of device that will be set during Bluetooth init.
+ * @note has to be done before stack starts up
+ */
+void gap_set_class_of_device(uint32_t class_of_device);
+
+/**
  * @brief Enable/disable bonding. Default is enabled.
  * @param enabled
  */

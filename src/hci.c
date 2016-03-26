@@ -1997,7 +1997,7 @@ void hci_close(void){
     hci_stack = NULL;
 }
 
-void hci_set_class_of_device(uint32_t class_of_device){
+void gap_set_class_of_device(uint32_t class_of_device){
     hci_stack->class_of_device = class_of_device;
 }
 

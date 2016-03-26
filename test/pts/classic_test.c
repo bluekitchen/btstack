@@ -761,12 +761,14 @@ int btstack_main(int argc, const char * argv[]){
 
     printf("Starting up..\n");
 
-    hci_set_class_of_device(0x220404);
     hci_disable_l2cap_timeout_check();
+
+    gap_set_class_of_device(0x220404);
     gap_ssp_set_io_capability(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);
     gap_io_capabilities =  "IO_CAPABILITY_NO_INPUT_NO_OUTPUT";
     gap_ssp_set_authentication_requirement(0);
     gap_ssp_set_auto_accept(0);
+
     update_auth_req();
 
     // register for HCI events

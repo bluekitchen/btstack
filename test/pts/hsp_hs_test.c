@@ -226,7 +226,7 @@ int btstack_main(int argc, const char * argv[]){
     sdp_register_service((uint8_t *)hsp_service_buffer);
 
     gap_discoverable_control(1);
-    hci_set_class_of_device(0x200418);
+    gap_set_class_of_device(0x200418);
     gap_set_local_name("BTstack HSP HS PTS");
     btstack_stdin_setup(stdin_process);
 

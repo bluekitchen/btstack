@@ -155,7 +155,7 @@ static int stdin_process(btstack_data_source_t *ds){
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
 
-    hci_set_class_of_device(0x220404);
+    gap_set_class_of_device(0x220404);
     gap_discoverable_control(1);
 
     /* Register for HCI events */

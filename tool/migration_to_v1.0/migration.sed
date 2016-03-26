@@ -72,6 +72,7 @@ s/bt_store_24/little_endian_store_24/g
 s/bt_store_32/little_endian_store_32/g
 s/hci_discoverable_control/gap_discoverable_control/g
 s/hci_ssp_set_io_capability/gap_ssp_set_io_capability/g
+s/hci_set_class_of_device/gap_set_class_of_device/g
 s/le_central_connect/gap_connect/g
 s/le_central_connect_cancel/gap_connect_cancel/g
 s/le_central_set_scan_parameters/gap_set_scan_parameters/g

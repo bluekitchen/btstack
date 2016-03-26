@@ -87,9 +87,6 @@ static uint8_t hfp_hf_service_buffer[200];  // rfcomm 5
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
 
-    hci_set_class_of_device(0x220404);
-    gap_discoverable_control(1);
-
     l2cap_init();
 
     sdp_init();
@@ -116,7 +113,9 @@ int btstack_main(int argc, const char * argv[]){
     sdp_register_service((uint8_t *)hfp_hf_service_buffer);    
 
     // set CoD for all this
-    hci_set_class_of_device(0x6A0000);  // Networking, Capturing, Audio, Telehpony / Misc
+    gap_set_class_of_device(0x6A0000);  // Networking, Capturing, Audio, Telehpony / Misc
+
+    gap_discoverable_control(1);
 
     // turn on!
     hci_power_control(HCI_POWER_ON);
