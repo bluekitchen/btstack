@@ -14,7 +14,7 @@ CC256x init script conversion tool for use with BTstack, v0.1
 Copyright 2012-2014 BlueKitchen GmbH
 ''')
 
-usage = '''This script perpares init scripts for TI's
+usage = '''This script prepares init scripts for TI's
 CC256x chipsets for use with BTstack .
 
 Please download the Service Pack for your module from http://processors.wiki.ti.com/index.php/CC256x_Downloads 
@@ -47,7 +47,7 @@ def append_power_vector_gfsk(additions, str_list, data_indent):
     str_list.append("0x01, 0x82, 0xfd, 0x14, 0x00, 0x9c, 0x18, 0xd2, 0xd2, 0xd2, 0xd2, 0xd2, 0xd2, 0xd2, 0xdc,\n");
     str_list.append(data_indent)
     str_list.append("0xe6, 0xf0, 0xfa, 0x04, 0x0e, 0x18, 0xff, 0x00, 0x00,\n\n");
-    return 25
+    return 24
 
 def append_power_vector_edr2(additions, str_list, data_indent):
     additions.append("- added HCI_VS_SET_POWER_VECTOR(EDR2) template")
@@ -57,7 +57,7 @@ def append_power_vector_edr2(additions, str_list, data_indent):
     str_list.append("0x01, 0x82, 0xfd, 0x14, 0x01, 0x9c, 0xce, 0xce, 0xce, 0xce, 0xce, 0xce, 0xce, 0xce, 0xd8, \n");
     str_list.append(data_indent)
     str_list.append("0xe2, 0xec, 0xf6, 0x00, 0x0a, 0x14, 0xff, 0x00, 0x00,\n\n");
-    return 25
+    return 24
 
 def append_power_vector_edr3(additions, str_list, data_indent):
     additions.append("- added HCI_VS_SET_POWER_VECTOR(EDR3) template")
@@ -67,7 +67,7 @@ def append_power_vector_edr3(additions, str_list, data_indent):
     str_list.append("0x01, 0x82, 0xfd, 0x14, 0x02, 0x9c, 0xce, 0xce, 0xce, 0xce, 0xce, 0xce, 0xce, 0xce, 0xd8,\n");
     str_list.append(data_indent)
     str_list.append("0xe2, 0xec, 0xf6, 0x00, 0x0a, 0x14, 0xff, 0x00, 0x00,\n\n");
-    return 25
+    return 24
 
 def append_class2_single_power(additions, str_list, data_indent):
     additions.append("- added HCI_VS_SET_CLASS2_SINGLE_POWER template")
