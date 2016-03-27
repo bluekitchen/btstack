@@ -51,7 +51,7 @@ TEST_GROUP(RemoteDeviceDB){
 };
 
 TEST(RemoteDeviceDB, MemoryPool){
-    CHECK(MAX_NO_BTSTACK_LINK_KEY_DB_MEMORYS ==  2);
+    CHECK(MAX_NO_BTSTACK_LINK_KEY_DB_MEMORY_ENTRIES ==  2);
     // void * item = btstack_memory_db_mem_device_name_get();
     // CHECK(item);
 }

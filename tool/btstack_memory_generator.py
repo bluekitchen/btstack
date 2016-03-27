@@ -166,7 +166,7 @@ list_of_structs = [
     ["hci_connection"],
     ["l2cap_service", "l2cap_channel"],
     ["rfcomm_multiplexer", "rfcomm_service", "rfcomm_channel"],
-    ["btstack_link_key_db_memory"],
+    ["btstack_link_key_db_memory_entry"],
     ["bnep_service", "bnep_channel"],
     ["hfp_connection"],
     ["service_record_item"]

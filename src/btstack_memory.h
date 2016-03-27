@@ -98,9 +98,9 @@ void   btstack_memory_rfcomm_service_free(rfcomm_service_t *rfcomm_service);
 rfcomm_channel_t * btstack_memory_rfcomm_channel_get(void);
 void   btstack_memory_rfcomm_channel_free(rfcomm_channel_t *rfcomm_channel);
 
-// btstack_link_key_db_memory
-btstack_link_key_db_memory_t * btstack_memory_btstack_link_key_db_memory_get(void);
-void   btstack_memory_btstack_link_key_db_memory_free(btstack_link_key_db_memory_t *btstack_link_key_db_memory);
+// btstack_link_key_db_memory_entry
+btstack_link_key_db_memory_entry_t * btstack_memory_btstack_link_key_db_memory_entry_get(void);
+void   btstack_memory_btstack_link_key_db_memory_entry_free(btstack_link_key_db_memory_entry_t *btstack_link_key_db_memory_entry);
 
 // bnep_service, bnep_channel
 bnep_service_t * btstack_memory_bnep_service_get(void);

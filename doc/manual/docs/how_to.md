@@ -36,7 +36,7 @@ allocated in two different manners:
     #define MAX_NO_RFCOMM_MULTIPLEXERS 1
     #define MAX_NO_RFCOMM_SERVICES 1
     #define MAX_NO_RFCOMM_CHANNELS 1
-    #define MAX_NO_BTSTACK_LINK_KEY_DB_MEMORYS  3
+    #define MAX_NO_BTSTACK_LINK_KEY_DB_MEMORY_ENTRIES  3
 
 Listing: Title. {#lst:memoryConfigurationSPP}
 

@@ -247,35 +247,35 @@ void btstack_memory_rfcomm_channel_free(rfcomm_channel_t *rfcomm_channel){
 
 
 
-// MARK: btstack_link_key_db_memory_t
-#ifdef MAX_NO_BTSTACK_LINK_KEY_DB_MEMORYS
-#if MAX_NO_BTSTACK_LINK_KEY_DB_MEMORYS > 0
-static btstack_link_key_db_memory_t btstack_link_key_db_memory_storage[MAX_NO_BTSTACK_LINK_KEY_DB_MEMORYS];
-static btstack_memory_pool_t btstack_link_key_db_memory_pool;
-btstack_link_key_db_memory_t * btstack_memory_btstack_link_key_db_memory_get(void){
-    return (btstack_link_key_db_memory_t *) btstack_memory_pool_get(&btstack_link_key_db_memory_pool);
+// MARK: btstack_link_key_db_memory_entry_t
+#ifdef MAX_NO_BTSTACK_LINK_KEY_DB_MEMORY_ENTRIES
+#if MAX_NO_BTSTACK_LINK_KEY_DB_MEMORY_ENTRIES > 0
+static btstack_link_key_db_memory_entry_t btstack_link_key_db_memory_entry_storage[MAX_NO_BTSTACK_LINK_KEY_DB_MEMORY_ENTRIES];
+static btstack_memory_pool_t btstack_link_key_db_memory_entry_pool;
+btstack_link_key_db_memory_entry_t * btstack_memory_btstack_link_key_db_memory_entry_get(void){
+    return (btstack_link_key_db_memory_entry_t *) btstack_memory_pool_get(&btstack_link_key_db_memory_entry_pool);
 }
-void btstack_memory_btstack_link_key_db_memory_free(btstack_link_key_db_memory_t *btstack_link_key_db_memory){
-    btstack_memory_pool_free(&btstack_link_key_db_memory_pool, btstack_link_key_db_memory);
+void btstack_memory_btstack_link_key_db_memory_entry_free(btstack_link_key_db_memory_entry_t *btstack_link_key_db_memory_entry){
+    btstack_memory_pool_free(&btstack_link_key_db_memory_entry_pool, btstack_link_key_db_memory_entry);
 }
 #else
-btstack_link_key_db_memory_t * btstack_memory_btstack_link_key_db_memory_get(void){
+btstack_link_key_db_memory_entry_t * btstack_memory_btstack_link_key_db_memory_entry_get(void){
     return NULL;
 }
-void btstack_memory_btstack_link_key_db_memory_free(btstack_link_key_db_memory_t *btstack_link_key_db_memory){
+void btstack_memory_btstack_link_key_db_memory_entry_free(btstack_link_key_db_memory_entry_t *btstack_link_key_db_memory_entry){
     // silence compiler warning about unused parameter in a portable way
-    (void) btstack_link_key_db_memory;
+    (void) btstack_link_key_db_memory_entry;
 };
 #endif
 #elif defined(HAVE_MALLOC)
-btstack_link_key_db_memory_t * btstack_memory_btstack_link_key_db_memory_get(void){
-    return (btstack_link_key_db_memory_t*) malloc(sizeof(btstack_link_key_db_memory_t));
+btstack_link_key_db_memory_entry_t * btstack_memory_btstack_link_key_db_memory_entry_get(void){
+    return (btstack_link_key_db_memory_entry_t*) malloc(sizeof(btstack_link_key_db_memory_entry_t));
 }
-void btstack_memory_btstack_link_key_db_memory_free(btstack_link_key_db_memory_t *btstack_link_key_db_memory){
-    free(btstack_link_key_db_memory);
+void btstack_memory_btstack_link_key_db_memory_entry_free(btstack_link_key_db_memory_entry_t *btstack_link_key_db_memory_entry){
+    free(btstack_link_key_db_memory_entry);
 }
 #else
-#error "Neither HAVE_MALLOC nor MAX_NO_BTSTACK_LINK_KEY_DB_MEMORYS for struct btstack_link_key_db_memory is defined. Please, edit the config file."
+#error "Neither HAVE_MALLOC nor MAX_NO_BTSTACK_LINK_KEY_DB_MEMORY_ENTRIES for struct btstack_link_key_db_memory_entry is defined. Please, edit the config file."
 #endif
 
 
@@ -529,8 +529,8 @@ void btstack_memory_init(void){
 #if MAX_NO_RFCOMM_CHANNELS > 0
     btstack_memory_pool_create(&rfcomm_channel_pool, rfcomm_channel_storage, MAX_NO_RFCOMM_CHANNELS, sizeof(rfcomm_channel_t));
 #endif
-#if MAX_NO_BTSTACK_LINK_KEY_DB_MEMORYS > 0
-    btstack_memory_pool_create(&btstack_link_key_db_memory_pool, btstack_link_key_db_memory_storage, MAX_NO_BTSTACK_LINK_KEY_DB_MEMORYS, sizeof(btstack_link_key_db_memory_t));
+#if MAX_NO_BTSTACK_LINK_KEY_DB_MEMORY_ENTRIES > 0
+    btstack_memory_pool_create(&btstack_link_key_db_memory_entry_pool, btstack_link_key_db_memory_entry_storage, MAX_NO_BTSTACK_LINK_KEY_DB_MEMORY_ENTRIES, sizeof(btstack_link_key_db_memory_entry_t));
 #endif
 #if MAX_NO_BNEP_SERVICES > 0
     btstack_memory_pool_create(&bnep_service_pool, bnep_service_storage, MAX_NO_BNEP_SERVICES, sizeof(bnep_service_t));
