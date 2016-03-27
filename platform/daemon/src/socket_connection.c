@@ -309,9 +309,8 @@ static void socket_connection_accept(btstack_data_source_t *socket_ds, btstack_d
 int socket_connection_create_tcp(int port){
     
     // create btstack_data_source_t
-    btstack_data_source_t *ds = malloc( sizeof(btstack_data_source_t));
+    btstack_data_source_t *ds = calloc(sizeof(btstack_data_source_t));
     if (ds == NULL) return -1;
-    memset(ds, 0, sizeof(btstack_data_source_t));
     
 	// create tcp socket
     int fd = socket (PF_INET, SOCK_STREAM, 0);
@@ -367,9 +366,8 @@ void socket_connection_launchd_register_fd_array(launch_data_t listening_fd_arra
 		log_info("file descriptor = %u", listening_fd);
         
         // create btstack_data_source_t for fd
-        btstack_data_source_t *ds = malloc( sizeof(btstack_data_source_t));
+        btstack_data_source_t *ds = calloc(sizeof(btstack_data_source_t));
         if (ds == NULL) return;
-        memset(ds, 0, sizeof(btstack_data_source_t));
         btstack_run_loop_set_data_source_fd(ds, listening_fd);
         btstack_run_loop_set_data_source_handler(ds, &socket_connection_accept);
         btstack_run_loop_enable_data_source_callbacks(ds, DATA_SOURCE_CALLBACK_READ);
@@ -455,9 +453,8 @@ int socket_connection_create_launchd(void){
 int socket_connection_create_unix(char *path){
         
     // create btstack_data_source_t
-    btstack_data_source_t *ds = malloc( sizeof(btstack_data_source_t));
+    btstack_data_source_t *ds = calloc(sizeof(btstack_data_source_t));
     if (ds == NULL) return -1;
-    memset(ds, 0, sizeof(btstack_data_source_t));
 
 	// create unix socket
     int fd = socket (AF_UNIX, SOCK_STREAM, 0);

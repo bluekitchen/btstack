@@ -399,9 +399,8 @@ static void daemon_add_gatt_client_handle(connection_t * connection, uint32_t ha
 
     // if gatt_helper doesn't exist, create it and add it to gatt_client_helpers list
     if (!gatt_helper){
-        gatt_helper = malloc(sizeof(btstack_linked_list_gatt_client_helper_t));
+        gatt_helper = calloc(sizeof(btstack_linked_list_gatt_client_helper_t));
         if (!gatt_helper) return; 
-        memset(gatt_helper, 0, sizeof(btstack_linked_list_gatt_client_helper_t));
         gatt_helper->con_handle = handle;
         btstack_linked_list_add(&gatt_client_helpers, (btstack_linked_item_t *) gatt_helper);
     }
@@ -419,9 +418,8 @@ static void daemon_add_gatt_client_handle(connection_t * connection, uint32_t ha
 
     // if connection is not found, add it to the all_connections, and set it as active connection
     if (!connection_found){
-        btstack_linked_list_connection_t * con = malloc(sizeof(btstack_linked_list_connection_t));
+        btstack_linked_list_connection_t * con = calloc(sizeof(btstack_linked_list_connection_t));
         if (!con) return;
-        memset(con, 0, sizeof(btstack_linked_list_connection_t));
         con->connection = connection;
         btstack_linked_list_add(&gatt_helper->all_connections, (btstack_linked_item_t *)con);
     }
@@ -831,9 +829,8 @@ btstack_linked_list_gatt_client_helper_t * daemon_setup_gatt_client_request(conn
 
     if (!helper){
         log_info("helper does not exist");
-        helper = malloc(sizeof(btstack_linked_list_gatt_client_helper_t));
+        helper = calloc(sizeof(btstack_linked_list_gatt_client_helper_t));
         if (!helper) return NULL; 
-        memset(helper, 0, sizeof(btstack_linked_list_gatt_client_helper_t));
         helper->con_handle = con_handle;
         btstack_linked_list_add(&gatt_client_helpers, (btstack_linked_item_t *) helper);
     } 
@@ -1326,9 +1323,8 @@ static int daemon_client_handler(connection_t *connection, uint16_t packet_type,
                 case DAEMON_EVENT_CONNECTION_OPENED:
                     log_info("DAEMON_EVENT_CONNECTION_OPENED %p\n",connection);
 
-                    client = malloc(sizeof(client_state_t));
+                    client = calloc(sizeof(client_state_t));
                     if (!client) break; // fail
-                    memset(client, 0, sizeof(client_state_t));
                     client->connection   = connection;
                     client->power_mode   = HCI_POWER_OFF;
                     client->discoverable = 0;
