@@ -6,7 +6,6 @@
 #define __BTSTACK_CONFIG
 
 // Port related features
-#define HAVE_BZERO
 #define HAVE_TIME_MS
 
 // BTstack features that can be enabled

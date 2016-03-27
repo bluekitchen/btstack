@@ -6,7 +6,6 @@
 #define __BTSTACK_CONFIG
 
 // Port related features
-#define HAVE_BZERO
 #define HAVE_MALLOC
 #define HAVE_PLATFORM_IPHONE_OS
 #define HAVE_POSIX_FILE_IO

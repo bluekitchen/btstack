@@ -132,7 +132,6 @@ echo                                            >> btstack_config.h
 echo "// Port related features"                 >> btstack_config.h
 echo "#define HAVE_TIME"                        >> btstack_config.h
 echo "#define HAVE_MALLOC"                      >> btstack_config.h
-echo "#define HAVE_BZERO"                       >> btstack_config.h
 if test "x$HAVE_SO_NOSIGPIPE" == xyes ; then
     echo "#define HAVE_SO_NOSIGPIPE"            >> btstack_config.h
 else

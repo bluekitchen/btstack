@@ -243,7 +243,7 @@ static void send_arp_probe_ipv4(void){
     pos += 2;
     bd_addr_copy(&network_buffer[pos], local_addr); // Sender Hardware Address (SHA)
     pos += 6;
-    bzero(&network_buffer[pos], 4);                 // Sender Protocol Adress (SPA)
+    memset(&network_buffer[pos], 0, 4);                 // Sender Protocol Adress (SPA)
     pos += 4;
     bd_addr_copy(&network_buffer[pos], other_addr); // Target Hardware Address (THA) (ignored for requests)
     pos += 6;
@@ -491,7 +491,7 @@ static void send_llmnr_request_ipv4(void){
     pos += sizeof(udp_header);
 
     // llmnr packet
-    bzero(llmnr_packet, sizeof(llmnr_packet));
+    memset(llmnr_packet, 0, sizeof(llmnr_packet));
     big_endian_store_16(llmnr_packet, 0, 0x1234);  // transaction id
     big_endian_store_16(llmnr_packet, 4, 1);   // one query
 
@@ -530,7 +530,7 @@ static void send_llmnr_request_ipv6(void){
     int payload_length = sizeof(udp_header) + sizeof(llmnr_packet) + sizeof(dns_data);
 
     // llmnr header
-    bzero(llmnr_packet, sizeof(llmnr_packet));
+    memset(llmnr_packet, 0, sizeof(llmnr_packet));
     big_endian_store_16(llmnr_packet, 0, 0x1235);  // transaction id
     big_endian_store_16(llmnr_packet, 4, 1);   // one query
 
@@ -538,7 +538,7 @@ static void send_llmnr_request_ipv6(void){
     big_endian_store_16(ipv6_header, 4, payload_length);
 
     // udp header
-    bzero(udp_header, sizeof(udp_header));
+    memset(udp_header, 0, sizeof(udp_header));
     big_endian_store_16(udp_header, 0, 5355);   // source port
     big_endian_store_16(udp_header, 2, 5355);   // destination port
     big_endian_store_16(udp_header, 4, payload_length);

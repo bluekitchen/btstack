@@ -22,8 +22,8 @@ static void hexdump2(void *data, int size){
 int main(void){
 	uint8_t key[16];
 	uint8_t plaintext[16];
-	bzero(key, 16);
-	bzero(plaintext, 16);
+	memset(key, 0, 16);
+	memset(plaintext, 0, 16);
 	uint8_t cyphertext[16];
 	aes128_calc_cyphertext(key, plaintext, cyphertext);
 	hexdump2(cyphertext, 16);
