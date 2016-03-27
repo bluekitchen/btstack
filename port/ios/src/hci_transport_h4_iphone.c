@@ -222,9 +222,8 @@ static int h4_open(void)
     hci_transport_h4->uart_fd = fd;
 
     // set up data_source
-    hci_transport_h4->ds = malloc(sizeof(btstack_data_source_t));
+    hci_transport_h4->ds = calloc(sizeof(btstack_data_source_t), 1);
     if (!hci_transport_h4->ds) return -1;
-    memset(hci_transport_h4->ds, 0, sizeof(btstack_data_source_t));
     btstack_run_loop_set_data_source_fd(hci_transport_h4->ds, fd);
     btstack_run_loop_set_data_source_handler(hci_transport_h4->ds, &h4_process);
     btstack_run_loop_enable_data_source_callbacks(hci_transport_h4->ds, DATA_SOURCE_CALLBACK_READ);

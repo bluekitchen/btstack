@@ -309,7 +309,7 @@ static void socket_connection_accept(btstack_data_source_t *socket_ds, btstack_d
 int socket_connection_create_tcp(int port){
     
     // create btstack_data_source_t
-    btstack_data_source_t *ds = calloc(sizeof(btstack_data_source_t));
+    btstack_data_source_t *ds = calloc(sizeof(btstack_data_source_t), 1);
     if (ds == NULL) return -1;
     
 	// create tcp socket
@@ -366,7 +366,7 @@ void socket_connection_launchd_register_fd_array(launch_data_t listening_fd_arra
 		log_info("file descriptor = %u", listening_fd);
         
         // create btstack_data_source_t for fd
-        btstack_data_source_t *ds = calloc(sizeof(btstack_data_source_t));
+        btstack_data_source_t *ds = calloc(sizeof(btstack_data_source_t), 1);
         if (ds == NULL) return;
         btstack_run_loop_set_data_source_fd(ds, listening_fd);
         btstack_run_loop_set_data_source_handler(ds, &socket_connection_accept);
@@ -453,7 +453,7 @@ int socket_connection_create_launchd(void){
 int socket_connection_create_unix(char *path){
         
     // create btstack_data_source_t
-    btstack_data_source_t *ds = calloc(sizeof(btstack_data_source_t));
+    btstack_data_source_t *ds = calloc(sizeof(btstack_data_source_t), 1);
     if (ds == NULL) return -1;
 
 	// create unix socket

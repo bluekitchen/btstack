@@ -399,7 +399,7 @@ static void daemon_add_gatt_client_handle(connection_t * connection, uint32_t ha
 
     // if gatt_helper doesn't exist, create it and add it to gatt_client_helpers list
     if (!gatt_helper){
-        gatt_helper = calloc(sizeof(btstack_linked_list_gatt_client_helper_t));
+        gatt_helper = calloc(sizeof(btstack_linked_list_gatt_client_helper_t), 1);
         if (!gatt_helper) return; 
         gatt_helper->con_handle = handle;
         btstack_linked_list_add(&gatt_client_helpers, (btstack_linked_item_t *) gatt_helper);
@@ -418,7 +418,7 @@ static void daemon_add_gatt_client_handle(connection_t * connection, uint32_t ha
 
     // if connection is not found, add it to the all_connections, and set it as active connection
     if (!connection_found){
-        btstack_linked_list_connection_t * con = calloc(sizeof(btstack_linked_list_connection_t));
+        btstack_linked_list_connection_t * con = calloc(sizeof(btstack_linked_list_connection_t), 1);
         if (!con) return;
         con->connection = connection;
         btstack_linked_list_add(&gatt_helper->all_connections, (btstack_linked_item_t *)con);
@@ -829,7 +829,7 @@ btstack_linked_list_gatt_client_helper_t * daemon_setup_gatt_client_request(conn
 
     if (!helper){
         log_info("helper does not exist");
-        helper = calloc(sizeof(btstack_linked_list_gatt_client_helper_t));
+        helper = calloc(sizeof(btstack_linked_list_gatt_client_helper_t), 1);
         if (!helper) return NULL; 
         helper->con_handle = con_handle;
         btstack_linked_list_add(&gatt_client_helpers, (btstack_linked_item_t *) helper);
@@ -1323,7 +1323,7 @@ static int daemon_client_handler(connection_t *connection, uint16_t packet_type,
                 case DAEMON_EVENT_CONNECTION_OPENED:
                     log_info("DAEMON_EVENT_CONNECTION_OPENED %p\n",connection);
 
-                    client = calloc(sizeof(client_state_t));
+                    client = calloc(sizeof(client_state_t), 1);
                     if (!client) break; // fail
                     client->connection   = connection;
                     client->power_mode   = HCI_POWER_OFF;
