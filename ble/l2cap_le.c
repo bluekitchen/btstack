@@ -310,7 +310,7 @@ void l2cap_acl_handler( uint8_t *packet, uint16_t size ){
                     if (connection){ 
                         int update_parameter = 1;
                         le_connection_parameter_range_t existing_range;
-                        gap_le_get_connection_parameter_range(existing_range);
+                        gap_le_get_connection_parameter_range(&existing_range);
                         uint16_t le_conn_interval_min = READ_BT_16(packet,12);
                         uint16_t le_conn_interval_max = READ_BT_16(packet,14);
                         uint16_t le_conn_latency = READ_BT_16(packet,16);

@@ -859,8 +859,8 @@ int hci_remote_eSCO_supported(hci_con_handle_t con_handle);
 
 /* API_START */
 
-void gap_le_get_connection_parameter_range(le_connection_parameter_range_t range);
-void gap_le_set_connection_parameter_range(le_connection_parameter_range_t range);
+void gap_le_get_connection_parameter_range(le_connection_parameter_range_t * range);
+void gap_le_set_connection_parameter_range(le_connection_parameter_range_t * range);
 
 /* LE Client Start */
 

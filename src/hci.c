@@ -135,8 +135,8 @@ static hci_connection_t * create_connection_for_bd_addr_and_type(bd_addr_t addr,
 *
  * @return le connection parameter range struct
  */
-void gap_le_get_connection_parameter_range(le_connection_parameter_range_t range){
-    range = hci_stack->le_connection_parameter_range;
+void gap_le_get_connection_parameter_range(le_connection_parameter_range_t * range){
+    *range = hci_stack->le_connection_parameter_range;
 }
 
 /**
@@ -144,8 +144,8 @@ void gap_le_get_connection_parameter_range(le_connection_parameter_range_t range
  *
  */
 
-void gap_le_set_connection_parameter_range(le_connection_parameter_range_t range){
-    hci_stack->le_connection_parameter_range = range;
+void gap_le_set_connection_parameter_range(le_connection_parameter_range_t * range){
+    hci_stack->le_connection_parameter_range = *range;
 }
 
 /**
