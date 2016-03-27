@@ -55,10 +55,10 @@ static void db_open(void){
 static void db_close(void){ 
 }
 
-static btstack_link_key_db_memory_t * get_item(btstack_linked_list_t list, bd_addr_t bd_addr) {
+static btstack_link_key_db_memory_entry_t * get_item(btstack_linked_list_t list, bd_addr_t bd_addr) {
     btstack_linked_item_t *it;
     for (it = (btstack_linked_item_t *) list; it ; it = it->next){
-        btstack_link_key_db_memory_t * item = (btstack_link_key_db_memory_t *) it;
+        btstack_link_key_db_memory_entry_t * item = (btstack_link_key_db_memory_entry_t *) it;
         if (bd_addr_cmp(item->bd_addr, bd_addr) == 0) {
             return item;
         }
@@ -67,7 +67,7 @@ static btstack_link_key_db_memory_t * get_item(btstack_linked_list_t list, bd_ad
 }
 
 static int get_link_key(bd_addr_t bd_addr, link_key_t link_key, link_key_type_t * link_key_type) {
-    btstack_link_key_db_memory_t * item = get_item(db_mem_link_keys, bd_addr);
+    btstack_link_key_db_memory_entry_t * item = get_item(db_mem_link_keys, bd_addr);
     
     if (!item) return 0;
     
@@ -82,31 +82,31 @@ static int get_link_key(bd_addr_t bd_addr, link_key_t link_key, link_key_type_t 
 }
 
 static void delete_link_key(bd_addr_t bd_addr){
-    btstack_link_key_db_memory_t * item = get_item(db_mem_link_keys, bd_addr);
+    btstack_link_key_db_memory_entry_t * item = get_item(db_mem_link_keys, bd_addr);
     
     if (!item) return;
     
     btstack_linked_list_remove(&db_mem_link_keys, (btstack_linked_item_t *) item);
-    btstack_memory_btstack_link_key_db_memory_free((btstack_link_key_db_memory_t*)item);
+    btstack_memory_btstack_link_key_db_memory_entry_free((btstack_link_key_db_memory_entry_t*)item);
 }
 
 
 static void put_link_key(bd_addr_t bd_addr, link_key_t link_key, link_key_type_t link_key_type){
 
     // check for existing record and remove if found
-    btstack_link_key_db_memory_t * record = get_item(db_mem_link_keys, bd_addr);
+    btstack_link_key_db_memory_entry_t * record = get_item(db_mem_link_keys, bd_addr);
     if (record){
         btstack_linked_list_remove(&db_mem_link_keys, (btstack_linked_item_t*) record);
     }
 
     // record not found, get new one from memory pool
     if (!record) {
-        record = btstack_memory_btstack_link_key_db_memory_get();
+        record = btstack_memory_btstack_link_key_db_memory_entry_get();
     }
 
     // if none left, re-use last item and remove from list
     if (!record){
-        record = (btstack_link_key_db_memory_t*) btstack_linked_list_get_last_item(&db_mem_link_keys);
+        record = (btstack_link_key_db_memory_entry_t*) btstack_linked_list_get_last_item(&db_mem_link_keys);
         if (record) {
             btstack_linked_list_remove(&db_mem_link_keys, (btstack_linked_item_t*) record);
         }

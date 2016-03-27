@@ -59,7 +59,7 @@ typedef struct {
     bd_addr_t bd_addr;
     link_key_t link_key;
     link_key_type_t link_key_type;
-} btstack_link_key_db_memory_t;
+} btstack_link_key_db_memory_entry_t;
 
 /* API_END */
 
