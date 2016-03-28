@@ -340,11 +340,24 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
         return;
     }
 
+    // directly process commands
+    // note: signed write cannot be handled directly as authentication needs to be verified
+    if (packet[0] == ATT_WRITE_COMMAND){
+        att_handle_request(&att_connection, packet, size, 0);
+        return;
+    }
+
     // check size
-    if (size > sizeof(att_request_buffer)) return;
+    if (size > sizeof(att_request_buffer)) {
+        log_info("att_packet_handler: dropping att pdu 0x%02x as size %u > att_request_buffer %u", packet[0], size, (int) sizeof(att_request_buffer));
+        return;
+    }
 
     // last request still in processing?
-    if (att_server_state != ATT_SERVER_IDLE) return;
+    if (att_server_state != ATT_SERVER_IDLE){
+        log_info("att_packet_handler: skipping att pdu 0x%02x as server not idle (state %u)", packet[0], att_server_state);
+        return;
+    }
 
     // store request
     att_server_state = ATT_SERVER_REQUEST_RECEIVED;
