@@ -1,9 +1,13 @@
 
-BTstack implements a set of basic Bluetooth protocols. To make use of
-these to connect to other devices or to provide own services, BTstack
-has to be properly configured during application startup.
+BTstack implements a set of Bluetooth protocols and profiles. To connect to other devices or to provide a Bluetooth services, BTstack has to be properly configured.
 
-In the following, we provide an overview of the memory management, the
+The configuration of BTstack is done both at compile time as well as at run time:
+
+- *btstack_config.h* to describe the system configuration, used functionality, and also the memory configuration
+- adding necessary source code files to your project
+- run time configuration of provided services during startup
+
+In the following, we provide an overview of the the configuration via *btstack_config.h*, the memory management, the
 run loop, and services that are necessary to setup BTstack. From the
 point when the run loop is executed, the application runs as a finite
 state machine, which processes events received from BTstack. BTstack
@@ -11,6 +15,45 @@ groups events logically and provides them over packet handlers, of which
 an overview is provided here. Finally, we describe the RFCOMM
 credit-based flow-control, which may be necessary for
 resource-constraint devices.
+
+## Configuration in btstack_config.h {#sec:btstackConfigHowTo}
+The file *btstack_config.h* contains three parts:
+
+- description of available system features, similar to config.h in a autoconf setup. All #defines start with HAVE_ and are [listed here](#sec:platformConfiguration)
+- list of enabled features, most importantly ENABLE_CLASSIC and ENABLE_BLE. [See here](#sec:btstackFeatureConfiguration)
+- other BTstack configuration, most notably static memory. [See next section](#sec:memoryConfigurationHowTo).
+
+<!-- a name "lst:platformConfiguration"></a-->
+<!-- -->
+
+#define | Platform | Explanation
+-----------------------------|-------|------------------------------------
+HAVE_B1200_MAPPED_TO_2000000 | posix | Hack to use serial port with 2 mbps 
+HAVE_B2400_MAPPED_TO_3000000 | posix | Hack to use serial port with 3 mbps
+HAVE_B300_MAPPED_TO_2000000  | posix | Hack to use serial port with 2 mbps
+HAVE_B600_MAPPED_TO_3000000  | posix | Hack to use serial port with 3 mpbs
+HAVE_EHCILL                  | cc256x radio | CC256x/WL18xx with eHCILL is used
+HAVE_MALLOC                  |       | dynamic memory used
+HAVE_POSIX_FILE_IO           | posix | POSIX File i/o used for hci dump
+HAVE_SO_NOSIGPIPE            | posix | libc supports SO_NOSIGPIPE 
+HAVE_STDIO                   |       | STDIN is available for examples
+HAVE_TICK                    | embedded | System provides tick interrupt
+HAVE_TIME                    | posix | System provides time function
+HAVE_TIME_MS                 | embedded | System provides time in milliseconds
+
+<!-- a name "lst:btstackFeatureConfiguration"></a-->
+<!-- -->
+
+#define | Explanation
+------------------|---------------------------------------------
+ENABLE_CLASSIC    | Enable Classic related code in HCI and L2CAP
+ENABLE_BLE        | Enable BLE related code in HCI and L2CAP
+ENABLE_LOG_DEBUG  | Enable log_debug messages
+ENABLE_LOG_ERROR  | Enable log_error messages
+ENABLE_LOG_INFO   | Enable log_info messages
+ENABLE_LOG_INTO_HCI_DUMP | Log debug messages as part of packet log
+ENABLE_SCO_OVER_HCI | Enable SCO over HCI for chipsets that support it (only CC256x ones currently)
+
 
 ## Memory configuration {#sec:memoryConfigurationHowTo}
 
@@ -26,6 +69,33 @@ allocated in two different manners:
 -   dynamically using the *malloc/free* functions, if HAVE_MALLOC is
     defined in config file.
 
+For each HCI connection, a buffer of size HCI_ACL_PAYLOAD_SIZE is reserved. For fast data transfer, however, a large ACL buffer of 1021 bytes is recommened. The large ACL buffer is required for 3-DH5 packets to be used.
+
+<!-- a name "lst:memoryConfiguration"></a-->
+<!-- -->
+
+#define | Explanation 
+--------|------------
+HCI_ACL_PAYLOAD_SIZE | Max size of HCI ACL payloads
+MAX_NR_BNEP_CHANNELS | Max nr. of BNEP channels
+MAX_NR_BNEP_SERVICES | Max nr. provides BNEP services
+MAX_NR_BTSTACK_LINK_KEY_DB_MEMORY_ENTRIES | Max nr. of link key entries cached in RAM
+MAX_NR_GATT_CLIENTS | Max nr. of GATT clients
+MAX_NR_HCI_CONNECTIONS | Max nr. HCI connections
+MAX_NR_HFP_CONNECTIONS | Max nr. HFP connections
+MAX_NR_L2CAP_CHANNELS |  Max nr. L2CAP connections
+MAX_NR_L2CAP_SERVICES |  Max nr. L2CAP services
+MAX_NR_RFCOMM_CHANNELS | Max nr. RFOMMM connections
+MAX_NR_RFCOMM_MULTIPLEXERS | Max nr. RFCOMM multiplexers. One multiplexer per HCI connection
+MAX_NR_RFCOMM_SERVICES | Max nr. RFCOMM services
+MAX_NR_SERVICE_RECORD_ITEMS | Max nr. SDP service records
+MAX_NR_SM_LOOKUP_ENTRIES | Max nr. of items in Security Manager lookup queue
+MAX_NR_WHITELIST_ENTRIES | Max nr. of items in GAP LE Whitelist to connect to
+
+The memory is set up by calling *btstack_memory_init* function:
+
+    btstack_memory_init();
+
 <!-- a name "lst:memoryConfigurationSPP"></a-->
 <!-- -->
 
@@ -40,15 +110,11 @@ allocated in two different manners:
 
 Listing: Title. {#lst:memoryConfigurationSPP}
 
-If both HAVE_MALLOC and maximal size of a pool are defined in the
-config file, the statical allocation will take precedence. In case that
-both are omitted, an error will be raised.
-
-The memory is set up by calling *btstack_memory_init* function:
+In this example, the size of ACL packets is limited to the minimum of 52 bytes, resulting in an L2CAP MTU of 48 bytes. Only a singleHCI connection can be established at any time. On it, two L2CAP services are provided, which can be active at the same time. Here, these two can be RFCOMM and SDP. Then, memory for one RFCOMM multiplexer is reserved over which one connection can be active. Finally, up to three link keys can be cached in RAM.
 
 <!-- -->
 
-    btstack_memory_init();
+
 
 
 ## Run loop {#sec:runLoopHowTo}
