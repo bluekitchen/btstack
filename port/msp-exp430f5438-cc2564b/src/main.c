@@ -51,16 +51,15 @@
 #include <msp430x54x.h>
 
 #include "btstack_chipset_cc256x.h"
+#include "btstack_config.h"
+#include "btstack_memory.h"
+#include "btstack_run_loop.h"
+#include "btstack_run_loop_embedded.h"
+#include "classic/btstack_link_key_db.h"
 #include "hal_board.h"
 #include "hal_compat.h"
 #include "hal_usb.h"
-
-#include "btstack_run_loop.h"
-
 #include "hci.h"
-#include "btstack_memory.h"
-#include "classic/btstack_link_key_db.h"
-#include "btstack_config.h"
 
 static void hw_setup(void){
     // stop watchdog timer
@@ -98,8 +97,8 @@ static void btstack_setup(void){
     btstack_run_loop_init(btstack_run_loop_embedded_get_instance());
     
     // init HCI
-    hci_init(hci_transport_h4_instance, &config);
-    hci_set_link_key_db(btstack_link_key_db_memory_instance);
+    hci_init(hci_transport_h4_instance(), &config);
+    hci_set_link_key_db(btstack_link_key_db_memory_instance());
     hci_set_chipset(btstack_chipset_cc256x_instance());
     
     // use eHCILL
