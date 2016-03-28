@@ -850,7 +850,6 @@ static void hfp_ag_slc_established(hfp_connection_t * hfp_connection){
 
 static void hfp_hf_switch_on_ok(hfp_connection_t *hfp_connection){
     hfp_connection->ok_pending = 0;
-    int done = 1;
     switch (hfp_connection->state){
         case HFP_W4_EXCHANGE_SUPPORTED_FEATURES:
             if (has_codec_negotiation_feature(hfp_connection)){
@@ -943,12 +942,10 @@ static void hfp_hf_switch_on_ok(hfp_connection_t *hfp_connection){
                     hfp_emit_event(hfp_callback, HFP_SUBEVENT_CODECS_CONNECTION_COMPLETE, 0);
                     break;
                 default:
-                    done = 0;
                     break;
             }
             break;
         default:
-            done = 0;
             break;
     }
 
@@ -1055,7 +1052,7 @@ static void hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8
     hfp_run_for_context(hfp_connection);
 }
 
-static void hfp_run(){
+static void hfp_run(void){
     linked_list_iterator_t it;    
     linked_list_iterator_init(&it, hfp_get_connections());
     while (linked_list_iterator_has_next(&it)){
