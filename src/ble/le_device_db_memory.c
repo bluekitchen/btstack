@@ -37,6 +37,8 @@
  
 #include "ble/le_device_db.h"
 
+#include "ble/core.h"
+
 #include <stdio.h>
 #include <string.h>
 #include "btstack_debug.h"

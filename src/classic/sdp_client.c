@@ -40,15 +40,14 @@
  */
 
 #include "btstack_config.h"
-#include "classic/sdp_client.h"
-
-#include "hci_cmd.h"
-
+#include "btstack_debug.h"
 #include "btstack_event.h"
-#include "l2cap.h"
+#include "classic/core.h"
+#include "classic/sdp_client.h"
 #include "classic/sdp_server.h"
 #include "classic/sdp_util.h"
-#include "btstack_debug.h"
+#include "hci_cmd.h"
+#include "l2cap.h"
 
 // Types SDP Parser - Data Element stream helper
 typedef enum { 

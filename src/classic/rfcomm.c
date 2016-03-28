@@ -48,6 +48,7 @@
 #include "btstack_event.h"
 #include "btstack_memory.h"
 #include "btstack_util.h"
+#include "classic/core.h"
 #include "classic/rfcomm.h"
 #include "hci.h"
 #include "hci_cmd.h"

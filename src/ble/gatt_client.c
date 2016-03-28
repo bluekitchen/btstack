@@ -45,6 +45,7 @@
 #include "att_dispatch.h"
 #include "ble/ad_parser.h"
 #include "ble/att_db.h"
+#include "ble/core.h"
 #include "ble/gatt_client.h"
 #include "ble/le_device_db.h"
 #include "ble/sm.h"

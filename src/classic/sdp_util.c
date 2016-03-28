@@ -39,10 +39,11 @@
  *  sdp_util.c
  */
 
-#include "classic/sdp_util.h"
-#include "btstack_util.h"
-#include "btstack_config.h"
 #include "bluetooth.h"
+#include "btstack_config.h"
+#include "btstack_util.h"
+#include "classic/core.h"
+#include "classic/sdp_util.h"
  
 #include <stdio.h>
 #include <stdlib.h>

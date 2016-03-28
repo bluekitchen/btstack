@@ -46,6 +46,8 @@
 #include <string.h>
 
 #include "bluetooth.h"
+#include "btstack_config.h"
+#include "classic/core.h"
 #include "classic/sdp_util.h"
 
 void spp_create_sdp_record(uint8_t *service, uint32_t service_record_handle, int rfcomm_channel, const char *name){

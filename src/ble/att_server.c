@@ -48,21 +48,20 @@
 
 #include "btstack_config.h"
 
+#include "att_dispatch.h"
+#include "ble/att_db.h"
+#include "ble/att_server.h"
+#include "ble/core.h"
+#include "ble/le_device_db.h"
+#include "ble/sm.h"
 #include "btstack_debug.h"
 #include "btstack_event.h"
 #include "btstack_memory.h"
 #include "btstack_run_loop.h"
+#include "gap.h"
 #include "hci.h"
 #include "hci_dump.h"
 #include "l2cap.h"
-
-#include "ble/sm.h"
-#include "ble/att_db.h"
-#include "att_dispatch.h"
-#include "gap.h"
-#include "ble/le_device_db.h"
-
-#include "ble/att_server.h"
 
 static void att_run(void);
 

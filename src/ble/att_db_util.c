@@ -40,6 +40,7 @@
 
 #include "att_db_util.h"
 #include "ble/att_db.h"
+#include "ble/core.h"
 #include "btstack_util.h"
 #include "btstack_debug.h"
 #include "bluetooth.h"

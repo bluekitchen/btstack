@@ -40,10 +40,10 @@
  * Dispatcher for independent implementation of ATT client and server
  */
 
-#include "l2cap.h"
-
 #include "att_dispatch.h"
+#include "ble/core.h"
 #include "btstack_debug.h"
+#include "l2cap.h"
 
 static btstack_packet_handler_t att_client_handler;
 static btstack_packet_handler_t att_server_handler;

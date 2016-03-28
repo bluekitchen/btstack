@@ -34,56 +34,18 @@
  * contact@bluekitchen-gmbh.com
  *
  */
-#include  "le_device_db.h"
-#include "ble/core.h"
 
- // Central Device db interface
-void le_device_db_init(void){}
+// *****************************************************************************
+//  Core header for all BLE protocols and profiles
+// *****************************************************************************
 
-// @returns index if successful, -1 otherwise
-int le_device_db_add(int addr_type, bd_addr_t addr, sm_key_t irk){
-	return -1;
-}
+#ifndef __BLE_CORE
+#define __BLE_CORE
 
-// @returns number of device in db
-int le_device_db_count(void){
-	return 0;
-}
+#include "btstack_config.h"
 
-void le_device_db_encryption_set(int index, uint16_t ediv, uint8_t rand[8], sm_key_t ltk, int key_size, int authenticated, int authorized){}
+#ifndef ENABLE_BLE
+#error "ENABLE_BLE not defined but Classic protocol or profile include. Please add ENABLE_BLE in btstack_config.h, or remove all Classic protocols and profiles"
+#endif
 
-void le_device_db_encryption_get(int index, uint16_t * ediv, uint8_t rand[8], sm_key_t ltk, int * key_size, int * authenticated, int * authorized){}
-
-// get device information: addr type and address
-void le_device_db_info(int index, int * addr_type, bd_addr_t addr, sm_key_t csrk){}
-
-// get signature key
-void le_device_db_remote_csrk_get(int index, sm_key_t csrk){}
-
-void le_device_db_remote_csrk_set(int index, sm_key_t csrk){}
-
-// get signature key
-void le_device_db_local_csrk_get(int index, sm_key_t csrk){}
-
-void le_device_db_local_csrk_set(int index, sm_key_t csrk){}
-
-
-// query last used/seen signing counter
-uint32_t le_device_db_remote_counter_get(int index){ 
-	return 0xffffffff;
-}
-
-// update signing counter
-void le_device_db_local_counter_set(int index, uint32_t counter){}
-
-// query last used/seen signing counter
-uint32_t le_device_db_local_counter_get(int index){ 
-	return 0xffffffff;
-}
-
-// update signing counter
-void le_device_db_remote_counter_set(int index, uint32_t counter){}
-
-// free device
-void le_device_db_remove(int index){}
-
+#endif

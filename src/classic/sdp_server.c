@@ -42,14 +42,14 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "btstack_memory.h"
 #include "btstack_debug.h"
 #include "btstack_event.h"
-#include "hci_dump.h"
-#include "l2cap.h"
-
+#include "btstack_memory.h"
+#include "classic/core.h"
 #include "classic/sdp_server.h"
 #include "classic/sdp_util.h"
+#include "hci_dump.h"
+#include "l2cap.h"
 
 // max reserved ServiceRecordHandle
 #define maxReservedServiceRecordHandle 0xffff

@@ -46,6 +46,7 @@
 
 #include "btstack_debug.h"
 #include "btstack_event.h"
+#include "classic/core.h"
 #include "classic/sdp_client.h"
 #include "classic/sdp_client_rfcomm.h"
 #include "classic/sdp_util.h"

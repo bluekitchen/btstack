@@ -56,6 +56,7 @@
 #include "hci_dump.h"
 #include "l2cap.h"
 #include "btstack_debug.h"
+#include "classic/core.h"
 #include "classic/hfp.h"
 #include "classic/hfp_ag.h"
 #include "classic/hfp_gsm_model.h"

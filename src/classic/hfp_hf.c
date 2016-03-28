@@ -48,20 +48,19 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "hci_cmd.h"
-#include "btstack_run_loop.h"
-
-#include "hci.h"
+#include "btstack_debug.h"
 #include "btstack_memory.h"
-#include "hci_dump.h"
-#include "l2cap.h"
+#include "btstack_run_loop.h"
+#include "classic/core.h"
+#include "classic/hfp.h"
+#include "classic/hfp_hf.h"
 #include "classic/sdp_client_rfcomm.h"
 #include "classic/sdp_server.h"
 #include "classic/sdp_util.h"
-#include "btstack_debug.h"
-#include "classic/hfp.h"
-#include "classic/hfp_hf.h"
-
+#include "hci.h"
+#include "hci_cmd.h"
+#include "hci_dump.h"
+#include "l2cap.h"
 
 static const char default_hfp_hf_service_name[] = "Hands-Free unit";
 static uint16_t hfp_supported_features = HFP_DEFAULT_HF_SUPPORTED_FEATURES;

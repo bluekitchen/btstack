@@ -40,6 +40,7 @@
 #include <inttypes.h>
 
 #include "ble/le_device_db.h"
+#include "ble/core.h"
 #include "ble/sm.h"
 #include "btstack_debug.h"
 #include "btstack_event.h"

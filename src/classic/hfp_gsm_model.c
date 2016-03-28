@@ -49,6 +49,7 @@
 #include <string.h>
 
 #include "btstack_memory.h"
+#include "classic/core.h"
 #include "classic/hfp.h"
 #include "classic/hfp_gsm_model.h"
 #include "classic/sdp_server.h"
