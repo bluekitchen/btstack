@@ -12,16 +12,16 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "btstack_event.h"
+#include "btstack_memory.h"
+#include "btstack_run_loop.h"
 #include "classic/sdp_client_rfcomm.h"
 #include "classic/sdp_util.h"
-#include "hci_cmd.h"
-#include "btstack_run_loop.h"
-
+#include "classic/spp_server.h"
 #include "hci.h"
-#include "btstack_memory.h"
+#include "hci_cmd.h"
 #include "hci_dump.h"
 #include "l2cap.h"
-#include "btstack_event.h"
 #include "mock.h"
 
 #include "CppUTest/TestHarness.h"
