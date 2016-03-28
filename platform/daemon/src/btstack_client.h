@@ -55,6 +55,7 @@
 #include "daemon_cmds.h"
 #include "hci.h"
 #include "hci_cmd.h"
+#include "classic/spp_server.h"
 
 #include <stdint.h>
 

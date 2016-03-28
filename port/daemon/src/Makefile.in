@@ -33,6 +33,7 @@ libBTstack_SOURCES =    \
     btstack_linked_list.c    \
     btstack_run_loop.c  \
     sdp_util.c          \
+    spp_server.c        \
     btstack_util.c             \
     $(btstack_run_loop_sources) \
 			  
