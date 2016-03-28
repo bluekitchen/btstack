@@ -1,7 +1,7 @@
 
 #include "rijndael.h"
 #include <stdio.h>
-#include <strings.h>
+#include <string.h>
 
 void aes128_calc_cyphertext(uint8_t key[16], uint8_t plaintext[16], uint8_t cyphertext[16]){
 	uint32_t rk[RKLENGTH(KEYBITS)];
