@@ -34,6 +34,7 @@ libBTstack_OBJS  = 		           \
 	daemon_cmds.o                  \
 	hci_dump.o                     \
 	sdp_util.o                     \
+	spp_server.o                   \
 	socket_connection.o            \
 
 BTdaemon_OBJS = $(libBTstack_OBJS) \
