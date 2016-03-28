@@ -23,8 +23,8 @@
 #define HCI_ACL_PAYLOAD_SIZE 1021
 
 // Daemon configuration
-#define BTSTACK_DEVICE_NAME_DB_INSTANCE btstack_device_name_db_cocoa_instance
-#define BTSTACK_LINK_KEY_DB_INSTANCE btstack_link_key_db_cocoa_instance
+#define BTSTACK_DEVICE_NAME_DB_INSTANCE btstack_device_name_db_corefoundation_instance
+#define BTSTACK_LINK_KEY_DB_INSTANCE btstack_link_key_db_corefoundation_instance
 #define ENABLE_RFCOMM
 #define ENABLE_SDP
 #define HAVE_TRANSPORT_H4

@@ -47,7 +47,7 @@ extern "C" {
 /*
  * @brief Get basic link key db implementation that stores link keys preferences
  */
-const btstack_link_key_db_t * btstack_link_key_db_cocoa_instance(void);
+const btstack_link_key_db_t * btstack_link_key_db_corefoundation_instance(void);
 
 /* API_END */
 

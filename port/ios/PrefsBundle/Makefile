@@ -14,7 +14,7 @@ BTstack_FRAMEWORKS = UIKit
 BTstack_CFLAGS =  -g -I.. \
 	-I$(BTSTACK_ROOT)/src \
 	-I$(BTSTACK_ROOT)/platform/daemon/src \
-	-I$(BTSTACK_ROOT)/platform/cocoa \
+	-I$(BTSTACK_ROOT)/platform/corefoundation \
 
 BTstack_LDFLAGS = -L../src/.theos/obj -lBTstack
 BTstack_PRIVATE_FRAMEWORKS = Preferences

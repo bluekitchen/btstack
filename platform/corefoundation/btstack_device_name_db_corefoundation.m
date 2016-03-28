@@ -33,7 +33,7 @@
  * Please inquire about commercial licensing options at contact@bluekitchen-gmbh.com
  *
  */
-#include "btstack_device_name_db_cocoa.h"
+#include "btstack_device_name_db_corefoundation.h"
 #include "btstack_debug.h"
 
 #import <Foundation/Foundation.h>
@@ -164,7 +164,7 @@ static int  get_name(bd_addr_t bd_addr, device_name_t *device_name) {
     return (remoteName != nil);
 }
 
-btstack_device_name_db_t btstack_device_name_db_cocoa = {
+btstack_device_name_db_t btstack_device_name_db_corefounation = {
     db_open,
     db_close,
     get_name,
@@ -172,7 +172,7 @@ btstack_device_name_db_t btstack_device_name_db_cocoa = {
     delete_name,
 };
 
-const btstack_device_name_db_t * btstack_device_name_db_cocoa_instance(void) {
-    return &btstack_device_name_db_cocoa;
+const btstack_device_name_db_t * btstack_device_name_db_corefoundation_instance(void) {
+    return &btstack_device_name_db_corefounation;
 }
 

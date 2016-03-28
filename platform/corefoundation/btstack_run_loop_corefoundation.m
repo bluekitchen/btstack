@@ -35,7 +35,7 @@
  */
 
 /*
- *  btstack_run_loop_cocoa.c
+ *  btstack_run_loop_corefoundation.c
  *
  *  Created by Matthias Ringwald on 8/2/09.
  */
@@ -50,12 +50,12 @@
 #include <stdlib.h>
 
 static struct timeval init_tv;
-static const btstack_run_loop_t btstack_run_loop_cocoa;
+static const btstack_run_loop_t btstack_run_loop_corefoundation;
 
 typedef struct  {
     CFSocketRef socket;
     CFRunLoopSourceRef socket_run_loop;
-} btstack_cocoa_data_source_helper_t;
+} btstack_corefoundation_data_source_helper_t;
 
 static void theCFRunLoopTimerCallBack (CFRunLoopTimerRef timer,void *info){
     btstack_timer_source_t * ts = (btstack_timer_source_t*)info;
@@ -72,16 +72,16 @@ static void socketDataCallback (
     btstack_data_source_t * ds = (btstack_data_source_t *) info;
 
     if ((callbackType == kCFSocketReadCallBack) && (ds->flags & DATA_SOURCE_CALLBACK_READ)){
-        // printf("btstack_run_loop_cocoa_ds %x - fd %u, CFSocket %x, CFRunLoopSource %x\n", (int) ds, ds->fd, (int) s, (int) ds->item.next);
+        // printf("btstack_run_loop_corefoundation_ds %x - fd %u, CFSocket %x, CFRunLoopSource %x\n", (int) ds, ds->fd, (int) s, (int) ds->item.next);
         ds->process(ds, DATA_SOURCE_CALLBACK_READ);
     }
     if ((callbackType == kCFSocketWriteCallBack) && (ds->flags & DATA_SOURCE_CALLBACK_WRITE)){
-        // printf("btstack_run_loop_cocoa_ds %x - fd %u, CFSocket %x, CFRunLoopSource %x\n", (int) ds, ds->fd, (int) s, (int) ds->item.next);
+        // printf("btstack_run_loop_corefoundation_ds %x - fd %u, CFSocket %x, CFRunLoopSource %x\n", (int) ds, ds->fd, (int) s, (int) ds->item.next);
         ds->process(ds, DATA_SOURCE_CALLBACK_WRITE);
     }
 }
 
-static CFOptionFlags btstack_run_loop_cocoa_option_flags_for_callback_types(uint16_t callback_types){
+static CFOptionFlags btstack_run_loop_corefoundation_option_flags_for_callback_types(uint16_t callback_types){
     uint16_t option_flags = 0;
     if (callback_types & DATA_SOURCE_CALLBACK_READ){
         option_flags |= kCFSocketReadCallBack;
@@ -92,14 +92,14 @@ static CFOptionFlags btstack_run_loop_cocoa_option_flags_for_callback_types(uint
     return option_flags;
 }
 
-static void btstack_run_loop_cocoa_add_data_source(btstack_data_source_t *data_source){
+static void btstack_run_loop_corefoundation_add_data_source(btstack_data_source_t *data_source){
 
 	// add fd as CFSocket
 
     // allocate memory for Core Foundation references	
-    btstack_cocoa_data_source_helper_t * references = malloc(sizeof(btstack_cocoa_data_source_helper_t));
+    btstack_corefoundation_data_source_helper_t * references = malloc(sizeof(btstack_corefoundation_data_source_helper_t));
     if (!references){
-        log_error("btstack_run_loop_cocoa_add_data_source could not allocate btstack_cocoa_data_source_helper_t");
+        log_error("btstack_run_loop_corefoundation_add_data_source could not allocate btstack_corefoundation_data_source_helper_t");
         return;
     }
 
@@ -109,7 +109,7 @@ static void btstack_run_loop_cocoa_add_data_source(btstack_data_source_t *data_s
 	socketContext.info = data_source;
 
 	// create CFSocket from file descriptor
-    uint16_t callback_types = btstack_run_loop_cocoa_option_flags_for_callback_types(data_source->flags);
+    uint16_t callback_types = btstack_run_loop_corefoundation_option_flags_for_callback_types(data_source->flags);
 	CFSocketRef socket = CFSocketCreateWithNative (
 										  kCFAllocatorDefault,
 										  data_source->fd,
@@ -131,30 +131,30 @@ static void btstack_run_loop_cocoa_add_data_source(btstack_data_source_t *data_s
     references->socket = socket;
     references->socket_run_loop = socket_run_loop;
 
-    // hack: store btstack_cocoa_data_source_helper_t in "next" of btstack_linked_item_t
+    // hack: store btstack_corefoundation_data_source_helper_t in "next" of btstack_linked_item_t
     data_source->item.next      = (void *) references;
 
     // add to run loop
 	CFRunLoopAddSource( CFRunLoopGetCurrent(), socket_run_loop, kCFRunLoopCommonModes);
-    // printf("btstack_run_loop_cocoa_add_data_source    %x - fd %u - CFSocket %x, CFRunLoopSource %x\n", (int) dataSource, dataSource->fd, (int) socket, (int) socket_run_loop);
+    // printf("btstack_run_loop_corefoundation_add_data_source    %x - fd %u - CFSocket %x, CFRunLoopSource %x\n", (int) dataSource, dataSource->fd, (int) socket, (int) socket_run_loop);
     
 }
 
 static void btstack_run_loop_embedded_enable_data_source_callbacks(btstack_data_source_t * ds, uint16_t callback_types){
-    btstack_cocoa_data_source_helper_t * references = (btstack_cocoa_data_source_helper_t *) ds->item.next;
-    uint16_t option_flags = btstack_run_loop_cocoa_option_flags_for_callback_types(callback_types);
+    btstack_corefoundation_data_source_helper_t * references = (btstack_corefoundation_data_source_helper_t *) ds->item.next;
+    uint16_t option_flags = btstack_run_loop_corefoundation_option_flags_for_callback_types(callback_types);
     CFSocketEnableCallBacks(references->socket, option_flags);   
 }
 
 static void btstack_run_loop_embedded_disable_data_source_callbacks(btstack_data_source_t * ds, uint16_t callback_types){
-    btstack_cocoa_data_source_helper_t * references = (btstack_cocoa_data_source_helper_t *) ds->item.next;
-    uint16_t option_flags = btstack_run_loop_cocoa_option_flags_for_callback_types(callback_types);
+    btstack_corefoundation_data_source_helper_t * references = (btstack_corefoundation_data_source_helper_t *) ds->item.next;
+    uint16_t option_flags = btstack_run_loop_corefoundation_option_flags_for_callback_types(callback_types);
     CFSocketDisableCallBacks(references->socket, option_flags);   
 }
 
-static int  btstack_run_loop_cocoa_remove_data_source(btstack_data_source_t *ds){
-    btstack_cocoa_data_source_helper_t * references = (btstack_cocoa_data_source_helper_t *) ds->item.next;
-    // printf("btstack_run_loop_cocoa_remove_data_source %x - fd %u, CFSocket %x, CFRunLoopSource %x\n", (int) dataSource, dataSource->fd, (int) dataSource->item.next, (int) dataSource->item.user_data);
+static int  btstack_run_loop_corefoundation_remove_data_source(btstack_data_source_t *ds){
+    btstack_corefoundation_data_source_helper_t * references = (btstack_corefoundation_data_source_helper_t *) ds->item.next;
+    // printf("btstack_run_loop_corefoundation_remove_data_source %x - fd %u, CFSocket %x, CFRunLoopSource %x\n", (int) dataSource, dataSource->fd, (int) dataSource->item.next, (int) dataSource->item.user_data);
     CFRunLoopRemoveSource( CFRunLoopGetCurrent(), references->socket_run_loop, kCFRunLoopCommonModes);
     CFRelease(references->socket_run_loop);
 
@@ -165,7 +165,7 @@ static int  btstack_run_loop_cocoa_remove_data_source(btstack_data_source_t *ds)
 	return 0;
 }
 
-static void btstack_run_loop_cocoa_add_timer(btstack_timer_source_t * ts)
+static void btstack_run_loop_corefoundation_add_timer(btstack_timer_source_t * ts)
 {
     // note: ts uses unix time: seconds since Jan 1st 1970, CF uses Jan 1st 2001 as reference date
     // printf("kCFAbsoluteTimeIntervalSince1970 = %f\n", kCFAbsoluteTimeIntervalSince1970);
@@ -176,12 +176,12 @@ static void btstack_run_loop_cocoa_add_timer(btstack_timer_source_t * ts)
 
     // hack: store CFRunLoopTimerRef in next pointer of linked_item
     ts->item.next = (void *)timerRef;
-    // printf("btstack_run_loop_cocoa_add_timer %x -> %x now %f, then %f\n", (int) ts, (int) ts->item.next, CFAbsoluteTimeGetCurrent(),fireDate);
+    // printf("btstack_run_loop_corefoundation_add_timer %x -> %x now %f, then %f\n", (int) ts, (int) ts->item.next, CFAbsoluteTimeGetCurrent(),fireDate);
     CFRunLoopAddTimer(CFRunLoopGetCurrent(), timerRef, kCFRunLoopCommonModes);
 }
 
-static int btstack_run_loop_cocoa_remove_timer(btstack_timer_source_t * ts){
-    // printf("btstack_run_loop_cocoa_remove_timer %x -> %x\n", (int) ts, (int) ts->item.next);
+static int btstack_run_loop_corefoundation_remove_timer(btstack_timer_source_t * ts){
+    // printf("btstack_run_loop_corefoundation_remove_timer %x -> %x\n", (int) ts, (int) ts->item.next);
 	if (ts->item.next != NULL) {
     	CFRunLoopTimerInvalidate((CFRunLoopTimerRef) ts->item.next);    // also removes timer from run loops + releases it
     	CFRelease((CFRunLoopTimerRef) ts->item.next);
@@ -190,7 +190,7 @@ static int btstack_run_loop_cocoa_remove_timer(btstack_timer_source_t * ts){
 }
 
 // set timer
-static void btstack_run_loop_cocoa_set_timer(btstack_timer_source_t *a, uint32_t timeout_in_ms){
+static void btstack_run_loop_corefoundation_set_timer(btstack_timer_source_t *a, uint32_t timeout_in_ms){
     gettimeofday(&a->timeout, NULL);
     a->timeout.tv_sec  +=  timeout_in_ms / 1000;
     a->timeout.tv_usec += (timeout_in_ms % 1000) * 1000;
@@ -203,23 +203,23 @@ static void btstack_run_loop_cocoa_set_timer(btstack_timer_source_t *a, uint32_t
 /**
  * @brief Queries the current time in ms since start
  */
-static uint32_t btstack_run_loop_cocoa_get_time_ms(void){
+static uint32_t btstack_run_loop_corefoundation_get_time_ms(void){
     struct timeval current_tv;
     gettimeofday(&current_tv, NULL);
     return (current_tv.tv_sec  - init_tv.tv_sec)  * 1000
          + (current_tv.tv_usec - init_tv.tv_usec) / 1000;
 }
 
-static void btstack_run_loop_cocoa_init(void){
+static void btstack_run_loop_corefoundation_init(void){
     gettimeofday(&init_tv, NULL);
 }
 
-static void btstack_run_loop_cocoa_execute(void)
+static void btstack_run_loop_corefoundation_execute(void)
 {
     CFRunLoopRun();
 }
 
-static void btstack_run_loop_cocoa_dump_timer(void){
+static void btstack_run_loop_corefoundation_dump_timer(void){
     log_error("WARNING: btstack_run_loop_dump_timer not implemented!");
 	return;
 }
@@ -227,21 +227,21 @@ static void btstack_run_loop_cocoa_dump_timer(void){
 /**
  * Provide btstack_run_loop_embedded instance
  */
-const btstack_run_loop_t * btstack_run_loop_cocoa_get_instance(void){
-    return &btstack_run_loop_cocoa;
+const btstack_run_loop_t * btstack_run_loop_corefoundation_get_instance(void){
+    return &btstack_run_loop_corefoundation;
 }
 
-static const btstack_run_loop_t btstack_run_loop_cocoa = {
-    &btstack_run_loop_cocoa_init,
-    &btstack_run_loop_cocoa_add_data_source,
-    &btstack_run_loop_cocoa_remove_data_source,
+static const btstack_run_loop_t btstack_run_loop_corefoundation = {
+    &btstack_run_loop_corefoundation_init,
+    &btstack_run_loop_corefoundation_add_data_source,
+    &btstack_run_loop_corefoundation_remove_data_source,
     &btstack_run_loop_embedded_enable_data_source_callbacks,
     &btstack_run_loop_embedded_disable_data_source_callbacks,
-    &btstack_run_loop_cocoa_set_timer,
-    &btstack_run_loop_cocoa_add_timer,
-    &btstack_run_loop_cocoa_remove_timer,
-    &btstack_run_loop_cocoa_execute,
-    &btstack_run_loop_cocoa_dump_timer,
-    &btstack_run_loop_cocoa_get_time_ms,
+    &btstack_run_loop_corefoundation_set_timer,
+    &btstack_run_loop_corefoundation_add_timer,
+    &btstack_run_loop_corefoundation_remove_timer,
+    &btstack_run_loop_corefoundation_execute,
+    &btstack_run_loop_corefoundation_dump_timer,
+    &btstack_run_loop_corefoundation_get_time_ms,
 };
 

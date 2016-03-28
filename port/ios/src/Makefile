@@ -12,7 +12,7 @@ VPATH += $(BTSTACK_ROOT)/src \
 		 $(BTSTACK_ROOT)/src/classic \
 		 $(BTSTACK_ROOT)/platform/posix \
 		 $(BTSTACK_ROOT)/platform/daemon/src \
-		 $(BTSTACK_ROOT)/platform/cocoa \
+		 $(BTSTACK_ROOT)/platform/corefoundation \
 		 $(BTSTACK_ROOT)/port/ios/SpringBoardAccess
 
 LIBRARY_NAME = libBTstack
@@ -20,12 +20,13 @@ libBTstack_FILES = \
 	btstack.c \
 	btstack_linked_list.c \
 	btstack_run_loop.c \
-	btstack_run_loop_cocoa.m \
+	btstack_run_loop_corefoundation.m \
 	btstack_run_loop_posix.c \
 	daemon_cmds.c \
 	hci_cmd.c \
 	hci_dump.c \
 	sdp_util.c \
+	spp_server.c \
 	socket_connection.c \
 	btstack_util.c \
 
@@ -35,8 +36,8 @@ TOOL_NAME = BTdaemon
 BTdaemon_FILES = \
 	$(libBTstack_FILES)  	  \
 	btstack_control_iphone.m  \
-	btstack_device_name_db_cocoa.m  \
-	btstack_link_key_db_cocoa.m  \
+	btstack_device_name_db_corefoundation.m  \
+	btstack_link_key_db_corefoundation.m  \
 	btstack_memory.c          \
 	btstack_memory_pool.c     \
 	daemon.c  				  \
@@ -48,7 +49,7 @@ BTdaemon_FILES = \
 	rfcomm.c                  \
 	sdp_server.c                     \
 	SpringBoardAccess.c       \
-    rfcomm_service_db_cocoa.m \
+    rfcomm_service_db_corefoundation.m \
     sdp_client.c              \
     sdp_client_rfcomm.c        \
 
@@ -56,6 +57,7 @@ BTdaemon_CFLAGS = \
 	-I$(BTSTACK_ROOT)/src \
 	-I$(BTSTACK_ROOT)/platform/posix \
 	-I$(BTSTACK_ROOT)/platform/daemon/src \
+	-I$(BTSTACK_ROOT)/platform/corefoundation \
 	-I..
 BTdaemon_PRIVATE_FRAMEWORKS = IOKIT
 

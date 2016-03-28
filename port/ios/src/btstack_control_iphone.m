@@ -704,20 +704,18 @@ static void MySleepCallBack( void * refCon, io_service_t service, natural_t mess
     }
 }
 
-static int  power_notification_process(struct btstack_data_source *ds) {
+static void power_notification_process(struct btstack_data_source *ds, btstack_data_source_callback_type_t callback_type) {
 
-    if (!power_notification_callback) return -1;
+    if (!power_notification_callback) return;
 
     // get token
     char token;
     int bytes_read = read(power_notification_pipe_fds[0], &token, 1);
-    if (bytes_read != 1) return -1;
+    if (bytes_read != 1) return;
         
     log_info("power_notification_process: %u\n", token);
 
     power_notification_callback( (POWER_NOTIFICATION_t) token );    
-    
-    return 0;
 }
 
 /**

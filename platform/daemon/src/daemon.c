@@ -95,9 +95,9 @@ extern void hci_transport_h4_iphone_set_enforce_wake_device(char *path);
 #endif
 
 // copy of prototypes
-const btstack_device_name_db_t * btstack_device_name_db_cocoa_instance(void);
+const btstack_device_name_db_t * btstack_device_name_db_corefoundation_instance(void);
 const btstack_device_name_db_t * btstack_device_name_db_fs_instance(void);
-const btstack_link_key_db_t * btstack_link_key_db_cocoa_instance(void);
+const btstack_link_key_db_t * btstack_link_key_db_corefoundation_instance(void);
 const btstack_link_key_db_t * btstack_link_key_db_fs_instance(void);
 
 #ifndef BTSTACK_LOG_FILE

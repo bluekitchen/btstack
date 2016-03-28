@@ -61,13 +61,13 @@ HAVE_SO_NOSIGPIPE="no"
 btstack_run_loop_SOURCES="btstack_run_loop_posix.c"
 case "$host_os" in
     darwin*)
-        btstack_run_loop_SOURCES="$btstack_run_loop_SOURCES btstack_run_loop_cocoa.m"
+        btstack_run_loop_SOURCES="$btstack_run_loop_SOURCES btstack_run_loop_corefoundation.m"
         LDFLAGS="$LDFLAGS -framework CoreFoundation -framework Foundation"
         BTSTACK_LIB_LDFLAGS="-dynamiclib -install_name \$(prefix)/lib/libBTstack.dylib"
         BTSTACK_LIB_EXTENSION="dylib"
-        REMOTE_DEVICE_DB_SOURCES="btstack_link_key_db_cocoa.m btstack_device_name_db_cocoa.m rfcomm_service_db_cocoa.m"
-        BTSTACK_LINK_KEY_DB_INSTANCE="btstack_link_key_db_cocoa_instance"
-        BTSTACK_DEVICE_NAME_DB_INSTANCE="btstack_device_name_db_cocoa_instance"
+        REMOTE_DEVICE_DB_SOURCES="btstack_link_key_db_corefoundation.m btstack_device_name_db_corefoundation.m rfcomm_service_db_corefoundation.m"
+        BTSTACK_LINK_KEY_DB_INSTANCE="btstack_link_key_db_corefoundation_instance"
+        BTSTACK_DEVICE_NAME_DB_INSTANCE="btstack_device_name_db_corefoundation_instance"
         HAVE_SO_NOSIGPIPE="yes";
         ;;
     mingw*)

@@ -14,6 +14,7 @@ ADDITIONAL_CFLAGS  = -I.. \
 	-I$(BTSTACK_ROOT)/src \
 	-I$(BTSTACK_ROOT)/platform/daemon/src \
 	-I$(BTSTACK_ROOT)/platform/posix  \
+	-I$(BTSTACK_ROOT)/platform/corefoundation  \
 
 ADDITIONAL_LDFLAGS = -L../src/.theos/obj -lBTstack
 

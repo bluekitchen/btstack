@@ -337,24 +337,19 @@ static void h4_statemachine(void){
 }
 
 static void h4_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type) {
-    if (hci_transport_h4->uart_fd == 0) return -1;
+    if (hci_transport_h4->uart_fd == 0) return;
 
     int read_now = bytes_to_read;
     
     // read up to bytes_to_read data in
     ssize_t bytes_read = read(hci_transport_h4->uart_fd, &hci_packet[read_pos], read_now);
-    if (bytes_read < 0) {
-        return bytes_read;
-    }
+    if (bytes_read < 0) return;
         
     bytes_to_read -= bytes_read;
     read_pos      += bytes_read;
-    if (bytes_to_read > 0) {
-        return 0;
-    }
+    if (bytes_to_read > 0) return;
     
     h4_statemachine();
-    return 0;
 }
 
 static void h4_enforce_wake_on(void){

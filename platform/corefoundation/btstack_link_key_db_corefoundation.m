@@ -33,7 +33,7 @@
  * Please inquire about commercial licensing options at contact@bluekitchen-gmbh.com
  *
  */
-#include "btstack_link_key_db_cocoa.h"
+#include "btstack_link_key_db_corefoundation.h"
 #include "btstack_debug.h"
 
 #import <Foundation/Foundation.h>
@@ -166,6 +166,6 @@ const btstack_link_key_db_t btstack_link_key_db_cocoa = {
     delete_link_key,
 };
 
-const btstack_link_key_db_t * btstack_link_key_db_cocoa_instance(void){
+const btstack_link_key_db_t * btstack_link_key_db_corefoundation_instance(void){
     return &btstack_link_key_db_cocoa;
 }

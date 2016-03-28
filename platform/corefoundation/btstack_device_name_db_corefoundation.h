@@ -35,24 +35,18 @@
  *
  */
 
-/*
- *  btstack_run_loop_cocoa.h
- *  Functionality special to the CoreFoundation run loop
- */
+#ifndef __BTSTACK_DEVICE_NAME_DB_COCOA_H
+#define __BTSTACK_DEVICE_NAME_DB_COCOA_H
 
-#ifndef __btstack_run_loop_COCOA_H
-#define __btstack_run_loop_COCOA_H
-
-#include "btstack_run_loop.h"
+#include "btstack_device_name_db.h"
 
 #if defined __cplusplus
 extern "C" {
 #endif
-	
-/**
- * Provide btstack_run_loop_cocoa instance
+
+/*
  */
-const btstack_run_loop_t * btstack_run_loop_cocoa_get_instance(void);
+const btstack_device_name_db_t * btstack_device_name_db_corefoundation_instance(void);
 
 /* API_END */
 
@@ -60,4 +54,4 @@ const btstack_run_loop_t * btstack_run_loop_cocoa_get_instance(void);
 }
 #endif
 
-#endif // __btstack_run_loop_COCOA_H
+#endif // __BTSTACK_DEVICE_NAME_DB_COCOA_H
