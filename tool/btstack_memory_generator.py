@@ -114,6 +114,14 @@ void   btstack_memory_STRUCT_NAME_free(STRUCT_NAME_t *STRUCT_NAME);"""
 
 code_template = """
 // MARK: STRUCT_TYPE
+#if !defined(HAVE_MALLOC) && !defined(POOL_COUNT)
+    #if defined(POOL_COUNT_OLD_NO)
+        #error "Deprecated POOL_COUNT_OLD_NO defined instead of POOL_COUNT. Please update your btstack_config.h to use POOL_COUNT."
+    #else
+        #define POOL_COUNT 0
+    #endif
+#endif
+
 #ifdef POOL_COUNT
 #if POOL_COUNT > 0
 static STRUCT_TYPE STRUCT_NAME_storage[POOL_COUNT];
@@ -140,8 +148,6 @@ STRUCT_NAME_t * btstack_memory_STRUCT_NAME_get(void){
 void btstack_memory_STRUCT_NAME_free(STRUCT_NAME_t *STRUCT_NAME){
     free(STRUCT_NAME);
 }
-#else
-#error "Neither HAVE_MALLOC nor POOL_COUNT for struct STRUCT_NAME is defined. Please, edit the config file."
 #endif
 """
 
@@ -155,11 +161,11 @@ def writeln(f, data):
 def replacePlaceholder(template, struct_name):
     struct_type = struct_name + '_t'
     if struct_name.endswith('try'):
-        pool_count = "MAX_NO_" + struct_name.upper()[:-3] + "TRIES"
+        pool_count = "MAX_NR_" + struct_name.upper()[:-3] + "TRIES"
     else:
-        pool_count = "MAX_NO_" + struct_name.upper() + "S"
-    
-    snippet = template.replace("STRUCT_TYPE", struct_type).replace("STRUCT_NAME", struct_name).replace("POOL_COUNT", pool_count)
+        pool_count = "MAX_NR_" + struct_name.upper() + "S"
+    pool_count_old_no = pool_count.replace("MAX_NR_", "MAX_NO_")
+    snippet = template.replace("STRUCT_TYPE", struct_type).replace("STRUCT_NAME", struct_name).replace("POOL_COUNT_OLD_NO", pool_count_old_no).replace("POOL_COUNT", pool_count)
     return snippet
     
 list_of_structs = [

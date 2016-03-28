@@ -53,9 +53,17 @@
 
 
 // MARK: hci_connection_t
-#ifdef MAX_NO_HCI_CONNECTIONS
-#if MAX_NO_HCI_CONNECTIONS > 0
-static hci_connection_t hci_connection_storage[MAX_NO_HCI_CONNECTIONS];
+#if !defined(HAVE_MALLOC) && !defined(MAX_NR_HCI_CONNECTIONS)
+    #if defined(MAX_NO_HCI_CONNECTIONS)
+        #error "Deprecated MAX_NO_HCI_CONNECTIONS defined instead of MAX_NR_HCI_CONNECTIONS. Please update your btstack_config.h to use MAX_NR_HCI_CONNECTIONS"
+    #else
+        #define MAX_NR_HCI_CONNECTIONS 0
+    #endif
+#endif
+
+#ifdef MAX_NR_HCI_CONNECTIONS
+#if MAX_NR_HCI_CONNECTIONS > 0
+static hci_connection_t hci_connection_storage[MAX_NR_HCI_CONNECTIONS];
 static btstack_memory_pool_t hci_connection_pool;
 hci_connection_t * btstack_memory_hci_connection_get(void){
     return (hci_connection_t *) btstack_memory_pool_get(&hci_connection_pool);
@@ -79,16 +87,22 @@ hci_connection_t * btstack_memory_hci_connection_get(void){
 void btstack_memory_hci_connection_free(hci_connection_t *hci_connection){
     free(hci_connection);
 }
-#else
-#error "Neither HAVE_MALLOC nor MAX_NO_HCI_CONNECTIONS for struct hci_connection is defined. Please, edit the config file."
 #endif
 
 
 
 // MARK: l2cap_service_t
-#ifdef MAX_NO_L2CAP_SERVICES
-#if MAX_NO_L2CAP_SERVICES > 0
-static l2cap_service_t l2cap_service_storage[MAX_NO_L2CAP_SERVICES];
+#if !defined(HAVE_MALLOC) && !defined(MAX_NR_L2CAP_SERVICES)
+    #if defined(MAX_NO_L2CAP_SERVICES)
+        #error "Deprecated MAX_NO_L2CAP_SERVICES defined instead of MAX_NR_L2CAP_SERVICES. Please update your btstack_config.h to use MAX_NR_L2CAP_SERVICES"
+    #else
+        #define MAX_NR_L2CAP_SERVICES 0
+    #endif
+#endif
+
+#ifdef MAX_NR_L2CAP_SERVICES
+#if MAX_NR_L2CAP_SERVICES > 0
+static l2cap_service_t l2cap_service_storage[MAX_NR_L2CAP_SERVICES];
 static btstack_memory_pool_t l2cap_service_pool;
 l2cap_service_t * btstack_memory_l2cap_service_get(void){
     return (l2cap_service_t *) btstack_memory_pool_get(&l2cap_service_pool);
@@ -112,15 +126,21 @@ l2cap_service_t * btstack_memory_l2cap_service_get(void){
 void btstack_memory_l2cap_service_free(l2cap_service_t *l2cap_service){
     free(l2cap_service);
 }
-#else
-#error "Neither HAVE_MALLOC nor MAX_NO_L2CAP_SERVICES for struct l2cap_service is defined. Please, edit the config file."
 #endif
 
 
 // MARK: l2cap_channel_t
-#ifdef MAX_NO_L2CAP_CHANNELS
-#if MAX_NO_L2CAP_CHANNELS > 0
-static l2cap_channel_t l2cap_channel_storage[MAX_NO_L2CAP_CHANNELS];
+#if !defined(HAVE_MALLOC) && !defined(MAX_NR_L2CAP_CHANNELS)
+    #if defined(MAX_NO_L2CAP_CHANNELS)
+        #error "Deprecated MAX_NO_L2CAP_CHANNELS defined instead of MAX_NR_L2CAP_CHANNELS. Please update your btstack_config.h to use MAX_NR_L2CAP_CHANNELS"
+    #else
+        #define MAX_NR_L2CAP_CHANNELS 0
+    #endif
+#endif
+
+#ifdef MAX_NR_L2CAP_CHANNELS
+#if MAX_NR_L2CAP_CHANNELS > 0
+static l2cap_channel_t l2cap_channel_storage[MAX_NR_L2CAP_CHANNELS];
 static btstack_memory_pool_t l2cap_channel_pool;
 l2cap_channel_t * btstack_memory_l2cap_channel_get(void){
     return (l2cap_channel_t *) btstack_memory_pool_get(&l2cap_channel_pool);
@@ -144,16 +164,22 @@ l2cap_channel_t * btstack_memory_l2cap_channel_get(void){
 void btstack_memory_l2cap_channel_free(l2cap_channel_t *l2cap_channel){
     free(l2cap_channel);
 }
-#else
-#error "Neither HAVE_MALLOC nor MAX_NO_L2CAP_CHANNELS for struct l2cap_channel is defined. Please, edit the config file."
 #endif
 
 
 
 // MARK: rfcomm_multiplexer_t
-#ifdef MAX_NO_RFCOMM_MULTIPLEXERS
-#if MAX_NO_RFCOMM_MULTIPLEXERS > 0
-static rfcomm_multiplexer_t rfcomm_multiplexer_storage[MAX_NO_RFCOMM_MULTIPLEXERS];
+#if !defined(HAVE_MALLOC) && !defined(MAX_NR_RFCOMM_MULTIPLEXERS)
+    #if defined(MAX_NO_RFCOMM_MULTIPLEXERS)
+        #error "Deprecated MAX_NO_RFCOMM_MULTIPLEXERS defined instead of MAX_NR_RFCOMM_MULTIPLEXERS. Please update your btstack_config.h to use MAX_NR_RFCOMM_MULTIPLEXERS"
+    #else
+        #define MAX_NR_RFCOMM_MULTIPLEXERS 0
+    #endif
+#endif
+
+#ifdef MAX_NR_RFCOMM_MULTIPLEXERS
+#if MAX_NR_RFCOMM_MULTIPLEXERS > 0
+static rfcomm_multiplexer_t rfcomm_multiplexer_storage[MAX_NR_RFCOMM_MULTIPLEXERS];
 static btstack_memory_pool_t rfcomm_multiplexer_pool;
 rfcomm_multiplexer_t * btstack_memory_rfcomm_multiplexer_get(void){
     return (rfcomm_multiplexer_t *) btstack_memory_pool_get(&rfcomm_multiplexer_pool);
@@ -177,15 +203,21 @@ rfcomm_multiplexer_t * btstack_memory_rfcomm_multiplexer_get(void){
 void btstack_memory_rfcomm_multiplexer_free(rfcomm_multiplexer_t *rfcomm_multiplexer){
     free(rfcomm_multiplexer);
 }
-#else
-#error "Neither HAVE_MALLOC nor MAX_NO_RFCOMM_MULTIPLEXERS for struct rfcomm_multiplexer is defined. Please, edit the config file."
 #endif
 
 
 // MARK: rfcomm_service_t
-#ifdef MAX_NO_RFCOMM_SERVICES
-#if MAX_NO_RFCOMM_SERVICES > 0
-static rfcomm_service_t rfcomm_service_storage[MAX_NO_RFCOMM_SERVICES];
+#if !defined(HAVE_MALLOC) && !defined(MAX_NR_RFCOMM_SERVICES)
+    #if defined(MAX_NO_RFCOMM_SERVICES)
+        #error "Deprecated MAX_NO_RFCOMM_SERVICES defined instead of MAX_NR_RFCOMM_SERVICES. Please update your btstack_config.h to use MAX_NR_RFCOMM_SERVICES"
+    #else
+        #define MAX_NR_RFCOMM_SERVICES 0
+    #endif
+#endif
+
+#ifdef MAX_NR_RFCOMM_SERVICES
+#if MAX_NR_RFCOMM_SERVICES > 0
+static rfcomm_service_t rfcomm_service_storage[MAX_NR_RFCOMM_SERVICES];
 static btstack_memory_pool_t rfcomm_service_pool;
 rfcomm_service_t * btstack_memory_rfcomm_service_get(void){
     return (rfcomm_service_t *) btstack_memory_pool_get(&rfcomm_service_pool);
@@ -209,15 +241,21 @@ rfcomm_service_t * btstack_memory_rfcomm_service_get(void){
 void btstack_memory_rfcomm_service_free(rfcomm_service_t *rfcomm_service){
     free(rfcomm_service);
 }
-#else
-#error "Neither HAVE_MALLOC nor MAX_NO_RFCOMM_SERVICES for struct rfcomm_service is defined. Please, edit the config file."
 #endif
 
 
 // MARK: rfcomm_channel_t
-#ifdef MAX_NO_RFCOMM_CHANNELS
-#if MAX_NO_RFCOMM_CHANNELS > 0
-static rfcomm_channel_t rfcomm_channel_storage[MAX_NO_RFCOMM_CHANNELS];
+#if !defined(HAVE_MALLOC) && !defined(MAX_NR_RFCOMM_CHANNELS)
+    #if defined(MAX_NO_RFCOMM_CHANNELS)
+        #error "Deprecated MAX_NO_RFCOMM_CHANNELS defined instead of MAX_NR_RFCOMM_CHANNELS. Please update your btstack_config.h to use MAX_NR_RFCOMM_CHANNELS"
+    #else
+        #define MAX_NR_RFCOMM_CHANNELS 0
+    #endif
+#endif
+
+#ifdef MAX_NR_RFCOMM_CHANNELS
+#if MAX_NR_RFCOMM_CHANNELS > 0
+static rfcomm_channel_t rfcomm_channel_storage[MAX_NR_RFCOMM_CHANNELS];
 static btstack_memory_pool_t rfcomm_channel_pool;
 rfcomm_channel_t * btstack_memory_rfcomm_channel_get(void){
     return (rfcomm_channel_t *) btstack_memory_pool_get(&rfcomm_channel_pool);
@@ -241,16 +279,22 @@ rfcomm_channel_t * btstack_memory_rfcomm_channel_get(void){
 void btstack_memory_rfcomm_channel_free(rfcomm_channel_t *rfcomm_channel){
     free(rfcomm_channel);
 }
-#else
-#error "Neither HAVE_MALLOC nor MAX_NO_RFCOMM_CHANNELS for struct rfcomm_channel is defined. Please, edit the config file."
 #endif
 
 
 
 // MARK: btstack_link_key_db_memory_entry_t
-#ifdef MAX_NO_BTSTACK_LINK_KEY_DB_MEMORY_ENTRIES
-#if MAX_NO_BTSTACK_LINK_KEY_DB_MEMORY_ENTRIES > 0
-static btstack_link_key_db_memory_entry_t btstack_link_key_db_memory_entry_storage[MAX_NO_BTSTACK_LINK_KEY_DB_MEMORY_ENTRIES];
+#if !defined(HAVE_MALLOC) && !defined(MAX_NR_BTSTACK_LINK_KEY_DB_MEMORY_ENTRIES)
+    #if defined(MAX_NO_BTSTACK_LINK_KEY_DB_MEMORY_ENTRIES)
+        #error "Deprecated MAX_NO_BTSTACK_LINK_KEY_DB_MEMORY_ENTRIES defined instead of MAX_NR_BTSTACK_LINK_KEY_DB_MEMORY_ENTRIES. Please update your btstack_config.h to use MAX_NR_BTSTACK_LINK_KEY_DB_MEMORY_ENTRIES"
+    #else
+        #define MAX_NR_BTSTACK_LINK_KEY_DB_MEMORY_ENTRIES 0
+    #endif
+#endif
+
+#ifdef MAX_NR_BTSTACK_LINK_KEY_DB_MEMORY_ENTRIES
+#if MAX_NR_BTSTACK_LINK_KEY_DB_MEMORY_ENTRIES > 0
+static btstack_link_key_db_memory_entry_t btstack_link_key_db_memory_entry_storage[MAX_NR_BTSTACK_LINK_KEY_DB_MEMORY_ENTRIES];
 static btstack_memory_pool_t btstack_link_key_db_memory_entry_pool;
 btstack_link_key_db_memory_entry_t * btstack_memory_btstack_link_key_db_memory_entry_get(void){
     return (btstack_link_key_db_memory_entry_t *) btstack_memory_pool_get(&btstack_link_key_db_memory_entry_pool);
@@ -274,16 +318,22 @@ btstack_link_key_db_memory_entry_t * btstack_memory_btstack_link_key_db_memory_e
 void btstack_memory_btstack_link_key_db_memory_entry_free(btstack_link_key_db_memory_entry_t *btstack_link_key_db_memory_entry){
     free(btstack_link_key_db_memory_entry);
 }
-#else
-#error "Neither HAVE_MALLOC nor MAX_NO_BTSTACK_LINK_KEY_DB_MEMORY_ENTRIES for struct btstack_link_key_db_memory_entry is defined. Please, edit the config file."
 #endif
 
 
 
 // MARK: bnep_service_t
-#ifdef MAX_NO_BNEP_SERVICES
-#if MAX_NO_BNEP_SERVICES > 0
-static bnep_service_t bnep_service_storage[MAX_NO_BNEP_SERVICES];
+#if !defined(HAVE_MALLOC) && !defined(MAX_NR_BNEP_SERVICES)
+    #if defined(MAX_NO_BNEP_SERVICES)
+        #error "Deprecated MAX_NO_BNEP_SERVICES defined instead of MAX_NR_BNEP_SERVICES. Please update your btstack_config.h to use MAX_NR_BNEP_SERVICES"
+    #else
+        #define MAX_NR_BNEP_SERVICES 0
+    #endif
+#endif
+
+#ifdef MAX_NR_BNEP_SERVICES
+#if MAX_NR_BNEP_SERVICES > 0
+static bnep_service_t bnep_service_storage[MAX_NR_BNEP_SERVICES];
 static btstack_memory_pool_t bnep_service_pool;
 bnep_service_t * btstack_memory_bnep_service_get(void){
     return (bnep_service_t *) btstack_memory_pool_get(&bnep_service_pool);
@@ -307,15 +357,21 @@ bnep_service_t * btstack_memory_bnep_service_get(void){
 void btstack_memory_bnep_service_free(bnep_service_t *bnep_service){
     free(bnep_service);
 }
-#else
-#error "Neither HAVE_MALLOC nor MAX_NO_BNEP_SERVICES for struct bnep_service is defined. Please, edit the config file."
 #endif
 
 
 // MARK: bnep_channel_t
-#ifdef MAX_NO_BNEP_CHANNELS
-#if MAX_NO_BNEP_CHANNELS > 0
-static bnep_channel_t bnep_channel_storage[MAX_NO_BNEP_CHANNELS];
+#if !defined(HAVE_MALLOC) && !defined(MAX_NR_BNEP_CHANNELS)
+    #if defined(MAX_NO_BNEP_CHANNELS)
+        #error "Deprecated MAX_NO_BNEP_CHANNELS defined instead of MAX_NR_BNEP_CHANNELS. Please update your btstack_config.h to use MAX_NR_BNEP_CHANNELS"
+    #else
+        #define MAX_NR_BNEP_CHANNELS 0
+    #endif
+#endif
+
+#ifdef MAX_NR_BNEP_CHANNELS
+#if MAX_NR_BNEP_CHANNELS > 0
+static bnep_channel_t bnep_channel_storage[MAX_NR_BNEP_CHANNELS];
 static btstack_memory_pool_t bnep_channel_pool;
 bnep_channel_t * btstack_memory_bnep_channel_get(void){
     return (bnep_channel_t *) btstack_memory_pool_get(&bnep_channel_pool);
@@ -339,16 +395,22 @@ bnep_channel_t * btstack_memory_bnep_channel_get(void){
 void btstack_memory_bnep_channel_free(bnep_channel_t *bnep_channel){
     free(bnep_channel);
 }
-#else
-#error "Neither HAVE_MALLOC nor MAX_NO_BNEP_CHANNELS for struct bnep_channel is defined. Please, edit the config file."
 #endif
 
 
 
 // MARK: hfp_connection_t
-#ifdef MAX_NO_HFP_CONNECTIONS
-#if MAX_NO_HFP_CONNECTIONS > 0
-static hfp_connection_t hfp_connection_storage[MAX_NO_HFP_CONNECTIONS];
+#if !defined(HAVE_MALLOC) && !defined(MAX_NR_HFP_CONNECTIONS)
+    #if defined(MAX_NO_HFP_CONNECTIONS)
+        #error "Deprecated MAX_NO_HFP_CONNECTIONS defined instead of MAX_NR_HFP_CONNECTIONS. Please update your btstack_config.h to use MAX_NR_HFP_CONNECTIONS"
+    #else
+        #define MAX_NR_HFP_CONNECTIONS 0
+    #endif
+#endif
+
+#ifdef MAX_NR_HFP_CONNECTIONS
+#if MAX_NR_HFP_CONNECTIONS > 0
+static hfp_connection_t hfp_connection_storage[MAX_NR_HFP_CONNECTIONS];
 static btstack_memory_pool_t hfp_connection_pool;
 hfp_connection_t * btstack_memory_hfp_connection_get(void){
     return (hfp_connection_t *) btstack_memory_pool_get(&hfp_connection_pool);
@@ -372,16 +434,22 @@ hfp_connection_t * btstack_memory_hfp_connection_get(void){
 void btstack_memory_hfp_connection_free(hfp_connection_t *hfp_connection){
     free(hfp_connection);
 }
-#else
-#error "Neither HAVE_MALLOC nor MAX_NO_HFP_CONNECTIONS for struct hfp_connection is defined. Please, edit the config file."
 #endif
 
 
 
 // MARK: service_record_item_t
-#ifdef MAX_NO_SERVICE_RECORD_ITEMS
-#if MAX_NO_SERVICE_RECORD_ITEMS > 0
-static service_record_item_t service_record_item_storage[MAX_NO_SERVICE_RECORD_ITEMS];
+#if !defined(HAVE_MALLOC) && !defined(MAX_NR_SERVICE_RECORD_ITEMS)
+    #if defined(MAX_NO_SERVICE_RECORD_ITEMS)
+        #error "Deprecated MAX_NO_SERVICE_RECORD_ITEMS defined instead of MAX_NR_SERVICE_RECORD_ITEMS. Please update your btstack_config.h to use MAX_NR_SERVICE_RECORD_ITEMS"
+    #else
+        #define MAX_NR_SERVICE_RECORD_ITEMS 0
+    #endif
+#endif
+
+#ifdef MAX_NR_SERVICE_RECORD_ITEMS
+#if MAX_NR_SERVICE_RECORD_ITEMS > 0
+static service_record_item_t service_record_item_storage[MAX_NR_SERVICE_RECORD_ITEMS];
 static btstack_memory_pool_t service_record_item_pool;
 service_record_item_t * btstack_memory_service_record_item_get(void){
     return (service_record_item_t *) btstack_memory_pool_get(&service_record_item_pool);
@@ -405,17 +473,23 @@ service_record_item_t * btstack_memory_service_record_item_get(void){
 void btstack_memory_service_record_item_free(service_record_item_t *service_record_item){
     free(service_record_item);
 }
-#else
-#error "Neither HAVE_MALLOC nor MAX_NO_SERVICE_RECORD_ITEMS for struct service_record_item is defined. Please, edit the config file."
 #endif
 
 
 #ifdef ENABLE_BLE
 
 // MARK: gatt_client_t
-#ifdef MAX_NO_GATT_CLIENTS
-#if MAX_NO_GATT_CLIENTS > 0
-static gatt_client_t gatt_client_storage[MAX_NO_GATT_CLIENTS];
+#if !defined(HAVE_MALLOC) && !defined(MAX_NR_GATT_CLIENTS)
+    #if defined(MAX_NO_GATT_CLIENTS)
+        #error "Deprecated MAX_NO_GATT_CLIENTS defined instead of MAX_NR_GATT_CLIENTS. Please update your btstack_config.h to use MAX_NR_GATT_CLIENTS"
+    #else
+        #define MAX_NR_GATT_CLIENTS 0
+    #endif
+#endif
+
+#ifdef MAX_NR_GATT_CLIENTS
+#if MAX_NR_GATT_CLIENTS > 0
+static gatt_client_t gatt_client_storage[MAX_NR_GATT_CLIENTS];
 static btstack_memory_pool_t gatt_client_pool;
 gatt_client_t * btstack_memory_gatt_client_get(void){
     return (gatt_client_t *) btstack_memory_pool_get(&gatt_client_pool);
@@ -439,15 +513,21 @@ gatt_client_t * btstack_memory_gatt_client_get(void){
 void btstack_memory_gatt_client_free(gatt_client_t *gatt_client){
     free(gatt_client);
 }
-#else
-#error "Neither HAVE_MALLOC nor MAX_NO_GATT_CLIENTS for struct gatt_client is defined. Please, edit the config file."
 #endif
 
 
 // MARK: whitelist_entry_t
-#ifdef MAX_NO_WHITELIST_ENTRIES
-#if MAX_NO_WHITELIST_ENTRIES > 0
-static whitelist_entry_t whitelist_entry_storage[MAX_NO_WHITELIST_ENTRIES];
+#if !defined(HAVE_MALLOC) && !defined(MAX_NR_WHITELIST_ENTRIES)
+    #if defined(MAX_NO_WHITELIST_ENTRIES)
+        #error "Deprecated MAX_NO_WHITELIST_ENTRIES defined instead of MAX_NR_WHITELIST_ENTRIES. Please update your btstack_config.h to use MAX_NR_WHITELIST_ENTRIES"
+    #else
+        #define MAX_NR_WHITELIST_ENTRIES 0
+    #endif
+#endif
+
+#ifdef MAX_NR_WHITELIST_ENTRIES
+#if MAX_NR_WHITELIST_ENTRIES > 0
+static whitelist_entry_t whitelist_entry_storage[MAX_NR_WHITELIST_ENTRIES];
 static btstack_memory_pool_t whitelist_entry_pool;
 whitelist_entry_t * btstack_memory_whitelist_entry_get(void){
     return (whitelist_entry_t *) btstack_memory_pool_get(&whitelist_entry_pool);
@@ -471,15 +551,21 @@ whitelist_entry_t * btstack_memory_whitelist_entry_get(void){
 void btstack_memory_whitelist_entry_free(whitelist_entry_t *whitelist_entry){
     free(whitelist_entry);
 }
-#else
-#error "Neither HAVE_MALLOC nor MAX_NO_WHITELIST_ENTRIES for struct whitelist_entry is defined. Please, edit the config file."
 #endif
 
 
 // MARK: sm_lookup_entry_t
-#ifdef MAX_NO_SM_LOOKUP_ENTRIES
-#if MAX_NO_SM_LOOKUP_ENTRIES > 0
-static sm_lookup_entry_t sm_lookup_entry_storage[MAX_NO_SM_LOOKUP_ENTRIES];
+#if !defined(HAVE_MALLOC) && !defined(MAX_NR_SM_LOOKUP_ENTRIES)
+    #if defined(MAX_NO_SM_LOOKUP_ENTRIES)
+        #error "Deprecated MAX_NO_SM_LOOKUP_ENTRIES defined instead of MAX_NR_SM_LOOKUP_ENTRIES. Please update your btstack_config.h to use MAX_NR_SM_LOOKUP_ENTRIES"
+    #else
+        #define MAX_NR_SM_LOOKUP_ENTRIES 0
+    #endif
+#endif
+
+#ifdef MAX_NR_SM_LOOKUP_ENTRIES
+#if MAX_NR_SM_LOOKUP_ENTRIES > 0
+static sm_lookup_entry_t sm_lookup_entry_storage[MAX_NR_SM_LOOKUP_ENTRIES];
 static btstack_memory_pool_t sm_lookup_entry_pool;
 sm_lookup_entry_t * btstack_memory_sm_lookup_entry_get(void){
     return (sm_lookup_entry_t *) btstack_memory_pool_get(&sm_lookup_entry_pool);
@@ -503,56 +589,54 @@ sm_lookup_entry_t * btstack_memory_sm_lookup_entry_get(void){
 void btstack_memory_sm_lookup_entry_free(sm_lookup_entry_t *sm_lookup_entry){
     free(sm_lookup_entry);
 }
-#else
-#error "Neither HAVE_MALLOC nor MAX_NO_SM_LOOKUP_ENTRIES for struct sm_lookup_entry is defined. Please, edit the config file."
 #endif
 
 
 #endif
 // init
 void btstack_memory_init(void){
-#if MAX_NO_HCI_CONNECTIONS > 0
-    btstack_memory_pool_create(&hci_connection_pool, hci_connection_storage, MAX_NO_HCI_CONNECTIONS, sizeof(hci_connection_t));
+#if MAX_NR_HCI_CONNECTIONS > 0
+    btstack_memory_pool_create(&hci_connection_pool, hci_connection_storage, MAX_NR_HCI_CONNECTIONS, sizeof(hci_connection_t));
 #endif
-#if MAX_NO_L2CAP_SERVICES > 0
-    btstack_memory_pool_create(&l2cap_service_pool, l2cap_service_storage, MAX_NO_L2CAP_SERVICES, sizeof(l2cap_service_t));
+#if MAX_NR_L2CAP_SERVICES > 0
+    btstack_memory_pool_create(&l2cap_service_pool, l2cap_service_storage, MAX_NR_L2CAP_SERVICES, sizeof(l2cap_service_t));
 #endif
-#if MAX_NO_L2CAP_CHANNELS > 0
-    btstack_memory_pool_create(&l2cap_channel_pool, l2cap_channel_storage, MAX_NO_L2CAP_CHANNELS, sizeof(l2cap_channel_t));
+#if MAX_NR_L2CAP_CHANNELS > 0
+    btstack_memory_pool_create(&l2cap_channel_pool, l2cap_channel_storage, MAX_NR_L2CAP_CHANNELS, sizeof(l2cap_channel_t));
 #endif
-#if MAX_NO_RFCOMM_MULTIPLEXERS > 0
-    btstack_memory_pool_create(&rfcomm_multiplexer_pool, rfcomm_multiplexer_storage, MAX_NO_RFCOMM_MULTIPLEXERS, sizeof(rfcomm_multiplexer_t));
+#if MAX_NR_RFCOMM_MULTIPLEXERS > 0
+    btstack_memory_pool_create(&rfcomm_multiplexer_pool, rfcomm_multiplexer_storage, MAX_NR_RFCOMM_MULTIPLEXERS, sizeof(rfcomm_multiplexer_t));
 #endif
-#if MAX_NO_RFCOMM_SERVICES > 0
-    btstack_memory_pool_create(&rfcomm_service_pool, rfcomm_service_storage, MAX_NO_RFCOMM_SERVICES, sizeof(rfcomm_service_t));
+#if MAX_NR_RFCOMM_SERVICES > 0
+    btstack_memory_pool_create(&rfcomm_service_pool, rfcomm_service_storage, MAX_NR_RFCOMM_SERVICES, sizeof(rfcomm_service_t));
 #endif
-#if MAX_NO_RFCOMM_CHANNELS > 0
-    btstack_memory_pool_create(&rfcomm_channel_pool, rfcomm_channel_storage, MAX_NO_RFCOMM_CHANNELS, sizeof(rfcomm_channel_t));
+#if MAX_NR_RFCOMM_CHANNELS > 0
+    btstack_memory_pool_create(&rfcomm_channel_pool, rfcomm_channel_storage, MAX_NR_RFCOMM_CHANNELS, sizeof(rfcomm_channel_t));
 #endif
-#if MAX_NO_BTSTACK_LINK_KEY_DB_MEMORY_ENTRIES > 0
-    btstack_memory_pool_create(&btstack_link_key_db_memory_entry_pool, btstack_link_key_db_memory_entry_storage, MAX_NO_BTSTACK_LINK_KEY_DB_MEMORY_ENTRIES, sizeof(btstack_link_key_db_memory_entry_t));
+#if MAX_NR_BTSTACK_LINK_KEY_DB_MEMORY_ENTRIES > 0
+    btstack_memory_pool_create(&btstack_link_key_db_memory_entry_pool, btstack_link_key_db_memory_entry_storage, MAX_NR_BTSTACK_LINK_KEY_DB_MEMORY_ENTRIES, sizeof(btstack_link_key_db_memory_entry_t));
 #endif
-#if MAX_NO_BNEP_SERVICES > 0
-    btstack_memory_pool_create(&bnep_service_pool, bnep_service_storage, MAX_NO_BNEP_SERVICES, sizeof(bnep_service_t));
+#if MAX_NR_BNEP_SERVICES > 0
+    btstack_memory_pool_create(&bnep_service_pool, bnep_service_storage, MAX_NR_BNEP_SERVICES, sizeof(bnep_service_t));
 #endif
-#if MAX_NO_BNEP_CHANNELS > 0
-    btstack_memory_pool_create(&bnep_channel_pool, bnep_channel_storage, MAX_NO_BNEP_CHANNELS, sizeof(bnep_channel_t));
+#if MAX_NR_BNEP_CHANNELS > 0
+    btstack_memory_pool_create(&bnep_channel_pool, bnep_channel_storage, MAX_NR_BNEP_CHANNELS, sizeof(bnep_channel_t));
 #endif
-#if MAX_NO_HFP_CONNECTIONS > 0
-    btstack_memory_pool_create(&hfp_connection_pool, hfp_connection_storage, MAX_NO_HFP_CONNECTIONS, sizeof(hfp_connection_t));
+#if MAX_NR_HFP_CONNECTIONS > 0
+    btstack_memory_pool_create(&hfp_connection_pool, hfp_connection_storage, MAX_NR_HFP_CONNECTIONS, sizeof(hfp_connection_t));
 #endif
-#if MAX_NO_SERVICE_RECORD_ITEMS > 0
-    btstack_memory_pool_create(&service_record_item_pool, service_record_item_storage, MAX_NO_SERVICE_RECORD_ITEMS, sizeof(service_record_item_t));
+#if MAX_NR_SERVICE_RECORD_ITEMS > 0
+    btstack_memory_pool_create(&service_record_item_pool, service_record_item_storage, MAX_NR_SERVICE_RECORD_ITEMS, sizeof(service_record_item_t));
 #endif
 #ifdef ENABLE_BLE
-#if MAX_NO_GATT_CLIENTS > 0
-    btstack_memory_pool_create(&gatt_client_pool, gatt_client_storage, MAX_NO_GATT_CLIENTS, sizeof(gatt_client_t));
+#if MAX_NR_GATT_CLIENTS > 0
+    btstack_memory_pool_create(&gatt_client_pool, gatt_client_storage, MAX_NR_GATT_CLIENTS, sizeof(gatt_client_t));
 #endif
-#if MAX_NO_WHITELIST_ENTRIES > 0
-    btstack_memory_pool_create(&whitelist_entry_pool, whitelist_entry_storage, MAX_NO_WHITELIST_ENTRIES, sizeof(whitelist_entry_t));
+#if MAX_NR_WHITELIST_ENTRIES > 0
+    btstack_memory_pool_create(&whitelist_entry_pool, whitelist_entry_storage, MAX_NR_WHITELIST_ENTRIES, sizeof(whitelist_entry_t));
 #endif
-#if MAX_NO_SM_LOOKUP_ENTRIES > 0
-    btstack_memory_pool_create(&sm_lookup_entry_pool, sm_lookup_entry_storage, MAX_NO_SM_LOOKUP_ENTRIES, sizeof(sm_lookup_entry_t));
+#if MAX_NR_SM_LOOKUP_ENTRIES > 0
+    btstack_memory_pool_create(&sm_lookup_entry_pool, sm_lookup_entry_storage, MAX_NR_SM_LOOKUP_ENTRIES, sizeof(sm_lookup_entry_t));
 #endif
 #endif
 }

@@ -20,7 +20,7 @@ void dump(btstack_linked_list_t list){
     int i;
     btstack_linked_item_t *it;
     for (it = (btstack_linked_item_t *) list, i = 1; it ; it = it->next, i++){
-        // btstack_link_key_db_memory_t * item = (btstack_link_key_db_memory_t *) it;
+        // btstack_link_key_db_memory_entry_t * item = (btstack_link_key_db_memory_entry_t *) it;
         // printf("%u.  %s + %u\n",  i, item->link_key, item->bd_addr[5]);
         // TODO printf broken
     }
@@ -51,7 +51,7 @@ TEST_GROUP(RemoteDeviceDB){
 };
 
 TEST(RemoteDeviceDB, MemoryPool){
-    CHECK(MAX_NO_BTSTACK_LINK_KEY_DB_MEMORY_ENTRIES ==  2);
+    CHECK(MAX_NR_BTSTACK_LINK_KEY_DB_MEMORY_ENTRIES ==  2);
     // void * item = btstack_memory_db_mem_device_name_get();
     // CHECK(item);
 }
@@ -108,7 +108,7 @@ TEST(RemoteDeviceDB, SortByLastUsedKey){
     // dump(db_mem_link_keys);
     
     //get first element of the list
-    btstack_link_key_db_memory_t * item = (btstack_link_key_db_memory_t *) db_mem_link_keys;
+    btstack_link_key_db_memory_entry_t * item = (btstack_link_key_db_memory_entry_t *) db_mem_link_keys;
     STRCMP_EQUAL((char*)item->link_key, "20"); 
 }
 
