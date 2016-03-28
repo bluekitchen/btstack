@@ -59,6 +59,9 @@
 #include <unistd.h>
 
 #include "btstack.h"
+#ifdef HAVE_STDIO
+#include "stdin_support.h"
+#endif
 
 #define SCO_REPORT_PERIOD 255
 
@@ -130,7 +133,7 @@ static void show_usage(void){
 }
 
 #ifdef HAVE_STDIO
-static int stdin_process(struct data_source *ds){
+static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type){
     char buffer;
     read(ds->fd, &buffer, 1);
 
@@ -184,7 +187,6 @@ static int stdin_process(struct data_source *ds){
             break;
 
     }
-    return 0;
 }
 #endif
 

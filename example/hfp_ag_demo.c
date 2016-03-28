@@ -56,8 +56,10 @@
 #include <unistd.h>
 
 #include "btstack.h"
+#ifdef HAVE_STDIO
 #include "stdin_support.h"
- 
+#endif
+
 
 uint8_t hfp_service_buffer[150];
 const uint8_t    rfcomm_channel_nr = 1;
@@ -325,7 +327,7 @@ static void show_usage(void){
     printf("---\n");
 }
 
-static int stdin_process(struct data_source *ds){
+static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type){
     read(ds->fd, &cmd, 1);
     switch (cmd){
         case 'a':
@@ -542,8 +544,6 @@ static int stdin_process(struct data_source *ds){
             show_usage();
             break;
     }
-
-    return 0;
 }
 #endif
 
