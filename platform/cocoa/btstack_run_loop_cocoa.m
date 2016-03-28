@@ -54,7 +54,7 @@ static const btstack_run_loop_t btstack_run_loop_cocoa;
 
 typedef struct  {
     CFSocketRef socket;
-    CFRunLoopSourceRef socketRunLoop;
+    CFRunLoopSourceRef socket_run_loop;
 } btstack_cocoa_data_source_helper_t;
 
 static void theCFRunLoopTimerCallBack (CFRunLoopTimerRef timer,void *info){
@@ -69,7 +69,7 @@ static void socketDataCallback (
 						 const void *data,
 						 void *info) {
 	if (!info) return;
-    btstack_data_source_t * ds = (btstack_ds_t *) info;
+    btstack_data_source_t * ds = (btstack_data_source_t *) info;
 
     if ((callbackType == kCFSocketReadCallBack) && (ds->flags & DATA_SOURCE_CALLBACK_READ)){
         // printf("btstack_run_loop_cocoa_ds %x - fd %u, CFSocket %x, CFRunLoopSource %x\n", (int) ds, ds->fd, (int) s, (int) ds->item.next);
@@ -136,27 +136,27 @@ static void btstack_run_loop_cocoa_add_data_source(btstack_data_source_t *data_s
 
     // add to run loop
 	CFRunLoopAddSource( CFRunLoopGetCurrent(), socket_run_loop, kCFRunLoopCommonModes);
-    // printf("btstack_run_loop_cocoa_add_data_source    %x - fd %u - CFSocket %x, CFRunLoopSource %x\n", (int) dataSource, dataSource->fd, (int) socket, (int) socketRunLoop);
+    // printf("btstack_run_loop_cocoa_add_data_source    %x - fd %u - CFSocket %x, CFRunLoopSource %x\n", (int) dataSource, dataSource->fd, (int) socket, (int) socket_run_loop);
     
 }
 
 static void btstack_run_loop_embedded_enable_data_source_callbacks(btstack_data_source_t * ds, uint16_t callback_types){
-    btstack_cocoa_data_source_helper_t * references = (btstack_cocoa_data_source_helper_t *) dataSource->item.next;
+    btstack_cocoa_data_source_helper_t * references = (btstack_cocoa_data_source_helper_t *) ds->item.next;
     uint16_t option_flags = btstack_run_loop_cocoa_option_flags_for_callback_types(callback_types);
     CFSocketEnableCallBacks(references->socket, option_flags);   
 }
 
 static void btstack_run_loop_embedded_disable_data_source_callbacks(btstack_data_source_t * ds, uint16_t callback_types){
-    btstack_cocoa_data_source_helper_t * references = (btstack_cocoa_data_source_helper_t *) dataSource->item.next;
+    btstack_cocoa_data_source_helper_t * references = (btstack_cocoa_data_source_helper_t *) ds->item.next;
     uint16_t option_flags = btstack_run_loop_cocoa_option_flags_for_callback_types(callback_types);
     CFSocketDisableCallBacks(references->socket, option_flags);   
 }
 
-static int  btstack_run_loop_cocoa_remove_data_source(btstack_data_source_t *dataSource){
-    btstack_cocoa_data_source_helper_t * references = (btstack_cocoa_data_source_helper_t *) dataSource->item.next;
+static int  btstack_run_loop_cocoa_remove_data_source(btstack_data_source_t *ds){
+    btstack_cocoa_data_source_helper_t * references = (btstack_cocoa_data_source_helper_t *) ds->item.next;
     // printf("btstack_run_loop_cocoa_remove_data_source %x - fd %u, CFSocket %x, CFRunLoopSource %x\n", (int) dataSource, dataSource->fd, (int) dataSource->item.next, (int) dataSource->item.user_data);
-    CFRunLoopRemoveSource( CFRunLoopGetCurrent(), references->socketRunLoop, kCFRunLoopCommonModes);
-    CFRelease(references->socketRunLoop);
+    CFRunLoopRemoveSource( CFRunLoopGetCurrent(), references->socket_run_loop, kCFRunLoopCommonModes);
+    CFRelease(references->socket_run_loop);
 
     CFSocketInvalidate(references->socket);
     CFRelease(references->socket);
@@ -235,8 +235,8 @@ static const btstack_run_loop_t btstack_run_loop_cocoa = {
     &btstack_run_loop_cocoa_init,
     &btstack_run_loop_cocoa_add_data_source,
     &btstack_run_loop_cocoa_remove_data_source,
-    NULL,
-    NULL,
+    &btstack_run_loop_embedded_enable_data_source_callbacks,
+    &btstack_run_loop_embedded_disable_data_source_callbacks,
     &btstack_run_loop_cocoa_set_timer,
     &btstack_run_loop_cocoa_add_timer,
     &btstack_run_loop_cocoa_remove_timer,
