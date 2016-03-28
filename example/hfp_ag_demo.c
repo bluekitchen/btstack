@@ -253,7 +253,7 @@ static void inquiry_packet_handler (uint8_t packet_type, uint8_t *packet, uint16
 #ifdef HAVE_STDIO
 
 // prototypes
-static void show_usage();
+static void show_usage(void);
 
 // Testig User Interface 
 static void show_usage(void){

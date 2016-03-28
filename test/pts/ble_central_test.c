@@ -200,7 +200,7 @@ static gatt_client_service_t        service;
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 static btstack_packet_callback_registration_t sm_event_callback_registration;
 
-static void show_usage();
+static void show_usage(void);
 ///
 
 static void printUUID(uint8_t * uuid128, uint16_t uuid16){

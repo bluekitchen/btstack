@@ -118,9 +118,9 @@ static uint16_t client_configuration_handle;
 
 static uint16_t handle = 0;
 
-static void app_run();
-static void show_usage();
-static void update_advertisements();
+static void app_run(void);
+static void show_usage(void);
+static void update_advertisements(void);
 
 
 // static bd_addr_t tester_address = {0x00, 0x1B, 0xDC, 0x06, 0x07, 0x5F};

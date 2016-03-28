@@ -67,7 +67,7 @@ const char hfp_hf_service_name[] = "BTstack HFP HF Demo";
 #ifdef HAVE_STDIO
 static bd_addr_t device_addr = {0xD8,0xBb,0x2C,0xDf,0xF1,0x08};
 // prototypes
-static void show_usage();
+static void show_usage(void);
 #endif
 static uint16_t handle = -1;
 static uint8_t codecs[] = {HFP_CODEC_CVSD, HFP_CODEC_MSBC};

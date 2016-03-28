@@ -70,8 +70,8 @@ static void hfp_ag_setup_audio_connection(hfp_connection_t * connection);
 static void hfp_ag_hf_start_ringing(hfp_connection_t * context);
 
 // public prototypes
-hfp_generic_status_indicator_t * get_hfp_generic_status_indicators();
-int get_hfp_generic_status_indicators_nr();
+hfp_generic_status_indicator_t * get_hfp_generic_status_indicators(void);
+int get_hfp_generic_status_indicators_nr(void);
 void set_hfp_generic_status_indicators(hfp_generic_status_indicator_t * indicators, int indicator_nr);
 void set_hfp_ag_indicators(hfp_ag_indicator_t * indicators, int indicator_nr);
 int get_hfp_ag_indicators_nr(hfp_connection_t * context);

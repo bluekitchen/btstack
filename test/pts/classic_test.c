@@ -65,7 +65,7 @@
 #include "l2cap.h"
 #include "stdin_support.h"
 
-static void show_usage();
+static void show_usage(void);
 
 // static bd_addr_t remote = {0x04,0x0C,0xCE,0xE4,0x85,0xD3};
 // static bd_addr_t remote = {0x84, 0x38, 0x35, 0x65, 0xD1, 0x15};
