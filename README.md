@@ -74,22 +74,21 @@ Status               | Platform
 ## Supported Chipsets
 Chipsets             | Status
 --------------       | ------ 
-TI CC256x, WL183x    | complete incl. eHCIll support and SCO-over-HCI (chipset-cc256x)
-CSR 8x10, 8x11       | H4 only (chipset-csr), SCO-over-HCI missing
-STM STLC2500D        | working, no support for custom deep sleep management (chipset-stlc2500d)
-TC35661              | working, BLE patches missing (chipset-tc3566x)
-EM 9301 (LE-only)    | working, used on Arduino Shield (chipset-em9301)
+TI CC256x, WL183x    | complete incl. eHCIll support and SCO-over-HCI (chipset/cc256x)
+CSR 8x10, 8x11       | H4 only (chipset-csr), SCO-over-HCI missing (chipset/csr)
+STM STLC2500D        | working, no support for custom deep sleep management (chipset/stlc2500d)
+TC35661              | working, BLE patches missing (chipset/tc3566x)
+EM 9301 (LE-only)    | working, used on Arduino Shield (chipset/em9301)
 CSR USB Dongles      | complete, incl. SCO-over-HCI 
-Broadcom USB Dongles | complete, SCO-over-HCI not working
-Broadcom BCM43438    | complete. UART baudrate limited to 3 mbps, SCO-over-HCI not working
+Broadcom USB Dongles | complete, SCO-over-HCI not missing
+Broadcom BCM43438    | complete. UART baudrate limited to 3 mbps, SCO-over-HCI not missing
 
 ## Source Tree Overview
 Path				| Description
 --------------------|---------------
-binding	            | Language bindings for BTstack, e.g. Java client/server
 chipset             | Support for individual Bluetooth chipsets
 doc                 | Sources for BTstack documentation
-example             | Example applications available for different ports
+example             | Example applications available for all ports
 platform            | Support for special OSs and/or MCU architectures
 port                | Complete port for a MCU + Chipset combinations
 src                 | Bluetooth stack implementation

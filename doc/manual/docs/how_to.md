@@ -26,7 +26,7 @@ The file *btstack_config.h* contains three parts:
 <!-- a name "lst:platformConfiguration"></a-->
 <!-- -->
 
-#define | Platform | Explanation
+#define | Platform | Description
 -----------------------------|-------|------------------------------------
 HAVE_B1200_MAPPED_TO_2000000 | posix | Hack to use serial port with 2 mbps 
 HAVE_B2400_MAPPED_TO_3000000 | posix | Hack to use serial port with 3 mbps
@@ -44,7 +44,7 @@ HAVE_TIME_MS                 | embedded | System provides time in milliseconds
 <!-- a name "lst:btstackFeatureConfiguration"></a-->
 <!-- -->
 
-#define | Explaination
+#define | Description
 ------------------|---------------------------------------------
 ENABLE_CLASSIC    | Enable Classic related code in HCI and L2CAP
 ENABLE_BLE        | Enable BLE related code in HCI and L2CAP
@@ -74,7 +74,7 @@ For each HCI connection, a buffer of size HCI_ACL_PAYLOAD_SIZE is reserved. For 
 <!-- a name "lst:memoryConfiguration"></a-->
 <!-- -->
 
-#define | Explaination 
+#define | Description 
 --------|------------
 HCI_ACL_PAYLOAD_SIZE | Max size of HCI ACL payloads
 MAX_NR_BNEP_CHANNELS | Max nr. of BNEP channels
@@ -116,12 +116,25 @@ In this example, the size of ACL packets is limited to the minimum of 52 bytes, 
 
 ## Source tree structure {#sec:sourceTreeHowTo}
 
-TODO:
+The source tree has been organized to easily setup new projects.
+The core of BTstack incl. all protocol and profiles is in *src/*.
 
-- src: with src/classic and src/ble
-- chipset: bcm, cc256x, csr, em9301, stlc2500f, tc3566x
-- platform: corefoundation, daemon, embedded, posix
-- port: ...
+Support for a particular platform is provided by the *platform/* subfolder. For most embedded ports, *platform/embedded/* provides *btstack_run_loop_embedded* and the *hci_transport_h4_embedded* implementation that require *hal_cpu.h*, *hal_led.h*, and *hal_uart_dma.h* plus *hal_tick.h* or *hal_time_ms* to be implemented by the user.
+
+To accomodate a particular Bluetooth chipset, the *chipset/* subfolders provide various btstack_chipset_* implementations.
+Please have a look at the existing ports in *port/*.
+
+Path                | Description
+--------------------|---------------
+chipset             | Support for individual Bluetooth chipsets
+doc                 | Sources for BTstack documentation
+example             | Example applications available for all ports
+platform            | Support for special OSs and/or MCU architectures
+port                | Complete port for a MCU + Chipset combinations
+src                 | Bluetooth stack implementation
+test                | Unit and PTS tests
+tool                | Helper tools for BTstack
+
 
 ## Run loop {#sec:runLoopHowTo}
 
