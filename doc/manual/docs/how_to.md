@@ -44,7 +44,7 @@ HAVE_TIME_MS                 | embedded | System provides time in milliseconds
 <!-- a name "lst:btstackFeatureConfiguration"></a-->
 <!-- -->
 
-#define | Explanation
+#define | Explaination
 ------------------|---------------------------------------------
 ENABLE_CLASSIC    | Enable Classic related code in HCI and L2CAP
 ENABLE_BLE        | Enable BLE related code in HCI and L2CAP
@@ -74,7 +74,7 @@ For each HCI connection, a buffer of size HCI_ACL_PAYLOAD_SIZE is reserved. For 
 <!-- a name "lst:memoryConfiguration"></a-->
 <!-- -->
 
-#define | Explanation 
+#define | Explaination 
 --------|------------
 HCI_ACL_PAYLOAD_SIZE | Max size of HCI ACL payloads
 MAX_NR_BNEP_CHANNELS | Max nr. of BNEP channels
@@ -114,12 +114,18 @@ In this example, the size of ACL packets is limited to the minimum of 52 bytes, 
 
 <!-- -->
 
+## Source tree structure {#sec:sourceTreeHowTo}
 
+TODO:
 
+- src: with src/classic and src/ble
+- chipset: bcm, cc256x, csr, em9301, stlc2500f, tc3566x
+- platform: corefoundation, daemon, embedded, posix
+- port: ...
 
 ## Run loop {#sec:runLoopHowTo}
 
-BTstack uses a run loop to handle incoming data and to schedule work.
+BTstack uses the concept of a run loop to handle incoming data and to schedule work.
 The run loop handles events from two different types of sources: data
 sources and timers. Data sources represent communication interfaces like
 an UART or an USB driver. Timers are used by BTstack to implement
@@ -127,11 +133,50 @@ various Bluetooth-related timeouts. They can also be used to handle
 periodic events.
 
 Data sources and timers are represented by the *btstack_data_source_t* and
-*btstack_timer_source_t* structs respectively. Each of these structs contain a
-linked list node and a pointer to a callback function. All active timers
+*btstack_timer_source_t* structs respectively. Each of these structs contain 
+at least a linked list node and a pointer to a callback function. All active timers
 and data sources are kept in link lists. While the list of data sources
 is unsorted, the timers are sorted by expiration timeout for efficient
 processing.
+
+Timers are single shot: a timer will be removed from the timer list
+before its event handler callback is executed. If you need a periodic
+timer, you can re-register the same timer source in the callback
+function, as shown in Listing [PeriodicTimerHandler]. Note that BTstack
+expects to get called periodically to keep its time, see Section
+[on time abstraction](#sec:timeAbstractionPorting) for more on the 
+tick hardware abstraction. 
+
+BTstack provides different run loop implementations that implement the *btstack_run_loop_t* interface:
+
+- Embedded: the main implementation for embedded systems, especially without an RTOS.
+- POSIX: implementation for POSIX systems based on the select() call.
+- WICED: implementation for the Broadcom WICED SDK RTOS abstraction that warps FreeRTOS or ThreadX.
+- CoreFoundation: implementation for iOS and OS X applications 
+
+Depending on the platform, data sources are either polled (embedded), or the platform provides a way
+to wait for a data source to become ready for read or write (POSIX, CoreFoundation), or,
+are not used as the HCI transport driver and the run loop are implemented in a different way (WICED).
+In any case, the callbacks need to explicitly enabled with the *btstack_run_loop_enable_data_source_callbacks(..)* function.
+
+In your code, you’ll have to configure the run loop before you start it
+as shown in Listing [listing:btstackInit]. The application can register
+data sources as well as timers, e.g., periodical sampling of sensors, or
+communication over the UART.
+
+The run loop is set up by calling *btstack_run_loop_init* function and providing
+an instance of the actual run loop. E.g. for the embedded platform, it is:
+
+<!-- -->
+
+    btstack_run_loop_init(btstack_run_loop_embedded_get_instance());
+
+The complete Run loop API is provided [here](appendix/apis/#sec:runLoopAPIAppendix).
+
+### Run loop embedded
+
+In the embeded run loop implementation, data sources are constantly polled and 
+the system is put to sleep if no IRQ happend during the poll of all data sources.
 
 The complete run loop cycle looks like this: first, the callback
 function of all registered data sources are called in a round robin way.
@@ -144,33 +189,41 @@ Incoming data over the UART, USB, or timer ticks will generate an
 interrupt and wake up the microcontroller. In order to avoid the
 situation where a data source becomes ready just before the run loop
 enters sleep mode, an interrupt-driven data source has to call the
-*embedded_trigger* function. The call to *embedded_trigger* sets an
+*btstack_run_loop_embedded_trigger* function. The call to 
+*btstack_run_loop_embedded_trigger* sets an
 internal flag that is checked in the critical section just before
-entering sleep mode.
+entering sleep mode causing another round of callbacks.
 
-Timers are single shot: a timer will be removed from the timer list
-before its event handler callback is executed. If you need a periodic
-timer, you can re-register the same timer source in the callback
-function, as shown in Listing [PeriodicTimerHandler]. Note that BTstack
-expects to get called periodically to keep its time, see Section
-[on time abstraction](#sec:timeAbstractionPorting) for more on the 
-tick hardware abstraction.
-
-The run loop is set up by calling *btstack_run_loop_init* function for
-embedded systems:
-
-<!-- -->
-
-    btstack_run_loop_init(btstack_run_loop_embedded_get_instance());
-
-The Run loop API is provided [here](appendix/apis/#sec:runLoopAPIAppendix). To
-enable the use of timers, make sure that you defined HAVE_TICK in the
+To enable the use of timers, make sure that you defined HAVE_TICK or HAVE_TIME_MS in the
 config file.
 
-In your code, you’ll have to configure the run loop before you start it
-as shown in Listing [listing:btstackInit]. The application can register
-data sources as well as timers, e.g., periodical sampling of sensors, or
-communication over the UART.
+### Run loop POSIX
+
+The data sources are standard File Descriptors. In the run loop execute implementaion,
+select() call is used to wait for file descriptors to become ready to read or write,
+while waiting for the next timeout. 
+
+To enable the use of timers, make sure that you defined HAVE_TIME in the config file.
+
+### Run loop CoreFoundation (OS X/iOS)
+
+This run loop directly maps BTstack's data source and timer source with CoreFoundation objects.
+It supports ready to read and write similar to the POSIX implementation. The call to
+*btstack_run_loop_execute()* then just calls *CFRunLoopRun()*.
+
+To enable the use of timers, make sure that you defined HAVE_TIME in the config file.
+
+### Run loop WICED
+
+
+WICED SDK API does not provide asynchronous read and write to the UART and no direct way to wait for 
+one or more peripherals to become ready. Therefore, BTstack does not provide direct support for data sources.
+Instead,  the run loop provides a message queue that  allows to schedule functions calls on its thread via
+*btstack_run_loop_wiced_execute_code_on_main_thread()*. 
+
+The HCI transport H4 implementation uses 2 lightweight thread to do the 
+blocking read and write operations. When a read or write is complete on
+the helper threads, a callback to BTstack is scheduled.
 
 
 ## BTstack initialization {#sec:btstackInitializationHowTo}
@@ -178,6 +231,7 @@ communication over the UART.
 To initialize BTstack you need to [initialize the memory](#sec:memoryConfigurationHowTo)
 and [the run loop](#sec:runLoopHowTo) respectively, then setup HCI and all needed higher
 level protocols.
+
 
 The HCI initialization has to adapt BTstack to the used platform and
 requires four arguments. These are:
