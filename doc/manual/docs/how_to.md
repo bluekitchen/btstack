@@ -30,13 +30,13 @@ allocated in two different manners:
 <!-- -->
 
     #define HCI_ACL_PAYLOAD_SIZE 52
-    #define MAX_NO_HCI_CONNECTIONS 1
-    #define MAX_NO_L2CAP_SERVICES  2
-    #define MAX_NO_L2CAP_CHANNELS  2
-    #define MAX_NO_RFCOMM_MULTIPLEXERS 1
-    #define MAX_NO_RFCOMM_SERVICES 1
-    #define MAX_NO_RFCOMM_CHANNELS 1
-    #define MAX_NO_BTSTACK_LINK_KEY_DB_MEMORY_ENTRIES  3
+    #define MAX_NR_HCI_CONNECTIONS 1
+    #define MAX_NR_L2CAP_SERVICES  2
+    #define MAX_NR_L2CAP_CHANNELS  2
+    #define MAX_NR_RFCOMM_MULTIPLEXERS 1
+    #define MAX_NR_RFCOMM_SERVICES 1
+    #define MAX_NR_RFCOMM_CHANNELS 1
+    #define MAX_NR_BTSTACK_LINK_KEY_DB_MEMORY_ENTRIES  3
 
 Listing: Title. {#lst:memoryConfigurationSPP}
 
