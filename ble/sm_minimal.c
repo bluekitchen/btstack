@@ -49,7 +49,7 @@
 // SM internal types and globals
 //
 
-static void sm_run();
+static void sm_run(void);
 
 // used to notify applicationss that user interaction is neccessary, see sm_notify_t below
 static btstack_packet_handler_t sm_client_packet_handler = NULL;

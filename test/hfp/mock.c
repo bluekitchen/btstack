@@ -75,11 +75,11 @@ hfp_connection_t * hfp_context;
 void (*registered_rfcomm_packet_handler)(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 void (*registered_sdp_app_callback)(sdp_query_event_t * event, void * context);
 
-uint8_t * get_rfcomm_payload(){
+uint8_t * get_rfcomm_payload(void){
 	return &rfcomm_payload[0];
 }
 
-uint16_t get_rfcomm_payload_len(){
+uint16_t get_rfcomm_payload_len(void){
 	return rfcomm_payload_len;
 }
 
@@ -173,7 +173,7 @@ int rfcomm_send_prepared(uint16_t rfcomm_cid, uint16_t len){
     return rfcomm_send_internal(rfcomm_cid, rfcomm_reserved_buffer, len);
 }
 
-static void hci_event_sco_complete(){
+static void hci_event_sco_complete(void){
     uint8_t event[19];
     uint8_t pos = 0;
     event[pos++] = HCI_EVENT_SYNCHRONOUS_CONNECTION_COMPLETE;
@@ -311,7 +311,7 @@ le_command_status_t gap_disconnect(hci_con_handle_t handle){
     return BLE_PERIPHERAL_OK;
 }
 
-uint16_t hci_get_sco_voice_setting(){
+uint16_t hci_get_sco_voice_setting(void){
     return 0x40;
 }
 

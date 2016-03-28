@@ -218,7 +218,7 @@ static void hfp_emit_audio_connection_established_event(hfp_callback_t callback,
     (*callback)(event, sizeof(event));
 }
 
-linked_list_t * hfp_get_connections(){
+linked_list_t * hfp_get_connections(void){
     return (linked_list_t *) &hfp_connections;
 } 
 

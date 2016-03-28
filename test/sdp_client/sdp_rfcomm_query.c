@@ -86,7 +86,7 @@ extern "C" void sdp_client_query(bd_addr_t remote, uint8_t * des_serviceSearchPa
 }
 
 // for test purposes
-void sdp_query_rfcomm_init();
+void sdp_query_rfcomm_init(void);
 
 
 void handle_query_rfcomm_event(sdp_query_event_t * event, void * context){

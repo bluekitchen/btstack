@@ -193,7 +193,7 @@ static le_characteristic_t gap_reconnection_address_characteristic;
 static le_characteristic_t gap_peripheral_privacy_flag_characteristic;
 static le_characteristic_t signed_write_characteristic;
 
-static void show_usage();
+static void show_usage(void);
 ///
 
 static void printUUID(uint8_t * uuid128, uint16_t uuid16){

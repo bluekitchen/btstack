@@ -297,7 +297,7 @@ static void dummy_handler(uint8_t *packet, int size){
 }
 
 // get h5 singleton
-hci_transport_t * hci_transport_h5_instance() {
+hci_transport_t * hci_transport_h5_instance(void) {
     if (hci_transport_h5 == NULL) {
         hci_transport_h5 = malloc( sizeof(hci_transport_h5_t));
         hci_transport_h5->ds                                      = NULL;

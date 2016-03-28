@@ -1025,7 +1025,7 @@ static void dummy_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
 }
 
 // get usb singleton
-hci_transport_t * hci_transport_usb_instance() {
+hci_transport_t * hci_transport_usb_instance(void) {
     if (!hci_transport_usb) {
         hci_transport_usb = (hci_transport_t*) malloc( sizeof(hci_transport_t));
         hci_transport_usb->open                          = usb_open;

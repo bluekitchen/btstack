@@ -91,7 +91,7 @@
 #define ARP_OPERATION_REPLY   2
 
 // prototypes
-static void show_usage();
+static void show_usage(void);
 
 // Configuration for PTS
 static bd_addr_t pts_addr = {0x00,0x1b,0xDC,0x07,0x32,0xEF};

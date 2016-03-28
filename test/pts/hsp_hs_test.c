@@ -92,7 +92,7 @@ static bd_addr_t current_addr;
 static char hs_cmd_buffer[100];
 
 // prototypes
-static void show_usage();
+static void show_usage(void);
 
 // Testig User Interface 
 static void show_usage(void){

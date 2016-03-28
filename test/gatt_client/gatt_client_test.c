@@ -72,8 +72,8 @@ static le_service_t included_services[50];
 static le_characteristic_t characteristics[50];
 static le_characteristic_descriptor_t descriptors[50];
 
-void mock_simulate_discover_primary_services_response();
-void mock_simulate_att_exchange_mtu_response();
+void mock_simulate_discover_primary_services_response(void);
+void mock_simulate_att_exchange_mtu_response(void);
 
 void CHECK_EQUAL_ARRAY(const uint8_t * expected, uint8_t * actual, int size){
 	for (int i=0; i<size; i++){

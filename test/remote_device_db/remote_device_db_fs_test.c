@@ -8,7 +8,7 @@
 
 #include "btstack-config.h"
 
-const remote_device_db_t * remote_device_db_fs_instance();
+const remote_device_db_t * remote_device_db_fs_instance(void);
 
 TEST_GROUP(RemoteDeviceDB){
     bd_addr_t bd_addr;

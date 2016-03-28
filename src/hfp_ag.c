@@ -139,7 +139,7 @@ void hfp_ag_register_packet_handler(hfp_callback_t callback){
     hfp_callback = callback;
 }
 
-static int use_in_band_tone(){
+static int use_in_band_tone(void){
     return get_bit(hfp_supported_features, HFP_AGSF_IN_BAND_RING_TONE);
 }
 
@@ -1005,7 +1005,7 @@ static void hfp_ag_trigger_terminate_call(void){
     hfp_emit_simple_event(hfp_callback, HFP_SUBEVENT_CALL_TERMINATED);
 }
 
-static void hfp_ag_set_callsetup_indicator(){
+static void hfp_ag_set_callsetup_indicator(void){
     hfp_ag_indicator_t * indicator = get_ag_indicator_for_name("callsetup");
     if (!indicator){
         log_error("hfp_ag_set_callsetup_indicator: callsetup indicator is missing");
@@ -1013,7 +1013,7 @@ static void hfp_ag_set_callsetup_indicator(){
     indicator->status = hfp_gsm_callsetup_status();
 }
 
-static void hfp_ag_set_callheld_indicator(){
+static void hfp_ag_set_callheld_indicator(void){
     hfp_ag_indicator_t * indicator = get_ag_indicator_for_name("callheld");
     if (!indicator){
         log_error("hfp_ag_set_callheld_state: callheld indicator is missing");
@@ -1021,7 +1021,7 @@ static void hfp_ag_set_callheld_indicator(){
     indicator->status = hfp_gsm_callheld_status();
 }
 
-static void hfp_ag_set_call_indicator(){
+static void hfp_ag_set_call_indicator(void){
     hfp_ag_indicator_t * indicator = get_ag_indicator_for_name("call");
     if (!indicator){
         log_error("hfp_ag_set_call_state: call indicator is missing");

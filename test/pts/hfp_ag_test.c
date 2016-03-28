@@ -102,7 +102,7 @@ static hfp_generic_status_indicator_t hf_indicators[] = {
 
 char cmd;
 // prototypes
-static void show_usage();
+static void show_usage(void);
 
 // GAP INQUIRY
 

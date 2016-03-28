@@ -84,11 +84,11 @@ static int supported_features_with_codec_negotiation = 438;
 
 static uint16_t handle = -1;
 
-char * get_next_hfp_hf_command(){
+char * get_next_hfp_hf_command(void){
     return get_next_hfp_command(0,2);
 }
 
-int has_more_hfp_hf_commands(){
+int has_more_hfp_hf_commands(void){
     return has_more_hfp_commands(0,2);
 }
 

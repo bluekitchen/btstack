@@ -85,7 +85,7 @@ static uint16_t indicators[1] = {0x01};
 char cmd;
 
 // prototypes
-static void show_usage();
+static void show_usage(void);
 
 // Testig User Interface 
 static void show_usage(void){
