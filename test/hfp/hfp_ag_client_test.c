@@ -110,11 +110,11 @@ static hfp_generic_status_indicator_t hf_indicators[] = {
 static uint16_t handle = -1;
 static int memory_1_enabled = 1;
 
-int has_more_hfp_ag_commands(){
+int has_more_hfp_ag_commands(void){
     return has_more_hfp_commands(2,2);
 }
 
-char * get_next_hfp_ag_command(){
+char * get_next_hfp_ag_command(void){
    return get_next_hfp_command(2,2);
 }
 

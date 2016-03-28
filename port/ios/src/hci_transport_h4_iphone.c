@@ -247,7 +247,7 @@ err_out0:
     return -1;
 }
 
-static int h4_close(){
+static int h4_close(void){
     // first remove run loop handler
 	btstack_run_loop_remove_data_source(hci_transport_h4->ds);
     
@@ -389,7 +389,7 @@ static void dummy_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
 }
 
 // get h4 singleton
-const hci_transport_t * hci_transport_h4_instance() {
+const hci_transport_t * hci_transport_h4_instance(void) {
     if (hci_transport_h4 == NULL) {
         hci_transport_h4 = (hci_transport_h4_t*)malloc( sizeof(hci_transport_h4_t));
         memset(hci_transport_h4, 0, sizeof(hci_transport_h4_t));

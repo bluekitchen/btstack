@@ -1056,7 +1056,7 @@ static void hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8
     hfp_run_for_context(hfp_connection);
 }
 
-static void hfp_run(){
+static void hfp_run(void){
     btstack_linked_list_iterator_t it;    
     btstack_linked_list_iterator_init(&it, hfp_get_connections());
     while (btstack_linked_list_iterator_has_next(&it)){

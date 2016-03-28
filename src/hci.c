@@ -3548,7 +3548,7 @@ void hci_set_sco_voice_setting(uint16_t voice_setting){
  * @brief Get SCO Voice Setting
  * @return current voice setting
  */
-uint16_t hci_get_sco_voice_setting(){
+uint16_t hci_get_sco_voice_setting(void){
     return hci_stack->sco_voice_setting;
 }
 

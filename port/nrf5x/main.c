@@ -80,7 +80,7 @@ void uart_error_handle(app_uart_evt_t * p_event)
     }
 }
 
-static void init_timer() {
+static void init_timer(void) {
 
 #if 1
     // start high frequency clock source if not done yet

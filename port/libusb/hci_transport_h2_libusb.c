@@ -1024,7 +1024,7 @@ static void dummy_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
 }
 
 // get usb singleton
-const hci_transport_t * hci_transport_usb_instance() {
+const hci_transport_t * hci_transport_usb_instance(void) {
     if (!hci_transport_usb) {
         hci_transport_usb = (hci_transport_t*) malloc( sizeof(hci_transport_t));
         memset(hci_transport_usb, 0, sizeof(hci_transport_t));

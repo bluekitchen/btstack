@@ -672,7 +672,7 @@ static void hci_transport_h5_process(btstack_data_source_t *ds, btstack_data_sou
 }
 
 // get h5 singleton
-const hci_transport_t * hci_transport_h5_instance() {
+const hci_transport_t * hci_transport_h5_instance(void) {
     if (hci_transport_h5 == NULL) {
         hci_transport_h5 = (hci_transport_t*) malloc(sizeof(hci_transport_t));
         memset(hci_transport_h5, 0, sizeof(hci_transport_t));

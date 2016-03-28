@@ -4126,47 +4126,47 @@ hfp_test_item_t pts_hf_rhh_tests[] = {
 static int test_item_size = sizeof(hfp_test_item_t);
 
 // CC
-int hfp_cc_tests_size(){ return sizeof(cc_tests) /test_item_size;}
-hfp_test_item_t * hfp_cc_tests(){ return cc_tests;}
-hfp_test_item_t * default_hfp_cc_test(){ return &cc_tests[0];}
+int hfp_cc_tests_size(void){ return sizeof(cc_tests) /test_item_size;}
+hfp_test_item_t * hfp_cc_tests(void){ return cc_tests;}
+hfp_test_item_t * default_hfp_cc_test(void){ return &cc_tests[0];}
 
 // PTS - SLC Group
-int hfp_pts_ag_slc_tests_size(){ return sizeof(pts_ag_slc_tests)/test_item_size;}
-hfp_test_item_t * hfp_pts_ag_slc_tests(){ return pts_ag_slc_tests;}
+int hfp_pts_ag_slc_tests_size(void){ return sizeof(pts_ag_slc_tests)/test_item_size;}
+hfp_test_item_t * hfp_pts_ag_slc_tests(void){ return pts_ag_slc_tests;}
 
-int hfp_pts_hf_slc_tests_size(){ return sizeof(pts_hf_slc_tests)/test_item_size;}
-hfp_test_item_t * hfp_pts_hf_slc_tests(){ return pts_hf_slc_tests;}
+int hfp_pts_hf_slc_tests_size(void){ return sizeof(pts_hf_slc_tests)/test_item_size;}
+hfp_test_item_t * hfp_pts_hf_slc_tests(void){ return pts_hf_slc_tests;}
 
 // PTS - ATA Group
-int hfp_pts_ag_ata_tests_size(){ return sizeof(pts_ag_ata_tests)/test_item_size;}
-hfp_test_item_t * hfp_pts_ag_ata_tests(){ return pts_ag_ata_tests;}
+int hfp_pts_ag_ata_tests_size(void){ return sizeof(pts_ag_ata_tests)/test_item_size;}
+hfp_test_item_t * hfp_pts_ag_ata_tests(void){ return pts_ag_ata_tests;}
 
-int hfp_pts_hf_ata_tests_size(){ return sizeof(pts_hf_ata_tests)/test_item_size;}
-hfp_test_item_t * hfp_pts_hf_ata_tests(){ return pts_hf_ata_tests;}
+int hfp_pts_hf_ata_tests_size(void){ return sizeof(pts_hf_ata_tests)/test_item_size;}
+hfp_test_item_t * hfp_pts_hf_ata_tests(void){ return pts_hf_ata_tests;}
 
 // PTS - TWC Group
-int hfp_pts_ag_twc_tests_size(){ return sizeof(pts_ag_twc_tests)/test_item_size;}
-hfp_test_item_t * hfp_pts_ag_twc_tests(){ return pts_ag_twc_tests;}
-int hfp_pts_hf_twc_tests_size(){ return sizeof(pts_hf_twc_tests)/test_item_size;}
-hfp_test_item_t * hfp_pts_hf_twc_tests(){ return pts_hf_twc_tests;}
+int hfp_pts_ag_twc_tests_size(void){ return sizeof(pts_ag_twc_tests)/test_item_size;}
+hfp_test_item_t * hfp_pts_ag_twc_tests(void){ return pts_ag_twc_tests;}
+int hfp_pts_hf_twc_tests_size(void){ return sizeof(pts_hf_twc_tests)/test_item_size;}
+hfp_test_item_t * hfp_pts_hf_twc_tests(void){ return pts_hf_twc_tests;}
 
 // PTS - ECS Group
-int hfp_pts_ag_ecs_tests_size(){ return sizeof(pts_ag_ecs_tests)/test_item_size;}
-hfp_test_item_t * hfp_pts_ag_ecs_tests(){ return pts_ag_ecs_tests;}
-int hfp_pts_hf_ecs_tests_size(){ return sizeof(pts_hf_ecs_tests)/test_item_size;}
-hfp_test_item_t * hfp_pts_hf_ecs_tests(){ return pts_hf_ecs_tests;}
+int hfp_pts_ag_ecs_tests_size(void){ return sizeof(pts_ag_ecs_tests)/test_item_size;}
+hfp_test_item_t * hfp_pts_ag_ecs_tests(void){ return pts_ag_ecs_tests;}
+int hfp_pts_hf_ecs_tests_size(void){ return sizeof(pts_hf_ecs_tests)/test_item_size;}
+hfp_test_item_t * hfp_pts_hf_ecs_tests(void){ return pts_hf_ecs_tests;}
 
 // PTS - ECC Group
-int hfp_pts_ag_ecc_tests_size(){ return sizeof(pts_ag_ecc_tests)/test_item_size;}
-hfp_test_item_t * hfp_pts_ag_ecc_tests(){ return pts_ag_ecc_tests;}
-int hfp_pts_hf_ecc_tests_size(){ return sizeof(pts_hf_ecc_tests)/test_item_size;}
-hfp_test_item_t * hfp_pts_hf_ecc_tests(){ return pts_hf_ecc_tests;}
+int hfp_pts_ag_ecc_tests_size(void){ return sizeof(pts_ag_ecc_tests)/test_item_size;}
+hfp_test_item_t * hfp_pts_ag_ecc_tests(void){ return pts_ag_ecc_tests;}
+int hfp_pts_hf_ecc_tests_size(void){ return sizeof(pts_hf_ecc_tests)/test_item_size;}
+hfp_test_item_t * hfp_pts_hf_ecc_tests(void){ return pts_hf_ecc_tests;}
 
 // PTS - RHH Group
-int hfp_pts_ag_rhh_tests_size(){ return sizeof(pts_ag_rhh_tests)/test_item_size;}
-hfp_test_item_t * hfp_pts_ag_rhh_tests(){ return pts_ag_rhh_tests;}
-int hfp_pts_hf_rhh_tests_size(){ return sizeof(pts_hf_rhh_tests)/test_item_size;}
-hfp_test_item_t * hfp_pts_hf_rhh_tests(){ return pts_hf_rhh_tests;}
+int hfp_pts_ag_rhh_tests_size(void){ return sizeof(pts_ag_rhh_tests)/test_item_size;}
+hfp_test_item_t * hfp_pts_ag_rhh_tests(void){ return pts_ag_rhh_tests;}
+int hfp_pts_hf_rhh_tests_size(void){ return sizeof(pts_hf_rhh_tests)/test_item_size;}
+hfp_test_item_t * hfp_pts_hf_rhh_tests(void){ return pts_hf_rhh_tests;}
 
 
  

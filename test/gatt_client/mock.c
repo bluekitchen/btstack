@@ -84,7 +84,7 @@ uint16_t l2cap_max_le_mtu(void){
     return max_mtu;
 }
 
-void l2cap_init(){}
+void l2cap_init(void){}
 
 void l2cap_register_fixed_channel(btstack_packet_handler_t packet_handler, uint16_t channel_id) {
     att_packet_handler = packet_handler;
