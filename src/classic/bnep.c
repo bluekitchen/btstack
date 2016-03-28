@@ -1042,7 +1042,7 @@ static int bnep_handle_ethernet_packet(bnep_channel_t *channel, bd_addr_t addr_d
 {
     uint16_t pos = 0;
     
-#if (HCI_INCOMING_PRE_BUFFER_SIZE) && (HCI_INCOMING_PRE_BUFFER_SIZE >= 14 - 8) // 2 * sizeof(bd_addr_t) + sizeof(uint16_t) - L2CAP Header (4) - ACL Header (4)
+#if defined(HCI_INCOMING_PRE_BUFFER_SIZE) && (HCI_INCOMING_PRE_BUFFER_SIZE >= 14 - 8) // 2 * sizeof(bd_addr_t) + sizeof(uint16_t) - L2CAP Header (4) - ACL Header (4)
     /* In-place modify the package and add the ethernet header in front of the payload.
      * WARNING: This modifies the data in front of the payload and may overwrite 14 bytes there!
      */
@@ -1055,19 +1055,7 @@ static int bnep_handle_ethernet_packet(bnep_channel_t *channel, bd_addr_t addr_d
     big_endian_store_16(ethernet_packet, pos, network_protocol_type);
     /* Payload is just in place... */
 #else
-    /* Copy ethernet frame to statically allocated buffer. This solution is more 
-     * save, but needs an extra copy and more stack! 
-     */
-    uint8_t ethernet_packet[BNEP_MTU_MIN];
-
-    /* Restore the ethernet packet header */
-    bd_addr_copy(ethernet_packet + pos, addr_dest);
-    pos += sizeof(bd_addr_t);
-    bd_addr_copy(ethernet_packet + pos, addr_source);
-    pos += sizeof(bd_addr_t);
-    big_endian_store_16(ethernet_packet, pos, network_protocol_type);
-    pos += 2;
-    memcpy(ethernet_packet + pos, payload, size);
+#error "BNEP requires HCI_INCOMING_PRE_BUFFER_SIZE >= 6. Please update bstack_config.h"
 #endif
     
     /* Notify application layer and deliver the ethernet packet */

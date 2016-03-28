@@ -92,11 +92,8 @@ extern "C" {
 #define HCI_OUTGOING_PRE_BUFFER_SIZE 1
 
 // BNEP may uncompress the IP Header by 16 bytes
-#ifdef HAVE_BNEP
-#define HCI_INCOMING_PRE_BUFFER_SIZE (16 - HCI_ACL_HEADER_SIZE - 4)
-#endif 
 #ifndef HCI_INCOMING_PRE_BUFFER_SIZE
-    #define HCI_INCOMING_PRE_BUFFER_SIZE 0
+#define HCI_INCOMING_PRE_BUFFER_SIZE (16 - HCI_ACL_HEADER_SIZE - 4)
 #endif
 
 // 
