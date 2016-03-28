@@ -64,6 +64,7 @@ SPP = \
     l2cap_signaling.c         \
 	rfcomm.c			      \
     sdp_util.c                \
+    spp_server.c              \
 
 SDP_CLIENT += \
     sdp_client.o		      \

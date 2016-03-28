@@ -49,19 +49,18 @@
 #include <msp430.h>
 
 #include "btstack_chipset_cc256x.h"
+#include "btstack_config.h"
+#include "btstack_memory.h"
+#include "btstack_run_loop.h"
+#include "btstack_run_loop_embedded.h"
+#include "classic/btstack_link_key_db.h"
 #include "hal_board.h"
 #include "hal_compat.h"
-#include "hal_usb.h"
-
-#include "btstack_run_loop.h"
-#include "hal_tick.h"
 #include "hal_cpu.h"
-
+#include "hal_tick.h"
+#include "hal_usb.h"
 #include "hci.h"
 #include "hci_dump.h"
-#include "btstack_memory.h"
-#include "classic/btstack_link_key_db.h"
-#include "btstack_config.h"
 
 static void hw_setup(void){
 
