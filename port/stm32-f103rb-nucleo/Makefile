@@ -39,6 +39,7 @@ COMMON = \
     sdp_client.c              \
     sdp_server.c			  \
     sdp_util.c                \
+    spp_server.c			  \
 
 BLE = \
 	att_db.c 				  \
