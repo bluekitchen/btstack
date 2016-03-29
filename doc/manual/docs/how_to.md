@@ -28,11 +28,9 @@ The file *btstack_config.h* contains three parts:
 
 #define | Platform | Description
 -----------------------------|-------|------------------------------------
-HAVE_B1200_MAPPED_TO_2000000 | posix | Hack to use serial port with 2 mbps 
-HAVE_B2400_MAPPED_TO_3000000 | posix | Hack to use serial port with 3 mbps
 HAVE_B300_MAPPED_TO_2000000  | posix | Hack to use serial port with 2 mbps
 HAVE_B600_MAPPED_TO_3000000  | posix | Hack to use serial port with 3 mpbs
-HAVE_EHCILL                  | cc256x radio | CC256x/WL18xx with eHCILL is used
+HAVE_EHCILL                  | cc256x radio | TI CC256x/WL18xx with eHCILL is used
 HAVE_MALLOC                  |       | dynamic memory used
 HAVE_POSIX_FILE_IO           | posix | POSIX File i/o used for hci dump
 HAVE_STDIO                   |       | STDIN is available for examples
