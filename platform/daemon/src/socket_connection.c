@@ -56,8 +56,9 @@
  
 #include <errno.h>
 #include <fcntl.h>
-#include <stdio.h>
+#include <signal.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <string.h>
 #include <unistd.h>
 
@@ -135,13 +136,6 @@ static int (*socket_connection_packet_callback)(connection_t *connection, uint16
 
 static int socket_connection_dummy_handler(connection_t *connection, uint16_t packet_type, uint16_t channel, uint8_t *data, uint16_t length){
     return 0;
-}
-
-void socket_connection_set_no_sigpipe(int fd){
-#ifdef HAVE_SO_NOSIGPIPE    
-    int set = 1;
-    setsockopt(fd, SOL_SOCKET, SO_NOSIGPIPE, (void *)&set, sizeof(int));
-#endif
 }
 
 void socket_connection_free_connection(connection_t *conn){
@@ -292,9 +286,6 @@ static void socket_connection_accept(btstack_data_source_t *socket_ds, btstack_d
         return;
 	}
         
-    // no sigpipe
-    socket_connection_set_no_sigpipe(fd);
-    
     log_info("socket_connection_accept new connection %u", fd);
     
     connection_t * connection = socket_connection_register_new_connection(fd);
@@ -515,15 +506,8 @@ void socket_connection_send_packet(connection_t *conn, uint16_t type, uint16_t c
     little_endian_store_16(header, 0, type);
     little_endian_store_16(header, 2, channel);
     little_endian_store_16(header, 4, size);
-#if defined(HAVE_SO_NOSIGPIPE) || defined (_WIN32)
-    // BSD Variants like Darwin and iOS
     write(conn->ds.fd, header, 6);
     write(conn->ds.fd, packet, size);
-#else
-    // Linux
-    send(conn->ds.fd, header,    6, MSG_NOSIGNAL);
-    send(conn->ds.fd, packet, size, MSG_NOSIGNAL);
-#endif
 }
 
 /**
@@ -619,4 +603,18 @@ int socket_connection_close_unix(connection_t * connection){
     socket_connection_free_connection(connection);
     return 0;
 }
+
+/**
+ * Init socket connection module
+ */
+void socket_connection_init(void){
+    // just ignore broken sockets - NO_SO_SIGPIPE
+#ifndef _WIN32
+    sig_t result = signal(SIGPIPE, SIG_IGN);
+    if (result)}{
+        log_error("socket_connection_init: failed to ignore SIGPIPE, error: %s", strerror(errno));
+    }
+#endif
+}
+
 

@@ -56,8 +56,6 @@ AM_CONDITIONAL(HAVE_LIBUSB, [test "x$HAVE_LIBUSB" == "xyes"])
 echo
 echo "BTstack configured for HCI $HCI_TRANSPORT Transport"
 
-HAVE_SO_NOSIGPIPE="no"
-
 btstack_run_loop_SOURCES="btstack_run_loop_posix.c"
 case "$host_os" in
     darwin*)
@@ -68,7 +66,6 @@ case "$host_os" in
         REMOTE_DEVICE_DB_SOURCES="btstack_link_key_db_corefoundation.m btstack_device_name_db_corefoundation.m rfcomm_service_db_corefoundation.m"
         BTSTACK_LINK_KEY_DB_INSTANCE="btstack_link_key_db_corefoundation_instance"
         BTSTACK_DEVICE_NAME_DB_INSTANCE="btstack_device_name_db_corefoundation_instance"
-        HAVE_SO_NOSIGPIPE="yes";
         ;;
     mingw*)
         echo "Building on mingw32"
@@ -113,7 +110,6 @@ fi
 
 echo "BTSTACK_LINK_KEY_DB:     $BTSTACK_LINK_KEY_DB_INSTANCE"
 echo "BTSTACK_DEVICE_NAME_DB:  $BTSTACK_DEVICE_NAME_DB_INSTANCE"
-echo "HAVE_SO_NOSIGPIPE:       $HAVE_SO_NOSIGPIPE"
 echo
 echo
 
@@ -132,11 +128,6 @@ echo                                            >> btstack_config.h
 echo "// Port related features"                 >> btstack_config.h
 echo "#define HAVE_TIME"                        >> btstack_config.h
 echo "#define HAVE_MALLOC"                      >> btstack_config.h
-if test "x$HAVE_SO_NOSIGPIPE" == xyes ; then
-    echo "#define HAVE_SO_NOSIGPIPE"            >> btstack_config.h
-else
-    echo "// #undef HAVE_SO_NOSIGPIPE"          >> btstack_config.h
-fi
 echo                                            >> btstack_config.h
 
 # todo: HAVE -> ENABLE in features below

@@ -35,7 +35,6 @@ HAVE_B600_MAPPED_TO_3000000  | posix | Hack to use serial port with 3 mpbs
 HAVE_EHCILL                  | cc256x radio | CC256x/WL18xx with eHCILL is used
 HAVE_MALLOC                  |       | dynamic memory used
 HAVE_POSIX_FILE_IO           | posix | POSIX File i/o used for hci dump
-HAVE_SO_NOSIGPIPE            | posix | libc supports SO_NOSIGPIPE 
 HAVE_STDIO                   |       | STDIN is available for examples
 HAVE_TICK                    | embedded | System provides tick interrupt
 HAVE_TIME                    | posix | System provides time function

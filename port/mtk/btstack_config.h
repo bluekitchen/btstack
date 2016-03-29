@@ -8,7 +8,6 @@
 // Port related features
 #define HAVE_MALLOC
 #define HAVE_POSIX_FILE_IO
-// #define HAVE_SO_NOSIGPIPE
 #define HAVE_TIME
 
 // BTstack features that can be enabled

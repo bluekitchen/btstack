@@ -56,6 +56,11 @@ extern "C" {
 /** opaque connection type */
 typedef struct connection connection_t;
 
+/**
+ * Init socket connection module
+ */
+void socket_connection_init(void);
+
 /** 
  * create socket data_source for socket specified by launchd configuration
  */

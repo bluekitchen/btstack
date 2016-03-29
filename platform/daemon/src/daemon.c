@@ -1959,15 +1959,7 @@ int main (int argc,  char * const * argv){
     // handle SIGTERM - suggested for launchd
     signal(SIGTERM, daemon_sigint_handler);
 
-    // TODO: win32 variant
-#ifndef _WIN32
-    // handle SIGPIPE
-    struct sigaction act;
-    act.sa_handler = SIG_IGN;
-    sigemptyset (&act.sa_mask);
-    act.sa_flags = 0;
-    sigaction (SIGPIPE, &act, NULL);
-#endif
+    socket_connection_int();
 
     btstack_control_t * control = NULL;
     void * config;
