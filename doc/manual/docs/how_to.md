@@ -246,26 +246,9 @@ and [the run loop](#sec:runLoopHowTo) respectively, then setup HCI and all neede
 level protocols.
 
 
-The HCI initialization has to adapt BTstack to the used platform and
-requires four arguments. These are:
-
--   *Bluetooth hardware control*: The Bluetooth hardware control API can
-    provide the HCI layer with a custom initialization script, a
-    vendor-specific baud rate change command, and system power
-    notifications. It is also used to control the power mode of the
-    Bluetooth module, i.e., turning it on/off and putting to sleep. In
-    addition, it provides an error handler *hw_error* that is called
-    when a Hardware Error is reported by the Bluetooth module. The
-    callback allows for persistent logging or signaling of this failure.
-
-    Overall, the struct *btstack_control_t* encapsulates common
-    functionality that is not covered by the Bluetooth specification. As
-    an example, the *bt_con-trol_cc256x_in-stance* function returns a
-    pointer to a control struct suitable for the CC256x chipset.
-
-<!-- -->
-
-    btstack_control_t * control = btstack_chipset_cc256x_instance();
+The HCI initialization has to adapt BTstack to the used platform. The first 
+call is to *hci_init()* and requires information about the HCI Transport to use.
+The arguments are:
 
 -   *HCI Transport implementation*: On embedded systems, a Bluetooth
     module can be connected via USB or an UART port. BTstack implements
@@ -288,30 +271,50 @@ requires four arguments. These are:
     layer of BTstack will change the init baud rate to the main one
     after the basic setup of the Bluetooth module. A baud rate change
     has to be done in a coordinated way at both HCI and hardware level.
-    First, the HCI command to change the baud rate is sent, then it is
-    necessary to wait for the confirmation event from the Bluetooth
-    module. Only now, can the UART baud rate changed. As an example, the
-    CC256x has to be initialized at 115200 and can then be used at
-    higher speeds.
+    For example, on the CC256x, the HCI command to change the baud rate 
+    is sent first, then it is necessary to wait for the confirmation event 
+    from the Bluetooth module. Only now, can the UART baud rate changed.
 
 <!-- -->
 
-    hci_uart_config_t* config = hci_uart_config_cc256x_instance();
-
--   *Persistent storage* - specifies where to persist data like link
-    keys or remote device names. This commonly requires platform
-    specific code to access the MCU’s EEPROM of Flash storage. For the
-    first steps, BTstack provides a (non) persistent store in memory.
-    For more see [here](porting/#sec:persistentStoragePorting).
-
-<!-- -->
-
-    remote_device_db_t * remote_db = &remote_device_db_memory;
+    hci_uart_config_t* config = &hci_uart_config;
 
 After these are ready, HCI is initialized like this:
 
+    hci_init(transport, config);
+
+
+In addition to these, most UART-based Bluetooth chipset require some
+special logic for correct initialization that is not covered by the 
+Bluetooth specification. In particular, this covers:
+
+- setting the baudrate
+- setting the BD ADDR for devices without an internal persistent storage
+- upload of some firmware patches.
+
+This is provided by the various *btstack_chipset_t* implementation in the *chipset/* subfolders.
+As an example, the *bstack_chipset_cc256x_instance* function returns a pointer to a chipset struct
+suitable for the CC256x chipset.
 <!-- -->
-    hci_init(transport, config, control, remote_db);
+
+    btstack_chipset_t * chipset = btstack_chipset_cc256x_instance();
+    hci_set_chipset(chipset);
+
+
+In some setups, the hardware setup provides explicit control of Bluetooth power and sleep modes.
+In this case, a *btstack_control_t* struct can be set with *hci_set_control*.
+
+Finally, the HCI implementation requires some form of persistent storage for link keys generated
+during either legacy pairing or the Secure Simple Pairing (SSP). This commonly requires platform
+specific code to access the MCU’s EEPROM of Flash storage. For the
+first steps, BTstack provides a (non) persistent store in memory.
+For more see [here](porting/#sec:persistentStoragePorting). 
+
+<!-- -->
+
+    btstack_link_key_db_t * link_key_db = &btstack_link_key_db_memory_instance();
+    btstack_set_link_key_db(link_key_db);
+
 
 The higher layers only rely on BTstack and are initialized by calling
 the respective *\*_init* function. These init functions register
