@@ -85,7 +85,7 @@ static int socket_packet_handler(connection_t *connection, uint16_t packet_type,
 // init BTstack library
 int bt_open(void){
 
-    socket_connection_int();
+    socket_connection_init();
 
     socket_connection_register_packet_callback(socket_packet_handler);
 

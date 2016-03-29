@@ -1959,7 +1959,7 @@ int main (int argc,  char * const * argv){
     // handle SIGTERM - suggested for launchd
     signal(SIGTERM, daemon_sigint_handler);
 
-    socket_connection_int();
+    socket_connection_init();
 
     btstack_control_t * control = NULL;
     void * config;

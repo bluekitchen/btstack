@@ -611,7 +611,7 @@ void socket_connection_init(void){
     // just ignore broken sockets - NO_SO_SIGPIPE
 #ifndef _WIN32
     sig_t result = signal(SIGPIPE, SIG_IGN);
-    if (result)}{
+    if (result){
         log_error("socket_connection_init: failed to ignore SIGPIPE, error: %s", strerror(errno));
     }
 #endif
