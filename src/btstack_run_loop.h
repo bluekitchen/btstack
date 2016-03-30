@@ -50,7 +50,7 @@
 
 #include <stdint.h>
 
-#ifdef HAVE_TIME
+#ifdef HAVE_POSIX_TIME
 #include <sys/time.h>
 #endif
 
@@ -81,7 +81,7 @@ typedef struct btstack_data_source {
 
 typedef struct btstack_timer_source {
     btstack_linked_item_t item; 
-#ifdef HAVE_TIME
+#ifdef HAVE_POSIX_TIME
     struct timeval timeout;                  // <-- next timeout
 #endif
 #if defined(HAVE_TICK) || defined(HAVE_TIME_MS)

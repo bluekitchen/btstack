@@ -45,7 +45,7 @@
  * @text This example implements a HSP Headset device that sends and receives 
  * audio signal over HCI SCO. It demonstrates how to receive 
  * an output from a remote audio gateway (AG), and, 
- * if HAVE_STDIO is defined, how to control the AG. 
+ * if HAVE_POSIX_STDIN is defined, how to control the AG. 
  */
 // *****************************************************************************
 
@@ -59,7 +59,7 @@
 #include <unistd.h>
 
 #include "btstack.h"
-#ifdef HAVE_STDIO
+#ifdef HAVE_POSIX_STDIN
 #include "stdin_support.h"
 #endif
 
@@ -132,7 +132,7 @@ static void show_usage(void){
     printf("---\n");
 }
 
-#ifdef HAVE_STDIO
+#ifdef HAVE_POSIX_STDIN
 static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type){
     char buffer;
     read(ds->fd, &buffer, 1);
@@ -338,7 +338,7 @@ int btstack_main(int argc, const char * argv[]){
     hsp_hs_init(rfcomm_channel_nr);
     hsp_hs_register_packet_handler(packet_handler);
 
-#ifdef HAVE_STDIO
+#ifdef HAVE_POSIX_STDIN
     btstack_stdin_setup(stdin_process);
 #endif
 

@@ -47,7 +47,7 @@
 #include "btstack_linked_list.h"
 #include "btstack_run_loop.h"
 
-#ifdef HAVE_TIME
+#ifdef HAVE_POSIX_TIME
 #include <sys/time.h>
 #endif
 #include <stdint.h>

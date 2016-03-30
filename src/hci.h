@@ -386,7 +386,7 @@ typedef struct {
 
     btstack_timer_source_t timeout;
     
-#ifdef HAVE_TIME
+#ifdef HAVE_POSIX_TIME
     // timer
     struct timeval timestamp;
 #endif

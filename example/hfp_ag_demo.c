@@ -44,7 +44,7 @@
  *
  * @text This HFP Audio Gateway example demonstrates how to receive 
  * an output from a remote HFP Hands-Free (HF) unit, and, 
- * if HAVE_STDIO is defined, how to control the HFP HF. 
+ * if HAVE_POSIX_STDIN is defined, how to control the HFP HF. 
  */
 // *****************************************************************************
 
@@ -56,7 +56,7 @@
 #include <unistd.h>
 
 #include "btstack.h"
-#ifdef HAVE_STDIO
+#ifdef HAVE_POSIX_STDIN
 #include "stdin_support.h"
 #endif
 
@@ -126,7 +126,7 @@ static int getDeviceIndexForAddress( bd_addr_t addr){
     return -1;
 }
 
-#ifdef HAVE_STDIO
+#ifdef HAVE_POSIX_STDIN
 static void start_scan(void){
     printf("Starting inquiry scan..\n");
     hci_send_cmd(&hci_inquiry, HCI_INQUIRY_LAP, INQUIRY_INTERVAL, 0);
@@ -252,7 +252,7 @@ static void inquiry_packet_handler (uint8_t packet_type, uint8_t *packet, uint16
     }
 }
 // GAP INQUIRY END
-#ifdef HAVE_STDIO
+#ifdef HAVE_POSIX_STDIN
 
 // prototypes
 static void show_usage(void);
@@ -671,7 +671,7 @@ int btstack_main(int argc, const char * argv[]){
     printf("SDP service record size: %u\n", de_get_len( hfp_service_buffer));
     sdp_register_service(hfp_service_buffer);
     
-#ifdef HAVE_STDIO
+#ifdef HAVE_POSIX_STDIN
     btstack_stdin_setup(stdin_process);
 #endif  
     // turn on!

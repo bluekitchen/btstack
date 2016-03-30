@@ -126,7 +126,7 @@ echo "#define __BTSTACK_CONFIG"                 >> btstack_config.h
 echo                                            >> btstack_config.h
 
 echo "// Port related features"                 >> btstack_config.h
-echo "#define HAVE_TIME"                        >> btstack_config.h
+echo "#define HAVE_POSIX_TIME"                        >> btstack_config.h
 echo "#define HAVE_MALLOC"                      >> btstack_config.h
 echo                                            >> btstack_config.h
 

@@ -45,7 +45,7 @@
  *
  * @text This  HFP Hands-Free example demonstrates how to receive 
  * an output from a remote HFP audio gateway (AG), and, 
- * if HAVE_STDIO is defined, how to control the HFP AG. 
+ * if HAVE_POSIX_STDIN is defined, how to control the HFP AG. 
  */
 // *****************************************************************************
 
@@ -59,7 +59,7 @@
 #include <unistd.h>
 
 #include "btstack.h"
-#ifdef HAVE_STDIO
+#ifdef HAVE_POSIX_STDIN
 #include "stdin_support.h"
 #endif
 
@@ -67,7 +67,7 @@ uint8_t hfp_service_buffer[150];
 const uint8_t   rfcomm_channel_nr = 1;
 const char hfp_hf_service_name[] = "BTstack HFP HF Demo";
 
-#ifdef HAVE_STDIO
+#ifdef HAVE_POSIX_STDIN
 static bd_addr_t device_addr = {0xD8,0xBb,0x2C,0xDf,0xF1,0x08};
 // prototypes
 static void show_usage(void);
@@ -78,7 +78,7 @@ static uint16_t indicators[1] = {0x01};
 
 char cmd;
 
-#ifdef HAVE_STDIO
+#ifdef HAVE_POSIX_STDIN
 
 // Testig User Interface 
 static void show_usage(void){
@@ -534,7 +534,7 @@ int btstack_main(int argc, const char * argv[]){
     printf("SDP service record size: %u\n", de_get_len(hfp_service_buffer));
     sdp_register_service(hfp_service_buffer);
 
-#ifdef HAVE_STDIO
+#ifdef HAVE_POSIX_STDIN
     btstack_stdin_setup(stdin_process);
 #endif    
     // turn on!

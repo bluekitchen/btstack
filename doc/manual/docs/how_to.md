@@ -26,20 +26,35 @@ The file *btstack_config.h* contains three parts:
 <!-- a name "lst:platformConfiguration"></a-->
 <!-- -->
 
+General features:
+
+#define | Description
+-----------------------------------|-------------------------------------
+HAVE_EHCILL                        | TI CC256x/WL18xx with eHCILL is used
+HAVE_MALLOC                        | Use dynamic memory
+
+
+Embedded platform features:
+
 #define | Platform | Description
------------------------------|-------|------------------------------------
-HAVE_B300_MAPPED_TO_2000000  | posix | Hack to use serial port with 2 mbps
-HAVE_B600_MAPPED_TO_3000000  | posix | Hack to use serial port with 3 mpbs
-HAVE_EHCILL                  | cc256x radio | TI CC256x/WL18xx with eHCILL is used
-HAVE_MALLOC                  |       | dynamic memory used
-HAVE_POSIX_FILE_IO           | posix | POSIX File i/o used for hci dump
-HAVE_STDIO                   |       | STDIN is available for examples
-HAVE_TICK                    | embedded | System provides tick interrupt
-HAVE_TIME                    | posix | System provides time function
-HAVE_TIME_MS                 | embedded | System provides time in milliseconds
+-----------------------------------|--------------|------------------------------------
+HAVE_TIME_MS                 | embedded     | System provides time in milliseconds
+HAVE_TICK                          | embedded     | System provides tick interrupt
+
+POSIX platform features:
+
+#define | Platform | Description
+-----------------------------------|--------------|------------------------------------
+HAVE_POSIX_B300_MAPPED_TO_2000000  | posix        | Hack to use serial port with 2 mbps
+HAVE_POSIX_B600_MAPPED_TO_3000000  | posix        | Hack to use serial port with 3 mpbs
+HAVE_POSIX_FILE_IO                 | posix        | POSIX File i/o used for hci dump
+HAVE_POSIX_STDIN                   |              | STDIN is available for examples
+HAVE_POSIX_TIME                    | posix        | System provides time function
 
 <!-- a name "lst:btstackFeatureConfiguration"></a-->
 <!-- -->
+
+BTstack features:
 
 #define | Description
 ------------------|---------------------------------------------
@@ -213,7 +228,7 @@ The data sources are standard File Descriptors. In the run loop execute implemen
 select() call is used to wait for file descriptors to become ready to read or write,
 while waiting for the next timeout. 
 
-To enable the use of timers, make sure that you defined HAVE_TIME in the config file.
+To enable the use of timers, make sure that you defined HAVE_POSIX_TIME in the config file.
 
 ### Run loop CoreFoundation (OS X/iOS)
 
@@ -221,7 +236,7 @@ This run loop directly maps BTstack's data source and timer source with CoreFoun
 It supports ready to read and write similar to the POSIX implementation. The call to
 *btstack_run_loop_execute()* then just calls *CFRunLoopRun()*.
 
-To enable the use of timers, make sure that you defined HAVE_TIME in the config file.
+To enable the use of timers, make sure that you defined HAVE_POSIX_TIME in the config file.
 
 ### Run loop WICED
 
