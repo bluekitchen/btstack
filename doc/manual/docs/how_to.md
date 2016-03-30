@@ -120,6 +120,8 @@ The memory is set up by calling *btstack_memory_init* function:
 <!-- a name "lst:memoryConfigurationSPP"></a-->
 <!-- -->
 
+Here's the memory configuration for a basic SPP server.
+
     #define HCI_ACL_PAYLOAD_SIZE 52
     #define MAX_NR_HCI_CONNECTIONS 1
     #define MAX_NR_L2CAP_SERVICES  2
@@ -259,7 +261,7 @@ one or more peripherals to become ready. Therefore, BTstack does not provide dir
 Instead,  the run loop provides a message queue that  allows to schedule functions calls on its thread via
 *btstack_run_loop_wiced_execute_code_on_main_thread()*. 
 
-The HCI transport H4 implementation uses 2 lightweight thread to do the 
+The HCI transport H4 implementation then uses 2 lightweight threads to do the 
 blocking read and write operations. When a read or write is complete on
 the helper threads, a callback to BTstack is scheduled.
 
@@ -347,13 +349,12 @@ following section.
 
 One important construct of BTstack is *service*. A service represents a
 server side component that handles incoming connections. So far, BTstack
-provides L2CAP and RFCOMM services. An L2CAP service handles incoming
+provides L2CAP, BNEP, and RFCOMM services. An L2CAP service handles incoming
 connections for an L2CAP channel and is registered with its protocol
 service multiplexer ID (PSM). Similarly, an RFCOMM service handles
 incoming RFCOMM connections and is registered with the RFCOMM channel
 ID. Outgoing connections require no special registration, they are
 created by the application when needed.
-
 
 
 ## Packet handlers configuration {#sec:packetHandlersHowTo}
@@ -374,10 +375,9 @@ corresponding error codes.
 Here is summarized list of packet handlers that an application might
 use:
 
--   HCI packet handler - handles HCI and general BTstack events if L2CAP
-    is not used (rare case).
+-   HCI event handler - allows to observer HCI, GAP, and general BTstack events.
 
--   L2CAP packet handler - handles HCI and general BTstack events.
+-   L2CAP packet handler - handles LE Connection parameter requeset updates
 
 -   L2CAP service packet handler - handles incoming L2CAP connections,
     i.e., channels initiated by the remote.
@@ -385,35 +385,36 @@ use:
 -   L2CAP channel packet handler - handles outgoing L2CAP connections,
     i.e., channels initiated internally.
 
--   RFCOMM packet handler - handles RFCOMM incoming/outgoing events and
-    data.
+-   RFCOMM service packet handler - handles incoming RFCOMM connections,
+    i.e., channels initiated by the remote.
+
+-   RFCOMM channel packet handler - handles outgoing RFCOMM connections,
+    i.e., channels initiated internally.
 
 These handlers are registered with the functions listed in Table
 {@tbl:registeringFunction}.
 
-  ------------------------------ --------------------------------------
-                  Packet Handler Registering Function
-              HCI packet handler *hci_register_packet_handler*
-            L2CAP packet handler *l2cap_register_packet_handler*
-    L2CAP service packet handler *l2cap_register_service*
-    L2CAP channel packet handler *l2cap_create_channel*
-           RFCOMM packet handler *rfcomm_register_packet_handler*
-  ------------------------------ --------------------------------------
+  ------------------------------  --------------------------------------
+                  Packet Handler  Registering Function
+              HCI packet handler  *hci_add_event_handler*
+            L2CAP packet handler  *l2cap_register_packet_handler*
+    L2CAP service packet handler  *l2cap_register_service*
+    L2CAP channel packet handler  *l2cap_create_channel*
+    RFCOMM service packet handler *rfcomm_register_service* and *rfcomm_register_service_with_initial_credits*
+    RFOOMM channel packet hanlder *rfcomm_create_channel* and *rfcomm_create_channel_with_initial_credits*
+  ------------------------------  --------------------------------------
 
 Table: Functions for registering packet handlers. {#tbl:registeringFunction}
 
-HCI and general BTstack events are delivered to the packet handler
-specified by *l2cap_register_packet_handler* function, or
-*hci_register_packet_handler*, if L2CAP is not used. In L2CAP,
+HCI, GAP, and general BTstack events are delivered to the packet handler
+specified by *hci_add_event_handler* function. In L2CAP,
 BTstack discriminates incoming and outgoing connections, i.e., event and
 data packets are delivered to different packet handlers. Outgoing
 connections are used access remote services, incoming connections are
 used to provide services. For incoming connections, the packet handler
 specified by *l2cap_register_service* is used. For outgoing
 connections, the handler provided by *l2cap_create_channel*
-is used. Currently, RFCOMM provides only a single packet handler
-specified by *rfcomm_register_packet_handler* for all RFCOMM
-connections, but this will be fixed in the next API overhaul.
+is used. RFCOMM and BNEP are similar.
 
 The application can register a single shared packet handler for all
 protocols and services, or use separate packet handlers for each
