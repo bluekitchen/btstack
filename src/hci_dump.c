@@ -238,7 +238,7 @@ void hci_dump_packet(uint8_t packet_type, uint8_t in, uint8_t *packet, uint16_t 
     }
 #else
 
-// #ifdef HAVE_TICK
+// #ifdef HAVE_EMBEDDED_TICK
 //     uint32_t time_ms = btstack_run_loop_embedded_get_time_ms();
 //     printf("[%06u] ", time_ms);
 // #endif

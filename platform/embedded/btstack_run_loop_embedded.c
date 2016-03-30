@@ -63,15 +63,15 @@
 
 #include <stddef.h> // NULL
 
-#ifdef HAVE_TIME_MS
+#ifdef HAVE_EMBEDDED_TIME_MS
 #include "hal_time_ms.h"
 #endif
 
-#if defined(HAVE_TICK) && defined(HAVE_TIME_MS)
-#error "Please specify either HAVE_TICK or HAVE_TIME_MS"
+#if defined(HAVE_EMBEDDED_TICK) && defined(HAVE_EMBEDDED_TIME_MS)
+#error "Please specify either HAVE_EMBEDDED_TICK or HAVE_EMBEDDED_TIME_MS"
 #endif
 
-#if defined(HAVE_TICK) || defined(HAVE_TIME_MS)
+#if defined(HAVE_EMBEDDED_TICK) || defined(HAVE_EMBEDDED_TIME_MS)
 #define TIMER_SUPPORT
 #endif
 
@@ -84,7 +84,7 @@ static btstack_linked_list_t data_sources;
 static btstack_linked_list_t timers;
 #endif
 
-#ifdef HAVE_TICK
+#ifdef HAVE_EMBEDDED_TICK
 static volatile uint32_t system_ticks;
 #endif
 
@@ -106,13 +106,13 @@ static int btstack_run_loop_embedded_remove_data_source(btstack_data_source_t *d
 
 // set timer
 static void btstack_run_loop_embedded_set_timer(btstack_timer_source_t *ts, uint32_t timeout_in_ms){
-#ifdef HAVE_TICK
+#ifdef HAVE_EMBEDDED_TICK
     uint32_t ticks = btstack_run_loop_embedded_ticks_for_ms(timeout_in_ms);
     if (ticks == 0) ticks++;
     // time until next tick is < hal_tick_get_tick_period_in_ms() and we don't know, so we add one
     ts->timeout = system_ticks + 1 + ticks; 
 #endif
-#ifdef HAVE_TIME_MS
+#ifdef HAVE_EMBEDDED_TIME_MS
     ts->timeout = hal_time_ms() + timeout_in_ms + 1;
 #endif
 }
@@ -185,10 +185,10 @@ void btstack_run_loop_embedded_execute_once(void) {
         }
     }
     
-#ifdef HAVE_TICK
+#ifdef HAVE_EMBEDDED_TICK
     uint32_t now = system_ticks;
 #endif
-#ifdef HAVE_TIME_MS
+#ifdef HAVE_EMBEDDED_TIME_MS
     uint32_t now = hal_time_ms();
 #endif
 #ifdef TIMER_SUPPORT
@@ -220,7 +220,7 @@ static void btstack_run_loop_embedded_execute(void) {
     }
 }
 
-#ifdef HAVE_TICK
+#ifdef HAVE_EMBEDDED_TICK
 static void btstack_run_loop_embedded_tick_handler(void){
     system_ticks++;
     trigger_event_received = 1;
@@ -236,10 +236,10 @@ uint32_t btstack_run_loop_embedded_ticks_for_ms(uint32_t time_in_ms){
 #endif
 
 static uint32_t btstack_run_loop_embedded_get_time_ms(void){
-#ifdef HAVE_TIME_MS
+#ifdef HAVE_EMBEDDED_TIME_MS
     return hal_time_ms();
 #endif
-#ifdef HAVE_TICK
+#ifdef HAVE_EMBEDDED_TICK
     return system_ticks * hal_tick_get_tick_period_in_ms();
 #endif
     return 0;
@@ -260,7 +260,7 @@ static void btstack_run_loop_embedded_init(void){
     timers = NULL;
 #endif
 
-#ifdef HAVE_TICK
+#ifdef HAVE_EMBEDDED_TICK
     system_ticks = 0;
     hal_tick_init();
     hal_tick_set_handler(&btstack_run_loop_embedded_tick_handler);

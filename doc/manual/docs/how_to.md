@@ -28,30 +28,45 @@ The file *btstack_config.h* contains three parts:
 <!-- a name "lst:platformConfiguration"></a-->
 <!-- -->
 
-#define | Platform | Description
------------------------------|-------|------------------------------------
-HAVE_B300_MAPPED_TO_2000000  | posix | Hack to use serial port with 2 mbps
-HAVE_B600_MAPPED_TO_3000000  | posix | Hack to use serial port with 3 mpbs
-HAVE_EHCILL                  | cc256x radio | TI CC256x/WL18xx with eHCILL is used
-HAVE_MALLOC                  |       | dynamic memory used
-HAVE_POSIX_FILE_IO           | posix | POSIX File i/o used for hci dump
-HAVE_STDIO                   |       | STDIN is available for examples
-HAVE_TICK                    | embedded | System provides tick interrupt
-HAVE_TIME                    | posix | System provides time function
-HAVE_TIME_MS                 | embedded | System provides time in milliseconds
+General features:
+
+#define | Description
+-----------------------------------|-------------------------------------
+HAVE_EHCILL                        | TI CC256x/WL18xx with eHCILL is used
+HAVE_MALLOC                        | Use dynamic memory
+
+
+Embedded platform features:
+
+#define                            | Description
+-----------------------------------|------------------------------------
+HAVE_EMBEDDED_TIME_MS              | System provides time in milliseconds
+HAVE_EMBEDDED_TICK                 | System provides tick interrupt
+
+POSIX platform features:
+
+#define                            | Description
+-----------------------------------|------------------------------------
+HAVE_POSIX_B300_MAPPED_TO_2000000  | Hack to use serial port with 2 mbps
+HAVE_POSIX_B600_MAPPED_TO_3000000  | Hack to use serial port with 3 mpbs
+HAVE_POSIX_FILE_IO                 | POSIX File i/o used for hci dump
+HAVE_POSIX_STDIN                   | STDIN is available for CLI interface
+HAVE_POSIX_TIME                    | System provides time function
 
 <!-- a name "lst:btstackFeatureConfiguration"></a-->
 <!-- -->
 
-#define | Description
-------------------|---------------------------------------------
-ENABLE_CLASSIC    | Enable Classic related code in HCI and L2CAP
-ENABLE_BLE        | Enable BLE related code in HCI and L2CAP
-ENABLE_LOG_DEBUG  | Enable log_debug messages
-ENABLE_LOG_ERROR  | Enable log_error messages
-ENABLE_LOG_INFO   | Enable log_info messages
+BTstack features:
+
+#define                  | Description
+-------------------------|---------------------------------------------
+ENABLE_CLASSIC           | Enable Classic related code in HCI and L2CAP
+ENABLE_BLE               | Enable BLE related code in HCI and L2CAP
+ENABLE_LOG_DEBUG         | Enable log_debug messages
+ENABLE_LOG_ERROR         | Enable log_error messages
+ENABLE_LOG_INFO          | Enable log_info messages
 ENABLE_LOG_INTO_HCI_DUMP | Log debug messages as part of packet log
-ENABLE_SCO_OVER_HCI | Enable SCO over HCI for chipsets that support it (only CC256x ones currently)
+ENABLE_SCO_OVER_HCI      | Enable SCO over HCI for chipsets (only CC256x/WL18xx currently)
 
 
 ## Memory configuration {#sec:memoryConfigurationHowTo}
@@ -206,7 +221,7 @@ enters sleep mode, an interrupt-driven data source has to call the
 internal flag that is checked in the critical section just before
 entering sleep mode causing another round of callbacks.
 
-To enable the use of timers, make sure that you defined HAVE_TICK or HAVE_TIME_MS in the
+To enable the use of timers, make sure that you defined HAVE_EMBEDDED_TICK or HAVE_EMBEDDED_TIME_MS in the
 config file.
 
 ### Run loop POSIX
@@ -215,7 +230,7 @@ The data sources are standard File Descriptors. In the run loop execute implemen
 select() call is used to wait for file descriptors to become ready to read or write,
 while waiting for the next timeout. 
 
-To enable the use of timers, make sure that you defined HAVE_TIME in the config file.
+To enable the use of timers, make sure that you defined HAVE_POSIX_TIME in the config file.
 
 ### Run loop CoreFoundation (OS X/iOS)
 
@@ -223,7 +238,7 @@ This run loop directly maps BTstack's data source and timer source with CoreFoun
 It supports ready to read and write similar to the POSIX implementation. The call to
 *btstack_run_loop_execute()* then just calls *CFRunLoopRun()*.
 
-To enable the use of timers, make sure that you defined HAVE_TIME in the config file.
+To enable the use of timers, make sure that you defined HAVE_POSIX_TIME in the config file.
 
 ### Run loop WICED
 

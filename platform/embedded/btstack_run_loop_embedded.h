@@ -47,7 +47,7 @@
 #include "btstack_linked_list.h"
 #include "btstack_run_loop.h"
 
-#ifdef HAVE_TIME
+#ifdef HAVE_POSIX_TIME
 #include <sys/time.h>
 #endif
 #include <stdint.h>
@@ -62,7 +62,7 @@ extern "C" {
 const btstack_run_loop_t * btstack_run_loop_embedded_get_instance(void);
 
 // hack to fix HCI timer handling
-#ifdef HAVE_TICK
+#ifdef HAVE_EMBEDDED_TICK
 /**
  * @brief Sets how many milliseconds has one tick.
  */

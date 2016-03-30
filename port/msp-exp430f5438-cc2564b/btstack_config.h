@@ -8,7 +8,7 @@
 // Port related features
 #define HAVE_EHCILL
 #define HAVE_INIT_SCRIPT
-#define HAVE_TICK
+#define HAVE_EMBEDDED_TICK
 
 // BTstack features that can be enabled
 #define ENABLE_BLE

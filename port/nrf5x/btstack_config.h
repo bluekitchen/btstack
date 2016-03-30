@@ -7,7 +7,7 @@
 
 // Port related features
 #define HAVE_EHCILL
-#define HAVE_TIME_MS
+#define HAVE_EMBEDDED_TIME_MS
 #define WICED_BT_UART_MANUAL_CTS_RTS
 
 // BTstack features that can be enabled

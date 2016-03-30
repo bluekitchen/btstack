@@ -386,14 +386,14 @@ typedef struct {
 
     btstack_timer_source_t timeout;
     
-#ifdef HAVE_TIME
+#ifdef HAVE_POSIX_TIME
     // timer
     struct timeval timestamp;
 #endif
-#ifdef HAVE_TICK
+#ifdef HAVE_EMBEDDED_TICK
     uint32_t timestamp; // timestamp in system ticks
 #endif
-#ifdef HAVE_TIME_MS
+#ifdef HAVE_EMBEDDED_TIME_MS
     uint32_t timestamp; // timestamp in ms
 #endif
 
