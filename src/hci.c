@@ -207,38 +207,23 @@ hci_connection_t * hci_connection_for_bd_addr_and_type(bd_addr_t  addr, bd_addr_
 
 static void hci_connection_timeout_handler(btstack_timer_source_t *timer){
     hci_connection_t * connection = (hci_connection_t *) btstack_run_loop_get_timer_context(timer);
-#ifdef HAVE_POSIX_TIME
-    struct timeval tv;
-    gettimeofday(&tv, NULL);
-    if (tv.tv_sec >= connection->timestamp.tv_sec + HCI_CONNECTION_TIMEOUT_MS/1000) {
-        // connections might be timed out
-        hci_emit_l2cap_check_timeout(connection);
-    }
-#endif
 #ifdef HAVE_EMBEDDED_TICK
     if (btstack_run_loop_embedded_get_ticks() > connection->timestamp + btstack_run_loop_embedded_ticks_for_ms(HCI_CONNECTION_TIMEOUT_MS)){
         // connections might be timed out
         hci_emit_l2cap_check_timeout(connection);
     }
-#endif
-#ifdef HAVE_EMBEDDED_TIME_MS
+#else 
     if (btstack_run_loop_get_time_ms() > connection->timestamp + HCI_CONNECTION_TIMEOUT_MS){
         // connections might be timed out
         hci_emit_l2cap_check_timeout(connection);
     }
 #endif
-    btstack_run_loop_set_timer(timer, HCI_CONNECTION_TIMEOUT_MS);
-    btstack_run_loop_add_timer(timer);
 }
 
 static void hci_connection_timestamp(hci_connection_t *connection){
-#ifdef HAVE_POSIX_TIME
-    gettimeofday(&connection->timestamp, NULL);
-#endif
 #ifdef HAVE_EMBEDDED_TICK
     connection->timestamp = btstack_run_loop_embedded_get_ticks();
-#endif
-#ifdef HAVE_EMBEDDED_TIME_MS
+#else
     connection->timestamp = btstack_run_loop_get_time_ms();
 #endif
 }

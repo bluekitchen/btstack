@@ -50,10 +50,6 @@
 
 #include <stdint.h>
 
-#ifdef HAVE_POSIX_TIME
-#include <sys/time.h>
-#endif
-
 #if defined __cplusplus
 extern "C" {
 #endif
@@ -81,12 +77,8 @@ typedef struct btstack_data_source {
 
 typedef struct btstack_timer_source {
     btstack_linked_item_t item; 
-#ifdef HAVE_POSIX_TIME
-    struct timeval timeout;                  // <-- next timeout
-#endif
-#if defined(HAVE_EMBEDDED_TICK) || defined(HAVE_EMBEDDED_TIME_MS)
-    uint32_t timeout;                       // timeout in system ticks (HAVE_EMBEDDED_TICK) or millis (HAVE_EMBEDDED_TIME_MS)
-#endif
+    // timeout in system ticks (HAVE_EMBEDDED_TICK) or milliseconds (HAVE_EMBEDDED_TIME_MS)
+    uint32_t timeout;
     // will be called when timer fired
     void  (*process)(struct btstack_timer_source *ts); 
     void * context;
