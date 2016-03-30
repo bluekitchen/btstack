@@ -1,11 +1,13 @@
 
-BTstack implements a set of Bluetooth protocols and profiles. To connect to other devices or to provide a Bluetooth services, BTstack has to be properly configured.
+BTstack implements a set of Bluetooth protocols and profiles. To connect to other Bluetooth devices or to provide a Bluetooth services, BTstack has to be properly configured.
 
 The configuration of BTstack is done both at compile time as well as at run time:
+- compile time configuration:
+    - *btstack_config.h* to describe the system configuration, used functionality, and also the memory configuration
+    - adding necessary source code files to your project
 
-- *btstack_config.h* to describe the system configuration, used functionality, and also the memory configuration
-- adding necessary source code files to your project
-- run time configuration of provided services during startup
+- run time configuration:
+    - provided services during startup
 
 In the following, we provide an overview of the the configuration via *btstack_config.h*, the memory management, the
 run loop, and services that are necessary to setup BTstack. From the
@@ -66,7 +68,7 @@ allocated in two different manners:
 -   dynamically using the *malloc/free* functions, if HAVE_MALLOC is
     defined in config file.
 
-For each HCI connection, a buffer of size HCI_ACL_PAYLOAD_SIZE is reserved. For fast data transfer, however, a large ACL buffer of 1021 bytes is recommened. The large ACL buffer is required for 3-DH5 packets to be used.
+For each HCI connection, a buffer of size HCI_ACL_PAYLOAD_SIZE is reserved. For fast data transfer, however, a large ACL buffer of 1021 bytes is recommend. The large ACL buffer is required for 3-DH5 packets to be used.
 
 <!-- a name "lst:memoryConfiguration"></a-->
 <!-- -->
@@ -118,7 +120,7 @@ The core of BTstack incl. all protocol and profiles is in *src/*.
 
 Support for a particular platform is provided by the *platform/* subfolder. For most embedded ports, *platform/embedded/* provides *btstack_run_loop_embedded* and the *hci_transport_h4_embedded* implementation that require *hal_cpu.h*, *hal_led.h*, and *hal_uart_dma.h* plus *hal_tick.h* or *hal_time_ms* to be implemented by the user.
 
-To accomodate a particular Bluetooth chipset, the *chipset/* subfolders provide various btstack_chipset_* implementations.
+To accommodate a particular Bluetooth chipset, the *chipset/* subfolders provide various btstack_chipset_* implementations.
 Please have a look at the existing ports in *port/*.
 
 Path                | Description
@@ -169,7 +171,7 @@ to wait for a data source to become ready for read or write (POSIX, CoreFoundati
 are not used as the HCI transport driver and the run loop are implemented in a different way (WICED).
 In any case, the callbacks need to explicitly enabled with the *btstack_run_loop_enable_data_source_callbacks(..)* function.
 
-In your code, you’ll have to configure the run loop before you start it
+In your code, you'll have to configure the run loop before you start it
 as shown in Listing [listing:btstackInit]. The application can register
 data sources as well as timers, e.g., periodical sampling of sensors, or
 communication over the UART.
@@ -209,7 +211,7 @@ config file.
 
 ### Run loop POSIX
 
-The data sources are standard File Descriptors. In the run loop execute implementaion,
+The data sources are standard File Descriptors. In the run loop execute implementation,
 select() call is used to wait for file descriptors to become ready to read or write,
 while waiting for the next timeout. 
 
@@ -428,7 +430,7 @@ The resulting file can be analyzed with Wireshark
 or the Apple's PacketLogger tool.
 
 On embedded systems without a file system, you still can call *hci_dump_open(NULL, HCI_DUMP_STDOUT)*.
-It will log all HCI packets to the consolve via printf.
+It will log all HCI packets to the console via printf.
 If you capture the console output, incl. your own debug messages, you can use 
 the create_packet_log.py tool in the tools folder to convert a text output into a
 PacketLogger file.
