@@ -388,6 +388,7 @@ static int hfp_ag_cmd_via_generator(uint16_t cid, hfp_connection_t * hfp_connect
 
     // assumes: can send now == true
     // assumes: num segments > 0
+    // assumes: individual segments are smaller than MTU
     rfcomm_reserve_packet_buffer();
     int mtu = rfcomm_get_max_frame_size(cid);
     uint8_t * data = rfcomm_get_outgoing_buffer();
@@ -395,11 +396,11 @@ static int hfp_ag_cmd_via_generator(uint16_t cid, hfp_connection_t * hfp_connect
     int segment = start_segment;
     while (segment < num_segments){
         int segment_len = get_segment_len(hfp_connection, segment);
-        if (offset + segment_len <= mtu){
-            store_segment(hfp_connection, segment, data+offset);
-            offset += segment_len;
-            segment++;
-        }
+        if (offset + segment_len > mtu) break;
+        // append segement
+        store_segment(hfp_connection, segment, data+offset);
+        offset += segment_len;
+        segment++;
     }
     rfcomm_send_prepared(cid, offset);
     return segment;
