@@ -201,13 +201,13 @@ static void btstack_run_loop_posix_execute(void) {
         btstack_linked_list_iterator_init(&it, &data_sources);
         while (btstack_linked_list_iterator_has_next(&it) && !data_sources_modified){
             btstack_data_source_t *ds = (btstack_data_source_t*) btstack_linked_list_iterator_next(&it);
-            log_debug("btstack_run_loop_posix_execute: check %x with fd %u\n", (int) ds, ds->fd);
+            log_debug("btstack_run_loop_posix_execute: check ds %p with fd %u\n", ds, ds->fd);
             if (FD_ISSET(ds->fd, &descriptors_read)) {
-                log_debug("btstack_run_loop_posix_execute: process read %x with fd %u\n", (int) ds, ds->fd);
+                log_debug("btstack_run_loop_posix_execute: process read ds %p with fd %u\n", ds, ds->fd);
                 ds->process(ds, DATA_SOURCE_CALLBACK_READ);
             }
             if (FD_ISSET(ds->fd, &descriptors_write)) {
-                log_debug("btstack_run_loop_posix_execute: process write %x with fd %u\n", (int) ds, ds->fd);
+                log_debug("btstack_run_loop_posix_execute: process write ds %p with fd %u\n", ds, ds->fd);
                 ds->process(ds, DATA_SOURCE_CALLBACK_WRITE);
             }
         }
