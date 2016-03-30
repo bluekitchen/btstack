@@ -272,9 +272,6 @@ void hsp_ag_init(uint8_t rfcomm_channel_nr){
     hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
 
-    // init L2CAP
-    l2cap_register_packet_handler(packet_handler);
-
     rfcomm_register_service(packet_handler, rfcomm_channel_nr, 0xffff);  // reserved channel, mtu limited by l2cap
 
     hsp_ag_reset_state();
