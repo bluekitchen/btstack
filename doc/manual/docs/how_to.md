@@ -2,16 +2,21 @@
 BTstack implements a set of Bluetooth protocols and profiles. To connect to other Bluetooth devices or to provide a Bluetooth services, BTstack has to be properly configured.
 
 The configuration of BTstack is done both at compile time as well as at run time:
+
 - compile time configuration:
-    - *btstack_config.h* to describe the system configuration, used functionality, and also the memory configuration
-    - adding necessary source code files to your project
+    - adjust *btstack_config.h* - this file describes the system configuration, used functionality, and also the memory configuration
+    - add necessary source code files to your project
 
-- run time configuration:
-    - provided services during startup
+- run time configuration of:
+    - Bluetooth chipset
+    - run loop
+    - HCI transport layer
+    - provided services
+    - packet handlers
 
-In the following, we provide an overview of the the configuration via *btstack_config.h*, the memory management, the
-run loop, and services that are necessary to setup BTstack. From the
-point when the run loop is executed, the application runs as a finite
+In the following, we provide an overview of the configuration 
+that is necessary to setup BTstack. From the point when the run loop 
+is executed, the application runs as a finite
 state machine, which processes events received from BTstack. BTstack
 groups events logically and provides them over packet handlers, of which
 an overview is provided here. Finally, we describe the RFCOMM
@@ -21,14 +26,15 @@ resource-constraint devices.
 ## Configuration in btstack_config.h {#sec:btstackConfigHowTo}
 The file *btstack_config.h* contains three parts:
 
-- description of available system features, similar to config.h in a autoconf setup. All #defines start with HAVE_ and are [listed here](#sec:platformConfiguration)
-- list of enabled features, most importantly ENABLE_CLASSIC and ENABLE_BLE. [See here](#sec:btstackFeatureConfiguration)
-- other BTstack configuration, most notably static memory. [See next section](#sec:memoryConfigurationHowTo).
+- \#define HAVE_* directives [listed here](#sec:haveDirectives). These directives describe available system properties, similar to config.h in a autoconf setup.
+- \#define ENABLE_* directives [listed here](#sec:enableDirectives). These directives list enabled properties, most importantly ENABLE_CLASSIC and ENABLE_BLE. 
+- other #define directives for BTstack configuration, most notably static memory, [see next section](#sec:memoryConfigurationHowTo).
 
 <!-- a name "lst:platformConfiguration"></a-->
 <!-- -->
 
-General features:
+### HAVE_* directives {#sec:haveDirectives}
+System properties:
 
 #define | Description
 -----------------------------------|-------------------------------------
@@ -36,19 +42,19 @@ HAVE_EHCILL                        | TI CC256x/WL18xx with eHCILL is used
 HAVE_MALLOC                        | Use dynamic memory
 
 
-Embedded platform features:
+Embedded platform properties:
 
 #define                            | Description
 -----------------------------------|------------------------------------
 HAVE_EMBEDDED_TIME_MS              | System provides time in milliseconds
 HAVE_EMBEDDED_TICK                 | System provides tick interrupt
 
-POSIX platform features:
+POSIX platform properties:
 
 #define                            | Description
 -----------------------------------|------------------------------------
-HAVE_POSIX_B300_MAPPED_TO_2000000  | Hack to use serial port with 2 mbps
-HAVE_POSIX_B600_MAPPED_TO_3000000  | Hack to use serial port with 3 mpbs
+HAVE_POSIX_B300_MAPPED_TO_2000000  | Workaround to use serial port with 2 mbps
+HAVE_POSIX_B600_MAPPED_TO_3000000  | Workaround to use serial port with 3 mpbs
 HAVE_POSIX_FILE_IO                 | POSIX File i/o used for hci dump
 HAVE_POSIX_STDIN                   | STDIN is available for CLI interface
 HAVE_POSIX_TIME                    | System provides time function
@@ -56,7 +62,8 @@ HAVE_POSIX_TIME                    | System provides time function
 <!-- a name "lst:btstackFeatureConfiguration"></a-->
 <!-- -->
 
-BTstack features:
+### ENABLE_* directives {#sec:enableDirectives}
+BTstack properties:
 
 #define                  | Description
 -------------------------|---------------------------------------------
@@ -69,19 +76,19 @@ ENABLE_LOG_INTO_HCI_DUMP | Log debug messages as part of packet log
 ENABLE_SCO_OVER_HCI      | Enable SCO over HCI for chipsets (only CC256x/WL18xx currently)
 
 
-## Memory configuration {#sec:memoryConfigurationHowTo}
+### Memory configuration directives {#sec:memoryConfigurationHowTo}
 
 The structs for services, active connections and remote devices can be
 allocated in two different manners:
 
 -   statically from an individual memory pool, whose maximal number of
-    elements is defined in the config file. To initialize the static
-    pools, you need to call *btstack_memory_init* function. An example
+    elements is defined in the btstack_config.h file. To initialize the static
+    pools, you need to call at runtime *btstack_memory_init* function. An example
     of memory configuration for a single SPP service with a minimal
     L2CAP MTU is shown in Listing {@lst:memoryConfigurationSPP}.
 
 -   dynamically using the *malloc/free* functions, if HAVE_MALLOC is
-    defined in config file.
+    defined in btstack_config.h file.
 
 For each HCI connection, a buffer of size HCI_ACL_PAYLOAD_SIZE is reserved. For fast data transfer, however, a large ACL buffer of 1021 bytes is recommend. The large ACL buffer is required for 3-DH5 packets to be used.
 
@@ -91,20 +98,20 @@ For each HCI connection, a buffer of size HCI_ACL_PAYLOAD_SIZE is reserved. For 
 #define | Description 
 --------|------------
 HCI_ACL_PAYLOAD_SIZE | Max size of HCI ACL payloads
-MAX_NR_BNEP_CHANNELS | Max nr. of BNEP channels
-MAX_NR_BNEP_SERVICES | Max nr. provides BNEP services
-MAX_NR_BTSTACK_LINK_KEY_DB_MEMORY_ENTRIES | Max nr. of link key entries cached in RAM
-MAX_NR_GATT_CLIENTS | Max nr. of GATT clients
-MAX_NR_HCI_CONNECTIONS | Max nr. HCI connections
-MAX_NR_HFP_CONNECTIONS | Max nr. HFP connections
-MAX_NR_L2CAP_CHANNELS |  Max nr. L2CAP connections
-MAX_NR_L2CAP_SERVICES |  Max nr. L2CAP services
-MAX_NR_RFCOMM_CHANNELS | Max nr. RFOMMM connections
-MAX_NR_RFCOMM_MULTIPLEXERS | Max nr. RFCOMM multiplexers. One multiplexer per HCI connection
-MAX_NR_RFCOMM_SERVICES | Max nr. RFCOMM services
-MAX_NR_SERVICE_RECORD_ITEMS | Max nr. SDP service records
-MAX_NR_SM_LOOKUP_ENTRIES | Max nr. of items in Security Manager lookup queue
-MAX_NR_WHITELIST_ENTRIES | Max nr. of items in GAP LE Whitelist to connect to
+MAX_NR_BNEP_CHANNELS | Max number of BNEP channels
+MAX_NR_BNEP_SERVICES | Max number of BNEP services
+MAX_NR_BTSTACK_LINK_KEY_DB_MEMORY_ENTRIES | Max number of link key entries cached in RAM
+MAX_NR_GATT_CLIENTS | Max number of GATT clients
+MAX_NR_HCI_CONNECTIONS | Max number of HCI connections
+MAX_NR_HFP_CONNECTIONS | Max number of HFP connections
+MAX_NR_L2CAP_CHANNELS |  Max number of L2CAP connections
+MAX_NR_L2CAP_SERVICES |  Max number of L2CAP services
+MAX_NR_RFCOMM_CHANNELS | Max number of RFOMMM connections
+MAX_NR_RFCOMM_MULTIPLEXERS | Max number of RFCOMM multiplexers, with one multiplexer per HCI connection
+MAX_NR_RFCOMM_SERVICES | Max number of RFCOMM services
+MAX_NR_SERVICE_RECORD_ITEMS | Max number of SDP service records
+MAX_NR_SM_LOOKUP_ENTRIES | Max number of items in Security Manager lookup queue
+MAX_NR_WHITELIST_ENTRIES | Max number of items in GAP LE Whitelist to connect to
 
 The memory is set up by calling *btstack_memory_init* function:
 
@@ -131,12 +138,6 @@ In this example, the size of ACL packets is limited to the minimum of 52 bytes, 
 ## Source tree structure {#sec:sourceTreeHowTo}
 
 The source tree has been organized to easily setup new projects.
-The core of BTstack incl. all protocol and profiles is in *src/*.
-
-Support for a particular platform is provided by the *platform/* subfolder. For most embedded ports, *platform/embedded/* provides *btstack_run_loop_embedded* and the *hci_transport_h4_embedded* implementation that require *hal_cpu.h*, *hal_led.h*, and *hal_uart_dma.h* plus *hal_tick.h* or *hal_time_ms* to be implemented by the user.
-
-To accommodate a particular Bluetooth chipset, the *chipset/* subfolders provide various btstack_chipset_* implementations.
-Please have a look at the existing ports in *port/*.
 
 Path                | Description
 --------------------|---------------
@@ -149,8 +150,18 @@ src                 | Bluetooth stack implementation
 test                | Unit and PTS tests
 tool                | Helper tools for BTstack
 
+The core of BTstack, including all protocol and profiles, is in *src/*.
 
-## Run loop {#sec:runLoopHowTo}
+Support for a particular platform is provided by the *platform/* subfolder. For most embedded ports, *platform/embedded/* provides *btstack_run_loop_embedded* and the *hci_transport_h4_embedded* implementation that require *hal_cpu.h*, *hal_led.h*, and *hal_uart_dma.h* plus *hal_tick.h* or *hal_time_ms* to be implemented by the user.
+
+To accommodate a particular Bluetooth chipset, the *chipset/* subfolders provide various btstack_chipset_* implementations.
+Please have a look at the existing ports in *port/*.
+
+## Run loop configuration {#sec:runLoopHowTo}
+
+To initialize BTstack you need to [initialize the memory](#sec:memoryConfigurationHowTo)
+and [the run loop](#sec:runLoopHowTo) respectively, then setup HCI and all needed higher
+level protocols.
 
 BTstack uses the concept of a run loop to handle incoming data and to schedule work.
 The run loop handles events from two different types of sources: data
@@ -253,12 +264,7 @@ blocking read and write operations. When a read or write is complete on
 the helper threads, a callback to BTstack is scheduled.
 
 
-## BTstack initialization {#sec:btstackInitializationHowTo}
-
-To initialize BTstack you need to [initialize the memory](#sec:memoryConfigurationHowTo)
-and [the run loop](#sec:runLoopHowTo) respectively, then setup HCI and all needed higher
-level protocols.
-
+## HCI Transport configuration
 
 The HCI initialization has to adapt BTstack to the used platform. The first 
 call is to *hci_init()* and requires information about the HCI Transport to use.
@@ -337,7 +343,7 @@ register packet handlers to get events and data as explained in the
 following section.
 
 
-## Services {#sec:servicesHowTo}
+### Run time configuration - Services {#sec:servicesHowTo}
 
 One important construct of BTstack is *service*. A service represents a
 server side component that handles incoming connections. So far, BTstack
@@ -350,7 +356,7 @@ created by the application when needed.
 
 
 
-## Where to get data - packet handlers {#sec:packetHandlersHowTo}
+## Packet handlers configuration {#sec:packetHandlersHowTo}
 
 
 After the hardware and BTstack are set up, the run loop is entered. From
@@ -429,7 +435,6 @@ a packet handler to accept and receive keyboard data.
 
 
 ## Bluetooth HCI Packet Logs {#sec:packetlogsHowTo}
-
 
 If things don't work as expected, having a look at the data exchanged
 between BTstack and the Bluetooth chipset often helps.

@@ -5,7 +5,7 @@ pages:
 - [index.md, Welcome]
 - [quick_start.md, Quick Start]
 - [architecture.md, BTstack Architecture]
-- [how_to.md, How to use BTstack]
+- [how_to.md, How to configure BTstack]
 - [protocols.md, Supported Protocols]
 - [profiles.md, Supported Profiles]
 - [examples/examples.md, Embedded Examples]
