@@ -7,7 +7,7 @@
 
 // Port related features
 #define HAVE_INIT_SCRIPT
-#define HAVE_TICK
+#define HAVE_EMBEDDED_TICK
 
 // #define HAVE_EHCILL
 

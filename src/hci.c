@@ -45,7 +45,7 @@
 #include "btstack_config.h"
 
 
-#ifdef HAVE_TICK
+#ifdef HAVE_EMBEDDED_TICK
 #include "btstack_run_loop_embedded.h"
 #endif
 
@@ -215,13 +215,13 @@ static void hci_connection_timeout_handler(btstack_timer_source_t *timer){
         hci_emit_l2cap_check_timeout(connection);
     }
 #endif
-#ifdef HAVE_TICK
+#ifdef HAVE_EMBEDDED_TICK
     if (btstack_run_loop_embedded_get_ticks() > connection->timestamp + btstack_run_loop_embedded_ticks_for_ms(HCI_CONNECTION_TIMEOUT_MS)){
         // connections might be timed out
         hci_emit_l2cap_check_timeout(connection);
     }
 #endif
-#ifdef HAVE_TIME_MS
+#ifdef HAVE_EMBEDDED_TIME_MS
     if (btstack_run_loop_get_time_ms() > connection->timestamp + HCI_CONNECTION_TIMEOUT_MS){
         // connections might be timed out
         hci_emit_l2cap_check_timeout(connection);
@@ -235,10 +235,10 @@ static void hci_connection_timestamp(hci_connection_t *connection){
 #ifdef HAVE_POSIX_TIME
     gettimeofday(&connection->timestamp, NULL);
 #endif
-#ifdef HAVE_TICK
+#ifdef HAVE_EMBEDDED_TICK
     connection->timestamp = btstack_run_loop_embedded_get_ticks();
 #endif
-#ifdef HAVE_TIME_MS
+#ifdef HAVE_EMBEDDED_TIME_MS
     connection->timestamp = btstack_run_loop_get_time_ms();
 #endif
 }

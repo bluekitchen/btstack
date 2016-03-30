@@ -390,10 +390,10 @@ typedef struct {
     // timer
     struct timeval timestamp;
 #endif
-#ifdef HAVE_TICK
+#ifdef HAVE_EMBEDDED_TICK
     uint32_t timestamp; // timestamp in system ticks
 #endif
-#ifdef HAVE_TIME_MS
+#ifdef HAVE_EMBEDDED_TIME_MS
     uint32_t timestamp; // timestamp in ms
 #endif
 

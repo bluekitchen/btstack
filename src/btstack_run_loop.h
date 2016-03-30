@@ -84,8 +84,8 @@ typedef struct btstack_timer_source {
 #ifdef HAVE_POSIX_TIME
     struct timeval timeout;                  // <-- next timeout
 #endif
-#if defined(HAVE_TICK) || defined(HAVE_TIME_MS)
-    uint32_t timeout;                       // timeout in system ticks (HAVE_TICK) or millis (HAVE_TIME_MS)
+#if defined(HAVE_EMBEDDED_TICK) || defined(HAVE_EMBEDDED_TIME_MS)
+    uint32_t timeout;                       // timeout in system ticks (HAVE_EMBEDDED_TICK) or millis (HAVE_EMBEDDED_TIME_MS)
 #endif
     // will be called when timer fired
     void  (*process)(struct btstack_timer_source *ts); 
