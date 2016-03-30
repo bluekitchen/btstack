@@ -18,10 +18,11 @@ In the following, we provide an overview of the configuration
 that is necessary to setup BTstack. From the point when the run loop 
 is executed, the application runs as a finite
 state machine, which processes events received from BTstack. BTstack
-groups events logically and provides them over packet handlers, of which
-an overview is provided here. Finally, we describe the RFCOMM
-credit-based flow-control, which may be necessary for
-resource-constraint devices.
+groups events logically and provides them via packet handlers. 
+We provide their overview here, and finally, for the case that there is a need to inspect the data exchanged
+between BTstack and the Bluetooth chipset, we describe how to configure 
+packet logging mechanism. 
+
 
 ## Configuration in btstack_config.h {#sec:btstackConfigHowTo}
 The file *btstack_config.h* contains three parts:
@@ -131,7 +132,7 @@ Here's the memory configuration for a basic SPP server.
     #define MAX_NR_RFCOMM_CHANNELS 1
     #define MAX_NR_BTSTACK_LINK_KEY_DB_MEMORY_ENTRIES  3
 
-Listing: Title. {#lst:memoryConfigurationSPP}
+Listing: Memory configuration for a basic SPP server. {#lst:memoryConfigurationSPP}
 
 In this example, the size of ACL packets is limited to the minimum of 52 bytes, resulting in an L2CAP MTU of 48 bytes. Only a singleHCI connection can be established at any time. On it, two L2CAP services are provided, which can be active at the same time. Here, these two can be RFCOMM and SDP. Then, memory for one RFCOMM multiplexer is reserved over which one connection can be active. Finally, up to three link keys can be cached in RAM.
 
@@ -191,18 +192,18 @@ BTstack provides different run loop implementations that implement the *btstack_
 
 - Embedded: the main implementation for embedded systems, especially without an RTOS.
 - POSIX: implementation for POSIX systems based on the select() call.
-- WICED: implementation for the Broadcom WICED SDK RTOS abstraction that warps FreeRTOS or ThreadX.
 - CoreFoundation: implementation for iOS and OS X applications 
+- WICED: implementation for the Broadcom WICED SDK RTOS abstraction that warps FreeRTOS or ThreadX.
 
 Depending on the platform, data sources are either polled (embedded), or the platform provides a way
 to wait for a data source to become ready for read or write (POSIX, CoreFoundation), or,
-are not used as the HCI transport driver and the run loop are implemented in a different way (WICED).
-In any case, the callbacks need to explicitly enabled with the *btstack_run_loop_enable_data_source_callbacks(..)* function.
+are not used as the HCI transport driver and the run loop is implemented in a different way (WICED).
+In any case, the callbacks must be to explicitly enabled with the *btstack_run_loop_enable_data_source_callbacks(..)* function.
 
 In your code, you'll have to configure the run loop before you start it
 as shown in Listing [listing:btstackInit]. The application can register
-data sources as well as timers, e.g., periodical sampling of sensors, or
-communication over the UART.
+data sources as well as timers, e.g., for periodical sampling of sensors, or
+for communication over the UART.
 
 The run loop is set up by calling *btstack_run_loop_init* function and providing
 an instance of the actual run loop. E.g. for the embedded platform, it is:
@@ -215,8 +216,8 @@ The complete Run loop API is provided [here](appendix/apis/#sec:runLoopAPIAppend
 
 ### Run loop embedded
 
-In the embeded run loop implementation, data sources are constantly polled and 
-the system is put to sleep if no IRQ happend during the poll of all data sources.
+In the embedded run loop implementation, data sources are constantly polled and 
+the system is put to sleep if no IRQ happens during the poll of all data sources.
 
 The complete run loop cycle looks like this: first, the callback
 function of all registered data sources are called in a round robin way.
@@ -232,7 +233,7 @@ enters sleep mode, an interrupt-driven data source has to call the
 *btstack_run_loop_embedded_trigger* function. The call to 
 *btstack_run_loop_embedded_trigger* sets an
 internal flag that is checked in the critical section just before
-entering sleep mode causing another round of callbacks.
+entering sleep mode causing another run loop cycle.
 
 To enable the use of timers, make sure that you defined HAVE_EMBEDDED_TICK or HAVE_EMBEDDED_TIME_MS in the
 config file.
@@ -258,10 +259,10 @@ To enable the use of timers, make sure that you defined HAVE_POSIX_TIME in the c
 
 WICED SDK API does not provide asynchronous read and write to the UART and no direct way to wait for 
 one or more peripherals to become ready. Therefore, BTstack does not provide direct support for data sources.
-Instead,  the run loop provides a message queue that  allows to schedule functions calls on its thread via
+Instead, the run loop provides a message queue that allows to schedule functions calls on its thread via
 *btstack_run_loop_wiced_execute_code_on_main_thread()*. 
 
-The HCI transport H4 implementation then uses 2 lightweight threads to do the 
+The HCI transport H4 implementation then uses two lightweight threads to do the 
 blocking read and write operations. When a read or write is complete on
 the helper threads, a callback to BTstack is scheduled.
 
@@ -273,11 +274,9 @@ call is to *hci_init()* and requires information about the HCI Transport to use.
 The arguments are:
 
 -   *HCI Transport implementation*: On embedded systems, a Bluetooth
-    module can be connected via USB or an UART port. BTstack implements
-    two UART based protocols: HCI UART Transport Layer (H4) and H4 with
-    eHCILL support, a lightweight low-power variant by Texas
-    Instruments. These are accessed by linking the appropriate file 
-    [src/hci_transport_h4_embedded.c]() resp. [src/hci_transport_h4_ehcill_embedded.c]()
+    module can be connected via USB or an UART port. On embedded, BTstack implements HCI UART Transport Layer (H4) and H4 with eHCILL support, a lightweight low-power variant by Texas Instruments. For POSIX, there is an implementation for HCI H4, HCI H5 and H2 libUSB, and for WICED HCI H4 WICED.
+    These are accessed by linking the appropriate file, e.g., 
+    [platform/embedded/hci_transport_h4_embedded.c]()
     and then getting a pointer to HCI Transport implementation.
     For more information on adapting HCI Transport to different
     environments, see [here](porting/#sec:hciTransportPorting).
@@ -345,7 +344,7 @@ register packet handlers to get events and data as explained in the
 following section.
 
 
-### Run time configuration - Services {#sec:servicesHowTo}
+## Services {#sec:servicesHowTo}
 
 One important construct of BTstack is *service*. A service represents a
 server side component that handles incoming connections. So far, BTstack
@@ -401,7 +400,7 @@ These handlers are registered with the functions listed in Table
     L2CAP service packet handler  *l2cap_register_service*
     L2CAP channel packet handler  *l2cap_create_channel*
     RFCOMM service packet handler *rfcomm_register_service* and *rfcomm_register_service_with_initial_credits*
-    RFOOMM channel packet hanlder *rfcomm_create_channel* and *rfcomm_create_channel_with_initial_credits*
+    RFOOMM channel packet handler *rfcomm_create_channel* and *rfcomm_create_channel_with_initial_credits*
   ------------------------------  --------------------------------------
 
 Table: Functions for registering packet handlers. {#tbl:registeringFunction}
