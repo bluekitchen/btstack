@@ -54,6 +54,8 @@
 
 #include "mock.h"
 
+#define RFCOMM_MTU (52-4-5)
+
 static uint8_t sdp_rfcomm_channel_nr = 1;
 const char sdp_rfcomm_service_name[] = "BTstackMock";
 static uint16_t rfcomm_cid = 1;
@@ -62,10 +64,10 @@ static uint16_t sco_handle = 10;
 static uint8_t rfcomm_payload[200];
 static uint16_t rfcomm_payload_len = 0;
 
-static uint8_t outgoing_rfcomm_payload[200];
+static uint8_t outgoing_rfcomm_payload[RFCOMM_MTU];
 static uint16_t outgoing_rfcomm_payload_len = 0;
 
-static uint8_t rfcomm_reserved_buffer[1000];
+static uint8_t rfcomm_reserved_buffer[48];
 
 hfp_connection_t * hfp_context;
 
