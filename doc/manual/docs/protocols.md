@@ -241,15 +241,8 @@ outgoing packet buffer, or if the ACL buffers in the Bluetooth module
 become full, i.e., if the application is sending faster than the packets
 can be transferred over the air.
 
-Instead of directly calling *l2cap_send*, it is recommended to call
-*l2cap_request_can_send_now_event* which will trigger an L2CAP_EVENT_CAN_SEND_NOW
-as soon as possible. This might be even be immediately from inside the 
-*l2cap_request_can_send_now_event*. On L2CAP_EVENT_CAN_SEND_NOW, sending to the
-channel indicated in the event is guaranteed to succedd. 
-
 Listing [below](#lst:L2CAPService)
 provides L2CAP service example code.
-
 
 ~~~~ {#lst:L2CAPService .c caption="{Providing an L2CAP service.}"}
 
@@ -294,6 +287,15 @@ provides L2CAP service example code.
         }
     }
 ~~~~ 
+
+### L2CAP - Sending packets {#sec:l2capFlowControlProtocols}
+
+Instead of directly calling *l2cap_send*, it is recommended to call
+*l2cap_request_can_send_now_event* which will trigger an L2CAP_EVENT_CAN_SEND_NOW
+as soon as possible. This might be even be immediately from inside the 
+*l2cap_request_can_send_now_event*. On L2CAP_EVENT_CAN_SEND_NOW, sending to the
+channel indicated in the event is guaranteed to succedd. 
+
 
 ## RFCOMM - Radio Frequency Communication Protocol
 
@@ -387,11 +389,6 @@ device with *rfcomm_send* and receive data packets by the
 packet handler provided by the *rfcomm_register_service*
 call.
 
-Sending of RFCOMM data packets may fail due to a full internal BTstack
-outgoing packet buffer, or if the ACL buffers in the Bluetooth module
-become full, i.e., if the application is sending faster than the packets
-can be transferred over the air.
-
 Listing [below](#lst:RFCOMMService)
 provides the RFCOMM service example code.
 
@@ -430,11 +427,6 @@ provides the RFCOMM service example code.
                mtu = little_endian_read_16(packet, 14);
                printf("RFCOMM channel open succeeded.");
                break;
-            case RFCOMM_EVENT_CREDITS:
-            case DAEMON_EVENT_HCI_PACKET_SENT:
-                tryToSend();
-                break;
-
             case RFCOMM_EVENT_CHANNEL_CLOSED:
                 printf("Channel closed.");
                 rfcomm_channel_id = 0;
@@ -462,7 +454,26 @@ gets received.
 
 Before sending data packets, check if RFCOMM can send them by calling
 *rfcomm_can_send_packet_now*, as shown in Listing [below](#lst:SingleOutputBufferTryToSend).
- 
+
+Sending of RFCOMM data packets may fail due to a full internal BTstack
+outgoing packet buffer, or if the ACL buffers in the Bluetooth module
+become full, i.e., if the application is sending faster than the packets
+can be transferred over the air.
+
+RFCOMM’s mandatory credit-based flow-control imposes an additional
+constraint on sending a data packet - at least one new RFCOMM credit
+must be available. BTstack signals the availability of a credit by
+sending an RFCOMM credit (RFCOMM_EVENT_CREDITS) event.
+
+These two events represent two orthogonal mechanisms that deal with flow
+control. BTstack provides a unified approach to send efficiently.
+
+If calling *rfcomm_can_send_packet_now* returns false, and it is not possible to send right away,
+BTstack will keep track of the applications request to send a packet and later emit an RFCOMM_EVENT_CAN_SEND_NOW
+as soon as it becomes possible to send again. L2CAP, BNEP, and ATT API offer similar functionality.
+
+For an RFCOMM example see Listing [below](#lst:SingleOutputBufferTryPH).
+
 ~~~~ {#lst:SingleOutputBufferTryToSend .c caption="{Preparing and sending data.}"}    
     void prepare_data(void){
         ...
@@ -492,21 +503,6 @@ Before sending data packets, check if RFCOMM can send them by calling
 
 ~~~~ 
 
-RFCOMM’s mandatory credit-based flow-control imposes an additional
-constraint on sending a data packet - at least one new RFCOMM credit
-must be available. BTstack signals the availability of a credit by
-sending an RFCOMM credit (RFCOMM_EVENT_CREDITS) event.
-
-These two events represent two orthogonal mechanisms that deal with flow
-control. BTstack provides a unified approach to send efficiently.
-
-If calling *rfcomm_can_send_packet_now* returns false, and it is not possible to send right away,
-BTstack will keep track of the applications request to send a packet and later emit an RFCOMM_EVENT_CAN_SEND_NOW
-as soon as it becomes possible to send again. L2CAP, BNEP, and ATT API offer similar functionality.
-
-For an RFCOMM example see Listing [below](#lst:SingleOutputBufferTryPH).
-
-
 ~~~~ {#lst:SingleOutputBufferTryPH .c caption="{Resending data packets.}"} 
 
     void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
@@ -532,46 +528,6 @@ For an RFCOMM example see Listing [below](#lst:SingleOutputBufferTryPH).
     }
 ~~~~ 
 
-If the management of credits is manual, credits are provided by the
-application such that it can manage its receive buffers explicitly, see
-Listing [below](#lst:explicitFlowControl).
-
-
-~~~~ {#lst:explicitFlowControl .c caption="{RFCOMM service with manual credit management.}"}   
-    void btstack_setup(void){
-        ...
-        // init RFCOMM
-        rfcomm_init();
-        rfcomm_register_packet_handler(packet_handler);
-        // reserved channel, mtu=100, 1 credit
-        rfcomm_register_service_with_initial_credits(NULL, rfcomm_channel_nr, 100, 1);  
-    }
-~~~~ 
-
-Manual credit management is recommended when received RFCOMM data cannot
-be processed immediately. In the [SPP flow control example](examples/generated/#sec:sppflowcontrolExample), 
-delayed processing of received data is
-simulated with the help of a periodic timer. To provide new credits, you
-call the *rfcomm_grant_credits* function with the RFCOMM channel ID
-and the number of credits as shown in Listing [below](#lst:NewCredits). 
-
-~~~~ {#lst:NewCredits .c caption="{Granting RFCOMM credits.}"} 
-    void processing(){
-        // process incoming data packet
-        ... 
-        // provide new credit
-        rfcomm_grant_credits(rfcomm_channel_id, 1);
-    }
-~~~~ 
-
-Please note that providing single credits effectively reduces the credit-based
-(sliding window) flow control to a stop-and-wait flow-control that
-limits the data throughput substantially. On the plus side, it allows
-for a minimal memory footprint. If possible, multiple RFCOMM buffers
-should be used to avoid pauses while the sender has to wait for a new
-credit.
-
-
 ### Slowing down RFCOMM data reception {#sec:manualCreditsProtocols}
 
 RFCOMM’s credit-based flow-control can be used to adapt, i.e., slow down
@@ -591,6 +547,46 @@ connection is used. See Listing [below](#lst:automaticFlowControl).
         rfcomm_register_service(NULL, rfcomm_channel_nr, 100); 
     }
 ~~~~ 
+
+If the management of credits is manual, credits are provided by the
+application such that it can manage its receive buffers explicitly, see
+Listing [below](#lst:explicitFlowControl).
+
+
+Manual credit management is recommended when received RFCOMM data cannot
+be processed immediately. In the [SPP flow control example](examples/generated/#sec:sppflowcontrolExample), 
+delayed processing of received data is
+simulated with the help of a periodic timer. To provide new credits, you
+call the *rfcomm_grant_credits* function with the RFCOMM channel ID
+and the number of credits as shown in Listing [below](#lst:NewCredits). 
+
+~~~~ {#lst:explicitFlowControl .c caption="{RFCOMM service with manual credit management.}"}   
+    void btstack_setup(void){
+        ...
+        // init RFCOMM
+        rfcomm_init();
+        rfcomm_register_packet_handler(packet_handler);
+        // reserved channel, mtu=100, 1 credit
+        rfcomm_register_service_with_initial_credits(NULL, rfcomm_channel_nr, 100, 1);  
+    }
+~~~~ 
+
+~~~~ {#lst:NewCredits .c caption="{Granting RFCOMM credits.}"} 
+    void processing(){
+        // process incoming data packet
+        ... 
+        // provide new credit
+        rfcomm_grant_credits(rfcomm_channel_id, 1);
+    }
+~~~~ 
+
+Please note that providing single credits effectively reduces the credit-based
+(sliding window) flow control to a stop-and-wait flow-control that
+limits the data throughput substantially. On the plus side, it allows
+for a minimal memory footprint. If possible, multiple RFCOMM buffers
+should be used to avoid pauses while the sender has to wait for a new
+credit.
+
 
 ## SDP - Service Discovery Protocol
 
