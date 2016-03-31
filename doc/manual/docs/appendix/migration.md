@@ -1,6 +1,6 @@
 We already had two listings with the Bluetooth SIG, but no official BTstack v1.0 release. After the second listing, we decided that it's time for a major overhaul of the API - making it easier for new users. 
 
-In the following, we provide an overview of the changes and guidelines for updating an existing code base. At the end, we present a comand line tool and as an alternativ a Web service, that can simplify the migration to hte new v1.0 API.
+In the following, we provide an overview of the changes and guidelines for updating an existing code base. At the end, we present a command line tool and as an alternative a Web service, that can simplify the migration to hte new v1.0 API.
 
 # Changes
 
@@ -25,7 +25,7 @@ Types with generic names like *linked_list* have been prefixed with btstack_ (e.
 All defines that originate from the Bluetooth Specification are now in *src/bluetooth.h*. Addition defines by BTstack are collected in *src/btstack_defines.h*. All events names have the form MODULE_EVENT_NAME now.
 
 ## Function names
-- The _internal suffix has been an artefact from the iOS port. All public functions with the _internal suffix have been stripped of this suffix.
+- The _internal suffix has been an artifact from the iOS port. All public functions with the _internal suffix have been stripped of this suffix.
 - Types with generic names like linked_list have been prefixed with btstack_ (e.g. btstack_linked_list) to avoid problems when integrating with other environments like vendor SDKs.
 
 ## Packet Handlers
@@ -99,7 +99,7 @@ Renamed to *src/ble/ancs_client*
 
 ## Flow control / DAEMON_EVENT_HCI_PACKET_SENT
 
-In BTstack teh functions l2cap_can_send_packet_now(..) and rfcomm_can_send_packet(..) must be called before sending the next L2CAP or RFCOMM packet. Before v1.0, we suggested to check with l2cap_can_send_packet_now(..) or rfcomm_can_send_packet(..) whenever an HCI event was received. This has been cleaned up and streamlined in v1.0. 
+In BTstack the functions l2cap_can_send_packet_now(..) and rfcomm_can_send_packet(..) must be called before sending the next L2CAP or RFCOMM packet. Before v1.0, we suggested to check with l2cap_can_send_packet_now(..) or rfcomm_can_send_packet(..) whenever an HCI event was received. This has been cleaned up and streamlined in v1.0. 
 
 Now, both L2CAP and RFCOMM now emit a L2CAP_EVENT_CAN_SEND_NOW or a RFCOMM_EVENT_CAN_SEND_NOW after the connection gets established. The app can now send a packet if it is ready to send. If the app later wants to send, it has to call l2cap/rfcomm_can_send_packet_now(..). If the result is negative, BTstack will emit the L2CAP/RCOMM_EVENT_CAN_SEND_NOW as soon as sending becomes possible again. We hope that this design leads to simpler application code. 
 
