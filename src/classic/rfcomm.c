@@ -180,8 +180,6 @@ static void rfcomm_emit_channel_opened(rfcomm_channel_t *channel, uint8_t status
     if (status) return;
     if (rfcomm_channel_can_send(channel)){
         rfcomm_emit_can_send_now(channel);
-    } else {
-        channel->waiting_for_can_send_now = 1;
     }
 }
 
