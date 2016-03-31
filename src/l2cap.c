@@ -83,6 +83,7 @@ static void l2cap_emit_connection_request(l2cap_channel_t *channel);
 static int  l2cap_channel_ready_for_open(l2cap_channel_t *channel);
 static void l2cap_hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static void l2cap_acl_handler(uint8_t packet_type, uint8_t *packet, uint16_t size );
+static void l2cap_notify_channel_can_send(void);
 
 typedef struct l2cap_fixed_channel {
     btstack_packet_handler_t callback;
@@ -185,14 +186,6 @@ void l2cap_emit_channel_opened(l2cap_channel_t *channel, uint8_t status) {
     little_endian_store_16(event, 21, channel->flush_timeout); 
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
     l2cap_dispatch_to_channel(channel, HCI_EVENT_PACKET, event, sizeof(event));
-
-    // if channel opened successfully, also send can send now if possible
-    if (status) return;
-    if (hci_can_send_acl_packet_now(channel->con_handle)){
-        l2cap_emit_can_send_now(channel->packet_handler, channel->local_cid);
-    } else {
-        channel->waiting_for_can_send_now = 1;
-    }
 }
 
 void l2cap_emit_channel_closed(l2cap_channel_t *channel) {
@@ -251,6 +244,13 @@ static l2cap_channel_t * l2cap_get_channel_for_local_cid(uint16_t local_cid){
         }
     } 
     return NULL;
+}
+
+void l2cap_request_can_send_now_event(uint16_t local_cid){
+    l2cap_channel_t *channel = l2cap_get_channel_for_local_cid(local_cid);
+    if (!channel) return;
+    channel->waiting_for_can_send_now = 1;
+    l2cap_notify_channel_can_send();
 }
 
 int  l2cap_can_send_packet_now(uint16_t local_cid){
