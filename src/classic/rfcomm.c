@@ -768,10 +768,16 @@ static void rfcomm_multiplexer_finalize(rfcomm_multiplexer_t * multiplexer){
         rfcomm_channel_t * channel = (rfcomm_channel_t *) it->next;
         if (channel->multiplexer == multiplexer) {
             // emit appropriate events
-            if (channel->state == RFCOMM_CHANNEL_OPEN) {
-                rfcomm_emit_channel_closed(channel);
-            } else {
-                rfcomm_emit_channel_opened(channel, RFCOMM_MULTIPLEXER_STOPPED); 
+            switch(channel->state){
+                case RFCOMM_CHANNEL_OPEN:
+                    rfcomm_emit_channel_closed(channel);
+                    break;
+                case RFCOMM_CHANNEL_SEND_UA_AFTER_DISC:
+                    // remote didn't wait until we send the UA disc
+                    break;
+                default:
+                    rfcomm_emit_channel_opened(channel, RFCOMM_MULTIPLEXER_STOPPED); 
+                    break;
             }
             // remove from list
             it->next = it->next->next;
