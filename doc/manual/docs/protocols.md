@@ -80,7 +80,7 @@ Listing [below](#lst:hciOGFs) shows the OGFs provided by BTstack in file [src/hc
     #define OGF_LE_CONTROLLER   0x08
     #define OGF_BTSTACK  0x3d
     #define OGF_VENDOR  0x3f
-~~~~ 
+~~~~
 
 For all existing Bluetooth
 commands and their OCFs see [Bluetooth Specification](https://www.bluetooth.org/Technical/Specifications/adopted.htm) -
@@ -241,9 +241,11 @@ outgoing packet buffer, or if the ACL buffers in the Bluetooth module
 become full, i.e., if the application is sending faster than the packets
 can be transferred over the air.
 
-Instead of directly calling *l2cap_send*, it is recommended to first call
-*l2cap_can_send_packet_now*. If true, then sending will not fail. If false,
-BTstack will emit an L2CAP_EVENT_CAN_SEND_NOW when it is possible to send again.
+Instead of directly calling *l2cap_send*, it is recommended to call
+*l2cap_request_can_send_now_event* which will trigger an L2CAP_EVENT_CAN_SEND_NOW
+as soon as possible. This might be even be immediately from inside the 
+*l2cap_request_can_send_now_event*. On L2CAP_EVENT_CAN_SEND_NOW, sending to the
+channel indicated in the event is guaranteed to succedd. 
 
 Listing [below](#lst:L2CAPService)
 provides L2CAP service example code.
@@ -285,7 +287,7 @@ provides L2CAP service example code.
                 }
                 break;        
             case L2CAP_EVENT_CAN_SEND_NOW:
-                tryToSend();
+                send_now();
                 break;
             case L2CAP_EVENT_CHANNEL_CLOSED:
                 break;
@@ -388,11 +390,9 @@ call.
 Sending of RFCOMM data packets may fail due to a full internal BTstack
 outgoing packet buffer, or if the ACL buffers in the Bluetooth module
 become full, i.e., if the application is sending faster than the packets
-can be transferred over the air. In such case, the application can try
-sending again upon reception of DAEMON_EVENT_HCI_PACKET_SENT or
-RFCOMM_EVENT_CREDITS event. The first event signals that the internal
-BTstack outgoing buffer became free again, the second one signals that
-the remote side allowed to send another packet. Listing [below](#lst:RFCOMMService)
+can be transferred over the air.
+
+Listing [below](#lst:RFCOMMService)
 provides the RFCOMM service example code.
 
 
@@ -404,13 +404,13 @@ provides the RFCOMM service example code.
         rfcomm_register_service(NULL, rfcomm_channel_nr, mtu); 
     }
 
-    void packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
+    void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
         if (packet_type == RFCOMM_DATA_PACKET){
             // handle RFCOMM data packets
             return;
         }
         ...
-        switch (event) {
+        switch (packet[0]) {
             ...
             case RFCOMM_EVENT_INCOMING_CONNECTION:
                 //data: event(8), len(8), address(48), channel(8), rfcomm_cid(16)
@@ -456,24 +456,40 @@ assumption, the single output buffer design does not impose additional
 restrictions. In the following, we show how this is used for adapting
 the RFCOMM send rate.
 
+When there's a need to send a packet, call *rcomm_request_can_send_now* 
+directly and send the packet when the RFCOMM_EVENT_CAN_SEND_NOW event
+gets received.
+
 Before sending data packets, check if RFCOMM can send them by calling
 *rfcomm_can_send_packet_now*, as shown in Listing [below](#lst:SingleOutputBufferTryToSend).
  
 ~~~~ {#lst:SingleOutputBufferTryToSend .c caption="{Preparing and sending data.}"}    
-    void prepareData(void){
+    void prepare_data(void){
         ...
+        rfcomm_request_can_send_now_event(rfcom_channel_id);
     }
 
-    void tryToSend(void){
-        if (!dataLen) return;
-        if (!rfcomm_channel_id) return;
-        if (!rfcomm_can_send_packet_now(rfcomm_channel_id)) return;
-
+    void send_data(void){
         rfcomm_send(rfcomm_channel_id,  dataBuffer, dataLen);
-
         // packet is sent prepare next one
-        prepareData();
+        prepare_data();
     }
+
+    void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+        switch (packet_type){
+            case HCI_EVENT_PACKET:
+                switch (packet[0]){
+                    ...
+                    case RFCOMM_CAN_SEND_NOW:
+                        send_data(;
+                        break;
+                    ...
+                }
+                ...
+            }
+        }
+    }
+
 ~~~~ 
 
 RFCOMM’s mandatory credit-based flow-control imposes an additional
