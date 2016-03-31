@@ -518,10 +518,10 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     }
                     break;
 
-                /* @text BNEP_EVENT_READY_TO_SEND indicates that a new packet can be send. This triggers the retry of a 
+                /* @text BNEP_EVENT_CAN_SEND_NOW indicates that a new packet can be send. This triggers the retry of a 
                  * parked network packet. If this succeeds, the data source element is added to the run loop again.
                  */
-                case BNEP_EVENT_READY_TO_SEND:
+                case BNEP_EVENT_CAN_SEND_NOW:
                     // Check for parked network packets and send it out now 
                     if (network_buffer_len > 0) {
                         bnep_send(bnep_cid, network_buffer, network_buffer_len);

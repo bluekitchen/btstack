@@ -120,7 +120,7 @@ static void bnep_emit_channel_closed(bnep_channel_t *channel)
 static void bnep_emit_ready_to_send(bnep_channel_t *channel)
 {
     uint8_t event[2];
-    event[0] = BNEP_EVENT_READY_TO_SEND;
+    event[0] = BNEP_EVENT_CAN_SEND_NOW;
     event[1] = sizeof(event) - 2;
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
 	(*app_packet_handler)(HCI_EVENT_PACKET, channel->l2cap_cid, (uint8_t *) event, sizeof(event));

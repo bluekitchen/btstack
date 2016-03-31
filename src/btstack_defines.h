@@ -640,7 +640,7 @@ typedef uint8_t sm_key_t[16];
 #define BNEP_EVENT_CHANNEL_TIMEOUT                         0xC3    
     
 // data: event(8), len(8)
-#define BNEP_EVENT_READY_TO_SEND                           0xC4
+#define BNEP_EVENT_CAN_SEND_NOW                           0xC4
 
  /**
   * @format H1B

@@ -725,7 +725,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     printf("BNEP channel closed\n");
                     break;
 
-                case BNEP_EVENT_READY_TO_SEND:
+                case BNEP_EVENT_CAN_SEND_NOW:
                     /* Check for parked network packets and send it out now */
                     if (network_buffer_len > 0) {
                         bnep_send(bnep_cid, network_buffer, network_buffer_len);
