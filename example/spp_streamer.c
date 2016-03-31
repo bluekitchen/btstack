@@ -135,17 +135,13 @@ static void create_test_data(void){
 
 static void try_send_packets(void){
     while (rfcomm_can_send_packet_now(rfcomm_cid)){
-        int err = rfcomm_send(rfcomm_cid, (uint8_t*) test_data, test_data_len);
-        if (err){
-            printf("rfcomm_send -> error 0X%02x", err);
-            return;
-        }
+        rfcomm_send(rfcomm_cid, (uint8_t*) test_data, test_data_len);
+
         test_track_sent(test_data_len);
-        if (data_to_send < test_data_len){
+        if (data_to_send <= test_data_len){
+            printf("SPP Streamer: enough data send, closing channel\n");
             rfcomm_disconnect(rfcomm_cid);
             rfcomm_cid = 0;
-            state = DONE;
-            printf("SPP Streamer: enough data send, closing DLC\n");
             return;
         }
         data_to_send -= test_data_len;
@@ -160,11 +156,13 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
         case BTSTACK_EVENT_STATE:
             // bt stack activated, get started 
             if (packet[2] == HCI_STATE_WORKING){
+                printf("SDP Query for RFCOMM services on %s started\n", bd_addr_to_str(remote));
                 sdp_client_query_rfcomm_channel_and_name_for_uuid(&handle_query_rfcomm_event, remote, SDP_PublicBrowseGroup);
             }
             break;
         case RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE:
             // data: event(8), len(8), status (8), address (48), handle(16), server channel(8), rfcomm_cid(16), max frame size(16)
+            state = DONE;
             if (packet[2]) {
                 printf("RFCOMM channel open failed, status %u\n", packet[2]);
             } else {
