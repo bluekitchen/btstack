@@ -393,15 +393,16 @@ use:
 These handlers are registered with the functions listed in Table
 {@tbl:registeringFunction}.
 
-  ------------------------------  --------------------------------------
-                  Packet Handler  Registering Function
-              HCI packet handler  *hci_add_event_handler*
-            L2CAP packet handler  *l2cap_register_packet_handler*
-    L2CAP service packet handler  *l2cap_register_service*
-    L2CAP channel packet handler  *l2cap_create_channel*
-    RFCOMM service packet handler *rfcomm_register_service* and *rfcomm_register_service_with_initial_credits*
-    RFOOMM channel packet handler *rfcomm_create_channel* and *rfcomm_create_channel_with_initial_credits*
-  ------------------------------  --------------------------------------
+
+Packet Handler                 | Registering Function
+-------------------------------|--------------------------------------
+HCI packet handler             | hci_add_event_handler
+L2CAP packet handler           | l2cap_register_packet_handler
+L2CAP service packet handler   | l2cap_register_service
+L2CAP channel packet handler   | l2cap_create_channel
+RFCOMM service packet handler  | rfcomm_register_service and rfcomm_register_service_with_initial_credits
+RFCOMM channel packet handler  | rfcomm_create_channel and rfcomm_create_channel_with_initial_credits
+
 
 Table: Functions for registering packet handlers. {#tbl:registeringFunction}
 
