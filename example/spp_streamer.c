@@ -67,6 +67,7 @@ typedef enum {
     W4_SDP_RESULT,
     W4_SDP_COMPLETE,
     W4_RFCOMM_CHANNEL,
+    SENDING,
     DONE
 } state_t;
 
@@ -138,6 +139,7 @@ static void send_packet(void){
 
     test_track_sent(test_data_len);
     if (data_to_send <= test_data_len){
+        state = DONE;
         printf("SPP Streamer: enough data send, closing channel\n");
         rfcomm_disconnect(rfcomm_cid);
         rfcomm_cid = 0;
@@ -150,7 +152,6 @@ static void send_packet(void){
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     if (packet_type != HCI_EVENT_PACKET) return;
     uint8_t event = hci_event_packet_get_type(packet);
-
     switch (event) {
         case BTSTACK_EVENT_STATE:
             // bt stack activated, get started 
@@ -161,11 +162,12 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             break;
         case RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE:
             // data: event(8), len(8), status (8), address (48), handle(16), server channel(8), rfcomm_cid(16), max frame size(16)
-            state = DONE;
             if (packet[2]) {
+                state = DONE;
                 printf("RFCOMM channel open failed, status %u\n", packet[2]);
             } else {
                 // data: event(8), len(8), status (8), address (48), handle (16), server channel(8), rfcomm_cid(16), max frame size(16)
+                state = SENDING;
                 rfcomm_cid = little_endian_read_16(packet, 12);
                 mtu = little_endian_read_16(packet, 14);
                 printf("RFCOMM channel open succeeded. New RFCOMM Channel ID %u, max frame size %u\n", rfcomm_cid, mtu);
@@ -178,8 +180,13 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             }
             break;
         case RFCOMM_EVENT_CAN_SEND_NOW:
-            // try_send_packets();
             send_packet();
+            break;
+        case RFCOMM_EVENT_CHANNEL_CLOSED:
+            if (state != DONE) {
+                printf("RFCOMM_EVENT_CHANNEL_CLOSED received before all test data was sent\n");
+                state = DONE;
+            }
             break;
         default:
             break;
