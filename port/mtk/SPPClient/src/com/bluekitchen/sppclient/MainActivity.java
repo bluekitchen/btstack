@@ -24,7 +24,7 @@ import com.bluekitchen.btstack.event.HCIEventHardwareError;
 import com.bluekitchen.btstack.event.HCIEventInquiryComplete;
 import com.bluekitchen.btstack.event.HCIEventInquiryResultWithRssi;
 import com.bluekitchen.btstack.event.HCIEventRemoteNameRequestComplete;
-import com.bluekitchen.btstack.event.RFCOMMEventOpenChannelComplete;
+import com.bluekitchen.btstack.event.RFCOMMEventChannelOpened;
 import com.bluekitchen.btstack.event.SDPEventQueryComplete;
 import com.bluekitchen.btstack.event.SDPEventQueryRFCOMMService;
 
@@ -313,8 +313,8 @@ public class MainActivity extends Activity implements PacketHandler {
 			break;
 			
 		case w4_connected:
-			if (packet instanceof RFCOMMEventOpenChannelComplete){
-				RFCOMMEventOpenChannelComplete e = (RFCOMMEventOpenChannelComplete) packet;
+			if (packet instanceof RFCOMMEventChannelOpened){
+				RFCOMMEventChannelOpened e = (RFCOMMEventChannelOpened) packet;
 				if (e.getStatus() != 0) {
 					addMessage("RFCOMM channel open failed, status " + e.getStatus());
 				} else {
