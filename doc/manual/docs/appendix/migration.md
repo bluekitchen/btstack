@@ -97,7 +97,7 @@ The function to create an SPP SDP record has been moved into *spp_server.h*
 ## ANCS Client
 Renamed to *src/ble/ancs_client*
 
-## Flow control / DAEMON_EVENT_PACKET_SENT
+## Flow control / DAEMON_EVENT_HCI_PACKET_SENT
 
 In BTstack the functions l2cap_can_send_packet_now(..) and rfcomm_can_send_packet(..) must be called before sending the next L2CAP or RFCOMM packet. Before v1.0, we suggested to check with l2cap_can_send_packet_now(..) or rfcomm_can_send_packet(..) whenever an HCI event was received. This has been cleaned up and streamlined in v1.0. 
 
