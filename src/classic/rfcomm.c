@@ -1937,6 +1937,16 @@ int rfcomm_can_send_packet_now(uint16_t rfcomm_cid){
     return res;
 }
 
+void rfcomm_request_can_send_now_event(uint16_t rfcomm_cid){
+    rfcomm_channel_t * channel = rfcomm_channel_for_rfcomm_cid(rfcomm_cid);
+    if (!channel){
+        log_error("rfcomm_send cid 0x%02x doesn't exist!", rfcomm_cid);
+        return;
+    }
+    channel->waiting_for_can_send_now = 1;
+    rfcomm_notify_channel_can_send();
+}
+
 static int rfcomm_assert_send_valid(rfcomm_channel_t * channel , uint16_t len){
     if (len > channel->max_frame_size){
         log_error("rfcomm_send cid 0x%02x, rfcomm data lenght exceeds MTU!", channel->rfcomm_cid);

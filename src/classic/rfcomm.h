@@ -319,37 +319,61 @@ void rfcomm_decline_connection(uint16_t rfcomm_cid);
 void rfcomm_grant_credits(uint16_t rfcomm_cid, uint8_t credits);
 
 /** 
- * @brief Checks if RFCOMM can send packet. Returns yes if packet can be sent.
+ * @brief Checks if RFCOMM can send packet. 
+ * @note If packet cannot be sent now, a RFCOMM_EVENT_CAN_SEND_NOW will be emitted later
+ * @param rfcomm_cid
+ * @result != 0 if can send now
  */
 int rfcomm_can_send_packet_now(uint16_t rfcomm_cid);
 
 /** 
+ * @brief Request emission of RFCOMM_EVENT_CAN_SEND_NOW as soon as possible
+ * @note RFCOMM_EVENT_CAN_SEND_NOW might be emitted during call to this function
+ *       so packet handler should be ready to handle it
+ * @param rfcomm_cid
+ */
+void rfcomm_request_can_send_now_event(uint16_t rfcomm_cid);
+
+/** 
  * @brief Sends RFCOMM data packet to the RFCOMM channel with given identifier.
+ * @param rfcomm_cid
  */
 int  rfcomm_send(uint16_t rfcomm_cid, uint8_t *data, uint16_t len);
 
 /** 
  * @brief Sends Local Line Status, see LINE_STATUS_..
+ * @param rfcomm_cid
+ * @param line_status
  */
 int rfcomm_send_local_line_status(uint16_t rfcomm_cid, uint8_t line_status);
 
 /** 
  * @brief Send local modem status. see MODEM_STAUS_..
+ * @param rfcomm_cid
+ * @param modem_status
  */
 int rfcomm_send_modem_status(uint16_t rfcomm_cid, uint8_t modem_status);
 
 /** 
  * @brief Configure remote port 
+ * @param rfcomm_cid
+ * @param baud_rate
+ * @param data_bits
+ * @param stop_bits
+ * @param parity
+ * @param flow_control
  */
 int rfcomm_send_port_configuration(uint16_t rfcomm_cid, rpn_baud_t baud_rate, rpn_data_bits_t data_bits, rpn_stop_bits_t stop_bits, rpn_parity_t parity, rpn_flow_control_t flow_control);
 
 /** 
  * @brief Query remote port 
+ * @param rfcomm_cid
  */
 int rfcomm_query_port_configuration(uint16_t rfcomm_cid);
 
 /** 
  * @brief Query max frame size
+ * @param rfcomm_cid
  */
 uint16_t  rfcomm_get_max_frame_size(uint16_t rfcomm_cid);
 
