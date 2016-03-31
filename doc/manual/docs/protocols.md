@@ -199,29 +199,42 @@ in Listing [below](#lst:L2CAPremoteService).
 
     btstack_packet_handler_t l2cap_packet_handler;
 
-    void btstack_setup(){
-        ...
-        l2cap_init();
+    void l2cap_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+        bd_addr_t event_addr;
+        switch (packet_type){
+            case HCI_EVENT_PACKET:
+                switch (hci_event_packet_get_type(packet)){
+                    case L2CAP_EVENT_CHANNEL_OPENED:
+                        l2cap_event_channel_opened_get_address(packet, &event_addr);
+                        psm       = l2cap_event_channel_opened_get_psm(packet); 
+                        local_cid = l2cap_event_channel_opened_get_local_cid(packet); 
+                        handle    = l2cap_event_channel_opened_get_handle(packet);
+                        if (l2cap_event_channel_opened_get_status(packet)) {
+                            printf("Connection failed\n\r");
+                        } else 
+                            printf("Connected\n\r");
+                        }
+                        break;
+                    case L2CAP_EVENT_CHANNEL_CLOSED:
+                        break;
+                        ...
+                }
+            case L2CAP_DATA_PACKET:
+                // handle L2CAP data packet
+                break;
+            ...
+        }
     }
 
     void create_outgoing_l2cap_channel(bd_addr_t address, uint16_t psm, uint16_t mtu){
          l2cap_create_channel(NULL, l2cap_packet_handler, remote_bd_addr, psm, mtu);
     }
 
-    void l2cap_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-        if (packet_type == HCI_EVENT_PACKET &&
-              packet[0] == L2CAP_EVENT_CHANNEL_OPENED){
-            if (packet[2]) {
-                printf("Connection failed\n\r");
-                return;
-            }
-            printf("Connected\n\r");
-        }
-        if (packet_type == L2CAP_DATA_PACKET){
-            // handle L2CAP data packet
-            return;
-        }
+    void btstack_setup(){
+        ...
+        l2cap_init();
     }
+
 ~~~~ 
 
 ### Provide an L2CAP service
@@ -231,20 +244,47 @@ must init the L2CAP layer and register the service with
 *l2cap_register_service*. From there on, it can wait for
 incoming L2CAP connections. The application can accept or deny an
 incoming connection by calling the *l2cap_accept_connection*
-and *l2cap_deny_connection* functions respectively. If a
-connection is accepted and the incoming L2CAP channel gets successfully
-opened, the L2CAP service can send L2CAP data packets to the connected
-device with *l2cap_send*.
+and *l2cap_deny_connection* functions respectively. 
 
-Sending of L2CAP data packets may fail due to a full internal BTstack
-outgoing packet buffer, or if the ACL buffers in the Bluetooth module
-become full, i.e., if the application is sending faster than the packets
-can be transferred over the air.
+If a connection is accepted and the incoming L2CAP channel gets successfully
+opened, the L2CAP service can send and receive L2CAP data packets to the connected
+device with *l2cap_send*.
 
 Listing [below](#lst:L2CAPService)
 provides L2CAP service example code.
 
 ~~~~ {#lst:L2CAPService .c caption="{Providing an L2CAP service.}"}
+
+    void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+        bd_addr_t event_addr;
+        switch (packet_type){
+            case HCI_EVENT_PACKET:
+                switch (hci_event_packet_get_type(packet)){
+                    case L2CAP_EVENT_INCOMING_CONNECTION:
+                        local_cid = l2cap_event_incoming_connection_get_local_cid(packet); 
+                        l2cap_accept_connection(local_cid);
+                        break;
+                    case L2CAP_EVENT_CHANNEL_OPENED:
+                        l2cap_event_channel_opened_get_address(packet, &event_addr);
+                        psm       = l2cap_event_channel_opened_get_psm(packet); 
+                        local_cid = l2cap_event_channel_opened_get_local_cid(packet); 
+                        handle    = l2cap_event_channel_opened_get_handle(packet);
+                        if (l2cap_event_channel_opened_get_status(packet)) {
+                            printf("Connection failed\n\r");
+                        } else 
+                            printf("Connected\n\r");
+                        }
+                        break;
+                    case L2CAP_EVENT_CHANNEL_CLOSED:
+                        break;
+                        ...
+                }
+            case L2CAP_DATA_PACKET:
+                // handle L2CAP data packet
+                break;
+            ...
+        }
+    }
 
     void btstack_setup(){
         ...
@@ -252,50 +292,20 @@ provides L2CAP service example code.
         l2cap_register_service(NULL, packet_handler, 0x11,100);
     }
 
-    void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-          ...
-          if (packet_type == L2CAP_DATA_PACKET){
-            // handle L2CAP data packet
-            return;
-        }
-        switch(event){
-            ...
-            case L2CAP_EVENT_INCOMING_CONNECTION:
-                bt_flip_addr(event_addr, &packet[2]);
-                handle     = little_endian_read_16(packet, 8); 
-                psm        = little_endian_read_16(packet, 10); 
-                local_cid  = little_endian_read_16(packet, 12); 
-                printf("L2CAP incoming connection requested.");
-                l2cap_accept_connection(local_cid);
-                break;
-            case L2CAP_EVENT_CHANNEL_OPENED:
-                bt_flip_addr(event_addr, &packet[3]);
-                psm = little_endian_read_16(packet, 11); 
-                local_cid = little_endian_read_16(packet, 13); 
-                handle = little_endian_read_16(packet, 9);
-                if (packet[2] == 0) {
-                    printf("Channel successfully opened.");
-                } else {
-                    printf("L2CAP connection failed. status code.");
-                }
-                break;        
-            case L2CAP_EVENT_CAN_SEND_NOW:
-                send_now();
-                break;
-            case L2CAP_EVENT_CHANNEL_CLOSED:
-                break;
-        }
-    }
 ~~~~ 
 
-### L2CAP - Sending packets {#sec:l2capFlowControlProtocols}
+### Sending L2CAP Data {#sec:l2capSendProtocols}
+
+Sending of L2CAP data packets may fail due to a full internal BTstack
+outgoing packet buffer, or if the ACL buffers in the Bluetooth module
+become full, i.e., if the application is sending faster than the packets
+can be transferred over the air.
 
 Instead of directly calling *l2cap_send*, it is recommended to call
 *l2cap_request_can_send_now_event* which will trigger an L2CAP_EVENT_CAN_SEND_NOW
 as soon as possible. This might be even be immediately from inside the 
 *l2cap_request_can_send_now_event*. On L2CAP_EVENT_CAN_SEND_NOW, sending to the
 channel indicated in the event is guaranteed to succedd. 
-
 
 ## RFCOMM - Radio Frequency Communication Protocol
 
@@ -348,30 +358,39 @@ Listing [below](#lst:RFCOMMremoteService).
 
 ~~~~ {#lst:RFCOMMremoteService .c caption="{RFCOMM handler for outgoing RFCOMM channel.}"}
 
-    void init_rfcomm(){
-        ...
-        rfcomm_init();
-        rfcomm_register_packet_handler(packet_handler);
+    void rfcomm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+        switch (packet_type){
+            case HCI_EVENT_PACKET:
+                switch (hci_event_packet_get_type(packet)){
+                    case RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE:
+                        if (rfcomm_event_open_channel_complete_get_status(packet)) {
+                            printf("Connection failed\n\r");
+                        } else {
+                            printf("Connected\n\r");
+                        }
+                        break;
+                    case RFCOMM_EVENT_CHANNEL_CLOSED:
+                        break;
+                    ...
+                }
+                break;
+            case RFCOMM_DATA_PACKET:
+                // handle RFCOMM data packets
+                return;
+        }
     }
 
     void create_rfcomm_channel(uint8_t packet_type, uint8_t *packet, uint16_t size){
-        rfcomm_create_channel(connection, addr, rfcomm_channel);
+        rfcomm_create_channel(rfcomm_packet_handler, addr, rfcomm_channel);
     }
 
-    void rfcomm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-        if (packet_type == HCI_EVENT_PACKET && packet[0] == RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE){
-            if (packet[2]) {
-                printf("Connection failed\n\r");
-                return;
-            }
-            printf("Connected\n\r");
-        }
-        
-        if (packet_type == RFCOMM_DATA_PACKET){
-            // handle RFCOMM data packets
-            return;
-        }
+    void btstack_setup(){
+        ...
+        l2cap_init();
+        rfcomm_init();
     }
+
+
 ~~~~ 
 
 ### Provide an RFCOMM service {#sec:rfcommServiceProtocols}
@@ -381,61 +400,58 @@ device must first init the L2CAP and RFCOMM layers and then register the
 service with *rfcomm_register_service*. From there on, it
 can wait for incoming RFCOMM connections. The application can accept or
 deny an incoming connection by calling the
-*rfcomm_accept_connection* and
-*rfcomm_deny_connection* functions respectively. If a
-connection is accepted and the incoming RFCOMM channel gets successfully
+*rfcomm_accept_connection* and *rfcomm_deny_connection* functions respectively.
+If a connection is accepted and the incoming RFCOMM channel gets successfully
 opened, the RFCOMM service can send RFCOMM data packets to the connected
 device with *rfcomm_send* and receive data packets by the
 packet handler provided by the *rfcomm_register_service*
 call.
 
-Listing [below](#lst:RFCOMMService)
-provides the RFCOMM service example code.
-
+Listing [below](#lst:RFCOMMService) provides the RFCOMM service example code.
 
 ~~~~ {#lst:RFCOMMService .c caption="{Providing an RFCOMM service.}"}
     
+    void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+        switch (packet_type){
+            case HCI_EVENT_PACKET:
+                switch (hci_event_packet_get_type(packet)){
+                    case RFCOMM_EVENT_INCOMING_CONNECTION:
+                        rfcomm_channel_id = rfcomm_event_incoming_connection_get_rfcomm_cid(packet);
+                        rfcomm_accept_connection(rfcomm_channel_id);
+                        break;
+                    case RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE:
+                        if (rfcomm_event_open_channel_complete_get_status(packet)){
+                            printf("RFCOMM channel open failed.");
+                            break;
+                        } 
+                        rfcomm_channel_id = rfcomm_event_open_channel_complete_get_rfcomm_cid(packet);
+                        mtu = rfcomm_event_open_channel_complete_get_max_frame_size(packet);
+                        printf("RFCOMM channel open succeeded, max frame size %u.", mtu);
+                        break;
+                    case RFCOMM_EVENT_CHANNEL_CLOSED:
+                        printf("Channel closed.");
+                        break;
+                    ...
+                }
+                break;
+            case RFCOMM_DATA_PACKET:
+                // handle RFCOMM data packets
+                return;
+            ...
+        }
+        ...
+    }
+    
     void btstack_setup(){
         ...
+        l2cap_init();
         rfcomm_init();
-        rfcomm_register_service(NULL, rfcomm_channel_nr, mtu); 
+        rfcomm_register_service(packet_handler, rfcomm_channel_nr, mtu); 
     }
 
-    void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-        if (packet_type == RFCOMM_DATA_PACKET){
-            // handle RFCOMM data packets
-            return;
-        }
-        ...
-        switch (packet[0]) {
-            ...
-            case RFCOMM_EVENT_INCOMING_CONNECTION:
-                //data: event(8), len(8), address(48), channel(8), rfcomm_cid(16)
-                bt_flip_addr(event_addr, &packet[2]); 
-                rfcomm_channel_nr = packet[8];
-                rfcomm_channel_id = little_endian_read_16(packet, 9);
-                rfcomm_accept_connection(rfcomm_channel_id);
-                break;
-            case RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE:
-               // data: event(8), len(8), status (8), address (48), handle(16), server channel(8), rfcomm_cid(16), max frame size(16)
-                if (packet[2]) {
-                    printf("RFCOMM channel open failed.");
-                    break;
-                } 
-               // data: event(8), len(8), status (8), address (48), handle (16), server channel(8), rfcomm_cid(16), max frame size(16)
-               rfcomm_channel_id = little_endian_read_16(packet, 12);
-               mtu = little_endian_read_16(packet, 14);
-               printf("RFCOMM channel open succeeded.");
-               break;
-            case RFCOMM_EVENT_CHANNEL_CLOSED:
-                printf("Channel closed.");
-                rfcomm_channel_id = 0;
-            break;
-        }
-    }
 ~~~~ 
 
-### Living with a single output buffer {#sec:singleBufferProtocols}
+### Sending RFCOMM data {#sec:rfcommSendProtocols}
 
 Outgoing packets, both commands and data, are not queued in BTstack.
 This section explains the consequences of this design decision for
@@ -450,46 +466,25 @@ the RFCOMM send rate.
 
 When there's a need to send a packet, call *rcomm_request_can_send_now* 
 directly and send the packet when the RFCOMM_EVENT_CAN_SEND_NOW event
-gets received.
+gets receive as shown in Listing [below](#lst:rfcommRequestCanSendNow).
 
-Before sending data packets, check if RFCOMM can send them by calling
-*rfcomm_can_send_packet_now*, as shown in Listing [below](#lst:SingleOutputBufferTryToSend).
-
-Sending of RFCOMM data packets may fail due to a full internal BTstack
-outgoing packet buffer, or if the ACL buffers in the Bluetooth module
-become full, i.e., if the application is sending faster than the packets
-can be transferred over the air.
-
-RFCOMM’s mandatory credit-based flow-control imposes an additional
-constraint on sending a data packet - at least one new RFCOMM credit
-must be available. BTstack signals the availability of a credit by
-sending an RFCOMM credit (RFCOMM_EVENT_CREDITS) event.
-
-These two events represent two orthogonal mechanisms that deal with flow
-control. BTstack provides a unified approach to send efficiently.
-
-If calling *rfcomm_can_send_packet_now* returns false, and it is not possible to send right away,
-BTstack will keep track of the applications request to send a packet and later emit an RFCOMM_EVENT_CAN_SEND_NOW
-as soon as it becomes possible to send again. L2CAP, BNEP, and ATT API offer similar functionality.
-
-For an RFCOMM example see Listing [below](#lst:SingleOutputBufferTryPH).
-
-~~~~ {#lst:SingleOutputBufferTryToSend .c caption="{Preparing and sending data.}"}    
+~~~~ {#lst:rfcommRequestCanSendNow .c caption="{Preparing and sending data.}"}    
     void prepare_data(void){
         ...
+        // prepare data in data_buffer
         rfcomm_request_can_send_now_event(rfcom_channel_id);
     }
 
     void send_data(void){
-        rfcomm_send(rfcomm_channel_id,  dataBuffer, dataLen);
-        // packet is sent prepare next one
+        rfcomm_send(rfcomm_channel_id,  data_buffer, data_len);
+        // packet is handed over to BTstack, we can prepare the next one
         prepare_data();
     }
 
     void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
         switch (packet_type){
             case HCI_EVENT_PACKET:
-                switch (packet[0]){
+                switch (hci_event_packet_get_type(packet)){
                     ...
                     case RFCOMM_CAN_SEND_NOW:
                         send_data(;
@@ -501,31 +496,6 @@ For an RFCOMM example see Listing [below](#lst:SingleOutputBufferTryPH).
         }
     }
 
-~~~~ 
-
-~~~~ {#lst:SingleOutputBufferTryPH .c caption="{Resending data packets.}"} 
-
-    void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-        ...
-        switch(event){
-            case RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE:
-                if (status) {
-                    printf("RFCOMM channel open failed.");
-                } else {
-                    rfcomm_channel_id = little_endian_read_16(packet, 12);
-                    rfcomm_mtu = little_endian_read_16(packet, 14);
-                    printf("RFCOMM channel opened, mtu = %u.", rfcomm_mtu);
-                }
-                break; 
-            case RFCOMM_EVENT_CAN_SEND_NOW:
-                tryToSend();
-                break;
-            case RFCOMM_EVENT_CHANNEL_CLOSED:
-                rfcomm_channel_id = 0;
-                break;
-           ...
-           }
-    }
 ~~~~ 
 
 ### Slowing down RFCOMM data reception {#sec:manualCreditsProtocols}
@@ -543,15 +513,13 @@ connection is used. See Listing [below](#lst:automaticFlowControl).
         ...
         // init RFCOMM
         rfcomm_init();
-        rfcomm_register_packet_handler(packet_handler);
-        rfcomm_register_service(NULL, rfcomm_channel_nr, 100); 
+        rfcomm_register_service(packet_handler, rfcomm_channel_nr, 100); 
     }
 ~~~~ 
 
 If the management of credits is manual, credits are provided by the
 application such that it can manage its receive buffers explicitly, see
 Listing [below](#lst:explicitFlowControl).
-
 
 Manual credit management is recommended when received RFCOMM data cannot
 be processed immediately. In the [SPP flow control example](examples/generated/#sec:sppflowcontrolExample), 
@@ -565,9 +533,8 @@ and the number of credits as shown in Listing [below](#lst:NewCredits).
         ...
         // init RFCOMM
         rfcomm_init();
-        rfcomm_register_packet_handler(packet_handler);
         // reserved channel, mtu=100, 1 credit
-        rfcomm_register_service_with_initial_credits(NULL, rfcomm_channel_nr, 100, 1);  
+        rfcomm_register_service_with_initial_credits(packet_handler, rfcomm_channel_nr, 100, 1);  
     }
 ~~~~ 
 
