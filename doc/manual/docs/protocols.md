@@ -298,11 +298,10 @@ become full, i.e., if the application is sending faster than the packets
 can be transferred over the air.
 
 Instead of directly calling *l2cap_send*, it is recommended to call
-*l2cap_request_can_send_now_event* which will trigger an L2CAP_EVENT_CAN_SEND_NOW
-as soon as possible. This might be even be immediately from inside the 
-*l2cap_request_can_send_now_event* call. 
-On L2CAP_EVENT_CAN_SEND_NOW, sending to the
-channel indicated in the event is guaranteed to succedd. 
+*l2cap_request_can_send_now_event(cahnnel_id)* which will trigger an L2CAP_EVENT_CAN_SEND_NOW
+as soon as possible. It might happen that the event is received via 
+packet handler before the *l2cap_request_can_send_now_event* function returns.
+The L2CAP_EVENT_CAN_SEND_NOW indicates a channel ID on which sending is possible.
 
 ## RFCOMM - Radio Frequency Communication Protocol
 
@@ -517,21 +516,21 @@ assumption, the single output buffer design does not impose additional
 restrictions. In the following, we show how this is used for adapting
 the RFCOMM send rate.
 
-When there's a need to send a packet, call *rcomm_request_can_send_now* 
-and send the packet when the RFCOMM_EVENT_CAN_SEND_NOW event
-gets receive as shown in Listing [below](#lst:rfcommRequestCanSendNow).
+When there is a need to send a packet, call *rcomm_request_can_send_now* 
+and wait for the reception of the RFCOMM_EVENT_CAN_SEND_NOW event 
+to send the packet, as shown in Listing [below](#lst:rfcommRequestCanSendNow).
 
 ~~~~ {#lst:rfcommRequestCanSendNow .c caption="{Preparing and sending data.}"}    
-    void prepare_data(void){
+    void prepare_data(uint16_t rfcomm_channel_id){
         ...
         // prepare data in data_buffer
-        rfcomm_request_can_send_now_event(rfcom_channel_id);
+        rfcomm_request_can_send_now_event(rfcomm_channel_id);
     }
 
-    void send_data(void){
+    void send_data(uint16_t rfcomm_channel_id){
         rfcomm_send(rfcomm_channel_id,  data_buffer, data_len);
         // packet is handed over to BTstack, we can prepare the next one
-        prepare_data();
+        prepare_data(rfcomm_channel_id);
     }
 
     void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
@@ -539,8 +538,9 @@ gets receive as shown in Listing [below](#lst:rfcommRequestCanSendNow).
             case HCI_EVENT_PACKET:
                 switch (hci_event_packet_get_type(packet)){
                     ...
-                    case RFCOMM_CAN_SEND_NOW:
-                        send_data(;
+                    case RFCOMM_EVENT_CAN_SEND_NOW:
+                        rfcomm_channel_id = rfcomm_event_can_send_now_get_rfcomm_cid(packet);
+                        send_data(rfcomm_channel_id);
                         break;
                     ...
                 }
