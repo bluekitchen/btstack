@@ -239,11 +239,13 @@ device with *l2cap_send*.
 Sending of L2CAP data packets may fail due to a full internal BTstack
 outgoing packet buffer, or if the ACL buffers in the Bluetooth module
 become full, i.e., if the application is sending faster than the packets
-can be transferred over the air. In such case, the application can try
-sending again upon reception of DAEMON_EVENT_HCI_PACKET_SENT or
-L2CAP_EVENT_CREDITS event. The first event signals that the internal
-BTstack outgoing buffer became free again, the second one signals the
-same for ACL buffers in the Bluetooth chipset. Listing [below](#lst:L2CAPService)
+can be transferred over the air.
+
+Instead of directly calling *l2cap_send*, it is recommended to first call
+*l2cap_can_send_packet_now*. If true, then sending will not fail. If false,
+BTstack will emit an L2CAP_EVENT_CAN_SEND_NOW when it is possible to send again.
+
+Listing [below](#lst:L2CAPService)
 provides L2CAP service example code.
 
 
@@ -282,8 +284,7 @@ provides L2CAP service example code.
                     printf("L2CAP connection failed. status code.");
                 }
                 break;        
-            case L2CAP_EVENT_CREDITS:
-            case DAEMON_EVENT_HCI_PACKET_SENT:
+            case L2CAP_EVENT_CAN_SEND_NOW:
                 tryToSend();
                 break;
             case L2CAP_EVENT_CHANNEL_CLOSED:
@@ -291,14 +292,6 @@ provides L2CAP service example code.
         }
     }
 ~~~~ 
-
-### L2CAP LE - L2CAP Low Energy Protocol
-
-In addition to the full L2CAP implementation in the *src* folder,
-BTstack provides an optimized *l2cap_le* implementation in the *ble*
-folder. This L2CAP LE variant can be used for single-mode devices and
-provides the base for the ATT and SMP protocols.
-
 
 ## RFCOMM - Radio Frequency Communication Protocol
 
@@ -463,8 +456,9 @@ assumption, the single output buffer design does not impose additional
 restrictions. In the following, we show how this is used for adapting
 the RFCOMM send rate.
 
-Before sending data packets, check if RFCOMM can send them by calling rfcomm_can_send_packet_now, as shown in Listing [below](#lst:SingleOutputBufferTryToSend). L2CAP, BNEP, and ATT API offer similar functions. 
-
+Before sending data packets, check if RFCOMM can send them by calling
+*rfcomm_can_send_packet_now*, as shown in Listing [below](#lst:SingleOutputBufferTryToSend).
+ 
 ~~~~ {#lst:SingleOutputBufferTryToSend .c caption="{Preparing and sending data.}"}    
     void prepareData(void){
         ...
@@ -475,11 +469,8 @@ Before sending data packets, check if RFCOMM can send them by calling rfcomm_can
         if (!rfcomm_channel_id) return;
         if (!rfcomm_can_send_packet_now(rfcomm_channel_id)) return;
 
-        int err = rfcomm_send(rfcomm_channel_id,  dataBuffer, dataLen);
-        if (err) {
-            log_error("rfcomm_send -> error 0X%02x", err);
-            return;
-        }
+        rfcomm_send(rfcomm_channel_id,  dataBuffer, dataLen);
+
         // packet is sent prepare next one
         prepareData();
     }
@@ -491,9 +482,13 @@ must be available. BTstack signals the availability of a credit by
 sending an RFCOMM credit (RFCOMM_EVENT_CREDITS) event.
 
 These two events represent two orthogonal mechanisms that deal with flow
-control. Taking these mechanisms in account, the application should try
-to send data packets when one of these two events is received. For an
-RFCOMM example see Listing [below](#lst:SingleOutputBufferTryPH).
+control. BTstack provides a unified approach to send efficiently.
+
+If calling *rfcomm_can_send_packet_now* returns false, and it is not possible to send right away,
+BTstack will keep track of the applications request to send a packet and later emit an RFCOMM_EVENT_CAN_SEND_NOW
+as soon as it becomes possible to send again. L2CAP, BNEP, and ATT API offer similar functionality.
+
+For an RFCOMM example see Listing [below](#lst:SingleOutputBufferTryPH).
 
 
 ~~~~ {#lst:SingleOutputBufferTryPH .c caption="{Resending data packets.}"} 
@@ -509,9 +504,8 @@ RFCOMM example see Listing [below](#lst:SingleOutputBufferTryPH).
                     rfcomm_mtu = little_endian_read_16(packet, 14);
                     printf("RFCOMM channel opened, mtu = %u.", rfcomm_mtu);
                 }
-                break;
-            case RFCOMM_EVENT_CREDITS:
-            case DAEMON_EVENT_HCI_PACKET_SENT:
+                break; 
+            case RFCOMM_EVENT_CAN_SEND_NOW:
                 tryToSend();
                 break;
             case RFCOMM_EVENT_CHANNEL_CLOSED:
