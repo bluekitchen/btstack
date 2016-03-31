@@ -448,53 +448,6 @@ Listing [below](#lst:RFCOMMService) provides the RFCOMM service example code.
 
 ~~~~ 
 
-### Sending RFCOMM data {#sec:rfcommSendProtocols}
-
-Outgoing packets, both commands and data, are not queued in BTstack.
-This section explains the consequences of this design decision for
-sending data and why it is not as bad as it sounds.
-
-Independent from the number of output buffers, packet generation has to
-be adapted to the remote receiver and/or maximal link speed. Therefore,
-a packet can only be generated when it can get sent. With this
-assumption, the single output buffer design does not impose additional
-restrictions. In the following, we show how this is used for adapting
-the RFCOMM send rate.
-
-When there's a need to send a packet, call *rcomm_request_can_send_now* 
-and send the packet when the RFCOMM_EVENT_CAN_SEND_NOW event
-gets receive as shown in Listing [below](#lst:rfcommRequestCanSendNow).
-
-~~~~ {#lst:rfcommRequestCanSendNow .c caption="{Preparing and sending data.}"}    
-    void prepare_data(void){
-        ...
-        // prepare data in data_buffer
-        rfcomm_request_can_send_now_event(rfcom_channel_id);
-    }
-
-    void send_data(void){
-        rfcomm_send(rfcomm_channel_id,  data_buffer, data_len);
-        // packet is handed over to BTstack, we can prepare the next one
-        prepare_data();
-    }
-
-    void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-        switch (packet_type){
-            case HCI_EVENT_PACKET:
-                switch (hci_event_packet_get_type(packet)){
-                    ...
-                    case RFCOMM_CAN_SEND_NOW:
-                        send_data(;
-                        break;
-                    ...
-                }
-                ...
-            }
-        }
-    }
-
-~~~~ 
-
 ### Slowing down RFCOMM data reception {#sec:manualCreditsProtocols}
 
 RFCOMM’s credit-based flow-control can be used to adapt, i.e., slow down
@@ -550,6 +503,67 @@ limits the data throughput substantially. On the plus side, it allows
 for a minimal memory footprint. If possible, multiple RFCOMM buffers
 should be used to avoid pauses while the sender has to wait for a new
 credit.
+
+### Sending RFCOMM data {#sec:rfcommSendProtocols}
+
+Outgoing packets, both commands and data, are not queued in BTstack.
+This section explains the consequences of this design decision for
+sending data and why it is not as bad as it sounds.
+
+Independent from the number of output buffers, packet generation has to
+be adapted to the remote receiver and/or maximal link speed. Therefore,
+a packet can only be generated when it can get sent. With this
+assumption, the single output buffer design does not impose additional
+restrictions. In the following, we show how this is used for adapting
+the RFCOMM send rate.
+
+When there's a need to send a packet, call *rcomm_request_can_send_now* 
+and send the packet when the RFCOMM_EVENT_CAN_SEND_NOW event
+gets receive as shown in Listing [below](#lst:rfcommRequestCanSendNow).
+
+~~~~ {#lst:rfcommRequestCanSendNow .c caption="{Preparing and sending data.}"}    
+    void prepare_data(void){
+        ...
+        // prepare data in data_buffer
+        rfcomm_request_can_send_now_event(rfcom_channel_id);
+    }
+
+    void send_data(void){
+        rfcomm_send(rfcomm_channel_id,  data_buffer, data_len);
+        // packet is handed over to BTstack, we can prepare the next one
+        prepare_data();
+    }
+
+    void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+        switch (packet_type){
+            case HCI_EVENT_PACKET:
+                switch (hci_event_packet_get_type(packet)){
+                    ...
+                    case RFCOMM_CAN_SEND_NOW:
+                        send_data(;
+                        break;
+                    ...
+                }
+                ...
+            }
+        }
+    }
+
+~~~~ 
+
+### Optimized sending of RFCOMM data
+
+When sending RFCOMM data via *rfcomm_send*, BTstack needs to copy the data
+from the user provided buffer into the outgoing buffer. This requires both
+an additional buffer for the user data as well requires a copy operation.
+
+To avoid this, it is possible to directly write the user data into the outgoing buffer.
+
+When get the RFCOMM_CAN_SEND_NOW event, you call *rfcomm_reserve_packet_buffer* to
+lock the buffer for your send operation. Then, you can ask how many bytes you can send 
+with *rfcomm_get_max_frame_size* and get a pointer to BTstack's buffer with
+*rfcomm_get_outgoing_buffer*. Now, you can fill that buffer and finally send the
+data with *rfcomm_send_prepared*.
 
 
 ## SDP - Service Discovery Protocol
