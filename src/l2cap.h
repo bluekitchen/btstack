@@ -174,6 +174,9 @@ int  l2cap_send_prepared_connectionless(hci_con_handle_t con_handle, uint16_t ci
 int l2cap_send_echo_request(hci_con_handle_t con_handle, uint8_t *data, uint16_t len);
 void l2cap_require_security_level_2_for_outgoing_sdp(void);
 
+// Used by RFCOMM - similar to l2cap_can-send_packet_now but does not check if outgoing buffer is reserved
+int  l2cap_can_send_prepared_packet_now(uint16_t local_cid);
+
 /* API_START */
 
 /** 
@@ -248,9 +251,12 @@ void l2cap_decline_connection(uint16_t local_cid, uint8_t reason);
 int  l2cap_can_send_packet_now(uint16_t local_cid);    
 
 /** 
- * @brief Check if there's space on the Bluetooth module
+ * @brief Request emission of L2CAP_EVENT_CAN_SEND_NOW as soon as possible
+ * @note L2CAP_EVENT_CAN_SEND_NOW might be emitted during call to this function
+ *       so packet handler should be ready to handle it
+ * @param local_cid
  */
-int  l2cap_can_send_prepared_packet_now(uint16_t local_cid);
+void l2cap_request_can_send_now_event(uint16_t local_cid);
 
 /** 
  * @brief Reserve outgoing buffer
