@@ -51,15 +51,11 @@ layer (L2CAP) packets.
 
 Please note, that an application rarely has to send HCI commands on its
 own. Instead, BTstack provides convenience functions in GAP and higher
-level protocols use HCI automatically. E.g. to set the name, you can
+level protocols that use HCI automatically. E.g. to set the name, you
 call *gap_set_local_name()* before powering up. The main use of HCI
 commands in application is during the startup phase to configure special
-features that are not available via the GAP API yet.
-
-However, as many features of the GAP Classic can be achieved by sending
-a single HCI command, not all GAP convenience functions are listed in .
-If there’s no special GAP function, please consider sending the HCI
-command directly, as explained in the following.
+features that are not available via the GAP API yet. How to send a
+custom HCI command is explained in the following section.
 
 ### Defining custom HCI command templates
 
@@ -161,7 +157,7 @@ device name with the HCI Write Local Name command.
 
 Please note, that an application rarely has to send HCI commands on its
 own. Instead, BTstack provides convenience functions in GAP and higher
-level protocols use HCI automatically.
+level protocols that use HCI automatically.
 
 
 ## L2CAP - Logical Link Control and Adaptation Protocol
@@ -304,7 +300,8 @@ can be transferred over the air.
 Instead of directly calling *l2cap_send*, it is recommended to call
 *l2cap_request_can_send_now_event* which will trigger an L2CAP_EVENT_CAN_SEND_NOW
 as soon as possible. This might be even be immediately from inside the 
-*l2cap_request_can_send_now_event*. On L2CAP_EVENT_CAN_SEND_NOW, sending to the
+*l2cap_request_can_send_now_event* call. 
+On L2CAP_EVENT_CAN_SEND_NOW, sending to the
 channel indicated in the event is guaranteed to succedd. 
 
 ## RFCOMM - Radio Frequency Communication Protocol
@@ -465,7 +462,7 @@ restrictions. In the following, we show how this is used for adapting
 the RFCOMM send rate.
 
 When there's a need to send a packet, call *rcomm_request_can_send_now* 
-directly and send the packet when the RFCOMM_EVENT_CAN_SEND_NOW event
+and send the packet when the RFCOMM_EVENT_CAN_SEND_NOW event
 gets receive as shown in Listing [below](#lst:rfcommRequestCanSendNow).
 
 ~~~~ {#lst:rfcommRequestCanSendNow .c caption="{Preparing and sending data.}"}    
@@ -678,7 +675,6 @@ of L2CAP, and it specifies a minimum L2CAP MTU of 1691 bytes.
 To receive BNEP events, please register a packet handler with
 *bnep_register_packet_handler*.
 
-
 ### Access a BNEP service on a remote device {#sec:bnepClientProtocols}
 
 To connect to a remote BNEP service, you need to know its UUID. The set
@@ -700,7 +696,6 @@ multicast filters with *bnep_set_net_type_filter* and
 
 Finally, to close a BNEP connection, you can call *bnep_disconnect*.
 
-
 ### Provide BNEP service {#sec:bnepServiceProtocols}
 
 To provide a BNEP service, call *bnep_register_service* with the
@@ -710,25 +705,35 @@ A *BNEP_EVENT_INCOMING_CONNECTION* event will mark that an incoming
 connection is established. At this point you can start sending and
 receiving Ethernet packets as described in the previous section.
 
+### Sending Ethernet packets
+
+Similar to L2CAP and RFOMM, directly sending an Ethernet packet via BNEP might fail,
+if the outgoing packet buffer or the ACL buffers in the Bluetooth module are full.
+
+When there's a need to send an Ethernet packet, call *bnep_request_can_send_now* 
+and send the packet when the BNEP_EVENT_CAN_SEND_NOW event
+gets received.
+
+
 ## ATT - Attribute Protocol
 
 The ATT protocol is used by an ATT client to read and write attribute
 values stored on an ATT server. In addition, the ATT server can notify
 the client about attribute value changes. An attribute has a handle, a
-type, and a set of properties, see Section [section:GATTServer].
+type, and a set of properties.
 
 The Generic Attribute (GATT) profile is built upon ATT and provides
 higher level organization of the ATT attributes into GATT Services and
 GATT Characteristics. In BTstack, the complete ATT client functionality
-is included within the GATT Client. On the server side, one ore more
-GATT profiles are converted ahead of time into the corresponding ATT
-attribute database and provided by the *att_server* implementation. The
-constant data are automatically served by the ATT server upon client
+is included within the GATT Client. See [GATT client](profiles/#sec:GATTClientProfiles) for more.
+
+On the server side, one ore more GATT profiles are converted ahead of time 
+into the corresponding ATT attribute database and provided by the *att_server*
+implementation. The constant data are automatically served by the ATT server upon client
 request. To receive the dynamic data, such is characteristic value, the
 application needs to register read and/or write callback. In addition,
 notifications and indications can be sent. Please see Section on 
-[GATT client](profiles/#sec:GATTClientProfiles) for more.
-
+[GATT server](section:profiles/#sec:GATTServerProfile) for more.
 
 ## SMP - Security Manager Protocol {#sec:smpProtocols}
 

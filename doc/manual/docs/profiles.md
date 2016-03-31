@@ -174,7 +174,6 @@ bonding via the *gap_dedicated_bonding* function.
 
 ## SPP - Serial Port Profile
 
-
 The SPP profile defines how to set up virtual serial ports and connect
 two Bluetooth enabled devices.
 
@@ -355,7 +354,6 @@ Services are queried and modified via ATT operations.
 GATT defines both a server and a client role. A device can implement one
 or both GATT roles.
 
-
 ### GATT Client {#sec:GATTClientProfiles}
 
 The GATT Client is used to discover services, and their characteristics
@@ -446,3 +444,6 @@ Characteristics by UUIDs, ATT uses Handles (16 bit values). To allow to
 identify a Characteristic without hard-coding the attribute ID, the GATT
 compiler creates a list of defines in the generated \*.h file.
 
+Similar to other protocols, it might be not possible to send any time.
+To send a Notification, you can call *att_server_request_can_send_now*
+to receive a ATT_EVENT_CAN_SEND_NOW event.
