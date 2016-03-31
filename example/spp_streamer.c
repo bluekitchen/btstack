@@ -133,19 +133,18 @@ static void create_test_data(void){
     }
 }
 
-static void try_send_packets(void){
-    while (rfcomm_can_send_packet_now(rfcomm_cid)){
-        rfcomm_send(rfcomm_cid, (uint8_t*) test_data, test_data_len);
+static void send_packet(void){
+    rfcomm_send(rfcomm_cid, (uint8_t*) test_data, test_data_len);
 
-        test_track_sent(test_data_len);
-        if (data_to_send <= test_data_len){
-            printf("SPP Streamer: enough data send, closing channel\n");
-            rfcomm_disconnect(rfcomm_cid);
-            rfcomm_cid = 0;
-            return;
-        }
-        data_to_send -= test_data_len;
+    test_track_sent(test_data_len);
+    if (data_to_send <= test_data_len){
+        printf("SPP Streamer: enough data send, closing channel\n");
+        rfcomm_disconnect(rfcomm_cid);
+        rfcomm_cid = 0;
+        return;
     }
+    data_to_send -= test_data_len;
+    rfcomm_request_can_send_now_event(rfcomm_cid);
 }
 
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
@@ -174,12 +173,13 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     test_data_len = mtu;
                 }
                 test_reset();
-                try_send_packets();
+                rfcomm_request_can_send_now_event(rfcomm_cid);
                 break;
             }
             break;
         case RFCOMM_EVENT_CAN_SEND_NOW:
-            try_send_packets();
+            // try_send_packets();
+            send_packet();
             break;
         default:
             break;
