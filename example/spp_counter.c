@@ -141,7 +141,7 @@ static void one_shot_timer_setup(void){
  * - HCI_EVENT_PIN_CODE_REQUEST (Standard pairing) or 
  * - HCI_EVENT_USER_CONFIRMATION_REQUEST (Secure Simple Pairing),
  * - RFCOMM_EVENT_INCOMING_CONNECTION,
- * - RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE, and
+ * - RFCOMM_EVENT_CHANNEL_OPENED, and
  * - RFCOMM_EVENT_CHANNEL_CLOSED
  */
 
@@ -158,7 +158,7 @@ static void one_shot_timer_setup(void){
  * channel number used during the SPP setup phase and the newly assigned RFCOMM
  * channel ID that is used by all BTstack commands and events.
  *
- * If RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE event returns status greater then 0,
+ * If RFCOMM_EVENT_CHANNEL_OPENED event returns status greater then 0,
  * then the channel establishment has failed (rare case, e.g., client crashes).
  * On successful connection, the RFCOMM channel ID and MTU for this
  * channel are made available to the heartbeat counter. After opening the RFCOMM channel, 
@@ -208,7 +208,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     rfcomm_accept_connection(rfcomm_channel_id);
                     break;
                
-                case RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE:
+                case RFCOMM_EVENT_CHANNEL_OPENED:
                     // data: event(8), len(8), status (8), address (48), server channel(8), rfcomm_cid(16), max frame size(16)
                     if (packet[2]) {
                         printf("RFCOMM channel open failed, status %u\n", packet[2]);

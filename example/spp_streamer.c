@@ -160,7 +160,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 sdp_client_query_rfcomm_channel_and_name_for_uuid(&handle_query_rfcomm_event, remote, SDP_PublicBrowseGroup);
             }
             break;
-        case RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE:
+        case RFCOMM_EVENT_CHANNEL_OPENED:
             // data: event(8), len(8), status (8), address (48), handle(16), server channel(8), rfcomm_cid(16), max frame size(16)
             if (packet[2]) {
                 state = DONE;

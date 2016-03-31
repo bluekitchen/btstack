@@ -160,12 +160,12 @@ static void rfcomm_emit_connection_request(rfcomm_channel_t *channel) {
 // next Cydia release will use SVN version of this
 // data: event(8), len(8), status (8), address (48), handle (16), server channel(8), rfcomm_cid(16), max frame size(16)
 static void rfcomm_emit_channel_opened(rfcomm_channel_t *channel, uint8_t status) {
-    log_info("RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE status 0x%x addr %s handle 0x%x channel #%u cid 0x%02x mtu %u",
+    log_info("RFCOMM_EVENT_CHANNEL_OPENED status 0x%x addr %s handle 0x%x channel #%u cid 0x%02x mtu %u",
              status, bd_addr_to_str(channel->multiplexer->remote_addr), channel->multiplexer->con_handle,
              channel->dlci>>1, channel->rfcomm_cid, channel->max_frame_size);
     uint8_t event[16];
     uint8_t pos = 0;
-    event[pos++] = RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE;  // 0
+    event[pos++] = RFCOMM_EVENT_CHANNEL_OPENED;  // 0
     event[pos++] = sizeof(event) - 2;                   // 1
     event[pos++] = status;                              // 2
     reverse_bd_addr(channel->multiplexer->remote_addr, &event[pos]); pos += 6; // 3

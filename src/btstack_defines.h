@@ -406,7 +406,7 @@ typedef uint8_t sm_key_t[16];
  * @param rfcomm_cid
  * @param max_frame_size
  */
-#define RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE                 0x80
+#define RFCOMM_EVENT_CHANNEL_OPENED                 0x80
 
 /**
  * @format 2

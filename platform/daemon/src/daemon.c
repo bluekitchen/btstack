@@ -747,7 +747,7 @@ static void send_rfcomm_create_channel_failed(void * connection, bd_addr_t addr,
     uint8_t event[16];
     memset(event, 0, sizeof(event));
     uint8_t pos = 0;
-    event[pos++] = RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE;
+    event[pos++] = RFCOMM_EVENT_CHANNEL_OPENED;
     event[pos++] = sizeof(event) - 2;
     event[pos++] = status;
     reverse_bd_addr(addr, &event[pos]); pos += 6;
@@ -1554,7 +1554,7 @@ static void daemon_packet_handler(void * connection, uint8_t packet_type, uint16
                     daemon_retry_parked();
                     break;
                 
-                case RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE:
+                case RFCOMM_EVENT_CHANNEL_OPENED:
                     cid = little_endian_read_16(packet, 13);
                     connection = connection_for_rfcomm_cid(cid);
                     if (!connection) break;

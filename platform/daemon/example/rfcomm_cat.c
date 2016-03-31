@@ -99,7 +99,7 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 					bt_send_cmd(&hci_pin_code_request_reply, &event_addr, 4, "0000");
 					break;
 										
-				case RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE:
+				case RFCOMM_EVENT_CHANNEL_OPENED:
 					// data: event(8), len(8), status (8), address (48), handle(16), server channel(8), rfcomm_cid(16), max frame size(16)
 					if (packet[2]) {
 						printf("RFCOMM channel open failed, status %u\n", packet[2]);

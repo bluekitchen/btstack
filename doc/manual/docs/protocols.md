@@ -347,7 +347,7 @@ see Section [on manual credit assignement](#sec:manualCreditsProtocols).
 
 The packet handler that is given as an input parameter of the RFCOMM
 create channel function will be assigned to the new outgoing channel.
-This handler receives the RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE and
+This handler receives the RFCOMM_EVENT_CHANNEL_OPENED and
 RFCOMM_EVENT_CHANNEL_CLOSED events, and RFCOMM data packets, as shown in
 Listing [below](#lst:RFCOMMremoteService).
 
@@ -358,7 +358,7 @@ Listing [below](#lst:RFCOMMremoteService).
         switch (packet_type){
             case HCI_EVENT_PACKET:
                 switch (hci_event_packet_get_type(packet)){
-                    case RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE:
+                    case RFCOMM_EVENT_CHANNEL_OPENED:
                         if (rfcomm_event_open_channel_complete_get_status(packet)) {
                             printf("Connection failed\n\r");
                         } else {
@@ -415,7 +415,7 @@ Listing [below](#lst:RFCOMMService) provides the RFCOMM service example code.
                         rfcomm_channel_id = rfcomm_event_incoming_connection_get_rfcomm_cid(packet);
                         rfcomm_accept_connection(rfcomm_channel_id);
                         break;
-                    case RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE:
+                    case RFCOMM_EVENT_CHANNEL_OPENED:
                         if (rfcomm_event_open_channel_complete_get_status(packet)){
                             printf("RFCOMM channel open failed.");
                             break;
