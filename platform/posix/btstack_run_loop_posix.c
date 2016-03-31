@@ -137,7 +137,7 @@ static uint32_t btstack_run_loop_posix_get_time_ms(void){
     struct timeval tv;
     gettimeofday(&tv, NULL);
     uint32_t time_ms = ((tv.tv_sec  - init_tv.tv_sec) * 1000) + (tv.tv_usec / 1000);
-    log_info("btstack_run_loop_posix_get_time_ms: %u <- %u / %u", time_ms, (int) tv.tv_sec, (int) tv.tv_usec);
+    log_debug("btstack_run_loop_posix_get_time_ms: %u <- %u / %u", time_ms, (int) tv.tv_sec, (int) tv.tv_usec);
     return time_ms;
 }
 
@@ -231,7 +231,7 @@ static void btstack_run_loop_posix_execute(void) {
 static void btstack_run_loop_posix_set_timer(btstack_timer_source_t *a, uint32_t timeout_in_ms){
     uint32_t time_ms = btstack_run_loop_posix_get_time_ms();
     a->timeout = time_ms + timeout_in_ms;
-    log_info("btstack_run_loop_posix_set_timer to %u ms (now %u, timeout %u)", a->timeout, time_ms, timeout_in_ms);
+    log_debug("btstack_run_loop_posix_set_timer to %u ms (now %u, timeout %u)", a->timeout, time_ms, timeout_in_ms);
 }
 
 static void btstack_run_loop_posix_init(void){
