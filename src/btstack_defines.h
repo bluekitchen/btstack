@@ -466,7 +466,7 @@ typedef uint8_t sm_key_t[16];
 
 /**
  * @format 2
- * @param local_cid
+ * @param rfcomm_cid
  */
 #define RFCOMM_EVENT_CAN_SEND_NOW                          0x89
 
@@ -769,7 +769,6 @@ typedef uint8_t sm_key_t[16];
 
 /** HSP Subevent */
 
-// data: event(8), len(8), subevent(8), status(8) 
 /**
  * @format 11
  * @param subevent_code
@@ -777,7 +776,6 @@ typedef uint8_t sm_key_t[16];
  */
 #define HSP_SUBEVENT_RFCOMM_CONNECTION_COMPLETE             0x01
 
-// data: event(8), len(8), subevent(8), status(8) 
 /**
  * @format 11
  * @param subevent_code
@@ -786,11 +784,11 @@ typedef uint8_t sm_key_t[16];
 #define HSP_SUBEVENT_RFCOMM_DISCONNECTION_COMPLETE           0x02
 
 
-// data: event(8), len(8), subevent(8), status(8) 
 /**
- * @format 11
+ * @format 11H
  * @param subevent_code
  * @param status 0 == OK
+ * @param handle
  */
 #define HSP_SUBEVENT_AUDIO_CONNECTION_COMPLETE             0x03
 

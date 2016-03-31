@@ -1166,12 +1166,12 @@ static inline uint8_t rfcomm_event_remote_modem_status_get_modem_status(const ui
 }
 
 /**
- * @brief Get field local_cid from event rfcomm_event_can_send_now
+ * @brief Get field rfcomm_cid from event rfcomm_event_can_send_now
  * @param event packet
- * @return local_cid
+ * @return rfcomm_cid
  * @note: btstack_type 2
  */
-static inline uint16_t rfcomm_event_can_send_now_get_local_cid(const uint8_t * event){
+static inline uint16_t rfcomm_event_can_send_now_get_rfcomm_cid(const uint8_t * event){
     return little_endian_read_16(event, 2);
 }
 
@@ -2198,6 +2198,26 @@ static inline uint8_t hci_subevent_le_connection_complete_get_master_clock_accur
 }
 
 /**
+ * @brief Get field status from event hsp_subevent_rfcomm_connection_complete
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t hsp_subevent_rfcomm_connection_complete_get_status(const uint8_t * event){
+    return event[3];
+}
+
+/**
+ * @brief Get field status from event hsp_subevent_rfcomm_disconnection_complete
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t hsp_subevent_rfcomm_disconnection_complete_get_status(const uint8_t * event){
+    return event[3];
+}
+
+/**
  * @brief Get field status from event hsp_subevent_audio_connection_complete
  * @param event packet
  * @return status
@@ -2210,9 +2230,9 @@ static inline uint8_t hsp_subevent_audio_connection_complete_get_status(const ui
  * @brief Get field handle from event hsp_subevent_audio_connection_complete
  * @param event packet
  * @return handle
- * @note: btstack_type 2
+ * @note: btstack_type H
  */
-static inline uint16_t hsp_subevent_audio_connection_complete_get_handle(const uint8_t * event){
+static inline hci_con_handle_t hsp_subevent_audio_connection_complete_get_handle(const uint8_t * event){
     return little_endian_read_16(event, 4);
 }
 
