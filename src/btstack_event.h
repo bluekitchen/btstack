@@ -2358,6 +2358,44 @@ static inline uint8_t sm_event_authorization_result_get_authorization_result(con
 #endif
 
 /**
+ * @brief Get field handle from event gap_event_security_level
+ * @param event packet
+ * @return handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t gap_event_security_level_get_handle(const uint8_t * event){
+    return little_endian_read_16(event, 2);
+}
+/**
+ * @brief Get field security_level from event gap_event_security_level
+ * @param event packet
+ * @return security_level
+ * @note: btstack_type 1
+ */
+static inline uint8_t gap_event_security_level_get_security_level(const uint8_t * event){
+    return event[4];
+}
+
+/**
+ * @brief Get field status from event gap_event_dedicated_bonding_completed
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t gap_event_dedicated_bonding_completed_get_status(const uint8_t * event){
+    return event[2];
+}
+/**
+ * @brief Get field address from event gap_event_dedicated_bonding_completed
+ * @param event packet
+ * @param Pointer to storage for address
+ * @note: btstack_type B
+ */
+static inline void gap_event_dedicated_bonding_completed_get_address(const uint8_t * event, bd_addr_t address){
+    reverse_bd_addr(&event[3], address);    
+}
+
+/**
  * @brief Get field advertising_event_type from event gap_event_advertising_report
  * @param event packet
  * @return advertising_event_type

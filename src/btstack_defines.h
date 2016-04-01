@@ -779,10 +779,18 @@ typedef uint8_t sm_key_t[16];
 
 // GAP
 
-// data: event(8), len(8), hci_handle (16), security_level (8)
+/**
+ * @format H1
+ * @param handle
+ * @param security_level
+ */
 #define GAP_EVENT_SECURITY_LEVEL                                 0xE0
 
-// data: event(8), len(8), status (8), bd_addr(48)
+/**
+ * @format 1B
+ * @param status
+ * @param address
+ */
 #define GAP_EVENT_DEDICATED_BONDING_COMPLETED                    0xE1
 
 /**
