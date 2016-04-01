@@ -415,16 +415,12 @@ void att_server_register_packet_handler(btstack_packet_handler_t handler){
 
 int  att_server_can_send_packet_now(void){
 	if (att_connection.con_handle == 0) return 0;
-	int can_send = att_dispatch_server_can_send_now(att_connection.con_handle);
-    if (!can_send){
-        att_client_waiting_for_can_send = 1;
-    }
-    return can_send;
+	return att_dispatch_server_can_send_now(att_connection.con_handle);
 }
 
 void att_server_request_can_send_now_event(){
     att_client_waiting_for_can_send = 1;
-    att_server_notify_can_send();
+    att_dispatch_server_request_can_send_now_event(att_connection.con_handle);
 }
 
 int att_server_notify(uint16_t attribute_handle, uint8_t *value, uint16_t value_len){

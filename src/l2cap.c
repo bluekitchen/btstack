@@ -246,6 +246,8 @@ static l2cap_channel_t * l2cap_get_channel_for_local_cid(uint16_t local_cid){
     return NULL;
 }
 
+///
+
 void l2cap_request_can_send_now_event(uint16_t local_cid){
     l2cap_channel_t *channel = l2cap_get_channel_for_local_cid(local_cid);
     if (!channel) return;
@@ -253,36 +255,32 @@ void l2cap_request_can_send_now_event(uint16_t local_cid){
     l2cap_notify_channel_can_send();
 }
 
+void l2cap_request_can_send_fix_channel_now_event(hci_con_handle_t con_handle, uint16_t channel_id){
+    int index = l2cap_fixed_channel_table_index_for_channel_id(channel_id);
+    if (index < 0) return;
+    fixed_channels[index].waiting_for_can_send_now = 1;
+    l2cap_notify_channel_can_send();
+}
+
+///
+
 int  l2cap_can_send_packet_now(uint16_t local_cid){
     l2cap_channel_t *channel = l2cap_get_channel_for_local_cid(local_cid);
     if (!channel) return 0;
-    int can_send = hci_can_send_acl_packet_now(channel->con_handle);
-    if (!can_send){
-        channel->waiting_for_can_send_now = 1;
-    }
-    return can_send;
+    return hci_can_send_acl_packet_now(channel->con_handle);
 }
 
 int  l2cap_can_send_prepared_packet_now(uint16_t local_cid){
     l2cap_channel_t *channel = l2cap_get_channel_for_local_cid(local_cid);
     if (!channel) return 0;
-    int can_send = hci_can_send_prepared_acl_packet_now(channel->con_handle);
-    if (!can_send){
-        channel->waiting_for_can_send_now = 1;
-    }
-    return can_send;
+    return hci_can_send_prepared_acl_packet_now(channel->con_handle);
 }
 
 int  l2cap_can_send_fixed_channel_packet_now(hci_con_handle_t con_handle, uint16_t channel_id){
-    int can_send = hci_can_send_acl_packet_now(con_handle);
-    if (!can_send){
-        int index = l2cap_fixed_channel_table_index_for_channel_id(channel_id);
-        if (index >= 0){
-            fixed_channels[index].waiting_for_can_send_now = 1;
-        }
-    }
-    return can_send;
+    return hci_can_send_acl_packet_now(con_handle);
 }
+
+///
 
 uint16_t l2cap_get_remote_mtu_for_local_cid(uint16_t local_cid){
     l2cap_channel_t * channel = l2cap_get_channel_for_local_cid(local_cid);

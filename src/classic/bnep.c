@@ -378,13 +378,7 @@ int bnep_can_send_packet_now(uint16_t bnep_cid)
         return 0;
     }
     
-    int can_send = l2cap_can_send_packet_now(channel->l2cap_cid);
-
-    if (!can_send){
-        channel->waiting_for_can_send_now = 1;
-    }
-
-    return can_send;
+    return l2cap_can_send_packet_now(channel->l2cap_cid);
 }
 
 void bnep_request_can_send_now_event(uint16_t bnep_cid)

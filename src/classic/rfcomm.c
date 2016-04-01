@@ -1934,11 +1934,7 @@ int rfcomm_can_send_packet_now(uint16_t rfcomm_cid){
         log_error("rfcomm_send cid 0x%02x doesn't exist!", rfcomm_cid);
         return 0;
     }
-    int res = rfcomm_channel_can_send(channel);
-    if (!res){
-        channel->waiting_for_can_send_now = 1;
-    }
-    return res;
+    return rfcomm_channel_can_send(channel);
 }
 
 void rfcomm_request_can_send_now_event(uint16_t rfcomm_cid){
