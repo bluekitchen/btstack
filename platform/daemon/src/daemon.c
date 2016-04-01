@@ -1076,9 +1076,9 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             // enforce \0
             packet[3+248] = 0;
             rfcomm_channel = rfcomm_service_db_channel_for_service((char*)&packet[3]);
-            log_info("DAEMON_EVENT_RFCOMM_SERVICE_REGISTERED %u", rfcomm_channel);
+            log_info("RFCOMM_EVENT_PERSISTENT_CHANNEL %u", rfcomm_channel);
             uint8_t event[4];
-            event[0] = DAEMON_EVENT_RFCOMM_SERVICE_REGISTERED;
+            event[0] = RFCOMM_EVENT_PERSISTENT_CHANNEL;
             event[1] = sizeof(event) - 2;
             event[2] = 0;
             event[3] = rfcomm_channel;
