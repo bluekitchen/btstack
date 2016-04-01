@@ -230,7 +230,7 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
             break;
         case HCI_EVENT_LE_META:
             // wait for connection complete
-            if (packet[2] !=  HCI_SUBEVENT_LE_CONNECTION_COMPLETE) break;
+            if (hci_event_le_meta_get_subevent_code(packet) !=  HCI_SUBEVENT_LE_CONNECTION_COMPLETE) break;
             if (state != TC_W4_CONNECT) return;
             connection_handle = hci_subevent_le_connection_complete_get_connection_handle(packet);
             // initialize gatt client context with handle, and add it to the list of active clients

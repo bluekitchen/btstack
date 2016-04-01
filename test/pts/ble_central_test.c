@@ -338,7 +338,7 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                     break;
                 
                 case HCI_EVENT_LE_META:
-                    switch (packet[2]) {
+                    switch (hci_event_le_meta_get_subevent_code(packet)) {
                         case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
                             handle = little_endian_read_16(packet, 4);
                             printf("Connection complete, handle 0x%04x\n", handle);

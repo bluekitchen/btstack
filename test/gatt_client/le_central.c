@@ -61,7 +61,7 @@ static void handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *pac
         }
         case HCI_EVENT_LE_META:
             // wait for connection complete
-            if (packet[2] !=  HCI_SUBEVENT_LE_CONNECTION_COMPLETE) break;
+            if (hci_event_le_meta_get_subevent_code(packet) !=  HCI_SUBEVENT_LE_CONNECTION_COMPLETE) break;
             connected = 1;
             break;
         case HCI_EVENT_DISCONNECTION_COMPLETE:
