@@ -370,7 +370,26 @@ int bnep_can_send_packet_now(uint16_t bnep_cid)
         return 0;
     }
     
-    return l2cap_can_send_packet_now(channel->l2cap_cid);
+    int can_send = l2cap_can_send_packet_now(channel->l2cap_cid);
+
+    if (!can_send){
+        channel->waiting_for_can_send_now = 1;
+    }
+
+    return can_send;
+}
+
+void bnep_request_can_send_now_event(uint16_t bnep_cid)
+{
+    bnep_channel_t *channel = bnep_channel_for_l2cap_cid(bnep_cid);
+
+    if (!channel){
+        log_error("bnep_request_can_send_now_event cid 0x%02x doesn't exist!", bnep_cid);
+        return;
+    }
+
+    channel->waiting_for_can_send_now = 1;
+    l2cap_request_can_send_now_event(bnep_cid);
 }
 
 
@@ -1477,9 +1496,11 @@ static void bnep_channel_state_machine(bnep_channel_t* channel, bnep_channel_eve
             return;
         }
 
-
         /* If the event was not yet handled, notify the application layer */
-        bnep_emit_ready_to_send(channel);
+        if (channel->waiting_for_can_send_now){
+            channel->waiting_for_can_send_now = 0;            
+            bnep_emit_ready_to_send(channel);
+        }
     }    
 }
 
