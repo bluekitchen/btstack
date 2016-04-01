@@ -237,7 +237,7 @@ def create_events(events):
         for event_type, event_name, format, args in events:
             parts = event_name.split("_")
             event_group = parts[0]
-            if not event_group in [ 'BTSTACK', 'GAP', 'HCI', 'HSP', 'HFP', 'SDP', 'ANCS', 'SM', 'L2CAP', 'RFCOMM', 'GATT', 'BNEP']:
+            if not event_group in [ 'BTSTACK', 'GAP', 'HCI', 'HSP', 'HFP', 'SDP', 'ANCS', 'SM', 'L2CAP', 'RFCOMM', 'GATT', 'BNEP', 'ATT']:
                 print("// %s " % event_name)
                 continue
             print(event_name)
