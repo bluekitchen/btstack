@@ -1595,7 +1595,7 @@ static void event_handler(uint8_t *packet, int size){
             }
             // PIN CODE REQUEST means the link key request didn't succee -> delete stored link key
             if (!hci_stack->link_key_db) break;
-            reverse_bd_addr(&packet[2], addr);
+            hci_event_pin_code_request_get_bd_addr(packet, addr);
             hci_stack->link_key_db->delete_link_key(addr);
             break;
             

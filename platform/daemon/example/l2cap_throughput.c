@@ -152,8 +152,7 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 						i--;
 					}
 					printf("PIN (%u)= '%s'\n", i, pin);
-					reverse_bd_addr(&packet[2],
-							event_addr); 
+					hci_event_pin_code_request_get_bd_addr(packet, event_addr); 
 					bt_send_cmd(&hci_pin_code_request_reply, &event_addr, i, pin);
 					break;
 					

@@ -136,7 +136,7 @@ PIN, see Listing [below](#lst:PinCodeRequest).
             case HCI_EVENT_PIN_CODE_REQUEST:
                 // inform about pin code request
                 printf("Pin code request - using '0000'\n\r");
-                bt_flip_addr(bd_addr, &packet[2]);
+                hci_event_pin_code_request_get_bd_addr(packet, bd_addr);
                 
                 // baseband address, pin length, PIN: c-string
                 hci_send_cmd(&hci_pin_code_request_reply, &bd_addr, 4, "0000");

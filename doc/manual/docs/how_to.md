@@ -446,7 +446,7 @@ and address from the *gap_event_advertising_report* event use following getters:
 <!-- -->
     uint8_t address type = gap_event_advertising_report_get_address_type(event);
     bd_addr_t address;
-    gap_event_advertising_report_get_address(event, &address);
+    gap_event_advertising_report_get_address(event, address);
 
 
 ## Bluetooth HCI Packet Logs {#sec:packetlogsHowTo}

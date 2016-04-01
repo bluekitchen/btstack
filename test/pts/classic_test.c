@@ -317,7 +317,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             break;
 
         case HCI_EVENT_PIN_CODE_REQUEST:
-            reverse_bd_addr(&packet[2], remote);
+            hci_event_pin_code_request_get_bd_addr(packet, remote);
             printf("GAP Legacy PIN Request for %s (press ENTER to send)\nPasskey:", bd_addr_to_str(remote));
             fflush(stdout);
             ui_chars_for_pin = 1;
