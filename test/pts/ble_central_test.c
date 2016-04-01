@@ -255,21 +255,21 @@ const char * ad_event_types[] = {
 static void handle_advertising_event(uint8_t * packet, int size){
     // filter PTS
     bd_addr_t addr;
-    reverse_bd_addr(&packet[4], addr);
-
+    gap_event_advertising_report_get_address(packet, addr);
+    uint8_t addr_type = gap_event_advertising_report_get_address_type(packet);
     // always request address resolution
-    sm_address_resolution_lookup(packet[3], addr);
+    sm_address_resolution_lookup(addr_type, addr);
 
     // ignore advertisement from devices other than pts
     // if (memcmp(addr, current_pts_address, 6)) return;
-
-    printf("Advertisement: %s - %s, ", bd_addr_to_str(addr), ad_event_types[packet[2]]);
-    int adv_size = packet[11];
-    uint8_t * adv_data = &packet[12];
+    uint8_t adv_event_type = gap_event_advertising_report_get_advertising_event_type(packet);
+    printf("Advertisement: %s - %s, ", bd_addr_to_str(addr), ad_event_types[adv_event_type]);
+    int adv_size = gap_event_advertising_report_get_data_length(packet);
+    const uint8_t * adv_data = gap_event_advertising_report_get_data(packet);
 
     // check flags
     ad_context_t context;
-    for (ad_iterator_init(&context, adv_size, adv_data) ; ad_iterator_has_more(&context) ; ad_iterator_next(&context)){
+    for (ad_iterator_init(&context, adv_size, (uint8_t *)adv_data) ; ad_iterator_has_more(&context) ; ad_iterator_next(&context)){
         uint8_t data_type = ad_iterator_get_data_type(&context);
         // uint8_t size      = ad_iterator_get_data_len(&context);
         uint8_t * data    = ad_iterator_get_data(&context);

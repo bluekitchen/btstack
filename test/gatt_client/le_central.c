@@ -55,8 +55,7 @@ static void handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *pac
         case GAP_EVENT_ADVERTISING_REPORT:{
             advertisement_received = 1;
             memcpy(advertisement_packet, packet, size);
-            
-            reverse_bd_addr(&packet[4], address);
+            gap_event_advertising_report_get_address(packet, address);
             gap_connect(address, (bd_addr_type_t)packet[3]);
             break;
         }

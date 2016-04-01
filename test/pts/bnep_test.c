@@ -707,7 +707,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                         printf("BNEP channel open failed, status %02x\n", bnep_event_channel_opened_get_status(packet));
                     } else {
                         // data: event(8), len(8), status (8), bnep source uuid (16), bnep destination uuid (16), remote_address (48)
-                        bnep_cid    = bnep_event_channel_opened_get_cid(packet);
+                        bnep_cid    = bnep_event_channel_opened_get_bnep_cid(packet);
                         uuid_source = bnep_event_channel_opened_get_source_uuid(packet);
                         uuid_dest   = bnep_event_channel_opened_get_destination_uuid(packet);
                         mtu         = bnep_event_channel_opened_get_mtu(packet);

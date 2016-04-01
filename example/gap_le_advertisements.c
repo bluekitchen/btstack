@@ -128,11 +128,11 @@ static char * flags[] = {
  */
 
 /* LISTING_START(GAPLEAdvDataParsing): Parsing advertising data */
-static void dump_advertisement_data(uint8_t * adv_data, uint8_t adv_size){
+static void dump_advertisement_data(const uint8_t * adv_data, uint8_t adv_size){
     ad_context_t context;
     bd_addr_t address;
     uint8_t uuid_128[16];
-    for (ad_iterator_init(&context, adv_size, adv_data) ; ad_iterator_has_more(&context) ; ad_iterator_next(&context)){
+    for (ad_iterator_init(&context, adv_size, (uint8_t *)adv_data) ; ad_iterator_has_more(&context) ; ad_iterator_next(&context)){
         uint8_t data_type = ad_iterator_get_data_type(&context);
         uint8_t size      = ad_iterator_get_data_len(&context);
         uint8_t * data    = ad_iterator_get_data(&context);
@@ -242,15 +242,13 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             }
             break;
         case GAP_EVENT_ADVERTISING_REPORT:{
-            int pos = 2;
-            uint8_t event_type = packet[pos++];
-            uint8_t address_type = packet[pos++];
             bd_addr_t address;
-            reverse_bd_addr(&packet[pos], address);
-            pos += 6;
-            int8_t rssi = (int8_t) packet[pos++];
-            uint8_t length = packet[pos++];
-            uint8_t * data = &packet[pos];
+            gap_event_advertising_report_get_address(packet, address);
+            uint8_t event_type = gap_event_advertising_report_get_advertising_event_type(packet);
+            uint8_t address_type = gap_event_advertising_report_get_address_type(packet);
+            int8_t rssi = gap_event_advertising_report_get_rssi(packet);
+            uint8_t length = gap_event_advertising_report_get_data_length(packet);
+            const uint8_t * data = gap_event_advertising_report_get_data(packet);
             
             printf("Advertisement event: evt-type %u, addr-type %u, addr %s, rssi %d, data[%u] ", event_type,
                address_type, bd_addr_to_str(address), rssi, length);
