@@ -139,6 +139,9 @@ typedef struct {
     int                retry_count;       // number of retries for CONTROL SETUP MSG
     // l2cap packet handler
     btstack_packet_handler_t packet_handler;
+
+    uint8_t   waiting_for_can_send_now;
+
 } bnep_channel_t;
 
 /* Internal BNEP service descriptor */
@@ -165,6 +168,14 @@ void bnep_init(void);
  * @brief Check if a data packet can be send out.
  */
 int bnep_can_send_packet_now(uint16_t bnep_cid);
+
+/** 
+ * @brief Request emission of BNEP_CAN_SEND_NOW as soon as possible
+ * @note BNEP_CAN_SEND_NOW might be emitted during call to this function
+ *       so packet handler should be ready to handle it
+ * @param bnep_cid
+ */
+void bnep_request_can_send_now_event(uint16_t bnep_cid);
 
 /**
  * @brief Send a data packet.
