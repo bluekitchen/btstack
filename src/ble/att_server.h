@@ -67,6 +67,14 @@ void att_server_register_packet_handler(btstack_packet_handler_t handler);
  */
 int  att_server_can_send_packet_now(void);
 
+/** 
+ * @brief Request emission of ATT_EVENT_CAN_SEND_NOW as soon as possible
+ * @note ATT_EVENT_CAN_SEND_NOW might be emitted during call to this function
+ *       so packet handler should be ready to handle it
+ * @param local_cid
+ */
+void att_server_request_can_send_now_event(void);
+
 /*
  * @brief notify client about attribute value change
  * @param attribute_handle
