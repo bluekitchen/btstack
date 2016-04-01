@@ -445,9 +445,9 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
 #endif
 
 static void packet_handler(uint8_t * event, uint16_t event_size){
-    if (event[0] == RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE){
+    if (event[0] == RFCOMM_EVENT_CHANNEL_OPENED){
         handle = little_endian_read_16(event, 9);
-        printf("RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE received for handle 0x%04x\n", handle);
+        printf("RFCOMM_EVENT_CHANNEL_OPENED received for handle 0x%04x\n", handle);
         return;
     }
     if (event[0] != HCI_EVENT_HFP_META) return;

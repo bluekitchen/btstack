@@ -226,10 +226,10 @@ void sdp_client_query_rfcomm_channel_and_name_for_uuid(btstack_packet_handler_t 
 
 
 uint8_t rfcomm_create_channel(btstack_packet_handler_t handler, bd_addr_t addr, uint8_t channel, uint16_t * out_cid){
-	// RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE
+	// RFCOMM_EVENT_CHANNEL_OPENED
     uint8_t event[16];
     uint8_t pos = 0;
-    event[pos++] = RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE;
+    event[pos++] = RFCOMM_EVENT_CHANNEL_OPENED;
     event[pos++] = sizeof(event) - 2;
     event[pos++] = 0;
     

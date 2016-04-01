@@ -82,6 +82,7 @@ static att_server_state_t att_server_state;
 
 static uint8_t   att_client_addr_type;
 static bd_addr_t att_client_address;
+static uint8_t   att_client_waiting_for_can_send;
 static uint16_t  att_request_size   = 0;
 static uint8_t   att_request_buffer[ATT_REQUEST_BUFFER_SIZE];
 
@@ -95,7 +96,6 @@ static btstack_packet_callback_registration_t sm_event_callback_registration;
 static btstack_packet_handler_t att_client_packet_handler = NULL;
 
 static void att_handle_value_indication_notify_client(uint8_t status, uint16_t client_handle, uint16_t attribute_handle){
-    
     if (!att_client_packet_handler) return;
     
     uint8_t event[7];
@@ -111,7 +111,6 @@ static void att_handle_value_indication_notify_client(uint8_t status, uint16_t c
 }
 
 static void att_emit_mtu_event(hci_con_handle_t con_handle, uint16_t mtu){
-
     if (!att_client_packet_handler) return;
 
     uint8_t event[6];
@@ -123,6 +122,21 @@ static void att_emit_mtu_event(hci_con_handle_t con_handle, uint16_t mtu){
     little_endian_store_16(event, pos, mtu);
     pos += 2;
     (*att_client_packet_handler)(HCI_EVENT_PACKET, 0, &event[0], sizeof(event));
+}
+
+static void att_emit_can_send_now_event(void){
+    if (att_client_packet_handler) return;
+    uint8_t event[] = { ATT_EVENT_CAN_SEND_NOW, 0};
+    (*att_client_packet_handler)(HCI_EVENT_PACKET, 0, &event[0], sizeof(event));
+}
+
+static void att_server_notify_can_send(void){
+    if (att_connection.con_handle == 0) return;
+    if (!att_client_waiting_for_can_send) return;
+    if (!att_dispatch_server_can_send_now(att_connection.con_handle)) return;
+
+    att_client_waiting_for_can_send = 0;
+    att_emit_can_send_now_event();
 }
 
 static void att_handle_value_indication_timeout(btstack_timer_source_t *ts){
@@ -140,6 +154,8 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
                 
                 case L2CAP_EVENT_CAN_SEND_NOW:
                     att_run();
+                    // if we cannot send now, we'll get another l2cap can send now soon
+                    att_server_notify_can_send();
                     break;
                     
                 case HCI_EVENT_LE_META:
@@ -399,7 +415,16 @@ void att_server_register_packet_handler(btstack_packet_handler_t handler){
 
 int  att_server_can_send_packet_now(void){
 	if (att_connection.con_handle == 0) return 0;
-	return att_dispatch_server_can_send_now(att_connection.con_handle);
+	int can_send = att_dispatch_server_can_send_now(att_connection.con_handle);
+    if (!can_send){
+        att_client_waiting_for_can_send = 1;
+    }
+    return can_send;
+}
+
+void att_server_request_can_send_now_event(){
+    att_client_waiting_for_can_send = 1;
+    att_server_notify_can_send();
 }
 
 int att_server_notify(uint16_t attribute_handle, uint8_t *value, uint16_t value_len){

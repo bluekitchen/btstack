@@ -70,7 +70,7 @@ by RFCOMM:
 -   RFCOMM_EVENT_CHANNEL_CLOSED - emitted when channel is closed. No
     status information is provided.
 
--   RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE - sent if channel
+-   RFCOMM_EVENT_CHANNEL_OPENED - sent if channel
     establishment is done. Status not equal zero indicates an error.
     Possible errors: an L2CAP error, out of memory.
 
@@ -87,7 +87,7 @@ by RFCOMM:
 
 Event      | Event Code
 -----------|-----------------------------
-RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE | 0x80 
+RFCOMM_EVENT_CHANNEL_OPENED | 0x80 
 RFCOMM_EVENT_CHANNEL_CLOSED        | 0x81 
 RFCOMM_EVENT_INCOMING_CONNECTION   | 0x82 
 RFCOMM_EVENT_CREDITS               | 0x84 
@@ -98,7 +98,7 @@ Table: RFCOMM Events. {#tbl:rfcommEvents}
 
 RFCOMM event paramaters, with size in bits:
 
-- RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE: 
+- RFCOMM_EVENT_CHANNEL_OPENED: 
     - *event(8), len(8), status(8), address(48), handle(16), server_channel(8), rfcomm_cid(16), max_frame_size(16)*
 - RFCOMM_EVENT_CHANNEL_CLOSED: 
     - *event(8), len(8), rfcomm_cid(16)*

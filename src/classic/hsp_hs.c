@@ -532,8 +532,8 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             rfcomm_accept_connection(rfcomm_cid);
             break;
 
-        case RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE:
-            // printf("RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE packet_handler type %u, packet[0] %x\n", packet_type, packet[0]);
+        case RFCOMM_EVENT_CHANNEL_OPENED:
+            // printf("RFCOMM_EVENT_CHANNEL_OPENED packet_handler type %u, packet[0] %x\n", packet_type, packet[0]);
             // data: event(8), len(8), status (8), address (48), handle(16), server channel(8), rfcomm_cid(16), max frame size(16)
             if (hsp_state != HSP_W4_RFCOMM_CONNECTED) return;
             if (packet[2]) {

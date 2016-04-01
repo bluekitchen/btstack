@@ -11,7 +11,7 @@ import com.bluekitchen.btstack.RFCOMMDataPacket;
 import com.bluekitchen.btstack.Util;
 import com.bluekitchen.btstack.event.BTstackEventState;
 import com.bluekitchen.btstack.event.HCIEventDisconnectionComplete;
-import com.bluekitchen.btstack.event.RFCOMMEventOpenChannelComplete;
+import com.bluekitchen.btstack.event.RFCOMMEventChannelOpened;
 import com.bluekitchen.btstack.event.SDPEventQueryComplete;
 import com.bluekitchen.btstack.event.SDPEventQueryRFCOMMService;
 
@@ -76,9 +76,9 @@ public class SPPClientTest implements PacketHandler {
 			break;
 			
 		case w4_connected:
-			if (packet instanceof RFCOMMEventOpenChannelComplete){
-				RFCOMMEventOpenChannelComplete e = (RFCOMMEventOpenChannelComplete) packet;
-				System.out.println("RFCOMMEventOpenChannelComplete with status " + e.getStatus());
+			if (packet instanceof RFCOMMEventChannelOpened){
+				RFCOMMEventChannelOpened e = (RFCOMMEventChannelOpened) packet;
+				System.out.println("RFCOMMEventChannelOpened with status " + e.getStatus());
 				if (e.getStatus() != 0) {
 					System.out.println("RFCOMM channel open failed, status " + e.getStatus());
 				} else {

@@ -406,7 +406,7 @@ typedef uint8_t sm_key_t[16];
  * @param rfcomm_cid
  * @param max_frame_size
  */
-#define RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE                 0x80
+#define RFCOMM_EVENT_CHANNEL_OPENED                 0x80
 
 /**
  * @format 2
@@ -466,7 +466,7 @@ typedef uint8_t sm_key_t[16];
 
 /**
  * @format 2
- * @param local_cid
+ * @param rfcomm_cid
  */
 #define RFCOMM_EVENT_CAN_SEND_NOW                          0x89
 
@@ -623,24 +623,62 @@ typedef uint8_t sm_key_t[16];
  */    
 #define ATT_EVENT_MTU_EXCHANGE_COMPLETE                          0xB5
 
-// data: event(8), len(8), status (8), hci_handle (16), attribute_handle (16)
+ /**
+  * @format 1H2
+  * @param status
+  * @param conn_handle
+  * @param attribute_handle
+  */
 #define ATT_EVENT_HANDLE_VALUE_INDICATION_COMPLETE               0xB6
 
+/**
+ * @format
+ */
+#define ATT_EVENT_CAN_SEND_NOW                                   0xB7
 
-// data: event(8), len(8), status (8), bnep service uuid (16) 
-#define BNEP_EVENT_SERVICE_REGISTERED                      0xC0
+// TODO: daemon only event
 
-// data: event(8), len(8), status (8), bnep source uuid (16), bnep destination uuid (16), mtu (16), remote_address (48) 
-#define BNEP_EVENT_OPEN_CHANNEL_COMPLETE                   0xC1
+/**
+ * @format 12
+ * @param status
+ * @param service_uuid
+ */
+ #define BNEP_EVENT_SERVICE_REGISTERED                      0xC0
 
-// data: event(8), len(8), bnep source uuid (16), bnep destination uuid (16), remote_address (48) 
-#define BNEP_EVENT_CHANNEL_CLOSED                          0xC2
+/**
+ * @format 1222B
+ * @param status
+ * @param source_uuid
+ * @param destination_uuid
+ * @param mtu
+ * @param remote_address
+ */
+ #define BNEP_EVENT_OPEN_CHANNEL_COMPLETE                   0xC1
 
-// data: event(8), len(8), bnep source uuid (16), bnep destination uuid (16), remote_address (48), channel state (8)
+/**
+ * @format 22B
+ * @param source_uuid
+ * @param destination_uuid
+ * @param remote_address
+ */
+ #define BNEP_EVENT_CHANNEL_CLOSED                          0xC2
+
+/**
+ * @format 22B1
+ * @param source_uuid
+ * @param destination_uuid
+ * @param remote_address
+ * @param channel_state
+ */
 #define BNEP_EVENT_CHANNEL_TIMEOUT                         0xC3    
     
-// data: event(8), len(8)
-#define BNEP_EVENT_CAN_SEND_NOW                           0xC4
+/**
+ * @format 22B
+ * @param source_uuid
+ * @param destination_uuid
+ * @param remote_address
+ */
+ #define BNEP_EVENT_CAN_SEND_NOW                           0xC4
 
  /**
   * @format H1B
@@ -769,7 +807,6 @@ typedef uint8_t sm_key_t[16];
 
 /** HSP Subevent */
 
-// data: event(8), len(8), subevent(8), status(8) 
 /**
  * @format 11
  * @param subevent_code
@@ -777,7 +814,6 @@ typedef uint8_t sm_key_t[16];
  */
 #define HSP_SUBEVENT_RFCOMM_CONNECTION_COMPLETE             0x01
 
-// data: event(8), len(8), subevent(8), status(8) 
 /**
  * @format 11
  * @param subevent_code
@@ -786,11 +822,11 @@ typedef uint8_t sm_key_t[16];
 #define HSP_SUBEVENT_RFCOMM_DISCONNECTION_COMPLETE           0x02
 
 
-// data: event(8), len(8), subevent(8), status(8) 
 /**
- * @format 11
+ * @format 11H
  * @param subevent_code
  * @param status 0 == OK
+ * @param handle
  */
 #define HSP_SUBEVENT_AUDIO_CONNECTION_COMPLETE             0x03
 

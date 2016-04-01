@@ -463,9 +463,9 @@ void hfp_handle_hci_event(uint8_t packet_type, uint8_t *packet, uint16_t size){
             rfcomm_accept_connection(hfp_connection->rfcomm_cid);
             break;
 
-        case RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE:
+        case RFCOMM_EVENT_CHANNEL_OPENED:
             // data: event(8), len(8), status (8), address (48), handle(16), server channel(8), rfcomm_cid(16), max frame size(16)
-            printf("RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE packet_handler type %u, size %u\n", packet_type, size);
+            printf("RFCOMM_EVENT_CHANNEL_OPENED packet_handler type %u, size %u\n", packet_type, size);
 
             reverse_bd_addr(&packet[3], event_addr); 
             hfp_connection = get_hfp_connection_context_for_bd_addr(event_addr);
@@ -476,7 +476,7 @@ void hfp_handle_hci_event(uint8_t packet_type, uint8_t *packet, uint16_t size){
                 remove_hfp_connection_context(hfp_connection);
             } else {
                 hfp_connection->acl_handle = little_endian_read_16(packet, 9);
-                printf("RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE con_handle 0x%02x\n", hfp_connection->acl_handle);
+                printf("RFCOMM_EVENT_CHANNEL_OPENED con_handle 0x%02x\n", hfp_connection->acl_handle);
             
                 hfp_connection->rfcomm_cid = little_endian_read_16(packet, 12);
                 uint16_t mtu = little_endian_read_16(packet, 14);

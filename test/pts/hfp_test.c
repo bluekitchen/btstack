@@ -118,8 +118,8 @@ static void packet_handler(void * connection, uint8_t packet_type, uint16_t chan
             hci_send_cmd(&hci_pin_code_request_reply, &event_addr, 4, "0000");
             break;
 
-        case RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE:
-            printf("RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE packet_handler type %u, packet[0] %x\n", packet_type, packet[0]);
+        case RFCOMM_EVENT_CHANNEL_OPENED:
+            printf("RFCOMM_EVENT_CHANNEL_OPENED packet_handler type %u, packet[0] %x\n", packet_type, packet[0]);
             // data: event(8), len(8), status (8), address (48), handle(16), server channel(8), rfcomm_cid(16), max frame size(16)
             if (packet[2]) {
                 printf("RFCOMM channel open failed, status %u\n", packet[2]);
