@@ -77,7 +77,7 @@ static void try_send_sco(void){
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * packet, uint16_t event_size){
     switch (packet[0]) {
         case BTSTACK_EVENT_STATE:
-            if (packet[2] != HCI_STATE_WORKING) break;
+            if (btstack_event_state_get_state(packet) != HCI_STATE_WORKING) break;
             // request loopback mode
             hci_send_cmd(&hci_write_loopback_mode, 1);
             break;

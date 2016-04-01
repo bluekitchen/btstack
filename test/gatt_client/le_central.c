@@ -47,7 +47,7 @@ static void handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *pac
     uint8_t event = packet[0];
     switch (event) {
         case BTSTACK_EVENT_STATE:
-            if (packet[2] != HCI_STATE_WORKING) break;
+            if (btstack_event_state_get_state(packet) != HCI_STATE_WORKING) break;
             gap_set_scan_parameters(0,0x0030, 0x0030);
             gap_start_scan();
             break;

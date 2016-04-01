@@ -205,7 +205,7 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
     switch (event) {
         case BTSTACK_EVENT_STATE:
             // BTstack activated, get started
-            if (packet[2] != HCI_STATE_WORKING) break;
+            if (btstack_event_state_get_state(packet) != HCI_STATE_WORKING) break;
             if (cmdline_addr_found){
                 printf("Start connect to %s\n", bd_addr_to_str(cmdline_addr));
                 state = TC_W4_CONNECT;
