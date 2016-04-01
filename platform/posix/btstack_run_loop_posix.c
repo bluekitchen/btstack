@@ -197,6 +197,7 @@ static void btstack_run_loop_posix_execute(void) {
         // wait for ready FDs
         select( highest_fd+1 , &descriptors_read, &descriptors_write, NULL, timeout);
                 
+
         data_sources_modified = 0;
         btstack_linked_list_iterator_init(&it, &data_sources);
         while (btstack_linked_list_iterator_has_next(&it) && !data_sources_modified){
@@ -214,7 +215,7 @@ static void btstack_run_loop_posix_execute(void) {
         log_debug("btstack_run_loop_posix_execute: after ds check\n");
         
         // process timers
-        // pre: 0 <= tv_usec < 1000000
+        now_ms = btstack_run_loop_posix_get_time_ms();
         while (timers) {
             ts = (btstack_timer_source_t *) timers;
             if (ts->timeout > now_ms) break;
