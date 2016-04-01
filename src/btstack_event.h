@@ -2358,8 +2358,7 @@ static inline uint8_t sm_event_authorization_result_get_authorization_result(con
 #endif
 
 /**
-<<<<<<< HEAD
- * @brief Get field handle from event gap_event_security_level
+ * @brief Get field handle from event GAP_EVENT_SECURITY_LEVEL
  * @param event packet
  * @return handle
  * @note: btstack_type H
@@ -2368,7 +2367,7 @@ static inline hci_con_handle_t gap_event_security_level_get_handle(const uint8_t
     return little_endian_read_16(event, 2);
 }
 /**
- * @brief Get field security_level from event gap_event_security_level
+ * @brief Get field security_level from event GAP_EVENT_SECURITY_LEVEL
  * @param event packet
  * @return security_level
  * @note: btstack_type 1
@@ -2378,7 +2377,7 @@ static inline uint8_t gap_event_security_level_get_security_level(const uint8_t 
 }
 
 /**
- * @brief Get field status from event gap_event_dedicated_bonding_completed
+ * @brief Get field status from event GAP_EVENT_DEDICATED_BONDING_COMPLETED
  * @param event packet
  * @return status
  * @note: btstack_type 1
@@ -2387,7 +2386,7 @@ static inline uint8_t gap_event_dedicated_bonding_completed_get_status(const uin
     return event[2];
 }
 /**
- * @brief Get field address from event gap_event_dedicated_bonding_completed
+ * @brief Get field address from event GAP_EVENT_DEDICATED_BONDING_COMPLETED
  * @param event packet
  * @param Pointer to storage for address
  * @note: btstack_type B
@@ -2397,10 +2396,7 @@ static inline void gap_event_dedicated_bonding_completed_get_address(const uint8
 }
 
 /**
- * @brief Get field advertising_event_type from event gap_event_advertising_report
-=======
  * @brief Get field advertising_event_type from event GAP_EVENT_ADVERTISING_REPORT
->>>>>>> 568284b08fa415cfefa87358341b4d966401705d
  * @param event packet
  * @return advertising_event_type
  * @note: btstack_type 1
