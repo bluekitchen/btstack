@@ -316,6 +316,7 @@ Bluetooth specification. In particular, this covers:
 This is provided by the various *btstack_chipset_t* implementation in the *chipset/* subfolders.
 As an example, the *bstack_chipset_cc256x_instance* function returns a pointer to a chipset struct
 suitable for the CC256x chipset.
+
 <!-- -->
 
     btstack_chipset_t * chipset = btstack_chipset_cc256x_instance();
@@ -433,6 +434,19 @@ services for the HID Control and HID Interrupt PSMs using
 *l2cap_register_service*. In this call, you’ll also specify
 a packet handler to accept and receive keyboard data.
 
+All events names have the form MODULE_EVENT_NAME now, e.g., *gap_event_advertising_report*. 
+To facilitate working with
+events and get rid of manually calculating offsets into packets, BTstack provides 
+auto-generated getters for all fields of all events in *src/hci_event.h*. All 
+functions are defined as static inline, so they are not wasting any program memory 
+if not used. If used, the memory footprint should be identical to accessing the 
+field directly via offsets into the packet. For example, to access fields address_type
+and address from the *gap_event_advertising_report* event use following getters:
+
+<!-- -->
+    uint8_t address type = gap_event_advertising_report_get_address_type(event);
+    bd_addr_t address;
+    gap_event_advertising_report_get_address(event, &address);
 
 
 ## Bluetooth HCI Packet Logs {#sec:packetlogsHowTo}
