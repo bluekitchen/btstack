@@ -2,7 +2,7 @@
 import os, sys, getopt, re
 
 # Defines the names of example groups. Preserves the order in which the example groups will be parsed.
-list_of_groups = ["Hello World", "GAP", "SDP Queries", "SPP Server", "BNEP/PAN", "Low Energy", "Dual Mode"]
+list_of_groups = ["Hello World", "GAP", "SDP Queries", "SPP Server", "BNEP/PAN", "HSP", "HFP", "Low Energy", "Dual Mode"]
 
 # Defines which examples belong to a group. Example is defined as [example file, example title].
 list_of_examples = { 
@@ -11,6 +11,8 @@ list_of_examples = {
     "SDP Queries" : [["sdp_general_query"],["sdp_bnep_query"]],
     "SPP Server"  : [["spp_counter"],["spp_flowcontrol"]],
     "BNEP/PAN"   :  [["panu_demo"]],
+    "HSP"         : [["hsp_hs_demo"],["hsp_ag_demo"]],
+    "HFP"         : [["hfp_hf_demo"],["hfp_ag_demo"]],
     "Low Energy"  : [["gap_le_advertisements"],
                      ["gatt_browser"],
                      ["le_counter"],
@@ -257,7 +259,6 @@ def writeListings(aout, infile_name, ref_prefix):
 # write list of examples
 def processExamples(intro_file, examples_folder, examples_ofile):
     with open(examples_ofile, 'w') as aout:
-
         with open(intro_file, 'rb') as fin:
             for line in fin:
                 aout.write(line)
