@@ -646,17 +646,19 @@ typedef uint8_t sm_key_t[16];
  #define BNEP_EVENT_SERVICE_REGISTERED                      0xC0
 
 /**
- * @format 1222B
+ * @format 12222B
  * @param status
+ * @param bnep_cid
  * @param source_uuid
  * @param destination_uuid
  * @param mtu
  * @param remote_address
  */
- #define BNEP_EVENT_OPEN_CHANNEL_COMPLETE                   0xC1
+ #define BNEP_EVENT_CHANNEL_OPENED                   0xC1
 
 /**
- * @format 22B
+ * @format 222B
+ * @param bnep_cid
  * @param source_uuid
  * @param destination_uuid
  * @param remote_address
@@ -664,7 +666,8 @@ typedef uint8_t sm_key_t[16];
  #define BNEP_EVENT_CHANNEL_CLOSED                          0xC2
 
 /**
- * @format 22B1
+ * @format 222B1
+ * @param bnep_cid
  * @param source_uuid
  * @param destination_uuid
  * @param remote_address
@@ -673,7 +676,8 @@ typedef uint8_t sm_key_t[16];
 #define BNEP_EVENT_CHANNEL_TIMEOUT                         0xC3    
     
 /**
- * @format 22B
+ * @format 222B
+ * @param bnep_cid
  * @param source_uuid
  * @param destination_uuid
  * @param remote_address

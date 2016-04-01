@@ -695,7 +695,7 @@ To connect to a remote BNEP service, you need to know its UUID. The set
 of available UUIDs can be queried by a SDP query for the PAN profile.
 Please see section on [PAN profile](profiles/#sec:panProfiles) for details. 
 With the remote UUID, you can create a connection using the *bnep_connect* 
-function. You’ll receive a *BNEP_EVENT_OPEN_CHANNEL_COMPLETE* on success or
+function. You’ll receive a *BNEP_EVENT_CHANNEL_OPENED* on success or
 failure.
 
 After the connection was opened successfully, you can send and receive

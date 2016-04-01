@@ -1703,6 +1703,200 @@ static inline uint16_t gatt_event_mtu_get_MTU(const uint8_t * event){
 }
 #endif
 
+/**
+ * @brief Get field status from event bnep_event_service_registered
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t bnep_event_service_registered_get_status(const uint8_t * event){
+    return event[2];
+}
+/**
+ * @brief Get field service_uuid from event bnep_event_service_registered
+ * @param event packet
+ * @return service_uuid
+ * @note: btstack_type 2
+ */
+static inline uint16_t bnep_event_service_registered_get_service_uuid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+
+/**
+ * @brief Get field status from event bnep_event_channel_opened
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t bnep_event_channel_opened_get_status(const uint8_t * event){
+    return event[2];
+}
+/**
+ * @brief Get field bnep_cid from event bnep_event_channel_opened
+ * @param event packet
+ * @return bnep_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t bnep_event_channel_opened_get_bnep_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field source_uuid from event bnep_event_channel_opened
+ * @param event packet
+ * @return source_uuid
+ * @note: btstack_type 2
+ */
+static inline uint16_t bnep_event_channel_opened_get_source_uuid(const uint8_t * event){
+    return little_endian_read_16(event, 5);
+}
+/**
+ * @brief Get field destination_uuid from event bnep_event_channel_opened
+ * @param event packet
+ * @return destination_uuid
+ * @note: btstack_type 2
+ */
+static inline uint16_t bnep_event_channel_opened_get_destination_uuid(const uint8_t * event){
+    return little_endian_read_16(event, 7);
+}
+/**
+ * @brief Get field mtu from event bnep_event_channel_opened
+ * @param event packet
+ * @return mtu
+ * @note: btstack_type 2
+ */
+static inline uint16_t bnep_event_channel_opened_get_mtu(const uint8_t * event){
+    return little_endian_read_16(event, 9);
+}
+/**
+ * @brief Get field remote_address from event bnep_event_channel_opened
+ * @param event packet
+ * @param Pointer to storage for remote_address
+ * @note: btstack_type B
+ */
+static inline void bnep_event_channel_opened_get_remote_address(const uint8_t * event, bd_addr_t remote_address){
+    reverse_bd_addr(&event[11], remote_address);    
+}
+
+/**
+ * @brief Get field bnep_cid from event bnep_event_channel_closed
+ * @param event packet
+ * @return bnep_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t bnep_event_channel_closed_get_bnep_cid(const uint8_t * event){
+    return little_endian_read_16(event, 2);
+}
+/**
+ * @brief Get field source_uuid from event bnep_event_channel_closed
+ * @param event packet
+ * @return source_uuid
+ * @note: btstack_type 2
+ */
+static inline uint16_t bnep_event_channel_closed_get_source_uuid(const uint8_t * event){
+    return little_endian_read_16(event, 4);
+}
+/**
+ * @brief Get field destination_uuid from event bnep_event_channel_closed
+ * @param event packet
+ * @return destination_uuid
+ * @note: btstack_type 2
+ */
+static inline uint16_t bnep_event_channel_closed_get_destination_uuid(const uint8_t * event){
+    return little_endian_read_16(event, 6);
+}
+/**
+ * @brief Get field remote_address from event bnep_event_channel_closed
+ * @param event packet
+ * @param Pointer to storage for remote_address
+ * @note: btstack_type B
+ */
+static inline void bnep_event_channel_closed_get_remote_address(const uint8_t * event, bd_addr_t remote_address){
+    reverse_bd_addr(&event[8], remote_address);    
+}
+
+/**
+ * @brief Get field bnep_cid from event bnep_event_channel_timeout
+ * @param event packet
+ * @return bnep_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t bnep_event_channel_timeout_get_bnep_cid(const uint8_t * event){
+    return little_endian_read_16(event, 2);
+}
+/**
+ * @brief Get field source_uuid from event bnep_event_channel_timeout
+ * @param event packet
+ * @return source_uuid
+ * @note: btstack_type 2
+ */
+static inline uint16_t bnep_event_channel_timeout_get_source_uuid(const uint8_t * event){
+    return little_endian_read_16(event, 4);
+}
+/**
+ * @brief Get field destination_uuid from event bnep_event_channel_timeout
+ * @param event packet
+ * @return destination_uuid
+ * @note: btstack_type 2
+ */
+static inline uint16_t bnep_event_channel_timeout_get_destination_uuid(const uint8_t * event){
+    return little_endian_read_16(event, 6);
+}
+/**
+ * @brief Get field remote_address from event bnep_event_channel_timeout
+ * @param event packet
+ * @param Pointer to storage for remote_address
+ * @note: btstack_type B
+ */
+static inline void bnep_event_channel_timeout_get_remote_address(const uint8_t * event, bd_addr_t remote_address){
+    reverse_bd_addr(&event[8], remote_address);    
+}
+/**
+ * @brief Get field channel_state from event bnep_event_channel_timeout
+ * @param event packet
+ * @return channel_state
+ * @note: btstack_type 1
+ */
+static inline uint8_t bnep_event_channel_timeout_get_channel_state(const uint8_t * event){
+    return event[14];
+}
+
+/**
+ * @brief Get field bnep_cid from event bnep_event_can_send_now
+ * @param event packet
+ * @return bnep_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t bnep_event_can_send_now_get_bnep_cid(const uint8_t * event){
+    return little_endian_read_16(event, 2);
+}
+/**
+ * @brief Get field source_uuid from event bnep_event_can_send_now
+ * @param event packet
+ * @return source_uuid
+ * @note: btstack_type 2
+ */
+static inline uint16_t bnep_event_can_send_now_get_source_uuid(const uint8_t * event){
+    return little_endian_read_16(event, 4);
+}
+/**
+ * @brief Get field destination_uuid from event bnep_event_can_send_now
+ * @param event packet
+ * @return destination_uuid
+ * @note: btstack_type 2
+ */
+static inline uint16_t bnep_event_can_send_now_get_destination_uuid(const uint8_t * event){
+    return little_endian_read_16(event, 6);
+}
+/**
+ * @brief Get field remote_address from event bnep_event_can_send_now
+ * @param event packet
+ * @param Pointer to storage for remote_address
+ * @note: btstack_type B
+ */
+static inline void bnep_event_can_send_now_get_remote_address(const uint8_t * event, bd_addr_t remote_address){
+    reverse_bd_addr(&event[8], remote_address);    
+}
+
 #ifdef ENABLE_BLE
 /**
  * @brief Get field handle from event sm_event_just_works_request

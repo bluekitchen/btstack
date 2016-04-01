@@ -133,7 +133,7 @@ static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 /* LISTING_START(PanuSetup): Panu setup */
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
-static void handle_sdp_client_query_result(uint8_t packet_type, uint8_t *packet, uint16_t size);
+static void handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
 static void panu_setup(void){
 
@@ -268,13 +268,13 @@ static int tap_alloc(char *dev, bd_addr_t bd_addr)
  */
 
 /* LISTING_START(processTapData): Process incoming network packets */
-static int process_tap_dev_data(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type) 
+static void process_tap_dev_data(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type) 
 {
     ssize_t len;
     len = read(ds->fd, network_buffer, sizeof(network_buffer));
     if (len <= 0){
         fprintf(stderr, "TAP: Error while reading: %s\n", strerror(errno));
-        return 0;
+        return;
     }
 
     network_buffer_len = len;
@@ -285,7 +285,7 @@ static int process_tap_dev_data(btstack_data_source_t *ds, btstack_data_source_c
         // park the current network packet
         btstack_run_loop_remove_data_source(&tap_dev_ds);
     }
-    return 0;
+    return;
 }
 /* LISTING_END */
 
@@ -316,7 +316,7 @@ static char * get_string_from_data_element(uint8_t * element){
  * @text The SDP parsers retrieves the BNEP PAN UUID as explained in  
  * Section [on SDP BNEP Query example](#sec:sdpbnepqueryExample}.
  */
-static void handle_sdp_client_query_result(uint8_t packet_type, uint8_t *packet, uint16_t size) {
+static void handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) {
 
     des_iterator_t des_list_it;
     des_iterator_t prot_it;
@@ -444,7 +444,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 case BTSTACK_EVENT_STATE:
                     if (packet[2] == HCI_STATE_WORKING) {
                         printf("Start SDP BNEP query.\n");
-                        sdp_client_query_uuid16(remote, SDP_BNEPProtocol);
+                        sdp_client_query_uuid16(&handle_sdp_client_query_result, remote, SDP_BNEPProtocol);
                     }
                     break;
 
@@ -464,7 +464,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 
                 /* LISTING_RESUME */
 
-                /* @text BNEP_EVENT_OPEN_CHANNEL_COMPLETE is received after a BNEP connection was established or 
+                /* @text BNEP_EVENT_CHANNEL_OPENED is received after a BNEP connection was established or 
                  * or when the connection fails. The status field returns the error code.
                  * 
                  * The TAP network interface is then configured. A data source is set up and registered with the 
@@ -473,17 +473,16 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                  * The event contains both the source and destination UUIDs, as well as the MTU for this connection and
                  * the BNEP Channel ID, which is used for sending Ethernet packets over BNEP.
                  */  
-				case BNEP_EVENT_OPEN_CHANNEL_COMPLETE:
+				case BNEP_EVENT_CHANNEL_OPENED:
                     if (packet[2]) {
                         printf("BNEP channel open failed, status %02x\n", packet[2]);
                     } else {
-                        // data: event(8), len(8), status (8), bnep source uuid (16), bnep destination uuid (16), remote_address (48)
-                        uuid_source = little_endian_read_16(packet, 3);
-                        uuid_dest   = little_endian_read_16(packet, 5);
-                        mtu         = little_endian_read_16(packet, 7);
-                        bnep_cid    = channel;
+                        bnep_cid    = little_endian_read_16(packet, 3);
+                        uuid_source = little_endian_read_16(packet, 5);
+                        uuid_dest   = little_endian_read_16(packet, 7);
+                        mtu         = little_endian_read_16(packet, 9);
                         //bt_flip_addr(event_addr, &packet[9]); 
-                        memcpy(&event_addr, &packet[9], sizeof(bd_addr_t));
+                        memcpy(&event_addr, &packet[11], sizeof(bd_addr_t));
                         printf("BNEP connection open succeeded to %s source UUID 0x%04x dest UUID: 0x%04x, max frame size %u\n", bd_addr_to_str(event_addr), uuid_source, uuid_dest, mtu);
                         /* Create the tap interface */
                         gap_local_bd_addr(local_addr);
@@ -494,7 +493,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                             printf("BNEP device \"%s\" allocated.\n", tap_dev_name);
                             /* Create and register a new runloop data source */
                             btstack_run_loop_set_data_source_fd(&tap_dev_ds, tap_fd);
-                            btstack_run_loop_set_data_source_handler(&tap_dev_ds, process_tap_dev_data);
+                            btstack_run_loop_set_data_source_handler(&tap_dev_ds, &process_tap_dev_data);
                             btstack_run_loop_add_data_source(&tap_dev_ds);
                         }
                     }
