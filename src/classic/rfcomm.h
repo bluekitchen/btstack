@@ -320,7 +320,6 @@ void rfcomm_grant_credits(uint16_t rfcomm_cid, uint8_t credits);
 
 /** 
  * @brief Checks if RFCOMM can send packet. 
- * @note If packet cannot be sent now, a RFCOMM_EVENT_CAN_SEND_NOW will be emitted later
  * @param rfcomm_cid
  * @result != 0 if can send now
  */

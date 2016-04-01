@@ -105,11 +105,7 @@ void att_dispatch_register_server(btstack_packet_handler_t packet_handler){
  * @param handle
  */
 int att_dispatch_client_can_send_now(hci_con_handle_t con_handle){
-	int res = l2cap_can_send_fixed_channel_packet_now(con_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL);
-	if (!res){
-		att_client_waiting_for_can_send =1;
-	}
-	return res;
+	return l2cap_can_send_fixed_channel_packet_now(con_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL);
 }
 
 /**
@@ -117,9 +113,27 @@ int att_dispatch_client_can_send_now(hci_con_handle_t con_handle){
  * @param handle
  */
 int att_dispatch_server_can_send_now(hci_con_handle_t con_handle){
-	int res = l2cap_can_send_fixed_channel_packet_now(con_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL);
-	if (!res){
-		att_server_waiting_for_can_send =1;
-	}
-	return res;
+	return l2cap_can_send_fixed_channel_packet_now(con_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL);
+}
+
+/** 
+ * @brief Request emission of L2CAP_EVENT_CAN_SEND_NOW as soon as possible for client
+ * @note L2CAP_EVENT_CAN_SEND_NOW might be emitted during call to this function
+ *       so packet handler should be ready to handle it
+ * @param con_handle
+ */
+void att_dispatch_client_request_can_send_now_event(hci_con_handle_t con_handle){
+	att_client_waiting_for_can_send = 1;
+	l2cap_request_can_send_fix_channel_now_event(con_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL);
+}
+
+/** 
+ * @brief Request emission of L2CAP_EVENT_CAN_SEND_NOW as soon as possible for server
+ * @note L2CAP_EVENT_CAN_SEND_NOW might be emitted during call to this function
+ *       so packet handler should be ready to handle it
+ * @param con_handle
+ */
+void att_dispatch_server_request_can_send_now_event(hci_con_handle_t con_handle){
+	att_server_waiting_for_can_send = 1;
+	l2cap_request_can_send_fix_channel_now_event(con_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL);
 }
