@@ -701,15 +701,15 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     printf("SSP User Confirmation Request with numeric value '%06u'\n", little_endian_read_32(packet, 8));
                     printf("SSP User Confirmation Auto accept\n");
                     break;
-					
+				
 				case BNEP_EVENT_CHANNEL_OPENED:
-                    if (packet[2]) {
-                        printf("BNEP channel open failed, status %02x\n", packet[2]);
+                    if (bnep_event_channel_opened_get_status(packet)) {
+                        printf("BNEP channel open failed, status %02x\n", bnep_event_channel_opened_get_status(packet));
                     } else {
                         // data: event(8), len(8), status (8), bnep source uuid (16), bnep destination uuid (16), remote_address (48)
-                        uuid_source = little_endian_read_16(packet, 3);
-                        uuid_dest   = little_endian_read_16(packet, 5);
-                        mtu         = little_endian_read_16(packet, 7);
+                        uuid_source = bnep_event_channel_opened_get_source_uuid(packet);
+                        uuid_dest   = bnep_event_channel_opened_get_destination_uuid(packet);
+                        mtu         = bnep_event_channel_opened_get_mtu(packet);
                         bnep_cid    = channel;
                         //bt_flip_addr(event_addr, &packet[9]); 
                         memcpy(&event_addr, &packet[9], sizeof(bd_addr_t));
