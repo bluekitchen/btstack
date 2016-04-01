@@ -99,8 +99,8 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
                     bt_send_cmd(&rfcomm_register_service_cmd, rfcomm_channel_nr, 0xffff);  // reserved channel, mtu limited by l2cap
                     break;
                     
-                case RFCOMM_EVENT_SERVICE_REGISTERED:
-                    printf("RFCOMM_EVENT_SERVICE_REGISTERED channel: %u, status: 0x%02x\n", packet[3], packet[2]);
+                case DAEMON_EVENT_RFCOMM_SERVICE_REGISTERED:
+                    printf("DAEMON_EVENT_RFCOMM_SERVICE_REGISTERED channel: %u, status: 0x%02x\n", packet[3], packet[2]);
                     // register SDP for our SPP
                     spp_create_sdp_record((uint8_t*)service_buffer, 0x10001, rfcomm_channel_nr, "SPP ECHO");
                     bt_send_cmd(&sdp_register_service_record_cmd, service_buffer);

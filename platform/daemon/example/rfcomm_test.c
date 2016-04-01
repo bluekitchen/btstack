@@ -114,8 +114,8 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
                     bt_send_cmd(&rfcomm_register_service_cmd, rfcomm_channel_nr, 0xffff);  // reserved channel, mtu limited by l2cap
                     break;
                     
-                case RFCOMM_EVENT_SERVICE_REGISTERED:
-                    printf("RFCOMM_EVENT_SERVICE_REGISTERED\n");
+                case DAEMON_EVENT_RFCOMM_SERVICE_REGISTERED:
+                    printf("DAEMON_EVENT_RFCOMM_SERVICE_REGISTERED\n");
                     rfcomm_channel_nr = packet[3];
                     // register SDP for our SPP
 				    spp_create_sdp_record((uint8_t*) spp_service_buffer, 0x10001, rfcomm_channel_nr, "RFCOMM Test");
@@ -123,7 +123,7 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
                     bt_send_cmd(&btstack_set_discoverable, 1);
                     break;
 
-                case RFCOMM_EVENT_CREDITS:
+                case DAEMON_EVENT_RFCOMM_CREDITS:
                     sprintf((char*)test_data, "\n\r\n\r-> %09u <- ", counter++);
                     bt_send_rfcomm(rfcomm_channel_id, test_data, mtu);
                     break;

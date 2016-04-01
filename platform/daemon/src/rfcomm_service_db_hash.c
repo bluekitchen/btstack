@@ -50,7 +50,7 @@ uint8_t rfcomm_service_db_channel_for_service(const char *serviceName){
     // quick hack: use sum over service name, map 0 to 1
     int sum = 0;
     while (*serviceName){
-        sum += serviceName;
+        sum += *serviceName;
     }
     int channel = sum & 0x0f;
     if (channel == 0) return 1;

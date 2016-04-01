@@ -146,7 +146,9 @@ typedef uint8_t sm_key_t[16];
 #define BNEP_CHANNEL_NOT_CONNECTED                         0xA1
 #define BNEP_DATA_LEN_EXCEEDS_MTU                          0xA2
 
-// COMMANDS
+
+
+// DAEMON COMMANDS
 
 #define OGF_BTSTACK 0x3d
 
@@ -252,6 +254,7 @@ typedef uint8_t sm_key_t[16];
 #define GATT_GET_MTU                                             0x82
 
 
+
 // EVENTS
 
 /**
@@ -301,13 +304,50 @@ typedef uint8_t sm_key_t[16];
  */
 #define DAEMON_EVENT_REMOTE_NAME_CACHED                    0x65
 
-// internal daemon events
-
-// data: event(8)
+// internal - data: event(8)
 #define DAEMON_EVENT_CONNECTION_OPENED                     0x67
 
-// data: event(8)
+// internal - data: event(8)
 #define DAEMON_EVENT_CONNECTION_CLOSED                     0x68
+
+// data: event(8), len(8), local_cid(16), credits(8)
+#define DAEMON_EVENT_L2CAP_CREDITS                         0x74
+
+/**
+ * @format 12
+ * @param status
+ * @param psm
+ */
+#define DAEMON_EVENT_L2CAP_SERVICE_REGISTERED              0x75
+
+/**
+ * @format 21
+ * @param rfcomm_cid
+ * @param credits
+ */
+#define DAEMON_EVENT_RFCOMM_CREDITS                        0x84
+
+/**
+ * @format 11
+ * @param status
+ * @param channel_id
+ */
+#define DAEMON_EVENT_RFCOMM_SERVICE_REGISTERED             0x85
+
+/**
+ * @format 11
+ * @param status
+ * @param server_channel_id
+ */
+#define DAEMON_EVENT_RFCOMM_PERSISTENT_CHANNEL             0x86
+
+/**
+  * @format 14
+  * @param status
+  * @param service_record_handle
+  */
+#define DAEMON_EVENT_SDP_SERVICE_REGISTERED                0x90
+
 
 
 // additional HCI events
@@ -322,6 +362,7 @@ typedef uint8_t sm_key_t[16];
  * @param handle
  */
 #define HCI_EVENT_SCO_CAN_SEND_NOW                         0x6F
+
 
 // L2CAP EVENTS
     
@@ -360,17 +401,6 @@ typedef uint8_t sm_key_t[16];
 // data: event(8), len(8), handle(16)
 #define L2CAP_EVENT_TIMEOUT_CHECK                          0x73
 
-// ??
-// data: event(8), len(8), local_cid(16), credits(8)
-#define L2CAP_EVENT_CREDITS                                0x74
-
-/**
- * @format 12
- * @param status
- * @param psm
- */
-#define L2CAP_EVENT_SERVICE_REGISTERED                     0x75
-
 /**
  * @format H2222
  * @param handle
@@ -406,7 +436,7 @@ typedef uint8_t sm_key_t[16];
  * @param rfcomm_cid
  * @param max_frame_size
  */
-#define RFCOMM_EVENT_CHANNEL_OPENED                 0x80
+#define RFCOMM_EVENT_CHANNEL_OPENED                        0x80
 
 /**
  * @format 2
@@ -428,28 +458,7 @@ typedef uint8_t sm_key_t[16];
  * @param line_status
  */
 #define RFCOMM_EVENT_REMOTE_LINE_STATUS                    0x83
-    
-/**
- * @format 21
- * @param rfcomm_cid
- * @param credits
- */
-#define RFCOMM_EVENT_CREDITS                               0x84
-
-/**
- * @format 11
- * @param status
- * @param channel_id
- */
-#define RFCOMM_EVENT_SERVICE_REGISTERED                    0x85
-    
-/**
- * @format 11
- * @param status
- * @param server_channel_id
- */
-#define RFCOMM_EVENT_PERSISTENT_CHANNEL                    0x86
-    
+        
 /**
  * @format 21
  * @param rfcomm_cid
@@ -470,13 +479,6 @@ typedef uint8_t sm_key_t[16];
  */
 #define RFCOMM_EVENT_CAN_SEND_NOW                          0x89
 
-
-/**
-  * @format 14
-  * @param status
-  * @param service_record_handle
-  */
-#define SDP_EVENT_SERVICE_REGISTERED                             0x90
 
 /**
  * @format 1

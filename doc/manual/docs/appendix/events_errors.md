@@ -19,13 +19,13 @@ L2CAP_DATA_PACKET packet type. L2CAP provides the following events:
     with *l2cap_accept_connection* and
     *l2cap_decline_connecti-on* respectively.
 
--   L2CAP_EVENT_CREDITS - emitted when there is a chance to send a new
+-   DAEMON_EVENT_L2CAP_CREDITS - emitted when there is a chance to send a new
     L2CAP packet. BTstack does not buffer packets. Instead, it requires
     the application to retry sending if BTstack cannot deliver a packet
     to the Bluetooth module. In this case, the l2cap_send
     will return an error.
 
--   L2CAP_EVENT_SERVICE_REGISTERED - Status not equal zero indicates
+-   DAEMON_EVENT_L2CAP_SERVICE_REGISTERED - Status not equal zero indicates
     an error. Possible errors: service is already registered;
     MAX_NO_L2CAP_SERVICES (defined in config.h) already registered.
 
@@ -36,8 +36,8 @@ Event      | Event Code
 L2CAP_EVENT_CHANNEL_OPENED          | 0x70 
 L2CAP_EVENT_CHANNEL_CLOSED          | 0x71 
 L2CAP_EVENT_INCOMING_CONNECTION     | 0x72 
-L2CAP_EVENT_CREDITS                 | 0x74 
-L2CAP_EVENT_SERVICE_REGISTERED      | 0x75 
+DAEMON_EVENT_L2CAP_CREDITS                 | 0x74 
+DAEMON_EVENT_L2CAP_SERVICE_REGISTERED      | 0x75 
 
 
 Table: L2CAP Events. {#tbl:l2capEvents}
@@ -50,9 +50,9 @@ L2CAP event paramaters, with size in bits:
     - *event (8), len(8), channel(16)* 
 - L2CAP_EVENT_INCOMING_CONNECTION: 
     - *event(8), len(8), address(48), handle(16), psm (16), local_cid(16), remote_cid (16)* 
-- L2CAP_EVENT_CREDITS:
+- DAEMON_EVENT_L2CAP_CREDITS:
     - *event(8), len(8), local_cid(16), credits(8)*
-- L2CAP_EVENT_SERVICE_REGISTERED: 
+- DAEMON_EVENT_L2CAP_SERVICE_REGISTERED: 
     - *event(8), len(8), status(8), psm(16)* 
 
 ## RFCOMM Events
@@ -74,11 +74,11 @@ by RFCOMM:
     establishment is done. Status not equal zero indicates an error.
     Possible errors: an L2CAP error, out of memory.
 
--   RFCOMM_EVENT_CREDITS - The application can resume sending when
+-   DAEMON_EVENT_RFCOMM_CREDITS - The application can resume sending when
     this even is received. See Section on [RFCOMM credit-based flow-control](../protocols/#sec:flowControlProtocols) 
     for more.
     
--   RFCOMM_EVENT_SERVICE_REGISTERED - Status not equal zero indicates
+-   DAEMON_EVENT_RFCOMM_SERVICE_REGISTERED - Status not equal zero indicates
     an error. Possible errors: 
     
     - service is already registered;
@@ -90,8 +90,8 @@ Event      | Event Code
 RFCOMM_EVENT_CHANNEL_OPENED | 0x80 
 RFCOMM_EVENT_CHANNEL_CLOSED        | 0x81 
 RFCOMM_EVENT_INCOMING_CONNECTION   | 0x82 
-RFCOMM_EVENT_CREDITS               | 0x84 
-RFCOMM_EVENT_SERVICE_REGISTERED    | 0x85 
+DAEMON_EVENT_RFCOMM_CREDITS               | 0x84 
+DAEMON_EVENT_RFCOMM_SERVICE_REGISTERED    | 0x85 
 
 Table: RFCOMM Events. {#tbl:rfcommEvents}
 
@@ -104,9 +104,9 @@ RFCOMM event paramaters, with size in bits:
     - *event(8), len(8), rfcomm_cid(16)*
 - RFCOMM_EVENT_INCOMING_CONNECTION: 
     - *event(8), len(8), address(48), channel (8), rfcomm_cid(16)*
-- RFCOMM_EVENT_CREDITS: 
+- DAEMON_EVENT_RFCOMM_CREDITS: 
     - *event(8), len(8), rfcomm_cid(16), credits(8)*
-- RFCOMM_EVENT_SERVICE_REGISTERED: 
+- DAEMON_EVENT_RFCOMM_SERVICE_REGISTERED: 
     - *event(8), len(8), status(8), rfcomm server channel_id(8)*
 
 ## Errors {#sec:errorsAppendix}
