@@ -1839,7 +1839,7 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
 				
                 case BTSTACK_EVENT_STATE:
 					// bt stack activated, get started
-					if (packet[2] == HCI_STATE_WORKING) {
+					if (btstack_event_state_get_state(packet) == HCI_STATE_WORKING){
                         log_info("HCI Working!");
                         dkg_state = sm_persistent_irk_ready ? DKG_CALC_DHK : DKG_CALC_IRK;
                         rau_state = RAU_IDLE;

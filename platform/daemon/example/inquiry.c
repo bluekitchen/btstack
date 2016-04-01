@@ -119,7 +119,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 	switch(state){
 
 		case INIT: 
-			if (packet[2] == HCI_STATE_WORKING) {
+			if (btstack_event_state_get_state(packet) == HCI_STATE_WORKING){
 				bt_send_cmd(&hci_write_inquiry_mode, 0x01); // with RSSI
 				state = W4_INQUIRY_MODE_COMPLETE;
 			}
@@ -150,7 +150,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 			switch(event){
 				case HCI_EVENT_INQUIRY_RESULT:
 				case HCI_EVENT_INQUIRY_RESULT_WITH_RSSI:{
-                    numResponses = packet[2];
+                    numResponses = hci_event_inquiry_result_get_num_responses(packet);
                     int offset = 3;
                     for (i=0; i<numResponses && deviceCount < MAX_DEVICES;i++){
                         reverse_bd_addr(&packet[offset], addr);

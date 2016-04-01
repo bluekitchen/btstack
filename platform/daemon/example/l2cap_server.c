@@ -88,7 +88,7 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 					
 				case BTSTACK_EVENT_STATE:
 					// bt stack activated, get started 
-					if (packet[2] == HCI_STATE_WORKING) {
+					if (btstack_event_state_get_state(packet) == HCI_STATE_WORKING){
 						bt_send_cmd(&hci_write_class_of_device, 0x2540);
 					}
 					break;

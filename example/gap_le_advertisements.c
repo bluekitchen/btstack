@@ -235,7 +235,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
     switch (hci_event_packet_get_type(packet)) {
         case BTSTACK_EVENT_STATE:
             // BTstack activated, get started
-            if (packet[2] == HCI_STATE_WORKING) {
+            if (btstack_event_state_get_state(packet) == HCI_STATE_WORKING){
                 printf("BTstack activated, start scaning!\n");
                 gap_set_scan_parameters(0,0x0030, 0x0030);
                 gap_start_scan(); 

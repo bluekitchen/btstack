@@ -291,7 +291,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 		case kW4Activated:
 			switch (hci_event_packet_get_type(packet)){
 				case BTSTACK_EVENT_STATE:
-					if (packet[2] == HCI_STATE_WORKING) {
+					if (btstack_event_state_get_state(packet) == HCI_STATE_WORKING){
 						state = kActivated;
 						[self sendActivated];
 					}
@@ -414,7 +414,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 			
 			switch (hci_event_packet_get_type(packet)){
 				case HCI_EVENT_INQUIRY_RESULT:
-					numResponses = packet[2];
+					numResponses = hci_event_inquiry_result_get_num_responses(packet);
 					for (i=0; i<numResponses ; i++){
 						bt_flip_addr(addr, &packet[3+i*6]);
 						// NSLog(@"found %@", [BTDevice stringForAddress:addr]);
@@ -434,7 +434,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 					break;
 					
 				case HCI_EVENT_INQUIRY_RESULT_WITH_RSSI:{
-					numResponses = packet[2];
+					numResponses = hci_event_inquiry_result_get_num_responses(packet);
 					int offset = 3;
 					for (i=0; i<numResponses ;i++){
 						bt_flip_addr(addr, &packet[offset]);

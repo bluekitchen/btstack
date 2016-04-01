@@ -631,7 +631,7 @@ registered callback, as shown in Listing [below](#lst:SDPClientRFCOMM).
         switch (event) {
             case BTSTACK_EVENT_STATE:
                 // bt stack activated, get started 
-                if (packet[2] == HCI_STATE_WORKING){
+                if (btstack_event_state_get_state(packet) == HCI_STATE_WORKING){
                       sdp_client_query_rfcomm_channel_and_name_for_uuid(remote, 0x0003);
                 }
                 break;

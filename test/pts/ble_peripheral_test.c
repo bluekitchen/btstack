@@ -549,7 +549,7 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                 
                 case BTSTACK_EVENT_STATE:
                     // bt stack activated, get started
-                    if (packet[2] == HCI_STATE_WORKING) {
+                    if (btstack_event_state_get_state(packet) == HCI_STATE_WORKING){
                         printf("SM Init completed\n");
                         todos = SET_ADVERTISEMENT_PARAMS | SET_ADVERTISEMENT_DATA | SET_SCAN_RESPONSE_DATA | ENABLE_ADVERTISEMENTS;
                         update_advertisements();

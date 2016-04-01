@@ -192,7 +192,7 @@ static void inquiry_packet_handler (uint8_t packet_type, uint8_t *packet, uint16
     switch(event){
         case HCI_EVENT_INQUIRY_RESULT:
         case HCI_EVENT_INQUIRY_RESULT_WITH_RSSI:{
-            numResponses = packet[2];
+            numResponses = hci_event_inquiry_result_get_num_responses(packet);
             int offset = 3;
             for (i=0; i<numResponses && deviceCount < MAX_DEVICES;i++){
                 reverse_bd_addr(&packet[offset], addr);
@@ -285,7 +285,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 
         case BTSTACK_EVENT_STATE:
             // bt stack activated, get started 
-            if (packet[2] == HCI_STATE_WORKING){
+            if (btstack_event_state_get_state(packet) == HCI_STATE_WORKING){
                 printf("BTstack Bluetooth Classic Test Ready\n");
                 hci_send_cmd(&hci_write_inquiry_mode, 0x01); // with RSSI
                 show_usage();

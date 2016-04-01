@@ -112,7 +112,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 
     switch (event) {
         case BTSTACK_EVENT_STATE:
-            if (packet[2] == HCI_STATE_WORKING){
+            if (btstack_event_state_get_state(packet) == HCI_STATE_WORKING){
                 sdp_client_query_uuid16(&handle_sdp_client_query_result, remote, SDP_PublicBrowseGroup);
             }
             break;

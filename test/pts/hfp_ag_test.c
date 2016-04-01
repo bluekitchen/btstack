@@ -194,7 +194,7 @@ static void inquiry_packet_handler (uint8_t packet_type, uint8_t *packet, uint16
     switch(event){
         case HCI_EVENT_INQUIRY_RESULT:
         case HCI_EVENT_INQUIRY_RESULT_WITH_RSSI:{
-            numResponses = packet[2];
+            numResponses = hci_event_inquiry_result_get_num_responses(packet);
             int offset = 3;
             for (i=0; i<numResponses && deviceCount < MAX_DEVICES;i++){
                 reverse_bd_addr(&packet[offset], addr);
