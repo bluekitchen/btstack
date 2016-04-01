@@ -137,8 +137,7 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 					
 				case HCI_EVENT_LINK_KEY_REQUEST:
 					// link key request
-					reverse_bd_addr(&packet[2],
-							event_addr); 
+					hci_event_link_key_request_get_bd_addr(packet, event_addr);
 					bt_send_cmd(&hci_link_key_request_negative_reply, &event_addr);
 					break;
 					
