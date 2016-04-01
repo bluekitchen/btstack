@@ -238,35 +238,35 @@ static void packet_handler(uint8_t * event, uint16_t event_size){
         case HCI_EVENT_HSP_META:
             switch (event[2]) { 
                 case HSP_SUBEVENT_RFCOMM_CONNECTION_COMPLETE:
-                    if (hsp_subevent_audio_connection_complete_get_handle(event) == 0){
-                        printf("RFCOMM connection established.\n");
+                    if (hsp_subevent_rfcomm_connection_complete_get_status(event)){
+                        printf("RFCOMM connection establishement failed with status %u\n", hsp_subevent_audio_connection_complete_get_handle(event));
                     } else {
-                        printf("RFCOMM connection establishement failed.\n");
-                    }
+                        printf("RFCOMM connection established.\n");
+                    } 
                     break;
                 case HSP_SUBEVENT_RFCOMM_DISCONNECTION_COMPLETE:
-                    if (hsp_subevent_audio_connection_complete_get_handle(event) == 0){
-                        printf("RFCOMM disconnected.\n");
+                    if (hsp_subevent_rfcomm_disconnection_complete_get_status(event)){
+                        printf("RFCOMM disconnection failed with status %u.\n", hsp_subevent_rfcomm_disconnection_complete_get_status(event));
                     } else {
-                        printf("RFCOMM disconnection failed.\n");
+                        printf("RFCOMM disconnected.\n");
                     }
                     break;
                 case HSP_SUBEVENT_AUDIO_CONNECTION_COMPLETE:
-                    if (hsp_subevent_audio_connection_complete_get_handle(event) == 0){
-                        sco_handle = little_endian_read_16(event, 4);
-                        printf("Audio connection established with SCO handle 0x%04x.\n", sco_handle);
-                        try_send_sco();
-                    } else {
+                    if (hsp_subevent_audio_connection_complete_get_status(event)){
                         printf("Audio connection establishment failed with status %u\n", hsp_subevent_audio_connection_complete_get_status(event));
                         sco_handle = 0;
-                    }
+                    } else {
+                        sco_handle = hsp_subevent_audio_connection_complete_get_handle(event);
+                        printf("Audio connection established with SCO handle 0x%04x.\n", sco_handle);
+                        try_send_sco();
+                    } 
                     break;
                 case HSP_SUBEVENT_AUDIO_DISCONNECTION_COMPLETE:
-                    if (event[3] == 0){
+                    if (hsp_subevent_audio_disconnection_complete_get_status(event)){
+                        printf("Audio connection releasing failed with status %u\n", hsp_subevent_audio_disconnection_complete_get_status(event));
+                    } else {
                         printf("Audio connection released.\n\n");
                         sco_handle = 0;    
-                    } else {
-                        printf("Audio connection releasing failed with status %u\n", event[3]);
                     }
                     break;
                 case HSP_SUBEVENT_MICROPHONE_GAIN_CHANGED:
