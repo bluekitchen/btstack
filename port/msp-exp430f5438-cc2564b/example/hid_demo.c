@@ -59,7 +59,8 @@
 #include "btstack_memory.h"
 #include "hci.h"
 #include "l2cap.h"
-
+#include "btstack_link_key_db_memory,h"
+ 
 #define INQUIRY_INTERVAL 15
 
 #define FONT_HEIGHT		12                    // Each character has 13 lines 
@@ -378,8 +379,8 @@ int main(void){
 
     // init HCI
 	const hci_transport_t * transport = hci_transport_h4_instance();
-    remote_device_db_t * link_key_db = (remote_device_db_t *) &remote_device_db_memory;
-	hci_init(transport, &config, link_key_db);
+    btstack_link_key_db_t * link_key_db = btstack_link_key_db_memory_instance();
+	hci_init(transport, &config);
 	hci_set_link_key_db(link_key_db);
 	hci_set_chipset(btstack_chipset_cc256x_instance());
 
