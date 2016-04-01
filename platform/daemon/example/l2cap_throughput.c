@@ -127,9 +127,8 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 					con_handle = l2cap_event_incoming_connection_get_handle(packet); 
 					psm        = l2cap_event_incoming_connection_get_psm(packet); 
 					local_cid  = l2cap_event_incoming_connection_get_local_cid(packet); 
-					remote_cid = l2cap_event_incoming_connection_get_remote_cid(packet); 
 					printf("L2CAP_EVENT_INCOMING_CONNECTION %s, handle 0x%02x, psm 0x%02x, local cid 0x%02x, remote cid 0x%02x\n",
-						bd_addr_to_str(event_addr), con_handle, psm, local_cid, remote_cid);
+						bd_addr_to_str(event_addr), con_handle, psm, local_cid, l2cap_event_incoming_connection_get_remote_cid(packet));
 					
 					// accept
 					bt_send_cmd(&l2cap_accept_connection_cmd, local_cid);
