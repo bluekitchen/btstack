@@ -93,6 +93,14 @@ static inline uint8_t hci_event_hfp_meta_get_subevent_code(const uint8_t * event
 static inline uint8_t hci_event_ancs_meta_get_subevent_code(const uint8_t * event){
     return event[2];
 }
+/***
+ * @brief Get subevent code for le event
+ * @param event packet
+ * @return subevent_code
+ */
+static inline uint8_t hci_event_le_meta_get_subevent_code(const uint8_t * event){
+    return event[2];
+}
 /**
  * @brief Get field status from event hci_event_inquiry_complete
  * @param event packet
@@ -855,6 +863,7 @@ static inline uint8_t hci_event_encryption_key_refresh_complete_get_status(const
 static inline hci_con_handle_t hci_event_encryption_key_refresh_complete_get_handle(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
+
 
 /**
  * @brief Get field state from event btstack_event_state

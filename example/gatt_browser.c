@@ -171,7 +171,7 @@ static void handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *pac
     switch (event) {
         case BTSTACK_EVENT_STATE:
             // BTstack activated, get started
-            if (packet[2] != HCI_STATE_WORKING) break;
+            if (btstack_event_state_get_state(packet) != HCI_STATE_WORKING) break;
             if (cmdline_addr_found){
                 printf("Trying to connect to %s\n", bd_addr_to_str(cmdline_addr));
                 gap_connect(cmdline_addr, 0);
@@ -191,7 +191,7 @@ static void handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *pac
             break;
         case HCI_EVENT_LE_META:
             // wait for connection complete
-            if (packet[2] !=  HCI_SUBEVENT_LE_CONNECTION_COMPLETE) break;
+            if (hci_event_le_meta_get_subevent_code(packet) !=  HCI_SUBEVENT_LE_CONNECTION_COMPLETE) break;
             connection_handler = hci_subevent_le_connection_complete_get_connection_handle(packet);
             // query primary services
             gatt_client_discover_primary_services(handle_gatt_client_event, connection_handler);

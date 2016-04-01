@@ -63,7 +63,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 			}
 			break;
 		case HCI_EVENT_LE_META:
-            switch (packet[2]) {
+            switch (hci_event_le_meta_get_subevent_code(packet)) {
                 case HCI_SUBEVENT_LE_ADVERTISING_REPORT: 
                 	printf("\n- ADV: ");
                 	printf_hexdump(packet, size);

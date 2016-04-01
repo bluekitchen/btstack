@@ -168,10 +168,10 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     le_notification_enabled = 0;
                     break;
                 case HCI_EVENT_LE_META:
-                    switch (packet[2]) {
+                    switch (hci_event_le_meta_get_subevent_code(packet)) {
                         case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
                             test_data_len = ATT_DEFAULT_MTU - 3;
-                            connection_handle = little_endian_read_16(packet, 4);
+                            connection_handle = hci_subevent_le_connection_complete_get_connection_handle(packet);
                             // min con interval 20 ms 
                             // gap_request_connection_parameter_update(connection_handle, 0x10, 0x18, 0, 0x0048);
                             // printf("Connected, requesting conn param update for handle 0x%04x\n", connection_handle);

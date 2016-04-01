@@ -205,7 +205,7 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
     switch (event) {
         case BTSTACK_EVENT_STATE:
             // BTstack activated, get started
-            if (packet[2] != HCI_STATE_WORKING) break;
+            if (btstack_event_state_get_state(packet) != HCI_STATE_WORKING) break;
             if (cmdline_addr_found){
                 printf("Start connect to %s\n", bd_addr_to_str(cmdline_addr));
                 state = TC_W4_CONNECT;
@@ -230,7 +230,7 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
             break;
         case HCI_EVENT_LE_META:
             // wait for connection complete
-            if (packet[2] !=  HCI_SUBEVENT_LE_CONNECTION_COMPLETE) break;
+            if (hci_event_le_meta_get_subevent_code(packet) !=  HCI_SUBEVENT_LE_CONNECTION_COMPLETE) break;
             if (state != TC_W4_CONNECT) return;
             connection_handle = hci_subevent_le_connection_complete_get_connection_handle(packet);
             // initialize gatt client context with handle, and add it to the list of active clients
