@@ -205,7 +205,7 @@ def create_getter(event_name, field_name, field_type, offset, supported):
     global c_prototoype_unsupported
     global param_read
 
-    description = "Get field %s from event %s" % (field_name, event_name)
+    description = "Get field %s from event %s" % (field_name, event_name.upper())
     result_name = field_name
     fn_name     = "%s_get_%s" % (event_name, field_name)
     result_type = c_type_for_btstack_type(field_type)
