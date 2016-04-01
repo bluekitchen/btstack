@@ -600,30 +600,30 @@ static inline uint16_t hci_event_read_clock_offset_complete_get_clock_offset(con
 }
 
 /**
- * @brief Get field status from event hci_event_packet_type_changed
+ * @brief Get field status from event hci_event_connection_packet_type_changed
  * @param event packet
  * @return status
  * @note: btstack_type 1
  */
-static inline uint8_t hci_event_packet_type_changed_get_status(const uint8_t * event){
+static inline uint8_t hci_event_connection_packet_type_changed_get_status(const uint8_t * event){
     return event[2];
 }
 /**
- * @brief Get field handle from event hci_event_packet_type_changed
+ * @brief Get field handle from event hci_event_connection_packet_type_changed
  * @param event packet
  * @return handle
  * @note: btstack_type H
  */
-static inline hci_con_handle_t hci_event_packet_type_changed_get_handle(const uint8_t * event){
+static inline hci_con_handle_t hci_event_connection_packet_type_changed_get_handle(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 /**
- * @brief Get field packet_type from event hci_event_packet_type_changed
+ * @brief Get field packet_types from event hci_event_connection_packet_type_changed
  * @param event packet
- * @return packet_type
+ * @return packet_types
  * @note: btstack_type 2
  */
-static inline uint16_t hci_event_packet_type_changed_get_packet_type(const uint8_t * event){
+static inline uint16_t hci_event_connection_packet_type_changed_get_packet_types(const uint8_t * event){
     return little_endian_read_16(event, 5);
 }
 

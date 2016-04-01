@@ -427,9 +427,10 @@ typedef enum {
  * @format 1H2
  * @param status
  * @param handle
- * @param packet_type
+ * @param packet_types
+ * @pnote packet_type is in plural to avoid clash with Java binding Packet.getPacketType()
  */
-#define HCI_EVENT_PACKET_TYPE_CHANGED                      0x1D
+#define HCI_EVENT_CONNECTION_PACKET_TYPE_CHANGED           0x1D
 
 /** 
  * @format 1B11321

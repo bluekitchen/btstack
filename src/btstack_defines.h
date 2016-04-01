@@ -332,7 +332,8 @@ typedef uint8_t sm_key_t[16];
  * @param status
  * @param channel_id
  */
-#define DEAMON_EVENT_RFCOMM_SERVICE_REGISTERED             0x85
+#define DAEMON_EVENT_RFCOMM_SERVICE_REGISTERED             0x85
+
 /**
  * @format 11
  * @param status
