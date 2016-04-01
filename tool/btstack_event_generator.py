@@ -230,7 +230,7 @@ def create_events(events):
         fout.write(copyright)
         fout.write(hfile_header_begin)
 
-        meta_events = ['HSP', 'HFP', 'ANCS'];
+        meta_events = ['HSP', 'HFP', 'ANCS', 'LE'];
         for meta_event in meta_events:
             fout.write(meta_event_template.format(meta_event=meta_event.lower()))
 
