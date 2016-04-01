@@ -1035,25 +1035,6 @@ static inline uint16_t l2cap_event_incoming_connection_get_remote_cid(const uint
 }
 
 /**
- * @brief Get field status from event l2cap_event_service_registered
- * @param event packet
- * @return status
- * @note: btstack_type 1
- */
-static inline uint8_t l2cap_event_service_registered_get_status(const uint8_t * event){
-    return event[2];
-}
-/**
- * @brief Get field psm from event l2cap_event_service_registered
- * @param event packet
- * @return psm
- * @note: btstack_type 2
- */
-static inline uint16_t l2cap_event_service_registered_get_psm(const uint8_t * event){
-    return little_endian_read_16(event, 3);
-}
-
-/**
  * @brief Get field handle from event l2cap_event_connection_parameter_update_request
  * @param event packet
  * @return handle
@@ -1232,63 +1213,6 @@ static inline uint8_t rfcomm_event_remote_line_status_get_line_status(const uint
 }
 
 /**
- * @brief Get field rfcomm_cid from event rfcomm_event_credits
- * @param event packet
- * @return rfcomm_cid
- * @note: btstack_type 2
- */
-static inline uint16_t rfcomm_event_credits_get_rfcomm_cid(const uint8_t * event){
-    return little_endian_read_16(event, 2);
-}
-/**
- * @brief Get field credits from event rfcomm_event_credits
- * @param event packet
- * @return credits
- * @note: btstack_type 1
- */
-static inline uint8_t rfcomm_event_credits_get_credits(const uint8_t * event){
-    return event[4];
-}
-
-/**
- * @brief Get field status from event rfcomm_event_service_registered
- * @param event packet
- * @return status
- * @note: btstack_type 1
- */
-static inline uint8_t rfcomm_event_service_registered_get_status(const uint8_t * event){
-    return event[2];
-}
-/**
- * @brief Get field channel_id from event rfcomm_event_service_registered
- * @param event packet
- * @return channel_id
- * @note: btstack_type 1
- */
-static inline uint8_t rfcomm_event_service_registered_get_channel_id(const uint8_t * event){
-    return event[3];
-}
-
-/**
- * @brief Get field status from event rfcomm_event_persistent_channel
- * @param event packet
- * @return status
- * @note: btstack_type 1
- */
-static inline uint8_t rfcomm_event_persistent_channel_get_status(const uint8_t * event){
-    return event[2];
-}
-/**
- * @brief Get field server_channel_id from event rfcomm_event_persistent_channel
- * @param event packet
- * @return server_channel_id
- * @note: btstack_type 1
- */
-static inline uint8_t rfcomm_event_persistent_channel_get_server_channel_id(const uint8_t * event){
-    return event[3];
-}
-
-/**
  * @brief Get field rfcomm_cid from event rfcomm_event_remote_modem_status
  * @param event packet
  * @return rfcomm_cid
@@ -1315,25 +1239,6 @@ static inline uint8_t rfcomm_event_remote_modem_status_get_modem_status(const ui
  */
 static inline uint16_t rfcomm_event_can_send_now_get_rfcomm_cid(const uint8_t * event){
     return little_endian_read_16(event, 2);
-}
-
-/**
- * @brief Get field status from event sdp_event_service_registered
- * @param event packet
- * @return status
- * @note: btstack_type 1
- */
-static inline uint8_t sdp_event_service_registered_get_status(const uint8_t * event){
-    return event[2];
-}
-/**
- * @brief Get field service_record_handle from event sdp_event_service_registered
- * @param event packet
- * @return service_record_handle
- * @note: btstack_type 4
- */
-static inline uint32_t sdp_event_service_registered_get_service_record_handle(const uint8_t * event){
-    return little_endian_read_32(event, 3);
 }
 
 /**

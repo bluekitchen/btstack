@@ -174,7 +174,7 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 					printf("Basebank connection closed\n");
 					break;
 					
-				case L2CAP_EVENT_CREDITS:
+				case DAEMON_EVENT_L2CAP_CREDITS:
 					if (!serverMode) {
 						// can send! (assuming single credits are handet out)
 						update_packet();

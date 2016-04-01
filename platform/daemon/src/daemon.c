@@ -218,10 +218,10 @@ static int loggingEnabled;
 #if 0
 static void l2cap_emit_credits(l2cap_channel_t *channel, uint8_t credits) {
     
-    log_info("L2CAP_EVENT_CREDITS local_cid 0x%x credits %u", channel->local_cid, credits);
+    log_info("DAEMON_EVENT_L2CAP_CREDITS local_cid 0x%x credits %u", channel->local_cid, credits);
     
     uint8_t event[5];
-    event[0] = L2CAP_EVENT_CREDITS;
+    event[0] = DAEMON_EVENT_L2CAP_CREDITS;
     event[1] = sizeof(event) - 2;
     little_endian_store_16(event, 2, channel->local_cid);
     event[4] = credits;
@@ -240,9 +240,9 @@ static void l2cap_hand_out_credits(void){
     }
 }
 static void rfcomm_emit_credits(rfcomm_channel_t * channel, uint8_t credits) {
-    log_info("RFCOMM_EVENT_CREDITS cid 0x%02x credits %u", channel->rfcomm_cid, credits);
+    log_info("DAEMON_EVENT_RFCOMM_CREDITS cid 0x%02x credits %u", channel->rfcomm_cid, credits);
     uint8_t event[5];
-    event[0] = RFCOMM_EVENT_CREDITS;
+    event[0] = DAEMON_EVENT_RFCOMM_CREDITS;
     event[1] = sizeof(event) - 2;
     little_endian_store_16(event, 2, channel->rfcomm_cid);
     event[4] = credits;
@@ -254,15 +254,15 @@ static void rfcomm_hand_out_credits(void){
     for (it = (btstack_linked_item_t *) rfcomm_channels; it ; it = it->next){
         rfcomm_channel_t * channel = (rfcomm_channel_t *) it;
         if (channel->state != RFCOMM_CHANNEL_OPEN) {
-            // log_info("RFCOMM_EVENT_CREDITS: multiplexer not open");
+            // log_info("DAEMON_EVENT_RFCOMM_CREDITS: multiplexer not open");
             continue;
         }
         if (!channel->credits_outgoing) {
-            // log_info("RFCOMM_EVENT_CREDITS: no outgoing credits");
+            // log_info("DAEMON_EVENT_RFCOMM_CREDITS: no outgoing credits");
             continue;
         }
         // channel open, multiplexer has l2cap credits and we didn't hand out credit before -> go!
-        // log_info("RFCOMM_EVENT_CREDITS: 1");
+        // log_info("DAEMON_EVENT_RFCOMM_CREDITS: 1");
         rfcomm_emit_credits(channel, 1);
     }        
 }
@@ -724,7 +724,7 @@ static void send_l2cap_connection_open_failed(connection_t * connection, bd_addr
 
 static void l2cap_emit_service_registered(void *connection, uint8_t status, uint16_t psm){
     uint8_t event[5];
-    event[0] = L2CAP_EVENT_SERVICE_REGISTERED;
+    event[0] = DAEMON_EVENT_L2CAP_SERVICE_REGISTERED;
     event[1] = sizeof(event) - 2;
     event[2] = status;
     little_endian_store_16(event, 3, psm);
@@ -734,7 +734,7 @@ static void l2cap_emit_service_registered(void *connection, uint8_t status, uint
 
 static void rfcomm_emit_service_registered(void *connection, uint8_t status, uint8_t channel){
     uint8_t event[4];
-    event[0] = RFCOMM_EVENT_SERVICE_REGISTERED;
+    event[0] = DAEMON_EVENT_RFCOMM_SERVICE_REGISTERED;
     event[1] = sizeof(event) - 2;
     event[2] = status;
     event[3] = channel;
@@ -762,7 +762,7 @@ static void send_rfcomm_create_channel_failed(void * connection, bd_addr_t addr,
 // data: event(8), len(8), status(8), service_record_handle(32)
 static void sdp_emit_service_registered(void *connection, uint32_t handle, uint8_t status) {
     uint8_t event[7];
-    event[0] = SDP_EVENT_SERVICE_REGISTERED;
+    event[0] = DAEMON_EVENT_SDP_SERVICE_REGISTERED;
     event[1] = sizeof(event) - 2;
     event[2] = status;
     little_endian_store_32(event, 3, handle);
@@ -1076,9 +1076,9 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             // enforce \0
             packet[3+248] = 0;
             rfcomm_channel = rfcomm_service_db_channel_for_service((char*)&packet[3]);
-            log_info("RFCOMM_EVENT_PERSISTENT_CHANNEL %u", rfcomm_channel);
+            log_info("DAEMON_EVENT_RFCOMM_SERVICE_REGISTERED %u", rfcomm_channel);
             uint8_t event[4];
-            event[0] = RFCOMM_EVENT_PERSISTENT_CHANNEL;
+            event[0] = DAEMON_EVENT_RFCOMM_SERVICE_REGISTERED;
             event[1] = sizeof(event) - 2;
             event[2] = 0;
             event[3] = rfcomm_channel;
@@ -1549,7 +1549,7 @@ static void daemon_packet_handler(void * connection, uint8_t packet_type, uint16
                     return;
                 }
                 
-                case RFCOMM_EVENT_CREDITS:
+                case DAEMON_EVENT_RFCOMM_CREDITS:
                     // RFCOMM CREDITS received...
                     daemon_retry_parked();
                     break;
@@ -1570,7 +1570,7 @@ static void daemon_packet_handler(void * connection, uint8_t packet_type, uint16
                     if (!connection) break;
                     daemon_remove_client_rfcomm_channel(connection, cid);
                     break;
-                case RFCOMM_EVENT_SERVICE_REGISTERED:
+                case DAEMON_EVENT_RFCOMM_SERVICE_REGISTERED:
                     if (packet[2]) break;
                     daemon_add_client_rfcomm_service(connection, packet[3]);
                     break;

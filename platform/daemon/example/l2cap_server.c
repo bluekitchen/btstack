@@ -93,10 +93,10 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 					}
 					break;
 
-				case L2CAP_EVENT_SERVICE_REGISTERED:
+				case DAEMON_EVENT_L2CAP_SERVICE_REGISTERED:
 					status = packet[2];
 					psm = little_endian_read_16(packet, 3); 
-					printf("L2CAP_EVENT_SERVICE_REGISTERED psm: 0x%02x, status: 0x%02x\n", psm, status);
+					printf("DAEMON_EVENT_L2CAP_SERVICE_REGISTERED psm: 0x%02x, status: 0x%02x\n", psm, status);
 					if (status) {
 						l2cap_reg_fail = 1;
 					} else {
