@@ -179,7 +179,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     }
                     break;  
                 case ATT_EVENT_MTU_EXCHANGE_COMPLETE:
-                    mtu = little_endian_read_16(packet, 4) - 3;
+                    mtu = att_event_mtu_exchange_complete_get_MTU(packet) - 3;
                     printf("ATT MTU = %u\n", mtu);
                     test_data_len = mtu - 3;
                     break;
