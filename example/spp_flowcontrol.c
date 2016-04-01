@@ -155,7 +155,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 case HCI_EVENT_LINK_KEY_REQUEST:
                     // deny link key request
                     printf("Link key request\n\r");
-                    reverse_bd_addr(&packet[2], event_addr);
+                    hci_event_link_key_request_get_bd_addr(packet, event_addr);
                     hci_send_cmd(&hci_link_key_request_negative_reply, &event_addr);
                     break;
                     
