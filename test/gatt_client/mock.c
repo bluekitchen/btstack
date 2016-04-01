@@ -25,7 +25,7 @@ uint16_t get_gatt_client_handle(void){
 
 void mock_simulate_command_complete(const hci_cmd_t *cmd){
 	uint8_t packet[] = {HCI_EVENT_COMMAND_COMPLETE, 4, 1, (uint8_t) (cmd->opcode & 0xff), (uint8_t) (cmd->opcode >> 8), 0};
-	registered_hci_event_handler(HCI_EVENT_PACKET, NULL, (uint8_t *)&packet, sizeof(packet));
+	registered_hci_event_handler(HCI_EVENT_PACKET, 0, (uint8_t *)&packet, sizeof(packet));
 }
 
 void mock_simulate_hci_state_working(void){
@@ -100,6 +100,11 @@ int l2cap_reserve_packet_buffer(void){
 
 int l2cap_can_send_fixed_channel_packet_now(uint16_t handle, uint16_t channel_id){
 	return 1;
+}
+
+void l2cap_request_can_send_fix_channel_now_event(uint16_t handle, uint16_t channel_id){
+	uint8_t event[] = { L2CAP_EVENT_CAN_SEND_NOW, 2, 1, 0};
+	att_packet_handler(HCI_EVENT_PACKET, 0, (uint8_t*)event, sizeof(event));
 }
 
 int l2cap_send_prepared_connectionless(uint16_t handle, uint16_t cid, uint16_t len){
