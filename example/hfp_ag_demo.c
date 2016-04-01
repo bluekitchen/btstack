@@ -603,11 +603,11 @@ static void packet_handler(uint8_t * event, uint16_t event_size){
             printf("\n** Stop Ringing **\n");
             break;
         case HFP_SUBEVENT_PLACE_CALL_WITH_NUMBER:
-            printf("\n** Outgoing call '%s' **\n", &event[3]);
+            printf("\n** Outgoing call '%s' **\n", hfp_subevent_place_call_with_number_get_number(event));
             // validate number
-            if ( strcmp("1234567", (char*) &event[3]) == 0
-              || strcmp("7654321", (char*) &event[3]) == 0
-              || (memory_1_enabled && strcmp(">1",      (char*) &event[3]) == 0)){
+            if ( strcmp("1234567", hfp_subevent_place_call_with_number_get_number(event)) == 0
+              || strcmp("7654321", hfp_subevent_place_call_with_number_get_number(event)) == 0
+              || (memory_1_enabled && strcmp(">1", hfp_subevent_place_call_with_number_get_number(event)) == 0)){
                 printf("Dialstring valid: accept call\n");
                 hfp_ag_outgoing_call_accepted();
             } else {
@@ -621,10 +621,10 @@ static void packet_handler(uint8_t * event, uint16_t event_size){
             hfp_ag_send_phone_number_for_voice_tag(device_addr, "1234567");
             break;
         case HFP_SUBEVENT_TRANSMIT_DTMF_CODES:
-            printf("\n** Send DTMF Codes: '%s'\n", &event[3]);
+            printf("\n** Send DTMF Codes: '%s'\n", hfp_subevent_transmit_dtmf_codes_get_dtmf(event));
             hfp_ag_send_dtmf_code_done(device_addr);
             break;
-        case HFP_CMD_CALL_ANSWERED:
+        case HFP_SUBEVENT_CALL_ANSWERED:
             printf("Call answered by HF\n");
             break;
         default:

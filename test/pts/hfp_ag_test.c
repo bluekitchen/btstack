@@ -643,7 +643,7 @@ static void packet_handler(uint8_t * event, uint16_t event_size){
             printf("\n** Send DTMF Codes: '%s'\n", &event[3]);
             hfp_ag_send_dtmf_code_done(device_addr);
             break;
-        case HFP_CMD_CALL_ANSWERED:
+        case HFP_SUBEVENT_CALL_ANSWERED:
             printf("Call answered by HF\n");
             break;
         default:
