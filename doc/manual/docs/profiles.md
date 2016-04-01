@@ -62,7 +62,7 @@ Extended Inquiry Result (EIR). A code snippet is shown in Listing
 
     void print_inquiry_results(uint8_t *packet){
         int event = packet[0];
-        int numResponses = packet[2];
+        int numResponses = hci_event_inquiry_result_get_num_responses(packet);
         uint16_t classOfDevice, clockOffset;
         uint8_t  rssi, pageScanRepetitionMode;
         for (i=0; i<numResponses; i++){

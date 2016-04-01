@@ -156,7 +156,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 				case HCI_EVENT_INQUIRY_RESULT:
 				case HCI_EVENT_INQUIRY_RESULT_WITH_RSSI:
 				{
-					int numResponses = packet[2];
+					int numResponses = hci_event_inquiry_result_get_num_responses(packet);
 					int i;
 					int offset = 3;
 					for (i=0; i<numResponses;i++){
