@@ -702,7 +702,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     printf("SSP User Confirmation Auto accept\n");
                     break;
 					
-				case BNEP_EVENT_OPEN_CHANNEL_COMPLETE:
+				case BNEP_EVENT_CHANNEL_OPENED:
                     if (packet[2]) {
                         printf("BNEP channel open failed, status %02x\n", packet[2]);
                     } else {

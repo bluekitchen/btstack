@@ -77,53 +77,57 @@ inline static void bnep_channel_state_add(bnep_channel_t *channel, BNEP_CHANNEL_
 
 static void bnep_emit_open_channel_complete(bnep_channel_t *channel, uint8_t status) 
 {
-    log_info("BNEP_EVENT_OPEN_CHANNEL_COMPLETE status 0x%02x bd_addr: %s", status, bd_addr_to_str(channel->remote_addr));
-    uint8_t event[3 + sizeof(bd_addr_t) + 3 * sizeof(uint16_t)];
-    event[0] = BNEP_EVENT_OPEN_CHANNEL_COMPLETE;
+    log_info("BNEP_EVENT_CHANNEL_OPENED status 0x%02x bd_addr: %s", status, bd_addr_to_str(channel->remote_addr));
+    uint8_t event[3 + sizeof(bd_addr_t) + 4 * sizeof(uint16_t)];
+    event[0] = BNEP_EVENT_CHANNEL_OPENED;
     event[1] = sizeof(event) - 2;
     event[2] = status;
-    little_endian_store_16(event, 3, channel->uuid_source);
-    little_endian_store_16(event, 5, channel->uuid_dest);
-    little_endian_store_16(event, 7, channel->max_frame_size);
-    bd_addr_copy(&event[9], channel->remote_addr);
+    little_endian_store_16(event, 3, channel->l2cap_cid);
+    little_endian_store_16(event, 5, channel->uuid_source);
+    little_endian_store_16(event, 7, channel->uuid_dest);
+    little_endian_store_16(event, 9, channel->max_frame_size);
+    bd_addr_copy(&event[11], channel->remote_addr);
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
-	(*app_packet_handler)(HCI_EVENT_PACKET, channel->l2cap_cid, (uint8_t *) event, sizeof(event));
+	(*app_packet_handler)(HCI_EVENT_PACKET, 0, (uint8_t *) event, sizeof(event));
 }
 
 static void bnep_emit_channel_timeout(bnep_channel_t *channel) 
 {
     log_info("BNEP_EVENT_CHANNEL_TIMEOUT bd_addr: %s", bd_addr_to_str(channel->remote_addr));
-    uint8_t event[2 + sizeof(bd_addr_t) + 2 * sizeof(uint16_t) + sizeof(uint8_t)];
+    uint8_t event[2 + sizeof(bd_addr_t) + 3 * sizeof(uint16_t) + sizeof(uint8_t)];
     event[0] = BNEP_EVENT_CHANNEL_TIMEOUT;
     event[1] = sizeof(event) - 2;
-    little_endian_store_16(event, 2, channel->uuid_source);
-    little_endian_store_16(event, 4, channel->uuid_dest);
-    bd_addr_copy(&event[6], channel->remote_addr);
-    event[12] = channel->state; 
+    little_endian_store_16(event, 2, channel->l2cap_cid);
+    little_endian_store_16(event, 4, channel->uuid_source);
+    little_endian_store_16(event, 6, channel->uuid_dest);
+    bd_addr_copy(&event[8], channel->remote_addr);
+    event[14] = channel->state; 
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
-	(*app_packet_handler)(HCI_EVENT_PACKET, channel->l2cap_cid, (uint8_t *) event, sizeof(event));
+	(*app_packet_handler)(HCI_EVENT_PACKET, 0, (uint8_t *) event, sizeof(event));
 }
 
 static void bnep_emit_channel_closed(bnep_channel_t *channel) 
 {
     log_info("BNEP_EVENT_CHANNEL_CLOSED bd_addr: %s", bd_addr_to_str(channel->remote_addr));
-    uint8_t event[2 + sizeof(bd_addr_t) + 2 * sizeof(uint16_t)];
+    uint8_t event[2 + sizeof(bd_addr_t) + 3 * sizeof(uint16_t)];
     event[0] = BNEP_EVENT_CHANNEL_CLOSED;
     event[1] = sizeof(event) - 2;
-    little_endian_store_16(event, 2, channel->uuid_source);
-    little_endian_store_16(event, 4, channel->uuid_dest);
-    bd_addr_copy(&event[6], channel->remote_addr);
+    little_endian_store_16(event, 2, channel->l2cap_cid);
+    little_endian_store_16(event, 4, channel->uuid_source);
+    little_endian_store_16(event, 6, channel->uuid_dest);
+    bd_addr_copy(&event[8], channel->remote_addr);
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
-	(*app_packet_handler)(HCI_EVENT_PACKET, channel->l2cap_cid, (uint8_t *) event, sizeof(event));
+	(*app_packet_handler)(HCI_EVENT_PACKET, 0, (uint8_t *) event, sizeof(event));
 }
 
 static void bnep_emit_ready_to_send(bnep_channel_t *channel)
 {
-    uint8_t event[2];
+    uint8_t event[4];
     event[0] = BNEP_EVENT_CAN_SEND_NOW;
     event[1] = sizeof(event) - 2;
+    little_endian_store_16(event, 2, channel->l2cap_cid);
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
-	(*app_packet_handler)(HCI_EVENT_PACKET, channel->l2cap_cid, (uint8_t *) event, sizeof(event));
+	(*app_packet_handler)(HCI_EVENT_PACKET, 0, (uint8_t *) event, sizeof(event));
 }
 
 /* Send BNEP connection request */
