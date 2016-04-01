@@ -65,7 +65,7 @@ typedef struct advertising_report {
     bd_addr_t address;
     uint8_t   rssi;
     uint8_t   length;
-    uint8_t * data;
+    const uint8_t * data;
 } advertising_report_t;
 
 static bd_addr_t cmdline_addr = { };
@@ -144,18 +144,13 @@ static void dump_service(gatt_client_service_t * service){
 }
 
 static void fill_advertising_report_from_packet(advertising_report_t * report, uint8_t *packet){
-    int pos = 2;
-    report->event_type = packet[pos++];
-    report->address_type = packet[pos++];
-    reverse_bd_addr(&packet[pos], report->address);
-    pos += 6;
-    report->rssi = packet[pos++];
-    report->length = packet[pos++];
-    report->data = &packet[pos];
-    pos += report->length;
-    dump_advertising_report(report);
+    gap_event_advertising_report_get_address(packet, report->address);
+    report->event_type = gap_event_advertising_report_get_advertising_event_type(packet);
+    report->address_type = gap_event_advertising_report_get_address_type(packet);
+    report->rssi = gap_event_advertising_report_get_rssi(packet);
+    report->length = gap_event_advertising_report_get_data_length(packet);
+    report->data = gap_event_advertising_report_get_data(packet);
 }
-
 
 /* @section HCI packet handler
  * 
@@ -188,6 +183,8 @@ static void handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *pac
             break;
         case GAP_EVENT_ADVERTISING_REPORT:
             fill_advertising_report_from_packet(&report, packet);
+            dump_advertising_report(&report);
+
             // stop scanning, and connect to the device
             gap_stop_scan();
             gap_connect(report.address,report.address_type);
