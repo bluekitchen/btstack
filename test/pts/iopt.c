@@ -65,7 +65,7 @@ static void show_usage(void){
     printf("---\n");
 }
 
-static int stdin_process(btstack_data_source_t *ds){
+static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type){
     char buffer;
     read(ds->fd, &buffer, 1);
     switch (buffer){
@@ -74,7 +74,6 @@ static int stdin_process(btstack_data_source_t *ds){
             break;
 
     }
-    return 0;
 }
 
 static uint8_t pan_service_buffer[200];
@@ -120,6 +119,6 @@ int btstack_main(int argc, const char * argv[]){
     // turn on!
     hci_power_control(HCI_POWER_ON);
 
-    btstack_stdin_setup(stdin_process);
+    btstack_stdin_setup(&stdin_process);
     return 0;
 }

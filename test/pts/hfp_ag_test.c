@@ -54,16 +54,16 @@
 #include <unistd.h>
 #include <errno.h>
 
-#include "hci_cmd.h"
+#include "btstack_debug.h"
+#include "btstack_event.h"
 #include "btstack_run_loop.h"
-#include "classic/sdp_util.h"
-
-#include "hci.h"
-#include "l2cap.h"
+#include "classic/hfp_ag.h"
 #include "classic/rfcomm.h"
 #include "classic/sdp_server.h"
-#include "btstack_debug.h"
-#include "classic/hfp_ag.h"
+#include "classic/sdp_util.h"
+#include "hci.h"
+#include "hci_cmd.h"
+#include "l2cap.h"
 #include "stdin_support.h"
  
 
@@ -339,7 +339,7 @@ static void show_usage(void){
     printf("---\n");
 }
 
-static int stdin_process(btstack_data_source_t *ds){
+static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type){
     read(ds->fd, &cmd, 1);
     switch (cmd){
         case 'a':
@@ -563,8 +563,6 @@ static int stdin_process(btstack_data_source_t *ds){
             show_usage();
             break;
     }
-
-    return 0;
 }
 
 

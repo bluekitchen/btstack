@@ -49,12 +49,12 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "hci_cmd.h"
-#include "btstack_run_loop.h"
-
-#include "hci.h"
-#include "gap.h"
+#include "btstack_event.h"
 #include "btstack_memory.h"
+#include "btstack_run_loop.h"
+#include "gap.h"
+#include "hci.h"
+#include "hci_cmd.h"
 #include "hci_dump.h"
 #include "l2cap.h"
 #include "stdin_support.h"
@@ -120,7 +120,7 @@ static void show_usage(void){
     printf("---\n");
 }
 
-static int stdin_process(btstack_data_source_t *ds){
+static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type){
     char buffer;
     read(ds->fd, &buffer, 1);
     switch (buffer){
@@ -131,7 +131,7 @@ static int stdin_process(btstack_data_source_t *ds){
         case 's':
             printf("Send L2CAP Data\n");
             l2cap_send(local_cid, (uint8_t *) "0123456789", 10);
-       break;
+            break;
         case 'e':
             printf("Send L2CAP ECHO Request\n");
             l2cap_send_echo_request(handle, (uint8_t *)  "Hello World!", 13);
@@ -148,7 +148,6 @@ static int stdin_process(btstack_data_source_t *ds){
             break;
 
     }
-    return 0;
 }
 
 

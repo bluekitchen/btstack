@@ -473,13 +473,12 @@ static void show_usage(void){
     printf("---\n");
 }
 
-static int stdin_process(btstack_data_source_t *ds){
+static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type){
     char buffer;
     read(ds->fd, &buffer, 1);
 
     // passkey input
     if (ui_digits_for_passkey){
-        if (buffer < '0' || buffer > '9') return 0;
         printf("%c", buffer);
         fflush(stdout);
         ui_passkey = ui_passkey * 10 + buffer - '0';
@@ -488,7 +487,6 @@ static int stdin_process(btstack_data_source_t *ds){
             printf("\nSending Passkey '%06u'\n", ui_passkey);
             hci_send_cmd(&hci_user_passkey_request_reply, remote, ui_passkey);
         }
-        return 0;
     }
     if (ui_chars_for_pin){
         printf("%c", buffer);
@@ -499,7 +497,6 @@ static int stdin_process(btstack_data_source_t *ds){
         } else {
             ui_pin[ui_pin_offset++] = buffer;
         }
-        return 0;
     }
 
     switch (buffer){
@@ -689,7 +686,6 @@ static int stdin_process(btstack_data_source_t *ds){
             break;
 
     }
-    return 0;
 }
 
 static void sdp_create_dummy_service(uint8_t *service, const char *name){
