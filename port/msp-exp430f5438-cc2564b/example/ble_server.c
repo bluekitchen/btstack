@@ -107,7 +107,7 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
     switch (hci_event_packet_get_type(packet)) {
         case BTSTACK_EVENT_STATE:
             // bt stack activated, get started - set local name
-            if (packet[2] == HCI_STATE_WORKING) {
+            if (btstack_event_state_get_state(packet) == HCI_STATE_WORKING){
                 printf("Working!\n");
                 hci_send_cmd(&hci_le_set_advertising_data, sizeof(adv_data), adv_data);
             }

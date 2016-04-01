@@ -86,7 +86,7 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
                     
 				case BTSTACK_EVENT_STATE:
 					// bt stack activated, get started
-                    if (packet[2] == HCI_STATE_WORKING) {
+                    if (btstack_event_state_get_state(packet) == HCI_STATE_WORKING){
                         // get persistent RFCOMM channel
                         printf("HCI_STATE_WORKING\n");
                         bt_send_cmd(&rfcomm_persistent_channel_for_service_cmd, "ch.ringwald.btstack.rfcomm_echo2");

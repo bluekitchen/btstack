@@ -130,7 +130,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 		case HCI_EVENT_PACKET:
 			switch (hci_event_packet_get_type(packet)) {
                 case BTSTACK_EVENT_STATE:
-                    if (packet[2] == HCI_STATE_WORKING) {
+                    if (btstack_event_state_get_state(packet) == HCI_STATE_WORKING){
                         printf("LE Counter Demo ready.\n");
                         beat();
                     }

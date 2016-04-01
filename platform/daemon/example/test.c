@@ -71,7 +71,7 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 					
 				case BTSTACK_EVENT_STATE:
 					// bt stack activated, get started
-					if (packet[2] == HCI_STATE_WORKING) {
+					if (btstack_event_state_get_state(packet) == HCI_STATE_WORKING){
 						uint8_t des_serviceSearchPattern[5] = {0x35, 0x03, 0x19, 0x10, 0x02};
 						bt_send_cmd(&sdp_client_query_rfcomm_services_cmd, addr, des_serviceSearchPattern);
 					}
