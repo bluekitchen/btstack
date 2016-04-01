@@ -864,7 +864,6 @@ static inline hci_con_handle_t hci_event_encryption_key_refresh_complete_get_han
     return little_endian_read_16(event, 3);
 }
 
-
 /**
  * @brief Get field state from event btstack_event_state
  * @param event packet
@@ -1758,6 +1757,54 @@ static inline uint16_t gatt_event_mtu_get_MTU(const uint8_t * event){
     return little_endian_read_16(event, 4);
 }
 #endif
+
+/**
+ * @brief Get field handle from event att_event_mtu_exchange_complete
+ * @param event packet
+ * @return handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t att_event_mtu_exchange_complete_get_handle(const uint8_t * event){
+    return little_endian_read_16(event, 2);
+}
+/**
+ * @brief Get field MTU from event att_event_mtu_exchange_complete
+ * @param event packet
+ * @return MTU
+ * @note: btstack_type 2
+ */
+static inline uint16_t att_event_mtu_exchange_complete_get_MTU(const uint8_t * event){
+    return little_endian_read_16(event, 4);
+}
+
+/**
+ * @brief Get field status from event att_event_handle_value_indication_complete
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t att_event_handle_value_indication_complete_get_status(const uint8_t * event){
+    return event[2];
+}
+/**
+ * @brief Get field conn_handle from event att_event_handle_value_indication_complete
+ * @param event packet
+ * @return conn_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t att_event_handle_value_indication_complete_get_conn_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field attribute_handle from event att_event_handle_value_indication_complete
+ * @param event packet
+ * @return attribute_handle
+ * @note: btstack_type 2
+ */
+static inline uint16_t att_event_handle_value_indication_complete_get_attribute_handle(const uint8_t * event){
+    return little_endian_read_16(event, 5);
+}
+
 
 /**
  * @brief Get field status from event bnep_event_service_registered
