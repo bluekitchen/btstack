@@ -49,21 +49,20 @@
 
 #include "btstack_config.h"
 
-#include "btstack_run_loop.h"
-#include "btstack_debug.h"
-#include "btstack_memory.h"
-#include "hci.h"
-#include "hci_dump.h"
-
-#include "l2cap.h"
-
-#include "ble/sm.h"
+#include "ble/ad_parser.h"
 #include "ble/att_db.h"
 #include "ble/att_server.h"
-#include "gap.h"
 #include "ble/le_device_db.h"
+#include "ble/sm.h"
+#include "btstack_debug.h"
+#include "btstack_event.h"
+#include "btstack_memory.h"
+#include "btstack_run_loop.h"
+#include "gap.h"
+#include "hci.h"
+#include "hci_dump.h"
+#include "l2cap.h"
 #include "stdin_support.h"
-#include "ble/ad_parser.h"
 
 // test profile
 #include "ble_central_test.h"
@@ -1598,29 +1597,33 @@ static void ui_process_command(char buffer){
     }
 }
 
-static int stdin_process(btstack_data_source_t *ds){
+static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type){
     char buffer;
     read(ds->fd, &buffer, 1);
 
     if (ui_digits_for_passkey){
-        return ui_process_digits_for_passkey(buffer);
+        ui_process_digits_for_passkey(buffer);
+        return;
     }
 
     if (ui_uint16_request){
-        return ui_process_uint16_request(buffer);
+        ui_process_uint16_request(buffer);
+        return;
     }
 
     if (ui_uuid128_request){
-        return ui_process_uuid128_request(buffer);
+        ui_process_uuid128_request(buffer);
+        return;
     }
 
     if (ui_value_request){
-        return ui_process_data_request(buffer);        
+        ui_process_data_request(buffer);        
+        return;
     }
 
     ui_process_command(buffer);
 
-    return 0;
+    return;
 }
 
 static int get_oob_data_callback(uint8_t addres_type, bd_addr_t addr, uint8_t * oob_data){

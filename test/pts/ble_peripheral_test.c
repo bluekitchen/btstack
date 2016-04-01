@@ -49,19 +49,18 @@
 
 #include "btstack_config.h"
 
-#include "btstack_run_loop.h"
-#include "btstack_debug.h"
-#include "btstack_memory.h"
-#include "hci.h"
-#include "hci_dump.h"
-
-#include "l2cap.h"
-
-#include "ble/sm.h"
 #include "ble/att_db.h"
 #include "ble/att_server.h"
-#include "gap.h"
 #include "ble/le_device_db.h"
+#include "ble/sm.h"
+#include "btstack_debug.h"
+#include "btstack_event.h"
+#include "btstack_memory.h"
+#include "btstack_run_loop.h"
+#include "gap.h"
+#include "hci.h"
+#include "hci_dump.h"
+#include "l2cap.h"
 #include "stdin_support.h"
  
 #define HEARTBEAT_PERIOD_MS 1000
@@ -573,7 +572,7 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                     break;
 
                 case HCI_EVENT_DISCONNECTION_COMPLETE:
-                    if (!advertisements_enabled == 0 && gap_discoverable){
+                    if (advertisements_enabled && gap_discoverable){
                         todos = ENABLE_ADVERTISEMENTS;
                     }
                     att_attributes_init();
@@ -711,13 +710,13 @@ static void update_auth_req(void){
     sm_set_authentication_requirements(auth_req);
 }
 
-static int stdin_process(btstack_data_source_t *ds){
+static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type){
     char buffer;
     read(ds->fd, &buffer, 1);
 
     // passkey input
     if (ui_digits_for_passkey){
-        if (buffer < '0' || buffer > '9') return 0;
+        if (buffer < '0' || buffer > '9') return;
         printf("%c", buffer);
         fflush(stdout);
         ui_passkey = ui_passkey * 10 + buffer - '0';
@@ -726,7 +725,7 @@ static int stdin_process(btstack_data_source_t *ds){
             printf("\nSending Passkey '%06x'\n", ui_passkey);
             sm_passkey_input(handle, ui_passkey);
         }
-        return 0;
+        return;
     }
 
     switch (buffer){
@@ -930,7 +929,7 @@ static int stdin_process(btstack_data_source_t *ds){
             break;
 
     }
-    return 0;
+    return;
 }
 
 static int get_oob_data_callback(uint8_t addres_type, bd_addr_t addr, uint8_t * oob_data){

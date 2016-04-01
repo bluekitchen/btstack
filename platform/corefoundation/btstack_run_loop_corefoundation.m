@@ -48,8 +48,11 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/time.h>
 
 static struct timeval init_tv;
+static CFAbsoluteTime init_cf;
+
 static const btstack_run_loop_t btstack_run_loop_corefoundation;
 
 typedef struct  {
@@ -167,9 +170,7 @@ static int  btstack_run_loop_corefoundation_remove_data_source(btstack_data_sour
 
 static void btstack_run_loop_corefoundation_add_timer(btstack_timer_source_t * ts)
 {
-    // note: ts uses unix time: seconds since Jan 1st 1970, CF uses Jan 1st 2001 as reference date
-    // printf("kCFAbsoluteTimeIntervalSince1970 = %f\n", kCFAbsoluteTimeIntervalSince1970);
-    CFAbsoluteTime fireDate = ((double)ts->timeout.tv_sec) + (((double)ts->timeout.tv_usec)/1000000.0) - kCFAbsoluteTimeIntervalSince1970; // unix time - since Jan 1st 1970
+    CFAbsoluteTime fireDate = init_cf + ts->timeout;
     CFRunLoopTimerContext timerContext = {0, ts, NULL, NULL, NULL};
     CFRunLoopTimerRef timerRef = CFRunLoopTimerCreate (kCFAllocatorDefault,fireDate,0,0,0,theCFRunLoopTimerCallBack,&timerContext);
     CFRetain(timerRef);
@@ -189,29 +190,30 @@ static int btstack_run_loop_corefoundation_remove_timer(btstack_timer_source_t *
 	return 0;
 }
 
-// set timer
-static void btstack_run_loop_corefoundation_set_timer(btstack_timer_source_t *a, uint32_t timeout_in_ms){
-    gettimeofday(&a->timeout, NULL);
-    a->timeout.tv_sec  +=  timeout_in_ms / 1000;
-    a->timeout.tv_usec += (timeout_in_ms % 1000) * 1000;
-    if (a->timeout.tv_usec  > 1000000) {
-        a->timeout.tv_usec -= 1000000;
-        a->timeout.tv_sec++;
-    }
-}
-
 /**
  * @brief Queries the current time in ms since start
  */
 static uint32_t btstack_run_loop_corefoundation_get_time_ms(void){
-    struct timeval current_tv;
-    gettimeofday(&current_tv, NULL);
-    return (current_tv.tv_sec  - init_tv.tv_sec)  * 1000
-         + (current_tv.tv_usec - init_tv.tv_usec) / 1000;
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    uint32_t time_ms = ((tv.tv_sec  - init_tv.tv_sec) * 1000) + (tv.tv_usec / 1000);
+    log_debug("btstack_run_loop_corefoundation_get_time_ms: %u <- %u / %u", time_ms, (int) tv.tv_sec, (int) tv.tv_usec);
+    return time_ms;
 }
+
+// set timer
+static void btstack_run_loop_corefoundation_set_timer(btstack_timer_source_t *a, uint32_t timeout_in_ms){
+    uint32_t time_ms = btstack_run_loop_corefoundation_get_time_ms();
+    a->timeout = time_ms + timeout_in_ms;
+    log_debug("btstack_run_loop_corefoundation_set_timer to %u ms (now %u, timeout %u)", a->timeout, time_ms, timeout_in_ms);
+}
+
 
 static void btstack_run_loop_corefoundation_init(void){
     gettimeofday(&init_tv, NULL);
+    // calc CFAbsoluteTime for init_tv
+    // note: timeval uses unix time: seconds since Jan 1st 1970, CF uses Jan 1st 2001 as reference date
+    init_cf = ((double)init_tv.tv_sec) + (((double)init_tv.tv_usec)/1000000.0) - kCFAbsoluteTimeIntervalSince1970; // unix time - since Jan 1st 1970
 }
 
 static void btstack_run_loop_corefoundation_execute(void)

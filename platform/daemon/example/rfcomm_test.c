@@ -141,7 +141,7 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
                     rfcomm_channel_nr = rfcomm_event_incoming_connection_get_server_channel(packet);
                     rfcomm_channel_id = rfcomm_event_incoming_connection_get_rfcomm_cid(packet);
                     printf("RFCOMM channel %u requested for %s\n", rfcomm_channel_nr, bd_addr_to_str(event_addr));
-                    rfcomm_accept_connection(rfcomm_channel_id);
+                    bt_send_cmd(&rfcomm_accept_connection_cmd, rfcomm_channel_id);
                     break;
                
                 case RFCOMM_EVENT_CHANNEL_OPENED:

@@ -55,15 +55,15 @@
 #include <unistd.h>
 #include <errno.h>
 
-#include "hci_cmd.h"
-#include "btstack_run_loop.h"
-#include "classic/sdp_util.h"
-
-#include "hci.h"
+#include "btstack_event.h"
 #include "btstack_memory.h"
+#include "btstack_run_loop.h"
+#include "classic/sdp_server.h"
+#include "classic/sdp_util.h"
+#include "hci.h"
+#include "hci_cmd.h"
 #include "hci_dump.h"
 #include "l2cap.h"
-#include "classic/sdp_server.h"
 #include "pan.h"
 #include "stdin_support.h"
 
@@ -92,6 +92,7 @@
 
 // prototypes
 static void show_usage(void);
+static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
 // Configuration for PTS
 static bd_addr_t pts_addr = {0x00,0x1b,0xDC,0x07,0x32,0xEF};
@@ -595,14 +596,14 @@ static void show_usage(void){
     printf("---\n");
 }
 
-static int stdin_process(btstack_data_source_t *ds){
+static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type){
     char buffer;
     read(ds->fd, &buffer, 1);
 
     switch (buffer){
         case 'p':
             printf("Connecting to PTS at %s...\n", bd_addr_to_str(pts_addr));
-            bnep_connect(pts_addr, bnep_l2cap_psm, bnep_src_uuid, bnep_dest_uuid);
+            bnep_connect(&packet_handler, pts_addr, bnep_l2cap_psm, bnep_src_uuid, bnep_dest_uuid);
             break;
         case 'e':
             printf("Sending general ethernet packet\n");
@@ -657,7 +658,6 @@ static int stdin_process(btstack_data_source_t *ds){
             break;
 
     }
-    return 0;
 }
 
 /*************** PANU client routines *********************/
@@ -707,12 +707,12 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                         printf("BNEP channel open failed, status %02x\n", bnep_event_channel_opened_get_status(packet));
                     } else {
                         // data: event(8), len(8), status (8), bnep source uuid (16), bnep destination uuid (16), remote_address (48)
+                        bnep_cid    = bnep_event_channel_opened_get_cid(packet);
                         uuid_source = bnep_event_channel_opened_get_source_uuid(packet);
                         uuid_dest   = bnep_event_channel_opened_get_destination_uuid(packet);
                         mtu         = bnep_event_channel_opened_get_mtu(packet);
-                        bnep_cid    = channel;
                         //bt_flip_addr(event_addr, &packet[9]); 
-                        memcpy(&event_addr, &packet[9], sizeof(bd_addr_t));
+                        memcpy(&event_addr, &packet[11], sizeof(bd_addr_t));
                         printf("BNEP connection open succeeded to %s source UUID 0x%04x dest UUID: 0x%04x, max frame size %u\n", bd_addr_to_str(event_addr), uuid_source, uuid_dest, mtu);
                     }
 					break;
@@ -823,8 +823,7 @@ int btstack_main(int argc, const char * argv[]){
 
     /* Initialise BNEP */
     bnep_init();
-    bnep_register_packet_handler(packet_handler);
-    bnep_register_service(bnep_local_service_uuid, 1691);  /* Minimum L2CAP MTU for bnep is 1691 bytes */
+    bnep_register_service(&packet_handler, bnep_local_service_uuid, 1691);  /* Minimum L2CAP MTU for bnep is 1691 bytes */
 
     /* Initialize SDP and add PANU record */
     sdp_init();

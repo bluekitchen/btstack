@@ -41,28 +41,28 @@
 //
 // *****************************************************************************
 
+#include <errno.h>
+#include <fcntl.h>
+#include <net/if_arp.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/socket.h>
-#include <net/if_arp.h>
 #include <sys/ioctl.h>
-#include <sys/types.h>
+#include <sys/socket.h>
 #include <sys/stat.h>
-#include <fcntl.h>
+#include <sys/types.h>
 #include <unistd.h>
-#include <errno.h>
 
-#include "hci_cmd.h"
-#include "btstack_run_loop.h"
-#include "classic/sdp_util.h"
-
-#include "hci.h"
-#include "l2cap.h"
-#include "classic/sdp_server.h"
 #include "btstack_debug.h"
+#include "btstack_event.h"
+#include "btstack_run_loop.h"
+#include "classic/sdp_server.h"
+#include "classic/sdp_util.h"
+#include "hci.h"
+#include "hci_cmd.h"
 #include "hsp_ag.h"
+#include "l2cap.h"
 #include "stdin_support.h"
  
 static uint32_t   hsp_service_buffer[150/4]; // implicit alignment to 4-byte memory address
@@ -94,7 +94,7 @@ static void show_usage(void){
     printf("---\n");
 }
 
-static int stdin_process(btstack_data_source_t *ds){
+static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type){
     char buffer;
     read(ds->fd, &buffer, 1);
 
@@ -144,7 +144,6 @@ static int stdin_process(btstack_data_source_t *ds){
             break;
 
     }
-    return 0;
 }
 
 // Audio Gateway routines 
