@@ -146,9 +146,8 @@ static void panu_setup(void){
 
     // Initialise BNEP
     bnep_init();
-    bnep_register_packet_handler(packet_handler);
     // Minimum L2CAP MTU for bnep is 1691 bytes
-    bnep_register_service(SDP_PANU, 1691);  
+    bnep_register_service(packet_handler, SDP_PANU, 1691);  
 }
 /* LISTING_END */
 
@@ -395,7 +394,7 @@ static void handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel
                                 printf("l2cap_psm 0x%04x, bnep_version 0x%04x\n", bnep_l2cap_psm, bnep_version);
 
                                 /* Create BNEP connection */
-                                bnep_connect(remote, bnep_l2cap_psm, PANU_UUID, bnep_remote_uuid);
+                                bnep_connect(packet_handler, remote, bnep_l2cap_psm, PANU_UUID, bnep_remote_uuid);
                             }
                             break;
                         default:

@@ -198,14 +198,9 @@ int bnep_set_multicast_filter(uint16_t bnep_cid, bnep_multi_filter_t *filter, ui
 void bnep_set_required_security_level(gap_security_level_t security_level);
 
 /**
- * @brief Register packet handler. 
- */
-void bnep_register_packet_handler(void (*handler)(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size));
-
-/**
  * @brief Creates BNEP connection (channel) to a given server on a remote device with baseband address. A new baseband connection will be initiated if necessary. 
  */
-int bnep_connect(bd_addr_t addr, uint16_t l2cap_psm, uint16_t uuid_src, uint16_t uuid_dest);
+int bnep_connect(btstack_packet_handler_t packet_handler, bd_addr_t addr, uint16_t l2cap_psm, uint16_t uuid_src, uint16_t uuid_dest);
 
 /**
  * @brief Disconnects BNEP channel with given identifier. 
@@ -215,7 +210,7 @@ void bnep_disconnect(bd_addr_t addr);
 /**
  * @brief Registers BNEP service, set a maximum frame size and assigns a packet handler. On embedded systems, use NULL for connection parameter. 
  */
-uint8_t bnep_register_service(uint16_t service_uuid, uint16_t max_frame_size);
+uint8_t bnep_register_service(btstack_packet_handler_t packet_handler, uint16_t service_uuid, uint16_t max_frame_size);
 
 /**
  * @brief Unregister BNEP service.

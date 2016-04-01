@@ -77,7 +77,9 @@ inline static void bnep_channel_state_add(bnep_channel_t *channel, BNEP_CHANNEL_
 
 static void bnep_emit_open_channel_complete(bnep_channel_t *channel, uint8_t status) 
 {
-    log_info("BNEP_EVENT_CHANNEL_OPENED status 0x%02x bd_addr: %s", status, bd_addr_to_str(channel->remote_addr));
+    log_info("BNEP_EVENT_CHANNEL_OPENED status 0x%02x bd_addr: %s, handler %p", status, bd_addr_to_str(channel->remote_addr), channel->packet_handler);
+    if (!channel->packet_handler) return;
+
     uint8_t event[3 + sizeof(bd_addr_t) + 4 * sizeof(uint16_t)];
     event[0] = BNEP_EVENT_CHANNEL_OPENED;
     event[1] = sizeof(event) - 2;
@@ -88,12 +90,14 @@ static void bnep_emit_open_channel_complete(bnep_channel_t *channel, uint8_t sta
     little_endian_store_16(event, 9, channel->max_frame_size);
     bd_addr_copy(&event[11], channel->remote_addr);
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
-	(*app_packet_handler)(HCI_EVENT_PACKET, 0, (uint8_t *) event, sizeof(event));
+	(*channel->packet_handler)(HCI_EVENT_PACKET, 0, (uint8_t *) event, sizeof(event));
 }
 
 static void bnep_emit_channel_timeout(bnep_channel_t *channel) 
 {
-    log_info("BNEP_EVENT_CHANNEL_TIMEOUT bd_addr: %s", bd_addr_to_str(channel->remote_addr));
+    log_info("BNEP_EVENT_CHANNEL_TIMEOUT bd_addr: %s, handler %p", bd_addr_to_str(channel->remote_addr), channel->packet_handler);
+    if (!channel->packet_handler) return;
+
     uint8_t event[2 + sizeof(bd_addr_t) + 3 * sizeof(uint16_t) + sizeof(uint8_t)];
     event[0] = BNEP_EVENT_CHANNEL_TIMEOUT;
     event[1] = sizeof(event) - 2;
@@ -103,12 +107,14 @@ static void bnep_emit_channel_timeout(bnep_channel_t *channel)
     bd_addr_copy(&event[8], channel->remote_addr);
     event[14] = channel->state; 
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
-	(*app_packet_handler)(HCI_EVENT_PACKET, 0, (uint8_t *) event, sizeof(event));
+	(*channel->packet_handler)(HCI_EVENT_PACKET, 0, (uint8_t *) event, sizeof(event));
 }
 
 static void bnep_emit_channel_closed(bnep_channel_t *channel) 
 {
-    log_info("BNEP_EVENT_CHANNEL_CLOSED bd_addr: %s", bd_addr_to_str(channel->remote_addr));
+    log_info("BNEP_EVENT_CHANNEL_CLOSED bd_addr: %s, handler %p", bd_addr_to_str(channel->remote_addr), channel->packet_handler);
+    if (!channel->packet_handler) return;
+
     uint8_t event[2 + sizeof(bd_addr_t) + 3 * sizeof(uint16_t)];
     event[0] = BNEP_EVENT_CHANNEL_CLOSED;
     event[1] = sizeof(event) - 2;
@@ -117,17 +123,19 @@ static void bnep_emit_channel_closed(bnep_channel_t *channel)
     little_endian_store_16(event, 6, channel->uuid_dest);
     bd_addr_copy(&event[8], channel->remote_addr);
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
-	(*app_packet_handler)(HCI_EVENT_PACKET, 0, (uint8_t *) event, sizeof(event));
+	(*channel->packet_handler)(HCI_EVENT_PACKET, 0, (uint8_t *) event, sizeof(event));
 }
 
 static void bnep_emit_ready_to_send(bnep_channel_t *channel)
 {
+    if (!channel->packet_handler) return;
+
     uint8_t event[4];
     event[0] = BNEP_EVENT_CAN_SEND_NOW;
     event[1] = sizeof(event) - 2;
     little_endian_store_16(event, 2, channel->l2cap_cid);
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
-	(*app_packet_handler)(HCI_EVENT_PACKET, 0, (uint8_t *) event, sizeof(event));
+	(*channel->packet_handler)(HCI_EVENT_PACKET, 0, (uint8_t *) event, sizeof(event));
 }
 
 /* Send BNEP connection request */
@@ -838,10 +846,14 @@ static int bnep_handle_connection_request(bnep_channel_t *channel, uint8_t *pack
         service = bnep_service_for_uuid(channel->uuid_dest);
         if (service == NULL) {
             response_code = BNEP_RESP_SETUP_INVALID_DEST_UUID;
-        } else 
-        if ((channel->uuid_source != SDP_PANU) && (channel->uuid_dest != SDP_PANU)) {
-            response_code = BNEP_RESP_SETUP_INVALID_SOURCE_UUID;
-        }
+        } else {
+            // use packet handler for service
+            channel->packet_handler = service->packet_handler;
+
+            if ((channel->uuid_source != SDP_PANU) && (channel->uuid_dest != SDP_PANU)) {
+                response_code = BNEP_RESP_SETUP_INVALID_SOURCE_UUID;
+            }
+        } 
     }
 
     /* Set flag to send out the connection response on next statemachine cycle */
@@ -1537,12 +1549,7 @@ void bnep_set_required_security_level(gap_security_level_t security_level)
     bnep_security_level = security_level;
 }
 
-/* Register application packet handler */
-void bnep_register_packet_handler(void (*handler)(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size)){
-	app_packet_handler = handler;
-}
-
-int bnep_connect(bd_addr_t addr, uint16_t l2cap_psm, uint16_t uuid_src, uint16_t uuid_dest)
+int bnep_connect(btstack_packet_handler_t packet_handler, bd_addr_t addr, uint16_t l2cap_psm, uint16_t uuid_src, uint16_t uuid_dest)
 {
     bnep_channel_t *channel;
     log_info("BNEP_CONNECT addr %s", bd_addr_to_str(addr));
@@ -1552,8 +1559,9 @@ int bnep_connect(bd_addr_t addr, uint16_t l2cap_psm, uint16_t uuid_src, uint16_t
         return -1;
     }
 
-    channel->uuid_source = uuid_src;
-    channel->uuid_dest   = uuid_dest;
+    channel->uuid_source    = uuid_src;
+    channel->uuid_dest      = uuid_dest;
+    channel->packet_handler = packet_handler;
 
     uint8_t status = l2cap_create_channel(bnep_packet_handler, addr, l2cap_psm, l2cap_max_mtu(), NULL);
     if (status){
@@ -1575,7 +1583,7 @@ void bnep_disconnect(bd_addr_t addr)
 }
 
 
-uint8_t bnep_register_service(uint16_t service_uuid, uint16_t max_frame_size)
+uint8_t bnep_register_service(btstack_packet_handler_t packet_handler, uint16_t service_uuid, uint16_t max_frame_size)
 {
     log_info("BNEP_REGISTER_SERVICE mtu %d", max_frame_size);
 
@@ -1606,6 +1614,8 @@ uint8_t bnep_register_service(uint16_t service_uuid, uint16_t max_frame_size)
     /* Setup the service struct */
     service->max_frame_size = max_frame_size;
     service->service_uuid    = service_uuid;
+    service->packet_handler = packet_handler;
+
 
     /* Add to services list */
     btstack_linked_list_add(&bnep_services, (btstack_linked_item_t *) service);
