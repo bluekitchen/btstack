@@ -372,15 +372,63 @@ typedef enum {
  */
 #define HCI_EVENT_ROLE_CHANGE                              0x12
 
+// TODO: number_of_handles 1, connection_handle[H*i], hc_num_of_completed_packets[2*i]
 #define HCI_EVENT_NUMBER_OF_COMPLETED_PACKETS              0x13
+
+/**
+ * @format 1H12
+ * @param status
+ * @param handle
+ * @param mode
+ * @param interval
+ */
 #define HCI_EVENT_MODE_CHANGE_EVENT                        0x14
+
+// TODO: num_keys, bd_addr[B*i], link_key[16 octets * i]
 #define HCI_EVENT_RETURN_LINK_KEYS                         0x15
+
+/**
+ * @format B
+ * @param bd_addr
+ */
 #define HCI_EVENT_PIN_CODE_REQUEST                         0x16
+
+/**
+ * @format B
+ * @param bd_addr
+ */
 #define HCI_EVENT_LINK_KEY_REQUEST                         0x17
+
+// TODO: bd_addr B, link_key 16octets, key_type 1
 #define HCI_EVENT_LINK_KEY_NOTIFICATION                    0x18
+
+/**
+ * @format 1
+ * @param link_type
+ */
 #define HCI_EVENT_DATA_BUFFER_OVERFLOW                     0x1A
+
+/**
+ * @format H1
+ * @param handle
+ * @param lmp_max_slots
+ */
 #define HCI_EVENT_MAX_SLOTS_CHANGED                        0x1B
+
+/**
+ * @format 1H2
+ * @param status
+ * @param handle
+ * @param clock_offset
+ */
 #define HCI_EVENT_READ_CLOCK_OFFSET_COMPLETE               0x1C
+
+/**
+ * @format 1H2
+ * @param status
+ * @param handle
+ * @param packet_type
+ */
 #define HCI_EVENT_PACKET_TYPE_CHANGED                      0x1D
 
 /** 

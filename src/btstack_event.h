@@ -486,6 +486,148 @@ static inline uint8_t hci_event_role_change_get_role(const uint8_t * event){
 }
 
 /**
+ * @brief Get field status from event hci_event_mode_change_event
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_event_mode_change_event_get_status(const uint8_t * event){
+    return event[2];
+}
+/**
+ * @brief Get field handle from event hci_event_mode_change_event
+ * @param event packet
+ * @return handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t hci_event_mode_change_event_get_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field mode from event hci_event_mode_change_event
+ * @param event packet
+ * @return mode
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_event_mode_change_event_get_mode(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field interval from event hci_event_mode_change_event
+ * @param event packet
+ * @return interval
+ * @note: btstack_type 2
+ */
+static inline uint16_t hci_event_mode_change_event_get_interval(const uint8_t * event){
+    return little_endian_read_16(event, 6);
+}
+
+/**
+ * @brief Get field bd_addr from event hci_event_pin_code_request
+ * @param event packet
+ * @param Pointer to storage for bd_addr
+ * @note: btstack_type B
+ */
+static inline void hci_event_pin_code_request_get_bd_addr(const uint8_t * event, bd_addr_t bd_addr){
+    reverse_bd_addr(&event[2], bd_addr);    
+}
+
+/**
+ * @brief Get field bd_addr from event hci_event_link_key_request
+ * @param event packet
+ * @param Pointer to storage for bd_addr
+ * @note: btstack_type B
+ */
+static inline void hci_event_link_key_request_get_bd_addr(const uint8_t * event, bd_addr_t bd_addr){
+    reverse_bd_addr(&event[2], bd_addr);    
+}
+
+/**
+ * @brief Get field link_type from event hci_event_data_buffer_overflow
+ * @param event packet
+ * @return link_type
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_event_data_buffer_overflow_get_link_type(const uint8_t * event){
+    return event[2];
+}
+
+/**
+ * @brief Get field handle from event hci_event_max_slots_changed
+ * @param event packet
+ * @return handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t hci_event_max_slots_changed_get_handle(const uint8_t * event){
+    return little_endian_read_16(event, 2);
+}
+/**
+ * @brief Get field lmp_max_slots from event hci_event_max_slots_changed
+ * @param event packet
+ * @return lmp_max_slots
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_event_max_slots_changed_get_lmp_max_slots(const uint8_t * event){
+    return event[4];
+}
+
+/**
+ * @brief Get field status from event hci_event_read_clock_offset_complete
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_event_read_clock_offset_complete_get_status(const uint8_t * event){
+    return event[2];
+}
+/**
+ * @brief Get field handle from event hci_event_read_clock_offset_complete
+ * @param event packet
+ * @return handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t hci_event_read_clock_offset_complete_get_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field clock_offset from event hci_event_read_clock_offset_complete
+ * @param event packet
+ * @return clock_offset
+ * @note: btstack_type 2
+ */
+static inline uint16_t hci_event_read_clock_offset_complete_get_clock_offset(const uint8_t * event){
+    return little_endian_read_16(event, 5);
+}
+
+/**
+ * @brief Get field status from event hci_event_packet_type_changed
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_event_packet_type_changed_get_status(const uint8_t * event){
+    return event[2];
+}
+/**
+ * @brief Get field handle from event hci_event_packet_type_changed
+ * @param event packet
+ * @return handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t hci_event_packet_type_changed_get_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field packet_type from event hci_event_packet_type_changed
+ * @param event packet
+ * @return packet_type
+ * @note: btstack_type 2
+ */
+static inline uint16_t hci_event_packet_type_changed_get_packet_type(const uint8_t * event){
+    return little_endian_read_16(event, 5);
+}
+
+/**
  * @brief Get field num_responses from event hci_event_inquiry_result_with_rssi
  * @param event packet
  * @return num_responses
