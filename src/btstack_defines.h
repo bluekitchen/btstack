@@ -387,8 +387,7 @@ typedef uint8_t sm_key_t[16];
 #define L2CAP_EVENT_CHANNEL_CLOSED                         0x71
 
 /**
- * @format 1BH222
- * @param status
+ * @format BH222
  * @param address
  * @param handle
  * @param psm

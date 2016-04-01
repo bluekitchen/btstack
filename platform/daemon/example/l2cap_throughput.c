@@ -123,14 +123,13 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 					break;
 
 				case L2CAP_EVENT_INCOMING_CONNECTION:
-					// data: event(8), len(8), address(48), handle (16),  psm (16), source cid(16) dest cid(16)
-					reverse_bd_addr(&packet[2],
-							event_addr);
-					con_handle     = little_endian_read_16(packet, 8); 
-					psm        = little_endian_read_16(packet, 10); 
-					local_cid  = little_endian_read_16(packet, 12); 
-					// remote_cid = little_endian_read_16(packet, 14); 
-					printf("L2CAP_EVENT_INCOMING_CONNECTION %s, handle 0x%02x, psm 0x%02x, local cid 0x%02x\n", bd_addr_to_str(event_addr), con_handle, psm, local_cid);
+					l2cap_event_incoming_connection_get_address(packet, event_addr);
+					con_handle = l2cap_event_incoming_connection_get_handle(packet); 
+					psm        = l2cap_event_incoming_connection_get_psm(packet); 
+					local_cid  = l2cap_event_incoming_connection_get_local_cid(packet); 
+					printf("L2CAP_EVENT_INCOMING_CONNECTION %s, handle 0x%02x, psm 0x%02x, local cid 0x%02x, remote cid 0x%02x\n",
+						bd_addr_to_str(event_addr), con_handle, psm, local_cid, l2cap_event_incoming_connection_get_remote_cid(packet));
+					
 					// accept
 					bt_send_cmd(&l2cap_accept_connection_cmd, local_cid);
 					break;
@@ -157,17 +156,20 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 					
 				case L2CAP_EVENT_CHANNEL_OPENED:
 					// inform about new l2cap connection
-					reverse_bd_addr(&packet[3],
-							event_addr);
+					l2cap_event_channel_opened_get_address(packet, event_addr);
+
+					if (l2cap_event_channel_opened_get_status(packet)){
+						printf("L2CAP connection to device %s failed. status code %u\n", 
+							bd_addr_to_str(event_addr), l2cap_event_channel_opened_get_status(packet));
+						exit(1);
+					}
+
 					psm = little_endian_read_16(packet, 11); 
 					local_cid = little_endian_read_16(packet, 13); 
 					con_handle = little_endian_read_16(packet, 9);
-					if (packet[2] == 0) {
-						printf("Channel successfully opened: %s, handle 0x%02x, psm 0x%02x, local cid 0x%02x, remote cid 0x%02x\n",
-							   bd_addr_to_str(event_addr), con_handle, psm, local_cid,  little_endian_read_16(packet, 15));
-					} else {
-						printf("L2CAP connection to device %s failed. status code %u\n", bd_addr_to_str(event_addr), packet[2]);
-					}
+					printf("Channel successfully opened: %s, handle 0x%02x, psm 0x%02x, local cid 0x%02x, remote cid 0x%02x\n",
+						   bd_addr_to_str(event_addr), con_handle, psm, local_cid,  l2cap_event_channel_opened_get_remote_cid(packet));
+					
 					break;
 				
 				case HCI_EVENT_DISCONNECTION_COMPLETE:

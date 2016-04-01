@@ -988,22 +988,13 @@ static inline uint16_t l2cap_event_channel_closed_get_local_cid(const uint8_t * 
 }
 
 /**
- * @brief Get field status from event L2CAP_EVENT_INCOMING_CONNECTION
- * @param event packet
- * @return status
- * @note: btstack_type 1
- */
-static inline uint8_t l2cap_event_incoming_connection_get_status(const uint8_t * event){
-    return event[2];
-}
-/**
  * @brief Get field address from event L2CAP_EVENT_INCOMING_CONNECTION
  * @param event packet
  * @param Pointer to storage for address
  * @note: btstack_type B
  */
 static inline void l2cap_event_incoming_connection_get_address(const uint8_t * event, bd_addr_t address){
-    reverse_bd_addr(&event[3], address);    
+    reverse_bd_addr(&event[2], address);    
 }
 /**
  * @brief Get field handle from event L2CAP_EVENT_INCOMING_CONNECTION
@@ -1012,7 +1003,7 @@ static inline void l2cap_event_incoming_connection_get_address(const uint8_t * e
  * @note: btstack_type H
  */
 static inline hci_con_handle_t l2cap_event_incoming_connection_get_handle(const uint8_t * event){
-    return little_endian_read_16(event, 9);
+    return little_endian_read_16(event, 8);
 }
 /**
  * @brief Get field psm from event L2CAP_EVENT_INCOMING_CONNECTION
@@ -1021,7 +1012,7 @@ static inline hci_con_handle_t l2cap_event_incoming_connection_get_handle(const 
  * @note: btstack_type 2
  */
 static inline uint16_t l2cap_event_incoming_connection_get_psm(const uint8_t * event){
-    return little_endian_read_16(event, 11);
+    return little_endian_read_16(event, 10);
 }
 /**
  * @brief Get field local_cid from event L2CAP_EVENT_INCOMING_CONNECTION
@@ -1030,7 +1021,7 @@ static inline uint16_t l2cap_event_incoming_connection_get_psm(const uint8_t * e
  * @note: btstack_type 2
  */
 static inline uint16_t l2cap_event_incoming_connection_get_local_cid(const uint8_t * event){
-    return little_endian_read_16(event, 13);
+    return little_endian_read_16(event, 12);
 }
 /**
  * @brief Get field remote_cid from event L2CAP_EVENT_INCOMING_CONNECTION
@@ -1039,7 +1030,7 @@ static inline uint16_t l2cap_event_incoming_connection_get_local_cid(const uint8
  * @note: btstack_type 2
  */
 static inline uint16_t l2cap_event_incoming_connection_get_remote_cid(const uint8_t * event){
-    return little_endian_read_16(event, 15);
+    return little_endian_read_16(event, 14);
 }
 
 /**

@@ -195,7 +195,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 case GAP_EVENT_DEDICATED_BONDING_COMPLETED:
                     // data: event(8), len(8), status (8), bd_addr(48)
                     printf("GAP Dedicated Bonding Complete, status %u\n", packet[2]);
-                    reverse_bd_addr(&packet[3], addr);
+                    gap_event_dedicated_bonding_completed_get_address(packet, addr);
                     int index = getDeviceIndexForAddress(addr);
                     if (index >= 0) {
                         devices[index].state = BONDING_COMPLETED;
