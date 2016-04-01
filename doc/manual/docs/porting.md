@@ -137,14 +137,18 @@ callback for CTS interrupts.
     void hal_uart_dma_set_sleep(uint8_t sleep);
 
 
-## Persistent Storage API {#sec:persistentStoragePorting}
+## Persistent Storage APIs {#sec:persistentStoragePorting}
 
 On embedded systems there is no generic way to persist data like link
 keys or remote device names, as every type of a device has its own
 capabilities, particularities and limitations. The persistent storage
-API provides an interface to implement concrete drivers for a particular
-system. As an example and for testing purposes, BTstack provides the
-memory-only implementation *remote_device_db_memory*. An
+APIs provides an interface to implement concrete drivers for a particular
+system. 
+
+### Link Key DB
+
+As an example and for testing purposes, BTstack provides the
+memory-only implementation *btstack_link_key_db_memory*. An
 implementation has to conform to the interface in Listing [below](#lst:persistentDB).
 
 ~~~~ {#lst:persistentDB .c caption="{Persistent storage interface.}"}
@@ -158,10 +162,5 @@ implementation has to conform to the interface in Listing [below](#lst:persisten
         int  (*get_link_key)(bd_addr_t bd_addr, link_key_t link_key);
         void (*put_link_key)(bd_addr_t bd_addr, link_key_t key);
         void (*delete_link_key)(bd_addr_t bd_addr);
-        
-        // remote name
-        int (*get_name)(bd_addr_t bd_addr, device_name_t *device_name);
-        void(*put_name)(bd_addr_t bd_addr, device_name_t *device_name);
-        void(*delete_name)(bd_addr_t bd_addr);
-    } remote_device_db_t;
+    } btstack_link_key_db_t;
 ~~~~ 
