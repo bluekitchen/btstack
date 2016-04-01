@@ -348,20 +348,20 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 
         case RFCOMM_EVENT_INCOMING_CONNECTION:
             // data: event (8), len(8), address(48), channel (8), rfcomm_cid (16)
-            reverse_bd_addr(&packet[2], remote); 
-            rfcomm_channel_nr = packet[8];
-            rfcomm_channel_id = little_endian_read_16(packet, 9);
+            rfcomm_event_incoming_connection_get_bd_addr(packet, remote); 
+            rfcomm_channel_nr = rfcomm_event_incoming_connection_get_server_channel(packet);
+            rfcomm_channel_id = rfcomm_event_incoming_connection_get_rfcomm_cid(packet);
             printf("RFCOMM channel %u requested for %s\n\r", rfcomm_channel_nr, bd_addr_to_str(remote));
             rfcomm_accept_connection(rfcomm_channel_id);
             break;
             
         case RFCOMM_EVENT_CHANNEL_OPENED:
             // data: event(8), len(8), status (8), address (48), server channel(8), rfcomm_cid(16), max frame size(16)
-            if (packet[2]) {
-                printf("RFCOMM channel open failed, status %u\n\r", packet[2]);
+            if (rfcomm_event_channel_opened_get_status(packet)) {
+                printf("RFCOMM channel open failed, status %u\n\r", rfcomm_event_channel_opened_get_status(packet));
             } else {
-                rfcomm_channel_id = little_endian_read_16(packet, 12);
-                mtu = little_endian_read_16(packet, 14);
+                rfcomm_channel_id = rfcomm_event_channel_opened_get_rfcomm_cid(packet);
+                mtu = rfcomm_event_channel_opened_get_max_frame_size(packet);
                 if (mtu > 60){
                     printf("BTstack libusb hack: using reduced MTU for sending instead of %u\n", mtu);
                     mtu = 60;

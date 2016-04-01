@@ -604,8 +604,8 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             // data: event (8), len(8), address(48), channel (8), rfcomm_cid (16)
             if (hsp_state != HSP_IDLE) return;
 
-            reverse_bd_addr(&packet[2], event_addr); 
-            rfcomm_cid = little_endian_read_16(packet, 9);
+            rfcomm_event_incoming_connection_get_bd_addr(packet, event_addr);  
+            rfcomm_cid = rfcomm_event_incoming_connection_get_server_channel(packet);
             log_info("RFCOMM channel %u requested for %s", packet[8], bd_addr_to_str(event_addr));
             hsp_state = HSP_W4_RFCOMM_CONNECTED;
             rfcomm_accept_connection(rfcomm_cid);
@@ -614,15 +614,15 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
         case RFCOMM_EVENT_CHANNEL_OPENED:
             log_info("RFCOMM_EVENT_CHANNEL_OPENED packet_handler type %u, packet[0] %x", packet_type, packet[0]);
             // data: event(8), len(8), status (8), address (48), handle(16), server channel(8), rfcomm_cid(16), max frame size(16)
-            if (packet[2]) {
-                log_info("RFCOMM channel open failed, status %u§", packet[2]);
+            if (rfcomm_event_channel_opened_get_status(packet)) {
+                log_info("RFCOMM channel open failed, status %u§", rfcomm_event_channel_opened_get_status(packet));
                 hsp_ag_reset_state();
                 hsp_state = HSP_IDLE;
             } else {
                 // data: event(8) , len(8), status (8), address (48), handle (16), server channel(8), rfcomm_cid(16), max frame size(16)
-                rfcomm_handle = little_endian_read_16(packet, 9);
-                rfcomm_cid = little_endian_read_16(packet, 12);
-                mtu = little_endian_read_16(packet, 14);
+                rfcomm_handle = rfcomm_event_channel_opened_get_con_handle(packet);
+                rfcomm_cid = rfcomm_event_channel_opened_get_rfcomm_cid(packet);
+                mtu = rfcomm_event_channel_opened_get_max_frame_size(packet);
                 log_info("RFCOMM channel open succeeded. New RFCOMM Channel ID %u, max frame size %u, state %d", rfcomm_cid, mtu, hsp_state);
                 hsp_state = HSP_RFCOMM_CONNECTION_ESTABLISHED;
             }

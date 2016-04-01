@@ -114,26 +114,25 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 					bt_send_cmd(&hci_pin_code_request_reply, &event_addr, 4, "0000");
 					break;
 					
-				case RFCOMM_EVENT_INCOMING_CONNECTION:
-					// data: event (8), len(8), address(48), channel (8), rfcomm_cid (16)
-					reverse_bd_addr(&packet[2],
-							event_addr); 
-					rfcomm_channel_nr = packet[8];
-					rfcomm_channel_id = little_endian_read_16(packet, 9);
-					printf("RFCOMM channel %u requested for %s\n", rfcomm_channel_nr, bd_addr_to_str(event_addr));
-					bt_send_cmd(&rfcomm_accept_connection_cmd, rfcomm_channel_id);
-					break;
-					
-				case RFCOMM_EVENT_CHANNEL_OPENED:
-					// data: event(8), len(8), status (8), address (48), handle(16), server channel(8), rfcomm_cid(16), max frame size(16)
-					if (packet[2]) {
-						printf("RFCOMM channel open failed, status %u\n", packet[2]);
-					} else {
-						rfcomm_channel_id = little_endian_read_16(packet, 12);
-						mtu = little_endian_read_16(packet, 14);
-						printf("RFCOMM channel open succeeded. New RFCOMM Channel ID %u, max frame size %u\n", rfcomm_channel_id, mtu);
-					}
-					break;
+                case RFCOMM_EVENT_INCOMING_CONNECTION:
+                    // data: event (8), len(8), address(48), channel (8), rfcomm_cid (16)
+                    rfcomm_event_incoming_connection_get_bd_addr(packet, event_addr); 
+                    rfcomm_channel_nr = rfcomm_event_incoming_connection_get_server_channel(packet);
+                    rfcomm_channel_id = rfcomm_event_incoming_connection_get_rfcomm_cid(packet);
+                    printf("RFCOMM channel %u requested for %s\n", rfcomm_channel_nr, bd_addr_to_str(event_addr));
+                    rfcomm_accept_connection(rfcomm_channel_id);
+                    break;
+               
+                case RFCOMM_EVENT_CHANNEL_OPENED:
+                    // data: event(8), len(8), status (8), address (48), server channel(8), rfcomm_cid(16), max frame size(16)
+                    if (rfcomm_event_channel_opened_get_status(packet)) {
+                        printf("RFCOMM channel open failed, status %u\n", rfcomm_event_channel_opened_get_status(packet));
+                    } else {
+                        rfcomm_channel_id = rfcomm_event_channel_opened_get_rfcomm_cid(packet);
+                        mtu = rfcomm_event_channel_opened_get_max_frame_size(packet);
+                        printf("RFCOMM channel open succeeded. New RFCOMM Channel ID %u, max frame size %u\n", rfcomm_channel_id, mtu);
+                    }
+                    break;
 					
 				case HCI_EVENT_DISCONNECTION_COMPLETE:
 					// connection closed -> quit test app
