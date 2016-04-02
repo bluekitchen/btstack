@@ -125,7 +125,8 @@ static void att_emit_mtu_event(hci_con_handle_t con_handle, uint16_t mtu){
 }
 
 static void att_emit_can_send_now_event(void){
-    if (att_client_packet_handler) return;
+    if (!att_client_packet_handler) return;
+
     uint8_t event[] = { ATT_EVENT_CAN_SEND_NOW, 0};
     (*att_client_packet_handler)(HCI_EVENT_PACKET, 0, &event[0], sizeof(event));
 }
@@ -154,8 +155,6 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
                 
                 case L2CAP_EVENT_CAN_SEND_NOW:
                     att_run();
-                    // if we cannot send now, we'll get another l2cap can send now soon
-                    att_server_notify_can_send();
                     break;
                     
                 case HCI_EVENT_LE_META:
@@ -348,6 +347,8 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
         case HCI_EVENT_PACKET:
             if (packet[0] != L2CAP_EVENT_CAN_SEND_NOW) break;
             att_run();
+            // if we cannot send now, we'll get another l2cap can send now soon
+            att_server_notify_can_send();
             break;
 
         case ATT_DATA_PACKET:
