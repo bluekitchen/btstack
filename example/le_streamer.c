@@ -183,10 +183,11 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     printf("ATT MTU = %u\n", mtu);
                     test_data_len = mtu - 3;
                     break;
+                case ATT_EVENT_CAN_SEND_NOW:
+                    streamer();
+                    break;
             }
     }
-    // try sending whenever something happens
-    streamer();
 }
 
 /* LISTING_END */
@@ -201,21 +202,20 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 static void streamer(void){
     // check if we can send
     if (!le_notification_enabled) return;
-    if (!att_server_can_send_packet_now()) return;
 
     // create test data
-    int i;
     counter++;
     if (counter > 'Z') counter = 'A';
-    for (i=0;i<sizeof(test_data);i++){
-        test_data[i] = counter;
-    }
+    memset(test_data, counter, sizeof(test_data));
 
     // send
     att_server_notify(ATT_CHARACTERISTIC_0000FF11_0000_1000_8000_00805F9B34FB_01_VALUE_HANDLE, (uint8_t*) test_data, test_data_len);
 
     // track
     test_track_sent(test_data_len);
+
+    // request next send event
+    att_server_request_can_send_now_event();
 } 
 /* LISTING_END */
 
@@ -223,8 +223,8 @@ static void streamer(void){
  * @section ATT Write
  *
  * @text The only valid ATT write in this example is to the Client Characteristic Configuration, which configures notification
- * and indication. If the ATT handle matches the client configuration handle, the new configuration value is stored and used
- * in the heartbeat handler to decide if a new value should be sent. See Listing attWrite.
+ * and indication. If the ATT handle matches the client configuration handle, the new configuration value is stored.
+ * If notifications get enabled, an ATT_EVENT_CAN_SEND_NOW is requested. See Listing attWrite.
  */
 
 /* LISTING_START(attWrite): ATT Write */
@@ -235,6 +235,9 @@ static int att_write_callback(hci_con_handle_t con_handle, uint16_t att_handle, 
         case ATT_CHARACTERISTIC_0000FF11_0000_1000_8000_00805F9B34FB_01_CLIENT_CONFIGURATION_HANDLE:
             le_notification_enabled = little_endian_read_16(buffer, 0) == GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION;
             printf("Notifications enabled %u\n", le_notification_enabled);            
+            if (le_notification_enabled){
+                att_server_request_can_send_now_event();
+            }
             test_reset();
             break;
         case ATT_CHARACTERISTIC_0000FF12_0000_1000_8000_00805F9B34FB_01_VALUE_HANDLE:
