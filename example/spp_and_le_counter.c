@@ -142,7 +142,11 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                         printf("RFCOMM channel open succeeded. New RFCOMM Channel ID %u, max frame size %u\n", rfcomm_channel_id, mtu);
                     }
 					break;
-                    
+
+                case RFCOMM_EVENT_CAN_SEND_NOW:
+                    rfcomm_send(rfcomm_channel_id, (uint8_t*) counter_string, counter_string_len);
+                    break;
+
                 case RFCOMM_EVENT_CHANNEL_CLOSED:
                     printf("RFCOMM channel closed\n");
                     rfcomm_channel_id = 0;
@@ -205,8 +209,7 @@ static int att_write_callback(hci_con_handle_t con_handle, uint16_t att_handle, 
  * @section Heartbeat Handler
  * 
  * @text Similar to the packet handler, the heartbeat handler is the combination of the individual ones.
- * After updating the counter, it sends an RFCOMM packet if an RFCOMM connection is active,
- * and an LE notification if the remote side has requested notifications.
+ * After updating the counter, it requests an ATT_EVENT_CAN_SEND_NOW and/or RFCOMM_EVENT_CAN_SEND_NOW
  */
 
  /* LISTING_START(heartbeat): Combined Heartbeat handler */
@@ -217,12 +220,7 @@ static void heartbeat_handler(struct btstack_timer_source *ts){
     // log_info("%s", counter_string);
 
     if (rfcomm_channel_id){
-        if (rfcomm_can_send_packet_now(rfcomm_channel_id)){
-            int err = rfcomm_send(rfcomm_channel_id, (uint8_t*) counter_string, counter_string_len);
-            if (err) {
-                log_error("rfcomm_send -> error 0X%02x", err);
-            }
-        }
+        rfcomm_request_can_send_now_event(rfcomm_channel_id);
     }
 
     if (le_notification_enabled) {

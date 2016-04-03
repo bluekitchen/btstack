@@ -105,21 +105,17 @@ static void spp_service_setup(void){
 
 /* LISTING_START(PeriodicCounter): Periodic Counter */ 
 static btstack_timer_source_t heartbeat;
-
+static char lineBuffer[30];
 static void  heartbeat_handler(struct btstack_timer_source *ts){
     static int counter = 0;
 
     if (rfcomm_channel_id){
-        char lineBuffer[30];
         sprintf(lineBuffer, "BTstack counter %04u\n", ++counter);
         printf("%s", lineBuffer);
-        if (rfcomm_can_send_packet_now(rfcomm_channel_id)) {
-            int err = rfcomm_send(rfcomm_channel_id, (uint8_t*) lineBuffer, strlen(lineBuffer));  
-            if (err) {
-                log_error("rfcomm_send -> error 0X%02x", err);  
-            }
-        }   
+
+        rfcomm_request_can_send_now_event(rfcomm_channel_id);
     }
+
     btstack_run_loop_set_timer(ts, HEARTBEAT_PERIOD_MS);
     btstack_run_loop_add_timer(ts);
 } 
@@ -141,7 +137,8 @@ static void one_shot_timer_setup(void){
  * - HCI_EVENT_PIN_CODE_REQUEST (Standard pairing) or 
  * - HCI_EVENT_USER_CONFIRMATION_REQUEST (Secure Simple Pairing),
  * - RFCOMM_EVENT_INCOMING_CONNECTION,
- * - RFCOMM_EVENT_CHANNEL_OPENED, and
+ * - RFCOMM_EVENT_CHANNEL_OPENED, 
+* - RFCOMM_EVETN_CAN_SEND_NOW, and
  * - RFCOMM_EVENT_CHANNEL_CLOSED
  */
 
@@ -165,6 +162,10 @@ static void one_shot_timer_setup(void){
  * the communication between client and the application
  * takes place. In this example, the timer handler increases the real counter every
  * second. 
+ *
+ * RFCOMM_EVENT_CAN_SEND_NOW indicates that it's possible to send an RFCOMM packet
+ * on the rfcomm_cid that is include
+
  */ 
 
 /* LISTING_START(SppServerPacketHandler): SPP Server - Heartbeat Counter over RFCOMM */
@@ -218,6 +219,10 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                         printf("RFCOMM channel open succeeded. New RFCOMM Channel ID %u, max frame size %u\n", rfcomm_channel_id, mtu);
                     }
                     break;
+                case RFCOMM_EVENT_CAN_SEND_NOW:
+                    rfcomm_send(rfcomm_channel_id, (uint8_t*) lineBuffer, strlen(lineBuffer));  
+                    break;
+
 /* LISTING_PAUSE */                 
                 case RFCOMM_EVENT_CHANNEL_CLOSED:
                     printf("RFCOMM channel closed\n");
