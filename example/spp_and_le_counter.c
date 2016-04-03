@@ -119,6 +119,10 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     le_notification_enabled = 0;
                     break;
 
+                case ATT_EVENT_CAN_SEND_NOW:
+                    att_server_notify(ATT_CHARACTERISTIC_0000FF11_0000_1000_8000_00805F9B34FB_01_VALUE_HANDLE, (uint8_t*) counter_string, counter_string_len);
+                    break;
+
                 case RFCOMM_EVENT_INCOMING_CONNECTION:
 					// data: event (8), len(8), address(48), channel (8), rfcomm_cid (16)
                     rfcomm_event_incoming_connection_get_bd_addr(packet, event_addr); 
@@ -222,10 +226,7 @@ static void heartbeat_handler(struct btstack_timer_source *ts){
     }
 
     if (le_notification_enabled) {
-        int err = att_server_notify(ATT_CHARACTERISTIC_0000FF11_0000_1000_8000_00805F9B34FB_01_VALUE_HANDLE, (uint8_t*) counter_string, counter_string_len);
-        if (err){
-            log_error("att_server_notify -> error 0X%02x", err);
-        }
+        att_server_request_can_send_now_event();
     }
     btstack_run_loop_set_timer(ts, HEARTBEAT_PERIOD_MS);
     btstack_run_loop_add_timer(ts);
@@ -270,6 +271,7 @@ int btstack_main(void)
 
     // setup ATT server
     att_server_init(profile_data, att_read_callback, att_write_callback);    
+    att_server_register_packet_handler(packet_handler);
 
     // set one-shot timer
     heartbeat.process = &heartbeat_handler;
