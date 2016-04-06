@@ -136,6 +136,7 @@ static int  rfcomm_channel_ready_for_open(rfcomm_channel_t *channel);
 static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, rfcomm_channel_event_t *event);
 static void rfcomm_channel_state_machine_2(rfcomm_multiplexer_t * multiplexer, uint8_t dlci, rfcomm_channel_event_t *event);
 static void rfcomm_emit_can_send_now(rfcomm_channel_t *channel);
+static int rfcomm_multiplexer_ready_to_send(rfcomm_multiplexer_t * multiplexer);
 static void rfcomm_multiplexer_state_machine(rfcomm_multiplexer_t * multiplexer, RFCOMM_MULTIPLEXER_EVENT event);
 static void rfcomm_run(void);
 
@@ -830,11 +831,35 @@ static void rfcomm_multiplexer_opened(rfcomm_multiplexer_t *multiplexer){
         if (channel->multiplexer != multiplexer) continue;
         rfcomm_channel_state_machine(channel, &event);
     }        
-    
-    rfcomm_run();
     rfcomm_multiplexer_prepare_idle_timer(multiplexer);
+
+    // request can send now for multiplexer if ready
+    if (rfcomm_multiplexer_ready_to_send(multiplexer)){
+        l2cap_request_can_send_now_event(multiplexer->l2cap_cid);
+    }
 }
 
+static void rfcomm_handle_can_send_now(uint16_t l2cap_cid){
+
+    // find multiplexer for this cid
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &rfcomm_multiplexers);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        rfcomm_multiplexer_t * multiplexer = (rfcomm_multiplexer_t *) btstack_linked_list_iterator_next(&it);
+        if (multiplexer->l2cap_cid != l2cap_cid) continue;
+        if (rfcomm_multiplexer_ready_to_send(multiplexer)){
+            rfcomm_multiplexer_state_machine(multiplexer, MULT_EV_READY_TO_SEND);
+            // more to send?
+            if (rfcomm_multiplexer_ready_to_send(multiplexer)){
+                l2cap_request_can_send_now_event(l2cap_cid);
+                return;
+            }
+        }
+    }
+
+    rfcomm_run();   // rfcomm signaling packets first
+    rfcomm_notify_channel_can_send();
+}
 
 /**
  * @return handled packet
@@ -933,6 +958,8 @@ static int rfcomm_multiplexer_hci_event_handler(uint8_t *packet, uint16_t size){
                 multiplexer->con_handle = con_handle;
                 // send SABM #0
                 multiplexer->state = RFCOMM_MULTIPLEXER_SEND_SABM_0;
+                l2cap_request_can_send_now_event(multiplexer->l2cap_cid);
+
             } else { // multiplexer->state == RFCOMM_MULTIPLEXER_W4_SABM_0
                 
                 // set max frame size based on l2cap MTU
@@ -944,8 +971,8 @@ static int rfcomm_multiplexer_hci_event_handler(uint8_t *packet, uint16_t size){
         
         // Notify channel packet handler if they can send now
         case L2CAP_EVENT_CAN_SEND_NOW:
-            rfcomm_run();   // rfcomm signaling packets first
-            rfcomm_notify_channel_can_send();
+            l2cap_cid = l2cap_event_can_send_now_get_local_cid(packet);
+            rfcomm_handle_can_send_now(l2cap_cid);
             break;
             
         case L2CAP_EVENT_CHANNEL_CLOSED:
@@ -996,6 +1023,7 @@ static int rfcomm_multiplexer_l2cap_packet_handler(uint16_t channel, uint8_t *pa
                 log_info("Received SABM #0");
                 multiplexer->outgoing = 0;
                 multiplexer->state = RFCOMM_MULTIPLEXER_SEND_UA_0;
+                l2cap_request_can_send_now_event(multiplexer->l2cap_cid);
                 return 1;
             }
             break;
@@ -1013,6 +1041,7 @@ static int rfcomm_multiplexer_l2cap_packet_handler(uint16_t channel, uint8_t *pa
             // DISC #0 -> send UA #0, close multiplexer
             log_info("Received DISC #0, (ougoing = %u)", multiplexer->outgoing);
             multiplexer->state = RFCOMM_MULTIPLEXER_SEND_UA_0_AND_DISC;
+            l2cap_request_can_send_now_event(multiplexer->l2cap_cid);
             return 1;
             
         case BT_RFCOMM_DM:
@@ -1043,11 +1072,13 @@ static int rfcomm_multiplexer_l2cap_packet_handler(uint16_t channel, uint8_t *pa
 
                 case BT_RFCOMM_FCON_CMD:
                     multiplexer->fcon = 0x81;
-                    break;
+                    l2cap_request_can_send_now_event(multiplexer->l2cap_cid);
+                    return 1;
 
                 case BT_RFCOMM_FCOFF_CMD:
                     multiplexer->fcon = 0x80;
-                    break;
+                    l2cap_request_can_send_now_event(multiplexer->l2cap_cid);
+                    return 1;
 
                 case BT_RFCOMM_TEST_CMD: {
                     log_info("Received test command");
@@ -1057,6 +1088,7 @@ static int rfcomm_multiplexer_l2cap_packet_handler(uint16_t channel, uint8_t *pa
                     }
                     multiplexer->test_data_len = len;
                     memcpy(multiplexer->test_data, &packet[payload_offset + 2], len);
+                    l2cap_request_can_send_now_event(multiplexer->l2cap_cid);
                     return 1;
                 }
                 default:
@@ -1067,6 +1099,26 @@ static int rfcomm_multiplexer_l2cap_packet_handler(uint16_t channel, uint8_t *pa
         default:
             break;
             
+    }
+    return 0;
+}
+
+static int rfcomm_multiplexer_ready_to_send(rfcomm_multiplexer_t * multiplexer){
+    if (multiplexer->send_dm_for_dlci) return 1;
+    if (multiplexer->nsc_command) return 1;
+    if (multiplexer->fcon & 0x80) return 1;
+    switch (multiplexer->state){
+        case RFCOMM_MULTIPLEXER_SEND_SABM_0:
+        case RFCOMM_MULTIPLEXER_SEND_UA_0:
+        case RFCOMM_MULTIPLEXER_SEND_UA_0_AND_DISC:
+            return 1;
+        case RFCOMM_MULTIPLEXER_OPEN:
+            if (multiplexer->test_data_len) {
+                return 1;
+            }
+            break;
+        default:
+            break;
     }
     return 0;
 }
@@ -1483,10 +1535,7 @@ static void rfcomm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t
             break;
     }
     
-    if (handled) {
-        rfcomm_run();
-        return;
-    }
+    if (handled) return;
     
     // we only handle l2cap packets
     if (packet_type != L2CAP_DATA_PACKET) return;
@@ -1882,6 +1931,7 @@ static void rfcomm_run(void){
     btstack_linked_item_t *it;
     btstack_linked_item_t *next;
     
+#if 0
     for (it = (btstack_linked_item_t *) rfcomm_multiplexers; it ; it = next){
 
         next = it->next;    // be prepared for removal of channel in state machine
@@ -1896,6 +1946,7 @@ static void rfcomm_run(void){
 
         rfcomm_multiplexer_state_machine(multiplexer, MULT_EV_READY_TO_SEND);
     }
+#endif
 
     for (it = (btstack_linked_item_t *) rfcomm_channels; it ; it = next){
 
