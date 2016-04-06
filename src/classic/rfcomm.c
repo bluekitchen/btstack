@@ -1944,7 +1944,7 @@ void rfcomm_request_can_send_now_event(uint16_t rfcomm_cid){
         return;
     }
     channel->waiting_for_can_send_now = 1;
-    rfcomm_notify_channel_can_send();
+    l2cap_request_can_send_now_event(channel->multiplexer->l2cap_cid);
 }
 
 static int rfcomm_assert_send_valid(rfcomm_channel_t * channel , uint16_t len){
