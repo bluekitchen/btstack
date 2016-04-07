@@ -798,8 +798,8 @@ static void gatt_client_run(void){
 
         gatt_client_t * peripheral = (gatt_client_t *) it;
 
-        if (!att_dispatch_server_can_send_now(peripheral->con_handle)) {
-            att_dispatch_server_request_can_send_now_event(peripheral->con_handle);
+        if (!att_dispatch_client_can_send_now(peripheral->con_handle)) {
+            att_dispatch_client_request_can_send_now_event(peripheral->con_handle);
             return;
         }
 
@@ -1023,6 +1023,10 @@ static void gatt_client_hci_event_packet_handler(uint8_t packet_type, uint16_t c
 }
 
 static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *packet, uint16_t size){
+
+    if (packet_type == HCI_EVENT_PACKET && packet[0] == L2CAP_EVENT_CAN_SEND_NOW){
+        gatt_client_run();
+    }
 
     if (packet_type != ATT_DATA_PACKET) return;
 
@@ -1616,7 +1620,7 @@ uint8_t gatt_client_write_value_of_characteristic_without_response(hci_con_handl
     if (!is_ready(peripheral)) return GATT_CLIENT_IN_WRONG_STATE;
     
     if (value_length > peripheral_mtu(peripheral) - 3) return GATT_CLIENT_VALUE_TOO_LONG;
-    if (!att_dispatch_server_can_send_now(peripheral->con_handle)) return GATT_CLIENT_BUSY;
+    if (!att_dispatch_client_can_send_now(peripheral->con_handle)) return GATT_CLIENT_BUSY;
 
     att_write_request(ATT_WRITE_COMMAND, peripheral->con_handle, value_handle, value_length, value);
     return 0;
