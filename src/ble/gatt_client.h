@@ -286,7 +286,7 @@ uint8_t gatt_client_read_multiple_characteristic_values(btstack_packet_handler_t
 /** 
  * @brief Writes the characteristic value using the characteristic's value handle without an acknowledgment that the write was successfully performed.
  */
-uint8_t gatt_client_write_value_of_characteristic_without_response(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t characteristic_value_handle, uint16_t length, uint8_t  * data);
+uint8_t gatt_client_write_value_of_characteristic_without_response(hci_con_handle_t con_handle, uint16_t characteristic_value_handle, uint16_t length, uint8_t  * data);
 
 /** 
  * @brief Writes the authenticated characteristic value using the characteristic's value handle without an acknowledgment that the write was successfully performed.
