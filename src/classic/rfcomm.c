@@ -846,7 +846,7 @@ static void rfcomm_handle_can_send_now(uint16_t l2cap_cid){
 
     btstack_linked_list_iterator_t it;
 
-    // find multiplexer for this cid
+    // find multiplexer ready for this cid
     btstack_linked_list_iterator_init(&it, &rfcomm_multiplexers);
     while (btstack_linked_list_iterator_has_next(&it)){
         rfcomm_multiplexer_t * multiplexer = (rfcomm_multiplexer_t *) btstack_linked_list_iterator_next(&it);
@@ -861,7 +861,7 @@ static void rfcomm_handle_can_send_now(uint16_t l2cap_cid){
         }
     }
 
-    // find channels for this cid
+    // find channels ready for this cid
     btstack_linked_list_iterator_init(&it, &rfcomm_channels);
     while (btstack_linked_list_iterator_has_next(&it)){
         rfcomm_channel_t * channel = (rfcomm_channel_t *) btstack_linked_list_iterator_next(&it);
@@ -875,6 +875,13 @@ static void rfcomm_handle_can_send_now(uint16_t l2cap_cid){
             }
             return;
         }
+    }
+
+    // inform clients if waiting
+    btstack_linked_list_iterator_init(&it, &rfcomm_channels);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        rfcomm_channel_t * channel = (rfcomm_channel_t *) btstack_linked_list_iterator_next(&it);
+        if (channel->multiplexer->l2cap_cid != l2cap_cid) continue;
         // client waiting for can send now
         if (!channel->waiting_for_can_send_now)    continue;
         if (!channel->credits_outgoing)            continue;
@@ -883,8 +890,10 @@ static void rfcomm_handle_can_send_now(uint16_t l2cap_cid){
         channel->waiting_for_can_send_now = 0;
         rfcomm_emit_can_send_now(channel);
 
-        // TODO: call request send now if ... ?
+        // note: if client wants to send more, it will call rfcomm_request_can_send_now which in turn will
+        // call l2cap_request_can_send_now -> nothing to do for us here.
 
+        // check if we can still send
         if (!l2cap_can_send_packet_now(l2cap_cid)) {
             return;
         }
