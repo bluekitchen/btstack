@@ -321,18 +321,15 @@ static void sdp_client_emit_busy(btstack_packet_handler_t callback){
 
 // TODO: inline if not needed (des(des))
 
-static int sdp_client_can_send_now(uint16_t channel){
-    if (sdp_client_state != W2_SEND) return 0;
-    if (!l2cap_can_send_packet_now(channel)) return 0;
-    return 1;
-}
-
 static void sdp_client_parse_attribute_lists(uint8_t* packet, uint16_t length){
     sdp_parser_handle_chunk(packet, length);
 }
 
 
 static void sdp_client_send_request(uint16_t channel){
+
+    if (sdp_client_state != W2_SEND) return;
+
     l2cap_reserve_packet_buffer();
     uint8_t * data = l2cap_get_outgoing_buffer();
     uint16_t request_len = 0;
@@ -356,22 +353,8 @@ static void sdp_client_send_request(uint16_t channel){
 
     // prevent re-entrance
     sdp_client_state = W4_RESPONSE;
-    int err = l2cap_send_prepared(channel, request_len);
-    // l2cap_send_prepared shouldn't have failed as l2ap_can_send_packet_now() was true
-    switch (err){
-        case 0:
-            log_debug("l2cap_send() -> OK");
-            PDU_ID = SDP_Invalid;
-            break;
-        case BTSTACK_ACL_BUFFERS_FULL:
-            sdp_client_state = W2_SEND;
-            log_info("l2cap_send() ->BTSTACK_ACL_BUFFERS_FULL");
-            break;
-        default:
-            sdp_client_state = W2_SEND;
-            log_error("l2cap_send() -> err %d", err);
-            break;
-    }
+    PDU_ID = SDP_Invalid;
+    l2cap_send_prepared(channel, request_len);
 }
 
 
@@ -453,7 +436,7 @@ void sdp_client_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
         }
         // prepare next request and send
         sdp_client_state = W2_SEND;
-        if (sdp_client_can_send_now(sdp_cid)) sdp_client_send_request(sdp_cid);
+        l2cap_request_can_send_now_event(sdp_cid);
         return;
     }
     
@@ -474,11 +457,13 @@ void sdp_client_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
             log_info("SDP Client Connected, cid %x, mtu %u.", sdp_cid, mtu);
 
             sdp_client_state = W2_SEND;
-            if (sdp_client_can_send_now(sdp_cid)) sdp_client_send_request(sdp_cid);
-        
+            l2cap_request_can_send_now_event(sdp_cid);
             break;
+
         case L2CAP_EVENT_CAN_SEND_NOW:
-            if (sdp_client_can_send_now(sdp_cid)) sdp_client_send_request(sdp_cid);
+            if(l2cap_event_can_send_now_get_local_cid(packet) == sdp_cid){
+                sdp_client_send_request(sdp_cid);
+            }
             break;
         case L2CAP_EVENT_CHANNEL_CLOSED: {
             if (sdp_cid != little_endian_read_16(packet, 2)) {
