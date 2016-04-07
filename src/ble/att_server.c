@@ -153,10 +153,6 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
         case HCI_EVENT_PACKET:
             switch (hci_event_packet_get_type(packet)) {
                 
-                case L2CAP_EVENT_CAN_SEND_NOW:
-                    att_run();
-                    break;
-                    
                 case HCI_EVENT_LE_META:
                     switch (packet[2]) {
                         case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
@@ -250,6 +246,11 @@ static void att_signed_write_handle_cmac_result(uint8_t hash[8]){
     att_run();
 }
 
+#if 0
+static int att_server_ready_to_send(att_connection_t * connection){
+}
+#endif
+
 static void att_run(void){
     switch (att_server_state){
         case ATT_SERVER_IDLE:
@@ -300,6 +301,7 @@ static void att_run(void){
             // NOTE: fall through for regular commands
 
         case ATT_SERVER_REQUEST_RECEIVED_AND_VALIDATED:
+
             if (!att_dispatch_server_can_send_now(att_connection.con_handle)) return;
 
             l2cap_reserve_packet_buffer();
@@ -342,13 +344,18 @@ static void att_run(void){
     }
 }
 
+static void att_server_handle_can_send_now(hci_con_handle_t con_handle){
+    att_run();
+    // if we cannot send now, we'll get another l2cap can send now soon
+    att_server_notify_can_send();
+}
+
 static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *packet, uint16_t size){
     switch (packet_type){
+
         case HCI_EVENT_PACKET:
             if (packet[0] != L2CAP_EVENT_CAN_SEND_NOW) break;
-            att_run();
-            // if we cannot send now, we'll get another l2cap can send now soon
-            att_server_notify_can_send();
+            att_server_handle_can_send_now(l2cap_event_can_send_now_get_local_cid(packet));
             break;
 
         case ATT_DATA_PACKET:
