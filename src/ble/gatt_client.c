@@ -798,7 +798,10 @@ static void gatt_client_run(void){
 
         gatt_client_t * peripheral = (gatt_client_t *) it;
 
-        if (!att_dispatch_server_can_send_now(peripheral->con_handle)) return;
+        if (!att_dispatch_server_can_send_now(peripheral->con_handle)) {
+            att_dispatch_server_request_can_send_now_event(peripheral->con_handle);
+            return;
+        }
 
         // log_info("- handle_peripheral_list, mtu state %u, client state %u", peripheral->mtu_state, peripheral->gatt_client_state);
         
@@ -1606,7 +1609,7 @@ uint8_t gatt_client_read_multiple_characteristic_values(btstack_packet_handler_t
     return 0;
 }
 
-uint8_t gatt_client_write_value_of_characteristic_without_response(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t value_handle, uint16_t value_length, uint8_t * value){
+uint8_t gatt_client_write_value_of_characteristic_without_response(hci_con_handle_t con_handle, uint16_t value_handle, uint16_t value_length, uint8_t * value){
     gatt_client_t * peripheral = provide_context_for_conn_handle(con_handle);
     
     if (!peripheral) return BTSTACK_MEMORY_ALLOC_FAILED; 
@@ -1615,7 +1618,6 @@ uint8_t gatt_client_write_value_of_characteristic_without_response(btstack_packe
     if (value_length > peripheral_mtu(peripheral) - 3) return GATT_CLIENT_VALUE_TOO_LONG;
     if (!att_dispatch_server_can_send_now(peripheral->con_handle)) return GATT_CLIENT_BUSY;
 
-    peripheral->callback = callback;
     att_write_request(ATT_WRITE_COMMAND, peripheral->con_handle, value_handle, value_length, value);
     return 0;
 }
