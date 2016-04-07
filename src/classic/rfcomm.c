@@ -908,7 +908,7 @@ static void rfcomm_multiplexer_set_state_and_request_can_send_now_event(rfcomm_m
 /**
  * @return handled packet
  */
-static int rfcomm_multiplexer_hci_event_handler(uint8_t *packet, uint16_t size){
+static int rfcomm_hci_event_handler(uint8_t *packet, uint16_t size){
     bd_addr_t event_addr;
     uint16_t  psm;
     uint16_t l2cap_cid;
@@ -946,8 +946,8 @@ static int rfcomm_multiplexer_hci_event_handler(uint8_t *packet, uint16_t size){
             
             multiplexer->con_handle = con_handle;
             multiplexer->l2cap_cid = l2cap_cid;
+            // 
             multiplexer->state = RFCOMM_MULTIPLEXER_W4_SABM_0;
-            
             log_info("L2CAP_EVENT_INCOMING_CONNECTION (l2cap_cid 0x%02x) for PSM_RFCOMM => accept", l2cap_cid);
             l2cap_accept_connection(l2cap_cid);
             return 1;
@@ -994,6 +994,8 @@ static int rfcomm_multiplexer_hci_event_handler(uint8_t *packet, uint16_t size){
                 return 1;
             }
             
+            // following could be: rfcom_multiplexer_state_machein(..., EVENT_L2CAP_OPENED)
+
             if (multiplexer->state == RFCOMM_MULTIPLEXER_W4_CONNECT) {
                 log_info("L2CAP_EVENT_CHANNEL_OPENED: outgoing connection");
                 // wrong remote addr
@@ -1016,7 +1018,7 @@ static int rfcomm_multiplexer_hci_event_handler(uint8_t *packet, uint16_t size){
         case L2CAP_EVENT_CAN_SEND_NOW:
             l2cap_cid = l2cap_event_can_send_now_get_local_cid(packet);
             rfcomm_handle_can_send_now(l2cap_cid);
-            break;
+            return 1;
             
         case L2CAP_EVENT_CHANNEL_CLOSED:
             // data: event (8), len(8), channel (16)
@@ -1557,25 +1559,20 @@ static void rfcomm_channel_packet_handler(rfcomm_multiplexer_t * multiplexer,  u
 
 static void rfcomm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     
-    // multiplexer handler
-    int handled = 0;
-    switch (packet_type) {
-        case HCI_EVENT_PACKET:
-            handled = rfcomm_multiplexer_hci_event_handler(packet, size);
-            break;
-        case L2CAP_DATA_PACKET:
-            handled = rfcomm_multiplexer_l2cap_packet_handler(channel, packet, size);
-            break;
-        default:
-            break;
+    if (packet_type == HCI_EVENT_PACKET){
+        rfcomm_hci_event_handler(packet, size);
+        return;
     }
-    
-    if (handled) return;
-    
-    // we only handle l2cap packets
+
+    // we only handle l2cap packets for:
     if (packet_type != L2CAP_DATA_PACKET) return;
 
-    // ... over open multiplexer channel now
+    //  - multiplexer itself
+    int handled = rfcomm_multiplexer_l2cap_packet_handler(channel, packet, size);
+
+    if (handled) return;
+    
+    // - channel over open mutliplexer
     rfcomm_multiplexer_t * multiplexer = rfcomm_multiplexer_for_l2cap_cid(channel);
     if (!multiplexer || multiplexer->state != RFCOMM_MULTIPLEXER_OPEN) return;
     
