@@ -1231,11 +1231,11 @@ static void sm_run(void){
                 case SM_RESPONDER_SEND_SECURITY_REQUEST:
                     // send packet if possible,
                     if (l2cap_can_send_fixed_channel_packet_now(sm_connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL)){
-                        uint8_t buffer[2];
-                        buffer[0] = SM_CODE_SECURITY_REQUEST;
-                        buffer[1] = SM_AUTHREQ_BONDING;
+                        const uint8_t buffer[2] = { SM_CODE_SECURITY_REQUEST, SM_AUTHREQ_BONDING};
                         sm_connection->sm_engine_state = SM_RESPONDER_PH1_W4_PAIRING_REQUEST;            
                         l2cap_send_connectionless(sm_connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
+                    } else {
+                        l2cap_request_can_send_fix_channel_now_event(sm_connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL);
                     }
                     // don't lock setup context yet
                     done = 0;
@@ -1303,7 +1303,10 @@ static void sm_run(void){
         if (sm_active_connection == 0) return;
 
         // assert that we could send a SM PDU - not needed for all of the following
-        if (!l2cap_can_send_fixed_channel_packet_now(sm_active_connection, L2CAP_CID_SECURITY_MANAGER_PROTOCOL)) return;
+        if (!l2cap_can_send_fixed_channel_packet_now(sm_active_connection, L2CAP_CID_SECURITY_MANAGER_PROTOCOL)) {
+            l2cap_request_can_send_fix_channel_now_event(sm_active_connection, L2CAP_CID_SECURITY_MANAGER_PROTOCOL);
+            return;
+        }
 
         sm_connection_t * connection = sm_get_connection_for_handle(sm_active_connection);
         if (!connection) return;
@@ -2060,6 +2063,10 @@ static void sm_pdu_received_in_wrong_state(sm_connection_t * sm_conn){
 
 static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uint8_t *packet, uint16_t size){
 
+    if (packet_type == HCI_EVENT_PACKET && packet[0] == L2CAP_EVENT_CAN_SEND_NOW){
+        sm_run();
+    }
+
     if (packet_type != SM_DATA_PACKET) return;
 
     sm_connection_t * sm_conn = sm_get_connection_for_handle(con_handle);
@@ -2350,7 +2357,7 @@ void sm_init(void){
     hci_event_callback_registration.callback = &sm_event_packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
     
-    // and L2CAP PDUs
+    // and L2CAP PDUs + L2CAP_EVENT_CAN_SEND_NOW
     l2cap_register_fixed_channel(sm_pdu_handler, L2CAP_CID_SECURITY_MANAGER_PROTOCOL);
 }
 
