@@ -414,17 +414,20 @@ void att_server_register_packet_handler(btstack_packet_handler_t handler){
     att_client_packet_handler = handler;    
 }
 
-int  att_server_can_send_packet_now(void){
+// NOTE: con_handle is ignored for now as only a single connection is supported
+// TODO: support multiple connections
+
+int  att_server_can_send_packet_now(hci_con_handle_t con_handle){
 	if (att_connection.con_handle == 0) return 0;
 	return att_dispatch_server_can_send_now(att_connection.con_handle);
 }
 
-void att_server_request_can_send_now_event(){
+void att_server_request_can_send_now_event(hci_con_handle_t con_handle){
     att_client_waiting_for_can_send = 1;
     att_dispatch_server_request_can_send_now_event(att_connection.con_handle);
 }
 
-int att_server_notify(uint16_t attribute_handle, uint8_t *value, uint16_t value_len){
+int att_server_notify(hci_con_handle_t con_handle, uint16_t attribute_handle, uint8_t *value, uint16_t value_len){
     if (!att_dispatch_server_can_send_now(att_connection.con_handle)) return BTSTACK_ACL_BUFFERS_FULL;
 
     l2cap_reserve_packet_buffer();
@@ -433,7 +436,7 @@ int att_server_notify(uint16_t attribute_handle, uint8_t *value, uint16_t value_
 	return l2cap_send_prepared_connectionless(att_connection.con_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, size);
 }
 
-int att_server_indicate(uint16_t attribute_handle, uint8_t *value, uint16_t value_len){
+int att_server_indicate(hci_con_handle_t con_handle, uint16_t attribute_handle, uint8_t *value, uint16_t value_len){
     if (att_handle_value_indication_handle) return ATT_HANDLE_VALUE_INDICATION_IN_PORGRESS;
     if (!att_dispatch_server_can_send_now(att_connection.con_handle)) return BTSTACK_ACL_BUFFERS_FULL;
 

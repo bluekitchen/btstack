@@ -209,13 +209,13 @@ static void streamer(void){
     memset(test_data, counter, sizeof(test_data));
 
     // send
-    att_server_notify(ATT_CHARACTERISTIC_0000FF11_0000_1000_8000_00805F9B34FB_01_VALUE_HANDLE, (uint8_t*) test_data, test_data_len);
+    att_server_notify(connection_handle, ATT_CHARACTERISTIC_0000FF11_0000_1000_8000_00805F9B34FB_01_VALUE_HANDLE, (uint8_t*) test_data, test_data_len);
 
     // track
     test_track_sent(test_data_len);
 
     // request next send event
-    att_server_request_can_send_now_event();
+    att_server_request_can_send_now_event(connection_handle);
 } 
 /* LISTING_END */
 
@@ -234,9 +234,9 @@ static int att_write_callback(hci_con_handle_t con_handle, uint16_t att_handle, 
     switch(att_handle){
         case ATT_CHARACTERISTIC_0000FF11_0000_1000_8000_00805F9B34FB_01_CLIENT_CONFIGURATION_HANDLE:
             le_notification_enabled = little_endian_read_16(buffer, 0) == GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION;
-            printf("Notifications enabled %u\n", le_notification_enabled);            
+            printf("Notifications enabled %u\n", le_notification_enabled); 
             if (le_notification_enabled){
-                att_server_request_can_send_now_event();
+                att_server_request_can_send_now_event(connection_handle);
             }
             test_reset();
             break;

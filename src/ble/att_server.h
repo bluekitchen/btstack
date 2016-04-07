@@ -64,35 +64,38 @@ void att_server_register_packet_handler(btstack_packet_handler_t handler);
 
 /*
  * @brief tests if a notification or indication can be send right now
+ * @param con_handle
  * @return 1, if packet can be sent
  */
-int  att_server_can_send_packet_now(void);
+int  att_server_can_send_packet_now(hci_con_handle_t con_handle);
 
 /** 
  * @brief Request emission of ATT_EVENT_CAN_SEND_NOW as soon as possible
  * @note ATT_EVENT_CAN_SEND_NOW might be emitted during call to this function
  *       so packet handler should be ready to handle it
- * @param local_cid
+ * @param con_handle
  */
-void att_server_request_can_send_now_event(void);
+void att_server_request_can_send_now_event(hci_con_handle_t con_handle);
 
 /*
  * @brief notify client about attribute value change
+ * @param con_handle
  * @param attribute_handle
  * @param value
  * @param value_len
  * @return 0 if ok, error otherwise
  */
-int att_server_notify(uint16_t attribute_handle, uint8_t *value, uint16_t value_len);
+int att_server_notify(hci_con_handle_t con_handle, uint16_t attribute_handle, uint8_t *value, uint16_t value_len);
 
 /*
  * @brief indicate value change to client. client is supposed to reply with an indication_response
+ * @param con_handle
  * @param attribute_handle
  * @param value
  * @param value_len
  * @return 0 if ok, error otherwise
  */
-int att_server_indicate(uint16_t attribute_handle, uint8_t *value, uint16_t value_len);
+int att_server_indicate(hci_con_handle_t con_handle, uint16_t attribute_handle, uint8_t *value, uint16_t value_len);
 
 /* API_END */
 
