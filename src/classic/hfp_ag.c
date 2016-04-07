@@ -56,6 +56,7 @@
 #include "hci_dump.h"
 #include "l2cap.h"
 #include "btstack_debug.h"
+#include "btstack_event.h"
 #include "classic/core.h"
 #include "classic/hfp.h"
 #include "classic/hfp_ag.h"
@@ -1610,8 +1611,11 @@ static void hfp_ag_send_call_status(hfp_connection_t * hfp_connection, int call_
 
 static void hfp_run_for_context(hfp_connection_t *hfp_connection){
     if (!hfp_connection) return;
-    if (!rfcomm_can_send_packet_now(hfp_connection->rfcomm_cid)) return;
-    
+    if (!rfcomm_can_send_packet_now(hfp_connection->rfcomm_cid)) {
+        rfcomm_request_can_send_now_event(hfp_connection->rfcomm_cid);
+        return;
+    }
+
     if (hfp_connection->send_status_of_current_calls){
         hfp_connection->ok_pending = 0; 
         if (hfp_connection->next_call_index < hfp_gsm_get_number_of_calls()){
@@ -1978,7 +1982,12 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             hfp_handle_rfcomm_data(packet_type, channel, packet, size);
             break;
         case HCI_EVENT_PACKET:
-            hfp_handle_hci_event(packet_type, packet, size);
+            if (packet[0] == RFCOMM_EVENT_CAN_SEND_NOW){
+                uint16_t rfcomm_cid = rfcomm_event_can_send_now_get_rfcomm_cid(packet);
+                hfp_run_for_context(get_hfp_connection_context_for_rfcomm_cid(rfcomm_cid));
+                return;
+            }
+            hfp_handle_hci_event(packet_type, channel, packet, size);
             break;
         default:
             break;

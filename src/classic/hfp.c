@@ -409,10 +409,6 @@ void hfp_create_sdp_record(uint8_t * service, uint32_t service_record_handle, ui
 
 static hfp_connection_t * connection_doing_sdp_query = NULL;
 
-static void handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    hfp_handle_hci_event(packet_type, packet, size);
-}
-
 static void handle_query_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     hfp_connection_t * hfp_connection = connection_doing_sdp_query;
     
@@ -431,7 +427,7 @@ static void handle_query_rfcomm_event(uint8_t packet_type, uint16_t channel, uin
             if (hfp_connection->rfcomm_channel_nr > 0){
                 hfp_connection->state = HFP_W4_RFCOMM_CONNECTED;
                 log_info("HFP: SDP_EVENT_QUERY_COMPLETE context %p, addr %s, state %d", hfp_connection, bd_addr_to_str( hfp_connection->remote_addr),  hfp_connection->state);
-                rfcomm_create_channel(handle_hci_event, hfp_connection->remote_addr, hfp_connection->rfcomm_channel_nr, NULL); 
+                rfcomm_create_channel(&hfp_handle_hci_event, hfp_connection->remote_addr, hfp_connection->rfcomm_channel_nr, NULL); 
                 break;
             }
             log_info("rfcomm service not found, status %u.", sdp_event_query_complete_get_status(packet));
@@ -441,7 +437,7 @@ static void handle_query_rfcomm_event(uint8_t packet_type, uint16_t channel, uin
     }
 }
 
-void hfp_handle_hci_event(uint8_t packet_type, uint8_t *packet, uint16_t size){
+void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     bd_addr_t event_addr;
     uint16_t rfcomm_cid, handle;
     hfp_connection_t * hfp_connection = NULL;

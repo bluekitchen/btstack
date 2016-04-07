@@ -154,6 +154,10 @@ int  rfcomm_send(uint16_t rfcomm_cid, uint8_t *data, uint16_t len){
     return 0;
 }
 
+void rfcomm_request_can_send_now_event(uint16_t rfcomm_cid){
+    // TODO: emit event
+}
+
 int       rfcomm_reserve_packet_buffer(void){
     return 1;
 };
