@@ -1703,6 +1703,7 @@ static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, const rfcomm
         rfcomm_channel_event_rpn_t *event_rpn = (rfcomm_channel_event_rpn_t*) event;
         rfcomm_rpn_data_update(&channel->rpn_data, &event_rpn->data);
         rfcomm_channel_state_add(channel, RFCOMM_CHANNEL_STATE_VAR_SEND_RPN_RSP);
+        l2cap_request_can_send_now_event(multiplexer->l2cap_cid);
         // notify client about new settings
         rfcomm_emit_port_configuration(channel);
         return;
@@ -1714,6 +1715,7 @@ static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, const rfcomm
         channel->rpn_data.parameter_mask_0 = 0x00;
         channel->rpn_data.parameter_mask_1 = 0x00;
         rfcomm_channel_state_add(channel, RFCOMM_CHANNEL_STATE_VAR_SEND_RPN_RSP);
+        l2cap_request_can_send_now_event(multiplexer->l2cap_cid);
         return;
     }
     
@@ -1790,6 +1792,7 @@ static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, const rfcomm
                     rfcomm_channel_state_add(channel, RFCOMM_CHANNEL_STATE_VAR_RCVD_SABM);
                     if (channel->state_var & RFCOMM_CHANNEL_STATE_VAR_CLIENT_ACCEPTED) {
                         rfcomm_channel_state_add(channel, RFCOMM_CHANNEL_STATE_VAR_SEND_UA);
+                        l2cap_request_can_send_now_event(multiplexer->l2cap_cid);
                     }
                     break;
                 case CH_EVT_RCVD_PN:
@@ -1797,6 +1800,7 @@ static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, const rfcomm
                     rfcomm_channel_state_add(channel, RFCOMM_CHANNEL_STATE_VAR_RCVD_PN);
                     if (channel->state_var & RFCOMM_CHANNEL_STATE_VAR_CLIENT_ACCEPTED) {
                         rfcomm_channel_state_add(channel, RFCOMM_CHANNEL_STATE_VAR_SEND_PN_RSP);
+                        l2cap_request_can_send_now_event(multiplexer->l2cap_cid);
                     }
                     break;
                 case CH_EVT_READY_TO_SEND:
@@ -1814,7 +1818,7 @@ static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, const rfcomm
                         log_info("Incomping setup done, requesting send MSC CMD and send Credits");
                         rfcomm_channel_state_add(channel, RFCOMM_CHANNEL_STATE_VAR_SEND_MSC_CMD);
                         rfcomm_channel_state_add(channel, RFCOMM_CHANNEL_STATE_VAR_SEND_CREDITS);
-                        channel->state = RFCOMM_CHANNEL_DLC_SETUP;
+                        l2cap_request_can_send_now_event(multiplexer->l2cap_cid);
                     }
                     break;
                 default:
@@ -1827,6 +1831,7 @@ static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, const rfcomm
                 case CH_EVT_MULTIPLEXER_READY:
                     log_info("Muliplexer opened, sending UIH PN next");
                     channel->state = RFCOMM_CHANNEL_SEND_UIH_PN;
+                    l2cap_request_can_send_now_event(multiplexer->l2cap_cid);
                     break;
                 default:
                     break;
@@ -1855,6 +1860,7 @@ static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, const rfcomm
                     // new credits
                     channel->credits_outgoing = event_pn->credits_outgoing;
                     channel->state = RFCOMM_CHANNEL_SEND_SABM_W4_UA;
+                    l2cap_request_can_send_now_event(multiplexer->l2cap_cid);
                     break;
                 default:
                     break;
@@ -1879,6 +1885,7 @@ static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, const rfcomm
                     channel->state = RFCOMM_CHANNEL_DLC_SETUP;
                     rfcomm_channel_state_add(channel, RFCOMM_CHANNEL_STATE_VAR_SEND_MSC_CMD);
                     rfcomm_channel_state_add(channel, RFCOMM_CHANNEL_STATE_VAR_SEND_CREDITS);
+                    l2cap_request_can_send_now_event(multiplexer->l2cap_cid);
                     break;
                 default:
                     break;
@@ -1890,6 +1897,7 @@ static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, const rfcomm
                 case CH_EVT_RCVD_MSC_CMD:
                     rfcomm_channel_state_add(channel, RFCOMM_CHANNEL_STATE_VAR_RCVD_MSC_CMD);
                     rfcomm_channel_state_add(channel, RFCOMM_CHANNEL_STATE_VAR_SEND_MSC_RSP);
+                    l2cap_request_can_send_now_event(multiplexer->l2cap_cid);
                     break;
                 case CH_EVT_RCVD_MSC_RSP:
                     rfcomm_channel_state_add(channel, RFCOMM_CHANNEL_STATE_VAR_RCVD_MSC_RSP);
@@ -1931,6 +1939,7 @@ static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, const rfcomm
             switch (event->type){
                 case CH_EVT_RCVD_MSC_CMD:
                     rfcomm_channel_state_add(channel, RFCOMM_CHANNEL_STATE_VAR_SEND_MSC_RSP);
+                    l2cap_request_can_send_now_event(multiplexer->l2cap_cid);
                     break;
                 case CH_EVT_READY_TO_SEND:
                     if (channel->new_credits_incoming) {
