@@ -436,10 +436,9 @@ int sdp_handle_service_search_attribute_request(uint8_t * packet, uint16_t remot
     return pos;
 }
 
-static void sdp_try_respond(void){
+static void sdp_respond(void){
     if (!sdp_response_size ) return;
     if (!l2cap_cid) return;
-    if (!l2cap_can_send_packet_now(l2cap_cid)) return;
     
     // update state before sending packet (avoid getting called when new l2cap credit gets emitted)
     uint16_t size = sdp_response_size;
@@ -485,9 +484,8 @@ static void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                     sdp_response_size = sdp_create_error_response(transaction_id, 0x0003); // invalid syntax
                     break;
             }
-            
-            sdp_try_respond();
-            
+            if (!sdp_response_size) break;
+            l2cap_request_can_send_now(l2cap_cid);
 			break;
 			
 		case HCI_EVENT_PACKET:
@@ -514,7 +512,7 @@ static void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                     break;
 
                 case L2CAP_EVENT_CAN_SEND_NOW:
-                    sdp_try_respond();
+                    sdp_respond();
                     break;
                 
                 case L2CAP_EVENT_CHANNEL_CLOSED:
