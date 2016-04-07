@@ -378,7 +378,11 @@ void hsp_ag_stop_ringing(void){
 }
 
 static void hsp_run(void){
-    if (!rfcomm_can_send_packet_now(rfcomm_cid)) return;
+    if (!rfcomm_can_send_packet_now(rfcomm_cid)) {
+        rfcomm_request_can_send_now_event(rfcomm_cid);
+        return;
+    }
+
     int err;
 
     if (ag_send_ok){
@@ -629,6 +633,17 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             emit_event(HSP_SUBEVENT_RFCOMM_CONNECTION_COMPLETE, packet[2]);
             break;
         
+        case RFCOMM_EVENT_CHANNEL_CLOSED:
+            rfcomm_handle = 0;
+            hsp_state = HSP_IDLE;
+            hsp_ag_reset_state();
+            emit_event(HSP_SUBEVENT_RFCOMM_DISCONNECTION_COMPLETE,0);
+            break;
+
+        case RFCOMM_EVENT_CAN_SEND_NOW:
+            hsp_run();
+            break;
+
         case HCI_EVENT_DISCONNECTION_COMPLETE:
             handle = little_endian_read_16(packet,3);
             if (handle == sco_handle){
@@ -644,16 +659,11 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 emit_event(HSP_SUBEVENT_RFCOMM_DISCONNECTION_COMPLETE,0);
             }
             break;
-            
-        case RFCOMM_EVENT_CHANNEL_CLOSED:
-            rfcomm_handle = 0;
-            hsp_state = HSP_IDLE;
-            hsp_ag_reset_state();
-            emit_event(HSP_SUBEVENT_RFCOMM_DISCONNECTION_COMPLETE,0);
-            break;
+
         default:
             break;
     }
+
     hsp_run();
 }
 

@@ -359,7 +359,12 @@ void hsp_hs_set_speaker_gain(uint8_t gain){
     
 
 static void hsp_run(void){
-    if (!rfcomm_can_send_packet_now(rfcomm_cid)) return;
+
+    if (!rfcomm_can_send_packet_now(rfcomm_cid)) {
+        rfcomm_request_can_send_now_event(rfcomm_cid);
+        return;
+    }
+
     if (wait_ok) return;
 
     if (hsp_release_audio_connection){
@@ -513,9 +518,6 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                  " rx_packet_length %u bytes, tx_packet_length %u bytes, air_mode 0x%2x (0x02 == CVSD)", sco_handle,
                  bd_addr_to_str(address), transmission_interval, retransmission_interval, rx_packet_length, tx_packet_length, air_mode);
 
-            // forward event to app
-            hsp_hs_callback(packet, size);
-
             hsp_state = HSP_AUDIO_CONNECTION_ESTABLISHED;
             emit_event_audio_connected(status, sco_handle);
             break;                
@@ -552,7 +554,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             break;
 
         case RFCOMM_EVENT_CAN_SEND_NOW:
-            hsp_hs_callback(packet, size);
+            hsp_run();
             break;
         
         case HCI_EVENT_DISCONNECTION_COMPLETE:
@@ -570,13 +572,16 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 hsp_hs_reset_state();
             }
             break;
+
         case RFCOMM_EVENT_CHANNEL_CLOSED:
             hsp_hs_reset_state();
             hsp_hs_callback(packet, size);
             break;
+
         default:
             break;
     }
+
     hsp_run();
 }
 
