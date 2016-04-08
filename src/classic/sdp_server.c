@@ -485,7 +485,7 @@ static void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                     break;
             }
             if (!sdp_response_size) break;
-            l2cap_request_can_send_now(l2cap_cid);
+            l2cap_request_can_send_now_event(l2cap_cid);
 			break;
 			
 		case HCI_EVENT_PACKET:
