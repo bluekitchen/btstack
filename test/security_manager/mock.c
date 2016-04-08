@@ -147,6 +147,13 @@ void gap_advertisements_get_address(uint8_t * addr_type, bd_addr_t addr){
     uint8_t channel_map, uint8_t filter_policy) {
  }
 
+extern "C" void l2cap_request_can_send_fix_channel_now_event(hci_con_handle_t con_handle, uint16_t cid){
+	if (packet_buffer_len) return;
+    uint8_t event[] = { L2CAP_EVENT_CAN_SEND_NOW, 2, 0, 0};
+    little_endian_store_16(event, 2, cid);
+    le_data_handler(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
 int  l2cap_can_send_connectionless_packet_now(void){
 	return packet_buffer_len == 0;
 }
