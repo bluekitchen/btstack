@@ -155,7 +155,9 @@ int  rfcomm_send(uint16_t rfcomm_cid, uint8_t *data, uint16_t len){
 }
 
 void rfcomm_request_can_send_now_event(uint16_t rfcomm_cid){
-    // TODO: emit event
+    uint8_t event[] = { RFCOMM_EVENT_CAN_SEND_NOW, 2, 0, 0};
+    little_endian_store_16(event, 2, rfcomm_cid);
+    registered_rfcomm_packet_handler(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
 int       rfcomm_reserve_packet_buffer(void){
