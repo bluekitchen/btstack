@@ -340,15 +340,15 @@ static void att_run(void){
     }
 }
 
-static void att_server_handle_can_send_now(hci_con_handle_t con_handle){
+static void att_server_handle_can_send_now(){
 
     // NOTE: we get l2cap fixed channel instead of con_handle 
     // TODO: get con_handle
 
     if (att_server_state == ATT_SERVER_REQUEST_RECEIVED_AND_VALIDATED){
-        int sent = att_server_process_validated_request(con_handle);
+        int sent = att_server_process_validated_request(att_connection.con_handle);
         if (sent && att_client_waiting_for_can_send){
-            att_dispatch_server_request_can_send_now_event(con_handle);
+            att_dispatch_server_request_can_send_now_event(att_connection.con_handle);
             return;
         }
     }
@@ -364,7 +364,7 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
 
         case HCI_EVENT_PACKET:
             if (packet[0] != L2CAP_EVENT_CAN_SEND_NOW) break;
-            att_server_handle_can_send_now(l2cap_event_can_send_now_get_local_cid(packet));
+            att_server_handle_can_send_now();
             break;
 
         case ATT_DATA_PACKET:
