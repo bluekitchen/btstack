@@ -147,7 +147,7 @@ int btstack_main(int argc, const char * argv[]){
 
     // register for SM events
     sm_event_callback_registration.callback = &app_packet_handler;
-    hci_add_event_handler(&sm_event_callback_registration);
+    sm_add_event_handler(&sm_event_callback_registration);
 
     // setup ATT server
     att_server_init(profile_data, NULL, NULL);    
