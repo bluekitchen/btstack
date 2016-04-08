@@ -59,10 +59,10 @@ const char sdp_rfcomm_service_name[] = "BTstackMock";
 static uint16_t rfcomm_cid = 1;
 static bd_addr_t dev_addr;
 static uint16_t sco_handle = 10;
-static uint8_t rfcomm_payload[200];
+static uint8_t rfcomm_payload[1000];
 static uint16_t rfcomm_payload_len = 0;
 
-static uint8_t outgoing_rfcomm_payload[200];
+static uint8_t outgoing_rfcomm_payload[1000];
 static uint16_t outgoing_rfcomm_payload_len = 0;
 
 static uint8_t rfcomm_reserved_buffer[1000];
@@ -221,11 +221,12 @@ static void sdp_client_query_rfcomm_service_response(uint8_t status){
     (*registered_sdp_app_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-void sdp_client_query_rfcomm_channel_and_name_for_uuid(btstack_packet_handler_t callback, bd_addr_t remote, uint16_t uuid){
+uint8_t sdp_client_query_rfcomm_channel_and_name_for_uuid(btstack_packet_handler_t callback, bd_addr_t remote, uint16_t uuid){
 	// printf("sdp_client_query_rfcomm_channel_and_name_for_uuid %p\n", registered_sdp_app_callback);
     registered_sdp_app_callback = callback;
 	sdp_client_query_rfcomm_service_response(0);
 	sdp_query_complete_response(0);
+    return 0;
 }
 
 
