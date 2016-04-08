@@ -55,12 +55,12 @@ extern "C" {
 /** 
  * @brief Searches SDP records on a remote device for RFCOMM services with a given UUID.
  */
-void sdp_client_query_rfcomm_channel_and_name_for_uuid(btstack_packet_handler_t callback, bd_addr_t remote, uint16_t uuid);
+uint8_t sdp_client_query_rfcomm_channel_and_name_for_uuid(btstack_packet_handler_t callback, bd_addr_t remote, uint16_t uuid);
 
 /** 
  * @brief Searches SDP records on a remote device for RFCOMM services with a given service search pattern.
  */
-void sdp_client_query_rfcomm_channel_and_name_for_search_pattern(btstack_packet_handler_t callback, bd_addr_t remote, uint8_t * des_serviceSearchPattern);
+uint8_t sdp_client_query_rfcomm_channel_and_name_for_search_pattern(btstack_packet_handler_t callback, bd_addr_t remote, uint8_t * des_serviceSearchPattern);
 /* API_END */
 
 #if defined __cplusplus

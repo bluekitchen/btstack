@@ -76,19 +76,19 @@ int sdp_client_ready(void);
  * @param des_service_search_pattern 
  * @param des_attribute_id_list
  */
-void sdp_client_query(btstack_packet_handler_t callback, bd_addr_t remote, const uint8_t * des_service_search_pattern, const uint8_t * des_attribute_id_list);
+uint8_t sdp_client_query(btstack_packet_handler_t callback, bd_addr_t remote, const uint8_t * des_service_search_pattern, const uint8_t * des_attribute_id_list);
 
 /*
  * @brief Searches SDP records on a remote device for all services with a given UUID.
  * @note calls sdp_client_query with service search pattern based on uuid16
  */
-void sdp_client_query_uuid16(btstack_packet_handler_t callback, bd_addr_t remote, uint16_t uuid16);
+uint8_t sdp_client_query_uuid16(btstack_packet_handler_t callback, bd_addr_t remote, uint16_t uuid16);
 
 /*
  * @brief Searches SDP records on a remote device for all services with a given UUID.
  * @note calls sdp_client_query with service search pattern based on uuid128
  */
-void sdp_client_query_uuid128(btstack_packet_handler_t callback, bd_addr_t remote, const uint8_t* uuid128);
+uint8_t sdp_client_query_uuid128(btstack_packet_handler_t callback, bd_addr_t remote, const uint8_t* uuid128);
 
 
 /** 
@@ -100,7 +100,7 @@ void sdp_client_query_uuid128(btstack_packet_handler_t callback, bd_addr_t remot
  * @param search_service_record_handle 
  * @param des_attributeIDList
  */
-void sdp_client_service_attribute_search(btstack_packet_handler_t callback, bd_addr_t remote, uint32_t search_service_record_handle, const uint8_t * des_attributeIDList);
+uint8_t sdp_client_service_attribute_search(btstack_packet_handler_t callback, bd_addr_t remote, uint32_t search_service_record_handle, const uint8_t * des_attributeIDList);
 
 /** 
  * @brief Query the list of SDP records that match a given service search pattern. 
@@ -110,7 +110,7 @@ void sdp_client_service_attribute_search(btstack_packet_handler_t callback, bd_a
  * @param remote address
  * @param des_service_search_pattern 
  */
-void sdp_client_service_search(btstack_packet_handler_t callback, bd_addr_t remote, const uint8_t * des_service_search_pattern);
+uint8_t sdp_client_service_search(btstack_packet_handler_t callback, bd_addr_t remote, const uint8_t * des_service_search_pattern);
 
 
 /* API_END */
