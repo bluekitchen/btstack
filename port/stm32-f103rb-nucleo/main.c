@@ -48,6 +48,7 @@
 #include <errno.h>
 #include <unistd.h>
 
+#include "btstack_event.h"
 #include "btstack_run_loop.h"
 #include "btstack_run_loop_embedded.h"
 #include "hci.h"
