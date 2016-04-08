@@ -50,6 +50,7 @@
 
 #include "btstack_chipset_cc256x.h"
 #include "btstack_config.h"
+#include "btstack_event.h"
 #include "btstack_memory.h"
 #include "btstack_run_loop.h"
 #include "btstack_run_loop_embedded.h"
