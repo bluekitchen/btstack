@@ -758,7 +758,14 @@ int hci_send_cmd(const hci_cmd_t *cmd, ...);
 int hci_get_sco_packet_length(void);
 
 /**
- * @brief Check hci packet buffer and if SCO packet can be sent to controller
+ * @brief Request emission of HCI_EVENT_SCO_CAN_SEND_NOW as soon as possible
+ * @note HCI_EVENT_SCO_CAN_SEND_NOW might be emitted during call to this function
+ *       so packet handler should be ready to handle it
+ */
+void hci_request_sco_can_send_now_event(void);
+
+/**
+ * @brief Check HCI packet buffer and if SCO packet can be sent to controller
  */
 int hci_can_send_sco_packet_now(void);
 
@@ -768,7 +775,7 @@ int hci_can_send_sco_packet_now(void);
 int hci_can_send_prepared_sco_packet_now(void);
 
 /**
- * @brief Send SCO packet prepared in hci packet buffer
+ * @brief Send SCO packet prepared in HCI packet buffer
  */
 int hci_send_sco_packet_buffer(int size);
 

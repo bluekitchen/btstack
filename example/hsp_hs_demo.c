@@ -190,32 +190,33 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
 }
 #endif
 
-static void try_send_sco(void){
+static void send_sco_data(void){
     if (!sco_handle) return;
-
-    while (hci_can_send_sco_packet_now()) {
         
-        const int sco_packet_length = hci_get_sco_packet_length();
-        const int sco_payload_length = sco_packet_length - 3;
-        const int frames_per_packet = sco_payload_length;    // for 8-bit data. for 16-bit data it's /2
+    const int sco_packet_length = hci_get_sco_packet_length();
+    const int sco_payload_length = sco_packet_length - 3;
+    const int frames_per_packet = sco_payload_length;    // for 8-bit data. for 16-bit data it's /2
 
-        hci_reserve_packet_buffer();
-        uint8_t * sco_packet = hci_get_outgoing_packet_buffer();
-        // set handle + flags
-        little_endian_store_16(sco_packet, 0, sco_handle);
-        // set len
-        sco_packet[2] = sco_payload_length;
-        int i;
-        for (i=0;i<frames_per_packet;i++){
-            sco_packet[3+i] = sine[phase];
-            phase++;
-            if (phase >= sizeof(sine)) phase = 0;
-        }
-        hci_send_sco_packet_buffer(sco_packet_length);
-        static int count = 0;
-        count++;
-        if ((count & 15) == 0) printf("Sent %u\n", count);
+    hci_reserve_packet_buffer();
+    uint8_t * sco_packet = hci_get_outgoing_packet_buffer();
+    // set handle + flags
+    little_endian_store_16(sco_packet, 0, sco_handle);
+    // set len
+    sco_packet[2] = sco_payload_length;
+    int i;
+    for (i=0;i<frames_per_packet;i++){
+        sco_packet[3+i] = sine[phase];
+        phase++;
+        if (phase >= sizeof(sine)) phase = 0;
     }
+    hci_send_sco_packet_buffer(sco_packet_length);
+
+    // request another send event
+    hci_request_sco_can_send_now_event();
+
+    static int count = 0;
+    count++;
+    if ((count & 15) == 0) printf("Sent %u\n", count);
 }
 
 static void sco_packet_handler(uint8_t packet_type, uint8_t * packet, uint16_t size){
@@ -233,7 +234,7 @@ static void packet_handler(uint8_t * event, uint16_t event_size){
             show_usage();
             break;
         case HCI_EVENT_SCO_CAN_SEND_NOW:
-            try_send_sco();
+            send_sco_data();
             break;
         case HCI_EVENT_HSP_META:
             switch (event[2]) { 
@@ -258,7 +259,7 @@ static void packet_handler(uint8_t * event, uint16_t event_size){
                     } else {
                         sco_handle = hsp_subevent_audio_connection_complete_get_handle(event);
                         printf("Audio connection established with SCO handle 0x%04x.\n", sco_handle);
-                        try_send_sco();
+                        hci_request_sco_can_send_now_event();
                     } 
                     break;
                 case HSP_SUBEVENT_AUDIO_DISCONNECTION_COMPLETE:

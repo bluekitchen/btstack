@@ -409,20 +409,19 @@ int hci_can_send_acl_packet_now(hci_con_handle_t con_handle){
 }
 
 int hci_can_send_prepared_sco_packet_now(void){
-    if (!hci_transport_can_send_prepared_packet_now(HCI_SCO_DATA_PACKET)) {
-        hci_stack->sco_waiting_for_can_send_now = 1;
-        return 0;
-    }
+    if (!hci_transport_can_send_prepared_packet_now(HCI_SCO_DATA_PACKET)) return 0;
     if (!hci_stack->synchronous_flow_control_enabled) return 1;
     return hci_number_free_sco_slots() > 0;    
 }
 
 int hci_can_send_sco_packet_now(void){
-    if (hci_stack->hci_packet_buffer_reserved) {
-        hci_stack->sco_waiting_for_can_send_now = 1;
-        return 0;
-    }
+    if (hci_stack->hci_packet_buffer_reserved) return 0;
     return hci_can_send_prepared_sco_packet_now();
+}
+
+void hci_request_sco_can_send_now_event(void){
+    hci_stack->sco_waiting_for_can_send_now = 1;
+    hci_notify_if_sco_can_send_now();
 }
 
 // used for internal checks in l2cap.c

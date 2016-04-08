@@ -190,13 +190,8 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
 }
 #endif
 
-static void try_send_sco(void){
-    return;
+static void send_sco_data(void){
     if (!sco_handle) return;
-    if (!hci_can_send_sco_packet_now()) {
-        // printf("try_send_sco, cannot send now\n");
-        return;
-    }
     
     const int sco_packet_length = hci_get_sco_packet_length();
     const int sco_payload_length = sco_packet_length - 3;
@@ -215,6 +210,10 @@ static void try_send_sco(void){
         if (phase >= sizeof(sine)) phase = 0;
     }
     hci_send_sco_packet_buffer(sco_packet_length);
+
+    // request another send event
+    hci_request_sco_can_send_now_event();
+
     static int count = 0;
     count++;
     if ((count & SCO_REPORT_PERIOD) == 0) printf("Sent %u\n", count);
@@ -236,7 +235,7 @@ static void packet_handler(uint8_t * event, uint16_t event_size){
             show_usage();
             break;
         case HCI_EVENT_SCO_CAN_SEND_NOW:
-            try_send_sco();
+            send_sco_data();
             break;
         case HCI_EVENT_HSP_META:
             switch (event[2]) {
@@ -261,7 +260,7 @@ static void packet_handler(uint8_t * event, uint16_t event_size){
                     } else {
                         sco_handle = hsp_subevent_audio_connection_complete_get_handle(event);
                         printf("Audio connection established with SCO handle 0x%04x.\n", sco_handle);
-                        try_send_sco();
+                        hci_request_sco_can_send_now_event();
                     }
                     break;
                 case HSP_SUBEVENT_AUDIO_DISCONNECTION_COMPLETE:
