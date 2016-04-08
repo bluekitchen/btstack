@@ -441,6 +441,7 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
     bd_addr_t event_addr;
     uint16_t rfcomm_cid, handle;
     hfp_connection_t * hfp_connection = NULL;
+    uint8_t status;
 
     // printf("AG packet_handler type %u, event type %x, size %u\n", packet_type, hci_event_packet_get_type(packet), size);
 
@@ -454,26 +455,28 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
 
             hfp_connection->rfcomm_cid = rfcomm_event_incoming_connection_get_rfcomm_cid(packet);
             hfp_connection->state = HFP_W4_RFCOMM_CONNECTED;
-            printf("RFCOMM channel %u requested for %s\n", hfp_connection->rfcomm_cid, bd_addr_to_str(hfp_connection->remote_addr));
+            // printf("RFCOMM channel %u requested for %s\n", hfp_connection->rfcomm_cid, bd_addr_to_str(hfp_connection->remote_addr));
             rfcomm_accept_connection(hfp_connection->rfcomm_cid);
             break;
 
         case RFCOMM_EVENT_CHANNEL_OPENED:
             // data: event(8), len(8), status (8), address (48), handle(16), server channel(8), rfcomm_cid(16), max frame size(16)
-            printf("RFCOMM_EVENT_CHANNEL_OPENED packet_handler type %u, size %u\n", packet_type, size);
 
-            rfcomm_event_incoming_connection_get_bd_addr(packet, event_addr); 
+            rfcomm_event_channel_opened_get_bd_addr(packet, event_addr); 
+            status = rfcomm_event_channel_opened_get_status(packet);          
+            // printf("RFCOMM_EVENT_CHANNEL_OPENED packet_handler adddr %s, status %u\n", bd_addr_to_str(event_addr), status);
+
             hfp_connection = get_hfp_connection_context_for_bd_addr(event_addr);
             if (!hfp_connection || hfp_connection->state != HFP_W4_RFCOMM_CONNECTED) return;
-            
-            if (rfcomm_event_channel_opened_get_status(packet)) {
-                hfp_emit_event(hfp_callback, HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED, rfcomm_event_channel_opened_get_status(packet));
+
+            if (status) {
+                hfp_emit_event(hfp_callback, HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED, status);
                 remove_hfp_connection_context(hfp_connection);
             } else {
                 hfp_connection->acl_handle = rfcomm_event_channel_opened_get_con_handle(packet);
                 hfp_connection->rfcomm_cid = rfcomm_event_channel_opened_get_rfcomm_cid(packet);
-                uint16_t mtu = rfcomm_event_channel_opened_get_max_frame_size(packet);
-                printf("RFCOMM channel open succeeded. hfp_connection %p, RFCOMM Channel ID 0x%02x, max frame size %u\n", hfp_connection, hfp_connection->rfcomm_cid, mtu);
+                // uint16_t mtu = rfcomm_event_channel_opened_get_max_frame_size(packet);
+                // printf("RFCOMM channel open succeeded. hfp_connection %p, RFCOMM Channel ID 0x%02x, max frame size %u\n", hfp_connection, hfp_connection->rfcomm_cid, mtu);
                         
                 switch (hfp_connection->state){
                     case HFP_W4_RFCOMM_CONNECTED:
@@ -481,7 +484,7 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
                         break;
                     case HFP_W4_CONNECTION_ESTABLISHED_TO_SHUTDOWN:
                         hfp_connection->state = HFP_W2_DISCONNECT_RFCOMM;
-                        printf("Shutting down RFCOMM.\n");
+                        // printf("Shutting down RFCOMM.\n");
                         break;
                     default:
                         break;
