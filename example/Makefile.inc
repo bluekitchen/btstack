@@ -143,9 +143,6 @@ gap_dedicated_bonding: ${CORE_OBJ} ${COMMON_OBJ} gap_dedicated_bonding.c
 gap_inquiry: ${CORE_OBJ} ${COMMON_OBJ} gap_inquiry.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-gap_inquiry_and_bond: ${CORE_OBJ} ${COMMON_OBJ} gap_inquiry_and_bond.c
-	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
-
 panu_demo: ${CORE_OBJ} ${COMMON_OBJ} ${SDP_CLIENT} panu_demo.c  
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
