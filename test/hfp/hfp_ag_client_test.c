@@ -51,16 +51,17 @@
 #include "CppUTest/TestHarness.h"
 #include "CppUTest/CommandLineTestRunner.h"
 
-#include "hci_cmd.h"
-#include "btstack_run_loop.h"
-#include "classic/sdp_util.h"
 
-#include "hci.h"
-#include "l2cap.h"
+#include "btstack_debug.h"
+#include "btstack_event.h"
+#include "btstack_run_loop.h"
+#include "classic/hfp_ag.h"
 #include "classic/rfcomm.h"
 #include "classic/sdp_server.h"
-#include "btstack_debug.h"
-#include "classic/hfp_ag.h"
+#include "classic/sdp_util.h"
+#include "hci.h"
+#include "hci_cmd.h"
+#include "l2cap.h"
 
 #include "mock.h"
 #include "test_sequences.h"
@@ -301,8 +302,6 @@ static void simulate_test_sequence(hfp_test_item_t * test_item){
     printf("\nSimulate test sequence: \"%s\"\n", test_item->name);
     
     int i = 0;
-    static char * previous_cmd = NULL;
-    
     int previous_step = -1;
     while ( i < test_item->len){
         previous_step++;
@@ -334,8 +333,7 @@ static void simulate_test_sequence(hfp_test_item_t * test_item){
                     return;
                 } 
                 printf("Verified: '%s'\n", expected_cmd);
-                previous_cmd = ag_cmd;
-
+               
                 i++;
                 if (i < test_item->len){
                     expected_cmd = test_steps[i];
@@ -349,13 +347,6 @@ static void simulate_test_sequence(hfp_test_item_t * test_item){
 }
 
 void packet_handler(uint8_t * event, uint16_t event_size){
-    if (event[0] == RFCOMM_EVENT_CHANNEL_OPENED){
-        handle = little_endian_read_16(event, 9);
-        printf("RFCOMM_EVENT_CHANNEL_OPENED received for handle 0x%04x\n", handle);
-        return;
-    }
-
-
     if (event[0] != HCI_EVENT_HFP_META) return;
 
     if (event[3]
@@ -368,6 +359,7 @@ void packet_handler(uint8_t * event, uint16_t event_size){
 
     switch (event[2]) {   
         case HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED:
+            handle = hfp_subevent_service_level_connection_established_get_con_handle(event);
             printf("Service level connection established.\n");
             break;
         case HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED:

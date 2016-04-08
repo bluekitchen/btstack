@@ -259,7 +259,7 @@ static void show_usage(void);
 
 // Testig User Interface 
 static void show_usage(void){
-    printf("\n--- Bluetooth HFP Hands-Free (HF) unit Test Console ---\n");
+    printf("\n--- Bluetooth HFP Audiogateway (AG) unit Test Console ---\n");
     printf("---\n");
     
     printf("a - establish HFP connection to PTS module\n");
@@ -548,19 +548,7 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
 #endif
 
 static void packet_handler(uint8_t * event, uint16_t event_size){
-
-    if (event[0] == RFCOMM_EVENT_CHANNEL_OPENED){
-        handle = little_endian_read_16(event, 9);
-        printf("RFCOMM_EVENT_CHANNEL_OPENED received for handle 0x%04x\n", handle);
-        return;
-    }
-
-    switch (event[0]){
-        case RFCOMM_EVENT_CHANNEL_OPENED:
-            handle = little_endian_read_16(event, 9);
-            printf("RFCOMM_EVENT_CHANNEL_OPENED received for handle 0x%04x\n", handle);
-            return;
-
+     switch (event[0]){
         case HCI_EVENT_INQUIRY_RESULT:
         case HCI_EVENT_INQUIRY_RESULT_WITH_RSSI:
         case HCI_EVENT_INQUIRY_COMPLETE:
@@ -585,6 +573,7 @@ static void packet_handler(uint8_t * event, uint16_t event_size){
 
     switch (event[2]) {   
         case HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED:
+            handle = hfp_subevent_service_level_connection_established_get_con_handle(event);
             printf("Service level connection established.\n");
             break;
         case HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED:

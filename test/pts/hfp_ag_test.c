@@ -72,8 +72,8 @@ const uint8_t    rfcomm_channel_nr = 1;
 const char hfp_ag_service_name[] = "BTstack HFP AG Test";
 
 static bd_addr_t device_addr;
-static bd_addr_t pts_addr = {0x00,0x15,0x83,0x5F,0x9D,0x46};
-//static bd_addr_t pts_addr = {0x00,0x1b,0xDC,0x07,0x32,0xEF};
+//static bd_addr_t pts_addr = {0x00,0x15,0x83,0x5F,0x9D,0x46};
+static bd_addr_t pts_addr = {0x00,0x1b,0xDC,0x07,0x32,0xEF};
 static bd_addr_t speaker_addr = {0x00, 0x21, 0x3C, 0xAC, 0xF7, 0x38};
 static uint8_t codecs[1] = {HFP_CODEC_CVSD};
 static uint16_t handle = -1;
@@ -268,7 +268,10 @@ static void inquiry_packet_handler (uint8_t packet_type, uint8_t *packet, uint16
 
 // Testig User Interface 
 static void show_usage(void){
-    printf("\n--- Bluetooth HFP Hands-Free (HF) unit Test Console ---\n");
+    bd_addr_t iut_address;
+    gap_local_bd_addr(iut_address);
+
+    printf("\n--- Bluetooth HFP Audiogateway (AG) unit Test Console %s ---\n", bd_addr_to_str(iut_address));
     printf("---\n");
     
     printf("a - establish HFP connection to PTS module\n");
@@ -533,7 +536,7 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
             break;
         case 't':
             log_info("USER:\'%c\'", cmd);
-            printf("Terminate HCI connection.\n");
+            printf("Terminate HCI connection. 0x%2x\n", handle);
             gap_disconnect(handle);
             break;
         case 'u':
@@ -567,26 +570,13 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
 
 
 static void packet_handler(uint8_t * event, uint16_t event_size){
-
-    if (event[0] == RFCOMM_EVENT_CHANNEL_OPENED){
-        handle = little_endian_read_16(event, 9);
-        printf("RFCOMM_EVENT_CHANNEL_OPENED received for handle 0x%04x\n", handle);
-        return;
-    }
-
     switch (event[0]){
-        case RFCOMM_EVENT_CHANNEL_OPENED:
-            handle = little_endian_read_16(event, 9);
-            printf("RFCOMM_EVENT_CHANNEL_OPENED received for handle 0x%04x\n", handle);
-            return;
-
         case HCI_EVENT_INQUIRY_RESULT:
         case HCI_EVENT_INQUIRY_RESULT_WITH_RSSI:
         case HCI_EVENT_INQUIRY_COMPLETE:
         case HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE:
             inquiry_packet_handler(HCI_EVENT_PACKET, event, event_size);
             break;
-
         default:
             break;
     }
@@ -604,6 +594,7 @@ static void packet_handler(uint8_t * event, uint16_t event_size){
 
     switch (event[2]) {   
         case HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED:
+            handle = hfp_subevent_service_level_connection_established_get_con_handle(event);
             printf("Service level connection established.\n");
             break;
         case HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED:
