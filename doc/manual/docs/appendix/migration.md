@@ -99,9 +99,12 @@ Renamed to *src/ble/ancs_client*
 
 ## Flow control / DAEMON_EVENT_HCI_PACKET_SENT
 
-In BTstack the functions l2cap_can_send_packet_now(..) and rfcomm_can_send_packet(..) must be called before sending the next L2CAP or RFCOMM packet. Before v1.0, we suggested to check with l2cap_can_send_packet_now(..) or rfcomm_can_send_packet(..) whenever an HCI event was received. This has been cleaned up and streamlined in v1.0. 
+In BTstack, you can only send a packet with most protocols (L2CAP, RFCOMM, ATT) if the outgoing buffer is free and also per-protocol constraints are satisfied, e.g., there are outgoing credits for RFCOMM.
 
-Now, both L2CAP and RFCOMM now emit a L2CAP_EVENT_CAN_SEND_NOW or a RFCOMM_EVENT_CAN_SEND_NOW after the connection gets established. The app can now send a packet if it is ready to send. If the app later wants to send, it has to call l2cap/rfcomm_can_send_packet_now(..). If the result is negative, BTstack will emit the L2CAP/RCOMM_EVENT_CAN_SEND_NOW as soon as sending becomes possible again. We hope that this design leads to simpler application code. 
+Before v1.0, we suggested to check with *l2cap_can_send_packet_now(..)* or *rfcomm_can_send_packet(..)* whenever an HCI event was received. This has been cleaned up and streamlined in v1.0. 
+
+Now, when there is a need to send a packet, you can call *rcomm_request_can_send_now(..)* / *l2cap_request_can_send_now(..)* to let BTstack know that you want to send a packet. As soon as it becomes possible to send a RFCOMM_EVENT_CAN_SEND_NOW/L2CAP_EVENT_CAN_SEND_NOW will be emitted and you can directly react on that and send a packet. After that, you can request another "can send event" if needed.
+
 
 ## Daemon
 - Not tested since API migration!
