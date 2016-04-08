@@ -1828,7 +1828,8 @@ static void rfcomm_channel_state_machine_with_channel(rfcomm_channel_t *channel,
                         log_info("Incomping setup done, requesting send MSC CMD and send Credits");
                         rfcomm_channel_state_add(channel, RFCOMM_CHANNEL_STATE_VAR_SEND_MSC_CMD);
                         rfcomm_channel_state_add(channel, RFCOMM_CHANNEL_STATE_VAR_SEND_CREDITS);
-                    }
+                        channel->state = RFCOMM_CHANNEL_DLC_SETUP;
+                     }
                     break;
                 default:
                     break;
