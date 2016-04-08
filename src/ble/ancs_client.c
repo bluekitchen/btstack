@@ -89,7 +89,8 @@ static const uint8_t ancs_data_source_uuid[] =         {0x22,0xEA,0xC6,0xE9,0x24
 
 static uint32_t ancs_notification_uid;
 static uint16_t gc_handle;
-static gatt_client_notification_t client_notification;
+static gatt_client_notification_t ancs_notification_source_notification;
+static gatt_client_notification_t ancs_data_source_notification;
 static int ancs_service_found;
 static gatt_client_service_t  ancs_service;
 static gatt_client_characteristic_t ancs_notification_source_characteristic;
@@ -252,19 +253,19 @@ static void handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *pac
                 case GATT_EVENT_CHARACTERISTIC_QUERY_RESULT:
                     gatt_event_characteristic_query_result_get_characteristic(packet, &characteristic);
                     if (memcmp(characteristic.uuid128, ancs_notification_source_uuid, 16) == 0){
-                        log_info("ANCS Notification Source Characterisic found");
+                        log_info("ANCS Notification Source found, attribute handle %u", characteristic.value_handle);
                         ancs_notification_source_characteristic = characteristic;
                         ancs_characteristcs++;
                         break;                        
                     }
                     if (memcmp(characteristic.uuid128, ancs_control_point_uuid, 16) == 0){
-                        log_info("ANCS Control Point found");
+                        log_info("ANCS Control Point found, attribute handle %u", characteristic.value_handle);
                         ancs_control_point_characteristic = characteristic;
                         ancs_characteristcs++;
                         break;                        
                     }
                     if (memcmp(characteristic.uuid128, ancs_data_source_uuid, 16) == 0){
-                        log_info("ANCS Data Source Characterisic found");
+                        log_info("ANCS Data Source found, attribute handle %u", characteristic.value_handle);
                         ancs_data_source_characteristic = characteristic;
                         ancs_characteristcs++;
                         break;                        
@@ -273,6 +274,7 @@ static void handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *pac
                 case GATT_EVENT_QUERY_COMPLETE:
                     log_info("ANCS Characteristcs count %u", ancs_characteristcs);
                     tc_state = TC_W4_NOTIFICATION_SOURCE_SUBSCRIBED;
+                    gatt_client_listen_for_characteristic_value_updates(&ancs_notification_source_notification, &handle_hci_event, gc_handle, &ancs_notification_source_characteristic);
                     gatt_client_write_client_characteristic_configuration(handle_hci_event, gc_handle, &ancs_notification_source_characteristic,
                         GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION);
                     break;
@@ -285,7 +287,7 @@ static void handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *pac
                 case GATT_EVENT_QUERY_COMPLETE:
                     log_info("ANCS Notification Source subscribed");
                     tc_state = TC_W4_DATA_SOURCE_SUBSCRIBED;
-                    gatt_client_listen_for_characteristic_value_updates(&client_notification, gc_handle, &ancs_data_source_characteristic);
+                    gatt_client_listen_for_characteristic_value_updates(&ancs_data_source_notification, &handle_hci_event, gc_handle, &ancs_data_source_characteristic);
                     gatt_client_write_client_characteristic_configuration(handle_hci_event, gc_handle, &ancs_data_source_characteristic,
                         GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION);
                     break;
@@ -310,6 +312,8 @@ static void handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *pac
             value_handle = little_endian_read_16(packet, 4);
             value_length = little_endian_read_16(packet, 6);
             value = &packet[8];
+
+            log_info("ANCS Ntoficiation, value handle %u", value_handle);
 
             if (value_handle == ancs_data_source_characteristic.value_handle){
                 int i;

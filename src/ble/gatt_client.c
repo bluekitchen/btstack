@@ -453,13 +453,8 @@ static void emit_event_new(btstack_packet_handler_t callback, uint8_t * packet, 
     (*callback)(HCI_EVENT_PACKET, 0, packet, size);
 }
 
-/**
- * @brief Register for notifications and indications of a characteristic enabled by gatt_client_write_client_characteristic_configuration
- * @param notification struct used to store registration
- * @param con_handle
- * @param characteristic
- */
-void gatt_client_listen_for_characteristic_value_updates(gatt_client_notification_t * notification, hci_con_handle_t con_handle, gatt_client_characteristic_t * characteristic){
+void gatt_client_listen_for_characteristic_value_updates(gatt_client_notification_t * notification, btstack_packet_handler_t packet_handler, hci_con_handle_t con_handle, gatt_client_characteristic_t * characteristic){
+    notification->callback = packet_handler;
     notification->con_handle = con_handle;
     notification->attribute_handle = characteristic->value_handle;
     btstack_linked_list_add(&gatt_client_value_listeners, (btstack_linked_item_t*) notification);
@@ -469,10 +464,10 @@ static void emit_event_to_registered_listeners(hci_con_handle_t con_handle, uint
     btstack_linked_list_iterator_t it;    
     btstack_linked_list_iterator_init(&it, &gatt_client_value_listeners);
     while (btstack_linked_list_iterator_has_next(&it)){
-        gatt_client_notification_t * registration = (gatt_client_notification_t*) btstack_linked_list_iterator_next(&it);
-        if (registration->con_handle != con_handle) continue;
-        if (registration->attribute_handle != attribute_handle) continue;
-        (*registration->callback)(HCI_EVENT_PACKET, 0, packet, size);
+        gatt_client_notification_t * notification = (gatt_client_notification_t*) btstack_linked_list_iterator_next(&it);
+        if (notification->con_handle != con_handle) continue;
+        if (notification->attribute_handle != attribute_handle) continue;
+        (*notification->callback)(HCI_EVENT_PACKET, 0, packet, size);
     } 
 }
 
@@ -1854,8 +1849,7 @@ void gatt_client_deserialize_characteristic(const uint8_t * packet, int offset, 
     characteristic->value_handle = little_endian_read_16(packet, offset + 2);
     characteristic->end_handle = little_endian_read_16(packet, offset + 4);
     characteristic->properties = little_endian_read_16(packet, offset + 6);
-    characteristic->uuid16 = little_endian_read_16(packet, offset + 8);
-    reverse_128(&packet[offset+10], characteristic->uuid128);
+    reverse_128(&packet[offset+8], characteristic->uuid128);
     if (uuid_has_bluetooth_prefix(characteristic->uuid128)){
         characteristic->uuid16 = big_endian_read_32(characteristic->uuid128, 0);
     }
