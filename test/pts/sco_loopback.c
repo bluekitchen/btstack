@@ -49,7 +49,8 @@
 #include "hci_cmd.h"
 #include "hci.h"
 #include "btstack_debug.h"
- 
+#include "btstack_event.h"
+  
 static uint16_t  sco_handle = 0;
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;

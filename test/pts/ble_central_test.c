@@ -1257,7 +1257,7 @@ static int ui_process_data_request(char buffer){
         switch (central_state){
             case CENTRAL_W4_WRITE_WITHOUT_RESPONSE:
                 ui_announce_write("Write without response");
-                gatt_client_write_value_of_characteristic_without_response(handle_gatt_client_event, handle, ui_attribute_handle, value_len, ui_value_data);
+                gatt_client_write_value_of_characteristic_without_response(handle, ui_attribute_handle, value_len, ui_value_data);
                 break;
             case CENTRAL_W4_WRITE_CHARACTERICISTIC_VALUE:
                 ui_announce_write("Write Characteristic Value");

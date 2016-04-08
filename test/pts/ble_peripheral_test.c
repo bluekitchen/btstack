@@ -273,17 +273,17 @@ static void  heartbeat_handler(struct btstack_timer_source *ts){
 
 static void app_run(void){
     if (!update_client) return;
-    if (!att_server_can_send_packet_now()) return;
+    if (!att_server_can_send_packet_now(handle)) return;
 
     int result = -1;
     switch (client_configuration){
         case 0x01:
             printf("Notify value %u\n", counter);
-            result = att_server_notify(client_configuration_handle - 1, &counter, 1);
+            result = att_server_notify(handle, client_configuration_handle - 1, &counter, 1);
             break;
         case 0x02:
             printf("Indicate value %u\n", counter);
-            result = att_server_indicate(client_configuration_handle - 1, &counter, 1);
+            result = att_server_indicate(handle, client_configuration_handle - 1, &counter, 1);
             break;
         default:
             return;
