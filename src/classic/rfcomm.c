@@ -1648,6 +1648,16 @@ static int rfcomm_channel_ready_to_send(rfcomm_channel_t * channel){
                 return 1;
             }
             break;
+        case RFCOMM_CHANNEL_DLC_SETUP:
+            if (channel->state_var & (
+                RFCOMM_CHANNEL_STATE_VAR_SEND_MSC_CMD  |
+                RFCOMM_CHANNEL_STATE_VAR_SEND_CREDITS
+             )) {
+                log_debug("ch-ready: channel dlc setup & send msc cmd or send credits") ; 
+                return 1;
+            }
+            break;
+
         default:
             break;
     }
@@ -1657,9 +1667,7 @@ static int rfcomm_channel_ready_to_send(rfcomm_channel_t * channel){
         RFCOMM_CHANNEL_STATE_VAR_SEND_RPN_INFO |
         RFCOMM_CHANNEL_STATE_VAR_SEND_RPN_RSP  |
         RFCOMM_CHANNEL_STATE_VAR_SEND_UA       |
-        RFCOMM_CHANNEL_STATE_VAR_SEND_MSC_CMD  |
-        RFCOMM_CHANNEL_STATE_VAR_SEND_MSC_RSP  |
-        RFCOMM_CHANNEL_STATE_VAR_SEND_CREDITS
+        RFCOMM_CHANNEL_STATE_VAR_SEND_MSC_RSP
                              )){
         log_debug("ch-ready: state %x, state var %x", channel->state, channel->state_var);
         return 1;
