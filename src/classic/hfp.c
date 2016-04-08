@@ -497,7 +497,7 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
 
             reverse_bd_addr(&packet[5], event_addr);
             int index = 2;
-            uint8_t status = packet[index++];
+            status = packet[index++];
 
             if (status != 0){
                 log_error("(e)SCO Connection failed status %u", status);
