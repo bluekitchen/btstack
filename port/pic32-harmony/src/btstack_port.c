@@ -3,14 +3,18 @@
 //
 
 #include "btstack_port.h"
+
 #include "system_config.h"
+
 #include "btstack_chipset_csr.h"
+#include "btstack_debug.h"
+#include "btstack_event.h"
 #include "btstack_run_loop.h"
 #include "btstack_run_loop_embedded.h"
-#include "hci_dump.h"
 #include "hci.h"
+#include "hci_dump.h"
 #include "hci_transport.h"
-#include "btstack_debug.h"
+
 #include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>
@@ -215,6 +219,14 @@ static hci_transport_config_uart_t config = {
     NULL,
 };
 
+static btstack_packet_callback_registration_t hci_event_callback_registration;
+
+static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    if (packet_type != HCI_EVENT_PACKET) return;
+    if (hci_event_packet_get_type(packet) != BTSTACK_EVENT_STATE) return;
+    if (btstack_event_state_get_state(packet) != HCI_STATE_WORKING) return;
+    printf("BTstack up and running.\n");
+}
 
 void BTSTACK_Initialize ( void )
 {
@@ -229,7 +241,10 @@ void BTSTACK_Initialize ( void )
     hci_init(transport, &config);
     hci_set_chipset(btstack_chipset_csr_instance());
 
-    // hci_power_control(HCI_POWER_ON);
+    // inform about BTstack state
+    hci_event_callback_registration.callback = &packet_handler;
+    hci_add_event_handler(&hci_event_callback_registration);
+
     btstack_main(0, NULL);
 }
 

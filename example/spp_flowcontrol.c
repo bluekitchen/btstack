@@ -137,13 +137,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
     switch (packet_type) {
         case HCI_EVENT_PACKET:
             switch (hci_event_packet_get_type(packet)) {
-                    
-                case BTSTACK_EVENT_STATE:
-                    if (btstack_event_state_get_state(packet) == HCI_STATE_WORKING){
-                        printf("BTstack is up and running\n");
-                    }
-                    break;
-                
+                                    
                 case HCI_EVENT_COMMAND_COMPLETE:
                     if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_read_bd_addr)){
                         reverse_bd_addr(&packet[6], event_addr);

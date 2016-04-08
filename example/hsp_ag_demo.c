@@ -231,7 +231,6 @@ static void packet_handler(uint8_t * event, uint16_t event_size){
     switch (event[0]) {
         case BTSTACK_EVENT_STATE:
             if (event[2] != HCI_STATE_WORKING) break;
-            printf("HCI_STATE_WORKING\n");
             show_usage();
             break;
         case HCI_EVENT_SCO_CAN_SEND_NOW:

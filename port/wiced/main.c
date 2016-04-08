@@ -48,6 +48,8 @@
 // see generated_mac_address.txt - "macaddr=02:0A:F7:3d:76:be"
 static const char * wifi_mac_address = NVRAM_GENERATED_MAC_ADDRESS;
 
+static btstack_packet_callback_registration_t hci_event_callback_registration;
+
 static const hci_transport_config_uart_t hci_transport_config_uart = {
     HCI_TRANSPORT_CONFIG_UART,
     115200,
@@ -57,6 +59,13 @@ static const hci_transport_config_uart_t hci_transport_config_uart = {
 };
 
 extern int btstack_main(void);
+
+static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    if (packet_type != HCI_EVENT_PACKET) return;
+    if (hci_event_packet_get_type(packet) != BTSTACK_EVENT_STATE) return;
+    if (btstack_event_state_get_state(packet) != HCI_STATE_WORKING) return;
+    printf("BTstack up and running.\n");
+}
 
 void application_start(void){
 
@@ -76,6 +85,10 @@ void application_start(void){
     hci_init(hci_transport_h4_instance(), (void*) &hci_transport_config_uart);
     hci_set_link_key_db(btstack_link_key_db_memory_instance());
     hci_set_chipset(btstack_chipset_bcm_instance());
+
+    // inform about BTstack state
+    hci_event_callback_registration.callback = &packet_handler;
+    hci_add_event_handler(&hci_event_callback_registration);
 
     // use WIFI Mac address + 1 for Bluetooth
     bd_addr_t dummy = { 1,2,3,4,5,6};

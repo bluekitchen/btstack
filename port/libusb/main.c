@@ -50,6 +50,7 @@
 #include "btstack_config.h"
 
 #include "btstack_debug.h"
+#include "btstack_event.h"
 #include "btstack_link_key_db_fs.h"
 #include "btstack_memory.h"
 #include "btstack_run_loop.h"
@@ -60,6 +61,15 @@
 #include "stdin_support.h"
 
 int btstack_main(int argc, const char * argv[]);
+
+static btstack_packet_callback_registration_t hci_event_callback_registration;
+
+static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    if (packet_type != HCI_EVENT_PACKET) return;
+    if (hci_event_packet_get_type(packet) != BTSTACK_EVENT_STATE) return;
+    if (btstack_event_state_get_state(packet) != HCI_STATE_WORKING) return;
+    printf("BTstack up and running.\n");
+}
 
 static void sigint_handler(int param){
 
@@ -81,6 +91,7 @@ void hal_led_toggle(void){
     printf("LED State %u\n", led_state);
 }
 
+
 int main(int argc, const char * argv[]){
 
 	/// GET STARTED with BTstack ///
@@ -94,6 +105,10 @@ int main(int argc, const char * argv[]){
 	hci_init(hci_transport_usb_instance(), NULL);
     hci_set_link_key_db(btstack_link_key_db_fs_instance());
     
+    // inform about BTstack state
+    hci_event_callback_registration.callback = &packet_handler;
+    hci_add_event_handler(&hci_event_callback_registration);
+
     // handle CTRL-c
     signal(SIGINT, sigint_handler);
 

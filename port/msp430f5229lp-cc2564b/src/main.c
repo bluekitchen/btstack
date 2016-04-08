@@ -95,6 +95,15 @@ static hci_transport_config_uart_t config = {
     NULL,
 };
 
+static btstack_packet_callback_registration_t hci_event_callback_registration;
+
+static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    if (packet_type != HCI_EVENT_PACKET) return;
+    if (hci_event_packet_get_type(packet) != BTSTACK_EVENT_STATE) return;
+    if (btstack_event_state_get_state(packet) != HCI_STATE_WORKING) return;
+    printf("BTstack up and running.\n");
+}
+
 static void btstack_setup(void){
 
     hci_dump_open(NULL, HCI_DUMP_STDOUT);
@@ -108,6 +117,10 @@ static void btstack_setup(void){
     hci_set_link_key_db(btstack_link_key_db_memory_instance());
     hci_set_chipset(btstack_chipset_cc256x_instance());
     
+    // inform about BTstack state
+    hci_event_callback_registration.callback = &packet_handler;
+    hci_add_event_handler(&hci_event_callback_registration);
+
     // use eHCILL
     // btstack_chipset_cc256x_enable_ehcill(1);    
 }
