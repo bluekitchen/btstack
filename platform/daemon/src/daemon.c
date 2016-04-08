@@ -1213,7 +1213,7 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             data_length = little_endian_read_16(packet, 5 + CHARACTERISTIC_LENGTH);
             data = gatt_helper->characteristic_buffer;
             memcpy(data, &packet[7 + CHARACTERISTIC_LENGTH], data_length);
-            gatt_client_write_value_of_characteristic_without_response(&handle_gatt_client_event, gatt_helper->con_handle, characteristic.value_handle, data_length, data);
+            gatt_client_write_value_of_characteristic_without_response(gatt_helper->con_handle, characteristic.value_handle, data_length, data);
             break;
         case GATT_WRITE_VALUE_OF_CHARACTERISTIC:
             gatt_helper = daemon_setup_gatt_client_request(connection, packet, 1);
