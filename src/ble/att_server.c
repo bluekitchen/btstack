@@ -340,7 +340,7 @@ static void att_run(void){
     }
 }
 
-static void att_server_handle_can_send_now(){
+static void att_server_handle_can_send_now(void){
 
     // NOTE: we get l2cap fixed channel instead of con_handle 
     // TODO: get con_handle
