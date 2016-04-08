@@ -132,6 +132,10 @@ extern "C" void hci_add_event_handler(btstack_packet_callback_registration_t * c
 }
 
 int  rfcomm_send(uint16_t rfcomm_cid, uint8_t *data, uint16_t len){
+
+    // printf("mock: rfcomm send: ");
+    print_without_newlines(data, len);
+
 	int start_command_offset = 2;
     int end_command_offset = 2;
     
@@ -150,17 +154,21 @@ int  rfcomm_send(uint16_t rfcomm_cid, uint8_t *data, uint16_t len){
         rfcomm_payload_len = len;
     }
 	
-    //print_without_newlines(rfcomm_payload,rfcomm_payload_len);
+    // print_without_newlines(rfcomm_payload,rfcomm_payload_len);
     return 0;
 }
 
 void rfcomm_request_can_send_now_event(uint16_t rfcomm_cid){
+
+    // printf("mock: rfcomm_request_can_send_now_event\n");
+
     uint8_t event[] = { RFCOMM_EVENT_CAN_SEND_NOW, 2, 0, 0};
     little_endian_store_16(event, 2, rfcomm_cid);
     registered_rfcomm_packet_handler(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
 int       rfcomm_reserve_packet_buffer(void){
+    // printf("mock: rfcomm_reserve_packet_buffer\n");
     return 1;
 };
 void      rfcomm_release_packet_buffer(void){};
@@ -171,7 +179,7 @@ uint16_t rfcomm_get_max_frame_size(uint16_t rfcomm_cid){
     return sizeof(rfcomm_reserved_buffer);
 }
 int rfcomm_send_prepared(uint16_t rfcomm_cid, uint16_t len){
-    printf("--- rfcomm_send_prepared with len %u ---\n", len);
+    // printf("--- rfcomm_send_prepared with len %u ---\n", len);
     return rfcomm_send(rfcomm_cid, rfcomm_reserved_buffer, len);
 }
 
@@ -233,6 +241,11 @@ uint8_t sdp_client_query_rfcomm_channel_and_name_for_uuid(btstack_packet_handler
 
 
 uint8_t rfcomm_create_channel(btstack_packet_handler_t handler, bd_addr_t addr, uint8_t channel, uint16_t * out_cid){
+
+    // printf("mock: rfcomm_create_channel addr %s\n", bd_addr_to_str(addr));
+
+    registered_rfcomm_packet_handler = handler;
+
 	// RFCOMM_EVENT_CHANNEL_OPENED
     uint8_t event[16];
     uint8_t pos = 0;
@@ -258,6 +271,7 @@ uint8_t rfcomm_create_channel(btstack_packet_handler_t handler, bd_addr_t addr, 
 }
 
 int rfcomm_can_send_packet_now(uint16_t rfcomm_cid){
+    // printf("mock: rfcomm_can_send_packet_now\n");
 	return 1;
 }
 
@@ -270,19 +284,19 @@ void rfcomm_disconnect(uint16_t rfcomm_cid){
 }
 
 uint8_t rfcomm_register_service(btstack_packet_handler_t handler, uint8_t channel, uint16_t max_frame_size){
-	printf("rfcomm_register_service\n");
+	// printf("rfcomm_register_service\n");
     registered_rfcomm_packet_handler = handler;
     return 0;
 }
 
 
 void sdp_client_query_rfcomm_channel_and_name_for_search_pattern(bd_addr_t remote, uint8_t * des_serviceSearchPattern){
-	printf("sdp_client_query_rfcomm_channel_and_name_for_search_pattern\n");
+	// printf("sdp_client_query_rfcomm_channel_and_name_for_search_pattern\n");
 }
 
 
 void rfcomm_accept_connection(uint16_t rfcomm_cid){
-	printf("rfcomm_accept_connection \n");
+	// printf("rfcomm_accept_connection \n");
 }
 
 void btstack_run_loop_add_timer(btstack_timer_source_t *timer){
@@ -354,6 +368,10 @@ void inject_hfp_command_to_ag(uint8_t * data, int len){
     if (data[0] == '+') return;
     
     add_new_lines_to_hfp_command(data, len);
+
+    // printf("mock: inject command to ag: ");
+    // print_without_newlines(data, len);
+
     (*registered_rfcomm_packet_handler)(RFCOMM_DATA_PACKET, rfcomm_cid, (uint8_t *) &outgoing_rfcomm_payload[0], outgoing_rfcomm_payload_len);
 }
 

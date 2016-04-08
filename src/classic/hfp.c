@@ -97,6 +97,7 @@ static const char * hfp_ag_features[] = {
 static btstack_linked_list_t hfp_connections = NULL;
 static void parse_sequence(hfp_connection_t * context);
 static hfp_callback_t hfp_callback;
+static btstack_packet_handler_t rfcomm_packet_handler;
 
 void hfp_set_callback(hfp_callback_t callback){
     hfp_callback = callback;
@@ -427,7 +428,7 @@ static void handle_query_rfcomm_event(uint8_t packet_type, uint16_t channel, uin
             if (hfp_connection->rfcomm_channel_nr > 0){
                 hfp_connection->state = HFP_W4_RFCOMM_CONNECTED;
                 log_info("HFP: SDP_EVENT_QUERY_COMPLETE context %p, addr %s, state %d", hfp_connection, bd_addr_to_str( hfp_connection->remote_addr),  hfp_connection->state);
-                rfcomm_create_channel(&hfp_handle_hci_event, hfp_connection->remote_addr, hfp_connection->rfcomm_channel_nr, NULL); 
+                rfcomm_create_channel(rfcomm_packet_handler, hfp_connection->remote_addr, hfp_connection->rfcomm_channel_nr, NULL); 
                 break;
             }
             log_info("rfcomm service not found, status %u.", sdp_event_query_complete_get_status(packet));
@@ -1336,3 +1337,8 @@ void hfp_setup_synchronous_connection(hci_con_handle_t handle, hfp_link_settting
     hci_send_cmd(&hci_setup_synchronous_connection, handle, 8000, 8000, hfp_link_settings[setting].max_latency,
         hci_get_sco_voice_setting(), hfp_link_settings[setting].retransmission_effort, hfp_link_settings[setting].packet_types); // all types 0x003f, only 2-ev3 0x380
 }
+
+void hfp_set_packet_handler_for_rfcomm_connections(btstack_packet_handler_t handler){
+    rfcomm_packet_handler = handler;
+}
+

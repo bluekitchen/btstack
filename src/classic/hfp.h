@@ -623,6 +623,8 @@ int store_bit(uint32_t bitmap, int position, uint8_t value);
 
 void hfp_set_callback(hfp_callback_t callback);
 
+void hfp_set_packet_handler_for_rfcomm_connections(btstack_packet_handler_t handler);
+
 void hfp_create_sdp_record(uint8_t * service, uint32_t service_record_handle, uint16_t service_uuid, int rfcomm_channel_nr, const char * name);
 void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 void hfp_emit_event(hfp_callback_t callback, uint8_t event_subtype, uint8_t value);

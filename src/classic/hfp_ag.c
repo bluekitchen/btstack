@@ -1763,6 +1763,7 @@ static void hfp_run_for_context(hfp_connection_t *hfp_connection){
         hfp_connection->command = HFP_CMD_NONE;
     }
 }
+
 static hfp_generic_status_indicator_t *get_hf_indicator_by_number(int number){
     int i;
     for (i=0;i< hfp_generic_status_indicators_nr;i++){
@@ -2037,11 +2038,13 @@ void hfp_ag_init(uint16_t rfcomm_channel_nr){
 
     l2cap_init();
 
-    rfcomm_register_service(packet_handler, rfcomm_channel_nr, 0xffff);  
+    rfcomm_register_service(&packet_handler, rfcomm_channel_nr, 0xffff);  
     
     hfp_ag_response_and_hold_active = 0;
     subscriber_numbers = NULL;
     subscriber_numbers_count = 0;
+
+    hfp_set_packet_handler_for_rfcomm_connections(&packet_handler);
 
     hfp_gsm_init();
 }

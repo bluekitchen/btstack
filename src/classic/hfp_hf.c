@@ -1086,6 +1086,8 @@ void hfp_hf_init(uint16_t rfcomm_channel_nr){
 
     rfcomm_register_service(packet_handler, rfcomm_channel_nr, 0xffff);  
 
+    hfp_set_packet_handler_for_rfcomm_connections(&packet_handler);
+
     hfp_supported_features = HFP_DEFAULT_HF_SUPPORTED_FEATURES;
     hfp_codecs_nr = 0;
     hfp_indicators_nr = 0;
