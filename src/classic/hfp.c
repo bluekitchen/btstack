@@ -203,6 +203,17 @@ void hfp_emit_event(hfp_callback_t callback, uint8_t event_subtype, uint8_t valu
     (*callback)(event, sizeof(event));
 }
 
+void hfp_emit_connection_event(hfp_callback_t callback, uint8_t event_subtype, uint8_t status, hci_con_handle_t con_handle){
+    if (!callback) return;
+    uint8_t event[6];
+    event[0] = HCI_EVENT_HFP_META;
+    event[1] = sizeof(event) - 2;
+    event[2] = event_subtype;
+    event[3] = status; // status 0 == OK
+    little_endian_store_16(event, 4, con_handle);
+    (*callback)(event, sizeof(event));
+}
+
 void hfp_emit_string_event(hfp_callback_t callback, uint8_t event_subtype, const char * value){
     if (!callback) return;
     uint8_t event[40];
@@ -212,17 +223,6 @@ void hfp_emit_string_event(hfp_callback_t callback, uint8_t event_subtype, const
     int size = (strlen(value) < sizeof(event) - 4) ? strlen(value) : sizeof(event) - 4;
     strncpy((char*)&event[3], value, size);
     event[3 + size] = 0;
-    (*callback)(event, sizeof(event));
-}
-
-static void hfp_emit_audio_connection_established_event(hfp_callback_t callback, uint8_t value, uint16_t sco_handle){
-    if (!callback) return;
-    uint8_t event[6];
-    event[0] = HCI_EVENT_HFP_META;
-    event[1] = sizeof(event) - 2;
-    event[2] = HFP_SUBEVENT_AUDIO_CONNECTION_ESTABLISHED;
-    event[3] = value; // status 0 == OK
-    little_endian_store_16(event, 4, sco_handle);
     (*callback)(event, sizeof(event));
 }
 
@@ -471,7 +471,7 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
             if (!hfp_connection || hfp_connection->state != HFP_W4_RFCOMM_CONNECTED) return;
 
             if (status) {
-                hfp_emit_event(hfp_callback, HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED, status);
+                hfp_emit_connection_event(hfp_callback, HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED, status, rfcomm_event_channel_opened_get_con_handle(packet));
                 remove_hfp_connection_context(hfp_connection);
             } else {
                 hfp_connection->acl_handle = rfcomm_event_channel_opened_get_con_handle(packet);
@@ -578,7 +578,7 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
             hfp_connection->sco_handle = sco_handle;
             hfp_connection->establish_audio_connection = 0;
             hfp_connection->state = HFP_AUDIO_CONNECTION_ESTABLISHED;
-            hfp_emit_audio_connection_established_event(hfp_callback, packet[2], sco_handle);
+            hfp_emit_connection_event(hfp_callback, HFP_SUBEVENT_AUDIO_CONNECTION_ESTABLISHED, packet[2], sco_handle);
             break;                
         }
 

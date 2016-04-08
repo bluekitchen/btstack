@@ -445,15 +445,11 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
 #endif
 
 static void packet_handler(uint8_t * event, uint16_t event_size){
-    if (event[0] == RFCOMM_EVENT_CHANNEL_OPENED){
-        handle = little_endian_read_16(event, 9);
-        printf("RFCOMM_EVENT_CHANNEL_OPENED received for handle 0x%04x\n", handle);
-        return;
-    }
     if (event[0] != HCI_EVENT_HFP_META) return;
 
     switch (event[2]) {   
         case HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED:
+            handle = hfp_subevent_service_level_connection_established_get_con_handle(event);
             printf("Service level connection established.\n\n");
             break;
         case HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED:

@@ -2640,6 +2640,15 @@ static inline const uint8_t * hsp_subevent_ag_indication_get_value(const uint8_t
 static inline uint8_t hfp_subevent_service_level_connection_established_get_status(const uint8_t * event){
     return event[3];
 }
+/**
+ * @brief Get field con_handle from event HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t hfp_subevent_service_level_connection_established_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 4);
+}
 
 
 /**
