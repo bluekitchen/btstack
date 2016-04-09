@@ -213,6 +213,9 @@ static void packet_handler(uint8_t * event, uint16_t event_size){
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
 
+    l2cap_init();
+    rfcomm_init();
+
     hsp_hs_init(rfcomm_channel_nr);
     hsp_hs_register_packet_handler(packet_handler);
     
