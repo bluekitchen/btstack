@@ -305,7 +305,6 @@ void hsp_ag_establish_audio_connection(void){
             
     switch (hsp_state){
         case HSP_RFCOMM_CONNECTION_ESTABLISHED:
-            printf("set flag hsp_establish_audio_connection\n");
             hsp_establish_audio_connection = 1;
             hsp_state = HSP_W4_SCO_CONNECTED;
             break;
@@ -381,33 +380,31 @@ static void hsp_run(void){
 
     int err;
 
-    if (rfcomm_cid) {
-
+    if (ag_send_ok){
         if (!rfcomm_can_send_packet_now(rfcomm_cid)) {
             rfcomm_request_can_send_now_event(rfcomm_cid);
             return;
         }
+        ag_send_ok = 0;  
+        hsp_ag_send_str_over_rfcomm(rfcomm_cid, HSP_AG_OK);
+        return;
+    }
 
-        if (ag_send_ok){
-            ag_send_ok = 0;  
-            err = hsp_ag_send_str_over_rfcomm(rfcomm_cid, HSP_AG_OK);
-            if (err){
-                ag_send_ok = 1;  
-            } 
+    if (ag_send_error){
+        if (!rfcomm_can_send_packet_now(rfcomm_cid)) {
+            rfcomm_request_can_send_now_event(rfcomm_cid);
             return;
         }
-
-        if (ag_send_error){
-            ag_send_error = 0;
-            err = hsp_ag_send_str_over_rfcomm(rfcomm_cid, HSP_AG_ERROR);
-            if (err) {
-                ag_send_error = 1;
-            }
-            return;
+        ag_send_error = 0;
+        err = hsp_ag_send_str_over_rfcomm(rfcomm_cid, HSP_AG_ERROR);
+        if (err) {
+            ag_send_error = 1;
         }
+        return;
     }
 
     if (hsp_establish_audio_connection){
+        if (!hci_can_send_command_packet_now()) return;
         hsp_establish_audio_connection = 0;
         hci_send_cmd(&hci_setup_synchronous_connection, rfcomm_handle, 8000, 8000, 0xFFFF, hci_get_sco_voice_setting(), 0xFF, 0x003F);
         return;
@@ -435,6 +432,10 @@ static void hsp_run(void){
 
         case HSP_W4_RING_ANSWER:
             if (ag_ring){
+                if (!rfcomm_can_send_packet_now(rfcomm_cid)) {
+                    rfcomm_request_can_send_now_event(rfcomm_cid);
+                    return;
+                }
                 ag_ring = 0;
                 err = hsp_ag_send_str_over_rfcomm(rfcomm_cid, HSP_AG_RING);
                 if (err) {
@@ -457,6 +458,7 @@ static void hsp_run(void){
             break;
         
         case HSP_W2_CONNECT_SCO:
+            if (!hci_can_send_command_packet_now()) return;
             hsp_state = HSP_W4_SCO_CONNECTED;
             hci_send_cmd(&hci_setup_synchronous_connection, rfcomm_handle, 8000, 8000, 0xFFFF, hci_get_sco_voice_setting(), 0xFF, 0x003F);
             break;
@@ -476,6 +478,10 @@ static void hsp_run(void){
         case HSP_RFCOMM_CONNECTION_ESTABLISHED:
             
             if (ag_microphone_gain >= 0){
+                if (!rfcomm_can_send_packet_now(rfcomm_cid)) {
+                    rfcomm_request_can_send_now_event(rfcomm_cid);
+                    return;
+                }
                 int gain = ag_microphone_gain;
                 ag_microphone_gain = -1;
                 char buffer[10];
@@ -488,6 +494,10 @@ static void hsp_run(void){
             }
 
             if (ag_speaker_gain >= 0){
+                if (!rfcomm_can_send_packet_now(rfcomm_cid)) {
+                    rfcomm_request_can_send_now_event(rfcomm_cid);
+                    return;
+                }
                 int gain = ag_speaker_gain;
                 ag_speaker_gain = -1;
                 char buffer[10];
