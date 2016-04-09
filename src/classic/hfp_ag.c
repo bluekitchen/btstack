@@ -1611,6 +1611,7 @@ static void hfp_ag_send_call_status(hfp_connection_t * hfp_connection, int call_
 
 static void hfp_run_for_context(hfp_connection_t *hfp_connection){
     if (!hfp_connection) return;
+    if (!hfp_connection->rfcomm_cid) return;
     if (!rfcomm_can_send_packet_now(hfp_connection->rfcomm_cid)) {
         rfcomm_request_can_send_now_event(hfp_connection->rfcomm_cid);
         return;

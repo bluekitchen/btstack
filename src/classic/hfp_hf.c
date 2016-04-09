@@ -584,6 +584,7 @@ static int call_setup_state_machine(hfp_connection_t * hfp_connection){
 
 static void hfp_run_for_context(hfp_connection_t * hfp_connection){
     if (!hfp_connection) return;
+    if (!hfp_connection->rfcomm_cid) return;
     if (!rfcomm_can_send_packet_now(hfp_connection->rfcomm_cid)) return;
     
     int done = hfp_hf_run_for_context_service_level_connection(hfp_connection);
