@@ -360,14 +360,13 @@ void hsp_hs_set_speaker_gain(uint8_t gain){
 
 static void hsp_run(void){
 
-    if (!rfcomm_can_send_packet_now(rfcomm_cid)) {
-        rfcomm_request_can_send_now_event(rfcomm_cid);
-        return;
-    }
-
     if (wait_ok) return;
 
     if (hsp_release_audio_connection){
+        if (!rfcomm_can_send_packet_now(rfcomm_cid)) {
+            rfcomm_request_can_send_now_event(rfcomm_cid);
+            return;
+        }
         hsp_release_audio_connection = 0;
         wait_ok = 1;
         hsp_hs_send_str_over_rfcomm(rfcomm_cid, HSP_HS_AT_CKPD);
@@ -382,6 +381,10 @@ static void hsp_run(void){
     }
 
     if (hsp_establish_audio_connection){
+        if (!rfcomm_can_send_packet_now(rfcomm_cid)) {
+            rfcomm_request_can_send_now_event(rfcomm_cid);
+            return;
+        }
         hsp_establish_audio_connection = 0;
         wait_ok = 1;
         hsp_hs_send_str_over_rfcomm(rfcomm_cid, HSP_HS_AT_CKPD);
@@ -389,6 +392,10 @@ static void hsp_run(void){
     }
     
     if (hs_send_button_press){
+        if (!rfcomm_can_send_packet_now(rfcomm_cid)) {
+            rfcomm_request_can_send_now_event(rfcomm_cid);
+            return;
+        }
         hs_send_button_press = 0;
         wait_ok = 1;
         hsp_hs_send_str_over_rfcomm(rfcomm_cid, HSP_HS_AT_CKPD);
@@ -405,6 +412,10 @@ static void hsp_run(void){
         case HSP_RFCOMM_CONNECTION_ESTABLISHED:
 
             if (hs_microphone_gain >= 0){
+                if (!rfcomm_can_send_packet_now(rfcomm_cid)) {
+                    rfcomm_request_can_send_now_event(rfcomm_cid);
+                    return;
+                }
                 char buffer[20];
                 sprintf(buffer, "%s=%d\r\n", HSP_HS_MICROPHONE_GAIN, hs_microphone_gain);
                 hsp_hs_send_str_over_rfcomm(rfcomm_cid, buffer);
@@ -413,6 +424,10 @@ static void hsp_run(void){
             }
 
             if (hs_speaker_gain >= 0){
+                if (!rfcomm_can_send_packet_now(rfcomm_cid)) {
+                    rfcomm_request_can_send_now_event(rfcomm_cid);
+                    return;
+                }
                 char buffer[20];
                 sprintf(buffer, "%s=%d\r\n", HSP_HS_SPEAKER_GAIN, hs_speaker_gain);
                 hsp_hs_send_str_over_rfcomm(rfcomm_cid, buffer);
