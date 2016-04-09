@@ -63,6 +63,7 @@
 #include "hci_cmd.h"
 #include "hsp_ag.h"
 #include "l2cap.h"
+#include "rfcomm.h"
 #include "stdin_support.h"
  
 static uint32_t   hsp_service_buffer[150/4]; // implicit alignment to 4-byte memory address
@@ -80,8 +81,9 @@ static void show_usage(void);
 static void show_usage(void){
     printf("\n--- Bluetooth HSP AudioGateway Test Console ---\n");
     printf("---\n");
-    printf("p - establish audio connection to PTS module\n");
-    printf("e - establish audio connection to Bluetooth Speaker\n");
+    printf("p - establish service level connection to PTS module\n");
+    printf("e - establish service level connection to Bluetooth Speaker\n");
+    printf("a - release audio connection\n");
     printf("d - release audio connection\n");
     printf("m - set microphone gain 8\n");
     printf("M - set microphone gain 15\n");
@@ -101,12 +103,16 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
 
     switch (buffer){
         case 'p':
-            printf("Establishing audio connection to PTS module %s...\n", bd_addr_to_str(pts_addr));
+            printf("Establishing service level connection to PTS module %s...\n", bd_addr_to_str(pts_addr));
             hsp_ag_connect(pts_addr);
             break;
         case 'e':
-            printf("Establishing audio connection to Bluetooth Speaker %s...\n", bd_addr_to_str(bt_speaker_addr));
+            printf("Establishing service level connection to Bluetooth Speaker %s...\n", bd_addr_to_str(bt_speaker_addr));
             hsp_ag_connect(bt_speaker_addr);
+            break;
+        case 'a':
+            printf("Establish audio connection\n");
+            hsp_ag_establish_audio_connection();
             break;
         case 'd':
             printf("Releasing audio connection\n");
@@ -185,6 +191,8 @@ static void packet_handler(uint8_t * event, uint16_t event_size){
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
     
+    l2cap_init();
+    rfcomm_init();
     hsp_ag_init(rfcomm_channel_nr);
     hsp_ag_register_packet_handler(packet_handler);
     
