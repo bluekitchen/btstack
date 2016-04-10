@@ -25,7 +25,7 @@ const uint8_t profile_data[] =
 '''
 
 usage = '''
-Usage: ./compile-gatt.py profile.gatt profile.h
+Usage: ./compile_gatt.py profile.gatt profile.h
 '''
 
 import re

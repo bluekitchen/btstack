@@ -26,7 +26,7 @@ gatt_update_template = '''#!/bin/sh
 DIR=`dirname $0`
 BTSTACK_ROOT=$DIR/../../../libraries/btstack
 echo "Creating EXAMPLE.h from EXAMPLE.gatt"
-$BTSTACK_ROOT/tool/compile-gatt.py $BTSTACK_ROOT/example/EXAMPLE.gatt $DIR/EXAMPLE.h
+$BTSTACK_ROOT/tool/compile_gatt.py $BTSTACK_ROOT/example/EXAMPLE.gatt $DIR/EXAMPLE.h
 '''
 
 # get script path

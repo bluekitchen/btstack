@@ -35,9 +35,9 @@ all: ${EXAMPLES}
 
 # compile .gatt descriptions
 ble_peripheral_test.h: ble_peripheral_test.gatt
-	python ${BTSTACK_ROOT}/tool/compile-gatt.py $< $@ 
+	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
 ble_central_test.h: ble_central_test.gatt
-	python ${BTSTACK_ROOT}/tool/compile-gatt.py $< $@ 
+	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
 	
 ble_peripheral_test: ble_peripheral_test.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_REAL_OBJ} ble_peripheral_test.o
 	${CC} $(filter-out ble_peripheral_test.h,$^) ${CFLAGS} ${LDFLAGS} -o $@

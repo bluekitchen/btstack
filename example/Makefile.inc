@@ -99,15 +99,15 @@ default_target: all
 
 # compile .gatt descriptions
 profile.h: profile.gatt
-	python ${BTSTACK_ROOT}/tool/compile-gatt.py $< $@ 
+	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
 ancs_client_demo.h: ancs_client_demo.gatt
-	python ${BTSTACK_ROOT}/tool/compile-gatt.py $< $@ 
+	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
 spp_and_le_counter.h: spp_and_le_counter.gatt
-	python ${BTSTACK_ROOT}/tool/compile-gatt.py $< $@ 
+	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
 le_counter.h: le_counter.gatt
-	python ${BTSTACK_ROOT}/tool/compile-gatt.py $< $@ 
+	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
 le_streamer.h: le_streamer.gatt
-	python ${BTSTACK_ROOT}/tool/compile-gatt.py $< $@ 
+	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
 
 # examples
 sdp_rfcomm_query: ${CORE_OBJ} ${COMMON_OBJ} ${PAN_OBJ} ${SDP_CLIENT} sdp_rfcomm_query.c

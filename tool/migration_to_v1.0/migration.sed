@@ -107,7 +107,7 @@ s/pan_create_nap_service/pan_create_nap_sdp_record/g
 
 # Folder structure
 s|/example/embedded|/example|g
-s|/ble/compile-gatt.py|/tool/compile-gatt.py|g
+s|/ble/compile-gatt.py|/tool/compile_gatt.py|g
 
 # type renames
 s/le_service_t/gatt_client_service_t/g
