@@ -58,7 +58,6 @@ EXAMPLES = 					\
 	ancs_client_demo		\
 	gap_dedicated_bonding	\
 	gap_inquiry 			\
-	gap_inquiry_and_bond 	\
 	gatt_battery_query		\
 	gatt_browser            \
 	le_counter              \
