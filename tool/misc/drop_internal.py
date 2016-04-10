@@ -1,0 +1,20 @@
+
+def do(name):
+	name_without = name.replace('_internal','')
+	print("s/%s/%s/g" % (name, name_without))
+
+do('l2cap_create_channel_internal')
+do('l2cap_disconnect_internal')
+do('l2cap_send_internal')
+do('l2cap_register_service_internal')
+do('l2cap_unregister_service_internal')
+do('l2cap_accept_connection_internal')
+do('l2cap_decline_connection_internal')
+do('l2cap_le_register_service_internal')
+do('l2cap_le_unregister_service_internal')
+do('rfcomm_create_channel_internal')
+do('rfcomm_create_channel_with_initial_credits_internal')
+do('rfcomm_register_service_with_initial_credits_internal')
+do('rfcomm_unregister_service_internal')
+do('rfcomm_decline_connection_internal')
+do('sdp_unregister_service_internal')
