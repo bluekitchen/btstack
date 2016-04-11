@@ -1,4 +1,5 @@
-**_Note: Major API Changes. For older projects, you may use the [v0.9 branch](https://github.com/bluekitchen/btstack/tree/v0.9)_**
+**_Note: Major API Changes. For older projects, you may use the [v0.9 branch](https://github.com/bluekitchen/btstack/tree/v0.9). 
+Please see [Migration notes]([Migration notes]) _**
 
 # Welcome to BTstack
 
