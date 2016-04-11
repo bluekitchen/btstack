@@ -24,8 +24,8 @@ It has been qualified with the the Bluetooth SIG for GAP, IOP, HFP, HSP, SPP, PA
 GATT, SM of the Bluetooth 4.2 LE Central and Peripheral roles (QD ID 25340).
 
 ## Documentation
-- [HTML](http://bluekitchen-gmbh.com/btstack/)
-- [PDF](http://bluekitchen-gmbh.com/btstack.pdf)
+- [HTML](http://bluekitchen-gmbh.com/btstack/v0.9)
+- [PDF](http://bluekitchen-gmbh.com/btstack_v0.9.pdf)
 
 ## Supported Protocols
 * L2CAP            
@@ -52,22 +52,22 @@ Coming next: HID, HOGP, A2DP, and more.
 #### Embedded Platforms:      
 Status               | Platform
 --------------       | ------ 
-![buildstatus](http://buildbot.bluekitchen-gmbh.com/btstack/badge.png?builder=platform-ez430-rf2560-master) | [EZ430-RF256x Bluetooth Evaluation Tool for MSP430](http://www.ti.com/tool/ez430-rf256x)  
-![buildstatus](http://buildbot.bluekitchen-gmbh.com/btstack/badge.png?builder=platform-msp-exp430f5438-cc2564b-master) | [MSP430F5438 Experimenter Board for MSP430](http://www.ti.com/tool/msp-exp430f5438) with [Bluetooth CC2564 Module Evaluation Board](http://www.ti.com/tool/cc2564modnem) 
-![buildstatus](http://buildbot.bluekitchen-gmbh.com/btstack/badge.png?builder=platform-msp430f5229lp-cc2564b-master) | [MSP-EXP430F5529LP LaunchPad](http://www.ti.com/ww/en/launchpad/launchpads-msp430-msp-exp430f5529lp.html#tabs) with [Bluetooth CC2564 Module Evaluation Board](http://www.ti.com/tool/cc2564modnem) and [EM Adapter BoosterPack](http://www.ti.com/tool/boost-ccemadapter) with additional 32768Hz quartz oscillator   
-![buildstatus](http://buildbot.bluekitchen-gmbh.com/btstack/badge.png?builder=platform-stm32-f103rb-nucleo-master) | [STM32 Nucleo development board NUCLEO-F103RB](http://www.st.com/web/catalog/tools/FM116/SC959/SS1532/LN1847/PF259875) with [Bluetooth CC2564 Module Evaluation Board](http://www.ti.com/tool/cc2564modnem) and [EM Adapter BoosterPack](http://www.ti.com/tool/boost-ccemadapter) with additional 32768Hz quartz oscillator
-![buildstatus](http://buildbot.bluekitchen-gmbh.com/btstack/badge.png?builder=platform-pic32-harmony-master) | [Microchip's PIC32 Bluetooth Audio Development Kit](http://www.microchip.com/Developmenttools/ProductDetails.aspx?PartNO=DV320032)          
+![buildstatus](http://buildbot.bluekitchen-gmbh.com/btstack/badge.png?builder=platform-ez430-rf2560-v0.9) | [EZ430-RF256x Bluetooth Evaluation Tool for MSP430](http://www.ti.com/tool/ez430-rf256x)  
+![buildstatus](http://buildbot.bluekitchen-gmbh.com/btstack/badge.png?builder=platform-msp-exp430f5438-cc2564b-v0.9) | [MSP430F5438 Experimenter Board for MSP430](http://www.ti.com/tool/msp-exp430f5438) with [Bluetooth CC2564 Module Evaluation Board](http://www.ti.com/tool/cc2564modnem) 
+![buildstatus](http://buildbot.bluekitchen-gmbh.com/btstack/badge.png?builder=platform-msp430f5229lp-cc2564b-v0.9) | [MSP-EXP430F5529LP LaunchPad](http://www.ti.com/ww/en/launchpad/launchpads-msp430-msp-exp430f5529lp.html#tabs) with [Bluetooth CC2564 Module Evaluation Board](http://www.ti.com/tool/cc2564modnem) and [EM Adapter BoosterPack](http://www.ti.com/tool/boost-ccemadapter) with additional 32768Hz quartz oscillator   
+![buildstatus](http://buildbot.bluekitchen-gmbh.com/btstack/badge.png?builder=platform-stm32-f103rb-nucleo-v0.9) | [STM32 Nucleo development board NUCLEO-F103RB](http://www.st.com/web/catalog/tools/FM116/SC959/SS1532/LN1847/PF259875) with [Bluetooth CC2564 Module Evaluation Board](http://www.ti.com/tool/cc2564modnem) and [EM Adapter BoosterPack](http://www.ti.com/tool/boost-ccemadapter) with additional 32768Hz quartz oscillator
+![buildstatus](http://buildbot.bluekitchen-gmbh.com/btstack/badge.png?builder=platform-pic32-harmony-v0.9) | [Microchip's PIC32 Bluetooth Audio Development Kit](http://www.microchip.com/Developmenttools/ProductDetails.aspx?PartNO=DV320032)          
 
 
 #### Other Platforms:     
 Status               | Platform
 --------------       | ------ 
-![buildstatus](http://buildbot.bluekitchen-gmbh.com/btstack/badge.png?builder=platform-posix-stlc2500d-master)| posix: Unix-based system talking to Bluetooth module via serial port   
-![buildstatus](http://buildbot.bluekitchen-gmbh.com/btstack/badge.png?builder=platform-libusb-master)| libusb: Unix-based system talking via USB Bluetooth dongle
-![buildstatus](http://buildbot.bluekitchen-gmbh.com/btstack/badge.png?builder=platform-daemon-master)| daemon: TCP and Unix domain named socket client-server architecture supporting multiple clients
-![buildstatus](http://buildbot.bluekitchen-gmbh.com/btstack/badge.png?builder=java-master)| java: Java wrapper for daemon 
-![buildstatus](http://buildbot.bluekitchen-gmbh.com/btstack/badge.png?builder=platform-ios-master)| iOS: daemon for iOS jailbreak devices, C client-server API
-![buildstatus](http://buildbot.bluekitchen-gmbh.com/btstack/badge.png?builder=platform-mtk-master)| mtk: daemon for rooted Android devices, based on Mediatek MT65xx processor, Java and C client-server API
+![buildstatus](http://buildbot.bluekitchen-gmbh.com/btstack/badge.png?builder=platform-posix-stlc2500d-v0.9)| posix: Unix-based system talking to Bluetooth module via serial port   
+![buildstatus](http://buildbot.bluekitchen-gmbh.com/btstack/badge.png?builder=platform-libusb-v0.9)| libusb: Unix-fbased system talking via USB Bluetooth dongle
+![buildstatus](http://buildbot.bluekitchen-gmbh.com/btstack/badge.png?builder=platform-daemon-v0.9)| daemon: TCP and Unix domain named socket client-server architecture supporting multiple clients
+![buildstatus](http://buildbot.bluekitchen-gmbh.com/btstack/badge.png?builder=java-v0.9)| java: Java wrapper for daemon 
+![buildstatus](http://buildbot.bluekitchen-gmbh.com/btstack/badge.png?builder=platform-ios-v0.9)| iOS: daemon for iOS jailbreak devices, C client-server API
+![buildstatus](http://buildbot.bluekitchen-gmbh.com/btstack/badge.png?builder=platform-mtk-v0.9)| mtk: daemon for rooted Android devices, based on Mediatek MT65xx processor, Java and C client-server API
 
 
 ## Supported Chipsets
