@@ -127,47 +127,12 @@ static void h4_init(const void * transport_config){
 
 static int h4_open(void){
 
-    struct termios toptions;
-    int flags = O_RDWR | O_NOCTTY | O_NONBLOCK;
-    int fd = open(hci_transport_config_uart->device_name, flags);
-    if (fd == -1)  {
-        perror("init_serialport: Unable to open port ");
-        perror(hci_transport_config_uart->device_name);
-        return -1;
+    int fd = btstack_uart_posix_open(hci_transport_config_uart->device_name, hci_transport_config_uart->flowcontrol, hci_transport_config_uart->baudrate_init);
+    if (fd < 0){
+        return fd;
     }
-    
-    if (tcgetattr(fd, &toptions) < 0) {
-        perror("init_serialport: Couldn't get term attributes");
-        return -1;
-    }
-    
-    cfmakeraw(&toptions);   // make raw
 
-    // 8N1
-    toptions.c_cflag &= ~CSTOPB;
-    toptions.c_cflag |= CS8;
-
-    if (hci_transport_config_uart->flowcontrol) {
-        // with flow control
-        toptions.c_cflag |= CRTSCTS;
-    } else {
-        // no flow control
-        toptions.c_cflag &= ~CRTSCTS;
-    }
-    
-    toptions.c_cflag |= CREAD | CLOCAL;  // turn on READ & ignore ctrl lines
-    toptions.c_iflag &= ~(IXON | IXOFF | IXANY); // turn off s/w flow ctrl
-    
-    // see: http://unixwiz.net/techtips/termios-vmin-vtime.html
-    toptions.c_cc[VMIN]  = 1;
-    toptions.c_cc[VTIME] = 0;
-    
-    if( tcsetattr(fd, TCSANOW, &toptions) < 0) {
-        perror("init_serialport: Couldn't set term attributes");
-        return -1;
-    }
-    
-    // set up data_source
+   // set up data_source
     hci_transport_h4->ds = (btstack_data_source_t*) malloc(sizeof(btstack_data_source_t));
     if (!hci_transport_h4->ds) return -1;
     hci_transport_h4->uart_fd = fd;
@@ -175,11 +140,6 @@ static int h4_open(void){
     btstack_run_loop_set_data_source_handler(hci_transport_h4->ds, &h4_process);
     btstack_run_loop_enable_data_source_callbacks(hci_transport_h4->ds, DATA_SOURCE_CALLBACK_READ);
     btstack_run_loop_add_data_source(hci_transport_h4->ds);
-    
-    // also set baudrate
-    if (h4_set_baudrate(hci_transport_config_uart->baudrate_init) < 0){
-        return -1;
-    }
 
     // init state machine
     bytes_to_read = 1;

@@ -52,6 +52,56 @@
 // #include <stdio.h>
 // #include <string.h>
 
+int btstack_uart_posix_open(const char * device_name, int flowcontrol, uint32_t baudrate){
+
+    struct termios toptions;
+    int flags = O_RDWR | O_NOCTTY | O_NONBLOCK;
+    int fd = open(device_name, flags);
+    if (fd == -1)  {
+        perror("init_serialport: Unable to open port ");
+        perror(device_name);
+        return -1;
+    }
+    
+    if (tcgetattr(fd, &toptions) < 0) {
+        perror("init_serialport: Couldn't get term attributes");
+        return -1;
+    }
+    
+    cfmakeraw(&toptions);   // make raw
+
+    // 8N1
+    toptions.c_cflag &= ~CSTOPB;
+    toptions.c_cflag |= CS8;
+
+    if (flowcontrol) {
+        // with flow control
+        toptions.c_cflag |= CRTSCTS;
+    } else {
+        // no flow control
+        toptions.c_cflag &= ~CRTSCTS;
+    }
+    
+    toptions.c_cflag |= CREAD | CLOCAL;  // turn on READ & ignore ctrl lines
+    toptions.c_iflag &= ~(IXON | IXOFF | IXANY); // turn off s/w flow ctrl
+    
+    // see: http://unixwiz.net/techtips/termios-vmin-vtime.html
+    toptions.c_cc[VMIN]  = 1;
+    toptions.c_cc[VTIME] = 0;
+    
+    if(tcsetattr(fd, TCSANOW, &toptions) < 0) {
+        perror("init_serialport: Couldn't set term attributes");
+        return -1;
+    }
+    
+    // also set baudrate
+    if (btstack_uart_posix_set_baudrate(fd, baudrate) < 0){
+        return -1;
+    }
+
+    return fd;
+}
+
 int btstack_uart_posix_set_baudrate(int fd, uint32_t baudrate){
     log_info("h4_set_baudrate %u", baudrate);
 

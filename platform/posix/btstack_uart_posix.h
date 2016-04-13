@@ -49,6 +49,15 @@
 #include <stdint.h>
 
 /**
+ * @brief Open serial port 
+ * @param device_name
+ * @param flowcontrol enabled
+ * @param baudrate
+ * @returns fd if successful
+ */
+int btstack_uart_posix_open(const char * device_name, int flowcontrol, uint32_t baudrate);
+
+/**
  * @brief Set baudrate 
  * @param fd
  * @param baudrate

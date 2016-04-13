@@ -540,60 +540,17 @@ static int hci_transport_h5_set_baudrate(uint32_t baudrate){
 
 static int hci_transport_h5_open(void){
 
-    struct termios toptions;
-    int flags = O_RDWR | O_NOCTTY | O_NONBLOCK;
-    int fd = open(hci_transport_config_uart->device_name, flags);
-    if (fd == -1)  {
-        perror("h5_open: Unable to open port ");
-        perror(hci_transport_config_uart->device_name);
-        return -1;
+    int fd = btstack_uart_posix_open(hci_transport_config_uart->device_name, hci_transport_config_uart->flowcontrol, hci_transport_config_uart->baudrate_init);
+    if (fd < 0){
+        return fd;
     }
-    
-    if (tcgetattr(fd, &toptions) < 0) {
-        perror("h5_open: Couldn't get term attributes");
-        return -1;
-    }
-    
-    cfmakeraw(&toptions);   // make raw
 
-    // 8N1
-    toptions.c_cflag &= ~CSTOPB;
-    toptions.c_cflag |= CS8;
-
-    if (hci_transport_config_uart->flowcontrol) {
-        // with flow control
-        toptions.c_cflag |= CRTSCTS;
-    } else {
-        // no flow control
-        toptions.c_cflag &= ~CRTSCTS;
-    }
-    
-    toptions.c_cflag |= CREAD | CLOCAL;  // turn on READ & ignore ctrl lines
-    //
-    // toptions.c_cflag |= PARENB; // enable even parity
-    //
-    toptions.c_iflag &= ~(IXON | IXOFF | IXANY); // turn off s/w flow ctrl
-    
-    // see: http://unixwiz.net/techtips/termios-vmin-vtime.html
-    toptions.c_cc[VMIN]  = 1;
-    toptions.c_cc[VTIME] = 0;
-    
-    if( tcsetattr(fd, TCSANOW, &toptions) < 0) {
-        perror("init_serialport: Couldn't set term attributes");
-        return -1;
-    }
-    
     // set up data_source
     btstack_run_loop_set_data_source_fd(&hci_transport_h5_data_source, fd);
     btstack_run_loop_set_data_source_handler(&hci_transport_h5_data_source, &hci_transport_h5_process);
     btstack_run_loop_enable_data_source_callbacks(&hci_transport_h5_data_source, DATA_SOURCE_CALLBACK_READ);
     btstack_run_loop_add_data_source(&hci_transport_h5_data_source);
     
-    // also set baudrate
-    if (hci_transport_h5_set_baudrate(hci_transport_config_uart->baudrate_init) < 0){
-        return -1;
-    }
-
     // init slip parser state machine
     hci_transport_slip_init();
     
@@ -627,9 +584,7 @@ static int hci_transport_h5_close(void){
     return 0;
 }
 
-static void hci_transport_h5_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type) {
-    if (hci_transport_h5_data_source.fd < 0) return;
-
+static void hci_transport_h5_process_read(btstack_data_source_t * ds){
     // process data byte by byte
     uint8_t data;
     while (1) {
@@ -643,6 +598,23 @@ static void hci_transport_h5_process(btstack_data_source_t *ds, btstack_data_sou
             hci_transport_slip_init();
         }
     };
+}
+
+static void hci_transport_h5_process_write(btstack_data_source_t *ds){
+    // not implemented yet
+}
+
+static void hci_transport_h5_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type) {
+    if (hci_transport_h5_data_source.fd < 0) return;
+    switch (callback_type){
+        case DATA_SOURCE_CALLBACK_READ:
+            hci_transport_h5_process_read(ds);
+            break;
+        case DATA_SOURCE_CALLBACK_WRITE:
+            hci_transport_h5_process_write(ds);
+        default:
+            break;
+    }
 }
 
 // get h5 singleton
