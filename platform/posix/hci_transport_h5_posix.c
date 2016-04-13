@@ -53,6 +53,8 @@
 #include "btstack_slip.h"
 #include "btstack_debug.h"
 #include "hci_transport.h"
+#include "btstack_uart_posix.h"
+
 
 #ifdef HAVE_EHCILL
 #error "HCI Transport H5 POSIX does not support eHCILL. Please either use HAVE_EHCILL or H5 Transport"
@@ -125,7 +127,7 @@ static  void (*packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t si
 
 
 // Prototypes
-static int hci_transport_h5_process(btstack_data_source_t *ds);
+static void hci_transport_h5_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type);
 static void hci_transport_link_set_timer(uint16_t timeout_ms);
 static void hci_transport_link_timeout_handler(btstack_timer_source_t * timer);
 static int  hci_transport_h5_outgoing_packet(void);
@@ -525,42 +527,14 @@ static void hci_transport_h5_init(const void * transport_config){
 }
 
 static int hci_transport_h5_set_baudrate(uint32_t baudrate){
-
     log_info("hci_transport_h5_set_baudrate %u", baudrate);
-
-    struct termios toptions;
     int fd = hci_transport_h5_data_source.fd;
 
-    if (tcgetattr(fd, &toptions) < 0) {
-        perror("init_serialport: Couldn't get term attributes");
-        return -1;
-    }
-    
-    speed_t brate = baudrate; // let you override switch below if needed
-    switch(baudrate) {
-        case 57600:  brate=B57600;  break;
-        case 115200: brate=B115200; break;
-#ifdef B230400
-        case 230400: brate=B230400; break;
-#endif
-#ifdef B460800
-        case 460800: brate=B460800; break;
-#endif
-#ifdef B921600
-        case 921600: brate=B921600; break;
-#endif
-    }
-    cfsetospeed(&toptions, brate);
-    cfsetispeed(&toptions, brate);
-
-    if( tcsetattr(fd, TCSANOW, &toptions) < 0) {
-        perror("init_serialport: Couldn't set term attributes");
-        return -1;
-    }
+    int res = btstack_uart_posix_set_baudrate(fd, baudrate);
+    if (res) return res;
 
     // extra for h5: calc resend timeout
     link_resend_timeout_ms = hci_transport_h5_calc_resend_timeout(baudrate);
-
     return 0;
 }
 
