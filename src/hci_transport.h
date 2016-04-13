@@ -94,9 +94,14 @@ typedef struct {
     int    (*send_packet)(uint8_t packet_type, uint8_t *packet, int size);
 
     /**
-     *  extension for UART transport implementations
+     * extension for UART transport implementations
      */
     int    (*set_baudrate)(uint32_t baudrate);
+
+    /**
+     * extension for UART H5 on CSR: reset BCSP/H5 Link
+     */
+    void   (*reset_link)(void);
 
 } hci_transport_t;
 

@@ -630,6 +630,7 @@ const hci_transport_t * hci_transport_h5_instance(void) {
         hci_transport_h5->can_send_packet_now           = &hci_transport_h5_can_send_packet_now;
         hci_transport_h5->send_packet                   = &hci_transport_h5_send_packet;
         hci_transport_h5->set_baudrate                  = &hci_transport_h5_set_baudrate;
+        hci_transport_h5->reset_link                    = &hci_transport_h5_reset_link;
     }
     return (const hci_transport_t *) hci_transport_h5;
 }

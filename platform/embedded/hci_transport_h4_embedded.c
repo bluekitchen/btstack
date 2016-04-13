@@ -122,6 +122,7 @@ static const hci_transport_h4_t hci_transport_h4_dma = {
   /*  .transport.can_send_packet_now           = */  h4_can_send_packet_now,
   /*  .transport.send_packet                   = */  h4_send_packet,
   /*  .transport.set_baudrate                  = */  h4_set_baudrate,
+  /*  .transport.reset_link                    = */  NULL,    
     },
   /*  .ds                                      = */  &hci_transport_h4_dma_ds
 };
