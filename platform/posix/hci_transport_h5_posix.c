@@ -526,6 +526,10 @@ static void hci_transport_h5_init(const void * transport_config){
     hci_transport_h5_data_source.fd = -1;
 }
 
+static void hci_transport_link_update_resend_timeout(uint32_t baudrate){
+    link_resend_timeout_ms = hci_transport_h5_calc_resend_timeout(baudrate);
+}
+
 static int hci_transport_h5_set_baudrate(uint32_t baudrate){
     log_info("hci_transport_h5_set_baudrate %u", baudrate);
     int fd = hci_transport_h5_data_source.fd;
@@ -533,8 +537,7 @@ static int hci_transport_h5_set_baudrate(uint32_t baudrate){
     int res = btstack_uart_posix_set_baudrate(fd, baudrate);
     if (res) return res;
 
-    // extra for h5: calc resend timeout
-    link_resend_timeout_ms = hci_transport_h5_calc_resend_timeout(baudrate);
+    hci_transport_link_update_resend_timeout(baudrate);
     return 0;
 }
 
@@ -544,16 +547,19 @@ static int hci_transport_h5_open(void){
     if (fd < 0){
         return fd;
     }
-
+    
     // set up data_source
     btstack_run_loop_set_data_source_fd(&hci_transport_h5_data_source, fd);
     btstack_run_loop_set_data_source_handler(&hci_transport_h5_data_source, &hci_transport_h5_process);
     btstack_run_loop_enable_data_source_callbacks(&hci_transport_h5_data_source, DATA_SOURCE_CALLBACK_READ);
     btstack_run_loop_add_data_source(&hci_transport_h5_data_source);
     
+    // setup resend timeout
+    hci_transport_link_update_resend_timeout(hci_transport_config_uart->baudrate_init);
+
     // init slip parser state machine
     hci_transport_slip_init();
-    
+
     // init link management - already starts syncing
     hci_transport_link_init();
 
@@ -584,7 +590,9 @@ static int hci_transport_h5_close(void){
     return 0;
 }
 
-static void hci_transport_h5_process_read(btstack_data_source_t * ds){
+static void hci_transport_h5_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type) {
+    if (hci_transport_h5_data_source.fd < 0) return;
+
     // process data byte by byte
     uint8_t data;
     while (1) {
@@ -598,23 +606,6 @@ static void hci_transport_h5_process_read(btstack_data_source_t * ds){
             hci_transport_slip_init();
         }
     };
-}
-
-static void hci_transport_h5_process_write(btstack_data_source_t *ds){
-    // not implemented yet
-}
-
-static void hci_transport_h5_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type) {
-    if (hci_transport_h5_data_source.fd < 0) return;
-    switch (callback_type){
-        case DATA_SOURCE_CALLBACK_READ:
-            hci_transport_h5_process_read(ds);
-            break;
-        case DATA_SOURCE_CALLBACK_WRITE:
-            hci_transport_h5_process_write(ds);
-        default:
-            break;
-    }
 }
 
 // get h5 singleton
