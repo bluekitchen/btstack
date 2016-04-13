@@ -867,6 +867,13 @@ static void hci_initialization_timeout_handler(btstack_timer_source_t * ds){
             hci_stack->num_cmd_packets = 1;
             hci_run();
             break;
+        case HCI_INIT_W4_CUSTOM_INIT_CSR_WARM_BOOT_LINK_RESET:
+            log_info("Resend HCI Reset - CSR Warm Boot with Link Reset");
+            if (hci_stack->hci_transport->reset_link){
+                hci_stack->hci_transport->reset_link();
+            }
+            // NOTE: explicit fallthrough to HCI_INIT_W4_CUSTOM_INIT_CSR_WARM_BOOT
+
         case HCI_INIT_W4_CUSTOM_INIT_CSR_WARM_BOOT:
             log_info("Resend HCI Reset - CSR Warm Boot");
             hci_stack->substate = HCI_INIT_SEND_RESET_CSR_WARM_BOOT;
@@ -978,7 +985,7 @@ static void hci_initializing_run(void){
                                 && hci_transport_uart_get_main_baud_rate()){
                                 hci_stack->substate = HCI_INIT_W4_SEND_BAUD_CHANGE;
                             } else {
-                               hci_stack->substate = HCI_INIT_W4_CUSTOM_INIT_CSR_WARM_BOOT;
+                               hci_stack->substate = HCI_INIT_W4_CUSTOM_INIT_CSR_WARM_BOOT_LINK_RESET;
                             }
                             break;
                     }
@@ -1163,6 +1170,33 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
         }
     }
 
+    // CSR & H5
+    // Fix: Command Complete for HCI Reset in HCI_INIT_W4_SEND_READ_LOCAL_VERSION_INFORMATION trigger resend
+    if (!command_completed
+            && hci_event_packet_get_type(packet) == HCI_EVENT_COMMAND_COMPLETE
+            && hci_stack->substate == HCI_INIT_W4_READ_LOCAL_SUPPORTED_COMMANDS){
+
+        uint16_t opcode = little_endian_read_16(packet,3);
+        if (opcode == hci_reset.opcode){
+            hci_stack->substate = HCI_INIT_READ_LOCAL_SUPPORTED_COMMANDS;
+            return;
+        }
+    }
+
+    // on CSR with BCSP/H5, the reset resend timeout leads to substate == HCI_INIT_SEND_RESET or HCI_INIT_SEND_RESET_CSR_WARM_BOOT
+    // fix: Correct substate and behave as command below
+    if (command_completed){
+        switch (hci_stack->substate){
+            case HCI_INIT_SEND_RESET:
+                hci_stack->substate = HCI_INIT_W4_SEND_RESET;
+                break;
+            case HCI_INIT_SEND_RESET_CSR_WARM_BOOT:
+                hci_stack->substate = HCI_INIT_W4_CUSTOM_INIT_CSR_WARM_BOOT;
+                break;
+            default:
+                break;
+        }
+    }
 
 
     if (!command_completed) return;
@@ -1178,6 +1212,12 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
                         && hci_stack->chipset->set_bd_addr_command;
 
     switch(hci_stack->substate){
+        case HCI_INIT_SEND_RESET:
+            // on CSR with H5/BCSP, resend triggers resend of HCI Reset and leads to substate == HCI_INIT_SEND_RESET
+            // fix: just correct substate and behave as command below
+            hci_stack->substate = HCI_INIT_W4_SEND_RESET;
+            btstack_run_loop_remove_timer(&hci_stack->timeout);
+            break;
         case HCI_INIT_W4_SEND_RESET:
             btstack_run_loop_remove_timer(&hci_stack->timeout);
             break;
