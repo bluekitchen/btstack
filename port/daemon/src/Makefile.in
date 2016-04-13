@@ -39,6 +39,7 @@ libBTstack_SOURCES =    \
 			  
 BTdaemon_SOURCES =      \
     daemon.c            \
+    btstack_uart_posix.c \
     hci_transport_h4_posix.c  \
     $(libBTstack_SOURCES) \
     btstack_memory.c    \
