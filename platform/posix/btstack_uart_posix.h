@@ -58,11 +58,19 @@
 int btstack_uart_posix_open(const char * device_name, int flowcontrol, uint32_t baudrate);
 
 /**
- * @brief Set baudrate 
+ * @brief Set Baudrate 
  * @param fd
  * @param baudrate
  * @returns 0 if successful
  */
 int btstack_uart_posix_set_baudrate(int fd, uint32_t baudrate);
+
+/**
+ * @brief Set Parity
+ * @param fd
+ * @param parity
+ * @returns 0 if successful
+ */
+int btstack_uart_posix_set_parity(int fd, int parity);
 
 #endif

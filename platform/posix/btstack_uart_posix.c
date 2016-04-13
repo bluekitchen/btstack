@@ -58,13 +58,13 @@ int btstack_uart_posix_open(const char * device_name, int flowcontrol, uint32_t 
     int flags = O_RDWR | O_NOCTTY | O_NONBLOCK;
     int fd = open(device_name, flags);
     if (fd == -1)  {
-        perror("init_serialport: Unable to open port ");
+        perror("posix_open: Unable to open port ");
         perror(device_name);
         return -1;
     }
     
     if (tcgetattr(fd, &toptions) < 0) {
-        perror("init_serialport: Couldn't get term attributes");
+        perror("posix_open: Couldn't get term attributes");
         return -1;
     }
     
@@ -73,6 +73,10 @@ int btstack_uart_posix_open(const char * device_name, int flowcontrol, uint32_t 
     // 8N1
     toptions.c_cflag &= ~CSTOPB;
     toptions.c_cflag |= CS8;
+
+	// 8E1
+ 	// toptions.c_cflag |= PARENB; // enable even parity
+ 	//
 
     if (flowcontrol) {
         // with flow control
@@ -90,7 +94,7 @@ int btstack_uart_posix_open(const char * device_name, int flowcontrol, uint32_t 
     toptions.c_cc[VTIME] = 0;
     
     if(tcsetattr(fd, TCSANOW, &toptions) < 0) {
-        perror("init_serialport: Couldn't set term attributes");
+        perror("posix_open: Couldn't set term attributes");
         return -1;
     }
     
@@ -108,7 +112,7 @@ int btstack_uart_posix_set_baudrate(int fd, uint32_t baudrate){
     struct termios toptions;
 
     if (tcgetattr(fd, &toptions) < 0) {
-        perror("init_serialport: Couldn't get term attributes");
+        perror("posix_open: Couldn't get term attributes");
         return -1;
     }
     
@@ -153,9 +157,27 @@ int btstack_uart_posix_set_baudrate(int fd, uint32_t baudrate){
     cfsetispeed(&toptions, brate);
 
     if( tcsetattr(fd, TCSANOW, &toptions) < 0) {
-        perror("init_serialport: Couldn't set term attributes");
+        perror("posix_set_baudrate: Couldn't set term attributes");
         return -1;
     }
 
+    return 0;
+}
+
+int btstack_uart_posix_set_parity(int fd, int parity){
+    struct termios toptions;
+    if (tcgetattr(fd, &toptions) < 0) {
+        perror("posix_set_parity: Couldn't get term attributes");
+        return -1;
+    }
+    if (parity){
+		toptions.c_cflag |= PARENB; // enable even parity
+    } else {
+		toptions.c_cflag &= ~PARENB; // enable even parity
+    }
+    if(tcsetattr(fd, TCSANOW, &toptions) < 0) {
+        perror("posix_set_parity: Couldn't set term attributes");
+        return -1;
+    }
     return 0;
 }

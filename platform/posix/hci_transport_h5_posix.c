@@ -344,6 +344,15 @@ static void hci_transport_h5_process_frame(uint16_t frame_size){
     log_info_hexdump(slip_header, 4);
     log_info_hexdump(slip_payload, frame_size_without_header);
 
+    // CSR 8811 does not seem to auto-detect H5 mode and sends data with even parity.
+    // if this byte sequence is detected, just enable even parity
+    const uint8_t sync_response_bcsp[] = {0x01, 0x7a, 0x06, 0x10};
+    if (memcmp(sync_response_bcsp, slip_header, 4) == 0){
+        log_info("h5: detected BSCP SYNC sent with Even Parity -> discard frame and enable Even Parity");
+        btstack_uart_posix_set_parity(hci_transport_h5_data_source.fd, 1);
+        return;
+    }
+
     // validate header checksum
     uint8_t header_checksum = slip_header[0] + slip_header[1] + slip_header[2] + slip_header[3];
     if (header_checksum != 0xff){
