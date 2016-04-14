@@ -873,7 +873,6 @@ static void hci_initialization_timeout_handler(btstack_timer_source_t * ds){
                 hci_stack->hci_transport->reset_link();
             }
             // NOTE: explicit fallthrough to HCI_INIT_W4_CUSTOM_INIT_CSR_WARM_BOOT
-
         case HCI_INIT_W4_CUSTOM_INIT_CSR_WARM_BOOT:
             log_info("Resend HCI Reset - CSR Warm Boot");
             hci_stack->substate = HCI_INIT_SEND_RESET_CSR_WARM_BOOT;
@@ -902,7 +901,7 @@ static void hci_initializing_next_state(void){
 
 // assumption: hci_can_send_command_packet_now() == true
 static void hci_initializing_run(void){
-    log_info("hci_initializing_run: substate %u", hci_stack->substate);
+    log_info("hci_initializing_run: substate %u, can send %u", hci_stack->substate, hci_can_send_command_packet_now());
     switch (hci_stack->substate){
         case HCI_INIT_SEND_RESET:
             hci_state_reset();
@@ -1011,7 +1010,12 @@ static void hci_initializing_run(void){
             // otherwise continue
             hci_stack->substate = HCI_INIT_W4_READ_LOCAL_SUPPORTED_COMMANDS;
             hci_send_cmd(&hci_read_local_supported_commands);
-            break;
+            break;            
+        case HCI_INIT_READ_LOCAL_SUPPORTED_COMMANDS:
+            log_info("Resend hci_read_local_supported_commands after CSR Warm Boot double reset");
+            hci_stack->substate = HCI_INIT_W4_READ_LOCAL_SUPPORTED_COMMANDS;
+            hci_send_cmd(&hci_read_local_supported_commands);
+            break;       
         case HCI_INIT_SET_BD_ADDR:
             log_info("Set Public BD ADDR to %s", bd_addr_to_str(hci_stack->custom_bd_addr));
             hci_stack->chipset->set_bd_addr_command(hci_stack->custom_bd_addr, hci_stack->hci_packet_buffer);
@@ -1116,7 +1120,7 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
             command_completed = 1;
             log_info("Command complete for expected opcode %04x at substate %u", opcode, hci_stack->substate);
         } else {
-            log_info("Command complete for opcode %04x, expected %04x", opcode, hci_stack->last_cmd_opcode);
+            log_info("Command complete for different opcode %04x, expected %04x, at substate %u", opcode, hci_stack->last_cmd_opcode, hci_stack->substate);
         }
     }
 
@@ -1213,7 +1217,7 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
 
     switch(hci_stack->substate){
         case HCI_INIT_SEND_RESET:
-            // on CSR with H5/BCSP, resend triggers resend of HCI Reset and leads to substate == HCI_INIT_SEND_RESET
+            // on CSR with BCSP/H5, resend triggers resend of HCI Reset and leads to substate == HCI_INIT_SEND_RESET
             // fix: just correct substate and behave as command below
             hci_stack->substate = HCI_INIT_W4_SEND_RESET;
             btstack_run_loop_remove_timer(&hci_stack->timeout);
