@@ -68,6 +68,70 @@ typedef enum {
     LINK_ACTIVE
 } hci_transport_link_state_t;
 
+typedef enum {
+    HCI_TRANSPORT_LINK_SEND_SYNC            = 1 << 0,
+    HCI_TRANSPORT_LINK_SEND_SYNC_RESPONSE   = 1 << 1,
+    HCI_TRANSPORT_LINK_SEND_CONFIG          = 1 << 2,
+    HCI_TRANSPORT_LINK_SEND_CONFIG_RESPONSE = 1 << 3,
+    HCI_TRANSPORT_LINK_SEND_WOKEN           = 1 << 4,
+    HCI_TRANSPORT_LINK_SEND_WAKEUP          = 1 << 5,
+    HCI_TRANSPORT_LINK_SEND_QUEUED_PACKET   = 1 << 6,
+    HCI_TRANSPORT_LINK_SEND_ACK_PACKET      = 1 << 7,
+} hci_transport_link_actions_t;
+
+typedef struct {
+    /**
+     * init transport
+     * @param transport_config
+     */
+    int (*init)(const hci_transport_config_uart_t * config);
+
+    /**
+     * open transport connection
+     */
+    int (*open)(void);
+
+    /**
+     * close transport connection
+     */
+    int (*close)(void);
+
+    /**
+     * set callback for block received
+     */
+    void (*set_block_received)(void (*block_handler)(void));
+
+    /**
+     * set callback for sent
+     */
+    void (*set_block_sent)(void (*block_handler)(void));
+
+    /**
+     * set baudrate
+     */
+    int (*set_baudrate)(uint32_t baudrate);
+
+    /**
+     * set parity
+     */
+    int  (*set_parity)(int parity);
+
+    /**
+     * receive block
+     */
+    void (*receive_block)(uint8_t *buffer, uint16_t len);
+
+    /**
+     * send block
+     */
+    void (*send_block)(const uint8_t *buffer, uint16_t length);
+
+    // void hal_uart_dma_set_sleep(uint8_t sleep);
+
+    // void hal_uart_dma_set_csr_irq_handler( void (*csr_irq_handler)(void));
+
+} btstack_uart_block_t;
+
 // Configuration Field. No packet buffers -> sliding window = 1, no OOF flow control, no data integrity check
 #define LINK_CONFIG_SLIDING_WINDOW_SIZE 1
 #define LINK_CONFIG_OOF_FLOW_CONTROL 0
@@ -86,17 +150,6 @@ typedef enum {
 #define LINK_CONTROL_PACKET_TYPE 0x0f
 
 // ---
-typedef enum {
-    HCI_TRANSPORT_LINK_SEND_SYNC            = 1 << 0,
-    HCI_TRANSPORT_LINK_SEND_SYNC_RESPONSE   = 1 << 1,
-    HCI_TRANSPORT_LINK_SEND_CONFIG          = 1 << 2,
-    HCI_TRANSPORT_LINK_SEND_CONFIG_RESPONSE = 1 << 3,
-    HCI_TRANSPORT_LINK_SEND_WOKEN           = 1 << 4,
-    HCI_TRANSPORT_LINK_SEND_WAKEUP          = 1 << 5,
-    HCI_TRANSPORT_LINK_SEND_QUEUED_PACKET   = 1 << 6,
-    HCI_TRANSPORT_LINK_SEND_ACK_PACKET      = 1 << 7,
-} hci_transport_link_actions_t;
-
 static const uint8_t link_control_sync[] =   { 0x01, 0x7e};
 static const uint8_t link_control_sync_response[] = { 0x02, 0x7d};
 static const uint8_t link_control_config[] = { 0x03, 0xfc, LINK_CONFIG_FIELD};
@@ -111,10 +164,6 @@ static uint8_t   hci_packet_with_pre_buffer[HCI_INCOMING_PRE_BUFFER_SIZE + 6 + H
 
 // Non-optimized outgoing buffer (EOF, 4 bytes header, payload, EOF)
 static uint8_t slip_outgoing_buffer[2 + 2 * (HCI_PACKET_BUFFER_SIZE + 4)];
-
-// async write
-static int             write_bytes_len;
-static const uint8_t * write_bytes_data;
 
 // H5 Link State
 static hci_transport_link_state_t link_state;
@@ -132,9 +181,6 @@ static uint8_t * hci_packet;
 // device
 static hci_transport_config_uart_t * hci_transport_config_uart;
 
-// data source for device
-static btstack_data_source_t         hci_transport_h5_data_source;
-
 // hci_transport_t instance
 static hci_transport_t *             hci_transport_h5;
 
@@ -143,31 +189,36 @@ static  void (*packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t si
 
 static int hci_transport_link_actions;
 
-// Prototypes
-static int  hci_transport_link_have_outgoing_packet(void);
-static void hci_transport_h5_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type);
-static void btstack_uart_posix_process_write(btstack_data_source_t *ds);
+static int uart_write_active;
 
+// Prototypes
+static void btstack_uart_posix_process_write(btstack_data_source_t *ds);
+static void hci_transport_h5_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type);
+static void hci_transport_h5_process_frame(uint16_t frame_size);
+static int  hci_transport_link_have_outgoing_packet(void);
 static void hci_transport_link_send_queued_packet(void);
 static void hci_transport_link_set_timer(uint16_t timeout_ms);
 static void hci_transport_link_timeout_handler(btstack_timer_source_t * timer);
-
+static void hci_transport_link_run(void);
+static void hci_transport_slip_init(void);
 // -----------------------------
 // POSIX specific portion of HCI Transport H5 POSIX - lower layer for send/receive of data
 // -----------------------------
 
-static int btstack_uart_posix_can_send_now(void){
-    return write_bytes_len == 0;
-}
+static const hci_transport_config_uart_t * uart_config;
+static btstack_data_source_t               transport_data_source;
 
-static void btstack_uart_posix_write_async(btstack_data_source_t *ds, const uint8_t * data, uint16_t size){
-    // setup async write
-    write_bytes_data = data;
-    write_bytes_len  = size;
+// block write
+static int             write_bytes_len;
+static const uint8_t * write_bytes_data;
 
-    // go
-    btstack_uart_posix_process_write(ds);
-}
+// block read
+static uint16_t  read_bytes_len;
+static uint8_t * read_bytes_data;
+
+// callbacks
+static void (*block_sent)(void);
+static void (*block_received)(void);
 
 static void btstack_uart_posix_process_write(btstack_data_source_t *ds) {
     
@@ -196,7 +247,140 @@ static void btstack_uart_posix_process_write(btstack_data_source_t *ds) {
     }
 
     btstack_run_loop_disable_data_source_callbacks(ds, DATA_SOURCE_CALLBACK_WRITE);
+
+    // notify done
+    if (block_sent){
+        block_sent();
+    }
 }
+
+static void btstack_uart_posix_process_read(btstack_data_source_t *ds) {
+
+    if (read_bytes_len == 0) {
+        log_info("btstack_uart_posix_process_read but no read requested");
+        btstack_run_loop_disable_data_source_callbacks(ds, DATA_SOURCE_CALLBACK_READ);
+    }
+
+    uint32_t start = btstack_run_loop_get_time_ms();
+    
+    // read up to bytes_to_read data in
+    ssize_t bytes_read = read(ds->fd, read_bytes_data, read_bytes_len);
+    // log_info("btstack_uart_posix_process_read need %u bytes, got %d", read_bytes_len, (int) bytes_read);
+    uint32_t end = btstack_run_loop_get_time_ms();
+    if (end - start > 10){
+        log_info("h4_process: read took %u ms", end - start);
+    }
+    if (bytes_read < 0) return;
+    
+    read_bytes_len   -= bytes_read;
+    read_bytes_data  += bytes_read;
+    if (read_bytes_len > 0) return;
+    
+    btstack_run_loop_disable_data_source_callbacks(ds, DATA_SOURCE_CALLBACK_READ);
+
+    if (block_received){
+        block_received();
+    }
+}
+
+static void hci_transport_h5_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type) {
+    if (ds->fd < 0) return;
+    switch (callback_type){
+        case DATA_SOURCE_CALLBACK_READ:
+            btstack_uart_posix_process_read(ds);
+            break;
+        case DATA_SOURCE_CALLBACK_WRITE:
+            btstack_uart_posix_process_write(ds);
+            break;
+        default:
+            break;
+    }
+}
+
+static int btstack_uart_posix_init(const hci_transport_config_uart_t * config){
+    uart_config = config;
+    return 0;
+}
+
+static int btstack_uart_posix_open_new(void){
+
+    int fd = btstack_uart_posix_open(uart_config->device_name, uart_config->flowcontrol, uart_config->baudrate_init);
+    if (fd < 0){
+        return fd;
+    }
+    
+    // set up data_source
+    btstack_run_loop_set_data_source_fd(&transport_data_source, fd);
+    btstack_run_loop_set_data_source_handler(&transport_data_source, &hci_transport_h5_process);
+    btstack_run_loop_add_data_source(&transport_data_source);
+
+    return 0;
+} 
+
+static int btstack_uart_posix_close_new(void){
+
+    // first remove run loop handler
+    btstack_run_loop_remove_data_source(&transport_data_source);
+    
+    // then close device 
+    close(transport_data_source.fd);
+    transport_data_source.fd = -1;
+    return 0;
+}
+
+static void btstack_uart_posix_set_block_received( void (*block_handler)(void)){
+    block_received = block_handler;
+}
+
+static void btstack_uart_posix_set_block_sent( void (*block_handler)(void)){
+    block_sent = block_handler;
+}
+
+static int  btstack_uart_posix_set_baudrate_new(uint32_t baudrate){
+    return btstack_uart_posix_set_baudrate(transport_data_source.fd, baudrate);
+}
+
+static int  btstack_uart_posix_set_parity_new(int parity){
+    return btstack_uart_posix_set_parity(transport_data_source.fd, parity);
+}
+
+static void btstack_uart_posix_send_block(const uint8_t *data, uint16_t size){
+    // setup async write
+    write_bytes_data = data;
+    write_bytes_len  = size;
+
+    // go
+    // btstack_uart_posix_process_write(&transport_data_source);
+    btstack_run_loop_enable_data_source_callbacks(&transport_data_source, DATA_SOURCE_CALLBACK_WRITE);
+}
+
+static void btstack_uart_posix_receive_block(uint8_t *buffer, uint16_t len){
+    read_bytes_data = buffer;
+    read_bytes_len = len;
+    btstack_run_loop_enable_data_source_callbacks(&transport_data_source, DATA_SOURCE_CALLBACK_READ);
+
+    // go
+    // btstack_uart_posix_process_read(&transport_data_source);
+}
+
+// static void btstack_uart_posix_set_sleep(uint8_t sleep){
+// }
+// static void btstack_uart_posix_set_csr_irq_handler( void (*csr_irq_handler)(void)){
+// }
+
+static const btstack_uart_block_t btstack_uart_posix = {
+    /* int  (*init)(hci_transport_config_uart_t * config); */         &btstack_uart_posix_init,
+    /* int  (*open)(void); */                                         &btstack_uart_posix_open_new,
+    /* int  (*close)(void); */                                        &btstack_uart_posix_close_new,
+    /* void (*set_block_received)(void (*handler)(void)); */          &btstack_uart_posix_set_block_received,
+    /* void (*set_block_sent)(void (*handler)(void)); */              &btstack_uart_posix_set_block_sent,
+    /* int  (*set_baudrate)(uint32_t baudrate); */                    &btstack_uart_posix_set_baudrate_new,
+    /* int  (*set_parity)(int parity); */                             &btstack_uart_posix_set_parity_new,
+    /* void (*receive_block)(uint8_t *buffer, uint16_t len); */       &btstack_uart_posix_receive_block,
+    /* void (*send_block)(const uint8_t *buffer, uint16_t length); */ &btstack_uart_posix_send_block    
+};
+
+const btstack_uart_block_t * btstack_uart = &btstack_uart_posix;
 
 // -----------------------------
 
@@ -227,7 +411,8 @@ static void hci_transport_slip_send_frame(const uint8_t * header, const uint8_t 
     // Start of Frame
     slip_outgoing_buffer[pos++] = BTSTACK_SLIP_SOF;
 
-    btstack_uart_posix_write_async(&hci_transport_h5_data_source, slip_outgoing_buffer, pos);
+    uart_write_active = 1;
+    btstack_uart->send_block(slip_outgoing_buffer, pos);
 }
 
 // SLIP Incoming
@@ -312,7 +497,7 @@ static void hci_transport_link_send_ack_packet(void){
 
 static void hci_transport_link_run(void){
     // exit if outgoing active
-    if (!btstack_uart_posix_can_send_now()) return;
+    if (uart_write_active) return;
 
     // process queued requests
     if (hci_transport_link_actions & HCI_TRANSPORT_LINK_SEND_SYNC){
@@ -449,7 +634,7 @@ static void hci_transport_h5_process_frame(uint16_t frame_size){
     const uint8_t sync_response_bcsp[] = {0x01, 0x7a, 0x06, 0x10};
     if (memcmp(sync_response_bcsp, slip_header, 4) == 0){
         log_info("h5: detected BSCP SYNC sent with Even Parity -> discard frame and enable Even Parity");
-        btstack_uart_posix_set_parity(hci_transport_h5_data_source.fd, 1);
+        btstack_uart->set_parity(1);
         return;
     }
 
@@ -596,40 +781,30 @@ static void hci_transport_link_update_resend_timeout(uint32_t baudrate){
     link_resend_timeout_ms = hci_transport_link_calc_resend_timeout(baudrate);
 }
 
-
-static void hci_transport_h5_process_read(btstack_data_source_t *ds) {
-    // process data byte by byte
-    uint8_t data;
-    while (1) {
-        int bytes_read = read(hci_transport_h5_data_source.fd, &data, 1);
-        if (bytes_read < 1) break;
-        // log_info("slip: process 0x%02x", data);
-        btstack_slip_decoder_process(data);
-        uint16_t frame_size = btstack_slip_decoder_frame_size();
-        if (frame_size) {
-            hci_transport_h5_process_frame(frame_size);
-            hci_transport_slip_init();
-        }
-    };
-}
-
-
-static void hci_transport_h5_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type) {
-    if (hci_transport_h5_data_source.fd < 0) return;
-    switch (callback_type){
-        case DATA_SOURCE_CALLBACK_READ:
-            hci_transport_h5_process_read(ds);
-            break;
-        case DATA_SOURCE_CALLBACK_WRITE:
-            btstack_uart_posix_process_write(ds);
-            hci_transport_link_run();
-            break;
-        default:
-            break;
-    }
-}
-
 /// H5 Interface
+
+static uint8_t hci_transport_link_read_byte;
+
+static void hci_transport_h5_read_next_byte(void){
+    log_info("hci_transport_h5_read_next_byte");
+    btstack_uart->receive_block(&hci_transport_link_read_byte, 1);    
+}
+
+static void hci_transport_h5_block_received(){
+    // log_info("slip: process 0x%02x", hci_transport_link_read_byte);
+    btstack_slip_decoder_process(hci_transport_link_read_byte);
+    uint16_t frame_size = btstack_slip_decoder_frame_size();
+    if (frame_size) {
+        hci_transport_h5_process_frame(frame_size);
+        hci_transport_slip_init();
+    }
+    hci_transport_h5_read_next_byte();
+}
+
+static void hci_transport_h5_block_sent(void){
+    uart_write_active = 0;
+    hci_transport_link_run();
+}
 
 static void hci_transport_h5_posix_init(const void * transport_config){
     // check for hci_transport_config_uart_t
@@ -641,11 +816,26 @@ static void hci_transport_h5_posix_init(const void * transport_config){
         log_error("hci_transport_h5_posix: config not of type != HCI_TRANSPORT_CONFIG_UART!");
         return;
     }
+
+    btstack_uart->init((hci_transport_config_uart_t*) transport_config);
+
     hci_transport_config_uart = (hci_transport_config_uart_t*) transport_config;
+#if 0
     hci_transport_h5_data_source.fd = -1;
+#endif
+
+    btstack_uart->set_block_received(&hci_transport_h5_block_received);
+    btstack_uart->set_block_sent(&hci_transport_h5_block_sent);
 }
 
 static int hci_transport_h5_posix_open(void){
+
+    int res = btstack_uart->open();
+    if (res){
+        return res;
+    }        
+
+#if 0
 
     int fd = btstack_uart_posix_open(hci_transport_config_uart->device_name, hci_transport_config_uart->flowcontrol, hci_transport_config_uart->baudrate_init);
     if (fd < 0){
@@ -657,6 +847,7 @@ static int hci_transport_h5_posix_open(void){
     btstack_run_loop_set_data_source_handler(&hci_transport_h5_data_source, &hci_transport_h5_process);
     btstack_run_loop_enable_data_source_callbacks(&hci_transport_h5_data_source, DATA_SOURCE_CALLBACK_READ);
     btstack_run_loop_add_data_source(&hci_transport_h5_data_source);
+#endif 
     
     // setup resend timeout
     hci_transport_link_update_resend_timeout(hci_transport_config_uart->baudrate_init);
@@ -667,16 +858,24 @@ static int hci_transport_h5_posix_open(void){
     // init link management - already starts syncing
     hci_transport_link_init();
 
+    // start receiving
+    hci_transport_h5_read_next_byte();
+
     return 0;
 }
 
 static int hci_transport_h5_posix_close(void){
+
+    btstack_uart->close();
+
+#if 0
     // first remove run loop handler
     btstack_run_loop_remove_data_source(&hci_transport_h5_data_source);
     
     // then close device 
     close(hci_transport_h5_data_source.fd);
     hci_transport_h5_data_source.fd = -1;
+#endif
     return 0;
 }
 
@@ -711,12 +910,16 @@ static int hci_transport_h5_posix_send_packet(uint8_t packet_type, uint8_t *pack
 }
 
 static int hci_transport_h5_posix_set_baudrate(uint32_t baudrate){
+
     log_info("hci_transport_h5_posix_set_baudrate %u", baudrate);
+    int res = btstack_uart->set_baudrate(baudrate);
+
+#if 0
     int fd = hci_transport_h5_data_source.fd;
-
     int res = btstack_uart_posix_set_baudrate(fd, baudrate);
-    if (res) return res;
+#endif
 
+    if (res) return res;
     hci_transport_link_update_resend_timeout(baudrate);
     return 0;
 }
