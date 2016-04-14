@@ -54,7 +54,7 @@
 #include "btstack_debug.h"
 #include "hci_transport.h"
 #include "btstack_uart_posix.h"
-
+#include "btstack_uart_block.h"
 
 #ifdef HAVE_EHCILL
 #error "HCI Transport H5 POSIX does not support eHCILL. Please either use HAVE_EHCILL or H5 Transport"
@@ -78,59 +78,6 @@ typedef enum {
     HCI_TRANSPORT_LINK_SEND_QUEUED_PACKET   = 1 << 6,
     HCI_TRANSPORT_LINK_SEND_ACK_PACKET      = 1 << 7,
 } hci_transport_link_actions_t;
-
-typedef struct {
-    /**
-     * init transport
-     * @param transport_config
-     */
-    int (*init)(const hci_transport_config_uart_t * config);
-
-    /**
-     * open transport connection
-     */
-    int (*open)(void);
-
-    /**
-     * close transport connection
-     */
-    int (*close)(void);
-
-    /**
-     * set callback for block received
-     */
-    void (*set_block_received)(void (*block_handler)(void));
-
-    /**
-     * set callback for sent
-     */
-    void (*set_block_sent)(void (*block_handler)(void));
-
-    /**
-     * set baudrate
-     */
-    int (*set_baudrate)(uint32_t baudrate);
-
-    /**
-     * set parity
-     */
-    int  (*set_parity)(int parity);
-
-    /**
-     * receive block
-     */
-    void (*receive_block)(uint8_t *buffer, uint16_t len);
-
-    /**
-     * send block
-     */
-    void (*send_block)(const uint8_t *buffer, uint16_t length);
-
-    // void hal_uart_dma_set_sleep(uint8_t sleep);
-
-    // void hal_uart_dma_set_csr_irq_handler( void (*csr_irq_handler)(void));
-
-} btstack_uart_block_t;
 
 // Configuration Field. No packet buffers -> sliding window = 1, no OOF flow control, no data integrity check
 #define LINK_CONFIG_SLIDING_WINDOW_SIZE 1
