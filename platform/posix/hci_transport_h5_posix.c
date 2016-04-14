@@ -127,11 +127,11 @@ static  void (*packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t si
 
 
 // Prototypes
+static int  hci_transport_h5_outgoing_packet(void);
 static void hci_transport_h5_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type);
+static void hci_transport_link_send_queued_packet(void);
 static void hci_transport_link_set_timer(uint16_t timeout_ms);
 static void hci_transport_link_timeout_handler(btstack_timer_source_t * timer);
-static int  hci_transport_h5_outgoing_packet(void);
-static void hci_transport_h5_send_queued_packet(void);
 
 // Generic helper
 static void hci_transport_h5_send_really(const uint8_t * data, int size){
@@ -241,11 +241,81 @@ static void hci_transport_link_send_wakeup(void){
     hci_transport_link_send_control(link_control_wakeup, sizeof(link_control_wakeup));
 }
 
+static void hci_transport_link_send_queued_packet(void){
+    log_info("hci_transport_link_send_queued_packet: seq %u, ack %u, size %u", link_seq_nr, link_ack_nr, hci_packet_size);
+    log_info_hexdump(hci_packet, hci_packet_size);
+
+    uint8_t header[4];
+    hci_transport_link_calc_header(header, link_seq_nr, link_ack_nr, 0, 1, hci_packet_type, hci_packet_size);
+    hci_transport_slip_send_frame(header, hci_packet, hci_packet_size);
+}
+
 static void hci_transport_link_send_ack_packet(void){
     log_info("link: send ack %u", link_ack_nr);
     uint8_t header[4];
     hci_transport_link_calc_header(header, 0, link_ack_nr, 0, 0, LINK_ACKNOWLEDGEMENT_TYPE, 0);
     hci_transport_slip_send_frame(header, NULL, 0);
+}
+
+// ---
+typedef enum {
+    HCI_TRANSPORT_LINK_SEND_SYNC            = 1 << 0,
+    HCI_TRANSPORT_LINK_SEND_SYNC_RESPONSE   = 1 << 1,
+    HCI_TRANSPORT_LINK_SEND_CONFIG          = 1 << 2,
+    HCI_TRANSPORT_LINK_SEND_CONFIG_RESPONSE = 1 << 3,
+    HCI_TRANSPORT_LINK_SEND_WOKEN           = 1 << 4,
+    HCI_TRANSPORT_LINK_SEND_WAKEUP          = 1 << 5,
+    HCI_TRANSPORT_LINK_SEND_QUEUED_PACKET   = 1 << 6,
+    HCI_TRANSPORT_LINK_SEND_ACK_PACKET      = 1 << 7,
+} hci_transport_link_actions_t;
+
+static int hci_transport_link_actions;
+
+static void hci_transport_link_run(void){
+    // exit if outgoing active
+    // process queued requests
+    if (hci_transport_link_actions & HCI_TRANSPORT_LINK_SEND_SYNC){
+        hci_transport_link_actions &= ~HCI_TRANSPORT_LINK_SEND_SYNC;
+        hci_transport_link_send_sync();
+        return;
+    }
+    if (hci_transport_link_actions & HCI_TRANSPORT_LINK_SEND_SYNC_RESPONSE){
+        hci_transport_link_actions &= ~HCI_TRANSPORT_LINK_SEND_SYNC_RESPONSE;
+        hci_transport_link_send_sync_response();
+        return;
+    }
+    if (hci_transport_link_actions & HCI_TRANSPORT_LINK_SEND_CONFIG){
+        hci_transport_link_actions &= ~HCI_TRANSPORT_LINK_SEND_CONFIG;
+        hci_transport_link_send_config();
+        return;
+    }
+    if (hci_transport_link_actions & HCI_TRANSPORT_LINK_SEND_CONFIG_RESPONSE){
+        hci_transport_link_actions &= ~HCI_TRANSPORT_LINK_SEND_CONFIG_RESPONSE;
+        hci_transport_link_send_config_response();
+        return;
+    }
+    if (hci_transport_link_actions & HCI_TRANSPORT_LINK_SEND_WOKEN){
+        hci_transport_link_actions &= ~HCI_TRANSPORT_LINK_SEND_WOKEN;
+        hci_transport_link_send_woken();
+        return;
+    }
+    if (hci_transport_link_actions & HCI_TRANSPORT_LINK_SEND_WAKEUP){
+        hci_transport_link_actions &= ~HCI_TRANSPORT_LINK_SEND_WAKEUP;
+        hci_transport_link_send_wakeup();
+        return;
+    }
+    if (hci_transport_link_actions & HCI_TRANSPORT_LINK_SEND_QUEUED_PACKET){
+        hci_transport_link_actions &= ~HCI_TRANSPORT_LINK_SEND_QUEUED_PACKET;
+        // packet already contains ack, no need to send addtitional one
+        hci_transport_link_actions &= ~HCI_TRANSPORT_LINK_SEND_ACK_PACKET;
+        hci_transport_link_send_queued_packet();
+        return;
+    }
+    if (hci_transport_link_actions & HCI_TRANSPORT_LINK_SEND_ACK_PACKET){
+        hci_transport_link_actions &= ~HCI_TRANSPORT_LINK_SEND_ACK_PACKET;
+        hci_transport_link_send_ack_packet();
+        return;
+    }
 }
 
 static void hci_transport_link_set_timer(uint16_t timeout_ms){
@@ -257,11 +327,11 @@ static void hci_transport_link_set_timer(uint16_t timeout_ms){
 static void hci_transport_link_timeout_handler(btstack_timer_source_t * timer){
     switch (link_state){
         case LINK_UNINITIALIZED:
-            hci_transport_link_send_sync();
+            hci_transport_link_actions |= HCI_TRANSPORT_LINK_SEND_SYNC;
             hci_transport_link_set_timer(LINK_PERIOD_MS);
             break;            
         case LINK_INITIALIZED:
-            hci_transport_link_send_config();
+            hci_transport_link_actions |= HCI_TRANSPORT_LINK_SEND_CONFIG;
             hci_transport_link_set_timer(LINK_PERIOD_MS);
             break;
         case LINK_ACTIVE:
@@ -270,17 +340,19 @@ static void hci_transport_link_timeout_handler(btstack_timer_source_t * timer){
                 return;
             }
             if (link_peer_asleep){
-                hci_transport_link_send_wakeup();
+                hci_transport_link_actions |= HCI_TRANSPORT_LINK_SEND_WAKEUP;
                 hci_transport_link_set_timer(LINK_WAKEUP_MS);
                 return;
             }
             // resend packet
-            hci_transport_h5_send_queued_packet();
+            hci_transport_link_actions |= HCI_TRANSPORT_LINK_SEND_QUEUED_PACKET;
             hci_transport_link_set_timer(link_resend_timeout_ms);
             break;
         default:
             break;
     }
+
+    hci_transport_link_run();
 }
 
 static void hci_transport_link_init(void){
@@ -288,8 +360,9 @@ static void hci_transport_link_init(void){
     link_peer_asleep = 0;
  
     // get started
-    hci_transport_link_send_sync();
+    hci_transport_link_actions |= HCI_TRANSPORT_LINK_SEND_SYNC;
     hci_transport_link_set_timer(LINK_PERIOD_MS);
+    hci_transport_link_run();
 }
 
 static int hci_transport_h5_inc_seq_nr(int seq_nr){
@@ -309,15 +382,6 @@ static void hci_transport_h5_queue_packet(uint8_t packet_type, uint8_t *packet, 
     hci_packet = packet;
     hci_packet_type = packet_type;
     hci_packet_size = size;
-}
-
-static void hci_transport_h5_send_queued_packet(void){
-    log_info("hci_transport_h5_send_queued_packet: seq %u, ack %u, size %u", link_seq_nr, link_ack_nr, hci_packet_size);
-    log_info_hexdump(hci_packet, hci_packet_size);
-
-    uint8_t header[4];
-    hci_transport_link_calc_header(header, link_seq_nr, link_ack_nr, 0, 1, hci_packet_type, hci_packet_size);
-    hci_transport_slip_send_frame(header, hci_packet, hci_packet_size);
 }
 
 static int hci_transport_h5_can_send_packet_now(uint8_t packet_type){
@@ -375,7 +439,7 @@ static void hci_transport_h5_process_frame(uint16_t frame_size){
             if (link_packet_type != LINK_CONTROL_PACKET_TYPE) break;
             if (memcmp(slip_payload, link_control_sync, sizeof(link_control_sync)) == 0){
                 log_info("link: received sync");
-                hci_transport_link_send_sync_response();
+                hci_transport_link_actions |= HCI_TRANSPORT_LINK_SEND_SYNC_RESPONSE;
             }
             if (memcmp(slip_payload, link_control_sync_response, sizeof(link_control_sync_response)) == 0){
                 log_info("link: received sync response");
@@ -383,7 +447,7 @@ static void hci_transport_h5_process_frame(uint16_t frame_size){
                 btstack_run_loop_remove_timer(&link_timer);
                 log_info("link initialized");
                 //
-                hci_transport_link_send_config();
+                hci_transport_link_actions |= HCI_TRANSPORT_LINK_SEND_CONFIG;
                 hci_transport_link_set_timer(LINK_PERIOD_MS);
             }
             break;
@@ -391,11 +455,11 @@ static void hci_transport_h5_process_frame(uint16_t frame_size){
             if (link_packet_type != LINK_CONTROL_PACKET_TYPE) break;
             if (memcmp(slip_payload, link_control_sync, sizeof(link_control_sync)) == 0){
                 log_info("link: received sync");
-                hci_transport_link_send_sync_response();
+                hci_transport_link_actions |= HCI_TRANSPORT_LINK_SEND_SYNC_RESPONSE;
             }
             if (memcmp(slip_payload, link_control_config, sizeof(link_control_config)) == 0){
                 log_info("link: received config");
-                hci_transport_link_send_config_response();
+                hci_transport_link_actions |= HCI_TRANSPORT_LINK_SEND_CONFIG_RESPONSE;
             }
             if (memcmp(slip_payload, link_control_config_response, link_control_config_response_prefix_len) == 0){
                 log_info("link: received config response");
@@ -416,12 +480,12 @@ static void hci_transport_h5_process_frame(uint16_t frame_size){
             if (reliable_packet){
                 if (seq_nr != link_ack_nr){
                     log_info("expected seq nr %u, but received %u", link_ack_nr, seq_nr);
-                    hci_transport_link_send_ack_packet();
-                    return;
+                    hci_transport_link_actions |= HCI_TRANSPORT_LINK_SEND_ACK_PACKET;
+                    break;
                 }
                 // ack packet right away
                 link_ack_nr = hci_transport_h5_inc_seq_nr(link_ack_nr);
-                hci_transport_link_send_ack_packet();
+                hci_transport_link_actions |= HCI_TRANSPORT_LINK_SEND_ACK_PACKET;
             }
           
             // Process ACKs in reliable packet and explicit ack packets
@@ -443,7 +507,7 @@ static void hci_transport_h5_process_frame(uint16_t frame_size){
                 case LINK_CONTROL_PACKET_TYPE:
                     if (memcmp(slip_payload, link_control_config, sizeof(link_control_config)) == 0){
                         log_info("link: received config");
-                        hci_transport_link_send_config_response();
+                        hci_transport_link_actions |= HCI_TRANSPORT_LINK_SEND_CONFIG_RESPONSE;
                         break;
                     }
                     if (memcmp(slip_payload, link_control_sync, sizeof(link_control_sync)) == 0){
@@ -459,7 +523,7 @@ static void hci_transport_h5_process_frame(uint16_t frame_size){
                     if (memcmp(slip_payload, link_control_wakeup, sizeof(link_control_wakeup)) == 0){
                         log_info("link: received wakupe message -> send woken");
                         link_peer_asleep = 0;
-                        hci_transport_link_send_woken();
+                        hci_transport_link_actions |= HCI_TRANSPORT_LINK_SEND_WOKEN;
                         break;
                     }
                     if (memcmp(slip_payload, link_control_woken, sizeof(link_control_woken)) == 0){
@@ -481,6 +545,7 @@ static void hci_transport_h5_process_frame(uint16_t frame_size){
             break;
     }
 
+    hci_transport_link_run();
 }
 
 static int hci_transport_h5_send_packet(uint8_t packet_type, uint8_t *packet, int size){
@@ -492,18 +557,15 @@ static int hci_transport_h5_send_packet(uint8_t packet_type, uint8_t *packet, in
     // store request
     hci_transport_h5_queue_packet(packet_type, packet, size);
 
-    // check peer sleep mode
+    // send wakeup first
     if (link_peer_asleep){
-        hci_transport_link_send_wakeup();
+        hci_transport_link_actions |= HCI_TRANSPORT_LINK_SEND_WAKEUP;
         hci_transport_link_set_timer(LINK_WAKEUP_MS);
-        return 0;        
+    } else {
+        hci_transport_link_actions |= HCI_TRANSPORT_LINK_SEND_QUEUED_PACKET;
+        hci_transport_link_set_timer(link_resend_timeout_ms);
     }
-
-    // otherwise, send packet right away
-    hci_transport_h5_send_queued_packet();
-
-    // set timer for retransmit
-    hci_transport_link_set_timer(link_resend_timeout_ms);
+    hci_transport_link_run();
     return 0;
 }
 
