@@ -599,9 +599,7 @@ static int hci_transport_h5_close(void){
     return 0;
 }
 
-static void hci_transport_h5_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type) {
-    if (hci_transport_h5_data_source.fd < 0) return;
-
+static void hci_transport_h5_process_read(btstack_data_source_t *ds) {
     // process data byte by byte
     uint8_t data;
     while (1) {
@@ -615,6 +613,23 @@ static void hci_transport_h5_process(btstack_data_source_t *ds, btstack_data_sou
             hci_transport_slip_init();
         }
     };
+}
+
+static void hci_transport_h5_process_write(btstack_data_source_t *ds) {
+}
+
+static void hci_transport_h5_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type) {
+    if (hci_transport_h5_data_source.fd < 0) return;
+    switch (callback_type){
+        case DATA_SOURCE_CALLBACK_READ:
+            hci_transport_h5_process_read(ds);
+            break;
+        case DATA_SOURCE_CALLBACK_WRITE:
+            hci_transport_h5_process_write(ds);
+            break;
+        default:
+            break;
+    }
 }
 
 // get h5 singleton
