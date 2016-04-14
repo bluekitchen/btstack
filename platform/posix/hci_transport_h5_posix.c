@@ -100,6 +100,10 @@ static uint8_t   hci_packet_with_pre_buffer[HCI_INCOMING_PRE_BUFFER_SIZE + 6 + H
 // Non-optimized outgoing buffer (EOF, 4 bytes header, payload, EOF)
 static uint8_t slip_outgoing_buffer[2 + 2 * (HCI_PACKET_BUFFER_SIZE + 4)];
 
+// async write
+static int             write_bytes_len;
+static const uint8_t * write_bytes_data;
+
 // H5 Link State
 static hci_transport_link_state_t link_state;
 static btstack_timer_source_t link_timer;
@@ -129,24 +133,11 @@ static  void (*packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t si
 // Prototypes
 static int  hci_transport_h5_outgoing_packet(void);
 static void hci_transport_h5_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type);
+static void hci_transport_h5_process_write(btstack_data_source_t *ds);
+
 static void hci_transport_link_send_queued_packet(void);
 static void hci_transport_link_set_timer(uint16_t timeout_ms);
 static void hci_transport_link_timeout_handler(btstack_timer_source_t * timer);
-
-// Generic helper
-static void hci_transport_h5_send_really(const uint8_t * data, int size){
-    // log_info("hci_transport_h5_send_really (%u bytes)", size);
-    // log_info_hexdump(data, size);
-    while (size > 0) {
-        int bytes_written = write(hci_transport_h5_data_source.fd, data, size);
-        if (bytes_written < 0) {
-            usleep(5000);
-            continue;
-        }
-        data += bytes_written;
-        size -= bytes_written;
-    }
-}
 
 // SLIP Outgoing
 
@@ -174,7 +165,12 @@ static void hci_transport_slip_send_frame(const uint8_t * header, const uint8_t 
     // Start of Frame
     slip_outgoing_buffer[pos++] = BTSTACK_SLIP_SOF;
 
-    hci_transport_h5_send_really(slip_outgoing_buffer, pos);
+    // setup async write
+    write_bytes_data = slip_outgoing_buffer;
+    write_bytes_len  = pos;
+
+    // go
+    hci_transport_h5_process_write(&hci_transport_h5_data_source);
 }
 
 // SLIP Incoming
@@ -273,6 +269,8 @@ static int hci_transport_link_actions;
 
 static void hci_transport_link_run(void){
     // exit if outgoing active
+    if (write_bytes_len) return;
+
     // process queued requests
     if (hci_transport_link_actions & HCI_TRANSPORT_LINK_SEND_SYNC){
         hci_transport_link_actions &= ~HCI_TRANSPORT_LINK_SEND_SYNC;
@@ -678,6 +676,31 @@ static void hci_transport_h5_process_read(btstack_data_source_t *ds) {
 }
 
 static void hci_transport_h5_process_write(btstack_data_source_t *ds) {
+    if (write_bytes_len == 0) return;
+
+    uint32_t start = btstack_run_loop_get_time_ms();
+
+    // write up to write_bytes_len to fd
+    int bytes_written = write(hci_transport_h5_data_source.fd, write_bytes_data, write_bytes_len);
+    if (bytes_written < 0) {
+        btstack_run_loop_enable_data_source_callbacks(ds, DATA_SOURCE_CALLBACK_WRITE);
+        return;
+    }
+
+    uint32_t end = btstack_run_loop_get_time_ms();
+    if (end - start > 10){
+        log_info("h4_process: write took %u ms", end - start);
+    }
+
+    write_bytes_data += bytes_written;
+    write_bytes_len  -= bytes_written;
+
+    if (write_bytes_len){
+        btstack_run_loop_enable_data_source_callbacks(ds, DATA_SOURCE_CALLBACK_WRITE);
+        return;
+    }
+
+    btstack_run_loop_disable_data_source_callbacks(ds, DATA_SOURCE_CALLBACK_WRITE);
 }
 
 static void hci_transport_h5_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type) {
