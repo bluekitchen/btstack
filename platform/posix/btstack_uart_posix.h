@@ -73,4 +73,12 @@ int btstack_uart_posix_set_baudrate(int fd, uint32_t baudrate);
  */
 int btstack_uart_posix_set_parity(int fd, int parity);
 
+/**
+ * @brief Blocking write
+ * @param fd
+ * @param data
+ * @param size
+ */
+ void btstack_uart_posix_write(int fd, const uint8_t * data, int size);
+
 #endif

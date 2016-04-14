@@ -48,7 +48,7 @@
 
 #include <termios.h>  /* POSIX terminal control definitions */
 #include <fcntl.h>    /* File control definitions */
-// #include <unistd.h>   /* UNIX standard function definitions */
+#include <unistd.h>   /* UNIX standard function definitions */
 // #include <stdio.h>
 // #include <string.h>
 
@@ -181,3 +181,19 @@ int btstack_uart_posix_set_parity(int fd, int parity){
     }
     return 0;
 }
+
+// Generic helper
+void btstack_uart_posix_write(int fd, const uint8_t * data, int size){
+    // log_info("btstack_uart_posix_write (%u bytes)", size);
+    // log_info_hexdump(data, size);
+    while (size > 0) {
+        int bytes_written = write(fd, data, size);
+        if (bytes_written < 0) {
+            usleep(5000);
+            continue;
+        }
+        data += bytes_written;
+        size -= bytes_written;
+    }
+}
+
