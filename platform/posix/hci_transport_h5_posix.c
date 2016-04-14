@@ -85,6 +85,18 @@ typedef enum {
 #define LINK_ACKNOWLEDGEMENT_TYPE 0x00
 #define LINK_CONTROL_PACKET_TYPE 0x0f
 
+// ---
+typedef enum {
+    HCI_TRANSPORT_LINK_SEND_SYNC            = 1 << 0,
+    HCI_TRANSPORT_LINK_SEND_SYNC_RESPONSE   = 1 << 1,
+    HCI_TRANSPORT_LINK_SEND_CONFIG          = 1 << 2,
+    HCI_TRANSPORT_LINK_SEND_CONFIG_RESPONSE = 1 << 3,
+    HCI_TRANSPORT_LINK_SEND_WOKEN           = 1 << 4,
+    HCI_TRANSPORT_LINK_SEND_WAKEUP          = 1 << 5,
+    HCI_TRANSPORT_LINK_SEND_QUEUED_PACKET   = 1 << 6,
+    HCI_TRANSPORT_LINK_SEND_ACK_PACKET      = 1 << 7,
+} hci_transport_link_actions_t;
+
 static const uint8_t link_control_sync[] =   { 0x01, 0x7e};
 static const uint8_t link_control_sync_response[] = { 0x02, 0x7d};
 static const uint8_t link_control_config[] = { 0x03, 0xfc, LINK_CONFIG_FIELD};
@@ -129,22 +141,62 @@ static hci_transport_t *             hci_transport_h5;
 // hci packet handler
 static  void (*packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size);
 
+static int hci_transport_link_actions;
 
 // Prototypes
 static int  hci_transport_link_have_outgoing_packet(void);
 static void hci_transport_h5_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type);
-static void hci_transport_h5_process_write(btstack_data_source_t *ds);
+static void btstack_uart_posix_process_write(btstack_data_source_t *ds);
 
 static void hci_transport_link_send_queued_packet(void);
 static void hci_transport_link_set_timer(uint16_t timeout_ms);
 static void hci_transport_link_timeout_handler(btstack_timer_source_t * timer);
 
-
 // -----------------------------
-// POSIX specific portion of HCI Transport H5 POSIX
+// POSIX specific portion of HCI Transport H5 POSIX - lower layer for send/receive of data
 // -----------------------------
 
+static int btstack_uart_posix_can_send_now(void){
+    return write_bytes_len == 0;
+}
 
+static void btstack_uart_posix_write_async(btstack_data_source_t *ds, const uint8_t * data, uint16_t size){
+    // setup async write
+    write_bytes_data = data;
+    write_bytes_len  = size;
+
+    // go
+    btstack_uart_posix_process_write(ds);
+}
+
+static void btstack_uart_posix_process_write(btstack_data_source_t *ds) {
+    
+    if (write_bytes_len == 0) return;
+
+    uint32_t start = btstack_run_loop_get_time_ms();
+
+    // write up to write_bytes_len to fd
+    int bytes_written = write(ds->fd, write_bytes_data, write_bytes_len);
+    if (bytes_written < 0) {
+        btstack_run_loop_enable_data_source_callbacks(ds, DATA_SOURCE_CALLBACK_WRITE);
+        return;
+    }
+
+    uint32_t end = btstack_run_loop_get_time_ms();
+    if (end - start > 10){
+        log_info("h4_process: write took %u ms", end - start);
+    }
+
+    write_bytes_data += bytes_written;
+    write_bytes_len  -= bytes_written;
+
+    if (write_bytes_len){
+        btstack_run_loop_enable_data_source_callbacks(ds, DATA_SOURCE_CALLBACK_WRITE);
+        return;
+    }
+
+    btstack_run_loop_disable_data_source_callbacks(ds, DATA_SOURCE_CALLBACK_WRITE);
+}
 
 // -----------------------------
 
@@ -175,12 +227,7 @@ static void hci_transport_slip_send_frame(const uint8_t * header, const uint8_t 
     // Start of Frame
     slip_outgoing_buffer[pos++] = BTSTACK_SLIP_SOF;
 
-    // setup async write
-    write_bytes_data = slip_outgoing_buffer;
-    write_bytes_len  = pos;
-
-    // go
-    hci_transport_h5_process_write(&hci_transport_h5_data_source);
+    btstack_uart_posix_write_async(&hci_transport_h5_data_source, slip_outgoing_buffer, pos);
 }
 
 // SLIP Incoming
@@ -263,23 +310,9 @@ static void hci_transport_link_send_ack_packet(void){
     hci_transport_slip_send_frame(header, NULL, 0);
 }
 
-// ---
-typedef enum {
-    HCI_TRANSPORT_LINK_SEND_SYNC            = 1 << 0,
-    HCI_TRANSPORT_LINK_SEND_SYNC_RESPONSE   = 1 << 1,
-    HCI_TRANSPORT_LINK_SEND_CONFIG          = 1 << 2,
-    HCI_TRANSPORT_LINK_SEND_CONFIG_RESPONSE = 1 << 3,
-    HCI_TRANSPORT_LINK_SEND_WOKEN           = 1 << 4,
-    HCI_TRANSPORT_LINK_SEND_WAKEUP          = 1 << 5,
-    HCI_TRANSPORT_LINK_SEND_QUEUED_PACKET   = 1 << 6,
-    HCI_TRANSPORT_LINK_SEND_ACK_PACKET      = 1 << 7,
-} hci_transport_link_actions_t;
-
-static int hci_transport_link_actions;
-
 static void hci_transport_link_run(void){
     // exit if outgoing active
-    if (write_bytes_len) return;
+    if (!btstack_uart_posix_can_send_now()) return;
 
     // process queued requests
     if (hci_transport_link_actions & HCI_TRANSPORT_LINK_SEND_SYNC){
@@ -391,7 +424,6 @@ static void hci_transport_h5_queue_packet(uint8_t packet_type, uint8_t *packet, 
     hci_packet_type = packet_type;
     hci_packet_size = size;
 }
-
 
 static void hci_transport_h5_process_frame(uint16_t frame_size){
 
@@ -581,33 +613,6 @@ static void hci_transport_h5_process_read(btstack_data_source_t *ds) {
     };
 }
 
-static void hci_transport_h5_process_write(btstack_data_source_t *ds) {
-    if (write_bytes_len == 0) return;
-
-    uint32_t start = btstack_run_loop_get_time_ms();
-
-    // write up to write_bytes_len to fd
-    int bytes_written = write(hci_transport_h5_data_source.fd, write_bytes_data, write_bytes_len);
-    if (bytes_written < 0) {
-        btstack_run_loop_enable_data_source_callbacks(ds, DATA_SOURCE_CALLBACK_WRITE);
-        return;
-    }
-
-    uint32_t end = btstack_run_loop_get_time_ms();
-    if (end - start > 10){
-        log_info("h4_process: write took %u ms", end - start);
-    }
-
-    write_bytes_data += bytes_written;
-    write_bytes_len  -= bytes_written;
-
-    if (write_bytes_len){
-        btstack_run_loop_enable_data_source_callbacks(ds, DATA_SOURCE_CALLBACK_WRITE);
-        return;
-    }
-
-    btstack_run_loop_disable_data_source_callbacks(ds, DATA_SOURCE_CALLBACK_WRITE);
-}
 
 static void hci_transport_h5_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type) {
     if (hci_transport_h5_data_source.fd < 0) return;
@@ -616,7 +621,8 @@ static void hci_transport_h5_process(btstack_data_source_t *ds, btstack_data_sou
             hci_transport_h5_process_read(ds);
             break;
         case DATA_SOURCE_CALLBACK_WRITE:
-            hci_transport_h5_process_write(ds);
+            btstack_uart_posix_process_write(ds);
+            hci_transport_link_run();
             break;
         default:
             break;
