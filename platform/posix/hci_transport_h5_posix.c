@@ -131,13 +131,23 @@ static  void (*packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t si
 
 
 // Prototypes
-static int  hci_transport_h5_outgoing_packet(void);
+static int  hci_transport_link_have_outgoing_packet(void);
 static void hci_transport_h5_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type);
 static void hci_transport_h5_process_write(btstack_data_source_t *ds);
 
 static void hci_transport_link_send_queued_packet(void);
 static void hci_transport_link_set_timer(uint16_t timeout_ms);
 static void hci_transport_link_timeout_handler(btstack_timer_source_t * timer);
+
+
+// -----------------------------
+// POSIX specific portion of HCI Transport H5 POSIX
+// -----------------------------
+
+
+
+// -----------------------------
+
 
 // SLIP Outgoing
 
@@ -333,7 +343,7 @@ static void hci_transport_link_timeout_handler(btstack_timer_source_t * timer){
             hci_transport_link_set_timer(LINK_PERIOD_MS);
             break;
         case LINK_ACTIVE:
-            if (!hci_transport_h5_outgoing_packet()){
+            if (!hci_transport_link_have_outgoing_packet()){
                 log_info("h5 timeout while active, but no outgoing packet");
                 return;
             }
@@ -363,15 +373,15 @@ static void hci_transport_link_init(void){
     hci_transport_link_run();
 }
 
-static int hci_transport_h5_inc_seq_nr(int seq_nr){
+static int hci_transport_link_inc_seq_nr(int seq_nr){
     return (seq_nr + 1) & 0x07;    
 }
 
-static int hci_transport_h5_outgoing_packet(void){
+static int hci_transport_link_have_outgoing_packet(void){
     return hci_packet != 0;
 }
 
-static void hci_transport_h5_clear_queue(void){
+static void hci_transport_link_clear_queue(void){
     btstack_run_loop_remove_timer(&link_timer);
     hci_packet = NULL;
 }
@@ -382,10 +392,6 @@ static void hci_transport_h5_queue_packet(uint8_t packet_type, uint8_t *packet, 
     hci_packet_size = size;
 }
 
-static int hci_transport_h5_can_send_packet_now(uint8_t packet_type){
-    if (hci_transport_h5_outgoing_packet()) return 0;
-    return link_state == LINK_ACTIVE;
-}
 
 static void hci_transport_h5_process_frame(uint16_t frame_size){
 
@@ -482,18 +488,18 @@ static void hci_transport_h5_process_frame(uint16_t frame_size){
                     break;
                 }
                 // ack packet right away
-                link_ack_nr = hci_transport_h5_inc_seq_nr(link_ack_nr);
+                link_ack_nr = hci_transport_link_inc_seq_nr(link_ack_nr);
                 hci_transport_link_actions |= HCI_TRANSPORT_LINK_SEND_ACK_PACKET;
             }
           
             // Process ACKs in reliable packet and explicit ack packets
             if (reliable_packet || link_packet_type == LINK_ACKNOWLEDGEMENT_TYPE){
                 // our packet is good if the remote expects our seq nr + 1
-                int next_seq_nr = hci_transport_h5_inc_seq_nr(link_seq_nr);
-                if (hci_transport_h5_outgoing_packet() && next_seq_nr == ack_nr){
+                int next_seq_nr = hci_transport_link_inc_seq_nr(link_seq_nr);
+                if (hci_transport_link_have_outgoing_packet() && next_seq_nr == ack_nr){
                     log_info("h5: outoing packet with seq %u ack'ed", link_seq_nr);
                     link_seq_nr = next_seq_nr;
-                    hci_transport_h5_clear_queue();
+                    hci_transport_link_clear_queue();
 
                     // notify upper stack that it can send again
                     uint8_t event[] = { HCI_EVENT_TRANSPORT_PACKET_SENT, 0};
@@ -546,118 +552,18 @@ static void hci_transport_h5_process_frame(uint16_t frame_size){
     hci_transport_link_run();
 }
 
-static int hci_transport_h5_send_packet(uint8_t packet_type, uint8_t *packet, int size){
-    if (!hci_transport_h5_can_send_packet_now(packet_type)){
-        log_error("hci_transport_h5_send_packet called but in state %u", link_state);
-        return -1;
-    }
-
-    // store request
-    hci_transport_h5_queue_packet(packet_type, packet, size);
-
-    // send wakeup first
-    if (link_peer_asleep){
-        hci_transport_link_actions |= HCI_TRANSPORT_LINK_SEND_WAKEUP;
-        hci_transport_link_set_timer(LINK_WAKEUP_MS);
-    } else {
-        hci_transport_link_actions |= HCI_TRANSPORT_LINK_SEND_QUEUED_PACKET;
-        hci_transport_link_set_timer(link_resend_timeout_ms);
-    }
-    hci_transport_link_run();
-    return 0;
-}
-
-/// H5 Interface
-
-static void hci_transport_h5_register_packet_handler(void (*handler)(uint8_t packet_type, uint8_t *packet, uint16_t size)){
-    packet_handler = handler;
-}
-
 // recommendet time until resend: 3 * time of largest packet
-static uint16_t hci_transport_h5_calc_resend_timeout(uint32_t baudrate){
+static uint16_t hci_transport_link_calc_resend_timeout(uint32_t baudrate){
     uint32_t max_packet_size_in_bit = (HCI_PACKET_BUFFER_SIZE + 6) << 3;
     uint32_t t_max_x3_ms = max_packet_size_in_bit * 3000 / baudrate;
     log_info("resend timeout for %u baud: %u ms", baudrate, t_max_x3_ms);
     return t_max_x3_ms;
 }
 
-static void hci_transport_h5_init(const void * transport_config){
-    // check for hci_transport_config_uart_t
-    if (!transport_config) {
-        log_error("hci_transport_h5_posix: no config!");
-        return;
-    }
-    if (((hci_transport_config_t*)transport_config)->type != HCI_TRANSPORT_CONFIG_UART) {
-        log_error("hci_transport_h5_posix: config not of type != HCI_TRANSPORT_CONFIG_UART!");
-        return;
-    }
-    hci_transport_config_uart = (hci_transport_config_uart_t*) transport_config;
-    hci_transport_h5_data_source.fd = -1;
-}
-
 static void hci_transport_link_update_resend_timeout(uint32_t baudrate){
-    link_resend_timeout_ms = hci_transport_h5_calc_resend_timeout(baudrate);
+    link_resend_timeout_ms = hci_transport_link_calc_resend_timeout(baudrate);
 }
 
-static int hci_transport_h5_set_baudrate(uint32_t baudrate){
-    log_info("hci_transport_h5_set_baudrate %u", baudrate);
-    int fd = hci_transport_h5_data_source.fd;
-
-    int res = btstack_uart_posix_set_baudrate(fd, baudrate);
-    if (res) return res;
-
-    hci_transport_link_update_resend_timeout(baudrate);
-    return 0;
-}
-
-static int hci_transport_h5_open(void){
-
-    int fd = btstack_uart_posix_open(hci_transport_config_uart->device_name, hci_transport_config_uart->flowcontrol, hci_transport_config_uart->baudrate_init);
-    if (fd < 0){
-        return fd;
-    }
-    
-    // set up data_source
-    btstack_run_loop_set_data_source_fd(&hci_transport_h5_data_source, fd);
-    btstack_run_loop_set_data_source_handler(&hci_transport_h5_data_source, &hci_transport_h5_process);
-    btstack_run_loop_enable_data_source_callbacks(&hci_transport_h5_data_source, DATA_SOURCE_CALLBACK_READ);
-    btstack_run_loop_add_data_source(&hci_transport_h5_data_source);
-    
-    // setup resend timeout
-    hci_transport_link_update_resend_timeout(hci_transport_config_uart->baudrate_init);
-
-    // init slip parser state machine
-    hci_transport_slip_init();
-
-    // init link management - already starts syncing
-    hci_transport_link_init();
-
-    return 0;
-}
-
-void hci_transport_h5_reset_link(void){
-
-    log_info("hci_transport_h5_reset_link");
-
-    // clear outgoing queue
-    hci_transport_h5_clear_queue();
-
-    // init slip parser state machine
-    hci_transport_slip_init();
-    
-    // init link management - already starts syncing
-    hci_transport_link_init();
-}
-
-static int hci_transport_h5_close(void){
-    // first remove run loop handler
-    btstack_run_loop_remove_data_source(&hci_transport_h5_data_source);
-    
-    // then close device 
-    close(hci_transport_h5_data_source.fd);
-    hci_transport_h5_data_source.fd = -1;
-    return 0;
-}
 
 static void hci_transport_h5_process_read(btstack_data_source_t *ds) {
     // process data byte by byte
@@ -717,20 +623,126 @@ static void hci_transport_h5_process(btstack_data_source_t *ds, btstack_data_sou
     }
 }
 
+/// H5 Interface
+
+static void hci_transport_h5_posix_init(const void * transport_config){
+    // check for hci_transport_config_uart_t
+    if (!transport_config) {
+        log_error("hci_transport_h5_posix: no config!");
+        return;
+    }
+    if (((hci_transport_config_t*)transport_config)->type != HCI_TRANSPORT_CONFIG_UART) {
+        log_error("hci_transport_h5_posix: config not of type != HCI_TRANSPORT_CONFIG_UART!");
+        return;
+    }
+    hci_transport_config_uart = (hci_transport_config_uart_t*) transport_config;
+    hci_transport_h5_data_source.fd = -1;
+}
+
+static int hci_transport_h5_posix_open(void){
+
+    int fd = btstack_uart_posix_open(hci_transport_config_uart->device_name, hci_transport_config_uart->flowcontrol, hci_transport_config_uart->baudrate_init);
+    if (fd < 0){
+        return fd;
+    }
+    
+    // set up data_source
+    btstack_run_loop_set_data_source_fd(&hci_transport_h5_data_source, fd);
+    btstack_run_loop_set_data_source_handler(&hci_transport_h5_data_source, &hci_transport_h5_process);
+    btstack_run_loop_enable_data_source_callbacks(&hci_transport_h5_data_source, DATA_SOURCE_CALLBACK_READ);
+    btstack_run_loop_add_data_source(&hci_transport_h5_data_source);
+    
+    // setup resend timeout
+    hci_transport_link_update_resend_timeout(hci_transport_config_uart->baudrate_init);
+
+    // init slip parser state machine
+    hci_transport_slip_init();
+
+    // init link management - already starts syncing
+    hci_transport_link_init();
+
+    return 0;
+}
+
+static int hci_transport_h5_posix_close(void){
+    // first remove run loop handler
+    btstack_run_loop_remove_data_source(&hci_transport_h5_data_source);
+    
+    // then close device 
+    close(hci_transport_h5_data_source.fd);
+    hci_transport_h5_data_source.fd = -1;
+    return 0;
+}
+
+static void hci_transport_h5_posix_register_packet_handler(void (*handler)(uint8_t packet_type, uint8_t *packet, uint16_t size)){
+    packet_handler = handler;
+}
+
+static int hci_transport_h5_posix_can_send_packet_now(uint8_t packet_type){
+    if (hci_transport_link_have_outgoing_packet()) return 0;
+    return link_state == LINK_ACTIVE;
+}
+
+static int hci_transport_h5_posix_send_packet(uint8_t packet_type, uint8_t *packet, int size){
+    if (!hci_transport_h5_posix_can_send_packet_now(packet_type)){
+        log_error("hci_transport_h5_posix_send_packet called but in state %u", link_state);
+        return -1;
+    }
+
+    // store request
+    hci_transport_h5_queue_packet(packet_type, packet, size);
+
+    // send wakeup first
+    if (link_peer_asleep){
+        hci_transport_link_actions |= HCI_TRANSPORT_LINK_SEND_WAKEUP;
+        hci_transport_link_set_timer(LINK_WAKEUP_MS);
+    } else {
+        hci_transport_link_actions |= HCI_TRANSPORT_LINK_SEND_QUEUED_PACKET;
+        hci_transport_link_set_timer(link_resend_timeout_ms);
+    }
+    hci_transport_link_run();
+    return 0;
+}
+
+static int hci_transport_h5_posix_set_baudrate(uint32_t baudrate){
+    log_info("hci_transport_h5_posix_set_baudrate %u", baudrate);
+    int fd = hci_transport_h5_data_source.fd;
+
+    int res = btstack_uart_posix_set_baudrate(fd, baudrate);
+    if (res) return res;
+
+    hci_transport_link_update_resend_timeout(baudrate);
+    return 0;
+}
+
+static void hci_transport_h5_posix_reset_link(void){
+
+    log_info("hci_transport_h5_posix_reset_link");
+
+    // clear outgoing queue
+    hci_transport_link_clear_queue();
+
+    // init slip parser state machine
+    hci_transport_slip_init();
+    
+    // init link management - already starts syncing
+    hci_transport_link_init();
+}
+
 // get h5 singleton
 const hci_transport_t * hci_transport_h5_instance(void) {
     if (hci_transport_h5 == NULL) {
         hci_transport_h5 = (hci_transport_t*) malloc(sizeof(hci_transport_t));
         memset(hci_transport_h5, 0, sizeof(hci_transport_t));
         hci_transport_h5->name                          = "H5_POSIX";
-        hci_transport_h5->init                          = &hci_transport_h5_init;
-        hci_transport_h5->open                          = &hci_transport_h5_open;
-        hci_transport_h5->close                         = &hci_transport_h5_close;
-        hci_transport_h5->register_packet_handler       = &hci_transport_h5_register_packet_handler;
-        hci_transport_h5->can_send_packet_now           = &hci_transport_h5_can_send_packet_now;
-        hci_transport_h5->send_packet                   = &hci_transport_h5_send_packet;
-        hci_transport_h5->set_baudrate                  = &hci_transport_h5_set_baudrate;
-        hci_transport_h5->reset_link                    = &hci_transport_h5_reset_link;
+        hci_transport_h5->init                          = &hci_transport_h5_posix_init;
+        hci_transport_h5->open                          = &hci_transport_h5_posix_open;
+        hci_transport_h5->close                         = &hci_transport_h5_posix_close;
+        hci_transport_h5->register_packet_handler       = &hci_transport_h5_posix_register_packet_handler;
+        hci_transport_h5->can_send_packet_now           = &hci_transport_h5_posix_can_send_packet_now;
+        hci_transport_h5->send_packet                   = &hci_transport_h5_posix_send_packet;
+        hci_transport_h5->set_baudrate                  = &hci_transport_h5_posix_set_baudrate;
+        hci_transport_h5->reset_link                    = &hci_transport_h5_posix_reset_link;
     }
     return (const hci_transport_t *) hci_transport_h5;
 }
