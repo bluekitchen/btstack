@@ -36,10 +36,9 @@
  */
 
 /*
- *  btstack_uart_posix.h
+ *  btstack_uart_block.h
  *
- *  Common code to access serial port via POSIX interface
- *  Used by hci_transport_h4_posix.c and hci_transport_h5.posix
+ *  Common code to access serial port via asynchronous block read/write commands
  *
  */
 
@@ -100,5 +99,8 @@ typedef struct {
     // void hal_uart_dma_set_csr_irq_handler( void (*csr_irq_handler)(void));
 
 } btstack_uart_block_t;
+
+// common implementations
+const btstack_uart_block_t * btstack_uart_block_posix_instance(void);
 
 #endif

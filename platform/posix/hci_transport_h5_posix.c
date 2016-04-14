@@ -136,11 +136,11 @@ static  void (*packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t si
 
 static int hci_transport_link_actions;
 
+const btstack_uart_block_t * btstack_uart;
+
 static int uart_write_active;
 
 // Prototypes
-static void btstack_uart_posix_process_write(btstack_data_source_t *ds);
-static void hci_transport_h5_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type);
 static void hci_transport_h5_process_frame(uint16_t frame_size);
 static int  hci_transport_link_have_outgoing_packet(void);
 static void hci_transport_link_send_queued_packet(void);
@@ -148,186 +148,6 @@ static void hci_transport_link_set_timer(uint16_t timeout_ms);
 static void hci_transport_link_timeout_handler(btstack_timer_source_t * timer);
 static void hci_transport_link_run(void);
 static void hci_transport_slip_init(void);
-// -----------------------------
-// POSIX specific portion of HCI Transport H5 POSIX - lower layer for send/receive of data
-// -----------------------------
-
-static const hci_transport_config_uart_t * uart_config;
-static btstack_data_source_t               transport_data_source;
-
-// block write
-static int             write_bytes_len;
-static const uint8_t * write_bytes_data;
-
-// block read
-static uint16_t  read_bytes_len;
-static uint8_t * read_bytes_data;
-
-// callbacks
-static void (*block_sent)(void);
-static void (*block_received)(void);
-
-static void btstack_uart_posix_process_write(btstack_data_source_t *ds) {
-    
-    if (write_bytes_len == 0) return;
-
-    uint32_t start = btstack_run_loop_get_time_ms();
-
-    // write up to write_bytes_len to fd
-    int bytes_written = write(ds->fd, write_bytes_data, write_bytes_len);
-    if (bytes_written < 0) {
-        btstack_run_loop_enable_data_source_callbacks(ds, DATA_SOURCE_CALLBACK_WRITE);
-        return;
-    }
-
-    uint32_t end = btstack_run_loop_get_time_ms();
-    if (end - start > 10){
-        log_info("h4_process: write took %u ms", end - start);
-    }
-
-    write_bytes_data += bytes_written;
-    write_bytes_len  -= bytes_written;
-
-    if (write_bytes_len){
-        btstack_run_loop_enable_data_source_callbacks(ds, DATA_SOURCE_CALLBACK_WRITE);
-        return;
-    }
-
-    btstack_run_loop_disable_data_source_callbacks(ds, DATA_SOURCE_CALLBACK_WRITE);
-
-    // notify done
-    if (block_sent){
-        block_sent();
-    }
-}
-
-static void btstack_uart_posix_process_read(btstack_data_source_t *ds) {
-
-    if (read_bytes_len == 0) {
-        log_info("btstack_uart_posix_process_read but no read requested");
-        btstack_run_loop_disable_data_source_callbacks(ds, DATA_SOURCE_CALLBACK_READ);
-    }
-
-    uint32_t start = btstack_run_loop_get_time_ms();
-    
-    // read up to bytes_to_read data in
-    ssize_t bytes_read = read(ds->fd, read_bytes_data, read_bytes_len);
-    // log_info("btstack_uart_posix_process_read need %u bytes, got %d", read_bytes_len, (int) bytes_read);
-    uint32_t end = btstack_run_loop_get_time_ms();
-    if (end - start > 10){
-        log_info("h4_process: read took %u ms", end - start);
-    }
-    if (bytes_read < 0) return;
-    
-    read_bytes_len   -= bytes_read;
-    read_bytes_data  += bytes_read;
-    if (read_bytes_len > 0) return;
-    
-    btstack_run_loop_disable_data_source_callbacks(ds, DATA_SOURCE_CALLBACK_READ);
-
-    if (block_received){
-        block_received();
-    }
-}
-
-static void hci_transport_h5_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type) {
-    if (ds->fd < 0) return;
-    switch (callback_type){
-        case DATA_SOURCE_CALLBACK_READ:
-            btstack_uart_posix_process_read(ds);
-            break;
-        case DATA_SOURCE_CALLBACK_WRITE:
-            btstack_uart_posix_process_write(ds);
-            break;
-        default:
-            break;
-    }
-}
-
-static int btstack_uart_posix_init(const hci_transport_config_uart_t * config){
-    uart_config = config;
-    return 0;
-}
-
-static int btstack_uart_posix_open_new(void){
-
-    int fd = btstack_uart_posix_open(uart_config->device_name, uart_config->flowcontrol, uart_config->baudrate_init);
-    if (fd < 0){
-        return fd;
-    }
-    
-    // set up data_source
-    btstack_run_loop_set_data_source_fd(&transport_data_source, fd);
-    btstack_run_loop_set_data_source_handler(&transport_data_source, &hci_transport_h5_process);
-    btstack_run_loop_add_data_source(&transport_data_source);
-
-    return 0;
-} 
-
-static int btstack_uart_posix_close_new(void){
-
-    // first remove run loop handler
-    btstack_run_loop_remove_data_source(&transport_data_source);
-    
-    // then close device 
-    close(transport_data_source.fd);
-    transport_data_source.fd = -1;
-    return 0;
-}
-
-static void btstack_uart_posix_set_block_received( void (*block_handler)(void)){
-    block_received = block_handler;
-}
-
-static void btstack_uart_posix_set_block_sent( void (*block_handler)(void)){
-    block_sent = block_handler;
-}
-
-static int  btstack_uart_posix_set_baudrate_new(uint32_t baudrate){
-    return btstack_uart_posix_set_baudrate(transport_data_source.fd, baudrate);
-}
-
-static int  btstack_uart_posix_set_parity_new(int parity){
-    return btstack_uart_posix_set_parity(transport_data_source.fd, parity);
-}
-
-static void btstack_uart_posix_send_block(const uint8_t *data, uint16_t size){
-    // setup async write
-    write_bytes_data = data;
-    write_bytes_len  = size;
-
-    // go
-    // btstack_uart_posix_process_write(&transport_data_source);
-    btstack_run_loop_enable_data_source_callbacks(&transport_data_source, DATA_SOURCE_CALLBACK_WRITE);
-}
-
-static void btstack_uart_posix_receive_block(uint8_t *buffer, uint16_t len){
-    read_bytes_data = buffer;
-    read_bytes_len = len;
-    btstack_run_loop_enable_data_source_callbacks(&transport_data_source, DATA_SOURCE_CALLBACK_READ);
-
-    // go
-    // btstack_uart_posix_process_read(&transport_data_source);
-}
-
-// static void btstack_uart_posix_set_sleep(uint8_t sleep){
-// }
-// static void btstack_uart_posix_set_csr_irq_handler( void (*csr_irq_handler)(void)){
-// }
-
-static const btstack_uart_block_t btstack_uart_posix = {
-    /* int  (*init)(hci_transport_config_uart_t * config); */         &btstack_uart_posix_init,
-    /* int  (*open)(void); */                                         &btstack_uart_posix_open_new,
-    /* int  (*close)(void); */                                        &btstack_uart_posix_close_new,
-    /* void (*set_block_received)(void (*handler)(void)); */          &btstack_uart_posix_set_block_received,
-    /* void (*set_block_sent)(void (*handler)(void)); */              &btstack_uart_posix_set_block_sent,
-    /* int  (*set_baudrate)(uint32_t baudrate); */                    &btstack_uart_posix_set_baudrate_new,
-    /* int  (*set_parity)(int parity); */                             &btstack_uart_posix_set_parity_new,
-    /* void (*receive_block)(uint8_t *buffer, uint16_t len); */       &btstack_uart_posix_receive_block,
-    /* void (*send_block)(const uint8_t *buffer, uint16_t length); */ &btstack_uart_posix_send_block    
-};
-
-const btstack_uart_block_t * btstack_uart = &btstack_uart_posix;
 
 // -----------------------------
 
@@ -764,37 +584,24 @@ static void hci_transport_h5_posix_init(const void * transport_config){
         return;
     }
 
+    // TODO: move btstack_uart_block_t into hci_transport_config_uart
+
+    // use fixed uart block posix implementation for now
+    btstack_uart = btstack_uart_block_posix_instance();
+
     btstack_uart->init((hci_transport_config_uart_t*) transport_config);
 
     hci_transport_config_uart = (hci_transport_config_uart_t*) transport_config;
-#if 0
-    hci_transport_h5_data_source.fd = -1;
-#endif
 
     btstack_uart->set_block_received(&hci_transport_h5_block_received);
     btstack_uart->set_block_sent(&hci_transport_h5_block_sent);
 }
 
 static int hci_transport_h5_posix_open(void){
-
     int res = btstack_uart->open();
     if (res){
         return res;
     }        
-
-#if 0
-
-    int fd = btstack_uart_posix_open(hci_transport_config_uart->device_name, hci_transport_config_uart->flowcontrol, hci_transport_config_uart->baudrate_init);
-    if (fd < 0){
-        return fd;
-    }
-    
-    // set up data_source
-    btstack_run_loop_set_data_source_fd(&hci_transport_h5_data_source, fd);
-    btstack_run_loop_set_data_source_handler(&hci_transport_h5_data_source, &hci_transport_h5_process);
-    btstack_run_loop_enable_data_source_callbacks(&hci_transport_h5_data_source, DATA_SOURCE_CALLBACK_READ);
-    btstack_run_loop_add_data_source(&hci_transport_h5_data_source);
-#endif 
     
     // setup resend timeout
     hci_transport_link_update_resend_timeout(hci_transport_config_uart->baudrate_init);
@@ -812,17 +619,6 @@ static int hci_transport_h5_posix_open(void){
 }
 
 static int hci_transport_h5_posix_close(void){
-
-    btstack_uart->close();
-
-#if 0
-    // first remove run loop handler
-    btstack_run_loop_remove_data_source(&hci_transport_h5_data_source);
-    
-    // then close device 
-    close(hci_transport_h5_data_source.fd);
-    hci_transport_h5_data_source.fd = -1;
-#endif
     return 0;
 }
 
@@ -860,11 +656,6 @@ static int hci_transport_h5_posix_set_baudrate(uint32_t baudrate){
 
     log_info("hci_transport_h5_posix_set_baudrate %u", baudrate);
     int res = btstack_uart->set_baudrate(baudrate);
-
-#if 0
-    int fd = hci_transport_h5_data_source.fd;
-    int res = btstack_uart_posix_set_baudrate(fd, baudrate);
-#endif
 
     if (res) return res;
     hci_transport_link_update_resend_timeout(baudrate);
