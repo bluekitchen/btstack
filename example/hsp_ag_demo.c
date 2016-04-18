@@ -88,7 +88,7 @@ static const uint8_t sine[] = {
 /* @section Audio Transfer Setup 
  *
  * @text A pre-computed sine wave (160Hz) is used as the input audio signal. 160 Hz. 
- * To send and receive an audio signal, HAVE_SCO_OVER_HCI has to be defined. 
+ * To send and receive an audio signal, ENABLE_SCO_OVER_HCI has to be defined. 
  *
  * Tested working setups: 
  * - Ubuntu 14 64-bit, CC2564B connected via FTDI USB-2-UART adapter, 921600 baud
