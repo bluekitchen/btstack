@@ -227,7 +227,7 @@ void hsp_ag_create_sdp_record(uint8_t * service, uint32_t service_record_handle,
     }
 }
 
-static int hsp_ag_send_str_over_rfcomm(uint16_t cid, char * command){
+static int hsp_ag_send_str_over_rfcomm(const uint16_t cid, char * command){
     int err = rfcomm_send(cid, (uint8_t*) command, strlen(command));
     if (err){
         log_error("rfcomm_send_internal -> error 0X%02x", err);
