@@ -619,6 +619,7 @@ static int hci_transport_h5_posix_open(void){
 }
 
 static int hci_transport_h5_posix_close(void){
+    return btstack_uart->close();
     return 0;
 }
 
