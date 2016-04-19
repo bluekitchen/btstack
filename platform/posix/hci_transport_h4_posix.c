@@ -56,6 +56,7 @@
 #include "hci.h"
 #include "hci_transport.h"
 #include "btstack_uart_posix.h"
+#include "btstack_uart_block.h"
 
 #ifdef HAVE_EHCILL
 #error "HCI Transport H4 POSIX does not support eHCILL yet. Please remove HAVE_EHCILL from your btstack-config.h"
@@ -66,7 +67,6 @@
 #error HCI_OUTGOING_PRE_BUFFER_SIZE not defined. Please update hci.h
 #endif
 
-static void h4_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type);
 static void dummy_handler(uint8_t packet_type, uint8_t *packet, uint16_t size); 
 
 typedef enum {
@@ -77,17 +77,14 @@ typedef enum {
     H4_W4_PAYLOAD,
 } H4_STATE;
 
-typedef struct hci_transport_h4 {
-    hci_transport_t transport;
-    btstack_data_source_t *ds;
-    int uart_fd;    // different from ds->fd for HCI reader thread
-    /* power management support, e.g. used by iOS */
-    btstack_timer_source_t sleep_timer;
-} hci_transport_h4_t;
+const btstack_uart_block_t * btstack_uart;
 
+// write mutex
+static int uart_write_active;
 
 // single instance
-static hci_transport_h4_t * hci_transport_h4 = NULL;
+static hci_transport_t * hci_transport_h4 = NULL;
+
 
 static hci_transport_config_uart_t * hci_transport_config_uart = NULL;
 
@@ -98,89 +95,40 @@ static  H4_STATE h4_state;
 static int bytes_to_read;
 static int read_pos;
 
-// packet writer state
-static int             write_bytes_len;
-static const uint8_t * write_bytes_data;
-
-
+// incoming packet buffer
 static uint8_t hci_packet_with_pre_buffer[HCI_INCOMING_PRE_BUFFER_SIZE + 1 + HCI_PACKET_BUFFER_SIZE]; // packet type + max(acl header + acl payload, event header + event data)
 static uint8_t * hci_packet = &hci_packet_with_pre_buffer[HCI_INCOMING_PRE_BUFFER_SIZE];
 
-static int    h4_set_baudrate(uint32_t baudrate){
-    log_info("h4_set_baudrate %u", baudrate);
-    int fd = btstack_run_loop_get_data_source_fd(hci_transport_h4->ds);
-    return btstack_uart_posix_set_baudrate(fd, baudrate);
+static int hci_transport_h4_set_baudrate(uint32_t baudrate){
+    log_info("hci_transport_h4_set_baudrate %u", baudrate);
+    return btstack_uart->set_baudrate(baudrate);
 }
 
-static void h4_init(const void * transport_config){
-    // check for hci_transport_config_uart_t
-    if (!transport_config) {
-        log_error("hci_transport_h4_posix: no config!");
-        return;
-    }
-    if (((hci_transport_config_t*)transport_config)->type != HCI_TRANSPORT_CONFIG_UART) {
-        log_error("hci_transport_h4_posix: config not of type != HCI_TRANSPORT_CONFIG_UART!");
-        return;
-    }
-    hci_transport_config_uart = (hci_transport_config_uart_t*) transport_config;
-}
-
-static int h4_open(void){
-
-    int fd = btstack_uart_posix_open(hci_transport_config_uart->device_name, hci_transport_config_uart->flowcontrol, hci_transport_config_uart->baudrate_init);
-    if (fd < 0){
-        return fd;
-    }
-
-   // set up data_source
-    hci_transport_h4->ds = (btstack_data_source_t*) malloc(sizeof(btstack_data_source_t));
-    if (!hci_transport_h4->ds) return -1;
-    hci_transport_h4->uart_fd = fd;
-    btstack_run_loop_set_data_source_fd(hci_transport_h4->ds, fd);
-    btstack_run_loop_set_data_source_handler(hci_transport_h4->ds, &h4_process);
-    btstack_run_loop_enable_data_source_callbacks(hci_transport_h4->ds, DATA_SOURCE_CALLBACK_READ);
-    btstack_run_loop_add_data_source(hci_transport_h4->ds);
-
-    // init state machine
-    bytes_to_read = 1;
-    h4_state = H4_W4_PACKET_TYPE;
-    read_pos = 0;    
-    return 0;
-}
-
-static int h4_close(void){
-    // first remove run loop handler
-	btstack_run_loop_remove_data_source(hci_transport_h4->ds);
-    
-    // close device 
-    int fd = btstack_run_loop_get_data_source_fd(hci_transport_h4->ds);
-    close(fd);
-
-    // free struct
-    free(hci_transport_h4->ds);
-    hci_transport_h4->ds = NULL;
-    return 0;
-}
-
-static void h4_register_packet_handler(void (*handler)(uint8_t packet_type, uint8_t *packet, uint16_t size)){
-    packet_handler = handler;
-}
-
-static void h4_reset_statemachine(void){
+static void hci_transport_h4_reset_statemachine(void){
     h4_state = H4_W4_PACKET_TYPE;
     read_pos = 0;
     bytes_to_read = 1;
 }
 
-static void   h4_deliver_packet(void){
-    if (read_pos < 3) return; // sanity check
-    packet_handler(hci_packet[0], &hci_packet[1], read_pos-1);
-    h4_reset_statemachine();
+static void hci_transport_h4_trigger_next_read(void){
+    // trigger next read
+    btstack_uart->receive_block(&hci_packet[read_pos], bytes_to_read);  
 }
 
-static void h4_statemachine(void){
+static void hci_transport_h4_block_sent(void){
+    // free mutex
+    uart_write_active = 0;
+
+    // notify upper stack that it can send again
+    uint8_t event[] = { HCI_EVENT_TRANSPORT_PACKET_SENT, 0};
+    packet_handler(HCI_EVENT_PACKET, &event[0], sizeof(event));
+}
+
+static void hci_transport_h4_block_read(void){
+
+    read_pos += bytes_to_read;
+
     switch (h4_state) {
-            
         case H4_W4_PACKET_TYPE:
             switch (hci_packet[0]){
                 case HCI_EVENT_PACKET:
@@ -197,7 +145,7 @@ static void h4_statemachine(void){
                     break;
                 default:
                     log_error("h4_process: invalid packet type 0x%02x", hci_packet[0]);
-                    h4_reset_statemachine();
+                    hci_transport_h4_reset_statemachine();
                     break;
             }
             break;
@@ -212,7 +160,7 @@ static void h4_statemachine(void){
             // check ACL length
             if (HCI_ACL_HEADER_SIZE + bytes_to_read >  HCI_PACKET_BUFFER_SIZE){
                 log_error("h4_process: invalid ACL payload len %u - only space for %u", bytes_to_read, HCI_PACKET_BUFFER_SIZE - HCI_ACL_HEADER_SIZE);
-                h4_reset_statemachine();
+                hci_transport_h4_reset_statemachine();
                 break;              
             }
             h4_state = H4_W4_PAYLOAD;
@@ -224,103 +172,71 @@ static void h4_statemachine(void){
             break;
 
         case H4_W4_PAYLOAD:
-            h4_deliver_packet();
+            packet_handler(hci_packet[0], &hci_packet[1], read_pos-1);
+            hci_transport_h4_reset_statemachine();
             break;
-
         default:
             break;
     }
+    hci_transport_h4_trigger_next_read();
 }
-static void h4_process_read(btstack_data_source_t *ds){
-    if (hci_transport_h4->uart_fd == 0) return;
 
-    int read_now = bytes_to_read;
-
-    uint32_t start = btstack_run_loop_get_time_ms();
-    
-    // read up to bytes_to_read data in
-    ssize_t bytes_read = read(hci_transport_h4->uart_fd, &hci_packet[read_pos], read_now);
-    // log_info("h4_process: bytes read %u", bytes_read);
-    if (bytes_read < 0) return;
-
-    uint32_t end = btstack_run_loop_get_time_ms();
-    if (end - start > 10){
-        log_info("h4_process: read took %u ms", end - start);
+static void hci_transport_h4_init(const void * transport_config){
+    // check for hci_transport_config_uart_t
+    if (!transport_config) {
+        log_error("hci_transport_h4_posix: no config!");
+        return;
     }
-    
-    bytes_to_read -= bytes_read;
-    read_pos      += bytes_read;
-    if (bytes_to_read > 0) return;
-    
-    h4_statemachine();
-}
-
-static void h4_process_write(btstack_data_source_t * ds){
-    if (hci_transport_h4->uart_fd == 0) return;
-    if (write_bytes_len == 0) return;
-
-    uint32_t start = btstack_run_loop_get_time_ms();
-
-    // write up to write_bytes_len to fd
-    int bytes_written = write(hci_transport_h4->uart_fd, write_bytes_data, write_bytes_len);
-    if (bytes_written < 0) {
-        btstack_run_loop_enable_data_source_callbacks(ds, DATA_SOURCE_CALLBACK_WRITE);
+    if (((hci_transport_config_t*)transport_config)->type != HCI_TRANSPORT_CONFIG_UART) {
+        log_error("hci_transport_h4_posix: config not of type != HCI_TRANSPORT_CONFIG_UART!");
         return;
     }
 
-    uint32_t end = btstack_run_loop_get_time_ms();
-    if (end - start > 10){
-        log_info("h4_process: write took %u ms", end - start);
-    }
+    hci_transport_config_uart = (hci_transport_config_uart_t*) transport_config;
 
-    write_bytes_data += bytes_written;
-    write_bytes_len  -= bytes_written;
+    // TODO: move btstack_uart_block_t into hci_transport_config_uart
 
-    if (write_bytes_len){
-        btstack_run_loop_enable_data_source_callbacks(ds, DATA_SOURCE_CALLBACK_WRITE);
-        return;
-    }
-
-    btstack_run_loop_disable_data_source_callbacks(ds, DATA_SOURCE_CALLBACK_WRITE);
-
-    // notify upper stack that it can send again
-    uint8_t event[] = { HCI_EVENT_TRANSPORT_PACKET_SENT, 0};
-    packet_handler(HCI_EVENT_PACKET, &event[0], sizeof(event));
+    // use fixed uart block posix implementation for now
+    btstack_uart = btstack_uart_block_posix_instance();
+    btstack_uart->init(hci_transport_config_uart);
+    btstack_uart->set_block_received(&hci_transport_h4_block_read);
+    btstack_uart->set_block_sent(&hci_transport_h4_block_sent);
 }
 
-static void h4_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type) {
-    switch (callback_type){
-        case DATA_SOURCE_CALLBACK_READ:
-            h4_process_read(ds);
-            break;
-        case DATA_SOURCE_CALLBACK_WRITE:
-            h4_process_write(ds);
-        default:
-            break;
+static int hci_transport_h4_open(void){
+    int res = btstack_uart->open();
+    if (res){
+        return res;
     }
+    hci_transport_h4_reset_statemachine();
+    hci_transport_h4_trigger_next_read();
+    return 0;
 }
 
-static int h4_send_packet(uint8_t packet_type, uint8_t * packet, int size){
-    if (hci_transport_h4->ds == NULL) return -1;
-    if (hci_transport_h4->uart_fd == 0) return -1;
+static int hci_transport_h4_close(void){
+    return btstack_uart->close();
+}
 
+static void hci_transport_h4_register_packet_handler(void (*handler)(uint8_t packet_type, uint8_t *packet, uint16_t size)){
+    packet_handler = handler;
+}
+
+static int hci_transport_h4_can_send_now(uint8_t packet_type){
+    return uart_write_active == 0;
+}
+
+static int hci_transport_h4_send_packet(uint8_t packet_type, uint8_t * packet, int size){
     // store packet type before actual data and increase size
     size++;
     packet--;
     *packet = packet_type;
 
-    // register outgoing request
-    write_bytes_data = packet;
-    write_bytes_len = size;
+    // lock mutex
+    uart_write_active = 1;
 
-    // start sending
-    h4_process_write(hci_transport_h4->ds);
-
+    //
+    btstack_uart->send_block(packet, size);
     return 0;
-}
-
-static int h4_can_send_now(uint8_t packet_type){
-    return write_bytes_len == 0;
 }
 
 static void dummy_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
@@ -329,17 +245,16 @@ static void dummy_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
 // get h4 singleton
 const hci_transport_t * hci_transport_h4_instance(void) {
     if (hci_transport_h4 == NULL) {
-        hci_transport_h4 = (hci_transport_h4_t*)malloc( sizeof(hci_transport_h4_t));
-        memset(hci_transport_h4, 0, sizeof(hci_transport_h4_t));
-        hci_transport_h4->ds                                      = NULL;
-        hci_transport_h4->transport.name                          = "H4_POSIX";
-        hci_transport_h4->transport.init                          = h4_init;
-        hci_transport_h4->transport.open                          = h4_open;
-        hci_transport_h4->transport.close                         = h4_close;
-        hci_transport_h4->transport.register_packet_handler       = h4_register_packet_handler;
-        hci_transport_h4->transport.can_send_packet_now           = h4_can_send_now;
-        hci_transport_h4->transport.send_packet                   = h4_send_packet;
-        hci_transport_h4->transport.set_baudrate                  = h4_set_baudrate;
+        hci_transport_h4 = (hci_transport_t*)malloc( sizeof(hci_transport_t));
+        memset(hci_transport_h4, 0, sizeof(hci_transport_t));
+        hci_transport_h4->name                          = "H4_POSIX";
+        hci_transport_h4->init                          = hci_transport_h4_init;
+        hci_transport_h4->open                          = hci_transport_h4_open;
+        hci_transport_h4->close                         = hci_transport_h4_close;
+        hci_transport_h4->register_packet_handler       = hci_transport_h4_register_packet_handler;
+        hci_transport_h4->can_send_packet_now           = hci_transport_h4_can_send_now;
+        hci_transport_h4->send_packet                   = hci_transport_h4_send_packet;
+        hci_transport_h4->set_baudrate                  = hci_transport_h4_set_baudrate;
     }
-    return (const hci_transport_t *) hci_transport_h4;
+    return hci_transport_h4;
 }
