@@ -53,6 +53,50 @@ typedef struct {
     bd_addr_type_t address_type;
 } sm_lookup_entry_t;
 
+static inline uint8_t sm_pairing_packet_get_code(sm_pairing_packet_t packet){
+    return packet[0];
+}
+static inline uint8_t sm_pairing_packet_get_io_capability(sm_pairing_packet_t packet){
+    return packet[1];
+}
+static inline uint8_t sm_pairing_packet_get_oob_data_flag(sm_pairing_packet_t packet){
+    return packet[2];
+}
+static inline uint8_t sm_pairing_packet_get_auth_req(sm_pairing_packet_t packet){
+    return packet[3];
+}
+static inline uint8_t sm_pairing_packet_get_max_encryption_key_size(sm_pairing_packet_t packet){
+    return packet[4];
+}
+static inline uint8_t sm_pairing_packet_get_initiator_key_distribution(sm_pairing_packet_t packet){
+    return packet[5];
+}
+static inline uint8_t sm_pairing_packet_get_responder_key_distribution(sm_pairing_packet_t packet){
+    return packet[6];
+}
+
+static inline void sm_pairing_packet_set_code(sm_pairing_packet_t packet, uint8_t code){
+    packet[0] = code;
+}
+static inline void sm_pairing_packet_set_io_capability(sm_pairing_packet_t packet, uint8_t io_capability){
+    packet[1] = io_capability;
+}
+static inline void sm_pairing_packet_set_oob_data_flag(sm_pairing_packet_t packet, uint8_t oob_data_flag){
+    packet[2] = oob_data_flag;
+}
+static inline void sm_pairing_packet_set_auth_req(sm_pairing_packet_t packet, uint8_t auth_req){
+    packet[3] = auth_req;
+}
+static inline void sm_pairing_packet_set_max_encryption_key_size(sm_pairing_packet_t packet, uint8_t max_encryption_key_size){
+    packet[4] = max_encryption_key_size;
+}
+static inline void sm_pairing_packet_set_initiator_key_distribution(sm_pairing_packet_t packet, uint8_t initiator_key_distribution){
+    packet[5] = initiator_key_distribution;
+}
+static inline void sm_pairing_packet_set_responder_key_distribution(sm_pairing_packet_t packet, uint8_t responder_key_distribution){
+    packet[6] = responder_key_distribution;
+}
+
 /* API_START */
 
 /**
