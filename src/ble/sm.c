@@ -551,7 +551,7 @@ static void sm_setup_tk(void){
     }
 
     // Also use just works if unknown io capabilites
-    if ((sm_pairing_packet_get_io_capability(setup->sm_m_preq) > IO_CAPABILITY_KEYBOARD_DISPLAY) || (sm_pairing_packet_get_io_capability(setup->sm_s_preq) > IO_CAPABILITY_KEYBOARD_DISPLAY)){
+    if ((sm_pairing_packet_get_io_capability(setup->sm_m_preq) > IO_CAPABILITY_KEYBOARD_DISPLAY) || (sm_pairing_packet_get_io_capability(setup->sm_s_pres) > IO_CAPABILITY_KEYBOARD_DISPLAY)){
         return;
     }
 
