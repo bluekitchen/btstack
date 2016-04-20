@@ -55,7 +55,6 @@
 #include "btstack_debug.h"
 #include "hci.h"
 #include "hci_transport.h"
-#include "btstack_uart_posix.h"
 #include "btstack_uart_block.h"
 
 #ifdef HAVE_EHCILL

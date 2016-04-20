@@ -43,16 +43,16 @@
  */
 
 #include "btstack_uart_block.h"
-#include "btstack_uart_posix.h"
 #include "btstack_debug.h"
 
 #include <termios.h>  /* POSIX terminal control definitions */
 #include <fcntl.h>    /* File control definitions */
 #include <unistd.h>   /* UNIX standard function definitions */
-// #include <stdio.h>
-// #include <string.h>
 
+// uart config
 static const hci_transport_config_uart_t * uart_config;
+
+// data source for integration with BTstack Runloop
 static btstack_data_source_t               transport_data_source;
 
 // block write
@@ -66,6 +66,12 @@ static uint8_t * read_bytes_data;
 // callbacks
 static void (*block_sent)(void);
 static void (*block_received)(void);
+
+
+static int btstack_uart_posix_init(const hci_transport_config_uart_t * config){
+    uart_config = config;
+    return 0;
+}
 
 static void btstack_uart_posix_process_write(btstack_data_source_t *ds) {
     
@@ -144,18 +150,122 @@ static void hci_transport_h5_process(btstack_data_source_t *ds, btstack_data_sou
     }
 }
 
-static int btstack_uart_posix_init(const hci_transport_config_uart_t * config){
-    uart_config = config;
+static int  btstack_uart_posix_set_baudrate(uint32_t baudrate){
+
+    int fd = transport_data_source.fd;
+
+    log_info("h4_set_baudrate %u", baudrate);
+
+    struct termios toptions;
+
+    if (tcgetattr(fd, &toptions) < 0) {
+        perror("posix_open: Couldn't get term attributes");
+        return -1;
+    }
+    
+    speed_t brate = baudrate; // let you override switch below if needed
+    switch(baudrate) {
+        case 57600:  brate=B57600;  break;
+        case 115200: brate=B115200; break;
+#ifdef B230400
+        case 230400: brate=B230400; break;
+#endif
+#ifdef B460800
+        case 460800: brate=B460800; break;
+#endif
+#ifdef B921600
+        case 921600: brate=B921600; break;
+#endif
+
+// Hacks to switch to 2/3 mbps on FTDI FT232 chipsets
+// requires special config in Info.plist or Registry
+        case 2000000: 
+#if defined(HAVE_POSIX_B300_MAPPED_TO_2000000)
+            log_info("hci_transport_posix: using B300 for 2 mbps");
+            brate=B300; 
+#elif defined(HAVE_POSIX_B1200_MAPPED_TO_2000000)
+           log_info("hci_transport_posix: using B1200 for 2 mbps");
+            brate=B1200;
+#endif
+            break;
+        case 3000000:
+#if defined(HAVE_POSIX_B600_MAPPED_TO_3000000)
+            log_info("hci_transport_posix: using B600 for 3 mbps");
+            brate=B600;
+#elif defined(HAVE_POSIX_B2400_MAPPED_TO_3000000)
+            log_info("hci_transport_posix: using B2400 for 3 mbps");
+            brate=B2400;
+#endif
+            break;
+        default:
+            break;
+    }
+    cfsetospeed(&toptions, brate);
+    cfsetispeed(&toptions, brate);
+
+    if( tcsetattr(fd, TCSANOW, &toptions) < 0) {
+        perror("posix_set_baudrate: Couldn't set term attributes");
+        return -1;
+    }
+
     return 0;
 }
 
-static int btstack_uart_posix_open_new(void){
+static int btstack_uart_posix_open(void){
 
-    int fd = btstack_uart_posix_open(uart_config->device_name, uart_config->flowcontrol, uart_config->baudrate_init);
-    if (fd < 0){
-        return fd;
+    const char * device_name = uart_config->device_name;
+    const int flowcontrol    = uart_config->flowcontrol;
+    const uint32_t baudrate  = uart_config->baudrate_init;
+
+    struct termios toptions;
+    int flags = O_RDWR | O_NOCTTY | O_NONBLOCK;
+    int fd = open(device_name, flags);
+    if (fd == -1)  {
+        perror("posix_open: Unable to open port ");
+        perror(device_name);
+        return -1;
     }
     
+    if (tcgetattr(fd, &toptions) < 0) {
+        perror("posix_open: Couldn't get term attributes");
+        return -1;
+    }
+    
+    cfmakeraw(&toptions);   // make raw
+
+    // 8N1
+    toptions.c_cflag &= ~CSTOPB;
+    toptions.c_cflag |= CS8;
+
+    // 8E1
+    // toptions.c_cflag |= PARENB; // enable even parity
+    //
+
+    if (flowcontrol) {
+        // with flow control
+        toptions.c_cflag |= CRTSCTS;
+    } else {
+        // no flow control
+        toptions.c_cflag &= ~CRTSCTS;
+    }
+    
+    toptions.c_cflag |= CREAD | CLOCAL;  // turn on READ & ignore ctrl lines
+    toptions.c_iflag &= ~(IXON | IXOFF | IXANY); // turn off s/w flow ctrl
+    
+    // see: http://unixwiz.net/techtips/termios-vmin-vtime.html
+    toptions.c_cc[VMIN]  = 1;
+    toptions.c_cc[VTIME] = 0;
+    
+    if(tcsetattr(fd, TCSANOW, &toptions) < 0) {
+        perror("posix_open: Couldn't set term attributes");
+        return -1;
+    }
+    
+    // also set baudrate
+    if (btstack_uart_posix_set_baudrate(baudrate) < 0){
+        return -1;
+    }
+
     // set up data_source
     btstack_run_loop_set_data_source_fd(&transport_data_source, fd);
     btstack_run_loop_set_data_source_handler(&transport_data_source, &hci_transport_h5_process);
@@ -183,12 +293,25 @@ static void btstack_uart_posix_set_block_sent( void (*block_handler)(void)){
     block_sent = block_handler;
 }
 
-static int  btstack_uart_posix_set_baudrate_new(uint32_t baudrate){
-    return btstack_uart_posix_set_baudrate(transport_data_source.fd, baudrate);
-}
+static int btstack_uart_posix_set_parity(int parity){
 
-static int  btstack_uart_posix_set_parity_new(int parity){
-    return btstack_uart_posix_set_parity(transport_data_source.fd, parity);
+    int fd = transport_data_source.fd;
+
+    struct termios toptions;
+    if (tcgetattr(fd, &toptions) < 0) {
+        perror("posix_set_parity: Couldn't get term attributes");
+        return -1;
+    }
+    if (parity){
+        toptions.c_cflag |= PARENB; // enable even parity
+    } else {
+        toptions.c_cflag &= ~PARENB; // enable even parity
+    }
+    if(tcsetattr(fd, TCSANOW, &toptions) < 0) {
+        perror("posix_set_parity: Couldn't set term attributes");
+        return -1;
+    }
+    return 0;
 }
 
 static void btstack_uart_posix_send_block(const uint8_t *data, uint16_t size){
@@ -217,12 +340,12 @@ static void btstack_uart_posix_receive_block(uint8_t *buffer, uint16_t len){
 
 static const btstack_uart_block_t btstack_uart_posix = {
     /* int  (*init)(hci_transport_config_uart_t * config); */         &btstack_uart_posix_init,
-    /* int  (*open)(void); */                                         &btstack_uart_posix_open_new,
+    /* int  (*open)(void); */                                         &btstack_uart_posix_open,
     /* int  (*close)(void); */                                        &btstack_uart_posix_close_new,
     /* void (*set_block_received)(void (*handler)(void)); */          &btstack_uart_posix_set_block_received,
     /* void (*set_block_sent)(void (*handler)(void)); */              &btstack_uart_posix_set_block_sent,
-    /* int  (*set_baudrate)(uint32_t baudrate); */                    &btstack_uart_posix_set_baudrate_new,
-    /* int  (*set_parity)(int parity); */                             &btstack_uart_posix_set_parity_new,
+    /* int  (*set_baudrate)(uint32_t baudrate); */                    &btstack_uart_posix_set_baudrate,
+    /* int  (*set_parity)(int parity); */                             &btstack_uart_posix_set_parity,
     /* void (*receive_block)(uint8_t *buffer, uint16_t len); */       &btstack_uart_posix_receive_block,
     /* void (*send_block)(const uint8_t *buffer, uint16_t length); */ &btstack_uart_posix_send_block    
 };

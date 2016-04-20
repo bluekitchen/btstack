@@ -10,7 +10,6 @@ CORE += \
 	btstack_chipset_tc3566x.c \
 	btstack_link_key_db_fs.c \
 	btstack_run_loop_posix.c \
-	btstack_uart_posix.c \
 	btstack_uart_block_posix.c \
 	hci_transport_h4_posix.c \
 	main.c \
