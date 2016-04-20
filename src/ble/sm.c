@@ -531,7 +531,8 @@ static void sm_setup_tk(void){
     // If both devices have out of band authentication data, then the Authentication
     // Requirements Flags shall be ignored when selecting the pairing method and the
     // Out of Band pairing method shall be used.
-    if (setup->sm_m_preq.oob_data_flag && setup->sm_s_pres.oob_data_flag){
+    if (sm_pairing_packet_get_oob_data_flag(setup->sm_m_preq)
+    &&  sm_pairing_packet_get_oob_data_flag(setup->sm_s_pres)){
         log_info("SM: have OOB data");
         log_info_key("OOB", setup->sm_tk);
         setup->sm_stk_generation_method = OOB;
@@ -544,20 +545,21 @@ static void sm_setup_tk(void){
     // If both devices have not set the MITM option in the Authentication Requirements
     // Flags, then the IO capabilities shall be ignored and the Just Works association
     // model shall be used. 
-    if ( ((setup->sm_m_preq.auth_req & SM_AUTHREQ_MITM_PROTECTION) == 0x00) && ((setup->sm_s_pres.auth_req & SM_AUTHREQ_MITM_PROTECTION) == 0)){
+    if (((sm_pairing_packet_get_auth_req(setup->sm_m_preq) & SM_AUTHREQ_MITM_PROTECTION) == 0) 
+    &&  ((sm_pairing_packet_get_auth_req(setup->sm_s_pres) & SM_AUTHREQ_MITM_PROTECTION) == 0)){
         return;
     }
 
     // Also use just works if unknown io capabilites
-    if ((setup->sm_m_preq.io_capability > IO_CAPABILITY_KEYBOARD_DISPLAY) || (setup->sm_m_preq.io_capability > IO_CAPABILITY_KEYBOARD_DISPLAY)){
+    if ((sm_pairing_packet_get_io_capability(setup->sm_m_preq) > IO_CAPABILITY_KEYBOARD_DISPLAY) || (sm_pairing_packet_get_io_capability(setup->sm_m_preq) > IO_CAPABILITY_KEYBOARD_DISPLAY)){
         return;
     }
 
     // Otherwise the IO capabilities of the devices shall be used to determine the
     // pairing method as defined in Table 2.4.
-    setup->sm_stk_generation_method = stk_generation_method[setup->sm_s_pres.io_capability][setup->sm_m_preq.io_capability];
+    setup->sm_stk_generation_method = stk_generation_method[sm_pairing_packet_get_io_capability(setup->sm_s_pres)][sm_pairing_packet_get_io_capability(setup->sm_m_preq)];
     log_info("sm_setup_tk: master io cap: %u, slave io cap: %u -> method %u",
-        setup->sm_m_preq.io_capability, setup->sm_s_pres.io_capability, setup->sm_stk_generation_method);
+        sm_pairing_packet_get_io_capability(setup->sm_m_preq), sm_pairing_packet_get_io_capability(setup->sm_s_pres), setup->sm_stk_generation_method);
 }
 
 static int sm_key_distribution_flags_for_set(uint8_t key_set){
@@ -834,10 +836,10 @@ static int sm_key_distribution_all_received(sm_connection_t * sm_conn){
     int recv_flags;
     if (sm_conn->sm_role){
         // slave / responser
-        recv_flags = sm_key_distribution_flags_for_set(setup->sm_s_pres.initiator_key_distribution);
+        recv_flags = sm_key_distribution_flags_for_set(sm_pairing_packet_get_initiator_key_distribution(setup->sm_s_pres));
     } else {
         // master / initiator
-        recv_flags = sm_key_distribution_flags_for_set(setup->sm_s_pres.responder_key_distribution);
+        recv_flags = sm_key_distribution_flags_for_set(sm_pairing_packet_get_responder_key_distribution(setup->sm_s_pres));
     } 
     log_debug("sm_key_distribution_all_received: received 0x%02x, expecting 0x%02x", setup->sm_key_distribution_received_set, recv_flags);       
     return recv_flags == setup->sm_key_distribution_received_set;
@@ -888,14 +890,14 @@ static void sm_init_setup(sm_connection_t * sm_conn){
         memcpy(setup->sm_s_address, sm_conn->sm_peer_address, 6);
 
         int key_distribution_flags = sm_key_distribution_flags_for_auth_req();
-        setup->sm_m_preq.initiator_key_distribution = key_distribution_flags;
-        setup->sm_m_preq.responder_key_distribution = key_distribution_flags;
+        sm_pairing_packet_set_initiator_key_distribution(setup->sm_m_preq, key_distribution_flags);
+        sm_pairing_packet_set_responder_key_distribution(setup->sm_m_preq, key_distribution_flags);
     }
 
-    local_packet->io_capability = sm_io_capabilities;
-    local_packet->oob_data_flag = have_oob_data;
-    local_packet->auth_req = sm_auth_req;
-    local_packet->max_encryption_key_size = sm_max_encryption_key_size;
+    sm_pairing_packet_set_io_capability(*local_packet, sm_io_capabilities);
+    sm_pairing_packet_set_oob_data_flag(*local_packet, have_oob_data);
+    sm_pairing_packet_set_auth_req(*local_packet, sm_auth_req);
+    sm_pairing_packet_set_max_encryption_key_size(*local_packet, sm_max_encryption_key_size);
 }
 
 static int sm_stk_generation_init(sm_connection_t * sm_conn){
@@ -905,15 +907,15 @@ static int sm_stk_generation_init(sm_connection_t * sm_conn){
     if (sm_conn->sm_role){
         // slave / responser
         remote_packet      = &setup->sm_m_preq;
-        remote_key_request = setup->sm_m_preq.responder_key_distribution;
+        remote_key_request = sm_pairing_packet_get_responder_key_distribution(setup->sm_m_preq);
     } else {
         // master / initiator
         remote_packet      = &setup->sm_s_pres;
-        remote_key_request = setup->sm_s_pres.initiator_key_distribution;
+        remote_key_request = sm_pairing_packet_get_initiator_key_distribution(setup->sm_s_pres);
     }
 
     // check key size
-    sm_conn->sm_actual_encryption_key_size = sm_calc_actual_encryption_key_size(remote_packet->max_encryption_key_size);
+    sm_conn->sm_actual_encryption_key_size = sm_calc_actual_encryption_key_size(sm_pairing_packet_get_max_encryption_key_size(*remote_packet));
     if (sm_conn->sm_actual_encryption_key_size == 0) return SM_REASON_ENCRYPTION_KEY_SIZE;
 
     // setup key distribution
@@ -1343,7 +1345,7 @@ static void sm_run(void){
             }
 
             case SM_INITIATOR_PH1_SEND_PAIRING_REQUEST:
-                setup->sm_m_preq.code = SM_CODE_PAIRING_REQUEST;
+                sm_pairing_packet_set_code(setup->sm_m_preq, SM_CODE_PAIRING_REQUEST);
                 connection->sm_engine_state = SM_INITIATOR_PH1_W4_PAIRING_RESPONSE;
                 l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) &setup->sm_m_preq, sizeof(sm_pairing_packet_t));
                 sm_timeout_reset(connection);
@@ -1357,10 +1359,11 @@ static void sm_run(void){
 
             case SM_RESPONDER_PH1_SEND_PAIRING_RESPONSE:
                 // echo initiator for now
-                setup->sm_s_pres.code = SM_CODE_PAIRING_RESPONSE;
+                sm_pairing_packet_set_code(setup->sm_s_pres,SM_CODE_PAIRING_RESPONSE);
                 key_distribution_flags = sm_key_distribution_flags_for_auth_req();
-                setup->sm_s_pres.initiator_key_distribution = setup->sm_m_preq.initiator_key_distribution & key_distribution_flags;
-                setup->sm_s_pres.responder_key_distribution = setup->sm_m_preq.responder_key_distribution & key_distribution_flags;
+                sm_pairing_packet_set_initiator_key_distribution(setup->sm_s_pres, sm_pairing_packet_get_initiator_key_distribution(setup->sm_m_preq) & key_distribution_flags);
+                sm_pairing_packet_set_responder_key_distribution(setup->sm_s_pres, sm_pairing_packet_get_responder_key_distribution(setup->sm_m_preq) & key_distribution_flags);
+
                 connection->sm_engine_state = SM_RESPONDER_PH1_W4_PAIRING_CONFIRM;
                 l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) &setup->sm_s_pres, sizeof(sm_pairing_packet_t));
                 sm_timeout_reset(connection);

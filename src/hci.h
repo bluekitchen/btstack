@@ -320,15 +320,7 @@ typedef enum {
     AUTHORIZATION_GRANTED
 } authorization_state_t;
 
-typedef struct sm_pairing_packet {
-    uint8_t code;
-    uint8_t io_capability;
-    uint8_t oob_data_flag;
-    uint8_t auth_req;
-    uint8_t max_encryption_key_size;
-    uint8_t initiator_key_distribution;
-    uint8_t responder_key_distribution;
-} sm_pairing_packet_t;
+typedef uint8_t sm_pairing_packet_t[7];
 
 // connection info available as long as connection exists
 typedef struct sm_connection {
