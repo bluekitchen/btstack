@@ -43,6 +43,7 @@
  */
 
 #include "btstack_uart_block.h"
+#include "btstack_run_loop.h"
 #include "btstack_debug.h"
 
 #include <termios.h>  /* POSIX terminal control definitions */
@@ -50,10 +51,10 @@
 #include <unistd.h>   /* UNIX standard function definitions */
 
 // uart config
-static const hci_transport_config_uart_t * uart_config;
+static const btstack_uart_config_t * uart_config;
 
 // data source for integration with BTstack Runloop
-static btstack_data_source_t               transport_data_source;
+static btstack_data_source_t transport_data_source;
 
 // block write
 static int             write_bytes_len;
@@ -68,7 +69,7 @@ static void (*block_sent)(void);
 static void (*block_received)(void);
 
 
-static int btstack_uart_posix_init(const hci_transport_config_uart_t * config){
+static int btstack_uart_posix_init(const btstack_uart_config_t * config){
     uart_config = config;
     return 0;
 }
@@ -215,7 +216,7 @@ static int btstack_uart_posix_open(void){
 
     const char * device_name = uart_config->device_name;
     const int flowcontrol    = uart_config->flowcontrol;
-    const uint32_t baudrate  = uart_config->baudrate_init;
+    const uint32_t baudrate  = uart_config->baudrate;
 
     struct termios toptions;
     int flags = O_RDWR | O_NOCTTY | O_NONBLOCK;

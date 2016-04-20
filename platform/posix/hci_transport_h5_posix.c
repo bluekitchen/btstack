@@ -124,9 +124,6 @@ static uint8_t   hci_packet_type;
 static uint16_t  hci_packet_size;
 static uint8_t * hci_packet;
 
-// device
-static hci_transport_config_uart_t * hci_transport_config_uart;
-
 // hci_transport_t instance
 static hci_transport_t *             hci_transport_h5;
 
@@ -135,7 +132,9 @@ static  void (*packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t si
 
 static int hci_transport_link_actions;
 
-const btstack_uart_block_t * btstack_uart;
+// UART Driver + Config
+static const btstack_uart_block_t * btstack_uart;
+static btstack_uart_config_t uart_config;
 
 static int uart_write_active;
 
@@ -583,15 +582,14 @@ static void hci_transport_h5_posix_init(const void * transport_config){
         return;
     }
 
-    // TODO: move btstack_uart_block_t into hci_transport_config_uart
+    // extract UART config from transport config
+    hci_transport_config_uart_t * hci_transport_config_uart = (hci_transport_config_uart_t*) transport_config;
+    uart_config.baudrate    = hci_transport_config_uart->baudrate_init;
+    uart_config.flowcontrol = hci_transport_config_uart->flowcontrol;
+    uart_config.device_name = hci_transport_config_uart->device_name;
 
-    // use fixed uart block posix implementation for now
-    btstack_uart = btstack_uart_block_posix_instance();
-
-    btstack_uart->init((hci_transport_config_uart_t*) transport_config);
-
-    hci_transport_config_uart = (hci_transport_config_uart_t*) transport_config;
-
+    // setup UART driver
+    btstack_uart->init(&uart_config);
     btstack_uart->set_block_received(&hci_transport_h5_block_received);
     btstack_uart->set_block_sent(&hci_transport_h5_block_sent);
 }
@@ -603,7 +601,7 @@ static int hci_transport_h5_posix_open(void){
     }        
     
     // setup resend timeout
-    hci_transport_link_update_resend_timeout(hci_transport_config_uart->baudrate_init);
+    hci_transport_link_update_resend_timeout(uart_config.baudrate);
 
     // init slip parser state machine
     hci_transport_slip_init();
@@ -677,7 +675,7 @@ static void hci_transport_h5_posix_reset_link(void){
 }
 
 // get h5 singleton
-const hci_transport_t * hci_transport_h5_instance(void) {
+const hci_transport_t * hci_transport_h5_instance(const btstack_uart_block_t * uart_driver) {
     if (hci_transport_h5 == NULL) {
         hci_transport_h5 = (hci_transport_t*) malloc(sizeof(hci_transport_t));
         memset(hci_transport_h5, 0, sizeof(hci_transport_t));
@@ -691,5 +689,6 @@ const hci_transport_t * hci_transport_h5_instance(void) {
         hci_transport_h5->set_baudrate                  = &hci_transport_h5_posix_set_baudrate;
         hci_transport_h5->reset_link                    = &hci_transport_h5_posix_reset_link;
     }
+    btstack_uart = uart_driver;
     return (const hci_transport_t *) hci_transport_h5;
 }

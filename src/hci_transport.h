@@ -47,6 +47,7 @@
 #define __HCI_TRANSPORT_H
 
 #include <stdint.h>
+#include "btstack_uart_block.h"
 #include "btstack_run_loop.h"
 
 #if defined __cplusplus
@@ -126,14 +127,16 @@ typedef struct {
 // inline various hci_transport_X.h files
 
 /*
- * @brief
+ * @brief Setup H4 instance with uart_driver
+ * @param uart_driver to use 
  */
-extern const hci_transport_t * hci_transport_h4_instance(void);
+extern const hci_transport_t * hci_transport_h4_instance(const btstack_uart_block_t * uart_driver);
 
 /*
- * @brief
+ * @brief Setup H5 instance with uart_driver
+ * @param uart_driver to use 
  */
-extern const hci_transport_t * hci_transport_h5_instance(void);
+extern const hci_transport_t * hci_transport_h5_instance(const btstack_uart_block_t * uart_driver);
 
 /*
  * @brief

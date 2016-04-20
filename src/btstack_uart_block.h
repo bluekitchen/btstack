@@ -46,14 +46,19 @@
 #define __BTSTACK_UART_BLOCK_H
 
 #include <stdint.h>
-#include "hci_transport.h"
+
+typedef struct {
+    uint32_t   baudrate;
+    int        flowcontrol;
+    const char *device_name;
+} btstack_uart_config_t;
 
 typedef struct {
     /**
      * init transport
-     * @param transport_config
+     * @param uart_config
      */
-    int (*init)(const hci_transport_config_uart_t * config);
+    int (*init)(const btstack_uart_config_t * uart_config);
 
     /**
      * open transport connection
@@ -102,5 +107,6 @@ typedef struct {
 
 // common implementations
 const btstack_uart_block_t * btstack_uart_block_posix_instance(void);
+const btstack_uart_block_t * btstack_uart_block_embedded_instance(void);
 
 #endif

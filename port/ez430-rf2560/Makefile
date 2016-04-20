@@ -50,12 +50,13 @@ CORE   = \
     btstack_util.c			          \
 
 COMMON = \
-    hal_uart_dma.c            \
-	btstack_chipset_cc256x.c       \
-    hci.c			          \
-    hci_cmd.c		          \
+    hal_uart_dma.c            		   \
+	btstack_chipset_cc256x.c       	   \
+    hci.c			          		   \
+    hci_cmd.c		                   \
     hci_transport_h4_ehcill_embedded.c \
-	btstack_link_key_db_memory.c \
+    btstack_uart_block_embedded.c      \
+	btstack_link_key_db_memory.c       \
 
 SPP = \
     l2cap.c			          \

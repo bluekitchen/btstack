@@ -76,16 +76,15 @@ typedef enum {
     H4_W4_PAYLOAD,
 } H4_STATE;
 
-const btstack_uart_block_t * btstack_uart;
+// UART Driver + Config
+static const btstack_uart_block_t * btstack_uart;
+static btstack_uart_config_t uart_config;
 
 // write mutex
 static int uart_write_active;
 
 // single instance
 static hci_transport_t * hci_transport_h4 = NULL;
-
-
-static hci_transport_config_uart_t * hci_transport_config_uart = NULL;
 
 static  void (*packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size) = dummy_handler;
 
@@ -191,13 +190,14 @@ static void hci_transport_h4_init(const void * transport_config){
         return;
     }
 
-    hci_transport_config_uart = (hci_transport_config_uart_t*) transport_config;
+    // extract UART config from transport config
+    hci_transport_config_uart_t * hci_transport_config_uart = (hci_transport_config_uart_t*) transport_config;
+    uart_config.baudrate    = hci_transport_config_uart->baudrate_init;
+    uart_config.flowcontrol = hci_transport_config_uart->flowcontrol;
+    uart_config.device_name = hci_transport_config_uart->device_name;
 
-    // TODO: move btstack_uart_block_t into hci_transport_config_uart
-
-    // use fixed uart block posix implementation for now
-    btstack_uart = btstack_uart_block_posix_instance();
-    btstack_uart->init(hci_transport_config_uart);
+    // setup UART driver
+    btstack_uart->init(&uart_config);
     btstack_uart->set_block_received(&hci_transport_h4_block_read);
     btstack_uart->set_block_sent(&hci_transport_h4_block_sent);
 }
@@ -242,7 +242,7 @@ static void dummy_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
 }
 
 // get h4 singleton
-const hci_transport_t * hci_transport_h4_instance(void) {
+const hci_transport_t * hci_transport_h4_instance(const btstack_uart_block_t * uart_driver) {
     if (hci_transport_h4 == NULL) {
         hci_transport_h4 = (hci_transport_t*)malloc( sizeof(hci_transport_t));
         memset(hci_transport_h4, 0, sizeof(hci_transport_t));
@@ -255,5 +255,6 @@ const hci_transport_t * hci_transport_h4_instance(void) {
         hci_transport_h4->send_packet                   = hci_transport_h4_send_packet;
         hci_transport_h4->set_baudrate                  = hci_transport_h4_set_baudrate;
     }
+    btstack_uart = uart_driver;
     return hci_transport_h4;
 }

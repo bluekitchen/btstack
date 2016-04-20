@@ -378,7 +378,7 @@ int main(void){
     btstack_run_loop_init(btstack_run_loop_embedded_get_instance());
 
     // init HCI
-	const hci_transport_t * transport = hci_transport_h4_instance();
+	const hci_transport_t * transport = hci_transport_h4_instance(btstack_uart_block_embedded_instance());
     btstack_link_key_db_t * link_key_db = btstack_link_key_db_memory_instance();
 	hci_init(transport, &config);
 	hci_set_link_key_db(link_key_db);
