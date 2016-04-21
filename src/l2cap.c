@@ -1488,7 +1488,7 @@ static void l2cap_acl_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
         default: {
             // Find channel for this channel_id and connection handle
             l2cap_channel_t * l2cap_channel = l2cap_get_channel_for_local_cid(channel_id);
-            if (channel) {
+            if (l2cap_channel) {
                 l2cap_dispatch_to_channel(l2cap_channel, L2CAP_DATA_PACKET, &packet[COMPLETE_L2CAP_HEADER], size-COMPLETE_L2CAP_HEADER);
             }
             break;
