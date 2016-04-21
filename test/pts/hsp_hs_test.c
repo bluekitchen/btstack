@@ -159,7 +159,7 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
     }
 }
 
-static void packet_handler(uint8_t * event, uint16_t event_size){
+static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * event, uint16_t event_size){
     // printf("Packet handler event 0x%02x\n", event[0]);
     switch (event[0]) {
         case BTSTACK_EVENT_STATE:

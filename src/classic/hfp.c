@@ -96,12 +96,12 @@ static const char * hfp_ag_features[] = {
 
 static btstack_linked_list_t hfp_connections = NULL;
 static void parse_sequence(hfp_connection_t * context);
-static hfp_callback_t hfp_callback;
+static btstack_packet_handler_t hfp_callback;
 static btstack_packet_handler_t rfcomm_packet_handler;
 
 static hfp_connection_t * sco_establishment_active;
 
-void hfp_set_callback(hfp_callback_t callback){
+void hfp_set_callback(btstack_packet_handler_t callback){
     hfp_callback = callback;
 }
 
@@ -186,26 +186,26 @@ int join_bitmap(char * buffer, int buffer_size, uint32_t values, int values_nr){
     return offset;
 }
 
-void hfp_emit_simple_event(hfp_callback_t callback, uint8_t event_subtype){
+void hfp_emit_simple_event(btstack_packet_handler_t callback, uint8_t event_subtype){
     if (!callback) return;
     uint8_t event[3];
     event[0] = HCI_EVENT_HFP_META;
     event[1] = sizeof(event) - 2;
     event[2] = event_subtype;
-    (*callback)(event, sizeof(event));
+    (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-void hfp_emit_event(hfp_callback_t callback, uint8_t event_subtype, uint8_t value){
+void hfp_emit_event(btstack_packet_handler_t callback, uint8_t event_subtype, uint8_t value){
     if (!callback) return;
     uint8_t event[4];
     event[0] = HCI_EVENT_HFP_META;
     event[1] = sizeof(event) - 2;
     event[2] = event_subtype;
     event[3] = value; // status 0 == OK
-    (*callback)(event, sizeof(event));
+    (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-void hfp_emit_connection_event(hfp_callback_t callback, uint8_t event_subtype, uint8_t status, hci_con_handle_t con_handle){
+void hfp_emit_connection_event(btstack_packet_handler_t callback, uint8_t event_subtype, uint8_t status, hci_con_handle_t con_handle){
     if (!callback) return;
     uint8_t event[6];
     event[0] = HCI_EVENT_HFP_META;
@@ -213,10 +213,10 @@ void hfp_emit_connection_event(hfp_callback_t callback, uint8_t event_subtype, u
     event[2] = event_subtype;
     event[3] = status; // status 0 == OK
     little_endian_store_16(event, 4, con_handle);
-    (*callback)(event, sizeof(event));
+    (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-void hfp_emit_string_event(hfp_callback_t callback, uint8_t event_subtype, const char * value){
+void hfp_emit_string_event(btstack_packet_handler_t callback, uint8_t event_subtype, const char * value){
     if (!callback) return;
     uint8_t event[40];
     event[0] = HCI_EVENT_HFP_META;
@@ -225,7 +225,7 @@ void hfp_emit_string_event(hfp_callback_t callback, uint8_t event_subtype, const
     int size = (strlen(value) < sizeof(event) - 4) ? strlen(value) : sizeof(event) - 4;
     strncpy((char*)&event[3], value, size);
     event[3 + size] = 0;
-    (*callback)(event, sizeof(event));
+    (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
 btstack_linked_list_t * hfp_get_connections(void){

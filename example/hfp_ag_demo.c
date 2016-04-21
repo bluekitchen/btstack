@@ -595,97 +595,92 @@ static void send_sco_data(void){
     if ((count & SCO_REPORT_PERIOD) == 0) printf("Sent %u\n", count);
 }
 
-static void sco_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * packet, uint16_t size){
+static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * event, uint16_t event_size){
     switch (packet_type){
         case HCI_EVENT_PACKET:
-            if (packet[0] == HCI_EVENT_SCO_CAN_SEND_NOW){
-                send_sco_data();
+            switch (event[0]){
+                case HCI_EVENT_INQUIRY_RESULT:
+                case HCI_EVENT_INQUIRY_RESULT_WITH_RSSI:
+                case HCI_EVENT_INQUIRY_COMPLETE:
+                case HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE:
+                    inquiry_packet_handler(HCI_EVENT_PACKET, event, event_size);
+                    break;
+                case HCI_EVENT_SCO_CAN_SEND_NOW:
+                    send_sco_data(); 
+                    break; 
+                default:
+                    break;
             }
-            break;
-        default:
-            break;
-    }
-}
 
-static void packet_handler(uint8_t * event, uint16_t event_size){
-     switch (event[0]){
-        case HCI_EVENT_INQUIRY_RESULT:
-        case HCI_EVENT_INQUIRY_RESULT_WITH_RSSI:
-        case HCI_EVENT_INQUIRY_COMPLETE:
-        case HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE:
-            inquiry_packet_handler(HCI_EVENT_PACKET, event, event_size);
-            break;
+            if (event[0] != HCI_EVENT_HFP_META) return;
 
-        default:
-            break;
-    }
-
-    if (event[0] != HCI_EVENT_HFP_META) return;
-
-    if (event[3]
-        && event[2] != HFP_SUBEVENT_PLACE_CALL_WITH_NUMBER
-        && event[2] != HFP_SUBEVENT_ATTACH_NUMBER_TO_VOICE_TAG 
-        && event[2] != HFP_SUBEVENT_TRANSMIT_DTMF_CODES){
-        printf("ERROR, status: %u\n", event[3]);
-        return;
-    }
-
-    switch (event[2]) {   
-        case HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED:
-            handle = hfp_subevent_service_level_connection_established_get_con_handle(event);
-            printf("Service level connection established.\n");
-            break;
-        case HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED:
-            printf("Service level connection released.\n");
-            sco_handle = 0;
-            break;
-        case HFP_SUBEVENT_AUDIO_CONNECTION_ESTABLISHED:
-            if (hfp_subevent_audio_connection_established_get_status(event)){
-                printf("Audio connection establishment failed with status %u\n", hfp_subevent_audio_connection_established_get_status(event));
-                sco_handle = 0;
-            } else {
-                sco_handle = hfp_subevent_audio_connection_established_get_handle(event);
-                printf("Audio connection established with SCO handle 0x%04x.\n", sco_handle);
-                hci_request_sco_can_send_now_event();
+            if (event[3]
+                && event[2] != HFP_SUBEVENT_PLACE_CALL_WITH_NUMBER
+                && event[2] != HFP_SUBEVENT_ATTACH_NUMBER_TO_VOICE_TAG 
+                && event[2] != HFP_SUBEVENT_TRANSMIT_DTMF_CODES){
+                printf("ERROR, status: %u\n", event[3]);
+                return;
             }
-            break;
-        case HFP_SUBEVENT_AUDIO_CONNECTION_RELEASED:
-            printf("\n** Audio connection released **\n");
-            sco_handle = 0;
-            break;
-        case HFP_SUBEVENT_START_RINGINIG:
-            printf("\n** Start Ringing **\n");
-            break;        
-        case HFP_SUBEVENT_STOP_RINGINIG:
-            printf("\n** Stop Ringing **\n");
-            break;
-        case HFP_SUBEVENT_PLACE_CALL_WITH_NUMBER:
-            printf("\n** Outgoing call '%s' **\n", hfp_subevent_place_call_with_number_get_number(event));
-            // validate number
-            if ( strcmp("1234567", hfp_subevent_place_call_with_number_get_number(event)) == 0
-              || strcmp("7654321", hfp_subevent_place_call_with_number_get_number(event)) == 0
-              || (memory_1_enabled && strcmp(">1", hfp_subevent_place_call_with_number_get_number(event)) == 0)){
-                printf("Dialstring valid: accept call\n");
-                hfp_ag_outgoing_call_accepted();
-            } else {
-                printf("Dialstring invalid: reject call\n");
-                hfp_ag_outgoing_call_rejected();
+
+            switch (event[2]) {   
+                case HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED:
+                    handle = hfp_subevent_service_level_connection_established_get_con_handle(event);
+                    printf("Service level connection established.\n");
+                    break;
+                case HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED:
+                    printf("Service level connection released.\n");
+                    sco_handle = 0;
+                    break;
+                case HFP_SUBEVENT_AUDIO_CONNECTION_ESTABLISHED:
+                    if (hfp_subevent_audio_connection_established_get_status(event)){
+                        printf("Audio connection establishment failed with status %u\n", hfp_subevent_audio_connection_established_get_status(event));
+                        sco_handle = 0;
+                    } else {
+                        sco_handle = hfp_subevent_audio_connection_established_get_handle(event);
+                        printf("Audio connection established with SCO handle 0x%04x.\n", sco_handle);
+                        hci_request_sco_can_send_now_event();
+                    }
+                    break;
+                case HFP_SUBEVENT_AUDIO_CONNECTION_RELEASED:
+                    printf("\n** Audio connection released **\n");
+                    sco_handle = 0;
+                    break;
+                case HFP_SUBEVENT_START_RINGINIG:
+                    printf("\n** Start Ringing **\n");
+                    break;        
+                case HFP_SUBEVENT_STOP_RINGINIG:
+                    printf("\n** Stop Ringing **\n");
+                    break;
+                case HFP_SUBEVENT_PLACE_CALL_WITH_NUMBER:
+                    printf("\n** Outgoing call '%s' **\n", hfp_subevent_place_call_with_number_get_number(event));
+                    // validate number
+                    if ( strcmp("1234567", hfp_subevent_place_call_with_number_get_number(event)) == 0
+                      || strcmp("7654321", hfp_subevent_place_call_with_number_get_number(event)) == 0
+                      || (memory_1_enabled && strcmp(">1", hfp_subevent_place_call_with_number_get_number(event)) == 0)){
+                        printf("Dialstring valid: accept call\n");
+                        hfp_ag_outgoing_call_accepted();
+                    } else {
+                        printf("Dialstring invalid: reject call\n");
+                        hfp_ag_outgoing_call_rejected();
+                    }
+                    break;
+                
+                case HFP_SUBEVENT_ATTACH_NUMBER_TO_VOICE_TAG:
+                    printf("\n** Attach number to voice tag. Sending '1234567\n");
+                    hfp_ag_send_phone_number_for_voice_tag(device_addr, "1234567");
+                    break;
+                case HFP_SUBEVENT_TRANSMIT_DTMF_CODES:
+                    printf("\n** Send DTMF Codes: '%s'\n", hfp_subevent_transmit_dtmf_codes_get_dtmf(event));
+                    hfp_ag_send_dtmf_code_done(device_addr);
+                    break;
+                case HFP_SUBEVENT_CALL_ANSWERED:
+                    printf("Call answered by HF\n");
+                    break;
+                default:
+                    printf("Event not handled %u\n", event[2]);
+                    break;
             }
-            break;
-        
-        case HFP_SUBEVENT_ATTACH_NUMBER_TO_VOICE_TAG:
-            printf("\n** Attach number to voice tag. Sending '1234567\n");
-            hfp_ag_send_phone_number_for_voice_tag(device_addr, "1234567");
-            break;
-        case HFP_SUBEVENT_TRANSMIT_DTMF_CODES:
-            printf("\n** Send DTMF Codes: '%s'\n", hfp_subevent_transmit_dtmf_codes_get_dtmf(event));
-            hfp_ag_send_dtmf_code_done(device_addr);
-            break;
-        case HFP_SUBEVENT_CALL_ANSWERED:
-            printf("Call answered by HF\n");
-            break;
         default:
-            printf("Event not handled %u\n", event[2]);
             break;
     }
 }
@@ -723,7 +718,7 @@ int btstack_main(int argc, const char * argv[]){
     hfp_ag_init_call_hold_services(call_hold_services_nr, call_hold_services);
     hfp_ag_set_subcriber_number_information(&subscriber_number, 1);
     hfp_ag_register_packet_handler(&packet_handler);
-    hci_register_sco_packet_handler(&sco_packet_handler);
+    hci_register_sco_packet_handler(&packet_handler);
 
     // SDP Server
     sdp_init();

@@ -95,7 +95,7 @@ void hfp_hf_init_hf_indicators(int indicators_nr, uint16_t * indicators);
  * @brief Register callback for the HFP Hands-Free (HF) client. 
  * @param callback
  */
-void hfp_hf_register_packet_handler(hfp_callback_t callback);
+void hfp_hf_register_packet_handler(btstack_packet_handler_t callback);
 
 /**
  * @brief Establish RFCOMM connection with the AG with given Bluetooth address, 

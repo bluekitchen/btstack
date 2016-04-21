@@ -95,7 +95,7 @@ static hfp_generic_status_indicator_t hfp_generic_status_indicators[HFP_MAX_NUM_
 
 static int  hfp_ag_call_hold_services_nr = 0;
 static char *hfp_ag_call_hold_services[6];
-static hfp_callback_t hfp_callback;
+static btstack_packet_handler_t hfp_callback;
 
 static hfp_response_and_hold_state_t hfp_ag_response_and_hold_state;
 static int hfp_ag_response_and_hold_active = 0;
@@ -149,7 +149,7 @@ static int get_ag_indicator_index_for_name(const char * name){
 }
 
 
-void hfp_ag_register_packet_handler(hfp_callback_t callback){
+void hfp_ag_register_packet_handler(btstack_packet_handler_t callback){
     if (callback == NULL){
         log_error("hfp_ag_register_packet_handler called with NULL callback");
         return;

@@ -215,101 +215,93 @@ static void send_sco_data(void){
     hci_request_sco_can_send_now_event();
 
     static int count = 0;
+    count++;
     if ((count & SCO_REPORT_PERIOD)) return;
     printf("SCO packets sent: %u\n", count);
 }
 
-static void sco_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * packet, uint16_t size){
-    static int count = 0;
+static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * event, uint16_t event_size){
+    static int sco_rev_count = 0;
     switch (packet_type){
+        case HCI_SCO_DATA_PACKET:
+            sco_rev_count++;
+            if ((sco_rev_count & SCO_REPORT_PERIOD)) break;
+            printf("SCO packets received: %u\n", sco_rev_count);
+            break;
         case HCI_EVENT_PACKET:
-            if (packet[0] == HCI_EVENT_SCO_CAN_SEND_NOW){
-                send_sco_data();
-            }
-            break;
-        default:
-            count++;
-            if ((count & SCO_REPORT_PERIOD)) return;
-            printf("SCO packets received: %u\n", count);
-            break;
-    }
-}
+            switch (event[0]) {
+                case BTSTACK_EVENT_STATE:
+                    if (btstack_event_state_get_state(event) != HCI_STATE_WORKING) break;
+                    show_usage();
+                    break;
+                case HCI_EVENT_SCO_CAN_SEND_NOW:
+                    send_sco_data();
+                    break;
+                case HCI_EVENT_HSP_META:
+                    switch (event[2]) { 
+                        case HSP_SUBEVENT_RFCOMM_CONNECTION_COMPLETE:
+                            if (hsp_subevent_rfcomm_connection_complete_get_status(event)){
+                                printf("RFCOMM connection establishement failed with status %u\n", hsp_subevent_audio_connection_complete_get_handle(event));
+                            } else {
+                                printf("RFCOMM connection established.\n");
+                            } 
+                            break;
+                        case HSP_SUBEVENT_RFCOMM_DISCONNECTION_COMPLETE:
+                            if (hsp_subevent_rfcomm_disconnection_complete_get_status(event)){
+                                printf("RFCOMM disconnection failed with status %u.\n", hsp_subevent_rfcomm_disconnection_complete_get_status(event));
+                            } else {
+                                printf("RFCOMM disconnected.\n");
+                            }
+                            break;
+                        case HSP_SUBEVENT_AUDIO_CONNECTION_COMPLETE:
+                            if (hsp_subevent_audio_connection_complete_get_status(event)){
+                                printf("Audio connection establishment failed with status %u\n", hsp_subevent_audio_connection_complete_get_status(event));
+                                sco_handle = 0;
+                            } else {
+                                sco_handle = hsp_subevent_audio_connection_complete_get_handle(event);
+                                printf("Audio connection established with SCO handle 0x%04x.\n", sco_handle);
+                                hci_request_sco_can_send_now_event();
+                            } 
+                            break;
+                        case HSP_SUBEVENT_AUDIO_DISCONNECTION_COMPLETE:
+                            if (hsp_subevent_audio_disconnection_complete_get_status(event)){
+                                printf("Audio connection releasing failed with status %u\n", hsp_subevent_audio_disconnection_complete_get_status(event));
+                            } else {
+                                printf("Audio connection released.\n\n");
+                                sco_handle = 0;    
+                            }
+                            break;
+                        case HSP_SUBEVENT_MICROPHONE_GAIN_CHANGED:
+                            printf("Received microphone gain change %d\n", hsp_subevent_microphone_gain_changed_get_gain(event));
+                            break;
+                        case HSP_SUBEVENT_SPEAKER_GAIN_CHANGED:
+                            printf("Received speaker gain change %d\n", hsp_subevent_speaker_gain_changed_get_gain(event));
+                            break;
+                        case HSP_SUBEVENT_RING:
+                            printf("HS: RING RING!\n");
+                            break;
+                        case HSP_SUBEVENT_AG_INDICATION: {
+                            memset(hs_cmd_buffer, 0, sizeof(hs_cmd_buffer));
+                            int size = hsp_subevent_ag_indication_get_value_length(event);
+                            if (size >= sizeof(hs_cmd_buffer)-1){
+                                size =  sizeof(hs_cmd_buffer)-1;
+                            }
+                            memcpy(hs_cmd_buffer, hsp_subevent_ag_indication_get_value(event), size);
+                            printf("Received custom indication: \"%s\". \nExit code or call hsp_hs_send_result.\n", hs_cmd_buffer);
 
-static void packet_handler(uint8_t * event, uint16_t event_size){
-    switch (event[0]) {
-        case BTSTACK_EVENT_STATE:
-            if (btstack_event_state_get_state(event) != HCI_STATE_WORKING) break;
-            show_usage();
-            break;
-        case HCI_EVENT_SCO_CAN_SEND_NOW:
-            send_sco_data();
-            break;
-        case HCI_EVENT_HSP_META:
-            switch (event[2]) { 
-                case HSP_SUBEVENT_RFCOMM_CONNECTION_COMPLETE:
-                    if (hsp_subevent_rfcomm_connection_complete_get_status(event)){
-                        printf("RFCOMM connection establishement failed with status %u\n", hsp_subevent_audio_connection_complete_get_handle(event));
-                    } else {
-                        printf("RFCOMM connection established.\n");
-                    } 
-                    break;
-                case HSP_SUBEVENT_RFCOMM_DISCONNECTION_COMPLETE:
-                    if (hsp_subevent_rfcomm_disconnection_complete_get_status(event)){
-                        printf("RFCOMM disconnection failed with status %u.\n", hsp_subevent_rfcomm_disconnection_complete_get_status(event));
-                    } else {
-                        printf("RFCOMM disconnected.\n");
+                        }
+                            break;
+                        default:
+                            printf("event not handled %u\n", event[2]);
+                            break;
                     }
-                    break;
-                case HSP_SUBEVENT_AUDIO_CONNECTION_COMPLETE:
-                    if (hsp_subevent_audio_connection_complete_get_status(event)){
-                        printf("Audio connection establishment failed with status %u\n", hsp_subevent_audio_connection_complete_get_status(event));
-                        sco_handle = 0;
-                    } else {
-                        sco_handle = hsp_subevent_audio_connection_complete_get_handle(event);
-                        printf("Audio connection established with SCO handle 0x%04x.\n", sco_handle);
-                        hci_request_sco_can_send_now_event();
-                    } 
-                    break;
-                case HSP_SUBEVENT_AUDIO_DISCONNECTION_COMPLETE:
-                    if (hsp_subevent_audio_disconnection_complete_get_status(event)){
-                        printf("Audio connection releasing failed with status %u\n", hsp_subevent_audio_disconnection_complete_get_status(event));
-                    } else {
-                        printf("Audio connection released.\n\n");
-                        sco_handle = 0;    
-                    }
-                    break;
-                case HSP_SUBEVENT_MICROPHONE_GAIN_CHANGED:
-                    printf("Received microphone gain change %d\n", hsp_subevent_microphone_gain_changed_get_gain(event));
-                    break;
-                case HSP_SUBEVENT_SPEAKER_GAIN_CHANGED:
-                    printf("Received speaker gain change %d\n", hsp_subevent_speaker_gain_changed_get_gain(event));
-                    break;
-                case HSP_SUBEVENT_RING:
-                    printf("HS: RING RING!\n");
-                    break;
-                case HSP_SUBEVENT_AG_INDICATION: {
-                    memset(hs_cmd_buffer, 0, sizeof(hs_cmd_buffer));
-                    int size = hsp_subevent_ag_indication_get_value_length(event);
-                    if (size >= sizeof(hs_cmd_buffer)-1){
-                        size =  sizeof(hs_cmd_buffer)-1;
-                    }
-                    memcpy(hs_cmd_buffer, hsp_subevent_ag_indication_get_value(event), size);
-                    printf("Received custom indication: \"%s\". \nExit code or call hsp_hs_send_result.\n", hs_cmd_buffer);
-
-                }
                     break;
                 default:
-                    printf("event not handled %u\n", event[2]);
                     break;
             }
-            break;
         default:
             break;
     }
-}
-
-static void handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t * packet, uint16_t size){
-    packet_handler(packet, size);
 }
 
 /* @section Main Application Setup
@@ -331,9 +323,9 @@ int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
 
     // register for HCI events
-    hci_event_callback_registration.callback = &handle_hci_event;
+    hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
-    hci_register_sco_packet_handler(&sco_packet_handler);
+    hci_register_sco_packet_handler(&packet_handler);
 
     l2cap_init();
 
