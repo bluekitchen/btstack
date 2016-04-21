@@ -904,9 +904,10 @@ typedef uint8_t sm_key_t[16];
 #define HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED     0x02
 
 /**
- * @format 11
+ * @format 11H
  * @param subevent_code
  * @param status 0 == OK
+ * @param handle
  */
 #define HFP_SUBEVENT_AUDIO_CONNECTION_ESTABLISHED          0x03
 
