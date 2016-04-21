@@ -1083,8 +1083,6 @@ void hfp_hf_init(uint16_t rfcomm_channel_nr){
     hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
 
-    l2cap_init();
-
     rfcomm_register_service(packet_handler, rfcomm_channel_nr, 0xffff);  
 
     hfp_set_packet_handler_for_rfcomm_connections(&packet_handler);
