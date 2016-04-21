@@ -490,6 +490,7 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
                     default:
                         break;
                 }
+                rfcomm_request_can_send_now_event(hfp_connection->rfcomm_cid);
             }
             break;
         
