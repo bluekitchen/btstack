@@ -533,7 +533,7 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
         
         case HCI_EVENT_COMMAND_STATUS:
             if (hci_event_command_status_get_command_opcode(packet) == hci_setup_synchronous_connection.opcode) {
-                uint8_t status = hci_event_command_status_get_status(packet);
+                status = hci_event_command_status_get_status(packet);
                 if (status) {
                     hfp_handle_failed_sco_connection(hci_event_command_status_get_status(packet));
                }
