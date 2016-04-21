@@ -280,7 +280,7 @@ static void show_usage(void){
     printf("\n--- Bluetooth HFP Audiogateway (AG) unit Test Console %s ---\n", bd_addr_to_str(iut_address));
     printf("---\n");
     
-    printf("a - establish HFP connection to PTS module\n");
+    printf("a - establish HFP connection to PTS module %s\n", bd_addr_to_str(device_addr));
     // printf("A - release HFP connection to PTS module\n");
     
     printf("b - establish AUDIO connection\n");
@@ -592,7 +592,7 @@ static void send_sco_data(void){
 
     static int count = 0;
     count++;
-    if ((count & SCO_REPORT_PERIOD) == 0) printf("Sent %u\n", count);
+    if ((count % SCO_REPORT_PERIOD) == 0) printf("Sent %u\n", count);
 }
 
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * event, uint16_t event_size){

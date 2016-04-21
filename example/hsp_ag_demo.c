@@ -215,8 +215,7 @@ static void send_sco_data(void){
     hci_request_sco_can_send_now_event();
 
     static int count = 0;
-    if ((count & SCO_REPORT_PERIOD)) return;
-    printf("SCO packets sent: %u\n", count);
+    if ((count % SCO_REPORT_PERIOD) == 0) printf("Sent %u\n", count);
 }
 
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * event, uint16_t event_size){

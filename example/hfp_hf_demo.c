@@ -85,7 +85,7 @@ static void show_usage(void){
     printf("\n--- Bluetooth HFP Hands-Free (HF) unit Test Console ---\n");
     printf("---\n");
 
-    printf("a - establish SLC connection to device\n");
+    printf("a - establish SLC connection to device %s\n", bd_addr_to_str(device_addr));
     printf("A - release SLC connection to device\n");
     
     printf("b - establish Audio connection\n");
