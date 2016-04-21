@@ -65,7 +65,10 @@ uint8_t hfp_service_buffer[150];
 const uint8_t    rfcomm_channel_nr = 1;
 const char hfp_ag_service_name[] = "BTstack HFP AG Test";
 
-static bd_addr_t device_addr = {0x00,0x15,0x83,0x5F,0x9D,0x46};
+// PTS
+// static bd_addr_t device_addr = {0x00,0x15,0x83,0x5F,0x9D,0x46};
+// BT-201
+static bd_addr_t device_addr = {0x00, 0x07, 0xB0, 0x83, 0x02, 0x5E};
 
 static uint8_t codecs[1] = {HFP_CODEC_CVSD};
 static uint16_t handle = -1;
@@ -189,7 +192,7 @@ static void inquiry_packet_handler (uint8_t packet_type, uint8_t *packet, uint16
             numResponses = hci_event_inquiry_result_get_num_responses(packet);
             int offset = 3;
             for (i=0; i<numResponses && deviceCount < MAX_DEVICES;i++){
-                reverse_bd_addr(addr, &packet[offset]);
+                reverse_bd_addr(&packet[offset], addr);
                 offset += 6;
                 index = getDeviceIndexForAddress(addr);
                 if (index >= 0) continue;   // already in our list
@@ -234,7 +237,7 @@ static void inquiry_packet_handler (uint8_t packet_type, uint8_t *packet, uint16
             break;
 
         case HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE:
-            reverse_bd_addr(addr, &packet[3]);
+            reverse_bd_addr(&packet[3], addr);
             index = getDeviceIndexForAddress(addr);
             if (index >= 0) {
                 if (packet[2] == 0) {
@@ -259,7 +262,10 @@ static void show_usage(void);
 
 // Testig User Interface 
 static void show_usage(void){
-    printf("\n--- Bluetooth HFP Audiogateway (AG) unit Test Console ---\n");
+    bd_addr_t iut_address;
+    gap_local_bd_addr(iut_address);
+
+    printf("\n--- Bluetooth HFP Audiogateway (AG) unit Test Console %s ---\n", bd_addr_to_str(iut_address));
     printf("---\n");
     
     printf("a - establish HFP connection to PTS module\n");
@@ -514,7 +520,7 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
             break;
         case 't':
             log_info("USER:\'%c\'", cmd);
-            printf("Terminate HCI connection.\n");
+            printf("Terminate HCI connection. 0x%2x\n", handle);
             gap_disconnect(handle);
             break;
         case 'u':
@@ -559,7 +565,6 @@ static void packet_handler(uint8_t * event, uint16_t event_size){
         default:
             break;
     }
-
 
     if (event[0] != HCI_EVENT_HFP_META) return;
 
@@ -639,22 +644,25 @@ static hfp_phone_number_t subscriber_number = {
 
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
-    // HFP HS address is hardcoded, please change it
-    // init L2CAP
-    l2cap_init();
-    rfcomm_init();
-    sdp_init();
 
+    gap_discoverable_control(1);
+
+    // L2CAP
+    l2cap_init();
+    
+    // HFP
+    rfcomm_init();
     hfp_ag_init(rfcomm_channel_nr);
     hfp_ag_init_supported_features(0x3ef | (1<<HFP_AGSF_HF_INDICATORS) | (1<<HFP_AGSF_ESCO_S4)); 
     hfp_ag_init_codecs(sizeof(codecs), codecs);
     hfp_ag_init_ag_indicators(ag_indicators_nr, ag_indicators);
     hfp_ag_init_hf_indicators(hf_indicators_nr, hf_indicators); 
     hfp_ag_init_call_hold_services(call_hold_services_nr, call_hold_services);
-
     hfp_ag_set_subcriber_number_information(&subscriber_number, 1);
     hfp_ag_register_packet_handler(packet_handler);
 
+    // SDP Server
+    sdp_init();
     memset(hfp_service_buffer, 0, sizeof(hfp_service_buffer));
     hfp_ag_create_sdp_record( hfp_service_buffer, 0x10001, rfcomm_channel_nr, hfp_ag_service_name, 0, 0);
     printf("SDP service record size: %u\n", de_get_len( hfp_service_buffer));
