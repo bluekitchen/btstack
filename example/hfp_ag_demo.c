@@ -595,7 +595,7 @@ static void send_sco_data(void){
     if ((count & SCO_REPORT_PERIOD) == 0) printf("Sent %u\n", count);
 }
 
-static void sco_packet_handler(uint8_t packet_type, uint8_t * packet, uint16_t size){
+static void sco_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * packet, uint16_t size){
     switch (packet_type){
         case HCI_EVENT_PACKET:
             if (packet[0] == HCI_EVENT_SCO_CAN_SEND_NOW){

@@ -215,16 +215,26 @@ static void send_sco_data(void){
     hci_request_sco_can_send_now_event();
 
     static int count = 0;
-    count++;
-    if ((count & SCO_REPORT_PERIOD) == 0) printf("Sent %u\n", count);
+    if ((count & SCO_REPORT_PERIOD)) return;
+    printf("SCO packets sent: %u\n", count);
 }
 
-static void sco_packet_handler(uint8_t packet_type, uint8_t * packet, uint16_t size){
-    return;
+static void sco_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * packet, uint16_t size){
     static int count = 0;
-    count++;
-    if ((count & SCO_REPORT_PERIOD)) return;
-    printf("SCO packets %u\n", count);
+    switch (packet_type){
+        case HCI_EVENT_PACKET:
+            if (packet[0] == HCI_EVENT_SCO_CAN_SEND_NOW){
+                send_sco_data();
+            }
+            break;
+        case HCI_SCO_DATA_PACKET:
+            count++;
+            if ((count & SCO_REPORT_PERIOD)) return;
+            printf("SCO packets received: %u\n", count);
+            break;
+        default:
+            break;
+    }
 }
 
 static void packet_handler(uint8_t * event, uint16_t event_size){
@@ -232,9 +242,6 @@ static void packet_handler(uint8_t * event, uint16_t event_size){
         case BTSTACK_EVENT_STATE:
             if (event[2] != HCI_STATE_WORKING) break;
             show_usage();
-            break;
-        case HCI_EVENT_SCO_CAN_SEND_NOW:
-            send_sco_data();
             break;
         case HCI_EVENT_HSP_META:
             switch (event[2]) {
