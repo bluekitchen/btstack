@@ -557,7 +557,6 @@ static int codecs_exchange_state_machine(hfp_connection_t * hfp_connection){
     
     switch (hfp_connection->command){
         case HFP_CMD_AVAILABLE_CODECS:
-            //printf("HFP_CODECS_RECEIVED_LIST \n");
             if (hfp_connection->state < HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED){
                 hfp_connection->codecs_state = HFP_CODECS_RECEIVED_LIST;
                 hfp_ag_ok(hfp_connection->rfcomm_cid);
@@ -576,20 +575,17 @@ static int codecs_exchange_state_machine(hfp_connection_t * hfp_connection){
             return 1;
         
         case HFP_CMD_TRIGGER_CODEC_CONNECTION_SETUP:
-            //printf(" HFP_CMD_TRIGGER_CODEC_CONNECTION_SETUP \n");
             hfp_connection->codecs_state = HFP_CODECS_RECEIVED_TRIGGER_CODEC_EXCHANGE;
             hfp_ag_ok(hfp_connection->rfcomm_cid);
             return 1;
         
         case HFP_CMD_AG_SEND_COMMON_CODEC:
-            //printf(" HFP_CMD_AG_SEND_COMMON_CODEC \n");
             hfp_connection->codecs_state = HFP_CODECS_AG_SENT_COMMON_CODEC;
             hfp_connection->suggested_codec = hfp_ag_suggest_codec(hfp_connection);
             hfp_ag_cmd_suggest_codec(hfp_connection->rfcomm_cid, hfp_connection->suggested_codec);
             return 1;
 
         case HFP_CMD_HF_CONFIRMED_CODEC:
-            //printf("HFP_CMD_HF_CONFIRMED_CODEC \n");
             if (hfp_connection->codec_confirmed != hfp_connection->suggested_codec){
                 hfp_connection->codecs_state = HFP_CODECS_ERROR;
                 hfp_ag_error(hfp_connection->rfcomm_cid);
@@ -636,9 +632,9 @@ static void hfp_ag_slc_established(hfp_connection_t * hfp_connection){
 }
 
 static int hfp_ag_run_for_context_service_level_connection(hfp_connection_t * hfp_connection){
+    log_info("hfp_ag_run_for_context_service_level_connection state %u, command %u", hfp_connection->state, hfp_connection->command);
     if (hfp_connection->state >= HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED) return 0;
     int done = 0;
-    // printf(" -> State machine: SLC\n");
     switch(hfp_connection->command){
         case HFP_CMD_SUPPORTED_FEATURES:
             switch(hfp_connection->state){
@@ -665,18 +661,9 @@ static int hfp_ag_run_for_context_service_level_connection(hfp_connection_t * hf
 
         case HFP_CMD_RETRIEVE_AG_INDICATORS:
             if (hfp_connection->state == HFP_W4_RETRIEVE_INDICATORS) {
-                hfp_connection->command = HFP_CMD_NONE;  // prevent reentrance
-                int next_segment = hfp_ag_retrieve_indicators_cmd_via_generator(hfp_connection->rfcomm_cid, hfp_connection, hfp_connection->send_ag_indicators_segment);
-                if (next_segment < hfp_ag_indicators_cmd_generator_num_segments(hfp_connection)){
-                    // prepare sending of next segment
-                    hfp_connection->send_ag_indicators_segment = next_segment;
-                    hfp_connection->command = HFP_CMD_RETRIEVE_AG_INDICATORS;
-                } else {
-                    // done, go to next state
-                    hfp_connection->send_ag_indicators_segment = 0;
-                    hfp_connection->state = HFP_W4_RETRIEVE_INDICATORS_STATUS;
-                }
-                return 1;
+                // HF requested AG Indicators and we did expect it
+                hfp_connection->state = HFP_RETRIEVE_INDICATORS;
+                // continue below in state switch
             }
             break;
         
@@ -729,16 +716,35 @@ static int hfp_ag_run_for_context_service_level_connection(hfp_connection_t * hf
         default:
             break;
     }
+
+    switch (hfp_connection->state){
+        case HFP_RETRIEVE_INDICATORS: {
+            int next_segment = hfp_ag_retrieve_indicators_cmd_via_generator(hfp_connection->rfcomm_cid, hfp_connection, hfp_connection->send_ag_indicators_segment);
+            int num_segments = hfp_ag_indicators_cmd_generator_num_segments(hfp_connection);
+            log_info("HFP_CMD_RETRIEVE_AG_INDICATORS next segment %u, num_segments %u", next_segment, num_segments);
+            if (next_segment < num_segments){
+                // prepare sending of next segment
+                hfp_connection->send_ag_indicators_segment = next_segment;
+                log_info("HFP_CMD_RETRIEVE_AG_INDICATORS more. command %u, next seg %u", hfp_connection->command, next_segment);
+            } else {
+                // done, go to next state
+                hfp_connection->send_ag_indicators_segment = 0;
+                hfp_connection->state = HFP_W4_RETRIEVE_INDICATORS_STATUS;
+            }
+            return 1;
+        }
+        default:
+            break;
+    }
+
     return done;
 }
 
 static int hfp_ag_run_for_context_service_level_connection_queries(hfp_connection_t * hfp_connection){
-    // if (hfp_connection->state != HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED) return 0;
-    
+
     int done = codecs_exchange_state_machine(hfp_connection);
     if (done) return done;
    
-    // printf(" -> State machine: SLC Queries\n");
     switch(hfp_connection->command){
         case HFP_CMD_AG_ACTIVATE_VOICE_RECOGNITION:
             hfp_supported_features = store_bit(hfp_supported_features, HFP_AGSF_VOICE_RECOGNITION_FUNCTION, hfp_connection->ag_activate_voice_recognition);
@@ -801,7 +807,6 @@ static int hfp_ag_run_for_audio_connection(hfp_connection_t * hfp_connection){
     // run codecs exchange
     int done = codecs_exchange_state_machine(hfp_connection);
     if (done) return done;
-    // printf(" -> State machine: Audio hfp_connection\n");
 
     if (hfp_connection->codecs_state != HFP_CODECS_EXCHANGED) return done;
     if (hfp_connection->establish_audio_connection){
@@ -1610,9 +1615,15 @@ static void hfp_ag_send_call_status(hfp_connection_t * hfp_connection, int call_
 }
 
 static void hfp_run_for_context(hfp_connection_t *hfp_connection){
+
+    log_info("hfp_run_for_context %p", hfp_connection);
+
     if (!hfp_connection) return;
+
     if (!hfp_connection->rfcomm_cid) return;
+
     if (!rfcomm_can_send_packet_now(hfp_connection->rfcomm_cid)) {
+        log_info("hfp_run_for_context: request can send for 0x%02x", hfp_connection->rfcomm_cid);
         rfcomm_request_can_send_now_event(hfp_connection->rfcomm_cid);
         return;
     }
@@ -1762,6 +1773,10 @@ static void hfp_run_for_context(hfp_connection_t *hfp_connection){
     }
     if (done){
         hfp_connection->command = HFP_CMD_NONE;
+    }
+    //
+    if (done) {
+        rfcomm_request_can_send_now_event(hfp_connection->rfcomm_cid); 
     }
 }
 
