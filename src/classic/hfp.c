@@ -99,6 +99,8 @@ static void parse_sequence(hfp_connection_t * context);
 static hfp_callback_t hfp_callback;
 static btstack_packet_handler_t rfcomm_packet_handler;
 
+static hfp_connection_t * sco_establishment_active;
+
 void hfp_set_callback(hfp_callback_t callback){
     hfp_callback = callback;
 }
@@ -438,13 +440,48 @@ static void handle_query_rfcomm_event(uint8_t packet_type, uint16_t channel, uin
     }
 }
 
+static void hfp_handle_failed_sco_connection(uint8_t status){
+               
+    if (!sco_establishment_active){
+        log_error("(e)SCO Connection failed but not started by us");
+        return;
+    }
+    log_error("(e)SCO Connection failed status %u", status);
+
+    // invalid params / unspecified error
+    if (status != 0x11 && status != 0x1f) return;
+                
+     switch (sco_establishment_active->link_setting){
+        case HFP_LINK_SETTINGS_D0:
+            return; // no other option left
+        case HFP_LINK_SETTINGS_D1:
+            sco_establishment_active->link_setting = HFP_LINK_SETTINGS_D0;
+            break;
+        case HFP_LINK_SETTINGS_S1:
+            sco_establishment_active->link_setting = HFP_LINK_SETTINGS_D1;
+            break;                    
+        case HFP_LINK_SETTINGS_S2:
+        case HFP_LINK_SETTINGS_S3:
+        case HFP_LINK_SETTINGS_S4:
+            sco_establishment_active->link_setting = HFP_LINK_SETTINGS_S1;
+            break;
+        case HFP_LINK_SETTINGS_T1:
+        case HFP_LINK_SETTINGS_T2:
+            sco_establishment_active->link_setting = HFP_LINK_SETTINGS_S3;
+            break;
+    }
+    sco_establishment_active->establish_audio_connection = 1;
+    sco_establishment_active = 0;
+}
+
+
 void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     bd_addr_t event_addr;
     uint16_t rfcomm_cid, handle;
     hfp_connection_t * hfp_connection = NULL;
     uint8_t status;
 
-    // printf("AG packet_handler type %u, event type %x, size %u\n", packet_type, hci_event_packet_get_type(packet), size);
+    log_info("AG packet_handler type %u, event type %x, size %u", packet_type, hci_event_packet_get_type(packet), size);
 
     switch (hci_event_packet_get_type(packet)) {
         
@@ -494,6 +531,12 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
             }
             break;
         
+        case HCI_EVENT_COMMAND_STATUS:
+            if (hci_event_command_status_get_command_opcode(packet) == hci_setup_synchronous_connection.opcode) {
+                hfp_handle_failed_sco_connection(hci_event_command_status_get_status(packet));
+            }
+            break;
+
         case HCI_EVENT_SYNCHRONOUS_CONNECTION_COMPLETE:{
 
             reverse_bd_addr(&packet[5], event_addr);
@@ -501,32 +544,7 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
             status = packet[index++];
 
             if (status != 0){
-                log_error("(e)SCO Connection failed status %u", status);
-                // if outgoing && link_setting != d0 && appropriate error
-                if (status != 0x11 && status != 0x1f) break;  // invalid params / unspecified error
-                hfp_connection = get_hfp_connection_context_for_bd_addr(event_addr);
-                if (!hfp_connection) break;
-                switch (hfp_connection->link_setting){
-                    case HFP_LINK_SETTINGS_D0:
-                        return; // no other option left
-                    case HFP_LINK_SETTINGS_D1:
-                        // hfp_connection->link_setting = HFP_LINK_SETTINGS_D0;
-                        // break;
-                    case HFP_LINK_SETTINGS_S1:
-                        // hfp_connection->link_setting = HFP_LINK_SETTINGS_D1;
-                        // break;                    
-                    case HFP_LINK_SETTINGS_S2:
-                    case HFP_LINK_SETTINGS_S3:
-                    case HFP_LINK_SETTINGS_S4:
-                        // hfp_connection->link_setting = HFP_LINK_SETTINGS_S1;
-                        // break;
-                    case HFP_LINK_SETTINGS_T1:
-                    case HFP_LINK_SETTINGS_T2:
-                        // hfp_connection->link_setting = HFP_LINK_SETTINGS_S3;
-                        hfp_connection->link_setting = HFP_LINK_SETTINGS_D0;
-                        break;
-                }
-                hfp_connection->establish_audio_connection = 1;
+                hfp_handle_failed_sco_connection(status);
                 break;
             }
             
@@ -1332,10 +1350,12 @@ static const struct link_settings {
     { 0x000d, 0x02, 0x0380 }  // HFP_LINK_SETTINGS_T2, 2-EV3
 };
 
-void hfp_setup_synchronous_connection(hci_con_handle_t handle, hfp_link_setttings_t setting){
+void hfp_setup_synchronous_connection(hfp_connection_t * hfp_connection){
     // all packet types, fixed bandwidth
+    int setting = hfp_connection->link_setting;
     log_info("hfp_setup_synchronous_connection using setting nr %u", setting);
-    hci_send_cmd(&hci_setup_synchronous_connection, handle, 8000, 8000, hfp_link_settings[setting].max_latency,
+    sco_establishment_active = hfp_connection;
+    hci_send_cmd(&hci_setup_synchronous_connection, hfp_connection->acl_handle, 8000, 8000, hfp_link_settings[setting].max_latency,
         hci_get_sco_voice_setting(), hfp_link_settings[setting].retransmission_effort, hfp_link_settings[setting].packet_types); // all types 0x003f, only 2-ev3 0x380
 }
 

@@ -645,7 +645,7 @@ void hfp_reset_context_flags(hfp_connection_t * connection);
 
 void hfp_release_audio_connection(hfp_connection_t * connection);
 
-void hfp_setup_synchronous_connection(hci_con_handle_t handle, hfp_link_setttings_t link_settings);
+void hfp_setup_synchronous_connection(hfp_connection_t * connection);
 
 const char * hfp_hf_feature(int index);
 const char * hfp_ag_feature(int index);

@@ -812,7 +812,7 @@ static int hfp_ag_run_for_audio_connection(hfp_connection_t * hfp_connection){
     if (hfp_connection->establish_audio_connection){
         hfp_connection->state = HFP_W4_SCO_CONNECTED;
         hfp_connection->establish_audio_connection = 0;
-        hfp_setup_synchronous_connection(hfp_connection->acl_handle, hfp_connection->link_setting);
+        hfp_setup_synchronous_connection(hfp_connection);
         return 1;
     }
     return 0;
