@@ -446,7 +446,7 @@ static void hfp_handle_failed_sco_connection(uint8_t status){
         log_error("(e)SCO Connection failed but not started by us");
         return;
     }
-    log_error("(e)SCO Connection failed status %u", status);
+    log_error("(e)SCO Connection failed status 0x%02x", status);
 
     // invalid params / unspecified error
     if (status != 0x11 && status != 0x1f) return;
@@ -533,7 +533,10 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
         
         case HCI_EVENT_COMMAND_STATUS:
             if (hci_event_command_status_get_command_opcode(packet) == hci_setup_synchronous_connection.opcode) {
-                hfp_handle_failed_sco_connection(hci_event_command_status_get_status(packet));
+                uint8_t status = hci_event_command_status_get_status(packet);
+                if (status) {
+                    hfp_handle_failed_sco_connection(hci_event_command_status_get_status(packet));
+               }
             }
             break;
 
