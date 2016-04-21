@@ -61,6 +61,17 @@
 #endif
 
 
+static int phase = 0;
+
+// input signal: pre-computed sine wave, 160 Hz
+static const uint8_t sine[] = {
+      0,  15,  31,  46,  61,  74,  86,  97, 107, 114,
+    120, 124, 126, 126, 124, 120, 114, 107,  97,  86,
+     74,  61,  46,  31,  15,   0, 241, 225, 210, 195,
+    182, 170, 159, 149, 142, 136, 132, 130, 130, 132,
+    136, 142, 149, 159, 170, 182, 195, 210, 225, 241,
+};
+
 uint8_t hfp_service_buffer[150];
 const uint8_t    rfcomm_channel_nr = 1;
 const char hfp_ag_service_name[] = "BTstack HFP AG Test";
@@ -72,6 +83,7 @@ static bd_addr_t device_addr = {0x00, 0x07, 0xB0, 0x83, 0x02, 0x5E};
 
 static uint8_t codecs[1] = {HFP_CODEC_CVSD};
 static uint16_t handle = -1;
+static hci_con_handle_t sco_handle;
 static int memory_1_enabled = 1;
 
 static int ag_indicators_nr = 7;
@@ -553,6 +565,48 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
 }
 #endif
 
+#define SCO_REPORT_PERIOD 100
+static void send_sco_data(void){
+    if (!sco_handle) return;
+    
+    const int sco_packet_length = hci_get_sco_packet_length();
+    const int sco_payload_length = sco_packet_length - 3;
+    const int frames_per_packet = sco_payload_length;    // for 8-bit data. for 16-bit data it's /2
+
+    hci_reserve_packet_buffer();
+    uint8_t * sco_packet = hci_get_outgoing_packet_buffer();
+    // set handle + flags
+    little_endian_store_16(sco_packet, 0, sco_handle);
+    // set len
+    sco_packet[2] = sco_payload_length;
+    int i;
+    for (i=0;i<frames_per_packet;i++){
+        sco_packet[3+i] = sine[phase];
+        phase++;
+        if (phase >= sizeof(sine)) phase = 0;
+    }
+    hci_send_sco_packet_buffer(sco_packet_length);
+
+    // request another send event
+    hci_request_sco_can_send_now_event();
+
+    static int count = 0;
+    count++;
+    if ((count & SCO_REPORT_PERIOD) == 0) printf("Sent %u\n", count);
+}
+
+static void sco_packet_handler(uint8_t packet_type, uint8_t * packet, uint16_t size){
+    switch (packet_type){
+        case HCI_EVENT_PACKET:
+            if (packet[0] == HCI_EVENT_SCO_CAN_SEND_NOW){
+                send_sco_data();
+            }
+            break;
+        default:
+            break;
+    }
+}
+
 static void packet_handler(uint8_t * event, uint16_t event_size){
      switch (event[0]){
         case HCI_EVENT_INQUIRY_RESULT:
@@ -583,12 +637,21 @@ static void packet_handler(uint8_t * event, uint16_t event_size){
             break;
         case HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED:
             printf("Service level connection released.\n");
+            sco_handle = 0;
             break;
         case HFP_SUBEVENT_AUDIO_CONNECTION_ESTABLISHED:
-            printf("\n** Audio connection established **\n");
+            if (hfp_subevent_audio_connection_established_get_status(event)){
+                printf("Audio connection establishment failed with status %u\n", hfp_subevent_audio_connection_established_get_status(event));
+                sco_handle = 0;
+            } else {
+                sco_handle = hfp_subevent_audio_connection_established_get_handle(event);
+                printf("Audio connection established with SCO handle 0x%04x.\n", sco_handle);
+                hci_request_sco_can_send_now_event();
+            }
             break;
         case HFP_SUBEVENT_AUDIO_CONNECTION_RELEASED:
             printf("\n** Audio connection released **\n");
+            sco_handle = 0;
             break;
         case HFP_SUBEVENT_START_RINGINIG:
             printf("\n** Start Ringing **\n");
@@ -659,7 +722,8 @@ int btstack_main(int argc, const char * argv[]){
     hfp_ag_init_hf_indicators(hf_indicators_nr, hf_indicators); 
     hfp_ag_init_call_hold_services(call_hold_services_nr, call_hold_services);
     hfp_ag_set_subcriber_number_information(&subscriber_number, 1);
-    hfp_ag_register_packet_handler(packet_handler);
+    hfp_ag_register_packet_handler(&packet_handler);
+    hci_register_sco_packet_handler(&sco_packet_handler);
 
     // SDP Server
     sdp_init();
