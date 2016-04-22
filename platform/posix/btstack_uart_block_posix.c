@@ -261,6 +261,9 @@ static int btstack_uart_posix_open(void){
         perror("posix_open: Couldn't set term attributes");
         return -1;
     }
+
+    // store fd in data source
+    transport_data_source.fd = fd;
     
     // also set baudrate
     if (btstack_uart_posix_set_baudrate(baudrate) < 0){
