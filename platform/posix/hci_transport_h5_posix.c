@@ -43,12 +43,6 @@
  *  Created by Matthias Ringwald on 4/29/09.
  */
 
-#include <termios.h>  /* POSIX terminal control definitions */
-#include <fcntl.h>    /* File control definitions */
-#include <unistd.h>   /* UNIX standard function definitions */
-#include <stdio.h>
-#include <string.h>
-
 #include "hci.h"
 #include "btstack_slip.h"
 #include "btstack_debug.h"
@@ -56,7 +50,7 @@
 #include "btstack_uart_block.h"
 
 #ifdef HAVE_EHCILL
-#error "HCI Transport H5 POSIX does not support eHCILL. Please either use HAVE_EHCILL or H5 Transport"
+#error "HCI Transport H5 does not support eHCILL. Please either use (H4 + HAVE_EHCILL) or H5 Transport"
 #endif 
 
 /// newer
@@ -123,9 +117,6 @@ static uint8_t  link_peer_asleep;
 static uint8_t   hci_packet_type;
 static uint16_t  hci_packet_size;
 static uint8_t * hci_packet;
-
-// hci_transport_t instance
-static hci_transport_t *             hci_transport_h5;
 
 // hci packet handler
 static  void (*packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size);
@@ -571,14 +562,14 @@ static void hci_transport_h5_block_sent(void){
     hci_transport_link_run();
 }
 
-static void hci_transport_h5_posix_init(const void * transport_config){
+static void hci_transport_h5_init(const void * transport_config){
     // check for hci_transport_config_uart_t
     if (!transport_config) {
-        log_error("hci_transport_h5_posix: no config!");
+        log_error("hci_transport_h5: no config!");
         return;
     }
     if (((hci_transport_config_t*)transport_config)->type != HCI_TRANSPORT_CONFIG_UART) {
-        log_error("hci_transport_h5_posix: config not of type != HCI_TRANSPORT_CONFIG_UART!");
+        log_error("hci_transport_h5: config not of type != HCI_TRANSPORT_CONFIG_UART!");
         return;
     }
 
@@ -594,7 +585,7 @@ static void hci_transport_h5_posix_init(const void * transport_config){
     btstack_uart->set_block_sent(&hci_transport_h5_block_sent);
 }
 
-static int hci_transport_h5_posix_open(void){
+static int hci_transport_h5_open(void){
     int res = btstack_uart->open();
     if (res){
         return res;
@@ -615,23 +606,23 @@ static int hci_transport_h5_posix_open(void){
     return 0;
 }
 
-static int hci_transport_h5_posix_close(void){
+static int hci_transport_h5_close(void){
     return btstack_uart->close();
     return 0;
 }
 
-static void hci_transport_h5_posix_register_packet_handler(void (*handler)(uint8_t packet_type, uint8_t *packet, uint16_t size)){
+static void hci_transport_h5_register_packet_handler(void (*handler)(uint8_t packet_type, uint8_t *packet, uint16_t size)){
     packet_handler = handler;
 }
 
-static int hci_transport_h5_posix_can_send_packet_now(uint8_t packet_type){
+static int hci_transport_h5_can_send_packet_now(uint8_t packet_type){
     if (hci_transport_link_have_outgoing_packet()) return 0;
     return link_state == LINK_ACTIVE;
 }
 
-static int hci_transport_h5_posix_send_packet(uint8_t packet_type, uint8_t *packet, int size){
-    if (!hci_transport_h5_posix_can_send_packet_now(packet_type)){
-        log_error("hci_transport_h5_posix_send_packet called but in state %u", link_state);
+static int hci_transport_h5_send_packet(uint8_t packet_type, uint8_t *packet, int size){
+    if (!hci_transport_h5_can_send_packet_now(packet_type)){
+        log_error("hci_transport_h5_send_packet called but in state %u", link_state);
         return -1;
     }
 
@@ -650,9 +641,9 @@ static int hci_transport_h5_posix_send_packet(uint8_t packet_type, uint8_t *pack
     return 0;
 }
 
-static int hci_transport_h5_posix_set_baudrate(uint32_t baudrate){
+static int hci_transport_h5_set_baudrate(uint32_t baudrate){
 
-    log_info("hci_transport_h5_posix_set_baudrate %u", baudrate);
+    log_info("hci_transport_h5_set_baudrate %u", baudrate);
     int res = btstack_uart->set_baudrate(baudrate);
 
     if (res) return res;
@@ -660,9 +651,9 @@ static int hci_transport_h5_posix_set_baudrate(uint32_t baudrate){
     return 0;
 }
 
-static void hci_transport_h5_posix_reset_link(void){
+static void hci_transport_h5_reset_link(void){
 
-    log_info("hci_transport_h5_posix_reset_link");
+    log_info("hci_transport_h5_reset_link");
 
     // clear outgoing queue
     hci_transport_link_clear_queue();
@@ -674,21 +665,20 @@ static void hci_transport_h5_posix_reset_link(void){
     hci_transport_link_init();
 }
 
-// get h5 singleton
+static const hci_transport_t hci_transport_h5 = {
+    /* const char * name; */                                        "H5",
+    /* void   (*init) (const void *transport_config); */            &hci_transport_h5_init,
+    /* int    (*open)(void); */                                     &hci_transport_h5_open,
+    /* int    (*close)(void); */                                    &hci_transport_h5_close,
+    /* void   (*register_packet_handler)(void (*handler)(...); */   &hci_transport_h5_register_packet_handler,
+    /* int    (*can_send_packet_now)(uint8_t packet_type); */       &hci_transport_h5_can_send_packet_now,
+    /* int    (*send_packet)(...); */                               &hci_transport_h5_send_packet,
+    /* int    (*set_baudrate)(uint32_t baudrate); */                &hci_transport_h5_set_baudrate,
+    /* void   (*reset_link)(void); */                               &hci_transport_h5_reset_link,
+};
+
+// configure and return h5 singleton
 const hci_transport_t * hci_transport_h5_instance(const btstack_uart_block_t * uart_driver) {
-    if (hci_transport_h5 == NULL) {
-        hci_transport_h5 = (hci_transport_t*) malloc(sizeof(hci_transport_t));
-        memset(hci_transport_h5, 0, sizeof(hci_transport_t));
-        hci_transport_h5->name                          = "H5_POSIX";
-        hci_transport_h5->init                          = &hci_transport_h5_posix_init;
-        hci_transport_h5->open                          = &hci_transport_h5_posix_open;
-        hci_transport_h5->close                         = &hci_transport_h5_posix_close;
-        hci_transport_h5->register_packet_handler       = &hci_transport_h5_posix_register_packet_handler;
-        hci_transport_h5->can_send_packet_now           = &hci_transport_h5_posix_can_send_packet_now;
-        hci_transport_h5->send_packet                   = &hci_transport_h5_posix_send_packet;
-        hci_transport_h5->set_baudrate                  = &hci_transport_h5_posix_set_baudrate;
-        hci_transport_h5->reset_link                    = &hci_transport_h5_posix_reset_link;
-    }
     btstack_uart = uart_driver;
-    return (const hci_transport_t *) hci_transport_h5;
+    return &hci_transport_h5;
 }

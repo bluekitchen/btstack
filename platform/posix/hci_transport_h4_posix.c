@@ -45,13 +45,6 @@
 
 #include "btstack_config.h"
 
-#include <termios.h>  /* POSIX terminal control definitions */
-#include <fcntl.h>    /* File control definitions */
-#include <unistd.h>   /* UNIX standard function definitions */
-#include <stdio.h>
-#include <string.h>
-#include <pthread.h> 
-
 #include "btstack_debug.h"
 #include "hci.h"
 #include "hci_transport.h"
@@ -82,9 +75,6 @@ static btstack_uart_config_t uart_config;
 
 // write mutex
 static int uart_write_active;
-
-// single instance
-static hci_transport_t * hci_transport_h4 = NULL;
 
 static  void (*packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size) = dummy_handler;
 
@@ -182,11 +172,11 @@ static void hci_transport_h4_block_read(void){
 static void hci_transport_h4_init(const void * transport_config){
     // check for hci_transport_config_uart_t
     if (!transport_config) {
-        log_error("hci_transport_h4_posix: no config!");
+        log_error("hci_transport_h4: no config!");
         return;
     }
     if (((hci_transport_config_t*)transport_config)->type != HCI_TRANSPORT_CONFIG_UART) {
-        log_error("hci_transport_h4_posix: config not of type != HCI_TRANSPORT_CONFIG_UART!");
+        log_error("hci_transport_h4: config not of type != HCI_TRANSPORT_CONFIG_UART!");
         return;
     }
 
@@ -241,20 +231,20 @@ static int hci_transport_h4_send_packet(uint8_t packet_type, uint8_t * packet, i
 static void dummy_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
 }
 
-// get h4 singleton
+static const hci_transport_t hci_transport_h4 = {
+    /* const char * name; */                                        "H4",
+    /* void   (*init) (const void *transport_config); */            &hci_transport_h4_init,
+    /* int    (*open)(void); */                                     &hci_transport_h4_open,
+    /* int    (*close)(void); */                                    &hci_transport_h4_close,
+    /* void   (*register_packet_handler)(void (*handler)(...); */   &hci_transport_h4_register_packet_handler,
+    /* int    (*can_send_packet_now)(uint8_t packet_type); */       &hci_transport_h4_can_send_now,
+    /* int    (*send_packet)(...); */                               &hci_transport_h4_send_packet,
+    /* int    (*set_baudrate)(uint32_t baudrate); */                &hci_transport_h4_set_baudrate,
+    /* void   (*reset_link)(void); */                               NULL,
+};
+
+// configure and return h4 singleton
 const hci_transport_t * hci_transport_h4_instance(const btstack_uart_block_t * uart_driver) {
-    if (hci_transport_h4 == NULL) {
-        hci_transport_h4 = (hci_transport_t*)malloc( sizeof(hci_transport_t));
-        memset(hci_transport_h4, 0, sizeof(hci_transport_t));
-        hci_transport_h4->name                          = "H4_POSIX";
-        hci_transport_h4->init                          = hci_transport_h4_init;
-        hci_transport_h4->open                          = hci_transport_h4_open;
-        hci_transport_h4->close                         = hci_transport_h4_close;
-        hci_transport_h4->register_packet_handler       = hci_transport_h4_register_packet_handler;
-        hci_transport_h4->can_send_packet_now           = hci_transport_h4_can_send_now;
-        hci_transport_h4->send_packet                   = hci_transport_h4_send_packet;
-        hci_transport_h4->set_baudrate                  = hci_transport_h4_set_baudrate;
-    }
     btstack_uart = uart_driver;
-    return hci_transport_h4;
+    return &hci_transport_h4;
 }
