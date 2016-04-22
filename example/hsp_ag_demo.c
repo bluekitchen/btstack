@@ -243,7 +243,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                     switch (event[2]) {
                         case HSP_SUBEVENT_RFCOMM_CONNECTION_COMPLETE:
                             if (hsp_subevent_rfcomm_connection_complete_get_status(event)){
-                                printf("RFCOMM connection establishement failed with status %u\n", hsp_subevent_audio_connection_complete_get_handle(event));
+                                printf("RFCOMM connection establishement failed with status %u\n", hsp_subevent_rfcomm_connection_complete_get_status(event));
                             } else {
                                 printf("RFCOMM connection established.\n");
                             } 
