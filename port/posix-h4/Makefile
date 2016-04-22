@@ -11,7 +11,7 @@ CORE += \
 	btstack_link_key_db_fs.c \
 	btstack_run_loop_posix.c \
 	btstack_uart_block_posix.c \
-	hci_transport_h4_posix.c \
+	hci_transport_h4.c \
 	main.c \
 	stdin_support.c \
 #	btstack_chipset_bcm.c \

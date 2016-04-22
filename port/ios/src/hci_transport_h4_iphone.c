@@ -136,11 +136,11 @@ static uint8_t hci_packet[1+HCI_PACKET_BUFFER_SIZE]; // packet type + max(acl he
 static void h4_init(const void * transport_config){
     // check for hci_transport_config_uart_t
     if (!transport_config) {
-        log_error("hci_transport_h4_posix: no config!");
+        log_error("hci_transport_h4_iphone: no config!");
         return;
     }
     if (((hci_transport_config_t*)transport_config)->type != HCI_TRANSPORT_CONFIG_UART) {
-        log_error("hci_transport_h4_posix: config not of type != HCI_TRANSPORT_CONFIG_UART!");
+        log_error("hci_transport_h4_iphone: config not of type != HCI_TRANSPORT_CONFIG_UART!");
         return;
     }
     hci_transport_config_uart = (hci_transport_config_uart_t*) transport_config;
