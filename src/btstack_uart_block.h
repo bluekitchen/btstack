@@ -53,6 +53,21 @@ typedef struct {
     const char *device_name;
 } btstack_uart_config_t;
 
+typedef enum {
+    // UART active, sleep off
+    BTSTACK_UART_SLEEP_OFF = 0,
+    // used for eHCILL
+    BTSTACK_UART_SLEEP_RTS_HIGH_WAKE_ON_CTS_PULSE,
+    // used for H5 and for eHCILL without support for wake on CTS pulse
+    BTSTACK_UART_SLEEP_RTS_LOW_WAKE_ON_RX_EDGE, 
+
+} btstack_uart_sleep_mode_t;
+
+typedef enum { 
+    BTSTACK_UART_SLEEP_MASK_HIGH_WAKE_ON_CTS_PULSE  = 1 << BTSTACK_UART_SLEEP_RTS_HIGH_WAKE_ON_CTS_PULSE,
+    BTSTACK_UART_SLEEP_MASK_RTS_LOW_WAKE_ON_RX_EDGE = 1 << BTSTACK_UART_SLEEP_RTS_LOW_WAKE_ON_RX_EDGE
+} btstack_uart_sleep_mode_mask_t;
+
 typedef struct {
     /**
      * init transport
@@ -100,8 +115,22 @@ typedef struct {
      */
     void (*send_block)(const uint8_t *buffer, uint16_t length);
 
-    // void hal_uart_dma_set_sleep(uint8_t sleep);
-    // void hal_uart_dma_set_csr_irq_handler( void (*csr_irq_handler)(void));
+    // support for sleep modes in TI's H4 eHCILL and H5
+
+    /**
+     * query supported wakeup mechanisms
+     * @return supported_sleep_modes mask
+     */
+     int (*get_supported_sleep_modes);
+
+    /**
+     * set UART sleep mode - allows to turn off UART and it's clocks to save energy
+     * Supported sleep modes:
+     * - off: UART active, RTS low if receive_block was called and block not read yet
+     * - RTS high, wake on CTS: RTS should be high. On CTS pulse, UART gets enabled again and RTS goes to low
+     * - RTS low, wake on RX: data on RX will trigger UART enable, bytes might get lost
+     */
+    void (*set_sleep)(btstack_uart_sleep_mode_t sleep_mode);
 
 } btstack_uart_block_t;
 

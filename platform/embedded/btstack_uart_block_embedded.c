@@ -145,7 +145,9 @@ static const btstack_uart_block_t btstack_uart_embedded = {
     /* int  (*set_baudrate)(uint32_t baudrate); */                    &hal_uart_dma_set_baud,
     /* int  (*set_parity)(int parity); */                             &btstack_uart_embedded_set_parity,
     /* void (*receive_block)(uint8_t *buffer, uint16_t len); */       &btstack_uart_embedded_receive_block,
-    /* void (*send_block)(const uint8_t *buffer, uint16_t length); */ &btstack_uart_embedded_send_block    
+    /* void (*send_block)(const uint8_t *buffer, uint16_t length); */ &btstack_uart_embedded_send_block,    
+    /* int (*get_supported_sleep_modes); */                           NULL,
+    /* void (*set_sleep)(btstack_uart_sleep_mode_t sleep_mode); */    NULL
 };
 
 const btstack_uart_block_t * btstack_uart_block_embedded_instance(void){
