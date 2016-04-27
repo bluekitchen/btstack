@@ -38,7 +38,7 @@
 /*
  *  hci_h4_transport.c
  *
- *  HCI Transport API implementation for basic H4 protocol over POSIX
+ *  HCI Transport API implementation for H4 protocol over POSIX with optional support for eHCILL
  *
  *  Created by Matthias Ringwald on 4/29/09.
  */
@@ -50,10 +50,6 @@
 #include "hci_transport.h"
 #include "btstack_uart_block.h"
 
-// #ifdef HAVE_EHCILL
-// #error "HCI Transport H4 POSIX does not support eHCILL yet. Please remove HAVE_EHCILL from your btstack-config.h"
-// #endif 
-
 #ifdef HAVE_EHCILL
 
 // eHCILL commands
@@ -62,13 +58,17 @@
 #define EHCILL_WAKE_UP_IND     0x032
 #define EHCILL_WAKE_UP_ACK     0x033
 
-static void hci_transport_h4_ehcill_handle(uint8_t action);
+static int  hci_transport_h4_ehcill_outgoing_packet_ready(void);
+static int  hci_transport_h4_ehcill_sleep_mode_active(void);
+static void hci_transport_h4_echill_send_wakeup_ind(void);
+static void hci_transport_h4_ehcill_handle_command(uint8_t action);
+static void hci_transport_h4_ehcill_handle_ehcill_command_sent(void);
+static void hci_transport_h4_ehcill_handle_packet_sent(void);
+static void hci_transport_h4_ehcill_open(void);
 static void hci_transport_h4_ehcill_reset_statemachine(void);
 static void hci_transport_h4_ehcill_send_ehcill_command(void);
 static void hci_transport_h4_ehcill_sleep_ack_timer_setup(void);
-static int  hci_transport_h4_ehcill_outgoing_packet_ready(void);
-static void hci_transport_h4_ehcill_reactivate_rx(void);
-static void hci_transport_h4_echill_send_wakeup_ind(void);
+static void hci_transport_h4_ehcill_trigger_wakeup(void);
 
 typedef enum {
     EHCILL_STATE_SLEEP,
@@ -79,13 +79,9 @@ typedef enum {
 // eHCILL state machine
 static EHCILL_STATE ehcill_state;
 static uint8_t      ehcill_command_to_send;
-static uint8_t *    ehcill_defer_rx_buffer;
-static uint16_t     ehcill_defer_rx_size = 0; 
 
 // work around for eHCILL problem
 static btstack_timer_source_t ehcill_sleep_ack_timer;
-
-static uint8_t * tx_data;
 
 #endif
 
@@ -117,11 +113,14 @@ typedef enum {
 
 // UART Driver + Config
 static const btstack_uart_block_t * btstack_uart;
+static btstack_uart_sleep_mode_t btstack_uart_sleep_mode;
 static btstack_uart_config_t uart_config;
 
 // write state
-static TX_STATE tx_state;             // updated from block_sent callback
-static uint16_t  tx_len;                        // 0 == no outgoing packet
+static TX_STATE tx_state;         
+static uint8_t * tx_data;
+static uint16_t  tx_len;   // 0 == no outgoing packet
+
 static uint8_t packet_sent_event[] = { HCI_EVENT_TRANSPORT_PACKET_SENT, 0};
 
 static  void (*packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size) = dummy_handler;
@@ -147,7 +146,7 @@ static void hci_transport_h4_reset_statemachine(void){
 }
 
 static void hci_transport_h4_trigger_next_read(void){
-    // trigger next read
+    // log_info("hci_transport_h4_trigger_next_read: %u bytes", bytes_to_read);
     btstack_uart->receive_block(&hci_packet[read_pos], bytes_to_read);  
 }
 
@@ -175,12 +174,12 @@ static void hci_transport_h4_block_read(void){
                 case EHCILL_GO_TO_SLEEP_ACK:
                 case EHCILL_WAKE_UP_IND:
                 case EHCILL_WAKE_UP_ACK:
-                    bytes_to_read = 1;
-                    hci_transport_h4_ehcill_handle(hci_packet[0]);
+                    hci_transport_h4_ehcill_handle_command(hci_packet[0]);
+                    hci_transport_h4_reset_statemachine();
                     break;
 #endif
                 default:
-                    log_error("h4_process: invalid packet type 0x%02x", hci_packet[0]);
+                    log_error("hci_transport_h4: invalid packet type 0x%02x", hci_packet[0]);
                     hci_transport_h4_reset_statemachine();
                     break;
             }
@@ -195,7 +194,7 @@ static void hci_transport_h4_block_read(void){
             bytes_to_read = little_endian_read_16( hci_packet, 3);
             // check ACL length
             if (HCI_ACL_HEADER_SIZE + bytes_to_read >  HCI_PACKET_BUFFER_SIZE){
-                log_error("h4_process: invalid ACL payload len %u - only space for %u", bytes_to_read, HCI_PACKET_BUFFER_SIZE - HCI_ACL_HEADER_SIZE);
+                log_error("hci_transport_h4: invalid ACL payload len %u - only space for %u", bytes_to_read, HCI_PACKET_BUFFER_SIZE - HCI_ACL_HEADER_SIZE);
                 hci_transport_h4_reset_statemachine();
                 break;              
             }
@@ -218,51 +217,24 @@ static void hci_transport_h4_block_read(void){
 }
 
 static void hci_transport_h4_block_sent(void){
-    tx_state = TX_IDLE;
     switch (tx_state){
         case TX_W4_PACKET_SENT:
             // packet fully sent, reset state
             tx_len = 0;
+            tx_state = TX_IDLE;
 
 #ifdef HAVE_EHCILL
-            // now, send pending ehcill command if neccessary
-            switch (ehcill_command_to_send){
-                case EHCILL_GO_TO_SLEEP_ACK:
-                    hci_transport_h4_ehcill_sleep_ack_timer_setup();
-                    break;
-                case EHCILL_WAKE_UP_IND:
-                    hci_transport_h4_ehcill_send_ehcill_command();
-                    break;
-                default:
-                    break;
-            }
+            // notify eHCILL engine
+            hci_transport_h4_ehcill_handle_packet_sent();
 #endif
             // notify upper stack that it can send again
             packet_handler(HCI_EVENT_PACKET, &packet_sent_event[0], sizeof(packet_sent_event));
             break;
 
 #ifdef HAVE_EHCILL        
-        case TX_W4_EHCILL_SENT: {
-            int command = ehcill_command_to_send;
-            ehcill_command_to_send = 0;
-            if (command == EHCILL_GO_TO_SLEEP_ACK) {
-                // UART not needed after EHCILL_GO_TO_SLEEP_ACK was sent
-                if (btstack_uart->get_supported_sleep_modes() & BTSTACK_UART_SLEEP_MASK_RTS_HIGH_WAKE_ON_CTS_PULSE){
-                    btstack_uart->set_sleep(BTSTACK_UART_SLEEP_RTS_HIGH_WAKE_ON_CTS_PULSE);
-                } else if (btstack_uart->get_supported_sleep_modes() & BTSTACK_UART_SLEEP_MASK_RTS_LOW_WAKE_ON_RX_EDGE){
-                    btstack_uart->set_sleep(BTSTACK_UART_SLEEP_RTS_LOW_WAKE_ON_RX_EDGE);
-                }
-            }
-            if (hci_transport_h4_ehcill_outgoing_packet_ready()){
-                // already packet ready? then start wakeup
-                btstack_uart->set_sleep(BTSTACK_UART_SLEEP_OFF);
-                hci_transport_h4_ehcill_reactivate_rx();
-                hci_transport_h4_echill_send_wakeup_ind();
-            }
-            // TODO: trigger run loop
-            // btstack_run_loop_embedded_trigger();
+        case TX_W4_EHCILL_SENT: 
+            hci_transport_h4_ehcill_handle_ehcill_command_sent();
             break;
-        }
 #endif
 
         default:
@@ -280,8 +252,19 @@ static int hci_transport_h4_send_packet(uint8_t packet_type, uint8_t * packet, i
     packet--;
     *packet = packet_type;
 
-    tx_state = TX_W4_PACKET_SENT;
+    // store request
+    tx_len   = size;
+    tx_data  = packet;
 
+#ifdef HAVE_EHCILL
+    if (hci_transport_h4_ehcill_sleep_mode_active()){
+        hci_transport_h4_ehcill_trigger_wakeup();
+        return 0;
+    }
+#endif
+
+    // start sending
+    tx_state = TX_W4_PACKET_SENT;
     btstack_uart->send_block(packet, size);
     return 0;
 }
@@ -320,7 +303,7 @@ static int hci_transport_h4_open(void){
     tx_state = TX_IDLE;
 
 #ifdef HAVE_EHCILL
-    hci_transport_h4_ehcill_reset_statemachine();
+    hci_transport_h4_ehcill_open();
 #endif
     return 0;
 }
@@ -336,20 +319,30 @@ static void hci_transport_h4_register_packet_handler(void (*handler)(uint8_t pac
 static void dummy_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
 }
 
+//
 // --- main part of eHCILL implementation ---
+//
 
 #ifdef HAVE_EHCILL
 
-static void hci_transport_h4_ehcill_reactivate_rx(void){
-    if (!ehcill_defer_rx_size){
-        log_error("EHCILL: NO RX REQUEST PENDING");
-        return;
+static void hci_transport_h4_ehcill_open(void){
+    hci_transport_h4_ehcill_reset_statemachine();
+
+    // find best sleep mode to use: wake on CTS, wake on RX, none
+    btstack_uart_sleep_mode = BTSTACK_UART_SLEEP_OFF;
+    int supported_sleep_modes = 0;
+    if (btstack_uart->get_supported_sleep_modes){
+        supported_sleep_modes = btstack_uart->get_supported_sleep_modes();
     }
-    log_info ("EHCILL: Re-activate rx");
-    // receive request, clears RTS
-    int rx_size = ehcill_defer_rx_size;
-    ehcill_defer_rx_size = 0;
-    btstack_uart->receive_block(ehcill_defer_rx_buffer, rx_size);
+    if (supported_sleep_modes & BTSTACK_UART_SLEEP_MASK_RTS_HIGH_WAKE_ON_CTS_PULSE){
+        log_info("eHCILL: using wake on CTS");
+        btstack_uart_sleep_mode = BTSTACK_UART_SLEEP_RTS_HIGH_WAKE_ON_CTS_PULSE;
+    } else if (supported_sleep_modes & BTSTACK_UART_SLEEP_MASK_RTS_LOW_WAKE_ON_RX_EDGE){
+        log_info("eHCILL: using wake on RX");
+        btstack_uart_sleep_mode = BTSTACK_UART_SLEEP_RTS_LOW_WAKE_ON_RX_EDGE;
+    } else {
+        log_info("eHCILL: UART driver does not provide compatible sleep mode");
+    }
 }
 
 static void hci_transport_h4_echill_send_wakeup_ind(void){
@@ -364,30 +357,52 @@ static int hci_transport_h4_ehcill_outgoing_packet_ready(void){
     return tx_len != 0;
 }
 
-// static int  ehcill_sleep_mode_active(void){
-//     return ehcill_state == EHCILL_STATE_SLEEP;
-// }
+static int  hci_transport_h4_ehcill_sleep_mode_active(void){
+    return ehcill_state == EHCILL_STATE_SLEEP;
+}
 
 static void hci_transport_h4_ehcill_reset_statemachine(void){
     ehcill_state = EHCILL_STATE_AWAKE;
 }
 
 static void hci_transport_h4_ehcill_send_ehcill_command(void){
+    log_debug("eHCILL: send command %02x", ehcill_command_to_send);
     tx_state = TX_W4_EHCILL_SENT;
     btstack_uart->send_block(&ehcill_command_to_send, 1);
 }
 
 static void hci_transport_h4_ehcill_sleep_ack_timer_handler(btstack_timer_source_t * timer){
+    log_debug("eHCILL: timer triggered");
     hci_transport_h4_ehcill_send_ehcill_command();
 }
 
 static void hci_transport_h4_ehcill_sleep_ack_timer_setup(void){
     // setup timer
-    ehcill_sleep_ack_timer.process = &hci_transport_h4_ehcill_sleep_ack_timer_handler;
+    log_debug("eHCILL: set timer for sending command");
+    btstack_run_loop_set_timer_handler(&ehcill_sleep_ack_timer, &hci_transport_h4_ehcill_sleep_ack_timer_handler);
     btstack_run_loop_set_timer(&ehcill_sleep_ack_timer, 50);
     btstack_run_loop_add_timer(&ehcill_sleep_ack_timer);
+
     // TODO: trigger run loop
     // btstack_run_loop_embedded_trigger();    
+}
+
+static void hci_transport_h4_ehcill_trigger_wakeup(void){
+    switch (tx_state){
+        case TX_W2_EHCILL_SEND:
+        case TX_W4_EHCILL_SENT:
+            // wake up / sleep ack in progress, nothing to do now
+            return;
+        case TX_IDLE:
+        default:
+            // all clear, prepare for wakeup
+            break;
+    }
+    // UART needed again
+    if (btstack_uart_sleep_mode){
+        btstack_uart->set_sleep(BTSTACK_UART_SLEEP_OFF);
+    }
+    hci_transport_h4_echill_send_wakeup_ind();
 }
 
 static void hci_transport_h4_ehcill_schedule_ecill_command(uint8_t command){
@@ -408,16 +423,14 @@ static void hci_transport_h4_ehcill_schedule_ecill_command(uint8_t command){
     }
 }
 
-static void hci_transport_h4_ehcill_handle(uint8_t action){
+static void hci_transport_h4_ehcill_handle_command(uint8_t action){
     // log_info("hci_transport_h4_ehcill_handle: %x, state %u, defer_rx %u", action, ehcill_state, ehcill_defer_rx_size);
     switch(ehcill_state){
         case EHCILL_STATE_AWAKE:
             switch(action){
                 case EHCILL_GO_TO_SLEEP_IND:
-                    // 1. set RTS high - already done by BT RX ISR
-                    // 2. enable CTS IRQ  - CTS always enabled
                     ehcill_state = EHCILL_STATE_SLEEP;
-                    log_info("EHCILL: GO_TO_SLEEP_IND RX");
+                    log_info("eHCILL: GO_TO_SLEEP_IND RX");
                     hci_transport_h4_ehcill_schedule_ecill_command(EHCILL_GO_TO_SLEEP_ACK);
                     break;
                 default:
@@ -429,7 +442,7 @@ static void hci_transport_h4_ehcill_handle(uint8_t action){
             switch(action){
                 case EHCILL_WAKE_UP_IND:
                     ehcill_state = EHCILL_STATE_AWAKE;
-                    log_info("EHCILL: WAKE_UP_IND RX");
+                    log_info("eHCILL: WAKE_UP_IND RX");
                     hci_transport_h4_ehcill_schedule_ecill_command(EHCILL_WAKE_UP_ACK);
                     break;
                     
@@ -442,7 +455,7 @@ static void hci_transport_h4_ehcill_handle(uint8_t action){
             switch(action){
                 case EHCILL_WAKE_UP_IND:
                 case EHCILL_WAKE_UP_ACK:
-                    log_info("EHCILL: WAKE_UP_IND or ACK");
+                    log_info("eHCILL: WAKE_UP_IND or ACK");
                     tx_state = TX_W4_PACKET_SENT;
                     ehcill_state = EHCILL_STATE_AWAKE;
                     btstack_uart->send_block(tx_data, tx_len);
@@ -453,6 +466,43 @@ static void hci_transport_h4_ehcill_handle(uint8_t action){
             break;
     }
 }
+
+static void hci_transport_h4_ehcill_handle_packet_sent(void){
+    // now, send pending ehcill command if neccessary
+    switch (ehcill_command_to_send){
+        case EHCILL_GO_TO_SLEEP_ACK:
+            hci_transport_h4_ehcill_sleep_ack_timer_setup();
+            break;
+        case EHCILL_WAKE_UP_IND:
+            hci_transport_h4_ehcill_send_ehcill_command();
+            break;
+        default:
+            break;
+    }
+}
+
+static void hci_transport_h4_ehcill_handle_ehcill_command_sent(void){
+    tx_state = TX_IDLE;
+    int command = ehcill_command_to_send;
+    ehcill_command_to_send = 0;
+    if (command == EHCILL_GO_TO_SLEEP_ACK) {
+        log_info("eHCILL: GO_TO_SLEEP_ACK sent, enter sleep mode");
+        // UART not needed after EHCILL_GO_TO_SLEEP_ACK was sent
+        if (btstack_uart_sleep_mode != BTSTACK_UART_SLEEP_OFF){
+            btstack_uart->set_sleep(btstack_uart_sleep_mode);
+        }
+    }
+    // already packet ready? then start wakeup
+    if (hci_transport_h4_ehcill_outgoing_packet_ready()){
+        if (btstack_uart_sleep_mode){
+            btstack_uart->set_sleep(BTSTACK_UART_SLEEP_OFF);
+        }
+        hci_transport_h4_echill_send_wakeup_ind();
+    }
+    // TODO: trigger run loop
+    // btstack_run_loop_embedded_trigger();
+}
+
 #endif
 // --- end of eHCILL implementation ---------
 
