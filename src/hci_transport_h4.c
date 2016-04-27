@@ -85,7 +85,10 @@ static uint16_t     ehcill_defer_rx_size = 0;
 // work around for eHCILL problem
 static btstack_timer_source_t ehcill_sleep_ack_timer;
 
+static uint8_t * tx_data;
+
 #endif
+
 
 // assert pre-buffer for packet type is available
 #if !defined(HCI_OUTGOING_PRE_BUFFER_SIZE) || (HCI_OUTGOING_PRE_BUFFER_SIZE == 0)
@@ -118,7 +121,6 @@ static btstack_uart_config_t uart_config;
 
 // write state
 static TX_STATE tx_state;             // updated from block_sent callback
-static uint8_t * tx_data;
 static uint16_t  tx_len;                        // 0 == no outgoing packet
 static uint8_t packet_sent_event[] = { HCI_EVENT_TRANSPORT_PACKET_SENT, 0};
 
