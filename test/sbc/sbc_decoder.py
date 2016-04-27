@@ -156,6 +156,7 @@ def get_frame_sample_frequences(fin, bit_count):
     for i in range(bit_count):
         get_bit(fin)
 
+
 def sbc_bit_allocation_stereo_joint(fin, frame, ch):
     bitneed = np.zeros(shape=(frame.nr_channels, frame.nr_subbands))
     bits    = np.zeros(shape=(frame.nr_channels, frame.nr_subbands))
@@ -344,6 +345,15 @@ def sbc_bit_allocation_mono_dual(fin, frame):
 
     return bits
 
+def sbc_bit_allocation(fin, frame):
+    if frame.channel_mode == MONO or frame.channel_mode == DUAL_CHANNEL:
+        return sbc_bit_allocation_mono_dual(fin,frame)
+    elif frame.channel_mode == STEREO or frame.channel_mode == JOINT_STEREO:
+        return sbc_bit_allocation_stereo_joint(fin, frame)
+    else:
+        print "Wrong channel mode ", frame.channel_mode
+        return -1
+
 def sbc_process_frame(fin, frame):
     global sb_sample
 
@@ -389,7 +399,7 @@ def sbc_process_frame(fin, frame):
         for sb in range(frame.nr_subbands):
             frame.scalefactor[ch][sb] = 1 << (frame.scale_factor[ch][sb] + 1)
 
-    bits = sbc_bit_allocation_mono_dual(fin, frame)
+    bits = sbc_bit_allocation(fin, frame)
     # print "bits: ", bits
     #print "Nr blocks ", frame.nr_blocks, frame.nr_channels, frame.nr_subbands
 
@@ -428,8 +438,10 @@ def sbc_process_frame(fin, frame):
         for blk in range(frame.nr_blocks):
             for sb in range(frame.nr_subbands):
                 if frame.join[sb]==1:
-                    sb_sample[blk][0][sb] = sb_sample[blk][0][sb] + sb_sample[blk][1][sb]
-                    sb_sample[blk][1][sb] = sb_sample[blk][0][sb] - 2 * sb_sample[blk][1][sb]
+                    ch_a = sb_sample[blk][0][sb] + sb_sample[blk][1][sb]
+                    ch_b = sb_sample[blk][0][sb] - sb_sample[blk][1][sb]
+                    sb_sample[blk][0][sb] = ch_a
+                    sb_sample[blk][1][sb] = ch_b
     
     # print "Scale factors ", frame.scale_factor[0]
 
@@ -438,7 +450,6 @@ def sbc_process_frame(fin, frame):
     #     print "block %2d - recon. sample: %s" % (blk, sb_sample[blk][0])
     # print 
     return 0
-
 
 
 def sbc_synthesis(frame, ch, blk, proto_table):
@@ -468,7 +479,7 @@ def sbc_synthesis(frame, ch, blk, proto_table):
     for i in range(5):
         for j in range(M):
             U[i*M2+j] = V[ch][i*2*M2+j]
-            U[(i*2+1)*M+j] = V[ch][(i*2+1)*2*M+j]
+            U[(i*2+1)*M+j] = V[ch][(i*4+3)*M+j]
 
     for i in range(L):
         D = proto_table[i] * (-M)
