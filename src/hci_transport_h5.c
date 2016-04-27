@@ -49,12 +49,6 @@
 #include "hci_transport.h"
 #include "btstack_uart_block.h"
 
-#ifdef HAVE_EHCILL
-#error "HCI Transport H5 does not support eHCILL. Please either use (H4 + HAVE_EHCILL) or H5 Transport"
-#endif 
-
-/// newer
-
 typedef enum {
     LINK_UNINITIALIZED,
     LINK_INITIALIZED,

@@ -64,8 +64,8 @@ typedef enum {
 } btstack_uart_sleep_mode_t;
 
 typedef enum { 
-    BTSTACK_UART_SLEEP_MASK_HIGH_WAKE_ON_CTS_PULSE  = 1 << BTSTACK_UART_SLEEP_RTS_HIGH_WAKE_ON_CTS_PULSE,
-    BTSTACK_UART_SLEEP_MASK_RTS_LOW_WAKE_ON_RX_EDGE = 1 << BTSTACK_UART_SLEEP_RTS_LOW_WAKE_ON_RX_EDGE
+    BTSTACK_UART_SLEEP_MASK_RTS_HIGH_WAKE_ON_CTS_PULSE  = 1 << BTSTACK_UART_SLEEP_RTS_HIGH_WAKE_ON_CTS_PULSE,
+    BTSTACK_UART_SLEEP_MASK_RTS_LOW_WAKE_ON_RX_EDGE     = 1 << BTSTACK_UART_SLEEP_RTS_LOW_WAKE_ON_RX_EDGE
 } btstack_uart_sleep_mode_mask_t;
 
 typedef struct {
@@ -121,7 +121,7 @@ typedef struct {
      * query supported wakeup mechanisms
      * @return supported_sleep_modes mask
      */
-     int (*get_supported_sleep_modes);
+     int (*get_supported_sleep_modes)(void);
 
     /**
      * set UART sleep mode - allows to turn off UART and it's clocks to save energy
