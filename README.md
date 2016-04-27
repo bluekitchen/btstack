@@ -1,5 +1,5 @@
 **_Note: Major API Changes. For older projects, you may use the [v0.9 branch](https://github.com/bluekitchen/btstack/tree/v0.9). 
-Please see [Migration notes]([Migration notes]) _**
+Please see [Migration notes](https://github.com/bluekitchen/btstack/blob/master/doc/manual/docs/appendix/migration.md)_**
 
 # Welcome to BTstack
 
@@ -27,8 +27,8 @@ It has been qualified with the the Bluetooth SIG for GAP, IOP, HFP, HSP, SPP, PA
 GATT, SM of the Bluetooth 4.2 LE Central and Peripheral roles (QD ID 25340).
 
 ## Documentation
-- [HTML](http://bluekitchen-gmbh.com/btstack/v1.0)
-- [PDF](http://bluekitchen-gmbh.com/btstack_v1.0.pdf)
+- [HTML](http://bluekitchen-gmbh.com/btstack)
+- [PDF](http://bluekitchen-gmbh.com/btstack.pdf)
 
 ## Supported Protocols
 * L2CAP            
