@@ -164,20 +164,6 @@ void hal_uart_dma_init(void){
 
     // HACK: CTS doesn't seem to work right now
     msleep(250);
-
-    // HACK: CSR seems to do an auto-baud on the uart, which makes the first HCI RESET fail
-    // 2 options: a) check for CTS going high within 10 ms, b) just send HCI RESET twice
-
-//    const uint8_t hci_reset_cmd[] = {0x01, 0x03, 0x0c, 0x00};
-//    int pos = 0;
-//    while(pos < sizeof(hci_reset_cmd)){
-//        if (PLIB_USART_TransmitterIsEmpty(BT_USART_ID)){
-//            PLIB_USART_TransmitterByteSend(BT_USART_ID, hci_reset_cmd[pos]);
-//            pos++;
-//        }
-//    }
-//    msleep(250);
-
 }
 
 void hal_uart_dma_set_block_received( void (*the_block_handler)(void)){
@@ -193,9 +179,9 @@ void hal_uart_dma_set_csr_irq_handler( void (*the_irq_handler)(void)){
 }
 
 int  hal_uart_dma_set_baud(uint32_t baud){
-    PLIB_USART_Disable(BT_USART_ID);
-    PLIB_USART_BaudRateSet(BT_USART_ID, SYS_CLK_PeripheralFrequencyGet(CLK_BUS_PERIPHERAL_1), baud);
-    PLIB_USART_Enable(BT_USART_ID);
+//    PLIB_USART_Disable(BT_USART_ID);
+//    PLIB_USART_BaudRateSet(BT_USART_ID, SYS_CLK_PeripheralFrequencyGet(CLK_BUS_PERIPHERAL_1), baud);
+//    PLIB_USART_Enable(BT_USART_ID);
     return 0;
 }
 
@@ -237,7 +223,7 @@ void BTSTACK_Initialize ( void )
 
     hci_dump_open(NULL, HCI_DUMP_STDOUT);
 
-    const hci_transport_t * transport = hci_transport_h4_instance(btstack_uart_block_embedded_instance);
+    const hci_transport_t * transport = hci_transport_h4_instance(btstack_uart_block_embedded_instance());
     hci_init(transport, &config);
     hci_set_chipset(btstack_chipset_csr_instance());
 
