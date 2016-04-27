@@ -120,6 +120,7 @@ static int hci_transport_link_actions;
 // UART Driver + Config
 static const btstack_uart_block_t * btstack_uart;
 static btstack_uart_config_t uart_config;
+static btstack_uart_sleep_mode_t btstack_uart_sleep_mode;
 
 static int uart_write_active;
 
@@ -487,7 +488,12 @@ static void hci_transport_h5_process_frame(uint16_t frame_size){
                         break;
                     }
                     if (memcmp(slip_payload, link_control_sleep, sizeof(link_control_sleep)) == 0){
-                        log_info("link: received sleep message");
+                        if (btstack_uart_sleep_mode){
+                            log_info("link: received sleep message. Enabling UART Sleep.");
+                            btstack_uart->set_sleep(btstack_uart_sleep_mode);
+                        } else {
+                            log_info("link: received sleep message. UART Sleep not supported");
+                        }
                         link_peer_asleep = 1;
                         break;
                     }
@@ -585,6 +591,19 @@ static int hci_transport_h5_open(void){
         return res;
     }        
     
+    // check if wake on RX can be used
+    btstack_uart_sleep_mode = BTSTACK_UART_SLEEP_OFF;
+    int supported_sleep_modes = 0;
+    if (btstack_uart->get_supported_sleep_modes){
+        supported_sleep_modes = btstack_uart->get_supported_sleep_modes();
+    }
+    if (supported_sleep_modes & BTSTACK_UART_SLEEP_MASK_RTS_LOW_WAKE_ON_RX_EDGE){
+        log_info("H5: using wake on RX");
+        btstack_uart_sleep_mode = BTSTACK_UART_SLEEP_RTS_LOW_WAKE_ON_RX_EDGE;
+    } else {
+        log_info("H5: UART driver does not provide compatible sleep mode");
+    }
+
     // setup resend timeout
     hci_transport_link_update_resend_timeout(uart_config.baudrate);
 
@@ -625,6 +644,10 @@ static int hci_transport_h5_send_packet(uint8_t packet_type, uint8_t *packet, in
 
     // send wakeup first
     if (link_peer_asleep){
+        if (btstack_uart_sleep_mode){
+            log_info("h5: disable UART sleep");
+            btstack_uart->set_sleep(BTSTACK_UART_SLEEP_OFF);
+        }
         hci_transport_link_actions |= HCI_TRANSPORT_LINK_SEND_WAKEUP;
         hci_transport_link_set_timer(LINK_WAKEUP_MS);
     } else {
