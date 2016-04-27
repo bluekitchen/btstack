@@ -383,9 +383,6 @@ static void hci_transport_h4_ehcill_sleep_ack_timer_setup(void){
     btstack_run_loop_set_timer_handler(&ehcill_sleep_ack_timer, &hci_transport_h4_ehcill_sleep_ack_timer_handler);
     btstack_run_loop_set_timer(&ehcill_sleep_ack_timer, 50);
     btstack_run_loop_add_timer(&ehcill_sleep_ack_timer);
-
-    // TODO: trigger run loop
-    // btstack_run_loop_embedded_trigger();    
 }
 
 static void hci_transport_h4_ehcill_trigger_wakeup(void){
@@ -500,8 +497,6 @@ static void hci_transport_h4_ehcill_handle_ehcill_command_sent(void){
         }
         hci_transport_h4_echill_send_wakeup_ind();
     }
-    // TODO: trigger run loop
-    // btstack_run_loop_embedded_trigger();
 }
 
 #endif
