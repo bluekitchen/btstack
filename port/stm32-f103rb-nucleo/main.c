@@ -442,9 +442,6 @@ int main(void)
     hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
 
-    // enable eHCILL
-    btstack_chipset_cc256x_enable_ehcill(1);
-
 	// hand over to btstack embedded code 
     btstack_main();
 

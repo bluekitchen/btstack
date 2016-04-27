@@ -50,7 +50,7 @@
 #include "hci_transport.h"
 #include "btstack_uart_block.h"
 
-#ifdef HAVE_EHCILL
+#ifdef ENABLE_EHCILL
 
 // eHCILL commands
 #define EHCILL_GO_TO_SLEEP_IND 0x030
@@ -80,6 +80,8 @@ typedef enum {
 static EHCILL_STATE ehcill_state;
 static uint8_t      ehcill_command_to_send;
 
+static btstack_uart_sleep_mode_t btstack_uart_sleep_mode;
+
 // work around for eHCILL problem
 static btstack_timer_source_t ehcill_sleep_ack_timer;
 
@@ -104,7 +106,7 @@ typedef enum {
 typedef enum {
     TX_IDLE = 1,
     TX_W4_PACKET_SENT,
-#ifdef HAVE_EHCILL
+#ifdef ENABLE_EHCILL
     TX_W4_WAKEUP, 
     TX_W2_EHCILL_SEND,
     TX_W4_EHCILL_SENT,
@@ -113,7 +115,6 @@ typedef enum {
 
 // UART Driver + Config
 static const btstack_uart_block_t * btstack_uart;
-static btstack_uart_sleep_mode_t btstack_uart_sleep_mode;
 static btstack_uart_config_t uart_config;
 
 // write state
@@ -169,7 +170,7 @@ static void hci_transport_h4_block_read(void){
                     bytes_to_read = HCI_SCO_HEADER_SIZE;
                     h4_state = H4_W4_SCO_HEADER;
                     break;
-#ifdef HAVE_EHCILL
+#ifdef ENABLE_EHCILL
                 case EHCILL_GO_TO_SLEEP_IND:
                 case EHCILL_GO_TO_SLEEP_ACK:
                 case EHCILL_WAKE_UP_IND:
@@ -223,7 +224,7 @@ static void hci_transport_h4_block_sent(void){
             tx_len = 0;
             tx_state = TX_IDLE;
 
-#ifdef HAVE_EHCILL
+#ifdef ENABLE_EHCILL
             // notify eHCILL engine
             hci_transport_h4_ehcill_handle_packet_sent();
 #endif
@@ -231,7 +232,7 @@ static void hci_transport_h4_block_sent(void){
             packet_handler(HCI_EVENT_PACKET, &packet_sent_event[0], sizeof(packet_sent_event));
             break;
 
-#ifdef HAVE_EHCILL        
+#ifdef ENABLE_EHCILL        
         case TX_W4_EHCILL_SENT: 
             hci_transport_h4_ehcill_handle_ehcill_command_sent();
             break;
@@ -256,7 +257,7 @@ static int hci_transport_h4_send_packet(uint8_t packet_type, uint8_t * packet, i
     tx_len   = size;
     tx_data  = packet;
 
-#ifdef HAVE_EHCILL
+#ifdef ENABLE_EHCILL
     if (hci_transport_h4_ehcill_sleep_mode_active()){
         hci_transport_h4_ehcill_trigger_wakeup();
         return 0;
@@ -302,7 +303,7 @@ static int hci_transport_h4_open(void){
 
     tx_state = TX_IDLE;
 
-#ifdef HAVE_EHCILL
+#ifdef ENABLE_EHCILL
     hci_transport_h4_ehcill_open();
 #endif
     return 0;
@@ -323,7 +324,7 @@ static void dummy_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
 // --- main part of eHCILL implementation ---
 //
 
-#ifdef HAVE_EHCILL
+#ifdef ENABLE_EHCILL
 
 static void hci_transport_h4_ehcill_open(void){
     hci_transport_h4_ehcill_reset_statemachine();

@@ -121,9 +121,6 @@ static void btstack_setup(void){
     // inform about BTstack state
     hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
-
-    // use eHCILL
-    // btstack_chipset_cc256x_enable_ehcill(1);    
 }
 
 int btstack_main(int argc, const char * argv[]);

@@ -59,7 +59,7 @@
 #error HCI_OUTGOING_PRE_BUFFER_SIZE not defined. Please update hci.h
 #endif
 
-#ifdef HAVE_EHCILL
+#ifdef ENABLE_EHCILL
 #error "HCI Transport H4 DMA does not support eHCILL. Please use hci_transport_h4_ehcill_dma.c instead."
 #endif 
 

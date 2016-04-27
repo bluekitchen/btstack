@@ -84,7 +84,6 @@ extern const uint32_t cc256x_init_script_size;
 // init script
 static uint32_t init_script_offset  = 0;
 static int16_t  init_power_in_dB    = 13; // 13 dBm
-static int      init_ehcill_enabled = 0;
 
 // support for SCO over HCI
 #ifdef ENABLE_SCO_OVER_HCI
@@ -193,11 +192,11 @@ static void update_set_class2_single_power(uint8_t * hci_cmd_buffer){
 
 // eHCILL activate from http://e2e.ti.com/support/low_power_rf/f/660/p/134855/484776.aspx
 static void update_sleep_mode_configurations(uint8_t * hci_cmd_buffer){
-    if (init_ehcill_enabled) {
-        hci_cmd_buffer[4] = 1;
-    } else {
-        hci_cmd_buffer[4] = 0;
-    }
+#ifdef ENABLE_EHCILL  
+    hci_cmd_buffer[4] = 1;
+#else
+    hci_cmd_buffer[4] = 0;
+#endif
 }
 
 static void update_init_script_command(uint8_t *hci_cmd_buffer){
@@ -275,14 +274,6 @@ static btstack_chipset_result_t chipset_next_command(uint8_t * hci_cmd_buffer){
 
 
 // MARK: public API
-void btstack_chipset_cc256x_enable_ehcill(int on){
-    init_ehcill_enabled = on;
-}
-
-int btstack_chipset_cc256x_ehcill_enabled(void){
-    return init_ehcill_enabled;
-}
-
 void btstack_chipset_cc256x_set_power(int16_t power_in_dB){
     init_power_in_dB = power_in_dB;
 }
