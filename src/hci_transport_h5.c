@@ -87,6 +87,7 @@ typedef enum {
 static const uint8_t link_control_sync[] =   { 0x01, 0x7e};
 static const uint8_t link_control_sync_response[] = { 0x02, 0x7d};
 static const uint8_t link_control_config[] = { 0x03, 0xfc, LINK_CONFIG_FIELD};
+static const uint8_t link_control_config_prefix_len  = 2;
 static const uint8_t link_control_config_response[] = { 0x04, 0x7b, LINK_CONFIG_FIELD};
 static const uint8_t link_control_config_response_prefix_len  = 2;
 static const uint8_t link_control_wakeup[] = { 0x05, 0xfa};
@@ -429,7 +430,7 @@ static void hci_transport_h5_process_frame(uint16_t frame_size){
                 log_info("link: received sync");
                 hci_transport_link_actions |= HCI_TRANSPORT_LINK_SEND_SYNC_RESPONSE;
             }
-            if (memcmp(slip_payload, link_control_config, sizeof(link_control_config)) == 0){
+            if (memcmp(slip_payload, link_control_config, link_control_config_prefix_len) == 0){
                 log_info("link: received config");
                 hci_transport_link_actions |= HCI_TRANSPORT_LINK_SEND_CONFIG_RESPONSE;
             }
@@ -542,12 +543,12 @@ static void hci_transport_link_update_resend_timeout(uint32_t baudrate){
 static uint8_t hci_transport_link_read_byte;
 
 static void hci_transport_h5_read_next_byte(void){
-    log_info("hci_transport_h5_read_next_byte");
+    log_debug("h5: rx nxt");
     btstack_uart->receive_block(&hci_transport_link_read_byte, 1);    
 }
 
 static void hci_transport_h5_block_received(){
-    // log_info("slip: process 0x%02x", hci_transport_link_read_byte);
+    log_debug("slip: process 0x%02x", hci_transport_link_read_byte);
     btstack_slip_decoder_process(hci_transport_link_read_byte);
     uint16_t frame_size = btstack_slip_decoder_frame_size();
     if (frame_size) {
