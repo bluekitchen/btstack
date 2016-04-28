@@ -78,13 +78,6 @@ static hci_transport_config_uart_t config = {
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
-static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    if (packet_type != HCI_EVENT_PACKET) return;
-    if (hci_event_packet_get_type(packet) != BTSTACK_EVENT_STATE) return;
-    if (btstack_event_state_get_state(packet) != HCI_STATE_WORKING) return;
-    printf("BTstack up and running.\n");
-}
-
 static void sigint_handler(int param){
 
 #ifndef _WIN32
@@ -105,16 +98,8 @@ void hal_led_toggle(void){
     printf("LED State %u\n", led_state);
 }
 static void use_fast_uart(void){
-#if defined(HAVE_POSIX_B240000_MAPPED_TO_3000000) || defined(HAVE_POSIX_B600_MAPPED_TO_3000000)
-    printf("Using 3000000 baud.\n");
-    config.baudrate_main = 3000000;
-#elif defined(HAVE_POSIX_B1200_MAPPED_TO_2000000) || defined(HAVE_POSIX_B300_MAPPED_TO_2000000)
-    printf("Using 2000000 baud.\n");
-    config.baudrate_main = 2000000;
-#else
-    printf("Using 921600 baud.\n");
-    config.baudrate_main = 921600;
-#endif
+    // printf("Using 921600 baud.\n");
+    // config.baudrate_main = 921600;
 }
 
 static void local_version_information_callback(uint8_t * packet){
@@ -139,9 +124,6 @@ static void local_version_information_callback(uint8_t * packet){
             printf("Texas Instruments - CC256x compatible chipset.\n");
             use_fast_uart();
             hci_set_chipset(btstack_chipset_cc256x_instance());
-#ifdef ENABLE_EHCILL
-            printf("eHCILL enabled.\n");
-#endif
             break;
         case COMPANY_ID_BROADCOM_CORPORATION:   
             printf("Broadcom chipset. Not supported yet\n");
@@ -162,6 +144,14 @@ static void local_version_information_callback(uint8_t * packet){
     }
 }
 
+static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    if (packet_type != HCI_EVENT_PACKET) return;
+    if (hci_event_packet_get_type(packet) != BTSTACK_EVENT_STATE) return;
+    if (btstack_event_state_get_state(packet) != HCI_STATE_WORKING) return;
+    printf("BTstack up and running.\n");
+}
+
+
 int main(int argc, const char * argv[]){
 
 	/// GET STARTED with BTstack ///
@@ -176,17 +166,17 @@ int main(int argc, const char * argv[]){
 
     // init HCI
     const btstack_uart_block_t * uart_driver = btstack_uart_block_posix_instance();
-	const hci_transport_t * transport = hci_transport_h4_instance(uart_driver);
+    const hci_transport_t * transport = hci_transport_h5_instance(uart_driver);
     const btstack_link_key_db_t * link_key_db = btstack_link_key_db_fs_instance();
 	hci_init(transport, (void*) &config);
     hci_set_link_key_db(link_key_db);
     
-    // inform about BTstack state
-    hci_event_callback_registration.callback = &packet_handler;
-    hci_add_event_handler(&hci_event_callback_registration);
-
     // setup dynamic chipset driver setup
     hci_set_local_version_information_callback(&local_version_information_callback);
+
+    // register for HCI events
+    hci_event_callback_registration.callback = &packet_handler;
+    hci_add_event_handler(&hci_event_callback_registration);
 
     // handle CTRL-c
     signal(SIGINT, sigint_handler);

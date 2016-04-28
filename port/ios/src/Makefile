@@ -43,6 +43,7 @@ BTdaemon_FILES = \
 	daemon.c  				  \
 	hci.c                     \
 	hci_transport_h4_iphone.c \
+	btstack_uart_block_posix.c \
 	l2cap.c                   \
 	l2cap_signaling.c         \
 	platform_iphone.m         \

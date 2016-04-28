@@ -1970,7 +1970,7 @@ int main (int argc,  char * const * argv){
     hci_transport_config_uart.baudrate_main = 0;
     hci_transport_config_uart.flowcontrol = 1;
     hci_transport_config_uart.device_name   = UART_DEVICE;
-    transport = hci_transport_h4_instance();
+    transport = hci_transport_h4_instance(btstack_uart_block_posix_instance());
 
 #ifdef HAVE_PLATFORM_IPHONE_OS
     // use default (max) UART baudrate over netgraph interface

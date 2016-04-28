@@ -33,6 +33,7 @@ COMMON = \
     hci.c			          \
     hci_cmd.c		          \
     hci_dump.c		          \
+    btstack_uart_block_embedded.c \
     hci_transport_h4_ehcill_embedded.c \
     l2cap.c			          \
     l2cap_signaling.c         \
@@ -69,6 +70,8 @@ include ${BTSTACK_ROOT}/chipset/cc256x/Makefile.inc
 
 clean:
 	rm -f *.map *.o *.d *.out *.elf *.bin *.hex 
+
+distclean: clean
 	make -C libopencm3 clean
 
 # git clone and compile libopencm3

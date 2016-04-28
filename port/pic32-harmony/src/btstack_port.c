@@ -123,10 +123,10 @@ static uint8_t * tx_buffer_ptr = 0;
 
 // reset Bluetooth using n_shutdown
 static void bluetooth_power_cycle(void){
-    printf("Bluetooth power cycle Reset ON\n");
+    printf("Bluetooth power cycle: Reset ON\n");
     SYS_PORTS_PinClear(PORTS_ID_0, BT_RESET_PORT, BT_RESET_BIT);
     msleep(250);
-    printf("Bluetooth power cycle Reset OFF\n");
+    printf("Bluetooth power cycle: Reset OFF\n");
     SYS_PORTS_PinSet(PORTS_ID_0, BT_RESET_PORT, BT_RESET_BIT);
 }
 
@@ -148,36 +148,30 @@ void hal_uart_dma_init(void){
     PLIB_USART_HandshakeModeSelect(BT_USART_ID, USART_HANDSHAKE_MODE_FLOW_CONTROL);
     PLIB_USART_OperationModeSelect(BT_USART_ID, USART_ENABLE_TX_RX_CTS_RTS_USED);
     PLIB_USART_LineControlModeSelect(BT_USART_ID, USART_8N1);
-    PLIB_USART_TransmitterEnable(BT_USART_ID);
-//    PLIB_USART_TransmitterInterruptModeSelect(bluetooth_uart_id, USART_TRANSMIT_FIFO_IDLE);
-    PLIB_USART_ReceiverEnable(BT_USART_ID);
-//    PLIB_USART_ReceiverInterruptModeSelect(bluetooth_uart_id, USART_RECEIVE_FIFO_ONE_CHAR);
 
+    // BCSP on CSR requires even parity
+    // PLIB_USART_LineControlModeSelect(BT_USART_ID, USART_8E1);
+
+    PLIB_USART_TransmitterEnable(BT_USART_ID);
+    // PLIB_USART_TransmitterInterruptModeSelect(bluetooth_uart_id, USART_TRANSMIT_FIFO_IDLE);
+
+    // allow overrun mode: not needed for H4. CSR with BCSP/H5 does not enable RTS/CTS
+    PLIB_USART_RunInOverflowEnable(BT_USART_ID);
+
+    PLIB_USART_ReceiverEnable(BT_USART_ID);
+    // PLIB_USART_ReceiverInterruptModeSelect(bluetooth_uart_id, USART_RECEIVE_FIFO_ONE_CHAR);
+    
     PLIB_USART_Enable(BT_USART_ID);
 
     // enable _RESET
-    SYS_PORTS_PinDirectionSelect(PORTS_ID_0, SYS_PORTS_DIRECTION_OUTPUT, BT_RESET_PORT, BT_RESET_BIT);
-
+    SYS_PORTS_PinDirectionSelect(PORTS_ID_0, SYS_PORTS_DIRECTION_OUTPUT, BT_RESET_PORT, BT_RESET_BIT); 
+    
     bluetooth_power_cycle();
 
     // After reset, CTS is high and we need to wait until CTS is low again
 
     // HACK: CTS doesn't seem to work right now
     msleep(250);
-
-    // HACK: CSR seems to do an auto-baud on the uart, which makes the first HCI RESET fail
-    // 2 options: a) check for CTS going high within 10 ms, b) just send HCI RESET twice
-
-//    const uint8_t hci_reset_cmd[] = {0x01, 0x03, 0x0c, 0x00};
-//    int pos = 0;
-//    while(pos < sizeof(hci_reset_cmd)){
-//        if (PLIB_USART_TransmitterIsEmpty(BT_USART_ID)){
-//            PLIB_USART_TransmitterByteSend(BT_USART_ID, hci_reset_cmd[pos]);
-//            pos++;
-//        }
-//    }
-//    msleep(250);
-
 }
 
 void hal_uart_dma_set_block_received( void (*the_block_handler)(void)){
@@ -193,9 +187,9 @@ void hal_uart_dma_set_csr_irq_handler( void (*the_irq_handler)(void)){
 }
 
 int  hal_uart_dma_set_baud(uint32_t baud){
-    PLIB_USART_Disable(BT_USART_ID);
-    PLIB_USART_BaudRateSet(BT_USART_ID, SYS_CLK_PeripheralFrequencyGet(CLK_BUS_PERIPHERAL_1), baud);
-    PLIB_USART_Enable(BT_USART_ID);
+//    PLIB_USART_Disable(BT_USART_ID);
+//    PLIB_USART_BaudRateSet(BT_USART_ID, SYS_CLK_PeripheralFrequencyGet(CLK_BUS_PERIPHERAL_1), baud);
+//    PLIB_USART_Enable(BT_USART_ID);
     return 0;
 }
 
@@ -237,7 +231,7 @@ void BTSTACK_Initialize ( void )
 
     hci_dump_open(NULL, HCI_DUMP_STDOUT);
 
-    const hci_transport_t * transport = hci_transport_h4_instance();
+    const hci_transport_t * transport = hci_transport_h5_instance(btstack_uart_block_embedded_instance());
     hci_init(transport, &config);
     hci_set_chipset(btstack_chipset_csr_instance());
 
@@ -250,15 +244,22 @@ void BTSTACK_Initialize ( void )
 
 
 void BTSTACK_Tasks(void){
-    if (bytes_to_read && PLIB_USART_ReceiverDataIsAvailable(BT_USART_ID)) {
+    
+    while (bytes_to_read && PLIB_USART_ReceiverDataIsAvailable(BT_USART_ID)) {
         *rx_buffer_ptr++ = PLIB_USART_ReceiverByteReceive(BT_USART_ID);
         bytes_to_read--;
         if (bytes_to_read == 0){
             (*rx_done_handler)();
         }
     }
-
-    if (bytes_to_write && PLIB_USART_TransmitterIsEmpty(BT_USART_ID)){
+    
+    if(PLIB_USART_ReceiverOverrunHasOccurred(BT_USART_ID))
+    {
+        // printf("RX Overrun!\n");
+        PLIB_USART_ReceiverOverrunErrorClear(BT_USART_ID);
+    }
+    
+    while (bytes_to_write && !PLIB_USART_TransmitterBufferIsFull(BT_USART_ID)){
         PLIB_USART_TransmitterByteSend(BT_USART_ID, *tx_buffer_ptr++);
         bytes_to_write--;
         if (bytes_to_write == 0){

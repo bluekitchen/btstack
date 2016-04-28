@@ -1,7 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project-private xmlns="http://www.netbeans.org/ns/project-private/1">
     <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/1"/>
+    <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/2" lastBookmarkId="0"/>
     <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
-        <group/>
+        <group>
+            <file>file:/Users/mringwal/microchip/harmony/v1_07/framework/btstack/port/pic32-harmony/src/btstack_port.c</file>
+            <file>file:/Users/mringwal/microchip/harmony/v1_07/framework/btstack/src/hci_transport_h4.c</file>
+            <file>file:/Users/mringwal/microchip/harmony/v1_07/framework/btstack/platform/embedded/btstack_uart_block_embedded.c</file>
+            <file>file:/Users/mringwal/microchip/harmony/v1_07/framework/btstack/platform/embedded/btstack_run_loop_embedded.c</file>
+            <file>file:/Users/mringwal/microchip/harmony/v1_07/framework/btstack/src/btstack_run_loop.c</file>
+            <file>file:/Users/mringwal/microchip/harmony/v1_07/framework/btstack/platform/embedded/hci_transport_h4_embedded.c</file>
+        </group>
     </open-files>
 </project-private>

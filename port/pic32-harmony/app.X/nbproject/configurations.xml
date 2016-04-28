@@ -35,6 +35,7 @@
           <itemPath>../../../src/classic/sdp_server.h</itemPath>
           <itemPath>../../../src/classic/sdp_client.h</itemPath>
           <itemPath>../../../src/classic/sdp_client_rfcomm.h</itemPath>
+          <itemPath>../../../src/classic/spp_server.h</itemPath>
         </logicalFolder>
         <logicalFolder name="embedded" displayName="embedded" projectFiles="true">
           <itemPath>../../../platform/embedded/hal_cpu.h</itemPath>
@@ -57,6 +58,7 @@
           <itemPath>../../../src/hci_transport.h</itemPath>
           <itemPath>../../../src/l2cap.h</itemPath>
           <itemPath>../../../src/l2cap_signaling.h</itemPath>
+          <itemPath>../../../src/btstack_uart_block.h</itemPath>
         </logicalFolder>
       </logicalFolder>
       <logicalFolder name="f2" displayName="framework" projectFiles="true">
@@ -116,6 +118,10 @@
         <logicalFolder name="chipset-csr" displayName="chipset-csr" projectFiles="true">
           <itemPath>../../../chipset/csr/btstack_chipset_csr.c</itemPath>
         </logicalFolder>
+        <logicalFolder name="f1" displayName="platform-embedded" projectFiles="true">
+          <itemPath>../../../platform/embedded/btstack_run_loop_embedded.c</itemPath>
+          <itemPath>../../../platform/embedded/btstack_uart_block_embedded.c</itemPath>
+        </logicalFolder>
         <logicalFolder name="src" displayName="src" projectFiles="true">
           <itemPath>../../../src/btstack_memory.c</itemPath>
           <itemPath>../../../src/hci.c</itemPath>
@@ -133,8 +139,8 @@
           <itemPath>../../../src/classic/sdp_client_rfcomm.c</itemPath>
           <itemPath>../../../src/classic/sdp_util.c</itemPath>
           <itemPath>../../../src/btstack_util.c</itemPath>
-          <itemPath>../../../platform/embedded/btstack_run_loop_embedded.c</itemPath>
-          <itemPath>../../../platform/embedded/hci_transport_h4_embedded.c</itemPath>
+          <itemPath>../../../src/classic/spp_server.c</itemPath>
+          <itemPath>../../../src/hci_transport_h4.c</itemPath>
         </logicalFolder>
       </logicalFolder>
       <logicalFolder name="f2" displayName="framework" projectFiles="true">
@@ -201,7 +207,7 @@
         <targetPluginBoard></targetPluginBoard>
         <platformTool>PICkit3PlatformTool</platformTool>
         <languageToolchain>XC32</languageToolchain>
-        <languageToolchainVersion></languageToolchainVersion>
+        <languageToolchainVersion>1.40</languageToolchainVersion>
         <platform>4</platform>
       </toolsSet>
       <compileType>
@@ -377,6 +383,7 @@
         <property key="UART4" value="true"/>
         <property key="UART5" value="true"/>
         <property key="USB" value="true"/>
+        <property key="firmware.download.all" value="false"/>
         <property key="hwtoolclock.frcindebug" value="false"/>
         <property key="memories.aux" value="false"/>
         <property key="memories.bootflash" value="true"/>
