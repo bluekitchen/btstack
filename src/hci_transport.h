@@ -130,18 +130,24 @@ typedef struct {
  * @brief Setup H4 instance with uart_driver
  * @param uart_driver to use 
  */
-extern const hci_transport_t * hci_transport_h4_instance(const btstack_uart_block_t * uart_driver);
+const hci_transport_t * hci_transport_h4_instance(const btstack_uart_block_t * uart_driver);
 
 /*
  * @brief Setup H5 instance with uart_driver
  * @param uart_driver to use 
  */
-extern const hci_transport_t * hci_transport_h5_instance(const btstack_uart_block_t * uart_driver);
+const hci_transport_t * hci_transport_h5_instance(const btstack_uart_block_t * uart_driver);
+
+/*
+ * @brief Enable H5 Low Power Mode: enter sleep mode after x ms of inactivity
+ * @param inactivity_timeout_ms or 0 for off
+ */
+void hci_transport_h5_set_auto_sleep(uint16_t inactivity_timeout_ms);
 
 /*
  * @brief
  */
-extern const hci_transport_t * hci_transport_usb_instance(void);
+const hci_transport_t * hci_transport_usb_instance(void);
 
 
 /* API_END */
