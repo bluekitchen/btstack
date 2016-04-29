@@ -86,6 +86,9 @@ typedef enum {
 #define LINK_ACKNOWLEDGEMENT_TYPE 0x00
 #define LINK_CONTROL_PACKET_TYPE 0x0f
 
+// max size of write requests
+#define LINK_SLIP_TX_CHUNK_LEN 64
+
 // ---
 static const uint8_t link_control_sync[] =   { 0x01, 0x7e};
 static const uint8_t link_control_sync_response[] = { 0x02, 0x7d};
@@ -100,8 +103,9 @@ static const uint8_t link_control_sleep[] =  { 0x07, 0x78};
 // incoming pre-bufffer + 4 bytes H5 header + max(acl header + acl payload, event header + event data) + 2 bytes opt CRC
 static uint8_t   hci_packet_with_pre_buffer[HCI_INCOMING_PRE_BUFFER_SIZE + 6 + HCI_PACKET_BUFFER_SIZE];
 
-// Non-optimized outgoing buffer (EOF, 4 bytes header, payload, EOF)
-static uint8_t slip_outgoing_buffer[2 + 2 * (HCI_PACKET_BUFFER_SIZE + 4)];
+// outgoing slip encoded buffer. +1 to assert that last SOF fits in buffer
+static uint8_t slip_outgoing_buffer[LINK_SLIP_TX_CHUNK_LEN+1];
+static int     slip_write_active;
 
 // H5 Link State
 static hci_transport_link_state_t link_state;
@@ -129,8 +133,6 @@ static int hci_transport_link_actions;
 static const btstack_uart_block_t * btstack_uart;
 static btstack_uart_config_t uart_config;
 static btstack_uart_sleep_mode_t btstack_uart_sleep_mode;
-
-static int uart_write_active;
 
 // Prototypes
 static void hci_transport_h5_process_frame(uint16_t frame_size);
@@ -164,6 +166,24 @@ static void hci_transport_inactivity_timer_set(void){
 // -----------------------------
 // SLIP Outgoing
 
+// Fill chunk and write
+static void hci_transport_slip_encode_chunk_and_send(int pos){
+    while (btstack_slip_encoder_has_data() & (pos < LINK_SLIP_TX_CHUNK_LEN)) {
+        slip_outgoing_buffer[pos++] = btstack_slip_encoder_get_byte();
+    }
+    if (!btstack_slip_encoder_has_data()){
+        // Start of Frame
+        slip_outgoing_buffer[pos++] = BTSTACK_SLIP_SOF;
+    }
+    slip_write_active = 1;
+    log_info("hci_transport_slip: send %u bytes", pos);
+    btstack_uart->send_block(slip_outgoing_buffer, pos);
+}
+
+static inline void hci_transport_slip_send_next_chunk(void){
+    hci_transport_slip_encode_chunk_and_send(0);
+}
+
 // format: 0xc0 HEADER PACKER 0xc0
 // @param uint8_t header[4]
 static void hci_transport_slip_send_frame(const uint8_t * header, const uint8_t * packet, uint16_t packet_size){
@@ -181,15 +201,9 @@ static void hci_transport_slip_send_frame(const uint8_t * header, const uint8_t 
 
     // Packet
     btstack_slip_encoder_start(packet, packet_size);
-    while (btstack_slip_encoder_has_data()){
-        slip_outgoing_buffer[pos++] = btstack_slip_encoder_get_byte();
-    }
 
-    // Start of Frame
-    slip_outgoing_buffer[pos++] = BTSTACK_SLIP_SOF;
-
-    uart_write_active = 1;
-    btstack_uart->send_block(slip_outgoing_buffer, pos);
+    // Fill rest of chunk from packet and send
+    hci_transport_slip_encode_chunk_and_send(pos);
 }
 
 // SLIP Incoming
@@ -282,7 +296,7 @@ static void hci_transport_link_send_ack_packet(void){
 
 static void hci_transport_link_run(void){
     // exit if outgoing active
-    if (uart_write_active) return;
+    if (slip_write_active) return;
 
     // process queued requests
     if (hci_transport_link_actions & HCI_TRANSPORT_LINK_SEND_SYNC){
@@ -604,7 +618,15 @@ static void hci_transport_h5_block_received(){
 }
 
 static void hci_transport_h5_block_sent(void){
-    uart_write_active = 0;
+
+    // check if more data to send
+    if (btstack_slip_encoder_has_data()){
+        hci_transport_slip_send_next_chunk();
+        return;
+    }
+
+    // done
+    slip_write_active = 0;
 
     // enter sleep mode after sending sleep message
     if (hci_transport_link_actions & HCI_TRANSPORT_LINK_ENTER_SLEEP){
@@ -688,7 +710,7 @@ static void hci_transport_h5_register_packet_handler(void (*handler)(uint8_t pac
 
 static int hci_transport_h5_can_send_packet_now(uint8_t packet_type){
     int res = !hci_transport_link_have_outgoing_packet() && link_state == LINK_ACTIVE;
-    log_info("hci_transport_h5_can_send_packet_now: %u", res);
+    // log_info("hci_transport_h5_can_send_packet_now: %u", res);
     return res;
 }
 
