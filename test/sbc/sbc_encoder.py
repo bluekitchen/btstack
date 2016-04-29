@@ -5,7 +5,7 @@ import struct
 import sys
 from sbc import *
 
-X = np.zeros(40)
+X = np.zeros(80)
 
 def fetch_samples_for_next_sbc_frame(fin, nr_audio_frames, frame):
     raw_data = fin.readframes(nr_audio_frames) # Returns byte data
@@ -15,11 +15,6 @@ def fetch_samples_for_next_sbc_frame(fin, nr_audio_frames, frame):
 
     frame.pcm =  np.array(struct.unpack(fmt, raw_data))
     del raw_data
-
-    # channels = [ [] for ch in range(frame.nr_channels) ]
-    # for index, value in enumerate(integer_data):
-    #     bucket = index % nr_channels
-    #     channels[bucket].append(value)
 
     
 def sbc_analyse(frame, ch, blk, C, debug):
@@ -72,25 +67,18 @@ def sbc_encode(frame,debug):
         return -1
      
     frame.sb_sample = np.ndarray(shape=(frame.nr_blocks, frame.nr_channels, frame.nr_subbands))
-
-    # channels = [ [] for ch in range(frame.nr_channels) ]
-    # for index, value in enumerate(frame.pcm):
-    #     bucket = index % frame.nr_channels
-    #     channels[bucket].append(value)
-
-    # print "encoder pcm ", frame.pcm
-    
     index = 0
     for ch in range(frame.nr_channels):
         for blk in range(frame.nr_blocks):
             for sb in range(frame.nr_subbands):
-                frame.EX[sb] = frame.pcm[index] #channels[ch][blk * frame.nr_subbands + sb]
+                frame.EX[sb] = frame.pcm[index] 
                 index+=1
             sbc_analyse(frame, ch, blk, proto_table,debug)
     sbc_quantization(frame)
 
 
 def should_use_joint_coding(frame):
+    # TODO: implement this
     return False
 
 def calculate_scalefactor(max_subbandsample):
@@ -128,11 +116,9 @@ def frame_to_bitstream(frame):
             for sb in range(frame.nr_subbands):
                 add_bits(frame.audio_sample[blk][ch][sb], frame.bits[ch][sb])
 
-    # bitstream_len = 16 + frame.nr_subbands + frame.nr_channels * frame.nr_subbands * 4
     return bitstream
 
 def sbc_quantization(frame):
-    
     frame.join = np.zeros(frame.nr_subbands, dtype = np.uint8)
     if should_use_joint_coding(frame):
         return
@@ -169,8 +155,8 @@ def sbc_quantization(frame):
                     SB = frame.sb_sample[blk][ch][sb]
                     SF = frame.scalefactor[ch][sb]
                     L  = frame.levels[ch][sb] 
-                    AS = np.uint16(((SB * L / SF    + L) - 1.0)/2.0)
-                    frame.audio_sample[blk][ch][sb] = AS
+                
+                    frame.audio_sample[blk][ch][sb] = np.uint16(((SB * L / SF    + L) - 1.0)/2.0)
                 else:
                     frame.audio_sample[blk][ch][sb] = 0 
 

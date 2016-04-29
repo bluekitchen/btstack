@@ -116,15 +116,8 @@ def sbc_unpack_frame(fin, frame):
                     AS = frame.audio_sample[blk][ch][sb]
                     SF = frame.scalefactor[ch][sb]
                     L  = frame.levels[ch][sb]
-
-                    SB = SF * ((AS*2.0+1.0) / L -1.0 )
-                    # if sb == 3:
-                    #     print "decoder SF, L, AS ", SF, L, AS
-                    frame.sb_sample[blk][ch][sb] = SB
-                    # tmpa = (((frame.audio_sample[blk][ch][sb] << 16) | 0x8000) / levels[ch][sb] ) - 0x8000
-                    # tmpb = tmpa >> 3
-                    # frame.sb_sample[blk][ch][sb] = tmpb * frame.scalefactor[ch][sb]
-
+                    
+                    frame.sb_sample[blk][ch][sb] = SF * ((AS*2.0+1.0) / L -1.0 )
                 else:
                     frame.sb_sample[blk][ch][sb] = 0 
 
@@ -137,14 +130,7 @@ def sbc_unpack_frame(fin, frame):
                     ch_b = frame.sb_sample[blk][0][sb] - frame.sb_sample[blk][1][sb]
                     frame.sb_sample[blk][0][sb] = ch_a
                     frame.sb_sample[blk][1][sb] = ch_b
-    
-    
-    # print "Scale factors ", frame.scale_factor[0]
 
-    # print "\nReconstructed subband samples: "
-    # for blk in range(frame.nr_blocks):
-    #     print "block %2d - recon. sample: %s" % (blk, frame.sb_sample[blk][0])
-    # print 
     return 0
 
 

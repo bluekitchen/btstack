@@ -151,7 +151,7 @@ try:
                                                 sbc_decoder_frame.bitpool)
                 
                 sbc_encoder_frame.pcm = np.array(sbc_decoder_frame.pcm)
-                # TODO: joi field 
+                # TODO: join field 
                 # TODO: clear memory
 
                 # sbc_encoder_frame.sb_sample = np.array(sbc_decoder_frame.sb_sample)

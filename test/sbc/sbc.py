@@ -4,7 +4,6 @@ import wave
 import struct
 import sys
 
-
 # channel mode
 MONO = 0
 DUAL_CHANNEL = 1
@@ -172,7 +171,6 @@ class SBCFrame:
         return res
 
 
-
 def sbc_bit_allocation_stereo_joint(frame, ch):
     bitneed = np.zeros(shape=(frame.nr_channels, frame.nr_subbands))
     bits    = np.zeros(shape=(frame.nr_channels, frame.nr_subbands))
@@ -206,8 +204,6 @@ def sbc_bit_allocation_stereo_joint(frame, ch):
         for sb in range(frame.nr_subbands):
             if bitneed[ch][sb] > max_bitneed:
                 max_bitneed = bitneed[ch][sb]
-
-    # # print "max_bitneed: ", max_bitneed
         
     # calculate how many bitslices fit into the bitpool
     bitcount = 0
@@ -227,8 +223,6 @@ def sbc_bit_allocation_stereo_joint(frame, ch):
         if bitcount + slicecount >= frame.bitpool:
             break 
 
-    # print "bitcount %d, slicecount %d" % (bitcount, slicecount)
-
     if bitcount + slicecount == frame.bitpool:
         bitcount = bitcount + slicecount
         bitslice = bitslice - 1
@@ -240,7 +234,6 @@ def sbc_bit_allocation_stereo_joint(frame, ch):
                bits[ch][sb]=0;
             else:
                 bits[ch][sb] = min(bitneed[ch][sb]-bitslice,16)
-
 
     ch = 0
     sb = 0
@@ -304,13 +297,11 @@ def sbc_bit_allocation_mono_dual(frame):
         for sb in range(frame.nr_subbands):
             if bitneed[ch][sb] > max_bitneed:
                 max_bitneed = bitneed[ch][sb]
-
-        #print "max_bitneed: ", max_bitneed
-        
+ 
         # calculate how many bitslices fit into the bitpool
         bitcount = 0
         slicecount = 0
-        bitslice = max_bitneed + 1 #/* init just above the largest sf */
+        bitslice = max_bitneed + 1
 
         while True:
             bitslice = bitslice - 1
@@ -324,20 +315,16 @@ def sbc_bit_allocation_mono_dual(frame):
             if bitcount + slicecount >= frame.bitpool:
                 break 
 
-        #print "bitcount %d, slicecount %d" % (bitcount, slicecount)
-
         if bitcount + slicecount == frame.bitpool:
             bitcount = bitcount + slicecount
             bitslice = bitslice - 1
         
-        # bits are distributed until the last bitslice is reached
         for sb in range(frame.nr_subbands):
             if bitneed[ch][sb] < bitslice+2 :
                bits[ch][sb]=0;
             else:
                 bits[ch][sb] = min(bitneed[ch][sb]-bitslice,16)
 
-        # The remaining bits are allocated starting at subband 0.
         sb = 0
         while bitcount < frame.bitpool and sb < frame.nr_subbands:
             if bits[ch][sb] >= 2 and bits[ch][sb] < 16:
@@ -377,30 +364,9 @@ def sbc_sampling_frequency_index(sample_rate):
             break 
     return sbc_sampling_frequency_index
 
-# static uint8_t sbc_crc8(const uint8_t * data, size_t len)
-# 158 {
-# 159         uint8_t crc = 0x0f;
-# 160         size_t i;
-# 161         uint8_t octet;
-# 162 
-# 163         for (i = 0; i < len / 8; i++)
-# 164                 crc = crc_table[crc ^ data[i]];
-# 165 
-# 166         octet = data[i];
-# 167         for (i = 0; i < len % 8; i++) {
-# 168                 char bit = ((octet ^ crc) & 0x80) >> 7;
-# 169 
-# 170                 crc = ((crc & 0x7f) << 1) ^ (bit ? 0x1d : 0);
-# 171 
-# 172                 octet = octet << 1;
-# 173         }
-# 174 
-# 175         return crc;
-# 176 }
 
 def sbc_crc8(data, data_len):
     crc = 0x0f
-    
     j = 0
     for i in range(data_len / 8):
         crc = crc_table[crc ^ data[i]]
@@ -463,7 +429,7 @@ def calculate_crc(frame):
     for ch in range(frame.nr_channels):
         for sb in range(frame.nr_subbands):
             add_bits(frame.scale_factor[ch][sb], 4)
-    # bitstream_len = 16 + frame.nr_subbands + frame.nr_channels * frame.nr_subbands * 4
+    
     bitstream_len = (bitstream_index + 1) * 8
     if bitstream_bits_available:
         bitstream_len += (8-bitstream_bits_available)
