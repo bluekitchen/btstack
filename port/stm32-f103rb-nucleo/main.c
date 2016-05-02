@@ -434,16 +434,13 @@ int main(void)
     btstack_run_loop_init(btstack_run_loop_embedded_get_instance());
     
     // init HCI
-    hci_init(hci_transport_h4_instance(), (void*) &config);
+    hci_init(hci_transport_h4_instance(btstack_uart_block_embedded_instance()), (void*) &config);
     hci_set_link_key_db(btstack_link_key_db_memory_instance());
     hci_set_chipset(btstack_chipset_cc256x_instance());
 
     // inform about BTstack state
     hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
-
-    // enable eHCILL
-    btstack_chipset_cc256x_enable_ehcill(1);
 
 	// hand over to btstack embedded code 
     btstack_main();

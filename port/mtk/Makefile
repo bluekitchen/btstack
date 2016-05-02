@@ -46,6 +46,7 @@ BTdaemon_OBJS = $(libBTstack_OBJS) \
 	gatt_client.o                  \
 	hci.o                          \
 	hci_transport_h4_mtk.o         \
+	btstack_uart_block_posix.o     \
 	l2cap.o                        \
 	l2cap_signaling.o              \
 	le_device_db_memory.o          \
@@ -56,7 +57,7 @@ BTdaemon_OBJS = $(libBTstack_OBJS) \
     att_db.o                       \
     att_server.o                   \
     sdp_client.o                   \
-    sdp_client_rfcomm.o             \
+    sdp_client_rfcomm.o            \
 
 all: $(TOOLCHAIN) version BTstackDaemon libBTstack.so BTstackDaemonRespawn inquiry le_scan rfcomm_echo dist
 

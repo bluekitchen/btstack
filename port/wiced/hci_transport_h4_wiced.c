@@ -231,11 +231,11 @@ static int h4_set_baudrate(uint32_t baudrate){
 static void h4_init(const void * transport_config){
     // check for hci_transport_config_uart_t
     if (!transport_config) {
-        log_error("hci_transport_h4_posix: no config!");
+        log_error("hci_transport_h4_wiced: no config!");
         return;
     }
     if (((hci_transport_config_t*)transport_config)->type != HCI_TRANSPORT_CONFIG_UART) {
-        log_error("hci_transport_h4_posix: config not of type != HCI_TRANSPORT_CONFIG_UART!");
+        log_error("hci_transport_h4_wiced: config not of type != HCI_TRANSPORT_CONFIG_UART!");
         return;
     }
     hci_transport_config_uart = (hci_transport_config_uart_t*) transport_config;
@@ -330,7 +330,7 @@ static void dummy_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
 }
 
 // get h4 singleton
-const hci_transport_t * hci_transport_h4_instance(void) {
+const hci_transport_t * hci_transport_h4_instance(const btstack_uart_block_t * uart_driver) {
     if (hci_transport_h4 == NULL) {
         hci_transport_h4 = (hci_transport_h4_t*)malloc( sizeof(hci_transport_h4_t));
         memset(hci_transport_h4, 0, sizeof(hci_transport_h4_t));

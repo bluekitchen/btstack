@@ -158,6 +158,7 @@ static const hci_transport_h4_t hci_transport_h4_ehcill_dma = {
   /*  .transport.can_send_packet_now           = */  h4_can_send_packet_now,
   /*  .transport.send_packet                   = */  ehcill_send_packet,
   /*  .transport.set_baudrate                  = */  h4_set_baudrate,
+  /*  .transport.reset_link                    = */  NULL,    
     },
   /*  .ds                                      = */  &hci_transport_h4_dma_ds
 };
@@ -167,7 +168,7 @@ static void dummy_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
 }
 
 // get h4 singleton
-const hci_transport_t * hci_transport_h4_instance(void){ 
+const hci_transport_t * hci_transport_h4_instance(const btstack_uart_block_t * uart_driver){ 
     return &hci_transport_h4_ehcill_dma.transport;
 }
 

@@ -50,8 +50,6 @@ extern "C" {
 #include <stdint.h>
 #include "btstack_chipset.h"
 
-void btstack_chipset_cc256x_enable_ehcill(int on);
-int  btstack_chipset_cc256x_ehcill_enabled(void);
 void btstack_chipset_cc256x_set_power(int16_t power_in_dB);
 const btstack_chipset_t * btstack_chipset_cc256x_instance(void);
 

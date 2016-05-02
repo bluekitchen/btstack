@@ -9,14 +9,13 @@
 #define HAVE_INIT_SCRIPT
 #define HAVE_EMBEDDED_TICK
 
-// #define HAVE_EHCILL
-
 // BTstack features that can be enabled
 #define ENABLE_BLE
 #define ENABLE_CLASSIC
 #define ENABLE_LOG_INTO_HCI_DUMP
 // #define ENABLE_LOG_ERROR
 // #define ENABLE_LOG_INFO 
+// #define ENABLE_EHCILL
 
 // BTstack configuration. buffers, sizes, ...
 #define HCI_ACL_PAYLOAD_SIZE 52

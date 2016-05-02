@@ -59,7 +59,7 @@
 #error HCI_OUTGOING_PRE_BUFFER_SIZE not defined. Please update hci.h
 #endif
 
-#ifdef HAVE_EHCILL
+#ifdef ENABLE_EHCILL
 #error "HCI Transport H4 DMA does not support eHCILL. Please use hci_transport_h4_ehcill_dma.c instead."
 #endif 
 
@@ -123,6 +123,7 @@ static const hci_transport_h4_t hci_transport_h4_dma = {
   /*  .transport.can_send_packet_now           = */  h4_can_send_packet_now,
   /*  .transport.send_packet                   = */  h4_send_packet,
   /*  .transport.set_baudrate                  = */  h4_set_baudrate,
+  /*  .transport.reset_link                    = */  NULL,    
     },
   /*  .ds                                      = */  &hci_transport_h4_dma_ds
 };
@@ -310,6 +311,6 @@ static void dummy_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
 }
 
 // get h4 singleton
-const hci_transport_t * hci_transport_h4_instance(void){ 
+const hci_transport_t * hci_transport_h4_instance(const btstack_uart_block_t * uart_driver){ 
     return &hci_transport_h4_dma.transport;
 }
