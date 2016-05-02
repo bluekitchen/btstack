@@ -141,6 +141,8 @@
           <itemPath>../../../src/btstack_util.c</itemPath>
           <itemPath>../../../src/classic/spp_server.c</itemPath>
           <itemPath>../../../src/hci_transport_h4.c</itemPath>
+          <itemPath>../../../src/hci_transport_h5.c</itemPath>
+          <itemPath>../../../src/btstack_slip.c</itemPath>
         </logicalFolder>
       </logicalFolder>
       <logicalFolder name="f2" displayName="framework" projectFiles="true">
