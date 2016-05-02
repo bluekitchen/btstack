@@ -61,14 +61,29 @@
 #endif
 
 
+static int phase = 0;
+
+// input signal: pre-computed sine wave, 160 Hz
+static const uint8_t sine[] = {
+      0,  15,  31,  46,  61,  74,  86,  97, 107, 114,
+    120, 124, 126, 126, 124, 120, 114, 107,  97,  86,
+     74,  61,  46,  31,  15,   0, 241, 225, 210, 195,
+    182, 170, 159, 149, 142, 136, 132, 130, 130, 132,
+    136, 142, 149, 159, 170, 182, 195, 210, 225, 241,
+};
+
 uint8_t hfp_service_buffer[150];
 const uint8_t    rfcomm_channel_nr = 1;
 const char hfp_ag_service_name[] = "BTstack HFP AG Test";
 
-static bd_addr_t device_addr = {0x00,0x15,0x83,0x5F,0x9D,0x46};
+// PTS
+// static bd_addr_t device_addr = {0x00,0x15,0x83,0x5F,0x9D,0x46};
+// BT-201
+static bd_addr_t device_addr = {0x00, 0x07, 0xB0, 0x83, 0x02, 0x5E};
 
 static uint8_t codecs[1] = {HFP_CODEC_CVSD};
 static uint16_t handle = -1;
+static hci_con_handle_t sco_handle;
 static int memory_1_enabled = 1;
 
 static int ag_indicators_nr = 7;
@@ -189,7 +204,7 @@ static void inquiry_packet_handler (uint8_t packet_type, uint8_t *packet, uint16
             numResponses = hci_event_inquiry_result_get_num_responses(packet);
             int offset = 3;
             for (i=0; i<numResponses && deviceCount < MAX_DEVICES;i++){
-                reverse_bd_addr(addr, &packet[offset]);
+                reverse_bd_addr(&packet[offset], addr);
                 offset += 6;
                 index = getDeviceIndexForAddress(addr);
                 if (index >= 0) continue;   // already in our list
@@ -234,7 +249,7 @@ static void inquiry_packet_handler (uint8_t packet_type, uint8_t *packet, uint16
             break;
 
         case HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE:
-            reverse_bd_addr(addr, &packet[3]);
+            reverse_bd_addr(&packet[3], addr);
             index = getDeviceIndexForAddress(addr);
             if (index >= 0) {
                 if (packet[2] == 0) {
@@ -259,10 +274,13 @@ static void show_usage(void);
 
 // Testig User Interface 
 static void show_usage(void){
-    printf("\n--- Bluetooth HFP Audiogateway (AG) unit Test Console ---\n");
+    bd_addr_t iut_address;
+    gap_local_bd_addr(iut_address);
+
+    printf("\n--- Bluetooth HFP Audiogateway (AG) unit Test Console %s ---\n", bd_addr_to_str(iut_address));
     printf("---\n");
     
-    printf("a - establish HFP connection to PTS module\n");
+    printf("a - establish HFP connection to PTS module %s\n", bd_addr_to_str(device_addr));
     // printf("A - release HFP connection to PTS module\n");
     
     printf("b - establish AUDIO connection\n");
@@ -514,7 +532,7 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
             break;
         case 't':
             log_info("USER:\'%c\'", cmd);
-            printf("Terminate HCI connection.\n");
+            printf("Terminate HCI connection. 0x%2x\n", handle);
             gap_disconnect(handle);
             break;
         case 'u':
@@ -547,77 +565,122 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
 }
 #endif
 
-static void packet_handler(uint8_t * event, uint16_t event_size){
-     switch (event[0]){
-        case HCI_EVENT_INQUIRY_RESULT:
-        case HCI_EVENT_INQUIRY_RESULT_WITH_RSSI:
-        case HCI_EVENT_INQUIRY_COMPLETE:
-        case HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE:
-            inquiry_packet_handler(HCI_EVENT_PACKET, event, event_size);
-            break;
+#define SCO_REPORT_PERIOD 100
+static void send_sco_data(void){
+    if (!sco_handle) return;
+    
+    const int sco_packet_length = hci_get_sco_packet_length();
+    const int sco_payload_length = sco_packet_length - 3;
+    const int frames_per_packet = sco_payload_length;    // for 8-bit data. for 16-bit data it's /2
 
-        default:
-            break;
+    hci_reserve_packet_buffer();
+    uint8_t * sco_packet = hci_get_outgoing_packet_buffer();
+    // set handle + flags
+    little_endian_store_16(sco_packet, 0, sco_handle);
+    // set len
+    sco_packet[2] = sco_payload_length;
+    int i;
+    for (i=0;i<frames_per_packet;i++){
+        sco_packet[3+i] = sine[phase];
+        phase++;
+        if (phase >= sizeof(sine)) phase = 0;
     }
+    hci_send_sco_packet_buffer(sco_packet_length);
 
+    // request another send event
+    hci_request_sco_can_send_now_event();
 
-    if (event[0] != HCI_EVENT_HFP_META) return;
+    static int count = 0;
+    count++;
+    if ((count % SCO_REPORT_PERIOD) == 0) printf("Sent %u\n", count);
+}
 
-    if (event[3]
-        && event[2] != HFP_SUBEVENT_PLACE_CALL_WITH_NUMBER
-        && event[2] != HFP_SUBEVENT_ATTACH_NUMBER_TO_VOICE_TAG 
-        && event[2] != HFP_SUBEVENT_TRANSMIT_DTMF_CODES){
-        printf("ERROR, status: %u\n", event[3]);
-        return;
-    }
-
-    switch (event[2]) {   
-        case HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED:
-            handle = hfp_subevent_service_level_connection_established_get_con_handle(event);
-            printf("Service level connection established.\n");
-            break;
-        case HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED:
-            printf("Service level connection released.\n");
-            break;
-        case HFP_SUBEVENT_AUDIO_CONNECTION_ESTABLISHED:
-            printf("\n** Audio connection established **\n");
-            break;
-        case HFP_SUBEVENT_AUDIO_CONNECTION_RELEASED:
-            printf("\n** Audio connection released **\n");
-            break;
-        case HFP_SUBEVENT_START_RINGINIG:
-            printf("\n** Start Ringing **\n");
-            break;        
-        case HFP_SUBEVENT_STOP_RINGINIG:
-            printf("\n** Stop Ringing **\n");
-            break;
-        case HFP_SUBEVENT_PLACE_CALL_WITH_NUMBER:
-            printf("\n** Outgoing call '%s' **\n", hfp_subevent_place_call_with_number_get_number(event));
-            // validate number
-            if ( strcmp("1234567", hfp_subevent_place_call_with_number_get_number(event)) == 0
-              || strcmp("7654321", hfp_subevent_place_call_with_number_get_number(event)) == 0
-              || (memory_1_enabled && strcmp(">1", hfp_subevent_place_call_with_number_get_number(event)) == 0)){
-                printf("Dialstring valid: accept call\n");
-                hfp_ag_outgoing_call_accepted();
-            } else {
-                printf("Dialstring invalid: reject call\n");
-                hfp_ag_outgoing_call_rejected();
+static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * event, uint16_t event_size){
+    switch (packet_type){
+        case HCI_EVENT_PACKET:
+            switch (event[0]){
+                case HCI_EVENT_INQUIRY_RESULT:
+                case HCI_EVENT_INQUIRY_RESULT_WITH_RSSI:
+                case HCI_EVENT_INQUIRY_COMPLETE:
+                case HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE:
+                    inquiry_packet_handler(HCI_EVENT_PACKET, event, event_size);
+                    break;
+                case HCI_EVENT_SCO_CAN_SEND_NOW:
+                    send_sco_data(); 
+                    break; 
+                default:
+                    break;
             }
-            break;
-        
-        case HFP_SUBEVENT_ATTACH_NUMBER_TO_VOICE_TAG:
-            printf("\n** Attach number to voice tag. Sending '1234567\n");
-            hfp_ag_send_phone_number_for_voice_tag(device_addr, "1234567");
-            break;
-        case HFP_SUBEVENT_TRANSMIT_DTMF_CODES:
-            printf("\n** Send DTMF Codes: '%s'\n", hfp_subevent_transmit_dtmf_codes_get_dtmf(event));
-            hfp_ag_send_dtmf_code_done(device_addr);
-            break;
-        case HFP_SUBEVENT_CALL_ANSWERED:
-            printf("Call answered by HF\n");
-            break;
+
+            if (event[0] != HCI_EVENT_HFP_META) return;
+
+            if (event[3]
+                && event[2] != HFP_SUBEVENT_PLACE_CALL_WITH_NUMBER
+                && event[2] != HFP_SUBEVENT_ATTACH_NUMBER_TO_VOICE_TAG 
+                && event[2] != HFP_SUBEVENT_TRANSMIT_DTMF_CODES){
+                printf("ERROR, status: %u\n", event[3]);
+                return;
+            }
+
+            switch (event[2]) {   
+                case HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED:
+                    handle = hfp_subevent_service_level_connection_established_get_con_handle(event);
+                    printf("Service level connection established.\n");
+                    break;
+                case HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED:
+                    printf("Service level connection released.\n");
+                    sco_handle = 0;
+                    break;
+                case HFP_SUBEVENT_AUDIO_CONNECTION_ESTABLISHED:
+                    if (hfp_subevent_audio_connection_established_get_status(event)){
+                        printf("Audio connection establishment failed with status %u\n", hfp_subevent_audio_connection_established_get_status(event));
+                        sco_handle = 0;
+                    } else {
+                        sco_handle = hfp_subevent_audio_connection_established_get_handle(event);
+                        printf("Audio connection established with SCO handle 0x%04x.\n", sco_handle);
+                        hci_request_sco_can_send_now_event();
+                    }
+                    break;
+                case HFP_SUBEVENT_AUDIO_CONNECTION_RELEASED:
+                    printf("\n** Audio connection released **\n");
+                    sco_handle = 0;
+                    break;
+                case HFP_SUBEVENT_START_RINGINIG:
+                    printf("\n** Start Ringing **\n");
+                    break;        
+                case HFP_SUBEVENT_STOP_RINGINIG:
+                    printf("\n** Stop Ringing **\n");
+                    break;
+                case HFP_SUBEVENT_PLACE_CALL_WITH_NUMBER:
+                    printf("\n** Outgoing call '%s' **\n", hfp_subevent_place_call_with_number_get_number(event));
+                    // validate number
+                    if ( strcmp("1234567", hfp_subevent_place_call_with_number_get_number(event)) == 0
+                      || strcmp("7654321", hfp_subevent_place_call_with_number_get_number(event)) == 0
+                      || (memory_1_enabled && strcmp(">1", hfp_subevent_place_call_with_number_get_number(event)) == 0)){
+                        printf("Dialstring valid: accept call\n");
+                        hfp_ag_outgoing_call_accepted();
+                    } else {
+                        printf("Dialstring invalid: reject call\n");
+                        hfp_ag_outgoing_call_rejected();
+                    }
+                    break;
+                
+                case HFP_SUBEVENT_ATTACH_NUMBER_TO_VOICE_TAG:
+                    printf("\n** Attach number to voice tag. Sending '1234567\n");
+                    hfp_ag_send_phone_number_for_voice_tag(device_addr, "1234567");
+                    break;
+                case HFP_SUBEVENT_TRANSMIT_DTMF_CODES:
+                    printf("\n** Send DTMF Codes: '%s'\n", hfp_subevent_transmit_dtmf_codes_get_dtmf(event));
+                    hfp_ag_send_dtmf_code_done(device_addr);
+                    break;
+                case HFP_SUBEVENT_CALL_ANSWERED:
+                    printf("Call answered by HF\n");
+                    break;
+                default:
+                    printf("Event not handled %u\n", event[2]);
+                    break;
+            }
         default:
-            printf("Event not handled %u\n", event[2]);
             break;
     }
 }
@@ -639,22 +702,26 @@ static hfp_phone_number_t subscriber_number = {
 
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
-    // HFP HS address is hardcoded, please change it
-    // init L2CAP
-    l2cap_init();
-    rfcomm_init();
-    sdp_init();
 
+    gap_discoverable_control(1);
+
+    // L2CAP
+    l2cap_init();
+    
+    // HFP
+    rfcomm_init();
     hfp_ag_init(rfcomm_channel_nr);
     hfp_ag_init_supported_features(0x3ef | (1<<HFP_AGSF_HF_INDICATORS) | (1<<HFP_AGSF_ESCO_S4)); 
     hfp_ag_init_codecs(sizeof(codecs), codecs);
     hfp_ag_init_ag_indicators(ag_indicators_nr, ag_indicators);
     hfp_ag_init_hf_indicators(hf_indicators_nr, hf_indicators); 
     hfp_ag_init_call_hold_services(call_hold_services_nr, call_hold_services);
-
     hfp_ag_set_subcriber_number_information(&subscriber_number, 1);
-    hfp_ag_register_packet_handler(packet_handler);
+    hfp_ag_register_packet_handler(&packet_handler);
+    hci_register_sco_packet_handler(&packet_handler);
 
+    // SDP Server
+    sdp_init();
     memset(hfp_service_buffer, 0, sizeof(hfp_service_buffer));
     hfp_ag_create_sdp_record( hfp_service_buffer, 0x10001, rfcomm_channel_nr, hfp_ag_service_name, 0, 0);
     printf("SDP service record size: %u\n", de_get_len( hfp_service_buffer));

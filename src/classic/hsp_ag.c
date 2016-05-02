@@ -124,15 +124,15 @@ typedef enum {
 static hsp_state_t hsp_state = HSP_IDLE;
 
 
-static hsp_ag_callback_t hsp_ag_callback;
+static btstack_packet_handler_t hsp_ag_callback;
 
 static void hsp_run(void);
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static void handle_query_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
-static void dummy_notify(uint8_t * event, uint16_t size){}
+static void dummy_notify(uint8_t packet_type, uint16_t channel, uint8_t * event, uint16_t size){}
 
-void hsp_ag_register_packet_handler(hsp_ag_callback_t callback){
+void hsp_ag_register_packet_handler(btstack_packet_handler_t callback){
     if (callback == NULL){
         callback = &dummy_notify;
     }
@@ -146,7 +146,7 @@ static void emit_event(uint8_t event_subtype, uint8_t value){
     event[1] = sizeof(event) - 2;
     event[2] = event_subtype;
     event[3] = value; // status 0 == OK
-    (*hsp_ag_callback)(event, sizeof(event));
+    (*hsp_ag_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
 static void emit_event_audio_connected(uint8_t status, uint16_t handle){
@@ -157,7 +157,7 @@ static void emit_event_audio_connected(uint8_t status, uint16_t handle){
     event[2] = HSP_SUBEVENT_AUDIO_CONNECTION_COMPLETE;
     event[3] = status;
     little_endian_store_16(event, 4, handle);
-    (*hsp_ag_callback)(event, sizeof(event));
+    (*hsp_ag_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
 void hsp_ag_create_sdp_record(uint8_t * service, uint32_t service_record_handle, int rfcomm_channel_nr, const char * name){
@@ -554,7 +554,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             event[1] = size + 2;
             event[2] = HSP_SUBEVENT_HS_COMMAND;
             event[3] = size;
-            (*hsp_ag_callback)(event, size+4);
+            (*hsp_ag_callback)(HCI_EVENT_PACKET, 0, event, size+4);
         }
 
         hsp_run();

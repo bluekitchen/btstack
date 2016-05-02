@@ -1860,7 +1860,7 @@ static void event_handler(uint8_t *packet, int size){
 
 static void sco_handler(uint8_t * packet, uint16_t size){
     if (!hci_stack->sco_packet_handler) return;
-    hci_stack->sco_packet_handler(HCI_SCO_DATA_PACKET, packet, size);
+    hci_stack->sco_packet_handler(HCI_SCO_DATA_PACKET, 0, packet, size);
 }
 
 static void packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
@@ -1888,14 +1888,14 @@ void hci_add_event_handler(btstack_packet_callback_registration_t * callback_han
 
 
 /** Register HCI packet handlers */
-void hci_register_acl_packet_handler(void (*handler)(uint8_t packet_type, uint8_t *packet, uint16_t size)){
+void hci_register_acl_packet_handler(btstack_packet_handler_t handler){
     hci_stack->acl_packet_handler = handler;
 }
 
 /**
  * @brief Registers a packet handler for SCO data. Used for HSP and HFP profiles.
  */
-void hci_register_sco_packet_handler(void (*handler)(uint8_t packet_type, uint8_t *packet, uint16_t size)){
+void hci_register_sco_packet_handler(btstack_packet_handler_t handler){
     hci_stack->sco_packet_handler = handler;    
 }
 
@@ -2974,7 +2974,7 @@ static void hci_emit_event(uint8_t * event, uint16_t size, int dump){
 
 static void hci_emit_acl_packet(uint8_t * packet, uint16_t size){
     if (!hci_stack->acl_packet_handler) return;
-    hci_stack->acl_packet_handler(HCI_ACL_DATA_PACKET, packet, size);
+    hci_stack->acl_packet_handler(HCI_ACL_DATA_PACKET, 0, packet, size);
 }
 
 static void hci_notify_if_sco_can_send_now(void){
@@ -2984,7 +2984,7 @@ static void hci_notify_if_sco_can_send_now(void){
         hci_stack->sco_waiting_for_can_send_now = 0;
         uint8_t event[2] = { HCI_EVENT_SCO_CAN_SEND_NOW, 0 };
         hci_dump_packet(HCI_EVENT_PACKET, 1, event, sizeof(event));
-        hci_stack->sco_packet_handler(HCI_EVENT_PACKET, event, sizeof(event));
+        hci_stack->sco_packet_handler(HCI_EVENT_PACKET, 0, event, sizeof(event));
     }
 }
 

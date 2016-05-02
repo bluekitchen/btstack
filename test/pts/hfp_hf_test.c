@@ -462,7 +462,7 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
 }
 
 
-static void packet_handler(uint8_t * event, uint16_t event_size){
+static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * event, uint16_t event_size){
     if (event[0] != HCI_EVENT_HFP_META) return;
 
     switch (event[2]) {   

@@ -67,6 +67,7 @@ typedef enum {
     H4_W4_PACKET_TYPE = 1,
     H4_W4_EVENT_HEADER,
     H4_W4_ACL_HEADER,
+    H4_W4_SCO_HEADER,
     H4_W4_PAYLOAD,
     H4_PACKET_RECEIVED
 } H4_STATE;
@@ -172,13 +173,17 @@ static void h4_block_received(void){
     switch (h4_state) {
         case H4_W4_PACKET_TYPE:
             switch (hci_packet[0]) {
+                case HCI_EVENT_PACKET:
+                    h4_state = H4_W4_EVENT_HEADER;
+                    bytes_to_read = HCI_EVENT_HEADER_SIZE;
+                    break;
                 case HCI_ACL_DATA_PACKET:
                     h4_state = H4_W4_ACL_HEADER;
                     bytes_to_read = HCI_ACL_HEADER_SIZE;
                     break;
-                case HCI_EVENT_PACKET:
-                    h4_state = H4_W4_EVENT_HEADER;
-                    bytes_to_read = HCI_EVENT_HEADER_SIZE;
+                case HCI_SCO_DATA_PACKET:
+                    h4_state = H4_W4_SCO_HEADER;
+                    bytes_to_read = HCI_SCO_HEADER_SIZE;
                     break;
                 default:
                     log_error("h4_process: invalid packet type 0x%02x", hci_packet[0]);
@@ -210,7 +215,16 @@ static void h4_block_received(void){
             }
             h4_state = H4_W4_PAYLOAD;
             break;
-            
+        
+        case H4_W4_SCO_HEADER:
+            bytes_to_read = hci_packet[2];
+            if (bytes_to_read == 0) {
+                h4_state = H4_PACKET_RECEIVED; 
+                break;
+            }
+            h4_state = H4_W4_PAYLOAD;
+            break;            
+
         case H4_W4_PAYLOAD:
             h4_state = H4_PACKET_RECEIVED;
             bytes_to_read = 0;
