@@ -4,7 +4,7 @@
   <defaultConf>0</defaultConf>
   <confs>
     <conf name="default" type="2">
-      <platformToolSN>:=MPLABComm-USB-Microchip:=&lt;vid>04D8:=&lt;pid>900A:=&lt;rev>0002:=&lt;man>Microchip Technology Inc.:=&lt;prod>PICkit 3:=&lt;sn>BUR140172964:=&lt;drv>x:=&lt;xpt>h:=end</platformToolSN>
+      <platformToolSN></platformToolSN>
       <languageToolchainDir>/Applications/microchip/xc32/v1.40/bin</languageToolchainDir>
       <mdbdebugger version="1">
         <placeholder1>place holder 1</placeholder1>

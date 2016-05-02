@@ -6,9 +6,9 @@
                    projectFiles="true">
       <logicalFolder name="f1" displayName="app" projectFiles="true">
         <logicalFolder name="f1" displayName="system_config" projectFiles="true">
-          <logicalFolder name="f1" displayName="bt-audio-dk" projectFiles="true">
-            <itemPath>../src/system_config/bk-audio-dk/system_definitions.h</itemPath>
-            <itemPath>../src/system_config/bk-audio-dk/system_config.h</itemPath>
+          <logicalFolder name="f1" displayName="bt_audio_dk" projectFiles="true">
+            <itemPath>../src/system_config/bt_audio_dk/system_definitions.h</itemPath>
+            <itemPath>../src/system_config/bt_audio_dk/system_config.h</itemPath>
           </logicalFolder>
         </logicalFolder>
         <itemPath>../../../src/btstack_debug.h</itemPath>
@@ -95,9 +95,9 @@
                    projectFiles="true">
       <logicalFolder name="f1" displayName="app" projectFiles="true">
         <logicalFolder name="f1" displayName="system_config" projectFiles="true">
-          <logicalFolder name="f1" displayName="bt-audio-dk" projectFiles="true">
-            <itemPath>../src/system_config/bk-audio-dk/system_init.c</itemPath>
-            <itemPath>../src/system_config/bk-audio-dk/system_tasks.c</itemPath>
+          <logicalFolder name="f1" displayName="bt_audio_dk" projectFiles="true">
+            <itemPath>../src/system_config/bt_audio_dk/system_init.c</itemPath>
+            <itemPath>../src/system_config/bt_audio_dk/system_tasks.c</itemPath>
           </logicalFolder>
         </logicalFolder>
         <itemPath>../src/btstack_port.c</itemPath>
@@ -243,7 +243,7 @@
         <property key="enable-unroll-loops" value="false"/>
         <property key="exclude-floating-point" value="false"/>
         <property key="extra-include-directories"
-                  value=".;../../../..;../src;../src/system_config/bk-audio-dk;../../../include;../../../src;../../../ble;../../../chipset/csr;../../../platform/embedded"/>
+                  value=".;../../../..;../src;../src/system_config/bt_audio_dk;../../../src;../../../chipset/csr;../../../platform/embedded"/>
         <property key="generate-16-bit-code" value="false"/>
         <property key="generate-micro-compressed-code" value="false"/>
         <property key="isolate-each-function" value="false"/>
@@ -296,7 +296,7 @@
         <property key="generate-16-bit-code" value="false"/>
         <property key="generate-cross-reference-file" value="false"/>
         <property key="generate-micro-compressed-code" value="false"/>
-        <property key="heap-size" value=""/>
+        <property key="heap-size" value="16"/>
         <property key="input-libraries" value=""/>
         <property key="linker-symbols" value=""/>
         <property key="map-file" value="${DISTDIR}/${PROJECTNAME}.${IMAGE_TYPE}.map"/>
@@ -385,7 +385,6 @@
         <property key="UART4" value="true"/>
         <property key="UART5" value="true"/>
         <property key="USB" value="true"/>
-        <property key="firmware.download.all" value="false"/>
         <property key="hwtoolclock.frcindebug" value="false"/>
         <property key="memories.aux" value="false"/>
         <property key="memories.bootflash" value="true"/>
