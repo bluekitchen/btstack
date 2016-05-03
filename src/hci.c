@@ -73,6 +73,7 @@
 
 
 #define HCI_CONNECTION_TIMEOUT_MS 10000
+#define HCI_RESET_RESEND_TIMEOUT_MS 200
 
 // prototypes
 static void hci_update_scan_enable(void);
@@ -908,7 +909,7 @@ static void hci_initializing_run(void){
 
 #ifndef HAVE_PLATFORM_IPHONE_OS
             // prepare reset if command complete not received in 100ms
-            btstack_run_loop_set_timer(&hci_stack->timeout, 100);
+            btstack_run_loop_set_timer(&hci_stack->timeout, HCI_RESET_RESEND_TIMEOUT_MS);
             btstack_run_loop_set_timer_handler(&hci_stack->timeout, hci_initialization_timeout_handler);
             btstack_run_loop_add_timer(&hci_stack->timeout);
 #endif
@@ -923,7 +924,7 @@ static void hci_initializing_run(void){
         case HCI_INIT_SEND_RESET_CSR_WARM_BOOT:
             hci_state_reset();
             // prepare reset if command complete not received in 100ms
-            btstack_run_loop_set_timer(&hci_stack->timeout, 100);
+            btstack_run_loop_set_timer(&hci_stack->timeout, HCI_RESET_RESEND_TIMEOUT_MS);
             btstack_run_loop_set_timer_handler(&hci_stack->timeout, hci_initialization_timeout_handler);
             btstack_run_loop_add_timer(&hci_stack->timeout);
             // send command
@@ -944,7 +945,7 @@ static void hci_initializing_run(void){
             // STLC25000D: baudrate change happens within 0.5 s after command was send,
             // use timer to update baud rate after 100 ms (knowing exactly, when command was sent is non-trivial)
             if (hci_stack->manufacturer == COMPANY_ID_ST_MICROELECTRONICS){
-                btstack_run_loop_set_timer(&hci_stack->timeout, 100);
+                btstack_run_loop_set_timer(&hci_stack->timeout, HCI_RESET_RESEND_TIMEOUT_MS);
                 btstack_run_loop_add_timer(&hci_stack->timeout);
             }
             break;
@@ -973,7 +974,7 @@ static void hci_initializing_run(void){
                             break;
                         case 2: // CSR Warm Boot: Wait a bit, then send HCI Reset until HCI Command Complete
                             log_info("CSR Warm Boot");
-                            btstack_run_loop_set_timer(&hci_stack->timeout, 100);
+                            btstack_run_loop_set_timer(&hci_stack->timeout, HCI_RESET_RESEND_TIMEOUT_MS);
                             btstack_run_loop_set_timer_handler(&hci_stack->timeout, hci_initialization_timeout_handler);
                             btstack_run_loop_add_timer(&hci_stack->timeout);
                             if (hci_stack->manufacturer == COMPANY_ID_CAMBRIDGE_SILICON_RADIO
