@@ -349,6 +349,7 @@ static void hsp_ringing_timeout_handler(btstack_timer_source_t * timer){
     ag_ring = 1;
     btstack_run_loop_set_timer(&hs_timeout, 2000); // 2 seconds timeout
     btstack_run_loop_add_timer(&hs_timeout);
+    hsp_run();
 }
 
 static void hsp_ringing_timer_start(void){
@@ -363,22 +364,22 @@ static void hsp_ringing_timer_stop(void){
 } 
 
 void hsp_ag_start_ringing(void){
-    if (hsp_state != HSP_W2_CONNECT_SCO) return;
     ag_ring = 1;
-    hsp_state = HSP_W4_RING_ANSWER;
+    if (hsp_state == HSP_W2_CONNECT_SCO) {
+        hsp_state = HSP_W4_RING_ANSWER;
+    }
     hsp_ringing_timer_start();
 }
 
 void hsp_ag_stop_ringing(void){
     ag_ring = 0;
-    ag_num_button_press_received = 0;
-    hsp_state = HSP_W2_CONNECT_SCO;
+    if (hsp_state == HSP_W4_RING_ANSWER){
+        hsp_state = HSP_W2_CONNECT_SCO;
+    }
     hsp_ringing_timer_stop();
 }
 
 static void hsp_run(void){
-
-    int err;
 
     if (ag_send_ok){
         if (!rfcomm_can_send_packet_now(rfcomm_cid)) {
@@ -396,10 +397,17 @@ static void hsp_run(void){
             return;
         }
         ag_send_error = 0;
-        err = hsp_ag_send_str_over_rfcomm(rfcomm_cid, HSP_AG_ERROR);
-        if (err) {
-            ag_send_error = 1;
+        hsp_ag_send_str_over_rfcomm(rfcomm_cid, HSP_AG_ERROR);
+        return;
+    }
+
+    if (ag_ring){
+        if (!rfcomm_can_send_packet_now(rfcomm_cid)) {
+            rfcomm_request_can_send_now_event(rfcomm_cid);
+            return;
         }
+        ag_ring = 0;
+        hsp_ag_send_str_over_rfcomm(rfcomm_cid, HSP_AG_RING);
         return;
     }
 
@@ -431,30 +439,18 @@ static void hsp_run(void){
             break;
 
         case HSP_W4_RING_ANSWER:
-            if (ag_ring){
-                if (!rfcomm_can_send_packet_now(rfcomm_cid)) {
-                    rfcomm_request_can_send_now_event(rfcomm_cid);
-                    return;
-                }
-                ag_ring = 0;
-                err = hsp_ag_send_str_over_rfcomm(rfcomm_cid, HSP_AG_RING);
-                if (err) {
-                    ag_ring = 1;
-                }
-                break;
+            if (!ag_num_button_press_received) break;    
+
+            if (!rfcomm_can_send_packet_now(rfcomm_cid)) {
+                rfcomm_request_can_send_now_event(rfcomm_cid);
+                return;
             }
 
-            if (!ag_num_button_press_received) break;    
             ag_send_ok = 0;
-
             ag_num_button_press_received = 0;
             hsp_state = HSP_W2_CONNECT_SCO;
 
-            err = hsp_ag_send_str_over_rfcomm(rfcomm_cid, HSP_AG_OK);
-            if (err) {
-                hsp_state = HSP_W4_RING_ANSWER;
-                ag_num_button_press_received = 1;
-            }
+            hsp_ag_send_str_over_rfcomm(rfcomm_cid, HSP_AG_OK);
             break;
         
         case HSP_W2_CONNECT_SCO:
@@ -486,10 +482,7 @@ static void hsp_run(void){
                 ag_microphone_gain = -1;
                 char buffer[10];
                 sprintf(buffer, "%s=%d\r\n", HSP_MICROPHONE_GAIN, gain);
-                err = hsp_ag_send_str_over_rfcomm(rfcomm_cid, buffer);
-                if (err) {
-                    ag_microphone_gain = gain;
-                }
+                hsp_ag_send_str_over_rfcomm(rfcomm_cid, buffer);
                 break;
             }
 
@@ -502,10 +495,7 @@ static void hsp_run(void){
                 ag_speaker_gain = -1;
                 char buffer[10];
                 sprintf(buffer, "%s=%d\r\n", HSP_SPEAKER_GAIN, gain);
-                err = hsp_ag_send_str_over_rfcomm(rfcomm_cid, buffer);
-                if (err) {
-                    ag_speaker_gain = gain;
-                }
+                hsp_ag_send_str_over_rfcomm(rfcomm_cid, buffer);
                 break;
             }
             break;
