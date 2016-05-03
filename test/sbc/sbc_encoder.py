@@ -49,9 +49,9 @@ def sbc_analyse(frame, ch, blk, C, debug):
     if debug:
         #print "EX:", frame.EX
         print "X:", X
-        print "Z:"
-        print "Y:", Y
-        print "W:", W
+        # print "Z:"
+        # print "Y:", Y
+        # print "W:", W
         print "S:", S
 
     for sb in range(M):
@@ -163,60 +163,63 @@ def sbc_quantization(frame):
 
     return 0
 
+if __name__ == "__main__":
+    usage = '''
+    Usage: ./sbc_encoder.py input.wav block_size nr_subbands bitpool
+    '''
+    nr_blocks = 0
+    nr_subbands = 0
 
-# usage = '''
-# Usage: ./sbc_encoder.py input.wav block_size nr_subbands bitpool
-# '''
-# nr_blocks = 0
-# nr_subbands = 0
+    if (len(sys.argv) < 5):
+        print(usage)
+        sys.exit(1)
+    try:
+        infile = sys.argv[1]
+        if not infile.endswith('.wav'):
+            print(usage)
+            sys.exit(1)
+        nr_blocks = int(sys.argv[2])
+        nr_subbands = int(sys.argv[3])
+        bitpool = int(sys.argv[4])      
+        sbcfile = infile.replace('.wav', '-encoded.sbc')
 
-# if (len(sys.argv) < 5):
-#     print(usage)
-#     sys.exit(1)
-# try:
-#     infile = sys.argv[1]
-#     if not infile.endswith('.wav'):
-#         print(usage)
-#         sys.exit(1)
-#     nr_blocks = int(sys.argv[2])
-#     nr_subbands = int(sys.argv[3])
-#     bitpool = int(sys.argv[4])      
-#     sbcfile = infile.replace('.wav', '-encoded.sbc')
-
-#     fin = wave.open(infile, 'rb')
-    
-#     wav_nr_channels = fin.getnchannels()
-#     wav_sample_rate = fin.getframerate()
-#     wav_nr_frames = fin.getnframes()
-#     sbc_sampling_frequency = sbc_sampling_frequency_index(wav_sample_rate)
-
-#     sbc_frame_count = 0
-#     audio_frame_count = 0
-
-#     while audio_frame_count < wav_nr_frames:
-#         if sbc_frame_count % 200 == 0:
-#             print "== Frame %d ==" % (sbc_frame_count)
-
-#         sbc_encoder_frame = SBCFrame(nr_blocks, nr_subbands, wav_nr_channels, sbc_sampling_frequency, bitpool)
+        fin = wave.open(infile, 'rb')
         
-#         wav_nr_audio_frames = sbc_encoder_frame.nr_blocks * sbc_encoder_frame.nr_subbands
-#         fetch_samples_for_next_sbc_frame(fin, wav_nr_audio_frames, sbc_encoder_frame)
-#         sbc_encode(sbc_encoder_frame)
+        wav_nr_channels = fin.getnchannels()
+        wav_sample_rate = fin.getframerate()
+        wav_nr_frames = fin.getnframes()
+        sbc_sampling_frequency = sbc_sampling_frequency_index(wav_sample_rate)
+
+        sbc_frame_count = 0
+        audio_frame_count = 0
+
+        while audio_frame_count < wav_nr_frames:
+            # if sbc_frame_count % 200 == 0:
+            print "== Frame %d ==" % (sbc_frame_count)
+
+            sbc_encoder_frame = SBCFrame(nr_blocks, nr_subbands, wav_nr_channels, sbc_sampling_frequency, bitpool)
+            
+            wav_nr_audio_frames = sbc_encoder_frame.nr_blocks * sbc_encoder_frame.nr_subbands
+            fetch_samples_for_next_sbc_frame(fin, wav_nr_audio_frames, sbc_encoder_frame)
+            sbc_encode(sbc_encoder_frame, 1)
+            
+            # stream = frame_to_bitstream(frame)
+            audio_frame_count += wav_nr_audio_frames
+            sbc_frame_count += 1
+
+            if sbc_frame_count == 87:
+                break;
+
+        # except TypeError:
+        #     fin.close()
+        #     print "DONE, WAV file %s encoded into SBC file %s ", (infile, sbcfile)
+
+        #channels, num_audio_frames, wav_nr_channels, wav_sample_rate = read_waw_file(wavfile)
         
-#         # stream = frame_to_bitstream(frame)
-#         audio_frame_count += wav_nr_audio_frames
-#         sbc_frame_count += 1
-
-#     # except TypeError:
-#     #     fin.close()
-#     #     print "DONE, WAV file %s encoded into SBC file %s ", (infile, sbcfile)
-
-#     #channels, num_audio_frames, wav_nr_channels, wav_sample_rate = read_waw_file(wavfile)
-    
-    
-# except IOError as e:
-#     print(usage)
-#     sys.exit(1)
+        
+    except IOError as e:
+        print(usage)
+        sys.exit(1)
 
 
 

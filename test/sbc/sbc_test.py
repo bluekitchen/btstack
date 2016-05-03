@@ -149,7 +149,6 @@ try:
                                                 sbc_decoder_frame.nr_channels, 
                                                 sbc_decoder_frame.sampling_frequency,
                                                 sbc_decoder_frame.bitpool)
-                
                 sbc_encoder_frame.pcm = np.array(sbc_decoder_frame.pcm)
                 # TODO: join field 
                 # TODO: clear memory
@@ -158,8 +157,9 @@ try:
                 # sbc_quantization(sbc_encoder_frame)
 
                 # print "encoder pcm ", sbc_encoder_frame.pcm
-                sbc_encode(sbc_encoder_frame,frame_count >86)
-                
+                # if frame_count > 86:
+                print sbc_decoder_frame.sb_sample[0][0]
+                sbc_encode(sbc_encoder_frame,frame_count >= 0)
                 # test
                 err = check_equal(sbc_encoder_frame, sbc_decoder_frame, frame_count)
                 if err:

@@ -200,59 +200,60 @@ def write_wav_file(fout, sample):
     fout.writeframes(value_str)
     
 
-# usage = '''
-# Usage: ./sbc_decoder.py input.sbc
-# '''
+if __name__ == "__main__":
+    usage = '''
+    Usage: ./sbc_decoder.py input.sbc
+    '''
 
-# if (len(sys.argv) < 2):
-#     print(usage)
-#     sys.exit(1)
-# try:
-#     infile = sys.argv[1]
-#     if not infile.endswith('.sbc'):
-#         print(usage)
-#         sys.exit(1)
+    if (len(sys.argv) < 2):
+        print(usage)
+        sys.exit(1)
+    try:
+        infile = sys.argv[1]
+        if not infile.endswith('.sbc'):
+            print(usage)
+            sys.exit(1)
 
-#     wavfile = infile.replace('.sbc', '-decoded.wav')
+        wavfile = infile.replace('.sbc', '-decoded.wav')
 
-#     with open (infile, 'rb') as fin:
-#         try:
-#             frame_count = 0
-#             while True:
-#                 sbc_frame = SBCFrame(0,0,0,0,0)
-#                 if frame_count % 200 == 0:
-#                     print "== Frame %d ==" % (frame_count)
-#                 err = sbc_unpack_frame(fin, sbc_frame)
-#                 if err:
-#                     print "error, frame_count: ", frame_count
-#                     break
-                
-#                 sbc_decode(sbc_frame)
-#                 # print sbc_frame.pcm
-                
-#                 if frame_count == 0:
-#                     fout = wave.open(wavfile, 'w')
-#                     fout.setnchannels(sbc_frame.nr_channels)
-#                     fout.setsampwidth(2)
-#                     fout.setframerate(sampling_frequency[sbc_frame.sampling_frequency])
-#                     fout.setnframes(0)
-#                     fout.setcomptype = 'NONE'
-                
-#                 write_wav_file(fout, sbc_frame.pcm)
-#                 frame_count += 1
-                
-#                 # if frame_count == 8:
-#                 #     fout.close()
-#                 #     break
+        with open (infile, 'rb') as fin:
+            try:
+                frame_count = 0
+                while True:
+                    sbc_frame = SBCFrame(0,0,0,0,0)
+                    if frame_count % 200 == 0:
+                        print "== Frame %d ==" % (frame_count)
+                    err = sbc_unpack_frame(fin, sbc_frame)
+                    if err:
+                        print "error, frame_count: ", frame_count
+                        break
+                    
+                    sbc_decode(sbc_frame)
+                    # print sbc_frame.pcm
+                    
+                    if frame_count == 0:
+                        fout = wave.open(wavfile, 'w')
+                        fout.setnchannels(sbc_frame.nr_channels)
+                        fout.setsampwidth(2)
+                        fout.setframerate(sampling_frequency[sbc_frame.sampling_frequency])
+                        fout.setnframes(0)
+                        fout.setcomptype = 'NONE'
+                    
+                    write_wav_file(fout, sbc_frame.pcm)
+                    frame_count += 1
+                    
+                    # if frame_count == 8:
+                    #     fout.close()
+                    #     break
 
-#         except TypeError:
-#             fout.close()
-#             print "DONE, SBC file %s decoded into WAV file %s ", (infile, wavfile)
-#             exit(0) 
+            except TypeError:
+                fout.close()
+                print "DONE, SBC file %s decoded into WAV file %s ", (infile, wavfile)
+                exit(0) 
 
-# except IOError as e:
-#     print(usage)
-#     sys.exit(1)
+    except IOError as e:
+        print(usage)
+        sys.exit(1)
 
 
 
