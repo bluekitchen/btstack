@@ -4,6 +4,7 @@
 #include <string.h>
 
 typedef uint8_t sm_key_t[16];
+typedef uint8_t sm_key256_t[32];
 
 static const char * key_string      = "2b7e1516 28aed2a6 abf71588 09cf4f3c";
 static const char * k0_string       = "7df76b0c 1ab899b3 3e42f047 b91b546f";
@@ -12,16 +13,19 @@ static const char * k2_string       = "f7ddac30 6ae266cc f90bc11e e46d513b";
 
 static const char * m0_string       = "";
 static const char * cmac_m0_string  = "bb1d6929 e9593728 7fa37d12 9b756746";
-
 static const char * m16_string       = "6bc1bee2 2e409f96 e93d7e11 7393172a";
 static const char * cmac_m16_string  = "070a16b4 6b4d4144 f79bdd9d d04a287c";
-
 static const char * m40_string       = "6bc1bee2 2e409f96 e93d7e11 7393172a ae2d8a57 1e03ac9c 9eb76fac 45af8e51 30c81c46 a35ce411";
 static const char * cmac_m40_string  = "dfa66747 de9ae630 30ca3261 1497c827";
-
 static const char * m64_string       = "6bc1bee2 2e409f96 e93d7e11 7393172a ae2d8a57 1e03ac9c 9eb76fac 45af8e51 30c81c46 a35ce411 e5fbc119 1a0a52ef f69f2445 df4f9b17 ad2b417b e66c3710";
 static const char * cmac_m64_string  = "51f0bebf 7e3b9d92 fc497417 79363cfe";
 
+// f4 
+static const char * f4_u_string 	= "20b003d2 f297be2c 5e2c83a7 e9f9a5b9 eff49111 acf4fddb cc030148 0e359de6";
+static const char * f4_v_string 	= "55188b3d 32f6bb9a 900afcfb eed4e72a 59cb9ac2 f19d7cfb 6b4fdd49 f47fc5fd";
+static const char * f4_x_string 	= "d5cb8454 d177733e ffffb2ec 712baeab";
+static const char * f4_z_string 	= "00";
+static const char * f4_cmac_string 	= "f2c916f1 07a9bd1c f1eda1be a974872d";
 
 static int nibble_for_char(char c){
     if (c >= '0' && c <= '9') return c - '0';
@@ -88,10 +92,9 @@ static void calc_subkeys(sm_key_t k0, sm_key_t k1, sm_key_t k2){
 #define VALIDATE_KEY(NAME) { LOG_KEY(NAME); sm_key_t test; parse_hex(test, NAME##_string); if (memcmp(NAME, test, 16)){ printf("Error calculating key\n"); } }
 #define VALIDATE_MESSAGE(NAME) validate_message(#NAME, NAME##_string, cmac_##NAME##_string)
 
-static void aes_cmac(sm_key_t aes_cmac, uint8_t * data, int sm_cmac_message_len){
-	sm_key_t key, k0, k1, k2, zero;
+static void aes_cmac(sm_key_t aes_cmac, sm_key_t key, uint8_t * data, int sm_cmac_message_len){
+	sm_key_t k0, k1, k2, zero;
 	memset(zero, 0, 16);
-	parse_hex(key, key_string);
 
 	aes128_calc_cyphertext(key, zero, k0);
 	calc_subkeys(k0, k1, k2);
@@ -149,6 +152,15 @@ static void aes_cmac(sm_key_t aes_cmac, uint8_t * data, int sm_cmac_message_len)
     aes128_calc_cyphertext(key, sm_cmac_y, aes_cmac);
 }
 
+static void f4(sm_key_t res, sm_key256_t u, sm_key256_t v, sm_key_t x, uint8_t z){
+	uint8_t buffer[65];
+	memcpy(buffer, u, 32);
+	memcpy(buffer+32, v, 32);
+	buffer[64] = z;
+	hexdump2(buffer, sizeof(buffer));
+	aes_cmac(res, x, buffer, sizeof(buffer));
+}
+
 static void validate_message(const char * name, const char * message_string, const char * cmac_string){
 
 	uint8_t m[128];
@@ -159,8 +171,11 @@ static void validate_message(const char * name, const char * message_string, con
 
 	printf("-- verify message %s, len %u:\nm:    %s\ncmac: %s\n", name, len, message_string, cmac_string);
 
+	sm_key_t key;
+	parse_hex(key, key_string);
+
 	sm_key_t cmac_test;
-	aes_cmac(cmac_test, m, len);
+	aes_cmac(cmac_test, key, m, len);
 
 	LOG_KEY(cmac_test);
 
@@ -176,14 +191,33 @@ int main(void){
 	memset(zero, 0, 16);
 	PARSE_KEY(key);
 
+	// validate subkey k0,k1,k2 generation
 	aes128_calc_cyphertext(key, zero, k0);
 	VALIDATE_KEY(k0);
 	calc_subkeys(k0, k1, k2);
 	VALIDATE_KEY(k1);
 	VALIDATE_KEY(k2);
 
+	// validate AES_CMAC for some messages
 	VALIDATE_MESSAGE(m0);
 	VALIDATE_MESSAGE(m16);
 	VALIDATE_MESSAGE(m40);
 	VALIDATE_MESSAGE(m64);
+
+	// validate f4
+	printf("-- verify f4\n");
+	sm_key_t f4_x, f4_cmac, f4_cmac_test;
+	sm_key256_t f4_u, f4_v;
+	uint8_t f4_z;
+	parse_hex(f4_cmac, f4_cmac_string);
+	parse_hex(f4_u, f4_u_string);
+	parse_hex(f4_v, f4_v_string);
+	parse_hex(f4_x, f4_x_string);
+	parse_hex(&f4_z, f4_z_string);
+	f4(f4_cmac_test, f4_u, f4_v, f4_x, f4_z);
+	if (memcmp(f4_cmac_test, f4_cmac, 16)){
+		printf("CMAC incorrect!\n");
+	} else {
+		printf("CMAC correct!\n");
+	}
 }
