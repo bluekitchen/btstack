@@ -5,49 +5,17 @@ import struct
 import sys
 from sbc import *
 
-
 V = np.zeros(shape = (2, 10*2*8))
-
-ibuffer = None
-ibuffer_count = 0
-
-def get_bit(fin):
-    global ibuffer, ibuffer_count
-    if ibuffer_count == 0:
-        ibuffer = ord(fin.read(1))
-        ibuffer_count = 8
-        # print "new byte ", hex(ibuffer)
-
-    bit = (ibuffer >> 7) & 1
-    ibuffer = ibuffer << 1
-    ibuffer_count = ibuffer_count - 1
-    # print "bit: ", bit
-    return bit
-
-def drop_remaining_bits():
-    global ibuffer_count
-    ibuffer_count = 0
-
-def get_bits(fin, bit_count):
-    bits = 0
-    for i in range(bit_count):
-        bits = (bits << 1) | get_bit(fin)
-    # print "collected bits", hex(bits)
-    return bits
-
-def get_frame_sample_frequences(fin, bit_count):
-    for i in range(bit_count):
-        get_bit(fin)
 
 def sbc_unpack_frame(fin, frame):
     frame.syncword = get_bits(fin,8)
     if frame.syncword != 156:
         print "incorrect syncword ", frame.syncword
         return -1
-    
     frame.sampling_frequency = get_bits(fin,2)
     frame.nr_blocks = nr_blocks[get_bits(fin,2)]
     frame.channel_mode = get_bits(fin,2)
+    
     if frame.channel_mode == MONO:
         frame.nr_channels = 1
     else:
@@ -66,42 +34,39 @@ def sbc_unpack_frame(fin, frame):
             frame.join[sb] = get_bits(fin,1)
         get_bits(fin,1) # RFA
 
-    # print frame
-
     frame.scale_factor = np.zeros(shape=(frame.nr_channels, frame.nr_subbands), dtype = np.int32)
-    frame.scalefactor = np.zeros(shape=(frame.nr_channels, frame.nr_subbands), dtype = np.int32)
-    frame.audio_sample = np.ndarray(shape=(frame.nr_blocks, frame.nr_channels, frame.nr_subbands), dtype = np.uint16)
     
     # print frame.audio_sample
     
     for ch in range(frame.nr_channels):
         for sb in range(frame.nr_subbands):
             frame.scale_factor[ch][sb] = get_bits(fin, 4)
-    
     crc = calculate_crc(frame)
     if crc != frame.crc_check:
+        print frame
         print "error, crc not equal: ", crc, frame.crc_check
         exit(1)
-
+    
+    frame.scalefactor = np.zeros(shape=(frame.nr_channels, frame.nr_subbands), dtype = np.int32)
     for ch in range(frame.nr_channels):
         for sb in range(frame.nr_subbands):
             frame.scalefactor[ch][sb] = 1 << (frame.scale_factor[ch][sb] + 1)
 
+    
     frame.bits = sbc_bit_allocation(frame)
-    # print "bits: ", bits
-    #print "Nr blocks ", frame.nr_blocks, frame.nr_channels, frame.nr_subbands
-
+    
+    frame.audio_sample = np.ndarray(shape=(frame.nr_blocks, frame.nr_channels, frame.nr_subbands), dtype = np.uint16)
     for blk in range(frame.nr_blocks):
         for ch in range(frame.nr_channels):
             for sb in range(frame.nr_subbands):
                 frame.audio_sample[blk][ch][sb] = get_bits(fin, frame.bits[ch][sb])
         # print "block %2d - audio sample: %s" % (blk, frame.audio_sample[blk][0])
-        
+     
     # add padding        
     drop_remaining_bits()
-    
-    # Reconstruct the Subband Samples
+    return 0
 
+def sbc_reconstruct_subband_samples(frame):
     frame.levels = np.zeros(shape=(frame.nr_channels, frame.nr_subbands), dtype = np.int32)
     frame.sb_sample = np.zeros(shape=(frame.nr_blocks, frame.nr_channels, frame.nr_subbands))
     
@@ -134,7 +99,7 @@ def sbc_unpack_frame(fin, frame):
     return 0
 
 
-def sbc_synthesis(frame, ch, blk, proto_table):
+def sbc_frame_synthesis(frame, ch, blk, proto_table):
     global V
     M = frame.nr_subbands
     L = 10 * M
@@ -172,10 +137,10 @@ def sbc_synthesis(frame, ch, blk, proto_table):
         for i in range(10):
             frame.X[j] += W[j+M*i]
     
-    frame.pcm = np.concatenate([frame.pcm, frame.X])
+    frame.pcm = np.concatenate([frame.pcm, np.int16(frame.X)])
 
 
-def sbc_decode(frame):
+def sbc_synthesis(frame):
     if frame.nr_subbands == 4:
         proto_table = Proto_4_40
     elif frame.nr_subbands == 8:
@@ -185,16 +150,27 @@ def sbc_decode(frame):
      
     for ch in range(frame.nr_channels):
         for blk in range(frame.nr_blocks):
-            sbc_synthesis(frame, ch, blk, proto_table)
+            sbc_frame_synthesis(frame, ch, blk, proto_table)
        
     return frame.nr_blocks * frame.nr_subbands
 
+def sbc_decode(frame):
+    err = sbc_reconstruct_subband_samples(frame)
+    if err >= 0:
+        err = sbc_synthesis(frame)
+    return err
 
-def write_wav_file(fout, sample):
+
+def write_wav_file(fout, frame):
     values = []
-    for i in range(len(sample)):
-        packed_value = struct.pack('h', sample[i])
-        values.append(packed_value)
+    for i in range(len(frame.pcm)):
+        try:
+            packed_value = struct.pack('h', frame.pcm[i])
+            values.append(packed_value)
+        except struct.error:
+            print frame
+            print i, frame.pcm[i], frame.pcm
+            exit(1)
 
     value_str = ''.join(values)
     fout.writeframes(value_str)
@@ -215,40 +191,42 @@ if __name__ == "__main__":
             sys.exit(1)
 
         wavfile = infile.replace('.sbc', '-decoded.wav')
+        fout = False
 
         with open (infile, 'rb') as fin:
             try:
                 frame_count = 0
                 while True:
-                    sbc_frame = SBCFrame(0,0,0,0,0)
+                    sbc_decoder_frame = SBCFrame(0,0,0,0,0)
                     if frame_count % 200 == 0:
                         print "== Frame %d ==" % (frame_count)
-                    err = sbc_unpack_frame(fin, sbc_frame)
+
+                    err = sbc_unpack_frame(fin, sbc_decoder_frame)
+                    
                     if err:
                         print "error, frame_count: ", frame_count
                         break
                     
-                    sbc_decode(sbc_frame)
-                    # print sbc_frame.pcm
+                    sbc_decode(sbc_decoder_frame)
                     
                     if frame_count == 0:
+                        print sbc_decoder_frame
                         fout = wave.open(wavfile, 'w')
-                        fout.setnchannels(sbc_frame.nr_channels)
+                        fout.setnchannels(sbc_decoder_frame.nr_channels)
                         fout.setsampwidth(2)
-                        fout.setframerate(sampling_frequency[sbc_frame.sampling_frequency])
+                        fout.setframerate(sampling_frequency[sbc_decoder_frame.sampling_frequency])
                         fout.setnframes(0)
                         fout.setcomptype = 'NONE'
                     
-                    write_wav_file(fout, sbc_frame.pcm)
+                    write_wav_file(fout, sbc_decoder_frame)
                     frame_count += 1
-                    
-                    # if frame_count == 8:
-                    #     fout.close()
-                    #     break
 
-            except TypeError:
-                fout.close()
-                print "DONE, SBC file %s decoded into WAV file %s ", (infile, wavfile)
+            except TypeError as err:
+                if not fout:
+                    print err
+                else:
+                    fout.close()
+                    print ("DONE, SBC file %s decoded into WAV file %s " % (infile, wavfile))
                 exit(0) 
 
     except IOError as e:

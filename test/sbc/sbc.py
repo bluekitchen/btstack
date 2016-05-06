@@ -9,10 +9,36 @@ MONO = 0
 DUAL_CHANNEL = 1
 STEREO = 2
 JOINT_STEREO = 3
+channel_modes = ["MONO", "DUAL CHANNEL", "STEREO", "JOINT STEREO"]
 
 # allocation method
 LOUDNESS = 0
 SNR = 1
+allocation_methods = ["LOUDNESS", "SNR"]
+
+sampling_frequencies = [16000, 32000, 44100, 48000]
+nr_blocks = [4, 8, 12, 16]
+nr_subbands = [4, 8]
+
+
+def allocation_method_to_str(allocation_method):
+    global allocation_methods
+    return allocation_methods[allocation_method]
+
+def channel_mode_to_str(channel_mode):
+    global channel_modes
+    return channel_modes[channel_mode]
+
+def sampling_frequency_to_str(sampling_frequency):
+    global sampling_frequencies
+    return sampling_frequencies[sampling_frequency]
+
+def sampling_frequency_index(sampling_frequency):
+    global sampling_frequencies
+    for index, value in enumerate(sampling_frequencies):
+        if value == sampling_frequency:
+            return index
+    return -1
 
 Proto_4_40 = [
     0.00000000E+00, 5.36548976E-04, 1.49188357E-03, 2.73370904E-03,
@@ -98,10 +124,6 @@ offset8 = np.array([[ -2, 0, 0, 0, 0, 0, 0, 1 ],
                     [ -4, 0, 0, 0, 0, 0, 1, 2 ]
                     ])
 
-nr_blocks = [4, 8, 12, 16]
-nr_subbands = [4, 8]
-sampling_frequency =[16000, 32000, 44100, 48000]
-
 class SBCFrame:
     syncword = 0
     sampling_frequency = 0
@@ -124,11 +146,12 @@ class SBCFrame:
     bits    = np.zeros(shape=(2, 8))
     levels = np.zeros(shape=(2, 8), dtype = np.int32)
 
-    def __init__(self, nr_blocks, nr_subbands, nr_channels, sampling_frequency, bitpool):
+
+    def __init__(self, nr_blocks=16, nr_subbands=4, nr_channels=1, bitpool=31, sampling_frequency=44100):
         self.nr_blocks = nr_blocks
         self.nr_subbands = nr_subbands
         self.nr_channels = nr_channels
-        self.sampling_frequency = sampling_frequency
+        self.sampling_frequency = sampling_frequency_index(sampling_frequency)
         self.bitpool = bitpool
         self.scale_factor = np.zeros(shape=(nr_channels, nr_subbands), dtype = np.int32)
         self.scalefactor = np.zeros(shape=(nr_channels, nr_subbands), dtype = np.int32)
@@ -138,36 +161,37 @@ class SBCFrame:
         self.EX = np.zeros(nr_subbands)
         return
 
+    def dump_audio_samples(self, blk, ch):
+        print self.audio_sample[blk][ch]
+
+    def dump_subband_samples(self, blk, ch):
+        print self.sb_sample[blk][ch]
+
+    def dump_state(self):
+        res =  "SBCFrameHeader state:"
+        res += "\n - nr channels %d" % self.nr_channels
+        res += "\n - nr blocks %d" % self.nr_blocks
+        res += "\n - nr subbands %d" % self.nr_subbands
+        res += "\n - scale factors: %s" % self.scale_factor
+        res += "\n - levels: %s" % self.levels
+        res += "\n - join: %s" % self.join
+        res += "\n - bits: %s" % self.bits
+        print res
+
     def __str__(self):
         res =  "SBCFrameHeader:"
-        res = res + "\n - syncword %d" % self.syncword
-        res = res + "\n - sample frequency %d" % self.sampling_frequency
-        res = res + "\n - nr blocks %d" % self.nr_blocks
-
-        if self.channel_mode == MONO:
-            res = res + "\n - channel mode MONO"
-        elif self.channel_mode == DUAL_CHANNEL:
-            res = res + "\n - channel mode DUAL CHANNEL"
-        elif self.channel_mode == STEREO:
-            res = res + "\n - channel mode STEREO"
-        elif self.channel_mode == JOINT_STEREO:
-            res = res + "\n - channel mode JOINT STEREO"
-        else:
-            res = res + "\n - channel mode %d" % self.channel_mode
+        res += "\n - syncword %d" % self.syncword
+        res += "\n - sampling frequency %d Hz" % sampling_frequency_to_str(self.sampling_frequency)
         
-        res = res + "\n - nr channels %d" % self.nr_channels
+        res += "\n - nr channels %d" % self.nr_channels
+        res += "\n - nr blocks %d" % self.nr_blocks
+        res += "\n - nr subbands %d" % self.nr_subbands
         
-        if self.allocation_method == 1:
-            res = res + "\n - allocation method SNR"
-        elif self.allocation_method == 0:
-            res = res + "\n - allocation method LOUNDNESS"
-        else:
-            res = res + "\n - allocation method %d" % self.allocation_method
+        res += "\n - channel mode %s" % channel_mode_to_str(self.channel_mode)
+        res += "\n - allocation method %s" % allocation_method_to_str(self.allocation_method)
 
-        res = res + "\n - nr subbands %d" % self.nr_subbands
-        res = res + "\n - bitpool %d" % self.bitpool
-        res = res + "\n - crc check %d" % self.crc_check
-
+        res += "\n - bitpool %d" % self.bitpool
+        res += "\n - crc check %d" % self.crc_check
         return res
 
 
@@ -384,7 +408,7 @@ def sbc_crc8(data, data_len):
     return crc
 
 
-bitstream = []
+bitstream = None
 bitstream_index = -1
 bitstream_bits_available = 0
 
@@ -409,6 +433,30 @@ def add_bits(bits, len):
     global bitstream, bitstream_bits_available
     for i in range(len):
         add_bit((bits >> (len-1-i)) & 1)
+
+ibuffer = None
+ibuffer_count = 0
+
+def get_bit(fin):
+    global ibuffer, ibuffer_count
+    if ibuffer_count == 0:
+        ibuffer = ord(fin.read(1))
+        ibuffer_count = 8
+        
+    bit = (ibuffer >> 7) & 1
+    ibuffer = ibuffer << 1
+    ibuffer_count = ibuffer_count - 1
+    return bit
+
+def drop_remaining_bits():
+    global ibuffer_count
+    ibuffer_count = 0
+
+def get_bits(fin, bit_count):
+    bits = 0
+    for i in range(bit_count):
+        bits = (bits << 1) | get_bit(fin)
+    return bits
 
 
 def calculate_crc(frame):
@@ -437,6 +485,43 @@ def calculate_crc(frame):
 
 
 
+def frame_to_bitstream(frame):
+    global bitstream, bitstream_bits_available, bitstream_index
+    init_bitstream()
 
+    add_bits(frame.syncword, 8)
+    add_bits(frame.sampling_frequency, 2)
+    add_bits(frame.nr_blocks/4-1, 2)
+    add_bits(frame.channel_mode, 2)
+    add_bits(frame.allocation_method, 1)
+    add_bits(frame.nr_subbands/4-1, 1)
+    add_bits(frame.bitpool, 8)
+    add_bits(frame.crc_check, 8)
 
+    if frame.channel_mode == JOINT_STEREO:
+        for sb in range(frame.nr_subbands-1):
+            add_bits(frame.join[sb],1)
+        add_bits(0,1)
 
+    for ch in range(frame.nr_channels):
+        for sb in range(frame.nr_subbands):
+            add_bits(frame.scale_factor[ch][sb], 4)
+    
+    for blk in range(frame.nr_blocks):
+        for ch in range(frame.nr_channels):
+            for sb in range(frame.nr_subbands):
+                add_bits(frame.audio_sample[blk][ch][sb], frame.bits[ch][sb])
+
+    bitstream_bits_available = 0
+    return bitstream
+
+def mse(a,b):
+    count = 1
+    for i in a.shape:
+        count *= i
+    delta = a - b
+    sqr = delta ** 2
+    res = sqr.sum()*1.0/count
+    # res = ((a - b) ** 2).mean()
+    return res
+    

@@ -5,20 +5,27 @@ import struct
 import sys
 from sbc import *
 
-X = np.zeros(80)
+X = np.zeros(80, dtype = np.int16)
 
-def fetch_samples_for_next_sbc_frame(fin, nr_audio_frames, frame):
+
+def fetch_samples_for_next_sbc_frame(fin, frame):
+    nr_audio_frames = frame.nr_blocks * frame.nr_subbands
     raw_data = fin.readframes(nr_audio_frames) # Returns byte data
     
     total_samples = nr_audio_frames * frame.nr_channels
-    fmt = "%ih" % total_samples # read signed 2 byte shorts
+    len_raw_data =  len(raw_data) / 2
 
-    frame.pcm =  np.array(struct.unpack(fmt, raw_data))
+    padding = np.zeros(total_samples - len_raw_data, dtype=np.int16)
+
+    fmt = "%ih" % len_raw_data # read signed 2 byte shorts
+
+    frame.pcm =  np.concatenate([np.array(struct.unpack(fmt, raw_data)), padding]) 
     del raw_data
 
     
-def sbc_analyse(frame, ch, blk, C, debug):
+def sbc_frame_analysis(frame, ch, blk, C):
     global X
+
     M = frame.nr_subbands
     L = 10 * M
     M2 = 2*M
@@ -46,40 +53,62 @@ def sbc_analyse(frame, ch, blk, C, debug):
             W[i][k] = np.cos((i+0.5)*(k-2)*np.pi/M)
             S[i] += W[i][k] * Y[k]
 
-    if debug:
-        #print "EX:", frame.EX
-        print "X:", X
-        # print "Z:"
-        # print "Y:", Y
-        # print "W:", W
-        print "S:", S
-
     for sb in range(M):
         frame.sb_sample[blk][ch][sb] = S[sb]
 
-
-def sbc_encode(frame,debug):
+def sbc_analysis(frame):
     if frame.nr_subbands == 4:
-        proto_table = Proto_4_40
+        C = Proto_4_40
     elif frame.nr_subbands == 8:
-        proto_table = Proto_8_80
+        C = Proto_8_80
     else:
         return -1
-     
+
     frame.sb_sample = np.ndarray(shape=(frame.nr_blocks, frame.nr_channels, frame.nr_subbands))
     index = 0
     for ch in range(frame.nr_channels):
         for blk in range(frame.nr_blocks):
             for sb in range(frame.nr_subbands):
-                frame.EX[sb] = frame.pcm[index] 
+                frame.EX[sb] = np.int16(frame.pcm[index]) 
                 index+=1
-            sbc_analyse(frame, ch, blk, proto_table,debug)
-    sbc_quantization(frame)
+            sbc_frame_analysis(frame, ch, blk, C)
+    return 0
 
+def sbc_encode(frame):
+    err = sbc_analysis(frame)
+    if err >= 0:
+        err = sbc_quantization(frame)
+    return err
 
-def should_use_joint_coding(frame):
-    # TODO: implement this
-    return False
+def calculate_joint_stereo_signal(frame):
+    sb_sample = np.zeros(shape = (frame.nr_blocks,frame.nr_channels,frame.nr_subbands), dtype = np.uint32)
+    scale_factor = np.zeros(shape=(frame.nr_channels, frame.nr_subbands), dtype = np.int32)
+    scalefactor = np.zeros(shape=(frame.nr_channels, frame.nr_subbands), dtype = np.int32)
+    
+    for sb in range(frame.nr_subbands-1):
+        for blk in range(frame.nr_blocks):
+             sb_sample[blk][0][sb] = (frame.sb_sample_f[blk][0][sb] +  frame.sb_sample_f[blk][1][sb]) >> 1
+             sb_sample[blk][1][sb] = (frame.sb_sample_f[blk][0][sb] -  frame.sb_sample_f[blk][1][sb]) >> 1
+
+    for ch in range(frame.nr_channels):
+        for sb in range(frame.nr_subbands-1):
+            frame.scale_factor[ch][sb] = 0
+            frame.scalefactor[ch][sb] = 2
+            for blk in range(frame.nr_blocks):
+                while frame.scalefactor[ch][sb] < abs(frame.sb_sample[blk][ch][sb]):
+                    frame.scale_factor[ch][sb]+=1
+                    frame.scalefactor[ch][sb] *= 2
+
+    for sb in range(frame.nr_subbands-1):
+        if (frame.scalefactor[0][sb] + frame.scalefactor[1][sb]) > (scalefactor[0][sb] + scalefactor[1][sb]):
+            frame.join[sb] = 1
+            frame.scale_factor[0][sb] = scale_factor[0][sb]
+            frame.scale_factor[1][sb] = scale_factor[1][sb]
+            frame.scalefactor[0][sb]  = scalefactor[0][sb]
+            frame.scalefactor[1][sb]  = scalefactor[1][sb]
+            for blk in range(frame.nr_blocks):
+                frame.sb_sample[blk][0][sb] = sb_sample[blk][0][sb]
+                frame.sb_sample[blk][1][sb] = sb_sample[blk][1][sb]
 
 def calculate_scalefactor(max_subbandsample):
     x = 0
@@ -91,38 +120,7 @@ def calculate_scalefactor(max_subbandsample):
     return (x,y)
 
 
-def frame_to_bitstream(frame):
-    global bitstream, bitstream_bits_available
-    init_bitstream()
-
-    add_bits(frame.syncword, 8)
-    add_bits(frame.sampling_frequency, 2)
-    add_bits(frame.nr_blocks/4-1, 2)
-    add_bits(frame.channel_mode, 2)
-    add_bits(frame.allocation_method, 1)
-    add_bits(frame.nr_subbands/4-1, 1)
-    add_bits(frame.bitpool, 8)
-    add_bits(frame.crc_check, 8)
-
-    for sb in range(frame.nr_subbands):
-        add_bits(frame.join[sb],1)
-    
-    for ch in range(frame.nr_channels):
-        for sb in range(frame.nr_subbands):
-            add_bits(frame.scale_factor[ch][sb], 4)
-
-    for blk in range(frame.nr_blocks):
-        for ch in range(frame.nr_channels):
-            for sb in range(frame.nr_subbands):
-                add_bits(frame.audio_sample[blk][ch][sb], frame.bits[ch][sb])
-
-    return bitstream
-
 def sbc_quantization(frame):
-    frame.join = np.zeros(frame.nr_subbands, dtype = np.uint8)
-    if should_use_joint_coding(frame):
-        return
-
     max_subbandsample = np.zeros(shape = (frame.nr_channels, frame.nr_subbands))
 
     for blk in range(frame.nr_blocks):
@@ -135,7 +133,14 @@ def sbc_quantization(frame):
 
     for ch in range(frame.nr_channels):
         for sb in range(frame.nr_subbands):
-            (frame.scale_factor[ch][sb], frame.scalefactor[ch][sb]) = calculate_scalefactor(max_subbandsample[ch][sb])
+            frame.scale_factor[ch][sb] = 0
+            frame.scalefactor[ch][sb] = 2
+            for blk in range(frame.nr_blocks):
+                while frame.scalefactor[ch][sb] < abs(frame.sb_sample[blk][ch][sb]):
+                    frame.scale_factor[ch][sb]+=1
+                    frame.scalefactor[ch][sb] *= 2
+
+            #(frame.scale_factor[ch][sb], frame.scalefactor[ch][sb]) = calculate_scalefactor(max_subbandsample[ch][sb])
         
     frame.bits = sbc_bit_allocation(frame)
     
@@ -143,32 +148,41 @@ def sbc_quantization(frame):
     frame.levels = np.zeros(shape=(frame.nr_channels, frame.nr_subbands), dtype = np.int32)
     for ch in range(frame.nr_channels):
         for sb in range(frame.nr_subbands):
-            frame.levels[ch][sb] = pow(2.0, frame.bits[ch][sb]) - 1
+            frame.levels[ch][sb] = (1 << frame.bits[ch][sb]) - 1 #pow(2.0, frame.bits[ch][sb]) - 1
 
     frame.syncword = 156
     frame.crc_check = calculate_crc(frame)
     
+    frame.join = np.zeros(frame.nr_subbands, dtype = np.uint8)
+    if frame.channel_mode == JOINT_STEREO:
+        calculate_joint_stereo_signal(frame)
+
     for blk in range(frame.nr_blocks):
         for ch in range(frame.nr_channels):
             for sb in range(frame.nr_subbands):
                 if frame.levels[ch][sb] > 0:
                     SB = frame.sb_sample[blk][ch][sb]
+                    L  = frame.levels[ch][sb]             
                     SF = frame.scalefactor[ch][sb]
-                    L  = frame.levels[ch][sb] 
-                
                     frame.audio_sample[blk][ch][sb] = np.uint16(((SB * L / SF    + L) - 1.0)/2.0)
                 else:
                     frame.audio_sample[blk][ch][sb] = 0 
 
-
     return 0
+
+def sbc_write_frame(fout, sbc_encoder_frame):
+    stream = frame_to_bitstream(sbc_encoder_frame)
+    barray = bytearray(stream)
+    fout.write(barray)
 
 if __name__ == "__main__":
     usage = '''
-    Usage: ./sbc_encoder.py input.wav block_size nr_subbands bitpool
+    Usage:      ./sbc_encoder.py input.wav blocks subbands bitpool
+    Example:    ./sbc_encoder.py fanfare.wav 16 4 31
     '''
     nr_blocks = 0
     nr_subbands = 0
+    
 
     if (len(sys.argv) < 5):
         print(usage)
@@ -178,43 +192,37 @@ if __name__ == "__main__":
         if not infile.endswith('.wav'):
             print(usage)
             sys.exit(1)
+        sbcfile = infile.replace('.wav', '-encoded.sbc')
+
         nr_blocks = int(sys.argv[2])
         nr_subbands = int(sys.argv[3])
         bitpool = int(sys.argv[4])      
-        sbcfile = infile.replace('.wav', '-encoded.sbc')
 
         fin = wave.open(infile, 'rb')
-        
-        wav_nr_channels = fin.getnchannels()
-        wav_sample_rate = fin.getframerate()
-        wav_nr_frames = fin.getnframes()
-        sbc_sampling_frequency = sbc_sampling_frequency_index(wav_sample_rate)
+        nr_channels = fin.getnchannels()
+        sampling_frequency = fin.getframerate()
+        nr_audio_frames = fin.getnframes()
 
-        sbc_frame_count = 0
+        subband_frame_count = 0
         audio_frame_count = 0
+        nr_samples = nr_blocks * nr_subbands
+        fout = open(sbcfile, 'wb')
+        while audio_frame_count < nr_audio_frames:
+            if subband_frame_count % 200 == 0:
+                print("== Frame %d ==" % (subband_frame_count))
 
-        while audio_frame_count < wav_nr_frames:
-            # if sbc_frame_count % 200 == 0:
-            print "== Frame %d ==" % (sbc_frame_count)
-
-            sbc_encoder_frame = SBCFrame(nr_blocks, nr_subbands, wav_nr_channels, sbc_sampling_frequency, bitpool)
+            sbc_encoder_frame = SBCFrame(nr_blocks, nr_subbands, nr_channels, bitpool, sampling_frequency)
+            fetch_samples_for_next_sbc_frame(fin, sbc_encoder_frame)
             
-            wav_nr_audio_frames = sbc_encoder_frame.nr_blocks * sbc_encoder_frame.nr_subbands
-            fetch_samples_for_next_sbc_frame(fin, wav_nr_audio_frames, sbc_encoder_frame)
-            sbc_encode(sbc_encoder_frame, 1)
-            
-            # stream = frame_to_bitstream(frame)
-            audio_frame_count += wav_nr_audio_frames
-            sbc_frame_count += 1
+            sbc_encode(sbc_encoder_frame)
+            sbc_write_frame(fout, sbc_encoder_frame)
 
-            if sbc_frame_count == 87:
-                break;
+            audio_frame_count += nr_samples
+            subband_frame_count += 1
 
-        # except TypeError:
-        #     fin.close()
-        #     print "DONE, WAV file %s encoded into SBC file %s ", (infile, sbcfile)
-
-        #channels, num_audio_frames, wav_nr_channels, wav_sample_rate = read_waw_file(wavfile)
+        fin.close()
+        fout.close()
+        print("DONE, WAV file %s encoded into SBC file %s " % (infile, sbcfile))
         
         
     except IOError as e:
