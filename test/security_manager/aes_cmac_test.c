@@ -4,6 +4,7 @@
 #include <string.h>
 
 typedef uint8_t sm_key_t[16];
+typedef uint8_t sm_key56_t[7];
 typedef uint8_t sm_key256_t[32];
 
 static const char * key_string      = "2b7e1516 28aed2a6 abf71588 09cf4f3c";
@@ -26,6 +27,16 @@ static const char * f4_v_string 	= "55188b3d 32f6bb9a 900afcfb eed4e72a 59cb9ac2
 static const char * f4_x_string 	= "d5cb8454 d177733e ffffb2ec 712baeab";
 static const char * f4_z_string 	= "00";
 static const char * f4_cmac_string 	= "f2c916f1 07a9bd1c f1eda1be a974872d";
+
+// f5
+const char * f5_w_string       = "ec0234a3 57c8ad05 341010a6 0a397d9b 99796b13 b4f866f1 868d34f3 73bfa698";
+const char * f5_t_string       = "3c128f20 de883288 97624bdb 8dac6989";
+const char * f5_n1_string      = "d5cb8454 d177733e ffffb2ec 712baeab";
+const char * f5_n2_string      = "a6e8e7cc 25a75f6e 216583f7 ff3dc4cf";
+const char * f5_a1_string      = "00561237 37bfce";
+const char * f5_a2_string      = "00a71370 2dcfc1";
+const char * f5_cmac_string    = "2965f176 a1084a02 fd3f6a20 ce636e20 69867911 69d7cd23 980522b5 94750a38";
+
 
 static int nibble_for_char(char c){
     if (c >= '0' && c <= '9') return c - '0';
@@ -59,7 +70,7 @@ static void sm_shift_left_by_one_bit_inplace(int len, uint8_t * data){
     }
 }
 
-void aes128_calc_cyphertext(uint8_t key[16], uint8_t plaintext[16], uint8_t cyphertext[16]){
+void aes128_calc_cyphertext(const uint8_t key[16], const uint8_t plaintext[16], uint8_t cyphertext[16]){
 	uint32_t rk[RKLENGTH(KEYBITS)];
 	int nrounds = rijndaelSetupEncrypt(rk, &key[0], KEYBITS);
 	rijndaelEncrypt(rk, nrounds, plaintext, cyphertext);
@@ -92,7 +103,7 @@ static void calc_subkeys(sm_key_t k0, sm_key_t k1, sm_key_t k2){
 #define VALIDATE_KEY(NAME) { LOG_KEY(NAME); sm_key_t test; parse_hex(test, NAME##_string); if (memcmp(NAME, test, 16)){ printf("Error calculating key\n"); } }
 #define VALIDATE_MESSAGE(NAME) validate_message(#NAME, NAME##_string, cmac_##NAME##_string)
 
-static void aes_cmac(sm_key_t aes_cmac, sm_key_t key, uint8_t * data, int sm_cmac_message_len){
+static void aes_cmac(sm_key_t aes_cmac, const sm_key_t key, const uint8_t * data, int sm_cmac_message_len){
 	sm_key_t k0, k1, k2, zero;
 	memset(zero, 0, 16);
 
@@ -152,15 +163,6 @@ static void aes_cmac(sm_key_t aes_cmac, sm_key_t key, uint8_t * data, int sm_cma
     aes128_calc_cyphertext(key, sm_cmac_y, aes_cmac);
 }
 
-static void f4(sm_key_t res, sm_key256_t u, sm_key256_t v, sm_key_t x, uint8_t z){
-	uint8_t buffer[65];
-	memcpy(buffer, u, 32);
-	memcpy(buffer+32, v, 32);
-	buffer[64] = z;
-	hexdump2(buffer, sizeof(buffer));
-	aes_cmac(res, x, buffer, sizeof(buffer));
-}
-
 static void validate_message(const char * name, const char * message_string, const char * cmac_string){
 
 	uint8_t m[128];
@@ -184,6 +186,41 @@ static void validate_message(const char * name, const char * message_string, con
 	} else {
 		printf("CMAC correct!\n");
 	}
+}
+
+static void f4(sm_key_t res, const sm_key256_t u, const sm_key256_t v, const sm_key_t x, uint8_t z){
+	uint8_t buffer[65];
+	memcpy(buffer, u, 32);
+	memcpy(buffer+32, v, 32);
+	buffer[64] = z;
+	// hexdump2(buffer, sizeof(buffer));
+	aes_cmac(res, x, buffer, sizeof(buffer));
+}
+
+const sm_key_t f5_salt = { 0x6C ,0x88, 0x83, 0x91, 0xAA, 0xF5, 0xA5, 0x38, 0x60, 0x37, 0x0B, 0xDB, 0x5A, 0x60, 0x83, 0xBE};
+const uint8_t f5_key_id[] = { 0x62, 0x74, 0x6c, 0x65 };
+const uint8_t f5_length[] = { 0x01, 0x00};	
+static void f5(sm_key256_t res, const sm_key256_t w, const sm_key_t n1, const sm_key_t n2, const sm_key56_t a1, const sm_key56_t a2){
+	// T = AES-CMACSAL_T(W)
+	sm_key_t t;
+	aes_cmac(t, f5_salt, w, 32);
+	// f5(W, N1, N2, A1, A2) = AES-CMACT (Counter = 0 || keyID || N1 || N2|| A1|| A2 || Length = 256) -- this is the MacKey
+	uint8_t buffer[53];
+	buffer[0] = 0;
+	memcpy(buffer+01, f5_key_id, 4);
+	memcpy(buffer+05, n1, 16);
+	memcpy(buffer+21, n2, 16);
+	memcpy(buffer+37, a1, 7);
+	memcpy(buffer+44, a2, 7);
+	memcpy(buffer+51, f5_length, 2);
+	// hexdump2(buffer, sizeof(buffer));
+	aes_cmac(res, t, buffer, sizeof(buffer));
+	// hexdump2(res, 16);
+	//           			|| AES-CMACT (Counter = 1 || keyID || N1 || N2|| A1|| A2 || Length = 256) -- this is the LTK
+	buffer[0] = 1;
+	// hexdump2(buffer, sizeof(buffer));
+	aes_cmac(res+16, t, buffer, sizeof(buffer));
+	// hexdump2(res+16, 16);
 }
 
 int main(void){
@@ -216,6 +253,30 @@ int main(void){
 	parse_hex(&f4_z, f4_z_string);
 	f4(f4_cmac_test, f4_u, f4_v, f4_x, f4_z);
 	if (memcmp(f4_cmac_test, f4_cmac, 16)){
+		printf("CMAC incorrect!\n");
+	} else {
+		printf("CMAC correct!\n");
+	}
+
+	// valdiate f5
+	printf("-- verify f5\n");
+	sm_key_t f5_cmac, f5_mackey, f5_n1, f5_n2;
+	sm_key56_t f5_a1, f5_a2;
+	sm_key256_t f5_w, f5_res;
+	uint8_t f5_z;
+	parse_hex(f5_w, f5_w_string);
+	parse_hex(f5_n1, f5_n1_string);
+	parse_hex(f5_n2, f5_n2_string);
+	parse_hex(f5_a1, f5_a1_string);
+	parse_hex(f5_a2, f5_a2_string);
+	f5(f5_res, f5_w, f5_n1, f5_n2, f5_a1, f5_a2);
+	printf("MacKey:");
+	hexdump2(f5_res, 16);
+	printf("LTK:   ");
+	hexdump2(f5_res+16, 16);
+
+	parse_hex(f5_cmac, f5_cmac_string);
+	if (memcmp(f5_res, f5_cmac, 16)){
 		printf("CMAC incorrect!\n");
 	} else {
 		printf("CMAC correct!\n");
