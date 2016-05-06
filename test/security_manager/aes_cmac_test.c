@@ -3,6 +3,8 @@
 #include <stdio.h>
 #include <string.h>
 
+// #include "btstack_util.h"
+
 typedef uint8_t sm_key24_t[3];
 typedef uint8_t sm_key56_t[7];
 typedef uint8_t sm_key_t[16];
@@ -47,6 +49,23 @@ const char * f6_io_cap_string 	= "010102";
 const char * f6_a1_string 	 	= "00561237 37bfce";
 const char * f6_a2_string 	 	= "00a71370 2dcfc1";
 const char * f6_cmac_string 	= "e3c47398 9cd0e8c5 d26c0b09 da958f61";
+
+// g2
+const char * g2_u_string 	 	= "20b003d2 f297be2c 5e2c83a7 e9f9a5b9 eff49111 acf4fddb cc030148 0e359de6";
+const char * g2_v_string 	 	= "55188b3d 32f6bb9a 900afcfb eed4e72a 59cb9ac2 f19d7cfb 6b4fdd49 f47fc5fd";
+const char * g2_x_string 	 	= "d5cb8454 d177733e ffffb2ec 712baeab";
+const char * g2_y_string 	 	= "a6e8e7cc 25a75f6e 216583f7 ff3dc4cf";
+// const char * g2_cmac_string 	= "1536d18d e3d20df9 9b7044c1 2f9ed5ba";
+const char * g2_res_string 	 	= "2f9ed5ba";
+
+// h6
+const char * h6_key_string 	    = "ec0234a3 57c8ad05 341010a6 0a397d9b";
+const char * h6_key_id_string 	= "6c656272";
+const char * h6_cmac_string     = "2d9ae102 e76dc91c e8d3a9e2 80b16399";
+
+static uint32_t big_endian_read_32( const uint8_t * buffer, int pos) {
+    return ((uint32_t) buffer[(pos)+3]) | (((uint32_t)buffer[(pos)+2]) << 8) | (((uint32_t)buffer[(pos)+1]) << 16) | (((uint32_t) buffer[pos]) << 24);
+}
 
 static int nibble_for_char(char c){
     if (c >= '0' && c <= '9') return c - '0';
@@ -234,13 +253,13 @@ static void f5(sm_key256_t res, const sm_key256_t w, const sm_key_t n1, const sm
 }
 
 // f6(W, N1, N2, R, IOcap, A1, A2) = AES-CMACW (N1 || N2 || R || IOcap || A1 || A2
-// W is 128 bits 
-// N1 is 128 bits 
-// N2 is 128 bits 
-// R is 128 bits 
-// IOcap is 24 bits 
-// A1 is 56 bits 
-// A2 is 56 bits
+// - W is 128 bits 
+// - N1 is 128 bits 
+// - N2 is 128 bits 
+// - R is 128 bits 
+// - IOcap is 24 bits 
+// - A1 is 56 bits 
+// - A2 is 56 bits
 static void f6(sm_key_t res, const sm_key_t w, const sm_key_t n1, const sm_key_t n2, const sm_key_t r, const sm_key24_t io_cap, const sm_key56_t a1, const sm_key56_t a2){
 	uint8_t buffer[65];
 	memcpy(buffer, n1, 16);
@@ -250,6 +269,21 @@ static void f6(sm_key_t res, const sm_key_t w, const sm_key_t n1, const sm_key_t
 	memcpy(buffer+51, a1, 7);
 	memcpy(buffer+58, a2, 7);
 	aes_cmac(res, w, buffer,sizeof(buffer));
+}
+
+// g2(U, V, X, Y) = AES-CMACX(U || V || Y) mod 2^32
+// - U is 256 bits
+// - V is 256 bits
+// - X is 128 bits
+// - Y is 128 bits
+static uint32_t g2(const sm_key256_t u, const sm_key256_t v, const sm_key_t x, const sm_key_t y){
+	uint8_t buffer[80];
+	memcpy(buffer, u, 32);	
+	memcpy(buffer+32, v, 32);
+	memcpy(buffer+64, y, 16);
+	sm_key_t cmac;
+	aes_cmac(cmac, x, buffer, sizeof(buffer));
+	return big_endian_read_32(buffer, 12);
 }
 
 int main(void){
@@ -330,6 +364,25 @@ int main(void){
 		printf("CMAC incorrect!\n");
 	} else {
 		printf("CMAC correct!\n");
+	}
+
+	// validate h2
+	printf("-- verify h2\n");
+	sm_key_t g2_cmac, g2_x, g2_y;
+	sm_key256_t g2_u, g2_v;
+	parse_hex(g2_x, g2_x_string);
+	parse_hex(g2_y, g2_y_string);
+	parse_hex(g2_u, g2_u_string);
+	parse_hex(g2_v, g2_v_string);
+	uint32_t g2_test = g2(g2_u, g2_v, g2_x, g2_y);
+	printf("%08x\n", g2_test);
+	uint8_t g2_res_buffer[4];
+	parse_hex(g2_res_buffer, g2_res_string);
+	uint32_t g2_res = big_endian_read_32(g2_res_buffer, 0);
+	if (g2_test == g2_res){
+		printf("G2 incorrect!\n");
+	} else {
+		printf("G2 correct!\n");
 	}
 
 }
