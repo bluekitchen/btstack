@@ -67,6 +67,13 @@ static uint32_t big_endian_read_32( const uint8_t * buffer, int pos) {
     return ((uint32_t) buffer[(pos)+3]) | (((uint32_t)buffer[(pos)+2]) << 8) | (((uint32_t)buffer[(pos)+1]) << 16) | (((uint32_t) buffer[pos]) << 24);
 }
 
+static void big_endian_store_32(uint8_t *buffer, uint16_t pos, uint32_t value){
+    buffer[pos++] = value >> 24;
+    buffer[pos++] = value >> 16;
+    buffer[pos++] = value >> 8;
+    buffer[pos++] = value;
+}
+
 static int nibble_for_char(char c){
     if (c >= '0' && c <= '9') return c - '0';
     if (c >= 'a' && c <= 'f') return c - 'a' + 10;
@@ -286,6 +293,15 @@ static uint32_t g2(const sm_key256_t u, const sm_key256_t v, const sm_key_t x, c
 	return big_endian_read_32(buffer, 12);
 }
 
+// h6(W, keyID) = AES-CMACW(keyID)
+// - W is 128 bits
+// - keyID is 32 bits
+static void h6(sm_key_t res, const sm_key_t w, const uint32_t key_id){
+	uint8_t key_id_buffer[4];
+	big_endian_store_32(key_id_buffer, 0, key_id);
+	aes_cmac(res, w, key_id_buffer, 4);
+}
+
 int main(void){
 	sm_key_t key, k0, k1, k2, zero;
 	memset(zero, 0, 16);
@@ -366,8 +382,8 @@ int main(void){
 		printf("CMAC correct!\n");
 	}
 
-	// validate h2
-	printf("-- verify h2\n");
+	// validate g2
+	printf("-- verify g2\n");
 	sm_key_t g2_cmac, g2_x, g2_y;
 	sm_key256_t g2_u, g2_v;
 	parse_hex(g2_x, g2_x_string);
@@ -385,4 +401,19 @@ int main(void){
 		printf("G2 correct!\n");
 	}
 
+	// validate h6
+	printf("-- verify h6\n");
+	sm_key_t h6_key, h6_res, h6_cmac;
+	uint8_t h6_key_id_buffer[4];
+	parse_hex(h6_key, h6_key_string);
+	parse_hex(h6_key_id_buffer, h6_key_id_string);
+	parse_hex(h6_cmac, h6_cmac_string);
+	uint32_t h6_key_id = big_endian_read_32(h6_key_id_buffer, 0);
+	h6(h6_res, h6_key, h6_key_id);
+	hexdump2(h6_res, 16);
+	if (memcmp(h6_res, h6_cmac, 16)){
+		printf("CMAC incorrect!\n");
+	} else {
+		printf("CMAC correct!\n");
+	}
 }
