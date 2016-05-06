@@ -3,8 +3,9 @@
 #include <stdio.h>
 #include <string.h>
 
-typedef uint8_t sm_key_t[16];
+typedef uint8_t sm_key24_t[3];
 typedef uint8_t sm_key56_t[7];
+typedef uint8_t sm_key_t[16];
 typedef uint8_t sm_key256_t[32];
 
 static const char * key_string      = "2b7e1516 28aed2a6 abf71588 09cf4f3c";
@@ -37,6 +38,15 @@ const char * f5_a1_string      = "00561237 37bfce";
 const char * f5_a2_string      = "00a71370 2dcfc1";
 const char * f5_cmac_string    = "2965f176 a1084a02 fd3f6a20 ce636e20 69867911 69d7cd23 980522b5 94750a38";
 
+// f6
+const char * f6_n1_string 	 	= "d5cb8454 d177733e ffffb2ec 712baeab";
+const char * f6_n2_string 	 	= "a6e8e7cc 25a75f6e 216583f7 ff3dc4cf";
+const char * f6_mac_key_string 	= "2965f176 a1084a02 fd3f6a20 ce636e20";
+const char * f6_r_string 	 	= "12a3343b b453bb54 08da42d2 0c2d0fc8";
+const char * f6_io_cap_string 	= "010102";
+const char * f6_a1_string 	 	= "00561237 37bfce";
+const char * f6_a2_string 	 	= "00a71370 2dcfc1";
+const char * f6_cmac_string 	= "e3c47398 9cd0e8c5 d26c0b09 da958f61";
 
 static int nibble_for_char(char c){
     if (c >= '0' && c <= '9') return c - '0';
@@ -223,6 +233,25 @@ static void f5(sm_key256_t res, const sm_key256_t w, const sm_key_t n1, const sm
 	// hexdump2(res+16, 16);
 }
 
+// f6(W, N1, N2, R, IOcap, A1, A2) = AES-CMACW (N1 || N2 || R || IOcap || A1 || A2
+// W is 128 bits 
+// N1 is 128 bits 
+// N2 is 128 bits 
+// R is 128 bits 
+// IOcap is 24 bits 
+// A1 is 56 bits 
+// A2 is 56 bits
+static void f6(sm_key_t res, const sm_key_t w, const sm_key_t n1, const sm_key_t n2, const sm_key_t r, const sm_key24_t io_cap, const sm_key56_t a1, const sm_key56_t a2){
+	uint8_t buffer[65];
+	memcpy(buffer, n1, 16);
+	memcpy(buffer+16, n2, 16);
+	memcpy(buffer+32, r, 16);
+	memcpy(buffer+48, io_cap, 3);
+	memcpy(buffer+51, a1, 7);
+	memcpy(buffer+58, a2, 7);
+	aes_cmac(res, w, buffer,sizeof(buffer));
+}
+
 int main(void){
 	sm_key_t key, k0, k1, k2, zero;
 	memset(zero, 0, 16);
@@ -274,11 +303,33 @@ int main(void){
 	hexdump2(f5_res, 16);
 	printf("LTK:   ");
 	hexdump2(f5_res+16, 16);
-
 	parse_hex(f5_cmac, f5_cmac_string);
 	if (memcmp(f5_res, f5_cmac, 16)){
 		printf("CMAC incorrect!\n");
 	} else {
 		printf("CMAC correct!\n");
 	}
+
+	// validate f6
+	printf("-- verify f6\n");
+	sm_key_t f6_cmac, f6_mac_key, f6_n1, f6_n2, f6_r, f6_res;
+	sm_key24_t f6_io_cap;
+	sm_key56_t f6_a1, f6_a2;
+	uint8_t f6_z;
+	parse_hex(f6_n1, f6_n1_string);
+	parse_hex(f6_n2, f6_n2_string);
+	parse_hex(f6_a1, f6_a1_string);
+	parse_hex(f6_a2, f6_a2_string);
+	parse_hex(f6_mac_key, f6_mac_key_string);
+	parse_hex(f6_r, f6_r_string);
+	parse_hex(f6_io_cap, f6_io_cap_string);
+	f6(f6_res, f6_mac_key, f6_n1, f6_n2, f6_r, f6_io_cap, f6_a1, f6_a2);
+	hexdump2(f6_res, 16);
+	parse_hex(f6_cmac, f6_cmac_string);
+	if (memcmp(f6_res, f6_cmac, 16)){
+		printf("CMAC incorrect!\n");
+	} else {
+		printf("CMAC correct!\n");
+	}
+
 }
