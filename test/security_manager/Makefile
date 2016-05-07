@@ -32,29 +32,29 @@ COMMON = \
 COMMON_OBJ = $(COMMON:.c=.o)
 
 MBEDTLS = \
-	aes.c \
-	aesni.c \
-	asn1parse.c \
-	asn1write.c \
-	base64.c \
-	bignum.c \
-	ctr_drbg.c \
 	ecp.c \
 	ecp_curves.c \
-	entropy.c \
-	entropy_poll.c \
-	error.c \
-	md.c \
-	md5.c \
-	md_wrap.c \
-	oid.c \
-	pem.c \
-	pk.c \
-	pk_wrap.c \
-	pkwrite.c \
-	sha256.c \
-	sha512.c \
-	timing.c \
+	bignum.c \
+	# aes.c \
+	# aesni.c \
+	# asn1parse.c \
+	# asn1write.c \
+	# base64.c \
+	# ctr_drbg.c \
+	# entropy.c \
+	# entropy_poll.c \
+	# error.c \
+	# md.c \
+	# md5.c \
+	# md_wrap.c \
+	# oid.c \
+	# pem.c \
+	# pk.c \
+	# pk_wrap.c \
+	# pkwrite.c \
+	# sha256.c \
+	# sha512.c \
+	# timing.c \
 
 all: security_manager aestest ectest aes_cmac_test
 
@@ -67,7 +67,7 @@ aestest: aestest.c rijndael.c
 ectest: ectest.c ${MBEDTLS} rijndael.c
 	gcc ${CFLAGS} $^ -o $@ 
 
-aes_cmac_test: aes_cmac_test.c ${MBEDTLS} rijndael.c
+aes_cmac_test: aes_cmac_test.c rijndael.c
 	gcc ${CFLAGS} $^ -o $@ 
 
 test: all
