@@ -2,11 +2,13 @@ VPATH += ${BTSTACK_ROOT}/src
 VPATH += ${BTSTACK_ROOT}/src/ble
 VPATH += ${BTSTACK_ROOT}/src/classic
 VPATH += ${BTSTACK_ROOT}/example
+VPATH += ${BTSTACK_ROOT}/3rd-party/mbedtls/library
 
 CFLAGS += -I.
 CFLAGS += -I${BTSTACK_ROOT}/src/ble
 CFLAGS += -I${BTSTACK_ROOT}/src/classic
 CFLAGS += -I${BTSTACK_ROOT}/src
+CFLAGS += -I${BTSTACK_ROOT}/3rd-party/mbedtls/include
 
 CORE += \
     btstack_memory.c            \
@@ -54,6 +56,11 @@ SM_MINIMAL += \
 PAN += \
 	pan.c \
 
+MBEDTLS = 					\
+	bignum.c 				\
+	ecp.c 					\
+	ecp_curves.c 			\
+
 EXAMPLES = 					\
 	ancs_client_demo		\
 	gap_dedicated_bonding	\
@@ -87,7 +94,7 @@ EXAMPLES_USING_LE =			\
 # .o for .c
 CORE_OBJ    = $(CORE:.c=.o)
 COMMON_OBJ  = $(COMMON:.c=.o) 
-SM_REAL_OBJ = $(SM_REAL:.c=.o)
+SM_REAL_OBJ = $(SM_REAL:.c=.o) $(MBEDTLS:.c=.o)
 SM_MINIMAL_OBJ = $(SM_MINIMAL:.c=.o)
 ATT_OBJ     = $(ATT:.c=.o)
 GATT_CLIENT_OBJ = $(GATT_CLIENT:.c=.o)
