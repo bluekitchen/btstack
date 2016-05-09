@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdint.h>
+#include <stdlib.h>
 
 #if !defined(MBEDTLS_CONFIG_FILE)
 #include "mbedtls/config.h"
@@ -32,13 +33,13 @@ static const char * set1_public_by_string = "4c55f33e429dad377356703a9ab85160472
 static const char * set1_dh_key_string    = "ec0234a357c8ad05341010a60a397d9b99796b13b4f866f1868d34f373bfa698";
 
 // P256 Set 1
-static const char * set2_private_a_string = "06a51669 3c9aa31a 6084545d 0c5db641 b48572b9 7203ddff b7ac73f7 d0457663";
-static const char * set2_private_b_string = "529aa067 0d72cd64 97502ed4 73502b03 7e8803b5 c60829a5 a3caa219 505530ba";
-static const char * set2_public_ax_string = "2c31a47b 5779809e f44cb5ea af5c3e43 d5f8faad 4a8794cb 987e9b03 745c78dd";
-static const char * set2_public_ay_string = "91951218 3898dfbe cd52e240 8e43871f d0211091 17bd3ed4 eaf84377 43715d4f";
-static const char * set2_publix_bx_string = "f465e43f f23d3f1b 9dc7dfc0 4da87581 84dbc966 204796ec cf0d6cf5 e16500cc";
-static const char * set2_public_by_string = "0201d048 bcbbd899 eeefc424 164e33c2 01c2b010 ca6b4d43 a8a155ca d8ecb279";
-static const char * set2_dh_key_string    = "ab85843a 2f6d883f 62e5684b 38e30733 5fe6e194 5ecd1960 4105c6f2 3221eb69";
+static const char * set2_private_a_string = "06a516693c9aa31a6084545d0c5db641b48572b97203ddffb7ac73f7d0457663";
+static const char * set2_private_b_string = "529aa0670d72cd6497502ed473502b037e8803b5c60829a5a3caa219505530ba";
+static const char * set2_public_ax_string = "2c31a47b5779809ef44cb5eaaf5c3e43d5f8faad4a8794cb987e9b03745c78dd";
+static const char * set2_public_ay_string = "919512183898dfbecd52e2408e43871fd021109117bd3ed4eaf8437743715d4f";
+static const char * set2_public_bx_string = "f465e43ff23d3f1b9dc7dfc04da8758184dbc966204796eccf0d6cf5e16500cc";
+static const char * set2_public_by_string = "0201d048bcbbd899eeefc424164e33c201c2b010ca6b4d43a8a155cad8ecb279";
+static const char * set2_dh_key_string    = "ab85843a2f6d883f62e5684b38e307335fe6e1945ecd19604105c6f23221eb69";
 
 uint32_t big_endian_read_32( const uint8_t * buffer, int pos) {
     return ((uint32_t) buffer[(pos)+3]) | (((uint32_t)buffer[(pos)+2]) << 8) | (((uint32_t)buffer[(pos)+1]) << 16) | (((uint32_t) buffer[pos]) << 24);
@@ -82,8 +83,8 @@ static void hexdump2(void *data, int size){
     printf("\n");
 }
 
-int main(void){
-	mbedtls_ecp_group grp;
+int test_set1(void){
+    mbedtls_ecp_group grp;
     mbedtls_ecp_point R1, R2;
     mbedtls_ecp_point Pa, Pb;
     mbedtls_mpi da, db, dh_key;
@@ -93,11 +94,14 @@ int main(void){
     mbedtls_ecp_point_init( &R2 );
     mbedtls_ecp_point_init( &Pa );
     mbedtls_ecp_point_init( &Pb );
-	mbedtls_mpi_init(&da);
+    mbedtls_mpi_init(&da);
     mbedtls_mpi_init(&db);
 
-	int res = mbedtls_ecp_group_load(&grp, MBEDTLS_ECP_DP_SECP256R1);
-	printf("loading curve %d\n", res);
+    int res = mbedtls_ecp_group_load(&grp, MBEDTLS_ECP_DP_SECP256R1);
+    if (res) {
+        printf("set1: error loading curve %d\n", res);
+        return 0;
+    }
 
     // da * Pb
     mbedtls_mpi_read_string( &da,   16, set1_private_a_string );
@@ -116,23 +120,118 @@ int main(void){
     // checks
     mbedtls_mpi_read_string( &dh_key, 16, set1_dh_key_string);
     if (mbedtls_mpi_cmp_mpi(&R1.X, &dh_key)){
-        printf( "Set 1: da * Pb incorrect\n");
+        printf( "set1: da * Pb incorrect\n");
+        return 0;
     }  else {
-        printf( "Set 1: da * Pb correct\n");
+        printf( "set1: da * Pb correct\n");
     }
     if (mbedtls_mpi_cmp_mpi(&R2.X, &dh_key)){
-        printf( "Set 1: db * Pa incorrect\n");
+        printf( "set1: db * Pa incorrect\n");
+        return 0;
     }  else {
-        printf( "Set 1: db * Pa correct\n");
+        printf( "set1: db * Pa correct\n");
+    }
+    return 1;
+}
+
+int test_set2(void){
+    mbedtls_ecp_group grp;
+    mbedtls_ecp_point R1, R2;
+    mbedtls_ecp_point Pa, Pb;
+    mbedtls_mpi da, db, dh_key;
+
+    mbedtls_ecp_group_init( &grp );
+    mbedtls_ecp_point_init( &R1 );
+    mbedtls_ecp_point_init( &R2 );
+    mbedtls_ecp_point_init( &Pa );
+    mbedtls_ecp_point_init( &Pb );
+    mbedtls_mpi_init(&da);
+    mbedtls_mpi_init(&db);
+
+    int res = mbedtls_ecp_group_load(&grp, MBEDTLS_ECP_DP_SECP256R1);
+    if (res) {
+        printf("set 2: error loading curve %d\n", res);
+        return 0;
     }
 
-exit:
-    mbedtls_ecp_group_free( &grp );
-    mbedtls_ecp_point_free( &R1 );
-    mbedtls_ecp_point_free( &R2 );
-    mbedtls_ecp_point_free( &Pa );
-    mbedtls_ecp_point_free( &Pb );
-    mbedtls_mpi_free( &da );
-    mbedtls_mpi_free( &db );
-    mbedtls_mpi_free( &dh_key );
+    // da * Pb
+    mbedtls_mpi_read_string( &da,   16, set2_private_a_string );
+    mbedtls_mpi_read_string( &Pb.X, 16, set2_public_bx_string );
+    mbedtls_mpi_read_string( &Pb.Y, 16, set2_public_by_string );
+    mbedtls_mpi_read_string( &Pb.Z, 16, "1" );
+    mbedtls_ecp_mul(&grp, &R1, &da, &Pb, NULL, NULL);
+
+    // db * Pa
+    mbedtls_mpi_read_string( &Pa.X, 16, set2_public_ax_string );
+    mbedtls_mpi_read_string( &Pa.Y, 16, set2_public_ay_string );
+    mbedtls_mpi_read_string( &Pa.Z, 16, "1" );
+    mbedtls_mpi_read_string( &db,   16, set2_private_b_string );
+    mbedtls_ecp_mul(&grp, &R2, &db, &Pa, NULL, NULL);
+
+    // checks
+    mbedtls_mpi_read_string( &dh_key, 16, set2_dh_key_string);
+    if (mbedtls_mpi_cmp_mpi(&R1.X, &dh_key)){
+        printf( "set2: da * Pb incorrect\n");
+        return 0;
+    }  else {
+        printf( "set2: da * Pb correct\n");
+    }
+    if (mbedtls_mpi_cmp_mpi(&R2.X, &dh_key)){
+        printf( "set2: db * Pa incorrect\n");
+        return 0;
+    }  else {
+        printf( "set2: db * Pa correct\n");
+    }
+    return 1;
+}
+
+int test_generate_f_rng(void * context, unsigned char * buffer, size_t size){
+    printf("test_generate_f_rng: size %u\n", (int)size);
+    while (size) {
+        *buffer++ = rand() & 0xff;
+        size--;
+    }
+    return 0;
+}
+
+int test_generate(void){
+    // use stdlib rand with fixed seed for testing
+    srand(0);
+
+    mbedtls_ecp_keypair keypair;
+    mbedtls_ecp_keypair_init(&keypair);
+    int res = mbedtls_ecp_gen_key(MBEDTLS_ECP_DP_SECP256R1, &keypair, &test_generate_f_rng, NULL);
+    if (res){
+        printf("generate keypair failed %u\n", res);
+        return 0;
+    }
+    // print keypair
+    char buffer[100];
+    size_t len;
+    mbedtls_mpi_write_string( &keypair.d, 16, buffer, sizeof(buffer), &len);
+    printf("d: %s\n", buffer);
+    mbedtls_mpi_write_string( &keypair.Q.X, 16, buffer, sizeof(buffer), &len);
+    printf("X: %s\n", buffer);
+    mbedtls_mpi_write_string( &keypair.Q.Y, 16, buffer, sizeof(buffer), &len);
+    printf("Y: %s\n", buffer);
+
+    // verify
+    res = mbedtls_ecp_check_pubkey(&keypair.grp, &keypair.Q);
+    if (res){
+        printf("public key invalid\n");
+        return 0;
+    }
+    res = mbedtls_ecp_check_privkey(&keypair.grp, &keypair.d);
+    if (res){
+        printf("private key invalid\n");
+        return 0;
+    }
+    return 0;
+}
+
+int main(void){
+    test_set1();
+    test_set2();
+    test_generate();
+    return 0;
 }
