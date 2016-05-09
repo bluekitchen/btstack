@@ -50,6 +50,26 @@
 #include "hci.h"
 #include "l2cap.h"
 
+#if defined(ENABLE_LE_SECURE_CONNECTIONS) && !defined(HAVE_HCI_CONTROLLER_DHKEY_SUPPORT)
+#define USE_MBEDTLS_FOR_ECDH
+#endif
+
+// Software ECDH implementation provided by mbedtls
+#ifdef USE_MBEDTLS_FOR_ECDH
+#if !defined(MBEDTLS_CONFIG_FILE)
+#include "mbedtls/config.h"
+#else
+#include MBEDTLS_CONFIG_FILE
+#endif
+#if defined(MBEDTLS_PLATFORM_C)
+#include "mbedtls/platform.h"
+#else
+#include <stdio.h>
+#define mbedtls_printf     printf
+#endif
+#include "mbedtls/ecp.h"
+#endif
+
 //
 // SM internal types and globals
 //
@@ -85,9 +105,10 @@ typedef enum {
 
 typedef enum {
     JUST_WORKS,
-    PK_RESP_INPUT,  // Initiator displays PK, initiator inputs PK 
-    PK_INIT_INPUT,  // Responder displays PK, responder inputs PK
+    PK_RESP_INPUT,  // Initiator displays PK, responder inputs PK 
+    PK_INIT_INPUT,  // Responder displays PK, initiator inputs PK
     OK_BOTH_INPUT,  // Only input on both, both input PK
+    NK_BOTH_INPUT,  // Only numerical compparison (yes/no) on on both sides
     OOB             // OOB available on both sides
 } stk_generation_method_t;
 
@@ -180,6 +201,11 @@ static btstack_packet_callback_registration_t hci_event_callback_registration;
 /* to dispatch sm event */
 static btstack_linked_list_t sm_event_handlers;
 
+// Software ECDH implementation provided by mbedtls
+#ifdef USE_MBEDTLS_FOR_ECDH
+mbedtls_ecp_keypair le_keypair;
+#endif
+
 //
 // Volume 3, Part H, Chapter 24
 // "Security shall be initiated by the Security Manager in the device in the master role.
@@ -205,6 +231,7 @@ typedef struct sm_setup_context {
     // Phase 2 (Pairing over SMP)
     stk_generation_method_t sm_stk_generation_method;
     sm_key_t  sm_tk;
+    uint8_t   sm_use_secure_connections;
 
     sm_key_t  sm_c1_t3_value;   // c1 calculation 
     sm_pairing_packet_t sm_m_preq; // pairing request - needed only for c1
@@ -218,6 +245,10 @@ typedef struct sm_setup_context {
     bd_addr_t sm_m_address;     //  ''
     bd_addr_t sm_s_address;     //  ''
     sm_key_t  sm_ltk;
+
+    // SC
+    uint8_t   sm_peer_qx[32];
+    uint8_t   sm_peer_qy[32];
 
     // Phase 3
 
@@ -260,13 +291,24 @@ static btstack_packet_handler_t sm_client_packet_handler = NULL;
 
 // horizontal: initiator capabilities
 // vertial:    responder capabilities
-static const stk_generation_method_t stk_generation_method[5][5] = {
+static const stk_generation_method_t stk_generation_method [5] [5] = {
     { JUST_WORKS,      JUST_WORKS,       PK_INIT_INPUT,   JUST_WORKS,    PK_INIT_INPUT },
     { JUST_WORKS,      JUST_WORKS,       PK_INIT_INPUT,   JUST_WORKS,    PK_INIT_INPUT },
     { PK_RESP_INPUT,   PK_RESP_INPUT,    OK_BOTH_INPUT,   JUST_WORKS,    PK_RESP_INPUT },
     { JUST_WORKS,      JUST_WORKS,       JUST_WORKS,      JUST_WORKS,    JUST_WORKS    },
     { PK_RESP_INPUT,   PK_RESP_INPUT,    PK_INIT_INPUT,   JUST_WORKS,    PK_RESP_INPUT },
 };
+
+// uses numeric comparison if one side has DisplayYesNo and KeyboardDisplay combinations
+#ifdef ENABLE_LE_SECURE_CONNECTIONS
+static const stk_generation_method_t stk_generation_method_with_secure_connection[5][5] = {
+    { JUST_WORKS,      JUST_WORKS,       PK_INIT_INPUT,   JUST_WORKS,    PK_INIT_INPUT },
+    { JUST_WORKS,      NK_BOTH_INPUT,    PK_INIT_INPUT,   JUST_WORKS,    NK_BOTH_INPUT },
+    { PK_RESP_INPUT,   PK_RESP_INPUT,    OK_BOTH_INPUT,   JUST_WORKS,    PK_RESP_INPUT },
+    { JUST_WORKS,      JUST_WORKS,       JUST_WORKS,      JUST_WORKS,    JUST_WORKS    },
+    { PK_RESP_INPUT,   NK_BOTH_INPUT,    PK_INIT_INPUT,   JUST_WORKS,    NK_BOTH_INPUT },
+};
+#endif
 
 static void sm_run(void);
 static void sm_done_for_handle(hci_con_handle_t con_handle);
@@ -527,7 +569,26 @@ static void sm_setup_tk(void){
 
     // default: just works
     setup->sm_stk_generation_method = JUST_WORKS;
+
+#ifdef ENABLE_LE_SECURE_CONNECTIONS
+    setup->sm_use_secure_connections = ( sm_pairing_packet_get_auth_req(setup->sm_m_preq)
+                                       & sm_pairing_packet_get_auth_req(setup->sm_s_pres)
+                                       & SM_AUTHREQ_SECURE_CONNECTION ) != 0;
+#else
+    setup->sm_use_secure_connections = 0;
+#endif
     
+    // If both devices have not set the MITM option in the Authentication Requirements
+    // Flags, then the IO capabilities shall be ignored and the Just Works association
+    // model shall be used. 
+    if (((sm_pairing_packet_get_auth_req(setup->sm_m_preq) & SM_AUTHREQ_MITM_PROTECTION) == 0) 
+    &&  ((sm_pairing_packet_get_auth_req(setup->sm_s_pres) & SM_AUTHREQ_MITM_PROTECTION) == 0)){
+        log_info("SM: MITM not required by both -> JUST WORKS");
+        return;
+    }
+
+    // TODO: with LE SC, OOB is used to transfer data OOB during pairing, single device with OOB is sufficient
+
     // If both devices have out of band authentication data, then the Authentication
     // Requirements Flags shall be ignored when selecting the pairing method and the
     // Out of Band pairing method shall be used.
@@ -542,14 +603,6 @@ static void sm_setup_tk(void){
     // Reset TK as it has been setup in sm_init_setup
     sm_reset_tk();
 
-    // If both devices have not set the MITM option in the Authentication Requirements
-    // Flags, then the IO capabilities shall be ignored and the Just Works association
-    // model shall be used. 
-    if (((sm_pairing_packet_get_auth_req(setup->sm_m_preq) & SM_AUTHREQ_MITM_PROTECTION) == 0) 
-    &&  ((sm_pairing_packet_get_auth_req(setup->sm_s_pres) & SM_AUTHREQ_MITM_PROTECTION) == 0)){
-        return;
-    }
-
     // Also use just works if unknown io capabilites
     if ((sm_pairing_packet_get_io_capability(setup->sm_m_preq) > IO_CAPABILITY_KEYBOARD_DISPLAY) || (sm_pairing_packet_get_io_capability(setup->sm_s_pres) > IO_CAPABILITY_KEYBOARD_DISPLAY)){
         return;
@@ -557,7 +610,16 @@ static void sm_setup_tk(void){
 
     // Otherwise the IO capabilities of the devices shall be used to determine the
     // pairing method as defined in Table 2.4.
-    setup->sm_stk_generation_method = stk_generation_method[sm_pairing_packet_get_io_capability(setup->sm_s_pres)][sm_pairing_packet_get_io_capability(setup->sm_m_preq)];
+    // see http://stackoverflow.com/a/1052837/393697 for how to specify pointer to 2-dimensional array
+    const stk_generation_method_t (*generation_method)[5] = stk_generation_method;
+
+#ifdef ENABLE_LE_SECURE_CONNECTIONS
+    if (setup->sm_use_secure_connections){
+        generation_method = stk_generation_method_with_secure_connection;
+    }
+#endif    
+    setup->sm_stk_generation_method = generation_method[sm_pairing_packet_get_io_capability(setup->sm_s_pres)][sm_pairing_packet_get_io_capability(setup->sm_m_preq)];
+
     log_info("sm_setup_tk: master io cap: %u, slave io cap: %u -> method %u",
         sm_pairing_packet_get_io_capability(setup->sm_m_preq), sm_pairing_packet_get_io_capability(setup->sm_s_pres), setup->sm_stk_generation_method);
 }
@@ -822,6 +884,9 @@ static void sm_trigger_user_response(sm_connection_t * sm_conn){
             setup->sm_user_response = SM_USER_RESPONSE_PENDING;
             sm_notify_client_base(SM_EVENT_PASSKEY_INPUT_NUMBER, sm_conn->sm_handle, sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address); 
             break;        
+        case NK_BOTH_INPUT:
+            log_error("LE SC - numeric comparison not implemented yet");
+            break;
         case JUST_WORKS:
             setup->sm_user_response = SM_USER_RESPONSE_PENDING;
             sm_notify_client_base(SM_EVENT_JUST_WORKS_REQUEST, sm_conn->sm_handle, sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address);
@@ -1357,6 +1422,30 @@ static void sm_run(void){
                 hci_send_cmd(&hci_le_long_term_key_negative_reply, connection->sm_handle);
                 return;
 
+#ifdef ENABLE_LE_SECURE_CONNECTIONS
+            case SM_PH2_SEND_PUBLIC_KEY_COMMAND: {
+                uint8_t buffer[65];
+                buffer[0] = SM_CODE_PAIRING_PUBLIC_KEY;
+                //
+#ifdef USE_MBEDTLS_FOR_ECDH
+                uint8_t value[32];
+                mbedtls_mpi_write_binary(&le_keypair.Q.X, value, sizeof(value));
+                reverse_256(value, &buffer[1]);
+                mbedtls_mpi_write_binary(&le_keypair.Q.Y, value, sizeof(value));
+                reverse_256(value, &buffer[33]);
+#endif
+                // TODO: fix next state
+                if (connection->sm_role){
+                    connection->sm_engine_state = SM_RESPONDER_PH2_W4_LTK_REQUEST;
+                } else {
+                    connection->sm_engine_state = SM_INITIATOR_PH2_W4_PAIRING_RANDOM;
+                }
+                l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
+                sm_timeout_reset(connection);
+                break;
+            }
+#endif
+
             case SM_RESPONDER_PH1_SEND_PAIRING_RESPONSE:
                 // echo initiator for now
                 sm_pairing_packet_set_code(setup->sm_s_pres,SM_CODE_PAIRING_RESPONSE);
@@ -1365,6 +1454,11 @@ static void sm_run(void){
                 sm_pairing_packet_set_responder_key_distribution(setup->sm_s_pres, sm_pairing_packet_get_responder_key_distribution(setup->sm_m_preq) & key_distribution_flags);
 
                 connection->sm_engine_state = SM_RESPONDER_PH1_W4_PAIRING_CONFIRM;
+#ifdef ENABLE_LE_SECURE_CONNECTIONS
+                if (setup->sm_use_secure_connections){
+                    connection->sm_engine_state = SM_RESPONDER_PH2_W4_PUBLIC_KEY_COMMAND;
+                }
+#endif
                 l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) &setup->sm_s_pres, sizeof(sm_pairing_packet_t));
                 sm_timeout_reset(connection);
                 sm_trigger_user_response(connection);
@@ -2177,10 +2271,21 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
             sm_conn->sm_engine_state = SM_RESPONDER_PH1_PAIRING_REQUEST_RECEIVED;
             break;
 
+#ifdef ENABLE_LE_SECURE_CONNECTIONS
+        case SM_RESPONDER_PH2_W4_PUBLIC_KEY_COMMAND:
+            if (packet[0] != SM_CODE_PAIRING_PUBLIC_KEY){
+                sm_pdu_received_in_wrong_state(sm_conn);
+                break;
+            }
+            // TODO: store public key for DH Key calculation
+            sm_conn->sm_engine_state = SM_PH2_SEND_PUBLIC_KEY_COMMAND;
+            break;
+#endif
+ 
         case SM_RESPONDER_PH1_W4_PAIRING_CONFIRM:
             if (packet[0] != SM_CODE_PAIRING_CONFIRM){
                 sm_pdu_received_in_wrong_state(sm_conn);
-                break;;
+                break;
             }
 
             // received confirm value
@@ -2359,9 +2464,29 @@ void sm_init(void){
     // register for HCI Events from HCI
     hci_event_callback_registration.callback = &sm_event_packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
-    
+
     // and L2CAP PDUs + L2CAP_EVENT_CAN_SEND_NOW
     l2cap_register_fixed_channel(sm_pdu_handler, L2CAP_CID_SECURITY_MANAGER_PROTOCOL);
+
+#ifdef USE_MBEDTLS_FOR_ECDH
+    // TODO: calculate keypair using LE Random Number Generator
+    // use test keypair from spec initially
+    mbedtls_ecp_keypair_init(&le_keypair);
+    mbedtls_ecp_group_load(&le_keypair.grp, MBEDTLS_ECP_DP_SECP256R1);
+    mbedtls_mpi_read_string( &le_keypair.d,   16, "3f49f6d4a3c55f3874c9b3e3d2103f504aff607beb40b7995899b8a6cd3c1abd");
+    mbedtls_mpi_read_string( &le_keypair.Q.X, 16, "20b003d2f297be2c5e2c83a7e9f9a5b9eff49111acf4fddbcc0301480e359de6");
+    mbedtls_mpi_read_string( &le_keypair.Q.Y, 16, "dc809c49652aeb6d63329abf5a52155c766345c28fed3024741c8ed01589d28b");
+    mbedtls_mpi_read_string( &le_keypair.Q.Z, 16, "1");
+    // print keypair
+    char buffer[100];
+    size_t len;
+    mbedtls_mpi_write_string( &le_keypair.d, 16, buffer, sizeof(buffer), &len);
+    log_info("d: %s", buffer);
+    mbedtls_mpi_write_string( &le_keypair.Q.X, 16, buffer, sizeof(buffer), &len);
+    log_info("X: %s", buffer);
+    mbedtls_mpi_write_string( &le_keypair.Q.Y, 16, buffer, sizeof(buffer), &len);
+    log_info("Y: %s", buffer);
+#endif
 }
 
 static sm_connection_t * sm_get_connection_for_handle(hci_con_handle_t con_handle){

@@ -141,7 +141,7 @@ void sm_set_accepted_stk_generation_methods(uint8_t accepted_stk_generation_meth
 void sm_set_encryption_key_size_range(uint8_t min_size, uint8_t max_size);
 
 /**
- * @brief Sets the requested authentication requirements, bonding yes/no, MITM yes/no
+ * @brief Sets the requested authentication requirements, bonding yes/no, MITM yes/no, SC yes/no, keypress yes/no
  * @param OR combination of SM_AUTHREQ_ flags
  */
 void sm_set_authentication_requirements(uint8_t auth_req);
