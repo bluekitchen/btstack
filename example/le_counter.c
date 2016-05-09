@@ -191,9 +191,10 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 static uint16_t att_read_callback(hci_con_handle_t connection_handle, uint16_t att_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
     if (att_handle == ATT_CHARACTERISTIC_0000FF11_0000_1000_8000_00805F9B34FB_01_VALUE_HANDLE){
         if (buffer){
-            memcpy(buffer, &counter_string[offset], counter_string_len - offset);
+            memcpy(buffer, &counter_string[offset], buffer_size);
+            return buffer_size;
         }
-        return counter_string_len - offset;
+        return counter_string_len;
     }
     return 0;
 }
