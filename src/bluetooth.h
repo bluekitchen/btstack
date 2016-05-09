@@ -951,7 +951,9 @@ typedef enum {
     SM_CODE_IDENTITY_INFORMATION,
     SM_CODE_IDENTITY_ADDRESS_INFORMATION,
     SM_CODE_SIGNING_INFORMATION,
-    SM_CODE_SECURITY_REQUEST
+    SM_CODE_SECURITY_REQUEST,
+    SM_CODE_PAIRING_PUBLIC_KEY,
+    SM_CODE_PAIRING_DHKEY_CHECK,
 } SECURITY_MANAGER_COMMANDS;
 
 // IO Capability Values
@@ -964,9 +966,11 @@ typedef enum {
 } io_capability_t;
 
 // Authentication requirement flags
-#define SM_AUTHREQ_NO_BONDING 0x00
-#define SM_AUTHREQ_BONDING 0x01
-#define SM_AUTHREQ_MITM_PROTECTION 0x04
+#define SM_AUTHREQ_NO_BONDING        0x00
+#define SM_AUTHREQ_BONDING           0x01
+#define SM_AUTHREQ_MITM_PROTECTION   0x04
+#define SM_AUTHREQ_SECURE_CONNECTION 0x08
+#define SM_AUTHREQ_KEYPRESS          0x10
 
 // Key distribution flags used by spec
 #define SM_KEYDIST_ENC_KEY 0X01
