@@ -98,6 +98,9 @@ static void le_counter_setup(void){
 
     // setup SM: Display only
     sm_init();
+#ifdef ENABLE_LE_SECURE_CONNECTIONS
+    sm_set_authentication_requirements(SM_AUTHREQ_SECURE_CONNECTION);
+#endif
 
     // setup ATT server
     att_server_init(profile_data, att_read_callback, att_write_callback);    
