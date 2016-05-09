@@ -144,6 +144,7 @@ void reverse_48 (const uint8_t *src, uint8_t * dest);
 void reverse_56 (const uint8_t *src, uint8_t * dest);
 void reverse_64 (const uint8_t *src, uint8_t * dest);
 void reverse_128(const uint8_t *src, uint8_t * dest);
+void reverse_256(const uint8_t *src, uint8_t * dest);
 
 void reverse_bd_addr(const bd_addr_t src, bd_addr_t dest);
 
