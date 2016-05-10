@@ -137,6 +137,14 @@ void reverse_bd_addr(const bd_addr_t src, bd_addr_t dest){
     reverse_bytes(src, dest, 6);
 }
 
+uint32_t btstack_min(uint32_t a, uint32_t b){
+    return a < b ? a : b;
+}
+
+uint32_t btstack_max(uint32_t a, uint32_t b){
+    return a > b ? a : b;
+}
+
 char char_for_nibble(int nibble){
     if (nibble < 10) return '0' + nibble;
     nibble -= 10;
