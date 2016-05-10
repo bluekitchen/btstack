@@ -176,18 +176,15 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 // - if buffer != NULL, copy data and return number bytes copied
 // @param offset defines start of attribute value
 static uint16_t att_read_callback(hci_con_handle_t con_handle, uint16_t att_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
-    uint16_t size = 0;
     if (att_handle == ATT_CHARACTERISTIC_0000FF11_0000_1000_8000_00805F9B34FB_01_VALUE_HANDLE){
         if (buffer){
-            // size is bound by actual value chunk and provided buffer
-            size = btstack_min(counter_string_len - offset, buffer_size);
-            memcpy(buffer, &counter_string[offset], size);
+            memcpy(buffer, &counter_string[offset], buffer_size);
+            return buffer_size;
         } else {
-            // size is only bound by actual value chunk
-            size = counter_string_len - offset;
+            return counter_string_len;
         }
     }
-    return size;
+    return 0;
 }
 
 // write requests
