@@ -72,6 +72,22 @@ extern "C" {
 typedef uint8_t device_name_t[DEVICE_NAME_LEN+1]; 
 
 
+/**
+ * @brief Minimum function for uint32_t
+ * @param a
+ * @param b
+ * @return value
+ */
+uint32_t btstack_min(uint32_t a, uint32_t b);
+
+/**
+ * @brief Maximum function for uint32_t
+ * @param a
+ * @param b
+ * @return value
+ */
+uint32_t btstack_max(uint32_t a, uint32_t b);
+
 	
 /** 
  * @brief Read 16/24/32 bit little endian value from buffer
