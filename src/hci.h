@@ -249,8 +249,13 @@ typedef enum {
 
     SM_PH2_W4_CONNECTION_ENCRYPTED,
 
-    //
+    // LE Secure Connections
     SM_PH2_SEND_PUBLIC_KEY_COMMAND,
+    SM_PH2_SEND_CONFIRMATION,
+    SM_PH2_SEND_PAIRING_RANDOM_SC,
+    SM_PH2_SEND_DHKEY_CHECK_COMMAND,
+    SM_PH2_W4_PAIRING_RANDOM,
+    SM_PH2_W4_DHKEY_CHECK_COMMAND,
 
     // Phase 3: Transport Specific Key Distribution
     // calculate DHK, Y, EDIV, and LTK
@@ -283,7 +288,9 @@ typedef enum {
     SM_RESPONDER_PH2_W4_PAIRING_RANDOM,
     SM_RESPONDER_PH2_W4_LTK_REQUEST,
     SM_RESPONDER_PH2_SEND_LTK_REPLY,
+    // LE Secure Connection
     SM_RESPONDER_PH2_W4_PUBLIC_KEY_COMMAND,
+    SM_RESPONDER_PH2_W4_LTK_REQUEST_SC,
 
     // Phase 4: re-establish previously distributed LTK
     // state == 46
