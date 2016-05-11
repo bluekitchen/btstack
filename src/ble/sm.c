@@ -50,6 +50,11 @@
 #include "hci.h"
 #include "l2cap.h"
 
+#ifdef ENABLE_LE_SECURE_CONNECTIONS
+// TODO: remove software AES
+#include "rijndael.h"
+#endif
+
 #if defined(ENABLE_LE_SECURE_CONNECTIONS) && !defined(HAVE_HCI_CONTROLLER_DHKEY_SUPPORT)
 #define USE_MBEDTLS_FOR_ECDH
 #endif
@@ -246,9 +251,14 @@ typedef struct sm_setup_context {
     bd_addr_t sm_s_address;     //  ''
     sm_key_t  sm_ltk;
 
-    // SC
+#ifdef ENABLE_LE_SECURE_CONNECTIONS
     uint8_t   sm_peer_qx[32];
     uint8_t   sm_peer_qy[32];
+    sm_key_t  sm_peer_nonce;
+    sm_key_t  sm_local_nonce;
+    sm_key_t  sm_peer_dhkey_check;
+    sm_key_t  sm_local_dhkey_check;
+#endif
 
     // Phase 3
 
@@ -315,6 +325,7 @@ static void sm_done_for_handle(hci_con_handle_t con_handle);
 static sm_connection_t * sm_get_connection_for_handle(hci_con_handle_t con_handle);
 static inline int sm_calc_actual_encryption_key_size(int other);
 static int sm_validate_stk_generation_method(void);
+static void sm_shift_left_by_one_bit_inplace(int len, uint8_t * data);
 
 static void log_info_hex16(const char * name, uint16_t value){
     log_info("%-6s 0x%04x", name, value);
@@ -511,6 +522,187 @@ static void sm_s1_r_prime(sm_key_t r1, sm_key_t r2, sm_key_t r_prime){
     memcpy(&r_prime[8], &r2[8], 8);
     memcpy(&r_prime[0], &r1[8], 8);
 }
+
+#ifdef ENABLE_LE_SECURE_CONNECTIONS
+// Software implementations of crypto toolbox for LE Secure Connection
+// TODO: replace with code to use AES Engine of HCI Controller
+typedef uint8_t sm_key24_t[3];
+typedef uint8_t sm_key56_t[7];
+typedef uint8_t sm_key256_t[32];
+
+static void aes128_calc_cyphertext(const uint8_t key[16], const uint8_t plaintext[16], uint8_t cyphertext[16]){
+    uint32_t rk[RKLENGTH(KEYBITS)];
+    int nrounds = rijndaelSetupEncrypt(rk, &key[0], KEYBITS);
+    rijndaelEncrypt(rk, nrounds, plaintext, cyphertext);
+}
+
+static void calc_subkeys(sm_key_t k0, sm_key_t k1, sm_key_t k2){
+    memcpy(k1, k0, 16);
+    sm_shift_left_by_one_bit_inplace(16, k1);
+    if (k0[0] & 0x80){
+        k1[15] ^= 0x87;
+    }
+    memcpy(k2, k1, 16);
+    sm_shift_left_by_one_bit_inplace(16, k2);
+    if (k1[0] & 0x80){
+        k2[15] ^= 0x87;
+    } 
+}
+
+static void aes_cmac(sm_key_t aes_cmac, const sm_key_t key, const uint8_t * data, int cmac_message_len){
+    sm_key_t k0, k1, k2, zero;
+    memset(zero, 0, 16);
+
+    aes128_calc_cyphertext(key, zero, k0);
+    calc_subkeys(k0, k1, k2);
+
+    int cmac_block_count = (cmac_message_len + 15) / 16;
+
+    // step 3: ..
+    if (cmac_block_count==0){
+        cmac_block_count = 1;
+    }
+
+    // step 4: set m_last
+    sm_key_t cmac_m_last;
+    int sm_cmac_last_block_complete = cmac_message_len != 0 && (cmac_message_len & 0x0f) == 0;
+    int i;
+    if (sm_cmac_last_block_complete){
+        for (i=0;i<16;i++){
+            cmac_m_last[i] = data[cmac_message_len - 16 + i] ^ k1[i];
+        }
+    } else {
+        int valid_octets_in_last_block = cmac_message_len & 0x0f;
+        for (i=0;i<16;i++){
+            if (i < valid_octets_in_last_block){
+                cmac_m_last[i] = data[(cmac_message_len & 0xfff0) + i] ^ k2[i];
+                continue;
+            }
+            if (i == valid_octets_in_last_block){
+                cmac_m_last[i] = 0x80 ^ k2[i];
+                continue;
+            }
+            cmac_m_last[i] = k2[i];
+        }
+    }
+
+    // printf("sm_cmac_start: len %u, block count %u\n", cmac_message_len, cmac_block_count);
+    // LOG_KEY(cmac_m_last);
+
+    // Step 5
+    sm_key_t cmac_x;
+    memset(cmac_x, 0, 16);
+
+    // Step 6
+    sm_key_t sm_cmac_y;
+    for (int block = 0 ; block < cmac_block_count-1 ; block++){
+        for (i=0;i<16;i++){
+            sm_cmac_y[i] = cmac_x[i] ^ data[block * 16 + i];
+        }
+        aes128_calc_cyphertext(key, sm_cmac_y, cmac_x);
+    }
+    for (i=0;i<16;i++){
+        sm_cmac_y[i] = cmac_x[i] ^ cmac_m_last[i];
+    }
+
+    // Step 7
+    aes128_calc_cyphertext(key, sm_cmac_y, aes_cmac);
+}
+
+static void f4(sm_key_t res, const sm_key256_t u, const sm_key256_t v, const sm_key_t x, uint8_t z){
+    uint8_t buffer[65];
+    memcpy(buffer, u, 32);
+    memcpy(buffer+32, v, 32);
+    buffer[64] = z;
+    log_info("f4 key");
+    log_info_hexdump(x, 16);
+    log_info("f4 message");
+    log_info_hexdump(buffer, sizeof(buffer));
+    aes_cmac(res, x, buffer, sizeof(buffer));
+}
+
+const sm_key_t f5_salt = { 0x6C ,0x88, 0x83, 0x91, 0xAA, 0xF5, 0xA5, 0x38, 0x60, 0x37, 0x0B, 0xDB, 0x5A, 0x60, 0x83, 0xBE};
+const uint8_t f5_key_id[] = { 0x62, 0x74, 0x6c, 0x65 };
+const uint8_t f5_length[] = { 0x01, 0x00};  
+static void f5(sm_key256_t res, const sm_key256_t w, const sm_key_t n1, const sm_key_t n2, const sm_key56_t a1, const sm_key56_t a2){
+    // T = AES-CMACSAL_T(W)
+    sm_key_t t;
+    aes_cmac(t, f5_salt, w, 32);
+    // f5(W, N1, N2, A1, A2) = AES-CMACT (Counter = 0 || keyID || N1 || N2|| A1|| A2 || Length = 256) -- this is the MacKey
+    uint8_t buffer[53];
+    buffer[0] = 0;
+    memcpy(buffer+01, f5_key_id, 4);
+    memcpy(buffer+05, n1, 16);
+    memcpy(buffer+21, n2, 16);
+    memcpy(buffer+37, a1, 7);
+    memcpy(buffer+44, a2, 7);
+    memcpy(buffer+51, f5_length, 2);
+    log_info("f5 DHKEY");
+    log_info_hexdump(w, 32);
+    log_info("f5 key");
+    log_info_hexdump(t, 16);
+    log_info("f5 message for MacKey");
+    log_info_hexdump(buffer, sizeof(buffer));
+    aes_cmac(res, t, buffer, sizeof(buffer));
+    // hexdump2(res, 16);
+    //                      || AES-CMACT (Counter = 1 || keyID || N1 || N2|| A1|| A2 || Length = 256) -- this is the LTK
+    buffer[0] = 1;
+    // hexdump2(buffer, sizeof(buffer));
+    log_info("f5 message for LTK");
+    log_info_hexdump(buffer, sizeof(buffer));
+    aes_cmac(res+16, t, buffer, sizeof(buffer));
+    // hexdump2(res+16, 16);
+}
+
+// f6(W, N1, N2, R, IOcap, A1, A2) = AES-CMACW (N1 || N2 || R || IOcap || A1 || A2
+// - W is 128 bits 
+// - N1 is 128 bits 
+// - N2 is 128 bits 
+// - R is 128 bits 
+// - IOcap is 24 bits 
+// - A1 is 56 bits 
+// - A2 is 56 bits
+static void f6(sm_key_t res, const sm_key_t w, const sm_key_t n1, const sm_key_t n2, const sm_key_t r, const sm_key24_t io_cap, const sm_key56_t a1, const sm_key56_t a2){
+    uint8_t buffer[65];
+    memcpy(buffer, n1, 16);
+    memcpy(buffer+16, n2, 16);
+    memcpy(buffer+32, r, 16);
+    memcpy(buffer+48, io_cap, 3);
+    memcpy(buffer+51, a1, 7);
+    memcpy(buffer+58, a2, 7);
+    log_info("f6 key");
+    log_info_hexdump(w, 16);
+    log_info("f6 message");
+    log_info_hexdump(buffer, sizeof(buffer));
+    aes_cmac(res, w, buffer,sizeof(buffer));
+}
+
+#if 0
+// g2(U, V, X, Y) = AES-CMACX(U || V || Y) mod 2^32
+// - U is 256 bits
+// - V is 256 bits
+// - X is 128 bits
+// - Y is 128 bits
+static uint32_t g2(const sm_key256_t u, const sm_key256_t v, const sm_key_t x, const sm_key_t y){
+    uint8_t buffer[80];
+    memcpy(buffer, u, 32);  
+    memcpy(buffer+32, v, 32);
+    memcpy(buffer+64, y, 16);
+    sm_key_t cmac;
+    aes_cmac(cmac, x, buffer, sizeof(buffer));
+    return big_endian_read_32(buffer, 12);
+}
+
+// h6(W, keyID) = AES-CMACW(keyID)
+// - W is 128 bits
+// - keyID is 32 bits
+static void h6(sm_key_t res, const sm_key_t w, const uint32_t key_id){
+    uint8_t key_id_buffer[4];
+    big_endian_store_32(key_id_buffer, 0, key_id);
+    aes_cmac(res, w, key_id_buffer, 4);
+}
+#endif
+#endif
 
 static void sm_setup_event_base(uint8_t * event, int event_size, uint8_t type, hci_con_handle_t con_handle, uint8_t addr_type, bd_addr_t address){
     event[0] = type;
@@ -1434,18 +1626,142 @@ static void sm_run(void){
                 mbedtls_mpi_write_binary(&le_keypair.Q.Y, value, sizeof(value));
                 reverse_256(value, &buffer[33]);
 #endif
-                // TODO: fix next state
+                // TODO: use random generator to generate nonce
+                // generate 128-bit nonce
+                int i;
+                for (i=0;i<16;i++){
+                    setup->sm_local_nonce[i] = rand() & 0xff;
+                }                
+
                 if (connection->sm_role){
-                    connection->sm_engine_state = SM_RESPONDER_PH2_W4_LTK_REQUEST;
+                    connection->sm_engine_state = SM_PH2_SEND_CONFIRMATION;
                 } else {
-                    connection->sm_engine_state = SM_INITIATOR_PH2_W4_PAIRING_RANDOM;
+                    // TODO:
+                    log_error("SC, next state initiator, send local nonce");
                 }
                 l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
                 sm_timeout_reset(connection);
                 break;
             }
+            case SM_PH2_SEND_CONFIRMATION: {
+                uint8_t buffer[17];
+                buffer[0] = SM_CODE_PAIRING_CONFIRM;
+#ifdef USE_MBEDTLS_FOR_ECDH
+                // TODO: use AES Engine to calculate commitment value using f4
+                uint8_t value[32];
+                mbedtls_mpi_write_binary(&le_keypair.Q.X, value, sizeof(value));
+                sm_key_t confirm_value;
+                f4(confirm_value, value, setup->sm_peer_qx, setup->sm_local_nonce, 0);
+                reverse_128(confirm_value, &buffer[1]);
 #endif
+                if (connection->sm_role){
+                    connection->sm_engine_state = SM_PH2_W4_PAIRING_RANDOM;
+                } else {
+                    // TODO: set next state for initiator depending on stk generation method
+                    log_error("SC, next state initiator, only for passkey entry needed");
+                }
+                l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
+                sm_timeout_reset(connection);
+                break;
+            }
+            case SM_PH2_SEND_PAIRING_RANDOM_SC: {
+                uint8_t buffer[17];
+                buffer[0] = SM_CODE_PAIRING_RANDOM;
+                reverse_128(setup->sm_local_nonce, &buffer[1]);
+                if (connection->sm_role){
+                    // responder
+                    // TODO: calculate verification number if Numerical Comparison
+                    connection->sm_engine_state = SM_PH2_W4_DHKEY_CHECK_COMMAND;
+                } else {
+                    // TODO: next initiator state
+                    // connection->sm_engine_state = SM_INITIATOR_PH2_W4_PAIRING_RANDOM;
+                }
+                l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
+                sm_timeout_reset(connection);
+                break;
+            }
+            case SM_PH2_SEND_DHKEY_CHECK_COMMAND: {
 
+                uint8_t buffer[17];
+                buffer[0] = SM_CODE_PAIRING_DHKEY_CHECK;
+#ifdef USE_MBEDTLS_FOR_ECDH
+                // calculate DHKEY
+                mbedtls_ecp_group grp;
+                mbedtls_ecp_group_init( &grp );
+                int res = mbedtls_ecp_group_load(&grp, MBEDTLS_ECP_DP_SECP256R1);
+                if (res) {
+                    log_error("dhkey: error loading curve %d", res);
+                    break;
+                }
+                mbedtls_ecp_point Q;
+                mbedtls_ecp_point_init( &Q );
+                mbedtls_mpi_read_binary(&Q.X, setup->sm_peer_qx, 32);
+                mbedtls_mpi_read_binary(&Q.Y, setup->sm_peer_qy, 32);
+                mbedtls_mpi_read_string(&Q.Z, 16, "1" );
+
+                // da * Pb
+                mbedtls_ecp_point DH;
+                mbedtls_ecp_point_init( &DH );
+                res = mbedtls_ecp_mul(&grp, &DH, &le_keypair.d, &Q, NULL, NULL);
+                sm_key256_t dhkey;
+                res = mbedtls_mpi_write_binary(&DH.X, dhkey, 32);
+                log_info("dhkey");
+                log_info_hexdump(dhkey, 32);
+
+                // calculate LTK + MacKey
+                sm_key256_t ltk_mackey;
+                sm_key56_t bd_addr_master, bd_addr_slave;
+                bd_addr_master[0] =  setup->sm_m_addr_type;
+                bd_addr_slave[0]  =  setup->sm_s_addr_type;
+                memcpy(&bd_addr_master[1], setup->sm_m_address, 6);
+                memcpy(&bd_addr_slave[1],  setup->sm_s_address, 6);
+                if (connection->sm_role){
+                    // responder
+                    f5(ltk_mackey, dhkey, setup->sm_peer_nonce, setup->sm_local_nonce, bd_addr_master, bd_addr_slave);
+                } else {
+                    // initiator
+                    f5(ltk_mackey, dhkey, setup->sm_local_nonce, setup->sm_peer_nonce, bd_addr_master, bd_addr_slave);
+                }
+                // store LTK
+                memcpy(setup->sm_ltk, &ltk_mackey[16], 16);
+
+                // calc DHKCheck
+                sm_key_t mackey;
+                memcpy(mackey, &ltk_mackey[0], 16);
+
+                // TODO: checks
+
+                uint8_t iocap_a[3];
+                iocap_a[0] = sm_pairing_packet_get_auth_req(setup->sm_m_preq);
+                iocap_a[1] = sm_pairing_packet_get_oob_data_flag(setup->sm_m_preq);
+                iocap_a[2] = sm_pairing_packet_get_io_capability(setup->sm_m_preq);
+                uint8_t iocap_b[3];
+                iocap_b[0] = sm_pairing_packet_get_auth_req(setup->sm_s_pres);
+                iocap_b[1] = sm_pairing_packet_get_oob_data_flag(setup->sm_s_pres);
+                iocap_b[2] = sm_pairing_packet_get_io_capability(setup->sm_s_pres);
+                sm_key_t ra;
+                memset(ra, 0, 16);
+                if (connection->sm_role){
+                    // responder
+                    f6(setup->sm_local_dhkey_check, mackey, setup->sm_local_nonce, setup->sm_peer_nonce, ra, iocap_b, bd_addr_slave, bd_addr_master);
+                } else {
+                    // initiator
+                    // 
+                }
+#endif
+                reverse_128(setup->sm_local_dhkey_check, &buffer[1]);
+                if (connection->sm_role){
+                    connection->sm_engine_state = SM_RESPONDER_PH2_W4_LTK_REQUEST_SC;
+                } else {
+                    // TODO: next initiator state
+                    // connection->sm_engine_state = SM_INITIATOR_PH2_W4_PAIRING_RANDOM;
+                }
+                l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
+                sm_timeout_reset(connection);            
+                break;
+            }
+
+#endif
             case SM_RESPONDER_PH1_SEND_PAIRING_RESPONSE:
                 // echo initiator for now
                 sm_pairing_packet_set_code(setup->sm_s_pres,SM_CODE_PAIRING_RESPONSE);
@@ -2005,6 +2321,10 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                                 sm_conn->sm_engine_state = SM_PH2_CALC_STK;
                                 break;
                             }
+                            if (sm_conn->sm_engine_state == SM_RESPONDER_PH2_W4_LTK_REQUEST_SC){
+                                sm_conn->sm_engine_state = SM_RESPONDER_PH2_SEND_LTK_REPLY;
+                                break;
+                            }
 
                             // assume that we don't have a LTK for ediv == 0 and random == null
                             if (little_endian_read_16(packet, 13) == 0 && sm_is_null_random(&packet[5])){
@@ -2277,8 +2597,35 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
                 sm_pdu_received_in_wrong_state(sm_conn);
                 break;
             }
-            // TODO: store public key for DH Key calculation
+            // store public key for DH Key calculation
+            reverse_256(&packet[01], setup->sm_peer_qx);
+            reverse_256(&packet[33], setup->sm_peer_qy);
             sm_conn->sm_engine_state = SM_PH2_SEND_PUBLIC_KEY_COMMAND;
+            break;
+
+        case SM_PH2_W4_PAIRING_RANDOM:
+            if (packet[0] != SM_CODE_PAIRING_RANDOM){
+                sm_pdu_received_in_wrong_state(sm_conn);
+                break;;
+            }
+
+            // received random value
+            reverse_128(&packet[1], setup->sm_peer_nonce);
+
+            // TODO: handle Initiator role
+
+            // Responder
+            sm_conn->sm_engine_state = SM_PH2_SEND_PAIRING_RANDOM_SC;
+            break;
+
+        case SM_PH2_W4_DHKEY_CHECK_COMMAND:
+            if (packet[0] != SM_CODE_PAIRING_DHKEY_CHECK){
+                sm_pdu_received_in_wrong_state(sm_conn);
+                break;
+            }
+            // store DHKey Check
+            reverse_128(&packet[01], setup->sm_peer_dhkey_check);
+            sm_conn->sm_engine_state = SM_PH2_SEND_DHKEY_CHECK_COMMAND;
             break;
 #endif
  

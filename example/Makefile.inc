@@ -3,12 +3,14 @@ VPATH += ${BTSTACK_ROOT}/src/ble
 VPATH += ${BTSTACK_ROOT}/src/classic
 VPATH += ${BTSTACK_ROOT}/example
 VPATH += ${BTSTACK_ROOT}/3rd-party/mbedtls/library
+VPATH += ${BTSTACK_ROOT}/test/security_manager
 
 CFLAGS += -I.
 CFLAGS += -I${BTSTACK_ROOT}/src/ble
 CFLAGS += -I${BTSTACK_ROOT}/src/classic
 CFLAGS += -I${BTSTACK_ROOT}/src
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/mbedtls/include
+CFLAGS += -I${BTSTACK_ROOT}/test/security_manager
 
 CORE += \
     btstack_memory.c            \
@@ -48,6 +50,7 @@ GATT_CLIENT += \
 SM_REAL += \
 	sm.c 				 	    \
     le_device_db_memory.c       \
+    rijndael.c 					\
 
 SM_MINIMAL += \
 	sm_minimal.c  		 	    \
