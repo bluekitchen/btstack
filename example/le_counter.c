@@ -101,7 +101,10 @@ static void le_counter_setup(void){
     sm_init();
     sm_event_callback_registration.callback = &packet_handler;
     sm_add_event_handler(&sm_event_callback_registration);
-    sm_set_io_capabilities(IO_CAPABILITY_DISPLAY_YES_NO);
+    // Numeric Comparison
+    // sm_set_io_capabilities(IO_CAPABILITY_DISPLAY_YES_NO);
+    // Passkey entry initiator enter, responder displays
+    sm_set_io_capabilities(IO_CAPABILITY_DISPLAY_ONLY);
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
     sm_set_authentication_requirements(SM_AUTHREQ_SECURE_CONNECTION|SM_AUTHREQ_MITM_PROTECTION);
 #endif
@@ -176,7 +179,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     break;
                 case SM_EVENT_PASSKEY_DISPLAY_NUMBER:
                     printf("LE Secure Connection - Numeric Comparison: %u\n", sm_event_passkey_display_number_get_passkey(packet));
-                    sm_just_works_confirm(sm_event_passkey_display_number_get_handle(packet));
+                    // sm_just_works_confirm(sm_event_passkey_display_number_get_handle(packet));
                     break;
             }   
             break;
