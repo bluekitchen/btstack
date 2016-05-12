@@ -290,7 +290,7 @@ static uint32_t g2(const sm_key256_t u, const sm_key256_t v, const sm_key_t x, c
 	memcpy(buffer+64, y, 16);
 	sm_key_t cmac;
 	aes_cmac(cmac, x, buffer, sizeof(buffer));
-	return big_endian_read_32(buffer, 12);
+	return big_endian_read_32(cmac, 12);
 }
 
 // h6(W, keyID) = AES-CMACW(keyID)
@@ -395,7 +395,7 @@ int main(void){
 	uint8_t g2_res_buffer[4];
 	parse_hex(g2_res_buffer, g2_res_string);
 	uint32_t g2_res = big_endian_read_32(g2_res_buffer, 0);
-	if (g2_test == g2_res){
+	if (g2_test != g2_res){
 		printf("G2 incorrect!\n");
 	} else {
 		printf("G2 correct!\n");
