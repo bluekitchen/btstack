@@ -221,7 +221,7 @@ if __name__ == "__main__":
                         fout = wave.open(wavfile, 'w')
                         fout.setnchannels(sbc_decoder_frame.nr_channels)
                         fout.setsampwidth(2)
-                        fout.setframerate(sampling_frequency[sbc_decoder_frame.sampling_frequency])
+                        fout.setframerate(sampling_frequencies[sbc_decoder_frame.sampling_frequency])
                         fout.setnframes(0)
                         fout.setcomptype = 'NONE'
                     
