@@ -254,10 +254,12 @@ typedef struct sm_setup_context {
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
     uint8_t   sm_peer_qx[32];
     uint8_t   sm_peer_qy[32];
-    sm_key_t  sm_peer_nonce;
-    sm_key_t  sm_local_nonce;
+    sm_key_t  sm_peer_nonce;    // might be combined with sm_peer_random
+    sm_key_t  sm_local_nonce;   // might be combined with sm_local_random
     sm_key_t  sm_peer_dhkey_check;
     sm_key_t  sm_local_dhkey_check;
+    sm_key_t  sm_ra;
+    sm_key_t  sm_rb;
 #endif
 
     // Phase 3
@@ -677,7 +679,6 @@ static void f6(sm_key_t res, const sm_key_t w, const sm_key_t n1, const sm_key_t
     aes_cmac(res, w, buffer,sizeof(buffer));
 }
 
-#if 0
 // g2(U, V, X, Y) = AES-CMACX(U || V || Y) mod 2^32
 // - U is 256 bits
 // - V is 256 bits
@@ -689,10 +690,17 @@ static uint32_t g2(const sm_key256_t u, const sm_key256_t v, const sm_key_t x, c
     memcpy(buffer+32, v, 32);
     memcpy(buffer+64, y, 16);
     sm_key_t cmac;
+    log_info("g2 key");
+    log_info_hexdump(x, 16);
+    log_info("g2 message");
+    log_info_hexdump(buffer, sizeof(buffer));
     aes_cmac(cmac, x, buffer, sizeof(buffer));
-    return big_endian_read_32(buffer, 12);
+    log_info("g2 result");
+    log_info_hexdump(x, 16);
+    return big_endian_read_32(cmac, 12);
 }
 
+#if 0
 // h6(W, keyID) = AES-CMACW(keyID)
 // - W is 128 bits
 // - keyID is 32 bits
@@ -766,6 +774,8 @@ static void sm_setup_tk(void){
     setup->sm_use_secure_connections = ( sm_pairing_packet_get_auth_req(setup->sm_m_preq)
                                        & sm_pairing_packet_get_auth_req(setup->sm_s_pres)
                                        & SM_AUTHREQ_SECURE_CONNECTION ) != 0;
+    memset(setup->sm_ra, 0, 16);
+    memset(setup->sm_rb, 0, 16);
 #else
     setup->sm_use_secure_connections = 0;
 #endif
@@ -1053,7 +1063,7 @@ static void sm_cmac_handle_encryption_result(sm_key_t data){
 }
 
 static void sm_trigger_user_response(sm_connection_t * sm_conn){
-    // notify client for: JUST WORKS confirm, PASSKEY display or input
+    // notify client for: JUST WORKS confirm, Numeric comparison confirm, PASSKEY display or input
     setup->sm_user_response = SM_USER_RESPONSE_IDLE;
     switch (setup->sm_stk_generation_method){
         case PK_RESP_INPUT:
@@ -1077,7 +1087,8 @@ static void sm_trigger_user_response(sm_connection_t * sm_conn){
             sm_notify_client_base(SM_EVENT_PASSKEY_INPUT_NUMBER, sm_conn->sm_handle, sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address); 
             break;        
         case NK_BOTH_INPUT:
-            log_error("LE SC - numeric comparison not implemented yet");
+            setup->sm_user_response = SM_USER_RESPONSE_PENDING;
+            sm_notify_client_passkey(SM_EVENT_PASSKEY_DISPLAY_NUMBER, sm_conn->sm_handle, sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address, big_endian_read_32(setup->sm_tk, 12)); 
             break;
         case JUST_WORKS:
             setup->sm_user_response = SM_USER_RESPONSE_PENDING;
@@ -1670,8 +1681,16 @@ static void sm_run(void){
                 reverse_128(setup->sm_local_nonce, &buffer[1]);
                 if (connection->sm_role){
                     // responder
-                    // TODO: calculate verification number if Numerical Comparison
                     connection->sm_engine_state = SM_PH2_W4_DHKEY_CHECK_COMMAND;
+                    if (setup->sm_stk_generation_method == NK_BOTH_INPUT){
+                        // calc Vb if numeric comparison
+                        // TODO: use AES Engine to calculate g2
+                        uint8_t value[32];
+                        mbedtls_mpi_write_binary(&le_keypair.Q.X, value, sizeof(value));
+                        uint32_t vb = g2(setup->sm_peer_qx, value, setup->sm_peer_nonce, setup->sm_local_nonce) % 1000000;
+                        big_endian_store_32(setup->sm_tk, 12, vb);
+                        sm_trigger_user_response(connection);
+                    } 
                 } else {
                     // TODO: next initiator state
                     // connection->sm_engine_state = SM_INITIATOR_PH2_W4_PAIRING_RANDOM;
@@ -1739,11 +1758,9 @@ static void sm_run(void){
                 iocap_b[0] = sm_pairing_packet_get_auth_req(setup->sm_s_pres);
                 iocap_b[1] = sm_pairing_packet_get_oob_data_flag(setup->sm_s_pres);
                 iocap_b[2] = sm_pairing_packet_get_io_capability(setup->sm_s_pres);
-                sm_key_t ra;
-                memset(ra, 0, 16);
                 if (connection->sm_role){
                     // responder
-                    f6(setup->sm_local_dhkey_check, mackey, setup->sm_local_nonce, setup->sm_peer_nonce, ra, iocap_b, bd_addr_slave, bd_addr_master);
+                    f6(setup->sm_local_dhkey_check, mackey, setup->sm_local_nonce, setup->sm_peer_nonce, setup->sm_ra, iocap_b, bd_addr_slave, bd_addr_master);
                 } else {
                     // initiator
                     // 
@@ -1777,7 +1794,10 @@ static void sm_run(void){
 #endif
                 l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) &setup->sm_s_pres, sizeof(sm_pairing_packet_t));
                 sm_timeout_reset(connection);
-                sm_trigger_user_response(connection);
+                // SC Numeric Comparison will trigger user response after public keys & nonces have been exchanged                
+                if (setup->sm_stk_generation_method != NK_BOTH_INPUT){
+                    sm_trigger_user_response(connection);
+                }
                 return;
 
             case SM_PH2_SEND_PAIRING_RANDOM: {
@@ -2466,6 +2486,9 @@ static int sm_validate_stk_generation_method(void){
             return (sm_accepted_stk_generation_methods & SM_STK_GENERATION_METHOD_PASSKEY) != 0;
         case OOB:
             return (sm_accepted_stk_generation_methods & SM_STK_GENERATION_METHOD_OOB) != 0;
+        case NK_BOTH_INPUT:
+            // TODO check sm_accepted_stk_generation_methods 
+            return 1;
         default:
             return 0;
     }
@@ -2625,7 +2648,13 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
             }
             // store DHKey Check
             reverse_128(&packet[01], setup->sm_peer_dhkey_check);
-            sm_conn->sm_engine_state = SM_PH2_SEND_DHKEY_CHECK_COMMAND;
+
+            // for numeric comparison, we need to wait for user confirm
+            if (setup->sm_stk_generation_method == NK_BOTH_INPUT && setup->sm_user_response != SM_USER_RESPONSE_CONFIRM){
+                sm_conn->sm_engine_state = SM_PH2_W4_USER_RESPONSE;
+            } else {
+                sm_conn->sm_engine_state = SM_PH2_SEND_DHKEY_CHECK_COMMAND;
+            }
             break;
 #endif
  
@@ -2956,6 +2985,15 @@ void sm_just_works_confirm(hci_con_handle_t con_handle){
     setup->sm_user_response = SM_USER_RESPONSE_CONFIRM;
     if (sm_conn->sm_engine_state == SM_PH1_W4_USER_RESPONSE){
         sm_conn->sm_engine_state = SM_PH2_C1_GET_RANDOM_A;
+    }
+    if (sm_conn->sm_engine_state == SM_PH2_W4_USER_RESPONSE){
+        if (sm_conn->sm_role){
+            // responder
+            sm_conn->sm_engine_state = SM_PH2_SEND_DHKEY_CHECK_COMMAND;
+        } else {
+            // initiator
+            // TODO handle intiator role
+        }
     }
     sm_run();
 }
