@@ -123,7 +123,7 @@ def sbc_frame_synthesis(frame, ch, blk, proto_table):
     for k in range(M2):
         V[ch][k] = 0
         for i in range(M):
-            N = np.cos((i+0.5)*(k+2)*np.pi/M)
+            N = np.cos((i+0.5)*(k+M/2)*np.pi/M)
             V[ch][k] += N * S[i]
 
     for i in range(5):

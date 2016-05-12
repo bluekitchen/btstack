@@ -54,10 +54,11 @@ def sbc_compare_headers(frame_count, actual_frame, expected_frame):
     
     return 0
 
-
+file_size = 0
 def get_actual_frame(fin):
+    global file_size
     actual_frame = SBCFrame()
-    sbc_unpack_frame(fin, actual_frame)
+    sbc_unpack_frame(fin, file_size - fin.tell(), actual_frame)
     sbc_reconstruct_subband_samples(actual_frame)
     sbc_synthesis(actual_frame)
     return actual_frame
@@ -90,17 +91,20 @@ try:
     fin_expected = wave.open(decoder_expected_wav, 'rb')
     nr_channels, sampwidth, sampling_frequency, nr_audio_frames, comptype, compname =  fin_expected.getparams()
     
-    # print nr_channels, sampwidth, sampling_frequency, nr_audio_frames, comptype, compname
-    
     with open(decoder_input_sbc, 'rb') as fin:
         try:
             subband_frame_count = 0
+            fin.seek(0,2)
+            file_size = fin.tell()
+            fin.seek(0,0)
+
             while True:
                 if subband_frame_count % 200 == 0:
-                    print "== Frame %d ==" % (subband_frame_count)
+                    print ("== Frame %d ==" % subband_frame_count)
                 
                 actual_frame = get_actual_frame(fin)
                 
+
                 expected_frame = get_expected_frame(fin_expected, actual_frame.nr_blocks, 
                                                 actual_frame.nr_subbands, nr_channels, 
                                                 actual_frame.bitpool, sampling_frequency, 
@@ -109,21 +113,23 @@ try:
             
                 err = sbc_compare_headers(subband_frame_count, actual_frame, expected_frame)
                 if err < 0:
+                    print ("Headers differ \n%s\n%s" % (actual_frame, expected_frame))
                     exit(1)
 
                 err = sbc_compare_pcm(subband_frame_count, actual_frame, expected_frame)
                 if err < 0:
+                    print ("PCMs differ \n%s\n%s" % (actual_frame.pcm, expected_frame.pcm))
                     exit(1)
 
                 if subband_frame_count == 0:
-                    print actual_frame
-                    
+                    print actual_frame, expected_frame
+
                 subband_frame_count += 1
                 
         except TypeError:
             fin_expected.close()
             fin.close()
-            print "DONE, max MSE PCM error %d", max_error
+            print ("DONE, max MSE PCM error %d" % max_error)
             exit(0) 
 
 except IOError as e:
