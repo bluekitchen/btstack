@@ -177,14 +177,14 @@ def sbc_write_frame(fout, sbc_encoder_frame):
 
 if __name__ == "__main__":
     usage = '''
-    Usage:      ./sbc_encoder.py input.wav blocks subbands bitpool
-    Example:    ./sbc_encoder.py fanfare.wav 16 4 31
+    Usage:      ./sbc_encoder.py input.wav blocks subbands bitpool allocation_method[0-LOUDNESS,1-SNR]
+    Example:    ./sbc_encoder.py fanfare.wav 16 4 31 0
     '''
     nr_blocks = 0
     nr_subbands = 0
     
 
-    if (len(sys.argv) < 5):
+    if (len(sys.argv) < 6):
         print(usage)
         sys.exit(1)
     try:
@@ -196,7 +196,8 @@ if __name__ == "__main__":
 
         nr_blocks = int(sys.argv[2])
         nr_subbands = int(sys.argv[3])
-        bitpool = int(sys.argv[4])      
+        bitpool = int(sys.argv[4])
+        allocation_method = int(sys.argv[5])      
 
         fin = wave.open(infile, 'rb')
         nr_channels = fin.getnchannels()
@@ -211,7 +212,7 @@ if __name__ == "__main__":
             if subband_frame_count % 200 == 0:
                 print("== Frame %d ==" % (subband_frame_count))
 
-            sbc_encoder_frame = SBCFrame(nr_blocks, nr_subbands, nr_channels, bitpool, sampling_frequency)
+            sbc_encoder_frame = SBCFrame(nr_blocks, nr_subbands, nr_channels, bitpool, sampling_frequency, allocation_method)
             fetch_samples_for_next_sbc_frame(fin, sbc_encoder_frame)
             
             sbc_encode(sbc_encoder_frame)

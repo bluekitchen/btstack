@@ -62,8 +62,8 @@ def get_actual_frame(fin):
     sbc_synthesis(actual_frame)
     return actual_frame
 
-def get_expected_frame(fin_expected, nr_blocks, nr_subbands, nr_channels, sampling_frequency, bitpool):
-    expected_frame = SBCFrame(nr_blocks, nr_subbands, nr_channels, sampling_frequency, bitpool)
+def get_expected_frame(fin_expected, nr_blocks, nr_subbands, nr_channels, sampling_frequency, bitpool, allocation_method):
+    expected_frame = SBCFrame(nr_blocks, nr_subbands, nr_channels, sampling_frequency, bitpool, allocation_method)
     fetch_samples_for_next_sbc_frame(fin_expected, expected_frame)
     return expected_frame
 
@@ -103,7 +103,8 @@ try:
                 
                 expected_frame = get_expected_frame(fin_expected, actual_frame.nr_blocks, 
                                                 actual_frame.nr_subbands, nr_channels, 
-                                                actual_frame.bitpool, sampling_frequency)
+                                                actual_frame.bitpool, sampling_frequency, 
+                                                actual_frame.allocation_method)
                 
             
                 err = sbc_compare_headers(subband_frame_count, actual_frame, expected_frame)
@@ -114,6 +115,9 @@ try:
                 if err < 0:
                     exit(1)
 
+                if subband_frame_count == 0:
+                    print actual_frame
+                    
                 subband_frame_count += 1
                 
         except TypeError:

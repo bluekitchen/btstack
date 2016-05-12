@@ -147,12 +147,13 @@ class SBCFrame:
     levels = np.zeros(shape=(2, 8), dtype = np.int32)
 
 
-    def __init__(self, nr_blocks=16, nr_subbands=4, nr_channels=1, bitpool=31, sampling_frequency=44100):
+    def __init__(self, nr_blocks=16, nr_subbands=4, nr_channels=1, bitpool=31, sampling_frequency=44100, allocation_method = 0):
         self.nr_blocks = nr_blocks
         self.nr_subbands = nr_subbands
         self.nr_channels = nr_channels
         self.sampling_frequency = sampling_frequency_index(sampling_frequency)
         self.bitpool = bitpool
+        self.allocation_method = allocation_method
         self.scale_factor = np.zeros(shape=(nr_channels, nr_subbands), dtype = np.int32)
         self.scalefactor = np.zeros(shape=(nr_channels, nr_subbands), dtype = np.int32)
         self.audio_sample = np.zeros(shape=(nr_blocks, nr_channels, nr_subbands), dtype = np.uint16)
@@ -524,4 +525,3 @@ def mse(a,b):
     res = sqr.sum()*1.0/count
     # res = ((a - b) ** 2).mean()
     return res
-    

@@ -7,7 +7,10 @@ from sbc import *
 
 V = np.zeros(shape = (2, 10*2*8))
 
-def sbc_unpack_frame(fin, frame):
+def sbc_unpack_frame(fin, available_bytes, frame):
+    if available_bytes == 0:
+        raise TypeError
+
     frame.syncword = get_bits(fin,8)
     if frame.syncword != 156:
         print "incorrect syncword ", frame.syncword
@@ -195,13 +198,17 @@ if __name__ == "__main__":
 
         with open (infile, 'rb') as fin:
             try:
+                fin.seek(0, 2)
+                file_size = fin.tell()
+                fin.seek(0, 0)
+
                 frame_count = 0
                 while True:
-                    sbc_decoder_frame = SBCFrame(0,0,0,0,0)
+                    sbc_decoder_frame = SBCFrame()
                     if frame_count % 200 == 0:
                         print "== Frame %d ==" % (frame_count)
 
-                    err = sbc_unpack_frame(fin, sbc_decoder_frame)
+                    err = sbc_unpack_frame(fin, file_size - fin.tell(), sbc_decoder_frame)
                     
                     if err:
                         print "error, frame_count: ", frame_count
