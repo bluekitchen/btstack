@@ -69,6 +69,7 @@
 static int  le_notification_enabled;
 static btstack_timer_source_t heartbeat;
 static btstack_packet_callback_registration_t hci_event_callback_registration;
+static btstack_packet_callback_registration_t sm_event_callback_registration;
 static hci_con_handle_t con_handle;
 
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
@@ -98,8 +99,11 @@ static void le_counter_setup(void){
 
     // setup SM: Display only
     sm_init();
+    sm_event_callback_registration.callback = &packet_handler;
+    sm_add_event_handler(&sm_event_callback_registration);
+    sm_set_io_capabilities(IO_CAPABILITY_DISPLAY_YES_NO);
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
-    sm_set_authentication_requirements(SM_AUTHREQ_SECURE_CONNECTION);
+    sm_set_authentication_requirements(SM_AUTHREQ_SECURE_CONNECTION|SM_AUTHREQ_MITM_PROTECTION);
 #endif
 
     // setup ATT server
@@ -170,7 +174,11 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 case ATT_EVENT_CAN_SEND_NOW:
                     att_server_notify(con_handle, ATT_CHARACTERISTIC_0000FF11_0000_1000_8000_00805F9B34FB_01_VALUE_HANDLE, (uint8_t*) counter_string, counter_string_len);
                     break;
-            }
+                case SM_EVENT_PASSKEY_DISPLAY_NUMBER:
+                    printf("LE Secure Connection - Numeric Comparison: %u\n", sm_event_passkey_display_number_get_passkey(packet));
+                    sm_just_works_confirm(sm_event_passkey_display_number_get_handle(packet));
+                    break;
+            }   
             break;
     }
 }

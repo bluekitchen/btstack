@@ -255,6 +255,7 @@ typedef enum {
     SM_PH2_SEND_PAIRING_RANDOM_SC,
     SM_PH2_SEND_DHKEY_CHECK_COMMAND,
     SM_PH2_W4_PAIRING_RANDOM,
+    SM_PH2_W4_USER_RESPONSE,
     SM_PH2_W4_DHKEY_CHECK_COMMAND,
 
     // Phase 3: Transport Specific Key Distribution
