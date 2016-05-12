@@ -260,6 +260,7 @@ typedef struct sm_setup_context {
     sm_key_t  sm_local_dhkey_check;
     sm_key_t  sm_ra;
     sm_key_t  sm_rb;
+    uint8_t   sm_passkey_bit;
 #endif
 
     // Phase 3
@@ -1638,18 +1639,47 @@ static void sm_run(void){
                 reverse_256(value, &buffer[33]);
 #endif
                 // TODO: use random generator to generate nonce
+
                 // generate 128-bit nonce
                 int i;
                 for (i=0;i<16;i++){
                     setup->sm_local_nonce[i] = rand() & 0xff;
                 }                
 
-                if (connection->sm_role){
-                    connection->sm_engine_state = SM_PH2_SEND_CONFIRMATION;
-                } else {
-                    // TODO:
-                    log_error("SC, next state initiator, send local nonce");
+                // stk generation method
+                // passkey entry: notify app to show passkey or to request passkey
+                switch (setup->sm_stk_generation_method){
+                    case JUST_WORKS:
+                    case NK_BOTH_INPUT:
+                        if (connection->sm_role){
+                            connection->sm_engine_state = SM_PH2_SEND_CONFIRMATION;
+                        } else {
+                            // TODO:
+                            log_error("SC, next state initiator, send local nonce");
+                        }
+                        break;
+                    case PK_INIT_INPUT:
+                    case PK_RESP_INPUT:
+                    case OK_BOTH_INPUT:
+                        // hack for testing: assume user entered '000000'
+                        // memset(setup->sm_tk, 0, 16);
+                        memcpy(setup->sm_ra, setup->sm_tk, 16);
+                        memcpy(setup->sm_rb, setup->sm_tk, 16);
+                        setup->sm_passkey_bit = 0;
+                        if (connection->sm_role){
+                            // responder
+                            connection->sm_engine_state = SM_PH2_W4_CONFIRMATION;
+                        } else {
+                            // initiator
+                            connection->sm_engine_state = SM_PH2_SEND_CONFIRMATION;
+                        }
+                        sm_trigger_user_response(connection);
+                        break;
+                    case OOB:
+                        // TODO: implement SC OOB
+                        break;
                 }
+
                 l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
                 sm_timeout_reset(connection);
                 break;
@@ -1658,11 +1688,19 @@ static void sm_run(void){
                 uint8_t buffer[17];
                 buffer[0] = SM_CODE_PAIRING_CONFIRM;
 #ifdef USE_MBEDTLS_FOR_ECDH
+                uint8_t z = 0;
+                if (setup->sm_stk_generation_method != JUST_WORKS && setup->sm_stk_generation_method != NK_BOTH_INPUT){
+                    // some form of passkey
+                    uint32_t pk = big_endian_read_32(setup->sm_tk, 12);
+                    z = 0x80 | ((pk >> setup->sm_passkey_bit) & 1);
+                    setup->sm_passkey_bit++;
+                }
+
                 // TODO: use AES Engine to calculate commitment value using f4
                 uint8_t value[32];
                 mbedtls_mpi_write_binary(&le_keypair.Q.X, value, sizeof(value));
                 sm_key_t confirm_value;
-                f4(confirm_value, value, setup->sm_peer_qx, setup->sm_local_nonce, 0);
+                f4(confirm_value, value, setup->sm_peer_qx, setup->sm_local_nonce, z);
                 reverse_128(confirm_value, &buffer[1]);
 #endif
                 if (connection->sm_role){
@@ -1679,21 +1717,32 @@ static void sm_run(void){
                 uint8_t buffer[17];
                 buffer[0] = SM_CODE_PAIRING_RANDOM;
                 reverse_128(setup->sm_local_nonce, &buffer[1]);
-                if (connection->sm_role){
-                    // responder
-                    connection->sm_engine_state = SM_PH2_W4_DHKEY_CHECK_COMMAND;
-                    if (setup->sm_stk_generation_method == NK_BOTH_INPUT){
-                        // calc Vb if numeric comparison
-                        // TODO: use AES Engine to calculate g2
-                        uint8_t value[32];
-                        mbedtls_mpi_write_binary(&le_keypair.Q.X, value, sizeof(value));
-                        uint32_t vb = g2(setup->sm_peer_qx, value, setup->sm_peer_nonce, setup->sm_local_nonce) % 1000000;
-                        big_endian_store_32(setup->sm_tk, 12, vb);
-                        sm_trigger_user_response(connection);
-                    } 
+
+                if (setup->sm_stk_generation_method != JUST_WORKS && setup->sm_stk_generation_method != NK_BOTH_INPUT && setup->sm_passkey_bit < 20){
+                    if (connection->sm_role){
+                        // responder
+                        connection->sm_engine_state = SM_PH2_W4_CONFIRMATION;
+                    } else {
+                        // initiator
+                        // TODO: next initiator state
+                    }                    
                 } else {
-                    // TODO: next initiator state
-                    // connection->sm_engine_state = SM_INITIATOR_PH2_W4_PAIRING_RANDOM;
+                    if (connection->sm_role){
+                        // responder
+                        connection->sm_engine_state = SM_PH2_W4_DHKEY_CHECK_COMMAND;
+                        if (setup->sm_stk_generation_method == NK_BOTH_INPUT){
+                            // calc Vb if numeric comparison
+                            // TODO: use AES Engine to calculate g2
+                            uint8_t value[32];
+                            mbedtls_mpi_write_binary(&le_keypair.Q.X, value, sizeof(value));
+                            uint32_t vb = g2(setup->sm_peer_qx, value, setup->sm_peer_nonce, setup->sm_local_nonce) % 1000000;
+                            big_endian_store_32(setup->sm_tk, 12, vb);
+                            sm_trigger_user_response(connection);
+                        } 
+                    } else {
+                        // TODO: next initiator state
+                        // connection->sm_engine_state = SM_INITIATOR_PH2_W4_PAIRING_RANDOM;
+                    }                    
                 }
                 l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
                 sm_timeout_reset(connection);
@@ -1795,7 +1844,7 @@ static void sm_run(void){
                 l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) &setup->sm_s_pres, sizeof(sm_pairing_packet_t));
                 sm_timeout_reset(connection);
                 // SC Numeric Comparison will trigger user response after public keys & nonces have been exchanged                
-                if (setup->sm_stk_generation_method != NK_BOTH_INPUT){
+                if (setup->sm_stk_generation_method == JUST_WORKS){
                     sm_trigger_user_response(connection);
                 }
                 return;
@@ -2625,6 +2674,23 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
             reverse_256(&packet[33], setup->sm_peer_qy);
             sm_conn->sm_engine_state = SM_PH2_SEND_PUBLIC_KEY_COMMAND;
             break;
+
+        case SM_PH2_W4_CONFIRMATION:
+            if (packet[0] != SM_CODE_PAIRING_CONFIRM){
+                sm_pdu_received_in_wrong_state(sm_conn);
+                break;
+            }
+            // received confirm value
+            reverse_128(&packet[1], setup->sm_peer_confirm);
+
+            if (sm_conn->sm_role){
+                // responder
+                sm_conn->sm_engine_state = SM_PH2_SEND_CONFIRMATION;                
+            } else {
+                // initiator
+                // TODO: implement initiator role
+            }
+            break;        
 
         case SM_PH2_W4_PAIRING_RANDOM:
             if (packet[0] != SM_CODE_PAIRING_RANDOM){
