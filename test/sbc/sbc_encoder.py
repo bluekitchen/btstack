@@ -46,11 +46,11 @@ def sbc_frame_analysis(frame, ch, blk, C):
     
     for i in range(M2):
         for k in range(5):
-            Y[i] += Z[i+k*8]
+            Y[i] += Z[i+k*M2]
 
     for i in range(M):
         for k in range(M2):
-            W[i][k] = np.cos((i+0.5)*(k-2)*np.pi/M)
+            W[i][k] = np.cos((i+0.5)*(k-M/2)*np.pi/M)
             S[i] += W[i][k] * Y[k]
 
     for sb in range(M):
