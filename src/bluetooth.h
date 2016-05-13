@@ -986,9 +986,10 @@ typedef enum {
 #define SM_KEYDIST_FLAG_SIGNING_IDENTIFICATION       0x10
 
 // STK Generation Methods
-#define SM_STK_GENERATION_METHOD_JUST_WORKS 0x01
-#define SM_STK_GENERATION_METHOD_OOB        0x02
-#define SM_STK_GENERATION_METHOD_PASSKEY    0x04
+#define SM_STK_GENERATION_METHOD_JUST_WORKS          0x01
+#define SM_STK_GENERATION_METHOD_OOB                 0x02
+#define SM_STK_GENERATION_METHOD_PASSKEY             0x04
+#define SM_STK_GENERATION_METHOD_NUMERIC_COMPARISON  0x08
 
 // Pairing Failed Reasons
 #define SM_REASON_RESERVED                     0x00

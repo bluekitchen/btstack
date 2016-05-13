@@ -2537,7 +2537,7 @@ static int sm_validate_stk_generation_method(void){
         case OOB:
             return (sm_accepted_stk_generation_methods & SM_STK_GENERATION_METHOD_OOB) != 0;
         case NK_BOTH_INPUT:
-            // TODO check sm_accepted_stk_generation_methods 
+            return (sm_accepted_stk_generation_methods & SM_STK_GENERATION_METHOD_NUMERIC_COMPARISON) != 0;
             return 1;
         default:
             return 0;
@@ -2885,7 +2885,9 @@ void sm_init(void){
     // defaults
     sm_accepted_stk_generation_methods = SM_STK_GENERATION_METHOD_JUST_WORKS
                                        | SM_STK_GENERATION_METHOD_OOB
-                                       | SM_STK_GENERATION_METHOD_PASSKEY;
+                                       | SM_STK_GENERATION_METHOD_PASSKEY
+                                       | SM_STK_GENERATION_METHOD_NUMERIC_COMPARISON;
+
     sm_max_encryption_key_size = 16;
     sm_min_encryption_key_size = 7;
     
