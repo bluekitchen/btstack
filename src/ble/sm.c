@@ -1089,7 +1089,7 @@ static void sm_trigger_user_response(sm_connection_t * sm_conn){
             break;        
         case NK_BOTH_INPUT:
             setup->sm_user_response = SM_USER_RESPONSE_PENDING;
-            sm_notify_client_passkey(SM_EVENT_PASSKEY_DISPLAY_NUMBER, sm_conn->sm_handle, sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address, big_endian_read_32(setup->sm_tk, 12)); 
+            sm_notify_client_passkey(SM_EVENT_NUMERIC_COMPARISON_REQUEST, sm_conn->sm_handle, sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address, big_endian_read_32(setup->sm_tk, 12)); 
             break;
         case JUST_WORKS:
             setup->sm_user_response = SM_USER_RESPONSE_PENDING;
@@ -3065,6 +3065,11 @@ void sm_just_works_confirm(hci_con_handle_t con_handle){
         }
     }
     sm_run();
+}
+
+void sm_numeric_comparison_confirm(hci_con_handle_t con_handle){
+    // for now, it's the same
+    sm_just_works_confirm(con_handle);
 }
 
 void sm_passkey_input(hci_con_handle_t con_handle, uint32_t passkey){

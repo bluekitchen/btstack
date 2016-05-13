@@ -102,9 +102,9 @@ static void le_counter_setup(void){
     sm_event_callback_registration.callback = &packet_handler;
     sm_add_event_handler(&sm_event_callback_registration);
     // Numeric Comparison
-    // sm_set_io_capabilities(IO_CAPABILITY_DISPLAY_YES_NO);
+    sm_set_io_capabilities(IO_CAPABILITY_DISPLAY_YES_NO);
     // Passkey entry initiator enter, responder displays
-    sm_set_io_capabilities(IO_CAPABILITY_DISPLAY_ONLY);
+    // sm_set_io_capabilities(IO_CAPABILITY_DISPLAY_ONLY);
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
     sm_set_authentication_requirements(SM_AUTHREQ_SECURE_CONNECTION|SM_AUTHREQ_MITM_PROTECTION);
 #endif
@@ -180,9 +180,12 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 case ATT_EVENT_CAN_SEND_NOW:
                     att_server_notify(con_handle, ATT_CHARACTERISTIC_0000FF11_0000_1000_8000_00805F9B34FB_01_VALUE_HANDLE, (uint8_t*) counter_string, counter_string_len);
                     break;
+                case SM_EVENT_NUMERIC_COMPARISON_REQUEST:
+                    printf("Confirming numeric comparison: %u\n", sm_event_numeric_comparison_request_get_passkey(packet));
+                    sm_numeric_comparison_confirm(sm_event_passkey_display_number_get_handle(packet));
+                    break;
                 case SM_EVENT_PASSKEY_DISPLAY_NUMBER:
-                    printf("LE Secure Connection - Numeric Comparison: %u\n", sm_event_passkey_display_number_get_passkey(packet));
-                    // sm_just_works_confirm(sm_event_passkey_display_number_get_handle(packet));
+                    printf("Display Passkey: %u\n", sm_event_passkey_display_number_get_passkey(packet));
                     break;
             }   
             break;

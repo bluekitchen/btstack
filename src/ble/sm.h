@@ -166,19 +166,25 @@ void sm_send_security_request(hci_con_handle_t con_handle);
 
 /**
  * @brief Decline bonding triggered by event before
- * @param addr_type and address
+ * @param con_handle
  */
 void sm_bonding_decline(hci_con_handle_t con_handle);
 
 /**
  * @brief Confirm Just Works bonding 
- * @param addr_type and address
+ * @param con_handle
  */
 void sm_just_works_confirm(hci_con_handle_t con_handle);
 
 /**
+ * @brief Confirm value from SM_EVENT_NUMERIC_COMPARISON_REQUEST for Numeric Comparison bonding 
+ * @param con_handle
+ */
+void sm_numeric_comparison_confirm(hci_con_handle_t con_handle);
+
+/**
  * @brief Reports passkey input by user
- * @param addr_type and address
+ * @param con_handle
  * @param passkey in [0..999999]
  */
 void sm_passkey_input(hci_con_handle_t con_handle, uint32_t passkey);
@@ -186,40 +192,40 @@ void sm_passkey_input(hci_con_handle_t con_handle, uint32_t passkey);
 /**
  *
  * @brief Get encryption key size.
- * @param addr_type and address
+ * @param con_handle
  * @return 0 if not encrypted, 7-16 otherwise
  */
 int sm_encryption_key_size(hci_con_handle_t con_handle);
 
 /**
  * @brief Get authentication property.
- * @param addr_type and address
+ * @param con_handle
  * @return 1 if bonded with OOB/Passkey (AND MITM protection)
  */
 int sm_authenticated(hci_con_handle_t con_handle);
 
 /**
  * @brief Queries authorization state.
- * @param addr_type and address
+ * @param con_handle
  * @return authorization_state for the current session
  */
 authorization_state_t sm_authorization_state(hci_con_handle_t con_handle);
 
 /**
  * @brief Used by att_server.c to request user authorization.
- * @param addr_type and address
+ * @param con_handle
  */
 void sm_request_pairing(hci_con_handle_t con_handle);
 
 /**
  * @brief Report user authorization decline.
- * @param addr_type and address
+ * @param con_handle
  */
 void sm_authorization_decline(hci_con_handle_t con_handle);
 
 /**
  * @brief Report user authorization grant.
- * @param addr_type and address
+ * @param con_handle
  */
 void sm_authorization_grant(hci_con_handle_t con_handle);
 
