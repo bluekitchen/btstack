@@ -124,6 +124,76 @@ offset8 = np.array([[ -2, 0, 0, 0, 0, 0, 0, 1 ],
                     [ -4, 0, 0, 0, 0, 0, 1, 2 ]
                     ])
 
+def calculate_scalefactor(max_subbandsample):
+    x = 0
+    while True:
+        y = 1 << x + 1
+        if y > max_subbandsample:
+            break
+        x += 1
+    return (x,y)
+
+
+def calculate_max_subbandsample(nr_blocks, nr_channels, nr_subbands, sb_sample):
+    max_subbandsample = np.zeros(shape = (nr_channels, nr_subbands))
+
+    for blk in range(nr_blocks):
+        for ch in range(nr_channels):
+            for sb in range(nr_subbands):
+                m = abs(sb_sample[blk][ch][sb])
+                if max_subbandsample[ch][sb] < m:
+                    max_subbandsample[ch][sb] = m
+    return max_subbandsample
+
+def calculate_scalefactors(nr_blocks, nr_channels, nr_subbands, sb_sample):
+    scale_factor =  np.zeros(shape=(nr_channels, nr_subbands), dtype = np.int32)
+    scalefactor =  np.zeros(shape=(nr_channels, nr_subbands), dtype = np.int32)    
+
+    # max_subbandsample = calculate_max_subbandsample(nr_blocks, nr_channels, nr_subbands, sb_sample)
+    # for ch in range(nr_channels):
+    #     for sb in range(nr_subbands):
+    #         (scale_factor[ch][sb], scalefactor[ch][sb]) = calculate_scalefactor(max_subbandsample[ch][sb])  
+
+    for ch in range(nr_channels):
+        for sb in range(nr_subbands):
+            scale_factor[ch][sb] = 0
+            scalefactor[ch][sb] = 2
+            for blk in range(nr_blocks):
+                while scalefactor[ch][sb] < abs(sb_sample[blk][ch][sb]):
+                    scale_factor[ch][sb]+=1
+                    scalefactor[ch][sb] *= 2
+
+    return scale_factor, scalefactor
+
+def calculate_scalefactors_and_channel_mode(frame):
+    frame.scale_factor, frame.scalefactor = calculate_scalefactors(frame.nr_blocks, frame.nr_channels, frame.nr_subbands, frame.sb_sample)
+    #print "calculate_scalefactors_and_channel_mode1 ", frame.scale_factor
+
+    if frame.nr_channels == 1:
+        frame.channel_mode = MONO
+    else:
+        sb_sample1 = np.zeros(shape = (frame.nr_blocks,2,frame.nr_subbands), dtype = np.uint16)
+        
+        for blk in range(frame.nr_blocks):
+            for sb in range(frame.nr_subbands):
+                sb_sample1[blk][0][sb] = frame.sb_sample[blk][0][sb] + frame.sb_sample[blk][1][sb]
+                sb_sample1[blk][1][sb] = frame.sb_sample[blk][0][sb] - frame.sb_sample[blk][1][sb]
+
+        scale_factor, scalefactor = calculate_scalefactors(frame.nr_blocks, frame.nr_channels, frame.nr_subbands, sb_sample1)
+        #print "calculate_scalefactors_and_channel_mode 2", scale_factor
+        sumb = 0
+        suma = 0
+        for sb in range(frame.nr_subbands):
+            suma += frame.scale_factor[0][sb] + frame.scale_factor[1][sb]
+            sumb += scale_factor[0][sb] + scale_factor[1][sb]
+        
+        #print "calculate_scalefactors_and_channel_mode 3", suma, sumb
+        if suma > sumb:
+            frame.channel_mode = JOINT_STEREO
+        else:
+            frame.channel_mode = STEREO
+
+
 class SBCFrame:
     syncword = 0
     sampling_frequency = 0
@@ -142,7 +212,7 @@ class SBCFrame:
     sb_sample = np.zeros(shape = (16,2,8), dtype = np.uint16)
     X = np.zeros(8, dtype = np.int16)
     EX = np.zeros(8)
-    pcm = np.array([], dtype = np.int16)
+    pcm = np.zeros(shape=(2, 8*16), dtype = np.int16)
     bits    = np.zeros(shape=(2, 8))
     levels = np.zeros(shape=(2, 8), dtype = np.int32)
 
@@ -196,9 +266,10 @@ class SBCFrame:
         return res
 
 
-def sbc_bit_allocation_stereo_joint(frame, ch):
-    bitneed = np.zeros(shape=(frame.nr_channels, frame.nr_subbands))
-    bits    = np.zeros(shape=(frame.nr_channels, frame.nr_subbands))
+def sbc_bit_allocation_stereo_joint(frame):
+    bitneed = np.zeros(shape=(frame.nr_channels, frame.nr_subbands), dtype = np.int32)
+    bits    = np.zeros(shape=(frame.nr_channels, frame.nr_subbands), dtype = np.int32)
+
     loudness = 0
 
     if frame.allocation_method == SNR:
@@ -214,14 +285,12 @@ def sbc_bit_allocation_stereo_joint(frame, ch):
                     if frame.nr_subbands == 4:
                         loudness = scale_factor[ch][sb] - offset4[frame.sampling_frequency][sb]
                     else:
-                        if frame.nr_subbands == 4:
-                            loudness = frame.scale_factor[ch][sb] - offset4[frame.sampling_frequency][sb]
-                        else:
-                            loudness = frame.scale_factor[ch][sb] - offset8[frame.sampling_frequency][sb]
-                        if loudness > 0:
-                            bitneed[ch][sb] = loudness/2
-                        else:
-                            bitneed[ch][sb] = loudness
+                        loudness = frame.scale_factor[ch][sb] - offset8[frame.sampling_frequency][sb]
+                        
+                    if loudness > 0:
+                        bitneed[ch][sb] = loudness/2
+                    else:
+                        bitneed[ch][sb] = loudness
 
     # search the maximum bitneed index
     max_bitneed = 0
@@ -236,21 +305,21 @@ def sbc_bit_allocation_stereo_joint(frame, ch):
     bitslice = max_bitneed + 1 #/* init just above the largest sf */
 
     while True:
-        bitslice = bitslice - 1
-        bitcount = bitcount + slicecount
+        bitslice -= 1
+        bitcount += slicecount
         slicecount = 0
         for ch in range(frame.nr_channels):
             for sb in range(frame.nr_subbands):
                 if (bitneed[ch][sb] > bitslice+1) and (bitneed[ch][sb] < bitslice+16):
-                    slicecount = slicecount + 1
+                    slicecount += 1
                 elif bitneed[ch][sb] == bitslice + 1:
-                    slicecount = slicecount + 2
+                    slicecount += 2
         if bitcount + slicecount >= frame.bitpool:
             break 
 
     if bitcount + slicecount == frame.bitpool:
-        bitcount = bitcount + slicecount
-        bitslice = bitslice - 1
+        bitcount += slicecount
+        bitslice -= 1
     
     # bits are distributed until the last bitslice is reached
     for ch in range(frame.nr_channels):
@@ -264,30 +333,17 @@ def sbc_bit_allocation_stereo_joint(frame, ch):
     sb = 0
     while bitcount < frame.bitpool and sb < frame.nr_subbands:
         if bits[ch][sb] >= 2 and bits[ch][sb] < 16:
-               bits[ch][sb] = bits[ch][sb] + 1
-               bitcount = bitcount + 1
-            
+            bits[ch][sb] += 1
+            bitcount += 1            
         elif (bitneed[ch][sb] == bitslice+1) and (frame.bitpool > bitcount+1):
             bits[ch][sb] = 2
             bitcount += 2
         
         if ch == 1:
             ch = 0
-            sb = sb + 1
+            sb += 1
         else:
             ch = 1
-
-    ch = 0
-    sb = 0
-    while bitcount < frame.bitpool and sb < frame.nr_subbands:
-        if bits[ch][sb] < 16:
-            bits[ch][sb] = bits[ch][sb] + 1
-            bitcount = bitcount + 1
-        if ch == 1:
-            ch = 0
-            sb = sb + 1
-        else:
-            ch = 1 
 
     return bits
 

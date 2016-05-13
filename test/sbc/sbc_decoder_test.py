@@ -12,14 +12,14 @@ max_error = -1
 
 def sbc_compare_pcm(frame_count, actual_frame, expected_frame):
     global error, max_error
+    for ch in range(actual_frame.nr_channels):
+        M = mse(actual_frame.pcm[ch], expected_frame.pcm[ch])
+        if M > max_error:
+            max_error = M
 
-    M = mse(actual_frame.pcm, expected_frame.pcm)
-    if M > max_error:
-        max_error = M
-
-    if M > error:
-        print "pcm error (%d, %d ) " % (frame_count, M)
-        return -1
+        if M > error:
+            print "pcm error (%d, %d ) " % (frame_count, M)
+            return -1
     return 0 
 
 
@@ -66,6 +66,7 @@ def get_actual_frame(fin):
 def get_expected_frame(fin_expected, nr_blocks, nr_subbands, nr_channels, sampling_frequency, bitpool, allocation_method):
     expected_frame = SBCFrame(nr_blocks, nr_subbands, nr_channels, sampling_frequency, bitpool, allocation_method)
     fetch_samples_for_next_sbc_frame(fin_expected, expected_frame)
+    calculate_scalefactors_and_channel_mode(expected_frame)
     return expected_frame
 
 usage = '''
@@ -110,7 +111,6 @@ try:
                                                 actual_frame.bitpool, sampling_frequency, 
                                                 actual_frame.allocation_method)
                 
-            
                 err = sbc_compare_headers(subband_frame_count, actual_frame, expected_frame)
                 if err < 0:
                     print ("Headers differ \n%s\n%s" % (actual_frame, expected_frame))

@@ -44,6 +44,7 @@ def sbc_unpack_frame(fin, available_bytes, frame):
     for ch in range(frame.nr_channels):
         for sb in range(frame.nr_subbands):
             frame.scale_factor[ch][sb] = get_bits(fin, 4)
+    
     crc = calculate_crc(frame)
     if crc != frame.crc_check:
         print frame
@@ -65,7 +66,6 @@ def sbc_unpack_frame(fin, available_bytes, frame):
                 frame.audio_sample[blk][ch][sb] = get_bits(fin, frame.bits[ch][sb])
         # print "block %2d - audio sample: %s" % (blk, frame.audio_sample[blk][0])
      
-    # add padding        
     drop_remaining_bits()
     return 0
 
@@ -136,11 +136,13 @@ def sbc_frame_synthesis(frame, ch, blk, proto_table):
         W[i] = U[i]*D
 
     
+    offset = blk*M
+
     for j in range(M):
         for i in range(10):
             frame.X[j] += W[j+M*i]
-    
-    frame.pcm = np.concatenate([frame.pcm, np.int16(frame.X)])
+        
+        frame.pcm[ch][offset + j] = np.int16(frame.X[j])
 
 
 def sbc_synthesis(frame):
@@ -166,14 +168,16 @@ def sbc_decode(frame):
 
 def write_wav_file(fout, frame):
     values = []
-    for i in range(len(frame.pcm)):
-        try:
-            packed_value = struct.pack('h', frame.pcm[i])
-            values.append(packed_value)
-        except struct.error:
-            print frame
-            print i, frame.pcm[i], frame.pcm
-            exit(1)
+
+    for i in range(frame.nr_subbands * frame.nr_blocks):
+        for ch in range(frame.nr_channels):
+            try:
+                packed_value = struct.pack('h', frame.pcm[ch][i])
+                values.append(packed_value)
+            except struct.error:
+                print frame
+                print i, frame.pcm[ch][i], frame.pcm[ch]
+                exit(1)
 
     value_str = ''.join(values)
     fout.writeframes(value_str)
