@@ -3011,8 +3011,8 @@ void sm_request_pairing(hci_con_handle_t con_handle){
         sm_send_security_request_for_connection(sm_conn);
     } else {
         // used as a trigger to start central/master/initiator security procedures
-            uint16_t ediv;
-            if (sm_conn->sm_engine_state == SM_INITIATOR_CONNECTED){
+        uint16_t ediv;
+        if (sm_conn->sm_engine_state == SM_INITIATOR_CONNECTED){
             switch (sm_conn->sm_irk_lookup_state){
                 case IRK_LOOKUP_FAILED:
                     sm_conn->sm_engine_state = SM_INITIATOR_PH1_W2_SEND_PAIRING_REQUEST;            
@@ -3030,6 +3030,8 @@ void sm_request_pairing(hci_con_handle_t con_handle){
                     sm_conn->sm_bonding_requested = 1;
                     break;
             }
+        } else if (sm_conn->sm_engine_state == SM_GENERAL_IDLE){
+            sm_conn->sm_bonding_requested = 1;
         }
     }
     sm_run();
