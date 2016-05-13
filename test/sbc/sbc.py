@@ -337,14 +337,29 @@ def sbc_bit_allocation_stereo_joint(frame):
             bitcount += 1            
         elif (bitneed[ch][sb] == bitslice+1) and (frame.bitpool > bitcount+1):
             bits[ch][sb] = 2
-            bitcount += 2
-        
+            bitcount += 2     
         if ch == 1:
             ch = 0
             sb += 1
         else:
             ch = 1
 
+        
+    ch = 0  
+    sb = 0
+    while bitcount < frame.bitpool and sb < frame.nr_subbands:
+        if bits[ch][sb] < 16:
+            bits[ch][sb]+=1
+            bitcount+=1
+        if ch == 1:
+            ch = 0
+            sb += 1
+        else:
+            ch = 1
+
+    if bits.sum() != frame.bitpool:
+        print "bit allocation failed, bitpool %d, allocated %d" % (bits.sum() , frame.bitpool)
+        exit(1)
     return bits
 
 
@@ -507,12 +522,14 @@ def get_bit(fin):
 
 def drop_remaining_bits():
     global ibuffer_count
+    #print "dropping %d bits" % ibuffer_count
     ibuffer_count = 0
 
 def get_bits(fin, bit_count):
     bits = 0
     for i in range(bit_count):
         bits = (bits << 1) | get_bit(fin)
+    # print "get bits: %d -> %02x" %(bit_count, bits)
     return bits
 
 

@@ -9,11 +9,20 @@ V = np.zeros(shape = (2, 10*2*8))
 
 def sbc_unpack_frame(fin, available_bytes, frame):
     if available_bytes == 0:
+        print "no available_bytes"
         raise TypeError
 
     frame.syncword = get_bits(fin,8)
     if frame.syncword != 156:
-        print "incorrect syncword ", frame.syncword
+        # i = 0
+        # while available_bytes:
+        #     if i%10 == 0:
+        #         print
+        #     bt = get_bits(fin,8)
+        #     print "0x%0x "% bt,
+        #     available_bytes -= 1
+        #     i+=1
+        print ("out of sync %02x" % frame.syncword)
         return -1
     frame.sampling_frequency = get_bits(fin,2)
     frame.nr_blocks = nr_blocks[get_bits(fin,2)]
@@ -64,7 +73,7 @@ def sbc_unpack_frame(fin, available_bytes, frame):
         for ch in range(frame.nr_channels):
             for sb in range(frame.nr_subbands):
                 frame.audio_sample[blk][ch][sb] = get_bits(fin, frame.bits[ch][sb])
-        # print "block %2d - audio sample: %s" % (blk, frame.audio_sample[blk][0])
+        #print "block %2d - audio sample: %s" % (blk, frame.audio_sample[blk][0])
      
     drop_remaining_bits()
     return 0
@@ -210,7 +219,8 @@ if __name__ == "__main__":
                 while True:
                     sbc_decoder_frame = SBCFrame()
                     if frame_count % 200 == 0:
-                        print "== Frame %d ==" % (frame_count)
+                        print "== Frame %d == %d" % (frame_count, fin.tell())
+
 
                     err = sbc_unpack_frame(fin, file_size - fin.tell(), sbc_decoder_frame)
                     

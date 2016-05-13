@@ -139,6 +139,9 @@ try:
         actual_frame = get_actual_frame(fin, nr_blocks, nr_subbands, nr_channels, bitpool, sampling_frequency, allocation_method)
         expected_frame = get_expected_frame(fin_expected)
 
+        print actual_frame.sb_sample
+        print expected_frame.sb_sample
+    
         err = sbc_compare_headers(subband_frame_count, actual_frame, expected_frame)
         if err < 0:
             exit(1)

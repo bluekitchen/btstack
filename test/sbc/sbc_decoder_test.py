@@ -103,6 +103,7 @@ try:
                 if subband_frame_count % 200 == 0:
                     print ("== Frame %d ==" % subband_frame_count)
                 
+                
                 actual_frame = get_actual_frame(fin)
                 
 
@@ -112,6 +113,10 @@ try:
                                                 actual_frame.allocation_method)
                 
                 err = sbc_compare_headers(subband_frame_count, actual_frame, expected_frame)
+                print ("%03d : %s %s"%( subband_frame_count, 
+                                    channel_mode_to_str(actual_frame.channel_mode), 
+                                    channel_mode_to_str(expected_frame.channel_mode)))
+
                 if err < 0:
                     print ("Headers differ \n%s\n%s" % (actual_frame, expected_frame))
                     exit(1)
@@ -129,7 +134,7 @@ try:
         except TypeError:
             fin_expected.close()
             fin.close()
-            print ("DONE, max MSE PCM error %d" % max_error)
+            print ("DONE, max MSE PCM error %f" % max_error)
             exit(0) 
 
 except IOError as e:
