@@ -973,9 +973,10 @@ typedef enum {
 #define SM_AUTHREQ_KEYPRESS          0x10
 
 // Key distribution flags used by spec
-#define SM_KEYDIST_ENC_KEY 0X01
-#define SM_KEYDIST_ID_KEY  0x02
-#define SM_KEYDIST_SIGN    0x04
+#define SM_KEYDIST_ENC_KEY  0x01
+#define SM_KEYDIST_ID_KEY   0x02
+#define SM_KEYDIST_SIGN     0x04
+#define SM_KEYDIST_LINK_KEY 0x08
 
 // Key distribution flags used internally
 #define SM_KEYDIST_FLAG_ENCRYPTION_INFORMATION       0x01

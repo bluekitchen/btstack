@@ -1104,7 +1104,7 @@ static void sm_trigger_user_response(sm_connection_t * sm_conn){
 static int sm_key_distribution_all_received(sm_connection_t * sm_conn){
     int recv_flags;
     if (sm_conn->sm_role){
-        // slave / responser
+        // slave / responder
         recv_flags = sm_key_distribution_flags_for_set(sm_pairing_packet_get_initiator_key_distribution(setup->sm_s_pres));
     } else {
         // master / initiator
@@ -1174,7 +1174,7 @@ static int sm_stk_generation_init(sm_connection_t * sm_conn){
     sm_pairing_packet_t * remote_packet;
     int                   remote_key_request;
     if (sm_conn->sm_role){
-        // slave / responser
+        // slave / responder
         remote_packet      = &setup->sm_m_preq;
         remote_key_request = sm_pairing_packet_get_responder_key_distribution(setup->sm_m_preq);
     } else {
@@ -1187,17 +1187,15 @@ static int sm_stk_generation_init(sm_connection_t * sm_conn){
     sm_conn->sm_actual_encryption_key_size = sm_calc_actual_encryption_key_size(sm_pairing_packet_get_max_encryption_key_size(*remote_packet));
     if (sm_conn->sm_actual_encryption_key_size == 0) return SM_REASON_ENCRYPTION_KEY_SIZE;
 
-    // setup key distribution
-    sm_setup_key_distribution(remote_key_request);
-
-    // identical to responder
-
     // decide on STK generation method
     sm_setup_tk();
     log_info("SMP: generation method %u", setup->sm_stk_generation_method);
 
     // check if STK generation method is acceptable by client
     if (!sm_validate_stk_generation_method()) return SM_REASON_AUTHENTHICATION_REQUIREMENTS;
+
+    // identical to responder
+    sm_setup_key_distribution(remote_key_request);
 
     // JUST WORKS doens't provide authentication
     sm_conn->sm_connection_authenticated = setup->sm_stk_generation_method == JUST_WORKS ? 0 : 1;
@@ -1832,15 +1830,18 @@ static void sm_run(void){
                 // echo initiator for now
                 sm_pairing_packet_set_code(setup->sm_s_pres,SM_CODE_PAIRING_RESPONSE);
                 key_distribution_flags = sm_key_distribution_flags_for_auth_req();
-                sm_pairing_packet_set_initiator_key_distribution(setup->sm_s_pres, sm_pairing_packet_get_initiator_key_distribution(setup->sm_m_preq) & key_distribution_flags);
-                sm_pairing_packet_set_responder_key_distribution(setup->sm_s_pres, sm_pairing_packet_get_responder_key_distribution(setup->sm_m_preq) & key_distribution_flags);
 
                 connection->sm_engine_state = SM_RESPONDER_PH1_W4_PAIRING_CONFIRM;
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
                 if (setup->sm_use_secure_connections){
                     connection->sm_engine_state = SM_RESPONDER_PH2_W4_PUBLIC_KEY_COMMAND;
+                    // skip LTK/EDIV for SC
+                    key_distribution_flags &= ~SM_KEYDIST_ENC_KEY;
                 }
 #endif
+                sm_pairing_packet_set_initiator_key_distribution(setup->sm_s_pres, sm_pairing_packet_get_initiator_key_distribution(setup->sm_m_preq) & key_distribution_flags);
+                sm_pairing_packet_set_responder_key_distribution(setup->sm_s_pres, sm_pairing_packet_get_responder_key_distribution(setup->sm_m_preq) & key_distribution_flags);
+
                 l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) &setup->sm_s_pres, sizeof(sm_pairing_packet_t));
                 sm_timeout_reset(connection);
                 // SC Numeric Comparison will trigger user response after public keys & nonces have been exchanged                
