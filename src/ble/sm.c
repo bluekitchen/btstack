@@ -1754,11 +1754,7 @@ static void sm_run(void){
                 // calculate DHKEY
                 mbedtls_ecp_group grp;
                 mbedtls_ecp_group_init( &grp );
-                int res = mbedtls_ecp_group_load(&grp, MBEDTLS_ECP_DP_SECP256R1);
-                if (res) {
-                    log_error("dhkey: error loading curve %d", res);
-                    break;
-                }
+                mbedtls_ecp_group_load(&grp, MBEDTLS_ECP_DP_SECP256R1);
                 mbedtls_ecp_point Q;
                 mbedtls_ecp_point_init( &Q );
                 mbedtls_mpi_read_binary(&Q.X, setup->sm_peer_qx, 32);
@@ -1768,9 +1764,9 @@ static void sm_run(void){
                 // da * Pb
                 mbedtls_ecp_point DH;
                 mbedtls_ecp_point_init( &DH );
-                res = mbedtls_ecp_mul(&grp, &DH, &le_keypair.d, &Q, NULL, NULL);
+                mbedtls_ecp_mul(&grp, &DH, &le_keypair.d, &Q, NULL, NULL);
                 sm_key256_t dhkey;
-                res = mbedtls_mpi_write_binary(&DH.X, dhkey, 32);
+                mbedtls_mpi_write_binary(&DH.X, dhkey, 32);
                 log_info("dhkey");
                 log_info_hexdump(dhkey, 32);
 
@@ -2670,9 +2666,30 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
                 sm_pdu_received_in_wrong_state(sm_conn);
                 break;
             }
+
             // store public key for DH Key calculation
             reverse_256(&packet[01], setup->sm_peer_qx);
             reverse_256(&packet[33], setup->sm_peer_qy);
+
+#ifdef USE_MBEDTLS_FOR_ECDH
+            // validate public key
+            mbedtls_ecp_group grp;
+            mbedtls_ecp_group_init( &grp );
+            mbedtls_ecp_group_load(&grp, MBEDTLS_ECP_DP_SECP256R1);
+
+            mbedtls_ecp_point Q;
+            mbedtls_ecp_point_init( &Q );
+            mbedtls_mpi_read_binary(&Q.X, setup->sm_peer_qx, 32);
+            mbedtls_mpi_read_binary(&Q.Y, setup->sm_peer_qy, 32);
+            mbedtls_mpi_read_string(&Q.Z, 16, "1" );
+            err = mbedtls_ecp_check_pubkey(&grp, &Q);
+            if (err){
+                log_error("sm: peer public key invalid %x", err);
+                // uses "unspecified reason", there is no "public key invalid" error code
+                sm_pdu_received_in_wrong_state(sm_conn);
+                break;
+            }
+#endif
             sm_conn->sm_engine_state = SM_PH2_SEND_PUBLIC_KEY_COMMAND;
             break;
 
