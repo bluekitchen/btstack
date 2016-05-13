@@ -735,12 +735,21 @@ typedef uint8_t sm_key_t[16];
 #define SM_EVENT_PASSKEY_INPUT_CANCEL                            0xD5
 
  /**
-  * @format H1B
+  * @format H1B4
+  * @param handle
+  * @param addr_type
+  * @param address
+  * @param passkey
+  */
+#define SM_EVENT_NUMERIC_COMPARISON_REQUEST                      0xD6
+
+ /**
+  * @format H1B4
   * @param handle
   * @param addr_type
   * @param address
   */
-#define SM_EVENT_IDENTITY_RESOLVING_STARTED                      0xD6
+#define SM_EVENT_NUMERIC_COMPARISON_CANCEL                       0xD7
 
  /**
   * @format H1B
@@ -748,7 +757,15 @@ typedef uint8_t sm_key_t[16];
   * @param addr_type
   * @param address
   */
-#define SM_EVENT_IDENTITY_RESOLVING_FAILED                       0xD7
+#define SM_EVENT_IDENTITY_RESOLVING_STARTED                      0xD8
+
+ /**
+  * @format H1B
+  * @param handle
+  * @param addr_type
+  * @param address
+  */
+#define SM_EVENT_IDENTITY_RESOLVING_FAILED                       0xD9
 
  /**
   * @format H1B2
@@ -757,7 +774,7 @@ typedef uint8_t sm_key_t[16];
   * @param address
   * @param le_device_db_index
   */
-#define SM_EVENT_IDENTITY_RESOLVING_SUCCEEDED                    0xD8
+#define SM_EVENT_IDENTITY_RESOLVING_SUCCEEDED                    0xDA
 
  /**
   * @format H1B
@@ -765,7 +782,7 @@ typedef uint8_t sm_key_t[16];
   * @param addr_type
   * @param address
   */
-#define SM_EVENT_AUTHORIZATION_REQUEST                           0xD9
+#define SM_EVENT_AUTHORIZATION_REQUEST                           0xDB
 
  /**
   * @format H1B1
@@ -774,7 +791,7 @@ typedef uint8_t sm_key_t[16];
   * @param address
   * @param authorization_result
   */
-#define SM_EVENT_AUTHORIZATION_RESULT                            0xDA
+#define SM_EVENT_AUTHORIZATION_RESULT                            0xDC
 
 // GAP
 
