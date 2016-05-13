@@ -7,6 +7,12 @@ COMMON += hci_transport_h2_libusb.c btstack_run_loop_posix.c btstack_link_key_db
 
 include ${BTSTACK_ROOT}/example/Makefile.inc
 
+# custom
+EXAMPLES += gap_le_connect_to_1111
+gap_le_connect_to_1111: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${SM_REAL_OBJ} ad_parser.o gap_le_connect_to_1111.c
+	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+
+
 # CC = gcc-fsf-4.9
 CFLAGS  += -g -Wall -Wmissing-prototypes -Wstrict-prototypes -Wshadow -Werror
 # CFLAGS += -Werror
