@@ -61,13 +61,13 @@ typedef enum {
     CompleteList128 = 0x07
 } UUID_TYPE;
 
-void ad_iterator_init(ad_context_t *context, uint8_t ad_len, uint8_t * ad_data){
+void ad_iterator_init(ad_context_t *context, uint8_t ad_len, const uint8_t * ad_data){
     context->data = ad_data;
     context->length = ad_len;
     context->offset = 0;
 }
 
-int  ad_iterator_has_more(ad_context_t * context){
+int  ad_iterator_has_more(const ad_context_t * context){
     return context->offset < context->length;
 }
 
@@ -81,24 +81,24 @@ void ad_iterator_next(ad_context_t * context){
     context->offset = new_offset;
 }
 
-uint8_t   ad_iterator_get_data_len(ad_context_t * context){
+uint8_t   ad_iterator_get_data_len(const ad_context_t * context){
     return context->data[context->offset] - 1;
 }
 
-uint8_t   ad_iterator_get_data_type(ad_context_t * context){
+uint8_t   ad_iterator_get_data_type(const ad_context_t * context){
     return context->data[context->offset + 1];
 }
 
-uint8_t * ad_iterator_get_data(ad_context_t * context){
+const uint8_t * ad_iterator_get_data(const ad_context_t * context){
     return &context->data[context->offset + 2];
 }
 
-int ad_data_contains_uuid16(uint8_t ad_len, uint8_t * ad_data, uint16_t uuid16){
+int ad_data_contains_uuid16(uint8_t ad_len, const uint8_t * ad_data, uint16_t uuid16){
     ad_context_t context;
     for (ad_iterator_init(&context, ad_len, ad_data) ; ad_iterator_has_more(&context) ; ad_iterator_next(&context)){
-        uint8_t data_type = ad_iterator_get_data_type(&context);
-        uint8_t data_len  = ad_iterator_get_data_len(&context);
-        uint8_t * data    = ad_iterator_get_data(&context);
+        uint8_t data_type    = ad_iterator_get_data_type(&context);
+        uint8_t data_len     = ad_iterator_get_data_len(&context);
+        const uint8_t * data = ad_iterator_get_data(&context);
         
         int i;
         uint8_t ad_uuid128[16], uuid128_bt[16];
@@ -127,7 +127,7 @@ int ad_data_contains_uuid16(uint8_t ad_len, uint8_t * ad_data, uint16_t uuid16){
     return 0;
 }
 
-int ad_data_contains_uuid128(uint8_t ad_len, uint8_t * ad_data, uint8_t * uuid128){
+int ad_data_contains_uuid128(uint8_t ad_len, const uint8_t * ad_data, const uint8_t * uuid128){
     ad_context_t context;
     // input in big endian/network order, bluetooth data in little endian
     uint8_t uuid128_le[16];
@@ -135,7 +135,7 @@ int ad_data_contains_uuid128(uint8_t ad_len, uint8_t * ad_data, uint8_t * uuid12
     for (ad_iterator_init(&context, ad_len, ad_data) ; ad_iterator_has_more(&context) ; ad_iterator_next(&context)){
         uint8_t data_type = ad_iterator_get_data_type(&context);
         uint8_t data_len  = ad_iterator_get_data_len(&context);
-        uint8_t * data    = ad_iterator_get_data(&context);
+        const uint8_t * data = ad_iterator_get_data(&context);
         
         int i;
         uint8_t ad_uuid128[16];

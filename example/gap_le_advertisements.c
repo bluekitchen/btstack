@@ -133,9 +133,9 @@ static void dump_advertisement_data(const uint8_t * adv_data, uint8_t adv_size){
     bd_addr_t address;
     uint8_t uuid_128[16];
     for (ad_iterator_init(&context, adv_size, (uint8_t *)adv_data) ; ad_iterator_has_more(&context) ; ad_iterator_next(&context)){
-        uint8_t data_type = ad_iterator_get_data_type(&context);
-        uint8_t size      = ad_iterator_get_data_len(&context);
-        uint8_t * data    = ad_iterator_get_data(&context);
+        uint8_t data_type    = ad_iterator_get_data_type(&context);
+        uint8_t size         = ad_iterator_get_data_len(&context);
+        const uint8_t * data = ad_iterator_get_data(&context);
         
         if (data_type > 0 && data_type < 0x1B){
             printf("    %s: ", ad_types[data_type]);
