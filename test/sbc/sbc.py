@@ -165,7 +165,7 @@ def calculate_channel_mode_and_scale_factors(frame):
     frame.channel_mode = STEREO
     frame.join = np.zeros(frame.nr_subbands, dtype = np.uint8)
     return
-    
+
     sb_sample = np.zeros(shape = (frame.nr_blocks,2,frame.nr_subbands), dtype = np.uint16)
     for blk in range(frame.nr_blocks):
         for sb in range(frame.nr_subbands):
@@ -303,6 +303,7 @@ def sbc_bit_allocation_stereo_joint(frame):
             if bitneed[ch][sb] > max_bitneed:
                 max_bitneed = bitneed[ch][sb]
         
+    
     # calculate how many bitslices fit into the bitpool
     bitcount = 0
     slicecount = 0
@@ -397,7 +398,8 @@ def sbc_bit_allocation_mono_dual(frame):
         for sb in range(frame.nr_subbands):
             if bitneed[ch][sb] > max_bitneed:
                 max_bitneed = bitneed[ch][sb]
- 
+        
+        print "mono: bitneed", bitneed, max_bitneed
         # calculate how many bitslices fit into the bitpool
         bitcount = 0
         slicecount = 0
@@ -419,6 +421,7 @@ def sbc_bit_allocation_mono_dual(frame):
             bitcount = bitcount + slicecount
             bitslice = bitslice - 1
         
+        print "mono: bitslice", bitslice
         for sb in range(frame.nr_subbands):
             if bitneed[ch][sb] < bitslice+2 :
                bits[ch][sb]=0;

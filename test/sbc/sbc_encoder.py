@@ -9,13 +9,13 @@ X = np.zeros(shape=(2,80), dtype = np.int16)
 
 
 def fetch_samples_for_next_sbc_frame(fin, frame):
-    nr_samples = frame.nr_blocks * frame.nr_subbands
+    nr_samples = frame.nr_blocks * frame.nr_subbands 
     raw_data = fin.readframes(nr_samples) # Returns byte data
     fmt = "%ih" % (len(raw_data) / 2)
     data = struct.unpack(fmt, raw_data) 
 
     if frame.nr_channels == 2:
-        for i in range(len(data)/2 - 1):
+        for i in range(len(data)/2):
             frame.pcm[0][i] = data[2*i]
             frame.pcm[1][i] = data[2*i+1]            
     else:
@@ -40,7 +40,6 @@ def sbc_frame_analysis(frame, ch, blk, C):
         X[ch][i] = X[ch][i-M]
     for i in range(M-1, -1, -1):
         X[ch][i] = frame.EX[M-1-i]
-    
     for i in range(L):
         Z[i] = X[ch][i] * C[i]
     
@@ -55,7 +54,7 @@ def sbc_frame_analysis(frame, ch, blk, C):
 
     for sb in range(M):
         frame.sb_sample[blk][ch][sb] = S[sb]
-
+    
 def sbc_analysis(frame):
     if frame.nr_subbands == 4:
         C = Proto_4_40
@@ -154,8 +153,8 @@ if __name__ == "__main__":
             sbc_encode(sbc_encoder_frame)
             sbc_write_frame(fout, sbc_encoder_frame)
 
-            # if subband_frame_count == 0:
-            #     exit(0)
+            if subband_frame_count == 1:
+                exit(0)
             audio_frame_count += nr_samples
             subband_frame_count += 1
 

@@ -61,15 +61,15 @@ def sbc_compare_headers(frame_count, actual_frame, expected_frame):
     
     
     if  mse(actual_frame.scale_factor, expected_frame.scale_factor) > 0:
-        print "scale_factor error \nE:\n %s \nD:\n %s" % (actual_frame.scale_factor, expected_frame.scale_factor)
+        print "scale_factor error %d \nE:\n %s \nD:\n %s" % (frame_count, actual_frame.scale_factor, expected_frame.scale_factor)
         return -1
 
     if  mse(actual_frame.scalefactor, expected_frame.scalefactor) > 0:
-        print "scalefactor error \nE:\n %s \nD:\n %s" % (actual_frame.scalefactor, expected_frame.scalefactor)
+        print "scalefactor error %d \nE:\n %s \nD:\n %s" % (frame_count, actual_frame.scalefactor, expected_frame.scalefactor)
         return -1
     
     if  mse(actual_frame.bits, expected_frame.bits) > 0:
-        print "bits error \nE:\n %s \nD:\n %s" % (actual_frame.bits, expected_frame.bits)
+        print "bits error %d \nE:\n %s \nD:\n %s" % (frame_count, actual_frame.bits, expected_frame.bits)
         return -1
 
     if actual_frame.crc_check != expected_frame.crc_check:
@@ -141,23 +141,20 @@ try:
         err = sbc_compare_headers(subband_frame_count, actual_frame, expected_frame)
         if err < 0:
             exit(1)
-
+        
         err = sbc_compare_audio_frames(subband_frame_count, actual_frame, expected_frame)
         if err < 0:
             exit(1)
-
-        if subband_frame_count == 0:
-            print actual_frame
-                
+        
         audio_frame_count += nr_samples
         subband_frame_count += 1
 
-    print "DONE, max MSE audio sample error %d", max_error
+    print ("DONE, max MSE audio sample error %f" % max_error)
     fin.close()
     fin_expected.close()
 
 except TypeError:
-    print "DONE, max MSE audio sample error %d", max_error
+    print ("DONE, max MSE audio sample error %f" % max_error)
     fin.close()
     fin_expected.close()
 
