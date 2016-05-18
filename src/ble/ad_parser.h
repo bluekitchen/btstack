@@ -53,24 +53,24 @@ extern "C" {
 /* API_START */
 
 typedef struct ad_context {
-     uint8_t * data;
+     const uint8_t * data;
      uint8_t   offset;
      uint8_t   length;
 } ad_context_t;
 
 // Advertising or Scan Response data iterator
-void ad_iterator_init(ad_context_t *context, uint8_t ad_len, uint8_t * ad_data);
-int  ad_iterator_has_more(ad_context_t * context);
+void ad_iterator_init(ad_context_t *context, uint8_t ad_len, const uint8_t * ad_data);
+int  ad_iterator_has_more(const ad_context_t * context);
 void ad_iterator_next(ad_context_t * context);
 
 // Access functions
-uint8_t   ad_iterator_get_data_type(ad_context_t * context);
-uint8_t   ad_iterator_get_data_len(ad_context_t * context);
-uint8_t * ad_iterator_get_data(ad_context_t * context);
+uint8_t         ad_iterator_get_data_type(const ad_context_t * context);
+uint8_t         ad_iterator_get_data_len(const ad_context_t * context);
+const uint8_t * ad_iterator_get_data(const ad_context_t * context);
 
 // convenience function on complete advertisements
-int ad_data_contains_uuid16(uint8_t ad_len, uint8_t * ad_data, uint16_t uuid);
-int ad_data_contains_uuid128(uint8_t ad_len, uint8_t * ad_data, uint8_t * uuid128);
+int ad_data_contains_uuid16(uint8_t ad_len, const uint8_t * ad_data, uint16_t uuid);
+int ad_data_contains_uuid128(uint8_t ad_len, const uint8_t * ad_data, const uint8_t * uuid128);
 
 /* API_END */
 
