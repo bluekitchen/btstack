@@ -69,7 +69,7 @@ def sbc_analysis(frame):
         index = 0
         for blk in range(frame.nr_blocks):
             for sb in range(frame.nr_subbands):
-                frame.EX[sb] = np.int16(frame.pcm[ch][index]) 
+                frame.EX[sb] = frame.pcm[ch][index]
                 index+=1
             sbc_frame_analysis(frame, ch, blk, C)
     return 0
@@ -81,8 +81,7 @@ def sbc_encode(frame):
     return err
 
 def sbc_quantization(frame):
-    frame.scale_factor, frame.scalefactor = calculate_scalefactors(frame.nr_blocks, frame.nr_channels, frame.nr_subbands, frame.sb_sample)
-    calculate_channel_mode(frame)
+    calculate_channel_mode_and_scale_factors(frame)
     frame.bits = sbc_bit_allocation(frame)
     
     # Reconstruct the Audio Samples

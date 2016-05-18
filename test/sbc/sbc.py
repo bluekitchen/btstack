@@ -155,41 +155,41 @@ def calculate_scalefactors(nr_blocks, nr_channels, nr_subbands, sb_sample):
             (scale_factor[ch][sb], scalefactor[ch][sb]) = calculate_scalefactor(max_subbandsample[ch][sb])  
     return scale_factor, scalefactor
 
-def calculate_channel_mode(frame):
+def calculate_channel_mode_and_scale_factors(frame):
+    frame.scale_factor, frame.scalefactor = calculate_scalefactors(frame.nr_blocks, frame.nr_channels, frame.nr_subbands, frame.sb_sample)
+    
     if frame.nr_channels == 1:
         frame.channel_mode = MONO
-    else:
-        frame.channel_mode = STEREO
-        frame.join = np.zeros(frame.nr_subbands, dtype = np.uint8)
         return
-        sb_sample1 = np.zeros(shape = (frame.nr_blocks,2,frame.nr_subbands), dtype = np.uint16)
-        
-        for blk in range(frame.nr_blocks):
-            for sb in range(frame.nr_subbands):
-                sb_sample1[blk][0][sb] = (frame.sb_sample[blk][0][sb] + frame.sb_sample[blk][1][sb])/2
-                sb_sample1[blk][1][sb] = (frame.sb_sample[blk][0][sb] - frame.sb_sample[blk][1][sb])/2
 
-        scale_factor, scalefactor = calculate_scalefactors(frame.nr_blocks, frame.nr_channels, frame.nr_subbands, sb_sample1)
-
-
+    frame.channel_mode = STEREO
+    frame.join = np.zeros(frame.nr_subbands, dtype = np.uint8)
+    return
+    
+    sb_sample = np.zeros(shape = (frame.nr_blocks,2,frame.nr_subbands), dtype = np.uint16)
+    for blk in range(frame.nr_blocks):
         for sb in range(frame.nr_subbands):
-            suma = frame.scale_factor[0][sb] + frame.scale_factor[1][sb]
-            sumb = scale_factor[0][sb] + scale_factor[1][sb]
-        
-            if suma > sumb:
-                frame.channel_mode = JOINT_STEREO
-                frame.join[sb] = 1
+            sb_sample[blk][0][sb] = np.uint16(frame.sb_sample[blk][0][sb] + frame.sb_sample[blk][1][sb])/2
+            sb_sample[blk][1][sb] = np.uint16(frame.sb_sample[blk][0][sb] - frame.sb_sample[blk][1][sb])/2
 
-                frame.scale_factor[0][sb] = scale_factor[0][sb]
-                frame.scale_factor[1][sb] = scale_factor[1][sb]
-                frame.scalefactor[0][sb]  = scalefactor[0][sb]
-                frame.scalefactor[1][sb]  = scalefactor[1][sb]
+    scale_factor, scalefactor = calculate_scalefactors(frame.nr_blocks, frame.nr_channels, frame.nr_subbands, sb_sample)
 
-                for blk in range(frame.nr_blocks):
-                    frame.sb_sample[blk][0][sb] = sb_sample1[blk][0][sb]
-                    frame.sb_sample[blk][1][sb] = sb_sample1[blk][1][sb]
+    for sb in range(frame.nr_subbands):
+        suma = frame.scale_factor[0][sb] + frame.scale_factor[1][sb]
+        sumb = scale_factor[0][sb] + scale_factor[1][sb]
+    
+        if suma > sumb:
+            frame.channel_mode = JOINT_STEREO
+            frame.join[sb] = 1
 
-                print " channel_mode = JOINT_STEREO"
+            frame.scale_factor[0][sb] = scale_factor[0][sb]
+            frame.scale_factor[1][sb] = scale_factor[1][sb]
+            frame.scalefactor[0][sb]  = scalefactor[0][sb]
+            frame.scalefactor[1][sb]  = scalefactor[1][sb]
+
+            for blk in range(frame.nr_blocks):
+                frame.sb_sample[blk][0][sb] = sb_sample[blk][0][sb]
+                frame.sb_sample[blk][1][sb] = sb_sample[blk][1][sb]
 
 
 class SBCFrame:
@@ -287,7 +287,7 @@ def sbc_bit_allocation_stereo_joint(frame):
                     bitneed[ch][sb] = -5
                 else:
                     if frame.nr_subbands == 4:
-                        loudness = scale_factor[ch][sb] - offset4[frame.sampling_frequency][sb]
+                        loudness = frame.scale_factor[ch][sb] - offset4[frame.sampling_frequency][sb]
                     else:
                         loudness = frame.scale_factor[ch][sb] - offset8[frame.sampling_frequency][sb]
                         
@@ -328,8 +328,8 @@ def sbc_bit_allocation_stereo_joint(frame):
     # bits are distributed until the last bitslice is reached
     for ch in range(frame.nr_channels):
         for sb in range(frame.nr_subbands):
-            if bitneed[ch][sb] < bitslice+2 :
-               bits[ch][sb]=0;
+            if bitneed[ch][sb] < bitslice+2:
+                bits[ch][sb]=0
             else:
                 bits[ch][sb] = min(bitneed[ch][sb]-bitslice,16)
 
@@ -547,9 +547,7 @@ def calculate_crc(frame):
     add_bits(frame.allocation_method, 1)
     add_bits(frame.nr_subbands/4-1, 1)
     add_bits(frame.bitpool, 8)
-
     if frame.channel_mode == JOINT_STEREO:
-        #print ("Joint Stereo!")
         for sb in range(frame.nr_subbands):
             add_bits(frame.join[sb],1)
 
@@ -560,7 +558,7 @@ def calculate_crc(frame):
     bitstream_len = (bitstream_index + 1) * 8
     if bitstream_bits_available:
         bitstream_len -= bitstream_bits_available
-        
+    
     return sbc_crc8(bitstream, bitstream_len)
 
 

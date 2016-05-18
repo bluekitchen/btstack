@@ -32,19 +32,16 @@ def sbc_unpack_frame(fin, available_bytes, frame):
     frame.bitpool = get_bits(fin,8)
     frame.crc_check = get_bits(fin,8)
 
-    
     # frame.join = np.zeros(frame.nr_subbands, dtype = np.uint8)
 
     if frame.channel_mode == JOINT_STEREO:
-        frame.join = np.zeros(frame.nr_subbands-1)
         for sb in range(frame.nr_subbands-1):
             frame.join[sb] = get_bits(fin,1)
         get_bits(fin,1) # RFA
-
+    
     frame.scale_factor = np.zeros(shape=(frame.nr_channels, frame.nr_subbands), dtype = np.int32)
     
     # print frame.audio_sample
-    
     for ch in range(frame.nr_channels):
         for sb in range(frame.nr_subbands):
             frame.scale_factor[ch][sb] = get_bits(fin, 4)
@@ -91,7 +88,7 @@ def sbc_reconstruct_subband_samples(frame):
                     
                     frame.sb_sample[blk][ch][sb] = SF * ((AS*2.0+1.0) / L -1.0 )
                 else:
-                    frame.sb_sample[blk][ch][sb] = 0 
+                    frame.sb_sample[blk][ch][sb] = 0
 
     # sythesis filter
     if frame.channel_mode == JOINT_STEREO:
