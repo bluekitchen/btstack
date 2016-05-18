@@ -78,15 +78,16 @@ def sbc_reconstruct_subband_samples(frame):
         for sb in range(frame.nr_subbands):
             frame.levels[ch][sb] = pow(2.0, frame.bits[ch][sb]) - 1
     
+    joint_stereo_const = 1
+
     for blk in range(frame.nr_blocks):
         for ch in range(frame.nr_channels):
             for sb in range(frame.nr_subbands):
                 if frame.levels[ch][sb] > 0:
                     AS = frame.audio_sample[blk][ch][sb]
-                    SF = frame.scalefactor[ch][sb]
                     L  = frame.levels[ch][sb]
-                    
-                    frame.sb_sample[blk][ch][sb] = SF * ((AS*2.0+1.0) / L -1.0 )
+                    SF = frame.scalefactor[ch][sb]
+                    frame.sb_sample[blk][ch][sb] = SF * ((AS*2.0+1.0) / (L) -1.0 )
                 else:
                     frame.sb_sample[blk][ch][sb] = 0
 

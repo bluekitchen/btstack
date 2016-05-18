@@ -89,17 +89,22 @@ def sbc_quantization(frame):
         for sb in range(frame.nr_subbands):
             frame.levels[ch][sb] = (1 << frame.bits[ch][sb]) - 1 #pow(2.0, frame.bits[ch][sb]) - 1
 
-    frame.syncword = 156
+    frame.syncword = 0x9c
     frame.crc_check = calculate_crc(frame)
 
+    
     for blk in range(frame.nr_blocks):
         for ch in range(frame.nr_channels):
             for sb in range(frame.nr_subbands):
                 if frame.levels[ch][sb] > 0:
                     SB = frame.sb_sample[blk][ch][sb]
-                    L  = frame.levels[ch][sb]             
-                    SF = frame.scalefactor[ch][sb]
-                    frame.audio_sample[blk][ch][sb] = np.uint16(((SB * L / SF    + L) - 1.0)/2.0)
+                    L  = frame.levels[ch][sb]
+                    SF = frame.scalefactor[ch][sb]     
+                    
+                    # if frame.channel_mode == JOINT_STEREO and frame.join[sb]: 
+                    #     SB = SB * 2
+                        
+                    frame.audio_sample[blk][ch][sb] = np.uint16(((SB * L / SF + L) - 1.0)/2.0)
                 else:
                     frame.audio_sample[blk][ch][sb] = 0 
 
@@ -153,8 +158,8 @@ if __name__ == "__main__":
             sbc_encode(sbc_encoder_frame)
             sbc_write_frame(fout, sbc_encoder_frame)
 
-            if subband_frame_count == 1:
-                exit(0)
+            # if subband_frame_count == 1:
+            #     exit(0)
             audio_frame_count += nr_samples
             subband_frame_count += 1
 

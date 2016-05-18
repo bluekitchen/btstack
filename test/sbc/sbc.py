@@ -127,7 +127,7 @@ offset8 = np.array([[ -2, 0, 0, 0, 0, 0, 0, 1 ],
 def calculate_scalefactor(max_subbandsample):
     x = 0
     while True:
-        y = 1 << x + 1
+        y = (1 << x) + 1
         if y > max_subbandsample:
             break
         x += 1
@@ -157,7 +157,7 @@ def calculate_scalefactors(nr_blocks, nr_channels, nr_subbands, sb_sample):
 
 def calculate_channel_mode_and_scale_factors(frame):
     frame.scale_factor, frame.scalefactor = calculate_scalefactors(frame.nr_blocks, frame.nr_channels, frame.nr_subbands, frame.sb_sample)
-    
+
     if frame.nr_channels == 1:
         frame.channel_mode = MONO
         return
@@ -165,20 +165,19 @@ def calculate_channel_mode_and_scale_factors(frame):
     frame.channel_mode = STEREO
     frame.join = np.zeros(frame.nr_subbands, dtype = np.uint8)
     return
-
-    sb_sample = np.zeros(shape = (frame.nr_blocks,2,frame.nr_subbands), dtype = np.uint16)
+    sb_sample = np.zeros(shape = (frame.nr_blocks,2,frame.nr_subbands), dtype = np.int32)
     for blk in range(frame.nr_blocks):
         for sb in range(frame.nr_subbands):
-            sb_sample[blk][0][sb] = np.uint16(frame.sb_sample[blk][0][sb] + frame.sb_sample[blk][1][sb])/2
-            sb_sample[blk][1][sb] = np.uint16(frame.sb_sample[blk][0][sb] - frame.sb_sample[blk][1][sb])/2
+            sb_sample[blk][0][sb] = (frame.sb_sample[blk][0][sb] + frame.sb_sample[blk][1][sb])/2
+            sb_sample[blk][1][sb] = (frame.sb_sample[blk][0][sb] - frame.sb_sample[blk][1][sb])/2
 
     scale_factor, scalefactor = calculate_scalefactors(frame.nr_blocks, frame.nr_channels, frame.nr_subbands, sb_sample)
 
-    for sb in range(frame.nr_subbands):
+    for sb in range(frame.nr_subbands-1):
         suma = frame.scale_factor[0][sb] + frame.scale_factor[1][sb]
         sumb = scale_factor[0][sb] + scale_factor[1][sb]
     
-        if suma > sumb:
+        if suma >= sumb:
             frame.channel_mode = JOINT_STEREO
             frame.join[sb] = 1
 
@@ -190,7 +189,7 @@ def calculate_channel_mode_and_scale_factors(frame):
             for blk in range(frame.nr_blocks):
                 frame.sb_sample[blk][0][sb] = sb_sample[blk][0][sb]
                 frame.sb_sample[blk][1][sb] = sb_sample[blk][1][sb]
-
+                
 
 class SBCFrame:
     syncword = 0
@@ -399,7 +398,6 @@ def sbc_bit_allocation_mono_dual(frame):
             if bitneed[ch][sb] > max_bitneed:
                 max_bitneed = bitneed[ch][sb]
         
-        print "mono: bitneed", bitneed, max_bitneed
         # calculate how many bitslices fit into the bitpool
         bitcount = 0
         slicecount = 0
@@ -421,7 +419,6 @@ def sbc_bit_allocation_mono_dual(frame):
             bitcount = bitcount + slicecount
             bitslice = bitslice - 1
         
-        print "mono: bitslice", bitslice
         for sb in range(frame.nr_subbands):
             if bitneed[ch][sb] < bitslice+2 :
                bits[ch][sb]=0;
@@ -439,7 +436,6 @@ def sbc_bit_allocation_mono_dual(frame):
                 bitcount += 2
             
             sb = sb + 1
-
 
         sb = 0
         while bitcount < frame.bitpool and sb < frame.nr_subbands:
