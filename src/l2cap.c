@@ -576,7 +576,7 @@ static void l2cap_run(void){
                     case 3: { // Fixed Channels Supported
                         uint8_t map[8];
                         memset(map, 0, 8);
-                        map[0] = 0x01;  // L2CAP Signaling Channel (0x01) + Connectionless reception (0x02)
+                        map[0] = 0x06;  // L2CAP Signaling Channel (0x02) + Connectionless reception (0x04)
                         l2cap_send_signaling_packet(handle, INFORMATION_RESPONSE, sig_id, infoType, 0, sizeof(map), &map);
                         break;
                     }
