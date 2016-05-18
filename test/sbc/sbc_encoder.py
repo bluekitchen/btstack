@@ -5,26 +5,22 @@ import struct
 import sys
 from sbc import *
 
-X = np.zeros(80, dtype = np.int16)
+X = np.zeros(shape=(2,80), dtype = np.int16)
 
 
 def fetch_samples_for_next_sbc_frame(fin, frame):
-    nr_samples = frame.nr_blocks * frame.nr_subbands * frame.nr_channels
+    nr_samples = frame.nr_blocks * frame.nr_subbands
     raw_data = fin.readframes(nr_samples) # Returns byte data
-    len_raw_data =  len(raw_data) / 2
-    
-    fmt = "%ih" % len_raw_data # read signed 2 byte shorts
-
+    fmt = "%ih" % (len(raw_data) / 2)
     data = struct.unpack(fmt, raw_data) 
-    len_data = len(data)
 
-    for i in range(frame.nr_blocks * frame.nr_subbands):
-        for ch in range(frame.nr_channels):
-            index = i*2 + ch
-            if index < len_data:
-                frame.pcm[ch][i] = data[i*2 + ch]
-            else:
-                frame.pcm[ch][i] = 0
+    if frame.nr_channels == 2:
+        for i in range(len(data)/2 - 1):
+            frame.pcm[0][i] = data[2*i]
+            frame.pcm[1][i] = data[2*i+1]            
+    else:
+        for i in range(len(data)):
+            frame.pcm[0][i] = data[i]
 
     
 def sbc_frame_analysis(frame, ch, blk, C):
@@ -41,12 +37,12 @@ def sbc_frame_analysis(frame, ch, blk, C):
     S = np.zeros(M)
 
     for i in range(L-1, M-1, -1):
-        X[i] = X[i-M]
+        X[ch][i] = X[ch][i-M]
     for i in range(M-1, -1, -1):
-        X[i] = frame.EX[M-1-i]
+        X[ch][i] = frame.EX[M-1-i]
     
     for i in range(L):
-        Z[i] = X[i] * C[i]
+        Z[i] = X[ch][i] * C[i]
     
     for i in range(M2):
         for k in range(5):
@@ -69,8 +65,8 @@ def sbc_analysis(frame):
         return -1
 
     frame.sb_sample = np.ndarray(shape=(frame.nr_blocks, frame.nr_channels, frame.nr_subbands))
-    index = 0
     for ch in range(frame.nr_channels):
+        index = 0
         for blk in range(frame.nr_blocks):
             for sb in range(frame.nr_subbands):
                 frame.EX[sb] = np.int16(frame.pcm[ch][index]) 
@@ -84,39 +80,9 @@ def sbc_encode(frame):
         err = sbc_quantization(frame)
     return err
 
-def calculate_joint_stereo_signal(frame):
-    sb_sample = np.zeros(shape = (frame.nr_blocks,frame.nr_channels,frame.nr_subbands), dtype = np.uint32)
-    scale_factor = np.zeros(shape=(frame.nr_channels, frame.nr_subbands), dtype = np.int32)
-    scalefactor = np.zeros(shape=(frame.nr_channels, frame.nr_subbands), dtype = np.int32)
-    
-    for sb in range(frame.nr_subbands-1):
-        for blk in range(frame.nr_blocks):
-             sb_sample[blk][0][sb] = (frame.sb_sample_f[blk][0][sb] +  frame.sb_sample_f[blk][1][sb]) >> 1
-             sb_sample[blk][1][sb] = (frame.sb_sample_f[blk][0][sb] -  frame.sb_sample_f[blk][1][sb]) >> 1
-
-    for ch in range(frame.nr_channels):
-        for sb in range(frame.nr_subbands-1):
-            frame.scale_factor[ch][sb] = 0
-            frame.scalefactor[ch][sb] = 2
-            for blk in range(frame.nr_blocks):
-                while frame.scalefactor[ch][sb] < abs(frame.sb_sample[blk][ch][sb]):
-                    frame.scale_factor[ch][sb]+=1
-                    frame.scalefactor[ch][sb] *= 2
-
-    for sb in range(frame.nr_subbands-1):
-        if (frame.scalefactor[0][sb] + frame.scalefactor[1][sb]) > (scalefactor[0][sb] + scalefactor[1][sb]):
-            frame.join[sb] = 1
-            frame.scale_factor[0][sb] = scale_factor[0][sb]
-            frame.scale_factor[1][sb] = scale_factor[1][sb]
-            frame.scalefactor[0][sb]  = scalefactor[0][sb]
-            frame.scalefactor[1][sb]  = scalefactor[1][sb]
-            for blk in range(frame.nr_blocks):
-                frame.sb_sample[blk][0][sb] = sb_sample[blk][0][sb]
-                frame.sb_sample[blk][1][sb] = sb_sample[blk][1][sb]
-
-
 def sbc_quantization(frame):
-    calculate_scalefactors_and_channel_mode(frame)
+    frame.scale_factor, frame.scalefactor = calculate_scalefactors(frame.nr_blocks, frame.nr_channels, frame.nr_subbands, frame.sb_sample)
+    calculate_channel_mode(frame)
     frame.bits = sbc_bit_allocation(frame)
     
     # Reconstruct the Audio Samples
@@ -127,12 +93,6 @@ def sbc_quantization(frame):
 
     frame.syncword = 156
     frame.crc_check = calculate_crc(frame)
-    
-    frame.join = np.zeros(frame.nr_subbands, dtype = np.uint8)
-    
-
-    if frame.channel_mode == JOINT_STEREO:
-        calculate_joint_stereo_signal(frame)
 
     for blk in range(frame.nr_blocks):
         for ch in range(frame.nr_channels):
@@ -195,8 +155,11 @@ if __name__ == "__main__":
             sbc_encode(sbc_encoder_frame)
             sbc_write_frame(fout, sbc_encoder_frame)
 
+            # if subband_frame_count == 0:
+            #     exit(0)
             audio_frame_count += nr_samples
             subband_frame_count += 1
+
 
         fin.close()
         fout.close()

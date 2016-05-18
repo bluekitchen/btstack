@@ -18,7 +18,7 @@ def sbc_compare_pcm(frame_count, actual_frame, expected_frame):
             max_error = M
 
         if M > error:
-            print "pcm error (%d, %d ) " % (frame_count, M)
+            print "pcm error (%d, %f ) " % (frame_count, M)
             return -1
     return 0 
 

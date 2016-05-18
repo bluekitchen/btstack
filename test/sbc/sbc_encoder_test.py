@@ -12,16 +12,15 @@ max_error = -1
 
 def sbc_compare_audio_frames(frame_count, actual_frame, expected_frame):
     global error, max_error
+    for ch in range(actual_frame.nr_channels):
+        M = mse(actual_frame.audio_sample, expected_frame.audio_sample)
+        if M > max_error:
+            max_error = M
 
-    M = mse(actual_frame.audio_sample, expected_frame.audio_sample)
-    if M > max_error:
-        max_error = M
-       
-    if M > error:
-        print "audio_sample error (%d, %d ) " % (frame_count, M)
-        return -1
+        if M > error:
+            print "audio_sample error (%d, %f ) " % (frame_count, M)
+            return -1
     return 0 
-
 
 def sbc_compare_headers(frame_count, actual_frame, expected_frame):
     if actual_frame.syncword != expected_frame.syncword:
@@ -60,6 +59,7 @@ def sbc_compare_headers(frame_count, actual_frame, expected_frame):
         print "join error \nE:\n %s \nD:\n %s" % (actual_frame.join, expected_frame.join)
         return -1
     
+    
     if  mse(actual_frame.scale_factor, expected_frame.scale_factor) > 0:
         print "scale_factor error \nE:\n %s \nD:\n %s" % (actual_frame.scale_factor, expected_frame.scale_factor)
         return -1
@@ -89,7 +89,6 @@ file_size = 0
 def get_expected_frame(fin_expected):
     global file_size
     expected_frame = SBCFrame()
-
     sbc_unpack_frame(fin_expected, file_size - fin_expected.tell(), expected_frame)
     return expected_frame
 
@@ -139,9 +138,6 @@ try:
         actual_frame = get_actual_frame(fin, nr_blocks, nr_subbands, nr_channels, bitpool, sampling_frequency, allocation_method)
         expected_frame = get_expected_frame(fin_expected)
 
-        print actual_frame.sb_sample
-        print expected_frame.sb_sample
-    
         err = sbc_compare_headers(subband_frame_count, actual_frame, expected_frame)
         if err < 0:
             exit(1)

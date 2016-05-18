@@ -149,49 +149,47 @@ def calculate_scalefactors(nr_blocks, nr_channels, nr_subbands, sb_sample):
     scale_factor =  np.zeros(shape=(nr_channels, nr_subbands), dtype = np.int32)
     scalefactor =  np.zeros(shape=(nr_channels, nr_subbands), dtype = np.int32)    
 
-    # max_subbandsample = calculate_max_subbandsample(nr_blocks, nr_channels, nr_subbands, sb_sample)
-    # for ch in range(nr_channels):
-    #     for sb in range(nr_subbands):
-    #         (scale_factor[ch][sb], scalefactor[ch][sb]) = calculate_scalefactor(max_subbandsample[ch][sb])  
-
+    max_subbandsample = calculate_max_subbandsample(nr_blocks, nr_channels, nr_subbands, sb_sample)
     for ch in range(nr_channels):
         for sb in range(nr_subbands):
-            scale_factor[ch][sb] = 0
-            scalefactor[ch][sb] = 2
-            for blk in range(nr_blocks):
-                while scalefactor[ch][sb] < abs(sb_sample[blk][ch][sb]):
-                    scale_factor[ch][sb]+=1
-                    scalefactor[ch][sb] *= 2
-
+            (scale_factor[ch][sb], scalefactor[ch][sb]) = calculate_scalefactor(max_subbandsample[ch][sb])  
     return scale_factor, scalefactor
 
-def calculate_scalefactors_and_channel_mode(frame):
-    frame.scale_factor, frame.scalefactor = calculate_scalefactors(frame.nr_blocks, frame.nr_channels, frame.nr_subbands, frame.sb_sample)
-    #print "calculate_scalefactors_and_channel_mode1 ", frame.scale_factor
-
+def calculate_channel_mode(frame):
     if frame.nr_channels == 1:
         frame.channel_mode = MONO
     else:
+        frame.channel_mode = STEREO
+        frame.join = np.zeros(frame.nr_subbands, dtype = np.uint8)
+        return
         sb_sample1 = np.zeros(shape = (frame.nr_blocks,2,frame.nr_subbands), dtype = np.uint16)
         
         for blk in range(frame.nr_blocks):
             for sb in range(frame.nr_subbands):
-                sb_sample1[blk][0][sb] = frame.sb_sample[blk][0][sb] + frame.sb_sample[blk][1][sb]
-                sb_sample1[blk][1][sb] = frame.sb_sample[blk][0][sb] - frame.sb_sample[blk][1][sb]
+                sb_sample1[blk][0][sb] = (frame.sb_sample[blk][0][sb] + frame.sb_sample[blk][1][sb])/2
+                sb_sample1[blk][1][sb] = (frame.sb_sample[blk][0][sb] - frame.sb_sample[blk][1][sb])/2
 
         scale_factor, scalefactor = calculate_scalefactors(frame.nr_blocks, frame.nr_channels, frame.nr_subbands, sb_sample1)
-        #print "calculate_scalefactors_and_channel_mode 2", scale_factor
-        sumb = 0
-        suma = 0
+
+
         for sb in range(frame.nr_subbands):
-            suma += frame.scale_factor[0][sb] + frame.scale_factor[1][sb]
-            sumb += scale_factor[0][sb] + scale_factor[1][sb]
+            suma = frame.scale_factor[0][sb] + frame.scale_factor[1][sb]
+            sumb = scale_factor[0][sb] + scale_factor[1][sb]
         
-        #print "calculate_scalefactors_and_channel_mode 3", suma, sumb
-        if suma > sumb:
-            frame.channel_mode = JOINT_STEREO
-        else:
-            frame.channel_mode = STEREO
+            if suma > sumb:
+                frame.channel_mode = JOINT_STEREO
+                frame.join[sb] = 1
+
+                frame.scale_factor[0][sb] = scale_factor[0][sb]
+                frame.scale_factor[1][sb] = scale_factor[1][sb]
+                frame.scalefactor[0][sb]  = scalefactor[0][sb]
+                frame.scalefactor[1][sb]  = scalefactor[1][sb]
+
+                for blk in range(frame.nr_blocks):
+                    frame.sb_sample[blk][0][sb] = sb_sample1[blk][0][sb]
+                    frame.sb_sample[blk][1][sb] = sb_sample1[blk][1][sb]
+
+                print " channel_mode = JOINT_STEREO"
 
 
 class SBCFrame:
@@ -224,13 +222,19 @@ class SBCFrame:
         self.sampling_frequency = sampling_frequency_index(sampling_frequency)
         self.bitpool = bitpool
         self.allocation_method = allocation_method
+        self.init(nr_blocks, nr_subbands, nr_channels)
+        return
+    
+    def init(self, nr_blocks, nr_subbands, nr_channels):
         self.scale_factor = np.zeros(shape=(nr_channels, nr_subbands), dtype = np.int32)
         self.scalefactor = np.zeros(shape=(nr_channels, nr_subbands), dtype = np.int32)
         self.audio_sample = np.zeros(shape=(nr_blocks, nr_channels, nr_subbands), dtype = np.uint16)
         self.sb_sample = np.zeros(shape=(nr_blocks, nr_channels, nr_subbands), dtype = np.uint16)
         self.levels = np.zeros(shape=(nr_channels, nr_subbands), dtype = np.int32)
+        self.pcm = np.zeros(shape=(nr_channels, nr_subbands*nr_blocks), dtype = np.int16)
+        self.join = np.zeros(nr_subbands, dtype = np.uint8)
+        self.X = np.zeros(nr_subbands, dtype = np.int16)
         self.EX = np.zeros(nr_subbands)
-        return
 
     def dump_audio_samples(self, blk, ch):
         print self.audio_sample[blk][ch]
@@ -545,6 +549,7 @@ def calculate_crc(frame):
     add_bits(frame.bitpool, 8)
 
     if frame.channel_mode == JOINT_STEREO:
+        #print ("Joint Stereo!")
         for sb in range(frame.nr_subbands):
             add_bits(frame.join[sb],1)
 
@@ -554,7 +559,8 @@ def calculate_crc(frame):
     
     bitstream_len = (bitstream_index + 1) * 8
     if bitstream_bits_available:
-        bitstream_len += (8-bitstream_bits_available)
+        bitstream_len -= bitstream_bits_available
+        
     return sbc_crc8(bitstream, bitstream_len)
 
 

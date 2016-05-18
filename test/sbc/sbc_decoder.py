@@ -14,14 +14,6 @@ def sbc_unpack_frame(fin, available_bytes, frame):
 
     frame.syncword = get_bits(fin,8)
     if frame.syncword != 156:
-        # i = 0
-        # while available_bytes:
-        #     if i%10 == 0:
-        #         print
-        #     bt = get_bits(fin,8)
-        #     print "0x%0x "% bt,
-        #     available_bytes -= 1
-        #     i+=1
         print ("out of sync %02x" % frame.syncword)
         return -1
     frame.sampling_frequency = get_bits(fin,2)
@@ -32,13 +24,16 @@ def sbc_unpack_frame(fin, available_bytes, frame):
         frame.nr_channels = 1
     else:
         frame.nr_channels = 2
-        
+    
     frame.allocation_method = get_bits(fin,1)
     frame.nr_subbands = nr_subbands[get_bits(fin,1)] 
+    frame.init(frame.nr_blocks, frame.nr_subbands, frame.nr_channels)
+
     frame.bitpool = get_bits(fin,8)
     frame.crc_check = get_bits(fin,8)
 
-    frame.join = np.zeros(frame.nr_subbands, dtype = np.uint8)
+    
+    # frame.join = np.zeros(frame.nr_subbands, dtype = np.uint8)
 
     if frame.channel_mode == JOINT_STEREO:
         frame.join = np.zeros(frame.nr_subbands-1)
@@ -146,11 +141,9 @@ def sbc_frame_synthesis(frame, ch, blk, proto_table):
 
     
     offset = blk*M
-
     for j in range(M):
         for i in range(10):
             frame.X[j] += W[j+M*i]
-        
         frame.pcm[ch][offset + j] = np.int16(frame.X[j])
 
 
@@ -161,7 +154,6 @@ def sbc_synthesis(frame):
         proto_table = Proto_8_80
     else:
         return -1
-     
     for ch in range(frame.nr_channels):
         for blk in range(frame.nr_blocks):
             sbc_frame_synthesis(frame, ch, blk, proto_table)
@@ -223,15 +215,17 @@ if __name__ == "__main__":
 
 
                     err = sbc_unpack_frame(fin, file_size - fin.tell(), sbc_decoder_frame)
-                    
+                    if frame_count == 0:
+                        print sbc_decoder_frame
+
                     if err:
                         print "error, frame_count: ", frame_count
                         break
                     
+
                     sbc_decode(sbc_decoder_frame)
                     
                     if frame_count == 0:
-                        print sbc_decoder_frame
                         fout = wave.open(wavfile, 'w')
                         fout.setnchannels(sbc_decoder_frame.nr_channels)
                         fout.setsampwidth(2)
