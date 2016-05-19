@@ -10,15 +10,36 @@ from sbc_decoder import *
 error = 0.99
 max_error = -1
 
+
+def sbc_compare_subband_samples(frame_count, actual_frame, expected_frame):
+    global error, max_error
+    for blk in range(actual_frame.nr_blocks):
+        for ch in range(actual_frame.nr_channels):
+            M = mse(actual_frame.sb_sample[blk][ch], expected_frame.sb_sample[blk][ch])
+            if M > max_error:
+                max_error = M
+
+            if max_error > error:
+                print "Frame %d: sb_sample error %f (ch %d, blk %d)" % (frame_count, max_error, ch, blk)
+                print actual_frame.sb_sample[blk]
+                print expected_frame.sb_sample[blk]
+                return -1
+    return 0 
+
 def sbc_compare_audio_frames(frame_count, actual_frame, expected_frame):
     global error, max_error
-    for ch in range(actual_frame.nr_channels):
-        M = mse(actual_frame.audio_sample, expected_frame.audio_sample)
-        if M > max_error:
-            max_error = M
 
-        if M > error:
-            print "audio_sample error (%d, %f ) " % (frame_count, M)
+    for blk in range(actual_frame.nr_blocks):
+        for ch in range(actual_frame.nr_channels):
+            M = mse(actual_frame.audio_sample[blk][ch], expected_frame.audio_sample[blk][ch])
+            if M > max_error:
+                max_error = M
+
+        if max_error > error:
+            print "audio_sample error (%d, %f ) " % (frame_count, max_error)
+            print actual_frame.audio_sample[blk]
+            print expected_frame.audio_sample[blk]
+
             return -1
     return 0 
 
@@ -79,10 +100,10 @@ def sbc_compare_headers(frame_count, actual_frame, expected_frame):
     return 0
 
 
-def get_actual_frame(fin, nr_blocks, nr_subbands, nr_channels, sampling_frequency, bitpool, allocation_method):
+def get_actual_frame(fin, nr_blocks, nr_subbands, nr_channels, sampling_frequency, bitpool, allocation_method, force_channel_mode):
     actual_frame = SBCFrame(nr_blocks, nr_subbands, nr_channels, sampling_frequency, bitpool, allocation_method)
     fetch_samples_for_next_sbc_frame(fin, actual_frame)
-    sbc_encode(actual_frame)
+    sbc_encode(actual_frame, force_channel_mode)
     return actual_frame
 
 file_size = 0
@@ -90,14 +111,15 @@ def get_expected_frame(fin_expected):
     global file_size
     expected_frame = SBCFrame()
     sbc_unpack_frame(fin_expected, file_size - fin_expected.tell(), expected_frame)
+    sbc_reconstruct_subband_samples(expected_frame)
     return expected_frame
 
 usage = '''
-Usage:      ./sbc_encoder_test.py encoder_input.wav blocks subbands bitpool allocation_method encoder_expected_output.sbc
-Example:    ./sbc_encoder_test.py fanfare.wav 16 4 31 0 fanfare-4sb.sbc
+Usage:      ./sbc_encoder_test.py encoder_input.wav blocks subbands bitpool allocation_method force_channel_mode encoder_expected_output.sbc
+Example:    ./sbc_encoder_test.py fanfare.wav 16 4 31 0 2 fanfare-4sb.sbc
 '''
 
-if (len(sys.argv) < 7):
+if (len(sys.argv) < 8):
     print(usage)
     sys.exit(1)
 try:
@@ -107,6 +129,7 @@ try:
     bitpool = int(sys.argv[4])
     allocation_method = int(sys.argv[5])
     encoder_expected_sbc = sys.argv[6]
+    force_channel_mode = sys.argv[7]
     sampling_frequency = 44100
 
     if not encoder_input_wav.endswith('.wav'):
@@ -130,12 +153,12 @@ try:
     subband_frame_count = 0
     audio_frame_count = 0
     nr_samples = nr_blocks * nr_subbands
-
+    
     while audio_frame_count < nr_audio_frames:
         if subband_frame_count % 200 == 0:
             print("== Frame %d ==" % (subband_frame_count))
 
-        actual_frame = get_actual_frame(fin, nr_blocks, nr_subbands, nr_channels, bitpool, sampling_frequency, allocation_method)
+        actual_frame = get_actual_frame(fin, nr_blocks, nr_subbands, nr_channels, bitpool, sampling_frequency, allocation_method, force_channel_mode)    
         expected_frame = get_expected_frame(fin_expected)
 
         err = sbc_compare_headers(subband_frame_count, actual_frame, expected_frame)
@@ -149,12 +172,12 @@ try:
         audio_frame_count += nr_samples
         subband_frame_count += 1
 
-    print ("DONE, max MSE audio sample error %f" % max_error)
+    print ("Max MSE audio sample error %f" % max_error)
     fin.close()
     fin_expected.close()
 
 except TypeError:
-    print ("DONE, max MSE audio sample error %f" % max_error)
+    print ("Max MSE audio sample error %f" % max_error)
     fin.close()
     fin_expected.close()
 

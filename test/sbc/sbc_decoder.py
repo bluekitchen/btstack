@@ -97,8 +97,8 @@ def sbc_reconstruct_subband_samples(frame):
                 if frame.join[sb]==1:
                     ch_a = frame.sb_sample[blk][0][sb] + frame.sb_sample[blk][1][sb]
                     ch_b = frame.sb_sample[blk][0][sb] - frame.sb_sample[blk][1][sb]
-                    frame.sb_sample[blk][0][sb] = ch_a/2
-                    frame.sb_sample[blk][1][sb] = ch_b/2
+                    frame.sb_sample[blk][0][sb] = ch_a
+                    frame.sb_sample[blk][1][sb] = ch_b
 
     return 0
 
@@ -210,7 +210,6 @@ if __name__ == "__main__":
                     if frame_count % 200 == 0:
                         print "== Frame %d == %d" % (frame_count, fin.tell())
 
-
                     err = sbc_unpack_frame(fin, file_size - fin.tell(), sbc_decoder_frame)
                     if frame_count == 0:
                         print sbc_decoder_frame
@@ -221,7 +220,7 @@ if __name__ == "__main__":
                     
 
                     sbc_decode(sbc_decoder_frame)
-                    
+                        
                     if frame_count == 0:
                         fout = wave.open(wavfile, 'w')
                         fout.setnchannels(sbc_decoder_frame.nr_channels)

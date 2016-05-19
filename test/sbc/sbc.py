@@ -127,7 +127,7 @@ offset8 = np.array([[ -2, 0, 0, 0, 0, 0, 0, 1 ],
 def calculate_scalefactor(max_subbandsample):
     x = 0
     while True:
-        y = (1 << x) + 1
+        y = 1 << (x + 1)
         if y > max_subbandsample:
             break
         x += 1
@@ -155,16 +155,19 @@ def calculate_scalefactors(nr_blocks, nr_channels, nr_subbands, sb_sample):
             (scale_factor[ch][sb], scalefactor[ch][sb]) = calculate_scalefactor(max_subbandsample[ch][sb])  
     return scale_factor, scalefactor
 
-def calculate_channel_mode_and_scale_factors(frame):
+def calculate_channel_mode_and_scale_factors(frame, force_channel_mode):
     frame.scale_factor, frame.scalefactor = calculate_scalefactors(frame.nr_blocks, frame.nr_channels, frame.nr_subbands, frame.sb_sample)
 
     if frame.nr_channels == 1:
         frame.channel_mode = MONO
         return
 
-    frame.channel_mode = STEREO
     frame.join = np.zeros(frame.nr_subbands, dtype = np.uint8)
     
+    if force_channel_mode == STEREO:
+        frame.channel_mode = STEREO
+        return
+
     sb_sample = np.zeros(shape = (frame.nr_blocks,2,frame.nr_subbands), dtype = np.int32)
     for blk in range(frame.nr_blocks):
         for sb in range(frame.nr_subbands):
@@ -177,7 +180,7 @@ def calculate_channel_mode_and_scale_factors(frame):
         suma = frame.scale_factor[0][sb] + frame.scale_factor[1][sb]
         sumb = scale_factor[0][sb] + scale_factor[1][sb]
     
-        if suma > sumb:
+        if suma > sumb or force_channel_mode == JOINT_STEREO:
             frame.channel_mode = JOINT_STEREO
             frame.join[sb] = 1
             
@@ -361,6 +364,7 @@ def sbc_bit_allocation_stereo_joint(frame):
         else:
             ch = 1
 
+    
     if bits.sum() != frame.bitpool:
         print "bit allocation failed, bitpool %d, allocated %d" % (bits.sum() , frame.bitpool)
         exit(1)

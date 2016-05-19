@@ -7,17 +7,15 @@ from sbc import *
 
 X = np.zeros(shape=(2,80), dtype = np.int16)
 
-
 def fetch_samples_for_next_sbc_frame(fin, frame):
-    nr_samples = frame.nr_blocks * frame.nr_subbands 
-    raw_data = fin.readframes(nr_samples) # Returns byte data
+    raw_data = fin.readframes(frame.nr_blocks * frame.nr_subbands) 
     fmt = "%ih" % (len(raw_data) / 2)
     data = struct.unpack(fmt, raw_data) 
 
     if frame.nr_channels == 2:
         for i in range(len(data)/2):
             frame.pcm[0][i] = data[2*i]
-            frame.pcm[1][i] = data[2*i+1]            
+            frame.pcm[1][i] = data[2*i+1]
     else:
         for i in range(len(data)):
             frame.pcm[0][i] = data[i]
@@ -73,14 +71,14 @@ def sbc_analysis(frame):
             sbc_frame_analysis(frame, ch, blk, C)
     return 0
 
-def sbc_encode(frame):
+def sbc_encode(frame, force_channel_mode):
     err = sbc_analysis(frame)
     if err >= 0:
-        err = sbc_quantization(frame)
+        err = sbc_quantization(frame, force_channel_mode)
     return err
 
-def sbc_quantization(frame):
-    calculate_channel_mode_and_scale_factors(frame)
+def sbc_quantization(frame, force_channel_mode):
+    calculate_channel_mode_and_scale_factors(frame, force_channel_mode)
     frame.bits = sbc_bit_allocation(frame)
     
     # Reconstruct the Audio Samples
@@ -99,11 +97,7 @@ def sbc_quantization(frame):
                 if frame.levels[ch][sb] > 0:
                     SB = frame.sb_sample[blk][ch][sb]
                     L  = frame.levels[ch][sb]
-                    SF = frame.scalefactor[ch][sb]     
-                    
-                    # if frame.channel_mode == JOINT_STEREO and frame.join[sb]: 
-                    #     SB = SB * 2
-
+                    SF = frame.scalefactor[ch][sb]    
                     frame.audio_sample[blk][ch][sb] = np.uint16(((SB * L / SF + L) - 1.0)/2.0)
                 else:
                     frame.audio_sample[blk][ch][sb] = 0 
@@ -117,7 +111,7 @@ def sbc_write_frame(fout, sbc_encoder_frame):
 
 if __name__ == "__main__":
     usage = '''
-    Usage:      ./sbc_encoder.py input.wav blocks subbands bitpool allocation_method[0-LOUDNESS,1-SNR]
+    Usage:      ./sbc_encoder.py input.wav blocks subbands bitpool allocation_method[0-LOUDNESS,1-SNR] force_channel_mode[2-STEREO,3-JOINT_STEREO]
     Example:    ./sbc_encoder.py fanfare.wav 16 4 31 0
     '''
     nr_blocks = 0
@@ -137,7 +131,13 @@ if __name__ == "__main__":
         nr_blocks = int(sys.argv[2])
         nr_subbands = int(sys.argv[3])
         bitpool = int(sys.argv[4])
-        allocation_method = int(sys.argv[5])      
+        allocation_method = int(sys.argv[5])   
+        force_channel_mode = 0   
+        if len(sys.argv) == 6:
+            force_channel_mode = int(sys.argv[6]) 
+            if force_channel_mode != 2 or force_channel_mode != 3:
+                print(usage)
+                sys.exit(1)
 
         fin = wave.open(infile, 'rb')
         nr_channels = fin.getnchannels()
@@ -155,16 +155,11 @@ if __name__ == "__main__":
             sbc_encoder_frame = SBCFrame(nr_blocks, nr_subbands, nr_channels, bitpool, sampling_frequency, allocation_method)
             fetch_samples_for_next_sbc_frame(fin, sbc_encoder_frame)
             
-            sbc_encode(sbc_encoder_frame)
+            sbc_encode(sbc_encoder_frame, force_channel_mode)
             sbc_write_frame(fout, sbc_encoder_frame)
-
-            if subband_frame_count == 0:
-                print sbc_encoder_frame.channel_mode
-                print sbc_encoder_frame
 
             audio_frame_count += nr_samples
             subband_frame_count += 1
-
 
         fin.close()
         fout.close()

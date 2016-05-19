@@ -17,8 +17,8 @@ def sbc_compare_pcm(frame_count, actual_frame, expected_frame):
         if M > max_error:
             max_error = M
 
-        if M > error:
-            print "pcm error (%d, %f ) " % (frame_count, M)
+        if max_error > error:
+            print "pcm error (%d, %f ) " % (frame_count, max_error)
             return -1
     return 0 
 
@@ -66,7 +66,7 @@ def get_actual_frame(fin):
 def get_expected_frame(fin_expected, nr_blocks, nr_subbands, nr_channels, sampling_frequency, bitpool, allocation_method):
     expected_frame = SBCFrame(nr_blocks, nr_subbands, nr_channels, sampling_frequency, bitpool, allocation_method)
     fetch_samples_for_next_sbc_frame(fin_expected, expected_frame)
-    calculate_scalefactors_and_channel_mode(expected_frame)
+    calculate_channel_mode_and_scale_factors(expected_frame)
     return expected_frame
 
 usage = '''
@@ -113,18 +113,15 @@ try:
                                                 actual_frame.allocation_method)
                 
                 err = sbc_compare_headers(subband_frame_count, actual_frame, expected_frame)
-                print ("%03d : %s %s"%( subband_frame_count, 
-                                    channel_mode_to_str(actual_frame.channel_mode), 
-                                    channel_mode_to_str(expected_frame.channel_mode)))
 
                 if err < 0:
                     print ("Headers differ \n%s\n%s" % (actual_frame, expected_frame))
-                    exit(1)
+                    sys.exit(1)
 
                 err = sbc_compare_pcm(subband_frame_count, actual_frame, expected_frame)
                 if err < 0:
                     print ("PCMs differ \n%s\n%s" % (actual_frame.pcm, expected_frame.pcm))
-                    exit(1)
+                    sys.exit(1)
 
                 if subband_frame_count == 0:
                     print actual_frame, expected_frame
@@ -135,7 +132,6 @@ try:
             fin_expected.close()
             fin.close()
             print ("DONE, max MSE PCM error %f" % max_error)
-            exit(0) 
 
 except IOError as e:
     print(usage)
