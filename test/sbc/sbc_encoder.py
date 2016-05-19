@@ -103,7 +103,7 @@ def sbc_quantization(frame):
                     
                     # if frame.channel_mode == JOINT_STEREO and frame.join[sb]: 
                     #     SB = SB * 2
-                        
+
                     frame.audio_sample[blk][ch][sb] = np.uint16(((SB * L / SF + L) - 1.0)/2.0)
                 else:
                     frame.audio_sample[blk][ch][sb] = 0 
@@ -158,8 +158,10 @@ if __name__ == "__main__":
             sbc_encode(sbc_encoder_frame)
             sbc_write_frame(fout, sbc_encoder_frame)
 
-            # if subband_frame_count == 1:
-            #     exit(0)
+            if subband_frame_count == 0:
+                print sbc_encoder_frame.channel_mode
+                print sbc_encoder_frame
+
             audio_frame_count += nr_samples
             subband_frame_count += 1
 

@@ -164,7 +164,7 @@ def calculate_channel_mode_and_scale_factors(frame):
 
     frame.channel_mode = STEREO
     frame.join = np.zeros(frame.nr_subbands, dtype = np.uint8)
-    return
+    
     sb_sample = np.zeros(shape = (frame.nr_blocks,2,frame.nr_subbands), dtype = np.int32)
     for blk in range(frame.nr_blocks):
         for sb in range(frame.nr_subbands):
@@ -177,10 +177,10 @@ def calculate_channel_mode_and_scale_factors(frame):
         suma = frame.scale_factor[0][sb] + frame.scale_factor[1][sb]
         sumb = scale_factor[0][sb] + scale_factor[1][sb]
     
-        if suma >= sumb:
+        if suma > sumb:
             frame.channel_mode = JOINT_STEREO
             frame.join[sb] = 1
-
+            
             frame.scale_factor[0][sb] = scale_factor[0][sb]
             frame.scale_factor[1][sb] = scale_factor[1][sb]
             frame.scalefactor[0][sb]  = scalefactor[0][sb]
@@ -206,7 +206,7 @@ class SBCFrame:
     scale_factor =  np.zeros(shape=(2, 8), dtype = np.int32)
     scalefactor =  np.zeros(shape=(2, 8), dtype = np.int32)
     audio_sample = np.zeros(shape = (16,2,8), dtype = np.uint16)
-    sb_sample = np.zeros(shape = (16,2,8), dtype = np.uint16)
+    sb_sample = np.zeros(shape = (16,2,8), dtype = np.int32)
     X = np.zeros(8, dtype = np.int16)
     EX = np.zeros(8)
     pcm = np.zeros(shape=(2, 8*16), dtype = np.int16)
@@ -228,7 +228,7 @@ class SBCFrame:
         self.scale_factor = np.zeros(shape=(nr_channels, nr_subbands), dtype = np.int32)
         self.scalefactor = np.zeros(shape=(nr_channels, nr_subbands), dtype = np.int32)
         self.audio_sample = np.zeros(shape=(nr_blocks, nr_channels, nr_subbands), dtype = np.uint16)
-        self.sb_sample = np.zeros(shape=(nr_blocks, nr_channels, nr_subbands), dtype = np.uint16)
+        self.sb_sample = np.zeros(shape=(nr_blocks, nr_channels, nr_subbands), dtype = np.int32)
         self.levels = np.zeros(shape=(nr_channels, nr_subbands), dtype = np.int32)
         self.pcm = np.zeros(shape=(nr_channels, nr_subbands*nr_blocks), dtype = np.int16)
         self.join = np.zeros(nr_subbands, dtype = np.uint8)

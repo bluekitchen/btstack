@@ -18,8 +18,9 @@ def sbc_unpack_frame(fin, available_bytes, frame):
         return -1
     frame.sampling_frequency = get_bits(fin,2)
     frame.nr_blocks = nr_blocks[get_bits(fin,2)]
+
     frame.channel_mode = get_bits(fin,2)
-    
+
     if frame.channel_mode == MONO:
         frame.nr_channels = 1
     else:
@@ -77,8 +78,6 @@ def sbc_reconstruct_subband_samples(frame):
     for ch in range(frame.nr_channels):
         for sb in range(frame.nr_subbands):
             frame.levels[ch][sb] = pow(2.0, frame.bits[ch][sb]) - 1
-    
-    joint_stereo_const = 1
 
     for blk in range(frame.nr_blocks):
         for ch in range(frame.nr_channels):
@@ -87,7 +86,7 @@ def sbc_reconstruct_subband_samples(frame):
                     AS = frame.audio_sample[blk][ch][sb]
                     L  = frame.levels[ch][sb]
                     SF = frame.scalefactor[ch][sb]
-                    frame.sb_sample[blk][ch][sb] = SF * ((AS*2.0+1.0) / (L) -1.0 )
+                    frame.sb_sample[blk][ch][sb] = SF * ((AS*2.0+1.0) / L -1.0 )
                 else:
                     frame.sb_sample[blk][ch][sb] = 0
 
@@ -98,8 +97,8 @@ def sbc_reconstruct_subband_samples(frame):
                 if frame.join[sb]==1:
                     ch_a = frame.sb_sample[blk][0][sb] + frame.sb_sample[blk][1][sb]
                     ch_b = frame.sb_sample[blk][0][sb] - frame.sb_sample[blk][1][sb]
-                    frame.sb_sample[blk][0][sb] = ch_a
-                    frame.sb_sample[blk][1][sb] = ch_b
+                    frame.sb_sample[blk][0][sb] = ch_a/2
+                    frame.sb_sample[blk][1][sb] = ch_b/2
 
     return 0
 
