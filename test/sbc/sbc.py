@@ -3,6 +3,8 @@ import numpy as np
 import wave
 import struct
 import sys
+import time
+
 
 # channel mode
 MONO = 0
@@ -20,6 +22,7 @@ sampling_frequencies = [16000, 32000, 44100, 48000]
 nr_blocks = [4, 8, 12, 16]
 nr_subbands = [4, 8]
 
+time_ms = lambda: int(round(time.time() * 1000))
 
 def allocation_method_to_str(allocation_method):
     global allocation_methods

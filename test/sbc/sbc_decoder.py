@@ -6,6 +6,8 @@ import sys
 from sbc import *
 
 V = np.zeros(shape = (2, 10*2*8))
+total_time_ms = 0
+implementation = "SIG"
 
 def sbc_unpack_frame(fin, available_bytes, frame):
     if available_bytes == 0:
@@ -103,7 +105,7 @@ def sbc_reconstruct_subband_samples(frame):
     return 0
 
 
-def sbc_frame_synthesis(frame, ch, blk, proto_table):
+def sbc_frame_synthesis_sig(frame, ch, blk, proto_table):
     global V
     M = frame.nr_subbands
     L = 10 * M
@@ -126,7 +128,7 @@ def sbc_frame_synthesis(frame, ch, blk, proto_table):
         for i in range(M):
             N = np.cos((i+0.5)*(k+M/2)*np.pi/M)
             V[ch][k] += N * S[i]
-
+    
     for i in range(5):
         for j in range(M):
             U[i*M2+j] = V[ch][i*2*M2+j]
@@ -143,6 +145,22 @@ def sbc_frame_synthesis(frame, ch, blk, proto_table):
             frame.X[j] += W[j+M*i]
         frame.pcm[ch][offset + j] = np.int16(frame.X[j])
 
+
+def sbc_frame_synthesis(frame, ch, blk, proto_table):
+    global total_time_ms, implementation
+
+    t1 = time_ms()
+    if implementation == "SIG":
+         sbc_frame_synthesis_sig(frame, ch, blk, proto_table)
+    elif implementation == "V1":
+        sbc_frame_synthesis_v1(frame, ch, blk, proto_table)
+    else:
+        print ("synthesis %s not implemented" % implementation)
+        exit(1)
+
+    t2 = time_ms()
+    total_time_ms += t2-t1
+    
 
 def sbc_synthesis(frame):
     if frame.nr_subbands == 4:
@@ -231,15 +249,29 @@ if __name__ == "__main__":
                     
                     write_wav_file(fout, sbc_decoder_frame)
                     frame_count += 1
+                    
+                    if frame_count == 1:
+                        break
 
             except TypeError as err:
                 if not fout:
                     print err
                 else:
                     fout.close()
-                    print ("DONE, SBC file %s decoded into WAV file %s " % (infile, wavfile))
+                    if frame_count > 0:
+                        print ("DONE, SBC file %s decoded into WAV file %s " % (infile, wavfile))
+                        print ("Sythesis average %d ms/frame", total_time_ms/frame_count)
+                    else:
+                        print ("No frame found")
                 exit(0) 
 
+        fout.close()
+        if frame_count > 0:
+            print ("DONE: SBC file %s decoded into WAV file %s " % (infile, wavfile))
+            print ("Average sythesis time per frame: %d ms/frame" % (total_time_ms/frame_count))
+        else:
+            print ("No frame found")
+        
     except IOError as e:
         print(usage)
         sys.exit(1)

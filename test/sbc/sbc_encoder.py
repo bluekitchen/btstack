@@ -6,6 +6,7 @@ import sys
 from sbc import *
 
 X = np.zeros(shape=(2,80), dtype = np.int16)
+implementation = "SIG"
 
 def fetch_samples_for_next_sbc_frame(fin, frame):
     raw_data = fin.readframes(frame.nr_blocks * frame.nr_subbands) 
@@ -52,7 +53,22 @@ def sbc_frame_analysis(frame, ch, blk, C):
 
     for sb in range(M):
         frame.sb_sample[blk][ch][sb] = S[sb]
-    
+
+
+def sbc_frame_analysis(frame, ch, blk, proto_table):
+    global total_time_ms, implementation
+
+    t1 = time_ms()
+    if implementation == "SIG":
+         sbc_frame_analysis_sig(frame, ch, blk, proto_table)
+    else:
+        print ("Analysis %s not implemented" % implementation)
+        exit(1)
+
+    t2 = time_ms()
+    total_time_ms += t2-t1
+
+
 def sbc_analysis(frame):
     if frame.nr_subbands == 4:
         C = Proto_4_40
@@ -164,7 +180,11 @@ if __name__ == "__main__":
         fin.close()
         fout.close()
         print("DONE, WAV file %s encoded into SBC file %s " % (infile, sbcfile))
-        
+        if frame_count > 0:
+            print ("Average analysis time per frame: %d ms/frame" % (total_time_ms/frame_count))
+        else:
+            print ("No frame found")
+
         
     except IOError as e:
         print(usage)
