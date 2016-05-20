@@ -88,9 +88,10 @@ static int16_t  init_power_in_dB    = 13; // 13 dBm
 // support for SCO over HCI
 #ifdef ENABLE_SCO_OVER_HCI
 static int      init_send_route_sco_over_hci = 0;
-// route SCO over HCI (connection type=1, tx buffer size = 0x00 (don't change), tx buffer max latency=0x0000(don't chnage)), accept packets - 0)
+// Follow recommendation from https://e2e.ti.com/support/wireless_connectivity/bluetooth_cc256x/f/660/t/397004
+// route SCO over HCI (connection type=1, tx buffer size = 120, tx buffer max latency= 720, accept packets with CRC Error
 static const uint8_t hci_route_sco_over_hci[] = {
-    0x10, 0xfe, 0x05, 0x01, 0x00, 0x00, 0x00, 0x00
+    0x10, 0xfe, 0x05, 0x01, 0x78, 0xd0, 0x02, 0x01,
 };
 #endif
 

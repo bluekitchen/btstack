@@ -142,14 +142,13 @@ def convert_bts(main_bts_file, bts_add_on):
                     
                     if (action_type == 1):  # hci command
 
-                        # opcode = (ord(action_data[2]) << 8) | ord(action_data[1])
                         opcode = (action_data[2] << 8) | action_data[1]
                         if opcode == 0xFF36:
                             continue    # skip baud rate command
                         if opcode == 0xFD0C:
                             have_eHCILL = True
                         if opcode == 0xFD82:
-                            modulation_type = ord(action_data[4])
+                            modulation_type = action_data[4]
                             if modulation_type == 0:
                                 have_power_vector_gfsk = True
                             elif modulation_type == 1:
@@ -283,6 +282,9 @@ for name in files:
     if name_lower.startswith('avpr_init_cc'):
         print("Skipping AVPR add-on", name)
         continue
+    if re.match("tiinit_.*_ble_add-on.bts", name_lower):
+        print("Skipping BLE add-on", name)
+        continue
     if re.match("initscripts_tiinit_.*_ble_add-on.bts", name_lower):
         print("Skipping BLE add-on", name)
         continue
@@ -290,11 +292,20 @@ for name in files:
         print("Skipping AVPR add-on", name)
         continue
 
+    print "check", name
+    
     # check for BLE add-on
     add_on = ""
     name_parts = re.match('bluetooth_init_(.....+_...)_.*.bts', name)
     if name_parts:
         potential_add_on = 'BLE_init_%s.bts' % name_parts.group(1)
+        if os.path.isfile(potential_add_on):
+            add_on = potential_add_on
+            print("Found", add_on, "add-on for", name)
+
+    name_parts = re.match('TIInit_(\d*\.\d*\.\d*)_.*.bts', name)
+    if name_parts:
+        potential_add_on = 'TIInit_%s_ble_add-on.bts' % name_parts.group(1)
         if os.path.isfile(potential_add_on):
             add_on = potential_add_on
             print("Found", add_on, "add-on for", name)

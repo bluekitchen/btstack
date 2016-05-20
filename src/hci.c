@@ -1074,9 +1074,14 @@ static void hci_initializing_run(void){
             hci_send_cmd(&hci_write_scan_enable, (hci_stack->connectable << 1) | hci_stack->discoverable); // page scan
             hci_stack->substate = HCI_INIT_W4_WRITE_SCAN_ENABLE;
             break;
+        // only sent if ENABLE_SCO_OVER_HCI is defined
         case HCI_INIT_WRITE_SYNCHRONOUS_FLOW_CONTROL_ENABLE:
             hci_stack->substate = HCI_INIT_W4_WRITE_SYNCHRONOUS_FLOW_CONTROL_ENABLE;
             hci_send_cmd(&hci_write_synchronous_flow_control_enable, 1); // SCO tracking enabled
+            break;
+        case HCI_INIT_WRITE_DEFAULT_ERRONEOUS_DATA_REPORTING:
+            hci_stack->substate = HCI_INIT_W4_WRITE_DEFAULT_ERRONEOUS_DATA_REPORTING;
+            hci_send_cmd(&hci_write_default_erroneous_data_reporting, 1);
             break;
 #ifdef ENABLE_BLE
         // LE INIT
@@ -1323,9 +1328,9 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
 
 #ifdef ENABLE_SCO_OVER_HCI
         case HCI_INIT_W4_WRITE_SCAN_ENABLE:
-            // just go to next state
-            break;
         case HCI_INIT_W4_WRITE_SYNCHRONOUS_FLOW_CONTROL_ENABLE:
+            break;
+        case HCI_INIT_WRITE_DEFAULT_ERRONEOUS_DATA_REPORTING:
             if (!hci_le_supported()){
                 // SKIP LE init for Classic only configuration
                 hci_init_done();
