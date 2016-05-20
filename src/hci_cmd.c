@@ -656,6 +656,14 @@ const hci_cmd_t hci_write_simple_pairing_mode = {
 OPCODE(OGF_CONTROLLER_BASEBAND, 0x56), "1"
 };
 
+
+/**
+ * @param mode (0 = off, 1 = on)
+ */
+const hci_cmd_t hci_write_default_erroneous_data_reporting = {
+OPCODE(OGF_CONTROLLER_BASEBAND, 0x5B), "1"
+};
+
 /**
  */
 const hci_cmd_t hci_read_le_host_supported = {
