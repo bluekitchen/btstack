@@ -156,7 +156,6 @@ def sbc_frame_synthesis_v1(frame, ch, blk, proto_table):
     L2 = 2*L
 
     S = np.zeros(M)
-    U = np.zeros(L)
     W = np.zeros(L)
     frame.X = np.zeros(M)
     
@@ -171,16 +170,10 @@ def sbc_frame_synthesis_v1(frame, ch, blk, proto_table):
         V[ch][k] = 0
         for i in range(M):
             V[ch][k] += N[k][i] * S[i]
-    
-    for i in range(5):
-        for j in range(M):
-            U[i*M2+j] = V[ch][i*2*M2+j]
-            U[(i*2+1)*M+j] = V[ch][(i*4+3)*M+j]
 
     for i in range(L):
         D = proto_table[i] * (-M)
-        W[i] = U[i]*D
-
+        W[i] = D * VSGN(i,M2) * V[ch][remap_V(i)]
     
     offset = blk*M
     for j in range(M):
