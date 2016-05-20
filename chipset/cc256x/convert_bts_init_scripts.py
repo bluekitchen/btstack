@@ -142,14 +142,13 @@ def convert_bts(main_bts_file, bts_add_on):
                     
                     if (action_type == 1):  # hci command
 
-                        # opcode = (ord(action_data[2]) << 8) | ord(action_data[1])
                         opcode = (action_data[2] << 8) | action_data[1]
                         if opcode == 0xFF36:
                             continue    # skip baud rate command
                         if opcode == 0xFD0C:
                             have_eHCILL = True
                         if opcode == 0xFD82:
-                            modulation_type = ord(action_data[4])
+                            modulation_type = action_data[4]
                             if modulation_type == 0:
                                 have_power_vector_gfsk = True
                             elif modulation_type == 1:
