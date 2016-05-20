@@ -55,31 +55,36 @@ def sbc_compare_headers(frame_count, actual_frame, expected_frame):
     return 0
 
 file_size = 0
-def get_actual_frame(fin):
+def get_actual_frame(fin, implementation, frame_count):
     global file_size
     actual_frame = SBCFrame()
     sbc_unpack_frame(fin, file_size - fin.tell(), actual_frame)
     sbc_reconstruct_subband_samples(actual_frame)
-    sbc_synthesis(actual_frame)
+    if subband_frame_count == 0:
+        sbc_init_sythesis(actual_frame.nr_subbands, implementation)
+        print actual_frame
+    sbc_synthesis(actual_frame, implementation)
     return actual_frame
 
 def get_expected_frame(fin_expected, nr_blocks, nr_subbands, nr_channels, sampling_frequency, bitpool, allocation_method):
     expected_frame = SBCFrame(nr_blocks, nr_subbands, nr_channels, sampling_frequency, bitpool, allocation_method)
     fetch_samples_for_next_sbc_frame(fin_expected, expected_frame)
-    calculate_channel_mode_and_scale_factors(expected_frame)
+    calculate_channel_mode_and_scale_factors(expected_frame, 0)
     return expected_frame
 
 usage = '''
-Usage:      ./sbc_decoder_test.py decoder_input.sbc decoder_expected_output.wav
-Example:    ./sbc_decoder_test.py fanfare-4sb.sbc fanfare-4sb-decoded.wav 
+Usage:      ./sbc_decoder_test.py decoder_input.sbc force_channel_mode[No=0, Stereo=2, Joint Stereo=3] implementation[SIG, V1] decoder_expected_output.wav
+Example:    ./sbc_decoder_test.py fanfare-4sb.sbc 0 fanfare-4sb-decoded.wav 
 '''
 
-if (len(sys.argv) < 3):
+if (len(sys.argv) < 5):
     print(usage)
     sys.exit(1)
 try:
     decoder_input_sbc = sys.argv[1]
-    decoder_expected_wav = sys.argv[2]
+    force_channel_mode = int(sys.argv[2])
+    implementation = sys.argv[3]
+    decoder_expected_wav = sys.argv[4]
     
     if not decoder_input_sbc.endswith('.sbc'):
         print(usage)
@@ -89,6 +94,8 @@ try:
         print(usage)
         sys.exit(1)
 
+  
+    
     fin_expected = wave.open(decoder_expected_wav, 'rb')
     nr_channels, sampwidth, sampling_frequency, nr_audio_frames, comptype, compname =  fin_expected.getparams()
     
@@ -104,9 +111,8 @@ try:
                     print ("== Frame %d ==" % subband_frame_count)
                 
                 
-                actual_frame = get_actual_frame(fin)
+                actual_frame = get_actual_frame(fin, implementation, subband_frame_count)
                 
-
                 expected_frame = get_expected_frame(fin_expected, actual_frame.nr_blocks, 
                                                 actual_frame.nr_subbands, nr_channels, 
                                                 actual_frame.bitpool, sampling_frequency, 
@@ -115,17 +121,15 @@ try:
                 err = sbc_compare_headers(subband_frame_count, actual_frame, expected_frame)
 
                 if err < 0:
-                    print ("Headers differ \n%s\n%s" % (actual_frame, expected_frame))
+                    print ("Frame %d: Headers differ \n%s\n%s" % (subband_frame_count, actual_frame, expected_frame))
                     sys.exit(1)
 
                 err = sbc_compare_pcm(subband_frame_count, actual_frame, expected_frame)
                 if err < 0:
-                    print ("PCMs differ \n%s\n%s" % (actual_frame.pcm, expected_frame.pcm))
+                    print ("Frame %d: PCMs differ %f \n%s\n%s" % (subband_frame_count, max_error, actual_frame.pcm, expected_frame.pcm))
                     sys.exit(1)
 
-                if subband_frame_count == 0:
-                    print actual_frame, expected_frame
-
+                
                 subband_frame_count += 1
                 
         except TypeError:

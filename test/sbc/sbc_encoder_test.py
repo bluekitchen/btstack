@@ -129,7 +129,7 @@ try:
     bitpool = int(sys.argv[4])
     allocation_method = int(sys.argv[5])
     encoder_expected_sbc = sys.argv[6]
-    force_channel_mode = sys.argv[7]
+    force_channel_mode = int(sys.argv[7])
     sampling_frequency = 44100
 
     if not encoder_input_wav.endswith('.wav'):
