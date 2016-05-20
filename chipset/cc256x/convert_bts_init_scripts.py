@@ -282,6 +282,9 @@ for name in files:
     if name_lower.startswith('avpr_init_cc'):
         print("Skipping AVPR add-on", name)
         continue
+    if re.match("tiinit_.*_ble_add-on.bts", name_lower):
+        print("Skipping BLE add-on", name)
+        continue
     if re.match("initscripts_tiinit_.*_ble_add-on.bts", name_lower):
         print("Skipping BLE add-on", name)
         continue
@@ -289,11 +292,20 @@ for name in files:
         print("Skipping AVPR add-on", name)
         continue
 
+    print "check", name
+    
     # check for BLE add-on
     add_on = ""
     name_parts = re.match('bluetooth_init_(.....+_...)_.*.bts', name)
     if name_parts:
         potential_add_on = 'BLE_init_%s.bts' % name_parts.group(1)
+        if os.path.isfile(potential_add_on):
+            add_on = potential_add_on
+            print("Found", add_on, "add-on for", name)
+
+    name_parts = re.match('TIInit_(\d*\.\d*\.\d*)_.*.bts', name)
+    if name_parts:
+        potential_add_on = 'TIInit_%s_ble_add-on.bts' % name_parts.group(1)
         if os.path.isfile(potential_add_on):
             add_on = potential_add_on
             print("Found", add_on, "add-on for", name)

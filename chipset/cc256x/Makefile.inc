@@ -3,6 +3,7 @@
 # http://processors.wiki.ti.com/index.php/CC256x_Downloads
 #
 BASE_URL = https://git.ti.com/ti-bt/service-packs/blobs/raw/a027ae390d8790e56e1c78136c78fe6537470e91
+CONVERSION_SCRIPT=$(BTSTACK_ROOT)/chipset/cc256x/convert_bts_init_scripts.py
 
 # first generation CC2560 - TIInit_6.2.31.bts part of .zip archive
 
@@ -36,12 +37,7 @@ bluetooth_init_cc2564_2.14.bts: CC2564_BT_BLE_SP_BTS.zip
 
 # third generation
 
-bluetooth_init_cc2560B_1.2_BT_Spec_4.0.bts:
-	curl -O $(BASE_URL)/bluetooth_init_cc2560B_1.2_BT_Spec_4.0.bts
-
-bluetooth_init_cc2564B_1.2_BT_Spec_4.0.bts: 
-	curl -O $(BASE_URL)/bluetooth_init_cc2564B_1.2_BT_Spec_4.0.bts
-
+# versioned files for v1.2
 bluetooth_init_cc2560B_1.2_BT_Spec_4.1.bts:
 	curl -O $(BASE_URL)/bluetooth_init_cc2560B_1.2_BT_Spec_4.1.bts
 
@@ -51,6 +47,14 @@ bluetooth_init_cc2564B_1.2_BT_Spec_4.1.bts:
 BLE_init_cc2564B_1.2.bts:
 	curl -O $(BASE_URL)/BLE_init_cc2564B_1.2.bts
 
+# unversioned files for v1.4
+TIInit_6.7.16_bt_spec_4.1.bts:
+	curl -O https://git.ti.com/ti-bt/service-packs/blobs/raw/54f5c151dacc608b19ab2ce4c30e27a3983048b2/initscripts/TIInit_6.7.16_bt_spec_4.1.bts
+
+TIInit_6.7.16_ble_add-on.bts: 
+	curl -O https://git.ti.com/ti-bt/service-packs/blobs/raw/89c8db14929f10d75627b132690432cd71f5f54f/initscripts/TIInit_6.7.16_ble_add-on.bts
+
+# WL chipset
 TIInit_11.8.32.bts:
 	curl -O $(BASE_URL)/TIInit_11.8.32.bts
 
@@ -61,8 +65,6 @@ TIInit_12.8.32.bts:
 	curl -O $(BASE_URL)/TIInit_12.8.32.bts
 
 # convert to .c files
-CONVERSION_SCRIPT=$(BTSTACK_ROOT)/chipset/cc256x/convert_bts_init_scripts.py
-
 bluetooth_init_cc2560_2.44.c: bluetooth_init_cc2560_2.44.bts
 	$(CONVERSION_SCRIPT)
 
@@ -86,6 +88,14 @@ bluetooth_init_cc2560B_1.2_BT_Spec_4.1.c: bluetooth_init_cc2560B_1.2_BT_Spec_4.1
 bluetooth_init_cc2564B_1.2_BT_Spec_4.1.c: bluetooth_init_cc2564B_1.2_BT_Spec_4.1.bts BLE_init_cc2564B_1.2.bts
 	$(CONVERSION_SCRIPT)
 
+bluetooth_init_cc2560B_1.4_BT_Spec_4.1.c: TIInit_6.7.16_bt_spec_4.1.bts
+	cp TIInit_6.7.16_bt_spec_4.1.bts bluetooth_init_cc2560B_1.4_BT_Spec_4.1.bts
+	$(CONVERSION_SCRIPT)
+
+bluetooth_init_cc2564B_1.4_BT_Spec_4.1.c: TIInit_6.7.16_bt_spec_4.1.bts TIInit_6.7.16_ble_add-on.bts
+	cp TIInit_6.7.16_bt_spec_4.1.bts bluetooth_init_cc2564B_1.4_BT_Spec_4.1.bts
+	cp TIInit_6.7.16_ble_add-on.bts  BLE_init_cc2564B_1.4.bts
+	$(CONVERSION_SCRIPT)
 
 TIInit_11.8.32.c: TIInit_11.8.32.bts
 	$(CONVERSION_SCRIPT)
