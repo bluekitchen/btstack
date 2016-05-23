@@ -56,21 +56,10 @@
 #include <unistd.h>
 
 #include "btstack.h"
+#include "sco_demo_util.h"
 #ifdef HAVE_POSIX_STDIN
 #include "stdin_support.h"
 #endif
-
-
-static int phase = 0;
-
-// input signal: pre-computed sine wave, 160 Hz
-static const uint8_t sine[] = {
-      0,  15,  31,  46,  61,  74,  86,  97, 107, 114,
-    120, 124, 126, 126, 124, 120, 114, 107,  97,  86,
-     74,  61,  46,  31,  15,   0, 241, 225, 210, 195,
-    182, 170, 159, 149, 142, 136, 132, 130, 130, 132,
-    136, 142, 149, 159, 170, 182, 195, 210, 225, 241,
-};
 
 uint8_t hfp_service_buffer[150];
 const uint8_t    rfcomm_channel_nr = 1;
@@ -79,7 +68,9 @@ const char hfp_ag_service_name[] = "BTstack HFP AG Test";
 // PTS
 // static bd_addr_t device_addr = {0x00,0x15,0x83,0x5F,0x9D,0x46};
 // BT-201
-static bd_addr_t device_addr = {0x00, 0x07, 0xB0, 0x83, 0x02, 0x5E};
+// static bd_addr_t device_addr = {0x00, 0x07, 0xB0, 0x83, 0x02, 0x5E};
+// CC256x
+bd_addr_t device_addr = { 0xD0, 0x39, 0x72, 0xCD, 0x83, 0x45};
 
 static uint8_t codecs[1] = {HFP_CODEC_CVSD};
 static uint16_t handle = -1;
@@ -565,36 +556,6 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
 }
 #endif
 
-#define SCO_REPORT_PERIOD 100
-static void send_sco_data(void){
-    if (!sco_handle) return;
-    
-    const int sco_packet_length = hci_get_sco_packet_length();
-    const int sco_payload_length = sco_packet_length - 3;
-    const int frames_per_packet = sco_payload_length;    // for 8-bit data. for 16-bit data it's /2
-
-    hci_reserve_packet_buffer();
-    uint8_t * sco_packet = hci_get_outgoing_packet_buffer();
-    // set handle + flags
-    little_endian_store_16(sco_packet, 0, sco_handle);
-    // set len
-    sco_packet[2] = sco_payload_length;
-    int i;
-    for (i=0;i<frames_per_packet;i++){
-        sco_packet[3+i] = sine[phase];
-        phase++;
-        if (phase >= sizeof(sine)) phase = 0;
-    }
-    hci_send_sco_packet_buffer(sco_packet_length);
-
-    // request another send event
-    hci_request_sco_can_send_now_event();
-
-    static int count = 0;
-    count++;
-    if ((count % SCO_REPORT_PERIOD) == 0) printf("Sent %u\n", count);
-}
-
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * event, uint16_t event_size){
     switch (packet_type){
         case HCI_EVENT_PACKET:
@@ -606,7 +567,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                     inquiry_packet_handler(HCI_EVENT_PACKET, event, event_size);
                     break;
                 case HCI_EVENT_SCO_CAN_SEND_NOW:
-                    send_sco_data(); 
+                    sco_demo_send(sco_handle); 
                     break; 
                 default:
                     break;
@@ -680,6 +641,9 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                     printf("Event not handled %u\n", event[2]);
                     break;
             }
+        case HCI_SCO_DATA_PACKET:
+            sco_demo_receive(event, event_size);
+            break;
         default:
             break;
     }
@@ -702,6 +666,8 @@ static hfp_phone_number_t subscriber_number = {
 
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
+
+    sco_demo_init();
 
     gap_discoverable_control(1);
 

@@ -59,11 +59,10 @@
 #include <unistd.h>
 
 #include "btstack.h"
+#include "sco_demo_util.h"
 #ifdef HAVE_POSIX_STDIN
 #include "stdin_support.h"
 #endif
-
-#define SCO_REPORT_PERIOD 255
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
@@ -74,17 +73,6 @@ static hci_con_handle_t sco_handle = 0;
 
 static char hs_cmd_buffer[100];
 static bd_addr_t device_addr = {0x00,0x1b,0xDC,0x07,0x32,0xEF};
-
-static int phase = 0;
-
-// input signal: pre-computed sine wave, 160 Hz
-static const uint8_t sine[] = {
-      0,  15,  31,  46,  61,  74,  86,  97, 107, 114,
-    120, 124, 126, 126, 124, 120, 114, 107,  97,  86,
-     74,  61,  46,  31,  15,   0, 241, 225, 210, 195,
-    182, 170, 159, 149, 142, 136, 132, 130, 130, 132,
-    136, 142, 149, 159, 170, 182, 195, 210, 225, 241,
-};
 
 /* @section Audio Transfer Setup 
  *
@@ -190,42 +178,10 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
 }
 #endif
 
-static void send_sco_data(void){
-    if (!sco_handle) return;
-        
-    const int sco_packet_length = hci_get_sco_packet_length();
-    const int sco_payload_length = sco_packet_length - 3;
-    const int frames_per_packet = sco_payload_length;    // for 8-bit data. for 16-bit data it's /2
-
-    hci_reserve_packet_buffer();
-    uint8_t * sco_packet = hci_get_outgoing_packet_buffer();
-    // set handle + flags
-    little_endian_store_16(sco_packet, 0, sco_handle);
-    // set len
-    sco_packet[2] = sco_payload_length;
-    int i;
-    for (i=0;i<frames_per_packet;i++){
-        sco_packet[3+i] = sine[phase];
-        phase++;
-        if (phase >= sizeof(sine)) phase = 0;
-    }
-    hci_send_sco_packet_buffer(sco_packet_length);
-
-    // request another send event
-    hci_request_sco_can_send_now_event();
-
-    static int count = 0;
-    count++;
-    if ((count % SCO_REPORT_PERIOD) == 0) printf("Sent %u\n", count);
-}
-
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * event, uint16_t event_size){
-    static int sco_rev_count = 0;
     switch (packet_type){
         case HCI_SCO_DATA_PACKET:
-            sco_rev_count++;
-            if ((sco_rev_count & SCO_REPORT_PERIOD)) break;
-            printf("SCO packets received: %u\n", sco_rev_count);
+            sco_demo_receive(event, event_size);
             break;
         case HCI_EVENT_PACKET:
             switch (event[0]) {
@@ -234,7 +190,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                     show_usage();
                     break;
                 case HCI_EVENT_SCO_CAN_SEND_NOW:
-                    send_sco_data();
+                    sco_demo_send(sco_handle);
                     break;
                 case HCI_EVENT_HSP_META:
                     switch (event[2]) { 
@@ -320,6 +276,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
 /* LISTING_START(MainConfiguration): Setup HSP Headset */
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
+
+    sco_demo_init();
 
     // register for HCI events
     hci_event_callback_registration.callback = &packet_handler;
