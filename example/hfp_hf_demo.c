@@ -59,20 +59,24 @@
 #include <unistd.h>
 
 #include "btstack.h"
+#include "sco_demo_util.h"
 #ifdef HAVE_POSIX_STDIN
 #include "stdin_support.h"
 #endif
+
 
 uint8_t hfp_service_buffer[150];
 const uint8_t   rfcomm_channel_nr = 1;
 const char hfp_hf_service_name[] = "BTstack HFP HF Demo";
 
 #ifdef HAVE_POSIX_STDIN
-static bd_addr_t device_addr = {0xD8,0xBb,0x2C,0xDf,0xF1,0x08};
+static bd_addr_t device_addr = {0x80,0xbe,0x05,0xd5,0x28,0x48};
+// 80:BE:05:D5:28:48
 // prototypes
 static void show_usage(void);
 #endif
 static uint16_t handle = -1;
+static hci_con_handle_t sco_handle;
 static uint8_t codecs[] = {HFP_CODEC_CVSD, HFP_CODEC_MSBC};
 static uint16_t indicators[1] = {0x01};
 
@@ -445,6 +449,12 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
 #endif
 
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * event, uint16_t event_size){
+
+    if (event[0] == HCI_EVENT_SCO_CAN_SEND_NOW){
+        sco_demo_send(sco_handle);
+        return;
+    }
+
     if (event[0] != HCI_EVENT_HFP_META) return;
 
     switch (event[2]) {   
@@ -456,10 +466,18 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
             printf("Service level connection released.\n\n");
             break;
         case HFP_SUBEVENT_AUDIO_CONNECTION_ESTABLISHED:
-            printf("\n** Audio connection established **\n");
+            if (hfp_subevent_audio_connection_established_get_status(event)){
+                sco_handle = 0;
+                printf("Audio connection establishment failed with status %u\n", hfp_subevent_audio_connection_established_get_status(event));
+            } else {
+                sco_handle = hfp_subevent_audio_connection_established_get_handle(event);
+                printf("Audio connection established with SCO handle 0x%04x.\n", sco_handle);
+                hci_request_sco_can_send_now_event();
+            }
             break;
         case HFP_SUBEVENT_AUDIO_CONNECTION_RELEASED:
-            printf("\n** Audio connection released **\n");
+            sco_handle = 0;
+            printf("Audio connection released\n");
             break;
         case HFP_SUBEVENT_COMPLETE:
             switch (cmd){
@@ -512,6 +530,11 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
 /* LISTING_START(MainConfiguration): Setup HFP Hands-Free unit */
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
+
+    sco_demo_init();
+
+    gap_discoverable_control(1);
+
     // HFP AG address is hardcoded, please change it
     // init L2CAP
     l2cap_init();
@@ -524,6 +547,7 @@ int btstack_main(int argc, const char * argv[]){
     hfp_hf_init_codecs(sizeof(codecs), codecs);
     
     hfp_hf_register_packet_handler(packet_handler);
+    hci_register_sco_packet_handler(&packet_handler);
 
     memset(hfp_service_buffer, 0, sizeof(hfp_service_buffer));
     hfp_hf_create_sdp_record(hfp_service_buffer, 0x10001, rfcomm_channel_nr, hfp_hf_service_name, 0);
