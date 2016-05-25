@@ -70,6 +70,8 @@ static void gap_le_connect_to_1111_setup(void){
     hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
 
+    l2cap_init();
+
     // setup le device db
     le_device_db_init();
 
@@ -81,10 +83,11 @@ static void gap_le_connect_to_1111_setup(void){
     sm_set_io_capabilities(IO_CAPABILITY_DISPLAY_YES_NO);
     // Passkey entry initiator enter, responder displays
     // sm_set_io_capabilities(IO_CAPABILITY_DISPLAY_ONLY);
+    sm_set_authentication_requirements(SM_AUTHREQ_MITM_PROTECTION);
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
-    sm_set_authentication_requirements(SM_AUTHREQ_SECURE_CONNECTION|SM_AUTHREQ_MITM_PROTECTION);
+   // sm_set_authentication_requirements(SM_AUTHREQ_SECURE_CONNECTION|SM_AUTHREQ_MITM_PROTECTION);
+   sm_set_authentication_requirements(SM_AUTHREQ_SECURE_CONNECTION);
 #endif
-
 }
 
 /* LISTING_END */
@@ -130,6 +133,18 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             gap_connect(address,address_type);
             break;
         }
+        case SM_EVENT_JUST_WORKS_REQUEST:
+            printf("Just works requested\n");
+            sm_just_works_confirm(sm_event_just_works_request_get_handle(packet));
+            break;
+        case SM_EVENT_NUMERIC_COMPARISON_REQUEST:
+            printf("Confirming numeric comparison: %u\n", sm_event_numeric_comparison_request_get_passkey(packet));
+            sm_numeric_comparison_confirm(sm_event_passkey_display_number_get_handle(packet));
+            break;
+        case SM_EVENT_PASSKEY_DISPLAY_NUMBER:
+            printf("Display Passkey: %u\n", sm_event_passkey_display_number_get_passkey(packet));
+            break;
+
         case HCI_EVENT_LE_META:
             // wait for connection complete
             if (hci_event_le_meta_get_subevent_code(packet) != HCI_SUBEVENT_LE_CONNECTION_COMPLETE) break;
