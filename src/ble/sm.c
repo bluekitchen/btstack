@@ -1652,8 +1652,7 @@ static void sm_run(void){
                         if (connection->sm_role){
                             connection->sm_engine_state = SM_PH2_SEND_CONFIRMATION;
                         } else {
-                            // TODO:
-                            log_error("SC, next state initiator, send local nonce");
+                            connection->sm_engine_state = SM_RESPONDER_PH2_W4_PUBLIC_KEY_COMMAND;
                         }
                         break;
                     case PK_INIT_INPUT:
@@ -1676,7 +1675,7 @@ static void sm_run(void){
                     case OOB:
                         // TODO: implement SC OOB
                         break;
-                }
+                } 
 
                 l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
                 sm_timeout_reset(connection);
@@ -1738,8 +1737,8 @@ static void sm_run(void){
                             sm_trigger_user_response(connection);
                         } 
                     } else {
-                        // TODO: next initiator state
-                        // connection->sm_engine_state = SM_INITIATOR_PH2_W4_PAIRING_RANDOM;
+                        // initiator
+                        connection->sm_engine_state = SM_PH2_W4_PAIRING_RANDOM;
                     }                    
                 }
                 l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
@@ -1806,15 +1805,14 @@ static void sm_run(void){
                     f6(setup->sm_local_dhkey_check, mackey, setup->sm_local_nonce, setup->sm_peer_nonce, setup->sm_ra, iocap_b, bd_addr_slave, bd_addr_master);
                 } else {
                     // initiator
-                    // 
+                    f6(setup->sm_local_dhkey_check, mackey, setup->sm_local_nonce, setup->sm_peer_nonce, setup->sm_rb, iocap_a, bd_addr_master, bd_addr_slave);
                 }
 #endif
                 reverse_128(setup->sm_local_dhkey_check, &buffer[1]);
                 if (connection->sm_role){
                     connection->sm_engine_state = SM_RESPONDER_PH2_W4_LTK_REQUEST_SC;
                 } else {
-                    // TODO: next initiator state
-                    // connection->sm_engine_state = SM_INITIATOR_PH2_W4_PAIRING_RANDOM;
+                    connection->sm_engine_state = SM_PH2_W4_DHKEY_CHECK_COMMAND;
                 }
                 l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
                 sm_timeout_reset(connection);            
@@ -2611,6 +2609,16 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
                 sm_conn->sm_engine_state = SM_GENERAL_SEND_PAIRING_FAILED;
                 break;
             }
+#ifdef ENABLE_LE_SECURE_CONNECTIONS
+            if (setup->sm_use_secure_connections){
+                sm_conn->sm_engine_state = SM_PH1_W4_USER_RESPONSE;
+                sm_trigger_user_response(sm_conn);
+                if (setup->sm_user_response == SM_USER_RESPONSE_IDLE){
+                    sm_conn->sm_engine_state = SM_PH2_SEND_PUBLIC_KEY_COMMAND;
+                } 
+                break;
+            } 
+#endif  
             // generate random number first, if we need to show passkey
             if (setup->sm_stk_generation_method == PK_RESP_INPUT){
                 sm_conn->sm_engine_state = SM_PH2_GET_RANDOM_TK;
@@ -2690,7 +2698,13 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
                 break;
             }
 #endif
-            sm_conn->sm_engine_state = SM_PH2_SEND_PUBLIC_KEY_COMMAND;
+            if (sm_conn->sm_role){
+                // responder
+                sm_conn->sm_engine_state = SM_PH2_SEND_PUBLIC_KEY_COMMAND;
+            } else {
+                // initiator
+                sm_conn->sm_engine_state = SM_PH2_W4_CONFIRMATION;
+            }
             break;
 
         case SM_PH2_W4_CONFIRMATION:
@@ -2706,23 +2720,38 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
                 sm_conn->sm_engine_state = SM_PH2_SEND_CONFIRMATION;                
             } else {
                 // initiator
-                // TODO: implement initiator role
+                sm_conn->sm_engine_state = SM_PH2_SEND_PAIRING_RANDOM_SC;                
             }
             break;        
 
         case SM_PH2_W4_PAIRING_RANDOM:
             if (packet[0] != SM_CODE_PAIRING_RANDOM){
                 sm_pdu_received_in_wrong_state(sm_conn);
-                break;;
+                break;
             }
 
             // received random value
             reverse_128(&packet[1], setup->sm_peer_nonce);
 
-            // TODO: handle Initiator role
+            if (sm_conn->sm_role){
+                // Responder
+                sm_conn->sm_engine_state = SM_PH2_SEND_PAIRING_RANDOM_SC;
+            } else {
+                // Initiator role
+                sm_conn->sm_engine_state = SM_PH2_SEND_DHKEY_CHECK_COMMAND;
+                if (setup->sm_stk_generation_method == NK_BOTH_INPUT){
 
-            // Responder
-            sm_conn->sm_engine_state = SM_PH2_SEND_PAIRING_RANDOM_SC;
+                    // TODO: check if Cb = f4(Pkb, Pka, Nb, 0)
+
+                    // calc Va if numeric comparison
+                    // TODO: use AES Engine to calculate g2
+                    uint8_t value[32];
+                    mbedtls_mpi_write_binary(&le_keypair.Q.X, value, sizeof(value));
+                    uint32_t va = g2(value, setup->sm_peer_qx, setup->sm_local_nonce, setup->sm_peer_nonce) % 1000000;
+                    big_endian_store_32(setup->sm_tk, 12, va);
+                    sm_trigger_user_response(sm_conn);
+                }
+            }
             break;
 
         case SM_PH2_W4_DHKEY_CHECK_COMMAND:
@@ -2733,11 +2762,17 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
             // store DHKey Check
             reverse_128(&packet[01], setup->sm_peer_dhkey_check);
 
-            // for numeric comparison, we need to wait for user confirm
-            if (setup->sm_stk_generation_method == NK_BOTH_INPUT && setup->sm_user_response != SM_USER_RESPONSE_CONFIRM){
-                sm_conn->sm_engine_state = SM_PH2_W4_USER_RESPONSE;
+            // TODO: validate DHKey Check value
+
+            if (sm_conn->sm_role){
+                // for numeric comparison, we need to wait for user confirm
+                if (setup->sm_stk_generation_method == NK_BOTH_INPUT && setup->sm_user_response != SM_USER_RESPONSE_CONFIRM){
+                    sm_conn->sm_engine_state = SM_PH2_W4_USER_RESPONSE;
+                } else {
+                    sm_conn->sm_engine_state = SM_PH2_SEND_DHKEY_CHECK_COMMAND;
+                }
             } else {
-                sm_conn->sm_engine_state = SM_PH2_SEND_DHKEY_CHECK_COMMAND;
+                sm_conn->sm_engine_state = SM_INITIATOR_PH3_SEND_START_ENCRYPTION;
             }
             break;
 #endif
@@ -3073,6 +3108,12 @@ void sm_just_works_confirm(hci_con_handle_t con_handle){
     setup->sm_user_response = SM_USER_RESPONSE_CONFIRM;
     if (sm_conn->sm_engine_state == SM_PH1_W4_USER_RESPONSE){
         sm_conn->sm_engine_state = SM_PH2_C1_GET_RANDOM_A;
+
+#ifdef ENABLE_LE_SECURE_CONNECTIONS
+        if (setup->sm_use_secure_connections){
+            sm_conn->sm_engine_state = SM_PH2_SEND_PUBLIC_KEY_COMMAND;
+        }
+#endif
     }
     if (sm_conn->sm_engine_state == SM_PH2_W4_USER_RESPONSE){
         if (sm_conn->sm_role){
