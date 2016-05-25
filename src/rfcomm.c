@@ -961,7 +961,8 @@ static int rfcomm_multiplexer_hci_event_handler(uint8_t *packet, uint16_t size){
             log_info("L2CAP_EVENT_CHANNEL_CLOSED state %u", multiplexer->state);
             // no need to call l2cap_disconnect here, as it's already closed
             rfcomm_multiplexer_finalize(multiplexer);
-            break;
+            return 1;
+
         default:
             break;
     }
