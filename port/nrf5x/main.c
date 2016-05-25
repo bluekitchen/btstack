@@ -26,6 +26,7 @@
 #include "bsp.h"
 
 #include "btstack_config.h"
+#include "btstack_debug.h"
 #include "btstack_memory.h"
 #include "btstack_run_loop.h"
 #include "btstack_run_loop_embedded.h"
@@ -37,6 +38,10 @@
 // bluetooth.h
 #define ADVERTISING_RADIO_ACCESS_ADDRESS 0x8E89BED6
 #define ADVERTISING_CRC_INIT             0x555555
+
+// HCI CMD OGF/OCF
+#define READ_CMD_OGF(buffer) (buffer[1] >> 2)
+#define READ_CMD_OCF(buffer) ((buffer[1] & 0x03) << 8 | buffer[0])
 
 typedef enum {
     LL_STATE_STANDBY,
@@ -85,7 +90,6 @@ static void init_timer(void) {
 #if 1
     // start high frequency clock source if not done yet
     if ( !NRF_CLOCK->EVENTS_HFCLKSTARTED ) {
-        printf("1\n");
         NRF_CLOCK->TASKS_HFCLKSTART = 1;
         while ( !NRF_CLOCK->EVENTS_HFCLKSTARTED ){
             // just wait
@@ -99,13 +103,11 @@ static void init_timer(void) {
 
     NRF_TIMER0->TASKS_STOP  = 1;
     NRF_TIMER0->TASKS_CLEAR = 1;
-#if 0
-    NRF_TIMER0->EVENTS_COMPARE[ 0 ] = 0;
-    NRF_TIMER0->EVENTS_COMPARE[ 1 ] = 0;
-    NRF_TIMER0->EVENTS_COMPARE[ 2 ] = 0;
-    NRF_TIMER0->EVENTS_COMPARE[ 3 ] = 0;
+    NRF_TIMER0->EVENTS_COMPARE[0] = 0;
+    NRF_TIMER0->EVENTS_COMPARE[1] = 0;
+    NRF_TIMER0->EVENTS_COMPARE[2] = 0;
+    NRF_TIMER0->EVENTS_COMPARE[3] = 0;
     NRF_TIMER0->INTENCLR    = 0xffffffff;
-#endif
     NRF_TIMER0->TASKS_START = 1;
 }
 
@@ -286,12 +288,15 @@ void RADIO_IRQHandler(void){
         } else {
             // ... for now, we just throw the adv away and try to receive the next one
         }
+
+        // TODO: check if there's enough time left before the end of the scan interval
+
+        // restart receiving
+        NRF_RADIO->TASKS_START = 1;
     }
-    // restart receiving
-    NRF_RADIO->TASKS_START = 1;
 }
 
-static uint8_t random_generator_next(void){
+uint8_t random_generator_next(void){
     NRF_RNG->SHORTS = RNG_SHORTS_VALRDY_STOP_Enabled << RNG_SHORTS_VALRDY_STOP_Pos;
     NRF_RNG->TASKS_START = 1;
     while (!NRF_RNG->EVENTS_VALRDY){
@@ -299,30 +304,42 @@ static uint8_t random_generator_next(void){
     return NRF_RNG->VALUE;
 }
 
-static uint32_t get_time_us(void){
-    NRF_TIMER0->TASKS_CAPTURE[0] = 1;
-    return NRF_TIMER0->CC[0]; 
+// uses TIMER0-CC2 for reads
+uint32_t get_time_us(void){
+    NRF_TIMER0->TASKS_CAPTURE[2] = 1;
+    return NRF_TIMER0->CC[2]; 
 }
 
-// static 
-void tick(void){
-    uint32_t now = 0;
-    while (1){
-        uint8_t random = random_generator_next();
-        printf("Tick %02x\n", random);
-        now = get_time_us();
-        uint32_t tick_at = now + 1000000;
-        while (now < tick_at){
-            now = get_time_us();
-        }
-    }
+volatile int timer_irq_happened;
+void TIMER0_IRQHandler(void){
+    // Reset IRQ flag
+    NRF_TIMER0->EVENTS_COMPARE[0] = 0;
+    NRF_TIMER0->TASKS_CLEAR = 1;
+
+    timer_irq_happened = 1;
+
+    // if (ll_state == LL_STATE_SCANNING){
+    //     // Restart scanning
+    //     // TODO: use all channels
+    //     radio_receive_on_channel(37);
+    // }
 }
 
-// static
-void ll_set_scan_params(uint8_t le_scan_type, uint16_t le_scan_interval, uint16_t le_scan_window, uint8_t own_address_type, uint8_t scanning_filter_policy){
+// TODO: implement
+void hal_cpu_disable_irqs(void){}
+void hal_cpu_enable_irqs(void){}
+void hal_cpu_enable_irqs_and_sleep(void){}
+
+// TODO: get time from RTC
+uint32_t hal_time_ms(void){
+    return 999;
+}
+
+static void ll_set_scan_parameters(uint8_t le_scan_type, uint16_t le_scan_interval, uint16_t le_scan_window, uint8_t own_address_type, uint8_t scanning_filter_policy){
     // TODO .. store other params
     ll_scan_interval_us = ((uint32_t) le_scan_interval) * 625;
     ll_scan_window_us   = ((uint32_t) le_scan_window)   * 625;
+    log_info("LE Scan Params: window %lu, interval %lu ms", ll_scan_interval_us, ll_scan_window_us);
 }
 
 static uint8_t ll_start_scanning(uint8_t filter_duplicates){
@@ -331,18 +348,32 @@ static uint8_t ll_start_scanning(uint8_t filter_duplicates){
 
     ll_state = LL_STATE_SCANNING;
 
-    // reset timer
-    NRF_TIMER0->TASKS_CLEAR;
+    log_info("LE Scan Start: window %lu, interval %lu ms", ll_scan_interval_us, ll_scan_window_us);
 
-    // set timer to disable radio after end of scan_window
+    // reset timer and capature events
+    NRF_TIMER0->TASKS_CLEAR = 1;
+    NRF_TIMER0->TASKS_STOP  = 1;
+    NRF_TIMER0->EVENTS_COMPARE[0] = 0;
+    NRF_TIMER0->EVENTS_COMPARE[1] = 0;
+    
+    // limit scanning        
+    if (ll_scan_window_us < ll_scan_interval_us){
+        // setup PPI to disable radio after end of scan_window
+        NRF_TIMER0->CC[1]    = ll_scan_window_us;
+        NRF_PPI->CHENSET     = 1 << 22; // TIMER0->EVENTS_COMPARE[1] ->  RADIO->TASKS_DISABLE
+    }
 
     // set timer to trigger IRQ for next scan interval
+    NRF_TIMER0->CC[0]    = ll_scan_interval_us;
+    NRF_TIMER0->INTENSET = TIMER_INTENSET_COMPARE0_Enabled << TIMER_INTENSET_COMPARE0_Pos;
 
-    // start receive
-    // ..
+    // next channel to scan
+    int adv_channel = (random_generator_next() % 3) + 37;
+    log_debug("LE Scan Channel: %u", adv_channel);
 
-    // TODO: use all channels
-    radio_receive_on_channel(37);
+    // start receiving
+    NRF_TIMER0->TASKS_START = 1;
+    radio_receive_on_channel(adv_channel);
 
     return 0;
 }
@@ -350,6 +381,8 @@ static uint8_t ll_start_scanning(uint8_t filter_duplicates){
 static uint8_t ll_stop_scanning(void){
     // COMMAND DISALLOWED if wrong state.
     if (ll_state != LL_STATE_SCANNING)  return 0x0c;
+
+    log_info("LE Scan Stop");
 
     ll_state = LL_STATE_STANDBY;
 
@@ -359,13 +392,66 @@ static uint8_t ll_stop_scanning(void){
     return 0;
 }
 
-// static 
-uint8_t ll_set_scan_enable(uint8_t le_scan_enable, uint8_t filter_duplicates){
+static uint8_t ll_set_scan_enable(uint8_t le_scan_enable, uint8_t filter_duplicates){
     if (le_scan_enable){
         return ll_start_scanning(filter_duplicates);
     } else {
         return ll_stop_scanning();
     }
+}
+
+static void fake_command_complete(uint16_t opcode){
+    hci_outgoing_event[0] = HCI_EVENT_COMMAND_COMPLETE;
+    hci_outgoing_event[1] = 4;
+    hci_outgoing_event[2] = 1;
+    little_endian_store_16(hci_outgoing_event, 3, opcode);
+    hci_outgoing_event[5] = 0;
+    hci_outgoing_event_ready = 1;
+}
+
+static void send_hardware_error(uint8_t error_code){
+    hci_outgoing_event[0] = HCI_EVENT_HARDWARE_ERROR;
+    hci_outgoing_event[1] = 1;
+    hci_outgoing_event[2] = error_code;
+    hci_outgoing_event_ready = 1;
+}
+
+
+// command handler
+static void controller_handle_hci_command(uint8_t * packet, uint16_t size){
+    uint16_t opcode = little_endian_read_16(packet, 0);
+#if 0
+    uint16_t ocf = READ_CMD_OCF(packet);
+    switch (READ_CMD_OGF(packet)){
+        case OGF_CONTROLLER_BASEBAND:
+            switch (ocf):
+                break;
+        default:
+            break;
+    }
+#endif
+    if (opcode == hci_reset.opcode) {
+        fake_command_complete(opcode);
+        return;
+    }
+    if (opcode == hci_le_set_scan_enable.opcode){
+        ll_set_scan_enable(packet[3], packet[4]);
+        fake_command_complete(opcode);
+        return;
+    }
+    if (opcode == hci_le_set_scan_parameters.opcode){
+        ll_set_scan_parameters(packet[3], little_endian_read_16(packet, 4), little_endian_read_16(packet, 6), packet[8], packet[9]);
+        fake_command_complete(opcode);
+        return;
+    }
+    // try with "OK" 
+    printf("CMD opcode %02x not handled yet\n", opcode);
+    fake_command_complete(opcode);
+}
+
+// ACL handler
+static void controller_handle_acl_data(uint8_t * packet, uint16_t size){
+    // TODO
 }
 
 static void transport_run(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type){
@@ -374,9 +460,19 @@ static void transport_run(btstack_data_source_t *ds, btstack_data_source_callbac
         hci_outgoing_event_ready = 0;
         packet_handler(HCI_EVENT_PACKET, hci_outgoing_event, hci_outgoing_event[1]+2);
         hci_outgoing_event_free = 1;
-        return 0;
     }
-    return 0;
+    if (timer_irq_happened){
+        // printf("Timer irq occured\n");
+        // radio_dump_state();
+        timer_irq_happened = 0;
+
+        if (ll_state == LL_STATE_SCANNING){
+            // next channel to scan
+            int adv_channel = (random_generator_next() % 3) + 37;
+            log_debug("Restart scan on channel %u", adv_channel);
+            radio_receive_on_channel(adv_channel);
+        }
+    }
 }
 
 /**
@@ -412,48 +508,19 @@ static void transport_register_packet_handler(void (*handler)(uint8_t packet_typ
     packet_handler = handler;
 }
 
-// /**
-//  * support async transport layers, e.g. IRQ driven without buffers
-//  */
-// int transport_can_send_packet_now(uint8_t packet_type){
-//     return 1;
-// }
-
-// TODO: implement
-void hal_cpu_disable_irqs(void){}
-void hal_cpu_enable_irqs(void){}
-void hal_cpu_enable_irqs_and_sleep(void){}
-
-
-// TODO: get time from RTC
-uint32_t hal_time_ms(void){
-    return 999;
-}
-
-static void fake_command_complete(uint16_t opcode){
-    hci_outgoing_event[0] = HCI_EVENT_COMMAND_COMPLETE;
-    hci_outgoing_event[1] = 4;
-    hci_outgoing_event[2] = 1;
-    little_endian_store_16(hci_outgoing_event, 3, opcode);
-    hci_outgoing_event[5] = 0;
-    hci_outgoing_event_ready = 1;
-}
-
 int transport_send_packet(uint8_t packet_type, uint8_t *packet, int size){
-    // process packet
-    uint16_t opcode = little_endian_read_16(packet, 0);
-    if (opcode == hci_reset.opcode) {
-        fake_command_complete(opcode);
-        return 0;
+
+    switch (packet_type){
+        case HCI_COMMAND_DATA_PACKET:
+            controller_handle_hci_command(packet, size);
+            break;
+        case HCI_ACL_DATA_PACKET:
+            controller_handle_acl_data(packet, size);
+            break;
+        default:
+            send_hardware_error(0x01);  // invalid HCI packet
+            break;
     }
-    if (opcode == hci_le_set_scan_enable.opcode){
-        ll_set_scan_enable(packet[3], packet[4]);
-        fake_command_complete(opcode);
-        return 0;
-    }
-    // try with "OK" 
-    printf("CMD opcode %02x not handled yet\n", opcode);
-    fake_command_complete(opcode);
     return 0;    
 }
 
@@ -496,8 +563,16 @@ int main(void)
     NVIC_ClearPendingIRQ( RADIO_IRQn );
     NVIC_EnableIRQ( RADIO_IRQn );
 
-    // Bring up BTstack
+    // enable Timer IRQs
+    NVIC_SetPriority( TIMER0_IRQn, 0 );
+    NVIC_ClearPendingIRQ( TIMER0_IRQn );
+    NVIC_EnableIRQ( TIMER0_IRQn );
 
+    // HCI Controller Defaults
+    ll_scan_window_us   = 10000;
+    ll_scan_interval_us = 10000;
+
+    // Bring up BTstack
     printf("BTstack on Nordic nRF5 SDK\n");
 
     btstack_memory_init();
