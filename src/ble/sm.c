@@ -2763,30 +2763,31 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
             } else {
                 // Initiator role
                 
-                // check if Cb = f4(Pkb, Pka, Nb, 0)
+                // check if Cb = f4(Pkb, Pka, Nb, z)
+                uint8_t z = 0;
+                if (setup->sm_stk_generation_method != JUST_WORKS && setup->sm_stk_generation_method != NK_BOTH_INPUT){
+                    // some form of passkey
+                    uint32_t pk = big_endian_read_32(setup->sm_tk, 12);
+                    // sm_passkey_bit was increased before sending confirm value
+                    z = 0x80 | ((pk >> (setup->sm_passkey_bit-1)) & 1);
+                }
                 sm_key_t confirm_value;
 #ifdef USE_MBEDTLS_FOR_ECDH
                 uint8_t local_qx[32];
                 mbedtls_mpi_write_binary(&le_keypair.Q.X, local_qx, sizeof(local_qx));
-                f4(confirm_value, setup->sm_peer_qx, local_qx, setup->sm_peer_nonce, 0);
-                // not valid for PK entry
+                f4(confirm_value, setup->sm_peer_qx, local_qx, setup->sm_peer_nonce, z);
 #endif
+                if (0 != memcmp(confirm_value, setup->sm_peer_confirm, 16)){
+                    sm_pairing_error(sm_conn, SM_REASON_CONFIRM_VALUE_FAILED);
+                    break;
+                }
 
                 switch (setup->sm_stk_generation_method){
                     case JUST_WORKS:
-                        if (0 != memcmp(confirm_value, setup->sm_peer_confirm, 16)){
-                            sm_pairing_error(sm_conn, SM_REASON_CONFIRM_VALUE_FAILED);
-                            break;
-                        }
                         sm_conn->sm_engine_state = SM_PH2_SEND_DHKEY_CHECK_COMMAND;
                         break;
 
                     case NK_BOTH_INPUT: {
-                        if (0 != memcmp(confirm_value, setup->sm_peer_confirm, 16)){
-                            sm_pairing_error(sm_conn, SM_REASON_CONFIRM_VALUE_FAILED);
-                            break;
-                        }
-
                         // calc Va if numeric comparison
                         // TODO: use AES Engine to calculate g2
                         uint8_t value[32];
@@ -2799,9 +2800,6 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
                     case PK_INIT_INPUT:
                     case PK_RESP_INPUT:
                     case OK_BOTH_INPUT:
-
-                        // TODO: validate Cbi
-
                         if (setup->sm_passkey_bit < 20) {
                             sm_conn->sm_engine_state = SM_PH2_SEND_CONFIRMATION;
                         } else {
