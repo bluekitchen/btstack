@@ -2611,11 +2611,16 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
             }
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
             if (setup->sm_use_secure_connections){
-                sm_conn->sm_engine_state = SM_PH1_W4_USER_RESPONSE;
-                sm_trigger_user_response(sm_conn);
-                if (setup->sm_user_response == SM_USER_RESPONSE_IDLE){
+                // SC Numeric Comparison will trigger user response after public keys & nonces have been exchanged                
+                if (setup->sm_stk_generation_method == JUST_WORKS){
+                    sm_conn->sm_engine_state = SM_PH1_W4_USER_RESPONSE;
+                    sm_trigger_user_response(sm_conn);
+                    if (setup->sm_user_response == SM_USER_RESPONSE_IDLE){
+                        sm_conn->sm_engine_state = SM_PH2_SEND_PUBLIC_KEY_COMMAND;
+                    } 
+                } else {
                     sm_conn->sm_engine_state = SM_PH2_SEND_PUBLIC_KEY_COMMAND;
-                } 
+                }
                 break;
             } 
 #endif  
