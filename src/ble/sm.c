@@ -260,6 +260,7 @@ typedef struct sm_setup_context {
     sm_key_t  sm_local_dhkey_check;
     sm_key_t  sm_ra;
     sm_key_t  sm_rb;
+    sm_key_t  sm_mackey;
     uint8_t   sm_passkey_bit;
 #endif
 
@@ -680,6 +681,8 @@ static void f6(sm_key_t res, const sm_key_t w, const sm_key_t n1, const sm_key_t
     log_info("f6 message");
     log_info_hexdump(buffer, sizeof(buffer));
     aes_cmac(res, w, buffer,sizeof(buffer));
+    log_info("f6 result");
+    log_info_hexdump(res, 16);
 }
 
 // g2(U, V, X, Y) = AES-CMACX(U || V || Y) mod 2^32
@@ -1788,8 +1791,7 @@ static void sm_run(void){
                 memcpy(setup->sm_ltk, &ltk_mackey[16], 16);
 
                 // calc DHKCheck
-                sm_key_t mackey;
-                memcpy(mackey, &ltk_mackey[0], 16);
+                memcpy(setup->sm_mackey, &ltk_mackey[0], 16);
 
                 // TODO: checks
 
@@ -1803,10 +1805,10 @@ static void sm_run(void){
                 iocap_b[2] = sm_pairing_packet_get_io_capability(setup->sm_s_pres);
                 if (connection->sm_role){
                     // responder
-                    f6(setup->sm_local_dhkey_check, mackey, setup->sm_local_nonce, setup->sm_peer_nonce, setup->sm_ra, iocap_b, bd_addr_slave, bd_addr_master);
+                    f6(setup->sm_local_dhkey_check, setup->sm_mackey, setup->sm_local_nonce, setup->sm_peer_nonce, setup->sm_ra, iocap_b, bd_addr_slave, bd_addr_master);
                 } else {
                     // initiator
-                    f6(setup->sm_local_dhkey_check, mackey, setup->sm_local_nonce, setup->sm_peer_nonce, setup->sm_rb, iocap_a, bd_addr_master, bd_addr_slave);
+                    f6(setup->sm_local_dhkey_check, setup->sm_mackey, setup->sm_local_nonce, setup->sm_peer_nonce, setup->sm_rb, iocap_a, bd_addr_master, bd_addr_slave);
                 }
 #endif
                 reverse_128(setup->sm_local_dhkey_check, &buffer[1]);
@@ -2821,7 +2823,34 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
             // store DHKey Check
             reverse_128(&packet[01], setup->sm_peer_dhkey_check);
 
-            // TODO: validate DHKey Check value
+            // validate E = f6()
+            sm_key56_t bd_addr_master, bd_addr_slave;
+            bd_addr_master[0] =  setup->sm_m_addr_type;
+            bd_addr_slave[0]  =  setup->sm_s_addr_type;
+            memcpy(&bd_addr_master[1], setup->sm_m_address, 6);
+            memcpy(&bd_addr_slave[1],  setup->sm_s_address, 6);
+
+            uint8_t iocap_a[3];
+            iocap_a[0] = sm_pairing_packet_get_auth_req(setup->sm_m_preq);
+            iocap_a[1] = sm_pairing_packet_get_oob_data_flag(setup->sm_m_preq);
+            iocap_a[2] = sm_pairing_packet_get_io_capability(setup->sm_m_preq);
+            uint8_t iocap_b[3];
+            iocap_b[0] = sm_pairing_packet_get_auth_req(setup->sm_s_pres);
+            iocap_b[1] = sm_pairing_packet_get_oob_data_flag(setup->sm_s_pres);
+            iocap_b[2] = sm_pairing_packet_get_io_capability(setup->sm_s_pres);
+            sm_key_t peer_dhkey_check;
+            if (sm_conn->sm_role){
+                // responder
+                f6(peer_dhkey_check, setup->sm_mackey, setup->sm_peer_nonce, setup->sm_local_nonce, setup->sm_rb, iocap_a, bd_addr_master, bd_addr_slave);
+            } else {
+                // initiator
+                f6(peer_dhkey_check, setup->sm_mackey, setup->sm_peer_nonce, setup->sm_local_nonce, setup->sm_ra, iocap_b, bd_addr_slave, bd_addr_master);
+            }
+
+            if (0 != memcmp(setup->sm_peer_dhkey_check, peer_dhkey_check, 16) ){
+                sm_pairing_error(sm_conn, SM_REASON_DHKEY_CHECK_FAILED);
+                break;
+            }
 
             if (sm_conn->sm_role){
                 // responder

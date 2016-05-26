@@ -1002,6 +1002,10 @@ typedef enum {
 #define SM_REASON_COMMAND_NOT_SUPPORTED        0x07
 #define SM_REASON_UNSPECIFIED_REASON           0x08
 #define SM_REASON_REPEATED_ATTEMPTS            0x09
+#define SM_REASON_INVALID_PARAMETERS           0x0a
+#define SM_REASON_DHKEY_CHECK_FAILED           0x0b
+#define SM_REASON_NUMERIC_COMPARISON_FAILED    0x0c
+
 // also, invalid parameters
 // and reserved
 
