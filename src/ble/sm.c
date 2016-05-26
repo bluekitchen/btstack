@@ -2903,6 +2903,11 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
                     sm_done_for_handle(sm_conn->sm_handle);
                 } else {
                     sm_conn->sm_engine_state = SM_PH3_GET_RANDOM; 
+#ifdef ENABLE_LE_SECURE_CONNECTIONS
+                    if (setup->sm_use_secure_connections){
+                        sm_conn->sm_engine_state = SM_PH3_DISTRIBUTE_KEYS;
+                    }
+#endif                  
                 }
             }
             break;
