@@ -80,9 +80,9 @@ static void gap_le_connect_to_1111_setup(void){
     sm_event_callback_registration.callback = &packet_handler;
     sm_add_event_handler(&sm_event_callback_registration);
     // Numeric Comparison
-    sm_set_io_capabilities(IO_CAPABILITY_DISPLAY_YES_NO);
+    // sm_set_io_capabilities(IO_CAPABILITY_DISPLAY_YES_NO);
     // Passkey entry initiator enter, responder displays
-    // sm_set_io_capabilities(IO_CAPABILITY_DISPLAY_ONLY);
+    sm_set_io_capabilities(IO_CAPABILITY_DISPLAY_ONLY);
     sm_set_authentication_requirements(SM_AUTHREQ_MITM_PROTECTION);
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
     sm_set_authentication_requirements(SM_AUTHREQ_SECURE_CONNECTION|SM_AUTHREQ_MITM_PROTECTION);
