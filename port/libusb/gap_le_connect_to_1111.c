@@ -85,9 +85,9 @@ static void gap_le_connect_to_1111_setup(void){
     sm_set_io_capabilities(IO_CAPABILITY_DISPLAY_ONLY);
     sm_set_authentication_requirements(SM_AUTHREQ_MITM_PROTECTION);
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
-    sm_set_authentication_requirements(SM_AUTHREQ_SECURE_CONNECTION|SM_AUTHREQ_MITM_PROTECTION);
+    // sm_set_authentication_requirements(SM_AUTHREQ_SECURE_CONNECTION|SM_AUTHREQ_MITM_PROTECTION);
     // Just Works (no MITM requested)
-    // sm_set_authentication_requirements(SM_AUTHREQ_SECURE_CONNECTION);
+    sm_set_authentication_requirements(SM_AUTHREQ_SECURE_CONNECTION);
 #endif
 }
 

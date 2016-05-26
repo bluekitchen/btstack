@@ -622,6 +622,8 @@ static void f4(sm_key_t res, const sm_key256_t u, const sm_key256_t v, const sm_
     log_info("f4 message");
     log_info_hexdump(buffer, sizeof(buffer));
     aes_cmac(res, x, buffer, sizeof(buffer));
+    log_info("f4 result");
+    log_info_hexdump(res, sizeof(sm_key_t));
 }
 
 const sm_key_t f5_salt = { 0x6C ,0x88, 0x83, 0x91, 0xAA, 0xF5, 0xA5, 0x38, 0x60, 0x37, 0x0B, 0xDB, 0x5A, 0x60, 0x83, 0xBE};
@@ -2538,10 +2540,13 @@ static int sm_validate_stk_generation_method(void){
 }
 
 // helper for sm_pdu_handler, calls sm_run on exit
-static void sm_pdu_received_in_wrong_state(sm_connection_t * sm_conn){
-    setup->sm_pairing_failed_reason = SM_REASON_UNSPECIFIED_REASON;
+static void sm_pairing_error(sm_connection_t * sm_conn, uint8_t reason){
     sm_conn->sm_engine_state = sm_conn->sm_role ? SM_RESPONDER_IDLE : SM_INITIATOR_CONNECTED;
     sm_done_for_handle(sm_conn->sm_handle);
+}
+
+static inline void sm_pdu_received_in_wrong_state(sm_connection_t * sm_conn){
+    sm_pairing_error(sm_conn, SM_REASON_UNSPECIFIED_REASON);
 }
 
 static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uint8_t *packet, uint16_t size){
@@ -2758,15 +2763,29 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
             } else {
                 // Initiator role
                 
-                // TODO: validate confirmation values
+                // check if Cb = f4(Pkb, Pka, Nb, 0)
+                sm_key_t confirm_value;
+#ifdef USE_MBEDTLS_FOR_ECDH
+                uint8_t local_qx[32];
+                mbedtls_mpi_write_binary(&le_keypair.Q.X, local_qx, sizeof(local_qx));
+                f4(confirm_value, setup->sm_peer_qx, local_qx, setup->sm_peer_nonce, 0);
+                // not valid for PK entry
+#endif
 
                 switch (setup->sm_stk_generation_method){
                     case JUST_WORKS:
-                        sm_conn->sm_engine_state = SM_INITIATOR_PH3_SEND_START_ENCRYPTION;
+                        if (0 != memcmp(confirm_value, setup->sm_peer_confirm, 16)){
+                            sm_pairing_error(sm_conn, SM_REASON_CONFIRM_VALUE_FAILED);
+                            break;
+                        }
+                        sm_conn->sm_engine_state = SM_PH2_SEND_DHKEY_CHECK_COMMAND;
                         break;
 
                     case NK_BOTH_INPUT: {
-                        // TODO: check if Cb = f4(Pkb, Pka, Nb, 0)
+                        if (0 != memcmp(confirm_value, setup->sm_peer_confirm, 16)){
+                            sm_pairing_error(sm_conn, SM_REASON_CONFIRM_VALUE_FAILED);
+                            break;
+                        }
 
                         // calc Va if numeric comparison
                         // TODO: use AES Engine to calculate g2
@@ -2780,6 +2799,9 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
                     case PK_INIT_INPUT:
                     case PK_RESP_INPUT:
                     case OK_BOTH_INPUT:
+
+                        // TODO: validate Cbi
+
                         if (setup->sm_passkey_bit < 20) {
                             sm_conn->sm_engine_state = SM_PH2_SEND_CONFIRMATION;
                         } else {
