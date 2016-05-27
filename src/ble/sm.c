@@ -655,31 +655,6 @@ static void f5(sm_key256_t res, const sm_key256_t w, const sm_key_t n1, const sm
     // hexdump2(res+16, 16);
 }
 
-// f6(W, N1, N2, R, IOcap, A1, A2) = AES-CMACW (N1 || N2 || R || IOcap || A1 || A2
-// - W is 128 bits 
-// - N1 is 128 bits 
-// - N2 is 128 bits 
-// - R is 128 bits 
-// - IOcap is 24 bits 
-// - A1 is 56 bits 
-// - A2 is 56 bits
-static void f6(sm_key_t res, const sm_key_t w, const sm_key_t n1, const sm_key_t n2, const sm_key_t r, const sm_key24_t io_cap, const sm_key56_t a1, const sm_key56_t a2){
-    uint8_t buffer[65];
-    memcpy(buffer, n1, 16);
-    memcpy(buffer+16, n2, 16);
-    memcpy(buffer+32, r, 16);
-    memcpy(buffer+48, io_cap, 3);
-    memcpy(buffer+51, a1, 7);
-    memcpy(buffer+58, a2, 7);
-    log_info("f6 key");
-    log_info_hexdump(w, 16);
-    log_info("f6 message");
-    log_info_hexdump(buffer, sizeof(buffer));
-    aes_cmac(res, w, buffer,sizeof(buffer));
-    log_info("f6 result");
-    log_info_hexdump(res, 16);
-}
-
 // g2(U, V, X, Y) = AES-CMACX(U || V || Y) mod 2^32
 // - U is 256 bits
 // - V is 256 bits
@@ -1363,6 +1338,8 @@ static inline void sm_pdu_received_in_wrong_state(sm_connection_t * sm_conn){
 
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
 
+static void sm_sc_prepare_dhkey_check(sm_connection_t * sm_conn);
+
 static void sm_sc_state_after_receiving_random(sm_connection_t * sm_conn){
     if (sm_conn->sm_role){
         // Responder
@@ -1371,7 +1348,7 @@ static void sm_sc_state_after_receiving_random(sm_connection_t * sm_conn){
         // Initiator role
         switch (setup->sm_stk_generation_method){
             case JUST_WORKS:
-                sm_conn->sm_engine_state = SM_SC_SEND_DHKEY_CHECK_COMMAND;
+                sm_sc_prepare_dhkey_check(sm_conn);
                 break;
 
             case NK_BOTH_INPUT: {
@@ -1390,7 +1367,7 @@ static void sm_sc_state_after_receiving_random(sm_connection_t * sm_conn){
                 if (setup->sm_passkey_bit < 20) {
                     sm_conn->sm_engine_state = SM_SC_W2_CMAC_FOR_CONFIRMATION;
                 } else {
-                    sm_conn->sm_engine_state = SM_SC_SEND_DHKEY_CHECK_COMMAND;
+                    sm_sc_prepare_dhkey_check(sm_conn);
                 }
                 break;
             case OOB:
@@ -1431,6 +1408,7 @@ static void sm_sc_cmac_done(uint8_t * hash){
 }
 
 static void f4_engine(sm_connection_t * sm_conn, const sm_key256_t u, const sm_key256_t v, const sm_key_t x, uint8_t z){
+    const uint16_t message_len = 65;
     sm_cmac_connection = sm_conn;
     memcpy(sm_cmac_sc_buffer, u, 32);
     memcpy(sm_cmac_sc_buffer+32, v, 32);
@@ -1438,9 +1416,51 @@ static void f4_engine(sm_connection_t * sm_conn, const sm_key256_t u, const sm_k
     log_info("f4 key");
     log_info_hexdump(x, 16);
     log_info("f4 message");
-    log_info_hexdump(sm_cmac_sc_buffer, 65);
-    sm_cmac_general_start(x, 65, &sm_sc_cmac_get_byte, &sm_sc_cmac_done);
+    log_info_hexdump(sm_cmac_sc_buffer, message_len);
+    sm_cmac_general_start(x, message_len, &sm_sc_cmac_get_byte, &sm_sc_cmac_done);
 }
+
+// f6(W, N1, N2, R, IOcap, A1, A2) = AES-CMACW (N1 || N2 || R || IOcap || A1 || A2
+// - W is 128 bits 
+// - N1 is 128 bits 
+// - N2 is 128 bits 
+// - R is 128 bits 
+// - IOcap is 24 bits 
+// - A1 is 56 bits 
+// - A2 is 56 bits
+static void f6(sm_key_t res, const sm_key_t w, const sm_key_t n1, const sm_key_t n2, const sm_key_t r, const sm_key24_t io_cap, const sm_key56_t a1, const sm_key56_t a2){
+    uint8_t buffer[65];
+    memcpy(buffer, n1, 16);
+    memcpy(buffer+16, n2, 16);
+    memcpy(buffer+32, r, 16);
+    memcpy(buffer+48, io_cap, 3);
+    memcpy(buffer+51, a1, 7);
+    memcpy(buffer+58, a2, 7);
+    log_info("f6 key");
+    log_info_hexdump(w, 16);
+    log_info("f6 message");
+    log_info_hexdump(buffer, sizeof(buffer));
+    aes_cmac(res, w, buffer,sizeof(buffer));
+    log_info("f6 result");
+    log_info_hexdump(res, 16);
+}
+
+#if 0
+static void f6_engine(sm_key_t res, const sm_key_t w, const sm_key_t n1, const sm_key_t n2, const sm_key_t r, const sm_key24_t io_cap, const sm_key56_t a1, const sm_key56_t a2){
+    const uint16_t message_len = 65;
+    memcpy(sm_cmac_sc_buffer, n1, 16);
+    memcpy(sm_cmac_sc_buffer+16, n2, 16);
+    memcpy(sm_cmac_sc_buffer+32, r, 16);
+    memcpy(sm_cmac_sc_buffer+48, io_cap, 3);
+    memcpy(sm_cmac_sc_buffer+51, a1, 7);
+    memcpy(sm_cmac_sc_buffer+58, a2, 7);
+    log_info("f6 key");
+    log_info_hexdump(w, 16);
+    log_info("f6 message");
+    log_info_hexdump(sm_cmac_sc_buffer, message_len);
+    sm_cmac_general_start(w, 65, &sm_sc_cmac_get_byte, &sm_sc_cmac_done);
+}
+#endif
 
 static void sm_sc_calculate_local_confirm(sm_connection_t * sm_conn){
     uint8_t z = 0;
@@ -1490,6 +1510,63 @@ static void sm_sc_calculate_dhkey(sm_key256_t dhkey){
 #endif
     log_info("dhkey");
     log_info_hexdump(dhkey, 32);
+}
+
+static void sm_sc_calculate_f5_for_dhkey_check(sm_connection_t * sm_conn){
+
+    // calculate DHKEY
+    sm_key256_t dhkey;
+    sm_sc_calculate_dhkey(dhkey);
+
+    // calculate LTK + MacKey
+    sm_key256_t ltk_mackey;
+    sm_key56_t bd_addr_master, bd_addr_slave;
+    bd_addr_master[0] =  setup->sm_m_addr_type;
+    bd_addr_slave[0]  =  setup->sm_s_addr_type;
+    memcpy(&bd_addr_master[1], setup->sm_m_address, 6);
+    memcpy(&bd_addr_slave[1],  setup->sm_s_address, 6);
+    if (sm_conn->sm_role){
+        // responder
+        f5(ltk_mackey, dhkey, setup->sm_peer_nonce, setup->sm_local_nonce, bd_addr_master, bd_addr_slave);
+    } else {
+        // initiator
+        f5(ltk_mackey, dhkey, setup->sm_local_nonce, setup->sm_peer_nonce, bd_addr_master, bd_addr_slave);
+    }
+    // store LTK
+    memcpy(setup->sm_ltk, &ltk_mackey[16], 16);
+
+    // store macckey
+    memcpy(setup->sm_mackey, &ltk_mackey[0], 16);
+}
+
+static void sm_sc_calculate_f6_for_dhkey_check(sm_connection_t * sm_conn){
+    // calculate DHKCheck
+    sm_key56_t bd_addr_master, bd_addr_slave;
+    bd_addr_master[0] =  setup->sm_m_addr_type;
+    bd_addr_slave[0]  =  setup->sm_s_addr_type;
+    memcpy(&bd_addr_master[1], setup->sm_m_address, 6);
+    memcpy(&bd_addr_slave[1],  setup->sm_s_address, 6);
+    uint8_t iocap_a[3];
+    iocap_a[0] = sm_pairing_packet_get_auth_req(setup->sm_m_preq);
+    iocap_a[1] = sm_pairing_packet_get_oob_data_flag(setup->sm_m_preq);
+    iocap_a[2] = sm_pairing_packet_get_io_capability(setup->sm_m_preq);
+    uint8_t iocap_b[3];
+    iocap_b[0] = sm_pairing_packet_get_auth_req(setup->sm_s_pres);
+    iocap_b[1] = sm_pairing_packet_get_oob_data_flag(setup->sm_s_pres);
+    iocap_b[2] = sm_pairing_packet_get_io_capability(setup->sm_s_pres);
+    if (sm_conn->sm_role){
+        // responder
+        f6(setup->sm_local_dhkey_check, setup->sm_mackey, setup->sm_local_nonce, setup->sm_peer_nonce, setup->sm_ra, iocap_b, bd_addr_slave, bd_addr_master);
+    } else {
+        // initiator
+        f6(setup->sm_local_dhkey_check, setup->sm_mackey, setup->sm_local_nonce, setup->sm_peer_nonce, setup->sm_rb, iocap_a, bd_addr_master, bd_addr_slave);
+    }
+}
+
+static void sm_sc_prepare_dhkey_check(sm_connection_t * sm_conn){
+    sm_sc_calculate_f5_for_dhkey_check(sm_conn);
+    sm_sc_calculate_f6_for_dhkey_check(sm_conn);
+    sm_conn->sm_engine_state = SM_SC_SEND_DHKEY_CHECK_COMMAND;
 }
 
 #endif
@@ -1769,6 +1846,12 @@ static void sm_run(void){
                 connection->sm_engine_state = SM_SC_W4_CMAC_FOR_CHECK_CONFIRMATION;
                 sm_sc_calculate_remote_confirm(connection);
                 break;
+
+            case SM_SC_W2_CALCULATE_F6_FOR_DHKEY_CHECK:
+                if (!sm_cmac_ready()) break;
+                connection->sm_engine_state = SM_SC_W4_CALCULATE_F6_FOR_DHKEY_CHECK;
+                sm_sc_calculate_f6_for_dhkey_check(connection);
+                break;
 #endif
             // initiator side
             case SM_INITIATOR_PH0_SEND_START_ENCRYPTION: {
@@ -1900,52 +1983,10 @@ static void sm_run(void){
                 break;
             }
             case SM_SC_SEND_DHKEY_CHECK_COMMAND: {
-
-                // calculate DHKEY
-                sm_key256_t dhkey;
-                sm_sc_calculate_dhkey(dhkey);
-
-                // calculate LTK + MacKey
-                sm_key256_t ltk_mackey;
-                sm_key56_t bd_addr_master, bd_addr_slave;
-                bd_addr_master[0] =  setup->sm_m_addr_type;
-                bd_addr_slave[0]  =  setup->sm_s_addr_type;
-                memcpy(&bd_addr_master[1], setup->sm_m_address, 6);
-                memcpy(&bd_addr_slave[1],  setup->sm_s_address, 6);
-                if (connection->sm_role){
-                    // responder
-                    f5(ltk_mackey, dhkey, setup->sm_peer_nonce, setup->sm_local_nonce, bd_addr_master, bd_addr_slave);
-                } else {
-                    // initiator
-                    f5(ltk_mackey, dhkey, setup->sm_local_nonce, setup->sm_peer_nonce, bd_addr_master, bd_addr_slave);
-                }
-                // store LTK
-                memcpy(setup->sm_ltk, &ltk_mackey[16], 16);
-
-                // calc DHKCheck
-                memcpy(setup->sm_mackey, &ltk_mackey[0], 16);
-
-                // TODO: checks
-
-                uint8_t iocap_a[3];
-                iocap_a[0] = sm_pairing_packet_get_auth_req(setup->sm_m_preq);
-                iocap_a[1] = sm_pairing_packet_get_oob_data_flag(setup->sm_m_preq);
-                iocap_a[2] = sm_pairing_packet_get_io_capability(setup->sm_m_preq);
-                uint8_t iocap_b[3];
-                iocap_b[0] = sm_pairing_packet_get_auth_req(setup->sm_s_pres);
-                iocap_b[1] = sm_pairing_packet_get_oob_data_flag(setup->sm_s_pres);
-                iocap_b[2] = sm_pairing_packet_get_io_capability(setup->sm_s_pres);
-                if (connection->sm_role){
-                    // responder
-                    f6(setup->sm_local_dhkey_check, setup->sm_mackey, setup->sm_local_nonce, setup->sm_peer_nonce, setup->sm_ra, iocap_b, bd_addr_slave, bd_addr_master);
-                } else {
-                    // initiator
-                    f6(setup->sm_local_dhkey_check, setup->sm_mackey, setup->sm_local_nonce, setup->sm_peer_nonce, setup->sm_rb, iocap_a, bd_addr_master, bd_addr_slave);
-                }
-
                 uint8_t buffer[17];
                 buffer[0] = SM_CODE_PAIRING_DHKEY_CHECK;
                 reverse_128(setup->sm_local_dhkey_check, &buffer[1]);
+
                 if (connection->sm_role){
                     connection->sm_engine_state = SM_SC_W4_LTK_REQUEST_SC;
                 } else {
@@ -2948,7 +2989,7 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
                 if (setup->sm_stk_generation_method == NK_BOTH_INPUT && setup->sm_user_response != SM_USER_RESPONSE_CONFIRM){
                     sm_conn->sm_engine_state = SM_SC_W4_USER_RESPONSE;
                 } else {
-                    sm_conn->sm_engine_state = SM_SC_SEND_DHKEY_CHECK_COMMAND;
+                    sm_sc_prepare_dhkey_check(sm_conn);
                 }
             } else {
                 // initiator
@@ -3314,7 +3355,7 @@ void sm_just_works_confirm(hci_con_handle_t con_handle){
     if (sm_conn->sm_engine_state == SM_SC_W4_USER_RESPONSE){
         if (sm_conn->sm_role){
             // responder
-            sm_conn->sm_engine_state = SM_SC_SEND_DHKEY_CHECK_COMMAND;
+            sm_sc_prepare_dhkey_check(sm_conn);
         } else {
             // initiator
             // TODO handle intiator role
