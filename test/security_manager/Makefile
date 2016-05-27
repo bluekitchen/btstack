@@ -41,17 +41,18 @@ all: security_manager aestest ectest aes_cmac_test
 security_manager: ${CORE_OBJ} ${COMMON_OBJ} security_manager.c
 	${CC} ${CORE_OBJ} ${COMMON_OBJ} security_manager.c ${CFLAGS} ${CPPFLAGS} ${LDFLAGS} -o $@
 
-aestest: aestest.c rijndael.c
-	${CC} ${CFLAGS} rijndael.c aestest.c -o $@
+aestest: aestest.o rijndael.o
+	${CC} ${CFLAGS} $^ -o $@
 
-ectest: ectest.c ${MBEDTLS} rijndael.c
+ectest: ectest.o ${MBEDTLS} rijndael.o
 	gcc ${CFLAGS} $^ -o $@ 
 
-aes_cmac_test: aes_cmac_test.c rijndael.c
+aes_cmac_test: aes_cmac_test.o aes_cmac.o rijndael.o
 	gcc ${CFLAGS} $^ -o $@ 
 
 test: all
 	./security_manager
+	./aes_cmac_test
 	./aestest
 	
 clean:
