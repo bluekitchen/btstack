@@ -1472,6 +1472,26 @@ static void sm_sc_calculate_remote_confirm(sm_connection_t * sm_conn){
     f4_engine(sm_conn, setup->sm_peer_qx, local_qx, setup->sm_peer_nonce, z);
 }
 
+static void sm_sc_calculate_dhkey(sm_key256_t dhkey){
+#ifdef USE_MBEDTLS_FOR_ECDH
+    // da * Pb
+    mbedtls_ecp_group grp;
+    mbedtls_ecp_group_init( &grp );
+    mbedtls_ecp_group_load(&grp, MBEDTLS_ECP_DP_SECP256R1);
+    mbedtls_ecp_point Q;
+    mbedtls_ecp_point_init( &Q );
+    mbedtls_mpi_read_binary(&Q.X, setup->sm_peer_qx, 32);
+    mbedtls_mpi_read_binary(&Q.Y, setup->sm_peer_qy, 32);
+    mbedtls_mpi_read_string(&Q.Z, 16, "1" );
+    mbedtls_ecp_point DH;
+    mbedtls_ecp_point_init( &DH );
+    mbedtls_ecp_mul(&grp, &DH, &le_keypair.d, &Q, NULL, NULL);
+    mbedtls_mpi_write_binary(&DH.X, dhkey, 32);
+#endif
+    log_info("dhkey");
+    log_info_hexdump(dhkey, 32);
+}
+
 #endif
 
 static void sm_run(void){
@@ -1881,27 +1901,9 @@ static void sm_run(void){
             }
             case SM_SC_SEND_DHKEY_CHECK_COMMAND: {
 
-                uint8_t buffer[17];
-                buffer[0] = SM_CODE_PAIRING_DHKEY_CHECK;
-#ifdef USE_MBEDTLS_FOR_ECDH
                 // calculate DHKEY
-                mbedtls_ecp_group grp;
-                mbedtls_ecp_group_init( &grp );
-                mbedtls_ecp_group_load(&grp, MBEDTLS_ECP_DP_SECP256R1);
-                mbedtls_ecp_point Q;
-                mbedtls_ecp_point_init( &Q );
-                mbedtls_mpi_read_binary(&Q.X, setup->sm_peer_qx, 32);
-                mbedtls_mpi_read_binary(&Q.Y, setup->sm_peer_qy, 32);
-                mbedtls_mpi_read_string(&Q.Z, 16, "1" );
-
-                // da * Pb
-                mbedtls_ecp_point DH;
-                mbedtls_ecp_point_init( &DH );
-                mbedtls_ecp_mul(&grp, &DH, &le_keypair.d, &Q, NULL, NULL);
                 sm_key256_t dhkey;
-                mbedtls_mpi_write_binary(&DH.X, dhkey, 32);
-                log_info("dhkey");
-                log_info_hexdump(dhkey, 32);
+                sm_sc_calculate_dhkey(dhkey);
 
                 // calculate LTK + MacKey
                 sm_key256_t ltk_mackey;
@@ -1940,13 +1942,16 @@ static void sm_run(void){
                     // initiator
                     f6(setup->sm_local_dhkey_check, setup->sm_mackey, setup->sm_local_nonce, setup->sm_peer_nonce, setup->sm_rb, iocap_a, bd_addr_master, bd_addr_slave);
                 }
-#endif
+
+                uint8_t buffer[17];
+                buffer[0] = SM_CODE_PAIRING_DHKEY_CHECK;
                 reverse_128(setup->sm_local_dhkey_check, &buffer[1]);
                 if (connection->sm_role){
                     connection->sm_engine_state = SM_SC_W4_LTK_REQUEST_SC;
                 } else {
                     connection->sm_engine_state = SM_SC_W4_DHKEY_CHECK_COMMAND;
                 }
+
                 l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
                 sm_timeout_reset(connection);            
                 break;
