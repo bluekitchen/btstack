@@ -2759,20 +2759,18 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
             // received random value
             reverse_128(&packet[1], setup->sm_peer_nonce);
 
-            if (sm_conn->sm_role){
-                // Responder
-                sm_conn->sm_engine_state = SM_PH2_SEND_PAIRING_RANDOM_SC;
-            } else {
-                // Initiator role
-                
-                // check if Cb = f4(Pkb, Pka, Nb, z)
-                uint8_t z = 0;
-                if (setup->sm_stk_generation_method != JUST_WORKS && setup->sm_stk_generation_method != NK_BOTH_INPUT){
-                    // some form of passkey
-                    uint32_t pk = big_endian_read_32(setup->sm_tk, 12);
-                    // sm_passkey_bit was increased before sending confirm value
-                    z = 0x80 | ((pk >> (setup->sm_passkey_bit-1)) & 1);
-                }
+            // validate confirm value if Cb = f4(Pkb, Pka, Nb, z) 
+            uint8_t z = 0;
+            int passkey_entry = 0;
+            if (setup->sm_stk_generation_method != JUST_WORKS && setup->sm_stk_generation_method != NK_BOTH_INPUT){
+                // some form of passkey
+                passkey_entry = 1;
+                uint32_t pk = big_endian_read_32(setup->sm_tk, 12);
+                // sm_passkey_bit was increased before sending confirm value
+                z = 0x80 | ((pk >> (setup->sm_passkey_bit-1)) & 1);
+            }
+            // only check for JUST WORK/NC in initiator role AND passkey entry
+            if (sm_conn->sm_role || passkey_entry) {
                 sm_key_t confirm_value;
 #ifdef USE_MBEDTLS_FOR_ECDH
                 uint8_t local_qx[32];
@@ -2783,7 +2781,13 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
                     sm_pairing_error(sm_conn, SM_REASON_CONFIRM_VALUE_FAILED);
                     break;
                 }
+            }
 
+            if (sm_conn->sm_role){
+                // Responder
+                sm_conn->sm_engine_state = SM_PH2_SEND_PAIRING_RANDOM_SC;
+            } else {
+                // Initiator role
                 switch (setup->sm_stk_generation_method){
                     case JUST_WORKS:
                         sm_conn->sm_engine_state = SM_PH2_SEND_DHKEY_CHECK_COMMAND;
