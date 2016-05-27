@@ -171,18 +171,26 @@ static derived_key_generation_t dkg_state;
 static random_address_update_t rau_state;
 static bd_addr_t sm_random_address;
 
-// CMAC calculation
+// CMAC Calculation: General
 static cmac_state_t sm_cmac_state;
-static sm_key_t     sm_cmac_k;
-static uint8_t      sm_cmac_header[3];
 static uint16_t     sm_cmac_message_len;
-static uint8_t *    sm_cmac_message;
-static uint8_t      sm_cmac_sign_counter[4];
-static sm_key_t     sm_cmac_m_last;
+static sm_key_t     sm_cmac_k;
 static sm_key_t     sm_cmac_x;
+static sm_key_t     sm_cmac_m_last;
 static uint8_t      sm_cmac_block_current;
 static uint8_t      sm_cmac_block_count;
-static void (*sm_cmac_done_handler)(uint8_t hash[8]);
+static uint8_t      (*sm_cmac_get_byte)(uint16_t offset);
+static void         (*sm_cmac_done_handler)(uint8_t * hash);
+
+// CMAC for ATT Signed Writes
+static uint8_t      sm_cmac_header[3];
+static uint8_t *    sm_cmac_message;
+static uint8_t      sm_cmac_sign_counter[4];
+
+// CMAC for Secure Connection functions
+#ifdef ENABLE_LE_SECURE_CONNECTIONS
+static uint8_t      sm_cmac_sc_buffer[80];
+#endif
 
 // resolvable private address lookup / CSRK calculation
 static int       sm_address_resolution_test;
@@ -912,14 +920,19 @@ static inline void dkg_next_state(void){
 static inline void rau_next_state(void){
     rau_state = (random_address_update_t) (((int)rau_state) + 1);
 }
+
+// CMAC calculation using AES Engine
+
 static inline void sm_cmac_next_state(void){
     sm_cmac_state = (cmac_state_t) (((int)sm_cmac_state) + 1);
 }
+
 static int sm_cmac_last_block_complete(void){
     if (sm_cmac_message_len == 0) return 0;
     return (sm_cmac_message_len & 0x0f) == 0;
 }
-static inline uint8_t sm_cmac_message_get_byte(int offset){
+
+static inline uint8_t sm_cmac_message_get_byte(uint16_t offset){
     if (offset >= sm_cmac_message_len) {
         log_error("sm_cmac_message_get_byte. out of bounds, access %u, len %u", offset, sm_cmac_message_len);
         return 0;
@@ -938,16 +951,15 @@ static inline uint8_t sm_cmac_message_get_byte(int offset){
     return sm_cmac_sign_counter[offset - actual_message_len_incl_header];
 }
 
-void sm_cmac_start(sm_key_t k, uint8_t opcode, hci_con_handle_t con_handle, uint16_t message_len, uint8_t * message, uint32_t sign_counter, void (*done_handler)(uint8_t hash[8])){
-    memcpy(sm_cmac_k, k, 16);
-    sm_cmac_header[0] = opcode;
-    little_endian_store_16(sm_cmac_header, 1, con_handle);
-    little_endian_store_32(sm_cmac_sign_counter, 0, sign_counter);
-    sm_cmac_message_len = 3 + message_len + 4;  // incl. virtually prepended att opcode, handle and appended sign_counter in LE
-    sm_cmac_message = message;
-    sm_cmac_done_handler = done_handler;
-    sm_cmac_block_current = 0;
+// generic cmac calculation
+void sm_cmac_general_start(sm_key_t key, uint16_t message_len, uint8_t (*get_byte_callback)(uint16_t offset), void (*done_callback)(uint8_t hash[8])){
+    // Generalized CMAC
+    memcpy(sm_cmac_k, key, 16);
     memset(sm_cmac_x, 0, 16);
+    sm_cmac_block_current = 0;
+    sm_cmac_message_len  = message_len;
+    sm_cmac_done_handler = done_callback;
+    sm_cmac_get_byte     = get_byte_callback;
 
     // step 2: n := ceil(len/const_Bsize);
     sm_cmac_block_count = (sm_cmac_message_len + 15) / 16;
@@ -957,13 +969,24 @@ void sm_cmac_start(sm_key_t k, uint8_t opcode, hci_con_handle_t con_handle, uint
         sm_cmac_block_count = 1;
     }
 
-    log_info("sm_cmac_start: len %u, block count %u", sm_cmac_message_len, sm_cmac_block_count);
+    log_info("sm_cmac_general_start: len %u, block count %u", sm_cmac_message_len, sm_cmac_block_count);
 
     // first, we need to compute l for k1, k2, and m_last
     sm_cmac_state = CMAC_CALC_SUBKEYS;
 
     // let's go
     sm_run();
+}
+
+// cmac for ATT Message signing
+void sm_cmac_start(sm_key_t k, uint8_t opcode, hci_con_handle_t con_handle, uint16_t message_len, uint8_t * message, uint32_t sign_counter, void (*done_handler)(uint8_t * hash)){
+    // ATT Message Signing
+    sm_cmac_header[0] = opcode;
+    little_endian_store_16(sm_cmac_header, 1, con_handle);
+    little_endian_store_32(sm_cmac_sign_counter, 0, sign_counter);
+    uint16_t total_message_len = 3 + message_len + 4;  // incl. virtually prepended att opcode, handle and appended sign_counter in LE
+    sm_cmac_message = message;
+    sm_cmac_general_start(k, total_message_len, &sm_cmac_message_get_byte, done_handler);
 }
 
 int sm_cmac_ready(void){
@@ -983,7 +1006,7 @@ static void sm_cmac_handle_aes_engine_ready(void){
             int j;
             sm_key_t y;
             for (j=0;j<16;j++){
-                y[j] = sm_cmac_x[j] ^ sm_cmac_message_get_byte(sm_cmac_block_current*16 + j);
+                y[j] = sm_cmac_x[j] ^ sm_cmac_get_byte(sm_cmac_block_current*16 + j);
             }
             sm_cmac_block_current++;
             sm_cmac_next_state();
@@ -1032,13 +1055,13 @@ static void sm_cmac_handle_encryption_result(sm_key_t data){
             int i;
             if (sm_cmac_last_block_complete()){
                 for (i=0;i<16;i++){
-                    sm_cmac_m_last[i] = sm_cmac_message_get_byte(sm_cmac_message_len - 16 + i) ^ k1[i];
+                    sm_cmac_m_last[i] = sm_cmac_get_byte(sm_cmac_message_len - 16 + i) ^ k1[i];
                 }
             } else {
                 int valid_octets_in_last_block = sm_cmac_message_len & 0x0f;
                 for (i=0;i<16;i++){
                     if (i < valid_octets_in_last_block){
-                        sm_cmac_m_last[i] = sm_cmac_message_get_byte((sm_cmac_message_len & 0xfff0) + i) ^ k2[i];
+                        sm_cmac_m_last[i] = sm_cmac_get_byte((sm_cmac_message_len & 0xfff0) + i) ^ k2[i];
                         continue;
                     }
                     if (i == valid_octets_in_last_block){
