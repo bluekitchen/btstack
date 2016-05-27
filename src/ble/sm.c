@@ -1396,8 +1396,11 @@ static void sm_sc_cmac_done(uint8_t * hash){
                 sm_pairing_error(sm_cmac_connection, SM_REASON_CONFIRM_VALUE_FAILED);
                 break;
             }
-            // next state
             sm_sc_state_after_receiving_random(sm_cmac_connection);
+            break;
+        case SM_SC_W4_CALCULATE_F6_FOR_DHKEY_CHECK:
+            memcpy(setup->sm_local_dhkey_check, hash, 16);
+            sm_cmac_connection->sm_engine_state = SM_SC_SEND_DHKEY_CHECK_COMMAND;
             break;
         default:
             log_error("sm_sc_cmac_done in state %u", sm_cmac_connection->sm_engine_state);
@@ -1445,9 +1448,9 @@ static void f6(sm_key_t res, const sm_key_t w, const sm_key_t n1, const sm_key_t
     log_info_hexdump(res, 16);
 }
 
-#if 0
-static void f6_engine(sm_key_t res, const sm_key_t w, const sm_key_t n1, const sm_key_t n2, const sm_key_t r, const sm_key24_t io_cap, const sm_key56_t a1, const sm_key56_t a2){
+static void f6_engine(sm_connection_t * sm_conn, const sm_key_t w, const sm_key_t n1, const sm_key_t n2, const sm_key_t r, const sm_key24_t io_cap, const sm_key56_t a1, const sm_key56_t a2){
     const uint16_t message_len = 65;
+    sm_cmac_connection = sm_conn;
     memcpy(sm_cmac_sc_buffer, n1, 16);
     memcpy(sm_cmac_sc_buffer+16, n2, 16);
     memcpy(sm_cmac_sc_buffer+32, r, 16);
@@ -1460,7 +1463,6 @@ static void f6_engine(sm_key_t res, const sm_key_t w, const sm_key_t n1, const s
     log_info_hexdump(sm_cmac_sc_buffer, message_len);
     sm_cmac_general_start(w, 65, &sm_sc_cmac_get_byte, &sm_sc_cmac_done);
 }
-#endif
 
 static void sm_sc_calculate_local_confirm(sm_connection_t * sm_conn){
     uint8_t z = 0;
@@ -1556,17 +1558,20 @@ static void sm_sc_calculate_f6_for_dhkey_check(sm_connection_t * sm_conn){
     iocap_b[2] = sm_pairing_packet_get_io_capability(setup->sm_s_pres);
     if (sm_conn->sm_role){
         // responder
-        f6(setup->sm_local_dhkey_check, setup->sm_mackey, setup->sm_local_nonce, setup->sm_peer_nonce, setup->sm_ra, iocap_b, bd_addr_slave, bd_addr_master);
+        f6_engine(sm_conn, setup->sm_mackey, setup->sm_local_nonce, setup->sm_peer_nonce, setup->sm_ra, iocap_b, bd_addr_slave, bd_addr_master);
     } else {
         // initiator
-        f6(setup->sm_local_dhkey_check, setup->sm_mackey, setup->sm_local_nonce, setup->sm_peer_nonce, setup->sm_rb, iocap_a, bd_addr_master, bd_addr_slave);
+        f6_engine(sm_conn, setup->sm_mackey, setup->sm_local_nonce, setup->sm_peer_nonce, setup->sm_rb, iocap_a, bd_addr_master, bd_addr_slave);
     }
 }
 
 static void sm_sc_prepare_dhkey_check(sm_connection_t * sm_conn){
+
+    // TODO: use AES CMAC Engine
     sm_sc_calculate_f5_for_dhkey_check(sm_conn);
-    sm_sc_calculate_f6_for_dhkey_check(sm_conn);
-    sm_conn->sm_engine_state = SM_SC_SEND_DHKEY_CHECK_COMMAND;
+
+    // second part
+    sm_conn->sm_engine_state = SM_SC_W2_CALCULATE_F6_FOR_DHKEY_CHECK;
 }
 
 #endif
