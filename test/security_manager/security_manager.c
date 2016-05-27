@@ -174,6 +174,28 @@ void CHECK_EQUAL_ARRAY(uint8_t * expected, uint8_t * actual, int size){
 #define CHECK_HCI_COMMAND(packet) { printf("check " #packet "\n") ; CHECK_EQUAL_ARRAY(packet, mock_packet_buffer(), sizeof(packet)); mock_clear_packet_buffer(); }
 #define CHECK_ACL_PACKET(packet)  { printf("check " #packet "\n") ; CHECK_EQUAL_ARRAY(packet, mock_packet_buffer(), sizeof(packet)); mock_clear_packet_buffer(); }
 
+static int parse_hex(uint8_t * buffer, const char * hex_string){
+    int len = 0;
+    while (*hex_string){
+        if (*hex_string == ' '){
+            hex_string++;
+            continue;
+        }
+        int high_nibble = nibble_for_char(*hex_string++);
+        int low_nibble = nibble_for_char(*hex_string++);
+        *buffer++ = (high_nibble << 4) | low_nibble;
+        len++;
+    }
+    return len;
+}
+
+static const char * key_string = "2b7e1516 28aed2a6 abf71588 09cf4f3c";
+static uint8_t cmac_hash[8];
+static void cmac_done(uint8_t hash[8]){
+    memcpy(cmac_hash, hash, 8);
+    printf("cmac hash: ");
+    printf_hexdump(hash, 8);
+}
 
 TEST_GROUP(SecurityManager){
 	void setup(void){
@@ -334,6 +356,16 @@ TEST(SecurityManager, MainTest){
 
 	// expect send LE SMP Code Signing Information Command
     CHECK_ACL_PACKET(test_acl_packet_22);
+
+    // additional test: cmac signing
+    sm_key_t key;
+    parse_hex(key, key_string);
+    uint8_t message [] = "hallo";
+    sm_cmac_start(key, 0x11, 0x1234, sizeof(message), message, 1, &cmac_done);
+    aes128_report_result();
+    aes128_report_result();
+    uint8_t expected_hash[] = { 0x5F, 0xE6, 0x86, 0x3E, 0xF3, 0x45, 0xD8, 0x43};
+    CHECK_EQUAL_ARRAY(expected_hash, cmac_hash, 8);
 }
 
 int main (int argc, const char * argv[]){
