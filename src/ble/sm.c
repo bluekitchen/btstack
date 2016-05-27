@@ -184,12 +184,13 @@ static void         (*sm_cmac_done_handler)(uint8_t * hash);
 
 // CMAC for ATT Signed Writes
 static uint8_t      sm_cmac_header[3];
-static uint8_t *    sm_cmac_message;
+static const uint8_t * sm_cmac_message;
 static uint8_t      sm_cmac_sign_counter[4];
 
 // CMAC for Secure Connection functions
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
-static uint8_t      sm_cmac_sc_buffer[80];
+static sm_connection_t * sm_cmac_connection;
+static uint8_t           sm_cmac_sc_buffer[80];
 #endif
 
 // resolvable private address lookup / CSRK calculation
@@ -952,7 +953,7 @@ static inline uint8_t sm_cmac_message_get_byte(uint16_t offset){
 }
 
 // generic cmac calculation
-void sm_cmac_general_start(sm_key_t key, uint16_t message_len, uint8_t (*get_byte_callback)(uint16_t offset), void (*done_callback)(uint8_t hash[8])){
+void sm_cmac_general_start(const sm_key_t key, uint16_t message_len, uint8_t (*get_byte_callback)(uint16_t offset), void (*done_callback)(uint8_t hash[8])){
     // Generalized CMAC
     memcpy(sm_cmac_k, key, 16);
     memset(sm_cmac_x, 0, 16);
@@ -979,7 +980,7 @@ void sm_cmac_general_start(sm_key_t key, uint16_t message_len, uint8_t (*get_byt
 }
 
 // cmac for ATT Message signing
-void sm_cmac_start(sm_key_t k, uint8_t opcode, hci_con_handle_t con_handle, uint16_t message_len, uint8_t * message, uint32_t sign_counter, void (*done_handler)(uint8_t * hash)){
+void sm_cmac_start(const sm_key_t k, uint8_t opcode, hci_con_handle_t con_handle, uint16_t message_len, const uint8_t * message, uint32_t sign_counter, void (*done_handler)(uint8_t * hash)){
     // ATT Message Signing
     sm_cmac_header[0] = opcode;
     little_endian_store_16(sm_cmac_header, 1, con_handle);
@@ -1366,7 +1367,36 @@ static void sm_key_distribution_handle_all_received(sm_connection_t * sm_conn){
 }
 
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
-void sm_sc_calculate_local_confirm(void){
+static uint8_t sm_sc_cmac_get_byte(uint16_t offset){
+    return sm_cmac_sc_buffer[offset];
+}
+static void sm_sc_cmac_done(uint8_t * hash){
+    switch (sm_cmac_connection->sm_engine_state){
+        case SM_SC_W4_CMAC_FOR_CONFIRMATION:
+            memcpy(setup->sm_local_confirm, hash, 16);
+            sm_cmac_connection->sm_engine_state = SM_SC_SEND_CONFIRMATION;
+            break;
+        default:
+            log_error("sm_sc_cmac_done in state %u", sm_cmac_connection->sm_engine_state);
+            break;
+    }    
+    sm_cmac_connection = 0;
+    sm_run();
+}
+
+static void f4_engine(sm_connection_t * sm_conn, sm_key_t res, const sm_key256_t u, const sm_key256_t v, const sm_key_t x, uint8_t z){
+    sm_cmac_connection = sm_conn;
+    memcpy(sm_cmac_sc_buffer, u, 32);
+    memcpy(sm_cmac_sc_buffer+32, v, 32);
+    sm_cmac_sc_buffer[64] = z;
+    log_info("f4 key");
+    log_info_hexdump(x, 16);
+    log_info("f4 message");
+    log_info_hexdump(sm_cmac_sc_buffer, sizeof(sm_cmac_sc_buffer));
+    sm_cmac_general_start(x, 65, &sm_sc_cmac_get_byte, &sm_sc_cmac_done);
+}
+
+static void sm_sc_calculate_local_confirm(sm_connection_t * sm_conn){
     uint8_t z = 0;
     if (setup->sm_stk_generation_method != JUST_WORKS && setup->sm_stk_generation_method != NK_BOTH_INPUT){
         // some form of passkey
@@ -1378,8 +1408,7 @@ void sm_sc_calculate_local_confirm(void){
     uint8_t value[32];
     mbedtls_mpi_write_binary(&le_keypair.Q.X, value, sizeof(value));
 #endif
-    // TODO: use AES Engine to calculate commitment value using f4
-    f4(setup->sm_local_confirm, value, setup->sm_peer_qx, setup->sm_local_nonce, z);
+    f4_engine(sm_conn, setup->sm_local_confirm, value, setup->sm_peer_qx, setup->sm_local_nonce, z);
 }
 #endif
 
@@ -1646,6 +1675,13 @@ static void sm_run(void){
                 break;
             }
 
+#ifdef ENABLE_LE_SECURE_CONNECTIONS
+            case SM_SC_W2_CMAC_FOR_CONFIRMATION:
+                if (!sm_cmac_ready()) break;
+                connection->sm_engine_state = SM_SC_W4_CMAC_FOR_CONFIRMATION;
+                sm_sc_calculate_local_confirm(connection);
+                break;
+#endif
             // initiator side
             case SM_INITIATOR_PH0_SEND_START_ENCRYPTION: {
                 sm_key_t peer_ltk_flipped;
@@ -1697,8 +1733,7 @@ static void sm_run(void){
                     case JUST_WORKS:
                     case NK_BOTH_INPUT:
                         if (connection->sm_role){
-                            sm_sc_calculate_local_confirm();
-                            connection->sm_engine_state = SM_SC_SEND_CONFIRMATION;
+                            connection->sm_engine_state = SM_SC_W2_CMAC_FOR_CONFIRMATION;
                         } else {
                             connection->sm_engine_state = SM_SC_W4_PUBLIC_KEY_COMMAND;
                         }
@@ -2751,8 +2786,7 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
                     case PK_INIT_INPUT:
                     case PK_RESP_INPUT:
                     case OK_BOTH_INPUT:
-                        sm_sc_calculate_local_confirm();
-                        sm_conn->sm_engine_state = SM_SC_SEND_CONFIRMATION;
+                        sm_conn->sm_engine_state = SM_SC_W2_CMAC_FOR_CONFIRMATION;
                         break;
                     case OOB:
                         // TODO: implement SC OOB
@@ -2771,8 +2805,7 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
 
             if (sm_conn->sm_role){
                 // responder
-                sm_sc_calculate_local_confirm();
-                sm_conn->sm_engine_state = SM_SC_SEND_CONFIRMATION;                
+                sm_conn->sm_engine_state = SM_SC_W2_CMAC_FOR_CONFIRMATION;                
             } else {
                 // initiator
                 sm_conn->sm_engine_state = SM_SC_SEND_PAIRING_RANDOM;                
@@ -2837,8 +2870,7 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
                     case PK_RESP_INPUT:
                     case OK_BOTH_INPUT:
                         if (setup->sm_passkey_bit < 20) {
-                            sm_sc_calculate_local_confirm();
-                            sm_conn->sm_engine_state = SM_SC_SEND_CONFIRMATION;
+                            sm_conn->sm_engine_state = SM_SC_W2_CMAC_FOR_CONFIRMATION;
                         } else {
                             sm_conn->sm_engine_state = SM_SC_SEND_DHKEY_CHECK_COMMAND;
                         }

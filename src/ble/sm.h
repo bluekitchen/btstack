@@ -242,7 +242,7 @@ void sm_authorization_grant(hci_con_handle_t con_handle);
  * @param sign_counter
  */
 int  sm_cmac_ready(void);
-void sm_cmac_start(sm_key_t key, uint8_t opcode, uint16_t attribute_handle, uint16_t message_len, uint8_t * message, uint32_t sign_counter, void (*done_callback)(uint8_t * hash));
+void sm_cmac_start(const sm_key_t key, uint8_t opcode, uint16_t attribute_handle, uint16_t message_len, const uint8_t * message, uint32_t sign_counter, void (*done_callback)(uint8_t * hash));
 
 /*
  * @brief Generic CMAC AES
@@ -252,7 +252,7 @@ void sm_cmac_start(sm_key_t key, uint8_t opcode, uint16_t attribute_handle, uint
  * @param done_callback
  * @note hash is 16 bytes in big endian
  */
-void sm_cmac_general_start(sm_key_t key, uint16_t message_len, uint8_t (*get_byte_callback)(uint16_t offset), void (*done_callback)(uint8_t * hash));
+void sm_cmac_general_start(const sm_key_t key, uint16_t message_len, uint8_t (*get_byte_callback)(uint16_t offset), void (*done_callback)(uint8_t * hash));
 
 /*
  * @brief Match address against bonded devices
