@@ -223,6 +223,12 @@ static uint16_t att_read_callback(hci_con_handle_t connection_handle, uint16_t a
         }
         return counter_string_len - offset;
     }
+    if (att_handle == ATT_CHARACTERISTIC_0000FF12_0000_1000_8000_00805F9B34FB_01_VALUE_HANDLE){
+        if (buffer){
+            memcpy(buffer, &counter_string[offset], counter_string_len - offset);
+        }
+        return counter_string_len - offset;
+    }
     return 0;
 }
 /* LISTING_END */
