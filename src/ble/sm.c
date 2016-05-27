@@ -269,6 +269,7 @@ typedef struct sm_setup_context {
     sm_key_t  sm_local_dhkey_check;
     sm_key_t  sm_ra;
     sm_key_t  sm_rb;
+    sm_key_t  sm_t;             // used for f5
     sm_key_t  sm_mackey;
     uint8_t   sm_passkey_bit;
 #endif
@@ -620,39 +621,6 @@ static void aes_cmac(sm_key_t aes_cmac, const sm_key_t key, const uint8_t * data
 
     // Step 7
     aes128_calc_cyphertext(key, sm_cmac_y, aes_cmac);
-}
-
-const sm_key_t f5_salt = { 0x6C ,0x88, 0x83, 0x91, 0xAA, 0xF5, 0xA5, 0x38, 0x60, 0x37, 0x0B, 0xDB, 0x5A, 0x60, 0x83, 0xBE};
-const uint8_t f5_key_id[] = { 0x62, 0x74, 0x6c, 0x65 };
-const uint8_t f5_length[] = { 0x01, 0x00};  
-static void f5(sm_key256_t res, const sm_key256_t w, const sm_key_t n1, const sm_key_t n2, const sm_key56_t a1, const sm_key56_t a2){
-    // T = AES-CMACSAL_T(W)
-    sm_key_t t;
-    aes_cmac(t, f5_salt, w, 32);
-    // f5(W, N1, N2, A1, A2) = AES-CMACT (Counter = 0 || keyID || N1 || N2|| A1|| A2 || Length = 256) -- this is the MacKey
-    uint8_t buffer[53];
-    buffer[0] = 0;
-    memcpy(buffer+01, f5_key_id, 4);
-    memcpy(buffer+05, n1, 16);
-    memcpy(buffer+21, n2, 16);
-    memcpy(buffer+37, a1, 7);
-    memcpy(buffer+44, a2, 7);
-    memcpy(buffer+51, f5_length, 2);
-    log_info("f5 DHKEY");
-    log_info_hexdump(w, 32);
-    log_info("f5 key");
-    log_info_hexdump(t, 16);
-    log_info("f5 message for MacKey");
-    log_info_hexdump(buffer, sizeof(buffer));
-    aes_cmac(res, t, buffer, sizeof(buffer));
-    // hexdump2(res, 16);
-    //                      || AES-CMACT (Counter = 1 || keyID || N1 || N2|| A1|| A2 || Length = 256) -- this is the LTK
-    buffer[0] = 1;
-    // hexdump2(buffer, sizeof(buffer));
-    log_info("f5 message for LTK");
-    log_info_hexdump(buffer, sizeof(buffer));
-    aes_cmac(res+16, t, buffer, sizeof(buffer));
-    // hexdump2(res+16, 16);
 }
 
 // g2(U, V, X, Y) = AES-CMACX(U || V || Y) mod 2^32
@@ -1044,9 +1012,10 @@ static void sm_cmac_handle_encryption_result(sm_key_t data){
             break;
         case CMAC_W4_MLAST:
             // done
+            log_info("Setting CMAC Engine to IDLE");
+            sm_cmac_state = CMAC_IDLE;
             log_info_key("CMAC", data);
             sm_cmac_done_handler(data);
-            sm_cmac_state = CMAC_IDLE;
             break;
         default:
             log_info("sm_cmac_handle_encryption_result called in state %u", sm_cmac_state);
@@ -1419,11 +1388,23 @@ static void sm_sc_cmac_done(uint8_t * hash){
             break;
         case SM_SC_W4_CALCULATE_F6_TO_VERIFY_DHKEY_CHECK:
             if (0 != memcmp(hash, setup->sm_peer_dhkey_check, 16) ){
-                sm_pairing_error(sm_conn, SM_REASON_DHKEY_CHECK_FAILED);
+                sm_pairing_error(sm_cmac_connection, SM_REASON_DHKEY_CHECK_FAILED);
                 break;
             }
-            sm_sc_state_after_receiving_dhkey_check(sm_conn);  
+            sm_sc_state_after_receiving_dhkey_check(sm_cmac_connection);  
             break;
+        case SM_SC_W4_CALCULATE_F5_SALT:
+            memcpy(setup->sm_t, hash, 16);
+            sm_cmac_connection->sm_engine_state = SM_SC_W2_CALCULATE_F5_MACKEY;
+            break;            
+        case SM_SC_W4_CALCULATE_F5_MACKEY:
+            memcpy(setup->sm_mackey, hash, 16);
+            sm_cmac_connection->sm_engine_state = SM_SC_W2_CALCULATE_F5_LTK;
+            break;            
+        case SM_SC_W4_CALCULATE_F5_LTK:
+            memcpy(setup->sm_ltk, hash, 16);
+            sm_cmac_connection->sm_engine_state = SM_SC_W2_CALCULATE_F6_FOR_DHKEY_CHECK;
+            break;            
         default:
             log_error("sm_sc_cmac_done in state %u", sm_cmac_connection->sm_engine_state);
             break;
@@ -1443,6 +1424,92 @@ static void f4_engine(sm_connection_t * sm_conn, const sm_key256_t u, const sm_k
     log_info("f4 message");
     log_info_hexdump(sm_cmac_sc_buffer, message_len);
     sm_cmac_general_start(x, message_len, &sm_sc_cmac_get_byte, &sm_sc_cmac_done);
+}
+
+static const sm_key_t f5_salt = { 0x6C ,0x88, 0x83, 0x91, 0xAA, 0xF5, 0xA5, 0x38, 0x60, 0x37, 0x0B, 0xDB, 0x5A, 0x60, 0x83, 0xBE};
+static const uint8_t f5_key_id[] = { 0x62, 0x74, 0x6c, 0x65 };
+static const uint8_t f5_length[] = { 0x01, 0x00};  
+
+static void sm_sc_calculate_dhkey(sm_key256_t dhkey){
+#ifdef USE_MBEDTLS_FOR_ECDH
+    // da * Pb
+    mbedtls_ecp_group grp;
+    mbedtls_ecp_group_init( &grp );
+    mbedtls_ecp_group_load(&grp, MBEDTLS_ECP_DP_SECP256R1);
+    mbedtls_ecp_point Q;
+    mbedtls_ecp_point_init( &Q );
+    mbedtls_mpi_read_binary(&Q.X, setup->sm_peer_qx, 32);
+    mbedtls_mpi_read_binary(&Q.Y, setup->sm_peer_qy, 32);
+    mbedtls_mpi_read_string(&Q.Z, 16, "1" );
+    mbedtls_ecp_point DH;
+    mbedtls_ecp_point_init( &DH );
+    mbedtls_ecp_mul(&grp, &DH, &le_keypair.d, &Q, NULL, NULL);
+    mbedtls_mpi_write_binary(&DH.X, dhkey, 32);
+#endif
+    log_info("dhkey");
+    log_info_hexdump(dhkey, 32);
+}
+
+static void f5_calculate_salt(sm_connection_t * sm_conn){
+    // calculate DHKEY
+    sm_key256_t dhkey;
+    sm_sc_calculate_dhkey(dhkey);
+
+    // calculate salt for f5
+    const uint16_t message_len = 32;
+    sm_cmac_connection = sm_conn;
+    memcpy(sm_cmac_sc_buffer, dhkey, message_len);
+    sm_cmac_general_start(f5_salt, message_len, &sm_sc_cmac_get_byte, &sm_sc_cmac_done);
+}
+
+static inline void f5_mackkey(sm_connection_t * sm_conn, sm_key_t t, const sm_key_t n1, const sm_key_t n2, const sm_key56_t a1, const sm_key56_t a2){
+    const uint16_t message_len = 53;
+    sm_cmac_connection = sm_conn;
+
+    // f5(W, N1, N2, A1, A2) = AES-CMACT (Counter = 0 || keyID || N1 || N2|| A1|| A2 || Length = 256) -- this is the MacKey
+    sm_cmac_sc_buffer[0] = 0;
+    memcpy(sm_cmac_sc_buffer+01, f5_key_id, 4);
+    memcpy(sm_cmac_sc_buffer+05, n1, 16);
+    memcpy(sm_cmac_sc_buffer+21, n2, 16);
+    memcpy(sm_cmac_sc_buffer+37, a1, 7);
+    memcpy(sm_cmac_sc_buffer+44, a2, 7);
+    memcpy(sm_cmac_sc_buffer+51, f5_length, 2);
+    log_info("f5 key");
+    log_info_hexdump(t, 16);
+    log_info("f5 message for MacKey");
+    log_info_hexdump(sm_cmac_sc_buffer, message_len);
+    sm_cmac_general_start(t, message_len, &sm_sc_cmac_get_byte, &sm_sc_cmac_done);
+}
+
+static void f5_calculate_mackey(sm_connection_t * sm_conn){
+    sm_key56_t bd_addr_master, bd_addr_slave;
+    bd_addr_master[0] =  setup->sm_m_addr_type;
+    bd_addr_slave[0]  =  setup->sm_s_addr_type;
+    memcpy(&bd_addr_master[1], setup->sm_m_address, 6);
+    memcpy(&bd_addr_slave[1],  setup->sm_s_address, 6);
+    if (sm_conn->sm_role){
+        // responder
+        f5_mackkey(sm_conn, setup->sm_t, setup->sm_peer_nonce, setup->sm_local_nonce, bd_addr_master, bd_addr_slave);
+    } else {
+        // initiator
+        f5_mackkey(sm_conn, setup->sm_t, setup->sm_local_nonce, setup->sm_peer_nonce, bd_addr_master, bd_addr_slave);
+    }
+}
+
+// note: must be called right after f5_mackey, as sm_cmac_buffer[1..52] will be reused
+static inline void f5_ltk(sm_connection_t * sm_conn, sm_key_t t){
+    const uint16_t message_len = 53;
+    sm_cmac_connection = sm_conn;
+    sm_cmac_sc_buffer[0] = 1;
+    // 1..52 setup before
+    log_info("f5 key");
+    log_info_hexdump(t, 16);
+    log_info("f5 message for LTK");
+    log_info_hexdump(sm_cmac_sc_buffer, message_len);
+    sm_cmac_general_start(t, message_len, &sm_sc_cmac_get_byte, &sm_sc_cmac_done);
+}
+static void f5_calculate_ltk(sm_connection_t * sm_conn){
+    f5_ltk(sm_conn, setup->sm_t);
 }
 
 static void f6_engine(sm_connection_t * sm_conn, const sm_key_t w, const sm_key_t n1, const sm_key_t n2, const sm_key_t r, const sm_key24_t io_cap, const sm_key56_t a1, const sm_key56_t a2){
@@ -1491,50 +1558,15 @@ static void sm_sc_calculate_remote_confirm(sm_connection_t * sm_conn){
     f4_engine(sm_conn, setup->sm_peer_qx, local_qx, setup->sm_peer_nonce, z);
 }
 
-static void sm_sc_calculate_dhkey(sm_key256_t dhkey){
-#ifdef USE_MBEDTLS_FOR_ECDH
-    // da * Pb
-    mbedtls_ecp_group grp;
-    mbedtls_ecp_group_init( &grp );
-    mbedtls_ecp_group_load(&grp, MBEDTLS_ECP_DP_SECP256R1);
-    mbedtls_ecp_point Q;
-    mbedtls_ecp_point_init( &Q );
-    mbedtls_mpi_read_binary(&Q.X, setup->sm_peer_qx, 32);
-    mbedtls_mpi_read_binary(&Q.Y, setup->sm_peer_qy, 32);
-    mbedtls_mpi_read_string(&Q.Z, 16, "1" );
-    mbedtls_ecp_point DH;
-    mbedtls_ecp_point_init( &DH );
-    mbedtls_ecp_mul(&grp, &DH, &le_keypair.d, &Q, NULL, NULL);
-    mbedtls_mpi_write_binary(&DH.X, dhkey, 32);
-#endif
-    log_info("dhkey");
-    log_info_hexdump(dhkey, 32);
-}
+static void sm_sc_prepare_dhkey_check(sm_connection_t * sm_conn){
 
-static void sm_sc_calculate_f5_for_dhkey_check(sm_connection_t * sm_conn){
-    // calculate DHKEY
-    sm_key256_t dhkey;
-    sm_sc_calculate_dhkey(dhkey);
+    sm_conn->sm_engine_state = SM_SC_W2_CALCULATE_F5_SALT;
 
-    // calculate LTK + MacKey
-    sm_key256_t ltk_mackey;
-    sm_key56_t bd_addr_master, bd_addr_slave;
-    bd_addr_master[0] =  setup->sm_m_addr_type;
-    bd_addr_slave[0]  =  setup->sm_s_addr_type;
-    memcpy(&bd_addr_master[1], setup->sm_m_address, 6);
-    memcpy(&bd_addr_slave[1],  setup->sm_s_address, 6);
-    if (sm_conn->sm_role){
-        // responder
-        f5(ltk_mackey, dhkey, setup->sm_peer_nonce, setup->sm_local_nonce, bd_addr_master, bd_addr_slave);
-    } else {
-        // initiator
-        f5(ltk_mackey, dhkey, setup->sm_local_nonce, setup->sm_peer_nonce, bd_addr_master, bd_addr_slave);
-    }
-    // store LTK
-    memcpy(setup->sm_ltk, &ltk_mackey[16], 16);
+    // TODO: use AES CMAC Engine
+    // sm_sc_calculate_f5_for_dhkey_check(sm_conn);
 
-    // store macckey
-    memcpy(setup->sm_mackey, &ltk_mackey[0], 16);
+    // second part
+    // sm_conn->sm_engine_state = SM_SC_W2_CALCULATE_F6_FOR_DHKEY_CHECK;
 }
 
 static void sm_sc_calculate_f6_for_dhkey_check(sm_connection_t * sm_conn){
@@ -1584,15 +1616,6 @@ static void sm_sc_calculate_f6_to_verify_dhkey_check(sm_connection_t * sm_conn){
         // initiator
         f6_engine(sm_conn, setup->sm_mackey, setup->sm_peer_nonce, setup->sm_local_nonce, setup->sm_ra, iocap_b, bd_addr_slave, bd_addr_master);
     }
-}
-
-static void sm_sc_prepare_dhkey_check(sm_connection_t * sm_conn){
-
-    // TODO: use AES CMAC Engine
-    sm_sc_calculate_f5_for_dhkey_check(sm_conn);
-
-    // second part
-    sm_conn->sm_engine_state = SM_SC_W2_CALCULATE_F6_FOR_DHKEY_CHECK;
 }
 
 #endif
@@ -1880,7 +1903,19 @@ static void sm_run(void){
                 break;
             case SM_SC_W2_CALCULATE_F6_TO_VERIFY_DHKEY_CHECK:
                 connection->sm_engine_state = SM_SC_W4_CALCULATE_F6_TO_VERIFY_DHKEY_CHECK;
-                sm_sc_calculate_f6_to_verify_dhkey_check(sm_conn);
+                sm_sc_calculate_f6_to_verify_dhkey_check(connection);
+                break;
+            case SM_SC_W2_CALCULATE_F5_SALT:
+                connection->sm_engine_state = SM_SC_W4_CALCULATE_F5_SALT;
+                f5_calculate_salt(connection);
+                break;
+            case SM_SC_W2_CALCULATE_F5_MACKEY:
+                connection->sm_engine_state = SM_SC_W4_CALCULATE_F5_MACKEY;
+                f5_calculate_mackey(connection);
+                break;
+            case SM_SC_W2_CALCULATE_F5_LTK:
+                connection->sm_engine_state = SM_SC_W4_CALCULATE_F5_LTK;
+                f5_calculate_ltk(connection);
                 break;
 #endif
             // initiator side
@@ -3342,6 +3377,8 @@ void sm_just_works_confirm(hci_con_handle_t con_handle){
         }
 #endif
     }
+
+#ifdef ENABLE_LE_SECURE_CONNECTIONS
     if (sm_conn->sm_engine_state == SM_SC_W4_USER_RESPONSE){
         if (sm_conn->sm_role){
             // responder
@@ -3351,6 +3388,8 @@ void sm_just_works_confirm(hci_con_handle_t con_handle){
             // TODO handle intiator role
         }
     }
+#endif
+
     sm_run();
 }
 
