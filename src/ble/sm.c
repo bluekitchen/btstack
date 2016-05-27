@@ -622,20 +622,6 @@ static void aes_cmac(sm_key_t aes_cmac, const sm_key_t key, const uint8_t * data
     aes128_calc_cyphertext(key, sm_cmac_y, aes_cmac);
 }
 
-static void f4(sm_key_t res, const sm_key256_t u, const sm_key256_t v, const sm_key_t x, uint8_t z){
-    uint8_t buffer[65];
-    memcpy(buffer, u, 32);
-    memcpy(buffer+32, v, 32);
-    buffer[64] = z;
-    log_info("f4 key");
-    log_info_hexdump(x, 16);
-    log_info("f4 message");
-    log_info_hexdump(buffer, sizeof(buffer));
-    aes_cmac(res, x, buffer, sizeof(buffer));
-    log_info("f4 result");
-    log_info_hexdump(res, sizeof(sm_key_t));
-}
-
 const sm_key_t f5_salt = { 0x6C ,0x88, 0x83, 0x91, 0xAA, 0xF5, 0xA5, 0x38, 0x60, 0x37, 0x0B, 0xDB, 0x5A, 0x60, 0x83, 0xBE};
 const uint8_t f5_key_id[] = { 0x62, 0x74, 0x6c, 0x65 };
 const uint8_t f5_length[] = { 0x01, 0x00};  
@@ -1366,15 +1352,75 @@ static void sm_key_distribution_handle_all_received(sm_connection_t * sm_conn){
     sm_conn->sm_le_db_index = le_db_index;    
 }
 
+static void sm_pairing_error(sm_connection_t * sm_conn, uint8_t reason){
+    setup->sm_pairing_failed_reason = reason;
+    sm_conn->sm_engine_state = SM_GENERAL_SEND_PAIRING_FAILED;
+}
+
+static inline void sm_pdu_received_in_wrong_state(sm_connection_t * sm_conn){
+    sm_pairing_error(sm_conn, SM_REASON_UNSPECIFIED_REASON);
+}
+
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
+
+static void sm_sc_state_after_receiving_random(sm_connection_t * sm_conn){
+    if (sm_conn->sm_role){
+        // Responder
+        sm_conn->sm_engine_state = SM_SC_SEND_PAIRING_RANDOM;
+    } else {
+        // Initiator role
+        switch (setup->sm_stk_generation_method){
+            case JUST_WORKS:
+                sm_conn->sm_engine_state = SM_SC_SEND_DHKEY_CHECK_COMMAND;
+                break;
+
+            case NK_BOTH_INPUT: {
+                // calc Va if numeric comparison
+                // TODO: use AES Engine to calculate g2
+                uint8_t value[32];
+                mbedtls_mpi_write_binary(&le_keypair.Q.X, value, sizeof(value));
+                uint32_t va = g2(value, setup->sm_peer_qx, setup->sm_local_nonce, setup->sm_peer_nonce) % 1000000;
+                big_endian_store_32(setup->sm_tk, 12, va);
+                sm_trigger_user_response(sm_conn);
+                break;
+            }
+            case PK_INIT_INPUT:
+            case PK_RESP_INPUT:
+            case OK_BOTH_INPUT:
+                if (setup->sm_passkey_bit < 20) {
+                    sm_conn->sm_engine_state = SM_SC_W2_CMAC_FOR_CONFIRMATION;
+                } else {
+                    sm_conn->sm_engine_state = SM_SC_SEND_DHKEY_CHECK_COMMAND;
+                }
+                break;
+            case OOB:
+                // TODO: implement SC OOB
+                break;
+        } 
+    }
+}
+
 static uint8_t sm_sc_cmac_get_byte(uint16_t offset){
     return sm_cmac_sc_buffer[offset];
 }
+
 static void sm_sc_cmac_done(uint8_t * hash){
+    log_info("sm_sc_cmac_done: ");
+    log_info_hexdump(hash, 16);
+
     switch (sm_cmac_connection->sm_engine_state){
         case SM_SC_W4_CMAC_FOR_CONFIRMATION:
             memcpy(setup->sm_local_confirm, hash, 16);
             sm_cmac_connection->sm_engine_state = SM_SC_SEND_CONFIRMATION;
+            break;
+        case SM_SC_W4_CMAC_FOR_CHECK_CONFIRMATION:
+            // check
+            if (0 != memcmp(hash, setup->sm_peer_confirm, 16)){
+                sm_pairing_error(sm_cmac_connection, SM_REASON_CONFIRM_VALUE_FAILED);
+                break;
+            }
+            // next state
+            sm_sc_state_after_receiving_random(sm_cmac_connection);
             break;
         default:
             log_error("sm_sc_cmac_done in state %u", sm_cmac_connection->sm_engine_state);
@@ -1384,7 +1430,7 @@ static void sm_sc_cmac_done(uint8_t * hash){
     sm_run();
 }
 
-static void f4_engine(sm_connection_t * sm_conn, sm_key_t res, const sm_key256_t u, const sm_key256_t v, const sm_key_t x, uint8_t z){
+static void f4_engine(sm_connection_t * sm_conn, const sm_key256_t u, const sm_key256_t v, const sm_key_t x, uint8_t z){
     sm_cmac_connection = sm_conn;
     memcpy(sm_cmac_sc_buffer, u, 32);
     memcpy(sm_cmac_sc_buffer+32, v, 32);
@@ -1392,7 +1438,7 @@ static void f4_engine(sm_connection_t * sm_conn, sm_key_t res, const sm_key256_t
     log_info("f4 key");
     log_info_hexdump(x, 16);
     log_info("f4 message");
-    log_info_hexdump(sm_cmac_sc_buffer, sizeof(sm_cmac_sc_buffer));
+    log_info_hexdump(sm_cmac_sc_buffer, 65);
     sm_cmac_general_start(x, 65, &sm_sc_cmac_get_byte, &sm_sc_cmac_done);
 }
 
@@ -1405,11 +1451,27 @@ static void sm_sc_calculate_local_confirm(sm_connection_t * sm_conn){
         setup->sm_passkey_bit++;
     }
 #ifdef USE_MBEDTLS_FOR_ECDH
-    uint8_t value[32];
-    mbedtls_mpi_write_binary(&le_keypair.Q.X, value, sizeof(value));
+    uint8_t local_qx[32];
+    mbedtls_mpi_write_binary(&le_keypair.Q.X, local_qx, sizeof(local_qx));
 #endif
-    f4_engine(sm_conn, setup->sm_local_confirm, value, setup->sm_peer_qx, setup->sm_local_nonce, z);
+    f4_engine(sm_conn, local_qx, setup->sm_peer_qx, setup->sm_local_nonce, z);
 }
+
+static void sm_sc_calculate_remote_confirm(sm_connection_t * sm_conn){
+    uint8_t z = 0;
+    if (setup->sm_stk_generation_method != JUST_WORKS && setup->sm_stk_generation_method != NK_BOTH_INPUT){
+        // some form of passkey
+        uint32_t pk = big_endian_read_32(setup->sm_tk, 12);
+        // sm_passkey_bit was increased before sending confirm value
+        z = 0x80 | ((pk >> (setup->sm_passkey_bit-1)) & 1);
+    }
+#ifdef USE_MBEDTLS_FOR_ECDH
+    uint8_t local_qx[32];
+    mbedtls_mpi_write_binary(&le_keypair.Q.X, local_qx, sizeof(local_qx));
+#endif    
+    f4_engine(sm_conn, setup->sm_peer_qx, local_qx, setup->sm_peer_nonce, z);
+}
+
 #endif
 
 static void sm_run(void){
@@ -1680,6 +1742,12 @@ static void sm_run(void){
                 if (!sm_cmac_ready()) break;
                 connection->sm_engine_state = SM_SC_W4_CMAC_FOR_CONFIRMATION;
                 sm_sc_calculate_local_confirm(connection);
+                break;
+
+            case SM_SC_W2_CMAC_FOR_CHECK_CONFIRMATION:
+                if (!sm_cmac_ready()) break;
+                connection->sm_engine_state = SM_SC_W4_CMAC_FOR_CHECK_CONFIRMATION;
+                sm_sc_calculate_remote_confirm(connection);
                 break;
 #endif
             // initiator side
@@ -2581,6 +2649,17 @@ static inline int sm_calc_actual_encryption_key_size(int other){
     return sm_max_encryption_key_size;
 }
 
+static int sm_passkey_used(stk_generation_method_t method){
+    switch (method){
+        case PK_RESP_INPUT:
+        case PK_INIT_INPUT:
+        case OK_BOTH_INPUT:
+            return 1;
+        default:
+            return 0;        
+    }
+}
+
 /**
  * @return ok
  */
@@ -2601,16 +2680,6 @@ static int sm_validate_stk_generation_method(void){
         default:
             return 0;
     }
-}
-
-// helper for sm_pdu_handler, calls sm_run on exit
-static void sm_pairing_error(sm_connection_t * sm_conn, uint8_t reason){
-    setup->sm_pairing_failed_reason = reason;
-    sm_conn->sm_engine_state = SM_GENERAL_SEND_PAIRING_FAILED;
-}
-
-static inline void sm_pdu_received_in_wrong_state(sm_connection_t * sm_conn){
-    sm_pairing_error(sm_conn, SM_REASON_UNSPECIFIED_REASON);
 }
 
 static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uint8_t *packet, uint16_t size){
@@ -2822,64 +2891,13 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
             reverse_128(&packet[1], setup->sm_peer_nonce);
 
             // validate confirm value if Cb = f4(Pkb, Pka, Nb, z) 
-            uint8_t z = 0;
-            int passkey_entry = 0;
-            if (setup->sm_stk_generation_method != JUST_WORKS && setup->sm_stk_generation_method != NK_BOTH_INPUT){
-                // some form of passkey
-                passkey_entry = 1;
-                uint32_t pk = big_endian_read_32(setup->sm_tk, 12);
-                // sm_passkey_bit was increased before sending confirm value
-                z = 0x80 | ((pk >> (setup->sm_passkey_bit-1)) & 1);
-            }
             // only check for JUST WORK/NC in initiator role AND passkey entry
+            int passkey_entry = sm_passkey_used(setup->sm_stk_generation_method);
             if (sm_conn->sm_role || passkey_entry) {
-                sm_key_t confirm_value;
-
-#ifdef USE_MBEDTLS_FOR_ECDH
-                uint8_t local_qx[32];
-                mbedtls_mpi_write_binary(&le_keypair.Q.X, local_qx, sizeof(local_qx));
-                f4(confirm_value, setup->sm_peer_qx, local_qx, setup->sm_peer_nonce, z);
-#endif
-                if (0 != memcmp(confirm_value, setup->sm_peer_confirm, 16)){
-                    sm_pairing_error(sm_conn, SM_REASON_CONFIRM_VALUE_FAILED);
-                    break;
-                }
+                 sm_conn->sm_engine_state = SM_SC_W2_CMAC_FOR_CHECK_CONFIRMATION;
             }
 
-            if (sm_conn->sm_role){
-                // Responder
-                sm_conn->sm_engine_state = SM_SC_SEND_PAIRING_RANDOM;
-            } else {
-                // Initiator role
-                switch (setup->sm_stk_generation_method){
-                    case JUST_WORKS:
-                        sm_conn->sm_engine_state = SM_SC_SEND_DHKEY_CHECK_COMMAND;
-                        break;
-
-                    case NK_BOTH_INPUT: {
-                        // calc Va if numeric comparison
-                        // TODO: use AES Engine to calculate g2
-                        uint8_t value[32];
-                        mbedtls_mpi_write_binary(&le_keypair.Q.X, value, sizeof(value));
-                        uint32_t va = g2(value, setup->sm_peer_qx, setup->sm_local_nonce, setup->sm_peer_nonce) % 1000000;
-                        big_endian_store_32(setup->sm_tk, 12, va);
-                        sm_trigger_user_response(sm_conn);
-                        break;
-                    }
-                    case PK_INIT_INPUT:
-                    case PK_RESP_INPUT:
-                    case OK_BOTH_INPUT:
-                        if (setup->sm_passkey_bit < 20) {
-                            sm_conn->sm_engine_state = SM_SC_W2_CMAC_FOR_CONFIRMATION;
-                        } else {
-                            sm_conn->sm_engine_state = SM_SC_SEND_DHKEY_CHECK_COMMAND;
-                        }
-                        break;
-                    case OOB:
-                        // TODO: implement SC OOB
-                        break;
-                } 
-            }
+            sm_sc_state_after_receiving_random(sm_conn);
             break;
 
         case SM_SC_W4_DHKEY_CHECK_COMMAND:
