@@ -2543,8 +2543,8 @@ static int sm_validate_stk_generation_method(void){
 
 // helper for sm_pdu_handler, calls sm_run on exit
 static void sm_pairing_error(sm_connection_t * sm_conn, uint8_t reason){
-    sm_conn->sm_engine_state = sm_conn->sm_role ? SM_RESPONDER_IDLE : SM_INITIATOR_CONNECTED;
-    sm_done_for_handle(sm_conn->sm_handle);
+    setup->sm_pairing_failed_reason = reason;
+    sm_conn->sm_engine_state = SM_GENERAL_SEND_PAIRING_FAILED;
 }
 
 static inline void sm_pdu_received_in_wrong_state(sm_connection_t * sm_conn){
@@ -3190,9 +3190,20 @@ void sm_bonding_decline(hci_con_handle_t con_handle){
     setup->sm_user_response = SM_USER_RESPONSE_DECLINE;
 
     if (sm_conn->sm_engine_state == SM_PH1_W4_USER_RESPONSE){
-        sm_done_for_handle(sm_conn->sm_handle);
-        setup->sm_pairing_failed_reason = SM_REASON_PASSKEYT_ENTRY_FAILED;
-        sm_conn->sm_engine_state = SM_GENERAL_SEND_PAIRING_FAILED;
+        switch (setup->sm_stk_generation_method){
+            case PK_RESP_INPUT:
+            case PK_INIT_INPUT:
+            case OK_BOTH_INPUT:
+                sm_pairing_error(sm_conn, SM_GENERAL_SEND_PAIRING_FAILED);
+                break;        
+            case NK_BOTH_INPUT:
+                sm_pairing_error(sm_conn, SM_REASON_NUMERIC_COMPARISON_FAILED);
+                break;
+            case JUST_WORKS:
+            case OOB:
+                sm_pairing_error(sm_conn, SM_REASON_UNSPECIFIED_REASON);
+                break;
+        }
     }
     sm_run();
 }
