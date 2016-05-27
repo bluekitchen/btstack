@@ -1365,6 +1365,24 @@ static void sm_key_distribution_handle_all_received(sm_connection_t * sm_conn){
     sm_conn->sm_le_db_index = le_db_index;    
 }
 
+#ifdef ENABLE_LE_SECURE_CONNECTIONS
+void sm_sc_calculate_local_confirm(void){
+    uint8_t z = 0;
+    if (setup->sm_stk_generation_method != JUST_WORKS && setup->sm_stk_generation_method != NK_BOTH_INPUT){
+        // some form of passkey
+        uint32_t pk = big_endian_read_32(setup->sm_tk, 12);
+        z = 0x80 | ((pk >> setup->sm_passkey_bit) & 1);
+        setup->sm_passkey_bit++;
+    }
+#ifdef USE_MBEDTLS_FOR_ECDH
+    uint8_t value[32];
+    mbedtls_mpi_write_binary(&le_keypair.Q.X, value, sizeof(value));
+#endif
+    // TODO: use AES Engine to calculate commitment value using f4
+    f4(setup->sm_local_confirm, value, setup->sm_peer_qx, setup->sm_local_nonce, z);
+}
+#endif
+
 static void sm_run(void){
 
     btstack_linked_list_iterator_t it;    
@@ -1679,6 +1697,7 @@ static void sm_run(void){
                     case JUST_WORKS:
                     case NK_BOTH_INPUT:
                         if (connection->sm_role){
+                            sm_sc_calculate_local_confirm();
                             connection->sm_engine_state = SM_SC_SEND_CONFIRMATION;
                         } else {
                             connection->sm_engine_state = SM_SC_W4_PUBLIC_KEY_COMMAND;
@@ -1713,22 +1732,7 @@ static void sm_run(void){
             case SM_SC_SEND_CONFIRMATION: {
                 uint8_t buffer[17];
                 buffer[0] = SM_CODE_PAIRING_CONFIRM;
-#ifdef USE_MBEDTLS_FOR_ECDH
-                uint8_t z = 0;
-                if (setup->sm_stk_generation_method != JUST_WORKS && setup->sm_stk_generation_method != NK_BOTH_INPUT){
-                    // some form of passkey
-                    uint32_t pk = big_endian_read_32(setup->sm_tk, 12);
-                    z = 0x80 | ((pk >> setup->sm_passkey_bit) & 1);
-                    setup->sm_passkey_bit++;
-                }
-
-                // TODO: use AES Engine to calculate commitment value using f4
-                uint8_t value[32];
-                mbedtls_mpi_write_binary(&le_keypair.Q.X, value, sizeof(value));
-                sm_key_t confirm_value;
-                f4(confirm_value, value, setup->sm_peer_qx, setup->sm_local_nonce, z);
-                reverse_128(confirm_value, &buffer[1]);
-#endif
+                reverse_128(setup->sm_local_confirm, &buffer[1]);
                 if (connection->sm_role){
                     connection->sm_engine_state = SM_SC_W4_PAIRING_RANDOM;
                 } else {
@@ -1742,7 +1746,6 @@ static void sm_run(void){
                 uint8_t buffer[17];
                 buffer[0] = SM_CODE_PAIRING_RANDOM;
                 reverse_128(setup->sm_local_nonce, &buffer[1]);
-
                 if (setup->sm_stk_generation_method != JUST_WORKS && setup->sm_stk_generation_method != NK_BOTH_INPUT && setup->sm_passkey_bit < 20){
                     if (connection->sm_role){
                         // responder
@@ -2748,6 +2751,7 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
                     case PK_INIT_INPUT:
                     case PK_RESP_INPUT:
                     case OK_BOTH_INPUT:
+                        sm_sc_calculate_local_confirm();
                         sm_conn->sm_engine_state = SM_SC_SEND_CONFIRMATION;
                         break;
                     case OOB:
@@ -2767,6 +2771,7 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
 
             if (sm_conn->sm_role){
                 // responder
+                sm_sc_calculate_local_confirm();
                 sm_conn->sm_engine_state = SM_SC_SEND_CONFIRMATION;                
             } else {
                 // initiator
@@ -2796,6 +2801,7 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
             // only check for JUST WORK/NC in initiator role AND passkey entry
             if (sm_conn->sm_role || passkey_entry) {
                 sm_key_t confirm_value;
+
 #ifdef USE_MBEDTLS_FOR_ECDH
                 uint8_t local_qx[32];
                 mbedtls_mpi_write_binary(&le_keypair.Q.X, local_qx, sizeof(local_qx));
@@ -2831,6 +2837,7 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
                     case PK_RESP_INPUT:
                     case OK_BOTH_INPUT:
                         if (setup->sm_passkey_bit < 20) {
+                            sm_sc_calculate_local_confirm();
                             sm_conn->sm_engine_state = SM_SC_SEND_CONFIRMATION;
                         } else {
                             sm_conn->sm_engine_state = SM_SC_SEND_DHKEY_CHECK_COMMAND;
