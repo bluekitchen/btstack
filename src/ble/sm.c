@@ -623,28 +623,11 @@ static void aes_cmac(sm_key_t aes_cmac, const sm_key_t key, const uint8_t * data
     aes128_calc_cyphertext(key, sm_cmac_y, aes_cmac);
 }
 
-// g2(U, V, X, Y) = AES-CMACX(U || V || Y) mod 2^32
-// - U is 256 bits
-// - V is 256 bits
-// - X is 128 bits
-// - Y is 128 bits
-static uint32_t g2(const sm_key256_t u, const sm_key256_t v, const sm_key_t x, const sm_key_t y){
-    uint8_t buffer[80];
-    memcpy(buffer, u, 32);  
-    memcpy(buffer+32, v, 32);
-    memcpy(buffer+64, y, 16);
-    sm_key_t cmac;
-    log_info("g2 key");
-    log_info_hexdump(x, 16);
-    log_info("g2 message");
-    log_info_hexdump(buffer, sizeof(buffer));
-    aes_cmac(cmac, x, buffer, sizeof(buffer));
-    log_info("g2 result");
-    log_info_hexdump(x, 16);
-    return big_endian_read_32(cmac, 12);
-}
 
 #if 0
+//
+// Link Key Conversion Function h6
+//
 // h6(W, keyID) = AES-CMACW(keyID)
 // - W is 128 bits
 // - keyID is 32 bits
@@ -1308,6 +1291,7 @@ static inline void sm_pdu_received_in_wrong_state(sm_connection_t * sm_conn){
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
 
 static void sm_sc_prepare_dhkey_check(sm_connection_t * sm_conn);
+static void g2_calculate(sm_connection_t * sm_conn);
 
 static void sm_sc_state_after_receiving_random(sm_connection_t * sm_conn){
     if (sm_conn->sm_role){
@@ -1320,16 +1304,10 @@ static void sm_sc_state_after_receiving_random(sm_connection_t * sm_conn){
                 sm_sc_prepare_dhkey_check(sm_conn);
                 break;
 
-            case NK_BOTH_INPUT: {
-                // calc Va if numeric comparison
-                // TODO: use AES Engine to calculate g2
-                uint8_t value[32];
-                mbedtls_mpi_write_binary(&le_keypair.Q.X, value, sizeof(value));
-                uint32_t va = g2(value, setup->sm_peer_qx, setup->sm_local_nonce, setup->sm_peer_nonce) % 1000000;
-                big_endian_store_32(setup->sm_tk, 12, va);
+            case NK_BOTH_INPUT:
+                g2_calculate(sm_conn);
                 sm_trigger_user_response(sm_conn);
                 break;
-            }
             case PK_INIT_INPUT:
             case PK_RESP_INPUT:
             case OK_BOTH_INPUT:
@@ -1508,6 +1486,7 @@ static inline void f5_ltk(sm_connection_t * sm_conn, sm_key_t t){
     log_info_hexdump(sm_cmac_sc_buffer, message_len);
     sm_cmac_general_start(t, message_len, &sm_sc_cmac_get_byte, &sm_sc_cmac_done);
 }
+
 static void f5_calculate_ltk(sm_connection_t * sm_conn){
     f5_ltk(sm_conn, setup->sm_t);
 }
@@ -1526,6 +1505,44 @@ static void f6_engine(sm_connection_t * sm_conn, const sm_key_t w, const sm_key_
     log_info("f6 message");
     log_info_hexdump(sm_cmac_sc_buffer, message_len);
     sm_cmac_general_start(w, 65, &sm_sc_cmac_get_byte, &sm_sc_cmac_done);
+}
+
+// g2(U, V, X, Y) = AES-CMACX(U || V || Y) mod 2^32
+// - U is 256 bits
+// - V is 256 bits
+// - X is 128 bits
+// - Y is 128 bits
+static uint32_t g2(const sm_key256_t u, const sm_key256_t v, const sm_key_t x, const sm_key_t y){
+    uint8_t buffer[80];
+    memcpy(buffer, u, 32);  
+    memcpy(buffer+32, v, 32);
+    memcpy(buffer+64, y, 16);
+    sm_key_t cmac;
+    log_info("g2 key");
+    log_info_hexdump(x, 16);
+    log_info("g2 message");
+    log_info_hexdump(buffer, sizeof(buffer));
+    aes_cmac(cmac, x, buffer, sizeof(buffer));
+    log_info("g2 result");
+    log_info_hexdump(x, 16);
+    return big_endian_read_32(cmac, 12);
+}
+
+static void g2_calculate(sm_connection_t * sm_conn) {
+    // calc Va if numeric comparison
+    // TODO: use AES Engine to calculate g2
+    uint8_t value[32];
+    mbedtls_mpi_write_binary(&le_keypair.Q.X, value, sizeof(value));
+    uint32_t vab;
+    if (sm_conn->sm_role){
+        // responder  
+        vab = g2(setup->sm_peer_qx, value, setup->sm_peer_nonce, setup->sm_local_nonce);;
+    } else {
+        // initiator
+        vab = g2(value, setup->sm_peer_qx, setup->sm_local_nonce, setup->sm_peer_nonce);
+    }
+    vab = vab % 1000000;
+    big_endian_store_32(setup->sm_tk, 12, vab);
 }
 
 static void sm_sc_calculate_local_confirm(sm_connection_t * sm_conn){
@@ -2030,12 +2047,7 @@ static void sm_run(void){
                         // responder
                         connection->sm_engine_state = SM_SC_W4_DHKEY_CHECK_COMMAND;
                         if (setup->sm_stk_generation_method == NK_BOTH_INPUT){
-                            // calc Vb if numeric comparison
-                            // TODO: use AES Engine to calculate g2
-                            uint8_t value[32];
-                            mbedtls_mpi_write_binary(&le_keypair.Q.X, value, sizeof(value));
-                            uint32_t vb = g2(setup->sm_peer_qx, value, setup->sm_peer_nonce, setup->sm_local_nonce) % 1000000;
-                            big_endian_store_32(setup->sm_tk, 12, vb);
+                            g2_calculate(connection);
                             sm_trigger_user_response(connection);
                         } 
                     } else {
