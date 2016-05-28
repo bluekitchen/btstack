@@ -544,6 +544,7 @@ typedef uint8_t sm_key24_t[3];
 typedef uint8_t sm_key56_t[7];
 typedef uint8_t sm_key256_t[32];
 
+#if 0
 static void aes128_calc_cyphertext(const uint8_t key[16], const uint8_t plaintext[16], uint8_t cyphertext[16]){
     uint32_t rk[RKLENGTH(KEYBITS)];
     int nrounds = rijndaelSetupEncrypt(rk, &key[0], KEYBITS);
@@ -622,7 +623,7 @@ static void aes_cmac(sm_key_t aes_cmac, const sm_key_t key, const uint8_t * data
     // Step 7
     aes128_calc_cyphertext(key, sm_cmac_y, aes_cmac);
 }
-
+#endif
 
 #if 0
 //
@@ -881,7 +882,7 @@ void sm_cmac_general_start(const sm_key_t key, uint16_t message_len, uint8_t (*g
     if (sm_cmac_block_count==0){
         sm_cmac_block_count = 1;
     }
-
+    log_info("sm_cmac_connection %p", sm_cmac_connection);
     log_info("sm_cmac_general_start: len %u, block count %u", sm_cmac_message_len, sm_cmac_block_count);
 
     // first, we need to compute l for k1, k2, and m_last
@@ -1291,7 +1292,6 @@ static inline void sm_pdu_received_in_wrong_state(sm_connection_t * sm_conn){
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
 
 static void sm_sc_prepare_dhkey_check(sm_connection_t * sm_conn);
-static void g2_calculate(sm_connection_t * sm_conn);
 
 static void sm_sc_state_after_receiving_random(sm_connection_t * sm_conn){
     if (sm_conn->sm_role){
@@ -1305,8 +1305,7 @@ static void sm_sc_state_after_receiving_random(sm_connection_t * sm_conn){
                 break;
 
             case NK_BOTH_INPUT:
-                g2_calculate(sm_conn);
-                sm_trigger_user_response(sm_conn);
+                sm_conn->sm_engine_state = SM_SC_W2_CALCULATE_G2;
                 break;
             case PK_INIT_INPUT:
             case PK_RESP_INPUT:
@@ -1347,47 +1346,63 @@ static void sm_sc_cmac_done(uint8_t * hash){
     log_info("sm_sc_cmac_done: ");
     log_info_hexdump(hash, 16);
 
-    switch (sm_cmac_connection->sm_engine_state){
+    sm_connection_t * sm_conn = sm_cmac_connection;
+    sm_cmac_connection = NULL;
+
+    switch (sm_conn->sm_engine_state){
         case SM_SC_W4_CMAC_FOR_CONFIRMATION:
             memcpy(setup->sm_local_confirm, hash, 16);
-            sm_cmac_connection->sm_engine_state = SM_SC_SEND_CONFIRMATION;
+            sm_conn->sm_engine_state = SM_SC_SEND_CONFIRMATION;
             break;
         case SM_SC_W4_CMAC_FOR_CHECK_CONFIRMATION:
             // check
             if (0 != memcmp(hash, setup->sm_peer_confirm, 16)){
-                sm_pairing_error(sm_cmac_connection, SM_REASON_CONFIRM_VALUE_FAILED);
+                sm_pairing_error(sm_conn, SM_REASON_CONFIRM_VALUE_FAILED);
                 break;
             }
-            sm_sc_state_after_receiving_random(sm_cmac_connection);
+            sm_sc_state_after_receiving_random(sm_conn);
             break;
         case SM_SC_W4_CALCULATE_F6_FOR_DHKEY_CHECK:
             memcpy(setup->sm_local_dhkey_check, hash, 16);
-            sm_cmac_connection->sm_engine_state = SM_SC_SEND_DHKEY_CHECK_COMMAND;
+            sm_conn->sm_engine_state = SM_SC_SEND_DHKEY_CHECK_COMMAND;
             break;
         case SM_SC_W4_CALCULATE_F6_TO_VERIFY_DHKEY_CHECK:
             if (0 != memcmp(hash, setup->sm_peer_dhkey_check, 16) ){
-                sm_pairing_error(sm_cmac_connection, SM_REASON_DHKEY_CHECK_FAILED);
+                sm_pairing_error(sm_conn, SM_REASON_DHKEY_CHECK_FAILED);
                 break;
             }
-            sm_sc_state_after_receiving_dhkey_check(sm_cmac_connection);  
+            sm_sc_state_after_receiving_dhkey_check(sm_conn);  
             break;
         case SM_SC_W4_CALCULATE_F5_SALT:
             memcpy(setup->sm_t, hash, 16);
-            sm_cmac_connection->sm_engine_state = SM_SC_W2_CALCULATE_F5_MACKEY;
+            sm_conn->sm_engine_state = SM_SC_W2_CALCULATE_F5_MACKEY;
             break;            
         case SM_SC_W4_CALCULATE_F5_MACKEY:
             memcpy(setup->sm_mackey, hash, 16);
-            sm_cmac_connection->sm_engine_state = SM_SC_W2_CALCULATE_F5_LTK;
+            sm_conn->sm_engine_state = SM_SC_W2_CALCULATE_F5_LTK;
             break;            
         case SM_SC_W4_CALCULATE_F5_LTK:
             memcpy(setup->sm_ltk, hash, 16);
-            sm_cmac_connection->sm_engine_state = SM_SC_W2_CALCULATE_F6_FOR_DHKEY_CHECK;
-            break;            
+            sm_conn->sm_engine_state = SM_SC_W2_CALCULATE_F6_FOR_DHKEY_CHECK;
+            break; 
+        case SM_SC_W4_CALCULATE_G2: {
+            uint32_t vab = big_endian_read_32(hash, 12) % 1000000;
+            big_endian_store_32(setup->sm_tk, 12, vab);
+            sm_conn->sm_engine_state = SM_SC_W4_USER_RESPONSE;
+            sm_trigger_user_response(sm_conn);
+            break;
+        }
+        case SM_SC_W4_DHKEY_CHECK_COMMAND_AND_W4_CALCULATE_G2: {
+            uint32_t vab = big_endian_read_32(hash, 12) % 1000000;
+            big_endian_store_32(setup->sm_tk, 12, vab);
+            sm_conn->sm_engine_state = SM_SC_W4_DHKEY_CHECK_COMMAND_AND_W4_USER_RESPONSE;
+            sm_trigger_user_response(sm_conn);
+            break;
+        }
         default:
-            log_error("sm_sc_cmac_done in state %u", sm_cmac_connection->sm_engine_state);
+            log_error("sm_sc_cmac_done in state %u", sm_conn->sm_engine_state);
             break;
     }    
-    sm_cmac_connection = 0;
     sm_run();
 }
 
@@ -1512,37 +1527,30 @@ static void f6_engine(sm_connection_t * sm_conn, const sm_key_t w, const sm_key_
 // - V is 256 bits
 // - X is 128 bits
 // - Y is 128 bits
-static uint32_t g2(const sm_key256_t u, const sm_key256_t v, const sm_key_t x, const sm_key_t y){
-    uint8_t buffer[80];
-    memcpy(buffer, u, 32);  
-    memcpy(buffer+32, v, 32);
-    memcpy(buffer+64, y, 16);
-    sm_key_t cmac;
+static void g2_engine(sm_connection_t * sm_conn, const sm_key256_t u, const sm_key256_t v, const sm_key_t x, const sm_key_t y){
+    const uint16_t message_len = 80;
+    sm_cmac_connection = sm_conn;
+    memcpy(sm_cmac_sc_buffer, u, 32);  
+    memcpy(sm_cmac_sc_buffer+32, v, 32);
+    memcpy(sm_cmac_sc_buffer+64, y, 16);
     log_info("g2 key");
     log_info_hexdump(x, 16);
     log_info("g2 message");
-    log_info_hexdump(buffer, sizeof(buffer));
-    aes_cmac(cmac, x, buffer, sizeof(buffer));
-    log_info("g2 result");
-    log_info_hexdump(x, 16);
-    return big_endian_read_32(cmac, 12);
+    log_info_hexdump(sm_cmac_sc_buffer, sizeof(sm_cmac_sc_buffer));
+    sm_cmac_general_start(x, message_len, &sm_sc_cmac_get_byte, &sm_sc_cmac_done);
 }
 
-static void g2_calculate(sm_connection_t * sm_conn) {
+static void g2_calculate_engine(sm_connection_t * sm_conn) {
     // calc Va if numeric comparison
-    // TODO: use AES Engine to calculate g2
     uint8_t value[32];
     mbedtls_mpi_write_binary(&le_keypair.Q.X, value, sizeof(value));
-    uint32_t vab;
     if (sm_conn->sm_role){
         // responder  
-        vab = g2(setup->sm_peer_qx, value, setup->sm_peer_nonce, setup->sm_local_nonce);;
+        g2_engine(sm_conn, setup->sm_peer_qx, value, setup->sm_peer_nonce, setup->sm_local_nonce);;
     } else {
         // initiator
-        vab = g2(value, setup->sm_peer_qx, setup->sm_local_nonce, setup->sm_peer_nonce);
+        g2_engine(sm_conn, value, setup->sm_peer_qx, setup->sm_local_nonce, setup->sm_peer_nonce);
     }
-    vab = vab % 1000000;
-    big_endian_store_32(setup->sm_tk, 12, vab);
 }
 
 static void sm_sc_calculate_local_confirm(sm_connection_t * sm_conn){
@@ -1576,14 +1584,7 @@ static void sm_sc_calculate_remote_confirm(sm_connection_t * sm_conn){
 }
 
 static void sm_sc_prepare_dhkey_check(sm_connection_t * sm_conn){
-
     sm_conn->sm_engine_state = SM_SC_W2_CALCULATE_F5_SALT;
-
-    // TODO: use AES CMAC Engine
-    // sm_sc_calculate_f5_for_dhkey_check(sm_conn);
-
-    // second part
-    // sm_conn->sm_engine_state = SM_SC_W2_CALCULATE_F6_FOR_DHKEY_CHECK;
 }
 
 static void sm_sc_calculate_f6_for_dhkey_check(sm_connection_t * sm_conn){
@@ -1634,8 +1635,8 @@ static void sm_sc_calculate_f6_to_verify_dhkey_check(sm_connection_t * sm_conn){
         f6_engine(sm_conn, setup->sm_mackey, setup->sm_peer_nonce, setup->sm_local_nonce, setup->sm_ra, iocap_b, bd_addr_slave, bd_addr_master);
     }
 }
-
 #endif
+
 
 static void sm_run(void){
 
@@ -1934,6 +1935,15 @@ static void sm_run(void){
                 connection->sm_engine_state = SM_SC_W4_CALCULATE_F5_LTK;
                 f5_calculate_ltk(connection);
                 break;
+            case SM_SC_W2_CALCULATE_G2:
+                connection->sm_engine_state = SM_SC_W4_CALCULATE_G2;
+                g2_calculate_engine(connection);
+                break;
+            case SM_SC_W4_DHKEY_CHECK_COMMAND_AND_W2_CALCULATE_G2:
+                connection->sm_engine_state = SM_SC_W4_DHKEY_CHECK_COMMAND_AND_W4_CALCULATE_G2;
+                g2_calculate_engine(connection);
+                break;
+
 #endif
             // initiator side
             case SM_INITIATOR_PH0_SEND_START_ENCRYPTION: {
@@ -2047,8 +2057,7 @@ static void sm_run(void){
                         // responder
                         connection->sm_engine_state = SM_SC_W4_DHKEY_CHECK_COMMAND;
                         if (setup->sm_stk_generation_method == NK_BOTH_INPUT){
-                            g2_calculate(connection);
-                            sm_trigger_user_response(connection);
+                            connection->sm_engine_state = SM_SC_W4_DHKEY_CHECK_COMMAND_AND_W2_CALCULATE_G2;
                         } 
                     } else {
                         // initiator
@@ -3023,6 +3032,8 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
             sm_sc_state_after_receiving_random(sm_conn);
             break;
 
+        case SM_SC_W4_DHKEY_CHECK_COMMAND_AND_W2_CALCULATE_G2:
+        case SM_SC_W4_DHKEY_CHECK_COMMAND_AND_W4_CALCULATE_G2:
         case SM_SC_W4_DHKEY_CHECK_COMMAND:
             if (packet[0] != SM_CODE_PAIRING_DHKEY_CHECK){
                 sm_pdu_received_in_wrong_state(sm_conn);
@@ -3031,7 +3042,19 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
             // store DHKey Check
             reverse_128(&packet[01], setup->sm_peer_dhkey_check);
 
-            sm_conn->sm_engine_state = SM_SC_W2_CALCULATE_F6_TO_VERIFY_DHKEY_CHECK;
+            switch (sm_conn->sm_engine_state){
+                case SM_SC_W4_DHKEY_CHECK_COMMAND_AND_W2_CALCULATE_G2:
+                    sm_conn->sm_engine_state = SM_SC_W2_CALCULATE_G2;
+                    break;
+                case SM_SC_W4_DHKEY_CHECK_COMMAND_AND_W4_CALCULATE_G2:
+                    sm_conn->sm_engine_state = SM_SC_W4_CALCULATE_G2;
+                    break;
+                case SM_SC_W4_DHKEY_CHECK_COMMAND:
+                    sm_conn->sm_engine_state = SM_SC_W2_CALCULATE_F6_TO_VERIFY_DHKEY_CHECK;
+                    break;
+                default:
+                    break;
+            }
             break;
 #endif
  
@@ -3392,13 +3415,10 @@ void sm_just_works_confirm(hci_con_handle_t con_handle){
 
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
     if (sm_conn->sm_engine_state == SM_SC_W4_USER_RESPONSE){
-        if (sm_conn->sm_role){
-            // responder
-            sm_sc_prepare_dhkey_check(sm_conn);
-        } else {
-            // initiator
-            // TODO handle intiator role
-        }
+        sm_sc_prepare_dhkey_check(sm_conn);
+    }
+    if (sm_conn->sm_engine_state == SM_SC_W4_DHKEY_CHECK_COMMAND_AND_W4_USER_RESPONSE){
+        sm_conn->sm_engine_state =  SM_SC_W4_DHKEY_CHECK_COMMAND;
     }
 #endif
 
