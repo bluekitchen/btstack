@@ -1319,6 +1319,14 @@ static void sm_sc_prepare_dhkey_check(sm_connection_t * sm_conn);
 static int sm_passkey_used(stk_generation_method_t method);
 static int sm_just_works_or_numeric_comparison(stk_generation_method_t method);
 
+static void sm_sc_start_calculating_local_confirm(sm_connection_t * sm_conn){
+    if (sm_passkey_used(setup->sm_stk_generation_method)){
+        sm_conn->sm_engine_state = SM_SC_W2_GET_RANDOM_A;
+    } else {
+        sm_conn->sm_engine_state = SM_SC_W4_CMAC_FOR_CONFIRMATION;
+    }
+}
+
 static void sm_sc_state_after_receiving_random(sm_connection_t * sm_conn){
     if (sm_conn->sm_role){
         // Responder
@@ -1337,7 +1345,7 @@ static void sm_sc_state_after_receiving_random(sm_connection_t * sm_conn){
             case PK_RESP_INPUT:
             case OK_BOTH_INPUT:
                 if (setup->sm_passkey_bit < 20) {
-                    sm_conn->sm_engine_state = SM_SC_W2_CMAC_FOR_CONFIRMATION;
+                    sm_sc_start_calculating_local_confirm(sm_conn);
                 } else {
                     sm_sc_prepare_dhkey_check(sm_conn);
                 }
@@ -1559,7 +1567,7 @@ static void g2_engine(sm_connection_t * sm_conn, const sm_key256_t u, const sm_k
     sm_cmac_general_start(x, message_len, &sm_sc_cmac_get_byte, &sm_sc_cmac_done);
 }
 
-static void g2_calculate_engine(sm_connection_t * sm_conn) {
+static void g2_calculate(sm_connection_t * sm_conn) {
     // calc Va if numeric comparison
     uint8_t value[32];
     mbedtls_mpi_write_binary(&le_keypair.Q.X, value, sizeof(value));
@@ -1570,16 +1578,6 @@ static void g2_calculate_engine(sm_connection_t * sm_conn) {
         // initiator
         g2_engine(sm_conn, value, setup->sm_peer_qx, setup->sm_local_nonce, setup->sm_peer_nonce);
     }
-}
-
-static void sm_sc_generate_local_nonce(sm_connection_t * sm_conn){
-    // TODO: use random generator to generate nonce
-    log_info("SM: generate local nonce");
-    // generate 128-bit nonce
-    int i;
-    for (i=0;i<16;i++){
-        setup->sm_local_nonce[i] = rand() & 0xff;
-    }                
 }
 
 static void sm_sc_calculate_local_confirm(sm_connection_t * sm_conn){
@@ -1942,53 +1940,49 @@ static void sm_run(void){
                 sm_random_start(connection);
                 connection->sm_engine_state = SM_SC_W4_GET_RANDOM_A;
                 break;
-
             case SM_SC_W2_GET_RANDOM_B:
                 sm_random_start(connection);
                 connection->sm_engine_state = SM_SC_W4_GET_RANDOM_B;
                 break;
-
             case SM_SC_W2_CMAC_FOR_CONFIRMATION:
                 if (!sm_cmac_ready()) break;
-
-                if (sm_passkey_used(setup->sm_stk_generation_method)){
-                    sm_sc_generate_local_nonce(connection);
-                }
-
                 connection->sm_engine_state = SM_SC_W4_CMAC_FOR_CONFIRMATION;
                 sm_sc_calculate_local_confirm(connection);
                 break;
-
             case SM_SC_W2_CMAC_FOR_CHECK_CONFIRMATION:
                 if (!sm_cmac_ready()) break;
                 connection->sm_engine_state = SM_SC_W4_CMAC_FOR_CHECK_CONFIRMATION;
                 sm_sc_calculate_remote_confirm(connection);
                 break;
-
             case SM_SC_W2_CALCULATE_F6_FOR_DHKEY_CHECK:
                 if (!sm_cmac_ready()) break;
                 connection->sm_engine_state = SM_SC_W4_CALCULATE_F6_FOR_DHKEY_CHECK;
                 sm_sc_calculate_f6_for_dhkey_check(connection);
                 break;
             case SM_SC_W2_CALCULATE_F6_TO_VERIFY_DHKEY_CHECK:
+                if (!sm_cmac_ready()) break;
                 connection->sm_engine_state = SM_SC_W4_CALCULATE_F6_TO_VERIFY_DHKEY_CHECK;
                 sm_sc_calculate_f6_to_verify_dhkey_check(connection);
                 break;
             case SM_SC_W2_CALCULATE_F5_SALT:
+                if (!sm_cmac_ready()) break;
                 connection->sm_engine_state = SM_SC_W4_CALCULATE_F5_SALT;
                 f5_calculate_salt(connection);
                 break;
             case SM_SC_W2_CALCULATE_F5_MACKEY:
+                if (!sm_cmac_ready()) break;
                 connection->sm_engine_state = SM_SC_W4_CALCULATE_F5_MACKEY;
                 f5_calculate_mackey(connection);
                 break;
             case SM_SC_W2_CALCULATE_F5_LTK:
+                if (!sm_cmac_ready()) break;
                 connection->sm_engine_state = SM_SC_W4_CALCULATE_F5_LTK;
                 f5_calculate_ltk(connection);
                 break;
             case SM_SC_W2_CALCULATE_G2:
+                if (!sm_cmac_ready()) break;
                 connection->sm_engine_state = SM_SC_W4_CALCULATE_G2;
-                g2_calculate_engine(connection);
+                g2_calculate(connection);
                 break;
 
 #endif
@@ -2036,7 +2030,7 @@ static void sm_run(void){
                     case JUST_WORKS:
                     case NK_BOTH_INPUT:
                         if (connection->sm_role){
-                            connection->sm_engine_state = SM_SC_W2_CMAC_FOR_CONFIRMATION;
+                            sm_sc_start_calculating_local_confirm(connection);
                         } else {
                             connection->sm_engine_state = SM_SC_W4_PUBLIC_KEY_COMMAND;
                         }
@@ -2622,14 +2616,13 @@ static void sm_handle_random_result(uint8_t * data){
             break;
         case SM_SC_W4_GET_RANDOM_B:
             memcpy(&setup->sm_local_nonce[8], data, 8);
-            // TODO: next state
-
             // initiator & jw/nc -> send pairing random
             if (connection->sm_role == 0 && sm_just_works_or_numeric_comparison(setup->sm_stk_generation_method)){
                 connection->sm_engine_state = SM_SC_SEND_PAIRING_RANDOM;
                 break;
+            } else {
+                connection->sm_engine_state = SM_SC_W2_CMAC_FOR_CONFIRMATION;
             }
-            log_error("SM_SC_W4_GET_RANDOM_B: next state not defined");
             break;
 #endif
 
@@ -3114,7 +3107,7 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
                     case PK_INIT_INPUT:
                     case PK_RESP_INPUT:
                     case OK_BOTH_INPUT:
-                        sm_conn->sm_engine_state = SM_SC_W2_CMAC_FOR_CONFIRMATION;
+                        sm_sc_start_calculating_local_confirm(sm_conn);
                         break;
                     case OOB:
                         // TODO: implement SC OOB
@@ -3133,7 +3126,7 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
 
             if (sm_conn->sm_role){
                 // responder
-                sm_conn->sm_engine_state = SM_SC_W2_CMAC_FOR_CONFIRMATION;                
+                sm_sc_start_calculating_local_confirm(sm_conn);
             } else {
                 // initiator
                 if (sm_just_works_or_numeric_comparison(setup->sm_stk_generation_method)){
