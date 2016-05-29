@@ -59,6 +59,15 @@
 #define USE_MBEDTLS_FOR_ECDH
 #endif
 
+#ifdef ENABLE_LE_SECURE_CONNECTIONS
+#ifdef HAVE_HCI_CONTROLLER_DHKEY_SUPPORT
+#error "Support for DHKEY Support in HCI Controller not implemented yet. Please use software implementation" 
+#else
+#define USE_MBEDTLS_FOR_ECDH
+#endif
+#endif
+
+
 // Software ECDH implementation provided by mbedtls
 #ifdef USE_MBEDTLS_FOR_ECDH
 #if !defined(MBEDTLS_CONFIG_FILE)
@@ -142,6 +151,12 @@ typedef enum {
 } address_resolution_event_t;
 
 typedef enum {
+    EC_KEY_GENERATION_IDLE,
+    EC_KEY_GENERATION_ACTIVE,
+    EC_KEY_GENERATION_DONE,
+} ec_key_generation_state_t;
+
+typedef enum {
     SM_STATE_VAR_DHKEY_COMMAND_RECEIVED = 1 << 0
 } sm_state_var_t;
 
@@ -150,6 +165,7 @@ typedef enum {
 //
 
 static uint8_t test_use_fixed_local_csrk;
+static uint8_t test_use_fixed_ec_keypair;
 
 // configuration
 static uint8_t sm_accepted_stk_generation_methods;
@@ -222,7 +238,8 @@ static btstack_linked_list_t sm_event_handlers;
 
 // Software ECDH implementation provided by mbedtls
 #ifdef USE_MBEDTLS_FOR_ECDH
-mbedtls_ecp_keypair le_keypair;
+static mbedtls_ecp_keypair le_keypair;
+static ec_key_generation_state_t ec_key_generation_state;
 #endif
 
 //
@@ -266,8 +283,8 @@ typedef struct sm_setup_context {
     sm_key_t  sm_ltk;
 
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
-    uint8_t   sm_peer_qx[32];
-    uint8_t   sm_peer_qy[32];
+    uint8_t   sm_peer_qx[32];   // also stores random for EC key generation during init
+    uint8_t   sm_peer_qy[32];   //  ''
     sm_key_t  sm_peer_nonce;    // might be combined with sm_peer_random
     sm_key_t  sm_local_nonce;   // might be combined with sm_local_random
     sm_key_t  sm_peer_dhkey_check;
@@ -276,7 +293,7 @@ typedef struct sm_setup_context {
     sm_key_t  sm_rb;
     sm_key_t  sm_t;             // used for f5
     sm_key_t  sm_mackey;
-    uint8_t   sm_passkey_bit;
+    uint8_t   sm_passkey_bit;   // also stores number of generated random bytes for EC key generation
     uint8_t   sm_state_vars;
 #endif
 
@@ -1677,6 +1694,13 @@ static void sm_run(void){
             break;  
     }
 
+#ifdef USE_MBEDTLS_FOR_ECDH
+    if (ec_key_generation_state == EC_KEY_GENERATION_ACTIVE){
+        sm_random_start(NULL);
+        return; 
+    }
+#endif
+
     // random address updates
     switch (rau_state){
         case RAU_GET_RANDOM:
@@ -2487,8 +2511,59 @@ static void sm_handle_encryption_result(uint8_t * data){
     }
 }
 
+#ifdef USE_MBEDTLS_FOR_ECDH
+
+static void sm_log_ec_keypair(void){
+    // print keypair
+    char buffer[100];
+    size_t len;
+    mbedtls_mpi_write_string( &le_keypair.d, 16, buffer, sizeof(buffer), &len);
+    log_info("d: %s", buffer);
+    mbedtls_mpi_write_string( &le_keypair.Q.X, 16, buffer, sizeof(buffer), &len);
+    log_info("X: %s", buffer);
+    mbedtls_mpi_write_string( &le_keypair.Q.Y, 16, buffer, sizeof(buffer), &len);
+    log_info("Y: %s", buffer);
+}
+
+static int sm_generate_f_rng(void * context, unsigned char * buffer, size_t size){
+    int offset = setup->sm_passkey_bit;
+    log_info("sm_generate_f_rng: size %u - offset %u", (int) size, offset);
+    while (size) {
+        if (offset < 32){
+            *buffer++ = setup->sm_peer_qx[offset++];
+        } else {
+            *buffer++ = setup->sm_peer_qx[offset++ - 32];
+        }
+        size--;
+    }
+    setup->sm_passkey_bit = offset;
+    return 0;
+}
+#endif
+
 // note: random generator is ready. this doesn NOT imply that aes engine is unused!
 static void sm_handle_random_result(uint8_t * data){
+
+#ifdef USE_MBEDTLS_FOR_ECDH
+    if (ec_key_generation_state == EC_KEY_GENERATION_ACTIVE){
+        int num_bytes = setup->sm_passkey_bit;
+        if (num_bytes < 32){
+            memcpy(&setup->sm_peer_qx[num_bytes], data, 8);
+        } else {
+            memcpy(&setup->sm_peer_qx[num_bytes-32], data, 8);
+        }
+        num_bytes += 8;
+        setup->sm_passkey_bit = num_bytes;
+
+        if (num_bytes >= 64){
+            // generate EC key
+            setup->sm_passkey_bit = 0;
+            mbedtls_ecp_gen_key(MBEDTLS_ECP_DP_SECP256R1, &le_keypair, &sm_generate_f_rng, NULL);
+            sm_log_ec_keypair();
+            ec_key_generation_state = EC_KEY_GENERATION_DONE;
+        }
+    }
+#endif
 
     switch (rau_state){
         case RAU_W4_RANDOM:
@@ -2584,6 +2659,12 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                         log_info("HCI Working!");
                         dkg_state = sm_persistent_irk_ready ? DKG_CALC_DHK : DKG_CALC_IRK;
                         rau_state = RAU_IDLE;
+#ifdef USE_MBEDTLS_FOR_ECDH
+                        if (!test_use_fixed_ec_keypair){
+                            setup->sm_passkey_bit = 0;
+                            ec_key_generation_state = EC_KEY_GENERATION_ACTIVE;
+                        }
+#endif
                         sm_run();
 					}
 					break;
@@ -3248,23 +3329,20 @@ void sm_init(void){
     l2cap_register_fixed_channel(sm_pdu_handler, L2CAP_CID_SECURITY_MANAGER_PROTOCOL);
 
 #ifdef USE_MBEDTLS_FOR_ECDH
-    // TODO: calculate keypair using LE Random Number Generator
-    // use test keypair from spec initially
+    ec_key_generation_state = EC_KEY_GENERATION_IDLE;
+#endif
+}
+
+void sm_test_use_fixed_ec_keypair(void){
+    test_use_fixed_ec_keypair = 1;
+#ifdef USE_MBEDTLS_FOR_ECDH
+    // use test keypair from spec
     mbedtls_ecp_keypair_init(&le_keypair);
     mbedtls_ecp_group_load(&le_keypair.grp, MBEDTLS_ECP_DP_SECP256R1);
     mbedtls_mpi_read_string( &le_keypair.d,   16, "3f49f6d4a3c55f3874c9b3e3d2103f504aff607beb40b7995899b8a6cd3c1abd");
     mbedtls_mpi_read_string( &le_keypair.Q.X, 16, "20b003d2f297be2c5e2c83a7e9f9a5b9eff49111acf4fddbcc0301480e359de6");
     mbedtls_mpi_read_string( &le_keypair.Q.Y, 16, "dc809c49652aeb6d63329abf5a52155c766345c28fed3024741c8ed01589d28b");
     mbedtls_mpi_read_string( &le_keypair.Q.Z, 16, "1");
-    // print keypair
-    char buffer[100];
-    size_t len;
-    mbedtls_mpi_write_string( &le_keypair.d, 16, buffer, sizeof(buffer), &len);
-    log_info("d: %s", buffer);
-    mbedtls_mpi_write_string( &le_keypair.Q.X, 16, buffer, sizeof(buffer), &len);
-    log_info("X: %s", buffer);
-    mbedtls_mpi_write_string( &le_keypair.Q.Y, 16, buffer, sizeof(buffer), &len);
-    log_info("Y: %s", buffer);
 #endif
 }
 

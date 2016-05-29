@@ -272,6 +272,7 @@ int sm_le_device_index(hci_con_handle_t con_handle );
 // PTS testing
 void sm_test_set_irk(sm_key_t irk);
 void sm_test_use_fixed_local_csrk(void);
+void sm_test_use_fixed_ec_keypair(void);
 
 #if defined __cplusplus
 }
