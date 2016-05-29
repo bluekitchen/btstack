@@ -1317,6 +1317,7 @@ static inline void sm_pdu_received_in_wrong_state(sm_connection_t * sm_conn){
 
 static void sm_sc_prepare_dhkey_check(sm_connection_t * sm_conn);
 static int sm_passkey_used(stk_generation_method_t method);
+static int sm_just_works_or_numeric_comparison(stk_generation_method_t method);
 
 static void sm_sc_state_after_receiving_random(sm_connection_t * sm_conn){
     if (sm_conn->sm_role){
@@ -1937,6 +1938,16 @@ static void sm_run(void){
             }
 
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
+            case SM_SC_W2_GET_RANDOM_A:
+                sm_random_start(connection);
+                connection->sm_engine_state = SM_SC_W4_GET_RANDOM_A;
+                break;
+
+            case SM_SC_W2_GET_RANDOM_B:
+                sm_random_start(connection);
+                connection->sm_engine_state = SM_SC_W4_GET_RANDOM_B;
+                break;
+
             case SM_SC_W2_CMAC_FOR_CONFIRMATION:
                 if (!sm_cmac_ready()) break;
 
@@ -2604,6 +2615,24 @@ static void sm_handle_random_result(uint8_t * data){
     sm_connection_t * connection = (sm_connection_t *) sm_random_context;
     if (!connection) return;
     switch (connection->sm_engine_state){
+#ifdef ENABLE_LE_SECURE_CONNECTIONS
+        case SM_SC_W4_GET_RANDOM_A:
+            memcpy(&setup->sm_local_nonce[0], data, 8);
+            connection->sm_engine_state = SM_SC_W2_GET_RANDOM_B;
+            break;
+        case SM_SC_W4_GET_RANDOM_B:
+            memcpy(&setup->sm_local_nonce[8], data, 8);
+            // TODO: next state
+
+            // initiator & jw/nc -> send pairing random
+            if (connection->sm_role == 0 && sm_just_works_or_numeric_comparison(setup->sm_stk_generation_method)){
+                connection->sm_engine_state = SM_SC_SEND_PAIRING_RANDOM;
+                break;
+            }
+            log_error("SM_SC_W4_GET_RANDOM_B: next state not defined");
+            break;
+#endif
+
         case SM_PH2_W4_RANDOM_TK:
         {
             // map random to 0-999999 without speding much cycles on a modulus operation
@@ -3107,12 +3136,11 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
                 sm_conn->sm_engine_state = SM_SC_W2_CMAC_FOR_CONFIRMATION;                
             } else {
                 // initiator
-
                 if (sm_just_works_or_numeric_comparison(setup->sm_stk_generation_method)){
-                    sm_sc_generate_local_nonce(sm_conn);
+                    sm_conn->sm_engine_state = SM_SC_W2_GET_RANDOM_A;
+                } else {
+                    sm_conn->sm_engine_state = SM_SC_SEND_PAIRING_RANDOM;                
                 }
-
-                sm_conn->sm_engine_state = SM_SC_SEND_PAIRING_RANDOM;                
             }
             break;        
 
