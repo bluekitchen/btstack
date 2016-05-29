@@ -2075,10 +2075,11 @@ static void sm_run(void){
                 } else {
                     if (connection->sm_role){
                         // responder
-                        connection->sm_engine_state = SM_SC_W4_DHKEY_CHECK_COMMAND;
                         if (setup->sm_stk_generation_method == NK_BOTH_INPUT){
                             connection->sm_engine_state = SM_SC_W2_CALCULATE_G2;
-                        } 
+                        } else {
+                            sm_sc_prepare_dhkey_check(connection);
+                        }
                     } else {
                         // initiator
                         connection->sm_engine_state = SM_SC_W4_PAIRING_RANDOM;
