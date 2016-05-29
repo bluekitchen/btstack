@@ -1316,6 +1316,7 @@ static inline void sm_pdu_received_in_wrong_state(sm_connection_t * sm_conn){
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
 
 static void sm_sc_prepare_dhkey_check(sm_connection_t * sm_conn);
+static int sm_passkey_used(stk_generation_method_t method);
 
 static void sm_sc_state_after_receiving_random(sm_connection_t * sm_conn){
     if (sm_conn->sm_role){
@@ -1570,16 +1571,17 @@ static void g2_calculate_engine(sm_connection_t * sm_conn) {
     }
 }
 
-static void sm_sc_calculate_local_confirm(sm_connection_t * sm_conn){
-
+static void sm_sc_generate_local_nonce(sm_connection_t * sm_conn){
     // TODO: use random generator to generate nonce
-
+    log_info("SM: generate local nonce");
     // generate 128-bit nonce
     int i;
     for (i=0;i<16;i++){
         setup->sm_local_nonce[i] = rand() & 0xff;
     }                
+}
 
+static void sm_sc_calculate_local_confirm(sm_connection_t * sm_conn){
     uint8_t z = 0;
     if (setup->sm_stk_generation_method != JUST_WORKS && setup->sm_stk_generation_method != NK_BOTH_INPUT){
         // some form of passkey
@@ -1937,6 +1939,11 @@ static void sm_run(void){
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
             case SM_SC_W2_CMAC_FOR_CONFIRMATION:
                 if (!sm_cmac_ready()) break;
+
+                if (sm_passkey_used(setup->sm_stk_generation_method)){
+                    sm_sc_generate_local_nonce(connection);
+                }
+
                 connection->sm_engine_state = SM_SC_W4_CMAC_FOR_CONFIRMATION;
                 sm_sc_calculate_local_confirm(connection);
                 break;
@@ -2861,6 +2868,17 @@ static inline int sm_calc_actual_encryption_key_size(int other){
     return sm_max_encryption_key_size;
 }
 
+
+static int sm_just_works_or_numeric_comparison(stk_generation_method_t method){
+    switch (method){
+        case JUST_WORKS:
+        case NK_BOTH_INPUT:
+            return 1;
+        default:
+            return 0;        
+    }
+}
+
 static int sm_passkey_used(stk_generation_method_t method){
     switch (method){
         case PK_RESP_INPUT:
@@ -3089,6 +3107,11 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
                 sm_conn->sm_engine_state = SM_SC_W2_CMAC_FOR_CONFIRMATION;                
             } else {
                 // initiator
+
+                if (sm_just_works_or_numeric_comparison(setup->sm_stk_generation_method)){
+                    sm_sc_generate_local_nonce(sm_conn);
+                }
+
                 sm_conn->sm_engine_state = SM_SC_SEND_PAIRING_RANDOM;                
             }
             break;        
