@@ -1571,6 +1571,15 @@ static void g2_calculate_engine(sm_connection_t * sm_conn) {
 }
 
 static void sm_sc_calculate_local_confirm(sm_connection_t * sm_conn){
+
+    // TODO: use random generator to generate nonce
+
+    // generate 128-bit nonce
+    int i;
+    for (i=0;i<16;i++){
+        setup->sm_local_nonce[i] = rand() & 0xff;
+    }                
+
     uint8_t z = 0;
     if (setup->sm_stk_generation_method != JUST_WORKS && setup->sm_stk_generation_method != NK_BOTH_INPUT){
         // some form of passkey
@@ -2002,13 +2011,6 @@ static void sm_run(void){
                 mbedtls_mpi_write_binary(&le_keypair.Q.Y, value, sizeof(value));
                 reverse_256(value, &buffer[33]);
 #endif
-                // TODO: use random generator to generate nonce
-
-                // generate 128-bit nonce
-                int i;
-                for (i=0;i<16;i++){
-                    setup->sm_local_nonce[i] = rand() & 0xff;
-                }                
 
                 // stk generation method
                 // passkey entry: notify app to show passkey or to request passkey
@@ -3511,6 +3513,11 @@ void sm_passkey_input(hci_con_handle_t con_handle, uint32_t passkey){
     if (sm_conn->sm_engine_state == SM_PH1_W4_USER_RESPONSE){
         sm_conn->sm_engine_state = SM_PH2_C1_GET_RANDOM_A;
     }
+#ifdef ENABLE_LE_SECURE_CONNECTIONS
+    // if (sm_conn->sm_engine_state == SM_SC_W4_USER_RESPONSE){
+    //     sm_sc_prepare_dhkey_check(sm_conn);
+    // }
+#endif
     sm_run();
 }
 
