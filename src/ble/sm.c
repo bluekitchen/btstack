@@ -2030,19 +2030,21 @@ static void sm_run(void){
                     case JUST_WORKS:
                     case NK_BOTH_INPUT:
                         if (connection->sm_role){
+                            // responder
                             sm_sc_start_calculating_local_confirm(connection);
                         } else {
+                            // initiator
                             connection->sm_engine_state = SM_SC_W4_PUBLIC_KEY_COMMAND;
                         }
                         break;
                     case PK_INIT_INPUT:
                     case PK_RESP_INPUT:
                     case OK_BOTH_INPUT:
-                        // hack for testing: assume user entered '000000'
-                        // memset(setup->sm_tk, 0, 16);
+                        // use random TK for display
                         memcpy(setup->sm_ra, setup->sm_tk, 16);
                         memcpy(setup->sm_rb, setup->sm_tk, 16);
                         setup->sm_passkey_bit = 0;
+
                         if (connection->sm_role){
                             // responder
                             connection->sm_engine_state = SM_SC_W4_CONFIRMATION;
@@ -2900,12 +2902,11 @@ static int sm_just_works_or_numeric_comparison(stk_generation_method_t method){
             return 0;        
     }
 }
+// responder
 
 static int sm_passkey_used(stk_generation_method_t method){
     switch (method){
         case PK_RESP_INPUT:
-        case PK_INIT_INPUT:
-        case OK_BOTH_INPUT:
             return 1;
         default:
             return 0;        
@@ -3104,9 +3105,15 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
                     case NK_BOTH_INPUT:
                         sm_conn->sm_engine_state = SM_SC_W4_CONFIRMATION;
                         break;
-                    case PK_INIT_INPUT:
                     case PK_RESP_INPUT:
+                        sm_sc_start_calculating_local_confirm(sm_conn);
+                        break;
+                    case PK_INIT_INPUT:
                     case OK_BOTH_INPUT:
+                        if (setup->sm_user_response != SM_USER_RESPONSE_PASSKEY){
+                            sm_conn->sm_engine_state = SM_SC_W4_USER_RESPONSE;
+                            break;
+                        }
                         sm_sc_start_calculating_local_confirm(sm_conn);
                         break;
                     case OOB:
@@ -3126,6 +3133,13 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
 
             if (sm_conn->sm_role){
                 // responder
+                if (sm_passkey_used(setup->sm_stk_generation_method)){
+                    if (setup->sm_user_response != SM_USER_RESPONSE_PASSKEY){
+                        // still waiting for passkey
+                        sm_conn->sm_engine_state = SM_SC_W4_USER_RESPONSE;
+                        break;
+                    } 
+                }
                 sm_sc_start_calculating_local_confirm(sm_conn);
             } else {
                 // initiator
@@ -3558,9 +3572,11 @@ void sm_passkey_input(hci_con_handle_t con_handle, uint32_t passkey){
         sm_conn->sm_engine_state = SM_PH2_C1_GET_RANDOM_A;
     }
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
-    // if (sm_conn->sm_engine_state == SM_SC_W4_USER_RESPONSE){
-    //     sm_sc_prepare_dhkey_check(sm_conn);
-    // }
+    memcpy(setup->sm_ra, setup->sm_tk, 16);
+    memcpy(setup->sm_rb, setup->sm_tk, 16);
+    if (sm_conn->sm_engine_state == SM_SC_W4_USER_RESPONSE){
+        sm_sc_start_calculating_local_confirm(sm_conn);
+    }
 #endif
     sm_run();
 }
