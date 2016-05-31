@@ -51,15 +51,6 @@
 #include "l2cap.h"
 
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
-// TODO: remove software AES
-#include "rijndael.h"
-#endif
-
-#if defined(ENABLE_LE_SECURE_CONNECTIONS) && !defined(HAVE_HCI_CONTROLLER_DHKEY_SUPPORT)
-#define USE_MBEDTLS_FOR_ECDH
-#endif
-
-#ifdef ENABLE_LE_SECURE_CONNECTIONS
 #ifdef HAVE_HCI_CONTROLLER_DHKEY_SUPPORT
 #error "Support for DHKEY Support in HCI Controller not implemented yet. Please use software implementation" 
 #else
@@ -70,11 +61,7 @@
 
 // Software ECDH implementation provided by mbedtls
 #ifdef USE_MBEDTLS_FOR_ECDH
-#if !defined(MBEDTLS_CONFIG_FILE)
 #include "mbedtls/config.h"
-#else
-#include MBEDTLS_CONFIG_FILE
-#endif
 #if defined(MBEDTLS_PLATFORM_C)
 #include "mbedtls/platform.h"
 #else
@@ -1462,7 +1449,7 @@ static void sm_sc_calculate_dhkey(sm_key256_t dhkey){
 #ifdef USE_MBEDTLS_FOR_ECDH
     // da * Pb
     mbedtls_ecp_group grp;
-    mbedtls_ecp_group_init( &grp );
+    mbedtls_ecp_group_init(&grp );
     mbedtls_ecp_group_load(&grp, MBEDTLS_ECP_DP_SECP256R1);
     mbedtls_ecp_point Q;
     mbedtls_ecp_point_init( &Q );
@@ -1470,9 +1457,12 @@ static void sm_sc_calculate_dhkey(sm_key256_t dhkey){
     mbedtls_mpi_read_binary(&Q.Y, setup->sm_peer_qy, 32);
     mbedtls_mpi_read_string(&Q.Z, 16, "1" );
     mbedtls_ecp_point DH;
-    mbedtls_ecp_point_init( &DH );
+    mbedtls_ecp_point_init(&DH);
     mbedtls_ecp_mul(&grp, &DH, &le_keypair.d, &Q, NULL, NULL);
     mbedtls_mpi_write_binary(&DH.X, dhkey, 32);
+    mbedtls_ecp_point_free(&DH);
+    mbedtls_ecp_point_free(&Q);
+    mbedtls_ecp_group_free(&grp);
 #endif
     log_info("dhkey");
     log_info_hexdump(dhkey, 32);
@@ -3121,12 +3111,15 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
             mbedtls_mpi_read_binary(&Q.Y, setup->sm_peer_qy, 32);
             mbedtls_mpi_read_string(&Q.Z, 16, "1" );
             err = mbedtls_ecp_check_pubkey(&grp, &Q);
+            mbedtls_ecp_point_free( & Q);
+            mbedtls_ecp_group_free( &grp);
             if (err){
                 log_error("sm: peer public key invalid %x", err);
                 // uses "unspecified reason", there is no "public key invalid" error code
                 sm_pdu_received_in_wrong_state(sm_conn);
                 break;
             }
+
 #endif
             if (sm_conn->sm_role){
                 // responder
