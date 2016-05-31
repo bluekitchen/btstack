@@ -2034,6 +2034,7 @@ static void sm_run(void){
             case SM_RESPONDER_PH0_SEND_LTK_REQUESTED_NEGATIVE_REPLY:
                 connection->sm_engine_state = SM_RESPONDER_IDLE;
                 hci_send_cmd(&hci_le_long_term_key_negative_reply, connection->sm_handle);
+                sm_done_for_handle(connection->sm_handle);
                 return;
 
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
