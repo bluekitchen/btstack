@@ -2157,11 +2157,14 @@ static void sm_run(void){
                 if (setup->sm_use_secure_connections){
                     connection->sm_engine_state = SM_SC_W4_PUBLIC_KEY_COMMAND;
                     // skip LTK/EDIV for SC
+                    log_info("sm: dropping encryption information flag");
                     key_distribution_flags &= ~SM_KEYDIST_ENC_KEY;
                 }
 #endif
                 sm_pairing_packet_set_initiator_key_distribution(setup->sm_s_pres, sm_pairing_packet_get_initiator_key_distribution(setup->sm_m_preq) & key_distribution_flags);
                 sm_pairing_packet_set_responder_key_distribution(setup->sm_s_pres, sm_pairing_packet_get_responder_key_distribution(setup->sm_m_preq) & key_distribution_flags);
+                // update key distribution after ENC was dropped
+                sm_setup_key_distribution(sm_pairing_packet_get_responder_key_distribution(setup->sm_m_preq));
 
                 l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) &setup->sm_s_pres, sizeof(sm_pairing_packet_t));
                 sm_timeout_reset(connection);
@@ -2821,7 +2824,11 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                         case SM_PH2_W4_CONNECTION_ENCRYPTED:
                             if (sm_conn->sm_role){
                                 // slave
-                                sm_conn->sm_engine_state = SM_PH3_GET_RANDOM;
+                                if (setup->sm_use_secure_connections){
+                                    sm_conn->sm_engine_state = SM_PH3_DISTRIBUTE_KEYS;
+                                } else {
+                                    sm_conn->sm_engine_state = SM_PH3_GET_RANDOM;
+                                }
                             } else {
                                 // master
                                 if (sm_key_distribution_all_received(sm_conn)){
@@ -3298,12 +3305,11 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
                     sm_conn->sm_engine_state = SM_RESPONDER_IDLE; 
                     sm_done_for_handle(sm_conn->sm_handle);
                 } else {
-                    sm_conn->sm_engine_state = SM_PH3_GET_RANDOM; 
-#ifdef ENABLE_LE_SECURE_CONNECTIONS
                     if (setup->sm_use_secure_connections){
                         sm_conn->sm_engine_state = SM_PH3_DISTRIBUTE_KEYS;
+                    } else {
+                        sm_conn->sm_engine_state = SM_PH3_GET_RANDOM; 
                     }
-#endif                  
                 }
             }
             break;
@@ -3557,13 +3563,11 @@ void sm_just_works_confirm(hci_con_handle_t con_handle){
     if (!sm_conn) return;     // wrong connection
     setup->sm_user_response = SM_USER_RESPONSE_CONFIRM;
     if (sm_conn->sm_engine_state == SM_PH1_W4_USER_RESPONSE){
-        sm_conn->sm_engine_state = SM_PH2_C1_GET_RANDOM_A;
-
-#ifdef ENABLE_LE_SECURE_CONNECTIONS
         if (setup->sm_use_secure_connections){
             sm_conn->sm_engine_state = SM_SC_SEND_PUBLIC_KEY_COMMAND;
+        } else {
+            sm_conn->sm_engine_state = SM_PH2_C1_GET_RANDOM_A;
         }
-#endif
     }
 
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
