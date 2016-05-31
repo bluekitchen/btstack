@@ -369,12 +369,20 @@ static void log_info_hex16(const char * name, uint16_t value){
 }
 
 // @returns 1 if all bytes are 0
-static int sm_is_null_random(uint8_t random[8]){
+static int sm_is_null(uint8_t * data, int size){
     int i;
-    for (i=0; i < 8 ; i++){
-        if (random[i]) return 0;
+    for (i=0; i < size ; i++){
+        if (data[i]) return 0;
     }
     return 1;
+}
+
+static int sm_is_null_random(uint8_t random[8]){
+    return sm_is_null(random, 8);
+}
+
+static int sm_is_null_key(uint8_t * key){
+    return sm_is_null(key, 16);
 }
 
 // Key utils
@@ -2999,8 +3007,9 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
             }
             if (sm_conn->sm_irk_lookup_state == IRK_LOOKUP_SUCCEEDED){
                 uint16_t ediv;
-                le_device_db_encryption_get(sm_conn->sm_le_db_index, &ediv, NULL, NULL, NULL, NULL, NULL);
-                if (ediv){
+                sm_key_t ltk;
+                le_device_db_encryption_get(sm_conn->sm_le_db_index, &ediv, NULL, ltk, NULL, NULL, NULL);
+                if (!sm_is_null_key(ltk) || ediv){
                     log_info("sm: Setting up previous ltk/ediv/rand for device index %u", sm_conn->sm_le_db_index);
                     sm_conn->sm_engine_state = SM_INITIATOR_PH0_HAS_LTK;
                 } else {
@@ -3493,14 +3502,15 @@ void sm_request_pairing(hci_con_handle_t con_handle){
     } else {
         // used as a trigger to start central/master/initiator security procedures
         uint16_t ediv;
+        sm_key_t ltk;
         if (sm_conn->sm_engine_state == SM_INITIATOR_CONNECTED){
             switch (sm_conn->sm_irk_lookup_state){
                 case IRK_LOOKUP_FAILED:
                     sm_conn->sm_engine_state = SM_INITIATOR_PH1_W2_SEND_PAIRING_REQUEST;            
                     break;
                 case IRK_LOOKUP_SUCCEEDED:
-                        le_device_db_encryption_get(sm_conn->sm_le_db_index, &ediv, NULL, NULL, NULL, NULL, NULL);
-                        if (ediv){
+                        le_device_db_encryption_get(sm_conn->sm_le_db_index, &ediv, NULL, ltk, NULL, NULL, NULL);
+                        if (!sm_is_null_key(ltk) || ediv){
                             log_info("sm: Setting up previous ltk/ediv/rand for device index %u", sm_conn->sm_le_db_index);
                             sm_conn->sm_engine_state = SM_INITIATOR_PH0_HAS_LTK;
                         } else {
