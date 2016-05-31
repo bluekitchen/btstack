@@ -1323,7 +1323,7 @@ static void sm_sc_start_calculating_local_confirm(sm_connection_t * sm_conn){
     if (sm_passkey_used(setup->sm_stk_generation_method)){
         sm_conn->sm_engine_state = SM_SC_W2_GET_RANDOM_A;
     } else {
-        sm_conn->sm_engine_state = SM_SC_W4_CMAC_FOR_CONFIRMATION;
+        sm_conn->sm_engine_state = SM_SC_W2_CMAC_FOR_CONFIRMATION;
     }
 }
 
