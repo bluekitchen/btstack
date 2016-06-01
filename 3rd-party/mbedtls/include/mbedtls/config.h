@@ -32,12 +32,26 @@
 #define _CRT_SECURE_NO_DEPRECATE 1
 #endif
 
-#define MBEDTLS_PLATFORM_STD_CALLOC btstack_calloc
-#define MBEDTLS_PLATFORM_STD_FREE   btstack_free
+// BTstack modifications start
+#include "btstack_config.h"
 
-#include <stddef.h>
-void * btstack_calloc(size_t count, size_t size);
-void btstack_free(void * data);
+// test to force malloc-free version
+// #undef HAVE_MALLOC
+// #define MBEDTLS_MEMORY_DEBUG 
+
+#ifndef HAVE_MALLOC
+#define MBEDTLS_PLATFORM_MEMORY
+#define MBEDTLS_MEMORY_BUFFER_ALLOC_C
+#endif
+
+// #define MBEDTLS_PLATFORM_STD_CALLOC btstack_calloc
+// #define MBEDTLS_PLATFORM_STD_FREE   btstack_free
+
+// #include <stddef.h>
+// void * btstack_calloc(size_t count, size_t size);
+// void btstack_free(void * data);
+
+// BTstack modifications end
 
 /**
  * \name SECTION: System support
@@ -116,7 +130,7 @@ void btstack_free(void * data);
  *
  * Enable this layer to allow use of alternative memory allocators.
  */
-#define MBEDTLS_PLATFORM_MEMORY
+// #define MBEDTLS_PLATFORM_MEMORY
 
 /**
  * \def MBEDTLS_PLATFORM_NO_STD_FUNCTIONS

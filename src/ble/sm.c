@@ -62,24 +62,40 @@
 // Software ECDH implementation provided by mbedtls
 #ifdef USE_MBEDTLS_FOR_ECDH
 #include "mbedtls/config.h"
-#if defined(MBEDTLS_PLATFORM_C)
 #include "mbedtls/platform.h"
-#else
-#include <stdio.h>
-#define mbedtls_printf     printf
-#endif
 #include "mbedtls/ecp.h"
+#ifndef HAVE_MALLOC
+#include "mbedtls/memory_buffer_alloc.h" 
+#endif
 #endif
 
+#if 0
+static size_t mbed_memory_allocated_current = 0;
+static size_t mbed_memory_allocated_max = 0;
+static size_t mbed_memory_smallest_buffer = 0xfffffff;
+static int    mbed_memory_num_allocations = 0;
 void * btstack_calloc(size_t count, size_t size){
-    void * result = calloc(count, size);
-    printf("btstack_calloc(%zu, %zu) -> res %p\n", count, size, result);
-    return result;
+    size_t total = count * size;
+    mbed_memory_allocated_current += total;
+    mbed_memory_allocated_max = btstack_max(mbed_memory_allocated_max, mbed_memory_allocated_current);
+    mbed_memory_smallest_buffer = btstack_min(mbed_memory_smallest_buffer, total);
+    mbed_memory_num_allocations++;
+    void * result = calloc(4 + total, 1);
+    *(uint32_t*) result = total;    
+    printf("btstack_calloc(%zu, %zu) -> res %p. Total %lu, Max %lu, Smallest %lu, Count %u\n", count, size, result, mbed_memory_allocated_current, mbed_memory_allocated_max, mbed_memory_smallest_buffer, mbed_memory_num_allocations);
+    return ((uint8_t *) result) + 4;
 }
 
 void btstack_free(void * data){
-    printf("btstack_free(%p)\n", data);
+    void * orig = ((uint8_t *) data) - 4;
+    size_t total = *(uint32_t *)orig;
+    mbed_memory_allocated_current -= total;
+    mbed_memory_num_allocations--;
+    printf("btstack_free(%p) - %zu bytes. Total %lu, Count %u\n", data, total, mbed_memory_allocated_current, mbed_memory_num_allocations);
+    free(orig);
 }
+#endif
+
 //
 // SM internal types and globals
 //
@@ -236,6 +252,9 @@ static btstack_linked_list_t sm_event_handlers;
 #ifdef USE_MBEDTLS_FOR_ECDH
 static mbedtls_ecp_keypair le_keypair;
 static ec_key_generation_state_t ec_key_generation_state;
+#ifndef HAVE_MALLOC
+static uint8_t mbedtls_memory_buffer[5000]; // experimental value on 64-bit system
+#endif
 #endif
 
 //
@@ -1469,6 +1488,11 @@ static void sm_sc_calculate_dhkey(sm_key256_t dhkey){
     mbedtls_ecp_point_init(&DH);
     mbedtls_ecp_mul(&grp, &DH, &le_keypair.d, &Q, NULL, NULL);
     mbedtls_mpi_write_binary(&DH.X, dhkey, 32);
+
+#ifdef MBEDTLS_MEMORY_DEBUG
+    mbedtls_memory_buffer_alloc_status();
+#endif
+
     mbedtls_ecp_point_free(&DH);
     mbedtls_ecp_point_free(&Q);
     mbedtls_ecp_group_free(&grp);
@@ -3427,6 +3451,9 @@ void sm_init(void){
 
 #ifdef USE_MBEDTLS_FOR_ECDH
     ec_key_generation_state = EC_KEY_GENERATION_IDLE;
+#ifndef HAVE_MALLOC
+    mbedtls_memory_buffer_alloc_init(mbedtls_memory_buffer, sizeof(mbedtls_memory_buffer));
+#endif
 #endif
 }
 

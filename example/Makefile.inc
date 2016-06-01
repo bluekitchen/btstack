@@ -63,6 +63,7 @@ MBEDTLS = 					\
 	bignum.c 				\
 	ecp.c 					\
 	ecp_curves.c 			\
+	memory_buffer_alloc.c   \
 	platform.c 				\
 
 EXAMPLES = 					\
