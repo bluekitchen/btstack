@@ -69,7 +69,7 @@
 #endif
 #endif
 
-#if 0
+#ifndef MBEDTLS_MEMORY_BUFFER_ALLOC_C
 static size_t mbed_memory_allocated_current = 0;
 static size_t mbed_memory_allocated_max = 0;
 static size_t mbed_memory_smallest_buffer = 0xfffffff;
@@ -250,12 +250,13 @@ static btstack_linked_list_t sm_event_handlers;
 
 // Software ECDH implementation provided by mbedtls
 #ifdef USE_MBEDTLS_FOR_ECDH
-static mbedtls_ecp_keypair le_keypair;
+// group is always valid
+static mbedtls_ecp_group   mbedtls_ec_group;
 static ec_key_generation_state_t ec_key_generation_state;
 static uint8_t ec_qx[32];
 static uint8_t ec_qy[32];
 static uint8_t ec_d[32];
-#ifndef HAVE_MALLOC
+#ifdef MBEDTLS_MEMORY_BUFFER_ALLOC_C
 static uint8_t mbedtls_memory_buffer[5000]; // experimental value on 64-bit system
 #endif
 #endif
@@ -1479,26 +1480,23 @@ static const uint8_t f5_length[] = { 0x01, 0x00};
 static void sm_sc_calculate_dhkey(sm_key256_t dhkey){
 #ifdef USE_MBEDTLS_FOR_ECDH
     // da * Pb
-    mbedtls_ecp_group grp;
-    mbedtls_ecp_group_init(&grp );
-    mbedtls_ecp_group_load(&grp, MBEDTLS_ECP_DP_SECP256R1);
+    mbedtls_mpi d;
     mbedtls_ecp_point Q;
-    mbedtls_ecp_point_init( &Q );
+    mbedtls_mpi_init(&d);
+    mbedtls_ecp_point_init(&Q);
+    mbedtls_mpi_read_binary(&d, ec_d, 32);
     mbedtls_mpi_read_binary(&Q.X, setup->sm_peer_qx, 32);
     mbedtls_mpi_read_binary(&Q.Y, setup->sm_peer_qy, 32);
     mbedtls_mpi_read_string(&Q.Z, 16, "1" );
     mbedtls_ecp_point DH;
     mbedtls_ecp_point_init(&DH);
-    mbedtls_ecp_mul(&grp, &DH, &le_keypair.d, &Q, NULL, NULL);
+    mbedtls_ecp_mul(&mbedtls_ec_group, &DH, &d, &Q, NULL, NULL);
     mbedtls_mpi_write_binary(&DH.X, dhkey, 32);
-
 #ifdef MBEDTLS_MEMORY_DEBUG
     mbedtls_memory_buffer_alloc_status();
 #endif
-
     mbedtls_ecp_point_free(&DH);
     mbedtls_ecp_point_free(&Q);
-    mbedtls_ecp_group_free(&grp);
 #endif
     log_info("dhkey");
     log_info_hexdump(dhkey, 32);
@@ -2576,19 +2574,13 @@ static void sm_handle_encryption_result(uint8_t * data){
     }
 }
 
-#ifdef USE_MBEDTLS_FOR_ECDH
-
 static void sm_log_ec_keypair(void){
-    // print keypair
-    char buffer[100];
-    size_t len;
-    mbedtls_mpi_write_string( &le_keypair.d, 16, buffer, sizeof(buffer), &len);
-    log_info("d: %s", buffer);
-    mbedtls_mpi_write_string( &le_keypair.Q.X, 16, buffer, sizeof(buffer), &len);
-    log_info("X: %s", buffer);
-    mbedtls_mpi_write_string( &le_keypair.Q.Y, 16, buffer, sizeof(buffer), &len);
-    log_info("Y: %s", buffer);
+    log_info("d: %s", ec_d);
+    log_info("X: %s", ec_qx);
+    log_info("Y: %s", ec_qy);
 }
+
+#ifdef USE_MBEDTLS_FOR_ECDH
 
 static int sm_generate_f_rng(void * context, unsigned char * buffer, size_t size){
     int offset = setup->sm_passkey_bit;
@@ -2623,11 +2615,20 @@ static void sm_handle_random_result(uint8_t * data){
         if (num_bytes >= 64){
             // generate EC key
             setup->sm_passkey_bit = 0;
-            mbedtls_ecp_gen_key(MBEDTLS_ECP_DP_SECP256R1, &le_keypair, &sm_generate_f_rng, NULL);
-            mbedtls_mpi_write_binary(&le_keypair.Q.X, ec_qx, 16);
-            mbedtls_mpi_write_binary(&le_keypair.Q.Y, ec_qy, 16);
-            mbedtls_mpi_write_binary(&le_keypair.d, ec_d, 16);
+            mbedtls_mpi d;
+            mbedtls_ecp_point P;
+            mbedtls_mpi_init(&d);
+            mbedtls_ecp_point_init(&P);
+            mbedtls_ecp_gen_keypair(&mbedtls_ec_group, &d, &P, &sm_generate_f_rng, NULL);
+            mbedtls_mpi_write_binary(&P.X, ec_qx, 16);
+            mbedtls_mpi_write_binary(&P.Y, ec_qy, 16);
+            mbedtls_mpi_write_binary(&d, ec_d, 16);
             sm_log_ec_keypair();
+#ifdef MBEDTLS_MEMORY_DEBUG
+            mbedtls_memory_buffer_alloc_status();
+#endif
+            mbedtls_ecp_point_free(&P);
+            mbedtls_mpi_free(&d);
             ec_key_generation_state = EC_KEY_GENERATION_DONE;
         }
     }
@@ -3125,18 +3126,13 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
 
 #ifdef USE_MBEDTLS_FOR_ECDH
             // validate public key
-            mbedtls_ecp_group grp;
-            mbedtls_ecp_group_init( &grp );
-            mbedtls_ecp_group_load(&grp, MBEDTLS_ECP_DP_SECP256R1);
-
             mbedtls_ecp_point Q;
             mbedtls_ecp_point_init( &Q );
             mbedtls_mpi_read_binary(&Q.X, setup->sm_peer_qx, 32);
             mbedtls_mpi_read_binary(&Q.Y, setup->sm_peer_qy, 32);
             mbedtls_mpi_read_string(&Q.Z, 16, "1" );
-            err = mbedtls_ecp_check_pubkey(&grp, &Q);
+            err = mbedtls_ecp_check_pubkey(&mbedtls_ec_group, &Q);
             mbedtls_ecp_point_free( & Q);
-            mbedtls_ecp_group_free( &grp);
             if (err){
                 log_error("sm: peer public key invalid %x", err);
                 // uses "unspecified reason", there is no "public key invalid" error code
@@ -3442,9 +3438,18 @@ void sm_init(void){
 
 #ifdef USE_MBEDTLS_FOR_ECDH
     ec_key_generation_state = EC_KEY_GENERATION_IDLE;
-#ifndef HAVE_MALLOC
+    mbedtls_ecp_group_init(&mbedtls_ec_group);
+    mbedtls_ecp_group_load(&mbedtls_ec_group, MBEDTLS_ECP_DP_SECP256R1);
+
+#ifdef MBEDTLS_MEMORY_BUFFER_ALLOC_C
     mbedtls_memory_buffer_alloc_init(mbedtls_memory_buffer, sizeof(mbedtls_memory_buffer));
 #endif
+    // test
+    printf("test dhkey check\n");
+    sm_key256_t dhkey;
+    memcpy(setup->sm_peer_qx, ec_qx, 32);
+    memcpy(setup->sm_peer_qy, ec_qy, 32);
+    sm_sc_calculate_dhkey(dhkey);
 #endif
 }
 
@@ -3452,16 +3457,13 @@ void sm_test_use_fixed_ec_keypair(void){
     test_use_fixed_ec_keypair = 1;
 #ifdef USE_MBEDTLS_FOR_ECDH
     // use test keypair from spec
-    mbedtls_ecp_keypair_init(&le_keypair);
-    mbedtls_ecp_group_load(&le_keypair.grp, MBEDTLS_ECP_DP_SECP256R1);
-    mbedtls_mpi_read_string( &le_keypair.d,   16, "3f49f6d4a3c55f3874c9b3e3d2103f504aff607beb40b7995899b8a6cd3c1abd");
-    mbedtls_mpi_read_string( &le_keypair.Q.X, 16, "20b003d2f297be2c5e2c83a7e9f9a5b9eff49111acf4fddbcc0301480e359de6");
-    mbedtls_mpi_read_string( &le_keypair.Q.Y, 16, "dc809c49652aeb6d63329abf5a52155c766345c28fed3024741c8ed01589d28b");
-    mbedtls_mpi_read_string( &le_keypair.Q.Z, 16, "1");
-
-    mbedtls_mpi_write_binary(&le_keypair.Q.X, ec_qx, 16);
-    mbedtls_mpi_write_binary(&le_keypair.Q.Y, ec_qy, 16);
-    mbedtls_mpi_write_binary(&le_keypair.d, ec_d, 16);
+    mbedtls_mpi x;
+    mbedtls_mpi_read_string( &x, 16, "3f49f6d4a3c55f3874c9b3e3d2103f504aff607beb40b7995899b8a6cd3c1abd");
+    mbedtls_mpi_write_binary(&x, ec_qx, 16);
+    mbedtls_mpi_read_string( &x, 16, "20b003d2f297be2c5e2c83a7e9f9a5b9eff49111acf4fddbcc0301480e359de6");
+    mbedtls_mpi_write_binary(&x, ec_qy, 16);
+    mbedtls_mpi_read_string( &x, 16, "dc809c49652aeb6d63329abf5a52155c766345c28fed3024741c8ed01589d28b");
+    mbedtls_mpi_write_binary(&x, ec_d, 16);
 #endif
 }
 
