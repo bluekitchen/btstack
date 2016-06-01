@@ -252,6 +252,9 @@ static btstack_linked_list_t sm_event_handlers;
 #ifdef USE_MBEDTLS_FOR_ECDH
 static mbedtls_ecp_keypair le_keypair;
 static ec_key_generation_state_t ec_key_generation_state;
+static uint8_t ec_qx[32];
+static uint8_t ec_qy[32];
+static uint8_t ec_d[32];
 #ifndef HAVE_MALLOC
 static uint8_t mbedtls_memory_buffer[5000]; // experimental value on 64-bit system
 #endif
@@ -1600,14 +1603,12 @@ static void g2_engine(sm_connection_t * sm_conn, const sm_key256_t u, const sm_k
 
 static void g2_calculate(sm_connection_t * sm_conn) {
     // calc Va if numeric comparison
-    uint8_t value[32];
-    mbedtls_mpi_write_binary(&le_keypair.Q.X, value, sizeof(value));
     if (sm_conn->sm_role){
         // responder  
-        g2_engine(sm_conn, setup->sm_peer_qx, value, setup->sm_peer_nonce, setup->sm_local_nonce);;
+        g2_engine(sm_conn, setup->sm_peer_qx, ec_qx, setup->sm_peer_nonce, setup->sm_local_nonce);;
     } else {
         // initiator
-        g2_engine(sm_conn, value, setup->sm_peer_qx, setup->sm_local_nonce, setup->sm_peer_nonce);
+        g2_engine(sm_conn, ec_qx, setup->sm_peer_qx, setup->sm_local_nonce, setup->sm_peer_nonce);
     }
 }
 
@@ -1619,11 +1620,7 @@ static void sm_sc_calculate_local_confirm(sm_connection_t * sm_conn){
         z = 0x80 | ((pk >> setup->sm_passkey_bit) & 1);
         setup->sm_passkey_bit++;
     }
-#ifdef USE_MBEDTLS_FOR_ECDH
-    uint8_t local_qx[32];
-    mbedtls_mpi_write_binary(&le_keypair.Q.X, local_qx, sizeof(local_qx));
-#endif
-    f4_engine(sm_conn, local_qx, setup->sm_peer_qx, setup->sm_local_nonce, z);
+    f4_engine(sm_conn, ec_qx, setup->sm_peer_qx, setup->sm_local_nonce, z);
 }
 
 static void sm_sc_calculate_remote_confirm(sm_connection_t * sm_conn){
@@ -1634,11 +1631,7 @@ static void sm_sc_calculate_remote_confirm(sm_connection_t * sm_conn){
         // sm_passkey_bit was increased before sending confirm value
         z = 0x80 | ((pk >> (setup->sm_passkey_bit-1)) & 1);
     }
-#ifdef USE_MBEDTLS_FOR_ECDH
-    uint8_t local_qx[32];
-    mbedtls_mpi_write_binary(&le_keypair.Q.X, local_qx, sizeof(local_qx));
-#endif    
-    f4_engine(sm_conn, setup->sm_peer_qx, local_qx, setup->sm_peer_nonce, z);
+    f4_engine(sm_conn, setup->sm_peer_qx, ec_qx, setup->sm_peer_nonce, z);
 }
 
 static void sm_sc_prepare_dhkey_check(sm_connection_t * sm_conn){
@@ -2073,13 +2066,8 @@ static void sm_run(void){
                 uint8_t buffer[65];
                 buffer[0] = SM_CODE_PAIRING_PUBLIC_KEY;
                 //
-#ifdef USE_MBEDTLS_FOR_ECDH
-                uint8_t value[32];
-                mbedtls_mpi_write_binary(&le_keypair.Q.X, value, sizeof(value));
-                reverse_256(value, &buffer[1]);
-                mbedtls_mpi_write_binary(&le_keypair.Q.Y, value, sizeof(value));
-                reverse_256(value, &buffer[33]);
-#endif
+                reverse_256(ec_qx, &buffer[1]);
+                reverse_256(ec_qy, &buffer[33]);
 
                 // stk generation method
                 // passkey entry: notify app to show passkey or to request passkey
@@ -2636,6 +2624,9 @@ static void sm_handle_random_result(uint8_t * data){
             // generate EC key
             setup->sm_passkey_bit = 0;
             mbedtls_ecp_gen_key(MBEDTLS_ECP_DP_SECP256R1, &le_keypair, &sm_generate_f_rng, NULL);
+            mbedtls_mpi_write_binary(&le_keypair.Q.X, ec_qx, 16);
+            mbedtls_mpi_write_binary(&le_keypair.Q.Y, ec_qy, 16);
+            mbedtls_mpi_write_binary(&le_keypair.d, ec_d, 16);
             sm_log_ec_keypair();
             ec_key_generation_state = EC_KEY_GENERATION_DONE;
         }
@@ -3467,6 +3458,10 @@ void sm_test_use_fixed_ec_keypair(void){
     mbedtls_mpi_read_string( &le_keypair.Q.X, 16, "20b003d2f297be2c5e2c83a7e9f9a5b9eff49111acf4fddbcc0301480e359de6");
     mbedtls_mpi_read_string( &le_keypair.Q.Y, 16, "dc809c49652aeb6d63329abf5a52155c766345c28fed3024741c8ed01589d28b");
     mbedtls_mpi_read_string( &le_keypair.Q.Z, 16, "1");
+
+    mbedtls_mpi_write_binary(&le_keypair.Q.X, ec_qx, 16);
+    mbedtls_mpi_write_binary(&le_keypair.Q.Y, ec_qy, 16);
+    mbedtls_mpi_write_binary(&le_keypair.d, ec_d, 16);
 #endif
 }
 
