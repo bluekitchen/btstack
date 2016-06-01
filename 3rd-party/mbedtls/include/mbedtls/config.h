@@ -32,6 +32,13 @@
 #define _CRT_SECURE_NO_DEPRECATE 1
 #endif
 
+#define MBEDTLS_PLATFORM_STD_CALLOC btstack_calloc
+#define MBEDTLS_PLATFORM_STD_FREE   btstack_free
+
+#include <stddef.h>
+void * btstack_calloc(size_t count, size_t size);
+void btstack_free(void * data);
+
 /**
  * \name SECTION: System support
  *
@@ -73,7 +80,7 @@
  *
  * Comment if your system does not support time functions
  */
-#define MBEDTLS_HAVE_TIME
+// #define MBEDTLS_HAVE_TIME
 
 /**
  * \def MBEDTLS_HAVE_TIME_DATE
@@ -85,7 +92,7 @@
  *
  * Comment if your system does not have a correct clock.
  */
-#define MBEDTLS_HAVE_TIME_DATE
+// #define MBEDTLS_HAVE_TIME_DATE
 
 /**
  * \def MBEDTLS_PLATFORM_MEMORY
@@ -109,7 +116,7 @@
  *
  * Enable this layer to allow use of alternative memory allocators.
  */
-//#define MBEDTLS_PLATFORM_MEMORY
+#define MBEDTLS_PLATFORM_MEMORY
 
 /**
  * \def MBEDTLS_PLATFORM_NO_STD_FUNCTIONS

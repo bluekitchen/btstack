@@ -63,6 +63,7 @@ MBEDTLS = 					\
 	bignum.c 				\
 	ecp.c 					\
 	ecp_curves.c 			\
+	platform.c 				\
 
 EXAMPLES = 					\
 	ancs_client_demo		\

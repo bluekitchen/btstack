@@ -71,6 +71,15 @@
 #include "mbedtls/ecp.h"
 #endif
 
+void * btstack_calloc(size_t count, size_t size){
+    void * result = calloc(count, size);
+    printf("btstack_calloc(%zu, %zu) -> res %p\n", count, size, result);
+    return result;
+}
+
+void btstack_free(void * data){
+    printf("btstack_free(%p)\n", data);
+}
 //
 // SM internal types and globals
 //
