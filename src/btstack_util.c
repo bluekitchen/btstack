@@ -261,7 +261,7 @@ int sscanf_bd_addr(const char * addr_string, bd_addr_t addr){
         int single_byte = scan_hex_byte(addr_string);
         if (single_byte < 0) break;
         addr_string += 2;
-        addr[i] = single_byte;
+        buffer[i] = single_byte;
         // don't check seperator after last byte
         if (i == BD_ADDR_LEN - 1) {
             result = 1;
