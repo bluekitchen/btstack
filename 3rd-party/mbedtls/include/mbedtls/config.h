@@ -37,19 +37,17 @@
 
 // test to force malloc-free version
 // #undef HAVE_MALLOC
-// #define MBEDTLS_MEMORY_DEBUG 
+// #define MBEDTLS_CALLOC_TRACKER
 
 #ifndef HAVE_MALLOC
-#define MBEDTLS_PLATFORM_MEMORY
-#define MBEDTLS_MEMORY_BUFFER_ALLOC_C
+	#define MBEDTLS_PLATFORM_MEMORY
+	#define MBEDTLS_PLATFORM_STD_CALLOC sm_mbedtls_allocator_calloc
+	#define MBEDTLS_PLATFORM_STD_FREE   sm_mbedtls_allocator_free
 #endif
 
-// #define MBEDTLS_PLATFORM_STD_CALLOC btstack_calloc
-// #define MBEDTLS_PLATFORM_STD_FREE   btstack_free
-
-// #include <stddef.h>
-// void * btstack_calloc(size_t count, size_t size);
-// void btstack_free(void * data);
+#include <stddef.h>
+void * sm_mbedtls_allocator_calloc(size_t count, size_t size);
+void sm_mbedtls_allocator_free(void * data);
 
 // BTstack modifications end
 

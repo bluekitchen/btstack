@@ -64,36 +64,7 @@
 #include "mbedtls/config.h"
 #include "mbedtls/platform.h"
 #include "mbedtls/ecp.h"
-#ifndef HAVE_MALLOC
-#include "mbedtls/memory_buffer_alloc.h" 
-#endif
-#endif
-
-#ifndef MBEDTLS_MEMORY_BUFFER_ALLOC_C
-static size_t mbed_memory_allocated_current = 0;
-static size_t mbed_memory_allocated_max = 0;
-static size_t mbed_memory_smallest_buffer = 0xfffffff;
-static int    mbed_memory_num_allocations = 0;
-void * btstack_calloc(size_t count, size_t size){
-    size_t total = count * size;
-    mbed_memory_allocated_current += total;
-    mbed_memory_allocated_max = btstack_max(mbed_memory_allocated_max, mbed_memory_allocated_current);
-    mbed_memory_smallest_buffer = btstack_min(mbed_memory_smallest_buffer, total);
-    mbed_memory_num_allocations++;
-    void * result = calloc(4 + total, 1);
-    *(uint32_t*) result = total;    
-    printf("btstack_calloc(%zu, %zu) -> res %p. Total %lu, Max %lu, Smallest %lu, Count %u\n", count, size, result, mbed_memory_allocated_current, mbed_memory_allocated_max, mbed_memory_smallest_buffer, mbed_memory_num_allocations);
-    return ((uint8_t *) result) + 4;
-}
-
-void btstack_free(void * data){
-    void * orig = ((uint8_t *) data) - 4;
-    size_t total = *(uint32_t *)orig;
-    mbed_memory_allocated_current -= total;
-    mbed_memory_num_allocations--;
-    printf("btstack_free(%p) - %zu bytes. Total %lu, Count %u\n", data, total, mbed_memory_allocated_current, mbed_memory_num_allocations);
-    free(orig);
-}
+#include "sm_mbedtls_allocator.h" 
 #endif
 
 //
@@ -256,8 +227,8 @@ static ec_key_generation_state_t ec_key_generation_state;
 static uint8_t ec_qx[32];
 static uint8_t ec_qy[32];
 static uint8_t ec_d[32];
-#ifdef MBEDTLS_MEMORY_BUFFER_ALLOC_C
-static uint8_t mbedtls_memory_buffer[5000]; // experimental value on 64-bit system
+#ifndef HAVE_MALLOC
+static uint8_t mbedtls_memory_buffer[4500+70*sizeof(void *)]; // experimental value on 64-bit system
 #endif
 #endif
 
@@ -301,6 +272,7 @@ typedef struct sm_setup_context {
     bd_addr_t sm_s_address;     //  ''
     sm_key_t  sm_ltk;
 
+    uint8_t   sm_state_vars;
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
     uint8_t   sm_peer_qx[32];   // also stores random for EC key generation during init
     uint8_t   sm_peer_qy[32];   //  ''
@@ -313,7 +285,6 @@ typedef struct sm_setup_context {
     sm_key_t  sm_t;             // used for f5
     sm_key_t  sm_mackey;
     uint8_t   sm_passkey_bit;   // also stores number of generated random bytes for EC key generation
-    uint8_t   sm_state_vars;
 #endif
 
     // Phase 3
@@ -932,7 +903,6 @@ void sm_cmac_general_start(const sm_key_t key, uint16_t message_len, uint8_t (*g
     if (sm_cmac_block_count==0){
         sm_cmac_block_count = 1;
     }
-    log_info("sm_cmac_connection %p", sm_cmac_connection);
     log_info("sm_cmac_general_start: len %u, block count %u", sm_cmac_message_len, sm_cmac_block_count);
 
     // first, we need to compute l for k1, k2, and m_last
@@ -1346,6 +1316,12 @@ static void sm_sc_prepare_dhkey_check(sm_connection_t * sm_conn);
 static int sm_passkey_used(stk_generation_method_t method);
 static int sm_just_works_or_numeric_comparison(stk_generation_method_t method);
 
+static void sm_log_ec_keypair(void){
+    log_info("d: %s", ec_d);
+    log_info("X: %s", ec_qx);
+    log_info("Y: %s", ec_qy);
+}
+
 static void sm_sc_start_calculating_local_confirm(sm_connection_t * sm_conn){
     if (sm_passkey_used(setup->sm_stk_generation_method)){
         sm_conn->sm_engine_state = SM_SC_W2_GET_RANDOM_A;
@@ -1492,9 +1468,6 @@ static void sm_sc_calculate_dhkey(sm_key256_t dhkey){
     mbedtls_ecp_point_init(&DH);
     mbedtls_ecp_mul(&mbedtls_ec_group, &DH, &d, &Q, NULL, NULL);
     mbedtls_mpi_write_binary(&DH.X, dhkey, 32);
-#ifdef MBEDTLS_MEMORY_DEBUG
-    mbedtls_memory_buffer_alloc_status();
-#endif
     mbedtls_ecp_point_free(&DH);
     mbedtls_ecp_point_free(&Q);
 #endif
@@ -2574,12 +2547,6 @@ static void sm_handle_encryption_result(uint8_t * data){
     }
 }
 
-static void sm_log_ec_keypair(void){
-    log_info("d: %s", ec_d);
-    log_info("X: %s", ec_qx);
-    log_info("Y: %s", ec_qy);
-}
-
 #ifdef USE_MBEDTLS_FOR_ECDH
 
 static int sm_generate_f_rng(void * context, unsigned char * buffer, size_t size){
@@ -2624,9 +2591,6 @@ static void sm_handle_random_result(uint8_t * data){
             mbedtls_mpi_write_binary(&P.Y, ec_qy, 16);
             mbedtls_mpi_write_binary(&d, ec_d, 16);
             sm_log_ec_keypair();
-#ifdef MBEDTLS_MEMORY_DEBUG
-            mbedtls_memory_buffer_alloc_status();
-#endif
             mbedtls_ecp_point_free(&P);
             mbedtls_mpi_free(&d);
             ec_key_generation_state = EC_KEY_GENERATION_DONE;
@@ -3440,16 +3404,18 @@ void sm_init(void){
     ec_key_generation_state = EC_KEY_GENERATION_IDLE;
     mbedtls_ecp_group_init(&mbedtls_ec_group);
     mbedtls_ecp_group_load(&mbedtls_ec_group, MBEDTLS_ECP_DP_SECP256R1);
-
-#ifdef MBEDTLS_MEMORY_BUFFER_ALLOC_C
-    mbedtls_memory_buffer_alloc_init(mbedtls_memory_buffer, sizeof(mbedtls_memory_buffer));
+#ifndef HAVE_MALLOC
+    sm_mbedtls_allocator_init(mbedtls_memory_buffer, sizeof(mbedtls_memory_buffer));
 #endif
+
+#if 0
     // test
     printf("test dhkey check\n");
     sm_key256_t dhkey;
     memcpy(setup->sm_peer_qx, ec_qx, 32);
     memcpy(setup->sm_peer_qy, ec_qy, 32);
     sm_sc_calculate_dhkey(dhkey);
+#endif
 #endif
 }
 

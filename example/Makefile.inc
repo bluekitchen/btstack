@@ -3,7 +3,6 @@ VPATH += ${BTSTACK_ROOT}/src/ble
 VPATH += ${BTSTACK_ROOT}/src/classic
 VPATH += ${BTSTACK_ROOT}/example
 VPATH += ${BTSTACK_ROOT}/3rd-party/mbedtls/library
-VPATH += ${BTSTACK_ROOT}/test/security_manager
 
 CFLAGS += -I.
 CFLAGS += -I${BTSTACK_ROOT}/src/ble
@@ -50,7 +49,6 @@ GATT_CLIENT += \
 SM_REAL += \
 	sm.c 				 	    \
     le_device_db_memory.c       \
-    rijndael.c 					\
 
 SM_MINIMAL += \
 	sm_minimal.c  		 	    \
@@ -63,6 +61,7 @@ MBEDTLS = 					\
 	bignum.c 				\
 	ecp.c 					\
 	ecp_curves.c 			\
+	sm_mbedtls_allocator.c  \
 	memory_buffer_alloc.c   \
 	platform.c 				\
 
