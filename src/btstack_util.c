@@ -54,7 +54,7 @@
  * @brief Compare two Bluetooth addresses
  * @param a
  * @param b
- * @return true if equal
+ * @return 0 if equal
  */
 int bd_addr_cmp(bd_addr_t a, bd_addr_t b){
     return memcmp(a,b, BD_ADDR_LEN);
