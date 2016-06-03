@@ -94,7 +94,7 @@ static void printUUID(uint8_t * uuid128, uint16_t uuid16){
     }
 }
 
-static int blacklist_size(){
+static int blacklist_size(void){
     return sizeof(blacklist) / sizeof(bd_addr_t);
 }
 
