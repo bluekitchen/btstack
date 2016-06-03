@@ -234,7 +234,7 @@ static uint8_t ec_d[32];
 #define MBEDTLS_ALLOC_BUFFER_SIZE (250+6*sizeof(void *))
 #else
 // 4304 bytes with 73 allocations
-#define MBEDTLS_ALLOC_BUFFER_SIZE (4400+73*sizeof(void *))
+#define MBEDTLS_ALLOC_BUFFER_SIZE (4500+73*sizeof(void *))
 #endif
 static uint8_t mbedtls_memory_buffer[MBEDTLS_ALLOC_BUFFER_SIZE]; 
 #endif
