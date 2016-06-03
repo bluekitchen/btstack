@@ -148,7 +148,6 @@ typedef enum {
 //
 
 static uint8_t test_use_fixed_local_csrk;
-static uint8_t test_use_fixed_ec_keypair;
 
 // configuration
 static uint8_t sm_accepted_stk_generation_methods;
@@ -157,6 +156,7 @@ static uint8_t sm_min_encryption_key_size;
 static uint8_t sm_auth_req = 0;
 static uint8_t sm_io_capabilities = IO_CAPABILITY_NO_INPUT_NO_OUTPUT;
 static uint8_t sm_slave_request_security;
+static uint8_t sm_have_ec_keypair;
 
 // Security Manager Master Keys, please use sm_set_er(er) and sm_set_ir(ir) with your own 128 bit random values
 static sm_key_t sm_persistent_er;
@@ -219,6 +219,7 @@ static btstack_packet_callback_registration_t hci_event_callback_registration;
 /* to dispatch sm event */
 static btstack_linked_list_t sm_event_handlers;
 
+
 // Software ECDH implementation provided by mbedtls
 #ifdef USE_MBEDTLS_FOR_ECDH
 // group is always valid
@@ -228,7 +229,14 @@ static uint8_t ec_qx[32];
 static uint8_t ec_qy[32];
 static uint8_t ec_d[32];
 #ifndef HAVE_MALLOC
-static uint8_t mbedtls_memory_buffer[4500+70*sizeof(void *)]; // experimental value on 64-bit system
+#ifdef ENABLE_FIXED_LE_EC_KEY
+// 232 bytes with 6 allocations
+#define MBEDTLS_ALLOC_BUFFER_SIZE (250+6*sizeof(void *))
+#else
+// 4304 bytes with 73 allocations
+#define MBEDTLS_ALLOC_BUFFER_SIZE (4400+73*sizeof(void *))
+#endif
+static uint8_t mbedtls_memory_buffer[MBEDTLS_ALLOC_BUFFER_SIZE]; 
 #endif
 #endif
 
@@ -1128,9 +1136,18 @@ static void sm_init_setup(sm_connection_t * sm_conn){
         sm_pairing_packet_set_responder_key_distribution(setup->sm_m_preq, key_distribution_flags);
     }
 
+    uint8_t auth_req = sm_auth_req;
+#ifdef ENABLE_FIXED_LE_EC_KEY
+    if (auth_req & SM_AUTHREQ_SECURE_CONNECTION){
+        if (!sm_have_ec_keypair){
+            log_error("sm: disablling secure connection as key generation disabled but no fixed key provided.");
+            auth_req &= ~SM_AUTHREQ_SECURE_CONNECTION;
+        }
+    }
+#endif
     sm_pairing_packet_set_io_capability(*local_packet, sm_io_capabilities);
     sm_pairing_packet_set_oob_data_flag(*local_packet, have_oob_data);
-    sm_pairing_packet_set_auth_req(*local_packet, sm_auth_req);
+    sm_pairing_packet_set_auth_req(*local_packet, auth_req);
     sm_pairing_packet_set_max_encryption_key_size(*local_packet, sm_max_encryption_key_size);
 }
 
@@ -1458,18 +1475,19 @@ static void sm_sc_calculate_dhkey(sm_key256_t dhkey){
     // da * Pb
     mbedtls_mpi d;
     mbedtls_ecp_point Q;
+    mbedtls_ecp_point DH;
     mbedtls_mpi_init(&d);
     mbedtls_ecp_point_init(&Q);
+    mbedtls_ecp_point_init(&DH);
     mbedtls_mpi_read_binary(&d, ec_d, 32);
     mbedtls_mpi_read_binary(&Q.X, setup->sm_peer_qx, 32);
     mbedtls_mpi_read_binary(&Q.Y, setup->sm_peer_qy, 32);
     mbedtls_mpi_read_string(&Q.Z, 16, "1" );
-    mbedtls_ecp_point DH;
-    mbedtls_ecp_point_init(&DH);
     mbedtls_ecp_mul(&mbedtls_ec_group, &DH, &d, &Q, NULL, NULL);
     mbedtls_mpi_write_binary(&DH.X, dhkey, 32);
-    mbedtls_ecp_point_free(&DH);
+    mbedtls_mpi_free(&d);
     mbedtls_ecp_point_free(&Q);
+    mbedtls_ecp_point_free(&DH);
 #endif
     log_info("dhkey");
     log_info_hexdump(dhkey, 32);
@@ -2710,10 +2728,12 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                         dkg_state = sm_persistent_irk_ready ? DKG_CALC_DHK : DKG_CALC_IRK;
                         rau_state = RAU_IDLE;
 #ifdef USE_MBEDTLS_FOR_ECDH
-                        if (!test_use_fixed_ec_keypair){
+#ifndef ENABLE_FIXED_LE_EC_KEY
+                        if (!sm_have_ec_keypair){
                             setup->sm_passkey_bit = 0;
                             ec_key_generation_state = EC_KEY_GENERATION_ACTIVE;
                         }
+#endif
 #endif
                         sm_run();
 					}
@@ -3419,18 +3439,29 @@ void sm_init(void){
 #endif
 }
 
+void sm_use_fixed_ec_keypair(uint8_t * qx, uint8_t * qy, uint8_t * d){
+    memcpy(ec_qx, qx, 32);
+    memcpy(ec_qy, qy, 32);
+    memcpy(ec_d, d, 32);
+    sm_have_ec_keypair = 1;
+    ec_key_generation_state = EC_KEY_GENERATION_DONE;
+}
+
 void sm_test_use_fixed_ec_keypair(void){
-    test_use_fixed_ec_keypair = 1;
 #ifdef USE_MBEDTLS_FOR_ECDH
     // use test keypair from spec
     mbedtls_mpi x;
+    mbedtls_mpi_init(&x);
     mbedtls_mpi_read_string( &x, 16, "3f49f6d4a3c55f3874c9b3e3d2103f504aff607beb40b7995899b8a6cd3c1abd");
     mbedtls_mpi_write_binary(&x, ec_qx, 16);
     mbedtls_mpi_read_string( &x, 16, "20b003d2f297be2c5e2c83a7e9f9a5b9eff49111acf4fddbcc0301480e359de6");
     mbedtls_mpi_write_binary(&x, ec_qy, 16);
     mbedtls_mpi_read_string( &x, 16, "dc809c49652aeb6d63329abf5a52155c766345c28fed3024741c8ed01589d28b");
     mbedtls_mpi_write_binary(&x, ec_d, 16);
+    mbedtls_mpi_free(&x);
 #endif
+    sm_have_ec_keypair = 1;
+    ec_key_generation_state = EC_KEY_GENERATION_DONE;
 }
 
 static sm_connection_t * sm_get_connection_for_handle(hci_con_handle_t con_handle){

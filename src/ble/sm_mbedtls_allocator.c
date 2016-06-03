@@ -56,6 +56,7 @@
 #include "mbedtls/config.h"
 
 #ifndef HAVE_MALLOC
+// #define DEBUG_ALLOCATIONS
 
 size_t mbed_memory_allocated_current;
 size_t mbed_memory_allocated_max;
@@ -109,7 +110,7 @@ static inline void sm_mbedtls_allocator_update_max(){
     while (1){
         if (current_pos + 8 > mbed_memory_space_max) {
         mbed_memory_space_max = current_pos + 8;
-        printf("SM Alloc: space used %zu\n", mbed_memory_space_max);
+        printf("SM Alloc: space used %zu (%zu data + %u allocations)\n", mbed_memory_space_max, mbed_memory_allocated_current, mbed_memory_num_allocations);
         }
         current_pos = current->next;
         current = sm_mbedtls_node_for_offset(current_pos);
@@ -188,9 +189,10 @@ void * sm_mbedtls_allocator_calloc(size_t count, size_t size){
     // failed to allocate
     printf("sm_mbedtls_allocator_calloc error, no free chunk found!\n");
     exit(10);
-#endif
-    // !!!!
+#else
+    log_error("sm_mbedtls_allocator_calloc error, no free chunk found to allocate %zu bytes\n", total);
     return 0;
+#endif
 }
 
 void sm_mbedtls_allocator_free(void * data){

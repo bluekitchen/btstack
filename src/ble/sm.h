@@ -267,6 +267,17 @@ int sm_address_resolution_lookup(uint8_t addr_type, bd_addr_t addr);
  * @return index from le_device_db or -1 if not found/identified
  */
 int sm_le_device_index(hci_con_handle_t con_handle );
+
+/**
+ * @brief Set Elliptic Key Public/Private Keypair
+ * @note Creating a new key pair requires about 4600 bytes additional when used with MBEDTLS EC
+ * @note Using the same key for more than one device is not recommended. 
+ * @param qx 32 bytes
+ * @param qy 32 bytes
+ * @param d  32 bytes
+ */
+void sm_use_fixed_ec_keypair(uint8_t * qx, uint8_t * qy, uint8_t * d);
+
 /* API_END */
 
 // PTS testing
