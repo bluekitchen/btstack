@@ -59,6 +59,7 @@
 
 size_t mbed_memory_allocated_current;
 size_t mbed_memory_allocated_max;
+size_t mbed_memory_space_max;
 size_t mbed_memory_max;
 size_t mbed_memory_smallest_buffer = 0xfffffff;
 int    mbed_memory_num_allocations;
@@ -102,6 +103,19 @@ void sm_mbedtls_allocator_status(void){
 }
 
 static inline void sm_mbedtls_allocator_update_max(){
+#if 0
+    uint32_t current_pos = 0;
+    sm_allocator_node_t * current = sm_mbedtls_node_for_offset(current_pos);
+    while (1){
+        if (current_pos + 8 > mbed_memory_space_max) {
+        mbed_memory_space_max = current_pos + 8;
+        printf("SM Alloc: space used %zu\n", mbed_memory_space_max);
+        }
+        current_pos = current->next;
+        current = sm_mbedtls_node_for_offset(current_pos);
+        if (current_pos == 0) break;
+    }
+#endif
 }
 
 void * sm_mbedtls_allocator_calloc(size_t count, size_t size){
