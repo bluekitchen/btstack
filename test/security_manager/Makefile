@@ -36,7 +36,7 @@ MBEDTLS = \
 	ecp_curves.c \
 	bignum.c \
 
-all: security_manager aestest ectest aes_cmac_test
+all: security_manager aestest ectest aes_cmac_test sm_mbedtls_allocator_test
 
 security_manager: ${CORE_OBJ} ${COMMON_OBJ} security_manager.c
 	${CC} ${CORE_OBJ} ${COMMON_OBJ} security_manager.c ${CFLAGS} ${CPPFLAGS} ${LDFLAGS} -o $@
@@ -49,6 +49,9 @@ ectest: ectest.o ${MBEDTLS} rijndael.o
 
 aes_cmac_test: aes_cmac_test.o aes_cmac.o rijndael.o
 	gcc ${CFLAGS} $^ -o $@ 
+
+sm_mbedtls_allocator_test: sm_mbedtls_allocator.o hci_dump.o btstack_util.o sm_mbedtls_allocator_test.c
+	${CC} sm_mbedtls_allocator.o btstack_util.o hci_dump.o sm_mbedtls_allocator_test.c ${CFLAGS} ${CPPFLAGS}  ${LDFLAGS} -o $@ 
 
 test: all
 	./security_manager
