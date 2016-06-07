@@ -47,10 +47,6 @@ SM_REAL += \
 	sm.c 				 	    \
     le_device_db_memory.c       \
 
-SM_MINIMAL += \
-	sm_minimal.c  		 	    \
-    le_device_db_dummy.c        \
-
 PAN += \
 	pan.c \
 
@@ -88,7 +84,6 @@ EXAMPLES_USING_LE =			\
 CORE_OBJ    = $(CORE:.c=.o)
 COMMON_OBJ  = $(COMMON:.c=.o) 
 SM_REAL_OBJ = $(SM_REAL:.c=.o)
-SM_MINIMAL_OBJ = $(SM_MINIMAL:.c=.o)
 ATT_OBJ     = $(ATT:.c=.o)
 GATT_CLIENT_OBJ = $(GATT_CLIENT:.c=.o)
 GATT_SERVER_OBJ = $(GATT_SERVER:.c=.o)
