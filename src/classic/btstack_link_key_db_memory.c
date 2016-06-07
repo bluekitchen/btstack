@@ -53,6 +53,9 @@ btstack_linked_list_t db_mem_link_keys = NULL;
 static void db_open(void){
 }
 
+static void db_set_local_bd_addr(bd_addr_t bd_addr){
+}
+
 static void db_close(void){ 
 }
 
@@ -123,6 +126,7 @@ static void put_link_key(bd_addr_t bd_addr, link_key_t link_key, link_key_type_t
 
 const btstack_link_key_db_t btstack_link_key_db_memory = {
     db_open,
+    db_set_local_bd_addr,
     db_close,
     get_link_key,
     put_link_key,

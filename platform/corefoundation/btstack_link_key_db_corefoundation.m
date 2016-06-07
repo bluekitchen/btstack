@@ -73,6 +73,9 @@ static void db_open(void){
     [pool release];
 }
 
+static void db_set_local_bd_addr(bd_addr_t bd_addr){
+}
+
 static void db_synchronize(void){
     log_info("stored prefs for %u devices\n", (unsigned int) [remote_devices count]);
     
@@ -160,6 +163,7 @@ static void delete_link_key(bd_addr_t bd_addr){
 
 const btstack_link_key_db_t btstack_link_key_db_cocoa = {
     db_open,
+    db_set_local_bd_addr,
     db_close,
     get_link_key,
     put_link_key,

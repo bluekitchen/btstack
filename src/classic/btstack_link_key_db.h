@@ -54,6 +54,7 @@ typedef struct {
 
     // management
     void (*open)(void);
+    void (*set_local_bd_addr)(bd_addr_t bd_addr);
     void (*close)(void);
     
     // link key
