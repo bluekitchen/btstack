@@ -64,7 +64,7 @@ static void  streamer(void);
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 const uint8_t adv_data[] = {
-    // Flags general discoverable
+    // Flags general discoverable, BR/EDR not supported
     0x02, 0x01, 0x06, 
     // Name
     0x0c, 0x09, 'L', 'E', ' ', 'S', 't', 'r', 'e', 'a', 'm', 'e', 'r', 

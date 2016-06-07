@@ -73,8 +73,8 @@
 #include "ancs_client_demo.h"
 
 static const uint8_t adv_data[] = {
-    // Flags general discoverable
-    0x02, 0x01, 0x02, 
+    // Flags general discoverable, BR/EDR not supported
+    0x02, 0x01, 0x06,
     // Name
     0x05, 0x09, 'A', 'N', 'C', 'S', 
     // Service Solicitation, 128-bit UUIDs - ANCS (little endian)
