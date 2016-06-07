@@ -52,7 +52,8 @@
 #define LINK_KEY_STRING_LEN 17
 
 static bd_addr_t local_addr;
-static char keypath[strlen(LINK_KEY_PATH) + strlen(LINK_KEY_PREFIX) + LINK_KEY_STRING_LEN + strlen(LINK_KEY_FOR) + LINK_KEY_STRING_LEN + strlen(LINK_KEY_SUFFIX) + 1];
+// note: sizeof for string literals works at compile time while strlen only works with some optimizations turned on. sizeof inlcudes the  \0
+static char keypath[sizeof(LINK_KEY_PATH) + sizeof(LINK_KEY_PREFIX) + LINK_KEY_STRING_LEN + sizeof(LINK_KEY_FOR) + LINK_KEY_STRING_LEN + sizeof(LINK_KEY_SUFFIX) + 1];
 
 static char bd_addr_to_dash_str_buffer[6*3];  // 12-45-78-01-34-67\0
 static char * bd_addr_to_dash_str(bd_addr_t addr){
