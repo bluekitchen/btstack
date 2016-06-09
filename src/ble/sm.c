@@ -1321,9 +1321,12 @@ static int sm_passkey_used(stk_generation_method_t method);
 static int sm_just_works_or_numeric_comparison(stk_generation_method_t method);
 
 static void sm_log_ec_keypair(void){
-    log_info("d: %s", ec_d);
-    log_info("X: %s", ec_qx);
-    log_info("Y: %s", ec_qy);
+    log_info("Elliptic curve: d");
+    log_info_hexdump(ec_d,32);
+    log_info("Elliptic curve: X");
+    log_info_hexdump(ec_qx,32);
+    log_info("Elliptic curve: Y");
+    log_info_hexdump(ec_qy,32);
 }
 
 static void sm_sc_start_calculating_local_confirm(sm_connection_t * sm_conn){
@@ -2591,16 +2594,17 @@ static void sm_handle_random_result(uint8_t * data){
             mbedtls_ecp_point P;
             mbedtls_mpi_init(&d);
             mbedtls_ecp_point_init(&P);
-            mbedtls_ecp_gen_keypair(&mbedtls_ec_group, &d, &P, &sm_generate_f_rng, NULL);
-            mbedtls_mpi_write_binary(&P.X, ec_qx, 16);
-            mbedtls_mpi_write_binary(&P.Y, ec_qy, 16);
-            mbedtls_mpi_write_binary(&d, ec_d, 16);
-            sm_log_ec_keypair();
+            int res = mbedtls_ecp_gen_keypair(&mbedtls_ec_group, &d, &P, &sm_generate_f_rng, NULL);
+            log_info("gen keypair %x", res);
+            mbedtls_mpi_write_binary(&P.X, ec_qx, 32);
+            mbedtls_mpi_write_binary(&P.Y, ec_qy, 32);
+            mbedtls_mpi_write_binary(&d, ec_d, 32);
             mbedtls_ecp_point_free(&P);
             mbedtls_mpi_free(&d);
             ec_key_generation_state = EC_KEY_GENERATION_DONE;
+            sm_log_ec_keypair();
 
-#if 1
+#if 0
             printf("test dhkey check\n");
             sm_key256_t dhkey;
             memcpy(setup->sm_peer_qx, ec_qx, 32);
