@@ -229,13 +229,8 @@ static uint8_t ec_qx[32];
 static uint8_t ec_qy[32];
 static uint8_t ec_d[32];
 #ifndef HAVE_MALLOC
-#ifdef ENABLE_FIXED_LE_EC_KEY
-// 232 bytes with 6 allocations
-#define MBEDTLS_ALLOC_BUFFER_SIZE (250+6*sizeof(void *))
-#else
 // 4304 bytes with 73 allocations
-#define MBEDTLS_ALLOC_BUFFER_SIZE (4500+73*sizeof(void *))
-#endif
+#define MBEDTLS_ALLOC_BUFFER_SIZE (1300+23*sizeof(void *))
 static uint8_t mbedtls_memory_buffer[MBEDTLS_ALLOC_BUFFER_SIZE]; 
 #endif
 #endif
@@ -1137,14 +1132,6 @@ static void sm_init_setup(sm_connection_t * sm_conn){
     }
 
     uint8_t auth_req = sm_auth_req;
-#ifdef ENABLE_FIXED_LE_EC_KEY
-    if (auth_req & SM_AUTHREQ_SECURE_CONNECTION){
-        if (!sm_have_ec_keypair){
-            log_error("sm: disablling secure connection as key generation disabled but no fixed key provided.");
-            auth_req &= ~SM_AUTHREQ_SECURE_CONNECTION;
-        }
-    }
-#endif
     sm_pairing_packet_set_io_capability(*local_packet, sm_io_capabilities);
     sm_pairing_packet_set_oob_data_flag(*local_packet, have_oob_data);
     sm_pairing_packet_set_auth_req(*local_packet, auth_req);
@@ -2612,6 +2599,15 @@ static void sm_handle_random_result(uint8_t * data){
             mbedtls_ecp_point_free(&P);
             mbedtls_mpi_free(&d);
             ec_key_generation_state = EC_KEY_GENERATION_DONE;
+
+#if 1
+            printf("test dhkey check\n");
+            sm_key256_t dhkey;
+            memcpy(setup->sm_peer_qx, ec_qx, 32);
+            memcpy(setup->sm_peer_qy, ec_qy, 32);
+            sm_sc_calculate_dhkey(dhkey);
+#endif
+
         }
     }
 #endif
@@ -2728,12 +2724,10 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                         dkg_state = sm_persistent_irk_ready ? DKG_CALC_DHK : DKG_CALC_IRK;
                         rau_state = RAU_IDLE;
 #ifdef USE_MBEDTLS_FOR_ECDH
-#ifndef ENABLE_FIXED_LE_EC_KEY
                         if (!sm_have_ec_keypair){
                             setup->sm_passkey_bit = 0;
                             ec_key_generation_state = EC_KEY_GENERATION_ACTIVE;
                         }
-#endif
 #endif
                         sm_run();
 					}
@@ -3422,19 +3416,23 @@ void sm_init(void){
 
 #ifdef USE_MBEDTLS_FOR_ECDH
     ec_key_generation_state = EC_KEY_GENERATION_IDLE;
-    mbedtls_ecp_group_init(&mbedtls_ec_group);
-    mbedtls_ecp_group_load(&mbedtls_ec_group, MBEDTLS_ECP_DP_SECP256R1);
+
 #ifndef HAVE_MALLOC
     sm_mbedtls_allocator_init(mbedtls_memory_buffer, sizeof(mbedtls_memory_buffer));
 #endif
+    mbedtls_ecp_group_init(&mbedtls_ec_group);
+    mbedtls_ecp_group_load(&mbedtls_ec_group, MBEDTLS_ECP_DP_SECP256R1);
 
 #if 0
     // test
-    printf("test dhkey check\n");
-    sm_key256_t dhkey;
-    memcpy(setup->sm_peer_qx, ec_qx, 32);
-    memcpy(setup->sm_peer_qy, ec_qy, 32);
-    sm_sc_calculate_dhkey(dhkey);
+    sm_test_use_fixed_ec_keypair();
+    if (sm_have_ec_keypair){
+        printf("test dhkey check\n");
+        sm_key256_t dhkey;
+        memcpy(setup->sm_peer_qx, ec_qx, 32);
+        memcpy(setup->sm_peer_qy, ec_qy, 32);
+        sm_sc_calculate_dhkey(dhkey);
+    }
 #endif
 #endif
 }
@@ -3453,11 +3451,11 @@ void sm_test_use_fixed_ec_keypair(void){
     mbedtls_mpi x;
     mbedtls_mpi_init(&x);
     mbedtls_mpi_read_string( &x, 16, "3f49f6d4a3c55f3874c9b3e3d2103f504aff607beb40b7995899b8a6cd3c1abd");
-    mbedtls_mpi_write_binary(&x, ec_qx, 16);
+    mbedtls_mpi_write_binary(&x, ec_d, 32);
     mbedtls_mpi_read_string( &x, 16, "20b003d2f297be2c5e2c83a7e9f9a5b9eff49111acf4fddbcc0301480e359de6");
-    mbedtls_mpi_write_binary(&x, ec_qy, 16);
+    mbedtls_mpi_write_binary(&x, ec_qx, 32);
     mbedtls_mpi_read_string( &x, 16, "dc809c49652aeb6d63329abf5a52155c766345c28fed3024741c8ed01589d28b");
-    mbedtls_mpi_write_binary(&x, ec_d, 16);
+    mbedtls_mpi_write_binary(&x, ec_qy, 32);
     mbedtls_mpi_free(&x);
 #endif
     sm_have_ec_keypair = 1;

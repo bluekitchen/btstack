@@ -37,7 +37,6 @@
 
 // test to force malloc-free version
 // #undef HAVE_MALLOC
-// #define MBEDTLS_CALLOC_TRACKER
 
 #ifndef HAVE_MALLOC
 	#define MBEDTLS_PLATFORM_MEMORY
@@ -2449,8 +2448,8 @@ void sm_mbedtls_allocator_free(void * data);
 
 /* ECP options */
 //#define MBEDTLS_ECP_MAX_BITS             521 /**< Maximum bit size of groups */
-//#define MBEDTLS_ECP_WINDOW_SIZE            6 /**< Maximum window size used */
-//#define MBEDTLS_ECP_FIXED_POINT_OPTIM      1 /**< Enable fixed-point speed-up */
+#define MBEDTLS_ECP_WINDOW_SIZE            2 /**< Maximum window size used */
+#define MBEDTLS_ECP_FIXED_POINT_OPTIM      0 /**< Enable fixed-point speed-up */
 
 /* Entropy options */
 //#define MBEDTLS_ENTROPY_MAX_SOURCES                20 /**< Maximum number of sources supported */

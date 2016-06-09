@@ -43,6 +43,7 @@
 
 #include "sm_mbedtls_allocator.h"
 #include "btstack_util.h"
+#include "btstack_debug.h" 
 
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
 #ifdef HAVE_HCI_CONTROLLER_DHKEY_SUPPORT
@@ -65,6 +66,11 @@ size_t mbed_memory_max;
 size_t mbed_memory_smallest_buffer = 0xfffffff;
 int    mbed_memory_num_allocations;
 
+#define NUM_SIZES 150
+int current_individual_allocation[NUM_SIZES];
+int max_individual_allocation[NUM_SIZES];
+int max_total_allocation[NUM_SIZES];
+
 // customized allocator for use with BTstack's Security Manager
 // assumptions:
 // - allocations are multiple of 8
@@ -79,6 +85,60 @@ static sm_allocator_node_t * sm_mbedtls_node_for_offset(uint32_t offset){
         printf("Error! offset %u\n", offset);
     }
     return (sm_allocator_node_t *) (sm_allocator_buffer + offset);
+}
+
+static void dump_allocations(void){
+    size_t overhead = mbed_memory_num_allocations * sizeof(void*); 
+    printf("SM Per Block - Summary: Allocations %u. Current %lu (+ %zu = %zu used), Max %lu.\n", 
+        mbed_memory_num_allocations, 
+        mbed_memory_allocated_current, overhead, mbed_memory_allocated_current + overhead,
+        mbed_memory_allocated_max);
+    int i;
+    int total = 0;
+    printf("- current    : [ ");
+    for (i=0;i<sizeof(current_individual_allocation) / sizeof(int);i++){
+        printf("%02u ", current_individual_allocation[i]);
+        total += current_individual_allocation[i] * i * 8;
+        if (i == 16) {
+            printf(" - ");
+            i = 40;
+        }
+        if (i == 46) {
+            printf(" - ");
+            i = 140;
+        }
+    }
+    printf(" = %u\n", total);
+    printf("- current max: [ ");
+    total = 0;
+    for (i=0;i<sizeof(max_individual_allocation) / sizeof(int);i++){
+        printf("%02u ", max_individual_allocation[i]);
+        total += max_individual_allocation[i] * i * 8;
+        if (i == 16) {
+            printf(" - ");
+            i = 40;
+        }
+        if (i == 46) {
+            printf(" - ");
+            i = 140;
+        }
+    }
+    printf(" = %u\n", total);
+    printf("- total   max: [ ");
+    total = 0;
+    for (i=0;i<sizeof(max_total_allocation) / sizeof(int);i++){
+        printf("%02u ", max_total_allocation[i]);
+        total += max_total_allocation[i] * i * 8;
+        if (i == 16) {
+            printf(" - ");
+            i = 40;
+        }
+        if (i == 46) {
+            printf(" - ");
+            i = 140;
+        }
+    }
+    printf(" = %u\n", total);
 }
 
 void sm_mbedtls_allocator_status(void){
@@ -100,17 +160,19 @@ void sm_mbedtls_allocator_status(void){
         mbed_memory_num_allocations, 
         mbed_memory_allocated_current, overhead, mbed_memory_allocated_current + overhead,
         mbed_memory_allocated_max, bytes_free, bytes_free + mbed_memory_allocated_current + overhead );
+
+    dump_allocations();
 #endif
 }
 
 static inline void sm_mbedtls_allocator_update_max(){
-#if 0
+#if 1
     uint32_t current_pos = 0;
     sm_allocator_node_t * current = sm_mbedtls_node_for_offset(current_pos);
     while (1){
         if (current_pos + 8 > mbed_memory_space_max) {
-        mbed_memory_space_max = current_pos + 8;
-        printf("SM Alloc: space used %zu (%zu data + %u allocations)\n", mbed_memory_space_max, mbed_memory_allocated_current, mbed_memory_num_allocations);
+            mbed_memory_space_max = current_pos + 8;
+            printf("SM Alloc: space used %zu (%zu data + %u allocations)\n", mbed_memory_space_max, mbed_memory_allocated_current, mbed_memory_num_allocations);
         }
         current_pos = current->next;
         current = sm_mbedtls_node_for_offset(current_pos);
@@ -119,13 +181,34 @@ static inline void sm_mbedtls_allocator_update_max(){
 #endif
 }
 
+
+
 void * sm_mbedtls_allocator_calloc(size_t count, size_t size){
     size_t num_bytes = count * size;
     size_t total = num_bytes + sizeof(void *);
     mbed_memory_allocated_current += num_bytes;
-    mbed_memory_allocated_max   = btstack_max(mbed_memory_allocated_max, mbed_memory_allocated_current);
     mbed_memory_smallest_buffer = btstack_min(mbed_memory_smallest_buffer, num_bytes);
     mbed_memory_num_allocations++;
+
+    // printf("SM Alloc %zu bytes\n", num_bytes);
+
+    // if (num_bytes > 1000){
+    //     printf("big alloc!\n");
+    // }
+
+    int index = num_bytes / 8;
+    current_individual_allocation[index]++;
+ 
+    if (current_individual_allocation[index] > max_individual_allocation[index]){
+        max_individual_allocation[index] = current_individual_allocation[index];
+        dump_allocations();
+    }
+    // mbed_memory_allocated_max   = btstack_max(mbed_memory_allocated_max, mbed_memory_allocated_current);
+    if (mbed_memory_allocated_current > mbed_memory_allocated_max){
+        memcpy(max_total_allocation, current_individual_allocation, sizeof(max_total_allocation));
+        mbed_memory_allocated_max = mbed_memory_allocated_current;
+        dump_allocations();
+    }
 
     uint32_t prev_pos, current_pos, node_pos;
     sm_allocator_node_t * prev, * current, * node;
@@ -204,6 +287,12 @@ void sm_mbedtls_allocator_free(void * data){
     size_t num_bytes = total - sizeof(void *);
     mbed_memory_allocated_current -= num_bytes;
     mbed_memory_num_allocations--;
+  
+    int index = num_bytes / 8;
+    current_individual_allocation[index]--;
+
+    // printf("SM Free %zu bytes\n", num_bytes);
+ 
 
 #ifdef DEBUG_ALLOCATIONS
     printf("sm_mbedtls_allocator_free: pos %u, total %zu\n", current_pos, total);
