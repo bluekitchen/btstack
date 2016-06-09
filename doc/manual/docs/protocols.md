@@ -776,9 +776,9 @@ the Bluetooth Core V4.2 specification introduced appropriate commands for the Bl
 As an alternative for controller that don't provide these primitives, BTstack implements 
 the crytographic functions in software with the help of the Apache 2.0 Licensed [mbed TLS library](https://tls.mbed.org).
 
-There are two drawbacks when using LE Secure Connections:
+There are two details to be aware about using LE Secure Connections:
 
- - More RAM: It requires an additional 1.5 kB RAM in the current configuration (with mbed TLS).
+ - More RAM: It requires an additional 1.5 kB RAM when using mbed TLS instead of hardware support by the Bluetooth controller.
  - Peripheral must store LTK: Even an LE Peripheral needs to store the LTK in non-volatile memory.
 
 
