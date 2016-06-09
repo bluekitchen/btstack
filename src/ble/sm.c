@@ -2675,11 +2675,15 @@ static void sm_handle_random_result(uint8_t * data){
             if (connection->sm_role){
                 connection->sm_engine_state = SM_RESPONDER_PH1_SEND_PAIRING_RESPONSE;
             } else {
-                connection->sm_engine_state = SM_PH1_W4_USER_RESPONSE;
-                sm_trigger_user_response(connection);
-                // response_idle == nothing <--> sm_trigger_user_response() did not require response
-                if (setup->sm_user_response == SM_USER_RESPONSE_IDLE){
-                    connection->sm_engine_state = SM_PH2_C1_GET_RANDOM_A;
+                if (setup->sm_use_secure_connections){
+                    connection->sm_engine_state = SM_SC_SEND_PUBLIC_KEY_COMMAND;
+                } else {
+                    connection->sm_engine_state = SM_PH1_W4_USER_RESPONSE;
+                    sm_trigger_user_response(connection);
+                    // response_idle == nothing <--> sm_trigger_user_response() did not require response
+                    if (setup->sm_user_response == SM_USER_RESPONSE_IDLE){
+                        connection->sm_engine_state = SM_PH2_C1_GET_RANDOM_A;
+                    }
                 }
             }
             return;
@@ -3031,6 +3035,13 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
                 sm_conn->sm_engine_state = SM_GENERAL_SEND_PAIRING_FAILED;
                 break;
             }
+
+            // generate random number first, if we need to show passkey
+            if (setup->sm_stk_generation_method == PK_RESP_INPUT){
+                sm_conn->sm_engine_state = SM_PH2_GET_RANDOM_TK;
+                break;
+            }
+
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
             if (setup->sm_use_secure_connections){
                 // SC Numeric Comparison will trigger user response after public keys & nonces have been exchanged                
@@ -3046,11 +3057,6 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
                 break;
             } 
 #endif  
-            // generate random number first, if we need to show passkey
-            if (setup->sm_stk_generation_method == PK_RESP_INPUT){
-                sm_conn->sm_engine_state = SM_PH2_GET_RANDOM_TK;
-                break;
-            }
             sm_conn->sm_engine_state = SM_PH1_W4_USER_RESPONSE;
             sm_trigger_user_response(sm_conn);
             // response_idle == nothing <--> sm_trigger_user_response() did not require response
