@@ -2148,15 +2148,15 @@ static void sm_run(void){
                 sm_pairing_packet_set_code(setup->sm_s_pres,SM_CODE_PAIRING_RESPONSE);
                 key_distribution_flags = sm_key_distribution_flags_for_auth_req();
 
-                connection->sm_engine_state = SM_RESPONDER_PH1_W4_PAIRING_CONFIRM;
-#ifdef ENABLE_LE_SECURE_CONNECTIONS
                 if (setup->sm_use_secure_connections){
                     connection->sm_engine_state = SM_SC_W4_PUBLIC_KEY_COMMAND;
                     // skip LTK/EDIV for SC
                     log_info("sm: dropping encryption information flag");
                     key_distribution_flags &= ~SM_KEYDIST_ENC_KEY;
+                } else {
+                    connection->sm_engine_state = SM_RESPONDER_PH1_W4_PAIRING_CONFIRM;
                 }
-#endif
+
                 sm_pairing_packet_set_initiator_key_distribution(setup->sm_s_pres, sm_pairing_packet_get_initiator_key_distribution(setup->sm_m_preq) & key_distribution_flags);
                 sm_pairing_packet_set_responder_key_distribution(setup->sm_s_pres, sm_pairing_packet_get_responder_key_distribution(setup->sm_m_preq) & key_distribution_flags);
                 // update key distribution after ENC was dropped
@@ -2164,8 +2164,8 @@ static void sm_run(void){
 
                 l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) &setup->sm_s_pres, sizeof(sm_pairing_packet_t));
                 sm_timeout_reset(connection);
-                // SC Numeric Comparison will trigger user response after public keys & nonces have been exchanged                
-                if (setup->sm_stk_generation_method == JUST_WORKS){
+                // SC Numeric Comparison will trigger user response after public keys & nonces have been exchanged
+                if (!setup->sm_use_secure_connections || setup->sm_stk_generation_method == JUST_WORKS){
                     sm_trigger_user_response(connection);
                 }
                 return;
