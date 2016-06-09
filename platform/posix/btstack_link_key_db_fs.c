@@ -46,10 +46,14 @@
 #include "btstack_util.h"
 
 #define LINK_KEY_PATH "/tmp/"
-#define LINK_KEY_PREFIX "btstack_link_key_"
-#define LINK_KEY_SUFIX ".txt"
+#define LINK_KEY_PREFIX "btstack_at_"
+#define LINK_KEY_FOR "_link_key_for_"
+#define LINK_KEY_SUFFIX ".txt"
+#define LINK_KEY_STRING_LEN 17
 
-static char keypath[sizeof(LINK_KEY_PATH) + sizeof(LINK_KEY_PREFIX) + 17 + sizeof(LINK_KEY_SUFIX) + 1];
+static bd_addr_t local_addr;
+// note: sizeof for string literals works at compile time while strlen only works with some optimizations turned on. sizeof inlcudes the  \0
+static char keypath[sizeof(LINK_KEY_PATH) + sizeof(LINK_KEY_PREFIX) + LINK_KEY_STRING_LEN + sizeof(LINK_KEY_FOR) + LINK_KEY_STRING_LEN + sizeof(LINK_KEY_SUFFIX) + 1];
 
 static char bd_addr_to_dash_str_buffer[6*3];  // 12-45-78-01-34-67\0
 static char * bd_addr_to_dash_str(bd_addr_t addr){
@@ -64,15 +68,63 @@ static char * bd_addr_to_dash_str(bd_addr_t addr){
     return (char *) bd_addr_to_dash_str_buffer;
 }
 
+static char link_key_to_str_buffer[LINK_KEY_STR_LEN+1];  // 11223344556677889900112233445566\0
+char *link_key_to_str(link_key_t link_key){
+    char * p = link_key_to_str_buffer;
+    int i;
+    for (i = 0; i < LINK_KEY_LEN ; i++) {
+        *p++ = char_for_nibble((link_key[i] >> 4) & 0x0F);
+        *p++ = char_for_nibble((link_key[i] >> 0) & 0x0F);
+    }
+    *p = 0;
+    return (char *) link_key_to_str_buffer;
+}
+
+static char link_key_type_to_str_buffer[2];
+char *link_key_type_to_str(link_key_type_t link_key){
+    snprintf(link_key_type_to_str_buffer, sizeof(link_key_type_to_str_buffer), "%d", link_key);
+    return (char *) link_key_type_to_str_buffer;
+}
+
+int sscanf_link_key(char * addr_string, link_key_t link_key){
+    unsigned int buffer[LINK_KEY_LEN];
+
+    // reset result buffer
+    memset(&buffer, 0, sizeof(buffer));
+
+    // parse
+    int result = sscanf( (char *) addr_string, "%2x%2x%2x%2x%2x%2x%2x%2x%2x%2x%2x%2x%2x%2x%2x%2x",
+                                    &buffer[0], &buffer[1], &buffer[2], &buffer[3],
+                                    &buffer[4], &buffer[5], &buffer[6], &buffer[7],
+                                    &buffer[8], &buffer[9], &buffer[10], &buffer[11],
+                                    &buffer[12], &buffer[13], &buffer[14], &buffer[15] );
+
+    if (result != LINK_KEY_LEN) return 0;
+
+    // store
+    int i;
+    uint8_t *p = (uint8_t *) link_key;
+    for (i=0; i<LINK_KEY_LEN; i++ ) {
+        *p++ = (uint8_t) buffer[i];
+    }
+    return 1;
+}
+
 static void set_path(bd_addr_t bd_addr){
     strcpy(keypath, LINK_KEY_PATH);
     strcat(keypath, LINK_KEY_PREFIX);
+    strcat(keypath, bd_addr_to_dash_str(local_addr));
+    strcat(keypath, LINK_KEY_FOR);
     strcat(keypath, bd_addr_to_dash_str(bd_addr));
-    strcat(keypath, LINK_KEY_SUFIX);
+    strcat(keypath, LINK_KEY_SUFFIX);
 }
 
 // Device info
 static void db_open(void){
+}
+
+static void db_set_local_bd_addr(bd_addr_t bd_addr){
+    memcpy(local_addr, bd_addr, 6);
 }
 
 static void db_close(void){ 
@@ -129,55 +181,16 @@ static void delete_link_key(bd_addr_t bd_addr){
 }
 
 const btstack_link_key_db_t btstack_link_key_db_fs = {
-    db_open,
-    db_close,
-    get_link_key,
-    put_link_key,
-    delete_link_key,
+    &db_open,
+    &db_set_local_bd_addr,
+    &db_close,
+    &get_link_key,
+    &put_link_key,
+    &delete_link_key,
 };
 
 const btstack_link_key_db_t * btstack_link_key_db_fs_instance(void){
     return &btstack_link_key_db_fs;
 }
 
-static char link_key_to_str_buffer[LINK_KEY_STR_LEN+1];  // 11223344556677889900112233445566\0
-char *link_key_to_str(link_key_t link_key){
-    char * p = link_key_to_str_buffer;
-    int i;
-    for (i = 0; i < LINK_KEY_LEN ; i++) {
-        *p++ = char_for_nibble((link_key[i] >> 4) & 0x0F);
-        *p++ = char_for_nibble((link_key[i] >> 0) & 0x0F);
-    }
-    *p = 0;
-    return (char *) link_key_to_str_buffer;
-}
 
-static char link_key_type_to_str_buffer[2];
-char *link_key_type_to_str(link_key_type_t link_key){
-    snprintf(link_key_type_to_str_buffer, sizeof(link_key_type_to_str_buffer), "%d", link_key);
-    return (char *) link_key_type_to_str_buffer;
-}
-
-int sscanf_link_key(char * addr_string, link_key_t link_key){
-    unsigned int buffer[LINK_KEY_LEN];
-
-    // reset result buffer
-    memset(&buffer, 0, sizeof(buffer));
-
-    // parse
-    int result = sscanf( (char *) addr_string, "%2x%2x%2x%2x%2x%2x%2x%2x%2x%2x%2x%2x%2x%2x%2x%2x",
-                                    &buffer[0], &buffer[1], &buffer[2], &buffer[3],
-                                    &buffer[4], &buffer[5], &buffer[6], &buffer[7],
-                                    &buffer[8], &buffer[9], &buffer[10], &buffer[11],
-                                    &buffer[12], &buffer[13], &buffer[14], &buffer[15] );
-
-    if (result != LINK_KEY_LEN) return 0;
-
-    // store
-    int i;
-    uint8_t *p = (uint8_t *) link_key;
-    for (i=0; i<LINK_KEY_LEN; i++ ) {
-        *p++ = (uint8_t) buffer[i];
-    }
-    return 1;
-}

@@ -450,6 +450,7 @@ static void gatt_client_handle_transaction_complete(gatt_client_t * peripheral){
 
 static void emit_event_new(btstack_packet_handler_t callback, uint8_t * packet, uint16_t size){
     if (!callback) return;
+    hci_dump_packet(HCI_EVENT_PACKET, 0, packet, size);
     (*callback)(HCI_EVENT_PACKET, 0, packet, size);
 }
 
