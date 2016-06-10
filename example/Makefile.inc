@@ -2,11 +2,14 @@ VPATH += ${BTSTACK_ROOT}/src
 VPATH += ${BTSTACK_ROOT}/src/ble
 VPATH += ${BTSTACK_ROOT}/src/classic
 VPATH += ${BTSTACK_ROOT}/example
+VPATH += ${BTSTACK_ROOT}/3rd-party/mbedtls/library
 
 CFLAGS += -I.
 CFLAGS += -I${BTSTACK_ROOT}/src/ble
 CFLAGS += -I${BTSTACK_ROOT}/src/classic
 CFLAGS += -I${BTSTACK_ROOT}/src
+CFLAGS += -I${BTSTACK_ROOT}/3rd-party/mbedtls/include
+CFLAGS += -I${BTSTACK_ROOT}/test/security_manager
 
 CORE += \
     btstack_memory.c            \
@@ -47,12 +50,16 @@ SM_REAL += \
 	sm.c 				 	    \
     le_device_db_memory.c       \
 
-SM_MINIMAL += \
-	sm_minimal.c  		 	    \
-    le_device_db_dummy.c        \
-
 PAN += \
 	pan.c \
+
+MBEDTLS = 					\
+	bignum.c 				\
+	ecp.c 					\
+	ecp_curves.c 			\
+	sm_mbedtls_allocator.c  \
+	memory_buffer_alloc.c   \
+	platform.c 				\
 
 EXAMPLES = 					\
 	ancs_client_demo		\
@@ -70,10 +77,12 @@ EXAMPLES = 					\
 	spp_counter 			\
 	spp_streamer			\
     gap_le_advertisements   \
-    hsp_hs_demo             \
-    hsp_ag_demo             \
-    hfp_hf_demo             \
     hfp_ag_demo             \
+    hfp_hf_demo             \
+    hsp_ag_demo             \
+    hsp_hs_demo             \
+    sm_pairing_peripheral   \
+    sm_pairing_central      \
 
 EXAMPLES_USING_LE =			\
 	ancs_client_demo		\
@@ -83,12 +92,13 @@ EXAMPLES_USING_LE =			\
 	le_streamer				\
 	spp_and_le_counter	    \
     gap_le_advertisements   \
+    sm_pairing_peripheral   \
+    sm_pairing_central      \
 
 # .o for .c
 CORE_OBJ    = $(CORE:.c=.o)
 COMMON_OBJ  = $(COMMON:.c=.o) 
-SM_REAL_OBJ = $(SM_REAL:.c=.o)
-SM_MINIMAL_OBJ = $(SM_MINIMAL:.c=.o)
+SM_REAL_OBJ = $(SM_REAL:.c=.o) $(MBEDTLS:.c=.o)
 ATT_OBJ     = $(ATT:.c=.o)
 GATT_CLIENT_OBJ = $(GATT_CLIENT:.c=.o)
 GATT_SERVER_OBJ = $(GATT_SERVER:.c=.o)
@@ -107,6 +117,8 @@ le_counter.h: le_counter.gatt
 	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
 le_streamer.h: le_streamer.gatt
 	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
+sm_pairing_peripheral.h: sm_pairing_peripheral.gatt
+	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
 
 # examples
 sdp_rfcomm_query: ${CORE_OBJ} ${COMMON_OBJ} ${PAN_OBJ} ${SDP_CLIENT} sdp_rfcomm_query.c
@@ -123,6 +135,12 @@ spp_counter: ${CORE_OBJ} ${COMMON_OBJ} spp_counter.c
 
 le_counter: le_counter.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_REAL_OBJ} le_counter.c 
 	${CC} $(filter-out le_counter.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
+
+sm_pairing_peripheral: sm_pairing_peripheral.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_REAL_OBJ} sm_pairing_peripheral.c 
+	${CC} $(filter-out sm_pairing_peripheral.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
+
+sm_pairing_central: ${CORE_OBJ} ${COMMON_OBJ} ${SM_REAL_OBJ} ad_parser.o sm_pairing_central.o 
+	${CC} ${CFLAGS} ${LDFLAGS} $^ -o $@
 
 le_streamer: le_streamer.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_REAL_OBJ} le_streamer.c 
 	${CC} $(filter-out le_streamer.h,$^) ${CFLAGS} ${LDFLAGS} -o $@

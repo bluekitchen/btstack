@@ -132,6 +132,9 @@ void reverse_64(const uint8_t * src, uint8_t * dst){
 void reverse_128(const uint8_t * src, uint8_t * dst){
     reverse_bytes(src, dst, 16);
 }
+void reverse_256(const uint8_t * src, uint8_t * dst){
+    reverse_bytes(src, dst, 32);
+}
 
 void reverse_bd_addr(const bd_addr_t src, bd_addr_t dest){
     reverse_bytes(src, dest, 6);

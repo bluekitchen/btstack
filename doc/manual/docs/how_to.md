@@ -41,7 +41,6 @@ System properties:
 -----------------------------------|-------------------------------------
 HAVE_MALLOC                        | Use dynamic memory
 
-
 Embedded platform properties:
 
 #define                            | Description
@@ -65,16 +64,17 @@ HAVE_POSIX_TIME                    | System provides time function
 ### ENABLE_* directives {#sec:enableDirectives}
 BTstack properties:
 
-#define                  | Description
--------------------------|---------------------------------------------
-ENABLE_CLASSIC           | Enable Classic related code in HCI and L2CAP
-ENABLE_BLE               | Enable BLE related code in HCI and L2CAP
-ENABLE_EHCILL            | Enable eHCILL low power mode on TI CC256x/WL18xx chipsets
-ENABLE_LOG_DEBUG         | Enable log_debug messages
-ENABLE_LOG_ERROR         | Enable log_error messages
-ENABLE_LOG_INFO          | Enable log_info messages
-ENABLE_LOG_INTO_HCI_DUMP | Log debug messages as part of packet log
-ENABLE_SCO_OVER_HCI      | Enable SCO over HCI for chipsets (only CC256x/WL18xx currently)
+#define                      | Description
+-----------------------------|---------------------------------------------
+ENABLE_CLASSIC               | Enable Classic related code in HCI and L2CAP
+ENABLE_BLE                   | Enable BLE related code in HCI and L2CAP
+ENABLE_EHCILL                | Enable eHCILL low power mode on TI CC256x/WL18xx chipsets
+ENABLE_LOG_DEBUG             | Enable log_debug messages
+ENABLE_LOG_ERROR             | Enable log_error messages
+ENABLE_LOG_INFO              | Enable log_info messages
+ENABLE_LOG_INTO_HCI_DUMP     | Log debug messages as part of packet log
+ENABLE_SCO_OVER_HCI          | Enable SCO over HCI for chipsets (only CC256x/WL18xx and USB CSR controllers)
+ENABLE_LE_SECURE_CONNECTIONS | Enable LE Secure Connections using [mbed TLS library](https://tls.mbed.org)
 
 
 ### Memory configuration directives {#sec:memoryConfigurationHowTo}

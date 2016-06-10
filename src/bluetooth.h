@@ -951,7 +951,9 @@ typedef enum {
     SM_CODE_IDENTITY_INFORMATION,
     SM_CODE_IDENTITY_ADDRESS_INFORMATION,
     SM_CODE_SIGNING_INFORMATION,
-    SM_CODE_SECURITY_REQUEST
+    SM_CODE_SECURITY_REQUEST,
+    SM_CODE_PAIRING_PUBLIC_KEY,
+    SM_CODE_PAIRING_DHKEY_CHECK,
 } SECURITY_MANAGER_COMMANDS;
 
 // IO Capability Values
@@ -964,14 +966,17 @@ typedef enum {
 } io_capability_t;
 
 // Authentication requirement flags
-#define SM_AUTHREQ_NO_BONDING 0x00
-#define SM_AUTHREQ_BONDING 0x01
-#define SM_AUTHREQ_MITM_PROTECTION 0x04
+#define SM_AUTHREQ_NO_BONDING        0x00
+#define SM_AUTHREQ_BONDING           0x01
+#define SM_AUTHREQ_MITM_PROTECTION   0x04
+#define SM_AUTHREQ_SECURE_CONNECTION 0x08
+#define SM_AUTHREQ_KEYPRESS          0x10
 
 // Key distribution flags used by spec
-#define SM_KEYDIST_ENC_KEY 0X01
-#define SM_KEYDIST_ID_KEY  0x02
-#define SM_KEYDIST_SIGN    0x04
+#define SM_KEYDIST_ENC_KEY  0x01
+#define SM_KEYDIST_ID_KEY   0x02
+#define SM_KEYDIST_SIGN     0x04
+#define SM_KEYDIST_LINK_KEY 0x08
 
 // Key distribution flags used internally
 #define SM_KEYDIST_FLAG_ENCRYPTION_INFORMATION       0x01
@@ -981,9 +986,10 @@ typedef enum {
 #define SM_KEYDIST_FLAG_SIGNING_IDENTIFICATION       0x10
 
 // STK Generation Methods
-#define SM_STK_GENERATION_METHOD_JUST_WORKS 0x01
-#define SM_STK_GENERATION_METHOD_OOB        0x02
-#define SM_STK_GENERATION_METHOD_PASSKEY    0x04
+#define SM_STK_GENERATION_METHOD_JUST_WORKS          0x01
+#define SM_STK_GENERATION_METHOD_OOB                 0x02
+#define SM_STK_GENERATION_METHOD_PASSKEY             0x04
+#define SM_STK_GENERATION_METHOD_NUMERIC_COMPARISON  0x08
 
 // Pairing Failed Reasons
 #define SM_REASON_RESERVED                     0x00
@@ -996,6 +1002,10 @@ typedef enum {
 #define SM_REASON_COMMAND_NOT_SUPPORTED        0x07
 #define SM_REASON_UNSPECIFIED_REASON           0x08
 #define SM_REASON_REPEATED_ATTEMPTS            0x09
+#define SM_REASON_INVALID_PARAMETERS           0x0a
+#define SM_REASON_DHKEY_CHECK_FAILED           0x0b
+#define SM_REASON_NUMERIC_COMPARISON_FAILED    0x0c
+
 // also, invalid parameters
 // and reserved
 

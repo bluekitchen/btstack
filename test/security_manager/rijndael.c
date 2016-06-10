@@ -10,10 +10,6 @@
 typedef uint32_t u32;
 typedef uint8_t   u8;
 
-int rijndaelStartOfCode(void){
-	return 1;
-}
-
 static const u32 Te0[256] =
 {
   0xc66363a5U, 0xf87c7c84U, 0xee777799U, 0xf67b7b8dU,
@@ -1221,8 +1217,4 @@ u32 s0, s1, s2, s3, t0, t1, t2, t3;
 	PUTU32(plaintext + 12, s3);
 	
 
-}
-
-int rijndaelEndOfCode(void){
-	return 1;
 }

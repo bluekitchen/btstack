@@ -753,9 +753,33 @@ notifications and indications can be sent. Please see Section on
 
 The SMP protocol allows to setup authenticated and encrypted LE
 connection. After initialization and configuration, SMP handles security
-related functions on it’s own but emits events when feedback from the
+related functions on its own but emits events when feedback from the
 main app or the user is required. The two main tasks of the SMP protocol
 are: bonding and identity resolving.
+
+### LE Legacy Pairing and LE Secure Connections
+
+The original pairing algorithm introduced in Bluetooth Core V4.0 does not
+provide security in case of an attacker present during the initial pairing.
+To fix this, the Bluetooth Core V4.2 specification introduced the new
+*LE Secure Connections* method, while referring to the original method as *LE Legacy Pairing*.
+
+BTstack supports both pairing methods. To enable the more secure LE Secure Connections method,
+*ENABLE_LE_SECURE_CONNECTIONS* needs to be defined in *btstack_config.h*.
+
+LE Secure Connections are based on Elliptic Curve Diffie-Hellman (ECDH) algorithm for the key exchange.
+On start, a new public/private key pair is generated. During pairing, the
+Long Term Key (LTK) is generated based on the local keypair and the remote public key.
+To facilitate the creation of such a keypairs and the calculation of the LTK,
+the Bluetooth Core V4.2 specification introduced appropriate commands for the Bluetooth controller.
+
+As an alternative for controllers that don't provide these primitives, BTstack provides the relevant crytographic functions in software via the Apache 2.0 licensed [mbed TLS library](https://tls.mbed.org).
+
+There are two details to be aware about using LE Secure Connections:
+
+ - More RAM: It requires an additional 1.5 kB RAM when using mbed TLS instead of hardware support by the Bluetooth controller.
+ - Peripheral must store LTK: Even an LE Peripheral needs to store the LTK in non-volatile memory.
+
 
 ### Initialization
 
@@ -793,7 +817,9 @@ The default SMP configuration in BTstack is to be as open as possible:
 
 -   accept encryption key size from 7..16 bytes,
 
--   expect no authentication requirements, and
+-   expect no authentication requirements,
+
+-   don't support LE Secure Connections, and
 
 -   IO Capabilities set to *IO_CAPABILITY_NO_INPUT_NO_OUTPUT*.
 
@@ -804,9 +830,10 @@ respectively:
 
 -   *sm_set_encryption_key_size_range*
 
--   *sm_set_authentication_requirements*
+-   *sm_set_authentication_requirements* : add SM_AUTHREQ_SECURE_CONNECTION flag to enable LE Secure Connections
 
 -   *sm_set_io_capabilities*
+
 
 ### Identity Resolving
 
@@ -824,35 +851,37 @@ and later:
 
 -   *SM_EVENT_IDENTITY_RESOLVING_FAILED* on lookup failure.
 
-### Bonding process
+### User interaction
 
-In Bluetooth LE, there are three main methods of establishing an
-encrypted connection. From the most to the least secure, these are:
-Out-of-Band (OOB) Data , Passkey, and Just Works.
-
-With OOB data, there needs to be a pre-shared secret 16 byte key. In
-most cases, this is not an option, especially since popular OS like iOS
-don’t provide a way to specify it. It some applications, where both
-sides of a Bluetooth link are developed together, this could provide a
-viable option.
-
-To provide OOB data, you can register an OOB data callback with
-*sm_register_oob_data_callback*.
-
-Depending on the authentication requirements, available OOB data, and
-the enabled STK generation methods, BTstack will request feedback from
+Depending on the authentication requirements, IO capabilities, 
+available OOB data, and the enabled STK generation methods,
+BTstack will request feedback from
 the app in the form of an event:
+
+-   *SM_EVENT_JUST_WORKS_REQUEST*: request a user to accept a Just Works
+    pairing
 
 -   *SM_EVENT_PASSKEY_INPUT_NUMBER*: request user to input a passkey
 
 -   *SM_EVENT_PASSKEY_DISPLAY_NUMBER*: show a passkey to the user
 
--   *SM_EVENT_JUST_WORKS_REQUEST*: request a user to accept a Just Works
-    pairing
+-   *SM_EVENT_NUMERIC_COMPARISON_REQUEST*: show a passkey to the user and request confirmation
 
 To stop the bonding process, *sm_bonding_decline* should be called.
 Otherwise, *sm_just_works_confirm* or *sm_passkey_input* can be
 called.
 
-After the bonding process, *SM_EVENT_PASSKEY_DISPLAY_CANCEL* is emitted to
-update the user interface.
+After the bonding process, *SM_EVENT_JUST_WORKS_CANCEL*, *SM_EVENT_PASSKEY_DISPLAY_CANCEL*, or *SM_EVENT_NUMERIC_COMPARISON_CANCEL* is emitted to update the user interface if an Just Works request or a passkey has been shown before.
+
+
+### Out-of-Band Data with LE Legacy Pairing
+
+LE Legacy Pairing can be made secure by providing a way for both devices
+to aquire a pre-shared secret 16 byte key by some fancy method.
+In most cases, this is not an option, especially since popular OS like iOS
+don’t provide a way to specify it. In some applications, where both
+sides of a Bluetooth link are developed together, this could provide a
+viable option.
+
+To provide OOB data, you can register an OOB data callback with
+*sm_register_oob_data_callback*.
