@@ -35,42 +35,29 @@
  *
  */
 
+#ifndef __SM_MBEDTLS_ALLOCATOR_H
+#define __SM_MBEDTLS_ALLOCATOR_H
+
+#if defined __cplusplus
+extern "C" {
+#endif
+
 #include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <stddef.h>
 
-#include "btstack.h"
+typedef struct sm_allocator_node {
+    uint32_t next;  // offset from sm_allocator_buffer, 0 == last item
+    uint32_t size;  // size of free chunk incl. header
+} sm_allocator_node_t;
 
-static bd_addr_t remote = {0x84, 0x38, 0x35, 0x65, 0xD1, 0x15};
+void sm_mbedtls_allocator_init(uint8_t * buffer, uint32_t size);
+void sm_mbedtls_allocator_status(void);
 
-static btstack_packet_callback_registration_t hci_event_callback_registration;
+void * sm_mbedtls_allocator_calloc(size_t count, size_t size);
+void   sm_mbedtls_allocator_free(void * data);
 
-static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    if (packet_type != HCI_EVENT_PACKET) return;
-
-    switch (hci_event_packet_get_type(packet)) {
-        case BTSTACK_EVENT_STATE:
-            // BTstack activated, get started 
-            if (btstack_event_state_get_state(packet) == HCI_STATE_WORKING){
-                gap_dedicated_bonding(remote, 1);
-            }
-            break;
-        case GAP_EVENT_DEDICATED_BONDING_COMPLETED:
-            printf("GAP Dedicated Bonding Complete, status %u\n", packet[2]);
-        default:
-            break;
-    }
+#if defined __cplusplus
 }
+#endif
 
-int btstack_main(int argc, const char * argv[]);
-int btstack_main(int argc, const char * argv[]){
-
-    hci_event_callback_registration.callback = &packet_handler;
-    hci_add_event_handler(&hci_event_callback_registration);
-
-    // turn on!
-    hci_power_control(HCI_POWER_ON);
-
-    return 0;
-}
+#endif

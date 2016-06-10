@@ -1,3 +1,5 @@
 destest
 security_manager
 aestest
+aes_cmac_test
+ectest

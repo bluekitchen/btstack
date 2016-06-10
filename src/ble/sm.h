@@ -141,7 +141,7 @@ void sm_set_accepted_stk_generation_methods(uint8_t accepted_stk_generation_meth
 void sm_set_encryption_key_size_range(uint8_t min_size, uint8_t max_size);
 
 /**
- * @brief Sets the requested authentication requirements, bonding yes/no, MITM yes/no
+ * @brief Sets the requested authentication requirements, bonding yes/no, MITM yes/no, SC yes/no, keypress yes/no
  * @param OR combination of SM_AUTHREQ_ flags
  */
 void sm_set_authentication_requirements(uint8_t auth_req);
@@ -166,19 +166,25 @@ void sm_send_security_request(hci_con_handle_t con_handle);
 
 /**
  * @brief Decline bonding triggered by event before
- * @param addr_type and address
+ * @param con_handle
  */
 void sm_bonding_decline(hci_con_handle_t con_handle);
 
 /**
  * @brief Confirm Just Works bonding 
- * @param addr_type and address
+ * @param con_handle
  */
 void sm_just_works_confirm(hci_con_handle_t con_handle);
 
 /**
+ * @brief Confirm value from SM_EVENT_NUMERIC_COMPARISON_REQUEST for Numeric Comparison bonding 
+ * @param con_handle
+ */
+void sm_numeric_comparison_confirm(hci_con_handle_t con_handle);
+
+/**
  * @brief Reports passkey input by user
- * @param addr_type and address
+ * @param con_handle
  * @param passkey in [0..999999]
  */
 void sm_passkey_input(hci_con_handle_t con_handle, uint32_t passkey);
@@ -186,50 +192,67 @@ void sm_passkey_input(hci_con_handle_t con_handle, uint32_t passkey);
 /**
  *
  * @brief Get encryption key size.
- * @param addr_type and address
+ * @param con_handle
  * @return 0 if not encrypted, 7-16 otherwise
  */
 int sm_encryption_key_size(hci_con_handle_t con_handle);
 
 /**
  * @brief Get authentication property.
- * @param addr_type and address
+ * @param con_handle
  * @return 1 if bonded with OOB/Passkey (AND MITM protection)
  */
 int sm_authenticated(hci_con_handle_t con_handle);
 
 /**
  * @brief Queries authorization state.
- * @param addr_type and address
+ * @param con_handle
  * @return authorization_state for the current session
  */
 authorization_state_t sm_authorization_state(hci_con_handle_t con_handle);
 
 /**
  * @brief Used by att_server.c to request user authorization.
- * @param addr_type and address
+ * @param con_handle
  */
 void sm_request_pairing(hci_con_handle_t con_handle);
 
 /**
  * @brief Report user authorization decline.
- * @param addr_type and address
+ * @param con_handle
  */
 void sm_authorization_decline(hci_con_handle_t con_handle);
 
 /**
  * @brief Report user authorization grant.
- * @param addr_type and address
+ * @param con_handle
  */
 void sm_authorization_grant(hci_con_handle_t con_handle);
 
 /**
  * @brief Support for signed writes, used by att_server.
  * @note Message is in little endian to allows passing in ATT PDU without flipping. 
- * @note calculated hash in done_callback is big endian
+ * @note signing data: [opcode, attribute_handle, message, sign_counter]
+ * @note calculated hash in done_callback is big endian and has 16 byte. 
+ * @param key
+ * @param opcde
+ * @param attribute_handle
+ * @param message_len
+ * @param message
+ * @param sign_counter
  */
 int  sm_cmac_ready(void);
-void sm_cmac_start(sm_key_t k, uint8_t opcode, uint16_t attribute_handle, uint16_t message_len, uint8_t * message, uint32_t sign_counter, void (*done_handler)(uint8_t hash[8]));
+void sm_cmac_start(const sm_key_t key, uint8_t opcode, uint16_t attribute_handle, uint16_t message_len, const uint8_t * message, uint32_t sign_counter, void (*done_callback)(uint8_t * hash));
+
+/*
+ * @brief Generic CMAC AES
+ * @param key
+ * @param message_len
+ * @param get_byte_callback
+ * @param done_callback
+ * @note hash is 16 bytes in big endian
+ */
+void sm_cmac_general_start(const sm_key_t key, uint16_t message_len, uint8_t (*get_byte_callback)(uint16_t offset), void (*done_callback)(uint8_t * hash));
 
 /*
  * @brief Match address against bonded devices
@@ -244,11 +267,23 @@ int sm_address_resolution_lookup(uint8_t addr_type, bd_addr_t addr);
  * @return index from le_device_db or -1 if not found/identified
  */
 int sm_le_device_index(hci_con_handle_t con_handle );
+
+/**
+ * @brief Set Elliptic Key Public/Private Keypair
+ * @note Creating a new key pair requires about 4600 bytes additional when used with MBEDTLS EC
+ * @note Using the same key for more than one device is not recommended. 
+ * @param qx 32 bytes
+ * @param qy 32 bytes
+ * @param d  32 bytes
+ */
+void sm_use_fixed_ec_keypair(uint8_t * qx, uint8_t * qy, uint8_t * d);
+
 /* API_END */
 
 // PTS testing
 void sm_test_set_irk(sm_key_t irk);
 void sm_test_use_fixed_local_csrk(void);
+void sm_test_use_fixed_ec_keypair(void);
 
 #if defined __cplusplus
 }

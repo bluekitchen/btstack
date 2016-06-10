@@ -2182,6 +2182,75 @@ static inline void sm_event_passkey_input_cancel_get_address(const uint8_t * eve
 
 #ifdef ENABLE_BLE
 /**
+ * @brief Get field handle from event SM_EVENT_NUMERIC_COMPARISON_REQUEST
+ * @param event packet
+ * @return handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t sm_event_numeric_comparison_request_get_handle(const uint8_t * event){
+    return little_endian_read_16(event, 2);
+}
+/**
+ * @brief Get field addr_type from event SM_EVENT_NUMERIC_COMPARISON_REQUEST
+ * @param event packet
+ * @return addr_type
+ * @note: btstack_type 1
+ */
+static inline uint8_t sm_event_numeric_comparison_request_get_addr_type(const uint8_t * event){
+    return event[4];
+}
+/**
+ * @brief Get field address from event SM_EVENT_NUMERIC_COMPARISON_REQUEST
+ * @param event packet
+ * @param Pointer to storage for address
+ * @note: btstack_type B
+ */
+static inline void sm_event_numeric_comparison_request_get_address(const uint8_t * event, bd_addr_t address){
+    reverse_bd_addr(&event[5], address);    
+}
+/**
+ * @brief Get field passkey from event SM_EVENT_NUMERIC_COMPARISON_REQUEST
+ * @param event packet
+ * @return passkey
+ * @note: btstack_type 4
+ */
+static inline uint32_t sm_event_numeric_comparison_request_get_passkey(const uint8_t * event){
+    return little_endian_read_32(event, 11);
+}
+#endif
+
+#ifdef ENABLE_BLE
+/**
+ * @brief Get field handle from event SM_EVENT_NUMERIC_COMPARISON_CANCEL
+ * @param event packet
+ * @return handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t sm_event_numeric_comparison_cancel_get_handle(const uint8_t * event){
+    return little_endian_read_16(event, 2);
+}
+/**
+ * @brief Get field addr_type from event SM_EVENT_NUMERIC_COMPARISON_CANCEL
+ * @param event packet
+ * @return addr_type
+ * @note: btstack_type 1
+ */
+static inline uint8_t sm_event_numeric_comparison_cancel_get_addr_type(const uint8_t * event){
+    return event[4];
+}
+/**
+ * @brief Get field address from event SM_EVENT_NUMERIC_COMPARISON_CANCEL
+ * @param event packet
+ * @param Pointer to storage for address
+ * @note: btstack_type B
+ */
+static inline void sm_event_numeric_comparison_cancel_get_address(const uint8_t * event, bd_addr_t address){
+    reverse_bd_addr(&event[5], address);    
+}
+#endif
+
+#ifdef ENABLE_BLE
+/**
  * @brief Get field handle from event SM_EVENT_IDENTITY_RESOLVING_STARTED
  * @param event packet
  * @return handle
