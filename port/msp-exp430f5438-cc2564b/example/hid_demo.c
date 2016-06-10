@@ -384,9 +384,6 @@ int main(void){
 	hci_set_link_key_db(link_key_db);
 	hci_set_chipset(btstack_chipset_cc256x_instance());
 
-    // use eHCILL
-    btstack_chipset_cc256x_enable_ehcill(1);
-
     // register for HCI events
     hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);

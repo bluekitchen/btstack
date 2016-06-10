@@ -55,23 +55,6 @@ extern "C" {
 /* API_START */
 
 /**
- * @brief Packet handler for HSP Audio Gateway (AG) events. 
- * 
- * The HSP AG event has type HCI_EVENT_HSP_META with following subtypes:  
- * - HSP_SUBEVENT_RFCOMM_CONNECTION_COMPLETE
- * - HSP_SUBEVENT_RFCOMM_DISCONNECTION_COMPLETE
- * - HSP_SUBEVENT_AUDIO_CONNECTION_COMPLETE    
- * - HSP_SUBEVENT_AUDIO_DISCONNECTION_COMPLETE                       
- * - HSP_SUBEVENT_MICROPHONE_GAIN_CHANGED      
- * - HSP_SUBEVENT_SPEAKER_GAIN_CHANGED         
- * - HSP_SUBEVENT_HS_COMMAND      
- *
- * @param event See include/btstack/hci_cmds.h
- * @param event_size
- */
-typedef void (*hsp_ag_callback_t)(uint8_t * event, uint16_t event_size);
-
-/**
  * @brief Set up HSP AG.
  * @param rfcomm_channel_nr
  */
@@ -88,9 +71,19 @@ void hsp_ag_create_sdp_record(uint8_t * service, uint32_t service_record_handle,
 
 /**
  * @brief Register packet handler to receive HSP AG events.
+
+ * The HSP AG event has type HCI_EVENT_HSP_META with following subtypes:  
+ * - HSP_SUBEVENT_RFCOMM_CONNECTION_COMPLETE
+ * - HSP_SUBEVENT_RFCOMM_DISCONNECTION_COMPLETE
+ * - HSP_SUBEVENT_AUDIO_CONNECTION_COMPLETE    
+ * - HSP_SUBEVENT_AUDIO_DISCONNECTION_COMPLETE                       
+ * - HSP_SUBEVENT_MICROPHONE_GAIN_CHANGED      
+ * - HSP_SUBEVENT_SPEAKER_GAIN_CHANGED         
+ * - HSP_SUBEVENT_HS_COMMAND      
+ *
  * @param callback 
  */
-void hsp_ag_register_packet_handler(hsp_ag_callback_t callback);
+void hsp_ag_register_packet_handler(btstack_packet_handler_t callback);
 
 /**
  * @brief Connect to HSP Headset.

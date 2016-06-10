@@ -54,7 +54,7 @@
  * @brief Compare two Bluetooth addresses
  * @param a
  * @param b
- * @return true if equal
+ * @return 0 if equal
  */
 int bd_addr_cmp(bd_addr_t a, bd_addr_t b){
     return memcmp(a,b, BD_ADDR_LEN);
@@ -137,6 +137,14 @@ void reverse_bd_addr(const bd_addr_t src, bd_addr_t dest){
     reverse_bytes(src, dest, 6);
 }
 
+uint32_t btstack_min(uint32_t a, uint32_t b){
+    return a < b ? a : b;
+}
+
+uint32_t btstack_max(uint32_t a, uint32_t b){
+    return a > b ? a : b;
+}
+
 char char_for_nibble(int nibble){
     if (nibble < 10) return '0' + nibble;
     nibble -= 10;
@@ -146,8 +154,8 @@ char char_for_nibble(int nibble){
 
 int nibble_for_char(char c){
     if (c >= '0' && c <= '9') return c - '0';
-    if (c >= 'a' && c <= 'f') return c - 'a';
-    if (c >= 'A' && c <= 'F') return c - 'F';
+    if (c >= 'a' && c <= 'f') return c - 'a' + 10;
+    if (c >= 'A' && c <= 'F') return c - 'A' + 10;
     return -1;
 }
 
@@ -253,7 +261,7 @@ int sscanf_bd_addr(const char * addr_string, bd_addr_t addr){
         int single_byte = scan_hex_byte(addr_string);
         if (single_byte < 0) break;
         addr_string += 2;
-        addr[i] = single_byte;
+        buffer[i] = single_byte;
         // don't check seperator after last byte
         if (i == BD_ADDR_LEN - 1) {
             result = 1;

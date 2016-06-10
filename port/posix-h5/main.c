@@ -170,7 +170,10 @@ int main(int argc, const char * argv[]){
     const btstack_link_key_db_t * link_key_db = btstack_link_key_db_fs_instance();
 	hci_init(transport, (void*) &config);
     hci_set_link_key_db(link_key_db);
-    
+
+    // enable auto-sleep mode
+    // hci_transport_h5_set_auto_sleep(300);
+
     // setup dynamic chipset driver setup
     hci_set_local_version_information_callback(&local_version_information_callback);
 

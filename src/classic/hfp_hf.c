@@ -74,7 +74,7 @@ static uint32_t hfp_indicators_value[HFP_MAX_NUM_HF_INDICATORS];
 static uint8_t hfp_hf_speaker_gain = 9;
 static uint8_t hfp_hf_microphone_gain = 9;
 
-static hfp_callback_t hfp_callback;
+static btstack_packet_handler_t hfp_callback;
 
 static hfp_call_status_t hfp_call_status;
 static hfp_callsetup_status_t hfp_callsetup_status;
@@ -84,7 +84,7 @@ static char phone_number[25];
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
-void hfp_hf_register_packet_handler(hfp_callback_t callback){
+void hfp_hf_register_packet_handler(btstack_packet_handler_t callback){
     hfp_callback = callback;
     if (callback == NULL){
         log_error("hfp_hf_register_packet_handler called with NULL callback");
@@ -94,7 +94,7 @@ void hfp_hf_register_packet_handler(hfp_callback_t callback){
     hfp_set_callback(callback); 
 }
 
-static void hfp_hf_emit_subscriber_information(hfp_callback_t callback, uint8_t event_subtype, uint8_t status, uint8_t bnip_type, const char * bnip_number){
+static void hfp_hf_emit_subscriber_information(btstack_packet_handler_t callback, uint8_t event_subtype, uint8_t status, uint8_t bnip_type, const char * bnip_number){
     if (!callback) return;
     uint8_t event[31];
     event[0] = HCI_EVENT_HFP_META;
@@ -105,10 +105,10 @@ static void hfp_hf_emit_subscriber_information(hfp_callback_t callback, uint8_t 
     int size = (strlen(bnip_number) < sizeof(event) - 6) ? strlen(bnip_number) : sizeof(event) - 6;
     strncpy((char*)&event[5], bnip_number, size);
     event[5 + size] = 0;
-    (*callback)(event, sizeof(event));
+    (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-static void hfp_hf_emit_type_and_number(hfp_callback_t callback, uint8_t event_subtype, uint8_t bnip_type, const char * bnip_number){
+static void hfp_hf_emit_type_and_number(btstack_packet_handler_t callback, uint8_t event_subtype, uint8_t bnip_type, const char * bnip_number){
     if (!callback) return;
     uint8_t event[30];
     event[0] = HCI_EVENT_HFP_META;
@@ -118,10 +118,10 @@ static void hfp_hf_emit_type_and_number(hfp_callback_t callback, uint8_t event_s
     int size = (strlen(bnip_number) < sizeof(event) - 5) ? strlen(bnip_number) : sizeof(event) - 5;
     strncpy((char*)&event[4], bnip_number, size);
     event[4 + size] = 0;
-    (*callback)(event, sizeof(event));
+    (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-static void hfp_hf_emit_enhanced_call_status(hfp_callback_t callback, uint8_t clcc_idx, uint8_t clcc_dir,
+static void hfp_hf_emit_enhanced_call_status(btstack_packet_handler_t callback, uint8_t clcc_idx, uint8_t clcc_dir,
                 uint8_t clcc_status, uint8_t clcc_mpty, uint8_t bnip_type, const char * bnip_number){
     if (!callback) return;
     uint8_t event[35];
@@ -136,7 +136,7 @@ static void hfp_hf_emit_enhanced_call_status(hfp_callback_t callback, uint8_t cl
     int size = (strlen(bnip_number) < sizeof(event) - 10) ? strlen(bnip_number) : sizeof(event) - 10;
     strncpy((char*)&event[9], bnip_number, size);
     event[9 + size] = 0;
-    (*callback)(event, sizeof(event));
+    (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
 static int hfp_hf_supports_codec(uint8_t codec){
@@ -373,7 +373,7 @@ static int hfp_hf_send_clcc(uint16_t cid){
     return send_str_over_rfcomm(cid, buffer);
 }
 
-static void hfp_emit_ag_indicator_event(hfp_callback_t callback, hfp_ag_indicator_t indicator){
+static void hfp_emit_ag_indicator_event(btstack_packet_handler_t callback, hfp_ag_indicator_t indicator){
     if (!callback) return;
     uint8_t event[5+HFP_MAX_INDICATOR_DESC_SIZE+1];
     event[0] = HCI_EVENT_HFP_META;
@@ -383,10 +383,10 @@ static void hfp_emit_ag_indicator_event(hfp_callback_t callback, hfp_ag_indicato
     event[4] = indicator.status;
     strncpy((char*)&event[5], indicator.name, HFP_MAX_INDICATOR_DESC_SIZE);
     event[5+HFP_MAX_INDICATOR_DESC_SIZE] = 0;
-    (*callback)(event, sizeof(event));
+    (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-static void hfp_emit_network_operator_event(hfp_callback_t callback, hfp_network_opearator_t network_operator){
+static void hfp_emit_network_operator_event(btstack_packet_handler_t callback, hfp_network_opearator_t network_operator){
     if (!callback) return;
     uint8_t event[24];
     event[0] = HCI_EVENT_HFP_META;
@@ -395,7 +395,7 @@ static void hfp_emit_network_operator_event(hfp_callback_t callback, hfp_network
     event[3] = network_operator.mode;
     event[4] = network_operator.format;
     strcpy((char*)&event[5], network_operator.name); 
-    (*callback)(event, sizeof(event));
+    (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
 static int hfp_hf_run_for_context_service_level_connection(hfp_connection_t * hfp_connection){
@@ -566,7 +566,7 @@ static int hfp_hf_run_for_audio_connection(hfp_connection_t * hfp_connection){
     if (hfp_connection->establish_audio_connection){
         hfp_connection->state = HFP_W4_SCO_CONNECTED;
         hfp_connection->establish_audio_connection = 0;
-        hfp_setup_synchronous_connection(hfp_connection->acl_handle, hfp_connection->link_setting);
+        hfp_setup_synchronous_connection(hfp_connection);
         return 1;
     }
 
@@ -1082,8 +1082,6 @@ void hfp_hf_init(uint16_t rfcomm_channel_nr){
     // register for HCI events
     hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
-
-    l2cap_init();
 
     rfcomm_register_service(packet_handler, rfcomm_channel_nr, 0xffff);  
 

@@ -115,7 +115,7 @@ void hfp_ag_init_call_hold_services(int call_hold_services_nr, const char * call
  * @brief Register callback for the HFP Audio Gateway (AG) client. 
  * @param callback
  */
-void hfp_ag_register_packet_handler(hfp_callback_t callback);
+void hfp_ag_register_packet_handler(btstack_packet_handler_t callback);
 
 /**
  * @brief Enable in-band ring tone.

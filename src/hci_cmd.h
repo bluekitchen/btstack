@@ -134,6 +134,7 @@ extern const hci_cmd_t hci_user_passkey_request_negative_reply;
 extern const hci_cmd_t hci_user_passkey_request_reply;
 extern const hci_cmd_t hci_write_authentication_enable;
 extern const hci_cmd_t hci_write_class_of_device;
+extern const hci_cmd_t hci_write_default_erroneous_data_reporting;
 extern const hci_cmd_t hci_write_extended_inquiry_response;
 extern const hci_cmd_t hci_write_inquiry_mode;
 extern const hci_cmd_t hci_write_le_host_supported;

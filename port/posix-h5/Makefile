@@ -2,7 +2,7 @@
 BTSTACK_ROOT = ../..
 
 CORE += \
-	bluetooth_init_cc2564B_1.2_BT_Spec_4.1.c \
+	bluetooth_init_cc2564B_1.4_BT_Spec_4.1.c \
 	btstack_chipset_cc256x.c \
 	btstack_chipset_csr.c \
 	btstack_chipset_em9301.c \
@@ -53,5 +53,12 @@ endif
 ifneq ($(OS),Windows_NT)
 EXAMPLES += ${EXAMPLES_CLI}
 endif
+
+# use pkg-config for portaudio
+# CFLAGS  += $(shell pkg-config portaudio-2.0 --cflags) -DHAVE_PORTAUDIO
+# LDFLAGS += $(shell pkg-config portaudio-2.0 --libs)
+# hard coded flags for portaudio in /usr/local/lib
+# CFLAGS  += -I/usr/local/include -DHAVE_PORTAUDIO
+# LDFLAGS += -L/sw/lib -lportaudio -Wl,-framework,CoreAudio -Wl,-framework,AudioToolbox -Wl,-framework,AudioUnit -Wl,-framework,Carbon
 
 all: ${EXAMPLES}

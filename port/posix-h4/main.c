@@ -139,6 +139,9 @@ static void local_version_information_callback(uint8_t * packet){
             printf("Texas Instruments - CC256x compatible chipset.\n");
             use_fast_uart();
             hci_set_chipset(btstack_chipset_cc256x_instance());
+#ifdef ENABLE_EHCILL
+            printf("eHCILL enabled.\n");
+#endif
             break;
         case COMPANY_ID_BROADCOM_CORPORATION:   
             printf("Broadcom chipset. Not supported yet\n");

@@ -49,12 +49,6 @@
 #include "hci_transport.h"
 #include "btstack_uart_block.h"
 
-#ifdef HAVE_EHCILL
-#error "HCI Transport H5 does not support eHCILL. Please either use (H4 + HAVE_EHCILL) or H5 Transport"
-#endif 
-
-/// newer
-
 typedef enum {
     LINK_UNINITIALIZED,
     LINK_INITIALIZED,
@@ -66,10 +60,13 @@ typedef enum {
     HCI_TRANSPORT_LINK_SEND_SYNC_RESPONSE   = 1 << 1,
     HCI_TRANSPORT_LINK_SEND_CONFIG          = 1 << 2,
     HCI_TRANSPORT_LINK_SEND_CONFIG_RESPONSE = 1 << 3,
-    HCI_TRANSPORT_LINK_SEND_WOKEN           = 1 << 4,
-    HCI_TRANSPORT_LINK_SEND_WAKEUP          = 1 << 5,
-    HCI_TRANSPORT_LINK_SEND_QUEUED_PACKET   = 1 << 6,
-    HCI_TRANSPORT_LINK_SEND_ACK_PACKET      = 1 << 7,
+    HCI_TRANSPORT_LINK_SEND_SLEEP           = 1 << 4,
+    HCI_TRANSPORT_LINK_SEND_WOKEN           = 1 << 5,
+    HCI_TRANSPORT_LINK_SEND_WAKEUP          = 1 << 6,
+    HCI_TRANSPORT_LINK_SEND_QUEUED_PACKET   = 1 << 7,
+    HCI_TRANSPORT_LINK_SEND_ACK_PACKET      = 1 << 8,
+    HCI_TRANSPORT_LINK_ENTER_SLEEP          = 1 << 9,
+
 } hci_transport_link_actions_t;
 
 // Configuration Field. No packet buffers -> sliding window = 1, no OOF flow control, no data integrity check
@@ -89,10 +86,14 @@ typedef enum {
 #define LINK_ACKNOWLEDGEMENT_TYPE 0x00
 #define LINK_CONTROL_PACKET_TYPE 0x0f
 
+// max size of write requests
+#define LINK_SLIP_TX_CHUNK_LEN 64
+
 // ---
 static const uint8_t link_control_sync[] =   { 0x01, 0x7e};
 static const uint8_t link_control_sync_response[] = { 0x02, 0x7d};
 static const uint8_t link_control_config[] = { 0x03, 0xfc, LINK_CONFIG_FIELD};
+static const uint8_t link_control_config_prefix_len  = 2;
 static const uint8_t link_control_config_response[] = { 0x04, 0x7b, LINK_CONFIG_FIELD};
 static const uint8_t link_control_config_response_prefix_len  = 2;
 static const uint8_t link_control_wakeup[] = { 0x05, 0xfa};
@@ -102,8 +103,9 @@ static const uint8_t link_control_sleep[] =  { 0x07, 0x78};
 // incoming pre-bufffer + 4 bytes H5 header + max(acl header + acl payload, event header + event data) + 2 bytes opt CRC
 static uint8_t   hci_packet_with_pre_buffer[HCI_INCOMING_PRE_BUFFER_SIZE + 6 + HCI_PACKET_BUFFER_SIZE];
 
-// Non-optimized outgoing buffer (EOF, 4 bytes header, payload, EOF)
-static uint8_t slip_outgoing_buffer[2 + 2 * (HCI_PACKET_BUFFER_SIZE + 4)];
+// outgoing slip encoded buffer. +1 to assert that last SOF fits in buffer
+static uint8_t slip_outgoing_buffer[LINK_SLIP_TX_CHUNK_LEN+1];
+static int     slip_write_active;
 
 // H5 Link State
 static hci_transport_link_state_t link_state;
@@ -112,6 +114,10 @@ static uint8_t  link_seq_nr;
 static uint8_t  link_ack_nr;
 static uint16_t link_resend_timeout_ms;
 static uint8_t  link_peer_asleep;
+
+// auto sleep-mode
+static btstack_timer_source_t inactivity_timer;
+static uint16_t link_inactivity_timeout_ms; // auto-sleep if set
 
 // Outgoing packet
 static uint8_t   hci_packet_type;
@@ -126,8 +132,7 @@ static int hci_transport_link_actions;
 // UART Driver + Config
 static const btstack_uart_block_t * btstack_uart;
 static btstack_uart_config_t uart_config;
-
-static int uart_write_active;
+static btstack_uart_sleep_mode_t btstack_uart_sleep_mode;
 
 // Prototypes
 static void hci_transport_h5_process_frame(uint16_t frame_size);
@@ -139,9 +144,45 @@ static void hci_transport_link_run(void);
 static void hci_transport_slip_init(void);
 
 // -----------------------------
+static void hci_transport_inactivity_timeout_handler(btstack_timer_source_t * ts){
+    log_info("h5: inactivity timeout. link state %u, peer asleep %u, actions 0x%02x, outgoing packet %u",
+        link_state, link_peer_asleep, hci_transport_link_actions, hci_transport_link_have_outgoing_packet());
+    if (hci_transport_link_have_outgoing_packet()) return;
+    if (link_state != LINK_ACTIVE) return;
+    if (hci_transport_link_actions) return;
+    if (link_peer_asleep) return;
+    hci_transport_link_actions |= HCI_TRANSPORT_LINK_SEND_SLEEP;
+    hci_transport_link_run();
+}
 
+static void hci_transport_inactivity_timer_set(void){
+    if (!link_inactivity_timeout_ms) return;
+    btstack_run_loop_set_timer_handler(&inactivity_timer, &hci_transport_inactivity_timeout_handler);
+    btstack_run_loop_set_timer(&inactivity_timer, link_inactivity_timeout_ms);
+    btstack_run_loop_remove_timer(&inactivity_timer);
+    btstack_run_loop_add_timer(&inactivity_timer);
+}
 
+// -----------------------------
 // SLIP Outgoing
+
+// Fill chunk and write
+static void hci_transport_slip_encode_chunk_and_send(int pos){
+    while (btstack_slip_encoder_has_data() & (pos < LINK_SLIP_TX_CHUNK_LEN)) {
+        slip_outgoing_buffer[pos++] = btstack_slip_encoder_get_byte();
+    }
+    if (!btstack_slip_encoder_has_data()){
+        // Start of Frame
+        slip_outgoing_buffer[pos++] = BTSTACK_SLIP_SOF;
+    }
+    slip_write_active = 1;
+    log_info("hci_transport_slip: send %u bytes", pos);
+    btstack_uart->send_block(slip_outgoing_buffer, pos);
+}
+
+static inline void hci_transport_slip_send_next_chunk(void){
+    hci_transport_slip_encode_chunk_and_send(0);
+}
 
 // format: 0xc0 HEADER PACKER 0xc0
 // @param uint8_t header[4]
@@ -160,15 +201,9 @@ static void hci_transport_slip_send_frame(const uint8_t * header, const uint8_t 
 
     // Packet
     btstack_slip_encoder_start(packet, packet_size);
-    while (btstack_slip_encoder_has_data()){
-        slip_outgoing_buffer[pos++] = btstack_slip_encoder_get_byte();
-    }
 
-    // Start of Frame
-    slip_outgoing_buffer[pos++] = BTSTACK_SLIP_SOF;
-
-    uart_write_active = 1;
-    btstack_uart->send_block(slip_outgoing_buffer, pos);
+    // Fill rest of chunk from packet and send
+    hci_transport_slip_encode_chunk_and_send(pos);
 }
 
 // SLIP Incoming
@@ -235,6 +270,11 @@ static void hci_transport_link_send_wakeup(void){
     hci_transport_link_send_control(link_control_wakeup, sizeof(link_control_wakeup));
 }
 
+static void hci_transport_link_send_sleep(void){
+    log_info("link: send sleep");
+    hci_transport_link_send_control(link_control_sleep, sizeof(link_control_sleep));
+}
+
 static void hci_transport_link_send_queued_packet(void){
     log_info("hci_transport_link_send_queued_packet: seq %u, ack %u, size %u", link_seq_nr, link_ack_nr, hci_packet_size);
     log_info_hexdump(hci_packet, hci_packet_size);
@@ -242,6 +282,9 @@ static void hci_transport_link_send_queued_packet(void){
     uint8_t header[4];
     hci_transport_link_calc_header(header, link_seq_nr, link_ack_nr, 0, 1, hci_packet_type, hci_packet_size);
     hci_transport_slip_send_frame(header, hci_packet, hci_packet_size);
+
+    // reset inactvitiy timer
+    hci_transport_inactivity_timer_set();
 }
 
 static void hci_transport_link_send_ack_packet(void){
@@ -253,7 +296,7 @@ static void hci_transport_link_send_ack_packet(void){
 
 static void hci_transport_link_run(void){
     // exit if outgoing active
-    if (uart_write_active) return;
+    if (slip_write_active) return;
 
     // process queued requests
     if (hci_transport_link_actions & HCI_TRANSPORT_LINK_SEND_SYNC){
@@ -296,6 +339,13 @@ static void hci_transport_link_run(void){
     if (hci_transport_link_actions & HCI_TRANSPORT_LINK_SEND_ACK_PACKET){
         hci_transport_link_actions &= ~HCI_TRANSPORT_LINK_SEND_ACK_PACKET;
         hci_transport_link_send_ack_packet();
+        return;
+    }
+    if (hci_transport_link_actions & HCI_TRANSPORT_LINK_SEND_SLEEP){
+        hci_transport_link_actions &= ~HCI_TRANSPORT_LINK_SEND_SLEEP;
+        hci_transport_link_actions |=  HCI_TRANSPORT_LINK_ENTER_SLEEP;
+        link_peer_asleep = 1;
+        hci_transport_link_send_sleep();
         return;
     }
 }
@@ -434,7 +484,7 @@ static void hci_transport_h5_process_frame(uint16_t frame_size){
                 log_info("link: received sync");
                 hci_transport_link_actions |= HCI_TRANSPORT_LINK_SEND_SYNC_RESPONSE;
             }
-            if (memcmp(slip_payload, link_control_config, sizeof(link_control_config)) == 0){
+            if (memcmp(slip_payload, link_control_config, link_control_config_prefix_len) == 0){
                 log_info("link: received config");
                 hci_transport_link_actions |= HCI_TRANSPORT_LINK_SEND_CONFIG_RESPONSE;
             }
@@ -493,7 +543,12 @@ static void hci_transport_h5_process_frame(uint16_t frame_size){
                         break;
                     }
                     if (memcmp(slip_payload, link_control_sleep, sizeof(link_control_sleep)) == 0){
-                        log_info("link: received sleep message");
+                        if (btstack_uart_sleep_mode){
+                            log_info("link: received sleep message. Enabling UART Sleep.");
+                            btstack_uart->set_sleep(btstack_uart_sleep_mode);
+                        } else {
+                            log_info("link: received sleep message. UART Sleep not supported");
+                        }
                         link_peer_asleep = 1;
                         break;
                     }
@@ -506,14 +561,19 @@ static void hci_transport_h5_process_frame(uint16_t frame_size){
                     if (memcmp(slip_payload, link_control_woken, sizeof(link_control_woken)) == 0){
                         log_info("link: received woken message");
                         link_peer_asleep = 0;
-                        // TODO: send packet if queued....
+                        // queued packet will be sent in hci_transport_link_run if needed
                         break;
                     }
                     break;
                 case HCI_EVENT_PACKET:
                 case HCI_ACL_DATA_PACKET:
                 case HCI_SCO_DATA_PACKET:
+                    // seems like peer is awake
+                    link_peer_asleep = 0;
+                    // forward packet to stack
                     packet_handler(link_packet_type, slip_payload, link_payload_len);
+                    // reset inactvitiy timer
+                    hci_transport_inactivity_timer_set();
                     break;
             }
 
@@ -542,12 +602,12 @@ static void hci_transport_link_update_resend_timeout(uint32_t baudrate){
 static uint8_t hci_transport_link_read_byte;
 
 static void hci_transport_h5_read_next_byte(void){
-    log_info("hci_transport_h5_read_next_byte");
+    log_debug("h5: rx nxt");
     btstack_uart->receive_block(&hci_transport_link_read_byte, 1);    
 }
 
 static void hci_transport_h5_block_received(){
-    // log_info("slip: process 0x%02x", hci_transport_link_read_byte);
+    log_debug("slip: process 0x%02x", hci_transport_link_read_byte);
     btstack_slip_decoder_process(hci_transport_link_read_byte);
     uint16_t frame_size = btstack_slip_decoder_frame_size();
     if (frame_size) {
@@ -558,7 +618,27 @@ static void hci_transport_h5_block_received(){
 }
 
 static void hci_transport_h5_block_sent(void){
-    uart_write_active = 0;
+
+    // check if more data to send
+    if (btstack_slip_encoder_has_data()){
+        hci_transport_slip_send_next_chunk();
+        return;
+    }
+
+    // done
+    slip_write_active = 0;
+
+    // enter sleep mode after sending sleep message
+    if (hci_transport_link_actions & HCI_TRANSPORT_LINK_ENTER_SLEEP){
+        hci_transport_link_actions &= ~HCI_TRANSPORT_LINK_ENTER_SLEEP;
+        if (btstack_uart_sleep_mode){
+            log_info("link: sent sleep message. Enabling UART Sleep.");
+            btstack_uart->set_sleep(btstack_uart_sleep_mode);
+        } else {
+            log_info("link: sent sleep message. UART Sleep not supported");
+        }
+    }
+
     hci_transport_link_run();
 }
 
@@ -591,6 +671,19 @@ static int hci_transport_h5_open(void){
         return res;
     }        
     
+    // check if wake on RX can be used
+    btstack_uart_sleep_mode = BTSTACK_UART_SLEEP_OFF;
+    int supported_sleep_modes = 0;
+    if (btstack_uart->get_supported_sleep_modes){
+        supported_sleep_modes = btstack_uart->get_supported_sleep_modes();
+    }
+    if (supported_sleep_modes & BTSTACK_UART_SLEEP_MASK_RTS_LOW_WAKE_ON_RX_EDGE){
+        log_info("H5: using wake on RX");
+        btstack_uart_sleep_mode = BTSTACK_UART_SLEEP_RTS_LOW_WAKE_ON_RX_EDGE;
+    } else {
+        log_info("H5: UART driver does not provide compatible sleep mode");
+    }
+
     // setup resend timeout
     hci_transport_link_update_resend_timeout(uart_config.baudrate);
 
@@ -616,8 +709,9 @@ static void hci_transport_h5_register_packet_handler(void (*handler)(uint8_t pac
 }
 
 static int hci_transport_h5_can_send_packet_now(uint8_t packet_type){
-    if (hci_transport_link_have_outgoing_packet()) return 0;
-    return link_state == LINK_ACTIVE;
+    int res = !hci_transport_link_have_outgoing_packet() && link_state == LINK_ACTIVE;
+    // log_info("hci_transport_h5_can_send_packet_now: %u", res);
+    return res;
 }
 
 static int hci_transport_h5_send_packet(uint8_t packet_type, uint8_t *packet, int size){
@@ -631,6 +725,10 @@ static int hci_transport_h5_send_packet(uint8_t packet_type, uint8_t *packet, in
 
     // send wakeup first
     if (link_peer_asleep){
+        if (btstack_uart_sleep_mode){
+            log_info("h5: disable UART sleep");
+            btstack_uart->set_sleep(BTSTACK_UART_SLEEP_OFF);
+        }
         hci_transport_link_actions |= HCI_TRANSPORT_LINK_SEND_WAKEUP;
         hci_transport_link_set_timer(LINK_WAKEUP_MS);
     } else {
@@ -681,4 +779,8 @@ static const hci_transport_t hci_transport_h5 = {
 const hci_transport_t * hci_transport_h5_instance(const btstack_uart_block_t * uart_driver) {
     btstack_uart = uart_driver;
     return &hci_transport_h5;
+}
+
+void hci_transport_h5_set_auto_sleep(uint16_t inactivity_timeout_ms){
+    link_inactivity_timeout_ms = inactivity_timeout_ms;
 }

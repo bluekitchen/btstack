@@ -5,7 +5,7 @@
   <confs>
     <conf name="default" type="2">
       <platformToolSN></platformToolSN>
-      <languageToolchainDir></languageToolchainDir>
+      <languageToolchainDir>/Applications/microchip/xc32/v1.40/bin</languageToolchainDir>
       <mdbdebugger version="1">
         <placeholder1>place holder 1</placeholder1>
         <placeholder2>place holder 2</placeholder2>

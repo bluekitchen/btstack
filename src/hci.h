@@ -457,6 +457,8 @@ typedef enum hci_init_state{
     
     HCI_INIT_WRITE_SYNCHRONOUS_FLOW_CONTROL_ENABLE,
     HCI_INIT_W4_WRITE_SYNCHRONOUS_FLOW_CONTROL_ENABLE,
+    HCI_INIT_WRITE_DEFAULT_ERRONEOUS_DATA_REPORTING,
+    HCI_INIT_W4_WRITE_DEFAULT_ERRONEOUS_DATA_REPORTING,
 
     HCI_INIT_LE_READ_BUFFER_SIZE,
     HCI_INIT_W4_LE_READ_BUFFER_SIZE,
@@ -520,10 +522,10 @@ typedef struct {
     btstack_linked_list_t     connections;
 
     /* callback to L2CAP layer */
-    void (*acl_packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size);
+    btstack_packet_handler_t acl_packet_handler;
 
     /* callback for SCO data */
-    void (*sco_packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size);
+    btstack_packet_handler_t sco_packet_handler;
 
     /* callbacks for events */
     btstack_linked_list_t event_handlers;
@@ -721,12 +723,12 @@ void hci_add_event_handler(btstack_packet_callback_registration_t * callback_han
 /**
  * @brief Registers a packet handler for ACL data. Used by L2CAP
  */
-void hci_register_acl_packet_handler(void (*handler)(uint8_t packet_type, uint8_t *packet, uint16_t size));
+void hci_register_acl_packet_handler(btstack_packet_handler_t handler);
 
 /**
  * @brief Registers a packet handler for SCO data. Used for HSP and HFP profiles.
  */
-void hci_register_sco_packet_handler(void (*handler)(uint8_t packet_type, uint8_t *packet, uint16_t size));
+void hci_register_sco_packet_handler(btstack_packet_handler_t handler);
 
 
 // Sending HCI Commands

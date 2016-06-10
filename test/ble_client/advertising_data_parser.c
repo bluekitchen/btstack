@@ -132,7 +132,7 @@ bool nameHasPrefix(const char * name_prefix, uint16_t data_length, uint8_t * dat
     for (ad_iterator_init(&context, data_length, data) ; ad_iterator_has_more(&context) ; ad_iterator_next(&context)){
         uint8_t data_type = ad_iterator_get_data_type(&context);
         uint8_t data_len  = ad_iterator_get_data_len(&context);
-        uint8_t * data    = ad_iterator_get_data(&context);
+        const uint8_t * data    = ad_iterator_get_data(&context);
         int compare_len = name_prefix_len;
         switch(data_type){
             case 8: // shortented local name
@@ -172,7 +172,7 @@ TEST(ADParser, TestDataParsing){
     for (ad_iterator_init(&context, ad_len, ad_data) ; ad_iterator_has_more(&context) ; ad_iterator_next(&context)){
         uint8_t data_type = ad_iterator_get_data_type(&context);
         uint8_t data_len  = ad_iterator_get_data_len(&context);
-        uint8_t * data    = ad_iterator_get_data(&context);
+        const uint8_t * data    = ad_iterator_get_data(&context);
         
         CHECK_EQUAL(expected_len[i],  data_len);
         CHECK_EQUAL(expected_type[i], data_type);

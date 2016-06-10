@@ -6,9 +6,9 @@
                    projectFiles="true">
       <logicalFolder name="f1" displayName="app" projectFiles="true">
         <logicalFolder name="f1" displayName="system_config" projectFiles="true">
-          <logicalFolder name="f1" displayName="bt-audio-dk" projectFiles="true">
-            <itemPath>../src/system_config/bk-audio-dk/system_definitions.h</itemPath>
-            <itemPath>../src/system_config/bk-audio-dk/system_config.h</itemPath>
+          <logicalFolder name="f1" displayName="bt_audio_dk" projectFiles="true">
+            <itemPath>../src/system_config/bt_audio_dk/system_definitions.h</itemPath>
+            <itemPath>../src/system_config/bt_audio_dk/system_config.h</itemPath>
           </logicalFolder>
         </logicalFolder>
         <itemPath>../../../src/btstack_debug.h</itemPath>
@@ -35,6 +35,7 @@
           <itemPath>../../../src/classic/sdp_server.h</itemPath>
           <itemPath>../../../src/classic/sdp_client.h</itemPath>
           <itemPath>../../../src/classic/sdp_client_rfcomm.h</itemPath>
+          <itemPath>../../../src/classic/spp_server.h</itemPath>
         </logicalFolder>
         <logicalFolder name="embedded" displayName="embedded" projectFiles="true">
           <itemPath>../../../platform/embedded/hal_cpu.h</itemPath>
@@ -57,6 +58,7 @@
           <itemPath>../../../src/hci_transport.h</itemPath>
           <itemPath>../../../src/l2cap.h</itemPath>
           <itemPath>../../../src/l2cap_signaling.h</itemPath>
+          <itemPath>../../../src/btstack_uart_block.h</itemPath>
         </logicalFolder>
       </logicalFolder>
       <logicalFolder name="f2" displayName="framework" projectFiles="true">
@@ -93,9 +95,9 @@
                    projectFiles="true">
       <logicalFolder name="f1" displayName="app" projectFiles="true">
         <logicalFolder name="f1" displayName="system_config" projectFiles="true">
-          <logicalFolder name="f1" displayName="bt-audio-dk" projectFiles="true">
-            <itemPath>../src/system_config/bk-audio-dk/system_init.c</itemPath>
-            <itemPath>../src/system_config/bk-audio-dk/system_tasks.c</itemPath>
+          <logicalFolder name="f1" displayName="bt_audio_dk" projectFiles="true">
+            <itemPath>../src/system_config/bt_audio_dk/system_init.c</itemPath>
+            <itemPath>../src/system_config/bt_audio_dk/system_tasks.c</itemPath>
           </logicalFolder>
         </logicalFolder>
         <itemPath>../src/btstack_port.c</itemPath>
@@ -116,6 +118,10 @@
         <logicalFolder name="chipset-csr" displayName="chipset-csr" projectFiles="true">
           <itemPath>../../../chipset/csr/btstack_chipset_csr.c</itemPath>
         </logicalFolder>
+        <logicalFolder name="f1" displayName="platform-embedded" projectFiles="true">
+          <itemPath>../../../platform/embedded/btstack_run_loop_embedded.c</itemPath>
+          <itemPath>../../../platform/embedded/btstack_uart_block_embedded.c</itemPath>
+        </logicalFolder>
         <logicalFolder name="src" displayName="src" projectFiles="true">
           <itemPath>../../../src/btstack_memory.c</itemPath>
           <itemPath>../../../src/hci.c</itemPath>
@@ -133,8 +139,10 @@
           <itemPath>../../../src/classic/sdp_client_rfcomm.c</itemPath>
           <itemPath>../../../src/classic/sdp_util.c</itemPath>
           <itemPath>../../../src/btstack_util.c</itemPath>
-          <itemPath>../../../platform/embedded/btstack_run_loop_embedded.c</itemPath>
-          <itemPath>../../../platform/embedded/hci_transport_h4_embedded.c</itemPath>
+          <itemPath>../../../src/classic/spp_server.c</itemPath>
+          <itemPath>../../../src/hci_transport_h4.c</itemPath>
+          <itemPath>../../../src/hci_transport_h5.c</itemPath>
+          <itemPath>../../../src/btstack_slip.c</itemPath>
         </logicalFolder>
       </logicalFolder>
       <logicalFolder name="f2" displayName="framework" projectFiles="true">
@@ -201,7 +209,7 @@
         <targetPluginBoard></targetPluginBoard>
         <platformTool>PICkit3PlatformTool</platformTool>
         <languageToolchain>XC32</languageToolchain>
-        <languageToolchainVersion></languageToolchainVersion>
+        <languageToolchainVersion>1.40</languageToolchainVersion>
         <platform>4</platform>
       </toolsSet>
       <compileType>
@@ -235,7 +243,7 @@
         <property key="enable-unroll-loops" value="false"/>
         <property key="exclude-floating-point" value="false"/>
         <property key="extra-include-directories"
-                  value=".;../../../..;../src;../src/system_config/bk-audio-dk;../../../include;../../../src;../../../ble;../../../chipset/csr;../../../platform/embedded"/>
+                  value=".;../../../..;../src;../src/system_config/bt_audio_dk;../../../src;../../../chipset/csr;../../../platform/embedded"/>
         <property key="generate-16-bit-code" value="false"/>
         <property key="generate-micro-compressed-code" value="false"/>
         <property key="isolate-each-function" value="false"/>
@@ -288,7 +296,7 @@
         <property key="generate-16-bit-code" value="false"/>
         <property key="generate-cross-reference-file" value="false"/>
         <property key="generate-micro-compressed-code" value="false"/>
-        <property key="heap-size" value=""/>
+        <property key="heap-size" value="16"/>
         <property key="input-libraries" value=""/>
         <property key="linker-symbols" value=""/>
         <property key="map-file" value="${DISTDIR}/${PROJECTNAME}.${IMAGE_TYPE}.map"/>

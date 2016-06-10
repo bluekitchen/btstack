@@ -69,11 +69,13 @@
 #define HAVE_USB_VENDOR_ID_AND_PRODUCT_ID
 #endif
 
-#define ASYNC_BUFFERS 2
-#define AYSNC_POLLING_INTERVAL_MS 1
+#define ASYNC_BUFFERS  3
+#define ISOC_BUFFERS  10
+
+#define ASYNC_POLLING_INTERVAL_MS 1
 
 //
-// Bluetooth USB Transprot Alternate Settings:
+// Bluetooth USB Transport Alternate Settings:
 //
 // 0: No active voice channels (for USB compliance)
 // 1: One 8 kHz voice channel with 8-bit encoding
@@ -147,8 +149,8 @@ static H2_SCO_STATE sco_state;
 static uint8_t  sco_buffer[255+3 + SCO_PACKET_SIZE];
 static uint16_t sco_read_pos;
 static uint16_t sco_bytes_to_read;
-static struct  libusb_transfer *sco_in_transfer[ASYNC_BUFFERS];
-static uint8_t hci_sco_in_buffer[ASYNC_BUFFERS][SCO_PACKET_SIZE]; 
+static struct  libusb_transfer *sco_in_transfer[ISOC_BUFFERS];
+static uint8_t hci_sco_in_buffer[ISOC_BUFFERS][SCO_PACKET_SIZE]; 
 
 // outgoing SCO
 static uint8_t  sco_ring_buffer[SCO_RING_BUFFER_SIZE];
@@ -439,7 +441,7 @@ static void usb_process_ts(btstack_timer_source_t *timer) {
     usb_process_ds((struct btstack_data_source *) NULL, DATA_SOURCE_CALLBACK_READ);
 
     // Get the amount of time until next event is due
-    long msec = AYSNC_POLLING_INTERVAL_MS;
+    long msec = ASYNC_POLLING_INTERVAL_MS;
 
     // Activate timer
     btstack_run_loop_set_timer(&usb_timer, msec);
@@ -774,7 +776,7 @@ static int usb_open(void){
 #ifdef ENABLE_SCO_OVER_HCI
 
     // incoming
-    for (c = 0 ; c < ASYNC_BUFFERS ; c++) {
+    for (c = 0 ; c < ISOC_BUFFERS ; c++) {
         sco_in_transfer[c] = libusb_alloc_transfer(NUM_ISO_PACKETS); // isochronous transfers SCO in
         log_info("Alloc iso transfer");
         if (!sco_in_transfer[c]) {
@@ -853,7 +855,7 @@ static int usb_open(void){
         log_info("Async using timers:");
 
         usb_timer.process = usb_process_ts;
-        btstack_run_loop_set_timer(&usb_timer, AYSNC_POLLING_INTERVAL_MS);
+        btstack_run_loop_set_timer(&usb_timer, ASYNC_POLLING_INTERVAL_MS);
         btstack_run_loop_add_timer(&usb_timer);
         usb_timer_active = 1;
     }
@@ -882,10 +884,13 @@ static int usb_close(void){
             for (c = 0 ; c < ASYNC_BUFFERS ; c++) {
                 libusb_cancel_transfer(event_in_transfer[c]);
                 libusb_cancel_transfer(acl_in_transfer[c]);
-#ifdef ENABLE_SCO_OVER_HCI
-                libusb_cancel_transfer(sco_in_transfer[c]);
-#endif
             }
+#ifdef ENABLE_SCO_OVER_HCI
+            // Cancel all synchronous transfer
+            for (c = 0 ; c < ISOC_BUFFERS ; c++) {
+                libusb_cancel_transfer(sco_in_transfer[c]);
+            }
+#endif
 
             /* TODO - find a better way to ensure that all transfers have completed */
             struct timeval tv;
@@ -905,16 +910,19 @@ static int usb_close(void){
             }
 
         case LIB_USB_INTERFACE_CLAIMED:
+            // Cancel any asynchronous transfers
             for (c = 0 ; c < ASYNC_BUFFERS ; c++) {
-                if (event_in_transfer[c]) libusb_free_transfer(event_in_transfer[c]);
-                if (acl_in_transfer[c])   libusb_free_transfer(acl_in_transfer[c]);
-#ifdef ENABLE_SCO_OVER_HCI
-                if (sco_in_transfer[c])   libusb_free_transfer(sco_in_transfer[c]);
-#endif
+                libusb_cancel_transfer(event_in_transfer[c]);
+                libusb_cancel_transfer(acl_in_transfer[c]);
             }
+#ifdef ENABLE_SCO_OVER_HCI
+            // Cancel all synchronous transfer
+            for (c = 0 ; c < ISOC_BUFFERS ; c++) {
+                libusb_cancel_transfer(sco_in_transfer[c]);
+            }
+#endif
 
             // TODO free control and acl out transfers
-
             libusb_release_interface(handle, 0);
 
         case LIB_USB_DEVICE_OPENDED:

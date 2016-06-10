@@ -73,6 +73,7 @@
 
 
 #define HCI_CONNECTION_TIMEOUT_MS 10000
+#define HCI_RESET_RESEND_TIMEOUT_MS 200
 
 // prototypes
 static void hci_update_scan_enable(void);
@@ -908,7 +909,7 @@ static void hci_initializing_run(void){
 
 #ifndef HAVE_PLATFORM_IPHONE_OS
             // prepare reset if command complete not received in 100ms
-            btstack_run_loop_set_timer(&hci_stack->timeout, 100);
+            btstack_run_loop_set_timer(&hci_stack->timeout, HCI_RESET_RESEND_TIMEOUT_MS);
             btstack_run_loop_set_timer_handler(&hci_stack->timeout, hci_initialization_timeout_handler);
             btstack_run_loop_add_timer(&hci_stack->timeout);
 #endif
@@ -923,7 +924,7 @@ static void hci_initializing_run(void){
         case HCI_INIT_SEND_RESET_CSR_WARM_BOOT:
             hci_state_reset();
             // prepare reset if command complete not received in 100ms
-            btstack_run_loop_set_timer(&hci_stack->timeout, 100);
+            btstack_run_loop_set_timer(&hci_stack->timeout, HCI_RESET_RESEND_TIMEOUT_MS);
             btstack_run_loop_set_timer_handler(&hci_stack->timeout, hci_initialization_timeout_handler);
             btstack_run_loop_add_timer(&hci_stack->timeout);
             // send command
@@ -944,7 +945,7 @@ static void hci_initializing_run(void){
             // STLC25000D: baudrate change happens within 0.5 s after command was send,
             // use timer to update baud rate after 100 ms (knowing exactly, when command was sent is non-trivial)
             if (hci_stack->manufacturer == COMPANY_ID_ST_MICROELECTRONICS){
-                btstack_run_loop_set_timer(&hci_stack->timeout, 100);
+                btstack_run_loop_set_timer(&hci_stack->timeout, HCI_RESET_RESEND_TIMEOUT_MS);
                 btstack_run_loop_add_timer(&hci_stack->timeout);
             }
             break;
@@ -973,7 +974,7 @@ static void hci_initializing_run(void){
                             break;
                         case 2: // CSR Warm Boot: Wait a bit, then send HCI Reset until HCI Command Complete
                             log_info("CSR Warm Boot");
-                            btstack_run_loop_set_timer(&hci_stack->timeout, 100);
+                            btstack_run_loop_set_timer(&hci_stack->timeout, HCI_RESET_RESEND_TIMEOUT_MS);
                             btstack_run_loop_set_timer_handler(&hci_stack->timeout, hci_initialization_timeout_handler);
                             btstack_run_loop_add_timer(&hci_stack->timeout);
                             if (hci_stack->manufacturer == COMPANY_ID_CAMBRIDGE_SILICON_RADIO
@@ -1073,9 +1074,14 @@ static void hci_initializing_run(void){
             hci_send_cmd(&hci_write_scan_enable, (hci_stack->connectable << 1) | hci_stack->discoverable); // page scan
             hci_stack->substate = HCI_INIT_W4_WRITE_SCAN_ENABLE;
             break;
+        // only sent if ENABLE_SCO_OVER_HCI is defined
         case HCI_INIT_WRITE_SYNCHRONOUS_FLOW_CONTROL_ENABLE:
             hci_stack->substate = HCI_INIT_W4_WRITE_SYNCHRONOUS_FLOW_CONTROL_ENABLE;
             hci_send_cmd(&hci_write_synchronous_flow_control_enable, 1); // SCO tracking enabled
+            break;
+        case HCI_INIT_WRITE_DEFAULT_ERRONEOUS_DATA_REPORTING:
+            hci_stack->substate = HCI_INIT_W4_WRITE_DEFAULT_ERRONEOUS_DATA_REPORTING;
+            hci_send_cmd(&hci_write_default_erroneous_data_reporting, 1);
             break;
 #ifdef ENABLE_BLE
         // LE INIT
@@ -1322,9 +1328,9 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
 
 #ifdef ENABLE_SCO_OVER_HCI
         case HCI_INIT_W4_WRITE_SCAN_ENABLE:
-            // just go to next state
-            break;
         case HCI_INIT_W4_WRITE_SYNCHRONOUS_FLOW_CONTROL_ENABLE:
+            break;
+        case HCI_INIT_WRITE_DEFAULT_ERRONEOUS_DATA_REPORTING:
             if (!hci_le_supported()){
                 // SKIP LE init for Classic only configuration
                 hci_init_done();
@@ -1860,7 +1866,7 @@ static void event_handler(uint8_t *packet, int size){
 
 static void sco_handler(uint8_t * packet, uint16_t size){
     if (!hci_stack->sco_packet_handler) return;
-    hci_stack->sco_packet_handler(HCI_SCO_DATA_PACKET, packet, size);
+    hci_stack->sco_packet_handler(HCI_SCO_DATA_PACKET, 0, packet, size);
 }
 
 static void packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
@@ -1888,14 +1894,14 @@ void hci_add_event_handler(btstack_packet_callback_registration_t * callback_han
 
 
 /** Register HCI packet handlers */
-void hci_register_acl_packet_handler(void (*handler)(uint8_t packet_type, uint8_t *packet, uint16_t size)){
+void hci_register_acl_packet_handler(btstack_packet_handler_t handler){
     hci_stack->acl_packet_handler = handler;
 }
 
 /**
  * @brief Registers a packet handler for SCO data. Used for HSP and HFP profiles.
  */
-void hci_register_sco_packet_handler(void (*handler)(uint8_t packet_type, uint8_t *packet, uint16_t size)){
+void hci_register_sco_packet_handler(btstack_packet_handler_t handler){
     hci_stack->sco_packet_handler = handler;    
 }
 
@@ -2974,7 +2980,7 @@ static void hci_emit_event(uint8_t * event, uint16_t size, int dump){
 
 static void hci_emit_acl_packet(uint8_t * packet, uint16_t size){
     if (!hci_stack->acl_packet_handler) return;
-    hci_stack->acl_packet_handler(HCI_ACL_DATA_PACKET, packet, size);
+    hci_stack->acl_packet_handler(HCI_ACL_DATA_PACKET, 0, packet, size);
 }
 
 static void hci_notify_if_sco_can_send_now(void){
@@ -2984,7 +2990,7 @@ static void hci_notify_if_sco_can_send_now(void){
         hci_stack->sco_waiting_for_can_send_now = 0;
         uint8_t event[2] = { HCI_EVENT_SCO_CAN_SEND_NOW, 0 };
         hci_dump_packet(HCI_EVENT_PACKET, 1, event, sizeof(event));
-        hci_stack->sco_packet_handler(HCI_EVENT_PACKET, event, sizeof(event));
+        hci_stack->sco_packet_handler(HCI_EVENT_PACKET, 0, event, sizeof(event));
     }
 }
 

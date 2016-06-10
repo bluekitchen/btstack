@@ -178,10 +178,11 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 static uint16_t att_read_callback(hci_con_handle_t con_handle, uint16_t att_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
     if (att_handle == ATT_CHARACTERISTIC_0000FF11_0000_1000_8000_00805F9B34FB_01_VALUE_HANDLE){
         if (buffer){
-            log_info("att_read_callback for Characteristic *FF11*, value %s", counter_string);
-            memcpy(buffer, &counter_string[offset], counter_string_len - offset);
+            memcpy(buffer, &counter_string[offset], buffer_size);
+            return buffer_size;
+        } else {
+            return counter_string_len;
         }
-        return counter_string_len - offset;
     }
     return 0;
 }
@@ -207,6 +208,12 @@ static int att_write_callback(hci_con_handle_t con_handle, uint16_t att_handle, 
     }
 }
 
+static void beat(void){
+    counter++;
+    counter_string_len = sprintf(counter_string, "BTstack counter %04u", counter);
+    puts(counter_string);
+}
+
 /*
  * @section Heartbeat Handler
  * 
@@ -217,9 +224,9 @@ static int att_write_callback(hci_con_handle_t con_handle, uint16_t att_handle, 
  /* LISTING_START(heartbeat): Combined Heartbeat handler */
 static void heartbeat_handler(struct btstack_timer_source *ts){
 
-    counter++;
-    counter_string_len = sprintf(counter_string, "BTstack counter %04u\n", counter);
-    // log_info("%s", counter_string);
+    if (rfcomm_channel_id || le_notification_enabled) {
+        beat();
+    }
 
     if (rfcomm_channel_id){
         rfcomm_request_can_send_now_event(rfcomm_channel_id);
@@ -228,6 +235,7 @@ static void heartbeat_handler(struct btstack_timer_source *ts){
     if (le_notification_enabled) {
         att_server_request_can_send_now_event(att_con_handle);
     }
+
     btstack_run_loop_set_timer(ts, HEARTBEAT_PERIOD_MS);
     btstack_run_loop_add_timer(ts);
 } 
@@ -287,6 +295,9 @@ int btstack_main(void)
     gap_advertisements_set_params(adv_int_min, adv_int_max, adv_type, 0, null_addr, 0x07, 0x00);
     gap_advertisements_set_data(adv_data_len, (uint8_t*) adv_data);
     gap_advertisements_enable(1);
+
+    // beat once
+    beat();
 
     // turn on!
 	hci_power_control(HCI_POWER_ON);

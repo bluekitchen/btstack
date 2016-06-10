@@ -570,7 +570,7 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
 }
 
 
-static void packet_handler(uint8_t * event, uint16_t event_size){
+static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * event, uint16_t event_size){
     switch (event[0]){
         case HCI_EVENT_INQUIRY_RESULT:
         case HCI_EVENT_INQUIRY_RESULT_WITH_RSSI:

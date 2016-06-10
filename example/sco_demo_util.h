@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 BlueKitchen GmbH
+ * Copyright (C) 2016 BlueKitchen GmbH
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -34,47 +34,39 @@
  * contact@bluekitchen-gmbh.com
  *
  */
+ 
+/*
+ * sco_demo_util.h - send/receive test data via SCO, used by hfp_*_demo and hsp_*_demo
+ */
 
-// *****************************************************************************
-//
-// Advertising Data Parser 
-//
-// *****************************************************************************
 
-#ifndef __AD_PARSER_H
-#define __AD_PARSER_H
+#ifndef __SCO_DEMO_UTIL_H
+#define __SCO_DEMO_UTIL_H
 
-#include "btstack_config.h"
+#include "hci.h"
 
 #if defined __cplusplus
 extern "C" {
 #endif
 
-/* API_START */
+/**
+ * @brief Init demo SCO data production/consumtion
+ */
+void sco_demo_init(void);
 
-typedef struct ad_context {
-     const uint8_t * data;
-     uint8_t   offset;
-     uint8_t   length;
-} ad_context_t;
+/**
+ * @brief Send next data on con_handle
+ * @param con_handle
+ */
+void sco_demo_send(hci_con_handle_t con_handle);
 
-// Advertising or Scan Response data iterator
-void ad_iterator_init(ad_context_t *context, uint8_t ad_len, const uint8_t * ad_data);
-int  ad_iterator_has_more(const ad_context_t * context);
-void ad_iterator_next(ad_context_t * context);
-
-// Access functions
-uint8_t         ad_iterator_get_data_type(const ad_context_t * context);
-uint8_t         ad_iterator_get_data_len(const ad_context_t * context);
-const uint8_t * ad_iterator_get_data(const ad_context_t * context);
-
-// convenience function on complete advertisements
-int ad_data_contains_uuid16(uint8_t ad_len, const uint8_t * ad_data, uint16_t uuid);
-int ad_data_contains_uuid128(uint8_t ad_len, const uint8_t * ad_data, const uint8_t * uuid128);
-
-/* API_END */
+/**
+ * @brief Process received data
+ */
+void sco_demo_receive(uint8_t * packet, uint16_t size);
 
 #if defined __cplusplus
 }
 #endif
-#endif // __AD_PARSER_H
+
+#endif

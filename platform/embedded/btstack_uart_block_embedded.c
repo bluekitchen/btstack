@@ -85,8 +85,8 @@ static void btstack_uart_embedded_process(btstack_data_source_t *ds, btstack_dat
                 send_complete = 0;
                 block_sent();
             }
-            if (block_received){
-                block_received = 0;
+            if (receive_complete){
+                receive_complete = 0;
                 block_received();
             }
             break;

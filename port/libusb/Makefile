@@ -28,4 +28,11 @@ CFLAGS  += $(shell pkg-config libusb-1.0 --cflags)
 LDFLAGS += $(shell pkg-config libusb-1.0 --libs)
 endif
 
+# use pkg-config for portaudio
+# CFLAGS  += $(shell pkg-config portaudio-2.0 --cflags) -DHAVE_PORTAUDIO
+# LDFLAGS += $(shell pkg-config portaudio-2.0 --libs)
+# hard coded flags for portaudio in /usr/local/lib
+# CFLAGS  += -I/usr/local/include -DHAVE_PORTAUDIO
+# LDFLAGS += -L/sw/lib -lportaudio -Wl,-framework,CoreAudio -Wl,-framework,AudioToolbox -Wl,-framework,AudioUnit -Wl,-framework,Carbon
+
 all: ${EXAMPLES}

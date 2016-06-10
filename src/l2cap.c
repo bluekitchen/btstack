@@ -82,7 +82,7 @@ static void l2cap_emit_channel_closed(l2cap_channel_t *channel);
 static void l2cap_emit_connection_request(l2cap_channel_t *channel);
 static int  l2cap_channel_ready_for_open(l2cap_channel_t *channel);
 static void l2cap_hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
-static void l2cap_acl_handler(uint8_t packet_type, uint8_t *packet, uint16_t size );
+static void l2cap_acl_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size );
 static void l2cap_notify_channel_can_send(void);
 
 typedef struct l2cap_fixed_channel {
@@ -576,7 +576,7 @@ static void l2cap_run(void){
                     case 3: { // Fixed Channels Supported
                         uint8_t map[8];
                         memset(map, 0, 8);
-                        map[0] = 0x01;  // L2CAP Signaling Channel (0x01) + Connectionless reception (0x02)
+                        map[0] = 0x06;  // L2CAP Signaling Channel (0x02) + Connectionless reception (0x04)
                         l2cap_send_signaling_packet(handle, INFORMATION_RESPONSE, sig_id, infoType, 0, sizeof(map), &map);
                         break;
                     }
@@ -1381,7 +1381,7 @@ static void l2cap_signaling_handler_dispatch( hci_con_handle_t handle, uint8_t *
     }
 }
 
-static void l2cap_acl_handler(uint8_t packet_type, uint8_t *packet, uint16_t size ){
+static void l2cap_acl_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size ){
         
     // Get Channel ID
     uint16_t channel_id = READ_L2CAP_CHANNEL_ID(packet); 
@@ -1487,9 +1487,9 @@ static void l2cap_acl_handler(uint8_t packet_type, uint8_t *packet, uint16_t siz
 
         default: {
             // Find channel for this channel_id and connection handle
-            l2cap_channel_t * channel = l2cap_get_channel_for_local_cid(channel_id);
-            if (channel) {
-                l2cap_dispatch_to_channel(channel, L2CAP_DATA_PACKET, &packet[COMPLETE_L2CAP_HEADER], size-COMPLETE_L2CAP_HEADER);
+            l2cap_channel_t * l2cap_channel = l2cap_get_channel_for_local_cid(channel_id);
+            if (l2cap_channel) {
+                l2cap_dispatch_to_channel(l2cap_channel, L2CAP_DATA_PACKET, &packet[COMPLETE_L2CAP_HEADER], size-COMPLETE_L2CAP_HEADER);
             }
             break;
         }
@@ -1499,7 +1499,7 @@ static void l2cap_acl_handler(uint8_t packet_type, uint8_t *packet, uint16_t siz
 }
 
 // finalize closed channel - l2cap_handle_disconnect_request & DISCONNECTION_RESPONSE
-void l2cap_finialize_channel_close(l2cap_channel_t *channel){
+void l2cap_finialize_channel_close(l2cap_channel_t * channel){
     channel->state = L2CAP_STATE_CLOSED;
     l2cap_emit_channel_closed(channel);
     // discard channel

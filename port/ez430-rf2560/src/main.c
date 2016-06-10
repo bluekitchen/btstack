@@ -114,9 +114,6 @@ int main(void)
     // inform about BTstack state
     hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
-
-    // use eHCILL
-    btstack_chipset_cc256x_enable_ehcill(1);
     
     // ready - enable irq used in h4 task
     __enable_interrupt();   
