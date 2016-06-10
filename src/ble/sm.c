@@ -3198,8 +3198,7 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
 
             // validate confirm value if Cb = f4(Pkb, Pka, Nb, z) 
             // only check for JUST WORK/NC in initiator role AND passkey entry
-            int passkey_entry = sm_passkey_used(setup->sm_stk_generation_method);
-            if (sm_conn->sm_role || passkey_entry) {
+            if (sm_conn->sm_role || sm_passkey_used(setup->sm_stk_generation_method)) {
                  sm_conn->sm_engine_state = SM_SC_W2_CMAC_FOR_CHECK_CONFIRMATION;
             }
 
@@ -3448,14 +3447,17 @@ void sm_init(void){
 }
 
 void sm_use_fixed_ec_keypair(uint8_t * qx, uint8_t * qy, uint8_t * d){
+#ifdef ENABLE_LE_SECURE_CONNECTIONS
     memcpy(ec_qx, qx, 32);
     memcpy(ec_qy, qy, 32);
     memcpy(ec_d, d, 32);
     sm_have_ec_keypair = 1;
     ec_key_generation_state = EC_KEY_GENERATION_DONE;
+#endif
 }
 
 void sm_test_use_fixed_ec_keypair(void){
+#ifdef ENABLE_LE_SECURE_CONNECTIONS
 #ifdef USE_MBEDTLS_FOR_ECDH
     // use test keypair from spec
     mbedtls_mpi x;
@@ -3470,6 +3472,7 @@ void sm_test_use_fixed_ec_keypair(void){
 #endif
     sm_have_ec_keypair = 1;
     ec_key_generation_state = EC_KEY_GENERATION_DONE;
+#endif
 }
 
 static sm_connection_t * sm_get_connection_for_handle(hci_con_handle_t con_handle){
