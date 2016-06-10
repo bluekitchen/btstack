@@ -156,7 +156,9 @@ static uint8_t sm_min_encryption_key_size;
 static uint8_t sm_auth_req = 0;
 static uint8_t sm_io_capabilities = IO_CAPABILITY_NO_INPUT_NO_OUTPUT;
 static uint8_t sm_slave_request_security;
+#ifdef ENABLE_LE_SECURE_CONNECTIONS
 static uint8_t sm_have_ec_keypair;
+#endif
 
 // Security Manager Master Keys, please use sm_set_er(er) and sm_set_ir(ir) with your own 128 bit random values
 static sm_key_t sm_persistent_er;
@@ -2928,6 +2930,7 @@ static inline int sm_calc_actual_encryption_key_size(int other){
 }
 
 
+#ifdef ENABLE_LE_SECURE_CONNECTIONS
 static int sm_just_works_or_numeric_comparison(stk_generation_method_t method){
     switch (method){
         case JUST_WORKS:
@@ -2947,6 +2950,7 @@ static int sm_passkey_used(stk_generation_method_t method){
             return 0;        
     }
 }
+#endif
 
 /**
  * @return ok
