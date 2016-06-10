@@ -831,7 +831,7 @@ respectively:
 
 -   *sm_set_encryption_key_size_range*
 
--   *sm_set_authentication_requirements* : add SM_AUTHREQ_SECURE_CONNECTION to enable LE Secure Connections
+-   *sm_set_authentication_requirements* : add SM_AUTHREQ_SECURE_CONNECTION flag to enable LE Secure Connections
 
 -   *sm_set_io_capabilities*
 
