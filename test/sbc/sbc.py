@@ -260,7 +260,7 @@ class SBCFrame:
 
     def __str__(self):
         res =  "SBCFrameHeader:"
-        res += "\n - syncword %d" % self.syncword
+        res += "\n - syncword %x" % self.syncword
         res += "\n - sampling frequency %d Hz" % sampling_frequency_to_str(self.sampling_frequency)
         
         res += "\n - nr channels %d" % self.nr_channels
@@ -271,7 +271,7 @@ class SBCFrame:
         res += "\n - allocation method %s" % allocation_method_to_str(self.allocation_method)
 
         res += "\n - bitpool %d" % self.bitpool
-        res += "\n - crc check %d" % self.crc_check
+        res += "\n - crc check %x" % self.crc_check
         return res
 
 
