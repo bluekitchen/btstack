@@ -37,10 +37,13 @@
  
 
 // *****************************************************************************
-/* EXAMPLE_START(gap_le_connect_to_1111): GAP LE Advertisements Dumper
+/* EXAMPLE_START(sm_pairing_central): LE Peripheral - Test pairing combinations
  *
- * @text This example shows how to scan and parse advertisements.
- * 
+ * @text Depending on the Authentication requiremens and IO Capabilities,
+ * the pairing process uses different short and long term key generation method.
+ * This example helps explore the different options incl. LE Secure Connections.
+ * It scans for advertisements and connects to the first device that lists a 
+ * random service.
  */
  // *****************************************************************************
 
@@ -52,6 +55,12 @@
 #include <string.h>
 
 #include "btstack.h"
+
+
+// We're looking for a remote device that lists this service in the advertisement
+// LightBlue assigns 0x1111 as the UUID for a Blank service.
+#define REMOTE_SERVICE 0x1111
+
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 static btstack_packet_callback_registration_t sm_event_callback_registration;
@@ -66,7 +75,7 @@ static btstack_packet_callback_registration_t sm_event_callback_registration;
 /* LISTING_START(GAPLEAdvSetup): Setting up GAP LE client for receiving advertisements */
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
-static void gap_le_connect_to_1111_setup(void){
+static void sm_pairing_central_setup(void){
     hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
 
@@ -79,20 +88,33 @@ static void gap_le_connect_to_1111_setup(void){
     sm_init();
     sm_event_callback_registration.callback = &packet_handler;
     sm_add_event_handler(&sm_event_callback_registration);
-    // Numeric Comparison
-    // sm_set_io_capabilities(IO_CAPABILITY_DISPLAY_YES_NO);
-    // Passkey entry initiator enter, responder displays
-    sm_set_io_capabilities(IO_CAPABILITY_DISPLAY_ONLY);
-    sm_set_authentication_requirements(SM_AUTHREQ_MITM_PROTECTION);
+
+    /**
+     * Choose ONE of the following configurations
+     */
+
+    // LE Legacy Pairing, Just Works
+    sm_set_io_capabilities(IO_CAPABILITY_DISPLAY_YES_NO);
+    sm_set_authentication_requirements(0);
+
+    // LE Legacy Pairing, Passkey entry initiator enter, responder (us) displays
+    // sm_set_io_capabilities(IO_CAPABILITY_DISPLAY_ONLY);
+    // sm_set_authentication_requirements(SM_AUTHREQ_MITM_PROTECTION);
+
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
-    sm_set_authentication_requirements(SM_AUTHREQ_SECURE_CONNECTION|SM_AUTHREQ_MITM_PROTECTION);
-    // Just Works (no MITM requested)
+    // LE Secure Connetions, Just Works
+    // sm_set_io_capabilities(IO_CAPABILITY_DISPLAY_YES_NO);
     // sm_set_authentication_requirements(SM_AUTHREQ_SECURE_CONNECTION);
+
+    // LE Secure Connections, Numeric Comparison
+    // sm_set_io_capabilities(IO_CAPABILITY_DISPLAY_YES_NO);
+    // sm_set_authentication_requirements(SM_AUTHREQ_SECURE_CONNECTION|SM_AUTHREQ_MITM_PROTECTION);
+
+    // LE Legacy Pairing, Passkey entry initiator enter, responder (us) displays
+    // sm_set_io_capabilities(IO_CAPABILITY_DISPLAY_ONLY);
+    // sm_set_authentication_requirements(SM_AUTHREQ_SECURE_CONNECTION|SM_AUTHREQ_MITM_PROTECTION);
 #endif
 }
-
-/* LISTING_END */
-
 
 /* LISTING_END */
 
@@ -128,8 +150,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             printf("Advertisement event: addr-type %u, addr %s, data[%u] ",
                address_type, bd_addr_to_str(address), length);
             printf_hexdump(data, length);
-            if (!ad_data_contains_uuid16(length, (uint8_t *) data, 0x1111)) break;
-            printf("Found remtoe with UUID 1111, connecting...\n");
+            if (!ad_data_contains_uuid16(length, (uint8_t *) data, REMOTE_SERVICE)) break;
+            printf("Found remote with UUID %04x, connecting...\n", REMOTE_SERVICE);
             gap_stop_scan();
             gap_connect(address,address_type);
             break;
@@ -162,7 +184,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 int btstack_main(void);
 int btstack_main(void)
 {
-    gap_le_connect_to_1111_setup();
+    sm_pairing_central_setup();
 
     // turn on!
     hci_power_control(HCI_POWER_ON);
