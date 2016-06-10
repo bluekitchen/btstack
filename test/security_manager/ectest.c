@@ -96,6 +96,7 @@ int test_set1(void){
     mbedtls_ecp_point_init( &Pb );
     mbedtls_mpi_init(&da);
     mbedtls_mpi_init(&db);
+    mbedtls_mpi_init(&dh_key);
 
     int res = mbedtls_ecp_group_load(&grp, MBEDTLS_ECP_DP_SECP256R1);
     if (res) {
