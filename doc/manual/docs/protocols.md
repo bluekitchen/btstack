@@ -767,14 +767,13 @@ To fix this, the Bluetooth Core V4.2 specification introduced the new
 BTstack supports both pairing methods. To enable the more secure LE Secure Connections method,
 *ENABLE_LE_SECURE_CONNECTIONS* needs to be defined in *btstack_config.h*.
 
-LE Secure Connections are based on Elliptic Curve Diffie-Hellman (ECDH) keypairs.
+LE Secure Connections are based on Elliptic Curve Diffie-Hellman (ECDH) algorithm for the key exchange.
 On start, a new public/private key pair is generated. During pairing, the
 Long Term Key (LTK) is generated based on the local keypair and the remote public key.
 To facilitate the creation of such a keypairs and the calculation of the LTK,
 the Bluetooth Core V4.2 specification introduced appropriate commands for the Bluetooth controller.
 
-As an alternative for controller that don't provide these primitives, BTstack implements 
-the crytographic functions in software with the help of the Apache 2.0 Licensed [mbed TLS library](https://tls.mbed.org).
+As an alternative for controllers that don't provide these primitives, BTstack provides the relevant crytographic functions in software via the Apache 2.0 licensed [mbed TLS library](https://tls.mbed.org).
 
 There are two details to be aware about using LE Secure Connections:
 
