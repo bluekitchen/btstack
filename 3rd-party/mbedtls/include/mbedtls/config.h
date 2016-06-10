@@ -44,9 +44,17 @@
 	#define MBEDTLS_PLATFORM_STD_FREE   sm_mbedtls_allocator_free
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stddef.h>
 void * sm_mbedtls_allocator_calloc(size_t count, size_t size);
 void sm_mbedtls_allocator_free(void * data);
+
+#ifdef __cplusplus
+}
+#endif
 
 // BTstack modifications end
 
