@@ -47,23 +47,28 @@
 #define SCO_DEMO_MODE_ASCII		1
 #define SCO_DEMO_MODE_COUNTER	2
 
+
 // SCO demo configuration
 #define SCO_DEMO_MODE SCO_DEMO_MODE_SINE
 #define SCO_REPORT_PERIOD 100
 
-// portaudio config
-#define NUM_CHANNELS 1
-#define SAMPLE_RATE 8000
-#define FRAMES_PER_BUFFER 24
-#define PA_SAMPLE_TYPE paInt8
+#ifdef HAVE_POSIX_FILE_IO
+#define SCO_WAV_FILENAME "sco_input.wav"
+#define SCO_WAV_DURATION_IN_SECONDS 30
+#endif
+
 
 #if defined(HAVE_PORTAUDIO) && (SCO_DEMO_MODE == SCO_DEMO_MODE_SINE)
 #define USE_PORTAUDIO
 #endif
 
-
 #ifdef USE_PORTAUDIO
 #include <portaudio.h>
+// portaudio config
+#define NUM_CHANNELS 1
+#define SAMPLE_RATE 8000
+#define FRAMES_PER_BUFFER 24
+#define PA_SAMPLE_TYPE paInt8
 // portaudio globals
 static  PaStream * stream;
 #endif
@@ -81,6 +86,68 @@ static const uint8_t sine[] = {
 
 static int phase;
 
+#ifdef SCO_WAV_FILENAME
+
+static FILE * wav_file;
+static int num_samples_to_write;
+
+
+static void little_endian_fstore_16(FILE * file, uint16_t value){
+    uint8_t buf[2];
+    little_endian_store_32(buf, 0, value);
+    fwrite(&buf, 1, 2, file);
+}
+
+static void little_endian_fstore_32(FILE * file, uint32_t value){
+    uint8_t buf[4];
+    little_endian_store_32(buf, 0, value);
+    fwrite(&buf, 1, 4, file);
+}
+
+static FILE * wav_init(const char * filename){
+    printf("SCO Demo: creating wav file %s\n", filename);
+    return fopen(filename, "wb");
+}
+
+static void write_wav_header(FILE * file, int sample_rate, int num_channels, int num_samples, int bytes_per_sample){
+    printf("SCO Demo: writing wav header: sample rate %u, num channels %u, duration %u s, bytes per sample %u\n",
+        sample_rate, num_channels, num_samples / sample_rate / num_channels, bytes_per_sample);
+    
+    /* write RIFF header */
+    fwrite("RIFF", 1, 4, file);
+    // num_samples = blocks * subbands
+    uint32_t data_bytes = (uint32_t) (bytes_per_sample * num_samples * num_channels);
+    little_endian_fstore_32(file, data_bytes + 36); 
+    fwrite("WAVE", 1, 4, file);
+
+    int byte_rate = sample_rate * num_channels * bytes_per_sample;
+    int bits_per_sample = 8 * bytes_per_sample;
+    int block_align = num_channels * bits_per_sample;
+    int fmt_length = 16;
+    int fmt_format_tag = 1; // PCM
+
+    /* write fmt chunk */
+    fwrite("fmt ", 1, 4, file);
+    little_endian_fstore_32(file, fmt_length);
+    little_endian_fstore_16(file, fmt_format_tag);
+    little_endian_fstore_16(file, num_channels);
+    little_endian_fstore_32(file, sample_rate);
+    little_endian_fstore_32(file, byte_rate);
+    little_endian_fstore_16(file, block_align);   
+    little_endian_fstore_16(file, bits_per_sample);
+    
+    /* write data chunk */
+    fwrite("data", 1, 4, file); 
+    little_endian_fstore_32(file, data_bytes);
+}
+
+static void write_wav_data_uint8(FILE * file, unsigned long num_samples, uint8_t * data){
+    fwrite(data, num_samples, 1, file);
+}
+
+#endif
+
+
 void sco_demo_init(void){
 
 	// status
@@ -96,6 +163,16 @@ void sco_demo_init(void){
 #endif
 #if SCO_DEMO_MODE == SCO_DEMO_MODE_COUNTER
 	printf("SCO Demo: Sending counter value, hexdump received data.\n");
+#endif
+
+#ifdef SCO_WAV_FILENAME
+    wav_file = wav_init(SCO_WAV_FILENAME);
+    const int sample_rate = 8000;
+    const int num_samples = sample_rate * SCO_WAV_DURATION_IN_SECONDS;
+    const int num_channels = 1;
+    const int bytes_per_sample = 1;
+    write_wav_header(wav_file, sample_rate, num_channels, num_samples, bytes_per_sample);
+    num_samples_to_write = num_samples;
 #endif
 
 #ifdef USE_PORTAUDIO
@@ -184,11 +261,33 @@ void sco_demo_send(hci_con_handle_t sco_handle){
  */
 void sco_demo_receive(uint8_t * packet, uint16_t size){
 
-	if (packet[1] & 0xf0){
-	    printf("SCO CRC Error: %x - data: ", packet[1] >> 4);
-	    printf_hexdump(&packet[3], size-3);
-	    return;
-	}
+
+    int dump_data = 1;
+
+#ifdef SCO_WAV_FILENAME
+    if (num_samples_to_write){
+        const int num_samples = size - 3;
+        const int samples_to_write = btstack_min(num_samples, num_samples_to_write);
+        // convert 8 bit signed to 8 bit unsigned
+        int i;
+        for (i=0;i<samples_to_write;i++){
+            packet[3+i] += 128;            
+        }
+        write_wav_data_uint8(wav_file, samples_to_write, &packet[3]);
+        num_samples_to_write -= samples_to_write;
+        if (num_samples_to_write == 0){
+            printf("SCO Demo: closing wav file\n");
+            fclose(wav_file);
+        }
+        dump_data = 0;
+    }
+#endif
+
+    if (packet[1] & 0xf0){
+        printf("SCO CRC Error: %x - data: ", packet[1] >> 4);
+        printf_hexdump(&packet[3], size-3);
+        return;
+    }
 
 #if SCO_DEMO_MODE == SCO_DEMO_MODE_SINE
 #ifdef USE_PORTAUDIO
@@ -198,20 +297,23 @@ void sco_demo_receive(uint8_t * packet, uint16_t size){
     if (end - start > 5){
         printf("Portaudio: write stream took %u ms\n", end - start);
     }
-#else
-    printf_hexdump(&packet[3], size-3);
+    dump_data = 0;
 #endif
-#else
-    printf("data: ");
+#endif
+
+    if (dump_data){
+        printf("data: ");
 #if SCO_DEMO_MODE == SCO_DEMO_MODE_ASCII
-    int i;
-    for (i=3;i<size;i++){
-        printf("%c", packet[i]);
+        int i;
+        for (i=3;i<size;i++){
+            printf("%c", packet[i]);
+        }
+        printf("\n");
+        dump_data = 0;
+#else
+        printf_hexdump(&packet[3], size-3);
+#endif
     }
-    printf("\n");
-#endif
-    printf_hexdump(&packet[3], size-3);
-#endif
 
     static int count = 0;
     count++;
