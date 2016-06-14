@@ -450,10 +450,90 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
 
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * event, uint16_t event_size){
 
-    if (event[0] == HCI_EVENT_SCO_CAN_SEND_NOW){
-        sco_demo_send(sco_handle);
-        return;
+    switch (packet_type){
+
+        case HCI_SCO_DATA_PACKET:
+            sco_demo_receive(event, event_size);
+            break;
+
+        case HCI_EVENT_PACKET:
+            switch (event[0]){
+
+                case HCI_EVENT_SCO_CAN_SEND_NOW:
+                    sco_demo_send(sco_handle);
+                    break;
+
+                case HCI_EVENT_HFP_META:
+                    switch (event[2]) {   
+                        case HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED:
+                            handle = hfp_subevent_service_level_connection_established_get_con_handle(event);
+                            printf("Service level connection established.\n\n");
+                            break;
+                        case HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED:
+                            printf("Service level connection released.\n\n");
+                            break;
+                        case HFP_SUBEVENT_AUDIO_CONNECTION_ESTABLISHED:
+                            if (hfp_subevent_audio_connection_established_get_status(event)){
+                                sco_handle = 0;
+                                printf("Audio connection establishment failed with status %u\n", hfp_subevent_audio_connection_established_get_status(event));
+                            } else {
+                                sco_handle = hfp_subevent_audio_connection_established_get_handle(event);
+                                printf("Audio connection established with SCO handle 0x%04x.\n", sco_handle);
+                                hci_request_sco_can_send_now_event();
+                            }
+                            break;
+                        case HFP_SUBEVENT_AUDIO_CONNECTION_RELEASED:
+                            sco_handle = 0;
+                            printf("Audio connection released\n");
+                            break;
+                        case HFP_SUBEVENT_COMPLETE:
+                            switch (cmd){
+                                case 'd':
+                                    printf("HFP AG registration status update enabled.\n");
+                                    break;
+                                case 'e':
+                                    printf("HFP AG registration status update for individual indicators set.\n");
+                                default:
+                                    break;
+                            }
+                            break;
+                        case HFP_SUBEVENT_AG_INDICATOR_STATUS_CHANGED:
+                            printf("AG_INDICATOR_STATUS_CHANGED, AG indicator '%s' (index: %d) to: %d\n", (const char*) &event[5], event[3], event[4]);
+                            break;
+                        case HFP_SUBEVENT_NETWORK_OPERATOR_CHANGED:
+                            printf("NETWORK_OPERATOR_CHANGED, operator mode: %d, format: %d, name: %s\n", event[3], event[4], (char *) &event[5]);
+                            break;
+                        case HFP_SUBEVENT_EXTENDED_AUDIO_GATEWAY_ERROR:
+                            if (event[4])
+                            printf("EXTENDED_AUDIO_GATEWAY_ERROR_REPORT, status : %d\n", event[3]);
+                            break;
+                        case HFP_SUBEVENT_RING:
+                            printf("** Ring **\n");
+                            break;
+                        case HFP_SUBEVENT_NUMBER_FOR_VOICE_TAG:
+                            printf("Phone number for voice tag: %s\n", (const char *) &event[3]);
+                            break;
+                        case HFP_SUBEVENT_SPEAKER_VOLUME:
+                            printf("Speaker volume: %u\n", event[3]);
+                            break;
+                        case HFP_SUBEVENT_MICROPHONE_VOLUME:
+                            printf("Microphone volume: %u\n", event[3]);
+                            break;
+                        default:
+                            printf("event not handled %u\n", event[2]);
+                            break;
+                    }
+                    break;
+
+                default:
+                    break;
+            }
+            break;
+
+        default:
+            break;
     }
+
 
     if (event[0] != HCI_EVENT_HFP_META) return;
 
