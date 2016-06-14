@@ -49,7 +49,7 @@
 
 
 // SCO demo configuration
-#define SCO_DEMO_MODE SCO_DEMO_MODE_SINE
+#define SCO_DEMO_MODE SCO_DEMO_MODE_ASCII
 #define SCO_REPORT_PERIOD 100
 
 #ifdef HAVE_POSIX_FILE_IO
@@ -241,8 +241,9 @@ void sco_demo_send(hci_con_handle_t sco_handle){
     memset(&sco_packet[3], phase++, frames_per_packet);
     if (phase > 'z') phase = 'a';
 #else
-    for (i=0;i<frames_per_packet;i++){
-        sco_packet[3+i] = phase++;
+    int j;
+    for (j=0;j<frames_per_packet;j++){
+        sco_packet[3+j] = phase++;
     }
 #endif
 #endif
