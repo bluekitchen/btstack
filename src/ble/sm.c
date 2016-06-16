@@ -254,6 +254,7 @@ typedef struct sm_setup_context {
 
     // user response, (Phase 1 and/or 2)
     uint8_t   sm_user_response;
+    uint8_t   sm_keypress_notification;
 
     // defines which keys will be send after connection is encrypted - calculated during Phase 1, used Phase 3
     int       sm_key_distribution_send_set;
@@ -1104,6 +1105,7 @@ static void sm_init_setup(sm_connection_t * sm_conn){
 
     // fill in sm setup
     setup->sm_state_vars = 0;
+    setup->sm_keypress_notification = 0xff;
     sm_reset_tk();
     setup->sm_peer_addr_type = sm_conn->sm_peer_addr_type;
     memcpy(setup->sm_peer_address, sm_conn->sm_peer_address, 6);
@@ -1945,6 +1947,15 @@ static void sm_run(void){
 
         sm_connection_t * connection = sm_get_connection_for_handle(sm_active_connection);
         if (!connection) return;
+
+        // send keypress notifications
+        if (setup->sm_keypress_notification != 0xff){
+            uint8_t buffer[2];
+            buffer[0] = SM_CODE_KEYPRESS_NOTIFICATION;
+            buffer[1] = setup->sm_keypress_notification;
+            setup->sm_keypress_notification = 0xff;
+            l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
+        }
 
         sm_key_t plaintext;
         int key_distribution_flags;
@@ -2994,6 +3005,16 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
 
     int err;
 
+    if (packet[0] == SM_CODE_KEYPRESS_NOTIFICATION){
+        uint8_t buffer[5];
+        buffer[0] = SM_EVENT_KEYPRESS_NOTIFICATION;
+        buffer[1] = 3;
+        little_endian_store_16(buffer, 2, con_handle);
+        buffer[4] = packet[1];
+        sm_dispatch_event(HCI_EVENT_PACKET, 0, buffer, sizeof(buffer));
+        return;
+    }
+
     switch (sm_conn->sm_engine_state){
         
         // a sm timeout requries a new physical connection
@@ -3649,6 +3670,14 @@ void sm_passkey_input(hci_con_handle_t con_handle, uint32_t passkey){
         sm_sc_start_calculating_local_confirm(sm_conn);
     }
 #endif
+    sm_run();
+}
+
+void sm_keypress_notification(hci_con_handle_t con_handle, uint8_t action){
+    sm_connection_t * sm_conn = sm_get_connection_for_handle(con_handle);
+    if (!sm_conn) return;     // wrong connection
+    if (action > SM_KEYPRESS_PASSKEY_ENTRY_COMPLETED) return;
+    setup->sm_keypress_notification = action;
     sm_run();
 }
 

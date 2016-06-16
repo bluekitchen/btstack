@@ -793,6 +793,14 @@ typedef uint8_t sm_key_t[16];
   */
 #define SM_EVENT_AUTHORIZATION_RESULT                            0xDC
 
+ /**
+  * @format H1
+  * @param handle
+  * @param action see SM_KEYPRESS_*
+  */
+#define SM_EVENT_KEYPRESS_NOTIFICATION                           0xDD
+
+
 // GAP
 
 /**

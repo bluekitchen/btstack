@@ -190,6 +190,13 @@ void sm_numeric_comparison_confirm(hci_con_handle_t con_handle);
 void sm_passkey_input(hci_con_handle_t con_handle, uint32_t passkey);
 
 /**
+ * @brief Send keypress notification for keyboard only devices
+ * @param con_handle
+ * @param action see SM_KEYPRESS_* in bluetooth.h
+ */
+void sm_keypress_notification(hci_con_handle_t con_handle, uint8_t action);
+
+/**
  *
  * @brief Get encryption key size.
  * @param con_handle

@@ -2417,6 +2417,27 @@ static inline uint8_t sm_event_authorization_result_get_authorization_result(con
 }
 #endif
 
+#ifdef ENABLE_BLE
+/**
+ * @brief Get field handle from event SM_EVENT_KEYPRESS_NOTIFICATION
+ * @param event packet
+ * @return handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t sm_event_keypress_notification_get_handle(const uint8_t * event){
+    return little_endian_read_16(event, 2);
+}
+/**
+ * @brief Get field action from event SM_EVENT_KEYPRESS_NOTIFICATION
+ * @param event packet
+ * @return action
+ * @note: btstack_type 1
+ */
+static inline uint8_t sm_event_keypress_notification_get_action(const uint8_t * event){
+    return event[4];
+}
+#endif
+
 /**
  * @brief Get field handle from event GAP_EVENT_SECURITY_LEVEL
  * @param event packet
