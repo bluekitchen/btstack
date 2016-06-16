@@ -139,13 +139,6 @@ static void hfp_hf_emit_enhanced_call_status(btstack_packet_handler_t callback, 
     (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-static int hfp_hf_supports_codec(uint8_t codec){
-    int i;
-    for (i = 0; i < hfp_codecs_nr; i++){
-        if (hfp_codecs[i] == codec) return 1;
-    }
-    return HFP_CODEC_CVSD;
-}
 static int has_codec_negotiation_feature(hfp_connection_t * hfp_connection){
     int hf = get_bit(hfp_supported_features, HFP_HFSF_CODEC_NEGOTIATION);
     int ag = get_bit(hfp_connection->remote_supported_features, HFP_AGSF_CODEC_NEGOTIATION);
@@ -523,7 +516,7 @@ static int codecs_exchange_state_machine(hfp_connection_t * hfp_connection){
             break;
 
          case HFP_CMD_AG_SUGGESTED_CODEC:
-            if (hfp_hf_supports_codec(hfp_connection->suggested_codec)){
+            if (hfp_supports_codec(hfp_connection->suggested_codec, hfp_codecs_nr, (uint16_t *)hfp_codecs)){
                 hfp_connection->codec_confirmed = hfp_connection->suggested_codec;
                 hfp_connection->ok_pending = 1;
                 hfp_connection->codecs_state = HFP_CODECS_HF_CONFIRMED_CODEC;

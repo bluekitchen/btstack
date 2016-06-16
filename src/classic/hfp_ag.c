@@ -518,19 +518,13 @@ static int hfp_ag_set_response_and_hold(uint16_t cid, int state){
     return send_str_over_rfcomm(cid, buffer);
 }
 
-
 static uint8_t hfp_ag_suggest_codec(hfp_connection_t *hfp_connection){
-    int i,j;
-    uint8_t codec = HFP_CODEC_CVSD;
-    for (i = 0; i < hfp_codecs_nr; i++){
-        for (j = 0; j < hfp_connection->remote_codecs_nr; j++){
-            if (hfp_connection->remote_codecs[j] == hfp_codecs[i]){
-                codec = hfp_connection->remote_codecs[j];
-                continue;
-            }
+    if (hfp_supports_codec(HFP_CODEC_MSBC, hfp_codecs_nr, (uint16_t *)hfp_codecs)){
+        if (hfp_supports_codec(HFP_CODEC_MSBC, hfp_connection->remote_codecs_nr, (uint16_t *)(hfp_connection->remote_codecs))){
+            return HFP_CODEC_MSBC;
         }
     }
-    return codec;
+    return HFP_CODEC_CVSD;
 }
 
 static int codecs_exchange_state_machine(hfp_connection_t * hfp_connection){

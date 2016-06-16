@@ -644,6 +644,7 @@ void hfp_reset_context_flags(hfp_connection_t * connection);
 void hfp_release_audio_connection(hfp_connection_t * connection);
 
 void hfp_setup_synchronous_connection(hfp_connection_t * connection);
+int hfp_supports_codec(uint8_t codec, int codecs_nr, uint16_t * codecs);
 
 const char * hfp_hf_feature(int index);
 const char * hfp_ag_feature(int index);

@@ -129,6 +129,14 @@ int send_str_over_rfcomm(uint16_t cid, char * command){
     return 1;
 }
 
+int hfp_supports_codec(uint8_t codec, int codecs_nr, uint16_t * codecs){
+    int i;
+    for (i = 0; i < codecs_nr; i++){
+        if (codecs[i] == codec) return 1;
+    }
+    return 0;
+}
+
 #if 0
 void hfp_set_codec(hfp_connection_t * hfp_connection, uint8_t *packet, uint16_t size){
     // parse available codecs
