@@ -63,4 +63,4 @@ pytest:
 	./sbc_encoder_test.py data/fanfare-stereo.wav 16 8 64 2 data/fanfare-8sb-stereo.sbc
 
 clean:
-	rm -f *.pyc *.wav *.sbc data/*-decoded.wav data/*-encoded.sbc *.o $(SBC_TESTS) *.dSYM
+	rm -f *.pyc *.wav *.sbc data/*-decoded.wav data/*-encoded.sbc *.o $(SBC_TESTS) *.dSYM *_test
