@@ -76,7 +76,13 @@ PRIVATE OI_STATUS FindSyncword(OI_CODEC_SBC_DECODER_CONTEXT *context,
         return OI_CODEC_SBC_NO_SYNCWORD;
     }
 #else  // SBC_ENHANCED
-    while (*frameBytes && (**frameData != OI_SBC_SYNCWORD)) {
+    /* BK4BTSTACK_CHANGE START */
+    OI_UINT8 syncword = OI_SBC_SYNCWORD;
+    if (context->common.mSBCEnabled){
+        syncword = OI_mSBC_SYNCWORD;
+    }
+    /* BK4BTSTACK_CHANGE END */
+    while (*frameBytes && (**frameData != syncword)) {
         (*frameBytes)--;
         (*frameData)++;
     }
@@ -223,6 +229,7 @@ PRIVATE OI_STATUS internal_DecodeRaw(OI_CODEC_SBC_DECODER_CONTEXT *context,
     return status;
 }
 
+
 OI_STATUS OI_CODEC_SBC_DecoderReset(OI_CODEC_SBC_DECODER_CONTEXT *context,
                                     OI_UINT32 *decoderData,
                                     OI_UINT32 decoderDataBytes,
@@ -232,6 +239,17 @@ OI_STATUS OI_CODEC_SBC_DecoderReset(OI_CODEC_SBC_DECODER_CONTEXT *context,
 {
     return internal_DecoderReset(context, decoderData, decoderDataBytes, maxChannels, pcmStride, enhanced);
 }
+
+/* BK4BTSTACK_CHANGE START */
+OI_STATUS OI_CODEC_mSBC_DecoderReset(OI_CODEC_SBC_DECODER_CONTEXT *context,
+                                    OI_UINT32 *decoderData,
+                                    OI_UINT32 decoderDataBytes)
+{
+    OI_STATUS status = OI_CODEC_SBC_DecoderReset(context, decoderData, decoderDataBytes, 1, 1, FALSE);
+    context->common.mSBCEnabled = TRUE;
+    return status;
+}
+/* BK4BTSTACK_CHANGE END */
 
 OI_STATUS OI_CODEC_SBC_DecodeFrame(OI_CODEC_SBC_DECODER_CONTEXT *context,
                                    const OI_BYTE **frameData,

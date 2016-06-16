@@ -371,6 +371,8 @@ void SBC_Encoder_Init(SBC_ENC_PARAMS *pstrEncParams)
     HeaderParams = ((pstrEncParams->s16SamplingFreq & 3)<< 6);
 
     /* number of blocks*/
+    UINT8 num = (((pstrEncParams->s16NumOfBlocks -4) & 12) << 2);
+    printf("number of blocks %d, %d\n", num, pstrEncParams->s16NumOfBlocks);
     HeaderParams |= (((pstrEncParams->s16NumOfBlocks -4) & 12) << 2);
 
     /* channel mode: mono, dual...*/

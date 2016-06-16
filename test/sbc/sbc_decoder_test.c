@@ -104,6 +104,7 @@ void little_endian_fstore_32(FILE *wav_file, uint32_t value){
     fwrite(&buf, 1, 4, wav_file);
 }
 
+
 static void write_wav_header(FILE * wav_file, int num_samples, int num_channels, int sample_rate, int frame_count){
     unsigned int bytes_per_sample = 2;
     
@@ -170,14 +171,13 @@ int main (int argc, const char * argv[]){
     const OI_BYTE *frameData = data;
     
     OI_UINT32 pcmBytes = sizeof(pcmData);
-    
-    OI_STATUS status = OI_CODEC_SBC_DecoderReset(&context, decoderData, sizeof(decoderData), 1, 1, FALSE);
+    // OI_STATUS status = OI_CODEC_SBC_DecoderReset(&context, decoderData, sizeof(decoderData), 1, 1, FALSE);
 
+    OI_STATUS status = OI_CODEC_mSBC_DecoderReset(&context, decoderData, sizeof(decoderData));
     if (status != 0){
         printf("Reset decoder error %d\n", status);
         return -1;
     }
-
     int num_samples = 0;
     int num_channels = 0;
     int sample_rate = 0;

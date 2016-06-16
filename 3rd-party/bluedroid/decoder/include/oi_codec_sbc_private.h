@@ -66,6 +66,12 @@ Function prototypes and macro definitions used internally by the codec.
 #include "oi_assert.h"
 #include "oi_codec_sbc.h"
 
+/* BK4BTSTACK_CHANGE START */
+#ifndef OI_mSBC_SYNCWORD
+#define OI_mSBC_SYNCWORD 0xad
+#endif
+/* BK4BTSTACK_CHANGE END */
+
 #ifndef OI_SBC_SYNCWORD
 #define OI_SBC_SYNCWORD 0x9c
 #endif

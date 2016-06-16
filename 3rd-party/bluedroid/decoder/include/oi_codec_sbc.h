@@ -170,6 +170,9 @@ typedef struct {
     OI_BYTE formatByte;
     OI_UINT8 pcmStride;
     OI_UINT8 maxChannels;
+    /* BK4BTSTACK_CHANGE START */
+    OI_UINT8 mSBCEnabled; // default 0
+    /* BK4BTSTACK_CHANGE END */
 } OI_CODEC_SBC_COMMON_CONTEXT;
 
 
@@ -237,6 +240,12 @@ OI_STATUS OI_CODEC_SBC_DecoderReset(OI_CODEC_SBC_DECODER_CONTEXT *context,
                                     OI_UINT8 pcmStride,
                                     OI_BOOL enhanced);
 
+/* BK4BTSTACK_CHANGE START */
+OI_STATUS OI_CODEC_mSBC_DecoderReset(OI_CODEC_SBC_DECODER_CONTEXT *context,
+                                    OI_UINT32 *decoderData,
+                                    OI_UINT32 decoderDataBytes);
+/* BK4BTSTACK_CHANGE END */
+
 /**
  * This function restricts the kind of SBC frames that the Decoder will
  * process.  Its use is optional.  If used, it must be called after
@@ -294,6 +303,7 @@ OI_STATUS OI_CODEC_SBC_DecoderConfigureRaw(OI_CODEC_SBC_DECODER_CONTEXT *context
                                            OI_UINT8 blocks,
                                            OI_UINT8 alloc,
                                            OI_UINT8 maxBitpool);
+
 
 /**
  * Decode one SBC frame. The frame has no header bytes. The context must have been previously

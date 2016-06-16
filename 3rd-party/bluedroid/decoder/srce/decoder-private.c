@@ -90,9 +90,14 @@ INLINE void OI_SBC_ReadHeader(OI_CODEC_SBC_COMMON_CONTEXT *common, const OI_BYTE
     OI_CODEC_SBC_FRAME_INFO *frame = &common->frameInfo;
     OI_UINT8 d1;
 
-
-    OI_ASSERT(data[0] == OI_SBC_SYNCWORD || data[0] == OI_SBC_ENHANCED_SYNCWORD);
-
+    /* BK4BTSTACK_CHANGE START */
+    if (common->mSBCEnabled){
+        OI_ASSERT(data[0] == OI_mSBC_SYNCWORD);
+    } else {
+        OI_ASSERT(data[0] == OI_SBC_SYNCWORD || data[0] == OI_SBC_ENHANCED_SYNCWORD);
+    }
+    /* BK4BTSTACK_CHANGE END */
+    
     /* Avoid filling out all these strucutures if we already remember the values
      * from last time. Just in case we get a stream corresponding to data[1] ==
      * 0, DecoderReset is responsible for ensuring the lookup table entries have
@@ -105,7 +110,14 @@ INLINE void OI_SBC_ReadHeader(OI_CODEC_SBC_COMMON_CONTEXT *common, const OI_BYTE
         frame->frequency = freq_values[frame->freqIndex];
 
         frame->blocks = (d1 & (BIT5 | BIT4)) >> 4;
-        frame->nrof_blocks = block_values[frame->blocks];
+        
+        /* BK4BTSTACK_CHANGE START */
+        if (common->mSBCEnabled){
+            frame->nrof_blocks = 15;
+        } else {
+            frame->nrof_blocks = block_values[frame->blocks];
+        }
+        /* BK4BTSTACK_CHANGE END */
 
         frame->mode = (d1 & (BIT3 | BIT2)) >> 2;
         frame->nrof_channels = channel_values[frame->mode];

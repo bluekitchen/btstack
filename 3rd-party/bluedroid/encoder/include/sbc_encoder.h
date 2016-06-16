@@ -157,7 +157,7 @@ typedef struct SBC_ENC_PARAMS_TAG
     SINT16 s16ChannelMode;                          /* mono, dual, streo or joint streo*/
     SINT16 s16NumOfSubBands;                        /* 4 or 8 */
     SINT16 s16NumOfChannels;
-    SINT16 s16NumOfBlocks;                          /* 4, 8, 12 or 16*/
+    SINT16 s16NumOfBlocks;                          /* SBC: 4, 8, 12 or 16; mSBC: 15*/
     SINT16 s16AllocationMethod;                     /* loudness or SNR*/
     SINT16 s16BitPool;                              /* 16*numOfSb for mono & dual;
                                                        32*numOfSb for stereo & joint stereo */
@@ -187,7 +187,9 @@ typedef struct SBC_ENC_PARAMS_TAG
     UINT8  *pu8NextPacket;
     UINT16 FrameHeader;
     UINT16 u16PacketLength;
-
+    /* BK4BTSTACK_CHANGE START */
+    UINT8  mSBCEnabled;
+    /* BK4BTSTACK_CHANGE END */
 }SBC_ENC_PARAMS;
 
 #ifdef __cplusplus

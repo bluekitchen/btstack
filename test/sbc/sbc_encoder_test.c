@@ -80,22 +80,24 @@ static void read_wav_header(FILE * wav_fd, SBC_ENC_PARAMS *context){
     uint8_t buf[10];
     fread(&buf, 1, 4, wav_fd);
     buf[4] = 0;
-    printf("%s\n", buf ); // RIFF
+    // printf("%s\n", buf ); // RIFF
     
     little_endian_fread_32(wav_fd); // 36 + bytes_per_sample * num_samples  * frame_count
     
     fread(&buf, 1, 4, wav_fd);
     buf[4] = 0;
-    printf("%s\n", buf ); // WAVE
+    // printf("%s\n", buf ); // WAVE
     
     fread(&buf, 1, 4, wav_fd);
     buf[4] = 0;
-    printf("%s\n", buf ); // fmt
+    // printf("%s\n", buf ); // fmt
     
-    int fmt_length = little_endian_fread_32(wav_fd);
-    int fmt_format_tag = little_endian_fread_16(wav_fd);
+    // int fmt_length = 
+    little_endian_fread_32(wav_fd);
+    // int fmt_format_tag = 
+    little_endian_fread_16(wav_fd);
     
-    printf("fmt_length %d == 16, format %d == 1\n", fmt_length, fmt_format_tag);
+    // printf("fmt_length %d == 16, format %d == 1\n", fmt_length, fmt_format_tag);
 
     context->s16NumOfChannels = little_endian_fread_16(wav_fd);
     if (context->s16NumOfChannels == 1){
@@ -124,7 +126,7 @@ static void read_wav_header(FILE * wav_fd, SBC_ENC_PARAMS *context){
     little_endian_fread_16(wav_fd);
 
     fread(&buf, 1, 4, wav_fd);
-    printf("%s\n", buf ); // data
+    // printf("%s\n", buf ); // data
 
     num_data_bytes = little_endian_fread_32(wav_fd); 
 }
@@ -145,22 +147,33 @@ static int sbc_num_frames(SBC_ENC_PARAMS * context){
 }
 
 static void write_sbc_file(FILE * sbc_fd, SBC_ENC_PARAMS * context){
-    int i;
-    for (i=0;i<context->u16PacketLength;i++){
-        printf("%02x ", context->pu8Packet[i]);
-    }
-    printf("\n");
-    
+    // int i;
+    // for (i=0;i<context->u16PacketLength;i++){
+    //     printf("%02x ", context->pu8Packet[i]);
+    // }
+    // printf("\n");
+    printf("write %u bytes\n", context->u16PacketLength);
     fwrite(context->pu8Packet, 1, context->u16PacketLength, sbc_fd);
 }
 
-static void SBC_Encoder_Context_Init(SBC_ENC_PARAMS * context, FILE * fd, int blocks, int subbands, int allmethod, int bitpool){
+static void SBC_Encoder_Context_Init(SBC_ENC_PARAMS * context, FILE * fd, int blocks, int subbands, int allmethod, int bitpool, int chmode, int mSBCEnabled){
+
+    if (mSBCEnabled){
+        blocks    = 15;
+        subbands  = 8;
+        allmethod = SBC_LOUDNESS;
+        bitpool   = 26;
+        chmode = SBC_MONO;
+    }
+
     context->s16NumOfSubBands = subbands;                       
     context->s16NumOfBlocks = blocks;                          
     context->s16AllocationMethod = allmethod;                     
     context->s16BitPool = bitpool;  
     context->pu8Packet = sbc_packet;
-
+    context->s16ChannelMode = chmode;
+    context->mSBCEnabled = mSBCEnabled;
+    
     read_wav_header(fd, context);
 }
 
@@ -184,19 +197,23 @@ int main (int argc, const char * argv[]){
         return -1;
     }
     
-    SBC_Encoder_Context_Init(&context, wav_fd, SBC_BLOCK_3, SUB_BANDS_4, SBC_LOUDNESS, 31);
+    SBC_Encoder_Context_Init(&context, wav_fd, SBC_BLOCK_3, SUB_BANDS_4, SBC_LOUDNESS, 31, SBC_MONO, 1);
     SBC_Encoder_Init(&context);
 
     printf("channels %d, subbands %d, blocks %d\n", context.s16NumOfChannels, context.s16NumOfSubBands, context.s16NumOfBlocks);
     int num_frames = sbc_num_frames(&context);
     int frame_count = 0;
+    printf("num frames %d\n", num_frames);
     while (frame_count < num_frames){
-        printf("frame_count %d\n", frame_count);
         read_audio_frame(wav_fd, &context);
         SBC_Encoder(&context);
+        if (context.mSBCEnabled){
+            context.pu8Packet[0] = 0xad;
+        }
         write_sbc_file(sbc_fd, &context);
         frame_count++;
     }
+    printf("Done, frame count %d\n", frame_count);
     fclose(wav_fd);
     fclose(sbc_fd);
     return 0;
