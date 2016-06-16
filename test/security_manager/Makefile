@@ -4,13 +4,16 @@ CC = g++
 
 BTSTACK_ROOT =  ../..
 
-CFLAGS  = -DUNIT_TEST -x c++ -g -Wall -Wno-unused
+CFLAGS  = -DUNIT_TEST -g
+CPPFLAGS =  -x c++ -Wall -Wno-unused
 CFLAGS += -I. -I.. -I${BTSTACK_ROOT}/src -I${BTSTACK_ROOT}/ble -I${BTSTACK_ROOT}/platform/posix
+CFLAGS += -I${BTSTACK_ROOT}/3rd-party/mbedtls/include
 LDFLAGS +=  -lCppUTest -lCppUTestExt
 
 VPATH += ${BTSTACK_ROOT}/src
 VPATH += ${BTSTACK_ROOT}/src/ble 
 VPATH += ${BTSTACK_ROOT}/platform/posix
+VPATH += ${BTSTACK_ROOT}/3rd-party/mbedtls/library
 
 COMMON = \
     btstack_linked_list.c		\
@@ -28,17 +31,36 @@ COMMON = \
 	
 COMMON_OBJ = $(COMMON:.c=.o)
 
-all: security_manager aestest
+MBEDTLS = \
+	ecp.c \
+	ecp_curves.c \
+	bignum.c \
+
+all: security_manager aestest ectest aes_cmac_test
+# sm_mbedtls_allocator_test
 
 security_manager: ${CORE_OBJ} ${COMMON_OBJ} security_manager.c
-	${CC} ${CORE_OBJ} ${COMMON_OBJ} security_manager.c ${CFLAGS} ${LDFLAGS} -o $@
+	${CC} ${CORE_OBJ} ${COMMON_OBJ} security_manager.c ${CFLAGS} ${CPPFLAGS} ${LDFLAGS} -o $@
 
-aestest: aestest.c rijndael.c
-	${CC} ${CFLAGS} rijndael.c aestest.c -o $@
+aestest: aestest.o rijndael.o
+	${CC} ${CFLAGS} $^ -o $@
+
+ectest: ectest.o ${MBEDTLS} rijndael.o
+	echo "compiling ectest"
+	gcc ${CFLAGS} $^ -o $@ 
+
+aes_cmac_test: aes_cmac_test.o aes_cmac.o rijndael.o
+	gcc ${CFLAGS} $^ -o $@ 
+
+sm_mbedtls_allocator_test: sm_mbedtls_allocator.o hci_dump.o btstack_util.o sm_mbedtls_allocator_test.c
+	${CC} sm_mbedtls_allocator.o btstack_util.o hci_dump.o sm_mbedtls_allocator_test.c ${CFLAGS} ${CPPFLAGS}  ${LDFLAGS} -o $@ 
 
 test: all
 	./security_manager
+	./aes_cmac_test
 	./aestest
+	./ectest
+	./aes_cmac_test
 	
 clean:
 	rm -f  security_manager

@@ -1423,6 +1423,9 @@ static void event_handler(uint8_t *packet, int size){
 				hci_stack->local_bd_addr);
                 log_info("Local Address, Status: 0x%02x: Addr: %s",
                     packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE], bd_addr_to_str(hci_stack->local_bd_addr));
+                if (hci_stack->link_key_db){
+                    hci_stack->link_key_db->set_local_bd_addr(hci_stack->local_bd_addr);
+                }
             }
             if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_write_scan_enable)){
                 hci_emit_discoverable_enabled(hci_stack->discoverable);

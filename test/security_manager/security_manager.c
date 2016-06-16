@@ -121,7 +121,6 @@ uint8_t * mock_packet_buffer(void);
 uint16_t mock_packet_buffer_len(void);
 void mock_clear_packet_buffer(void);
 
-
 void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     uint16_t aHandle;
     bd_addr_t event_address;
@@ -174,17 +173,121 @@ void CHECK_EQUAL_ARRAY(uint8_t * expected, uint8_t * actual, int size){
 #define CHECK_HCI_COMMAND(packet) { printf("check " #packet "\n") ; CHECK_EQUAL_ARRAY(packet, mock_packet_buffer(), sizeof(packet)); mock_clear_packet_buffer(); }
 #define CHECK_ACL_PACKET(packet)  { printf("check " #packet "\n") ; CHECK_EQUAL_ARRAY(packet, mock_packet_buffer(), sizeof(packet)); mock_clear_packet_buffer(); }
 
+static int parse_hex(uint8_t * buffer, const char * hex_string){
+    int len = 0;
+    while (*hex_string){
+        if (*hex_string == ' '){
+            hex_string++;
+            continue;
+        }
+        int high_nibble = nibble_for_char(*hex_string++);
+        int low_nibble = nibble_for_char(*hex_string++);
+        *buffer++ = (high_nibble << 4) | low_nibble;
+        len++;
+    }
+    return len;
+}
+
+static const char * key_string = "2b7e1516 28aed2a6 abf71588 09cf4f3c";
+
+static const char * m0_string        = "";
+static const char * cmac_m0_string   = "bb1d6929 e9593728 7fa37d12 9b756746";
+static const char * m16_string       = "6bc1bee2 2e409f96 e93d7e11 7393172a";
+static const char * cmac_m16_string  = "070a16b4 6b4d4144 f79bdd9d d04a287c";
+static const char * m40_string       = "6bc1bee2 2e409f96 e93d7e11 7393172a ae2d8a57 1e03ac9c 9eb76fac 45af8e51 30c81c46 a35ce411";
+static const char * cmac_m40_string  = "dfa66747 de9ae630 30ca3261 1497c827";
+static const char * m64_string       = "6bc1bee2 2e409f96 e93d7e11 7393172a ae2d8a57 1e03ac9c 9eb76fac 45af8e51 30c81c46 a35ce411 e5fbc119 1a0a52ef f69f2445 df4f9b17 ad2b417b e66c3710";
+static const char * cmac_m64_string  = "51f0bebf 7e3b9d92 fc497417 79363cfe";
+
+static uint8_t cmac_hash[16];
+static int cmac_hash_received;
+static void cmac_done(uint8_t * hash){
+    memcpy(cmac_hash, hash, 16);
+    printf("cmac hash: ");
+    printf_hexdump(hash, 16);
+    cmac_hash_received = 1;
+}
+
+static uint8_t m[128];
+static uint8_t get_byte(uint16_t offset){
+    // printf ("get byte %02u -> %02x\n", offset, m[offset]);
+    return m[offset];
+}
+static void validate_message(const char * name, const char * message_string, const char * cmac_string){
+
+    mock_clear_packet_buffer();
+    int len = parse_hex(m, message_string);
+
+    // expected result
+    sm_key_t cmac;
+    parse_hex(cmac, cmac_string);
+
+    printf("-- verify key %s message %s, len %u:\nm:    %s\ncmac: %s\n", key_string, name, len, message_string, cmac_string);
+
+    sm_key_t key;
+    parse_hex(key, key_string);
+    // printf_hexdump(key, 16);
+
+    cmac_hash_received = 0;
+    sm_cmac_general_start(key, len, &get_byte, &cmac_done);
+    while (!cmac_hash_received){
+        aes128_report_result();
+    }
+    CHECK_EQUAL_ARRAY(cmac, cmac_hash, 16);
+}
+
+#define VALIDATE_MESSAGE(NAME) validate_message(#NAME, NAME##_string, cmac_##NAME##_string)
 
 TEST_GROUP(SecurityManager){
 	void setup(void){
-	    btstack_memory_init();
-	    btstack_run_loop_init(btstack_run_loop_posix_get_instance());
+        static int first = 1;
+        if (first){
+            first = 0;
+            btstack_memory_init();
+            btstack_run_loop_init(btstack_run_loop_posix_get_instance());            
+        }
 	    sm_init();
 	    sm_set_io_capabilities(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);
 	    sm_set_authentication_requirements( SM_AUTHREQ_BONDING ); 
         sm_event_callback_registration.callback = &app_packet_handler;
         sm_add_event_handler(&sm_event_callback_registration);	}
 };
+
+TEST(SecurityManager, CMACTest){
+
+    mock_init();
+    mock_simulate_hci_state_working();
+
+    // expect le encrypt commmand
+    CHECK_HCI_COMMAND(test_command_packet_01);
+
+    aes128_report_result();
+
+    // expect le encrypt commmand
+    CHECK_HCI_COMMAND(test_command_packet_02);
+
+    aes128_report_result();
+    mock_clear_packet_buffer();
+
+    // additional test: cmac signing
+    // aes cmac tests
+    sm_key_t key;
+    parse_hex(key, key_string);
+    uint8_t message [] = "hallo";
+    cmac_hash_received = 0;
+    sm_cmac_start(key, 0x11, 0x1234, sizeof(message), message, 1, &cmac_done);
+    while (!cmac_hash_received){
+        aes128_report_result();
+    }
+    uint8_t expected_hash[] = { 0x40, 0x4E, 0xDC, 0x0F, 0x6E, 0x0F, 0xF9, 0x5C};
+    CHECK_EQUAL_ARRAY(expected_hash, cmac_hash, 8);
+
+    // generic aes cmac tests
+    VALIDATE_MESSAGE(m0);
+    VALIDATE_MESSAGE(m16);
+    VALIDATE_MESSAGE(m40);
+    VALIDATE_MESSAGE(m64);
+}
 
 TEST(SecurityManager, MainTest){
 
@@ -337,6 +440,6 @@ TEST(SecurityManager, MainTest){
 }
 
 int main (int argc, const char * argv[]){
-    hci_dump_open("hci_dump.pklg", HCI_DUMP_PACKETLOGGER);
+    // hci_dump_open("hci_dump.pklg", HCI_DUMP_PACKETLOGGER);
     return CommandLineTestRunner::RunAllTests(argc, argv);
 }

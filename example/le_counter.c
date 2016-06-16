@@ -78,7 +78,7 @@ static void  heartbeat_handler(struct btstack_timer_source *ts);
 static void beat(void);
 
 const uint8_t adv_data[] = {
-    // Flags general discoverable
+    // Flags general discoverable, BR/EDR not supported
     0x02, 0x01, 0x06, 
     // Name
     0x0b, 0x09, 'L', 'E', ' ', 'C', 'o', 'u', 'n', 't', 'e', 'r', 

@@ -75,12 +75,16 @@ static btstack_packet_callback_registration_t hci_event_callback_registration;
  * @section Advertisements 
  *
  * @text The Flags attribute in the Advertisement Data indicates if a device is in dual-mode or not.
- * Flag 0x02 indicates LE General Discoverable, Dual-Mode device. See Listing advertisements.
+ * Flag 0x06 indicates LE General Discoverable, BR/EDR not supported although we're actually using BR/EDR.
+ * In the past, there have been problems with Anrdoid devices when the flag was not set.
+ * Setting it should prevent the remote implementation to try to use GATT over LE/EDR, which is not 
+ * implemented by BTstack. So, setting the flag seems like the safer choice (while it's technically incorrect).
  */
-/* LISTING_START(advertisements): Advertisement data: Flag 0x02 indicates a dual mode device */
+/* LISTING_START(advertisements): Advertisement data: Flag 0x06 indicates LE-only device */
 const uint8_t adv_data[] = {
-    // Flags: General Discoverable
-    0x02, 0x01, 0x02, 
+    // Flags general discoverable, BR/EDR not supported
+    0x02, 0x01, 0x06, 
+
     // Name
     0x0b, 0x09, 'L', 'E', ' ', 'C', 'o', 'u', 'n', 't', 'e', 'r', 
 };

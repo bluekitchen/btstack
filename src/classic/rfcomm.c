@@ -2187,6 +2187,7 @@ static uint8_t rfcomm_channel_create_internal(btstack_packet_handler_t packet_ha
     
     // create new multiplexer if necessary
     uint8_t status = 0;
+    uint8_t dlci = 0;
     int new_multiplexer = 0;
     rfcomm_channel_t * channel = NULL;
     rfcomm_multiplexer_t * multiplexer = rfcomm_multiplexer_for_addr(addr);
@@ -2201,6 +2202,14 @@ static uint8_t rfcomm_channel_create_internal(btstack_packet_handler_t packet_ha
         new_multiplexer = 1;
     }
     
+    // check if channel for this remote service already exists
+    dlci = (server_channel << 1) | (multiplexer->outgoing ^ 1);
+    channel = rfcomm_channel_for_multiplexer_and_dlci(multiplexer, dlci);
+    if (channel){
+        status = RFCOMM_CHANNEL_ALREADY_REGISTERED;
+        goto fail;
+    }
+
     // prepare channel
     channel = rfcomm_channel_create(multiplexer, NULL, server_channel);
     if (!channel){
