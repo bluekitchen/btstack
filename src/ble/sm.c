@@ -329,9 +329,6 @@ static uint16_t sm_active_connection = 0;
 // stores oob data in provided 16 byte buffer if not null
 static int (*sm_get_oob_data)(uint8_t addres_type, bd_addr_t addr, uint8_t * oob_data) = NULL;
 
-// used to notify applicationss that user interaction is neccessary, see sm_notify_t below
-static btstack_packet_handler_t sm_client_packet_handler = NULL;
-
 // horizontal: initiator capabilities
 // vertial:    responder capabilities
 static const stk_generation_method_t stk_generation_method [5] [5] = {
@@ -676,9 +673,6 @@ static void sm_setup_event_base(uint8_t * event, int event_size, uint8_t type, h
 }
 
 static void sm_dispatch_event(uint8_t packet_type, uint16_t channel, uint8_t * packet, uint16_t size){
-    if (sm_client_packet_handler) {
-        sm_client_packet_handler(HCI_EVENT_PACKET, 0, packet, size);
-    }
     // dispatch to all event handlers
     btstack_linked_list_iterator_t it;
     btstack_linked_list_iterator_init(&it, &sm_event_handlers);
