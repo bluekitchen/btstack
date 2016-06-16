@@ -85,7 +85,10 @@ static const uint8_t sine[] = {
 #endif
 
 static int phase;
+static int count_sent = 0;
+static int count_received = 0;
 
+#if SCO_DEMO_MODE == SCO_DEMO_MODE_SINE
 #ifdef SCO_WAV_FILENAME
 
 static FILE * wav_file;
@@ -146,7 +149,7 @@ static void write_wav_data_uint8(FILE * file, unsigned long num_samples, uint8_t
 }
 
 #endif
-
+#endif
 
 void sco_demo_init(void){
 
@@ -165,6 +168,7 @@ void sco_demo_init(void){
 	printf("SCO Demo: Sending counter value, hexdump received data.\n");
 #endif
 
+#if SCO_DEMO_MODE == SCO_DEMO_MODE_SINE
 #ifdef SCO_WAV_FILENAME
     wav_file = wav_init(SCO_WAV_FILENAME);
     const int sample_rate = 8000;
@@ -173,6 +177,7 @@ void sco_demo_init(void){
     const int bytes_per_sample = 1;
     write_wav_header(wav_file, sample_rate, num_channels, num_samples, bytes_per_sample);
     num_samples_to_write = num_samples;
+#endif
 #endif
 
 #ifdef USE_PORTAUDIO
@@ -213,6 +218,9 @@ void sco_demo_init(void){
 #endif
 }
 
+static void sco_report(void){
+    printf("SCO: sent %u, received %u\n", count_sent, count_received);
+}
 
 void sco_demo_send(hci_con_handle_t sco_handle){
 
@@ -252,9 +260,8 @@ void sco_demo_send(hci_con_handle_t sco_handle){
     // request another send event
     hci_request_sco_can_send_now_event();
 
-    static int count = 0;
-    count++;
-    if ((count % SCO_REPORT_PERIOD) == 0) printf("SCO: sent %u\n", count);
+    count_sent++;
+    if ((count_sent % SCO_REPORT_PERIOD) == 0) sco_report();
 }
 
 /**
@@ -265,6 +272,11 @@ void sco_demo_receive(uint8_t * packet, uint16_t size){
 
     int dump_data = 1;
 
+    count_received++;
+    // if ((count_received % SCO_REPORT_PERIOD) == 0) sco_report();
+
+
+#if SCO_DEMO_MODE == SCO_DEMO_MODE_SINE
 #ifdef SCO_WAV_FILENAME
     if (num_samples_to_write){
         const int num_samples = size - 3;
@@ -282,6 +294,7 @@ void sco_demo_receive(uint8_t * packet, uint16_t size){
         }
         dump_data = 0;
     }
+#endif
 #endif
 
     if (packet[1] & 0xf0){
@@ -315,8 +328,4 @@ void sco_demo_receive(uint8_t * packet, uint16_t size){
         printf_hexdump(&packet[3], size-3);
 #endif
     }
-
-    static int count = 0;
-    count++;
-    if ((count % SCO_REPORT_PERIOD) == 0) printf("SCO: received %u\n", count);
 }
