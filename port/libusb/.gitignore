@@ -34,3 +34,4 @@ le_streamer
 spp_streamer
 hfp_ag_demo
 hfp_hf_demo
+sm_pairing_peripheral.h

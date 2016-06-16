@@ -12,43 +12,43 @@ CFLAGS += -I${BTSTACK_ROOT}/3rd-party/mbedtls/include
 CFLAGS += -I${BTSTACK_ROOT}/test/security_manager
 
 CORE += \
-    btstack_memory.c            \
-    btstack_linked_list.c	    \
-    btstack_memory_pool.c       \
-    btstack_run_loop.c		    \
-    btstack_util.c 	            \
+	btstack_memory.c            \
+	btstack_linked_list.c	    \
+	btstack_memory_pool.c       \
+	btstack_run_loop.c		    \
+	btstack_util.c 	            \
 
 COMMON += \
-    hci.c			            \
-    hci_cmd.c		            \
-    hci_dump.c		            \
-    l2cap.c			            \
-    l2cap_signaling.c	        \
+	hci.c			            \
+	hci_cmd.c		            \
+	hci_dump.c		            \
+	l2cap.c			            \
+	l2cap_signaling.c	        \
 	btstack_link_key_db_memory.c   \
-    sdp_util.c	                \
-    spp_server.c  				\
-    rfcomm.c	                \
-    bnep.c	                    \
-    sdp_server.c			            \
+	sdp_util.c	                \
+	spp_server.c  				\
+	rfcomm.c	                \
+	bnep.c	                    \
+	sdp_server.c			            \
 
 SDP_CLIENT += \
-    sdp_client.o		        \
+	sdp_client.o		        \
 	sdp_client_rfcomm.o		    \
 
 ATT	+= \
-    att_dispatch.c       	    \
+	att_dispatch.c       	    \
 
 GATT_SERVER += \
-    att_db.c 				 	    \
-    att_server.c        	    \
+	att_db.c 				 	    \
+	att_server.c        	    \
 
 GATT_CLIENT += \
-    ad_parser.c                 \
-    gatt_client.c        	    \
+	ad_parser.c                 \
+	gatt_client.c        	    \
 
 SM_REAL += \
 	sm.c 				 	    \
-    le_device_db_memory.c       \
+	le_device_db_memory.c       \
 
 PAN += \
 	pan.c \
@@ -76,13 +76,13 @@ EXAMPLES = 					\
 	spp_and_le_counter 		\
 	spp_counter 			\
 	spp_streamer			\
-    gap_le_advertisements   \
-    hfp_ag_demo             \
-    hfp_hf_demo             \
-    hsp_ag_demo             \
-    hsp_hs_demo             \
-    sm_pairing_peripheral   \
-    sm_pairing_central      \
+	gap_le_advertisements   \
+	hfp_ag_demo             \
+	hfp_hf_demo             \
+	hsp_ag_demo             \
+	hsp_hs_demo             \
+	sm_pairing_peripheral   \
+	sm_pairing_central      \
 
 EXAMPLES_USING_LE =			\
 	ancs_client_demo		\
@@ -91,9 +91,9 @@ EXAMPLES_USING_LE =			\
 	le_counter              \
 	le_streamer				\
 	spp_and_le_counter	    \
-    gap_le_advertisements   \
-    sm_pairing_peripheral   \
-    sm_pairing_central      \
+	gap_le_advertisements   \
+	sm_pairing_peripheral   \
+	sm_pairing_central      \
 
 # .o for .c
 CORE_OBJ    = $(CORE:.c=.o)
@@ -192,6 +192,7 @@ hfp_hf_demo: ${CORE_OBJ} ${COMMON_OBJ} ${SDP_CLIENT} sco_demo_util.o hfp.o hfp_h
 
 clean:
 	rm -f ${EXAMPLES}
+	rm -f ${EXAMPLES_USING_LE}
 	rm -f  *.o *.out *.hex *.exe
 	rm -f  ancs_client_demo.h profile.h spp_and_le_counter.h
 	rm -rf *.dSYM
