@@ -288,7 +288,7 @@ typedef struct sm_setup_context {
     sm_key_t  sm_local_dhkey_check;
     sm_key_t  sm_ra;
     sm_key_t  sm_rb;
-    sm_key_t  sm_t;             // used for f5
+    sm_key_t  sm_t;             // used for f5 and h6
     sm_key_t  sm_mackey;
     uint8_t   sm_passkey_bit;   // also stores number of generated random bytes for EC key generation
 #endif
@@ -646,20 +646,6 @@ static void aes_cmac(sm_key_t aes_cmac, const sm_key_t key, const uint8_t * data
 
     // Step 7
     aes128_calc_cyphertext(key, sm_cmac_y, aes_cmac);
-}
-#endif
-
-#if 0
-//
-// Link Key Conversion Function h6
-//
-// h6(W, keyID) = AES-CMACW(keyID)
-// - W is 128 bits
-// - keyID is 32 bits
-static void h6(sm_key_t res, const sm_key_t w, const uint32_t key_id){
-    uint8_t key_id_buffer[4];
-    big_endian_store_32(key_id_buffer, 0, key_id);
-    aes_cmac(res, w, key_id_buffer, 4);
 }
 #endif
 #endif
@@ -1376,6 +1362,7 @@ static void sm_sc_cmac_done(uint8_t * hash){
 
     sm_connection_t * sm_conn = sm_cmac_connection;
     sm_cmac_connection = NULL;
+    link_key_type_t link_key_type;
 
     switch (sm_conn->sm_engine_state){
         case SM_SC_W4_CMAC_FOR_CONFIRMATION:
@@ -1434,6 +1421,23 @@ static void sm_sc_cmac_done(uint8_t * hash){
                 // initiator
                 sm_conn->sm_engine_state = SM_INITIATOR_PH3_SEND_START_ENCRYPTION;
             }
+            break;
+        case SM_SC_W4_CALCULATE_H6_ILK:
+            memcpy(setup->sm_t, hash, 16);
+            sm_conn->sm_engine_state = SM_SC_W2_CALCULATE_H6_BR_EDR_LINK_KEY;
+            break;
+        case SM_SC_W4_CALCULATE_H6_BR_EDR_LINK_KEY:
+            reverse_128(hash, setup->sm_t);
+            link_key_type = sm_conn->sm_connection_authenticated ?
+                AUTHENTICATED_COMBINATION_KEY_GENERATED_FROM_P256 : UNAUTHENTICATED_COMBINATION_KEY_GENERATED_FROM_P256;
+            if (sm_conn->sm_role){
+                gap_store_link_key_for_bd_addr(setup->sm_m_address, setup->sm_t, link_key_type);
+                sm_conn->sm_engine_state = SM_RESPONDER_IDLE; 
+            } else {
+                gap_store_link_key_for_bd_addr(setup->sm_s_address, setup->sm_t, link_key_type);
+                sm_conn->sm_engine_state = SM_INITIATOR_CONNECTED; 
+            }
+            sm_done_for_handle(sm_conn->sm_handle);
             break;
         default:
             log_error("sm_sc_cmac_done in state %u", sm_conn->sm_engine_state);
@@ -1575,7 +1579,7 @@ static void g2_engine(sm_connection_t * sm_conn, const sm_key256_t u, const sm_k
     log_info("g2 key");
     log_info_hexdump(x, 16);
     log_info("g2 message");
-    log_info_hexdump(sm_cmac_sc_buffer, sizeof(sm_cmac_sc_buffer));
+    log_info_hexdump(sm_cmac_sc_buffer, message_len);
     sm_cmac_general_start(x, message_len, &sm_sc_cmac_get_byte, &sm_sc_cmac_done);
 }
 
@@ -1664,6 +1668,33 @@ static void sm_sc_calculate_f6_to_verify_dhkey_check(sm_connection_t * sm_conn){
         f6_engine(sm_conn, setup->sm_mackey, setup->sm_peer_nonce, setup->sm_local_nonce, setup->sm_ra, iocap_b, bd_addr_slave, bd_addr_master);
     }
 }
+
+
+//
+// Link Key Conversion Function h6
+//
+// h6(W, keyID) = AES-CMACW(keyID)
+// - W is 128 bits
+// - keyID is 32 bits
+static void h6_engine(sm_connection_t * sm_conn, const sm_key_t w, const uint32_t key_id){
+    const uint16_t message_len = 4;
+    sm_cmac_connection = sm_conn;
+    big_endian_store_32(sm_cmac_sc_buffer, 0, key_id);
+    log_info("h6 key");
+    log_info_hexdump(w, 16);
+    log_info("h6 message");
+    log_info_hexdump(sm_cmac_sc_buffer, message_len);
+    sm_cmac_general_start(w, message_len, &sm_sc_cmac_get_byte, &sm_sc_cmac_done);
+}
+
+static void h6_calculate_ilk(sm_connection_t * sm_conn){
+    h6_engine(sm_conn, setup->sm_ltk, 0x746D7031);    // "tmp1"
+}
+
+static void h6_calculate_br_edr_link_key(sm_connection_t * sm_conn){
+    h6_engine(sm_conn, setup->sm_t, 0x6c656272);    // "lebr"
+}
+
 #endif
 
 static void sm_load_security_info(sm_connection_t * sm_connection){
@@ -2019,6 +2050,16 @@ static void sm_run(void){
                 if (!sm_cmac_ready()) break;
                 connection->sm_engine_state = SM_SC_W4_CALCULATE_G2;
                 g2_calculate(connection);
+                break;
+            case SM_SC_W2_CALCULATE_H6_ILK:
+                if (!sm_cmac_ready()) break;
+                connection->sm_engine_state = SM_SC_W4_CALCULATE_H6_ILK;
+                h6_calculate_ilk(connection);
+                break;
+            case SM_SC_W2_CALCULATE_H6_BR_EDR_LINK_KEY:
+                if (!sm_cmac_ready()) break;
+                connection->sm_engine_state = SM_SC_W4_CALCULATE_H6_BR_EDR_LINK_KEY;
+                h6_calculate_br_edr_link_key(connection);
                 break;
 
 #endif
@@ -2546,9 +2587,13 @@ static void sm_handle_encryption_result(uint8_t * data){
                     // slave -> receive master keys
                     connection->sm_engine_state = SM_PH3_RECEIVE_KEYS;
                 } else {
-                    // master -> all done
-                    connection->sm_engine_state = SM_INITIATOR_CONNECTED; 
-                    sm_done_for_handle(connection->sm_handle);
+                    if (setup->sm_use_secure_connections && (setup->sm_key_distribution_received_set & SM_KEYDIST_FLAG_IDENTITY_ADDRESS_INFORMATION)){
+                        connection->sm_engine_state = SM_SC_W2_CALCULATE_H6_ILK;
+                    } else {
+                        // master -> all done
+                        connection->sm_engine_state = SM_INITIATOR_CONNECTED; 
+                        sm_done_for_handle(connection->sm_handle);
+                    }
                 }                
             }
             return;                                
@@ -3332,8 +3377,12 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
                 sm_key_distribution_handle_all_received(sm_conn);
 
                 if (sm_conn->sm_role){
-                    sm_conn->sm_engine_state = SM_RESPONDER_IDLE; 
-                    sm_done_for_handle(sm_conn->sm_handle);
+                    if (setup->sm_use_secure_connections && (setup->sm_key_distribution_received_set & SM_KEYDIST_FLAG_IDENTITY_ADDRESS_INFORMATION)){
+                        sm_conn->sm_engine_state = SM_SC_W2_CALCULATE_H6_ILK;
+                    } else {
+                        sm_conn->sm_engine_state = SM_RESPONDER_IDLE; 
+                        sm_done_for_handle(sm_conn->sm_handle);
+                    }
                 } else {
                     if (setup->sm_use_secure_connections){
                         sm_conn->sm_engine_state = SM_PH3_DISTRIBUTE_KEYS;
