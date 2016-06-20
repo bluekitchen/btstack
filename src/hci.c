@@ -263,16 +263,19 @@ int  hci_authentication_active_for_handle(hci_con_handle_t handle){
 }
 
 void gap_drop_link_key_for_bd_addr(bd_addr_t addr){
-    if (hci_stack->link_key_db) {
-        hci_stack->link_key_db->delete_link_key(addr);
-    }
+    if (!hci_stack->link_key_db) return;
+    hci_stack->link_key_db->delete_link_key(addr);
+}
+
+void gap_store_link_key_for_bd_addr(bd_addr_t addr, link_key_t link_key, link_key_type_t type){
+    if (!hci_stack->link_key_db) return;
+    hci_stack->link_key_db->put_link_key(addr, link_key, type);
 }
 
 static int hci_is_le_connection(hci_connection_t * connection){
     return  connection->address_type == BD_ADDR_TYPE_LE_PUBLIC ||
     connection->address_type == BD_ADDR_TYPE_LE_RANDOM;
 }
-
 
 /**
  * count connections
@@ -1631,8 +1634,7 @@ static void event_handler(uint8_t *packet, int size){
             if (link_key_type != CHANGED_COMBINATION_KEY){
                 conn->link_key_type = link_key_type;
             }
-            if (!hci_stack->link_key_db) break;
-            hci_stack->link_key_db->put_link_key(addr, &packet[8], conn->link_key_type);
+            gap_store_link_key_for_bd_addr(addr, &packet[8], conn->link_key_type);
             // still forward event to allow dismiss of pairing dialog
             break;
         }
