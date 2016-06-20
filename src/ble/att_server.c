@@ -326,7 +326,7 @@ static void att_run(void){
                 log_info("Orig Signature: ");
                 log_info_hexdump( &att_request_buffer[att_request_size-8], 8);
                 uint16_t attribute_handle = little_endian_read_16(att_request_buffer, 1);
-                sm_cmac_start(csrk, att_request_buffer[0], attribute_handle, att_request_size - 15, &att_request_buffer[3], counter_packet, att_signed_write_handle_cmac_result);
+                sm_cmac_signed_write_start(csrk, att_request_buffer[0], attribute_handle, att_request_size - 15, &att_request_buffer[3], counter_packet, att_signed_write_handle_cmac_result);
                 return;
             } 
 

@@ -867,23 +867,8 @@ static int sm_cmac_last_block_complete(void){
     return (sm_cmac_message_len & 0x0f) == 0;
 }
 
-static inline uint8_t sm_cmac_message_get_byte(uint16_t offset){
-    if (offset >= sm_cmac_message_len) {
-        log_error("sm_cmac_message_get_byte. out of bounds, access %u, len %u", offset, sm_cmac_message_len);
-        return 0;
-    }
-
-    offset = sm_cmac_message_len - 1 - offset;
-
-    // sm_cmac_header[3] | message[] | sm_cmac_sign_counter[4]
-    if (offset < 3){
-        return sm_cmac_header[offset];
-    }
-    int actual_message_len_incl_header = sm_cmac_message_len - 4;
-    if (offset <  actual_message_len_incl_header){
-        return sm_cmac_message[offset - 3];
-    }
-    return sm_cmac_sign_counter[offset - actual_message_len_incl_header];
+int sm_cmac_ready(void){
+    return sm_cmac_state == CMAC_IDLE;
 }
 
 // generic cmac calculation
@@ -913,19 +898,35 @@ void sm_cmac_general_start(const sm_key_t key, uint16_t message_len, uint8_t (*g
 }
 
 // cmac for ATT Message signing
-void sm_cmac_start(const sm_key_t k, uint8_t opcode, hci_con_handle_t con_handle, uint16_t message_len, const uint8_t * message, uint32_t sign_counter, void (*done_handler)(uint8_t * hash)){
+static uint8_t sm_cmac_signed_write_message_get_byte(uint16_t offset){
+    if (offset >= sm_cmac_message_len) {
+        log_error("sm_cmac_signed_write_message_get_byte. out of bounds, access %u, len %u", offset, sm_cmac_message_len);
+        return 0;
+    }
+
+    offset = sm_cmac_message_len - 1 - offset;
+
+    // sm_cmac_header[3] | message[] | sm_cmac_sign_counter[4]
+    if (offset < 3){
+        return sm_cmac_header[offset];
+    }
+    int actual_message_len_incl_header = sm_cmac_message_len - 4;
+    if (offset <  actual_message_len_incl_header){
+        return sm_cmac_message[offset - 3];
+    }
+    return sm_cmac_sign_counter[offset - actual_message_len_incl_header];
+}
+
+void sm_cmac_signed_write_start(const sm_key_t k, uint8_t opcode, hci_con_handle_t con_handle, uint16_t message_len, const uint8_t * message, uint32_t sign_counter, void (*done_handler)(uint8_t * hash)){
     // ATT Message Signing
     sm_cmac_header[0] = opcode;
     little_endian_store_16(sm_cmac_header, 1, con_handle);
     little_endian_store_32(sm_cmac_sign_counter, 0, sign_counter);
     uint16_t total_message_len = 3 + message_len + 4;  // incl. virtually prepended att opcode, handle and appended sign_counter in LE
     sm_cmac_message = message;
-    sm_cmac_general_start(k, total_message_len, &sm_cmac_message_get_byte, done_handler);
+    sm_cmac_general_start(k, total_message_len, &sm_cmac_signed_write_message_get_byte, done_handler);
 }
 
-int sm_cmac_ready(void){
-    return sm_cmac_state == CMAC_IDLE;
-}
 
 static void sm_cmac_handle_aes_engine_ready(void){
     switch (sm_cmac_state){
