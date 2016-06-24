@@ -1729,6 +1729,19 @@ static void sm_load_security_info(sm_connection_t * sm_connection){
     sm_connection->sm_connection_authorization_state = authorized ? AUTHORIZATION_GRANTED : AUTHORIZATION_UNKNOWN; 
 }
 
+static void sm_start_calculating_ltk_from_ediv_and_rand(sm_connection_t * sm_connection){
+    memcpy(setup->sm_local_rand, sm_connection->sm_local_rand, 8);
+    setup->sm_local_ediv = sm_connection->sm_local_ediv;
+    // re-establish used key encryption size
+    // no db for encryption size hack: encryption size is stored in lowest nibble of setup->sm_local_rand
+    sm_connection->sm_actual_encryption_key_size = (setup->sm_local_rand[7] & 0x0f) + 1;
+    // no db for authenticated flag hack: flag is stored in bit 4 of LSB
+    sm_connection->sm_connection_authenticated = (setup->sm_local_rand[7] & 0x10) >> 4;
+    log_info("sm: received ltk request with key size %u, authenticated %u",
+            sm_connection->sm_actual_encryption_key_size, sm_connection->sm_connection_authenticated);
+    sm_connection->sm_engine_state = SM_RESPONDER_PH4_Y_GET_ENC;
+}
+
 static void sm_run(void){
 
     btstack_linked_list_iterator_t it;    
@@ -1928,7 +1941,7 @@ static void sm_run(void){
                     sm_load_security_info(sm_connection);
                     sm_connection->sm_engine_state = SM_INITIATOR_PH0_SEND_START_ENCRYPTION;
                     break;
-                case SM_RESPONDER_PH0_RECEIVED_LTK:
+                case SM_RESPONDER_PH0_RECEIVED_LTK_REQUEST:
                     switch (sm_connection->sm_irk_lookup_state){
                         case IRK_LOOKUP_SUCCEEDED:{
                                 sm_load_security_info(sm_connection);
@@ -1944,20 +1957,11 @@ static void sm_run(void){
                                 break;
                             }
                             // re-establish previously used LTK using Rand and EDIV
-                            memcpy(setup->sm_local_rand, sm_connection->sm_local_rand, 8);
-                            setup->sm_local_ediv = sm_connection->sm_local_ediv;
-                            // re-establish used key encryption size
-                            // no db for encryption size hack: encryption size is stored in lowest nibble of setup->sm_local_rand
-                            sm_connection->sm_actual_encryption_key_size = (setup->sm_local_rand[7] & 0x0f) + 1;
-                            // no db for authenticated flag hack: flag is stored in bit 4 of LSB
-                            sm_connection->sm_connection_authenticated = (setup->sm_local_rand[7] & 0x10) >> 4;
-                            log_info("sm: received ltk request with key size %u, authenticated %u",
-                                    sm_connection->sm_actual_encryption_key_size, sm_connection->sm_connection_authenticated);
-                            sm_connection->sm_engine_state = SM_RESPONDER_PH4_Y_GET_ENC;
+                            sm_start_calculating_ltk_from_ediv_and_rand(sm_connection);
                             break;
                         default:
                             // just wait until IRK lookup is completed
-                            // don't lock sxetup context yet
+                            // don't lock setup context yet
                             done = 0;
                             break;
                     }
@@ -2878,7 +2882,7 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                             // store rand and ediv
                             reverse_64(&packet[5], sm_conn->sm_local_rand);
                             sm_conn->sm_local_ediv   = little_endian_read_16(packet, 13);
-                            sm_conn->sm_engine_state = SM_RESPONDER_PH0_RECEIVED_LTK;
+                            sm_conn->sm_engine_state = SM_RESPONDER_PH0_RECEIVED_LTK_REQUEST;
                             break;
 
                         default:
@@ -3090,10 +3094,9 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
                 break;
             }
             if (sm_conn->sm_irk_lookup_state == IRK_LOOKUP_SUCCEEDED){
-                uint16_t ediv;
                 sm_key_t ltk;
-                le_device_db_encryption_get(sm_conn->sm_le_db_index, &ediv, NULL, ltk, NULL, NULL, NULL);
-                if (!sm_is_null_key(ltk) || ediv){
+                le_device_db_encryption_get(sm_conn->sm_le_db_index, NULL, NULL, ltk, NULL, NULL, NULL);
+                if (!sm_is_null_key(ltk)){
                     log_info("sm: Setting up previous ltk/ediv/rand for device index %u", sm_conn->sm_le_db_index);
                     sm_conn->sm_engine_state = SM_INITIATOR_PH0_HAS_LTK;
                 } else {
