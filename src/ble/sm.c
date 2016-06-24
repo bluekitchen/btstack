@@ -1942,22 +1942,25 @@ static void sm_run(void){
                     sm_connection->sm_engine_state = SM_INITIATOR_PH0_SEND_START_ENCRYPTION;
                     break;
                 case SM_RESPONDER_PH0_RECEIVED_LTK_REQUEST:
+#ifdef ENABLE_LE_SECURE_CONNECTIONS
                     switch (sm_connection->sm_irk_lookup_state){
-                        case IRK_LOOKUP_SUCCEEDED:{
-                                sm_load_security_info(sm_connection);
+                        case IRK_LOOKUP_SUCCEEDED:
+                            // assuming Secure Connection, we have a stored LTK and the EDIV/RAND are null
+                            sm_load_security_info(sm_connection);
+                            if (setup->sm_peer_ediv == 0 && sm_is_null_random(setup->sm_peer_rand) && !sm_is_null_key(setup->sm_peer_ltk)){
                                 sm_connection->sm_engine_state = SM_RESPONDER_PH2_SEND_LTK_REPLY;
                                 break;
                             }
+                            log_info("LTK Request: ediv & random are empty, but no stored LTK (IRK Lookup Succeeded)");
+                            sm_connection->sm_engine_state = SM_RESPONDER_PH0_SEND_LTK_REQUESTED_NEGATIVE_REPLY;
+                            // don't lock setup context yet
+                            done = 0;
+                            break;
                         case IRK_LOOKUP_FAILED:
-                            // assume that we don't have a LTK for ediv == 0 and random == null
-                            if (sm_connection->sm_local_ediv == 0 && sm_is_null_random(sm_connection->sm_local_rand)){
-                                log_info("LTK Request: ediv & random are empty");
-                                sm_connection->sm_engine_state = SM_RESPONDER_PH0_SEND_LTK_REQUESTED_NEGATIVE_REPLY;
-                                // TODO: no need to lock context yet -> done = 0;
-                                break;
-                            }
-                            // re-establish previously used LTK using Rand and EDIV
-                            sm_start_calculating_ltk_from_ediv_and_rand(sm_connection);
+                            log_info("LTK Request: ediv & random are empty, but no stored LTK (IRK Lookup Failed)");
+                            sm_connection->sm_engine_state = SM_RESPONDER_PH0_SEND_LTK_REQUESTED_NEGATIVE_REPLY;
+                            // don't lock setup context yet
+                            done = 0;
                             break;
                         default:
                             // just wait until IRK lookup is completed
@@ -1965,6 +1968,7 @@ static void sm_run(void){
                             done = 0;
                             break;
                     }
+#endif
                     break;
                 case SM_INITIATOR_PH1_W2_SEND_PAIRING_REQUEST:
                     sm_init_setup(sm_connection);
@@ -2882,7 +2886,20 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                             // store rand and ediv
                             reverse_64(&packet[5], sm_conn->sm_local_rand);
                             sm_conn->sm_local_ediv   = little_endian_read_16(packet, 13);
+
+                            // For Legacy Pairing (<=> EDIV != 0 || RAND != NULL), we need to recalculated our LTK as a
+                            // potentially stored LTK is from the master
+                            if (sm_conn->sm_local_ediv != 0 || !sm_is_null_random(sm_conn->sm_local_rand)){
+                                sm_start_calculating_ltk_from_ediv_and_rand(sm_conn);
+                                break;
+                            }
+
+#ifdef ENABLE_LE_SECURE_CONNECTIONS
                             sm_conn->sm_engine_state = SM_RESPONDER_PH0_RECEIVED_LTK_REQUEST;
+#else
+                            log_info("LTK Request: ediv & random are empty, but LE Secure Connections not supported");
+                            sm_conn->sm_engine_state = SM_RESPONDER_PH0_SEND_LTK_REQUESTED_NEGATIVE_REPLY;
+#endif
                             break;
 
                         default:
