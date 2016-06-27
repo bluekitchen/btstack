@@ -1082,12 +1082,16 @@ static int sm_key_distribution_flags_for_auth_req(void){
     return flags;
 }
 
-static void sm_init_setup(sm_connection_t * sm_conn){
-
+static void sm_reset_setup(void){
     // fill in sm setup
     setup->sm_state_vars = 0;
     setup->sm_keypress_notification = 0xff;
     sm_reset_tk();
+}
+
+static void sm_init_setup(sm_connection_t * sm_conn){
+
+    // fill in sm setup
     setup->sm_peer_addr_type = sm_conn->sm_peer_addr_type;
     memcpy(setup->sm_peer_address, sm_conn->sm_peer_address, 6);
 
@@ -1920,6 +1924,7 @@ static void sm_run(void){
                     done = 0;
                     break;
                 case SM_RESPONDER_PH1_PAIRING_REQUEST_RECEIVED:
+                    sm_reset_setup();
                     sm_init_setup(sm_connection);
                     // recover pairing request
                     memcpy(&setup->sm_m_preq, &sm_connection->sm_m_preq, sizeof(sm_pairing_packet_t));
@@ -1938,6 +1943,7 @@ static void sm_run(void){
                     sm_connection->sm_engine_state = SM_RESPONDER_PH1_SEND_PAIRING_RESPONSE;
                     break;
                 case SM_INITIATOR_PH0_HAS_LTK:
+                    sm_reset_setup();
                     sm_load_security_info(sm_connection);
                     sm_connection->sm_engine_state = SM_INITIATOR_PH0_SEND_START_ENCRYPTION;
                     break;
@@ -1946,9 +1952,11 @@ static void sm_run(void){
                     switch (sm_connection->sm_irk_lookup_state){
                         case IRK_LOOKUP_SUCCEEDED:
                             // assuming Secure Connection, we have a stored LTK and the EDIV/RAND are null
+                            sm_reset_setup();
                             sm_load_security_info(sm_connection);
                             if (setup->sm_peer_ediv == 0 && sm_is_null_random(setup->sm_peer_rand) && !sm_is_null_key(setup->sm_peer_ltk)){
-                                sm_connection->sm_engine_state = SM_RESPONDER_PH2_SEND_LTK_REPLY;
+                                memcpy(setup->sm_ltk, setup->sm_peer_ltk, 16);
+                                sm_connection->sm_engine_state = SM_RESPONDER_PH4_SEND_LTK_REPLY;
                                 break;
                             }
                             log_info("LTK Request: ediv & random are empty, but no stored LTK (IRK Lookup Succeeded)");
@@ -1971,6 +1979,7 @@ static void sm_run(void){
 #endif
                     break;
                 case SM_INITIATOR_PH1_W2_SEND_PAIRING_REQUEST:
+                    sm_reset_setup();
                     sm_init_setup(sm_connection);
                     sm_timeout_start(sm_connection);
                     sm_connection->sm_engine_state = SM_INITIATOR_PH1_SEND_PAIRING_REQUEST;
@@ -2007,6 +2016,7 @@ static void sm_run(void){
             buffer[1] = setup->sm_keypress_notification;
             setup->sm_keypress_notification = 0xff;
             l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
+            return;
         }
 
         sm_key_t plaintext;
@@ -2366,7 +2376,7 @@ static void sm_run(void){
                 hci_send_cmd(&hci_le_start_encryption, connection->sm_handle, 0, 0, 0, stk_flipped);
                 return;
             }
-            case SM_RESPONDER_PH4_SEND_LTK: {
+            case SM_RESPONDER_PH4_SEND_LTK_REPLY: {
                 sm_key_t ltk_flipped;
                 reverse_128(setup->sm_ltk, ltk_flipped);
                 connection->sm_engine_state = SM_RESPONDER_IDLE;
@@ -2627,7 +2637,7 @@ static void sm_handle_encryption_result(uint8_t * data){
             reverse_128(data, setup->sm_ltk);
             sm_truncate_key(setup->sm_ltk, connection->sm_actual_encryption_key_size);
             log_info_key("ltk", setup->sm_ltk);
-            connection->sm_engine_state = SM_RESPONDER_PH4_SEND_LTK;
+            connection->sm_engine_state = SM_RESPONDER_PH4_SEND_LTK_REPLY;
             return;                                
         default:
             break;
@@ -2879,7 +2889,7 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                                 break;
                             }
                             if (sm_conn->sm_engine_state == SM_SC_W4_LTK_REQUEST_SC){
-                                sm_conn->sm_engine_state = SM_RESPONDER_PH2_SEND_LTK_REPLY;
+                                sm_conn->sm_engine_state = SM_RESPONDER_PH4_SEND_LTK_REPLY;
                                 break;
                             }
 
