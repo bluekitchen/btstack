@@ -118,6 +118,12 @@ void att_init_connection(att_connection_t * att_connection){
 	att_connection->authorized = 0;
 }
 
+void gap_local_bd_addr(bd_addr_t address_buffer){
+	int i;
+	for (i=0;i<6;i++) {
+		address_buffer[i] = 0x11 * (i+1);
+	}
+}
 int hci_can_send_command_packet_now(void){
 	return 1;
 }
