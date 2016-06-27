@@ -1406,7 +1406,12 @@ static void sm_sc_cmac_done(uint8_t * hash){
             sm_conn->sm_engine_state = SM_SC_W2_CALCULATE_F5_LTK;
             break;            
         case SM_SC_W4_CALCULATE_F5_LTK:
+            // truncate sm_ltk, but keep full LTK for cross-transport key derivation in sm_local_ltk
+            // Errata Service Release to the Bluetooth Specification: ESR09
+            //   E6405 – Cross transport key derivation from a key of size less than 128 bits
+            //   Note: When the BR/EDR link key is being derived from the LTK, the derivation is done before the LTK gets masked."
             memcpy(setup->sm_ltk, hash, 16);
+            memcpy(setup->sm_local_ltk, 16);
             sm_truncate_key(setup->sm_ltk, sm_conn->sm_actual_encryption_key_size);
             sm_conn->sm_engine_state = SM_SC_W2_CALCULATE_F6_FOR_DHKEY_CHECK;
             break; 
@@ -1701,8 +1706,12 @@ static void h6_engine(sm_connection_t * sm_conn, const sm_key_t w, const uint32_
     sm_cmac_general_start(w, message_len, &sm_sc_cmac_get_byte, &sm_sc_cmac_done);
 }
 
+// For SC, setup->sm_local_ltk holds full LTK (sm_ltk is already truncated)
+// Errata Service Release to the Bluetooth Specification: ESR09
+//   E6405 – Cross transport key derivation from a key of size less than 128 bits
+//   "Note: When the BR/EDR link key is being derived from the LTK, the derivation is done before the LTK gets masked."
 static void h6_calculate_ilk(sm_connection_t * sm_conn){
-    h6_engine(sm_conn, setup->sm_ltk, 0x746D7031);    // "tmp1"
+    h6_engine(sm_conn, setup->sm_local_ltk, 0x746D7031);    // "tmp1"
 }
 
 static void h6_calculate_br_edr_link_key(sm_connection_t * sm_conn){
