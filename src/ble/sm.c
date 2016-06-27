@@ -1175,7 +1175,7 @@ static void sm_address_resolution_handle_event(address_resolution_event_t event)
     hci_con_handle_t con_handle = 0;
 
     sm_connection_t * sm_connection;
-    uint16_t ediv;
+    sm_key_t ltk;
     switch (mode){
         case ADDRESS_RESOLUTION_GENERAL:
             break;
@@ -1191,8 +1191,8 @@ static void sm_address_resolution_handle_event(address_resolution_event_t event)
                     if (!sm_connection->sm_bonding_requested && !sm_connection->sm_security_request_received) break;
                     sm_connection->sm_security_request_received = 0;
                     sm_connection->sm_bonding_requested = 0;
-                    le_device_db_encryption_get(sm_connection->sm_le_db_index, &ediv, NULL, NULL, NULL, NULL, NULL);
-                    if (ediv){
+                    le_device_db_encryption_get(sm_connection->sm_le_db_index, NULL, NULL, ltk, NULL, NULL, NULL);
+                    if (!sm_is_null_key(ltk)){
                         sm_connection->sm_engine_state = SM_INITIATOR_PH0_HAS_LTK;
                     } else {
                         sm_connection->sm_engine_state = SM_INITIATOR_PH1_W2_SEND_PAIRING_REQUEST;
