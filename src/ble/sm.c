@@ -2889,7 +2889,8 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                                 break;
                             }
                             if (sm_conn->sm_engine_state == SM_SC_W4_LTK_REQUEST_SC){
-                                sm_conn->sm_engine_state = SM_RESPONDER_PH4_SEND_LTK_REPLY;
+                                // PH2 SEND LTK as we need to exchange keys in PH3
+                                sm_conn->sm_engine_state = SM_RESPONDER_PH2_SEND_LTK_REPLY;
                                 break;
                             }
 
