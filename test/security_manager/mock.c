@@ -97,7 +97,7 @@ void mock_simulate_sm_data_packet(uint8_t * packet, uint16_t len){
 }
 
 void mock_simulate_command_complete(const hci_cmd_t *cmd){
-	uint8_t packet[] = {HCI_EVENT_COMMAND_COMPLETE, 4, 1, cmd->opcode & 0xff, cmd->opcode >> 8, 0};
+	uint8_t packet[] = {HCI_EVENT_COMMAND_COMPLETE, 4, 1, (uint8_t) cmd->opcode & 0xff, (uint8_t) cmd->opcode >> 8, 0};
 	mock_simulate_hci_event((uint8_t *)&packet, sizeof(packet));
 }
 
