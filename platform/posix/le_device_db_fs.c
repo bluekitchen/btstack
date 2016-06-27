@@ -72,10 +72,24 @@ typedef struct le_device_memory_db {
 
 #define LE_DEVICE_MEMORY_SIZE 20
 #define INVALID_ENTRY_ADDR_TYPE 0xff
-const char * db_path = "/tmp/btstack_le_device_db.txt";
-const char * csv_header = "# addr_type, addr, irk, ltk, ediv, rand[8], key_size, authenticated, authorized, remote_csrk, remote_counter, local_csrk, local_counter";
+#define DB_PATH_TEMPLATE "/tmp/btstack_at_%s_le_device_db.txt"
+const  char * csv_header = "# addr_type, addr, irk, ltk, ediv, rand[8], key_size, authenticated, authorized, remote_csrk, remote_counter, local_csrk, local_counter";
+static char db_path[sizeof(DB_PATH_TEMPLATE) - 2 + 17 + 1];
 
 static le_device_memory_db_t le_devices[LE_DEVICE_MEMORY_SIZE];
+
+static char bd_addr_to_dash_str_buffer[6*3];  // 12-45-78-01-34-67\0
+static char * bd_addr_to_dash_str(bd_addr_t addr){
+    char * p = bd_addr_to_dash_str_buffer;
+    int i;
+    for (i = 0; i < 6 ; i++) {
+        *p++ = char_for_nibble((addr[i] >> 4) & 0x0F);
+        *p++ = char_for_nibble((addr[i] >> 0) & 0x0F);
+        *p++ = '-';
+    }
+    *--p = 0;
+    return (char *) bd_addr_to_dash_str_buffer;
+}
 
 static inline void write_delimiter(FILE * wFile){
     fwrite(", ", 1, 1, wFile);
@@ -208,6 +222,12 @@ void le_device_db_init(void){
     for (i=0;i<LE_DEVICE_MEMORY_SIZE;i++){
         le_devices[i].addr_type = INVALID_ENTRY_ADDR_TYPE;
     }
+    sprintf(db_path, DB_PATH_TEMPLATE, "00-00-00-00-00-00");
+}
+
+void le_device_db_set_local_bd_addr(bd_addr_t addr){
+    sprintf(db_path, DB_PATH_TEMPLATE, bd_addr_to_dash_str(addr));
+    log_info("le_device_db_fs: path %s", db_path);
     le_device_db_read();
     le_device_db_dump();
 }
