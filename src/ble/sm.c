@@ -1407,6 +1407,7 @@ static void sm_sc_cmac_done(uint8_t * hash){
             break;            
         case SM_SC_W4_CALCULATE_F5_LTK:
             memcpy(setup->sm_ltk, hash, 16);
+            sm_truncate_key(setup->sm_ltk, sm_conn->sm_actual_encryption_key_size);
             sm_conn->sm_engine_state = SM_SC_W2_CALCULATE_F6_FOR_DHKEY_CHECK;
             break; 
         case SM_SC_W4_CALCULATE_F6_FOR_DHKEY_CHECK:
