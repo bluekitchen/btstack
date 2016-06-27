@@ -48,7 +48,6 @@ GATT_CLIENT += \
 
 SM_REAL += \
 	sm.c 				 	    \
-    le_device_db_memory.c       \
 
 PAN += \
 	pan.c \
