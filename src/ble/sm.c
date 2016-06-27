@@ -1411,7 +1411,7 @@ static void sm_sc_cmac_done(uint8_t * hash){
             //   E6405 – Cross transport key derivation from a key of size less than 128 bits
             //   Note: When the BR/EDR link key is being derived from the LTK, the derivation is done before the LTK gets masked."
             memcpy(setup->sm_ltk, hash, 16);
-            memcpy(setup->sm_local_ltk, 16);
+            memcpy(setup->sm_local_ltk, hash, 16);
             sm_truncate_key(setup->sm_ltk, sm_conn->sm_actual_encryption_key_size);
             sm_conn->sm_engine_state = SM_SC_W2_CALCULATE_F6_FOR_DHKEY_CHECK;
             break; 
