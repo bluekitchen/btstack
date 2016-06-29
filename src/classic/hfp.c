@@ -129,21 +129,6 @@ int send_str_over_rfcomm(uint16_t cid, char * command){
     return 1;
 }
 
-#if 0
-void hfp_set_codec(hfp_connection_t * hfp_connection, uint8_t *packet, uint16_t size){
-    // parse available codecs
-    int pos = 0;
-    int i;
-    for (i=0; i<size; i++){
-        pos+=8;
-        if (packet[pos] > hfp_connection->negotiated_codec){
-            hfp_connection->negotiated_codec = packet[pos];
-        }
-    }
-    printf("Negotiated Codec 0x%02x\n", hfp_connection->negotiated_codec);
-}
-#endif
-
 // UTILS
 int get_bit(uint16_t bitmap, int position){
     return (bitmap >> position) & 1;
