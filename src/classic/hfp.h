@@ -489,7 +489,7 @@ typedef struct hfp_connection {
 
     // TODO: rename into hf_codecs_nr
     int      remote_codecs_nr;
-    uint16_t remote_codecs[HFP_MAX_INDICATOR_DESC_SIZE];
+    uint8_t remote_codecs[HFP_MAX_INDICATOR_DESC_SIZE];
 
     int      ag_indicators_nr;
     hfp_ag_indicator_t ag_indicators[HFP_MAX_INDICATOR_DESC_SIZE];
@@ -628,7 +628,8 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
 void hfp_emit_event(btstack_packet_handler_t callback, uint8_t event_subtype, uint8_t value);
 void hfp_emit_simple_event(btstack_packet_handler_t callback, uint8_t event_subtype);
 void hfp_emit_string_event(btstack_packet_handler_t callback, uint8_t event_subtype, const char * value);
-void hfp_emit_connection_event(btstack_packet_handler_t callback, uint8_t event_subtype, uint8_t status, hci_con_handle_t con_handle);
+void hfp_emit_connection_event(btstack_packet_handler_t callback, uint8_t event_subtype, uint8_t status, hci_con_handle_t con_handle, bd_addr_t addr, uint8_t codec);
+void hfp_emit_codec_event(btstack_packet_handler_t callback, uint8_t status, uint8_t codec);
 
 hfp_connection_t * get_hfp_connection_context_for_rfcomm_cid(uint16_t cid);
 hfp_connection_t * get_hfp_connection_context_for_bd_addr(bd_addr_t bd_addr);
@@ -644,7 +645,7 @@ void hfp_reset_context_flags(hfp_connection_t * connection);
 void hfp_release_audio_connection(hfp_connection_t * connection);
 
 void hfp_setup_synchronous_connection(hfp_connection_t * connection);
-int hfp_supports_codec(uint8_t codec, int codecs_nr, uint16_t * codecs);
+int hfp_supports_codec(uint8_t codec, int codecs_nr, uint8_t * codecs);
 
 const char * hfp_hf_feature(int index);
 const char * hfp_ag_feature(int index);

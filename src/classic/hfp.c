@@ -129,7 +129,7 @@ int send_str_over_rfcomm(uint16_t cid, char * command){
     return 1;
 }
 
-int hfp_supports_codec(uint8_t codec, int codecs_nr, uint16_t * codecs){
+int hfp_supports_codec(uint8_t codec, int codecs_nr, uint8_t * codecs){
     int i;
     for (i = 0; i < codecs_nr; i++){
         if (codecs[i] == codec) return 1;
@@ -203,6 +203,17 @@ void hfp_emit_simple_event(btstack_packet_handler_t callback, uint8_t event_subt
     (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
+void hfp_emit_codec_event(btstack_packet_handler_t callback, uint8_t status, uint8_t codec){
+    if (!callback) return;
+    uint8_t event[5];
+    event[0] = HCI_EVENT_HFP_META;
+    event[1] = sizeof(event) - 2;
+    event[2] = HFP_SUBEVENT_CODECS_CONNECTION_COMPLETE;
+    event[3] = status; // status 0 == OK
+    event[4] = codec; 
+    (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
 void hfp_emit_event(btstack_packet_handler_t callback, uint8_t event_subtype, uint8_t value){
     if (!callback) return;
     uint8_t event[4];
@@ -213,14 +224,19 @@ void hfp_emit_event(btstack_packet_handler_t callback, uint8_t event_subtype, ui
     (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-void hfp_emit_connection_event(btstack_packet_handler_t callback, uint8_t event_subtype, uint8_t status, hci_con_handle_t con_handle){
+void hfp_emit_connection_event(btstack_packet_handler_t callback, uint8_t event_subtype, uint8_t status, hci_con_handle_t con_handle, bd_addr_t addr, uint8_t codec){
     if (!callback) return;
-    uint8_t event[6];
-    event[0] = HCI_EVENT_HFP_META;
-    event[1] = sizeof(event) - 2;
-    event[2] = event_subtype;
-    event[3] = status; // status 0 == OK
-    little_endian_store_16(event, 4, con_handle);
+    uint8_t event[13];
+    int pos = 0;
+    event[pos++] = HCI_EVENT_HFP_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = event_subtype;
+    event[pos++] = status; // status 0 == OK
+    little_endian_store_16(event, pos, con_handle);
+    pos += 2;
+    reverse_bd_addr(addr,&event[pos]);
+    pos += 6;
+    event[pos] = codec;
     (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
@@ -291,7 +307,7 @@ void hfp_reset_context_flags(hfp_connection_t * hfp_connection){
 
     // establish codecs hfp_connection
     hfp_connection->suggested_codec = 0;
-    hfp_connection->negotiated_codec = 0;
+    hfp_connection->negotiated_codec = HFP_CODEC_CVSD;
     hfp_connection->codec_confirmed = 0;
 
     hfp_connection->establish_audio_connection = 0; 
@@ -327,7 +343,6 @@ static hfp_connection_t * provide_hfp_connection_context_for_bd_addr(bd_addr_t b
     hfp_connection_t * hfp_connection = get_hfp_connection_context_for_bd_addr(bd_addr);
     if (hfp_connection) return  hfp_connection;
     hfp_connection = create_hfp_connection_context();
-    printf("created hfp_connection for address %s\n", bd_addr_to_str(bd_addr));
     memcpy(hfp_connection->remote_addr, bd_addr, 6);
     return hfp_connection;
 }
@@ -510,17 +525,17 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
 
             rfcomm_event_channel_opened_get_bd_addr(packet, event_addr); 
             status = rfcomm_event_channel_opened_get_status(packet);          
-            // printf("RFCOMM_EVENT_CHANNEL_OPENED packet_handler adddr %s, status %u\n", bd_addr_to_str(event_addr), status);
-
+            
             hfp_connection = get_hfp_connection_context_for_bd_addr(event_addr);
             if (!hfp_connection || hfp_connection->state != HFP_W4_RFCOMM_CONNECTED) return;
 
             if (status) {
-                hfp_emit_connection_event(hfp_callback, HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED, status, rfcomm_event_channel_opened_get_con_handle(packet));
+                hfp_emit_connection_event(hfp_callback, HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED, status, rfcomm_event_channel_opened_get_con_handle(packet), event_addr, hfp_connection->negotiated_codec);
                 remove_hfp_connection_context(hfp_connection);
             } else {
                 hfp_connection->acl_handle = rfcomm_event_channel_opened_get_con_handle(packet);
                 hfp_connection->rfcomm_cid = rfcomm_event_channel_opened_get_rfcomm_cid(packet);
+                bd_addr_copy(hfp_connection->remote_addr, event_addr);
                 // uint16_t mtu = rfcomm_event_channel_opened_get_max_frame_size(packet);
                 // printf("RFCOMM channel open succeeded. hfp_connection %p, RFCOMM Channel ID 0x%02x, max frame size %u\n", hfp_connection, hfp_connection->rfcomm_cid, mtu);
                         
@@ -608,7 +623,7 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
             hfp_connection->sco_handle = sco_handle;
             hfp_connection->establish_audio_connection = 0;
             hfp_connection->state = HFP_AUDIO_CONNECTION_ESTABLISHED;
-            hfp_emit_connection_event(hfp_callback, HFP_SUBEVENT_AUDIO_CONNECTION_ESTABLISHED, packet[2], sco_handle);
+            hfp_emit_connection_event(hfp_callback, HFP_SUBEVENT_AUDIO_CONNECTION_ESTABLISHED, packet[2], sco_handle, event_addr, hfp_connection->negotiated_codec);
             break;                
         }
 

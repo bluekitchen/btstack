@@ -519,8 +519,8 @@ static int hfp_ag_set_response_and_hold(uint16_t cid, int state){
 }
 
 static uint8_t hfp_ag_suggest_codec(hfp_connection_t *hfp_connection){
-    if (hfp_supports_codec(HFP_CODEC_MSBC, hfp_codecs_nr, (uint16_t *)hfp_codecs)){
-        if (hfp_supports_codec(HFP_CODEC_MSBC, hfp_connection->remote_codecs_nr, (uint16_t *)(hfp_connection->remote_codecs))){
+    if (hfp_supports_codec(HFP_CODEC_MSBC, hfp_codecs_nr, hfp_codecs)){
+        if (hfp_supports_codec(HFP_CODEC_MSBC, hfp_connection->remote_codecs_nr, hfp_connection->remote_codecs)){
             return HFP_CODEC_MSBC;
         }
     }
@@ -587,7 +587,7 @@ static int codecs_exchange_state_machine(hfp_connection_t * hfp_connection){
             } 
             hfp_connection->negotiated_codec = hfp_connection->codec_confirmed;
             hfp_connection->codecs_state = HFP_CODECS_EXCHANGED;
-            hfp_emit_event(hfp_callback, HFP_SUBEVENT_CODECS_CONNECTION_COMPLETE, 0);
+            hfp_emit_codec_event(hfp_callback, 0, hfp_connection->negotiated_codec);
             hfp_ag_ok(hfp_connection->rfcomm_cid);           
             return 1; 
         default:
@@ -610,7 +610,7 @@ static void hfp_init_link_settings(hfp_connection_t * hfp_connection){
 
 static void hfp_ag_slc_established(hfp_connection_t * hfp_connection){
     hfp_connection->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
-    hfp_emit_connection_event(hfp_callback, HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED, 0, hfp_connection->acl_handle);
+    hfp_emit_connection_event(hfp_callback, HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED, 0, hfp_connection->acl_handle, hfp_connection->remote_addr, hfp_connection->negotiated_codec);
     
     hfp_init_link_settings(hfp_connection);
 

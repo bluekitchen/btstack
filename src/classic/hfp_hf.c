@@ -515,8 +515,8 @@ static int codecs_exchange_state_machine(hfp_connection_t * hfp_connection){
             hfp_hf_cmd_trigger_codec_connection_setup(hfp_connection->rfcomm_cid);
             break;
 
-         case HFP_CMD_AG_SUGGESTED_CODEC:
-            if (hfp_supports_codec(hfp_connection->suggested_codec, hfp_codecs_nr, (uint16_t *)hfp_codecs)){
+         case HFP_CMD_AG_SUGGESTED_CODEC:{
+            if (hfp_supports_codec(hfp_connection->suggested_codec, hfp_codecs_nr, hfp_codecs)){
                 hfp_connection->codec_confirmed = hfp_connection->suggested_codec;
                 hfp_connection->ok_pending = 1;
                 hfp_connection->codecs_state = HFP_CODECS_HF_CONFIRMED_CODEC;
@@ -531,7 +531,7 @@ static int codecs_exchange_state_machine(hfp_connection_t * hfp_connection){
 
             }
             break;
-        
+        }
         default:
             break;
     }
@@ -828,7 +828,8 @@ static void hfp_init_link_settings(hfp_connection_t * hfp_connection){
 
 static void hfp_ag_slc_established(hfp_connection_t * hfp_connection){
     hfp_connection->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
-    hfp_emit_connection_event(hfp_callback, HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED, 0, hfp_connection->acl_handle);
+
+    hfp_emit_connection_event(hfp_callback, HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED, 0, hfp_connection->acl_handle, hfp_connection->remote_addr, hfp_connection->negotiated_codec);
     hfp_init_link_settings(hfp_connection);
     // restore volume settings
     hfp_connection->speaker_gain = hfp_hf_speaker_gain;
@@ -936,7 +937,8 @@ static void hfp_hf_switch_on_ok(hfp_connection_t *hfp_connection){
                     break;
                 case HFP_CODECS_HF_CONFIRMED_CODEC:
                     hfp_connection->codecs_state = HFP_CODECS_EXCHANGED;
-                    hfp_emit_event(hfp_callback, HFP_SUBEVENT_CODECS_CONNECTION_COMPLETE, 0);
+                    hfp_connection->negotiated_codec = hfp_connection->suggested_codec;
+                    hfp_emit_codec_event(hfp_callback, 0, hfp_connection->negotiated_codec);
                     break;
                 default:
                     break;
