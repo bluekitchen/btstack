@@ -64,7 +64,6 @@
 #include "stdin_support.h"
 #endif
 
-
 uint8_t hfp_service_buffer[150];
 const uint8_t   rfcomm_channel_nr = 1;
 const char hfp_hf_service_name[] = "BTstack HFP HF Demo";
@@ -79,8 +78,9 @@ static uint16_t handle = -1;
 static hci_con_handle_t sco_handle;
 static uint8_t codecs[] = {HFP_CODEC_CVSD, HFP_CODEC_MSBC};
 static uint16_t indicators[1] = {0x01};
-
+static uint8_t  negotiated_codec = HFP_CODEC_CVSD;
 char cmd;
+
 
 #ifdef HAVE_POSIX_STDIN
 
@@ -317,7 +317,7 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
             break;
         case 'N':
             log_info("USER:\'%c\'", cmd);
-            printf("Activate voice recognition\n");
+            printf("Activate voice recognition %s\n", bd_addr_to_str(device_addr));
             hfp_hf_activate_voice_recognition_notification(device_addr);
             break;
         case 'o':
@@ -453,21 +453,26 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
     switch (packet_type){
 
         case HCI_SCO_DATA_PACKET:
-            sco_demo_receive(event, event_size);
+            sco_demo_receive_with_codec(event, event_size, negotiated_codec);
             break;
 
         case HCI_EVENT_PACKET:
             switch (event[0]){
-
                 case HCI_EVENT_SCO_CAN_SEND_NOW:
                     sco_demo_send(sco_handle);
                     break;
 
                 case HCI_EVENT_HFP_META:
                     switch (event[2]) {   
+                        case HFP_SUBEVENT_CODECS_CONNECTION_COMPLETE:
+                            negotiated_codec = hfp_subevent_codecs_connection_complete_get_negotiated_codec(event);
+                            printf("Codec connection established with codec 0x%02x.\n", negotiated_codec);
+                            break;
+
                         case HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED:
                             handle = hfp_subevent_service_level_connection_established_get_con_handle(event);
-                            printf("Service level connection established.\n\n");
+                            hfp_subevent_service_level_connection_established_get_bd_addr(event, device_addr);
+                            printf("Service level connection established %s.\n\n", bd_addr_to_str(device_addr));
                             break;
                         case HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED:
                             printf("Service level connection released.\n\n");
@@ -478,7 +483,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                                 printf("Audio connection establishment failed with status %u\n", hfp_subevent_audio_connection_established_get_status(event));
                             } else {
                                 sco_handle = hfp_subevent_audio_connection_established_get_handle(event);
-                                printf("Audio connection established with SCO handle 0x%04x.\n", sco_handle);
+                                negotiated_codec = hfp_subevent_audio_connection_established_get_negotiated_codec(event);
+                                printf("Audio connection established with SCO handle 0x%04x and codec 0x%02x.\n", sco_handle, negotiated_codec);
                                 hci_request_sco_can_send_now_event();
                             }
                             break;
@@ -534,7 +540,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
             break;
     }
 
-
     if (event[0] != HCI_EVENT_HFP_META) return;
 
     switch (event[2]) {   
@@ -546,6 +551,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
             printf("Service level connection released.\n\n");
             break;
         case HFP_SUBEVENT_AUDIO_CONNECTION_ESTABLISHED:
+            printf("HFP_SUBEVENT_AUDIO_CONNECTION_ESTABLISHED\n");
             if (hfp_subevent_audio_connection_established_get_status(event)){
                 sco_handle = 0;
                 printf("Audio connection establishment failed with status %u\n", hfp_subevent_audio_connection_established_get_status(event));
@@ -593,7 +599,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
             printf("Microphone volume: %u\n", event[3]);
             break;
         default:
-            printf("event not handled %u\n", event[2]);
+            printf("event not handled 0x%02x\n", event[2]);
             break;
     }
 }
@@ -633,7 +639,8 @@ int btstack_main(int argc, const char * argv[]){
     hfp_hf_create_sdp_record(hfp_service_buffer, 0x10001, rfcomm_channel_nr, hfp_hf_service_name, 0);
     printf("SDP service record size: %u\n", de_get_len(hfp_service_buffer));
     sdp_register_service(hfp_service_buffer);
-
+    gap_set_class_of_device(0x200408);   
+    
 #ifdef HAVE_POSIX_STDIN
     btstack_stdin_setup(stdin_process);
 #endif    
