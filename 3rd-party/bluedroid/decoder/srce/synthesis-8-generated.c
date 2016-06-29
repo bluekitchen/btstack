@@ -39,6 +39,7 @@
 
 #define MUL_16S_16S(_x, _y) ((_x) * (_y))
 
+PRIVATE void SynthWindow80_generated(OI_INT16 *pcm, SBC_BUFFER_T const * RESTRICT buffer, OI_UINT strideShift);
 PRIVATE void SynthWindow80_generated(OI_INT16 *pcm, SBC_BUFFER_T const * RESTRICT buffer, OI_UINT strideShift)
 {
     OI_INT32 pcm_a, pcm_b;

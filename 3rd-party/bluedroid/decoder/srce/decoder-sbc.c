@@ -40,6 +40,9 @@
  */
 PRIVATE OI_STATUS FindSyncword(OI_CODEC_SBC_DECODER_CONTEXT *context,
                                const OI_BYTE **frameData,
+                               OI_UINT32 *frameBytes);
+PRIVATE OI_STATUS FindSyncword(OI_CODEC_SBC_DECODER_CONTEXT *context,
+                               const OI_BYTE **frameData,
                                OI_UINT32 *frameBytes)
 {
 #ifdef SBC_ENHANCED
@@ -445,6 +448,7 @@ OI_UINT8 OI_CODEC_SBC_FrameCount(OI_BYTE  *frameData,
 
 #ifdef SPECIALIZE_READ_SAMPLES_JOINT
 
+PRIVATE void OI_SBC_ReadSamplesJoint4(OI_CODEC_SBC_DECODER_CONTEXT *context, OI_BITSTREAM *global_bs);
 PRIVATE void OI_SBC_ReadSamplesJoint4(OI_CODEC_SBC_DECODER_CONTEXT *context, OI_BITSTREAM *global_bs)
 {
 #define NROF_SUBBANDS 4
@@ -452,6 +456,7 @@ PRIVATE void OI_SBC_ReadSamplesJoint4(OI_CODEC_SBC_DECODER_CONTEXT *context, OI_
 #undef NROF_SUBBANDS
 }
 
+PRIVATE void OI_SBC_ReadSamplesJoint8(OI_CODEC_SBC_DECODER_CONTEXT *context, OI_BITSTREAM *global_bs);
 PRIVATE void OI_SBC_ReadSamplesJoint8(OI_CODEC_SBC_DECODER_CONTEXT *context, OI_BITSTREAM *global_bs)
 {
 #define NROF_SUBBANDS 8

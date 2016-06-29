@@ -180,6 +180,7 @@ INLINE OI_INT32 OI_SBC_Dequant(OI_UINT32 raw, OI_UINT scale_factor, OI_UINT bits
  * the encoder is conformant) the result will fit a 24 bit fixed point signed
  * value.*/
 
+INLINE OI_INT32 OI_SBC_Dequant_Unscaled(OI_UINT32 raw, OI_UINT scale_factor, OI_UINT bits);
 INLINE OI_INT32 OI_SBC_Dequant_Unscaled(OI_UINT32 raw, OI_UINT scale_factor, OI_UINT bits)
 {
     OI_UINT32 d;

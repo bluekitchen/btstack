@@ -60,6 +60,7 @@
  * @return  A signed 32-bit value corresponding to the 32 most significant bits
  * of the 64-bit product of u and v.
  */
+INLINE OI_INT32 default_mul_32s_32s_hi(OI_INT32 u, OI_INT32 v);
 INLINE OI_INT32 default_mul_32s_32s_hi(OI_INT32 u, OI_INT32 v)
 {
     OI_UINT32 u0, v0;
@@ -206,6 +207,7 @@ PRIVATE void float_dct2_8(float * RESTRICT out, OI_INT32 const *RESTRICT in)
  * [ 0  0  0  0  0  0  1  2 ]
  *
  */
+PRIVATE void dct2_8(SBC_BUFFER_T * RESTRICT out, OI_INT32 const *RESTRICT in);
 PRIVATE void dct2_8(SBC_BUFFER_T * RESTRICT out, OI_INT32 const *RESTRICT in)
 {
 #define BUTTERFLY(x,y) x += y; y = x - (y<<1);

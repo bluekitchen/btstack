@@ -95,7 +95,6 @@ static const BIT_ALLOC balloc[] = {
     stereoBitAllocation   /* SBC_JOINT_STEREO */
 };
 
-
 PRIVATE void OI_SBC_ComputeBitAllocation(OI_CODEC_SBC_COMMON_CONTEXT *common)
 {
     OI_ASSERT(common->frameInfo.bitpool <= OI_SBC_MaxBitpool(&common->frameInfo));
@@ -116,6 +115,7 @@ OI_UINT32 OI_CODEC_SBC_CalculateBitrate(OI_CODEC_SBC_FRAME_INFO *frame)
 /*
  * Return the current maximum bitneed and clear it.
  */
+#if 0
 OI_UINT8 OI_CODEC_SBC_GetMaxBitneed(OI_CODEC_SBC_COMMON_CONTEXT *common)
 {
     OI_UINT8 max = common->maxBitneed;
@@ -123,7 +123,7 @@ OI_UINT8 OI_CODEC_SBC_GetMaxBitneed(OI_CODEC_SBC_COMMON_CONTEXT *common)
     common->maxBitneed = 0;
     return max;
 }
-
+#endif
 /*
  * Calculates the bitpool size for a given frame length
  */

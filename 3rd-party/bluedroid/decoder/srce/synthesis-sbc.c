@@ -213,6 +213,7 @@ const OI_INT32 dec_window_4[21] = {
  * @return  A signed 32-bit value corresponding to the 32 most significant bits
  * of the 48-bit product of u and v.
  */
+INLINE OI_INT32 default_mul_16s_32s_hi(OI_INT16 u, OI_INT32 v);
 INLINE OI_INT32 default_mul_16s_32s_hi(OI_INT16 u, OI_INT32 v)
 {
     OI_UINT16 v0;
@@ -255,6 +256,7 @@ typedef void (*SYNTH_FRAME)(OI_CODEC_SBC_DECODER_CONTEXT *context, OI_INT16 *pcm
 #define SYNTH112 SynthWindow112_generated
 #endif
 
+PRIVATE void OI_SBC_SynthFrame_80(OI_CODEC_SBC_DECODER_CONTEXT *context, OI_INT16 *pcm, OI_UINT blkstart, OI_UINT blkcount);
 PRIVATE void OI_SBC_SynthFrame_80(OI_CODEC_SBC_DECODER_CONTEXT *context, OI_INT16 *pcm, OI_UINT blkstart, OI_UINT blkcount)
 {
     OI_UINT blk;
@@ -286,6 +288,7 @@ PRIVATE void OI_SBC_SynthFrame_80(OI_CODEC_SBC_DECODER_CONTEXT *context, OI_INT1
     context->common.filterBufferOffset = offset;
 }
 
+PRIVATE void OI_SBC_SynthFrame_4SB(OI_CODEC_SBC_DECODER_CONTEXT *context, OI_INT16 *pcm, OI_UINT blkstart, OI_UINT blkcount);
 PRIVATE void OI_SBC_SynthFrame_4SB(OI_CODEC_SBC_DECODER_CONTEXT *context, OI_INT16 *pcm, OI_UINT blkstart, OI_UINT blkcount)
 {
     OI_UINT blk;
