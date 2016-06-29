@@ -319,7 +319,6 @@ static hfp_connection_t * provide_hfp_connection_context_for_bd_addr(bd_addr_t b
     hfp_connection_t * hfp_connection = get_hfp_connection_context_for_bd_addr(bd_addr);
     if (hfp_connection) return  hfp_connection;
     hfp_connection = create_hfp_connection_context();
-    printf("created hfp_connection for address %s\n", bd_addr_to_str(bd_addr));
     memcpy(hfp_connection->remote_addr, bd_addr, 6);
     return hfp_connection;
 }
