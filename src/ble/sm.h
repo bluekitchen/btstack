@@ -190,6 +190,13 @@ void sm_numeric_comparison_confirm(hci_con_handle_t con_handle);
 void sm_passkey_input(hci_con_handle_t con_handle, uint32_t passkey);
 
 /**
+ * @brief Send keypress notification for keyboard only devices
+ * @param con_handle
+ * @param action see SM_KEYPRESS_* in bluetooth.h
+ */
+void sm_keypress_notification(hci_con_handle_t con_handle, uint8_t action);
+
+/**
  *
  * @brief Get encryption key size.
  * @param con_handle
@@ -229,6 +236,23 @@ void sm_authorization_decline(hci_con_handle_t con_handle);
  */
 void sm_authorization_grant(hci_con_handle_t con_handle);
 
+
+/**
+ * @brief Check if CMAC AES engine is ready
+ * @return ready
+ */
+ int sm_cmac_ready(void);
+
+/*
+ * @brief Generic CMAC AES
+ * @param key
+ * @param message_len
+ * @param get_byte_callback
+ * @param done_callback
+ * @note hash is 16 bytes in big endian
+ */
+void sm_cmac_general_start(const sm_key_t key, uint16_t message_len, uint8_t (*get_byte_callback)(uint16_t offset), void (*done_callback)(uint8_t * hash));
+
 /**
  * @brief Support for signed writes, used by att_server.
  * @note Message is in little endian to allows passing in ATT PDU without flipping. 
@@ -241,18 +265,7 @@ void sm_authorization_grant(hci_con_handle_t con_handle);
  * @param message
  * @param sign_counter
  */
-int  sm_cmac_ready(void);
-void sm_cmac_start(const sm_key_t key, uint8_t opcode, uint16_t attribute_handle, uint16_t message_len, const uint8_t * message, uint32_t sign_counter, void (*done_callback)(uint8_t * hash));
-
-/*
- * @brief Generic CMAC AES
- * @param key
- * @param message_len
- * @param get_byte_callback
- * @param done_callback
- * @note hash is 16 bytes in big endian
- */
-void sm_cmac_general_start(const sm_key_t key, uint16_t message_len, uint8_t (*get_byte_callback)(uint16_t offset), void (*done_callback)(uint8_t * hash));
+void sm_cmac_signed_write_start(const sm_key_t key, uint8_t opcode, uint16_t attribute_handle, uint16_t message_len, const uint8_t * message, uint32_t sign_counter, void (*done_callback)(uint8_t * hash));
 
 /*
  * @brief Match address against bonded devices

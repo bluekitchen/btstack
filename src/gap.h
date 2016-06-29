@@ -353,8 +353,17 @@ void gap_local_bd_addr(bd_addr_t address_buffer);
 
 /**
  * @brief Deletes link key for remote device with baseband address.
+ * @param addr
  */
 void gap_drop_link_key_for_bd_addr(bd_addr_t addr);
+
+/** 
+ * @brief Store link key for remote device with baseband address
+ * @param addr
+ * @param link_key
+ * @param link_key_type
+ */
+void gap_store_link_key_for_bd_addr(bd_addr_t addr, link_key_t link_key, link_key_type_t type);
 
 // LE
 

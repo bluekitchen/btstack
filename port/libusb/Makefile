@@ -3,7 +3,7 @@ BTSTACK_ROOT = ../..
 
 CORE += main.c stdin_support.c
 
-COMMON += hci_transport_h2_libusb.c btstack_run_loop_posix.c btstack_link_key_db_fs.c
+COMMON += hci_transport_h2_libusb.c btstack_run_loop_posix.c btstack_link_key_db_fs.c le_device_db_fs.c
 
 include ${BTSTACK_ROOT}/example/Makefile.inc
 

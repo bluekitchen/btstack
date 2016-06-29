@@ -44,10 +44,11 @@
  */
 
 #include "btstack_config.h"
+#include "btstack_debug.h"
 #include "btstack_util.h"
+
 #include <stdio.h>
 #include <string.h>
-#include "btstack_debug.h"
 
 
 /**
@@ -171,17 +172,12 @@ void printf_hexdump(const void *data, int size){
     printf("\n");
 }
 
-//  void log_info_hexdump(..){
-//  
-//  }
-
 void log_info_hexdump(const void *data, int size){
 #ifdef ENABLE_LOG_INFO
     char buffer[6*16+1];
     int i, j;
-
-    uint8_t low = 0x0F;
-    uint8_t high = 0xF0;
+    const uint8_t low = 0x0F;
+    const uint8_t high = 0xF0;
     j = 0;
     for (i=0; i<size;i++){
         uint8_t byte = ((uint8_t *)data)[i];
@@ -205,8 +201,20 @@ void log_info_hexdump(const void *data, int size){
 }
 
 void log_info_key(const char * name, sm_key_t key){
-    // log_info("%-6s ", name);
-    // hexdump(key, 16);
+#ifdef ENABLE_LOG_INFO
+    char buffer[16*2+1];
+    const uint8_t low = 0x0F;
+    const uint8_t high = 0xF0;
+    int i;
+    int j = 0;
+    for (i=0; i<16;i++){
+        uint8_t byte = key[i];
+        buffer[j++] = char_for_nibble((byte & high) >> 4);
+        buffer[j++] = char_for_nibble(byte & low);
+    }
+    buffer[j] = 0;
+    log_info("%-6s %s", name, buffer);
+#endif
 }
 
 // UUIDs are stored in big endian, similar to bd_addr_t

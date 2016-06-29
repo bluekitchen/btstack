@@ -954,6 +954,7 @@ typedef enum {
     SM_CODE_SECURITY_REQUEST,
     SM_CODE_PAIRING_PUBLIC_KEY,
     SM_CODE_PAIRING_DHKEY_CHECK,
+    SM_CODE_KEYPRESS_NOTIFICATION,
 } SECURITY_MANAGER_COMMANDS;
 
 // IO Capability Values
@@ -1008,6 +1009,14 @@ typedef enum {
 
 // also, invalid parameters
 // and reserved
+
+// Keypress Notifications
+#define SM_KEYPRESS_PASSKEY_ENTRY_STARTED      0x00
+#define SM_KEYPRESS_PASSKEY_DIGIT_ENTERED      0x01
+#define SM_KEYPRESS_PASSKEY_DIGIT_ERASED       0x02
+#define SM_KEYPRESS_PASSKEY_CLEARED            0x03
+#define SM_KEYPRESS_PASSKEY_ENTRY_COMPLETED    0x04
+
 
 // Company identifiers / manufacturers
 #define COMPANY_ID_CAMBRIDGE_SILICON_RADIO     0x000A 
