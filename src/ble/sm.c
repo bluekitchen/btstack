@@ -231,8 +231,11 @@ static uint8_t ec_qx[32];
 static uint8_t ec_qy[32];
 static uint8_t ec_d[32];
 #ifndef HAVE_MALLOC
-// 4304 bytes with 73 allocations
-#define MBEDTLS_ALLOC_BUFFER_SIZE (1300+23*sizeof(void *))
+// COMP Method with Window 2
+// 1300 bytes with 23 allocations
+// #define MBEDTLS_ALLOC_BUFFER_SIZE (1300+23*sizeof(void *))
+// NAIVE Method with safe cond assignments (without safe cond, order changes and allocations fail)
+#define MBEDTLS_ALLOC_BUFFER_SIZE (700+18*sizeof(void *))
 static uint8_t mbedtls_memory_buffer[MBEDTLS_ALLOC_BUFFER_SIZE]; 
 #endif
 #endif
@@ -1494,12 +1497,12 @@ static void sm_sc_calculate_dhkey(sm_key256_t dhkey){
     mbedtls_mpi_read_binary(&d, ec_d, 32);
     mbedtls_mpi_read_binary(&Q.X, setup->sm_peer_qx, 32);
     mbedtls_mpi_read_binary(&Q.Y, setup->sm_peer_qy, 32);
-    mbedtls_mpi_read_string(&Q.Z, 16, "1" );
+    mbedtls_mpi_lset(&Q.Z, 1);
     mbedtls_ecp_mul(&mbedtls_ec_group, &DH, &d, &Q, NULL, NULL);
     mbedtls_mpi_write_binary(&DH.X, dhkey, 32);
+    mbedtls_ecp_point_free(&DH);
     mbedtls_mpi_free(&d);
     mbedtls_ecp_point_free(&Q);
-    mbedtls_ecp_point_free(&DH);
 #endif
     log_info("dhkey");
     log_info_hexdump(dhkey, 32);
@@ -2687,6 +2690,7 @@ static void sm_handle_random_result(uint8_t * data){
         setup->sm_passkey_bit = num_bytes;
 
         if (num_bytes >= 64){
+
             // generate EC key
             setup->sm_passkey_bit = 0;
             mbedtls_mpi d;
@@ -2704,11 +2708,15 @@ static void sm_handle_random_result(uint8_t * data){
             sm_log_ec_keypair();
 
 #if 0
-            printf("test dhkey check\n");
+            int i;
             sm_key256_t dhkey;
-            memcpy(setup->sm_peer_qx, ec_qx, 32);
-            memcpy(setup->sm_peer_qy, ec_qy, 32);
-            sm_sc_calculate_dhkey(dhkey);
+            for (i=0;i<10;i++){
+                // printf("test dhkey check\n");
+                memcpy(setup->sm_peer_qx, ec_qx, 32);
+                memcpy(setup->sm_peer_qy, ec_qy, 32);
+                sm_sc_calculate_dhkey(dhkey);
+                // printf("test dhkey check end\n");
+            }
 #endif
 
         }
@@ -3248,7 +3256,7 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
             mbedtls_ecp_point_init( &Q );
             mbedtls_mpi_read_binary(&Q.X, setup->sm_peer_qx, 32);
             mbedtls_mpi_read_binary(&Q.Y, setup->sm_peer_qy, 32);
-            mbedtls_mpi_read_string(&Q.Z, 16, "1" );
+            mbedtls_mpi_lset(&Q.Z, 1);
             err = mbedtls_ecp_check_pubkey(&mbedtls_ec_group, &Q);
             mbedtls_ecp_point_free( & Q);
             if (err){
@@ -3565,7 +3573,6 @@ void sm_init(void){
 #endif
     mbedtls_ecp_group_init(&mbedtls_ec_group);
     mbedtls_ecp_group_load(&mbedtls_ec_group, MBEDTLS_ECP_DP_SECP256R1);
-
 #if 0
     // test
     sm_test_use_fixed_ec_keypair();
