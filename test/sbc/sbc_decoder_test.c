@@ -55,10 +55,23 @@
 
 static uint8_t data[10000];
 static OI_INT16 pcmData[1000];
+static OI_UINT32 pcmBytes = sizeof(pcmData);
+
 static uint8_t buf[4];
 
 static OI_UINT32 decoderData[10000];
 static OI_CODEC_SBC_DECODER_CONTEXT context;
+
+typedef struct {
+    OI_UINT32 bytesRead;
+    OI_UINT32 frameBytes;
+    OI_UINT32 inputBufferBytes;
+    int frame_count;
+    int enough_data;
+    const OI_BYTE *frameData;
+} sbc_state_t;
+static sbc_state_t state;
+
 
 void OI_AssertFail(char* file, int line, char* reason){
     printf("AssertFail file %s, line %d, reason %s\n", file, line, reason);
@@ -105,9 +118,12 @@ void little_endian_fstore_32(FILE *wav_file, uint32_t value){
 }
 
 
-static void write_wav_header(FILE * wav_file, int num_samples, int num_channels, int sample_rate, int frame_count){
+static void write_wav_header(FILE * wav_file, OI_CODEC_SBC_DECODER_CONTEXT * decoderContext, int frame_count){
     unsigned int bytes_per_sample = 2;
-    
+    int num_samples = decoderContext->common.frameInfo.nrof_blocks * decoderContext->common.frameInfo.nrof_subbands;
+    int num_channels = decoderContext->common.frameInfo.nrof_channels;
+    int sample_rate = decoderContext->common.frameInfo.frequency;
+
     /* write RIFF header */
     fwrite("RIFF", 1, 4, wav_file);
     // num_samples = blocks * subbands
@@ -136,7 +152,9 @@ static void write_wav_header(FILE * wav_file, int num_samples, int num_channels,
     little_endian_fstore_32(wav_file, data_bytes);
 }
 
-static void write_wav_data(FILE * wav_file, unsigned long num_samples, unsigned int num_channels, int16_t * data){
+static void write_wav_data(FILE * wav_file, OI_CODEC_SBC_DECODER_CONTEXT * decoderContext, int16_t * data){
+    int num_samples = decoderContext->common.frameInfo.nrof_blocks * decoderContext->common.frameInfo.nrof_subbands;
+    int num_channels = decoderContext->common.frameInfo.nrof_channels;
     int i;
     for (i=0; i < num_samples; i++){
         little_endian_fstore_16(wav_file, (uint16_t)data[i]);
@@ -147,12 +165,63 @@ static void write_wav_data(FILE * wav_file, unsigned long num_samples, unsigned 
 }
 
 
+
+static uint8_t read_buffer[200];
+
+static int read_next_sbc_chunk(int fd, sbc_state_t * state){
+    // read data into seperate buffer
+    state->bytesRead = __read(fd, data + state->frameBytes, sizeof(data) - state->frameBytes);
+    state->frameBytes += state->bytesRead;
+    state->bytesRead = state->frameBytes;
+    state->frameData = data;
+    state->enough_data = 1;
+    return state->frameBytes != 0;
+
+    // uint16_t size = __read(fd, read_buffer, sizeof(read_buffer));
+    // return size != 0;
+}
+
+
+static void handle_received_sbc_data(sbc_state_t * state, uint8_t * read_buffer, int read_buffer_len){
+    int numFreeBytes = sizeof(data) - state->frameBytes;
+    
+    if (numFreeBytes >= read_buffer_len){
+        memcpy(data + state->frameBytes, read_buffer, read_buffer_len);
+        state->bytesRead = read_buffer_len;
+        state->inputBufferBytes = 0;
+    } else {
+        memcpy(data + state->frameBytes, read_buffer, numFreeBytes);
+        state->bytesRead = numFreeBytes;
+        state->inputBufferBytes = read_buffer_len - numFreeBytes;
+    }
+    state->frameBytes += state->bytesRead;
+    state->bytesRead = state->frameBytes;
+    state->frameData = data;
+    state->enough_data = 1;
+}
+
+// {
+//     while (not done){
+//         read some data (max size) using __read or even direct read
+//         handle received sbc data
+//     }
+// }
+
+static void init_sbc_state(sbc_state_t * state){
+    state->frameBytes = 0;
+    state->bytesRead = 0;
+    state->frame_count = 0;
+    state->enough_data = 0;
+    state->inputBufferBytes = 0;
+    state->frameData = NULL;
+}
+
 int main (int argc, const char * argv[]){
     if (argc < 2){
         show_usage();
         return -1;
     }
-
+    
     const char * sbc_filename = argv[1];
     const char * wav_filename = argv[2];
     
@@ -164,59 +233,49 @@ int main (int argc, const char * argv[]){
     }
     printf("Open sbc file: %s\n", sbc_filename);
 
-    OI_UINT32 frameBytes = 0;
-    
-    OI_UINT32 bytesRead = __read(fd, data, sizeof(data));
-    frameBytes += bytesRead;
-    const OI_BYTE *frameData = data;
-    
-    OI_UINT32 pcmBytes = sizeof(pcmData);
-    // OI_STATUS status = OI_CODEC_SBC_DecoderReset(&context, decoderData, sizeof(decoderData), 1, 1, FALSE);
+    //OI_STATUS status = OI_CODEC_SBC_DecoderReset(&context, decoderData, sizeof(decoderData), 1, 1, FALSE);
 
     OI_STATUS status = OI_CODEC_mSBC_DecoderReset(&context, decoderData, sizeof(decoderData));
     if (status != 0){
         printf("Reset decoder error %d\n", status);
         return -1;
     }
-    int num_samples = 0;
-    int num_channels = 0;
-    int sample_rate = 0;
-    int frame_count = 0;
+    
     FILE * wav_file = fopen(wav_filename, "wb");
     
-    while (frameBytes != 0){
-        status = OI_CODEC_SBC_DecodeFrame(&context, &frameData, &frameBytes, pcmData, &pcmBytes);
-        num_samples = context.common.frameInfo.nrof_blocks * context.common.frameInfo.nrof_subbands;
-        num_channels = context.common.frameInfo.nrof_channels;
-        sample_rate = context.common.frameInfo.frequency;
-        
-        if (status != 0){
-            if (status != OI_CODEC_SBC_NOT_ENOUGH_HEADER_DATA && status != OI_CODEC_SBC_NOT_ENOUGH_BODY_DATA){
-                printf("Frame decode error %d\n", status);
-                break;
-            } 
-            printf("Not enough data, read next %u bytes\n", bytesRead-frameBytes);
+    init_sbc_state(&state);
+    
+    while (read_next_sbc_chunk(fd, &state)){
+        while (state.frameBytes != 0 && state.enough_data){
             
-            memmove(data, data + bytesRead - frameBytes, frameBytes);
-            bytesRead = __read(fd, data + frameBytes, sizeof(data) - frameBytes);
-            frameBytes += bytesRead;
-            bytesRead = frameBytes;
-            frameData = data;
-            continue;
+            status = OI_CODEC_SBC_DecodeFrame(&context, &state.frameData, &state.frameBytes, pcmData, &pcmBytes);
+        
+            if (status != 0){
+                if (status != OI_CODEC_SBC_NOT_ENOUGH_HEADER_DATA && status != OI_CODEC_SBC_NOT_ENOUGH_BODY_DATA){
+                    OI_CODEC_SBC_DumpConfig(&(context. common.frameInfo));
+                    printf("Frame decode error %d\n", status);
+                    break;
+                }
+                printf("Not enough data, read next %u bytes\n", state.bytesRead-state.frameBytes);
+                state.enough_data = 0;
+                memmove(data, data + state.bytesRead - state.frameBytes, state.frameBytes);
+                continue;
+            }
+            
+            if (state.frame_count == 0){
+                write_wav_header(wav_file, &context, 0);
+            } 
+            write_wav_data(wav_file, &context, pcmData);
+            state.frame_count++;
         }
-
-        if (frame_count == 0){
-            write_wav_header(wav_file, num_samples, num_channels, sample_rate, 0);
-        }
-
-        write_wav_data(wav_file, num_samples, num_channels, pcmData);
-        frame_count++;
+        
     }
+
     rewind(wav_file);
-    write_wav_header(wav_file, num_samples, num_channels, sample_rate, frame_count);
+    write_wav_header(wav_file, &context, state.frame_count);
 
     fclose(wav_file);
-    printf("Write %d frames to wav file: %s\n", frame_count, wav_filename);
+    printf("Write %d frames to wav file: %s\n", state.frame_count, wav_filename);
 
     close(fd);
 }
