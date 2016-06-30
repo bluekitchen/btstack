@@ -52,8 +52,8 @@
 #include "oi_codec_sbc.h"
 #include "oi_assert.h"
 
-
-static uint8_t data[10000];
+static uint8_t read_buffer[6000];
+static uint8_t frame_buffer[5000];
 static OI_INT16 pcmData[1000];
 static OI_UINT32 pcmBytes = sizeof(pcmData);
 
@@ -163,10 +163,6 @@ static void write_wav_data(FILE * wav_file, OI_CODEC_SBC_DECODER_CONTEXT * decod
     }
 }
 
-
-
-static uint8_t read_buffer[200];
-
 static void init_sbc_state(sbc_state_t * state){
     state->frameBytes = 0;
     state->bytesRead = 0;
@@ -176,19 +172,46 @@ static void init_sbc_state(sbc_state_t * state){
 }
 
 static void append_received_sbc_data(sbc_state_t * state, uint8_t * buffer, int size){
-    int numFreeBytes = sizeof(data) - state->frameBytes;
+    int numFreeBytes = sizeof(frame_buffer) - state->frameBytes;
 
     if (size > numFreeBytes){
         printf("sbc data: more bytes read %u than free bytes in buffer %u", size, numFreeBytes);
         exit(10);
     }
 
-    memcpy(data + state->frameBytes, buffer, size);
+    memcpy(frame_buffer + state->frameBytes, buffer, size);
     state->frameBytes += size;
     state->bytesRead = state->frameBytes;
-    state->frameData = data;
+    state->frameData = frame_buffer;
 }
 
+// assumption: new data fits into buffer
+static void handle_received_sbc_data(sbc_state_t * state, uint8_t * buffer, int size, FILE * wav_file){
+    append_received_sbc_data(state, buffer, size);
+    while (1){
+        
+        OI_STATUS status = OI_CODEC_SBC_DecodeFrame(&context, &(state->frameData), &(state->frameBytes), pcmData, &pcmBytes);
+    
+        if (status != 0){
+            if (status != OI_CODEC_SBC_NOT_ENOUGH_HEADER_DATA && status != OI_CODEC_SBC_NOT_ENOUGH_BODY_DATA){
+                OI_CODEC_SBC_DumpConfig(&(context. common.frameInfo));
+                printf("Frame decode error %d\n", status);
+                break;
+            }
+
+            printf("Not enough data, read next %u bytes, move %d bytes\n", state->bytesRead-state->frameBytes, state->frameBytes);
+            memmove(frame_buffer, frame_buffer + state->bytesRead - state->frameBytes, state->frameBytes);
+            break;
+        }
+        
+        if (state->frame_count == 0){
+            write_wav_header(wav_file, &context, 0);
+        } 
+
+        write_wav_data(wav_file, &context, pcmData);
+        state->frame_count++;
+    }
+}
 
 
 int main (int argc, const char * argv[]){
@@ -217,7 +240,6 @@ int main (int argc, const char * argv[]){
     }
     
     FILE * wav_file = fopen(wav_filename, "wb");
-    
     init_sbc_state(&state);
     
     while (1){
@@ -225,31 +247,13 @@ int main (int argc, const char * argv[]){
         int bytes_read = __read(fd, read_buffer, sizeof(read_buffer));
         if (0 >= bytes_read) break;
 
-        append_received_sbc_data(&state, read_buffer, bytes_read);
-
-        while (1){
-            
-            status = OI_CODEC_SBC_DecodeFrame(&context, &state.frameData, &state.frameBytes, pcmData, &pcmBytes);
-        
-            if (status != 0){
-                if (status != OI_CODEC_SBC_NOT_ENOUGH_HEADER_DATA && status != OI_CODEC_SBC_NOT_ENOUGH_BODY_DATA){
-                    OI_CODEC_SBC_DumpConfig(&(context. common.frameInfo));
-                    printf("Frame decode error %d\n", status);
-                    break;
-                }
-
-                printf("Not enough data, read next %u bytes, move %d bytes\n", state.bytesRead-state.frameBytes, state.frameBytes);
-                memmove(data, data + state.bytesRead - state.frameBytes, state.frameBytes);
-                break;
-            }
-            
-            if (state.frame_count == 0){
-                write_wav_header(wav_file, &context, 0);
-            } 
-            write_wav_data(wav_file, &context, pcmData);
-            state.frame_count++;
+        while (bytes_read > 0){
+            int space_in_frame_buffer = sizeof(frame_buffer) - state.frameBytes;
+            int bytes_to_append = space_in_frame_buffer > bytes_read ? bytes_read : space_in_frame_buffer;
+            handle_received_sbc_data(&state, read_buffer, bytes_to_append, wav_file);
+            memmove(read_buffer, read_buffer + bytes_to_append, sizeof(read_buffer) - bytes_to_append);
+            bytes_read -= bytes_to_append;
         }
-        
     }
 
     rewind(wav_file);
