@@ -67,7 +67,6 @@ typedef struct {
     OI_UINT32 frameBytes;
     OI_UINT32 inputBufferBytes;
     int frame_count;
-    int enough_data;
     const OI_BYTE *frameData;
 } sbc_state_t;
 static sbc_state_t state;
@@ -168,53 +167,29 @@ static void write_wav_data(FILE * wav_file, OI_CODEC_SBC_DECODER_CONTEXT * decod
 
 static uint8_t read_buffer[200];
 
-static int read_next_sbc_chunk(int fd, sbc_state_t * state){
-    // read data into seperate buffer
-    state->bytesRead = __read(fd, data + state->frameBytes, sizeof(data) - state->frameBytes);
-    state->frameBytes += state->bytesRead;
-    state->bytesRead = state->frameBytes;
-    state->frameData = data;
-    state->enough_data = 1;
-    return state->frameBytes != 0;
-
-    // uint16_t size = __read(fd, read_buffer, sizeof(read_buffer));
-    // return size != 0;
-}
-
-
-static void handle_received_sbc_data(sbc_state_t * state, uint8_t * read_buffer, int read_buffer_len){
-    int numFreeBytes = sizeof(data) - state->frameBytes;
-    
-    if (numFreeBytes >= read_buffer_len){
-        memcpy(data + state->frameBytes, read_buffer, read_buffer_len);
-        state->bytesRead = read_buffer_len;
-        state->inputBufferBytes = 0;
-    } else {
-        memcpy(data + state->frameBytes, read_buffer, numFreeBytes);
-        state->bytesRead = numFreeBytes;
-        state->inputBufferBytes = read_buffer_len - numFreeBytes;
-    }
-    state->frameBytes += state->bytesRead;
-    state->bytesRead = state->frameBytes;
-    state->frameData = data;
-    state->enough_data = 1;
-}
-
-// {
-//     while (not done){
-//         read some data (max size) using __read or even direct read
-//         handle received sbc data
-//     }
-// }
-
 static void init_sbc_state(sbc_state_t * state){
     state->frameBytes = 0;
     state->bytesRead = 0;
     state->frame_count = 0;
-    state->enough_data = 0;
     state->inputBufferBytes = 0;
     state->frameData = NULL;
 }
+
+static void append_received_sbc_data(sbc_state_t * state, uint8_t * buffer, int size){
+    int numFreeBytes = sizeof(data) - state->frameBytes;
+
+    if (size > numFreeBytes){
+        printf("sbc data: more bytes read %u than free bytes in buffer %u", size, numFreeBytes);
+        exit(10);
+    }
+
+    memcpy(data + state->frameBytes, buffer, size);
+    state->frameBytes += size;
+    state->bytesRead = state->frameBytes;
+    state->frameData = data;
+}
+
+
 
 int main (int argc, const char * argv[]){
     if (argc < 2){
@@ -245,8 +220,14 @@ int main (int argc, const char * argv[]){
     
     init_sbc_state(&state);
     
-    while (read_next_sbc_chunk(fd, &state)){
-        while (state.frameBytes != 0 && state.enough_data){
+    while (1){
+
+        int bytes_read = __read(fd, read_buffer, sizeof(read_buffer));
+        if (0 >= bytes_read) break;
+
+        append_received_sbc_data(&state, read_buffer, bytes_read);
+
+        while (1){
             
             status = OI_CODEC_SBC_DecodeFrame(&context, &state.frameData, &state.frameBytes, pcmData, &pcmBytes);
         
@@ -256,10 +237,10 @@ int main (int argc, const char * argv[]){
                     printf("Frame decode error %d\n", status);
                     break;
                 }
-                printf("Not enough data, read next %u bytes\n", state.bytesRead-state.frameBytes);
-                state.enough_data = 0;
+
+                printf("Not enough data, read next %u bytes, move %d bytes\n", state.bytesRead-state.frameBytes, state.frameBytes);
                 memmove(data, data + state.bytesRead - state.frameBytes, state.frameBytes);
-                continue;
+                break;
             }
             
             if (state.frame_count == 0){
