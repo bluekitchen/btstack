@@ -62,12 +62,19 @@ static uint8_t buf[4];
 static OI_UINT32 decoderData[10000];
 static OI_CODEC_SBC_DECODER_CONTEXT context;
 
+typedef struct wav_writer_state {
+    FILE * wav_file;
+    int sample_rate;
+    int total_num_samples;
+} wav_writer_state_t;
+
 typedef struct {
     OI_UINT32 bytesRead;
     OI_UINT32 frameBytes;
     OI_UINT32 inputBufferBytes;
-    int frame_count;
     const OI_BYTE *frameData;
+    void * context;
+    void (*handle_pcm_data)(int16_t * data, int num_samples, int num_channels, int sample_rate, void * context);
 } sbc_state_t;
 static sbc_state_t state;
 
@@ -117,16 +124,12 @@ void little_endian_fstore_32(FILE *wav_file, uint32_t value){
 }
 
 
-static void write_wav_header(FILE * wav_file, OI_CODEC_SBC_DECODER_CONTEXT * decoderContext, int frame_count){
+static void write_wav_header(FILE * wav_file,  int total_num_samples, int num_channels, int sample_rate){
     unsigned int bytes_per_sample = 2;
-    int num_samples = decoderContext->common.frameInfo.nrof_blocks * decoderContext->common.frameInfo.nrof_subbands;
-    int num_channels = decoderContext->common.frameInfo.nrof_channels;
-    int sample_rate = decoderContext->common.frameInfo.frequency;
-
     /* write RIFF header */
     fwrite("RIFF", 1, 4, wav_file);
     // num_samples = blocks * subbands
-    uint32_t data_bytes = (uint32_t) (bytes_per_sample * num_samples * frame_count * num_channels);
+    uint32_t data_bytes = (uint32_t) (bytes_per_sample * total_num_samples * num_channels);
     little_endian_fstore_32(wav_file, data_bytes + 36); 
     fwrite("WAVE", 1, 4, wav_file);
 
@@ -151,9 +154,7 @@ static void write_wav_header(FILE * wav_file, OI_CODEC_SBC_DECODER_CONTEXT * dec
     little_endian_fstore_32(wav_file, data_bytes);
 }
 
-static void write_wav_data(FILE * wav_file, OI_CODEC_SBC_DECODER_CONTEXT * decoderContext, int16_t * data){
-    int num_samples = decoderContext->common.frameInfo.nrof_blocks * decoderContext->common.frameInfo.nrof_subbands;
-    int num_channels = decoderContext->common.frameInfo.nrof_channels;
+static void write_wav_data(FILE * wav_file, int num_samples, int num_channels, int16_t * data){
     int i;
     for (i=0; i < num_samples; i++){
         little_endian_fstore_16(wav_file, (uint16_t)data[i]);
@@ -163,12 +164,19 @@ static void write_wav_data(FILE * wav_file, OI_CODEC_SBC_DECODER_CONTEXT * decod
     }
 }
 
-static void init_sbc_state(sbc_state_t * state){
+static void handle_pcm_data(int16_t * data, int num_samples, int num_channels, int sample_rate, void * context){
+    wav_writer_state_t * wav_writer_state = (wav_writer_state_t*) context;
+    write_wav_data(wav_writer_state->wav_file, num_samples, num_channels, data);
+    wav_writer_state->total_num_samples+=num_samples;
+}
+
+static void init_sbc_state(sbc_state_t * state, void (*callback)(int16_t * data, int num_samples, int num_channels, int sample_rate, void * context), void * context){
     state->frameBytes = 0;
     state->bytesRead = 0;
-    state->frame_count = 0;
     state->inputBufferBytes = 0;
     state->frameData = NULL;
+    state->handle_pcm_data = callback;
+    state->context = context;
 }
 
 static void append_received_sbc_data(sbc_state_t * state, uint8_t * buffer, int size){
@@ -198,18 +206,16 @@ static void handle_received_sbc_data(sbc_state_t * state, uint8_t * buffer, int 
                 printf("Frame decode error %d\n", status);
                 break;
             }
-
-            printf("Not enough data, read next %u bytes, move %d bytes\n", state->bytesRead-state->frameBytes, state->frameBytes);
+            // printf("Not enough data, read next %u bytes, move %d bytes\n", state->bytesRead-state->frameBytes, state->frameBytes);
             memmove(frame_buffer, frame_buffer + state->bytesRead - state->frameBytes, state->frameBytes);
             break;
         }
-        
-        if (state->frame_count == 0){
-            write_wav_header(wav_file, &context, 0);
-        } 
 
-        write_wav_data(wav_file, &context, pcmData);
-        state->frame_count++;
+        int num_samples = context.common.frameInfo.nrof_blocks * context.common.frameInfo.nrof_subbands;
+        int num_channels = context.common.frameInfo.nrof_channels;
+        int sample_rate = context.common.frameInfo.frequency;
+
+        state->handle_pcm_data(pcmData, num_samples, num_channels, sample_rate, state->context);
     }
 }
 
@@ -240,8 +246,11 @@ int main (int argc, const char * argv[]){
     }
     
     FILE * wav_file = fopen(wav_filename, "wb");
-    init_sbc_state(&state);
-    
+    wav_writer_state_t wav_writer_state;
+    wav_writer_state.wav_file = wav_file;
+    init_sbc_state(&state, &handle_pcm_data, (void*)&wav_writer_state);
+    write_wav_header(wav_writer_state.wav_file, 0, 0, 0);
+
     while (1){
 
         int bytes_read = __read(fd, read_buffer, sizeof(read_buffer));
@@ -257,10 +266,14 @@ int main (int argc, const char * argv[]){
     }
 
     rewind(wav_file);
-    write_wav_header(wav_file, &context, state.frame_count);
+    int num_channels = context.common.frameInfo.nrof_channels;
+    int sample_rate = context.common.frameInfo.frequency;
+    write_wav_header(wav_writer_state.wav_file, wav_writer_state.total_num_samples, num_channels, sample_rate);
 
     fclose(wav_file);
-    printf("Write %d frames to wav file: %s\n", state.frame_count, wav_filename);
-
     close(fd);
+
+    int frame_count = wav_writer_state.total_num_samples/(context.common.frameInfo.nrof_blocks * context.common.frameInfo.nrof_subbands);
+    printf("Write %d frames to wav file: %s\n", frame_count, wav_filename);
+
 }
