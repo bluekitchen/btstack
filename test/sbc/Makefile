@@ -19,7 +19,7 @@ SBC_TESTS = sbc_decoder_test sbc_encoder_test
 
 all: ${SBC_TESTS}
 
-sbc_decoder_test: ${SBC_DECODER_OBJ} sbc_decoder_test.o  
+sbc_decoder_test: ${SBC_DECODER_OBJ} sbc_decoder_bludroid.o sbc_decoder_test.o  
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 sbc_encoder_test: ${SBC_ENCODER_OBJ} sbc_encoder_test.o  
