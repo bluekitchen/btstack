@@ -54,17 +54,19 @@
 #include "oi_assert.h"
 
 #include "btstack.h"
- 
+
+#define SBC_MAX_CHANNELS 2
+#define DECODER_DATA_SIZE (SBC_MAX_CHANNELS*SBC_MAX_BLOCKS*SBC_MAX_BANDS * 2 + SBC_CODEC_MIN_FILTER_BUFFERS*SBC_MAX_BANDS*SBC_MAX_CHANNELS * 2)
 typedef struct {
     OI_UINT32 bytes_read;
     OI_UINT32 bytes_in_frame;
     OI_CODEC_SBC_DECODER_CONTEXT decoder_context;
     
     const OI_BYTE *frame_data;
-    uint8_t frame_buffer[5000];
-    int16_t pcm_data[1000];
+    uint8_t frame_buffer[SBC_MAX_FRAME_LEN];
+    int16_t pcm_data[SBC_MAX_CHANNELS * SBC_MAX_BANDS * SBC_MAX_BLOCKS];
     uint32_t pcm_bytes;
-    OI_UINT32 decoder_data[10000];
+    OI_UINT32 decoder_data[(DECODER_DATA_SIZE+3)/4]; 
 } bludroid_decoder_state_t;
 
 static sbc_decoder_state_t * sbc_state_singelton = NULL;
@@ -140,7 +142,7 @@ void sbc_decoder_process_data(sbc_decoder_state_t * state, uint8_t * buffer, int
                                                         &(bd_decoder_state->bytes_in_frame), 
                                                         bd_decoder_state->pcm_data, 
                                                         &(bd_decoder_state->pcm_bytes));
-        
+            
             if (status != 0){
                 if (status != OI_CODEC_SBC_NOT_ENOUGH_HEADER_DATA && status != OI_CODEC_SBC_NOT_ENOUGH_BODY_DATA){
                     OI_CODEC_SBC_DumpConfig(&(bd_decoder_state->decoder_context.common.frameInfo));
@@ -153,6 +155,10 @@ void sbc_decoder_process_data(sbc_decoder_state_t * state, uint8_t * buffer, int
                     bd_decoder_state->bytes_in_frame);
                 break;
             }
+            
+            int frameBytes = OI_CODEC_SBC_CalculateFramelen(&(bd_decoder_state->decoder_context.common.frameInfo));
+            //printf("frame bytes %d\n", frameBytes);
+
             state->handle_pcm_data(bd_decoder_state->pcm_data, 
                                         sbc_decoder_num_samples_per_frame(state), 
                                         sbc_decoder_num_channels(state), 
