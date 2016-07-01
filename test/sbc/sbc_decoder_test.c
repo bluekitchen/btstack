@@ -52,6 +52,8 @@
 #include "sbc_decoder.h"
 #include "oi_assert.h"
 
+#include "btstack.h"
+ 
 static uint8_t read_buffer[6000];
 static uint8_t buf[4];
 
@@ -77,18 +79,6 @@ static ssize_t __read(int fd, void *buf, size_t count){
         pos   += len;
     }
     return pos;
-}
-
-void little_endian_store_16(uint8_t *buffer, uint16_t pos, uint16_t value){
-    buffer[pos++] = value;
-    buffer[pos++] = value >> 8;
-}
-
-void little_endian_store_32(uint8_t *buffer, uint16_t pos, uint32_t value){
-    buffer[pos++] = value;
-    buffer[pos++] = value >> 8;
-    buffer[pos++] = value >> 16;
-    buffer[pos++] = value >> 24;
 }
 
 void little_endian_fstore_16(FILE *wav_file, uint16_t value){

@@ -53,19 +53,21 @@
 #include "oi_codec_sbc.h"
 #include "oi_assert.h"
 
-static uint8_t frame_buffer[5000];
-static int16_t pcm_data[1000];
-static uint32_t pcm_bytes = sizeof(pcm_data);
-
-static OI_UINT32 decoder_data[10000];
-
+#include "btstack.h"
+ 
 typedef struct {
     OI_UINT32 bytes_read;
     OI_UINT32 bytes_in_frame;
-    const OI_BYTE *frame_data;
     OI_CODEC_SBC_DECODER_CONTEXT decoder_context;
+    
+    const OI_BYTE *frame_data;
+    uint8_t frame_buffer[5000];
+    int16_t pcm_data[1000];
+    uint32_t pcm_bytes;
+    OI_UINT32 decoder_data[10000];
 } bludroid_decoder_state_t;
 
+static sbc_decoder_state_t * sbc_state_singelton = NULL;
 static bludroid_decoder_state_t bd_state;
 
 int sbc_decoder_num_samples_per_frame(sbc_decoder_state_t * state){
@@ -89,14 +91,22 @@ void OI_AssertFail(char* file, int line, char* reason){
 }
 
 void sbc_decoder_init(sbc_decoder_state_t * state, void (*callback)(int16_t * data, int num_samples, int num_channels, int sample_rate, void * context), void * context){
-    OI_STATUS status = OI_CODEC_mSBC_DecoderReset(&(bd_state.decoder_context), decoder_data, sizeof(decoder_data));
+    if (sbc_state_singelton && sbc_state_singelton != state ){
+        log_error("SBC decoder: different sbc decoder state is allready registered");
+    } 
+
+    OI_STATUS status = OI_CODEC_mSBC_DecoderReset(&(bd_state.decoder_context), 
+                                                    bd_state.decoder_data, sizeof(bd_state.decoder_data));
     if (status != 0){
-        printf("Reset decoder error %d\n", status);
+        log_error("SBC decoder: error during reset %d\n", status);
     }
+    
+    sbc_state_singelton = state;
     bd_state.bytes_in_frame = 0;
     bd_state.bytes_read = 0;
     bd_state.frame_data = NULL;
-    
+    bd_state.pcm_bytes = sizeof(bd_state.pcm_data);
+
     state->handle_pcm_data = callback;
     state->context = context;
     state->decoder_state = &bd_state;
@@ -104,29 +114,32 @@ void sbc_decoder_init(sbc_decoder_state_t * state, void (*callback)(int16_t * da
 }
 
 static void append_received_sbc_data(bludroid_decoder_state_t * state, uint8_t * buffer, int size){
-    int numFreeBytes = sizeof(frame_buffer) - state->bytes_in_frame;
+    int numFreeBytes = sizeof(state->frame_buffer) - state->bytes_in_frame;
 
     if (size > numFreeBytes){
-        printf("sbc data: more bytes read %u than free bytes in buffer %u", size, numFreeBytes);
-        exit(10);
+        log_error("SBC data: more bytes read %u than free bytes in buffer %u", size, numFreeBytes);
     }
 
-    memcpy(frame_buffer + state->bytes_in_frame, buffer, size);
+    memcpy(state->frame_buffer + state->bytes_in_frame, buffer, size);
     state->bytes_in_frame += size;
     state->bytes_read = state->bytes_in_frame;
-    state->frame_data = frame_buffer;
+    state->frame_data = state->frame_buffer;
 }
 
 void sbc_decoder_process_data(sbc_decoder_state_t * state, uint8_t * buffer, int size){
     int bytes_read = size;
     while (bytes_read > 0){
         bludroid_decoder_state_t * bd_decoder_state = (bludroid_decoder_state_t*)state->decoder_state;
-        int space_in_frame_buffer = sizeof(frame_buffer) - bd_decoder_state->bytes_in_frame;
+        int space_in_frame_buffer = sizeof(bd_decoder_state->frame_buffer) - bd_decoder_state->bytes_in_frame;
         int bytes_to_append = space_in_frame_buffer > bytes_read ? bytes_read : space_in_frame_buffer;
         append_received_sbc_data(bd_decoder_state, buffer, bytes_to_append);
         
         while (1){
-            OI_STATUS status = OI_CODEC_SBC_DecodeFrame(&(bd_decoder_state->decoder_context), &(bd_decoder_state->frame_data), &(bd_decoder_state->bytes_in_frame), pcm_data, &pcm_bytes);
+            OI_STATUS status = OI_CODEC_SBC_DecodeFrame(&(bd_decoder_state->decoder_context), 
+                                                        &(bd_decoder_state->frame_data), 
+                                                        &(bd_decoder_state->bytes_in_frame), 
+                                                        bd_decoder_state->pcm_data, 
+                                                        &(bd_decoder_state->pcm_bytes));
         
             if (status != 0){
                 if (status != OI_CODEC_SBC_NOT_ENOUGH_HEADER_DATA && status != OI_CODEC_SBC_NOT_ENOUGH_BODY_DATA){
@@ -135,10 +148,15 @@ void sbc_decoder_process_data(sbc_decoder_state_t * state, uint8_t * buffer, int
                     break;
                 }
                 // printf("Not enough data, read next %u bytes, move %d bytes\n", state->bytes_read-state->bytes_in_frame, state->bytes_in_frame);
-                memmove(frame_buffer, frame_buffer + bd_decoder_state->bytes_read - bd_decoder_state->bytes_in_frame, bd_decoder_state->bytes_in_frame);
+                memmove(bd_decoder_state->frame_buffer, 
+                    bd_decoder_state->frame_buffer + bd_decoder_state->bytes_read - bd_decoder_state->bytes_in_frame, 
+                    bd_decoder_state->bytes_in_frame);
                 break;
             }
-            state->handle_pcm_data(pcm_data, sbc_decoder_num_samples_per_frame(state), sbc_decoder_num_channels(state), sbc_decoder_sample_rate(state), state->context);
+            state->handle_pcm_data(bd_decoder_state->pcm_data, 
+                                        sbc_decoder_num_samples_per_frame(state), 
+                                        sbc_decoder_num_channels(state), 
+                                        sbc_decoder_sample_rate(state), state->context);
         }
         
         memmove(buffer, buffer + bytes_to_append, size - bytes_to_append);
