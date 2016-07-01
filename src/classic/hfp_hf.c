@@ -801,7 +801,7 @@ static void hfp_run_for_context(hfp_connection_t * hfp_connection){
                     sprintf(buffer, "AT%s=%u,%u\r\n", HFP_TRANSFER_HF_INDICATOR_STATUS, hfp_indicators[i], hfp_indicators_value[i]);
                     send_str_over_rfcomm(hfp_connection->rfcomm_cid, buffer);
                 } else {
-                    printf("Not sending HF indicator %u as it is disabled\n", hfp_indicators[i]);
+                    log_info("Not sending HF indicator %u as it is disabled", hfp_indicators[i]);
                 }
                 return;
             }
@@ -921,7 +921,7 @@ static void hfp_hf_switch_on_ok(hfp_connection_t *hfp_connection){
 
             switch (hfp_connection->hf_query_operator_state){
                 case HFP_HF_QUERY_OPERATOR_W4_SET_FORMAT_OK:
-                    printf("Format set, querying name\n");
+                    // printf("Format set, querying name\n");
                     hfp_connection->hf_query_operator_state = HFP_HF_QUERY_OPERATOR_SEND_QUERY;
                     break;
                 case HPF_HF_QUERY_OPERATOR_W4_RESULT:

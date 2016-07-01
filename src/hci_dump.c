@@ -176,12 +176,13 @@ void hci_dump_packet(uint8_t packet_type, uint8_t in, uint8_t *packet, uint16_t 
         case HCI_DUMP_STDOUT: {
             /* Obtain the time of day, and convert it to a tm struct. */
             ptm = localtime (&curr_time_secs);
+            /* assert localtime was successful */
+            if (!ptm) break;
             /* Format the date and time, down to a single second. */
             strftime (time_string, sizeof (time_string), "[%Y-%m-%d %H:%M:%S", ptm);
             /* Compute milliseconds from microseconds. */
             uint16_t milliseconds = curr_time.tv_usec / 1000;
-            /* Print the formatted time, in seconds, followed by a decimal point
-             and the milliseconds. */
+            /* Print the formatted time, in seconds, followed by a decimal point and the milliseconds. */
             printf ("%s.%03u] ", time_string, milliseconds);
             printf_packet(packet_type, in, packet, len);
             break;

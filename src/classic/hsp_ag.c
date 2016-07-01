@@ -286,7 +286,6 @@ void hsp_ag_connect(bd_addr_t bd_addr){
 
 void hsp_ag_disconnect(void){
     hsp_ag_release_audio_connection();
-    printf(" rfcomm diconnect %d\n", hsp_state);
     if (hsp_state < HSP_W4_RFCOMM_CONNECTED){
         hsp_state = HSP_IDLE;
         return;
@@ -301,8 +300,6 @@ void hsp_ag_disconnect(void){
 }
 
 void hsp_ag_establish_audio_connection(void){
-    printf("hsp_ag_establish_audio_connection state %d\n", hsp_state);
-            
     switch (hsp_state){
         case HSP_RFCOMM_CONNECTION_ESTABLISHED:
             hsp_establish_audio_connection = 1;

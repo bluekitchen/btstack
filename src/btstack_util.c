@@ -174,12 +174,22 @@ void printf_hexdump(const void *data, int size){
 
 void log_info_hexdump(const void *data, int size){
 #ifdef ENABLE_LOG_INFO
-    char buffer[6*16+1];
-    int i, j;
+
+    const int items_per_line = 16;
+    const int bytes_per_byte = 6;   // strlen('0x12, ')
     const uint8_t low = 0x0F;
     const uint8_t high = 0xF0;
+
+    char buffer[bytes_per_byte*items_per_line+1];
+    int i, j;
     j = 0;
     for (i=0; i<size;i++){
+
+        // help static analyzer proof that j stays within bounds
+        if (j > bytes_per_byte * (items_per_line-1)){
+            j = 0;
+        }
+
         uint8_t byte = ((uint8_t *)data)[i];
         buffer[j++] = '0';
         buffer[j++] = 'x';
@@ -187,7 +197,8 @@ void log_info_hexdump(const void *data, int size){
         buffer[j++] = char_for_nibble(byte & low);
         buffer[j++] = ',';
         buffer[j++] = ' ';     
-        if (j >= 6*16 ){
+
+        if (j >= bytes_per_byte * items_per_line ){
             buffer[j] = 0;
             log_info("%s", buffer);
             j = 0;
@@ -234,9 +245,19 @@ int uuid_has_bluetooth_prefix(uint8_t * uuid128){
 
 static char uuid128_to_str_buffer[32+4+1];
 char * uuid128_to_str(uint8_t * uuid){
-    sprintf(uuid128_to_str_buffer, "%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x",
-           uuid[0], uuid[1], uuid[2], uuid[3], uuid[4], uuid[5], uuid[6], uuid[7],
-           uuid[8], uuid[9], uuid[10], uuid[11], uuid[12], uuid[13], uuid[14], uuid[15]);
+    int i;
+    int j = 0;
+    const uint8_t low =  0x0F;
+    const uint8_t high = 0xF0;
+    // after 4, 6, 8, and 10 bytes = XYXYXYXY-XYXY-XYXY-XYXY-XYXYXYXYXYXY, there's a dash
+    const int dash_locations = (1<<3) | (1<<5) | (1<<7) | (1<<9);
+    for (i=0;i<16;i++){
+        uuid128_to_str_buffer[j++] = char_for_nibble((uuid[i] & high) >> 4);
+        uuid128_to_str_buffer[j++] = char_for_nibble(uuid[i] & low);
+        if (dash_locations & (1<<i)){
+            uuid128_to_str_buffer[j++] = '-';
+        }
+    }
     return uuid128_to_str_buffer;
 }
 

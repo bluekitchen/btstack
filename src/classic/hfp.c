@@ -129,21 +129,6 @@ int send_str_over_rfcomm(uint16_t cid, char * command){
     return 1;
 }
 
-#if 0
-void hfp_set_codec(hfp_connection_t * hfp_connection, uint8_t *packet, uint16_t size){
-    // parse available codecs
-    int pos = 0;
-    int i;
-    for (i=0; i<size; i++){
-        pos+=8;
-        if (packet[pos] > hfp_connection->negotiated_codec){
-            hfp_connection->negotiated_codec = packet[pos];
-        }
-    }
-    printf("Negotiated Codec 0x%02x\n", hfp_connection->negotiated_codec);
-}
-#endif
-
 // UTILS
 int get_bit(uint16_t bitmap, int position){
     return (bitmap >> position) & 1;
@@ -319,7 +304,6 @@ static hfp_connection_t * provide_hfp_connection_context_for_bd_addr(bd_addr_t b
     hfp_connection_t * hfp_connection = get_hfp_connection_context_for_bd_addr(bd_addr);
     if (hfp_connection) return  hfp_connection;
     hfp_connection = create_hfp_connection_context();
-    printf("created hfp_connection for address %s\n", bd_addr_to_str(bd_addr));
     memcpy(hfp_connection->remote_addr, bd_addr, 6);
     return hfp_connection;
 }
