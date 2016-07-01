@@ -278,7 +278,7 @@ static l2cap_channel_t * l2cap_channel_for_rtx_timer(timer_source_t * ts){
 
 static void l2cap_rtx_timeout(timer_source_t * ts){
     l2cap_channel_t * channel = l2cap_channel_for_rtx_timer(ts);
-    if (!ts) return;
+    if (!channel) return;
 
     log_info("l2cap_rtx_timeout for local cid 0x%02x", channel->local_cid);
 
