@@ -24,6 +24,7 @@ $(NAME)_SOURCES += \
 	../../src/classic/sdp_client.c        \
 	../../src/classic/sdp_client_rfcomm.c  \
 	../../src/classic/sdp_util.c          \
+	../../src/classic/spp_server.c        \
 	../../src/btstack_linked_list.c       \
 	../../src/btstack_memory.c            \
 	../../src/btstack_memory_pool.c       \
@@ -39,7 +40,6 @@ $(NAME)_SOURCES += \
 $(NAME)_SOURCES += \
 	main.c                                     \
 	btstack_run_loop_wiced.c                   \
-	btstack_uart_block_embedded.c  			   \
 	hci_transport_h4_wiced.c                   \
 	../../chipset/bcm/btstack_chipset_bcm.c    \
-	../../../drivers/bluetooth/firmware/$(BT_CHIP)$(BT_CHIP_REVISION)/bt_firmware_image.c \
+	../../../drivers/bluetooth/firmware/$(BT_CHIP)$(BT_CHIP_REVISION)/$(BT_CHIP_XTAL_FREQUENCY)/bt_firmware_image.c \

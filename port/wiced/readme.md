@@ -1,6 +1,8 @@
 # BTstack port for WICED platform
 
-To integrate BTstack into the WICED SDK, please move the BTstack project into WICED-SDK-X/libraries.
+WICED SDK 3.5.2 or higher required. With RedBear Duo, please follow their installation guide for WICED SDK first.
+
+To integrate BTstack into the WICED SDK, please move the BTstack project into WICED-SDK-3.5.2/libraries.
 Then create projects for BTstack examples in WICED/apps/btstack by running:
 
 	./create_examples.py
@@ -21,7 +23,7 @@ The maximal baud rate is limited to 3 mbps.
 
 The port uses the generated WIFI address plus 1 as Bluetooth MAC address.
 
-The examples that implement a BLE Peripheral/provide a GATT Server use the GATT DB in the .gatt file.
+The examples that implement a BLE Peripheral/provide a GATT Server that uses the GATT DB in the .gatt file.
 After modifying the .gatt file, please run ./update_gatt_db.sh in the apps/btstack/$(EXAMPLE) folder.
 
 
