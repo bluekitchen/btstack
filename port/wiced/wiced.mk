@@ -42,4 +42,9 @@ $(NAME)_SOURCES += \
 	btstack_run_loop_wiced.c                   \
 	hci_transport_h4_wiced.c                   \
 	../../chipset/bcm/btstack_chipset_bcm.c    \
-	../../../drivers/bluetooth/firmware/$(BT_CHIP)$(BT_CHIP_REVISION)/$(BT_CHIP_XTAL_FREQUENCY)/bt_firmware_image.c \
+
+ifeq ($(BT_CHIP_XTAL_FREQUENCY),)
+$(NAME)_SOURCES := ../../../drivers/bluetooth/firmware/$(BT_CHIP)$(BT_CHIP_REVISION)/bt_firmware_image.c
+else
+$(NAME)_SOURCES := ../../../drivers/bluetooth/firmware/$(BT_CHIP)$(BT_CHIP_REVISION)/$(BT_CHIP_XTAL_FREQUENCY)/bt_firmware_image.c
+endif

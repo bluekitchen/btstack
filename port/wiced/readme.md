@@ -1,6 +1,6 @@
 # BTstack port for WICED platform
 
-WICED SDK 3.5.2 or higher required. With RedBear Duo, please follow their installation guide for WICED SDK first.
+Only tested on Redbear Duo platform. Please install [RedBear WICED Add-On](https://github.com/redbear/WICED-SDK) first.
 
 To integrate BTstack into the WICED SDK, please move the BTstack project into WICED-SDK-3.5.2/libraries.
 Then create projects for BTstack examples in WICED/apps/btstack by running:
@@ -14,8 +14,6 @@ Now, the BTstack examples can be build from the WICED root in the same way as ot
 to build the SPP-and-LE-Counter example.
 
 See WICED documentation about how to install it.
-
-Only tested on Redbear Duo platform.
 
 It should work with all WICED platforms that contain a Broadcom Bluetooth chipset.
 
