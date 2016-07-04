@@ -121,10 +121,22 @@ static wiced_result_t h4_main_notify_packet_send(void *arg){
 }
 
 // executed on rx worker thread
+
 static void h4_rx_worker_receive_bytes(int bytes_to_read){
+
+#ifdef WICED_UART_READ_DOES_NOT_RETURN_BYTES_READ
+    // older API passes in number of bytes to read (checked in 3.3.1 and 3.4.0)
     platform_uart_receive_bytes(wiced_bt_uart_driver, &hci_packet[rx_worker_read_pos], bytes_to_read, WICED_NEVER_TIMEOUT);
+#else
+    // newer API uses pointer to return number of read bytes
+    uint32_t bytes = bytes_to_read;
+    platform_uart_receive_bytes(wiced_bt_uart_driver, &hci_packet[rx_worker_read_pos], &bytes, WICED_NEVER_TIMEOUT);
+    // assumption: bytes = bytes_to_rad as timeout is never    
+#endif
     rx_worker_read_pos += bytes_to_read;        
+
 }
+
 static wiced_result_t h4_rx_worker_receive_packet(void * arg){
 
 #ifdef WICED_BT_UART_MANUAL_CTS_RTS
