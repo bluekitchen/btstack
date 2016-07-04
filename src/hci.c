@@ -2825,7 +2825,7 @@ int hci_send_cmd_packet(uint8_t *packet, int size){
             // if connection active exists
             case OPEN:
                 // and OPEN, emit connection complete command, don't send to controller
-                hci_emit_connection_complete(addr, 0, 0);
+                hci_emit_connection_complete(addr, conn->con_handle, 0);
                 return 0;
             case SEND_CREATE_CONNECTION:
                 // connection created by hci, e.g. dedicated bonding
