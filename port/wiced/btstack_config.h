@@ -12,7 +12,7 @@
 // BTstack features that can be enabled
 #define ENABLE_BLE
 #define ENABLE_CLASSIC
-#define ENABLE_LE_SECURE_CONNECTIONS
+// #define ENABLE_LE_SECURE_CONNECTIONS
 #define ENABLE_LOG_ERROR
 #define ENABLE_LOG_INFO
 

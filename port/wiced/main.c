@@ -79,10 +79,10 @@ void application_start(void){
     btstack_run_loop_init(btstack_run_loop_wiced_get_instance());
     
     // enable full log output while porting
-    // hci_dump_open(NULL, HCI_DUMP_STDOUT);
+    hci_dump_open(NULL, HCI_DUMP_STDOUT);
 
     // init HCI
-    hci_init(hci_transport_h4_instance(btstack_uart_block_embedded_instance()), (void*) &hci_transport_config_uart);
+    hci_init(hci_transport_h4_instance(NULL), (void*) &hci_transport_config_uart);
     hci_set_link_key_db(btstack_link_key_db_memory_instance());
     hci_set_chipset(btstack_chipset_bcm_instance());
 
