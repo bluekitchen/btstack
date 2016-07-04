@@ -824,7 +824,6 @@ int      hci_non_flushable_packet_boundary_flag_supported(void);
 void hci_disconnect_all(void);
 
 void hci_emit_state(void);
-void hci_emit_connection_complete(hci_connection_t *conn, uint8_t status);
 void hci_emit_l2cap_check_timeout(hci_connection_t *conn);
 void hci_emit_disconnection_complete(uint16_t handle, uint8_t reason);
 void hci_emit_nr_connections_changed(void);

@@ -85,6 +85,7 @@ static void hci_connection_timestamp(hci_connection_t *connection);
 static int  hci_power_control_on(void);
 static void hci_power_control_off(void);
 static void hci_state_reset(void);
+static void hci_emit_connection_complete(bd_addr_t address, hci_con_handle_t con_handle, uint8_t status);
 
 #ifdef HAVE_BLE
 // called from test/ble_client/advertising_data_parser.c
@@ -2672,7 +2673,7 @@ int hci_send_cmd_packet(uint8_t *packet, int size){
             conn = create_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_CLASSIC);
             if (!conn){
                 // notify client that alloc failed
-                hci_emit_connection_complete(conn, BTSTACK_MEMORY_ALLOC_FAILED);
+                hci_emit_connection_complete(addr, 0, BTSTACK_MEMORY_ALLOC_FAILED);
                 return 0; // don't sent packet to controller
             }
             conn->state = SEND_CREATE_CONNECTION;
@@ -2682,7 +2683,7 @@ int hci_send_cmd_packet(uint8_t *packet, int size){
             // if connection active exists
             case OPEN:
                 // and OPEN, emit connection complete command, don't send to controller
-                hci_emit_connection_complete(conn, 0);
+                hci_emit_connection_complete(addr, conn->con_handle, 0);
                 return 0;
             case SEND_CREATE_CONNECTION:
                 // connection created by hci, e.g. dedicated bonding
@@ -2845,13 +2846,13 @@ void hci_emit_state(void){
     hci_stack->packet_handler(HCI_EVENT_PACKET, event, sizeof(event));
 }
 
-void hci_emit_connection_complete(hci_connection_t *conn, uint8_t status){
+static void hci_emit_connection_complete(bd_addr_t address, hci_con_handle_t con_handle, uint8_t status){
     uint8_t event[13];
     event[0] = HCI_EVENT_CONNECTION_COMPLETE;
     event[1] = sizeof(event) - 2;
     event[2] = status;
-    bt_store_16(event, 3, conn->con_handle);
-    bt_flip_addr(&event[5], conn->address);
+    bt_store_16(event, 3, con_handle);
+    bt_flip_addr(&event[5], address);
     event[11] = 1; // ACL connection
     event[12] = 0; // encryption disabled
     hci_dump_packet(HCI_EVENT_PACKET, 0, event, sizeof(event));
