@@ -785,7 +785,7 @@ static void bnep_channel_finalize(bnep_channel_t *channel)
 static int bnep_handle_connection_request(bnep_channel_t *channel, uint8_t *packet, uint16_t size)
 {
     uint16_t uuid_size;
-    uint16_t uuid_offset;
+    uint16_t uuid_offset = 0; // avoid "may be unitialized when used" in clang
     uuid_size = packet[1];
     uint16_t response_code = BNEP_RESP_SETUP_SUCCESS;
     bnep_service_t * service;
