@@ -40,7 +40,7 @@
 
 #include <string.h>
 
-#include "ant_cmds.h"
+#include "ant_cmd.h"
 #include "classic/sdp_util.h"
 #include "btstack_config.h"
 #include "hci.h"
