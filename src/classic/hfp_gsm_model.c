@@ -224,7 +224,7 @@ static void hfp_gsm_set_clip(int index_in_table, uint8_t type, const char * numb
     
     gsm_calls[index_in_table].clip_type = type;
 
-    int clip_number_size = strlen(number) < HFP_GSM_MAX_CALL_NUMBER_SIZE ? strlen(number) : HFP_GSM_MAX_CALL_NUMBER_SIZE-1;
+    int clip_number_size = strlen(number) < HFP_GSM_MAX_CALL_NUMBER_SIZE ? (int) strlen(number) : HFP_GSM_MAX_CALL_NUMBER_SIZE-1;
     strncpy(gsm_calls[index_in_table].clip_number, number, clip_number_size);
     gsm_calls[index_in_table].clip_number[clip_number_size] = '\0';
     strncpy(last_dialed_number, number, clip_number_size);

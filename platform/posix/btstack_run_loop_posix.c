@@ -136,7 +136,7 @@ static void btstack_run_loop_posix_disable_data_source_callbacks(btstack_data_so
 static uint32_t btstack_run_loop_posix_get_time_ms(void){
     struct timeval tv;
     gettimeofday(&tv, NULL);
-    uint32_t time_ms = ((tv.tv_sec  - init_tv.tv_sec) * 1000) + (tv.tv_usec / 1000);
+    uint32_t time_ms = (uint32_t)((tv.tv_sec  - init_tv.tv_sec) * 1000) + (tv.tv_usec / 1000);
     log_debug("btstack_run_loop_posix_get_time_ms: %u <- %u / %u", time_ms, (int) tv.tv_sec, (int) tv.tv_usec);
     return time_ms;
 }
@@ -190,7 +190,7 @@ static void btstack_run_loop_posix_execute(void) {
                 delta = 0;
             }
             tv.tv_sec  = delta / 1000;
-            tv.tv_usec = (delta - (tv.tv_sec * 1000)) * 1000;
+            tv.tv_usec = (int) (delta - (tv.tv_sec * 1000)) * 1000;
             log_debug("btstack_run_loop_execute next timeout in %u ms", delta);
         }
                 

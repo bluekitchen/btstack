@@ -106,7 +106,6 @@ static void att_handle_value_indication_notify_client(uint8_t status, uint16_t c
     little_endian_store_16(event, pos, client_handle);
     pos += 2;
     little_endian_store_16(event, pos, attribute_handle);
-    pos += 2;
     (*att_client_packet_handler)(HCI_EVENT_PACKET, 0, &event[0], sizeof(event));
 }
 
@@ -120,7 +119,6 @@ static void att_emit_mtu_event(hci_con_handle_t con_handle, uint16_t mtu){
     little_endian_store_16(event, pos, con_handle);
     pos += 2;
     little_endian_store_16(event, pos, mtu);
-    pos += 2;
     (*att_client_packet_handler)(HCI_EVENT_PACKET, 0, &event[0], sizeof(event));
 }
 
