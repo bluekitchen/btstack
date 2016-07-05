@@ -1010,6 +1010,7 @@ static void hfp_ag_set_callsetup_indicator(void){
     hfp_ag_indicator_t * indicator = get_ag_indicator_for_name("callsetup");
     if (!indicator){
         log_error("hfp_ag_set_callsetup_indicator: callsetup indicator is missing");
+        return;
     };
     indicator->status = hfp_gsm_callsetup_status();
 }
@@ -1018,6 +1019,7 @@ static void hfp_ag_set_callheld_indicator(void){
     hfp_ag_indicator_t * indicator = get_ag_indicator_for_name("callheld");
     if (!indicator){
         log_error("hfp_ag_set_callheld_state: callheld indicator is missing");
+        return;
     };
     indicator->status = hfp_gsm_callheld_status();
 }
@@ -1026,6 +1028,7 @@ static void hfp_ag_set_call_indicator(void){
     hfp_ag_indicator_t * indicator = get_ag_indicator_for_name("call");
     if (!indicator){
         log_error("hfp_ag_set_call_state: call indicator is missing");
+        return;
     };
     indicator->status = hfp_gsm_call_status();
 }
