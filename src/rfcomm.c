@@ -2165,11 +2165,10 @@ void rfcomm_create_channel_internal(void * connection, bd_addr_t addr, uint8_t s
 void rfcomm_disconnect_internal(uint16_t rfcomm_cid){
     log_info("RFCOMM_DISCONNECT cid 0x%02x", rfcomm_cid);
     rfcomm_channel_t * channel = rfcomm_channel_for_rfcomm_cid(rfcomm_cid);
-    if (channel) {
-        channel->state = RFCOMM_CHANNEL_SEND_DISC;
-    }
-    
+    if (!channel) return;
+
     // process
+    channel->state = RFCOMM_CHANNEL_SEND_DISC;
     rfcomm_run();
 }
 
