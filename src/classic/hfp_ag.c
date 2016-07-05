@@ -272,7 +272,7 @@ static int string_len_for_uint32(uint32_t i){
 // get size for indicator string
 static int hfp_ag_indicators_string_size(hfp_connection_t * hfp_connection, int i){
     // template: ("$NAME",($MIN,$MAX))
-    return 8 + strlen(hfp_ag_get_ag_indicators(hfp_connection)[i].name)
+    return 8 + (int) strlen(hfp_ag_get_ag_indicators(hfp_connection)[i].name)
          + string_len_for_uint32(hfp_ag_get_ag_indicators(hfp_connection)[i].min_range)
          + string_len_for_uint32(hfp_ag_get_ag_indicators(hfp_connection)[i].min_range); 
 }
@@ -1034,6 +1034,7 @@ static void hfp_ag_set_callsetup_indicator(void){
     hfp_ag_indicator_t * indicator = get_ag_indicator_for_name("callsetup");
     if (!indicator){
         log_error("hfp_ag_set_callsetup_indicator: callsetup indicator is missing");
+        return;
     };
     indicator->status = hfp_gsm_callsetup_status();
 }
@@ -1042,6 +1043,7 @@ static void hfp_ag_set_callheld_indicator(void){
     hfp_ag_indicator_t * indicator = get_ag_indicator_for_name("callheld");
     if (!indicator){
         log_error("hfp_ag_set_callheld_state: callheld indicator is missing");
+        return;
     };
     indicator->status = hfp_gsm_callheld_status();
 }
@@ -1050,6 +1052,7 @@ static void hfp_ag_set_call_indicator(void){
     hfp_ag_indicator_t * indicator = get_ag_indicator_for_name("call");
     if (!indicator){
         log_error("hfp_ag_set_call_state: call indicator is missing");
+        return;
     };
     indicator->status = hfp_gsm_call_status();
 }
