@@ -2260,11 +2260,9 @@ uint8_t rfcomm_create_channel(btstack_packet_handler_t packet_handler, bd_addr_t
 void rfcomm_disconnect(uint16_t rfcomm_cid){
     log_info("RFCOMM_DISCONNECT cid 0x%02x", rfcomm_cid);
     rfcomm_channel_t * channel = rfcomm_channel_for_rfcomm_cid(rfcomm_cid);
-    if (channel) {
-        channel->state = RFCOMM_CHANNEL_SEND_DISC;
-    }
-    
-    // process
+    if (!channel) return;
+
+    channel->state = RFCOMM_CHANNEL_SEND_DISC;
     l2cap_request_can_send_now_event(channel->multiplexer->l2cap_cid);
 }
 
