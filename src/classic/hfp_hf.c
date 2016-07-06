@@ -102,7 +102,7 @@ static void hfp_hf_emit_subscriber_information(btstack_packet_handler_t callback
     event[2] = event_subtype;
     event[3] = status;
     event[4] = bnip_type;
-    int size = (strlen(bnip_number) < sizeof(event) - 6) ? strlen(bnip_number) : sizeof(event) - 6;
+    int size = (strlen(bnip_number) < sizeof(event) - 6) ? (int) strlen(bnip_number) : sizeof(event) - 6;
     strncpy((char*)&event[5], bnip_number, size);
     event[5 + size] = 0;
     (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
@@ -115,7 +115,7 @@ static void hfp_hf_emit_type_and_number(btstack_packet_handler_t callback, uint8
     event[1] = sizeof(event) - 2;
     event[2] = event_subtype;
     event[3] = bnip_type;
-    int size = (strlen(bnip_number) < sizeof(event) - 5) ? strlen(bnip_number) : sizeof(event) - 5;
+    int size = (strlen(bnip_number) < sizeof(event) - 5) ? (int) strlen(bnip_number) : sizeof(event) - 5;
     strncpy((char*)&event[4], bnip_number, size);
     event[4 + size] = 0;
     (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
@@ -133,7 +133,7 @@ static void hfp_hf_emit_enhanced_call_status(btstack_packet_handler_t callback, 
     event[6] = clcc_status;
     event[7] = clcc_mpty;
     event[8] = bnip_type;
-    int size = (strlen(bnip_number) < sizeof(event) - 10) ? strlen(bnip_number) : sizeof(event) - 10;
+    int size = (strlen(bnip_number) < sizeof(event) - 10) ? (int) strlen(bnip_number) : sizeof(event) - 10;
     strncpy((char*)&event[9], bnip_number, size);
     event[9 + size] = 0;
     (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));

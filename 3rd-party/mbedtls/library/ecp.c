@@ -1456,7 +1456,7 @@ static int ecp_mul_naive( mbedtls_ecp_group *grp, mbedtls_ecp_point *R,
 
     // calculate m * p using double and add in decreasing fashion to use ecp_add_mixed
     mbedtls_ecp_point_init(R);
-    for (i=grp->nbits;i >= 0;i--){
+    for (i=(int)grp->nbits;i >= 0;i--){
         MBEDTLS_MPI_CHK( ecp_double_jac( grp, R, R ) );
 
 #if MBEDTLS_ECP_MUL_NAIVE_SAFE == 1

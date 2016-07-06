@@ -3113,7 +3113,6 @@ static void hci_emit_dedicated_bonding_result(bd_addr_t address, uint8_t status)
     event[pos++] = sizeof(event) - 2;
     event[pos++] = status;
     reverse_bd_addr(address, &event[pos]);
-    pos += 6;
     hci_emit_event(event, sizeof(event), 1);
 }
 
