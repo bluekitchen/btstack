@@ -279,19 +279,98 @@ int l2cap_send_prepared(uint16_t local_cid, uint16_t len);
  */
 void l2cap_release_packet_buffer(void);
 
-/* API_END */
 
-#if 0
+//
+// LE Connection Oriented Channels feature with the LE Credit Based Flow Control Mode == LE Data Channel
+//
 
-// to be implemented soon
+
 /**
- * @brief Regster L2CAP LE Credit Based Flow Control Mode service
- * @param
+ * @brief Register L2CAP LE Data Channel service
+ * @note MTU and initial credits are specified in l2cap_le_accept_connection(..) call
+ * @param packet_handler
+ * @param psm
+ * @param security_level
  */
-void l2cap_le_register_service(btstack_packet_handler_t packet_handler, uint16_t psm,
-    uint16_t mtu, uint16_t mps, uint16_t initial_credits, gap_security_level_t security_level);
+void l2cap_le_register_service(btstack_packet_handler_t packet_handler, uint16_t psm, gap_security_level_t security_level);
+
+/**
+ * @brief Unregister L2CAP LE Data Channel service
+ * @param psm
+ */
+
 void l2cap_le_unregister_service(uint16_t psm);
-#endif
+
+/*
+ * @brief Accept incoming LE Data Channel connection
+ * @param local_cid             L2CAP LE Data Channel Identifier
+ * @param receive_buffer        buffer used for reassembly of L2CAP LE Information Frames into service data unit (SDU) with given MTU
+ * @param receive_buffer_size   buffer size equals MTU
+ * @param initial_credits       Number of initial credits provided to peer
+ */
+
+uint8_t l2cap_le_accept_connection(uint16_t local_cid, uint8_t * receive_sdu_buffer, uint16_t mtu, uint16_t initial_credits);
+
+/** 
+ * @brief Deny incoming LE Data Channel connection due to resource constraints
+ * @param local_cid             L2CAP LE Data Channel Identifier
+ */
+
+uint8_t l2cap_le_decline_connection(uint16_t local_cid);
+
+/**
+ * @brief Create LE Data Channel connection
+ * @param packet_handler        Packet handler for this connection
+ * @param address               Peer address
+ * @param address_type          Peer address type
+ * @param psm                   Service PSM to connect to
+ * @param receive_buffer        buffer used for reassembly of L2CAP LE Information Frames into service data unit (SDU) with given MTU
+ * @param receive_buffer_size   buffer size equals MTU
+ * @param initial_credits       Number of initial credits provided to peer
+ * @param security_level        Minimum required security level
+ * @param out_local_cid         L2CAP LE Channel Identifier is stored here
+ */
+uint8_t l2cap_le_create_connection(btstack_packet_handler_t packet_handler, bd_addr_t address, bd_addr_type_t address_type, 
+    uint16_t psm, uint8_t * receive_sdu_buffer, uint16_t mtu, uint16_t initial_credits, gap_security_level_t security_level,
+    uint16_t * out_local_cid);
+
+/**
+ * @brief Provide credtis for LE Data Channel
+ * @param local_cid             L2CAP LE Data Channel Identifier
+ * @param credits               Number additional credits for peer
+ */
+uint8_t l2cap_le_provide_credits(uint16_t cid, uint16_t credits);
+
+/**
+ * @brief Check if outgoing buffer is available and that there's space on the Bluetooth module
+ * @param local_cid             L2CAP LE Data Channel Identifier
+ */
+int l2cap_le_can_send_now(uint16_t cid);
+
+/**
+ * @brief Request emission of L2CAP_EVENT_CAN_SEND_NOW as soon as possible
+ * @note L2CAP_EVENT_CAN_SEND_NOW might be emitted during call to this function
+ *       so packet handler should be ready to handle it
+ * @param local_cid             L2CAP LE Data Channel Identifier
+ */
+uint8_t l2cap_le_request_can_send_now_event(uint16_t cid);
+
+/**
+ * @brief Send data via LE Data Channel
+ * @note Since data larger then the maximum PDU needs to be segmented into multiple PDUs, data needs to stay valid until ... event
+ * @param local_cid             L2CAP LE Data Channel Identifier
+ * @param data                  data to send
+ * @param size                  data size
+ */
+uint8_t l2cap_le_send_data(uint16_t cid, uint8_t * data, uint16_t size);
+
+/**
+ * @brief Disconnect from LE Data Channel
+ * @param local_cid             L2CAP LE Data Channel Identifier
+ */
+uint8_t l2cap_le_disconnect(uint16_t cid);
+
+/* API_END */
 
 #if defined __cplusplus
 }
