@@ -10,7 +10,7 @@ include ${SBC_ENCODER_ROOT}/Makefile.inc
 SBC_DECODER_OBJ  = $(SBC_DECODER:.c=.o) 
 SBC_ENCODER_OBJ  = $(SBC_ENCODER:.c=.o)
 
-CFLAGS  = -g -Wall -I. -I../ -I${BTSTACK_ROOT}/src -I${SBC_DECODER_ROOT}/include -I${SBC_ENCODER_ROOT}/include -D PRINT_SAMPLES -D PRINT_SCALEFACTORS -D OI_DEBUG -D SBC_NO_PCM_CPY_OPTION
+CFLAGS  = -g -Wall -I. -I../ -I${BTSTACK_ROOT}/src -I${BTSTACK_ROOT}/src/classic -I${SBC_DECODER_ROOT}/include -I${SBC_ENCODER_ROOT}/include -D PRINT_SAMPLES -D PRINT_SCALEFACTORS -D OI_DEBUG -D SBC_NO_PCM_CPY_OPTION
 # -D TRACE_EXECUTION -D CODEC_DEBUG 
 LDFLAGS += -lCppUTest -lCppUTestExt
 VPATH += ${SBC_DECODER_ROOT}/srce 
@@ -27,7 +27,7 @@ SBC_TESTS = sbc_decoder_test sbc_encoder_test
 
 all: ${SBC_TESTS}
 
-sbc_decoder_test: ${SBC_DECODER_OBJ} ${COMMON_OBJ} sbc_decoder_bludroid.o sbc_decoder_test.o  
+sbc_decoder_test: ${SBC_DECODER_OBJ} ${COMMON_OBJ} ${BTSTACK_ROOT}/src/classic/sbc_decoder_bludroid.o sbc_decoder_test.o  
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 sbc_encoder_test: ${SBC_ENCODER_OBJ} sbc_encoder_test.o  

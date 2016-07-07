@@ -156,8 +156,8 @@ void sbc_decoder_process_data(sbc_decoder_state_t * state, uint8_t * buffer, int
                 break;
             }
             
-            int frameBytes = OI_CODEC_SBC_CalculateFramelen(&(bd_decoder_state->decoder_context.common.frameInfo));
-            //printf("frame bytes %d\n", frameBytes);
+            // int frameBytes = OI_CODEC_SBC_CalculateFramelen(&(bd_decoder_state->decoder_context.common.frameInfo));
+            // printf("frame bytes %d\n", frameBytes);
 
             state->handle_pcm_data(bd_decoder_state->pcm_data, 
                                         sbc_decoder_num_samples_per_frame(state), 
