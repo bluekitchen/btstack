@@ -112,8 +112,10 @@ typedef struct {
     L2CAP_CHANNEL_STATE_VAR state_var;
 
     // info
-    bd_addr_t address;
     hci_con_handle_t con_handle;
+
+    bd_addr_t address;
+    bd_addr_type_t address_type;
     
     uint8_t   remote_sig_id;    // used by other side, needed for delayed response
     uint8_t   local_sig_id;     // own signaling identifier
@@ -123,6 +125,8 @@ typedef struct {
     
     uint16_t  local_mtu;
     uint16_t  remote_mtu;
+
+    uint16_t  mps;  // LE Data Channel
     
     uint16_t  flush_timeout;    // default 0xffff
 
@@ -132,7 +136,16 @@ typedef struct {
 
     uint8_t   reason; // used in decline internal
     uint8_t   waiting_for_can_send_now;
+
+    // credits for outgoing traffic
+    uint8_t credits_outgoing;
     
+    // number of packets remote will be granted
+    uint8_t new_credits_incoming;
+
+    // credits for incoming traffic
+    uint8_t credits_incoming;
+
 } l2cap_channel_t;
 
 // info regarding potential connections
@@ -145,15 +158,13 @@ typedef struct {
     
     // incoming MTU
     uint16_t mtu;
-
-    // incoming MPS
-    uint16_t mps;
     
     // internal connection
     btstack_packet_handler_t packet_handler;
 
     // required security level
-    gap_security_level_t required_security_level;    
+    gap_security_level_t required_security_level;
+
 } l2cap_service_t;
 
 
@@ -292,14 +303,14 @@ void l2cap_release_packet_buffer(void);
  * @param psm
  * @param security_level
  */
-void l2cap_le_register_service(btstack_packet_handler_t packet_handler, uint16_t psm, gap_security_level_t security_level);
+uint8_t l2cap_le_register_service(btstack_packet_handler_t packet_handler, uint16_t psm, gap_security_level_t security_level);
 
 /**
  * @brief Unregister L2CAP LE Data Channel service
  * @param psm
  */
 
-void l2cap_le_unregister_service(uint16_t psm);
+uint8_t l2cap_le_unregister_service(uint16_t psm);
 
 /*
  * @brief Accept incoming LE Data Channel connection
@@ -319,7 +330,7 @@ uint8_t l2cap_le_accept_connection(uint16_t local_cid, uint8_t * receive_sdu_buf
 uint8_t l2cap_le_decline_connection(uint16_t local_cid);
 
 /**
- * @brief Create LE Data Channel connection
+ * @brief Create LE Data Channel
  * @param packet_handler        Packet handler for this connection
  * @param address               Peer address
  * @param address_type          Peer address type
@@ -330,7 +341,7 @@ uint8_t l2cap_le_decline_connection(uint16_t local_cid);
  * @param security_level        Minimum required security level
  * @param out_local_cid         L2CAP LE Channel Identifier is stored here
  */
-uint8_t l2cap_le_create_connection(btstack_packet_handler_t packet_handler, bd_addr_t address, bd_addr_type_t address_type, 
+uint8_t l2cap_le_create_channel(btstack_packet_handler_t packet_handler, bd_addr_t address, bd_addr_type_t address_type, 
     uint16_t psm, uint8_t * receive_sdu_buffer, uint16_t mtu, uint16_t initial_credits, gap_security_level_t security_level,
     uint16_t * out_local_cid);
 
