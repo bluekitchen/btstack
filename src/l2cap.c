@@ -772,6 +772,38 @@ static void l2cap_handle_remote_supported_features_received(l2cap_channel_t * ch
     channel->state = L2CAP_STATE_WILL_SEND_CONNECTION_REQUEST;
 }
 
+static l2cap_channel_t * l2cap_create_channel_entry(btstack_packet_handler_t packet_handler, bd_addr_t address, bd_addr_type_t address_type, 
+    uint16_t psm, uint16_t local_mtu, gap_security_level_t security_level){
+
+    l2cap_channel_t * channel = btstack_memory_l2cap_channel_get();
+    if (!channel) {
+        return NULL;
+    }
+
+     // Init memory (make valgrind happy)
+    memset(channel, 0, sizeof(l2cap_channel_t));
+        
+    // fill in 
+    channel->packet_handler = packet_handler;
+    bd_addr_copy(channel->address, address);
+    channel->address_type = address_type;
+    channel->psm = psm;
+    channel->local_mtu  = local_mtu;
+    channel->remote_mtu = L2CAP_MINIMAL_MTU;
+    channel->required_security_level = security_level;
+
+    // 
+    channel->local_cid = l2cap_next_local_cid();
+    channel->con_handle = 0;
+
+    // set initial state
+    channel->state = L2CAP_STATE_WILL_SEND_CREATE_CONNECTION;
+    channel->state_var = L2CAP_CHANNEL_STATE_VAR_NONE;
+    channel->remote_sig_id = L2CAP_SIG_ID_INVALID;
+    channel->local_sig_id = L2CAP_SIG_ID_INVALID;
+    return channel;
+}
+
 /** 
  * @brief Creates L2CAP channel to the PSM of a remote device with baseband address. A new baseband connection will be initiated if necessary.
  * @param packet_handler
@@ -780,37 +812,18 @@ static void l2cap_handle_remote_supported_features_received(l2cap_channel_t * ch
  * @param mtu
  * @param local_cid
  */
-uint8_t l2cap_create_channel(btstack_packet_handler_t channel_packet_handler, bd_addr_t address, uint16_t psm, uint16_t mtu, uint16_t * out_local_cid){
-    log_info("L2CAP_CREATE_CHANNEL addr %s psm 0x%x mtu %u", bd_addr_to_str(address), psm, mtu);
+
+uint8_t l2cap_create_channel(btstack_packet_handler_t channel_packet_handler, bd_addr_t address, uint16_t psm, uint16_t local_mtu, uint16_t * out_local_cid){
+    log_info("L2CAP_CREATE_CHANNEL addr %s psm 0x%x mtu %u", bd_addr_to_str(address), psm, local_mtu);
     
-    // alloc structure
-    l2cap_channel_t * channel = btstack_memory_l2cap_channel_get();
+    if (local_mtu > l2cap_max_mtu()) {
+        local_mtu = l2cap_max_mtu();
+    }
+
+    l2cap_channel_t * channel = l2cap_create_channel_entry(channel_packet_handler, address, BD_ADDR_TYPE_CLASSIC, psm, local_mtu, LEVEL_0);
     if (!channel) {
         return BTSTACK_MEMORY_ALLOC_FAILED;
     }
-
-     // Init memory (make valgrind happy)
-    memset(channel, 0, sizeof(l2cap_channel_t));
-    // limit local mtu to max acl packet length - l2cap header
-    if (mtu > l2cap_max_mtu()) {
-        mtu = l2cap_max_mtu();
-    }
-        
-    // fill in 
-    bd_addr_copy(channel->address, address);
-    channel->psm = psm;
-    channel->con_handle = 0;
-    channel->packet_handler = channel_packet_handler;
-    channel->remote_mtu = L2CAP_MINIMAL_MTU;
-    channel->local_mtu = mtu;
-    channel->local_cid = l2cap_next_local_cid();
-
-    // set initial state
-    channel->state = L2CAP_STATE_WILL_SEND_CREATE_CONNECTION;
-    channel->state_var = L2CAP_CHANNEL_STATE_VAR_NONE;
-    channel->remote_sig_id = L2CAP_SIG_ID_INVALID;
-    channel->local_sig_id = L2CAP_SIG_ID_INVALID;
-    channel->required_security_level = LEVEL_0;
 
     // add to connections list
     btstack_linked_list_add(&l2cap_channels, (btstack_linked_item_t *) channel);
@@ -1081,25 +1094,17 @@ static void l2cap_handle_connection_request(hci_con_handle_t handle, uint8_t sig
 
     // alloc structure
     // log_info("l2cap_handle_connection_request register channel");
-    l2cap_channel_t * channel = btstack_memory_l2cap_channel_get();
+    l2cap_channel_t * channel = l2cap_create_channel_entry(service->packet_handler, hci_connection->address, BD_ADDR_TYPE_CLASSIC, 
+    psm, service->mtu, service->required_security_level);
     if (!channel){
         // 0x0004 No resources available
         l2cap_register_signaling_response(handle, CONNECTION_REQUEST, sig_id, 0x0004);
         return;
     }
-    // Init memory (make valgrind happy)
-    memset(channel, 0, sizeof(l2cap_channel_t));
-    // fill in 
-    bd_addr_copy(channel->address, hci_connection->address);
-    channel->psm = psm;
+
     channel->con_handle = handle;
-    channel->packet_handler = service->packet_handler;
-    channel->local_cid  = l2cap_next_local_cid();
     channel->remote_cid = source_cid;
-    channel->local_mtu  = service->mtu;
-    channel->remote_mtu = L2CAP_DEFAULT_MTU;
     channel->remote_sig_id = sig_id; 
-    channel->required_security_level = service->required_security_level;
 
     // limit local mtu to max acl packet length - l2cap header
     if (channel->local_mtu > l2cap_max_mtu()) {
@@ -1530,7 +1535,6 @@ uint8_t l2cap_register_service(btstack_packet_handler_t service_packet_handler, 
     log_info("L2CAP_REGISTER_SERVICE psm 0x%x mtu %u", psm, mtu);
     
     // check for alread registered psm 
-    // TODO: emit error event
     l2cap_service_t *service = l2cap_get_service(psm);
     if (service) {
         log_error("l2cap_register_service: PSM %u already registered", psm);
@@ -1538,7 +1542,6 @@ uint8_t l2cap_register_service(btstack_packet_handler_t service_packet_handler, 
     }
     
     // alloc structure
-    // TODO: emit error event
     service = btstack_memory_l2cap_service_get();
     if (!service) {
         log_error("l2cap_register_service: no memory for l2cap_service_t");
@@ -1583,8 +1586,6 @@ void l2cap_register_fixed_channel(btstack_packet_handler_t the_packet_handler, u
 
 #ifdef ENABLE_BLE
 
-
-#if 0
 static inline l2cap_service_t * l2cap_le_get_service(uint16_t psm){
     return l2cap_get_service_internal(&l2cap_le_services, psm);
 }
@@ -1592,33 +1593,26 @@ static inline l2cap_service_t * l2cap_le_get_service(uint16_t psm){
  * @brief Regster L2CAP LE Credit Based Flow Control Mode service
  * @param
  */
-void l2cap_le_register_service(btstack_packet_handler_t packet_handler, uint16_t psm,
-    uint16_t mtu, uint16_t mps, uint16_t initial_credits, gap_security_level_t security_level){
+uint8_t l2cap_le_register_service(btstack_packet_handler_t packet_handler, uint16_t psm, gap_security_level_t security_level){
     
-    log_info("L2CAP_LE_REGISTER_SERVICE psm 0x%x mtu %u connection %p", psm, mtu, connection);
+    log_info("L2CAP_LE_REGISTER_SERVICE psm 0x%x", psm);
     
     // check for alread registered psm 
-    // TODO: emit error event
     l2cap_service_t *service = l2cap_le_get_service(psm);
     if (service) {
-        log_error("l2cap_le_register_service_internal: PSM %u already registered", psm);
-        l2cap_emit_service_registered(connection, L2CAP_SERVICE_ALREADY_REGISTERED, psm);
-        return;
+        return L2CAP_SERVICE_ALREADY_REGISTERED;
     }
     
     // alloc structure
-    // TODO: emit error event
     service = btstack_memory_l2cap_service_get();
     if (!service) {
         log_error("l2cap_register_service_internal: no memory for l2cap_service_t");
-        l2cap_emit_service_registered(connection, BTSTACK_MEMORY_ALLOC_FAILED, psm);
-        return;
+        return BTSTACK_MEMORY_ALLOC_FAILED;
     }
     
     // fill in 
     service->psm = psm;
-    service->mtu = mtu;
-    service->mps = mps;
+    service->mtu = 0;
     service->packet_handler = packet_handler;
     service->required_security_level = security_level;
 
@@ -1626,17 +1620,132 @@ void l2cap_le_register_service(btstack_packet_handler_t packet_handler, uint16_t
     btstack_linked_list_add(&l2cap_le_services, (btstack_linked_item_t *) service);
     
     // done
-    l2cap_emit_service_registered(connection, 0, psm);
+    return 0;
 }
 
-void l2cap_le_unregister_service(uint16_t psm) {
-
+uint8_t l2cap_le_unregister_service(uint16_t psm) {
     log_info("L2CAP_LE_UNREGISTER_SERVICE psm 0x%x", psm);
-
     l2cap_service_t *service = l2cap_le_get_service(psm);
-    if (!service) return;
+    if (!service) return L2CAP_SERVICE_NOT_FOUND;
+
     btstack_linked_list_remove(&l2cap_le_services, (btstack_linked_item_t *) service);
     btstack_memory_l2cap_service_free(service);
+    return 0;
 }
-#endif
+
+/*
+ * @brief Accept incoming LE Data Channel connection
+ * @param local_cid             L2CAP LE Data Channel Identifier
+ * @param receive_buffer        buffer used for reassembly of L2CAP LE Information Frames into service data unit (SDU) with given MTU
+ * @param receive_buffer_size   buffer size equals MTU
+ * @param initial_credits       Number of initial credits provided to peer
+ */
+
+uint8_t l2cap_le_accept_connection(uint16_t local_cid, uint8_t * receive_sdu_buffer, uint16_t mtu, uint16_t initial_credits){
+    return 0;
+}
+
+/** 
+ * @brief Deny incoming LE Data Channel connection due to resource constraints
+ * @param local_cid             L2CAP LE Data Channel Identifier
+ */
+
+uint8_t l2cap_le_decline_connection(uint16_t local_cid){
+    return 0;
+}
+
+/**
+ * @brief Create LE Data Channel
+ * @param packet_handler        Packet handler for this connection
+ * @param address               Peer address
+ * @param address_type          Peer address type
+ * @param psm                   Service PSM to connect to
+ * @param receive_buffer        buffer used for reassembly of L2CAP LE Information Frames into service data unit (SDU) with given MTU
+ * @param receive_buffer_size   buffer size equals MTU
+ * @param initial_credits       Number of initial credits provided to peer
+ * @param security_level        Minimum required security level
+ * @param out_local_cid         L2CAP LE Channel Identifier is stored here
+ */
+uint8_t l2cap_le_create_channel(btstack_packet_handler_t packet_handler, bd_addr_t address, bd_addr_type_t address_type, 
+    uint16_t psm, uint8_t * receive_sdu_buffer, uint16_t mtu, uint16_t initial_credits, gap_security_level_t security_level,
+    uint16_t * out_local_cid)
+{
+    log_info("L2CAP_LE_CREATE_CHANNEL addr %s psm 0x%x mtu %u", bd_addr_to_str(address), psm, mtu);
+    
+    l2cap_channel_t * channel = l2cap_create_channel_entry(packet_handler, address, BD_ADDR_TYPE_CLASSIC, psm, mtu, LEVEL_0);
+    if (!channel) {
+        return BTSTACK_MEMORY_ALLOC_FAILED;
+    }
+
+    // add to connections list
+    btstack_linked_list_add(&l2cap_le_channels, (btstack_linked_item_t *) channel);
+
+    // store local_cid
+    if (out_local_cid){
+       *out_local_cid = channel->local_cid;
+    }
+
+    // check if hci connection is already usable
+    hci_connection_t * conn = hci_connection_for_bd_addr_and_type(address, address_type);
+    if (conn){
+        log_info("l2cap_le_create_channel, hci connection already exists");
+        // l2cap_handle_connection_complete(conn->con_handle, channel);
+        // check if remote supported fearures are already received
+        // if (conn->bonding_flags & BONDING_RECEIVED_REMOTE_FEATURES) {
+        //     l2cap_handle_remote_supported_features_received(channel);
+        // }
+    }
+
+    l2cap_run();
+
+    return 0;
+}
+
+/**
+ * @brief Provide credtis for LE Data Channel
+ * @param local_cid             L2CAP LE Data Channel Identifier
+ * @param credits               Number additional credits for peer
+ */
+uint8_t l2cap_le_provide_credits(uint16_t cid, uint16_t credits){
+    return 0;
+}
+
+/**
+ * @brief Check if outgoing buffer is available and that there's space on the Bluetooth module
+ * @param local_cid             L2CAP LE Data Channel Identifier
+ */
+int l2cap_le_can_send_now(uint16_t cid){
+    return 0;
+}
+
+/**
+ * @brief Request emission of L2CAP_EVENT_CAN_SEND_NOW as soon as possible
+ * @note L2CAP_EVENT_CAN_SEND_NOW might be emitted during call to this function
+ *       so packet handler should be ready to handle it
+ * @param local_cid             L2CAP LE Data Channel Identifier
+ */
+uint8_t l2cap_le_request_can_send_now_event(uint16_t cid){
+    return 0;
+}
+
+/**
+ * @brief Send data via LE Data Channel
+ * @note Since data larger then the maximum PDU needs to be segmented into multiple PDUs, data needs to stay valid until ... event
+ * @param local_cid             L2CAP LE Data Channel Identifier
+ * @param data                  data to send
+ * @param size                  data size
+ */
+uint8_t l2cap_le_send_data(uint16_t cid, uint8_t * data, uint16_t size){
+    return 0;
+}
+
+/**
+ * @brief Disconnect from LE Data Channel
+ * @param local_cid             L2CAP LE Data Channel Identifier
+ */
+uint8_t l2cap_le_disconnect(uint16_t cid)
+{
+    return 0;
+}
+
 #endif
