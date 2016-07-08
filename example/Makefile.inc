@@ -1,8 +1,13 @@
+SBC_DECODER_ROOT = ${BTSTACK_ROOT}/3rd-party/bluedroid/decoder
+SBC_ENCODER_ROOT = ${BTSTACK_ROOT}/3rd-party/bluedroid/encoder
+
 VPATH += ${BTSTACK_ROOT}/src
 VPATH += ${BTSTACK_ROOT}/src/ble
 VPATH += ${BTSTACK_ROOT}/src/classic
 VPATH += ${BTSTACK_ROOT}/example
 VPATH += ${BTSTACK_ROOT}/3rd-party/mbedtls/library
+VPATH += ${SBC_DECODER_ROOT}/srce 
+VPATH += ${SBC_ENCODER_ROOT}/srce
 
 CFLAGS += -I.
 CFLAGS += -I${BTSTACK_ROOT}/src/ble
@@ -10,6 +15,8 @@ CFLAGS += -I${BTSTACK_ROOT}/src/classic
 CFLAGS += -I${BTSTACK_ROOT}/src
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/mbedtls/include
 CFLAGS += -I${BTSTACK_ROOT}/test/security_manager
+CFLAGS += -I${SBC_DECODER_ROOT}/include -D OI_DEBUG # -D PRINT_SAMPLES -D PRINT_SCALEFACTORS 
+CFLAGS += -I${SBC_ENCODER_ROOT}/include -D SBC_NO_PCM_CPY_OPTION
 
 CORE += \
 	btstack_memory.c            \
@@ -61,6 +68,13 @@ MBEDTLS = 					\
 	memory_buffer_alloc.c   \
 	platform.c 				\
 
+# 
+include ${SBC_DECODER_ROOT}/Makefile.inc
+include ${SBC_ENCODER_ROOT}/Makefile.inc
+
+SBC_DECODER += \
+	${BTSTACK_ROOT}/src/classic/sbc_decoder_bludroid.c \
+
 EXAMPLES = 					\
 	ancs_client_demo		\
 	gap_dedicated_bonding	\
@@ -103,6 +117,8 @@ ATT_OBJ     = $(ATT:.c=.o)
 GATT_CLIENT_OBJ = $(GATT_CLIENT:.c=.o)
 GATT_SERVER_OBJ = $(GATT_SERVER:.c=.o)
 PAN_OBJ = $(PAN:.c=.o)
+SBC_DECODER_OBJ  = $(SBC_DECODER:.c=.o) 
+SBC_ENCODER_OBJ  = $(SBC_ENCODER:.c=.o)
 
 default_target: all
 
@@ -187,7 +203,7 @@ hsp_ag_demo: ${CORE_OBJ} ${COMMON_OBJ} ${SDP_CLIENT} sco_demo_util.o hsp_ag.o hs
 hfp_ag_demo: ${CORE_OBJ} ${COMMON_OBJ} ${SDP_CLIENT} sco_demo_util.o hfp.o hfp_gsm_model.o hfp_ag.o hfp_ag_demo.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-hfp_hf_demo: ${CORE_OBJ} ${COMMON_OBJ} ${SDP_CLIENT} sco_demo_util.o hfp.o hfp_hf.o hfp_hf_demo.c
+hfp_hf_demo: ${CORE_OBJ} ${COMMON_OBJ} ${SDP_CLIENT} ${SBC_DECODER_OBJ} sco_demo_util.o hfp.o hfp_hf.o hfp_hf_demo.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 clean:

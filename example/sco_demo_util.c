@@ -40,6 +40,9 @@
  */
 
 #include "sco_demo_util.h"
+#include "btstack_debug.h"
+#include "sbc_decoder.h"
+
 #include <stdio.h>
 
 // configure test mode
@@ -49,7 +52,7 @@
 
 
 // SCO demo configuration
-#define SCO_DEMO_MODE SCO_DEMO_MODE_ASCII
+#define SCO_DEMO_MODE SCO_DEMO_MODE_SINE
 #define SCO_REPORT_PERIOD 100
 
 #ifdef HAVE_POSIX_FILE_IO
@@ -73,6 +76,19 @@
 static  PaStream * stream;
 #endif
 
+typedef struct wav_writer_state {
+    FILE * wav_file;
+    int total_num_samples;
+    int frame_count;
+} wav_writer_state_t;
+
+static int dump_data = 1;
+
+static int phase;
+static int count_sent = 0;
+static int count_received = 0;
+static uint8_t negotiated_codec = 0; // CVSD
+
 #if SCO_DEMO_MODE == SCO_DEMO_MODE_SINE
 // input signal: pre-computed sine wave, 160 Hz
 static const uint8_t sine[] = {
@@ -82,19 +98,15 @@ static const uint8_t sine[] = {
     182, 170, 159, 149, 142, 136, 132, 130, 130, 132,
     136, 142, 149, 159, 170, 182, 195, 210, 225, 241,
 };
-#endif
 
-static int phase;
-static int count_sent = 0;
-static int count_received = 0;
 
-#if SCO_DEMO_MODE == SCO_DEMO_MODE_SINE
 #ifdef SCO_WAV_FILENAME
 
-static FILE * wav_file;
 static int num_samples_to_write;
+static wav_writer_state_t wav_writer_state;
 
-
+static sbc_decoder_state_t decoder_state;
+    
 static void little_endian_fstore_16(FILE * file, uint16_t value){
     uint8_t buf[2];
     little_endian_store_32(buf, 0, value);
@@ -108,14 +120,12 @@ static void little_endian_fstore_32(FILE * file, uint32_t value){
 }
 
 static FILE * wav_init(const char * filename){
-    printf("SCO Demo: creating wav file %s\n", filename);
-    return fopen(filename, "wb");
+    FILE * f = fopen(filename, "wb");
+    printf("SCO Demo: creating wav file %s, %p\n", filename, f);
+    return f;
 }
 
 static void write_wav_header(FILE * file, int sample_rate, int num_channels, int num_samples, int bytes_per_sample){
-    printf("SCO Demo: writing wav header: sample rate %u, num channels %u, duration %u s, bytes per sample %u\n",
-        sample_rate, num_channels, num_samples / sample_rate / num_channels, bytes_per_sample);
-    
     /* write RIFF header */
     fwrite("RIFF", 1, 4, file);
     // num_samples = blocks * subbands
@@ -148,8 +158,118 @@ static void write_wav_data_uint8(FILE * file, unsigned long num_samples, uint8_t
     fwrite(data, num_samples, 1, file);
 }
 
+static void write_wav_data_int16(FILE * file, int num_samples, int16_t * data){
+    fwrite(data, num_samples, 2, file);
+}
+
+static void handle_pcm_data(int16_t * data, int num_samples, int num_channels, int sample_rate, void * context){
+    log_info("handle_pcm_data num samples %u / %u", num_samples, num_samples_to_write);
+    if (!num_samples_to_write) return;
+    
+    wav_writer_state_t * writer_state = (wav_writer_state_t*) context;
+    num_samples = btstack_min(num_samples, num_samples_to_write);
+    num_samples_to_write -= num_samples;
+
+    write_wav_data_int16(writer_state->wav_file, num_samples, data);
+    writer_state->total_num_samples+=num_samples;
+    writer_state->frame_count++;
+
+    if (num_samples_to_write == 0){
+        sco_demo_close();
+    }
+}
+
+
+static void sco_demo_init_mSBC(void){
+    wav_writer_state.wav_file = wav_init(SCO_WAV_FILENAME);
+    wav_writer_state.frame_count = 0;
+    wav_writer_state.total_num_samples = 0;
+
+    sbc_decoder_init(&decoder_state, SBC_MODE_mSBC, &handle_pcm_data, (void*)&wav_writer_state);    
+
+    const int sample_rate = 16000;
+    const int num_samples = sample_rate * SCO_WAV_DURATION_IN_SECONDS;
+    const int bytes_per_sample = 2;
+    const int num_channels = 1;
+    num_samples_to_write = num_samples;
+    
+    write_wav_header(wav_writer_state.wav_file, sample_rate, num_channels, num_samples, bytes_per_sample);
+}
+
+static void sco_demo_init_CVSD(void){
+    wav_writer_state.wav_file = wav_init(SCO_WAV_FILENAME);
+    wav_writer_state.frame_count = 0;
+    wav_writer_state.total_num_samples = 0;
+
+    const int sample_rate = 8000;
+    const int num_samples = sample_rate * SCO_WAV_DURATION_IN_SECONDS;
+    const int num_channels = 1;
+    const int bytes_per_sample = 1;
+    num_samples_to_write = num_samples;
+    write_wav_header(wav_writer_state.wav_file, sample_rate, num_channels, num_samples, bytes_per_sample);
+}
+
+
+static void sco_demo_receive_mSBC(uint8_t * packet, uint16_t size){
+    printf("sco_demo_receive_mSBC size %u, need %u\n", size, num_samples_to_write);
+    if (num_samples_to_write){
+        sbc_decoder_process_data(&decoder_state, packet+3, size-3);
+        dump_data = 0;
+    }
+}
+
+static void sco_demo_receive_CVSD(uint8_t * packet, uint16_t size){
+    if (num_samples_to_write){
+        const int num_samples = size - 3;
+        const int samples_to_write = btstack_min(num_samples, num_samples_to_write);
+        // convert 8 bit signed to 8 bit unsigned
+        int i;
+        for (i=0;i<samples_to_write;i++){
+            packet[3+i] += 128;            
+        }
+        write_wav_data_uint8(wav_writer_state.wav_file, samples_to_write, &packet[3]);
+        num_samples_to_write -= samples_to_write;
+        if (num_samples_to_write == 0){
+            sco_demo_close();
+        }
+        dump_data = 0;
+    }
+}
+
 #endif
 #endif
+
+void sco_demo_close(void){
+#if SCO_DEMO_MODE == SCO_DEMO_MODE_SINE
+#ifdef SCO_WAV_FILENAME
+    
+    printf("SCO Demo: closing wav file\n");
+    if (negotiated_codec == 0x02){
+        wav_writer_state_t * writer_state = (wav_writer_state_t*) decoder_state.context;
+        if (!writer_state->wav_file) return;
+        rewind(writer_state->wav_file);
+        write_wav_header(writer_state->wav_file, writer_state->total_num_samples, sbc_decoder_num_channels(&decoder_state), sbc_decoder_sample_rate(&decoder_state),2);
+        fclose(writer_state->wav_file);
+        writer_state->wav_file = NULL;
+    }
+
+#endif
+#endif
+}
+
+void sco_demo_set_codec(uint8_t codec){
+    if (negotiated_codec == codec) return;
+    negotiated_codec = codec;
+#if SCO_DEMO_MODE == SCO_DEMO_MODE_SINE
+#ifdef SCO_WAV_FILENAME
+    if (negotiated_codec == 0x02){
+        sco_demo_init_mSBC();
+    } else {
+        sco_demo_init_CVSD();
+    }
+#endif
+#endif
+}
 
 void sco_demo_init(void){
 
@@ -166,18 +286,6 @@ void sco_demo_init(void){
 #endif
 #if SCO_DEMO_MODE == SCO_DEMO_MODE_COUNTER
 	printf("SCO Demo: Sending counter value, hexdump received data.\n");
-#endif
-
-#if SCO_DEMO_MODE == SCO_DEMO_MODE_SINE
-#ifdef SCO_WAV_FILENAME
-    wav_file = wav_init(SCO_WAV_FILENAME);
-    const int sample_rate = 8000;
-    const int num_samples = sample_rate * SCO_WAV_DURATION_IN_SECONDS;
-    const int num_channels = 1;
-    const int bytes_per_sample = 1;
-    write_wav_header(wav_file, sample_rate, num_channels, num_samples, bytes_per_sample);
-    num_samples_to_write = num_samples;
-#endif
 #endif
 
 #ifdef USE_PORTAUDIO
@@ -209,9 +317,9 @@ void sco_demo_init(void){
     if( err != paNoError ) return;
 #endif	
 
-#if SCO_DEMO_MODE != SCO_DEMO_MODE_SINE
+//#if SCO_DEMO_MODE != SCO_DEMO_MODE_SINE
     hci_set_sco_voice_setting(0x03);    // linear, unsigned, 8-bit, transparent
-#endif
+//#endif
 
 #if SCO_DEMO_MODE == SCO_DEMO_MODE_ASCII
     phase = 'a';
@@ -264,13 +372,14 @@ void sco_demo_send(hci_con_handle_t sco_handle){
     if ((count_sent % SCO_REPORT_PERIOD) == 0) sco_report();
 }
 
+
 /**
  * @brief Process received data
  */
 void sco_demo_receive(uint8_t * packet, uint16_t size){
 
 
-    int dump_data = 1;
+    dump_data = 1;
 
     count_received++;
     // if ((count_received % SCO_REPORT_PERIOD) == 0) sco_report();
@@ -278,21 +387,10 @@ void sco_demo_receive(uint8_t * packet, uint16_t size){
 
 #if SCO_DEMO_MODE == SCO_DEMO_MODE_SINE
 #ifdef SCO_WAV_FILENAME
-    if (num_samples_to_write){
-        const int num_samples = size - 3;
-        const int samples_to_write = btstack_min(num_samples, num_samples_to_write);
-        // convert 8 bit signed to 8 bit unsigned
-        int i;
-        for (i=0;i<samples_to_write;i++){
-            packet[3+i] += 128;            
-        }
-        write_wav_data_uint8(wav_file, samples_to_write, &packet[3]);
-        num_samples_to_write -= samples_to_write;
-        if (num_samples_to_write == 0){
-            printf("SCO Demo: closing wav file\n");
-            fclose(wav_file);
-        }
-        dump_data = 0;
+    if (negotiated_codec == 0x02){
+        sco_demo_receive_mSBC(packet, size);
+    } else {
+        sco_demo_receive_CVSD(packet, size);
     }
 #endif
 #endif

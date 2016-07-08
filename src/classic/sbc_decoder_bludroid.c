@@ -90,13 +90,20 @@ void OI_AssertFail(char* file, int line, char* reason){
     printf("AssertFail file %s, line %d, reason %s\n", file, line, reason);
 }
 
-void sbc_decoder_init(sbc_decoder_state_t * state, void (*callback)(int16_t * data, int num_samples, int num_channels, int sample_rate, void * context), void * context){
+void sbc_decoder_init(sbc_decoder_state_t * state, sbc_mode_t mode, void (*callback)(int16_t * data, int num_samples, int num_channels, int sample_rate, void * context), void * context){
     if (sbc_state_singelton && sbc_state_singelton != state ){
         log_error("SBC decoder: different sbc decoder state is allready registered");
     } 
+    OI_STATUS status;
+    switch (mode){
+        case SBC_MODE_STANDARD:
+            status = OI_CODEC_SBC_DecoderReset(&(bd_state.decoder_context), bd_state.decoder_data, sizeof(bd_state.decoder_data), 2, 1, FALSE);
+            break;
+        case SBC_MODE_mSBC:
+            status = OI_CODEC_mSBC_DecoderReset(&(bd_state.decoder_context), bd_state.decoder_data, sizeof(bd_state.decoder_data));
+            break;
+    }
 
-    OI_STATUS status = OI_CODEC_mSBC_DecoderReset(&(bd_state.decoder_context), 
-                                                    bd_state.decoder_data, sizeof(bd_state.decoder_data));
     if (status != 0){
         log_error("SBC decoder: error during reset %d\n", status);
     }
@@ -106,9 +113,9 @@ void sbc_decoder_init(sbc_decoder_state_t * state, void (*callback)(int16_t * da
     bd_state.pcm_bytes = sizeof(bd_state.pcm_data);
 
     state->handle_pcm_data = callback;
+    state->mode = mode;
     state->context = context;
     state->decoder_state = &bd_state;
-    //OI_STATUS status = OI_CODEC_SBC_DecoderReset(&context, decoder_data, sizeof(decoder_data), 1, 1, FALSE);
 }
 
 static void append_received_sbc_data(bludroid_decoder_state_t * state, uint8_t * buffer, int size){
@@ -124,12 +131,12 @@ static void append_received_sbc_data(bludroid_decoder_state_t * state, uint8_t *
 
 void sbc_decoder_process_data(sbc_decoder_state_t * state, uint8_t * buffer, int size){
     int bytes_read = size;
+    bludroid_decoder_state_t * bd_decoder_state = (bludroid_decoder_state_t*)state->decoder_state;
+
     while (bytes_read > 0){
-        bludroid_decoder_state_t * bd_decoder_state = (bludroid_decoder_state_t*)state->decoder_state;
         int space_in_frame_buffer = sizeof(bd_decoder_state->frame_buffer) - bd_decoder_state->bytes_in_frame;
         int bytes_to_append = space_in_frame_buffer > bytes_read ? bytes_read : space_in_frame_buffer;
         append_received_sbc_data(bd_decoder_state, buffer, bytes_to_append);
-
 
         while (1){
             uint16_t bytes_in_buffer_before = bd_decoder_state->bytes_in_frame;
@@ -139,22 +146,34 @@ void sbc_decoder_process_data(sbc_decoder_state_t * state, uint8_t * buffer, int
                                                         &(bd_decoder_state->bytes_in_frame), 
                                                         bd_decoder_state->pcm_data, 
                                                         &(bd_decoder_state->pcm_bytes));
+
+            if (status == OI_CODEC_SBC_CHECKSUM_MISMATCH){
+                // advance at least one byte
+                OI_CODEC_SBC_DumpConfig(&(bd_decoder_state->decoder_context.common.frameInfo));
+                bd_decoder_state->bytes_in_frame--;
+            }
+
             uint16_t bytes_processed = bytes_in_buffer_before - bd_decoder_state->bytes_in_frame;
+            // log_info("sbc_decoder_process_data: decode status %u, processed %u, left %u", status, bytes_processed, bd_decoder_state->bytes_in_frame);
             memmove(bd_decoder_state->frame_buffer, bd_decoder_state->frame_buffer + bytes_processed, bd_decoder_state->bytes_in_frame);
             
-            if (status != 0){
-                if (status != OI_CODEC_SBC_NOT_ENOUGH_HEADER_DATA && status != OI_CODEC_SBC_NOT_ENOUGH_BODY_DATA){
-                    OI_CODEC_SBC_DumpConfig(&(bd_decoder_state->decoder_context.common.frameInfo));
-                    printf("Frame decode error %d\n", status);
-                }
-                break;
-            }
-            
-            state->handle_pcm_data(bd_decoder_state->pcm_data, 
+            switch(status){
+                case 0:
+                    state->handle_pcm_data(bd_decoder_state->pcm_data, 
                                         sbc_decoder_num_samples_per_frame(state), 
                                         sbc_decoder_num_channels(state), 
                                         sbc_decoder_sample_rate(state), state->context);
+                    break;
+                case OI_CODEC_SBC_NOT_ENOUGH_HEADER_DATA:
+                case OI_CODEC_SBC_NOT_ENOUGH_BODY_DATA:
+                case OI_CODEC_SBC_NO_SYNCWORD:
+                    break;
+                default:
+                    printf("Frame decode error %d\n", status);
+                    break;
+            }
         }
+            
         
         buffer     += bytes_to_append;
         bytes_read -= bytes_to_append;

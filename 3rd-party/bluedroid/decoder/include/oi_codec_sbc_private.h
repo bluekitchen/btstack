@@ -185,6 +185,7 @@ PRIVATE OI_UINT32 OI_SBC_MaxBitpool(OI_CODEC_SBC_FRAME_INFO *frame);
 
 PRIVATE void OI_SBC_ComputeBitAllocation(OI_CODEC_SBC_COMMON_CONTEXT *frame);
 PRIVATE OI_UINT8 OI_SBC_CalculateChecksum(OI_CODEC_SBC_FRAME_INFO *frame, OI_BYTE const *data);
+PRIVATE OI_UINT8 OI_SBC_CalculateChecksum_mSBC(OI_CODEC_SBC_FRAME_INFO *frame, OI_BYTE const *data);
 
 /* Transform functions */
 PRIVATE void shift_buffer(SBC_BUFFER_T *dest, SBC_BUFFER_T *src, OI_UINT wordCount);
@@ -212,7 +213,7 @@ PRIVATE void analyze8_enhanced_generated(SBC_BUFFER_T analysisBuffer[RESTRICT 11
 #endif
 
 /* Decoder functions */
-
+INLINE  void OI_SBC_ReadHeader_mSBC(OI_CODEC_SBC_COMMON_CONTEXT *common, const OI_BYTE *data);
 INLINE  void OI_SBC_ReadHeader(OI_CODEC_SBC_COMMON_CONTEXT *common, const OI_BYTE *data);
 PRIVATE void OI_SBC_ReadScalefactors(OI_CODEC_SBC_COMMON_CONTEXT *common, const OI_BYTE *b, OI_BITSTREAM *bs);
 PRIVATE void OI_SBC_ReadSamples(OI_CODEC_SBC_DECODER_CONTEXT *common, OI_BITSTREAM *ob);

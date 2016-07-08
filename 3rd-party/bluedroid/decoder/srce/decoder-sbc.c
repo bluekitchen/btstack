@@ -81,7 +81,7 @@ PRIVATE OI_STATUS FindSyncword(OI_CODEC_SBC_DECODER_CONTEXT *context,
 #else  // SBC_ENHANCED
     /* BK4BTSTACK_CHANGE START */
     OI_UINT8 syncword = OI_SBC_SYNCWORD;
-    if (context->common.mSBCEnabled){
+    if (context->common.frameInfo.mSBCEnabled){
         syncword = OI_mSBC_SYNCWORD;
     }
     /* BK4BTSTACK_CHANGE END */
@@ -249,7 +249,7 @@ OI_STATUS OI_CODEC_mSBC_DecoderReset(OI_CODEC_SBC_DECODER_CONTEXT *context,
                                     OI_UINT32 decoderDataBytes)
 {
     OI_STATUS status = OI_CODEC_SBC_DecoderReset(context, decoderData, decoderDataBytes, 1, 1, FALSE);
-    context->common.mSBCEnabled = TRUE;
+    context->common.frameInfo.mSBCEnabled = TRUE;
     return status;
 }
 /* BK4BTSTACK_CHANGE END */
@@ -279,7 +279,11 @@ OI_STATUS OI_CODEC_SBC_DecodeFrame(OI_CODEC_SBC_DECODER_CONTEXT *context,
     }
 
     TRACE(("Reading Header"));
-    OI_SBC_ReadHeader(&context->common, *frameData);
+    if (context->common.frameInfo.mSBCEnabled){
+        OI_SBC_ReadHeader_mSBC(&context->common, *frameData);
+    } else {
+        OI_SBC_ReadHeader(&context->common, *frameData);
+    }
 
     /*
      * Some implementations load the decoder into RAM and use overlays for 4 vs 8 subbands. We need
@@ -317,8 +321,12 @@ OI_STATUS OI_CODEC_SBC_DecodeFrame(OI_CODEC_SBC_DECODER_CONTEXT *context,
     TRACE(("frame len %d\n", framelen));
 
     TRACE(("Calculating checksum"));
+    if (context->common.frameInfo.mSBCEnabled){
+        crc = OI_SBC_CalculateChecksum_mSBC(&context->common.frameInfo, *frameData);
+    } else {
+        crc = OI_SBC_CalculateChecksum(&context->common.frameInfo, *frameData);
+    }
 
-    crc = OI_SBC_CalculateChecksum(&context->common.frameInfo, *frameData);
     if (crc != context->common.frameInfo.crc) {
         TRACE(("CRC Mismatch:  calc=%02x read=%02x\n", crc, context->common.frameInfo.crc));
         TRACE(("-OI_CODEC_SBC_DecodeFrame: OI_CODEC_SBC_CHECKSUM_MISMATCH"));

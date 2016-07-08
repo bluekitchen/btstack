@@ -54,6 +54,7 @@ extern "C" {
  */
 void sco_demo_init(void);
 
+void sco_demo_set_codec(uint8_t codec);
 /**
  * @brief Send next data on con_handle
  * @param con_handle
@@ -64,6 +65,8 @@ void sco_demo_send(hci_con_handle_t con_handle);
  * @brief Process received data
  */
 void sco_demo_receive(uint8_t * packet, uint16_t size);
+
+void sco_demo_close(void);
 
 #if defined __cplusplus
 }

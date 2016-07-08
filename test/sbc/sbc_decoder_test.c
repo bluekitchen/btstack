@@ -54,7 +54,7 @@
 
 #include "btstack.h"
  
-static uint8_t read_buffer[6000];
+static uint8_t read_buffer[24];
 static uint8_t buf[4];
 
 typedef struct wav_writer_state {
@@ -64,7 +64,7 @@ typedef struct wav_writer_state {
 } wav_writer_state_t;
 
 static void show_usage(void){
-    printf("Usage: ./sbc_decoder_test input.sbc");
+    printf("\n\nUsage: ./sbc_decoder_test input.sbc output.wav msbc|sbc\n\n");
 }
 
 static ssize_t __read(int fd, void *buf, size_t count){
@@ -123,13 +123,7 @@ static void write_wav_header(FILE * wav_file,  int total_num_samples, int num_ch
 }
 
 static void write_wav_data(FILE * wav_file, int num_samples, int num_channels, int16_t * data){
-    int i;
-    for (i=0; i < num_samples; i++){
-        little_endian_fstore_16(wav_file, (uint16_t)data[i]);
-        if (num_channels == 2){
-            little_endian_fstore_16(wav_file, (uint16_t)data);
-        }  
-    }
+    fwrite(data, num_samples, 2, wav_file);
 }
 
 static void handle_pcm_data(int16_t * data, int num_samples, int num_channels, int sample_rate, void * context){
@@ -140,14 +134,22 @@ static void handle_pcm_data(int16_t * data, int num_samples, int num_channels, i
 }
 
 int main (int argc, const char * argv[]){
-    if (argc < 2){
+    if (argc < 4){
         show_usage();
         return -1;
     }
     
+    sbc_mode_t mode = SBC_MODE_STANDARD;
+    
     const char * sbc_filename = argv[1];
     const char * wav_filename = argv[2];
     
+    if (strncmp(argv[3], "msbc", 4) == 0 ){
+        mode = SBC_MODE_mSBC;
+        printf("Using SBC_MODE_mSBC mode\n");
+    } else {
+        printf("Using SBC_MODE_STANDARD mode\n");
+    }
     
     int fd = open(sbc_filename, O_RDONLY);
     if (fd < 0) {
@@ -162,7 +164,7 @@ int main (int argc, const char * argv[]){
     wav_writer_state.total_num_samples = 0;
    
     sbc_decoder_state_t state;
-    sbc_decoder_init(&state, &handle_pcm_data, (void*)&wav_writer_state);
+    sbc_decoder_init(&state, mode, &handle_pcm_data, (void*)&wav_writer_state);
     write_wav_header(wav_writer_state.wav_file, 0, 0, 0);
 
     while (1){

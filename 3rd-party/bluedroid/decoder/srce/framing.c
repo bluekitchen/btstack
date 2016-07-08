@@ -169,6 +169,28 @@ INLINE OI_UINT8 crc_iterate(OI_UINT8 crc, OI_UINT8 next)
 
 #endif // USE_WIDE_CRC
 
+PRIVATE OI_UINT8 OI_SBC_CalculateChecksum_mSBC(OI_CODEC_SBC_FRAME_INFO *frame, OI_BYTE const *data)
+{
+    OI_UINT i;
+    OI_UINT8 crc = 0x0f;
+    /* Count is the number of whole bytes subject to CRC. Actually, it's one
+     * more than this number, because data[3] is the CRC field itself, which is
+     * explicitly skipped. Since crc_iterate (should be) inlined, it's cheaper
+     * spacewise to include the check in the loop. This shouldn't be much of a
+     * bottleneck routine in the first place. */
+
+    // 0 - syncword (skip)
+    // 1 - reserved 
+    crc = crc_iterate(crc,frame->reserved_for_future_use[0]);
+    // 2 - reserved 
+    crc = crc_iterate(crc,frame->reserved_for_future_use[1]);
+    // 3 - crc (skip)
+    // 4..7 - scale factors (8 x 4 bit = 4 byte)
+    for (i = 0; i < 4; i++) {
+        crc = crc_iterate(crc,data[4+i]);
+    }
+    return crc;
+}
 
 PRIVATE OI_UINT8 OI_SBC_CalculateChecksum(OI_CODEC_SBC_FRAME_INFO *frame, OI_BYTE const *data)
 {
@@ -179,6 +201,7 @@ PRIVATE OI_UINT8 OI_SBC_CalculateChecksum(OI_CODEC_SBC_FRAME_INFO *frame, OI_BYT
      * explicitly skipped. Since crc_iterate (should be) inlined, it's cheaper
      * spacewise to include the check in the loop. This shouldn't be much of a
      * bottleneck routine in the first place. */
+
     OI_UINT count = (frame->nrof_subbands * frame->nrof_channels / 2u) + 4;
 
     if (frame->mode == SBC_JOINT_STEREO && frame->nrof_subbands == 8) {

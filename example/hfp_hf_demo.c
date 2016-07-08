@@ -59,6 +59,8 @@
 #include <unistd.h>
 
 #include "btstack.h"
+#include "sbc_decoder.h"
+
 #include "sco_demo_util.h"
 #ifdef HAVE_POSIX_STDIN
 #include "stdin_support.h"
@@ -86,7 +88,10 @@ char cmd;
 
 // Testig User Interface 
 static void show_usage(void){
-    printf("\n--- Bluetooth HFP Hands-Free (HF) unit Test Console ---\n");
+    bd_addr_t iut_address;
+    gap_local_bd_addr(iut_address);
+
+    printf("\n--- Bluetooth HFP Hands-Free (HF) unit Test Console %s ---\n", bd_addr_to_str(iut_address));
     printf("---\n");
 
     printf("a - establish SLC connection to device %s\n", bd_addr_to_str(device_addr));
@@ -453,7 +458,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
     switch (packet_type){
 
         case HCI_SCO_DATA_PACKET:
-            sco_demo_receive_with_codec(event, event_size, negotiated_codec);
+            sco_demo_receive(event, event_size);
             break;
 
         case HCI_EVENT_PACKET:
@@ -467,6 +472,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                         case HFP_SUBEVENT_CODECS_CONNECTION_COMPLETE:
                             negotiated_codec = hfp_subevent_codecs_connection_complete_get_negotiated_codec(event);
                             printf("Codec connection established with codec 0x%02x.\n", negotiated_codec);
+                            sco_demo_set_codec(negotiated_codec);
                             break;
 
                         case HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED:
@@ -491,6 +497,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                         case HFP_SUBEVENT_AUDIO_CONNECTION_RELEASED:
                             sco_handle = 0;
                             printf("Audio connection released\n");
+                            sco_demo_close();
                             break;
                         case HFP_SUBEVENT_COMPLETE:
                             switch (cmd){
@@ -616,9 +623,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
 /* LISTING_START(MainConfiguration): Setup HFP Hands-Free unit */
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
-
     sco_demo_init();
-
     gap_discoverable_control(1);
 
     // HFP AG address is hardcoded, please change it
@@ -628,7 +633,7 @@ int btstack_main(int argc, const char * argv[]){
     sdp_init();    
 
     hfp_hf_init(rfcomm_channel_nr);
-    hfp_hf_init_supported_features(438 | (1<<HFP_HFSF_ESCO_S4) | (1<<HFP_HFSF_EC_NR_FUNCTION)); 
+    hfp_hf_init_supported_features(438 | (1<<HFP_HFSF_CODEC_NEGOTIATION) |(1<<HFP_HFSF_ESCO_S4) | (1<<HFP_HFSF_EC_NR_FUNCTION)); 
     hfp_hf_init_hf_indicators(sizeof(indicators)/sizeof(uint16_t), indicators);
     hfp_hf_init_codecs(sizeof(codecs), codecs);
     

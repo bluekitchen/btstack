@@ -148,6 +148,11 @@ typedef struct {
                                  be used by the bit allocator.  */
 
     OI_UINT8 cachedInfo;    /**< Information about the previous frame */
+
+/* BK4BTSTACK_CHANGE START */
+    OI_UINT8 reserved_for_future_use[2];                             
+    OI_UINT8 mSBCEnabled; // default 0
+/* BK4BTSTACK_CHANGE END */
 } OI_CODEC_SBC_FRAME_INFO;
 
 /** Used internally. */
@@ -170,9 +175,6 @@ typedef struct {
     OI_BYTE formatByte;
     OI_UINT8 pcmStride;
     OI_UINT8 maxChannels;
-    /* BK4BTSTACK_CHANGE START */
-    OI_UINT8 mSBCEnabled; // default 0
-    /* BK4BTSTACK_CHANGE END */
 } OI_CODEC_SBC_COMMON_CONTEXT;
 
 

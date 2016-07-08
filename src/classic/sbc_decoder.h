@@ -49,14 +49,20 @@
 extern "C" {
 #endif
 
+typedef enum{
+    SBC_MODE_STANDARD,
+    SBC_MODE_mSBC
+} sbc_mode_t;
+
 typedef struct {
     void * context;
     void (*handle_pcm_data)(int16_t * data, int num_samples, int num_channels, int sample_rate, void * context);
     // private
     void * decoder_state;
+    sbc_mode_t mode;
 } sbc_decoder_state_t;
 
-void sbc_decoder_init(sbc_decoder_state_t * state, void (*callback)(int16_t * data, int num_samples, int num_channels, int sample_rate, void * context), void * context);
+void sbc_decoder_init(sbc_decoder_state_t * state, sbc_mode_t mode, void (*callback)(int16_t * data, int num_samples, int num_channels, int sample_rate, void * context), void * context);
 void sbc_decoder_process_data(sbc_decoder_state_t * state, uint8_t * buffer, int size);
 
 int sbc_decoder_num_samples_per_frame(sbc_decoder_state_t * state);

@@ -85,18 +85,51 @@ INLINE OI_STATUS internal_DecoderReset(OI_CODEC_SBC_DECODER_CONTEXT *context,
  * Read the SBC header up to but not including the joint stereo mask.  The syncword has already been
  * examined, and the enhanced mode flag set, by FindSyncword.
  */
+
+/* BK4BTSTACK_CHANGE START */
+INLINE void OI_SBC_ReadHeader_mSBC(OI_CODEC_SBC_COMMON_CONTEXT *common, const OI_BYTE *data){
+    OI_CODEC_SBC_FRAME_INFO *frame = &common->frameInfo;
+    
+    OI_ASSERT(data[0] == OI_mSBC_SYNCWORD);
+    
+    /* Avoid filling out all these strucutures if we already remember the values
+     * from last time. Just in case we get a stream corresponding to data[1] ==
+     * 0, DecoderReset is responsible for ensuring the lookup table entries have
+     * already been populated
+     */
+    frame->reserved_for_future_use[0] = data[1];
+    frame->reserved_for_future_use[1] = data[2];
+
+    frame->freqIndex = 0;
+    frame->frequency = 16000;
+
+    frame->blocks = 4;  // ?
+    frame->nrof_blocks = 15;
+    
+    frame->mode = 0;
+    frame->nrof_channels = 1;
+
+    frame->alloc = SBC_LOUDNESS;
+
+    frame->subbands = 1;
+    frame->nrof_subbands = 8;
+
+    frame->bitpool = 26;
+
+    frame->crc = data[3];
+
+    frame->cachedInfo = 0;
+}
+
+/* BK4BTSTACK_CHANGE END */
+    
+
 INLINE void OI_SBC_ReadHeader(OI_CODEC_SBC_COMMON_CONTEXT *common, const OI_BYTE *data)
 {
     OI_CODEC_SBC_FRAME_INFO *frame = &common->frameInfo;
     OI_UINT8 d1;
 
-    /* BK4BTSTACK_CHANGE START */
-    if (common->mSBCEnabled){
-        OI_ASSERT(data[0] == OI_mSBC_SYNCWORD);
-    } else {
-        OI_ASSERT(data[0] == OI_SBC_SYNCWORD || data[0] == OI_SBC_ENHANCED_SYNCWORD);
-    }
-    /* BK4BTSTACK_CHANGE END */
+    OI_ASSERT(data[0] == OI_SBC_SYNCWORD || data[0] == OI_SBC_ENHANCED_SYNCWORD);
     
     /* Avoid filling out all these strucutures if we already remember the values
      * from last time. Just in case we get a stream corresponding to data[1] ==
@@ -110,15 +143,8 @@ INLINE void OI_SBC_ReadHeader(OI_CODEC_SBC_COMMON_CONTEXT *common, const OI_BYTE
         frame->frequency = freq_values[frame->freqIndex];
 
         frame->blocks = (d1 & (BIT5 | BIT4)) >> 4;
+        frame->nrof_blocks = block_values[frame->blocks];
         
-        /* BK4BTSTACK_CHANGE START */
-        if (common->mSBCEnabled){
-            frame->nrof_blocks = 15;
-        } else {
-            frame->nrof_blocks = block_values[frame->blocks];
-        }
-        /* BK4BTSTACK_CHANGE END */
-
         frame->mode = (d1 & (BIT3 | BIT2)) >> 2;
         frame->nrof_channels = channel_values[frame->mode];
 
