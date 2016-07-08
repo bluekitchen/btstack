@@ -211,7 +211,6 @@ static void sco_demo_init_CVSD(void){
 
 
 static void sco_demo_receive_mSBC(uint8_t * packet, uint16_t size){
-    printf("sco_demo_receive_mSBC size %u, need %u\n", size, num_samples_to_write);
     if (num_samples_to_write){
         sbc_decoder_process_data(&decoder_state, packet+3, size-3);
         dump_data = 0;
@@ -227,7 +226,9 @@ static void sco_demo_receive_CVSD(uint8_t * packet, uint16_t size){
         for (i=0;i<samples_to_write;i++){
             packet[3+i] += 128;            
         }
-        write_wav_data_uint8(wav_writer_state.wav_file, samples_to_write, &packet[3]);
+
+        wav_writer_state_t * writer_state = (wav_writer_state_t*) decoder_state.context;
+        write_wav_data_uint8(writer_state->wav_file, samples_to_write, &packet[3]);
         num_samples_to_write -= samples_to_write;
         if (num_samples_to_write == 0){
             sco_demo_close();
@@ -243,6 +244,7 @@ void sco_demo_close(void){
 #if SCO_DEMO_MODE == SCO_DEMO_MODE_SINE
 #ifdef SCO_WAV_FILENAME
     
+#if 0
     printf("SCO Demo: closing wav file\n");
     if (negotiated_codec == 0x02){
         wav_writer_state_t * writer_state = (wav_writer_state_t*) decoder_state.context;
@@ -252,7 +254,7 @@ void sco_demo_close(void){
         fclose(writer_state->wav_file);
         writer_state->wav_file = NULL;
     }
-
+#endif
 #endif
 #endif
 }
