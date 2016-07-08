@@ -9,6 +9,7 @@ from sbc_synthesis_v1 import *
 V = np.zeros(shape = (2, 10*2*8))
 N = np.zeros(shape = (16,8))
 total_time_ms = 0
+mSBC_enabled = 1
 
 def sbc_unpack_frame(fin, available_bytes, frame):
     if available_bytes == 0:
@@ -16,12 +17,17 @@ def sbc_unpack_frame(fin, available_bytes, frame):
         raise TypeError
 
     frame.syncword = get_bits(fin,8)
-    if frame.syncword != 156:
-        print ("out of sync %02x" % frame.syncword)
-        return -1
+    if mSBC_enabled:
+        if frame.syncword != 173:
+            print ("out of sync %02x" % frame.syncword)
+            return -1
+    else:
+        if frame.syncword != 156:
+            print ("out of sync %02x" % frame.syncword)
+            return -1
+
     frame.sampling_frequency = get_bits(fin,2)
     frame.nr_blocks = nr_blocks[get_bits(fin,2)]
-
     frame.channel_mode = get_bits(fin,2)
 
     if frame.channel_mode == MONO:
@@ -31,12 +37,10 @@ def sbc_unpack_frame(fin, available_bytes, frame):
     
     frame.allocation_method = get_bits(fin,1)
     frame.nr_subbands = nr_subbands[get_bits(fin,1)] 
-    frame.init(frame.nr_blocks, frame.nr_subbands, frame.nr_channels)
-
     frame.bitpool = get_bits(fin,8)
     frame.crc_check = get_bits(fin,8)
 
-    # frame.join = np.zeros(frame.nr_subbands, dtype = np.uint8)
+    frame.init(frame.nr_blocks, frame.nr_subbands, frame.nr_channels)
 
     if frame.channel_mode == JOINT_STEREO:
         for sb in range(frame.nr_subbands-1):
@@ -49,12 +53,40 @@ def sbc_unpack_frame(fin, available_bytes, frame):
     for ch in range(frame.nr_channels):
         for sb in range(frame.nr_subbands):
             frame.scale_factor[ch][sb] = get_bits(fin, 4)
-    
+    if mSBC_enabled:
+        #frame.nr_blocks = 16
+        #frame.bitpool = 26
+        #frame.nr_subbands = 1
+        print "frequency: ", frame.sampling_frequency
+        print "subbands: ", frame.nr_blocks/4-1
+        print "bitpool:  ", frame.bitpool
+        print "blocks :  ", frame.nr_blocks/4-1
+        print "alloc  :  ", frame.allocation_method
+        print "mode   :  ", frame.channel_mode
+        print "scale factor: ", frame.scale_factor
+
     crc = calculate_crc(frame)
     if crc != frame.crc_check:
-        print frame
-        print "error, crc not equal: ", crc, frame.crc_check
-        exit(1)
+        print "CRC mismatch: calculated %d, expected %d" % (crc, frame.crc_check)
+        exit(10)    
+
+    if mSBC_enabled:
+        frame.nr_subbands = 8
+        frame.bitpool = 26
+        frame.nr_blocks = 15
+        #frame.sampling_frequency = 0
+
+        frame.init(frame.nr_blocks, frame.nr_subbands, frame.nr_channels)
+
+        if frame.channel_mode == JOINT_STEREO:
+            for sb in range(frame.nr_subbands-1):
+                frame.join[sb] = get_bits(fin,1)
+            get_bits(fin,1) # RFA
+
+        for ch in range(frame.nr_channels):
+            for sb in range(frame.nr_subbands):
+                frame.scale_factor[ch][sb] = get_bits(fin, 4)
+
     
     frame.scalefactor = np.zeros(shape=(frame.nr_channels, frame.nr_subbands), dtype = np.int32)
     for ch in range(frame.nr_channels):
@@ -266,10 +298,14 @@ if __name__ == "__main__":
         print(usage)
         sys.exit(1)
     try:
+        mSBC_enabled = 0
         infile = sys.argv[1]
         if not infile.endswith('.sbc'):
-            print(usage)
-            sys.exit(1)
+            if infile.endswith('.msbc'):
+                mSBC_enabled = 1
+            else:
+                print(usage)
+                sys.exit(1)
 
         wavfile = infile.replace('.sbc', '-decoded.wav')
         fout = False
@@ -296,15 +332,13 @@ if __name__ == "__main__":
                         print "== Frame %d == %d" % (frame_count, fin.tell())
 
                     err = sbc_unpack_frame(fin, file_size - fin.tell(), frame)
-                    if frame_count == 0:
-                        sbc_init_sythesis(frame.nr_subbands, implementation)
-                        print frame
-
-
                     if err:
                         print "error, frame_count: ", frame_count
-                        break
-                    
+                        continue
+
+                    if frame_count == 0:
+                        sbc_init_sythesis(frame.nr_subbands, implementation)
+                        print frame                    
 
                     sbc_decode(frame, implementation)
                         
