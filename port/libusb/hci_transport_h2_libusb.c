@@ -570,7 +570,21 @@ static int scan_for_bt_device(libusb_device **devs, int start_index) {
 }
 #endif
 
+// seems to be the max depth for USB 3
+#define MAX_PATH_DEPTH 7
 static int prepare_device(libusb_device_handle * aHandle){
+
+    // print device path
+    uint8_t port_numbers[MAX_PATH_DEPTH];
+    libusb_device * device = libusb_get_device(aHandle);
+    int path_len = libusb_get_port_numbers(device, port_numbers, MAX_PATH_DEPTH);
+    printf("USB Path: ");
+    int i;
+    for (i=0;i<path_len;i++){
+        if (i) printf("-");
+        printf("%02x", port_numbers[i]);
+    }
+    printf("\n");
 
     int r;
     int kernel_driver_detached = 0;
