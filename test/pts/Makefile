@@ -29,7 +29,7 @@ LDFLAGS += $(shell pkg-config libusb-1.0 --libs)
 # CFLAGS  += -I/usr/local/include
 # LDFLAGS += -L/sw/lib -lportaudio -Wl,-framework,CoreAudio -Wl,-framework,AudioToolbox -Wl,-framework,AudioUnit -Wl,-framework,Carbon
 
-EXAMPLES = iopt hfp_hf_test hfp_ag_test ble_peripheral_test ble_central_test l2cap_test classic_test bnep_test hsp_ag_test hsp_hs_test sco_loopback
+EXAMPLES = iopt hfp_hf_test hfp_ag_test ble_peripheral_test ble_central_test l2cap_test classic_test bnep_test hsp_ag_test hsp_hs_test sco_loopback le_data_channel
 
 all: ${EXAMPLES}
 
@@ -44,6 +44,9 @@ ble_peripheral_test: ble_peripheral_test.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} 
 
 ble_central_test: ble_central_test.h ${CORE_OBJ} ${COMMON_OBJ} ${SM_REAL_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${GATT_CLIENT_OBJ} ad_parser.o ble_central_test.c
 	${CC} $(filter-out ble_central_test.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
+
+le_data_channel: ${CORE_OBJ} ${COMMON_OBJ} ${SM_REAL_OBJ} ${ATT_OBJ} ad_parser.o le_data_channel.c
+	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 hsp_ag_test: ${CORE_OBJ} ${COMMON_OBJ} ${SDP_CLIENT} hsp_ag.o hsp_ag_test.c 
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
