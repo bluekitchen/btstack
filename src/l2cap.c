@@ -710,6 +710,16 @@ static void l2cap_run(void){
     }
 
 #ifdef ENABLE_BLE
+    btstack_linked_list_iterator_init(&it, &l2cap_le_channels);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        l2cap_channel_t * channel = (l2cap_channel_t *) btstack_linked_list_iterator_next(&it);
+        // log_info("l2cap_run: channel %p, state %u, var 0x%02x", channel, channel->state, channel->state_var);
+        switch (channel->state){
+            default:
+                break;
+        }
+    }
+
     // send l2cap con paramter update if necessary
     hci_connections_get_iterator(&it);
     while(btstack_linked_list_iterator_has_next(&it)){
@@ -733,6 +743,16 @@ static void l2cap_run(void){
             default:
                 break;
         }
+#if 0 
+void l2cap_le_run(void){
+    for all channels
+        switch(state):
+
+    if outgoing transfer active
+        send next chunk
+        if done, notify app
+}
+#endif
     }
 #endif
 
@@ -756,6 +776,18 @@ static void l2cap_handle_connection_complete(hci_con_handle_t con_handle, l2cap_
         channel->state = L2CAP_STATE_WAIT_REMOTE_SUPPORTED_FEATURES;
     }
 }
+
+#ifdef ENABLE_BLE
+static void l2cap_handle_le_connection_complete(hci_con_handle_t con_handle, l2cap_channel_t * channel){
+    if (channel->state == L2CAP_STATE_WAIT_CONNECTION_COMPLETE || channel->state == L2CAP_STATE_WILL_SEND_CREATE_CONNECTION) {
+        log_info("l2cap_le_handle_connection_complete expected state");
+        // success, start l2cap handshake
+        channel->con_handle = con_handle;
+        // ...
+    }
+}
+#endif
+
 
 static void l2cap_handle_remote_supported_features_received(l2cap_channel_t * channel){
     if (channel->state != L2CAP_STATE_WAIT_REMOTE_SUPPORTED_FEATURES) return;
@@ -1589,10 +1621,7 @@ void l2cap_register_fixed_channel(btstack_packet_handler_t the_packet_handler, u
 static inline l2cap_service_t * l2cap_le_get_service(uint16_t psm){
     return l2cap_get_service_internal(&l2cap_le_services, psm);
 }
-/**
- * @brief Regster L2CAP LE Credit Based Flow Control Mode service
- * @param
- */
+
 uint8_t l2cap_le_register_service(btstack_packet_handler_t packet_handler, uint16_t psm, gap_security_level_t security_level){
     
     log_info("L2CAP_LE_REGISTER_SERVICE psm 0x%x", psm);
@@ -1633,15 +1662,13 @@ uint8_t l2cap_le_unregister_service(uint16_t psm) {
     return 0;
 }
 
-/*
- * @brief Accept incoming LE Data Channel connection
- * @param local_cid             L2CAP LE Data Channel Identifier
- * @param receive_buffer        buffer used for reassembly of L2CAP LE Information Frames into service data unit (SDU) with given MTU
- * @param receive_buffer_size   buffer size equals MTU
- * @param initial_credits       Number of initial credits provided to peer
- */
-
 uint8_t l2cap_le_accept_connection(uint16_t local_cid, uint8_t * receive_sdu_buffer, uint16_t mtu, uint16_t initial_credits){
+    // get connection
+    // bail if missing
+    // set mtu and receive buffer
+    // check state
+    // set state accept connection
+    // l2cap_le_run()
     return 0;
 }
 
@@ -1651,25 +1678,18 @@ uint8_t l2cap_le_accept_connection(uint16_t local_cid, uint8_t * receive_sdu_buf
  */
 
 uint8_t l2cap_le_decline_connection(uint16_t local_cid){
+    // get connection
+    // bail if missing
+    // check state
+    // set state decline connection
+    // l2cap_le_run()
     return 0;
 }
 
-/**
- * @brief Create LE Data Channel
- * @param packet_handler        Packet handler for this connection
- * @param address               Peer address
- * @param address_type          Peer address type
- * @param psm                   Service PSM to connect to
- * @param receive_buffer        buffer used for reassembly of L2CAP LE Information Frames into service data unit (SDU) with given MTU
- * @param receive_buffer_size   buffer size equals MTU
- * @param initial_credits       Number of initial credits provided to peer
- * @param security_level        Minimum required security level
- * @param out_local_cid         L2CAP LE Channel Identifier is stored here
- */
 uint8_t l2cap_le_create_channel(btstack_packet_handler_t packet_handler, bd_addr_t address, bd_addr_type_t address_type, 
     uint16_t psm, uint8_t * receive_sdu_buffer, uint16_t mtu, uint16_t initial_credits, gap_security_level_t security_level,
-    uint16_t * out_local_cid)
-{
+    uint16_t * out_local_cid) {
+
     log_info("L2CAP_LE_CREATE_CHANNEL addr %s psm 0x%x mtu %u", bd_addr_to_str(address), psm, mtu);
     
     l2cap_channel_t * channel = l2cap_create_channel_entry(packet_handler, address, BD_ADDR_TYPE_CLASSIC, psm, mtu, LEVEL_0);
@@ -1677,27 +1697,37 @@ uint8_t l2cap_le_create_channel(btstack_packet_handler_t packet_handler, bd_addr
         return BTSTACK_MEMORY_ALLOC_FAILED;
     }
 
-    // add to connections list
-    btstack_linked_list_add(&l2cap_le_channels, (btstack_linked_item_t *) channel);
-
     // store local_cid
     if (out_local_cid){
        *out_local_cid = channel->local_cid;
     }
 
+    // add to connections list
+    btstack_linked_list_add(&l2cap_le_channels, (btstack_linked_item_t *) channel);
+
     // check if hci connection is already usable
     hci_connection_t * conn = hci_connection_for_bd_addr_and_type(address, address_type);
+
+    channel->state = L2CAP_STATE_WAIT_CONNECTION_COMPLETE;
+
     if (conn){
         log_info("l2cap_le_create_channel, hci connection already exists");
-        // l2cap_handle_connection_complete(conn->con_handle, channel);
-        // check if remote supported fearures are already received
-        // if (conn->bonding_flags & BONDING_RECEIVED_REMOTE_FEATURES) {
-        //     l2cap_handle_remote_supported_features_received(channel);
-        // }
+        l2cap_handle_le_connection_complete(conn->con_handle, channel);
+    } else {
+        
+        //
+        // TODO: start timer
+        // ..
+
+        // start connection
+        uint8_t res = gap_auto_connection_start(address_type, address);
+        if (!res){
+            // discard channel object
+            btstack_linked_list_remove(&l2cap_channels, (btstack_linked_item_t *) channel);
+            btstack_memory_l2cap_channel_free(channel);
+            return res;
+        }
     }
-
-    l2cap_run();
-
     return 0;
 }
 
@@ -1707,6 +1737,12 @@ uint8_t l2cap_le_create_channel(btstack_packet_handler_t packet_handler, bd_addr
  * @param credits               Number additional credits for peer
  */
 uint8_t l2cap_le_provide_credits(uint16_t cid, uint16_t credits){
+    // get connection
+    // bail if missing
+    // check state
+    // check incoming credits + credits <= 0xffff
+    // set credits_granted
+    // l2cap_le_run()
     return 0;
 }
 
@@ -1715,6 +1751,7 @@ uint8_t l2cap_le_provide_credits(uint16_t cid, uint16_t credits){
  * @param local_cid             L2CAP LE Data Channel Identifier
  */
 int l2cap_le_can_send_now(uint16_t cid){
+    // check if data can be sent via le at all
     return 0;
 }
 
@@ -1725,6 +1762,7 @@ int l2cap_le_can_send_now(uint16_t cid){
  * @param local_cid             L2CAP LE Data Channel Identifier
  */
 uint8_t l2cap_le_request_can_send_now_event(uint16_t cid){
+    // same as for non-le
     return 0;
 }
 
@@ -1736,6 +1774,9 @@ uint8_t l2cap_le_request_can_send_now_event(uint16_t cid){
  * @param size                  data size
  */
 uint8_t l2cap_le_send_data(uint16_t cid, uint8_t * data, uint16_t size){
+    // check if no outgoing data is pending
+    // store info
+    // l2cap_le_run()
     return 0;
 }
 
@@ -1745,6 +1786,9 @@ uint8_t l2cap_le_send_data(uint16_t cid, uint8_t * data, uint16_t size){
  */
 uint8_t l2cap_le_disconnect(uint16_t cid)
 {
+    // find channel
+    // check state
+    // set state SEND_DISCONNECT
     return 0;
 }
 
