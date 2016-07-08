@@ -10,8 +10,29 @@ V = np.zeros(shape = (2, 10*2*8))
 N = np.zeros(shape = (16,8))
 total_time_ms = 0
 mSBC_enabled = 1
+H2_first_byte = 0
+H2_second_byte = 0
+
+def find_syncword(h2_first_byte, h2_second_byte):
+    if h2_first_byte != 1:
+        return -1
+
+    hn = h2_second_byte >> 4
+    ln = h2_second_byte & 0x0F
+    if ln == 8:
+        sn0 = hn & 3 
+        sn1 = hn >> 2
+
+        if sn0 != sn1:
+            return -1
+
+        if sn0 not in [0,3]:
+            return -1
+
+    return sn0
 
 def sbc_unpack_frame(fin, available_bytes, frame):
+    global H2_first_byte, H2_second_byte
     if available_bytes == 0:
         print "no available_bytes"
         raise TypeError
@@ -19,7 +40,8 @@ def sbc_unpack_frame(fin, available_bytes, frame):
     frame.syncword = get_bits(fin,8)
     if mSBC_enabled:
         if frame.syncword != 173:
-            print ("out of sync %02x" % frame.syncword)
+            H2_first_byte = H2_second_byte
+            H2_second_byte = frame.syncword
             return -1
     else:
         if frame.syncword != 156:
@@ -64,6 +86,7 @@ def sbc_unpack_frame(fin, available_bytes, frame):
         print "alloc  :  ", frame.allocation_method
         print "mode   :  ", frame.channel_mode
         print "scale factor: ", frame.scale_factor
+        print "syncword: ", find_syncword(H2_first_byte, H2_second_byte)
 
     crc = calculate_crc(frame)
     if crc != frame.crc_check:
