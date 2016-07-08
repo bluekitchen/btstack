@@ -26,67 +26,54 @@ def sbc_unpack_frame(fin, available_bytes, frame):
             print ("out of sync %02x" % frame.syncword)
             return -1
 
-    frame.sampling_frequency = get_bits(fin,2)
-    frame.nr_blocks = nr_blocks[get_bits(fin,2)]
-    frame.channel_mode = get_bits(fin,2)
+    if mSBC_enabled:
+        frame.sampling_frequency = 0    # == 16 kHz
+        frame.nr_blocks = 15
+        frame.channel_mode = MONO
+        frame.allocation_method = LOUDNESS
+        frame.nr_subbands = 8
+        frame.bitpool = 26
+        frame.reserved_for_future_use = get_bits(fin,16)
+    else:
+        frame.sampling_frequency = get_bits(fin,2)
+        frame.nr_blocks = nr_blocks[get_bits(fin,2)]
+        frame.channel_mode = get_bits(fin,2)
+        frame.allocation_method = get_bits(fin,1)
+        frame.nr_subbands = nr_subbands[get_bits(fin,1)] 
+        frame.bitpool = get_bits(fin,8)
 
     if frame.channel_mode == MONO:
         frame.nr_channels = 1
     else:
         frame.nr_channels = 2
-    
-    frame.allocation_method = get_bits(fin,1)
-    frame.nr_subbands = nr_subbands[get_bits(fin,1)] 
-    frame.bitpool = get_bits(fin,8)
+
     frame.crc_check = get_bits(fin,8)
 
     frame.init(frame.nr_blocks, frame.nr_subbands, frame.nr_channels)
 
+    # read joint stereo flags
     if frame.channel_mode == JOINT_STEREO:
         for sb in range(frame.nr_subbands-1):
             frame.join[sb] = get_bits(fin,1)
         get_bits(fin,1) # RFA
     
     frame.scale_factor = np.zeros(shape=(frame.nr_channels, frame.nr_subbands), dtype = np.int32)
-    
-    # print frame.audio_sample
+        
+    # read scale factors
     for ch in range(frame.nr_channels):
         for sb in range(frame.nr_subbands):
             frame.scale_factor[ch][sb] = get_bits(fin, 4)
-    if mSBC_enabled:
-        #frame.nr_blocks = 16
-        #frame.bitpool = 26
-        #frame.nr_subbands = 1
-        print "frequency: ", frame.sampling_frequency
-        print "subbands: ", frame.nr_blocks/4-1
-        print "bitpool:  ", frame.bitpool
-        print "blocks :  ", frame.nr_blocks/4-1
-        print "alloc  :  ", frame.allocation_method
-        print "mode   :  ", frame.channel_mode
-        print "scale factor: ", frame.scale_factor
 
-    crc = calculate_crc(frame)
+    if mSBC_enabled:
+        crc = calculate_crc_mSBC(frame)
+    else:
+        crc = calculate_crc(frame)
+    
     if crc != frame.crc_check:
         print "CRC mismatch: calculated %d, expected %d" % (crc, frame.crc_check)
-        exit(10)    
+        return -1
 
-    if mSBC_enabled:
-        frame.nr_subbands = 8
-        frame.bitpool = 26
-        frame.nr_blocks = 15
-        #frame.sampling_frequency = 0
-
-        frame.init(frame.nr_blocks, frame.nr_subbands, frame.nr_channels)
-
-        if frame.channel_mode == JOINT_STEREO:
-            for sb in range(frame.nr_subbands-1):
-                frame.join[sb] = get_bits(fin,1)
-            get_bits(fin,1) # RFA
-
-        for ch in range(frame.nr_channels):
-            for sb in range(frame.nr_subbands):
-                frame.scale_factor[ch][sb] = get_bits(fin, 4)
-
+    print "CRC correct: %d" % crc
     
     frame.scalefactor = np.zeros(shape=(frame.nr_channels, frame.nr_subbands), dtype = np.int32)
     for ch in range(frame.nr_channels):
@@ -308,6 +295,7 @@ if __name__ == "__main__":
                 sys.exit(1)
 
         wavfile = infile.replace('.sbc', '-decoded.wav')
+        wavfile = infile.replace('.msbc', '-decoded.wav')
         fout = False
 
         implementation = "SIG"
@@ -329,7 +317,7 @@ if __name__ == "__main__":
                 while True:
                     frame = SBCFrame()
                     if frame_count % 200 == 0:
-                        print "== Frame %d == %d" % (frame_count, fin.tell())
+                        print "== Frame %d == offset %d" % (frame_count, fin.tell())
 
                     err = sbc_unpack_frame(fin, file_size - fin.tell(), frame)
                     if err:

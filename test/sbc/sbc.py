@@ -207,6 +207,7 @@ class SBCFrame:
     nr_subbands = 0
     bitpool = 0
     crc_check = 0
+    reserved_for_future_use = 0
     # pro subband - 1
     join = np.zeros(8, dtype = np.uint8)
     scale_factor =  np.zeros(shape=(2, 8), dtype = np.int32)
@@ -567,7 +568,15 @@ def calculate_crc(frame):
     
     return sbc_crc8(bitstream, bitstream_len)
 
-
+def calculate_crc_mSBC(frame):
+    init_bitstream()
+    add_bits(frame.reserved_for_future_use, 16)
+    for sb in range(8):
+        add_bits(frame.scale_factor[0][sb], 4)
+    bitstream_len = (bitstream_index + 1) * 8
+    if bitstream_bits_available:
+        bitstream_len -= bitstream_bits_available
+    return sbc_crc8(bitstream, bitstream_len)
 
 def frame_to_bitstream(frame):
     global bitstream, bitstream_bits_available, bitstream_index
