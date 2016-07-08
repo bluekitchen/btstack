@@ -126,7 +126,6 @@ typedef struct {
     uint16_t  local_mtu;
     uint16_t  remote_mtu;
 
-    uint16_t  mps;  // LE Data Channel
     
     uint16_t  flush_timeout;    // default 0xffff
 
@@ -137,14 +136,22 @@ typedef struct {
     uint8_t   reason; // used in decline internal
     uint8_t   waiting_for_can_send_now;
 
+    // LE Data Channels
+
+    // receive SDU buffer
+    uint8_t * receive_sdu_buffer;
+
+    // max PDU size
+    uint16_t  remote_mps;
+
     // credits for outgoing traffic
-    uint8_t credits_outgoing;
+    uint16_t credits_outgoing;
     
     // number of packets remote will be granted
-    uint8_t new_credits_incoming;
+    uint16_t new_credits_incoming;
 
     // credits for incoming traffic
-    uint8_t credits_incoming;
+    uint16_t credits_incoming;
 
 } l2cap_channel_t;
 
