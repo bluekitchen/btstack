@@ -149,6 +149,10 @@ void hci_transport_h5_set_auto_sleep(uint16_t inactivity_timeout_ms);
  */
 const hci_transport_t * hci_transport_usb_instance(void);
 
+/**
+ * @brief Specify USB Bluetooth device via port numbers from root to device
+ */
+void hci_transport_usb_set_path(int len, uint8_t * port_numbers);
 
 /* API_END */
     

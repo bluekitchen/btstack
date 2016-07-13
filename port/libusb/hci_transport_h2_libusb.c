@@ -101,6 +101,9 @@
 #define SCO_RING_BUFFER_COUNT  (8)
 #define SCO_RING_BUFFER_SIZE (SCO_RING_BUFFER_COUNT * SCO_PACKET_SIZE)
 
+// seems to be the max depth for USB 3
+#define USB_MAX_PATH_LEN 7
+
 // prototypes
 static void dummy_handler(uint8_t packet_type, uint8_t *packet, uint16_t size); 
 static int usb_close(void);    
@@ -185,6 +188,10 @@ static int acl_out_addr;
 static int sco_in_addr;
 static int sco_out_addr;
 
+// device path
+static int usb_path_len;
+static uint8_t usb_path[USB_MAX_PATH_LEN];
+
 
 #ifdef ENABLE_SCO_OVER_HCI
 static void sco_ring_init(void){
@@ -196,6 +203,14 @@ static int sco_ring_have_space(void){
 }
 #endif
 
+void hci_transport_usb_set_path(int len, uint8_t * port_numbers){
+    if (len > USB_MAX_PATH_LEN || !port_numbers){
+        log_error("hci_transport_usb_set_path: len or port numbers invalid");
+        return;
+    } 
+    usb_path_len = len;
+    memcpy(usb_path, port_numbers, len);
+}
 
 //
 static void queue_transfer(struct libusb_transfer *transfer){
@@ -572,6 +587,18 @@ static int scan_for_bt_device(libusb_device **devs, int start_index) {
 
 static int prepare_device(libusb_device_handle * aHandle){
 
+    // print device path
+    uint8_t port_numbers[USB_MAX_PATH_LEN];
+    libusb_device * device = libusb_get_device(aHandle);
+    int path_len = libusb_get_port_numbers(device, port_numbers, USB_MAX_PATH_LEN);
+    printf("USB Path: ");
+    int i;
+    for (i=0;i<path_len;i++){
+        if (i) printf("-");
+        printf("%02x", port_numbers[i]);
+    }
+    printf("\n");
+
     int r;
     int kernel_driver_detached = 0;
 
@@ -643,6 +670,30 @@ static int prepare_device(libusb_device_handle * aHandle){
     return 0;
 }
 
+static libusb_device_handle * try_open_device(libusb_device * device){
+    int r;
+
+    libusb_device_handle * dev_handle;
+    r = libusb_open(device, &dev_handle);
+
+    if (r < 0) {
+        log_error("libusb_open failed!");
+        dev_handle = NULL;
+        return NULL;
+    }
+
+    log_info("libusb open %d, handle %p", r, dev_handle);
+
+    // reset device
+    libusb_reset_device(dev_handle);
+    if (r < 0) {
+        log_error("libusb_reset_device failed!");
+        libusb_close(dev_handle);
+        return NULL;
+    }
+    return dev_handle;
+}
+
 static int usb_open(void){
     int r;
 
@@ -691,57 +742,61 @@ static int usb_open(void){
 #else
     // Scan system for an appropriate devices
     libusb_device **devs;
-    ssize_t cnt;
+    ssize_t num_devices;
 
     log_info("Scanning for USB Bluetooth device");
-    cnt = libusb_get_device_list(NULL, &devs);
-    if (cnt < 0) {
+    num_devices = libusb_get_device_list(NULL, &devs);
+    if (num_devices < 0) {
         usb_close();
         return -1;
     }
 
-    int startIndex = 0;
     dev = NULL;
 
-    while (1){
-        int deviceIndex = scan_for_bt_device(devs, startIndex);
-        if (deviceIndex < 0){
+    if (usb_path_len){
+        int i;
+        for (i=0;i<num_devices;i++){
+            uint8_t port_numbers[USB_MAX_PATH_LEN];
+            int len = libusb_get_port_numbers(devs[i], port_numbers, USB_MAX_PATH_LEN);
+            if (len != usb_path_len) continue;
+            if (memcmp(usb_path, port_numbers, len) == 0){
+                log_info("USB device found at specified path");
+                handle = try_open_device(devs[i]);
+                if (!handle) continue;
+
+                r = prepare_device(handle);
+                if (r < 0) continue;
+
+                dev = devs[i];
+                libusb_state = LIB_USB_INTERFACE_CLAIMED;
+                break;
+            };
+        }
+        if (!handle){
+            log_error("USB device with given path not found");
+            printf("USB device with given path not found\n");
+            return -1;
+        }
+    } else {
+
+        int deviceIndex = -1;
+        while (1){
+            // look for next Bluetooth dongle
+            deviceIndex = scan_for_bt_device(devs, deviceIndex+1);
+            if (deviceIndex < 0) break;
+
+            log_info("USB Bluetooth device found, index %u", deviceIndex);
+
+            handle = try_open_device(devs[deviceIndex]);
+            if (!handle) continue;
+
+            r = prepare_device(handle);
+            if (r < 0) continue;
+
+            dev = devs[deviceIndex];
+            libusb_state = LIB_USB_INTERFACE_CLAIMED;
             break;
         }
-        startIndex = deviceIndex+1;
-
-        log_info("USB Bluetooth device found, index %u", deviceIndex);
-        
-        handle = NULL;
-        r = libusb_open(devs[deviceIndex], &handle);
-
-        if (r < 0) {
-            log_error("libusb_open failed!");
-            handle = NULL;
-            continue;
-        }
-    
-        log_info("libusb open %d, handle %p", r, handle);
-
-        // reset device
-        libusb_reset_device(handle);
-        if (r < 0) {
-            log_error("libusb_reset_device failed!");
-            libusb_close(handle);
-            handle = NULL;
-            continue;
-        }
-
-        // device found
-        r = prepare_device(handle);
-        
-        if (r < 0){
-            continue;
-        }
-
-        libusb_state = LIB_USB_INTERFACE_CLAIMED;
-
-        break;
     }
 
     libusb_free_device_list(devs, 1);
