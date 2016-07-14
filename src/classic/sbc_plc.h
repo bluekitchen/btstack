@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 BlueKitchen GmbH
+ * Copyright (C) 2016 BlueKitchen GmbH
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -36,43 +36,40 @@
  */
 
 /*
- * file.h
+ * sbc_plc.h
  *
  */
 
-#ifndef __SBC_DECODER_H
-#define __SBC_DECODER_H
+#ifndef __SBC_PLC_H
+#define __SBC_PLC_H
 
 #include <stdint.h>
-#include "sbc_plc.h"
 
 #if defined __cplusplus
 extern "C" {
 #endif
 
-typedef enum{
-    SBC_MODE_STANDARD,
-    SBC_MODE_mSBC
-} sbc_mode_t;
+#define FS 120          /* Frame Size */
+#define N 256           /* 16ms - Window Length for pattern matching */ 
+#define M 64            /* 4ms - Template for matching */
+#define LHIST (N+FS-1)  /* Length of history buffer required */ 
+#define SBCRT 36        /* SBC Reconvergence Time (samples) */
+#define OLAL 16         /* OverLap-Add Length (samples) */
 
-typedef struct {
-    void * context;
-    void (*handle_pcm_data)(int16_t * data, int num_samples, int num_channels, int sample_rate, void * context);
-    // private
-    void * decoder_state;
-    sbc_plc_state_t plc_state;
-    sbc_mode_t mode;
-} sbc_decoder_state_t;
-
-void sbc_decoder_init(sbc_decoder_state_t * state, sbc_mode_t mode, void (*callback)(int16_t * data, int num_samples, int num_channels, int sample_rate, void * context), void * context);
-void sbc_decoder_process_data(sbc_decoder_state_t * state, uint8_t * buffer, int size);
-
-int sbc_decoder_num_samples_per_frame(sbc_decoder_state_t * state);
-int sbc_decoder_num_channels(sbc_decoder_state_t * state);
-int sbc_decoder_sample_rate(sbc_decoder_state_t * state);
+/* PLC State Information */
+typedef struct sbc_plc_state {
+    int16_t hist[LHIST+FS+SBCRT+OLAL];
+    int16_t bestlag;
+    int     nbf;
+} sbc_plc_state_t;
 
 #if defined __cplusplus
 }
 #endif
 
-#endif // __SBC_DECODER_H
+void sbc_plc_init(sbc_plc_state_t *plc_state);
+void sbc_plc_bad_frame(sbc_plc_state_t *plc_state, int16_t *ZIRbuf, int16_t *out); 
+void sbc_plc_good_frame(sbc_plc_state_t *plc_state, int16_t *in, int16_t *out);
+int16_t * sbc_plc_zero_signal_indices(void);
+
+#endif // __SBC_PLC_H

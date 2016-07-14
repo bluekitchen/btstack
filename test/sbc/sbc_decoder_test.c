@@ -49,13 +49,13 @@
 #include <string.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include "sbc_decoder.h"
+
 #include "oi_assert.h"
 
 #include "btstack.h"
+#include "sbc_decoder.h"
  
 static uint8_t read_buffer[24];
-static uint8_t buf[4];
 
 typedef struct wav_writer_state {
     FILE * wav_file;
@@ -82,11 +82,13 @@ static ssize_t __read(int fd, void *buf, size_t count){
 }
 
 void little_endian_fstore_16(FILE *wav_file, uint16_t value){
+    uint8_t buf[2];
     little_endian_store_32(buf, 0, value);
     fwrite(&buf, 1, 2, wav_file);
 }
 
 void little_endian_fstore_32(FILE *wav_file, uint32_t value){
+    uint8_t buf[4];
     little_endian_store_32(buf, 0, value);
     fwrite(&buf, 1, 4, wav_file);
 }

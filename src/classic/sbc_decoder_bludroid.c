@@ -49,7 +49,10 @@
 #include <string.h>
 #include <fcntl.h>
 #include <unistd.h>
+
 #include "sbc_decoder.h"
+#include "sbc_plc.h"
+
 #include "oi_codec_sbc.h"
 #include "oi_assert.h"
 
@@ -116,6 +119,7 @@ void sbc_decoder_init(sbc_decoder_state_t * state, sbc_mode_t mode, void (*callb
     state->mode = mode;
     state->context = context;
     state->decoder_state = &bd_state;
+    sbc_plc_init(&state->plc_state);
 }
 
 static void append_received_sbc_data(bludroid_decoder_state_t * state, uint8_t * buffer, int size){
@@ -160,6 +164,7 @@ void sbc_decoder_process_data(sbc_decoder_state_t * state, uint8_t * buffer, int
 
             switch(status){
                 case 0:
+                    sbc_plc_good_frame(&state->plc_state, bd_decoder_state->pcm_data, bd_decoder_state->pcm_data);
                     state->handle_pcm_data(bd_decoder_state->pcm_data, 
                                         sbc_decoder_num_samples_per_frame(state), 
                                         sbc_decoder_num_channels(state), 
@@ -170,7 +175,9 @@ void sbc_decoder_process_data(sbc_decoder_state_t * state, uint8_t * buffer, int
                 case OI_CODEC_SBC_NO_SYNCWORD:
                     break;
                 case OI_CODEC_SBC_CHECKSUM_MISMATCH:
-                    printf("Frame decode error: OI_CODEC_SBC_CHECKSUM_MISMATCH\n");
+                    // call decoder with indices0 as frame_data
+                    // then call:
+                    // sbc_plc_bad_frame(&state->plc_state, bd_decoder_state->pcm_data, bd_decoder_state->pcm_data);
                     break;
                 default:
                     printf("Frame decode error: %d\n", status);

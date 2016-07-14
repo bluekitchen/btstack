@@ -7,6 +7,10 @@ SBC_ENCODER_ROOT = ${BTSTACK_ROOT}/3rd-party/bluedroid/encoder
 include ${SBC_DECODER_ROOT}/Makefile.inc
 include ${SBC_ENCODER_ROOT}/Makefile.inc
 
+SBC_DECODER += \
+	${BTSTACK_ROOT}/src/classic/sbc_plc.c \
+	${BTSTACK_ROOT}/src/classic/sbc_decoder_bludroid.c \
+
 SBC_DECODER_OBJ  = $(SBC_DECODER:.c=.o) 
 SBC_ENCODER_OBJ  = $(SBC_ENCODER:.c=.o)
 
@@ -30,7 +34,7 @@ SBC_TESTS = sbc_decoder_test sbc_encoder_test
 
 all: ${SBC_TESTS}
 
-sbc_decoder_test: ${SBC_DECODER_OBJ} ${COMMON_OBJ} ${BTSTACK_ROOT}/src/classic/sbc_decoder_bludroid.o sbc_decoder_test.o  
+sbc_decoder_test: ${SBC_DECODER_OBJ} ${COMMON_OBJ} sbc_decoder_test.o  
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 sbc_encoder_test: ${SBC_ENCODER_OBJ} sbc_encoder_test.o  
