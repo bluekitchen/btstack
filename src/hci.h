@@ -581,8 +581,8 @@ typedef struct {
     uint8_t            ssp_auto_accept;
     
     // single buffer for HCI packet assembly + additional prebuffer for H4 drivers
-    uint8_t   hci_packet_buffer_prefix[HCI_OUTGOING_PRE_BUFFER_SIZE];
-    uint8_t   hci_packet_buffer[HCI_PACKET_BUFFER_SIZE]; // opcode (16), len(8)
+    uint8_t   * hci_packet_buffer;
+    uint8_t   hci_packet_buffer_data[HCI_OUTGOING_PRE_BUFFER_SIZE + HCI_PACKET_BUFFER_SIZE];
     uint8_t   hci_packet_buffer_reserved;
     uint16_t  acl_fragmentation_pos;
     uint16_t  acl_fragmentation_total_size;

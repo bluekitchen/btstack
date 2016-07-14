@@ -1976,6 +1976,9 @@ void hci_init(const hci_transport_t *transport, const void *config){
     // reference to used config
     hci_stack->config = config;
     
+    // setup pointer for outgoing packet buffer
+    hci_stack->hci_packet_buffer = &hci_stack->hci_packet_buffer_data[HCI_OUTGOING_PRE_BUFFER_SIZE];
+
     // max acl payload size defined in config.h
     hci_stack->acl_data_packet_length = HCI_ACL_PAYLOAD_SIZE;
     
