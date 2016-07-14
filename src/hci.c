@@ -1727,6 +1727,7 @@ static void event_handler(uint8_t *packet, int size){
             break;
 
         case HCI_EVENT_HARDWARE_ERROR:
+            log_error("Hardware Error: 0x%02x", packet[2]);
             if (hci_stack->hardware_error_callback){
                 (*hci_stack->hardware_error_callback)();
             } else {
