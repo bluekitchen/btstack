@@ -70,6 +70,6 @@ typedef struct sbc_plc_state {
 void sbc_plc_init(sbc_plc_state_t *plc_state);
 void sbc_plc_bad_frame(sbc_plc_state_t *plc_state, int16_t *ZIRbuf, int16_t *out); 
 void sbc_plc_good_frame(sbc_plc_state_t *plc_state, int16_t *in, int16_t *out);
-int16_t * sbc_plc_zero_signal_indices(void);
+uint8_t * sbc_plc_zero_signal_frame(void);
 
 #endif // __SBC_PLC_H
