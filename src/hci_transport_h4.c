@@ -50,16 +50,17 @@
 #include "hci_transport.h"
 #include "btstack_uart_block.h"
 
+#define ENABLE_LOG_EHCILL
+
 #ifdef ENABLE_EHCILL
 
 // eHCILL commands
-#define EHCILL_GO_TO_SLEEP_IND 0x030
-#define EHCILL_GO_TO_SLEEP_ACK 0x031
-#define EHCILL_WAKE_UP_IND     0x032
-#define EHCILL_WAKE_UP_ACK     0x033
+static const uint8_t EHCILL_GO_TO_SLEEP_IND = 0x030;
+static const uint8_t EHCILL_GO_TO_SLEEP_ACK = 0x031;
+static const uint8_t EHCILL_WAKE_UP_IND     = 0x032;
+static const uint8_t EHCILL_WAKE_UP_ACK     = 0x033;
 
 static int  hci_transport_h4_ehcill_outgoing_packet_ready(void);
-static int  hci_transport_h4_ehcill_sleep_mode_active(void);
 static void hci_transport_h4_echill_send_wakeup_ind(void);
 static void hci_transport_h4_ehcill_handle_command(uint8_t action);
 static void hci_transport_h4_ehcill_handle_ehcill_command_sent(void);
@@ -71,8 +72,9 @@ static void hci_transport_h4_ehcill_sleep_ack_timer_setup(void);
 static void hci_transport_h4_ehcill_trigger_wakeup(void);
 
 typedef enum {
+    EHCILL_STATE_W2_SEND_SLEEP_ACK,
     EHCILL_STATE_SLEEP,
-    EHCILL_STATE_W4_ACK,
+    EHCILL_STATE_W4_WAKEUP_IND_OR_ACK,
     EHCILL_STATE_AWAKE
 } EHCILL_STATE;
 
@@ -258,9 +260,14 @@ static int hci_transport_h4_send_packet(uint8_t packet_type, uint8_t * packet, i
     tx_data  = packet;
 
 #ifdef ENABLE_EHCILL
-    if (hci_transport_h4_ehcill_sleep_mode_active()){
-        hci_transport_h4_ehcill_trigger_wakeup();
-        return 0;
+    switch (ehcill_state){
+        case EHCILL_STATE_SLEEP:
+            hci_transport_h4_ehcill_trigger_wakeup();
+            return 0;
+        case EHCILL_STATE_W2_SEND_SLEEP_ACK:
+            return 0;
+        default:
+            break;    
     }
 #endif
 
@@ -347,9 +354,12 @@ static void hci_transport_h4_ehcill_open(void){
 }
 
 static void hci_transport_h4_echill_send_wakeup_ind(void){
+#ifdef ENABLE_LOG_EHCILL
+    log_info("eHCILL: send WAKEUP_IND");
+#endif
     // update state
     tx_state     = TX_W4_WAKEUP;
-    ehcill_state = EHCILL_STATE_W4_ACK;
+    ehcill_state = EHCILL_STATE_W4_WAKEUP_IND_OR_ACK;
     ehcill_command_to_send = EHCILL_WAKE_UP_IND;
     btstack_uart->send_block(&ehcill_command_to_send, 1);
 }
@@ -358,28 +368,33 @@ static int hci_transport_h4_ehcill_outgoing_packet_ready(void){
     return tx_len != 0;
 }
 
-static int  hci_transport_h4_ehcill_sleep_mode_active(void){
-    return ehcill_state == EHCILL_STATE_SLEEP;
-}
-
 static void hci_transport_h4_ehcill_reset_statemachine(void){
     ehcill_state = EHCILL_STATE_AWAKE;
 }
 
 static void hci_transport_h4_ehcill_send_ehcill_command(void){
-    log_debug("eHCILL: send command %02x", ehcill_command_to_send);
+#ifdef ENABLE_LOG_EHCILL
+    log_info("eHCILL: send command %02x", ehcill_command_to_send);
+#endif
     tx_state = TX_W4_EHCILL_SENT;
+    if (ehcill_command_to_send == EHCILL_GO_TO_SLEEP_ACK){
+        ehcill_state = EHCILL_STATE_SLEEP;
+    }
     btstack_uart->send_block(&ehcill_command_to_send, 1);
 }
 
 static void hci_transport_h4_ehcill_sleep_ack_timer_handler(btstack_timer_source_t * timer){
-    log_debug("eHCILL: timer triggered");
+#ifdef ENABLE_LOG_EHCILL
+    log_info("eHCILL: timer triggered");
+#endif
     hci_transport_h4_ehcill_send_ehcill_command();
 }
 
 static void hci_transport_h4_ehcill_sleep_ack_timer_setup(void){
     // setup timer
-    log_debug("eHCILL: set timer for sending command");
+#ifdef ENABLE_LOG_EHCILL
+    log_info("eHCILL: set timer for sending command %02x", ehcill_command_to_send);
+#endif
     btstack_run_loop_set_timer_handler(&ehcill_sleep_ack_timer, &hci_transport_h4_ehcill_sleep_ack_timer_handler);
     btstack_run_loop_set_timer(&ehcill_sleep_ack_timer, 50);
     btstack_run_loop_add_timer(&ehcill_sleep_ack_timer);
@@ -403,7 +418,10 @@ static void hci_transport_h4_ehcill_trigger_wakeup(void){
     hci_transport_h4_echill_send_wakeup_ind();
 }
 
-static void hci_transport_h4_ehcill_schedule_ecill_command(uint8_t command){
+static void hci_transport_h4_ehcill_schedule_ehcill_command(uint8_t command){
+#ifdef ENABLE_LOG_EHCILL
+    log_info("eHCILL: schedule eHCILL command %02x", command);
+#endif                
     ehcill_command_to_send = command;
     switch (tx_state){
         case TX_IDLE:
@@ -427,9 +445,11 @@ static void hci_transport_h4_ehcill_handle_command(uint8_t action){
         case EHCILL_STATE_AWAKE:
             switch(action){
                 case EHCILL_GO_TO_SLEEP_IND:
-                    ehcill_state = EHCILL_STATE_SLEEP;
-                    log_info("eHCILL: GO_TO_SLEEP_IND RX");
-                    hci_transport_h4_ehcill_schedule_ecill_command(EHCILL_GO_TO_SLEEP_ACK);
+                    ehcill_state = EHCILL_STATE_W2_SEND_SLEEP_ACK;
+#ifdef ENABLE_LOG_EHCILL
+                    log_info("eHCILL: Received GO_TO_SLEEP_IND RX");
+#endif
+                    hci_transport_h4_ehcill_schedule_ehcill_command(EHCILL_GO_TO_SLEEP_ACK);
                     break;
                 default:
                     break;
@@ -437,11 +457,14 @@ static void hci_transport_h4_ehcill_handle_command(uint8_t action){
             break;
             
         case EHCILL_STATE_SLEEP:
+        case EHCILL_STATE_W2_SEND_SLEEP_ACK:
             switch(action){
                 case EHCILL_WAKE_UP_IND:
                     ehcill_state = EHCILL_STATE_AWAKE;
-                    log_info("eHCILL: WAKE_UP_IND RX");
-                    hci_transport_h4_ehcill_schedule_ecill_command(EHCILL_WAKE_UP_ACK);
+#ifdef ENABLE_LOG_EHCILL
+                    log_info("eHCILL: Received WAKE_UP_IND RX");
+#endif
+                    hci_transport_h4_ehcill_schedule_ehcill_command(EHCILL_WAKE_UP_ACK);
                     break;
                     
                 default:
@@ -449,11 +472,13 @@ static void hci_transport_h4_ehcill_handle_command(uint8_t action){
             }
             break;
             
-        case EHCILL_STATE_W4_ACK:
+        case EHCILL_STATE_W4_WAKEUP_IND_OR_ACK:
             switch(action){
                 case EHCILL_WAKE_UP_IND:
                 case EHCILL_WAKE_UP_ACK:
-                    log_info("eHCILL: WAKE_UP_IND or ACK");
+#ifdef ENABLE_LOG_EHCILL
+                    log_info("eHCILL: Received WAKE_UP (%02x)", action);
+#endif
                     tx_state = TX_W4_PACKET_SENT;
                     ehcill_state = EHCILL_STATE_AWAKE;
                     btstack_uart->send_block(tx_data, tx_len);
@@ -466,6 +491,9 @@ static void hci_transport_h4_ehcill_handle_command(uint8_t action){
 }
 
 static void hci_transport_h4_ehcill_handle_packet_sent(void){
+#ifdef ENABLE_LOG_EHCILL
+        log_info("eHCILL: handle packet sent, command to send %02x", ehcill_command_to_send);
+#endif
     // now, send pending ehcill command if neccessary
     switch (ehcill_command_to_send){
         case EHCILL_GO_TO_SLEEP_ACK:
@@ -483,8 +511,15 @@ static void hci_transport_h4_ehcill_handle_ehcill_command_sent(void){
     tx_state = TX_IDLE;
     int command = ehcill_command_to_send;
     ehcill_command_to_send = 0;
+
+#ifdef ENABLE_LOG_EHCILL
+        log_info("eHCILL: handle eHCILL sent, command was %02x", command);
+#endif
+
     if (command == EHCILL_GO_TO_SLEEP_ACK) {
+#ifdef ENABLE_LOG_EHCILL
         log_info("eHCILL: GO_TO_SLEEP_ACK sent, enter sleep mode");
+#endif
         // UART not needed after EHCILL_GO_TO_SLEEP_ACK was sent
         if (btstack_uart_sleep_mode != BTSTACK_UART_SLEEP_OFF){
             btstack_uart->set_sleep(btstack_uart_sleep_mode);
@@ -495,7 +530,9 @@ static void hci_transport_h4_ehcill_handle_ehcill_command_sent(void){
         if (btstack_uart_sleep_mode){
             btstack_uart->set_sleep(BTSTACK_UART_SLEEP_OFF);
         }
-        hci_transport_h4_echill_send_wakeup_ind();
+        if (command != EHCILL_WAKE_UP_IND){
+            hci_transport_h4_echill_send_wakeup_ind();
+        }
     }
 }
 
