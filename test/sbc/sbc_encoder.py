@@ -7,6 +7,8 @@ from sbc import *
 
 X = np.zeros(shape=(2,80), dtype = np.int16)
 implementation = "SIG"
+msbc_enabled = 0
+total_time_ms = 0
 
 def fetch_samples_for_next_sbc_frame(fin, frame):
     raw_data = fin.readframes(frame.nr_blocks * frame.nr_subbands) 
@@ -22,7 +24,7 @@ def fetch_samples_for_next_sbc_frame(fin, frame):
             frame.pcm[0][i] = data[i]
 
     
-def sbc_frame_analysis(frame, ch, blk, C):
+def sbc_frame_analysis_sig(frame, ch, blk, C):
     global X
 
     M = frame.nr_subbands
@@ -94,6 +96,7 @@ def sbc_encode(frame, force_channel_mode):
     return err
 
 def sbc_quantization(frame, force_channel_mode):
+    global msbc_enabled
     calculate_channel_mode_and_scale_factors(frame, force_channel_mode)
     frame.bits = sbc_bit_allocation(frame)
     
@@ -103,7 +106,11 @@ def sbc_quantization(frame, force_channel_mode):
         for sb in range(frame.nr_subbands):
             frame.levels[ch][sb] = (1 << frame.bits[ch][sb]) - 1 #pow(2.0, frame.bits[ch][sb]) - 1
 
-    frame.syncword = 0x9c
+    if msbc_enabled:
+        frame.syncword = 0xad
+    else:
+        frame.syncword = 0x9c
+        
     frame.crc_check = calculate_crc(frame)
 
     
@@ -127,14 +134,14 @@ def sbc_write_frame(fout, sbc_encoder_frame):
 
 if __name__ == "__main__":
     usage = '''
-    Usage:      ./sbc_encoder.py input.wav blocks subbands bitpool allocation_method[0-LOUDNESS,1-SNR] force_channel_mode[2-STEREO,3-JOINT_STEREO]
-    Example:    ./sbc_encoder.py fanfare.wav 16 4 31 0
+    Usage:      ./sbc_encoder.py input.wav blocks subbands bitpool allocation_method[0-LOUDNESS,1-SNR] force_channel_mode[2-STEREO,3-JOINT_STEREO] [0-sbc|1-msbc]
+    Example:    ./sbc_encoder.py fanfare.wav 16 4 31 0 0
     '''
     nr_blocks = 0
     nr_subbands = 0
     
-
-    if (len(sys.argv) < 6):
+    print len(sys.argv)
+    if (len(sys.argv) < 7):
         print(usage)
         sys.exit(1)
     try:
@@ -142,12 +149,18 @@ if __name__ == "__main__":
         if not infile.endswith('.wav'):
             print(usage)
             sys.exit(1)
-        sbcfile = infile.replace('.wav', '-encoded.sbc')
-
+        
+        msbc_enabled = int(sys.argv[7]) 
+        if msbc_enabled:
+            sbcfile = infile.replace('.wav', '-encoded.msbc')
+        else:
+            sbcfile = infile.replace('.wav', '-encoded.sbc')
+            
         nr_blocks = int(sys.argv[2])
         nr_subbands = int(sys.argv[3])
         bitpool = int(sys.argv[4])
-        allocation_method = int(sys.argv[5])   
+        allocation_method = int(sys.argv[5]) 
+        
         force_channel_mode = 0   
         if len(sys.argv) == 6:
             force_channel_mode = int(sys.argv[6]) 
@@ -157,7 +170,16 @@ if __name__ == "__main__":
 
         fin = wave.open(infile, 'rb')
         nr_channels = fin.getnchannels()
-        sampling_frequency = fin.getframerate()
+        if msbc_enabled:
+            sampling_frequency = 16000
+            nr_channels = 1
+            bitpool = 26
+            nr_subbands = 8
+            allocation_method = 0
+            force_channel_mode = 0
+        else:
+            sampling_frequency = fin.getframerate()
+            nr_channels = fin.getnchannels()
         nr_audio_frames = fin.getnframes()
 
         subband_frame_count = 0
@@ -169,6 +191,8 @@ if __name__ == "__main__":
                 print("== Frame %d ==" % (subband_frame_count))
 
             sbc_encoder_frame = SBCFrame(nr_blocks, nr_subbands, nr_channels, bitpool, sampling_frequency, allocation_method)
+            if subband_frame_count == 0:
+                print sbc_encoder_frame
             fetch_samples_for_next_sbc_frame(fin, sbc_encoder_frame)
             
             sbc_encode(sbc_encoder_frame, force_channel_mode)
@@ -180,8 +204,8 @@ if __name__ == "__main__":
         fin.close()
         fout.close()
         print("DONE, WAV file %s encoded into SBC file %s " % (infile, sbcfile))
-        if frame_count > 0:
-            print ("Average analysis time per frame: %d ms/frame" % (total_time_ms/frame_count))
+        if subband_frame_count > 0:
+            print ("Average analysis time per frame: %d ms/frame" % (total_time_ms/subband_frame_count))
         else:
             print ("No frame found")
 

@@ -40,12 +40,13 @@ def sbc_unpack_frame(fin, available_bytes, frame):
     frame.syncword = get_bits(fin,8)
     if mSBC_enabled:
         if frame.syncword != 173:
+            #print ("out of sync %02x" % frame.syncword)
             H2_first_byte = H2_second_byte
             H2_second_byte = frame.syncword
             return -1
     else:
         if frame.syncword != 156:
-            print ("out of sync %02x" % frame.syncword)
+            #print ("out of sync %02x" % frame.syncword)
             return -1
 
     if mSBC_enabled:
@@ -87,7 +88,7 @@ def sbc_unpack_frame(fin, available_bytes, frame):
             frame.scale_factor[ch][sb] = get_bits(fin, 4)
 
     if mSBC_enabled:
-        print "syncword: ", find_syncword(H2_first_byte, H2_second_byte)
+        #print "syncword: ", find_syncword(H2_first_byte, H2_second_byte)
         crc = calculate_crc_mSBC(frame)
     else:
         crc = calculate_crc(frame)
@@ -96,7 +97,6 @@ def sbc_unpack_frame(fin, available_bytes, frame):
         print "CRC mismatch: calculated %d, expected %d" % (crc, frame.crc_check)
         return -1
 
-    print "CRC correct: %d" % crc
     
     frame.scalefactor = np.zeros(shape=(frame.nr_channels, frame.nr_subbands), dtype = np.int32)
     for ch in range(frame.nr_channels):
@@ -312,13 +312,18 @@ if __name__ == "__main__":
         infile = sys.argv[1]
         if not infile.endswith('.sbc'):
             if infile.endswith('.msbc'):
+                wavfile = infile.replace('.msbc', '-decoded.wav')
                 mSBC_enabled = 1
             else:
                 print(usage)
                 sys.exit(1)
+        else:
+            wavfile = infile.replace('.sbc', '-decoded.wav')
+        
+        print "input file: ", infile
+        print "output file: ", wavfile
+        print "mSBC enabled: ", mSBC_enabled
 
-        wavfile = infile.replace('.sbc', '-decoded.wav')
-        wavfile = infile.replace('.msbc', '-decoded.wav')
         fout = False
 
         implementation = "SIG"
@@ -344,7 +349,7 @@ if __name__ == "__main__":
 
                     err = sbc_unpack_frame(fin, file_size - fin.tell(), frame)
                     if err:
-                        print "error, frame_count: ", frame_count
+                        #print "error, frame_count: ", frame_count
                         continue
 
                     if frame_count == 0:
