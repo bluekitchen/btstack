@@ -71,6 +71,10 @@ int sbc_decoder_num_samples_per_frame(sbc_decoder_state_t * state);
 int sbc_decoder_num_channels(sbc_decoder_state_t * state);
 int sbc_decoder_sample_rate(sbc_decoder_state_t * state);
 
+// testing only
+void sbc_decoder_test_disable_plc(void);
+void sbc_decoder_test_simulate_corrupt_frames(int period);
+
 #if defined __cplusplus
 }
 #endif

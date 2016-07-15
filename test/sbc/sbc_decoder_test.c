@@ -143,16 +143,36 @@ int main (int argc, const char * argv[]){
     
     sbc_mode_t mode = SBC_MODE_STANDARD;
     
-    const char * sbc_filename = argv[1];
-    const char * wav_filename = argv[2];
+    const char * filename = argv[1];
+
+    char sbc_filename[30];
+    char wav_filename[30];
+
+    strcpy(sbc_filename, filename);
+    strcpy(wav_filename, filename);
+
+    const int plc_enabled = atoi(argv[3]);
+    const int corrupt_frame_period = atoi(argv[4]);
     
-    if (strncmp(argv[3], "msbc", 4) == 0 ){
+    if (strncmp(argv[2], "msbc", 4) == 0 ){
         mode = SBC_MODE_mSBC;
-        printf("Using SBC_MODE_mSBC mode\n");
+        printf("Using SBC_MODE_mSBC mode, plc enabled = %d\n", plc_enabled);
     } else {
-        printf("Using SBC_MODE_STANDARD mode\n");
+        printf("Using SBC_MODE_STANDARD mode, plc enabled = %d\n", plc_enabled);
+    } 
+
+    if (mode == SBC_MODE_mSBC){
+        strcat(sbc_filename, ".msbc");
+    } else {
+        strcat(sbc_filename, ".sbc");
     }
-    
+
+    if (plc_enabled){
+        strcat(wav_filename, "_plc.wav");
+    } else {
+        strcat(wav_filename, ".wav");
+    }
+
     int fd = open(sbc_filename, O_RDONLY);
     if (fd < 0) {
         printf("Can't open file %s", sbc_filename);
@@ -167,8 +187,15 @@ int main (int argc, const char * argv[]){
    
     sbc_decoder_state_t state;
     sbc_decoder_init(&state, mode, &handle_pcm_data, (void*)&wav_writer_state);
-    write_wav_header(wav_writer_state.wav_file, 0, 0, 0);
+    if (!plc_enabled){
+        sbc_decoder_test_disable_plc();
+    }
+    if (corrupt_frame_period > 0){
+        sbc_decoder_test_simulate_corrupt_frames(corrupt_frame_period);
+    }
 
+    write_wav_header(wav_writer_state.wav_file, 0, 0, 0);
+    
     while (1){
         // get next chunk
         int bytes_read = __read(fd, read_buffer, sizeof(read_buffer));
