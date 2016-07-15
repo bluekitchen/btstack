@@ -1961,7 +1961,18 @@ static void sm_run(void){
                     sm_connection->sm_engine_state = SM_INITIATOR_PH0_SEND_START_ENCRYPTION;
                     break;
                 case SM_RESPONDER_PH0_RECEIVED_LTK_REQUEST:
+                    sm_reset_setup();
+                    sm_start_calculating_ltk_from_ediv_and_rand(sm_connection);
+                    break;
+                case SM_INITIATOR_PH1_W2_SEND_PAIRING_REQUEST:
+                    sm_reset_setup();
+                    sm_init_setup(sm_connection);
+                    sm_timeout_start(sm_connection);
+                    sm_connection->sm_engine_state = SM_INITIATOR_PH1_SEND_PAIRING_REQUEST;
+                    break;
+
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
+                case SM_SC_RECEIVED_LTK_REQUEST:
                     switch (sm_connection->sm_irk_lookup_state){
                         case IRK_LOOKUP_SUCCEEDED:
                             // assuming Secure Connection, we have a stored LTK and the EDIV/RAND are null
@@ -1989,14 +2000,8 @@ static void sm_run(void){
                             done = 0;
                             break;
                     }
+                    break;
 #endif
-                    break;
-                case SM_INITIATOR_PH1_W2_SEND_PAIRING_REQUEST:
-                    sm_reset_setup();
-                    sm_init_setup(sm_connection);
-                    sm_timeout_start(sm_connection);
-                    sm_connection->sm_engine_state = SM_INITIATOR_PH1_SEND_PAIRING_REQUEST;
-                    break;
                 default:
                     done = 0;
                     break;
@@ -2920,17 +2925,17 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
 
                             // store rand and ediv
                             reverse_64(&packet[5], sm_conn->sm_local_rand);
-                            sm_conn->sm_local_ediv   = little_endian_read_16(packet, 13);
+                            sm_conn->sm_local_ediv = little_endian_read_16(packet, 13);
 
                             // For Legacy Pairing (<=> EDIV != 0 || RAND != NULL), we need to recalculated our LTK as a
                             // potentially stored LTK is from the master
                             if (sm_conn->sm_local_ediv != 0 || !sm_is_null_random(sm_conn->sm_local_rand)){
-                                sm_start_calculating_ltk_from_ediv_and_rand(sm_conn);
+                                sm_conn->sm_engine_state = SM_RESPONDER_PH0_RECEIVED_LTK_REQUEST;
                                 break;
                             }
 
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
-                            sm_conn->sm_engine_state = SM_RESPONDER_PH0_RECEIVED_LTK_REQUEST;
+                            sm_conn->sm_engine_state = SM_SC_RECEIVED_LTK_REQUEST;
 #else
                             log_info("LTK Request: ediv & random are empty, but LE Secure Connections not supported");
                             sm_conn->sm_engine_state = SM_RESPONDER_PH0_SEND_LTK_REQUESTED_NEGATIVE_REPLY;
