@@ -64,7 +64,7 @@ typedef struct wav_writer_state {
 } wav_writer_state_t;
 
 static void show_usage(void){
-    printf("\n\nUsage: ./sbc_decoder_test input.sbc output.wav msbc|sbc\n\n");
+    printf("\n\nUsage: ./sbc_decoder_test input_file msbc|sbc plc_enabled(0|1) corrupt_frame_period\n\n");
 }
 
 static ssize_t __read(int fd, void *buf, size_t count){
@@ -154,13 +154,23 @@ int main (int argc, const char * argv[]){
     const int plc_enabled = atoi(argv[3]);
     const int corrupt_frame_period = atoi(argv[4]);
     
+    printf("\n");
     if (strncmp(argv[2], "msbc", 4) == 0 ){
         mode = SBC_MODE_mSBC;
-        printf("Using SBC_MODE_mSBC mode, plc enabled = %d\n", plc_enabled);
+        printf("Using SBC_MODE_mSBC mode.\n");
     } else {
-        printf("Using SBC_MODE_STANDARD mode, plc enabled = %d\n", plc_enabled);
+        printf("Using SBC_MODE_STANDARD mode.\n");
     } 
+    
+    if (plc_enabled){
+        printf("PLC enabled.\n");
+    } else {
+        printf("PLC disbled.\n"); 
+    }
 
+    if (corrupt_frame_period > 0){
+        printf("Corrupt frame period: every %d frames.\n", corrupt_frame_period);
+    }
     if (mode == SBC_MODE_mSBC){
         strcat(sbc_filename, ".msbc");
     } else {
@@ -209,7 +219,9 @@ int main (int argc, const char * argv[]){
 
     fclose(wav_file);
     close(fd);
+    int total_frames_nr = state.good_frames_nr + state.bad_frames_nr + state.zero_frames_nr;
 
-    printf("Write %d frames to wav file: %s\n", wav_writer_state.frame_count, wav_filename);
+    printf("\nDecoding done. Processed totaly %d frames:\n - %d good\n - %d bad\n - %d zero frames\n", total_frames_nr, state.good_frames_nr, state.bad_frames_nr, state.zero_frames_nr);
+    printf("Write %d frames to wav file: %s\n\n", wav_writer_state.frame_count, wav_filename);
 
 }

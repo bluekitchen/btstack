@@ -62,6 +62,11 @@ typedef struct {
     void * decoder_state;
     sbc_plc_state_t plc_state;
     sbc_mode_t mode;
+
+    // summary of processed good, bad and zero frames
+    int good_frames_nr;
+    int bad_frames_nr;
+    int zero_frames_nr;
 } sbc_decoder_state_t;
 
 void sbc_decoder_init(sbc_decoder_state_t * state, sbc_mode_t mode, void (*callback)(int16_t * data, int num_samples, int num_channels, int sample_rate, void * context), void * context);

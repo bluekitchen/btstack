@@ -64,6 +64,7 @@
 #define mSBC_SYNCWORD 0xad
 #define SBC_SYNCWORD 0x9c
 
+// #define LOG_FRAME_STATUS
 
 // Testing only - START
 static int plc_enabled = 1;
@@ -79,10 +80,10 @@ typedef struct {
     int16_t pcm_data[SBC_MAX_CHANNELS * SBC_MAX_BANDS * SBC_MAX_BLOCKS];
     uint32_t pcm_bytes;
     OI_UINT32 decoder_data[(DECODER_DATA_SIZE+3)/4]; 
-    int corrupt_frame;
-    int h2_syncword;
+    int h2_sequence_nr;
     int search_new_sync_word;
     int sync_word_found;
+    int first_good_frame_found; 
 } bludroid_decoder_state_t;
 
 
@@ -97,19 +98,33 @@ void sbc_decoder_test_simulate_corrupt_frames(int period){
     corrupt_frame_period = period;
 }
 
-static int find_h2_syncword(const OI_BYTE *frameData, OI_UINT32 frameBytes, sbc_mode_t mode){
+static int find_sequence_of_zeros(const OI_BYTE *frame_data, OI_UINT32 frame_bytes, int seq_length){
+    int zero_seq_count = 0;
+    int i;
+    for (i=0; i<frame_bytes; i++){
+        if (frame_data[i] == 0) {
+            zero_seq_count++;
+            if (zero_seq_count >= seq_length) return zero_seq_count;
+        } else {
+            zero_seq_count = 0;
+        }
+    }
+    return 0;
+}
+
+static int find_h2_syncword(const OI_BYTE *frame_data, OI_UINT32 frame_bytes, sbc_mode_t mode){
     if (mode != SBC_MODE_mSBC) return -1;
     int syncword = mSBC_SYNCWORD;
     uint8_t h2_first_byte = 0;
     uint8_t h2_second_byte = 0;
     
     int i;
-    for (i=0; i<frameBytes; i++){
-        if (frameData[i] == syncword) {
+    for (i=0; i<frame_bytes; i++){
+        if (frame_data[i] == syncword) {
             break;
         }
         h2_first_byte = h2_second_byte;
-        h2_second_byte = frameData[i];
+        h2_second_byte = frame_data[i];
     }
     if (h2_first_byte != 1) return -1;
 
@@ -163,20 +178,22 @@ void sbc_decoder_init(sbc_decoder_state_t * state, sbc_mode_t mode, void (*callb
     }
     
     sbc_state_singelton = state;
+    
     bd_state.bytes_in_frame_buffer = 0;
     bd_state.pcm_bytes = sizeof(bd_state.pcm_data);
-    bd_state.h2_syncword = -1;
+    bd_state.h2_sequence_nr = -1;
     bd_state.sync_word_found = 0;
     bd_state.search_new_sync_word = 0;
     if (mode == SBC_MODE_mSBC){
         bd_state.search_new_sync_word = 1;
     }
+    bd_state.first_good_frame_found = 0;
 
+    memset(state, 0, sizeof(sbc_decoder_state_t));
     state->handle_pcm_data = callback;
     state->mode = mode;
     state->context = context;
     state->decoder_state = &bd_state;
-
     sbc_plc_init(&state->plc_state);
 }
 
@@ -195,10 +212,9 @@ static void append_received_sbc_data(bludroid_decoder_state_t * state, uint8_t *
 void sbc_decoder_process_data(sbc_decoder_state_t * state, uint8_t * buffer, int size){
     bludroid_decoder_state_t * bd_decoder_state = (bludroid_decoder_state_t*)state->decoder_state;
     int bytes_to_process = size;
-    int msbc_frame_size = 57; // 57 for mSBC frame, 2 for header H2
+    int msbc_frame_size = 57; 
 
     // printf("<<-- enter -->>\n");
-
     // printf("Process data: in buffer %u, new %u\n", bd_decoder_state->bytes_in_frame_buffer, size);
 
     while (bytes_to_process > 0){
@@ -233,41 +249,53 @@ void sbc_decoder_process_data(sbc_decoder_state_t * state, uint8_t * buffer, int
             }
         }
 
-        if (bd_decoder_state->search_new_sync_word && !bd_decoder_state->sync_word_found){
-            int h2_syncword = find_h2_syncword(frame_data, bd_decoder_state->bytes_in_frame_buffer, state->mode);
-            if (h2_syncword != -1){
-                bd_decoder_state->sync_word_found = 1;
-                bd_decoder_state->h2_syncword = h2_syncword;
-            }
-        }
-        // printf("Sync1: %d\n", bd_decoder_state->h2_syncword);
+        OI_STATUS status = 0;
+        int zero_seq_found = 0;
         
-        OI_STATUS status = OI_CODEC_SBC_DecodeFrame(&(bd_decoder_state->decoder_context), 
-                                                    &frame_data, 
-                                                    &(bd_decoder_state->bytes_in_frame_buffer), 
-                                                    bd_decoder_state->pcm_plc_data, 
-                                                    &(bd_decoder_state->pcm_bytes));
+        if (bd_decoder_state->first_good_frame_found){
+            zero_seq_found = find_sequence_of_zeros(frame_data, bd_decoder_state->bytes_in_frame_buffer, 20);
+        } 
 
+        if (zero_seq_found){
+            status = OI_CODEC_SBC_CHECKSUM_MISMATCH;
+            bd_decoder_state->bytes_in_frame_buffer = 0;
+        } else {
+            if (bd_decoder_state->search_new_sync_word && !bd_decoder_state->sync_word_found){
+                int h2_syncword = find_h2_syncword(frame_data, bd_decoder_state->bytes_in_frame_buffer, state->mode);
+            
+                if (h2_syncword != -1){
+                    bd_decoder_state->sync_word_found = 1;
+                    bd_decoder_state->h2_sequence_nr = h2_syncword;
+                }
+            }
+            status = OI_CODEC_SBC_DecodeFrame(&(bd_decoder_state->decoder_context), 
+                                                &frame_data, 
+                                                &(bd_decoder_state->bytes_in_frame_buffer), 
+                                                bd_decoder_state->pcm_plc_data, 
+                                                &(bd_decoder_state->pcm_bytes));
+        }        
+    
         bytes_processed = bytes_in_buffer_before - bd_decoder_state->bytes_in_frame_buffer;
 
         switch(status){
             case 0:
+#ifdef LOG_FRAME_STATUS                    
+                printf("%d : OK\n", bd_decoder_state->h2_sequence_nr);
+                if (bd_decoder_state->h2_sequence_nr == 3) printf("\n");
+#endif
+                bd_decoder_state->first_good_frame_found = 1;
+                
                 if (state->mode == SBC_MODE_mSBC){
-                    printf("%d : OK\n", bd_decoder_state->h2_syncword);
                     bd_decoder_state->search_new_sync_word = 1;
                     bd_decoder_state->sync_word_found = 0;
-                } else {
-                    printf("OK\n");
                 }
                 
-                if (bd_decoder_state->h2_syncword == 3) printf("\n");
                 sbc_plc_good_frame(&state->plc_state, bd_decoder_state->pcm_plc_data, bd_decoder_state->pcm_data);
                 state->handle_pcm_data(bd_decoder_state->pcm_data, 
                                     sbc_decoder_num_samples_per_frame(state), 
                                     sbc_decoder_num_channels(state), 
                                     sbc_decoder_sample_rate(state), state->context);
-
-                
+                state->good_frames_nr++;
                 continue;
             case OI_CODEC_SBC_NOT_ENOUGH_HEADER_DATA:
             case OI_CODEC_SBC_NOT_ENOUGH_BODY_DATA:
@@ -275,22 +303,35 @@ void sbc_decoder_process_data(sbc_decoder_state_t * state, uint8_t * buffer, int
                 if (bd_decoder_state->sync_word_found){
                     bd_decoder_state->search_new_sync_word = 0;
                 }
-                // do nothing
                 break;
             case OI_CODEC_SBC_NO_SYNCWORD:
             case OI_CODEC_SBC_CHECKSUM_MISMATCH:
                 // printf("NO_SYNCWORD or CHECKSUM_MISMATCH\n");
+                bd_decoder_state->bytes_in_frame_buffer = 0;
+                if (!bd_decoder_state->first_good_frame_found) break;
+
                 if (state->mode == SBC_MODE_mSBC){
-                    bd_decoder_state->h2_syncword = (bd_decoder_state->h2_syncword +1)%4;
-                    printf("%d : BAD FRAME\n", bd_decoder_state->h2_syncword);
-                    if (bd_decoder_state->h2_syncword == 3) printf("\n");
+                    if (!bd_decoder_state->sync_word_found){
+                        bd_decoder_state->h2_sequence_nr = (bd_decoder_state->h2_sequence_nr + 1)%4;
+                    }
                     bd_decoder_state->search_new_sync_word = 1;
                     bd_decoder_state->sync_word_found = 0;
-                } else {
-                    printf("BAD FRAME\n");
                 }
 
-                bd_decoder_state->bytes_in_frame_buffer = 0;
+                if (zero_seq_found){
+                    state->zero_frames_nr++;
+                } else {
+                    state->bad_frames_nr++;
+                }
+
+#ifdef LOG_FRAME_STATUS 
+                if (zero_seq_found){
+                    printf("%d : ZERO FRAME\n", bd_decoder_state->h2_sequence_nr);
+                } else {
+                    printf("%d : BAD FRAME\n", bd_decoder_state->h2_sequence_nr);
+                }
+                if (bd_decoder_state->h2_sequence_nr == 3) printf("\n");
+#endif
                 if (!plc_enabled) break;
                 
                 frame_data = sbc_plc_zero_signal_frame();
