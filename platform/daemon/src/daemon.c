@@ -1012,7 +1012,7 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
         case L2CAP_DECLINE_CONNECTION:
             cid    = little_endian_read_16(packet, 3);
             reason = packet[7];
-            l2cap_decline_connection(cid, reason);
+            l2cap_decline_connection(cid);
             break;
         case RFCOMM_CREATE_CHANNEL:
             reverse_bd_addr(&packet[3], addr);

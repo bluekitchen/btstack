@@ -1131,15 +1131,15 @@ void l2cap_accept_connection(uint16_t local_cid){
     l2cap_run();
 }
 
-void l2cap_decline_connection(uint16_t local_cid, uint8_t reason){
-    log_info("L2CAP_DECLINE_CONNECTION local_cid 0x%x, reason %x", local_cid, reason);
+void l2cap_decline_connection(uint16_t local_cid){
+    log_info("L2CAP_DECLINE_CONNECTION local_cid 0x%x", local_cid);
     l2cap_channel_t * channel = l2cap_get_channel_for_local_cid( local_cid);
     if (!channel) {
         log_error( "l2cap_decline_connection called but local_cid 0x%x not found", local_cid);
         return;
     }
     channel->state  = L2CAP_STATE_WILL_SEND_CONNECTION_RESPONSE_DECLINE;
-    channel->reason = reason;
+    channel->reason = 0x04; // no resources available
     l2cap_run();
 }
 

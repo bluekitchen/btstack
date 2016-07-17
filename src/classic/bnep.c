@@ -1193,7 +1193,7 @@ static int bnep_hci_event_handler(uint8_t *packet, uint16_t size)
 
             if (channel) {                
                 log_error("INCOMING_CONNECTION (l2cap_cid 0x%02x) for PSM_BNEP => decline - channel already exists", l2cap_cid);
-                l2cap_decline_connection(l2cap_cid,  0x04);    // no resources available
+                l2cap_decline_connection(l2cap_cid);
                 return 1;
             }
             
@@ -1202,7 +1202,7 @@ static int bnep_hci_event_handler(uint8_t *packet, uint16_t size)
 
             if (!channel) {
                 log_error("INCOMING_CONNECTION (l2cap_cid 0x%02x) for PSM_BNEP => decline - no memory left", l2cap_cid);
-                l2cap_decline_connection(l2cap_cid,  0x04);    // no resources available
+                l2cap_decline_connection(l2cap_cid);
                 return 1;
             }
 

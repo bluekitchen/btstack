@@ -244,7 +244,7 @@ void l2cap_accept_connection(uint16_t local_cid);
 /** 
  * @brief Deny incoming L2CAP connection.
  */
-void l2cap_decline_connection(uint16_t local_cid, uint8_t reason);
+void l2cap_decline_connection(uint16_t local_cid);
 
 /** 
  * @brief Check if outgoing buffer is available and that there's space on the Bluetooth module
