@@ -1729,7 +1729,7 @@ static void event_handler(uint8_t *packet, int size){
         case HCI_EVENT_HARDWARE_ERROR:
             log_error("Hardware Error: 0x%02x", packet[2]);
             if (hci_stack->hardware_error_callback){
-                (*hci_stack->hardware_error_callback)();
+                (*hci_stack->hardware_error_callback)(packet[2]);
             } else {
                 // if no special requests, just reboot stack
                 hci_power_control_off();
@@ -3617,7 +3617,7 @@ int hci_get_sco_packet_length(void){
 /**
  * @brief Set callback for Bluetooth Hardware Error
  */
-void hci_set_hardware_error_callback(void (*fn)(void)){
+void hci_set_hardware_error_callback(void (*fn)(uint8_t error)){
     hci_stack->hardware_error_callback = fn;
 }
 
