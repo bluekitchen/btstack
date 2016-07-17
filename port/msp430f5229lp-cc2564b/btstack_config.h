@@ -6,7 +6,6 @@
 #define __BTSTACK_CONFIG
 
 // Port related features
-#define HAVE_INIT_SCRIPT
 #define HAVE_EMBEDDED_TICK
 
 // BTstack features that can be enabled
