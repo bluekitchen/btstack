@@ -1560,18 +1560,20 @@ uint8_t l2cap_register_service(btstack_packet_handler_t service_packet_handler, 
     return 0;
 }
 
-void l2cap_unregister_service(uint16_t psm){
+uint8_t l2cap_unregister_service(uint16_t psm){
     
     log_info("L2CAP_UNREGISTER_SERVICE psm 0x%x", psm);
 
     l2cap_service_t *service = l2cap_get_service(psm);
-    if (!service) return;
+    if (!service) return L2CAP_SERVICE_DOES_NOT_EXIST;
     btstack_linked_list_remove(&l2cap_services, (btstack_linked_item_t *) service);
     btstack_memory_l2cap_service_free(service);
     
     // disable page scan when no services registered
-    if (!btstack_linked_list_empty(&l2cap_services)) return;
-    gap_connectable_control(0);
+    if (btstack_linked_list_empty(&l2cap_services)) {
+        gap_connectable_control(0);
+    }
+    return 0;
 }
 
 // Bluetooth 4.0 - allows to register handler for Attribute Protocol and Security Manager Protocol
