@@ -36,7 +36,7 @@
  */
 
 /*
- * file.h
+ * sbc_decoder.h
  *
  */
 

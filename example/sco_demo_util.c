@@ -39,11 +39,12 @@
  * sco_demo_util.c - send/receive test data via SCO, used by hfp_*_demo and hsp_*_demo
  */
 
+
+#include <stdio.h>
+
 #include "sco_demo_util.h"
 #include "btstack_debug.h"
 #include "sbc_decoder.h"
-
-#include <stdio.h>
 
 // configure test mode
 #define SCO_DEMO_MODE_SINE		0
