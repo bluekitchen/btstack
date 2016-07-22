@@ -93,7 +93,7 @@ void btstack_sbc_encoder_dump_context(void){
 }
 
 
-int btstack_sbc_encoder_num_subband_samples(void){
+int btstack_sbc_encoder_num_audio_samples(void){
     SBC_ENC_PARAMS * context = &((bludroid_encoder_state_t *)sbc_state_singelton->encoder_state)->context;
     return context->s16NumOfSubBands * context->s16NumOfBlocks * context->s16NumOfChannels;
 }

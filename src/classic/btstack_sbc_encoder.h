@@ -65,7 +65,7 @@ void btstack_sbc_encoder_process_data(int16_t * input_buffer);
 uint8_t * btstack_sbc_encoder_sbc_buffer(void);
 uint16_t  btstack_sbc_encoder_sbc_buffer_length(void);
 
-int  btstack_sbc_encoder_num_subband_samples(void);
+int  btstack_sbc_encoder_num_audio_samples(void);
 void btstack_sbc_encoder_dump_context(void);
 
 #if defined __cplusplus

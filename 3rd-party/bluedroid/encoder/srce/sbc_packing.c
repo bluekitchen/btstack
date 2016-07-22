@@ -82,8 +82,14 @@ void EncPacking(SBC_ENC_PARAMS *pstrEncParams)
 #endif
 
     pu8PacketPtr    = pstrEncParams->pu8NextPacket;    /*Initialize the ptr*/
-
-    *pu8PacketPtr++ = (UINT8)0xAD;  /*Sync word*/
+    
+    /* BK4BTSTACK_CHANGE START */
+    if (pstrEncParams->mSBCEnabled){
+        *pu8PacketPtr++ = (UINT8)0xAD;  /*Sync word*/
+    } else {
+        *pu8PacketPtr++ = (UINT8)0x9C;  /*Sync word*/
+    }
+    /* BK4BTSTACK_CHANGE END */ 
     *pu8PacketPtr++=(UINT8)(pstrEncParams->FrameHeader);
 
     *pu8PacketPtr = (UINT8)(pstrEncParams->s16BitPool & 0x00FF);
