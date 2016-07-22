@@ -108,7 +108,7 @@ int main(int argc, const char * argv[]){
             usb_path_len++;
             printf("%02x ", port);
             if (!delimiter) break;
-            if (*delimiter != ':') break;
+            if (*delimiter != ':' && *delimiter != '-') break;
             port_str = delimiter+1;
         }
         printf("\n");
