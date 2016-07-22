@@ -246,6 +246,18 @@ static l2cap_channel_t * l2cap_get_channel_for_local_cid(uint16_t local_cid){
     return NULL;
 }
 
+static l2cap_channel_t * l2cap_get_le_channel_for_address_and_addr_type(bd_addr_t address, bd_addr_type_t address_type){
+    btstack_linked_list_iterator_t it;    
+    btstack_linked_list_iterator_init(&it, &l2cap_le_channels);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        l2cap_channel_t * channel = (l2cap_channel_t *) btstack_linked_list_iterator_next(&it);
+        if (channel->address_type != address_type)  continue;
+        if (bd_addr_cmp(channel->address, address)) continue;
+        return channel;
+    } 
+    return NULL;
+}
+
 ///
 
 void l2cap_request_can_send_now_event(uint16_t local_cid){
@@ -715,6 +727,12 @@ static void l2cap_run(void){
         l2cap_channel_t * channel = (l2cap_channel_t *) btstack_linked_list_iterator_next(&it);
         // log_info("l2cap_run: channel %p, state %u, var 0x%02x", channel, channel->state, channel->state_var);
         switch (channel->state){
+            case L2CAP_STATE_WILL_SEND_LE_CONNECTION_REQUEST:
+                if (!hci_can_send_acl_packet_now(channel->con_handle)) break;
+                channel->state = L2CAP_STATE_WAIT_LE_CONNECTION_RESPONSE;
+                // le psm, source cid, mtu, mps, initial credits
+                l2cap_send_le_signaling_packet( channel->con_handle, LE_CREDIT_BASED_CONNECTION_REQUEST, channel->local_sig_id, channel->psm, channel->local_cid, 23, 23, 1);
+                break;                
             default:
                 break;
         }
@@ -778,12 +796,14 @@ static void l2cap_handle_connection_complete(hci_con_handle_t con_handle, l2cap_
 }
 
 #ifdef ENABLE_BLE
-static void l2cap_handle_le_connection_complete(hci_con_handle_t con_handle, l2cap_channel_t * channel){
+static void l2cap_handle_le_connection_complete(l2cap_channel_t * channel, uint8_t status, hci_con_handle_t con_handle){
     if (channel->state == L2CAP_STATE_WAIT_CONNECTION_COMPLETE || channel->state == L2CAP_STATE_WILL_SEND_CREATE_CONNECTION) {
         log_info("l2cap_le_handle_connection_complete expected state");
+        // TODO: bail if status != 0
+
         // success, start l2cap handshake
         channel->con_handle = con_handle;
-        // ...
+        channel->state = L2CAP_STATE_WILL_SEND_LE_CONNECTION_REQUEST;
     }
 }
 #endif
@@ -1043,6 +1063,28 @@ static void l2cap_hci_event_handler(uint8_t packet_type, uint16_t cid, uint8_t *
             }
             break;           
 
+#ifdef ENABLE_BLE
+        case HCI_EVENT_LE_META:
+            switch (packet[2]){
+                int addr_type;
+                l2cap_channel_t * channel;
+                case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
+                    // Connection management
+                    reverse_bd_addr(&packet[8], address);
+                    addr_type = (bd_addr_type_t)packet[7];
+                    log_info("L2CAP - LE Connection_complete (status=%u) type %u, %s", packet[3], addr_type, bd_addr_to_str(address));
+                    // get l2cap_channel
+                    // also pass in status
+                    channel = l2cap_get_le_channel_for_address_and_addr_type(address, addr_type);
+                    if (!channel) break;
+                    l2cap_handle_le_connection_complete(channel, packet[3], little_endian_read_16(packet, 4));
+                    break;
+                default:
+                    break;
+            }
+            break;
+#endif
+
         case GAP_EVENT_SECURITY_LEVEL:
             handle = little_endian_read_16(packet, 2);
             log_info("l2cap - security level update");
@@ -1081,7 +1123,7 @@ static void l2cap_hci_event_handler(uint8_t packet_type, uint16_t cid, uint8_t *
                 } 
             }
             break;
-            
+
         default:
             break;
     }
@@ -1694,7 +1736,7 @@ uint8_t l2cap_le_create_channel(btstack_packet_handler_t packet_handler, bd_addr
 
     log_info("L2CAP_LE_CREATE_CHANNEL addr %s psm 0x%x mtu %u", bd_addr_to_str(address), psm, mtu);
     
-    l2cap_channel_t * channel = l2cap_create_channel_entry(packet_handler, address, BD_ADDR_TYPE_CLASSIC, psm, mtu, LEVEL_0);
+    l2cap_channel_t * channel = l2cap_create_channel_entry(packet_handler, address, address_type, psm, mtu, LEVEL_0);
     if (!channel) {
         return BTSTACK_MEMORY_ALLOC_FAILED;
     }
@@ -1714,7 +1756,7 @@ uint8_t l2cap_le_create_channel(btstack_packet_handler_t packet_handler, bd_addr
 
     if (conn){
         log_info("l2cap_le_create_channel, hci connection already exists");
-        l2cap_handle_le_connection_complete(conn->con_handle, channel);
+        l2cap_handle_le_connection_complete(channel, 0, conn->con_handle);
     } else {
         
         //
