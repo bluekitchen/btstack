@@ -184,6 +184,7 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
     switch (buffer){
         case 'a':
             printf("Creating connection to %s\n", bd_addr_to_str(pts_address));
+            gap_advertisements_enable(0);
             l2cap_le_create_channel(&app_packet_handler,pts_address, pts_address_type, psm_x, buffer_x, sizeof(buffer_x), 1, LEVEL_0, &cid_x);
             break;
 
@@ -219,9 +220,10 @@ int btstack_main(int argc, const char * argv[]){
 
     btstack_stdin_setup(stdin_process);
 
-    gap_random_address_set_update_period(5000);
-    gap_random_address_set_mode(GAP_RANDOM_ADDRESS_RESOLVABLE);
+    // gap_random_address_set_update_period(5000);
+    // gap_random_address_set_mode(GAP_RANDOM_ADDRESS_RESOLVABLE);
     gap_advertisements_set_data(sizeof(adv_general_discoverable), adv_general_discoverable);
+    gap_advertisements_enable(1);
     sm_set_io_capabilities(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);
     sm_set_authentication_requirements(0);
 

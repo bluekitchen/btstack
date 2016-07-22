@@ -1723,7 +1723,7 @@ uint8_t l2cap_le_create_channel(btstack_packet_handler_t packet_handler, bd_addr
 
         // start connection
         uint8_t res = gap_auto_connection_start(address_type, address);
-        if (!res){
+        if (res){
             // discard channel object
             btstack_linked_list_remove(&l2cap_channels, (btstack_linked_item_t *) channel);
             btstack_memory_l2cap_channel_free(channel);
