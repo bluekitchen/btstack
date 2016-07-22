@@ -118,7 +118,7 @@ typedef uint8_t sm_key_t[16];
 
 #define L2CAP_SERVICE_ALREADY_REGISTERED                   0x69
 #define L2CAP_DATA_LEN_EXCEEDS_REMOTE_MTU                  0x6A
-#define L2CAP_SERVICE_NOT_FOUND                            0x6B
+#define L2CAP_SERVICE_DOES_NOT_EXIST                       0x6B
 #define L2CAP_LOCAL_CID_INVALID                            0x6C
     
 #define RFCOMM_MULTIPLEXER_STOPPED                         0x70

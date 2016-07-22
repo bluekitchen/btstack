@@ -303,6 +303,7 @@ typedef enum {
     SM_INITIATOR_PH3_SEND_START_ENCRYPTION,
 
     // LE Secure Connections
+    SM_SC_RECEIVED_LTK_REQUEST,
     SM_SC_SEND_PUBLIC_KEY_COMMAND,
     SM_SC_W4_PUBLIC_KEY_COMMAND,
     SM_SC_W2_GET_RANDOM_A,
@@ -569,7 +570,7 @@ typedef struct {
     void (*local_version_information_callback)(uint8_t * local_version_information);
 
     // hardware error callback
-    void (*hardware_error_callback)(void);
+    void (*hardware_error_callback)(uint8_t error);
 
     // basic configuration
     const char *       local_name;
@@ -581,8 +582,8 @@ typedef struct {
     uint8_t            ssp_auto_accept;
     
     // single buffer for HCI packet assembly + additional prebuffer for H4 drivers
-    uint8_t   hci_packet_buffer_prefix[HCI_OUTGOING_PRE_BUFFER_SIZE];
-    uint8_t   hci_packet_buffer[HCI_PACKET_BUFFER_SIZE]; // opcode (16), len(8)
+    uint8_t   * hci_packet_buffer;
+    uint8_t   hci_packet_buffer_data[HCI_OUTGOING_PRE_BUFFER_SIZE + HCI_PACKET_BUFFER_SIZE];
     uint8_t   hci_packet_buffer_reserved;
     uint16_t  acl_fragmentation_pos;
     uint16_t  acl_fragmentation_total_size;
@@ -712,7 +713,7 @@ void hci_set_link_key_db(btstack_link_key_db_t const * link_key_db);
 /**
  * @brief Set callback for Bluetooth Hardware Error
  */
-void hci_set_hardware_error_callback(void (*fn)(void));
+void hci_set_hardware_error_callback(void (*fn)(uint8_t error));
 
 /**
  * @brief Set callback for local information from Bluetooth controller right after HCI Reset

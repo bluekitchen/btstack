@@ -145,7 +145,7 @@ OPCODE(OGF_BTSTACK, L2CAP_ACCEPT_CONNECTION), "2"
 
 /**
  * @param source_cid (16)
- * @param reason
+ * @param reason (deprecated)
  */
 const hci_cmd_t l2cap_decline_connection_cmd = {
 OPCODE(OGF_BTSTACK, L2CAP_DECLINE_CONNECTION), "21"

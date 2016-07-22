@@ -721,8 +721,8 @@ void BTstackManager::setPublicBdAddr(bd_addr_t addr){
     memcpy(public_bd_addr, addr ,6);
 }
 
-void bluetooth_hardware_error(){
-    printf("Bluetooth Hardware Error event. Restarting...\n\n\n");
+void bluetooth_hardware_error(uint8_t error){
+    printf("Bluetooth Hardware Error event 0x%02x. Restarting...\n\n\n", error);
 #ifdef __AVR__
     wdt_enable(WDTO_15MS);
     // wait for watchdog to trigger

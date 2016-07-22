@@ -112,10 +112,12 @@ static void chipset_set_baudrate_command(uint32_t baudrate, uint8_t *hci_cmd_buf
     hci_cmd_buffer[6] = 0;
 }
 
-#if 0
 static void chipset_set_bd_addr_command(bd_addr_t addr, uint8_t *hci_cmd_buffer){
+    hci_cmd_buffer[0] = 0x06;
+    hci_cmd_buffer[1] = 0xFC;
+    hci_cmd_buffer[2] = 0x06;
+    reverse_bd_addr(addr, &hci_cmd_buffer[3]);
 }
-#endif
 
 // Output Power control from: http://e2e.ti.com/support/low_power_rf/f/660/p/134853/484767.aspx
 #define NUM_POWER_LEVELS 16
@@ -284,7 +286,7 @@ static const btstack_chipset_t btstack_chipset_cc256x = {
     chipset_init,
     chipset_next_command,
     chipset_set_baudrate_command,
-    NULL,   // set bd addr command not available or impemented
+    chipset_set_bd_addr_command,
 };
 
 const btstack_chipset_t * btstack_chipset_cc256x_instance(void){
