@@ -272,7 +272,7 @@ static void handle_advertising_event(uint8_t * packet, int size){
     for (ad_iterator_init(&context, adv_size, (uint8_t *)adv_data) ; ad_iterator_has_more(&context) ; ad_iterator_next(&context)){
         uint8_t data_type = ad_iterator_get_data_type(&context);
         // uint8_t size      = ad_iterator_get_data_len(&context);
-        const uint8_t * data    = ad_iterator_get_data(&context);
+        const uint8_t * data = ad_iterator_get_data(&context);
         switch (data_type){
             case 1: // AD_FLAGS
                 if (*data & 1) printf("LE Limited Discoverable Mode, ");
