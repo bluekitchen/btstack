@@ -8,6 +8,16 @@ btstack_linked_item_t itemB;
 btstack_linked_item_t itemC;
 btstack_linked_item_t itemD;
 
+TEST_GROUP(LinkedListEmpty){
+    void setup(void){
+        testList = NULL;
+    }
+};
+
+TEST(LinkedListEmpty, CountAll){
+    CHECK_EQUAL(0, btstack_linked_list_count(&testList)); 
+}
+
 TEST_GROUP(LinkedList){
     void setup(void){
         testList = NULL;
@@ -17,6 +27,10 @@ TEST_GROUP(LinkedList){
         btstack_linked_list_add(&testList, &itemA);
     }
 };
+
+TEST(LinkedList, CountAll){
+    CHECK_EQUAL(4, btstack_linked_list_count(&testList)); 
+}
 
 TEST(LinkedList, Iterator){
     btstack_linked_list_iterator_t it;
