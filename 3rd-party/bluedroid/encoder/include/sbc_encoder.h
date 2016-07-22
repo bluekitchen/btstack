@@ -161,7 +161,9 @@ typedef struct SBC_ENC_PARAMS_TAG
     SINT16 s16AllocationMethod;                     /* loudness or SNR*/
     SINT16 s16BitPool;                              /* 16*numOfSb for mono & dual;
                                                        32*numOfSb for stereo & joint stereo */
-    UINT16 u16BitRate;
+    /* BK4BTSTACK_CHANGE START */
+    // UINT16 u16BitRate;
+    /* BK4BTSTACK_CHANGE END */
     UINT8   u8NumPacketToEncode;                    /* number of sbc frame to encode. Default is 1 */
 #if (SBC_JOINT_STE_INCLUDED == TRUE)
     SINT16 as16Join[SBC_MAX_NUM_OF_SUBBANDS];       /*1 if JS, 0 otherwise*/

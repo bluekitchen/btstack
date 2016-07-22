@@ -47,40 +47,82 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "sbc_encoder.h"
 
-static SBC_ENC_PARAMS context;
-static int16_t data[8*16*2];
+#include "btstack.h"
+#include "btstack_sbc_encoder.h"
+
+static int16_t read_buffer[8*16*2];
 static int num_data_bytes = 0;
-static uint8_t sbc_packet[1000];
-static uint8_t buf[4];
-    
-static uint16_t little_endian_read_16(const uint8_t * buffer, int pos){
-    return ((uint16_t) buffer[pos]) | (((uint16_t)buffer[(pos)+1]) << 8);
+static int byte_rate = 0;
+static int sampling_frequency = -1;
+static int channel_mode = -1;
+
+
+#define MSBC_FRAME_SIZE 57
+
+static btstack_sbc_encoder_state_t state;
+static uint8_t msbc_padding[] = {0,0,0};
+
+static uint8_t msbc_buffer[2*(MSBC_FRAME_SIZE + sizeof(msbc_padding))];
+static int msbc_buffer_offset = 0; 
+
+void hfp_msbc_init(void);
+int hfp_msbc_can_encode_audio(void);
+void hfp_msbc_encode_audio_frame(int16_t * pcm_samples);
+void hfp_msbc_read_encoded_stream(uint8_t * buf, int size);
+
+void hfp_msbc_init(void){
+    btstack_sbc_encoder_init(&state, SBC_MODE_mSBC, 16, 8, 0, 16000, 26);
+    msbc_buffer_offset = 0;
 }
 
-static uint32_t little_endian_read_32(const uint8_t * buffer, int pos){
-    return ((uint32_t) buffer[pos]) | (((uint32_t)buffer[(pos)+1]) << 8) | (((uint32_t)buffer[(pos)+2]) << 16) | (((uint32_t) buffer[(pos)+3]) << 24);
+int hfp_msbc_can_encode_audio(void){
+    return sizeof(msbc_buffer) - msbc_buffer_offset >= MSBC_FRAME_SIZE + sizeof(msbc_padding); 
+}
+
+void hfp_msbc_encode_audio_frame(int16_t * pcm_samples){
+    if (!hfp_msbc_can_encode_audio()) return;
+
+    btstack_sbc_encoder_process_data(pcm_samples);
+    
+    memcpy(msbc_buffer + msbc_buffer_offset, msbc_padding, sizeof(msbc_padding));
+    msbc_buffer_offset += sizeof(msbc_padding);
+
+    memcpy(msbc_buffer + msbc_buffer_offset, btstack_sbc_encoder_sbc_buffer(), MSBC_FRAME_SIZE);
+    msbc_buffer_offset += MSBC_FRAME_SIZE;
+    msbc_buffer_free_bytes = sizeof(msbc_buffer) - msbc_buffer_offset;
+}
+
+void hfp_msbc_read_encoded_stream(uint8_t * buf, int size){
+    int bytes_to_copy = size;
+    if (size > msbc_buffer_offset){
+        bytes_to_copy = msbc_buffer_offset;
+        log_error("sbc frame storage is smaller then the output buffer");
+    }
+
+    memcpy(buf, msbc_buffer, bytes_to_copy);
+    memmv(msbc_buffer, msbc_buffer + bytes_to_copy, bytes_to_copy);
+    msbc_buffer_offset -= bytes_to_copy;
 }
 
 
 static uint16_t little_endian_fread_16(FILE * fd){
+    uint8_t buf[2];
     fread(&buf, 1, 2, fd);
     return little_endian_read_16(buf, 0);
 }
 
 
 static uint32_t little_endian_fread_32(FILE * fd){
+    uint8_t buf[4];
     fread(&buf, 1, 4, fd);
     return little_endian_read_32(buf, 0);
 }
 
-static void read_wav_header(FILE * wav_fd, SBC_ENC_PARAMS *context){
+static void read_wav_header(FILE * wav_fd){
     /* write RIFF header */
     uint8_t buf[10];
-    fread(&buf, 1, 4, wav_fd);
-    buf[4] = 0;
-    // printf("%s\n", buf ); // RIFF
+    fread(&buf, 1, 4, wav_fd); buf[4] = 0; // RIFF
     
     little_endian_fread_32(wav_fd); // 36 + bytes_per_sample * num_samples  * frame_count
     
@@ -98,28 +140,13 @@ static void read_wav_header(FILE * wav_fd, SBC_ENC_PARAMS *context){
     little_endian_fread_16(wav_fd);
     
     // printf("fmt_length %d == 16, format %d == 1\n", fmt_length, fmt_format_tag);
-
-    context->s16NumOfChannels = little_endian_fread_16(wav_fd);
-    if (context->s16NumOfChannels == 1){
-        context->s16ChannelMode = SBC_MONO;
-    } else {
-        context->s16ChannelMode = SBC_STEREO;
-    }
-
-    int sample_rate =  little_endian_fread_32(wav_fd);
-
-    if (sample_rate == 16000)
-        context->s16SamplingFreq = SBC_sf16000;
-    else if (sample_rate == 32000)
-        context->s16SamplingFreq = SBC_sf32000;
-    else if (sample_rate == 44100)
-        context->s16SamplingFreq = SBC_sf44100;
-    else
-        context->s16SamplingFreq = SBC_sf48000;
-
-    int byte_rate = little_endian_fread_32(wav_fd);
-    context->u16BitRate = byte_rate * 8;
-
+    // chanel mode:
+    channel_mode = little_endian_fread_16(wav_fd);
+    // sampling frequency:
+    sampling_frequency = little_endian_fread_32(wav_fd);
+    // byte rate:
+    byte_rate = little_endian_fread_32(wav_fd);
+    
     // int block_align = 
     little_endian_fread_16(wav_fd);    
     // int bits_per_sample = 
@@ -131,50 +158,16 @@ static void read_wav_header(FILE * wav_fd, SBC_ENC_PARAMS *context){
     num_data_bytes = little_endian_fread_32(wav_fd); 
 }
 
-static void read_audio_frame(FILE * wav_fd, SBC_ENC_PARAMS * context){
-    int num_samples = context->s16NumOfSubBands * context->s16NumOfBlocks * context->s16NumOfChannels;
+static void read_audio_frame(FILE * wav_fd){
     int i;
-    for (i=0; i < num_samples; i++){
-        data[i] = little_endian_fread_16(wav_fd);  
+    for (i=0; i < btstack_sbc_encoder_num_subband_samples(); i++){
+        read_buffer[i] = little_endian_fread_16(wav_fd);  
     }
-    context->ps16PcmBuffer = data;
 }
 
-static int sbc_num_frames(SBC_ENC_PARAMS * context){
-    int num_subband_samples = context->s16NumOfSubBands * context->s16NumOfBlocks * context->s16NumOfChannels;
+static int sbc_num_frames(){
     int num_all_samples = num_data_bytes / 2;
-    return num_all_samples / num_subband_samples; 
-}
-
-static void write_sbc_file(FILE * sbc_fd, SBC_ENC_PARAMS * context){
-    // int i;
-    // for (i=0;i<context->u16PacketLength;i++){
-    //     printf("%02x ", context->pu8Packet[i]);
-    // }
-    // printf("\n");
-    printf("write %u bytes\n", context->u16PacketLength);
-    fwrite(context->pu8Packet, 1, context->u16PacketLength, sbc_fd);
-}
-
-static void SBC_Encoder_Context_Init(SBC_ENC_PARAMS * context, FILE * fd, int blocks, int subbands, int allmethod, int bitpool, int chmode, int mSBCEnabled){
-
-    if (mSBCEnabled){
-        blocks    = 15;
-        subbands  = 8;
-        allmethod = SBC_LOUDNESS;
-        bitpool   = 26;
-        chmode = SBC_MONO;
-    }
-
-    context->s16NumOfSubBands = subbands;                       
-    context->s16NumOfBlocks = blocks;                          
-    context->s16AllocationMethod = allmethod;                     
-    context->s16BitPool = bitpool;  
-    context->pu8Packet = sbc_packet;
-    context->s16ChannelMode = chmode;
-    context->mSBCEnabled = mSBCEnabled;
-    
-    read_wav_header(fd, context);
+    return num_all_samples / btstack_sbc_encoder_num_subband_samples(); 
 }
 
 int main (int argc, const char * argv[]){
@@ -197,22 +190,22 @@ int main (int argc, const char * argv[]){
         return -1;
     }
     
-    SBC_Encoder_Context_Init(&context, wav_fd, SBC_BLOCK_3, SUB_BANDS_4, SBC_LOUDNESS, 31, SBC_MONO, 1);
-    SBC_Encoder_Init(&context);
-
-    printf("channels %d, subbands %d, blocks %d\n", context.s16NumOfChannels, context.s16NumOfSubBands, context.s16NumOfBlocks);
-    int num_frames = sbc_num_frames(&context);
+    
+    read_wav_header(wav_fd);
+    btstack_sbc_encoder_init(&state, SBC_MODE_STANDARD, 16, 4, channel_mode, sampling_frequency, 31);
+   
+    int num_frames = sbc_num_frames();
     int frame_count = 0;
-    printf("num frames %d\n", num_frames);
+    
     while (frame_count < num_frames){
-        read_audio_frame(wav_fd, &context);
-        SBC_Encoder(&context);
-        if (context.mSBCEnabled){
-            context.pu8Packet[0] = 0xad;
-        }
-        write_sbc_file(sbc_fd, &context);
+        read_audio_frame(wav_fd);
+        
+        btstack_sbc_encoder_process_data(read_buffer);
+        fwrite(btstack_sbc_encoder_sbc_buffer(), 1, btstack_sbc_encoder_sbc_buffer_length(), sbc_fd);
         frame_count++;
     }
+    btstack_sbc_encoder_dump_context();
+
     printf("Done, frame count %d\n", frame_count);
     fclose(wav_fd);
     fclose(sbc_fd);

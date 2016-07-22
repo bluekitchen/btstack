@@ -76,6 +76,9 @@ SBC_DECODER += \
 	${BTSTACK_ROOT}/src/classic/sbc_plc.c \
 	${BTSTACK_ROOT}/src/classic/sbc_decoder_bludroid.c \
 
+SBC_ENCODER += \
+	${BTSTACK_ROOT}/src/classic/sbc_encoder_bludroid.c \
+
 EXAMPLES = 					\
 	ancs_client_demo		\
 	gap_dedicated_bonding	\
@@ -204,7 +207,7 @@ hsp_ag_demo: ${CORE_OBJ} ${COMMON_OBJ} ${SDP_CLIENT} ${SBC_DECODER_OBJ} sco_demo
 hfp_ag_demo: ${CORE_OBJ} ${COMMON_OBJ} ${SDP_CLIENT} ${SBC_DECODER_OBJ} sco_demo_util.o hfp.o hfp_gsm_model.o hfp_ag.o hfp_ag_demo.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-hfp_hf_demo: ${CORE_OBJ} ${COMMON_OBJ} ${SDP_CLIENT} ${SBC_DECODER_OBJ} sco_demo_util.o hfp.o hfp_hf.o hfp_hf_demo.c
+hfp_hf_demo: ${CORE_OBJ} ${COMMON_OBJ} ${SDP_CLIENT} ${SBC_DECODER_OBJ} ${SBC_ENCODER_OBJ} sco_demo_util.o hfp.o hfp_hf.o hfp_hf_demo.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 clean:

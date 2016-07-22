@@ -11,6 +11,9 @@ SBC_DECODER += \
 	${BTSTACK_ROOT}/src/classic/sbc_plc.c \
 	${BTSTACK_ROOT}/src/classic/sbc_decoder_bludroid.c \
 
+SBC_ENCODER += \
+	${BTSTACK_ROOT}/src/classic/sbc_encoder_bludroid.c \
+
 SBC_DECODER_OBJ  = $(SBC_DECODER:.c=.o) 
 SBC_ENCODER_OBJ  = $(SBC_ENCODER:.c=.o)
 
@@ -37,7 +40,7 @@ all: ${SBC_TESTS}
 sbc_decoder_test: ${SBC_DECODER_OBJ} ${COMMON_OBJ} sbc_decoder_test.o  
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-sbc_encoder_test: ${SBC_ENCODER_OBJ} sbc_encoder_test.o  
+sbc_encoder_test: ${SBC_ENCODER_OBJ} ${COMMON_OBJ} sbc_encoder_test.o  
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 test: all
