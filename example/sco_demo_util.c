@@ -45,6 +45,9 @@
 #include "sco_demo_util.h"
 #include "btstack_debug.h"
 #include "btstack_sbc_decoder.h"
+#include "btstack_sbc_encoder.h"
+#include "hfp_msbc.h"
+#include "hfp.h"
 
 // configure test mode
 #define SCO_DEMO_MODE_SINE		0
@@ -58,6 +61,8 @@
 
 #ifdef HAVE_POSIX_FILE_IO
 #define SCO_WAV_FILENAME "sco_input.wav"
+#define SCO_MSBC_FILENAME "sco_output.msbc"
+
 #define SCO_WAV_DURATION_IN_SECONDS 30
 #endif
 
@@ -85,10 +90,11 @@ typedef struct wav_writer_state {
 
 static int dump_data = 1;
 
-static int phase;
+static int phase = 0;
 static int count_sent = 0;
 static int count_received = 0;
-static uint8_t negotiated_codec = 0; // CVSD
+static uint8_t negotiated_codec = HFP_CODEC_CVSD; 
+static int num_audio_frames = 0;
 
 #if SCO_DEMO_MODE == SCO_DEMO_MODE_SINE
 // input signal: pre-computed sine wave, 160 Hz
@@ -180,6 +186,25 @@ static void handle_pcm_data(int16_t * data, int num_samples, int num_channels, i
     }
 }
 
+static void sco_demo_generate_sine(int16_t * pcm_samples){
+    int i;
+    for (i=0; i < hfp_msbc_num_audio_samples_per_frame(); i++){
+        uint8_t buf[2];
+        buf[0] = sine[phase++];
+        if (phase >= sizeof(sine)) phase = 0;
+        buf[1] = sine[phase++];
+        if (phase >= sizeof(sine)) phase = 0;
+        pcm_samples[i] = little_endian_read_16(buf, 0);  
+    }
+}
+
+static void sco_demo_fill_audio_frame(void){
+    if (!hfp_msbc_can_encode_audio_frame_now()) return;
+    int16_t read_buffer[8*16*2];
+    sco_demo_generate_sine(read_buffer);
+    hfp_msbc_encode_audio_frame(read_buffer);
+    num_audio_frames++;
+}
 
 static void sco_demo_init_mSBC(void){
     wav_writer_state.wav_file = wav_init(SCO_WAV_FILENAME);
@@ -195,6 +220,10 @@ static void sco_demo_init_mSBC(void){
     num_samples_to_write = num_samples;
     
     write_wav_header(wav_writer_state.wav_file, sample_rate, num_channels, num_samples, bytes_per_sample);
+
+    wav_init(SCO_MSBC_FILENAME);
+    hfp_msbc_init();
+    sco_demo_fill_audio_frame();
 }
 
 static void sco_demo_init_CVSD(void){
@@ -247,7 +276,7 @@ void sco_demo_close(void){
     
 #if 0
     printf("SCO Demo: closing wav file\n");
-    if (negotiated_codec == 0x02){
+    if (negotiated_codec == HFP_CODEC_MSBC){
         wav_writer_state_t * writer_state = (wav_writer_state_t*) decoder_state.context;
         if (!writer_state->wav_file) return;
         rewind(writer_state->wav_file);
@@ -265,12 +294,20 @@ void sco_demo_set_codec(uint8_t codec){
     negotiated_codec = codec;
 #if SCO_DEMO_MODE == SCO_DEMO_MODE_SINE
 #ifdef SCO_WAV_FILENAME
-    if (negotiated_codec == 0x02){
+    if (negotiated_codec == HFP_CODEC_MSBC){
         sco_demo_init_mSBC();
     } else {
         sco_demo_init_CVSD();
     }
 #endif
+#ifdef SCO_SBC_FILENAME
+    if (negotiated_codec == HFP_CODEC_MSBC){
+        sco_demo_init_mSBC();
+    } else {
+        sco_demo_init_CVSD();
+    }
+#endif
+
 #endif
 }
 
@@ -346,26 +383,36 @@ void sco_demo_send(hci_con_handle_t sco_handle){
     little_endian_store_16(sco_packet, 0, sco_handle);
     // set len
     sco_packet[2] = sco_payload_length;
-    const int frames_per_packet = sco_payload_length;    // for 8-bit data. for 16-bit data it's /2
+    const int audio_samples_per_packet = sco_payload_length;    // for 8-bit data. for 16-bit data it's /2
 
 #if SCO_DEMO_MODE == SCO_DEMO_MODE_SINE
-    int i;
-    for (i=0;i<frames_per_packet;i++){
-        sco_packet[3+i] = sine[phase];
-        phase++;
-        if (phase >= sizeof(sine)) phase = 0;
+    if (negotiated_codec == HFP_CODEC_MSBC){
+
+        if (hfp_msbc_num_bytes_in_stream() < sco_payload_length){
+            log_error("mSBC stream is empty.");
+        }
+        hfp_msbc_read_from_stream(sco_packet + 3, sco_payload_length);
+        sco_demo_fill_audio_frame();
+    } else {
+        int i;
+        for (i=0;i<audio_samples_per_packet;i++){
+            sco_packet[3+i] = sine[phase];
+            phase++;
+            if (phase >= sizeof(sine)) phase = 0;
+        }
     }
 #else
 #if SCO_DEMO_MODE == SCO_DEMO_MODE_ASCII
-    memset(&sco_packet[3], phase++, frames_per_packet);
+    memset(&sco_packet[3], phase++, audio_samples_per_packet);
     if (phase > 'z') phase = 'a';
 #else
     int j;
-    for (j=0;j<frames_per_packet;j++){
+    for (j=0;j<audio_samples_per_packet;j++){
         sco_packet[3+j] = phase++;
     }
 #endif
 #endif
+
     hci_send_sco_packet_buffer(sco_packet_length);
 
     // request another send event
@@ -390,7 +437,7 @@ void sco_demo_receive(uint8_t * packet, uint16_t size){
 
 #if SCO_DEMO_MODE == SCO_DEMO_MODE_SINE
 #ifdef SCO_WAV_FILENAME
-    if (negotiated_codec == 0x02){
+    if (negotiated_codec == HFP_CODEC_MSBC){
         sco_demo_receive_mSBC(packet, size);
     } else {
         sco_demo_receive_CVSD(packet, size);

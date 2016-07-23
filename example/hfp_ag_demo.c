@@ -72,7 +72,9 @@ const char hfp_ag_service_name[] = "BTstack HFP AG Test";
 // CC256x
 bd_addr_t device_addr = { 0xD0, 0x39, 0x72, 0xCD, 0x83, 0x45};
 
-static uint8_t codecs[1] = {HFP_CODEC_CVSD};
+static uint8_t codecs[] = {HFP_CODEC_CVSD, HFP_CODEC_MSBC};
+static uint8_t negotiated_codec = HFP_CODEC_CVSD;
+
 static uint16_t handle = -1;
 static hci_con_handle_t sco_handle;
 static int memory_1_enabled = 1;
@@ -584,6 +586,11 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
             }
 
             switch (event[2]) {   
+                case HFP_SUBEVENT_CODECS_CONNECTION_COMPLETE:
+                    negotiated_codec = hfp_subevent_codecs_connection_complete_get_negotiated_codec(event);
+                    printf("Codec connection established with codec 0x%02x.\n", negotiated_codec);
+                    sco_demo_set_codec(negotiated_codec);
+                    break;
                 case HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED:
                     handle = hfp_subevent_service_level_connection_established_get_con_handle(event);
                     printf("Service level connection established.\n");

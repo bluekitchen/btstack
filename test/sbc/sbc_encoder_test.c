@@ -77,7 +77,7 @@ static ssize_t __read(int fd, void *buf, size_t count){
 static int read_audio_frame(int wav_fd){
     int i;
     int bytes_read = 0;  
-    for (i=0; i < hfp_msbc_num_audio_samples_per_frame() * 2/2; i++){
+    for (i=0; i < hfp_msbc_num_audio_samples_per_frame(); i++){
         uint8_t buf[2];
         bytes_read +=__read(wav_fd, &buf, 2);
         read_buffer[i] = little_endian_read_16(buf, 0);  
