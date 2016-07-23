@@ -241,7 +241,7 @@ static void sco_demo_init_CVSD(void){
 
 static void sco_demo_receive_mSBC(uint8_t * packet, uint16_t size){
     if (num_samples_to_write){
-        sbc_decoder_process_data(&decoder_state, packet[2], packet+3, size-3);
+        sbc_decoder_process_data(&decoder_state, (packet[1] >> 4) & 3, packet+3, size-3);
         dump_data = 0;
     }
 }
@@ -292,21 +292,13 @@ void sco_demo_set_codec(uint8_t codec){
     if (negotiated_codec == codec) return;
     negotiated_codec = codec;
 #if SCO_DEMO_MODE == SCO_DEMO_MODE_SINE
-#ifdef SCO_WAV_FILENAME
+#if defined(SCO_WAV_FILENAME) || defined(SCO_SBC_FILENAME)
     if (negotiated_codec == HFP_CODEC_MSBC){
         sco_demo_init_mSBC();
     } else {
         sco_demo_init_CVSD();
     }
 #endif
-#ifdef SCO_SBC_FILENAME
-    if (negotiated_codec == HFP_CODEC_MSBC){
-        sco_demo_init_mSBC();
-    } else {
-        sco_demo_init_CVSD();
-    }
-#endif
-
 #endif
 }
 
