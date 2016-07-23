@@ -67,23 +67,25 @@ static uint8_t msbc_buffer[2*(MSBC_FRAME_SIZE + sizeof(msbc_padding))];
 static int msbc_buffer_offset = 0; 
 
 void hfp_msbc_init(void);
-int  hfp_msbc_can_encode_audio(void);
-int  hfp_msbc_encoded_stream_available(int size);
+int  hfp_msbc_num_audio_samples_per_frame(void);
+
+int  hfp_msbc_can_encode_audio_frame_now(void);
 void hfp_msbc_encode_audio_frame(int16_t * pcm_samples);
-void hfp_msbc_read_encoded_stream(uint8_t * buf, int size);
-int  hfp_msbc_num_pcm_bytes(void);
+
+int  hfp_msbc_num_bytes_in_stream(void);
+void hfp_msbc_read_from_stream(uint8_t * buf, int size);
 
 void hfp_msbc_init(void){
     btstack_sbc_encoder_init(&state, SBC_MODE_mSBC, 16, 8, 0, 16000, 26);
     msbc_buffer_offset = 0;
 }
 
-int hfp_msbc_can_encode_audio(void){
+int hfp_msbc_can_encode_audio_frame_now(void){
     return sizeof(msbc_buffer) - msbc_buffer_offset >= MSBC_FRAME_SIZE + sizeof(msbc_padding); 
 }
 
 void hfp_msbc_encode_audio_frame(int16_t * pcm_samples){
-    if (!hfp_msbc_can_encode_audio()) return;
+    if (!hfp_msbc_can_encode_audio_frame_now()) return;
 
     btstack_sbc_encoder_process_data(pcm_samples);
     
@@ -94,7 +96,7 @@ void hfp_msbc_encode_audio_frame(int16_t * pcm_samples){
     msbc_buffer_offset += MSBC_FRAME_SIZE;
 }
 
-void hfp_msbc_read_encoded_stream(uint8_t * buf, int size){
+void hfp_msbc_read_from_stream(uint8_t * buf, int size){
     int bytes_to_copy = size;
     if (size > msbc_buffer_offset){
         bytes_to_copy = msbc_buffer_offset;
@@ -107,12 +109,12 @@ void hfp_msbc_read_encoded_stream(uint8_t * buf, int size){
     msbc_buffer_offset -= bytes_to_copy;
 }
 
-int hfp_msbc_encoded_stream_available(int size){
-    return msbc_buffer_offset >= size;
+int hfp_msbc_num_bytes_in_stream(void){
+    return msbc_buffer_offset;
 }
 
-int hfp_msbc_num_pcm_bytes(void){
-    return btstack_sbc_encoder_num_audio_samples() * 2;
+int hfp_msbc_num_audio_samples_per_frame(void){
+    return btstack_sbc_encoder_num_audio_samples();
 }
 
 static ssize_t __read(int fd, void *buf, size_t count){
@@ -133,12 +135,12 @@ static ssize_t __read(int fd, void *buf, size_t count){
 static int read_audio_frame(int wav_fd){
     int i;
     int bytes_read = 0;  
-    for (i=0; i < hfp_msbc_num_pcm_bytes()/2; i++){
+    for (i=0; i < hfp_msbc_num_audio_samples_per_frame() * 2/2; i++){
         uint8_t buf[2];
         bytes_read +=__read(wav_fd, &buf, 2);
         read_buffer[i] = little_endian_read_16(buf, 0);  
     }
-    if (bytes_read == hfp_msbc_num_pcm_bytes() ){
+    if (bytes_read == hfp_msbc_num_audio_samples_per_frame() * 2 ){
         num_frames++;
     }
     return bytes_read;
@@ -174,14 +176,14 @@ int main (int argc, const char * argv[]){
     hfp_msbc_init();
     
     while (1){
-        if (hfp_msbc_can_encode_audio()){
+        if (hfp_msbc_can_encode_audio_frame_now()){
             int bytes_read = read_audio_frame(wav_fd);
-            if (bytes_read < hfp_msbc_num_pcm_bytes()) break;
+            if (bytes_read < hfp_msbc_num_audio_samples_per_frame() * 2) break;
 
             hfp_msbc_encode_audio_frame(read_buffer);
         }
-        if (hfp_msbc_encoded_stream_available(sizeof(output_buffer))){
-            hfp_msbc_read_encoded_stream(output_buffer, sizeof(output_buffer));
+        if (hfp_msbc_num_bytes_in_stream() >= sizeof(output_buffer)){
+            hfp_msbc_read_from_stream(output_buffer, sizeof(output_buffer));
             fwrite(output_buffer, 1, sizeof(output_buffer), sbc_fd);
         } 
     }
