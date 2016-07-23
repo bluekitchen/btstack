@@ -44,7 +44,7 @@
 #define __SBC_DECODER_H
 
 #include <stdint.h>
-#include "sbc_plc.h"
+#include "btstack_sbc_plc.h"
 
 #if defined __cplusplus
 extern "C" {

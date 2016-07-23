@@ -50,8 +50,8 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-#include "sbc_decoder.h"
-#include "sbc_plc.h"
+#include "btstack_sbc_decoder.h"
+#include "btstack_sbc_plc.h"
 
 #include "oi_codec_sbc.h"
 #include "oi_assert.h"

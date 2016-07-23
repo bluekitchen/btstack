@@ -44,7 +44,7 @@
 
 #include "sco_demo_util.h"
 #include "btstack_debug.h"
-#include "sbc_decoder.h"
+#include "btstack_sbc_decoder.h"
 
 // configure test mode
 #define SCO_DEMO_MODE_SINE		0

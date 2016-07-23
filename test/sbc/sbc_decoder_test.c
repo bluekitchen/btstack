@@ -53,7 +53,7 @@
 #include "oi_assert.h"
 
 #include "btstack.h"
-#include "sbc_decoder.h"
+#include "btstack_sbc_decoder.h"
  
 static uint8_t read_buffer[24];
 

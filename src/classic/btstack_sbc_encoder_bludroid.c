@@ -50,8 +50,8 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-#include "btstack_sbc_encoder.h"
 #include "sbc_encoder.h"
+#include "btstack_sbc_encoder.h"
 #include "btstack.h"
 
 #define SBC_MAX_CHANNELS 2
