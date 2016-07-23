@@ -593,7 +593,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                     break;
                 case HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED:
                     handle = hfp_subevent_service_level_connection_established_get_con_handle(event);
-                    printf("Service level connection established.\n");
+                    hfp_subevent_service_level_connection_established_get_bd_addr(event, device_addr);
+                    printf("Service level connection established from %s.\n", bd_addr_to_str(device_addr));
                     break;
                 case HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED:
                     printf("Service level connection released.\n");

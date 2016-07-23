@@ -221,7 +221,6 @@ static void sco_demo_init_mSBC(void){
     
     write_wav_header(wav_writer_state.wav_file, sample_rate, num_channels, num_samples, bytes_per_sample);
 
-    wav_init(SCO_MSBC_FILENAME);
     hfp_msbc_init();
     sco_demo_fill_audio_frame();
 }
