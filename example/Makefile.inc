@@ -78,6 +78,7 @@ SBC_DECODER += \
 
 SBC_ENCODER += \
 	${BTSTACK_ROOT}/src/classic/btstack_sbc_encoder_bludroid.c \
+	${BTSTACK_ROOT}/src/classic/hfp_msbc.c \
 
 EXAMPLES = 					\
 	ancs_client_demo		\

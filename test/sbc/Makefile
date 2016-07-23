@@ -13,6 +13,7 @@ SBC_DECODER += \
 
 SBC_ENCODER += \
 	${BTSTACK_ROOT}/src/classic/btstack_sbc_encoder_bludroid.c \
+	${BTSTACK_ROOT}/src/classic/hfp_msbc.c \
 
 SBC_DECODER_OBJ  = $(SBC_DECODER:.c=.o) 
 SBC_ENCODER_OBJ  = $(SBC_ENCODER:.c=.o)
