@@ -208,8 +208,8 @@ static void append_received_sbc_data(bludroid_decoder_state_t * state, uint8_t *
     state->bytes_in_frame_buffer += size;
 }
 
+void sbc_decoder_process_data(sbc_decoder_state_t * state, int packet_status_flag, uint8_t * buffer, int size){
 
-void sbc_decoder_process_data(sbc_decoder_state_t * state, uint8_t * buffer, int size){
     bludroid_decoder_state_t * bd_decoder_state = (bludroid_decoder_state_t*)state->decoder_state;
     int bytes_to_process = size;
     int msbc_frame_size = 57; 
@@ -250,13 +250,15 @@ void sbc_decoder_process_data(sbc_decoder_state_t * state, uint8_t * buffer, int
         }
 
         OI_STATUS status = 0;
+        int bad_frame = 0;
         int zero_seq_found = 0;
-        
+
         if (bd_decoder_state->first_good_frame_found){
             zero_seq_found = find_sequence_of_zeros(frame_data, bd_decoder_state->bytes_in_frame_buffer, 20);
+            bad_frame = zero_seq_found || packet_status_flag;
         } 
 
-        if (zero_seq_found){
+        if (bad_frame){
             status = OI_CODEC_SBC_CHECKSUM_MISMATCH;
             bd_decoder_state->bytes_in_frame_buffer = 0;
         } else {

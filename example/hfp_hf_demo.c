@@ -59,7 +59,7 @@
 #include <unistd.h>
 
 #include "btstack.h"
-#include "sbc_decoder.h"
+#include "btstack_sbc_decoder.h"
 
 #include "sco_demo_util.h"
 #ifdef HAVE_POSIX_STDIN

@@ -94,7 +94,8 @@ static void read_wav_header(int wav_fd){
 }
 
 int main (int argc, const char * argv[]){
-    if (argc < 2){
+    if (argc < 3){
+        printf("Usage: %s WAV_FILE mSBC_FILE\n", argv[0]);
         return -1;
     }
 

@@ -211,7 +211,7 @@ int main (int argc, const char * argv[]){
         int bytes_read = __read(fd, read_buffer, sizeof(read_buffer));
         if (0 >= bytes_read) break;
         // process chunk
-        sbc_decoder_process_data(&state, read_buffer, bytes_read);
+        sbc_decoder_process_data(&state, 0, read_buffer, bytes_read);
     }
 
     rewind(wav_file);

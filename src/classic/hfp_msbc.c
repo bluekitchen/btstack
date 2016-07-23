@@ -50,32 +50,44 @@
 #include "hfp_msbc.h"
 
 #define MSBC_FRAME_SIZE 57
+#define MSBC_HEADER_H2_SIZE 2
+#define MSBC_PADDING_SIZE 1
+#define MSBC_EXTRA_SIZE (MSBC_HEADER_H2_SIZE + MSBC_PADDING_SIZE)
+
+static const uint8_t msbc_header_h2_byte_0         = 1;
+static const uint8_t msbc_header_h2_byte_1_table[] = { 0x08, 0x38, 0xc8, 0xf8 };
 
 static btstack_sbc_encoder_state_t state;
-static uint8_t msbc_padding[] = {0,0,0};
+static int msbc_sequence_number;
 
-static uint8_t msbc_buffer[2*(MSBC_FRAME_SIZE + sizeof(msbc_padding))];
+static uint8_t msbc_buffer[2*(MSBC_FRAME_SIZE + MSBC_EXTRA_SIZE)];
 static int msbc_buffer_offset = 0; 
 
 void hfp_msbc_init(void){
     btstack_sbc_encoder_init(&state, SBC_MODE_mSBC, 16, 8, 0, 16000, 26);
     msbc_buffer_offset = 0;
+    msbc_sequence_number = 0;
 }
 
 int hfp_msbc_can_encode_audio_frame_now(void){
-    return sizeof(msbc_buffer) - msbc_buffer_offset >= MSBC_FRAME_SIZE + sizeof(msbc_padding); 
+    return sizeof(msbc_buffer) - msbc_buffer_offset >= MSBC_FRAME_SIZE + MSBC_EXTRA_SIZE; 
 }
 
 void hfp_msbc_encode_audio_frame(int16_t * pcm_samples){
     if (!hfp_msbc_can_encode_audio_frame_now()) return;
 
-    btstack_sbc_encoder_process_data(pcm_samples);
-    
-    memcpy(msbc_buffer + msbc_buffer_offset, msbc_padding, sizeof(msbc_padding));
-    msbc_buffer_offset += sizeof(msbc_padding);
+    // Synchronization Header H2
+    msbc_buffer[msbc_buffer_offset++] = msbc_header_h2_byte_0;
+    msbc_buffer[msbc_buffer_offset++] = msbc_header_h2_byte_1_table[msbc_sequence_number];
+    msbc_sequence_number = (msbc_sequence_number + 1) & 3;
 
+    // SBC Frame
+    btstack_sbc_encoder_process_data(pcm_samples);
     memcpy(msbc_buffer + msbc_buffer_offset, btstack_sbc_encoder_sbc_buffer(), MSBC_FRAME_SIZE);
     msbc_buffer_offset += MSBC_FRAME_SIZE;
+
+    // Final padding to use 60 bytes for 120 audio samples
+    msbc_buffer[msbc_buffer_offset++] = 0;
 }
 
 void hfp_msbc_read_from_stream(uint8_t * buf, int size){
