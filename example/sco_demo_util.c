@@ -293,21 +293,13 @@ void sco_demo_set_codec(uint8_t codec){
     if (negotiated_codec == codec) return;
     negotiated_codec = codec;
 #if SCO_DEMO_MODE == SCO_DEMO_MODE_SINE
-#ifdef SCO_WAV_FILENAME
+#if defined(SCO_WAV_FILENAME) || defined(SCO_SBC_FILENAME)
     if (negotiated_codec == HFP_CODEC_MSBC){
         sco_demo_init_mSBC();
     } else {
         sco_demo_init_CVSD();
     }
 #endif
-#ifdef SCO_SBC_FILENAME
-    if (negotiated_codec == HFP_CODEC_MSBC){
-        sco_demo_init_mSBC();
-    } else {
-        sco_demo_init_CVSD();
-    }
-#endif
-
 #endif
 }
 
