@@ -242,7 +242,7 @@ static void sco_demo_init_CVSD(void){
 
 static void sco_demo_receive_mSBC(uint8_t * packet, uint16_t size){
     if (num_samples_to_write){
-        sbc_decoder_process_data(&decoder_state, packet[2], packet+3, size-3);
+        sbc_decoder_process_data(&decoder_state, (packet[1] >> 4) & 3, packet+3, size-3);
         dump_data = 0;
     }
 }
