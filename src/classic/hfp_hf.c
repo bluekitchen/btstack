@@ -939,6 +939,7 @@ static void hfp_hf_switch_on_ok(hfp_connection_t *hfp_connection){
                 case HFP_CODECS_HF_CONFIRMED_CODEC:
                     hfp_connection->codecs_state = HFP_CODECS_EXCHANGED;
                     hfp_connection->negotiated_codec = hfp_connection->suggested_codec;
+                    log_info("hfp: codec confirmed: %s", hfp_connection->negotiated_codec == HFP_CODEC_MSBC ? "mSBC" : "CVSD");
                     hfp_emit_codec_event(hfp_callback, 0, hfp_connection->negotiated_codec);
                     break;
                 default:

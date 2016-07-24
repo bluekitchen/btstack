@@ -587,6 +587,7 @@ static int codecs_exchange_state_machine(hfp_connection_t * hfp_connection){
             } 
             hfp_connection->negotiated_codec = hfp_connection->codec_confirmed;
             hfp_connection->codecs_state = HFP_CODECS_EXCHANGED;
+            log_info("hfp: codec confirmed: %s", hfp_connection->negotiated_codec == HFP_CODEC_MSBC ? "mSBC" : "CVSD");
             hfp_emit_codec_event(hfp_callback, 0, hfp_connection->negotiated_codec);
             hfp_ag_ok(hfp_connection->rfcomm_cid);           
             return 1; 
