@@ -1381,8 +1381,12 @@ void hfp_setup_synchronous_connection(hfp_connection_t * hfp_connection){
     int setting = hfp_connection->link_setting;
     log_info("hfp_setup_synchronous_connection using setting nr %u", setting);
     sco_establishment_active = hfp_connection;
+    uint16_t sco_voice_setting = hci_get_sco_voice_setting();
+    if (hfp_connection->negotiated_codec == HFP_CODEC_MSBC){
+        sco_voice_setting = 0x0003; // Transparent data
+    }
     hci_send_cmd(&hci_setup_synchronous_connection, hfp_connection->acl_handle, 8000, 8000, hfp_link_settings[setting].max_latency,
-        hci_get_sco_voice_setting(), hfp_link_settings[setting].retransmission_effort, hfp_link_settings[setting].packet_types); // all types 0x003f, only 2-ev3 0x380
+        sco_voice_setting, hfp_link_settings[setting].retransmission_effort, hfp_link_settings[setting].packet_types); // all types 0x003f, only 2-ev3 0x380
 }
 
 void hfp_set_packet_handler_for_rfcomm_connections(btstack_packet_handler_t handler){
