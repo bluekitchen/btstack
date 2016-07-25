@@ -2748,15 +2748,6 @@ static inline hci_con_handle_t hfp_subevent_service_level_connection_established
 static inline void hfp_subevent_service_level_connection_established_get_bd_addr(const uint8_t * event, bd_addr_t bd_addr){
     reverse_bd_addr(&event[6], bd_addr);    
 }
-/**
- * @brief Get field negotiated_codec from event HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED
- * @param event packet
- * @return negotiated_codec
- * @note: btstack_type 1
- */
-static inline uint8_t hfp_subevent_service_level_connection_established_get_negotiated_codec(const uint8_t * event){
-    return event[12];
-}
 
 
 /**
@@ -2785,15 +2776,6 @@ static inline hci_con_handle_t hfp_subevent_audio_connection_established_get_han
  */
 static inline void hfp_subevent_audio_connection_established_get_bd_addr(const uint8_t * event, bd_addr_t bd_addr){
     reverse_bd_addr(&event[6], bd_addr);    
-}
-/**
- * @brief Get field negotiated_codec from event HFP_SUBEVENT_AUDIO_CONNECTION_ESTABLISHED
- * @param event packet
- * @return negotiated_codec
- * @note: btstack_type 1
- */
-static inline uint8_t hfp_subevent_audio_connection_established_get_negotiated_codec(const uint8_t * event){
-    return event[12];
 }
 
 

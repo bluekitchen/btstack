@@ -489,8 +489,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                                 printf("Audio connection establishment failed with status %u\n", hfp_subevent_audio_connection_established_get_status(event));
                             } else {
                                 sco_handle = hfp_subevent_audio_connection_established_get_handle(event);
-                                negotiated_codec = hfp_subevent_audio_connection_established_get_negotiated_codec(event);
-                                printf("Audio connection established with SCO handle 0x%04x and codec 0x%02x.\n", sco_handle, negotiated_codec);
+                                printf("Audio connection established with SCO handle 0x%04x.\n", sco_handle);
                                 hci_request_sco_can_send_now_event();
                             }
                             break;
