@@ -97,7 +97,8 @@ static uint8_t negotiated_codec = HFP_CODEC_CVSD;
 static int num_audio_frames = 0;
 
 #if SCO_DEMO_MODE == SCO_DEMO_MODE_SINE
-// input signal: pre-computed sine wave, 160 Hz
+
+// input signal: pre-computed sine wave, 160 Hz at 8 kHz
 static const uint8_t sine[] = {
       0,  15,  31,  46,  61,  74,  86,  97, 107, 114,
     120, 124, 126, 126, 124, 120, 114, 107,  97,  86,
@@ -106,6 +107,19 @@ static const uint8_t sine[] = {
     136, 142, 149, 159, 170, 182, 195, 210, 225, 241,
 };
 
+// input signal: pre-computed sine wave, 160 Hz at 16000 kHz
+static const int16_t sine_int16[] = {
+     0,    2057,    4107,    6140,    8149,   10126,   12062,   13952,   15786,   17557,
+ 19260,   20886,   22431,   23886,   25247,   26509,   27666,   28714,   29648,   30466,
+ 31163,   31738,   32187,   32509,   32702,   32767,   32702,   32509,   32187,   31738,
+ 31163,   30466,   29648,   28714,   27666,   26509,   25247,   23886,   22431,   20886,
+ 19260,   17557,   15786,   13952,   12062,   10126,    8149,    6140,    4107,    2057,
+     0,   -2057,   -4107,   -6140,   -8149,  -10126,  -12062,  -13952,  -15786,  -17557,
+-19260,  -20886,  -22431,  -23886,  -25247,  -26509,  -27666,  -28714,  -29648,  -30466,
+-31163,  -31738,  -32187,  -32509,  -32702,  -32767,  -32702,  -32509,  -32187,  -31738,
+-31163,  -30466,  -29648,  -28714,  -27666,  -26509,  -25247,  -23886,  -22431,  -20886,
+-19260,  -17557,  -15786,  -13952,  -12062,  -10126,   -8149,   -6140,   -4107,   -2057,
+};
 
 #ifdef SCO_WAV_FILENAME
 
@@ -186,23 +200,17 @@ static void handle_pcm_data(int16_t * data, int num_samples, int num_channels, i
     }
 }
 
-static void sco_demo_generate_sine(int16_t * pcm_samples){
-    int i;
-    for (i=0; i < hfp_msbc_num_audio_samples_per_frame(); i++){
-        uint8_t buf[2];
-        buf[0] = sine[phase++];
-        if (phase >= sizeof(sine)) phase = 0;
-        buf[1] = sine[phase++];
-        if (phase >= sizeof(sine)) phase = 0;
-        pcm_samples[i] = little_endian_read_16(buf, 0);  
-    }
-}
-
 static void sco_demo_fill_audio_frame(void){
     if (!hfp_msbc_can_encode_audio_frame_now()) return;
-    int16_t read_buffer[8*16*2];
-    sco_demo_generate_sine(read_buffer);
-    hfp_msbc_encode_audio_frame(read_buffer);
+    int i;
+    int16_t sample_buffer[8*16*2];
+    for (i=0; i < hfp_msbc_num_audio_samples_per_frame(); i++){
+        sample_buffer[i] = sine_int16[phase++];
+        if (phase >= (sizeof(sine_int16) / sizeof(int16_t))){
+            phase = 0;
+        }
+    }
+    hfp_msbc_encode_audio_frame(sample_buffer);
     num_audio_frames++;
 }
 
