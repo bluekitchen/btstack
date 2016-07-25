@@ -145,8 +145,8 @@ int main (int argc, const char * argv[]){
     
     const char * filename = argv[1];
 
-    char sbc_filename[30];
-    char wav_filename[30];
+    char sbc_filename[1000];
+    char wav_filename[1000];
 
     strcpy(sbc_filename, filename);
     strcpy(wav_filename, filename);
