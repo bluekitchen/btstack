@@ -61,7 +61,7 @@
 
 #ifdef HAVE_POSIX_FILE_IO
 #define SCO_WAV_FILENAME "sco_input.wav"
-#define SCO_MSBC_FILENAME "sco_output.msbc"
+// #define SCO_MSBC_OUT_FILENAME "sco_output.msbc"
 
 #define SCO_WAV_DURATION_IN_SECONDS 30
 #endif
@@ -95,6 +95,8 @@ static int count_sent = 0;
 static int count_received = 0;
 static uint8_t negotiated_codec = HFP_CODEC_CVSD; 
 static int num_audio_frames = 0;
+
+FILE * msbc_file;
 
 #if SCO_DEMO_MODE == SCO_DEMO_MODE_SINE
 
@@ -232,6 +234,11 @@ static void sco_demo_init_mSBC(void){
     hfp_msbc_init();
     sco_demo_fill_audio_frame();
 
+#ifdef SCO_MSBC_OUT_FILENAME
+    msbc_file = fopen(SCO_MSBC_OUT_FILENAME, "wb");
+    printf("SCO Demo: creating mSBC file %s, %p\n", SCO_MSBC_OUT_FILENAME, msbc_file);
+#endif   
+
     // HACK: should be handled by HFP or HSP layer on (e)SCO connection request, not here
     // transparent data
     hci_set_sco_voice_setting(0x0003);
@@ -364,9 +371,9 @@ void sco_demo_init(void){
     if( err != paNoError ) return;
 #endif	
 
-//#if SCO_DEMO_MODE != SCO_DEMO_MODE_SINE
+#if SCO_DEMO_MODE != SCO_DEMO_MODE_SINE
     hci_set_sco_voice_setting(0x03);    // linear, unsigned, 8-bit, transparent
-//#endif
+#endif
 
 #if SCO_DEMO_MODE == SCO_DEMO_MODE_ASCII
     phase = 'a';
@@ -399,6 +406,8 @@ void sco_demo_send(hci_con_handle_t sco_handle){
             log_error("mSBC stream is empty.");
         }
         hfp_msbc_read_from_stream(sco_packet + 3, sco_payload_length);
+        fwrite(sco_packet + 3, sco_payload_length, 1, msbc_file);
+
         sco_demo_fill_audio_frame();
     } else {
         int i;
