@@ -180,7 +180,7 @@ static int has_hf_indicators_feature(hfp_connection_t * hfp_connection){
     return hf && ag;
 }
 
-void hfp_ag_create_sdp_record(uint8_t * service, uint32_t service_record_handle, int rfcomm_channel_nr, const char * name, uint8_t ability_to_reject_call, uint16_t supported_features){
+void hfp_ag_create_sdp_record(uint8_t * service, uint32_t service_record_handle, int rfcomm_channel_nr, const char * name, uint8_t ability_to_reject_call, uint16_t supported_features, int wide_band_speech){
     if (!name){
         name = default_hfp_ag_service_name;
     }
@@ -193,8 +193,17 @@ void hfp_ag_create_sdp_record(uint8_t * service, uint32_t service_record_handle,
     de_add_number(service, DE_UINT, DE_SIZE_16, 0x0301);    // Hands-Free Profile - Network
     de_add_number(service, DE_UINT, DE_SIZE_8, ability_to_reject_call);
 
+    // Construct SupportedFeatures for SDP bitmap:
+    // 
+    // "The values of the “SupportedFeatures” bitmap given in Table 5.4 shall be the same as the values
+    //  of the Bits 0 to 4 of the unsolicited result code +BRSF"
+    //
+    uint16_t sdp_features = supported_features &0x1f;
+    if (supported_features & wide_band_speech){
+        sdp_features |= 1 << 5; // Wide band speech bit
+    }
     de_add_number(service, DE_UINT, DE_SIZE_16, 0x0311);    // Hands-Free Profile - SupportedFeatures
-    de_add_number(service, DE_UINT, DE_SIZE_16, supported_features);
+    de_add_number(service, DE_UINT, DE_SIZE_16, sdp_features);
 }
 
 static int hfp_ag_change_in_band_ring_tone_setting_cmd(uint16_t cid){
@@ -611,7 +620,7 @@ static void hfp_init_link_settings(hfp_connection_t * hfp_connection){
 
 static void hfp_ag_slc_established(hfp_connection_t * hfp_connection){
     hfp_connection->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
-    hfp_emit_connection_event(hfp_callback, HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED, 0, hfp_connection->acl_handle, hfp_connection->remote_addr, hfp_connection->negotiated_codec);
+    hfp_emit_connection_event(hfp_callback, HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED, 0, hfp_connection->acl_handle, hfp_connection->remote_addr);
     
     hfp_init_link_settings(hfp_connection);
 

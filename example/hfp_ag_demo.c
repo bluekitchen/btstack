@@ -681,11 +681,24 @@ int btstack_main(int argc, const char * argv[]){
 
     // L2CAP
     l2cap_init();
-    
+
+    uint16_t supported_features                   =
+        (1<<HFP_AGSF_ESCO_S4)                     |
+        (1<<HFP_AGSF_HF_INDICATORS)               |
+        (1<<HFP_AGSF_CODEC_NEGOTIATION)           |
+        (1<<HFP_AGSF_EXTENDED_ERROR_RESULT_CODES) |
+        (1<<HFP_AGSF_ENHANCED_CALL_CONTROL)       |
+        (1<<HFP_AGSF_ENHANCED_CALL_STATUS)        |
+        (1<<HFP_AGSF_ABILITY_TO_REJECT_A_CALL)    |
+        (1<<HFP_AGSF_IN_BAND_RING_TONE)           |
+        (1<<HFP_AGSF_VOICE_RECOGNITION_FUNCTION)  |
+        (1<<HFP_AGSF_THREE_WAY_CALLING);
+    int wide_band_speech = 1;
+
     // HFP
     rfcomm_init();
     hfp_ag_init(rfcomm_channel_nr);
-    hfp_ag_init_supported_features(0x3ef | (1<<HFP_AGSF_HF_INDICATORS) | (1<<HFP_AGSF_ESCO_S4)); 
+    hfp_ag_init_supported_features(supported_features);
     hfp_ag_init_codecs(sizeof(codecs), codecs);
     hfp_ag_init_ag_indicators(ag_indicators_nr, ag_indicators);
     hfp_ag_init_hf_indicators(hf_indicators_nr, hf_indicators); 
@@ -697,7 +710,7 @@ int btstack_main(int argc, const char * argv[]){
     // SDP Server
     sdp_init();
     memset(hfp_service_buffer, 0, sizeof(hfp_service_buffer));
-    hfp_ag_create_sdp_record( hfp_service_buffer, 0x10001, rfcomm_channel_nr, hfp_ag_service_name, 0, 0);
+    hfp_ag_create_sdp_record( hfp_service_buffer, 0x10001, rfcomm_channel_nr, hfp_ag_service_name, 0, supported_features, wide_band_speech);
     printf("SDP service record size: %u\n", de_get_len( hfp_service_buffer));
     sdp_register_service(hfp_service_buffer);
     

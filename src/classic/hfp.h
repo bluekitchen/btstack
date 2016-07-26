@@ -66,12 +66,16 @@ extern "C" {
 9: eSCO S4 (and T2) Settings Supported
 10-31: Reserved for future definition
 */
-#define HFP_HFSF_EC_NR_FUNCTION     0
-#define HFP_HFSF_THREE_WAY_CALLING  1
-#define HFP_HFSF_VOICE_RECOGNITION_FUNCTION 3
-#define HFP_HFSF_CODEC_NEGOTIATION  7
-#define HFP_HFSF_HF_INDICATORS      8
-#define HFP_HFSF_ESCO_S4            9
+#define HFP_HFSF_EC_NR_FUNCTION              0
+#define HFP_HFSF_THREE_WAY_CALLING           1
+#define HFP_HFSF_CLI_PRESENTATION_CAPABILITY 2
+#define HFP_HFSF_VOICE_RECOGNITION_FUNCTION  3
+#define HFP_HFSF_REMOTE_VOLUME_CONTROL       4
+#define HFP_HFSF_ENHANCED_CALL_STATUS        5
+#define HFP_HFSF_ENHANCED_CALL_CONTROL       6
+#define HFP_HFSF_CODEC_NEGOTIATION           7
+#define HFP_HFSF_HF_INDICATORS               8
+#define HFP_HFSF_ESCO_S4                     9
 
 /* AG Supported Features:
 0: Three-way calling
@@ -88,13 +92,18 @@ extern "C" {
 11: eSCO S4 (and T2) Settings Supported
 12-31: Reserved for future definition
 */
-#define HFP_AGSF_THREE_WAY_CALLING  0
-#define HFP_AGSF_EC_NR_FUNCTION     1
+#define HFP_AGSF_THREE_WAY_CALLING              0
+#define HFP_AGSF_EC_NR_FUNCTION                 1
 #define HFP_AGSF_VOICE_RECOGNITION_FUNCTION     2
-#define HFP_AGSF_IN_BAND_RING_TONE  3
-#define HFP_AGSF_CODEC_NEGOTIATION  9
-#define HFP_AGSF_HF_INDICATORS      10
-#define HFP_AGSF_ESCO_S4            11
+#define HFP_AGSF_IN_BAND_RING_TONE              3
+#define HFP_AGSF_ATTACH_A_NUMBER_TO_A_VOICE_TAG 4
+#define HFP_AGSF_ABILITY_TO_REJECT_A_CALL       5 
+#define HFP_AGSF_ENHANCED_CALL_STATUS           6
+#define HFP_AGSF_ENHANCED_CALL_CONTROL          7
+#define HFP_AGSF_EXTENDED_ERROR_RESULT_CODES    8
+#define HFP_AGSF_CODEC_NEGOTIATION              9
+#define HFP_AGSF_HF_INDICATORS                 10
+#define HFP_AGSF_ESCO_S4                       11
 
 #define HFP_DEFAULT_HF_SUPPORTED_FEATURES 0x0000
 #define HFP_DEFAULT_AG_SUPPORTED_FEATURES 0x0009

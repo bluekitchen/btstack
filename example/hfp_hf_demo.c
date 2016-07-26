@@ -631,8 +631,16 @@ int btstack_main(int argc, const char * argv[]){
     rfcomm_init();
     sdp_init();    
 
+    uint16_t hf_supported_features          =
+        (1<<HFP_HFSF_ESCO_S4)               |
+        (1<<HFP_HFSF_HF_INDICATORS)         |
+        (1<<HFP_HFSF_CODEC_NEGOTIATION)     |
+        (1<<HFP_HFSF_ENHANCED_CALL_STATUS)  |
+        (1<<HFP_HFSF_REMOTE_VOLUME_CONTROL);
+    int wide_band_speech = 1;
+
     hfp_hf_init(rfcomm_channel_nr);
-    hfp_hf_init_supported_features(438 | (1<<HFP_HFSF_CODEC_NEGOTIATION) |(1<<HFP_HFSF_ESCO_S4) | (1<<HFP_HFSF_EC_NR_FUNCTION)); 
+    hfp_hf_init_supported_features(hf_supported_features);
     hfp_hf_init_hf_indicators(sizeof(indicators)/sizeof(uint16_t), indicators);
     hfp_hf_init_codecs(sizeof(codecs), codecs);
     
@@ -640,7 +648,7 @@ int btstack_main(int argc, const char * argv[]){
     hci_register_sco_packet_handler(&packet_handler);
 
     memset(hfp_service_buffer, 0, sizeof(hfp_service_buffer));
-    hfp_hf_create_sdp_record(hfp_service_buffer, 0x10001, rfcomm_channel_nr, hfp_hf_service_name, 0);
+    hfp_hf_create_sdp_record(hfp_service_buffer, 0x10001, rfcomm_channel_nr, hfp_hf_service_name, hf_supported_features, wide_band_speech);
     printf("SDP service record size: %u\n", de_get_len(hfp_service_buffer));
     sdp_register_service(hfp_service_buffer);
     gap_set_class_of_device(0x200408);   

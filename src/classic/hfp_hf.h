@@ -61,8 +61,9 @@ extern "C" {
  * @param rfcomm_channel_nr
  * @param name
  * @param suported_features 32-bit bitmap, see HFP_HFSF_* values in hfp.h
+ * @param wide_band_speech supported
  */
-void hfp_hf_create_sdp_record(uint8_t * service, uint32_t service_record_handle, int rfcomm_channel_nr, const char * name, uint16_t supported_features);
+void hfp_hf_create_sdp_record(uint8_t * service, uint32_t service_record_handle, int rfcomm_channel_nr, const char * name, uint16_t supported_features, int wide_band_speech);
 
 /**
  * @brief Set up HFP Hands-Free (HF) device without additional supported features. 
