@@ -84,8 +84,10 @@ void EncPacking(SBC_ENC_PARAMS *pstrEncParams)
     pu8PacketPtr    = pstrEncParams->pu8NextPacket;    /*Initialize the ptr*/
     
     /* BK4BTSTACK_CHANGE START */
+    uint8_t * reserved_ptr = (void*) 0;
     if (pstrEncParams->mSBCEnabled){
         *pu8PacketPtr++ = (UINT8)0xAD;  /*Sync word*/
+        reserved_ptr = pu8PacketPtr;
     } else {
         *pu8PacketPtr++ = (UINT8)0x9C;  /*Sync word*/
     }
@@ -236,6 +238,15 @@ void EncPacking(SBC_ENC_PARAMS *pstrEncParams)
     pu8PacketPtr = pstrEncParams->pu8NextPacket+1;    /*Initialize the ptr*/
     u8CRC = 0x0F;
     s32LoopCount = s32Sb >> 1;
+
+    /* BK4BTSTACK_CHANGE START */
+    if (reserved_ptr){
+        // overwrite fixed values for mSBC before CRC calculation
+        *reserved_ptr++ = 0;
+        *reserved_ptr   = 0;        
+    }
+    /* BK4BTSTACK_CHANGE END */ 
+  
 
     /*
     The loops is run from the start of the packet till the scale factor
