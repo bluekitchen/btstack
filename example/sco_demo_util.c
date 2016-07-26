@@ -93,7 +93,7 @@ static int dump_data = 1;
 static int phase = 0;
 static int count_sent = 0;
 static int count_received = 0;
-static uint8_t negotiated_codec = HFP_CODEC_CVSD; 
+static uint8_t negotiated_codec = 0; 
 static int num_audio_frames = 0;
 
 FILE * msbc_file;
@@ -384,10 +384,19 @@ static void sco_report(void){
     printf("SCO: sent %u, received %u\n", count_sent, count_received);
 }
 
+static void sco_assert_codec_set(void){
+    // if SCO is open but we didn't hear about the codec yet, we fall back to CVSD
+    if (!negotiated_codec){
+        sco_demo_set_codec(HFP_CODEC_CVSD);
+    }
+}
+
 void sco_demo_send(hci_con_handle_t sco_handle){
 
     if (!sco_handle) return;
     
+    sco_assert_codec_set();
+
     const int sco_packet_length = 24 + 3; // hci_get_sco_packet_length();
     const int sco_payload_length = sco_packet_length - 3;
 
@@ -406,7 +415,10 @@ void sco_demo_send(hci_con_handle_t sco_handle){
             log_error("mSBC stream is empty.");
         }
         hfp_msbc_read_from_stream(sco_packet + 3, sco_payload_length);
-        fwrite(sco_packet + 3, sco_payload_length, 1, msbc_file);
+        if (msbc_file){
+            // log outgoing mSBC data for testing
+            fwrite(sco_packet + 3, sco_payload_length, 1, msbc_file);
+        }
 
         sco_demo_fill_audio_frame();
     } else {
@@ -438,12 +450,12 @@ void sco_demo_send(hci_con_handle_t sco_handle){
     if ((count_sent % SCO_REPORT_PERIOD) == 0) sco_report();
 }
 
-
 /**
  * @brief Process received data
  */
 void sco_demo_receive(uint8_t * packet, uint16_t size){
 
+    sco_assert_codec_set();
 
     dump_data = 1;
 
