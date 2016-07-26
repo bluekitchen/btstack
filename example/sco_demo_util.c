@@ -279,7 +279,7 @@ static void sco_demo_receive_CVSD(uint8_t * packet, uint16_t size){
             packet[3+i] += 128;            
         }
 
-        wav_writer_state_t * writer_state = (wav_writer_state_t*) decoder_state.context;
+        wav_writer_state_t * writer_state = &wav_writer_state;
         write_wav_data_uint8(writer_state->wav_file, samples_to_write, &packet[3]);
         num_samples_to_write -= samples_to_write;
         if (num_samples_to_write == 0){
@@ -299,7 +299,7 @@ void sco_demo_close(void){
 #if 0
     printf("SCO Demo: closing wav file\n");
     if (negotiated_codec == HFP_CODEC_MSBC){
-        wav_writer_state_t * writer_state = (wav_writer_state_t*) decoder_state.context;
+        wav_writer_state_t * writer_state = &wav_writer_state;
         if (!writer_state->wav_file) return;
         rewind(writer_state->wav_file);
         write_wav_header(writer_state->wav_file, writer_state->total_num_samples, sbc_decoder_num_channels(&decoder_state), sbc_decoder_sample_rate(&decoder_state),2);
