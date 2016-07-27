@@ -46,7 +46,7 @@
 #include <string.h>
 
 #include "btstack_debug.h"
-#include "btstack_sbc_encoder.h"
+#include "btstack_sbc.h"
 #include "hfp_msbc.h"
 
 #define MSBC_FRAME_SIZE 57

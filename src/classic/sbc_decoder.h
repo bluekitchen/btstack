@@ -36,40 +36,52 @@
  */
 
 /*
- * btstack_sbc_encoder.h
+ * sbc_decoder.h
  *
  */
 
-#ifndef __BTSTACK_SBC_ENCODER_H
-#define __BTSTACK_SBC_ENCODER_H
+#ifndef __SBC_DECODER_H
+#define __SBC_DECODER_H
 
 #include <stdint.h>
-#include "btstack_sbc.h"
+#include "btstack_sbc_plc.h"
 
 #if defined __cplusplus
 extern "C" {
 #endif
 
+typedef enum{
+    SBC_MODE_STANDARD,
+    SBC_MODE_mSBC
+} sbc_mode_t;
+
 typedef struct {
+    void * context;
+    void (*handle_pcm_data)(int16_t * data, int num_samples, int num_channels, int sample_rate, void * context);
     // private
-    void * encoder_state;
-    btstack_sbc_mode_t mode;
-} btstack_sbc_encoder_state_t;
+    void * decoder_state;
+    sbc_plc_state_t plc_state;
+    sbc_mode_t mode;
 
-void btstack_sbc_encoder_init(btstack_sbc_encoder_state_t * state, btstack_sbc_mode_t mode, 
-                        int blocks, int subbands, int allmethod, int sample_rate, int bitpool);
+    // summary of processed good, bad and zero frames
+    int good_frames_nr;
+    int bad_frames_nr;
+    int zero_frames_nr;
+} sbc_decoder_state_t;
 
-void btstack_sbc_encoder_process_data(int16_t * input_buffer);
+void sbc_decoder_init(sbc_decoder_state_t * state, sbc_mode_t mode, void (*callback)(int16_t * data, int num_samples, int num_channels, int sample_rate, void * context), void * context);
+void sbc_decoder_process_data(sbc_decoder_state_t * state, uint8_t * buffer, int size);
 
+int sbc_decoder_num_samples_per_frame(sbc_decoder_state_t * state);
+int sbc_decoder_num_channels(sbc_decoder_state_t * state);
+int sbc_decoder_sample_rate(sbc_decoder_state_t * state);
 
-uint8_t * btstack_sbc_encoder_sbc_buffer(void);
-uint16_t  btstack_sbc_encoder_sbc_buffer_length(void);
-
-int  btstack_sbc_encoder_num_audio_samples(void);
-void btstack_sbc_encoder_dump_context(void);
+// testing only
+void sbc_decoder_test_disable_plc(void);
+void sbc_decoder_test_simulate_corrupt_frames(int period);
 
 #if defined __cplusplus
 }
 #endif
 
-#endif // __BTSTACK_SBC_ENCODER_H
+#endif // __SBC_DECODER_H

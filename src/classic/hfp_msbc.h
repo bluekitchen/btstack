@@ -48,8 +48,6 @@
 
 #include <stdint.h>
 
-#include "btstack_sbc_encoder.h"
-
 #if defined __cplusplus
 extern "C" {
 #endif

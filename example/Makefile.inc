@@ -74,10 +74,10 @@ include ${SBC_ENCODER_ROOT}/Makefile.inc
 
 SBC_DECODER += \
 	${BTSTACK_ROOT}/src/classic/btstack_sbc_plc.c \
-	${BTSTACK_ROOT}/src/classic/btstack_sbc_decoder_bludroid.c \
+	${BTSTACK_ROOT}/src/classic/btstack_sbc_bludroid.c \
 
 SBC_ENCODER += \
-	${BTSTACK_ROOT}/src/classic/btstack_sbc_encoder_bludroid.c \
+	${BTSTACK_ROOT}/src/classic/btstack_sbc_bludroid.c \
 	${BTSTACK_ROOT}/src/classic/hfp_msbc.c \
 
 EXAMPLES = 					\

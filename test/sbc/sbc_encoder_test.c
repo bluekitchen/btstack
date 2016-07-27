@@ -51,9 +51,9 @@
 #include <unistd.h>
 
 #include "btstack.h"
-#include "btstack_sbc_encoder.h"
-#include "hfp_msbc.h"
 
+#include "hfp_msbc.h"
+#include "btstack_sbc.h"
 
 static int num_frames = 0;
 
@@ -129,9 +129,6 @@ int main (int argc, const char * argv[]){
             fwrite(output_buffer, 1, sizeof(output_buffer), sbc_fd);
         } 
     }
-    
-
-    btstack_sbc_encoder_dump_context();
 
     printf("Done, frame count %d \n", num_frames);
     close(wav_fd);

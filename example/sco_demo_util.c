@@ -44,8 +44,7 @@
 
 #include "sco_demo_util.h"
 #include "btstack_debug.h"
-#include "btstack_sbc_decoder.h"
-#include "btstack_sbc_encoder.h"
+#include "btstack_sbc.h"
 #include "hfp_msbc.h"
 #include "hfp.h"
 

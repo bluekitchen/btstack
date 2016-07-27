@@ -9,10 +9,10 @@ include ${SBC_ENCODER_ROOT}/Makefile.inc
 
 SBC_DECODER += \
 	${BTSTACK_ROOT}/src/classic/btstack_sbc_plc.c \
-	${BTSTACK_ROOT}/src/classic/btstack_sbc_decoder_bludroid.c \
+	${BTSTACK_ROOT}/src/classic/btstack_sbc_bludroid.c \
 
 SBC_ENCODER += \
-	${BTSTACK_ROOT}/src/classic/btstack_sbc_encoder_bludroid.c \
+	${BTSTACK_ROOT}/src/classic/btstack_sbc_bludroid.c \
 	${BTSTACK_ROOT}/src/classic/hfp_msbc.c \
 
 SBC_DECODER_OBJ  = $(SBC_DECODER:.c=.o) 
@@ -38,10 +38,10 @@ SBC_TESTS = sbc_decoder_test sbc_encoder_test
 
 all: ${SBC_TESTS}
 
-sbc_decoder_test: ${SBC_DECODER_OBJ} ${COMMON_OBJ} sbc_decoder_test.o  
+sbc_decoder_test: ${SBC_DECODER_OBJ} ${SBC_ENCODER_OBJ} ${COMMON_OBJ} sbc_decoder_test.o  
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-sbc_encoder_test: ${SBC_ENCODER_OBJ} ${COMMON_OBJ} sbc_encoder_test.o  
+sbc_encoder_test: ${SBC_DECODER_OBJ} ${SBC_ENCODER_OBJ} ${COMMON_OBJ} sbc_encoder_test.o  
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 test: all
