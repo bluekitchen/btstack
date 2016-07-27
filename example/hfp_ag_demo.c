@@ -75,7 +75,7 @@ bd_addr_t device_addr = { 0xD0, 0x39, 0x72, 0xCD, 0x83, 0x45};
 static uint8_t codecs[] = {HFP_CODEC_CVSD, HFP_CODEC_MSBC};
 static uint8_t negotiated_codec = HFP_CODEC_CVSD;
 
-static uint16_t handle = -1;
+static hci_con_handle_t acl_handle = -1;
 static hci_con_handle_t sco_handle;
 static int memory_1_enabled = 1;
 
@@ -349,22 +349,22 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
         case 'A':
             log_info("USER:\'%c\'", cmd);
             printf("Release HFP service level connection.\n");
-            hfp_ag_release_service_level_connection(device_addr);
+            hfp_ag_release_service_level_connection(acl_handle);
             break;
         case 'Z':
             log_info("USER:\'%c\'", cmd);
             printf("Release HFP service level connection to %s...\n", bd_addr_to_str(device_addr));
-            hfp_ag_release_service_level_connection(device_addr);
+            hfp_ag_release_service_level_connection(acl_handle);
             break;
         case 'b':
             log_info("USER:\'%c\'", cmd);
             printf("Establish Audio connection %s...\n", bd_addr_to_str(device_addr));
-            hfp_ag_establish_audio_connection(device_addr);
+            hfp_ag_establish_audio_connection(acl_handle);
             break;
         case 'B':
             log_info("USER:\'%c\'", cmd);
             printf("Release Audio connection.\n");
-            hfp_ag_release_audio_connection(device_addr);
+            hfp_ag_release_audio_connection(acl_handle);
             break;
         case 'c':
             log_info("USER:\'%c\'", cmd);
@@ -386,7 +386,7 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
         case 'd':
             log_info("USER:\'%c\'", cmd);
             printf("Report AG failure\n");
-            hfp_ag_report_extended_audio_gateway_error_result_code(device_addr, HFP_CME_ERROR_AG_FAILURE);
+            hfp_ag_report_extended_audio_gateway_error_result_code(acl_handle, HFP_CME_ERROR_AG_FAILURE);
             break;
         case 'e':
             log_info("USER:\'%c\'", cmd);
@@ -471,52 +471,52 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
         case 'n':
             log_info("USER:\'%c\'", cmd);
             printf("Disable Voice Recognition\n");
-            hfp_ag_activate_voice_recognition(device_addr, 0);
+            hfp_ag_activate_voice_recognition(acl_handle, 0);
             break;
         case 'N':
             log_info("USER:\'%c\'", cmd);
             printf("Enable Voice Recognition\n");
-            hfp_ag_activate_voice_recognition(device_addr, 1);
+            hfp_ag_activate_voice_recognition(acl_handle, 1);
             break;
         case 'o':
             log_info("USER:\'%c\'", cmd);
             printf("Set speaker gain to 0 (minimum)\n");
-            hfp_ag_set_speaker_gain(device_addr, 0);
+            hfp_ag_set_speaker_gain(acl_handle, 0);
             break;
         case 'O':
             log_info("USER:\'%c\'", cmd);
             printf("Set speaker gain to 9 (default)\n");
-            hfp_ag_set_speaker_gain(device_addr, 9);
+            hfp_ag_set_speaker_gain(acl_handle, 9);
             break;
         case 'p':
             log_info("USER:\'%c\'", cmd);
             printf("Set speaker gain to 12 (higher)\n");
-            hfp_ag_set_speaker_gain(device_addr, 12);
+            hfp_ag_set_speaker_gain(acl_handle, 12);
             break;
         case 'P':
             log_info("USER:\'%c\'", cmd);
             printf("Set speaker gain to 15 (maximum)\n");
-            hfp_ag_set_speaker_gain(device_addr, 15);
+            hfp_ag_set_speaker_gain(acl_handle, 15);
             break;
         case 'q':
             log_info("USER:\'%c\'", cmd);
             printf("Set microphone gain to 0\n");
-            hfp_ag_set_microphone_gain(device_addr, 0);
+            hfp_ag_set_microphone_gain(acl_handle, 0);
             break;
         case 'Q':
             log_info("USER:\'%c\'", cmd);
             printf("Set microphone gain to 9\n");
-            hfp_ag_set_microphone_gain(device_addr, 9);
+            hfp_ag_set_microphone_gain(acl_handle, 9);
             break;
         case 's':
             log_info("USER:\'%c\'", cmd);
             printf("Set microphone gain to 12\n");
-            hfp_ag_set_microphone_gain(device_addr, 12);
+            hfp_ag_set_microphone_gain(acl_handle, 12);
             break;
         case 'S':
             log_info("USER:\'%c\'", cmd);
             printf("Set microphone gain to 15\n");
-            hfp_ag_set_microphone_gain(device_addr, 15);
+            hfp_ag_set_microphone_gain(acl_handle, 15);
             break;
         case 'R':
             log_info("USER:\'%c\'", cmd);
@@ -525,8 +525,8 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
             break;
         case 't':
             log_info("USER:\'%c\'", cmd);
-            printf("Terminate HCI connection. 0x%2x\n", handle);
-            gap_disconnect(handle);
+            printf("Terminate HCI connection. 0x%2x\n", acl_handle);
+            gap_disconnect(acl_handle);
             break;
         case 'u':
             log_info("USER:\'%c\'", cmd);
@@ -592,7 +592,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                     sco_demo_set_codec(negotiated_codec);
                     break;
                 case HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED:
-                    handle = hfp_subevent_service_level_connection_established_get_con_handle(event);
+                    acl_handle = hfp_subevent_service_level_connection_established_get_con_handle(event);
                     hfp_subevent_service_level_connection_established_get_bd_addr(event, device_addr);
                     printf("Service level connection established from %s.\n", bd_addr_to_str(device_addr));
                     break;
@@ -636,11 +636,11 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                 
                 case HFP_SUBEVENT_ATTACH_NUMBER_TO_VOICE_TAG:
                     printf("\n** Attach number to voice tag. Sending '1234567\n");
-                    hfp_ag_send_phone_number_for_voice_tag(device_addr, "1234567");
+                    hfp_ag_send_phone_number_for_voice_tag(acl_handle, "1234567");
                     break;
                 case HFP_SUBEVENT_TRANSMIT_DTMF_CODES:
                     printf("\n** Send DTMF Codes: '%s'\n", hfp_subevent_transmit_dtmf_codes_get_dtmf(event));
-                    hfp_ag_send_dtmf_code_done(device_addr);
+                    hfp_ag_send_dtmf_code_done(acl_handle);
                     break;
                 case HFP_SUBEVENT_CALL_ANSWERED:
                     printf("Call answered by HF\n");

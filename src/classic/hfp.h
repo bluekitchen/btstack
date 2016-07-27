@@ -643,6 +643,7 @@ void hfp_emit_codec_event(btstack_packet_handler_t callback, uint8_t status, uin
 hfp_connection_t * get_hfp_connection_context_for_rfcomm_cid(uint16_t cid);
 hfp_connection_t * get_hfp_connection_context_for_bd_addr(bd_addr_t bd_addr);
 hfp_connection_t * get_hfp_connection_context_for_sco_handle(uint16_t handle);
+hfp_connection_t * get_hfp_connection_context_for_acl_handle(uint16_t handle);
 
 btstack_linked_list_t * hfp_get_connections(void);
 void hfp_parse(hfp_connection_t * connection, uint8_t byte, int isHandsFree);

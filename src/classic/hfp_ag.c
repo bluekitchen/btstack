@@ -868,7 +868,7 @@ static void hfp_timeout_stop(hfp_connection_t * hfp_connection){
 static void hfp_ag_hf_start_ringing(hfp_connection_t * hfp_connection){
     if (use_in_band_tone()){
         hfp_connection->call_state = HFP_CALL_W4_AUDIO_CONNECTION_FOR_IN_BAND_RING;
-        hfp_ag_establish_audio_connection(hfp_connection->remote_addr);
+        hfp_ag_establish_audio_connection(hfp_connection->acl_handle);
     } else {
         hfp_timeout_start(hfp_connection);
         hfp_connection->ag_ring = 1;
@@ -967,7 +967,7 @@ static void hfp_ag_hf_accept_call(hfp_connection_t * source){
                 hfp_connection->call_state = HFP_CALL_ACTIVE;
             } else {
                 hfp_connection->call_state = HFP_CALL_W4_AUDIO_CONNECTION_FOR_ACTIVE;
-                hfp_ag_establish_audio_connection(hfp_connection->remote_addr);
+                hfp_ag_establish_audio_connection(hfp_connection->acl_handle);
             }
 
             hfp_connection->ag_indicators_status_update_bitmap = store_bit(hfp_connection->ag_indicators_status_update_bitmap, call_indicator_index, 1);
@@ -1468,7 +1468,7 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * hfp_con
             }
 
             // start audio if needed
-            hfp_ag_establish_audio_connection(hfp_connection->remote_addr);
+            hfp_ag_establish_audio_connection(hfp_connection->acl_handle);
             break;
         }
         case HFP_AG_OUTGOING_CALL_RINGING:
@@ -2071,14 +2071,14 @@ void hfp_ag_establish_service_level_connection(bd_addr_t bd_addr){
     hfp_establish_service_level_connection(bd_addr, SDP_Handsfree);
 }
 
-void hfp_ag_release_service_level_connection(bd_addr_t bd_addr){
-    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_bd_addr(bd_addr);
+void hfp_ag_release_service_level_connection(hci_con_handle_t acl_handle){
+    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_acl_handle(acl_handle);
     hfp_release_service_level_connection(hfp_connection);
     hfp_run_for_context(hfp_connection);
 }
 
-void hfp_ag_report_extended_audio_gateway_error_result_code(bd_addr_t bd_addr, hfp_cme_error_t error){
-    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_bd_addr(bd_addr);
+void hfp_ag_report_extended_audio_gateway_error_result_code(hci_con_handle_t acl_handle, hfp_cme_error_t error){
+    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_acl_handle(acl_handle);
     if (!hfp_connection){
         log_error("HFP HF: hfp_connection doesn't exist.");
         return;
@@ -2114,17 +2114,15 @@ static void hfp_ag_setup_audio_connection(hfp_connection_t * hfp_connection){
     } 
 }
 
-void hfp_ag_establish_audio_connection(bd_addr_t bd_addr){
-    hfp_ag_establish_service_level_connection(bd_addr);
-    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_bd_addr(bd_addr);
-
+void hfp_ag_establish_audio_connection(hci_con_handle_t acl_handle){
+    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_acl_handle(acl_handle);
     hfp_connection->establish_audio_connection = 0;
     hfp_ag_setup_audio_connection(hfp_connection);
     hfp_run_for_context(hfp_connection);
 }
 
-void hfp_ag_release_audio_connection(bd_addr_t bd_addr){
-    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_bd_addr(bd_addr);
+void hfp_ag_release_audio_connection(hci_con_handle_t acl_handle){
+    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_acl_handle(acl_handle);
     hfp_release_audio_connection(hfp_connection);
     hfp_run_for_context(hfp_connection);
 }
@@ -2242,17 +2240,17 @@ void hfp_ag_set_battery_level(int level){
     hfp_ag_set_ag_indicator("battchg", level);
 }
 
-void hfp_ag_activate_voice_recognition(bd_addr_t bd_addr, int activate){
+void hfp_ag_activate_voice_recognition(hci_con_handle_t acl_handle, int activate){
     if (!get_bit(hfp_supported_features, HFP_AGSF_VOICE_RECOGNITION_FUNCTION)) return;
-    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_bd_addr(bd_addr);
-
+    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_acl_handle(acl_handle);
+    
     if (!get_bit(hfp_connection->remote_supported_features, HFP_HFSF_VOICE_RECOGNITION_FUNCTION)) {
         printf("AG cannot acivate voice recognition - not supported by HF\n");
         return;
     }
 
     if (activate){
-        hfp_ag_establish_audio_connection(bd_addr);
+        hfp_ag_establish_audio_connection(acl_handle);
     }
 
     hfp_connection->ag_activate_voice_recognition = activate;
@@ -2260,8 +2258,8 @@ void hfp_ag_activate_voice_recognition(bd_addr_t bd_addr, int activate){
     hfp_run_for_context(hfp_connection);
 }
 
-void hfp_ag_set_microphone_gain(bd_addr_t bd_addr, int gain){
-    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_bd_addr(bd_addr);
+void hfp_ag_set_microphone_gain(hci_con_handle_t acl_handle, int gain){
+    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_acl_handle(acl_handle);
     if (hfp_connection->microphone_gain != gain){
         hfp_connection->command = HFP_CMD_SET_MICROPHONE_GAIN;
         hfp_connection->microphone_gain = gain;
@@ -2270,8 +2268,8 @@ void hfp_ag_set_microphone_gain(bd_addr_t bd_addr, int gain){
     hfp_run_for_context(hfp_connection);
 }
 
-void hfp_ag_set_speaker_gain(bd_addr_t bd_addr, int gain){
-    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_bd_addr(bd_addr);
+void hfp_ag_set_speaker_gain(hci_con_handle_t acl_handle, int gain){
+    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_acl_handle(acl_handle);
     if (hfp_connection->speaker_gain != gain){
         hfp_connection->speaker_gain = gain;
         hfp_connection->send_speaker_gain = 1;
@@ -2279,19 +2277,19 @@ void hfp_ag_set_speaker_gain(bd_addr_t bd_addr, int gain){
     hfp_run_for_context(hfp_connection);
 }
 
-void hfp_ag_send_phone_number_for_voice_tag(bd_addr_t bd_addr, const char * number){
-    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_bd_addr(bd_addr);
+void hfp_ag_send_phone_number_for_voice_tag(hci_con_handle_t acl_handle, const char * number){
+    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_acl_handle(acl_handle);
     hfp_ag_set_clip(0, number);
     hfp_connection->send_phone_number_for_voice_tag = 1;
 }
 
-void hfp_ag_reject_phone_number_for_voice_tag(bd_addr_t bd_addr){
-    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_bd_addr(bd_addr);
+void hfp_ag_reject_phone_number_for_voice_tag(hci_con_handle_t acl_handle){
+    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_acl_handle(acl_handle);
     hfp_connection->send_error = 1;
 }
 
-void hfp_ag_send_dtmf_code_done(bd_addr_t bd_addr){
-    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_bd_addr(bd_addr);
+void hfp_ag_send_dtmf_code_done(hci_con_handle_t acl_handle){
+    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_acl_handle(acl_handle);
     hfp_connection->ok_pending = 1;
 }
 
@@ -2304,8 +2302,8 @@ void hfp_ag_clear_last_dialed_number(void){
     hfp_gsm_clear_last_dialed_number();
 }
 
-void hfp_ag_notify_incoming_call_waiting(bd_addr_t bd_addr){
-    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_bd_addr(bd_addr);
+void hfp_ag_notify_incoming_call_waiting(hci_con_handle_t acl_handle){
+    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_acl_handle(acl_handle);
     if (!hfp_connection->call_waiting_notification_enabled) return;
     
     hfp_connection->ag_notify_incoming_call_waiting = 1;

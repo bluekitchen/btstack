@@ -291,6 +291,18 @@ hfp_connection_t * get_hfp_connection_context_for_sco_handle(uint16_t handle){
     return NULL;
 }
 
+hfp_connection_t * get_hfp_connection_context_for_acl_handle(uint16_t handle){
+    btstack_linked_list_iterator_t it;    
+    btstack_linked_list_iterator_init(&it, hfp_get_connections());
+    while (btstack_linked_list_iterator_has_next(&it)){
+        hfp_connection_t * hfp_connection = (hfp_connection_t *)btstack_linked_list_iterator_next(&it);
+        if (hfp_connection->acl_handle == handle){
+            return hfp_connection;
+        }
+    }
+    return NULL;
+}
+
 void hfp_reset_context_flags(hfp_connection_t * hfp_connection){
     if (!hfp_connection) return;
     hfp_connection->ok_pending = 0;

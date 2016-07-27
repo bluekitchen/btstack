@@ -105,10 +105,10 @@ int btstack_main(int argc, const char * argv[]){
     hsp_hs_create_sdp_record((uint8_t *)hsp_hs_service_buffer, 0x10004, 3, "HSP HS", 0);
     sdp_register_service((uint8_t *)hsp_hs_service_buffer);
 
-    hfp_ag_create_sdp_record((uint8_t *)hfp_ag_service_buffer, 0x10005, 4, "HFP AG", 0, 0);
+    hfp_ag_create_sdp_record((uint8_t *)hfp_ag_service_buffer, 0x10005, 4, "HFP AG", 0, 0, 1);
     sdp_register_service((uint8_t *)hfp_ag_service_buffer);
     
-    hfp_hf_create_sdp_record((uint8_t *)hfp_hf_service_buffer, 0x10006, 5, "HFP HS", 0);
+    hfp_hf_create_sdp_record((uint8_t *)hfp_hf_service_buffer, 0x10006, 5, "HFP HS", 0, 1);
     sdp_register_service((uint8_t *)hfp_hf_service_buffer);    
 
     // set CoD for all this
