@@ -1141,15 +1141,14 @@ void hfp_hf_establish_service_level_connection(bd_addr_t bd_addr){
     hfp_establish_service_level_connection(bd_addr, SDP_HandsfreeAudioGateway);
 }
 
-void hfp_hf_release_service_level_connection(bd_addr_t bd_addr){
-    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_bd_addr(bd_addr);
+void hfp_hf_release_service_level_connection(hci_con_handle_t acl_handle){
+    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_acl_handle(acl_handle);
     hfp_release_service_level_connection(hfp_connection);
     hfp_run_for_context(hfp_connection);
 }
 
-static void hfp_hf_set_status_update_for_all_ag_indicators(bd_addr_t bd_addr, uint8_t enable){
-    hfp_hf_establish_service_level_connection(bd_addr);
-    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_bd_addr(bd_addr);
+static void hfp_hf_set_status_update_for_all_ag_indicators(hci_con_handle_t acl_handle, uint8_t enable){
+    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_acl_handle(acl_handle);
     if (!hfp_connection){
         log_error("HFP HF: hfp_connection doesn't exist.");
         return;
@@ -1158,18 +1157,17 @@ static void hfp_hf_set_status_update_for_all_ag_indicators(bd_addr_t bd_addr, ui
     hfp_run_for_context(hfp_connection);
 }
 
-void hfp_hf_enable_status_update_for_all_ag_indicators(bd_addr_t bd_addr){
-    hfp_hf_set_status_update_for_all_ag_indicators(bd_addr, 1);
+void hfp_hf_enable_status_update_for_all_ag_indicators(hci_con_handle_t acl_handle){
+    hfp_hf_set_status_update_for_all_ag_indicators(acl_handle, 1);
 }
 
-void hfp_hf_disable_status_update_for_all_ag_indicators(bd_addr_t bd_addr){
-    hfp_hf_set_status_update_for_all_ag_indicators(bd_addr, 0);
+void hfp_hf_disable_status_update_for_all_ag_indicators(hci_con_handle_t acl_handle){
+    hfp_hf_set_status_update_for_all_ag_indicators(acl_handle, 0);
 }
 
 // TODO: returned ERROR - wrong format
-void hfp_hf_set_status_update_for_individual_ag_indicators(bd_addr_t bd_addr, uint32_t indicators_status_bitmap){
-    hfp_hf_establish_service_level_connection(bd_addr);
-    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_bd_addr(bd_addr);
+void hfp_hf_set_status_update_for_individual_ag_indicators(hci_con_handle_t acl_handle, uint32_t indicators_status_bitmap){
+    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_acl_handle(acl_handle);
     if (!hfp_connection){
         log_error("HFP HF: hfp_connection doesn't exist.");
         return;
@@ -1179,9 +1177,8 @@ void hfp_hf_set_status_update_for_individual_ag_indicators(bd_addr_t bd_addr, ui
     hfp_run_for_context(hfp_connection);
 }
 
-void hfp_hf_query_operator_selection(bd_addr_t bd_addr){
-    hfp_hf_establish_service_level_connection(bd_addr);
-    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_bd_addr(bd_addr);
+void hfp_hf_query_operator_selection(hci_con_handle_t acl_handle){
+    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_acl_handle(acl_handle);
     if (!hfp_connection){
         log_error("HFP HF: hfp_connection doesn't exist.");
         return;
@@ -1199,9 +1196,8 @@ void hfp_hf_query_operator_selection(bd_addr_t bd_addr){
     hfp_run_for_context(hfp_connection);
 }
 
-static void hfp_hf_set_report_extended_audio_gateway_error_result_code(bd_addr_t bd_addr, uint8_t enable){
-    hfp_hf_establish_service_level_connection(bd_addr);
-    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_bd_addr(bd_addr);
+static void hfp_hf_set_report_extended_audio_gateway_error_result_code(hci_con_handle_t acl_handle, uint8_t enable){
+    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_acl_handle(acl_handle);
     if (!hfp_connection){
         log_error("HFP HF: hfp_connection doesn't exist.");
         return;
@@ -1211,18 +1207,17 @@ static void hfp_hf_set_report_extended_audio_gateway_error_result_code(bd_addr_t
 }
 
 
-void hfp_hf_enable_report_extended_audio_gateway_error_result_code(bd_addr_t bd_addr){
-    hfp_hf_set_report_extended_audio_gateway_error_result_code(bd_addr, 1);
+void hfp_hf_enable_report_extended_audio_gateway_error_result_code(hci_con_handle_t acl_handle){
+    hfp_hf_set_report_extended_audio_gateway_error_result_code(acl_handle, 1);
 }
 
-void hfp_hf_disable_report_extended_audio_gateway_error_result_code(bd_addr_t bd_addr){
-    hfp_hf_set_report_extended_audio_gateway_error_result_code(bd_addr, 0);
+void hfp_hf_disable_report_extended_audio_gateway_error_result_code(hci_con_handle_t acl_handle){
+    hfp_hf_set_report_extended_audio_gateway_error_result_code(acl_handle, 0);
 }
 
 
-void hfp_hf_establish_audio_connection(bd_addr_t bd_addr){
-    hfp_hf_establish_service_level_connection(bd_addr);
-    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_bd_addr(bd_addr);
+void hfp_hf_establish_audio_connection(hci_con_handle_t acl_handle){
+    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_acl_handle(acl_handle);
     hfp_connection->establish_audio_connection = 0;
 
     if (hfp_connection->state == HFP_AUDIO_CONNECTION_ESTABLISHED) return;
@@ -1245,15 +1240,14 @@ void hfp_hf_establish_audio_connection(bd_addr_t bd_addr){
     hfp_run_for_context(hfp_connection);
 }
 
-void hfp_hf_release_audio_connection(bd_addr_t bd_addr){
-    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_bd_addr(bd_addr);
+void hfp_hf_release_audio_connection(hci_con_handle_t acl_handle){
+    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_acl_handle(acl_handle);
     hfp_release_audio_connection(hfp_connection);
     hfp_run_for_context(hfp_connection);
 }
 
-void hfp_hf_answer_incoming_call(bd_addr_t bd_addr){
-    hfp_hf_establish_service_level_connection(bd_addr);
-    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_bd_addr(bd_addr);
+void hfp_hf_answer_incoming_call(hci_con_handle_t acl_handle){
+    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_acl_handle(acl_handle);
 
     if (hfp_callsetup_status == HFP_CALLSETUP_STATUS_INCOMING_CALL_SETUP_IN_PROGRESS){
         hfp_connection->hf_answer_incoming_call = 1;
@@ -1263,17 +1257,14 @@ void hfp_hf_answer_incoming_call(bd_addr_t bd_addr){
     }
 }
 
-void hfp_hf_terminate_call(bd_addr_t bd_addr){
-    hfp_hf_establish_service_level_connection(bd_addr);
-    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_bd_addr(bd_addr);
-    
+void hfp_hf_terminate_call(hci_con_handle_t acl_handle){
+    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_acl_handle(acl_handle);
     hfp_connection->hf_send_chup = 1;
     hfp_run_for_context(hfp_connection);
 }
 
-void hfp_hf_reject_incoming_call(bd_addr_t bd_addr){
-    hfp_hf_establish_service_level_connection(bd_addr);
-    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_bd_addr(bd_addr);
+void hfp_hf_reject_incoming_call(hci_con_handle_t acl_handle){
+    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_acl_handle(acl_handle);
     
     if (hfp_callsetup_status == HFP_CALLSETUP_STATUS_INCOMING_CALL_SETUP_IN_PROGRESS){
         hfp_connection->hf_send_chup = 1;
@@ -1281,9 +1272,8 @@ void hfp_hf_reject_incoming_call(bd_addr_t bd_addr){
     }
 }
 
-void hfp_hf_user_busy(bd_addr_t addr){
-    hfp_hf_establish_service_level_connection(addr);
-    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_bd_addr(addr);
+void hfp_hf_user_busy(hci_con_handle_t acl_handle){
+    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_acl_handle(acl_handle);
     
     if (hfp_callsetup_status == HFP_CALLSETUP_STATUS_INCOMING_CALL_SETUP_IN_PROGRESS){
         hfp_connection->hf_send_chld_0 = 1;
@@ -1291,9 +1281,8 @@ void hfp_hf_user_busy(bd_addr_t addr){
     }
 }
 
-void hfp_hf_end_active_and_accept_other(bd_addr_t addr){
-    hfp_hf_establish_service_level_connection(addr);
-    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_bd_addr(addr);
+void hfp_hf_end_active_and_accept_other(hci_con_handle_t acl_handle){
+    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_acl_handle(acl_handle);
     
     if (hfp_callsetup_status == HFP_CALLSETUP_STATUS_INCOMING_CALL_SETUP_IN_PROGRESS ||
         hfp_call_status == HFP_CALL_STATUS_ACTIVE_OR_HELD_CALL_IS_PRESENT){
@@ -1302,9 +1291,8 @@ void hfp_hf_end_active_and_accept_other(bd_addr_t addr){
     }
 }
 
-void hfp_hf_swap_calls(bd_addr_t addr){
-    hfp_hf_establish_service_level_connection(addr);
-    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_bd_addr(addr);
+void hfp_hf_swap_calls(hci_con_handle_t acl_handle){
+    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_acl_handle(acl_handle);
     
     if (hfp_callsetup_status == HFP_CALLSETUP_STATUS_INCOMING_CALL_SETUP_IN_PROGRESS ||
         hfp_call_status == HFP_CALL_STATUS_ACTIVE_OR_HELD_CALL_IS_PRESENT){
@@ -1313,9 +1301,8 @@ void hfp_hf_swap_calls(bd_addr_t addr){
     }
 }
 
-void hfp_hf_join_held_call(bd_addr_t addr){
-    hfp_hf_establish_service_level_connection(addr);
-    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_bd_addr(addr);
+void hfp_hf_join_held_call(hci_con_handle_t acl_handle){
+    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_acl_handle(acl_handle);
     
     if (hfp_callsetup_status == HFP_CALLSETUP_STATUS_INCOMING_CALL_SETUP_IN_PROGRESS ||
         hfp_call_status == HFP_CALL_STATUS_ACTIVE_OR_HELD_CALL_IS_PRESENT){
@@ -1324,9 +1311,8 @@ void hfp_hf_join_held_call(bd_addr_t addr){
     }
 }
 
-void hfp_hf_connect_calls(bd_addr_t addr){
-    hfp_hf_establish_service_level_connection(addr);
-    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_bd_addr(addr);
+void hfp_hf_connect_calls(hci_con_handle_t acl_handle){
+    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_acl_handle(acl_handle);
     
     if (hfp_callsetup_status == HFP_CALLSETUP_STATUS_INCOMING_CALL_SETUP_IN_PROGRESS ||
         hfp_call_status == HFP_CALL_STATUS_ACTIVE_OR_HELD_CALL_IS_PRESENT){
@@ -1335,9 +1321,8 @@ void hfp_hf_connect_calls(bd_addr_t addr){
     }
 }
 
-void hfp_hf_release_call_with_index(bd_addr_t addr, int index){
-    hfp_hf_establish_service_level_connection(addr);
-    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_bd_addr(addr);
+void hfp_hf_release_call_with_index(hci_con_handle_t acl_handle, int index){
+    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_acl_handle(acl_handle);
     
     if (hfp_callsetup_status == HFP_CALLSETUP_STATUS_INCOMING_CALL_SETUP_IN_PROGRESS ||
         hfp_call_status == HFP_CALL_STATUS_ACTIVE_OR_HELD_CALL_IS_PRESENT){
@@ -1347,9 +1332,8 @@ void hfp_hf_release_call_with_index(bd_addr_t addr, int index){
     }
 }
 
-void hfp_hf_private_consultation_with_call(bd_addr_t addr, int index){
-    hfp_hf_establish_service_level_connection(addr);
-    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_bd_addr(addr);
+void hfp_hf_private_consultation_with_call(hci_con_handle_t acl_handle, int index){
+    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_acl_handle(acl_handle);
     
     if (hfp_callsetup_status == HFP_CALLSETUP_STATUS_INCOMING_CALL_SETUP_IN_PROGRESS ||
         hfp_call_status == HFP_CALL_STATUS_ACTIVE_OR_HELD_CALL_IS_PRESENT){
@@ -1359,103 +1343,92 @@ void hfp_hf_private_consultation_with_call(bd_addr_t addr, int index){
     }
 }
 
-void hfp_hf_dial_number(bd_addr_t bd_addr, char * number){
-    hfp_hf_establish_service_level_connection(bd_addr);
-    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_bd_addr(bd_addr);
-
-    hfp_connection->hf_initiate_outgoing_call = 1;
+void hfp_hf_dial_number(hci_con_handle_t acl_handle, char * number){
+    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_acl_handle(acl_handle);
+    
+     hfp_connection->hf_initiate_outgoing_call = 1;
     snprintf(phone_number, sizeof(phone_number), "%s", number);
     hfp_run_for_context(hfp_connection);
 }
 
-void hfp_hf_dial_memory(bd_addr_t bd_addr, int memory_id){
-    hfp_hf_establish_service_level_connection(bd_addr);
-    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_bd_addr(bd_addr);
-
-    hfp_connection->hf_initiate_memory_dialing = 1;
+void hfp_hf_dial_memory(hci_con_handle_t acl_handle, int memory_id){
+    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_acl_handle(acl_handle);
+    
+     hfp_connection->hf_initiate_memory_dialing = 1;
     hfp_connection->memory_id = memory_id;
 
     hfp_run_for_context(hfp_connection);
 }
 
-void hfp_hf_redial_last_number(bd_addr_t bd_addr){
-    hfp_hf_establish_service_level_connection(bd_addr);
-    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_bd_addr(bd_addr);
-
-    hfp_connection->hf_initiate_redial_last_number = 1;
+void hfp_hf_redial_last_number(hci_con_handle_t acl_handle){
+    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_acl_handle(acl_handle);
+    
+     hfp_connection->hf_initiate_redial_last_number = 1;
     hfp_run_for_context(hfp_connection);
 }
 
-void hfp_hf_activate_call_waiting_notification(bd_addr_t bd_addr){
-    hfp_hf_establish_service_level_connection(bd_addr);
-    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_bd_addr(bd_addr);
-
-    hfp_connection->hf_activate_call_waiting_notification = 1;
-    hfp_run_for_context(hfp_connection);
-}
-
-
-void hfp_hf_deactivate_call_waiting_notification(bd_addr_t bd_addr){
-    hfp_hf_establish_service_level_connection(bd_addr);
-    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_bd_addr(bd_addr);
-
-    hfp_connection->hf_deactivate_call_waiting_notification = 1;
+void hfp_hf_activate_call_waiting_notification(hci_con_handle_t acl_handle){
+    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_acl_handle(acl_handle);
+    
+     hfp_connection->hf_activate_call_waiting_notification = 1;
     hfp_run_for_context(hfp_connection);
 }
 
 
-void hfp_hf_activate_calling_line_notification(bd_addr_t bd_addr){
-    hfp_hf_establish_service_level_connection(bd_addr);
-    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_bd_addr(bd_addr);
-
-    hfp_connection->hf_activate_calling_line_notification = 1;
-    hfp_run_for_context(hfp_connection);
-}
-
-void hfp_hf_deactivate_calling_line_notification(bd_addr_t bd_addr){
-    hfp_hf_establish_service_level_connection(bd_addr);
-    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_bd_addr(bd_addr);
-
-    hfp_connection->hf_deactivate_calling_line_notification = 1;
+void hfp_hf_deactivate_call_waiting_notification(hci_con_handle_t acl_handle){
+    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_acl_handle(acl_handle);
+    
+     hfp_connection->hf_deactivate_call_waiting_notification = 1;
     hfp_run_for_context(hfp_connection);
 }
 
 
-void hfp_hf_activate_echo_canceling_and_noise_reduction(bd_addr_t bd_addr){
-    hfp_hf_establish_service_level_connection(bd_addr);
-    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_bd_addr(bd_addr);
-
-    hfp_connection->hf_activate_echo_canceling_and_noise_reduction = 1;
+void hfp_hf_activate_calling_line_notification(hci_con_handle_t acl_handle){
+    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_acl_handle(acl_handle);
+    
+     hfp_connection->hf_activate_calling_line_notification = 1;
     hfp_run_for_context(hfp_connection);
 }
 
-void hfp_hf_deactivate_echo_canceling_and_noise_reduction(bd_addr_t bd_addr){
-    hfp_hf_establish_service_level_connection(bd_addr);
-    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_bd_addr(bd_addr);
-
-    hfp_connection->hf_deactivate_echo_canceling_and_noise_reduction = 1;
+void hfp_hf_deactivate_calling_line_notification(hci_con_handle_t acl_handle){
+    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_acl_handle(acl_handle);
+    
+     hfp_connection->hf_deactivate_calling_line_notification = 1;
     hfp_run_for_context(hfp_connection);
 }
 
-void hfp_hf_activate_voice_recognition_notification(bd_addr_t bd_addr){
-    hfp_hf_establish_service_level_connection(bd_addr);
-    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_bd_addr(bd_addr);
 
-    hfp_connection->hf_activate_voice_recognition_notification = 1;
+void hfp_hf_activate_echo_canceling_and_noise_reduction(hci_con_handle_t acl_handle){
+    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_acl_handle(acl_handle);
+    
+     hfp_connection->hf_activate_echo_canceling_and_noise_reduction = 1;
     hfp_run_for_context(hfp_connection);
 }
 
-void hfp_hf_deactivate_voice_recognition_notification(bd_addr_t bd_addr){
-    hfp_hf_establish_service_level_connection(bd_addr);
-    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_bd_addr(bd_addr);
-
-    hfp_connection->hf_deactivate_voice_recognition_notification = 1;
+void hfp_hf_deactivate_echo_canceling_and_noise_reduction(hci_con_handle_t acl_handle){
+    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_acl_handle(acl_handle);
+    
+     hfp_connection->hf_deactivate_echo_canceling_and_noise_reduction = 1;
     hfp_run_for_context(hfp_connection);
 }
 
-void hfp_hf_set_microphone_gain(bd_addr_t bd_addr, int gain){
-    hfp_hf_establish_service_level_connection(bd_addr);
-    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_bd_addr(bd_addr);
+void hfp_hf_activate_voice_recognition_notification(hci_con_handle_t acl_handle){
+    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_acl_handle(acl_handle);
+    
+     hfp_connection->hf_activate_voice_recognition_notification = 1;
+    hfp_run_for_context(hfp_connection);
+}
+
+void hfp_hf_deactivate_voice_recognition_notification(hci_con_handle_t acl_handle){
+    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_acl_handle(acl_handle);
+    
+     hfp_connection->hf_deactivate_voice_recognition_notification = 1;
+    hfp_run_for_context(hfp_connection);
+}
+
+void hfp_hf_set_microphone_gain(hci_con_handle_t acl_handle, int gain){
+    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_acl_handle(acl_handle);
+    
     if (hfp_connection->microphone_gain == gain) return;
     if (gain < 0 || gain > 15){
         log_info("Valid range for a gain is [0..15]. Currently sent: %d", gain);
@@ -1466,9 +1439,9 @@ void hfp_hf_set_microphone_gain(bd_addr_t bd_addr, int gain){
     hfp_run_for_context(hfp_connection);
 }
 
-void hfp_hf_set_speaker_gain(bd_addr_t bd_addr, int gain){
-    hfp_hf_establish_service_level_connection(bd_addr);
-    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_bd_addr(bd_addr);
+void hfp_hf_set_speaker_gain(hci_con_handle_t acl_handle, int gain){
+    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_acl_handle(acl_handle);
+    
     if (hfp_connection->speaker_gain == gain) return;
     if (gain < 0 || gain > 15){
         log_info("Valid range for a gain is [0..15]. Currently sent: %d", gain);
@@ -1479,70 +1452,61 @@ void hfp_hf_set_speaker_gain(bd_addr_t bd_addr, int gain){
     hfp_run_for_context(hfp_connection);
 }
 
-void hfp_hf_send_dtmf_code(bd_addr_t addr, char code){
-    hfp_hf_establish_service_level_connection(addr);
-    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_bd_addr(addr);
+void hfp_hf_send_dtmf_code(hci_con_handle_t acl_handle, char code){
+    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_acl_handle(acl_handle);
     hfp_connection->hf_send_dtmf_code = code;
     hfp_run_for_context(hfp_connection);
 }
 
-void hfp_hf_request_phone_number_for_voice_tag(bd_addr_t addr){
-    hfp_hf_establish_service_level_connection(addr);
-    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_bd_addr(addr);
+void hfp_hf_request_phone_number_for_voice_tag(hci_con_handle_t acl_handle){
+    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_acl_handle(acl_handle);
     hfp_connection->hf_send_binp = 1;
     hfp_run_for_context(hfp_connection);
 }
 
-void hfp_hf_query_current_call_status(bd_addr_t addr){
-    hfp_hf_establish_service_level_connection(addr);
-    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_bd_addr(addr);
+void hfp_hf_query_current_call_status(hci_con_handle_t acl_handle){
+    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_acl_handle(acl_handle);
     hfp_connection->hf_send_clcc = 1;
     hfp_run_for_context(hfp_connection);
 }
 
 
-void hfp_hf_rrh_query_status(bd_addr_t addr){
-    hfp_hf_establish_service_level_connection(addr);
-    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_bd_addr(addr);
+void hfp_hf_rrh_query_status(hci_con_handle_t acl_handle){
+    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_acl_handle(acl_handle);
     hfp_connection->hf_send_rrh = 1;
     hfp_connection->hf_send_rrh_command = '?';
     hfp_run_for_context(hfp_connection);
 }
 
-void hfp_hf_rrh_hold_call(bd_addr_t addr){
-    hfp_hf_establish_service_level_connection(addr);
-    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_bd_addr(addr);
+void hfp_hf_rrh_hold_call(hci_con_handle_t acl_handle){
+    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_acl_handle(acl_handle);
     hfp_connection->hf_send_rrh = 1;
     hfp_connection->hf_send_rrh_command = '0';
     hfp_run_for_context(hfp_connection);
 }
 
-void hfp_hf_rrh_accept_held_call(bd_addr_t addr){
-    hfp_hf_establish_service_level_connection(addr);
-    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_bd_addr(addr);
+void hfp_hf_rrh_accept_held_call(hci_con_handle_t acl_handle){
+    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_acl_handle(acl_handle);
     hfp_connection->hf_send_rrh = 1;
     hfp_connection->hf_send_rrh_command = '1';
     hfp_run_for_context(hfp_connection);
 }
 
-void hfp_hf_rrh_reject_held_call(bd_addr_t addr){
-    hfp_hf_establish_service_level_connection(addr);
-    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_bd_addr(addr);
+void hfp_hf_rrh_reject_held_call(hci_con_handle_t acl_handle){
+    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_acl_handle(acl_handle);
     hfp_connection->hf_send_rrh = 1;
     hfp_connection->hf_send_rrh_command = '2';
     hfp_run_for_context(hfp_connection);
 }
 
-void hfp_hf_query_subscriber_number(bd_addr_t addr){
-    hfp_hf_establish_service_level_connection(addr);
-    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_bd_addr(addr);
+void hfp_hf_query_subscriber_number(hci_con_handle_t acl_handle){
+    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_acl_handle(acl_handle);
     hfp_connection->hf_send_cnum = 1;
     hfp_run_for_context(hfp_connection);
 }
 
-void hfp_hf_set_hf_indicator(bd_addr_t addr, int assigned_number, int value){
-    hfp_hf_establish_service_level_connection(addr);
-    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_bd_addr(addr);
+void hfp_hf_set_hf_indicator(hci_con_handle_t acl_handle, int assigned_number, int value){
+    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_acl_handle(acl_handle);
     // find index for assigned number
     int i;
     for (i = 0; i < hfp_indicators_nr ; i++){
