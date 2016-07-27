@@ -36,7 +36,7 @@
  */
 
 /*
- * sbc_plc.c
+ * btstack_sbc_plc.c
  *
  */
 
@@ -67,11 +67,11 @@ static float CrossCorrelation(int16_t *x, int16_t *y);
 static int PatternMatch(int16_t *y);
 static float AmplitudeMatch(int16_t *y, int16_t bestmatch);
 
-uint8_t * sbc_plc_zero_signal_frame(void){
+uint8_t * btstack_sbc_plc_zero_signal_frame(void){
     return (uint8_t *)&indices0;
 }
 
-void sbc_plc_init(sbc_plc_state_t *plc_state){
+void btstack_sbc_plc_init(btstack_sbc_plc_state_t *plc_state){
     int i;
     plc_state->nbf=0;
     plc_state->bestlag=0;
@@ -81,7 +81,7 @@ void sbc_plc_init(sbc_plc_state_t *plc_state){
        
 }
 
-void sbc_plc_bad_frame(sbc_plc_state_t *plc_state, int16_t *ZIRbuf, int16_t *out){
+void btstack_sbc_plc_bad_frame(btstack_sbc_plc_state_t *plc_state, int16_t *ZIRbuf, int16_t *out){
     int   i;
     float val;
     float sf;
@@ -133,7 +133,7 @@ void sbc_plc_bad_frame(sbc_plc_state_t *plc_state, int16_t *ZIRbuf, int16_t *out
 
 }
 
-void sbc_plc_good_frame(sbc_plc_state_t *plc_state, int16_t *in, int16_t *out){
+void btstack_sbc_plc_good_frame(btstack_sbc_plc_state_t *plc_state, int16_t *in, int16_t *out){
     int i;
     i=0;
     if (plc_state->nbf>0){

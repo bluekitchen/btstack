@@ -141,7 +141,7 @@ int main (int argc, const char * argv[]){
         return -1;
     }
     
-    sbc_mode_t mode = SBC_MODE_STANDARD;
+    btstack_sbc_mode_t mode = SBC_MODE_STANDARD;
     
     const char * filename = argv[1];
 

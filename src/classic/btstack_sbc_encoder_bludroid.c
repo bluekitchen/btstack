@@ -110,7 +110,7 @@ uint16_t  btstack_sbc_encoder_sbc_buffer_length(void){
 }
 
 
-void btstack_sbc_encoder_init(btstack_sbc_encoder_state_t * state, sbc_mode_t mode, 
+void btstack_sbc_encoder_init(btstack_sbc_encoder_state_t * state, btstack_sbc_mode_t mode, 
                         int blocks, int subbands, int allmethod, int sample_rate, int bitpool){
 
     if (sbc_state_singelton && sbc_state_singelton != state ){

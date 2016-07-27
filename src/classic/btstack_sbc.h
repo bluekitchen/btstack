@@ -48,7 +48,7 @@
 typedef enum{
     SBC_MODE_STANDARD,
     SBC_MODE_mSBC
-} sbc_mode_t;
+} btstack_sbc_mode_t;
 
 #if defined __cplusplus
 }

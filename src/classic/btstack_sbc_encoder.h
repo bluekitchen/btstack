@@ -53,10 +53,10 @@ extern "C" {
 typedef struct {
     // private
     void * encoder_state;
-    sbc_mode_t mode;
+    btstack_sbc_mode_t mode;
 } btstack_sbc_encoder_state_t;
 
-void btstack_sbc_encoder_init(btstack_sbc_encoder_state_t * state, sbc_mode_t mode, 
+void btstack_sbc_encoder_init(btstack_sbc_encoder_state_t * state, btstack_sbc_mode_t mode, 
                         int blocks, int subbands, int allmethod, int sample_rate, int bitpool);
 
 void btstack_sbc_encoder_process_data(int16_t * input_buffer);

@@ -112,7 +112,7 @@ static int find_sequence_of_zeros(const OI_BYTE *frame_data, OI_UINT32 frame_byt
     return 0;
 }
 
-static int find_h2_syncword(const OI_BYTE *frame_data, OI_UINT32 frame_bytes, sbc_mode_t mode){
+static int find_h2_syncword(const OI_BYTE *frame_data, OI_UINT32 frame_bytes, btstack_sbc_mode_t mode){
     if (mode != SBC_MODE_mSBC) return -1;
     int syncword = mSBC_SYNCWORD;
     uint8_t h2_first_byte = 0;
@@ -159,7 +159,7 @@ void OI_AssertFail(char* file, int line, char* reason){
     printf("AssertFail file %s, line %d, reason %s\n", file, line, reason);
 }
 
-void btstack_sbc_decoder_init(btstack_sbc_decoder_state_t * state, sbc_mode_t mode, void (*callback)(int16_t * data, int num_samples, int num_channels, int sample_rate, void * context), void * context){
+void btstack_sbc_decoder_init(btstack_sbc_decoder_state_t * state, btstack_sbc_mode_t mode, void (*callback)(int16_t * data, int num_samples, int num_channels, int sample_rate, void * context), void * context){
     if (sbc_state_singelton && sbc_state_singelton != state ){
         log_error("SBC decoder: different sbc decoder state is allready registered");
     } 
@@ -194,7 +194,7 @@ void btstack_sbc_decoder_init(btstack_sbc_decoder_state_t * state, sbc_mode_t mo
     state->mode = mode;
     state->context = context;
     state->decoder_state = &bd_state;
-    sbc_plc_init(&state->plc_state);
+    btstack_sbc_plc_init(&state->plc_state);
 }
 
 static void append_received_sbc_data(bludroid_decoder_state_t * state, uint8_t * buffer, int size){
@@ -292,7 +292,7 @@ void btstack_sbc_decoder_process_data(btstack_sbc_decoder_state_t * state, int p
                     bd_decoder_state->sync_word_found = 0;
                 }
                 
-                sbc_plc_good_frame(&state->plc_state, bd_decoder_state->pcm_plc_data, bd_decoder_state->pcm_data);
+                btstack_sbc_plc_good_frame(&state->plc_state, bd_decoder_state->pcm_plc_data, bd_decoder_state->pcm_data);
                 state->handle_pcm_data(bd_decoder_state->pcm_data, 
                                     btstack_sbc_decoder_num_samples_per_frame(state), 
                                     btstack_sbc_decoder_num_channels(state), 
@@ -336,7 +336,7 @@ void btstack_sbc_decoder_process_data(btstack_sbc_decoder_state_t * state, int p
 #endif
                 if (!plc_enabled) break;
                 
-                frame_data = sbc_plc_zero_signal_frame();
+                frame_data = btstack_sbc_plc_zero_signal_frame();
                 OI_UINT32 bytes_in_frame_buffer = msbc_frame_size;
                 
                 status = OI_CODEC_SBC_DecodeFrame(&(bd_decoder_state->decoder_context), 
@@ -347,7 +347,7 @@ void btstack_sbc_decoder_process_data(btstack_sbc_decoder_state_t * state, int p
                 // printf("after bad frame, new status: %d, bytes in frame %d\n", status, bytes_in_frame_buffer);
 
                 if (status != 0) exit(10);
-                sbc_plc_bad_frame(&state->plc_state, bd_decoder_state->pcm_plc_data, bd_decoder_state->pcm_data);
+                btstack_sbc_plc_bad_frame(&state->plc_state, bd_decoder_state->pcm_plc_data, bd_decoder_state->pcm_data);
                 state->handle_pcm_data(bd_decoder_state->pcm_data, 
                                     btstack_sbc_decoder_num_samples_per_frame(state), 
                                     btstack_sbc_decoder_num_channels(state), 

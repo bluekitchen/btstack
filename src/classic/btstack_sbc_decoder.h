@@ -36,12 +36,12 @@
  */
 
 /*
- * sbc_decoder.h
+ * btstack_sbc_decoder.h
  *
  */
 
-#ifndef __SBC_DECODER_H
-#define __SBC_DECODER_H
+#ifndef __BTSTACK_SBC_DECODER_H
+#define __BTSTACK_SBC_DECODER_H
 
 #include <stdint.h>
 #include "btstack_sbc.h"
@@ -56,8 +56,8 @@ typedef struct {
     void (*handle_pcm_data)(int16_t * data, int num_samples, int num_channels, int sample_rate, void * context);
     // private
     void * decoder_state;
-    sbc_plc_state_t plc_state;
-    sbc_mode_t mode;
+    btstack_sbc_plc_state_t plc_state;
+    btstack_sbc_mode_t mode;
 
     // summary of processed good, bad and zero frames
     int good_frames_nr;
@@ -75,7 +75,7 @@ typedef struct {
  * @param context provided in callback
  */
 
-void btstack_sbc_decoder_init(btstack_sbc_decoder_state_t * state, sbc_mode_t mode, void (*callback)(int16_t * data, int num_samples, int num_channels, int sample_rate, void * context), void * context);
+void btstack_sbc_decoder_init(btstack_sbc_decoder_state_t * state, btstack_sbc_mode_t mode, void (*callback)(int16_t * data, int num_samples, int num_channels, int sample_rate, void * context), void * context);
 
 /**
  * @brief Process received SCO data
@@ -111,4 +111,4 @@ void btstack_sbc_decoder_test_simulate_corrupt_frames(int period);
 }
 #endif
 
-#endif // __SBC_DECODER_H
+#endif // __BTSTACK_SBC_DECODER_H

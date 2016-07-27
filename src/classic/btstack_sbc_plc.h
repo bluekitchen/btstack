@@ -36,12 +36,12 @@
  */
 
 /*
- * sbc_plc.h
+ * btstack_sbc_plc.h
  *
  */
 
-#ifndef __SBC_PLC_H
-#define __SBC_PLC_H
+#ifndef __BTSTACK_SBC_PLC_H
+#define __BTSTACK_SBC_PLC_H
 
 #include <stdint.h>
 
@@ -61,15 +61,15 @@ typedef struct sbc_plc_state {
     int16_t hist[LHIST+FS+SBCRT+OLAL];
     int16_t bestlag;
     int     nbf;
-} sbc_plc_state_t;
+} btstack_sbc_plc_state_t;
+
+void btstack_sbc_plc_init(btstack_sbc_plc_state_t *plc_state);
+void btstack_sbc_plc_bad_frame(btstack_sbc_plc_state_t *plc_state, int16_t *ZIRbuf, int16_t *out); 
+void btstack_sbc_plc_good_frame(btstack_sbc_plc_state_t *plc_state, int16_t *in, int16_t *out);
+uint8_t * btstack_sbc_plc_zero_signal_frame(void);
 
 #if defined __cplusplus
 }
 #endif
 
-void sbc_plc_init(sbc_plc_state_t *plc_state);
-void sbc_plc_bad_frame(sbc_plc_state_t *plc_state, int16_t *ZIRbuf, int16_t *out); 
-void sbc_plc_good_frame(sbc_plc_state_t *plc_state, int16_t *in, int16_t *out);
-uint8_t * sbc_plc_zero_signal_frame(void);
-
-#endif // __SBC_PLC_H
+#endif // __BTSTACK_SBC_PLC_H
