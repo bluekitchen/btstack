@@ -1460,16 +1460,81 @@ static void l2cap_signaling_handler_dispatch( hci_con_handle_t handle, uint8_t *
     }
 }
 
+// @returns valid
+static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t * command, uint8_t sig_id){
+    uint16_t result;
+    uint8_t event[10];
+
+    switch (command[0]){
+
+        case CONNECTION_PARAMETER_UPDATE_RESPONSE:
+            result = little_endian_read_16(command, 4);
+            l2cap_emit_connection_parameter_update_response(handle, result);
+            break;
+
+        case CONNECTION_PARAMETER_UPDATE_REQUEST:
+            hci_connection_t * connection = hci_connection_for_handle(handle);
+            if (connection){
+                if (connection->role != HCI_ROLE_MASTER){
+                    // reject command without notifying upper layer when not in master role
+                    return 0;
+                }
+                int update_parameter = 1;
+                le_connection_parameter_range_t existing_range;
+                gap_get_connection_parameter_range(&existing_range);
+                uint16_t le_conn_interval_min = little_endian_read_16(command,8);
+                uint16_t le_conn_interval_max = little_endian_read_16(command,10);
+                uint16_t le_conn_latency = little_endian_read_16(command,12);
+                uint16_t le_supervision_timeout = little_endian_read_16(command,14);
+
+                if (le_conn_interval_min < existing_range.le_conn_interval_min) update_parameter = 0;
+                if (le_conn_interval_max > existing_range.le_conn_interval_max) update_parameter = 0;
+
+                if (le_conn_latency < existing_range.le_conn_latency_min) update_parameter = 0;
+                if (le_conn_latency > existing_range.le_conn_latency_max) update_parameter = 0;
+
+                if (le_supervision_timeout < existing_range.le_supervision_timeout_min) update_parameter = 0;
+                if (le_supervision_timeout > existing_range.le_supervision_timeout_max) update_parameter = 0;
+
+                if (update_parameter){
+                    connection->le_con_parameter_update_state = CON_PARAMETER_UPDATE_SEND_RESPONSE;
+                    connection->le_conn_interval_min = le_conn_interval_min;
+                    connection->le_conn_interval_max = le_conn_interval_max;
+                    connection->le_conn_latency = le_conn_latency;
+                    connection->le_supervision_timeout = le_supervision_timeout;
+                } else {
+                    connection->le_con_parameter_update_state = CON_PARAMETER_UPDATE_DENY;
+                }
+                connection->le_con_param_update_identifier = sig_id;
+            }
+
+            if (!l2cap_event_packet_handler) break;
+
+            event[0] = L2CAP_EVENT_CONNECTION_PARAMETER_UPDATE_REQUEST;
+            event[1] = 8;
+            memcpy(&event[2], &command[4], 8);
+            hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
+            (*l2cap_event_packet_handler)( HCI_EVENT_PACKET, 0, event, sizeof(event));
+            break;
+
+        default:
+            // command unknown -> reject command
+            return 0;
+    }
+    return 1;
+}
+
 static void l2cap_acl_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size ){
         
     // Get Channel ID
     uint16_t channel_id = READ_L2CAP_CHANNEL_ID(packet); 
+    uint8_t sig_id;
     hci_con_handle_t handle = READ_ACL_CONNECTION_HANDLE(packet);
-    
+    int valid;
+
     switch (channel_id) {
             
         case L2CAP_CID_SIGNALING: {
-            
             uint16_t command_offset = 8;
             while (command_offset < size) {                
                 
@@ -1482,6 +1547,14 @@ static void l2cap_acl_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
             break;
         }
             
+        case L2CAP_CID_SIGNALING_LE:
+            sig_id = packet[COMPLETE_L2CAP_HEADER + 1];
+            valid  = l2cap_le_signaling_handler_dispatch(handle, &packet[COMPLETE_L2CAP_HEADER], sig_id);
+            if (!valid){
+                l2cap_register_signaling_response(handle, COMMAND_REJECT_LE, sig_id, L2CAP_REJ_CMD_UNKNOWN);
+            }
+            break;
+
         case L2CAP_CID_ATTRIBUTE_PROTOCOL:
             if (fixed_channels[L2CAP_FIXED_CHANNEL_TABLE_INDEX_ATTRIBUTE_PROTOCOL].callback) {
                 (*fixed_channels[L2CAP_FIXED_CHANNEL_TABLE_INDEX_ATTRIBUTE_PROTOCOL].callback)(ATT_DATA_PACKET, handle, &packet[COMPLETE_L2CAP_HEADER], size-COMPLETE_L2CAP_HEADER);
@@ -1499,70 +1572,6 @@ static void l2cap_acl_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
                 (*fixed_channels[L2CAP_FIXED_CHANNEL_TABLE_INDEX_CONNECTIONLESS_CHANNEL].callback)(UCD_DATA_PACKET, handle, &packet[COMPLETE_L2CAP_HEADER], size-COMPLETE_L2CAP_HEADER);
             }
             break;
-        
-        case L2CAP_CID_SIGNALING_LE: {
-            switch (packet[8]){
-                case CONNECTION_PARAMETER_UPDATE_RESPONSE: {
-                    uint16_t result = little_endian_read_16(packet, 12);
-                    l2cap_emit_connection_parameter_update_response(handle, result);
-                    break;
-                }
-                case CONNECTION_PARAMETER_UPDATE_REQUEST: {
-                    uint8_t event[10];
-                    event[0] = L2CAP_EVENT_CONNECTION_PARAMETER_UPDATE_REQUEST;
-                    event[1] = 8;
-                    memcpy(&event[2], &packet[12], 8);
-                
-                    hci_connection_t * connection = hci_connection_for_handle(handle);
-                    if (connection){ 
-                        if (connection->role != HCI_ROLE_MASTER){
-                            // reject command without notifying upper layer when not in master role
-                            uint8_t sig_id = packet[COMPLETE_L2CAP_HEADER + 1]; 
-                            l2cap_register_signaling_response(handle, COMMAND_REJECT_LE, sig_id, L2CAP_REJ_CMD_UNKNOWN);
-                            break;
-                        }
-                        int update_parameter = 1;
-                        le_connection_parameter_range_t existing_range;
-                        gap_get_connection_parameter_range(&existing_range);
-                        uint16_t le_conn_interval_min = little_endian_read_16(packet,12);
-                        uint16_t le_conn_interval_max = little_endian_read_16(packet,14);
-                        uint16_t le_conn_latency = little_endian_read_16(packet,16);
-                        uint16_t le_supervision_timeout = little_endian_read_16(packet,18);
-
-                        if (le_conn_interval_min < existing_range.le_conn_interval_min) update_parameter = 0;
-                        if (le_conn_interval_max > existing_range.le_conn_interval_max) update_parameter = 0;
-                        
-                        if (le_conn_latency < existing_range.le_conn_latency_min) update_parameter = 0;
-                        if (le_conn_latency > existing_range.le_conn_latency_max) update_parameter = 0;
-
-                        if (le_supervision_timeout < existing_range.le_supervision_timeout_min) update_parameter = 0;
-                        if (le_supervision_timeout > existing_range.le_supervision_timeout_max) update_parameter = 0;
-
-                        if (update_parameter){
-                            connection->le_con_parameter_update_state = CON_PARAMETER_UPDATE_SEND_RESPONSE;
-                            connection->le_conn_interval_min = le_conn_interval_min;
-                            connection->le_conn_interval_max = le_conn_interval_max;
-                            connection->le_conn_latency = le_conn_latency;
-                            connection->le_supervision_timeout = le_supervision_timeout;
-                        } else {
-                            connection->le_con_parameter_update_state = CON_PARAMETER_UPDATE_DENY;
-                        }
-                        connection->le_con_param_update_identifier = packet[COMPLETE_L2CAP_HEADER + 1];
-                    }
-                
-                    hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
-                    if (!l2cap_event_packet_handler) break;
-                    (*l2cap_event_packet_handler)( HCI_EVENT_PACKET, 0, event, sizeof(event));
-                    break;
-                }
-                default: {
-                    uint8_t sig_id = packet[COMPLETE_L2CAP_HEADER + 1]; 
-                    l2cap_register_signaling_response(handle, COMMAND_REJECT_LE, sig_id, L2CAP_REJ_CMD_UNKNOWN);
-                    break;
-                }
-            }
-            break;
-        }
 
         default: {
             // Find channel for this channel_id and connection handle
