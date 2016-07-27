@@ -79,6 +79,8 @@ static uint8_t adv_general_discoverable[] = { 2, 01, 02 };
 
 const uint16_t psm_x = 0xf0;
 
+uint8_t receive_buffer_X[100];
+
 static void gap_run(void){
 }
 
@@ -111,6 +113,18 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                 case HCI_EVENT_DISCONNECTION_COMPLETE:
                     break;
                     
+                case L2CAP_EVENT_INCOMING_CONNECTION: {
+                    uint16_t l2cap_cid  = little_endian_read_16(packet, 12);
+#if 0
+                    printf("L2CAP Accepting incoming connection request\n"); 
+                    l2cap_le_accept_connection(l2cap_cid, receive_buffer_X, sizeof(receive_buffer_X), 1);
+#else
+                    printf("L2CAP Decline incoming connection request\n"); 
+                    l2cap_le_decline_connection(l2cap_cid);
+#endif
+                    break;
+                }
+
                 case SM_EVENT_JUST_WORKS_REQUEST:
                     printf("SM_EVENT_JUST_WORKS_REQUEST\n");
                     sm_just_works_confirm(little_endian_read_16(packet, 2));
