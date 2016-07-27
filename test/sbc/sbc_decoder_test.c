@@ -195,13 +195,13 @@ int main (int argc, const char * argv[]){
     wav_writer_state.frame_count = 0;
     wav_writer_state.total_num_samples = 0;
    
-    sbc_decoder_state_t state;
-    sbc_decoder_init(&state, mode, &handle_pcm_data, (void*)&wav_writer_state);
+    btstack_sbc_decoder_state_t state;
+    btstack_sbc_decoder_init(&state, mode, &handle_pcm_data, (void*)&wav_writer_state);
     if (!plc_enabled){
-        sbc_decoder_test_disable_plc();
+        btstack_sbc_decoder_test_disable_plc();
     }
     if (corrupt_frame_period > 0){
-        sbc_decoder_test_simulate_corrupt_frames(corrupt_frame_period);
+        btstack_sbc_decoder_test_simulate_corrupt_frames(corrupt_frame_period);
     }
 
     write_wav_header(wav_writer_state.wav_file, 0, 0, 0);
@@ -211,11 +211,11 @@ int main (int argc, const char * argv[]){
         int bytes_read = __read(fd, read_buffer, sizeof(read_buffer));
         if (0 >= bytes_read) break;
         // process chunk
-        sbc_decoder_process_data(&state, 0, read_buffer, bytes_read);
+        btstack_sbc_decoder_process_data(&state, 0, read_buffer, bytes_read);
     }
 
     rewind(wav_file);
-    write_wav_header(wav_writer_state.wav_file, wav_writer_state.total_num_samples, sbc_decoder_num_channels(&state), sbc_decoder_sample_rate(&state));
+    write_wav_header(wav_writer_state.wav_file, wav_writer_state.total_num_samples, btstack_sbc_decoder_num_channels(&state), btstack_sbc_decoder_sample_rate(&state));
 
     fclose(wav_file);
     close(fd);

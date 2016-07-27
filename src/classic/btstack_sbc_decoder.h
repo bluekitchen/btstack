@@ -63,7 +63,7 @@ typedef struct {
     int good_frames_nr;
     int bad_frames_nr;
     int zero_frames_nr;
-} sbc_decoder_state_t;
+} btstack_sbc_decoder_state_t;
 
 /* API_START */
 
@@ -75,7 +75,7 @@ typedef struct {
  * @param context provided in callback
  */
 
-void sbc_decoder_init(sbc_decoder_state_t * state, sbc_mode_t mode, void (*callback)(int16_t * data, int num_samples, int num_channels, int sample_rate, void * context), void * context);
+void btstack_sbc_decoder_init(btstack_sbc_decoder_state_t * state, sbc_mode_t mode, void (*callback)(int16_t * data, int num_samples, int num_channels, int sample_rate, void * context), void * context);
 
 /**
  * @brief Process received SCO data
@@ -84,28 +84,28 @@ void sbc_decoder_init(sbc_decoder_state_t * state, sbc_mode_t mode, void (*callb
  * @param buffer
  * @param size
  */
-void sbc_decoder_process_data(sbc_decoder_state_t * state, int packet_status_flag, uint8_t * buffer, int size);
+void btstack_sbc_decoder_process_data(btstack_sbc_decoder_state_t * state, int packet_status_flag, uint8_t * buffer, int size);
 
 /**
  * @brief Get number of samples per SBC frame
  */
-int sbc_decoder_num_samples_per_frame(sbc_decoder_state_t * state);
+int btstack_sbc_decoder_num_samples_per_frame(btstack_sbc_decoder_state_t * state);
 
 /*
  * @brief Get number of channels
  */
-int sbc_decoder_num_channels(sbc_decoder_state_t * state);
+int btstack_sbc_decoder_num_channels(btstack_sbc_decoder_state_t * state);
 
 /*
  * @brief Get sample rate in hz
  */
-int sbc_decoder_sample_rate(sbc_decoder_state_t * state);
+int btstack_sbc_decoder_sample_rate(btstack_sbc_decoder_state_t * state);
 
 /* API_END */
 
 // testing only
-void sbc_decoder_test_disable_plc(void);
-void sbc_decoder_test_simulate_corrupt_frames(int period);
+void btstack_sbc_decoder_test_disable_plc(void);
+void btstack_sbc_decoder_test_simulate_corrupt_frames(int period);
 
 #if defined __cplusplus
 }

@@ -87,14 +87,14 @@ typedef struct {
 } bludroid_decoder_state_t;
 
 
-static sbc_decoder_state_t * sbc_state_singelton = NULL;
+static btstack_sbc_decoder_state_t * sbc_state_singelton = NULL;
 static bludroid_decoder_state_t bd_state;
 
-void sbc_decoder_test_disable_plc(void){
+void btstack_sbc_decoder_test_disable_plc(void){
     plc_enabled = 0;
 }
 
-void sbc_decoder_test_simulate_corrupt_frames(int period){
+void btstack_sbc_decoder_test_simulate_corrupt_frames(int period){
     corrupt_frame_period = period;
 }
 
@@ -139,17 +139,17 @@ static int find_h2_syncword(const OI_BYTE *frame_data, OI_UINT32 frame_bytes, sb
     return ((hn & 0x04) >> 1) | (hn & 0x01);
 }
 
-int sbc_decoder_num_samples_per_frame(sbc_decoder_state_t * state){
+int btstack_sbc_decoder_num_samples_per_frame(btstack_sbc_decoder_state_t * state){
     bludroid_decoder_state_t * decoder_state = (bludroid_decoder_state_t *) state->decoder_state;
     return decoder_state->decoder_context.common.frameInfo.nrof_blocks * decoder_state->decoder_context.common.frameInfo.nrof_subbands;
 }
 
-int sbc_decoder_num_channels(sbc_decoder_state_t * state){
+int btstack_sbc_decoder_num_channels(btstack_sbc_decoder_state_t * state){
     bludroid_decoder_state_t * decoder_state = (bludroid_decoder_state_t *) state->decoder_state;
     return decoder_state->decoder_context.common.frameInfo.nrof_channels;
 }
 
-int sbc_decoder_sample_rate(sbc_decoder_state_t * state){
+int btstack_sbc_decoder_sample_rate(btstack_sbc_decoder_state_t * state){
     bludroid_decoder_state_t * decoder_state = (bludroid_decoder_state_t *) state->decoder_state;
     return decoder_state->decoder_context.common.frameInfo.frequency;
 }
@@ -159,7 +159,7 @@ void OI_AssertFail(char* file, int line, char* reason){
     printf("AssertFail file %s, line %d, reason %s\n", file, line, reason);
 }
 
-void sbc_decoder_init(sbc_decoder_state_t * state, sbc_mode_t mode, void (*callback)(int16_t * data, int num_samples, int num_channels, int sample_rate, void * context), void * context){
+void btstack_sbc_decoder_init(btstack_sbc_decoder_state_t * state, sbc_mode_t mode, void (*callback)(int16_t * data, int num_samples, int num_channels, int sample_rate, void * context), void * context){
     if (sbc_state_singelton && sbc_state_singelton != state ){
         log_error("SBC decoder: different sbc decoder state is allready registered");
     } 
@@ -189,7 +189,7 @@ void sbc_decoder_init(sbc_decoder_state_t * state, sbc_mode_t mode, void (*callb
     }
     bd_state.first_good_frame_found = 0;
 
-    memset(state, 0, sizeof(sbc_decoder_state_t));
+    memset(state, 0, sizeof(btstack_sbc_decoder_state_t));
     state->handle_pcm_data = callback;
     state->mode = mode;
     state->context = context;
@@ -208,7 +208,7 @@ static void append_received_sbc_data(bludroid_decoder_state_t * state, uint8_t *
     state->bytes_in_frame_buffer += size;
 }
 
-void sbc_decoder_process_data(sbc_decoder_state_t * state, int packet_status_flag, uint8_t * buffer, int size){
+void btstack_sbc_decoder_process_data(btstack_sbc_decoder_state_t * state, int packet_status_flag, uint8_t * buffer, int size){
 
     bludroid_decoder_state_t * bd_decoder_state = (bludroid_decoder_state_t*)state->decoder_state;
     int bytes_to_process = size;
@@ -294,9 +294,9 @@ void sbc_decoder_process_data(sbc_decoder_state_t * state, int packet_status_fla
                 
                 sbc_plc_good_frame(&state->plc_state, bd_decoder_state->pcm_plc_data, bd_decoder_state->pcm_data);
                 state->handle_pcm_data(bd_decoder_state->pcm_data, 
-                                    sbc_decoder_num_samples_per_frame(state), 
-                                    sbc_decoder_num_channels(state), 
-                                    sbc_decoder_sample_rate(state), state->context);
+                                    btstack_sbc_decoder_num_samples_per_frame(state), 
+                                    btstack_sbc_decoder_num_channels(state), 
+                                    btstack_sbc_decoder_sample_rate(state), state->context);
                 state->good_frames_nr++;
                 continue;
             case OI_CODEC_SBC_NOT_ENOUGH_HEADER_DATA:
@@ -349,9 +349,9 @@ void sbc_decoder_process_data(sbc_decoder_state_t * state, int packet_status_fla
                 if (status != 0) exit(10);
                 sbc_plc_bad_frame(&state->plc_state, bd_decoder_state->pcm_plc_data, bd_decoder_state->pcm_data);
                 state->handle_pcm_data(bd_decoder_state->pcm_data, 
-                                    sbc_decoder_num_samples_per_frame(state), 
-                                    sbc_decoder_num_channels(state), 
-                                    sbc_decoder_sample_rate(state), state->context);
+                                    btstack_sbc_decoder_num_samples_per_frame(state), 
+                                    btstack_sbc_decoder_num_channels(state), 
+                                    btstack_sbc_decoder_sample_rate(state), state->context);
 
                 
                 break;

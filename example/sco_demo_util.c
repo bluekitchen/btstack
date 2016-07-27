@@ -128,7 +128,7 @@ static const int16_t sine_int16[] = {
 static int num_samples_to_write;
 static wav_writer_state_t wav_writer_state;
 
-static sbc_decoder_state_t decoder_state;
+static btstack_sbc_decoder_state_t decoder_state;
     
 static void little_endian_fstore_16(FILE * file, uint16_t value){
     uint8_t buf[2];
@@ -221,7 +221,7 @@ static void sco_demo_init_mSBC(void){
     wav_writer_state.frame_count = 0;
     wav_writer_state.total_num_samples = 0;
 
-    sbc_decoder_init(&decoder_state, SBC_MODE_mSBC, &handle_pcm_data, (void*)&wav_writer_state);    
+    btstack_sbc_decoder_init(&decoder_state, SBC_MODE_mSBC, &handle_pcm_data, (void*)&wav_writer_state);    
 
     const int sample_rate = 16000;
     const int num_samples = sample_rate * SCO_WAV_DURATION_IN_SECONDS;
@@ -264,7 +264,7 @@ static void sco_demo_init_CVSD(void){
 
 static void sco_demo_receive_mSBC(uint8_t * packet, uint16_t size){
     if (num_samples_to_write){
-        sbc_decoder_process_data(&decoder_state, (packet[1] >> 4) & 3, packet+3, size-3);
+        btstack_sbc_decoder_process_data(&decoder_state, (packet[1] >> 4) & 3, packet+3, size-3);
         dump_data = 0;
     }
 }
@@ -302,7 +302,7 @@ void sco_demo_close(void){
         wav_writer_state_t * writer_state = &wav_writer_state;
         if (!writer_state->wav_file) return;
         rewind(writer_state->wav_file);
-        write_wav_header(writer_state->wav_file, writer_state->total_num_samples, sbc_decoder_num_channels(&decoder_state), sbc_decoder_sample_rate(&decoder_state),2);
+        write_wav_header(writer_state->wav_file, writer_state->total_num_samples, btstack_sbc_decoder_num_channels(&decoder_state), btstack_sbc_decoder_sample_rate(&decoder_state),2);
         fclose(writer_state->wav_file);
         writer_state->wav_file = NULL;
     }
