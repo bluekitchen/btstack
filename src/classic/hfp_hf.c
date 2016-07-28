@@ -588,6 +588,42 @@ static int call_setup_state_machine(hfp_connection_t * hfp_connection){
 static void hfp_run_for_context(hfp_connection_t * hfp_connection){
     if (!hfp_connection) return;
     if (!hfp_connection->rfcomm_cid) return;
+
+    if (hfp_connection->ag_establish_SCO && hci_can_send_command_packet_now()){
+
+        // notify about codec selection if not done already
+        if (hfp_connection->negotiated_codec == 0){
+            hfp_connection->negotiated_codec = HFP_CODEC_CVSD;
+            hfp_emit_codec_event(hfp_callback, 0, hfp_connection->negotiated_codec);
+        }
+
+        // remote supported feature eSCO is set if link type is eSCO
+        // eSCO: S4 - max latency == transmission interval = 0x000c == 12 ms, 
+        uint16_t max_latency;
+        uint8_t  retransmission_effort;
+        uint16_t packet_types;
+        
+        if (hci_remote_esco_supported(hfp_connection->acl_handle)){
+            max_latency = 0x000c;
+            retransmission_effort = 0x02;
+            packet_types = 0x388;
+        } else {
+            max_latency = 0xffff;
+            retransmission_effort = 0xff;
+            packet_types = 0x003f;
+        }
+        
+        uint16_t sco_voice_setting = hci_get_sco_voice_setting();
+        if (hfp_connection->negotiated_codec == HFP_CODEC_MSBC){
+            sco_voice_setting = 0x0043; // Transparent data
+        }
+        
+        log_info("HFP: sending hci_accept_connection_request, sco_voice_setting %02x", sco_voice_setting);
+        hci_send_cmd(&hci_accept_synchronous_connection, hfp_connection->remote_addr, 8000, 8000, max_latency, 
+                        sco_voice_setting, retransmission_effort, packet_types);
+        return;
+    }
+
     if (!rfcomm_can_send_packet_now(hfp_connection->rfcomm_cid)) return;
     
     int done = hfp_hf_run_for_context_service_level_connection(hfp_connection);
@@ -824,23 +860,11 @@ static void hfp_run_for_context(hfp_connection_t * hfp_connection){
     }
 }
 
-static void hfp_init_link_settings(hfp_connection_t * hfp_connection){
-    // determine highest possible link setting
-    hfp_connection->link_setting = HFP_LINK_SETTINGS_D1;
-    if (hci_remote_esco_supported(hfp_connection->acl_handle)){
-        hfp_connection->link_setting = HFP_LINK_SETTINGS_S3;
-        if ((hfp_supported_features             & (1<<HFP_HFSF_ESCO_S4))
-        &&  (hfp_connection->remote_supported_features & (1<<HFP_AGSF_ESCO_S4))){
-            hfp_connection->link_setting = HFP_LINK_SETTINGS_S4;
-        }
-    }
-}
-
 static void hfp_ag_slc_established(hfp_connection_t * hfp_connection){
     hfp_connection->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
 
     hfp_emit_connection_event(hfp_callback, HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED, 0, hfp_connection->acl_handle, hfp_connection->remote_addr);
-    hfp_init_link_settings(hfp_connection);
+
     // restore volume settings
     hfp_connection->speaker_gain = hfp_hf_speaker_gain;
     hfp_connection->send_speaker_gain = 1;

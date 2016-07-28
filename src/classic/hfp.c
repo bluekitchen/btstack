@@ -318,7 +318,7 @@ void hfp_reset_context_flags(hfp_connection_t * hfp_connection){
 
     // establish codecs hfp_connection
     hfp_connection->suggested_codec = 0;
-    hfp_connection->negotiated_codec = HFP_CODEC_CVSD;
+    hfp_connection->negotiated_codec = 0;
     hfp_connection->codec_confirmed = 0;
 
     hfp_connection->establish_audio_connection = 0; 
@@ -495,13 +495,21 @@ static void hfp_handle_failed_sco_connection(uint8_t status){
             sco_establishment_active->link_setting = HFP_LINK_SETTINGS_D1;
             break;                    
         case HFP_LINK_SETTINGS_S2:
-        case HFP_LINK_SETTINGS_S3:
-        case HFP_LINK_SETTINGS_S4:
             sco_establishment_active->link_setting = HFP_LINK_SETTINGS_S1;
             break;
-        case HFP_LINK_SETTINGS_T1:
-        case HFP_LINK_SETTINGS_T2:
+        case HFP_LINK_SETTINGS_S3:
+            sco_establishment_active->link_setting = HFP_LINK_SETTINGS_S2;
+            break;
+        case HFP_LINK_SETTINGS_S4:
             sco_establishment_active->link_setting = HFP_LINK_SETTINGS_S3;
+            break;
+        case HFP_LINK_SETTINGS_T1:
+            log_info("T1 failed, fallback to CVSD - D1");
+            sco_establishment_active->negotiated_codec = HFP_CODEC_CVSD;
+            sco_establishment_active->link_setting = HFP_LINK_SETTINGS_D1;
+            break;
+        case HFP_LINK_SETTINGS_T2:
+            sco_establishment_active->link_setting = HFP_LINK_SETTINGS_T1;
             break;
     }
     sco_establishment_active->establish_audio_connection = 1;
@@ -520,12 +528,16 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
     switch (hci_event_packet_get_type(packet)) {
         case HCI_EVENT_CONNECTION_REQUEST:
             // printf("hfp HCI_EVENT_CONNECTION_REQUEST\n");
-            
-            hci_event_connection_request_get_bd_addr(packet, event_addr);
-            hfp_connection = provide_hfp_connection_context_for_bd_addr(event_addr);
-            
-            if (!hfp_connection) break;
-            hfp_connection->ag_establish_SCO = 1;
+            switch(hci_event_connection_request_get_link_type(packet)){
+                case 0: //  SCO
+                case 2: // eSCO
+                    hci_event_connection_request_get_bd_addr(packet, event_addr);
+                    hfp_connection = get_hfp_connection_context_for_bd_addr(event_addr);
+                    if (!hfp_connection) break;
+                    hfp_connection->ag_establish_SCO = 1;
+                default:
+                    break;                    
+            }            
             break;
         
         case RFCOMM_EVENT_INCOMING_CONNECTION:
@@ -1400,7 +1412,7 @@ void hfp_setup_synchronous_connection(hfp_connection_t * hfp_connection){
     sco_establishment_active = hfp_connection;
     uint16_t sco_voice_setting = hci_get_sco_voice_setting();
     if (hfp_connection->negotiated_codec == HFP_CODEC_MSBC){
-        sco_voice_setting = 0x0003; // Transparent data
+        sco_voice_setting = 0x0043; // Transparent data
     }
     hci_send_cmd(&hci_setup_synchronous_connection, hfp_connection->acl_handle, 8000, 8000, hfp_link_settings[setting].max_latency,
         sco_voice_setting, hfp_link_settings[setting].retransmission_effort, hfp_link_settings[setting].packet_types); // all types 0x003f, only 2-ev3 0x380
