@@ -237,10 +237,6 @@ static void sco_demo_init_mSBC(void){
     msbc_file = fopen(SCO_MSBC_OUT_FILENAME, "wb");
     printf("SCO Demo: creating mSBC file %s, %p\n", SCO_MSBC_OUT_FILENAME, msbc_file);
 #endif   
-
-    // HACK: should be handled by HFP or HSP layer on (e)SCO connection request, not here
-    // transparent data
-    hci_set_sco_voice_setting(0x0003);
 }
 
 static void sco_demo_init_CVSD(void){
@@ -254,12 +250,7 @@ static void sco_demo_init_CVSD(void){
     const int bytes_per_sample = 1;
     num_samples_to_write = num_samples;
     write_wav_header(wav_writer_state.wav_file, sample_rate, num_channels, num_samples, bytes_per_sample);
-
-    // HACK: should be handled by HFP or HSP layer on (e)SCO connection request, not here
-    // signed 8 bit pcm data with CVSD over the air
-    hci_set_sco_voice_setting(0x0040);
 }
-
 
 static void sco_demo_receive_mSBC(uint8_t * packet, uint16_t size){
     if (num_samples_to_write){
