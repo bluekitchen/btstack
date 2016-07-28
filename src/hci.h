@@ -899,6 +899,11 @@ uint16_t hci_usable_acl_packet_types(void);
 int hci_non_flushable_packet_boundary_flag_supported(void);
 
 /**
+ * Check if extended SCO Link is supported
+ */
+int hci_extended_sco_link_supported(void);
+
+/**
  * Check if SSP is supported on both sides. Called by L2CAP
  */
 int gap_ssp_supported_on_both_sides(hci_con_handle_t handle);

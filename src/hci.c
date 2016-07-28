@@ -788,6 +788,11 @@ uint16_t hci_max_acl_data_packet_length(void){
     return hci_stack->acl_data_packet_length;
 }
 
+int hci_extended_sco_link_supported(void){
+    // No. 31, byte 3, bit 7
+    return (hci_stack->local_supported_features[3] & (1 << 7)) != 0;
+}
+
 int hci_non_flushable_packet_boundary_flag_supported(void){
     // No. 54, byte 6, bit 6
     return (hci_stack->local_supported_features[6] & (1 << 6)) != 0;
