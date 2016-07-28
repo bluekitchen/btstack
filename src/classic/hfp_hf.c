@@ -566,13 +566,6 @@ static int hfp_hf_run_for_audio_connection(hfp_connection_t * hfp_connection){
     int done = codecs_exchange_state_machine(hfp_connection);
     if (done) return 1;
         
-    if (hfp_connection->establish_audio_connection){
-        hfp_connection->state = HFP_W4_SCO_CONNECTED;
-        hfp_connection->establish_audio_connection = 0;
-        hfp_setup_synchronous_connection(hfp_connection);
-        return 1;
-    }
-
     return 0;
 }
 
