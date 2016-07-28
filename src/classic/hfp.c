@@ -525,7 +525,7 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
             hfp_connection = provide_hfp_connection_context_for_bd_addr(event_addr);
             
             if (!hfp_connection) break;
-            hfp_connection->ag_establish_eSCO = 1;
+            hfp_connection->ag_establish_SCO = 1;
             break;
         
         case RFCOMM_EVENT_INCOMING_CONNECTION:
@@ -590,7 +590,7 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
                 log_error("HFP: connection does not exist for remote with addr %s.", bd_addr_to_str(event_addr));
                 return;
             }
-            hfp_connection->ag_establish_eSCO = 0;
+            hfp_connection->ag_establish_SCO = 0;
             
             status = hci_event_synchronous_connection_complete_get_status(packet);
             if (status != 0){
