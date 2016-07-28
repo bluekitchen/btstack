@@ -70,7 +70,9 @@ const char hfp_ag_service_name[] = "BTstack HFP AG Test";
 // BT-201
 // static bd_addr_t device_addr = {0x00, 0x07, 0xB0, 0x83, 0x02, 0x5E};
 // CC256x
-bd_addr_t device_addr = { 0xD0, 0x39, 0x72, 0xCD, 0x83, 0x45};
+// bd_addr_t device_addr = { 0xD0, 0x39, 0x72, 0xCD, 0x83, 0x45};
+// Minijamox
+bd_addr_t device_addr = { 0x00, 0x21, 0x3c, 0xac, 0xf7, 0x38};
 
 static uint8_t codecs[] = {HFP_CODEC_CVSD, HFP_CODEC_MSBC};
 static uint8_t negotiated_codec = HFP_CODEC_CVSD;
@@ -571,6 +573,15 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                 case HCI_EVENT_SCO_CAN_SEND_NOW:
                     sco_demo_send(sco_handle); 
                     break; 
+                case HCI_EVENT_COMMAND_COMPLETE:
+                    if (HCI_EVENT_IS_COMMAND_COMPLETE(event, hci_read_local_supported_features)){
+                        if (hci_extended_sco_link_supported()){
+                            printf("Supported Codecs: CVSD, mSBC.\n");
+                        } else {
+                            printf("Supported Codecs: CVSD. mSBC disabled, eSCO not supported by controller).\n");
+                        }
+                    }
+                    break;
                 default:
                     break;
             }
@@ -586,19 +597,24 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
             }
 
             switch (event[2]) {   
-                case HFP_SUBEVENT_CODECS_CONNECTION_COMPLETE:
-                    negotiated_codec = hfp_subevent_codecs_connection_complete_get_negotiated_codec(event);
-                    printf("Codec connection established with codec 0x%02x.\n", negotiated_codec);
-                    sco_demo_set_codec(negotiated_codec);
-                    break;
                 case HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED:
                     acl_handle = hfp_subevent_service_level_connection_established_get_con_handle(event);
                     hfp_subevent_service_level_connection_established_get_bd_addr(event, device_addr);
                     printf("Service level connection established from %s.\n", bd_addr_to_str(device_addr));
-                    break;
+                    if (hci_extended_sco_link_supported()){
+                        printf("Supported Codecs: CVSD, mSBC.\n");
+                    } else {
+                        printf("Supported Codecs: CVSD. mSBC disabled, eSCO not supported by controller).\n");
+                    }
+                   break;
                 case HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED:
                     printf("Service level connection released.\n");
                     sco_handle = 0;
+                    break;
+                case HFP_SUBEVENT_CODECS_CONNECTION_COMPLETE:
+                    negotiated_codec = hfp_subevent_codecs_connection_complete_get_negotiated_codec(event);
+                    printf("Codec connection established with codec 0x%02x.\n", negotiated_codec);
+                    sco_demo_set_codec(negotiated_codec);
                     break;
                 case HFP_SUBEVENT_AUDIO_CONNECTION_ESTABLISHED:
                     if (hfp_subevent_audio_connection_established_get_status(event)){

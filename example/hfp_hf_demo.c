@@ -468,19 +468,23 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
 
                 case HCI_EVENT_HFP_META:
                     switch (event[2]) {   
-                        case HFP_SUBEVENT_CODECS_CONNECTION_COMPLETE:
-                            negotiated_codec = hfp_subevent_codecs_connection_complete_get_negotiated_codec(event);
-                            printf("Codec connection established with codec 0x%02x.\n", negotiated_codec);
-                            sco_demo_set_codec(negotiated_codec);
-                            break;
-
                         case HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED:
                             acl_handle = hfp_subevent_service_level_connection_established_get_con_handle(event);
                             hfp_subevent_service_level_connection_established_get_bd_addr(event, device_addr);
                             printf("Service level connection established %s.\n\n", bd_addr_to_str(device_addr));
+                            if (hci_extended_sco_link_supported()){
+                                printf("Supported Codecs: CVSD, mSBC.\n");
+                            } else {
+                                printf("Supported Codecs: CVSD. mSBC disabled, eSCO not supported by controller).\n");
+                            }
                             break;
                         case HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED:
                             printf("Service level connection released.\n\n");
+                            break;
+                        case HFP_SUBEVENT_CODECS_CONNECTION_COMPLETE:
+                            negotiated_codec = hfp_subevent_codecs_connection_complete_get_negotiated_codec(event);
+                            printf("Codec connection established with codec 0x%02x.\n", negotiated_codec);
+                            sco_demo_set_codec(negotiated_codec);
                             break;
                         case HFP_SUBEVENT_AUDIO_CONNECTION_ESTABLISHED:
                             if (hfp_subevent_audio_connection_established_get_status(event)){
@@ -551,6 +555,11 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
         case HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED:
             acl_handle = hfp_subevent_service_level_connection_established_get_con_handle(event);
             printf("Service level connection established.\n\n");
+            if (hci_extended_sco_link_supported()){
+                printf("Supported Codecs: CVSD, mSBC.\n");
+            } else {
+                printf("Supported Codecs: CVSD. mSBC disabled, eSCO not supported by controller).\n");
+            }
             break;
         case HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED:
             printf("Service level connection released.\n\n");
