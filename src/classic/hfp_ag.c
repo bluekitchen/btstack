@@ -2130,8 +2130,10 @@ static void hfp_ag_setup_audio_connection(hfp_connection_t * hfp_connection){
     hfp_connection->establish_audio_connection = 1;
 
     if (!has_codec_negotiation_feature(hfp_connection)){
-        log_info("hfp_ag_establish_audio_connection - no codec negotiation feature, using defaults");
+        log_info("hfp_ag_establish_audio_connection - no codec negotiation feature, using CVSD");
+        hfp_connection->negotiated_codec = HFP_CODEC_CVSD;
         hfp_connection->codecs_state = HFP_CODECS_EXCHANGED;
+        hfp_emit_codec_event(hfp_callback, 0, hfp_connection->negotiated_codec);
     } 
 
     switch (hfp_connection->codecs_state){
