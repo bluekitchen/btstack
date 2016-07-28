@@ -130,9 +130,14 @@ int send_str_over_rfcomm(uint16_t cid, char * command){
 }
 
 int hfp_supports_codec(uint8_t codec, int codecs_nr, uint8_t * codecs){
+
+    // mSBC requires support for eSCO connections
+    if (codec == HFP_CODEC_MSBC && !hci_extended_sco_link_supported()) return 0;
+
     int i;
     for (i = 0; i < codecs_nr; i++){
-        if (codecs[i] == codec) return 1;
+        if (codecs[i] != codec) continue;
+        return 1;
     }
     return 0;
 }
