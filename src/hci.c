@@ -2542,15 +2542,7 @@ static void hci_run(void){
                 connection->role  = HCI_ROLE_SLAVE;
                 if (connection->address_type == BD_ADDR_TYPE_CLASSIC){
                     hci_send_cmd(&hci_accept_connection_request, connection->address, 1);
-                } else {
-                    // remote supported feature eSCO is set if link type is eSCO
-                    if (connection->remote_supported_feature_eSCO) return;
-                    // SCO: max latency, retransmission interval: N/A. any packet type
-                    uint16_t max_latency = 0xffff;
-                    uint8_t  retransmission_effort = 0xff;
-                    uint16_t packet_types = 0x003f;
-                    hci_send_cmd(&hci_accept_synchronous_connection, connection->address, 8000, 8000, max_latency, hci_stack->sco_voice_setting, retransmission_effort, packet_types);
-                }
+                } 
                 return;
 
 #ifdef ENABLE_BLE
