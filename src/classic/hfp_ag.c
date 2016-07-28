@@ -1626,6 +1626,23 @@ static void hfp_run_for_context(hfp_connection_t *hfp_connection){
 
     if (!hfp_connection->rfcomm_cid) return;
 
+    if (hfp_connection->ag_establish_eSCO && hci_can_send_command_packet_now()){
+        // remote supported feature eSCO is set if link type is eSCO
+        // eSCO: S4 - max latency == transmission interval = 0x000c == 12 ms, 
+        uint16_t max_latency = 0x000c;
+        uint8_t  retransmission_effort = 0x02;
+        uint16_t packet_types = 0x388;
+        uint16_t sco_voice_setting = hci_get_sco_voice_setting();
+    
+        if (hfp_connection->negotiated_codec == HFP_CODEC_MSBC){
+            sco_voice_setting = 0x0003; // Transparent data
+        }
+        log_info("HFP: sending hci_accept_connection_request, sco_voice_setting %02x", sco_voice_setting);
+        hci_send_cmd(&hci_accept_synchronous_connection, hfp_connection->remote_addr, 8000, 8000, max_latency, 
+                        sco_voice_setting, retransmission_effort, packet_types);
+        return;
+    }
+
     if (!rfcomm_can_send_packet_now(hfp_connection->rfcomm_cid)) {
         log_info("hfp_run_for_context: request can send for 0x%02x", hfp_connection->rfcomm_cid);
         rfcomm_request_can_send_now_event(hfp_connection->rfcomm_cid);

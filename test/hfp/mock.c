@@ -212,6 +212,10 @@ int hci_send_cmd(const hci_cmd_t *cmd, ...){
 	return 0;
 }
 
+int hci_can_send_command_packet_now(void){
+    return 1;
+}
+
 static void sdp_query_complete_response(uint8_t status){
     uint8_t event[3];
     event[0] = SDP_EVENT_QUERY_COMPLETE;

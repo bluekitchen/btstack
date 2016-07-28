@@ -518,6 +518,15 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
     log_info("AG packet_handler type %u, event type %x, size %u", packet_type, hci_event_packet_get_type(packet), size);
 
     switch (hci_event_packet_get_type(packet)) {
+        case HCI_EVENT_CONNECTION_REQUEST:
+            // printf("hfp HCI_EVENT_CONNECTION_REQUEST\n");
+            
+            hci_event_connection_request_get_bd_addr(packet, event_addr);
+            hfp_connection = provide_hfp_connection_context_for_bd_addr(event_addr);
+            
+            if (!hfp_connection) break;
+            hfp_connection->ag_establish_eSCO = 1;
+            break;
         
         case RFCOMM_EVENT_INCOMING_CONNECTION:
             // data: event (8), len(8), address(48), channel (8), rfcomm_cid (16)
@@ -575,30 +584,27 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
             break;
 
         case HCI_EVENT_SYNCHRONOUS_CONNECTION_COMPLETE:{
-
-            reverse_bd_addr(&packet[5], event_addr);
-            int index = 2;
-            status = packet[index++];
-
+            hci_event_synchronous_connection_complete_get_bd_addr(packet, event_addr);
+            hfp_connection = get_hfp_connection_context_for_bd_addr(event_addr);
+            if (!hfp_connection) {
+                log_error("HFP: connection does not exist for remote with addr %s.", bd_addr_to_str(event_addr));
+                return;
+            }
+            hfp_connection->ag_establish_eSCO = 0;
+            
+            status = hci_event_synchronous_connection_complete_get_status(packet);
             if (status != 0){
                 hfp_handle_failed_sco_connection(status);
                 break;
             }
             
-            uint16_t sco_handle = little_endian_read_16(packet, index);
-            index+=2;
-
-            reverse_bd_addr(&packet[index], event_addr);
-            index+=6;
-
-            uint8_t link_type = packet[index++];
-            uint8_t transmission_interval = packet[index++];  // measured in slots
-            uint8_t retransmission_interval = packet[index++];// measured in slots
-            uint16_t rx_packet_length = little_endian_read_16(packet, index); // measured in bytes
-            index+=2;
-            uint16_t tx_packet_length = little_endian_read_16(packet, index); // measured in bytes
-            index+=2;
-            uint8_t air_mode = packet[index];
+            uint16_t sco_handle = hci_event_synchronous_connection_complete_get_handle(packet);
+            uint8_t  link_type = hci_event_synchronous_connection_complete_get_link_type(packet);
+            uint8_t  transmission_interval = hci_event_synchronous_connection_complete_get_transmission_interval(packet);  // measured in slots
+            uint8_t  retransmission_interval = hci_event_synchronous_connection_complete_get_retransmission_interval(packet);// measured in slots
+            uint16_t rx_packet_length = hci_event_synchronous_connection_complete_get_rx_packet_length(packet); // measured in bytes
+            uint16_t tx_packet_length = hci_event_synchronous_connection_complete_get_tx_packet_length(packet); // measured in bytes
+            uint8_t  air_mode = hci_event_synchronous_connection_complete_get_air_mode(packet);
 
             switch (link_type){
                 case 0x00:
