@@ -570,7 +570,7 @@ typedef struct {
     void (*local_version_information_callback)(uint8_t * local_version_information);
 
     // hardware error callback
-    void (*hardware_error_callback)(void);
+    void (*hardware_error_callback)(uint8_t error);
 
     // basic configuration
     const char *       local_name;
@@ -713,7 +713,7 @@ void hci_set_link_key_db(btstack_link_key_db_t const * link_key_db);
 /**
  * @brief Set callback for Bluetooth Hardware Error
  */
-void hci_set_hardware_error_callback(void (*fn)(void));
+void hci_set_hardware_error_callback(void (*fn)(uint8_t error));
 
 /**
  * @brief Set callback for local information from Bluetooth controller right after HCI Reset

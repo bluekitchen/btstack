@@ -1717,9 +1717,17 @@ static void event_handler(uint8_t *packet, int size){
         case HCI_EVENT_DISCONNECTION_COMPLETE:
             if (packet[2]) break;   // status != 0
             handle = little_endian_read_16(packet, 3);
-            conn = hci_connection_for_handle(handle);
-            if (!conn) break;       // no conn struct anymore
+            // drop outgoing ACL fragments if it is for closed connection
+            if (hci_stack->acl_fragmentation_total_size > 0) {
+                if (handle == READ_ACL_CONNECTION_HANDLE(hci_stack->hci_packet_buffer)){
+                    log_info("hci: drop fragmented ACL data for closed connection");
+                     hci_stack->acl_fragmentation_total_size = 0;
+                     hci_stack->acl_fragmentation_pos = 0;
+                }
+            }
             // re-enable advertisements for le connections if active
+            conn = hci_connection_for_handle(handle);
+            if (!conn) break; 
             if (hci_is_le_connection(conn) && hci_stack->le_advertisements_enabled){
                 hci_stack->le_advertisements_todo |= LE_ADVERTISEMENT_TASKS_ENABLE;
             }
@@ -1729,7 +1737,7 @@ static void event_handler(uint8_t *packet, int size){
         case HCI_EVENT_HARDWARE_ERROR:
             log_error("Hardware Error: 0x%02x", packet[2]);
             if (hci_stack->hardware_error_callback){
-                (*hci_stack->hardware_error_callback)();
+                (*hci_stack->hardware_error_callback)(packet[2]);
             } else {
                 // if no special requests, just reboot stack
                 hci_power_control_off();
@@ -2354,16 +2362,18 @@ static void hci_run(void){
     // send continuation fragments first, as they block the prepared packet buffer
     if (hci_stack->acl_fragmentation_total_size > 0) {
         hci_con_handle_t con_handle = READ_ACL_CONNECTION_HANDLE(hci_stack->hci_packet_buffer);
-        if (hci_can_send_prepared_acl_packet_now(con_handle)){
-            hci_connection_t *connection = hci_connection_for_handle(con_handle);
-            if (connection) {
+        hci_connection_t *connection = hci_connection_for_handle(con_handle);
+        if (connection) {
+            if (hci_can_send_prepared_acl_packet_now(con_handle)){
                 hci_send_acl_packet_fragments(connection);
                 return;
-            } 
+            }
+        } else {
             // connection gone -> discard further fragments
+            log_info("hci_run: fragmented ACL packet no connection -> discard fragment");
             hci_stack->acl_fragmentation_total_size = 0;
             hci_stack->acl_fragmentation_pos = 0;
-        }        
+        }
     }
 
     if (!hci_can_send_command_packet_now()) return;
@@ -3617,7 +3627,7 @@ int hci_get_sco_packet_length(void){
 /**
  * @brief Set callback for Bluetooth Hardware Error
  */
-void hci_set_hardware_error_callback(void (*fn)(void)){
+void hci_set_hardware_error_callback(void (*fn)(uint8_t error)){
     hci_stack->hardware_error_callback = fn;
 }
 

@@ -234,7 +234,7 @@ uint8_t l2cap_register_service(btstack_packet_handler_t packet_handler, uint16_t
 /** 
  * @brief Unregisters L2CAP service with given PSM.  On embedded systems, use NULL for connection parameter.
  */
-void l2cap_unregister_service(uint16_t psm);
+uint8_t l2cap_unregister_service(uint16_t psm);
 
 /** 
  * @brief Accepts incoming L2CAP connection.
@@ -244,7 +244,7 @@ void l2cap_accept_connection(uint16_t local_cid);
 /** 
  * @brief Deny incoming L2CAP connection.
  */
-void l2cap_decline_connection(uint16_t local_cid, uint8_t reason);
+void l2cap_decline_connection(uint16_t local_cid);
 
 /** 
  * @brief Check if outgoing buffer is available and that there's space on the Bluetooth module

@@ -118,7 +118,7 @@ int  btstack_linked_list_remove(btstack_linked_list_t * list, btstack_linked_ite
  int btstack_linked_list_count(btstack_linked_list_t * list){
     btstack_linked_item_t *it;
     int counter = 0;
-    for (it = (btstack_linked_item_t *) list; it ; it = it->next) {
+    for (it = (btstack_linked_item_t *) list; it->next ; it = it->next) {
         counter++;
     }
     return counter; 

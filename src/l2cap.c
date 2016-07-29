@@ -1131,15 +1131,15 @@ void l2cap_accept_connection(uint16_t local_cid){
     l2cap_run();
 }
 
-void l2cap_decline_connection(uint16_t local_cid, uint8_t reason){
-    log_info("L2CAP_DECLINE_CONNECTION local_cid 0x%x, reason %x", local_cid, reason);
+void l2cap_decline_connection(uint16_t local_cid){
+    log_info("L2CAP_DECLINE_CONNECTION local_cid 0x%x", local_cid);
     l2cap_channel_t * channel = l2cap_get_channel_for_local_cid( local_cid);
     if (!channel) {
         log_error( "l2cap_decline_connection called but local_cid 0x%x not found", local_cid);
         return;
     }
     channel->state  = L2CAP_STATE_WILL_SEND_CONNECTION_RESPONSE_DECLINE;
-    channel->reason = reason;
+    channel->reason = 0x04; // no resources available
     l2cap_run();
 }
 
@@ -1560,18 +1560,20 @@ uint8_t l2cap_register_service(btstack_packet_handler_t service_packet_handler, 
     return 0;
 }
 
-void l2cap_unregister_service(uint16_t psm){
+uint8_t l2cap_unregister_service(uint16_t psm){
     
     log_info("L2CAP_UNREGISTER_SERVICE psm 0x%x", psm);
 
     l2cap_service_t *service = l2cap_get_service(psm);
-    if (!service) return;
+    if (!service) return L2CAP_SERVICE_DOES_NOT_EXIST;
     btstack_linked_list_remove(&l2cap_services, (btstack_linked_item_t *) service);
     btstack_memory_l2cap_service_free(service);
     
     // disable page scan when no services registered
-    if (!btstack_linked_list_empty(&l2cap_services)) return;
-    gap_connectable_control(0);
+    if (btstack_linked_list_empty(&l2cap_services)) {
+        gap_connectable_control(0);
+    }
+    return 0;
 }
 
 // Bluetooth 4.0 - allows to register handler for Attribute Protocol and Security Manager Protocol

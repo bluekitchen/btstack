@@ -108,7 +108,7 @@ int main(int argc, const char * argv[]){
             usb_path_len++;
             printf("%02x ", port);
             if (!delimiter) break;
-            if (*delimiter != ':') break;
+            if (*delimiter != ':' && *delimiter != '-') break;
             port_str = delimiter+1;
         }
         printf("\n");
@@ -123,7 +123,16 @@ int main(int argc, const char * argv[]){
     }
 
     // use logger: format HCI_DUMP_PACKETLOGGER, HCI_DUMP_BLUEZ or HCI_DUMP_STDOUT
-    hci_dump_open("/tmp/hci_dump.pklg", HCI_DUMP_PACKETLOGGER);
+
+    char pklg_path[100];
+    strcpy(pklg_path, "/tmp/hci_dump");
+    if (usb_path_len){
+        strcat(pklg_path, "_");
+        strcat(pklg_path, argv[2]);
+    }
+    strcat(pklg_path, ".pklg");
+    printf("Packet Log: %s\n", pklg_path);
+    hci_dump_open(pklg_path, HCI_DUMP_PACKETLOGGER);
 
     // init HCI
 	hci_init(hci_transport_usb_instance(), NULL);

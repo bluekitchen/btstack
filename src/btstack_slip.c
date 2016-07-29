@@ -120,6 +120,9 @@ uint8_t btstack_slip_encoder_get_byte(void){
 		case SLIP_ENCODER_SEND_DD:
 			encoder_state = SLIP_ENCODER_DEFAULT;
 			return 0x0dd;
+        default:
+            log_error("btstack_slip_encoder_get_byte invalid state %x", encoder_state);
+            return 0x00;
 	}
 }
 
