@@ -92,7 +92,7 @@ static uint8_t ag_send_ok = 0;
 static uint8_t ag_send_error = 0;
 static uint8_t ag_num_button_press_received = 0;
 static uint8_t ag_support_custom_commands = 0;
-static uint8_t ag_establish_SCO = 0;
+static uint8_t ag_establish_sco = 0;
 static uint8_t hsp_disconnect_rfcomm = 0;
 static uint8_t hsp_establish_audio_connection = 0;
 static uint8_t hsp_release_audio_connection = 0;
@@ -381,7 +381,9 @@ void hsp_ag_stop_ringing(void){
 }
 
 static void hsp_run(void){
-    if (ag_establish_SCO && hci_can_send_command_packet_now()){
+    if (ag_establish_sco && hci_can_send_command_packet_now()){
+        ag_establish_sco = 0;
+        
         log_info("HSP: sending hci_accept_connection_request.");
         // remote supported feature eSCO is set if link type is eSCO
         // eSCO: S4 - max latency == transmission interval = 0x000c == 12 ms, 
@@ -586,10 +588,9 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
         case HCI_EVENT_CONNECTION_REQUEST:
             printf("hsp HCI_EVENT_CONNECTION_REQUEST\n");
             hci_event_connection_request_get_bd_addr(packet, sco_event_addr);
-            ag_establish_SCO = 1;
+            ag_establish_sco = 1;
             break;
         case HCI_EVENT_SYNCHRONOUS_CONNECTION_COMPLETE:{
-            ag_establish_SCO = 0;
             uint8_t status = hci_event_synchronous_connection_complete_get_status(packet);
             if (status != 0){
                 log_error("(e)SCO Connection failed, status %u", status);

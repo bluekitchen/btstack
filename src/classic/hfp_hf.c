@@ -582,7 +582,9 @@ static void hfp_run_for_context(hfp_connection_t * hfp_connection){
     if (!hfp_connection) return;
     if (!hfp_connection->rfcomm_cid) return;
 
-    if (hfp_connection->ag_establish_SCO && hci_can_send_command_packet_now()){
+    if (hfp_connection->hf_accept_sco && hci_can_send_command_packet_now()){
+
+        hfp_connection->hf_accept_sco = 0;
 
         // notify about codec selection if not done already
         if (hfp_connection->negotiated_codec == 0){
@@ -611,7 +613,7 @@ static void hfp_run_for_context(hfp_connection_t * hfp_connection){
             sco_voice_setting = 0x0043; // Transparent data
         }
         
-        log_info("HFP: sending hci_accept_connection_request, sco_voice_setting %02x", sco_voice_setting);
+        log_info("HFP: sending hci_accept_connection_request, sco_voice_setting 0x%02x", sco_voice_setting);
         hci_send_cmd(&hci_accept_synchronous_connection, hfp_connection->remote_addr, 8000, 8000, max_latency, 
                         sco_voice_setting, retransmission_effort, packet_types);
         return;
