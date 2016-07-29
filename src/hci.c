@@ -2354,16 +2354,18 @@ static void hci_run(void){
     // send continuation fragments first, as they block the prepared packet buffer
     if (hci_stack->acl_fragmentation_total_size > 0) {
         hci_con_handle_t con_handle = READ_ACL_CONNECTION_HANDLE(hci_stack->hci_packet_buffer);
-        if (hci_can_send_prepared_acl_packet_now(con_handle)){
-            hci_connection_t *connection = hci_connection_for_handle(con_handle);
-            if (connection) {
+        hci_connection_t *connection = hci_connection_for_handle(con_handle);
+        if (connection) {
+            if (hci_can_send_prepared_acl_packet_now(con_handle)){
                 hci_send_acl_packet_fragments(connection);
                 return;
-            } 
+            }
+        } else {
             // connection gone -> discard further fragments
+            log_info("hci_run: fragmented ACL packet no connection -> discard fragment");
             hci_stack->acl_fragmentation_total_size = 0;
             hci_stack->acl_fragmentation_pos = 0;
-        }        
+        }
     }
 
     if (!hci_can_send_command_packet_now()) return;
