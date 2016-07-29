@@ -141,6 +141,8 @@ static void local_version_information_callback(uint8_t * packet){
             hci_set_chipset(btstack_chipset_cc256x_instance());
 #ifdef ENABLE_EHCILL
             printf("eHCILL enabled.\n");
+#else
+            printf("eHCILL disable.\n");
 #endif
             break;
         case COMPANY_ID_BROADCOM_CORPORATION:   
