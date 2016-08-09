@@ -59,8 +59,9 @@
 #define SCO_REPORT_PERIOD 100
 
 #ifdef HAVE_POSIX_FILE_IO
-#define SCO_WAV_FILENAME "sco_input.wav"
-// #define SCO_MSBC_OUT_FILENAME "sco_output.msbc"
+#define SCO_WAV_FILENAME      "sco_input.wav"
+#define SCO_MSBC_OUT_FILENAME "sco_output.msbc"
+#define SCO_MSBC_IN_FILENAME  "sco_input.mscb"
 
 #define SCO_WAV_DURATION_IN_SECONDS 30
 #endif
@@ -95,7 +96,8 @@ static int count_received = 0;
 static uint8_t negotiated_codec = 0; 
 static int num_audio_frames = 0;
 
-FILE * msbc_file;
+FILE * msbc_file_in;
+FILE * msbc_file_out;
 
 #if SCO_DEMO_MODE == SCO_DEMO_MODE_SINE
 
@@ -233,9 +235,13 @@ static void sco_demo_init_mSBC(void){
     hfp_msbc_init();
     sco_demo_fill_audio_frame();
 
+#ifdef SCO_MSBC_IN_FILENAME
+    msbc_file_in = fopen(SCO_MSBC_IN_FILENAME, "wb");
+    printf("SCO Demo: creating mSBC in file %s, %p\n", SCO_MSBC_IN_FILENAME, msbc_file_in);
+#endif   
 #ifdef SCO_MSBC_OUT_FILENAME
-    msbc_file = fopen(SCO_MSBC_OUT_FILENAME, "wb");
-    printf("SCO Demo: creating mSBC file %s, %p\n", SCO_MSBC_OUT_FILENAME, msbc_file);
+    msbc_file_out = fopen(SCO_MSBC_OUT_FILENAME, "wb");
+    printf("SCO Demo: creating mSBC out file %s, %p\n", SCO_MSBC_OUT_FILENAME, msbc_file_out);
 #endif   
 }
 
@@ -254,6 +260,10 @@ static void sco_demo_init_CVSD(void){
 
 static void sco_demo_receive_mSBC(uint8_t * packet, uint16_t size){
     if (num_samples_to_write){
+        if (msbc_file_in){
+            // log incoming mSBC data for testing
+            fwrite(packet+3, size-3, 1, msbc_file_in);
+        }
         btstack_sbc_decoder_process_data(&decoder_state, (packet[1] >> 4) & 3, packet+3, size-3);
         dump_data = 0;
     }
@@ -396,9 +406,9 @@ void sco_demo_send(hci_con_handle_t sco_handle){
             log_error("mSBC stream is empty.");
         }
         hfp_msbc_read_from_stream(sco_packet + 3, sco_payload_length);
-        if (msbc_file){
+        if (msbc_file_out){
             // log outgoing mSBC data for testing
-            fwrite(sco_packet + 3, sco_payload_length, 1, msbc_file);
+            fwrite(sco_packet + 3, sco_payload_length, 1, msbc_file_out);
         }
 
         sco_demo_fill_audio_frame();

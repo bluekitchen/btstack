@@ -243,7 +243,7 @@ void EncPacking(SBC_ENC_PARAMS *pstrEncParams)
     if (reserved_ptr){
         // overwrite fixed values for mSBC before CRC calculation
         *reserved_ptr++ = 0;
-        *reserved_ptr   = 0;        
+        *reserved_ptr++ = 0;        
     }
     /* BK4BTSTACK_CHANGE END */ 
   
