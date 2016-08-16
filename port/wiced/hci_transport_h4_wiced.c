@@ -270,6 +270,13 @@ static int h4_open(void){
     platform_gpio_init(wiced_bt_control_pins[WICED_BT_PIN_HOST_WAKE], INPUT_HIGH_IMPEDANCE);
     platform_gpio_init(wiced_bt_control_pins[WICED_BT_PIN_DEVICE_WAKE], OUTPUT_PUSH_PULL);
     platform_gpio_output_low(wiced_bt_control_pins[WICED_BT_PIN_DEVICE_WAKE]);
+
+    /* Configure Reg Enable pin to output. Set to HIGH */
+    if (wiced_bt_control_pins[ WICED_BT_PIN_POWER ]){
+        platform_gpio_init( wiced_bt_control_pins[ WICED_BT_PIN_POWER ], OUTPUT_OPEN_DRAIN_PULL_UP );
+        platform_gpio_output_high( wiced_bt_control_pins[ WICED_BT_PIN_POWER ] );
+    }
+
     wiced_rtos_delay_milliseconds( 100 );
 
     // -- init UART
@@ -291,12 +298,23 @@ static int h4_open(void){
 #endif
     platform_uart_init( wiced_bt_uart_driver, wiced_bt_uart_peripheral, &uart_config, ring_buffer );
 
-    // reset Bluetooth
-    platform_gpio_init( wiced_bt_control_pins[ WICED_BT_PIN_POWER ], OUTPUT_PUSH_PULL );
-    platform_gpio_output_low( wiced_bt_control_pins[ WICED_BT_PIN_POWER ] );
-    wiced_rtos_delay_milliseconds( 100 );
-    platform_gpio_output_high( wiced_bt_control_pins[ WICED_BT_PIN_POWER ] );
 
+    // Reset Bluetooth via RESET line. Fallback to toggling POWER otherwise
+    if ( wiced_bt_control_pins[ WICED_BT_PIN_RESET ]){
+        platform_gpio_init( wiced_bt_control_pins[ WICED_BT_PIN_RESET ], OUTPUT_PUSH_PULL );
+        platform_gpio_output_high( wiced_bt_control_pins[ WICED_BT_PIN_RESET ] );
+
+        platform_gpio_output_low( wiced_bt_control_pins[ WICED_BT_PIN_RESET ] );
+        wiced_rtos_delay_milliseconds( 100 );
+        platform_gpio_output_high( wiced_bt_control_pins[ WICED_BT_PIN_RESET ] );
+    }
+    else if ( wiced_bt_control_pins[ WICED_BT_PIN_POWER ]){
+        platform_gpio_output_low( wiced_bt_control_pins[ WICED_BT_PIN_POWER ] );
+        wiced_rtos_delay_milliseconds( 100 );
+        platform_gpio_output_high( wiced_bt_control_pins[ WICED_BT_PIN_POWER ] );
+    }
+
+    // wait for Bluetooth to start up
     wiced_rtos_delay_milliseconds( 500 );
 
     // create worker threads for rx/tx. only single request is posted to their queues
