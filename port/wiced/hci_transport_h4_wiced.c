@@ -193,7 +193,7 @@ static wiced_result_t h4_tx_worker_send_packet(void * arg){
 
 static int h4_set_baudrate(uint32_t baudrate){
 
-#ifdef _STM32F205RGT6_
+#if defined(_STM32F205RGT6_) || defined(STM32F40_41xxx)
 
     // directly use STM peripheral functions to change baud rate dynamically
     
