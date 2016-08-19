@@ -180,7 +180,7 @@ static wiced_result_t h4_tx_worker_send_packet(void * arg){
 #ifdef WICED_BT_UART_MANUAL_CTS_RTS
     int cts_was_raised = 0;    
     while (platform_gpio_input_get(wiced_bt_uart_pins[WICED_BT_PIN_UART_CTS]) == WICED_TRUE){
-        log_info(".");
+        printf(".");
         wiced_rtos_delay_milliseconds(100);
         cts_was_raised = 1;
     }
