@@ -19,9 +19,9 @@ that is necessary to setup BTstack. From the point when the run loop
 is executed, the application runs as a finite
 state machine, which processes events received from BTstack. BTstack
 groups events logically and provides them via packet handlers. 
-We provide their overview here, and finally, for the case that there is a need to inspect the data exchanged
+We provide their overview here. For the case that there is a need to inspect the data exchanged
 between BTstack and the Bluetooth chipset, we describe how to configure 
-packet logging mechanism. 
+packet logging mechanism. Finally, we provide an overview on power management in Bluetooth in general and how to save energy in BTstack.
 
 
 ## Configuration in btstack_config.h {#sec:btstackConfigHowTo}
@@ -476,4 +476,50 @@ In addition to the HCI packets, you can also enable BTstack's debug information 
     #define ENABLE_LOG_ERROR
 
 to the btstack_config.h and recompiling your application.
+
+## Bluetooth Power Control {#sec:powerControl} 
+
+In most BTstack examples, the device is set to be discoverable and connectable. In this mode, even when there's no active connection, the Bluetooth Controller will periodicaly activate its receiver in order to listen for inquiries or connecting requests from another device. 
+The ability to be discoverable requires more energy than the ability to be connected. Being discoverable also announces the device to anybody in the area. Therefore, it is a good idea to pause listening for inquiries when not needed. Other devices that have your Bluetooth address can still connect to your device.
+
+To enable/disable discoverabilty, you can call:
+    
+    /**
+     * @brief Allows to control if device is discoverable. OFF by default.
+     */
+    void gap_discoverable_control(uint8_t enable);
+
+If you don't need to become connected from other devices for a longer period of time, you can also disable the listening to connection requests.
+
+To enable/disable connectability, you can call:
+
+    /**
+     * @brief Override page scan mode. Page scan mode enabled by l2cap when services are registered
+     * @note Might be used to reduce power consumption while Bluetooth module stays powered but no (new)
+     *       connections are expected
+     */
+    void gap_connectable_control(uint8_t enable);
+
+For Bluetooth Low Energy, the radio is periodically used to broadcast advertisements that are used for both discovery and connection establishment.
+
+To enable/disable advertisements, you can call:
+
+    /** 
+     * @brief Enable/Disable Advertisements. OFF by default.
+     * @param enabled
+     */
+    void gap_advertisements_enable(int enabled);
+
+If a Bluetooth Controller is neither discoverable nor conectable, it does not need to periodically turn on its radio and it only needs to respond to commands from the Host. In this case, the Bluetooth Controller is free to enter some kind of deep sleep where the power consumption is minimal.
+
+Finally, if that's not sufficient for your application, you could request BTstack to shutdown the Bluetooth Controller. For this, the "on" and "off" functions in the btstack_control_t struct must be implemented. To shutdown the Bluetooth Controller, you can call:
+    
+    /**
+     * @brief Requests the change of BTstack power mode.
+     */
+    int  hci_power_control(HCI_POWER_MODE mode);
+
+with mode set to *HCI_POWER_OFF*. When needed later, Bluetooth can be started again via by calling it with mode *HCI_POWER_ON*, as seen in all examples.
+
+
 

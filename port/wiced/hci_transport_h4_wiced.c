@@ -178,11 +178,15 @@ static wiced_result_t h4_rx_worker_receive_packet(void * arg){
 // executed on tx worker thread
 static wiced_result_t h4_tx_worker_send_packet(void * arg){
 #ifdef WICED_BT_UART_MANUAL_CTS_RTS
+    int cts_was_raised = 0;    
     while (platform_gpio_input_get(wiced_bt_uart_pins[WICED_BT_PIN_UART_CTS]) == WICED_TRUE){
         printf(".");
-        wiced_rtos_delay_milliseconds(10);
+        wiced_rtos_delay_milliseconds(100);
+        cts_was_raised = 1;
     }
-    printf("\n");
+    if (cts_was_raised){
+        printf("\n");
+    }
 #endif
     // blocking send
     platform_uart_transmit_bytes(wiced_bt_uart_driver, tx_worker_data_buffer, tx_worker_data_size);
@@ -193,7 +197,7 @@ static wiced_result_t h4_tx_worker_send_packet(void * arg){
 
 static int h4_set_baudrate(uint32_t baudrate){
 
-#ifdef _STM32F205RGT6_
+#if defined(_STM32F205RGT6_) || defined(STM32F40_41xxx)
 
     // directly use STM peripheral functions to change baud rate dynamically
     
@@ -270,6 +274,13 @@ static int h4_open(void){
     platform_gpio_init(wiced_bt_control_pins[WICED_BT_PIN_HOST_WAKE], INPUT_HIGH_IMPEDANCE);
     platform_gpio_init(wiced_bt_control_pins[WICED_BT_PIN_DEVICE_WAKE], OUTPUT_PUSH_PULL);
     platform_gpio_output_low(wiced_bt_control_pins[WICED_BT_PIN_DEVICE_WAKE]);
+
+    /* Configure Reg Enable pin to output. Set to HIGH */
+    if (wiced_bt_control_pins[ WICED_BT_PIN_POWER ]){
+        platform_gpio_init( wiced_bt_control_pins[ WICED_BT_PIN_POWER ], OUTPUT_OPEN_DRAIN_PULL_UP );
+        platform_gpio_output_high( wiced_bt_control_pins[ WICED_BT_PIN_POWER ] );
+    }
+
     wiced_rtos_delay_milliseconds( 100 );
 
     // -- init UART
@@ -291,12 +302,23 @@ static int h4_open(void){
 #endif
     platform_uart_init( wiced_bt_uart_driver, wiced_bt_uart_peripheral, &uart_config, ring_buffer );
 
-    // reset Bluetooth
-    platform_gpio_init( wiced_bt_control_pins[ WICED_BT_PIN_POWER ], OUTPUT_PUSH_PULL );
-    platform_gpio_output_low( wiced_bt_control_pins[ WICED_BT_PIN_POWER ] );
-    wiced_rtos_delay_milliseconds( 100 );
-    platform_gpio_output_high( wiced_bt_control_pins[ WICED_BT_PIN_POWER ] );
 
+    // Reset Bluetooth via RESET line. Fallback to toggling POWER otherwise
+    if ( wiced_bt_control_pins[ WICED_BT_PIN_RESET ]){
+        platform_gpio_init( wiced_bt_control_pins[ WICED_BT_PIN_RESET ], OUTPUT_PUSH_PULL );
+        platform_gpio_output_high( wiced_bt_control_pins[ WICED_BT_PIN_RESET ] );
+
+        platform_gpio_output_low( wiced_bt_control_pins[ WICED_BT_PIN_RESET ] );
+        wiced_rtos_delay_milliseconds( 100 );
+        platform_gpio_output_high( wiced_bt_control_pins[ WICED_BT_PIN_RESET ] );
+    }
+    else if ( wiced_bt_control_pins[ WICED_BT_PIN_POWER ]){
+        platform_gpio_output_low( wiced_bt_control_pins[ WICED_BT_PIN_POWER ] );
+        wiced_rtos_delay_milliseconds( 100 );
+        platform_gpio_output_high( wiced_bt_control_pins[ WICED_BT_PIN_POWER ] );
+    }
+
+    // wait for Bluetooth to start up
     wiced_rtos_delay_milliseconds( 500 );
 
     // create worker threads for rx/tx. only single request is posted to their queues
