@@ -248,7 +248,7 @@ void gap_advertisements_set_params(uint16_t adv_int_min, uint16_t adv_int_max, u
 	uint8_t direct_address_typ, bd_addr_t direct_address, uint8_t channel_map, uint8_t filter_policy);
 
 /** 
- * @brief Enable/Disable Advertisements
+ * @brief Enable/Disable Advertisements. OFF by default.
  * @param enabled
  */
 void gap_advertisements_enable(int enabled);
