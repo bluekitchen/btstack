@@ -250,7 +250,7 @@ void hfp_emit_string_event(btstack_packet_handler_t callback, uint8_t event_subt
     event[0] = HCI_EVENT_HFP_META;
     event[1] = sizeof(event) - 2;
     event[2] = event_subtype;
-    int size = (strlen(value) < sizeof(event) - 4) ? strlen(value) : sizeof(event) - 4;
+    int size = (strlen(value) < sizeof(event) - 4) ? (int) strlen(value) : sizeof(event) - 4;
     strncpy((char*)&event[3], value, size);
     event[3 + size] = 0;
     (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));

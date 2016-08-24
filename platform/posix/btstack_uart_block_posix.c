@@ -81,7 +81,7 @@ static void btstack_uart_posix_process_write(btstack_data_source_t *ds) {
     uint32_t start = btstack_run_loop_get_time_ms();
 
     // write up to write_bytes_len to fd
-    int bytes_written = write(ds->fd, write_bytes_data, write_bytes_len);
+    int bytes_written = (int) write(ds->fd, write_bytes_data, write_bytes_len);
     if (bytes_written < 0) {
         btstack_run_loop_enable_data_source_callbacks(ds, DATA_SOURCE_CALLBACK_WRITE);
         return;

@@ -2456,7 +2456,8 @@ void sm_mbedtls_allocator_free(void * data);
 
 /* ECP options */
 //#define MBEDTLS_ECP_MAX_BITS             521 /**< Maximum bit size of groups */
-#define MBEDTLS_ECP_WINDOW_SIZE            2 /**< Maximum window size used */
+#define MBEDTLS_ECP_WINDOW_SIZE            1 /**< Maximum window size used - 1 == uses double and add to save RAM */
+#define MBEDTLS_ECP_MUL_NAIVE_SAFE         0 /**< Enable use of temporary point for window size == 1 - adds ~100 bytes but makes branches independ from n */ 
 #define MBEDTLS_ECP_FIXED_POINT_OPTIM      0 /**< Enable fixed-point speed-up */
 
 /* Entropy options */

@@ -55,7 +55,6 @@ GATT_CLIENT += \
 
 SM_REAL += \
 	sm.c 				 	    \
-	le_device_db_memory.c       \
 
 PAN += \
 	pan.c \
@@ -213,7 +212,6 @@ hfp_hf_demo: ${CORE_OBJ} ${COMMON_OBJ} ${SDP_CLIENT} ${SBC_DECODER_OBJ} ${SBC_EN
 
 clean:
 	rm -f ${EXAMPLES}
-	rm -f ${EXAMPLES_USING_LE}
 	rm -f  *.o *.out *.hex *.exe
 	rm -f  ancs_client_demo.h profile.h spp_and_le_counter.h
 	rm -rf *.dSYM

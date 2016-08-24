@@ -176,12 +176,13 @@ void hci_dump_packet(uint8_t packet_type, uint8_t in, uint8_t *packet, uint16_t 
         case HCI_DUMP_STDOUT: {
             /* Obtain the time of day, and convert it to a tm struct. */
             ptm = localtime (&curr_time_secs);
+            /* assert localtime was successful */
+            if (!ptm) break;
             /* Format the date and time, down to a single second. */
             strftime (time_string, sizeof (time_string), "[%Y-%m-%d %H:%M:%S", ptm);
             /* Compute milliseconds from microseconds. */
             uint16_t milliseconds = curr_time.tv_usec / 1000;
-            /* Print the formatted time, in seconds, followed by a decimal point
-             and the milliseconds. */
+            /* Print the formatted time, in seconds, followed by a decimal point and the milliseconds. */
             printf ("%s.%03u] ", time_string, milliseconds);
             printf_packet(packet_type, in, packet, len);
             break;
@@ -191,8 +192,8 @@ void hci_dump_packet(uint8_t packet_type, uint8_t in, uint8_t *packet, uint16_t 
             little_endian_store_16( header_bluez, 0, 1 + len);
             header_bluez[2] = in;
             header_bluez[3] = 0;
-            little_endian_store_32( header_bluez, 4, curr_time.tv_sec);
-            little_endian_store_32( header_bluez, 8, curr_time.tv_usec);
+            little_endian_store_32( header_bluez, 4, (uint32_t) curr_time.tv_sec);
+            little_endian_store_32( header_bluez, 8,            curr_time.tv_usec);
             header_bluez[12] = packet_type;
             write (dump_file, header_bluez, HCIDUMP_HDR_SIZE);
             write (dump_file, packet, len );
@@ -200,7 +201,7 @@ void hci_dump_packet(uint8_t packet_type, uint8_t in, uint8_t *packet, uint16_t 
             
         case HCI_DUMP_PACKETLOGGER:
             big_endian_store_32( header_packetlogger, 0, PKTLOG_HDR_SIZE - 4 + len);
-            big_endian_store_32( header_packetlogger, 4, curr_time.tv_sec);
+            big_endian_store_32( header_packetlogger, 4,  (uint32_t) curr_time.tv_sec);
             big_endian_store_32( header_packetlogger, 8, curr_time.tv_usec);
             switch (packet_type){
                 case HCI_COMMAND_DATA_PACKET:

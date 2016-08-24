@@ -20,6 +20,7 @@ GLOBAL_INCLUDES += .
 
 $(NAME)_SOURCES := ../../../libraries/btstack/example/EXAMPLE.c
 $(NAME)_COMPONENTS += btstack/port/wiced
+$(NAME)_CFLAGS += ADDITIONAL_CFLAGS
 '''
 
 gatt_update_template = '''#!/bin/sh
@@ -45,7 +46,14 @@ if not "WICED Version" in wiced_version:
     sys.exit(1)
 
 # show WICED version
-print("Found %s" % wiced_version)
+wiced_version = wiced_version.split()[2]
+print("Found WICED SDK version: %s" % wiced_version)
+
+additional_cflags = ""
+if wiced_version < "3.4.0":
+    print("Adding WICED_UART_READ_DOES_NOT_RETURN_BYTES_READ for SDK < 3.4.0")
+    additional_cflags = "-DWICED_UART_READ_DOES_NOT_RETURN_BYTES_READ"
+
 
 # path to examples
 examples_embedded = script_path + "/../../example/"
@@ -68,7 +76,7 @@ for file in os.listdir(examples_embedded):
 
     # create .mk file
     with open(apps_folder + example + ".mk", "wt") as fout:
-        fout.write(mk_template.replace("EXAMPLE", example).replace("TOOL", script_path).replace("DATE",time.strftime("%c")))
+        fout.write(mk_template.replace("EXAMPLE", example).replace("TOOL", script_path).replace("ADDITIONAL_CFLAGS", additional_cflags).replace("DATE",time.strftime("%c")))
 
     # create update_gatt.sh if .gatt file is present
     gatt_path = examples_embedded + example + ".gatt"

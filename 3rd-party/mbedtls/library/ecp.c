@@ -728,6 +728,25 @@ cleanup:
         MBEDTLS_MPI_CHK( mbedtls_mpi_sub_abs( &N, &N, &grp->P ) )
 
 #if defined(ECP_SHORTWEIERSTRASS)
+
+/*
+ * Check and define parameters used by the comb method (see below for details)
+ */
+#if MBEDTLS_ECP_WINDOW_SIZE > 7
+#error "MBEDTLS_ECP_WINDOW_SIZE out of bounds"
+#endif
+
+#if MBEDTLS_ECP_WINDOW_SIZE >= 2
+#define ECP_COMB_METHOD
+
+/* d = ceil( n / w ) */
+#define COMB_MAX_D      ( MBEDTLS_ECP_MAX_BITS + 1 ) / 2
+
+/* number of precomputed points */
+#define COMB_MAX_PRE    ( 1 << ( MBEDTLS_ECP_WINDOW_SIZE - 1 ) )
+
+#endif
+
 /*
  * For curves in short Weierstrass form, we do all the internal operations in
  * Jacobian coordinates.
@@ -775,6 +794,7 @@ cleanup:
     return( ret );
 }
 
+#ifdef ECP_COMB_METHOD
 /*
  * Normalize jacobian coordinates of an array of (pointers to) points,
  * using Montgomery's trick to perform only one inversion mod P.
@@ -887,6 +907,7 @@ cleanup:
 
     return( ret );
 }
+#endif
 
 /*
  * Point doubling R = 2 P, Jacobian coordinates
@@ -1068,6 +1089,8 @@ cleanup:
     return( ret );
 }
 
+#ifdef ECP_COMB_METHOD
+
 /*
  * Randomize jacobian coordinates:
  * (X, Y, Z) -> (l^2 X, l^3 Y, l Z) for random l
@@ -1114,19 +1137,6 @@ cleanup:
 
     return( ret );
 }
-
-/*
- * Check and define parameters used by the comb method (see below for details)
- */
-#if MBEDTLS_ECP_WINDOW_SIZE < 2 || MBEDTLS_ECP_WINDOW_SIZE > 7
-#error "MBEDTLS_ECP_WINDOW_SIZE out of bounds"
-#endif
-
-/* d = ceil( n / w ) */
-#define COMB_MAX_D      ( MBEDTLS_ECP_MAX_BITS + 1 ) / 2
-
-/* number of precomputed points */
-#define COMB_MAX_PRE    ( 1 << ( MBEDTLS_ECP_WINDOW_SIZE - 1 ) )
 
 /*
  * Compute the representation of m that will be used with our comb method.
@@ -1422,6 +1432,63 @@ cleanup:
     return( ret );
 }
 
+#else /* ECP_COMB_METHOD */
+
+/*
+ * Multiplication using the double and add method,
+ * for curves in short Weierstrass form to optimize for RAM usage vs. speed
+ * 
+ * Implemented by BlueKitchen GmbH
+ * Note: 
+ */
+static int ecp_mul_naive( mbedtls_ecp_group *grp, mbedtls_ecp_point *R,
+                         const mbedtls_mpi *m, const mbedtls_ecp_point *P,
+                         int (*f_rng)(void *, unsigned char *, size_t),
+                         void *p_rng )
+{
+    int ret;
+    int i;
+
+#if MBEDTLS_ECP_MUL_NAIVE_SAFE == 1
+    mbedtls_ecp_point T;
+    mbedtls_ecp_point_init(&T);
+#endif
+
+    // calculate m * p using double and add in decreasing fashion to use ecp_add_mixed
+    mbedtls_ecp_point_init(R);
+    for (i=(int)grp->nbits;i >= 0;i--){
+        MBEDTLS_MPI_CHK( ecp_double_jac( grp, R, R ) );
+
+#if MBEDTLS_ECP_MUL_NAIVE_SAFE == 1
+        MBEDTLS_MPI_CHK( ecp_add_mixed(grp, &T, R, P) );
+        int bit_set = mbedtls_mpi_get_bit(m, i);
+        MBEDTLS_MPI_CHK( mbedtls_mpi_safe_cond_assign(&R->X, &T.X, bit_set));
+        MBEDTLS_MPI_CHK( mbedtls_mpi_safe_cond_assign(&R->Y, &T.Y, bit_set));
+        MBEDTLS_MPI_CHK( mbedtls_mpi_safe_cond_assign(&R->Y, &T.Y, bit_set));
+#else
+        if (mbedtls_mpi_get_bit(m, i)){
+            MBEDTLS_MPI_CHK( ecp_add_mixed(grp, R, R, P) );
+        }
+#endif
+
+    }
+
+    // normalize jacobian coordinates
+    MBEDTLS_MPI_CHK( ecp_normalize_jac( grp, R ) );
+
+cleanup:
+    
+#if MBEDTLS_ECP_MUL_NAIVE_SAFE == 1
+    mbedtls_ecp_point_free(&T);
+#endif
+
+    if( ret != 0 )
+        mbedtls_ecp_point_free( R );
+
+    return( ret );
+}
+#endif /* ECP_COMB_METHOD */
+
 #endif /* ECP_SHORTWEIERSTRASS */
 
 #if defined(ECP_MONTGOMERY)
@@ -1612,8 +1679,8 @@ int mbedtls_ecp_mul( mbedtls_ecp_group *grp, mbedtls_ecp_point *R,
              const mbedtls_mpi *m, const mbedtls_ecp_point *P,
              int (*f_rng)(void *, unsigned char *, size_t), void *p_rng )
 {
-    int ret;
 
+    int ret;
     /* Common sanity checks */
     if( mbedtls_mpi_cmp_int( &P->Z, 1 ) != 0 )
         return( MBEDTLS_ERR_ECP_BAD_INPUT_DATA );
@@ -1628,7 +1695,11 @@ int mbedtls_ecp_mul( mbedtls_ecp_group *grp, mbedtls_ecp_point *R,
 #endif
 #if defined(ECP_SHORTWEIERSTRASS)
     if( ecp_get_type( grp ) == ECP_TYPE_SHORT_WEIERSTRASS )
+#ifdef ECP_COMB_METHOD
         return( ecp_mul_comb( grp, R, m, P, f_rng, p_rng ) );
+#else
+        return( ecp_mul_naive( grp, R, m, P, f_rng, p_rng ) );
+#endif
 #endif
     return( MBEDTLS_ERR_ECP_BAD_INPUT_DATA );
 }

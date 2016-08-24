@@ -877,6 +877,12 @@ After the bonding process, *SM_EVENT_JUST_WORKS_CANCEL*, *SM_EVENT_PASSKEY_DISPL
 
 As part of Bluetooth Core V4.2 specification, a device with a keyboard but no display can send keypress notifications to provide better user feedback. In BTstack, the *sm_keypress_notification()* function is used for sending notifcations. Notifications are received by BTstack via the *SM_EVENT_KEYPRESS_NOTIFICATION* event.
 
+### Cross-transport Key Derivation for LE Secure Connections
+
+In a dual-mode configuration, BTstack automatically generates an BR/EDR Link Key from the LE LTK via the Link Key Conversion function *h6*. It is then stored in the link key db.
+
+To derive an LE LTK from a BR/EDR link key, the Bluetooth controller needs to support Secure Connections via NIST P-256 elliptic curves and the LE Secure Connections needs to get established via the LE Transport. BTstack does not support LE Secure Connections via LE Transport currently.
+
 ### Out-of-Band Data with LE Legacy Pairing
 
 LE Legacy Pairing can be made secure by providing a way for both devices

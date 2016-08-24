@@ -932,7 +932,7 @@ static int rfcomm_hci_event_handler(uint8_t *packet, uint16_t size){
             
             if (multiplexer) {
                 log_info("INCOMING_CONNECTION (l2cap_cid 0x%02x) for PSM_RFCOMM => decline - multiplexer already exists", l2cap_cid);
-                l2cap_decline_connection(l2cap_cid,  0x04);    // no resources available
+                l2cap_decline_connection(l2cap_cid);
                 return 1;
             }
             
@@ -940,7 +940,7 @@ static int rfcomm_hci_event_handler(uint8_t *packet, uint16_t size){
             multiplexer = rfcomm_multiplexer_create_for_addr(event_addr);
             if (!multiplexer){
                 log_info("INCOMING_CONNECTION (l2cap_cid 0x%02x) for PSM_RFCOMM => decline - no memory left", l2cap_cid);
-                l2cap_decline_connection(l2cap_cid,  0x04);    // no resources available
+                l2cap_decline_connection(l2cap_cid); 
                 return 1;
             }
             
@@ -2260,11 +2260,9 @@ uint8_t rfcomm_create_channel(btstack_packet_handler_t packet_handler, bd_addr_t
 void rfcomm_disconnect(uint16_t rfcomm_cid){
     log_info("RFCOMM_DISCONNECT cid 0x%02x", rfcomm_cid);
     rfcomm_channel_t * channel = rfcomm_channel_for_rfcomm_cid(rfcomm_cid);
-    if (channel) {
-        channel->state = RFCOMM_CHANNEL_SEND_DISC;
-    }
-    
-    // process
+    if (!channel) return;
+
+    channel->state = RFCOMM_CHANNEL_SEND_DISC;
     l2cap_request_can_send_now_event(channel->multiplexer->l2cap_cid);
 }
 

@@ -43,7 +43,7 @@
 
 #include "platform_bluetooth.h"
 #include "wiced.h"
-
+#include "platform/wwd_platform_interface.h"
 
 // see generated_mac_address.txt - "macaddr=02:0A:F7:3d:76:be"
 static const char * wifi_mac_address = NVRAM_GENERATED_MAC_ADDRESS;
@@ -53,7 +53,7 @@ static btstack_packet_callback_registration_t hci_event_callback_registration;
 static const hci_transport_config_uart_t hci_transport_config_uart = {
     HCI_TRANSPORT_CONFIG_UART,
     115200,
-    0, // 3000000,
+    0,
     1,
     NULL,
 };
@@ -69,8 +69,11 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 
 void application_start(void){
 
-    /* Initialise the WICED device */
-    wiced_init();
+    /* Initialise the WICED device without WLAN */
+    wiced_core_init();
+    
+    /* 32 kHz clock also needed for Bluetooth */
+    host_platform_init_wlan_powersave_clock();
 
     printf("BTstack on WICED\n");
 
@@ -82,7 +85,7 @@ void application_start(void){
     // hci_dump_open(NULL, HCI_DUMP_STDOUT);
 
     // init HCI
-    hci_init(hci_transport_h4_instance(btstack_uart_block_embedded_instance()), (void*) &hci_transport_config_uart);
+    hci_init(hci_transport_h4_instance(NULL), (void*) &hci_transport_config_uart);
     hci_set_link_key_db(btstack_link_key_db_memory_instance());
     hci_set_chipset(btstack_chipset_bcm_instance());
 

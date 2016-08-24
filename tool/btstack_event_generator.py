@@ -143,7 +143,7 @@ static inline uint8_t hci_event_{meta_event}_meta_get_subevent_code(const uint8_
 '''
 
 # global variables/defines
-gen_path = '../src/btstack_event.h'
+# gen_path = '../src/btstack_event.h'
 
 defines = dict()
 defines_used = set()
@@ -264,8 +264,8 @@ def create_events(events):
 
         fout.write(hfile_header_end)
 
-# set root
-parser.set_btstack_root('..')
+btstack_root = os.path.abspath(os.path.dirname(sys.argv[0]) + '/..')
+gen_path = btstack_root + '/src/btstack_event.h'
 
 print(program_info)
 

@@ -271,7 +271,7 @@ typedef enum {
     // state = 35
     SM_RESPONDER_IDLE,
     SM_RESPONDER_SEND_SECURITY_REQUEST,
-    SM_RESPONDER_PH0_RECEIVED_LTK,
+    SM_RESPONDER_PH0_RECEIVED_LTK_REQUEST,
     SM_RESPONDER_PH0_SEND_LTK_REQUESTED_NEGATIVE_REPLY,
     SM_RESPONDER_PH1_W4_PAIRING_REQUEST,
     SM_RESPONDER_PH1_PAIRING_REQUEST_RECEIVED,
@@ -287,7 +287,7 @@ typedef enum {
     SM_RESPONDER_PH4_Y_W4_ENC,
     SM_RESPONDER_PH4_LTK_GET_ENC,
     SM_RESPONDER_PH4_LTK_W4_ENC,
-    SM_RESPONDER_PH4_SEND_LTK,
+    SM_RESPONDER_PH4_SEND_LTK_REPLY,
 
     // INITITIATOR ROLE
     // state = 51
@@ -303,6 +303,7 @@ typedef enum {
     SM_INITIATOR_PH3_SEND_START_ENCRYPTION,
 
     // LE Secure Connections
+    SM_SC_RECEIVED_LTK_REQUEST,
     SM_SC_SEND_PUBLIC_KEY_COMMAND,
     SM_SC_W4_PUBLIC_KEY_COMMAND,
     SM_SC_W2_GET_RANDOM_A,
@@ -333,7 +334,10 @@ typedef enum {
     SM_SC_SEND_DHKEY_CHECK_COMMAND,
     SM_SC_W4_DHKEY_CHECK_COMMAND,
     SM_SC_W4_LTK_REQUEST_SC,
-
+    SM_SC_W2_CALCULATE_H6_ILK,
+    SM_SC_W4_CALCULATE_H6_ILK,
+    SM_SC_W2_CALCULATE_H6_BR_EDR_LINK_KEY,
+    SM_SC_W4_CALCULATE_H6_BR_EDR_LINK_KEY,
 } security_manager_state_t;
 
 typedef enum {
@@ -566,7 +570,7 @@ typedef struct {
     void (*local_version_information_callback)(uint8_t * local_version_information);
 
     // hardware error callback
-    void (*hardware_error_callback)(void);
+    void (*hardware_error_callback)(uint8_t error);
 
     // basic configuration
     const char *       local_name;
@@ -578,8 +582,8 @@ typedef struct {
     uint8_t            ssp_auto_accept;
     
     // single buffer for HCI packet assembly + additional prebuffer for H4 drivers
-    uint8_t   hci_packet_buffer_prefix[HCI_OUTGOING_PRE_BUFFER_SIZE];
-    uint8_t   hci_packet_buffer[HCI_PACKET_BUFFER_SIZE]; // opcode (16), len(8)
+    uint8_t   * hci_packet_buffer;
+    uint8_t   hci_packet_buffer_data[HCI_OUTGOING_PRE_BUFFER_SIZE + HCI_PACKET_BUFFER_SIZE];
     uint8_t   hci_packet_buffer_reserved;
     uint16_t  acl_fragmentation_pos;
     uint16_t  acl_fragmentation_total_size;
@@ -709,7 +713,7 @@ void hci_set_link_key_db(btstack_link_key_db_t const * link_key_db);
 /**
  * @brief Set callback for Bluetooth Hardware Error
  */
-void hci_set_hardware_error_callback(void (*fn)(void));
+void hci_set_hardware_error_callback(void (*fn)(uint8_t error));
 
 /**
  * @brief Set callback for local information from Bluetooth controller right after HCI Reset

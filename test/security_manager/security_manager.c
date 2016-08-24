@@ -275,7 +275,7 @@ TEST(SecurityManager, CMACTest){
     parse_hex(key, key_string);
     uint8_t message [] = "hallo";
     cmac_hash_received = 0;
-    sm_cmac_start(key, 0x11, 0x1234, sizeof(message), message, 1, &cmac_done);
+    sm_cmac_signed_write_start(key, 0x11, 0x1234, sizeof(message), message, 1, &cmac_done);
     while (!cmac_hash_received){
         aes128_report_result();
     }

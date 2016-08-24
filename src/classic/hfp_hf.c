@@ -102,7 +102,7 @@ static void hfp_hf_emit_subscriber_information(btstack_packet_handler_t callback
     event[2] = event_subtype;
     event[3] = status;
     event[4] = bnip_type;
-    int size = (strlen(bnip_number) < sizeof(event) - 6) ? strlen(bnip_number) : sizeof(event) - 6;
+    int size = (strlen(bnip_number) < sizeof(event) - 6) ? (int) strlen(bnip_number) : sizeof(event) - 6;
     strncpy((char*)&event[5], bnip_number, size);
     event[5 + size] = 0;
     (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
@@ -115,7 +115,7 @@ static void hfp_hf_emit_type_and_number(btstack_packet_handler_t callback, uint8
     event[1] = sizeof(event) - 2;
     event[2] = event_subtype;
     event[3] = bnip_type;
-    int size = (strlen(bnip_number) < sizeof(event) - 5) ? strlen(bnip_number) : sizeof(event) - 5;
+    int size = (strlen(bnip_number) < sizeof(event) - 5) ? (int) strlen(bnip_number) : sizeof(event) - 5;
     strncpy((char*)&event[4], bnip_number, size);
     event[4 + size] = 0;
     (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
@@ -133,7 +133,7 @@ static void hfp_hf_emit_enhanced_call_status(btstack_packet_handler_t callback, 
     event[6] = clcc_status;
     event[7] = clcc_mpty;
     event[8] = bnip_type;
-    int size = (strlen(bnip_number) < sizeof(event) - 10) ? strlen(bnip_number) : sizeof(event) - 10;
+    int size = (strlen(bnip_number) < sizeof(event) - 10) ? (int) strlen(bnip_number) : sizeof(event) - 10;
     strncpy((char*)&event[9], bnip_number, size);
     event[9 + size] = 0;
     (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
@@ -835,7 +835,7 @@ static void hfp_run_for_context(hfp_connection_t * hfp_connection){
                     sprintf(buffer, "AT%s=%u,%u\r\n", HFP_TRANSFER_HF_INDICATOR_STATUS, hfp_indicators[i], hfp_indicators_value[i]);
                     send_str_over_rfcomm(hfp_connection->rfcomm_cid, buffer);
                 } else {
-                    printf("Not sending HF indicator %u as it is disabled\n", hfp_indicators[i]);
+                    log_info("Not sending HF indicator %u as it is disabled", hfp_indicators[i]);
                 }
                 return;
             }
@@ -944,7 +944,7 @@ static void hfp_hf_switch_on_ok(hfp_connection_t *hfp_connection){
 
             switch (hfp_connection->hf_query_operator_state){
                 case HFP_HF_QUERY_OPERATOR_W4_SET_FORMAT_OK:
-                    printf("Format set, querying name\n");
+                    // printf("Format set, querying name\n");
                     hfp_connection->hf_query_operator_state = HFP_HF_QUERY_OPERATOR_SEND_QUERY;
                     break;
                 case HPF_HF_QUERY_OPERATOR_W4_RESULT:

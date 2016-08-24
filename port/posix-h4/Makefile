@@ -2,6 +2,7 @@
 BTSTACK_ROOT = ../..
 
 CORE += \
+	bluetooth_init_cc2564B_1.4_BT_Spec_4.1.c \
 	btstack_chipset_cc256x.c \
 	btstack_chipset_csr.c \
 	btstack_chipset_em9301.c \
@@ -11,9 +12,9 @@ CORE += \
 	btstack_run_loop_posix.c \
 	btstack_uart_block_posix.c \
 	hci_transport_h4.c \
+	le_device_db_fs.c \
 	main.c \
 	stdin_support.c \
-	bluetooth_init_cc2564B_1.4_BT_Spec_4.1.c \
 #	bluetooth_init_cc2564_2.14.c \
 #	btstack_chipset_bcm.c \
 

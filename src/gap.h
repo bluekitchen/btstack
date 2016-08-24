@@ -248,7 +248,7 @@ void gap_advertisements_set_params(uint16_t adv_int_min, uint16_t adv_int_max, u
 	uint8_t direct_address_typ, bd_addr_t direct_address, uint8_t channel_map, uint8_t filter_policy);
 
 /** 
- * @brief Enable/Disable Advertisements
+ * @brief Enable/Disable Advertisements. OFF by default.
  * @param enabled
  */
 void gap_advertisements_enable(int enabled);
@@ -353,8 +353,17 @@ void gap_local_bd_addr(bd_addr_t address_buffer);
 
 /**
  * @brief Deletes link key for remote device with baseband address.
+ * @param addr
  */
 void gap_drop_link_key_for_bd_addr(bd_addr_t addr);
+
+/** 
+ * @brief Store link key for remote device with baseband address
+ * @param addr
+ * @param link_key
+ * @param link_key_type
+ */
+void gap_store_link_key_for_bd_addr(bd_addr_t addr, link_key_t link_key, link_key_type_t type);
 
 // LE
 

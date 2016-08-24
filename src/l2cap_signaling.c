@@ -43,6 +43,7 @@
 
 #include "l2cap_signaling.h"
 #include "btstack_config.h"
+#include "btstack_debug.h"
 #include "hci.h"
 
 #include <string.h>
@@ -60,7 +61,12 @@ static const char *l2cap_signaling_commands_format[] = {
 "2",     // 0x0a information request: InfoType {1=Connectionless MTU, 2=Extended features supported}
 "22D",   // 0x0b information response: InfoType, Result, Data
 #ifdef ENABLE_BLE
-// skip 6 not supported signaling pdus, see below
+NULL,    // 0x0c non-supported AMP command
+NULL,    // 0x0d non-supported AMP command
+NULL,    // 0x0e non-supported AMP command
+NULL,    // 0x0f non-supported AMP command
+NULL,    // 0x10 non-supported AMP command
+NULL,    // 0x11 non-supported AMP command
 "2222",  // 0x12 connection parameter update request: interval min, interval max, slave latency, timeout multipler
 "2",     // 0x13 connection parameter update response: result
 "22222", // 0X14 le credit based connection request: le psm, source cid, mtu, mps, initial credits
@@ -68,6 +74,8 @@ static const char *l2cap_signaling_commands_format[] = {
 "22",    // 0x16 le flow control credit: source cid, credits
 #endif
 };
+
+static const int num_l2cap_commands = sizeof(l2cap_signaling_commands_format) / sizeof(const char *);
 
 uint8_t   sig_seq_nr  = 0xff;
 uint16_t  source_cid  = 0x40;
@@ -87,6 +95,15 @@ uint16_t l2cap_next_local_cid(void){
 
 static uint16_t l2cap_create_signaling_internal(uint8_t * acl_buffer, hci_con_handle_t handle, uint16_t cid, L2CAP_SIGNALING_COMMANDS cmd, uint8_t identifier, va_list argptr){
     
+    const char *format = NULL;
+    if (cmd > 0 && cmd <= num_l2cap_commands) {
+        format = l2cap_signaling_commands_format[cmd-1];
+    }
+    if (!format){
+        log_error("l2cap_create_signaling_internal: invalid command id 0x%02x", cmd);
+        return 0;
+    }
+
     int pb = hci_non_flushable_packet_boundary_flag_supported() ? 0x00 : 0x02;
 
     // 0 - Connection handle : PB=pb : BC=00 
@@ -100,11 +117,6 @@ static uint16_t l2cap_create_signaling_internal(uint8_t * acl_buffer, hci_con_ha
     
     // 12 - L2CAP signaling parameters
     uint16_t pos = 12;
-    // skip AMP commands
-    if (cmd >= CONNECTION_PARAMETER_UPDATE_REQUEST){
-        cmd = (L2CAP_SIGNALING_COMMANDS) (((int) cmd) - 6);
-    }
-    const char *format = l2cap_signaling_commands_format[cmd-1];
     uint16_t word;
     uint8_t * ptr;
     while (*format) {

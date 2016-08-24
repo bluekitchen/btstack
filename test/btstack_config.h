@@ -6,7 +6,6 @@
 #define __BTSTACK_CONFIG
 
 // Port related features
-#define HAVE_INIT_SCRIPT
 #define HAVE_POSIX_TIME
 #define HAVE_MALLOC
 
