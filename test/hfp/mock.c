@@ -380,4 +380,6 @@ void inject_hfp_command_to_ag(uint8_t * data, int len){
 }
 
 
-
+int hci_extended_sco_link_supported(void){
+    return 1;
+}
