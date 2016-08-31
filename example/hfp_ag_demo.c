@@ -72,9 +72,10 @@ const char hfp_ag_service_name[] = "BTstack HFP AG Test";
 // CC256x
 // bd_addr_t device_addr = { 0xD0, 0x39, 0x72, 0xCD, 0x83, 0x45};
 // Minijamox
-bd_addr_t device_addr = { 0x00, 0x21, 0x3c, 0xac, 0xf7, 0x38};
+bd_addr_t device_addr = { 0x00, 0x15, 0x83, 0x5F, 0x9D, 0x46};
 
-static uint8_t codecs[] = {HFP_CODEC_CVSD, HFP_CODEC_MSBC};
+// static uint8_t codecs[] = {HFP_CODEC_CVSD, HFP_CODEC_MSBC};
+static uint8_t codecs[] = {HFP_CODEC_CVSD};
 static uint8_t negotiated_codec = HFP_CODEC_CVSD;
 
 static hci_con_handle_t acl_handle = -1;
@@ -125,6 +126,21 @@ int deviceCount = 0;
 enum STATE {INIT, W4_INQUIRY_MODE_COMPLETE, ACTIVE} ;
 enum STATE state = INIT;
 
+static void dump_supported_codecs(){
+    int i;
+    printf("Supported codecs: ");
+    for (i = 0; i < sizeof(codecs); i++){
+        switch(codecs[i]){
+            case HFP_CODEC_CVSD:
+                printf(" CVSD");
+                break;
+            case HFP_CODEC_MSBC:
+                printf(" mSBC");
+                break;
+        }
+    }
+    printf("\n");
+}
 
 static int getDeviceIndexForAddress( bd_addr_t addr){
     int j;
@@ -601,11 +617,14 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                     acl_handle = hfp_subevent_service_level_connection_established_get_con_handle(event);
                     hfp_subevent_service_level_connection_established_get_bd_addr(event, device_addr);
                     printf("Service level connection established from %s.\n", bd_addr_to_str(device_addr));
+                    
+                    dump_supported_codecs();
                     if (hci_extended_sco_link_supported()){
-                        printf("Supported Codecs: CVSD, mSBC.\n");
+                        printf("eSCO supported by controller.\n");
                     } else {
-                        printf("Supported Codecs: CVSD. mSBC disabled, eSCO not supported by controller).\n");
+                        printf("eSCO not supported by controller.\n");
                     }
+
                    break;
                 case HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED:
                     printf("Service level connection released.\n");

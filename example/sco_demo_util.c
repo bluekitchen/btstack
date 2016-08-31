@@ -286,6 +286,12 @@ static void sco_demo_receive_CVSD(uint8_t * packet, uint16_t size){
             sco_demo_close();
         }
         dump_data = 0;
+
+        // convert back
+        int i;
+        for (i=0;i<samples_to_write;i++){
+            packet[3+i] += 128;            
+        }
     }
 }
 
@@ -462,9 +468,11 @@ void sco_demo_receive(uint8_t * packet, uint16_t size){
 #endif
 #endif
 
-    if (packet[1] & 0xf0){
-        printf("SCO CRC Error: %x - data: ", packet[1] >> 4);
+    if (packet[1] & 0x30){
+        printf("SCO CRC Error: %x - data: ", (packet[1] & 0x30) >> 4);
+        log_info("SCO CRC Error: %x - data: ", (packet[1] & 0x30) >> 4);
         printf_hexdump(&packet[3], size-3);
+
         return;
     }
 

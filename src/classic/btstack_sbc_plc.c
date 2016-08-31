@@ -75,9 +75,10 @@ void btstack_sbc_plc_init(btstack_sbc_plc_state_t *plc_state){
     int i;
     plc_state->nbf=0;
     plc_state->bestlag=0;
-    for (i=0;i<LHIST+SBCRT;i++){
-        plc_state->hist[i] = 0; 
-    }
+    // for (i=0;i<LHIST+FS+CVSDRT+OLAL;i++){
+    //     plc_state->hist[i] = 0; 
+    // }
+    memset(plc_state->hist,0,sizeof(plc_state->hist));
        
 }
 
