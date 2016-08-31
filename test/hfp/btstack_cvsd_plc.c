@@ -51,22 +51,30 @@
 #include "btstack_cvsd_plc.h"
 
 static float rcos[OLAL] = {
-    0.99148655f,0.96623611f,0.92510857f,0.86950446f,
-    0.80131732f,0.72286918f,0.63683150f,0.54613418f, 
-    0.45386582f,0.36316850f,0.27713082f,0.19868268f, 
-    0.13049554f,0.07489143f,0.03376389f,0.00851345f};
+    0.99148655,0.96623611,0.92510857,0.86950446,
+    0.80131732,0.72286918,0.63683150,0.54613418, 
+    0.45386582,0.36316850,0.27713082,0.19868268, 
+    0.13049554,0.07489143,0.03376389,0.00851345};
+
+// // 
+// float cosine_interpolate(float y1,float y2, int current_position){
+//    float mu2;
+//    float mu = current_position / number_of_positions_between_the_points;
+//    mu2 = icos[current_position];// (1-cos(mu*PI))/2;
+//    return(y1*(1-mu2)+y2*mu2);
+// }
+
 
 static float CrossCorrelation(int8_t *x, int8_t *y);
 static int PatternMatch(int8_t *y);
 static float AmplitudeMatch(int8_t *y, int8_t bestmatch);
 
 void btstack_cvsd_plc_init(btstack_cvsd_plc_state_t *plc_state){
-    int i;
+    //int i;
     plc_state->nbf=0;
     plc_state->bestlag=0;
-    for (i=0;i<LHIST+CVSDRT;i++){
-        plc_state->hist[i] = 0; 
-    }    
+    printf("init CVSDRT %d\n", CVSDRT);
+    memset(plc_state->hist, 0, sizeof(plc_state->hist));
 }
 
 void btstack_cvsd_plc_bad_frame(btstack_cvsd_plc_state_t *plc_state, int8_t *out){
@@ -80,46 +88,66 @@ void btstack_cvsd_plc_bad_frame(btstack_cvsd_plc_state_t *plc_state, int8_t *out
     if (plc_state->nbf==1){
         /* Perform pattern matching to find where to replicate */
         plc_state->bestlag = PatternMatch(plc_state->hist);
+
         /* the replication begins after the template match */
         plc_state->bestlag += M; 
         
         /* Compute Scale Factor to Match Amplitude of Substitution Packet to that of Preceding Packet */
         sf = AmplitudeMatch(plc_state->hist, plc_state->bestlag);
+
+        // float delta = plc_state->hist[LHIST-1] - (sf*plc_state->hist[plc_state->bestlag]);
+        // printf("sf %f; delta %f\n", sf, delta);
+        
         for (i=0;i<OLAL;i++){
-            val = sf*plc_state->hist[plc_state->bestlag+i];//*rcos[OLAL-i-1];
+#if 0
+            val = sf*plc_state->hist[plc_state->bestlag+i];
+#else
+            // if (delta < 0.93 && delta > 1.1){
+            float left = plc_state->hist[LHIST-1];
+            float right = sf*plc_state->hist[plc_state->bestlag+i];
+            val = left * rcos[i] + right *rcos[OLAL-1-i];
+            // }
+            printf("- %1.4f / %1.4f = %1.4f\n", left, right, val);
+#endif           
             if (val > 127.0) val= 127.0;
             if (val < -128.0) val=-128.0; 
             plc_state->hist[LHIST+i] = (int8_t)val;
         }
-        
-        for (;i<FS;i++){
+       
+        for (i=OLAL;i<FS;i++){
             val = sf*plc_state->hist[plc_state->bestlag+i]; 
             if (val > 127.0) val= 127.0;
             if (val < -128.0) val=-128.0; 
             plc_state->hist[LHIST+i] = (int8_t)val;
         }
         
-        for (;i<FS+OLAL;i++){
+#if 0
+#else
+        for (i=FS;i<FS+OLAL;i++){
             val = sf*plc_state->hist[plc_state->bestlag+i]*rcos[i-FS]
-                 +   plc_state->hist[plc_state->bestlag+i]*rcos[OLAL-1-i+FS];
+                 +   plc_state->hist[plc_state->bestlag+i]*rcos[OLAL+FS-1-i];
             if (val >  127.0) val= 127.0;
             if (val < -128.0) val=-128.0;
             plc_state->hist[LHIST+i] = (int8_t)val;
         }
 
-        for (;i<FS+CVSDRT+OLAL;i++)
+        for (i=FS+OLAL;i<FS+OLAL+CVSDRT;i++)
             plc_state->hist[LHIST+i] = plc_state->hist[plc_state->bestlag+i];
+        
+#endif
+
     } else {
-        for (;i<FS;i++)
+        for (i=0;i<FS;i++)
             plc_state->hist[LHIST+i] = plc_state->hist[plc_state->bestlag+i];
         for (;i<FS+CVSDRT+OLAL;i++)
             plc_state->hist[LHIST+i] = plc_state->hist[plc_state->bestlag+i];
     }
-    for (i=0;i<FS;i++)
+
+    for (i=0;i<FS;i++){
         out[i] = plc_state->hist[LHIST+i];
-   
-   /* shift the history buffer */
-   for (i=0;i<LHIST+CVSDRT+OLAL;i++)
+    }
+    /* shift the history buffer */
+    for (i=0;i<LHIST+CVSDRT+OLAL;i++)
         plc_state->hist[i] = plc_state->hist[i+FS];
 
 }
@@ -128,11 +156,17 @@ void btstack_cvsd_plc_good_frame(btstack_cvsd_plc_state_t *plc_state, int8_t *in
     int i;
     i=0;
     if (plc_state->nbf>0){
+#if 0
+#else
+        // printf("good frame, after bad frame\n");
         for (i=0;i<CVSDRT;i++)
             out[i] = plc_state->hist[LHIST+i];
-        for (;i<CVSDRT+OLAL;i++)
-            out[i] = (int8_t)(plc_state->hist[LHIST+i]*rcos[i-CVSDRT] + in[i]*rcos[OLAL-1-i+CVSDRT]);
+        
+        for (i=CVSDRT;i<CVSDRT+OLAL;i++)
+            out[i] = (int8_t)(plc_state->hist[LHIST+i]*rcos[i-CVSDRT] + in[i]*rcos[OLAL+CVSDRT-1-i]);
+#endif
     }
+
     for (;i<FS;i++)
         out[i] = in[i];
     /*Copy the output to the history buffer */

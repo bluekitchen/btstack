@@ -1,13 +1,21 @@
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <fcntl.h>
+#include <unistd.h>
+
 #include "CppUTest/TestHarness.h"
 #include "CppUTest/CommandLineTestRunner.h"
 
 #include "btstack_cvsd_plc.h"
 
-const  int audio_samples_per_packet = 24;
-static uint8_t audio_frame_in[audio_samples_per_packet];
-static uint8_t audio_frame_out[audio_samples_per_packet];
+const  int audio_samples_per_frame = 24;
+static uint8_t audio_frame_in[audio_samples_per_frame];
+static uint8_t audio_frame_out[audio_samples_per_frame];
+static int last_value = 0;
 
-static uint8_t test_data[][audio_samples_per_packet] = {
+static uint8_t test_data[][audio_samples_per_frame] = {
     { 0x05, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff },
     { 0xff, 0xff, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x05 },
     { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05 },
@@ -26,15 +34,23 @@ static int phase = 0;
 
 static btstack_cvsd_plc_state_t plc_state;
 
-static void fill_audio_frame_with_error(int nr_zero_bytes){
+static void next_sine_audio_frame(void){
     int i;
-    for (i=0;i<audio_samples_per_packet;i++){
-        audio_frame_in[i] = 0;
-        if (i<audio_samples_per_packet-nr_zero_bytes){
-            audio_frame_in[i] = sine[phase];
-        }
+    last_value = audio_frame_in[audio_samples_per_frame-1];
+    for (i=0;i<audio_samples_per_frame;i++){
+        audio_frame_in[i] = sine[phase];
         phase++;
         if (phase >= sizeof(sine)) phase = 0;
+    }
+}
+
+static void fill_audio_frame_with_error(int nr_zero_bytes, int mark_bad_frame){
+    int i;
+    int error_value = mark_bad_frame ? 127 : last_value;
+    for (i=0;i<audio_samples_per_frame;i++){
+        if (i >= audio_samples_per_frame-nr_zero_bytes){
+            audio_frame_in[i] = error_value;
+        }
     }
 }
 
@@ -42,7 +58,7 @@ static int count_equal_bytes(uint8_t * packet){
     int count = 0;
     int temp_count = 1;
     int i;
-    for (i = 0; i < audio_samples_per_packet-1; i++){
+    for (i = 0; i < audio_samples_per_frame-1; i++){
         if (packet[i] == packet[i+1]){
             temp_count++;
             continue;
@@ -124,7 +140,7 @@ static void write_wav_header(FILE * wav_file,  int total_num_samples, int num_ch
 }
 
 static void init_wav_writer(const char * cvsd_filename){
-    printf("Open sbc file: %s\n", cvsd_filename);
+    printf("Open wav file: %s\n", cvsd_filename);
     FILE * wav_file = fopen(cvsd_filename, "wb");
     wav_writer_state.wav_file = wav_file;
     wav_writer_state.frame_count = 0;
@@ -142,38 +158,128 @@ static void close_wav_writer(void){
 }
 
 static void write_wav_data(int num_samples, uint8_t * data){
-    fwrite(data, num_samples, 1, wav_writer_state.wav_file);
+    int i = 0;
+    for (i=0; i<num_samples;i++){
+        fwrite(&data[i], 1, 1, wav_writer_state.wav_file);
+        fwrite(&data[i], 1, 1, wav_writer_state.wav_file);
+    }
+    
     wav_writer_state.total_num_samples+=num_samples;
     wav_writer_state.frame_count++;
 }
 
+static int wav_reader_num_frames = 0;
+const char * wav_reader_filename_in = "data/fanfare-mono.wav";
+int wav_reader_fd;
+
+static ssize_t __read(int fd, void *buf, size_t count){
+    ssize_t len, pos = 0;
+
+    while (count > 0) {
+        len = read(fd, (int8_t * )buf + pos, count);
+        if (len <= 0)
+            return pos;
+
+        count -= len;
+        pos   += len;
+    }
+    return pos;
+}
+
+uint16_t little_endian_read_16(const uint8_t * buffer, int pos){
+    return ((uint16_t) buffer[pos]) | (((uint16_t)buffer[(pos)+1]) << 8);
+}
+
+static int read_audio_frame(int wav_fd){
+    int i;
+    int bytes_read = 0;  
+    for (i=0; i < audio_samples_per_frame; i++){
+        uint8_t buf[2];
+        bytes_read +=__read(wav_fd, &buf, 2);
+        //read_buffer[i] = little_endian_read_16(buf, 0);  
+        audio_frame_in[i] = buf[1];
+    }
+
+    wav_reader_num_frames++;
+    return bytes_read;
+}
+
+static void read_wav_header(int wav_fd){
+    uint8_t buf[40];
+    __read(wav_fd, buf, sizeof(buf));
+}
+
+int next_audio_frame(void){
+    if (!wav_reader_fd) return -1;
+    last_value = audio_frame_in[audio_samples_per_frame-1];
+    int bytes_read = read_audio_frame(wav_reader_fd);
+    return bytes_read == audio_samples_per_frame*2;
+}
+
+static void init_wav_reader(const char * wav_reader_filename_in){
+    wav_reader_fd = open(wav_reader_filename_in, O_RDONLY); //fopen(wav_reader_filename_in, "rb");
+    if (!wav_reader_fd) {
+        printf("Can't open file %s", wav_reader_filename_in);
+    }
+    read_wav_header(wav_reader_fd);
+}
+
+static void close_wav_reader(void){
+    close(wav_reader_fd);
+}
 //
 
-static void process_sine_with_error_rate(const char * file_name, int error_rate, int num_bad_frames, int plc_enabled){
+static void process_wav_file_with_error_rate(const char * file_name, int corruption_step, int num_bad_frames, int plc_enabled, int mark_bad_frame){
     btstack_cvsd_plc_init(&plc_state);
     init_wav_writer(file_name);
-    int total_num_samples = 5000;
-    int corruption_step = 0;
+    init_wav_reader(wav_reader_filename_in);
 
-    if (error_rate > 0){
-        int nr_corrupt_samples = total_num_samples * error_rate / 100;
-        corruption_step = total_num_samples / nr_corrupt_samples;
-    }
-    
-    int i;
+    int i = 0;
     int num_bf = num_bad_frames;
-    printf("Num samples %d, corruption every %dth step\n", total_num_samples, corruption_step);
-    for (i=0; i<2000; i++){
+    printf("Corruption every %dth step\n", corruption_step);
+    while (next_audio_frame() > 0){
         if (i > corruption_step && corruption_step > 0 && i%corruption_step == 0) {
-            fill_audio_frame_with_error(24);
+            fill_audio_frame_with_error(24, mark_bad_frame);
             btstack_cvsd_plc_bad_frame(&plc_state, (int8_t*)audio_frame_out);
             num_bf = num_bad_frames;
         } else if (i > corruption_step && num_bf > 1) {
-            fill_audio_frame_with_error(24);
+            fill_audio_frame_with_error(24, mark_bad_frame);
             btstack_cvsd_plc_bad_frame(&plc_state, (int8_t*)audio_frame_out);
             num_bf--;
         } else {
-            fill_audio_frame_with_error(0);
+            fill_audio_frame_with_error(0, mark_bad_frame);
+            btstack_cvsd_plc_good_frame(&plc_state, (int8_t*)audio_frame_in, (int8_t*)audio_frame_out);
+        }
+        if (plc_enabled){
+            write_wav_data(24, audio_frame_out);
+        } else {
+            write_wav_data(24, audio_frame_in);
+        }
+        i++;
+    } 
+    close_wav_writer();
+    close_wav_reader();
+}
+
+static void process_sine_with_error_rate(const char * file_name, int corruption_step, int num_bad_frames, int plc_enabled, int mark_bad_frame){
+    btstack_cvsd_plc_init(&plc_state);
+    init_wav_writer(file_name);
+    
+    int i;
+    int num_bf = num_bad_frames;
+    printf("Corruption every %dth step\n", corruption_step);
+    for (i=0; i<2000; i++){
+        next_sine_audio_frame();
+        if (i > corruption_step && corruption_step > 0 && i%corruption_step == 0) {
+            fill_audio_frame_with_error(24, mark_bad_frame);
+            btstack_cvsd_plc_bad_frame(&plc_state, (int8_t*)audio_frame_out);
+            num_bf = num_bad_frames;
+        } else if (i > corruption_step && num_bf > 1) {
+            fill_audio_frame_with_error(24, mark_bad_frame);
+            btstack_cvsd_plc_bad_frame(&plc_state, (int8_t*)audio_frame_out);
+            num_bf--;
+        } else {
+            fill_audio_frame_with_error(0, mark_bad_frame);
             btstack_cvsd_plc_good_frame(&plc_state, (int8_t*)audio_frame_in, (int8_t*)audio_frame_out);
         }
         if (plc_enabled){
@@ -198,40 +304,41 @@ TEST(CVSD_PLC, CountEqBytes){
     CHECK_EQUAL(23, count_equal_bytes(test_data[3]));   
 }
 
-TEST(CVSD_PLC, FillAudioFrame){
-    fill_audio_frame_with_error(15);
-    CHECK_EQUAL(15, count_equal_bytes(audio_frame_in));  
-}
-
-TEST(CVSD_PLC, ProcessWavFileWithErrorRate){
-    process_sine_with_error_rate("sine_test_10_no_plc.wav", 10, 0, 0);
-    process_sine_with_error_rate("sine_test_10_plc.wav", 10, 0, 1);
-}
-
-// TEST(CVSD_PLC, ProcessWavFileWithErrorRate){
-    
-//     // process_sine_with_error_rate("sine_test_0.wav", 0, 0, 1);
-//     // process_sine_with_error_rate("sine_test_1.wav", 1, 0, 1);
-//     // process_sine_with_error_rate("sine_test_2.wav", 2, 0, 1);
-//     // process_sine_with_error_rate("sine_test_3.wav", 3, 0, 1);
-//     // process_sine_with_error_rate("sine_test_4.wav", 4, 0, 1);
-//     // process_sine_with_error_rate("sine_test_5.wav", 5, 0, 1);
-//     // process_sine_with_error_rate("sine_test_6.wav", 6, 0, 1);
-//     // process_sine_with_error_rate("sine_test_7.wav", 7, 0, 1);
-//     // process_sine_with_error_rate("sine_test_8.wav", 8, 0, 1);
-//     // process_sine_with_error_rate("sine_test_9.wav", 9, 0, 1);
-//     // process_sine_with_error_rate("sine_test_10.wav", 10, 0, 1);
+// TEST(CVSD_PLC, FillAudioFrame){
+//     fill_audio_frame_with_error(15, 1);
+//     CHECK_EQUAL(15, count_equal_bytes(audio_frame_in));  
 // }
 
-TEST(CVSD_PLC, ProcessWavFileWithErrorRateAndSubseqBadSamples){
-    process_sine_with_error_rate("sine_test_10_2_no_plc.wav", 10, 2, 0);
-    process_sine_with_error_rate("sine_test_10_2_plc.wav", 10, 2, 1);
-    // process_sine_with_error_rate("sine_test_1_2.wav", 1, 2, 1);
-    // process_sine_with_error_rate("sine_test_1_4.wav", 1, 4, 1);
-    // process_sine_with_error_rate("sine_test_1_6.wav", 1, 6, 1);
-    // process_sine_with_error_rate("sine_test_1_8.wav", 1, 8, 1);
+// TEST(CVSD_PLC, SineWithErrorRateSingleBadFrame){
+//     process_sine_with_error_rate("sine_test_10_no_plc.wav", 10, 0, 0);
+//     process_sine_with_error_rate("sine_test_10_plc.wav", 10, 0, 1);
+// }
+
+// TEST(CVSD_PLC, SineWithErrorRateMultipleBadFrame){
+//     process_sine_with_error_rate("sine_test_10_2_no_plc.wav", 10, 2, 0);
+//     process_sine_with_error_rate("sine_test_10_2_plc.wav", 10, 2, 1);
+// }
+
+
+TEST(CVSD_PLC, WavFileWithErrorRateSingleBadFrame){
+    // process_wav_file_with_error_rate("fanfare_test.wav", 0, 0, 0);
+    // process_sine_with_error_rate("sine_test.wav", 0, 0, 0);
+    
+    process_wav_file_with_error_rate("fanfare_test_20_no_plc.wav", 20, 0, 0, 1);
+    process_wav_file_with_error_rate("fanfare_test_20_1_plc8.wav", 20, 1, 1, 0);
+    // process_wav_file_with_error_rate("fanfare_test_20_2_plc8.wav", 20, 2, 1, 0);
+    // process_wav_file_with_error_rate("fanfare_test_20_4_plc8.wav", 20, 4, 1, 0);
+
+    process_sine_with_error_rate("sine_test_10_no_plc.wav", 10, 0, 0, 1);
+    process_sine_with_error_rate("sine_test_10_1_plc8.wav", 10, 0, 1, 0);
+    // process_sine_with_error_rate("sine_test_10_2_plc8.wav", 10, 2, 1, 0);
+    // process_sine_with_error_rate("sine_test_10_4_plc8.wav", 10, 4, 1, 0);
 }
 
+// TEST(CVSD_PLC, WavFileWithErrorRateMultipleBadFrame){
+//     process_wav_file_with_error_rate("fanfare_test_10_2_no_plc.wav", 10, 2, 0);
+//     process_wav_file_with_error_rate("fanfare_test_10_2_plc.wav", 10, 2, 1);
+// }
 
 int main (int argc, const char * argv[]){
     return CommandLineTestRunner::RunAllTests(argc, argv);
