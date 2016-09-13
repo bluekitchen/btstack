@@ -131,7 +131,7 @@ static int num_samples_to_write;
 static wav_writer_state_t wav_writer_state;
 
 static btstack_sbc_decoder_state_t decoder_state;
-static btstack_cvsd_plc_t sbc_plc_state;
+static btstack_cvsd_plc_state_t cvsd_plc_state;
 
 static void little_endian_fstore_16(FILE * file, uint16_t value){
     uint8_t buf[2];
@@ -272,9 +272,7 @@ static void sco_demo_receive_mSBC(uint8_t * packet, uint16_t size){
     }
 }
 
-static int8_t audio_frame_out[24];
-
-static int count_equal_bytes(uint8_t * packet, uint16_t size){
+static int count_equal_bytes(int8_t * packet, uint16_t size){
     int count = 0;
     int temp_count = 1;
     int i;
@@ -294,11 +292,11 @@ static int count_equal_bytes(uint8_t * packet, uint16_t size){
     return count;
 }
 
-static void btstack_cvsd_handle_audio_frame(uint8_t * packet, uint16_t size){
+static void btstack_cvsd_plc_process_data(btstack_cvsd_plc_state_t * state, int8_t * packet, uint16_t size, int8_t * out){
     if (count_equal_bytes(packet, size) > size/2){
-        btstack_cvsd_plc_bad_frame(&cvsd_plc_state, audio_frame_out);
+        btstack_cvsd_plc_bad_frame(state, out);
     } else {
-        btstack_cvsd_plc_good_frame(&cvsd_plc_state, packet, audio_frame_out);
+        btstack_cvsd_plc_good_frame(state, packet, out);
     }
 }
 
@@ -306,8 +304,9 @@ static void sco_demo_receive_CVSD(uint8_t * packet, uint16_t size){
     if (num_samples_to_write){
         const int num_samples = size - 3;
         const int samples_to_write = btstack_min(num_samples, num_samples_to_write);
+        int8_t audio_frame_out[24];
         
-        btstack_cvsd_handle_audio_frame(packet+3,num_samples);
+        btstack_cvsd_plc_process_data(&cvsd_plc_state, (int8_t *)(packet+3),num_samples,audio_frame_out);
 
         // convert 8 bit signed to 8 bit unsigned
         int i;
@@ -316,7 +315,7 @@ static void sco_demo_receive_CVSD(uint8_t * packet, uint16_t size){
         }
 
         wav_writer_state_t * writer_state = &wav_writer_state;
-        write_wav_data_uint8(writer_state->wav_file, samples_to_write, audio_frame_out);
+        write_wav_data_uint8(writer_state->wav_file, samples_to_write, (uint8_t*)audio_frame_out);
         num_samples_to_write -= samples_to_write;
         if (num_samples_to_write == 0){
             sco_demo_close();
@@ -324,7 +323,6 @@ static void sco_demo_receive_CVSD(uint8_t * packet, uint16_t size){
         dump_data = 0;
 
         // convert back
-        int i;
         for (i=0;i<samples_to_write;i++){
             audio_frame_out[i] += 128;            
         }
