@@ -54,11 +54,11 @@ static void fill_audio_frame_with_error(int nr_zero_bytes, int mark_bad_frame){
     }
 }
 
-static int count_equal_bytes(uint8_t * packet){
+static int count_equal_bytes(uint8_t * packet, uint16_t size){
     int count = 0;
     int temp_count = 1;
     int i;
-    for (i = 0; i < audio_samples_per_frame-1; i++){
+    for (i = 0; i < size-1; i++){
         if (packet[i] == packet[i+1]){
             temp_count++;
             continue;
@@ -298,15 +298,15 @@ TEST_GROUP(CVSD_PLC){
 };
 
 TEST(CVSD_PLC, CountEqBytes){
-    CHECK_EQUAL(23, count_equal_bytes(test_data[0]));
-    CHECK_EQUAL(11, count_equal_bytes(test_data[1]));
-    CHECK_EQUAL(12, count_equal_bytes(test_data[2]));
-    CHECK_EQUAL(23, count_equal_bytes(test_data[3]));   
+    CHECK_EQUAL(23, count_equal_bytes(test_data[0],24));
+    CHECK_EQUAL(11, count_equal_bytes(test_data[1],24));
+    CHECK_EQUAL(12, count_equal_bytes(test_data[2],24));
+    CHECK_EQUAL(23, count_equal_bytes(test_data[3],24));   
 }
 
 // TEST(CVSD_PLC, FillAudioFrame){
 //     fill_audio_frame_with_error(15, 1);
-//     CHECK_EQUAL(15, count_equal_bytes(audio_frame_in));  
+//     CHECK_EQUAL(15, count_equal_bytes(audio_frame_in, 24));  
 // }
 
 // TEST(CVSD_PLC, SineWithErrorRateSingleBadFrame){
