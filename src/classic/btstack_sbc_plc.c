@@ -146,7 +146,7 @@ void btstack_sbc_plc_bad_frame(btstack_sbc_plc_state_t *plc_state, int16_t *ZIRb
         for (i=0;i<SBC_OLAL;i++){
             float left  = ZIRbuf[i];
             float right = sf*plc_state->hist[plc_state->bestlag+i];
-            val = left*rcos[i] + right*rcos[SBC_OLAL-i-1];
+            val = left*rcos[i] + right*rcos[SBC_OLAL-1-i];
             plc_state->hist[SBC_LHIST+i] = crop_to_int16(val);
         }
         
@@ -158,7 +158,7 @@ void btstack_sbc_plc_bad_frame(btstack_sbc_plc_state_t *plc_state, int16_t *ZIRb
         for (;i<SBC_FS+SBC_OLAL;i++){
             float left  = sf*plc_state->hist[plc_state->bestlag+i];
             float right = plc_state->hist[plc_state->bestlag+i];
-            val = left*rcos[i-SBC_FS]+right*rcos[SBC_OLAL-1-i+SBC_FS];
+            val = left*rcos[i-SBC_FS]+right*rcos[SBC_FS+SBC_OLAL-1-i];
             plc_state->hist[SBC_LHIST+i] = crop_to_int16(val);
         }
 
@@ -194,7 +194,7 @@ void btstack_sbc_plc_good_frame(btstack_sbc_plc_state_t *plc_state, int16_t *in,
             float left  = plc_state->hist[SBC_LHIST+i];
             float right = in[i];  
             val = left*rcos[i-SBC_RT] + right*rcos[SBC_OLAL-1-i+SBC_RT];
-            out[i] = crop_to_int16(val);
+            out[i] = (uint16_t)val;
         }
     }
     for (;i<SBC_FS;i++){

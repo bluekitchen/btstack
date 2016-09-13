@@ -40,6 +40,7 @@
  *
  */
 
+
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -72,12 +73,12 @@ static float CrossCorrelation(int8_t *x, int8_t *y){
 }
 
 static int PatternMatch(int8_t *y){
-    float maxCn = -999999.0;  /* large negative number */
+    float maxCn = -999999.0;  // large negative number
     int   bestmatch = 0;
     float Cn;
     int   n;
     for (n=0;n<CVSD_N;n++){
-        Cn = CrossCorrelation(&y[CVSD_LHIST-CVSD_M] /* x */, &y[n]); 
+        Cn = CrossCorrelation(&y[CVSD_LHIST-CVSD_M], &y[n]); 
         if (Cn>maxCn){
             bestmatch=n;
             maxCn = Cn; 
@@ -97,77 +98,71 @@ static float AmplitudeMatch(int8_t *y, int8_t bestmatch) {
         sumy += abs(y[bestmatch+i]);
     }
     sf = sumx/sumy;
-    /* This is not in the paper, but limit the scaling factor to something reasonable to avoid creating artifacts */
+    // This is not in the paper, but limit the scaling factor to something reasonable to avoid creating artifacts 
     if (sf<0.75f) sf=0.75f;
     if (sf>1.2f) sf=1.2f;
     return sf;
 }
 
 static int8_t crop_to_int8(float val){
-    float croped_val = 0;
-    if (val > 127.0)  croped_val= 127.0;
-    if (val < -128.0) croped_val=-128.0; 
+    float croped_val = val;
+    if (croped_val > 127.0)  croped_val= 127.0;
+    if (croped_val < -128.0) croped_val=-128.0; 
     return (int8_t) croped_val;
 }
 
+
 void btstack_cvsd_plc_init(btstack_cvsd_plc_state_t *plc_state){
-    plc_state->nbf = 0;
-    plc_state->bestlag = 0;
+    plc_state->nbf=0;
+    plc_state->bestlag=0;
     memset(plc_state->hist, 0, sizeof(plc_state->hist));
 }
 
 void btstack_cvsd_plc_bad_frame(btstack_cvsd_plc_state_t *plc_state, int8_t *out){
     float val;
-    float sf = 1;
     int   i = 0;
-
+    float sf = 1;
     plc_state->nbf++;
-
+    
     if (plc_state->nbf==1){
-        /* Perform pattern matching to find where to replicate */
+        // Perform pattern matching to find where to replicate
         plc_state->bestlag = PatternMatch(plc_state->hist);
-
-        /* the replication begins after the template match */
+        // the replication begins after the template match
         plc_state->bestlag += CVSD_M; 
         
-        /* Compute Scale Factor to Match Amplitude of Substitution Packet to that of Preceding Packet */
+        // Compute Scale Factor to Match Amplitude of Substitution Packet to that of Preceding Packet
         sf = AmplitudeMatch(plc_state->hist, plc_state->bestlag);
-
         for (i=0;i<CVSD_OLAL;i++){
-            float left = plc_state->hist[CVSD_LHIST-1];
-            float right = sf*plc_state->hist[plc_state->bestlag+i];
-            val = left * rcos[i] + right *rcos[CVSD_OLAL-1-i];
+            val = sf*plc_state->hist[plc_state->bestlag+i];
             plc_state->hist[CVSD_LHIST+i] = crop_to_int8(val);
         }
-       
-        for (i=CVSD_OLAL;i<CVSD_FS;i++){
+        
+        for (;i<CVSD_FS;i++){
             val = sf*plc_state->hist[plc_state->bestlag+i]; 
             plc_state->hist[CVSD_LHIST+i] = crop_to_int8(val);
         }
         
-        for (i=CVSD_FS;i<CVSD_FS+CVSD_OLAL;i++){
+        for (;i<CVSD_FS+CVSD_OLAL;i++){
             float left  = sf*plc_state->hist[plc_state->bestlag+i];
             float right = plc_state->hist[plc_state->bestlag+i];
-            val = left * rcos[i-CVSD_FS] + right *rcos[CVSD_OLAL+CVSD_FS-1-i];
+            val = left*rcos[i-CVSD_FS] + right*rcos[CVSD_OLAL-1-i+CVSD_FS];
             plc_state->hist[CVSD_LHIST+i] = crop_to_int8(val);
         }
 
-        for (i=CVSD_FS+CVSD_OLAL;i<CVSD_FS+CVSD_OLAL+CVSD_RT;i++){
+        for (;i<CVSD_FS+CVSD_RT+CVSD_OLAL;i++){
             plc_state->hist[CVSD_LHIST+i] = plc_state->hist[plc_state->bestlag+i];
         }
-
     } else {
-        for (i=0;i<CVSD_FS+CVSD_RT+CVSD_OLAL;i++){
+        for (;i<CVSD_FS+CVSD_RT+CVSD_OLAL;i++){
             plc_state->hist[CVSD_LHIST+i] = plc_state->hist[plc_state->bestlag+i];
         }
     }
-
     for (i=0;i<CVSD_FS;i++){
         out[i] = plc_state->hist[CVSD_LHIST+i];
     }
-
-    /* shift the history buffer */
-    for (i=0;i<CVSD_LHIST+CVSD_RT+CVSD_OLAL;i++){
+   
+   // shift the history buffer 
+   for (i=0;i<CVSD_LHIST+CVSD_RT+CVSD_OLAL;i++){
         plc_state->hist[i] = plc_state->hist[i+CVSD_FS];
     }
 }
@@ -184,24 +179,20 @@ void btstack_cvsd_plc_good_frame(btstack_cvsd_plc_state_t *plc_state, int8_t *in
             float left  = plc_state->hist[CVSD_LHIST+i];
             float right = in[i];
             val = left * rcos[i-CVSD_RT] + right *rcos[CVSD_OLAL+CVSD_RT-1-i];
-            out[i] = crop_to_int8(val);
+            out[i] = (int8_t)val;
         }
     }
 
     for (;i<CVSD_FS;i++){
         out[i] = in[i];
     }
-    
-    /*Copy the output to the history buffer */
+    // Copy the output to the history buffer
     for (i=0;i<CVSD_FS;i++){
         plc_state->hist[CVSD_LHIST+i] = out[i];
     }
-
-    /* shift the history buffer */
+    // shift the history buffer
     for (i=0;i<CVSD_LHIST;i++){
         plc_state->hist[i] = plc_state->hist[i+CVSD_FS];
     }
-    
     plc_state->nbf=0;
 }
-
