@@ -112,9 +112,9 @@ static float AmplitudeMatch(int16_t *y, int16_t bestmatch) {
 }
 
 static int16_t crop_to_int16(float val){
-    float croped_val = 0;
-    if (val > 32767.0)  croped_val= 32767.0;
-    if (val < -32768.0) croped_val=-32768.0; 
+    float croped_val = val;
+    if (croped_val > 32767.0)  croped_val= 32767.0;
+    if (croped_val < -32768.0) croped_val=-32768.0; 
     return (int16_t) croped_val;
 }
 
@@ -194,7 +194,7 @@ void btstack_sbc_plc_good_frame(btstack_sbc_plc_state_t *plc_state, int16_t *in,
             float left  = plc_state->hist[SBC_LHIST+i];
             float right = in[i];  
             val = left*rcos[i-SBC_RT] + right*rcos[SBC_OLAL-1-i+SBC_RT];
-            out[i] = (uint16_t)val;
+            out[i] = (int16_t)val;
         }
     }
     for (;i<SBC_FS;i++){

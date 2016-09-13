@@ -84,8 +84,8 @@ typedef struct {
     int first_good_frame_found; 
 } bludroid_decoder_state_t;
 
-static btstack_sbc_decoder_state_t * sbc_state_singelton = NULL;
-static bludroid_decoder_state_t bd_state;
+static btstack_sbc_decoder_state_t * sbc_decoder_state_singleton = NULL;
+static bludroid_decoder_state_t bd_decoder_state;
 
 // Testing only - START
 static int plc_enabled = 1;
@@ -105,7 +105,7 @@ typedef struct {
     uint8_t sbc_packet[1000];
 } bludroid_encoder_state_t;
 
-static btstack_sbc_encoder_state_t * sbc_encoder_state_singelton = NULL;
+static btstack_sbc_encoder_state_t * sbc_encoder_state_singleton = NULL;
 static bludroid_encoder_state_t bd_encoder_state;
 
 // SBC encoder start
@@ -189,16 +189,16 @@ void OI_AssertFail(char* file, int line, char* reason){
 }
 
 void btstack_sbc_decoder_init(btstack_sbc_decoder_state_t * state, btstack_sbc_mode_t mode, void (*callback)(int16_t * data, int num_samples, int num_channels, int sample_rate, void * context), void * context){
-    if (sbc_state_singelton && sbc_state_singelton != state ){
+    if (sbc_decoder_state_singleton && sbc_decoder_state_singleton != state ){
         log_error("SBC decoder: different sbc decoder state is allready registered");
     } 
     OI_STATUS status;
     switch (mode){
         case SBC_MODE_STANDARD:
-            status = OI_CODEC_SBC_DecoderReset(&(bd_state.decoder_context), bd_state.decoder_data, sizeof(bd_state.decoder_data), 2, 1, FALSE);
+            status = OI_CODEC_SBC_DecoderReset(&(bd_decoder_state.decoder_context), bd_decoder_state.decoder_data, sizeof(bd_decoder_state.decoder_data), 2, 1, FALSE);
             break;
         case SBC_MODE_mSBC:
-            status = OI_CODEC_mSBC_DecoderReset(&(bd_state.decoder_context), bd_state.decoder_data, sizeof(bd_state.decoder_data));
+            status = OI_CODEC_mSBC_DecoderReset(&(bd_decoder_state.decoder_context), bd_decoder_state.decoder_data, sizeof(bd_decoder_state.decoder_data));
             break;
     }
 
@@ -206,23 +206,23 @@ void btstack_sbc_decoder_init(btstack_sbc_decoder_state_t * state, btstack_sbc_m
         log_error("SBC decoder: error during reset %d\n", status);
     }
     
-    sbc_state_singelton = state;
+    sbc_decoder_state_singleton = state;
     
-    bd_state.bytes_in_frame_buffer = 0;
-    bd_state.pcm_bytes = sizeof(bd_state.pcm_data);
-    bd_state.h2_sequence_nr = -1;
-    bd_state.sync_word_found = 0;
-    bd_state.search_new_sync_word = 0;
+    bd_decoder_state.bytes_in_frame_buffer = 0;
+    bd_decoder_state.pcm_bytes = sizeof(bd_decoder_state.pcm_data);
+    bd_decoder_state.h2_sequence_nr = -1;
+    bd_decoder_state.sync_word_found = 0;
+    bd_decoder_state.search_new_sync_word = 0;
     if (mode == SBC_MODE_mSBC){
-        bd_state.search_new_sync_word = 1;
+        bd_decoder_state.search_new_sync_word = 1;
     }
-    bd_state.first_good_frame_found = 0;
+    bd_decoder_state.first_good_frame_found = 0;
 
     memset(state, 0, sizeof(btstack_sbc_decoder_state_t));
     state->handle_pcm_data = callback;
     state->mode = mode;
     state->context = context;
-    state->decoder_state = &bd_state;
+    state->decoder_state = &bd_decoder_state;
     btstack_sbc_plc_init(&state->plc_state);
 }
 
@@ -404,14 +404,19 @@ void btstack_sbc_decoder_process_data(btstack_sbc_decoder_state_t * state, int p
 void btstack_sbc_encoder_init(btstack_sbc_encoder_state_t * state, btstack_sbc_mode_t mode, 
                         int blocks, int subbands, int allmethod, int sample_rate, int bitpool){
 
-    if (sbc_encoder_state_singelton && sbc_encoder_state_singelton != state ){
+    if (sbc_encoder_state_singleton && sbc_encoder_state_singleton != state ){
         log_error("SBC encoder: different sbc decoder state is allready registered");
     } 
     
-    sbc_encoder_state_singelton = state;
-    sbc_encoder_state_singelton->mode = mode;
+    sbc_encoder_state_singleton = state;
 
-    switch (sbc_encoder_state_singelton->mode){
+    if (!sbc_encoder_state_singleton){
+        log_error("SBC encoder init: sbc state is NULL");
+    }
+
+    sbc_encoder_state_singleton->mode = mode;
+
+    switch (sbc_encoder_state_singleton->mode){
         case SBC_MODE_STANDARD:
             bd_encoder_state.context.s16NumOfBlocks = blocks;                          
             bd_encoder_state.context.s16NumOfSubBands = subbands;                       
@@ -440,17 +445,17 @@ void btstack_sbc_encoder_init(btstack_sbc_encoder_state_t * state, btstack_sbc_m
     }
     bd_encoder_state.context.pu8Packet = bd_encoder_state.sbc_packet;
     
-    sbc_encoder_state_singelton->encoder_state = &bd_encoder_state;
-    SBC_ENC_PARAMS * context = &((bludroid_encoder_state_t *)sbc_encoder_state_singelton->encoder_state)->context;
+    sbc_encoder_state_singleton->encoder_state = &bd_encoder_state;
+    SBC_ENC_PARAMS * context = &((bludroid_encoder_state_t *)sbc_encoder_state_singleton->encoder_state)->context;
     SBC_Encoder_Init(context);
 }
 
 
 void btstack_sbc_encoder_process_data(int16_t * input_buffer){
-    if (!sbc_state_singelton){
+    if (!sbc_encoder_state_singleton){
         log_error("SBC encoder: sbc state is NULL, call btstack_sbc_encoder_init to initialize it");
     }
-    SBC_ENC_PARAMS * context = &((bludroid_encoder_state_t *)sbc_encoder_state_singelton->encoder_state)->context;
+    SBC_ENC_PARAMS * context = &((bludroid_encoder_state_t *)sbc_encoder_state_singleton->encoder_state)->context;
     context->ps16PcmBuffer = input_buffer;
     if (context->mSBCEnabled){
         context->pu8Packet[0] = 0xad;
@@ -459,22 +464,22 @@ void btstack_sbc_encoder_process_data(int16_t * input_buffer){
 }
 
 int btstack_sbc_encoder_num_audio_samples(void){
-    SBC_ENC_PARAMS * context = &((bludroid_encoder_state_t *)sbc_encoder_state_singelton->encoder_state)->context;
+    SBC_ENC_PARAMS * context = &((bludroid_encoder_state_t *)sbc_encoder_state_singleton->encoder_state)->context;
     return context->s16NumOfSubBands * context->s16NumOfBlocks * context->s16NumOfChannels;
 }
 
 uint8_t * btstack_sbc_encoder_sbc_buffer(void){
-    SBC_ENC_PARAMS * context = &((bludroid_encoder_state_t *)sbc_encoder_state_singelton->encoder_state)->context;
+    SBC_ENC_PARAMS * context = &((bludroid_encoder_state_t *)sbc_encoder_state_singleton->encoder_state)->context;
     return context->pu8Packet;
 }
 
 uint16_t  btstack_sbc_encoder_sbc_buffer_length(void){
-    SBC_ENC_PARAMS * context = &((bludroid_encoder_state_t *)sbc_encoder_state_singelton->encoder_state)->context;
+    SBC_ENC_PARAMS * context = &((bludroid_encoder_state_t *)sbc_encoder_state_singleton->encoder_state)->context;
     return context->u16PacketLength;
 }
 
 // static void btstack_sbc_encoder_dump_context(void){
-//     SBC_ENC_PARAMS * context = &((bludroid_encoder_state_t *)sbc_encoder_state_singelton->encoder_state)->context;
+//     SBC_ENC_PARAMS * context = &((bludroid_encoder_state_t *)sbc_encoder_state_singleton->encoder_state)->context;
     
 //     printf("Blocks %d\n", context->s16NumOfBlocks);
 //     printf("SubBands %d\n", context->s16NumOfSubBands);
