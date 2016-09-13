@@ -49,16 +49,16 @@
 extern "C" {
 #endif
 
-#define FS 24           /* Frame Size */
-#define N 128           /* 16ms - Window Length for pattern matching */ 
-#define M 10            /* Template for matching */
-#define LHIST (N+FS-1)  /* Length of history buffer required */ 
-#define CVSDRT 5        /*  Reconvergence Time (samples) */
-#define OLAL 16         /* OverLap-Add Length (samples) */
+#define CVSD_FS 24           /* CVSD Frame Size */
+#define CVSD_N 128           /* 16ms - Window Length for pattern matching */ 
+#define CVSD_M 10            /* Template for matching */
+#define CVSD_LHIST (CVSD_N+CVSD_FS-1)  /* Length of history buffer required */ 
+#define CVSD_RT 5        /*  Reconvergence Time (samples) */
+#define CVSD_OLAL 16         /* OverLap-Add Length (samples) */
 
 /* PLC State Information */
 typedef struct cvsd_plc_state {
-    int8_t hist[LHIST+FS+CVSDRT+OLAL];
+    int8_t hist[CVSD_LHIST+CVSD_FS+CVSD_RT+CVSD_OLAL];
     int16_t bestlag;
     int     nbf;
 } btstack_cvsd_plc_state_t;

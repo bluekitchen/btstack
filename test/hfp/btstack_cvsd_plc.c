@@ -50,187 +50,161 @@
 
 #include "btstack_cvsd_plc.h"
 
-static float rcos[OLAL] = {
+static float rcos[CVSD_OLAL] = {
     0.99148655,0.96623611,0.92510857,0.86950446,
     0.80131732,0.72286918,0.63683150,0.54613418, 
     0.45386582,0.36316850,0.27713082,0.19868268, 
     0.13049554,0.07489143,0.03376389,0.00851345};
 
-// // 
-// float cosine_interpolate(float y1,float y2, int current_position){
-//    float mu2;
-//    float mu = current_position / number_of_positions_between_the_points;
-//    mu2 = icos[current_position];// (1-cos(mu*PI))/2;
-//    return(y1*(1-mu2)+y2*mu2);
-// }
-
-
 static float CrossCorrelation(int8_t *x, int8_t *y);
 static int PatternMatch(int8_t *y);
 static float AmplitudeMatch(int8_t *y, int8_t bestmatch);
 
+static int8_t crop_to_int8(float val){
+    float croped_val = 0;
+    if (val > 127.0)  croped_val= 127.0;
+    if (val < -128.0) croped_val=-128.0; 
+    return (int8_t) croped_val;
+}
+
 void btstack_cvsd_plc_init(btstack_cvsd_plc_state_t *plc_state){
-    //int i;
-    plc_state->nbf=0;
-    plc_state->bestlag=0;
-    printf("init CVSDRT %d\n", CVSDRT);
+    plc_state->nbf = 0;
+    plc_state->bestlag = 0;
     memset(plc_state->hist, 0, sizeof(plc_state->hist));
 }
 
 void btstack_cvsd_plc_bad_frame(btstack_cvsd_plc_state_t *plc_state, int8_t *out){
-    int   i;
     float val;
-    float sf;
-    plc_state->nbf++;
-    sf=1.0f;
+    float sf = 1;
+    int   i = 0;
 
-    i=0;
+    plc_state->nbf++;
+
     if (plc_state->nbf==1){
         /* Perform pattern matching to find where to replicate */
         plc_state->bestlag = PatternMatch(plc_state->hist);
 
         /* the replication begins after the template match */
-        plc_state->bestlag += M; 
+        plc_state->bestlag += CVSD_M; 
         
         /* Compute Scale Factor to Match Amplitude of Substitution Packet to that of Preceding Packet */
         sf = AmplitudeMatch(plc_state->hist, plc_state->bestlag);
 
-        // float delta = plc_state->hist[LHIST-1] - (sf*plc_state->hist[plc_state->bestlag]);
-        // printf("sf %f; delta %f\n", sf, delta);
-        
-        for (i=0;i<OLAL;i++){
-#if 0
-            val = sf*plc_state->hist[plc_state->bestlag+i];
-#else
-            // if (delta < 0.93 && delta > 1.1){
-            float left = plc_state->hist[LHIST-1];
+        for (i=0;i<CVSD_OLAL;i++){
+            float left = plc_state->hist[CVSD_LHIST-1];
             float right = sf*plc_state->hist[plc_state->bestlag+i];
-            val = left * rcos[i] + right *rcos[OLAL-1-i];
-            // }
-            printf("- %1.4f / %1.4f = %1.4f\n", left, right, val);
-#endif           
-            if (val > 127.0) val= 127.0;
-            if (val < -128.0) val=-128.0; 
-            plc_state->hist[LHIST+i] = (int8_t)val;
+            val = left * rcos[i] + right *rcos[CVSD_OLAL-1-i];
+            plc_state->hist[CVSD_LHIST+i] = crop_to_int8(val);
         }
        
-        for (i=OLAL;i<FS;i++){
+        for (i=CVSD_OLAL;i<CVSD_FS;i++){
             val = sf*plc_state->hist[plc_state->bestlag+i]; 
-            if (val > 127.0) val= 127.0;
-            if (val < -128.0) val=-128.0; 
-            plc_state->hist[LHIST+i] = (int8_t)val;
+            plc_state->hist[CVSD_LHIST+i] = crop_to_int8(val);
         }
         
-#if 0
-#else
-        for (i=FS;i<FS+OLAL;i++){
-            val = sf*plc_state->hist[plc_state->bestlag+i]*rcos[i-FS]
-                 +   plc_state->hist[plc_state->bestlag+i]*rcos[OLAL+FS-1-i];
-            if (val >  127.0) val= 127.0;
-            if (val < -128.0) val=-128.0;
-            plc_state->hist[LHIST+i] = (int8_t)val;
+        for (i=CVSD_FS;i<CVSD_FS+CVSD_OLAL;i++){
+            float left  = sf*plc_state->hist[plc_state->bestlag+i];
+            float right = plc_state->hist[plc_state->bestlag+i];
+            val = left * rcos[i-CVSD_FS] + right *rcos[CVSD_OLAL+CVSD_FS-1-i];
+            plc_state->hist[CVSD_LHIST+i] = crop_to_int8(val);
         }
 
-        for (i=FS+OLAL;i<FS+OLAL+CVSDRT;i++)
-            plc_state->hist[LHIST+i] = plc_state->hist[plc_state->bestlag+i];
-        
-#endif
+        for (i=CVSD_FS+CVSD_OLAL;i<CVSD_FS+CVSD_OLAL+CVSD_RT;i++)
+            plc_state->hist[CVSD_LHIST+i] = plc_state->hist[plc_state->bestlag+i];
 
     } else {
-        for (i=0;i<FS;i++)
-            plc_state->hist[LHIST+i] = plc_state->hist[plc_state->bestlag+i];
-        for (;i<FS+CVSDRT+OLAL;i++)
-            plc_state->hist[LHIST+i] = plc_state->hist[plc_state->bestlag+i];
+        for (i=0;i<CVSD_FS+CVSD_RT+CVSD_OLAL;i++)
+            plc_state->hist[CVSD_LHIST+i] = plc_state->hist[plc_state->bestlag+i];
     }
 
-    for (i=0;i<FS;i++){
-        out[i] = plc_state->hist[LHIST+i];
+    for (i=0;i<CVSD_FS;i++){
+        out[i] = plc_state->hist[CVSD_LHIST+i];
     }
+
     /* shift the history buffer */
-    for (i=0;i<LHIST+CVSDRT+OLAL;i++)
-        plc_state->hist[i] = plc_state->hist[i+FS];
-
+    for (i=0;i<CVSD_LHIST+CVSD_RT+CVSD_OLAL;i++){
+        plc_state->hist[i] = plc_state->hist[i+CVSD_FS];
+    }
 }
 
 void btstack_cvsd_plc_good_frame(btstack_cvsd_plc_state_t *plc_state, int8_t *in, int8_t *out){
-    int i;
-    i=0;
+    float val;
+    int i = 0;
     if (plc_state->nbf>0){
-#if 0
-#else
-        // printf("good frame, after bad frame\n");
-        for (i=0;i<CVSDRT;i++)
-            out[i] = plc_state->hist[LHIST+i];
-        
-        for (i=CVSDRT;i<CVSDRT+OLAL;i++)
-            out[i] = (int8_t)(plc_state->hist[LHIST+i]*rcos[i-CVSDRT] + in[i]*rcos[OLAL+CVSDRT-1-i]);
-#endif
+        for (i=0;i<CVSD_RT;i++){
+            out[i] = plc_state->hist[CVSD_LHIST+i];
+        }
+            
+        for (i=CVSD_RT;i<CVSD_RT+CVSD_OLAL;i++){
+            float left  = plc_state->hist[CVSD_LHIST+i];
+            float right = in[i];
+            val = left * rcos[i-CVSD_RT] + right *rcos[CVSD_OLAL+CVSD_RT-1-i];
+            out[i] = crop_to_int8(val);
+        }
     }
 
-    for (;i<FS;i++)
+    for (;i<CVSD_FS;i++){
         out[i] = in[i];
+    }
+    
     /*Copy the output to the history buffer */
-    for (i=0;i<FS;i++)
-        plc_state->hist[LHIST+i] = out[i];
+    for (i=0;i<CVSD_FS;i++){
+        plc_state->hist[CVSD_LHIST+i] = out[i];
+    }
+
     /* shift the history buffer */
-    for (i=0;i<LHIST;i++)
-        plc_state->hist[i] = plc_state->hist[i+FS];
+    for (i=0;i<CVSD_LHIST;i++){
+        plc_state->hist[i] = plc_state->hist[i+CVSD_FS];
+    }
+    
     plc_state->nbf=0;
 }
 
 
 float CrossCorrelation(int8_t *x, int8_t *y){
+    float num = 0;
+    float den = 0;
+    float x2 = 0;
+    float y2 = 0;
     int   m;
-    float num;
-    float den;
-    float Cn;
-    float x2, y2;
-    num=0;
-    den=0;
-    x2=0.0;
-    y2=0.0;
-    for (m=0;m<M;m++){
+    for (m=0;m<CVSD_M;m++){
         num+=((float)x[m])*y[m];
         x2+=((float)x[m])*x[m];
         y2+=((float)y[m])*y[m];
     }
     den = (float)sqrt(x2*y2);
-    Cn = num/den;
-    return(Cn);
+    return num/den;
 }
 
 int PatternMatch(int8_t *y){
-    int   n;
-    float maxCn;
+    float maxCn = -999999.0;  /* large negative number */
+    int   bestmatch = 0;
     float Cn;
-    int   bestmatch;
-    maxCn=-999999.0;  /* large negative number */
-    bestmatch=0;
-    for (n=0;n<N;n++){
-        Cn = CrossCorrelation(&y[LHIST-M] /* x */, &y[n]); 
+    int   n;
+    for (n=0;n<CVSD_N;n++){
+        Cn = CrossCorrelation(&y[CVSD_LHIST-CVSD_M] /* x */, &y[n]); 
         if (Cn>maxCn){
             bestmatch=n;
             maxCn = Cn; 
         }
     }
-    return(bestmatch);
+    return bestmatch;
 }
 
 
 float AmplitudeMatch(int8_t *y, int8_t bestmatch) {
     int   i;
-    float sumx;
-    float sumy;
+    float sumx = 0;
+    float sumy = 0.000001f;
     float sf;
-    sumx = 0.0;
-    sumy = 0.000001f;
-    for (i=0;i<FS;i++){
-        sumx += abs(y[LHIST-FS+i]);
+    
+    for (i=0;i<CVSD_FS;i++){
+        sumx += abs(y[CVSD_LHIST-CVSD_FS+i]);
         sumy += abs(y[bestmatch+i]);
     }
     sf = sumx/sumy;
     /* This is not in the paper, but limit the scaling factor to something reasonable to avoid creating artifacts */
     if (sf<0.75f) sf=0.75f;
     if (sf>1.2f) sf=1.2f;
-    return(sf);
+    return sf;
 }
