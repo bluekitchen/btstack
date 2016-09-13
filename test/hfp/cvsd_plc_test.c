@@ -11,8 +11,8 @@
 #include "btstack_cvsd_plc.h"
 
 const  int audio_samples_per_frame = 24;
-static uint8_t audio_frame_in[audio_samples_per_frame];
-static uint8_t audio_frame_out[audio_samples_per_frame];
+static int8_t audio_frame_in[audio_samples_per_frame];
+static int8_t audio_frame_out[audio_samples_per_frame];
 static int last_value = 0;
 
 static uint8_t test_data[][audio_samples_per_frame] = {
@@ -38,7 +38,7 @@ static void next_sine_audio_frame(void){
     int i;
     last_value = audio_frame_in[audio_samples_per_frame-1];
     for (i=0;i<audio_samples_per_frame;i++){
-        audio_frame_in[i] = sine[phase];
+        audio_frame_in[i] = (int8_t)sine[phase];
         phase++;
         if (phase >= sizeof(sine)) phase = 0;
     }
@@ -157,7 +157,7 @@ static void close_wav_writer(void){
     fclose(wav_writer_state.wav_file);
 }
 
-static void write_wav_data(int num_samples, uint8_t * data){
+static void write_wav_data(int num_samples, int8_t * data){
     int i = 0;
     for (i=0; i<num_samples;i++){
         fwrite(&data[i], 1, 1, wav_writer_state.wav_file);
@@ -240,15 +240,15 @@ static void process_wav_file_with_error_rate(const char * file_name, int corrupt
     while (next_audio_frame() > 0){
         if (i > corruption_step && corruption_step > 0 && i%corruption_step == 0) {
             fill_audio_frame_with_error(24, mark_bad_frame);
-            btstack_cvsd_plc_bad_frame(&plc_state, (int8_t*)audio_frame_out);
+            btstack_cvsd_plc_bad_frame(&plc_state, audio_frame_out);
             num_bf = num_bad_frames;
         } else if (i > corruption_step && num_bf > 1) {
             fill_audio_frame_with_error(24, mark_bad_frame);
-            btstack_cvsd_plc_bad_frame(&plc_state, (int8_t*)audio_frame_out);
+            btstack_cvsd_plc_bad_frame(&plc_state, audio_frame_out);
             num_bf--;
         } else {
-            fill_audio_frame_with_error(0, mark_bad_frame);
-            btstack_cvsd_plc_good_frame(&plc_state, (int8_t*)audio_frame_in, (int8_t*)audio_frame_out);
+            // fill_audio_frame_with_error(0, mark_bad_frame);
+            btstack_cvsd_plc_good_frame(&plc_state, audio_frame_in, (int8_t*)audio_frame_out);
         }
         if (plc_enabled){
             write_wav_data(24, audio_frame_out);
@@ -276,11 +276,11 @@ static void process_sine_with_error_rate(const char * file_name, int corruption_
             num_bf = num_bad_frames;
         } else if (i > corruption_step && num_bf > 1) {
             fill_audio_frame_with_error(24, mark_bad_frame);
-            btstack_cvsd_plc_bad_frame(&plc_state, (int8_t*)audio_frame_out);
+            btstack_cvsd_plc_bad_frame(&plc_state, audio_frame_out);
             num_bf--;
         } else {
             fill_audio_frame_with_error(0, mark_bad_frame);
-            btstack_cvsd_plc_good_frame(&plc_state, (int8_t*)audio_frame_in, (int8_t*)audio_frame_out);
+            btstack_cvsd_plc_good_frame(&plc_state, audio_frame_in, audio_frame_out);
         }
         if (plc_enabled){
             write_wav_data(24, audio_frame_out);
