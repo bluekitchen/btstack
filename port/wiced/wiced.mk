@@ -40,6 +40,7 @@ $(NAME)_SOURCES += \
 # WICED port incl. support for Broadcom chipset
 $(NAME)_SOURCES += \
 	main.c                                     \
+	btstack_link_key_db_wiced_dct.c  		   \
 	btstack_run_loop_wiced.c                   \
 	hci_transport_h4_wiced.c                   \
 	../../chipset/bcm/btstack_chipset_bcm.c    \
