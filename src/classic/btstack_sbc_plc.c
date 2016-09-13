@@ -57,7 +57,7 @@ static uint8_t indices0[] = { 0xad, 0x00, 0x00, 0xc5, 0x00, 0x00, 0x00, 0x00, 0x
 0xb6, 0xdd, 0xdb, 0x6d, 0xb7, 0x76, 0xdb, 0x6c};
 
 /* Raised COSine table for OLA */
-static float rcos[OLAL] = {
+static float rcos[SBC_OLAL] = {
     0.99148655f,0.96623611f,0.92510857f,0.86950446f,
     0.80131732f,0.72286918f,0.63683150f,0.54613418f, 
     0.45386582f,0.36316850f,0.27713082f,0.19868268f, 
@@ -67,146 +67,152 @@ static float CrossCorrelation(int16_t *x, int16_t *y);
 static int PatternMatch(int16_t *y);
 static float AmplitudeMatch(int16_t *y, int16_t bestmatch);
 
+static int16_t crop_to_int16(float val){
+    float croped_val = 0;
+    if (val > 32767.0)  croped_val= 32767.0;
+    if (val < -32768.0) croped_val=-32768.0; 
+    return (int16_t) croped_val;
+}
+
 uint8_t * btstack_sbc_plc_zero_signal_frame(void){
     return (uint8_t *)&indices0;
 }
 
 void btstack_sbc_plc_init(btstack_sbc_plc_state_t *plc_state){
-    int i;
     plc_state->nbf=0;
     plc_state->bestlag=0;
-    // for (i=0;i<LHIST+FS+CVSDRT+OLAL;i++){
-    //     plc_state->hist[i] = 0; 
-    // }
-    memset(plc_state->hist,0,sizeof(plc_state->hist));
-       
+    memset(plc_state->hist,0,sizeof(plc_state->hist));   
 }
 
 void btstack_sbc_plc_bad_frame(btstack_sbc_plc_state_t *plc_state, int16_t *ZIRbuf, int16_t *out){
-    int   i;
     float val;
-    float sf;
+    int   i = 0;
+    float sf = 1;
+    
     plc_state->nbf++;
-    sf=1.0f;
-
-    i=0;
+   
     if (plc_state->nbf==1){
         /* Perform pattern matching to find where to replicate */
         plc_state->bestlag = PatternMatch(plc_state->hist);
         /* the replication begins after the template match */
-        plc_state->bestlag += M; 
+        plc_state->bestlag += SBC_M; 
         
         /* Compute Scale Factor to Match Amplitude of Substitution Packet to that of Preceding Packet */
         sf = AmplitudeMatch(plc_state->hist, plc_state->bestlag);
-        for (i=0;i<OLAL;i++){
-            val = ZIRbuf[i]*rcos[i] + sf*plc_state->hist[plc_state->bestlag+i]*rcos[OLAL-i-1];
-            if (val >  32767.0) val= 32767.0;
-            if (val < -32768.0) val=-32768.0;
-             plc_state->hist[LHIST+i] = (int16_t)val;
+        for (i=0;i<SBC_OLAL;i++){
+            float left  = ZIRbuf[i];
+            float right = sf*plc_state->hist[plc_state->bestlag+i];
+            val = left*rcos[i] + right*rcos[SBC_OLAL-i-1];
+            plc_state->hist[SBC_LHIST+i] = crop_to_int16(val);
         }
         
-        for (;i<FS;i++){
-            val = sf*plc_state->hist[plc_state->bestlag+i]; if (val > 32767.0) val= 32767.0;
-            if (val < -32768.0) val=-32768.0; plc_state->hist[LHIST+i] = (int16_t)val;
+        for (;i<SBC_FS;i++){
+            val = sf*plc_state->hist[plc_state->bestlag+i]; 
+            plc_state->hist[SBC_LHIST+i] = crop_to_int16(val);
         }
         
-        for (;i<FS+OLAL;i++){
-            val = sf*plc_state->hist[plc_state->bestlag+i]*rcos[i-FS]+plc_state->hist[plc_state->bestlag+i]*rcos[OLAL-1-i+FS];
-            if (val >  32767.0) val= 32767.0;
-            if (val < -32768.0) val=-32768.0;
-            plc_state->hist[LHIST+i] = (int16_t)val;
+        for (;i<SBC_FS+SBC_OLAL;i++){
+            float left  = sf*plc_state->hist[plc_state->bestlag+i];
+            float right = plc_state->hist[plc_state->bestlag+i];
+            val = left*rcos[i-SBC_FS]+right*rcos[SBC_OLAL-1-i+SBC_FS];
+            plc_state->hist[SBC_LHIST+i] = crop_to_int16(val);
         }
 
-        for (;i<FS+SBCRT+OLAL;i++)
-            plc_state->hist[LHIST+i] = plc_state->hist[plc_state->bestlag+i];
+        for (;i<SBC_FS+SBC_RT+SBC_OLAL;i++){
+            plc_state->hist[SBC_LHIST+i] = plc_state->hist[plc_state->bestlag+i];
+        }
+            
     } else {
-        for (;i<FS;i++)
-            plc_state->hist[LHIST+i] = plc_state->hist[plc_state->bestlag+i];
-        for (;i<FS+SBCRT+OLAL;i++)
-            plc_state->hist[LHIST+i] = plc_state->hist[plc_state->bestlag+i];
+        for (i=0;i<SBC_FS+SBC_RT+SBC_OLAL;i++)
+            plc_state->hist[SBC_LHIST+i] = plc_state->hist[plc_state->bestlag+i];
     }
-    for (i=0;i<FS;i++)
-        out[i] = plc_state->hist[LHIST+i];
+    for (i=0;i<SBC_FS;i++){
+        out[i] = plc_state->hist[SBC_LHIST+i];
+    }
+        
+    /* shift the history buffer */
+    for (i=0;i<SBC_LHIST+SBC_RT+SBC_OLAL;i++){
+        plc_state->hist[i] = plc_state->hist[i+SBC_FS];
+    }
    
-   /* shift the history buffer */
-   for (i=0;i<LHIST+SBCRT+OLAL;i++)
-        plc_state->hist[i] = plc_state->hist[i+FS];
-
 }
 
 void btstack_sbc_plc_good_frame(btstack_sbc_plc_state_t *plc_state, int16_t *in, int16_t *out){
-    int i;
-    i=0;
+    float val;
+    int i = 0;
     if (plc_state->nbf>0){
-        for (i=0;i<SBCRT;i++)
-            out[i] = plc_state->hist[LHIST+i];
-        for (;i<SBCRT+OLAL;i++)
-            out[i] = (int16_t)(plc_state->hist[LHIST+i]*rcos[i-SBCRT] + in[i]*rcos[OLAL-1-i+SBCRT]);
+        for (i=0;i<SBC_RT;i++){
+            out[i] = plc_state->hist[SBC_LHIST+i];
+        }
+            
+        for (;i<SBC_RT+SBC_OLAL;i++){
+            float left  = plc_state->hist[SBC_LHIST+i];
+            float right = in[i];  
+            val = left*rcos[i-SBC_RT] + right*rcos[SBC_OLAL-1-i+SBC_RT];
+            out[i] = crop_to_int16(val);
+        }
     }
-    for (;i<FS;i++)
+    for (;i<SBC_FS;i++){
         out[i] = in[i];
+    }
+
     /*Copy the output to the history buffer */
-    for (i=0;i<FS;i++)
-        plc_state->hist[LHIST+i] = out[i];
+    for (i=0;i<SBC_FS;i++){
+        plc_state->hist[SBC_LHIST+i] = out[i];
+    }
     /* shift the history buffer */
-    for (i=0;i<LHIST;i++)
-        plc_state->hist[i] = plc_state->hist[i+FS];
+    for (i=0;i<SBC_LHIST;i++){
+        plc_state->hist[i] = plc_state->hist[i+SBC_FS];
+    }
+
     plc_state->nbf=0;
 }
 
 
 float CrossCorrelation(int16_t *x, int16_t *y){
+    float num = 0;
+    float den = 0;
+    float x2 = 0;
+    float y2 = 0;
     int   m;
-    float num;
-    float den;
-    float Cn;
-    float x2, y2;
-    num=0;
-    den=0;
-    x2=0.0;
-    y2=0.0;
-    for (m=0;m<M;m++){
+    for (m=0;m<SBC_M;m++){
         num+=((float)x[m])*y[m];
         x2+=((float)x[m])*x[m];
         y2+=((float)y[m])*y[m];
     }
     den = (float)sqrt(x2*y2);
-    Cn = num/den;
-    return(Cn);
+    return num/den;
 }
 
 int PatternMatch(int16_t *y){
-    int   n;
-    float maxCn;
+    float maxCn = -999999.0;  /* large negative number */
+    int   bestmatch = 0;
     float Cn;
-    int   bestmatch;
-    maxCn=-999999.0;  /* large negative number */
-    bestmatch=0;
-    for (n=0;n<N;n++){
-        Cn = CrossCorrelation(&y[LHIST-M] /* x */, &y[n]); 
+    int   n;
+    for (n=0;n<SBC_N;n++){
+        Cn = CrossCorrelation(&y[SBC_LHIST-SBC_M] /* x */, &y[n]); 
         if (Cn>maxCn){
             bestmatch=n;
             maxCn = Cn; 
         }
     }
-    return(bestmatch);
+    return bestmatch;
 }
 
 
 float AmplitudeMatch(int16_t *y, int16_t bestmatch) {
     int   i;
-    float sumx;
-    float sumy;
+    float sumx = 0;
+    float sumy = 0.000001f;
     float sf;
-    sumx = 0.0;
-    sumy = 0.000001f;
-    for (i=0;i<FS;i++){
-        sumx += abs(y[LHIST-FS+i]);
+    
+    for (i=0;i<SBC_FS;i++){
+        sumx += abs(y[SBC_LHIST-SBC_FS+i]);
         sumy += abs(y[bestmatch+i]);
     }
     sf = sumx/sumy;
     /* This is not in the paper, but limit the scaling factor to something reasonable to avoid creating artifacts */
     if (sf<0.75f) sf=0.75f;
     if (sf>1.2f) sf=1.2f;
-    return(sf);
+    return sf;
 }

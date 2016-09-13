@@ -49,16 +49,16 @@
 extern "C" {
 #endif
 
-#define FS 120          /* Frame Size */
-#define N 256           /* 16ms - Window Length for pattern matching */ 
-#define M 64            /* 4ms - Template for matching */
-#define LHIST (N+FS-1)  /* Length of history buffer required */ 
-#define SBCRT 36        /* SBC Reconvergence Time (samples) */
-#define OLAL 16         /* OverLap-Add Length (samples) */
+#define SBC_FS 120          /* SBC Frame Size */
+#define SBC_N 256           /* 16ms - Window Length for pattern matching */ 
+#define SBC_M 64            /* 4ms - Template for matching */
+#define SBC_LHIST (SBC_N+SBC_FS-1)  /* Length of history buffer required */ 
+#define SBC_RT 36           /* SBC Reconvergence Time (samples) */
+#define SBC_OLAL 16         /* OverLap-Add Length (samples) */
 
 /* PLC State Information */
 typedef struct sbc_plc_state {
-    int16_t hist[LHIST+FS+SBCRT+OLAL];
+    int16_t hist[SBC_LHIST+SBC_FS+SBC_RT+SBC_OLAL];
     int16_t bestlag;
     int     nbf;
 } btstack_sbc_plc_state_t;
