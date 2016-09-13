@@ -272,34 +272,6 @@ static void sco_demo_receive_mSBC(uint8_t * packet, uint16_t size){
     }
 }
 
-static int count_equal_bytes(int8_t * packet, uint16_t size){
-    int count = 0;
-    int temp_count = 1;
-    int i;
-    for (i = 0; i < size-1; i++){
-        if (packet[i] == packet[i+1]){
-            temp_count++;
-            continue;
-        }
-        if (count < temp_count){
-            count = temp_count;
-        }
-        temp_count = 1;
-    }
-    if (temp_count > count + 1){
-        count = temp_count;
-    }
-    return count;
-}
-
-static void btstack_cvsd_plc_process_data(btstack_cvsd_plc_state_t * state, int8_t * packet, uint16_t size, int8_t * out){
-    if (count_equal_bytes(packet, size) > size/2){
-        btstack_cvsd_plc_bad_frame(state, out);
-    } else {
-        btstack_cvsd_plc_good_frame(state, packet, out);
-    }
-}
-
 static void sco_demo_receive_CVSD(uint8_t * packet, uint16_t size){
     if (num_samples_to_write){
         const int num_samples = size - 3;
@@ -332,7 +304,18 @@ static void sco_demo_receive_CVSD(uint8_t * packet, uint16_t size){
 #endif
 #endif
 
-void sco_demo_close(void){
+void sco_demo_close(void){    
+#if SCO_DEMO_MODE == SCO_DEMO_MODE_SINE
+#if defined(SCO_WAV_FILENAME) || defined(SCO_SBC_FILENAME)
+    printf("SCO demo statistics: ");
+    if (negotiated_codec == HFP_CODEC_MSBC){
+        printf("Used mSBC with PLC, number of processed frames: \n - %d good frames, \n - %d zero frames, \n - %d bad frames.", decoder_state.good_frames_nr, decoder_state.zero_frames_nr, decoder_state.bad_frames_nr);
+    } else {
+        printf("Used CVSD with PLC, number of proccesed frames: \n - %d good frames, \n - %d bad frames.", cvsd_plc_state.good_frames_nr, cvsd_plc_state.bad_frames_nr);
+    }
+#endif
+#endif
+
 #if SCO_DEMO_MODE == SCO_DEMO_MODE_SINE
 #ifdef SCO_WAV_FILENAME
     

@@ -50,6 +50,7 @@
 #include <math.h>
 
 #include "btstack_cvsd_plc.h"
+#include "btstack_debug.h"
 
 static float rcos[CVSD_OLAL] = {
     0.99148655,0.96623611,0.92510857,0.86950446,
@@ -113,9 +114,7 @@ static int8_t crop_to_int8(float val){
 
 
 void btstack_cvsd_plc_init(btstack_cvsd_plc_state_t *plc_state){
-    plc_state->nbf=0;
-    plc_state->bestlag=0;
-    memset(plc_state->hist, 0, sizeof(plc_state->hist));
+    memset(plc_state, 0, sizeof(btstack_cvsd_plc_state_t));
 }
 
 void btstack_cvsd_plc_bad_frame(btstack_cvsd_plc_state_t *plc_state, int8_t *out){
@@ -195,4 +194,37 @@ void btstack_cvsd_plc_good_frame(btstack_cvsd_plc_state_t *plc_state, int8_t *in
         plc_state->hist[i] = plc_state->hist[i+CVSD_FS];
     }
     plc_state->nbf=0;
+}
+
+static int count_equal_bytes(int8_t * packet, uint16_t size){
+    int count = 0;
+    int temp_count = 1;
+    int i;
+    for (i = 0; i < size-1; i++){
+        if (packet[i] == packet[i+1]){
+            temp_count++;
+            continue;
+        }
+        if (count < temp_count){
+            count = temp_count;
+        }
+        temp_count = 1;
+    }
+    if (temp_count > count + 1){
+        count = temp_count;
+    }
+    return count;
+}
+
+void btstack_cvsd_plc_process_data(btstack_cvsd_plc_state_t * state, int8_t * in, uint16_t size, int8_t * out){
+    if (size != 24){
+        log_error("btstack_cvsd_plc_process_data: audio frame size is incorrect. Expected %d, got %d", CVSD_FS, size);
+    }
+    if (count_equal_bytes(in, size) > size/2){
+        btstack_cvsd_plc_bad_frame(state, out);
+        state->bad_frames_nr++;
+    } else {
+        btstack_cvsd_plc_good_frame(state, in, out);
+        state->good_frames_nr++;
+    }
 }
