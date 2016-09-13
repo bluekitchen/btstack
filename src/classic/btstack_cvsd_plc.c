@@ -56,9 +56,52 @@ static float rcos[CVSD_OLAL] = {
     0.45386582,0.36316850,0.27713082,0.19868268, 
     0.13049554,0.07489143,0.03376389,0.00851345};
 
-static float CrossCorrelation(int8_t *x, int8_t *y);
-static int PatternMatch(int8_t *y);
-static float AmplitudeMatch(int8_t *y, int8_t bestmatch);
+static float CrossCorrelation(int8_t *x, int8_t *y){
+    float num = 0;
+    float den = 0;
+    float x2 = 0;
+    float y2 = 0;
+    int   m;
+    for (m=0;m<CVSD_M;m++){
+        num+=((float)x[m])*y[m];
+        x2+=((float)x[m])*x[m];
+        y2+=((float)y[m])*y[m];
+    }
+    den = (float)sqrt(x2*y2);
+    return num/den;
+}
+
+static int PatternMatch(int8_t *y){
+    float maxCn = -999999.0;  /* large negative number */
+    int   bestmatch = 0;
+    float Cn;
+    int   n;
+    for (n=0;n<CVSD_N;n++){
+        Cn = CrossCorrelation(&y[CVSD_LHIST-CVSD_M] /* x */, &y[n]); 
+        if (Cn>maxCn){
+            bestmatch=n;
+            maxCn = Cn; 
+        }
+    }
+    return bestmatch;
+}
+
+static float AmplitudeMatch(int8_t *y, int8_t bestmatch) {
+    int   i;
+    float sumx = 0;
+    float sumy = 0.000001f;
+    float sf;
+    
+    for (i=0;i<CVSD_FS;i++){
+        sumx += abs(y[CVSD_LHIST-CVSD_FS+i]);
+        sumy += abs(y[bestmatch+i]);
+    }
+    sf = sumx/sumy;
+    /* This is not in the paper, but limit the scaling factor to something reasonable to avoid creating artifacts */
+    if (sf<0.75f) sf=0.75f;
+    if (sf>1.2f) sf=1.2f;
+    return sf;
+}
 
 static int8_t crop_to_int8(float val){
     float croped_val = 0;
@@ -109,12 +152,14 @@ void btstack_cvsd_plc_bad_frame(btstack_cvsd_plc_state_t *plc_state, int8_t *out
             plc_state->hist[CVSD_LHIST+i] = crop_to_int8(val);
         }
 
-        for (i=CVSD_FS+CVSD_OLAL;i<CVSD_FS+CVSD_OLAL+CVSD_RT;i++)
+        for (i=CVSD_FS+CVSD_OLAL;i<CVSD_FS+CVSD_OLAL+CVSD_RT;i++){
             plc_state->hist[CVSD_LHIST+i] = plc_state->hist[plc_state->bestlag+i];
+        }
 
     } else {
-        for (i=0;i<CVSD_FS+CVSD_RT+CVSD_OLAL;i++)
+        for (i=0;i<CVSD_FS+CVSD_RT+CVSD_OLAL;i++){
             plc_state->hist[CVSD_LHIST+i] = plc_state->hist[plc_state->bestlag+i];
+        }
     }
 
     for (i=0;i<CVSD_FS;i++){
@@ -160,51 +205,3 @@ void btstack_cvsd_plc_good_frame(btstack_cvsd_plc_state_t *plc_state, int8_t *in
     plc_state->nbf=0;
 }
 
-
-float CrossCorrelation(int8_t *x, int8_t *y){
-    float num = 0;
-    float den = 0;
-    float x2 = 0;
-    float y2 = 0;
-    int   m;
-    for (m=0;m<CVSD_M;m++){
-        num+=((float)x[m])*y[m];
-        x2+=((float)x[m])*x[m];
-        y2+=((float)y[m])*y[m];
-    }
-    den = (float)sqrt(x2*y2);
-    return num/den;
-}
-
-int PatternMatch(int8_t *y){
-    float maxCn = -999999.0;  /* large negative number */
-    int   bestmatch = 0;
-    float Cn;
-    int   n;
-    for (n=0;n<CVSD_N;n++){
-        Cn = CrossCorrelation(&y[CVSD_LHIST-CVSD_M] /* x */, &y[n]); 
-        if (Cn>maxCn){
-            bestmatch=n;
-            maxCn = Cn; 
-        }
-    }
-    return bestmatch;
-}
-
-
-float AmplitudeMatch(int8_t *y, int8_t bestmatch) {
-    int   i;
-    float sumx = 0;
-    float sumy = 0.000001f;
-    float sf;
-    
-    for (i=0;i<CVSD_FS;i++){
-        sumx += abs(y[CVSD_LHIST-CVSD_FS+i]);
-        sumy += abs(y[bestmatch+i]);
-    }
-    sf = sumx/sumy;
-    /* This is not in the paper, but limit the scaling factor to something reasonable to avoid creating artifacts */
-    if (sf<0.75f) sf=0.75f;
-    if (sf>1.2f) sf=1.2f;
-    return sf;
-}

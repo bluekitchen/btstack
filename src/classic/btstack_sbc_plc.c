@@ -63,9 +63,53 @@ static float rcos[SBC_OLAL] = {
     0.45386582f,0.36316850f,0.27713082f,0.19868268f, 
     0.13049554f,0.07489143f,0.03376389f,0.00851345f};
 
-static float CrossCorrelation(int16_t *x, int16_t *y);
-static int PatternMatch(int16_t *y);
-static float AmplitudeMatch(int16_t *y, int16_t bestmatch);
+static float CrossCorrelation(int16_t *x, int16_t *y){
+    float num = 0;
+    float den = 0;
+    float x2 = 0;
+    float y2 = 0;
+    int   m;
+    for (m=0;m<SBC_M;m++){
+        num+=((float)x[m])*y[m];
+        x2+=((float)x[m])*x[m];
+        y2+=((float)y[m])*y[m];
+    }
+    den = (float)sqrt(x2*y2);
+    return num/den;
+}
+
+static int PatternMatch(int16_t *y){
+    float maxCn = -999999.0;  /* large negative number */
+    int   bestmatch = 0;
+    float Cn;
+    int   n;
+    for (n=0;n<SBC_N;n++){
+        Cn = CrossCorrelation(&y[SBC_LHIST-SBC_M] /* x */, &y[n]); 
+        if (Cn>maxCn){
+            bestmatch=n;
+            maxCn = Cn; 
+        }
+    }
+    return bestmatch;
+}
+
+
+static float AmplitudeMatch(int16_t *y, int16_t bestmatch) {
+    int   i;
+    float sumx = 0;
+    float sumy = 0.000001f;
+    float sf;
+    
+    for (i=0;i<SBC_FS;i++){
+        sumx += abs(y[SBC_LHIST-SBC_FS+i]);
+        sumy += abs(y[bestmatch+i]);
+    }
+    sf = sumx/sumy;
+    /* This is not in the paper, but limit the scaling factor to something reasonable to avoid creating artifacts */
+    if (sf<0.75f) sf=0.75f;
+    if (sf>1.2f) sf=1.2f;
+    return sf;
+}
 
 static int16_t crop_to_int16(float val){
     float croped_val = 0;
@@ -123,8 +167,9 @@ void btstack_sbc_plc_bad_frame(btstack_sbc_plc_state_t *plc_state, int16_t *ZIRb
         }
             
     } else {
-        for (i=0;i<SBC_FS+SBC_RT+SBC_OLAL;i++)
+        for (i=0;i<SBC_FS+SBC_RT+SBC_OLAL;i++){
             plc_state->hist[SBC_LHIST+i] = plc_state->hist[plc_state->bestlag+i];
+        }
     }
     for (i=0;i<SBC_FS;i++){
         out[i] = plc_state->hist[SBC_LHIST+i];
@@ -166,53 +211,4 @@ void btstack_sbc_plc_good_frame(btstack_sbc_plc_state_t *plc_state, int16_t *in,
     }
 
     plc_state->nbf=0;
-}
-
-
-float CrossCorrelation(int16_t *x, int16_t *y){
-    float num = 0;
-    float den = 0;
-    float x2 = 0;
-    float y2 = 0;
-    int   m;
-    for (m=0;m<SBC_M;m++){
-        num+=((float)x[m])*y[m];
-        x2+=((float)x[m])*x[m];
-        y2+=((float)y[m])*y[m];
-    }
-    den = (float)sqrt(x2*y2);
-    return num/den;
-}
-
-int PatternMatch(int16_t *y){
-    float maxCn = -999999.0;  /* large negative number */
-    int   bestmatch = 0;
-    float Cn;
-    int   n;
-    for (n=0;n<SBC_N;n++){
-        Cn = CrossCorrelation(&y[SBC_LHIST-SBC_M] /* x */, &y[n]); 
-        if (Cn>maxCn){
-            bestmatch=n;
-            maxCn = Cn; 
-        }
-    }
-    return bestmatch;
-}
-
-
-float AmplitudeMatch(int16_t *y, int16_t bestmatch) {
-    int   i;
-    float sumx = 0;
-    float sumy = 0.000001f;
-    float sf;
-    
-    for (i=0;i<SBC_FS;i++){
-        sumx += abs(y[SBC_LHIST-SBC_FS+i]);
-        sumy += abs(y[bestmatch+i]);
-    }
-    sf = sumx/sumy;
-    /* This is not in the paper, but limit the scaling factor to something reasonable to avoid creating artifacts */
-    if (sf<0.75f) sf=0.75f;
-    if (sf>1.2f) sf=1.2f;
-    return sf;
 }
