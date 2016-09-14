@@ -53,7 +53,7 @@ VPATH += ${BTSTACK_ROOT}/src
 VPATH += ${BTSTACK_ROOT}/src/classic
 VPATH += ${BTSTACK_ROOT}/platform/posix
 
-CFLAGS  = -g -Wall -I. -I../ -I${BTSTACK_ROOT}/src -I${BTSTACK_ROOT}/src/classic -I${BTSTACK_ROOT}/include -I${BTSTACK_ROOT}/ble
+CFLAGS  = -g -Wall -I. -I../ -I${BTSTACK_ROOT}/src -I${BTSTACK_ROOT}/src/classic -I${BTSTACK_ROOT}/platform/posix -I${BTSTACK_ROOT}/include -I${BTSTACK_ROOT}/ble
 LDFLAGS += -lCppUTest -lCppUTestExt
 
 EXAMPLES = hfp_ag_parser_test hfp_ag_client_test hfp_hf_parser_test hfp_hf_client_test cvsd_plc_test
@@ -75,7 +75,7 @@ hfp_hf_client_test: ${MOCK_OBJ} hfp_hf.o hfp.o hfp_hf_client_test.c
 hfp_ag_client_test: ${MOCK_OBJ} hfp_gsm_model.o hfp_ag.o hfp.o hfp_ag_client_test.c  
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-cvsd_plc_test: ${COMMON_OBJ} btstack_cvsd_plc.o wav_utils.o cvsd_plc_test.c  
+cvsd_plc_test: ${COMMON_OBJ} btstack_cvsd_plc.o wav_util.o cvsd_plc_test.c  
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 test: all

@@ -9,9 +9,10 @@
 #include "CppUTest/CommandLineTestRunner.h"
 
 #include "btstack_cvsd_plc.h"
-#include "wav_utils.h"
+#include "wav_util.h"
 
 const  int audio_samples_per_frame = 24;
+static int8_t audio_frame_in[audio_samples_per_frame];
 
 static uint8_t test_data[][audio_samples_per_frame] = {
     { 0x05, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff },
@@ -42,71 +43,64 @@ static int count_equal_bytes(uint8_t * packet, uint16_t size){
     return count;
 }
 
-
-static void create_sine_wav(const char * out_file_name){
+static void create_sine_wav(const char * out_filename){
     btstack_cvsd_plc_init(&plc_state);
-    init_wav_writer(out_file_name);
+    wav_writer_open(out_filename, 1, 8000);
     
     int i;
     for (i=0; i<2000; i++){
-        int8_t * audio_frame_in = next_sine_audio_frame();
-        write_wav_data_int8(audio_samples_per_frame, audio_frame_in);
+        wav_synthesize_sine_wave_int8(audio_samples_per_frame, audio_frame_in);
+        wav_writer_write_int8(audio_samples_per_frame, audio_frame_in);
     } 
-    close_wav_writer();
+    wav_writer_close();
 }
 
 static void introduce_bad_frames_to_wav_file(const char * in_filename, const char * out_filename, int corruption_step){
     btstack_cvsd_plc_init(&plc_state);
-    init_wav_writer(out_filename);
-    init_wav_reader(in_filename);
+    wav_writer_open(out_filename, 1, 8000);
+    wav_reader_open(in_filename);
 
-    int8_t * audio_frame_in = next_audio_frame_int8();
     int fc = 0;
-    while (audio_frame_in != NULL){
+    while (wav_reader_read_int8(audio_samples_per_frame, audio_frame_in)){
         if (corruption_step > 0 && fc >= corruption_step && fc%corruption_step == 0){
             memset(audio_frame_in, 50, audio_samples_per_frame);
         } 
-        write_wav_data_int8(audio_samples_per_frame, audio_frame_in);
-        audio_frame_in = next_audio_frame_int8();
+        wav_writer_write_int8(audio_samples_per_frame, audio_frame_in);
         fc++;
     } 
-    close_wav_reader();
-    close_wav_writer();
+    wav_reader_close();
+    wav_writer_close();
 }
 
 static void process_wav_file_with_plc(const char * in_filename, const char * out_filename){
     printf("\nProcess %s -> %s\n", in_filename, out_filename);
     btstack_cvsd_plc_init(&plc_state);
-    init_wav_writer(out_filename);
-    init_wav_reader(in_filename);
+    wav_writer_open(out_filename, 1, 8000);
+    wav_reader_open(in_filename);
     
-    int8_t * audio_frame_in = next_audio_frame_int8();
-    while (audio_frame_in != NULL){
+    while (wav_reader_read_int8(audio_samples_per_frame, audio_frame_in)){
         int8_t audio_frame_out[audio_samples_per_frame];
         btstack_cvsd_plc_process_data(&plc_state, audio_frame_in, audio_samples_per_frame, audio_frame_out);
-        write_wav_data_int8(audio_samples_per_frame, audio_frame_out);
-        audio_frame_in = next_audio_frame_int8();
+        wav_writer_write_int8(audio_samples_per_frame, audio_frame_out);
     } 
-    close_wav_reader();
-    close_wav_writer();
+    wav_reader_close();
+    wav_writer_close();
     btstack_cvsd_dump_statistics(&plc_state);
 }
 
 static void mark_bad_frames_wav_file(const char * in_filename, const char * out_filename){
     printf("\nMark bad frame %s -> %s\n", in_filename, out_filename);
     btstack_cvsd_plc_init(&plc_state);
-    init_wav_writer(out_filename);
-    init_wav_reader(in_filename);
+    wav_writer_open(out_filename, 1, 8000);
+    wav_reader_open(in_filename);
     
-    int8_t * audio_frame_in = next_audio_frame_int8();
-    while (audio_frame_in != NULL){
+    while (wav_reader_read_int8(audio_samples_per_frame, audio_frame_in)){
         int8_t audio_frame_out[audio_samples_per_frame];
         btstack_cvsd_plc_mark_bad_frame(&plc_state, audio_frame_in, audio_samples_per_frame, audio_frame_out);
-        write_wav_data_int8(audio_samples_per_frame, audio_frame_out);
-        audio_frame_in = next_audio_frame_int8();
+        wav_writer_write_int8(audio_samples_per_frame, audio_frame_out);
     } 
-    close_wav_reader();
-    close_wav_writer();
+    wav_reader_close();
+    wav_writer_close();
     btstack_cvsd_dump_statistics(&plc_state);
 }
 
