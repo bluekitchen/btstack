@@ -75,7 +75,7 @@ hfp_hf_client_test: ${MOCK_OBJ} hfp_hf.o hfp.o hfp_hf_client_test.c
 hfp_ag_client_test: ${MOCK_OBJ} hfp_gsm_model.o hfp_ag.o hfp.o hfp_ag_client_test.c  
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-cvsd_plc_test: btstack_cvsd_plc.o cvsd_plc_test.c  
+cvsd_plc_test: ${COMMON_OBJ} btstack_cvsd_plc.o wav_utils.o cvsd_plc_test.c  
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 test: all

@@ -216,15 +216,54 @@ static int count_equal_bytes(int8_t * packet, uint16_t size){
     return count;
 }
 
+static int bad_frame(int8_t * frame, uint16_t size){
+    return count_equal_bytes(frame, size) > 20;
+}
+
 void btstack_cvsd_plc_process_data(btstack_cvsd_plc_state_t * state, int8_t * in, uint16_t size, int8_t * out){
     if (size != 24){
         log_error("btstack_cvsd_plc_process_data: audio frame size is incorrect. Expected %d, got %d", CVSD_FS, size);
     }
-    if (count_equal_bytes(in, size) > size/2){
-        btstack_cvsd_plc_bad_frame(state, out);
-        state->bad_frames_nr++;
+    state->frame_count++;
+    if (bad_frame(in,size)){
+        memcpy(out, in, size);
+        if (state->good_frames_nr > CVSD_LHIST/CVSD_FS){
+            btstack_cvsd_plc_bad_frame(state, out);
+            state->bad_frames_nr++;
+        } else {
+            memset(out, 0, CVSD_FS);
+        }
     } else {
         btstack_cvsd_plc_good_frame(state, in, out);
         state->good_frames_nr++;
+        if (state->good_frames_nr == 1){
+            printf("First good frame at index %d\n", state->frame_count-1);
+        }        
     }
+}
+
+void btstack_cvsd_plc_mark_bad_frame(btstack_cvsd_plc_state_t * state, int8_t * in, uint16_t size, int8_t * out){
+    if (size != 24){
+        log_error("btstack_cvsd_plc_mark_bad_frame: audio frame size is incorrect. Expected %d, got %d", CVSD_FS, size);
+    }
+    state->frame_count++;
+    
+    if (bad_frame(in,size)){
+        memcpy(out, in, size);
+        if (state->good_frames_nr > CVSD_LHIST/CVSD_FS){
+            memset(out, 50, size);
+            state->bad_frames_nr++;
+        } 
+    } else {
+        memcpy(out, in, size);
+        state->good_frames_nr++;
+        if (state->good_frames_nr == 1){
+            printf("First good frame at index %d\n", state->frame_count-1);
+        }        
+    }
+}
+
+void btstack_cvsd_dump_statistics(btstack_cvsd_plc_state_t * state){
+    printf("Good frames: %d\n", state->good_frames_nr);
+    printf("Bad frames: %d\n", state->bad_frames_nr);
 }

@@ -65,6 +65,7 @@ typedef struct cvsd_plc_state {
     // summary of processed good and bad frames
     int good_frames_nr;
     int bad_frames_nr;
+    int frame_count;
 } btstack_cvsd_plc_state_t;
 
 void btstack_cvsd_plc_init(btstack_cvsd_plc_state_t *plc_state);
@@ -72,6 +73,8 @@ void btstack_cvsd_plc_bad_frame(btstack_cvsd_plc_state_t *plc_state, int8_t *out
 void btstack_cvsd_plc_good_frame(btstack_cvsd_plc_state_t *plc_state, int8_t *in, int8_t *out);
 uint8_t * btstack_cvsd_plc_zero_signal_frame(void);
 void btstack_cvsd_plc_process_data(btstack_cvsd_plc_state_t * state, int8_t * in, uint16_t size, int8_t * out);
+void btstack_cvsd_plc_mark_bad_frame(btstack_cvsd_plc_state_t * state, int8_t * in, uint16_t size, int8_t * out);
+void btstack_cvsd_dump_statistics(btstack_cvsd_plc_state_t * state);
 
 #if defined __cplusplus
 }

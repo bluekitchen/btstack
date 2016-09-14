@@ -64,7 +64,7 @@
 #define SCO_MSBC_OUT_FILENAME "sco_output.msbc"
 #define SCO_MSBC_IN_FILENAME  "sco_input.mscb"
 
-#define SCO_WAV_DURATION_IN_SECONDS 30
+#define SCO_WAV_DURATION_IN_SECONDS 15
 #endif
 
 
@@ -278,7 +278,8 @@ static void sco_demo_receive_CVSD(uint8_t * packet, uint16_t size){
         const int samples_to_write = btstack_min(num_samples, num_samples_to_write);
         int8_t audio_frame_out[24];
         
-        btstack_cvsd_plc_process_data(&cvsd_plc_state, (int8_t *)(packet+3),num_samples,audio_frame_out);
+        memcpy(audio_frame_out, (int8_t*)(packet+3), 24);
+        // btstack_cvsd_plc_process_data(&cvsd_plc_state, (int8_t *)(packet+3),num_samples,audio_frame_out);
 
         // convert 8 bit signed to 8 bit unsigned
         int i;
