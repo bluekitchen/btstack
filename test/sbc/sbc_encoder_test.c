@@ -54,44 +54,10 @@
 
 #include "hfp_msbc.h"
 #include "btstack_sbc.h"
-
-static int num_frames = 0;
+#include "wav_util.h"
 
 static int16_t read_buffer[8*16*2];
 static uint8_t output_buffer[24];
-
-static ssize_t __read(int fd, void *buf, size_t count){
-    ssize_t len, pos = 0;
-
-    while (count > 0) {
-        len = read(fd, buf + pos, count);
-        if (len <= 0)
-            return pos;
-
-        count -= len;
-        pos   += len;
-    }
-    return pos;
-}
-
-static int read_audio_frame(int wav_fd){
-    int i;
-    int bytes_read = 0;  
-    for (i=0; i < hfp_msbc_num_audio_samples_per_frame(); i++){
-        uint8_t buf[2];
-        bytes_read +=__read(wav_fd, &buf, 2);
-        read_buffer[i] = little_endian_read_16(buf, 0);  
-    }
-    if (bytes_read == hfp_msbc_num_audio_samples_per_frame() * 2 ){
-        num_frames++;
-    }
-    return bytes_read;
-}
-
-static void read_wav_header(int wav_fd){
-    uint8_t buf[40];
-    __read(wav_fd, buf, sizeof(buf));
-}
 
 int main (int argc, const char * argv[]){
     if (argc < 3){
@@ -102,8 +68,7 @@ int main (int argc, const char * argv[]){
     const char * wav_filename = argv[1];
     const char * sbc_filename = argv[2];
     
-    int wav_fd = open(wav_filename, O_RDONLY); //fopen(wav_filename, "rb");
-    if (!wav_fd) {
+    if (wav_reader_open(wav_filename) != 0) {
         printf("Can't open file %s", wav_filename);
         return -1;
     }
@@ -114,13 +79,13 @@ int main (int argc, const char * argv[]){
         return -1;
     }
     
-    read_wav_header(wav_fd);
     hfp_msbc_init();
-    
+    int num_samples = hfp_msbc_num_audio_samples_per_frame() * 2;
+
     while (1){
         if (hfp_msbc_can_encode_audio_frame_now()){
-            int bytes_read = read_audio_frame(wav_fd);
-            if (bytes_read < hfp_msbc_num_audio_samples_per_frame() * 2) break;
+            int bytes_read = wav_reader_read_int16(num_samples, read_buffer);
+            if (bytes_read < num_samples) break;
 
             hfp_msbc_encode_audio_frame(read_buffer);
         }
@@ -130,8 +95,8 @@ int main (int argc, const char * argv[]){
         } 
     }
 
-    printf("Done, frame count %d \n", num_frames);
-    close(wav_fd);
+    printf("Done\n");
+    wav_reader_close();
     fclose(sbc_fd);
     return 0;
 }

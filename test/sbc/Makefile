@@ -18,7 +18,7 @@ SBC_ENCODER += \
 SBC_DECODER_OBJ  = $(SBC_DECODER:.c=.o) 
 SBC_ENCODER_OBJ  = $(SBC_ENCODER:.c=.o)
 
-CFLAGS  = -g -Wall -I. -I../ -I${BTSTACK_ROOT}/src -I${BTSTACK_ROOT}/src/classic 
+CFLAGS  = -g -Wall -I. -I../ -I${BTSTACK_ROOT}/src -I${BTSTACK_ROOT}/src/classic -I${BTSTACK_ROOT}/platform/posix
 CFLAGS += -I${SBC_DECODER_ROOT}/include 
 CFLAGS += -I${SBC_ENCODER_ROOT}/include 
 CFLAGS += -D PRINT_SAMPLES -D PRINT_SCALEFACTORS -D OI_DEBUG -D SBC_NO_PCM_CPY_OPTION
@@ -27,10 +27,12 @@ LDFLAGS += -lCppUTest -lCppUTestExt
 VPATH += ${SBC_DECODER_ROOT}/srce 
 VPATH += ${SBC_ENCODER_ROOT}/srce
 VPATH += ${BTSTACK_ROOT}/src
+VPATH += ${BTSTACK_ROOT}/platform/posix
 
 COMMON += \
 	hci_dump.c		            \
 	btstack_util.c 				\
+	wav_util.c 					\
 
 COMMON_OBJ  = $(COMMON:.c=.o) 
 
