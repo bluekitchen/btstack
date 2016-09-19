@@ -45,14 +45,17 @@
 // return 0 if ok
 int wav_writer_open(const char * filepath, int num_channels, int sampling_frequency);
 int wav_writer_write_int8(int num_samples, int8_t * data);
+int wav_writer_write_int16(int num_samples, int16_t * data);
 int wav_writer_close(void);
 
 
 // return 0 if ok
 int wav_reader_open(const char * filepath);
 int wav_reader_read_int8(int num_samples, int8_t * data);
+int wav_reader_read_int16(int num_samples, int16_t * data);
 int wav_reader_close(void);
 
 // 
 void wav_synthesize_sine_wave_int8(int num_samples, int8_t * data);
+void wav_synthesize_sine_wave_int16(int num_samples, int16_t * data);
 

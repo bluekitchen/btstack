@@ -49,6 +49,8 @@
 #include "hfp_msbc.h"
 #include "hfp.h"
 
+#include "wav_util.h"
+
 // configure test mode
 #define SCO_DEMO_MODE_SINE		0
 #define SCO_DEMO_MODE_ASCII		1
@@ -83,15 +85,9 @@
 static  PaStream * stream;
 #endif
 
-typedef struct wav_writer_state {
-    FILE * wav_file;
-    int total_num_samples;
-    int frame_count;
-} wav_writer_state_t;
 
 static int dump_data = 1;
 
-static int phase = 0;
 static int count_sent = 0;
 static int count_received = 0;
 static uint8_t negotiated_codec = 0; 
@@ -102,103 +98,22 @@ FILE * msbc_file_out;
 
 #if SCO_DEMO_MODE == SCO_DEMO_MODE_SINE
 
-// input signal: pre-computed sine wave, 160 Hz at 8 kHz
-static const uint8_t sine[] = {
-      0,  15,  31,  46,  61,  74,  86,  97, 107, 114,
-    120, 124, 126, 126, 124, 120, 114, 107,  97,  86,
-     74,  61,  46,  31,  15,   0, 241, 225, 210, 195,
-    182, 170, 159, 149, 142, 136, 132, 130, 130, 132,
-    136, 142, 149, 159, 170, 182, 195, 210, 225, 241,
-};
-
-// input signal: pre-computed sine wave, 160 Hz at 16000 kHz
-static const int16_t sine_int16[] = {
-     0,    2057,    4107,    6140,    8149,   10126,   12062,   13952,   15786,   17557,
- 19260,   20886,   22431,   23886,   25247,   26509,   27666,   28714,   29648,   30466,
- 31163,   31738,   32187,   32509,   32702,   32767,   32702,   32509,   32187,   31738,
- 31163,   30466,   29648,   28714,   27666,   26509,   25247,   23886,   22431,   20886,
- 19260,   17557,   15786,   13952,   12062,   10126,    8149,    6140,    4107,    2057,
-     0,   -2057,   -4107,   -6140,   -8149,  -10126,  -12062,  -13952,  -15786,  -17557,
--19260,  -20886,  -22431,  -23886,  -25247,  -26509,  -27666,  -28714,  -29648,  -30466,
--31163,  -31738,  -32187,  -32509,  -32702,  -32767,  -32702,  -32509,  -32187,  -31738,
--31163,  -30466,  -29648,  -28714,  -27666,  -26509,  -25247,  -23886,  -22431,  -20886,
--19260,  -17557,  -15786,  -13952,  -12062,  -10126,   -8149,   -6140,   -4107,   -2057,
-};
 
 #ifdef SCO_WAV_FILENAME
 
 static int num_samples_to_write;
-static wav_writer_state_t wav_writer_state;
 
 static btstack_sbc_decoder_state_t decoder_state;
 static btstack_cvsd_plc_state_t cvsd_plc_state;
-
-static void little_endian_fstore_16(FILE * file, uint16_t value){
-    uint8_t buf[2];
-    little_endian_store_32(buf, 0, value);
-    fwrite(&buf, 1, 2, file);
-}
-
-static void little_endian_fstore_32(FILE * file, uint32_t value){
-    uint8_t buf[4];
-    little_endian_store_32(buf, 0, value);
-    fwrite(&buf, 1, 4, file);
-}
-
-static FILE * wav_init(const char * filename){
-    FILE * f = fopen(filename, "wb");
-    printf("SCO Demo: creating wav file %s, %p\n", filename, f);
-    return f;
-}
-
-static void write_wav_header(FILE * file, int sample_rate, int num_channels, int num_samples, int bytes_per_sample){
-    /* write RIFF header */
-    fwrite("RIFF", 1, 4, file);
-    // num_samples = blocks * subbands
-    uint32_t data_bytes = (uint32_t) (bytes_per_sample * num_samples * num_channels);
-    little_endian_fstore_32(file, data_bytes + 36); 
-    fwrite("WAVE", 1, 4, file);
-
-    int byte_rate = sample_rate * num_channels * bytes_per_sample;
-    int bits_per_sample = 8 * bytes_per_sample;
-    int block_align = num_channels * bits_per_sample;
-    int fmt_length = 16;
-    int fmt_format_tag = 1; // PCM
-
-    /* write fmt chunk */
-    fwrite("fmt ", 1, 4, file);
-    little_endian_fstore_32(file, fmt_length);
-    little_endian_fstore_16(file, fmt_format_tag);
-    little_endian_fstore_16(file, num_channels);
-    little_endian_fstore_32(file, sample_rate);
-    little_endian_fstore_32(file, byte_rate);
-    little_endian_fstore_16(file, block_align);   
-    little_endian_fstore_16(file, bits_per_sample);
-    
-    /* write data chunk */
-    fwrite("data", 1, 4, file); 
-    little_endian_fstore_32(file, data_bytes);
-}
-
-static void write_wav_data_uint8(FILE * file, unsigned long num_samples, uint8_t * data){
-    fwrite(data, num_samples, 1, file);
-}
-
-static void write_wav_data_int16(FILE * file, int num_samples, int16_t * data){
-    fwrite(data, num_samples, 2, file);
-}
 
 static void handle_pcm_data(int16_t * data, int num_samples, int num_channels, int sample_rate, void * context){
     log_info("handle_pcm_data num samples %u / %u", num_samples, num_samples_to_write);
     if (!num_samples_to_write) return;
     
-    wav_writer_state_t * writer_state = (wav_writer_state_t*) context;
     num_samples = btstack_min(num_samples, num_samples_to_write);
     num_samples_to_write -= num_samples;
 
-    write_wav_data_int16(writer_state->wav_file, num_samples, data);
-    writer_state->total_num_samples+=num_samples;
-    writer_state->frame_count++;
+    wav_writer_write_int16(num_samples, data);
 
     if (num_samples_to_write == 0){
         sco_demo_close();
@@ -207,33 +122,20 @@ static void handle_pcm_data(int16_t * data, int num_samples, int num_channels, i
 
 static void sco_demo_fill_audio_frame(void){
     if (!hfp_msbc_can_encode_audio_frame_now()) return;
-    int i;
-    int16_t sample_buffer[8*16*2];
-    for (i=0; i < hfp_msbc_num_audio_samples_per_frame(); i++){
-        sample_buffer[i] = sine_int16[phase++];
-        if (phase >= (sizeof(sine_int16) / sizeof(int16_t))){
-            phase = 0;
-        }
-    }
+    int num_samples = hfp_msbc_num_audio_samples_per_frame();
+    int16_t sample_buffer[num_samples];
+    wav_synthesize_sine_wave_int16(num_samples, sample_buffer);
     hfp_msbc_encode_audio_frame(sample_buffer);
     num_audio_frames++;
 }
 
 static void sco_demo_init_mSBC(void){
-    wav_writer_state.wav_file = wav_init(SCO_WAV_FILENAME);
-    wav_writer_state.frame_count = 0;
-    wav_writer_state.total_num_samples = 0;
+    int sample_rate = 16000;
+    wav_writer_open(SCO_WAV_FILENAME, 1, sample_rate);
+    btstack_sbc_decoder_init(&decoder_state, SBC_MODE_mSBC, &handle_pcm_data, NULL);    
 
-    btstack_sbc_decoder_init(&decoder_state, SBC_MODE_mSBC, &handle_pcm_data, (void*)&wav_writer_state);    
-
-    const int sample_rate = 16000;
-    const int num_samples = sample_rate * SCO_WAV_DURATION_IN_SECONDS;
-    const int bytes_per_sample = 2;
-    const int num_channels = 1;
-    num_samples_to_write = num_samples;
+    num_samples_to_write = sample_rate * SCO_WAV_DURATION_IN_SECONDS;
     
-    write_wav_header(wav_writer_state.wav_file, sample_rate, num_channels, num_samples, bytes_per_sample);
-
     hfp_msbc_init();
     sco_demo_fill_audio_frame();
 
@@ -247,20 +149,6 @@ static void sco_demo_init_mSBC(void){
 #endif   
 }
 
-static void sco_demo_init_CVSD(void){
-    btstack_cvsd_plc_init(&cvsd_plc_state);
-    wav_writer_state.wav_file = wav_init(SCO_WAV_FILENAME);
-    wav_writer_state.frame_count = 0;
-    wav_writer_state.total_num_samples = 0;
-
-    const int sample_rate = 8000;
-    const int num_samples = sample_rate * SCO_WAV_DURATION_IN_SECONDS;
-    const int num_channels = 1;
-    const int bytes_per_sample = 1;
-    num_samples_to_write = num_samples;
-    write_wav_header(wav_writer_state.wav_file, sample_rate, num_channels, num_samples, bytes_per_sample);
-}
-
 static void sco_demo_receive_mSBC(uint8_t * packet, uint16_t size){
     if (num_samples_to_write){
         if (msbc_file_in){
@@ -272,33 +160,28 @@ static void sco_demo_receive_mSBC(uint8_t * packet, uint16_t size){
     }
 }
 
+static void sco_demo_init_CVSD(void){
+    int sample_rate = 8000;
+    wav_writer_open(SCO_WAV_FILENAME, 1, sample_rate);
+    btstack_cvsd_plc_init(&cvsd_plc_state);
+    num_samples_to_write = sample_rate * SCO_WAV_DURATION_IN_SECONDS;
+}
+
 static void sco_demo_receive_CVSD(uint8_t * packet, uint16_t size){
     if (num_samples_to_write){
         const int num_samples = size - 3;
         const int samples_to_write = btstack_min(num_samples, num_samples_to_write);
         int8_t audio_frame_out[24];
         
-        memcpy(audio_frame_out, (int8_t*)(packet+3), 24);
-        // btstack_cvsd_plc_process_data(&cvsd_plc_state, (int8_t *)(packet+3),num_samples,audio_frame_out);
+        // memcpy(audio_frame_out, (int8_t*)(packet+3), 24);
+        btstack_cvsd_plc_process_data(&cvsd_plc_state, (int8_t *)(packet+3), num_samples, audio_frame_out);
 
-        // convert 8 bit signed to 8 bit unsigned
-        int i;
-        for (i=0;i<samples_to_write;i++){
-            audio_frame_out[i] += 128;            
-        }
-
-        wav_writer_state_t * writer_state = &wav_writer_state;
-        write_wav_data_uint8(writer_state->wav_file, samples_to_write, (uint8_t*)audio_frame_out);
+        wav_writer_write_int8(samples_to_write, audio_frame_out);
         num_samples_to_write -= samples_to_write;
         if (num_samples_to_write == 0){
             sco_demo_close();
         }
         dump_data = 0;
-
-        // convert back
-        for (i=0;i<samples_to_write;i++){
-            audio_frame_out[i] += 128;            
-        }
     }
 }
 
@@ -308,6 +191,7 @@ static void sco_demo_receive_CVSD(uint8_t * packet, uint16_t size){
 void sco_demo_close(void){    
 #if SCO_DEMO_MODE == SCO_DEMO_MODE_SINE
 #if defined(SCO_WAV_FILENAME) || defined(SCO_SBC_FILENAME)
+    wav_writer_close();
     printf("SCO demo statistics: ");
     if (negotiated_codec == HFP_CODEC_MSBC){
         printf("Used mSBC with PLC, number of processed frames: \n - %d good frames, \n - %d zero frames, \n - %d bad frames.", decoder_state.good_frames_nr, decoder_state.zero_frames_nr, decoder_state.bad_frames_nr);
@@ -437,12 +321,7 @@ void sco_demo_send(hci_con_handle_t sco_handle){
 
         sco_demo_fill_audio_frame();
     } else {
-        int i;
-        for (i=0;i<audio_samples_per_packet;i++){
-            sco_packet[3+i] = sine[phase];
-            phase++;
-            if (phase >= sizeof(sine)) phase = 0;
-        }
+        wav_synthesize_sine_wave_int8(audio_samples_per_packet, (int8_t *) (sco_packet+3));
     }
 #else
 #if SCO_DEMO_MODE == SCO_DEMO_MODE_ASCII
