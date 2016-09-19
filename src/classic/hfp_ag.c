@@ -528,6 +528,8 @@ static int hfp_ag_set_response_and_hold(uint16_t cid, int state){
 }
 
 static uint8_t hfp_ag_suggest_codec(hfp_connection_t *hfp_connection){
+    if (hfp_connection->sco_for_msbc_failed) return HFP_CODEC_CVSD;
+
     if (hfp_supports_codec(HFP_CODEC_MSBC, hfp_codecs_nr, hfp_codecs)){
         if (hfp_supports_codec(HFP_CODEC_MSBC, hfp_connection->remote_codecs_nr, hfp_connection->remote_codecs)){
             return HFP_CODEC_MSBC;

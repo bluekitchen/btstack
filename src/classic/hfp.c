@@ -516,6 +516,8 @@ static void hfp_handle_failed_sco_connection(uint8_t status){
         case HFP_LINK_SETTINGS_T1:
             log_info("T1 failed, fallback to CVSD - D1");
             sco_establishment_active->negotiated_codec = HFP_CODEC_CVSD;
+            sco_establishment_active->sco_for_msbc_failed = 1;
+            sco_establishment_active->command = HFP_CMD_AG_SEND_COMMON_CODEC;
             sco_establishment_active->link_setting = HFP_LINK_SETTINGS_D1;
             break;
         case HFP_LINK_SETTINGS_T2:

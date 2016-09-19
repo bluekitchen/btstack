@@ -541,7 +541,8 @@ typedef struct hfp_connection {
     // establish codecs connection
     uint8_t suggested_codec;
     uint8_t codec_confirmed;
-
+    uint8_t sco_for_msbc_failed;
+    
     hfp_link_setttings_t link_setting;
 
     uint8_t establish_audio_connection; 
