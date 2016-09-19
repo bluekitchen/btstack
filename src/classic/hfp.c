@@ -208,17 +208,6 @@ void hfp_emit_simple_event(btstack_packet_handler_t callback, uint8_t event_subt
     (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-void hfp_emit_codec_event(btstack_packet_handler_t callback, uint8_t status, uint8_t codec){
-    if (!callback) return;
-    uint8_t event[5];
-    event[0] = HCI_EVENT_HFP_META;
-    event[1] = sizeof(event) - 2;
-    event[2] = HFP_SUBEVENT_CODECS_CONNECTION_COMPLETE;
-    event[3] = status; // status 0 == OK
-    event[4] = codec; 
-    (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
-}
-
 void hfp_emit_event(btstack_packet_handler_t callback, uint8_t event_subtype, uint8_t value){
     if (!callback) return;
     uint8_t event[4];
@@ -229,18 +218,34 @@ void hfp_emit_event(btstack_packet_handler_t callback, uint8_t event_subtype, ui
     (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-void hfp_emit_connection_event(btstack_packet_handler_t callback, uint8_t event_subtype, uint8_t status, hci_con_handle_t con_handle, bd_addr_t addr){
+void hfp_emit_slc_connection_event(btstack_packet_handler_t callback, uint8_t status, hci_con_handle_t con_handle, bd_addr_t addr){
     if (!callback) return;
     uint8_t event[12];
     int pos = 0;
     event[pos++] = HCI_EVENT_HFP_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = event_subtype;
+    event[pos++] = HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
     event[pos++] = status; // status 0 == OK
     little_endian_store_16(event, pos, con_handle);
     pos += 2;
     reverse_bd_addr(addr,&event[pos]);
     pos += 6;
+    (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
+static void hfp_emit_sco_event(btstack_packet_handler_t callback, uint8_t status, hci_con_handle_t con_handle, bd_addr_t addr, uint8_t  negotiated_codec){
+    if (!callback) return;
+    uint8_t event[13];
+    int pos = 0;
+    event[pos++] = HCI_EVENT_HFP_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = HFP_SUBEVENT_AUDIO_CONNECTION_ESTABLISHED;
+    event[pos++] = status; // status 0 == OK
+    little_endian_store_16(event, pos, con_handle);
+    pos += 2;
+    reverse_bd_addr(addr,&event[pos]);
+    pos += 6;
+    event[pos++] = negotiated_codec;
     (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
@@ -567,7 +572,7 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
             if (!hfp_connection || hfp_connection->state != HFP_W4_RFCOMM_CONNECTED) return;
 
             if (status) {
-                hfp_emit_connection_event(hfp_callback, HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED, status, rfcomm_event_channel_opened_get_con_handle(packet), event_addr);
+                hfp_emit_slc_connection_event(hfp_callback, status, rfcomm_event_channel_opened_get_con_handle(packet), event_addr);
                 remove_hfp_connection_context(hfp_connection);
             } else {
                 hfp_connection->acl_handle = rfcomm_event_channel_opened_get_con_handle(packet);
@@ -657,7 +662,7 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
             hfp_connection->sco_handle = sco_handle;
             hfp_connection->establish_audio_connection = 0;
             hfp_connection->state = HFP_AUDIO_CONNECTION_ESTABLISHED;
-            hfp_emit_connection_event(hfp_callback, HFP_SUBEVENT_AUDIO_CONNECTION_ESTABLISHED, packet[2], sco_handle, event_addr);
+            hfp_emit_sco_event(hfp_callback, packet[2], sco_handle, event_addr, hfp_connection->negotiated_codec);
             break;                
         }
 

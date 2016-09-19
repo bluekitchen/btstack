@@ -589,7 +589,6 @@ static void hfp_run_for_context(hfp_connection_t * hfp_connection){
         // notify about codec selection if not done already
         if (hfp_connection->negotiated_codec == 0){
             hfp_connection->negotiated_codec = HFP_CODEC_CVSD;
-            hfp_emit_codec_event(hfp_callback, 0, hfp_connection->negotiated_codec);
         }
 
         // remote supported feature eSCO is set if link type is eSCO
@@ -858,7 +857,7 @@ static void hfp_run_for_context(hfp_connection_t * hfp_connection){
 static void hfp_ag_slc_established(hfp_connection_t * hfp_connection){
     hfp_connection->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
 
-    hfp_emit_connection_event(hfp_callback, HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED, 0, hfp_connection->acl_handle, hfp_connection->remote_addr);
+    hfp_emit_slc_connection_event(hfp_callback, 0, hfp_connection->acl_handle, hfp_connection->remote_addr);
 
     // restore volume settings
     hfp_connection->speaker_gain = hfp_hf_speaker_gain;
@@ -968,7 +967,6 @@ static void hfp_hf_switch_on_ok(hfp_connection_t *hfp_connection){
                     hfp_connection->codecs_state = HFP_CODECS_EXCHANGED;
                     hfp_connection->negotiated_codec = hfp_connection->suggested_codec;
                     log_info("hfp: codec confirmed: %s", hfp_connection->negotiated_codec == HFP_CODEC_MSBC ? "mSBC" : "CVSD");
-                    hfp_emit_codec_event(hfp_callback, 0, hfp_connection->negotiated_codec);
                     break;
                 default:
                     break;

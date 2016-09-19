@@ -630,11 +630,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                     printf("Service level connection released.\n");
                     sco_handle = 0;
                     break;
-                case HFP_SUBEVENT_CODECS_CONNECTION_COMPLETE:
-                    negotiated_codec = hfp_subevent_codecs_connection_complete_get_negotiated_codec(event);
-                    printf("Codec connection established with codec 0x%02x.\n", negotiated_codec);
-                    sco_demo_set_codec(negotiated_codec);
-                    break;
                 case HFP_SUBEVENT_AUDIO_CONNECTION_ESTABLISHED:
                     if (hfp_subevent_audio_connection_established_get_status(event)){
                         printf("Audio connection establishment failed with status %u\n", hfp_subevent_audio_connection_established_get_status(event));
@@ -642,6 +637,9 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                     } else {
                         sco_handle = hfp_subevent_audio_connection_established_get_handle(event);
                         printf("Audio connection established with SCO handle 0x%04x.\n", sco_handle);
+                        negotiated_codec = hfp_subevent_audio_connection_established_get_negotiated_codec(event);
+                        printf("Using codec 0x%02x.\n", negotiated_codec);
+                        sco_demo_set_codec(negotiated_codec);
                         hci_request_sco_can_send_now_event();
                     }
                     break;

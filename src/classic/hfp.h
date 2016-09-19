@@ -638,8 +638,7 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
 void hfp_emit_event(btstack_packet_handler_t callback, uint8_t event_subtype, uint8_t value);
 void hfp_emit_simple_event(btstack_packet_handler_t callback, uint8_t event_subtype);
 void hfp_emit_string_event(btstack_packet_handler_t callback, uint8_t event_subtype, const char * value);
-void hfp_emit_connection_event(btstack_packet_handler_t callback, uint8_t event_subtype, uint8_t status, hci_con_handle_t con_handle, bd_addr_t addr);
-void hfp_emit_codec_event(btstack_packet_handler_t callback, uint8_t status, uint8_t codec);
+void hfp_emit_slc_connection_event(btstack_packet_handler_t callback, uint8_t status, hci_con_handle_t con_handle, bd_addr_t addr);
 
 hfp_connection_t * get_hfp_connection_context_for_rfcomm_cid(uint16_t cid);
 hfp_connection_t * get_hfp_connection_context_for_bd_addr(bd_addr_t bd_addr);

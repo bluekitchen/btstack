@@ -74,7 +74,6 @@ static uint8_t codecs[2] = {1,2};
 static uint16_t indicators[1] = {0x01};
 
 static uint8_t service_level_connection_established = 0;
-static uint8_t codecs_connection_established = 0;
 static uint8_t audio_connection_established = 0;
 static uint8_t start_ringing = 0;
 static uint8_t stop_ringing = 0;
@@ -400,12 +399,6 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * event, uint
             printf("\n** SLC established **\n\n");
             acl_handle = hfp_subevent_service_level_connection_established_get_con_handle(event);
             service_level_connection_established = 1;
-            codecs_connection_established = 0;
-            audio_connection_established = 0;
-            break;
-        case HFP_SUBEVENT_CODECS_CONNECTION_COMPLETE:
-            printf("\n** CC established **\n\n");
-            codecs_connection_established = 1;
             audio_connection_established = 0;
             break;
         case HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED:
@@ -468,7 +461,6 @@ TEST_GROUP(HFPClient){
 
     void setup(void){
         service_level_connection_established = 0;
-        codecs_connection_established = 0;
         audio_connection_established = 0;
         start_ringing = 0;
         stop_ringing = 0;
@@ -486,7 +478,6 @@ TEST_GROUP(HFPClient){
         hfp_hf_release_service_level_connection(acl_handle);
         
         service_level_connection_established = 0;
-        codecs_connection_established = 0;
         audio_connection_established = 0;
     }
 };

@@ -620,7 +620,6 @@ static int codecs_exchange_state_machine(hfp_connection_t * hfp_connection){
             hfp_connection->negotiated_codec = hfp_connection->codec_confirmed;
             hfp_connection->codecs_state = HFP_CODECS_EXCHANGED;
             log_info("hfp: codec confirmed: %s", hfp_connection->negotiated_codec == HFP_CODEC_MSBC ? "mSBC" : "CVSD");
-            hfp_emit_codec_event(hfp_callback, 0, hfp_connection->negotiated_codec);
             hfp_ag_ok(hfp_connection->rfcomm_cid);           
             // now, pick link settings
             hfp_init_link_settings(hfp_connection);
@@ -633,7 +632,7 @@ static int codecs_exchange_state_machine(hfp_connection_t * hfp_connection){
 
 static void hfp_ag_slc_established(hfp_connection_t * hfp_connection){
     hfp_connection->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
-    hfp_emit_connection_event(hfp_callback, HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED, 0, hfp_connection->acl_handle, hfp_connection->remote_addr);
+    hfp_emit_slc_connection_event(hfp_callback, 0, hfp_connection->acl_handle, hfp_connection->remote_addr);
     
     // if active call exist, set per-hfp_connection state active, too (when audio is on)
     if (hfp_gsm_call_status() == HFP_CALL_STATUS_ACTIVE_OR_HELD_CALL_IS_PRESENT){
@@ -2119,7 +2118,6 @@ static void hfp_ag_setup_audio_connection(hfp_connection_t * hfp_connection){
         log_info("hfp_ag_establish_audio_connection - no codec negotiation feature, using CVSD");
         hfp_connection->negotiated_codec = HFP_CODEC_CVSD;
         hfp_connection->codecs_state = HFP_CODECS_EXCHANGED;
-        hfp_emit_codec_event(hfp_callback, 0, hfp_connection->negotiated_codec);
         // now, pick link settings
         hfp_init_link_settings(hfp_connection);
     } 
