@@ -48,6 +48,7 @@
 
 #include <stdint.h>
 #include "hci.h"
+#include "avdtp.h"
 
 #if defined __cplusplus
 extern "C" {
@@ -56,8 +57,16 @@ extern "C" {
 typedef enum {
     AVDTP_SINK_IDLE,
     AVDTP_SINK_W4_L2CAP_CONNECTED,
-    AVDTP_SINK_W4_CONFIGURATION_COMPLETE,
+    AVDTP_SINK_W2_DISCOVER_SEPS,
+    AVDTP_SINK_W4_SEPS_DISCOVERED,
+    AVDTP_SINK_W2_GET_CAPABILITIES,
+    AVDTP_SINK_W4_CAPABILITIES,
 
+    AVDTP_SINK_CONFIGURED,
+    AVDTP_SINK_OPEN,
+    AVDTP_SINK_STREAMING,
+    AVDTP_SINK_CLOSING,
+    AVDTP_SINK_ABORTING,
     AVDTP_SINK_W4_L2CAP_DISCONNECTED
 } avdtp_sink_state_t;
 
@@ -70,6 +79,10 @@ typedef struct avdtp_sink_connection {
 
     avdtp_sink_state_t state;
 
+    avdtp_sep_t remote_seps[5];
+    uint8_t remote_seps_num;
+    uint8_t remote_sep_index_get_capabilities;
+    
     uint8_t release_l2cap_connection;
 } avdtp_sink_connection_t;
 
@@ -105,7 +118,7 @@ void avdtp_sink_connect(bd_addr_t bd_addr);
 
 /**
  * @brief Disconnect from device with connection handle. 
- * @param acl_handle
+ * @param l2cap_cid
  */
 void avdtp_sink_disconnect(uint16_t l2cap_cid);
 

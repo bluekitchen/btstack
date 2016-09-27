@@ -123,7 +123,7 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
             break;
         case 'd':
             printf("L2CAP Channel Closed\n");
-            // l2cap_disconnect(local_cid, 0);
+            // avdtp_sink_disconnect(local_cid);
             break;
         case '\n':
         case '\r':

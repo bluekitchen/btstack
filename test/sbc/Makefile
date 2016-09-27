@@ -47,7 +47,7 @@ sbc_encoder_test: ${SBC_DECODER_OBJ} ${SBC_ENCODER_OBJ} ${COMMON_OBJ} sbc_encode
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 test: all
-	./sbc_decoder_test data/sine-4sb-mono.sbc data/sine-4sb-decoded-mono.wav
+	./sbc_decoder_test data/sine-4sb-mono msbc 1 100
 	./sbc_encoder_test data/sine-mono.wav data/sine-4sb-mono.sbc
 
 pytest-sine:
@@ -61,17 +61,6 @@ pytest-sine:
 	./sbc_encoder_test.py data/sine-stereo.wav 16 4 30 1 2 data/sine-4sb-stereo.sbc
 	./sbc_encoder_test.py data/sine-stereo.wav 16 8 64 2 data/sine-8sb-stereo.sbc
 
-pytest-short:
-	./sbc_decoder_test.py data/fanfare-short-4sb-mono.sbc 0 SIG data/fanfare-short-4sb-decoded-mono.wav
-	./sbc_decoder_test.py data/fanfare-short-8sb-mono.sbc 0 V1 data/fanfare-short-8sb-decoded-mono.wav
-	./sbc_decoder_test.py data/fanfare-short-4sb-stereo.sbc 2 SIG data/fanfare-short-4sb-decoded-stereo.wav
-	./sbc_decoder_test.py data/fanfare-short-8sb-stereo.sbc 2 SIG data/fanfare-short-8sb-decoded-stereo.wav
-	
-	./sbc_encoder_test.py data/fanfare-short-mono.wav 16 4 31 1 0 data/fanfare-short-4sb-mono.sbc
-	./sbc_encoder_test.py data/fanfare-short-mono.wav 16 8 64 1 0 data/fanfare-short-8sb-mono.sbc
-	./sbc_encoder_test.py data/fanfare-short-stereo.wav 16 4 30 1 2 data/fanfare-short-4sb-stereo.sbc
-	./sbc_encoder_test.py data/fanfare-short-stereo.wav 16 8 62 1 2 data/fanfare-short-8sb-stereo.sbc
-	
 pytest:
 	./sbc_decoder_test.py data/fanfare-4sb-mono.sbc data/fanfare-4sb-decoded-mono.wav
 	./sbc_decoder_test.py data/fanfare-8sb-mono.sbc data/fanfare-8sb-decoded-mono.wav

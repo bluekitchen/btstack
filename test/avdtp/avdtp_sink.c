@@ -51,6 +51,8 @@ static const char * default_avdtp_sink_service_provider_name = "BTstack AVDTP Si
 
 static btstack_linked_list_t avdtp_sink_connections = NULL;
 
+static uint8_t transaction_label = 0;
+
 static btstack_packet_handler_t avdtp_sink_callback;
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static void avdtp_sink_run_for_connection(avdtp_sink_connection_t *connection);
@@ -138,8 +140,6 @@ void a2dp_sink_create_sdp_record(uint8_t * service,  uint32_t service_record_han
 static avdtp_sink_connection_t * create_avdtp_sink_connection_context(bd_addr_t bd_addr){
     avdtp_sink_connection_t * avdtp_connection = btstack_memory_avdtp_sink_connection_get();
     if (!avdtp_connection) return NULL;
-    printf("create_avdtp_sink_connection_context %p\n", avdtp_connection);
-    
     memset(avdtp_connection,0, sizeof(avdtp_sink_connection_t));
     memcpy(avdtp_connection->remote_addr, bd_addr, 6);
     avdtp_connection->state = AVDTP_SINK_IDLE;
@@ -172,8 +172,75 @@ static avdtp_sink_connection_t * get_avdtp_sink_connection_context_for_l2cap_cid
     return NULL;
 }
 
-static void remove_avdtp_sink_connection_context(avdtp_sink_connection_t * connection){
+static void avdtp_sink_remove_connection_context(avdtp_sink_connection_t * connection){
     btstack_linked_list_remove(&avdtp_sink_connections, (btstack_linked_item_t*) connection);   
+}
+
+static inline uint8_t avdtp_header(uint8_t tr_label, avdtp_packet_type_t packet_type, avdtp_message_type_t msg_type){
+    return (tr_label<<4) | ((uint8_t)packet_type<<2) | (uint8_t)msg_type;
+}
+
+static int avdtp_sink_send_discover_cmd(uint16_t cid){
+    uint8_t command[2];
+    command[0] = avdtp_header(transaction_label, AVDTP_SINGLE_PACKET, AVDTP_CMD_MSG);
+    command[1] = (uint8_t)AVDTP_DISCOVER;
+    return l2cap_send(cid, command, sizeof(command));
+}
+
+static int avdtp_sink_send_get_capabilities_cmd(uint16_t cid, uint8_t sep_id){
+    return 0;
+}
+
+static void handle_l2cap_data_packet(avdtp_sink_connection_t * connection, uint8_t *packet, uint16_t size){
+    if (size < 2) {
+        log_error("l2cap data packet too small");
+        return;
+    }
+    uint8_t tr_label = packet[0] >> 4;
+    avdtp_packet_type_t packet_type = (avdtp_packet_type_t)((packet[0] >> 2) & 0x03);
+    avdtp_message_type_t msg_type = (avdtp_message_type_t) (packet[0] & 0x03);
+    uint8_t signal_identifier = packet[1] & 0x3f;
+
+    printf("\nheader: tr_label %d, packet_type %d, msg_type %d, signal_identifier %02x\n", tr_label, packet_type, msg_type, signal_identifier);
+    
+    int i = 2;
+    avdtp_sep_t sep;
+
+    switch (connection->state){
+        case AVDTP_SINK_W4_SEPS_DISCOVERED:
+            if (tr_label != transaction_label){
+                log_error("unexpected transaction label, got %d, expected %d", tr_label, transaction_label);
+                return;
+            }
+            if (signal_identifier != AVDTP_DISCOVER) {
+                log_error("unexpected signal identifier ...");
+                return;
+            }
+            if (size == 3){
+                printf("ERROR code %02x\n", packet[2]);
+                return;
+            }
+            for (i = 2; i<size; i+=2){
+                sep.seid = packet[i] >> 2;
+                if (sep.seid < 0x01 || sep.seid > 0x3E){
+                    log_error("invalid sep id");
+                    return;
+                }
+                sep.in_use = (packet[i] >> 1) & 0x01;
+                sep.media_type = (avdtp_media_type_t)(packet[i+1] >> 4);
+                sep.type = (avdtp_sep_type_t)((packet[i+1] >> 3) & 0x01);
+                connection->remote_seps[connection->remote_seps_num++] = sep;
+                printf("found sep: seid %u, in_use %d, media type %d, sep type %d (1-SNK)\n", 
+                    sep.seid, sep.in_use, sep.media_type, sep.type);
+            }
+            // connection->state = AVDTP_SINK_W2_GET_CAPABILITIES;
+            // transaction_label++;
+            // l2cap_request_can_send_now_event(connection->l2cap_cid);
+            break;
+        default:
+            printf_hexdump( packet, size );
+            break;
+    }
 }
 
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
@@ -183,14 +250,15 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
     uint16_t remote_cid;
     uint16_t local_cid;
     avdtp_sink_connection_t * connection = NULL;
-
-    printf("avdtp_sink packet handler: Received packet type %02x\n", packet_type);
-            
+        
     switch (packet_type) {
         case L2CAP_DATA_PACKET:
-            // just dump data for now
-            printf("source cid %x -- ", channel);
-            // printf_hexdump( packet, size );
+            connection = get_avdtp_sink_connection_context_for_l2cap_cid(channel);
+            if (!connection){
+                log_error("avdtp packet handler L2CAP_EVENT_INCOMING_CONNECTION: connection for local cid 0x%02x not found", channel);
+                break;
+            }
+            handle_l2cap_data_packet(connection, packet, size);
             break;
             
         case HCI_EVENT_PACKET:
@@ -198,11 +266,11 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                 case L2CAP_EVENT_INCOMING_CONNECTION:
                     l2cap_event_incoming_connection_get_address(packet, event_addr);
                     connection = get_avdtp_sink_connection_context_for_bd_addr(event_addr);
-                    if (connection){
-                        log_error("");
+                    if (!connection){
+                        log_error("avdtp packet handler L2CAP_EVENT_INCOMING_CONNECTION: connection for bd address %s not found", bd_addr_to_str(event_addr));
                         break;
                     }
-                    
+
                     connection = create_avdtp_sink_connection_context(event_addr);
                     if (!connection) return;
 
@@ -233,11 +301,14 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     connection->l2cap_cid = l2cap_event_channel_opened_get_local_cid(packet); 
                     connection->acl_handle = l2cap_event_channel_opened_get_handle(packet);
 
-                    printf("Channel successfully opened: %s, handle 0x%02x, psm 0x%02x, local cid 0x%02x, remote cid 0x%02x\n",
-                           bd_addr_to_str(event_addr), connection->acl_handle, psm, connection->l2cap_cid,  l2cap_event_channel_opened_get_remote_cid(packet));
+                    printf("Channel successfully opened: %s, handle 0x%02x, psm 0x%02x, local cid 0x%02x, remote cid 0x%02x, context %p\n",
+                           bd_addr_to_str(event_addr), connection->acl_handle, psm, connection->l2cap_cid,  l2cap_event_channel_opened_get_remote_cid(packet),
+                           connection);
                     
 
-                    connection->state = AVDTP_SINK_W4_CONFIGURATION_COMPLETE;
+                    connection->state = AVDTP_SINK_W2_DISCOVER_SEPS;
+                    transaction_label++;
+                    l2cap_request_can_send_now_event(connection->l2cap_cid);
                     break;
                 
                 case L2CAP_EVENT_CHANNEL_CLOSED:
@@ -247,7 +318,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     if (!connection || connection->state != AVDTP_SINK_W4_L2CAP_DISCONNECTED) return;
 
                     log_info("L2CAP_EVENT_CHANNEL_CLOSED cid 0x%0x", local_cid);
-                    remove_avdtp_sink_connection_context(connection);
+                    avdtp_sink_remove_connection_context(connection);
                     connection->state = AVDTP_SINK_IDLE;
                     break;
 
@@ -284,29 +355,42 @@ static void avdtp_sink_run_for_connection(avdtp_sink_connection_t *connection){
     if (connection->release_l2cap_connection){
         if (connection->state > AVDTP_SINK_W4_L2CAP_CONNECTED || 
             connection->state < AVDTP_SINK_W4_L2CAP_DISCONNECTED){
-                connection->release_l2cap_connection = 0;
-                connection->state = AVDTP_SINK_W4_L2CAP_DISCONNECTED;
-                l2cap_disconnect(connection->l2cap_cid, 0);
+            
+            connection->release_l2cap_connection = 0;
+            connection->state = AVDTP_SINK_W4_L2CAP_DISCONNECTED;
+            l2cap_disconnect(connection->l2cap_cid, 0);
             return;
         }
     }
 
-    // if (!l2cap_can_send_packet_now(connection->l2cap_cid)) {
-    //     log_info("avdtp_sink_run_for_connection: request cannot send for 0x%02x", connection->l2cap_cid);
-    //     return;
-    // }
-    
+    if (!l2cap_can_send_packet_now(connection->l2cap_cid)) {
+        log_info("avdtp_sink_run_for_connection: request cannot send for 0x%02x", connection->l2cap_cid);
+        return;
+    }
+
+    switch (connection->state){
+        case AVDTP_SINK_W2_DISCOVER_SEPS:
+            avdtp_sink_send_discover_cmd(connection->l2cap_cid);
+            connection->state = AVDTP_SINK_W4_SEPS_DISCOVERED;
+            break;
+        case AVDTP_SINK_W2_GET_CAPABILITIES:
+            avdtp_sink_send_get_capabilities_cmd(connection->l2cap_cid, 0);
+            connection->state = AVDTP_SINK_W4_CAPABILITIES;
+            break;
+        default:
+            break;
+    }    
 }
 
 void avdtp_sink_connect(bd_addr_t bd_addr){
     avdtp_sink_connection_t * connection = get_avdtp_sink_connection_context_for_bd_addr(bd_addr);
     if (connection) {
-        log_error("...");
+        log_error("avdtp_sink_connect: connection for bd address %s not found", bd_addr_to_str(bd_addr));
         return;
     }
     connection = create_avdtp_sink_connection_context(bd_addr);
     if (!connection){
-        log_error("");
+        log_error("avdtp_sink_connect: cannot create connection for bd address %s", bd_addr_to_str(bd_addr));
         return;
     }
 
@@ -314,11 +398,10 @@ void avdtp_sink_connect(bd_addr_t bd_addr){
     l2cap_create_channel(packet_handler, connection->remote_addr, PSM_AVDTP, 0xffff, NULL);
 }
 
-
 void avdtp_sink_disconnect(uint16_t l2cap_cid){
     avdtp_sink_connection_t * connection = get_avdtp_sink_connection_context_for_l2cap_cid(l2cap_cid);
     if (!connection) {
-        log_error("avdtp_sink_disconnect Connection with l2cap_cid %d not found", l2cap_cid);
+        log_error("avdtp_sink_disconnect: Connection with l2cap_cid %d not found", l2cap_cid);
         return;
     }
 
@@ -328,3 +411,5 @@ void avdtp_sink_disconnect(uint16_t l2cap_cid){
     connection->release_l2cap_connection = 1;
     avdtp_sink_run_for_connection(connection);
 }
+
+

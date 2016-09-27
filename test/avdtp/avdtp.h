@@ -79,6 +79,80 @@ extern "C" {
 #define AVDTP_SINK_SF_Recorder      0x0004
 #define AVDTP_SINK_SF_Amplifier     0x0008
 
+// ACP to INT, Signal Response Header Error Codes
+#define BAD_HEADER_FORMAT 0x01
+
+// ACP to INT, Signal Response Payload Format Error Codes
+#define BAD_LENGTH 0x11
+#define BAD_ACP_SEID 0x12
+#define SEP_IN_USE 0x13
+#define SEP_NOT_IN_USE 0x14
+#define BAD_SERV_CATEGORY 0x17
+#define BAD_PAYLOAD_FORMAT 0x18
+#define NOT_SUPPORTED_COMMAND 0x19
+#define INVALID_CAPABILITIES 0x1A
+
+// ACP to INT, Signal Response Transport Service Capabilities Error Codes
+#define BAD_RECOVERY_TYPE 0x22
+#define BAD_MEDIA_TRANSPORT_FORMAT 0x23
+#define BAD_RECOVERY_FORMAT 0x25
+#define BAD_ROHC_FORMAT 0x26
+#define BAD_CP_FORMAT 0x27
+#define BAD_MULTIPLEXING_FORMAT 0x28
+#define UNSUPPORTED_CONFIGURAION 0x29
+
+// ACP to INT, Procedure Error Codes
+#define BAD_STATE 0x31
+// Signal Identifier fields
+typedef enum {
+    AVDTP_DISCOVER = 0x01,
+    AVDTP_GET_CAPABILITIES,
+    AVDTP_SET_CONFIGURATION,
+    AVDTP_GET_CONFIGURATION,
+    AVDTP_RECONFIGURE,
+    AVDTP_OPEN,
+    AVDTP_START,
+    AVDTP_CLOSE,
+    AVDTP_SUSPEND,
+    AVDTP_ABORT,
+    AVDTP_SECURITY_CONTROL,
+    AVDTP_GET_ALL_CAPABILITIES,
+    AVDTP_DELAYREPORT
+} avdtp_signal_identifier_t;
+
+typedef enum {
+    AVDTP_SINGLE_PACKET= 0,
+    AVDTP_START_PACKET    ,
+    AVDTP_CONTINUE_PACKET ,
+    AVDTP_END_PACKET
+} avdtp_packet_type_t;
+
+typedef enum {
+    AVDTP_CMD_MSG = 0,
+    AVDTP_GENERAL_REJECT_MSG   ,
+    AVDTP_RESPONSE_ACCEPT_MSG ,
+    AVDTP_RESPONSE_REJECT_MSG
+} avdtp_message_type_t;
+
+typedef enum{
+    AVDTP_AUDIO = 0,
+    AVDTP_VIDEO,
+    AVDTP_MULTIMEDIA 
+} avdtp_media_type_t;
+
+typedef enum{
+    AVDTP_SOURCE = 0,
+    AVDTP_SINK
+} avdtp_sep_type_t;
+
+typedef struct {
+    uint8_t seid;           // 0x01 – 0x3E, 6bit
+    uint8_t in_use;         // 1 bit, 0 - not in use, 1 - in use
+    avdtp_media_type_t media_type;     // 4 bit
+    avdtp_sep_type_t   type;       // 1 bit, 0 - SRC, 1 - SNK
+} avdtp_sep_t;
+
+
 #if defined __cplusplus
 }
 #endif
