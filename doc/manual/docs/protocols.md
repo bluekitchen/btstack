@@ -583,7 +583,7 @@ To create an SDP record for an SPP service, you can call
 *spp_create_sdp_record* from with a pointer to a buffer to store the
 record, the server channel number, and a record name.
 
-For other types of records, you can use the other functions in , using
+For other types of records, you can use the other functions in, using
 the data element *de_* functions. Listing [sdpCreate] shows how an SDP
 record containing two SDP attributes can be created. First, a DES is
 created and then the Service Record Handle and Service Class ID List
@@ -597,6 +597,11 @@ a sub-DES. The returned pointer is used to add elements to this sub-DES.
 After adding all UUIDs, the sub-DES is “closed” with
 *de_pop_sequence*.
 
+To register an SDP record, you call *sdp_register_service* with a pointer to it.
+The SDP record can be stored in FLASH since BTstack only stores the pointer.
+Please note that the buffer needs to persist (e.g. global storage, dynamically
+allocated from the heap or in FLASH) and cannot be used to create another SDP
+record.
 
 ### Query remote SDP service {#sec:querySDPProtocols}
 
