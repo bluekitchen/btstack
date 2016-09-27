@@ -298,7 +298,7 @@ void SBC_Encoder(SBC_ENC_PARAMS *pstrEncParams)
 */
 void SBC_Encoder_Init(SBC_ENC_PARAMS *pstrEncParams)
 {
-    UINT16 s16SamplingFreq; /*temp variable to store smpling freq*/
+    // UINT16 s16SamplingFreq; /*temp variable to store smpling freq*/
     SINT16 s16Bitpool;      /*to store bit pool value*/
     // SINT16 s16BitRate;      /*to store bitrate*/
     // SINT16 s16FrameLen;     /*to store frame length*/
