@@ -126,7 +126,7 @@ int deviceCount = 0;
 enum STATE {INIT, W4_INQUIRY_MODE_COMPLETE, ACTIVE} ;
 enum STATE state = INIT;
 
-static void dump_supported_codecs(){
+static void dump_supported_codecs(void){
     int i;
     printf("Supported codecs: ");
     for (i = 0; i < sizeof(codecs); i++){

@@ -129,8 +129,8 @@ void SBC_Encoder(SBC_ENC_PARAMS *pstrEncParams)
     UINT32 u32CountSum,u32CountDiff;
     SINT32 *pSum, *pDiff;
 #endif
-    UINT8  *pu8;
     /* BK4BTSTACK_CHANGE START */
+    // UINT8  *pu8;
     // tSBC_FR_CB  *p_cur, *p_last;
     // UINT32       idx, tmp, tmp2;
     /* BK4BTSTACK_CHANGE STOP */
@@ -267,7 +267,7 @@ void SBC_Encoder(SBC_ENC_PARAMS *pstrEncParams)
             sbc_enc_bit_alloc_mono(pstrEncParams);
 
         /* save the beginning of the frame. pu8NextPacket is modified in EncPacking() */
-        pu8 = pstrEncParams->pu8NextPacket;
+        // pu8 = pstrEncParams->pu8NextPacket;
         /* Quantize the encoded audio */
         EncPacking(pstrEncParams);
 
@@ -298,10 +298,10 @@ void SBC_Encoder(SBC_ENC_PARAMS *pstrEncParams)
 */
 void SBC_Encoder_Init(SBC_ENC_PARAMS *pstrEncParams)
 {
-    UINT16 s16SamplingFreq; /*temp variable to store smpling freq*/
+    // UINT16 s16SamplingFreq; /*temp variable to store smpling freq*/
     SINT16 s16Bitpool;      /*to store bit pool value*/
-    SINT16 s16BitRate;      /*to store bitrate*/
-    SINT16 s16FrameLen;     /*to store frame length*/
+    // SINT16 s16BitRate;      /*to store bitrate*/
+    // SINT16 s16FrameLen;     /*to store frame length*/
     UINT16 HeaderParams;
 
     pstrEncParams->u8NumPacketToEncode = 1; /* default is one for retrocompatibility purpose */
@@ -312,15 +312,17 @@ void SBC_Encoder_Init(SBC_ENC_PARAMS *pstrEncParams)
     else
         pstrEncParams->s16NumOfChannels = 2;
 
+    /* BK4BTSTACK_CHANGE START */
     /* Bit pool calculation */
-    if (pstrEncParams->s16SamplingFreq == SBC_sf16000)
-        s16SamplingFreq = 16000;
-    else if (pstrEncParams->s16SamplingFreq == SBC_sf32000)
-        s16SamplingFreq = 32000;
-    else if (pstrEncParams->s16SamplingFreq == SBC_sf44100)
-        s16SamplingFreq = 44100;
-    else
-        s16SamplingFreq = 48000;
+    // if (pstrEncParams->s16SamplingFreq == SBC_sf16000)
+    //     s16SamplingFreq = 16000;
+    // else if (pstrEncParams->s16SamplingFreq == SBC_sf32000)
+    //     s16SamplingFreq = 32000;
+    // else if (pstrEncParams->s16SamplingFreq == SBC_sf44100)
+    //     s16SamplingFreq = 44100;
+    // else
+    //     s16SamplingFreq = 48000;
+    /* BK4BTSTACK_CHANGE END */
 
     if ( (pstrEncParams->s16ChannelMode == SBC_JOINT_STEREO)
         ||  (pstrEncParams->s16ChannelMode == SBC_STEREO) )
@@ -333,19 +335,18 @@ void SBC_Encoder_Init(SBC_ENC_PARAMS *pstrEncParams)
         //     + ( (pstrEncParams->s16ChannelMode - 2) *
         //     pstrEncParams->s16NumOfSubBands )   )
         //     / pstrEncParams->s16NumOfBlocks) );
+        
         s16Bitpool = pstrEncParams->s16BitPool;
-        /* BK4BTSTACK_CHANGE END */
-        s16FrameLen = 4 + (4*pstrEncParams->s16NumOfSubBands*
-            pstrEncParams->s16NumOfChannels)/8
-            + ( ((pstrEncParams->s16ChannelMode - 2) *
-            pstrEncParams->s16NumOfSubBands)
-            + (pstrEncParams->s16NumOfBlocks * s16Bitpool) ) / 8;
 
-        s16BitRate = (8 * s16FrameLen * s16SamplingFreq)
-            / (pstrEncParams->s16NumOfSubBands *
-            pstrEncParams->s16NumOfBlocks * 1000);
+        // s16FrameLen = 4 + (4*pstrEncParams->s16NumOfSubBands*
+        //     pstrEncParams->s16NumOfChannels)/8
+        //     + ( ((pstrEncParams->s16ChannelMode - 2) *
+        //     pstrEncParams->s16NumOfSubBands)
+        //     + (pstrEncParams->s16NumOfBlocks * s16Bitpool) ) / 8;
+        // s16BitRate = (8 * s16FrameLen * s16SamplingFreq)
+        //     / (pstrEncParams->s16NumOfSubBands *
+        //     pstrEncParams->s16NumOfBlocks * 1000);
 
-        /* BK4BTSTACK_CHANGE START */
         // if (s16BitRate > pstrEncParams->u16BitRate)
         //     s16Bitpool--;
         /* BK4BTSTACK_CHANGE END */

@@ -1,5 +1,3 @@
-SBC_DECODER_ROOT = ${BTSTACK_ROOT}/3rd-party/bluedroid/decoder
-SBC_ENCODER_ROOT = ${BTSTACK_ROOT}/3rd-party/bluedroid/encoder
 
 VPATH += ${BTSTACK_ROOT}/src
 VPATH += ${BTSTACK_ROOT}/src/ble
@@ -15,8 +13,15 @@ CFLAGS += -I${BTSTACK_ROOT}/src/classic
 CFLAGS += -I${BTSTACK_ROOT}/src
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/mbedtls/include
 CFLAGS += -I${BTSTACK_ROOT}/test/security_manager
+
+# for SBC
+SBC_DECODER_ROOT = ${BTSTACK_ROOT}/3rd-party/bluedroid/decoder
+SBC_ENCODER_ROOT = ${BTSTACK_ROOT}/3rd-party/bluedroid/encoder
 CFLAGS += -I${SBC_DECODER_ROOT}/include -D OI_DEBUG # -D PRINT_SAMPLES -D PRINT_SCALEFACTORS 
 CFLAGS += -I${SBC_ENCODER_ROOT}/include -D SBC_NO_PCM_CPY_OPTION
+
+# for CVSD/SBC PLC
+LDFLAGS += -lm
 
 CORE += \
 	btstack_memory.c            \
