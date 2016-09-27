@@ -70,10 +70,15 @@ const char hfp_ag_service_name[] = "BTstack HFP AG Test";
 // BT-201
 // static bd_addr_t device_addr = {0x00, 0x07, 0xB0, 0x83, 0x02, 0x5E};
 // CC256x
-bd_addr_t device_addr = { 0xD0, 0x39, 0x72, 0xCD, 0x83, 0x45};
+// bd_addr_t device_addr = { 0xD0, 0x39, 0x72, 0xCD, 0x83, 0x45};
+// Minijamox
+bd_addr_t device_addr = { 0x00, 0x15, 0x83, 0x5F, 0x9D, 0x46};
 
-static uint8_t codecs[1] = {HFP_CODEC_CVSD};
-static uint16_t handle = -1;
+// static uint8_t codecs[] = {HFP_CODEC_CVSD, HFP_CODEC_MSBC};
+static uint8_t codecs[] = {HFP_CODEC_CVSD};
+static uint8_t negotiated_codec = HFP_CODEC_CVSD;
+
+static hci_con_handle_t acl_handle = -1;
 static hci_con_handle_t sco_handle;
 static int memory_1_enabled = 1;
 
@@ -121,6 +126,21 @@ int deviceCount = 0;
 enum STATE {INIT, W4_INQUIRY_MODE_COMPLETE, ACTIVE} ;
 enum STATE state = INIT;
 
+static void dump_supported_codecs(void){
+    int i;
+    printf("Supported codecs: ");
+    for (i = 0; i < sizeof(codecs); i++){
+        switch(codecs[i]){
+            case HFP_CODEC_CVSD:
+                printf(" CVSD");
+                break;
+            case HFP_CODEC_MSBC:
+                printf(" mSBC");
+                break;
+        }
+    }
+    printf("\n");
+}
 
 static int getDeviceIndexForAddress( bd_addr_t addr){
     int j;
@@ -347,22 +367,22 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
         case 'A':
             log_info("USER:\'%c\'", cmd);
             printf("Release HFP service level connection.\n");
-            hfp_ag_release_service_level_connection(device_addr);
+            hfp_ag_release_service_level_connection(acl_handle);
             break;
         case 'Z':
             log_info("USER:\'%c\'", cmd);
             printf("Release HFP service level connection to %s...\n", bd_addr_to_str(device_addr));
-            hfp_ag_release_service_level_connection(device_addr);
+            hfp_ag_release_service_level_connection(acl_handle);
             break;
         case 'b':
             log_info("USER:\'%c\'", cmd);
             printf("Establish Audio connection %s...\n", bd_addr_to_str(device_addr));
-            hfp_ag_establish_audio_connection(device_addr);
+            hfp_ag_establish_audio_connection(acl_handle);
             break;
         case 'B':
             log_info("USER:\'%c\'", cmd);
             printf("Release Audio connection.\n");
-            hfp_ag_release_audio_connection(device_addr);
+            hfp_ag_release_audio_connection(acl_handle);
             break;
         case 'c':
             log_info("USER:\'%c\'", cmd);
@@ -384,7 +404,7 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
         case 'd':
             log_info("USER:\'%c\'", cmd);
             printf("Report AG failure\n");
-            hfp_ag_report_extended_audio_gateway_error_result_code(device_addr, HFP_CME_ERROR_AG_FAILURE);
+            hfp_ag_report_extended_audio_gateway_error_result_code(acl_handle, HFP_CME_ERROR_AG_FAILURE);
             break;
         case 'e':
             log_info("USER:\'%c\'", cmd);
@@ -469,52 +489,52 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
         case 'n':
             log_info("USER:\'%c\'", cmd);
             printf("Disable Voice Recognition\n");
-            hfp_ag_activate_voice_recognition(device_addr, 0);
+            hfp_ag_activate_voice_recognition(acl_handle, 0);
             break;
         case 'N':
             log_info("USER:\'%c\'", cmd);
             printf("Enable Voice Recognition\n");
-            hfp_ag_activate_voice_recognition(device_addr, 1);
+            hfp_ag_activate_voice_recognition(acl_handle, 1);
             break;
         case 'o':
             log_info("USER:\'%c\'", cmd);
             printf("Set speaker gain to 0 (minimum)\n");
-            hfp_ag_set_speaker_gain(device_addr, 0);
+            hfp_ag_set_speaker_gain(acl_handle, 0);
             break;
         case 'O':
             log_info("USER:\'%c\'", cmd);
             printf("Set speaker gain to 9 (default)\n");
-            hfp_ag_set_speaker_gain(device_addr, 9);
+            hfp_ag_set_speaker_gain(acl_handle, 9);
             break;
         case 'p':
             log_info("USER:\'%c\'", cmd);
             printf("Set speaker gain to 12 (higher)\n");
-            hfp_ag_set_speaker_gain(device_addr, 12);
+            hfp_ag_set_speaker_gain(acl_handle, 12);
             break;
         case 'P':
             log_info("USER:\'%c\'", cmd);
             printf("Set speaker gain to 15 (maximum)\n");
-            hfp_ag_set_speaker_gain(device_addr, 15);
+            hfp_ag_set_speaker_gain(acl_handle, 15);
             break;
         case 'q':
             log_info("USER:\'%c\'", cmd);
             printf("Set microphone gain to 0\n");
-            hfp_ag_set_microphone_gain(device_addr, 0);
+            hfp_ag_set_microphone_gain(acl_handle, 0);
             break;
         case 'Q':
             log_info("USER:\'%c\'", cmd);
             printf("Set microphone gain to 9\n");
-            hfp_ag_set_microphone_gain(device_addr, 9);
+            hfp_ag_set_microphone_gain(acl_handle, 9);
             break;
         case 's':
             log_info("USER:\'%c\'", cmd);
             printf("Set microphone gain to 12\n");
-            hfp_ag_set_microphone_gain(device_addr, 12);
+            hfp_ag_set_microphone_gain(acl_handle, 12);
             break;
         case 'S':
             log_info("USER:\'%c\'", cmd);
             printf("Set microphone gain to 15\n");
-            hfp_ag_set_microphone_gain(device_addr, 15);
+            hfp_ag_set_microphone_gain(acl_handle, 15);
             break;
         case 'R':
             log_info("USER:\'%c\'", cmd);
@@ -523,8 +543,8 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
             break;
         case 't':
             log_info("USER:\'%c\'", cmd);
-            printf("Terminate HCI connection. 0x%2x\n", handle);
-            gap_disconnect(handle);
+            printf("Terminate HCI connection. 0x%2x\n", acl_handle);
+            gap_disconnect(acl_handle);
             break;
         case 'u':
             log_info("USER:\'%c\'", cmd);
@@ -569,6 +589,15 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                 case HCI_EVENT_SCO_CAN_SEND_NOW:
                     sco_demo_send(sco_handle); 
                     break; 
+                case HCI_EVENT_COMMAND_COMPLETE:
+                    if (HCI_EVENT_IS_COMMAND_COMPLETE(event, hci_read_local_supported_features)){
+                        if (hci_extended_sco_link_supported()){
+                            printf("Supported Codecs: CVSD, mSBC.\n");
+                        } else {
+                            printf("Supported Codecs: CVSD. mSBC disabled, eSCO not supported by controller).\n");
+                        }
+                    }
+                    break;
                 default:
                     break;
             }
@@ -585,9 +614,18 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
 
             switch (event[2]) {   
                 case HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED:
-                    handle = hfp_subevent_service_level_connection_established_get_con_handle(event);
-                    printf("Service level connection established.\n");
-                    break;
+                    acl_handle = hfp_subevent_service_level_connection_established_get_con_handle(event);
+                    hfp_subevent_service_level_connection_established_get_bd_addr(event, device_addr);
+                    printf("Service level connection established from %s.\n", bd_addr_to_str(device_addr));
+                    
+                    dump_supported_codecs();
+                    if (hci_extended_sco_link_supported()){
+                        printf("eSCO supported by controller.\n");
+                    } else {
+                        printf("eSCO not supported by controller.\n");
+                    }
+
+                   break;
                 case HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED:
                     printf("Service level connection released.\n");
                     sco_handle = 0;
@@ -599,6 +637,9 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                     } else {
                         sco_handle = hfp_subevent_audio_connection_established_get_handle(event);
                         printf("Audio connection established with SCO handle 0x%04x.\n", sco_handle);
+                        negotiated_codec = hfp_subevent_audio_connection_established_get_negotiated_codec(event);
+                        printf("Using codec 0x%02x.\n", negotiated_codec);
+                        sco_demo_set_codec(negotiated_codec);
                         hci_request_sco_can_send_now_event();
                     }
                     break;
@@ -628,11 +669,11 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                 
                 case HFP_SUBEVENT_ATTACH_NUMBER_TO_VOICE_TAG:
                     printf("\n** Attach number to voice tag. Sending '1234567\n");
-                    hfp_ag_send_phone_number_for_voice_tag(device_addr, "1234567");
+                    hfp_ag_send_phone_number_for_voice_tag(acl_handle, "1234567");
                     break;
                 case HFP_SUBEVENT_TRANSMIT_DTMF_CODES:
                     printf("\n** Send DTMF Codes: '%s'\n", hfp_subevent_transmit_dtmf_codes_get_dtmf(event));
-                    hfp_ag_send_dtmf_code_done(device_addr);
+                    hfp_ag_send_dtmf_code_done(acl_handle);
                     break;
                 case HFP_SUBEVENT_CALL_ANSWERED:
                     printf("Call answered by HF\n");
@@ -673,11 +714,24 @@ int btstack_main(int argc, const char * argv[]){
 
     // L2CAP
     l2cap_init();
-    
+
+    uint16_t supported_features                   =
+        (1<<HFP_AGSF_ESCO_S4)                     |
+        (1<<HFP_AGSF_HF_INDICATORS)               |
+        (1<<HFP_AGSF_CODEC_NEGOTIATION)           |
+        (1<<HFP_AGSF_EXTENDED_ERROR_RESULT_CODES) |
+        (1<<HFP_AGSF_ENHANCED_CALL_CONTROL)       |
+        (1<<HFP_AGSF_ENHANCED_CALL_STATUS)        |
+        (1<<HFP_AGSF_ABILITY_TO_REJECT_A_CALL)    |
+        (1<<HFP_AGSF_IN_BAND_RING_TONE)           |
+        (1<<HFP_AGSF_VOICE_RECOGNITION_FUNCTION)  |
+        (1<<HFP_AGSF_THREE_WAY_CALLING);
+    int wide_band_speech = 1;
+
     // HFP
     rfcomm_init();
     hfp_ag_init(rfcomm_channel_nr);
-    hfp_ag_init_supported_features(0x3ef | (1<<HFP_AGSF_HF_INDICATORS) | (1<<HFP_AGSF_ESCO_S4)); 
+    hfp_ag_init_supported_features(supported_features);
     hfp_ag_init_codecs(sizeof(codecs), codecs);
     hfp_ag_init_ag_indicators(ag_indicators_nr, ag_indicators);
     hfp_ag_init_hf_indicators(hf_indicators_nr, hf_indicators); 
@@ -689,7 +743,7 @@ int btstack_main(int argc, const char * argv[]){
     // SDP Server
     sdp_init();
     memset(hfp_service_buffer, 0, sizeof(hfp_service_buffer));
-    hfp_ag_create_sdp_record( hfp_service_buffer, 0x10001, rfcomm_channel_nr, hfp_ag_service_name, 0, 0);
+    hfp_ag_create_sdp_record( hfp_service_buffer, 0x10001, rfcomm_channel_nr, hfp_ag_service_name, 0, supported_features, wide_band_speech);
     printf("SDP service record size: %u\n", de_get_len( hfp_service_buffer));
     sdp_register_service(hfp_service_buffer);
     

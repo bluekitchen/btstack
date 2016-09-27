@@ -66,12 +66,16 @@ extern "C" {
 9: eSCO S4 (and T2) Settings Supported
 10-31: Reserved for future definition
 */
-#define HFP_HFSF_EC_NR_FUNCTION     0
-#define HFP_HFSF_THREE_WAY_CALLING  1
-#define HFP_HFSF_VOICE_RECOGNITION_FUNCTION 3
-#define HFP_HFSF_CODEC_NEGOTIATION  7
-#define HFP_HFSF_HF_INDICATORS      8
-#define HFP_HFSF_ESCO_S4            9
+#define HFP_HFSF_EC_NR_FUNCTION              0
+#define HFP_HFSF_THREE_WAY_CALLING           1
+#define HFP_HFSF_CLI_PRESENTATION_CAPABILITY 2
+#define HFP_HFSF_VOICE_RECOGNITION_FUNCTION  3
+#define HFP_HFSF_REMOTE_VOLUME_CONTROL       4
+#define HFP_HFSF_ENHANCED_CALL_STATUS        5
+#define HFP_HFSF_ENHANCED_CALL_CONTROL       6
+#define HFP_HFSF_CODEC_NEGOTIATION           7
+#define HFP_HFSF_HF_INDICATORS               8
+#define HFP_HFSF_ESCO_S4                     9
 
 /* AG Supported Features:
 0: Three-way calling
@@ -88,13 +92,18 @@ extern "C" {
 11: eSCO S4 (and T2) Settings Supported
 12-31: Reserved for future definition
 */
-#define HFP_AGSF_THREE_WAY_CALLING  0
-#define HFP_AGSF_EC_NR_FUNCTION     1
+#define HFP_AGSF_THREE_WAY_CALLING              0
+#define HFP_AGSF_EC_NR_FUNCTION                 1
 #define HFP_AGSF_VOICE_RECOGNITION_FUNCTION     2
-#define HFP_AGSF_IN_BAND_RING_TONE  3
-#define HFP_AGSF_CODEC_NEGOTIATION  9
-#define HFP_AGSF_HF_INDICATORS      10
-#define HFP_AGSF_ESCO_S4            11
+#define HFP_AGSF_IN_BAND_RING_TONE              3
+#define HFP_AGSF_ATTACH_A_NUMBER_TO_A_VOICE_TAG 4
+#define HFP_AGSF_ABILITY_TO_REJECT_A_CALL       5 
+#define HFP_AGSF_ENHANCED_CALL_STATUS           6
+#define HFP_AGSF_ENHANCED_CALL_CONTROL          7
+#define HFP_AGSF_EXTENDED_ERROR_RESULT_CODES    8
+#define HFP_AGSF_CODEC_NEGOTIATION              9
+#define HFP_AGSF_HF_INDICATORS                 10
+#define HFP_AGSF_ESCO_S4                       11
 
 #define HFP_DEFAULT_HF_SUPPORTED_FEATURES 0x0000
 #define HFP_DEFAULT_AG_SUPPORTED_FEATURES 0x0009
@@ -489,7 +498,7 @@ typedef struct hfp_connection {
 
     // TODO: rename into hf_codecs_nr
     int      remote_codecs_nr;
-    uint16_t remote_codecs[HFP_MAX_INDICATOR_DESC_SIZE];
+    uint8_t remote_codecs[HFP_MAX_INDICATOR_DESC_SIZE];
 
     int      ag_indicators_nr;
     hfp_ag_indicator_t ag_indicators[HFP_MAX_INDICATOR_DESC_SIZE];
@@ -532,7 +541,8 @@ typedef struct hfp_connection {
     // establish codecs connection
     uint8_t suggested_codec;
     uint8_t codec_confirmed;
-
+    uint8_t sco_for_msbc_failed;
+    
     hfp_link_setttings_t link_setting;
 
     uint8_t establish_audio_connection; 
@@ -565,6 +575,7 @@ typedef struct hfp_connection {
     int next_call_index;
 
     // HF only
+    uint8_t hf_accept_sco;
     hfp_hf_query_operator_state_t hf_query_operator_state;
     uint8_t hf_answer_incoming_call;
     uint8_t hf_initiate_outgoing_call;
@@ -628,11 +639,12 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
 void hfp_emit_event(btstack_packet_handler_t callback, uint8_t event_subtype, uint8_t value);
 void hfp_emit_simple_event(btstack_packet_handler_t callback, uint8_t event_subtype);
 void hfp_emit_string_event(btstack_packet_handler_t callback, uint8_t event_subtype, const char * value);
-void hfp_emit_connection_event(btstack_packet_handler_t callback, uint8_t event_subtype, uint8_t status, hci_con_handle_t con_handle);
+void hfp_emit_slc_connection_event(btstack_packet_handler_t callback, uint8_t status, hci_con_handle_t con_handle, bd_addr_t addr);
 
 hfp_connection_t * get_hfp_connection_context_for_rfcomm_cid(uint16_t cid);
 hfp_connection_t * get_hfp_connection_context_for_bd_addr(bd_addr_t bd_addr);
 hfp_connection_t * get_hfp_connection_context_for_sco_handle(uint16_t handle);
+hfp_connection_t * get_hfp_connection_context_for_acl_handle(uint16_t handle);
 
 btstack_linked_list_t * hfp_get_connections(void);
 void hfp_parse(hfp_connection_t * connection, uint8_t byte, int isHandsFree);
@@ -644,6 +656,7 @@ void hfp_reset_context_flags(hfp_connection_t * connection);
 void hfp_release_audio_connection(hfp_connection_t * connection);
 
 void hfp_setup_synchronous_connection(hfp_connection_t * connection);
+int hfp_supports_codec(uint8_t codec, int codecs_nr, uint8_t * codecs);
 
 const char * hfp_hf_feature(int index);
 const char * hfp_ag_feature(int index);

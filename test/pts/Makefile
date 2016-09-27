@@ -29,7 +29,7 @@ LDFLAGS += $(shell pkg-config libusb-1.0 --libs)
 # CFLAGS  += -I/usr/local/include
 # LDFLAGS += -L/sw/lib -lportaudio -Wl,-framework,CoreAudio -Wl,-framework,AudioToolbox -Wl,-framework,AudioUnit -Wl,-framework,Carbon
 
-EXAMPLES = iopt hfp_hf_test hfp_ag_test ble_peripheral_test ble_central_test l2cap_test classic_test bnep_test hsp_ag_test hsp_hs_test sco_loopback
+EXAMPLES = iopt ble_peripheral_test ble_central_test l2cap_test classic_test bnep_test hsp_ag_test hsp_hs_test sco_loopback
 
 all: ${EXAMPLES}
 
@@ -49,12 +49,6 @@ hsp_ag_test: ${CORE_OBJ} ${COMMON_OBJ} ${SDP_CLIENT} hsp_ag.o hsp_ag_test.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 hsp_hs_test: ${CORE_OBJ} ${COMMON_OBJ} ${SDP_CLIENT} hsp_hs.o hsp_hs_test.c  
-	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
-
-hfp_hf_test: ${CORE_OBJ} ${COMMON_OBJ} ${SDP_CLIENT} hfp.o hfp_hf.o hfp_hf_test.c  
-	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
-
-hfp_ag_test: ${CORE_OBJ} ${COMMON_OBJ} ${SDP_CLIENT} hfp.o hfp_gsm_model.o hfp_ag.o hfp_ag_test.c  
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 l2cap_test: ${CORE_OBJ} ${COMMON_OBJ} l2cap_test.c

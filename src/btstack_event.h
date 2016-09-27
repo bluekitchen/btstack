@@ -2739,6 +2739,15 @@ static inline uint8_t hfp_subevent_service_level_connection_established_get_stat
 static inline hci_con_handle_t hfp_subevent_service_level_connection_established_get_con_handle(const uint8_t * event){
     return little_endian_read_16(event, 4);
 }
+/**
+ * @brief Get field bd_addr from event HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED
+ * @param event packet
+ * @param Pointer to storage for bd_addr
+ * @note: btstack_type B
+ */
+static inline void hfp_subevent_service_level_connection_established_get_bd_addr(const uint8_t * event, bd_addr_t bd_addr){
+    reverse_bd_addr(&event[6], bd_addr);    
+}
 
 
 /**
@@ -2758,6 +2767,24 @@ static inline uint8_t hfp_subevent_audio_connection_established_get_status(const
  */
 static inline hci_con_handle_t hfp_subevent_audio_connection_established_get_handle(const uint8_t * event){
     return little_endian_read_16(event, 4);
+}
+/**
+ * @brief Get field bd_addr from event HFP_SUBEVENT_AUDIO_CONNECTION_ESTABLISHED
+ * @param event packet
+ * @param Pointer to storage for bd_addr
+ * @note: btstack_type B
+ */
+static inline void hfp_subevent_audio_connection_established_get_bd_addr(const uint8_t * event, bd_addr_t bd_addr){
+    reverse_bd_addr(&event[6], bd_addr);    
+}
+/**
+ * @brief Get field negotiated_codec from event HFP_SUBEVENT_AUDIO_CONNECTION_ESTABLISHED
+ * @param event packet
+ * @return negotiated_codec
+ * @note: btstack_type 1
+ */
+static inline uint8_t hfp_subevent_audio_connection_established_get_negotiated_codec(const uint8_t * event){
+    return event[12];
 }
 
 
@@ -2834,16 +2861,6 @@ static inline uint8_t hfp_subevent_network_operator_changed_get_network_operator
  * @note: btstack_type 1
  */
 static inline uint8_t hfp_subevent_extended_audio_gateway_error_get_error(const uint8_t * event){
-    return event[3];
-}
-
-/**
- * @brief Get field status from event HFP_SUBEVENT_CODECS_CONNECTION_COMPLETE
- * @param event packet
- * @return status
- * @note: btstack_type 1
- */
-static inline uint8_t hfp_subevent_codecs_connection_complete_get_status(const uint8_t * event){
     return event[3];
 }
 

@@ -76,6 +76,7 @@
 static const char default_hsp_ag_service_name[] = "Audio Gateway";
 
 static bd_addr_t remote;
+static bd_addr_t sco_event_addr;
 static uint8_t channel_nr = 0;
 
 static uint16_t mtu;
@@ -91,7 +92,7 @@ static uint8_t ag_send_ok = 0;
 static uint8_t ag_send_error = 0;
 static uint8_t ag_num_button_press_received = 0;
 static uint8_t ag_support_custom_commands = 0;
-
+static uint8_t ag_establish_sco = 0;
 static uint8_t hsp_disconnect_rfcomm = 0;
 static uint8_t hsp_establish_audio_connection = 0;
 static uint8_t hsp_release_audio_connection = 0;
@@ -377,6 +378,33 @@ void hsp_ag_stop_ringing(void){
 }
 
 static void hsp_run(void){
+    if (ag_establish_sco && hci_can_send_command_packet_now()){
+        ag_establish_sco = 0;
+        
+        log_info("HSP: sending hci_accept_connection_request.");
+        // remote supported feature eSCO is set if link type is eSCO
+        // eSCO: S4 - max latency == transmission interval = 0x000c == 12 ms, 
+        uint16_t max_latency;
+        uint8_t  retransmission_effort;
+        uint16_t packet_types;
+        
+        if (hci_remote_esco_supported(rfcomm_handle)){
+            max_latency = 0x000c;
+            retransmission_effort = 0x02;
+            packet_types = 0x388;
+        } else {
+            max_latency = 0xffff;
+            retransmission_effort = 0xff;
+            packet_types = 0x003f;
+        }
+        
+        uint16_t sco_voice_setting = hci_get_sco_voice_setting();
+        
+        log_info("HFP: sending hci_accept_connection_request, sco_voice_setting %02x", sco_voice_setting);
+        hci_send_cmd(&hci_accept_synchronous_connection, remote, 8000, 8000, max_latency, 
+                        sco_voice_setting, retransmission_effort, packet_types);
+        return;
+    }
 
     if (ag_send_ok){
         if (!rfcomm_can_send_packet_now(rfcomm_cid)) {
@@ -554,28 +582,28 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
     uint16_t handle;
 
     switch (event) {
+        case HCI_EVENT_CONNECTION_REQUEST:
+            printf("hsp HCI_EVENT_CONNECTION_REQUEST\n");
+            hci_event_connection_request_get_bd_addr(packet, sco_event_addr);
+            ag_establish_sco = 1;
+            break;
         case HCI_EVENT_SYNCHRONOUS_CONNECTION_COMPLETE:{
-            int index = 2;
-            uint8_t status = packet[index++];
-            sco_handle = little_endian_read_16(packet, index);
-            index+=2;
-            bd_addr_t address; 
-            memcpy(address, &packet[index], 6);
-            index+=6;
-            uint8_t link_type = packet[index++];
-            uint8_t transmission_interval = packet[index++];  // measured in slots
-            uint8_t retransmission_interval = packet[index++];// measured in slots
-            uint16_t rx_packet_length = little_endian_read_16(packet, index); // measured in bytes
-            index+=2;
-            uint16_t tx_packet_length = little_endian_read_16(packet, index); // measured in bytes
-            index+=2;
-            uint8_t air_mode = packet[index];
-
+            uint8_t status = hci_event_synchronous_connection_complete_get_status(packet);
             if (status != 0){
                 log_error("(e)SCO Connection failed, status %u", status);
                 emit_event_audio_connected(status, sco_handle);
                 break;
             }
+            
+            hci_event_synchronous_connection_complete_get_bd_addr(packet, event_addr);
+            sco_handle = hci_event_synchronous_connection_complete_get_handle(packet);
+            uint8_t  link_type = hci_event_synchronous_connection_complete_get_link_type(packet);
+            uint8_t  transmission_interval = hci_event_synchronous_connection_complete_get_transmission_interval(packet);  // measured in slots
+            uint8_t  retransmission_interval = hci_event_synchronous_connection_complete_get_retransmission_interval(packet);// measured in slots
+            uint16_t rx_packet_length = hci_event_synchronous_connection_complete_get_rx_packet_length(packet); // measured in bytes
+            uint16_t tx_packet_length = hci_event_synchronous_connection_complete_get_tx_packet_length(packet); // measured in bytes
+            uint8_t  air_mode = hci_event_synchronous_connection_complete_get_air_mode(packet);
+
             switch (link_type){
                 case 0x00:
                     log_info("SCO Connection established.");
@@ -593,7 +621,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             }
             log_info("sco_handle 0x%2x, address %s, transmission_interval %u slots, retransmission_interval %u slots, " 
                  " rx_packet_length %u bytes, tx_packet_length %u bytes, air_mode 0x%2x (0x02 == CVSD)", sco_handle,
-                 bd_addr_to_str(address), transmission_interval, retransmission_interval, rx_packet_length, tx_packet_length, air_mode);
+                 bd_addr_to_str(event_addr), transmission_interval, retransmission_interval, rx_packet_length, tx_packet_length, air_mode);
 
             if (hsp_state == HSP_W4_CONNECTION_ESTABLISHED_TO_SHUTDOWN){
                 hsp_state = HSP_W2_DISCONNECT_SCO;

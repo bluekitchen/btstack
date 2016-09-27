@@ -67,8 +67,9 @@ typedef struct {
  * @param name
  * @param ability_to_reject_call
  * @param suported_features 32-bit bitmap, see HFP_AGSF_* values in hfp.h
+ * @param wide_band_speech supported 
  */
-void hfp_ag_create_sdp_record(uint8_t * service, uint32_t service_record_handle, int rfcomm_channel_nr, const char * name, uint8_t ability_to_reject_call, uint16_t supported_features);;
+void hfp_ag_create_sdp_record(uint8_t * service, uint32_t service_record_handle, int rfcomm_channel_nr, const char * name, uint8_t ability_to_reject_call, uint16_t supported_features, int wide_band_speech);
 
 /**
  * @brief Set up HFP Audio Gateway (AG) device without additional supported features.
@@ -149,7 +150,7 @@ void hfp_ag_establish_service_level_connection(bd_addr_t bd_addr);
  *
  * @param bd_addr Bluetooth address of the HF
  */
-void hfp_ag_release_service_level_connection(bd_addr_t bd_addr);
+void hfp_ag_release_service_level_connection(hci_con_handle_t acl_handle);
 
 /**
  * @brief Establish audio connection.
@@ -157,7 +158,7 @@ void hfp_ag_release_service_level_connection(bd_addr_t bd_addr);
  * HSP_SUBEVENT_AUDIO_CONNECTION_COMPLETE.
  * @param bd_addr Bluetooth address of the HF
  */
-void hfp_ag_establish_audio_connection(bd_addr_t bd_addr);
+void hfp_ag_establish_audio_connection(hci_con_handle_t acl_handle);
 
 /**
  * @brief Release audio connection.
@@ -165,7 +166,7 @@ void hfp_ag_establish_audio_connection(bd_addr_t bd_addr);
  * HSP_SUBEVENT_AUDIO_DISCONNECTION_COMPLETE.
  * @param bd_addr Bluetooth address of the HF
  */
-void hfp_ag_release_audio_connection(bd_addr_t bd_addr);
+void hfp_ag_release_audio_connection(hci_con_handle_t acl_handle);
 
 /**
  * @brief Put the current call on hold, if it exists, and accept incoming call. 
@@ -202,14 +203,14 @@ void hfp_ag_reject_held_incoming_call(void);
  * @param bd_addr Bluetooth address of the HF
  * @param gain Valid range: [0,15]
  */
-void hfp_ag_set_microphone_gain(bd_addr_t bd_addr, int gain);
+void hfp_ag_set_microphone_gain(hci_con_handle_t acl_handle, int gain);
 
 /*
  * @brief Set speaker gain.
  * @param bd_addr Bluetooth address of the HF
  * @param gain Valid range: [0,15]
  */
-void hfp_ag_set_speaker_gain(bd_addr_t bd_addr, int gain);
+void hfp_ag_set_speaker_gain(hci_con_handle_t acl_handle, int gain);
 
 /*
  * @brief Set battery level.
@@ -228,7 +229,7 @@ void hfp_ag_clear_last_dialed_number(void);
  * has previously enabled the "Call Waiting notification" in the AG. 
  * @param bd_addr Bluetooth address of the HF
  */
-void hfp_ag_notify_incoming_call_waiting(bd_addr_t bd_addr);
+void hfp_ag_notify_incoming_call_waiting(hci_con_handle_t acl_handle);
 
 // Voice Recognition
 
@@ -237,20 +238,20 @@ void hfp_ag_notify_incoming_call_waiting(bd_addr_t bd_addr);
  * @param bd_addr Bluetooth address of the HF
  * @param activate
  */
-void hfp_ag_activate_voice_recognition(bd_addr_t bd_addr, int activate);
+void hfp_ag_activate_voice_recognition(hci_con_handle_t acl_handle, int activate);
 
 /*
  * @brief Send a phone number back to the HF.
  * @param bd_addr Bluetooth address of the HF
  * @param phone_number
  */
-void hfp_ag_send_phone_number_for_voice_tag(bd_addr_t bd_addr, const char * phone_number);
+void hfp_ag_send_phone_number_for_voice_tag(hci_con_handle_t acl_handle, const char * phone_number);
 
 /*
  * @brief Reject sending a phone number to the HF.
  * @param bd_addr Bluetooth address of the HF
  */
-void hfp_ag_reject_phone_number_for_voice_tag(bd_addr_t bd_addr);
+void hfp_ag_reject_phone_number_for_voice_tag(hci_con_handle_t acl_handle);
 
 /**
  * @brief Store phone number with initiated call.
@@ -321,7 +322,7 @@ void hfp_ag_set_subcriber_number_information(hfp_phone_number_t * numbers, int n
  * @brief Called by cellular unit after a DTMF code was transmitted, so that the next one can be emitted.
  * @param bd_addr Bluetooth address of the HF 
  */
-void hfp_ag_send_dtmf_code_done(bd_addr_t bd_addr);
+void hfp_ag_send_dtmf_code_done(hci_con_handle_t acl_handle);
 
 /**
  * @brief Report Extended Audio Gateway Error result codes in the AG.
@@ -354,7 +355,7 @@ void hfp_ag_send_dtmf_code_done(bd_addr_t bd_addr);
  * @param bd_addr Bluetooth address of the HF
  * @param error
  */
-void hfp_ag_report_extended_audio_gateway_error_result_code(bd_addr_t bd_addr, hfp_cme_error_t error);
+void hfp_ag_report_extended_audio_gateway_error_result_code(hci_con_handle_t acl_handle, hfp_cme_error_t error);
 
 /* API_END */
 
