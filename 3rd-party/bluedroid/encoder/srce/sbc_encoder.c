@@ -301,7 +301,7 @@ void SBC_Encoder_Init(SBC_ENC_PARAMS *pstrEncParams)
     UINT16 s16SamplingFreq; /*temp variable to store smpling freq*/
     SINT16 s16Bitpool;      /*to store bit pool value*/
     // SINT16 s16BitRate;      /*to store bitrate*/
-    SINT16 s16FrameLen;     /*to store frame length*/
+    // SINT16 s16FrameLen;     /*to store frame length*/
     UINT16 HeaderParams;
 
     pstrEncParams->u8NumPacketToEncode = 1; /* default is one for retrocompatibility purpose */
@@ -312,15 +312,17 @@ void SBC_Encoder_Init(SBC_ENC_PARAMS *pstrEncParams)
     else
         pstrEncParams->s16NumOfChannels = 2;
 
+    /* BK4BTSTACK_CHANGE START */
     /* Bit pool calculation */
-    if (pstrEncParams->s16SamplingFreq == SBC_sf16000)
-        s16SamplingFreq = 16000;
-    else if (pstrEncParams->s16SamplingFreq == SBC_sf32000)
-        s16SamplingFreq = 32000;
-    else if (pstrEncParams->s16SamplingFreq == SBC_sf44100)
-        s16SamplingFreq = 44100;
-    else
-        s16SamplingFreq = 48000;
+    // if (pstrEncParams->s16SamplingFreq == SBC_sf16000)
+    //     s16SamplingFreq = 16000;
+    // else if (pstrEncParams->s16SamplingFreq == SBC_sf32000)
+    //     s16SamplingFreq = 32000;
+    // else if (pstrEncParams->s16SamplingFreq == SBC_sf44100)
+    //     s16SamplingFreq = 44100;
+    // else
+    //     s16SamplingFreq = 48000;
+    /* BK4BTSTACK_CHANGE END */
 
     if ( (pstrEncParams->s16ChannelMode == SBC_JOINT_STEREO)
         ||  (pstrEncParams->s16ChannelMode == SBC_STEREO) )
@@ -333,15 +335,14 @@ void SBC_Encoder_Init(SBC_ENC_PARAMS *pstrEncParams)
         //     + ( (pstrEncParams->s16ChannelMode - 2) *
         //     pstrEncParams->s16NumOfSubBands )   )
         //     / pstrEncParams->s16NumOfBlocks) );
+        
         s16Bitpool = pstrEncParams->s16BitPool;
-        /* BK4BTSTACK_CHANGE END */
-        s16FrameLen = 4 + (4*pstrEncParams->s16NumOfSubBands*
-            pstrEncParams->s16NumOfChannels)/8
-            + ( ((pstrEncParams->s16ChannelMode - 2) *
-            pstrEncParams->s16NumOfSubBands)
-            + (pstrEncParams->s16NumOfBlocks * s16Bitpool) ) / 8;
 
-        /* BK4BTSTACK_CHANGE START */
+        // s16FrameLen = 4 + (4*pstrEncParams->s16NumOfSubBands*
+        //     pstrEncParams->s16NumOfChannels)/8
+        //     + ( ((pstrEncParams->s16ChannelMode - 2) *
+        //     pstrEncParams->s16NumOfSubBands)
+        //     + (pstrEncParams->s16NumOfBlocks * s16Bitpool) ) / 8;
         // s16BitRate = (8 * s16FrameLen * s16SamplingFreq)
         //     / (pstrEncParams->s16NumOfSubBands *
         //     pstrEncParams->s16NumOfBlocks * 1000);
