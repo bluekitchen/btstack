@@ -67,6 +67,8 @@ extern "C" {
 #include "classic/btstack_link_key_db_memory.h"
 #include "classic/rfcomm.h"
 #include "classic/sdp_server.h"
+#include "../test/avdtp/avdtp_sink.h"
+#include "../test/avdtp/avdtp_source.h"
 
 // BLE
 #ifdef ENABLE_BLE

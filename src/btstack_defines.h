@@ -834,6 +834,7 @@ typedef uint8_t sm_key_t[16];
 #define HCI_EVENT_HSP_META                                 0xE8
 #define HCI_EVENT_HFP_META                                 0xE9
 #define HCI_EVENT_ANCS_META                                0xEA
+#define HCI_EVENT_AVDTP_META                               0xEA
 
 // Potential other meta groups
  // #define HCI_EVENT_BNEP_META                                0xxx
@@ -916,7 +917,7 @@ typedef uint8_t sm_key_t[16];
 /** HFP Subevent */
 
 /**
- * @format 11HB1
+ * @format 11HB
  * @param subevent_code
  * @param status 0 == OK
  * @param con_handle
@@ -931,7 +932,7 @@ typedef uint8_t sm_key_t[16];
 #define HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED     0x02
 
 /**
- * @format 11HB11
+ * @format 11HB1
  * @param subevent_code
  * @param status 0 == OK
  * @param handle
@@ -1125,5 +1126,23 @@ typedef uint8_t sm_key_t[16];
  * @param handle
  */ 
 #define ANCS_SUBEVENT_CLIENT_DISCONNECTED                           0xF2
+
+
+/** AVDTP Subevent */
+
+// /**
+//  * @format 11HB
+//  * @param subevent_code
+//  * @param status 0 == OK
+//  * @param con_handle
+//  * @param bd_addr
+//  */
+// #define AVDTP_SUBEVENT_CONNECTION_ESTABLISHED  0x01
+
+// /**
+//  * @format 1
+//  * @param subevent_code
+//  */
+// #define AVDTP_SUBEVENT_CONNECTION_RELEASED     0x02
 
 #endif
