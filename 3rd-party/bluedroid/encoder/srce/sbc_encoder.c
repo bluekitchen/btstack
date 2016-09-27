@@ -129,8 +129,8 @@ void SBC_Encoder(SBC_ENC_PARAMS *pstrEncParams)
     UINT32 u32CountSum,u32CountDiff;
     SINT32 *pSum, *pDiff;
 #endif
-    UINT8  *pu8;
     /* BK4BTSTACK_CHANGE START */
+    // UINT8  *pu8;
     // tSBC_FR_CB  *p_cur, *p_last;
     // UINT32       idx, tmp, tmp2;
     /* BK4BTSTACK_CHANGE STOP */
@@ -267,7 +267,7 @@ void SBC_Encoder(SBC_ENC_PARAMS *pstrEncParams)
             sbc_enc_bit_alloc_mono(pstrEncParams);
 
         /* save the beginning of the frame. pu8NextPacket is modified in EncPacking() */
-        pu8 = pstrEncParams->pu8NextPacket;
+        // pu8 = pstrEncParams->pu8NextPacket;
         /* Quantize the encoded audio */
         EncPacking(pstrEncParams);
 
@@ -300,7 +300,7 @@ void SBC_Encoder_Init(SBC_ENC_PARAMS *pstrEncParams)
 {
     UINT16 s16SamplingFreq; /*temp variable to store smpling freq*/
     SINT16 s16Bitpool;      /*to store bit pool value*/
-    SINT16 s16BitRate;      /*to store bitrate*/
+    // SINT16 s16BitRate;      /*to store bitrate*/
     SINT16 s16FrameLen;     /*to store frame length*/
     UINT16 HeaderParams;
 
@@ -341,11 +341,11 @@ void SBC_Encoder_Init(SBC_ENC_PARAMS *pstrEncParams)
             pstrEncParams->s16NumOfSubBands)
             + (pstrEncParams->s16NumOfBlocks * s16Bitpool) ) / 8;
 
-        s16BitRate = (8 * s16FrameLen * s16SamplingFreq)
-            / (pstrEncParams->s16NumOfSubBands *
-            pstrEncParams->s16NumOfBlocks * 1000);
-
         /* BK4BTSTACK_CHANGE START */
+        // s16BitRate = (8 * s16FrameLen * s16SamplingFreq)
+        //     / (pstrEncParams->s16NumOfSubBands *
+        //     pstrEncParams->s16NumOfBlocks * 1000);
+
         // if (s16BitRate > pstrEncParams->u16BitRate)
         //     s16Bitpool--;
         /* BK4BTSTACK_CHANGE END */
