@@ -54,6 +54,8 @@
 extern "C" {
 #endif
 
+#define MAX_NUM_SEPS 10
+
 typedef enum {
     AVDTP_SINK_IDLE,
     AVDTP_SINK_W4_L2CAP_CONNECTED,
@@ -77,13 +79,20 @@ typedef struct avdtp_sink_connection {
     hci_con_handle_t acl_handle;
     uint16_t l2cap_cid;
 
-    avdtp_sink_state_t state;
+    avdtp_sink_state_t local_state;
+    avdtp_sink_state_t remote_state;
 
-    avdtp_sep_t remote_seps[5];
+    avdtp_sep_t remote_seps[MAX_NUM_SEPS];
     uint8_t remote_seps_num;
     uint8_t remote_sep_index_get_capabilities;
     
+    uint8_t local_transaction_label;
+    uint8_t remote_transaction_label;
+    
     uint8_t release_l2cap_connection;
+
+    avdtp_capabilities_t local_capabilities;
+    avdtp_capabilities_t remote_capabilities;
 } avdtp_sink_connection_t;
 
 
@@ -103,6 +112,8 @@ void a2dp_sink_create_sdp_record(uint8_t * service,  uint32_t service_record_han
  * @brief Set up AVDTP Sink device.
  */
 void avdtp_sink_init(void);
+
+void avdtp_sink_register_sep(avdtp_sep_type_t sep_type, avdtp_media_type_t media_type);
 
 /**
  * @brief Register callback for the AVDTP Sink client. 

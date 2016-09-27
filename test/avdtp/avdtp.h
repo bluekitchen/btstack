@@ -152,6 +152,66 @@ typedef struct {
     avdtp_sep_type_t   type;       // 1 bit, 0 - SRC, 1 - SNK
 } avdtp_sep_t;
 
+typedef enum {
+    AVDTP_MEDIA_TRANSPORT = 0X01,
+    AVDTP_REPORTING,
+    AVDTP_RECOVERY,
+    AVDTP_CONTENT_PROTECTION,
+    AVDTP_HEADER_COMPRESSION,
+    AVDTP_MULTIPLEXING,
+    AVDTP_MEDIA_CODEC,
+    AVDTP_DELAY_REPORTING
+} avdtp_service_category_t;
+
+typedef struct {
+    uint8_t recovery_type;                  // 0x01 = RFC2733
+    uint8_t maximum_recovery_window_size;   // 0x01 to 0x18, for a Transport Packet
+    uint8_t maximum_number_media_packets;   // 0x01 to 0x18, The maximum number of media packets a specific parity code covers
+} avdtp_recovery_capabilities_t;            
+
+typedef struct {
+    uint8_t media_type;                     // upper 4 bits, 4 lower are reserved
+    uint8_t media_codec_type;               // 
+    //uint8_t Media Codec Specific Information Elements
+} adtvp_media_codec_capabilities_t;
+
+typedef struct {
+    uint8_t CP_TYPE_LSB;
+    uint8_t CP_TYPE_MSB;
+    //uint8_t CP_Type Specific Value
+} adtvp_content_protection_t;
+
+typedef struct{
+    uint8_t back_ch;  // byte0 - bit 8; 0=Not Available/Not Used; 1=Available/In Use
+    uint8_t media;    // byte0 - bit 7
+    uint8_t recovery; // byte0 - bit 6
+} avdtp_header_compression_capabilities_t;
+
+typedef struct{
+    uint8_t fragmentation; // byte0 - bit 8, Allow Adaptation Layer Fragmentation, 0 no, 1 yes
+    // Request/indicate value of the Transport Session Identifier for a media, reporting, or recovery transport sessions, respectively
+    uint8_t transport_identifiers_num;
+    uint8_t transport_session_identifiers[4];   // byte1, upper 5bits, 0x01 to 0x1E
+    // Request/indicate value for TCID for a media, reporting, or transport session
+    uint8_t transport_c_identifiers[4];         // byte2 0x01 to 0x1E 
+} avdtp_multiplexing_mode_capabilities_t;
+
+typedef struct{
+    uint8_t media_transport_catagory;
+    uint8_t reporting_catagory;
+    uint8_t recovery_catagory;
+    uint8_t content_protection_catagory;
+    uint8_t header_compression_catagory;
+    uint8_t multiplexing_catagory;
+    uint8_t media_codec_catagory;
+    uint8_t delay_reportin_catagory;
+
+    avdtp_recovery_capabilities_t recovery_caps;
+    adtvp_media_codec_capabilities_t media_codec_caps;
+    adtvp_content_protection_t content_protection_caps;
+    avdtp_header_compression_capabilities_t header_compression_caps;
+    avdtp_multiplexing_mode_capabilities_t multiplexing_mode_caps;
+} avdtp_capabilities_t;
 
 #if defined __cplusplus
 }
