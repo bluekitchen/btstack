@@ -145,13 +145,6 @@ typedef enum{
     AVDTP_SINK
 } avdtp_sep_type_t;
 
-typedef struct {
-    uint8_t seid;           // 0x01 – 0x3E, 6bit
-    uint8_t in_use;         // 1 bit, 0 - not in use, 1 - in use
-    avdtp_media_type_t media_type;     // 4 bit
-    avdtp_sep_type_t   type;       // 1 bit, 0 - SRC, 1 - SNK
-} avdtp_sep_t;
-
 typedef enum {
     AVDTP_MEDIA_TRANSPORT = 0X01,
     AVDTP_REPORTING,
@@ -197,21 +190,23 @@ typedef struct{
 } avdtp_multiplexing_mode_capabilities_t;
 
 typedef struct{
-    uint8_t media_transport_catagory;
-    uint8_t reporting_catagory;
-    uint8_t recovery_catagory;
-    uint8_t content_protection_catagory;
-    uint8_t header_compression_catagory;
-    uint8_t multiplexing_catagory;
-    uint8_t media_codec_catagory;
-    uint8_t delay_reportin_catagory;
-
     avdtp_recovery_capabilities_t recovery_caps;
     adtvp_media_codec_capabilities_t media_codec_caps;
     adtvp_content_protection_t content_protection_caps;
     avdtp_header_compression_capabilities_t header_compression_caps;
     avdtp_multiplexing_mode_capabilities_t multiplexing_mode_caps;
 } avdtp_capabilities_t;
+
+typedef struct {
+    uint8_t seid;           // 0x01 – 0x3E, 6bit
+    uint8_t in_use;         // 1 bit, 0 - not in use, 1 - in use
+    avdtp_media_type_t media_type;     // 4 bit
+    avdtp_sep_type_t   type;       // 1 bit, 0 - SRC, 1 - SNK
+
+    uint16_t registered_service_categories;
+    avdtp_capabilities_t capabilities;
+} avdtp_sep_t;
+
 
 #if defined __cplusplus
 }

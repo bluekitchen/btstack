@@ -147,8 +147,8 @@ int btstack_main(int argc, const char * argv[]){
     // Initialize AVDTP Sink
     avdtp_sink_init();
     avdtp_sink_register_packet_handler(&packet_handler);
-    avdtp_sink_register_sep(AVDTP_SINK, AVDTP_AUDIO);
-    
+    avdtp_sink_register_stream_end_point(AVDTP_SINK, AVDTP_AUDIO);
+
     // Initialize SDP 
     sdp_init();
     memset(sdp_avdtp_sink_service_buffer, 0, sizeof(sdp_avdtp_sink_service_buffer));

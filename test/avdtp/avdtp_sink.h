@@ -91,8 +91,8 @@ typedef struct avdtp_sink_connection {
     
     uint8_t release_l2cap_connection;
 
-    avdtp_capabilities_t local_capabilities;
     avdtp_capabilities_t remote_capabilities;
+    uint8_t requested_local_seid;
 } avdtp_sink_connection_t;
 
 
@@ -113,7 +113,17 @@ void a2dp_sink_create_sdp_record(uint8_t * service,  uint32_t service_record_han
  */
 void avdtp_sink_init(void);
 
-void avdtp_sink_register_sep(avdtp_sep_type_t sep_type, avdtp_media_type_t media_type);
+// returns sep_id
+uint8_t avdtp_sink_register_stream_end_point(avdtp_sep_type_t sep_type, avdtp_media_type_t media_type);
+
+void avdtp_sink_register_media_transport_category(uint8_t seid);
+void avdtp_sink_register_reporting_category(uint8_t seid);
+void avdtp_sink_register_delay_reporting_category(uint8_t seid);
+void avdtp_sink_register_recovery_category(uint8_t seid, uint8_t maximum_recovery_window_size, uint8_t maximum_number_media_packets);
+void avdtp_sink_register_content_protection_category(uint8_t seid, uint8_t cp_type_lsb,  uint8_t cp_type_msb);
+void avdtp_sink_register_header_compression_category(uint8_t seid, uint8_t back_ch, uint8_t media, uint8_t recovery);
+void avdtp_sink_register_media_codec_category(uint8_t seid, uint8_t media_type, uint8_t media_codec_type);
+void avdtp_sink_register_multiplexing_category(uint8_t seid, uint8_t fragmentation, uint8_t transport_identifiers_num, uint8_t * transport_session_identifiers, uint8_t * transport_c_identifiers);
 
 /**
  * @brief Register callback for the AVDTP Sink client. 

@@ -52,7 +52,7 @@ static const char * default_avdtp_sink_service_provider_name = "BTstack AVDTP Si
 static btstack_linked_list_t avdtp_sink_connections = NULL;
 
 static avdtp_sep_t local_seps[MAX_NUM_SEPS];
-static int local_seps_num = 0;
+static uint8_t local_seps_num = 0;
 
 static btstack_packet_handler_t avdtp_sink_callback;
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
@@ -137,13 +137,14 @@ void a2dp_sink_create_sdp_record(uint8_t * service,  uint32_t service_record_han
     de_add_number(service, DE_UINT, DE_SIZE_16, supported_features);
 }
 
-void avdtp_sink_register_sep(avdtp_sep_type_t sep_type, avdtp_media_type_t media_type){
+uint8_t avdtp_sink_register_stream_end_point(avdtp_sep_type_t sep_type, avdtp_media_type_t media_type){
     if (local_seps_num >= MAX_NUM_SEPS){
         log_error("avdtp_sink_register_sep: excedeed max sep number %d", MAX_NUM_SEPS);
-        return;
+        return 255;
     }
+    uint8_t seid = local_seps_num;
     avdtp_sep_t entry = {
-        local_seps_num,
+        seid,
         0,
         media_type,
         sep_type
@@ -151,6 +152,84 @@ void avdtp_sink_register_sep(avdtp_sep_type_t sep_type, avdtp_media_type_t media
 
     local_seps[local_seps_num] = entry;
     local_seps_num++;
+    return seid;
+}
+
+static int get_bit16(uint16_t bitmap, int position){
+    return (bitmap >> position) & 1;
+}
+
+static uint8_t store_bit16(uint16_t bitmap, int position, uint8_t value){
+    if (value){
+        bitmap |= 1 << position;
+    } else {
+        bitmap &= ~ (1 << position);
+    }
+    return bitmap;
+}
+
+void avdtp_sink_register_media_transport_category(uint8_t seid){
+    if (seid >= local_seps_num){
+        log_error("invalid stream end point identifier");
+        return;
+    }
+    store_bit16(local_seps[seid].registered_service_categories, AVDTP_MEDIA_TRANSPORT, 1);
+}
+
+void avdtp_sink_register_reporting_category(uint8_t seid){
+    if (seid >= local_seps_num){
+        log_error("invalid stream end point identifier");
+        return;
+    }
+    store_bit16(local_seps[seid].registered_service_categories, AVDTP_REPORTING, 1);
+}
+
+void avdtp_sink_register_delay_reporting_category(uint8_t seid){
+    if (seid >= local_seps_num){
+        log_error("invalid stream end point identifier");
+        return;
+    }
+    store_bit16(local_seps[seid].registered_service_categories, AVDTP_DELAY_REPORTING, 1);
+}
+
+void avdtp_sink_register_recovery_category(uint8_t seid, uint8_t maximum_recovery_window_size, uint8_t maximum_number_media_packets){
+    if (seid >= local_seps_num){
+        log_error("invalid stream end point identifier");
+        return;
+    }
+    store_bit16(local_seps[seid].registered_service_categories, AVDTP_RECOVERY, 1);
+}
+
+void avdtp_sink_register_content_protection_category(uint8_t seid, uint8_t cp_type_lsb,  uint8_t cp_type_msb){
+    if (seid >= local_seps_num){
+        log_error("invalid stream end point identifier");
+        return;
+    }
+    store_bit16(local_seps[seid].registered_service_categories, AVDTP_CONTENT_PROTECTION, 1);
+}
+
+void avdtp_sink_register_header_compression_category(uint8_t seid, uint8_t back_ch, uint8_t media, uint8_t recovery){
+    if (seid >= local_seps_num){
+        log_error("invalid stream end point identifier");
+        return;
+    }
+    store_bit16(local_seps[seid].registered_service_categories, AVDTP_HEADER_COMPRESSION, 1);
+}
+
+void avdtp_sink_register_media_codec_category(uint8_t seid, uint8_t media_type, uint8_t media_codec_type){
+    if (seid >= local_seps_num){
+        log_error("invalid stream end point identifier");
+        return;
+    }
+    store_bit16(local_seps[seid].registered_service_categories, AVDTP_MEDIA_CODEC, 1);
+}
+
+void avdtp_sink_register_multiplexing_category(uint8_t seid, uint8_t fragmentation, uint8_t transport_identifiers_num, uint8_t * transport_session_identifiers, uint8_t * transport_c_identifiers){
+    if (seid >= local_seps_num){
+        log_error("invalid stream end point identifier");
+        return;
+    }
+    store_bit16(local_seps[seid].registered_service_categories, AVDTP_MULTIPLEXING, 1);
 }
 
 static void audio_sink_generate_next_transaction_label(avdtp_sink_connection_t * connection){
@@ -200,14 +279,14 @@ static inline uint8_t avdtp_header(uint8_t tr_label, avdtp_packet_type_t packet_
     return (tr_label<<4) | ((uint8_t)packet_type<<2) | (uint8_t)msg_type;
 }
 
-static int avdtp_sink_send_discover_cmd(uint16_t cid, uint8_t transaction_label){
+static int avdtp_sink_send_signaling_cmd(uint16_t cid, avdtp_signal_identifier_t identifier, uint8_t transaction_label){
     uint8_t command[2];
     command[0] = avdtp_header(transaction_label, AVDTP_SINGLE_PACKET, AVDTP_CMD_MSG);
-    command[1] = (uint8_t)AVDTP_DISCOVER;
+    command[1] = (uint8_t)identifier;
     return l2cap_send(cid, command, sizeof(command));
 }
 
-static int avdtp_sink_send_seps_cmd(uint16_t cid, uint8_t transaction_label, avdtp_sep_t * seps, int seps_num){
+static int avdtp_sink_send_seps_response(uint16_t cid, uint8_t transaction_label, avdtp_sep_t * seps, int seps_num){
     uint8_t command[2+2*MAX_NUM_SEPS];
     int pos = 0;
     command[pos++] = avdtp_header(transaction_label, AVDTP_SINGLE_PACKET, AVDTP_RESPONSE_ACCEPT_MSG);
@@ -220,12 +299,45 @@ static int avdtp_sink_send_seps_cmd(uint16_t cid, uint8_t transaction_label, avd
     return l2cap_send(cid, command, pos);
 }
 
-static int avdtp_sink_send_capabilities_cmd(uint16_t cid, uint8_t transaction_label, avdtp_capabilities_t capabilities){
+static int avdtp_sink_send_get_capabilities_cmd(uint16_t cid, uint8_t sep_id){
     return 0;
 }
 
-static int avdtp_sink_send_get_capabilities_cmd(uint16_t cid, uint8_t sep_id){
-    return 0;
+static int avdtp_pack_service_category(uint8_t * buffer, int size, avdtp_sep_t sep, avdtp_service_category_t category){
+    int pos = 0;
+    switch(category){
+        case AVDTP_MEDIA_TRANSPORT:
+            break;
+        case AVDTP_REPORTING:
+            break;
+        case AVDTP_RECOVERY:
+            break;
+        case AVDTP_CONTENT_PROTECTION:
+            break;
+        case AVDTP_HEADER_COMPRESSION:
+            break;
+        case AVDTP_MULTIPLEXING:
+            break;
+        case AVDTP_MEDIA_CODEC:
+            break;
+        case AVDTP_DELAY_REPORTING:
+            break;
+    }
+    return pos;
+}
+
+static int avdtp_sink_send_capabilities_response(uint16_t cid, uint8_t transaction_label, avdtp_sep_t sep){
+    uint8_t command[2+2*MAX_NUM_SEPS];
+    int pos = 0;
+    command[pos++] = avdtp_header(transaction_label, AVDTP_SINGLE_PACKET, AVDTP_RESPONSE_ACCEPT_MSG);
+    command[pos++] = (uint8_t)AVDTP_GET_CAPABILITIES;
+    int i = 0;
+    for (i = 1; i < 9; i++){
+        if (get_bit16(sep.registered_service_categories, i)){
+            pos += avdtp_pack_service_category(command+pos, sizeof(command)-pos, sep, (avdtp_service_category_t)i);
+        }
+    }
+    return l2cap_send(cid, command, pos);
 }
 
 static void handle_l2cap_data_packet(avdtp_sink_connection_t * connection, uint8_t *packet, uint16_t size){
@@ -253,7 +365,9 @@ static void handle_l2cap_data_packet(avdtp_sink_connection_t * connection, uint8
                 l2cap_request_can_send_now_event(connection->l2cap_cid);
                 break;
             case AVDTP_GET_CAPABILITIES:
+                sep.seid = packet[2] >> 2;
                 connection->remote_transaction_label = tr_label;
+                connection->requested_local_seid = sep.seid;
                 connection->remote_state = AVDTP_SINK_W2_GET_CAPABILITIES;
                 l2cap_request_can_send_now_event(connection->l2cap_cid);
                 break;
@@ -432,11 +546,11 @@ static void avdtp_sink_run_for_connection(avdtp_sink_connection_t *connection){
     switch (connection->remote_state){
         case AVDTP_SINK_W2_DISCOVER_SEPS:
             connection->local_state = AVDTP_SINK_W4_SEPS_DISCOVERED;
-            avdtp_sink_send_seps_cmd(connection->l2cap_cid, connection->remote_transaction_label, local_seps, local_seps_num);
+            avdtp_sink_send_seps_response(connection->l2cap_cid, connection->remote_transaction_label, local_seps, local_seps_num);
             return;
         case AVDTP_SINK_W2_GET_CAPABILITIES:
             connection->local_state = AVDTP_SINK_W4_CAPABILITIES;
-            avdtp_sink_send_capabilities_cmd(connection->l2cap_cid, connection->remote_transaction_label, connection->local_capabilities);
+            avdtp_sink_send_capabilities_response(connection->l2cap_cid, connection->remote_transaction_label, local_seps[connection->requested_local_seid]);
             break;
         default:
             break;
@@ -445,7 +559,7 @@ static void avdtp_sink_run_for_connection(avdtp_sink_connection_t *connection){
     switch (connection->local_state){
         case AVDTP_SINK_W2_DISCOVER_SEPS:
             connection->local_state = AVDTP_SINK_W4_SEPS_DISCOVERED;
-            avdtp_sink_send_discover_cmd(connection->l2cap_cid, connection->local_transaction_label);
+            avdtp_sink_send_signaling_cmd(connection->l2cap_cid, AVDTP_DISCOVER, connection->local_transaction_label);
             return;
         case AVDTP_SINK_W2_GET_CAPABILITIES:
             connection->local_state = AVDTP_SINK_W4_CAPABILITIES;
