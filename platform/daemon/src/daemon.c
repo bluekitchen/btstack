@@ -186,8 +186,12 @@ static void rfcomm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t
 
 
 // MARK: globals
-static const hci_transport_t * transport;
+
+#ifdef HAVE_TRANSPORT_H4
 static hci_transport_config_uart_t hci_transport_config_uart;
+#endif
+
+static const hci_transport_t * transport;
 static btstack_timer_source_t timeout;
 static uint8_t timeout_active = 0;
 static int power_management_sleep = 0;
