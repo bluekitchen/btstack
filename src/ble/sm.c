@@ -1919,6 +1919,20 @@ static void sm_run(void){
                 sm_connection->sm_engine_state = SM_RESPONDER_IDLE;
                 hci_send_cmd(&hci_le_long_term_key_negative_reply, sm_connection->sm_handle);
                 return;
+
+#ifdef ENABLE_LE_SECURE_CONNECTIONS
+            case SM_SC_RECEIVED_LTK_REQUEST:
+                switch (sm_connection->sm_irk_lookup_state){
+                    case IRK_LOOKUP_FAILED:
+                        log_info("LTK Request: ediv & random are empty, but no stored LTK (IRK Lookup Failed)");
+                        sm_connection->sm_engine_state = SM_RESPONDER_IDLE;
+                        hci_send_cmd(&hci_le_long_term_key_negative_reply, sm_connection->sm_handle);
+                        return;
+                    default:
+                        break;
+                }
+                break;
+#endif
             default:
                 break;
         }
@@ -2000,12 +2014,10 @@ static void sm_run(void){
                                 break;
                             }
                             log_info("LTK Request: ediv & random are empty, but no stored LTK (IRK Lookup Succeeded)");
-                            sm_connection->sm_engine_state = SM_SC_SEND_LTK_REQUESTED_NEGATIVE_REPLY;
-                            break;
-                        case IRK_LOOKUP_FAILED:
-                            log_info("LTK Request: ediv & random are empty, but no stored LTK (IRK Lookup Failed)");
-                            sm_connection->sm_engine_state = SM_SC_SEND_LTK_REQUESTED_NEGATIVE_REPLY;
-                            break;
+                            sm_connection->sm_engine_state = SM_RESPONDER_IDLE;
+                            hci_send_cmd(&hci_le_long_term_key_negative_reply, sm_connection->sm_handle);
+                            // don't lock setup context yet
+                            return;
                         default:
                             // just wait until IRK lookup is completed
                             // don't lock setup context yet
@@ -2069,11 +2081,6 @@ static void sm_run(void){
 
             // responding state
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
-            case SM_SC_SEND_LTK_REQUESTED_NEGATIVE_REPLY:
-                connection->sm_engine_state = SM_RESPONDER_IDLE;
-                hci_send_cmd(&hci_le_long_term_key_negative_reply, connection->sm_handle);
-                sm_done_for_handle(connection->sm_handle);
-                return;
             case SM_SC_W2_GET_RANDOM_A:
                 sm_random_start(connection);
                 connection->sm_engine_state = SM_SC_W4_GET_RANDOM_A;
