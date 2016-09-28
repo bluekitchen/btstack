@@ -1908,6 +1908,21 @@ static void sm_run(void){
         }
     }
 
+    // handle basic actions that don't requires the full context
+    hci_connections_get_iterator(&it);
+    while(!sm_active_connection && btstack_linked_list_iterator_has_next(&it)){
+        hci_connection_t * hci_connection = (hci_connection_t *) btstack_linked_list_iterator_next(&it);
+        sm_connection_t  * sm_connection = &hci_connection->sm_connection;
+        switch(sm_connection->sm_engine_state){
+            // responder side
+            case SM_RESPONDER_PH0_SEND_LTK_REQUESTED_NEGATIVE_REPLY:
+                sm_connection->sm_engine_state = SM_RESPONDER_IDLE;
+                hci_send_cmd(&hci_le_long_term_key_negative_reply, sm_connection->sm_handle);
+                return;
+            default:
+                break;
+        }
+    }
 
     // 
     // active connection handling
@@ -1976,6 +1991,7 @@ static void sm_run(void){
                     switch (sm_connection->sm_irk_lookup_state){
                         case IRK_LOOKUP_SUCCEEDED:
                             // assuming Secure Connection, we have a stored LTK and the EDIV/RAND are null
+                            // start using context by loading security info
                             sm_reset_setup();
                             sm_load_security_info(sm_connection);
                             if (setup->sm_peer_ediv == 0 && sm_is_null_random(setup->sm_peer_rand) && !sm_is_null_key(setup->sm_peer_ltk)){
@@ -1984,15 +2000,11 @@ static void sm_run(void){
                                 break;
                             }
                             log_info("LTK Request: ediv & random are empty, but no stored LTK (IRK Lookup Succeeded)");
-                            sm_connection->sm_engine_state = SM_RESPONDER_PH0_SEND_LTK_REQUESTED_NEGATIVE_REPLY;
-                            // don't lock setup context yet
-                            done = 0;
+                            sm_connection->sm_engine_state = SM_SC_SEND_LTK_REQUESTED_NEGATIVE_REPLY;
                             break;
                         case IRK_LOOKUP_FAILED:
                             log_info("LTK Request: ediv & random are empty, but no stored LTK (IRK Lookup Failed)");
-                            sm_connection->sm_engine_state = SM_RESPONDER_PH0_SEND_LTK_REQUESTED_NEGATIVE_REPLY;
-                            // don't lock setup context yet
-                            done = 0;
+                            sm_connection->sm_engine_state = SM_SC_SEND_LTK_REQUESTED_NEGATIVE_REPLY;
                             break;
                         default:
                             // just wait until IRK lookup is completed
@@ -2042,7 +2054,6 @@ static void sm_run(void){
 
         log_info("sm_run: state %u", connection->sm_engine_state);
 
-        // responding state
         switch (connection->sm_engine_state){
 
             // general
@@ -2056,7 +2067,13 @@ static void sm_run(void){
                 break;
             }
 
+            // responding state
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
+            case SM_SC_SEND_LTK_REQUESTED_NEGATIVE_REPLY:
+                connection->sm_engine_state = SM_RESPONDER_IDLE;
+                hci_send_cmd(&hci_le_long_term_key_negative_reply, connection->sm_handle);
+                sm_done_for_handle(connection->sm_handle);
+                return;
             case SM_SC_W2_GET_RANDOM_A:
                 sm_random_start(connection);
                 connection->sm_engine_state = SM_SC_W4_GET_RANDOM_A;
@@ -2115,8 +2132,8 @@ static void sm_run(void){
                 connection->sm_engine_state = SM_SC_W4_CALCULATE_H6_BR_EDR_LINK_KEY;
                 h6_calculate_br_edr_link_key(connection);
                 break;
-
 #endif
+
             // initiator side
             case SM_INITIATOR_PH0_SEND_START_ENCRYPTION: {
                 sm_key_t peer_ltk_flipped;
@@ -2136,14 +2153,8 @@ static void sm_run(void){
                 sm_timeout_reset(connection);
                 break;
 
-            // responder side
-            case SM_RESPONDER_PH0_SEND_LTK_REQUESTED_NEGATIVE_REPLY:
-                connection->sm_engine_state = SM_RESPONDER_IDLE;
-                hci_send_cmd(&hci_le_long_term_key_negative_reply, connection->sm_handle);
-                sm_done_for_handle(connection->sm_handle);
-                return;
-
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
+
             case SM_SC_SEND_PUBLIC_KEY_COMMAND: {
                 uint8_t buffer[65];
                 buffer[0] = SM_CODE_PAIRING_PUBLIC_KEY;
