@@ -170,7 +170,7 @@ sm_pairing_peripheral: sm_pairing_peripheral.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_O
 	${CC} $(filter-out sm_pairing_peripheral.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
 
 sm_pairing_central: ${CORE_OBJ} ${COMMON_OBJ} ${SM_REAL_OBJ} ad_parser.o sm_pairing_central.o 
-	${CC} ${CFLAGS} ${LDFLAGS} $^ -o $@
+	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 le_streamer: le_streamer.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_REAL_OBJ} le_streamer.c 
 	${CC} $(filter-out le_streamer.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
