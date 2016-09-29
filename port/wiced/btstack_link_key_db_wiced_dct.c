@@ -131,9 +131,10 @@ static int link_key_find_free_entry(void){
 	for (i=0;i<NVM_NUM_LINK_KEYS;i++){
 		link_key_read(i, &item);
 		if (item.magic != LINK_KEY_MAGIC) return i;
-		if ((lowest_index != -1) && (item.seq_nr < seq_nr)) continue;
-		lowest_index = i;
-		seq_nr= item.seq_nr;
+		if ((lowest_index < 0) || (item.seq_nr < seq_nr)){
+			lowest_index = i;
+			seq_nr= item.seq_nr;
+		}
 	}
 	return lowest_index;
 }
