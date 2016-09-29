@@ -49,7 +49,7 @@
 
 #include "btstack_config.h"
 
-#include "ble/ad_parser.h"
+#include "ad_parser.h"
 #include "ble/att_db.h"
 #include "ble/att_server.h"
 #include "ble/le_device_db.h"
