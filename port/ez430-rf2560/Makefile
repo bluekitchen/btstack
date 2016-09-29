@@ -134,7 +134,7 @@ spp_counter.out: ${CORE_OBJ} ${COMMON_OBJ} ${SPP_OBJ} ${CC2560B} spp_counter.o s
 spp_flowcontrol.out: ${CORE_OBJ} ${COMMON_OBJ} ${SPP_OBJ} ${CC2560B} spp_flowcontrol.o sdp.o
 	${CC} $^ ${LDFLAGS} -o $@
 
-gap_inquiry.out: ${CORE_OBJ} ${COMMON_OBJ} ${SPP_OBJ} ${CC2560B} gap_inquiry.o
+gap_inquiry.out: ${CORE_OBJ} ${COMMON_OBJ} ${SPP_OBJ} ${CC2560B} ad_parser.o gap_inquiry.o
 	${CC} $^ ${LDFLAGS} -o $@
 
 sdp_rfcomm_query.out: ${CORE_OBJ} ${COMMON_OBJ} ${SPP_OBJ} ${SDP_CLIENT} ${CC2560B} sdp_rfcomm_query.o
