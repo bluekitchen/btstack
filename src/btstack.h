@@ -47,7 +47,7 @@
 #include "btstack_config.h"
 
 #include "bluetooth.h"
-#include "btstack.h"
+#include "ad_parser.h"
 #include "btstack_control.h"
 #include "btstack_debug.h"
 #include "btstack_event.h"
@@ -66,7 +66,6 @@
 #include "l2cap_signaling.h"
 
 #ifdef ENABLE_BLE
-#include "ble/ad_parser.h"
 #include "ble/ancs_client.h"
 #include "ble/att_db.h"
 #include "ble/att_db_util.h"

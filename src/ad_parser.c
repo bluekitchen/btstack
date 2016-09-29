@@ -52,7 +52,7 @@
 #include "hci_cmd.h"
 
 #include "hci.h"
-#include "ble/ad_parser.h"
+#include "ad_parser.h"
 
 typedef enum {
     IncompleteList16 = 0x02, 
