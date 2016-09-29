@@ -1232,8 +1232,8 @@ static void rfcomm_multiplexer_state_machine(rfcomm_multiplexer_t * multiplexer,
 // MARK: RFCOMM CHANNEL
 
 static void rfcomm_channel_send_credits(rfcomm_channel_t *channel, uint8_t credits){
-    rfcomm_send_uih_credits(channel->multiplexer, channel->dlci, credits);
     channel->credits_incoming += credits;
+    rfcomm_send_uih_credits(channel->multiplexer, channel->dlci, credits);
 }
 
 static int rfcomm_channel_can_send(rfcomm_channel_t * channel){
