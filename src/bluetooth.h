@@ -96,6 +96,15 @@ typedef enum {
 } link_key_type_t;
 
 /**
+ * @brief Inquiry modes
+ */
+typedef enum {
+  INQUIRY_MODE_STANDARD = 0,
+  INQUIRY_MODE_RSSI,
+  INQUIRY_MODE_RSSI_AND_EIR,
+} inquiry_mode_t;
+
+/**
  * HCI Transport 
  */
 

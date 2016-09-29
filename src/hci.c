@@ -1082,6 +1082,10 @@ static void hci_initializing_run(void){
                 hci_send_cmd(&hci_write_local_name, local_name);
             }
             break;
+        case HCI_INIT_WRITE_INQUIRY_MODE:
+            hci_send_cmd(&hci_write_inquiry_mode, (int) hci_stack->inquiry_mode);
+            hci_stack->substate = HCI_INIT_W4_WRITE_INQUIRY_MODE;
+            break;
         case HCI_INIT_WRITE_SCAN_ENABLE:
             hci_send_cmd(&hci_write_scan_enable, (hci_stack->connectable << 1) | hci_stack->discoverable); // page scan
             hci_stack->substate = HCI_INIT_W4_WRITE_SCAN_ENABLE;
@@ -3585,6 +3589,14 @@ void gap_auto_connection_stop_all(void){
 }
 
 #endif
+
+/**
+ * @brief Set inquiry mode: standard, with RSSI, with RSSI + Extended Inquiry Results. Has to be called before power on.
+ * @param inquriy_mode see bluetooth_defines.h
+ */
+void hci_set_inquiry_mode(inquiry_mode_t mode){
+    hci_stack->inquiry_mode = mode;
+}
 
 /** 
  * @brief Configure Voice Setting for use with SCO data in HSP/HFP
