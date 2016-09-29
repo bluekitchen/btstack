@@ -187,7 +187,7 @@ spp_streamer: ${CORE_OBJ} ${COMMON_OBJ} ${SDP_CLIENT} spp_streamer.c
 gap_dedicated_bonding: ${CORE_OBJ} ${COMMON_OBJ} gap_dedicated_bonding.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-gap_inquiry: ${CORE_OBJ} ${COMMON_OBJ} gap_inquiry.c
+gap_inquiry: ${CORE_OBJ} ${COMMON_OBJ} ad_parser.o gap_inquiry.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 panu_demo: ${CORE_OBJ} ${COMMON_OBJ} ${SDP_CLIENT} panu_demo.c  
