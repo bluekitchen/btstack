@@ -488,6 +488,8 @@ typedef enum hci_init_state{
     HCI_INIT_W4_WRITE_CLASS_OF_DEVICE,
     HCI_INIT_WRITE_LOCAL_NAME,
     HCI_INIT_W4_WRITE_LOCAL_NAME,
+    HCI_INIT_WRITE_EIR_DATA,
+    HCI_INIT_W4_WRITE_EIR_DATA,
     HCI_INIT_WRITE_INQUIRY_MODE,
     HCI_INIT_W4_WRITE_INQUIRY_MODE,
     HCI_INIT_WRITE_SCAN_ENABLE,
@@ -576,6 +578,7 @@ typedef struct {
 
     // basic configuration
     const char *       local_name;
+    const uint8_t *    eir_data;
     uint32_t           class_of_device;
     bd_addr_t          local_bd_addr;
     uint8_t            ssp_enable;

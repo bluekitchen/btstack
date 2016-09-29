@@ -1082,6 +1082,9 @@ static void hci_initializing_run(void){
                 hci_send_cmd(&hci_write_local_name, local_name);
             }
             break;
+        case HCI_INIT_WRITE_EIR_DATA:
+            hci_send_cmd(&hci_write_extended_inquiry_response, 0, hci_stack->eir_data);                        
+            break;
         case HCI_INIT_WRITE_INQUIRY_MODE:
             hci_send_cmd(&hci_write_inquiry_mode, (int) hci_stack->inquiry_mode);
             hci_stack->substate = HCI_INIT_W4_WRITE_INQUIRY_MODE;
@@ -1341,6 +1344,11 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
             // skip write le host if not supported (e.g. on LE only EM9301)
             if (hci_stack->local_supported_commands[0] & 0x02) break;
             hci_stack->substate = HCI_INIT_LE_SET_SCAN_PARAMETERS;
+            return;
+        case HCI_INIT_W4_WRITE_LOCAL_NAME:
+            // skip write eir data if no eir data set
+            if (hci_stack->eir_data) break;
+            hci_stack->substate = HCI_INIT_WRITE_INQUIRY_MODE;
             return;
 
 #ifdef ENABLE_SCO_OVER_HCI
@@ -3589,6 +3597,15 @@ void gap_auto_connection_stop_all(void){
 }
 
 #endif
+
+/**
+ * @brief Set Extended Inquiry Response data
+ * @param eir_data size 240 bytes, is not copied make sure memory is accessible during stack startup
+ * @note has to be done before stack starts up
+ */
+void gap_set_extended_inquiry_response(const uint8_t * data){
+    hci_stack->eir_data = data;
+}
 
 /**
  * @brief Set inquiry mode: standard, with RSSI, with RSSI + Extended Inquiry Results. Has to be called before power on.
