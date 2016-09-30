@@ -1083,11 +1083,12 @@ static void hci_initializing_run(void){
             }
             break;
         case HCI_INIT_WRITE_EIR_DATA:
+            hci_stack->substate = HCI_INIT_W4_WRITE_EIR_DATA;
             hci_send_cmd(&hci_write_extended_inquiry_response, 0, hci_stack->eir_data);                        
             break;
         case HCI_INIT_WRITE_INQUIRY_MODE:
-            hci_send_cmd(&hci_write_inquiry_mode, (int) hci_stack->inquiry_mode);
             hci_stack->substate = HCI_INIT_W4_WRITE_INQUIRY_MODE;
+            hci_send_cmd(&hci_write_inquiry_mode, (int) hci_stack->inquiry_mode);
             break;
         case HCI_INIT_WRITE_SCAN_ENABLE:
             hci_send_cmd(&hci_write_scan_enable, (hci_stack->connectable << 1) | hci_stack->discoverable); // page scan
