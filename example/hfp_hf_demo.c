@@ -80,6 +80,7 @@ static hci_con_handle_t sco_handle;
 static uint8_t codecs[] = {HFP_CODEC_CVSD, HFP_CODEC_MSBC};
 static uint16_t indicators[1] = {0x01};
 static uint8_t  negotiated_codec = HFP_CODEC_CVSD;
+static btstack_packet_callback_registration_t hci_event_callback_registration;
 char cmd;
 
 

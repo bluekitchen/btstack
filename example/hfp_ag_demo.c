@@ -81,6 +81,7 @@ static uint8_t negotiated_codec = HFP_CODEC_CVSD;
 static hci_con_handle_t acl_handle = -1;
 static hci_con_handle_t sco_handle;
 static int memory_1_enabled = 1;
+static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 static int ag_indicators_nr = 7;
 static hfp_ag_indicator_t ag_indicators[] = {
