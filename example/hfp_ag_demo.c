@@ -710,6 +710,11 @@ int btstack_main(int argc, const char * argv[]){
 
     sco_demo_init();
 
+    // register for HCI events
+    hci_event_callback_registration.callback = &packet_handler;
+    hci_add_event_handler(&hci_event_callback_registration);
+    hci_register_sco_packet_handler(&packet_handler);
+
     gap_discoverable_control(1);
 
     // L2CAP
