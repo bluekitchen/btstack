@@ -276,7 +276,6 @@ typedef enum {
  * @param status
  */
 #define HCI_EVENT_INQUIRY_COMPLETE                         0x01
-// no format yet, can contain multiple results
 
 /** 
  * @format 1B11132
@@ -346,8 +345,11 @@ typedef enum {
  * @param key_flag 
  */
 #define HCI_EVENT_MASTER_LINK_KEY_COMPLETE                 0x0A
+
 #define HCI_EVENT_READ_REMOTE_SUPPORTED_FEATURES_COMPLETE  0x0B
+
 #define HCI_EVENT_READ_REMOTE_VERSION_INFORMATION_COMPLETE 0x0C
+
 #define HCI_EVENT_QOS_SETUP_COMPLETE                       0x0D
 
 /**
@@ -371,7 +373,7 @@ typedef enum {
  */
 #define HCI_EVENT_HARDWARE_ERROR                           0x10
 
-#define HCI_EVENT_FLUSH_OCCURED                            0x11
+#define HCI_EVENT_FLUSH_OCCURRED                           0x11
 
 /**
  * @format 1B1
@@ -489,9 +491,31 @@ typedef enum {
 
 #define HCI_EVENT_IO_CAPABILITY_REQUEST                    0x31
 #define HCI_EVENT_IO_CAPABILITY_RESPONSE                   0x32
+
+/**
+ * @format B4
+ * @param bd_addr
+ * @param numeric_value
+ */
 #define HCI_EVENT_USER_CONFIRMATION_REQUEST                0x33
+
+/**
+ * @format B
+ * @param bd_addr
+ */
 #define HCI_EVENT_USER_PASSKEY_REQUEST                     0x34
+
+/**
+ * @format B
+ * @param bd_addr
+ */
 #define HCI_EVENT_REMOTE_OOB_DATA_REQUEST                  0x35
+
+/**
+ * @format 1B
+ * @param status
+ * @param bd_addr
+ */
 #define HCI_EVENT_SIMPLE_PAIRING_COMPLETE                  0x36
 
 #define HCI_EVENT_LE_META                                  0x3E

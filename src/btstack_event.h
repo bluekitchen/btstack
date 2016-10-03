@@ -865,6 +865,64 @@ static inline hci_con_handle_t hci_event_encryption_key_refresh_complete_get_han
 }
 
 /**
+ * @brief Get field bd_addr from event HCI_EVENT_USER_CONFIRMATION_REQUEST
+ * @param event packet
+ * @param Pointer to storage for bd_addr
+ * @note: btstack_type B
+ */
+static inline void hci_event_user_confirmation_request_get_bd_addr(const uint8_t * event, bd_addr_t bd_addr){
+    reverse_bd_addr(&event[2], bd_addr);    
+}
+/**
+ * @brief Get field numeric_value from event HCI_EVENT_USER_CONFIRMATION_REQUEST
+ * @param event packet
+ * @return numeric_value
+ * @note: btstack_type 4
+ */
+static inline uint32_t hci_event_user_confirmation_request_get_numeric_value(const uint8_t * event){
+    return little_endian_read_32(event, 8);
+}
+
+/**
+ * @brief Get field bd_addr from event HCI_EVENT_USER_PASSKEY_REQUEST
+ * @param event packet
+ * @param Pointer to storage for bd_addr
+ * @note: btstack_type B
+ */
+static inline void hci_event_user_passkey_request_get_bd_addr(const uint8_t * event, bd_addr_t bd_addr){
+    reverse_bd_addr(&event[2], bd_addr);    
+}
+
+/**
+ * @brief Get field bd_addr from event HCI_EVENT_REMOTE_OOB_DATA_REQUEST
+ * @param event packet
+ * @param Pointer to storage for bd_addr
+ * @note: btstack_type B
+ */
+static inline void hci_event_remote_oob_data_request_get_bd_addr(const uint8_t * event, bd_addr_t bd_addr){
+    reverse_bd_addr(&event[2], bd_addr);    
+}
+
+/**
+ * @brief Get field status from event HCI_EVENT_SIMPLE_PAIRING_COMPLETE
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_event_simple_pairing_complete_get_status(const uint8_t * event){
+    return event[2];
+}
+/**
+ * @brief Get field bd_addr from event HCI_EVENT_SIMPLE_PAIRING_COMPLETE
+ * @param event packet
+ * @param Pointer to storage for bd_addr
+ * @note: btstack_type B
+ */
+static inline void hci_event_simple_pairing_complete_get_bd_addr(const uint8_t * event, bd_addr_t bd_addr){
+    reverse_bd_addr(&event[3], bd_addr);    
+}
+
+/**
  * @brief Get field state from event BTSTACK_EVENT_STATE
  * @param event packet
  * @return state
