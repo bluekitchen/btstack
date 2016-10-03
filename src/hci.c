@@ -1353,8 +1353,17 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
 
 #ifdef ENABLE_SCO_OVER_HCI
         case HCI_INIT_W4_WRITE_SCAN_ENABLE:
+            // skip write synchronous flow control if not supported
+            if (hci_stack->local_supported_commands[0] & 0x04) break;
+            hci_stack->substate = HCI_INIT_W4_WRITE_SYNCHRONOUS_FLOW_CONTROL_ENABLE;
+            // explicit fall through to reduce repetitions
+
         case HCI_INIT_W4_WRITE_SYNCHRONOUS_FLOW_CONTROL_ENABLE:
-            break;
+            // skip write default erroneous data reporting if not supported
+            if (hci_stack->local_supported_commands[0] & 0x08) break;
+            hci_stack->substate = HCI_INIT_W4_WRITE_DEFAULT_ERRONEOUS_DATA_REPORTING;
+            // explicit fall through to reduce repetitions
+
         case HCI_INIT_W4_WRITE_DEFAULT_ERRONEOUS_DATA_REPORTING:
             if (!hci_le_supported()){
                 // SKIP LE init for Classic only configuration
@@ -1480,8 +1489,11 @@ static void event_handler(uint8_t *packet, int size){
             }
             if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_read_local_supported_commands)){
                 hci_stack->local_supported_commands[0] =
-                    (packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1+14] & 0X80) >> 7 |  // Octet 14, bit 7
-                    (packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1+24] & 0x40) >> 5;   // Octet 24, bit 6 
+                    (packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1+14] & 0x80) >> 7 |  // bit 0 = Octet 14, bit 7
+                    (packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1+24] & 0x40) >> 5 |  // bit 1 = Octet 24, bit 6
+                    (packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1+10] & 0x10) >> 2 |  // bit 2 = Octet 10, bit 4
+                    (packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1+18] & 0x08);        // bit 3 = Octet 18, bit 3
+                    log_info("Local supported commands summary 0x%02x", hci_stack->local_supported_commands[0]); 
             }
             if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_write_synchronous_flow_control_enable)){
                 if (packet[5] == 0){
