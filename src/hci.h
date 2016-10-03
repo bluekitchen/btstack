@@ -495,6 +495,7 @@ typedef enum hci_init_state{
     HCI_INIT_WRITE_SCAN_ENABLE,
     HCI_INIT_W4_WRITE_SCAN_ENABLE,
     
+    // SCO over HCI
     HCI_INIT_WRITE_SYNCHRONOUS_FLOW_CONTROL_ENABLE,
     HCI_INIT_W4_WRITE_SYNCHRONOUS_FLOW_CONTROL_ENABLE,
     HCI_INIT_WRITE_DEFAULT_ERRONEOUS_DATA_REPORTING,
@@ -611,6 +612,8 @@ typedef struct {
     /* local supported commands summary - complete info is 64 bytes */
     /* 0 - read buffer size */
     /* 1 - write le host supported */
+    /* 2 - Write Synchronous Flow Control Enable (Octet 10/bit 4) */
+    /* 3 - Write Default Erroneous Data Reporting (Octect 18/bit 3) */
     uint8_t local_supported_commands[1];
 
     /* bluetooth device information from hci read local version information */
