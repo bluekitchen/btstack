@@ -150,6 +150,20 @@ static void printf_packet(uint8_t packet_type, uint8_t in, uint8_t * packet, uin
     printf_hexdump(packet, len);  
 }
 
+#ifndef HAVE_POSIX_FILE_IO
+static void printf_timestamp(void){
+    uint32_t time_ms = btstack_run_loop_get_time_ms();
+    int      seconds = time_ms / 1000;
+    int      minutes = seconds / 60;
+    int      hours   = minutes / 60;
+
+    int      p_ms      = time_ms - (seconds * 1000);
+    int      p_seconds = seconds - (minutes * 60);
+    int      p_minutes = minutes - (hours   * 60);     
+    printf("[%02u:%02u:%02u.%03u] ", hours, p_minutes, p_seconds, p_ms);
+}
+#endif
+
 void hci_dump_packet(uint8_t packet_type, uint8_t in, uint8_t *packet, uint16_t len) {
 
     if (dump_file < 0) return; // not activated yet
@@ -239,10 +253,7 @@ void hci_dump_packet(uint8_t packet_type, uint8_t in, uint8_t *packet, uint16_t 
     }
 #else
 
-// #ifdef HAVE_EMBEDDED_TICK
-//     uint32_t time_ms = btstack_run_loop_embedded_get_time_ms();
-//     printf("[%06u] ", time_ms);
-// #endif
+    printf_timestamp();
     printf_packet(packet_type, in, packet, len);
 
 #endif
@@ -262,6 +273,7 @@ void hci_dump_log(int log_level, const char * format, ...){
     int len = vsnprintf(log_message_buffer, sizeof(log_message_buffer), format, argptr);
     hci_dump_packet(LOG_MESSAGE_PACKET, 0, (uint8_t*) log_message_buffer, len);
 #else
+    printf_timestamp();
     printf("LOG -- ");
     vprintf(format, argptr);
     printf("\n");
