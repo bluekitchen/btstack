@@ -1355,7 +1355,7 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
         case HCI_INIT_W4_WRITE_SCAN_ENABLE:
         case HCI_INIT_W4_WRITE_SYNCHRONOUS_FLOW_CONTROL_ENABLE:
             break;
-        case HCI_INIT_WRITE_DEFAULT_ERRONEOUS_DATA_REPORTING:
+        case HCI_INIT_W4_WRITE_DEFAULT_ERRONEOUS_DATA_REPORTING:
             if (!hci_le_supported()){
                 // SKIP LE init for Classic only configuration
                 hci_init_done();
