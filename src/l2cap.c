@@ -751,6 +751,12 @@ static void l2cap_run(void){
                 channel->local_sig_id = l2cap_next_sig_id();
                 l2cap_send_le_signaling_packet( channel->con_handle, LE_CREDIT_BASED_CONNECTION_REQUEST, channel->local_sig_id, channel->psm, channel->local_cid, 23, 23, 1);
                 break;
+            case L2CAP_STATE_WILL_SEND_LE_CONNECTION_RESPONSE_ACCEPT:
+                if (!hci_can_send_acl_packet_now(channel->con_handle)) break;
+                // TODO: support larger MPS
+                channel->state = L2CAP_STATE_OPEN;
+                l2cap_send_le_signaling_packet(channel->con_handle, LE_CREDIT_BASED_CONNECTION_RESPONSE, channel->remote_sig_id, channel->remote_cid, channel->local_mtu, 23, channel->credits_incoming, 0);
+                break;                       
             case L2CAP_STATE_WILL_SEND_LE_CONNECTION_RESPONSE_DECLINE:
                 if (!hci_can_send_acl_packet_now(channel->con_handle)) break;
                 channel->state = L2CAP_STATE_INVALID;
@@ -1499,7 +1505,7 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
     btstack_linked_list_iterator_t it;    
 
     uint8_t code   = command[L2CAP_SIGNALING_COMMAND_CODE_OFFSET];
-    printf("l2cap_le_signaling_handler_dispatch: command 0x%02x, sig id %u\n", code, sig_id);
+    log_info("l2cap_le_signaling_handler_dispatch: command 0x%02x, sig id %u", code, sig_id);
 
     switch (code){
 
@@ -1627,7 +1633,6 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
                 if (a_channel->con_handle   != handle) continue;
                 if (a_channel->local_sig_id != sig_id) continue;
                 channel = a_channel;
-                printf("channel %p\n", channel);
                 break; 
             }
             // TODO: send error
@@ -1864,10 +1869,11 @@ uint8_t l2cap_le_accept_connection(uint16_t local_cid, uint8_t * receive_sdu_buf
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
 
-    // TODO: set mtu and receive buffer
-
     // set state accept connection
-    channel->state = L2CAP_STATE_WILL_SEND_CONNECTION_RESPONSE_ACCEPT;
+    channel->state = L2CAP_STATE_WILL_SEND_LE_CONNECTION_RESPONSE_ACCEPT;
+    channel->receive_sdu_buffer = receive_sdu_buffer;
+    channel->local_mtu = mtu;
+    channel->credits_incoming = initial_credits;
 
     // go
     l2cap_run();

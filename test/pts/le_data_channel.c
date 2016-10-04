@@ -118,7 +118,7 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                     
                 case L2CAP_EVENT_INCOMING_CONNECTION: {
                     uint16_t l2cap_cid  = little_endian_read_16(packet, 12);
-#if 0
+#if 1
                     printf("L2CAP Accepting incoming connection request\n"); 
                     l2cap_le_accept_connection(l2cap_cid, receive_buffer_X, sizeof(receive_buffer_X), 1);
 #else
