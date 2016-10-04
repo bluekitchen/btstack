@@ -64,6 +64,7 @@
 
 #include "mock.h"
 #include "test_sequences.h"
+#include "btstack.h"
 
 const uint8_t    rfcomm_channel_nr = 1;
 
@@ -73,7 +74,6 @@ static uint8_t codecs[2] = {1,2};
 static uint16_t indicators[1] = {0x01};
 
 static uint8_t service_level_connection_established = 0;
-static uint8_t codecs_connection_established = 0;
 static uint8_t audio_connection_established = 0;
 static uint8_t start_ringing = 0;
 static uint8_t stop_ringing = 0;
@@ -81,7 +81,7 @@ static uint8_t call_termiated = 0;
 
 static int supported_features_with_codec_negotiation = 438;    
 
-static uint16_t handle = -1;
+static uint16_t acl_handle = -1;
 
 char * get_next_hfp_hf_command(void){
     return get_next_hfp_command(0,2);
@@ -98,7 +98,7 @@ static void user_command(char cmd){
         case '+':
         case '*':
             printf("DTMF Code: %c\n", cmd);
-            hfp_hf_send_dtmf_code(device_addr, cmd);
+            hfp_hf_send_dtmf_code(acl_handle, cmd);
             break;
         case 'a':
             printf("Establish Service level connection to device with Bluetooth address %s...\n", bd_addr_to_str(device_addr));
@@ -106,202 +106,202 @@ static void user_command(char cmd){
             break;
         case 'A':
             printf("Release Service level connection.\n");
-            hfp_hf_release_service_level_connection(device_addr);
+            hfp_hf_release_service_level_connection(acl_handle);
             break;
         case 'b':
             printf("Establish Audio connection to device with Bluetooth address %s...\n", bd_addr_to_str(device_addr));
-            hfp_hf_establish_audio_connection(device_addr);
+            hfp_hf_establish_audio_connection(acl_handle);
             break;
         case 'B':
             printf("Release Audio service level connection.\n");
-            hfp_hf_release_audio_connection(device_addr);
+            hfp_hf_release_audio_connection(acl_handle);
             break;
         case 'C':
             printf("Enable registration status update for all AG indicators.\n");
-            hfp_hf_enable_status_update_for_all_ag_indicators(device_addr);
+            hfp_hf_enable_status_update_for_all_ag_indicators(acl_handle);
         case 'c':
             printf("Disable registration status update for all AG indicators.\n");
-            hfp_hf_disable_status_update_for_all_ag_indicators(device_addr);
+            hfp_hf_disable_status_update_for_all_ag_indicators(acl_handle);
             break;
         case 'D':
             printf("Set HFP AG registration status update for individual indicators (0111111).\n");
-            hfp_hf_set_status_update_for_individual_ag_indicators(device_addr, 63);
+            hfp_hf_set_status_update_for_individual_ag_indicators(acl_handle, 63);
             break;
         case 'd':
             printf("Query network operator.\n");
-            hfp_hf_query_operator_selection(device_addr);
+            hfp_hf_query_operator_selection(acl_handle);
             break;
         case 'E':
             printf("Enable reporting of the extended AG error result code.\n");
-            hfp_hf_enable_report_extended_audio_gateway_error_result_code(device_addr);
+            hfp_hf_enable_report_extended_audio_gateway_error_result_code(acl_handle);
             break;
         case 'e':
             printf("Disable reporting of the extended AG error result code.\n");
-            hfp_hf_disable_report_extended_audio_gateway_error_result_code(device_addr);
+            hfp_hf_disable_report_extended_audio_gateway_error_result_code(acl_handle);
             break;
         case 'f':
             printf("Answer incoming call.\n");
-            hfp_hf_answer_incoming_call(device_addr);
+            hfp_hf_answer_incoming_call(acl_handle);
             break;
         case 'F':
             printf("Hangup call.\n");
-            hfp_hf_terminate_call(device_addr);
+            hfp_hf_terminate_call(acl_handle);
             break;
         case 'G':
             printf("Reject incoming call.\n");
-            hfp_hf_reject_incoming_call(device_addr);
+            hfp_hf_reject_incoming_call(acl_handle);
             break;
         case 'g':
             printf("Query operator.\n");
-            hfp_hf_query_operator_selection(device_addr);
+            hfp_hf_query_operator_selection(acl_handle);
             break;
         case 't':
             printf("Terminate HCI connection.\n");
-            gap_disconnect(handle);
+            gap_disconnect(acl_handle);
             break;
         case 'i':
             printf("Dial 1234567\n");
-            hfp_hf_dial_number(device_addr, (char *)"1234567");
+            hfp_hf_dial_number(acl_handle, (char *)"1234567");
             break;
         case 'I':
             printf("Dial 7654321\n");
-            hfp_hf_dial_number(device_addr, (char *)"7654321");
+            hfp_hf_dial_number(acl_handle, (char *)"7654321");
             break;
         case 'j':
             printf("Dial #1\n");
-            hfp_hf_dial_memory(device_addr, 1);
+            hfp_hf_dial_memory(acl_handle, 1);
             break;
         case 'J':
             printf("Dial #99\n");
-            hfp_hf_dial_memory(device_addr, 99);
+            hfp_hf_dial_memory(acl_handle, 99);
             break;
         case 'k':
             printf("Deactivate call waiting notification\n");
-            hfp_hf_deactivate_call_waiting_notification(device_addr);
+            hfp_hf_deactivate_call_waiting_notification(acl_handle);
             break;
         case 'K':
             printf("Activate call waiting notification\n");
-            hfp_hf_activate_call_waiting_notification(device_addr);
+            hfp_hf_activate_call_waiting_notification(acl_handle);
             break;
         case 'l':
             printf("Deactivate calling line notification\n");
-            hfp_hf_deactivate_calling_line_notification(device_addr);
+            hfp_hf_deactivate_calling_line_notification(acl_handle);
             break;
         case 'L':
             printf("Activate calling line notification\n");
-            hfp_hf_activate_calling_line_notification(device_addr);
+            hfp_hf_activate_calling_line_notification(acl_handle);
             break;
         case 'm':
             printf("Deactivate echo canceling and noise reduction\n");
-            hfp_hf_deactivate_echo_canceling_and_noise_reduction(device_addr);
+            hfp_hf_deactivate_echo_canceling_and_noise_reduction(acl_handle);
             break;
         case 'M':
             printf("Activate echo canceling and noise reduction\n");
-            hfp_hf_activate_echo_canceling_and_noise_reduction(device_addr);
+            hfp_hf_activate_echo_canceling_and_noise_reduction(acl_handle);
             break;
         case 'n':
             printf("Deactivate voice recognition\n");
-            hfp_hf_deactivate_voice_recognition_notification(device_addr);
+            hfp_hf_deactivate_voice_recognition_notification(acl_handle);
             break;
         case 'N':
             printf("Activate voice recognition\n");
-            hfp_hf_activate_voice_recognition_notification(device_addr);
+            hfp_hf_activate_voice_recognition_notification(acl_handle);
             break;
         case 'o':
             printf("Set speaker gain to 0 (minimum)\n");
-            hfp_hf_set_speaker_gain(device_addr, 0);
+            hfp_hf_set_speaker_gain(acl_handle, 0);
             break;
         case 'O':
             printf("Set speaker gain to 9 (default)\n");
-            hfp_hf_set_speaker_gain(device_addr, 9);
+            hfp_hf_set_speaker_gain(acl_handle, 9);
             break;
         case 'p':
             printf("Set speaker gain to 12 (higher)\n");
-            hfp_hf_set_speaker_gain(device_addr, 12);
+            hfp_hf_set_speaker_gain(acl_handle, 12);
             break;
         case 'P':
             printf("Set speaker gain to 15 (maximum)\n");
-            hfp_hf_set_speaker_gain(device_addr, 15);
+            hfp_hf_set_speaker_gain(acl_handle, 15);
             break;
         case 'q':
             printf("Set microphone gain to 0\n");
-            hfp_hf_set_microphone_gain(device_addr, 0);
+            hfp_hf_set_microphone_gain(acl_handle, 0);
             break;
         case 'Q':
             printf("Set microphone gain to 9\n");
-            hfp_hf_set_microphone_gain(device_addr, 9);
+            hfp_hf_set_microphone_gain(acl_handle, 9);
             break;
         case 's':
             printf("Set microphone gain to 12\n");
-            hfp_hf_set_microphone_gain(device_addr, 12);
+            hfp_hf_set_microphone_gain(acl_handle, 12);
             break;
         case 'S':
             printf("Set microphone gain to 15\n");
-            hfp_hf_set_microphone_gain(device_addr, 15);
+            hfp_hf_set_microphone_gain(acl_handle, 15);
             break;
         case 'u':
             printf("Send 'user busy' (Three-Way Call 0)\n");
-            hfp_hf_user_busy(device_addr);
+            hfp_hf_user_busy(acl_handle);
             break;
         case 'U':
             printf("End active call and accept waiting/held call (Three-Way Call 1)\n");
-            hfp_hf_end_active_and_accept_other(device_addr);
+            hfp_hf_end_active_and_accept_other(acl_handle);
             break;
         case 'v':
             printf("Swap active call and hold/waiting call (Three-Way Call 2)\n");
-            hfp_hf_swap_calls(device_addr);
+            hfp_hf_swap_calls(acl_handle);
             break;
         case 'V':
             printf("Join hold call (Three-Way Call 3)\n");
-            hfp_hf_join_held_call(device_addr);
+            hfp_hf_join_held_call(acl_handle);
             break;
         case 'w':
             printf("Connect calls (Three-Way Call 4)\n");
-            hfp_hf_connect_calls(device_addr);
+            hfp_hf_connect_calls(acl_handle);
             break;
         case 'W':
             printf("Redial\n");
-            hfp_hf_redial_last_number(device_addr);
+            hfp_hf_redial_last_number(acl_handle);
             break;
         case 'x':
             printf("Request phone number for voice tag\n");
-            hfp_hf_request_phone_number_for_voice_tag(device_addr);
+            hfp_hf_request_phone_number_for_voice_tag(acl_handle);
             break;
         case 'X':
             printf("Query current call status\n");
-            hfp_hf_query_current_call_status(device_addr);
+            hfp_hf_query_current_call_status(acl_handle);
             break;
         case 'y':
             printf("Release call with index 2\n");
-            hfp_hf_release_call_with_index(device_addr, 2);
+            hfp_hf_release_call_with_index(acl_handle, 2);
             break;
         case 'Y':
             printf("Private consulation with call 2\n");
-            hfp_hf_private_consultation_with_call(device_addr, 2);
+            hfp_hf_private_consultation_with_call(acl_handle, 2);
             break;
         case '[':
             printf("Query Response and Hold status (RHH ?)\n");
-            hfp_hf_rrh_query_status(device_addr);
+            hfp_hf_rrh_query_status(acl_handle);
             break;
         case ']':
             printf("Place call in a response and held state (RHH 0)\n");
-            hfp_hf_rrh_hold_call(device_addr);
+            hfp_hf_rrh_hold_call(acl_handle);
            break;
         case '{':
             printf("Accept held call (RHH 1)\n");
-            hfp_hf_rrh_accept_held_call(device_addr);
+            hfp_hf_rrh_accept_held_call(acl_handle);
             break;
         case '}':
             printf("Reject held call (RHH 2)\n");
-            hfp_hf_rrh_reject_held_call(device_addr);
+            hfp_hf_rrh_reject_held_call(acl_handle);
             break;
         case '?':
             printf("Query Subscriber Number\n");
-            hfp_hf_query_subscriber_number(device_addr);
+            hfp_hf_query_subscriber_number(acl_handle);
             break;
         case '!':
             printf("Update HF indicator with assigned number 1 (HFI)\n");
-            hfp_hf_set_hf_indicator(device_addr, 1, 1);
+            hfp_hf_set_hf_indicator(acl_handle, 1, 1);
             break;
         default:
             printf("HF: undefined user command\n");
@@ -347,7 +347,7 @@ void simulate_test_sequence(hfp_test_item_t * test_item){
             int supported_features = 0;
             sscanf(&expected_cmd[8],"%d", &supported_features);
             printf("Call hfp_hf_init with SF %d\n", supported_features);
-            hfp_hf_release_service_level_connection(device_addr);
+            hfp_hf_release_service_level_connection(acl_handle);
             
             hfp_hf_init_supported_features(supported_features);
             
@@ -397,13 +397,8 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * event, uint
     switch (event[2]) {   
         case HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED:
             printf("\n** SLC established **\n\n");
+            acl_handle = hfp_subevent_service_level_connection_established_get_con_handle(event);
             service_level_connection_established = 1;
-            codecs_connection_established = 0;
-            audio_connection_established = 0;
-            break;
-        case HFP_SUBEVENT_CODECS_CONNECTION_COMPLETE:
-            printf("\n** CC established **\n\n");
-            codecs_connection_established = 1;
             audio_connection_established = 0;
             break;
         case HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED:
@@ -466,7 +461,6 @@ TEST_GROUP(HFPClient){
 
     void setup(void){
         service_level_connection_established = 0;
-        codecs_connection_established = 0;
         audio_connection_established = 0;
         start_ringing = 0;
         stop_ringing = 0;
@@ -480,11 +474,10 @@ TEST_GROUP(HFPClient){
     }
 
     void teardown(void){
-        hfp_hf_release_audio_connection(device_addr);
-        hfp_hf_release_service_level_connection(device_addr);
+        hfp_hf_release_audio_connection(acl_handle);
+        hfp_hf_release_service_level_connection(acl_handle);
         
         service_level_connection_established = 0;
-        codecs_connection_established = 0;
         audio_connection_established = 0;
     }
 };

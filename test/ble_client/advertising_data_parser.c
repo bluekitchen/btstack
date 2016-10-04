@@ -54,7 +54,7 @@
 
 #include "btstack_memory.h"
 #include "hci.h"
-#include "ble/ad_parser.h"
+#include "ad_parser.h"
 #include "l2cap.h"
 
 void le_handle_advertisement_report(uint8_t *packet, int size);

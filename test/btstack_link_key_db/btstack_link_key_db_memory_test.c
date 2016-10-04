@@ -14,6 +14,8 @@ extern btstack_linked_list_t db_mem_names ;
 // const extern "C" db_mem_device_name_t * btstack_memory_db_mem_device_name_get(void);
 // const extern "C" void btstack_memory_init(void);
 
+extern "C" uint32_t btstack_run_loop_get_time_ms(void) { return 0; }
+
 void dump(btstack_linked_list_t list){
     printf("dump:\n");
 

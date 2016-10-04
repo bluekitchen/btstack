@@ -108,7 +108,7 @@ static hfp_generic_status_indicator_t hf_indicators[] = {
     {2, 1},
 };
 
-static uint16_t handle = -1;
+static hci_con_handle_t acl_handle = -1;
 static int memory_1_enabled = 1;
 
 int has_more_hfp_ag_commands(void){
@@ -128,19 +128,19 @@ static void user_command(char cmd){
             break;
         case 'A':
             printf("Release HFP service level connection.\n");
-            hfp_ag_release_service_level_connection(device_addr);
+            hfp_ag_release_service_level_connection(acl_handle);
             break;
         case 'Z':
             printf("Release HFP service level connection to %s...\n", bd_addr_to_str(device_addr));
-            hfp_ag_release_service_level_connection(device_addr);
+            hfp_ag_release_service_level_connection(acl_handle);
             break;
         case 'b':
             printf("Establish Audio connection %s...\n", bd_addr_to_str(device_addr));
-            hfp_ag_establish_audio_connection(device_addr);
+            hfp_ag_establish_audio_connection(acl_handle);
             break;
         case 'B':
             printf("Release Audio connection.\n");
-            hfp_ag_release_audio_connection(device_addr);
+            hfp_ag_release_audio_connection(acl_handle);
             break;
         case 'c':
             printf("Simulate incoming call from 1234567\n");
@@ -158,7 +158,7 @@ static void user_command(char cmd){
             break;
         case 'd':
             printf("Report AG failure\n");
-            hfp_ag_report_extended_audio_gateway_error_result_code(device_addr, HFP_CME_ERROR_AG_FAILURE);
+            hfp_ag_report_extended_audio_gateway_error_result_code(acl_handle, HFP_CME_ERROR_AG_FAILURE);
             break;
         case 'e':
             printf("Answer call on AG\n");
@@ -226,43 +226,43 @@ static void user_command(char cmd){
             break;
         case 'n':
             printf("Disable Voice Recognition\n");
-            hfp_ag_activate_voice_recognition(device_addr, 0);
+            hfp_ag_activate_voice_recognition(acl_handle, 0);
             break;
         case 'N':
             printf("Enable Voice Recognition\n");
-            hfp_ag_activate_voice_recognition(device_addr, 1);
+            hfp_ag_activate_voice_recognition(acl_handle, 1);
             break;
         case 'o':
             printf("Set speaker gain to 0 (minimum)\n");
-            hfp_ag_set_speaker_gain(device_addr, 0);
+            hfp_ag_set_speaker_gain(acl_handle, 0);
             break;
         case 'O':
             printf("Set speaker gain to 9 (default)\n");
-            hfp_ag_set_speaker_gain(device_addr, 9);
+            hfp_ag_set_speaker_gain(acl_handle, 9);
             break;
         case 'p':
             printf("Set speaker gain to 12 (higher)\n");
-            hfp_ag_set_speaker_gain(device_addr, 12);
+            hfp_ag_set_speaker_gain(acl_handle, 12);
             break;
         case 'P':
             printf("Set speaker gain to 15 (maximum)\n");
-            hfp_ag_set_speaker_gain(device_addr, 15);
+            hfp_ag_set_speaker_gain(acl_handle, 15);
             break;
         case 'q':
             printf("Set microphone gain to 0\n");
-            hfp_ag_set_microphone_gain(device_addr, 0);
+            hfp_ag_set_microphone_gain(acl_handle, 0);
             break;
         case 'Q':
             printf("Set microphone gain to 9\n");
-            hfp_ag_set_microphone_gain(device_addr, 9);
+            hfp_ag_set_microphone_gain(acl_handle, 9);
             break;
         case 's':
             printf("Set microphone gain to 12\n");
-            hfp_ag_set_microphone_gain(device_addr, 12);
+            hfp_ag_set_microphone_gain(acl_handle, 12);
             break;
         case 'S':
             printf("Set microphone gain to 15\n");
-            hfp_ag_set_microphone_gain(device_addr, 15);
+            hfp_ag_set_microphone_gain(acl_handle, 15);
             break;
         case 'R':
             printf("Enable in-band ring tone\n");
@@ -270,7 +270,7 @@ static void user_command(char cmd){
             break;
         case 't':
             printf("Terminate HCI connection.\n");
-            gap_disconnect(handle);
+            gap_disconnect(acl_handle);
             break;
         case 'u':
             printf("Join held call\n");
@@ -360,7 +360,7 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * event, uint
 
     switch (event[2]) {   
         case HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED:
-            handle = hfp_subevent_service_level_connection_established_get_con_handle(event);
+            acl_handle = hfp_subevent_service_level_connection_established_get_con_handle(event);
             printf("Service level connection established.\n");
             break;
         case HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED:
@@ -393,11 +393,11 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * event, uint
             break;
         case HFP_SUBEVENT_ATTACH_NUMBER_TO_VOICE_TAG:
             printf("\n** Attach number to voice tag. Sending '1234567\n");
-            hfp_ag_send_phone_number_for_voice_tag(device_addr, "1234567");
+            hfp_ag_send_phone_number_for_voice_tag(acl_handle, "1234567");
             break;
         case HFP_SUBEVENT_TRANSMIT_DTMF_CODES:
             printf("\n** Send DTMF Codes: '%s'\n", &event[3]);
-            hfp_ag_send_dtmf_code_done(device_addr);
+            hfp_ag_send_dtmf_code_done(acl_handle);
             break;
         default:
             printf("Event not handled %u\n", event[2]);
@@ -418,8 +418,8 @@ TEST_GROUP(HFPClient){
     }
 
     void teardown(void){
-        hfp_ag_release_audio_connection(device_addr);
-        hfp_ag_release_service_level_connection(device_addr);
+        hfp_ag_release_audio_connection(acl_handle);
+        hfp_ag_release_service_level_connection(acl_handle);
     }
 };
 

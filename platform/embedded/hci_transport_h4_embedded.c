@@ -217,7 +217,7 @@ static void h4_block_received(void){
             break;
         
         case H4_W4_SCO_HEADER:
-            bytes_to_read = hci_packet[2];
+            bytes_to_read = hci_packet[3];
             if (bytes_to_read == 0) {
                 h4_state = H4_PACKET_RECEIVED; 
                 break;

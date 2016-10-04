@@ -61,8 +61,9 @@ extern "C" {
  * @param rfcomm_channel_nr
  * @param name
  * @param suported_features 32-bit bitmap, see HFP_HFSF_* values in hfp.h
+ * @param wide_band_speech supported
  */
-void hfp_hf_create_sdp_record(uint8_t * service, uint32_t service_record_handle, int rfcomm_channel_nr, const char * name, uint16_t supported_features);
+void hfp_hf_create_sdp_record(uint8_t * service, uint32_t service_record_handle, int rfcomm_channel_nr, const char * name, uint16_t supported_features, int wide_band_speech);
 
 /**
  * @brief Set up HFP Hands-Free (HF) device without additional supported features. 
@@ -120,7 +121,7 @@ void hfp_hf_establish_service_level_connection(bd_addr_t bd_addr);
  *
  * @param bd_addr Bluetooth address of the AG
  */
-void hfp_hf_release_service_level_connection(bd_addr_t bd_addr);
+void hfp_hf_release_service_level_connection(hci_con_handle_t acl_handle);
 
 /**
  * @brief Enable status update for all indicators in the AG.
@@ -129,14 +130,14 @@ void hfp_hf_release_service_level_connection(bd_addr_t bd_addr);
  *
  * @param bd_addr Bluetooth address of the AG
  */
-void hfp_hf_enable_status_update_for_all_ag_indicators(bd_addr_t bd_addr);
+void hfp_hf_enable_status_update_for_all_ag_indicators(hci_con_handle_t acl_handle);
 
 /**
  * @brief Disable status update for all indicators in the AG.
  * The status field of the HFP_SUBEVENT_COMPLETE reports if the command was accepted.
  * @param bd_addr Bluetooth address of the AG
  */
-void hfp_hf_disable_status_update_for_all_ag_indicators(bd_addr_t bd_addr);
+void hfp_hf_disable_status_update_for_all_ag_indicators(hci_con_handle_t acl_handle);
 
 /**
  * @brief Enable or disable status update for the individual indicators in the AG using bitmap.
@@ -146,7 +147,7 @@ void hfp_hf_disable_status_update_for_all_ag_indicators(bd_addr_t bd_addr);
  * @param bd_addr Bluetooth address of the AG
  * @param indicators_status_bitmap 32-bit bitmap, 0 - indicator is disabled, 1 - indicator is enabled
  */
-void hfp_hf_set_status_update_for_individual_ag_indicators(bd_addr_t bd_addr, uint32_t indicators_status_bitmap);
+void hfp_hf_set_status_update_for_individual_ag_indicators(hci_con_handle_t acl_handle, uint32_t indicators_status_bitmap);
 
 /**
  * @brief Query the name of the currently selected Network operator by AG. 
@@ -158,7 +159,7 @@ void hfp_hf_set_status_update_for_individual_ag_indicators(bd_addr_t bd_addr, ui
  * 
  * @param bd_addr Bluetooth address of the AG
  */
-void hfp_hf_query_operator_selection(bd_addr_t bd_addr);
+void hfp_hf_query_operator_selection(hci_con_handle_t acl_handle);
 
 /**
  * @brief Enable Extended Audio Gateway Error result codes in the AG.
@@ -168,14 +169,14 @@ void hfp_hf_query_operator_selection(bd_addr_t bd_addr);
  *
  * @param bd_addr Bluetooth address of the AG
  */
-void hfp_hf_enable_report_extended_audio_gateway_error_result_code(bd_addr_t bd_addr);
+void hfp_hf_enable_report_extended_audio_gateway_error_result_code(hci_con_handle_t acl_handle);
 
 /**
  * @brief Disable Extended Audio Gateway Error result codes in the AG.
  *
  * @param bd_addr Bluetooth address of the AG
  */
- void hfp_hf_disable_report_extended_audio_gateway_error_result_code(bd_addr_t bd_addr);
+ void hfp_hf_disable_report_extended_audio_gateway_error_result_code(hci_con_handle_t acl_handle);
 
 /**
  * @brief Establish audio connection. 
@@ -183,7 +184,7 @@ void hfp_hf_enable_report_extended_audio_gateway_error_result_code(bd_addr_t bd_
  * HFP_SUBEVENT_AUDIO_CONNECTION_ESTABLISHED.
  * @param bd_addr Bluetooth address of the AG
  */
-void hfp_hf_establish_audio_connection(bd_addr_t bd_addr);
+void hfp_hf_establish_audio_connection(hci_con_handle_t acl_handle);
 
 /**
  * @brief Release audio connection.
@@ -192,77 +193,77 @@ void hfp_hf_establish_audio_connection(bd_addr_t bd_addr);
  *
  * @param bd_addr Bluetooth address of the AG
  */
-void hfp_hf_release_audio_connection(bd_addr_t bd_addr);
+void hfp_hf_release_audio_connection(hci_con_handle_t acl_handle);
 
 /**
  * @brief Answer incoming call.
  * @param bd_addr Bluetooth address of the AG
  */
-void hfp_hf_answer_incoming_call(bd_addr_t bd_addr);
+void hfp_hf_answer_incoming_call(hci_con_handle_t acl_handle);
 
 /**
  * @brief Reject incoming call.
  * @param bd_addr Bluetooth address of the AG
  */
-void hfp_hf_reject_incoming_call(bd_addr_t bd_addr);
+void hfp_hf_reject_incoming_call(hci_con_handle_t acl_handle);
 
 /**
  * @brief Release all held calls or sets User Determined User Busy (UDUB) for a waiting call.
  * @param bd_addr Bluetooth address of the AG
  */
-void hfp_hf_user_busy(bd_addr_t addr);
+void hfp_hf_user_busy(hci_con_handle_t acl_handle);
 
 /**
  * @brief Release all active calls (if any exist) and accepts the other (held or waiting) call.
  * @param bd_addr Bluetooth address of the AG
  */
-void hfp_hf_end_active_and_accept_other(bd_addr_t addr);
+void hfp_hf_end_active_and_accept_other(hci_con_handle_t acl_handle);
 
 /**
  * @brief Place all active calls (if any exist) on hold and accepts the other (held or waiting) call.
  * @param bd_addr Bluetooth address of the AG
  */
-void hfp_hf_swap_calls(bd_addr_t addr);
+void hfp_hf_swap_calls(hci_con_handle_t acl_handle);
 
 /**
  * @brief Add a held call to the conversation.
  * @param bd_addr Bluetooth address of the AG
  */
-void hfp_hf_join_held_call(bd_addr_t addr);
+void hfp_hf_join_held_call(hci_con_handle_t acl_handle);
 
 /**
  * @brief Connect the two calls and disconnects the subscriber from both calls (Explicit Call
 Transfer).
  * @param bd_addr Bluetooth address of the AG
  */
-void hfp_hf_connect_calls(bd_addr_t addr);
+void hfp_hf_connect_calls(hci_con_handle_t acl_handle);
 
 /**
  * @brief Terminate an incoming or an outgoing call. 
  * HFP_SUBEVENT_CALL_TERMINATED is sent upon call termination.
  * @param bd_addr Bluetooth address of the AG
  */
-void hfp_hf_terminate_call(bd_addr_t bd_addr);
+void hfp_hf_terminate_call(hci_con_handle_t acl_handle);
 
 /**
  * @brief Initiate outgoing voice call by providing the destination phone number to the AG. 
  * @param bd_addr Bluetooth address of the AG
  * @param number
  */
-void hfp_hf_dial_number(bd_addr_t bd_addr, char * number);
+void hfp_hf_dial_number(hci_con_handle_t acl_handle, char * number);
 
 /**
  * @brief Initiate outgoing voice call using the memory dialing feature of the AG.
  * @param bd_addr Bluetooth address of the AG
  * @param memory_id
  */
-void hfp_hf_dial_memory(bd_addr_t bd_addr, int memory_id);
+void hfp_hf_dial_memory(hci_con_handle_t acl_handle, int memory_id);
 
 /**
  * @brief Initiate outgoing voice call by recalling the last number dialed by the AG.
  * @param bd_addr Bluetooth address of the AG
  */
-void hfp_hf_redial_last_number(bd_addr_t bd_addr);
+void hfp_hf_redial_last_number(hci_con_handle_t acl_handle);
 
 /*
  * @brief Enable the “Call Waiting notification” function in the AG. 
@@ -272,13 +273,13 @@ void hfp_hf_redial_last_number(bd_addr_t bd_addr);
  *
  * @param bd_addr Bluetooth address of the AG
  */
-void hfp_hf_activate_call_waiting_notification(bd_addr_t bd_addr);
+void hfp_hf_activate_call_waiting_notification(hci_con_handle_t acl_handle);
 
 /*
  * @brief Disable the “Call Waiting notification” function in the AG.
  * @param bd_addr Bluetooth address of the AG
  */
-void hfp_hf_deactivate_call_waiting_notification(bd_addr_t bd_addr);
+void hfp_hf_deactivate_call_waiting_notification(hci_con_handle_t acl_handle);
 
 /*
  * @brief Enable the “Calling Line Identification notification” function in the AG. 
@@ -287,13 +288,13 @@ void hfp_hf_deactivate_call_waiting_notification(bd_addr_t bd_addr);
  * the HFP_SUBEVENT_CALLING_LINE_INDETIFICATION_NOTIFICATION is emitted.
  * @param bd_addr Bluetooth address of the AG
  */
-void hfp_hf_activate_calling_line_notification(bd_addr_t bd_addr);
+void hfp_hf_activate_calling_line_notification(hci_con_handle_t acl_handle);
 
 /*
  * @brief Disable the “Calling Line Identification notification” function in the AG.
  * @param bd_addr Bluetooth address of the AG
  */
-void hfp_hf_deactivate_calling_line_notification(bd_addr_t bd_addr);
+void hfp_hf_deactivate_calling_line_notification(hci_con_handle_t acl_handle);
 
 
 /*
@@ -304,45 +305,45 @@ void hfp_hf_deactivate_calling_line_notification(bd_addr_t bd_addr);
  * it shall respond with the ERROR indicator (TODO)
  * @param bd_addr Bluetooth address of the AG
  */
-void hfp_hf_activate_echo_canceling_and_noise_reduction(bd_addr_t bd_addr);
+void hfp_hf_activate_echo_canceling_and_noise_reduction(hci_con_handle_t acl_handle);
 
 /*
  * @brief Deactivate echo canceling and noise reduction in the AG.
  */
-void hfp_hf_deactivate_echo_canceling_and_noise_reduction(bd_addr_t bd_addr);
+void hfp_hf_deactivate_echo_canceling_and_noise_reduction(hci_con_handle_t acl_handle);
 
 /*
  * @brief Activate voice recognition function.
  * @param bd_addr Bluetooth address of the AG
  */
-void hfp_hf_activate_voice_recognition_notification(bd_addr_t bd_addr);
+void hfp_hf_activate_voice_recognition_notification(hci_con_handle_t acl_handle);
 
 /*
  * @brief Dectivate voice recognition function.
  * @param bd_addr Bluetooth address of the AG
  */
-void hfp_hf_deactivate_voice_recognition_notification(bd_addr_t bd_addr);
+void hfp_hf_deactivate_voice_recognition_notification(hci_con_handle_t acl_handle);
 
 /*
  * @brief Set microphone gain. 
  * @param bd_addr Bluetooth address of the AG
  * @param gain Valid range: [0,15]
  */
-void hfp_hf_set_microphone_gain(bd_addr_t bd_addr, int gain);
+void hfp_hf_set_microphone_gain(hci_con_handle_t acl_handle, int gain);
 
 /*
  * @brief Set speaker gain.
  * @param bd_addr Bluetooth address of the AG
  * @param gain Valid range: [0,15]
  */
-void hfp_hf_set_speaker_gain(bd_addr_t bd_addr, int gain);
+void hfp_hf_set_speaker_gain(hci_con_handle_t acl_handle, int gain);
 
 /*
  * @brief Instruct the AG to transmit a DTMF code.
  * @param bd_addr Bluetooth address of the AG
  * @param dtmf_code
  */
-void hfp_hf_send_dtmf_code(bd_addr_t bd_addr, char code);
+void hfp_hf_send_dtmf_code(hci_con_handle_t acl_handle, char code);
 
 /*
  * @brief Read numbers from the AG for the purpose of creating 
@@ -351,21 +352,21 @@ void hfp_hf_send_dtmf_code(bd_addr_t bd_addr, char code);
  * The number is reported via HFP_SUBEVENT_NUMBER_FOR_VOICE_TAG.
  * @param bd_addr Bluetooth address of the AG
  */
-void hfp_hf_request_phone_number_for_voice_tag(bd_addr_t addr);
+void hfp_hf_request_phone_number_for_voice_tag(hci_con_handle_t acl_handle);
 
 /*
  * @brief Query the list of current calls in AG. 
  * The result is received via HFP_SUBEVENT_ENHANCED_CALL_STATUS.
  * @param bd_addr Bluetooth address of the AG
  */
-void hfp_hf_query_current_call_status(bd_addr_t addr);
+void hfp_hf_query_current_call_status(hci_con_handle_t acl_handle);
 
 /*
  * @brief Release a call with index in the AG.
  * @param bd_addr Bluetooth address of the AG
  * @param index
  */
-void hfp_hf_release_call_with_index(bd_addr_t addr, int index);
+void hfp_hf_release_call_with_index(hci_con_handle_t acl_handle, int index);
 
 /*
  * @brief Place all parties of a multiparty call on hold with the 
@@ -373,39 +374,39 @@ void hfp_hf_release_call_with_index(bd_addr_t addr, int index);
  * @param bd_addr Bluetooth address of the AG
  * @param index
  */
-void hfp_hf_private_consultation_with_call(bd_addr_t addr, int index);
+void hfp_hf_private_consultation_with_call(hci_con_handle_t acl_handle, int index);
 
 /*
  * @brief Query the status of the “Response and Hold” state of the AG.
  * The result is reported via HFP_SUBEVENT_RESPONSE_AND_HOLD_STATUS.
  * @param bd_addr Bluetooth address of the AG
  */
-void hfp_hf_rrh_query_status(bd_addr_t addr);
+void hfp_hf_rrh_query_status(hci_con_handle_t acl_handle);
 
 /*
  * @brief Put an incoming call on hold in the AG.
  * @param bd_addr Bluetooth address of the AG
  */
-void hfp_hf_rrh_hold_call(bd_addr_t addr);
+void hfp_hf_rrh_hold_call(hci_con_handle_t acl_handle);
 
 /*
  * @brief Accept held incoming call in the AG.
  * @param bd_addr Bluetooth address of the AG
  */
-void hfp_hf_rrh_accept_held_call(bd_addr_t addr);
+void hfp_hf_rrh_accept_held_call(hci_con_handle_t acl_handle);
 
 /*
  * @brief Reject held incoming call in the AG.
  * @param bd_addr Bluetooth address of the AG
  */
-void hfp_hf_rrh_reject_held_call(bd_addr_t addr);
+void hfp_hf_rrh_reject_held_call(hci_con_handle_t acl_handle);
 
 /*
  * @brief Query the AG subscriber number.
  * The result is reported via HFP_SUBEVENT_SUBSCRIBER_NUMBER_INFORMATION.
  * @param bd_addr Bluetooth address of the AG
  */
-void hfp_hf_query_subscriber_number(bd_addr_t addr);
+void hfp_hf_query_subscriber_number(hci_con_handle_t acl_handle);
 
 /*
  * @brief Set HF indicator.
@@ -413,7 +414,7 @@ void hfp_hf_query_subscriber_number(bd_addr_t addr);
  * @param assigned_number
  * @param value
  */
-void hfp_hf_set_hf_indicator(bd_addr_t addr, int assigned_number, int value);
+void hfp_hf_set_hf_indicator(hci_con_handle_t acl_handle, int assigned_number, int value);
 
 /* API_END */
 

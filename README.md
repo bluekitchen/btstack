@@ -77,14 +77,14 @@ Status               | Platform
 ## Supported Chipsets
 Chipsets             | Status
 --------------       | ------ 
-TI CC256x, WL183x    | complete incl. eHCIll support and SCO-over-HCI (chipset/cc256x)
-CSR 8x10, 8x11       | H4 only (chipset-csr), SCO-over-HCI missing (chipset/csr)
+TI CC256x, WL183x    | H4 incl. eHCIll support and SCO-over-HCI (chipset/cc256x)
+CSR 8x10, 8x11       | H4 + H5 supported, SCO-over-HCI missing (chipset/csr)
 STM STLC2500D        | working, no support for custom deep sleep management (chipset/stlc2500d)
 TC35661              | working, BLE patches missing (chipset/tc3566x)
 EM 9301 (LE-only)    | working, used on Arduino Shield (chipset/em9301)
 CSR USB Dongles      | complete, incl. SCO-over-HCI 
-Broadcom USB Dongles | complete, SCO-over-HCI not missing
-Broadcom BCM43438    | complete. UART baudrate limited to 3 mbps, SCO-over-HCI not missing
+Broadcom USB Dongles | complete, SCO-over-HCI missing
+Broadcom BCM43438    | complete. UART baudrate limited to 3 mbps, SCO-over-HCI missing
 
 ## Source Tree Overview
 Path				| Description

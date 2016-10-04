@@ -917,10 +917,11 @@ typedef uint8_t sm_key_t[16];
 /** HFP Subevent */
 
 /**
- * @format 11H
+ * @format 11HB1
  * @param subevent_code
  * @param status 0 == OK
  * @param con_handle
+ * @param bd_addr
  */
 #define HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED  0x01
 
@@ -931,10 +932,12 @@ typedef uint8_t sm_key_t[16];
 #define HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED     0x02
 
 /**
- * @format 11H
+ * @format 11HB11
  * @param subevent_code
  * @param status 0 == OK
  * @param handle
+ * @param bd_addr
+ * @param negotiated_codec
  */
 #define HFP_SUBEVENT_AUDIO_CONNECTION_ESTABLISHED          0x03
 
@@ -975,13 +978,6 @@ typedef uint8_t sm_key_t[16];
  * @param error
  */
 #define HFP_SUBEVENT_EXTENDED_AUDIO_GATEWAY_ERROR             0x08
-
-/**
- * @format 11
- * @param subevent_code
- * @param status
- */
-#define HFP_SUBEVENT_CODECS_CONNECTION_COMPLETE               0x09
 
 /**
  * @format 1

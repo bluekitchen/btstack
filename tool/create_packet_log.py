@@ -17,8 +17,10 @@ import sys
 import time
 import os
 
+default_date="2001-01-01"
+default_hours = 12 
 packet_counter = 0
-last_time = None
+last_time = default_date + " " + str(default_hours) + ":00:00.000"
 
 def chop(line, prefix):
 	if line.startswith(prefix):
@@ -42,17 +44,30 @@ def generateTimestamp(t):
 		t = last_time
 	if t:
 		last_time = t
+
+		# check for date
+		parts = t.split(' ')
+		have_date = True
+		if len(parts) == 1:
+			# only time, prepend fixed date
+			have_date = False
+			t = "2000-01-01 " + t;
+
 		# handle ms
 		try: 
 			(t1, t2) = t.split('.')
 			if t1 and t2:
-				t_obj = time.strptime(t1, "%Y-%m-%d %H:%M:%S")
+				t_obj   = time.strptime(t1, "%Y-%m-%d %H:%M:%S")
 				tv_sec  = int(time.mktime(t_obj)) 
+				if not have_date:
+					# start at 12:00
+					tv_sec += 12*60*60
 				tv_usec = int(t2) * 1000
 				return (tv_sec, tv_usec)
 		except ValueError:
 			# print 'Cannot parse time', t
 			pass
+
 	packet_counter += 1
 	return (packet_counter, 0)
 
@@ -91,7 +106,7 @@ with open (outfile, 'wb') as fout:
 		packet_counter = 0
 		for line in fin:
 			timestamp = None
-			parts = parts = re.match('\[(.*)\] (.*)', line)
+			parts = re.match('\[(.*)\] (.*)', line)
 			if parts and len(parts.groups()) == 2:
 				(timestamp, line) = parts.groups()
 			rest = chop(line,'CMD => ')

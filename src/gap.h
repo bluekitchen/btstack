@@ -129,6 +129,13 @@ gap_connection_type_t gap_get_connection_type(hci_con_handle_t connection_handle
 void gap_set_local_name(const char * local_name);
 
 /**
+ * @brief Set Extended Inquiry Response data
+ * @param eir_data size 240 bytes, is not copied make sure memory is accessible during stack startup
+ * @note has to be done before stack starts up
+ */
+void gap_set_extended_inquiry_response(const uint8_t * data); 
+
+/**
  * @brief Set class of device that will be set during Bluetooth init.
  * @note has to be done before stack starts up
  */
@@ -248,7 +255,7 @@ void gap_advertisements_set_params(uint16_t adv_int_min, uint16_t adv_int_max, u
 	uint8_t direct_address_typ, bd_addr_t direct_address, uint8_t channel_map, uint8_t filter_policy);
 
 /** 
- * @brief Enable/Disable Advertisements
+ * @brief Enable/Disable Advertisements. OFF by default.
  * @param enabled
  */
 void gap_advertisements_enable(int enabled);

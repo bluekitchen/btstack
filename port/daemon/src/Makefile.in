@@ -15,8 +15,9 @@ LIBUSB_CFLAGS = @LIBUSB_CFLAGS@
 LIBUSB_LDFLAGS = @LIBUSB_LDFLAGS@
 
 VPATH += ${BTSTACK_ROOT}/platform/daemon/src
-VPATH += ${BTSTACK_ROOT}/platform/posix
 VPATH += ${BTSTACK_ROOT}/platform/corefoundation
+VPATH += ${BTSTACK_ROOT}/platform/libusb
+VPATH += ${BTSTACK_ROOT}/platform/posix
 VPATH += ${BTSTACK_ROOT}/src
 VPATH += ${BTSTACK_ROOT}/src/ble
 VPATH += ${BTSTACK_ROOT}/src/classic
