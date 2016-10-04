@@ -66,9 +66,9 @@
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 static btstack_packet_callback_registration_t sm_event_callback_registration;
 
-static bd_addr_t pts_address = {0x00, 0x1B, 0xDC, 0x07, 0x32, 0xef};
+static bd_addr_t pts_address = { 0x00, 0x02, 0x72, 0xDC, 0x31, 0xC1};
 static int pts_address_type = 0;
-static bd_addr_t master_address = {0x00, 0x1B, 0xDC, 0x07, 0x32, 0xef};
+static bd_addr_t master_address = { 0x00, 0x02, 0x72, 0xDC, 0x31, 0xC1};
 static int master_addr_type = 0;
 static hci_con_handle_t handle;
 static uint32_t ui_passkey;
@@ -86,6 +86,9 @@ static void gap_run(void){
 
 static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     bd_addr_t event_address;
+    uint16_t psm;
+    uint16_t local_cid;
+
     switch (packet_type) {
             
         case HCI_EVENT_PACKET:
@@ -124,6 +127,20 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
 #endif
                     break;
                 }
+
+                case L2CAP_EVENT_CHANNEL_OPENED:
+                    // inform about new l2cap connection
+                    reverse_bd_addr(&packet[3], event_address);
+                    psm = little_endian_read_16(packet, 11); 
+                    local_cid = little_endian_read_16(packet, 13); 
+                    handle = little_endian_read_16(packet, 9);
+                    if (packet[2] == 0) {
+                        printf("Channel successfully opened: %s, handle 0x%02x, psm 0x%02x, local cid 0x%02x, remote cid 0x%02x\n",
+                               bd_addr_to_str(event_address), handle, psm, local_cid,  little_endian_read_16(packet, 15));
+                    } else {
+                        printf("L2CAP connection to device %s failed. status code %u\n", bd_addr_to_str(event_address), packet[2]);
+                    }
+                    break;
 
                 case SM_EVENT_JUST_WORKS_REQUEST:
                     printf("SM_EVENT_JUST_WORKS_REQUEST\n");

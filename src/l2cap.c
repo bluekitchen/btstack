@@ -748,6 +748,7 @@ static void l2cap_run(void){
                 if (!hci_can_send_acl_packet_now(channel->con_handle)) break;
                 channel->state = L2CAP_STATE_WAIT_LE_CONNECTION_RESPONSE;
                 // le psm, source cid, mtu, mps, initial credits
+                channel->local_sig_id = l2cap_next_sig_id();
                 l2cap_send_le_signaling_packet( channel->con_handle, LE_CREDIT_BASED_CONNECTION_REQUEST, channel->local_sig_id, channel->psm, channel->local_cid, 23, 23, 1);
                 break;
             case L2CAP_STATE_WILL_SEND_LE_CONNECTION_RESPONSE_DECLINE:
@@ -1494,8 +1495,13 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
     uint8_t  event[10];
     uint16_t le_psm;
     l2cap_service_t * service;
+    l2cap_channel_t * channel;
+    btstack_linked_list_iterator_t it;    
 
-    switch (command[0]){
+    uint8_t code   = command[L2CAP_SIGNALING_COMMAND_CODE_OFFSET];
+    printf("l2cap_le_signaling_handler_dispatch: command 0x%02x, sig id %u\n", code, sig_id);
+
+    switch (code){
 
         case CONNECTION_PARAMETER_UPDATE_RESPONSE:
             result = little_endian_read_16(command, 4);
@@ -1567,12 +1573,11 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
                 }
 
                 // go through list of channels for this ACL connection and check if we get a match
-                btstack_linked_list_iterator_t it;    
                 btstack_linked_list_iterator_init(&it, &l2cap_le_channels);
                 while (btstack_linked_list_iterator_has_next(&it)){
-                    l2cap_channel_t * channel = (l2cap_channel_t *) btstack_linked_list_iterator_next(&it);
-                    if (channel->con_handle != handle) continue;
-                    if (channel->remote_cid != source_cid) continue;
+                    l2cap_channel_t * a_channel = (l2cap_channel_t *) btstack_linked_list_iterator_next(&it);
+                    if (a_channel->con_handle != handle) continue;
+                    if (a_channel->remote_cid != source_cid) continue;
                     // 0x000a Connection refused - Source CID already allocated
                     l2cap_register_signaling_response(handle, LE_CREDIT_BASED_CONNECTION_REQUEST, sig_id, 0x000a);
                     return 1;
@@ -1581,7 +1586,7 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
                 // TODO: deal with authentication requirements, errors 0x005 - 000x8
 
                 // allocate channel
-                l2cap_channel_t * channel = l2cap_create_channel_entry(service->packet_handler, connection->address,
+                channel = l2cap_create_channel_entry(service->packet_handler, connection->address,
                     BD_ADDR_TYPE_LE_RANDOM, le_psm, service->mtu, service->required_security_level);
                 if (!channel){
                     // 0x0004 Connection refused – no resources available
@@ -1608,11 +1613,48 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
                 l2cap_emit_connection_request(channel);
 
             } else {
-
                 // Connection refused – LE_PSM not supported
                 l2cap_register_signaling_response(handle, LE_CREDIT_BASED_CONNECTION_REQUEST, sig_id, 0x0002);
             }
             break;
+
+        case LE_CREDIT_BASED_CONNECTION_RESPONSE:
+            // Find channel for this sig_id and connection handle
+            channel = NULL;
+            btstack_linked_list_iterator_init(&it, &l2cap_le_channels);
+            while (btstack_linked_list_iterator_has_next(&it)){
+                l2cap_channel_t * a_channel = (l2cap_channel_t *) btstack_linked_list_iterator_next(&it);
+                if (a_channel->con_handle   != handle) continue;
+                if (a_channel->local_sig_id != sig_id) continue;
+                channel = a_channel;
+                printf("channel %p\n", channel);
+                break; 
+            }
+            // TODO: send error
+            if (!channel) break;
+
+            // cid + 0
+            result = little_endian_read_16 (command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET+8);
+            if (result){
+                channel->state = L2CAP_STATE_CLOSED;
+                // map l2cap connection response result to BTstack status enumeration
+                l2cap_emit_channel_opened(channel, result);
+                                
+                // discard channel
+                btstack_linked_list_remove(&l2cap_channels, (btstack_linked_item_t *) channel);
+                btstack_memory_l2cap_channel_free(channel);
+                break;
+            }
+
+            // success
+            channel->remote_cid = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET + 0);
+            channel->remote_mtu = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET + 2);
+            channel->remote_mps = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET + 4);
+            channel->credits_outgoing = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET + 6);
+            channel->state = L2CAP_STATE_OPEN;
+            l2cap_emit_channel_opened(channel, result);
+            break;
+
         default:
             // command unknown -> reject command
             return 0;
@@ -1860,7 +1902,7 @@ uint8_t l2cap_le_create_channel(btstack_packet_handler_t packet_handler, bd_addr
 
     log_info("L2CAP_LE_CREATE_CHANNEL addr %s psm 0x%x mtu %u", bd_addr_to_str(address), psm, mtu);
     
-    l2cap_channel_t * channel = l2cap_create_channel_entry(packet_handler, address, address_type, psm, mtu, LEVEL_0);
+l2cap_channel_t * channel = l2cap_create_channel_entry(packet_handler, address, address_type, psm, mtu, LEVEL_0);
     if (!channel) {
         return BTSTACK_MEMORY_ALLOC_FAILED;
     }
