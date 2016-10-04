@@ -16,6 +16,7 @@ CFLAGS += -I${BTSTACK_ROOT}/platform/posix \
 
 VPATH += ${BTSTACK_ROOT}/platform/embedded
 VPATH += ${BTSTACK_ROOT}/platform/posix
+VPATH += ${BTSTACK_ROOT}/platform/libusb
 
 ifeq ($(OS),Windows_NT)
 LDFLAGS += -lws2_32

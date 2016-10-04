@@ -80,6 +80,7 @@ static hci_con_handle_t sco_handle;
 static uint8_t codecs[] = {HFP_CODEC_CVSD, HFP_CODEC_MSBC};
 static uint16_t indicators[1] = {0x01};
 static uint8_t  negotiated_codec = HFP_CODEC_CVSD;
+static btstack_packet_callback_registration_t hci_event_callback_registration;
 char cmd;
 
 
@@ -561,14 +562,19 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
 /* LISTING_START(MainConfiguration): Setup HFP Hands-Free unit */
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
-    sco_demo_init();
-    gap_discoverable_control(1);
 
-    // HFP AG address is hardcoded, please change it
+    sco_demo_init();
+
+    // register for HCI events
+    hci_event_callback_registration.callback = &packet_handler;
+    hci_add_event_handler(&hci_event_callback_registration);
+    hci_register_sco_packet_handler(&packet_handler);
+
+    gap_discoverable_control(1);
+    gap_set_class_of_device(0x200408);   
+
     // init L2CAP
     l2cap_init();
-    rfcomm_init();
-    sdp_init();    
 
     uint16_t hf_supported_features          =
         (1<<HFP_HFSF_ESCO_S4)               |
@@ -578,6 +584,7 @@ int btstack_main(int argc, const char * argv[]){
         (1<<HFP_HFSF_REMOTE_VOLUME_CONTROL);
     int wide_band_speech = 1;
 
+    rfcomm_init();
     hfp_hf_init(rfcomm_channel_nr);
     hfp_hf_init_supported_features(hf_supported_features);
     hfp_hf_init_hf_indicators(sizeof(indicators)/sizeof(uint16_t), indicators);
@@ -586,11 +593,12 @@ int btstack_main(int argc, const char * argv[]){
     hfp_hf_register_packet_handler(packet_handler);
     hci_register_sco_packet_handler(&packet_handler);
 
+    sdp_init();    
     memset(hfp_service_buffer, 0, sizeof(hfp_service_buffer));
     hfp_hf_create_sdp_record(hfp_service_buffer, 0x10001, rfcomm_channel_nr, hfp_hf_service_name, hf_supported_features, wide_band_speech);
     printf("SDP service record size: %u\n", de_get_len(hfp_service_buffer));
     sdp_register_service(hfp_service_buffer);
-    gap_set_class_of_device(0x200408);   
+
     
 #ifdef HAVE_POSIX_STDIN
     btstack_stdin_setup(stdin_process);

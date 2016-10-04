@@ -170,6 +170,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             switch(event){
                 case HCI_EVENT_INQUIRY_RESULT:
                 case HCI_EVENT_INQUIRY_RESULT_WITH_RSSI:
+                case HCI_EVENT_EXTENDED_INQUIRY_RESPONSE:
                     numResponses = hci_event_inquiry_result_get_num_responses(packet);
                     for (i=0; i<numResponses && deviceCount < MAX_DEVICES;i++){
                         reverse_bd_addr(&packet[3 + i * 6], addr);
@@ -185,12 +186,41 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                         } else {
                             devices[deviceCount].classOfDevice = little_endian_read_24(packet, 3 + numResponses*(6+1+1)     + i*3);
                             devices[deviceCount].clockOffset =   little_endian_read_16(packet, 3 + numResponses*(6+1+1+3)   + i*2) & 0x7fff;
-                            devices[deviceCount].rssi  =                    packet [3 + numResponses*(6+1+1+3+2) + i*1];
+                            devices[deviceCount].rssi  =                               packet [3 + numResponses*(6+1+1+3+2) + i*1];
                         }
                         devices[deviceCount].state = REMOTE_NAME_REQUEST;
-                        printf("Device found: %s with COD: 0x%06x, pageScan %d, clock offset 0x%04x, rssi 0x%02x\n", bd_addr_to_str(addr),
+                        char name_buffer[240];
+                        if (event == HCI_EVENT_EXTENDED_INQUIRY_RESPONSE){
+                            uint8_t * eir_data = &packet[3 + (6+1+1+3+2) + 1];
+                            ad_context_t context;
+                            for (ad_iterator_init(&context, 240, eir_data) ; ad_iterator_has_more(&context) ; ad_iterator_next(&context)){
+                                uint8_t data_type    = ad_iterator_get_data_type(&context);
+                                uint8_t data_size    = ad_iterator_get_data_len(&context);
+                                const uint8_t * data = ad_iterator_get_data(&context);
+                                // Prefer Complete Local Name over Shortend Local Name
+                                switch (data_type){
+                                    case 0x08: // Shortened Local Name
+                                        if (devices[deviceCount].state == REMOTE_NAME_FETCHED) break;
+                                    case 0x09: // Complete Local Name
+                                        devices[deviceCount].state = REMOTE_NAME_FETCHED;
+                                        memcpy(name_buffer, data, data_size);
+                                        name_buffer[data_size] = 0;
+                                        break;
+                                    default:
+                                        break;
+                                }
+                            }
+                        }
+                        printf("Device found: %s with COD: 0x%06x, pageScan %d, clock offset 0x%04x", bd_addr_to_str(addr),
                                 (unsigned int) devices[deviceCount].classOfDevice, devices[deviceCount].pageScanRepetitionMode,
-                                devices[deviceCount].clockOffset, devices[deviceCount].rssi);
+                                devices[deviceCount].clockOffset);
+                        if (event >= HCI_EVENT_INQUIRY_RESULT_WITH_RSSI){
+                            printf(", rssi 0x%02x: ", devices[deviceCount].rssi);
+                        }
+                        if (devices[deviceCount].state == REMOTE_NAME_FETCHED){
+                            printf(", name '%s'", name_buffer);
+                        }
+                        printf("\n");
                         deviceCount++;
                     }
                     break;
@@ -245,6 +275,9 @@ int btstack_main(int argc, const char * argv[]) {
 
     hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
+
+    // enabled EIR
+    hci_set_inquiry_mode(INQUIRY_MODE_RSSI_AND_EIR);
 
     // turn on!
     hci_power_control(HCI_POWER_ON);

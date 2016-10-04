@@ -81,6 +81,7 @@ static uint8_t negotiated_codec = HFP_CODEC_CVSD;
 static hci_con_handle_t acl_handle = -1;
 static hci_con_handle_t sco_handle;
 static int memory_1_enabled = 1;
+static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 static int ag_indicators_nr = 7;
 static hfp_ag_indicator_t ag_indicators[] = {
@@ -709,6 +710,11 @@ int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
 
     sco_demo_init();
+
+    // register for HCI events
+    hci_event_callback_registration.callback = &packet_handler;
+    hci_add_event_handler(&hci_event_callback_registration);
+    hci_register_sco_packet_handler(&packet_handler);
 
     gap_discoverable_control(1);
 

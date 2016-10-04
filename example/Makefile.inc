@@ -4,21 +4,18 @@ VPATH += ${BTSTACK_ROOT}/src/ble
 VPATH += ${BTSTACK_ROOT}/src/classic
 VPATH += ${BTSTACK_ROOT}/example
 VPATH += ${BTSTACK_ROOT}/3rd-party/mbedtls/library
-VPATH += ${SBC_DECODER_ROOT}/srce 
-VPATH += ${SBC_ENCODER_ROOT}/srce
+VPATH += ${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/srce 
+VPATH += ${BTSTACK_ROOT}/3rd-party/bluedroid/encoder//srce
 
 CFLAGS += -I.
 CFLAGS += -I${BTSTACK_ROOT}/src/ble
 CFLAGS += -I${BTSTACK_ROOT}/src/classic
 CFLAGS += -I${BTSTACK_ROOT}/src
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/mbedtls/include
-CFLAGS += -I${BTSTACK_ROOT}/test/security_manager
+CFLAGS += -I${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/include
+CFLAGS += -I${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/include
 
-# for SBC
-SBC_DECODER_ROOT = ${BTSTACK_ROOT}/3rd-party/bluedroid/decoder
-SBC_ENCODER_ROOT = ${BTSTACK_ROOT}/3rd-party/bluedroid/encoder
-CFLAGS += -I${SBC_DECODER_ROOT}/include -D OI_DEBUG # -D PRINT_SAMPLES -D PRINT_SCALEFACTORS 
-CFLAGS += -I${SBC_ENCODER_ROOT}/include -D SBC_NO_PCM_CPY_OPTION
+CFLAGS += -I${BTSTACK_ROOT}/test/security_manager
 
 # for CVSD/SBC PLC
 LDFLAGS += -lm
@@ -72,9 +69,9 @@ MBEDTLS = 					\
 	memory_buffer_alloc.c   \
 	platform.c 				\
 
-# 
-include ${SBC_DECODER_ROOT}/Makefile.inc
-include ${SBC_ENCODER_ROOT}/Makefile.inc
+# List of files for Bluedroid SBC codec
+include ${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/Makefile.inc
+include ${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/Makefile.inc
 
 SBC_DECODER += \
 	${BTSTACK_ROOT}/src/classic/btstack_sbc_plc.c \
@@ -170,7 +167,7 @@ sm_pairing_peripheral: sm_pairing_peripheral.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_O
 	${CC} $(filter-out sm_pairing_peripheral.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
 
 sm_pairing_central: ${CORE_OBJ} ${COMMON_OBJ} ${SM_REAL_OBJ} ad_parser.o sm_pairing_central.o 
-	${CC} ${CFLAGS} ${LDFLAGS} $^ -o $@
+	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 le_streamer: le_streamer.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_REAL_OBJ} le_streamer.c 
 	${CC} $(filter-out le_streamer.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
@@ -187,7 +184,7 @@ spp_streamer: ${CORE_OBJ} ${COMMON_OBJ} ${SDP_CLIENT} spp_streamer.c
 gap_dedicated_bonding: ${CORE_OBJ} ${COMMON_OBJ} gap_dedicated_bonding.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-gap_inquiry: ${CORE_OBJ} ${COMMON_OBJ} gap_inquiry.c
+gap_inquiry: ${CORE_OBJ} ${COMMON_OBJ} ad_parser.o gap_inquiry.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 panu_demo: ${CORE_OBJ} ${COMMON_OBJ} ${SDP_CLIENT} panu_demo.c  

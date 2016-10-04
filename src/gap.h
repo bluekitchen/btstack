@@ -129,6 +129,13 @@ gap_connection_type_t gap_get_connection_type(hci_con_handle_t connection_handle
 void gap_set_local_name(const char * local_name);
 
 /**
+ * @brief Set Extended Inquiry Response data
+ * @param eir_data size 240 bytes, is not copied make sure memory is accessible during stack startup
+ * @note has to be done before stack starts up
+ */
+void gap_set_extended_inquiry_response(const uint8_t * data); 
+
+/**
  * @brief Set class of device that will be set during Bluetooth init.
  * @note has to be done before stack starts up
  */

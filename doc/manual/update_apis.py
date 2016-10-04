@@ -8,7 +8,6 @@ class State:
 
 # [file_name, api_title, api_label]
 apis = [ 
-    ["src/ble/ad_parser.h", "BLE Advertisements Parser", "advParser"],
     ["src/ble/ancs_client.h", "BLE ANCS Client", "ancsClient"],
     ["src/ble/att_db_util.h", "BLE ATT Database", "attDb"],
     ["src/ble/att_server.h", "BLE ATT Server", "attServer"],
@@ -29,6 +28,7 @@ apis = [
     ["src/classic/sdp_server.h", "SDP Server", "sdpSrv"],
     ["src/classic/sdp_util.h","SDP Utils", "sdpUtil"],
 
+    ["src/ad_parser.h", "BLE Advertisements Parser", "advParser"],
     ["src/btstack_chipset.h","BTstack Chipset","btMemory"],
     ["src/btstack_control.h","BTstack Hardware Control","btControl"],
     ["src/btstack_event.h","HCI Event Getter","btEvent"],

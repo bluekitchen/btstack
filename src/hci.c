@@ -913,7 +913,7 @@ static void hci_initializing_next_state(void){
 
 // assumption: hci_can_send_command_packet_now() == true
 static void hci_initializing_run(void){
-    log_info("hci_initializing_run: substate %u, can send %u", hci_stack->substate, hci_can_send_command_packet_now());
+    log_debug("hci_initializing_run: substate %u, can send %u", hci_stack->substate, hci_can_send_command_packet_now());
     switch (hci_stack->substate){
         case HCI_INIT_SEND_RESET:
             hci_state_reset();
@@ -970,7 +970,6 @@ static void hci_initializing_run(void){
             break;
         }
         case HCI_INIT_CUSTOM_INIT:
-            log_info("Custom init");
             // Custom initialization
             if (hci_stack->chipset && hci_stack->chipset->next_command){
                 int valid_cmd = (*hci_stack->chipset->next_command)(hci_stack->hci_packet_buffer);
@@ -1003,7 +1002,7 @@ static void hci_initializing_run(void){
                     hci_stack->hci_transport->send_packet(HCI_COMMAND_DATA_PACKET, hci_stack->hci_packet_buffer, size);
                     break;
                 }
-                log_info("hci_run: init script done");
+                log_info("Init script done");
             
                 // Init script download causes baud rate to reset on Broadcom chipsets, restore UART baud rate if needed
                 if (hci_stack->manufacturer == COMPANY_ID_BROADCOM_CORPORATION){
@@ -1082,6 +1081,14 @@ static void hci_initializing_run(void){
                 hci_send_cmd(&hci_write_local_name, local_name);
             }
             break;
+        case HCI_INIT_WRITE_EIR_DATA:
+            hci_stack->substate = HCI_INIT_W4_WRITE_EIR_DATA;
+            hci_send_cmd(&hci_write_extended_inquiry_response, 0, hci_stack->eir_data);                        
+            break;
+        case HCI_INIT_WRITE_INQUIRY_MODE:
+            hci_stack->substate = HCI_INIT_W4_WRITE_INQUIRY_MODE;
+            hci_send_cmd(&hci_write_inquiry_mode, (int) hci_stack->inquiry_mode);
+            break;
         case HCI_INIT_WRITE_SCAN_ENABLE:
             hci_send_cmd(&hci_write_scan_enable, (hci_stack->connectable << 1) | hci_stack->discoverable); // page scan
             hci_stack->substate = HCI_INIT_W4_WRITE_SCAN_ENABLE;
@@ -1136,7 +1143,7 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
         uint16_t opcode = little_endian_read_16(packet,3);
         if (opcode == hci_stack->last_cmd_opcode){
             command_completed = 1;
-            log_info("Command complete for expected opcode %04x at substate %u", opcode, hci_stack->substate);
+            log_debug("Command complete for expected opcode %04x at substate %u", opcode, hci_stack->substate);
         } else {
             log_info("Command complete for different opcode %04x, expected %04x, at substate %u", opcode, hci_stack->last_cmd_opcode, hci_stack->substate);
         }
@@ -1148,12 +1155,12 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
         if (opcode == hci_stack->last_cmd_opcode){
             if (status){
                 command_completed = 1;
-                log_error("Command status error 0x%02x for expected opcode %04x at substate %u", status, opcode, hci_stack->substate);
+                log_debug("Command status error 0x%02x for expected opcode %04x at substate %u", status, opcode, hci_stack->substate);
             } else {
                 log_info("Command status OK for expected opcode %04x, waiting for command complete", opcode);
             }
         } else {
-            log_info("Command status for opcode %04x, expected %04x", opcode, hci_stack->last_cmd_opcode);
+            log_debug("Command status for opcode %04x, expected %04x", opcode, hci_stack->last_cmd_opcode);
         }
     }
 
@@ -1338,12 +1345,26 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
             if (hci_stack->local_supported_commands[0] & 0x02) break;
             hci_stack->substate = HCI_INIT_LE_SET_SCAN_PARAMETERS;
             return;
+        case HCI_INIT_W4_WRITE_LOCAL_NAME:
+            // skip write eir data if no eir data set
+            if (hci_stack->eir_data) break;
+            hci_stack->substate = HCI_INIT_WRITE_INQUIRY_MODE;
+            return;
 
 #ifdef ENABLE_SCO_OVER_HCI
         case HCI_INIT_W4_WRITE_SCAN_ENABLE:
+            // skip write synchronous flow control if not supported
+            if (hci_stack->local_supported_commands[0] & 0x04) break;
+            hci_stack->substate = HCI_INIT_W4_WRITE_SYNCHRONOUS_FLOW_CONTROL_ENABLE;
+            // explicit fall through to reduce repetitions
+
         case HCI_INIT_W4_WRITE_SYNCHRONOUS_FLOW_CONTROL_ENABLE:
-            break;
-        case HCI_INIT_WRITE_DEFAULT_ERRONEOUS_DATA_REPORTING:
+            // skip write default erroneous data reporting if not supported
+            if (hci_stack->local_supported_commands[0] & 0x08) break;
+            hci_stack->substate = HCI_INIT_W4_WRITE_DEFAULT_ERRONEOUS_DATA_REPORTING;
+            // explicit fall through to reduce repetitions
+
+        case HCI_INIT_W4_WRITE_DEFAULT_ERRONEOUS_DATA_REPORTING:
             if (!hci_le_supported()){
                 // SKIP LE init for Classic only configuration
                 hci_init_done();
@@ -1468,8 +1489,11 @@ static void event_handler(uint8_t *packet, int size){
             }
             if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_read_local_supported_commands)){
                 hci_stack->local_supported_commands[0] =
-                    (packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1+14] & 0X80) >> 7 |  // Octet 14, bit 7
-                    (packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1+24] & 0x40) >> 5;   // Octet 24, bit 6 
+                    (packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1+14] & 0x80) >> 7 |  // bit 0 = Octet 14, bit 7
+                    (packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1+24] & 0x40) >> 5 |  // bit 1 = Octet 24, bit 6
+                    (packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1+10] & 0x10) >> 2 |  // bit 2 = Octet 10, bit 4
+                    (packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1+18] & 0x08);        // bit 3 = Octet 18, bit 3
+                    log_info("Local supported commands summary 0x%02x", hci_stack->local_supported_commands[0]); 
             }
             if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_write_synchronous_flow_control_enable)){
                 if (packet[5] == 0){
@@ -3585,6 +3609,23 @@ void gap_auto_connection_stop_all(void){
 }
 
 #endif
+
+/**
+ * @brief Set Extended Inquiry Response data
+ * @param eir_data size 240 bytes, is not copied make sure memory is accessible during stack startup
+ * @note has to be done before stack starts up
+ */
+void gap_set_extended_inquiry_response(const uint8_t * data){
+    hci_stack->eir_data = data;
+}
+
+/**
+ * @brief Set inquiry mode: standard, with RSSI, with RSSI + Extended Inquiry Results. Has to be called before power on.
+ * @param inquriy_mode see bluetooth_defines.h
+ */
+void hci_set_inquiry_mode(inquiry_mode_t mode){
+    hci_stack->inquiry_mode = mode;
+}
 
 /** 
  * @brief Configure Voice Setting for use with SCO data in HSP/HFP

@@ -18,7 +18,7 @@
       </logicalFolder>
       <logicalFolder name="f3" displayName="btstack" projectFiles="true">
         <logicalFolder name="ble" displayName="ble" projectFiles="true">
-          <itemPath>../../../src/ble/ad_parser.h</itemPath>
+          <itemPath>../../../src/ad_parser.h</itemPath>
           <itemPath>../../../src/ble/ancs_client.h</itemPath>
           <itemPath>../../../src/ble/att_db.h</itemPath>
           <itemPath>../../../src/ble/att_dispatch.h</itemPath>
@@ -108,7 +108,7 @@
       </logicalFolder>
       <logicalFolder name="f3" displayName="btstack" projectFiles="true">
         <logicalFolder name="ble" displayName="ble" projectFiles="true">
-          <itemPath>../../../src/ble/ad_parser.c</itemPath>
+          <itemPath>../../../src/ad_parser.c</itemPath>
           <itemPath>../../../src/ble/att_db.c</itemPath>
           <itemPath>../../../src/ble/att_dispatch.c</itemPath>
           <itemPath>../../../src/ble/att_server.c</itemPath>

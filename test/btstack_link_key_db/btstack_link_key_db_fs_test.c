@@ -9,6 +9,9 @@
 #include "btstack_util.h"
 
 #include "btstack_config.h"
+
+extern "C" uint32_t btstack_run_loop_get_time_ms(void) { return 0; }
+
 TEST_GROUP(RemoteDeviceDB){
     bd_addr_t bd_addr;
     link_key_t link_key;

@@ -43,7 +43,7 @@
 #include "btstack_config.h"
 
 #include "att_dispatch.h"
-#include "ble/ad_parser.h"
+#include "ad_parser.h"
 #include "ble/att_db.h"
 #include "ble/core.h"
 #include "ble/gatt_client.h"
