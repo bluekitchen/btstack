@@ -1058,6 +1058,16 @@ static void l2cap_hci_event_handler(uint8_t packet_type, uint16_t cid, uint8_t *
                 btstack_linked_list_iterator_remove(&it);
                 btstack_memory_l2cap_channel_free(channel);
             }
+#ifdef ENABLE_BLE
+            btstack_linked_list_iterator_init(&it, &l2cap_le_channels);
+            while (btstack_linked_list_iterator_has_next(&it)){
+                l2cap_channel_t * channel = (l2cap_channel_t *) btstack_linked_list_iterator_next(&it);
+                if (channel->con_handle != handle) continue;
+                l2cap_emit_channel_closed(channel);
+                btstack_linked_list_iterator_remove(&it);
+                btstack_memory_l2cap_channel_free(channel);
+            }
+#endif
             break;
             
         // Notify channel packet handler if they can send now
