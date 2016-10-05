@@ -743,7 +743,7 @@ static void l2cap_run(void){
                 channel->state = L2CAP_STATE_WAIT_LE_CONNECTION_RESPONSE;
                 // le psm, source cid, mtu, mps, initial credits
                 channel->local_sig_id = l2cap_next_sig_id();
-                l2cap_send_le_signaling_packet( channel->con_handle, LE_CREDIT_BASED_CONNECTION_REQUEST, channel->local_sig_id, channel->psm, channel->local_cid, 23, 23, 1);
+                l2cap_send_le_signaling_packet( channel->con_handle, LE_CREDIT_BASED_CONNECTION_REQUEST, channel->local_sig_id, channel->psm, channel->local_cid, channel->local_mtu, 23, 1);
                 break;
             case L2CAP_STATE_WILL_SEND_LE_CONNECTION_RESPONSE_ACCEPT:
                 if (!hci_can_send_acl_packet_now(channel->con_handle)) break;
@@ -785,7 +785,8 @@ static void l2cap_run(void){
                 l2cap_setup_header(acl_buffer, channel->con_handle, channel->remote_cid, payload_size);
                 // done
 
-//                channel->credits_outgoing--;
+                // TODO: enable credit counting
+                // channel->credits_outgoing--;
 
                 if (channel->send_sdu_pos >= channel->send_sdu_len + 2){
                     channel->send_sdu_buffer = NULL;
@@ -833,16 +834,6 @@ static void l2cap_run(void){
             default:
                 break;
         }
-#if 0 
-void l2cap_le_run(void){
-    for all channels
-        switch(state):
-
-    if outgoing transfer active
-        send next chunk
-        if done, notify app
-}
-#endif
     }
 #endif
 
@@ -1784,7 +1775,22 @@ static void l2cap_acl_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
 #ifdef ENABLE_BLE
             l2cap_channel = l2cap_le_get_channel_for_local_cid(channel_id);
             if (l2cap_channel) {
-                l2cap_dispatch_to_channel(l2cap_channel, L2CAP_DATA_PACKET, &packet[COMPLETE_L2CAP_HEADER], size-COMPLETE_L2CAP_HEADER);
+                // first fragment
+                uint16_t pos = 0;
+                if (!l2cap_channel->receive_sdu_len){
+                    l2cap_channel->receive_sdu_len = little_endian_read_16(packet, COMPLETE_L2CAP_HEADER);
+                    l2cap_channel->receive_sdu_pos = 0;                   
+                    pos  += 2;
+                    size -= 2;
+                }
+                memcpy(&l2cap_channel->receive_sdu_buffer[l2cap_channel->receive_sdu_pos], &packet[COMPLETE_L2CAP_HEADER+pos], size-COMPLETE_L2CAP_HEADER);
+                l2cap_channel->receive_sdu_pos += size - COMPLETE_L2CAP_HEADER;
+                // done?
+                log_debug("le packet pos %u, len %u", l2cap_channel->receive_sdu_pos, l2cap_channel->receive_sdu_len);
+                if (l2cap_channel->receive_sdu_pos >= l2cap_channel->receive_sdu_len){
+                    l2cap_dispatch_to_channel(l2cap_channel, L2CAP_DATA_PACKET, l2cap_channel->receive_sdu_buffer, l2cap_channel->receive_sdu_len);
+                    l2cap_channel->receive_sdu_len = 0;
+                }
             }
 #endif
             break;
@@ -1984,7 +1990,7 @@ uint8_t l2cap_le_create_channel(btstack_packet_handler_t packet_handler, bd_addr
 
     log_info("L2CAP_LE_CREATE_CHANNEL addr %s psm 0x%x mtu %u", bd_addr_to_str(address), psm, mtu);
     
-l2cap_channel_t * channel = l2cap_create_channel_entry(packet_handler, address, address_type, psm, mtu, LEVEL_0);
+    l2cap_channel_t * channel = l2cap_create_channel_entry(packet_handler, address, address_type, psm, mtu, security_level);
     if (!channel) {
         return BTSTACK_MEMORY_ALLOC_FAILED;
     }
@@ -1995,6 +2001,8 @@ l2cap_channel_t * channel = l2cap_create_channel_entry(packet_handler, address, 
        *out_local_cid = channel->local_cid;
     }
 
+    // provdide buffer
+    channel->receive_sdu_buffer = receive_sdu_buffer;
     channel->state = L2CAP_STATE_WAIT_CONNECTION_COMPLETE;
 
     // add to connections list

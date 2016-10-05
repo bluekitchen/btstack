@@ -143,7 +143,9 @@ typedef struct {
 
     // incoming SDU
     uint8_t * receive_sdu_buffer;
-
+    uint16_t  receive_sdu_len;
+    uint16_t  receive_sdu_pos;
+    
     // outgoing SDU
     uint8_t  * send_sdu_buffer;
     uint16_t   send_sdu_len;
