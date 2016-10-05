@@ -135,6 +135,12 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
     }
 }
 
+static const uint8_t media_sbc_codec_info[] = {
+    (AVDTP_SBC_44100 << 4) | AVDTP_SBC_STEREO,
+    (AVDTP_SBC_BLOCK_LENGTH_16 << 4) | (AVDTP_SBC_SUBBANDS_8 << 2) | AVDTP_SBC_ALLOCATION_METHOD_LOUDNESS,
+    2, 250
+}; 
+
 
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
@@ -147,7 +153,11 @@ int btstack_main(int argc, const char * argv[]){
     // Initialize AVDTP Sink
     avdtp_sink_init();
     avdtp_sink_register_packet_handler(&packet_handler);
-    avdtp_sink_register_stream_end_point(AVDTP_SINK, AVDTP_AUDIO);
+    uint8_t seid = avdtp_sink_register_stream_end_point(AVDTP_SINK, AVDTP_AUDIO);
+    avdtp_sink_register_media_transport_category(seid);
+
+    avdtp_sink_register_media_codec_category(seid, AVDTP_AUDIO, AVDTP_CODEC_SBC, media_sbc_codec_info, sizeof(media_sbc_codec_info));
+
 
     // Initialize SDP 
     sdp_init();

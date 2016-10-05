@@ -68,6 +68,8 @@ extern "C" {
 #define AV_REMOTE_CONTROL           0X110E
 #define AV_REMOTE_CONTROL_CONTROLER 0X110F
 
+#define MAX_CSRC_NUM 15
+
 // Supported Features
 #define AVDTP_SOURCE_SF_Player      0x0001
 #define AVDTP_SOURCE_SF_Microphone  0x0002
@@ -141,6 +143,14 @@ typedef enum{
 } avdtp_media_type_t;
 
 typedef enum{
+    AVDTP_CODEC_SBC             = 0x00,
+    AVDTP_CODEC_MPEG_1_2_AUDIO  = 0x01, 
+    AVDTP_CODEC_MPEG_2_4_AAC    = 0x02,
+    AVDTP_CODEC_ATRAC_FAMILY    = 0x04,
+    AVDTP_CODEC_NON_A2DP        = 0xFF
+} avdtp_media_codec_type_t;
+
+typedef enum{
     AVDTP_SOURCE = 0,
     AVDTP_SINK
 } avdtp_sep_type_t;
@@ -163,15 +173,17 @@ typedef struct {
 } avdtp_recovery_capabilities_t;            
 
 typedef struct {
-    uint8_t media_type;                     // upper 4 bits, 4 lower are reserved
-    uint8_t media_codec_type;               // 
-    //uint8_t Media Codec Specific Information Elements
+    avdtp_media_type_t       media_type;                     
+    avdtp_media_codec_type_t media_codec_type; 
+    uint16_t  media_codec_information_len;
+    const uint8_t * media_codec_information;
 } adtvp_media_codec_capabilities_t;
 
 typedef struct {
-    uint8_t CP_TYPE_LSB;
-    uint8_t CP_TYPE_MSB;
-    //uint8_t CP_Type Specific Value
+    uint8_t cp_type_lsb;
+    uint8_t cp_type_msb;
+    uint16_t cp_type_value_len;
+    const uint8_t * cp_type_value;
 } adtvp_content_protection_t;
 
 typedef struct{
@@ -184,17 +196,17 @@ typedef struct{
     uint8_t fragmentation; // byte0 - bit 8, Allow Adaptation Layer Fragmentation, 0 no, 1 yes
     // Request/indicate value of the Transport Session Identifier for a media, reporting, or recovery transport sessions, respectively
     uint8_t transport_identifiers_num;
-    uint8_t transport_session_identifiers[4];   // byte1, upper 5bits, 0x01 to 0x1E
+    uint8_t transport_session_identifiers[3];   // byte1, upper 5bits, 0x01 to 0x1E
     // Request/indicate value for TCID for a media, reporting, or transport session
-    uint8_t transport_c_identifiers[4];         // byte2 0x01 to 0x1E 
+    uint8_t tcid[3];         // byte2 0x01 to 0x1E 
 } avdtp_multiplexing_mode_capabilities_t;
 
 typedef struct{
-    avdtp_recovery_capabilities_t recovery_caps;
-    adtvp_media_codec_capabilities_t media_codec_caps;
-    adtvp_content_protection_t content_protection_caps;
-    avdtp_header_compression_capabilities_t header_compression_caps;
-    avdtp_multiplexing_mode_capabilities_t multiplexing_mode_caps;
+    avdtp_recovery_capabilities_t recovery;
+    adtvp_media_codec_capabilities_t media_codec;
+    adtvp_content_protection_t content_protection;
+    avdtp_header_compression_capabilities_t header_compression;
+    avdtp_multiplexing_mode_capabilities_t multiplexing_mode;
 } avdtp_capabilities_t;
 
 typedef struct {
@@ -207,6 +219,65 @@ typedef struct {
     avdtp_capabilities_t capabilities;
 } avdtp_sep_t;
 
+typedef enum{
+    AVDTP_SBC_48000 = 1,
+    AVDTP_SBC_44100 = 2,
+    AVDTP_SBC_32000 = 4,
+    AVDTP_SBC_16000 = 8
+} avdtp_sbc_sampling_frequency_t;
+
+typedef enum{
+    AVDTP_SBC_JOINT_STEREO  = 1,
+    AVDTP_SBC_STEREO        = 2,
+    AVDTP_SBC_DUAL_CHANNEL  = 4,
+    AVDTP_SBC_MONO          = 8
+} avdtp_sbc_channel_mode_t;
+
+typedef enum{
+    AVDTP_SBC_BLOCK_LENGTH_16 = 1,
+    AVDTP_SBC_BLOCK_LENGTH_12 = 2,
+    AVDTP_SBC_BLOCK_LENGTH_8  = 4,
+    AVDTP_SBC_BLOCK_LENGTH_4  = 8
+} avdtp_sbc_block_length_t;
+
+typedef enum{
+    AVDTP_SBC_SUBBANDS_8 = 1,
+    AVDTP_SBC_SUBBANDS_4 = 2
+} avdtp_sbc_subbands_t;
+
+typedef enum{
+    AVDTP_SBC_ALLOCATION_METHOD_LOUDNESS = 1,
+    AVDTP_SBC_ALLOCATION_METHOD_SNR      = 2
+} avdtp_sbc_allocation_method_t;
+
+typedef struct {
+    uint8_t fragmentation;
+    uint8_t starting_packet; // of fragmented SBC frame
+    uint8_t last_packet;     // of fragmented SBC frame
+    uint8_t num_frames;
+} avdtp_sbc_codec_header_t;
+
+typedef struct {
+    uint8_t transaction_label;
+    avdtp_packet_type_t packet_type;
+    avdtp_message_type_t message_type;
+    uint8_t signal_identifier;
+} avdtp_signaling_packet_header_t;
+
+typedef struct {
+    uint8_t version;
+    uint8_t padding;
+    uint8_t extension;
+    uint8_t csrc_count;
+    uint8_t marker;
+    uint8_t payload_type;
+
+    uint16_t sequence_number;
+    uint32_t timestamp;
+    uint32_t synchronization_source;
+
+    uint32_t csrc_list[MAX_CSRC_NUM];
+} avdtp_media_packet_header_t;
 
 #if defined __cplusplus
 }

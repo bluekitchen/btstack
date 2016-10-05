@@ -1,30 +1,74 @@
 # Makefile for libusb based PTS tests
 BTSTACK_ROOT = ../..
 
-CORE += main.c stdin_support.c
+include ${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/Makefile.inc
+include ${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/Makefile.inc
 
-COMMON += hci_transport_h2_libusb.c btstack_run_loop_posix.c btstack_link_key_db_fs.c le_device_db_fs.c
+CORE += \
+	btstack_memory.c            \
+	btstack_linked_list.c	    \
+	btstack_memory_pool.c       \
+	btstack_run_loop.c		    \
+	btstack_util.c 	            \
+	main.c 	\
+	stdin_support.c \
+	
 
-include ${BTSTACK_ROOT}/example/Makefile.inc
+COMMON += \
+	hci.c			            \
+	hci_cmd.c		            \
+	hci_dump.c		            \
+	l2cap.c			            \
+	l2cap_signaling.c	        \
+	hci_transport_h2_libusb.c \
+	btstack_run_loop_posix.c \
+	btstack_link_key_db_fs.c \
+	le_device_db_fs.c \
+	wav_util.c \
+	sdp_util.c	                \
+	sdp_server.c			            \
 
-CFLAGS += -g -Wall -Wmissing-prototypes -Wstrict-prototypes -Wshadow -Werror \
-          -I${BTSTACK_ROOT}/platform/posix \
-          -I${BTSTACK_ROOT}/platform/embedded \
-	      -I${BTSTACK_ROOT}/port/libusb
+CFLAGS += -g -Wall -Wmissing-prototypes -Wstrict-prototypes -Wshadow -Werror 
+CFLAGS += -I.
+CFLAGS += -I${BTSTACK_ROOT}/src
+CFLAGS += -I${BTSTACK_ROOT}/src/classic
+CFLAGS += -I${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/include
+CFLAGS += -I${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/include
+CFLAGS += -I${BTSTACK_ROOT}/platform/posix 
+CFLAGS += -I${BTSTACK_ROOT}/platform/embedded 
+CFLAGS += -I${BTSTACK_ROOT}/port/libusb 
 
+
+VPATH += ${BTSTACK_ROOT}/src
+VPATH += ${BTSTACK_ROOT}/src/classic
 VPATH += ${BTSTACK_ROOT}/platform/posix
 VPATH += ${BTSTACK_ROOT}/port/libusb
+VPATH += ${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/srce 
+VPATH += ${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/srce 
 
 # use pkg-config for libusb
 CFLAGS  += $(shell pkg-config libusb-1.0 --cflags)
 LDFLAGS += $(shell pkg-config libusb-1.0 --libs)
 
+SBC_DECODER += \
+	${BTSTACK_ROOT}/src/classic/btstack_sbc_plc.c \
+	${BTSTACK_ROOT}/src/classic/btstack_sbc_bludroid.c \
+
+SBC_ENCODER += \
+	${BTSTACK_ROOT}/src/classic/btstack_sbc_bludroid.c \
+	${BTSTACK_ROOT}/src/classic/hfp_msbc.c \
+
 
 AVDTP_TESTS = avdtp_test 
 
+CORE_OBJ    = $(CORE:.c=.o)
+COMMON_OBJ  = $(COMMON:.c=.o) 
+SBC_DECODER_OBJ  = $(SBC_DECODER:.c=.o) 
+SBC_ENCODER_OBJ  = $(SBC_ENCODER:.c=.o)
+
 all: ${AVDTP_TESTS}
 
-avdtp_test: ${CORE_OBJ} ${COMMON_OBJ} avdtp_sink.o avdtp_test.o
+avdtp_test: ${CORE_OBJ} ${COMMON_OBJ} ${SBC_DECODER_OBJ} ${SBC_ENCODER_OBJ} avdtp_sink.o avdtp_test.o
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 test: all

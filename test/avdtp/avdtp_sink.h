@@ -58,11 +58,18 @@ extern "C" {
 
 typedef enum {
     AVDTP_SINK_IDLE,
+    
     AVDTP_SINK_W4_L2CAP_CONNECTED,
     AVDTP_SINK_W2_DISCOVER_SEPS,
     AVDTP_SINK_W4_SEPS_DISCOVERED,
     AVDTP_SINK_W2_GET_CAPABILITIES,
     AVDTP_SINK_W4_CAPABILITIES,
+    
+    AVDTP_SINK_W2_SET_CONFIGURATION,
+    AVDTP_SINK_W4_CONFIGURATION_SET,
+
+    AVDTP_SINK_W2_GET_CONFIGURATION,
+    AVDTP_SINK_W4_CONFIGURATION_RECEIVED,
 
     AVDTP_SINK_CONFIGURED,
     AVDTP_SINK_OPEN,
@@ -72,27 +79,45 @@ typedef enum {
     AVDTP_SINK_W4_L2CAP_DISCONNECTED
 } avdtp_sink_state_t;
 
+
+typedef enum {
+    AVDTP_REMOTE_IDLE,
+    AVDTP_REMOTE_W2_ANSWER_DISCOVER_SEPS,
+    AVDTP_REMOTE_W2_ANSWER_GET_CAPABILITIES,
+    AVDTP_REMOTE_W2_ANSWER_SET_CONFIGURATION,
+    AVDTP_REMOTE_W2_ANSWER_OPEN_STREAM,
+    AVDTP_REMOTE_OPEN,
+    AVDTP_REMOTE_W2_ANSWER_START_SINGLE_STREAM,
+    AVDTP_REMOTE_W4_STREAMING_CONNECTION_OPEN,
+    AVDTP_REMOTE_STREAMING
+} avdtp_source_state_t;
+
+
 typedef struct avdtp_sink_connection {
     btstack_linked_item_t    item;
     
     bd_addr_t remote_addr;
-    hci_con_handle_t acl_handle;
-    uint16_t l2cap_cid;
+    uint16_t l2cap_signaling_cid;
+    uint16_t l2cap_media_cid;
+    uint16_t l2cap_reporting_cid;
 
-    avdtp_sink_state_t local_state;
-    avdtp_sink_state_t remote_state;
+    avdtp_sink_state_t   local_state;
+    avdtp_source_state_t remote_state;
 
-    avdtp_sep_t remote_seps[MAX_NUM_SEPS];
-    uint8_t remote_seps_num;
-    uint8_t remote_sep_index_get_capabilities;
-    
     uint8_t local_transaction_label;
     uint8_t remote_transaction_label;
     
+    // store remote seps
+    avdtp_sep_t remote_seps[MAX_NUM_SEPS];
+    uint8_t remote_seps_num;
+    
+    // currently active local_seid
+    uint8_t local_seid;
+    // currently active remote seid
+    uint8_t remote_sep_index;
+    
+    // register request for L2cap connection release
     uint8_t release_l2cap_connection;
-
-    avdtp_capabilities_t remote_capabilities;
-    uint8_t requested_local_seid;
 } avdtp_sink_connection_t;
 
 
@@ -120,10 +145,11 @@ void avdtp_sink_register_media_transport_category(uint8_t seid);
 void avdtp_sink_register_reporting_category(uint8_t seid);
 void avdtp_sink_register_delay_reporting_category(uint8_t seid);
 void avdtp_sink_register_recovery_category(uint8_t seid, uint8_t maximum_recovery_window_size, uint8_t maximum_number_media_packets);
-void avdtp_sink_register_content_protection_category(uint8_t seid, uint8_t cp_type_lsb,  uint8_t cp_type_msb);
 void avdtp_sink_register_header_compression_category(uint8_t seid, uint8_t back_ch, uint8_t media, uint8_t recovery);
-void avdtp_sink_register_media_codec_category(uint8_t seid, uint8_t media_type, uint8_t media_codec_type);
-void avdtp_sink_register_multiplexing_category(uint8_t seid, uint8_t fragmentation, uint8_t transport_identifiers_num, uint8_t * transport_session_identifiers, uint8_t * transport_c_identifiers);
+void avdtp_sink_register_multiplexing_category(uint8_t seid, uint8_t fragmentation);
+
+void avdtp_sink_register_media_codec_category(uint8_t seid, avdtp_media_type_t media_type, avdtp_media_codec_type_t media_codec_type, const uint8_t * media_codec_info, uint16_t media_codec_info_len);
+void avdtp_sink_register_content_protection_category(uint8_t seid, uint8_t cp_type_lsb,  uint8_t cp_type_msb, const uint8_t * cp_type_value, uint8_t cp_type_value_len);
 
 /**
  * @brief Register callback for the AVDTP Sink client. 
