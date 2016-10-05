@@ -73,6 +73,7 @@ static int master_addr_type = 0;
 static hci_con_handle_t handle;
 static uint32_t ui_passkey;
 static int  ui_digits_for_passkey;
+static uint16_t local_cid;
 
 // general discoverable flags
 static uint8_t adv_general_discoverable[] = { 2, 01, 02 };
@@ -87,10 +88,15 @@ static void gap_run(void){
 static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     bd_addr_t event_address;
     uint16_t psm;
-    uint16_t local_cid;
+    uint16_t cid;
 
     switch (packet_type) {
-            
+        
+        case L2CAP_DATA_PACKET:
+            printf("L2CAP data cid 0x%02x: ", channel);
+            printf_hexdump(packet, size);
+            break;
+
         case HCI_EVENT_PACKET:
             switch (packet[0]) {
                 
@@ -116,17 +122,11 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                 case HCI_EVENT_DISCONNECTION_COMPLETE:
                     break;
 
-                case L2CAP_EVENT_INCOMING_CONNECTION: {
-                    local_cid  = little_endian_read_16(packet, 12);
-#if 1
-                    printf("L2CAP: Accepting incoming connection request for 0x%02x\n", local_cid); 
-                    l2cap_le_accept_connection(local_cid, receive_buffer_X, sizeof(receive_buffer_X), 1);
-#else
-                    printf("L2CAP Decline incoming connection request\n"); 
-                    l2cap_le_decline_connection(local_cid);
-#endif
+                case L2CAP_EVENT_INCOMING_CONNECTION: 
+                    cid  = little_endian_read_16(packet, 12);
+                    printf("L2CAP: Accepting incoming connection request for 0x%02x\n", cid); 
+                    l2cap_le_accept_connection(cid, receive_buffer_X, sizeof(receive_buffer_X), 1);
                     break;
-                }
 
                 case L2CAP_EVENT_CHANNEL_OPENED:
                     // inform about new l2cap connection
@@ -142,8 +142,8 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                     }
                     break;
                 case L2CAP_EVENT_CHANNEL_CLOSED:
-                    local_cid = l2cap_event_channel_closed_get_local_cid(packet);
-                    printf("L2CAP: Channel closed 0x%02x\n", local_cid); 
+                    cid = l2cap_event_channel_closed_get_local_cid(packet);
+                    printf("L2CAP: Channel closed 0x%02x\n", cid); 
                     break;
 
                 case SM_EVENT_JUST_WORKS_REQUEST:
@@ -191,6 +191,7 @@ void show_usage(void){
 
     printf("\n--- CLI for LE Data Channel %s ---\n", bd_addr_to_str(iut_address));
     printf("a - connect to type %u address %s PSM 0x%02x\n", pts_address_type, bd_addr_to_str(pts_address), psm_x);
+    printf("s - send data\n");
     printf("---\n");
     printf("Ctrl-c - exit\n");
     printf("---\n");
@@ -221,6 +222,11 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
             printf("Creating connection to %s\n", bd_addr_to_str(pts_address));
             gap_advertisements_enable(0);
             l2cap_le_create_channel(&app_packet_handler,pts_address, pts_address_type, psm_x, buffer_x, sizeof(buffer_x), 1, LEVEL_0, &cid_x);
+            break;
+
+        case 's':
+            printf("Send L2CAP Data\n");
+            l2cap_le_send_data(local_cid, (uint8_t *) "0123456789", 10);
             break;
 
         default:

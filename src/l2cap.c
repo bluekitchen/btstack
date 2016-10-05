@@ -756,6 +756,8 @@ static void l2cap_run(void){
                 // TODO: support larger MPS
                 channel->state = L2CAP_STATE_OPEN;
                 l2cap_send_le_signaling_packet(channel->con_handle, LE_CREDIT_BASED_CONNECTION_RESPONSE, channel->remote_sig_id, channel->remote_cid, channel->local_mtu, 23, channel->credits_incoming, 0);
+                // notify client
+                l2cap_emit_channel_opened(channel, 0);
                 break;                       
             case L2CAP_STATE_WILL_SEND_LE_CONNECTION_RESPONSE_DECLINE:
                 if (!hci_can_send_acl_packet_now(channel->con_handle)) break;
@@ -1729,10 +1731,17 @@ static void l2cap_acl_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
 
         default: {
             // Find channel for this channel_id and connection handle
-            l2cap_channel_t * l2cap_channel = l2cap_get_channel_for_local_cid(channel_id);
+            l2cap_channel_t * l2cap_channel;
+            l2cap_channel = l2cap_get_channel_for_local_cid(channel_id);
             if (l2cap_channel) {
                 l2cap_dispatch_to_channel(l2cap_channel, L2CAP_DATA_PACKET, &packet[COMPLETE_L2CAP_HEADER], size-COMPLETE_L2CAP_HEADER);
             }
+#ifdef ENABLE_BLE
+            l2cap_channel = l2cap_le_get_channel_for_local_cid(channel_id);
+            if (l2cap_channel) {
+                l2cap_dispatch_to_channel(l2cap_channel, L2CAP_DATA_PACKET, &packet[COMPLETE_L2CAP_HEADER], size-COMPLETE_L2CAP_HEADER);
+            }
+#endif
             break;
         }
     }
@@ -1964,7 +1973,7 @@ l2cap_channel_t * channel = l2cap_create_channel_entry(packet_handler, address, 
  * @param local_cid             L2CAP LE Data Channel Identifier
  * @param credits               Number additional credits for peer
  */
-uint8_t l2cap_le_provide_credits(uint16_t cid, uint16_t credits){
+uint8_t l2cap_le_provide_credits(uint16_t local_cid, uint16_t credits){
     // get channel
     // bail if missing
     // check state
@@ -1978,7 +1987,7 @@ uint8_t l2cap_le_provide_credits(uint16_t cid, uint16_t credits){
  * @brief Check if outgoing buffer is available and that there's space on the Bluetooth module
  * @param local_cid             L2CAP LE Data Channel Identifier
  */
-int l2cap_le_can_send_now(uint16_t cid){
+int l2cap_le_can_send_now(uint16_t local_cid){
     // check if data can be sent via le at all
     return 0;
 }
@@ -1989,7 +1998,7 @@ int l2cap_le_can_send_now(uint16_t cid){
  *       so packet handler should be ready to handle it
  * @param local_cid             L2CAP LE Data Channel Identifier
  */
-uint8_t l2cap_le_request_can_send_now_event(uint16_t cid){
+uint8_t l2cap_le_request_can_send_now_event(uint16_t local_cid){
     // same as for non-le
     return 0;
 }
@@ -2001,11 +2010,30 @@ uint8_t l2cap_le_request_can_send_now_event(uint16_t cid){
  * @param data                  data to send
  * @param size                  data size
  */
-uint8_t l2cap_le_send_data(uint16_t cid, uint8_t * data, uint16_t size){
-    // check if no outgoing data is pending
-    // store info
-    // l2cap_le_run()
-    return 0;
+uint8_t l2cap_le_send_data(uint16_t local_cid, uint8_t * data, uint16_t len){
+
+    l2cap_channel_t * channel = l2cap_le_get_channel_for_local_cid(local_cid);
+    if (!channel) {
+        log_error("l2cap_send no channel for cid 0x%02x", local_cid);
+        return -1;   // TODO: define error
+    }
+
+    if (len > channel->remote_mtu){
+        log_error("l2cap_send cid 0x%02x, data length exceeds remote MTU.", local_cid);
+        return L2CAP_DATA_LEN_EXCEEDS_REMOTE_MTU;
+    }
+
+    if (!hci_can_send_acl_packet_now(channel->con_handle)){
+        log_info("l2cap_send cid 0x%02x, cannot send", local_cid);
+        return BTSTACK_ACL_BUFFERS_FULL;
+    }
+
+    hci_reserve_packet_buffer();
+    uint8_t *acl_buffer = hci_get_outgoing_packet_buffer();
+
+    memcpy(&acl_buffer[8], data, len);
+
+    return l2cap_send_prepared_connectionless(channel->con_handle, local_cid, len);
 }
 
 /**
