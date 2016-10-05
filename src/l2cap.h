@@ -187,11 +187,6 @@ typedef struct {
     // required security level
     gap_security_level_t required_security_level;
 
-    // LE Data Channels
-
-    // automatic credits incoming
-    uint16_t automatic_credits;
-
 } l2cap_service_t;
 
 

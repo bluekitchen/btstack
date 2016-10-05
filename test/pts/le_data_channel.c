@@ -125,7 +125,7 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                 case L2CAP_EVENT_INCOMING_CONNECTION: 
                     cid  = little_endian_read_16(packet, 12);
                     printf("L2CAP: Accepting incoming connection request for 0x%02x\n", cid); 
-                    l2cap_le_accept_connection(cid, receive_buffer_X, sizeof(receive_buffer_X), 1);
+                    l2cap_le_accept_connection(cid, receive_buffer_X, sizeof(receive_buffer_X), L2CAP_LE_AUTOMATIC_CREDITS);
                     break;
 
                 case L2CAP_EVENT_CHANNEL_OPENED:
@@ -222,7 +222,8 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
         case 'a':
             printf("Creating connection to %s\n", bd_addr_to_str(pts_address));
             gap_advertisements_enable(0);
-            l2cap_le_create_channel(&app_packet_handler,pts_address, pts_address_type, psm_x, buffer_x, sizeof(buffer_x), 1, LEVEL_0, &cid_x);
+            l2cap_le_create_channel(&app_packet_handler,pts_address, pts_address_type, psm_x, buffer_x, 
+                                    sizeof(buffer_x), L2CAP_LE_AUTOMATIC_CREDITS, LEVEL_0, &cid_x);
             break;
 
         case 's':

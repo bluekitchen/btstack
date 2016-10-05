@@ -61,6 +61,10 @@
 // used to cache l2cap rejects, echo, and informational requests
 #define NR_PENDING_SIGNALING_RESPONSES 3
 
+// nr of credits provided to remote if credits fall below watermark
+#define L2CAP_LE_DATA_CHANNELS_AUTOMATIC_CREDITS_WATERMARK 5
+#define L2CAP_LE_DATA_CHANNELS_AUTOMATIC_CREDITS_INCREMENT 5
+
 // offsets for L2CAP SIGNALING COMMANDS
 #define L2CAP_SIGNALING_COMMAND_CODE_OFFSET   0
 #define L2CAP_SIGNALING_COMMAND_SIGID_OFFSET  1
@@ -763,9 +767,23 @@ static void l2cap_run(void){
                 btstack_memory_l2cap_channel_free(channel);
                 break;
             case L2CAP_STATE_OPEN:
+                if (!hci_can_send_acl_packet_now(channel->con_handle)) break;
+
+                // send credits
+                if (channel->new_credits_incoming){
+                    log_info("l2cap: sending %u credits", channel->new_credits_incoming);
+                    channel->local_sig_id = l2cap_next_sig_id();
+                    uint16_t new_credits = channel->new_credits_incoming;
+                    channel->new_credits_incoming = 0;
+                    channel->credits_incoming += new_credits;
+                    l2cap_send_le_signaling_packet(channel->con_handle, LE_FLOW_CONTROL_CREDIT, channel->local_sig_id, channel->remote_cid, new_credits);
+                    break;
+                }
+
+                // send data
                 if (!channel->send_sdu_buffer) break;
                 if (!channel->credits_outgoing) break;
-                if (!hci_can_send_acl_packet_now(channel->con_handle)) break;
+
                 // send part of SDU
                 hci_reserve_packet_buffer();
                 acl_buffer = hci_get_outgoing_packet_buffer();
@@ -778,15 +796,14 @@ static void l2cap_run(void){
                     pos += 2;
                 }
                 payload_size = btstack_min(channel->send_sdu_len + 2 - channel->send_sdu_pos, channel->remote_mps - pos);
-                log_info("len %u, pos %u => payload %u", channel->send_sdu_len, channel->send_sdu_pos, payload_size);
+                log_info("len %u, pos %u => payload %u, credits %u", channel->send_sdu_len, channel->send_sdu_pos, payload_size, channel->credits_outgoing);
                 memcpy(&l2cap_payload[pos], &channel->send_sdu_buffer[channel->send_sdu_pos-2], payload_size); // -2 for virtual SDU len
                 pos += payload_size;
                 channel->send_sdu_pos += payload_size;
                 l2cap_setup_header(acl_buffer, channel->con_handle, channel->remote_cid, payload_size);
                 // done
 
-                // TODO: enable credit counting
-                // channel->credits_outgoing--;
+                channel->credits_outgoing--;
 
                 if (channel->send_sdu_pos >= channel->send_sdu_len + 2){
                     channel->send_sdu_buffer = NULL;
@@ -1541,6 +1558,7 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
     uint8_t  event[10];
     uint16_t le_psm;
     uint16_t local_cid;
+    uint16_t credits;
     l2cap_service_t * service;
     l2cap_channel_t * channel;
     btstack_linked_list_iterator_t it;    
@@ -1674,7 +1692,6 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
                 channel = a_channel;
                 break; 
             }
-            // TODO: send error
             if (!channel) break;
 
             // cid + 0
@@ -1697,6 +1714,16 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
             channel->credits_outgoing = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET + 6);
             channel->state = L2CAP_STATE_OPEN;
             l2cap_emit_channel_opened(channel, result);
+            break;
+
+        case LE_FLOW_CONTROL_CREDIT:
+            // find channel
+            local_cid = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET + 0);
+            channel = l2cap_le_get_channel_for_local_cid(local_cid);
+            if (!channel) break;
+            credits = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET + 2);
+            channel->credits_outgoing += credits;
+            log_info("l2cap: %u credits for 0x%02x", credits, local_cid);
             break;
 
         case DISCONNECTION_REQUEST:
@@ -1775,6 +1802,19 @@ static void l2cap_acl_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
 #ifdef ENABLE_BLE
             l2cap_channel = l2cap_le_get_channel_for_local_cid(channel_id);
             if (l2cap_channel) {
+                // credit counting
+                if (l2cap_channel->credits_incoming == 0){
+                    log_error("LE Data Channel packet received but no incoming credits");
+                    l2cap_channel->state = L2CAP_STATE_WILL_SEND_DISCONNECT_REQUEST;
+                    break;
+                }
+                l2cap_channel->credits_incoming--;
+
+                // automatic credits
+                if (l2cap_channel->credits_incoming < L2CAP_LE_DATA_CHANNELS_AUTOMATIC_CREDITS_WATERMARK && l2cap_channel->automatic_credits){
+                    l2cap_channel->new_credits_incoming = L2CAP_LE_DATA_CHANNELS_AUTOMATIC_CREDITS_INCREMENT;
+                }
+
                 // first fragment
                 uint16_t pos = 0;
                 if (!l2cap_channel->receive_sdu_len){
@@ -1955,7 +1995,11 @@ uint8_t l2cap_le_accept_connection(uint16_t local_cid, uint8_t * receive_sdu_buf
     channel->state = L2CAP_STATE_WILL_SEND_LE_CONNECTION_RESPONSE_ACCEPT;
     channel->receive_sdu_buffer = receive_sdu_buffer;
     channel->local_mtu = mtu;
-    channel->credits_incoming = initial_credits;
+    channel->new_credits_incoming = initial_credits;
+    channel->automatic_credits  = initial_credits == L2CAP_LE_AUTOMATIC_CREDITS;
+
+    // test
+    channel->new_credits_incoming = 1;
 
     // go
     l2cap_run();
@@ -2004,6 +2048,11 @@ uint8_t l2cap_le_create_channel(btstack_packet_handler_t packet_handler, bd_addr
     // provdide buffer
     channel->receive_sdu_buffer = receive_sdu_buffer;
     channel->state = L2CAP_STATE_WAIT_CONNECTION_COMPLETE;
+    channel->new_credits_incoming = initial_credits;
+    channel->automatic_credits    = initial_credits == L2CAP_LE_AUTOMATIC_CREDITS;
+
+    // test
+    channel->new_credits_incoming = 1;
 
     // add to connections list
     btstack_linked_list_add(&l2cap_le_channels, (btstack_linked_item_t *) channel);
