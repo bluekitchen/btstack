@@ -13,4 +13,4 @@ l2cap_test
 profile.h
 sco_loopbackiopt
 sco_loopback
-iopt
+ioptle_data_channel

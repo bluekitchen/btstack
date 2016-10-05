@@ -428,6 +428,19 @@ void l2cap_release_packet_buffer(void){
     hci_release_packet_buffer();
 }
 
+static void l2cap_setup_header(uint8_t * acl_buffer, hci_con_handle_t con_handle, uint16_t remote_cid, uint16_t len){
+
+    int pb = hci_non_flushable_packet_boundary_flag_supported() ? 0x00 : 0x02;
+
+    // 0 - Connection handle : PB=pb : BC=00 
+    little_endian_store_16(acl_buffer, 0, con_handle | (pb << 12) | (0 << 14));
+    // 2 - ACL length
+    little_endian_store_16(acl_buffer, 2,  len + 4);
+    // 4 - L2CAP packet length
+    little_endian_store_16(acl_buffer, 4,  len + 0);
+    // 6 - L2CAP channel DEST
+    little_endian_store_16(acl_buffer, 6,  remote_cid);    
+}
 
 int l2cap_send_prepared(uint16_t local_cid, uint16_t len){
     
@@ -450,21 +463,9 @@ int l2cap_send_prepared(uint16_t local_cid, uint16_t len){
     log_debug("l2cap_send_prepared cid 0x%02x, handle %u, 1 credit used", local_cid, channel->con_handle);
     
     uint8_t *acl_buffer = hci_get_outgoing_packet_buffer();
-
-    int pb = hci_non_flushable_packet_boundary_flag_supported() ? 0x00 : 0x02;
-
-    // 0 - Connection handle : PB=pb : BC=00 
-    little_endian_store_16(acl_buffer, 0, channel->con_handle | (pb << 12) | (0 << 14));
-    // 2 - ACL length
-    little_endian_store_16(acl_buffer, 2,  len + 4);
-    // 4 - L2CAP packet length
-    little_endian_store_16(acl_buffer, 4,  len + 0);
-    // 6 - L2CAP channel DEST
-    little_endian_store_16(acl_buffer, 6, channel->remote_cid);    
+    l2cap_setup_header(acl_buffer, channel->con_handle, channel->remote_cid, len);
     // send
-    int err = hci_send_acl_packet_buffer(len+8);
-    
-    return err;
+    return hci_send_acl_packet_buffer(len+8);
 }
 
 int l2cap_send_prepared_connectionless(hci_con_handle_t con_handle, uint16_t cid, uint16_t len){
@@ -482,21 +483,9 @@ int l2cap_send_prepared_connectionless(hci_con_handle_t con_handle, uint16_t cid
     log_debug("l2cap_send_prepared_connectionless handle %u, cid 0x%02x", con_handle, cid);
     
     uint8_t *acl_buffer = hci_get_outgoing_packet_buffer();
-    
-    int pb = hci_non_flushable_packet_boundary_flag_supported() ? 0x00 : 0x02;
-
-    // 0 - Connection handle : PB=pb : BC=00 
-    little_endian_store_16(acl_buffer, 0, con_handle | (pb << 12) | (0 << 14));
-    // 2 - ACL length
-    little_endian_store_16(acl_buffer, 2,  len + 4);
-    // 4 - L2CAP packet length
-    little_endian_store_16(acl_buffer, 4,  len + 0);
-    // 6 - L2CAP channel DEST
-    little_endian_store_16(acl_buffer, 6, cid);    
+    l2cap_setup_header(acl_buffer, con_handle, cid, len);
     // send
-    int err = hci_send_acl_packet_buffer(len+8);
-    
-    return err;
+    return hci_send_acl_packet_buffer(len+8);
 }
 
 int l2cap_send(uint16_t local_cid, uint8_t *data, uint16_t len){
@@ -742,6 +731,10 @@ static void l2cap_run(void){
 #ifdef ENABLE_BLE
     btstack_linked_list_iterator_init(&it, &l2cap_le_channels);
     while (btstack_linked_list_iterator_has_next(&it)){
+        uint8_t  * acl_buffer;
+        uint8_t  * l2cap_payload;
+        uint16_t pos;
+        uint16_t payload_size;
         l2cap_channel_t * channel = (l2cap_channel_t *) btstack_linked_list_iterator_next(&it);
         // log_info("l2cap_run: channel %p, state %u, var 0x%02x", channel, channel->state, channel->state_var);
         switch (channel->state){
@@ -768,6 +761,37 @@ static void l2cap_run(void){
                 l2cap_stop_rtx(channel);
                 btstack_linked_list_iterator_remove(&it);
                 btstack_memory_l2cap_channel_free(channel);
+                break;
+            case L2CAP_STATE_OPEN:
+                if (!channel->send_sdu_buffer) break;
+                if (!channel->credits_outgoing) break;
+                if (!hci_can_send_acl_packet_now(channel->con_handle)) break;
+                // send part of SDU
+                hci_reserve_packet_buffer();
+                acl_buffer = hci_get_outgoing_packet_buffer();
+                l2cap_payload = acl_buffer + 8;
+                pos = 0;
+                if (!channel->send_sdu_pos){
+                    // store SDU len
+                    channel->send_sdu_pos += 2;
+                    little_endian_store_16(l2cap_payload, pos, channel->send_sdu_len);
+                    pos += 2;
+                }
+                payload_size = btstack_min(channel->send_sdu_len + 2 - channel->send_sdu_pos, channel->remote_mps - pos);
+                log_info("len %u, pos %u => payload %u", channel->send_sdu_len, channel->send_sdu_pos, payload_size);
+                memcpy(&l2cap_payload[pos], &channel->send_sdu_buffer[channel->send_sdu_pos-2], payload_size); // -2 for virtual SDU len
+                pos += payload_size;
+                channel->send_sdu_pos += payload_size;
+                l2cap_setup_header(acl_buffer, channel->con_handle, channel->remote_cid, payload_size);
+                // done
+
+//                channel->credits_outgoing--;
+
+                if (channel->send_sdu_pos >= channel->send_sdu_len + 2){
+                    channel->send_sdu_buffer = NULL;
+                    // TODO: send done event
+                }
+                hci_send_acl_packet_buffer(8 + pos);
                 break;
             case L2CAP_STATE_WILL_SEND_DISCONNECT_REQUEST:
                 if (!hci_can_send_acl_packet_now(channel->con_handle)) break;
@@ -1629,12 +1653,10 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
                 channel->con_handle = handle;
                 channel->remote_cid = source_cid;
                 channel->remote_sig_id = sig_id; 
+                channel->remote_mtu = little_endian_read_16(command, 8);
+                channel->remote_mps = little_endian_read_16(command, 10);
+                channel->credits_outgoing = little_endian_read_16(command, 12);
 
-                // limit local mtu to max acl packet length - l2cap header
-                if (channel->local_mtu > l2cap_max_le_mtu()) {
-                    channel->local_mtu = l2cap_max_le_mtu();
-                }
-    
                 // set initial state
                 channel->state = L2CAP_STATE_WAIT_CLIENT_ACCEPT_OR_REJECT;
     
@@ -2058,17 +2080,17 @@ uint8_t l2cap_le_send_data(uint16_t local_cid, uint8_t * data, uint16_t len){
         return L2CAP_DATA_LEN_EXCEEDS_REMOTE_MTU;
     }
 
-    if (!hci_can_send_acl_packet_now(channel->con_handle)){
+    if (channel->send_sdu_buffer){
         log_info("l2cap_send cid 0x%02x, cannot send", local_cid);
         return BTSTACK_ACL_BUFFERS_FULL;
     }
 
-    hci_reserve_packet_buffer();
-    uint8_t *acl_buffer = hci_get_outgoing_packet_buffer();
+    channel->send_sdu_buffer = data;
+    channel->send_sdu_len    = len;
+    channel->send_sdu_pos    = 0;
 
-    memcpy(&acl_buffer[8], data, len);
-
-    return l2cap_send_prepared_connectionless(channel->con_handle, local_cid, len);
+    l2cap_run();
+    return 0;
 }
 
 /**

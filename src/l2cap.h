@@ -130,7 +130,6 @@ typedef struct {
     uint16_t  local_mtu;
     uint16_t  remote_mtu;
 
-    
     uint16_t  flush_timeout;    // default 0xffff
 
     uint16_t  psm;
@@ -142,8 +141,13 @@ typedef struct {
 
     // LE Data Channels
 
-    // receive SDU buffer
+    // incoming SDU
     uint8_t * receive_sdu_buffer;
+
+    // outgoing SDU
+    uint8_t  * send_sdu_buffer;
+    uint16_t   send_sdu_len;
+    uint16_t   send_sdu_pos;
 
     // max PDU size
     uint16_t  remote_mps;

@@ -227,7 +227,7 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
 
         case 's':
             printf("Send L2CAP Data\n");
-            l2cap_le_send_data(local_cid, (uint8_t *) "0123456789", 10);
+            l2cap_le_send_data(local_cid, (uint8_t *) "0123456789abcdefghijklmnopqrstuvwxyz", 36);
             break;
 
         case 't':
