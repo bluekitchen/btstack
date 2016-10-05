@@ -21,7 +21,7 @@ SBC_ENCODER_OBJ  = $(SBC_ENCODER:.c=.o)
 CFLAGS  = -g -Wall -I. -I../ -I${BTSTACK_ROOT}/src -I${BTSTACK_ROOT}/src/classic -I${BTSTACK_ROOT}/platform/posix
 CFLAGS += -I${SBC_DECODER_ROOT}/include 
 CFLAGS += -I${SBC_ENCODER_ROOT}/include 
-CFLAGS += -D PRINT_SAMPLES -D PRINT_SCALEFACTORS -D OI_DEBUG -D SBC_NO_PCM_CPY_OPTION
+CFLAGS += -D PRINT_SAMPLES -D PRINT_SCALEFACTORS -D OI_DEBUG -D TRACE_EXECUTION
 # -D TRACE_EXECUTION -D CODEC_DEBUG 
 LDFLAGS += -lCppUTest -lCppUTestExt
 VPATH += ${SBC_DECODER_ROOT}/srce 
@@ -47,8 +47,10 @@ sbc_encoder_test: ${SBC_DECODER_OBJ} ${SBC_ENCODER_OBJ} ${COMMON_OBJ} sbc_encode
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 test: all
-	./sbc_decoder_test data/sine-4sb-mono msbc 1 100
-	./sbc_encoder_test data/sine-mono.wav data/sine-4sb-mono.sbc
+	./sbc_decoder_test data/avdtp_sink sbc 0 0
+	
+	#./sbc_decoder_test data/sine-4sb-mono msbc 1 100
+	#./sbc_encoder_test data/sine-mono.wav data/sine-4sb-mono.sbc
 
 pytest-sine:
 	./sbc_decoder_test.py data/sine-4sb-mono.sbc data/sine-4sb-decoded-mono.wav
