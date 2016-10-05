@@ -59,7 +59,9 @@ extern "C" {
 #if (L2CAP_MINIMAL_MTU + L2CAP_HEADER_SIZE) > HCI_ACL_PAYLOAD_SIZE
 #error "HCI_ACL_PAYLOAD_SIZE too small for minimal L2CAP MTU of 48 bytes"
 #endif    
-    
+
+#define L2CAP_LE_AUTOMATIC_CREDITS 0xffff
+
 // private structs
 typedef enum {
     L2CAP_STATE_CLOSED = 1,           // no baseband
@@ -145,7 +147,7 @@ typedef struct {
     uint8_t * receive_sdu_buffer;
     uint16_t  receive_sdu_len;
     uint16_t  receive_sdu_pos;
-    
+
     // outgoing SDU
     uint8_t  * send_sdu_buffer;
     uint16_t   send_sdu_len;
@@ -162,6 +164,9 @@ typedef struct {
 
     // credits for incoming traffic
     uint16_t credits_incoming;
+
+    // automatic credits incoming
+    uint16_t automatic_credits;
 
 } l2cap_channel_t;
 
@@ -181,6 +186,11 @@ typedef struct {
 
     // required security level
     gap_security_level_t required_security_level;
+
+    // LE Data Channels
+
+    // automatic credits incoming
+    uint16_t automatic_credits;
 
 } l2cap_service_t;
 
@@ -334,7 +344,7 @@ uint8_t l2cap_le_unregister_service(uint16_t psm);
  * @param local_cid             L2CAP LE Data Channel Identifier
  * @param receive_buffer        buffer used for reassembly of L2CAP LE Information Frames into service data unit (SDU) with given MTU
  * @param receive_buffer_size   buffer size equals MTU
- * @param initial_credits       Number of initial credits provided to peer
+ * @param initial_credits       Number of initial credits provided to peer or L2CAP_LE_AUTOMATIC_CREDITS to enable automatic credits
  */
 
 uint8_t l2cap_le_accept_connection(uint16_t local_cid, uint8_t * receive_sdu_buffer, uint16_t mtu, uint16_t initial_credits);
@@ -354,7 +364,7 @@ uint8_t l2cap_le_decline_connection(uint16_t local_cid);
  * @param psm                   Service PSM to connect to
  * @param receive_buffer        buffer used for reassembly of L2CAP LE Information Frames into service data unit (SDU) with given MTU
  * @param receive_buffer_size   buffer size equals MTU
- * @param initial_credits       Number of initial credits provided to peer
+ * @param initial_credits       Number of initial credits provided to peer or L2CAP_LE_AUTOMATIC_CREDITS to enable automatic credits
  * @param security_level        Minimum required security level
  * @param out_local_cid         L2CAP LE Channel Identifier is stored here
  */
