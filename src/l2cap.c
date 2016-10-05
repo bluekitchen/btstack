@@ -85,6 +85,7 @@ static void l2cap_hci_event_handler(uint8_t packet_type, uint16_t channel, uint8
 static void l2cap_acl_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size );
 static void l2cap_notify_channel_can_send(void);
 #ifdef ENABLE_BLE
+static void l2cap_le_finialize_channel_close(l2cap_channel_t *channel);
 static inline l2cap_service_t * l2cap_le_get_service(uint16_t psm);
 #endif
 
@@ -767,6 +768,18 @@ static void l2cap_run(void){
                 l2cap_stop_rtx(channel);
                 btstack_linked_list_iterator_remove(&it);
                 btstack_memory_l2cap_channel_free(channel);
+                break;
+            case L2CAP_STATE_WILL_SEND_DISCONNECT_REQUEST:
+                if (!hci_can_send_acl_packet_now(channel->con_handle)) break;
+                channel->local_sig_id = l2cap_next_sig_id();
+                channel->state = L2CAP_STATE_WAIT_DISCONNECT;
+                l2cap_send_le_signaling_packet( channel->con_handle, DISCONNECTION_REQUEST, channel->local_sig_id, channel->remote_cid, channel->local_cid);   
+                break;
+            case L2CAP_STATE_WILL_SEND_DISCONNECT_RESPONSE:
+                if (!hci_can_send_acl_packet_now(channel->con_handle)) break;
+                channel->state = L2CAP_STATE_INVALID;
+                l2cap_send_le_signaling_packet( channel->con_handle, DISCONNECTION_RESPONSE, channel->remote_sig_id, channel->local_cid, channel->remote_cid);   
+                l2cap_le_finialize_channel_close(channel);  // -- remove from list
                 break;
             default:
                 break;
@@ -1512,6 +1525,7 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
     uint16_t result;
     uint8_t  event[10];
     uint16_t le_psm;
+    uint16_t local_cid;
     l2cap_service_t * service;
     l2cap_channel_t * channel;
     btstack_linked_list_iterator_t it;    
@@ -1672,6 +1686,15 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
             l2cap_emit_channel_opened(channel, result);
             break;
 
+        case DISCONNECTION_REQUEST:
+            // find channel
+            local_cid = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET + 0);
+            channel = l2cap_le_get_channel_for_local_cid(local_cid);
+            if (!channel) break;
+            channel->remote_sig_id = sig_id;
+            channel->state = L2CAP_STATE_WILL_SEND_DISCONNECT_RESPONSE;
+            break;
+
         default:
             // command unknown -> reject command
             return 0;
@@ -1758,6 +1781,18 @@ void l2cap_finialize_channel_close(l2cap_channel_t * channel){
     btstack_linked_list_remove(&l2cap_channels, (btstack_linked_item_t *) channel);
     btstack_memory_l2cap_channel_free(channel);
 }
+
+#ifdef ENABLE_BLE
+// finalize closed channel - l2cap_handle_disconnect_request & DISCONNECTION_RESPONSE
+void l2cap_le_finialize_channel_close(l2cap_channel_t * channel){
+    channel->state = L2CAP_STATE_CLOSED;
+    l2cap_emit_channel_closed(channel);
+    // discard channel
+    l2cap_stop_rtx(channel);
+    btstack_linked_list_remove(&l2cap_le_channels, (btstack_linked_item_t *) channel);
+    btstack_memory_l2cap_channel_free(channel);
+}
+#endif
 
 static l2cap_service_t * l2cap_get_service_internal(btstack_linked_list_t * services, uint16_t psm){
     btstack_linked_list_iterator_t it;
@@ -2015,7 +2050,7 @@ uint8_t l2cap_le_send_data(uint16_t local_cid, uint8_t * data, uint16_t len){
     l2cap_channel_t * channel = l2cap_le_get_channel_for_local_cid(local_cid);
     if (!channel) {
         log_error("l2cap_send no channel for cid 0x%02x", local_cid);
-        return -1;   // TODO: define error
+        return L2CAP_LOCAL_CID_DOES_NOT_EXIST;
     }
 
     if (len > channel->remote_mtu){
@@ -2040,11 +2075,16 @@ uint8_t l2cap_le_send_data(uint16_t local_cid, uint8_t * data, uint16_t len){
  * @brief Disconnect from LE Data Channel
  * @param local_cid             L2CAP LE Data Channel Identifier
  */
-uint8_t l2cap_le_disconnect(uint16_t cid)
+uint8_t l2cap_le_disconnect(uint16_t local_cid)
 {
-    // find channel
-    // check state
-    // set state SEND_DISCONNECT
+    l2cap_channel_t * channel = l2cap_le_get_channel_for_local_cid(local_cid);
+    if (!channel) {
+        log_error("l2cap_send no channel for cid 0x%02x", local_cid);
+        return L2CAP_LOCAL_CID_DOES_NOT_EXIST;
+    }
+
+    channel->state = L2CAP_STATE_WILL_SEND_DISCONNECT_REQUEST;
+    l2cap_run();
     return 0;
 }
 

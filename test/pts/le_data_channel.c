@@ -192,6 +192,7 @@ void show_usage(void){
     printf("\n--- CLI for LE Data Channel %s ---\n", bd_addr_to_str(iut_address));
     printf("a - connect to type %u address %s PSM 0x%02x\n", pts_address_type, bd_addr_to_str(pts_address), psm_x);
     printf("s - send data\n");
+    printf("t - disconnect channel\n");
     printf("---\n");
     printf("Ctrl-c - exit\n");
     printf("---\n");
@@ -227,6 +228,11 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
         case 's':
             printf("Send L2CAP Data\n");
             l2cap_le_send_data(local_cid, (uint8_t *) "0123456789", 10);
+            break;
+
+        case 't':
+            printf("Disconnect channel 0x%02x\n", local_cid);
+            l2cap_le_disconnect(local_cid);
             break;
 
         default:
