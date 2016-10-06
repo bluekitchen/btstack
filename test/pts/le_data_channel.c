@@ -66,9 +66,8 @@
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 static btstack_packet_callback_registration_t sm_event_callback_registration;
 
-static bd_addr_t pts_address = { 0x00, 0x02, 0x72, 0xDC, 0x31, 0xC1};
+static bd_addr_t pts_address = { 0x00, 0x1a, 0x7d, 0xda, 0x71, 0x0a};
 static int pts_address_type = 0;
-static bd_addr_t master_address = { 0x00, 0x02, 0x72, 0xDC, 0x31, 0xC1};
 static int master_addr_type = 0;
 static hci_con_handle_t handle;
 static uint32_t ui_passkey;
@@ -78,7 +77,11 @@ static uint16_t local_cid;
 // general discoverable flags
 static uint8_t adv_general_discoverable[] = { 2, 01, 02 };
 
-const uint16_t psm_x = 0xf0;
+const uint16_t TSPX_le_psm = 0x25;
+const uint16_t TSPX_psm_unsupported = 0xf1;
+static uint16_t initial_credits = L2CAP_LE_AUTOMATIC_CREDITS;
+const char * data_short = "a";
+const char * data_long  = "0123456789abcdefghijklmnopqrstuvwxyz";
 
 uint8_t receive_buffer_X[100];
 
@@ -125,7 +128,7 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                 case L2CAP_EVENT_INCOMING_CONNECTION: 
                     cid  = little_endian_read_16(packet, 12);
                     printf("L2CAP: Accepting incoming connection request for 0x%02x\n", cid); 
-                    l2cap_le_accept_connection(cid, receive_buffer_X, sizeof(receive_buffer_X), L2CAP_LE_AUTOMATIC_CREDITS);
+                    l2cap_le_accept_connection(cid, receive_buffer_X, sizeof(receive_buffer_X), initial_credits);
                     break;
 
                 case L2CAP_EVENT_CHANNEL_OPENED:
@@ -155,7 +158,7 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                     // display number
                     master_addr_type = packet[4];
                     reverse_bd_addr(&packet[5], event_address);
-                    printf("\nGAP Bonding %s (%u): Enter 6 digit passkey: '", bd_addr_to_str(master_address), master_addr_type);
+                    printf("\nGAP Bonding %s (%u): Enter 6 digit passkey: '", bd_addr_to_str(pts_address), master_addr_type);
                     fflush(stdout);
                     ui_passkey = 0;
                     ui_digits_for_passkey = 6;
@@ -163,11 +166,11 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
 
                 case SM_EVENT_PASSKEY_DISPLAY_NUMBER:
                     // display number
-                    printf("\nGAP Bonding %s (%u): Display Passkey '%06u\n", bd_addr_to_str(master_address), master_addr_type, little_endian_read_32(packet, 11));
+                    printf("\nGAP Bonding %s (%u): Display Passkey '%06u\n", bd_addr_to_str(pts_address), master_addr_type, little_endian_read_32(packet, 11));
                     break;
 
                 case SM_EVENT_PASSKEY_DISPLAY_CANCEL: 
-                    printf("\nGAP Bonding %s (%u): Display cancel\n", bd_addr_to_str(master_address), master_addr_type);
+                    printf("\nGAP Bonding %s (%u): Display cancel\n", bd_addr_to_str(pts_address), master_addr_type);
                     break;
 
                 case SM_EVENT_AUTHORIZATION_REQUEST:
@@ -190,8 +193,12 @@ void show_usage(void){
     gap_advertisements_get_address(&uit_addr_type, iut_address);
 
     printf("\n--- CLI for LE Data Channel %s ---\n", bd_addr_to_str(iut_address));
-    printf("a - connect to type %u address %s PSM 0x%02x\n", pts_address_type, bd_addr_to_str(pts_address), psm_x);
-    printf("s - send data\n");
+    printf("a - connect to type %u address %s PSM 0x%02x (TSPX_le_psm)\n", pts_address_type, bd_addr_to_str(pts_address), TSPX_le_psm);
+    printf("A - connect to type %u address %s PSM 0x%02x (TSPX_psm_unsupported)\n", pts_address_type, bd_addr_to_str(pts_address), TSPX_psm_unsupported);
+    printf("c - send 10 credits\n");
+    printf("m - enable manual credit managment (incoming connections only)\n");
+    printf("s - send short data %s\n", data_short);
+    printf("S - send long data %s\n", data_long);
     printf("t - disconnect channel\n");
     printf("---\n");
     printf("Ctrl-c - exit\n");
@@ -220,15 +227,37 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
 
     switch (buffer){
         case 'a':
-            printf("Creating connection to %s\n", bd_addr_to_str(pts_address));
+            printf("Creating connection to %s 0x%02x\n", bd_addr_to_str(pts_address), TSPX_le_psm);
             gap_advertisements_enable(0);
-            l2cap_le_create_channel(&app_packet_handler,pts_address, pts_address_type, psm_x, buffer_x, 
+            l2cap_le_create_channel(&app_packet_handler,pts_address, pts_address_type, TSPX_le_psm, buffer_x, 
                                     sizeof(buffer_x), L2CAP_LE_AUTOMATIC_CREDITS, LEVEL_0, &cid_x);
             break;
 
+        case 'A':
+            printf("Creating connection to %s 0x%02x\n", bd_addr_to_str(pts_address), TSPX_psm_unsupported);
+            gap_advertisements_enable(0);
+            l2cap_le_create_channel(&app_packet_handler,pts_address, pts_address_type, TSPX_psm_unsupported, buffer_x, 
+                                    sizeof(buffer_x), L2CAP_LE_AUTOMATIC_CREDITS, LEVEL_0, &cid_x);
+            break;
+
+        case 'c':
+            printf("Provide 10 credits\n");
+            l2cap_le_provide_credits(local_cid, 10);
+            break;
+
+        case 'm':
+            printf("Enable manual credit management for incoming connections\n");
+            initial_credits = 5;
+            break;
+
         case 's':
-            printf("Send L2CAP Data\n");
-            l2cap_le_send_data(local_cid, (uint8_t *) "0123456789abcdefghijklmnopqrstuvwxyz", 36);
+            printf("Send L2CAP Data Short %s\n", data_short);
+            l2cap_le_send_data(local_cid, (uint8_t *) data_short, strlen(data_short));
+            break;
+
+        case 'S':
+            printf("Send L2CAP Data Long %s\n", data_long);
+            l2cap_le_send_data(local_cid, (uint8_t *) data_long, strlen(data_long));
             break;
 
         case 't':
@@ -276,7 +305,7 @@ int btstack_main(int argc, const char * argv[]){
     sm_set_authentication_requirements(0);
 
     // le data channel setup
-    l2cap_le_register_service(&app_packet_handler, psm_x, LEVEL_0);
+    l2cap_le_register_service(&app_packet_handler, TSPX_le_psm, LEVEL_0);
 
     // turn on!
     hci_power_control(HCI_POWER_ON);

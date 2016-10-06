@@ -30,6 +30,7 @@ LDFLAGS += $(shell pkg-config libusb-1.0 --libs)
 # LDFLAGS += -L/sw/lib -lportaudio -Wl,-framework,CoreAudio -Wl,-framework,AudioToolbox -Wl,-framework,AudioUnit -Wl,-framework,Carbon
 
 EXAMPLES = iopt ble_peripheral_test ble_central_test l2cap_test classic_test bnep_test hsp_ag_test hsp_hs_test sco_loopback le_data_channel
+EXAMPLES = le_data_channel
 
 all: ${EXAMPLES}
 
