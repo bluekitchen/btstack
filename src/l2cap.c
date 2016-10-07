@@ -1775,7 +1775,10 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
             // find channel
             local_cid = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET + 0);
             channel = l2cap_le_get_channel_for_local_cid(local_cid);
-            if (!channel) break;
+            if (!channel) {
+                log_error("l2cap: no channel for cid 0x%02x", local_cid);
+                break;
+            }
             channel->remote_sig_id = sig_id;
             channel->state = L2CAP_STATE_WILL_SEND_DISCONNECT_RESPONSE;
             break;
