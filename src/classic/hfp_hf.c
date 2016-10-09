@@ -352,7 +352,7 @@ static int hfp_hf_send_chup(uint16_t cid){
     return send_str_over_rfcomm(cid, buffer);
 }
 
-static int hfp_hf_send_chld(uint16_t cid, int number){
+static int hfp_hf_send_chld(uint16_t cid, unsigned int number){
     char buffer[20];
     sprintf(buffer, "AT%s=%u\r\n", HFP_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES, number);
     return send_str_over_rfcomm(cid, buffer);
