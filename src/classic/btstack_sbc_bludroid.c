@@ -194,7 +194,8 @@ void btstack_sbc_decoder_init(btstack_sbc_decoder_state_t * state, btstack_sbc_m
     OI_STATUS status;
     switch (mode){
         case SBC_MODE_STANDARD:
-            status = OI_CODEC_SBC_DecoderReset(&(bd_decoder_state.decoder_context), bd_decoder_state.decoder_data, sizeof(bd_decoder_state.decoder_data), 2, 1, FALSE);
+            // note: we always request stereo output, even for mono input
+            status = OI_CODEC_SBC_DecoderReset(&(bd_decoder_state.decoder_context), bd_decoder_state.decoder_data, sizeof(bd_decoder_state.decoder_data), 2, 2, FALSE);
             break;
         case SBC_MODE_mSBC:
             status = OI_CODEC_mSBC_DecoderReset(&(bd_decoder_state.decoder_context), bd_decoder_state.decoder_data, sizeof(bd_decoder_state.decoder_data));
@@ -244,8 +245,8 @@ static void btstack_sbc_decoder_process_sbc_data(btstack_sbc_decoder_state_t * s
 
     while (bytes_to_process){
 
-        printf("<<-- enter -->>\n");
-        printf("Process data: in buffer %u, new %u\n", decoder_state->bytes_in_frame_buffer, size);
+        // printf("<<-- enter -->>\n");
+        // printf("Process data: in buffer %u, new %u\n", decoder_state->bytes_in_frame_buffer, size);
 
         int bytes_free_in_buffer = SBC_MAX_FRAME_LEN - decoder_state->bytes_in_frame_buffer;
         int bytes_to_append = btstack_min(bytes_to_process, bytes_free_in_buffer);
@@ -253,8 +254,8 @@ static void btstack_sbc_decoder_process_sbc_data(btstack_sbc_decoder_state_t * s
         append_received_sbc_data(decoder_state, buffer, bytes_to_append);
         buffer           += bytes_to_append;
         bytes_to_process -= bytes_to_append;
-        printf("Append %u bytes, now %u in buffer \n", bytes_to_append, decoder_state->bytes_in_frame_buffer);
-        
+        // printf("Append %u bytes, now %u in buffer \n", bytes_to_append, decoder_state->bytes_in_frame_buffer);
+        // 
         uint16_t bytes_in_buffer_before = decoder_state->bytes_in_frame_buffer;
         uint16_t bytes_processed = 0;
         const OI_BYTE *frame_data = decoder_state->frame_buffer;
@@ -282,6 +283,7 @@ static void btstack_sbc_decoder_process_sbc_data(btstack_sbc_decoder_state_t * s
             status = OI_CODEC_SBC_CHECKSUM_MISMATCH;
             decoder_state->bytes_in_frame_buffer = 0;
         } else {
+            memset(decoder_state->pcm_plc_data, 0x55, SBC_MAX_CHANNELS * SBC_MAX_BANDS * SBC_MAX_BLOCKS * 2);
             status = OI_CODEC_SBC_DecodeFrame(&(decoder_state->decoder_context), 
                                                 &frame_data, 
                                                 &(decoder_state->bytes_in_frame_buffer), 
@@ -289,7 +291,8 @@ static void btstack_sbc_decoder_process_sbc_data(btstack_sbc_decoder_state_t * s
                                                 &(decoder_state->pcm_bytes));
         }        
         
-        printf("Status: %x\n", status);
+        // printf("Status: %x\n", status);
+        // printf_hexdump(decoder_state->pcm_plc_data, 512);
 
         bytes_processed = bytes_in_buffer_before - decoder_state->bytes_in_frame_buffer;
 
@@ -302,8 +305,8 @@ static void btstack_sbc_decoder_process_sbc_data(btstack_sbc_decoder_state_t * s
                     decoder_state->sync_word_found = 0;
                 }
                 
-                btstack_sbc_plc_good_frame(&state->plc_state, decoder_state->pcm_plc_data, decoder_state->pcm_data);
-                state->handle_pcm_data(decoder_state->pcm_data, 
+                // btstack_sbc_plc_good_frame(&state->plc_state, decoder_state->pcm_plc_data, decoder_state->pcm_data);
+                state->handle_pcm_data(decoder_state->pcm_plc_data, 
                                     btstack_sbc_decoder_num_samples_per_frame(state), 
                                     btstack_sbc_decoder_num_channels(state), 
                                     btstack_sbc_decoder_sample_rate(state), state->context);
@@ -311,7 +314,7 @@ static void btstack_sbc_decoder_process_sbc_data(btstack_sbc_decoder_state_t * s
                 continue;
             case OI_CODEC_SBC_NOT_ENOUGH_HEADER_DATA:
             case OI_CODEC_SBC_NOT_ENOUGH_BODY_DATA:
-                // printf("    NOT_ENOUGH_DATA\n");
+                printf("    NOT_ENOUGH_DATA\n");
                 if (decoder_state->sync_word_found){
                     decoder_state->search_new_sync_word = 0;
                 }
