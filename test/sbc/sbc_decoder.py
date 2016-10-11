@@ -301,7 +301,7 @@ def write_wav_file(fout, frame):
 
 if __name__ == "__main__":
     usage = '''
-    Usage: ./sbc_decoder.py input.sbc implementation[default=SIG, V1]
+    Usage: ./sbc_decoder.py input.(msbc|sbc) implementation[default=SIG, V1]
     '''
 
     if (len(sys.argv) < 2):
