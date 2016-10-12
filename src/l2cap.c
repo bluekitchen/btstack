@@ -268,18 +268,6 @@ static l2cap_channel_t * l2cap_le_get_channel_for_local_cid(uint16_t local_cid){
 }
 #endif
 
-static l2cap_channel_t * l2cap_get_le_channel_for_address_and_addr_type(bd_addr_t address, bd_addr_type_t address_type){
-    btstack_linked_list_iterator_t it;    
-    btstack_linked_list_iterator_init(&it, &l2cap_le_channels);
-    while (btstack_linked_list_iterator_has_next(&it)){
-        l2cap_channel_t * channel = (l2cap_channel_t *) btstack_linked_list_iterator_next(&it);
-        if (channel->address_type != address_type)  continue;
-        if (bd_addr_cmp(channel->address, address)) continue;
-        return channel;
-    } 
-    return NULL;
-}
-
 ///
 
 void l2cap_request_can_send_now_event(uint16_t local_cid){
@@ -883,20 +871,6 @@ static void l2cap_handle_connection_complete(hci_con_handle_t con_handle, l2cap_
     }
 }
 
-#ifdef ENABLE_BLE
-static void l2cap_handle_le_connection_complete(l2cap_channel_t * channel, uint8_t status, hci_con_handle_t con_handle){
-    if (channel->state == L2CAP_STATE_WAIT_CONNECTION_COMPLETE || channel->state == L2CAP_STATE_WILL_SEND_CREATE_CONNECTION) {
-        log_info("l2cap_le_handle_connection_complete expected state");
-        // TODO: bail if status != 0
-
-        // success, start l2cap handshake
-        channel->con_handle = con_handle;
-        channel->state = L2CAP_STATE_WILL_SEND_LE_CONNECTION_REQUEST;
-    }
-}
-#endif
-
-
 static void l2cap_handle_remote_supported_features_received(l2cap_channel_t * channel){
     if (channel->state != L2CAP_STATE_WAIT_REMOTE_SUPPORTED_FEATURES) return;
 
@@ -1160,28 +1134,6 @@ static void l2cap_hci_event_handler(uint8_t packet_type, uint16_t cid, uint8_t *
                 break;
             }
             break;           
-
-#ifdef ENABLE_BLE
-        case HCI_EVENT_LE_META:
-            switch (packet[2]){
-                int addr_type;
-                l2cap_channel_t * channel;
-                case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
-                    // Connection management
-                    reverse_bd_addr(&packet[8], address);
-                    addr_type = (bd_addr_type_t)packet[7];
-                    log_info("L2CAP - LE Connection_complete (status=%u) type %u, %s", packet[3], addr_type, bd_addr_to_str(address));
-                    // get l2cap_channel
-                    // also pass in status
-                    channel = l2cap_get_le_channel_for_address_and_addr_type(address, addr_type);
-                    if (!channel) break;
-                    l2cap_handle_le_connection_complete(channel, packet[3], little_endian_read_16(packet, 4));
-                    break;
-                default:
-                    break;
-            }
-            break;
-#endif
 
         case GAP_EVENT_SECURITY_LEVEL:
             handle = little_endian_read_16(packet, 2);
@@ -2081,13 +2033,20 @@ uint8_t l2cap_le_decline_connection(uint16_t local_cid){
     return 0;
 }
 
-uint8_t l2cap_le_create_channel(btstack_packet_handler_t packet_handler, bd_addr_t address, bd_addr_type_t address_type, 
+uint8_t l2cap_le_create_channel(btstack_packet_handler_t packet_handler, hci_con_handle_t con_handle, 
     uint16_t psm, uint8_t * receive_sdu_buffer, uint16_t mtu, uint16_t initial_credits, gap_security_level_t security_level,
     uint16_t * out_local_cid) {
 
-    log_info("L2CAP_LE_CREATE_CHANNEL addr %s psm 0x%x mtu %u", bd_addr_to_str(address), psm, mtu);
-    
-    l2cap_channel_t * channel = l2cap_create_channel_entry(packet_handler, address, address_type, psm, mtu, security_level);
+    log_info("L2CAP_LE_CREATE_CHANNEL handle 0x%04x psm 0x%x mtu %u", con_handle, psm, mtu);
+
+
+    hci_connection_t * connection = hci_connection_for_handle(con_handle);
+    if (!connection) {
+        log_error("no hci_connection for handle 0x%04x", con_handle);
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+
+    l2cap_channel_t * channel = l2cap_create_channel_entry(packet_handler, connection->address, connection->address_type, psm, mtu, security_level);
     if (!channel) {
         return BTSTACK_MEMORY_ALLOC_FAILED;
     }
@@ -2098,41 +2057,18 @@ uint8_t l2cap_le_create_channel(btstack_packet_handler_t packet_handler, bd_addr
        *out_local_cid = channel->local_cid;
     }
 
-    // provdide buffer
+    // provide buffer
+    channel->con_handle = con_handle;
     channel->receive_sdu_buffer = receive_sdu_buffer;
-    channel->state = L2CAP_STATE_WAIT_CONNECTION_COMPLETE;
+    channel->state = L2CAP_STATE_WILL_SEND_LE_CONNECTION_REQUEST;
     channel->new_credits_incoming = initial_credits;
     channel->automatic_credits    = initial_credits == L2CAP_LE_AUTOMATIC_CREDITS;
-
-    // test
-    // channel->new_credits_incoming = 1;
 
     // add to connections list
     btstack_linked_list_add(&l2cap_le_channels, (btstack_linked_item_t *) channel);
 
-    // check if hci connection is already usable
-    hci_connection_t * conn = hci_connection_for_bd_addr_and_type(address, address_type);
-
-    if (conn){
-        log_info("l2cap_le_create_channel, hci connection already exists");
-        l2cap_handle_le_connection_complete(channel, 0, conn->con_handle);
-        l2cap_run();
-    } else {
-        
-        //
-        // TODO: start timer
-        // ..
-
-        // start connection
-        uint8_t res = gap_auto_connection_start(address_type, address);
-        if (res){
-            // discard channel object
-            log_info("gap_auto_connection_start failed! 0x%02x", res);
-            btstack_linked_list_remove(&l2cap_le_channels, (btstack_linked_item_t *) channel);
-            btstack_memory_l2cap_channel_free(channel);
-            return res;
-        }
-    }
+    // go
+    l2cap_run();
     return 0;
 }
 

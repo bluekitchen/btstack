@@ -354,8 +354,7 @@ uint8_t l2cap_le_decline_connection(uint16_t local_cid);
 /**
  * @brief Create LE Data Channel
  * @param packet_handler        Packet handler for this connection
- * @param address               Peer address
- * @param address_type          Peer address type
+ * @param con_handle            ACL-LE HCI Connction Handle
  * @param psm                   Service PSM to connect to
  * @param receive_buffer        buffer used for reassembly of L2CAP LE Information Frames into service data unit (SDU) with given MTU
  * @param receive_buffer_size   buffer size equals MTU
@@ -363,7 +362,7 @@ uint8_t l2cap_le_decline_connection(uint16_t local_cid);
  * @param security_level        Minimum required security level
  * @param out_local_cid         L2CAP LE Channel Identifier is stored here
  */
-uint8_t l2cap_le_create_channel(btstack_packet_handler_t packet_handler, bd_addr_t address, bd_addr_type_t address_type, 
+uint8_t l2cap_le_create_channel(btstack_packet_handler_t packet_handler, hci_con_handle_t con_handle, 
     uint16_t psm, uint8_t * receive_sdu_buffer, uint16_t mtu, uint16_t initial_credits, gap_security_level_t security_level,
     uint16_t * out_local_cid);
 

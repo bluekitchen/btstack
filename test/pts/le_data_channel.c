@@ -66,10 +66,13 @@
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 static btstack_packet_callback_registration_t sm_event_callback_registration;
 
-static bd_addr_t pts_address = { 0x00, 0x1a, 0x7d, 0xda, 0x71, 0x0a};
+// static bd_addr_t pts_address = { 0x00, 0x1a, 0x7d, 0xda, 0x71, 0x0a};
+static bd_addr_t pts_address = { 0x00, 0x1b, 0xdc, 0x08, 0x0a, 0xa5};
+
 static int pts_address_type = 0;
 static int master_addr_type = 0;
-static hci_con_handle_t handle;
+static hci_con_handle_t handle_le;
+static hci_con_handle_t handle_classic;
 static uint32_t ui_passkey;
 static int  ui_digits_for_passkey;
 static uint16_t local_cid;
@@ -100,6 +103,7 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
     bd_addr_t event_address;
     uint16_t psm;
     uint16_t cid;
+    hci_con_handle_t handle;
 
     switch (packet_type) {
         
@@ -121,8 +125,8 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                 case HCI_EVENT_LE_META:
                     switch (hci_event_le_meta_get_subevent_code(packet)) {
                         case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
-                            handle = little_endian_read_16(packet, 4);
-                            printf("HCI: LE Connection Complete, connection handle 0x%04x\n", handle);
+                            handle_le = little_endian_read_16(packet, 4);
+                            printf("HCI: LE Connection Complete, connection handle 0x%04x\n", handle_le);
                             break;
 
                         default:
@@ -131,8 +135,8 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                     break;
 
                 case HCI_EVENT_CONNECTION_COMPLETE:
-                    handle = little_endian_read_16(packet, 3);
-                    printf("HCI: ACL Connection Complete, connection handle 0x%04x\n", handle);
+                    handle_classic = little_endian_read_16(packet, 3);
+                    printf("HCI: ACL Connection Complete, connection handle 0x%04x\n", handle_classic);
                     break;
 
                 case HCI_EVENT_DISCONNECTION_COMPLETE:
@@ -228,13 +232,14 @@ void show_usage(void){
     gap_advertisements_get_address(&uit_addr_type, iut_address);
 
     printf("\n--- CLI for LE Data Channel %s ---\n", bd_addr_to_str(iut_address));
-    printf("a - connect to type %u address %s PSM 0x%02x (TSPX_le_psm - LE)\n", pts_address_type, bd_addr_to_str(pts_address), TSPX_le_psm);
-    printf("A - connect to type %u address %s PSM 0x%02x (TSPX_psm_unsupported - LE)\n", pts_address_type, bd_addr_to_str(pts_address), TSPX_psm_unsupported);
-    printf("b - connect to type %u address %s PSM 0x%02x (TSPX_psm - Classic)\n", pts_address_type, bd_addr_to_str(pts_address), TSPX_psm);
+    printf("a - create HCI connection to type %u address %s\n", pts_address_type, bd_addr_to_str(pts_address));
+    printf("b - connect to PSM 0x%02x (TSPX_le_psm - LE)\n", TSPX_le_psm);
+    printf("B - connect to PSM 0x%02x (TSPX_psm_unsupported - LE)\n", TSPX_psm_unsupported);
     printf("c - send 10 credits\n");
     printf("m - enable manual credit managment (incoming connections only)\n");
     printf("s - send short data %s\n", data_short);
     printf("S - send long data %s\n", data_long);
+    printf("y - connect to address %s PSM 0x%02x (TSPX_psm - Classic)\n", bd_addr_to_str(pts_address), TSPX_psm);
     printf("z - send classic data Classic %s\n", data_classic);
     printf("t - disconnect channel\n");
     printf("---\n");
@@ -255,29 +260,27 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
         ui_digits_for_passkey--;
         if (ui_digits_for_passkey == 0){
             printf("\nSending Passkey '%06x'\n", ui_passkey);
-            sm_passkey_input(handle, ui_passkey);
+            sm_passkey_input(handle_le, ui_passkey);
         }
         return;
     }
 
     switch (buffer){
         case 'a':
-            printf("Creating connection to %s 0x%02x - LE\n", bd_addr_to_str(pts_address), TSPX_le_psm);
-            gap_advertisements_enable(0);
-            l2cap_le_create_channel(&app_packet_handler,pts_address, pts_address_type, TSPX_le_psm, buffer_x, 
+            printf("Direct Connection Establishment to type %u, addr %s\n", pts_address_type, bd_addr_to_str(pts_address));
+            gap_connect(pts_address, pts_address_type);
+            break;
+
+        case 'b':
+            printf("Connect to PSM 0x%02x - LE\n", TSPX_le_psm);
+            l2cap_le_create_channel(&app_packet_handler, handle_le, TSPX_le_psm, buffer_x, 
                                     sizeof(buffer_x), L2CAP_LE_AUTOMATIC_CREDITS, LEVEL_0, &cid_le);
             break;
 
         case 'A':
             printf("Creating connection to %s 0x%02x - LE\n", bd_addr_to_str(pts_address), TSPX_psm_unsupported);
-            gap_advertisements_enable(0);
-            l2cap_le_create_channel(&app_packet_handler,pts_address, pts_address_type, TSPX_psm_unsupported, buffer_x, 
+            l2cap_le_create_channel(&app_packet_handler, handle_le, TSPX_psm_unsupported, buffer_x, 
                                     sizeof(buffer_x), L2CAP_LE_AUTOMATIC_CREDITS, LEVEL_0, &cid_le);
-            break;
-
-        case 'b':
-            printf("Creating connection to %s 0x%02x - Classic\n", bd_addr_to_str(pts_address), TSPX_psm);
-            l2cap_create_channel(&app_packet_handler, pts_address, TSPX_psm, 100, &cid_classic);
             break;
 
         case 'c':
@@ -298,6 +301,11 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
         case 'S':
             printf("Send L2CAP Data Long %s\n", data_long);
             l2cap_le_send_data(cid_le, (uint8_t *) data_long, strlen(data_long));
+            break;
+
+        case 'y':
+            printf("Creating connection to %s 0x%02x - Classic\n", bd_addr_to_str(pts_address), TSPX_psm);
+            l2cap_create_channel(&app_packet_handler, pts_address, TSPX_psm, 100, &cid_classic);
             break;
 
         case 'z':
