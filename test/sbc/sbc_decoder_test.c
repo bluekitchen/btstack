@@ -85,8 +85,17 @@ static void handle_pcm_data(int16_t * data, int num_samples, int num_channels, i
     if (!wav_writer_opened){
         wav_writer_opened = 1;
         wav_writer_open(wav_filename, num_channels, sample_rate);
+
     }
 
+    printf("Sampels: num_samples %u, num_channels %u, sample_rate %u\n", num_samples, num_channels, sample_rate);
+    // printf_hexdump(data, num_samples * num_channels * 2);
+    int i;
+    for (i=0;i<num_channels*num_samples;i += 2){
+        if ((i%24) == 0) printf("\n");
+        printf ("%12d ", data[i]);
+    }
+    printf("\n");
     wav_writer_write_int16(num_samples*num_channels, data);
 
     total_num_samples+=num_samples*num_channels;
@@ -121,10 +130,10 @@ int main (int argc, const char * argv[]){
     
     if (plc_enabled){
         printf("PLC enabled.\n");
-        strcat(wav_filename, "_plc.wav");
+        strcat(wav_filename, "_decoded_bludroid_plc.wav");
     } else {
         printf("PLC disbled.\n"); 
-        strcat(wav_filename, ".wav");
+        strcat(wav_filename, "_decoded_bludroid.wav");
     }
 
     if (corrupt_frame_period > 0){

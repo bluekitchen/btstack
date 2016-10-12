@@ -49,8 +49,8 @@
 #include "btstack_sbc.h"
 #include "wav_util.h"
 
-#define OI_DEBUG
 #define STORE_SBC_TO_SBC_FILE 
+#define STORE_SBC_TO_WAV_FILE 
 
 static const char * default_avdtp_sink_service_name = "BTstack AVDTP Sink Service";
 static const char * default_avdtp_sink_service_provider_name = "BTstack AVDTP Sink Service Provider";
@@ -610,9 +610,24 @@ static void handle_l2cap_signaling_data_packet(avdtp_sink_connection_t * connect
                 connection->remote_state = AVDTP_REMOTE_W2_ANSWER_START_SINGLE_STREAM;
                 l2cap_request_can_send_now_event(connection->l2cap_signaling_cid);
                 break;
+            case AVDTP_CLOSE:          
+
+                break;
+
             default:
                 printf("NOT IMPLEMENTED signal_identifier %d\n", signaling_header.signal_identifier);
                 printf_hexdump( packet, size );
+           #ifdef STORE_SBC_TO_WAV_FILE 
+                printf(" Close wav writer\n");                   
+                wav_writer_close();
+                int total_frames_nr = state.good_frames_nr + state.bad_frames_nr + state.zero_frames_nr;
+
+                printf("\nDecoding done. Processed totaly %d frames:\n - %d good\n - %d bad\n - %d zero frames\n", total_frames_nr, state.good_frames_nr, state.bad_frames_nr, state.zero_frames_nr);
+                printf("Write %d frames to wav file: %s\n\n", frame_count, wav_filename);
+#endif
+#ifdef STORE_SBC_TO_SBC_FILE
+                fclose(sbc_file);
+#endif     
                 break;
         }
         return;
@@ -767,7 +782,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 
                 case HCI_EVENT_DISCONNECTION_COMPLETE:{
 
-#ifdef STORE_SBC_TO_WAV_FILE                    
+#ifdef STORE_SBC_TO_WAV_FILE 
+                    printf(" Close wav writer\n");                   
                     wav_writer_close();
                     int total_frames_nr = state.good_frames_nr + state.bad_frames_nr + state.zero_frames_nr;
 
@@ -779,7 +795,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 #endif
                 }
                 default:
-                    // other event
+                    printf("unknown packet %02x\n", hci_event_packet_get_type(packet));
                     break;
             }
             break;
@@ -793,9 +809,10 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 
 // TODO: find out which security level is needed, and replace LEVEL_0 in avdtp_sink_init
 void avdtp_sink_init(void){
-#ifdef STORE_SBC_TO_WAV_FILE    
-    btstack_sbc_decoder_init(&state, mode, &handle_pcm_data, NULL);
-    wav_writer_open(wav_filename, 2, 44100);  
+#ifdef STORE_SBC_TO_WAV_FILE
+    int num_channels = 2;
+    btstack_sbc_decoder_init(&state, mode, num_channels, &handle_pcm_data, NULL);
+    wav_writer_open(wav_filename, num_channels, 44100);  
 #endif
 
 #ifdef STORE_SBC_TO_SBC_FILE    
