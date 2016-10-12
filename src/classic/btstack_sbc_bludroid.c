@@ -184,9 +184,11 @@ int btstack_sbc_decoder_sample_rate(btstack_sbc_decoder_state_t * state){
 }
 
 
+#ifdef OI_DEBUG
 void OI_AssertFail(char* file, int line, char* reason){
     printf("AssertFail file %s, line %d, reason %s\n", file, line, reason);
 }
+#endif
 
 void btstack_sbc_decoder_init(btstack_sbc_decoder_state_t * state, btstack_sbc_mode_t mode, void (*callback)(int16_t * data, int num_samples, int num_channels, int sample_rate, void * context), void * context){
     if (sbc_decoder_state_singleton && sbc_decoder_state_singleton != state ){
