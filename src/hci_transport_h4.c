@@ -197,7 +197,7 @@ static void hci_transport_h4_block_read(void){
             bytes_to_read = little_endian_read_16( hci_packet, 3);
             // check ACL length
             if (HCI_ACL_HEADER_SIZE + bytes_to_read >  HCI_PACKET_BUFFER_SIZE){
-                log_error("hci_transport_h4: invalid ACL payload len %u - only space for %u", bytes_to_read, HCI_PACKET_BUFFER_SIZE - HCI_ACL_HEADER_SIZE);
+                log_error("hci_transport_h4: invalid ACL payload len %d - only space for %u", bytes_to_read, HCI_PACKET_BUFFER_SIZE - HCI_ACL_HEADER_SIZE);
                 hci_transport_h4_reset_statemachine();
                 break;              
             }

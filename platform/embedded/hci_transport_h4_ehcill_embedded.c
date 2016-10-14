@@ -210,9 +210,10 @@ static int h4_set_baudrate(uint32_t baudrate){
 }
 
 static int h4_close(void){
-    // first remove run loop handler
-	btstack_run_loop_remove_data_source(&hci_transport_h4_dma_ds);
-    
+        // remove data source
+    btstack_run_loop_disable_data_source_callbacks(&hci_transport_h4_dma_ds, DATA_SOURCE_CALLBACK_POLL);
+    btstack_run_loop_remove_data_source(&hci_transport_h4_dma_ds);
+
     // stop IRQ
     hal_uart_dma_set_csr_irq_handler(NULL);
     

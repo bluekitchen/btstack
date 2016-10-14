@@ -291,8 +291,8 @@ static int nr_hci_connections(void){
 
 static int hci_number_free_acl_slots_for_connection_type(bd_addr_type_t address_type){
     
-    int num_packets_sent_classic = 0;
-    int num_packets_sent_le = 0;
+    unsigned int num_packets_sent_classic = 0;
+    unsigned int num_packets_sent_le = 0;
 
     btstack_linked_item_t *it;
     for (it = (btstack_linked_item_t *) hci_stack->connections; it ; it = it->next){
@@ -355,7 +355,7 @@ int hci_number_free_acl_slots_for_handle(hci_con_handle_t con_handle){
 }
 
 static int hci_number_free_sco_slots(void){
-    int num_sco_packets_sent = 0;
+    unsigned int num_sco_packets_sent  = 0;
     btstack_linked_item_t *it;
     for (it = (btstack_linked_item_t *) hci_stack->connections; it ; it = it->next){
         hci_connection_t * connection = (hci_connection_t *) it;
@@ -498,7 +498,7 @@ static int hci_send_acl_packet_fragments(hci_connection_t *connection){
 
         // count packet
         connection->num_acl_packets_sent++;
-        log_debug("hci_send_acl_packet_fragments loop before send (more fragments %u)", more_fragments);
+        log_debug("hci_send_acl_packet_fragments loop before send (more fragments %d)", more_fragments);
 
         // update state for next fragment (if any) as "transport done" might be sent during send_packet already
         if (more_fragments){
@@ -516,7 +516,7 @@ static int hci_send_acl_packet_fragments(hci_connection_t *connection){
         hci_dump_packet(HCI_ACL_DATA_PACKET, 0, packet, size);
         err = hci_stack->hci_transport->send_packet(HCI_ACL_DATA_PACKET, packet, size);
 
-        log_debug("hci_send_acl_packet_fragments loop after send (more fragments %u)", more_fragments);
+        log_debug("hci_send_acl_packet_fragments loop after send (more fragments %d)", more_fragments);
 
         // done yet?
         if (!more_fragments) break;
@@ -639,7 +639,7 @@ static void acl_handler(uint8_t *packet, int size){
 
     // assert packet is complete    
     if (acl_length + 4 != size){
-        log_error("hci.c: acl_handler called with ACL packet of wrong size %u, expected %u => dropping packet", size, acl_length + 4);
+        log_error("hci.c: acl_handler called with ACL packet of wrong size %d, expected %u => dropping packet", size, acl_length + 4);
         return;
     }
 
@@ -769,7 +769,7 @@ static uint16_t hci_acl_packet_types_for_buffer_size_and_local_features(uint16_t
     }
     // disable packet types due to missing local supported features
     for (i=0;i<sizeof(packet_type_feature_requirement_bit);i++){
-        int bit_idx = packet_type_feature_requirement_bit[i];
+        unsigned int bit_idx = packet_type_feature_requirement_bit[i];
         int feature_set = (local_supported_features[bit_idx >> 3] & (1<<(bit_idx & 7))) != 0;
         if (feature_set) continue;
         log_info("Features bit %02u is not set, removing packet types 0x%04x", bit_idx, packet_type_feature_packet_mask[i]);
@@ -1251,7 +1251,7 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
             btstack_run_loop_remove_timer(&hci_stack->timeout);
             break;
         case HCI_INIT_W4_SEND_READ_LOCAL_VERSION_INFORMATION:
-            log_info("Received local version info, need baud change %u", need_baud_change);
+            log_info("Received local version info, need baud change %d", need_baud_change);
             if (need_baud_change){
                 hci_stack->substate = HCI_INIT_SEND_BAUD_CHANGE;
                 return;
@@ -1397,7 +1397,7 @@ static void event_handler(uint8_t *packet, int size){
 
     // assert packet is complete
     if (size != event_length + 2){
-        log_error("hci.c: event_handler called with event packet of wrong size %u, expected %u => dropping packet", size, event_length + 2);
+        log_error("hci.c: event_handler called with event packet of wrong size %d, expected %u => dropping packet", size, event_length + 2);
         return;
     }
 
@@ -2218,7 +2218,7 @@ static void hci_power_transition_to_initializing(void){
 
 int hci_power_control(HCI_POWER_MODE power_mode){
     
-    log_info("hci_power_control: %u, current mode %u", power_mode, hci_stack->state);
+    log_info("hci_power_control: %d, current mode %u", power_mode, hci_stack->state);
     
     int err = 0;
     switch (hci_stack->state){
@@ -2228,7 +2228,7 @@ int hci_power_control(HCI_POWER_MODE power_mode){
                 case HCI_POWER_ON:
                     err = hci_power_control_on();
                     if (err) {
-                        log_error("hci_power_control_on() error %u", err);
+                        log_error("hci_power_control_on() error %d", err);
                         return err;
                     }
                     hci_power_transition_to_initializing();
@@ -3273,7 +3273,7 @@ int gap_dedicated_bonding(bd_addr_t device, int mitm_protection_required){
     // configure LEVEL_2/3, dedicated bonding
     connection->state = SEND_CREATE_CONNECTION;    
     connection->requested_security_level = mitm_protection_required ? LEVEL_3 : LEVEL_2;
-    log_info("gap_dedicated_bonding, mitm %u -> level %u", mitm_protection_required, connection->requested_security_level);
+    log_info("gap_dedicated_bonding, mitm %d -> level %u", mitm_protection_required, connection->requested_security_level);
     connection->bonding_flags = BONDING_DEDICATED;
 
     // wait for GAP Security Result and send GAP Dedicated Bonding complete

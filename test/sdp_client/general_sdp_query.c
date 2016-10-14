@@ -105,7 +105,9 @@ int       attribute_value_buffer_size = 1000;
 void assertBuffer(int size){
     if (size > attribute_value_buffer_size){
         attribute_value_buffer_size *= 2;
-        attribute_value = (uint8_t *) realloc(attribute_value, attribute_value_buffer_size);
+        uint8_t * new_attribute = (uint8_t *) realloc(attribute_value, attribute_value_buffer_size);
+        if (!new_attribute) return;
+        attribute_value = new_attribute;
     }
 }
 

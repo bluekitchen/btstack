@@ -48,6 +48,10 @@
 #include "btstack_run_loop.h"
 #include "wiced.h"
 
+#if defined __cplusplus
+extern "C" {
+#endif
+
 /**
  * @brief Provide btstack_run_loop_posix instance for use with btstack_run_loop_init
  */

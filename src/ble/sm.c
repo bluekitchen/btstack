@@ -485,7 +485,7 @@ static void sm_aes128_start(sm_key_t key, sm_key_t plaintext, void * context){
 // ah(k,r) helper
 // r = padding || r
 // r - 24 bit value
-static void sm_ah_r_prime(uint8_t r[3], sm_key_t r_prime){
+static void sm_ah_r_prime(uint8_t r[3], uint8_t * r_prime){
     // r'= padding || r
     memset(r_prime, 0, 16);
     memcpy(&r_prime[13], r, 3);
@@ -494,7 +494,7 @@ static void sm_ah_r_prime(uint8_t r[3], sm_key_t r_prime){
 // d1 helper
 // d' = padding || r || d
 // d,r - 16 bit values
-static void sm_d1_d_prime(uint16_t d, uint16_t r, sm_key_t d1_prime){
+static void sm_d1_d_prime(uint16_t d, uint16_t r, uint8_t * d1_prime){
     // d'= padding || r || d
     memset(d1_prime, 0, 16);
     big_endian_store_16(d1_prime, 12, r);
@@ -504,13 +504,13 @@ static void sm_d1_d_prime(uint16_t d, uint16_t r, sm_key_t d1_prime){
 // dm helper
 // r’ = padding || r
 // r - 64 bit value
-static void sm_dm_r_prime(uint8_t r[8], sm_key_t r_prime){
+static void sm_dm_r_prime(uint8_t r[8], uint8_t * r_prime){
     memset(r_prime, 0, 16);
     memcpy(&r_prime[8], r, 8);
 }
 
 // calculate arguments for first AES128 operation in C1 function
-static void sm_c1_t1(sm_key_t r, uint8_t preq[7], uint8_t pres[7], uint8_t iat, uint8_t rat, sm_key_t t1){
+static void sm_c1_t1(sm_key_t r, uint8_t preq[7], uint8_t pres[7], uint8_t iat, uint8_t rat, uint8_t * t1){
 
     // p1 = pres || preq || rat’ || iat’
     // "The octet of iat’ becomes the least significant octet of p1 and the most signifi-
@@ -536,7 +536,7 @@ static void sm_c1_t1(sm_key_t r, uint8_t preq[7], uint8_t pres[7], uint8_t iat, 
 }
 
 // calculate arguments for second AES128 operation in C1 function
-static void sm_c1_t3(sm_key_t t2, bd_addr_t ia, bd_addr_t ra, sm_key_t t3){
+static void sm_c1_t3(sm_key_t t2, bd_addr_t ia, bd_addr_t ra, uint8_t * t3){
      // p2 = padding || ia || ra
     // "The least significant octet of ra becomes the least significant octet of p2 and
     // the most significant octet of padding becomes the most significant octet of p2.
@@ -557,7 +557,7 @@ static void sm_c1_t3(sm_key_t t2, bd_addr_t ia, bd_addr_t ra, sm_key_t t3){
     log_info_key("t3", t3);
 }
 
-static void sm_s1_r_prime(sm_key_t r1, sm_key_t r2, sm_key_t r_prime){
+static void sm_s1_r_prime(sm_key_t r1, sm_key_t r2, uint8_t * r_prime){
     log_info_key("r1", r1);
     log_info_key("r2", r2);
     memcpy(&r_prime[8], &r2[8], 8);
