@@ -75,7 +75,6 @@ static hci_con_handle_t handle_le;
 static hci_con_handle_t handle_classic;
 static uint32_t ui_passkey;
 static int  ui_digits_for_passkey;
-static uint16_t local_cid;
 
 // general discoverable flags
 static uint8_t adv_general_discoverable[] = { 2, 01, 02 };
@@ -314,8 +313,8 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
             break;
 
         case 't':
-            printf("Disconnect channel 0x%02x\n", local_cid);
-            l2cap_le_disconnect(local_cid);
+            printf("Disconnect channel 0x%02x\n", cid_le);
+            l2cap_le_disconnect(cid_le);
             break;
 
         default:
