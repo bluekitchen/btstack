@@ -50,6 +50,10 @@
 #include "btstack_event.h"
 #include "btstack_memory.h"
 
+#ifdef ENABLE_LE_DATA_CHANNEL
+#include "ble/sm.h"
+#endif
+
 #include <stdarg.h>
 #include <string.h>
 
@@ -1516,13 +1520,16 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
     hci_connection_t * connection;
     uint16_t result;
     uint8_t  event[10];
-    uint16_t le_psm;
     uint16_t local_cid;
+    l2cap_channel_t * channel;
+    btstack_linked_list_iterator_t it;    
+
+#ifdef ENABLE_LE_DATA_CHANNEL
+    uint16_t le_psm;
     uint16_t new_credits;
     uint16_t credits_before;
     l2cap_service_t * service;
-    l2cap_channel_t * channel;
-    btstack_linked_list_iterator_t it;    
+#endif
 
     uint8_t code   = command[L2CAP_SIGNALING_COMMAND_CODE_OFFSET];
     log_info("l2cap_le_signaling_handler_dispatch: command 0x%02x, sig id %u", code, sig_id);
@@ -1605,6 +1612,7 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
             }
             break;
 
+#ifdef ENABLE_LE_DATA_CHANNEL
         case LE_CREDIT_BASED_CONNECTION_REQUEST:
  
             // get hci connection, bail if not found (must not happen)
@@ -1635,7 +1643,38 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
                     return 1;
                 }                    
 
-                // TODO: deal with authentication requirements, errors 0x005 - 000x8
+                // security: check encryption
+                if (service->required_security_level >= LEVEL_2){
+                    if (sm_encryption_key_size(handle) == 0){
+                        // 0x0008 Connection refused - insufficient encryption 
+                        l2cap_register_signaling_response(handle, LE_CREDIT_BASED_CONNECTION_REQUEST, sig_id, 0x0008);
+                        return 1;
+                    }
+                    // anything less than 16 byte key size is insufficient
+                    if (sm_encryption_key_size(handle) < 16){
+                        // 0x0007 Connection refused – insufficient encryption key size
+                        l2cap_register_signaling_response(handle, LE_CREDIT_BASED_CONNECTION_REQUEST, sig_id, 0x0007);
+                        return 1;
+                    }
+                }
+
+                // security: check authencation
+                if (service->required_security_level >= LEVEL_3){
+                    if (!sm_authenticated(handle)){
+                        // 0x0005 Connection refused – insufficient authentication
+                        l2cap_register_signaling_response(handle, LE_CREDIT_BASED_CONNECTION_REQUEST, sig_id, 0x0005);
+                        return 1;
+                    }
+                }
+
+                // security: check authorization
+                if (service->required_security_level >= LEVEL_4){
+                    if (sm_authorization_state(handle) != AUTHORIZATION_GRANTED){
+                        // 0x0006 Connection refused – insufficient authorization
+                        l2cap_register_signaling_response(handle, LE_CREDIT_BASED_CONNECTION_REQUEST, sig_id, 0x0006);
+                        return 1;
+                    }
+                }
 
                 // allocate channel
                 channel = l2cap_create_channel_entry(service->packet_handler, connection->address,
@@ -1722,6 +1761,7 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
             }            
             log_info("l2cap: %u credits for 0x%02x, now %u", new_credits, local_cid, channel->credits_outgoing);
             break;
+#endif
 
         case DISCONNECTION_REQUEST:
             // find channel
@@ -1941,6 +1981,8 @@ void l2cap_register_fixed_channel(btstack_packet_handler_t the_packet_handler, u
 }
 
 #ifdef ENABLE_BLE
+
+#ifdef ENABLE_LE_DATA_CHANNEL
 
 static inline l2cap_service_t * l2cap_le_get_service(uint16_t le_psm){
     return l2cap_get_service_internal(&l2cap_le_services, le_psm);
@@ -2176,5 +2218,7 @@ uint8_t l2cap_le_disconnect(uint16_t local_cid)
     l2cap_run();
     return 0;
 }
+
+#endif
 
 #endif
