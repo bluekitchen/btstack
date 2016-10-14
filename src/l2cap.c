@@ -50,7 +50,7 @@
 #include "btstack_event.h"
 #include "btstack_memory.h"
 
-#ifdef ENABLE_LE_DATA_CHANNEL
+#ifdef ENABLE_LE_DATA_CHANNELS
 #include "ble/sm.h"
 #endif
 
@@ -92,7 +92,7 @@ static int  l2cap_channel_ready_for_open(l2cap_channel_t *channel);
 static void l2cap_hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static void l2cap_acl_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size );
 static void l2cap_notify_channel_can_send(void);
-#ifdef ENABLE_BLE
+#ifdef ENABLE_LE_DATA_CHANNELS
 static void l2cap_le_finialize_channel_close(l2cap_channel_t *channel);
 static inline l2cap_service_t * l2cap_le_get_service(uint16_t psm);
 #endif
@@ -729,6 +729,7 @@ static void l2cap_run(void){
     }
 
 #ifdef ENABLE_BLE
+#ifdef ENABLE_LE_DATA_CHANNELS
     btstack_linked_list_iterator_init(&it, &l2cap_le_channels);
     while (btstack_linked_list_iterator_has_next(&it)){
         uint8_t  * acl_buffer;
@@ -852,6 +853,7 @@ static void l2cap_run(void){
                 break;
         }
     }
+#endif
 #endif
 
     // log_info("l2cap_run: exit");
@@ -1524,7 +1526,7 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
     l2cap_channel_t * channel;
     btstack_linked_list_iterator_t it;    
 
-#ifdef ENABLE_LE_DATA_CHANNEL
+#ifdef ENABLE_LE_DATA_CHANNELS
     uint16_t le_psm;
     uint16_t new_credits;
     uint16_t credits_before;
@@ -1612,7 +1614,7 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
             }
             break;
 
-#ifdef ENABLE_LE_DATA_CHANNEL
+#ifdef ENABLE_LE_DATA_CHANNELS
         case LE_CREDIT_BASED_CONNECTION_REQUEST:
  
             // get hci connection, bail if not found (must not happen)
@@ -1895,7 +1897,7 @@ void l2cap_finialize_channel_close(l2cap_channel_t * channel){
     btstack_memory_l2cap_channel_free(channel);
 }
 
-#ifdef ENABLE_BLE
+#ifdef ENABLE_LE_DATA_CHANNELS
 // finalize closed channel - l2cap_handle_disconnect_request & DISCONNECTION_RESPONSE
 void l2cap_le_finialize_channel_close(l2cap_channel_t * channel){
     channel->state = L2CAP_STATE_CLOSED;
@@ -1982,7 +1984,7 @@ void l2cap_register_fixed_channel(btstack_packet_handler_t the_packet_handler, u
 
 #ifdef ENABLE_BLE
 
-#ifdef ENABLE_LE_DATA_CHANNEL
+#ifdef ENABLE_LE_DATA_CHANNELS
 
 static inline l2cap_service_t * l2cap_le_get_service(uint16_t le_psm){
     return l2cap_get_service_internal(&l2cap_le_services, le_psm);

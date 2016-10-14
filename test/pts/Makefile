@@ -11,7 +11,7 @@ CFLAGS += -g -Wall -Wmissing-prototypes -Wstrict-prototypes -Wshadow -Werror \
           -I${BTSTACK_ROOT}/platform/posix \
           -I${BTSTACK_ROOT}/platform/embedded \
 	      -I${BTSTACK_ROOT}/port/libusb \
-	      -D ENABLE_LE_DATA_CHANNEL
+	      -D ENABLE_LE_DATA_CHANNELS
 
 VPATH += ${BTSTACK_ROOT}/platform/posix
 VPATH += ${BTSTACK_ROOT}/port/libusb
