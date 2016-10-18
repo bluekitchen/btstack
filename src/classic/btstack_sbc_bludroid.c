@@ -319,7 +319,7 @@ static void btstack_sbc_decoder_process_sbc_data(btstack_sbc_decoder_state_t * s
                     continue;
                 case OI_CODEC_SBC_NOT_ENOUGH_HEADER_DATA:
                 case OI_CODEC_SBC_NOT_ENOUGH_BODY_DATA:
-                    printf("    NOT_ENOUGH_DATA\n");
+                    // printf("    NOT_ENOUGH_DATA\n");
                     if (decoder_state->sync_word_found){
                         decoder_state->search_new_sync_word = 0;
                     }
