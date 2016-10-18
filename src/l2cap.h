@@ -381,7 +381,7 @@ uint8_t l2cap_le_provide_credits(uint16_t cid, uint16_t credits);
 int l2cap_le_can_send_now(uint16_t cid);
 
 /**
- * @brief Request emission of L2CAP_EVENT_CAN_SEND_NOW as soon as possible
+ * @brief Request emission of L2CAP_EVENT_LE_CAN_SEND_NOW as soon as possible
  * @note L2CAP_EVENT_CAN_SEND_NOW might be emitted during call to this function
  *       so packet handler should be ready to handle it
  * @param local_cid             L2CAP LE Data Channel Identifier
