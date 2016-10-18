@@ -71,7 +71,7 @@ SBC_ENCODER_OBJ  = $(SBC_ENCODER:.c=.o)
 
 all: ${AVDTP_TESTS}
 
-avdtp_test: ${CORE_OBJ} ${COMMON_OBJ} ${SBC_DECODER_OBJ} ${SBC_ENCODER_OBJ} avdtp_sink.o avdtp_test.o
+avdtp_test: ${CORE_OBJ} ${COMMON_OBJ} ${SBC_DECODER_OBJ} ${SBC_ENCODER_OBJ} btstack_ring_buffer.o avdtp_sink.o avdtp_test.o
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 portaudio_test: btstack_util.o hci_dump.o wav_util.o btstack_ring_buffer.o portaudio_test.c

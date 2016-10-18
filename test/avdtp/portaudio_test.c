@@ -58,10 +58,9 @@
 #define TABLE_SIZE   100
 
 typedef struct {
-    float sine[TABLE_SIZE];
+    int16_t sine[TABLE_SIZE];
     int left_phase;
     int right_phase;
-    char message[20];
 } paTestData;
 
 static uint8_t ring_buffer_storage[3*FRAMES_PER_BUFFER*BYTES_PER_FRAME];
@@ -76,17 +75,14 @@ static void write_wav_data(int16_t * data, int num_frames, int num_channels, int
     if (total_num_samples>5*SAMPLE_RATE) wav_writer_close();
 }
 
-
 static void fill_ring_buffer(void *userData){
     paTestData *data = (paTestData*)userData;
 
     while (btstack_ring_buffer_bytes_free(&ring_buffer) > BYTES_PER_FRAME){
-        int16_t left = data->sine[data->left_phase] * 32767;
-        int16_t right = data->sine[data->right_phase] * 32767;
-        
         uint8_t write_data[BYTES_PER_FRAME];
-        *(int16_t*)&write_data[0] = left;
-        *(int16_t*)&write_data[2] = right;
+        *(int16_t*)&write_data[0] = data->sine[data->left_phase];
+        *(int16_t*)&write_data[2] = data->sine[data->right_phase];
+        
         btstack_ring_buffer_write(&ring_buffer, write_data, BYTES_PER_FRAME);
         write_wav_data((int16_t*)write_data, 1, NUM_CHANNELS, SAMPLE_RATE);
 
@@ -116,7 +112,7 @@ static int patestCallback( const void *inputBuffer, void *outputBuffer,
     if (btstack_ring_buffer_bytes_available(&ring_buffer) >= bytes_per_buffer){
         btstack_ring_buffer_read(&ring_buffer, outputBuffer, bytes_per_buffer, &bytes_read);
     } else {
-        printf("NOT ENGOUGH DAT!\n");
+        printf("NOT ENOUGH DATA!\n");
         memset(outputBuffer, 0, bytes_per_buffer);
     }
     return paContinue;
@@ -124,7 +120,6 @@ static int patestCallback( const void *inputBuffer, void *outputBuffer,
 
 
 int main(int argc, const char * argv[]){
-
     PaError err;
     static paTestData data;
     static PaStream * stream;
@@ -132,7 +127,7 @@ int main(int argc, const char * argv[]){
     /* initialise sinusoidal wavetable */
     int i;
     for (i=0; i<TABLE_SIZE; i++){
-        data.sine[i] = (float) sin( ((double)i/(double)TABLE_SIZE) * M_PI * 2. );
+        data.sine[i] = sin(((double)i/(double)TABLE_SIZE) * M_PI * 2.)*32767;
     }
     data.left_phase = data.right_phase = 0;
 
@@ -143,13 +138,12 @@ int main(int argc, const char * argv[]){
     } 
 
     PaStreamParameters outputParameters;
-
-    /* -- setup input and output -- */
     outputParameters.device = Pa_GetDefaultOutputDevice(); /* default output device */
     outputParameters.channelCount = NUM_CHANNELS;
     outputParameters.sampleFormat = PA_SAMPLE_TYPE;
     outputParameters.suggestedLatency = Pa_GetDeviceInfo( outputParameters.device )->defaultHighOutputLatency;
     outputParameters.hostApiSpecificStreamInfo = NULL;
+    
     /* -- setup stream -- */
     err = Pa_OpenStream(
            &stream,
@@ -159,7 +153,7 @@ int main(int argc, const char * argv[]){
            FRAMES_PER_BUFFER,
            paClipOff,           /* we won't output out of range samples so don't bother clipping them */
            patestCallback,      /* use callback */
-           &data );              /* no callback userData yet */
+           &data );             /* callback userData */
 
     memset(ring_buffer_storage, 0, sizeof(ring_buffer_storage));
     btstack_ring_buffer_init(&ring_buffer, ring_buffer_storage, sizeof(ring_buffer_storage));
