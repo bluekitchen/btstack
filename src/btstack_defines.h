@@ -441,11 +441,12 @@ typedef uint8_t sm_key_t[16];
 #define L2CAP_EVENT_LE_INCOMING_CONNECTION                 0x79
 
 /**
- * @format 11BH22222
+ * @format 11BH122222
  * @param status
  * @param address_type
  * @param address
  * @param handle
+ * @param incoming
  * @param psm
  * @param local_cid
  * @param remote_cid

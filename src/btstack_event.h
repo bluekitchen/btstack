@@ -1258,13 +1258,22 @@ static inline hci_con_handle_t l2cap_event_le_channel_opened_get_handle(const ui
     return little_endian_read_16(event, 10);
 }
 /**
+ * @brief Get field incoming from event L2CAP_EVENT_LE_CHANNEL_OPENED
+ * @param event packet
+ * @return incoming
+ * @note: btstack_type 1
+ */
+static inline uint8_t l2cap_event_le_channel_opened_get_incoming(const uint8_t * event){
+    return event[12];
+}
+/**
  * @brief Get field psm from event L2CAP_EVENT_LE_CHANNEL_OPENED
  * @param event packet
  * @return psm
  * @note: btstack_type 2
  */
 static inline uint16_t l2cap_event_le_channel_opened_get_psm(const uint8_t * event){
-    return little_endian_read_16(event, 12);
+    return little_endian_read_16(event, 13);
 }
 /**
  * @brief Get field local_cid from event L2CAP_EVENT_LE_CHANNEL_OPENED
@@ -1273,7 +1282,7 @@ static inline uint16_t l2cap_event_le_channel_opened_get_psm(const uint8_t * eve
  * @note: btstack_type 2
  */
 static inline uint16_t l2cap_event_le_channel_opened_get_local_cid(const uint8_t * event){
-    return little_endian_read_16(event, 14);
+    return little_endian_read_16(event, 15);
 }
 /**
  * @brief Get field remote_cid from event L2CAP_EVENT_LE_CHANNEL_OPENED
@@ -1282,7 +1291,7 @@ static inline uint16_t l2cap_event_le_channel_opened_get_local_cid(const uint8_t
  * @note: btstack_type 2
  */
 static inline uint16_t l2cap_event_le_channel_opened_get_remote_cid(const uint8_t * event){
-    return little_endian_read_16(event, 16);
+    return little_endian_read_16(event, 17);
 }
 /**
  * @brief Get field local_mtu from event L2CAP_EVENT_LE_CHANNEL_OPENED
@@ -1291,7 +1300,7 @@ static inline uint16_t l2cap_event_le_channel_opened_get_remote_cid(const uint8_
  * @note: btstack_type 2
  */
 static inline uint16_t l2cap_event_le_channel_opened_get_local_mtu(const uint8_t * event){
-    return little_endian_read_16(event, 18);
+    return little_endian_read_16(event, 19);
 }
 /**
  * @brief Get field remote_mtu from event L2CAP_EVENT_LE_CHANNEL_OPENED
@@ -1300,7 +1309,7 @@ static inline uint16_t l2cap_event_le_channel_opened_get_local_mtu(const uint8_t
  * @note: btstack_type 2
  */
 static inline uint16_t l2cap_event_le_channel_opened_get_remote_mtu(const uint8_t * event){
-    return little_endian_read_16(event, 20);
+    return little_endian_read_16(event, 21);
 }
 
 /**
