@@ -426,6 +426,53 @@ typedef uint8_t sm_key_t[16];
  */
 #define L2CAP_EVENT_CAN_SEND_NOW                           0x78
 
+// LE Data Channels
+
+/**
+ * @format 1BH2222
+ * @param address_type
+ * @param address
+ * @param handle
+ * @param psm
+ * @param local_cid
+ * @param remote_cid
+ * @param remote_mtu
+ */
+#define L2CAP_EVENT_LE_INCOMING_CONNECTION                 0x79
+
+/**
+ * @format 11BH22222
+ * @param status
+ * @param address_type
+ * @param address
+ * @param handle
+ * @param psm
+ * @param local_cid
+ * @param remote_cid
+ * @param local_mtu
+ * @param remote_mtu
+ */
+#define L2CAP_EVENT_LE_CHANNEL_OPENED                      0x7a
+
+/*
+ * @format 2
+ * @param local_cid
+ */
+#define L2CAP_EVENT_LE_CHANNEL_CLOSED                      0x7b
+
+/*
+ * @format 2
+ * @param local_cid
+ */
+#define L2CAP_EVENT_LE_CAN_SEND_NOW                        0x7c
+
+/*
+ * @format 2
+ * @param local_cid
+ */
+#define L2CAP_EVENT_LE_PACKET_SENT                         0x7d
+
+
 // RFCOMM EVENTS
 
 /**

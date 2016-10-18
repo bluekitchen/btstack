@@ -87,12 +87,13 @@ static inline l2cap_service_t * l2cap_get_service(uint16_t psm);
 static void l2cap_emit_channel_opened(l2cap_channel_t *channel, uint8_t status);
 static void l2cap_emit_can_send_now(btstack_packet_handler_t packet_handler, uint16_t channel);
 static void l2cap_emit_channel_closed(l2cap_channel_t *channel);
-static void l2cap_emit_connection_request(l2cap_channel_t *channel);
+static void l2cap_emit_incoming_connection(l2cap_channel_t *channel);
 static int  l2cap_channel_ready_for_open(l2cap_channel_t *channel);
 static void l2cap_hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static void l2cap_acl_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size );
 static void l2cap_notify_channel_can_send(void);
 #ifdef ENABLE_LE_DATA_CHANNELS
+static void l2cap_le_notify_channel_can_send(l2cap_channel_t *channel);
 static void l2cap_le_finialize_channel_close(l2cap_channel_t *channel);
 static inline l2cap_service_t * l2cap_le_get_service(uint16_t psm);
 #endif
@@ -180,6 +181,15 @@ static void l2cap_dispatch_to_channel(l2cap_channel_t *channel, uint8_t type, ui
     (* (channel->packet_handler))(type, channel->local_cid, data, size);
 }
 
+static void l2cap_emit_simple_event_with_cid(l2cap_channel_t * channel, uint8_t event_code){
+    uint8_t event[4];
+    event[0] = event_code;
+    event[1] = sizeof(event) - 2;
+    little_endian_store_16(event, 2, channel->local_cid);
+    hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
+    l2cap_dispatch_to_channel(channel, HCI_EVENT_PACKET, event, sizeof(event));
+}
+
 void l2cap_emit_channel_opened(l2cap_channel_t *channel, uint8_t status) {
     log_info("L2CAP_EVENT_CHANNEL_OPENED status 0x%x addr %s handle 0x%x psm 0x%x local_cid 0x%x remote_cid 0x%x local_mtu %u, remote_mtu %u, flush_timeout %u",
              status, bd_addr_to_str(channel->address), channel->con_handle, channel->psm,
@@ -200,17 +210,23 @@ void l2cap_emit_channel_opened(l2cap_channel_t *channel, uint8_t status) {
     l2cap_dispatch_to_channel(channel, HCI_EVENT_PACKET, event, sizeof(event));
 }
 
-void l2cap_emit_channel_closed(l2cap_channel_t *channel) {
+static void l2cap_emit_channel_closed(l2cap_channel_t *channel) {
     log_info("L2CAP_EVENT_CHANNEL_CLOSED local_cid 0x%x", channel->local_cid);
-    uint8_t event[4];
-    event[0] = L2CAP_EVENT_CHANNEL_CLOSED;
-    event[1] = sizeof(event) - 2;
-    little_endian_store_16(event, 2, channel->local_cid);
-    hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
-    l2cap_dispatch_to_channel(channel, HCI_EVENT_PACKET, event, sizeof(event));
+    l2cap_emit_simple_event_with_cid(channel, L2CAP_EVENT_CHANNEL_CLOSED);
 }
 
-void l2cap_emit_connection_request(l2cap_channel_t *channel) {
+
+static void l2cap_emit_can_send_now(btstack_packet_handler_t packet_handler, uint16_t channel) {
+    log_info("L2CAP_EVENT_CHANNEL_CAN_SEND_NOW local_cid 0x%x", channel);
+    uint8_t event[4];
+    event[0] = L2CAP_EVENT_CAN_SEND_NOW;
+    event[1] = sizeof(event) - 2;
+    little_endian_store_16(event, 2, channel);
+    hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
+    packet_handler(HCI_EVENT_PACKET, channel, event, sizeof(event));
+}
+
+static void l2cap_emit_incoming_connection(l2cap_channel_t *channel) {
     log_info("L2CAP_EVENT_INCOMING_CONNECTION addr %s handle 0x%x psm 0x%x local_cid 0x%x remote_cid 0x%x",
              bd_addr_to_str(channel->address), channel->con_handle,  channel->psm, channel->local_cid, channel->remote_cid);
     uint8_t event[16];
@@ -225,16 +241,6 @@ void l2cap_emit_connection_request(l2cap_channel_t *channel) {
     l2cap_dispatch_to_channel(channel, HCI_EVENT_PACKET, event, sizeof(event));
 }
 
-static void l2cap_emit_can_send_now(btstack_packet_handler_t packet_handler, uint16_t channel) {
-    log_info("L2CAP_EVENT_CHANNEL_CAN_SEND_NOW local_cid 0x%x", channel);
-    uint8_t event[4];
-    event[0] = L2CAP_EVENT_CAN_SEND_NOW;
-    event[1] = sizeof(event) - 2;
-    little_endian_store_16(event, 2, channel);
-    hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
-    packet_handler(HCI_EVENT_PACKET, channel, event, sizeof(event));
-}
-
 static void l2cap_emit_connection_parameter_update_response(hci_con_handle_t con_handle, uint16_t result){
     uint8_t event[6];
     event[0] = L2CAP_EVENT_CONNECTION_PARAMETER_UPDATE_RESPONSE;
@@ -245,6 +251,46 @@ static void l2cap_emit_connection_parameter_update_response(hci_con_handle_t con
     if (!l2cap_event_packet_handler) return;
     (*l2cap_event_packet_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
+
+#ifdef ENABLE_LE_DATA_CHANNELS
+// 1BH2222
+static void l2cap_emit_le_incoming_connection(l2cap_channel_t *channel) {
+    log_info("L2CAP_EVENT_LE_INCOMING_CONNECTION addr_type %u, addr %s handle 0x%x psm 0x%x local_cid 0x%x remote_cid 0x%x, remote_mtu %u",
+             channel->address_type, bd_addr_to_str(channel->address), channel->con_handle,  channel->psm, channel->local_cid, channel->remote_cid, channel->remote_mtu);
+    uint8_t event[19];
+    event[0] = L2CAP_EVENT_LE_INCOMING_CONNECTION;
+    event[1] = sizeof(event) - 2;
+    event[2] = channel->address_type;
+    reverse_bd_addr(channel->address, &event[3]);
+    little_endian_store_16(event,  9, channel->con_handle);
+    little_endian_store_16(event, 11, channel->psm);
+    little_endian_store_16(event, 13, channel->local_cid);
+    little_endian_store_16(event, 15, channel->remote_cid);
+    little_endian_store_16(event, 17, channel->remote_mtu);
+    hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
+    l2cap_dispatch_to_channel(channel, HCI_EVENT_PACKET, event, sizeof(event));
+}
+// 11BH22222
+static void l2cap_emit_le_channel_opened(l2cap_channel_t *channel, uint8_t status) {
+    log_info("L2CAP_EVENT_LE_CHANNEL_OPENED status 0x%x addr_type %u addr %s handle 0x%x psm 0x%x local_cid 0x%x remote_cid 0x%x local_mtu %u, remote_mtu %u",
+             status, channel->address_type, bd_addr_to_str(channel->address), channel->con_handle, channel->psm,
+             channel->local_cid, channel->remote_cid, channel->local_mtu, channel->remote_mtu);
+    uint8_t event[22];
+    event[0] = L2CAP_EVENT_LE_CHANNEL_OPENED;
+    event[1] = sizeof(event) - 2;
+    event[2] = status;
+    event[3] = channel->address_type;
+    reverse_bd_addr(channel->address, &event[4]);
+    little_endian_store_16(event, 10, channel->con_handle);
+    little_endian_store_16(event, 12, channel->psm);
+    little_endian_store_16(event, 14, channel->local_cid);
+    little_endian_store_16(event, 16, channel->remote_cid);
+    little_endian_store_16(event, 18, channel->local_mtu);
+    little_endian_store_16(event, 20, channel->remote_mtu); 
+    hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
+    l2cap_dispatch_to_channel(channel, HCI_EVENT_PACKET, event, sizeof(event));
+}
+#endif
 
 static l2cap_channel_t * l2cap_get_channel_for_local_cid(uint16_t local_cid){
     btstack_linked_list_iterator_t it;    
@@ -756,7 +802,7 @@ static void l2cap_run(void){
                 channel->new_credits_incoming = 0;
                 l2cap_send_le_signaling_packet(channel->con_handle, LE_CREDIT_BASED_CONNECTION_RESPONSE, channel->remote_sig_id, channel->local_cid, channel->local_mtu, 23, channel->credits_incoming, 0);
                 // notify client
-                l2cap_emit_channel_opened(channel, 0);
+                l2cap_emit_le_channel_opened(channel, 0);
                 break;                       
             case L2CAP_STATE_WILL_SEND_LE_CONNECTION_RESPONSE_DECLINE:
                 if (!hci_can_send_acl_packet_now(channel->con_handle)) break;
@@ -808,7 +854,10 @@ static void l2cap_run(void){
 
                 if (channel->send_sdu_pos >= channel->send_sdu_len + 2){
                     channel->send_sdu_buffer = NULL;
-                    // TODO: send done event
+                    // send done event
+                    l2cap_emit_simple_event_with_cid(channel, L2CAP_EVENT_LE_PACKET_SENT);
+                    // inform about can send now
+                    l2cap_le_notify_channel_can_send(channel);
                 }
                 hci_send_acl_packet_buffer(8 + pos);
                 break;
@@ -1017,6 +1066,17 @@ static void l2cap_handle_connection_success_for_addr(bd_addr_t address, hci_con_
     l2cap_run();
 }
 
+
+#ifdef ENABLE_LE_DATA_CHANNELS
+static void l2cap_le_notify_channel_can_send(l2cap_channel_t *channel){
+    if (!channel->waiting_for_can_send_now) return;
+    if (channel->send_sdu_buffer) return;
+    channel->waiting_for_can_send_now = 0;
+    log_info("L2CAP_EVENT_CHANNEL_LE_CAN_SEND_NOW local_cid 0x%x", channel->local_cid);
+    l2cap_emit_simple_event_with_cid(channel, L2CAP_EVENT_LE_CAN_SEND_NOW);
+}
+#endif
+
 static void l2cap_notify_channel_can_send(void){
     btstack_linked_list_iterator_t it;
     btstack_linked_list_iterator_init(&it, &l2cap_channels);
@@ -1027,6 +1087,7 @@ static void l2cap_notify_channel_can_send(void){
         channel->waiting_for_can_send_now = 0;
         l2cap_emit_can_send_now(channel->packet_handler, channel->local_cid);
     }
+
 
     int i;
     for (i=0;i<L2CAP_FIXED_CHANNEL_TABLE_SIZE;i++){
@@ -1158,7 +1219,7 @@ static void l2cap_hci_event_handler(uint8_t packet_type, uint16_t cid, uint8_t *
                     case L2CAP_STATE_WAIT_INCOMING_SECURITY_LEVEL_UPDATE:
                         if (actual_level >= required_level){
                             channel->state = L2CAP_STATE_WAIT_CLIENT_ACCEPT_OR_REJECT;
-                            l2cap_emit_connection_request(channel);                
+                            l2cap_emit_incoming_connection(channel);                
                         } else {
                             channel->reason = 0x0003; // security block
                             channel->state = L2CAP_STATE_WILL_SEND_CONNECTION_RESPONSE_DECLINE;
@@ -1605,7 +1666,7 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
             if (channel->state == L2CAP_STATE_WAIT_LE_CONNECTION_RESPONSE){
                 channel->state = L2CAP_STATE_CLOSED;
                 // no official value for this, use: Connection refused – LE_PSM not supported - 0x0002
-                l2cap_emit_channel_opened(channel, 0x0002);
+                l2cap_emit_le_channel_opened(channel, 0x0002);
                                 
                 // discard channel
                 btstack_linked_list_remove(&l2cap_le_channels, (btstack_linked_item_t *) channel);
@@ -1701,7 +1762,7 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
                 btstack_linked_list_add(&l2cap_le_channels, (btstack_linked_item_t *) channel);
 
                 // post connection request event
-                l2cap_emit_connection_request(channel);
+                l2cap_emit_le_incoming_connection(channel);
 
             } else {
                 // Connection refused – LE_PSM not supported
@@ -1727,7 +1788,7 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
             if (result){
                 channel->state = L2CAP_STATE_CLOSED;
                 // map l2cap connection response result to BTstack status enumeration
-                l2cap_emit_channel_opened(channel, result);
+                l2cap_emit_le_channel_opened(channel, result);
                                 
                 // discard channel
                 btstack_linked_list_remove(&l2cap_le_channels, (btstack_linked_item_t *) channel);
@@ -1741,7 +1802,7 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
             channel->remote_mps = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET + 4);
             channel->credits_outgoing = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET + 6);
             channel->state = L2CAP_STATE_OPEN;
-            l2cap_emit_channel_opened(channel, result);
+            l2cap_emit_le_channel_opened(channel, result);
             break;
 
         case LE_FLOW_CONTROL_CREDIT:
@@ -1901,9 +1962,8 @@ void l2cap_finialize_channel_close(l2cap_channel_t * channel){
 // finalize closed channel - l2cap_handle_disconnect_request & DISCONNECTION_RESPONSE
 void l2cap_le_finialize_channel_close(l2cap_channel_t * channel){
     channel->state = L2CAP_STATE_CLOSED;
-    l2cap_emit_channel_closed(channel);
+    l2cap_emit_simple_event_with_cid(channel, L2CAP_EVENT_CHANNEL_CLOSED);
     // discard channel
-    l2cap_stop_rtx(channel);
     btstack_linked_list_remove(&l2cap_le_channels, (btstack_linked_item_t *) channel);
     btstack_memory_l2cap_channel_free(channel);
 }
@@ -2156,8 +2216,20 @@ uint8_t l2cap_le_provide_credits(uint16_t local_cid, uint16_t credits){
  * @param local_cid             L2CAP LE Data Channel Identifier
  */
 int l2cap_le_can_send_now(uint16_t local_cid){
-    // check if data can be sent via le at all
-    return 0;
+    l2cap_channel_t * channel = l2cap_le_get_channel_for_local_cid(local_cid);
+    if (!channel) {
+        log_error("l2cap_le_provide_credits no channel for cid 0x%02x", local_cid);
+        return 0;
+    }
+
+    // check state
+    if (channel->state != L2CAP_STATE_OPEN) return 0;
+
+    // check queue
+    if (channel->send_sdu_buffer) return 0;    
+
+    // fine, go ahead
+    return 1;
 }
 
 /**
@@ -2167,7 +2239,13 @@ int l2cap_le_can_send_now(uint16_t local_cid){
  * @param local_cid             L2CAP LE Data Channel Identifier
  */
 uint8_t l2cap_le_request_can_send_now_event(uint16_t local_cid){
-    // same as for non-le
+    l2cap_channel_t * channel = l2cap_le_get_channel_for_local_cid(local_cid);
+    if (!channel) {
+        log_error("l2cap_le_request_can_send_now_event no channel for cid 0x%02x", local_cid);
+        return 0;
+    }
+    channel->waiting_for_can_send_now = 1;
+    l2cap_le_notify_channel_can_send(channel);
     return 0;
 }
 

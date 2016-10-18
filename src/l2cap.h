@@ -374,7 +374,7 @@ uint8_t l2cap_le_create_channel(btstack_packet_handler_t packet_handler, hci_con
 uint8_t l2cap_le_provide_credits(uint16_t cid, uint16_t credits);
 
 /**
- * @brief Check if outgoing buffer is available and that there's space on the Bluetooth module
+ * @brief Check if packet can be scheduled for transmission
  * @param local_cid             L2CAP LE Data Channel Identifier
  */
 int l2cap_le_can_send_now(uint16_t cid);

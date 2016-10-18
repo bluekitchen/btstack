@@ -87,6 +87,8 @@ static uint16_t initial_credits = L2CAP_LE_AUTOMATIC_CREDITS;
 const char * data_short = "a";
 const char * data_long  = "0123456789abcdefghijklmnopqrstuvwxyz";
 const char * data_classic = "ABCDEF";
+static int todo_send_short;
+static int todo_send_long;
 
 static uint8_t buffer_x[1000];
 
@@ -141,31 +143,60 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                 case HCI_EVENT_DISCONNECTION_COMPLETE:
                     break;
 
+                // Classic
                 case L2CAP_EVENT_INCOMING_CONNECTION: 
-                    psm = little_endian_read_16(packet, 10);
-                    cid = little_endian_read_16(packet, 12);
-                    switch (psm){
-                        case TSPX_psm:
-                            printf("L2CAP: Accepting incoming Classic connection request for 0x%02x, PSM %02x\n", cid, psm); 
-                            l2cap_accept_connection(cid);
-                            break;
-                        case TSPX_le_psm:
-                            printf("L2CAP: Accepting incoming LE connection request for 0x%02x, PSM %02x\n", cid, psm); 
-                            l2cap_le_accept_connection(cid, receive_buffer_X, sizeof(receive_buffer_X), initial_credits);
-                            break;
-                        default:
-                            break;
-                    }
+                    psm = l2cap_event_incoming_connection_get_psm(packet);
+                    cid = l2cap_event_incoming_connection_get_local_cid(packet);
+                    if (psm != TSPX_psm) break;
+                    printf("L2CAP: Accepting incoming Classic connection request for 0x%02x, PSM %02x\n", cid, psm); 
+                    l2cap_le_accept_connection(cid, receive_buffer_X, sizeof(receive_buffer_X), initial_credits);
                     break;
-
                 case L2CAP_EVENT_CHANNEL_OPENED:
                     // inform about new l2cap connection
-                    reverse_bd_addr(&packet[3], event_address);
-                    psm = little_endian_read_16(packet, 11); 
-                    cid = little_endian_read_16(packet, 13); 
-                    handle = little_endian_read_16(packet, 9);
+                    l2cap_event_channel_opened_get_address(packet, event_address);
+                    psm = l2cap_event_channel_opened_get_psm(packet); 
+                    cid = l2cap_event_channel_opened_get_local_cid(packet); 
+                    handle = l2cap_event_channel_opened_get_handle(packet);
                     if (packet[2] == 0) {
-                        printf("L2CAP: Channel successfully opened: %s, handle 0x%02x, psm 0x%02x, local cid 0x%02x, remote cid 0x%02x\n",
+                        printf("L2CAP: Classic Channel successfully opened: %s, handle 0x%02x, psm 0x%02x, local cid 0x%02x, remote cid 0x%02x\n",
+                               bd_addr_to_str(event_address), handle, psm, cid,  l2cap_event_channel_opened_get_remote_cid(packet));
+                        switch (psm){
+                            case TSPX_le_psm:
+                                cid_le = cid;
+                                break;
+                            case TSPX_psm:
+                                cid_classic = cid;
+                                break;
+                            default:
+                                break;
+                        }
+                    } else {
+                        printf("L2CAP: classic connection to device %s failed. status code %u\n", bd_addr_to_str(event_address), packet[2]);
+                    }
+                    break;
+                case L2CAP_EVENT_CHANNEL_CLOSED:
+                    cid = l2cap_event_channel_closed_get_local_cid(packet);
+                    printf("L2CAP: Clasic Channel closed 0x%02x\n", cid); 
+                    break;
+
+                // LE Data Channels
+                case L2CAP_EVENT_LE_INCOMING_CONNECTION: 
+                    psm = l2cap_event_le_incoming_connection_get_psm(packet);
+                    cid = l2cap_event_le_incoming_connection_get_local_cid(packet);
+                    if (psm != TSPX_le_psm) break;
+                    printf("L2CAP: Accepting incoming LE connection request for 0x%02x, PSM %02x\n", cid, psm); 
+                    l2cap_le_accept_connection(cid, receive_buffer_X, sizeof(receive_buffer_X), initial_credits);
+                    break;
+
+
+                case L2CAP_EVENT_LE_CHANNEL_OPENED:
+                    // inform about new l2cap connection
+                    l2cap_event_le_channel_opened_get_address(packet, event_address);
+                    psm = l2cap_event_le_channel_opened_get_psm(packet); 
+                    cid = l2cap_event_le_channel_opened_get_local_cid(packet); 
+                    handle = l2cap_event_le_channel_opened_get_handle(packet);
+                    if (packet[2] == 0) {
+                        printf("L2CAP: LE Data Channel successfully opened: %s, handle 0x%02x, psm 0x%02x, local cid 0x%02x, remote cid 0x%02x\n",
                                bd_addr_to_str(event_address), handle, psm, cid,  little_endian_read_16(packet, 15));
                         switch (psm){
                             case TSPX_le_psm:
@@ -178,13 +209,30 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                                 break;
                         }
                     } else {
-                        printf("L2CAP: connection to device %s failed. status code %u\n", bd_addr_to_str(event_address), packet[2]);
+                        printf("L2CAP: LE Data Channel connection to device %s failed. status code %u\n", bd_addr_to_str(event_address), packet[2]);
                     }
                     break;
 
-                case L2CAP_EVENT_CHANNEL_CLOSED:
-                    cid = l2cap_event_channel_closed_get_local_cid(packet);
-                    printf("L2CAP: Channel closed 0x%02x\n", cid); 
+                case L2CAP_EVENT_LE_CAN_SEND_NOW:
+                    if (todo_send_short){
+                        todo_send_short = 0;
+                        l2cap_le_send_data(cid_le, (uint8_t *) data_short, strlen(data_short));
+                        break;
+                    }
+                    if (todo_send_long){
+                        todo_send_long = 0;                        
+                        l2cap_le_send_data(cid_le, (uint8_t *) data_long, strlen(data_long));
+                    }
+                    break;
+
+                case L2CAP_EVENT_LE_CHANNEL_CLOSED:
+                    cid = l2cap_event_le_channel_closed_get_local_cid(packet);
+                    printf("L2CAP: LE Data Channel closed 0x%02x\n", cid); 
+                    break;
+
+               case L2CAP_EVENT_LE_PACKET_SENT:
+                    cid = l2cap_event_le_packet_sent_get_local_cid(packet);
+                    printf("L2CAP: LE Data Channel Packet sent0x%02x\n", cid); 
                     break;
 
                 case SM_EVENT_JUST_WORKS_REQUEST:
@@ -267,6 +315,7 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
     switch (buffer){
         case 'a':
             printf("Direct Connection Establishment to type %u, addr %s\n", pts_address_type, bd_addr_to_str(pts_address));
+            gap_advertisements_enable(0);   // controller with single role cannot create connection while advertising
             gap_connect(pts_address, pts_address_type);
             break;
 
@@ -294,12 +343,14 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
 
         case 's':
             printf("Send L2CAP Data Short %s\n", data_short);
-            l2cap_le_send_data(cid_le, (uint8_t *) data_short, strlen(data_short));
+            todo_send_short = 1;
+            l2cap_le_request_can_send_now_event(cid_le);
             break;
 
         case 'S':
             printf("Send L2CAP Data Long %s\n", data_long);
-            l2cap_le_send_data(cid_le, (uint8_t *) data_long, strlen(data_long));
+            todo_send_long = 1;
+            l2cap_le_request_can_send_now_event(cid_le);
             break;
 
         case 'y':
