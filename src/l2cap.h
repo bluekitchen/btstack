@@ -101,6 +101,7 @@ typedef enum {
     L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_INVALID = 1 << 8,   // in CONF RSP, send UNKNOWN OPTIONS
     L2CAP_CHANNEL_STATE_VAR_SEND_CMD_REJ_UNKNOWN  = 1 << 9,   // send CMD_REJ with reason unknown
     L2CAP_CHANNEL_STATE_VAR_SEND_CONN_RESP_PEND   = 1 << 10,  // send Connection Respond with pending
+    L2CAP_CHANNEL_STATE_VAR_INCOMING              = 1 << 15,  // channel is incoming
 } L2CAP_CHANNEL_STATE_VAR;
 
 // info regarding an actual connection

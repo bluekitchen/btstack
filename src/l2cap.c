@@ -1698,8 +1698,9 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
                 channel->credits_outgoing = little_endian_read_16(command, 12);
 
                 // set initial state
-                channel->state = L2CAP_STATE_WAIT_CLIENT_ACCEPT_OR_REJECT;
-    
+                channel->state      = L2CAP_STATE_WAIT_CLIENT_ACCEPT_OR_REJECT;
+                channel->state_var |= L2CAP_CHANNEL_STATE_VAR_INCOMING;
+
                 // add to connections list
                 btstack_linked_list_add(&l2cap_le_channels, (btstack_linked_item_t *) channel);
 
@@ -2007,18 +2008,19 @@ static void l2cap_emit_le_channel_opened(l2cap_channel_t *channel, uint8_t statu
     log_info("L2CAP_EVENT_LE_CHANNEL_OPENED status 0x%x addr_type %u addr %s handle 0x%x psm 0x%x local_cid 0x%x remote_cid 0x%x local_mtu %u, remote_mtu %u",
              status, channel->address_type, bd_addr_to_str(channel->address), channel->con_handle, channel->psm,
              channel->local_cid, channel->remote_cid, channel->local_mtu, channel->remote_mtu);
-    uint8_t event[22];
+    uint8_t event[23];
     event[0] = L2CAP_EVENT_LE_CHANNEL_OPENED;
     event[1] = sizeof(event) - 2;
     event[2] = status;
     event[3] = channel->address_type;
     reverse_bd_addr(channel->address, &event[4]);
     little_endian_store_16(event, 10, channel->con_handle);
-    little_endian_store_16(event, 12, channel->psm);
-    little_endian_store_16(event, 14, channel->local_cid);
-    little_endian_store_16(event, 16, channel->remote_cid);
-    little_endian_store_16(event, 18, channel->local_mtu);
-    little_endian_store_16(event, 20, channel->remote_mtu); 
+    event[12] = channel->state_var & L2CAP_CHANNEL_STATE_VAR_INCOMING ? 1 : 0;
+    little_endian_store_16(event, 13, channel->psm);
+    little_endian_store_16(event, 15, channel->local_cid);
+    little_endian_store_16(event, 17, channel->remote_cid);
+    little_endian_store_16(event, 19, channel->local_mtu);
+    little_endian_store_16(event, 21, channel->remote_mtu); 
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
     l2cap_dispatch_to_channel(channel, HCI_EVENT_PACKET, event, sizeof(event));
 }
