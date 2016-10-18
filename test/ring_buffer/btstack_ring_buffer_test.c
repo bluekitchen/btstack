@@ -70,6 +70,24 @@ TEST(RingBuffer, ReadWrite){
     }
 }
 
+TEST(RingBuffer, ReadWriteChunks){    
+    uint8_t test_write_data[] = {1,2,3,4,5,6};
+    int test_data_size = sizeof(test_write_data);
+    int chunk_size = 3;
+    uint8_t test_read_data[chunk_size];
+
+    btstack_ring_buffer_write(&ring_buffer, test_write_data, test_data_size);
+    CHECK_EQUAL(test_data_size, btstack_ring_buffer_bytes_available(&ring_buffer));
+
+    while (test_data_size){
+        memset(test_read_data, 0, chunk_size);
+        uint16_t number_of_bytes_read = 0;
+        btstack_ring_buffer_read(&ring_buffer, test_read_data, chunk_size, &number_of_bytes_read); 
+        test_data_size -= chunk_size;
+        CHECK_EQUAL(test_data_size, btstack_ring_buffer_bytes_available(&ring_buffer));
+    }
+}
+
 int main (int argc, const char * argv[]){
     return CommandLineTestRunner::RunAllTests(argc, argv);
 }
