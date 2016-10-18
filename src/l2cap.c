@@ -161,8 +161,11 @@ void l2cap_init(void){
     
     l2cap_channels = NULL;
     l2cap_services = NULL;
+
+#ifdef ENABLE_LE_DATA_CHANNELS
     l2cap_le_services = NULL;
     l2cap_le_channels = NULL;
+#endif
 
     l2cap_event_packet_handler = NULL;
     memset(fixed_channels, 0, sizeof(fixed_channels));
@@ -1096,7 +1099,7 @@ static void l2cap_hci_event_handler(uint8_t packet_type, uint16_t cid, uint8_t *
                 btstack_linked_list_iterator_remove(&it);
                 btstack_memory_l2cap_channel_free(channel);
             }
-#ifdef ENABLE_BLE
+#ifdef ENABLE_LE_DATA_CHANNELS
             btstack_linked_list_iterator_init(&it, &l2cap_le_channels);
             while (btstack_linked_list_iterator_has_next(&it)){
                 l2cap_channel_t * channel = (l2cap_channel_t *) btstack_linked_list_iterator_next(&it);
@@ -1525,11 +1528,11 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
     hci_connection_t * connection;
     uint16_t result;
     uint8_t  event[10];
-    uint16_t local_cid;
-    l2cap_channel_t * channel;
-    btstack_linked_list_iterator_t it;    
 
 #ifdef ENABLE_LE_DATA_CHANNELS
+    btstack_linked_list_iterator_t it;    
+    l2cap_channel_t * channel;
+    uint16_t local_cid;
     uint16_t le_psm;
     uint16_t new_credits;
     uint16_t credits_before;
@@ -1591,6 +1594,8 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
             (*l2cap_event_packet_handler)( HCI_EVENT_PACKET, 0, event, sizeof(event));
             break;
 
+#ifdef ENABLE_LE_DATA_CHANNELS
+
         case COMMAND_REJECT:
             // Find channel for this sig_id and connection handle
             channel = NULL;
@@ -1617,7 +1622,6 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
             }
             break;
 
-#ifdef ENABLE_LE_DATA_CHANNELS
         case LE_CREDIT_BASED_CONNECTION_REQUEST:
  
             // get hci connection, bail if not found (must not happen)
@@ -1767,7 +1771,6 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
             }            
             log_info("l2cap: %u credits for 0x%02x, now %u", new_credits, local_cid, channel->credits_outgoing);
             break;
-#endif
 
         case DISCONNECTION_REQUEST:
             // find channel
@@ -1780,6 +1783,8 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
             channel->remote_sig_id = sig_id;
             channel->state = L2CAP_STATE_WILL_SEND_DISCONNECT_RESPONSE;
             break;
+
+#endif
 
         case DISCONNECTION_RESPONSE:
             break;
@@ -1848,7 +1853,8 @@ static void l2cap_acl_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
             if (l2cap_channel) {
                 l2cap_dispatch_to_channel(l2cap_channel, L2CAP_DATA_PACKET, &packet[COMPLETE_L2CAP_HEADER], size-COMPLETE_L2CAP_HEADER);
             }
-#ifdef ENABLE_BLE
+
+#ifdef ENABLE_LE_DATA_CHANNELS
             l2cap_channel = l2cap_le_get_channel_for_local_cid(channel_id);
             if (l2cap_channel) {
                 // credit counting
