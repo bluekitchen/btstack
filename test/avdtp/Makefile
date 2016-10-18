@@ -38,7 +38,6 @@ CFLAGS += -I${BTSTACK_ROOT}/platform/posix
 CFLAGS += -I${BTSTACK_ROOT}/platform/embedded 
 CFLAGS += -I${BTSTACK_ROOT}/port/libusb 
 
-
 VPATH += ${BTSTACK_ROOT}/src
 VPATH += ${BTSTACK_ROOT}/src/classic
 VPATH += ${BTSTACK_ROOT}/platform/posix
@@ -50,6 +49,10 @@ VPATH += ${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/srce
 CFLAGS  += $(shell pkg-config libusb-1.0 --cflags)
 LDFLAGS += $(shell pkg-config libusb-1.0 --libs)
 
+# use pkg-config for portaudio
+CFLAGS  += $(shell pkg-config portaudio-2.0 --cflags) -DHAVE_PORTAUDIO 
+LDFLAGS += $(shell pkg-config portaudio-2.0 --libs)
+
 SBC_DECODER += \
 	${BTSTACK_ROOT}/src/classic/btstack_sbc_plc.c \
 	${BTSTACK_ROOT}/src/classic/btstack_sbc_bludroid.c \
@@ -59,7 +62,7 @@ SBC_ENCODER += \
 	${BTSTACK_ROOT}/src/classic/hfp_msbc.c \
 
 
-AVDTP_TESTS = avdtp_test 
+AVDTP_TESTS = avdtp_test portaudio_test
 
 CORE_OBJ    = $(CORE:.c=.o)
 COMMON_OBJ  = $(COMMON:.c=.o) 
@@ -71,7 +74,10 @@ all: ${AVDTP_TESTS}
 avdtp_test: ${CORE_OBJ} ${COMMON_OBJ} ${SBC_DECODER_OBJ} ${SBC_ENCODER_OBJ} avdtp_sink.o avdtp_test.o
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
+portaudio_test: btstack_util.o hci_dump.o wav_util.o btstack_ring_buffer.o portaudio_test.c
+	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+
 test: all
 
 clean:
-	rm -f *.pyc *.o $(AVDTP_TESTS) *.dSYM *_test
+	rm -rf *.pyc *.o $(AVDTP_TESTS) *.dSYM *_test *.wav *.sbc
