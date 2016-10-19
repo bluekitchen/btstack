@@ -83,7 +83,7 @@ static int patestCallback( const void *inputBuffer, void *outputBuffer,
     (void) statusFlags;
     (void) inputBuffer;
     
-    uint16_t bytes_read = 0;
+    uint32_t bytes_read = 0;
     int bytes_per_buffer = framesPerBuffer * BYTES_PER_FRAME;
 
     if (btstack_ring_buffer_bytes_available(&ring_buffer) >= bytes_per_buffer){

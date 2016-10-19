@@ -48,14 +48,14 @@ extern "C" {
 
 typedef struct btstack_ring_buffer {
     uint8_t  * storage;
-    uint16_t size;    
-    uint16_t last_read_index;
-    uint16_t last_written_index;
+    uint32_t size;    
+    uint32_t last_read_index;
+    uint32_t last_written_index;
     uint8_t  full;
 } btstack_ring_buffer_t;
 
 // init ring buffer
-void btstack_ring_buffer_init(btstack_ring_buffer_t * ring_buffer, uint8_t * storage, uint16_t storage_size);
+void btstack_ring_buffer_init(btstack_ring_buffer_t * ring_buffer, uint8_t * storage, uint32_t storage_size);
 
 // test if ring buffer is empty
 int btstack_ring_buffer_empty(btstack_ring_buffer_t * ring_buffer);
@@ -67,10 +67,10 @@ int btstack_ring_buffer_bytes_available(btstack_ring_buffer_t * ring_buffer);
 int btstack_ring_buffer_bytes_free(btstack_ring_buffer_t * ring_buffer);
 
 // add byte block to ring buffer, 
-int btstack_ring_buffer_write(btstack_ring_buffer_t * ring_buffer, uint8_t * data, uint16_t data_length); 
+int btstack_ring_buffer_write(btstack_ring_buffer_t * ring_buffer, uint8_t * data, uint32_t data_length); 
 
 // fetch data_length bytes from ring buffer
-void btstack_ring_buffer_read(btstack_ring_buffer_t * ring_buffer, uint8_t * data, uint16_t data_length, uint16_t * number_of_bytes_read); 
+void btstack_ring_buffer_read(btstack_ring_buffer_t * ring_buffer, uint8_t * data, uint32_t data_length, uint32_t * number_of_bytes_read); 
 
 
 #if defined __cplusplus

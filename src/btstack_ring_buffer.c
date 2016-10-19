@@ -49,7 +49,7 @@
 
 
 // init ring buffer
-void btstack_ring_buffer_init(btstack_ring_buffer_t * ring_buffer, uint8_t * storage, uint16_t storage_size){
+void btstack_ring_buffer_init(btstack_ring_buffer_t * ring_buffer, uint8_t * storage, uint32_t storage_size){
     ring_buffer->storage = storage;
     ring_buffer->size = storage_size;
     ring_buffer->last_read_index = 0;
@@ -75,7 +75,7 @@ int btstack_ring_buffer_bytes_free(btstack_ring_buffer_t * ring_buffer){
 }
 
 // add byte block to ring buffer, 
-int btstack_ring_buffer_write(btstack_ring_buffer_t * ring_buffer, uint8_t * data, uint16_t data_length){
+int btstack_ring_buffer_write(btstack_ring_buffer_t * ring_buffer, uint8_t * data, uint32_t data_length){
     if (btstack_ring_buffer_bytes_free(ring_buffer) < data_length){
         return ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
     }
@@ -95,7 +95,7 @@ int btstack_ring_buffer_write(btstack_ring_buffer_t * ring_buffer, uint8_t * dat
 } 
 
 // fetch data_length bytes from ring buffer
-void btstack_ring_buffer_read(btstack_ring_buffer_t * ring_buffer, uint8_t * data, uint16_t data_length, uint16_t * number_of_bytes_read){
+void btstack_ring_buffer_read(btstack_ring_buffer_t * ring_buffer, uint8_t * data, uint32_t data_length, uint32_t * number_of_bytes_read){
     uint32_t count = 0;
     while (count < data_length && btstack_ring_buffer_bytes_available(ring_buffer)){
         if (ring_buffer->last_read_index < ring_buffer->last_written_index ) {
