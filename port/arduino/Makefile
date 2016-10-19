@@ -17,7 +17,7 @@ PORT_FILES = btstack_config.h bsp_arduino_em9301.cpp BTstack.cpp BTstack.h
 EMBEDDED_FILES = btstack_run_loop_embedded.c hci_transport_h4_embedded.c btstack_uart_block_embedded.c
 
 PATHS  = $(addprefix ${BTSTACK_ROOT}/src/, ${SRC_FILES})
-PATHS += $(wildcard  ${BTSTACK_ROOT}/src/*.h)
+PATHS += $(filter-out ${BTSTACK_ROOT}/src/btstack.h, $(wildcard ${BTSTACK_ROOT}/src/*.h))
 PATHS += $(addprefix ${BTSTACK_ROOT}/src/ble/, ${BLE_FILES})
 PATHS += $(wildcard  ${BTSTACK_ROOT}/src/ble/*.h)
 PATHS += $(addprefix ${BTSTACK_ROOT}/platform/embedded/, ${EMBEDDED_FILES})
