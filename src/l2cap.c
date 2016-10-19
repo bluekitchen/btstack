@@ -1049,11 +1049,15 @@ static void l2cap_notify_channel_can_send(void){
     for (i=0;i<L2CAP_FIXED_CHANNEL_TABLE_SIZE;i++){
         if (!fixed_channels[i].callback) continue;
         if (!fixed_channels[i].waiting_for_can_send_now) continue;
-        int can_send;
+        int can_send = 0;
         if (l2cap_fixed_channel_table_index_is_le(i)){
+#ifdef ENABLE_BLE
             can_send = hci_can_send_acl_le_packet_now();
+#endif
         } else {
+#ifdef ENABLE_CLASSIC
             can_send = hci_can_send_acl_classic_packet_now();
+#endif
         } 
         if (!can_send) continue;
         fixed_channels[i].waiting_for_can_send_now = 0;

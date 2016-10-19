@@ -1453,10 +1453,14 @@ static void sm_sc_cmac_done(uint8_t * hash){
             link_key_type = sm_conn->sm_connection_authenticated ?
                 AUTHENTICATED_COMBINATION_KEY_GENERATED_FROM_P256 : UNAUTHENTICATED_COMBINATION_KEY_GENERATED_FROM_P256;
             if (sm_conn->sm_role){
+#ifdef ENABLE_CLASSIC
                 gap_store_link_key_for_bd_addr(setup->sm_m_address, setup->sm_t, link_key_type);
+#endif
                 sm_conn->sm_engine_state = SM_RESPONDER_IDLE; 
             } else {
+#ifdef ENABLE_CLASSIC
                 gap_store_link_key_for_bd_addr(setup->sm_s_address, setup->sm_t, link_key_type);
+#endif
                 sm_conn->sm_engine_state = SM_INITIATOR_CONNECTED; 
             }
             sm_done_for_handle(sm_conn->sm_handle);
