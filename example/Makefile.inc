@@ -33,6 +33,8 @@ COMMON += \
 	hci_dump.c		            \
 	l2cap.c			            \
 	l2cap_signaling.c	        \
+
+CLASSIC += \
 	btstack_link_key_db_memory.c   \
 	sdp_util.c	                \
 	spp_server.c  				\
@@ -122,6 +124,7 @@ EXAMPLES_USING_LE =			\
 # .o for .c
 CORE_OBJ    = $(CORE:.c=.o)
 COMMON_OBJ  = $(COMMON:.c=.o) 
+CLASSIC_OBJ  = $(CLASSIC:.c=.o) 
 SM_REAL_OBJ = $(SM_REAL:.c=.o) $(MBEDTLS:.c=.o)
 ATT_OBJ     = $(ATT:.c=.o)
 GATT_CLIENT_OBJ = $(GATT_CLIENT:.c=.o)
@@ -148,16 +151,16 @@ sm_pairing_peripheral.h: sm_pairing_peripheral.gatt
 	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
 
 # examples
-sdp_rfcomm_query: ${CORE_OBJ} ${COMMON_OBJ} ${PAN_OBJ} ${SDP_CLIENT} sdp_rfcomm_query.c
+sdp_rfcomm_query: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${PAN_OBJ} ${SDP_CLIENT} sdp_rfcomm_query.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-sdp_general_query: ${CORE_OBJ} ${COMMON_OBJ} ${SDP_CLIENT} sdp_general_query.c  
+sdp_general_query: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} sdp_general_query.c  
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-sdp_bnep_query: ${CORE_OBJ} ${COMMON_OBJ} ${SDP_CLIENT} sdp_bnep_query.c  
+sdp_bnep_query: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} sdp_bnep_query.c  
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-spp_counter: ${CORE_OBJ} ${COMMON_OBJ} spp_counter.c
+spp_counter: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} spp_counter.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 le_counter: le_counter.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_REAL_OBJ} le_counter.c 
@@ -172,22 +175,22 @@ sm_pairing_central: ${CORE_OBJ} ${COMMON_OBJ} ${SM_REAL_OBJ} ad_parser.o sm_pair
 le_streamer: le_streamer.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_REAL_OBJ} le_streamer.c 
 	${CC} $(filter-out le_streamer.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
 
-spp_and_le_counter: spp_and_le_counter.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_REAL_OBJ} spp_and_le_counter.c 
+spp_and_le_counter: spp_and_le_counter.h ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_REAL_OBJ} spp_and_le_counter.c 
 	${CC} $(filter-out spp_and_le_counter.h,$^)  ${CFLAGS} ${LDFLAGS} -o $@
 
-spp_counter_ssp: ${CORE_OBJ} ${COMMON_OBJ} spp_counter_ssp.c
+spp_counter_ssp: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} spp_counter_ssp.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-spp_streamer: ${CORE_OBJ} ${COMMON_OBJ} ${SDP_CLIENT} spp_streamer.c  
+spp_streamer: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} spp_streamer.c  
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-gap_dedicated_bonding: ${CORE_OBJ} ${COMMON_OBJ} gap_dedicated_bonding.c
+gap_dedicated_bonding: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} gap_dedicated_bonding.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-gap_inquiry: ${CORE_OBJ} ${COMMON_OBJ} ad_parser.o gap_inquiry.c
+gap_inquiry: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ad_parser.o gap_inquiry.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-panu_demo: ${CORE_OBJ} ${COMMON_OBJ} ${SDP_CLIENT} panu_demo.c  
+panu_demo: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} panu_demo.c  
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 gatt_browser: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} ${SM_REAL_OBJ} gatt_browser.c
@@ -205,16 +208,16 @@ led_counter: ${CORE_OBJ} ${COMMON_OBJ} led_counter.c
 gap_le_advertisements: ${CORE_OBJ} ${COMMON_OBJ} ad_parser.c gap_le_advertisements.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-hsp_hs_demo: ${CORE_OBJ} ${COMMON_OBJ} ${SDP_CLIENT} ${SBC_DECODER_OBJ} ${SBC_ENCODER_OBJ} ${CVSD_PLC_OBJ} wav_util.o sco_demo_util.o hsp_hs.o hsp_hs_demo.c
+hsp_hs_demo: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} ${SBC_DECODER_OBJ} ${SBC_ENCODER_OBJ} ${CVSD_PLC_OBJ} wav_util.o sco_demo_util.o hsp_hs.o hsp_hs_demo.c
 	${CC} $^ ${CFLAGS} -I${BTSTACK_ROOT}/platform/posix ${LDFLAGS} -o $@
 
-hsp_ag_demo: ${CORE_OBJ} ${COMMON_OBJ} ${SDP_CLIENT} ${SBC_DECODER_OBJ} ${SBC_ENCODER_OBJ} ${CVSD_PLC_OBJ} wav_util.o sco_demo_util.o hsp_ag.o hsp_ag_demo.c
+hsp_ag_demo: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} ${SBC_DECODER_OBJ} ${SBC_ENCODER_OBJ} ${CVSD_PLC_OBJ} wav_util.o sco_demo_util.o hsp_ag.o hsp_ag_demo.c
 	${CC} $^ ${CFLAGS} -I${BTSTACK_ROOT}/platform/posix ${LDFLAGS} -o $@
 
-hfp_ag_demo: ${CORE_OBJ} ${COMMON_OBJ} ${SDP_CLIENT} ${SBC_DECODER_OBJ} ${SBC_ENCODER_OBJ} ${CVSD_PLC_OBJ} wav_util.o sco_demo_util.o hfp.o hfp_gsm_model.o hfp_ag.o hfp_ag_demo.c
+hfp_ag_demo: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} ${SBC_DECODER_OBJ} ${SBC_ENCODER_OBJ} ${CVSD_PLC_OBJ} wav_util.o sco_demo_util.o hfp.o hfp_gsm_model.o hfp_ag.o hfp_ag_demo.c
 	${CC} $^ ${CFLAGS} -I${BTSTACK_ROOT}/platform/posix ${LDFLAGS} -o $@
 
-hfp_hf_demo: ${CORE_OBJ} ${COMMON_OBJ} ${SDP_CLIENT} ${SBC_DECODER_OBJ} ${SBC_ENCODER_OBJ} ${CVSD_PLC_OBJ} wav_util.o sco_demo_util.o hfp.o hfp_hf.o hfp_hf_demo.c
+hfp_hf_demo: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} ${SBC_DECODER_OBJ} ${SBC_ENCODER_OBJ} ${CVSD_PLC_OBJ} wav_util.o sco_demo_util.o hfp.o hfp_hf.o hfp_hf_demo.c
 	${CC} $^ ${CFLAGS} -I${BTSTACK_ROOT}/platform/posix ${LDFLAGS} -o $@
 
 clean:
