@@ -41,6 +41,7 @@ CFLAGS += -I${BTSTACK_ROOT}/port/libusb
 VPATH += ${BTSTACK_ROOT}/src
 VPATH += ${BTSTACK_ROOT}/src/classic
 VPATH += ${BTSTACK_ROOT}/platform/posix
+VPATH += ${BTSTACK_ROOT}/platform/libusb
 VPATH += ${BTSTACK_ROOT}/port/libusb
 VPATH += ${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/srce 
 VPATH += ${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/srce 
@@ -71,7 +72,7 @@ SBC_ENCODER_OBJ  = $(SBC_ENCODER:.c=.o)
 
 all: ${AVDTP_TESTS}
 
-avdtp_test: ${CORE_OBJ} ${COMMON_OBJ} ${SBC_DECODER_OBJ} ${SBC_ENCODER_OBJ} btstack_ring_buffer.o avdtp_sink.o avdtp_test.o
+avdtp_test: ${CORE_OBJ} ${COMMON_OBJ} ${SBC_DECODER_OBJ} ${SBC_ENCODER_OBJ} btstack_ring_buffer.o avdtp_util.o avdtp_sink.o avdtp_acceptor.o avdtp_initiator.o avdtp_test.o
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 portaudio_test: btstack_util.o hci_dump.o wav_util.o btstack_ring_buffer.o portaudio_test.c
@@ -80,4 +81,4 @@ portaudio_test: btstack_util.o hci_dump.o wav_util.o btstack_ring_buffer.o porta
 test: all
 
 clean:
-	rm -rf *.pyc *.o $(AVDTP_TESTS) *.dSYM *_test *.wav *.sbc
+	rm -rf *.pyc *.o $(AVDTP_TESTS) *.dSYM *_test *.wav *.sbc ${BTSTACK_ROOT}/port/libusb/*.o

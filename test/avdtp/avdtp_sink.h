@@ -57,40 +57,42 @@ extern "C" {
 #define MAX_NUM_SEPS 10
 
 typedef enum {
-    AVDTP_SINK_IDLE,
+    AVDTP_IDLE,
+    AVDTP_W4_L2CAP_CONNECTED,
+    AVDTP_CONFIGURATION_SUBSTATEMACHINE,
+    AVDTP_CONFIGURED,
+
+    AVDTP_W2_ANSWER_OPEN_STREAM,
+    AVDTP_OPEN,
+    AVDTP_W2_ANSWER_START_SINGLE_STREAM,
+    AVDTP_W4_STREAMING_CONNECTION_OPEN,
+    AVDTP_STREAMING,
     
-    AVDTP_SINK_W4_L2CAP_CONNECTED,
-    AVDTP_SINK_W2_DISCOVER_SEPS,
-    AVDTP_SINK_W4_SEPS_DISCOVERED,
-    AVDTP_SINK_W2_GET_CAPABILITIES,
-    AVDTP_SINK_W4_CAPABILITIES,
-    
-    AVDTP_SINK_W2_SET_CONFIGURATION,
-    AVDTP_SINK_W4_CONFIGURATION_SET,
-
-    AVDTP_SINK_W2_GET_CONFIGURATION,
-    AVDTP_SINK_W4_CONFIGURATION_RECEIVED,
-
-    AVDTP_SINK_CONFIGURED,
-    AVDTP_SINK_OPEN,
-    AVDTP_SINK_STREAMING,
-    AVDTP_SINK_CLOSING,
-    AVDTP_SINK_ABORTING,
-    AVDTP_SINK_W4_L2CAP_DISCONNECTED
-} avdtp_sink_state_t;
-
+    AVDTP_CLOSING,
+    AVDTP_ABORTING,
+    AVDTP_W4_L2CAP_DISCONNECTED
+} avdtp_state_t;
 
 typedef enum {
-    AVDTP_REMOTE_IDLE,
-    AVDTP_REMOTE_W2_ANSWER_DISCOVER_SEPS,
-    AVDTP_REMOTE_W2_ANSWER_GET_CAPABILITIES,
-    AVDTP_REMOTE_W2_ANSWER_SET_CONFIGURATION,
-    AVDTP_REMOTE_W2_ANSWER_OPEN_STREAM,
-    AVDTP_REMOTE_OPEN,
-    AVDTP_REMOTE_W2_ANSWER_START_SINGLE_STREAM,
-    AVDTP_REMOTE_W4_STREAMING_CONNECTION_OPEN,
-    AVDTP_REMOTE_STREAMING
-} avdtp_source_state_t;
+    AVDTP_INITIATOR_STREAM_CONFIG_IDLE,
+    AVDTP_INITIATOR_W2_DISCOVER_SEPS,
+    AVDTP_INITIATOR_W4_SEPS_DISCOVERED,
+    AVDTP_INITIATOR_W2_GET_CAPABILITIES,
+    AVDTP_INITIATOR_W4_CAPABILITIES,
+    AVDTP_INITIATOR_W2_SET_CONFIGURATION,
+    AVDTP_INITIATOR_W4_CONFIGURATION_SET,
+    AVDTP_INITIATOR_W2_GET_CONFIGURATION,
+    AVDTP_INITIATOR_W4_CONFIGURATION_RECEIVED,
+    AVDTP_INITIATOR_STREAM_CONFIG_DONE
+} avdtp_initiator_stream_config_state_t;
+
+typedef enum {
+    AVDTP_ACCEPTOR_STREAM_CONFIG_IDLE,
+    AVDTP_ACCEPTOR_W2_ANSWER_DISCOVER_SEPS,
+    AVDTP_ACCEPTOR_W2_ANSWER_GET_CAPABILITIES,
+    AVDTP_ACCEPTOR_W2_ANSWER_SET_CONFIGURATION,
+    AVDTP_ACCEPTOR_STREAM_CONFIG_DONE
+} avdtp_acceptor_stream_config_state_t;
 
 
 typedef struct avdtp_sink_connection {
@@ -101,11 +103,12 @@ typedef struct avdtp_sink_connection {
     uint16_t l2cap_media_cid;
     uint16_t l2cap_reporting_cid;
 
-    avdtp_sink_state_t   local_state;
-    avdtp_source_state_t remote_state;
+    avdtp_state_t        avdtp_state;
+    avdtp_initiator_stream_config_state_t initiator_config_state;
+    avdtp_acceptor_stream_config_state_t  acceptor_config_state;
 
-    uint8_t local_transaction_label;
-    uint8_t remote_transaction_label;
+    uint8_t initiator_transaction_label;
+    uint8_t acceptor_transaction_label;
     
     // store remote seps
     avdtp_sep_t remote_seps[MAX_NUM_SEPS];
@@ -163,6 +166,8 @@ void avdtp_sink_register_packet_handler(btstack_packet_handler_t callback);
  */
 void avdtp_sink_connect(bd_addr_t bd_addr);
 
+// TODO: per connectio?
+void avdtp_sink_register_media_handler(void (*callback)(avdtp_sink_connection_t * connection, uint8_t *packet, uint16_t size));
 /**
  * @brief Disconnect from device with connection handle. 
  * @param l2cap_cid
