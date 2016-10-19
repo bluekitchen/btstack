@@ -76,18 +76,35 @@
 
 #ifdef USE_PORTAUDIO
 #include <portaudio.h>
+#include "btstack_ring_buffer.h"
+
 // portaudio config
-#define NUM_CHANNELS 1
-#define SAMPLE_RATE 8000
-#define FRAMES_PER_BUFFER 24
-#define PA_SAMPLE_TYPE paInt8
+#define NUM_CHANNELS            1
+
+#define CVSD_SAMPLE_RATE        8000
+#define CVSD_FRAMES_PER_BUFFER  24
+#define CVSD_PA_SAMPLE_TYPE     paInt8
+#define CVSD_BYTES_PER_FRAME    (1*NUM_CHANNELS)
+#define CVSD_PREBUFFER_MS       5
+#define CVSD_PREBUFFER_BYTES    (CVSD_PREBUFFER_MS * CVSD_SAMPLE_RATE/1000 * CVSD_BYTES_PER_FRAME)
+
+#define MSBC_SAMPLE_RATE        16000
+#define MSBC_FRAMES_PER_BUFFER  120
+#define MSBC_PA_SAMPLE_TYPE     paInt16
+#define MSBC_BYTES_PER_FRAME    (2*NUM_CHANNELS)
+#define MSBC_PREBUFFER_MS       50
+#define MSBC_PREBUFFER_BYTES    (MSBC_PREBUFFER_MS * MSBC_SAMPLE_RATE/1000 * MSBC_BYTES_PER_FRAME)
+
 // portaudio globals
 static  PaStream * stream;
+static uint8_t pa_stream_started = 0;
+
+static uint8_t ring_buffer_storage[2*MSBC_PREBUFFER_BYTES];
+static btstack_ring_buffer_t ring_buffer;
 #endif
 
 
 static int dump_data = 1;
-
 static int count_sent = 0;
 static int count_received = 0;
 static uint8_t negotiated_codec = 0; 
@@ -100,14 +117,55 @@ FILE * msbc_file_out;
 
 
 #ifdef SCO_WAV_FILENAME
-
-static int num_samples_to_write;
-
 static btstack_sbc_decoder_state_t decoder_state;
 static btstack_cvsd_plc_state_t cvsd_plc_state;
+static int num_samples_to_write;
+
+#ifdef USE_PORTAUDIO
+static int patestCallback( const void *inputBuffer, void *outputBuffer,
+                           unsigned long framesPerBuffer,
+                           const PaStreamCallbackTimeInfo* timeInfo,
+                           PaStreamCallbackFlags statusFlags,
+                           void *userData ) {
+    (void) timeInfo; /* Prevent unused variable warnings. */
+    (void) statusFlags;
+    (void) inputBuffer;
+    
+    uint32_t bytes_read = 0;
+    int bytes_per_buffer = framesPerBuffer;
+    if (negotiated_codec == HFP_CODEC_MSBC){
+        bytes_per_buffer *= MSBC_BYTES_PER_FRAME;
+    } else {
+        bytes_per_buffer *= CVSD_BYTES_PER_FRAME;
+    }
+
+    if (btstack_ring_buffer_bytes_available(&ring_buffer) >= bytes_per_buffer){
+        btstack_ring_buffer_read(&ring_buffer, outputBuffer, bytes_per_buffer, &bytes_read);
+    } else {
+        printf("NOT ENOUGH DATA!\n");
+        memset(outputBuffer, 0, bytes_per_buffer);
+    }
+    // printf("bytes avail after read: %d\n", btstack_ring_buffer_bytes_available(&ring_buffer));
+    return 0;
+}
+#endif
 
 static void handle_pcm_data(int16_t * data, int num_samples, int num_channels, int sample_rate, void * context){
-    log_info("handle_pcm_data num samples %u / %u", num_samples, num_samples_to_write);
+    // printf("handle_pcm_data num samples %u, sample rate %d\n", num_samples, num_channels);
+#ifdef USE_PORTAUDIO
+    if (!pa_stream_started && btstack_ring_buffer_bytes_available(&ring_buffer) >= MSBC_PREBUFFER_BYTES){
+        /* -- start stream -- */
+        PaError err = Pa_StartStream(stream);
+        if (err != paNoError){
+            printf("Error starting the stream: \"%s\"\n",  Pa_GetErrorText(err));
+            return;
+        }
+        pa_stream_started = 1; 
+    }
+    btstack_ring_buffer_write(&ring_buffer, (uint8_t *)data, num_samples*num_channels*2);
+    // printf("bytes avail after write: %d\n", btstack_ring_buffer_bytes_available(&ring_buffer));
+#endif 
+
     if (!num_samples_to_write) return;
     
     num_samples = btstack_min(num_samples, num_samples_to_write);
@@ -147,6 +205,38 @@ static void sco_demo_init_mSBC(void){
     msbc_file_out = fopen(SCO_MSBC_OUT_FILENAME, "wb");
     printf("SCO Demo: creating mSBC out file %s, %p\n", SCO_MSBC_OUT_FILENAME, msbc_file_out);
 #endif   
+
+#ifdef USE_PORTAUDIO
+    PaError err;
+    PaStreamParameters outputParameters;
+
+    /* -- initialize PortAudio -- */
+    err = Pa_Initialize();
+    if( err != paNoError ) return;
+    /* -- setup input and output -- */
+    outputParameters.device = Pa_GetDefaultOutputDevice(); /* default output device */
+    outputParameters.channelCount = NUM_CHANNELS;
+    outputParameters.sampleFormat = MSBC_PA_SAMPLE_TYPE;
+    outputParameters.suggestedLatency = Pa_GetDeviceInfo( outputParameters.device )->defaultHighOutputLatency;
+    outputParameters.hostApiSpecificStreamInfo = NULL;
+    /* -- setup stream -- */
+    err = Pa_OpenStream(
+           &stream,
+           NULL, // &inputParameters,
+           &outputParameters,
+           MSBC_SAMPLE_RATE,
+           MSBC_FRAMES_PER_BUFFER,
+           paClipOff, /* we won't output out of range samples so don't bother clipping them */
+           patestCallback,      /* no callback, use blocking API */
+           NULL );    /* no callback, so no callback userData */
+    if (err != paNoError){
+        printf("Error initializing portaudio: \"%s\"\n",  Pa_GetErrorText(err));
+        return;
+    }
+    memset(ring_buffer_storage, 0, sizeof(ring_buffer_storage));
+    btstack_ring_buffer_init(&ring_buffer, ring_buffer_storage, sizeof(ring_buffer_storage));
+    pa_stream_started = 0;
+#endif  
 }
 
 static void sco_demo_receive_mSBC(uint8_t * packet, uint16_t size){
@@ -155,9 +245,8 @@ static void sco_demo_receive_mSBC(uint8_t * packet, uint16_t size){
             // log incoming mSBC data for testing
             fwrite(packet+3, size-3, 1, msbc_file_in);
         }
-        btstack_sbc_decoder_process_data(&decoder_state, (packet[1] >> 4) & 3, packet+3, size-3);
-        dump_data = 0;
     }
+    btstack_sbc_decoder_process_data(&decoder_state, (packet[1] >> 4) & 3, packet+3, size-3);  
 }
 
 static void sco_demo_init_CVSD(void){
@@ -165,24 +254,68 @@ static void sco_demo_init_CVSD(void){
     wav_writer_open(SCO_WAV_FILENAME, 1, sample_rate);
     btstack_cvsd_plc_init(&cvsd_plc_state);
     num_samples_to_write = sample_rate * SCO_WAV_DURATION_IN_SECONDS;
+
+#ifdef USE_PORTAUDIO
+    PaError err;
+    PaStreamParameters outputParameters;
+
+    /* -- initialize PortAudio -- */
+    err = Pa_Initialize();
+    if( err != paNoError ) return;
+    /* -- setup input and output -- */
+    outputParameters.device = Pa_GetDefaultOutputDevice(); /* default output device */
+    outputParameters.channelCount = NUM_CHANNELS;
+    outputParameters.sampleFormat = CVSD_PA_SAMPLE_TYPE;
+    outputParameters.suggestedLatency = Pa_GetDeviceInfo( outputParameters.device )->defaultHighOutputLatency;
+    outputParameters.hostApiSpecificStreamInfo = NULL;
+    /* -- setup stream -- */
+    err = Pa_OpenStream(
+           &stream,
+           NULL, // &inputParameters,
+           &outputParameters,
+           CVSD_SAMPLE_RATE,
+           CVSD_FRAMES_PER_BUFFER,
+           paClipOff, /* we won't output out of range samples so don't bother clipping them */
+           patestCallback,      /* no callback, use blocking API */
+           NULL );    /* no callback, so no callback userData */
+    if (err != paNoError){
+        printf("Error initializing portaudio: \"%s\"\n",  Pa_GetErrorText(err));
+        return;
+    }
+    memset(ring_buffer_storage, 0, sizeof(ring_buffer_storage));
+    btstack_ring_buffer_init(&ring_buffer, ring_buffer_storage, sizeof(ring_buffer_storage));
+    pa_stream_started = 0;
+#endif  
 }
 
 static void sco_demo_receive_CVSD(uint8_t * packet, uint16_t size){
-    if (num_samples_to_write){
-        const int num_samples = size - 3;
-        const int samples_to_write = btstack_min(num_samples, num_samples_to_write);
-        int8_t audio_frame_out[24];
-        
-        // memcpy(audio_frame_out, (int8_t*)(packet+3), 24);
-        btstack_cvsd_plc_process_data(&cvsd_plc_state, (int8_t *)(packet+3), num_samples, audio_frame_out);
+    if (!num_samples_to_write) return;
 
-        wav_writer_write_int8(samples_to_write, audio_frame_out);
-        num_samples_to_write -= samples_to_write;
-        if (num_samples_to_write == 0){
-            sco_demo_close();
-        }
-        dump_data = 0;
+    const int num_samples = size - 3;
+    const int samples_to_write = btstack_min(num_samples, num_samples_to_write);
+    int8_t audio_frame_out[24];
+    
+
+    // memcpy(audio_frame_out, (int8_t*)(packet+3), 24);
+    btstack_cvsd_plc_process_data(&cvsd_plc_state, (int8_t *)(packet+3), num_samples, audio_frame_out);
+
+    wav_writer_write_int8(samples_to_write, audio_frame_out);
+    num_samples_to_write -= samples_to_write;
+    if (num_samples_to_write == 0){
+        sco_demo_close();
     }
+#ifdef USE_PORTAUDIO
+    if (!pa_stream_started && btstack_ring_buffer_bytes_available(&ring_buffer) >= CVSD_PREBUFFER_BYTES){
+        /* -- start stream -- */
+        PaError err = Pa_StartStream(stream);
+        if (err != paNoError){
+            printf("Error starting the stream: \"%s\"\n",  Pa_GetErrorText(err));
+            return;
+        }
+        pa_stream_started = 1; 
+    }
+    btstack_ring_buffer_write(&ring_buffer, (uint8_t *)audio_frame_out, samples_to_write);
+#endif
 }
 
 #endif
@@ -199,6 +332,28 @@ void sco_demo_close(void){
         printf("Used CVSD with PLC, number of proccesed frames: \n - %d good frames, \n - %d bad frames.", cvsd_plc_state.good_frames_nr, cvsd_plc_state.bad_frames_nr);
     }
 #endif
+#endif
+
+#ifdef HAVE_PORTAUDIO
+    if (pa_stream_started){
+        PaError err = Pa_StopStream(stream);
+        if (err != paNoError){
+            printf("Error stopping the stream: \"%s\"\n",  Pa_GetErrorText(err));
+            return;
+        } 
+        pa_stream_started = 0;
+        err = Pa_CloseStream(stream);
+        if (err != paNoError){
+            printf("Error closing the stream: \"%s\"\n",  Pa_GetErrorText(err));
+            return;
+        } 
+
+        err = Pa_Terminate();
+        if (err != paNoError){
+            printf("Error terminating portaudio: \"%s\"\n",  Pa_GetErrorText(err));
+            return;
+        }
+    } 
 #endif
 
 #if SCO_DEMO_MODE == SCO_DEMO_MODE_SINE
@@ -249,35 +404,6 @@ void sco_demo_init(void){
 #if SCO_DEMO_MODE == SCO_DEMO_MODE_COUNTER
 	printf("SCO Demo: Sending counter value, hexdump received data.\n");
 #endif
-
-#ifdef USE_PORTAUDIO
-    int err;
-    PaStreamParameters outputParameters;
-
-    /* -- initialize PortAudio -- */
-    err = Pa_Initialize();
-    if( err != paNoError ) return;
-    /* -- setup input and output -- */
-    outputParameters.device = Pa_GetDefaultOutputDevice(); /* default output device */
-    outputParameters.channelCount = NUM_CHANNELS;
-    outputParameters.sampleFormat = PA_SAMPLE_TYPE;
-    outputParameters.suggestedLatency = Pa_GetDeviceInfo( outputParameters.device )->defaultHighOutputLatency;
-    outputParameters.hostApiSpecificStreamInfo = NULL;
-    /* -- setup stream -- */
-    err = Pa_OpenStream(
-           &stream,
-           NULL, // &inputParameters,
-           &outputParameters,
-           SAMPLE_RATE,
-           FRAMES_PER_BUFFER,
-           paClipOff, /* we won't output out of range samples so don't bother clipping them */
-           NULL, 	  /* no callback, use blocking API */
-           NULL ); 	  /* no callback, so no callback userData */
-    if( err != paNoError ) return;
-    /* -- start stream -- */
-    err = Pa_StartStream( stream );
-    if( err != paNoError ) return;
-#endif	
 
 #if SCO_DEMO_MODE != SCO_DEMO_MODE_SINE
     hci_set_sco_voice_setting(0x03);    // linear, unsigned, 8-bit, transparent
@@ -362,6 +488,7 @@ void sco_demo_receive(uint8_t * packet, uint16_t size){
     } else {
         sco_demo_receive_CVSD(packet, size);
     }
+    dump_data = 0;
 #endif
 #endif
 
@@ -372,19 +499,6 @@ void sco_demo_receive(uint8_t * packet, uint16_t size){
 
         return;
     }
-
-#if SCO_DEMO_MODE == SCO_DEMO_MODE_SINE
-#ifdef USE_PORTAUDIO
-    uint32_t start = btstack_run_loop_get_time_ms();
-    Pa_WriteStream( stream, &packet[3], size -3);
-    uint32_t end   = btstack_run_loop_get_time_ms();
-    if (end - start > 5){
-        printf("Portaudio: write stream took %u ms\n", end - start);
-    }
-    dump_data = 0;
-#endif
-#endif
-
     if (dump_data){
         printf("data: ");
 #if SCO_DEMO_MODE == SCO_DEMO_MODE_ASCII
