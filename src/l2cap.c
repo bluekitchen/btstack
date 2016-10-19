@@ -187,7 +187,9 @@ void l2cap_init(void){
 
     hci_register_acl_packet_handler(&l2cap_acl_handler);
 
+#ifdef ENABLE_CLASSIC
     gap_connectable_control(0); // no services yet
+#endif
 }
 
 void l2cap_register_packet_handler(void (*handler)(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size)){
