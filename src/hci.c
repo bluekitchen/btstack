@@ -85,13 +85,13 @@ static void hci_notify_if_sco_can_send_now(void);
 static void hci_emit_connection_complete(bd_addr_t address, hci_con_handle_t con_handle, uint8_t status);
 static gap_security_level_t gap_security_level_for_connection(hci_connection_t * connection);
 static void hci_emit_security_level(hci_con_handle_t con_handle, gap_security_level_t level);
-#endif
 static void hci_connection_timeout_handler(btstack_timer_source_t *timer);
 static void hci_connection_timestamp(hci_connection_t *connection);
+static void hci_emit_l2cap_check_timeout(hci_connection_t *conn);
+#endif
 static int  hci_power_control_on(void);
 static void hci_power_control_off(void);
 static void hci_state_reset(void);
-static void hci_emit_l2cap_check_timeout(hci_connection_t *conn);
 static void hci_emit_disconnection_complete(hci_con_handle_t con_handle, uint8_t reason);
 static void hci_emit_nr_connections_changed(void);
 static void hci_emit_hci_open_failed(void);
@@ -133,9 +133,11 @@ static hci_connection_t * create_connection_for_bd_addr_and_type(bd_addr_t addr,
     conn->authentication_flags = AUTH_FLAGS_NONE;
     conn->bonding_flags = 0;
     conn->requested_security_level = LEVEL_0;
+#ifdef ENABLE_CLASSIC
     btstack_run_loop_set_timer_handler(&conn->timeout, hci_connection_timeout_handler);
     btstack_run_loop_set_timer_context(&conn->timeout, conn);
     hci_connection_timestamp(conn);
+#endif
     conn->acl_recombination_length = 0;
     conn->acl_recombination_pos = 0;
     conn->num_acl_packets_sent = 0;
@@ -208,6 +210,9 @@ hci_connection_t * hci_connection_for_bd_addr_and_type(bd_addr_t  addr, bd_addr_
     return NULL;
 }
 
+
+#ifdef ENABLE_CLASSIC
+
 static void hci_connection_timeout_handler(btstack_timer_source_t *timer){
     hci_connection_t * connection = (hci_connection_t *) btstack_run_loop_get_timer_context(timer);
 #ifdef HAVE_EMBEDDED_TICK
@@ -230,9 +235,6 @@ static void hci_connection_timestamp(hci_connection_t *connection){
     connection->timestamp = btstack_run_loop_get_time_ms();
 #endif
 }
-
-
-#ifdef ENABLE_CLASSIC
 
 inline static void connectionSetAuthenticationFlags(hci_connection_t * conn, hci_authentication_flags_t flags){
     conn->authentication_flags = (hci_authentication_flags_t)(conn->authentication_flags | flags);
@@ -573,8 +575,11 @@ int hci_send_acl_packet_buffer(int size){
         hci_release_packet_buffer();
         return 0;
     }
+
+#ifdef ENABLE_CLASSIC
     hci_connection_timestamp(connection);
-    
+#endif
+
     // hci_dump_packet( HCI_ACL_DATA_PACKET, 0, packet, size);
 
     // setup data
@@ -654,9 +659,11 @@ static void acl_handler(uint8_t *packet, int size){
         return;
     }
 
+#ifdef ENABLE_CLASSIC
     // update idle timestamp
     hci_connection_timestamp(conn);
-    
+#endif
+
     // handle different packet types
     switch (acl_flags & 0x03) {
             
@@ -3128,6 +3135,15 @@ static void hci_emit_connection_complete(bd_addr_t address, hci_con_handle_t con
     event[12] = 0; // encryption disabled
     hci_emit_event(event, sizeof(event), 1);
 }
+static void hci_emit_l2cap_check_timeout(hci_connection_t *conn){
+    if (disable_l2cap_timeouts) return;
+    log_info("L2CAP_EVENT_TIMEOUT_CHECK");
+    uint8_t event[4];
+    event[0] = L2CAP_EVENT_TIMEOUT_CHECK;
+    event[1] = sizeof(event) - 2;
+    little_endian_store_16(event, 2, conn->con_handle);
+    hci_emit_event(event, sizeof(event), 1);
+}
 #endif
 
 #ifdef ENABLE_BLE
@@ -3156,16 +3172,6 @@ static void hci_emit_disconnection_complete(hci_con_handle_t con_handle, uint8_t
     event[2] = 0; // status = OK
     little_endian_store_16(event, 3, con_handle);
     event[5] = reason;
-    hci_emit_event(event, sizeof(event), 1);
-}
-
-static void hci_emit_l2cap_check_timeout(hci_connection_t *conn){
-    if (disable_l2cap_timeouts) return;
-    log_info("L2CAP_EVENT_TIMEOUT_CHECK");
-    uint8_t event[4];
-    event[0] = L2CAP_EVENT_TIMEOUT_CHECK;
-    event[1] = sizeof(event) - 2;
-    little_endian_store_16(event, 2, conn->con_handle);
     hci_emit_event(event, sizeof(event), 1);
 }
 
