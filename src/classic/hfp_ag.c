@@ -797,6 +797,7 @@ static int hfp_ag_run_for_context_service_level_connection_queries(hfp_connectio
                 hfp_ag_report_extended_audio_gateway_error(hfp_connection->rfcomm_cid, hfp_connection->extended_audio_gateway_error_value);
                 return 1;
             }
+            break;
         case HFP_CMD_ENABLE_INDICATOR_STATUS_UPDATE:
             hfp_ag_ok(hfp_connection->rfcomm_cid);
             return 1;
@@ -1330,7 +1331,8 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * hfp_con
                             hfp_gsm_handle_event(HFP_AG_TERMINATE_CALL_BY_HF);
                             hfp_ag_set_callsetup_indicator();
                             hfp_ag_transfer_callsetup_state();
-                            log_info("AG terminate outgoing call process");                            
+                            log_info("AG terminate outgoing call process"); 
+                            break;              
                         default:
                             break;
                     }
@@ -1358,6 +1360,7 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * hfp_con
                         default:
                             break;
                     }
+                    break;
                 case HFP_CALL_STATUS_ACTIVE_OR_HELD_CALL_IS_PRESENT:
                     hfp_gsm_handle_event(HFP_AG_TERMINATE_CALL_BY_AG);
                     hfp_ag_set_callsetup_indicator();

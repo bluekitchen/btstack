@@ -547,6 +547,7 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
                     hfp_connection = get_hfp_connection_context_for_bd_addr(event_addr);
                     if (!hfp_connection) break;
                     hfp_connection->hf_accept_sco = 1;
+                    break;
                 default:
                     break;                    
             }            

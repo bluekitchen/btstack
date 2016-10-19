@@ -1095,6 +1095,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             break;
         case HCI_EVENT_PACKET:
             hfp_handle_hci_event(packet_type, channel, packet, size);
+            break;
         default:
             break;
     }

@@ -580,23 +580,23 @@ static void l2cap_run(void){
             case INFORMATION_REQUEST:
                 switch (infoType){
                     case 1: { // Connectionless MTU
-                        uint16_t connectionless_mtu = hci_max_acl_data_packet_length();
-                        l2cap_send_signaling_packet(handle, INFORMATION_RESPONSE, sig_id, infoType, 0, sizeof(connectionless_mtu), &connectionless_mtu);
+                            uint16_t connectionless_mtu = hci_max_acl_data_packet_length();
+                            l2cap_send_signaling_packet(handle, INFORMATION_RESPONSE, sig_id, infoType, 0, sizeof(connectionless_mtu), &connectionless_mtu);
+                        }
                         break;
-                    }
                     case 2: { // Extended Features Supported
-                        // extended features request supported, features: fixed channels, unicast connectionless data reception
-                        uint32_t features = 0x280;
-                        l2cap_send_signaling_packet(handle, INFORMATION_RESPONSE, sig_id, infoType, 0, sizeof(features), &features);
+                            // extended features request supported, features: fixed channels, unicast connectionless data reception
+                            uint32_t features = 0x280;
+                            l2cap_send_signaling_packet(handle, INFORMATION_RESPONSE, sig_id, infoType, 0, sizeof(features), &features);
+                        }
                         break;
-                    }
                     case 3: { // Fixed Channels Supported
-                        uint8_t map[8];
-                        memset(map, 0, 8);
-                        map[0] = 0x06;  // L2CAP Signaling Channel (0x02) + Connectionless reception (0x04)
-                        l2cap_send_signaling_packet(handle, INFORMATION_RESPONSE, sig_id, infoType, 0, sizeof(map), &map);
+                            uint8_t map[8];
+                            memset(map, 0, 8);
+                            map[0] = 0x06;  // L2CAP Signaling Channel (0x02) + Connectionless reception (0x04)
+                            l2cap_send_signaling_packet(handle, INFORMATION_RESPONSE, sig_id, infoType, 0, sizeof(map), &map);
+                        }
                         break;
-                    }
                     default:
                         // all other types are not supported
                         l2cap_send_signaling_packet(handle, INFORMATION_RESPONSE, sig_id, infoType, 1, 0, NULL);

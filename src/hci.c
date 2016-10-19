@@ -883,7 +883,7 @@ static void hci_initialization_timeout_handler(btstack_timer_source_t * ds){
             if (hci_stack->hci_transport->reset_link){
                 hci_stack->hci_transport->reset_link();
             }
-            // NOTE: explicit fallthrough to HCI_INIT_W4_CUSTOM_INIT_CSR_WARM_BOOT
+            // no break - explicit fallthrough to HCI_INIT_W4_CUSTOM_INIT_CSR_WARM_BOOT
         case HCI_INIT_W4_CUSTOM_INIT_CSR_WARM_BOOT:
             log_info("Resend HCI Reset - CSR Warm Boot");
             hci_stack->substate = HCI_INIT_SEND_RESET_CSR_WARM_BOOT;
@@ -1928,6 +1928,7 @@ static void packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
             break;
         case HCI_SCO_DATA_PACKET:
             sco_handler(packet, size);
+            break;
         default:
             break;
     }
@@ -2797,7 +2798,7 @@ static void hci_run(void){
                         hci_stack->substate = HCI_FALLING_ASLEEP_W4_WRITE_SCAN_ENABLE;
                         break;
                     }
-                    // fall through for ble-only chips
+                    // no break - fall through for ble-only chips
 
                 case HCI_FALLING_ASLEEP_COMPLETE:
                     log_info("HCI_STATE_HALTING, calling sleep");
