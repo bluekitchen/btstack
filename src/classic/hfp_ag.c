@@ -541,22 +541,22 @@ static uint8_t hfp_ag_suggest_codec(hfp_connection_t *hfp_connection){
 static void hfp_init_link_settings(hfp_connection_t * hfp_connection){
     // determine highest possible link setting
     hfp_connection->link_setting = HFP_LINK_SETTINGS_D1;
-    switch (hfp_connection->negotiated_codec){
-        default:
-        case HFP_CODEC_CVSD:
-            if (hci_remote_esco_supported(hfp_connection->acl_handle)){
+    // anything else requires eSCO support on both sides
+    if (hci_extended_sco_link_supported() && hci_remote_esco_supported(hfp_connection->acl_handle)){
+        switch (hfp_connection->negotiated_codec){
+            case HFP_CODEC_CVSD:
                 hfp_connection->link_setting = HFP_LINK_SETTINGS_S3;
                 if ((hfp_connection->remote_supported_features & (1<<HFP_HFSF_ESCO_S4))
-                &&  (hfp_supported_features             & (1<<HFP_AGSF_ESCO_S4))){
+                &&  (hfp_supported_features                    & (1<<HFP_AGSF_ESCO_S4))){
                     hfp_connection->link_setting = HFP_LINK_SETTINGS_S4;
                 }
-            }
-            break;
-        case HFP_CODEC_MSBC:
-            if (hci_remote_esco_supported(hfp_connection->acl_handle)){
+                break;
+            case HFP_CODEC_MSBC:
                 hfp_connection->link_setting = HFP_LINK_SETTINGS_T2;
-            }
-            break;
+                break;
+            default:
+                break;
+        }
     }
     log_info("hfp_init_link_settings: %u", hfp_connection->link_setting);
 }

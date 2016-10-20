@@ -597,7 +597,7 @@ static void hfp_run_for_context(hfp_connection_t * hfp_connection){
         uint8_t  retransmission_effort;
         uint16_t packet_types;
         
-        if (hci_remote_esco_supported(hfp_connection->acl_handle)){
+        if (hci_extended_sco_link_supported() && hci_remote_esco_supported(hfp_connection->acl_handle)){
             max_latency = 0x000c;
             retransmission_effort = 0x02;
             packet_types = 0x388;
