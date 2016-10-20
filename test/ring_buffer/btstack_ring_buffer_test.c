@@ -29,7 +29,7 @@ TEST(RingBuffer, WriteBuffer){
     btstack_ring_buffer_write(&ring_buffer, test_write_data, test_data_size);
     CHECK_EQUAL(test_data_size, btstack_ring_buffer_bytes_available(&ring_buffer));
 
-    uint16_t number_of_bytes_read = 0;
+    uint32_t number_of_bytes_read = 0;
     memset(test_read_data, 0, test_data_size);
     btstack_ring_buffer_read(&ring_buffer, test_read_data, test_data_size, &number_of_bytes_read); 
     
@@ -46,7 +46,7 @@ TEST(RingBuffer, WriteFullBuffer){
     CHECK_EQUAL(test_data_size, btstack_ring_buffer_bytes_available(&ring_buffer));
 
     memset(test_read_data, 0, test_data_size);
-    uint16_t number_of_bytes_read = 0;
+    uint32_t number_of_bytes_read = 0;
     btstack_ring_buffer_read(&ring_buffer, test_read_data, test_data_size, &number_of_bytes_read); 
 
     CHECK_EQUAL(0, memcmp(test_write_data, test_read_data, test_data_size));
@@ -64,7 +64,7 @@ TEST(RingBuffer, ReadWrite){
         CHECK_EQUAL(test_data_size, btstack_ring_buffer_bytes_available(&ring_buffer));
 
         memset(test_read_data, 0, test_data_size);
-        uint16_t number_of_bytes_read = 0;
+        uint32_t number_of_bytes_read = 0;
         btstack_ring_buffer_read(&ring_buffer, test_read_data, test_data_size, &number_of_bytes_read); 
         CHECK_EQUAL(0, memcmp(test_write_data, test_read_data, test_data_size));
     }
@@ -81,7 +81,7 @@ TEST(RingBuffer, ReadWriteChunks){
 
     while (test_data_size){
         memset(test_read_data, 0, chunk_size);
-        uint16_t number_of_bytes_read = 0;
+        uint32_t number_of_bytes_read = 0;
         btstack_ring_buffer_read(&ring_buffer, test_read_data, chunk_size, &number_of_bytes_read); 
         test_data_size -= chunk_size;
         CHECK_EQUAL(test_data_size, btstack_ring_buffer_bytes_available(&ring_buffer));
