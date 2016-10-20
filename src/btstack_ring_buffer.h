@@ -46,6 +46,8 @@
 extern "C" {
 #endif
 
+#include <stdint.h>
+
 typedef struct btstack_ring_buffer {
     uint8_t  * storage;
     uint32_t size;    
@@ -54,24 +56,52 @@ typedef struct btstack_ring_buffer {
     uint8_t  full;
 } btstack_ring_buffer_t;
 
-// init ring buffer
+/**
+ * Init ring buffer
+ * @param ring_buffer object
+ * @param storage
+ * @param storage_size in bytes
+ */
 void btstack_ring_buffer_init(btstack_ring_buffer_t * ring_buffer, uint8_t * storage, uint32_t storage_size);
 
-// test if ring buffer is empty
+/**
+ * Check if ring buffer is empty
+ * @param ring_buffer object
+ * @return TRUE if empty
+ */
 int btstack_ring_buffer_empty(btstack_ring_buffer_t * ring_buffer);
 
-// number of bytes available for read 
+/**
+ * Get number of bytes available for read
+ * @param ring_buffer object
+ * @return number of bytes available for read
+ */
 int btstack_ring_buffer_bytes_available(btstack_ring_buffer_t * ring_buffer);
 
-// free space for write given in number of bytes
+/**
+ * Get free space available for write
+ * @param ring_buffer object
+ * @return number of bytes available for write
+ */
 int btstack_ring_buffer_bytes_free(btstack_ring_buffer_t * ring_buffer);
 
-// add byte block to ring buffer, 
+/**
+ * Write bytes into ring buffer
+ * @param ring_buffer object
+ * @param data to store
+ * @param data_length
+ * @return 0 if ok, ERROR_CODE_MEMORY_CAPACITY_EXCEEDED if not enough space in buffer
+ */
 int btstack_ring_buffer_write(btstack_ring_buffer_t * ring_buffer, uint8_t * data, uint32_t data_length); 
 
-// fetch data_length bytes from ring buffer
-void btstack_ring_buffer_read(btstack_ring_buffer_t * ring_buffer, uint8_t * data, uint32_t data_length, uint32_t * number_of_bytes_read); 
-
+/**
+ * Read from ring buffer
+ * @param ring_buffer object
+ * @param buffer to store read data
+ * @param length to read
+ * @param number_of_bytes_read
+ */
+void btstack_ring_buffer_read(btstack_ring_buffer_t * ring_buffer, uint8_t * buffer, uint32_t length, uint32_t * number_of_bytes_read); 
 
 #if defined __cplusplus
 }
