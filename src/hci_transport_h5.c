@@ -145,7 +145,7 @@ static void hci_transport_slip_init(void);
 
 // -----------------------------
 static void hci_transport_inactivity_timeout_handler(btstack_timer_source_t * ts){
-    log_info("h5: inactivity timeout. link state %u, peer asleep %u, actions 0x%02x, outgoing packet %u",
+    log_info("h5: inactivity timeout. link state %d, peer asleep %u, actions 0x%02x, outgoing packet %u",
         link_state, link_peer_asleep, hci_transport_link_actions, hci_transport_link_have_outgoing_packet());
     if (hci_transport_link_have_outgoing_packet()) return;
     if (link_state != LINK_ACTIVE) return;
@@ -176,7 +176,7 @@ static void hci_transport_slip_encode_chunk_and_send(int pos){
         slip_outgoing_buffer[pos++] = BTSTACK_SLIP_SOF;
     }
     slip_write_active = 1;
-    log_info("hci_transport_slip: send %u bytes", pos);
+    log_info("hci_transport_slip: send %d bytes", pos);
     btstack_uart->send_block(slip_outgoing_buffer, pos);
 }
 
@@ -424,10 +424,10 @@ static void hci_transport_h5_process_frame(uint16_t frame_size){
     uint8_t * slip_payload = &hci_packet_with_pre_buffer[HCI_INCOMING_PRE_BUFFER_SIZE + 4];
     int       frame_size_without_header = frame_size - 4;
 
-    int      seq_nr =  slip_header[0] & 0x07;
-    int      ack_nr = (slip_header[0] >> 3)    & 0x07;
-    int      data_integrity_check_present = (slip_header[0] & 0x40) != 0;
-    int      reliable_packet  = (slip_header[0] & 0x80) != 0;
+    uint8_t  seq_nr =  slip_header[0] & 0x07;
+    uint8_t  ack_nr = (slip_header[0] >> 3)    & 0x07;
+    uint8_t  data_integrity_check_present = (slip_header[0] & 0x40) != 0;
+    uint8_t  reliable_packet  = (slip_header[0] & 0x80) != 0;
     uint8_t  link_packet_type = slip_header[1] & 0x0f;
     uint16_t link_payload_len = (slip_header[1] >> 4) | (slip_header[2] << 4);
 
@@ -716,7 +716,7 @@ static int hci_transport_h5_can_send_packet_now(uint8_t packet_type){
 
 static int hci_transport_h5_send_packet(uint8_t packet_type, uint8_t *packet, int size){
     if (!hci_transport_h5_can_send_packet_now(packet_type)){
-        log_error("hci_transport_h5_send_packet called but in state %u", link_state);
+        log_error("hci_transport_h5_send_packet called but in state %d", link_state);
         return -1;
     }
 

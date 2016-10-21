@@ -541,22 +541,22 @@ static uint8_t hfp_ag_suggest_codec(hfp_connection_t *hfp_connection){
 static void hfp_init_link_settings(hfp_connection_t * hfp_connection){
     // determine highest possible link setting
     hfp_connection->link_setting = HFP_LINK_SETTINGS_D1;
-    switch (hfp_connection->negotiated_codec){
-        default:
-        case HFP_CODEC_CVSD:
-            if (hci_remote_esco_supported(hfp_connection->acl_handle)){
+    // anything else requires eSCO support on both sides
+    if (hci_extended_sco_link_supported() && hci_remote_esco_supported(hfp_connection->acl_handle)){
+        switch (hfp_connection->negotiated_codec){
+            case HFP_CODEC_CVSD:
                 hfp_connection->link_setting = HFP_LINK_SETTINGS_S3;
                 if ((hfp_connection->remote_supported_features & (1<<HFP_HFSF_ESCO_S4))
-                &&  (hfp_supported_features             & (1<<HFP_AGSF_ESCO_S4))){
+                &&  (hfp_supported_features                    & (1<<HFP_AGSF_ESCO_S4))){
                     hfp_connection->link_setting = HFP_LINK_SETTINGS_S4;
                 }
-            }
-            break;
-        case HFP_CODEC_MSBC:
-            if (hci_remote_esco_supported(hfp_connection->acl_handle)){
+                break;
+            case HFP_CODEC_MSBC:
                 hfp_connection->link_setting = HFP_LINK_SETTINGS_T2;
-            }
-            break;
+                break;
+            default:
+                break;
+        }
     }
     log_info("hfp_init_link_settings: %u", hfp_connection->link_setting);
 }
@@ -656,6 +656,7 @@ static int hfp_ag_run_for_context_service_level_connection(hfp_connection_t * hf
             switch(hfp_connection->state){
                 case HFP_W4_EXCHANGE_SUPPORTED_FEATURES:
                 case HFP_EXCHANGE_SUPPORTED_FEATURES:
+                    hfp_hf_drop_mSBC_if_eSCO_not_supported(hfp_codecs, &hfp_codecs_nr);
                     if (has_codec_negotiation_feature(hfp_connection)){
                         hfp_connection->state = HFP_W4_NOTIFY_ON_CODECS;
                     } else {
@@ -797,6 +798,7 @@ static int hfp_ag_run_for_context_service_level_connection_queries(hfp_connectio
                 hfp_ag_report_extended_audio_gateway_error(hfp_connection->rfcomm_cid, hfp_connection->extended_audio_gateway_error_value);
                 return 1;
             }
+            break;
         case HFP_CMD_ENABLE_INDICATOR_STATUS_UPDATE:
             hfp_ag_ok(hfp_connection->rfcomm_cid);
             return 1;
@@ -1330,7 +1332,8 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * hfp_con
                             hfp_gsm_handle_event(HFP_AG_TERMINATE_CALL_BY_HF);
                             hfp_ag_set_callsetup_indicator();
                             hfp_ag_transfer_callsetup_state();
-                            log_info("AG terminate outgoing call process");                            
+                            log_info("AG terminate outgoing call process"); 
+                            break;              
                         default:
                             break;
                     }
@@ -1358,6 +1361,7 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * hfp_con
                         default:
                             break;
                     }
+                    break;
                 case HFP_CALL_STATUS_ACTIVE_OR_HELD_CALL_IS_PRESENT:
                     hfp_gsm_handle_event(HFP_AG_TERMINATE_CALL_BY_AG);
                     hfp_ag_set_callsetup_indicator();

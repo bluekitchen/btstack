@@ -64,6 +64,7 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
 				if (!att_server_handler) return;
 				att_server_handler(packet_type, handle, packet, size);
 			}
+			break;
 		case HCI_EVENT_PACKET:
 			if (packet[0] != L2CAP_EVENT_CAN_SEND_NOW) break;
 			if (att_server_handler && att_server_waiting_for_can_send){

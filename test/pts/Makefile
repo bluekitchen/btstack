@@ -10,7 +10,8 @@ include ${BTSTACK_ROOT}/example/Makefile.inc
 CFLAGS += -g -Wall -Wmissing-prototypes -Wstrict-prototypes -Wshadow -Werror \
           -I${BTSTACK_ROOT}/platform/posix \
           -I${BTSTACK_ROOT}/platform/embedded \
-	      -I${BTSTACK_ROOT}/port/libusb
+	      -I${BTSTACK_ROOT}/port/libusb \
+	      -D ENABLE_LE_DATA_CHANNELS
 
 VPATH += ${BTSTACK_ROOT}/platform/posix
 VPATH += ${BTSTACK_ROOT}/port/libusb
@@ -29,7 +30,8 @@ LDFLAGS += $(shell pkg-config libusb-1.0 --libs)
 # CFLAGS  += -I/usr/local/include
 # LDFLAGS += -L/sw/lib -lportaudio -Wl,-framework,CoreAudio -Wl,-framework,AudioToolbox -Wl,-framework,AudioUnit -Wl,-framework,Carbon
 
-EXAMPLES = iopt ble_peripheral_test ble_central_test l2cap_test classic_test bnep_test hsp_ag_test hsp_hs_test sco_loopback
+EXAMPLES = iopt ble_peripheral_test ble_central_test l2cap_test classic_test bnep_test hsp_ag_test hsp_hs_test sco_loopback le_data_channel
+EXAMPLES = le_data_channel
 
 all: ${EXAMPLES}
 
@@ -44,6 +46,9 @@ ble_peripheral_test: ble_peripheral_test.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} 
 
 ble_central_test: ble_central_test.h ${CORE_OBJ} ${COMMON_OBJ} ${SM_REAL_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${GATT_CLIENT_OBJ} ad_parser.o ble_central_test.c
 	${CC} $(filter-out ble_central_test.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
+
+le_data_channel: ${CORE_OBJ} ${COMMON_OBJ} ${SM_REAL_OBJ} ${ATT_OBJ} ad_parser.o le_data_channel.c
+	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 hsp_ag_test: ${CORE_OBJ} ${COMMON_OBJ} ${SDP_CLIENT} hsp_ag.o hsp_ag_test.c 
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@

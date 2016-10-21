@@ -129,18 +129,26 @@ enum STATE state = INIT;
 
 static void dump_supported_codecs(void){
     int i;
-    printf("Supported codecs: ");
+    int mSBC_skipped = 0;
+    printf("Supported codecs:");
     for (i = 0; i < sizeof(codecs); i++){
         switch(codecs[i]){
             case HFP_CODEC_CVSD:
                 printf(" CVSD");
                 break;
             case HFP_CODEC_MSBC:
-                printf(" mSBC");
+                if (hci_extended_sco_link_supported()){
+                    printf("mSBC");
+                } else {
+                    mSBC_skipped = 1;
+                }
                 break;
         }
     }
     printf("\n");
+    if (mSBC_skipped){
+        printf("mSBC codec disabled because eSCO not supported by local controller.\n");
+    }
 }
 
 static int getDeviceIndexForAddress( bd_addr_t addr){
@@ -592,11 +600,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                     break; 
                 case HCI_EVENT_COMMAND_COMPLETE:
                     if (HCI_EVENT_IS_COMMAND_COMPLETE(event, hci_read_local_supported_features)){
-                        if (hci_extended_sco_link_supported()){
-                            printf("Supported Codecs: CVSD, mSBC.\n");
-                        } else {
-                            printf("Supported Codecs: CVSD. mSBC disabled, eSCO not supported by controller).\n");
-                        }
+                        dump_supported_codecs();
                     }
                     break;
                 default:
@@ -618,14 +622,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                     acl_handle = hfp_subevent_service_level_connection_established_get_con_handle(event);
                     hfp_subevent_service_level_connection_established_get_bd_addr(event, device_addr);
                     printf("Service level connection established from %s.\n", bd_addr_to_str(device_addr));
-                    
                     dump_supported_codecs();
-                    if (hci_extended_sco_link_supported()){
-                        printf("eSCO supported by controller.\n");
-                    } else {
-                        printf("eSCO not supported by controller.\n");
-                    }
-
                    break;
                 case HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED:
                     printf("Service level connection released.\n");
@@ -639,7 +636,17 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                         sco_handle = hfp_subevent_audio_connection_established_get_handle(event);
                         printf("Audio connection established with SCO handle 0x%04x.\n", sco_handle);
                         negotiated_codec = hfp_subevent_audio_connection_established_get_negotiated_codec(event);
-                        printf("Using codec 0x%02x.\n", negotiated_codec);
+                        switch (negotiated_codec){
+                            case 0x01:
+                                printf("Using CVSD codec.\n");
+                                break;
+                            case 0x02:
+                                printf("Using mSBC codec.\n");
+                                break;
+                            default:
+                                printf("Using unknown codec 0x%02x.\n", negotiated_codec);
+                                break;
+                        }
                         sco_demo_set_codec(negotiated_codec);
                         hci_request_sco_can_send_now_event();
                     }

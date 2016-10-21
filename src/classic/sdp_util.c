@@ -626,8 +626,8 @@ static int de_traversal_dump_data(uint8_t * element, de_type_t de_type, de_size_
     int indent = *(int*) my_context;
     int i;
     for (i=0; i<indent;i++) printf("    ");
-    int pos     = de_get_header_size(element);
-    int end_pos = de_get_len(element);
+    unsigned int pos     = de_get_header_size(element);
+    unsigned int end_pos = de_get_len(element);
     printf("type %5s (%u), element len %2u ", type_names[de_type], de_type, end_pos);
     if (de_type == DE_DES) {
 		printf("\n");
@@ -636,7 +636,7 @@ static int de_traversal_dump_data(uint8_t * element, de_type_t de_type, de_size_
     } else if (de_type == DE_UUID && de_size == DE_SIZE_128) {
         printf(", value: %s\n", uuid128_to_str(element+1));
     } else if (de_type == DE_STRING) {
-        int len = 0;
+        unsigned int len = 0;
         switch (de_size){
             case DE_SIZE_VAR_8:
                 len = element[1];

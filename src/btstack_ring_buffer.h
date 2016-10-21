@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 BlueKitchen GmbH
+ * Copyright (C) 2016 BlueKitchen GmbH
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -36,36 +36,75 @@
  */
 
 /*
- * btstack_run_loop_wiced.h
- *
- * Functions relevant for BTstack WICED port 
+ *  btstack_ring_buffer.h
  */
 
-#ifndef __btstack_run_loop_WICED_H
-#define __btstack_run_loop_WICED_H
-
-#include "btstack_config.h"
-#include "btstack_run_loop.h"
-#include "wiced.h"
+#ifndef __BTSTACK_RING_BUFFER_H
+#define __BTSTACK_RING_BUFFER_H
 
 #if defined __cplusplus
 extern "C" {
 #endif
 
+#include <stdint.h>
+
+typedef struct btstack_ring_buffer {
+    uint8_t  * storage;
+    uint32_t size;    
+    uint32_t last_read_index;
+    uint32_t last_written_index;
+    uint8_t  full;
+} btstack_ring_buffer_t;
+
 /**
- * @brief Provide btstack_run_loop_posix instance for use with btstack_run_loop_init
+ * Init ring buffer
+ * @param ring_buffer object
+ * @param storage
+ * @param storage_size in bytes
  */
-const btstack_run_loop_t * btstack_run_loop_wiced_get_instance(void);
+void btstack_ring_buffer_init(btstack_ring_buffer_t * ring_buffer, uint8_t * storage, uint32_t storage_size);
 
-/*
- * @brief Execute code on BTstack run loop. Can be used to control BTstack from a different thread
+/**
+ * Check if ring buffer is empty
+ * @param ring_buffer object
+ * @return TRUE if empty
  */
-void btstack_run_loop_wiced_execute_code_on_main_thread(wiced_result_t (*fn)(void *arg), void * arg);
+int btstack_ring_buffer_empty(btstack_ring_buffer_t * ring_buffer);
 
-/* API_END */
+/**
+ * Get number of bytes available for read
+ * @param ring_buffer object
+ * @return number of bytes available for read
+ */
+int btstack_ring_buffer_bytes_available(btstack_ring_buffer_t * ring_buffer);
+
+/**
+ * Get free space available for write
+ * @param ring_buffer object
+ * @return number of bytes available for write
+ */
+int btstack_ring_buffer_bytes_free(btstack_ring_buffer_t * ring_buffer);
+
+/**
+ * Write bytes into ring buffer
+ * @param ring_buffer object
+ * @param data to store
+ * @param data_length
+ * @return 0 if ok, ERROR_CODE_MEMORY_CAPACITY_EXCEEDED if not enough space in buffer
+ */
+int btstack_ring_buffer_write(btstack_ring_buffer_t * ring_buffer, uint8_t * data, uint32_t data_length); 
+
+/**
+ * Read from ring buffer
+ * @param ring_buffer object
+ * @param buffer to store read data
+ * @param length to read
+ * @param number_of_bytes_read
+ */
+void btstack_ring_buffer_read(btstack_ring_buffer_t * ring_buffer, uint8_t * buffer, uint32_t length, uint32_t * number_of_bytes_read); 
 
 #if defined __cplusplus
 }
 #endif
 
-#endif // __btstack_run_loop_WICED_H
+#endif // __BTSTACK_RING_BUFFER_H

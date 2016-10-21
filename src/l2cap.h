@@ -59,7 +59,9 @@ extern "C" {
 #if (L2CAP_MINIMAL_MTU + L2CAP_HEADER_SIZE) > HCI_ACL_PAYLOAD_SIZE
 #error "HCI_ACL_PAYLOAD_SIZE too small for minimal L2CAP MTU of 48 bytes"
 #endif    
-    
+
+#define L2CAP_LE_AUTOMATIC_CREDITS 0xffff
+
 // private structs
 typedef enum {
     L2CAP_STATE_CLOSED = 1,           // no baseband
@@ -79,6 +81,10 @@ typedef enum {
     L2CAP_STATE_WILL_SEND_CONNECTION_RESPONSE_ACCEPT,   
     L2CAP_STATE_WILL_SEND_DISCONNECT_REQUEST,
     L2CAP_STATE_WILL_SEND_DISCONNECT_RESPONSE,
+    L2CAP_STATE_WILL_SEND_LE_CONNECTION_REQUEST,
+    L2CAP_STATE_WILL_SEND_LE_CONNECTION_RESPONSE_DECLINE,
+    L2CAP_STATE_WILL_SEND_LE_CONNECTION_RESPONSE_ACCEPT,
+    L2CAP_STATE_WAIT_LE_CONNECTION_RESPONSE,
     L2CAP_STATE_INVALID,
 } L2CAP_STATE;
 
@@ -95,6 +101,7 @@ typedef enum {
     L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_INVALID = 1 << 8,   // in CONF RSP, send UNKNOWN OPTIONS
     L2CAP_CHANNEL_STATE_VAR_SEND_CMD_REJ_UNKNOWN  = 1 << 9,   // send CMD_REJ with reason unknown
     L2CAP_CHANNEL_STATE_VAR_SEND_CONN_RESP_PEND   = 1 << 10,  // send Connection Respond with pending
+    L2CAP_CHANNEL_STATE_VAR_INCOMING              = 1 << 15,  // channel is incoming
 } L2CAP_CHANNEL_STATE_VAR;
 
 // info regarding an actual connection
@@ -112,8 +119,10 @@ typedef struct {
     L2CAP_CHANNEL_STATE_VAR state_var;
 
     // info
-    bd_addr_t address;
     hci_con_handle_t con_handle;
+
+    bd_addr_t address;
+    bd_addr_type_t address_type;
     
     uint8_t   remote_sig_id;    // used by other side, needed for delayed response
     uint8_t   local_sig_id;     // own signaling identifier
@@ -123,7 +132,7 @@ typedef struct {
     
     uint16_t  local_mtu;
     uint16_t  remote_mtu;
-    
+
     uint16_t  flush_timeout;    // default 0xffff
 
     uint16_t  psm;
@@ -132,7 +141,34 @@ typedef struct {
 
     uint8_t   reason; // used in decline internal
     uint8_t   waiting_for_can_send_now;
+
+    // LE Data Channels
+
+    // incoming SDU
+    uint8_t * receive_sdu_buffer;
+    uint16_t  receive_sdu_len;
+    uint16_t  receive_sdu_pos;
+
+    // outgoing SDU
+    uint8_t  * send_sdu_buffer;
+    uint16_t   send_sdu_len;
+    uint16_t   send_sdu_pos;
+
+    // max PDU size
+    uint16_t  remote_mps;
+
+    // credits for outgoing traffic
+    uint16_t credits_outgoing;
     
+    // number of packets remote will be granted
+    uint16_t new_credits_incoming;
+
+    // credits for incoming traffic
+    uint16_t credits_incoming;
+
+    // automatic credits incoming
+    uint16_t automatic_credits;
+
 } l2cap_channel_t;
 
 // info regarding potential connections
@@ -145,15 +181,13 @@ typedef struct {
     
     // incoming MTU
     uint16_t mtu;
-
-    // incoming MPS
-    uint16_t mps;
     
     // internal connection
     btstack_packet_handler_t packet_handler;
 
     // required security level
-    gap_security_level_t required_security_level;    
+    gap_security_level_t required_security_level;
+
 } l2cap_service_t;
 
 
@@ -279,19 +313,97 @@ int l2cap_send_prepared(uint16_t local_cid, uint16_t len);
  */
 void l2cap_release_packet_buffer(void);
 
-/* API_END */
 
-#if 0
+//
+// LE Connection Oriented Channels feature with the LE Credit Based Flow Control Mode == LE Data Channel
+//
 
-// to be implemented soon
+
 /**
- * @brief Regster L2CAP LE Credit Based Flow Control Mode service
- * @param
+ * @brief Register L2CAP LE Data Channel service
+ * @note MTU and initial credits are specified in l2cap_le_accept_connection(..) call
+ * @param packet_handler
+ * @param psm
+ * @param security_level
  */
-void l2cap_le_register_service(btstack_packet_handler_t packet_handler, uint16_t psm,
-    uint16_t mtu, uint16_t mps, uint16_t initial_credits, gap_security_level_t security_level);
-void l2cap_le_unregister_service(uint16_t psm);
-#endif
+uint8_t l2cap_le_register_service(btstack_packet_handler_t packet_handler, uint16_t psm, gap_security_level_t security_level);
+
+/**
+ * @brief Unregister L2CAP LE Data Channel service
+ * @param psm
+ */
+
+uint8_t l2cap_le_unregister_service(uint16_t psm);
+
+/*
+ * @brief Accept incoming LE Data Channel connection
+ * @param local_cid             L2CAP LE Data Channel Identifier
+ * @param receive_buffer        buffer used for reassembly of L2CAP LE Information Frames into service data unit (SDU) with given MTU
+ * @param receive_buffer_size   buffer size equals MTU
+ * @param initial_credits       Number of initial credits provided to peer or L2CAP_LE_AUTOMATIC_CREDITS to enable automatic credits
+ */
+
+uint8_t l2cap_le_accept_connection(uint16_t local_cid, uint8_t * receive_sdu_buffer, uint16_t mtu, uint16_t initial_credits);
+
+/** 
+ * @brief Deny incoming LE Data Channel connection due to resource constraints
+ * @param local_cid             L2CAP LE Data Channel Identifier
+ */
+
+uint8_t l2cap_le_decline_connection(uint16_t local_cid);
+
+/**
+ * @brief Create LE Data Channel
+ * @param packet_handler        Packet handler for this connection
+ * @param con_handle            ACL-LE HCI Connction Handle
+ * @param psm                   Service PSM to connect to
+ * @param receive_buffer        buffer used for reassembly of L2CAP LE Information Frames into service data unit (SDU) with given MTU
+ * @param receive_buffer_size   buffer size equals MTU
+ * @param initial_credits       Number of initial credits provided to peer or L2CAP_LE_AUTOMATIC_CREDITS to enable automatic credits
+ * @param security_level        Minimum required security level
+ * @param out_local_cid         L2CAP LE Channel Identifier is stored here
+ */
+uint8_t l2cap_le_create_channel(btstack_packet_handler_t packet_handler, hci_con_handle_t con_handle, 
+    uint16_t psm, uint8_t * receive_sdu_buffer, uint16_t mtu, uint16_t initial_credits, gap_security_level_t security_level,
+    uint16_t * out_local_cid);
+
+/**
+ * @brief Provide credtis for LE Data Channel
+ * @param local_cid             L2CAP LE Data Channel Identifier
+ * @param credits               Number additional credits for peer
+ */
+uint8_t l2cap_le_provide_credits(uint16_t cid, uint16_t credits);
+
+/**
+ * @brief Check if packet can be scheduled for transmission
+ * @param local_cid             L2CAP LE Data Channel Identifier
+ */
+int l2cap_le_can_send_now(uint16_t cid);
+
+/**
+ * @brief Request emission of L2CAP_EVENT_LE_CAN_SEND_NOW as soon as possible
+ * @note L2CAP_EVENT_CAN_SEND_NOW might be emitted during call to this function
+ *       so packet handler should be ready to handle it
+ * @param local_cid             L2CAP LE Data Channel Identifier
+ */
+uint8_t l2cap_le_request_can_send_now_event(uint16_t cid);
+
+/**
+ * @brief Send data via LE Data Channel
+ * @note Since data larger then the maximum PDU needs to be segmented into multiple PDUs, data needs to stay valid until ... event
+ * @param local_cid             L2CAP LE Data Channel Identifier
+ * @param data                  data to send
+ * @param size                  data size
+ */
+uint8_t l2cap_le_send_data(uint16_t cid, uint8_t * data, uint16_t size);
+
+/**
+ * @brief Disconnect from LE Data Channel
+ * @param local_cid             L2CAP LE Data Channel Identifier
+ */
+uint8_t l2cap_le_disconnect(uint16_t cid);
+
+/* API_END */
 
 #if defined __cplusplus
 }

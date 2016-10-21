@@ -136,8 +136,11 @@ int main(int argc, const char * argv[]){
 
     // init HCI
 	hci_init(hci_transport_usb_instance(), NULL);
+
+#ifdef ENABLE_CLASSIC
     hci_set_link_key_db(btstack_link_key_db_fs_instance());
-    
+#endif    
+
     // inform about BTstack state
     hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);

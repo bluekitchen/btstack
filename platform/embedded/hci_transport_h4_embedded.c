@@ -157,7 +157,9 @@ static int h4_open(void){
 }
 
 static int h4_close(void){
-    // first remove run loop handler
+
+    // remove data source
+    btstack_run_loop_disable_data_source_callbacks(&hci_transport_h4_dma_ds, DATA_SOURCE_CALLBACK_POLL);
 	btstack_run_loop_remove_data_source(&hci_transport_h4_dma_ds);
     
     // close device 
