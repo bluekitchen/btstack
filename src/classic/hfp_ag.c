@@ -656,6 +656,7 @@ static int hfp_ag_run_for_context_service_level_connection(hfp_connection_t * hf
             switch(hfp_connection->state){
                 case HFP_W4_EXCHANGE_SUPPORTED_FEATURES:
                 case HFP_EXCHANGE_SUPPORTED_FEATURES:
+                    hfp_hf_drop_mSBC_if_eSCO_not_supported(hfp_codecs, &hfp_codecs_nr);
                     if (has_codec_negotiation_feature(hfp_connection)){
                         hfp_connection->state = HFP_W4_NOTIFY_ON_CODECS;
                     } else {

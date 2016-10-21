@@ -408,6 +408,7 @@ static int hfp_hf_run_for_context_service_level_connection(hfp_connection_t * hf
             
     switch (hfp_connection->state){
         case HFP_EXCHANGE_SUPPORTED_FEATURES:
+            hfp_hf_drop_mSBC_if_eSCO_not_supported(hfp_codecs, &hfp_codecs_nr);
             hfp_connection->state = HFP_W4_EXCHANGE_SUPPORTED_FEATURES;
             hfp_hf_cmd_exchange_supported_features(hfp_connection->rfcomm_cid);
             break;
@@ -1128,18 +1129,6 @@ void hfp_hf_init_codecs(int codecs_nr, uint8_t * codecs){
     int i;
     for (i=0; i<codecs_nr; i++){
         hfp_codecs[i] = codecs[i];
-    }
-
-    char buffer[30];
-    int offset = join(buffer, sizeof(buffer), hfp_codecs, hfp_codecs_nr);
-    buffer[offset] = 0;
-    btstack_linked_list_iterator_t it;    
-    btstack_linked_list_iterator_init(&it, hfp_get_connections());
-    while (btstack_linked_list_iterator_has_next(&it)){
-        hfp_connection_t * hfp_connection = (hfp_connection_t *)btstack_linked_list_iterator_next(&it);
-        if (! hfp_connection) continue;
-        hfp_connection->command = HFP_CMD_AVAILABLE_CODECS;
-        hfp_run_for_context(hfp_connection);
     }
 }
 

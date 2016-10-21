@@ -657,6 +657,7 @@ void hfp_release_audio_connection(hfp_connection_t * connection);
 
 void hfp_setup_synchronous_connection(hfp_connection_t * connection);
 int hfp_supports_codec(uint8_t codec, int codecs_nr, uint8_t * codecs);
+void hfp_hf_drop_mSBC_if_eSCO_not_supported(uint8_t * codecs, uint8_t * codecs_nr);
 
 const char * hfp_hf_feature(int index);
 const char * hfp_ag_feature(int index);

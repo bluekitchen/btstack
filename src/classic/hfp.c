@@ -142,6 +142,20 @@ int hfp_supports_codec(uint8_t codec, int codecs_nr, uint8_t * codecs){
     return 0;
 }
 
+void hfp_hf_drop_mSBC_if_eSCO_not_supported(uint8_t * codecs, uint8_t * codecs_nr){
+    if (hci_extended_sco_link_supported()) return;
+    uint8_t tmp_codecs[HFP_MAX_NUM_CODECS];
+    int i;
+    int tmp_codec_nr = 0;
+    for (i=0; i < *codecs_nr; i++){
+        if (codecs[i] == HFP_CODEC_MSBC) continue;
+        tmp_codecs[tmp_codec_nr++] = codecs[i];
+    }
+    *codecs_nr = tmp_codec_nr;
+    memcpy(codecs, tmp_codecs, tmp_codec_nr);
+}
+
+
 #if 0
 void hfp_set_codec(hfp_connection_t * hfp_connection, uint8_t *packet, uint16_t size){
     // parse available codecs
