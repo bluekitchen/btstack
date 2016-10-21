@@ -49,6 +49,12 @@
 #include <termios.h>  /* POSIX terminal control definitions */
 #include <fcntl.h>    /* File control definitions */
 #include <unistd.h>   /* UNIX standard function definitions */
+#include <string.h>
+#include <errno.h>
+#ifdef __APPLE__
+#include <sys/ioctl.h>
+#include <IOKit/serial/ioss.h>
+#endif
 
 // uart config
 static const btstack_uart_config_t * uart_config;
@@ -151,16 +157,32 @@ static void hci_transport_h5_process(btstack_data_source_t *ds, btstack_data_sou
     }
 }
 
-static int  btstack_uart_posix_set_baudrate(uint32_t baudrate){
+static int btstack_uart_posix_set_baudrate(uint32_t baudrate){
 
     int fd = transport_data_source.fd;
 
     log_info("h4_set_baudrate %u", baudrate);
 
+#ifdef __APPLE__
+
+    // From https://developer.apple.com/library/content/samplecode/SerialPortSample/Listings/SerialPortSample_SerialPortSample_c.html
+
+    // The IOSSIOSPEED ioctl can be used to set arbitrary baud rates
+    // other than those specified by POSIX. The driver for the underlying serial hardware
+    // ultimately determines which baud rates can be used. This ioctl sets both the input
+    // and output speed.
+
+    speed_t speed = baudrate;
+    if (ioctl(fd, IOSSIOSPEED, &speed) == -1) {
+        log_error("btstack_uart_posix_set_baudrate: error calling ioctl(..., IOSSIOSPEED, %u) - %s(%d).\n", baudrate, strerror(errno), errno);
+        return -1;
+    }
+
+#else
     struct termios toptions;
 
     if (tcgetattr(fd, &toptions) < 0) {
-        perror("posix_open: Couldn't get term attributes");
+        log_error("btstack_uart_posix_set_baudrate: Couldn't get term attributes");
         return -1;
     }
     
@@ -205,9 +227,10 @@ static int  btstack_uart_posix_set_baudrate(uint32_t baudrate){
     cfsetispeed(&toptions, brate);
 
     if( tcsetattr(fd, TCSANOW, &toptions) < 0) {
-        perror("posix_set_baudrate: Couldn't set term attributes");
+        log_error("btstack_uart_posix_set_baudrate: Couldn't set term attributes");
         return -1;
     }
+#endif
 
     return 0;
 }
@@ -222,13 +245,12 @@ static int btstack_uart_posix_open(void){
     int flags = O_RDWR | O_NOCTTY | O_NONBLOCK;
     int fd = open(device_name, flags);
     if (fd == -1)  {
-        perror("posix_open: Unable to open port ");
-        perror(device_name);
+        log_error("posix_open: Unable to open port %s", device_name);
         return -1;
     }
     
     if (tcgetattr(fd, &toptions) < 0) {
-        perror("posix_open: Couldn't get term attributes");
+        log_error("posix_open: Couldn't get term attributes");
         return -1;
     }
     
@@ -258,7 +280,7 @@ static int btstack_uart_posix_open(void){
     toptions.c_cc[VTIME] = 0;
     
     if(tcsetattr(fd, TCSANOW, &toptions) < 0) {
-        perror("posix_open: Couldn't set term attributes");
+        log_error("posix_open: Couldn't set term attributes");
         return -1;
     }
 
@@ -303,7 +325,7 @@ static int btstack_uart_posix_set_parity(int parity){
 
     struct termios toptions;
     if (tcgetattr(fd, &toptions) < 0) {
-        perror("posix_set_parity: Couldn't get term attributes");
+        log_error("btstack_uart_posix_set_parity: Couldn't get term attributes");
         return -1;
     }
     if (parity){
@@ -312,7 +334,7 @@ static int btstack_uart_posix_set_parity(int parity){
         toptions.c_cflag &= ~PARENB; // enable even parity
     }
     if(tcsetattr(fd, TCSANOW, &toptions) < 0) {
-        perror("posix_set_parity: Couldn't set term attributes");
+        log_error("posix_set_parity: Couldn't set term attributes");
         return -1;
     }
     return 0;
