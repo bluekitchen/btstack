@@ -1277,8 +1277,7 @@ static void l2cap_handle_connection_request(hci_con_handle_t handle, uint8_t sig
     
     // set initial state
     channel->state =      L2CAP_STATE_WAIT_INCOMING_SECURITY_LEVEL_UPDATE;
-    channel->state_var  = L2CAP_CHANNEL_STATE_VAR_SEND_CONN_RESP_PEND;
-    channel->state_var |= L2CAP_CHANNEL_STATE_VAR_INCOMING;
+    channel->state_var  = (L2CAP_CHANNEL_STATE_VAR) (L2CAP_CHANNEL_STATE_VAR_SEND_CONN_RESP_PEND | L2CAP_CHANNEL_STATE_VAR_INCOMING);
     
     // add to connections list
     btstack_linked_list_add(&l2cap_channels, (btstack_linked_item_t *) channel);
