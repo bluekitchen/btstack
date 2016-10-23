@@ -107,13 +107,22 @@
         <itemPath>../../../example/spp_and_le_counter.c</itemPath>
       </logicalFolder>
       <logicalFolder name="f3" displayName="btstack" projectFiles="true">
+        <logicalFolder name="f2" displayName="3rd-party" projectFiles="true">
+          <logicalFolder name="library" displayName="library" projectFiles="true">
+            <itemPath>../../../3rd-party/mbedtls/library/bignum.c</itemPath>
+            <itemPath>../../../3rd-party/mbedtls/library/ecp.c</itemPath>
+            <itemPath>../../../3rd-party/mbedtls/library/ecp_curves.c</itemPath>
+            <itemPath>../../../3rd-party/mbedtls/library/memory_buffer_alloc.c</itemPath>
+            <itemPath>../../../3rd-party/mbedtls/library/platform.c</itemPath>
+          </logicalFolder>
+        </logicalFolder>
         <logicalFolder name="ble" displayName="ble" projectFiles="true">
-          <itemPath>../../../src/ad_parser.c</itemPath>
           <itemPath>../../../src/ble/att_db.c</itemPath>
           <itemPath>../../../src/ble/att_dispatch.c</itemPath>
           <itemPath>../../../src/ble/att_server.c</itemPath>
           <itemPath>../../../src/ble/le_device_db_memory.c</itemPath>
           <itemPath>../../../src/ble/sm.c</itemPath>
+          <itemPath>../../../src/ble/sm_mbedtls_allocator.c</itemPath>
         </logicalFolder>
         <logicalFolder name="chipset-csr" displayName="chipset-csr" projectFiles="true">
           <itemPath>../../../chipset/csr/btstack_chipset_csr.c</itemPath>
@@ -123,6 +132,7 @@
           <itemPath>../../../platform/embedded/btstack_uart_block_embedded.c</itemPath>
         </logicalFolder>
         <logicalFolder name="src" displayName="src" projectFiles="true">
+          <itemPath>../../../src/ad_parser.c</itemPath>
           <itemPath>../../../src/btstack_memory.c</itemPath>
           <itemPath>../../../src/hci.c</itemPath>
           <itemPath>../../../src/hci_cmd.c</itemPath>
@@ -198,6 +208,8 @@
     <Elem>../../../chipset/csr</Elem>
     <Elem>../../../example</Elem>
     <Elem>../../../platform/embedded</Elem>
+    <Elem>../../../3rd-party/mbedtls/include</Elem>
+    <Elem>../../../3rd-party/mbedtls/library</Elem>
   </sourceRootList>
   <projectmakefile>Makefile</projectmakefile>
   <confs>
@@ -243,7 +255,7 @@
         <property key="enable-unroll-loops" value="false"/>
         <property key="exclude-floating-point" value="false"/>
         <property key="extra-include-directories"
-                  value=".;../../../..;../src;../src/system_config/bt_audio_dk;../../../src;../../../chipset/csr;../../../platform/embedded"/>
+                  value=".;../../../..;../src;../src/system_config/bt_audio_dk;../../../src;../../../chipset/csr;../../../platform/embedded;../../../3rd-party/mbedtls/include"/>
         <property key="generate-16-bit-code" value="false"/>
         <property key="generate-micro-compressed-code" value="false"/>
         <property key="isolate-each-function" value="false"/>
