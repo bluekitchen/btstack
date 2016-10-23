@@ -297,7 +297,7 @@ void l2cap_emit_channel_opened(l2cap_channel_t *channel, uint8_t status) {
     log_info("L2CAP_EVENT_CHANNEL_OPENED status 0x%x addr %s handle 0x%x psm 0x%x local_cid 0x%x remote_cid 0x%x local_mtu %u, remote_mtu %u, flush_timeout %u",
              status, bd_addr_to_str(channel->address), channel->con_handle, channel->psm,
              channel->local_cid, channel->remote_cid, channel->local_mtu, channel->remote_mtu, channel->flush_timeout);
-    uint8_t event[23];
+    uint8_t event[24];
     event[0] = L2CAP_EVENT_CHANNEL_OPENED;
     event[1] = sizeof(event) - 2;
     event[2] = status;
@@ -309,6 +309,7 @@ void l2cap_emit_channel_opened(l2cap_channel_t *channel, uint8_t status) {
     little_endian_store_16(event, 17, channel->local_mtu);
     little_endian_store_16(event, 19, channel->remote_mtu); 
     little_endian_store_16(event, 21, channel->flush_timeout); 
+    event[23] = channel->state_var & L2CAP_CHANNEL_STATE_VAR_INCOMING ? 1 : 0;
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
     l2cap_dispatch_to_channel(channel, HCI_EVENT_PACKET, event, sizeof(event));
 }
@@ -1275,8 +1276,9 @@ static void l2cap_handle_connection_request(hci_con_handle_t handle, uint8_t sig
     }
     
     // set initial state
-    channel->state =     L2CAP_STATE_WAIT_INCOMING_SECURITY_LEVEL_UPDATE;
-    channel->state_var = L2CAP_CHANNEL_STATE_VAR_SEND_CONN_RESP_PEND;
+    channel->state =      L2CAP_STATE_WAIT_INCOMING_SECURITY_LEVEL_UPDATE;
+    channel->state_var  = L2CAP_CHANNEL_STATE_VAR_SEND_CONN_RESP_PEND;
+    channel->state_var |= L2CAP_CHANNEL_STATE_VAR_INCOMING;
     
     // add to connections list
     btstack_linked_list_add(&l2cap_channels, (btstack_linked_item_t *) channel);

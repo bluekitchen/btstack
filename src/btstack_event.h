@@ -1034,6 +1034,15 @@ static inline uint16_t l2cap_event_channel_opened_get_remote_mtu(const uint8_t *
 static inline uint16_t l2cap_event_channel_opened_get_flush_timeout(const uint8_t * event){
     return little_endian_read_16(event, 21);
 }
+/**
+ * @brief Get field incoming from event L2CAP_EVENT_CHANNEL_OPENED
+ * @param event packet
+ * @return incoming
+ * @note: btstack_type 1
+ */
+static inline uint8_t l2cap_event_channel_opened_get_incoming(const uint8_t * event){
+    return event[23];
+}
 
 /**
  * @brief Get field local_cid from event L2CAP_EVENT_CHANNEL_CLOSED
@@ -1395,6 +1404,15 @@ static inline uint16_t rfcomm_event_channel_opened_get_rfcomm_cid(const uint8_t 
  */
 static inline uint16_t rfcomm_event_channel_opened_get_max_frame_size(const uint8_t * event){
     return little_endian_read_16(event, 14);
+}
+/**
+ * @brief Get field incoming from event RFCOMM_EVENT_CHANNEL_OPENED
+ * @param event packet
+ * @return incoming
+ * @note: btstack_type 1
+ */
+static inline uint8_t rfcomm_event_channel_opened_get_incoming(const uint8_t * event){
+    return event[16];
 }
 
 /**

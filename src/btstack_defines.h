@@ -369,7 +369,7 @@ typedef uint8_t sm_key_t[16];
 // L2CAP EVENTS
     
 /**
- * @format 1BH222222
+ * @format 1BH2222221
  * @param status
  * @param address
  * @param handle
@@ -379,6 +379,7 @@ typedef uint8_t sm_key_t[16];
  * @param local_mtu
  * @param remote_mtu
  * @param flush_timeout
+ * @param incoming
  */
 #define L2CAP_EVENT_CHANNEL_OPENED                         0x70
 
@@ -477,13 +478,14 @@ typedef uint8_t sm_key_t[16];
 // RFCOMM EVENTS
 
 /**
- * @format 1B2122
+ * @format 1B21221
  * @param status
  * @param bd_addr
  * @param con_handle
  * @param server_channel
  * @param rfcomm_cid
  * @param max_frame_size
+ * @param incoming
  */
 #define RFCOMM_EVENT_CHANNEL_OPENED                        0x80
 

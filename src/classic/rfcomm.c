@@ -164,7 +164,7 @@ static void rfcomm_emit_channel_opened(rfcomm_channel_t *channel, uint8_t status
     log_info("RFCOMM_EVENT_CHANNEL_OPENED status 0x%x addr %s handle 0x%x channel #%u cid 0x%02x mtu %u",
              status, bd_addr_to_str(channel->multiplexer->remote_addr), channel->multiplexer->con_handle,
              channel->dlci>>1, channel->rfcomm_cid, channel->max_frame_size);
-    uint8_t event[16];
+    uint8_t event[18];
     uint8_t pos = 0;
     event[pos++] = RFCOMM_EVENT_CHANNEL_OPENED;  // 0
     event[pos++] = sizeof(event) - 2;                   // 1
@@ -174,6 +174,7 @@ static void rfcomm_emit_channel_opened(rfcomm_channel_t *channel, uint8_t status
 	event[pos++] = channel->dlci >> 1;                                      // 11
 	little_endian_store_16(event, pos, channel->rfcomm_cid); pos += 2;                 // 12 - channel ID
 	little_endian_store_16(event, pos, channel->max_frame_size); pos += 2;   // max frame size
+    event[pos++] = channel->service ? 1 : 0;    // linked to service -> incoming
     hci_dump_packet(HCI_EVENT_PACKET, 0, event, sizeof(event));
 	(channel->packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
 
