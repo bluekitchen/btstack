@@ -14,7 +14,7 @@
 #define ENABLE_CLASSIC
 // #define ENABLE_LE_SECURE_CONNECTIONS
 #define ENABLE_LOG_ERROR
-#define ENABLE_LOG_INFO
+// #define ENABLE_LOG_INFO
 
 // BTstack configuration. buffers, sizes, ...
 #define HCI_ACL_PAYLOAD_SIZE 52
@@ -34,5 +34,8 @@
 #define MAX_NR_WHITELIST_ENTRIES 1
 #define MAX_NR_SM_LOOKUP_ENTRIES 3
 #define MAX_NR_SERVICE_RECORD_ITEMS 1
+
+// Nun Link Keys stored in WICED DCT
+#define NVM_NUM_LINK_KEYS 10
 
 #endif

@@ -52,11 +52,13 @@ print("Creating examples in apps/btstack")
 for file in os.listdir(examples_embedded):
     if not file.endswith(".c"):
         continue
+    if file.endswith("sco_demo_util.c"):
+        continue
     example = file[:-2]
 
     # recreate folder
     apps_folder = apps_btstack + example + "/"
-    shutil.rmtree(apps_folder)
+    shutil.rmtree(apps_folder, ignore_errors=True)
     os.makedirs(apps_folder)
 
     # create update_gatt.sh if .gatt file is present
@@ -96,17 +98,19 @@ for file in os.listdir(examples_embedded):
         with open(dst, 'wt') as fout:
             # template = template.replace('app', example)
             template = template.replace("<itemPath>../../../example/spp_and_le_counter.c", "<itemPath>../../../../framework/btstack/example/" + example + ".c")
-            template = template.replace(">../../../../driver", ">../../../../framework/driver");
-            template = template.replace(">../../../../system", ">../../../../framework/system");
-            template = template.replace(">../../../chipset",   ">../../../../framework/btstack/chipset");
-            template = template.replace(">../../../platform",  ">../../../../framework/btstack/platform");
-            template = template.replace(">../../../src",       ">../../../../framework/btstack/src");
-            template = template.replace(">../src",             ">../../../../framework/btstack/port/pic32-harmony/src");
+            template = template.replace(">../../../../driver", ">../../../../framework/driver")
+            template = template.replace(">../../../../system", ">../../../../framework/system")
+            template = template.replace(">../../../chipset",   ">../../../../framework/btstack/chipset")
+            template = template.replace(">../../../platform",  ">../../../../framework/btstack/platform")
+            template = template.replace(">../../../3rd-party", ">../../../../framework/btstack/3rd-party")
+            template = template.replace(">../../../src",       ">../../../../framework/btstack/src")
+            template = template.replace(">../src",             ">../../../../framework/btstack/port/pic32-harmony/src")
             template = template.replace("app.X", example+".X")
-            template = template.replace(";../../../..", ";../../../../framework");
+            template = template.replace(";../../../..", ";../../../../framework")
             template = template.replace(";../../../chipset",   ";../../../../framework/btstack/chipset")
             template = template.replace(";../../../platform",  ";../../../../framework/btstack/platform")
             template = template.replace(";../../../src",       ";../../../../framework/btstack/src")
+            template = template.replace(";../../../3rd-party", ";../../../../framework/btstack/3rd-party")
             template = template.replace(";../src",             ";../../../../framework/btstack/port/pic32-harmony/src")
             template = template.replace(">../../../../../bin/framework/peripheral", ">../../../../bin/framework/peripheral")
             template = template.replace('value=".;', 'value="..;')

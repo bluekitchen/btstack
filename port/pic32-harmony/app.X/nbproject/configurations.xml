@@ -17,8 +17,57 @@
         <itemPath>../src/app.h</itemPath>
       </logicalFolder>
       <logicalFolder name="f3" displayName="btstack" projectFiles="true">
+        <logicalFolder name="3rd-party" displayName="3rd-party" projectFiles="true">
+          <logicalFolder name="bluedroid" displayName="bluedroid" projectFiles="true">
+            <logicalFolder name="decoder" displayName="decoder" projectFiles="true">
+              <logicalFolder name="include" displayName="include" projectFiles="true">
+                <itemPath>../../../3rd-party/bluedroid/decoder/include/oi_assert.h</itemPath>
+                <itemPath>../../../3rd-party/bluedroid/decoder/include/oi_bitstream.h</itemPath>
+                <itemPath>../../../3rd-party/bluedroid/decoder/include/oi_bt_spec.h</itemPath>
+                <itemPath>../../../3rd-party/bluedroid/decoder/include/oi_codec_sbc.h</itemPath>
+                <itemPath>../../../3rd-party/bluedroid/decoder/include/oi_codec_sbc_private.h</itemPath>
+                <itemPath>../../../3rd-party/bluedroid/decoder/include/oi_common.h</itemPath>
+                <itemPath>../../../3rd-party/bluedroid/decoder/include/oi_cpu_dep.h</itemPath>
+                <itemPath>../../../3rd-party/bluedroid/decoder/include/oi_modules.h</itemPath>
+                <itemPath>../../../3rd-party/bluedroid/decoder/include/oi_osinterface.h</itemPath>
+                <itemPath>../../../3rd-party/bluedroid/decoder/include/oi_status.h</itemPath>
+                <itemPath>../../../3rd-party/bluedroid/decoder/include/oi_stddefs.h</itemPath>
+                <itemPath>../../../3rd-party/bluedroid/decoder/include/oi_string.h</itemPath>
+                <itemPath>../../../3rd-party/bluedroid/decoder/include/oi_time.h</itemPath>
+                <itemPath>../../../3rd-party/bluedroid/decoder/include/oi_utils.h</itemPath>
+              </logicalFolder>
+              <logicalFolder name="srce" displayName="srce" projectFiles="true">
+                <itemPath>../../../3rd-party/bluedroid/decoder/srce/readsamplesjoint.inc</itemPath>
+              </logicalFolder>
+              <itemPath>../../../3rd-party/bluedroid/decoder/Makefile.inc</itemPath>
+            </logicalFolder>
+            <logicalFolder name="encoder" displayName="encoder" projectFiles="true">
+              <logicalFolder name="include" displayName="include" projectFiles="true">
+                <itemPath>../../../3rd-party/bluedroid/encoder/include/sbc_dct.h</itemPath>
+                <itemPath>../../../3rd-party/bluedroid/encoder/include/sbc_enc_func_declare.h</itemPath>
+                <itemPath>../../../3rd-party/bluedroid/encoder/include/sbc_encoder.h</itemPath>
+                <itemPath>../../../3rd-party/bluedroid/encoder/include/sbc_types.h</itemPath>
+              </logicalFolder>
+              <logicalFolder name="srce" displayName="srce" projectFiles="true">
+              </logicalFolder>
+              <itemPath>../../../3rd-party/bluedroid/encoder/Makefile.inc</itemPath>
+            </logicalFolder>
+          </logicalFolder>
+          <logicalFolder name="mbedtls" displayName="mbedtls" projectFiles="true">
+            <logicalFolder name="include" displayName="include" projectFiles="true">
+              <logicalFolder name="mbedtls" displayName="mbedtls" projectFiles="true">
+                <itemPath>../../../3rd-party/mbedtls/include/mbedtls/bignum.h</itemPath>
+                <itemPath>../../../3rd-party/mbedtls/include/mbedtls/bn_mul.h</itemPath>
+                <itemPath>../../../3rd-party/mbedtls/include/mbedtls/check_config.h</itemPath>
+                <itemPath>../../../3rd-party/mbedtls/include/mbedtls/config.h</itemPath>
+                <itemPath>../../../3rd-party/mbedtls/include/mbedtls/ecp.h</itemPath>
+                <itemPath>../../../3rd-party/mbedtls/include/mbedtls/memory_buffer_alloc.h</itemPath>
+                <itemPath>../../../3rd-party/mbedtls/include/mbedtls/platform.h</itemPath>
+              </logicalFolder>
+            </logicalFolder>
+          </logicalFolder>
+        </logicalFolder>
         <logicalFolder name="ble" displayName="ble" projectFiles="true">
-          <itemPath>../../../src/ad_parser.h</itemPath>
           <itemPath>../../../src/ble/ancs_client.h</itemPath>
           <itemPath>../../../src/ble/att_db.h</itemPath>
           <itemPath>../../../src/ble/att_dispatch.h</itemPath>
@@ -59,6 +108,7 @@
           <itemPath>../../../src/l2cap.h</itemPath>
           <itemPath>../../../src/l2cap_signaling.h</itemPath>
           <itemPath>../../../src/btstack_uart_block.h</itemPath>
+          <itemPath>../../../src/ad_parser.h</itemPath>
         </logicalFolder>
       </logicalFolder>
       <logicalFolder name="f2" displayName="framework" projectFiles="true">
@@ -107,13 +157,64 @@
         <itemPath>../../../example/spp_and_le_counter.c</itemPath>
       </logicalFolder>
       <logicalFolder name="f3" displayName="btstack" projectFiles="true">
+        <logicalFolder name="3rd-party" displayName="3rd-party" projectFiles="true">
+          <logicalFolder name="bluedroid" displayName="bluedroid" projectFiles="true">
+            <logicalFolder name="decoder" displayName="decoder" projectFiles="true">
+              <logicalFolder name="include" displayName="include" projectFiles="true">
+              </logicalFolder>
+              <logicalFolder name="srce" displayName="srce" projectFiles="true">
+                <itemPath>../../../3rd-party/bluedroid/decoder/srce/alloc.c</itemPath>
+                <itemPath>../../../3rd-party/bluedroid/decoder/srce/bitalloc-sbc.c</itemPath>
+                <itemPath>../../../3rd-party/bluedroid/decoder/srce/bitalloc.c</itemPath>
+                <itemPath>../../../3rd-party/bluedroid/decoder/srce/bitstream-decode.c</itemPath>
+                <itemPath>../../../3rd-party/bluedroid/decoder/srce/decoder-oina.c</itemPath>
+                <itemPath>../../../3rd-party/bluedroid/decoder/srce/decoder-private.c</itemPath>
+                <itemPath>../../../3rd-party/bluedroid/decoder/srce/decoder-sbc.c</itemPath>
+                <itemPath>../../../3rd-party/bluedroid/decoder/srce/dequant.c</itemPath>
+                <itemPath>../../../3rd-party/bluedroid/decoder/srce/framing-sbc.c</itemPath>
+                <itemPath>../../../3rd-party/bluedroid/decoder/srce/framing.c</itemPath>
+                <itemPath>../../../3rd-party/bluedroid/decoder/srce/oi_codec_version.c</itemPath>
+                <itemPath>../../../3rd-party/bluedroid/decoder/srce/synthesis-8-generated.c</itemPath>
+                <itemPath>../../../3rd-party/bluedroid/decoder/srce/synthesis-dct8.c</itemPath>
+                <itemPath>../../../3rd-party/bluedroid/decoder/srce/synthesis-sbc.c</itemPath>
+              </logicalFolder>
+            </logicalFolder>
+            <logicalFolder name="encoder" displayName="encoder" projectFiles="true">
+              <logicalFolder name="include" displayName="include" projectFiles="true">
+              </logicalFolder>
+              <logicalFolder name="srce" displayName="srce" projectFiles="true">
+                <itemPath>../../../3rd-party/bluedroid/encoder/srce/sbc_analysis.c</itemPath>
+                <itemPath>../../../3rd-party/bluedroid/encoder/srce/sbc_dct.c</itemPath>
+                <itemPath>../../../3rd-party/bluedroid/encoder/srce/sbc_dct_coeffs.c</itemPath>
+                <itemPath>../../../3rd-party/bluedroid/encoder/srce/sbc_enc_bit_alloc_mono.c</itemPath>
+                <itemPath>../../../3rd-party/bluedroid/encoder/srce/sbc_enc_bit_alloc_ste.c</itemPath>
+                <itemPath>../../../3rd-party/bluedroid/encoder/srce/sbc_enc_coeffs.c</itemPath>
+                <itemPath>../../../3rd-party/bluedroid/encoder/srce/sbc_encoder.c</itemPath>
+                <itemPath>../../../3rd-party/bluedroid/encoder/srce/sbc_packing.c</itemPath>
+              </logicalFolder>
+            </logicalFolder>
+          </logicalFolder>
+          <logicalFolder name="mbedtls" displayName="mbedtls" projectFiles="true">
+            <logicalFolder name="include" displayName="include" projectFiles="true">
+              <logicalFolder name="mbedtls" displayName="mbedtls" projectFiles="true">
+              </logicalFolder>
+            </logicalFolder>
+            <logicalFolder name="library" displayName="library" projectFiles="true">
+              <itemPath>../../../3rd-party/mbedtls/library/bignum.c</itemPath>
+              <itemPath>../../../3rd-party/mbedtls/library/ecp.c</itemPath>
+              <itemPath>../../../3rd-party/mbedtls/library/ecp_curves.c</itemPath>
+              <itemPath>../../../3rd-party/mbedtls/library/memory_buffer_alloc.c</itemPath>
+              <itemPath>../../../3rd-party/mbedtls/library/platform.c</itemPath>
+            </logicalFolder>
+          </logicalFolder>
+        </logicalFolder>
         <logicalFolder name="ble" displayName="ble" projectFiles="true">
-          <itemPath>../../../src/ad_parser.c</itemPath>
           <itemPath>../../../src/ble/att_db.c</itemPath>
           <itemPath>../../../src/ble/att_dispatch.c</itemPath>
           <itemPath>../../../src/ble/att_server.c</itemPath>
           <itemPath>../../../src/ble/le_device_db_memory.c</itemPath>
           <itemPath>../../../src/ble/sm.c</itemPath>
+          <itemPath>../../../src/ble/sm_mbedtls_allocator.c</itemPath>
         </logicalFolder>
         <logicalFolder name="chipset-csr" displayName="chipset-csr" projectFiles="true">
           <itemPath>../../../chipset/csr/btstack_chipset_csr.c</itemPath>
@@ -143,6 +244,7 @@
           <itemPath>../../../src/hci_transport_h4.c</itemPath>
           <itemPath>../../../src/hci_transport_h5.c</itemPath>
           <itemPath>../../../src/btstack_slip.c</itemPath>
+          <itemPath>../../../src/ad_parser.c</itemPath>
         </logicalFolder>
       </logicalFolder>
       <logicalFolder name="f2" displayName="framework" projectFiles="true">
@@ -198,6 +300,7 @@
     <Elem>../../../chipset/csr</Elem>
     <Elem>../../../example</Elem>
     <Elem>../../../platform/embedded</Elem>
+    <Elem>../../../3rd-party</Elem>
   </sourceRootList>
   <projectmakefile>Makefile</projectmakefile>
   <confs>
@@ -243,7 +346,7 @@
         <property key="enable-unroll-loops" value="false"/>
         <property key="exclude-floating-point" value="false"/>
         <property key="extra-include-directories"
-                  value=".;../../../..;../src;../src/system_config/bt_audio_dk;../../../src;../../../chipset/csr;../../../platform/embedded"/>
+                  value=".;../../../..;../src;../src/system_config/bt_audio_dk;../../../src;../../../chipset/csr;../../../platform/embedded;../../../3rd-party/mbedtls/include;../../../3rd-party/bluedroid/decoder/include;../../../3rd-party/bluedroid/encoder/include"/>
         <property key="generate-16-bit-code" value="false"/>
         <property key="generate-micro-compressed-code" value="false"/>
         <property key="isolate-each-function" value="false"/>

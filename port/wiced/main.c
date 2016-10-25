@@ -38,6 +38,7 @@
 #include "btstack.h"
 #include "btstack_chipset_bcm.h"
 #include "btstack_run_loop_wiced.h"
+#include "btstack_link_key_db_wiced_dct.h"
 
 #include "generated_mac_address.txt"
 
@@ -86,7 +87,7 @@ void application_start(void){
 
     // init HCI
     hci_init(hci_transport_h4_instance(NULL), (void*) &hci_transport_config_uart);
-    hci_set_link_key_db(btstack_link_key_db_memory_instance());
+    hci_set_link_key_db(btstack_link_key_db_wiced_dct_instance());
     hci_set_chipset(btstack_chipset_bcm_instance());
 
     // inform about BTstack state
