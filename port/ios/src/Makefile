@@ -8,51 +8,43 @@ ARCHS = armv6 arm64
 
 BTSTACK_ROOT=../../..
 
-VPATH += $(BTSTACK_ROOT)/src \
-		 $(BTSTACK_ROOT)/src/classic \
-		 $(BTSTACK_ROOT)/platform/posix \
-		 $(BTSTACK_ROOT)/platform/daemon/src \
-		 $(BTSTACK_ROOT)/platform/corefoundation \
-		 $(BTSTACK_ROOT)/port/ios/SpringBoardAccess
-
 LIBRARY_NAME = libBTstack
 libBTstack_FILES = \
-	btstack.c \
-	btstack_linked_list.c \
-	btstack_run_loop.c \
-	btstack_run_loop_corefoundation.m \
-	btstack_run_loop_posix.c \
-	daemon_cmds.c \
-	hci_cmd.c \
-	hci_dump.c \
-	sdp_util.c \
-	spp_server.c \
-	socket_connection.c \
-	btstack_util.c \
+	$(BTSTACK_ROOT)/src/btstack_linked_list.c \
+	$(BTSTACK_ROOT)/src/btstack_run_loop.c \
+	$(BTSTACK_ROOT)/src/hci_cmd.c \
+	$(BTSTACK_ROOT)/src/hci_dump.c \
+	$(BTSTACK_ROOT)/src/btstack_util.c \
+	$(BTSTACK_ROOT)/platform/daemon/src/btstack.c \
+ 	$(BTSTACK_ROOT)/platform/daemon/src/daemon_cmds.c \
+    $(BTSTACK_ROOT)/platform/daemon/src/socket_connection.c \
+	$(BTSTACK_ROOT)/platform/corefoundation/btstack_run_loop_corefoundation.m \
+    $(BTSTACK_ROOT)/platform/posix/btstack_run_loop_posix.c \
+	$(BTSTACK_ROOT)/src/classic/sdp_util.c \
+	$(BTSTACK_ROOT)/src/classic/spp_server.c \
 
 libBTstack_CFLAGS = -I$(BTSTACK_ROOT)/src/ble -I$(BTSTACK_ROOT)/src -I..
 
 TOOL_NAME = BTdaemon
 BTdaemon_FILES = \
-	$(libBTstack_FILES)  	  \
+	$(libBTstack_FILES)  	  							  \
+	$(BTSTACK_ROOT)/src/hci.c                             \
+	$(BTSTACK_ROOT)/src/l2cap.c                           \
+	$(BTSTACK_ROOT)/src/l2cap_signaling.c                 \
+	$(BTSTACK_ROOT)/src/btstack_memory.c                  \
+	$(BTSTACK_ROOT)/src/btstack_memory_pool.c             \
+	$(BTSTACK_ROOT)/src/classic/rfcomm.c                  \
+	$(BTSTACK_ROOT)/src/classic/sdp_server.c              \
+    $(BTSTACK_ROOT)/src/classic/sdp_client.c              \
+    $(BTSTACK_ROOT)/src/classic/sdp_client_rfcomm.c       \
+	$(BTSTACK_ROOT)/platform/corefoundation/btstack_device_name_db_corefoundation.m  \
+	$(BTSTACK_ROOT)/platform/corefoundation/btstack_link_key_db_corefoundation.m  \
+    $(BTSTACK_ROOT)/platform/corefoundation/rfcomm_service_db_corefoundation.m \
+	$(BTSTACK_ROOT)/platform/daemon/src/daemon.c  		  \
 	btstack_control_iphone.m  \
-	btstack_device_name_db_corefoundation.m  \
-	btstack_link_key_db_corefoundation.m  \
-	btstack_memory.c          \
-	btstack_memory_pool.c     \
-	daemon.c  				  \
-	hci.c                     \
 	hci_transport_h4_iphone.c \
-	btstack_uart_block_posix.c \
-	l2cap.c                   \
-	l2cap_signaling.c         \
 	platform_iphone.m         \
-	rfcomm.c                  \
-	sdp_server.c                     \
-	SpringBoardAccess.c       \
-    rfcomm_service_db_corefoundation.m \
-    sdp_client.c              \
-    sdp_client_rfcomm.c        \
+	../SpringBoardAccess/SpringBoardAccess.c       \
 
 BTdaemon_CFLAGS = \
 	-I$(BTSTACK_ROOT)/src \
@@ -61,6 +53,11 @@ BTdaemon_CFLAGS = \
 	-I$(BTSTACK_ROOT)/platform/corefoundation \
 	-I..
 BTdaemon_PRIVATE_FRAMEWORKS = IOKIT
+
+
+include $(THEOS)/makefiles/common.mk
+include $(THEOS_MAKE_PATH)/library.mk
+include $(THEOS_MAKE_PATH)/tool.mk
 
 before-all::
 	../../../tool/get_version.sh
@@ -71,7 +68,3 @@ after-BTdaemon-stage::
 	mkdir -p ../.theos/_/usr/local/bin
 	ln -s /usr/lib/libBTstack.dylib ../.theos/_/usr/local/lib
 	ln -s /usr/bin/BTdaemon         ../.theos/_/usr/local/bin/BTdaemon
-
-include $(THEOS)/makefiles/common.mk
-include $(THEOS_MAKE_PATH)/library.mk
-include $(THEOS_MAKE_PATH)/tool.mk
