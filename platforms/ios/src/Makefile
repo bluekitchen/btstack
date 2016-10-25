@@ -7,42 +7,38 @@ TARGET_IPHONEOS_DEPLOYMENT_VERSION_arm64 = 7.0
 ARCHS = armv6 arm64
 
 BTSTACK_ROOT=../../..
-POSIX_ROOT=$(BTSTACK_ROOT)/platforms/posix
-DAEMON_ROOT=$(BTSTACK_ROOT)/platforms/daemon
-
-VPATH += $(BTSTACK_ROOT)/src
 
 LIBRARY_NAME = libBTstack
 libBTstack_FILES = \
-	hci_cmds.c \
-	hci_dump.c \
-	linked_list.c \
-	run_loop.c \
-	sdp_util.c \
-	utils.c \
+	$(BTSTACK_ROOT)/src/hci_cmds.c \
+	$(BTSTACK_ROOT)/src/hci_dump.c \
+	$(BTSTACK_ROOT)/src/linked_list.c \
+	$(BTSTACK_ROOT)/src/run_loop.c \
+	$(BTSTACK_ROOT)/src/sdp_util.c \
+	$(BTSTACK_ROOT)/src/utils.c \
 	$(BTSTACK_ROOT)/platforms/cocoa/run_loop_cocoa.m \
-	$(POSIX_ROOT)/src/run_loop_posix.c \
-	$(DAEMON_ROOT)/src/btstack.c \
-	$(DAEMON_ROOT)/src/socket_connection.c \
+	$(BTSTACK_ROOT)/platforms/posix/src/run_loop_posix.c \
+	$(BTSTACK_ROOT)/platforms/daemon/src/btstack.c \
+	$(BTSTACK_ROOT)/platforms/daemon/src/socket_connection.c \
 
 libBTstack_CFLAGS = -I$(BTSTACK_ROOT)/include -I$(BTSTACK_ROOT)/ble -I$(BTSTACK_ROOT)/src -I..
 
 TOOL_NAME = BTdaemon
 BTdaemon_FILES = \
 	$(libBTstack_FILES)  	\
-	btstack_memory.c        \
-	hci.c                   \
-	l2cap.c                 \
-	l2cap_signaling.c       \
-	memory_pool.c           \
-	rfcomm.c                \
-	sdp.c                   \
-    sdp_client.c            \
-    sdp_parser.c            \
-    sdp_query_rfcomm.c      \
-    sdp_query_util.c        \
-	$(DAEMON_ROOT)/src/daemon.c  \
-	$(POSIX_ROOT)/src/hci_transport_h4.c 		 	\
+	$(BTSTACK_ROOT)/src/btstack_memory.c        \
+	$(BTSTACK_ROOT)/src/hci.c                   \
+	$(BTSTACK_ROOT)/src/l2cap.c                 \
+	$(BTSTACK_ROOT)/src/l2cap_signaling.c       \
+	$(BTSTACK_ROOT)/src/memory_pool.c           \
+	$(BTSTACK_ROOT)/src/rfcomm.c                \
+	$(BTSTACK_ROOT)/src/sdp.c                   \
+    $(BTSTACK_ROOT)/src/sdp_client.c            \
+    $(BTSTACK_ROOT)/src/sdp_parser.c            \
+    $(BTSTACK_ROOT)/src/sdp_query_rfcomm.c      \
+    $(BTSTACK_ROOT)/src/sdp_query_util.c        \
+	$(BTSTACK_ROOT)/platforms/daemon/src/daemon.c  \
+	$(BTSTACK_ROOT)/platforms/posix/src/hci_transport_h4.c 		 	\
 	$(BTSTACK_ROOT)/platforms/ios/src/bt_control_iphone.m     	\
 	$(BTSTACK_ROOT)/platforms/ios/src/hci_transport_h4_iphone.c  \
 	$(BTSTACK_ROOT)/platforms/ios/src/platform_iphone.m       	\

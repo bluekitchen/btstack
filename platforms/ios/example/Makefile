@@ -8,20 +8,19 @@ TARGET_IPHONEOS_DEPLOYMENT_VERSION_arm64 = 7.0
 ARCHS = armv6 arm64
 
 BTSTACK_ROOT=../../..
-VPATH += $(BTSTACK_ROOT)/example/daemon
 
 ADDITIONAL_CFLAGS =  -I.. -I$(BTSTACK_ROOT)/include
 ADDITIONAL_LDFLAGS = -L../src/.theos/obj -lBTstack
 
 TOOL_NAME = inquiry l2cap-test rfcomm-echo rfcomm-cat rfcomm-test l2cap-server l2cap-throughput
 
-inquiry_FILES = inquiry.c
-rfcomm-echo_FILES = rfcomm-echo.c
-rfcomm-cat_FILES = rfcomm-cat.c
-rfcomm-test_FILES = rfcomm-test.c
-l2cap-test_FILES = test.c
-l2cap-server_FILES = l2cap-server.c
-l2cap-throughput_FILES = l2cap-throughput.c
+inquiry_FILES          = $(BTSTACK_ROOT)/example/daemon/inquiry.c
+rfcomm-echo_FILES      = $(BTSTACK_ROOT)/example/daemon/rfcomm-echo.c
+rfcomm-cat_FILES       = $(BTSTACK_ROOT)/example/daemon/rfcomm-cat.c
+rfcomm-test_FILES      = $(BTSTACK_ROOT)/example/daemon/rfcomm-test.c
+l2cap-test_FILES       = $(BTSTACK_ROOT)/example/daemon/test.c
+l2cap-server_FILES     = $(BTSTACK_ROOT)/example/daemon/l2cap-server.c
+l2cap-throughput_FILES = $(BTSTACK_ROOT)/example/daemon/l2cap-throughput.c
 
 include $(THEOS)/makefiles/common.mk
 include $(THEOS_MAKE_PATH)/tool.mk
