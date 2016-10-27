@@ -149,7 +149,7 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                     cid = l2cap_event_incoming_connection_get_local_cid(packet);
                     if (psm != TSPX_psm) break;
                     printf("L2CAP: Accepting incoming Classic connection request for 0x%02x, PSM %02x\n", cid, psm); 
-                    l2cap_le_accept_connection(cid, receive_buffer_X, sizeof(receive_buffer_X), initial_credits);
+                    l2cap_accept_connection(cid);
                     break;
                 case L2CAP_EVENT_CHANNEL_OPENED:
                     // inform about new l2cap connection
