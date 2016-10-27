@@ -820,11 +820,17 @@ typedef uint8_t sm_key_t[16];
 #define SM_EVENT_IDENTITY_RESOLVING_FAILED                       0xD9
 
  /**
-  * @format H1B2
+  * @brief Identify resolving succeeded
+  *
+  * @format H1B1B
   * @param handle
   * @param addr_type
   * @param address
-  * @param le_device_db_index
+  * @param identity_addr_type
+  * @param identity_address
+  *
+  * @note le_device_db_index was removed, please use provided identity information directly
+  *
   */
 #define SM_EVENT_IDENTITY_RESOLVING_SUCCEEDED                    0xDA
 
@@ -852,6 +858,17 @@ typedef uint8_t sm_key_t[16];
   */
 #define SM_EVENT_KEYPRESS_NOTIFICATION                           0xDD
 
+ /**
+  * @brief Emitted during pairing to inform app about address used as identity
+  *
+  * @format H1B1B
+  * @param handle
+  * @param addr_type
+  * @param address
+  * @param identity_addr_type
+  * @param identity_address
+  */
+#define SM_EVENT_IDENTITY_CREATED                                0xDE
 
 // GAP
 
