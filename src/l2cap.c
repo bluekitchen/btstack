@@ -561,8 +561,7 @@ static void l2cap_run(void){
         uint16_t result   = signaling_responses[0].data;    // CONNECTION_REQUEST, COMMAND_REJECT
         uint8_t  response_code = signaling_responses[0].code;
 
-        // avoid warnings
-        (void) infoType;
+        UNUSED(infoType);
 
         // remove first item before sending (to avoid sending response mutliple times)
         signaling_responses_pending--;
@@ -628,7 +627,7 @@ static void l2cap_run(void){
     }
     
     btstack_linked_list_iterator_t it;    
-    (void) it;
+    UNUSED(it);
 
 #ifdef ENABLE_CLASSIC
     uint8_t  config_options[4];
@@ -1074,9 +1073,9 @@ static void l2cap_hci_event_handler(uint8_t packet_type, uint16_t cid, uint8_t *
     btstack_linked_list_iterator_t it;
 
     // avoid unused warnings
-    (void) address;
-    (void) hci_con_used; 
-    (void) it; 
+    UNUSED(address);
+    UNUSED(hci_con_used);
+    UNUSED(it);
 
     switch(hci_event_packet_get_type(packet)){
             
@@ -1841,7 +1840,7 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
 static void l2cap_acl_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size ){
         
     l2cap_channel_t * l2cap_channel;
-    (void) l2cap_channel;
+    UNUSED(l2cap_channel);
 
     // Get Channel ID
     uint16_t channel_id = READ_L2CAP_CHANNEL_ID(packet); 

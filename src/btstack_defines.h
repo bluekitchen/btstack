@@ -46,6 +46,10 @@
 #include <stdint.h>
 #include "btstack_linked_list.h" 
 
+
+// UNUSED macro
+#define UNUSED(x) (void)(sizeof(x))
+
 // TYPES
 
 // packet handler
