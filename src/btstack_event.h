@@ -2599,13 +2599,22 @@ static inline void sm_event_identity_resolving_succeeded_get_address(const uint8
     reverse_bd_addr(&event[5], address);    
 }
 /**
- * @brief Get field le_device_db_index from event SM_EVENT_IDENTITY_RESOLVING_SUCCEEDED
+ * @brief Get field identity_addr_type from event SM_EVENT_IDENTITY_RESOLVING_SUCCEEDED
  * @param event packet
- * @return le_device_db_index
- * @note: btstack_type 2
+ * @return identity_addr_type
+ * @note: btstack_type 1
  */
-static inline uint16_t sm_event_identity_resolving_succeeded_get_le_device_db_index(const uint8_t * event){
-    return little_endian_read_16(event, 11);
+static inline uint8_t sm_event_identity_resolving_succeeded_get_identity_addr_type(const uint8_t * event){
+    return event[11];
+}
+/**
+ * @brief Get field identity_address from event SM_EVENT_IDENTITY_RESOLVING_SUCCEEDED
+ * @param event packet
+ * @param Pointer to storage for identity_address
+ * @note: btstack_type B
+ */
+static inline void sm_event_identity_resolving_succeeded_get_identity_address(const uint8_t * event, bd_addr_t identity_address){
+    reverse_bd_addr(&event[12], identity_address);    
 }
 #endif
 
@@ -2696,6 +2705,54 @@ static inline hci_con_handle_t sm_event_keypress_notification_get_handle(const u
  */
 static inline uint8_t sm_event_keypress_notification_get_action(const uint8_t * event){
     return event[4];
+}
+#endif
+
+#ifdef ENABLE_BLE
+/**
+ * @brief Get field handle from event SM_EVENT_IDENTITY_CREATED
+ * @param event packet
+ * @return handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t sm_event_identity_created_get_handle(const uint8_t * event){
+    return little_endian_read_16(event, 2);
+}
+/**
+ * @brief Get field addr_type from event SM_EVENT_IDENTITY_CREATED
+ * @param event packet
+ * @return addr_type
+ * @note: btstack_type 1
+ */
+static inline uint8_t sm_event_identity_created_get_addr_type(const uint8_t * event){
+    return event[4];
+}
+/**
+ * @brief Get field address from event SM_EVENT_IDENTITY_CREATED
+ * @param event packet
+ * @param Pointer to storage for address
+ * @note: btstack_type B
+ */
+static inline void sm_event_identity_created_get_address(const uint8_t * event, bd_addr_t address){
+    reverse_bd_addr(&event[5], address);    
+}
+/**
+ * @brief Get field identity_addr_type from event SM_EVENT_IDENTITY_CREATED
+ * @param event packet
+ * @return identity_addr_type
+ * @note: btstack_type 1
+ */
+static inline uint8_t sm_event_identity_created_get_identity_addr_type(const uint8_t * event){
+    return event[11];
+}
+/**
+ * @brief Get field identity_address from event SM_EVENT_IDENTITY_CREATED
+ * @param event packet
+ * @param Pointer to storage for identity_address
+ * @note: btstack_type B
+ */
+static inline void sm_event_identity_created_get_identity_address(const uint8_t * event, bd_addr_t identity_address){
+    reverse_bd_addr(&event[12], identity_address);    
 }
 #endif
 

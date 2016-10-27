@@ -48,6 +48,7 @@
 #include "btstack_memory.h"
 #include "gap.h"
 #include "hci.h"
+#include "hci_dump.h"
 #include "l2cap.h"
 
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
@@ -662,6 +663,8 @@ static void sm_setup_event_base(uint8_t * event, int event_size, uint8_t type, h
 }
 
 static void sm_dispatch_event(uint8_t packet_type, uint16_t channel, uint8_t * packet, uint16_t size){
+    // log event
+    hci_dump_packet(packet_type, 1, packet, size);
     // dispatch to all event handlers
     btstack_linked_list_iterator_t it;
     btstack_linked_list_iterator_init(&it, &sm_event_handlers);
@@ -685,9 +688,15 @@ static void sm_notify_client_passkey(uint8_t type, hci_con_handle_t con_handle, 
 }
 
 static void sm_notify_client_index(uint8_t type, hci_con_handle_t con_handle, uint8_t addr_type, bd_addr_t address, uint16_t index){
-    uint8_t event[13];
+    // fetch addr and addr type from db
+    bd_addr_t identity_address;
+    int identity_address_type;
+    le_device_db_info(index, &identity_address_type, identity_address, NULL);
+
+    uint8_t event[18];
     sm_setup_event_base(event, sizeof(event), type, con_handle, addr_type, address);
-    little_endian_store_16(event, 11, index);
+    event[11] = identity_address_type;
+    reverse_bd_addr(identity_address, &event[12]);
     sm_dispatch_event(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
@@ -1266,6 +1275,8 @@ static void sm_key_distribution_handle_all_received(sm_connection_t * sm_conn){
     if (le_db_index < 0) {
         le_db_index = le_device_db_add(setup->sm_peer_addr_type, setup->sm_peer_address, setup->sm_peer_irk);
     }
+
+    sm_notify_client_index(SM_EVENT_IDENTITY_CREATED, sm_conn->sm_handle, setup->sm_peer_addr_type, setup->sm_peer_address, le_db_index);
 
     if (le_db_index >= 0){
         
@@ -2896,8 +2907,7 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                             sm_conn->sm_handle = con_handle;
                             sm_conn->sm_role = packet[6];
                             sm_conn->sm_peer_addr_type = packet[7];
-                            reverse_bd_addr(&packet[8],
-                                            sm_conn->sm_peer_address);
+                            reverse_bd_addr(&packet[8], sm_conn->sm_peer_address);
 
                             log_info("New sm_conn, role %s", sm_conn->sm_role ? "slave" : "master");
 
