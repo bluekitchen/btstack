@@ -7,11 +7,12 @@
 # PRIMARY_SERVICE, SERVICE_UUID
 # CHARACTERISTIC, ATTRIBUTE_TYPE_UUID, [READ | WRITE | DYNAMIC], VALUE
 
-import re
-import io
-import csv
-import string
 import codecs
+import csv
+import io
+import os
+import re
+import string
 
 header = '''
 // {0} generated from {1} for BTstack
@@ -87,6 +88,16 @@ defines = []
 handle = 1
 total_size = 0
 
+def read_defines(infile):
+    defines = dict()
+    with open (infile, 'rt') as fin:
+        for line in fin:
+            parts = re.match('#define\s+(\w+)\s+(\w+)',line)
+            if parts and len(parts.groups()) == 2:
+                (key, value) = parts.groups()
+                defines[key] = int(value, 16)
+    return defines
+
 def keyForUUID(uuid):
     keyUUID = ""
     for i in uuid:
@@ -114,6 +125,9 @@ def parseUUID128(uuid):
 def parseUUID(uuid):
     if uuid in assigned_uuids:
         return twoByteLEFor(assigned_uuids[uuid])
+    uuid_upper = uuid.upper().replace('.','_')
+    if uuid_upper in bluetooth_gatt:
+        return twoByteLEFor(bluetooth_gatt[uuid_upper])
     if is_128bit_uuid(uuid):
         return parseUUID128(uuid)
     uuidInt = int(uuid, 16)
@@ -492,11 +506,19 @@ def parse(fname_in, fin, fname_out, fout):
     fout.write(header.format(fname_out, fname_in))
     fout.write('{\n')
     
+    line_count = 0;
     for line in fin:
         line = line.strip("\n\r ")
-        
-        if line.startswith("#") or line.startswith("//"):
-            fout.write("//" + line.lstrip('/#') + '\n')
+        line_count += 1
+
+        if line.startswith("//"):
+            fout.write("//" + line.lstrip('/') + '\n')
+            continue
+
+        if line.startswith("#"):
+            print ("WARNING: #TODO in line %u not handled, skipping declaration:" % line_count)
+            print ("'%s'" % line)
+            fout.write("// " + line + '\n')
             continue
             
         if len(line) == 0:
@@ -533,8 +555,11 @@ def parse(fname_in, fin, fname_out, fout):
                 parseCharacteristicUserDescription(fout, parts)
                 continue
 
-            # 2902 Client Characteristic Configuration - included in Characteristic if
+
+            # 2902 Client Characteristic Configuration - automatically included in Characteristic if
             # notification / indication is supported
+            if parts[0] == 'CHARACTERISTIC_USER_DESCRIPTION':
+                continue
 
             # 2903
             if parts[0] == 'SERVER_CHARACTERISTIC_CONFIGURATION':
@@ -620,13 +645,18 @@ if (len(sys.argv) < 3):
     print(usage)
     sys.exit(1)
 try:
+    # read defines from bluetooth_gatt.h
+    btstack_root = os.path.abspath(os.path.dirname(sys.argv[0]) + '/..')
+    gen_path = btstack_root + '/src/bluetooth_gatt.h'
+    bluetooth_gatt = read_defines(gen_path)
+
     filename = sys.argv[2]
     fin  = codecs.open (sys.argv[1], encoding='utf-8')
     fout = open (filename, 'w')
     parse(sys.argv[1], fin, filename, fout)
     listHandles(fout)    
     fout.close()
-    print('Created', filename)
+    print('Created %s' % filename)
 
 except IOError as e:
     print(usage)

@@ -77,6 +77,8 @@ def handle_todo(fout, name):
     print('-- Descriptor %-40s - TODO: Please set values' % name)
     fout.write('// TODO: %s: please set values\n' % name)
 
+def define_for_type(type):
+    return type.upper().replace('.','_')
 
 def convert_service(fout, specification_type):
     url = 'https://www.bluetooth.com/api/gatt/xmlfile?xmlFileName=%s.xml' % specification_type
@@ -105,7 +107,7 @@ def convert_service(fout, specification_type):
     fout.write('// %s\n' % url)
     fout.write('\n')
     fout.write('// %s %s\n' % (service_name, service_uuid))
-    fout.write('PRIMARY_SERVICE, %s\n' % specification_type) 
+    fout.write('PRIMARY_SERVICE, %s\n' % define_for_type(specification_type)) 
 
     characteristics = tree.find('Characteristics')
     for characteristic in characteristics:
@@ -114,7 +116,7 @@ def convert_service(fout, specification_type):
         property_list_human = parse_properties(characteristic)
         properties = ' | '.join( ['DYNAMIC'] + property_list_human).upper()
         print("- Characteristic %s - properties %s" % (name, property_list_human))
-        fout.write('CHARACTERISTIC, %s, %s,\n' % (type, properties))
+        fout.write('CHARACTERISTIC, %s, %s,\n' % (define_for_type(type), properties))
 
         descriptors = characteristic.find('Descriptors')
         for descriptor in descriptors:
@@ -124,27 +126,28 @@ def convert_service(fout, specification_type):
             properties = ' | '.join(property_list_human).upper()
 
             if (type == 'org.bluetooth.descriptor.gatt.client_characteristic_configuration'):
-                print('-- Descriptor %-40s - SKIPPED: automatically generated currently by compile_gatt.py' % name)
+                print('-- Descriptor %-40s' % name)
+                fout.write('CLIENT_CHARACTERISTIC_CONFIGURATION, %s,\n' % properties)
+                continue
+
+            if (type == 'org.bluetooth.descriptor.gatt.server_characteristic_configuration'):
+                print('-- Descriptor %-40s' % name)
+                fout.write('SERVER_CHARACTERISTIC_CONFIGURATION, %s,\n' % properties)
                 continue
 
             if (type == 'org.bluetooth.descriptor.gatt.characteristic_presentation_format'):
                 handle_todo(fout, 'Characteristic Presentation Format')
-                fout.write('CHARACTERISTIC_FORMAT, %s, _format_, _exponent_, _unit_, _name_space_, _description_\n' % properties)
+                fout.write('#TODO CHARACTERISTIC_FORMAT, %s, _format_, _exponent_, _unit_, _name_space_, _description_\n' % properties)
                 continue
 
             if (type == 'org.bluetooth.descriptor.gatt.characteristic_user_description'):
                 handle_todo(fout, 'Characteristic User Description')
-                fout.write('CHARACTERISTIC_USER_DESCRIPTION, %s, _user_description_\n' % properties)
-                continue
-
-            if (type == 'org.bluetooth.descriptor.gatt.server_characteristic_configuration'):
-                handle_todo(fout, 'Server Characteristic Configuration')
-                fout.write('SERVER_CHARACTERISTIC_CONFIGURATION, %s,\n' % properties)
+                fout.write('#TODO CHARACTERISTIC_USER_DESCRIPTION, %s, _user_description_\n' % properties)
                 continue
 
             if (type == 'org.bluetooth.descriptor.gatt.characteristic_aggregate_format'):
                 handle_todo(fout, 'Characteristic Aggregate Format')
-                fout.write('CHARACTERISTIC_AGGREGATE_FORMAT, %s, _list_of_handles_\n' % properties)
+                fout.write('#TODO CHARACTERISTIC_AGGREGATE_FORMAT, %s, _list_of_handles_\n' % properties)
                 continue
 
             if (type == 'org.bluetooth.descriptor.valid_range'):
