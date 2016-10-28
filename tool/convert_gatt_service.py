@@ -119,6 +119,9 @@ def convert_service(fout, specification_type):
         fout.write('CHARACTERISTIC, %s, %s,\n' % (define_for_type(type), properties))
 
         descriptors = characteristic.find('Descriptors')
+        if descriptors is None:
+            continue
+
         for descriptor in descriptors:
             type = descriptor.attrib['type']
             name = descriptor.attrib['name']
@@ -130,7 +133,8 @@ def convert_service(fout, specification_type):
                 fout.write('CLIENT_CHARACTERISTIC_CONFIGURATION, %s,\n' % properties)
                 continue
 
-            if (type == 'org.bluetooth.descriptor.gatt.server_characteristic_configuration'):
+            if (type == 'org.bluetooth.descriptor.gatt.server_characteristic_configuration' or
+                type == 'org.bluetooth.descriptor.server_characteristic_configuration'):
                 print('-- Descriptor %-40s' % name)
                 fout.write('SERVER_CHARACTERISTIC_CONFIGURATION, %s,\n' % properties)
                 continue
@@ -186,7 +190,7 @@ def convert_service(fout, specification_type):
                 print('-- Descriptor %-40s - WARNING: not supported yet' % name)
                 continue
 
-            print('-- Descriptor %-40s -- WARNING: not supported yet' % name)
+            print('-- Descriptor %-40s -- WARNING: not supported yet %s' % (name, type))
 
 
 if (len(sys.argv) < 2):
