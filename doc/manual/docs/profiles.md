@@ -447,3 +447,13 @@ compiler creates a list of defines in the generated \*.h file.
 Similar to other protocols, it might be not possible to send any time.
 To send a Notification, you can call *att_server_request_can_send_now*
 to receive a ATT_EVENT_CAN_SEND_NOW event.
+
+To facilitate the creation of .gatt files for standard profiles defined by the Bluetooth SIG,
+the *tool/convert_gatt_service.py* script can be used. When run without a parameter, it queries the
+Bluetooth SIG website and lists the available Services by their Specification Name, e.g., 
+*org.bluetooth.service.battery_service*.
+
+You can then run the script again with the Specification Name as parameter to generate
+the file *org.bluetooth.service.battery_service.gatt*. Most of the times, custom parameters
+need to get set in the .gatt file. Please pay attention to the tool output and have a look
+at the generated .gatt file.
