@@ -83,7 +83,8 @@ presentation_formats = dict()
 current_service_uuid_string = ""
 current_service_start_handle = 0
 current_characteristic_uuid_string = ""
-defines = []
+defines_for_characteristics = []
+defines_for_services = []
 
 handle = 1
 total_size = 0
@@ -175,17 +176,22 @@ def is_string(text):
 def add_client_characteristic_configuration(properties):
     return properties & (property_flags['NOTIFY'] | property_flags['INDICATE'])
 
+def serviceDefinitionComplete(fout):
+    global services
+    if current_service_uuid_string:
+        fout.write("\n")
+        # print("append service %s = [%d, %d]" % (current_characteristic_uuid_string, current_service_start_handle, handle-1))
+        defines_for_services.append('#define ATT_SERVICE_%s_START_HANDLE 0x%04x' % (current_service_uuid_string, current_service_start_handle))
+        defines_for_services.append('#define ATT_SERVICE_%s_END_HANDLE 0x%04x' % (current_service_uuid_string, handle-1))
+        services[current_service_uuid_string] = [current_service_start_handle, handle-1]
+
 def parseService(fout, parts, service_type):
     global handle
     global total_size
     global current_service_uuid_string
     global current_service_start_handle
-    global services
 
-    if current_service_uuid_string:
-        fout.write("\n")
-        # print("append service %s = [%d, %d]\n" % (current_characteristic_uuid_string, current_service_start_handle, handle-1))
-        services[current_service_uuid_string] = [current_service_start_handle, handle-1]
+    serviceDefinitionComplete(fout)
 
     property = property_flags['READ'];
     
@@ -208,7 +214,7 @@ def parseService(fout, parts, service_type):
     write_uuid(uuid)
     fout.write("\n")
 
-    current_service_uuid_string = keyForUUID(uuid)
+    current_service_uuid_string = c_string_for_uuid(parts[1])
     current_service_start_handle = handle
     handle = handle + 1
     total_size = total_size + size
@@ -232,11 +238,11 @@ def parseIncludeService(fout, parts):
     uuid_size = len(uuid)
     if uuid_size > 2:
         uuid_size = 0
-    # print("Include Service ", keyForUUID(uuid))
+    # print("Include Service ", c_string_for_uuid(uuid))
 
     size = 2 + 2 + 2 + 2 + 4 + uuid_size
 
-    keyUUID = keyForUUID(uuid)
+    keyUUID = c_string_for_uuid(parts[1])
 
     write_indent(fout)
     write_16(fout, size)
@@ -319,7 +325,7 @@ def parseCharacteristic(fout, parts):
         write_sequence(fout,value)
 
     fout.write("\n")
-    defines.append('#define ATT_CHARACTERISTIC_%s_VALUE_HANDLE 0x%04x' % (current_characteristic_uuid_string, handle))
+    defines_for_characteristics.append('#define ATT_CHARACTERISTIC_%s_VALUE_HANDLE 0x%04x' % (current_characteristic_uuid_string, handle))
     handle = handle + 1
 
     if add_client_characteristic_configuration(properties):
@@ -333,7 +339,7 @@ def parseCharacteristic(fout, parts):
         write_16(fout, 0x2902)
         write_16(fout, 0)
         fout.write("\n")
-        defines.append('#define ATT_CHARACTERISTIC_%s_CLIENT_CONFIGURATION_HANDLE 0x%04x' % (current_characteristic_uuid_string, handle))
+        defines_for_characteristics.append('#define ATT_CHARACTERISTIC_%s_CLIENT_CONFIGURATION_HANDLE 0x%04x' % (current_characteristic_uuid_string, handle))
         handle = handle + 1
 
     if properties & property_flags['RELIABLE_WRITE']:
@@ -375,7 +381,7 @@ def parseCharacteristicUserDescription(fout, parts):
     else:
         write_sequence(fout,value)
     fout.write("\n")
-    defines.append('#define ATT_CHARACTERISTIC_%s_USER_DESCRIPTION_HANDLE 0x%04x' % (current_characteristic_uuid_string, handle))
+    defines_for_characteristics.append('#define ATT_CHARACTERISTIC_%s_USER_DESCRIPTION_HANDLE 0x%04x' % (current_characteristic_uuid_string, handle))
     handle = handle + 1
 
 def parseServerCharacteristicConfiguration(fout, parts):
@@ -395,7 +401,7 @@ def parseServerCharacteristicConfiguration(fout, parts):
     write_16(fout, handle)
     write_16(fout, 0x2903)
     fout.write("\n")
-    defines.append('#define ATT_CHARACTERISTIC_%s_SERVER_CONFIGURATION_HANDLE 0x%04x' % (current_characteristic_uuid_string, handle))
+    defines_for_characteristics.append('#define ATT_CHARACTERISTIC_%s_SERVER_CONFIGURATION_HANDLE 0x%04x' % (current_characteristic_uuid_string, handle))
     handle = handle + 1
 
 def parseCharacteristicFormat(fout, parts):
@@ -622,7 +628,8 @@ def parse(fname_in, fin, fname_out, fout):
                 continue
 
             print("WARNING: unknown token: %s\n" % (parts[0]))
-
+    
+    serviceDefinitionComplete(fout)
     write_indent(fout)
     fout.write("// END\n");
     write_indent(fout)
@@ -635,9 +642,16 @@ def parse(fname_in, fin, fname_out, fout):
 def listHandles(fout):
     fout.write('\n\n')
     fout.write('//\n')
+    fout.write('// list service handle ranges\n')
+    fout.write('//\n')
+    for define in defines_for_services:
+        fout.write(define)
+        fout.write('\n')
+    fout.write('\n')
+    fout.write('//\n')
     fout.write('// list mapping between characteristics and handles\n')
     fout.write('//\n')
-    for define in defines:
+    for define in defines_for_characteristics:
         fout.write(define)
         fout.write('\n')
 
