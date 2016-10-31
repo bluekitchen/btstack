@@ -18,7 +18,6 @@ Copyright 2016, BlueKitchen GmbH
 header = '''
 /**
  * bluetooth_gatt.h generated from Bluetooth SIG website for BTstack
- * {datetime}
  */
 
 #ifndef __BLUETOOTH_GATT_H
@@ -48,8 +47,8 @@ def scrape_page(fout, url):
         id      = children[1].text_content()
         uuid    = children[2].text_content()
         if (len(id)):
-            tag = id.upper().replace('.', '_')
-            fout.write("#define %s %s // %s\n" %  (tag, uuid, summary))
+            tag = id.upper().replace('.', '_').replace('-','_')
+            fout.write("#define %-80s %s // %s\n" %  (tag, uuid, summary))
 
 btstack_root = os.path.abspath(os.path.dirname(sys.argv[0]) + '/..')
 gen_path = btstack_root + '/src/bluetooth_gatt.h'
