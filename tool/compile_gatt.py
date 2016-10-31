@@ -13,6 +13,7 @@ import io
 import os
 import re
 import string
+import sys
 
 header = '''
 // {0} generated from {1} for BTstack
@@ -29,8 +30,6 @@ usage = '''
 Usage: ./compile_gatt.py profile.gatt profile.h
 '''
 
-import re
-import sys
 
 print('''
 BLE configuration generator for use with BTstack, v0.1
@@ -77,6 +76,7 @@ property_flags = {
     'RELIABLE_WRITE':             0x10000,
 }
 
+btstack_root = ''
 services = dict()
 characteristic_indices = dict()
 presentation_formats = dict()
@@ -504,14 +504,10 @@ def parseNumberOfDigitals(fout, parts):
     fout.write("\n")
     handle = handle + 1
 
-
-def parse(fname_in, fin, fname_out, fout):
+def parseLines(fname_in, fin, fout):
     global handle
     global total_size
-    
-    fout.write(header.format(fname_out, fname_in))
-    fout.write('{\n')
-    
+
     line_count = 0;
     for line in fin:
         line = line.strip("\n\r ")
@@ -521,8 +517,31 @@ def parse(fname_in, fin, fname_out, fout):
             fout.write("    //" + line.lstrip('/') + '\n')
             continue
 
-        if line.startswith("#"):
-            print ("WARNING: #TODO in line %u not handled, skipping declaration:" % line_count)
+        if line.startswith("#import"):
+            imported_file = ''
+            parts = re.match('#import\s+<(.*)>\w*',line)
+            if parts and len(parts.groups()) == 1:
+                imported_file = btstack_root+'/src/ble/' + parts.groups()[0]
+            parts = re.match('#import\s+"(.*)"\w*',line)
+            if parts and len(parts.groups()) == 1:
+                imported_file = os.path.abspath(os.path.dirname(fname_in) + '/'+parts.groups()[0])
+            if len(imported_file) == 0:
+                print('ERROR: #import in file %s - line %u neither <name.gatt> nor "name.gatt" form', (fname_in, line_count))
+                continue
+
+            print("Importing %s" % imported_file)
+            try:
+                imported_fin = codecs.open (imported_file, encoding='utf-8')
+                fout.write('    // ' + line + ' -- BEGIN\n')
+                parseLines(imported_file, imported_fin, fout)
+                fout.write('    // ' + line + ' -- END\n')
+            except IOError as e:
+                print('ERROR: Import failed. Please check path.')
+
+            continue
+
+        if line.startswith("#TODO"):
+            print ("WARNING: #TODO in file %s - line %u not handled, skipping declaration:" % (fname_in, line_count))
             print ("'%s'" % line)
             fout.write("// " + line + '\n')
             continue
@@ -628,7 +647,16 @@ def parse(fname_in, fin, fname_out, fout):
                 continue
 
             print("WARNING: unknown token: %s\n" % (parts[0]))
+
+def parse(fname_in, fin, fname_out, fout):
+    global handle
+    global total_size
     
+    fout.write(header.format(fname_out, fname_in))
+    fout.write('{\n')
+    
+    parseLines(fname_in, fin, fout)
+
     serviceDefinitionComplete(fout)
     write_indent(fout)
     fout.write("// END\n");
