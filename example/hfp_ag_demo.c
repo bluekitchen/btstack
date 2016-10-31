@@ -71,7 +71,7 @@ const char hfp_ag_service_name[] = "BTstack HFP AG Test";
 // static bd_addr_t device_addr = {0x00, 0x07, 0xB0, 0x83, 0x02, 0x5E};
 // CC256x
 // bd_addr_t device_addr = { 0xD0, 0x39, 0x72, 0xCD, 0x83, 0x45};
-// Minijamox
+// Mini Jambox
 bd_addr_t device_addr = { 0x00, 0x15, 0x83, 0x5F, 0x9D, 0x46};
 
 // static uint8_t codecs[] = {HFP_CODEC_CVSD, HFP_CODEC_MSBC};
@@ -298,61 +298,30 @@ static void show_usage(void){
     gap_local_bd_addr(iut_address);
 
     printf("\n--- Bluetooth HFP Audiogateway (AG) unit Test Console %s ---\n", bd_addr_to_str(iut_address));
-    printf("---\n");
+    printf("\n");
     
     printf("a - establish HFP connection to PTS module %s\n", bd_addr_to_str(device_addr));
     // printf("A - release HFP connection to PTS module\n");
     
-    printf("b - establish AUDIO connection\n");
-    printf("B - release AUDIO connection\n");
-    
-    printf("c - simulate incoming call from 1234567\n");
-    printf("C - simulate call from 1234567 dropped\n");
-
+    printf("b - establish AUDIO connection          | B - release AUDIO connection\n");
+    printf("c - simulate incoming call from 1234567 | C - simulate call from 1234567 dropped\n");
     printf("d - report AG failure\n");
-
-    printf("e - answer call on AG\n");
-    printf("E - reject call on AG\n");
-
-    printf("r - disable in-band ring tone\n");
-    printf("R - enable in-band ring tone\n");
-
-    printf("f - Disable cellular network\n");
-    printf("F - Enable cellular network\n");
-
-    printf("g - Set signal strength to 0\n");
-    printf("G - Set signal strength to 5\n");
-
-    printf("h - Disable roaming\n");
-    printf("H - Enable roaming\n");
-
-    printf("i - Set battery level to 3\n");
-    printf("I - Set battery level to 5\n");
-    
+    printf("e - answer call on AG                   | E - reject call on AG\n");
+    printf("r - disable in-band ring tone           | R - enable in-band ring tone\n");
+    printf("f - Disable cellular network            | F - Enable cellular network\n");
+    printf("g - Set signal strength to 0            | G - Set signal strength to 5\n");
+    printf("h - Disable roaming                     | H - Enable roaming\n");
+    printf("i - Set battery level to 3              | I - Set battery level to 5\n");
     printf("j - Answering call on remote side\n");
-
-    printf("k - Clear memory #1\n");
-    printf("K - Set memory #1\n");
-
-    printf("l - Clear last number\n");
-    printf("L - Set last number\n");
-
+    printf("k - Clear memory #1                     | K - Set memory #1\n");
+    printf("l - Clear last number                   | L - Set last number\n");
     printf("m - simulate incoming call from 7654321\n");
     // printf("M - simulate call from 7654321 dropped\n");
-
-    printf("n - Disable Voice Regocnition\n");
-    printf("N - Enable Voice Recognition\n");
-
-    printf("o - Set speaker volume to 0  (minimum)\n");
-    printf("O - Set speaker volume to 9  (default)\n");
-    printf("p - Set speaker volume to 12 (higher)\n");
-    printf("P - Set speaker volume to 15 (maximum)\n");
-
-    printf("q - Set microphone gain to 0  (minimum)\n");
-    printf("Q - Set microphone gain to 9  (default)\n");
-    printf("s - Set microphone gain to 12 (higher)\n");
-    printf("S - Set microphone gain to 15 (maximum)\n");
-
+    printf("n - Disable Voice Regocnition           | N - Enable Voice Recognition\n");
+    printf("o - Set speaker volume to 0  (minimum)  | O - Set speaker volume to 9  (default)\n");
+    printf("p - Set speaker volume to 12 (higher)   | P - Set speaker volume to 15 (maximum)\n");
+    printf("q - Set microphone gain to 0  (minimum) | Q - Set microphone gain to 9  (default)\n");
+    printf("s - Set microphone gain to 12 (higher)  | S - Set microphone gain to 15 (maximum)\n");
     printf("t - terminate connection\n");
     printf("u - join held call\n");
     printf("v - discover nearby HF units\n");

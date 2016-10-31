@@ -115,82 +115,37 @@ static void show_usage(void){
     gap_local_bd_addr(iut_address);
 
     printf("\n--- Bluetooth HFP Hands-Free (HF) unit Test Console %s ---\n", bd_addr_to_str(iut_address));
-    printf("---\n");
-
-    printf("a - establish SLC connection to device %s\n", bd_addr_to_str(device_addr));
+    printf("\n");
+    printf("a - establish SLC to %s     | ", bd_addr_to_str(device_addr));
     printf("A - release SLC connection to device\n");
-    
-    printf("b - establish Audio connection\n");
-    printf("B - release Audio connection\n");
-    
-    printf("c - disable registration status update for all AG indicators\n");
-    printf("C - enable registration status update for all AG indicators\n");
-    
-    printf("d - query network operator.\n");
-    printf("D - set HFP AG registration status update for individual indicators (IIA)\n");
-
-    printf("e - disable reporting of the extended AG error result code\n");
-    printf("E - enable reporting of the extended AG error result code\n");
-    
-    printf("f - answer incoming call\n");
-    printf("F - Hangup call\n");
-
-    printf("g - query network operator name\n");
-    printf("G - reject incoming call\n");
-
-    printf("i - dial 1234567\n");
-    printf("I - dial 7654321\n");
-    
-    printf("j - dial #1\n");
-    printf("J - dial #99\n");
-    
-    printf("k - deactivate call waiting notification\n");
-    printf("K - activate call waiting notification\n");
-    
-    printf("l - deactivate calling line notification\n");
-    printf("L - activate calling line notification\n");
-    
-    printf("m - deactivate echo canceling and noise reduction\n");
-    printf("M - activate echo canceling and noise reduction\n");
-    
-    printf("n - deactivate voice recognition\n");
-    printf("N - activate voice recognition\n");
-    
-    printf("o - Set speaker volume to 0  (minimum)\n");
-    printf("O - Set speaker volume to 9  (default)\n");
-    printf("p - Set speaker volume to 12 (higher)\n");
-    printf("P - Set speaker volume to 15 (maximum)\n");
-
-    printf("q - Set microphone gain to 0  (minimum)\n");
-    printf("Q - Set microphone gain to 9  (default)\n");
-    printf("s - Set microphone gain to 12 (higher)\n");
-    printf("S - Set microphone gain to 15 (maximum)\n");
-
+    printf("b - establish Audio connection             | B - release Audio connection\n");
+    printf("d - query network operator                 | D - Enable HFP AG registration status update via bitmap(IIA)\n");
+    printf("f - answer incoming call                   | F - Hangup call\n");
+    printf("g - query network operator name            | G - reject incoming call\n");
+    printf("i - dial 1234567                           | I - dial 7654321\n");
+    printf("j - dial #1                                | J - dial #99\n");
+    printf("o - Set speaker volume to 0  (minimum)     | O - Set speaker volume to 9  (default)\n");
+    printf("p - Set speaker volume to 12 (higher)      | P - Set speaker volume to 15 (maximum)\n");
+    printf("q - Set microphone gain to 0  (minimum)    | Q - Set microphone gain to 9  (default)\n");
+    printf("s - Set microphone gain to 12 (higher)     | S - Set microphone gain to 15 (maximum)\n");
     printf("t - terminate connection\n");
-
     printf("u - send 'user busy' (TWC 0)\n");
     printf("U - end active call and accept other call' (TWC 1)\n");
-    printf("v - Swap active call and hold/waiting call (TWC 2)\n");
-    printf("V - Join held call (TWC 3)\n");
-    printf("w - Connect calls (TWC 4)\n");
-    printf("W - redial\n");
-
+    printf("v - Swap active call call (TWC 2)          | V - Join held call (TWC 3)\n");
+    printf("w - Connect calls (TWC 4)                  | W - redial\n");
+    printf("c/C - disable/enable registration status update for all AG indicators\n");
+    printf("e/E - disable/enable reporting of the extended AG error result code\n");
+    printf("k/K - deactivate/activate call waiting notification\n");
+    printf("l/L - deactivate/activate calling line notification\n");
+    printf("m/M - deactivate/activate echo canceling and noise reduction\n");
+    printf("n/N - deactivate/activate voice recognition\n");
     printf("0123456789#*-+ - send DTMF dial tones\n");
-
-    printf("x - request phone number for voice tag\n");
-    printf("X - current call status (ECS)\n");
-    printf("y - release call with index 2 (ECC)\n");
-    printf("Y - private consulation with call 2(ECC)\n");
-
-    printf("[ - Query Response and Hold status (RHH ?)\n");
-    printf("] - Place call in a response and held state(RHH 0)\n");
-    printf("{ - Accept held call(RHH 1)\n");
-    printf("} - Reject held call(RHH 2)\n");
-
+    printf("x - request phone number for voice tag     | X - current call status (ECS)\n");
+    printf("y - release call with index 2 (ECC)        | Y - private consulation with call 2(ECC)\n");
+    printf("[ - Query Response and Hold status (RHH ?) | ] - Place call in a response and held state(RHH 0)\n");
+    printf("{ - Accept held call(RHH 1)                | } - Reject held call(RHH 2)\n");
     printf("? - Query Subscriber Number (NUM)\n");
-
     printf("! - Update HF indicator with assigned number 1 (HFI)\n");
-
     printf("---\n");
     printf("Ctrl-c - exit\n");
     printf("---\n");
