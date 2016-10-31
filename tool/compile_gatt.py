@@ -518,7 +518,7 @@ def parse(fname_in, fin, fname_out, fout):
         line_count += 1
 
         if line.startswith("//"):
-            fout.write("//" + line.lstrip('/') + '\n')
+            fout.write("    //" + line.lstrip('/') + '\n')
             continue
 
         if line.startswith("#"):
