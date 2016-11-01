@@ -1123,3 +1123,78 @@ void att_register_service_handler(att_service_handler_t * handler){
     btstack_linked_list_add(&service_handlers, (btstack_linked_item_t*) handler);
 }
 
+// returns 1 if service found. only primary service.
+int gatt_server_get_get_handle_range_for_service_with_uuid16(uint16_t uuid16, uint16_t * start_handle, uint16_t * end_handle){
+    uint16_t in_group    = 0;
+    uint16_t prev_handle = 0;
+
+    uint8_t attribute_value[2];
+    int attribute_len = sizeof(attribute_value);
+    little_endian_store_16(attribute_value, 0, uuid16);
+
+    att_iterator_t it;
+    att_iterator_init(&it);
+    while (att_iterator_has_next(&it)){
+        att_iterator_fetch_next(&it);
+        int new_service_started = att_iterator_match_uuid16(&it, GATT_PRIMARY_SERVICE_UUID) || att_iterator_match_uuid16(&it, GATT_SECONDARY_SERVICE_UUID);
+
+        // close current tag, if within a group and a new service definition starts or we reach end of att db
+        if (in_group &&
+            (it.handle == 0 || new_service_started)){
+            *end_handle = prev_handle;
+            return 1;
+        }
+        
+        // keep track of previous handle
+        prev_handle = it.handle;
+        
+        // check if found
+        if (it.handle && new_service_started && attribute_len == it.value_len && memcmp(attribute_value, it.value, it.value_len) == 0){
+            *start_handle = it.handle;
+            in_group = 1;
+        }
+    }
+    return 0;
+}
+
+// returns 0 if not found
+uint16_t gatt_server_get_value_handle_for_characteristic_with_uuid16(uint16_t start_handle, uint16_t end_handle, uint16_t uuid16){
+    att_iterator_t it;
+    att_iterator_init(&it);
+    while (att_iterator_has_next(&it)){
+        att_iterator_fetch_next(&it);
+        if (it.handle && it.handle < start_handle) continue;
+        if (it.handle > end_handle) break;  // (1)
+        if (it.handle == 0) break;
+        if (att_iterator_match_uuid16(&it, uuid16)) return it.handle;
+    }
+    return 0;
+}
+
+// returns 0 if not found
+uint16_t gatt_server_get_client_configuration_handle_for_characteristic_with_uuid16(uint16_t start_handle, uint16_t end_handle, uint16_t uuid16){
+    att_iterator_t it;
+    att_iterator_init(&it);
+    int characteristic_found = 0;
+    while (att_iterator_has_next(&it)){
+        att_iterator_fetch_next(&it);
+        if (it.handle && it.handle < start_handle) continue;
+        if (it.handle > end_handle) break;  // (1)
+        if (it.handle == 0) break;
+        if (att_iterator_match_uuid16(&it, uuid16)){
+            characteristic_found = 1;
+            continue;
+        }
+        if (att_iterator_match_uuid16(&it, GATT_PRIMARY_SERVICE_UUID) 
+         || att_iterator_match_uuid16(&it, GATT_SECONDARY_SERVICE_UUID)
+         || att_iterator_match_uuid16(&it, GATT_CHARACTERISTICS_UUID)){
+            if (characteristic_found) break;
+            continue;
+        }
+        if (att_iterator_match_uuid16(&it, GATT_CLIENT_CHARACTERISTICS_CONFIGURATION)){
+            return it.handle;
+        }
+    }
+    return 0;
+}
+

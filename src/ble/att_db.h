@@ -173,6 +173,18 @@ void att_register_service_handler(att_service_handler_t * handler);
  // experimental client API
 uint16_t att_uuid_for_handle(uint16_t attribute_handle);
 
+
+// experimental GATT Server API
+
+// returns 1 if service found. only primary service.
+int gatt_server_get_get_handle_range_for_service_with_uuid16(uint16_t uuid16, uint16_t * start_handle, uint16_t * end_handle);
+
+// returns 0 if not found
+uint16_t gatt_server_get_value_handle_for_characteristic_with_uuid16(uint16_t start_handle, uint16_t end_handle, uint16_t uuid16);
+
+// returns 0 if not found
+uint16_t gatt_server_get_client_configuration_handle_for_characteristic_with_uuid16(uint16_t start_handle, uint16_t end_handle, uint16_t uuid16);
+
 #if defined __cplusplus
 }
 #endif
