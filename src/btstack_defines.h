@@ -61,6 +61,13 @@ typedef struct {
     btstack_packet_handler_t callback;
 } btstack_packet_callback_registration_t;
 
+// context callback supporting multiple registrations
+typedef struct {
+  btstack_linked_item_t * item;
+  void (*callback)(void * context);
+  void * context;
+} btstack_context_callback_registration_t;
+
 /**
  * @brief 128 bit key used with AES128 in Security Manager
  */

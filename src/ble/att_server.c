@@ -95,6 +95,8 @@ static btstack_packet_callback_registration_t hci_event_callback_registration;
 static btstack_packet_callback_registration_t sm_event_callback_registration;
 static btstack_packet_handler_t att_client_packet_handler = NULL;
 
+static btstack_linked_list_t can_send_now_clients;
+
 static void att_handle_value_indication_notify_client(uint8_t status, uint16_t client_handle, uint16_t attribute_handle){
     if (!att_client_packet_handler) return;
     
@@ -345,8 +347,23 @@ static void att_server_handle_can_send_now(void){
 
     if (att_server_state == ATT_SERVER_REQUEST_RECEIVED_AND_VALIDATED){
         int sent = att_server_process_validated_request(att_connection.con_handle);
-        if (sent && att_client_waiting_for_can_send){
+        if (sent && (att_client_waiting_for_can_send || !btstack_linked_list_empty(&can_send_now_clients))){
             att_dispatch_server_request_can_send_now_event(att_connection.con_handle);
+            return;
+        }
+    }
+
+    while (!btstack_linked_list_empty(&can_send_now_clients)){
+        // handle first client
+        btstack_context_callback_registration_t * client = (btstack_context_callback_registration_t*) can_send_now_clients;
+        btstack_linked_list_remove(&can_send_now_clients, (btstack_linked_item_t *) client);
+        client->callback(client->context);
+
+        // request again if needed
+        if (!att_dispatch_server_can_send_now(att_connection.con_handle)){
+            if (!btstack_linked_list_empty(&can_send_now_clients) || att_client_waiting_for_can_send){
+                att_dispatch_server_request_can_send_now_event(att_connection.con_handle);
+            }
             return;
         }
     }
@@ -439,6 +456,16 @@ int  att_server_can_send_packet_now(hci_con_handle_t con_handle){
 void att_server_request_can_send_now_event(hci_con_handle_t con_handle){
     att_client_waiting_for_can_send = 1;
     att_dispatch_server_request_can_send_now_event(att_connection.con_handle);
+}
+
+void att_server_register_can_send_now_callback(btstack_context_callback_registration_t * callback_registration, hci_con_handle_t con_handle){
+    // check if can send already
+    if (att_dispatch_server_can_send_now(con_handle)){
+        callback_registration->callback(callback_registration->context);
+        return;
+    }
+    btstack_linked_list_add_tail(&can_send_now_clients, (btstack_linked_item_t*) callback_registration);
+    att_dispatch_server_request_can_send_now_event(con_handle);
 }
 
 int att_server_notify(hci_con_handle_t con_handle, uint16_t attribute_handle, uint8_t *value, uint16_t value_len){
