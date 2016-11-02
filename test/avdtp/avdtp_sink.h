@@ -58,19 +58,22 @@ extern "C" {
 
 typedef enum {
     AVDTP_IDLE,
-    AVDTP_W4_L2CAP_CONNECTED,
+    AVDTP_W4_L2CAP_FOR_SIGNALING_CONNECTED,
     AVDTP_CONFIGURATION_SUBSTATEMACHINE,
     AVDTP_CONFIGURED,
 
     AVDTP_W2_ANSWER_OPEN_STREAM,
-    AVDTP_OPEN,
+    AVDTP_W4_L2CAP_FOR_MEDIA_CONNECTED,
+    AVDTP_OPEN, // 5
     AVDTP_W2_ANSWER_START_SINGLE_STREAM,
     AVDTP_W4_STREAMING_CONNECTION_OPEN,
-    AVDTP_STREAMING,
+    AVDTP_STREAMING, // 8
     
     AVDTP_CLOSING,
     AVDTP_ABORTING,
-    AVDTP_W4_L2CAP_DISCONNECTED
+    
+    AVDTP_W4_L2CAP_FOR_MEDIA_DISCONNECTED,
+    AVDTP_W4_L2CAP_FOR_SIGNALING_DISCONNECTED
 } avdtp_state_t;
 
 typedef enum {
@@ -102,6 +105,7 @@ typedef struct avdtp_sink_connection {
     uint16_t l2cap_signaling_cid;
     uint16_t l2cap_media_cid;
     uint16_t l2cap_reporting_cid;
+    uint8_t  num_l2cap_channels_opened;
 
     avdtp_state_t        avdtp_state;
     avdtp_initiator_stream_config_state_t initiator_config_state;

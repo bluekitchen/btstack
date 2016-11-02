@@ -87,7 +87,7 @@ static int avdtp_pack_service_capabilities(uint8_t * buffer, int size, avdtp_cap
             }
             break;
     }
-    buffer[0] = pos; // length
+    buffer[0] = pos - 1; // length
     return pos;
 }
 
