@@ -110,7 +110,7 @@ void battery_service_server_init(uint8_t value){
 	att_register_service_handler(&battery_service);
 }
 
-void battery_service_set_server_battery_value(uint8_t value){
+void battery_service_server_set_battery_value(uint8_t value){
 	battery_value = value;
 	if (battery_value_client_configuration){
 		battery_callback.callback = &battery_service_can_send_now;

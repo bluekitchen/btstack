@@ -61,7 +61,7 @@ void battery_service_server_init(uint8_t battery_value);
  * @note triggers notifications if subscribed
  * @param battery_value in range 0-100
  */
-void battery_service_set_server_battery_value(uint8_t battery_value);
+void battery_service_server_set_battery_value(uint8_t battery_value);
 
 /* API_END */
 

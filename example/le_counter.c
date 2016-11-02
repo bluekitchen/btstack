@@ -159,7 +159,7 @@ static void heartbeat_handler(struct btstack_timer_source *ts){
     if (battery < 50) {
         battery = 100;
     }
-    battery_service_set_server_battery_value(battery);
+    battery_service_server_set_battery_value(battery);
 
     btstack_run_loop_set_timer(ts, HEARTBEAT_PERIOD_MS);
     btstack_run_loop_add_timer(ts);
