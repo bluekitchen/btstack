@@ -384,6 +384,10 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                 (*handle_media_data)(connection, packet, size);
             } else if (channel == connection->l2cap_reporting_cid){
                 // TODO
+                printf("L2CAP_DATA_PACKET for reporting: NOT IMPLEMENTED\n");
+            } else if (channel == connection->l2cap_recovery_cid){
+                // TODO
+                printf("L2CAP_DATA_PACKET for recovery: NOT IMPLEMENTED\n");
             } else {
                 log_error("avdtp packet handler L2CAP_DATA_PACKET: local cid 0x%02x not found", channel);
             }
@@ -398,10 +402,11 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                         connection = create_avdtp_sink_connection_context(event_addr);
                         if (!connection) {
                             log_error("avdtp packet handler L2CAP_EVENT_INCOMING_CONNECTION: connection for bd address %s not found", bd_addr_to_str(event_addr));
+                            break;
                         }
-                        break;
                     }
-
+                    printf("L2CAP_EVENT_INCOMING_CONNECTION state %d\n", connection->avdtp_state);
+                    
                     con_handle = l2cap_event_incoming_connection_get_handle(packet); 
                     psm        = l2cap_event_incoming_connection_get_psm(packet); 
                     local_cid  = l2cap_event_incoming_connection_get_local_cid(packet); 
@@ -410,13 +415,20 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     printf("L2CAP_EVENT_INCOMING_CONNECTION %s, handle 0x%02x, psm 0x%02x, local cid 0x%02x, remote cid 0x%02x\n",
                         bd_addr_to_str(event_addr), con_handle, psm, local_cid, remote_cid);
                     
+                    // if multiplexing os not used, multiple L2CAP channels are created in a fix order to the same PSM.
+                    // They have different usages:
+                    // 1. signaling
+                    // 2. media transport
+                    // 3. reporting
+                    // 4. recovery
+
                     if (connection->l2cap_signaling_cid == 0){
                         // if (connection->avdtp_state != AVDTP_IDLE) break;
                         printf("incoming %d: AVDTP_W4_L2CAP_FOR_SIGNALING_CONNECTED\n", connection->avdtp_state);
                         connection->l2cap_signaling_cid = local_cid;
                         connection->avdtp_state = AVDTP_W4_L2CAP_FOR_SIGNALING_CONNECTED;
                         l2cap_accept_connection(local_cid);
-                        break;
+                        return;
                     }
                     if (connection->l2cap_media_cid == 0){
                          // if (connection->avdtp_state != AVDTP_W2_ANSWER_OPEN_STREAM) break;
@@ -424,14 +436,19 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                         connection->l2cap_media_cid = local_cid;
                         connection->avdtp_state = AVDTP_W4_L2CAP_FOR_MEDIA_CONNECTED;
                         l2cap_accept_connection(local_cid);
-                        break;
+                        return;
                     }
                     if (connection->l2cap_reporting_cid == 0){
                         connection->l2cap_reporting_cid = local_cid;
                         printf("TODO enable reporting, set state\n");
-                        break;
+                        return;
                     }   
                     
+                    if (connection->l2cap_recovery_cid == 0){
+                        connection->l2cap_recovery_cid = local_cid;
+                        printf("TODO enable recovery, set state\n");
+                        return;
+                    }
                     break;
                     
                 case L2CAP_EVENT_CHANNEL_OPENED:
@@ -462,7 +479,14 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                            connection);
 
                     if (psm != PSM_AVDTP) break;
-                    
+
+                    // if multiplexing os not used, multiple L2CAP channels are created in a fix order to the same PSM.
+                    // They have different usages:
+                    // 1. signaling
+                    // 2. media transport
+                    // 3. reporting
+                    // 4. recovery
+
                     if (connection->l2cap_signaling_cid == 0 || connection->l2cap_signaling_cid == local_cid){
                         if (connection->avdtp_state != AVDTP_W4_L2CAP_FOR_SIGNALING_CONNECTED) break;
                         printf("AVDTP_W4_L2CAP_FOR_SIGNALING_CONNECTED ->  AVDTP_CONFIGURATION_SUBSTATEMACHINE\n");
@@ -490,6 +514,11 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                         break;
                     }   
 
+                    if (connection->l2cap_recovery_cid == 0 || connection->l2cap_recovery_cid == local_cid){
+                        printf("TODO enable recovery, set state\n");
+                        connection->l2cap_recovery_cid = local_cid;
+                        break;
+                    }  
                     break;
                 
                 case L2CAP_EVENT_CHANNEL_CLOSED:
@@ -497,16 +526,31 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     local_cid = l2cap_event_channel_closed_get_local_cid(packet);
                     connection = get_avdtp_sink_connection_context_for_l2cap_cid(local_cid);
                     if (!connection) return;
+
+                    if (connection->l2cap_recovery_cid == local_cid){
+                        log_info("L2CAP_EVENT_CHANNEL_CLOSED recovery cid 0x%0x", local_cid);
+                        connection->l2cap_recovery_cid = 0;
+                        break;
+                    }
                     
+                    if (connection->l2cap_reporting_cid == local_cid){
+                        log_info("L2CAP_EVENT_CHANNEL_CLOSED reporting cid 0x%0x", local_cid);
+                        connection->l2cap_reporting_cid = 0;
+                        break;
+                    }
+
                     if (connection->l2cap_media_cid == local_cid){
                         log_info("L2CAP_EVENT_CHANNEL_CLOSED media cid 0x%0x", local_cid);
                         connection->avdtp_state = AVDTP_CONFIGURED;
                         connection->l2cap_media_cid = 0;
+                        break;
                     }
 
                     if (connection->l2cap_signaling_cid == local_cid){
                         log_info("L2CAP_EVENT_CHANNEL_CLOSED signaling cid 0x%0x", local_cid);
+                        connection->avdtp_state = AVDTP_IDLE;
                         avdtp_sink_remove_connection_context(connection);
+                        break;
                     }
                     break;
 

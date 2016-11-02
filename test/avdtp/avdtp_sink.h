@@ -71,7 +71,7 @@ typedef enum {
     
     AVDTP_CLOSING,
     AVDTP_ABORTING,
-    
+
     AVDTP_W4_L2CAP_FOR_MEDIA_DISCONNECTED,
     AVDTP_W4_L2CAP_FOR_SIGNALING_DISCONNECTED
 } avdtp_state_t;
@@ -105,6 +105,8 @@ typedef struct avdtp_sink_connection {
     uint16_t l2cap_signaling_cid;
     uint16_t l2cap_media_cid;
     uint16_t l2cap_reporting_cid;
+    uint16_t l2cap_recovery_cid;
+
     uint8_t  num_l2cap_channels_opened;
 
     avdtp_state_t        avdtp_state;
