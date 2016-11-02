@@ -84,7 +84,7 @@ static int battery_service_write_callback(hci_con_handle_t con_handle, uint16_t 
 }
 
 static void battery_service_can_send_now(void * context){
-	hci_con_handle_t con_handle = (hci_con_handle_t) context;
+	hci_con_handle_t con_handle = (hci_con_handle_t) (uintptr_t) context;
 	att_server_notify(con_handle, battery_value_handle_value, &battery_value, 1);
 }
 
