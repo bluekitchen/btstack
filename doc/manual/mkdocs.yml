@@ -8,6 +8,7 @@ pages:
 - [how_to.md, How to configure BTstack]
 - [protocols.md, Supported Protocols]
 - [profiles.md, Supported Profiles]
+- [gatt_services.md, Implemented GATT Services]
 - [examples/examples.md, Embedded Examples]
 - [porting.md, Porting to Other Platforms]
 - [integration.md, Integrating with Existing Systems]
