@@ -39,7 +39,7 @@ def list_services():
     tree = html.fromstring(page.content)
     # get all <tr> elements in <table id="gattTable">
     rows = tree.xpath('//table[@id="gattTable"]/tr')
-    print("%-55s| %-30s| %s" % ('Service ID', 'Summary', 'UUID'))
+    print("%-55s| %-30s| %s" % ('Specification Type', 'Specification Name', 'UUID'))
     print('-'*55 + '+-' + '-' * 30 + '+-' + '-'*10)
     maxlen_type = 0
     maxlen_name = 0
@@ -196,13 +196,16 @@ def convert_service(fout, specification_type):
 if (len(sys.argv) < 2):
     list_services()
     print('\n')
-    # print(maxlen_type, maxlen_name)
-    print('To convert service into .gatt file, call %s with the requested service id' % sys.argv[0])
+    print('To convert a service into a .gatt file template, please call the script again with the requested Specification Type and the output file name')
+    print('Usage: %s SPECIFICATION_TYPE [service_name.gatt]' % sys.argv[0])
+    print('')
 else:
     specification_type = sys.argv[1]
     filename = '%s.gatt' % specification_type
+    if (len(sys.argv)>=3):
+        filename = sys.argv[2]
     with open(filename, 'wt') as fout:
         convert_service(fout, specification_type)
         print('')
-        print('Service successfully converted into %s' % filename)
+        print('Service successfully created %s' % filename)
         print('Please check for TODOs in the .gatt file')
