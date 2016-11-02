@@ -521,7 +521,7 @@ def parseLines(fname_in, fin, fout):
             imported_file = ''
             parts = re.match('#import\s+<(.*)>\w*',line)
             if parts and len(parts.groups()) == 1:
-                imported_file = btstack_root+'/src/ble/' + parts.groups()[0]
+                imported_file = btstack_root+'/src/ble/gatt-service/' + parts.groups()[0]
             parts = re.match('#import\s+"(.*)"\w*',line)
             if parts and len(parts.groups()) == 1:
                 imported_file = os.path.abspath(os.path.dirname(fname_in) + '/'+parts.groups()[0])

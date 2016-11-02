@@ -41,12 +41,12 @@
  */
 
 #include "btstack_defines.h"
-#include "ble/battery_service_server.h"
 #include "ble/att_db.h"
 #include "ble/att_server.h"
 #include "btstack_util.h"
 #include "bluetooth_gatt.h"
 
+#include "ble/gatt-service/battery_service_server.h"
 
 static btstack_context_callback_registration_t  battery_callback;
 static att_service_handler_t       battery_service;
