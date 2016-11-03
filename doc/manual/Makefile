@@ -1,4 +1,4 @@
-all: update_docs_and_apis html latex
+all: update_docs_and_apis html pdf
 
 html:
 	rm -rf docs_tmp
