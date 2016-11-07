@@ -2982,6 +2982,8 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                             sm_conn->sm_engine_state = SM_RESPONDER_PH0_SEND_LTK_REQUESTED_NEGATIVE_REPLY;
 #endif
                             break;
+
+#ifdef ENABLE_LE_SECURE_CONNECTIONS
                         case HCI_SUBEVENT_LE_READ_LOCAL_P256_PUBLIC_KEY_COMPLETE:
                             if (hci_subevent_le_read_local_p256_public_key_complete_get_status(packet)){
                                 log_error("Read Local P256 Public Key failed");
@@ -2992,6 +2994,7 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                             ec_key_generation_state = EC_KEY_GENERATION_DONE;
                             sm_log_ec_keypair();
                             break;
+#endif
                         default:
                             break;
                     }
