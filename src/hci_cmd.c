@@ -65,6 +65,7 @@
  *   P: 16 byte Pairing code
  *   A: 31 bytes advertising data
  *   S: Service Record (Data Element Sequence)
+ *   Q: 32 byte data block, e.g. for X and Y coordinates of P-256 public key
  */
 uint16_t hci_cmd_create_from_template(uint8_t *hci_cmd_buffer, const hci_cmd_t *cmd, va_list argptr){
     
@@ -155,6 +156,13 @@ uint16_t hci_cmd_create_from_template(uint8_t *hci_cmd_buffer, const hci_cmd_t *
                 pos += len;
                 break;
             }
+#endif
+#ifdef ENABLE_LE_SECURE_CONNECTIONS
+            case 'Q':
+                ptr = va_arg(argptr, uint8_t *);
+                reverse_bytes(ptr, &hci_cmd_buffer[pos], 32);
+                pos += 32;
+                break;
 #endif
             default:
                 break;
@@ -1000,4 +1008,20 @@ const hci_cmd_t hci_le_test_end = {
 OPCODE(OGF_LE_CONTROLLER, 0x1f), "1"
 // return: status, number of packets (8)
 };
+
+/**
+ */
+const hci_cmd_t hci_le_read_local_p256_public_key = {
+OPCODE(OGF_LE_CONTROLLER, 0x25), ""
+//  LE Read Local P-256 Public Key Complete is generated on completion
+};
+
+/**
+ * @param end_test_cmd
+ */
+const hci_cmd_t hci_le_generate_dhkey = {
+OPCODE(OGF_LE_CONTROLLER, 0x26), "QQ"
+// LE Generate DHKey Complete is generated on completion
+};
+
 #endif

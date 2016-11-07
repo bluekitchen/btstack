@@ -520,6 +520,9 @@ typedef enum {
 
 #define HCI_EVENT_LE_META                                  0x3E
 
+// last used HCI_EVENT in 2.1 is 0x3d
+// last used HCI_EVENT in 4.1 is 0x57
+
 #define HCI_EVENT_VENDOR_SPECIFIC                          0xFF
 
 /** 
@@ -536,13 +539,96 @@ typedef enum {
  * @param master_clock_accuracy
  */
 #define HCI_SUBEVENT_LE_CONNECTION_COMPLETE                0x01
+
+// array of advertisements, not handled by event accessor generator
 #define HCI_SUBEVENT_LE_ADVERTISING_REPORT                 0x02
-#define HCI_SUBEVENT_LE_CONNECTION_UPDATE_COMPLETE         0x03
+
+/**
+ * @format 11H222
+ * @param subevent_code
+ * @param status
+ * @param connection_handle
+ * @param conn_interval
+ * @param conn_latency
+ */
+ #define HCI_SUBEVENT_LE_CONNECTION_UPDATE_COMPLETE         0x03
+
+/**
+ * @format 1HD2
+ * @param subevent_code
+ * @param connection_handle
+ * @param random_number
+ * @param encryption_diversifier
+ */
 #define HCI_SUBEVENT_LE_READ_REMOTE_USED_FEATURES_COMPLETE 0x04
+
+/**
+ * @format 1HD2
+ * @param subevent_code
+ * @param connection_handle
+ * @param random_number
+ * @param encryption_diversifier
+ */
 #define HCI_SUBEVENT_LE_LONG_TERM_KEY_REQUEST              0x05
-    
-// last used HCI_EVENT in 2.1 is 0x3d
-// last used HCI_EVENT in 4.1 is 0x57
+
+/**
+ * @format 1H2222
+ * @param subevent_code
+ * @param connection_handle
+ * @param interval_min
+ * @param interval_max
+ * @param latency
+ * @param timeout
+ */
+#define HCI_SUBEVENT_LE_REMOTE_CONNECTION_PARAMETER_REQUEST 0x06
+
+/**
+ * @format 1H2222
+ * @param subevent_code
+ * @param connection_handle
+ * @param max_tx_octets
+ * @param max_tx_time
+ * @param max_rx_octets
+ * @param max_rx_time
+ */
+#define HCI_SUBEVENT_LE_DATA_LENGTH_CHANGE 0x07
+
+/**
+ * @format 11QQ
+ * @param subevent_code
+ * @param status
+ * @param dhkey_x x coordinate of P256 public key
+ * @param dhkey_y y coordinate of P256 public key
+ */
+#define HCI_SUBEVENT_LE_READ_LOCAL_P256_PUBLIC_KEY_COMPLETE 0x08
+ /**
+ * @format 11QQ
+ * @param subevent_code
+ * @param status
+ * @param dhkey_x x coordinate of Diffie-Hellman key
+ * @param dhkey_y y coordinate of Diffie-Hellman key
+ */
+#define HCI_SUBEVENT_LE_GENERATE_DHKEY_COMPLETE            0x09
+
+/**
+ * @format 11H11BBB2221
+ * @param subevent_code
+ * @param status
+ * @param connection_handle
+ * @param role
+ * @param peer_address_type
+ * @param perr_addresss
+ * @param local_resolvable_private_addres
+ * @param peer_resolvable_private_addres
+ * @param conn_interval
+ * @param conn_latency
+ * @param supervision_timeout
+ * @param master_clock_accuracy
+ */
+#define HCI_SUBEVENT_LE_ENHANCED_CONNECTION_COMPLETE       0x0A
+
+// array of advertisements, not handled by event accessor generator
+#define HCI_SUBEVENT_LE_DIRECT_ADVERTISING_REPORT          0x0B
 
 /** 
  * L2CAP Layer
