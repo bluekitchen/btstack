@@ -137,6 +137,7 @@ typedef enum {
 typedef enum {
     EC_KEY_GENERATION_IDLE,
     EC_KEY_GENERATION_ACTIVE,
+    EC_KEY_GENERATION_W4_KEY,
     EC_KEY_GENERATION_DONE,
 } ec_key_generation_state_t;
 
@@ -222,15 +223,18 @@ static btstack_packet_callback_registration_t hci_event_callback_registration;
 /* to dispatch sm event */
 static btstack_linked_list_t sm_event_handlers;
 
+// LE Secure Connections
+#ifdef ENABLE_LE_SECURE_CONNECTIONS
+static ec_key_generation_state_t ec_key_generation_state;
+static uint8_t ec_d[32];
+static uint8_t ec_qx[32];
+static uint8_t ec_qy[32];
+#endif
 
 // Software ECDH implementation provided by mbedtls
 #ifdef USE_MBEDTLS_FOR_ECDH
 // group is always valid
 static mbedtls_ecp_group   mbedtls_ec_group;
-static ec_key_generation_state_t ec_key_generation_state;
-static uint8_t ec_qx[32];
-static uint8_t ec_qy[32];
-static uint8_t ec_d[32];
 #ifndef HAVE_MALLOC
 // COMP Method with Window 2
 // 1300 bytes with 23 allocations
@@ -1333,8 +1337,6 @@ static int sm_passkey_used(stk_generation_method_t method);
 static int sm_just_works_or_numeric_comparison(stk_generation_method_t method);
 
 static void sm_log_ec_keypair(void){
-    log_info("Elliptic curve: d");
-    log_info_hexdump(ec_d,32);
     log_info("Elliptic curve: X");
     log_info_hexdump(ec_qx,32);
     log_info("Elliptic curve: Y");
@@ -1813,9 +1815,14 @@ static void sm_run(void){
             break;  
     }
 
-#ifdef USE_MBEDTLS_FOR_ECDH
+#ifdef ENABLE_LE_SECURE_CONNECTIONS
     if (ec_key_generation_state == EC_KEY_GENERATION_ACTIVE){
+#ifdef USE_MBEDTLS_FOR_ECDH
         sm_random_start(NULL);
+#else
+        ec_key_generation_state = EC_KEY_GENERATION_W4_KEY;
+        hci_send_cmd(&hci_le_read_local_p256_public_key);
+#endif
         return; 
     }
 #endif
@@ -2743,6 +2750,8 @@ static void sm_handle_random_result(uint8_t * data){
             mbedtls_ecp_point_free(&P);
             mbedtls_mpi_free(&d);
             ec_key_generation_state = EC_KEY_GENERATION_DONE;
+            log_info("Elliptic curve: d");
+            log_info_hexdump(ec_d,32);
             sm_log_ec_keypair();
 
 #if 0
@@ -2882,7 +2891,7 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
 
                         dkg_state = sm_persistent_irk_ready ? DKG_CALC_DHK : DKG_CALC_IRK;
                         rau_state = RAU_IDLE;
-#ifdef USE_MBEDTLS_FOR_ECDH
+#ifdef ENABLE_LE_SECURE_CONNECTIONS
                         if (!sm_have_ec_keypair){
                             setup->sm_passkey_bit = 0;
                             ec_key_generation_state = EC_KEY_GENERATION_ACTIVE;
@@ -2973,7 +2982,16 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                             sm_conn->sm_engine_state = SM_RESPONDER_PH0_SEND_LTK_REQUESTED_NEGATIVE_REPLY;
 #endif
                             break;
-
+                        case HCI_SUBEVENT_LE_READ_LOCAL_P256_PUBLIC_KEY_COMPLETE:
+                            if (hci_subevent_le_read_local_p256_public_key_complete_get_status(packet)){
+                                log_error("Read Local P256 Public Key failed");
+                                break;
+                            }
+                            hci_subevent_le_read_local_p256_public_key_complete_get_dhkey_x(packet, ec_qx);
+                            hci_subevent_le_read_local_p256_public_key_complete_get_dhkey_y(packet, ec_qy);
+                            ec_key_generation_state = EC_KEY_GENERATION_DONE;
+                            sm_log_ec_keypair();
+                            break;
                         default:
                             break;
                     }
@@ -3602,8 +3620,11 @@ void sm_init(void){
     // and L2CAP PDUs + L2CAP_EVENT_CAN_SEND_NOW
     l2cap_register_fixed_channel(sm_pdu_handler, L2CAP_CID_SECURITY_MANAGER_PROTOCOL);
 
-#ifdef USE_MBEDTLS_FOR_ECDH
+#ifdef ENABLE_LE_SECURE_CONNECTIONS
     ec_key_generation_state = EC_KEY_GENERATION_IDLE;
+#endif
+
+#ifdef USE_MBEDTLS_FOR_ECDH
 
 #ifndef HAVE_MALLOC
     sm_mbedtls_allocator_init(mbedtls_memory_buffer, sizeof(mbedtls_memory_buffer));
@@ -3886,7 +3907,7 @@ void gap_random_address_set(bd_addr_t addr){
  */
 void gap_advertisements_set_params(uint16_t adv_int_min, uint16_t adv_int_max, uint8_t adv_type,
     uint8_t direct_address_typ, bd_addr_t direct_address, uint8_t channel_map, uint8_t filter_policy){
-    hci_le_advertisements_set_params(adv_int_min, adv_int_max, adv_type, gap_random_adress_type,
+    hci_le_advertisements_set_params(adv_int_min, adv_int_max, adv_type, gap_random_adress_type == 0 ? 0 : 1,
         direct_address_typ, direct_address, channel_map, filter_policy);
 }
 
