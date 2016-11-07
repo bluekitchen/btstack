@@ -555,6 +555,13 @@ OPCODE(OGF_CONTROLLER_BASEBAND, 0x03), ""
 };
 
 /**
+ * @param handle
+ */
+const hci_cmd_t hci_flush = {
+OPCODE(OGF_CONTROLLER_BASEBAND, 0x09), "H"
+};
+
+/**
  * @param bd_addr
  * @param delete_all_flags
  */
