@@ -64,9 +64,13 @@ int                     btstack_linked_list_empty(btstack_linked_list_t * list);
 // add item to list as first element
 void                    btstack_linked_list_add(btstack_linked_list_t * list, btstack_linked_item_t *item);       
 // add item to list as last element
-void                    btstack_linked_list_add_tail(btstack_linked_list_t * list, btstack_linked_item_t *item); 
+void                    btstack_linked_list_add_tail(btstack_linked_list_t * list, btstack_linked_item_t *item);
+// pop (get + remove) first element
+btstack_linked_item_t * btstack_linked_list_pop(btstack_linked_list_t * list);
 // remove item from list
 int                     btstack_linked_list_remove(btstack_linked_list_t * list, btstack_linked_item_t *item); 
+// get first element
+btstack_linked_item_t * btstack_linked_list_get_first_item(btstack_linked_list_t * list);
 // find the last item in the list
 btstack_linked_item_t * btstack_linked_list_get_last_item(btstack_linked_list_t * list);   
 
