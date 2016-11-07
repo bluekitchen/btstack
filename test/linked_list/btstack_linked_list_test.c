@@ -32,6 +32,19 @@ TEST(LinkedList, CountAll){
     CHECK_EQUAL(4, btstack_linked_list_count(&testList)); 
 }
 
+TEST(LinkedList, GetFirst){
+    btstack_linked_item_t * item;
+    item = btstack_linked_list_get_first_item(&testList);
+    CHECK_EQUAL(item, &itemA);
+}
+
+TEST(LinkedList, Pop){
+    btstack_linked_item_t * item;
+    item = btstack_linked_list_pop(&testList);
+    CHECK_EQUAL(item, &itemA);
+    CHECK_EQUAL(3, btstack_linked_list_count(&testList)); 
+}
+
 TEST(LinkedList, Iterator){
     btstack_linked_list_iterator_t it;
     btstack_linked_list_iterator_init(&it, &testList);
