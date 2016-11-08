@@ -2890,13 +2890,17 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                         le_device_db_set_local_bd_addr(local_bd_addr);
 
                         dkg_state = sm_persistent_irk_ready ? DKG_CALC_DHK : DKG_CALC_IRK;
-                        rau_state = RAU_IDLE;
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
                         if (!sm_have_ec_keypair){
                             setup->sm_passkey_bit = 0;
                             ec_key_generation_state = EC_KEY_GENERATION_ACTIVE;
                         }
 #endif
+                        // trigger Random Address generation if requested before
+                        rau_state = RAU_IDLE;
+                        if (gap_random_adress_type != GAP_RANDOM_ADDRESS_TYPE_OFF) {
+                            gap_random_address_trigger();
+                        }
                         sm_run();
 					}
 					break;

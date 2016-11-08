@@ -642,7 +642,7 @@ typedef struct {
     /* buffer for scan enable cmd - 0xff no change */
     uint8_t   new_scan_enable_value;
     
-    uint16_t   sco_voice_setting;
+    uint16_t  sco_voice_setting;
 
     uint8_t   loopback_mode;
 
@@ -672,6 +672,7 @@ typedef struct {
     uint8_t  le_advertisements_active;
     uint8_t  le_advertisements_enabled;
     uint8_t  le_advertisements_todo;
+    uint8_t  le_advertisements_random_address_set;
 
     uint16_t le_advertisements_interval_min;
     uint16_t le_advertisements_interval_max;

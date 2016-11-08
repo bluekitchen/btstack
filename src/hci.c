@@ -2026,6 +2026,7 @@ static void hci_state_reset(void){
     
     // LE
     hci_stack->adv_addr_type = 0;
+    hci_stack->le_advertisements_random_address_set = 0;
     memset(hci_stack->adv_address, 0, 6);
     hci_stack->le_scanning_state = LE_SCAN_IDLE;
     hci_stack->le_scan_type = 0xff; 
@@ -2546,7 +2547,9 @@ static void hci_run(void){
                 hci_stack->le_scan_response_data);
             return;
         }
-        if (hci_stack->le_advertisements_todo & LE_ADVERTISEMENT_TASKS_ENABLE){
+        // Random address needs to be set before enabling advertisements
+        if ((hci_stack->le_advertisements_todo & LE_ADVERTISEMENT_TASKS_ENABLE)
+        &&  (hci_stack->le_advertisements_own_address_type == 0 || hci_stack->le_advertisements_random_address_set)){
             hci_stack->le_advertisements_todo &= ~LE_ADVERTISEMENT_TASKS_ENABLE;
             hci_send_cmd(&hci_le_set_advertise_enable, 1);
             return;
@@ -2979,6 +2982,7 @@ int hci_send_cmd_packet(uint8_t *packet, int size){
         hci_stack->adv_addr_type = packet[8];
     }
     if (IS_COMMAND(packet, hci_le_set_random_address)){
+        hci_stack->le_advertisements_random_address_set = 1;
         reverse_bd_addr(&packet[3], hci_stack->adv_address);
     }
     if (IS_COMMAND(packet, hci_le_set_advertise_enable)){
