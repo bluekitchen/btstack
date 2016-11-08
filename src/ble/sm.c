@@ -178,6 +178,7 @@ static derived_key_generation_t dkg_state;
 // random address update
 static random_address_update_t rau_state;
 static bd_addr_t sm_random_address;
+static uint8_t   sm_random_address_set;
 
 // CMAC Calculation: General
 static cmac_state_t sm_cmac_state;
@@ -2897,9 +2898,14 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                         }
 #endif
                         // trigger Random Address generation if requested before
-                        rau_state = RAU_IDLE;
-                        if (gap_random_adress_type != GAP_RANDOM_ADDRESS_TYPE_OFF) {
-                            gap_random_address_trigger();
+                        if (gap_random_adress_type == GAP_RANDOM_ADDRESS_TYPE_OFF) {
+                            if (sm_random_address_set){
+                                rau_state = RAU_SET_ADDRESS;
+                            } else {
+                                rau_state = RAU_IDLE;
+                            }
+                        } else {
+                            rau_state = RAU_GET_RANDOM;
                         }
                         sm_run();
 					}
@@ -3615,7 +3621,7 @@ void sm_init(void){
     sm_address_resolution_general_queue = NULL;
     
     gap_random_adress_update_period = 15 * 60 * 1000L;
-
+    sm_random_address_set = 0;  
     sm_active_connection = 0;
 
     test_use_fixed_local_csrk = 0;
@@ -3896,6 +3902,8 @@ void gap_random_address_set_update_period(int period_ms){
 void gap_random_address_set(bd_addr_t addr){
     gap_random_address_set_mode(GAP_RANDOM_ADDRESS_TYPE_OFF);
     memcpy(sm_random_address, addr, 6);
+    sm_random_address_set = 1;
+    if (rau_state == RAU_W4_WORKING) return;
     rau_state = RAU_SET_ADDRESS;
     sm_run();
 }
