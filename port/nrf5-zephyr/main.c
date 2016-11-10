@@ -41,31 +41,36 @@
   * Timers are supported by waiting on the HCI Controller RX queue until the next timeout is due
   */
 
+// libc
 #include <errno.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <string.h>
 
-#include <zephyr.h>
+// zephyr
 #include <arch/cpu.h>
-#include <misc/byteorder.h>
-#include <misc/sys_log.h>
-#include <misc/util.h>
-#include <sys_clock.h>
-
 #include <device.h>
 #include <init.h>
-#include <uart.h>
-
+#include <misc/byteorder.h>
+#include <misc/kernel_event_logger.h>
+#include <misc/sys_log.h>
+#include <misc/util.h>
 #include <net/buf.h>
+#include <sys_clock.h>
+#include <uart.h>
+#include <zephyr.h>
+
+// Bluetooth Controller
+#include "ll.h"
 #include <bluetooth/bluetooth.h>
 #include <bluetooth/hci.h>
 #include <bluetooth/buf.h>
 #include <bluetooth/hci_raw.h>
-#include "ll.h"
 
-#include <misc/kernel_event_logger.h>
+// Nordic NFK
+#include "nrf.h"
 
+// BTstack
 #include "btstack_debug.h"
 #include "btstack_event.h"
 #include "btstack_memory.h"
@@ -120,10 +125,6 @@ static void transport_init(const void *transport_config){
 
 	/* startup Controller */
 	bt_enable_raw(&rx_queue);
-
-	// use 11:22:33:44:55:66
-	uint8_t addr[] = {0x11, 0x22, 0x33, 0x44, 0x55, 0x66};
-	ll_address_set(0, addr);
 }
 
 /**
@@ -356,6 +357,14 @@ void main(void)
 
     // init HCI
     hci_init(transport_get_instance(), NULL);
+
+    // nRF5 chipsets don't have an official public address
+    // Instead, they use a Static Random Address set in the factory
+    bd_addr_t addr;
+    big_endian_store_16(addr, 0, NRF_FICR->DEVICEADDR[1] | 0xc000);
+    big_endian_store_32(addr, 2, NRF_FICR->DEVICEADDR[0]);
+    gap_random_address_set(addr);
+    printf("Random Static Address: %s\n", bd_addr_to_str(addr));
 
     // inform about BTstack state
     hci_event_callback_registration.callback = &packet_handler;

@@ -18,3 +18,4 @@ obj-y +=  \
 
 obj-y += ble/
 ccflags-y += -I${ZEPHYR_BASE}/subsys/btstack
+ccflags-y += -I${ZEPHYR_BASE}/ext/hal/nordic/mdk
