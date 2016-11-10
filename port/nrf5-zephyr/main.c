@@ -361,10 +361,18 @@ void main(void)
     // nRF5 chipsets don't have an official public address
     // Instead, they use a Static Random Address set in the factory
     bd_addr_t addr;
+#if 0
+    // set random static address
     big_endian_store_16(addr, 0, NRF_FICR->DEVICEADDR[1] | 0xc000);
     big_endian_store_32(addr, 2, NRF_FICR->DEVICEADDR[0]);
     gap_random_address_set(addr);
     printf("Random Static Address: %s\n", bd_addr_to_str(addr));
+#else
+    // make Random Static Address available via HCI Read BD ADDR as fake public address
+    little_endian_store_32(addr, 0, NRF_FICR->DEVICEADDR[0]);
+    little_endian_store_16(addr, 4, NRF_FICR->DEVICEADDR[1] | 0xc000);
+    ll_address_set(0, addr);
+#endif
 
     // inform about BTstack state
     hci_event_callback_registration.callback = &packet_handler;
