@@ -2898,14 +2898,16 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                         }
 #endif
                         // trigger Random Address generation if requested before
-                        if (gap_random_adress_type == GAP_RANDOM_ADDRESS_TYPE_OFF) {
-                            if (sm_random_address_set){
-                                rau_state = RAU_SET_ADDRESS;
-                            } else {
+                        switch (gap_random_adress_type){
+                            case GAP_RANDOM_ADDRESS_TYPE_OFF:
                                 rau_state = RAU_IDLE;
-                            }
-                        } else {
-                            rau_state = RAU_GET_RANDOM;
+                                break;
+                            case GAP_RANDOM_ADDRESS_TYPE_STATIC:                         
+                                rau_state = RAU_SET_ADDRESS;
+                                break;
+                            default:
+                                rau_state = RAU_GET_RANDOM;
+                                break;
                         }
                         sm_run();
 					}
@@ -3879,11 +3881,17 @@ int sm_le_device_index(hci_con_handle_t con_handle ){
     return sm_conn->sm_le_db_index;
 }
 
+static int gap_random_address_type_requires_updates(void){
+    if (gap_random_adress_type == GAP_RANDOM_ADDRESS_TYPE_OFF) return 0;
+    if (gap_random_adress_type == GAP_RANDOM_ADDRESS_TYPE_OFF) return 0;
+    return 1;
+}
+
 // GAP LE API
 void gap_random_address_set_mode(gap_random_address_type_t random_address_type){
     gap_random_address_update_stop();
     gap_random_adress_type = random_address_type;
-    if (random_address_type == GAP_RANDOM_ADDRESS_TYPE_OFF) return;
+    if (!gap_random_address_type_requires_updates()) return;
     gap_random_address_update_start();
     gap_random_address_trigger();
 }
@@ -3894,13 +3902,13 @@ gap_random_address_type_t gap_random_address_get_mode(void){
 
 void gap_random_address_set_update_period(int period_ms){
     gap_random_adress_update_period = period_ms;
-    if (gap_random_adress_type == GAP_RANDOM_ADDRESS_TYPE_OFF) return;
+    if (!gap_random_address_type_requires_updates()) return;
     gap_random_address_update_stop();
     gap_random_address_update_start();
 }
 
 void gap_random_address_set(bd_addr_t addr){
-    gap_random_address_set_mode(GAP_RANDOM_ADDRESS_TYPE_OFF);
+    gap_random_address_set_mode(GAP_RANDOM_ADDRESS_TYPE_STATIC);
     memcpy(sm_random_address, addr, 6);
     sm_random_address_set = 1;
     if (rau_state == RAU_W4_WORKING) return;
