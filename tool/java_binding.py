@@ -111,6 +111,12 @@ java_event_getter_data = \
         System.arraycopy(data, {1}, result, 0, len);
         return result;'''
 
+java_event_getter_data_fixed = \
+'''int len = {0};
+        byte[] result = new byte[len];
+        System.arraycopy(data, {1}, result, 0, len);
+        return result;'''
+
 java_event_getter_remaining_data = \
 '''int len = getPayloadLen() - {0};
         byte[] result = new byte[len];
@@ -140,7 +146,7 @@ defines_used = set()
 def java_type_for_btstack_type(type):
     param_types = { '1' : 'int', '2' : 'int', '3' : 'int', '4' : 'long', 'H' : 'int', 'B' : 'BD_ADDR',
                     'D' : 'byte []', 'E' : 'byte [] ', 'N' : 'String' , 'P' : 'byte []', 'A' : 'byte []',
-                    'R' : 'byte []', 'S' : 'byte []',
+                    'R' : 'byte []', 'S' : 'byte []', 'Q' : 'byte []',
                     'J' : 'int', 'L' : 'int', 'V' : 'byte []', 'U' : 'BT_UUID',
                     'X' : 'GATTService', 'Y' : 'GATTCharacteristic', 'Z' : 'GATTCharacteristicDescriptor',
                     'T' : 'String'}
@@ -148,7 +154,7 @@ def java_type_for_btstack_type(type):
 
 def size_for_type(type):
     param_sizes = { '1' : 1, '2' : 2, '3' : 3, '4' : 4, 'H' : 2, 'B' : 6, 'D' : 8, 'E' : 240, 'N' : 248, 'P' : 16,
-                    'A' : 31, 'S' : -1, 'V': -1, 'J' : 1, 'L' : 2, 'U' : 16, 'X' : 20, 'Y' : 24, 'Z' : 18, 'T':-1}
+                    'A' : 31, 'S' : -1, 'V': -1, 'J' : 1, 'L' : 2, 'Q' : 32, 'U' : 16, 'X' : 20, 'Y' : 24, 'Z' : 18, 'T':-1}
     return param_sizes[type]
 
 def create_command_java(fout, name, ogf, ocf, format, params):
@@ -166,6 +172,7 @@ def create_command_java(fout, name, ogf, ocf, format, params):
      'D' : 'Util.storeBytes(command, offset, %s, 8);',
      'E' : 'Util.storeBytes(command, offset, %s, 240);',
      'P' : 'Util.storeBytes(command, offset, %s, 16);',
+     'Q' : 'Util.storeBytes(command, offset, %s, 32);',
      'A' : 'Util.storeBytes(command, offset, %s, 31);',
      'S' : 'Util.storeBytes(command, offset, %s);', 
      'B' : 'Util.storeBytes(command, offset, %s.getBytes());',
@@ -278,7 +285,8 @@ def create_event(event_name, format, args):
      'Z' : 'return Util.readGattCharacteristicDescriptor(data, %u);',
      'T' : 'int offset = %u; \n        return Util.getText(data, offset, getPayloadLen()-offset);',
      'N' : 'return Util.getText(data, %u, 248);',
-     # 'D' : 'Util.storeBytes(data, %u, 8);',
+     'D' : 'Util.storeBytes(data, %u, 8);',
+     'Q' : 'Util.storeBytes(data, %u, 32);',
      # 'E' : 'Util.storeBytes(data, %u, 240);',
      # 'P' : 'Util.storeBytes(data, %u, 16);',
      # 'A' : 'Util.storeBytes(data, %u, 31);',
@@ -302,6 +310,9 @@ def create_event(event_name, format, args):
             elif f == 'V':
                 access = java_event_getter_data.format(length_name, offset)
                 size = 0
+            elif f in ['D', 'Q']:
+                size = size_for_type(f)
+                access = java_event_getter_data_fixed.format(size, offset)
             else: 
                 access = param_read[f] % offset
                 size = size_for_type(f)
