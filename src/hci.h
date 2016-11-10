@@ -975,6 +975,13 @@ void hci_le_advertisements_set_params(uint16_t adv_int_min, uint16_t adv_int_max
     uint8_t own_address_type, uint8_t direct_address_typ, bd_addr_t direct_address,
     uint8_t channel_map, uint8_t filter_policy);
 
+void hci_le_advertisements_set_own_address_type(uint8_t own_address_type);
+
+/**
+ * @brief Get Manufactured
+ * @return manufacturer id
+ */
+uint16_t hci_get_manufacturer(void);
 
 // Only for PTS testing
 

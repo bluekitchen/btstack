@@ -178,7 +178,6 @@ static derived_key_generation_t dkg_state;
 // random address update
 static random_address_update_t rau_state;
 static bd_addr_t sm_random_address;
-static uint8_t   sm_random_address_set;
 
 // CMAC Calculation: General
 static cmac_state_t sm_cmac_state;
@@ -3106,6 +3105,17 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                         sm_handle_random_result(&packet[6]);
                         break;
                     }
+                    if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_read_bd_addr)){
+                        // Hack for Nordic nRF5 series that doesn't have public address:
+                        // - with patches from port/nrf5-zephyr, hci_read_bd_addr returns random static address
+                        // - we use this as default for advertisements/connections
+                        if (hci_get_manufacturer() == COMPANY_ID_NORDIC_SEMICONDUCTOR_ASA){
+                            log_info("nRF5: using (fake) public address as random static address");
+                            bd_addr_t addr;
+                            reverse_bd_addr(&packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE + 1], addr);
+                            gap_random_address_set(addr);
+                        }
+                    }
                     break;
                 default:
                     break;
@@ -3623,7 +3633,6 @@ void sm_init(void){
     sm_address_resolution_general_queue = NULL;
     
     gap_random_adress_update_period = 15 * 60 * 1000L;
-    sm_random_address_set = 0;  
     sm_active_connection = 0;
 
     test_use_fixed_local_csrk = 0;
@@ -3886,11 +3895,16 @@ static int gap_random_address_type_requires_updates(void){
     if (gap_random_adress_type == GAP_RANDOM_ADDRESS_TYPE_OFF) return 0;
     return 1;
 }
+static uint8_t own_address_type(void){
+    if (gap_random_adress_type == 0) return 0;
+    return 1;
+}
 
 // GAP LE API
 void gap_random_address_set_mode(gap_random_address_type_t random_address_type){
     gap_random_address_update_stop();
     gap_random_adress_type = random_address_type;
+    hci_le_advertisements_set_own_address_type(own_address_type());
     if (!gap_random_address_type_requires_updates()) return;
     gap_random_address_update_start();
     gap_random_address_trigger();
@@ -3910,7 +3924,6 @@ void gap_random_address_set_update_period(int period_ms){
 void gap_random_address_set(bd_addr_t addr){
     gap_random_address_set_mode(GAP_RANDOM_ADDRESS_TYPE_STATIC);
     memcpy(sm_random_address, addr, 6);
-    sm_random_address_set = 1;
     if (rau_state == RAU_W4_WORKING) return;
     rau_state = RAU_SET_ADDRESS;
     sm_run();
@@ -3930,7 +3943,7 @@ void gap_random_address_set(bd_addr_t addr){
  */
 void gap_advertisements_set_params(uint16_t adv_int_min, uint16_t adv_int_max, uint8_t adv_type,
     uint8_t direct_address_typ, bd_addr_t direct_address, uint8_t channel_map, uint8_t filter_policy){
-    hci_le_advertisements_set_params(adv_int_min, adv_int_max, adv_type, gap_random_adress_type == 0 ? 0 : 1,
+    hci_le_advertisements_set_params(adv_int_min, adv_int_max, adv_type, own_address_type(),
         direct_address_typ, direct_address, channel_map, filter_policy);
 }
 
