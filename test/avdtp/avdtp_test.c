@@ -302,9 +302,9 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
 }
 
 static const uint8_t media_sbc_codec_info[] = {
-    (AVDTP_SBC_44100 << 4) | AVDTP_SBC_STEREO,
-    (AVDTP_SBC_BLOCK_LENGTH_16 << 4) | (AVDTP_SBC_SUBBANDS_8 << 2) | AVDTP_SBC_ALLOCATION_METHOD_LOUDNESS,
-    2, 250
+    0xFF, // (AVDTP_SBC_44100 << 4) | AVDTP_SBC_STEREO,
+    0xFF, // (AVDTP_SBC_BLOCK_LENGTH_16 << 4) | (AVDTP_SBC_SUBBANDS_8 << 2) | AVDTP_SBC_ALLOCATION_METHOD_LOUDNESS,
+    2, 53
 }; 
 
 
@@ -323,13 +323,16 @@ int btstack_main(int argc, const char * argv[]){
     uint8_t seid = avdtp_sink_register_stream_end_point(AVDTP_SINK, AVDTP_AUDIO);
     avdtp_sink_register_media_transport_category(seid);
     avdtp_sink_register_media_codec_category(seid, AVDTP_AUDIO, AVDTP_CODEC_SBC, media_sbc_codec_info, sizeof(media_sbc_codec_info));
+    
+    // uint8_t cp_type_lsb,  uint8_t cp_type_msb, const uint8_t * cp_type_value, uint8_t cp_type_value_len
+    // avdtp_sink_register_content_protection_category(seid, 2, 2, NULL, 0);
 
     avdtp_sink_register_media_handler(&handle_l2cap_media_data_packet);
 
     // Initialize SDP 
     sdp_init();
     memset(sdp_avdtp_sink_service_buffer, 0, sizeof(sdp_avdtp_sink_service_buffer));
-    a2dp_sink_create_sdp_record(sdp_avdtp_sink_service_buffer, 0x10001, 0, NULL, NULL);
+    a2dp_sink_create_sdp_record(sdp_avdtp_sink_service_buffer, 0x10001, 1, NULL, NULL);
     sdp_register_service(sdp_avdtp_sink_service_buffer);
     
     gap_set_local_name("BTstack AVDTP Test");

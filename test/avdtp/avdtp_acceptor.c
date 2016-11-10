@@ -47,14 +47,16 @@
 #include "avdtp_util.h"
 #include "avdtp_acceptor.h"
 
-static int avdtp_pack_service_capabilities(uint8_t * buffer, int size, avdtp_capabilities_t caps, avdtp_service_category_t category){
+static int avdtp_pack_service_capabilities(uint8_t * buffer, int size, avdtp_capabilities_t caps, avdtp_service_category_t category, uint8_t pack_all_capabilities){
     int i;
     // pos = 0 reserved for length
     int pos = 1;
     switch(category){
         case AVDTP_MEDIA_TRANSPORT:
         case AVDTP_REPORTING:
+            break;
         case AVDTP_DELAY_REPORTING:
+            if (!pack_all_capabilities) break;
             break;
         case AVDTP_RECOVERY:
             buffer[pos++] = caps.recovery.recovery_type; // 0x01=RFC2733
@@ -64,9 +66,13 @@ static int avdtp_pack_service_capabilities(uint8_t * buffer, int size, avdtp_cap
         case AVDTP_CONTENT_PROTECTION:
             buffer[pos++] = caps.content_protection.cp_type_lsb;
             buffer[pos++] = caps.content_protection.cp_type_msb;
+            // if (caps.content_protection.cp_type_value_len == 0){
+            //     buffer[pos++] = 0;
+            // }
             for (i = 0; i<caps.content_protection.cp_type_value_len; i++){
                 buffer[pos++] = caps.content_protection.cp_type_value[i];
             }
+            printf("AVDTP_CONTENT_PROTECTION %d, %d \n", caps.content_protection.cp_type_lsb, caps.content_protection.cp_type_msb);
             break;
         case AVDTP_HEADER_COMPRESSION:
             buffer[pos++] = (caps.header_compression.back_ch << 7) | (caps.header_compression.media << 6) | (caps.header_compression.recovery << 5);
@@ -157,20 +163,40 @@ static int avdtp_acceptor_send_seps_response(uint16_t cid, uint8_t transaction_l
     return l2cap_send(cid, command, pos);
 }
 
-static int avdtp_acceptor_send_capabilities_response(uint16_t cid, uint8_t transaction_label, avdtp_sep_t sep){
+static inline int avdtp_acceptor_send_capabilities(uint16_t cid, uint8_t transaction_label, avdtp_sep_t sep, uint8_t pack_all_capabilities){
     uint8_t command[100];
+    uint8_t identifier = (uint8_t)AVDTP_SI_GET_CAPABILITIES;
+    if (pack_all_capabilities){
+        identifier = (uint8_t)AVDTP_SI_GET_ALL_CAPABILITIES;
+    } 
+    
     int pos = 0;
     command[pos++] = avdtp_header(transaction_label, AVDTP_SINGLE_PACKET, AVDTP_RESPONSE_ACCEPT_MSG);
-    command[pos++] = (uint8_t)AVDTP_SI_GET_CAPABILITIES;
+    command[pos++] = identifier;
     int i = 0;
     for (i = 1; i < 9; i++){
         if (get_bit16(sep.registered_service_categories, i)){
             // service category
             command[pos++] = i;
-            pos += avdtp_pack_service_capabilities(command+pos, sizeof(command)-pos, sep.capabilities, (avdtp_service_category_t)i);
+            pos += avdtp_pack_service_capabilities(command+pos, sizeof(command)-pos, sep.capabilities, (avdtp_service_category_t)i, pack_all_capabilities);
         }
     }
+    command[pos++] = 0x04;
+    command[pos++] = 0x02;
+    command[pos++] = 0x02;
+    command[pos++] = 0x00;
+    
+    printf(" avdtp_acceptor_send_capabilities_response: \n");
+    printf_hexdump(command, pos);
     return l2cap_send(cid, command, pos);
+}
+
+static int avdtp_acceptor_send_capabilities_response(uint16_t cid, uint8_t transaction_label, avdtp_sep_t sep){
+    return avdtp_acceptor_send_capabilities(cid, transaction_label, sep, 0);
+}
+
+static int avdtp_acceptor_send_all_capabilities_response(uint16_t cid, uint8_t transaction_label, avdtp_sep_t sep){
+    return avdtp_acceptor_send_capabilities(cid, transaction_label, sep, 1);
 }
 
 // static int avdtp_acceptor_send_configuration_reject_response(uint16_t cid, uint8_t transaction_label){
@@ -217,14 +243,18 @@ int avdtp_acceptor_stream_config_subsm(avdtp_sink_connection_t * connection, uin
                     printf("    ACP -> AVDTP_ACCEPTOR_W2_ANSWER_DISCOVER_SEPS\n");
                     connection->acceptor_config_state = AVDTP_ACCEPTOR_W2_ANSWER_DISCOVER_SEPS;
                     break;
+                case AVDTP_SI_GET_ALL_CAPABILITIES:
+                    printf("    ACP -> AVDTP_SI_GET_ALL_CAPABILITIES\n");
+                    connection->acceptor_config_state = AVDTP_ACCEPTOR_W2_ANSWER_GET_ALL_CAPABILITIES;
+                    break;
                 case AVDTP_SI_GET_CAPABILITIES:
                     printf("    ACP -> AVDTP_ACCEPTOR_W2_ANSWER_GET_CAPABILITIES\n");
-                    connection->local_seid = packet[2] >> 2;
+                    connection->query_seid = packet[2] >> 2;
                     connection->acceptor_config_state = AVDTP_ACCEPTOR_W2_ANSWER_GET_CAPABILITIES;
                     break;
                 case AVDTP_SI_SET_CONFIGURATION:
                     printf("    ACP -> AVDTP_ACCEPTOR_W2_ANSWER_SET_CONFIGURATION\n");
-                    connection->local_seid  = packet[2] >> 2;
+                    connection->query_seid  = packet[2] >> 2;
                     sep.seid = packet[3] >> 2;
                     // find or add sep
                     for (i=0; i<connection->remote_seps_num; i++){
@@ -236,9 +266,12 @@ int avdtp_acceptor_stream_config_subsm(avdtp_sink_connection_t * connection, uin
                     connection->remote_seps[connection->remote_sep_index] = sep;
                     connection->acceptor_config_state = AVDTP_ACCEPTOR_W2_ANSWER_SET_CONFIGURATION;
                     break;
+
                 default:
-                    printf("    ACP -> NOT IMPLEMENTED\n");
-                    request_to_send = 0;
+                    printf("    ACP -> NOT IMPLEMENTED, Reject signal_identifier %02x\n", signaling_header.signal_identifier);
+                    connection->acceptor_config_state = AVDTP_ACCEPTOR_W2_REJECT_UNKNOWN_CMD;
+                    connection->unknown_signal_identifier = signaling_header.signal_identifier;
+                    request_to_send = 1;
                     break;
             }
             l2cap_request_can_send_now_event(connection->l2cap_signaling_cid);
@@ -254,6 +287,13 @@ int avdtp_acceptor_stream_config_subsm(avdtp_sink_connection_t * connection, uin
     return request_to_send;
 }
 
+static int avdtp_acceptor_send_response_reject(uint16_t cid,  avdtp_signal_identifier_t identifier, uint8_t transaction_label){
+    uint8_t command[2];
+    command[0] = avdtp_header(transaction_label, AVDTP_SINGLE_PACKET, AVDTP_GENERAL_REJECT_MSG);
+    command[1] = (uint8_t)identifier;
+    return l2cap_send(cid, command, sizeof(command));
+}
+
 int avdtp_acceptor_stream_config_subsm_run_for_connection(avdtp_sink_connection_t *connection, avdtp_sep_t * local_seps, uint8_t local_seps_num){
     int sent = 1;
     switch (connection->acceptor_config_state){
@@ -265,7 +305,16 @@ int avdtp_acceptor_stream_config_subsm_run_for_connection(avdtp_sink_connection_
         case AVDTP_ACCEPTOR_W2_ANSWER_GET_CAPABILITIES:
             printf("    AVDTP_ACCEPTOR_W2_ANSWER_GET_CAPABILITIES -> AVDTP_ACCEPTOR_STREAM_CONFIG_IDLE\n");
             connection->acceptor_config_state = AVDTP_ACCEPTOR_STREAM_CONFIG_IDLE;
-            avdtp_acceptor_send_capabilities_response(connection->l2cap_signaling_cid, connection->acceptor_transaction_label, local_seps[connection->local_seid]);
+            avdtp_acceptor_send_capabilities_response(connection->l2cap_signaling_cid, connection->acceptor_transaction_label, local_seps[connection->query_seid]);
+            break;
+        case AVDTP_ACCEPTOR_W2_ANSWER_GET_ALL_CAPABILITIES:
+            printf("    AVDTP_ACCEPTOR_W2_ANSWER_GET_ALL_CAPABILITIES -> AVDTP_ACCEPTOR_STREAM_CONFIG_IDLE\n");
+            connection->acceptor_config_state = AVDTP_ACCEPTOR_STREAM_CONFIG_IDLE;
+            avdtp_acceptor_send_all_capabilities_response(connection->l2cap_signaling_cid, connection->acceptor_transaction_label, local_seps[connection->query_seid]);
+            break;
+        case AVDTP_ACCEPTOR_W2_REJECT_UNKNOWN_CMD:
+            connection->acceptor_config_state = AVDTP_ACCEPTOR_STREAM_CONFIG_IDLE;
+            avdtp_acceptor_send_response_reject(connection->l2cap_signaling_cid, connection->unknown_signal_identifier, connection->acceptor_transaction_label);
             break;
         case AVDTP_ACCEPTOR_W2_ANSWER_SET_CONFIGURATION:
             printf("    AVDTP_ACCEPTOR_W2_ANSWER_SET_CONFIGURATION -> AVDTP_ACCEPTOR_STREAM_CONFIG_DONE\n");

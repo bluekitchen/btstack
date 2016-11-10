@@ -82,6 +82,8 @@ typedef enum {
     AVDTP_INITIATOR_W4_SEPS_DISCOVERED,
     AVDTP_INITIATOR_W2_GET_CAPABILITIES,
     AVDTP_INITIATOR_W4_CAPABILITIES,
+    AVDTP_INITIATOR_W2_GET_ALL_CAPABILITIES,
+    AVDTP_INITIATOR_W4_ALL_CAPABILITIES,
     AVDTP_INITIATOR_W2_SET_CONFIGURATION,
     AVDTP_INITIATOR_W4_CONFIGURATION_SET,
     AVDTP_INITIATOR_W2_GET_CONFIGURATION,
@@ -93,7 +95,9 @@ typedef enum {
     AVDTP_ACCEPTOR_STREAM_CONFIG_IDLE,
     AVDTP_ACCEPTOR_W2_ANSWER_DISCOVER_SEPS,
     AVDTP_ACCEPTOR_W2_ANSWER_GET_CAPABILITIES,
+    AVDTP_ACCEPTOR_W2_ANSWER_GET_ALL_CAPABILITIES,
     AVDTP_ACCEPTOR_W2_ANSWER_SET_CONFIGURATION,
+    AVDTP_ACCEPTOR_W2_REJECT_UNKNOWN_CMD,
     AVDTP_ACCEPTOR_STREAM_CONFIG_DONE
 } avdtp_acceptor_stream_config_state_t;
 
@@ -115,13 +119,16 @@ typedef struct avdtp_sink_connection {
 
     uint8_t initiator_transaction_label;
     uint8_t acceptor_transaction_label;
+    avdtp_signal_identifier_t unknown_signal_identifier;
     
     // store remote seps
     avdtp_sep_t remote_seps[MAX_NUM_SEPS];
     uint8_t remote_seps_num;
     
-    // currently active local_seid
-    uint8_t local_seid;
+    // currently active seid - stream opened
+    uint8_t active_seid;
+    uint8_t query_seid;
+
     // currently active remote seid
     uint8_t remote_sep_index;
     

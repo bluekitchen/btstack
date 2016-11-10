@@ -331,7 +331,7 @@ static void handle_l2cap_signaling_data_packet(avdtp_sink_connection_t * connect
             switch (signaling_header.signal_identifier){
                 case AVDTP_SI_OPEN:
                     printf("AVDTP_CONFIGURED -> AVDTP_W2_ANSWER_OPEN_STREAM %d\n", signaling_header.transaction_label);
-                    connection->local_seid  = packet[2] >> 2;
+                    connection->active_seid  = packet[2] >> 2;
                     connection->avdtp_state = AVDTP_W2_ANSWER_OPEN_STREAM;
                     connection->acceptor_transaction_label = signaling_header.transaction_label;
                     l2cap_request_can_send_now_event(connection->l2cap_signaling_cid);
@@ -345,7 +345,7 @@ static void handle_l2cap_signaling_data_packet(avdtp_sink_connection_t * connect
             switch (signaling_header.signal_identifier){
                 case AVDTP_SI_START:
                     printf("AVDTP_OPEN -> AVDTP_W2_ANSWER_START_SINGLE_STREAM\n");
-                    connection->local_seid  = packet[2] >> 2;
+                    connection->active_seid  = packet[2] >> 2;
                     connection->avdtp_state = AVDTP_W2_ANSWER_START_SINGLE_STREAM;
                     connection->acceptor_transaction_label = signaling_header.transaction_label;
                     l2cap_request_can_send_now_event(connection->l2cap_signaling_cid);

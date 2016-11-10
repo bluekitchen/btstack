@@ -54,9 +54,20 @@ static int avdtp_initiator_send_signaling_cmd(uint16_t cid, avdtp_signal_identif
     return l2cap_send(cid, command, sizeof(command));
 }
 
-static int avdtp_initiator_send_get_capabilities_cmd(uint16_t cid, uint8_t sep_id){
-    printf("TODO: avdtp_initiator_send_get_capabilities_cmd not implemented\n");
-    return 0;
+static int avdtp_initiator_send_get_all_capabilities_cmd(uint16_t cid, uint8_t transaction_label, uint8_t sep_id){
+    uint8_t command[3];
+    command[0] = avdtp_header(transaction_label, AVDTP_SINGLE_PACKET, AVDTP_CMD_MSG);
+    command[1] = AVDTP_SI_GET_ALL_CAPABILITIES;
+    command[2] = sep_id << 2;
+    return l2cap_send(cid, command, sizeof(command));
+}
+
+static int avdtp_initiator_send_get_capabilities_cmd(uint16_t cid, uint8_t transaction_label, uint8_t sep_id){
+    uint8_t command[3];
+    command[0] = avdtp_header(transaction_label, AVDTP_SINGLE_PACKET, AVDTP_CMD_MSG);
+    command[1] = AVDTP_SI_GET_CAPABILITIES;
+    command[2] = sep_id << 2;
+    return l2cap_send(cid, command, sizeof(command));
 }
 
 void avdtp_initiator_stream_config_subsm_init(avdtp_sink_connection_t * connection){
@@ -68,6 +79,7 @@ int avdtp_initiator_stream_config_subsm_is_done(avdtp_sink_connection_t * connec
 }
 
 int avdtp_initiator_stream_config_subsm(avdtp_sink_connection_t * connection, uint8_t *packet, uint16_t size){
+    return 0;
     if (avdtp_initiator_stream_config_subsm_run_for_connection(connection)) return 1;
     int i;
     int responded = 1;
@@ -115,8 +127,13 @@ int avdtp_initiator_stream_config_subsm(avdtp_sink_connection_t * connection, ui
             responded = 1;
             break;
         case AVDTP_INITIATOR_W4_CAPABILITIES:
-            printf("    AVDTP_INITIATOR_W4_CAPABILITIES -> NOT IMPLEMENTED\n");
-            
+            printf("    Received basic capabilities -> NOT IMPLEMENTED\n");
+            responded = 0;
+            break;
+        case AVDTP_INITIATOR_W4_ALL_CAPABILITIES:
+            printf("    Received all capabilities -> NOT IMPLEMENTED\n");
+            responded = 0;
+            break;
         default:
             printf("    INT : NOT IMPLEMENTED sig. ID %02x\n", signaling_header.signal_identifier);
             //printf_hexdump( packet, size );
@@ -127,6 +144,7 @@ int avdtp_initiator_stream_config_subsm(avdtp_sink_connection_t * connection, ui
 }
 
 int avdtp_initiator_stream_config_subsm_run_for_connection(avdtp_sink_connection_t *connection){
+    return 0;
     int sent = 1;
     switch (connection->initiator_config_state){
         case AVDTP_INITIATOR_STREAM_CONFIG_IDLE:
@@ -136,9 +154,14 @@ int avdtp_initiator_stream_config_subsm_run_for_connection(avdtp_sink_connection
             avdtp_initiator_send_signaling_cmd(connection->l2cap_signaling_cid, AVDTP_SI_DISCOVER, connection->initiator_transaction_label);
             break;
         case AVDTP_INITIATOR_W2_GET_CAPABILITIES:
-            printf("    AVDTP_INitiator_W2_GET_CAPABILITIES -> AVDTP_INitiator_W4_CAPABILITIES\n");
+            printf("    AVDTP_INITIATOR_W2_GET_CAPABILITIES -> AVDTP_INITIATOR_W4_CAPABILITIES\n");
             connection->initiator_config_state = AVDTP_INITIATOR_W4_CAPABILITIES;
-            avdtp_initiator_send_get_capabilities_cmd(connection->l2cap_signaling_cid, 0);
+            avdtp_initiator_send_get_capabilities_cmd(connection->l2cap_signaling_cid, connection->initiator_transaction_label, connection->query_seid);
+            break;
+        case AVDTP_INITIATOR_W2_GET_ALL_CAPABILITIES:
+            printf("    AVDTP_INITIATOR_W2_GET_ALL_CAPABILITIES -> AVDTP_INITIATOR_W4_ALL_CAPABILITIES\n");
+            connection->initiator_config_state = AVDTP_INITIATOR_W4_ALL_CAPABILITIES;
+            avdtp_initiator_send_get_all_capabilities_cmd(connection->l2cap_signaling_cid, connection->initiator_transaction_label, connection->query_seid);
             break;
         default:
             sent = 0;
