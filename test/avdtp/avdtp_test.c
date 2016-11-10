@@ -146,7 +146,7 @@ uint16_t local_cid = 0;
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 
-static void handle_l2cap_media_data_packet(avdtp_sink_connection_t * connection, uint8_t *packet, uint16_t size){
+static void handle_l2cap_media_data_packet(avdtp_stream_endpoint_t * stream_endpoint, uint8_t *packet, uint16_t size){
     int pos = 0;
     
     avdtp_media_packet_header_t media_header;
@@ -320,7 +320,7 @@ int btstack_main(int argc, const char * argv[]){
     avdtp_sink_init();
     avdtp_sink_register_packet_handler(&packet_handler);
 
-    uint8_t seid = avdtp_sink_register_stream_end_point(AVDTP_SINK, AVDTP_AUDIO);
+    uint8_t seid = avdtp_sink_register_stream_endpoint(AVDTP_SINK, AVDTP_AUDIO);
     avdtp_sink_register_media_transport_category(seid);
     avdtp_sink_register_media_codec_category(seid, AVDTP_AUDIO, AVDTP_CODEC_SBC, media_sbc_codec_info, sizeof(media_sbc_codec_info));
     

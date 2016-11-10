@@ -61,20 +61,17 @@ typedef enum {
     AVDTP_W4_L2CAP_FOR_SIGNALING_CONNECTED,
     AVDTP_CONFIGURATION_SUBSTATEMACHINE,
     AVDTP_CONFIGURED,
-
     AVDTP_W2_ANSWER_OPEN_STREAM,
     AVDTP_W4_L2CAP_FOR_MEDIA_CONNECTED,
     AVDTP_OPEN, // 5
     AVDTP_W2_ANSWER_START_SINGLE_STREAM,
     AVDTP_W4_STREAMING_CONNECTION_OPEN,
     AVDTP_STREAMING, // 8
-    
     AVDTP_CLOSING,
     AVDTP_ABORTING,
-
     AVDTP_W4_L2CAP_FOR_MEDIA_DISCONNECTED,
     AVDTP_W4_L2CAP_FOR_SIGNALING_DISCONNECTED
-} avdtp_state_t;
+} avdtp_seid_state_t;
 
 typedef enum {
     AVDTP_INITIATOR_STREAM_CONFIG_IDLE,
@@ -113,7 +110,7 @@ typedef struct avdtp_sink_connection {
 
     uint8_t  num_l2cap_channels_opened;
 
-    avdtp_state_t        avdtp_state;
+    avdtp_seid_state_t        avdtp_state;
     avdtp_initiator_stream_config_state_t initiator_config_state;
     avdtp_acceptor_stream_config_state_t  acceptor_config_state;
 
@@ -134,7 +131,7 @@ typedef struct avdtp_sink_connection {
     
     // register request for L2cap connection release
     uint8_t release_l2cap_connection;
-} avdtp_sink_connection_t;
+} avdtp_stream_endpoint_t;
 
 
 /* API_START */
@@ -155,7 +152,7 @@ void a2dp_sink_create_sdp_record(uint8_t * service,  uint32_t service_record_han
 void avdtp_sink_init(void);
 
 // returns sep_id
-uint8_t avdtp_sink_register_stream_end_point(avdtp_sep_type_t sep_type, avdtp_media_type_t media_type);
+uint8_t avdtp_sink_register_stream_endpoint(avdtp_sep_type_t sep_type, avdtp_media_type_t media_type);
 
 void avdtp_sink_register_media_transport_category(uint8_t seid);
 void avdtp_sink_register_reporting_category(uint8_t seid);
@@ -179,8 +176,7 @@ void avdtp_sink_register_packet_handler(btstack_packet_handler_t callback);
  */
 void avdtp_sink_connect(bd_addr_t bd_addr);
 
-// TODO: per connectio?
-void avdtp_sink_register_media_handler(void (*callback)(avdtp_sink_connection_t * connection, uint8_t *packet, uint16_t size));
+void avdtp_sink_register_media_handler(void (*callback)(avdtp_stream_endpoint_t * stream_endpoint, uint8_t *packet, uint16_t size));
 /**
  * @brief Disconnect from device with connection handle. 
  * @param l2cap_cid

@@ -178,7 +178,7 @@ list_of_structs = [
     ["bnep_service", "bnep_channel"],
     ["hfp_connection"],
     ["service_record_item"],
-    ["avdtp_sink_connection"]
+    ["avdtp_stream_endpoint"]
 ]
 list_of_le_structs = [["gatt_client", "whitelist_entry", "sm_lookup_entry"]]
 

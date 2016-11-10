@@ -477,40 +477,40 @@ void btstack_memory_service_record_item_free(service_record_item_t *service_reco
 
 
 
-// MARK: avdtp_sink_connection_t
-#if !defined(HAVE_MALLOC) && !defined(MAX_NR_AVDTP_SINK_CONNECTIONS)
-    #if defined(MAX_NO_AVDTP_SINK_CONNECTIONS)
-        #error "Deprecated MAX_NO_AVDTP_SINK_CONNECTIONS defined instead of MAX_NR_AVDTP_SINK_CONNECTIONS. Please update your btstack_config.h to use MAX_NR_AVDTP_SINK_CONNECTIONS."
+// MARK: avdtp_stream_endpoint_t
+#if !defined(HAVE_MALLOC) && !defined(MAX_NR_AVDTP_STREAM_ENDPOINTS)
+    #if defined(MAX_NO_AVDTP_STREAM_ENDPOINTS)
+        #error "Deprecated MAX_NO_AVDTP_STREAM_ENDPOINTS defined instead of MAX_NR_AVDTP_STREAM_ENDPOINTS. Please update your btstack_config.h to use MAX_NR_AVDTP_STREAM_ENDPOINTS."
     #else
-        #define MAX_NR_AVDTP_SINK_CONNECTIONS 0
+        #define MAX_NR_AVDTP_STREAM_ENDPOINTS 0
     #endif
 #endif
 
-#ifdef MAX_NR_AVDTP_SINK_CONNECTIONS
-#if MAX_NR_AVDTP_SINK_CONNECTIONS > 0
-static avdtp_sink_connection_t avdtp_sink_connection_storage[MAX_NR_AVDTP_SINK_CONNECTIONS];
-static btstack_memory_pool_t avdtp_sink_connection_pool;
-avdtp_sink_connection_t * btstack_memory_avdtp_sink_connection_get(void){
-    return (avdtp_sink_connection_t *) btstack_memory_pool_get(&avdtp_sink_connection_pool);
+#ifdef MAX_NR_AVDTP_STREAM_ENDPOINTS
+#if MAX_NR_AVDTP_STREAM_ENDPOINTS > 0
+static avdtp_stream_endpoint_t avdtp_stream_endpoint_storage[MAX_NR_AVDTP_STREAM_ENDPOINTS];
+static btstack_memory_pool_t avdtp_stream_endpoint_pool;
+avdtp_stream_endpoint_t * btstack_memory_avdtp_stream_endpoint_get(void){
+    return (avdtp_stream_endpoint_t *) btstack_memory_pool_get(&avdtp_stream_endpoint_pool);
 }
-void btstack_memory_avdtp_sink_connection_free(avdtp_sink_connection_t *avdtp_sink_connection){
-    btstack_memory_pool_free(&avdtp_sink_connection_pool, avdtp_sink_connection);
+void btstack_memory_avdtp_stream_endpoint_free(avdtp_stream_endpoint_t *avdtp_stream_endpoint){
+    btstack_memory_pool_free(&avdtp_stream_endpoint_pool, avdtp_stream_endpoint);
 }
 #else
-avdtp_sink_connection_t * btstack_memory_avdtp_sink_connection_get(void){
+avdtp_stream_endpoint_t * btstack_memory_avdtp_stream_endpoint_get(void){
     return NULL;
 }
-void btstack_memory_avdtp_sink_connection_free(avdtp_sink_connection_t *avdtp_sink_connection){
+void btstack_memory_avdtp_stream_endpoint_free(avdtp_stream_endpoint_t *avdtp_stream_endpoint){
     // silence compiler warning about unused parameter in a portable way
-    (void) avdtp_sink_connection;
+    (void) avdtp_stream_endpoint;
 };
 #endif
 #elif defined(HAVE_MALLOC)
-avdtp_sink_connection_t * btstack_memory_avdtp_sink_connection_get(void){
-    return (avdtp_sink_connection_t*) malloc(sizeof(avdtp_sink_connection_t));
+avdtp_stream_endpoint_t * btstack_memory_avdtp_stream_endpoint_get(void){
+    return (avdtp_stream_endpoint_t*) malloc(sizeof(avdtp_stream_endpoint_t));
 }
-void btstack_memory_avdtp_sink_connection_free(avdtp_sink_connection_t *avdtp_sink_connection){
-    free(avdtp_sink_connection);
+void btstack_memory_avdtp_stream_endpoint_free(avdtp_stream_endpoint_t *avdtp_stream_endpoint){
+    free(avdtp_stream_endpoint);
 }
 #endif
 
@@ -667,8 +667,8 @@ void btstack_memory_init(void){
 #if MAX_NR_SERVICE_RECORD_ITEMS > 0
     btstack_memory_pool_create(&service_record_item_pool, service_record_item_storage, MAX_NR_SERVICE_RECORD_ITEMS, sizeof(service_record_item_t));
 #endif
-#if MAX_NR_AVDTP_SINK_CONNECTIONS > 0
-    btstack_memory_pool_create(&avdtp_sink_connection_pool, avdtp_sink_connection_storage, MAX_NR_AVDTP_SINK_CONNECTIONS, sizeof(avdtp_sink_connection_t));
+#if MAX_NR_AVDTP_STREAM_ENDPOINTS > 0
+    btstack_memory_pool_create(&avdtp_stream_endpoint_pool, avdtp_stream_endpoint_storage, MAX_NR_AVDTP_STREAM_ENDPOINTS, sizeof(avdtp_stream_endpoint_t));
 #endif
 #ifdef ENABLE_BLE
 #if MAX_NR_GATT_CLIENTS > 0

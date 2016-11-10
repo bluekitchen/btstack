@@ -118,9 +118,9 @@ void   btstack_memory_hfp_connection_free(hfp_connection_t *hfp_connection);
 service_record_item_t * btstack_memory_service_record_item_get(void);
 void   btstack_memory_service_record_item_free(service_record_item_t *service_record_item);
 
-// avdtp_sink_connection
-avdtp_sink_connection_t * btstack_memory_avdtp_sink_connection_get(void);
-void   btstack_memory_avdtp_sink_connection_free(avdtp_sink_connection_t *avdtp_sink_connection);
+// avdtp_stream_endpoint
+avdtp_stream_endpoint_t * btstack_memory_avdtp_stream_endpoint_get(void);
+void   btstack_memory_avdtp_stream_endpoint_free(avdtp_stream_endpoint_t *avdtp_stream_endpoint);
 
 #ifdef ENABLE_BLE
 // gatt_client, whitelist_entry, sm_lookup_entry
