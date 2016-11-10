@@ -80,7 +80,7 @@ int avdtp_initiator_stream_config_subsm_is_done(avdtp_stream_endpoint_t * stream
 
 int avdtp_initiator_stream_config_subsm(avdtp_stream_endpoint_t * stream_endpoint, uint8_t *packet, uint16_t size){
     return 0;
-    if (avdtp_initiator_stream_config_subsm_run_for_connection(stream_endpoint)) return 1;
+    if (avdtp_initiator_stream_config_subsm_run(stream_endpoint)) return 1;
     int i;
     int responded = 1;
     avdtp_sep_t sep;
@@ -143,7 +143,7 @@ int avdtp_initiator_stream_config_subsm(avdtp_stream_endpoint_t * stream_endpoin
     return responded;
 }
 
-int avdtp_initiator_stream_config_subsm_run_for_connection(avdtp_stream_endpoint_t * stream_endpoint){
+int avdtp_initiator_stream_config_subsm_run(avdtp_stream_endpoint_t * stream_endpoint){
     return 0;
     int sent = 1;
     switch (stream_endpoint->initiator_config_state){

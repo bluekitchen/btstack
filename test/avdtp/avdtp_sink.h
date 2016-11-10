@@ -54,63 +54,16 @@
 extern "C" {
 #endif
 
-#define MAX_NUM_SEPS 10
-
-typedef enum {
-    AVDTP_IDLE,
-    AVDTP_W4_L2CAP_FOR_SIGNALING_CONNECTED,
-    AVDTP_CONFIGURATION_SUBSTATEMACHINE,
-    AVDTP_CONFIGURED,
-    AVDTP_W2_ANSWER_OPEN_STREAM,
-    AVDTP_W4_L2CAP_FOR_MEDIA_CONNECTED,
-    AVDTP_OPEN, // 5
-    AVDTP_W2_ANSWER_START_SINGLE_STREAM,
-    AVDTP_W4_STREAMING_CONNECTION_OPEN,
-    AVDTP_STREAMING, // 8
-    AVDTP_CLOSING,
-    AVDTP_ABORTING,
-    AVDTP_W4_L2CAP_FOR_MEDIA_DISCONNECTED,
-    AVDTP_W4_L2CAP_FOR_SIGNALING_DISCONNECTED
-} avdtp_seid_state_t;
-
-typedef enum {
-    AVDTP_INITIATOR_STREAM_CONFIG_IDLE,
-    AVDTP_INITIATOR_W2_DISCOVER_SEPS,
-    AVDTP_INITIATOR_W4_SEPS_DISCOVERED,
-    AVDTP_INITIATOR_W2_GET_CAPABILITIES,
-    AVDTP_INITIATOR_W4_CAPABILITIES,
-    AVDTP_INITIATOR_W2_GET_ALL_CAPABILITIES,
-    AVDTP_INITIATOR_W4_ALL_CAPABILITIES,
-    AVDTP_INITIATOR_W2_SET_CONFIGURATION,
-    AVDTP_INITIATOR_W4_CONFIGURATION_SET,
-    AVDTP_INITIATOR_W2_GET_CONFIGURATION,
-    AVDTP_INITIATOR_W4_CONFIGURATION_RECEIVED,
-    AVDTP_INITIATOR_STREAM_CONFIG_DONE
-} avdtp_initiator_stream_config_state_t;
-
-typedef enum {
-    AVDTP_ACCEPTOR_STREAM_CONFIG_IDLE,
-    AVDTP_ACCEPTOR_W2_ANSWER_DISCOVER_SEPS,
-    AVDTP_ACCEPTOR_W2_ANSWER_GET_CAPABILITIES,
-    AVDTP_ACCEPTOR_W2_ANSWER_GET_ALL_CAPABILITIES,
-    AVDTP_ACCEPTOR_W2_ANSWER_SET_CONFIGURATION,
-    AVDTP_ACCEPTOR_W2_REJECT_UNKNOWN_CMD,
-    AVDTP_ACCEPTOR_STREAM_CONFIG_DONE
-} avdtp_acceptor_stream_config_state_t;
-
-
-typedef struct avdtp_sink_connection {
+typedef struct avdtp_stream_endpoint {
     btstack_linked_item_t    item;
     
-    bd_addr_t remote_addr;
-    uint16_t l2cap_signaling_cid;
     uint16_t l2cap_media_cid;
     uint16_t l2cap_reporting_cid;
     uint16_t l2cap_recovery_cid;
 
     uint8_t  num_l2cap_channels_opened;
 
-    avdtp_seid_state_t        avdtp_state;
+    avdtp_stream_endpoint_state_t        avdtp_state;
     avdtp_initiator_stream_config_state_t initiator_config_state;
     avdtp_acceptor_stream_config_state_t  acceptor_config_state;
 
@@ -130,12 +83,10 @@ typedef struct avdtp_sink_connection {
     uint8_t remote_sep_index;
     
     // register request for L2cap connection release
-    uint8_t release_l2cap_connection;
+    uint8_t disconnect;
 } avdtp_stream_endpoint_t;
 
-
 /* API_START */
-
 /**
  * @brief AVDTP Sink service record. 
  * @param service
@@ -179,9 +130,9 @@ void avdtp_sink_connect(bd_addr_t bd_addr);
 void avdtp_sink_register_media_handler(void (*callback)(avdtp_stream_endpoint_t * stream_endpoint, uint8_t *packet, uint16_t size));
 /**
  * @brief Disconnect from device with connection handle. 
- * @param l2cap_cid
+ * @param con_handle
  */
-void avdtp_sink_disconnect(uint16_t l2cap_cid);
+void avdtp_sink_disconnect(uint16_t con_handle);
 
 /* API_END */
 

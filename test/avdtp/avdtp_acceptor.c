@@ -294,7 +294,7 @@ static int avdtp_acceptor_send_response_reject(uint16_t cid,  avdtp_signal_ident
     return l2cap_send(cid, command, sizeof(command));
 }
 
-int avdtp_acceptor_stream_config_subsm_run_for_connection(avdtp_stream_endpoint_t * stream_endpoint, avdtp_sep_t * local_seps, uint8_t local_seps_num){
+int avdtp_acceptor_stream_config_subsm_run(avdtp_stream_endpoint_t * stream_endpoint, avdtp_sep_t * local_seps, uint8_t local_seps_num){
     int sent = 1;
     switch (stream_endpoint->acceptor_config_state){
         case AVDTP_ACCEPTOR_W2_ANSWER_DISCOVER_SEPS:

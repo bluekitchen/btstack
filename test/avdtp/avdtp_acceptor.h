@@ -54,7 +54,7 @@ extern "C" {
 void avdtp_acceptor_stream_config_subsm_init(avdtp_stream_endpoint_t * stream_endpoint);
 int  avdtp_acceptor_stream_config_subsm_is_done(avdtp_stream_endpoint_t * stream_endpoint);
 int  avdtp_acceptor_stream_config_subsm(avdtp_stream_endpoint_t * stream_endpoint, uint8_t *packet, uint16_t size);
-int  avdtp_acceptor_stream_config_subsm_run_for_connection(avdtp_stream_endpoint_t * stream_endpoint, avdtp_sep_t * local_seps, uint8_t local_seps_num);
+int  avdtp_acceptor_stream_config_subsm_run(avdtp_stream_endpoint_t * stream_endpoint, avdtp_sep_t * local_seps, uint8_t local_seps_num);
 int  avdtp_acceptor_send_accept_response(uint16_t cid,  avdtp_signal_identifier_t identifier, uint8_t transaction_label);
 
 #if defined __cplusplus
