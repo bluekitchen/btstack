@@ -72,11 +72,9 @@ for file in os.listdir(examples_embedded):
     if not os.path.exists(apps_folder):
         os.makedirs(apps_folder)
 
-    # copy nrf5.conf
-    shutil.copyfile(script_path + '/nrf5.conf', apps_folder + '/nrf5.conf')
-
-    # copy Makefile
-    shutil.copyfile(script_path + '/Makefile', apps_folder + 'Makefile')
+    # copy files
+    for item in ['nrf5.conf', 'flash_nrf51_pca10028.sh', 'flash_nrf52_pca10040.sh', 'Makefile']:
+        shutil.copyfile(script_path + '/' + item, apps_folder + '/' + item)
 
     # create src folder
     src_folder = apps_folder + "src/"
