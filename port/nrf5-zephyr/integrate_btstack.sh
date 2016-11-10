@@ -47,7 +47,7 @@ rsync -a Makefile.gatt-service ${ZEPHYR_BASE}/subsys/btstack/ble/gatt-service/Ma
 
 
 ## Additonal changes for HCI Controller firmware in samples/bluetooth/hci-uart
-HCI_UART=${ZEPHYR_BASE}/samples/bluetooth/hci-uart
+HCI_UART=${ZEPHYR_BASE}/samples/bluetooth/hci_uart
 
 # add flash scripts to hci-uart
 rsync -a flash_nrf51_pca10028.sh ${HCI_UART}/flash_nrf51_pca10028.sh
