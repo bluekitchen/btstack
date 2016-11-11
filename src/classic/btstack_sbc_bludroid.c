@@ -47,8 +47,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <fcntl.h>
-#include <unistd.h>
 
 #include "btstack_sbc.h"
 #include "btstack_sbc_plc.h"
@@ -194,13 +192,15 @@ void btstack_sbc_decoder_init(btstack_sbc_decoder_state_t * state, btstack_sbc_m
     if (sbc_decoder_state_singleton && sbc_decoder_state_singleton != state ){
         log_error("SBC decoder: different sbc decoder state is allready registered");
     } 
-    OI_STATUS status;
+    OI_STATUS status = 0;
     switch (mode){
         case SBC_MODE_STANDARD:
             status = OI_CODEC_SBC_DecoderReset(&(bd_decoder_state.decoder_context), bd_decoder_state.decoder_data, sizeof(bd_decoder_state.decoder_data), 2, 1, FALSE);
             break;
         case SBC_MODE_mSBC:
             status = OI_CODEC_mSBC_DecoderReset(&(bd_decoder_state.decoder_context), bd_decoder_state.decoder_data, sizeof(bd_decoder_state.decoder_data));
+            break;
+        default:
             break;
     }
 

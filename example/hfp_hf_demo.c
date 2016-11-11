@@ -56,21 +56,21 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
-
 #include "btstack.h"
 
 #include "sco_demo_util.h"
+
 #ifdef HAVE_POSIX_STDIN
+#include <unistd.h>
 #include "stdin_support.h"
 #endif
 
 uint8_t hfp_service_buffer[150];
 const uint8_t   rfcomm_channel_nr = 1;
 const char hfp_hf_service_name[] = "BTstack HFP HF Demo";
+static bd_addr_t device_addr = {0x80,0xbe,0x05,0xd5,0x28,0x48};
 
 #ifdef HAVE_POSIX_STDIN
-static bd_addr_t device_addr = {0x80,0xbe,0x05,0xd5,0x28,0x48};
 // 80:BE:05:D5:28:48
 // prototypes
 static void show_usage(void);
