@@ -957,6 +957,10 @@ static void hci_initializing_run(void){
             hci_send_cmd(&hci_read_local_version_information);
             hci_stack->substate = HCI_INIT_W4_SEND_READ_LOCAL_VERSION_INFORMATION;
             break;
+        case HCI_INIT_SEND_READ_LOCAL_NAME:
+            hci_send_cmd(&hci_read_local_name);
+            hci_stack->substate = HCI_INIT_W4_SEND_READ_LOCAL_NAME;
+            break;
         case HCI_INIT_SEND_RESET_CSR_WARM_BOOT:
             hci_state_reset();
             // prepare reset if command complete not received in 100ms
@@ -1277,8 +1281,8 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
         case HCI_INIT_W4_SEND_RESET:
             btstack_run_loop_remove_timer(&hci_stack->timeout);
             break;
-        case HCI_INIT_W4_SEND_READ_LOCAL_VERSION_INFORMATION:
-            log_info("Received local version info, need baud change %d", need_baud_change);
+        case HCI_INIT_W4_SEND_READ_LOCAL_NAME:
+            log_info("Received local name, need baud change %d", need_baud_change);
             if (need_baud_change){
                 hci_stack->substate = HCI_INIT_SEND_BAUD_CHANGE;
                 return;

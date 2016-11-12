@@ -577,6 +577,12 @@ OPCODE(OGF_CONTROLLER_BASEBAND, 0x13), "N"
 };
 
 /**
+ */
+const hci_cmd_t hci_read_local_name = {
+OPCODE(OGF_CONTROLLER_BASEBAND, 0x14), ""
+};
+
+/**
  * @param page_timeout (* 0.625 ms)
  */
 const hci_cmd_t hci_write_page_timeout = {
