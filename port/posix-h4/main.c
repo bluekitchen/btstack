@@ -158,6 +158,9 @@ static void local_version_information_callback(uint8_t * packet){
             printf("EM Microelectronics - using EM9301 driver.\n");
             hci_set_chipset(btstack_chipset_em9301_instance());
             break;
+        case COMPANY_ID_NORDIC_SEMICONDUCTOR_ASA:
+            printf("Nordic Semicondutor ASA nRF5 chipset.\n");
+            break;        
         default:
             printf("Unknown manufacturer / manufacturer not supported yet.\n");
             break;

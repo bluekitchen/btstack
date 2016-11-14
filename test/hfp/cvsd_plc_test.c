@@ -22,6 +22,50 @@ static uint8_t test_data[][audio_samples_per_frame] = {
 };
 
 static btstack_cvsd_plc_state_t plc_state;
+
+// input signal: pre-computed sine wave, at 8000 kz
+static const uint8_t sine_uint8[] = {
+      0,  15,  31,  46,  61,  74,  86,  97, 107, 114,
+    120, 124, 126, 126, 124, 120, 114, 107,  97,  86,
+     74,  61,  46,  31,  15,   0, 241, 225, 210, 195,
+    182, 170, 159, 149, 142, 136, 132, 130, 130, 132,
+    136, 142, 149, 159, 170, 182, 195, 210, 225, 241,
+};
+
+
+// input signal: pre-computed sine wave, 160 Hz at 16000 kHz
+static const int16_t sine_int16[] = {
+     0,    2057,    4107,    6140,    8149,   10126,   12062,   13952,   15786,   17557,
+ 19260,   20886,   22431,   23886,   25247,   26509,   27666,   28714,   29648,   30466,
+ 31163,   31738,   32187,   32509,   32702,   32767,   32702,   32509,   32187,   31738,
+ 31163,   30466,   29648,   28714,   27666,   26509,   25247,   23886,   22431,   20886,
+ 19260,   17557,   15786,   13952,   12062,   10126,    8149,    6140,    4107,    2057,
+     0,   -2057,   -4107,   -6140,   -8149,  -10126,  -12062,  -13952,  -15786,  -17557,
+-19260,  -20886,  -22431,  -23886,  -25247,  -26509,  -27666,  -28714,  -29648,  -30466,
+-31163,  -31738,  -32187,  -32509,  -32702,  -32767,  -32702,  -32509,  -32187,  -31738,
+-31163,  -30466,  -29648,  -28714,  -27666,  -26509,  -25247,  -23886,  -22431,  -20886,
+-19260,  -17557,  -15786,  -13952,  -12062,  -10126,   -8149,   -6140,   -4107,   -2057,
+};
+
+static int phase = 0;
+void sco_demo_sine_wave_int8(int num_samples, int8_t * data){
+    int i;
+    for (i=0; i<num_samples; i++){
+        data[i] = (int8_t)sine_uint8[phase];
+        phase++;
+        if (phase >= sizeof(sine_uint8)) phase = 0;
+    }  
+}
+
+void sco_demo_sine_wave_int16(int num_samples, int16_t * data){
+    int i;
+    for (i=0; i < num_samples; i++){
+        data[i] = sine_int16[phase++];
+        if (phase >= (sizeof(sine_int16) / sizeof(int16_t))){
+            phase = 0;
+        }
+    }
+}
     
 static int count_equal_bytes(uint8_t * packet, uint16_t size){
     int count = 0;
@@ -49,7 +93,7 @@ static void create_sine_wav(const char * out_filename){
     
     int i;
     for (i=0; i<2000; i++){
-        wav_synthesize_sine_wave_int8(audio_samples_per_frame, audio_frame_in);
+        sco_demo_sine_wave_int8(audio_samples_per_frame, audio_frame_in);
         wav_writer_write_int8(audio_samples_per_frame, audio_frame_in);
     } 
     wav_writer_close();

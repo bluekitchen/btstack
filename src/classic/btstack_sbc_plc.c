@@ -44,9 +44,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <math.h>
 
 #include "btstack_sbc_plc.h"
 
@@ -63,6 +60,30 @@ static float rcos[SBC_OLAL] = {
     0.45386582f,0.36316850f,0.27713082f,0.19868268f, 
     0.13049554f,0.07489143f,0.03376389f,0.00851345f};
 
+// taken from http://www.codeproject.com/Articles/69941/Best-Square-Root-Method-Algorithm-Function-Precisi
+// Algorithm: Babylonian Method + some manipulations on IEEE 32 bit floating point representation
+static float sqrt3(const float x){
+    union {
+        int i;
+        float x;
+    } u;
+    u.x = x;
+    u.i = (1<<29) + (u.i >> 1) - (1<<22); 
+
+    // Two Babylonian Steps (simplified from:)
+    // u.x = 0.5f * (u.x + x/u.x);
+    // u.x = 0.5f * (u.x + x/u.x);
+    u.x =       u.x + x/u.x;
+    u.x = 0.25f*u.x + x/u.x;
+
+    return u.x;
+}
+
+static float absolute(float x){
+     if (x < 0) x = -x;
+     return x;
+}
+
 static float CrossCorrelation(int16_t *x, int16_t *y){
     float num = 0;
     float den = 0;
@@ -74,7 +95,7 @@ static float CrossCorrelation(int16_t *x, int16_t *y){
         x2+=((float)x[m])*x[m];
         y2+=((float)y[m])*y[m];
     }
-    den = (float)sqrt(x2*y2);
+    den = (float)sqrt3(x2*y2);
     return num/den;
 }
 
@@ -101,8 +122,8 @@ static float AmplitudeMatch(int16_t *y, int16_t bestmatch) {
     float sf;
     
     for (i=0;i<SBC_FS;i++){
-        sumx += abs(y[SBC_LHIST-SBC_FS+i]);
-        sumy += abs(y[bestmatch+i]);
+        sumx += absolute(y[SBC_LHIST-SBC_FS+i]);
+        sumy += absolute(y[bestmatch+i]);
     }
     sf = sumx/sumy;
     /* This is not in the paper, but limit the scaling factor to something reasonable to avoid creating artifacts */

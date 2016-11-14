@@ -98,6 +98,7 @@ typedef struct le_connection_parameter_range{
 
 typedef enum {
     GAP_RANDOM_ADDRESS_TYPE_OFF = 0,
+    GAP_RANDOM_ADDRESS_TYPE_STATIC,
     GAP_RANDOM_ADDRESS_NON_RESOLVABLE,
     GAP_RANDOM_ADDRESS_RESOLVABLE,
 } gap_random_address_type_t;

@@ -957,6 +957,10 @@ static void hci_initializing_run(void){
             hci_send_cmd(&hci_read_local_version_information);
             hci_stack->substate = HCI_INIT_W4_SEND_READ_LOCAL_VERSION_INFORMATION;
             break;
+        case HCI_INIT_SEND_READ_LOCAL_NAME:
+            hci_send_cmd(&hci_read_local_name);
+            hci_stack->substate = HCI_INIT_W4_SEND_READ_LOCAL_NAME;
+            break;
         case HCI_INIT_SEND_RESET_CSR_WARM_BOOT:
             hci_state_reset();
             // prepare reset if command complete not received in 100ms
@@ -1277,8 +1281,8 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
         case HCI_INIT_W4_SEND_RESET:
             btstack_run_loop_remove_timer(&hci_stack->timeout);
             break;
-        case HCI_INIT_W4_SEND_READ_LOCAL_VERSION_INFORMATION:
-            log_info("Received local version info, need baud change %d", need_baud_change);
+        case HCI_INIT_W4_SEND_READ_LOCAL_NAME:
+            log_info("Received local name, need baud change %d", need_baud_change);
             if (need_baud_change){
                 hci_stack->substate = HCI_INIT_SEND_BAUD_CHANGE;
                 return;
@@ -1445,6 +1449,11 @@ static void event_handler(uint8_t *packet, int size){
             // log_info("HCI_EVENT_COMMAND_COMPLETE cmds old %u - new %u", hci_stack->num_cmd_packets, packet[2]);
             hci_stack->num_cmd_packets = packet[2];
 
+            if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_read_local_name)){
+                // terminate, name 248 chars
+                packet[6+248] = 0;
+                log_info("local name: %s", &packet[6]);
+            }
             if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_read_buffer_size)){
                 // from offset 5
                 // status 
@@ -1479,15 +1488,16 @@ static void event_handler(uint8_t *packet, int size){
                 log_info("hci_le_read_white_list_size: size %u", hci_stack->le_whitelist_capacity);
             }   
 #endif
-            // Dump local address
             if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_read_bd_addr)) {
                 reverse_bd_addr(&packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE + 1],
 				hci_stack->local_bd_addr);
                 log_info("Local Address, Status: 0x%02x: Addr: %s",
                     packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE], bd_addr_to_str(hci_stack->local_bd_addr));
+#ifdef ENABLE_CLASSIC
                 if (hci_stack->link_key_db){
                     hci_stack->link_key_db->set_local_bd_addr(hci_stack->local_bd_addr);
                 }
+#endif
             }
 #ifdef ENABLE_CLASSIC
             if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_write_scan_enable)){
@@ -3580,6 +3590,12 @@ void gap_scan_response_set_data(uint8_t scan_response_data_length, uint8_t * sca
     gap_advertisments_changed();
  }
 
+void hci_le_advertisements_set_own_address_type(uint8_t own_address_type){
+    hci_stack->le_advertisements_own_address_type = own_address_type;
+    hci_stack->le_advertisements_todo |= LE_ADVERTISEMENT_TASKS_SET_PARAMS;
+    gap_advertisments_changed();
+}
+
 /**
  * @brief Enable/Disable Advertisements
  * @param enabled
@@ -3772,4 +3788,8 @@ void hci_disconnect_all(void){
         con->state = SEND_DISCONNECT;
     }
     hci_run();
+}
+
+uint16_t hci_get_manufacturer(void){
+    return hci_stack->manufacturer;
 }

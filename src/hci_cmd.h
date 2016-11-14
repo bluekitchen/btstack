@@ -112,6 +112,7 @@ extern const hci_cmd_t hci_read_buffer_size;
 extern const hci_cmd_t hci_read_le_host_supported;
 extern const hci_cmd_t hci_read_link_policy_settings;
 extern const hci_cmd_t hci_read_link_supervision_timeout;
+extern const hci_cmd_t hci_read_local_name;
 extern const hci_cmd_t hci_read_local_version_information;
 extern const hci_cmd_t hci_read_local_supported_commands;
 extern const hci_cmd_t hci_read_local_supported_features;
