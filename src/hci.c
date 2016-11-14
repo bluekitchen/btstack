@@ -1449,6 +1449,11 @@ static void event_handler(uint8_t *packet, int size){
             // log_info("HCI_EVENT_COMMAND_COMPLETE cmds old %u - new %u", hci_stack->num_cmd_packets, packet[2]);
             hci_stack->num_cmd_packets = packet[2];
 
+            if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_read_local_name)){
+                // terminate, name 248 chars
+                packet[6+248] = 0;
+                log_info("local name: %s", &packet[6]);
+            }
             if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_read_buffer_size)){
                 // from offset 5
                 // status 
