@@ -1,9 +1,13 @@
-In this chapter, we first explain how Bluetooth chipsets can be connected physically and 
-then try to collect and provide information about popular Bluetooth chipset and their use with BTstack.
+In this chapter, we first explain how Bluetooth chipsets are connected physically and 
+then provide information about popular Bluetooth chipset and their use with BTstack.
 
-All Bluetooth chipsets that are connected to a host support the Host Controller Interface (HCI). HCI defines how  commands, events, asynchrous and synchronous data packets are exchanged. On desktop-class computers incl. laptops, Bluetooth chipsets are mainly connected via USB. On embedded systems, they are usually connected via an UART connection although USB might be used as well.
+The communication between a Host (a computer or an MCU) and a Host Controller (the actual Bluetoot chipset) follows the Host Controller Interface (HCI), see {@fig:HostChipsetConnection}. HCI defines how commands, events, asynchronous and synchronous data packets are exchanged, see [here]). Asynchronous packets (ACL) are used for data transfer, while synchronous packets (SCO) are used for Voice with the Headset and the Hands-free Profiles.
 
-For UART connections, multiple transport layers exist. The most common one is the UART Transport, called H4. It requires hardware flowcontrol via the CTS/RTS lines and assumes no error on the UART line. The Three-Wire UART Transprot, called H5, makes use of the SLIP protocol to transmit a packet and can deal with packet loss and bit-errors by retranssion. Finally, Texas Instruments created the eHCILL transport layer based on H4 that allows both sides to enter sleep mode without loosing synchronisation.
+![Host Controller to Host connection](picts/host_chipset_connection.png){#fig:HostChipsetConnection}
+
+On desktop-class computers incl. laptops, USB is mainly used as HCI transport layer. On embedded systems, UART connections are used instead, although USB could be used as well.
+
+For UART connections, different transport layer variants exist. The most common one is the official "UART Transport", also called H4. It requires hardware flow control via the CTS/RTS lines and assumes no errors on the UART lines. The "Three-Wire UART Transport", also called H5, makes use of the SLIP protocol to transmit a packet and can deal with packet loss and bit-errors by retranssion. Finally, Texas Instruments created the "eHCILL transport" layer based on H4 that allows both sides to enter sleep mode without loosing synchronisation.
 
 Unfortunately, the HCI standard misses a few relevant details:
 
@@ -11,17 +15,16 @@ Unfortunately, the HCI standard misses a few relevant details:
 
   * Some Bluetooth chipsets don't have a unique MAC address. On start, the MAC address needs to be set, but there's no standard HCI command to set it.
  
-  * Sychronous data can either be transmitted via the HCI interface or via an explicit I2S/PCM interface on the chipset. Most chipsets default to the I2S interface. To use it via USB or for Wide-Band Speech in the Hands-Free Profile, the data needs to be delivered to the host MCU. Newer Bluetooth standards define a HCI command to configure the routing, but it is not implemented in the chipsets we've tried so far. Instead this is configured in a vendor-specific way as well. 
+  * SCO data for Voice can either be transmitted via the HCI interface or via an explicit PCM/I2S interface on the chipset. Most chipsets default to the PCM/I2S interface. To use it via USB or for Wide-Band Speech in the Hands-Free Profile, the data needs to be delivered to the host MCU. Newer Bluetooth standards define a HCI command to configure the routing, but it is not implemented in the chipsets we've tested so far. Instead, this is configured in a vendor-specific way as well. 
 
   * In addition, most vendors allow to patch their chipsets at run time by sending patch comands to the chipset. Obviously, this is also vendor dependent. 
 
 
 The level of developer documentation and support varies widely between the various Bluetooth chipset providers.
 
-Only Texas Instruments and EM Microelectronics provide all relevant information directly on their website.
-Nordic Semiconductor does not officially have Bluetooth chipsets with HCI interface, but the documentation on their nRF5 series is complete as well. TI and Nordic also provide excellent support via their web forum.
+From our experience, only Texas Instruments and EM Microelectronics provide all relevant information directly on their website. Nordic Semiconductor does not officially have Bluetooth chipsets with HCI interface, but their the documentation on their nRF5 series is complete and very informative. TI and Nordic also provide excellent support via their web forum.
 
-Broadcom, whose Bluetooth + Wifi division has been acquired by Cypress Semicondutor Corporation, provides developer documentation only to large customers as far as we know. It's possible to join their Community forum and download the WICED SDK. The WICED SDK is targeted at Wifi + Bluetooth Combo chipsets and contains the necessary chipset patch files.
+Broadcom, whose Bluetooth + Wifi division has been acquired by the Cypress Semiconductor Corporation, provides developer documentation only to large customers as far as we know. It's possible to join their Community forum and download the WICED SDK. The WICED SDK is targeted at Wifi + Bluetooth Combo chipsets and contains the necessary chipset patch files.
 
 CSR, which has been acquired by Qualcomm, provides all relevant information on their Support website after signing an NDA.
 
@@ -32,11 +35,12 @@ Broadcom BCM43438    | H4, H5         | No (didn't work) | chipset/bcm       | m
 CSR 8x10, 8x11       | H4, H5         | No (didn't work) | chipset/csr       | 
 CSR USB Dongles      | USB            | Yes              | chipset/csr       |
 EM 9301              | SPI            | n.a.             | chipset/em9301    | LE only, custom HCI SPI implementation
+Nordic nRF           | H4             | n.a.             | n.a.              | LE only, requires HCI firmware
 STM STLC2500D        | H4             | No (didn't try)  | chipset/stlc2500d | custom deep sleep management not supported
 TC35661              | H4             | No (didn't try)  | chipset/tc3566    | BLE patches missing
-TI CC256x, WL183x    | H4, H5, eHCILL | Yes              | chipset/cc256x    |
+TI CC256x, WL183x    | H4, H5, eHCILL | Yes              | chipset/cc256x    | also WL185x, WL187x, and WL189x
 
-**Note** All Bluetooth Classic chipsets support SOC over HCI, for those that are marked with No, we either didn't try or didn't found enough information to configure it correctly.
+**Note** All Bluetooth Classic chipsets support SCO over HCI, for those that are marked with No, we either didn't try or didn't found enough information to configure it correctly.
 
 ## Broadcom
 
