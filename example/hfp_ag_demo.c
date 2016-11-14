@@ -71,7 +71,7 @@ const char hfp_ag_service_name[] = "BTstack HFP AG Test";
 // static bd_addr_t device_addr = {0x00, 0x07, 0xB0, 0x83, 0x02, 0x5E};
 // CC256x
 // bd_addr_t device_addr = { 0xD0, 0x39, 0x72, 0xCD, 0x83, 0x45};
-// Minijamox
+// Mini Jambox
 bd_addr_t device_addr = { 0x00, 0x15, 0x83, 0x5F, 0x9D, 0x46};
 
 // static uint8_t codecs[] = {HFP_CODEC_CVSD, HFP_CODEC_MSBC};
@@ -129,18 +129,26 @@ enum STATE state = INIT;
 
 static void dump_supported_codecs(void){
     int i;
-    printf("Supported codecs: ");
+    int mSBC_skipped = 0;
+    printf("Supported codecs:");
     for (i = 0; i < sizeof(codecs); i++){
         switch(codecs[i]){
             case HFP_CODEC_CVSD:
                 printf(" CVSD");
                 break;
             case HFP_CODEC_MSBC:
-                printf(" mSBC");
+                if (hci_extended_sco_link_supported()){
+                    printf("mSBC");
+                } else {
+                    mSBC_skipped = 1;
+                }
                 break;
         }
     }
     printf("\n");
+    if (mSBC_skipped){
+        printf("mSBC codec disabled because eSCO not supported by local controller.\n");
+    }
 }
 
 static int getDeviceIndexForAddress( bd_addr_t addr){
@@ -290,61 +298,30 @@ static void show_usage(void){
     gap_local_bd_addr(iut_address);
 
     printf("\n--- Bluetooth HFP Audiogateway (AG) unit Test Console %s ---\n", bd_addr_to_str(iut_address));
-    printf("---\n");
+    printf("\n");
     
     printf("a - establish HFP connection to PTS module %s\n", bd_addr_to_str(device_addr));
     // printf("A - release HFP connection to PTS module\n");
     
-    printf("b - establish AUDIO connection\n");
-    printf("B - release AUDIO connection\n");
-    
-    printf("c - simulate incoming call from 1234567\n");
-    printf("C - simulate call from 1234567 dropped\n");
-
+    printf("b - establish AUDIO connection          | B - release AUDIO connection\n");
+    printf("c - simulate incoming call from 1234567 | C - simulate call from 1234567 dropped\n");
     printf("d - report AG failure\n");
-
-    printf("e - answer call on AG\n");
-    printf("E - reject call on AG\n");
-
-    printf("r - disable in-band ring tone\n");
-    printf("R - enable in-band ring tone\n");
-
-    printf("f - Disable cellular network\n");
-    printf("F - Enable cellular network\n");
-
-    printf("g - Set signal strength to 0\n");
-    printf("G - Set signal strength to 5\n");
-
-    printf("h - Disable roaming\n");
-    printf("H - Enable roaming\n");
-
-    printf("i - Set battery level to 3\n");
-    printf("I - Set battery level to 5\n");
-    
+    printf("e - answer call on AG                   | E - reject call on AG\n");
+    printf("r - disable in-band ring tone           | R - enable in-band ring tone\n");
+    printf("f - Disable cellular network            | F - Enable cellular network\n");
+    printf("g - Set signal strength to 0            | G - Set signal strength to 5\n");
+    printf("h - Disable roaming                     | H - Enable roaming\n");
+    printf("i - Set battery level to 3              | I - Set battery level to 5\n");
     printf("j - Answering call on remote side\n");
-
-    printf("k - Clear memory #1\n");
-    printf("K - Set memory #1\n");
-
-    printf("l - Clear last number\n");
-    printf("L - Set last number\n");
-
+    printf("k - Clear memory #1                     | K - Set memory #1\n");
+    printf("l - Clear last number                   | L - Set last number\n");
     printf("m - simulate incoming call from 7654321\n");
     // printf("M - simulate call from 7654321 dropped\n");
-
-    printf("n - Disable Voice Regocnition\n");
-    printf("N - Enable Voice Recognition\n");
-
-    printf("o - Set speaker volume to 0  (minimum)\n");
-    printf("O - Set speaker volume to 9  (default)\n");
-    printf("p - Set speaker volume to 12 (higher)\n");
-    printf("P - Set speaker volume to 15 (maximum)\n");
-
-    printf("q - Set microphone gain to 0  (minimum)\n");
-    printf("Q - Set microphone gain to 9  (default)\n");
-    printf("s - Set microphone gain to 12 (higher)\n");
-    printf("S - Set microphone gain to 15 (maximum)\n");
-
+    printf("n - Disable Voice Regocnition           | N - Enable Voice Recognition\n");
+    printf("o - Set speaker volume to 0  (minimum)  | O - Set speaker volume to 9  (default)\n");
+    printf("p - Set speaker volume to 12 (higher)   | P - Set speaker volume to 15 (maximum)\n");
+    printf("q - Set microphone gain to 0  (minimum) | Q - Set microphone gain to 9  (default)\n");
+    printf("s - Set microphone gain to 12 (higher)  | S - Set microphone gain to 15 (maximum)\n");
     printf("t - terminate connection\n");
     printf("u - join held call\n");
     printf("v - discover nearby HF units\n");
@@ -592,11 +569,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                     break; 
                 case HCI_EVENT_COMMAND_COMPLETE:
                     if (HCI_EVENT_IS_COMMAND_COMPLETE(event, hci_read_local_supported_features)){
-                        if (hci_extended_sco_link_supported()){
-                            printf("Supported Codecs: CVSD, mSBC.\n");
-                        } else {
-                            printf("Supported Codecs: CVSD. mSBC disabled, eSCO not supported by controller).\n");
-                        }
+                        dump_supported_codecs();
                     }
                     break;
                 default:
@@ -618,14 +591,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                     acl_handle = hfp_subevent_service_level_connection_established_get_con_handle(event);
                     hfp_subevent_service_level_connection_established_get_bd_addr(event, device_addr);
                     printf("Service level connection established from %s.\n", bd_addr_to_str(device_addr));
-                    
                     dump_supported_codecs();
-                    if (hci_extended_sco_link_supported()){
-                        printf("eSCO supported by controller.\n");
-                    } else {
-                        printf("eSCO not supported by controller.\n");
-                    }
-
                    break;
                 case HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED:
                     printf("Service level connection released.\n");
@@ -639,7 +605,17 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                         sco_handle = hfp_subevent_audio_connection_established_get_handle(event);
                         printf("Audio connection established with SCO handle 0x%04x.\n", sco_handle);
                         negotiated_codec = hfp_subevent_audio_connection_established_get_negotiated_codec(event);
-                        printf("Using codec 0x%02x.\n", negotiated_codec);
+                        switch (negotiated_codec){
+                            case 0x01:
+                                printf("Using CVSD codec.\n");
+                                break;
+                            case 0x02:
+                                printf("Using mSBC codec.\n");
+                                break;
+                            default:
+                                printf("Using unknown codec 0x%02x.\n", negotiated_codec);
+                                break;
+                        }
                         sco_demo_set_codec(negotiated_codec);
                         hci_request_sco_can_send_now_event();
                     }

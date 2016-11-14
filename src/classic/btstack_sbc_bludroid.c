@@ -178,11 +178,17 @@ int btstack_sbc_decoder_sample_rate(btstack_sbc_decoder_state_t * state){
     return decoder_state->decoder_context.common.frameInfo.frequency;
 }
 
+#ifdef OI_DEBUG
+void OI_AssertFail(char* file, int line, char* reason){
+    log_error("AssertFail file %s, line %d, reason %s", file, line, reason);
+}
+#endif
+
 void btstack_sbc_decoder_init(btstack_sbc_decoder_state_t * state, btstack_sbc_mode_t mode, void (*callback)(int16_t * data, int num_samples, int num_channels, int sample_rate, void * context), void * context){
     if (sbc_decoder_state_singleton && sbc_decoder_state_singleton != state ){
         log_error("SBC decoder: different sbc decoder state is allready registered");
     } 
-    OI_STATUS status;
+    OI_STATUS status = 0;
     switch (mode){
         case SBC_MODE_STANDARD:
             // note: we always request stereo output, even for mono input
@@ -190,6 +196,8 @@ void btstack_sbc_decoder_init(btstack_sbc_decoder_state_t * state, btstack_sbc_m
             break;
         case SBC_MODE_mSBC:
             status = OI_CODEC_mSBC_DecoderReset(&(bd_decoder_state.decoder_context), bd_decoder_state.decoder_data, sizeof(bd_decoder_state.decoder_data));
+            break;
+        default:
             break;
     }
 

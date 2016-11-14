@@ -87,11 +87,12 @@ static int att_db_util_assert_space(uint16_t size){
 	if (att_db_size + size <= att_db_max_size) return 1;
 #ifdef HAVE_MALLOC
 	int new_size = att_db_size + att_db_size / 2;
-	att_db = (uint8_t*) realloc(att_db, new_size);
-	if (!att_db) {
+	uint8_t * new_db = (uint8_t*) realloc(att_db, new_size);
+	if (!new_db) {
 		log_error("att_db: realloc failed");
 		return 0;
 	}
+	att_db = new_db;
 	att_db_max_size = new_size;
 	return 1;
 #else

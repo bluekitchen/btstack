@@ -50,7 +50,6 @@
 #include <stdio.h>
 #include <string.h>
 
-
 /**
  * @brief Compare two Bluetooth addresses
  * @param a
@@ -156,6 +155,14 @@ char char_for_nibble(int nibble){
     return '?';
 }
 
+static inline char char_for_high_nibble(int value){
+    return char_for_nibble((value >> 4) & 0x0f);
+}
+
+static inline char char_for_low_nibble(int value){
+    return char_for_nibble(value & 0x0f);
+}
+
 int nibble_for_char(char c){
     if (c >= '0' && c <= '9') return c - '0';
     if (c >= 'a' && c <= 'f') return c - 'a' + 10;
@@ -175,30 +182,29 @@ void printf_hexdump(const void *data, int size){
 void log_info_hexdump(const void *data, int size){
 #ifdef ENABLE_LOG_INFO
 
-    const int items_per_line = 16;
-    const int bytes_per_byte = 6;   // strlen('0x12, ')
-    const uint8_t low = 0x0F;
-    const uint8_t high = 0xF0;
+#define ITEMS_PER_LINE 16
+// template '0x12, '
+#define BYTES_PER_BYTE  6
 
-    char buffer[bytes_per_byte*items_per_line+1];
+    char buffer[BYTES_PER_BYTE*ITEMS_PER_LINE+1];
     int i, j;
     j = 0;
     for (i=0; i<size;i++){
 
         // help static analyzer proof that j stays within bounds
-        if (j > bytes_per_byte * (items_per_line-1)){
+        if (j > BYTES_PER_BYTE * (ITEMS_PER_LINE-1)){
             j = 0;
         }
 
         uint8_t byte = ((uint8_t *)data)[i];
         buffer[j++] = '0';
         buffer[j++] = 'x';
-        buffer[j++] = char_for_nibble((byte & high) >> 4);
-        buffer[j++] = char_for_nibble(byte & low);
+        buffer[j++] = char_for_high_nibble(byte);
+        buffer[j++] = char_for_low_nibble(byte);
         buffer[j++] = ',';
         buffer[j++] = ' ';     
 
-        if (j >= bytes_per_byte * items_per_line ){
+        if (j >= BYTES_PER_BYTE * ITEMS_PER_LINE ){
             buffer[j] = 0;
             log_info("%s", buffer);
             j = 0;
@@ -214,14 +220,12 @@ void log_info_hexdump(const void *data, int size){
 void log_info_key(const char * name, sm_key_t key){
 #ifdef ENABLE_LOG_INFO
     char buffer[16*2+1];
-    const uint8_t low = 0x0F;
-    const uint8_t high = 0xF0;
     int i;
     int j = 0;
     for (i=0; i<16;i++){
         uint8_t byte = key[i];
-        buffer[j++] = char_for_nibble((byte & high) >> 4);
-        buffer[j++] = char_for_nibble(byte & low);
+        buffer[j++] = char_for_high_nibble(byte);
+        buffer[j++] = char_for_low_nibble(byte);
     }
     buffer[j] = 0;
     log_info("%-6s %s", name, buffer);
@@ -247,13 +251,12 @@ static char uuid128_to_str_buffer[32+4+1];
 char * uuid128_to_str(uint8_t * uuid){
     int i;
     int j = 0;
-    const uint8_t low =  0x0F;
-    const uint8_t high = 0xF0;
     // after 4, 6, 8, and 10 bytes = XYXYXYXY-XYXY-XYXY-XYXY-XYXYXYXYXYXY, there's a dash
     const int dash_locations = (1<<3) | (1<<5) | (1<<7) | (1<<9);
     for (i=0;i<16;i++){
-        uuid128_to_str_buffer[j++] = char_for_nibble((uuid[i] & high) >> 4);
-        uuid128_to_str_buffer[j++] = char_for_nibble(uuid[i] & low);
+        uint8_t byte = uuid[i];
+        uuid128_to_str_buffer[j++] = char_for_high_nibble(byte);
+        uuid128_to_str_buffer[j++] = char_for_low_nibble(byte);
         if (dash_locations & (1<<i)){
             uuid128_to_str_buffer[j++] = '-';
         }
@@ -269,8 +272,9 @@ char * bd_addr_to_str(bd_addr_t addr){
     char * p = bd_addr_to_str_buffer;
     int i;
     for (i = 0; i < 6 ; i++) {
-        *p++ = char_for_nibble((addr[i] >> 4) & 0x0F);
-        *p++ = char_for_nibble((addr[i] >> 0) & 0x0F);
+        uint8_t byte = addr[i];
+        *p++ = char_for_high_nibble(byte);
+        *p++ = char_for_low_nibble(byte);
         *p++ = ':';
     }
     *--p = 0;

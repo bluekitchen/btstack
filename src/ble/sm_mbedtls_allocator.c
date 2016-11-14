@@ -64,7 +64,7 @@ size_t mbed_memory_allocated_max;
 size_t mbed_memory_space_max;
 size_t mbed_memory_max;
 size_t mbed_memory_smallest_buffer = 0xfffffff;
-int    mbed_memory_num_allocations;
+unsigned int mbed_memory_num_allocations;
 
 #define NUM_SIZES 150
 int current_individual_allocation[NUM_SIZES];
@@ -94,7 +94,7 @@ static void dump_allocations(void){
         mbed_memory_allocated_current, overhead, mbed_memory_allocated_current + overhead,
         mbed_memory_allocated_max);
     int i;
-    int total = 0;
+    unsigned int total = 0;
     printf("- current    : [ ");
     for (i=0;i<sizeof(current_individual_allocation) / sizeof(int);i++){
         printf("%02u ", current_individual_allocation[i]);

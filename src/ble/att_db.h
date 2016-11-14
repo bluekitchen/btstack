@@ -41,7 +41,8 @@
 
 #include <stdint.h>
 #include "bluetooth.h"
- 
+#include "btstack_linked_list.h"
+
 #if defined __cplusplus
 extern "C" {
 #endif
@@ -49,7 +50,7 @@ extern "C" {
 // custom BTstack error codes
 #define ATT_ERROR_HCI_DISCONNECT_RECEIVED          0x1f
 
-// custom BTstack ATT error coders
+// custom BTstack ATT error codes
 #define ATT_ERROR_DATA_MISMATCH                    0x7e
 #define ATT_ERROR_TIMEOUT                          0x7F
     
@@ -82,6 +83,16 @@ typedef uint16_t (*att_read_callback_t)(hci_con_handle_t con_handle, uint16_t at
 // @param signature used for signed write commmands
 // @returns 0 if write was ok, ATT_ERROR_PREPARE_QUEUE_FULL if no space in queue, ATT_ERROR_INVALID_OFFSET if offset is larger than max buffer
 typedef int (*att_write_callback_t)(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size);
+
+
+// Read & Write Callbacks for handle range
+typedef struct att_service_handler {
+  btstack_linked_item_t * item;
+  uint16_t start_handle;
+  uint16_t end_handle;
+  att_read_callback_t read_callback;
+  att_write_callback_t write_callback;
+} att_service_handler_t;
 
 // MARK: ATT Operations
 
@@ -152,8 +163,27 @@ uint16_t att_prepare_handle_value_indication(att_connection_t * att_connection,
  */
 void att_clear_transaction_queue(att_connection_t * att_connection);
 
-// experimental client API
+/**
+ * @brief register read/write callbacks for specific handle range
+ * @param att_service_handler_t
+ */
+void att_register_service_handler(att_service_handler_t * handler);
+
+
+ // experimental client API
 uint16_t att_uuid_for_handle(uint16_t attribute_handle);
+
+
+// experimental GATT Server API
+
+// returns 1 if service found. only primary service.
+int gatt_server_get_get_handle_range_for_service_with_uuid16(uint16_t uuid16, uint16_t * start_handle, uint16_t * end_handle);
+
+// returns 0 if not found
+uint16_t gatt_server_get_value_handle_for_characteristic_with_uuid16(uint16_t start_handle, uint16_t end_handle, uint16_t uuid16);
+
+// returns 0 if not found
+uint16_t gatt_server_get_client_configuration_handle_for_characteristic_with_uuid16(uint16_t start_handle, uint16_t end_handle, uint16_t uuid16);
 
 #if defined __cplusplus
 }

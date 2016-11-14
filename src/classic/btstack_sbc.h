@@ -46,6 +46,10 @@
 #include <stdint.h>
 #include "btstack_sbc_plc.h"
 
+#if defined __cplusplus
+extern "C" {
+#endif
+
 typedef enum{
     SBC_MODE_STANDARD,
     SBC_MODE_mSBC

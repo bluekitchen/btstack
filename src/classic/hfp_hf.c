@@ -352,7 +352,7 @@ static int hfp_hf_send_chup(uint16_t cid){
     return send_str_over_rfcomm(cid, buffer);
 }
 
-static int hfp_hf_send_chld(uint16_t cid, int number){
+static int hfp_hf_send_chld(uint16_t cid, unsigned int number){
     char buffer[20];
     sprintf(buffer, "AT%s=%u\r\n", HFP_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES, number);
     return send_str_over_rfcomm(cid, buffer);
@@ -408,6 +408,7 @@ static int hfp_hf_run_for_context_service_level_connection(hfp_connection_t * hf
             
     switch (hfp_connection->state){
         case HFP_EXCHANGE_SUPPORTED_FEATURES:
+            hfp_hf_drop_mSBC_if_eSCO_not_supported(hfp_codecs, &hfp_codecs_nr);
             hfp_connection->state = HFP_W4_EXCHANGE_SUPPORTED_FEATURES;
             hfp_hf_cmd_exchange_supported_features(hfp_connection->rfcomm_cid);
             break;
@@ -597,7 +598,7 @@ static void hfp_run_for_context(hfp_connection_t * hfp_connection){
         uint8_t  retransmission_effort;
         uint16_t packet_types;
         
-        if (hci_remote_esco_supported(hfp_connection->acl_handle)){
+        if (hci_extended_sco_link_supported() && hci_remote_esco_supported(hfp_connection->acl_handle)){
             max_latency = 0x000c;
             retransmission_effort = 0x02;
             packet_types = 0x388;
@@ -1095,6 +1096,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             break;
         case HCI_EVENT_PACKET:
             hfp_handle_hci_event(packet_type, channel, packet, size);
+            break;
         default:
             break;
     }
@@ -1127,18 +1129,6 @@ void hfp_hf_init_codecs(int codecs_nr, uint8_t * codecs){
     int i;
     for (i=0; i<codecs_nr; i++){
         hfp_codecs[i] = codecs[i];
-    }
-
-    char buffer[30];
-    int offset = join(buffer, sizeof(buffer), hfp_codecs, hfp_codecs_nr);
-    buffer[offset] = 0;
-    btstack_linked_list_iterator_t it;    
-    btstack_linked_list_iterator_init(&it, hfp_get_connections());
-    while (btstack_linked_list_iterator_has_next(&it)){
-        hfp_connection_t * hfp_connection = (hfp_connection_t *)btstack_linked_list_iterator_next(&it);
-        if (! hfp_connection) continue;
-        hfp_connection->command = HFP_CMD_AVAILABLE_CODECS;
-        hfp_run_for_context(hfp_connection);
     }
 }
 

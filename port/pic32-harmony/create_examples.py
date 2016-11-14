@@ -102,6 +102,7 @@ for file in os.listdir(examples_embedded):
             template = template.replace(">../../../../system", ">../../../../framework/system")
             template = template.replace(">../../../chipset",   ">../../../../framework/btstack/chipset")
             template = template.replace(">../../../platform",  ">../../../../framework/btstack/platform")
+            template = template.replace(">../../../3rd-party", ">../../../../framework/btstack/3rd-party")
             template = template.replace(">../../../src",       ">../../../../framework/btstack/src")
             template = template.replace(">../src",             ">../../../../framework/btstack/port/pic32-harmony/src")
             template = template.replace("app.X", example+".X")

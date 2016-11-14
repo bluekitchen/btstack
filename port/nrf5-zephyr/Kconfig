@@ -1,0 +1,5 @@
+menuconfig BTSTACK
+	bool "BTstack support"
+	default n
+	help
+	  This option enables the BTstack Bluetooth stack.

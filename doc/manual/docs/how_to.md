@@ -75,7 +75,7 @@ ENABLE_LOG_INFO              | Enable log_info messages
 ENABLE_LOG_INTO_HCI_DUMP     | Log debug messages as part of packet log
 ENABLE_SCO_OVER_HCI          | Enable SCO over HCI for chipsets (only CC256x/WL18xx and USB CSR controllers)
 ENABLE_LE_SECURE_CONNECTIONS | Enable LE Secure Connections using [mbed TLS library](https://tls.mbed.org)
-
+ENABLE_LE_DATA_CHANNELS      | Enable LE Data Channels in credit-based flow control mode
 
 ### Memory configuration directives {#sec:memoryConfigurationHowTo}
 

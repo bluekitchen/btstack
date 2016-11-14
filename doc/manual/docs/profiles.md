@@ -408,6 +408,9 @@ The current format is shown in Listing [below](#lst:GATTServerProfile).
 
 ~~~~ {#lst:GATTServerProfile .c caption="{GATT profile.}"}
 
+    // import service_name
+    #import <service_name.gatt>
+
     PRIMARY_SERVICE, {SERVICE_UUID}
     CHARACTERISTIC, {ATTRIBUTE_TYPE_UUID}, {PROPERTIES}, {VALUE}
     CHARACTERISTIC, {ATTRIBUTE_TYPE_UUID}, {PROPERTIES}, {VALUE}
@@ -438,6 +441,9 @@ To require encryption or authentication before a Characteristic can be
 accessed, you can add ENCRYPTION_KEY_SIZE_X - with $X \in [7..16]$ -
 or AUTHENTICATION_REQUIRED.
 
+To use already implemented GATT Services, you can import it
+using the *#import <service_name.gatt>* command. See [list of provided services](gatt_services.md).
+
 BTstack only provides an ATT Server, while the GATT Server logic is
 mainly provided by the GATT compiler. While GATT identifies
 Characteristics by UUIDs, ATT uses Handles (16 bit values). To allow to
@@ -447,3 +453,88 @@ compiler creates a list of defines in the generated \*.h file.
 Similar to other protocols, it might be not possible to send any time.
 To send a Notification, you can call *att_server_request_can_send_now*
 to receive a ATT_EVENT_CAN_SEND_NOW event.
+
+### Implementing Standard GATT Services {#sec:GATTStandardServices}
+
+Implementation of a standard GATT Service consists of the following 4 steps:
+  
+  1. Identify full Service Name
+  2. Use Service Name to fetch XML definition at Bluetooth SIG site and convert into generic .gatt file
+  3. Edit .gatt file to set constant values and exclude unwanted Characteristics
+  4. Implement Service server, e.g., battery_service_server.c
+
+Step 1:
+
+To facilitate the creation of .gatt files for standard profiles defined by the Bluetooth SIG,
+the *tool/convert_gatt_service.py* script can be used. When run without a parameter, it queries the
+Bluetooth SIG website and lists the available Services by their Specification Name, e.g., 
+*org.bluetooth.service.battery_service*.
+
+    $ tool/convert_gatt_service.py
+    Fetching list of services from https://www.bluetooth.com/specifications/gatt/services
+
+    Specification Type                                     | Specification Name            | UUID
+    -------------------------------------------------------+-------------------------------+-----------
+    org.bluetooth.service.alert_notification               | Alert Notification Service    | 0x1811
+    org.bluetooth.service.automation_io                    | Automation IO                 | 0x1815
+    org.bluetooth.service.battery_service                  | Battery Service               | 0x180F
+    ...
+    org.bluetooth.service.weight_scale                     | Weight Scale                  | 0x181D
+
+    To convert a service into a .gatt file template, please call the script again with the requested Specification Type and the output file name
+    Usage: tool/convert_gatt_service.py SPECIFICATION_TYPE [service_name.gatt]
+
+Step 2:
+
+To convert service into .gatt file, call *tool/convert_gatt_service.py with the requested Specification Type and the output file name.
+
+    $ tool/convert_gatt_service.py org.bluetooth.service.battery_service battery_service.gatt
+    Fetching org.bluetooth.service.battery_service from
+    https://www.bluetooth.com/api/gatt/xmlfile?xmlFileName=org.bluetooth.service.battery_service.xml
+
+    Service Battery Service
+    - Characteristic Battery Level - properties ['Read', 'Notify']
+    -- Descriptor Characteristic Presentation Format       - TODO: Please set values
+    -- Descriptor Client Characteristic Configuration
+
+    Service successfully converted into battery_service.gatt
+    Please check for TODOs in the .gatt file
+
+
+Step 3:
+
+In most cases, you will need to customize the .gatt file. Please pay attention to the tool output and have a look
+at the generated .gatt file.
+
+E.g. in the generated .gatt file for the Battery Service
+
+    // Specification Type org.bluetooth.service.battery_service
+    // https://www.bluetooth.com/api/gatt/xmlfile?xmlFileName=org.bluetooth.service.battery_service.xml
+
+    // Battery Service 180F
+    PRIMARY_SERVICE, ORG_BLUETOOTH_SERVICE_BATTERY_SERVICE
+    CHARACTERISTIC, ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_LEVEL, DYNAMIC | READ | NOTIFY,
+    // TODO: Characteristic Presentation Format: please set values
+    #TODO CHARACTERISTIC_FORMAT, READ, _format_, _exponent_, _unit_, _name_space_, _description_
+    CLIENT_CHARACTERISTIC_CONFIGURATION, READ | WRITE,
+
+you could delete the line regarding the CHARACTERISTIC_FORMAT, since it's not required if there is a single instance of the service.
+Please compare the .gatt file against the [Adopted Specifications](https://www.bluetooth.com/specifications/adopted-specifications).
+
+Step 4:
+
+As described [above](#sec:GATTServerProfiles) all read/write requests are handled by the application. 
+To implement the new services as a reusable module, it's neccessary to get access to all read/write requests related to this service. 
+
+For this, the ATT DB allows to register read/write callbacks for a specific handle range with *att_server_register_can_send_now_callback()*.
+
+Since the handle range depends on the application's .gatt file, the handle range for Primary and Secondary Services can be queried with *gatt_server_get_get_handle_range_for_service_with_uuid16*. 
+
+Similarly, you will need to know the attribute handle for particular Characteristics to handle Characteristic read/writes requests. You can get the attribute value handle for a Characteristics *gatt_server_get_value_handle_for_characteristic_with_uuid16()*.
+
+In addition to the attribute value handle, the handle for the Client Characteristic Configuration is needed to support Indications/Notifications. You can get this attribute handle with *gatt_server_get_client_configuration_handle_for_characteristic_with_uuid16()*
+
+Finally, in order to send Notifications and Indications independently from the main application, *att_server_register_can_send_now_callback* can be used to request a callback when it's possible to send a Notification or Indication.
+
+To see how this works together, please check out the Battery Service Server in *src/ble/battery_service_server.c*.
+

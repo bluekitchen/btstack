@@ -199,9 +199,9 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                                 const uint8_t * data = ad_iterator_get_data(&context);
                                 // Prefer Complete Local Name over Shortend Local Name
                                 switch (data_type){
-                                    case 0x08: // Shortened Local Name
+                                    case BLUETOOTH_DATA_TYPE_SHORTENED_LOCAL_NAME:
                                         if (devices[deviceCount].state == REMOTE_NAME_FETCHED) break;
-                                    case 0x09: // Complete Local Name
+                                    case BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME:
                                         devices[deviceCount].state = REMOTE_NAME_FETCHED;
                                         memcpy(name_buffer, data, data_size);
                                         name_buffer[data_size] = 0;
@@ -215,7 +215,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                                 (unsigned int) devices[deviceCount].classOfDevice, devices[deviceCount].pageScanRepetitionMode,
                                 devices[deviceCount].clockOffset);
                         if (event >= HCI_EVENT_INQUIRY_RESULT_WITH_RSSI){
-                            printf(", rssi 0x%02x: ", devices[deviceCount].rssi);
+                            printf(", rssi 0x%02x", devices[deviceCount].rssi);
                         }
                         if (devices[deviceCount].state == REMOTE_NAME_FETCHED){
                             printf(", name '%s'", name_buffer);

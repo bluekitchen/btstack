@@ -55,7 +55,3 @@ int wav_reader_read_int8(int num_samples, int8_t * data);
 int wav_reader_read_int16(int num_samples, int16_t * data);
 int wav_reader_close(void);
 
-// 
-void wav_synthesize_sine_wave_int8(int num_samples, int8_t * data);
-void wav_synthesize_sine_wave_int16(int num_samples, int16_t * data);
-

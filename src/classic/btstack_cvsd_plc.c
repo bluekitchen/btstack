@@ -45,8 +45,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <fcntl.h>
-#include <unistd.h>
 
 #include "btstack_cvsd_plc.h"
 #include "btstack_debug.h"

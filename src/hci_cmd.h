@@ -96,6 +96,7 @@ extern const hci_cmd_t hci_delete_stored_link_key;
 extern const hci_cmd_t hci_enhanced_setup_synchronous_connection;
 extern const hci_cmd_t hci_enhanced_accept_synchronous_connection;
 extern const hci_cmd_t hci_disconnect;
+extern const hci_cmd_t hci_flush;
 extern const hci_cmd_t hci_host_buffer_size;
 extern const hci_cmd_t hci_inquiry;
 extern const hci_cmd_t hci_io_capability_request_reply;
@@ -111,6 +112,7 @@ extern const hci_cmd_t hci_read_buffer_size;
 extern const hci_cmd_t hci_read_le_host_supported;
 extern const hci_cmd_t hci_read_link_policy_settings;
 extern const hci_cmd_t hci_read_link_supervision_timeout;
+extern const hci_cmd_t hci_read_local_name;
 extern const hci_cmd_t hci_read_local_version_information;
 extern const hci_cmd_t hci_read_local_supported_commands;
 extern const hci_cmd_t hci_read_local_supported_features;
@@ -155,12 +157,14 @@ extern const hci_cmd_t hci_le_connection_update;
 extern const hci_cmd_t hci_le_create_connection;
 extern const hci_cmd_t hci_le_create_connection_cancel;
 extern const hci_cmd_t hci_le_encrypt;
+extern const hci_cmd_t hci_le_generate_dhkey;
 extern const hci_cmd_t hci_le_long_term_key_negative_reply;
 extern const hci_cmd_t hci_le_long_term_key_request_reply;
 extern const hci_cmd_t hci_le_rand;
 extern const hci_cmd_t hci_le_read_advertising_channel_tx_power;
 extern const hci_cmd_t hci_le_read_buffer_size ;
 extern const hci_cmd_t hci_le_read_channel_map;
+extern const hci_cmd_t hci_le_read_local_p256_public_key;
 extern const hci_cmd_t hci_le_read_remote_used_features;
 extern const hci_cmd_t hci_le_read_supported_features;
 extern const hci_cmd_t hci_le_read_supported_states;
@@ -179,7 +183,6 @@ extern const hci_cmd_t hci_le_set_scan_response_data;
 extern const hci_cmd_t hci_le_start_encryption;
 extern const hci_cmd_t hci_le_test_end;
 extern const hci_cmd_t hci_le_transmitter_test;
-
 
 /**
  * construct HCI Command based on template

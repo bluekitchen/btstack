@@ -77,10 +77,10 @@ struct suitable for the CC256x chipset.
 
 
 On embedded systems, a Bluetooth module can be connected via USB or an
-UART port. BTstack implements two UART based protocols for carrying HCI
+UART port. BTstack implements three UART based protocols for carrying HCI
 commands, events and data between a host and a Bluetooth module: HCI
-UART Transport Layer (H4) and H4 with eHCILL support, a lightweight
-low-power variant by Texas Instruments.
+UART Transport Layer (H4), H4 with eHCILL support, a lightweight
+low-power variant by Texas Instruments, and the Three-Wire UART Transport Layer (H5).
 
 
 ### HCI UART Transport Layer (H4) {#sec:hciUARTPorting}
@@ -136,6 +136,19 @@ callback for CTS interrupts.
     void hal_uart_dma_set_cts_irq_handler(void(*cts_irq_handler)(void));
     void hal_uart_dma_set_sleep(uint8_t sleep);
 
+
+### H5
+
+H5, makes use of the SLIP protocol to transmit a packet and can deal
+with packet loss and bit-errors by retranssion. Since it can recover
+from packet loss, it's also possible for either side to enter sleep
+mode without loosing synchronization.
+
+The use of hardware flow control in H5 is ooptional, however, since
+BTstack uses hardware flow control to avoid packet buffers, it's
+recommended to only use H5 with RTS/CTS as well.
+
+For porting, the implementation follows the regular H4 procotol described above.
 
 ## Persistent Storage APIs {#sec:persistentStoragePorting}
 

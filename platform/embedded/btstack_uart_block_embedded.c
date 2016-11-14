@@ -107,6 +107,13 @@ static int btstack_uart_embedded_open(void){
 } 
 
 static int btstack_uart_embedded_close(void){
+
+    // remove data source
+    btstack_run_loop_disable_data_source_callbacks(&transport_data_source, DATA_SOURCE_CALLBACK_POLL);
+    btstack_run_loop_remove_data_source(&transport_data_source);
+
+    // close device
+    // ...
     return 0;
 }
 

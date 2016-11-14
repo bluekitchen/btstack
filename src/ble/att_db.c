@@ -39,9 +39,9 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "bluetooth.h"
 #include "ble/att_db.h"
 #include "ble/core.h"
+#include "bluetooth.h"
 #include "btstack_debug.h"
 #include "btstack_util.h"
 
@@ -68,6 +68,8 @@ static att_read_callback_t  att_read_callback  = NULL;
 static att_write_callback_t att_write_callback = NULL;
 static uint8_t  att_prepare_write_error_code   = 0;
 static uint16_t att_prepare_write_error_handle = 0x0000;
+
+static btstack_linked_list_t service_handlers;
 
 // new java-style iterator
 typedef struct att_iterator {
@@ -152,6 +154,30 @@ static int att_find_handle(att_iterator_t *it, uint16_t handle){
     return 0;
 }
 
+static att_service_handler_t * att_service_handler_for_handle(uint16_t handle){
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &service_handlers);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        att_service_handler_t * handler = (att_service_handler_t*) btstack_linked_list_iterator_next(&it);
+        if (handler->start_handle > handle) continue;
+        if (handler->end_handle   < handle) continue;
+        return handler;
+    }
+    return NULL;
+}
+
+static att_read_callback_t att_read_callback_for_handle(uint16_t handle){
+    att_service_handler_t * handler = att_service_handler_for_handle(handle);
+    if (handler) return handler->read_callback;
+    return att_read_callback;
+}
+
+static att_write_callback_t att_write_callback_for_handle(uint16_t handle){
+    att_service_handler_t * handler = att_service_handler_for_handle(handle);
+    if (handler) return handler->write_callback;
+    return att_write_callback;
+}
+
 // experimental client API
 uint16_t att_uuid_for_handle(uint16_t attribute_handle){
     att_iterator_t it;
@@ -163,8 +189,10 @@ uint16_t att_uuid_for_handle(uint16_t attribute_handle){
 // end of client API
 
 static void att_update_value_len(att_iterator_t *it, hci_con_handle_t con_handle){
-    if ((it->flags & ATT_PROPERTY_DYNAMIC) == 0 || !att_read_callback) return;
-    it->value_len = (*att_read_callback)(con_handle, it->handle, 0, NULL, 0);
+    if ((it->flags & ATT_PROPERTY_DYNAMIC) == 0) return;
+    att_read_callback_t callback = att_read_callback_for_handle(it->handle);
+    if (!callback) return;
+    it->value_len = (*callback)(con_handle, it->handle, 0, NULL, 0);
     return;
 }
 
@@ -172,8 +200,10 @@ static void att_update_value_len(att_iterator_t *it, hci_con_handle_t con_handle
 static int att_copy_value(att_iterator_t *it, uint16_t offset, uint8_t * buffer, uint16_t buffer_size, hci_con_handle_t con_handle){
     
     // DYNAMIC 
-    if ((it->flags & ATT_PROPERTY_DYNAMIC) && att_read_callback) {
-        return (*att_read_callback)(con_handle, it->handle, offset, buffer, buffer_size);
+    if (it->flags & ATT_PROPERTY_DYNAMIC){
+        att_read_callback_t callback = att_read_callback_for_handle(it->handle);
+        if (!callback) return 0;
+        return (*callback)(con_handle, it->handle, offset, buffer, buffer_size);
     }
     
     // STATIC
@@ -854,7 +884,8 @@ static uint16_t handle_write_request(att_connection_t * att_connection, uint8_t 
     if (!ok) {
         return setup_error_invalid_handle(response_buffer, request_type, handle);
     }
-    if (!att_write_callback) {
+    att_write_callback_t callback = att_write_callback_for_handle(handle);
+    if (!callback) {
         return setup_error_write_not_permitted(response_buffer, request_type, handle);
     }
     if ((it.flags & ATT_PROPERTY_WRITE) == 0) {
@@ -868,7 +899,7 @@ static uint16_t handle_write_request(att_connection_t * att_connection, uint8_t 
     if (error_code) {
         return setup_error(response_buffer, request_type, handle, error_code);
     }
-    error_code = (*att_write_callback)(att_connection->con_handle, handle, ATT_TRANSACTION_MODE_NONE, 0, request_buffer + 3, request_len - 3);
+    error_code = (*callback)(att_connection->con_handle, handle, ATT_TRANSACTION_MODE_NONE, 0, request_buffer + 3, request_len - 3);
     if (error_code) {
         return setup_error(response_buffer, request_type, handle, error_code);
     }
@@ -885,7 +916,8 @@ static uint16_t handle_prepare_write_request(att_connection_t * att_connection, 
 
     uint16_t handle = little_endian_read_16(request_buffer, 1);
     uint16_t offset = little_endian_read_16(request_buffer, 3);
-    if (!att_write_callback) {
+    att_write_callback_t callback = att_write_callback_for_handle(handle);
+    if (!callback) {
         return setup_error_write_not_permitted(response_buffer, request_type, handle);
     }
     att_iterator_t it;
@@ -905,7 +937,7 @@ static uint16_t handle_prepare_write_request(att_connection_t * att_connection, 
         return setup_error(response_buffer, request_type, handle, error_code);
     }
 
-    error_code = (*att_write_callback)(att_connection->con_handle, handle, ATT_TRANSACTION_MODE_ACTIVE, offset, request_buffer + 5, request_len - 5);
+    error_code = (*callback)(att_connection->con_handle, handle, ATT_TRANSACTION_MODE_ACTIVE, offset, request_buffer + 5, request_len - 5);
     switch (error_code){
         case 0:
             break;
@@ -924,12 +956,24 @@ static uint16_t handle_prepare_write_request(att_connection_t * att_connection, 
     return request_len;
 }
 
+static void att_notify_write_callbacks(att_connection_t * att_connection, uint16_t transaction_mode){
+    // notify all 
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &service_handlers);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        att_service_handler_t * handler = (att_service_handler_t*) btstack_linked_list_iterator_next(&it);
+        if (!handler->write_callback) continue;
+        (*handler->write_callback)(att_connection->con_handle, 0, transaction_mode, 0, NULL, 0);
+    }
+    if (!att_write_callback) return;
+    (*att_write_callback)(att_connection->con_handle, 0, transaction_mode, 0, NULL, 0);
+}
+
 /*
  * @brief transcation queue of prepared writes, e.g., after disconnect
  */
 void att_clear_transaction_queue(att_connection_t * att_connection){
-    if (!att_write_callback) return;
-    (*att_write_callback)(att_connection->con_handle, 0, ATT_TRANSACTION_MODE_CANCEL, 0, NULL, 0);
+    att_notify_write_callbacks(att_connection, ATT_TRANSACTION_MODE_CANCEL);
 }
 
 // MARK: ATT_EXECUTE_WRITE_REQUEST 0x18
@@ -938,10 +982,6 @@ static uint16_t handle_execute_write_request(att_connection_t * att_connection, 
                                       uint8_t * response_buffer, uint16_t response_buffer_size){
 
     uint8_t request_type = ATT_EXECUTE_WRITE_REQUEST;
-
-    if (!att_write_callback) {
-        return setup_error_write_not_permitted(response_buffer, request_type, 0);
-    }
     if (request_buffer[1]) {
         // deliver queued errors
         if (att_prepare_write_error_code){
@@ -951,7 +991,7 @@ static uint16_t handle_execute_write_request(att_connection_t * att_connection, 
             att_prepare_write_reset();
             return setup_error(response_buffer, request_type, handle, error_code);
         }
-        (*att_write_callback)(att_connection->con_handle, 0, ATT_TRANSACTION_MODE_EXECUTE, 0, NULL, 0);
+        att_notify_write_callbacks(att_connection, ATT_TRANSACTION_MODE_EXECUTE);
     } else {
         att_clear_transaction_queue(att_connection);
     }
@@ -965,15 +1005,17 @@ static uint16_t handle_execute_write_request(att_connection_t * att_connection, 
 static void handle_write_command(att_connection_t * att_connection, uint8_t * request_buffer,  uint16_t request_len,
                                            uint8_t * response_buffer, uint16_t response_buffer_size){
 
-    if (!att_write_callback) return;
     uint16_t handle = little_endian_read_16(request_buffer, 1);
+    att_write_callback_t callback = att_write_callback_for_handle(handle);
+    if (!callback) return;
+
     att_iterator_t it;
     int ok = att_find_handle(&it, handle);
     if (!ok) return;
     if ((it.flags & ATT_PROPERTY_DYNAMIC) == 0) return;
     if ((it.flags & ATT_PROPERTY_WRITE_WITHOUT_RESPONSE) == 0) return;
     if (att_validate_security(att_connection, &it)) return;
-    (*att_write_callback)(att_connection->con_handle, handle, ATT_TRANSACTION_MODE_NONE, 0, request_buffer + 3, request_len - 3);
+    (*callback)(att_connection->con_handle, handle, ATT_TRANSACTION_MODE_NONE, 0, request_buffer + 3, request_len - 3);
 }
 
 // MARK: helper for ATT_HANDLE_VALUE_NOTIFICATION and ATT_HANDLE_VALUE_INDICATION
@@ -1068,42 +1110,91 @@ uint16_t att_handle_request(att_connection_t * att_connection,
     return response_len;
 }
 
-#if 0
+/**
+ * @brief register read/write callbacks for specific handle range
+ * @param att_service_handler_t
+ */
+void att_register_service_handler(att_service_handler_t * handler){
+    if (att_service_handler_for_handle(handler->start_handle) ||
+        att_service_handler_for_handle(handler->end_handle)){
+        log_error("att_register_service_handler: handler for range 0x%04x-0x%04x already registered", handler->start_handle, handler->end_handle);
+        return;
+    }
+    btstack_linked_list_add(&service_handlers, (btstack_linked_item_t*) handler);
+}
 
-// test profile
-#include "profile.h"
+// returns 1 if service found. only primary service.
+int gatt_server_get_get_handle_range_for_service_with_uuid16(uint16_t uuid16, uint16_t * start_handle, uint16_t * end_handle){
+    uint16_t in_group    = 0;
+    uint16_t prev_handle = 0;
 
-int main(void){
-    int acl_buffer_size;
-    uint8_t acl_buffer[27];
-    att_set_db(profile_data);
-    att_dump_attributes();
+    uint8_t attribute_value[2];
+    int attribute_len = sizeof(attribute_value);
+    little_endian_store_16(attribute_value, 0, uuid16);
 
-    uint8_t uuid_1[] = { 0x00, 0x18};
-    acl_buffer_size = handle_find_by_type_value_request2(acl_buffer, 19, 0, 0xffff, 0x2800, 2, (uint8_t *) &uuid_1);
-    log_info_hexdump(acl_buffer, acl_buffer_size);
-    
-    uint8_t uuid_3[] = { 0x00, 0x2a};
-    acl_buffer_size = handle_read_by_type_request2(acl_buffer, 19, 0, 0xffff, 2, (uint8_t *) &uuid_3);
-    log_info_hexdump(acl_buffer, acl_buffer_size);
+    att_iterator_t it;
+    att_iterator_init(&it);
+    while (att_iterator_has_next(&it)){
+        att_iterator_fetch_next(&it);
+        int new_service_started = att_iterator_match_uuid16(&it, GATT_PRIMARY_SERVICE_UUID) || att_iterator_match_uuid16(&it, GATT_SECONDARY_SERVICE_UUID);
+
+        // close current tag, if within a group and a new service definition starts or we reach end of att db
+        if (in_group &&
+            (it.handle == 0 || new_service_started)){
+            *end_handle = prev_handle;
+            return 1;
+        }
         
-    acl_buffer_size = handle_find_by_type_value_request2(acl_buffer, 19, 0, 0xffff, 0x2800, 2, (uint8_t *) &uuid_1);
-    log_info_hexdump(acl_buffer, acl_buffer_size);
-
-    uint8_t uuid_4[] = { 0x00, 0x28};
-    acl_buffer_size = handle_read_by_group_type_request2(acl_buffer, 20, 0, 0xffff, 2, (uint8_t *) &uuid_4);
-    log_info_hexdump(acl_buffer, acl_buffer_size);
-    
-    acl_buffer_size = handle_find_information_request2(acl_buffer, 20, 0, 0xffff);
-    log_info_hexdump(acl_buffer, acl_buffer_size);
-    acl_buffer_size = handle_find_information_request2(acl_buffer, 20, 3, 0xffff);
-    log_info_hexdump(acl_buffer, acl_buffer_size);
-    acl_buffer_size = handle_find_information_request2(acl_buffer, 20, 5, 0xffff);
-    log_info_hexdump(acl_buffer, acl_buffer_size);
-
-    acl_buffer_size = handle_read_request2(acl_buffer, 19, 0x0003);
-    log_info_hexdump(acl_buffer, acl_buffer_size);
-
+        // keep track of previous handle
+        prev_handle = it.handle;
+        
+        // check if found
+        if (it.handle && new_service_started && attribute_len == it.value_len && memcmp(attribute_value, it.value, it.value_len) == 0){
+            *start_handle = it.handle;
+            in_group = 1;
+        }
+    }
     return 0;
 }
-#endif
+
+// returns 0 if not found
+uint16_t gatt_server_get_value_handle_for_characteristic_with_uuid16(uint16_t start_handle, uint16_t end_handle, uint16_t uuid16){
+    att_iterator_t it;
+    att_iterator_init(&it);
+    while (att_iterator_has_next(&it)){
+        att_iterator_fetch_next(&it);
+        if (it.handle && it.handle < start_handle) continue;
+        if (it.handle > end_handle) break;  // (1)
+        if (it.handle == 0) break;
+        if (att_iterator_match_uuid16(&it, uuid16)) return it.handle;
+    }
+    return 0;
+}
+
+// returns 0 if not found
+uint16_t gatt_server_get_client_configuration_handle_for_characteristic_with_uuid16(uint16_t start_handle, uint16_t end_handle, uint16_t uuid16){
+    att_iterator_t it;
+    att_iterator_init(&it);
+    int characteristic_found = 0;
+    while (att_iterator_has_next(&it)){
+        att_iterator_fetch_next(&it);
+        if (it.handle && it.handle < start_handle) continue;
+        if (it.handle > end_handle) break;  // (1)
+        if (it.handle == 0) break;
+        if (att_iterator_match_uuid16(&it, uuid16)){
+            characteristic_found = 1;
+            continue;
+        }
+        if (att_iterator_match_uuid16(&it, GATT_PRIMARY_SERVICE_UUID) 
+         || att_iterator_match_uuid16(&it, GATT_SECONDARY_SERVICE_UUID)
+         || att_iterator_match_uuid16(&it, GATT_CHARACTERISTICS_UUID)){
+            if (characteristic_found) break;
+            continue;
+        }
+        if (att_iterator_match_uuid16(&it, GATT_CLIENT_CHARACTERISTICS_CONFIGURATION)){
+            return it.handle;
+        }
+    }
+    return 0;
+}
+

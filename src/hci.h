@@ -450,6 +450,8 @@ typedef enum hci_init_state{
     HCI_INIT_W4_SEND_RESET,
     HCI_INIT_SEND_READ_LOCAL_VERSION_INFORMATION,
     HCI_INIT_W4_SEND_READ_LOCAL_VERSION_INFORMATION,
+    HCI_INIT_SEND_READ_LOCAL_NAME,
+    HCI_INIT_W4_SEND_READ_LOCAL_NAME,
 
     HCI_INIT_SEND_BAUD_CHANGE,
     HCI_INIT_W4_SEND_BAUD_CHANGE,
@@ -642,7 +644,7 @@ typedef struct {
     /* buffer for scan enable cmd - 0xff no change */
     uint8_t   new_scan_enable_value;
     
-    uint16_t   sco_voice_setting;
+    uint16_t  sco_voice_setting;
 
     uint8_t   loopback_mode;
 
@@ -672,6 +674,7 @@ typedef struct {
     uint8_t  le_advertisements_active;
     uint8_t  le_advertisements_enabled;
     uint8_t  le_advertisements_todo;
+    uint8_t  le_advertisements_random_address_set;
 
     uint16_t le_advertisements_interval_min;
     uint16_t le_advertisements_interval_max;
@@ -974,6 +977,13 @@ void hci_le_advertisements_set_params(uint16_t adv_int_min, uint16_t adv_int_max
     uint8_t own_address_type, uint8_t direct_address_typ, bd_addr_t direct_address,
     uint8_t channel_map, uint8_t filter_policy);
 
+void hci_le_advertisements_set_own_address_type(uint8_t own_address_type);
+
+/**
+ * @brief Get Manufactured
+ * @return manufacturer id
+ */
+uint16_t hci_get_manufacturer(void);
 
 // Only for PTS testing
 

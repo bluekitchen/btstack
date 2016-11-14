@@ -880,8 +880,10 @@ void daemon_gatt_serialize_characteristic_descriptor(gatt_client_characteristic_
 static int btstack_command_handler(connection_t *connection, uint8_t *packet, uint16_t size){
     
     bd_addr_t addr;
+#ifdef ENABLE_BLE
     bd_addr_type_t addr_type;
     hci_con_handle_t handle;
+#endif
     uint16_t cid;
     uint16_t psm;
     uint16_t service_channel;
@@ -1132,6 +1134,7 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             
             sdp_client_query(&handle_sdp_client_query_result, addr, (uint8_t*)&serviceSearchPattern[0], (uint8_t*)&attributeIDList[0]);
             break;
+#ifdef ENABLE_BLE
         case GAP_LE_SCAN_START:
             gap_start_scan();
             break;
@@ -1153,6 +1156,7 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             handle = little_endian_read_16(packet, 3);
             gap_disconnect(handle);
             break;
+#endif
 #if defined(HAVE_MALLOC) && defined(ENABLE_BLE)
         case GATT_DISCOVER_ALL_PRIMARY_SERVICES:
             gatt_helper = daemon_setup_gatt_client_request(connection, packet, 1);
@@ -1967,14 +1971,19 @@ int main (int argc,  char * const * argv){
 
     btstack_control_t * control = NULL;
     void * config;
-
+    const btstack_uart_block_t * uart_block_implementation = NULL;
+    (void) uart_block_implementation;
+    
 #ifdef HAVE_TRANSPORT_H4
     hci_transport_config_uart.type = HCI_TRANSPORT_CONFIG_UART;
     hci_transport_config_uart.baudrate_init = UART_SPEED;
     hci_transport_config_uart.baudrate_main = 0;
     hci_transport_config_uart.flowcontrol = 1;
     hci_transport_config_uart.device_name   = UART_DEVICE;
-    transport = hci_transport_h4_instance(btstack_uart_block_posix_instance());
+
+#ifndef HAVE_PLATFORM_IPHONE_OS
+    uart_block_implementation = btstack_uart_block_posix_instance();
+#endif
 
 #ifdef HAVE_PLATFORM_IPHONE_OS
     // use default (max) UART baudrate over netgraph interface
@@ -1982,6 +1991,7 @@ int main (int argc,  char * const * argv){
 #endif
 
     config = &hci_transport_config_uart;
+    transport = hci_transport_h4_instance(uart_block_implementation);
 #endif
 
 #ifdef HAVE_TRANSPORT_USB

@@ -47,19 +47,13 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "bluetooth_data_types.h"
 #include "btstack_util.h"
 #include "classic/sdp_util.h"
+#include "hci.h"
 #include "hci_cmd.h"
 
-#include "hci.h"
 #include "ad_parser.h"
-
-typedef enum {
-    IncompleteList16 = 0x02, 
-    CompleteList16 = 0x03, 
-    IncompleteList128 = 0x06, 
-    CompleteList128 = 0x07
-} UUID_TYPE;
 
 void ad_iterator_init(ad_context_t *context, uint8_t ad_len, const uint8_t * ad_data){
     context->data = ad_data;
@@ -104,15 +98,15 @@ int ad_data_contains_uuid16(uint8_t ad_len, const uint8_t * ad_data, uint16_t uu
         uint8_t ad_uuid128[16], uuid128_bt[16];
                 
         switch (data_type){
-            case IncompleteList16:
-            case CompleteList16:
+            case BLUETOOTH_DATA_TYPE_INCOMPLETE_LIST_OF_16_BIT_SERVICE_CLASS_UUIDS:
+            case BLUETOOTH_DATA_TYPE_COMPLETE_LIST_OF_16_BIT_SERVICE_CLASS_UUIDS:
                 for (i=0; i<data_len; i+=2){
                     uint16_t uuid = little_endian_read_16(data, i);
                     if ( uuid == uuid16 ) return 1;
                 }
                 break;
-            case IncompleteList128:
-            case CompleteList128:
+            case BLUETOOTH_DATA_TYPE_INCOMPLETE_LIST_OF_128_BIT_SERVICE_CLASS_UUIDS:
+            case BLUETOOTH_DATA_TYPE_COMPLETE_LIST_OF_128_BIT_SERVICE_CLASS_UUIDS:
                 uuid_add_bluetooth_prefix(ad_uuid128, uuid16);
                 reverse_128(ad_uuid128, uuid128_bt);
             
@@ -142,8 +136,8 @@ int ad_data_contains_uuid128(uint8_t ad_len, const uint8_t * ad_data, const uint
 
 
         switch (data_type){
-            case IncompleteList16:
-            case CompleteList16:
+            case BLUETOOTH_DATA_TYPE_INCOMPLETE_LIST_OF_16_BIT_SERVICE_CLASS_UUIDS:
+            case BLUETOOTH_DATA_TYPE_COMPLETE_LIST_OF_16_BIT_SERVICE_CLASS_UUIDS:
                 for (i=0; i<data_len; i+=2){
                     uint16_t uuid16 = little_endian_read_16(data, i);
                     uuid_add_bluetooth_prefix(ad_uuid128, uuid16);
@@ -152,8 +146,8 @@ int ad_data_contains_uuid128(uint8_t ad_len, const uint8_t * ad_data, const uint
                 }
 
                 break;
-            case IncompleteList128:
-            case CompleteList128:
+            case BLUETOOTH_DATA_TYPE_INCOMPLETE_LIST_OF_128_BIT_SERVICE_CLASS_UUIDS:
+            case BLUETOOTH_DATA_TYPE_COMPLETE_LIST_OF_128_BIT_SERVICE_CLASS_UUIDS:
                 for (i=0; i<data_len; i+=16){
                     if (memcmp(uuid128_le, &data[i], 16) == 0) return 1;
                 }

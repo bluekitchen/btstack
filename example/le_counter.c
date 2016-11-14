@@ -52,6 +52,7 @@
 
 #include "le_counter.h"
 #include "btstack.h"
+#include "ble/gatt-service/battery_service_server.h"
 
 #define HEARTBEAT_PERIOD_MS 1000
 
@@ -59,7 +60,9 @@
  *
  * @text Listing MainConfiguration shows main application code.
  * It initializes L2CAP, the Security Manager and configures the ATT Server with the pre-compiled
- * ATT Database generated from $le_counter.gatt$. Finally, it configures the advertisements 
+ * ATT Database generated from $le_counter.gatt$. 
+ * Additionally, it enables the Battery Service Server with the current battery level.
+ * Finally, it configures the advertisements 
  * and the heartbeat handler and boots the Bluetooth stack. 
  * In this example, the Advertisement contains the Flags attribute and the device name.
  * The flag 0x06 indicates: LE General Discoverable Mode and BR/EDR not supported.
@@ -70,6 +73,7 @@ static int  le_notification_enabled;
 static btstack_timer_source_t heartbeat;
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 static hci_con_handle_t con_handle;
+static uint8_t battery = 100;
 
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static uint16_t att_read_callback(hci_con_handle_t con_handle, uint16_t att_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size);
@@ -102,6 +106,9 @@ static void le_counter_setup(void){
     // setup ATT server
     att_server_init(profile_data, att_read_callback, att_write_callback);    
     att_server_register_packet_handler(packet_handler);
+
+    // setup battery service
+    battery_service_server_init(battery);
 
     // setup advertisements
     uint16_t adv_int_min = 0x0030;
@@ -146,6 +153,14 @@ static void heartbeat_handler(struct btstack_timer_source *ts){
         beat();
         att_server_request_can_send_now_event(con_handle);
     }
+
+    // simulate battery drain
+    battery--;
+    if (battery < 50) {
+        battery = 100;
+    }
+    battery_service_server_set_battery_value(battery);
+
     btstack_run_loop_set_timer(ts, HEARTBEAT_PERIOD_MS);
     btstack_run_loop_add_timer(ts);
 } 

@@ -17,6 +17,7 @@ BTstack_CFLAGS =  -g -I.. \
 	-I$(BTSTACK_ROOT)/platform/corefoundation \
 
 BTstack_LDFLAGS = -L../src/.theos/obj -lBTstack
+BTstack_LDFLAGS += -F../Frameworks 
 BTstack_PRIVATE_FRAMEWORKS = Preferences
 
 include $(THEOS)/makefiles/common.mk
