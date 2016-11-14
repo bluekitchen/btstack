@@ -45,7 +45,6 @@
 
 #include <errno.h>
 #include <fcntl.h>
-#include <math.h>
 #include <net/if_arp.h>
 #include <stdint.h>
 #include <stdio.h>
