@@ -216,6 +216,14 @@ void uuid_add_bluetooth_prefix(uint8_t * uuid128, uint32_t short_uuid);
  */
 int  uuid_has_bluetooth_prefix(uint8_t * uuid128);
 
+/**
+ * @brief Parse unsigned number 
+ * @param str to parse
+ * @return value
+ */
+uint32_t btstack_atoi(const char *str);
+
+
 #if defined __cplusplus
 }
 #endif
