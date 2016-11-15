@@ -53,8 +53,8 @@ extern "C" {
 
 void avdtp_initiator_stream_config_subsm_init(avdtp_stream_endpoint_t * stream_endpoint);
 int  avdtp_initiator_stream_config_subsm_is_done(avdtp_stream_endpoint_t * stream_endpoint);
-int  avdtp_initiator_stream_config_subsm(avdtp_stream_endpoint_t * stream_endpoint, uint8_t *packet, uint16_t size);
-int  avdtp_initiator_stream_config_subsm_run(avdtp_stream_endpoint_t * stream_endpoint);
+int  avdtp_initiator_stream_config_subsm(avdtp_device_t * device, avdtp_stream_endpoint_t * stream_endpoint, uint8_t *packet, uint16_t size);
+int  avdtp_initiator_stream_config_subsm_run(avdtp_device_t * device, avdtp_stream_endpoint_t * stream_endpoint);
 
 #if defined __cplusplus
 }

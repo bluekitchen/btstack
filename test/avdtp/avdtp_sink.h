@@ -54,38 +54,6 @@
 extern "C" {
 #endif
 
-typedef struct avdtp_stream_endpoint {
-    btstack_linked_item_t    item;
-    
-    uint16_t l2cap_media_cid;
-    uint16_t l2cap_reporting_cid;
-    uint16_t l2cap_recovery_cid;
-
-    uint8_t  num_l2cap_channels_opened;
-
-    avdtp_stream_endpoint_state_t        avdtp_state;
-    avdtp_initiator_stream_config_state_t initiator_config_state;
-    avdtp_acceptor_stream_config_state_t  acceptor_config_state;
-
-    uint8_t initiator_transaction_label;
-    uint8_t acceptor_transaction_label;
-    avdtp_signal_identifier_t unknown_signal_identifier;
-    
-    // store remote seps
-    avdtp_sep_t remote_seps[MAX_NUM_SEPS];
-    uint8_t remote_seps_num;
-    
-    // currently active seid - stream opened
-    uint8_t active_seid;
-    uint8_t query_seid;
-
-    // currently active remote seid
-    uint8_t remote_sep_index;
-    
-    // register request for L2cap connection release
-    uint8_t disconnect;
-} avdtp_stream_endpoint_t;
-
 /* API_START */
 /**
  * @brief AVDTP Sink service record. 

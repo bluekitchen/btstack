@@ -212,15 +212,6 @@ typedef struct{
     avdtp_multiplexing_mode_capabilities_t multiplexing_mode;
 } avdtp_capabilities_t;
 
-typedef struct {
-    uint8_t seid;           // 0x01 – 0x3E, 6bit
-    uint8_t in_use;         // 1 bit, 0 - not in use, 1 - in use
-    avdtp_media_type_t media_type;     // 4 bit
-    avdtp_sep_type_t   type;       // 1 bit, 0 - SRC, 1 - SNK
-
-    uint16_t registered_service_categories;
-    avdtp_capabilities_t capabilities;
-} avdtp_sep_t;
 
 typedef enum{
     AVDTP_SBC_48000 = 1,
@@ -283,6 +274,11 @@ typedef struct {
 } avdtp_media_packet_header_t;
 
 typedef enum {
+    AVDTP_BASIC_SERVICE_MODE,
+    AVDTP_MULTIPLEXING_SERVICE_MODE
+} avdtp_service_mode_t;
+
+typedef enum {
     AVDTP_IDLE,
     AVDTP_CONFIGURATION_SUBSTATEMACHINE,
     AVDTP_CONFIGURED,
@@ -322,10 +318,69 @@ typedef enum {
     AVDTP_ACCEPTOR_STREAM_CONFIG_DONE
 } avdtp_acceptor_stream_config_state_t;
 
+typedef struct {
+    uint8_t seid;           // 0x01 – 0x3E, 6bit
+    uint8_t in_use;         // 1 bit, 0 - not in use, 1 - in use
+    avdtp_media_type_t media_type;     // 4 bit
+    avdtp_sep_type_t   type;       // 1 bit, 0 - SRC, 1 - SNK
+
+    uint16_t registered_service_categories;
+    avdtp_capabilities_t capabilities;
+} avdtp_sep_t;
+
+typedef struct avdtp_stream_endpoint {
+    btstack_linked_item_t    item;
+    
+    avdtp_sep_t sep;
+
+    uint16_t l2cap_media_cid;
+    uint16_t l2cap_reporting_cid;
+    uint16_t l2cap_recovery_cid;
+
+    uint8_t  num_l2cap_channels_opened;
+
+    avdtp_stream_endpoint_state_t         state;
+    avdtp_initiator_stream_config_state_t initiator_config_state;
+    avdtp_acceptor_stream_config_state_t  acceptor_config_state;
+
+    avdtp_signal_identifier_t unknown_signal_identifier;
+    
+    // store remote seps
+    avdtp_sep_t remote_seps[MAX_NUM_SEPS];
+    uint8_t remote_seps_num;
+    
+    // currently active remote seid
+    uint8_t remote_sep_index;
+    
+    // register request for L2cap connection release
+    uint8_t disconnect;
+} avdtp_stream_endpoint_t;
+
+
 typedef enum {
-    AVDTP_BASIC_SERVICE_MODE,
-    AVDTP_MULTIPLEXING_SERVICE_MODE
-} avdtp_service_mode_t;
+    AVDTP_DEVICE_IDLE,
+    AVDTP_W4_L2CAP_FOR_SIGNALING_CONNECTED,
+    AVDTP_DEVICE_CONNECTED,
+    AVDTP_W4_L2CAP_FOR_SIGNALING_DISCONNECTED
+} avdtp_device_state_t;
+
+
+typedef struct {
+    bd_addr_t remote_addr;
+    uint16_t l2cap_signaling_cid;
+    btstack_linked_list_t stream_endpoints;
+    uint16_t stream_endpoints_id_counter;
+
+    avdtp_device_state_t state;
+    uint8_t disconnect;
+
+    uint8_t initiator_transaction_label;
+    uint8_t acceptor_transaction_label;
+
+    uint8_t query_seid;
+
+    avdtp_service_mode_t service_mode;
+} avdtp_device_t;
 
 #if defined __cplusplus
 }

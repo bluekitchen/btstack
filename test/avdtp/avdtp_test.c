@@ -142,9 +142,94 @@ static char * sbc_filename = "avdtp_sink.sbc";
 static bd_addr_t remote = {0x04, 0x0C, 0xCE, 0xE4, 0x85, 0xD3};
 static uint8_t sdp_avdtp_sink_service_buffer[150];
 
-uint16_t local_cid = 0;
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
+static int media_initialized = 0;
+static int init_media_processing(void){
+    if (media_initialized) return 0;
+#ifdef STORE_SBC_TO_WAV_FILE
+    btstack_sbc_decoder_init(&state, mode, handle_pcm_data, NULL);
+    wav_writer_open(wav_filename, NUM_CHANNELS, SAMPLE_RATE);  
+#endif
+
+#ifdef STORE_SBC_TO_SBC_FILE    
+    sbc_file = fopen(sbc_filename, "wb"); 
+#endif
+
+#ifdef HAVE_PORTAUDIO
+    PaError err;
+    PaStreamParameters outputParameters;
+
+    /* -- initialize PortAudio -- */
+    err = Pa_Initialize();
+    if (err != paNoError){
+        printf("Error initializing portaudio: \"%s\"\n",  Pa_GetErrorText(err));
+        return err;
+    } 
+    /* -- setup input and output -- */
+    outputParameters.device = Pa_GetDefaultOutputDevice(); /* default output device */
+    outputParameters.channelCount = NUM_CHANNELS;
+    outputParameters.sampleFormat = PA_SAMPLE_TYPE;
+    outputParameters.suggestedLatency = Pa_GetDeviceInfo( outputParameters.device )->defaultHighOutputLatency;
+    outputParameters.hostApiSpecificStreamInfo = NULL;
+    /* -- setup stream -- */
+    err = Pa_OpenStream(
+           &stream,
+           NULL,                /* &inputParameters */
+           &outputParameters,
+           SAMPLE_RATE,
+           FRAMES_PER_BUFFER,
+           paClipOff,           /* we won't output out of range samples so don't bother clipping them */
+           patestCallback,      /* use callback */
+           NULL );   
+    
+    if (err != paNoError){
+        printf("Error initializing portaudio: \"%s\"\n",  Pa_GetErrorText(err));
+        return err;
+    }
+    memset(ring_buffer_storage, 0, sizeof(ring_buffer_storage));
+    btstack_ring_buffer_init(&ring_buffer, ring_buffer_storage, sizeof(ring_buffer_storage));
+    pa_stream_started = 0;
+#endif 
+    media_initialized = 1;
+    return 0;
+}
+
+static void close_media_processing(void){
+    if (!media_initialized) return;
+    media_initialized = 0;
+#ifdef STORE_SBC_TO_WAV_FILE 
+    printf(" Close wav writer.\n");                   
+    wav_writer_close();
+    int total_frames_nr = state.good_frames_nr + state.bad_frames_nr + state.zero_frames_nr;
+
+    printf(" Decoding done. Processed totaly %d frames:\n - %d good\n - %d bad\n - %d zero frames\n", total_frames_nr, state.good_frames_nr, state.bad_frames_nr, state.zero_frames_nr);
+    printf(" Written %d frames to wav file: %s\n\n", frame_count, wav_filename);
+#endif
+#ifdef STORE_SBC_TO_SBC_FILE
+    fclose(sbc_file);
+#endif     
+
+#ifdef HAVE_PORTAUDIO
+    PaError err = Pa_StopStream(stream);
+    if (err != paNoError){
+        printf("Error stopping the stream: \"%s\"\n",  Pa_GetErrorText(err));
+        return;
+    } 
+    pa_stream_started = 0;
+    err = Pa_CloseStream(stream);
+    if (err != paNoError){
+        printf("Error closing the stream: \"%s\"\n",  Pa_GetErrorText(err));
+        return;
+    } 
+
+    err = Pa_Terminate();
+    if (err != paNoError){
+        printf("Error terminating portaudio: \"%s\"\n",  Pa_GetErrorText(err));
+        return;
+    } 
+#endif
+}
 
 static void handle_l2cap_media_data_packet(avdtp_stream_endpoint_t * stream_endpoint, uint8_t *packet, uint16_t size){
     int pos = 0;
@@ -187,6 +272,7 @@ static void handle_l2cap_media_data_packet(avdtp_stream_endpoint_t * stream_endp
 
     // printf("SBC HEADER: num_frames %u, fragmented %u, start %u, stop %u\n", sbc_header.num_frames, sbc_header.fragmentation, sbc_header.starting_packet, sbc_header.last_packet);
     // printf_hexdump( packet+pos, size-pos );
+    init_media_processing();
 #ifdef STORE_SBC_TO_WAV_FILE
     btstack_sbc_decoder_process_data(&state, 0, packet+pos, size-pos);
 #endif
@@ -225,37 +311,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                 case HCI_EVENT_DISCONNECTION_COMPLETE:
                     // connection closed -> quit tes app
                     printf("\n --- avdtp_test: HCI_EVENT_DISCONNECTION_COMPLETE ---\n");
-#ifdef STORE_SBC_TO_WAV_FILE 
-                    printf(" Close wav writer.\n");                   
-                    wav_writer_close();
-                    int total_frames_nr = state.good_frames_nr + state.bad_frames_nr + state.zero_frames_nr;
-
-                    printf(" Decoding done. Processed totaly %d frames:\n - %d good\n - %d bad\n - %d zero frames\n", total_frames_nr, state.good_frames_nr, state.bad_frames_nr, state.zero_frames_nr);
-                    printf(" Written %d frames to wav file: %s\n\n", frame_count, wav_filename);
-#endif
-#ifdef STORE_SBC_TO_SBC_FILE
-                    fclose(sbc_file);
-#endif     
-
-#ifdef HAVE_PORTAUDIO
-                    PaError err = Pa_StopStream(stream);
-                    if (err != paNoError){
-                        printf("Error stopping the stream: \"%s\"\n",  Pa_GetErrorText(err));
-                        return;
-                    } 
-                    pa_stream_started = 0;
-                    err = Pa_CloseStream(stream);
-                    if (err != paNoError){
-                        printf("Error closing the stream: \"%s\"\n",  Pa_GetErrorText(err));
-                        return;
-                    } 
-
-                    err = Pa_Terminate();
-                    if (err != paNoError){
-                        printf("Error terminating portaudio: \"%s\"\n",  Pa_GetErrorText(err));
-                        return;
-                    } 
-#endif
+                    close_media_processing();
                     // exit(0);
                     break;
                     
@@ -338,51 +394,6 @@ int btstack_main(int argc, const char * argv[]){
     gap_set_local_name("BTstack AVDTP Test");
     gap_discoverable_control(1);
     gap_set_class_of_device(0x200408);
-
-#ifdef STORE_SBC_TO_WAV_FILE
-    btstack_sbc_decoder_init(&state, mode, handle_pcm_data, NULL);
-    wav_writer_open(wav_filename, NUM_CHANNELS, SAMPLE_RATE);  
-#endif
-
-#ifdef STORE_SBC_TO_SBC_FILE    
-    sbc_file = fopen(sbc_filename, "wb"); 
-#endif
-
-#ifdef HAVE_PORTAUDIO
-    PaError err;
-    PaStreamParameters outputParameters;
-
-    /* -- initialize PortAudio -- */
-    err = Pa_Initialize();
-    if (err != paNoError){
-        printf("Error initializing portaudio: \"%s\"\n",  Pa_GetErrorText(err));
-        return err;
-    } 
-    /* -- setup input and output -- */
-    outputParameters.device = Pa_GetDefaultOutputDevice(); /* default output device */
-    outputParameters.channelCount = NUM_CHANNELS;
-    outputParameters.sampleFormat = PA_SAMPLE_TYPE;
-    outputParameters.suggestedLatency = Pa_GetDeviceInfo( outputParameters.device )->defaultHighOutputLatency;
-    outputParameters.hostApiSpecificStreamInfo = NULL;
-    /* -- setup stream -- */
-    err = Pa_OpenStream(
-           &stream,
-           NULL,                /* &inputParameters */
-           &outputParameters,
-           SAMPLE_RATE,
-           FRAMES_PER_BUFFER,
-           paClipOff,           /* we won't output out of range samples so don't bother clipping them */
-           patestCallback,      /* use callback */
-           NULL );   
-    
-    if (err != paNoError){
-        printf("Error initializing portaudio: \"%s\"\n",  Pa_GetErrorText(err));
-        return err;
-    }
-    memset(ring_buffer_storage, 0, sizeof(ring_buffer_storage));
-    btstack_ring_buffer_init(&ring_buffer, ring_buffer_storage, sizeof(ring_buffer_storage));
-    pa_stream_started = 0;
-#endif  
     
     // turn on!
     hci_power_control(HCI_POWER_ON);
