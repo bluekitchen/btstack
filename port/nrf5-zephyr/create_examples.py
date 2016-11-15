@@ -16,7 +16,12 @@ mk_template = '''#
 
 obj-y += EXAMPLE.o
 obj-y += main.o
+obj-y += hci_raw.o
+obj-y += hci_driver.o
 ccflags-y += -I${ZEPHYR_BASE}/subsys/btstack
+ccflags-y += -I${ZEPHYR_BASE}/include/drivers
+ccflags-y += -I${ZEPHYR_BASE}/subsys/bluetooth/controller/
+ccflags-y += -I${ZEPHYR_BASE}/subsys/bluetooth/controller/hci
 ccflags-y += -I${ZEPHYR_BASE}/subsys/bluetooth/controller/ll
 
 '''
@@ -85,11 +90,12 @@ for file in os.listdir(examples_embedded):
     with open(src_folder + "Makefile", "wt") as fout:
         fout.write(mk_template.replace("EXAMPLE", example).replace("TOOL", script_path).replace("DATE",time.strftime("%c")))
 
-    # copy port main.c
-    shutil.copyfile(script_path + '/main.c', src_folder + "/main.c")
-
     # copy example file
     shutil.copyfile(examples_embedded + file, src_folder + "/" + example + ".c")
+
+    # copy other files
+    for item in ['main.c', 'hci_raw.c', 'hci_driver.c']:
+        shutil.copyfile(script_path + '/' + item, src_folder + '/' + item)
 
     # create update_gatt.sh if .gatt file is present
     gatt_path = examples_embedded + example + ".gatt"
