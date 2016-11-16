@@ -35,3 +35,5 @@ spp_and_le_counter.h
 spp_counter
 spp_streamer
 spp_streamer
+sco_input*
+sco_output*

@@ -52,6 +52,27 @@ extern "C" {
 
 const btstack_chipset_t * btstack_chipset_bcm_instance(void);
 
+
+// Support for loading .hcd init files on POSIX systems
+
+/** 
+ * @brief Set path to .hcd init file
+ * @param path
+ */
+void btstack_chipset_bcm_set_hcd_file_path(const char * path);
+
+/**
+ * @brief Set folder to look for .hcd init files
+ * @param path
+ */
+void btstack_chipset_bcm_set_hcd_folder_path(const char * path);
+
+/**
+ * @brief Look for .hcd init file based on device name
+ * @param device_name e.g. BCM43430A1
+ */
+void btstack_chipset_bcm_set_device_name(const char * path);
+
 #if defined __cplusplus
 }
 #endif

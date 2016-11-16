@@ -1837,7 +1837,7 @@ static void hfp_handle_rfcomm_data(uint8_t packet_type, uint16_t channel, uint8_
             hfp_connection->ok_pending = 1;
             break;
         case HFP_CMD_RESPONSE_AND_HOLD_COMMAND:
-            value = atoi((char *)&hfp_connection->line_buffer[0]);
+            value = btstack_atoi((char *)&hfp_connection->line_buffer[0]);
             log_info("HF Response and Hold: %u", value);
             switch(value){
                 case HFP_RESPONSE_AND_HOLD_INCOMING_ON_HOLD:
@@ -1862,7 +1862,7 @@ static void hfp_handle_rfcomm_data(uint8_t packet_type, uint16_t channel, uint8_
                 hfp_connection->send_error = 1;
                 break;
             }
-            value = atoi((char *)&hfp_connection->line_buffer[0]);
+            value = btstack_atoi((char *)&hfp_connection->line_buffer[0]);
             switch (indicator->uuid){
                 case 1: // enhanced security
                     if (value > 1) {
@@ -1939,7 +1939,7 @@ static void hfp_handle_rfcomm_data(uint8_t packet_type, uint16_t channel, uint8_
             hfp_connection->call_index = 0;
             
             if (hfp_connection->line_buffer[1] != '\0'){
-                hfp_connection->call_index = atoi((char *)&hfp_connection->line_buffer[1]);
+                hfp_connection->call_index = btstack_atoi((char *)&hfp_connection->line_buffer[1]);
             }
 
             switch (hfp_connection->line_buffer[0]){
