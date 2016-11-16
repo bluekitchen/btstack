@@ -515,6 +515,45 @@ void btstack_memory_avdtp_stream_endpoint_free(avdtp_stream_endpoint_t *avdtp_st
 #endif
 
 
+
+// MARK: avdtp_connection_t
+#if !defined(HAVE_MALLOC) && !defined(MAX_NR_AVDTP_CONNECTIONS)
+    #if defined(MAX_NO_AVDTP_CONNECTIONS)
+        #error "Deprecated MAX_NO_AVDTP_CONNECTIONS defined instead of MAX_NR_AVDTP_CONNECTIONS. Please update your btstack_config.h to use MAX_NR_AVDTP_CONNECTIONS."
+    #else
+        #define MAX_NR_AVDTP_CONNECTIONS 0
+    #endif
+#endif
+
+#ifdef MAX_NR_AVDTP_CONNECTIONS
+#if MAX_NR_AVDTP_CONNECTIONS > 0
+static avdtp_connection_t avdtp_connection_storage[MAX_NR_AVDTP_CONNECTIONS];
+static btstack_memory_pool_t avdtp_connection_pool;
+avdtp_connection_t * btstack_memory_avdtp_connection_get(void){
+    return (avdtp_connection_t *) btstack_memory_pool_get(&avdtp_connection_pool);
+}
+void btstack_memory_avdtp_connection_free(avdtp_connection_t *avdtp_connection){
+    btstack_memory_pool_free(&avdtp_connection_pool, avdtp_connection);
+}
+#else
+avdtp_connection_t * btstack_memory_avdtp_connection_get(void){
+    return NULL;
+}
+void btstack_memory_avdtp_connection_free(avdtp_connection_t *avdtp_connection){
+    // silence compiler warning about unused parameter in a portable way
+    (void) avdtp_connection;
+};
+#endif
+#elif defined(HAVE_MALLOC)
+avdtp_connection_t * btstack_memory_avdtp_connection_get(void){
+    return (avdtp_connection_t*) malloc(sizeof(avdtp_connection_t));
+}
+void btstack_memory_avdtp_connection_free(avdtp_connection_t *avdtp_connection){
+    free(avdtp_connection);
+}
+#endif
+
+
 #ifdef ENABLE_BLE
 
 // MARK: gatt_client_t
@@ -669,6 +708,9 @@ void btstack_memory_init(void){
 #endif
 #if MAX_NR_AVDTP_STREAM_ENDPOINTS > 0
     btstack_memory_pool_create(&avdtp_stream_endpoint_pool, avdtp_stream_endpoint_storage, MAX_NR_AVDTP_STREAM_ENDPOINTS, sizeof(avdtp_stream_endpoint_t));
+#endif
+#if MAX_NR_AVDTP_CONNECTIONS > 0
+    btstack_memory_pool_create(&avdtp_connection_pool, avdtp_connection_storage, MAX_NR_AVDTP_CONNECTIONS, sizeof(avdtp_connection_t));
 #endif
 #ifdef ENABLE_BLE
 #if MAX_NR_GATT_CLIENTS > 0

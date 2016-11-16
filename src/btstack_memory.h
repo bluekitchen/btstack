@@ -122,6 +122,10 @@ void   btstack_memory_service_record_item_free(service_record_item_t *service_re
 avdtp_stream_endpoint_t * btstack_memory_avdtp_stream_endpoint_get(void);
 void   btstack_memory_avdtp_stream_endpoint_free(avdtp_stream_endpoint_t *avdtp_stream_endpoint);
 
+// avdtp_connection
+avdtp_connection_t * btstack_memory_avdtp_connection_get(void);
+void   btstack_memory_avdtp_connection_free(avdtp_connection_t *avdtp_connection);
+
 #ifdef ENABLE_BLE
 // gatt_client, whitelist_entry, sm_lookup_entry
 gatt_client_t * btstack_memory_gatt_client_get(void);
