@@ -328,34 +328,6 @@ typedef struct {
     avdtp_capabilities_t capabilities;
 } avdtp_sep_t;
 
-typedef struct avdtp_stream_endpoint {
-    btstack_linked_item_t    item;
-    
-    avdtp_sep_t sep;
-
-    uint16_t l2cap_media_cid;
-    uint16_t l2cap_reporting_cid;
-    uint16_t l2cap_recovery_cid;
-
-    uint8_t  num_l2cap_channels_opened;
-
-    avdtp_stream_endpoint_state_t         state;
-    avdtp_initiator_stream_config_state_t initiator_config_state;
-    avdtp_acceptor_stream_config_state_t  acceptor_config_state;
-
-    avdtp_signal_identifier_t unknown_signal_identifier;
-    
-    // store remote seps
-    avdtp_sep_t remote_seps[MAX_NUM_SEPS];
-    uint8_t remote_seps_num;
-    
-    // currently active remote seid
-    uint8_t remote_sep_index;
-    
-    // register request for L2cap connection release
-    uint8_t disconnect;
-} avdtp_stream_endpoint_t;
-
 
 typedef enum {
     AVDTP_DEVICE_IDLE,
@@ -367,23 +339,46 @@ typedef enum {
 
 typedef struct {
     bd_addr_t remote_addr;
-    
     uint16_t l2cap_signaling_cid;
-    btstack_linked_list_t can_send_now_signaling_channel_requests;
-
-    btstack_linked_list_t stream_endpoints;
-    uint16_t stream_endpoints_id_counter;
-
     avdtp_device_state_t state;
-    uint8_t disconnect;
+    avdtp_service_mode_t service_mode;
 
+    uint8_t disconnect;
     uint8_t initiator_transaction_label;
     uint8_t acceptor_transaction_label;
-
     uint8_t query_seid;
 
-    avdtp_service_mode_t service_mode;
+    btstack_linked_list_t can_send_now_signaling_channel_requests;
 } avdtp_connection_t;
+
+typedef struct {
+
+} avdtp_stream_endpoint_context_t;
+
+typedef struct avdtp_stream_endpoint {
+    btstack_linked_item_t    item;
+    
+    avdtp_sep_t sep;
+    uint16_t l2cap_media_cid;
+    uint16_t l2cap_reporting_cid;
+    uint16_t l2cap_recovery_cid;
+
+    avdtp_stream_endpoint_state_t         state;
+    avdtp_initiator_stream_config_state_t initiator_config_state;
+    avdtp_acceptor_stream_config_state_t  acceptor_config_state;
+
+    // active connection
+    avdtp_connection_t * connection;
+    // store remote seps
+    avdtp_sep_t remote_seps[MAX_NUM_SEPS];
+    uint8_t remote_seps_num;
+
+    avdtp_signal_identifier_t unknown_signal_identifier;
+    // currently active remote seid
+    uint8_t remote_sep_index;
+    // register request for L2cap connection release
+    uint8_t disconnect;
+} avdtp_stream_endpoint_t;
 
 #if defined __cplusplus
 }
