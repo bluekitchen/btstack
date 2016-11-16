@@ -44,6 +44,7 @@
 
 #include "wav_util.h"
 #include "btstack_util.h"
+#include "btstack_debug.h"
 
 static int wav_reader_fd;
 static int bytes_per_sample = 2;
@@ -164,7 +165,7 @@ int wav_writer_write_int16(int num_samples, int16_t * data){
 int wav_reader_open(const char * filepath){
     wav_reader_fd = open(filepath, O_RDONLY); 
     if (!wav_reader_fd) {
-        printf("Can't open file %s", filepath);
+        log_error("Can't open file %s", filepath);
         return 1;
     }
 
@@ -173,6 +174,10 @@ int wav_reader_open(const char * filepath){
 
     int num_channels = little_endian_read_16(buf, 22);
     int block_align = little_endian_read_16(buf, 32);
+    if (num_channels != 1 && num_channels != 2) {
+        log_error("Unexpected num channels %d", num_channels);
+        return 1;
+    }
     bytes_per_sample = block_align/num_channels;
     if (bytes_per_sample > 2){
         bytes_per_sample = bytes_per_sample/8;

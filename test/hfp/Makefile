@@ -79,7 +79,7 @@ cvsd_plc_test: ${COMMON_OBJ} btstack_cvsd_plc.o wav_util.o cvsd_plc_test.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 test: all
-	mkdir -p result
+	mkdir -p results
 	./hfp_ag_parser_test
 	./hfp_ag_client_test
 	./hfp_hf_parser_test
