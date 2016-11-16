@@ -124,18 +124,61 @@ static void swi5_nrf5_isr(void *arg)
 	work_run(NRF5_IRQ_SWI5_IRQn);
 }
 
+static void recv_fiber_task_a(struct radio_pdu_node_rx *node_rx){
+
+	struct pdu_data * pdu_data;
+	struct net_buf  * buf;
+
+	pdu_data = (void *)node_rx->pdu_data;
+	/* Check if we need to generate an HCI event or ACL
+	 * data
+	 */
+	if (node_rx->hdr.type != NODE_RX_TYPE_DC_PDU ||
+	    pdu_data->ll_id == PDU_DATA_LLID_CTRL) {
+		/* generate a (non-priority) HCI event */
+		buf = bt_buf_get_evt(0);
+		if (buf) {
+			hci_evt_encode(node_rx, buf);
+		} else {
+			BT_ERR("Cannot allocate RX event");
+		}
+	} else {
+		/* generate ACL data */
+		buf = bt_buf_get_acl();
+		if (buf) {
+			hci_acl_encode(node_rx, buf);
+		} else {
+			BT_ERR("Cannot allocate RX ACL");
+		}
+	}
+
+	if (buf) {
+		if (buf->len) {
+			BT_DBG("Packet in: type:%u len:%u",
+				bt_buf_get_type(buf), buf->len);
+			bt_recv(buf);
+		} else {
+			net_buf_unref(buf);
+		}
+	}
+
+	radio_rx_dequeue();
+	radio_rx_fc_set(node_rx->hdr.handle, 0);
+	node_rx->hdr.onion.next = 0;
+	radio_rx_mem_release(&node_rx);
+}
+
 static void recv_fiber(int unused0, int unused1)
 {
 	while (1) {
+
 		struct radio_pdu_node_rx *node_rx;
-		struct pdu_data *pdu_data;
-		struct net_buf *buf;
 		uint8_t num_cmplt;
 		uint16_t handle;
 
 		while ((num_cmplt = radio_rx_get(&node_rx, &handle))) {
 
-			buf = bt_buf_get_evt(BT_HCI_EVT_NUM_COMPLETED_PACKETS);
+			struct net_buf * buf = bt_buf_get_evt(BT_HCI_EVT_NUM_COMPLETED_PACKETS);
 			if (buf) {
 				hci_num_cmplt_encode(buf, handle, num_cmplt);
 				BT_DBG("Num Complete: 0x%04x:%u", handle,
@@ -150,43 +193,7 @@ static void recv_fiber(int unused0, int unused1)
 
 		if (node_rx) {
 
-			pdu_data = (void *)node_rx->pdu_data;
-			/* Check if we need to generate an HCI event or ACL
-			 * data
-			 */
-			if (node_rx->hdr.type != NODE_RX_TYPE_DC_PDU ||
-			    pdu_data->ll_id == PDU_DATA_LLID_CTRL) {
-				/* generate a (non-priority) HCI event */
-				buf = bt_buf_get_evt(0);
-				if (buf) {
-					hci_evt_encode(node_rx, buf);
-				} else {
-					BT_ERR("Cannot allocate RX event");
-				}
-			} else {
-				/* generate ACL data */
-				buf = bt_buf_get_acl();
-				if (buf) {
-					hci_acl_encode(node_rx, buf);
-				} else {
-					BT_ERR("Cannot allocate RX ACL");
-				}
-			}
-
-			if (buf) {
-				if (buf->len) {
-					BT_DBG("Packet in: type:%u len:%u",
-						bt_buf_get_type(buf), buf->len);
-					bt_recv(buf);
-				} else {
-					net_buf_unref(buf);
-				}
-			}
-
-			radio_rx_dequeue();
-			radio_rx_fc_set(node_rx->hdr.handle, 0);
-			node_rx->hdr.onion.next = 0;
-			radio_rx_mem_release(&node_rx);
+			recv_fiber_task_a(node_rx);
 
 			fiber_yield();
 		} else {
