@@ -62,7 +62,7 @@
  *   D: 8 byte data block
  *   E: Extended Inquiry Result
  *   N: Name up to 248 chars, \0 terminated
- *   P: 16 byte Pairing code
+ *   P: 16 byte data block. Pairing code, Simple Pairing Hash and Randomizer
  *   A: 31 bytes advertising data
  *   S: Service Record (Data Element Sequence)
  *   Q: 32 byte data block, e.g. for X and Y coordinates of P-256 public key
@@ -388,6 +388,15 @@ OPCODE(OGF_LINK_CONTROL, 0x2f), "B"
 
 /**
  * @param bd_addr
+ * @param c Simple Pairing Hash C
+ * @param r Simple Pairing Randomizer R
+ */
+const hci_cmd_t hci_remote_oob_data_request_reply = {
+OPCODE(OGF_LINK_CONTROL, 0x30), "BPP"
+};
+
+/**
+ * @param bd_addr
  */
 const hci_cmd_t hci_remote_oob_data_request_negative_reply = {
 OPCODE(OGF_LINK_CONTROL, 0x33), "B"
@@ -677,6 +686,12 @@ const hci_cmd_t hci_write_simple_pairing_mode = {
 OPCODE(OGF_CONTROLLER_BASEBAND, 0x56), "1"
 };
 
+/**
+ */
+const hci_cmd_t hci_read_local_oob_data = {
+OPCODE(OGF_CONTROLLER_BASEBAND, 0x57), ""
+// return status, C, R
+};
 
 /**
  * @param mode (0 = off, 1 = on)
@@ -700,6 +715,14 @@ const hci_cmd_t hci_write_le_host_supported = {
 OPCODE(OGF_CONTROLLER_BASEBAND, 0x6d), "11"
 // return: status
 };
+
+/**
+ */
+const hci_cmd_t hci_read_local_extended_ob_data = {
+OPCODE(OGF_CONTROLLER_BASEBAND, 0x7d), ""
+// return status, C_192, R_192, R_256, C_256
+};
+
 
 /**
  * Testing Commands
