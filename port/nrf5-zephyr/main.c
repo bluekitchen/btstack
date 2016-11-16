@@ -282,28 +282,40 @@ static void btstack_run_loop_zephyr_dump_timer(void){
 /**
  * Execute run_loop
  */
+
+// private in hci_driver.c
+void hci_driver_task(void);
+struct k_sem hci_driver_sem_recv;
+
 static void btstack_run_loop_zephyr_execute(void) {
     while (1) {
+
+        // process RX fifo only
+        while (1){
+            struct net_buf *buf = net_buf_get_timeout(&rx_queue, 0, TICKS_NONE);
+            if (!buf) break;
+            transport_deliver_controller_packet(buf);
+        }
+
         // get next timeout
-        int32_t timeout_ticks = TICKS_UNLIMITED;
+        int32_t timeout_ms = K_FOREVER;
         if (timers) {
             btstack_timer_source_t * ts = (btstack_timer_source_t *) timers;
             uint32_t now = sys_tick_get_32();
             if (ts->timeout < now){
                 // remove timer before processing it to allow handler to re-register with run loop
                 btstack_run_loop_remove_timer(ts);
-                // printf("RL: timer %p\n", ts->process);
                 ts->process(ts);
                 continue;
             }
-            timeout_ticks = ts->timeout - now;
+            timeout_ms = (ts->timeout - now) * sys_clock_ms_per_tick;
         }
-                
- 	   	// process RX fifo only
-    	struct net_buf *buf = net_buf_get_timeout(&rx_queue, 0, timeout_ticks);
-		if (buf){
-			transport_deliver_controller_packet(buf);
-		}
+
+        // no timer ready, no data in the RX queue, let's wait for some radio action or the next timer
+        int err = k_sem_take(&hci_driver_sem_recv, timeout_ms);
+        if (err == 0){
+            hci_driver_task();
+        }
 	}
 }
 

@@ -68,8 +68,6 @@ static uint8_t ALIGNED(4) _radio[LL_MEM_TOTAL];
 
 // BTstack: make public
 struct k_sem hci_driver_sem_recv;
-// static BT_STACK_NOINIT(recv_fiber_stack,
-// 		       CONFIG_BLUETOOTH_CONTROLLER_RX_STACK_SIZE);
 
 void radio_active_callback(uint8_t active)
 {
@@ -202,17 +200,6 @@ void hci_driver_task(void){
 	}
 }
 
-#if 0
-static void recv_fiber(int unused0, int unused1)
-{
-	while (1) {
-		k_sem_take(&hci_driver_sem_recv, K_FOREVER);
-		hci_driver_task();
-		stack_analyze("recv fiber stack", recv_fiber_stack, sizeof(recv_fiber_stack));
-	}
-}
-#endif
-
 static int cmd_handle(struct net_buf *buf)
 {
 	struct net_buf *evt;
@@ -334,9 +321,6 @@ static int hci_driver_open(void)
 	irq_enable(NRF5_IRQ_SWI5_IRQn);
 
 	k_sem_init(&hci_driver_sem_recv, 0, UINT_MAX);
-	// BTstack: call hci_driver_task from run loop directly
-	// fiber_start(recv_fiber_stack, sizeof(recv_fiber_stack),
-	// 	    (nano_fiber_entry_t)recv_fiber, 0, 0, 7, 0);
 
 	BT_DBG("Success.");
 
