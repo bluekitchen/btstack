@@ -66,9 +66,10 @@ static uint8_t ALIGNED(4) _ticker_user_ops[RADIO_TICKER_USER_OPS]
 						[TICKER_USER_OP_T_SIZE];
 static uint8_t ALIGNED(4) _radio[LL_MEM_TOTAL];
 
-static struct k_sem sem_recv;
-static BT_STACK_NOINIT(recv_fiber_stack,
-		       CONFIG_BLUETOOTH_CONTROLLER_RX_STACK_SIZE);
+// BTstack: make public
+struct k_sem hci_driver_sem_recv;
+// static BT_STACK_NOINIT(recv_fiber_stack,
+// 		       CONFIG_BLUETOOTH_CONTROLLER_RX_STACK_SIZE);
 
 void radio_active_callback(uint8_t active)
 {
@@ -76,7 +77,7 @@ void radio_active_callback(uint8_t active)
 
 void radio_event_callback(void)
 {
-	k_sem_give(&sem_recv);
+	k_sem_give(&hci_driver_sem_recv);
 }
 
 static void radio_nrf5_isr(void *arg)
@@ -168,7 +169,8 @@ static void recv_fiber_task_a(struct radio_pdu_node_rx *node_rx){
 	radio_rx_mem_release(&node_rx);
 }
 
-static void recv_fiber_task(void){
+// BTstack: make public
+void hci_driver_task(void){
 	while (1){
 		struct radio_pdu_node_rx *node_rx;
 		uint8_t num_cmplt;
@@ -200,14 +202,16 @@ static void recv_fiber_task(void){
 	}
 }
 
+#if 0
 static void recv_fiber(int unused0, int unused1)
 {
 	while (1) {
-		k_sem_take(&sem_recv, K_FOREVER);
-		recv_fiber_task();
+		k_sem_take(&hci_driver_sem_recv, K_FOREVER);
+		hci_driver_task();
 		stack_analyze("recv fiber stack", recv_fiber_stack, sizeof(recv_fiber_stack));
 	}
 }
+#endif
 
 static int cmd_handle(struct net_buf *buf)
 {
@@ -329,9 +333,10 @@ static int hci_driver_open(void)
 	irq_enable(NRF5_IRQ_SWI4_IRQn);
 	irq_enable(NRF5_IRQ_SWI5_IRQn);
 
-	k_sem_init(&sem_recv, 0, UINT_MAX);
-	fiber_start(recv_fiber_stack, sizeof(recv_fiber_stack),
-		    (nano_fiber_entry_t)recv_fiber, 0, 0, 7, 0);
+	k_sem_init(&hci_driver_sem_recv, 0, UINT_MAX);
+	// BTstack: call hci_driver_task from run loop directly
+	// fiber_start(recv_fiber_stack, sizeof(recv_fiber_stack),
+	// 	    (nano_fiber_entry_t)recv_fiber, 0, 0, 7, 0);
 
 	BT_DBG("Success.");
 
