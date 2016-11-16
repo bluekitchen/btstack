@@ -367,7 +367,10 @@ typedef enum {
 
 typedef struct {
     bd_addr_t remote_addr;
+    
     uint16_t l2cap_signaling_cid;
+    btstack_linked_list_t can_send_now_signaling_channel_requests;
+
     btstack_linked_list_t stream_endpoints;
     uint16_t stream_endpoints_id_counter;
 
@@ -380,7 +383,7 @@ typedef struct {
     uint8_t query_seid;
 
     avdtp_service_mode_t service_mode;
-} avdtp_device_t;
+} avdtp_connection_t;
 
 #if defined __cplusplus
 }

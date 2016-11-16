@@ -227,7 +227,7 @@ int  avdtp_acceptor_stream_config_subsm_is_done(avdtp_stream_endpoint_t * stream
     return stream_endpoint->acceptor_config_state == AVDTP_ACCEPTOR_STREAM_CONFIG_DONE;
 }
 
-int avdtp_acceptor_stream_config_subsm(avdtp_device_t * device, avdtp_stream_endpoint_t * stream_endpoint, uint8_t *packet, uint16_t size){
+int avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, avdtp_stream_endpoint_t * stream_endpoint, uint8_t *packet, uint16_t size){
     avdtp_signaling_packet_header_t signaling_header;
     avdtp_read_signaling_header(&signaling_header, packet, size);
 
@@ -238,7 +238,7 @@ int avdtp_acceptor_stream_config_subsm(avdtp_device_t * device, avdtp_stream_end
     int i = 2;
     avdtp_sep_t sep;
 
-    device->acceptor_transaction_label = signaling_header.transaction_label;
+    connection->acceptor_transaction_label = signaling_header.transaction_label;
     
     int request_to_send = 1;
     switch (stream_endpoint->acceptor_config_state){
@@ -254,12 +254,12 @@ int avdtp_acceptor_stream_config_subsm(avdtp_device_t * device, avdtp_stream_end
                     break;
                 case AVDTP_SI_GET_CAPABILITIES:
                     printf("    ACP -> AVDTP_ACCEPTOR_W2_ANSWER_GET_CAPABILITIES\n");
-                    device->query_seid = packet[2] >> 2;
+                    connection->query_seid = packet[2] >> 2;
                     stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_ANSWER_GET_CAPABILITIES;
                     break;
                 case AVDTP_SI_SET_CONFIGURATION:
                     printf("    ACP -> AVDTP_ACCEPTOR_W2_ANSWER_SET_CONFIGURATION\n");
-                    device->query_seid  = packet[2] >> 2;
+                    connection->query_seid  = packet[2] >> 2;
                     sep.seid = packet[3] >> 2;
                     // find or add sep
                     for (i=0; i < stream_endpoint->remote_seps_num; i++){
@@ -278,7 +278,7 @@ int avdtp_acceptor_stream_config_subsm(avdtp_device_t * device, avdtp_stream_end
                     stream_endpoint->unknown_signal_identifier = signaling_header.signal_identifier;
                     break;
             }
-            l2cap_request_can_send_now_event(device->l2cap_signaling_cid);
+            l2cap_request_can_send_now_event(connection->l2cap_signaling_cid);
             break;
         case AVDTP_ACCEPTOR_STREAM_CONFIG_DONE:
             printf(" ACP: AVDTP_ACCEPTOR_W2_ANSWER_SET_CONFIGURATION\n");
@@ -298,35 +298,35 @@ static int avdtp_acceptor_send_response_reject(uint16_t cid,  avdtp_signal_ident
     return l2cap_send(cid, command, sizeof(command));
 }
 
-int avdtp_acceptor_stream_config_subsm_run(avdtp_device_t * device, avdtp_stream_endpoint_t * stream_endpoint){
+int avdtp_acceptor_stream_config_subsm_run(avdtp_connection_t * connection, avdtp_stream_endpoint_t * stream_endpoint){
     int sent = 1;
     // printf("acceptor run: state %d\n", stream_endpoint->acceptor_config_state);
     switch (stream_endpoint->acceptor_config_state){
         case AVDTP_ACCEPTOR_W2_ANSWER_DISCOVER_SEPS:
             printf("    AVDTP_ACCEPTOR_W2_ANSWER_DISCOVER_SEPS -> AVDTP_ACCEPTOR_STREAM_CONFIG_IDLE\n");
             stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_STREAM_CONFIG_IDLE;
-            avdtp_acceptor_send_seps_response(device->l2cap_signaling_cid, device->acceptor_transaction_label, (avdtp_stream_endpoint_t *)&device->stream_endpoints);
+            avdtp_acceptor_send_seps_response(connection->l2cap_signaling_cid, connection->acceptor_transaction_label, (avdtp_stream_endpoint_t *)&connection->stream_endpoints);
             break;
         case AVDTP_ACCEPTOR_W2_ANSWER_GET_CAPABILITIES:
-            if (device->query_seid != stream_endpoint->sep.seid) return 0;
+            if (connection->query_seid != stream_endpoint->sep.seid) return 0;
             printf("    AVDTP_ACCEPTOR_W2_ANSWER_GET_CAPABILITIES -> AVDTP_ACCEPTOR_STREAM_CONFIG_IDLE\n");
             stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_STREAM_CONFIG_IDLE;
-            avdtp_acceptor_send_capabilities_response(device->l2cap_signaling_cid, device->acceptor_transaction_label, stream_endpoint->sep);
+            avdtp_acceptor_send_capabilities_response(connection->l2cap_signaling_cid, connection->acceptor_transaction_label, stream_endpoint->sep);
             break;
         case AVDTP_ACCEPTOR_W2_ANSWER_GET_ALL_CAPABILITIES:
-            if (device->query_seid != stream_endpoint->sep.seid) return 0;
+            if (connection->query_seid != stream_endpoint->sep.seid) return 0;
             printf("    AVDTP_ACCEPTOR_W2_ANSWER_GET_ALL_CAPABILITIES -> AVDTP_ACCEPTOR_STREAM_CONFIG_IDLE\n");
             stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_STREAM_CONFIG_IDLE;
-            avdtp_acceptor_send_all_capabilities_response(device->l2cap_signaling_cid, device->acceptor_transaction_label, stream_endpoint->sep);
+            avdtp_acceptor_send_all_capabilities_response(connection->l2cap_signaling_cid, connection->acceptor_transaction_label, stream_endpoint->sep);
             break;
         case AVDTP_ACCEPTOR_W2_REJECT_UNKNOWN_CMD:
             stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_STREAM_CONFIG_IDLE;
-            avdtp_acceptor_send_response_reject(device->l2cap_signaling_cid, stream_endpoint->unknown_signal_identifier, device->acceptor_transaction_label);
+            avdtp_acceptor_send_response_reject(connection->l2cap_signaling_cid, stream_endpoint->unknown_signal_identifier, connection->acceptor_transaction_label);
             break;
         case AVDTP_ACCEPTOR_W2_ANSWER_SET_CONFIGURATION:
             printf("    AVDTP_ACCEPTOR_W2_ANSWER_SET_CONFIGURATION -> AVDTP_ACCEPTOR_STREAM_CONFIG_DONE\n");
             stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_STREAM_CONFIG_DONE;
-            avdtp_acceptor_send_accept_response(device->l2cap_signaling_cid, AVDTP_SI_SET_CONFIGURATION, device->acceptor_transaction_label);
+            avdtp_acceptor_send_accept_response(connection->l2cap_signaling_cid, AVDTP_SI_SET_CONFIGURATION, connection->acceptor_transaction_label);
             break;
         case AVDTP_ACCEPTOR_STREAM_CONFIG_IDLE:
             break;
