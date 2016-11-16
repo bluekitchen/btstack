@@ -312,3 +312,14 @@ int sscanf_bd_addr(const char * addr_string, bd_addr_t addr){
     }
 	return result;
 }
+
+uint32_t btstack_atoi(const char *str){
+    uint32_t val = 0;
+    while (1){
+        char chr = *str;
+        if (!chr || chr < '0' || chr > '9')
+            return val;
+        val = (val * 10) + (chr - '0');
+        str++;
+    }
+}
