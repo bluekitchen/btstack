@@ -168,10 +168,8 @@ static void recv_fiber_task_a(struct radio_pdu_node_rx *node_rx){
 	radio_rx_mem_release(&node_rx);
 }
 
-static void recv_fiber(int unused0, int unused1)
-{
-	while (1) {
-
+static void recv_fiber_task(void){
+	while (1){
 		struct radio_pdu_node_rx *node_rx;
 		uint8_t num_cmplt;
 		uint16_t handle;
@@ -197,12 +195,17 @@ static void recv_fiber(int unused0, int unused1)
 
 			fiber_yield();
 		} else {
-			k_sem_take(&sem_recv, K_FOREVER);
+			break;
 		}
+	}
+}
 
-		stack_analyze("recv fiber stack",
-			      recv_fiber_stack,
-			      sizeof(recv_fiber_stack));
+static void recv_fiber(int unused0, int unused1)
+{
+	while (1) {
+		k_sem_take(&sem_recv, K_FOREVER);
+		recv_fiber_task();
+		stack_analyze("recv fiber stack", recv_fiber_stack, sizeof(recv_fiber_stack));
 	}
 }
 
