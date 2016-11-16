@@ -583,7 +583,6 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 
     switch (event) {
         case HCI_EVENT_CONNECTION_REQUEST:
-            printf("hsp HCI_EVENT_CONNECTION_REQUEST\n");
             hci_event_connection_request_get_bd_addr(packet, sco_event_addr);
             ag_establish_sco = 1;
             break;
