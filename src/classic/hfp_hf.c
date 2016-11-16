@@ -142,7 +142,6 @@ static void hfp_hf_emit_enhanced_call_status(btstack_packet_handler_t callback, 
 static int has_codec_negotiation_feature(hfp_connection_t * hfp_connection){
     int hf = get_bit(hfp_supported_features, HFP_HFSF_CODEC_NEGOTIATION);
     int ag = get_bit(hfp_connection->remote_supported_features, HFP_AGSF_CODEC_NEGOTIATION);
-    printf("local %d, remote %d\n", hf, ag);
     return hf && ag;
 }
 
