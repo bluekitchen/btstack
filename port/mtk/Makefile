@@ -5,8 +5,8 @@ TOOLCHAIN = /usr/local/android-ndk
 SYSROOT = $(TOOLCHAIN)/sysroot
 GCC = $(TOOLCHAIN)/bin/arm-linux-androideabi-gcc
 STRIP = $(TOOLCHAIN)/bin/arm-linux-androideabi-strip
-CFLAGS = -march=armv7-a -mfloat-abi=softfp -I$(SYSROOT)/usr/include
-LDFLAGS = -Wl,--fix-cortex-a8 -L$(SYSROOT)/usr/lib
+CFLAGS = -march=armv7-a -mfloat-abi=softfp -I$(SYSROOT)/usr/include -fpie -fpic -fPIE -pie#
+LDFLAGS = -Wl,--fix-cortex-a8 -L$(SYSROOT)/usr/lib -fpie -fpic -fPIE -pie
 
 BTSTACK_ROOT = ../..
 

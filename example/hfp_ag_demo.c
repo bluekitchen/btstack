@@ -130,15 +130,15 @@ enum STATE state = INIT;
 static void dump_supported_codecs(void){
     int i;
     int mSBC_skipped = 0;
-    printf("Supported codecs:");
+    printf("Supported codecs: ");
     for (i = 0; i < sizeof(codecs); i++){
         switch(codecs[i]){
             case HFP_CODEC_CVSD:
-                printf(" CVSD");
+                printf("CVSD");
                 break;
             case HFP_CODEC_MSBC:
                 if (hci_extended_sco_link_supported()){
-                    printf("mSBC");
+                    printf(", mSBC");
                 } else {
                     mSBC_skipped = 1;
                 }

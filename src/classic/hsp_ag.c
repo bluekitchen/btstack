@@ -551,12 +551,12 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     break;
             } 
         } else if (strncmp((char *)packet, HSP_HS_MICROPHONE_GAIN, strlen(HSP_HS_MICROPHONE_GAIN)) == 0){
-            uint8_t gain = (uint8_t)atoi((char*)&packet[strlen(HSP_HS_MICROPHONE_GAIN)]);
+            uint8_t gain = (uint8_t)btstack_atoi((char*)&packet[strlen(HSP_HS_MICROPHONE_GAIN)]);
             ag_send_ok = 1;
             emit_event(HSP_SUBEVENT_MICROPHONE_GAIN_CHANGED, gain);
         
         } else if (strncmp((char *)packet, HSP_HS_SPEAKER_GAIN, strlen(HSP_HS_SPEAKER_GAIN)) == 0){
-            uint8_t gain = (uint8_t)atoi((char*)&packet[strlen(HSP_HS_SPEAKER_GAIN)]);
+            uint8_t gain = (uint8_t)btstack_atoi((char*)&packet[strlen(HSP_HS_SPEAKER_GAIN)]);
             ag_send_ok = 1;
             emit_event(HSP_SUBEVENT_SPEAKER_GAIN_CHANGED, gain);
 
@@ -583,7 +583,6 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 
     switch (event) {
         case HCI_EVENT_CONNECTION_REQUEST:
-            printf("hsp HCI_EVENT_CONNECTION_REQUEST\n");
             hci_event_connection_request_get_bd_addr(packet, sco_event_addr);
             ag_establish_sco = 1;
             break;

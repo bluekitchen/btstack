@@ -258,7 +258,7 @@ void btstack_cvsd_plc_process_data(btstack_cvsd_plc_state_t * state, int8_t * in
         btstack_cvsd_plc_good_frame(state, in, out);
         state->good_frames_nr++;
         if (state->good_frames_nr == 1){
-            printf("First good frame at index %d\n", state->frame_count-1);
+            log_info("First good frame at index %d\n", state->frame_count-1);
         }        
     }
 }
@@ -279,12 +279,12 @@ void btstack_cvsd_plc_mark_bad_frame(btstack_cvsd_plc_state_t * state, int8_t * 
         memcpy(out, in, size);
         state->good_frames_nr++;
         if (state->good_frames_nr == 1){
-            printf("First good frame at index %d\n", state->frame_count-1);
+            log_info("First good frame at index %d\n", state->frame_count-1);
         }        
     }
 }
 
 void btstack_cvsd_dump_statistics(btstack_cvsd_plc_state_t * state){
-    printf("Good frames: %d\n", state->good_frames_nr);
-    printf("Bad frames: %d\n", state->bad_frames_nr);
+    log_info("Good frames: %d\n", state->good_frames_nr);
+    log_info("Bad frames: %d\n", state->bad_frames_nr);
 }

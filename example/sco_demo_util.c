@@ -66,7 +66,7 @@
 #ifdef HAVE_POSIX_FILE_IO
 #define SCO_WAV_FILENAME      "sco_input.wav"
 #define SCO_MSBC_OUT_FILENAME "sco_output.msbc"
-#define SCO_MSBC_IN_FILENAME  "sco_input.mscb"
+#define SCO_MSBC_IN_FILENAME  "sco_input.msbc"
 
 #define SCO_WAV_DURATION_IN_SECONDS 15
 #endif
