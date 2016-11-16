@@ -1005,7 +1005,7 @@ static void hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8
         case HFP_CMD_RESPONSE_AND_HOLD_STATUS:
             hfp_connection->command = HFP_CMD_NONE;
             // printf("Response and Hold status: %s\n", hfp_connection->line_buffer);
-            hfp_emit_event(hfp_callback, HFP_SUBEVENT_RESPONSE_AND_HOLD_STATUS, atoi((char *)&hfp_connection->line_buffer[0]));
+            hfp_emit_event(hfp_callback, HFP_SUBEVENT_RESPONSE_AND_HOLD_STATUS, btstack_atoi((char *)&hfp_connection->line_buffer[0]));
             break;
         case HFP_CMD_LIST_CURRENT_CALLS:
             hfp_connection->command = HFP_CMD_NONE;
@@ -1018,13 +1018,13 @@ static void hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8
             break;
         case HFP_CMD_SET_SPEAKER_GAIN:
             hfp_connection->command = HFP_CMD_NONE;
-            value = atoi((char*)hfp_connection->line_buffer);
+            value = btstack_atoi((char*)hfp_connection->line_buffer);
             hfp_hf_speaker_gain = value;
             hfp_emit_event(hfp_callback, HFP_SUBEVENT_SPEAKER_VOLUME, value);
             break;
         case HFP_CMD_SET_MICROPHONE_GAIN:
             hfp_connection->command = HFP_CMD_NONE;
-            value = atoi((char*)hfp_connection->line_buffer);
+            value = btstack_atoi((char*)hfp_connection->line_buffer);
             hfp_hf_microphone_gain = value;
             hfp_emit_event(hfp_callback, HFP_SUBEVENT_MICROPHONE_VOLUME, value);
             break;
