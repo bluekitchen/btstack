@@ -7,8 +7,20 @@ echo "Adding BTstack sources as subsys/btstack"
 
 # add btstack folder to subsys/Makefile
 MAKEFILE_ADD_ON='obj-$(CONFIG_BTSTACK) += btstack/'
-NET_MAKEFILE=${ZEPHYR_BASE}/subsys/Makefile
-grep -q -F btstack ${NET_MAKEFILE} || echo ${MAKEFILE_ADD_ON} >> ${NET_MAKEFILE}
+SUBSYS_MAKEFILE=${ZEPHYR_BASE}/subsys/Makefile
+grep -q -F btstack ${SUBSYS_MAKEFILE} || echo ${MAKEFILE_ADD_ON} >> ${SUBSYS_MAKEFILE}
+
+# remove subsys/bluetooth/host from parent makefile
+SUBSYS_BLUETOOTH_MAKEFILE=${ZEPHYR_BASE}/subsys/bluetooth/Makefile
+sed -i "s|CONFIG_BLUETOOTH_HCI|CONFIG_DISABLED_BY_BTSTACK_BLUETOOTH_HCI|g" ${SUBSYS_BLUETOOTH_MAKEFILE}
+
+# remove subsys/bluetooth/controller/hci_driver from makefile
+SUBSYS_BLUETOOTH_CONTROLLER_MAKEFILE=${ZEPHYR_BASE}/subsys/bluetooth/controller/Makefile
+sed -i "s|CONTROLLER. += hci/hci_driver.o|CONTROLLER_DISABLED_BY_BTSTACK) += hci/hci_driver.o|g" ${SUBSYS_BLUETOOTH_CONTROLLER_MAKEFILE}
+
+# remove subsys/bluetooth/controller/hci_driver from makefile
+SUBSYS_BLUETOOTH_HOST_MAKEFILE=${ZEPHYR_BASE}/subsys/bluetooth/host/Makefile
+sed -i "s|CONFIG_BLUETOOTH_STACK_HCI_RAW|CONFIG_BLUETOOTH_STACK_HCI_RAW_DISABLED_BY_BTSTACK|g" ${SUBSYS_BLUETOOTH_HOST_MAKEFILE}
 
 # add BTstack KConfig to net/Kconfig
 SUBSYS_KCONFIG=${ZEPHYR_BASE}/subsys/Kconfig
@@ -56,6 +68,7 @@ rsync -a Makefile.bluedroid-decoder ${ZEPHYR_BASE}/subsys/btstack/bluedroid/deco
 
 ## Additonal changes for HCI Controller firmware in samples/bluetooth/hci-uart
 HCI_UART=${ZEPHYR_BASE}/samples/bluetooth/hci_uart
+HCI_UART_MAKEFILE=${ZEPHYR_BASE}/samples/bluetooth/hci_uart/src/Makefile
 
 # add flash scripts to hci-uart
 rsync -a flash_nrf51_pca10028.sh ${HCI_UART}/flash_nrf51_pca10028.sh
@@ -66,3 +79,7 @@ sed -i 's|CONFIG_UART_NRF5_BAUD_RATE=1000000|CONFIG_UART_NRF5_BAUD_RATE=115200|g
 
 # provide static random address to host via hci read bd addr
 grep -q -F ll_address_set ${HCI_UART}/src/main.c || cat hci_uart.patch | patch -d ${ZEPHYR_BASE} -p1
+
+# add includes
+grep -q -F "subsys/bluetooth/controller/ll" ${HCI_UART_MAKEFILE} || echo "ccflags-y += -I${ZEPHYR_BASE}/subsys/bluetooth/controller/ll" >> ${HCI_UART_MAKEFILE}
+
