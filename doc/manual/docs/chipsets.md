@@ -35,7 +35,7 @@ Chipset              | HCI Transport  | SCO over HCI     | BTstack support   | C
 -------------------- | ---------------|------------------|-------------------|--------
 Broadcom USB Dongles | USB            | No (didn't work) | chipset/bcm       | 
 Broadcom UART        | H4, H5         | No (didn't work) | chipset/bcm       | Max UART baudrate 3 mbps
-CSR 8x10, 8x11       | H4, H5         | No (didn't work) | chipset/csr       | 
+CSR UART             | H4, H5         | No (didn't work) | chipset/csr       | 
 CSR USB Dongles      | USB            | Yes              | chipset/csr       |
 EM 9301              | SPI            | n.a.             | chipset/em9301    | LE only, custom HCI SPI implementation
 Nordic nRF           | H4             | n.a.             | n.a.              | LE only, requires custom HCI firmware
@@ -62,21 +62,74 @@ BTstack supports uploading of the init script for both variants: file lookup by 
 
 **BD Addr** can be set with a custom command. A fixed addres is provided on some modules, e.g. the AP6212A, but not on others. 
 
-**SCO data** can be configured with a custom command found in the bluez sources. We haven't been able to route SCO data over HCI yet. Therefore, only HSP and HFP Narrow Band Speech is supported with BTstack via I2C/PCM pins currently.
+**SCO data** can be configured with a custom command found in the bluez sources. We haven't been able to route SCO data over HCI yet.
 
 **Baud rate** can be set with custom command. It is reset during the warm start after uploading the init script.
 
 **BTstack integration**: The common code for all Broadcom chipsets is provided by *btstack_chipset_bcm.c*. During the setup, *btstack_chipset_bcm_instance* function is used to get a *btstack_chipset_t* instance and passed to *hci_init* function.
 
-SCO Data can not be routed over HCI, so HFP Wide-Band Speech is not supported currently.
+SCO Data can not be routed over HCI, so HFP Wide-Band Speech is not supported currently. HSP and HFP Narrow Band Speech is supported via I2C/PCM pins.
 
 ## CSR
 
+Similar to Broadcom, the best source for documentation is the source code for blueZ. 
+
+CSR USB dongles do not require special configuration and SCO data is routed over USB by default.
+
+CSR chipset do not require an actual init script in general, but they allow to configure the chipset via so-called PSKEYs. After setting one or more PSKEYs, a warm reset activates the new setting.
+
+**BD Addr** can be set via PSKEY. A fixed address can be provided if the chipset has some kind of persistent memory to store it. Most USB Bluetooth dongles have a fixed BD ADDR. 
+
+**SCO data** can be configured via a set of PSKEYs. We haven't been able to route SCO data over HCI for UART connections yet. 
+
+**Baud rate** can be set as part of the initial configuration and gets active by the warm reset.
+
+**BTstack integration**: The common code for all Broadcom chipsets is provided by *btstack_chipset_csr.c*. During the setup, *btstack_chipset_csr_instance* function is used to get a *btstack_chipset_t* instance and passed to *hci_init* function. The baud rate is set during the general configuration.
+
+SCO Data is routed over HCI for USB dongles, but not for UART connections. HSP and HFP Narrow Band Speech is supported via I2C/PCM pins.
+
+
+## Dialog Semiconductor
+
+Dialog Semiconductor offers the DA14581, a LE-only SoC, that can be programmed with an HCI firmware. The HCI firmware can be uploaded on boot into SRAM or stored in the OTP (One-time programmable) memory, or in an external SPI.
+
+We just ordered a Dev Kit and will try to implement the firmware upload to SRAM option.
+
+
 ## EM Microelectronic Marin
+
+For a long time, the EM9301 has been the only Bluetooth Single-Mode LE chipset with an HCI interface. The EM9301 can be connected via SPI or UART. The UART interface does not support hardware flow control and is not recommended for use with BTstack. The SPI mode uses a proprietary but documented exension to implement flow control and signal if the EM9301 has data to send.
+
+**Update:** EM has just announced a new EM9304 that also features an HCI mode and supports the Bluetooth 4.2. specification incl. data length extension and multiple connections. 
+
+**BD Addr** must be set during startup since it does not have a stored fix address.
+
+**SCO data** is not supported since it is LE only.
+
+**Baud rate** could be set for UART mode. For SPI, the master controls the speed via the SPI Clock line.
+
+**Init scripts** are not required although it is possible to upload small firmware patches. 
+
+**BTstack integration**: The common code for the EM9301 is provided by *btstack_chipset_em9301.c*. During the setup, *btstack_chipset_em9301_instance* function is used to get a *btstack_chipset_t* instance and passed to *hci_init* function. It enables to set the BD Addr during start.
+
 
 ## Nordic nRF5 series
 
-## ST Micro
+
+## STMicroelectronics
+
+STMicroelectronics offers the Bluetooth V2.1 + EDR chipset STLC2500D that supports SPI and UART H4 connection.
+
+**BD Addr** can be set with custom command alhough all chipsets have an official address stored.
+
+**SCO data** might work. We didn't try.
+
+**Baud rate** can be set with custom command. 
+
+**Init scripts** are not required although it is possible to upload firmware patches. 
+
+**BTstack integration**: Support for the STLC2500C is provided by *btstack_chipset_stlc.c*. During the setup, *btstack_chipset_stlc2500d_instance* function is used to get a *btstack_chipset_t* instance and passed to *hci_init* function. It enables higher UART baud rate and to set the BD Addr during startup.
+
 
 ## Texas Instruments CC256x series
 
@@ -95,7 +148,7 @@ The CC256x chipset is connected via an UART connection and supports the H4, H5 (
 The Makefile at *chipset/cc256x/Makefile* is able to automatically download and convert the requested file. It does this by:
 
 -   Downloading one or more [BTS files](http://processors.wiki.ti.com/index.php/CC256x_Downloads) for your chipset.
--   Running runnig the Python script: 
+-   Running running the Python script: 
 
 <!-- -->
 
@@ -117,5 +170,7 @@ and integrates *initscripts_TIInit_6.7.16_ble_add-on.bts* if present.
 SCO Data can be routed over HCI, so HFP Wide-Band Speech is supported.
 
 ## Toshiba
+
+
 
 
