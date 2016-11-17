@@ -165,6 +165,8 @@ static void local_version_information_callback(uint8_t * packet){
         case COMPANY_ID_BROADCOM_CORPORATION:   
             printf("Broadcom - using BCM driver.\n");
             hci_set_chipset(btstack_chipset_bcm_instance());
+
+            use_fast_uart();
             is_bcm = 1;
             break;
         case COMPANY_ID_ST_MICROELECTRONICS:   
@@ -195,7 +197,7 @@ int main(int argc, const char * argv[]){
     hci_dump_open("/tmp/hci_dump.pklg", HCI_DUMP_PACKETLOGGER);
 
     // pick serial port
-    config.device_name = "/dev/tty.usbserial-A9GN71D5";
+    config.device_name = "/dev/tty.usbserial-A9OVNX5P";
 
     // init HCI
     const btstack_uart_block_t * uart_driver = btstack_uart_block_posix_instance();
