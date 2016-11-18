@@ -31,19 +31,26 @@ Broadcom, whose Bluetooth + Wifi division has been acquired by the Cypress Semic
 
 CSR, which has been acquired by Qualcomm, provides all relevant information on their Support website after signing an NDA.
 
-Chipset              | HCI Transport  | SCO over HCI     | BTstack support   | Comment 
--------------------- | ---------------|------------------|-------------------|--------
-Broadcom USB Dongles | USB            | No (didn't work) | chipset/bcm       | 
-Broadcom UART        | H4, H5         | No (didn't work) | chipset/bcm       | Max UART baudrate 3 mbps
-CSR UART             | H4, H5         | No (didn't work) | chipset/csr       | 
-CSR USB Dongles      | USB            | Yes              | chipset/csr       |
-EM 9301              | SPI            | n.a.             | chipset/em9301    | LE only, custom HCI SPI implementation
-Nordic nRF           | H4             | n.a.             | n.a.              | LE only, requires custom HCI firmware
-STM STLC2500D        | H4             | No (didn't try)  | chipset/stlc2500d | Custom deep sleep management not supported
-Toshiba TC35661      | H4             | No (didn't try)  | chipset/tc3566    | HCI version not tested. Classic works.
-TI CC256x, WL183x    | H4, H5, eHCILL | Yes              | chipset/cc256x    | Also WL185x, WL187x, and WL189x
+Chipset              | Type      | HCI Transport  | BD_ADDR (1)  | SCO over HCI (2) | LE DLE | Multiple LE Roles (3)| BTstack folder | Comment 
+-------------------- |-----------| ---------------|--------------|------------------|--------|----------------------|----------------|---------
+Broadcom UART        | Dual mode | H4, H5         | rarely       | No (didn't work) | No     |         Maybe        | bcm            | Max UART baudrate 3 mbps
+Broadcom USB Dongles | Dual mode | USB            | Yes          | No (didn't work) | No     |         No           | bcm            | 
+CSR UART             | Dual mode | H4, H5         | rarely       | No (didn't work) | No     |         No           | csr            | 
+CSR USB Dongles      | Dual mode | USB            | Mostly       | Yes              | No     |         No           | csr            |
+Dialog DA14581       | LE        | H4, SPI        | ?            | n.a.             | No     |         No           |                | Waiting for dev kit
+EM 9301              | LE        | SPI            | No           | n.a.             | No     |         No           | em9301         | Custom HCI SPI implementation
+EM 9304              | LE        | SPI, H4        | ?            | n.a.             | Yes    |         No           |                | Waiting for dev kit
+Nordic nRF           | LE        | H4             | fixed random | n.a.             | Yes    |         Yes          |                | Requires custom HCI firmware
+STM STLC2500D        | Classic   | H4             | No           | No (didn't try)  | n.a    |         n.a.         | stlc2500d      | Custom deep sleep management not supported
+Toshiba TC35661      | Dual mode | H4             | No           | No (didn't try)  | No     |         No           | tc3566         | HCI version not tested. See below
+TI CC256x, WL183x    | Dual mode | H4, H5, eHCILL | Yes          | Yes              | No     |         No           | cc256x         | Also WL185x, WL187x, and WL189x
 
-**Note** All Bluetooth Classic chipsets support SCO over HCI, for those that are marked with No, we either didn't try or didn't found enough information to configure it correctly.
+**Notes**:
+
+  1. BD_ADDR: Not all Bluetooth chipset come with a fixed valid MAC Address. Better Broadcom and CSR dongles come with a MAC address from the dongle manufacturer, but cheaper ones might come with identical addresses.
+  2. SCO over HCI: All Bluetooth Classic chipsets support SCO over HCI, for those that are marked with No, we either didn't try or didn't found enough information to configure it correctly.
+  2. Multiple LE Roles: Apple uses Broadcom Bluetooth+Wifi in their iOS devices and newer iOS versions support multipe concurrent LE roles,
+  so at least some Broadcom models support multiple concurrent LE roles.
 
 ## Broadcom
 
@@ -93,14 +100,13 @@ SCO Data is routed over HCI for USB dongles, but not for UART connections. HSP a
 
 Dialog Semiconductor offers the DA14581, a LE-only SoC, that can be programmed with an HCI firmware. The HCI firmware can be uploaded on boot into SRAM or stored in the OTP (One-time programmable) memory, or in an external SPI.
 
-We just ordered a Dev Kit and will try to implement the firmware upload to SRAM option.
-
+We just ordered a Dev Kit and will try to implement the firmware upload to SRAM option. This chipset supports the Bluetooth 4.2. specification but does not seem to implement the Data Length Extension nor supports multiple concurrent roles. 
 
 ## EM Microelectronic Marin
 
 For a long time, the EM9301 has been the only Bluetooth Single-Mode LE chipset with an HCI interface. The EM9301 can be connected via SPI or UART. The UART interface does not support hardware flow control and is not recommended for use with BTstack. The SPI mode uses a proprietary but documented exension to implement flow control and signal if the EM9301 has data to send.
 
-**Update:** EM has just announced a new EM9304 that also features an HCI mode and supports the Bluetooth 4.2. specification incl. data length extension and multiple connections. 
+**Update:** EM has just announced a new EM9304 that also features an HCI mode and supports the Bluetooth 4.2. specification. It seems to support the Data Length Extension but not and multiple concurrent roles. 
 
 **BD Addr** must be set during startup since it does not have a stored fix address.
 
@@ -210,6 +216,16 @@ SCO Data can be routed over HCI, so HFP Wide-Band Speech is supported.
 
 ## Toshiba
 
+The Toshiba TC35661 Dual-Mode chipset is available in 3 three variants: standalone incl. binary Bluetooth stack, as a module with embedded stack or with a regular HCI interface. The HCI variant has the model number TC35661–007.
 
+We've tried their USB Evaluation Stick that contains an USB-to-UART adapter and the PAN1026 module that contains the TC35661 -501. We have been told by our distributor that the -501 variant also supports the HCI interface. However, while our tests have shown that Classic Bluetooth with SPP works fine with this variant, none of the LE commands work. 
 
+**SCO data** might work. We didn't try.
 
+**Baud rate** can be set with custom command.
+
+**BD Addr ** must be set with custom command. It does not have a stored valid public BD Addr.
+
+**Init Script** is not required. A patch file might be uploaded.
+
+**BTstack integration**: Support for the TC35661 series is provided by *btstack_chipset_tc3566x.c*. During the setup, *btstack_chipset_tc3566x_instance* function is used to get a *btstack_chipset_t* instance and passed to *hci_init* function. It enables higher UART baud rate and to set the BD Addr during startup.
