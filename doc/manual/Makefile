@@ -26,7 +26,7 @@ preview: update_docs_and_apis html
 	mkdocs serve
 
 update_docs_and_apis:
-	rsync -a ../../chipset/README.md docs/chipsets.md
+	sed -e "s|../doc/manual/docs/||g" ../../chipset/README.md > docs/chipsets.md
 	rm -rf tmp
 	mkdir tmp
 	./update_apis.py	
