@@ -115,6 +115,44 @@ For a long time, the EM9301 has been the only Bluetooth Single-Mode LE chipset w
 
 ## Nordic nRF5 series
 
+The Single-Mode LE chipsets from the Nordic nRF5 series chipsets do not have an HCI interface. Instead, they provide an LE Bluetooth Stack as a binary library, the so-called *SoftDevices*. Developer can write their Bluetooth application on top of this library usually. Since the chipset can be programmed, it can also be loaded with a firmware that provides a regular HCI H4 interface for a Host.
+
+An interesting feature of the nRF5 chipsets is that they can support multiple LE roles at the same time, e.g. being Central in one connection and a Peripheral in another connection. Also, the nRF52 SoftDevice implementation supports the Bluetooth 4.2 Data Length Extension. 
+
+Both nRF5 series, the nRF51 and the nRF52, can be used with an HCI firmware. The HCI firmware does not support the Data Length Extension yet, but this will be supported soon. Also, the nRF51 does not support encryted connections at the moment (November 18th, 2016) although this might become supported as well.
+
+**BD ADDR** is not set automatically. However, during production, a 64-bit random number is stored in the each chip. Nordic uses this random number as a random static address in their SoftDevice implementation. 
+
+** SCO data** is not supported since it is LE only.
+
+**Baud rate** is fixed to 115200 at the moment althouth the firmware could be extended to support a baud rate change.
+
+**Init script** is not required. 
+
+**BTstack integration**: No special chipset driver is provided. In order to use the random static address, the provided patch stores this address as the (invalid) public address that is returned by the HCI Read BD Addr command. When BTstack detects that it is a Nordic chipset, it automatically uses this address as random static address - unless the app chooses to use private addresses.
+
+To use these chipsets with BTstack, you need to install an arm-none-eabi gcc toolchain and the nRF5x Command Line Tools incl. the J-Link drivers, checkout the Zephyr project, apply a minimal patch to help with using a random static address, and flash it onto the chipset:
+
+  * Install [J-Link Software and documentation pack](https://www.segger.com/jlink-software.html).
+  * Get nrfjprog as part of the [nRFx-Command-Line-Tools](http://www.nordicsemi.com/eng/Products/Bluetooth-low-energy/nRF52-DK). Click on Downloads tab on the top and look for your OS.
+  * [Checkout Zephry and install toolchain](https://www.zephyrproject.org/doc/getting_started/getting_started.html). We recommend using the [arm-non-eabi gcc binaries](https://launchpad.net/gcc-arm-embedded) instead of compiling it yourself. At least on OS X, this failed for us.
+  * Download our [patch](https://raw.githubusercontent.com/bluekitchen/btstack/develop/port/nrf5-zephyr/hci_firmware.patch) into the Zephry root folder and apply it there:
+
+<!-- -->
+      $ patch -p1 < hci_firmware.patch
+
+  * In *samples/bluetooth/hci_uart* compile the firmware for nRF52 Dev Kit
+
+<!-- -->
+
+      $ make BOARD=nrf52_pca10040
+
+   * Upload the firmware
+
+      $ ./flash_nrf52_pca10040.sh
+
+   * For the nRF51 Dev Kit, use `make BOARD=nrf51_pca10028` and `./flash_nrf51_10028.sh` with the nRF51 kit.
+   * The nRF5 dev kit acts as an LE HCI Controller with H4 interface.
 
 ## STMicroelectronics
 
@@ -129,6 +167,7 @@ STMicroelectronics offers the Bluetooth V2.1 + EDR chipset STLC2500D that suppor
 **Init scripts** are not required although it is possible to upload firmware patches. 
 
 **BTstack integration**: Support for the STLC2500C is provided by *btstack_chipset_stlc.c*. During the setup, *btstack_chipset_stlc2500d_instance* function is used to get a *btstack_chipset_t* instance and passed to *hci_init* function. It enables higher UART baud rate and to set the BD Addr during startup.
+
 
 
 ## Texas Instruments CC256x series
