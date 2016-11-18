@@ -123,7 +123,7 @@ Both nRF5 series, the nRF51 and the nRF52, can be used with an HCI firmware. The
 
 **BD ADDR** is not set automatically. However, during production, a 64-bit random number is stored in the each chip. Nordic uses this random number as a random static address in their SoftDevice implementation. 
 
-** SCO data** is not supported since it is LE only.
+**SCO data** is not supported since it is LE only.
 
 **Baud rate** is fixed to 115200 at the moment althouth the firmware could be extended to support a baud rate change.
 
