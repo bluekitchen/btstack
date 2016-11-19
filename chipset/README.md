@@ -142,7 +142,7 @@ To use these chipsets with BTstack, you need to install an arm-none-eabi gcc too
   * Install [J-Link Software and documentation pack](https://www.segger.com/jlink-software.html).
   * Get nrfjprog as part of the [nRFx-Command-Line-Tools](http://www.nordicsemi.com/eng/Products/Bluetooth-low-energy/nRF52-DK). Click on Downloads tab on the top and look for your OS.
   * [Checkout Zephyr and install toolchain](https://www.zephyrproject.org/doc/getting_started/getting_started.html). We recommend using the [arm-non-eabi gcc binaries](https://launchpad.net/gcc-arm-embedded) instead of compiling it yourself. At least on OS X, this failed for us.
-  * Download our [patch](https://raw.githubusercontent.com/bluekitchen/btstack/develop/port/nrf5-zephyr/hci_firmware.patch) into the Zephyr root folder and apply it there:
+  * Download our [patch](https://raw.githubusercontent.com/bluekitchen/btstack/master/port/nrf5-zephyr/hci_firmware.patch) into the Zephyr root folder and apply it there:
 
 <!-- -->
       $ patch -p1 < hci_firmware.patch
