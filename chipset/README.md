@@ -10,7 +10,7 @@ On embedded systems, UART connections are used instead, although USB could be us
 
 Most USB Bluetooth dongles on the market conatin either an Broadcom BCM20702 
 
-For UART connections, different transport layer variants exist. The most common one is the official "UART Transport", also called H4. It requires hardware flow control via the CTS/RTS lines and assumes no errors on the UART lines. The "Three-Wire UART Transport", also called H5, makes use of the SLIP protocol to transmit a packet and can deal with packet loss and bit-errors by retranssion. Finally, Texas Instruments created the "eHCILL transport" layer based on H4 that allows both sides to enter sleep mode without loosing synchronisation.
+For UART connections, different transport layer variants exist. The most common one is the official "UART Transport", also called H4. It requires hardware flow control via the CTS/RTS lines and assumes no errors on the UART lines. The "Three-Wire UART Transport", also called H5, makes use of the SLIP protocol to transmit a packet and can deal with packet loss and bit-errors by retransmission. Finally, Texas Instruments created the "eHCILL transport" layer based on H4 that allows both sides to enter sleep mode without loosing synchronisation.
 
 Unfortunately, the HCI standard misses a few relevant details:
 
@@ -54,10 +54,10 @@ TI CC256x, WL183x    | Dual mode | H4, H5, eHCILL | Yes          | Yes          
 
 ## Broadcom
 
-Before the Broadcom Wifi+Bluetooth division was taken over by Cypress Semiconductor, it was not possible to buy Broadcom chipset in low quantities. However, module manufacturers like Ampak created modules that contained Broadcom BCM chipsets (Bluetooth as well as Bluetooth+Wifi combos) that might already have been pre-tested for FCC and similar certifications.
+Before the Broadcom Wifi+Bluetooth division was taken over by Cypress Semiconductor, it was not possible to buy Broadcom chipset in low quantities. Nevertheless, module manufacturers like Ampak created modules that contained Broadcom BCM chipsets (Bluetooth as well as Bluetooth+Wifi combos) that might already have been pre-tested for FCC and similar certifications.
 A popular example is the Ampak AP6212A module that contains an BCM 43438A1 and is used on the Raspberry Pi 3, the RedBear Duo, and the RedBear IoT pHAT for older Rasperry Pi models.
 
-The best source for documentation so far has been the source code for blueZ and the Bluedroid Bluetooth stack from Android.
+The best source for documentation on vendor specific commands so far has been the source code for blueZ and the Bluedroid Bluetooth stack from Android.
 
 Broadcom USB dongles do not require special configuration, however SCO data is not routed over USB by default.
 
@@ -65,17 +65,17 @@ Broadcom USB dongles do not require special configuration, however SCO data is n
 
 To find the correct file, Broadcom chipsets return their model number when asked for their local name.
 
-BTstack supports uploading of the init script for both variants: file lookup by name in the posix-h4 port and linking against the init script in the WICED port.
+BTstack supports uploading of the init script in two variants: using .hcd files looked up by name in the posix-h4 port and by linking against the init script in the WICED port.
 
 **BD Addr** can be set with a custom command. A fixed addres is provided on some modules, e.g. the AP6212A, but not on others. 
 
 **SCO data** can be configured with a custom command found in the bluez sources. We haven't been able to route SCO data over HCI yet.
 
-**Baud rate** can be set with custom command. It is reset during the warm start after uploading the init script.
+**Baud rate** can be set with custom command. The baud rate resets during the warm start after uploading the init script. So, the overall scheme is this: start at default baud rate, get local version info, send custom Broadcom baud rate change command, wait for response, set local UART to high baud rate, and then send init script. After sending the last command from the init script, reset the local UART. Finally, send custom baud rate change command, wait for response, and set local UART to high baud rate.
 
 **BTstack integration**: The common code for all Broadcom chipsets is provided by *btstack_chipset_bcm.c*. During the setup, *btstack_chipset_bcm_instance* function is used to get a *btstack_chipset_t* instance and passed to *hci_init* function.
 
-SCO Data can not be routed over HCI, so HFP Wide-Band Speech is not supported currently. HSP and HFP Narrow Band Speech is supported via I2C/PCM pins.
+SCO Data can not be routed over HCI via USB or UART, so HFP Wide-Band Speech is not supported currently. HSP and HFP Narrow Band Speech is supported via I2C/PCM pins.
 
 ## CSR
 
@@ -89,7 +89,7 @@ CSR chipset do not require an actual init script in general, but they allow to c
 
 **SCO data** can be configured via a set of PSKEYs. We haven't been able to route SCO data over HCI for UART connections yet. 
 
-**Baud rate** can be set as part of the initial configuration and gets active by the warm reset.
+**Baud rate** can be set as part of the initial configuration and gets actived by the warm reset.
 
 **BTstack integration**: The common code for all Broadcom chipsets is provided by *btstack_chipset_csr.c*. During the setup, *btstack_chipset_csr_instance* function is used to get a *btstack_chipset_t* instance and passed to *hci_init* function. The baud rate is set during the general configuration.
 
@@ -98,7 +98,7 @@ SCO Data is routed over HCI for USB dongles, but not for UART connections. HSP a
 
 ## Dialog Semiconductor
 
-Dialog Semiconductor offers the DA14581, a LE-only SoC, that can be programmed with an HCI firmware. The HCI firmware can be uploaded on boot into SRAM or stored in the OTP (One-time programmable) memory, or in an external SPI.
+Dialog Semiconductor offers the DA14581, an LE-only SoC that can be programmed with an HCI firmware. The HCI firmware can be uploaded on boot into SRAM or stored in the OTP (One-time programmable) memory, or in an external SPI.
 
 We just ordered a Dev Kit and will try to implement the firmware upload to SRAM option. This chipset supports the Bluetooth 4.2. specification but does not seem to implement the Data Length Extension nor supports multiple concurrent roles. 
 
@@ -131,7 +131,7 @@ Both nRF5 series, the nRF51 and the nRF52, can be used with an HCI firmware. The
 
 **SCO data** is not supported since it is LE only.
 
-**Baud rate** is fixed to 115200 at the moment althouth the firmware could be extended to support a baud rate change.
+**Baud rate** is fixed to 115200 by the patch althouth the firmware could be extended to support a baud rate change.
 
 **Init script** is not required. 
 
@@ -141,8 +141,8 @@ To use these chipsets with BTstack, you need to install an arm-none-eabi gcc too
 
   * Install [J-Link Software and documentation pack](https://www.segger.com/jlink-software.html).
   * Get nrfjprog as part of the [nRFx-Command-Line-Tools](http://www.nordicsemi.com/eng/Products/Bluetooth-low-energy/nRF52-DK). Click on Downloads tab on the top and look for your OS.
-  * [Checkout Zephry and install toolchain](https://www.zephyrproject.org/doc/getting_started/getting_started.html). We recommend using the [arm-non-eabi gcc binaries](https://launchpad.net/gcc-arm-embedded) instead of compiling it yourself. At least on OS X, this failed for us.
-  * Download our [patch](https://raw.githubusercontent.com/bluekitchen/btstack/develop/port/nrf5-zephyr/hci_firmware.patch) into the Zephry root folder and apply it there:
+  * [Checkout Zephyr and install toolchain](https://www.zephyrproject.org/doc/getting_started/getting_started.html). We recommend using the [arm-non-eabi gcc binaries](https://launchpad.net/gcc-arm-embedded) instead of compiling it yourself. At least on OS X, this failed for us.
+  * Download our [patch](https://raw.githubusercontent.com/bluekitchen/btstack/develop/port/nrf5-zephyr/hci_firmware.patch) into the Zephyr root folder and apply it there:
 
 <!-- -->
       $ patch -p1 < hci_firmware.patch
@@ -168,7 +168,7 @@ STMicroelectronics offers the Bluetooth V2.1 + EDR chipset STLC2500D that suppor
 
 **SCO data** might work. We didn't try.
 
-**Baud rate** can be set with custom command. 
+**Baud rate** can be set with custom command. The baud rate change of the chipset happens within 0.5 seconds. At least on BTstack, knowning exactly when the command was fully sent over the UART is non-trivial, so BTstack switches to the new baud rate after 100 ms to expect the command response on the new speed.
 
 **Init scripts** are not required although it is possible to upload firmware patches. 
 
@@ -184,7 +184,7 @@ The CC256x chipset is connected via an UART connection and supports the H4, H5 (
 
 **SCO data** is routed to the I2S/PCM interface but can be configured with the [HCI_VS_Write_SCO_Configuration](http://processors.wiki.ti.com/index.php/CC256x_VS_HCI_Commands#HCI_VS_Write_SCO_Configuration_.280xFE10.29) command.
 
-**Baud rate** can be set with [HCI_VS_Update_UART_HCI_Baudrate](http://processors.wiki.ti.com/index.php/CC256x_VS_HCI_Commands#HCI_VS_Update_UART_HCI_Baudrate_.280xFF36.29)
+**Baud rate** can be set with [HCI_VS_Update_UART_HCI_Baudrate](http://processors.wiki.ti.com/index.php/CC256x_VS_HCI_Commands#HCI_VS_Update_UART_HCI_Baudrate_.280xFF36.29). The chipset confirms the change with a command complete event after which the local UART is set to the new speed. Oddly enough, the CC256x chipsets ignore the incoming CTS line during this particular command complete response. If the MCU gets UART overrun errors in this situation, a work around could be to set a timer for 100 ms and ignore all incoming data (i.e. the command complete event) during that period. Then, after the timeout, the UART can be set to the new speed safely.
 
 **BD Addr** can be set with [HCI_VS_Write_BD_Addr](2.2.1 HCI_VS_Write_BD_Addr (0xFC06)) although all chipsets have an official address stored.
 
@@ -193,7 +193,7 @@ The CC256x chipset is connected via an UART connection and supports the H4, H5 (
 The Makefile at *chipset/cc256x/Makefile* is able to automatically download and convert the requested file. It does this by:
 
 -   Downloading one or more [BTS files](http://processors.wiki.ti.com/index.php/CC256x_Downloads) for your chipset.
--   Running running the Python script: 
+-   Running the Python script: 
 
 <!-- -->
 
@@ -216,7 +216,7 @@ SCO Data can be routed over HCI, so HFP Wide-Band Speech is supported.
 
 ## Toshiba
 
-The Toshiba TC35661 Dual-Mode chipset is available in 3 three variants: standalone incl. binary Bluetooth stack, as a module with embedded stack or with a regular HCI interface. The HCI variant has the model number TC35661–007.
+The Toshiba TC35661 Dual-Mode chipset is available in three variants: standalone incl. binary Bluetooth stack, as a module with embedded stack or with a regular HCI interface. The HCI variant has the model number TC35661–007.
 
 We've tried their USB Evaluation Stick that contains an USB-to-UART adapter and the PAN1026 module that contains the TC35661 -501. We have been told by our distributor that the -501 variant also supports the HCI interface. However, while our tests have shown that Classic Bluetooth with SPP works fine with this variant, none of the LE commands work. 
 
@@ -228,4 +228,4 @@ We've tried their USB Evaluation Stick that contains an USB-to-UART adapter and 
 
 **Init Script** is not required. A patch file might be uploaded.
 
-**BTstack integration**: Support for the TC35661 series is provided by *btstack_chipset_tc3566x.c*. During the setup, *btstack_chipset_tc3566x_instance* function is used to get a *btstack_chipset_t* instance and passed to *hci_init* function. It enables higher UART baud rate and to set the BD Addr during startup.
+**BTstack integration**: Support for the TC35661 series is provided by *btstack_chipset_tc3566x.c*. During the setup, *btstack_chipset_tc3566x_instance* function is used to get a *btstack_chipset_t* instance and passed to *hci_init* function. It enables higher UART baud rate and sets the BD Addr during startup.
