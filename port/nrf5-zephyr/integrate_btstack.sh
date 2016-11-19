@@ -65,4 +65,4 @@ rsync -a flash_nrf52_pca10040.sh ${HCI_UART}/flash_nrf52_pca10040.sh
 sed -i 's|CONFIG_UART_NRF5_BAUD_RATE=1000000|CONFIG_UART_NRF5_BAUD_RATE=115200|g' ${HCI_UART}/nrf5.conf
 
 # provide static random address to host via hci read bd addr
-grep -q -F ll_address_set ${HCI_UART}/src/main.c || cat hci-uart.patch | patch -d ${ZEPHYR_BASE} -p1
+grep -q -F ll_address_set ${HCI_UART}/src/main.c || cat hci_uart.patch | patch -d ${ZEPHYR_BASE} -p1

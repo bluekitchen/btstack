@@ -26,6 +26,7 @@ preview: update_docs_and_apis html
 	mkdocs serve
 
 update_docs_and_apis:
+	sed -e "s|../doc/manual/docs/||g" ../../chipset/README.md > docs/chipsets.md
 	rm -rf tmp
 	mkdir tmp
 	./update_apis.py	
@@ -33,7 +34,7 @@ update_docs_and_apis:
 
 clean:
 	rm -rf docs_final tmp btstack *.pdf latex/btstack_generated.* latex/btstack_final.tex
-	rm -rf docs/appendix/apis.md docs/appendix/index.md docs/examples/examples.md 
+	rm -rf docs/appendix/apis.md docs/appendix/index.md docs/examples/examples.md docs/chipsets.md
 	rm -rf docs_tmp latex btstack help
 	
 

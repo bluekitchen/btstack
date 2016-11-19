@@ -1,0 +1,98 @@
+diff --git a/samples/bluetooth/hci_uart/flash_nrf51_pca10028.sh b/samples/bluetooth/hci_uart/flash_nrf51_pca10028.sh
+new file mode 100755
+index 0000000..d51907f
+--- /dev/null
++++ b/samples/bluetooth/hci_uart/flash_nrf51_pca10028.sh
+@@ -0,0 +1,4 @@
++#!/bin/sh
++nrfjprog --eraseall -f nrf51
++nrfjprog --program outdir/nrf51_pca10028/zephyr.hex -f nrf51
++nrfjprog --reset -f nrf51
+diff --git a/samples/bluetooth/hci_uart/flash_nrf52_pca10040.sh b/samples/bluetooth/hci_uart/flash_nrf52_pca10040.sh
+new file mode 100755
+index 0000000..cc20145
+--- /dev/null
++++ b/samples/bluetooth/hci_uart/flash_nrf52_pca10040.sh
+@@ -0,0 +1,4 @@
++#!/bin/sh
++nrfjprog --eraseall -f nrf52
++nrfjprog --program outdir/nrf52_pca10040/zephyr.hex -f nrf52
++nrfjprog --reset -f nrf52
+diff --git a/samples/bluetooth/hci_uart/nrf5.conf b/samples/bluetooth/hci_uart/nrf5.conf
+index c3b362d..9fe511f 100644
+--- a/samples/bluetooth/hci_uart/nrf5.conf
++++ b/samples/bluetooth/hci_uart/nrf5.conf
+@@ -7,6 +7,6 @@ CONFIG_UART_INTERRUPT_DRIVEN=y
+ CONFIG_BLUETOOTH=y
+ CONFIG_BLUETOOTH_HCI_RAW=y
+ CONFIG_BLUETOOTH_MAX_CONN=16
+-CONFIG_UART_NRF5_BAUD_RATE=1000000
++CONFIG_UART_NRF5_BAUD_RATE=115200
+ CONFIG_UART_NRF5_FLOW_CONTROL=y
+ CONFIG_BLUETOOTH_CONTROLLER_ASSERT_HANDLER=y
+diff --git a/samples/bluetooth/hci_uart/src/Makefile b/samples/bluetooth/hci_uart/src/Makefile
+index b666967..8606b24 100644
+--- a/samples/bluetooth/hci_uart/src/Makefile
++++ b/samples/bluetooth/hci_uart/src/Makefile
+@@ -1 +1,2 @@
+ obj-y += main.o
++ccflags-y += -I../../../subsys/bluetooth/controller/ll
+diff --git a/samples/bluetooth/hci_uart/src/main.c b/samples/bluetooth/hci_uart/src/main.c
+index 76e75e1..70da655 100644
+--- a/samples/bluetooth/hci_uart/src/main.c
++++ b/samples/bluetooth/hci_uart/src/main.c
+@@ -36,6 +36,9 @@
+ #include <bluetooth/buf.h>
+ #include <bluetooth/hci_raw.h>
+ 
++#include "ll.h"
++#include "nrf.h"
++
+ static struct device *hci_uart_dev;
+ 
+ #define STACK_SIZE 1024
+@@ -354,6 +357,18 @@ static int hci_uart_init(struct device *unused)
+ DEVICE_INIT(hci_uart, "hci_uart", &hci_uart_init, NULL, NULL,
+ 	    APPLICATION, CONFIG_KERNEL_INIT_PRIORITY_DEVICE);
+ 
++void little_endian_store_16(uint8_t *buffer, uint16_t pos, uint16_t value){
++    buffer[pos++] = value;
++    buffer[pos++] = value >> 8;
++}
++
++void little_endian_store_32(uint8_t *buffer, uint16_t pos, uint32_t value){
++    buffer[pos++] = value;
++    buffer[pos++] = value >> 8;
++    buffer[pos++] = value >> 16;
++    buffer[pos++] = value >> 24;
++}
++
+ void main(void)
+ {
+ 	/* incoming events and data from the controller */
+@@ -373,6 +388,12 @@ void main(void)
+ 		       NULL, K_PRIO_COOP(7), 0, K_NO_WAIT);
+ 
+ 	bt_enable_raw(&rx_queue);
++    
++    // make Random Static Address available via HCI Read BD ADDR as fake public address
++    uint8_t addr[6];
++    little_endian_store_16(addr, 4, NRF_FICR->DEVICEADDR[1] | 0xc000);
++    little_endian_store_32(addr, 0, NRF_FICR->DEVICEADDR[0]);
++    ll_address_set(0, addr);
+ 
+ 	while (1) {
+ 		struct net_buf *buf;
+diff --git a/subsys/bluetooth/controller/ll/ctrl.h b/subsys/bluetooth/controller/ll/ctrl.h
+index f9b092d..b950083 100644
+--- a/subsys/bluetooth/controller/ll/ctrl.h
++++ b/subsys/bluetooth/controller/ll/ctrl.h
+@@ -79,7 +79,7 @@
+  * Controller Interface Defines
+  ****************************************************************************/
+ #define RADIO_BLE_VERSION_NUMBER	(0x08)
+-#define RADIO_BLE_COMPANY_ID		(0xFFFF)
++#define RADIO_BLE_COMPANY_ID (0x0059) // Nordic Semiconductor ASA
+ #define RADIO_BLE_SUB_VERSION_NUMBER	(0xFFFF)
+ #define RADIO_BLE_FEATURES		(0x1F) /* LE Ping, Slave Initiated
+ 						* Feature request, Extended

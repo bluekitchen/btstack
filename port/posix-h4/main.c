@@ -66,6 +66,8 @@
 #include "btstack_chipset_stlc2500d.h"
 #include "btstack_chipset_tc3566x.h"
 
+int is_bcm;
+
 int btstack_main(int argc, const char * argv[]);
 
 static hci_transport_config_uart_t config = {
@@ -80,9 +82,24 @@ static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     if (packet_type != HCI_EVENT_PACKET) return;
-    if (hci_event_packet_get_type(packet) != BTSTACK_EVENT_STATE) return;
-    if (btstack_event_state_get_state(packet) != HCI_STATE_WORKING) return;
-    printf("BTstack up and running.\n");
+    switch (hci_event_packet_get_type(packet)){
+        case BTSTACK_EVENT_STATE:
+            if (btstack_event_state_get_state(packet) != HCI_STATE_WORKING) break;
+            printf("BTstack up and running.\n");
+            break;
+        case HCI_EVENT_COMMAND_COMPLETE:
+            if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_read_local_name)){
+                // terminate, name 248 chars
+                packet[6+248] = 0;
+                printf("Local name: %s\n", &packet[6]);
+                if (is_bcm){
+                    btstack_chipset_bcm_set_device_name((const char *)&packet[6]);
+                }
+            }        
+            break;
+        default:
+            break;
+    }
 }
 
 static void sigint_handler(int param){
@@ -131,7 +148,7 @@ static void local_version_information_callback(uint8_t * packet){
     printf("- Manufacturer 0x%04x\n", manufacturer);
     switch (manufacturer){
         case COMPANY_ID_CAMBRIDGE_SILICON_RADIO:
-            printf("Cambridge Silicon Radio CSR chipset.\n");
+            printf("Cambridge Silicon Radio - CSR chipset.\n");
             use_fast_uart();
             hci_set_chipset(btstack_chipset_csr_instance());
             break;
@@ -146,8 +163,11 @@ static void local_version_information_callback(uint8_t * packet){
 #endif
             break;
         case COMPANY_ID_BROADCOM_CORPORATION:   
-            printf("Broadcom chipset. Not supported yet\n");
-            // hci_set_chipset(btstack_chipset_bcm_instance());
+            printf("Broadcom - using BCM driver.\n");
+            hci_set_chipset(btstack_chipset_bcm_instance());
+
+            use_fast_uart();
+            is_bcm = 1;
             break;
         case COMPANY_ID_ST_MICROELECTRONICS:   
             printf("ST Microelectronics - using STLC2500d driver.\n");
@@ -159,7 +179,7 @@ static void local_version_information_callback(uint8_t * packet){
             hci_set_chipset(btstack_chipset_em9301_instance());
             break;
         case COMPANY_ID_NORDIC_SEMICONDUCTOR_ASA:
-            printf("Nordic Semicondutor ASA nRF5 chipset.\n");
+            printf("Nordic Semiconductor nRF5 chipset.\n");
             break;        
         default:
             printf("Unknown manufacturer / manufacturer not supported yet.\n");
@@ -177,7 +197,7 @@ int main(int argc, const char * argv[]){
     hci_dump_open("/tmp/hci_dump.pklg", HCI_DUMP_PACKETLOGGER);
 
     // pick serial port
-    config.device_name = "/dev/tty.usbserial-A900K0VK";
+    config.device_name = "/dev/tty.usbserial-A9OVNX5P";
 
     // init HCI
     const btstack_uart_block_t * uart_driver = btstack_uart_block_posix_instance();

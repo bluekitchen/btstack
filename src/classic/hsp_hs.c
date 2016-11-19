@@ -454,11 +454,11 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
         } else if (strncmp((char *)packet, HSP_AG_OK, strlen(HSP_AG_OK)) == 0){
            wait_ok = 0;
         } else if (strncmp((char *)packet, HSP_MICROPHONE_GAIN, strlen(HSP_MICROPHONE_GAIN)) == 0){
-            uint8_t gain = (uint8_t)atoi((char*)&packet[strlen(HSP_MICROPHONE_GAIN)]);
+            uint8_t gain = (uint8_t)btstack_atoi((char*)&packet[strlen(HSP_MICROPHONE_GAIN)]);
             emit_event(HSP_SUBEVENT_MICROPHONE_GAIN_CHANGED, gain);
         
         } else if (strncmp((char *)packet, HSP_SPEAKER_GAIN, strlen(HSP_SPEAKER_GAIN)) == 0){
-            uint8_t gain = (uint8_t)atoi((char*)&packet[strlen(HSP_SPEAKER_GAIN)]);
+            uint8_t gain = (uint8_t)btstack_atoi((char*)&packet[strlen(HSP_SPEAKER_GAIN)]);
             emit_event(HSP_SUBEVENT_SPEAKER_GAIN_CHANGED, gain);
         } else {
             if (!hsp_hs_callback) return;

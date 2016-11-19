@@ -117,7 +117,7 @@ static void introduce_bad_frames_to_wav_file(const char * in_filename, const cha
 }
 
 static void process_wav_file_with_plc(const char * in_filename, const char * out_filename){
-    printf("\nProcess %s -> %s\n", in_filename, out_filename);
+    // printf("\nProcess %s -> %s\n", in_filename, out_filename);
     btstack_cvsd_plc_init(&plc_state);
     wav_writer_open(out_filename, 1, 8000);
     wav_reader_open(in_filename);
@@ -133,10 +133,10 @@ static void process_wav_file_with_plc(const char * in_filename, const char * out
 }
 
 static void mark_bad_frames_wav_file(const char * in_filename, const char * out_filename){
-    printf("\nMark bad frame %s -> %s\n", in_filename, out_filename);
+    // printf("\nMark bad frame %s -> %s\n", in_filename, out_filename);
     btstack_cvsd_plc_init(&plc_state);
-    wav_writer_open(out_filename, 1, 8000);
-    wav_reader_open(in_filename);
+    CHECK_EQUAL(wav_writer_open(out_filename, 1, 8000), 0);
+    CHECK_EQUAL(wav_reader_open(in_filename), 0);
     
     while (wav_reader_read_int8(audio_samples_per_frame, audio_frame_in)){
         int8_t audio_frame_out[audio_samples_per_frame];
@@ -161,31 +161,31 @@ TEST(CVSD_PLC, CountEqBytes){
 
 TEST(CVSD_PLC, TestLiveWavFile){
     int corruption_step = 10;
-    introduce_bad_frames_to_wav_file("data/input/sco_input.wav", "data/sco_input.wav", 0);
-    introduce_bad_frames_to_wav_file("data/input/sco_input.wav", "data/sco_input_with_bad_frames.wav", corruption_step);
+    introduce_bad_frames_to_wav_file("data/sco_input.wav", "results/sco_input.wav", 0);
+    introduce_bad_frames_to_wav_file("data/sco_input.wav", "results/sco_input_with_bad_frames.wav", corruption_step);
     
-    mark_bad_frames_wav_file("data/sco_input.wav", "data/sco_input_detected_frames.wav");
-    process_wav_file_with_plc("data/sco_input.wav", "data/sco_input_after_plc.wav");
-    process_wav_file_with_plc("data/sco_input_with_bad_frames.wav", "data/sco_input_with_bad_frames_after_plc.wav");
+    mark_bad_frames_wav_file("results/sco_input.wav", "results/sco_input_detected_frames.wav");
+    process_wav_file_with_plc("results/sco_input.wav", "results/sco_input_after_plc.wav");
+    process_wav_file_with_plc("results/sco_input_with_bad_frames.wav", "results/sco_input_with_bad_frames_after_plc.wav");
 }
 
 TEST(CVSD_PLC, TestFanfareFile){
     int corruption_step = 10;
-    introduce_bad_frames_to_wav_file("data/input/fanfare_mono.wav", "data/fanfare_mono.wav", 0);
-    introduce_bad_frames_to_wav_file("data/fanfare_mono.wav", "data/fanfare_mono_with_bad_frames.wav", corruption_step);
+    introduce_bad_frames_to_wav_file("data/input/fanfare_mono.wav", "results/fanfare_mono.wav", 0);
+    introduce_bad_frames_to_wav_file("results/fanfare_mono.wav", "results/fanfare_mono_with_bad_frames.wav", corruption_step);
     
-    mark_bad_frames_wav_file("data/fanfare_mono.wav", "data/fanfare_mono_detected_frames.wav");
-    process_wav_file_with_plc("data/fanfare_mono.wav", "data/fanfare_mono_after_plc.wav");
-    process_wav_file_with_plc("data/fanfare_mono_with_bad_frames.wav", "data/fanfare_mono_with_bad_frames_after_plc.wav");
+    mark_bad_frames_wav_file("results/fanfare_mono.wav", "results/fanfare_mono_detected_frames.wav");
+    process_wav_file_with_plc("results/fanfare_mono.wav", "results/fanfare_mono_after_plc.wav");
+    process_wav_file_with_plc("results/fanfare_mono_with_bad_frames.wav", "results/fanfare_mono_with_bad_frames_after_plc.wav");
 }
 
 TEST(CVSD_PLC, TestSineWave){
     int corruption_step = 10;
-    create_sine_wav("data/sine_test.wav");
-    introduce_bad_frames_to_wav_file("data/sine_test.wav", "data/sine_test_with_bad_frames.wav", corruption_step);
+    create_sine_wav("results/sine_test.wav");
+    introduce_bad_frames_to_wav_file("results/sine_test.wav", "results/sine_test_with_bad_frames.wav", corruption_step);
     
-    process_wav_file_with_plc("data/sine_test.wav", "data/sine_test_after_plc.wav");
-    process_wav_file_with_plc("data/sine_test_with_bad_frames.wav", "data/sine_test_with_bad_frames_after_plc.wav");
+    process_wav_file_with_plc("results/sine_test.wav", "results/sine_test_after_plc.wav");
+    process_wav_file_with_plc("results/sine_test_with_bad_frames.wav", "results/sine_test_with_bad_frames_after_plc.wav");
 }
 
 int main (int argc, const char * argv[]){
