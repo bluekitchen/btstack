@@ -30,25 +30,16 @@ GATT, SM of the Bluetooth 4.2 LE Central and Peripheral roles (QD ID 25340).
 - [HTML](http://bluekitchen-gmbh.com/btstack/)
 - [PDF](http://bluekitchen-gmbh.com/btstack.pdf)
 
-## Supported Protocols
-* L2CAP            
-* RFCOMM           
-* SDP              
-* BNEP             
-* ATT              
-* SM      
+## Discussion and Community Support
+[BTstack Google Group](http://groups.google.com/group/btstack-dev)
 
+## Supported Protocols and Profiles
 
-## Supported Profiles
-* GAP              
-* IOP              
-* HFP
-* HSP
-* SPP              
-* PAN              
-* GATT             
+Protocols: L2CAP, RFCOMM, SDP, BNEP, ATT, SM
 
-Coming next: HID, HOGP, A2DP, and more.
+Profiles: GAP, IOP, HFP, HSP, SPP, PAN, GATT
+
+Coming next: A2DP, AVRCP, HID, HOGP, BLE, and more.
 
 ## Evaluation Platforms
 
@@ -75,16 +66,20 @@ Status               | Platform
 [<img src="http://buildbot.bluekitchen-gmbh.com/btstack/badge.png?builder=port-wiced-master">](https://buildbot.bluekitchen-gmbh.com/btstack/builders/port-wiced-master)    | wiced: Broadcom platforms that support the WICED SDK
 
 ## Supported Chipsets
-Chipsets             | Status
---------------       | ------ 
-TI CC256x, WL183x    | H4 incl. eHCIll support and SCO-over-HCI (chipset/cc256x)
-CSR 8x10, 8x11       | H4 + H5 supported, SCO-over-HCI missing (chipset/csr)
-STM STLC2500D        | working, no support for custom deep sleep management (chipset/stlc2500d)
-TC35661              | working, BLE patches missing (chipset/tc3566x)
-EM 9301 (LE-only)    | working, used on Arduino Shield (chipset/em9301)
-CSR USB Dongles      | complete, incl. SCO-over-HCI 
-Broadcom USB Dongles | complete, SCO-over-HCI missing
-Broadcom BCM43438    | complete. UART baudrate limited to 3 mbps, SCO-over-HCI missing
+
+Chipset              | Type      | HCI Transport   | SCO over HCI (2) | BTstack folder | Comment 
+-------------------- |-----------| ----------------|------------------|----------------|---------
+Broadcom UART        | Dual mode | H4, H5          | No (didn't work) | bcm            | Max UART baudrate 3 mbps
+Broadcom USB Dongles | Dual mode | USB             | No (didn't work) | bcm            | 
+CSR UART             | Dual mode | H4, H5          | No (didn't work) | csr            | 
+CSR USB Dongles      | Dual mode | USB             | Yes              | csr            |
+EM 9301              | LE        | SPI             | n.a.             | em9301         | Custom HCI SPI implementation
+Nordic nRF           | LE        | H4              | n.a.             |                | Requires custom HCI firmware
+STM STLC2500D        | Classic   | H4              | No (didn't try)  | stlc2500d      | Custom deep sleep management not supported
+Toshiba TC35661      | Dual mode | H4              | No (didn't try)  | tc3566         | HCI version not tested.
+TI CC256x, WL183x    | Dual mode | H4, H5, eHCILL  | Yes              | cc256x         | Also WL185x, WL187x, and WL189x
+
+[More infos on supported chipsets](https://bluekitchen-gmbh.com/btstack/chipsets/)
 
 ## Source Tree Overview
 Path				| Description
@@ -97,6 +92,3 @@ port                | Complete port for a MCU + Chipset combinations
 src                 | Bluetooth stack implementation
 test                | Unit and PTS tests
 tool                | Helper tools for BTstack
-
-## Discussion and Community Support
-[BTstack Google Group](http://groups.google.com/group/btstack-dev)
