@@ -150,14 +150,14 @@ static uint16_t avdtp_unpack_service_capabilities(avdtp_capabilities_t * caps, u
     }
     return registered_service_categories;
 }
-static int avdtp_acceptor_send_seps_response(uint16_t cid, uint8_t transaction_label, avdtp_stream_endpoint_t * stream_endpoints){
+static int avdtp_acceptor_send_seps_response(uint16_t cid, uint8_t transaction_label, avdtp_stream_endpoint_t * endpoints){
     uint8_t command[2+2*MAX_NUM_SEPS];
     int pos = 0;
     command[pos++] = avdtp_header(transaction_label, AVDTP_SINGLE_PACKET, AVDTP_RESPONSE_ACCEPT_MSG);
     command[pos++] = (uint8_t)AVDTP_SI_DISCOVER;
 
     btstack_linked_list_iterator_t it;    
-    btstack_linked_list_iterator_init(&it, (btstack_linked_list_t *) stream_endpoints);
+    btstack_linked_list_iterator_init(&it, (btstack_linked_list_t *) endpoints);
     while (btstack_linked_list_iterator_has_next(&it)){
         avdtp_stream_endpoint_t * stream_endpoint = (avdtp_stream_endpoint_t *)btstack_linked_list_iterator_next(&it);
         command[pos++] = (stream_endpoint->sep.seid << 2) | (stream_endpoint->sep.in_use<<1);
@@ -305,7 +305,7 @@ int avdtp_acceptor_stream_config_subsm_run(avdtp_connection_t * connection, avdt
         case AVDTP_ACCEPTOR_W2_ANSWER_DISCOVER_SEPS:
             printf("    AVDTP_ACCEPTOR_W2_ANSWER_DISCOVER_SEPS -> AVDTP_ACCEPTOR_STREAM_CONFIG_IDLE\n");
             stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_STREAM_CONFIG_IDLE;
-            avdtp_acceptor_send_seps_response(connection->l2cap_signaling_cid, connection->acceptor_transaction_label, (avdtp_stream_endpoint_t *)&connection->stream_endpoints);
+            avdtp_acceptor_send_seps_response(connection->l2cap_signaling_cid, connection->acceptor_transaction_label, (avdtp_stream_endpoint_t *)&stream_endpoints);
             break;
         case AVDTP_ACCEPTOR_W2_ANSWER_GET_CAPABILITIES:
             if (connection->query_seid != stream_endpoint->sep.seid) return 0;
