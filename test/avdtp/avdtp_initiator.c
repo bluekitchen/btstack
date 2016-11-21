@@ -47,125 +47,125 @@
 #include "avdtp_util.h"
 #include "avdtp_initiator.h"
 
-static int avdtp_initiator_send_signaling_cmd(uint16_t cid, avdtp_signal_identifier_t identifier, uint8_t transaction_label){
-    uint8_t command[2];
-    command[0] = avdtp_header(transaction_label, AVDTP_SINGLE_PACKET, AVDTP_CMD_MSG);
-    command[1] = (uint8_t)identifier;
-    return l2cap_send(cid, command, sizeof(command));
+// static int avdtp_initiator_send_signaling_cmd(uint16_t cid, avdtp_signal_identifier_t identifier, uint8_t transaction_label){
+//     uint8_t command[2];
+//     command[0] = avdtp_header(transaction_label, AVDTP_SINGLE_PACKET, AVDTP_CMD_MSG);
+//     command[1] = (uint8_t)identifier;
+//     return l2cap_send(cid, command, sizeof(command));
+// }
+
+// static int avdtp_initiator_send_get_all_capabilities_cmd(uint16_t cid, uint8_t transaction_label, uint8_t sep_id){
+//     uint8_t command[3];
+//     command[0] = avdtp_header(transaction_label, AVDTP_SINGLE_PACKET, AVDTP_CMD_MSG);
+//     command[1] = AVDTP_SI_GET_ALL_CAPABILITIES;
+//     command[2] = sep_id << 2;
+//     return l2cap_send(cid, command, sizeof(command));
+// }
+
+// static int avdtp_initiator_send_get_capabilities_cmd(uint16_t cid, uint8_t transaction_label, uint8_t sep_id){
+//     uint8_t command[3];
+//     command[0] = avdtp_header(transaction_label, AVDTP_SINGLE_PACKET, AVDTP_CMD_MSG);
+//     command[1] = AVDTP_SI_GET_CAPABILITIES;
+//     command[2] = sep_id << 2;
+//     return l2cap_send(cid, command, sizeof(command));
+// }
+
+void avdtp_initiator_stream_config_subsm_init(avdtp_connection_t * connection){
+    connection->initiator_config_state = AVDTP_INITIATOR_STREAM_CONFIG_IDLE;
 }
 
-static int avdtp_initiator_send_get_all_capabilities_cmd(uint16_t cid, uint8_t transaction_label, uint8_t sep_id){
-    uint8_t command[3];
-    command[0] = avdtp_header(transaction_label, AVDTP_SINGLE_PACKET, AVDTP_CMD_MSG);
-    command[1] = AVDTP_SI_GET_ALL_CAPABILITIES;
-    command[2] = sep_id << 2;
-    return l2cap_send(cid, command, sizeof(command));
+int avdtp_initiator_stream_config_subsm_is_done(avdtp_connection_t * connection){
+    return 1; //connection->initiator_config_state == AVDTP_INITIATOR_STREAM_CONFIG_DONE;
 }
 
-static int avdtp_initiator_send_get_capabilities_cmd(uint16_t cid, uint8_t transaction_label, uint8_t sep_id){
-    uint8_t command[3];
-    command[0] = avdtp_header(transaction_label, AVDTP_SINGLE_PACKET, AVDTP_CMD_MSG);
-    command[1] = AVDTP_SI_GET_CAPABILITIES;
-    command[2] = sep_id << 2;
-    return l2cap_send(cid, command, sizeof(command));
-}
-
-void avdtp_initiator_stream_config_subsm_init(avdtp_stream_endpoint_t * stream_endpoint){
-    stream_endpoint->initiator_config_state = AVDTP_INITIATOR_STREAM_CONFIG_IDLE;
-}
-
-int avdtp_initiator_stream_config_subsm_is_done(avdtp_stream_endpoint_t * stream_endpoint){
-    return stream_endpoint->initiator_config_state == AVDTP_INITIATOR_STREAM_CONFIG_DONE;
-}
-
-int avdtp_initiator_stream_config_subsm(avdtp_connection_t * connection, avdtp_stream_endpoint_t * stream_endpoint, uint8_t *packet, uint16_t size){
+int avdtp_initiator_stream_config_subsm(avdtp_connection_t * connection, uint8_t *packet, uint16_t size){
     return 0;
-    if (avdtp_initiator_stream_config_subsm_run(connection, stream_endpoint)) return 1;
-    int i;
-    int responded = 1;
-    avdtp_sep_t sep;
+    // if (avdtp_initiator_stream_config_subsm_run(connection, stream_endpoint)) return 1;
+    // int i;
+    // int responded = 1;
+    // avdtp_sep_t sep;
     
-    avdtp_signaling_packet_header_t signaling_header;
-    avdtp_read_signaling_header(&signaling_header, packet, size);
+    // avdtp_signaling_packet_header_t signaling_header;
+    // avdtp_read_signaling_header(&signaling_header, packet, size);
     
-    switch (stream_endpoint->initiator_config_state){
-        case AVDTP_INITIATOR_W4_SEPS_DISCOVERED:
-            printf("    AVDTP_INITIATOR_W4_SEPS_DISCOVERED -> AVDTP_INITIATOR_W2_GET_CAPABILITIES\n");
+    // switch (connection->initiator_config_state){
+    //     case AVDTP_INITIATOR_W4_SEPS_DISCOVERED:
+    //         printf("    AVDTP_INITIATOR_W4_SEPS_DISCOVERED -> AVDTP_INITIATOR_W2_GET_CAPABILITIES\n");
             
-            if (signaling_header.transaction_label != connection->initiator_transaction_label){
-                printf("unexpected transaction label, got %d, expected %d\n", signaling_header.transaction_label, connection->initiator_transaction_label);
-                return 0;
-            }
-            if (signaling_header.signal_identifier != AVDTP_SI_DISCOVER) {
-                printf("unexpected signal identifier ...\n");
-                return 0;
-            }
-            if (signaling_header.message_type != AVDTP_RESPONSE_ACCEPT_MSG){
-                printf("request rejected...\n");
-                return 0;   
-            }
-            if (size == 3){
-                printf("ERROR code %02x\n", packet[2]);
-                return 0;
-            }
-            for (i = 2; i<size; i+=2){
-                sep.seid = packet[i] >> 2;
-                if (sep.seid < 0x01 || sep.seid > 0x3E){
-                    printf("invalid sep id\n");
-                    return 0;
-                }
-                sep.in_use = (packet[i] >> 1) & 0x01;
-                sep.media_type = (avdtp_media_type_t)(packet[i+1] >> 4);
-                sep.type = (avdtp_sep_type_t)((packet[i+1] >> 3) & 0x01);
-                stream_endpoint->remote_seps[stream_endpoint->remote_seps_num++] = sep;
-                // printf("found sep: seid %u, in_use %d, media type %d, sep type %d (1-SNK)\n", 
-                //     sep.seid, sep.in_use, sep.media_type, sep.type);
-            }
-            stream_endpoint->initiator_config_state = AVDTP_INITIATOR_W2_GET_CAPABILITIES;
-            connection->initiator_transaction_label++;
-            l2cap_request_can_send_now_event(connection->l2cap_signaling_cid);
-            responded = 1;
-            break;
-        case AVDTP_INITIATOR_W4_CAPABILITIES:
-            printf("    Received basic capabilities -> NOT IMPLEMENTED\n");
-            responded = 0;
-            break;
-        case AVDTP_INITIATOR_W4_ALL_CAPABILITIES:
-            printf("    Received all capabilities -> NOT IMPLEMENTED\n");
-            responded = 0;
-            break;
-        default:
-            printf("    INT : NOT IMPLEMENTED sig. ID %02x\n", signaling_header.signal_identifier);
-            //printf_hexdump( packet, size );
-            responded = 0;
-            break;
-    }
-    return responded;
+    //         if (signaling_header.transaction_label != connection->initiator_transaction_label){
+    //             printf("unexpected transaction label, got %d, expected %d\n", signaling_header.transaction_label, connection->initiator_transaction_label);
+    //             return 0;
+    //         }
+    //         if (signaling_header.signal_identifier != AVDTP_SI_DISCOVER) {
+    //             printf("unexpected signal identifier ...\n");
+    //             return 0;
+    //         }
+    //         if (signaling_header.message_type != AVDTP_RESPONSE_ACCEPT_MSG){
+    //             printf("request rejected...\n");
+    //             return 0;   
+    //         }
+    //         if (size == 3){
+    //             printf("ERROR code %02x\n", packet[2]);
+    //             return 0;
+    //         }
+    //         for (i = 2; i<size; i+=2){
+    //             sep.seid = packet[i] >> 2;
+    //             if (sep.seid < 0x01 || sep.seid > 0x3E){
+    //                 printf("invalid sep id\n");
+    //                 return 0;
+    //             }
+    //             sep.in_use = (packet[i] >> 1) & 0x01;
+    //             sep.media_type = (avdtp_media_type_t)(packet[i+1] >> 4);
+    //             sep.type = (avdtp_sep_type_t)((packet[i+1] >> 3) & 0x01);
+    //             stream_endpoint->remote_seps[stream_endpoint->remote_seps_num++] = sep;
+    //             // printf("found sep: seid %u, in_use %d, media type %d, sep type %d (1-SNK)\n", 
+    //             //     sep.seid, sep.in_use, sep.media_type, sep.type);
+    //         }
+    //         connection->initiator_config_state = AVDTP_INITIATOR_W2_GET_CAPABILITIES;
+    //         connection->initiator_transaction_label++;
+    //         l2cap_request_can_send_now_event(connection->l2cap_signaling_cid);
+    //         responded = 1;
+    //         break;
+    //     case AVDTP_INITIATOR_W4_CAPABILITIES:
+    //         printf("    Received basic capabilities -> NOT IMPLEMENTED\n");
+    //         responded = 0;
+    //         break;
+    //     case AVDTP_INITIATOR_W4_ALL_CAPABILITIES:
+    //         printf("    Received all capabilities -> NOT IMPLEMENTED\n");
+    //         responded = 0;
+    //         break;
+    //     default:
+    //         printf("    INT : NOT IMPLEMENTED sig. ID %02x\n", signaling_header.signal_identifier);
+    //         //printf_hexdump( packet, size );
+    //         responded = 0;
+    //         break;
+    // }
+    // return responded;
 }
 
-int avdtp_initiator_stream_config_subsm_run(avdtp_connection_t * connection, avdtp_stream_endpoint_t * stream_endpoint){
+int avdtp_initiator_stream_config_subsm_run(avdtp_connection_t * connection){
     return 0;
-    int sent = 1;
-    switch (stream_endpoint->initiator_config_state){
-        case AVDTP_INITIATOR_STREAM_CONFIG_IDLE:
-        case AVDTP_INITIATOR_W2_DISCOVER_SEPS:
-            printf("    AVDTP_INITIATOR_STREAM_CONFIG_IDLE | AVDTP_INITIATOR_W2_DISCOVER_SEPS -> AVDTP_INITIATOR_W4_SEPS_DISCOVERED\n");
-            stream_endpoint->initiator_config_state = AVDTP_INITIATOR_W4_SEPS_DISCOVERED;
-            avdtp_initiator_send_signaling_cmd(connection->l2cap_signaling_cid, AVDTP_SI_DISCOVER, connection->initiator_transaction_label);
-            break;
-        case AVDTP_INITIATOR_W2_GET_CAPABILITIES:
-            printf("    AVDTP_INITIATOR_W2_GET_CAPABILITIES -> AVDTP_INITIATOR_W4_CAPABILITIES\n");
-            stream_endpoint->initiator_config_state = AVDTP_INITIATOR_W4_CAPABILITIES;
-            avdtp_initiator_send_get_capabilities_cmd(connection->l2cap_signaling_cid, connection->initiator_transaction_label, connection->query_seid);
-            break;
-        case AVDTP_INITIATOR_W2_GET_ALL_CAPABILITIES:
-            printf("    AVDTP_INITIATOR_W2_GET_ALL_CAPABILITIES -> AVDTP_INITIATOR_W4_ALL_CAPABILITIES\n");
-            stream_endpoint->initiator_config_state = AVDTP_INITIATOR_W4_ALL_CAPABILITIES;
-            avdtp_initiator_send_get_all_capabilities_cmd(connection->l2cap_signaling_cid, connection->initiator_transaction_label, connection->query_seid);
-            break;
-        default:
-            sent = 0;
-            break;
-    }  
-    return sent;
+    // int sent = 1;
+    // switch (connection->initiator_config_state){
+    //     case AVDTP_INITIATOR_STREAM_CONFIG_IDLE:
+    //     case AVDTP_INITIATOR_W2_DISCOVER_SEPS:
+    //         printf("    AVDTP_INITIATOR_STREAM_CONFIG_IDLE | AVDTP_INITIATOR_W2_DISCOVER_SEPS -> AVDTP_INITIATOR_W4_SEPS_DISCOVERED\n");
+    //         connection->initiator_config_state = AVDTP_INITIATOR_W4_SEPS_DISCOVERED;
+    //         avdtp_initiator_send_signaling_cmd(connection->l2cap_signaling_cid, AVDTP_SI_DISCOVER, connection->initiator_transaction_label);
+    //         break;
+    //     case AVDTP_INITIATOR_W2_GET_CAPABILITIES:
+    //         printf("    AVDTP_INITIATOR_W2_GET_CAPABILITIES -> AVDTP_INITIATOR_W4_CAPABILITIES\n");
+    //         connection->initiator_config_state = AVDTP_INITIATOR_W4_CAPABILITIES;
+    //         avdtp_initiator_send_get_capabilities_cmd(connection->l2cap_signaling_cid, connection->initiator_transaction_label, connection->query_seid);
+    //         break;
+    //     case AVDTP_INITIATOR_W2_GET_ALL_CAPABILITIES:
+    //         printf("    AVDTP_INITIATOR_W2_GET_ALL_CAPABILITIES -> AVDTP_INITIATOR_W4_ALL_CAPABILITIES\n");
+    //         connection->initiator_config_state = AVDTP_INITIATOR_W4_ALL_CAPABILITIES;
+    //         avdtp_initiator_send_get_all_capabilities_cmd(connection->l2cap_signaling_cid, connection->initiator_transaction_label, connection->query_seid);
+    //         break;
+    //     default:
+    //         sent = 0;
+    //         break;
+    // }  
+    // return sent;
 }

@@ -279,18 +279,17 @@ typedef enum {
 } avdtp_service_mode_t;
 
 typedef enum {
-    AVDTP_IDLE,
-    AVDTP_CONFIGURATION_SUBSTATEMACHINE,
-    AVDTP_CONFIGURED,
-    AVDTP_W2_ANSWER_OPEN_STREAM,
-    AVDTP_W4_L2CAP_FOR_MEDIA_CONNECTED,
-    AVDTP_OPEN, // 5
-    AVDTP_W2_ANSWER_START_SINGLE_STREAM,
-    AVDTP_W4_STREAMING_CONNECTION_OPEN,
-    AVDTP_STREAMING, // 8
-    AVDTP_CLOSING,
-    AVDTP_ABORTING,
-    AVDTP_W4_L2CAP_FOR_MEDIA_DISCONNECTED
+    AVDTP_STREAM_ENDPOINT_IDLE,
+    AVDTP_STREAM_ENDPOINT_CONFIGURED,
+    AVDTP_STREAM_ENDPOINT_W2_ANSWER_OPEN_STREAM,
+    AVDTP_STREAM_ENDPOINT_W4_L2CAP_FOR_MEDIA_CONNECTED,
+    AVDTP_STREAM_ENDPOINT_OPENED, // 5
+    AVDTP_STREAM_ENDPOINT_W2_ANSWER_START_STREAM,
+    AVDTP_STREAM_ENDPOINT_W4_STREAMING_CONNECTION_OPEN,
+    AVDTP_STREAM_ENDPOINT_STREAMING, // 8
+    AVDTP_STREAM_ENDPOINT_CLOSING,
+    AVDTP_STREAM_ENDPOINT_ABORTING,
+    AVDTP_STREAM_ENDPOINT_W4_L2CAP_FOR_MEDIA_DISCONNECTED
 } avdtp_stream_endpoint_state_t;
 
 typedef enum {
@@ -332,7 +331,9 @@ typedef struct {
 typedef enum {
     AVDTP_SIGNALING_CONNECTION_IDLE,
     AVDTP_SIGNALING_CONNECTION_W4_L2CAP_CONNECTED,
-    AVDTP_SIGNALING_CONNECTION_OPENED,
+    AVDTP_SIGNALING_CONNECTION_CONFIGURATION_SUBSTATEMACHINE,
+    AVDTP_SIGNALING_CONNECTION_CONFIGURED,
+    AVDTP_SIGNALING_CONNECTION_STREAM_ENPOINT_IN_USE,
     AVDTP_SIGNALING_CONNECTION_W4_L2CAP_DISCONNECTED
 } avdtp_connection_state_t;
 
@@ -346,17 +347,18 @@ typedef struct {
     avdtp_connection_state_t state;
     avdtp_service_mode_t service_mode;
 
+    avdtp_initiator_stream_config_state_t initiator_config_state;
+    avdtp_acceptor_stream_config_state_t  acceptor_config_state;
+
     uint8_t disconnect;
     uint8_t initiator_transaction_label;
     uint8_t acceptor_transaction_label;
     uint8_t query_seid;
-
+    avdtp_signal_identifier_t unknown_signal_identifier;
+    
     btstack_linked_list_t can_send_now_signaling_channel_requests;
 } avdtp_connection_t;
 
-typedef struct {
-
-} avdtp_stream_endpoint_context_t;
 
 typedef struct avdtp_stream_endpoint {
     btstack_linked_item_t    item;
@@ -367,16 +369,12 @@ typedef struct avdtp_stream_endpoint {
     uint16_t l2cap_recovery_cid;
 
     avdtp_stream_endpoint_state_t         state;
-    avdtp_initiator_stream_config_state_t initiator_config_state;
-    avdtp_acceptor_stream_config_state_t  acceptor_config_state;
-
     // active connection
     avdtp_connection_t * connection;
     // store remote seps
     avdtp_sep_t remote_seps[MAX_NUM_SEPS];
     uint8_t remote_seps_num;
 
-    avdtp_signal_identifier_t unknown_signal_identifier;
     // currently active remote seid
     uint8_t remote_sep_index;
     // register request for L2cap connection release

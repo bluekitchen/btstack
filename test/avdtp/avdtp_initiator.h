@@ -51,10 +51,10 @@
 extern "C" {
 #endif
 
-void avdtp_initiator_stream_config_subsm_init(avdtp_stream_endpoint_t * stream_endpoint);
-int  avdtp_initiator_stream_config_subsm_is_done(avdtp_stream_endpoint_t * stream_endpoint);
-int  avdtp_initiator_stream_config_subsm(avdtp_connection_t * connection, avdtp_stream_endpoint_t * stream_endpoint, uint8_t *packet, uint16_t size);
-int  avdtp_initiator_stream_config_subsm_run(avdtp_connection_t * connection, avdtp_stream_endpoint_t * stream_endpoint);
+void avdtp_initiator_stream_config_subsm_init(avdtp_connection_t * connection);
+int  avdtp_initiator_stream_config_subsm_is_done(avdtp_connection_t * connection);
+int  avdtp_initiator_stream_config_subsm(avdtp_connection_t * connection, uint8_t *packet, uint16_t size);
+int  avdtp_initiator_stream_config_subsm_run(avdtp_connection_t * connection);
 
 #if defined __cplusplus
 }

@@ -190,8 +190,8 @@ static inline int avdtp_acceptor_send_capabilities(uint16_t cid, uint8_t transac
     command[pos++] = 0x02;
     command[pos++] = 0x00;
     
-    printf(" avdtp_acceptor_send_capabilities_response: \n");
-    printf_hexdump(command, pos);
+    // printf(" avdtp_acceptor_send_capabilities_response: \n");
+    // printf_hexdump(command, pos);
     return l2cap_send(cid, command, pos);
 }
 
@@ -203,15 +203,6 @@ static int avdtp_acceptor_send_all_capabilities_response(uint16_t cid, uint8_t t
     return avdtp_acceptor_send_capabilities(cid, transaction_label, sep, 1);
 }
 
-// static int avdtp_acceptor_send_configuration_reject_response(uint16_t cid, uint8_t transaction_label){
-//     uint8_t command[3];
-//     command[0] = avdtp_header(transaction_label, AVDTP_SINGLE_PACKET, AVDTP_RESPONSE_REJECT_MSG);
-//     command[1] = (uint8_t)AVDTP_SET_CONFIGURATION;
-//     command[2] = 0x00;
-//     // TODO: add reason for reject AVDTP 8.9
-//     return l2cap_send(cid, command, sizeof(command));
-// }
-
 int avdtp_acceptor_send_accept_response(uint16_t cid,  avdtp_signal_identifier_t identifier, uint8_t transaction_label){
     uint8_t command[2];
     command[0] = avdtp_header(transaction_label, AVDTP_SINGLE_PACKET, AVDTP_RESPONSE_ACCEPT_MSG);
@@ -219,48 +210,65 @@ int avdtp_acceptor_send_accept_response(uint16_t cid,  avdtp_signal_identifier_t
     return l2cap_send(cid, command, sizeof(command));
 }
 
-void avdtp_acceptor_stream_config_subsm_init(avdtp_stream_endpoint_t * stream_endpoint){
-    stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_STREAM_CONFIG_IDLE;
+void avdtp_acceptor_stream_config_subsm_init(avdtp_connection_t * connection){
+    connection->acceptor_config_state = AVDTP_ACCEPTOR_STREAM_CONFIG_IDLE;
 }
 
-int  avdtp_acceptor_stream_config_subsm_is_done(avdtp_stream_endpoint_t * stream_endpoint){
-    return stream_endpoint->acceptor_config_state == AVDTP_ACCEPTOR_STREAM_CONFIG_DONE;
+int  avdtp_acceptor_stream_config_subsm_is_done(avdtp_connection_t * connection){
+    return connection->acceptor_config_state == AVDTP_ACCEPTOR_STREAM_CONFIG_DONE;
 }
 
-int avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, avdtp_stream_endpoint_t * stream_endpoint, uint8_t *packet, uint16_t size){
+static avdtp_stream_endpoint_t * get_avdtp_stream_endpoint_for_active_seid(uint8_t seid){
+    btstack_linked_list_iterator_t it;    
+    btstack_linked_list_iterator_init(&it, (btstack_linked_list_t *) &stream_endpoints);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        avdtp_stream_endpoint_t * stream_endpoint = (avdtp_stream_endpoint_t *)btstack_linked_list_iterator_next(&it);
+        if (stream_endpoint->sep.seid == seid){
+            return stream_endpoint;
+        }
+    }
+    return NULL;
+}
+
+int avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, uint8_t *packet, uint16_t size){
+    if (!connection) return 0;
+
     avdtp_signaling_packet_header_t signaling_header;
     avdtp_read_signaling_header(&signaling_header, packet, size);
 
     // printf("SIGNALING HEADER: tr_label %d, packet_type %d, msg_type %d, signal_identifier %02x\n", 
     //     signaling_header.transaction_label, signaling_header.packet_type, signaling_header.message_type, signaling_header.signal_identifier);
-    printf("acceptor sm: state %d, si %d\n", stream_endpoint->acceptor_config_state, signaling_header.signal_identifier);
+    // printf("acceptor sm: state %d, si %d\n", connection->acceptor_config_state, signaling_header.signal_identifier);
     
     int i = 2;
     avdtp_sep_t sep;
 
     connection->acceptor_transaction_label = signaling_header.transaction_label;
-    
+    avdtp_stream_endpoint_t * stream_endpoint = NULL;
     int request_to_send = 1;
-    switch (stream_endpoint->acceptor_config_state){
+    switch (connection->acceptor_config_state){
         case AVDTP_ACCEPTOR_STREAM_CONFIG_IDLE:
             switch (signaling_header.signal_identifier){
                 case AVDTP_SI_DISCOVER:
                     printf("    ACP -> AVDTP_ACCEPTOR_W2_ANSWER_DISCOVER_SEPS\n");
-                    stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_ANSWER_DISCOVER_SEPS;
+                    connection->acceptor_config_state = AVDTP_ACCEPTOR_W2_ANSWER_DISCOVER_SEPS;
                     break;
                 case AVDTP_SI_GET_ALL_CAPABILITIES:
                     printf("    ACP -> AVDTP_SI_GET_ALL_CAPABILITIES\n");
-                    stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_ANSWER_GET_ALL_CAPABILITIES;
+                    connection->acceptor_config_state = AVDTP_ACCEPTOR_W2_ANSWER_GET_ALL_CAPABILITIES;
                     break;
                 case AVDTP_SI_GET_CAPABILITIES:
                     printf("    ACP -> AVDTP_ACCEPTOR_W2_ANSWER_GET_CAPABILITIES\n");
                     connection->query_seid = packet[2] >> 2;
-                    stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_ANSWER_GET_CAPABILITIES;
+                    connection->acceptor_config_state = AVDTP_ACCEPTOR_W2_ANSWER_GET_CAPABILITIES;
                     break;
                 case AVDTP_SI_SET_CONFIGURATION:
-                    printf("    ACP -> AVDTP_ACCEPTOR_W2_ANSWER_SET_CONFIGURATION\n");
+                    printf("AVDTP_SI_SET_CONFIGURATION \n");
                     connection->query_seid  = packet[2] >> 2;
                     sep.seid = packet[3] >> 2;
+                    
+                    stream_endpoint = get_avdtp_stream_endpoint_for_active_seid(connection->query_seid);
+                    if (!stream_endpoint) return 0;
                     // find or add sep
                     for (i=0; i < stream_endpoint->remote_seps_num; i++){
                         if (stream_endpoint->remote_seps[i].seid == sep.seid){
@@ -269,18 +277,18 @@ int avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, avdtp_st
                     }
                     sep.registered_service_categories = avdtp_unpack_service_capabilities(&sep.capabilities, packet+4, size-4);
                     stream_endpoint->remote_seps[stream_endpoint->remote_sep_index] = sep;
-                    stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_ANSWER_SET_CONFIGURATION;
+                    connection->acceptor_config_state = AVDTP_ACCEPTOR_W2_ANSWER_SET_CONFIGURATION;
                     break;
 
                 default:
                     printf("    ACP -> NOT IMPLEMENTED, Reject signal_identifier %02x\n", signaling_header.signal_identifier);
-                    stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_REJECT_UNKNOWN_CMD;
-                    stream_endpoint->unknown_signal_identifier = signaling_header.signal_identifier;
+                    connection->acceptor_config_state = AVDTP_ACCEPTOR_W2_REJECT_UNKNOWN_CMD;
+                    connection->unknown_signal_identifier = signaling_header.signal_identifier;
                     break;
             }
-            l2cap_request_can_send_now_event(connection->l2cap_signaling_cid);
             break;
         case AVDTP_ACCEPTOR_STREAM_CONFIG_DONE:
+            request_to_send = 0;
             printf(" ACP: AVDTP_ACCEPTOR_W2_ANSWER_SET_CONFIGURATION\n");
             break;
         default:
@@ -291,6 +299,7 @@ int avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, avdtp_st
     return request_to_send;
 }
 
+
 static int avdtp_acceptor_send_response_reject(uint16_t cid,  avdtp_signal_identifier_t identifier, uint8_t transaction_label){
     uint8_t command[2];
     command[0] = avdtp_header(transaction_label, AVDTP_SINGLE_PACKET, AVDTP_GENERAL_REJECT_MSG);
@@ -298,34 +307,40 @@ static int avdtp_acceptor_send_response_reject(uint16_t cid,  avdtp_signal_ident
     return l2cap_send(cid, command, sizeof(command));
 }
 
-int avdtp_acceptor_stream_config_subsm_run(avdtp_connection_t * connection, avdtp_stream_endpoint_t * stream_endpoint){
+int avdtp_acceptor_stream_config_subsm_run(avdtp_connection_t * connection){
     int sent = 1;
-    // printf("acceptor run: state %d\n", stream_endpoint->acceptor_config_state);
-    switch (stream_endpoint->acceptor_config_state){
+    avdtp_stream_endpoint_t * stream_endpoint = NULL;
+    switch (connection->acceptor_config_state){
         case AVDTP_ACCEPTOR_W2_ANSWER_DISCOVER_SEPS:
             printf("    AVDTP_ACCEPTOR_W2_ANSWER_DISCOVER_SEPS -> AVDTP_ACCEPTOR_STREAM_CONFIG_IDLE\n");
-            stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_STREAM_CONFIG_IDLE;
+            connection->acceptor_config_state = AVDTP_ACCEPTOR_STREAM_CONFIG_IDLE;
             avdtp_acceptor_send_seps_response(connection->l2cap_signaling_cid, connection->acceptor_transaction_label, (avdtp_stream_endpoint_t *)&stream_endpoints);
             break;
         case AVDTP_ACCEPTOR_W2_ANSWER_GET_CAPABILITIES:
-            if (connection->query_seid != stream_endpoint->sep.seid) return 0;
+            stream_endpoint = get_avdtp_stream_endpoint_for_active_seid(connection->query_seid);
+            if (!stream_endpoint) return 0;
             printf("    AVDTP_ACCEPTOR_W2_ANSWER_GET_CAPABILITIES -> AVDTP_ACCEPTOR_STREAM_CONFIG_IDLE\n");
-            stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_STREAM_CONFIG_IDLE;
+            connection->acceptor_config_state = AVDTP_ACCEPTOR_STREAM_CONFIG_IDLE;
             avdtp_acceptor_send_capabilities_response(connection->l2cap_signaling_cid, connection->acceptor_transaction_label, stream_endpoint->sep);
             break;
         case AVDTP_ACCEPTOR_W2_ANSWER_GET_ALL_CAPABILITIES:
-            if (connection->query_seid != stream_endpoint->sep.seid) return 0;
+            stream_endpoint = get_avdtp_stream_endpoint_for_active_seid(connection->query_seid);
+            if (!stream_endpoint) return 0;connection->acceptor_config_state = AVDTP_ACCEPTOR_STREAM_CONFIG_IDLE;
             printf("    AVDTP_ACCEPTOR_W2_ANSWER_GET_ALL_CAPABILITIES -> AVDTP_ACCEPTOR_STREAM_CONFIG_IDLE\n");
-            stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_STREAM_CONFIG_IDLE;
             avdtp_acceptor_send_all_capabilities_response(connection->l2cap_signaling_cid, connection->acceptor_transaction_label, stream_endpoint->sep);
             break;
         case AVDTP_ACCEPTOR_W2_REJECT_UNKNOWN_CMD:
-            stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_STREAM_CONFIG_IDLE;
-            avdtp_acceptor_send_response_reject(connection->l2cap_signaling_cid, stream_endpoint->unknown_signal_identifier, connection->acceptor_transaction_label);
+            connection->acceptor_config_state = AVDTP_ACCEPTOR_STREAM_CONFIG_IDLE;
+            avdtp_acceptor_send_response_reject(connection->l2cap_signaling_cid, connection->unknown_signal_identifier, connection->acceptor_transaction_label);
             break;
         case AVDTP_ACCEPTOR_W2_ANSWER_SET_CONFIGURATION:
+            printf("    ... AVDTP_ACCEPTOR_W2_ANSWER_SET_CONFIGURATION seid\n");
+            stream_endpoint = get_avdtp_stream_endpoint_for_active_seid(connection->query_seid);
+            if (!stream_endpoint) return 0;
             printf("    AVDTP_ACCEPTOR_W2_ANSWER_SET_CONFIGURATION -> AVDTP_ACCEPTOR_STREAM_CONFIG_DONE\n");
-            stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_STREAM_CONFIG_DONE;
+            connection->acceptor_config_state = AVDTP_ACCEPTOR_STREAM_CONFIG_DONE;
+            stream_endpoint->connection = connection;
+            stream_endpoint->state = AVDTP_STREAM_ENDPOINT_CONFIGURED;
             avdtp_acceptor_send_accept_response(connection->l2cap_signaling_cid, AVDTP_SI_SET_CONFIGURATION, connection->acceptor_transaction_label);
             break;
         case AVDTP_ACCEPTOR_STREAM_CONFIG_IDLE:
