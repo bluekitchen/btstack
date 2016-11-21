@@ -114,7 +114,7 @@ void battery_service_server_set_battery_value(uint8_t value){
 	battery_value = value;
 	if (battery_value_client_configuration){
 		battery_callback.callback = &battery_service_can_send_now;
-		battery_callback.context  = NULL;
+		battery_callback.context  = (void*) (uintptr_t) battery_value_client_configuration_connection;
 		att_server_register_can_send_now_callback(&battery_callback, battery_value_client_configuration_connection);
 	}
 }
