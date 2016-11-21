@@ -56,6 +56,10 @@
 #include "gap.h"
 #include "hci_transport.h"
 
+#ifdef ENABLE_BLE
+#include "ble/att_db.h"
+#endif
+
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -378,6 +382,42 @@ typedef struct sm_connection {
     int                      sm_le_db_index;
 } sm_connection_t;
 
+//
+// ATT Server
+//
+
+// max ATT request matches L2CAP PDU -- allow to use smaller buffer
+#ifndef ATT_REQUEST_BUFFER_SIZE
+#define ATT_REQUEST_BUFFER_SIZE HCI_ACL_PAYLOAD_SIZE
+#endif
+
+typedef enum {
+    ATT_SERVER_IDLE,
+    ATT_SERVER_REQUEST_RECEIVED,
+    ATT_SERVER_W4_SIGNED_WRITE_VALIDATION,
+    ATT_SERVER_REQUEST_RECEIVED_AND_VALIDATED,
+} att_server_state_t;
+
+typedef struct {
+    att_server_state_t      state;
+
+    uint8_t                 peer_addr_type;
+    bd_addr_t               peer_address;
+
+    int                     ir_le_device_db_index;
+    int                     ir_lookup_active;
+
+    int                     value_indication_handle;    
+    btstack_timer_source_t  value_indication_timer;
+
+    att_connection_t        connection;
+
+    uint16_t                request_size;
+    uint8_t                 request_buffer[ATT_REQUEST_BUFFER_SIZE];
+
+} att_server_t;
+
+//
 typedef struct {
     // linked list - assert: first field
     btstack_linked_item_t    item;
@@ -437,6 +477,9 @@ typedef struct {
 #ifdef ENABLE_BLE
     // LE Security Manager
     sm_connection_t sm_connection;
+
+    // ATT Server
+    att_server_t    att_server;
 #endif
 
 } hci_connection_t;
