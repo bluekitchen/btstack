@@ -73,7 +73,7 @@ void a2dp_sink_create_sdp_record(uint8_t * service,  uint32_t service_record_han
 void avdtp_sink_init(void);
 
 // returns sep_id
-uint8_t avdtp_sink_register_stream_endpoint(avdtp_sep_type_t sep_type, avdtp_media_type_t media_type);
+uint8_t avdtp_sink_create_stream_endpoint(avdtp_sep_type_t sep_type, avdtp_media_type_t media_type);
 
 void avdtp_sink_register_media_transport_category(uint8_t seid);
 void avdtp_sink_register_reporting_category(uint8_t seid);

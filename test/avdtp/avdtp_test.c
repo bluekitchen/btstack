@@ -376,7 +376,7 @@ int btstack_main(int argc, const char * argv[]){
     avdtp_sink_init();
     avdtp_sink_register_packet_handler(&packet_handler);
 
-    uint8_t seid = avdtp_sink_register_stream_endpoint(AVDTP_SINK, AVDTP_AUDIO);
+    uint8_t seid = avdtp_sink_create_stream_endpoint(AVDTP_SINK, AVDTP_AUDIO);
     avdtp_sink_register_media_transport_category(seid);
     avdtp_sink_register_media_codec_category(seid, AVDTP_AUDIO, AVDTP_CODEC_SBC, media_sbc_codec_info, sizeof(media_sbc_codec_info));
     

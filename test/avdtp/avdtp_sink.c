@@ -54,7 +54,6 @@ static const char * default_avdtp_sink_service_provider_name = "BTstack AVDTP Si
 
 // TODO list of devices
 static btstack_linked_list_t avdtp_connections;
-static avdtp_connection_t avdtp_sink;
 static uint16_t stream_endpoints_id_counter;
 
 static void avdtp_sink_run_for_connection(void * context);
@@ -105,13 +104,6 @@ static void avdtp_sink_register_can_send_now_callback(uint16_t l2cap_cid, avdtp_
 }
 
 /* END: tracking can send now requests pro l2cap cid */
-
-
-static void avdtp_state_init(avdtp_connection_t * connection){
-    connection->service_mode = AVDTP_BASIC_SERVICE_MODE;
-    connection->state = AVDTP_DEVICE_IDLE;
-    connection->disconnect = 0;
-}
 
 static btstack_packet_handler_t avdtp_sink_callback;
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
@@ -222,7 +214,18 @@ static avdtp_stream_endpoint_t * get_avdtp_stream_endpoint_for_connection(avdtp_
     return NULL;
 }
 
-uint8_t avdtp_sink_register_stream_endpoint(avdtp_sep_type_t sep_type, avdtp_media_type_t media_type){
+static avdtp_connection_t * avdtp_sink_create_connection(bd_addr_t remote_addr, hci_con_handle_t con_handle, uint16_t local_cid){
+    avdtp_connection_t * connection = btstack_memory_avdtp_connection_get();
+    connection->l2cap_signaling_cid = local_cid;
+    connection->con_handle = con_handle;
+    connection->state = AVDTP_SIGNALING_CONNECTION_IDLE;
+    connection->initiator_transaction_label++;
+    memcpy(connection->remote_addr, remote_addr, 6);
+    btstack_linked_list_add(&avdtp_connections, (btstack_linked_item_t *) connection);
+    return connection;
+}
+
+uint8_t avdtp_sink_create_stream_endpoint(avdtp_sep_type_t sep_type, avdtp_media_type_t media_type){
     avdtp_stream_endpoint_t * stream_endpoint = btstack_memory_avdtp_stream_endpoint_get();
     stream_endpoints_id_counter++;
     stream_endpoint->sep.seid = stream_endpoints_id_counter;
@@ -232,7 +235,6 @@ uint8_t avdtp_sink_register_stream_endpoint(avdtp_sep_type_t sep_type, avdtp_med
     btstack_linked_list_add(&stream_endpoints, (btstack_linked_item_t *) stream_endpoint);
     return stream_endpoint->sep.seid;
 }
-
 
 void avdtp_sink_register_media_transport_category(uint8_t seid){
     avdtp_stream_endpoint_t * stream_endpoint = get_avdtp_stream_endpoint_for_seid(seid);
@@ -336,14 +338,36 @@ void avdtp_sink_register_multiplexing_category(uint8_t seid, uint8_t fragmentati
 
 // }
 
+
+static avdtp_connection_t * get_avdtp_connection_for_bd_addr(bd_addr_t addr){
+    btstack_linked_list_iterator_t it;    
+    btstack_linked_list_iterator_init(&it, (btstack_linked_list_t *) &avdtp_connections);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        avdtp_connection_t * connection = (avdtp_connection_t *)btstack_linked_list_iterator_next(&it);
+        if (memcmp(addr, connection->remote_addr, 6) != 0) continue;
+        return connection;
+    }
+    return NULL;
+}
+
+static avdtp_connection_t * get_avdtp_connection_for_con_handle(hci_con_handle_t con_handle){
+    btstack_linked_list_iterator_t it;    
+    btstack_linked_list_iterator_init(&it, (btstack_linked_list_t *) &avdtp_connections);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        avdtp_connection_t * connection = (avdtp_connection_t *)btstack_linked_list_iterator_next(&it);
+        if (connection->con_handle != con_handle) continue;
+        return connection;
+    }
+    return NULL;
+}
+
 static avdtp_connection_t * get_avdtp_connection_for_l2cap_cid(uint16_t l2cap_cid){
     btstack_linked_list_iterator_t it;    
     btstack_linked_list_iterator_init(&it, (btstack_linked_list_t *) &avdtp_connections);
     while (btstack_linked_list_iterator_has_next(&it)){
         avdtp_connection_t * connection = (avdtp_connection_t *)btstack_linked_list_iterator_next(&it);
-        if (connection->l2cap_signaling_cid == l2cap_cid){
-            return connection;
-        }
+        if (connection->l2cap_signaling_cid != l2cap_cid) continue;
+        return connection;
     }
     return NULL;
 }
@@ -409,7 +433,7 @@ static void handle_l2cap_signaling_data_packet(avdtp_connection_t * connection, 
                         printf("AVDTP_CONFIGURED -> AVDTP_W2_ANSWER_OPEN_STREAM %d\n", signaling_header.transaction_label);
                         if (stream_endpoint->sep.seid != packet[2] >> 2) return;
                         stream_endpoint->state = AVDTP_W2_ANSWER_OPEN_STREAM;
-                        avdtp_sink.acceptor_transaction_label = signaling_header.transaction_label;
+                        connection->acceptor_transaction_label = signaling_header.transaction_label;
                         l2cap_request_can_send_now_event(connection->l2cap_signaling_cid);
 
                         btstack_context_callback_registration_t callback_registration;
@@ -430,7 +454,7 @@ static void handle_l2cap_signaling_data_packet(avdtp_connection_t * connection, 
                         if (stream_endpoint->sep.seid != packet[2] >> 2) return;
                         stream_endpoint->sep.in_use  = 1;
                         stream_endpoint->state = AVDTP_W2_ANSWER_START_SINGLE_STREAM;
-                        avdtp_sink.acceptor_transaction_label = signaling_header.transaction_label;
+                        connection->acceptor_transaction_label = signaling_header.transaction_label;
                         l2cap_request_can_send_now_event(connection->l2cap_signaling_cid);
                         break;
                     default:
@@ -453,15 +477,10 @@ static void handle_l2cap_signaling_data_packet(avdtp_connection_t * connection, 
     }
 }
 
-static void avdtp_sink_handle_open_connection(uint16_t local_cid, hci_con_handle_t con_handle, bd_addr_t event_addr){
+static void avdtp_sink_handle_open_connection(bd_addr_t remote_addr, hci_con_handle_t con_handle, uint16_t local_cid){
     avdtp_connection_t * connection = get_avdtp_connection_for_l2cap_cid(local_cid);
     if (!connection){
-        connection = btstack_memory_avdtp_connection_get();
-        connection->l2cap_signaling_cid = local_cid;
-        connection->state = AVDTP_DEVICE_CONNECTED;
-        connection->initiator_transaction_label++;
-        memcpy(connection->remote_addr, event_addr, 6);
-        btstack_linked_list_add(&avdtp_connections, (btstack_linked_item_t *) connection);
+        avdtp_sink_create_connection(remote_addr, con_handle, local_cid);
         l2cap_request_can_send_now_event(local_cid); // TODO register can send now
     }
     
@@ -559,7 +578,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 
                     if (psm != PSM_AVDTP) break;
 
-                    avdtp_sink_handle_open_connection(local_cid, con_handle, event_addr);
+                    avdtp_sink_handle_open_connection(event_addr, con_handle, local_cid);
                     break;
                 
                 case L2CAP_EVENT_CHANNEL_CLOSED:
@@ -598,7 +617,14 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                 case HCI_EVENT_DISCONNECTION_COMPLETE:
                     break;
                 case L2CAP_EVENT_CAN_SEND_NOW:
-                    avdtp_sink_handle_can_send_now(channel, &avdtp_sink);
+                    connection = get_avdtp_connection_for_l2cap_cid(channel);
+                    if (!connection) {
+                        stream_endpoint = get_avdtp_stream_endpoint_for_l2cap_cid(channel);
+                        if (!stream_endpoint->connection) break;
+                        connection = stream_endpoint->connection;
+                        break;
+                    }
+                    avdtp_sink_handle_can_send_now(channel, connection);
                     break;
                 default:
                     printf("unknown HCI event type %02x\n", hci_event_packet_get_type(packet));
@@ -616,10 +642,9 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 
 // TODO: find out which security level is needed, and replace LEVEL_0 in avdtp_sink_init
 void avdtp_sink_init(void){
-    avdtp_state_init(&avdtp_sink);
     stream_endpoints = NULL;
-    stream_endpoints_id_counter = 0;
     avdtp_connections = NULL;
+    stream_endpoints_id_counter = 0;
     l2cap_register_service(&packet_handler, PSM_AVDTP, 0xffff, LEVEL_0);
 }
 
@@ -641,11 +666,9 @@ void avdtp_sink_register_packet_handler(btstack_packet_handler_t callback){
 
 static void avdtp_sink_run_for_connection(void * context){
     avdtp_connection_t * connection = (avdtp_connection_t *) context;
-
-    
     if (connection->disconnect == 1){
         connection->disconnect = 0;
-        connection->state = AVDTP_W4_L2CAP_FOR_SIGNALING_DISCONNECTED;
+        connection->state = AVDTP_SIGNALING_CONNECTION_W4_L2CAP_DISCONNECTED;
         l2cap_disconnect(connection->l2cap_signaling_cid, 0);
         return;
     }
@@ -680,7 +703,7 @@ static void avdtp_sink_run(void){
         }
     }
 
-    avdtp_sink_run_for_connection((void*)&avdtp_sink);
+    // avdtp_sink_run_for_connection((void*)&avdtp_sink);
     btstack_linked_list_iterator_init(&it, (btstack_linked_list_t *) stream_endpoints);
     while (btstack_linked_list_iterator_has_next(&it)){
         avdtp_stream_endpoint_t * stream_endpoint = (avdtp_stream_endpoint_t *)btstack_linked_list_iterator_next(&it);
@@ -722,18 +745,24 @@ static void avdtp_sink_run(void){
     }
 }
 
+
+
 void avdtp_sink_connect(bd_addr_t bd_addr){
-    if (avdtp_sink.state != AVDTP_DEVICE_IDLE) return;
-    memcpy(avdtp_sink.remote_addr, bd_addr, 6);
-    avdtp_sink.state = AVDTP_W4_L2CAP_FOR_SIGNALING_CONNECTED;
-    l2cap_create_channel(packet_handler, avdtp_sink.remote_addr, PSM_AVDTP, 0xffff, NULL);
+    avdtp_connection_t * connection = get_avdtp_connection_for_bd_addr(bd_addr);
+    if (!connection){
+        connection = avdtp_sink_create_connection(bd_addr,0,0);
+    }
+    if (connection->state != AVDTP_SIGNALING_CONNECTION_IDLE) return;
+    connection->state = AVDTP_SIGNALING_CONNECTION_W4_L2CAP_CONNECTED;
+    l2cap_create_channel(packet_handler, connection->remote_addr, PSM_AVDTP, 0xffff, NULL);
 }
 
 void avdtp_sink_disconnect(uint16_t con_handle){
-    if (avdtp_sink.state == AVDTP_DEVICE_IDLE) return;
-    if (avdtp_sink.state == AVDTP_W4_L2CAP_FOR_SIGNALING_DISCONNECTED) return;
+    avdtp_connection_t * connection = get_avdtp_connection_for_con_handle(con_handle);
+    if (connection->state == AVDTP_SIGNALING_CONNECTION_IDLE) return;
+    if (connection->state == AVDTP_SIGNALING_CONNECTION_W4_L2CAP_DISCONNECTED) return;
     
-    avdtp_sink.disconnect = 1;
+    connection->disconnect = 1;
 
     btstack_linked_list_iterator_t it;    
     btstack_linked_list_iterator_init(&it, (btstack_linked_list_t *) &stream_endpoints);

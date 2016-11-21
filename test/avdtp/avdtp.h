@@ -330,19 +330,20 @@ typedef struct {
 
 
 typedef enum {
-    AVDTP_DEVICE_IDLE,
-    AVDTP_W4_L2CAP_FOR_SIGNALING_CONNECTED,
-    AVDTP_DEVICE_CONNECTED,
-    AVDTP_W4_L2CAP_FOR_SIGNALING_DISCONNECTED
-} avdtp_device_state_t;
+    AVDTP_SIGNALING_CONNECTION_IDLE,
+    AVDTP_SIGNALING_CONNECTION_W4_L2CAP_CONNECTED,
+    AVDTP_SIGNALING_CONNECTION_OPENED,
+    AVDTP_SIGNALING_CONNECTION_W4_L2CAP_DISCONNECTED
+} avdtp_connection_state_t;
 
 
 typedef struct {
     btstack_linked_item_t    item;
 
     bd_addr_t remote_addr;
+    hci_con_handle_t con_handle;
     uint16_t l2cap_signaling_cid;
-    avdtp_device_state_t state;
+    avdtp_connection_state_t state;
     avdtp_service_mode_t service_mode;
 
     uint8_t disconnect;
