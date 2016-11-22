@@ -311,6 +311,11 @@ static void btstack_run_loop_zephyr_execute(void) {
             timeout_ms = (ts->timeout - now) * sys_clock_ms_per_tick;
         }
 
+#if 1
+        // avoid task switching!
+        timeout_ms = K_NO_WAIT;
+#endif
+
         // no timer ready, no data in the RX queue, let's wait for some radio action or the next timer
         int err = k_sem_take(&hci_driver_sem_recv, timeout_ms);
         if (err == 0){

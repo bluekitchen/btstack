@@ -1,0 +1,34 @@
+diff --git a/kernel/unified/init.c b/kernel/unified/init.c
+index 781d625..d2db739 100644
+--- a/kernel/unified/init.c
++++ b/kernel/unified/init.c
+@@ -95,10 +95,10 @@ uint64_t __noinit __idle_tsc;  /* timestamp when CPU goes idle */
+ #endif
+ 
+ static char __noinit __stack main_stack[MAIN_STACK_SIZE];
+-static char __noinit __stack idle_stack[IDLE_STACK_SIZE];
++//  static char __noinit __stack idle_stack[IDLE_STACK_SIZE];
+ 
+ k_tid_t const _main_thread = (k_tid_t)main_stack;
+-k_tid_t const _idle_thread = (k_tid_t)idle_stack;
++//  k_tid_t const _idle_thread = (k_tid_t)idle_stack;
+ 
+ /*
+  * storage space for the interrupt stack
+@@ -283,11 +283,16 @@ static void prepare_multithreading(struct k_thread *dummy_thread)
+ 	_mark_thread_as_started(_main_thread);
+ 	_add_thread_to_ready_q(_main_thread);
+ 
++#if 0
++
++	BTSTACK: no idle thread
++
+ 	_new_thread(idle_stack, IDLE_STACK_SIZE, NULL,
+ 		    idle, NULL, NULL, NULL,
+ 		    K_LOWEST_THREAD_PRIO, K_ESSENTIAL);
+ 	_mark_thread_as_started(_idle_thread);
+ 	_add_thread_to_ready_q(_idle_thread);
++#endif
+ 
+ 	initialize_timeouts();
+ 

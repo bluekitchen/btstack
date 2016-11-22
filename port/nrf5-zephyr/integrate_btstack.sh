@@ -31,6 +31,11 @@ CTRL_H=${ZEPHYR_BASE}/subsys/bluetooth/controller/ll/ctrl.h
 sed -i "s|#define RADIO_BLE_COMPANY_ID.*0xFFFF.|#define RADIO_BLE_COMPANY_ID (0x0059) // Nordic Semiconductor ASA|g" ${CTRL_H}
 
 
+# diet - no idle thread
+KERNEL_INIT=${ZEPHYR_BASE}/kernel/unified/init.c
+grep -q -F btstack ${KERNEL_INIT} || cat no-idle-thread.patcth | patch -p 1 -d ${ZEPHYR_BASE}
+
+
 # create subsys/btstack
 mkdir -p ${ZEPHYR_BASE}/subsys/btstack
 
@@ -64,22 +69,3 @@ rsync -a Makefile.bluedroid-decoder ${ZEPHYR_BASE}/subsys/btstack/bluedroid/deco
 
 # create samples/btstack
 ./create_examples.py
-
-
-## Additonal changes for HCI Controller firmware in samples/bluetooth/hci-uart
-HCI_UART=${ZEPHYR_BASE}/samples/bluetooth/hci_uart
-HCI_UART_MAKEFILE=${ZEPHYR_BASE}/samples/bluetooth/hci_uart/src/Makefile
-
-# add flash scripts to hci-uart
-rsync -a flash_nrf51_pca10028.sh ${HCI_UART}/flash_nrf51_pca10028.sh
-rsync -a flash_nrf52_pca10040.sh ${HCI_UART}/flash_nrf52_pca10040.sh
-
-# use 115200 baud
-sed -i 's|CONFIG_UART_NRF5_BAUD_RATE=1000000|CONFIG_UART_NRF5_BAUD_RATE=115200|g' ${HCI_UART}/nrf5.conf
-
-# provide static random address to host via hci read bd addr
-grep -q -F ll_address_set ${HCI_UART}/src/main.c || cat hci_uart.patch | patch -d ${ZEPHYR_BASE} -p1
-
-# add includes
-grep -q -F "subsys/bluetooth/controller/ll" ${HCI_UART_MAKEFILE} || echo "ccflags-y += -I${ZEPHYR_BASE}/subsys/bluetooth/controller/ll" >> ${HCI_UART_MAKEFILE}
-
