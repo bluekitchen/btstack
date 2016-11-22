@@ -356,7 +356,10 @@ typedef struct {
     uint8_t query_seid;
     avdtp_signal_identifier_t unknown_signal_identifier;
     
-    btstack_linked_list_t can_send_now_signaling_channel_requests;
+    uint8_t wait_to_send_acceptor;
+    uint8_t wait_to_send_initiator;
+    uint8_t wait_to_send_self;
+
 } avdtp_connection_t;
 
 
