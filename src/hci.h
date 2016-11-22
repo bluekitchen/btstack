@@ -203,6 +203,8 @@ typedef enum {
     LE_CONNECTING_WHITELIST,
 } le_connecting_state_t;
 
+#ifdef ENABLE_BLE
+
 //
 // SM internal types and globals
 //
@@ -416,6 +418,8 @@ typedef struct {
     uint8_t                 request_buffer[ATT_REQUEST_BUFFER_SIZE];
 
 } att_server_t;
+
+#endif
 
 //
 typedef struct {
