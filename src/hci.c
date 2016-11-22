@@ -1896,6 +1896,8 @@ static void event_handler(uint8_t *packet, int size){
                     } else {
                         // if we're slave, it was an incoming connection, advertisements have stopped
                         hci_stack->le_advertisements_active = 0;
+                        // try to re-enable them
+                        hci_stack->le_advertisements_todo |= LE_ADVERTISEMENT_TASKS_ENABLE;
                     }
                     // LE connections are auto-accepted, so just create a connection if there isn't one already
                     if (!conn){
