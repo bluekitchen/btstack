@@ -31,9 +31,9 @@ CTRL_H=${ZEPHYR_BASE}/subsys/bluetooth/controller/ll/ctrl.h
 sed -i "s|#define RADIO_BLE_COMPANY_ID.*0xFFFF.|#define RADIO_BLE_COMPANY_ID (0x0059) // Nordic Semiconductor ASA|g" ${CTRL_H}
 
 
-# diet - no idle thread
+# diet - no idle thread, no IRQ stack
 KERNEL_INIT=${ZEPHYR_BASE}/kernel/unified/init.c
-grep -q -F btstack ${KERNEL_INIT} || cat no-idle-thread.patcth | patch -p 1 -d ${ZEPHYR_BASE}
+grep -q -F btstack ${KERNEL_INIT} || cat no-idle-no-irq.patch | patch -p 1 -d ${ZEPHYR_BASE}
 
 
 # create subsys/btstack

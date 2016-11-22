@@ -1,0 +1,95 @@
+diff --git a/arch/arm/core/cortex_m/reset.S b/arch/arm/core/cortex_m/reset.S
+index 812d6d9..98e2809 100644
+--- a/arch/arm/core/cortex_m/reset.S
++++ b/arch/arm/core/cortex_m/reset.S
+@@ -127,7 +127,13 @@ SECTION_FUNC(TEXT,_force_exit_one_nested_irq)
+ 		ldrne lr, =0xfffffffd
+ 		ldrne r2, =_do_software_reboot
+ 
++#if 0
+ 	ldr ip, =_interrupt_stack
++#else
++	/* BTstack: use main stack during init */
++	ldr ip, =main_stack
++#endif
++
+ 	add.w ip, #(___esf_t_SIZEOF * 2) /* enough for a stack frame */
+ 	ldr r1, =0xfffffffe
+ 	and.w r2, r1
+diff --git a/arch/arm/include/cortex_m/stack.h b/arch/arm/include/cortex_m/stack.h
+index f0396d5..e914375 100644
+--- a/arch/arm/include/cortex_m/stack.h
++++ b/arch/arm/include/cortex_m/stack.h
+@@ -43,7 +43,12 @@ extern "C" {
+ 
+ #else
+ 
++#if 0
+ extern char _interrupt_stack[CONFIG_ISR_STACK_SIZE];
++#else
++	// BTstack: no irq stack, we use main_stack instead
++	extern char main_stack[CONFIG_MAIN_STACK_SIZE];
++#endif
+ 
+ /**
+  *
+@@ -56,9 +61,13 @@ extern char _interrupt_stack[CONFIG_ISR_STACK_SIZE];
+  */
+ static ALWAYS_INLINE void _InterruptStackSetup(void)
+ {
++#if 0
++	BTstack: no dedicated IRQ stack
++
+ 	uint32_t msp = (uint32_t)(_interrupt_stack + CONFIG_ISR_STACK_SIZE);
+ 
+ 	_MspSet(msp);
++#endif
+ }
+ 
+ #endif /* _ASMLANGUAGE */
+diff --git a/kernel/unified/init.c b/kernel/unified/init.c
+index 781d625..f99606d 100644
+--- a/kernel/unified/init.c
++++ b/kernel/unified/init.c
+@@ -94,11 +94,12 @@ uint64_t __noinit __idle_tsc;  /* timestamp when CPU goes idle */
+ #define MAIN_STACK_SIZE CONFIG_MAIN_STACK_SIZE
+ #endif
+ 
+-static char __noinit __stack main_stack[MAIN_STACK_SIZE];
+-static char __noinit __stack idle_stack[IDLE_STACK_SIZE];
++//static
++char __noinit __stack main_stack[MAIN_STACK_SIZE];
++//  static char __noinit __stack idle_stack[IDLE_STACK_SIZE];
+ 
+ k_tid_t const _main_thread = (k_tid_t)main_stack;
+-k_tid_t const _idle_thread = (k_tid_t)idle_stack;
++//  k_tid_t const _idle_thread = (k_tid_t)idle_stack;
+ 
+ /*
+  * storage space for the interrupt stack
+@@ -111,7 +112,7 @@ k_tid_t const _idle_thread = (k_tid_t)idle_stack;
+ #if CONFIG_ISR_STACK_SIZE & (STACK_ALIGN - 1)
+     #error "ISR_STACK_SIZE must be a multiple of the stack alignment"
+ #endif
+-char __noinit __stack _interrupt_stack[CONFIG_ISR_STACK_SIZE];
++// char __noinit __stack _interrupt_stack[CONFIG_ISR_STACK_SIZE];
+ 
+ #ifdef CONFIG_SYS_CLOCK_EXISTS
+ 	#include <misc/dlist.h>
+@@ -283,11 +284,16 @@ static void prepare_multithreading(struct k_thread *dummy_thread)
+ 	_mark_thread_as_started(_main_thread);
+ 	_add_thread_to_ready_q(_main_thread);
+ 
++#if 0
++
++	BTSTACK: no idle thread
++
+ 	_new_thread(idle_stack, IDLE_STACK_SIZE, NULL,
+ 		    idle, NULL, NULL, NULL,
+ 		    K_LOWEST_THREAD_PRIO, K_ESSENTIAL);
+ 	_mark_thread_as_started(_idle_thread);
+ 	_add_thread_to_ready_q(_idle_thread);
++#endif
+ 
+ 	initialize_timeouts();
+ 
