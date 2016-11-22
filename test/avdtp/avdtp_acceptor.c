@@ -213,7 +213,7 @@ void avdtp_acceptor_stream_config_subsm_init(avdtp_connection_t * connection){
     connection->acceptor_config_state = AVDTP_ACCEPTOR_STREAM_CONFIG_IDLE;
 }
 
-int  avdtp_acceptor_stream_config_subsm_is_done(avdtp_connection_t * connection){
+int  avdtp_acceptor_stream_config_subsm_is_configured(avdtp_connection_t * connection){
     return connection->acceptor_config_state == AVDTP_ACCEPTOR_STREAM_CONFIG_DONE;
 }
 

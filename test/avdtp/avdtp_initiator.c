@@ -74,7 +74,7 @@ void avdtp_initiator_stream_config_subsm_init(avdtp_connection_t * connection){
     connection->initiator_config_state = AVDTP_INITIATOR_STREAM_CONFIG_IDLE;
 }
 
-int avdtp_initiator_stream_config_subsm_is_done(avdtp_connection_t * connection){
+int avdtp_initiator_stream_config_subsm_is_configured(avdtp_connection_t * connection){
     return 1; //connection->initiator_config_state == AVDTP_INITIATOR_STREAM_CONFIG_DONE;
 }
 
