@@ -692,8 +692,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                         stream_endpoint = get_avdtp_stream_endpoint_for_l2cap_cid(channel);
                         if (!stream_endpoint->connection) break;
                         connection = stream_endpoint->connection;
-                        break;
                     }
+                    printf(" call avdtp_sink_handle_can_send_now\n");
                     avdtp_sink_handle_can_send_now(connection, channel);
                     break;
                 default:
