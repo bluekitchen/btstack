@@ -235,7 +235,33 @@ static void queue_transfer(struct libusb_transfer *transfer){
 
 static void async_callback(struct libusb_transfer *transfer)
 {
-    if (libusb_state != LIB_USB_TRANSFERS_ALLOCATED)  return;
+    // identify and free transfers as part of shutdown
+    if (libusb_state != LIB_USB_TRANSFERS_ALLOCATED) {
+        int c;
+        for (c=0;c<ASYNC_BUFFERS;c++){
+            if (transfer == event_in_transfer[c]){
+                libusb_free_transfer(transfer);
+                event_in_transfer[c] = 0;
+                return;
+            }
+            if (transfer == acl_in_transfer[c]){
+                libusb_free_transfer(transfer);
+                acl_in_transfer[c] = 0;
+                return;
+            }
+        }
+#ifdef ENABLE_SCO_OVER_HCI
+        for (c=0;c<ISOC_BUFFERS;c++){
+            if (transfer == sco_in_transfer[c]){
+                libusb_free_transfer(transfer);
+                sco_in_transfer[c] = 0;
+                return;
+            }
+        }
+#endif
+        return;
+    }
+
     int r;
     // log_info("begin async_callback endpoint %x, status %x, actual length %u", transfer->endpoint, transfer->status, transfer->actual_length );
 
@@ -921,8 +947,6 @@ static int usb_open(void){
 
 static int usb_close(void){
     int c;
-    // @TODO: remove all run loops!
-
     switch (libusb_state){
         case LIB_USB_CLOSED:
             break;
@@ -934,23 +958,6 @@ static int usb_close(void){
                 btstack_run_loop_remove_timer(&usb_timer);
                 usb_timer_active = 0;
             }
-
-            // Cancel any asynchronous transfers
-            for (c = 0 ; c < ASYNC_BUFFERS ; c++) {
-                libusb_cancel_transfer(event_in_transfer[c]);
-                libusb_cancel_transfer(acl_in_transfer[c]);
-            }
-#ifdef ENABLE_SCO_OVER_HCI
-            // Cancel all synchronous transfer
-            for (c = 0 ; c < ISOC_BUFFERS ; c++) {
-                libusb_cancel_transfer(sco_in_transfer[c]);
-            }
-#endif
-
-            /* TODO - find a better way to ensure that all transfers have completed */
-            struct timeval tv;
-            memset(&tv, 0, sizeof(struct timeval));
-            libusb_handle_events_timeout(NULL, &tv);
 
             if (doing_pollfds){
                 int r;
@@ -965,20 +972,51 @@ static int usb_close(void){
             }
 
         case LIB_USB_INTERFACE_CLAIMED:
-            // Cancel any asynchronous transfers
+            // Cancel all transfers, ignore warnings for this
+            libusb_set_debug(NULL, LIBUSB_LOG_LEVEL_ERROR);
             for (c = 0 ; c < ASYNC_BUFFERS ; c++) {
                 libusb_cancel_transfer(event_in_transfer[c]);
                 libusb_cancel_transfer(acl_in_transfer[c]);
             }
 #ifdef ENABLE_SCO_OVER_HCI
-            // Cancel all synchronous transfer
             for (c = 0 ; c < ISOC_BUFFERS ; c++) {
                 libusb_cancel_transfer(sco_in_transfer[c]);
             }
 #endif
+            libusb_set_debug(NULL, LIBUSB_LOG_LEVEL_WARNING);
 
-            // TODO free control and acl out transfers
+            // wait until all transfers are completed
+            int completed = 0;
+            while (!completed){
+                struct timeval tv;
+                memset(&tv, 0, sizeof(struct timeval));
+                libusb_handle_events_timeout(NULL, &tv);
+                // check if all done
+                completed = 1;
+                for (c=0;c<ASYNC_BUFFERS;c++){
+                    if (event_in_transfer[c] || acl_in_transfer[c]) {
+                        completed = 0;
+                        break;
+                    }
+                }
+#ifdef ENABLE_SCO_OVER_HCI
+                if (!completed) continue;
+
+                // Cancel all synchronous transfer
+                for (c = 0 ; c < ISOC_BUFFERS ; c++) {
+                    if (sco_in_transfer[c]){
+                        completed = 0;
+                        break;
+                    }
+                }
+#endif
+            }
+
+            // finally release interface
             libusb_release_interface(handle, 0);
+#ifdef ENABLE_SCO_OVER_HCI
+            libusb_release_interface(handle, 1);
+#endif
 
         case LIB_USB_DEVICE_OPENDED:
             libusb_close(handle);
