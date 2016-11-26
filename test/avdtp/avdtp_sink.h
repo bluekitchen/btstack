@@ -54,8 +54,6 @@
 extern "C" {
 #endif
 
-btstack_linked_list_t stream_endpoints;
-
 /* API_START */
 /**
  * @brief AVDTP Sink service record. 
