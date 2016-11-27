@@ -233,8 +233,7 @@ static void queue_transfer(struct libusb_transfer *transfer){
     temp->user_data = transfer;
 }
 
-static void async_callback(struct libusb_transfer *transfer)
-{
+LIBUSB_CALL static void async_callback(struct libusb_transfer *transfer){
     // identify and free transfers as part of shutdown
     if (libusb_state != LIB_USB_TRANSFERS_ALLOCATED) {
         int c;
