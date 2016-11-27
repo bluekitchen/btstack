@@ -145,6 +145,8 @@ static uint32_t btstack_run_loop_windows_get_time_ms(void){
  */
 static void btstack_run_loop_windows_execute(void) {
 
+    btstack_timer_source_t *ts;
+    btstack_linked_list_iterator_t it;
 
     while (1) {
 
@@ -152,9 +154,17 @@ static void btstack_run_loop_windows_execute(void) {
         HANDLE handles[20];
         memset(handles, 0, sizeof(handles));
         int num_handles = 0;     
+        btstack_linked_list_iterator_init(&it, &data_sources);
+        while (btstack_linked_list_iterator_has_next(&it)){
+            btstack_data_source_t *ds = (btstack_data_source_t*) btstack_linked_list_iterator_next(&it);
+            if (ds->handle == 0) continue;
+            if (ds->flags & (DATA_SOURCE_CALLBACK_READ | DATA_SOURCE_CALLBACK_WRITE)){
+                handles[num_handles++] = ds->handle;
+                log_debug("btstack_run_loop_execute adding handle %p", ds->handle);
+            }
+        }
 
         // get next timeout
-        btstack_timer_source_t *ts;
         uint32_t timeout_ms = INFINITE;
         if (timers) {
             ts = (btstack_timer_source_t *) timers;
@@ -165,15 +175,37 @@ static void btstack_run_loop_windows_execute(void) {
             }
             log_debug("btstack_run_loop_execute next timeout in %u ms", timeout_ms);
         }
-           
+        
+        int res;
         if (num_handles){
             // wait for ready Events or timeout
-            WaitForMultipleObjects(num_handles, &handles[0], 0, timeout_ms);
+            res = WaitForMultipleObjects(num_handles, &handles[0], 0, timeout_ms);
         } else {
             // just wait for timeout
             Sleep(timeout_ms);
+            res = WAIT_TIMEOUT;
         }
         
+        // process data source
+        if (WAIT_OBJECT_0 <= res && res < (WAIT_OBJECT_0 + num_handles)){
+            void * triggered_handle = handles[res - WAIT_OBJECT_0];
+            btstack_linked_list_iterator_init(&it, &data_sources);
+            while (btstack_linked_list_iterator_has_next(&it)){
+                btstack_data_source_t *ds = (btstack_data_source_t*) btstack_linked_list_iterator_next(&it);
+                log_debug("btstack_run_loop_windows_execute: check ds %p with handle %p\n", ds, ds->handle);
+                if (triggered_handle == ds->handle){
+                    if (ds->flags & DATA_SOURCE_CALLBACK_READ){
+                        log_debug("btstack_run_loop_windows_execute: process read ds %p with handle %p\n", ds, ds->handle);
+                        ds->process(ds, DATA_SOURCE_CALLBACK_READ);
+                    } else if (ds->flags & DATA_SOURCE_CALLBACK_WRITE){
+                        log_debug("btstack_run_loop_windows_execute: process write ds %p with handle %p\n", ds, ds->handle);
+                        ds->process(ds, DATA_SOURCE_CALLBACK_WRITE);
+                    }
+                    break;
+                }
+            }
+        }
+
         // process timers
         uint32_t now_ms = btstack_run_loop_windows_get_time_ms();
         while (timers) {
@@ -186,90 +218,6 @@ static void btstack_run_loop_windows_execute(void) {
             ts->process(ts);
         }
     }
-
-#if 0
-    fd_set descriptors_read;
-    fd_set descriptors_write;
-    
-    btstack_timer_source_t       *ts;
-    btstack_linked_list_iterator_t it;
-    struct timeval * timeout;
-    struct timeval tv;
-    uint32_t now_ms;
-
-    while (1) {
-        // collect FDs
-        FD_ZERO(&descriptors_read);
-        FD_ZERO(&descriptors_write);
-        int highest_fd = -1;
-        btstack_linked_list_iterator_init(&it, &data_sources);
-        while (btstack_linked_list_iterator_has_next(&it)){
-            btstack_data_source_t *ds = (btstack_data_source_t*) btstack_linked_list_iterator_next(&it);
-            if (ds->fd < 0) continue;
-            if (ds->flags & DATA_SOURCE_CALLBACK_READ){
-                FD_SET(ds->fd, &descriptors_read);
-                if (ds->fd > highest_fd) {
-                    highest_fd = ds->fd;
-                }
-                log_debug("btstack_run_loop_execute adding fd %u for read", ds->fd);
-            }
-            if (ds->flags & DATA_SOURCE_CALLBACK_WRITE){
-                FD_SET(ds->fd, &descriptors_write);
-                if (ds->fd > highest_fd) {
-                    highest_fd = ds->fd;
-                }
-                log_debug("btstack_run_loop_execute adding fd %u for write", ds->fd);
-            }
-        }
-        
-        // get next timeout
-        timeout = NULL;
-        if (timers) {
-            ts = (btstack_timer_source_t *) timers;
-            timeout = &tv;
-            now_ms = btstack_run_loop_windows_get_time_ms();
-            int delta = ts->timeout - now_ms;
-            if (delta < 0){
-                delta = 0;
-            }
-            tv.tv_sec  = delta / 1000;
-            tv.tv_usec = (int) (delta - (tv.tv_sec * 1000)) * 1000;
-            log_debug("btstack_run_loop_execute next timeout in %u ms", delta);
-        }
-                
-        // wait for ready FDs
-        select( highest_fd+1 , &descriptors_read, &descriptors_write, NULL, timeout);
-                
-
-        data_sources_modified = 0;
-        btstack_linked_list_iterator_init(&it, &data_sources);
-        while (btstack_linked_list_iterator_has_next(&it) && !data_sources_modified){
-            btstack_data_source_t *ds = (btstack_data_source_t*) btstack_linked_list_iterator_next(&it);
-            log_debug("btstack_run_loop_windows_execute: check ds %p with fd %u\n", ds, ds->fd);
-            if (FD_ISSET(ds->fd, &descriptors_read)) {
-                log_debug("btstack_run_loop_windows_execute: process read ds %p with fd %u\n", ds, ds->fd);
-                ds->process(ds, DATA_SOURCE_CALLBACK_READ);
-            }
-            if (FD_ISSET(ds->fd, &descriptors_write)) {
-                log_debug("btstack_run_loop_windows_execute: process write ds %p with fd %u\n", ds, ds->fd);
-                ds->process(ds, DATA_SOURCE_CALLBACK_WRITE);
-            }
-        }
-        log_debug("btstack_run_loop_windows_execute: after ds check\n");
-        
-        // process timers
-        now_ms = btstack_run_loop_windows_get_time_ms();
-        while (timers) {
-            ts = (btstack_timer_source_t *) timers;
-            if (ts->timeout > now_ms) break;
-            log_debug("btstack_run_loop_windows_execute: process timer %p\n", ts);
-            
-            // remove timer before processing it to allow handler to re-register with run loop
-            btstack_run_loop_remove_timer(ts);
-            ts->process(ts);
-        }
-    }
-#endif
 }
 
 // set timer
