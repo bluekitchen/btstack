@@ -65,14 +65,23 @@ typedef enum {
 } btstack_data_source_callback_type_t;
 
 typedef struct btstack_data_source {
-	// 
+	// linked item
     btstack_linked_item_t item;
-    // file descriptor to watch for run loops that support file descriptors
-    int  fd;
+
+    // item to watch in run loop
+    union {
+	    // file descriptor for posix systems
+	    int  fd;
+    	// handle on windows
+    	void * handle;	
+    };
+
     // callback to call for enabled callback types
     void  (*process)(struct btstack_data_source *ds, btstack_data_source_callback_type_t callback_type);
+
     // flags storing enabled callback types
     uint16_t flags;
+
 } btstack_data_source_t;
 
 typedef struct btstack_timer_source {
