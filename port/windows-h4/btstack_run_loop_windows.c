@@ -144,6 +144,49 @@ static uint32_t btstack_run_loop_windows_get_time_ms(void){
  * Execute run_loop
  */
 static void btstack_run_loop_windows_execute(void) {
+
+
+    while (1) {
+
+        // collect handles to wait for
+        HANDLE handles[20];
+        memset(handles, 0, sizeof(handles));
+        int num_handles = 0;     
+
+        // get next timeout
+        btstack_timer_source_t *ts;
+        uint32_t timeout_ms = INFINITE;
+        if (timers) {
+            ts = (btstack_timer_source_t *) timers;
+            uint32_t now_ms = btstack_run_loop_windows_get_time_ms();
+            timeout_ms = ts->timeout - now_ms;
+            if (timeout_ms < 0){
+                timeout_ms = 0;
+            }
+            log_debug("btstack_run_loop_execute next timeout in %u ms", timeout_ms);
+        }
+           
+        if (num_handles){
+            // wait for ready Events or timeout
+            WaitForMultipleObjects(num_handles, &handles[0], 0, timeout_ms);
+        } else {
+            // just wait for timeout
+            Sleep(timeout_ms);
+        }
+        
+        // process timers
+        uint32_t now_ms = btstack_run_loop_windows_get_time_ms();
+        while (timers) {
+            ts = (btstack_timer_source_t *) timers;
+            if (ts->timeout > now_ms) break;
+            log_debug("btstack_run_loop_windows_execute: process timer %p\n", ts);
+            
+            // remove timer before processing it to allow handler to re-register with run loop
+            btstack_run_loop_remove_timer(ts);
+            ts->process(ts);
+        }
+    }
+
 #if 0
     fd_set descriptors_read;
     fd_set descriptors_write;
