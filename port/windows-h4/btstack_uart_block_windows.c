@@ -51,11 +51,14 @@
 #include <string.h>
 #include <errno.h>
 
+#include <Windows.h>
+
 // uart config
 static const btstack_uart_config_t * uart_config;
 
 // data source for integration with BTstack Runloop
-static btstack_data_source_t transport_data_source;
+static btstack_data_source_t transport_data_source_read;
+static btstack_data_source_t transport_data_source_write;
 
 // block write
 static int             write_bytes_len;
@@ -69,158 +72,271 @@ static uint8_t * read_bytes_data;
 static void (*block_sent)(void);
 static void (*block_received)(void);
 
+// port and async control structure
+static HANDLE serial_port_handle;
+static OVERLAPPED overlapped_read;
+static OVERLAPPED overlapped_write;
+
 
 static int btstack_uart_windows_init(const btstack_uart_config_t * config){
     uart_config = config;
     return 0;
 }
 
-static void btstack_uart_windows_process_write(btstack_data_source_t *ds) {
-#if 0    
-    if (write_bytes_len == 0) return;
-
-    uint32_t start = btstack_run_loop_get_time_ms();
-
-    // write up to write_bytes_len to fd
-    int bytes_written = (int) write(ds->fd, write_bytes_data, write_bytes_len);
-    if (bytes_written < 0) {
-        btstack_run_loop_enable_data_source_callbacks(ds, DATA_SOURCE_CALLBACK_WRITE);
-        return;
-    }
-
-    uint32_t end = btstack_run_loop_get_time_ms();
-    if (end - start > 10){
-        log_info("h4_process: write took %u ms", end - start);
-    }
-
-    write_bytes_data += bytes_written;
-    write_bytes_len  -= bytes_written;
-
-    if (write_bytes_len){
-        btstack_run_loop_enable_data_source_callbacks(ds, DATA_SOURCE_CALLBACK_WRITE);
-        return;
-    }
+static void btstack_uart_windows_process_write(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type) {
 
     btstack_run_loop_disable_data_source_callbacks(ds, DATA_SOURCE_CALLBACK_WRITE);
+
+    DWORD bytes_written;
+    BOOL ok = GetOverlappedResult(serial_port_handle, &overlapped_write, &bytes_written, FALSE);
+    if(!ok){
+        DWORD err = GetLastError();
+        if (err == ERROR_IO_INCOMPLETE){
+            // IO_INCOMPLETE -> wait for completed
+            btstack_run_loop_enable_data_source_callbacks(ds, DATA_SOURCE_CALLBACK_WRITE);
+        } else {
+            log_error("btstack_uart_windows_process_write: error writing");
+        }
+        return;
+    }
+
+    // assert all bytes written
+    if (bytes_written != write_bytes_len){
+        log_error("btstack_uart_windows_process_write: requested write %u but %u were written", (int) write_bytes_len, (int) bytes_written);
+        return;
+    }
 
     // notify done
     if (block_sent){
         block_sent();
     }
-#endif
 }
 
-static void btstack_uart_windows_process_read(btstack_data_source_t *ds) {
-#if 0
-    if (read_bytes_len == 0) {
-        log_info("btstack_uart_windows_process_read but no read requested");
-        btstack_run_loop_disable_data_source_callbacks(ds, DATA_SOURCE_CALLBACK_READ);
-    }
+static void btstack_uart_windows_process_read(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type) {
 
-    uint32_t start = btstack_run_loop_get_time_ms();
-    
-    // read up to bytes_to_read data in
-    ssize_t bytes_read = read(ds->fd, read_bytes_data, read_bytes_len);
-    // log_info("btstack_uart_windows_process_read need %u bytes, got %d", read_bytes_len, (int) bytes_read);
-    uint32_t end = btstack_run_loop_get_time_ms();
-    if (end - start > 10){
-        log_info("h4_process: read took %u ms", end - start);
-    }
-    if (bytes_read < 0) return;
-    
-    read_bytes_len   -= bytes_read;
-    read_bytes_data  += bytes_read;
-    if (read_bytes_len > 0) return;
-    
     btstack_run_loop_disable_data_source_callbacks(ds, DATA_SOURCE_CALLBACK_READ);
 
+    DWORD bytes_read;
+    BOOL ok = GetOverlappedResult(serial_port_handle, &overlapped_read, &bytes_read, FALSE);
+    if(!ok){
+        DWORD err = GetLastError();
+        if (err == ERROR_IO_INCOMPLETE){
+            // IO_INCOMPLETE -> wait for completed
+            btstack_run_loop_enable_data_source_callbacks(ds, DATA_SOURCE_CALLBACK_READ);
+        } else {
+            log_error("btstack_uart_windows_process_write: error writing");
+        }
+        return;
+    }
+
+    // assert all bytes read
+    if (bytes_read != read_bytes_len){
+        log_error("btstack_uart_windows_process_read: requested read %u but %u were read", (int)  read_bytes_len, (int)  bytes_read);
+        return;
+    }
+
+    // notify done
     if (block_received){
         block_received();
     }
-#endif
 }
 
-static void btstack_uart_windows_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type) {
-    switch (callback_type){
-        case DATA_SOURCE_CALLBACK_READ:
-            btstack_uart_windows_process_read(ds);
-            break;
-        case DATA_SOURCE_CALLBACK_WRITE:
-            btstack_uart_windows_process_write(ds);
-            break;
-        default:
-            break;
+static void btstack_uart_windows_send_block(const uint8_t *data, uint16_t size){
+
+    // setup async write
+    write_bytes_data = data;
+    write_bytes_len  = size;
+
+    // start write
+    DWORD bytes_written;
+    BOOL ok = WriteFile(serial_port_handle,  // handle
+                        write_bytes_data,    // (LPCSTR) 8-bit data
+                        write_bytes_len,     // length
+                        &bytes_written,      // amount written
+                        &overlapped_write);  // overlapped structure
+
+    if (ok){
+
+        // assert all bytes written
+        if (bytes_written != write_bytes_len){
+            log_error("btstack_uart_windows_send_block: requested write %u but %u were written", (int) write_bytes_len, (int) bytes_written);
+            return;
+        }
+
+        //
+        // TODO: to defer sending done event by enabling POLL Callback for Write
+        //
+
+        // notify done
+        if (block_sent){
+            block_sent();
+        }
+        return;
     }
+
+    DWORD err = GetLastError();
+    if (err != ERROR_IO_PENDING){
+        log_error("btstack_uart_windows_send_block: error writing");
+        return;
+    }
+
+    // IO_PENDING -> wait for completed
+    btstack_run_loop_enable_data_source_callbacks(&transport_data_source_write, DATA_SOURCE_CALLBACK_WRITE);
 }
+
+static void btstack_uart_windows_receive_block(uint8_t *buffer, uint16_t len){
+
+    // setup async read
+    read_bytes_data = buffer;
+    read_bytes_len = len;
+
+    // go
+    DWORD bytes_read;
+    BOOL ok = ReadFile(serial_port_handle,  // handle
+                        read_bytes_data,    // (LPCSTR) 8-bit data
+                        read_bytes_len,     // length
+                        &bytes_read,        // amount read
+                        &overlapped_read);  // overlapped structure
+
+    if (ok){
+
+        // assert all bytes read
+        if (bytes_read != read_bytes_len){
+            log_error("btstack_uart_windows_receive_block: requested read %u but %u were read", (int) read_bytes_len, (int) bytes_read);
+            return;
+        }
+
+        //
+        // TODO: to defer sending done event by enabling POLL Callback
+        //
+
+        // notify done
+        if (block_received){
+            block_received();
+        }
+        return;
+    }
+
+    DWORD err = GetLastError();
+    if (err != ERROR_IO_PENDING){
+        log_error("btstack_uart_windows_receive_block: error reading");
+        return;
+    }
+
+    // IO_PENDING -> wait for completed
+    btstack_run_loop_enable_data_source_callbacks(&transport_data_source_read, DATA_SOURCE_CALLBACK_READ);
+}
+
 
 static int btstack_uart_windows_set_baudrate(uint32_t baudrate){
-    // TODO: implement
+    DCB serial_params;
+    memset(&serial_params, 0, sizeof(DCB));
+    serial_params.DCBlength = sizeof(DCB);
+        
+    int ok = GetCommState(serial_port_handle, &serial_params);
+
+    if (!ok){
+        log_error("windows_set_baudrate: Couldn't get serial parameters");
+        return -1;
+    }
+
+    serial_params.BaudRate = baudrate;
+
+    ok = SetCommState(serial_port_handle, &serial_params);
+    if (!ok){
+        log_error("windows_set_baudrate: Couldn't serial parameters");
+        return -1;
+    }
+
+    return 0;
+}
+
+
+static int btstack_uart_windows_set_parity(int parity){
+    DCB serial_params;
+    memset(&serial_params, 0, sizeof(DCB));
+    serial_params.DCBlength = sizeof(DCB);
+        
+    int ok = GetCommState(serial_port_handle, &serial_params);
+
+    if (!ok){
+        log_error("windows_set_parity: Couldn't get serial parameters");
+        return -1;
+    }
+
+    serial_params.Parity = parity;
+
+    ok = SetCommState(serial_port_handle, &serial_params);
+    if (!ok){
+        log_error("windows_set_parity: Couldn't serial parameters");
+        return -1;
+    }
     return 0;
 }
 
 static int btstack_uart_windows_open(void){
 
-#if 0
     const char * device_name = uart_config->device_name;
-    const int flowcontrol    = uart_config->flowcontrol;
     const uint32_t baudrate  = uart_config->baudrate;
+    const int flowcontrol    = uart_config->flowcontrol;
 
-    struct termios toptions;
-    int flags = O_RDWR | O_NOCTTY | O_NONBLOCK;
-    int fd = open(device_name, flags);
-    if (fd == -1)  {
-        log_error("posix_open: Unable to open port %s", device_name);
-        return -1;
-    }
-    
-    if (tcgetattr(fd, &toptions) < 0) {
-        log_error("posix_open: Couldn't get term attributes");
-        return -1;
-    }
-    
-    cfmakeraw(&toptions);   // make raw
+    serial_port_handle = CreateFile( device_name,  
+                        GENERIC_READ | GENERIC_WRITE, 
+                        0, 
+                        0, 
+                        OPEN_EXISTING,
+                        FILE_FLAG_OVERLAPPED,
+                        0);
 
-    // 8N1
-    toptions.c_cflag &= ~CSTOPB;
-    toptions.c_cflag |= CS8;
-
-    // 8E1
-    // toptions.c_cflag |= PARENB; // enable even parity
-    //
-
-    if (flowcontrol) {
-        // with flow control
-        toptions.c_cflag |= CRTSCTS;
-    } else {
-        // no flow control
-        toptions.c_cflag &= ~CRTSCTS;
-    }
-    
-    toptions.c_cflag |= CREAD | CLOCAL;  // turn on READ & ignore ctrl lines
-    toptions.c_iflag &= ~(IXON | IXOFF | IXANY); // turn off s/w flow ctrl
-    
-    // see: http://unixwiz.net/techtips/termios-vmin-vtime.html
-    toptions.c_cc[VMIN]  = 1;
-    toptions.c_cc[VTIME] = 0;
-    
-    if(tcsetattr(fd, TCSANOW, &toptions) < 0) {
-        log_error("posix_open: Couldn't set term attributes");
+    if (device_name == INVALID_HANDLE_VALUE){
+        log_error("windows_open: Unable to open port %s", device_name);
         return -1;
     }
 
-    // store fd in data source
-    transport_data_source.fd = fd;
-    
+    DCB serial_params;
+    memset(&serial_params, 0, sizeof(DCB));
+    serial_params.DCBlength = sizeof(DCB);
+        
+    int ok = GetCommState(serial_port_handle, &serial_params);
+
+    if (!ok){
+        log_error("windows_open: Couldn't get serial parameters");
+        return -1;
+    }
+
+    // 8-N-1
+    serial_params.ByteSize     = 8; 
+    serial_params.StopBits     = ONESTOPBIT;
+    serial_params.Parity       = NOPARITY;
+
+    // Flowcontrol
+    serial_params.fOutxCtsFlow = flowcontrol;
+    serial_params.fRtsControl  = flowcontrol ? RTS_CONTROL_HANDSHAKE : 0;
+
+    ok = SetCommState(serial_port_handle, &serial_params);
+    if (!ok){
+        log_error("windows_open: Couldn't serial parameters");
+        return -1;
+    }
+
     // also set baudrate
     if (btstack_uart_windows_set_baudrate(baudrate) < 0){
         return -1;
     }
 
-    // set up data_source
-    btstack_run_loop_set_data_source_fd(&transport_data_source, fd);
-#endif
-    btstack_run_loop_set_data_source_handler(&transport_data_source, &btstack_uart_windows_process);
-//    btstack_run_loop_add_data_source(&transport_data_source);
+    // setup overlapped structures for async io
+    memset(&overlapped_read,  0, sizeof(overlapped_read));
+    memset(&overlapped_write, 0, sizeof(overlapped_write));
+    overlapped_read.hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
+    overlapped_write.hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
+
+    // setup read + write data sources
+    transport_data_source_read.handle = overlapped_read.hEvent;
+    transport_data_source_write.handle = overlapped_write.hEvent;
+    btstack_run_loop_set_data_source_handler(&transport_data_source_read,  &btstack_uart_windows_process_read);
+    btstack_run_loop_set_data_source_handler(&transport_data_source_write, &btstack_uart_windows_process_write);
+    btstack_run_loop_add_data_source(&transport_data_source_read);
+    btstack_run_loop_add_data_source(&transport_data_source_write);
 
     return 0;
 } 
@@ -228,13 +344,21 @@ static int btstack_uart_windows_open(void){
 static int btstack_uart_windows_close_new(void){
 
     // first remove run loop handler
-    btstack_run_loop_remove_data_source(&transport_data_source);
+    btstack_run_loop_remove_data_source(&transport_data_source_read);
+    btstack_run_loop_remove_data_source(&transport_data_source_write);
     
-#if 0
-   // then close device 
-    close(transport_data_source.fd);
-    transport_data_source.fd = -1;
-#endif
+    // note: an event cannot be freed while a kernel function is waiting.
+    //       in our single-threaded environment, this cannot happen.
+
+    // free events
+    CloseHandle(overlapped_read.hEvent);
+    CloseHandle(overlapped_write.hEvent); 
+    CloseHandle(serial_port_handle);
+
+    // set pointers to zero
+    overlapped_read.hEvent = NULL;
+    overlapped_write.hEvent = NULL;
+    serial_port_handle = NULL;
     return 0;
 }
 
@@ -244,51 +368,6 @@ static void btstack_uart_windows_set_block_received( void (*block_handler)(void)
 
 static void btstack_uart_windows_set_block_sent( void (*block_handler)(void)){
     block_sent = block_handler;
-}
-
-static int btstack_uart_windows_set_parity(int parity){
-#if 0
-    int fd = transport_data_source.fd;
-
-    struct termios toptions;
-    if (tcgetattr(fd, &toptions) < 0) {
-        log_error("btstack_uart_windows_set_parity: Couldn't get term attributes");
-        return -1;
-    }
-    if (parity){
-        toptions.c_cflag |= PARENB; // enable even parity
-    } else {
-        toptions.c_cflag &= ~PARENB; // enable even parity
-    }
-    if(tcsetattr(fd, TCSANOW, &toptions) < 0) {
-        log_error("posix_set_parity: Couldn't set term attributes");
-        return -1;
-    }
-#endif
-    return 0;
-}
-
-static void btstack_uart_windows_send_block(const uint8_t *data, uint16_t size){
-    // setup async write
-    write_bytes_data = data;
-    write_bytes_len  = size;
-
-#if 0
-    // go
-    // btstack_uart_windows_process_write(&transport_data_source);
-    btstack_run_loop_enable_data_source_callbacks(&transport_data_source, DATA_SOURCE_CALLBACK_WRITE);
-#endif
-}
-
-static void btstack_uart_windows_receive_block(uint8_t *buffer, uint16_t len){
-    read_bytes_data = buffer;
-    read_bytes_len = len;
-    btstack_run_loop_enable_data_source_callbacks(&transport_data_source, DATA_SOURCE_CALLBACK_READ);
-
-#if 0
-    // go
-    // btstack_uart_windows_process_read(&transport_data_source);
-#endif
 }
 
 // static void btstack_uart_windows_set_sleep(uint8_t sleep){
