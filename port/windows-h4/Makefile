@@ -31,6 +31,7 @@ CFLAGS  += -g -Wall -Wmissing-prototypes -Wstrict-prototypes -Wshadow -Werror
 # CFLAGS += -Werror
 
 CFLAGS += -I${BTSTACK_ROOT}/platform/posix \
+		  -I${BTSTACK_ROOT}/platform/windows \
 		  -I${BTSTACK_ROOT}/platform/embedded \
 		  -I$(BTSTACK_ROOT)/chipset/bcm \
 		  -I$(BTSTACK_ROOT)/chipset/cc256x \
@@ -39,9 +40,8 @@ CFLAGS += -I${BTSTACK_ROOT}/platform/posix \
 		  -I$(BTSTACK_ROOT)/chipset/stlc2500d \
 		  -I$(BTSTACK_ROOT)/chipset/tc3566x \
 
-VPATH += ${BTSTACK_ROOT}/platform/embedded
+VPATH += ${BTSTACK_ROOT}/platform/windows
 VPATH += ${BTSTACK_ROOT}/platform/posix
-VPATH += ${BTSTACK_ROOT}/platform/libusb
 
 VPATH += ${BTSTACK_ROOT}/chipset/bcm	
 VPATH += ${BTSTACK_ROOT}/chipset/cc256x
