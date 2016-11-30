@@ -110,19 +110,3 @@ static int getstring(char *line, int size)
     return i;
 }
 
-uint32_t btstack_stdin_query_int(const char * fieldName){
-    printf("Please enter new int value for %s:\n", fieldName);
-    char buffer[80];
-    getstring(buffer, sizeof(buffer));
-    return atoi(buffer);
-}
-
-uint32_t btstack_stdin_query_hex(const char * fieldName){
-    printf("Please enter new hex value for %s:\n", fieldName);
-    char buffer[80];
-    getstring(buffer, sizeof(buffer));
-    uint32_t value;
-    sscanf(buffer, "%x", &value);
-    return value;
-}
-
