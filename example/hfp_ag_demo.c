@@ -335,7 +335,7 @@ static void show_usage(void){
 }
 
 static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type){
-    read(ds->fd, &cmd, 1);
+    cmd = btstack_stdin_read();
     switch (cmd){
         case 'a':
             log_info("USER:\'%c\'", cmd);
