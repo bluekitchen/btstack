@@ -37,6 +37,8 @@
 
 #include <errno.h>
 #include <stdio.h>
+#include <unistd.h>
+
 #include "btstack_run_loop.h"
 #include <stdlib.h>
 
@@ -89,6 +91,7 @@ void btstack_stdin_reset(void){
 #endif
 }
 
+#if 0
 static int getstring(char *line, int size)
 {
     int i = 0;
@@ -108,5 +111,13 @@ static int getstring(char *line, int size)
     }
     line[i] = 0;
     return i;
+}
+#endif
+
+// read single byte after data source callback was triggered
+char btstack_stdin_read(void){
+    char buffer;
+    read(stdin_source.fd, &buffer, 1);
+    return buffer;
 }
 
