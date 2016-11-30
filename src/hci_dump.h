@@ -47,6 +47,7 @@
 #define __HCI_DUMP_H
 
 #include <stdint.h>
+#include <stdarg.h>       // for va_list
 
 #ifdef __AVR__
 #include <avr/pgmspace.h>
@@ -103,6 +104,8 @@ void hci_dump_enable_log_level(int log_level, int enable);
 void hci_dump_close(void);
 
 /* API_END */
+
+void hci_dump_log_va_arg(int log_level, const char * format, va_list argtr);
 
 #ifdef __AVR__
 void hci_dump_log_P(int log_level, PGM_P format, ...);

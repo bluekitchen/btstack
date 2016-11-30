@@ -900,6 +900,10 @@ void hci_release_packet_buffer(void);
 /* API_END */
 
 
+/**
+ * va_list version of hci_send_cmd
+ */
+int hci_send_cmd_va_arg(const hci_cmd_t *cmd, va_list argtr);
 
 /**
  * Get connection iterator. Only used by l2cap.c and sm.c

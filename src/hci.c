@@ -3069,11 +3069,8 @@ void gap_ssp_set_auto_accept(int auto_accept){
 }
 #endif
 
-/**
- * pre: numcmds >= 0 - it's allowed to send a command to the controller
- */
-int hci_send_cmd(const hci_cmd_t *cmd, ...){
-
+// va_list part of hci_send_cmd
+int hci_send_cmd_va_arg(const hci_cmd_t *cmd, va_list argptr){
     if (!hci_can_send_command_packet_now()){ 
         log_error("hci_send_cmd called but cannot send packet now");
         return 0;
@@ -3085,13 +3082,19 @@ int hci_send_cmd(const hci_cmd_t *cmd, ...){
 
     hci_reserve_packet_buffer();
     uint8_t * packet = hci_stack->hci_packet_buffer;
+    uint16_t size = hci_cmd_create_from_template(packet, cmd, argptr);
+    return hci_send_cmd_packet(packet, size);
+}
 
+/**
+ * pre: numcmds >= 0 - it's allowed to send a command to the controller
+ */
+int hci_send_cmd(const hci_cmd_t *cmd, ...){
     va_list argptr;
     va_start(argptr, cmd);
-    uint16_t size = hci_cmd_create_from_template(packet, cmd, argptr);
+    int res = hci_send_cmd_va_arg(cmd, argptr);
     va_end(argptr);
-
-    return hci_send_cmd_packet(packet, size);
+    return res;
 }
 
 // Create various non-HCI events. 
