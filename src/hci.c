@@ -1445,9 +1445,8 @@ static void event_handler(uint8_t *packet, int size){
     switch (hci_event_packet_get_type(packet)) {
                         
         case HCI_EVENT_COMMAND_COMPLETE:
-            // get num cmd packets
-            // log_info("HCI_EVENT_COMMAND_COMPLETE cmds old %u - new %u", hci_stack->num_cmd_packets, packet[2]);
-            hci_stack->num_cmd_packets = packet[2];
+            // get num cmd packets - limit to 1 to reduce complexity
+            hci_stack->num_cmd_packets = packet[2] ? 1 : 0;
 
             if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_read_local_name)){
                 // terminate, name 248 chars
@@ -1545,9 +1544,8 @@ static void event_handler(uint8_t *packet, int size){
             break;
             
         case HCI_EVENT_COMMAND_STATUS:
-            // get num cmd packets
-            // log_info("HCI_EVENT_COMMAND_STATUS cmds - old %u - new %u", hci_stack->num_cmd_packets, packet[3]);
-            hci_stack->num_cmd_packets = packet[3];
+            // get num cmd packets - limit to 1 to reduce complexity
+            hci_stack->num_cmd_packets = packet[3] ? 1 : 0;
             break;
             
         case HCI_EVENT_NUMBER_OF_COMPLETED_PACKETS:{
