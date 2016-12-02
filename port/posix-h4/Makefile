@@ -26,6 +26,9 @@ include ${BTSTACK_ROOT}/example/Makefile.inc
 # fetch and convert TI init scripts
 include ${BTSTACK_ROOT}/chipset/cc256x/Makefile.inc
 
+# fetch Broadcom init scripts
+include ${BTSTACK_ROOT}/chipset/bcm/Makefile.inc
+
 CFLAGS  += -g -Wall -Werror \
 	-I$(BTSTACK_ROOT)/platform/embedded \
 	-I$(BTSTACK_ROOT)/platform/posix \
@@ -62,4 +65,5 @@ endif
 # CFLAGS  += -I/usr/local/include -DHAVE_PORTAUDIO
 # LDFLAGS += -L/sw/lib -lportaudio -Wl,-framework,CoreAudio -Wl,-framework,AudioToolbox -Wl,-framework,AudioUnit -Wl,-framework,Carbon
 
-all: ${EXAMPLES}
+all: BCM43430A1.hcd ${EXAMPLES}
+

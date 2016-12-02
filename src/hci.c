@@ -1445,9 +1445,8 @@ static void event_handler(uint8_t *packet, int size){
     switch (hci_event_packet_get_type(packet)) {
                         
         case HCI_EVENT_COMMAND_COMPLETE:
-            // get num cmd packets
-            // log_info("HCI_EVENT_COMMAND_COMPLETE cmds old %u - new %u", hci_stack->num_cmd_packets, packet[2]);
-            hci_stack->num_cmd_packets = packet[2];
+            // get num cmd packets - limit to 1 to reduce complexity
+            hci_stack->num_cmd_packets = packet[2] ? 1 : 0;
 
             if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_read_local_name)){
                 // terminate, name 248 chars
@@ -1545,9 +1544,8 @@ static void event_handler(uint8_t *packet, int size){
             break;
             
         case HCI_EVENT_COMMAND_STATUS:
-            // get num cmd packets
-            // log_info("HCI_EVENT_COMMAND_STATUS cmds - old %u - new %u", hci_stack->num_cmd_packets, packet[3]);
-            hci_stack->num_cmd_packets = packet[3];
+            // get num cmd packets - limit to 1 to reduce complexity
+            hci_stack->num_cmd_packets = packet[3] ? 1 : 0;
             break;
             
         case HCI_EVENT_NUMBER_OF_COMPLETED_PACKETS:{
@@ -1896,6 +1894,8 @@ static void event_handler(uint8_t *packet, int size){
                     } else {
                         // if we're slave, it was an incoming connection, advertisements have stopped
                         hci_stack->le_advertisements_active = 0;
+                        // try to re-enable them
+                        hci_stack->le_advertisements_todo |= LE_ADVERTISEMENT_TASKS_ENABLE;
                     }
                     // LE connections are auto-accepted, so just create a connection if there isn't one already
                     if (!conn){
@@ -3067,11 +3067,8 @@ void gap_ssp_set_auto_accept(int auto_accept){
 }
 #endif
 
-/**
- * pre: numcmds >= 0 - it's allowed to send a command to the controller
- */
-int hci_send_cmd(const hci_cmd_t *cmd, ...){
-
+// va_list part of hci_send_cmd
+int hci_send_cmd_va_arg(const hci_cmd_t *cmd, va_list argptr){
     if (!hci_can_send_command_packet_now()){ 
         log_error("hci_send_cmd called but cannot send packet now");
         return 0;
@@ -3083,13 +3080,19 @@ int hci_send_cmd(const hci_cmd_t *cmd, ...){
 
     hci_reserve_packet_buffer();
     uint8_t * packet = hci_stack->hci_packet_buffer;
+    uint16_t size = hci_cmd_create_from_template(packet, cmd, argptr);
+    return hci_send_cmd_packet(packet, size);
+}
 
+/**
+ * pre: numcmds >= 0 - it's allowed to send a command to the controller
+ */
+int hci_send_cmd(const hci_cmd_t *cmd, ...){
     va_list argptr;
     va_start(argptr, cmd);
-    uint16_t size = hci_cmd_create_from_template(packet, cmd, argptr);
+    int res = hci_send_cmd_va_arg(cmd, argptr);
     va_end(argptr);
-
-    return hci_send_cmd_packet(packet, size);
+    return res;
 }
 
 // Create various non-HCI events. 

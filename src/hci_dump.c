@@ -62,7 +62,6 @@
 #include <time.h>
 #include <sys/time.h>     // for timestamps
 #include <sys/stat.h>     // for mode flags
-#include <stdarg.h>       // for va_list
 #endif
 
 // BLUEZ hcidump - struct not used directly, but left here as documentation
@@ -265,19 +264,24 @@ static int hci_dump_log_level_active(int log_level){
     return log_level_enabled[log_level];
 }
 
+void hci_dump_log_va_arg(int log_level, const char * format, va_list argptr){
+    if (hci_dump_log_level_active(log_level)) {
+#ifdef HAVE_POSIX_FILE_IO
+        int len = vsnprintf(log_message_buffer, sizeof(log_message_buffer), format, argptr);
+        hci_dump_packet(LOG_MESSAGE_PACKET, 0, (uint8_t*) log_message_buffer, len);
+#else
+        printf_timestamp();
+        printf("LOG -- ");
+        vprintf(format, argptr);
+        printf("\n");
+#endif
+    }
+}
+
 void hci_dump_log(int log_level, const char * format, ...){
-    if (!hci_dump_log_level_active(log_level)) return;
     va_list argptr;
     va_start(argptr, format);
-#ifdef HAVE_POSIX_FILE_IO
-    int len = vsnprintf(log_message_buffer, sizeof(log_message_buffer), format, argptr);
-    hci_dump_packet(LOG_MESSAGE_PACKET, 0, (uint8_t*) log_message_buffer, len);
-#else
-    printf_timestamp();
-    printf("LOG -- ");
-    vprintf(format, argptr);
-    printf("\n");
-#endif
+    hci_dump_log_va_arg(log_level, format, argptr);
     va_end(argptr);
 }
 

@@ -2,8 +2,18 @@
 
 ZEPHYR_BASE=../../..
 
-echo "Adding BTstack sources as subsys/btstack"
+echo "Integrating BTstack into Zephyr"
 
+if grep -q -F "NRF_FICR->DEVICEADDR" ${ZEPHYR_BASE}/samples/bluetooth/hci_uart/src/main.c; then
+	echo "HCI Firmware patch already installed"
+else
+	# assert files don't exist since patch would get irritated
+	echo "Applying HCI Firmware patch"
+	rm -f ${ZEPHYR_BASE}/samples/bluetooth/hci_uart/flash*
+	cat hci_firmware.patch | patch -d ${ZEPHYR_BASE} -p1
+fi
+
+echo "Adding subsys/btstack"
 
 # add btstack folder to subsys/Makefile
 MAKEFILE_ADD_ON='obj-$(CONFIG_BTSTACK) += btstack/'
@@ -22,14 +32,9 @@ sed -i "s|CONTROLLER. += hci/hci_driver.o|CONTROLLER_DISABLED_BY_BTSTACK) += hci
 SUBSYS_BLUETOOTH_HOST_MAKEFILE=${ZEPHYR_BASE}/subsys/bluetooth/host/Makefile
 sed -i "s|CONFIG_BLUETOOTH_STACK_HCI_RAW|CONFIG_BLUETOOTH_STACK_HCI_RAW_DISABLED_BY_BTSTACK|g" ${SUBSYS_BLUETOOTH_HOST_MAKEFILE}
 
-# add BTstack KConfig to net/Kconfig
+# add BTstack KConfig to subsys/Kconfig
 SUBSYS_KCONFIG=${ZEPHYR_BASE}/subsys/Kconfig
 grep -q -F btstack ${SUBSYS_KCONFIG} || echo 'source "subsys/btstack/Kconfig"' >> ${SUBSYS_KCONFIG}
-
-# set Nordic Semiconductor as manufacturer
-CTRL_H=${ZEPHYR_BASE}/subsys/bluetooth/controller/ll/ctrl.h
-sed -i "s|#define RADIO_BLE_COMPANY_ID.*0xFFFF.|#define RADIO_BLE_COMPANY_ID (0x0059) // Nordic Semiconductor ASA|g" ${CTRL_H}
-
 
 # diet - no idle thread, no IRQ stack
 KERNEL_INIT=${ZEPHYR_BASE}/kernel/unified/init.c
