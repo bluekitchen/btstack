@@ -311,26 +311,26 @@ void hal_cpu_enable_irqs_and_sleep(void){
 
 static void btstack_run_loop_zephyr_execute_once(void) {
 
-    // process RX fifo only
+    // process ready
+    while (1){
+        // get 
+        int done = hci_driver_task_step();
+        if (done) break;
+        // deliver
+        struct net_buf *buf = net_buf_get_timeout(&rx_queue, 0, TICKS_NONE);
+        if (buf) {
+            transport_deliver_controller_packet(buf);
+        }
+    }
+
+    // process left overs
     while (1){
         struct net_buf *buf = net_buf_get_timeout(&rx_queue, 0, TICKS_NONE);
         if (!buf) break;
         transport_deliver_controller_packet(buf);
     }
 
-    // process ready
-    while (1){
-        int done = hci_driver_task_step();
-        if (done) break;
-    }
-
-#ifdef HAVE_EMBEDDED_TICK
     uint32_t now = sys_tick_get_32();
-#endif
-#ifdef HAVE_EMBEDDED_TIME_MS
-    uint32_t now = hal_time_ms();
-#endif
-#ifdef TIMER_SUPPORT
     // process timers
     while (timers) {
         btstack_timer_source_t *ts = (btstack_timer_source_t *) timers;
@@ -338,7 +338,6 @@ static void btstack_run_loop_zephyr_execute_once(void) {
         btstack_run_loop_remove_timer(ts);
         ts->process(ts);
     }
-#endif
 
     // disable IRQs and check if run loop iteration has been requested. if not, go to sleep
     hal_cpu_disable_irqs();

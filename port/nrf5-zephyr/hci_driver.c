@@ -172,8 +172,7 @@ void hci_driver_emit_num_completed(uint16_t handle, uint16_t num_completed){
 	struct net_buf * buf = bt_buf_get_evt(BT_HCI_EVT_NUM_COMPLETED_PACKETS);
 	if (buf) {
 		hci_num_cmplt_encode(buf, handle, num_completed);
-		BT_DBG("Num Complete: 0x%04x:%u", handle,
-						  num_completed);
+		BT_DBG("Num Complete: 0x%04x:%u", handle, num_completed);
 		bt_recv(buf);
 	} else {
 		BT_ERR("Cannot allocate Num Complete");

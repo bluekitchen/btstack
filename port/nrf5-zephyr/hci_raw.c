@@ -28,7 +28,7 @@ static struct nano_fifo *raw_rx;
 
 /* ACL incoming buffers */
 static struct nano_fifo avail_acl_in;
-static NET_BUF_POOL(acl_in_pool, CONFIG_BLUETOOTH_ACL_IN_COUNT,
+static NET_BUF_POOL(acl_in_pool, 1,
 		    BT_BUF_ACL_IN_SIZE, &avail_acl_in, NULL,
 		    sizeof(uint8_t));
 
