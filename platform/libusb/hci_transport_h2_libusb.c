@@ -236,8 +236,8 @@ static void queue_transfer(struct libusb_transfer *transfer){
 
 LIBUSB_CALL static void async_callback(struct libusb_transfer *transfer){
     // identify and free transfers as part of shutdown
+    int c;
     if (libusb_state != LIB_USB_TRANSFERS_ALLOCATED) {
-        int c;
         for (c=0;c<ASYNC_BUFFERS;c++){
             if (transfer == event_in_transfer[c]){
                 libusb_free_transfer(transfer);
@@ -272,7 +272,7 @@ LIBUSB_CALL static void async_callback(struct libusb_transfer *transfer){
         return;
     }
 
-    for (int c=0;c<SCO_RING_BUFFER_COUNT;c++){
+    for (c=0;c<SCO_RING_BUFFER_COUNT;c++){
         if (transfer == sco_ring_transfers[c]){
             sco_ring_transfers_in_flight[c] = 0;
         }
@@ -426,7 +426,8 @@ static void handle_completed_transfer(struct libusb_transfer *transfer){
         }
         resubmit = 1;
     } else if (transfer->endpoint == sco_out_addr){
-        for (int i = 0; i < transfer->num_iso_packets; i++) {
+        int i;
+        for (i = 0; i < transfer->num_iso_packets; i++) {
             struct libusb_iso_packet_descriptor *pack = &transfer->iso_packet_desc[i];
             if (pack->status != LIBUSB_TRANSFER_COMPLETED) {
                 log_error("Error: pack %u status %d\n", i, pack->status);
