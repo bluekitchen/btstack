@@ -12,6 +12,8 @@
 #define ENABLE_LOG_INFO
 #define ENABLE_LOG_ERROR
 
+#define HAVE_EMBEDDED_TICK
+
 // BTstack configuration. buffers, sizes, ...
 #define HCI_ACL_PAYLOAD_SIZE 52
 #define MAX_NR_WHITELIST_ENTRIES 1

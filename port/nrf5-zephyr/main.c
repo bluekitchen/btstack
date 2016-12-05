@@ -296,39 +296,60 @@ static void btstack_run_loop_zephyr_dump_timer(void){
 // private in hci_driver.c
 void hci_driver_task(void);
 
+#include "hal_cpu.h"
+// assumption: hal_cpu_disable_irqs isn't called recursively
+static unsigned int hal_cpu_key;
+void hal_cpu_disable_irqs(void){
+    hal_cpu_key = irq_lock();
+}
+void hal_cpu_enable_irqs(void){
+    irq_unlock(hal_cpu_key);
+}
+void hal_cpu_enable_irqs_and_sleep(void){
+   nano_cpu_atomic_idle(hal_cpu_key);
+}
+
+static void btstack_run_loop_zephyr_execute_once(void) {
+
+    // process RX fifo only
+    while (1){
+        struct net_buf *buf = net_buf_get_timeout(&rx_queue, 0, TICKS_NONE);
+        if (!buf) break;
+        transport_deliver_controller_packet(buf);
+    }
+
+    // process ready
+    hci_driver_task();
+
+#ifdef HAVE_EMBEDDED_TICK
+    uint32_t now = sys_tick_get_32();
+#endif
+#ifdef HAVE_EMBEDDED_TIME_MS
+    uint32_t now = hal_time_ms();
+#endif
+#ifdef TIMER_SUPPORT
+    // process timers
+    while (timers) {
+        btstack_timer_source_t *ts = (btstack_timer_source_t *) timers;
+        if (ts->timeout > now) break;
+        btstack_run_loop_remove_timer(ts);
+        ts->process(ts);
+    }
+#endif
+
+    // disable IRQs and check if run loop iteration has been requested. if not, go to sleep
+    hal_cpu_disable_irqs();
+    if (trigger_event_received){
+        trigger_event_received = 0;
+        hal_cpu_enable_irqs();
+    } else {
+        hal_cpu_enable_irqs_and_sleep();
+    }
+}
+
 static void btstack_run_loop_zephyr_execute(void) {
     while (1) {
-
-        // process RX fifo only
-        while (1){
-            struct net_buf *buf = net_buf_get_timeout(&rx_queue, 0, TICKS_NONE);
-            if (!buf) break;
-            transport_deliver_controller_packet(buf);
-        }
-
-        // process ready
-        hci_driver_task();
-
-        // get next timeout
-        int32_t timeout_ms = K_FOREVER;
-        if (timers) {
-            btstack_timer_source_t * ts = (btstack_timer_source_t *) timers;
-            uint32_t now = sys_tick_get_32();
-            if (ts->timeout < now){
-                // remove timer before processing it to allow handler to re-register with run loop
-                btstack_run_loop_remove_timer(ts);
-                ts->process(ts);
-                continue;
-            }
-            timeout_ms = (ts->timeout - now) * sys_clock_ms_per_tick;
-        }
-
-        unsigned int key = irq_lock();
-        if (trigger_event_received){
-            irq_unlock(key);
-        } else {
-            nano_cpu_atomic_idle(key);
-        }
+        btstack_run_loop_zephyr_execute_once();
 	}
 }
 
