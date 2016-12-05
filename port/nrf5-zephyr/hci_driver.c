@@ -68,9 +68,12 @@ static uint8_t ALIGNED(4) _radio[LL_MEM_TOTAL];
 
 // BTstack: make public
 struct k_sem hci_driver_sem_recv;
+typedef struct {
+    unsigned int count;    
+} btstack_sem_t;
 
-void btstack_sem_init(struct k_sem *sem, unsigned int initial_count, unsigned int limit);
-void btstack_sem_give(struct k_sem *sem);
+void btstack_sem_init(btstack_sem_t *sem, unsigned int initial_count, unsigned int limit);
+void btstack_sem_give(btstack_sem_t *sem);
 
 void radio_active_callback(uint8_t active)
 {
