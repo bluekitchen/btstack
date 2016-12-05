@@ -67,13 +67,7 @@ static uint8_t ALIGNED(4) _ticker_user_ops[RADIO_TICKER_USER_OPS]
 static uint8_t ALIGNED(4) _radio[LL_MEM_TOTAL];
 
 // BTstack: make public
-typedef struct {
-    unsigned int count;    
-} btstack_sem_t;
-btstack_sem_t hci_driver_sem_recv;
-
-void btstack_sem_init(btstack_sem_t *sem, unsigned int initial_count, unsigned int limit);
-void btstack_sem_give(btstack_sem_t *sem);
+void btstack_run_loop_embedded_trigger(void);
 
 void radio_active_callback(uint8_t active)
 {
@@ -81,7 +75,7 @@ void radio_active_callback(uint8_t active)
 
 void radio_event_callback(void)
 {
-	btstack_sem_give(&hci_driver_sem_recv);
+	btstack_run_loop_embedded_trigger();
 }
 
 static void radio_nrf5_isr(void *arg)
@@ -320,8 +314,6 @@ static int hci_driver_open(void)
 	irq_enable(NRF5_IRQ_RNG_IRQn);
 	irq_enable(NRF5_IRQ_SWI4_IRQn);
 	irq_enable(NRF5_IRQ_SWI5_IRQn);
-
-	btstack_sem_init(&hci_driver_sem_recv, 0, UINT_MAX);
 
 	BT_DBG("Success.");
 

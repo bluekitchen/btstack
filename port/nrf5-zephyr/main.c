@@ -84,34 +84,13 @@ static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 static void (*transport_packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size);
 
-//
-// temp reimplementation of zephyr primitives
-// assumptions: sem->count does not overrun, no thread is waiting on semaphore, time
-typedef struct {
-    unsigned int count;    
-} btstack_sem_t;
+static volatile int trigger_event_received = 0;
 
-void btstack_sem_init(btstack_sem_t *sem, unsigned int initial_count, unsigned int limit){
-    __ASSERT(limit != 0, "limit cannot be zero");
-    sem->count = initial_count;
-}
-
-void btstack_sem_give(btstack_sem_t *sem){
-    unsigned int key = irq_lock();
-    sem->count++;
-    irq_unlock(key);
-}
-
-int btstack_sem_take(btstack_sem_t *sem, int32_t timeout){
-    __ASSERT(!_is_in_isr() || timeout == K_NO_WAIT, "");
-    unsigned int key = irq_lock();
-    int result = -EBUSY;
-    if (sem->count > 0){
-        sem->count--;
-        result = 0;
-    }
-    irq_unlock(key);
-    return result;
+/**
+ * trigger run loop iteration
+ */
+void btstack_run_loop_embedded_trigger(void){
+    trigger_event_received = 1;
 }
 
 //
@@ -316,7 +295,6 @@ static void btstack_run_loop_zephyr_dump_timer(void){
 
 // private in hci_driver.c
 void hci_driver_task(void);
-btstack_sem_t hci_driver_sem_recv;
 
 static void btstack_run_loop_zephyr_execute(void) {
     while (1) {
@@ -327,6 +305,9 @@ static void btstack_run_loop_zephyr_execute(void) {
             if (!buf) break;
             transport_deliver_controller_packet(buf);
         }
+
+        // process ready
+        hci_driver_task();
 
         // get next timeout
         int32_t timeout_ms = K_FOREVER;
@@ -342,18 +323,9 @@ static void btstack_run_loop_zephyr_execute(void) {
             timeout_ms = (ts->timeout - now) * sys_clock_ms_per_tick;
         }
 
-#if 1
-        // avoid task switching!
-        timeout_ms = K_NO_WAIT;
-#endif
-
         unsigned int key = irq_lock();
-
-        // check radio rx task
-        if (hci_driver_sem_recv.count){
-            hci_driver_sem_recv.count--;
+        if (trigger_event_received){
             irq_unlock(key);
-            hci_driver_task();
         } else {
             nano_cpu_atomic_idle(key);
         }
