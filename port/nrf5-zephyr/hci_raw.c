@@ -26,12 +26,6 @@
 
 static struct nano_fifo *raw_rx;
 
-/* ACL incoming buffers */
-static struct nano_fifo avail_acl_in;
-static NET_BUF_POOL(acl_in_pool, 1,
-		    BT_BUF_ACL_IN_SIZE, &avail_acl_in, NULL,
-		    sizeof(uint8_t));
-
 /* HCI event buffers */
 static struct nano_fifo avail_hci_evt;
 static NET_BUF_POOL(hci_evt_pool, CONFIG_BLUETOOTH_HCI_EVT_COUNT,
@@ -80,18 +74,6 @@ struct net_buf *bt_buf_get_evt(uint8_t opcode)
 	return buf;
 }
 
-struct net_buf *bt_buf_get_acl(void)
-{
-	struct net_buf *buf;
-
-	buf = net_buf_get(&avail_acl_in, 0);
-	if (buf) {
-		bt_buf_set_type(buf, BT_BUF_ACL_IN);
-	}
-
-	return buf;
-}
-
 int bt_recv(struct net_buf *buf)
 {
 	BT_DBG("buf %p len %u", buf, buf->len);
@@ -121,7 +103,6 @@ int bt_enable_raw(struct nano_fifo *rx_queue)
 	BT_DBG("");
 
 	net_buf_pool_init(hci_evt_pool);
-	net_buf_pool_init(acl_in_pool);
 
 	raw_rx = rx_queue;
 

@@ -293,8 +293,6 @@ static void btstack_run_loop_zephyr_dump_timer(void){
  * Execute run_loop
  */
 
-// private in hci_driver.c
-int hci_driver_task_step(void);
 
 #include "hal_cpu.h"
 // assumption: hal_cpu_disable_irqs isn't called recursively
@@ -309,12 +307,22 @@ void hal_cpu_enable_irqs_and_sleep(void){
    nano_cpu_atomic_idle(hal_cpu_key);
 }
 
+// private in hci_driver.c
+int hci_driver_task_step(uint8_t * packet_type, uint8_t * packet_buffer, uint16_t * packet_size);
+static uint8_t hci_rx_buffer[60];
+
 static void btstack_run_loop_zephyr_execute_once(void) {
 
     // process ready
     while (1){
         // get 
-        int done = hci_driver_task_step();
+        uint8_t packet_type  = 0;
+        uint16_t packet_size = 0;
+        int done = hci_driver_task_step(&packet_type, hci_rx_buffer, &packet_size);
+        if (packet_size){
+            transport_packet_handler(packet_type, hci_rx_buffer, packet_size);
+            continue;
+        }
         if (done) break;
         // deliver
         struct net_buf *buf = net_buf_get_timeout(&rx_queue, 0, TICKS_NONE);

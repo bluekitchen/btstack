@@ -49,6 +49,8 @@
 
 #include "hal/debug.h"
 
+#include "bluetooth.h"
+
 #if !defined(CONFIG_BLUETOOTH_DEBUG_HCI_DRIVER)
 #undef BT_DBG
 #define BT_DBG(fmt, ...)
@@ -123,10 +125,50 @@ static void swi5_nrf5_isr(void *arg)
 	work_run(NRF5_IRQ_SWI5_IRQn);
 }
 
-static void recv_task_a(struct radio_pdu_node_rx *node_rx){
+// from subsys/bluetooth/controller/hci/hci.c
+void hci_acl_encode_btstack(struct radio_pdu_node_rx *node_rx, uint8_t * packet_buffer, uint16_t * packet_size)
+{
+	struct bt_hci_acl_hdr *acl;
+	struct pdu_data *pdu_data;
+	uint16_t handle_flags;
+	uint16_t handle;
+	uint8_t *data;
+
+	uint16_t offset = 0;
+
+	pdu_data = (struct pdu_data *)node_rx->pdu_data;
+	handle = node_rx->hdr.handle;
+
+	switch (pdu_data->ll_id) {
+	case PDU_DATA_LLID_DATA_CONTINUE:
+	case PDU_DATA_LLID_DATA_START:
+		if (pdu_data->ll_id == PDU_DATA_LLID_DATA_START) {
+			handle_flags = bt_acl_handle_pack(handle, BT_ACL_START);
+		} else {
+			handle_flags = bt_acl_handle_pack(handle, BT_ACL_CONT);
+		}
+		acl = (struct bt_hci_acl_hdr*) packet_buffer;
+		acl->handle = sys_cpu_to_le16(handle_flags);
+		acl->len = sys_cpu_to_le16(pdu_data->len);	
+		offset += sizeof(*acl);
+
+		data = &packet_buffer[offset];
+		memcpy(data, &pdu_data->payload.lldata[0], pdu_data->len);
+		offset += pdu_data->len;
+		break;
+
+	default:
+		LL_ASSERT(0);
+		break;
+	}
+	*packet_size = offset;
+}
+
+
+static void recv_task_a(struct radio_pdu_node_rx *node_rx, uint8_t * packet_buffer, uint16_t * packet_size){
 
 	struct pdu_data * pdu_data;
-	struct net_buf  * buf;
+	struct net_buf  * buf = NULL;
 
 	pdu_data = (void *)node_rx->pdu_data;
 	/* Check if we need to generate an HCI event or ACL
@@ -143,12 +185,7 @@ static void recv_task_a(struct radio_pdu_node_rx *node_rx){
 		}
 	} else {
 		/* generate ACL data */
-		buf = bt_buf_get_acl();
-		if (buf) {
-			hci_acl_encode(node_rx, buf);
-		} else {
-			BT_ERR("Cannot allocate RX ACL");
-		}
+		hci_acl_encode_btstack(node_rx, packet_buffer, packet_size);
 	}
 
 	if (buf) {
@@ -180,7 +217,7 @@ void hci_driver_emit_num_completed(uint16_t handle, uint16_t num_completed){
 }
 
 // returns 1 if done
-int hci_driver_task_step(void){
+int hci_driver_task_step(uint8_t * packet_type, uint8_t * packet_buffer, uint16_t * packet_size){
 	uint16_t handle;
 	struct radio_pdu_node_rx *node_rx;
 
@@ -193,7 +230,8 @@ int hci_driver_task_step(void){
 	}
 
 	if (node_rx) {
-		recv_task_a(node_rx);
+		recv_task_a(node_rx, packet_buffer, packet_size);
+		*packet_type = HCI_ACL_DATA_PACKET;
 		return 0;
 	}
 
