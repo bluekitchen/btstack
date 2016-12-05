@@ -84,6 +84,35 @@ static btstack_packet_callback_registration_t hci_event_callback_registration;
 static void (*transport_packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size);
 
 //
+// temp reimplementation of zephyr primitives
+// assumptions: sem->count does not overrun, no thread is waiting on semaphore, time
+ 
+void btstack_sem_init(struct k_sem *sem, unsigned int initial_count, unsigned int limit){
+    __ASSERT(limit != 0, "limit cannot be zero");
+    sem->count = initial_count;
+    sem->limit = limit;
+    sys_dlist_init(&sem->wait_q);
+}
+
+void btstack_sem_give(struct k_sem *sem){
+    unsigned int key = irq_lock();
+    sem->count++;
+    irq_unlock(key);
+}
+
+int btstack_sem_take(struct k_sem *sem, int32_t timeout){
+    __ASSERT(!_is_in_isr() || timeout == K_NO_WAIT, "");
+    unsigned int key = irq_lock();
+    int result = -EBUSY;
+    if (sem->count > 0){
+        sem->count--;
+        result = 0;
+    }
+    irq_unlock(key);
+    return result;
+}
+
+//
 // hci_transport_zephyr.c
 //
 
@@ -317,8 +346,9 @@ static void btstack_run_loop_zephyr_execute(void) {
 #endif
 
         // no timer ready, no data in the RX queue, let's wait for some radio action or the next timer
-        int err = k_sem_take(&hci_driver_sem_recv, timeout_ms);
+        int err = btstack_sem_take(&hci_driver_sem_recv, timeout_ms);
         if (err == 0){
+            printf("RUN LOOP: call driver task\n");
             hci_driver_task();
         }
 	}

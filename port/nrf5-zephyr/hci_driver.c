@@ -69,13 +69,16 @@ static uint8_t ALIGNED(4) _radio[LL_MEM_TOTAL];
 // BTstack: make public
 struct k_sem hci_driver_sem_recv;
 
+void btstack_sem_init(struct k_sem *sem, unsigned int initial_count, unsigned int limit);
+void btstack_sem_give(struct k_sem *sem);
+
 void radio_active_callback(uint8_t active)
 {
 }
 
 void radio_event_callback(void)
 {
-	k_sem_give(&hci_driver_sem_recv);
+	btstack_sem_give(&hci_driver_sem_recv);
 }
 
 static void radio_nrf5_isr(void *arg)
@@ -320,7 +323,7 @@ static int hci_driver_open(void)
 	irq_enable(NRF5_IRQ_SWI4_IRQn);
 	irq_enable(NRF5_IRQ_SWI5_IRQn);
 
-	k_sem_init(&hci_driver_sem_recv, 0, UINT_MAX);
+	btstack_sem_init(&hci_driver_sem_recv, 0, UINT_MAX);
 
 	BT_DBG("Success.");
 
