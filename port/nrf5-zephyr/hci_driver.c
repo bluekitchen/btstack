@@ -67,10 +67,10 @@ static uint8_t ALIGNED(4) _ticker_user_ops[RADIO_TICKER_USER_OPS]
 static uint8_t ALIGNED(4) _radio[LL_MEM_TOTAL];
 
 // BTstack: make public
-struct k_sem hci_driver_sem_recv;
 typedef struct {
     unsigned int count;    
 } btstack_sem_t;
+btstack_sem_t hci_driver_sem_recv;
 
 void btstack_sem_init(btstack_sem_t *sem, unsigned int initial_count, unsigned int limit);
 void btstack_sem_give(btstack_sem_t *sem);
@@ -129,7 +129,7 @@ static void swi5_nrf5_isr(void *arg)
 	work_run(NRF5_IRQ_SWI5_IRQn);
 }
 
-static void recv_fiber_task_a(struct radio_pdu_node_rx *node_rx){
+static void recv_task_a(struct radio_pdu_node_rx *node_rx){
 
 	struct pdu_data * pdu_data;
 	struct net_buf  * buf;
@@ -191,15 +191,10 @@ void hci_driver_task(void){
 			} else {
 				BT_ERR("Cannot allocate Num Complete");
 			}
-
-			// fiber_yield();
 		}
 
 		if (node_rx) {
-
-			recv_fiber_task_a(node_rx);
-
-			// fiber_yield();
+			recv_task_a(node_rx);
 		} else {
 			break;
 		}

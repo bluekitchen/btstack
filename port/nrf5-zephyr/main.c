@@ -59,6 +59,7 @@
 #include <sys_clock.h>
 #include <uart.h>
 #include <zephyr.h>
+#include <kernel_structs.h>
 
 // Bluetooth Controller
 #include "ll.h"
@@ -315,7 +316,7 @@ static void btstack_run_loop_zephyr_dump_timer(void){
 
 // private in hci_driver.c
 void hci_driver_task(void);
-struct k_sem hci_driver_sem_recv;
+btstack_sem_t hci_driver_sem_recv;
 
 static void btstack_run_loop_zephyr_execute(void) {
     while (1) {
@@ -346,11 +347,15 @@ static void btstack_run_loop_zephyr_execute(void) {
         timeout_ms = K_NO_WAIT;
 #endif
 
-        // no timer ready, no data in the RX queue, let's wait for some radio action or the next timer
-        int err = btstack_sem_take(&hci_driver_sem_recv, timeout_ms);
-        if (err == 0){
-            // printf("RUN LOOP: call driver task\n");
+        unsigned int key = irq_lock();
+
+        // check radio rx task
+        if (hci_driver_sem_recv.count){
+            hci_driver_sem_recv.count--;
+            irq_unlock(key);
             hci_driver_task();
+        } else {
+            nano_cpu_atomic_idle(key);
         }
 	}
 }
