@@ -168,31 +168,37 @@ static void recv_task_a(struct radio_pdu_node_rx *node_rx){
 }
 
 // BTstack: make public
-void hci_driver_task(void){
-	while (1){
-		struct radio_pdu_node_rx *node_rx;
-		uint8_t num_cmplt;
-		uint16_t handle;
-
-		while ((num_cmplt = radio_rx_get(&node_rx, &handle))) {
-
-			struct net_buf * buf = bt_buf_get_evt(BT_HCI_EVT_NUM_COMPLETED_PACKETS);
-			if (buf) {
-				hci_num_cmplt_encode(buf, handle, num_cmplt);
-				BT_DBG("Num Complete: 0x%04x:%u", handle,
-								  num_cmplt);
-				bt_recv(buf);
-			} else {
-				BT_ERR("Cannot allocate Num Complete");
-			}
-		}
-
-		if (node_rx) {
-			recv_task_a(node_rx);
-		} else {
-			break;
-		}
+void hci_driver_emit_num_completed(uint16_t handle, uint16_t num_completed){
+	struct net_buf * buf = bt_buf_get_evt(BT_HCI_EVT_NUM_COMPLETED_PACKETS);
+	if (buf) {
+		hci_num_cmplt_encode(buf, handle, num_completed);
+		BT_DBG("Num Complete: 0x%04x:%u", handle,
+						  num_completed);
+		bt_recv(buf);
+	} else {
+		BT_ERR("Cannot allocate Num Complete");
 	}
+}
+
+// returns 1 if done
+int hci_driver_task_step(void){
+	uint16_t handle;
+	struct radio_pdu_node_rx *node_rx;
+
+	// if num_completed != 0 => node_rx == null
+	uint8_t num_completed = radio_rx_get(&node_rx, &handle);
+
+	if (num_completed){
+		hci_driver_emit_num_completed(handle,num_completed);
+		return 0;
+	}
+
+	if (node_rx) {
+		recv_task_a(node_rx);
+		return 0;
+	}
+
+	return 1;
 }
 
 static int cmd_handle(struct net_buf *buf)

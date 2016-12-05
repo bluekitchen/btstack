@@ -294,7 +294,7 @@ static void btstack_run_loop_zephyr_dump_timer(void){
  */
 
 // private in hci_driver.c
-void hci_driver_task(void);
+int hci_driver_task_step(void);
 
 #include "hal_cpu.h"
 // assumption: hal_cpu_disable_irqs isn't called recursively
@@ -319,7 +319,10 @@ static void btstack_run_loop_zephyr_execute_once(void) {
     }
 
     // process ready
-    hci_driver_task();
+    while (1){
+        int done = hci_driver_task_step();
+        if (done) break;
+    }
 
 #ifdef HAVE_EMBEDDED_TICK
     uint32_t now = sys_tick_get_32();
