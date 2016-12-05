@@ -78,8 +78,13 @@ for file in os.listdir(examples_embedded):
         os.makedirs(apps_folder)
 
     # copy files
-    for item in ['nrf5.conf', 'flash_nrf51_pca10028.sh', 'flash_nrf52_pca10040.sh', 'Makefile']:
+    scripts = ['flash_nrf51_pca10028.sh', 'flash_nrf52_pca10040.sh']
+    for item in ['nrf5.conf','Makefile'] + scripts:
         shutil.copyfile(script_path + '/' + item, apps_folder + '/' + item)
+
+    # make executable
+    for item in scripts:
+        os.chmod(apps_folder + '/' + item, 0755)
 
     # create src folder
     src_folder = apps_folder + "src/"
