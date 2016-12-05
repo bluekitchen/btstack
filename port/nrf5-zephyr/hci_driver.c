@@ -186,14 +186,14 @@ void hci_driver_task(void){
 				BT_ERR("Cannot allocate Num Complete");
 			}
 
-			fiber_yield();
+			// fiber_yield();
 		}
 
 		if (node_rx) {
 
 			recv_fiber_task_a(node_rx);
 
-			fiber_yield();
+			// fiber_yield();
 		} else {
 			break;
 		}
