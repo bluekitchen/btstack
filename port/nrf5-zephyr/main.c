@@ -100,20 +100,12 @@ void btstack_run_loop_embedded_trigger(void){
     trigger_event_received = 1;
 }
 
+#define BT_L2CAP_MTU 64
+
 //
 // hci_transport_zephyr.c
 //
-
-/* HCI command buffers */
-#define CMD_BUF_SIZE (CONFIG_BLUETOOTH_HCI_SEND_RESERVE + \
-		      sizeof(struct bt_hci_cmd_hdr) + \
-		      CONFIG_BLUETOOTH_MAX_CMD_LEN)
-
-static struct nano_fifo avail_cmd_tx;
-static NET_BUF_POOL(cmd_tx_pool, CONFIG_BLUETOOTH_HCI_CMD_COUNT, CMD_BUF_SIZE,
-		    &avail_cmd_tx, NULL, BT_BUF_USER_DATA_MIN);
-
-#define BT_L2CAP_MTU 64
+#if 1
 /** Data size needed for ACL buffers */
 #define BT_BUF_ACL_SIZE (CONFIG_BLUETOOTH_HCI_RECV_RESERVE + \
 			 sizeof(struct bt_hci_acl_hdr) + \
@@ -123,7 +115,7 @@ static NET_BUF_POOL(cmd_tx_pool, CONFIG_BLUETOOTH_HCI_CMD_COUNT, CMD_BUF_SIZE,
 static struct nano_fifo avail_acl_tx;
 static NET_BUF_POOL(acl_tx_pool, CONFIG_BLUETOOTH_CONTROLLER_TX_BUFFERS,
 		    BT_BUF_ACL_SIZE, &avail_acl_tx, NULL, BT_BUF_USER_DATA_MIN);
-
+#endif
 // static struct nano_fifo tx_queue;
 
 /**
@@ -132,11 +124,7 @@ static NET_BUF_POOL(acl_tx_pool, CONFIG_BLUETOOTH_CONTROLLER_TX_BUFFERS,
  */
 static void transport_init(const void *transport_config){
 	/* Initialize the buffer pools */
-	net_buf_pool_init(cmd_tx_pool);
 	net_buf_pool_init(acl_tx_pool);
-
-	/* Initialize the FIFOs */
-	// nano_fifo_init(&tx_queue);
 
 	/* startup Controller */
 	bt_enable_raw(NULL);
