@@ -82,6 +82,7 @@
 
 // temp
 #include "zephyr_diet.h"
+int hci_driver_open(void);
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
@@ -106,7 +107,8 @@ void btstack_run_loop_embedded_trigger(void){
  */
 static void transport_init(const void *transport_config){
 	/* startup Controller */
-	bt_enable_raw(NULL);
+	// bt_enable_raw(NULL);
+    hci_driver_open();
 }
 
 /**

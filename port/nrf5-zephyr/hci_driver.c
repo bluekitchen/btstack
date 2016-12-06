@@ -250,7 +250,7 @@ static int hci_driver_send(struct net_buf *buf){
 	return -EINVAL;
 }
 
-static int hci_driver_open(void)
+int hci_driver_open(void)
 {
 	struct device *clk_k32;
 	struct device *clk_m16;
@@ -313,21 +313,3 @@ static int hci_driver_open(void)
 
 	return 0;
 }
-
-static struct bt_hci_driver drv = {
-	.name	= "Controller",
-	.bus	= BT_HCI_DRIVER_BUS_VIRTUAL,
-	.open	= hci_driver_open,
-	.send	= hci_driver_send,
-};
-
-static int _hci_driver_init(struct device *unused)
-{
-	ARG_UNUSED(unused);
-
-	bt_hci_driver_register(&drv);
-
-	return 0;
-}
-
-SYS_INIT(_hci_driver_init, NANOKERNEL, CONFIG_KERNEL_INIT_PRIORITY_DEVICE);
