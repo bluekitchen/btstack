@@ -25,8 +25,10 @@ SUBSYS_BLUETOOTH_MAKEFILE=${ZEPHYR_BASE}/subsys/bluetooth/Makefile
 sed -i "s|CONFIG_BLUETOOTH_HCI|CONFIG_DISABLED_BY_BTSTACK_BLUETOOTH_HCI|g" ${SUBSYS_BLUETOOTH_MAKEFILE}
 
 # remove subsys/bluetooth/controller/hci_driver from makefile
+# remove subsys/bluetooth/controller/hci from makefile
 SUBSYS_BLUETOOTH_CONTROLLER_MAKEFILE=${ZEPHYR_BASE}/subsys/bluetooth/controller/Makefile
 sed -i "s|CONTROLLER. += hci/hci_driver.o|CONTROLLER_DISABLED_BY_BTSTACK) += hci/hci_driver.o|g" ${SUBSYS_BLUETOOTH_CONTROLLER_MAKEFILE}
+sed -i "s|CONTROLLER. += hci/hci.o|CONTROLLER_DISABLED_BY_BTSTACK) += hci/hci.o|g" ${SUBSYS_BLUETOOTH_CONTROLLER_MAKEFILE}
 
 # remove subsys/bluetooth/controller/hci_driver from makefile
 SUBSYS_BLUETOOTH_HOST_MAKEFILE=${ZEPHYR_BASE}/subsys/bluetooth/host/Makefile
@@ -38,8 +40,7 @@ grep -q -F btstack ${SUBSYS_KCONFIG} || echo 'source "subsys/btstack/Kconfig"' >
 
 # diet - no idle thread, no IRQ stack
 KERNEL_INIT=${ZEPHYR_BASE}/kernel/unified/init.c
-grep -q -F btstack ${KERNEL_INIT} || cat no-idle-no-irq.patch | patch -p 1 -d ${ZEPHYR_BASE}
-
+grep -q -F BTSTACK ${KERNEL_INIT} || cat no-idle-no-irq.patch | patch -p 1 -d ${ZEPHYR_BASE}
 
 # create subsys/btstack
 mkdir -p ${ZEPHYR_BASE}/subsys/btstack

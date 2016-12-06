@@ -80,11 +80,18 @@
 #include "hci_dump.h"
 #include "hci_transport.h"
 
+// temp
+#include "zephyr_diet.h"
+
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 static void (*transport_packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size);
 
 static volatile int trigger_event_received = 0;
+
+static uint16_t hci_rx_pos;
+static uint8_t  hci_rx_buffer[60];
+static uint8_t  hci_rx_type;
 
 /**
  * trigger run loop iteration
@@ -117,7 +124,6 @@ static struct nano_fifo avail_acl_tx;
 static NET_BUF_POOL(acl_tx_pool, CONFIG_BLUETOOTH_CONTROLLER_TX_BUFFERS,
 		    BT_BUF_ACL_SIZE, &avail_acl_tx, NULL, BT_BUF_USER_DATA_MIN);
 
-static struct nano_fifo rx_queue;
 static struct nano_fifo tx_queue;
 
 /**
@@ -131,10 +137,9 @@ static void transport_init(const void *transport_config){
 
 	/* Initialize the FIFOs */
 	nano_fifo_init(&tx_queue);
-	nano_fifo_init(&rx_queue);
 
 	/* startup Controller */
-	bt_enable_raw(&rx_queue);
+	bt_enable_raw(NULL);
 }
 
 /**
@@ -165,6 +170,8 @@ static void send_hardware_error(uint8_t error_code){
     // hci_outgoing_event_ready = 1;
 }
 
+int hci_driver_handle_cmd(struct net_buf *buf, uint8_t * event_buffer, uint16_t * event_size);
+
 static int transport_send_packet(uint8_t packet_type, uint8_t *packet, int size){
 	struct net_buf *buf;
     switch (packet_type){
@@ -173,7 +180,17 @@ static int transport_send_packet(uint8_t packet_type, uint8_t *packet, int size)
 			if (buf) {
 				bt_buf_set_type(buf, BT_BUF_CMD);
 				memcpy(net_buf_add(buf, size), packet, size);
-				bt_send(buf);
+				// bt_send(buf);
+                if (hci_rx_pos){
+                    log_error("transport_send_packet, but previous event not delivered size %u, type %u", hci_rx_pos, hci_rx_type);
+                    log_info_hexdump(hci_rx_buffer, hci_rx_pos);
+                }
+                hci_rx_pos = 0;
+                hci_rx_type = 0;
+                hci_driver_handle_cmd(buf, hci_rx_buffer, &hci_rx_pos);
+                hci_rx_type = HCI_EVENT_PACKET;
+                log_info("command handled, event size %u", hci_rx_pos);
+                net_buf_unref(buf);
 			} else {
 				log_error("No available command buffers!\n");
 			}
@@ -309,33 +326,31 @@ void hal_cpu_enable_irqs_and_sleep(void){
 
 // private in hci_driver.c
 int hci_driver_task_step(uint8_t * packet_type, uint8_t * packet_buffer, uint16_t * packet_size);
-static uint8_t hci_rx_buffer[60];
+
+static void transport_deliver_packet(void){
+    uint16_t size = hci_rx_pos;
+    uint8_t  type = hci_rx_type;
+    hci_rx_pos  = 0;
+    hci_rx_type = 0;
+    transport_packet_handler(type, hci_rx_buffer, size);
+}
 
 static void btstack_run_loop_zephyr_execute_once(void) {
 
+    // deliver packet if ready
+    if (hci_rx_pos){
+        transport_deliver_packet();
+    }
+
     // process ready
     while (1){
-        // get 
-        uint8_t packet_type  = 0;
-        uint16_t packet_size = 0;
-        int done = hci_driver_task_step(&packet_type, hci_rx_buffer, &packet_size);
-        if (packet_size){
-            transport_packet_handler(packet_type, hci_rx_buffer, packet_size);
+        // get next event from ll
+        int done = hci_driver_task_step(&hci_rx_type, hci_rx_buffer, &hci_rx_pos);
+        if (hci_rx_pos){
+            transport_deliver_packet();
             continue;
         }
         if (done) break;
-        // deliver
-        struct net_buf *buf = net_buf_get_timeout(&rx_queue, 0, TICKS_NONE);
-        if (buf) {
-            transport_deliver_controller_packet(buf);
-        }
-    }
-
-    // process left overs
-    while (1){
-        struct net_buf *buf = net_buf_get_timeout(&rx_queue, 0, TICKS_NONE);
-        if (!buf) break;
-        transport_deliver_controller_packet(buf);
     }
 
     uint32_t now = sys_tick_get_32();
@@ -345,6 +360,11 @@ static void btstack_run_loop_zephyr_execute_once(void) {
         if (ts->timeout > now) break;
         btstack_run_loop_remove_timer(ts);
         ts->process(ts);
+    }
+
+    // deliver packet if ready
+    if (hci_rx_pos){
+        transport_deliver_packet();
     }
 
     // disable IRQs and check if run loop iteration has been requested. if not, go to sleep

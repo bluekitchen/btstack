@@ -51,6 +51,14 @@
 
 #include "bluetooth.h"
 
+// temp
+#include "zephyr_diet.h"
+
+// updated hci.c
+int btstack_hci_cmd_handle(struct net_buf *cmd, btstack_buf_t *evt);
+void btstack_hci_evt_encode(struct radio_pdu_node_rx *node_rx, btstack_buf_t *buf);
+void btstack_hci_num_cmplt_encode(btstack_buf_t *buf, uint16_t handle, uint8_t num);
+
 #if !defined(CONFIG_BLUETOOTH_DEBUG_HCI_DRIVER)
 #undef BT_DBG
 #define BT_DBG(fmt, ...)
@@ -165,10 +173,9 @@ void hci_acl_encode_btstack(struct radio_pdu_node_rx *node_rx, uint8_t * packet_
 }
 
 
-static void recv_task_a(struct radio_pdu_node_rx *node_rx, uint8_t * packet_buffer, uint16_t * packet_size){
+static void recv_task_a(struct radio_pdu_node_rx *node_rx, uint8_t * packet_type, uint8_t * packet_buffer, uint16_t * packet_size){
 
 	struct pdu_data * pdu_data;
-	struct net_buf  * buf = NULL;
 
 	pdu_data = (void *)node_rx->pdu_data;
 	/* Check if we need to generate an HCI event or ACL
@@ -176,26 +183,19 @@ static void recv_task_a(struct radio_pdu_node_rx *node_rx, uint8_t * packet_buff
 	 */
 	if (node_rx->hdr.type != NODE_RX_TYPE_DC_PDU ||
 	    pdu_data->ll_id == PDU_DATA_LLID_CTRL) {
+		
 		/* generate a (non-priority) HCI event */
-		buf = bt_buf_get_evt(0);
-		if (buf) {
-			hci_evt_encode(node_rx, buf);
-		} else {
-			BT_ERR("Cannot allocate RX event");
-		}
+		btstack_buf_t buf;
+		buf.data = packet_buffer;
+		buf.len = 0;
+		btstack_hci_evt_encode(node_rx, &buf);
+		*packet_size = buf.len;
+		*packet_type = HCI_EVENT_PACKET;
+
 	} else {
 		/* generate ACL data */
 		hci_acl_encode_btstack(node_rx, packet_buffer, packet_size);
-	}
-
-	if (buf) {
-		if (buf->len) {
-			BT_DBG("Packet in: type:%u len:%u",
-				bt_buf_get_type(buf), buf->len);
-			bt_recv(buf);
-		} else {
-			net_buf_unref(buf);
-		}
+		*packet_type = HCI_ACL_DATA_PACKET;
 	}
 
 	radio_rx_dequeue();
@@ -205,15 +205,12 @@ static void recv_task_a(struct radio_pdu_node_rx *node_rx, uint8_t * packet_buff
 }
 
 // BTstack: make public
-void hci_driver_emit_num_completed(uint16_t handle, uint16_t num_completed){
-	struct net_buf * buf = bt_buf_get_evt(BT_HCI_EVT_NUM_COMPLETED_PACKETS);
-	if (buf) {
-		hci_num_cmplt_encode(buf, handle, num_completed);
-		BT_DBG("Num Complete: 0x%04x:%u", handle, num_completed);
-		bt_recv(buf);
-	} else {
-		BT_ERR("Cannot allocate Num Complete");
-	}
+static void hci_driver_emit_num_completed(uint16_t handle, uint16_t num_completed, uint8_t * packet_buffer, uint16_t * packet_size){
+	btstack_buf_t buf;
+	buf.data = packet_buffer;
+	buf.len = 0;
+	btstack_hci_num_cmplt_encode(&buf, handle, num_completed);
+	*packet_size = buf.len;
 }
 
 // returns 1 if done
@@ -225,43 +222,26 @@ int hci_driver_task_step(uint8_t * packet_type, uint8_t * packet_buffer, uint16_
 	uint8_t num_completed = radio_rx_get(&node_rx, &handle);
 
 	if (num_completed){
-		hci_driver_emit_num_completed(handle,num_completed);
+		hci_driver_emit_num_completed(handle,num_completed, packet_buffer, packet_size);
+		*packet_type = HCI_EVENT_PACKET;
 		return 0;
 	}
 
 	if (node_rx) {
-		recv_task_a(node_rx, packet_buffer, packet_size);
-		*packet_type = HCI_ACL_DATA_PACKET;
+		recv_task_a(node_rx, packet_type, packet_buffer, packet_size);
 		return 0;
 	}
 
 	return 1;
 }
 
-static int cmd_handle(struct net_buf *buf)
+int hci_driver_handle_cmd(struct net_buf *buf, uint8_t * event_buffer, uint16_t * event_size)
 {
-	struct net_buf *evt;
-	int err;
-
-	/* Preallocate the response event so that there is no need for
-	 * memory checking in hci_cmd_handle().
-	 * this might actually be CMD_COMPLETE or CMD_STATUS, but the
-	 * actual point is to retrieve the event from the priority
-	 * queue
-	 */
-	evt = bt_buf_get_evt(BT_HCI_EVT_CMD_COMPLETE);
-	if (!evt) {
-		BT_ERR("No available event buffers");
-		return -ENOMEM;
-	}
-	err = hci_cmd_handle(buf, evt);
-	if (!err && evt->len) {
-		BT_DBG("Replying with event of %u bytes", evt->len);
-		bt_recv(evt);
-	} else {
-		net_buf_unref(evt);
-	}
-
+	btstack_buf_t evt;
+	evt.data = event_buffer;
+	evt.len = 0;
+	int err = btstack_hci_cmd_handle(buf, &evt);
+	*event_size = evt.len;
 	return err;
 }
 
@@ -283,7 +263,9 @@ static int hci_driver_send(struct net_buf *buf)
 		err = hci_acl_handle(buf);
 		break;
 	case BT_BUF_CMD:
-		err = cmd_handle(buf);
+		// err = cmd_handle(buf);
+		err = -EINVAL;
+		printf("ERROR: hci_driver_send called with COMMAND\n");
 		break;
 	default:
 		BT_ERR("Unknown HCI type %u", type);

@@ -22,15 +22,20 @@
 #include <bluetooth/hci_driver.h>
 #include <bluetooth/log.h>
 
+// temp
+#include "zephyr_diet.h"
+
 // #include "monitor.h"
 
-static struct nano_fifo *raw_rx;
+// static struct nano_fifo *raw_rx;
 
 /* HCI event buffers */
+#if 0
 static struct nano_fifo avail_hci_evt;
 static NET_BUF_POOL(hci_evt_pool, CONFIG_BLUETOOTH_HCI_EVT_COUNT,
 		    BT_BUF_EVT_SIZE, &avail_hci_evt, NULL,
 		    sizeof(uint8_t));
+#endif
 
 static struct bt_dev {
 	/* Registered HCI driver */
@@ -62,6 +67,7 @@ void bt_hci_driver_unregister(struct bt_hci_driver *drv)
 	bt_dev.drv = NULL;
 }
 
+#if 0
 struct net_buf *bt_buf_get_evt(uint8_t opcode)
 {
 	struct net_buf *buf;
@@ -73,7 +79,9 @@ struct net_buf *bt_buf_get_evt(uint8_t opcode)
 
 	return buf;
 }
+#endif
 
+#if 0
 int bt_recv(struct net_buf *buf)
 {
 	BT_DBG("buf %p len %u", buf, buf->len);
@@ -85,13 +93,12 @@ int bt_recv(struct net_buf *buf)
 
 	return 0;
 }
+#endif
 
 int bt_send(struct net_buf *buf)
 {
 	BT_DBG("buf %p len %u", buf, buf->len);
-
 	// bt_monitor_send(bt_monitor_opcode(buf), buf->data, buf->len);
-
 	return bt_dev.drv->send(buf);
 }
 
@@ -102,9 +109,7 @@ int bt_enable_raw(struct nano_fifo *rx_queue)
 
 	BT_DBG("");
 
-	net_buf_pool_init(hci_evt_pool);
-
-	raw_rx = rx_queue;
+	// net_buf_pool_init(hci_evt_pool);
 
 	if (!bt_dev.drv) {
 		BT_ERR("No HCI driver registered");

@@ -16,13 +16,16 @@ mk_template = '''#
 
 obj-y += EXAMPLE.o
 obj-y += main.o
+obj-y += hci.o
 obj-y += hci_raw.o
 obj-y += hci_driver.o
 ccflags-y += -I${ZEPHYR_BASE}/subsys/btstack
 ccflags-y += -I${ZEPHYR_BASE}/include/drivers
 ccflags-y += -I${ZEPHYR_BASE}/subsys/bluetooth/controller/
+ccflags-y += -I${ZEPHYR_BASE}/subsys/bluetooth/controller/hal
 ccflags-y += -I${ZEPHYR_BASE}/subsys/bluetooth/controller/hci
 ccflags-y += -I${ZEPHYR_BASE}/subsys/bluetooth/controller/ll
+ccflags-y += -I${ZEPHYR_BASE}/subsys/bluetooth/controller/util
 
 '''
 
@@ -99,7 +102,7 @@ for file in os.listdir(examples_embedded):
     shutil.copyfile(examples_embedded + file, src_folder + "/" + example + ".c")
 
     # copy other files
-    for item in ['main.c', 'hci_raw.c', 'hci_driver.c']:
+    for item in ['main.c', 'hci_raw.c', 'hci_driver.c', 'hci.c', 'zephyr_diet.h']:
         shutil.copyfile(script_path + '/' + item, src_folder + '/' + item)
 
     # create update_gatt.sh if .gatt file is present
