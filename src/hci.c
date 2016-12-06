@@ -1449,6 +1449,7 @@ static void event_handler(uint8_t *packet, int size){
             hci_stack->num_cmd_packets = packet[2] ? 1 : 0;
 
             if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_read_local_name)){
+                if (packet[5]) break;
                 // terminate, name 248 chars
                 packet[6+248] = 0;
                 log_info("local name: %s", &packet[6]);
