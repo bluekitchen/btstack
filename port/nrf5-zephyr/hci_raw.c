@@ -27,16 +27,6 @@
 
 // #include "monitor.h"
 
-// static struct nano_fifo *raw_rx;
-
-/* HCI event buffers */
-#if 0
-static struct nano_fifo avail_hci_evt;
-static NET_BUF_POOL(hci_evt_pool, CONFIG_BLUETOOTH_HCI_EVT_COUNT,
-		    BT_BUF_EVT_SIZE, &avail_hci_evt, NULL,
-		    sizeof(uint8_t));
-#endif
-
 static struct bt_dev {
 	/* Registered HCI driver */
 	struct bt_hci_driver	*drv;
@@ -56,9 +46,6 @@ int bt_hci_driver_register(struct bt_hci_driver *drv)
 
 	BT_DBG("Registered %s", drv->name ? drv->name : "");
 
-	// bt_monitor_new_index(BT_MONITOR_TYPE_PRIMARY, drv->bus,
-	// 		     BT_ADDR_ANY, drv->name ? drv->name : "bt0");
-
 	return 0;
 }
 
@@ -68,39 +55,13 @@ void bt_hci_driver_unregister(struct bt_hci_driver *drv)
 }
 
 #if 0
-struct net_buf *bt_buf_get_evt(uint8_t opcode)
-{
-	struct net_buf *buf;
-
-	buf = net_buf_get(&avail_hci_evt, 0);
-	if (buf) {
-		bt_buf_set_type(buf, BT_BUF_EVT);
-	}
-
-	return buf;
-}
-#endif
-
-#if 0
-int bt_recv(struct net_buf *buf)
-{
-	BT_DBG("buf %p len %u", buf, buf->len);
-
-	// bt_monitor_send(bt_monitor_opcode(buf), buf->data, buf->len);
-
-	/* Queue to RAW rx queue */
-	net_buf_put(raw_rx, buf);
-
-	return 0;
-}
-#endif
-
 int bt_send(struct net_buf *buf)
 {
 	BT_DBG("buf %p len %u", buf, buf->len);
 	// bt_monitor_send(bt_monitor_opcode(buf), buf->data, buf->len);
 	return bt_dev.drv->send(buf);
 }
+#endif
 
 int bt_enable_raw(struct nano_fifo *rx_queue)
 {

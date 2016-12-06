@@ -196,6 +196,7 @@ static void recv_task_a(struct radio_pdu_node_rx *node_rx, uint8_t * packet_type
 		/* generate ACL data */
 		hci_acl_encode_btstack(node_rx, packet_buffer, packet_size);
 		*packet_type = HCI_ACL_DATA_PACKET;
+		printf("recv_task_a: received acl packet size %u\n", *packet_size);
 	}
 
 	radio_rx_dequeue();
@@ -245,40 +246,10 @@ int hci_driver_handle_cmd(struct net_buf *buf, uint8_t * event_buffer, uint16_t 
 	return err;
 }
 
-static int hci_driver_send(struct net_buf *buf)
-{
-	uint8_t type;
-	int err;
-
-	BT_DBG("enter");
-
-	if (!buf->len) {
-		BT_ERR("Empty HCI packet");
-		return -EINVAL;
-	}
-
-	type = bt_buf_get_type(buf);
-	switch (type) {
-	case BT_BUF_ACL_OUT:
-		err = hci_acl_handle(buf);
-		break;
-	case BT_BUF_CMD:
-		// err = cmd_handle(buf);
-		err = -EINVAL;
-		printf("ERROR: hci_driver_send called with COMMAND\n");
-		break;
-	default:
-		BT_ERR("Unknown HCI type %u", type);
-		return -EINVAL;
-	}
-
-	if (!err) {
-		net_buf_unref(buf);
-	}
-
-	BT_DBG("exit: %d", err);
-
-	return err;
+static int hci_driver_send(struct net_buf *buf){
+	printf("hci_driver_send called, but not active anymore\n");
+	net_buf_unref(buf);
+	return -EINVAL;
 }
 
 static int hci_driver_open(void)

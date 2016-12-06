@@ -136,7 +136,7 @@ static void transport_init(const void *transport_config){
 	net_buf_pool_init(acl_tx_pool);
 
 	/* Initialize the FIFOs */
-	nano_fifo_init(&tx_queue);
+	// nano_fifo_init(&tx_queue);
 
 	/* startup Controller */
 	bt_enable_raw(NULL);
@@ -171,6 +171,7 @@ static void send_hardware_error(uint8_t error_code){
 }
 
 int hci_driver_handle_cmd(struct net_buf *buf, uint8_t * event_buffer, uint16_t * event_size);
+int btstack_hci_acl_handle(uint8_t * packet_buffer, uint16_t packet_len);
 
 static int transport_send_packet(uint8_t packet_type, uint8_t *packet, int size){
 	struct net_buf *buf;
@@ -189,21 +190,13 @@ static int transport_send_packet(uint8_t packet_type, uint8_t *packet, int size)
                 hci_rx_type = 0;
                 hci_driver_handle_cmd(buf, hci_rx_buffer, &hci_rx_pos);
                 hci_rx_type = HCI_EVENT_PACKET;
-                log_info("command handled, event size %u", hci_rx_pos);
                 net_buf_unref(buf);
 			} else {
 				log_error("No available command buffers!\n");
 			}
             break;
         case HCI_ACL_DATA_PACKET:
-			buf = net_buf_get(&avail_acl_tx, 0);
-			if (buf) {
-				bt_buf_set_type(buf, BT_BUF_ACL_OUT);
-				memcpy(net_buf_add(buf, size), packet, size);
-				bt_send(buf);
-			} else {
-				log_error("No available ACL buffers!\n");
-			}
+            btstack_hci_acl_handle(packet, size);
             break;
         default:
             send_hardware_error(0x01);  // invalid HCI packet
@@ -227,24 +220,6 @@ static const hci_transport_t transport = {
 
 static const hci_transport_t * transport_get_instance(void){
 	return &transport;
-}
-
-static void transport_deliver_controller_packet(struct net_buf * buf){
-		uint16_t    size = buf->len;
-		uint8_t * packet = buf->data;
-		switch (bt_buf_get_type(buf)) {
-			case BT_BUF_ACL_IN:
-				transport_packet_handler(HCI_ACL_DATA_PACKET, packet, size);
-				break;
-			case BT_BUF_EVT:
-				transport_packet_handler(HCI_EVENT_PACKET, packet, size);
-				break;
-			default:
-				log_error("Unknown type %u\n", bt_buf_get_type(buf));
-				net_buf_unref(buf);
-				break;
-		}
-		net_buf_unref(buf);
 }
 
 // btstack_run_loop_zephry.c
@@ -346,6 +321,7 @@ static void btstack_run_loop_zephyr_execute_once(void) {
     while (1){
         // get next event from ll
         int done = hci_driver_task_step(&hci_rx_type, hci_rx_buffer, &hci_rx_pos);
+        // log_info("main_loop: hci_driver_task_step, done = %u, hci_rx_pos = %u", done, hci_rx_pos);
         if (hci_rx_pos){
             transport_deliver_packet();
             continue;
@@ -363,9 +339,7 @@ static void btstack_run_loop_zephyr_execute_once(void) {
     }
 
     // deliver packet if ready
-    if (hci_rx_pos){
-        transport_deliver_packet();
-    }
+    if (hci_rx_pos) return;
 
     // disable IRQs and check if run loop iteration has been requested. if not, go to sleep
     hal_cpu_disable_irqs();

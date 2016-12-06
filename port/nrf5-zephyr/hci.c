@@ -863,7 +863,7 @@ int btstack_hci_cmd_handle(struct net_buf *cmd, btstack_buf_t *evt)
 	return 0;
 }
 
-int hci_acl_handle(struct net_buf *buf)
+int btstack_hci_acl_handle(uint8_t * packet_buffer, uint16_t packet_len)
 {
 	struct radio_pdu_node_tx *radio_pdu_node_tx;
 	struct bt_hci_acl_hdr *acl;
@@ -871,17 +871,18 @@ int hci_acl_handle(struct net_buf *buf)
 	uint8_t flags;
 	uint16_t len;
 
-	if (buf->len < sizeof(*acl)) {
+	if (packet_len < sizeof(*acl)) {
 		BT_ERR("No HCI ACL header");
 		return -EINVAL;
 	}
 
-	acl = (void *)buf->data;
+	acl = (void *)packet_buffer;
 	len = sys_le16_to_cpu(acl->len);
 	handle = sys_le16_to_cpu(acl->handle);
-	net_buf_pull(buf, sizeof(*acl));
+	packet_buffer += sizeof(*acl);
+	packet_len    -= sizeof(*acl);
 
-	if (buf->len < len) {
+	if (packet_len < len) {
 		BT_ERR("Invalid HCI ACL packet length");
 		return -EINVAL;
 	}
@@ -901,7 +902,7 @@ int hci_acl_handle(struct net_buf *buf)
 			pdu_data->ll_id = PDU_DATA_LLID_DATA_CONTINUE;
 		}
 		pdu_data->len = len;
-		memcpy(&pdu_data->payload.lldata[0], buf->data, len);
+		memcpy(&pdu_data->payload.lldata[0], packet_buffer, len);
 		if (radio_tx_mem_enqueue(handle, radio_pdu_node_tx)) {
 			radio_tx_mem_release(radio_pdu_node_tx);
 		}
