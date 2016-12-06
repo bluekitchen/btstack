@@ -173,7 +173,7 @@ void hci_acl_encode_btstack(struct radio_pdu_node_rx *node_rx, uint8_t * packet_
 }
 
 
-static void recv_task_a(struct radio_pdu_node_rx *node_rx, uint8_t * packet_type, uint8_t * packet_buffer, uint16_t * packet_size){
+static void hci_driver_process_radio_data(struct radio_pdu_node_rx *node_rx, uint8_t * packet_type, uint8_t * packet_buffer, uint16_t * packet_size){
 
 	struct pdu_data * pdu_data;
 
@@ -228,7 +228,7 @@ int hci_driver_task_step(uint8_t * packet_type, uint8_t * packet_buffer, uint16_
 	}
 
 	if (node_rx) {
-		recv_task_a(node_rx, packet_type, packet_buffer, packet_size);
+		hci_driver_process_radio_data(node_rx, packet_type, packet_buffer, packet_size);
 		return 0;
 	}
 
@@ -243,11 +243,6 @@ int hci_driver_handle_cmd(btstack_buf_t * buf, uint8_t * event_buffer, uint16_t 
 	int err = btstack_hci_cmd_handle(buf, &evt);
 	*event_size = evt.len;
 	return err;
-}
-
-static int hci_driver_send(struct net_buf *buf){
-	printf("hci_driver_send called, but not active anymore\n");
-	return -EINVAL;
 }
 
 int hci_driver_open(void)
