@@ -196,7 +196,6 @@ static void recv_task_a(struct radio_pdu_node_rx *node_rx, uint8_t * packet_type
 		/* generate ACL data */
 		hci_acl_encode_btstack(node_rx, packet_buffer, packet_size);
 		*packet_type = HCI_ACL_DATA_PACKET;
-		printf("recv_task_a: received acl packet size %u\n", *packet_size);
 	}
 
 	radio_rx_dequeue();
@@ -248,7 +247,6 @@ int hci_driver_handle_cmd(btstack_buf_t * buf, uint8_t * event_buffer, uint16_t 
 
 static int hci_driver_send(struct net_buf *buf){
 	printf("hci_driver_send called, but not active anymore\n");
-	net_buf_unref(buf);
 	return -EINVAL;
 }
 

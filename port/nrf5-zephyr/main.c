@@ -90,7 +90,7 @@ static void (*transport_packet_handler)(uint8_t packet_type, uint8_t *packet, ui
 static volatile int trigger_event_received = 0;
 
 static uint16_t hci_rx_pos;
-static uint8_t  hci_rx_buffer[60];
+static uint8_t  hci_rx_buffer[256];
 static uint8_t  hci_rx_type;
 
 /**
@@ -100,32 +100,11 @@ void btstack_run_loop_embedded_trigger(void){
     trigger_event_received = 1;
 }
 
-#define BT_L2CAP_MTU 64
-
-//
-// hci_transport_zephyr.c
-//
-#if 1
-/** Data size needed for ACL buffers */
-#define BT_BUF_ACL_SIZE (CONFIG_BLUETOOTH_HCI_RECV_RESERVE + \
-			 sizeof(struct bt_hci_acl_hdr) + \
-			 4 /* L2CAP header size */ + \
-			 BT_L2CAP_MTU)
-
-static struct nano_fifo avail_acl_tx;
-static NET_BUF_POOL(acl_tx_pool, CONFIG_BLUETOOTH_CONTROLLER_TX_BUFFERS,
-		    BT_BUF_ACL_SIZE, &avail_acl_tx, NULL, BT_BUF_USER_DATA_MIN);
-#endif
-// static struct nano_fifo tx_queue;
-
 /**
  * init transport
  * @param transport_config
  */
 static void transport_init(const void *transport_config){
-	/* Initialize the buffer pools */
-	net_buf_pool_init(acl_tx_pool);
-
 	/* startup Controller */
 	bt_enable_raw(NULL);
 }
@@ -183,7 +162,6 @@ static int transport_send_packet(uint8_t packet_type, uint8_t *packet, int size)
             send_hardware_error(0x01);  // invalid HCI packet
             break;
     }
-
     return 0;   
 }
 
@@ -302,7 +280,6 @@ static void btstack_run_loop_zephyr_execute_once(void) {
     while (1){
         // get next event from ll
         int done = hci_driver_task_step(&hci_rx_type, hci_rx_buffer, &hci_rx_pos);
-        // log_info("main_loop: hci_driver_task_step, done = %u, hci_rx_pos = %u", done, hci_rx_pos);
         if (hci_rx_pos){
             transport_deliver_packet();
             continue;
