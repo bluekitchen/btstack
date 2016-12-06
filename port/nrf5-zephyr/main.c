@@ -124,7 +124,7 @@ static struct nano_fifo avail_acl_tx;
 static NET_BUF_POOL(acl_tx_pool, CONFIG_BLUETOOTH_CONTROLLER_TX_BUFFERS,
 		    BT_BUF_ACL_SIZE, &avail_acl_tx, NULL, BT_BUF_USER_DATA_MIN);
 
-static struct nano_fifo tx_queue;
+// static struct nano_fifo tx_queue;
 
 /**
  * init transport
@@ -170,30 +170,23 @@ static void send_hardware_error(uint8_t error_code){
     // hci_outgoing_event_ready = 1;
 }
 
-int hci_driver_handle_cmd(struct net_buf *buf, uint8_t * event_buffer, uint16_t * event_size);
+int hci_driver_handle_cmd(btstack_buf_t * buf, uint8_t * event_buffer, uint16_t * event_size);
 int btstack_hci_acl_handle(uint8_t * packet_buffer, uint16_t packet_len);
 
 static int transport_send_packet(uint8_t packet_type, uint8_t *packet, int size){
-	struct net_buf *buf;
+    btstack_buf_t buf;
     switch (packet_type){
         case HCI_COMMAND_DATA_PACKET:
-			buf = net_buf_get(&avail_cmd_tx, 0);
-			if (buf) {
-				bt_buf_set_type(buf, BT_BUF_CMD);
-				memcpy(net_buf_add(buf, size), packet, size);
-				// bt_send(buf);
-                if (hci_rx_pos){
-                    log_error("transport_send_packet, but previous event not delivered size %u, type %u", hci_rx_pos, hci_rx_type);
-                    log_info_hexdump(hci_rx_buffer, hci_rx_pos);
-                }
-                hci_rx_pos = 0;
-                hci_rx_type = 0;
-                hci_driver_handle_cmd(buf, hci_rx_buffer, &hci_rx_pos);
-                hci_rx_type = HCI_EVENT_PACKET;
-                net_buf_unref(buf);
-			} else {
-				log_error("No available command buffers!\n");
-			}
+            buf.data = packet,
+            buf.len  = size;
+            if (hci_rx_pos){
+                log_error("transport_send_packet, but previous event not delivered size %u, type %u", hci_rx_pos, hci_rx_type);
+                log_info_hexdump(hci_rx_buffer, hci_rx_pos);
+            }
+            hci_rx_pos = 0;
+            hci_rx_type = 0;
+            hci_driver_handle_cmd(&buf, hci_rx_buffer, &hci_rx_pos);
+            hci_rx_type = HCI_EVENT_PACKET;
             break;
         case HCI_ACL_DATA_PACKET:
             btstack_hci_acl_handle(packet, size);

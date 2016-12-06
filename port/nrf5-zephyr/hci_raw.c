@@ -54,15 +54,6 @@ void bt_hci_driver_unregister(struct bt_hci_driver *drv)
 	bt_dev.drv = NULL;
 }
 
-#if 0
-int bt_send(struct net_buf *buf)
-{
-	BT_DBG("buf %p len %u", buf, buf->len);
-	// bt_monitor_send(bt_monitor_opcode(buf), buf->data, buf->len);
-	return bt_dev.drv->send(buf);
-}
-#endif
-
 int bt_enable_raw(struct nano_fifo *rx_queue)
 {
 	struct bt_hci_driver *drv = bt_dev.drv;

@@ -1,5 +1,5 @@
-#ifndef __BTSTACK_CONFIG
-#define __BTSTACK_CONFIG
+#ifndef __ZEPHYR_DIET
+#define __ZEPHYR_DIET
 
 // temp global header file for zephyr_diet
 #include <stdint.h>
@@ -14,9 +14,15 @@ typedef struct btstack_buf {
 
 inline void * btstack_buf_add(btstack_buf_t * buf, uint16_t len){
 	void * data = buf->data;
-	buf->data += len;
+	buf->data += len;	// probably wrong, but doesn't matter currently
 	buf->len  += len;
 	return data;
+}
+
+inline void * btstack_buf_pull(btstack_buf_t * buf, uint16_t len){
+	buf->data += len;
+	buf->len  -= len;
+	return buf->data;
 }
 
 #endif

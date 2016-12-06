@@ -55,7 +55,7 @@
 #include "zephyr_diet.h"
 
 // updated hci.c
-int btstack_hci_cmd_handle(struct net_buf *cmd, btstack_buf_t *evt);
+int  btstack_hci_cmd_handle(btstack_buf_t *cmd, btstack_buf_t *evt);
 void btstack_hci_evt_encode(struct radio_pdu_node_rx *node_rx, btstack_buf_t *buf);
 void btstack_hci_num_cmplt_encode(btstack_buf_t *buf, uint16_t handle, uint8_t num);
 
@@ -236,7 +236,7 @@ int hci_driver_task_step(uint8_t * packet_type, uint8_t * packet_buffer, uint16_
 	return 1;
 }
 
-int hci_driver_handle_cmd(struct net_buf *buf, uint8_t * event_buffer, uint16_t * event_size)
+int hci_driver_handle_cmd(btstack_buf_t * buf, uint8_t * event_buffer, uint16_t * event_size)
 {
 	btstack_buf_t evt;
 	evt.data = event_buffer;

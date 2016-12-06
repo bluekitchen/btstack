@@ -93,7 +93,7 @@ static void *meta_evt(btstack_buf_t *buf, uint8_t subevt, uint8_t melen)
 	return btstack_buf_add(buf, melen);
 }
 
-static void disconnect(struct net_buf *buf, btstack_buf_t *evt)
+static void disconnect(btstack_buf_t *buf, btstack_buf_t *evt)
 {
 	struct bt_hci_cp_disconnect *cmd = (void *)buf->data;
 	uint16_t handle;
@@ -105,7 +105,7 @@ static void disconnect(struct net_buf *buf, btstack_buf_t *evt)
 	cmd_status(evt, (!status) ? 0x00 : BT_HCI_ERR_CMD_DISALLOWED);
 }
 
-static void read_remote_ver_info(struct net_buf *buf, btstack_buf_t *evt)
+static void read_remote_ver_info(btstack_buf_t *buf, btstack_buf_t *evt)
 {
 	struct bt_hci_cp_read_remote_version_info *cmd = (void *)buf->data;
 	uint16_t handle;
@@ -117,7 +117,7 @@ static void read_remote_ver_info(struct net_buf *buf, btstack_buf_t *evt)
 	cmd_status(evt, (!status) ? 0x00 : BT_HCI_ERR_CMD_DISALLOWED);
 }
 
-static int link_control_cmd_handle(uint8_t ocf, struct net_buf *cmd,
+static int link_control_cmd_handle(uint8_t ocf, btstack_buf_t *cmd,
 				   btstack_buf_t *evt)
 {
 	switch (ocf) {
@@ -134,7 +134,7 @@ static int link_control_cmd_handle(uint8_t ocf, struct net_buf *cmd,
 	return 0;
 }
 
-static void set_event_mask(struct net_buf *buf, btstack_buf_t *evt)
+static void set_event_mask(btstack_buf_t *buf, btstack_buf_t *evt)
 {
 	struct bt_hci_evt_cc_status *ccst;
 
@@ -144,7 +144,7 @@ static void set_event_mask(struct net_buf *buf, btstack_buf_t *evt)
 	ccst->status = 0x00;
 }
 
-static void reset(struct net_buf *buf, btstack_buf_t *evt)
+static void reset(btstack_buf_t *buf, btstack_buf_t *evt)
 {
 	struct bt_hci_evt_cc_status *ccst;
 
@@ -154,7 +154,7 @@ static void reset(struct net_buf *buf, btstack_buf_t *evt)
 	ccst->status = 0x00;
 }
 
-static int ctrl_bb_cmd_handle(uint8_t ocf, struct net_buf *cmd,
+static int ctrl_bb_cmd_handle(uint8_t ocf, btstack_buf_t *cmd,
 			      btstack_buf_t *evt)
 {
 	switch (ocf) {
@@ -173,7 +173,7 @@ static int ctrl_bb_cmd_handle(uint8_t ocf, struct net_buf *cmd,
 	return 0;
 }
 
-static void read_local_version_info(struct net_buf *buf, btstack_buf_t *evt)
+static void read_local_version_info(btstack_buf_t *buf, btstack_buf_t *evt)
 {
 	struct bt_hci_rp_read_local_version_info *rp;
 
@@ -187,7 +187,7 @@ static void read_local_version_info(struct net_buf *buf, btstack_buf_t *evt)
 	rp->lmp_subversion = sys_cpu_to_le16(RADIO_BLE_SUB_VERSION_NUMBER);
 }
 
-static void read_supported_commands(struct net_buf *buf, btstack_buf_t *evt)
+static void read_supported_commands(btstack_buf_t *buf, btstack_buf_t *evt)
 {
 	struct bt_hci_rp_read_supported_commands *rp;
 
@@ -225,7 +225,7 @@ static void read_supported_commands(struct net_buf *buf, btstack_buf_t *evt)
 	rp->commands[35] = (1 << 3);
 }
 
-static void read_local_features(struct net_buf *buf, btstack_buf_t *evt)
+static void read_local_features(btstack_buf_t *buf, btstack_buf_t *evt)
 {
 	struct bt_hci_rp_read_local_features *rp;
 
@@ -237,7 +237,7 @@ static void read_local_features(struct net_buf *buf, btstack_buf_t *evt)
 	rp->features[4] = (1 << 5) | (1 << 6);
 }
 
-static void read_bd_addr(struct net_buf *buf, btstack_buf_t *evt)
+static void read_bd_addr(btstack_buf_t *buf, btstack_buf_t *evt)
 {
 	struct bt_hci_rp_read_bd_addr *rp;
 
@@ -247,7 +247,7 @@ static void read_bd_addr(struct net_buf *buf, btstack_buf_t *evt)
 	ll_address_get(0, &rp->bdaddr.val[0]);
 }
 
-static int info_cmd_handle(uint8_t ocf, struct net_buf *cmd,
+static int info_cmd_handle(uint8_t ocf, btstack_buf_t *cmd,
 			   btstack_buf_t *evt)
 {
 	switch (ocf) {
@@ -274,7 +274,7 @@ static int info_cmd_handle(uint8_t ocf, struct net_buf *cmd,
 	return 0;
 }
 
-static void le_set_event_mask(struct net_buf *buf, btstack_buf_t *evt)
+static void le_set_event_mask(btstack_buf_t *buf, btstack_buf_t *evt)
 {
 	struct bt_hci_evt_cc_status *ccst;
 
@@ -284,7 +284,7 @@ static void le_set_event_mask(struct net_buf *buf, btstack_buf_t *evt)
 	ccst->status = 0x00;
 }
 
-static void le_read_buffer_size(struct net_buf *buf, btstack_buf_t *evt)
+static void le_read_buffer_size(btstack_buf_t *buf, btstack_buf_t *evt)
 {
 	struct bt_hci_rp_le_read_buffer_size *rp;
 
@@ -296,7 +296,7 @@ static void le_read_buffer_size(struct net_buf *buf, btstack_buf_t *evt)
 	rp->le_max_num = RADIO_PACKET_COUNT_TX_MAX;
 }
 
-static void le_read_local_features(struct net_buf *buf, btstack_buf_t *evt)
+static void le_read_local_features(btstack_buf_t *buf, btstack_buf_t *evt)
 {
 	struct bt_hci_rp_le_read_local_features *rp;
 
@@ -308,7 +308,7 @@ static void le_read_local_features(struct net_buf *buf, btstack_buf_t *evt)
 	rp->features[0] = RADIO_BLE_FEATURES;
 }
 
-static void le_set_random_address(struct net_buf *buf, btstack_buf_t *evt)
+static void le_set_random_address(btstack_buf_t *buf, btstack_buf_t *evt)
 {
 	struct bt_hci_cp_le_set_random_address *cmd = (void *)buf->data;
 	struct bt_hci_evt_cc_status *ccst;
@@ -319,7 +319,7 @@ static void le_set_random_address(struct net_buf *buf, btstack_buf_t *evt)
 	ccst->status = 0x00;
 }
 
-static void le_set_adv_param(struct net_buf *buf, btstack_buf_t *evt)
+static void le_set_adv_param(btstack_buf_t *buf, btstack_buf_t *evt)
 {
 	struct bt_hci_cp_le_set_adv_param *cmd = (void *)buf->data;
 	struct bt_hci_evt_cc_status *ccst;
@@ -339,7 +339,7 @@ static void le_set_adv_param(struct net_buf *buf, btstack_buf_t *evt)
 	ccst->status = 0x00;
 }
 
-static void le_read_adv_ch_tx_power(struct net_buf *buf, btstack_buf_t *evt)
+static void le_read_adv_ch_tx_power(btstack_buf_t *buf, btstack_buf_t *evt)
 {
 	struct bt_hci_rp_le_read_ch_tx_power *rp;
 
@@ -350,7 +350,7 @@ static void le_read_adv_ch_tx_power(struct net_buf *buf, btstack_buf_t *evt)
 	rp->tx_power_level = 0;
 }
 
-static void le_set_adv_data(struct net_buf *buf, btstack_buf_t *evt)
+static void le_set_adv_data(btstack_buf_t *buf, btstack_buf_t *evt)
 {
 	struct bt_hci_cp_le_set_adv_data *cmd = (void *)buf->data;
 	struct bt_hci_evt_cc_status *ccst;
@@ -361,7 +361,7 @@ static void le_set_adv_data(struct net_buf *buf, btstack_buf_t *evt)
 	ccst->status = 0x00;
 }
 
-static void le_set_scan_rsp_data(struct net_buf *buf, btstack_buf_t *evt)
+static void le_set_scan_rsp_data(btstack_buf_t *buf, btstack_buf_t *evt)
 {
 	struct bt_hci_cp_le_set_scan_rsp_data *cmd = (void *)buf->data;
 	struct bt_hci_evt_cc_status *ccst;
@@ -372,7 +372,7 @@ static void le_set_scan_rsp_data(struct net_buf *buf, btstack_buf_t *evt)
 	ccst->status = 0x00;
 }
 
-static void le_set_adv_enable(struct net_buf *buf, btstack_buf_t *evt)
+static void le_set_adv_enable(btstack_buf_t *buf, btstack_buf_t *evt)
 {
 	struct bt_hci_cp_le_set_adv_enable *cmd = (void *)buf->data;
 	struct bt_hci_evt_cc_status *ccst;
@@ -384,7 +384,7 @@ static void le_set_adv_enable(struct net_buf *buf, btstack_buf_t *evt)
 	ccst->status = (!status) ? 0x00 : BT_HCI_ERR_CMD_DISALLOWED;
 }
 
-static void le_set_scan_params(struct net_buf *buf, btstack_buf_t *evt)
+static void le_set_scan_params(btstack_buf_t *buf, btstack_buf_t *evt)
 {
 	struct bt_hci_cp_le_set_scan_params *cmd = (void *)buf->data;
 	struct bt_hci_evt_cc_status *ccst;
@@ -401,7 +401,7 @@ static void le_set_scan_params(struct net_buf *buf, btstack_buf_t *evt)
 	ccst->status = 0x00;
 }
 
-static void le_set_scan_enable(struct net_buf *buf, btstack_buf_t *evt)
+static void le_set_scan_enable(btstack_buf_t *buf, btstack_buf_t *evt)
 {
 	struct bt_hci_cp_le_set_scan_enable *cmd = (void *)buf->data;
 	struct bt_hci_evt_cc_status *ccst;
@@ -413,7 +413,7 @@ static void le_set_scan_enable(struct net_buf *buf, btstack_buf_t *evt)
 	ccst->status = (!status) ? 0x00 : BT_HCI_ERR_CMD_DISALLOWED;
 }
 
-static void le_create_connection(struct net_buf *buf, btstack_buf_t *evt)
+static void le_create_connection(btstack_buf_t *buf, btstack_buf_t *evt)
 {
 	struct bt_hci_cp_le_create_conn *cmd = (void *)buf->data;
 	uint16_t supervision_timeout;
@@ -439,7 +439,7 @@ static void le_create_connection(struct net_buf *buf, btstack_buf_t *evt)
 	cmd_status(evt, (!status) ? 0x00 : BT_HCI_ERR_CMD_DISALLOWED);
 }
 
-static void le_create_conn_cancel(struct net_buf *buf, btstack_buf_t *evt)
+static void le_create_conn_cancel(btstack_buf_t *buf, btstack_buf_t *evt)
 {
 	struct bt_hci_evt_cc_status *ccst;
 	uint32_t status;
@@ -450,7 +450,7 @@ static void le_create_conn_cancel(struct net_buf *buf, btstack_buf_t *evt)
 	ccst->status = (!status) ? 0x00 : BT_HCI_ERR_CMD_DISALLOWED;
 }
 
-static void le_read_wl_size(struct net_buf *buf, btstack_buf_t *evt)
+static void le_read_wl_size(btstack_buf_t *buf, btstack_buf_t *evt)
 {
 	struct bt_hci_rp_le_read_wl_size *rp;
 
@@ -460,7 +460,7 @@ static void le_read_wl_size(struct net_buf *buf, btstack_buf_t *evt)
 	rp->wl_size = 8;
 }
 
-static void le_clear_wl(struct net_buf *buf, btstack_buf_t *evt)
+static void le_clear_wl(btstack_buf_t *buf, btstack_buf_t *evt)
 {
 	struct bt_hci_evt_cc_status *ccst;
 
@@ -470,7 +470,7 @@ static void le_clear_wl(struct net_buf *buf, btstack_buf_t *evt)
 	ccst->status = 0x00;
 }
 
-static void le_add_dev_to_wl(struct net_buf *buf, btstack_buf_t *evt)
+static void le_add_dev_to_wl(btstack_buf_t *buf, btstack_buf_t *evt)
 {
 	struct bt_hci_cp_le_add_dev_to_wl *cmd = (void *)buf->data;
 	struct bt_hci_evt_cc_status *ccst;
@@ -482,7 +482,7 @@ static void le_add_dev_to_wl(struct net_buf *buf, btstack_buf_t *evt)
 	ccst->status = (!status) ? 0x00 : BT_HCI_ERR_MEM_CAPACITY_EXCEEDED;
 }
 
-static void le_rem_dev_from_wl(struct net_buf *buf, btstack_buf_t *evt)
+static void le_rem_dev_from_wl(btstack_buf_t *buf, btstack_buf_t *evt)
 {
 	struct bt_hci_cp_le_rem_dev_from_wl *cmd = (void *)buf->data;
 	struct bt_hci_evt_cc_status *ccst;
@@ -494,7 +494,7 @@ static void le_rem_dev_from_wl(struct net_buf *buf, btstack_buf_t *evt)
 	ccst->status = (!status) ? 0x00 : BT_HCI_ERR_CMD_DISALLOWED;
 }
 
-static void le_conn_update(struct net_buf *buf, btstack_buf_t *evt)
+static void le_conn_update(btstack_buf_t *buf, btstack_buf_t *evt)
 {
 	struct hci_cp_le_conn_update *cmd = (void *)buf->data;
 	uint16_t supervision_timeout;
@@ -517,7 +517,7 @@ static void le_conn_update(struct net_buf *buf, btstack_buf_t *evt)
 	cmd_status(evt, (!status) ? 0x00 : BT_HCI_ERR_CMD_DISALLOWED);
 }
 
-static void le_set_host_ch_classif(struct net_buf *buf, btstack_buf_t *evt)
+static void le_set_host_ch_classif(btstack_buf_t *buf, btstack_buf_t *evt)
 {
 	struct bt_hci_cp_le_set_host_ch_classif *cmd = (void *)buf->data;
 	struct bt_hci_evt_cc_status *ccst;
@@ -529,7 +529,7 @@ static void le_set_host_ch_classif(struct net_buf *buf, btstack_buf_t *evt)
 	ccst->status = (!status) ? 0x00 : BT_HCI_ERR_CMD_DISALLOWED;
 }
 
-static void le_read_remote_features(struct net_buf *buf, btstack_buf_t *evt)
+static void le_read_remote_features(btstack_buf_t *buf, btstack_buf_t *evt)
 {
 	struct bt_hci_cp_le_read_remote_features *cmd = (void *)buf->data;
 	uint32_t status;
@@ -541,7 +541,7 @@ static void le_read_remote_features(struct net_buf *buf, btstack_buf_t *evt)
 	cmd_status(evt, (!status) ? 0x00 : BT_HCI_ERR_CMD_DISALLOWED);
 }
 
-static void le_encrypt(struct net_buf *buf, btstack_buf_t *evt)
+static void le_encrypt(btstack_buf_t *buf, btstack_buf_t *evt)
 {
 	struct bt_hci_cp_le_encrypt *cmd = (void *)buf->data;
 	struct bt_hci_rp_le_encrypt *rp;
@@ -553,7 +553,7 @@ static void le_encrypt(struct net_buf *buf, btstack_buf_t *evt)
 	rp->status = 0x00;
 }
 
-static void le_rand(struct net_buf *buf, btstack_buf_t *evt)
+static void le_rand(btstack_buf_t *buf, btstack_buf_t *evt)
 {
 	struct bt_hci_rp_le_rand *rp;
 	uint8_t count = sizeof(rp->rand);
@@ -569,7 +569,7 @@ static void le_rand(struct net_buf *buf, btstack_buf_t *evt)
 	}
 }
 
-static void le_start_encryption(struct net_buf *buf, btstack_buf_t *evt)
+static void le_start_encryption(btstack_buf_t *buf, btstack_buf_t *evt)
 {
 	struct bt_hci_cp_le_start_encryption *cmd = (void *)buf->data;
 	uint32_t status;
@@ -584,7 +584,7 @@ static void le_start_encryption(struct net_buf *buf, btstack_buf_t *evt)
 	cmd_status(evt, (!status) ? 0x00 : BT_HCI_ERR_CMD_DISALLOWED);
 }
 
-static void le_ltk_req_reply(struct net_buf *buf, btstack_buf_t *evt)
+static void le_ltk_req_reply(btstack_buf_t *buf, btstack_buf_t *evt)
 {
 	struct bt_hci_cp_le_ltk_req_reply *cmd = (void *)buf->data;
 	struct bt_hci_rp_le_ltk_req_reply *rp;
@@ -599,7 +599,7 @@ static void le_ltk_req_reply(struct net_buf *buf, btstack_buf_t *evt)
 	rp->handle = cmd->handle;
 }
 
-static void le_ltk_req_neg_reply(struct net_buf *buf, btstack_buf_t *evt)
+static void le_ltk_req_neg_reply(btstack_buf_t *buf, btstack_buf_t *evt)
 {
 	struct bt_hci_cp_le_ltk_req_neg_reply *cmd = (void *)buf->data;
 	struct bt_hci_rp_le_ltk_req_neg_reply *rp;
@@ -615,7 +615,7 @@ static void le_ltk_req_neg_reply(struct net_buf *buf, btstack_buf_t *evt)
 	rp->handle = cmd->handle;
 }
 
-static void le_read_supp_states(struct net_buf *buf, btstack_buf_t *evt)
+static void le_read_supp_states(btstack_buf_t *buf, btstack_buf_t *evt)
 {
 	struct bt_hci_rp_le_read_supp_states *rp;
 
@@ -625,7 +625,7 @@ static void le_read_supp_states(struct net_buf *buf, btstack_buf_t *evt)
 	sys_put_le64(0x000003ffffffffff, rp->le_states);
 }
 
-static void le_conn_param_req_reply(struct net_buf *buf, btstack_buf_t *evt)
+static void le_conn_param_req_reply(btstack_buf_t *buf, btstack_buf_t *evt)
 {
 	struct bt_hci_cp_le_conn_param_req_reply *cmd = (void *)buf->data;
 	struct bt_hci_rp_le_conn_param_req_reply *rp;
@@ -648,7 +648,7 @@ static void le_conn_param_req_reply(struct net_buf *buf, btstack_buf_t *evt)
 	rp->handle = cmd->handle;
 }
 
-static void le_conn_param_req_neg_reply(struct net_buf *buf,
+static void le_conn_param_req_neg_reply(btstack_buf_t *buf,
 					btstack_buf_t *evt)
 {
 	struct bt_hci_cp_le_conn_param_req_neg_reply *cmd = (void *)buf->data;
@@ -664,7 +664,7 @@ static void le_conn_param_req_neg_reply(struct net_buf *buf,
 	rp->handle = cmd->handle;
 }
 
-static void le_set_data_len(struct net_buf *buf, btstack_buf_t *evt)
+static void le_set_data_len(btstack_buf_t *buf, btstack_buf_t *evt)
 {
 	struct bt_hci_cp_le_set_data_len *cmd = (void *)buf->data;
 	struct bt_hci_rp_le_set_data_len *rp;
@@ -682,7 +682,7 @@ static void le_set_data_len(struct net_buf *buf, btstack_buf_t *evt)
 	rp->handle = cmd->handle;
 }
 
-static int controller_cmd_handle(uint8_t ocf, struct net_buf *cmd,
+static int controller_cmd_handle(uint8_t ocf, btstack_buf_t *cmd,
 				 btstack_buf_t *evt)
 {
 	switch (ocf) {
@@ -809,7 +809,7 @@ static int controller_cmd_handle(uint8_t ocf, struct net_buf *cmd,
 	return 0;
 }
 
-int btstack_hci_cmd_handle(struct net_buf *cmd, btstack_buf_t *evt)
+int btstack_hci_cmd_handle(btstack_buf_t *cmd, btstack_buf_t *evt)
 {
 	struct bt_hci_evt_cc_status *ccst;
 	struct bt_hci_cmd_hdr *chdr;
@@ -830,7 +830,7 @@ int btstack_hci_cmd_handle(struct net_buf *cmd, btstack_buf_t *evt)
 		return -EINVAL;
 	}
 
-	net_buf_pull(cmd, sizeof(*chdr));
+	btstack_buf_pull(cmd, sizeof(*chdr));
 
 	ocf = BT_OCF(_opcode);
 
