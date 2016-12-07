@@ -1232,6 +1232,45 @@ static void encode_data_ctrl(struct radio_pdu_node_rx *node_rx,
 	}
 }
 
+void hci_acl_encode_btstack(struct radio_pdu_node_rx *node_rx, uint8_t * packet_buffer, uint16_t * packet_size)
+{
+	struct bt_hci_acl_hdr *acl;
+	struct pdu_data *pdu_data;
+	uint16_t handle_flags;
+	uint16_t handle;
+	uint8_t *data;
+
+	uint16_t offset = 0;
+
+	pdu_data = (struct pdu_data *)node_rx->pdu_data;
+	handle = node_rx->hdr.handle;
+
+	switch (pdu_data->ll_id) {
+	case PDU_DATA_LLID_DATA_CONTINUE:
+	case PDU_DATA_LLID_DATA_START:
+		if (pdu_data->ll_id == PDU_DATA_LLID_DATA_START) {
+			handle_flags = bt_acl_handle_pack(handle, BT_ACL_START);
+		} else {
+			handle_flags = bt_acl_handle_pack(handle, BT_ACL_CONT);
+		}
+		acl = (struct bt_hci_acl_hdr*) packet_buffer;
+		acl->handle = sys_cpu_to_le16(handle_flags);
+		acl->len = sys_cpu_to_le16(pdu_data->len);	
+		offset += sizeof(*acl);
+
+		data = &packet_buffer[offset];
+		memcpy(data, &pdu_data->payload.lldata[0], pdu_data->len);
+		offset += pdu_data->len;
+		break;
+
+	default:
+		LL_ASSERT(0);
+		break;
+	}
+	*packet_size = offset;
+}
+
+
 #if 0
 void hci_acl_encode(struct radio_pdu_node_rx *node_rx, btstack_buf_t *buf)
 {
