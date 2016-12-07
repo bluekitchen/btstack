@@ -476,6 +476,7 @@ static int handle_l2cap_data_packet_for_connection(avdtp_connection_t * connecti
                 case AVDTP_SI_GET_CAPABILITIES:
                 case AVDTP_SI_GET_ALL_CAPABILITIES:
                 case AVDTP_SI_SET_CONFIGURATION:
+                case AVDTP_SI_GET_CONFIGURATION:
                 case AVDTP_SI_OPEN:
                 case AVDTP_SI_START:
                     connection->query_seid  = packet[2] >> 2;
