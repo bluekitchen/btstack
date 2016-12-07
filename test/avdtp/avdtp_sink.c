@@ -507,7 +507,7 @@ static int handle_l2cap_data_packet_for_connection(avdtp_connection_t * connecti
                         sep.seid = packet[i] >> 2;
                         if (sep.seid < 0x01 || sep.seid > 0x3E){
                             printf("invalid sep id\n");
-                            return 0;
+                            return 01;
                         }
                         sep.in_use = (packet[i] >> 1) & 0x01;
                         sep.media_type = (avdtp_media_type_t)(packet[i+1] >> 4);
@@ -666,6 +666,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     if (connection){
                         log_info(" -> L2CAP_EVENT_CHANNEL_CLOSED signaling cid 0x%0x", local_cid);
                         stream_endpoint = get_avdtp_stream_endpoint_for_connection(connection);
+                        if (!stream_endpoint) break;
                         stream_endpoint->connection = NULL;
                         connection->state = AVDTP_SIGNALING_CONNECTION_IDLE;
                         btstack_linked_list_remove(&avdtp_connections, (btstack_linked_item_t*) connection); 

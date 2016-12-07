@@ -328,8 +328,10 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 }
 
 static void show_usage(void){
-    printf("\n--- CLI for L2CAP TEST ---\n");
-    printf("c      - create connection to SDP at addr %s\n", bd_addr_to_str(remote));
+    bd_addr_t      iut_address;
+    gap_local_bd_addr(iut_address);
+    printf("\n--- Bluetooth AVDTP SINK Test Console %s ---\n", bd_addr_to_str(iut_address));
+    printf("c      - create connection to addr %s\n", bd_addr_to_str(remote));
     printf("d      - disconnect\n");
     printf("Ctrl-c - exit\n");
     printf("---\n");
