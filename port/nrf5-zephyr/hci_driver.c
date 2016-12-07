@@ -51,24 +51,10 @@
 
 #include "bluetooth.h"
 
-// temp
-#include "zephyr_diet.h"
-
-// updated hci.c
-int  btstack_hci_cmd_handle(btstack_buf_t *cmd, btstack_buf_t *evt);
-void btstack_hci_evt_encode(struct radio_pdu_node_rx *node_rx, btstack_buf_t *buf);
-void btstack_hci_num_cmplt_encode(btstack_buf_t *buf, uint16_t handle, uint8_t num);
-void hci_acl_encode_btstack(struct radio_pdu_node_rx *node_rx, uint8_t * packet_buffer, uint16_t * packet_size);
-
 #if !defined(CONFIG_BLUETOOTH_DEBUG_HCI_DRIVER)
 #undef BT_DBG
 #define BT_DBG(fmt, ...)
 #endif
-
-#define HCI_CMD		0x01
-#define HCI_ACL		0x02
-#define HCI_SCO		0x03
-#define HCI_EVT		0x04
 
 static uint8_t ALIGNED(4) _rand_context[3 + 4 + 1];
 static uint8_t ALIGNED(4) _ticker_nodes[RADIO_TICKER_NODES][TICKER_NODE_T_SIZE];
@@ -133,8 +119,6 @@ static void swi5_nrf5_isr(void *arg)
 {
 	work_run(NRF5_IRQ_SWI5_IRQn);
 }
-
-
 
 int hci_driver_open(void)
 {
@@ -203,6 +187,15 @@ int hci_driver_open(void)
 //
 // parked here - moving it to main.c is tricky due to incomplete includes - probably.
 //
+
+// temp
+#include "zephyr_diet.h"
+
+// updated hci.c
+int  btstack_hci_cmd_handle(btstack_buf_t *cmd, btstack_buf_t *evt);
+void btstack_hci_evt_encode(struct radio_pdu_node_rx *node_rx, btstack_buf_t *buf);
+void btstack_hci_num_cmplt_encode(btstack_buf_t *buf, uint16_t handle, uint8_t num);
+void hci_acl_encode_btstack(struct radio_pdu_node_rx *node_rx, uint8_t * packet_buffer, uint16_t * packet_size);
 
 static void hci_driver_process_radio_data(struct radio_pdu_node_rx *node_rx, uint8_t * packet_type, uint8_t * packet_buffer, uint16_t * packet_size){
 
