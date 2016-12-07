@@ -364,6 +364,7 @@ typedef struct {
     uint8_t wait_to_send_acceptor;
     uint8_t wait_to_send_initiator;
     uint8_t wait_to_send_self;
+    uint8_t confirm_suspend;
 } avdtp_connection_t;
 
 
