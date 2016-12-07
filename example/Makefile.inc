@@ -77,15 +77,15 @@ include ${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/Makefile.inc
 include ${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/Makefile.inc
 
 SBC_DECODER += \
-	${BTSTACK_ROOT}/src/classic/btstack_sbc_plc.c \
-	${BTSTACK_ROOT}/src/classic/btstack_sbc_bludroid.c \
+	btstack_sbc_plc.c \
+	btstack_sbc_bludroid.c \
 
 SBC_ENCODER += \
-	${BTSTACK_ROOT}/src/classic/btstack_sbc_bludroid.c \
-	${BTSTACK_ROOT}/src/classic/hfp_msbc.c \
+	btstack_sbc_bludroid.c \
+	hfp_msbc.c \
 
 CVSD_PLC = \
-	${BTSTACK_ROOT}/src/classic/btstack_cvsd_plc.c \
+	btstack_cvsd_plc.c \
 
 
 EXAMPLES = 					\

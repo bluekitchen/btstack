@@ -47,12 +47,11 @@ extern "C" {
 // setup handler for command line interface
 void btstack_stdin_setup(void (*stdin_handler)(btstack_data_source_t *_ds, btstack_data_source_callback_type_t callback_type));
 
+// read single byte after data source callback was triggered
+char btstack_stdin_read(void);
+
 // gets called by main.c
 void btstack_stdin_reset(void);
-
-// 
-uint32_t btstack_stdin_query_int(const char * fieldName);
-uint32_t btstack_stdin_query_hex(const char * fieldName);
 
 #if defined __cplusplus
 }

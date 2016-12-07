@@ -219,11 +219,9 @@ void l2cap_release_packet_buffer(void){
     hci_release_packet_buffer();
 }
 
-static void l2cap_setup_header(uint8_t * acl_buffer, hci_con_handle_t con_handle, uint16_t remote_cid, uint16_t len){
-    int pb = hci_non_flushable_packet_boundary_flag_supported() ? 0x00 : 0x02;
-
+static void l2cap_setup_header(uint8_t * acl_buffer, hci_con_handle_t con_handle, uint8_t packet_boundary, uint16_t remote_cid, uint16_t len){
     // 0 - Connection handle : PB=pb : BC=00 
-    little_endian_store_16(acl_buffer, 0, con_handle | (pb << 12) | (0 << 14));
+    little_endian_store_16(acl_buffer, 0, con_handle | (packet_boundary << 12) | (0 << 14));
     // 2 - ACL length
     little_endian_store_16(acl_buffer, 2,  len + 4);
     // 4 - L2CAP packet length
@@ -232,6 +230,7 @@ static void l2cap_setup_header(uint8_t * acl_buffer, hci_con_handle_t con_handle
     little_endian_store_16(acl_buffer, 6,  remote_cid);    
 }
 
+// assumption - only on LE connections
 int l2cap_send_prepared_connectionless(hci_con_handle_t con_handle, uint16_t cid, uint16_t len){
     
     if (!hci_is_packet_buffer_reserved()){
@@ -247,11 +246,12 @@ int l2cap_send_prepared_connectionless(hci_con_handle_t con_handle, uint16_t cid
     log_debug("l2cap_send_prepared_connectionless handle %u, cid 0x%02x", con_handle, cid);
     
     uint8_t *acl_buffer = hci_get_outgoing_packet_buffer();
-    l2cap_setup_header(acl_buffer, con_handle, cid, len);
+    l2cap_setup_header(acl_buffer, con_handle, 0, cid, len);
     // send
     return hci_send_acl_packet_buffer(len+8);
 }
 
+// assumption - only on LE connections
 int l2cap_send_connectionless(hci_con_handle_t con_handle, uint16_t cid, uint8_t *data, uint16_t len){
     
     if (!hci_can_send_acl_packet_now(con_handle)){
@@ -449,6 +449,7 @@ static int l2cap_send_signaling_packet(hci_con_handle_t handle, L2CAP_SIGNALING_
     return hci_send_acl_packet_buffer(len);
 }
 
+// assumption - only on Classic connections
 int l2cap_send_prepared(uint16_t local_cid, uint16_t len){
     
     if (!hci_is_packet_buffer_reserved()){
@@ -469,12 +470,15 @@ int l2cap_send_prepared(uint16_t local_cid, uint16_t len){
     
     log_debug("l2cap_send_prepared cid 0x%02x, handle %u, 1 credit used", local_cid, channel->con_handle);
     
+    // set non-flushable packet boundary flag if supported on Controller
     uint8_t *acl_buffer = hci_get_outgoing_packet_buffer();
-    l2cap_setup_header(acl_buffer, channel->con_handle, channel->remote_cid, len);
+    uint8_t packet_boundary_flag = hci_non_flushable_packet_boundary_flag_supported() ? 0x00 : 0x02;
+    l2cap_setup_header(acl_buffer, channel->con_handle, packet_boundary_flag, channel->remote_cid, len);
     // send
     return hci_send_acl_packet_buffer(len+8);
 }
 
+// assumption - only on Classic connections
 int l2cap_send(uint16_t local_cid, uint8_t *data, uint16_t len){
 
     l2cap_channel_t * channel = l2cap_get_channel_for_local_cid(local_cid);
@@ -812,7 +816,7 @@ static void l2cap_run(void){
                 memcpy(&l2cap_payload[pos], &channel->send_sdu_buffer[channel->send_sdu_pos-2], payload_size); // -2 for virtual SDU len
                 pos += payload_size;
                 channel->send_sdu_pos += payload_size;
-                l2cap_setup_header(acl_buffer, channel->con_handle, channel->remote_cid, pos);
+                l2cap_setup_header(acl_buffer, channel->con_handle, 0, channel->remote_cid, pos);
                 // done
 
                 channel->credits_outgoing--;

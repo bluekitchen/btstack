@@ -37,6 +37,8 @@
 
 #include <errno.h>
 #include <stdio.h>
+#include <unistd.h>
+
 #include "btstack_run_loop.h"
 #include <stdlib.h>
 
@@ -89,6 +91,7 @@ void btstack_stdin_reset(void){
 #endif
 }
 
+#if 0
 static int getstring(char *line, int size)
 {
     int i = 0;
@@ -109,20 +112,12 @@ static int getstring(char *line, int size)
     line[i] = 0;
     return i;
 }
+#endif
 
-uint32_t btstack_stdin_query_int(const char * fieldName){
-    printf("Please enter new int value for %s:\n", fieldName);
-    char buffer[80];
-    getstring(buffer, sizeof(buffer));
-    return atoi(buffer);
-}
-
-uint32_t btstack_stdin_query_hex(const char * fieldName){
-    printf("Please enter new hex value for %s:\n", fieldName);
-    char buffer[80];
-    getstring(buffer, sizeof(buffer));
-    uint32_t value;
-    sscanf(buffer, "%x", &value);
-    return value;
+// read single byte after data source callback was triggered
+char btstack_stdin_read(void){
+    char buffer;
+    read(stdin_source.fd, &buffer, 1);
+    return buffer;
 }
 

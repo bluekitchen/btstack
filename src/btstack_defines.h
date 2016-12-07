@@ -833,14 +833,13 @@ typedef uint8_t sm_key_t[16];
  /**
   * @brief Identify resolving succeeded
   *
-  * @format H1B1B
+  * @format H1B1B2
   * @param handle
   * @param addr_type
   * @param address
   * @param identity_addr_type
   * @param identity_address
-  *
-  * @note le_device_db_index was removed, please use provided identity information directly
+  * @param index_internal
   *
   */
 #define SM_EVENT_IDENTITY_RESOLVING_SUCCEEDED                    0xDA

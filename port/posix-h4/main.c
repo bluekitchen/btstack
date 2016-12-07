@@ -89,6 +89,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             break;
         case HCI_EVENT_COMMAND_COMPLETE:
             if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_read_local_name)){
+                if (hci_event_command_complete_get_return_parameters(packet)[0]) break;
                 // terminate, name 248 chars
                 packet[6+248] = 0;
                 printf("Local name: %s\n", &packet[6]);
@@ -165,6 +166,8 @@ static void local_version_information_callback(uint8_t * packet){
         case COMPANY_ID_BROADCOM_CORPORATION:   
             printf("Broadcom - using BCM driver.\n");
             hci_set_chipset(btstack_chipset_bcm_instance());
+
+            use_fast_uart();
             is_bcm = 1;
             break;
         case COMPANY_ID_ST_MICROELECTRONICS:   
@@ -195,7 +198,7 @@ int main(int argc, const char * argv[]){
     hci_dump_open("/tmp/hci_dump.pklg", HCI_DUMP_PACKETLOGGER);
 
     // pick serial port
-    config.device_name = "/dev/tty.usbserial-A9GN71D5";
+    config.device_name = "/dev/tty.usbserial-A9OVNX5P";
 
     // init HCI
     const btstack_uart_block_t * uart_driver = btstack_uart_block_posix_instance();

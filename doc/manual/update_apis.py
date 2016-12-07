@@ -160,15 +160,19 @@ def createIndex(btstackfolder, apis, githubfolder):
                     functions[ref_function.group(1)] = codeReference(ref_function.group(1), githubfolder, api_tuple[0], linenr)
                     continue
 
-                function = re.match('.*?\s+\*?\s*(.*?)\(.*\(*.*;\n', line)
+                function = re.match('(.*?)\(.*\(*.*;\n', line)
                 if function:
-                    functions[function.group(1)] = codeReference(function.group(1), githubfolder, api_tuple[0], linenr)
+                    parts = function.group(1).split(" ");
+                    name = parts[len(parts)-1]
+                    functions[name] = codeReference( name, githubfolder, api_tuple[0], linenr)
                     continue
 
-                function = re.match('.*?\s+\*?\s*(.*?)\(.*\(*.*', line)
+                function = re.match('.(.*?)\(.*\(*.*', line)
                 if function:
+                    parts = function.group(1).split(" ");
+                    name = parts[len(parts)-1]
                     multiline_function_def = 1
-                    functions[function.group(1)] = codeReference(function.group(1), githubfolder, api_tuple[0], linenr)
+                    functions[name] = codeReference(name, githubfolder, api_tuple[0], linenr)
 
                         
 def main(argv):
@@ -206,6 +210,11 @@ def main(argv):
 
     writeAPI(apifile, btstackfolder, apis, mk_codeidentation)
     createIndex(btstackfolder, apis, githubfolder)
+
+    for function in functions:
+        parts = function.split(' ')
+        if (len(parts) > 1):
+            print (parts)
 
     references = functions.copy()
     references.update(typedefs)
