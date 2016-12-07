@@ -134,77 +134,7 @@ static void swi5_nrf5_isr(void *arg)
 	work_run(NRF5_IRQ_SWI5_IRQn);
 }
 
-static void hci_driver_process_radio_data(struct radio_pdu_node_rx *node_rx, uint8_t * packet_type, uint8_t * packet_buffer, uint16_t * packet_size){
 
-	struct pdu_data * pdu_data;
-
-	pdu_data = (void *)node_rx->pdu_data;
-	/* Check if we need to generate an HCI event or ACL
-	 * data
-	 */
-	if (node_rx->hdr.type != NODE_RX_TYPE_DC_PDU ||
-	    pdu_data->ll_id == PDU_DATA_LLID_CTRL) {
-		
-		/* generate a (non-priority) HCI event */
-		btstack_buf_t buf;
-		buf.data = packet_buffer;
-		buf.len = 0;
-		btstack_hci_evt_encode(node_rx, &buf);
-		*packet_size = buf.len;
-		*packet_type = HCI_EVENT_PACKET;
-
-	} else {
-		/* generate ACL data */
-		hci_acl_encode_btstack(node_rx, packet_buffer, packet_size);
-		*packet_type = HCI_ACL_DATA_PACKET;
-	}
-
-	radio_rx_dequeue();
-	radio_rx_fc_set(node_rx->hdr.handle, 0);
-	node_rx->hdr.onion.next = 0;
-	radio_rx_mem_release(&node_rx);
-}
-
-// BTstack: make public
-static void hci_driver_emit_num_completed(uint16_t handle, uint16_t num_completed, uint8_t * packet_buffer, uint16_t * packet_size){
-	btstack_buf_t buf;
-	buf.data = packet_buffer;
-	buf.len = 0;
-	btstack_hci_num_cmplt_encode(&buf, handle, num_completed);
-	*packet_size = buf.len;
-}
-
-// returns 1 if done
-int hci_driver_task_step(uint8_t * packet_type, uint8_t * packet_buffer, uint16_t * packet_size){
-	uint16_t handle;
-	struct radio_pdu_node_rx *node_rx;
-
-	// if num_completed != 0 => node_rx == null
-	uint8_t num_completed = radio_rx_get(&node_rx, &handle);
-
-	if (num_completed){
-		hci_driver_emit_num_completed(handle,num_completed, packet_buffer, packet_size);
-		*packet_type = HCI_EVENT_PACKET;
-		return 0;
-	}
-
-	if (node_rx) {
-		hci_driver_process_radio_data(node_rx, packet_type, packet_buffer, packet_size);
-		return 0;
-	}
-
-	return 1;
-}
-
-int hci_driver_handle_cmd(btstack_buf_t * buf, uint8_t * event_buffer, uint16_t * event_size)
-{
-	btstack_buf_t evt;
-	evt.data = event_buffer;
-	evt.len = 0;
-	int err = btstack_hci_cmd_handle(buf, &evt);
-	*event_size = evt.len;
-	return err;
-}
 
 int hci_driver_open(void)
 {
@@ -269,3 +199,76 @@ int hci_driver_open(void)
 
 	return 0;
 }
+
+//
+// parked here - moving it to main.c is tricky due to incomplete includes - probably.
+//
+
+static void hci_driver_process_radio_data(struct radio_pdu_node_rx *node_rx, uint8_t * packet_type, uint8_t * packet_buffer, uint16_t * packet_size){
+
+	struct pdu_data * pdu_data;
+
+	pdu_data = (void *)node_rx->pdu_data;
+	/* Check if we need to generate an HCI event or ACL
+	 * data
+	 */
+	if (node_rx->hdr.type != NODE_RX_TYPE_DC_PDU ||
+	    pdu_data->ll_id == PDU_DATA_LLID_CTRL) {
+		
+		/* generate a (non-priority) HCI event */
+		btstack_buf_t buf;
+		buf.data = packet_buffer;
+		buf.len = 0;
+		btstack_hci_evt_encode(node_rx, &buf);
+		*packet_size = buf.len;
+		*packet_type = HCI_EVENT_PACKET;
+
+	} else {
+		/* generate ACL data */
+		hci_acl_encode_btstack(node_rx, packet_buffer, packet_size);
+		*packet_type = HCI_ACL_DATA_PACKET;
+	}
+
+	radio_rx_dequeue();
+	radio_rx_fc_set(node_rx->hdr.handle, 0);
+	node_rx->hdr.onion.next = 0;
+	radio_rx_mem_release(&node_rx);
+}
+
+// returns 1 if done
+int hci_driver_task_step(uint8_t * packet_type, uint8_t * packet_buffer, uint16_t * packet_size){
+	uint16_t handle;
+	struct radio_pdu_node_rx *node_rx;
+
+	// if num_completed != 0 => node_rx == null
+	uint8_t num_completed = radio_rx_get(&node_rx, &handle);
+
+	if (num_completed){
+		// emit num completed event
+		btstack_buf_t buf;
+		buf.data = packet_buffer;
+		buf.len = 0;
+		btstack_hci_num_cmplt_encode(&buf, handle, num_completed);
+		*packet_size = buf.len;
+		*packet_type = HCI_EVENT_PACKET;
+		return 0;
+	}
+
+	if (node_rx) {
+		hci_driver_process_radio_data(node_rx, packet_type, packet_buffer, packet_size);
+		return 0;
+	}
+
+	return 1;
+}
+
+int hci_driver_handle_cmd(btstack_buf_t * buf, uint8_t * event_buffer, uint16_t * event_size)
+{
+	btstack_buf_t evt;
+	evt.data = event_buffer;
+	evt.len = 0;
+	int err = btstack_hci_cmd_handle(buf, &evt);
+	*event_size = evt.len;
+	return err;
+}
+
