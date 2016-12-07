@@ -352,6 +352,13 @@ static avdtp_stream_endpoint_t * get_avdtp_stream_endpoint_for_connection(avdtp_
     return NULL;
 }
 
+static int avdtp_acceptor_send_accept_response(uint16_t cid,  avdtp_signal_identifier_t identifier, uint8_t transaction_label){
+    uint8_t command[2];
+    command[0] = avdtp_header(transaction_label, AVDTP_SINGLE_PACKET, AVDTP_RESPONSE_ACCEPT_MSG);
+    command[1] = (uint8_t)identifier;
+    return l2cap_send(cid, command, sizeof(command));
+}
+
 static int avdtp_send_seps_response(uint16_t cid, uint8_t transaction_label, avdtp_stream_endpoint_t * endpoints){
     uint8_t command[2+2*MAX_NUM_SEPS];
     int pos = 0;
@@ -391,6 +398,13 @@ static void avdtp_sink_handle_can_send_now(avdtp_connection_t * connection, uint
 
     } else if (connection->wait_to_send_self){
         connection->wait_to_send_self = 0;
+
+        if (connection->confirm_suspend){
+            printf(" -> STREAMS SUSPENDED\n");
+            connection->confirm_suspend = 0;
+            avdtp_acceptor_send_accept_response(connection->l2cap_signaling_cid, AVDTP_SI_SUSPEND, connection->acceptor_transaction_label);
+            return;
+        }
 
         switch (connection->acceptor_connection_state){
             case AVDTP_SIGNALING_CONNECTION_ACCEPTOR_W2_ANSWER_DISCOVER_SEPS:
@@ -483,6 +497,23 @@ static int handle_l2cap_data_packet_for_connection(avdtp_connection_t * connecti
                     stream_endpoint = get_avdtp_stream_endpoint_for_active_seid(connection->query_seid);
                     // printf(" handle_l2cap_data_packet_for_connection 2\n");
                     return handle_l2cap_data_packet_for_stream_endpoint(connection, stream_endpoint, packet, size);
+                case AVDTP_SI_RECONFIGURE:
+                    connection->query_seid  = packet[2] >> 2;
+                    stream_endpoint = get_avdtp_stream_endpoint_for_active_seid(connection->query_seid);
+                    printf(" AVDTP_SI_RECONFIGURE handle_l2cap_data_packet_for_connection 2\n");
+                    return handle_l2cap_data_packet_for_stream_endpoint(connection, stream_endpoint, packet, size);
+                
+                case AVDTP_SI_SUSPEND:{
+                    int i;
+                    for (i=2; i<size; i++){
+                        stream_endpoint = get_avdtp_stream_endpoint_for_active_seid(packet[i] >> 2);
+                        if (!stream_endpoint) continue;
+                        stream_endpoint->state = AVDTP_STREAM_ENDPOINT_OPENED;
+                    }
+                    connection->confirm_suspend = 1;
+                    avdtp_sink_request_can_send_now_self(connection, connection->l2cap_signaling_cid);
+                    return 1;
+                }
                 default:
                     printf("AVDTP_CMD_MSG signal %d not implemented\n", signaling_header.signal_identifier);
                     break;
@@ -503,7 +534,7 @@ static int handle_l2cap_data_packet_for_connection(avdtp_connection_t * connecti
                 
                     avdtp_sep_t sep;
                     int i;
-                    for (i = 2; i<size; i+=2){
+                    for (i=2; i<size; i+=2){
                         sep.seid = packet[i] >> 2;
                         if (sep.seid < 0x01 || sep.seid > 0x3E){
                             printf("invalid sep id\n");

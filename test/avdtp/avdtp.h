@@ -308,6 +308,7 @@ typedef enum {
     AVDTP_ACCEPTOR_W2_ANSWER_GET_CAPABILITIES,
     AVDTP_ACCEPTOR_W2_ANSWER_GET_ALL_CAPABILITIES,
     AVDTP_ACCEPTOR_W2_ANSWER_SET_CONFIGURATION,
+    AVDTP_ACCEPTOR_W2_ANSWER_RECONFIGURE,
     AVDTP_ACCEPTOR_W2_ANSWER_GET_CONFIGURATION,
     AVDTP_ACCEPTOR_W2_ANSWER_OPEN_STREAM,
     AVDTP_ACCEPTOR_W4_L2CAP_FOR_MEDIA_CONNECTED,
@@ -392,6 +393,7 @@ typedef struct avdtp_stream_endpoint {
     uint8_t remote_sep_index;
     // register request for L2cap connection release
     uint8_t disconnect;
+    uint8_t failed_reconfigure_service_category;
 } avdtp_stream_endpoint_t;
 
 #if defined __cplusplus
