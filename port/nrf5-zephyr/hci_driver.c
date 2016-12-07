@@ -59,8 +59,7 @@
 static uint8_t ALIGNED(4) _rand_context[3 + 4 + 1];
 static uint8_t ALIGNED(4) _ticker_nodes[RADIO_TICKER_NODES][TICKER_NODE_T_SIZE];
 static uint8_t ALIGNED(4) _ticker_users[RADIO_TICKER_USERS][TICKER_USER_T_SIZE];
-static uint8_t ALIGNED(4) _ticker_user_ops[RADIO_TICKER_USER_OPS]
-						[TICKER_USER_OP_T_SIZE];
+static uint8_t ALIGNED(4) _ticker_user_ops[RADIO_TICKER_USER_OPS][TICKER_USER_OP_T_SIZE];
 static uint8_t ALIGNED(4) _radio[LL_MEM_TOTAL];
 
 // BTstack: make public
@@ -91,7 +90,6 @@ static void rtc0_nrf5_isr(void *arg)
 	/* On compare0 run ticker worker instance0 */
 	if (compare0) {
 		NRF_RTC0->EVENTS_COMPARE[0] = 0;
-
 		ticker_trigger(0);
 	}
 
@@ -113,11 +111,6 @@ static void rng_nrf5_isr(void *arg)
 static void swi4_nrf5_isr(void *arg)
 {
 	work_run(NRF5_IRQ_SWI4_IRQn);
-}
-
-static void swi5_nrf5_isr(void *arg)
-{
-	work_run(NRF5_IRQ_SWI5_IRQn);
 }
 
 int hci_driver_open(void)
@@ -172,12 +165,10 @@ int hci_driver_open(void)
 	IRQ_CONNECT(NRF5_IRQ_RTC0_IRQn, 0, rtc0_nrf5_isr, 0, 0);
 	IRQ_CONNECT(NRF5_IRQ_RNG_IRQn, 1, rng_nrf5_isr, 0, 0);
 	IRQ_CONNECT(NRF5_IRQ_SWI4_IRQn, 0, swi4_nrf5_isr, 0, 0);
-	IRQ_CONNECT(NRF5_IRQ_SWI5_IRQn, 1, swi5_nrf5_isr, 0, 0);
 	irq_enable(NRF5_IRQ_RADIO_IRQn);
 	irq_enable(NRF5_IRQ_RTC0_IRQn);
 	irq_enable(NRF5_IRQ_RNG_IRQn);
 	irq_enable(NRF5_IRQ_SWI4_IRQn);
-	irq_enable(NRF5_IRQ_SWI5_IRQn);
 
 	BT_DBG("Success.");
 
