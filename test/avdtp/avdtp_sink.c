@@ -154,8 +154,6 @@ static avdtp_stream_endpoint_t * get_avdtp_stream_endpoint_for_seid(uint16_t sei
     return NULL;
 }
 
-
-
 static avdtp_connection_t * avdtp_sink_create_connection(bd_addr_t remote_addr){
     avdtp_connection_t * connection = btstack_memory_avdtp_connection_get();
     memset(connection, 0, sizeof(avdtp_connection_t));
@@ -476,6 +474,7 @@ static int handle_l2cap_data_packet_for_connection(avdtp_connection_t * connecti
                     avdtp_sink_request_can_send_now_self(connection, connection->l2cap_signaling_cid);
                     return 1;
                 case AVDTP_SI_GET_CAPABILITIES:
+                case AVDTP_SI_GET_ALL_CAPABILITIES:
                 case AVDTP_SI_SET_CONFIGURATION:
                 case AVDTP_SI_OPEN:
                 case AVDTP_SI_START:
@@ -666,10 +665,16 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     if (connection){
                         log_info(" -> L2CAP_EVENT_CHANNEL_CLOSED signaling cid 0x%0x", local_cid);
                         stream_endpoint = get_avdtp_stream_endpoint_for_connection(connection);
+                        btstack_linked_list_remove(&avdtp_connections, (btstack_linked_item_t*) connection); 
                         if (!stream_endpoint) break;
                         stream_endpoint->connection = NULL;
-                        connection->state = AVDTP_SIGNALING_CONNECTION_IDLE;
-                        btstack_linked_list_remove(&avdtp_connections, (btstack_linked_item_t*) connection); 
+                        stream_endpoint->state = AVDTP_STREAM_ENDPOINT_IDLE;
+                        stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_STREAM_CONFIG_IDLE;
+                        stream_endpoint->initiator_config_state = AVDTP_INITIATOR_STREAM_CONFIG_IDLE;
+                        stream_endpoint->remote_sep_index = 0;
+                        stream_endpoint->disconnect = 0;
+                        stream_endpoint->remote_seps_num = 0;
+                        memset(stream_endpoint->remote_seps, 0, sizeof(stream_endpoint->remote_seps));
                         break;
                     }
 
@@ -694,7 +699,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                         stream_endpoint->l2cap_reporting_cid = 0;
                         break;
                     }
-
                     break;
 
                 case HCI_EVENT_DISCONNECTION_COMPLETE:

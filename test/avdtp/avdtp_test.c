@@ -309,7 +309,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     break;
 
                 case HCI_EVENT_DISCONNECTION_COMPLETE:
-                    // connection closed -> quit tes app
+                    // connection closed -> quit test app
                     printf("\n --- avdtp_test: HCI_EVENT_DISCONNECTION_COMPLETE ---\n");
                     close_media_processing();
                     // exit(0);
