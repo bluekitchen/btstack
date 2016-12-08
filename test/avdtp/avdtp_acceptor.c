@@ -368,85 +368,82 @@ static int avdtp_acceptor_send_response_reject_with_error_code(uint16_t cid,  av
 
 int avdtp_acceptor_stream_config_subsm_run(avdtp_connection_t * connection, avdtp_stream_endpoint_t * stream_endpoint){
     if (!stream_endpoint) return 0;
-    
-    int sent = 1;
-
     uint8_t failed_reconfigure_service_category = stream_endpoint->failed_reconfigure_service_category;
     avdtp_signal_identifier_t reject_signal_identifier = stream_endpoint->reject_signal_identifier;
     uint8_t error_code = stream_endpoint->error_code;
-    
+    uint16_t cid = stream_endpoint->connection ? stream_endpoint->connection->l2cap_signaling_cid : connection->l2cap_signaling_cid;
+    uint8_t trid = stream_endpoint->connection ? stream_endpoint->connection->acceptor_transaction_label : connection->acceptor_transaction_label;
+
     avdtp_acceptor_stream_endpoint_state_t acceptor_config_state = stream_endpoint->acceptor_config_state;
     stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_STREAM_CONFIG_IDLE;
-            
+    int sent = 1;
     switch (acceptor_config_state){
         case AVDTP_ACCEPTOR_STREAM_CONFIG_IDLE:
             break;
         case AVDTP_ACCEPTOR_W2_ANSWER_GET_CAPABILITIES:
             printf("    ACP: DONE\n");
-            avdtp_acceptor_send_capabilities_response(connection->l2cap_signaling_cid, connection->acceptor_transaction_label, stream_endpoint->sep);
+            avdtp_acceptor_send_capabilities_response(cid, trid, stream_endpoint->sep);
             break;
         case AVDTP_ACCEPTOR_W2_ANSWER_GET_ALL_CAPABILITIES:
             printf("    ACP: DONE\n");
-            avdtp_acceptor_send_all_capabilities_response(connection->l2cap_signaling_cid, connection->acceptor_transaction_label, stream_endpoint->sep);
+            avdtp_acceptor_send_all_capabilities_response(cid, trid, stream_endpoint->sep);
             break;
         case AVDTP_ACCEPTOR_W2_ANSWER_SET_CONFIGURATION:
             printf("    ACP: DONE\n");
             printf("    -> AVDTP_STREAM_ENDPOINT_CONFIGURED\n");
             stream_endpoint->connection = connection;
             stream_endpoint->state = AVDTP_STREAM_ENDPOINT_CONFIGURED;
-            avdtp_acceptor_send_accept_response(connection->l2cap_signaling_cid, AVDTP_SI_SET_CONFIGURATION, connection->acceptor_transaction_label);
+            avdtp_acceptor_send_accept_response(cid, AVDTP_SI_SET_CONFIGURATION, trid);
             break;
         case AVDTP_ACCEPTOR_W2_ANSWER_GET_CONFIGURATION:
             printf("    ACP: DONE\n");
-            avdtp_acceptor_send_stream_configuration_response(connection->l2cap_signaling_cid, connection->acceptor_transaction_label, stream_endpoint->remote_seps[stream_endpoint->remote_sep_index]);
+            avdtp_acceptor_send_stream_configuration_response(cid, trid, stream_endpoint->remote_seps[stream_endpoint->remote_sep_index]);
             break;
         case AVDTP_ACCEPTOR_W4_L2CAP_FOR_MEDIA_CONNECTED:
             stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W4_L2CAP_FOR_MEDIA_CONNECTED;
             return 0;
         case AVDTP_ACCEPTOR_W2_ANSWER_OPEN_STREAM:
             printf("    ACP: DONE\n");
-            avdtp_acceptor_send_accept_response(stream_endpoint->connection->l2cap_signaling_cid, AVDTP_SI_OPEN, stream_endpoint->connection->acceptor_transaction_label);
+            avdtp_acceptor_send_accept_response(cid, AVDTP_SI_OPEN, trid);
             break;
         case AVDTP_ACCEPTOR_W2_ANSWER_START_STREAM:
             printf("    ACP: DONE \n");
             printf("    -> AVDTP_STREAM_ENDPOINT_STREAMING \n");
-            avdtp_acceptor_send_accept_response(stream_endpoint->connection->l2cap_signaling_cid, AVDTP_SI_START, stream_endpoint->connection->acceptor_transaction_label);
+            avdtp_acceptor_send_accept_response(cid, AVDTP_SI_START, trid);
             break;
         case AVDTP_ACCEPTOR_W2_ANSWER_RECONFIGURE:
             printf("    ACP: DONE \n");
             if (failed_reconfigure_service_category){
                 printf("    ACP: failed_reconfigure_service_category %d \n", failed_reconfigure_service_category);
                 stream_endpoint->failed_reconfigure_service_category = 0;
-                avdtp_acceptor_send_response_reject_service_category(stream_endpoint->connection->l2cap_signaling_cid, AVDTP_SI_RECONFIGURE, 
-                        failed_reconfigure_service_category, stream_endpoint->connection->acceptor_transaction_label);
+                avdtp_acceptor_send_response_reject_service_category(cid, AVDTP_SI_RECONFIGURE, failed_reconfigure_service_category, trid);
                 break;
             }
             printf("    ACP: avdtp_acceptor_send_accept_response \n");
-            avdtp_acceptor_send_accept_response(stream_endpoint->connection->l2cap_signaling_cid, AVDTP_SI_RECONFIGURE, stream_endpoint->connection->acceptor_transaction_label);
+            avdtp_acceptor_send_accept_response(cid, AVDTP_SI_RECONFIGURE, trid);
             break;
         case AVDTP_ACCEPTOR_W2_ANSWER_CLOSE_STREAM:
             printf("    ACP: DONE\n");
-            avdtp_acceptor_send_accept_response(stream_endpoint->connection->l2cap_signaling_cid, AVDTP_SI_CLOSE, connection->acceptor_transaction_label);
+            avdtp_acceptor_send_accept_response(cid, AVDTP_SI_CLOSE, trid);
             break;
         case AVDTP_ACCEPTOR_W2_ANSWER_ABORT_STREAM:
             printf("    ACP: DONE\n");
-            avdtp_acceptor_send_accept_response(stream_endpoint->connection->l2cap_signaling_cid, AVDTP_SI_ABORT, connection->acceptor_transaction_label);
+            avdtp_acceptor_send_accept_response(cid, AVDTP_SI_ABORT, trid);
             break;
         case AVDTP_ACCEPTOR_W2_REJECT_UNKNOWN_CMD:
             printf("    ACP: REJECT\n");
             stream_endpoint->reject_signal_identifier = 0;
-            avdtp_acceptor_send_response_reject(connection->l2cap_signaling_cid, reject_signal_identifier, connection->acceptor_transaction_label);
+            avdtp_acceptor_send_response_reject(cid, reject_signal_identifier, trid);
             break;
         case AVDTP_ACCEPTOR_W2_REJECT_WITH_ERROR_CODE:
             printf("    ACP: REJECT\n");
             stream_endpoint->reject_signal_identifier = 0;
             stream_endpoint->error_code = 0;
-            avdtp_acceptor_send_response_reject_with_error_code(connection->l2cap_signaling_cid, reject_signal_identifier, error_code, connection->acceptor_transaction_label);
+            avdtp_acceptor_send_response_reject_with_error_code(cid, reject_signal_identifier, error_code, trid);
             break;
         default:  
             printf("    ACP: NOT IMPLEMENTED\n");
             return 0;
-    }
-    
+    }   
     return sent;
 }
