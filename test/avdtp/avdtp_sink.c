@@ -493,16 +493,15 @@ static int handle_l2cap_data_packet_for_connection(avdtp_connection_t * connecti
                 case AVDTP_SI_GET_CONFIGURATION:
                 case AVDTP_SI_OPEN:
                 case AVDTP_SI_START:
-                    connection->query_seid  = packet[2] >> 2;
-                    stream_endpoint = get_avdtp_stream_endpoint_for_active_seid(connection->query_seid);
-                    // printf(" handle_l2cap_data_packet_for_connection 2\n");
-                    return handle_l2cap_data_packet_for_stream_endpoint(connection, stream_endpoint, packet, size);
                 case AVDTP_SI_RECONFIGURE:
+                //case AVDTP_SI_CLOSE:
                     connection->query_seid  = packet[2] >> 2;
                     stream_endpoint = get_avdtp_stream_endpoint_for_active_seid(connection->query_seid);
-                    printf(" AVDTP_SI_RECONFIGURE handle_l2cap_data_packet_for_connection 2\n");
                     return handle_l2cap_data_packet_for_stream_endpoint(connection, stream_endpoint, packet, size);
-                
+                case AVDTP_SI_CLOSE:
+                    connection->query_seid  = packet[2] >> 2;
+                    stream_endpoint = get_avdtp_stream_endpoint_for_active_seid(connection->query_seid);
+                    return handle_l2cap_data_packet_for_stream_endpoint(connection, stream_endpoint, packet, size);
                 case AVDTP_SI_SUSPEND:{
                     int i;
                     for (i=2; i<size; i++){
@@ -671,7 +670,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                         connection->con_handle = con_handle;
                         connection->query_seid = 0;
                         connection->state = AVDTP_SIGNALING_CONNECTION_OPENED;
-                        printf(" -> AVDTP_SIGNALING_CONNECTION_OPENED\n");
+                        printf(" -> AVDTP_SIGNALING_CONNECTION_OPENED, connection %p\n", connection);
                         break;
                     }
 
@@ -684,8 +683,9 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     if (stream_endpoint->l2cap_media_cid == 0){
                         if (stream_endpoint->state != AVDTP_STREAM_ENDPOINT_W4_L2CAP_FOR_MEDIA_CONNECTED) return;
                         stream_endpoint->state = AVDTP_STREAM_ENDPOINT_OPENED;
+                        stream_endpoint->connection = connection;
                         stream_endpoint->l2cap_media_cid = local_cid;
-                        printf(" -> AVDTP_STREAM_ENDPOINT_OPENED\n");
+                        printf(" -> AVDTP_STREAM_ENDPOINT_OPENED, stream endpoint %p, connection %p\n", stream_endpoint, connection);
                         break;
                     }
                     break;
@@ -694,8 +694,10 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     // data: event (8), len(8), channel (16)
                     local_cid = l2cap_event_channel_closed_get_local_cid(packet);
                     connection = get_avdtp_connection_for_l2cap_signaling_cid(local_cid);
+                    printf(" -> L2CAP_EVENT_CHANNEL_CLOSED signaling cid 0x%0x\n", local_cid);
+                    
                     if (connection){
-                        log_info(" -> L2CAP_EVENT_CHANNEL_CLOSED signaling cid 0x%0x", local_cid);
+                        printf(" -> AVDTP_STREAM_ENDPOINT_IDLE, connection closed\n");
                         stream_endpoint = get_avdtp_stream_endpoint_for_connection(connection);
                         btstack_linked_list_remove(&avdtp_connections, (btstack_linked_item_t*) connection); 
                         if (!stream_endpoint) break;
@@ -714,9 +716,19 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     if (!stream_endpoint) return;
                     
                     if (stream_endpoint->l2cap_media_cid == local_cid){
-                        log_info(" -> L2CAP_EVENT_CHANNEL_CLOSED media cid 0x%0x", local_cid);
-                        stream_endpoint->state = AVDTP_STREAM_ENDPOINT_CONFIGURED;
+                        // printf(" -> L2CAP_EVENT_CHANNEL_CLOSED media cid 0x%0x, stream endpoint %p, connection %p", local_cid, stream_endpoint, stream_endpoint->connection);
                         stream_endpoint->l2cap_media_cid = 0;
+                        if (stream_endpoint->state == AVDTP_STREAM_ENDPOINT_CLOSING){
+                            if (stream_endpoint->connection){
+                                // stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_ANSWER_CLOSED;
+                                // avdtp_sink_request_can_send_now_acceptor(stream_endpoint->connection, stream_endpoint->connection->l2cap_signaling_cid);
+                                break;
+                            } else {
+                                printf(" closing media channel, no signaling connection registered\n");
+                            }
+                            break;
+                        }
+                        stream_endpoint->state = AVDTP_STREAM_ENDPOINT_CONFIGURED;
                         break;
                     }
 

@@ -304,7 +304,6 @@ typedef enum {
 
 typedef enum {
     AVDTP_ACCEPTOR_STREAM_CONFIG_IDLE,
-    AVDTP_ACCEPTOR_W2_REJECT_UNKNOWN_CMD,
     AVDTP_ACCEPTOR_W2_ANSWER_GET_CAPABILITIES,
     AVDTP_ACCEPTOR_W2_ANSWER_GET_ALL_CAPABILITIES,
     AVDTP_ACCEPTOR_W2_ANSWER_SET_CONFIGURATION,
@@ -313,6 +312,16 @@ typedef enum {
     AVDTP_ACCEPTOR_W2_ANSWER_OPEN_STREAM,
     AVDTP_ACCEPTOR_W4_L2CAP_FOR_MEDIA_CONNECTED,
     AVDTP_ACCEPTOR_W2_ANSWER_START_STREAM,
+
+    // AVDTP_ACCEPTOR_W2_DISCONNECT_L2CAP_FOR_MEDIA,
+    // AVDTP_ACCEPTOR_W4_L2CAP_FOR_MEDIA_DISCONNECTED,
+    AVDTP_ACCEPTOR_W2_ANSWER_CLOSE_STREAM,
+
+    // AVDTP_ACCEPTOR_W2_DISCONNECT_L2CAP_FOR_SIGNALING,
+    // AVDTP_ACCEPTOR_W4_L2CAP_FOR_SIGNALING_DISCONNECTED,
+
+    AVDTP_ACCEPTOR_W2_REJECT_WITH_ERROR_CODE,
+    AVDTP_ACCEPTOR_W2_REJECT_UNKNOWN_CMD,
     AVDTP_ACCEPTOR_STREAMING
 } avdtp_acceptor_stream_endpoint_state_t;
 
@@ -381,8 +390,6 @@ typedef struct avdtp_stream_endpoint {
     avdtp_acceptor_stream_endpoint_state_t  acceptor_config_state;
     avdtp_initiator_stream_endpoint_state_t initiator_config_state;
     
-    avdtp_signal_identifier_t unknown_signal_identifier;
-    
     // active connection
     avdtp_connection_t * connection;
     // store remote seps
@@ -394,6 +401,8 @@ typedef struct avdtp_stream_endpoint {
     // register request for L2cap connection release
     uint8_t disconnect;
     uint8_t failed_reconfigure_service_category;
+    avdtp_signal_identifier_t reject_signal_identifier;
+    uint8_t error_code;
 } avdtp_stream_endpoint_t;
 
 #if defined __cplusplus
