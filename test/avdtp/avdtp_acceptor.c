@@ -191,7 +191,7 @@ static int avdtp_acceptor_send_stream_configuration_response(uint16_t cid, uint8
     return avdtp_acceptor_send_capabilities(cid, transaction_label, sep, AVDTP_SI_GET_CONFIGURATION);
 }
 
-static int avdtp_acceptor_send_accept_response(uint16_t cid,  avdtp_signal_identifier_t identifier, uint8_t transaction_label){
+static int avdtp_acceptor_send_accept_response(uint16_t cid,  uint8_t transaction_label, avdtp_signal_identifier_t identifier){
     uint8_t command[2];
     command[0] = avdtp_header(transaction_label, AVDTP_SINGLE_PACKET, AVDTP_RESPONSE_ACCEPT_MSG);
     command[1] = (uint8_t)identifier;
@@ -393,7 +393,7 @@ int avdtp_acceptor_stream_config_subsm_run(avdtp_connection_t * connection, avdt
             printf("    -> AVDTP_STREAM_ENDPOINT_CONFIGURED\n");
             stream_endpoint->connection = connection;
             stream_endpoint->state = AVDTP_STREAM_ENDPOINT_CONFIGURED;
-            avdtp_acceptor_send_accept_response(cid, AVDTP_SI_SET_CONFIGURATION, trid);
+            avdtp_acceptor_send_accept_response(cid, trid, AVDTP_SI_SET_CONFIGURATION);
             break;
         case AVDTP_ACCEPTOR_W2_ANSWER_GET_CONFIGURATION:
             printf("    ACP: DONE\n");
@@ -404,12 +404,12 @@ int avdtp_acceptor_stream_config_subsm_run(avdtp_connection_t * connection, avdt
             return 0;
         case AVDTP_ACCEPTOR_W2_ANSWER_OPEN_STREAM:
             printf("    ACP: DONE\n");
-            avdtp_acceptor_send_accept_response(cid, AVDTP_SI_OPEN, trid);
+            avdtp_acceptor_send_accept_response(cid, trid, AVDTP_SI_OPEN);
             break;
         case AVDTP_ACCEPTOR_W2_ANSWER_START_STREAM:
             printf("    ACP: DONE \n");
             printf("    -> AVDTP_STREAM_ENDPOINT_STREAMING \n");
-            avdtp_acceptor_send_accept_response(cid, AVDTP_SI_START, trid);
+            avdtp_acceptor_send_accept_response(cid, trid, AVDTP_SI_START);
             break;
         case AVDTP_ACCEPTOR_W2_ANSWER_RECONFIGURE:
             printf("    ACP: DONE \n");
@@ -420,15 +420,15 @@ int avdtp_acceptor_stream_config_subsm_run(avdtp_connection_t * connection, avdt
                 break;
             }
             printf("    ACP: avdtp_acceptor_send_accept_response \n");
-            avdtp_acceptor_send_accept_response(cid, AVDTP_SI_RECONFIGURE, trid);
+            avdtp_acceptor_send_accept_response(cid, trid, AVDTP_SI_RECONFIGURE);
             break;
         case AVDTP_ACCEPTOR_W2_ANSWER_CLOSE_STREAM:
             printf("    ACP: DONE\n");
-            avdtp_acceptor_send_accept_response(cid, AVDTP_SI_CLOSE, trid);
+            avdtp_acceptor_send_accept_response(cid, trid, AVDTP_SI_CLOSE);
             break;
         case AVDTP_ACCEPTOR_W2_ANSWER_ABORT_STREAM:
             printf("    ACP: DONE\n");
-            avdtp_acceptor_send_accept_response(cid, AVDTP_SI_ABORT, trid);
+            avdtp_acceptor_send_accept_response(cid, trid, AVDTP_SI_ABORT);
             break;
         case AVDTP_ACCEPTOR_W2_REJECT_UNKNOWN_CMD:
             printf("    ACP: REJECT\n");
