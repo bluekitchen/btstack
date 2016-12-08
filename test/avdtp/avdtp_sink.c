@@ -716,20 +716,22 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     if (!stream_endpoint) return;
                     
                     if (stream_endpoint->l2cap_media_cid == local_cid){
-                        // printf(" -> L2CAP_EVENT_CHANNEL_CLOSED media cid 0x%0x, stream endpoint %p, connection %p", local_cid, stream_endpoint, stream_endpoint->connection);
                         stream_endpoint->l2cap_media_cid = 0;
-                        if (stream_endpoint->state == AVDTP_STREAM_ENDPOINT_CLOSING){
-                            if (stream_endpoint->connection){
-                                // stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_ANSWER_CLOSED;
-                                // avdtp_sink_request_can_send_now_acceptor(stream_endpoint->connection, stream_endpoint->connection->l2cap_signaling_cid);
+                        switch (stream_endpoint->state){
+                            case AVDTP_STREAM_ENDPOINT_CLOSING:
+                                if (stream_endpoint->connection){
+                                    printf(" -> AVDTP_STREAM_ENDPOINT_OPENED\n");
+                                    stream_endpoint->state = AVDTP_STREAM_ENDPOINT_OPENED;
+                                    break;
+                                }
+                                printf(" -> AVDTP_STREAM_ENDPOINT_IDLE\n");
+                                stream_endpoint->state = AVDTP_STREAM_ENDPOINT_IDLE;
                                 break;
-                            } else {
-                                printf(" closing media channel, no signaling connection registered\n");
-                            }
-                            break;
+                            default:
+                                printf(" -> AVDTP_STREAM_ENDPOINT_IDLE\n");
+                                stream_endpoint->state = AVDTP_STREAM_ENDPOINT_IDLE;
+                                break;
                         }
-                        stream_endpoint->state = AVDTP_STREAM_ENDPOINT_CONFIGURED;
-                        break;
                     }
 
                     if (stream_endpoint->l2cap_recovery_cid == local_cid){

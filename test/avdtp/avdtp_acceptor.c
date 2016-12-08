@@ -372,6 +372,7 @@ int avdtp_acceptor_stream_config_subsm_run(avdtp_connection_t * connection, avdt
             avdtp_acceptor_send_accept_response(stream_endpoint->connection->l2cap_signaling_cid, AVDTP_SI_OPEN, stream_endpoint->connection->acceptor_transaction_label);
             break;
         case AVDTP_ACCEPTOR_W2_ANSWER_START_STREAM:
+            printf("    ACP: DONE \n");
             printf("    ACP: AVDTP_STREAM_ENDPOINT_STREAMING \n");
             stream_endpoint->state = AVDTP_STREAM_ENDPOINT_STREAMING;
             avdtp_acceptor_send_accept_response(stream_endpoint->connection->l2cap_signaling_cid, AVDTP_SI_START, stream_endpoint->connection->acceptor_transaction_label);
@@ -390,9 +391,6 @@ int avdtp_acceptor_stream_config_subsm_run(avdtp_connection_t * connection, avdt
 
         case AVDTP_ACCEPTOR_W2_ANSWER_CLOSE_STREAM:
             printf("    ACP: DONE\n");
-            // stream_endpoint->state = AVDTP_STREAM_ENDPOINT_OPENED;
-            stream_endpoint->state = AVDTP_STREAM_ENDPOINT_IDLE;
-            printf("    ACP: AVDTP_STREAM_ENDPOINT_OPENED\n");
             avdtp_acceptor_send_accept_response(stream_endpoint->connection->l2cap_signaling_cid, AVDTP_SI_CLOSE, connection->acceptor_transaction_label);
             break;
 
