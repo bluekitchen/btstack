@@ -494,11 +494,8 @@ static int handle_l2cap_data_packet_for_connection(avdtp_connection_t * connecti
                 case AVDTP_SI_OPEN:
                 case AVDTP_SI_START:
                 case AVDTP_SI_RECONFIGURE:
-                //case AVDTP_SI_CLOSE:
-                    connection->query_seid  = packet[2] >> 2;
-                    stream_endpoint = get_avdtp_stream_endpoint_for_active_seid(connection->query_seid);
-                    return handle_l2cap_data_packet_for_stream_endpoint(connection, stream_endpoint, packet, size);
                 case AVDTP_SI_CLOSE:
+                case AVDTP_SI_ABORT:
                     connection->query_seid  = packet[2] >> 2;
                     stream_endpoint = get_avdtp_stream_endpoint_for_active_seid(connection->query_seid);
                     return handle_l2cap_data_packet_for_stream_endpoint(connection, stream_endpoint, packet, size);
@@ -717,21 +714,10 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     
                     if (stream_endpoint->l2cap_media_cid == local_cid){
                         stream_endpoint->l2cap_media_cid = 0;
-                        switch (stream_endpoint->state){
-                            case AVDTP_STREAM_ENDPOINT_CLOSING:
-                                if (stream_endpoint->connection){
-                                    printf(" -> AVDTP_STREAM_ENDPOINT_OPENED\n");
-                                    stream_endpoint->state = AVDTP_STREAM_ENDPOINT_OPENED;
-                                    break;
-                                }
-                                printf(" -> AVDTP_STREAM_ENDPOINT_IDLE\n");
-                                stream_endpoint->state = AVDTP_STREAM_ENDPOINT_IDLE;
-                                break;
-                            default:
-                                printf(" -> AVDTP_STREAM_ENDPOINT_IDLE\n");
-                                stream_endpoint->state = AVDTP_STREAM_ENDPOINT_IDLE;
-                                break;
-                        }
+                        printf(" -> AVDTP_STREAM_ENDPOINT_IDLE\n");
+                        stream_endpoint->state = AVDTP_STREAM_ENDPOINT_IDLE;
+                        stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_STREAM_CONFIG_IDLE;
+                        stream_endpoint->initiator_config_state = AVDTP_INITIATOR_STREAM_CONFIG_IDLE;
                     }
 
                     if (stream_endpoint->l2cap_recovery_cid == local_cid){

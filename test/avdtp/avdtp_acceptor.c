@@ -131,10 +131,11 @@ static uint16_t avdtp_unpack_service_capabilities(avdtp_capabilities_t * caps, u
                 break;
             case AVDTP_MULTIPLEXING:
                 caps->multiplexing_mode.fragmentation = packet[pos++] >> 7;
+                // read [tsid, tcid] for media, reporting. recovery respectively
+                caps->multiplexing_mode.transport_identifiers_num = 3;
                 for (i=0; i<caps->multiplexing_mode.transport_identifiers_num; i++){
                     caps->multiplexing_mode.transport_session_identifiers[i] = packet[pos++] >> 7;
                     caps->multiplexing_mode.tcid[i] = packet[pos++] >> 7;
-                    // media, reporting. recovery
                 }
                 break;
             case AVDTP_MEDIA_CODEC:
@@ -217,46 +218,77 @@ int avdtp_acceptor_stream_config_subsm(avdtp_stream_endpoint_t * stream_endpoint
                     avdtp_sep_t sep;
                     sep.seid = packet[3] >> 2;
                     // find or add sep
+                    stream_endpoint->remote_sep_index = 0xFF;
                     int i;
                     for (i=0; i < stream_endpoint->remote_seps_num; i++){
                         if (stream_endpoint->remote_seps[i].seid == sep.seid){
                             stream_endpoint->remote_sep_index = i;
                         }
                     }
+
                     sep.registered_service_categories = avdtp_unpack_service_capabilities(&sep.capabilities, packet+4, size-4);
-                    stream_endpoint->remote_seps[stream_endpoint->remote_sep_index] = sep;
+                    
+                    if (stream_endpoint->remote_sep_index == 0xFF){
+                        printf("    ACP: seid %d not found in %p\n", sep.seid, stream_endpoint);
+                        stream_endpoint->remote_sep_index = stream_endpoint->remote_seps_num;
+                        stream_endpoint->remote_seps_num++;
+                        stream_endpoint->remote_seps[stream_endpoint->remote_sep_index] = sep;
+                        printf("    ACP: add seid %d, to %p\n", stream_endpoint->remote_seps[stream_endpoint->remote_sep_index].seid, stream_endpoint);
+                    }
                     stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_ANSWER_SET_CONFIGURATION;
                     break;
                 }
                 case AVDTP_SI_RECONFIGURE:{
-                    printf("    ACP: AVDTP_ACCEPTOR_W2_ANSWER_RECONFIGURE \n");
+                    // if (stream_endpoint->state < AVDTP_STREAM_ENDPOINT_OPENED){
+                    //     printf("    ACP: AVDTP_SI_RECONFIGURE, bad state %d \n", stream_endpoint->state);
+                    //     stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_REJECT_WITH_ERROR_CODE;
+                    //     stream_endpoint->error_code = BAD_STATE;
+                    //     stream_endpoint->reject_signal_identifier = signaling_header->signal_identifier;
+                    //     break;
+                    // }
+            
+                    stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_ANSWER_RECONFIGURE;
+                    stream_endpoint->failed_reconfigure_service_category = 0;
+                    stream_endpoint->remote_sep_index = 0xFF;
+
+                    printf("    ACP: AVDTP_ACCEPTOR_W2_ANSWER_RECONFIGURE %p in state %d (AVDTP_STREAM_ENDPOINT_OPENED %d)\n", stream_endpoint, stream_endpoint->state, AVDTP_STREAM_ENDPOINT_OPENED);
                     avdtp_sep_t sep;
                     sep.seid = packet[3] >> 2;
+                    sep.registered_service_categories = avdtp_unpack_service_capabilities(&sep.capabilities, packet+4, size-4);
+                    
                     // find or add sep
+                    // printf("    ACP: search for seid in %p\n", stream_endpoint);
                     int i;
                     for (i = 0; i < stream_endpoint->remote_seps_num; i++){
                         if (stream_endpoint->remote_seps[i].seid == sep.seid){
                             stream_endpoint->remote_sep_index = i;
                         }
                     }
-                    uint16_t service_categories = avdtp_unpack_service_capabilities(&sep.capabilities, packet+4, size-4);
-                    printf(" service_categories 0x%2x\n", service_categories);
-                    stream_endpoint->failed_reconfigure_service_category = 0;
-                    
-                    uint16_t remaining_service_categories = service_categories;
-                    if (get_bit16(service_categories, AVDTP_MEDIA_CODEC-1)){
+
+                    if (stream_endpoint->remote_sep_index == 0xFF){
+                        printf("    ACP: AVDTP_SI_RECONFIGURE, bad state seid %d not found\n", sep.seid);
+                        stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_REJECT_WITH_ERROR_CODE;
+                        stream_endpoint->error_code = BAD_ACP_SEID;
+                        stream_endpoint->reject_signal_identifier = signaling_header->signal_identifier;
+                        break;
+                    }
+
+                    uint16_t remaining_service_categories = sep.registered_service_categories;
+                    if (get_bit16(sep.registered_service_categories, AVDTP_MEDIA_CODEC-1)){
                         printf("    ACP: reconfigure media, not implemented\n");
-                        remaining_service_categories = store_bit16(service_categories, AVDTP_MEDIA_CODEC-1, 0);
+                        remaining_service_categories = store_bit16(sep.registered_service_categories, AVDTP_MEDIA_CODEC-1, 0);
                     }
-                    if (get_bit16(service_categories, AVDTP_CONTENT_PROTECTION-1)){
+                    if (get_bit16(sep.registered_service_categories, AVDTP_CONTENT_PROTECTION-1)){
                         printf("    ACP: reconfigure content protection, not implemented\n");
-                        remaining_service_categories = store_bit16(service_categories, AVDTP_CONTENT_PROTECTION-1, 0);
+                        remaining_service_categories = store_bit16(sep.registered_service_categories, AVDTP_CONTENT_PROTECTION-1, 0);
                     }
-                    stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_ANSWER_RECONFIGURE;
+
                     if (!remaining_service_categories) break;
+                     
                     printf("remained service_categories 0x%2x\n", remaining_service_categories);
+                    // find first category that shouldn't be reconfigured
                     for (i = 1; i < 9; i++){
-                        if (get_bit16(service_categories, i-1)){
+                        if (get_bit16(sep.registered_service_categories, i-1)){
                             stream_endpoint->failed_reconfigure_service_category = i;
                         }
                     }    
@@ -266,6 +298,7 @@ int avdtp_acceptor_stream_config_subsm(avdtp_stream_endpoint_t * stream_endpoint
                     if (stream_endpoint->state != AVDTP_STREAM_ENDPOINT_CONFIGURED) return 0;
                     printf("    ACP: AVDTP_STREAM_ENDPOINT_W2_ANSWER_OPEN_STREAM\n");
                     stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_ANSWER_OPEN_STREAM;
+                    stream_endpoint->state = AVDTP_STREAM_ENDPOINT_W4_L2CAP_FOR_MEDIA_CONNECTED;
                     stream_endpoint->connection->acceptor_transaction_label = signaling_header->transaction_label;
                     break;
                 case AVDTP_SI_GET_CONFIGURATION:
@@ -281,17 +314,25 @@ int avdtp_acceptor_stream_config_subsm(avdtp_stream_endpoint_t * stream_endpoint
                     stream_endpoint->connection->acceptor_transaction_label = signaling_header->transaction_label;
                     break;
                 case AVDTP_SI_CLOSE:
-                    if (stream_endpoint->state != AVDTP_STREAM_ENDPOINT_OPENED &&
-                        stream_endpoint->state != AVDTP_STREAM_ENDPOINT_STREAMING){
-                        printf("    ACP: AVDTP_SI_CLOSE, bad state %d \n", stream_endpoint->state);
-                        stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_REJECT_WITH_ERROR_CODE;
-                        stream_endpoint->error_code = BAD_STATE;
-                        stream_endpoint->reject_signal_identifier = signaling_header->signal_identifier;
-                        break;
+                    switch (stream_endpoint->state){
+                        case AVDTP_STREAM_ENDPOINT_OPENED:
+                        case AVDTP_STREAM_ENDPOINT_STREAMING:
+                            printf("    ACP: AVDTP_ACCEPTOR_W2_ANSWER_CLOSE_STREAM\n");
+                            stream_endpoint->state = AVDTP_STREAM_ENDPOINT_CLOSING;
+                            stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_ANSWER_CLOSE_STREAM;
+                            break;
+                        default:
+                            printf("    ACP: AVDTP_SI_CLOSE, bad state %d \n", stream_endpoint->state);
+                            stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_REJECT_WITH_ERROR_CODE;
+                            stream_endpoint->error_code = BAD_STATE;
+                            stream_endpoint->reject_signal_identifier = signaling_header->signal_identifier;
+                            break;
                     }
-                    printf("    ACP: AVDTP_ACCEPTOR_W2_ANSWER_CLOSE_STREAM\n");
-                    stream_endpoint->state = AVDTP_STREAM_ENDPOINT_CLOSING;
-                    stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_ANSWER_CLOSE_STREAM;
+                    break;
+                case AVDTP_SI_ABORT:
+                    printf("    ACP: AVDTP_ACCEPTOR_W2_ANSWER_ABORT_STREAM\n");
+                    stream_endpoint->state = AVDTP_STREAM_ENDPOINT_ABORTING;
+                    stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_ANSWER_ABORT_STREAM;
                     break;
                 default:
                     printf("    ACP: NOT IMPLEMENTED, Reject signal_identifier %02x\n", signaling_header->signal_identifier);
@@ -358,6 +399,7 @@ int avdtp_acceptor_stream_config_subsm_run(avdtp_connection_t * connection, avdt
             break;
         case AVDTP_ACCEPTOR_W2_ANSWER_SET_CONFIGURATION:
             printf("    ACP: DONE\n");
+            printf("    -> AVDTP_STREAM_ENDPOINT_CONFIGURED\n");
             stream_endpoint->connection = connection;
             stream_endpoint->state = AVDTP_STREAM_ENDPOINT_CONFIGURED;
             avdtp_acceptor_send_accept_response(connection->l2cap_signaling_cid, AVDTP_SI_SET_CONFIGURATION, connection->acceptor_transaction_label);
@@ -366,56 +408,43 @@ int avdtp_acceptor_stream_config_subsm_run(avdtp_connection_t * connection, avdt
             printf("    ACP: DONE\n");
             avdtp_acceptor_send_stream_configuration_response(connection->l2cap_signaling_cid, connection->acceptor_transaction_label, stream_endpoint->remote_seps[stream_endpoint->remote_sep_index]);
             break;
+        case AVDTP_ACCEPTOR_W4_L2CAP_FOR_MEDIA_CONNECTED:
+            stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W4_L2CAP_FOR_MEDIA_CONNECTED;
+            return 0;
         case AVDTP_ACCEPTOR_W2_ANSWER_OPEN_STREAM:
-            printf("    ACP: AVDTP_STREAM_ENDPOINT_W4_L2CAP_FOR_MEDIA_CONNECTED\n");
-            stream_endpoint->state = AVDTP_STREAM_ENDPOINT_W4_L2CAP_FOR_MEDIA_CONNECTED;
+            printf("    ACP: DONE\n");
             avdtp_acceptor_send_accept_response(stream_endpoint->connection->l2cap_signaling_cid, AVDTP_SI_OPEN, stream_endpoint->connection->acceptor_transaction_label);
             break;
         case AVDTP_ACCEPTOR_W2_ANSWER_START_STREAM:
             printf("    ACP: DONE \n");
-            printf("    ACP: AVDTP_STREAM_ENDPOINT_STREAMING \n");
-            stream_endpoint->state = AVDTP_STREAM_ENDPOINT_STREAMING;
+            printf("    -> AVDTP_STREAM_ENDPOINT_STREAMING \n");
             avdtp_acceptor_send_accept_response(stream_endpoint->connection->l2cap_signaling_cid, AVDTP_SI_START, stream_endpoint->connection->acceptor_transaction_label);
             break;
         case AVDTP_ACCEPTOR_W2_ANSWER_RECONFIGURE:
             printf("    ACP: DONE \n");
             if (stream_endpoint->failed_reconfigure_service_category){
+                printf("    ACP: failed_reconfigure_service_category %d \n", failed_reconfigure_service_category);
                 stream_endpoint->failed_reconfigure_service_category = 0;
                 avdtp_acceptor_send_response_reject_service_category(stream_endpoint->connection->l2cap_signaling_cid, AVDTP_SI_RECONFIGURE, 
                         failed_reconfigure_service_category, stream_endpoint->connection->acceptor_transaction_label);
-                
-            } else {
-                avdtp_acceptor_send_accept_response(stream_endpoint->connection->l2cap_signaling_cid, AVDTP_SI_RECONFIGURE, stream_endpoint->connection->acceptor_transaction_label);
+                break;
             }
+            printf("    ACP: avdtp_acceptor_send_accept_response \n");
+            avdtp_acceptor_send_accept_response(stream_endpoint->connection->l2cap_signaling_cid, AVDTP_SI_RECONFIGURE, stream_endpoint->connection->acceptor_transaction_label);
             break;
-
         case AVDTP_ACCEPTOR_W2_ANSWER_CLOSE_STREAM:
             printf("    ACP: DONE\n");
             avdtp_acceptor_send_accept_response(stream_endpoint->connection->l2cap_signaling_cid, AVDTP_SI_CLOSE, connection->acceptor_transaction_label);
             break;
-
-        // case AVDTP_ACCEPTOR_W2_DISCONNECT_L2CAP_FOR_MEDIA:
-        //     printf("    ACP: AVDTP_ACCEPTOR_W4_L2CAP_FOR_MEDIA_DISCONNECTED\n");
-        //     stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W4_L2CAP_FOR_MEDIA_DISCONNECTED;
-        //     l2cap_disconnect(stream_endpoint->l2cap_media_cid, 0);
-        //     break;
-        // case AVDTP_ACCEPTOR_W2_DISCONNECT_L2CAP_FOR_SIGNALING:
-        //     printf("    ACP: AVDTP_ACCEPTOR_W4_L2CAP_FOR_SIGNALING_DISCONNECTED\n");
-        //     stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W4_L2CAP_FOR_SIGNALING_DISCONNECTED;
-        //     if (!stream_endpoint->connection){
-        //         stream_endpoint->state = AVDTP_STREAM_ENDPOINT_IDLE;
-        //         stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_STREAM_CONFIG_IDLE;
-        //         return 0;
-        //     } 
-        //     l2cap_disconnect(stream_endpoint->connection->l2cap_signaling_cid, 0);
-        //     break;
-
+        case AVDTP_ACCEPTOR_W2_ANSWER_ABORT_STREAM:
+            printf("    ACP: DONE\n");
+            avdtp_acceptor_send_accept_response(stream_endpoint->connection->l2cap_signaling_cid, AVDTP_SI_ABORT, connection->acceptor_transaction_label);
+            break;
         case AVDTP_ACCEPTOR_W2_REJECT_UNKNOWN_CMD:
             printf("    ACP: REJECT\n");
             stream_endpoint->reject_signal_identifier = 0;
             avdtp_acceptor_send_response_reject(connection->l2cap_signaling_cid, reject_signal_identifier, connection->acceptor_transaction_label);
             break;
-        
         case AVDTP_ACCEPTOR_W2_REJECT_WITH_ERROR_CODE:
             printf("    ACP: REJECT\n");
             stream_endpoint->reject_signal_identifier = 0;
