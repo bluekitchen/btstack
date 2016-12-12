@@ -455,7 +455,7 @@ static int handle_l2cap_data_packet_for_stream_endpoint(avdtp_connection_t * con
     avdtp_read_signaling_header(&signaling_header, packet, size);
     
     if (signaling_header.message_type == AVDTP_CMD_MSG){
-        if (avdtp_acceptor_stream_config_subsm(stream_endpoint, &signaling_header, packet, size)){
+        if (avdtp_acceptor_stream_config_subsm(connection, stream_endpoint, &signaling_header, packet, size)){
             avdtp_sink_request_can_send_now_acceptor(connection, connection->l2cap_signaling_cid);
             return 1;
         }

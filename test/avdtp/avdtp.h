@@ -351,6 +351,16 @@ typedef enum {
 } avdtp_initiator_connection_state_t;
 
 typedef struct {
+    uint8_t command[200];
+    uint16_t size;
+    uint16_t offset;
+    avdtp_signal_identifier_t signal_identifier;
+    avdtp_message_type_t message_type;
+    avdtp_packet_type_t  packet_type;
+    uint16_t transaction_label;
+} avdtp_signaling_packet_state_t;
+
+typedef struct {
     btstack_linked_item_t    item;
 
     bd_addr_t remote_addr;
@@ -362,6 +372,9 @@ typedef struct {
     avdtp_acceptor_connection_state_t  acceptor_connection_state;
     avdtp_initiator_connection_state_t initiator_connection_state;
     
+    // used for fragmentation
+    avdtp_signaling_packet_state_t sig_packet;
+
     uint8_t disconnect;
     uint8_t initiator_transaction_label;
     uint8_t acceptor_transaction_label;
