@@ -455,7 +455,7 @@ static int handle_l2cap_data_packet_for_stream_endpoint(avdtp_connection_t * con
     avdtp_read_signaling_header(&signaling_header, packet, size);
     
     if (signaling_header.message_type == AVDTP_CMD_MSG){
-        if (avdtp_acceptor_stream_config_subsm(stream_endpoint, signaling_header.signal_identifier, packet, size)){
+        if (avdtp_acceptor_stream_config_subsm(stream_endpoint, &signaling_header, packet, size)){
             avdtp_sink_request_can_send_now_acceptor(connection, connection->l2cap_signaling_cid);
             return 1;
         }
@@ -468,7 +468,7 @@ static int handle_l2cap_data_packet_for_stream_endpoint(avdtp_connection_t * con
     return 0;  
 }
 
-static int handle_l2cap_data_packet_for_connection(avdtp_connection_t * connection, uint8_t *packet, uint16_t size){
+static int handle_l2cap_data_packet_for_signaling_connection(avdtp_connection_t * connection, uint8_t *packet, uint16_t size){
     if (size < 2) {
         log_error("l2cap data packet too small");
         return 0;
@@ -562,48 +562,57 @@ static int handle_l2cap_data_packet_for_connection(avdtp_connection_t * connecti
             break;
     }
     
-    printf(" handle_l2cap_data_packet_for_connection 3, signal %d\n", signaling_header.signal_identifier);
+    printf(" handle_l2cap_data_packet_for_signaling_connection 3, signal %d\n", signaling_header.signal_identifier);
     return 0;
 }
 
-static void handle_hci_event_packet_for_stream_endpoint(avdtp_connection_t * connection, avdtp_stream_endpoint_t * stream_endpoint, uint8_t event, uint8_t *packet, uint16_t size){
+static void stream_endpoint_state_machine(avdtp_connection_t * connection, avdtp_stream_endpoint_t * stream_endpoint, uint8_t packet_type, uint8_t event, uint8_t *packet, uint16_t size){
     uint16_t local_cid;
-    switch (event){
-        case L2CAP_EVENT_CHANNEL_OPENED:
-            if (stream_endpoint->l2cap_media_cid == 0){
-                if (stream_endpoint->state != AVDTP_STREAM_ENDPOINT_W4_L2CAP_FOR_MEDIA_CONNECTED) return;
-                stream_endpoint->state = AVDTP_STREAM_ENDPOINT_OPENED;
-                stream_endpoint->connection = connection;
-                stream_endpoint->l2cap_media_cid = l2cap_event_channel_opened_get_local_cid(packet);;
-                printf(" -> AVDTP_STREAM_ENDPOINT_OPENED, stream endpoint %p, connection %p\n", stream_endpoint, connection);
-                break;
-            }
+    switch (packet_type){
+        case L2CAP_DATA_PACKET:
+            handle_l2cap_data_packet_for_stream_endpoint(connection, stream_endpoint, packet, size);
             break;
-        case L2CAP_EVENT_CHANNEL_CLOSED:
-            local_cid = l2cap_event_channel_closed_get_local_cid(packet);
-            if (stream_endpoint->l2cap_media_cid == local_cid){
-                stream_endpoint->l2cap_media_cid = 0;
-                printf(" -> AVDTP_STREAM_ENDPOINT_IDLE\n");
-                stream_endpoint->state = AVDTP_STREAM_ENDPOINT_IDLE;
-                stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_STREAM_CONFIG_IDLE;
-                stream_endpoint->initiator_config_state = AVDTP_INITIATOR_STREAM_CONFIG_IDLE;
-            }
+        case HCI_EVENT_PACKET:
+            switch (event){
+                case L2CAP_EVENT_CHANNEL_OPENED:
+                    if (stream_endpoint->l2cap_media_cid == 0){
+                        if (stream_endpoint->state != AVDTP_STREAM_ENDPOINT_W4_L2CAP_FOR_MEDIA_CONNECTED) return;
+                        stream_endpoint->state = AVDTP_STREAM_ENDPOINT_OPENED;
+                        stream_endpoint->connection = connection;
+                        stream_endpoint->l2cap_media_cid = l2cap_event_channel_opened_get_local_cid(packet);;
+                        printf(" -> AVDTP_STREAM_ENDPOINT_OPENED, stream endpoint %p, connection %p\n", stream_endpoint, connection);
+                        break;
+                    }
+                    break;
+                case L2CAP_EVENT_CHANNEL_CLOSED:
+                    local_cid = l2cap_event_channel_closed_get_local_cid(packet);
+                    if (stream_endpoint->l2cap_media_cid == local_cid){
+                        stream_endpoint->l2cap_media_cid = 0;
+                        printf(" -> AVDTP_STREAM_ENDPOINT_IDLE\n");
+                        stream_endpoint->state = AVDTP_STREAM_ENDPOINT_IDLE;
+                        stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_STREAM_CONFIG_IDLE;
+                        stream_endpoint->initiator_config_state = AVDTP_INITIATOR_STREAM_CONFIG_IDLE;
+                    }
 
-            if (stream_endpoint->l2cap_recovery_cid == local_cid){
-                log_info(" -> L2CAP_EVENT_CHANNEL_CLOSED recovery cid 0x%0x", local_cid);
-                stream_endpoint->l2cap_recovery_cid = 0;
-                break;
-            }
-            
-            if (stream_endpoint->l2cap_reporting_cid == local_cid){
-                log_info("L2CAP_EVENT_CHANNEL_CLOSED reporting cid 0x%0x", local_cid);
-                stream_endpoint->l2cap_reporting_cid = 0;
-                break;
-            }
+                    if (stream_endpoint->l2cap_recovery_cid == local_cid){
+                        log_info(" -> L2CAP_EVENT_CHANNEL_CLOSED recovery cid 0x%0x", local_cid);
+                        stream_endpoint->l2cap_recovery_cid = 0;
+                        break;
+                    }
+                    
+                    if (stream_endpoint->l2cap_reporting_cid == local_cid){
+                        log_info("L2CAP_EVENT_CHANNEL_CLOSED reporting cid 0x%0x", local_cid);
+                        stream_endpoint->l2cap_reporting_cid = 0;
+                        break;
+                    }
+                    break;
+                default:
+                    break;
+            } 
             break;
         default:
             break;
-    } 
+    }
 }
 
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
@@ -618,7 +627,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
         case L2CAP_DATA_PACKET:
             connection = get_avdtp_connection_for_l2cap_signaling_cid(channel);
             if (connection){
-                if (handle_l2cap_data_packet_for_connection(connection, packet, size)) return;
+                if (handle_l2cap_data_packet_for_signaling_connection(connection, packet, size)) return;
             }
             
             stream_endpoint = get_avdtp_stream_endpoint_for_l2cap_cid(channel);
@@ -628,8 +637,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             }
 
             if (channel == stream_endpoint->connection->l2cap_signaling_cid){
-                printf(" handle_l2cap_data_packet_for_connection 1\n");
-                handle_l2cap_data_packet_for_stream_endpoint(stream_endpoint->connection, stream_endpoint, packet, size);
+                printf(" handle_l2cap_data_packet_for_signaling_connection 1\n");
+                stream_endpoint_state_machine(stream_endpoint->connection, stream_endpoint, L2CAP_DATA_PACKET, 0, packet, size);
                 break;
             }
 
@@ -717,7 +726,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                         printf("L2CAP_EVENT_CHANNEL_OPENED: stream_endpoint not found");
                         return;
                     }
-                    handle_hci_event_packet_for_stream_endpoint(connection, stream_endpoint, L2CAP_EVENT_CHANNEL_OPENED, packet, size);
+                    stream_endpoint_state_machine(connection, stream_endpoint, HCI_EVENT_PACKET, L2CAP_EVENT_CHANNEL_OPENED, packet, size);
                     break;
                 
                 case L2CAP_EVENT_CHANNEL_CLOSED:
@@ -745,7 +754,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     stream_endpoint = get_avdtp_stream_endpoint_for_l2cap_cid(local_cid);
                     if (!stream_endpoint) return;
                     
-                    handle_hci_event_packet_for_stream_endpoint(connection, stream_endpoint, L2CAP_EVENT_CHANNEL_CLOSED, packet, size);
+                    stream_endpoint_state_machine(connection, stream_endpoint, HCI_EVENT_PACKET, L2CAP_EVENT_CHANNEL_CLOSED, packet, size);
                     break;
 
                 case HCI_EVENT_DISCONNECTION_COMPLETE:

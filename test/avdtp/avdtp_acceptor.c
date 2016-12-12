@@ -198,13 +198,31 @@ static int avdtp_acceptor_send_accept_response(uint16_t cid,  uint8_t transactio
     return l2cap_send(cid, command, sizeof(command));
 }
 
-int avdtp_acceptor_stream_config_subsm(avdtp_stream_endpoint_t * stream_endpoint, uint8_t signal_identifier, uint8_t *packet, uint16_t size){
-    if (!stream_endpoint) return 0;
-    int request_to_send = 1;
+typedef struct {
+    uint8_t command[200];
+    uint16_t size;
+    uint16_t offset;
+} avdtp_signaling_packet_state_t;
 
+static avdtp_signaling_packet_state_t sig_packet;
+
+static int avdtp_acceptor_process_chunk(avdtp_signaling_packet_header_t * signaling_header, uint8_t * packet, uint16_t size){
+    memcpy(sig_packet.command + sig_packet.size, packet, size);
+    sig_packet.size += size;
+    return signaling_header->packet_type == AVDTP_SINGLE_PACKET || signaling_header->packet_type == AVDTP_END_PACKET;
+}
+
+int avdtp_acceptor_stream_config_subsm(avdtp_stream_endpoint_t * stream_endpoint, avdtp_signaling_packet_header_t * signaling_header, uint8_t * packet, uint16_t size){
+    if (!stream_endpoint) return 0;
+
+    if (!avdtp_acceptor_process_chunk(signaling_header, packet, size)) return 0;
+    uint16_t packet_size = sig_packet.size;
+    sig_packet.size = 0;
+
+    int request_to_send = 1;
     switch (stream_endpoint->acceptor_config_state){
         case AVDTP_ACCEPTOR_STREAM_CONFIG_IDLE:
-            switch (signal_identifier){
+            switch (signaling_header->signal_identifier){
                 case AVDTP_SI_GET_ALL_CAPABILITIES:
                     printf("    ACP: AVDTP_SI_GET_ALL_CAPABILITIES\n");
                     stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_ANSWER_GET_ALL_CAPABILITIES;
@@ -217,8 +235,8 @@ int avdtp_acceptor_stream_config_subsm(avdtp_stream_endpoint_t * stream_endpoint
                     printf("    ACP: AVDTP_ACCEPTOR_W2_ANSWER_SET_CONFIGURATION \n");
                     stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_ANSWER_SET_CONFIGURATION;
                     avdtp_sep_t sep;
-                    sep.seid = packet[3] >> 2;
-                    sep.registered_service_categories = avdtp_unpack_service_capabilities(&sep.capabilities, packet+4, size-4);
+                    sep.seid = sig_packet.command[3] >> 2;
+                    sep.registered_service_categories = avdtp_unpack_service_capabilities(&sep.capabilities, sig_packet.command+4, packet_size-4);
                     
                     // find or add sep
                     stream_endpoint->remote_sep_index = 0xFF;
@@ -242,7 +260,7 @@ int avdtp_acceptor_stream_config_subsm(avdtp_stream_endpoint_t * stream_endpoint
                     //     printf("    ACP: AVDTP_SI_RECONFIGURE, bad state %d \n", stream_endpoint->state);
                     //     stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_REJECT_WITH_ERROR_CODE;
                     //     stream_endpoint->error_code = BAD_STATE;
-                    //     stream_endpoint->reject_signal_identifier = signal_identifier;
+                    //     stream_endpoint->reject_signal_identifier = signaling_header->signal_identifier;
                     //     break;
                     // }
             
@@ -253,7 +271,7 @@ int avdtp_acceptor_stream_config_subsm(avdtp_stream_endpoint_t * stream_endpoint
                     printf("    ACP: AVDTP_ACCEPTOR_W2_ANSWER_RECONFIGURE %p in state %d (AVDTP_STREAM_ENDPOINT_OPENED %d)\n", stream_endpoint, stream_endpoint->state, AVDTP_STREAM_ENDPOINT_OPENED);
                     avdtp_sep_t sep;
                     sep.seid = packet[3] >> 2;
-                    sep.registered_service_categories = avdtp_unpack_service_capabilities(&sep.capabilities, packet+4, size-4);
+                    sep.registered_service_categories = avdtp_unpack_service_capabilities(&sep.capabilities, packet+4, packet_size-4);
                     
                     // find sep or raise error
                     int i;
@@ -267,7 +285,7 @@ int avdtp_acceptor_stream_config_subsm(avdtp_stream_endpoint_t * stream_endpoint
                         printf("    ACP: AVDTP_SI_RECONFIGURE, bad state seid %d not found\n", sep.seid);
                         stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_REJECT_WITH_ERROR_CODE;
                         stream_endpoint->error_code = BAD_ACP_SEID;
-                        stream_endpoint->reject_signal_identifier = signal_identifier;
+                        stream_endpoint->reject_signal_identifier = signaling_header->signal_identifier;
                         break;
                     }
 
@@ -316,7 +334,7 @@ int avdtp_acceptor_stream_config_subsm(avdtp_stream_endpoint_t * stream_endpoint
                             printf("    ACP: AVDTP_SI_CLOSE, bad state %d \n", stream_endpoint->state);
                             stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_REJECT_WITH_ERROR_CODE;
                             stream_endpoint->error_code = BAD_STATE;
-                            stream_endpoint->reject_signal_identifier = signal_identifier;
+                            stream_endpoint->reject_signal_identifier = signaling_header->signal_identifier;
                             break;
                     }
                     break;
@@ -326,16 +344,16 @@ int avdtp_acceptor_stream_config_subsm(avdtp_stream_endpoint_t * stream_endpoint
                     stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_ANSWER_ABORT_STREAM;
                     break;
                 default:
-                    printf("    ACP: NOT IMPLEMENTED, Reject signal_identifier %02x\n", signal_identifier);
+                    printf("    ACP: NOT IMPLEMENTED, Reject signal_identifier %02x\n", signaling_header->signal_identifier);
                     stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_REJECT_UNKNOWN_CMD;
-                    stream_endpoint->reject_signal_identifier = signal_identifier;
+                    stream_endpoint->reject_signal_identifier = signaling_header->signal_identifier;
                     break;
             }
             break;
         default:
             return 0;
     }
-    
+
     if (!request_to_send){
         printf("    ACP: NOT IMPLEMENTED\n");
     }

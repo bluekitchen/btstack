@@ -51,7 +51,7 @@
 extern "C" {
 #endif
 
-int  avdtp_acceptor_stream_config_subsm(avdtp_stream_endpoint_t * stream_endpoint, uint8_t signal_identifier, uint8_t *packet, uint16_t size);
+int  avdtp_acceptor_stream_config_subsm(avdtp_stream_endpoint_t * stream_endpoint, avdtp_signaling_packet_header_t * signaling_header, uint8_t *packet, uint16_t size);
 int  avdtp_acceptor_stream_config_subsm_run(avdtp_connection_t * connection, avdtp_stream_endpoint_t * stream_endpoint);
 
 #if defined __cplusplus
