@@ -96,7 +96,7 @@ def append_calibration_sequence(additions, str_list, data_indent):
     str_list.append("0x01, 0x80, 0xfd, 0x06, 0x3c, 0xf0, 0x5f, 0x00, 0x00, 0x00,\n\n")
     return 20 
 
-def convert_bts(main_bts_file, bts_add_on):
+def convert_bts(main_bts_file, bts_add_on, aka):
     array_name = 'cc256x'
     c_file   = main_bts_file.replace('bts', 'c')
 
@@ -223,10 +223,14 @@ def convert_bts(main_bts_file, bts_add_on):
 
         fout.write( '// init script created from\n')
         fout.write( '// - {0}\n'.format(main_bts_file))
+        if aka != "":
+            fout.write( '// - AKA TIInit_{0}.bts\n'.format(aka))
         if bts_add_on != "":
             fout.write( '// - {0}\n'.format(bts_add_on))
         fout.write( '#include <stdint.h>\n')
-
+        fout.write( '\n')
+        # if aka != "":
+        #     fout.write( 'const char * {0}_init_script_aka = "{1}";\n'.format(array_name, aka))
         part = 0
         size = 0
         for part_size in part_sizes:
@@ -304,8 +308,36 @@ for name in files:
         print("Skipping " + name)
         continue
 
+
     print ("\nMain script " + name)
     
+    # set AKA and lmp subversion
+    aka = ""
+    lmp_subversion = 0
+    if name_lower == "bluetooth_init_cc2560_2.44.bts":
+        aka = "6.2.31"
+    if name_lower == "bluetooth_init_cc2560a_2.14.bts":
+        aka = "6.6.15"
+    if name_lower == "bluetooth_init_cc2564_2.14.bts":
+        aka = "6.6.15"
+    if name_lower == "bluetooth_init_cc2560b_1.2_bt_spec_4.1.bts":
+        aka = "6.7.16"
+    if name_lower == "bluetooth_init_cc2564b_1.2_bt_spec_4.1.bts":
+        aka = "6.7.16"
+    if name_lower == "bluetooth_init_cc2560b_1.4_bt_spec_4.1.bts":
+        aka = "6.7.16"
+    if name_lower == "bluetooth_init_cc2564b_1.4_bt_spec_4.1.bts":
+        aka = "6.7.16"
+    if name_lower == "bluetooth_init_cc2560b_1.5_bt_spec_4.1.bts":
+        aka = "6.7.16"
+    if name_lower == "bluetooth_init_cc2564b_1.5_bt_spec_4.1.bts":
+        aka = "6.7.16"
+
+    if name_lower == "bluetooth_init_cc2560c_1.0.bts":
+        aka = "6.12.26"
+    if name_lower == "bluetooth_init_cc2564c_1.0.bts":
+        aka = "6.12.26"
+
     # check for BLE add-on
     add_on = ""
     name_parts = re.match('bluetooth_init_(.....+_...).*.bts', name)
@@ -314,29 +346,35 @@ for name in files:
         if os.path.isfile(potential_add_on):
             add_on = potential_add_on
 
-    name_parts = re.match('TIInit_(\d*\.\d*\.\d*)_.*.bts', name)
+    name_parts = re.match('TIInit_(\d*\.\d*\.\d*).*.bts', name)
     if name_parts:
-        potential_add_on = 'TIInit_%s_ble_add-on.bts' % name_parts.group(1)
+        aka = name_parts.group(1)
+        potential_add_on = 'TIInit_%s_ble_add-on.bts' % aka
         if os.path.isfile(potential_add_on):
             add_on = potential_add_on
 
     name_parts = re.match('initscripts_TIInit_(\d*\.\d*\.\d*)_.*.bts', name)
     if name_parts:
-        potential_add_on = 'initscripts_TIInit_%s_ble_add-on.bts' % name_parts.group(1)
+        aka = name_parts.group(1)
+        potential_add_on = 'initscripts_TIInit_%s_ble_add-on.bts' % aka
         if os.path.isfile(potential_add_on):
             add_on = potential_add_on
 
     name_parts = re.match('initscripts-TIInit_(\d*\.\d*\.\d*).*.bts', name)
     if name_parts:
-        potential_add_on = 'initscripts-TIInit_%s_ble_add-on.bts' % name_parts.group(1)
+        aka = name_parts.group(1)
+        potential_add_on = 'initscripts-TIInit_%s_ble_add-on.bts' % aka
         if os.path.isfile(potential_add_on):
             add_on = potential_add_on
+
+    if aka != "":
+        print ("- AKA TIInit_%s.bts" % aka)
 
     if add_on != "":
         print("+ add-on " + add_on)
 
     print("--------")  
-    convert_bts(name, add_on)
+    convert_bts(name, add_on, aka)
     print
 
 # done
