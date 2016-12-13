@@ -232,9 +232,9 @@ def convert_bts(main_bts_file, bts_add_on):
         for part_size in part_sizes:
             part += 1
             size += part_size
-            print("- part", part, "size", part_size)
+            print("- part %u, size %u" % (part,part_size))
 
-        print('- total size', size)
+        print('- total size %u' % size)
 
         print("\n".join(additions))
 
@@ -277,47 +277,67 @@ for name in files:
     name_lower = name.lower()
     # skip BLE and AVRP add-ons
     if name_lower.startswith('ble_init_cc'):
-        print("Skipping BLE add-on", name)
+        print("Skipping BLE add-on " + name)
         continue
     if name_lower.startswith('avpr_init_cc'):
-        print("Skipping AVPR add-on", name)
+        print("Skipping AVPR add-on " + name)
         continue
     if re.match("tiinit_.*_ble_add-on.bts", name_lower):
-        print("Skipping BLE add-on", name)
+        print("Skipping BLE add-on " + name)
         continue
     if re.match("initscripts_tiinit_.*_ble_add-on.bts", name_lower):
-        print("Skipping BLE add-on", name)
+        print("Skipping BLE add-on " + name)
         continue
     if re.match("initscripts_tiinit_.*_avpr_add-on.bts", name_lower):
-        print("Skipping AVPR add-on", name)
+        print("Skipping AVPR add-on " + name)
+        continue
+    if re.match("initscripts_tiinit.*", name_lower):
+        print("Skipping " + name)
+        continue
+    if re.match("initscripts-tiinit_.*_ble_add-on.bts", name_lower):
+        print("Skipping BLE add-on " + name)
+        continue
+    if re.match("initscripts-tiinit_.*_avpr_add-on.bts", name_lower):
+        print("Skipping AVPR add-on " + name)
+        continue
+    if re.match("initscripts-tiinit.*", name_lower):
+        print("Skipping " + name)
         continue
 
-    print "check", name
+    print ("\nBase script " + name)
     
     # check for BLE add-on
     add_on = ""
-    name_parts = re.match('bluetooth_init_(.....+_...)_.*.bts', name)
+    name_parts = re.match('bluetooth_init_(.....+_...).*.bts', name)
     if name_parts:
         potential_add_on = 'BLE_init_%s.bts' % name_parts.group(1)
         if os.path.isfile(potential_add_on):
             add_on = potential_add_on
-            print("Found", add_on, "add-on for", name)
 
     name_parts = re.match('TIInit_(\d*\.\d*\.\d*)_.*.bts', name)
     if name_parts:
         potential_add_on = 'TIInit_%s_ble_add-on.bts' % name_parts.group(1)
         if os.path.isfile(potential_add_on):
             add_on = potential_add_on
-            print("Found", add_on, "add-on for", name)
 
     name_parts = re.match('initscripts_TIInit_(\d*\.\d*\.\d*)_.*.bts', name)
     if name_parts:
         potential_add_on = 'initscripts_TIInit_%s_ble_add-on.bts' % name_parts.group(1)
         if os.path.isfile(potential_add_on):
             add_on = potential_add_on
-            print("Found", add_on, "add-on for", name)
 
+    name_parts = re.match('initscripts-TIInit_(\d*\.\d*\.\d*).*.bts', name)
+    if name_parts:
+        potential_add_on = 'initscripts-TIInit_%s_ble_add-on.bts' % name_parts.group(1)
+        if os.path.isfile(potential_add_on):
+            add_on = potential_add_on
+
+    if add_on != "":
+        print("+ add-on " + add_on)
+
+    print("--------")  
     convert_bts(name, add_on)
+    print
 
 # done
 print('\nConversion(s) successful!\n')

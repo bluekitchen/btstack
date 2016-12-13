@@ -125,7 +125,7 @@ bluetooth_init_cc2560C_1.0.c: initscripts-TIInit_6.12.26.bts
 	$(CONVERSION_SCRIPT)
 
 bluetooth_init_cc2564C_1.0.c: initscripts-TIInit_6.12.26.bts initscripts-TIInit_6.12.26_ble_add-on.bts
-	cp initscripts-TIInit_6.12.26_bt_spec_4.2.bts bluetooth_init_cc2564C_1.0.bts
+	cp initscripts-TIInit_6.12.26.bts             bluetooth_init_cc2564C_1.0.bts
 	cp initscripts-TIInit_6.12.26_ble_add-on.bts  BLE_init_cc2564C_1.0.bts
 	$(CONVERSION_SCRIPT)
 
