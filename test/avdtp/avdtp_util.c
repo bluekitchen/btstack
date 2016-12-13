@@ -62,7 +62,7 @@ uint8_t store_bit16(uint16_t bitmap, int position, uint8_t value){
     return bitmap;
 }
 
-void avdtp_read_signaling_header(avdtp_signaling_packet_header_t * signaling_header, uint8_t * packet, uint16_t size){
+void avdtp_read_signaling_header(avdtp_signaling_packet_t * signaling_header, uint8_t * packet, uint16_t size){
     if (size < 2) return;   
     signaling_header->transaction_label = packet[0] >> 4;
     signaling_header->packet_type = (avdtp_packet_type_t)((packet[0] >> 2) & 0x03);

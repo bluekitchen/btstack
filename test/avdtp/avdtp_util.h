@@ -52,7 +52,7 @@ extern "C" {
 #endif
 
 uint8_t avdtp_header(uint8_t tr_label, avdtp_packet_type_t packet_type, avdtp_message_type_t msg_type);
-void    avdtp_read_signaling_header(avdtp_signaling_packet_header_t * signaling_header, uint8_t * packet, uint16_t size);
+void    avdtp_read_signaling_header(avdtp_signaling_packet_t * signaling_header, uint8_t * packet, uint16_t size);
 
 uint8_t store_bit16(uint16_t bitmap, int position, uint8_t value);
 int     get_bit16(uint16_t bitmap, int position);

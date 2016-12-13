@@ -47,49 +47,6 @@
 #include "avdtp_util.h"
 #include "avdtp_acceptor.h"
 
-static int avdtp_acceptor_signaling_response_send_fragmented(uint16_t cid, avdtp_signaling_packet_state_t * sig_packet) {
-    int mtu = l2cap_get_remote_mtu_for_local_cid(cid);
-    // hack for test
-    mtu = 10;
-    int data_len = 0;
-
-    uint8_t *out_buffer = NULL;
-    uint16_t offset = sig_packet->offset;
-    uint16_t pos = 1;
-    
-    l2cap_reserve_packet_buffer();
-    out_buffer = l2cap_get_outgoing_buffer();
-    
-    if (offset == 0){
-        if (sig_packet->size <= mtu - 2){
-            sig_packet->packet_type = AVDTP_SINGLE_PACKET;
-            out_buffer[pos++] = sig_packet->signal_identifier;
-            data_len = sig_packet->size;
-        } else {
-            sig_packet->packet_type = AVDTP_START_PACKET;
-            out_buffer[pos++] = 1;
-            out_buffer[pos++] = sig_packet->signal_identifier;
-            data_len = mtu - 3;
-            sig_packet->offset = data_len;
-        }
-    } else {
-        int remaining_bytes = sig_packet->size - offset;
-
-        if (remaining_bytes <= mtu - 1){
-            sig_packet->packet_type = AVDTP_END_PACKET;
-            data_len = remaining_bytes;
-            sig_packet->offset = 0;
-        } else{
-            sig_packet->packet_type = AVDTP_CONTINUE_PACKET;
-            data_len = mtu - 1;
-            sig_packet->offset += data_len;
-        }
-    }
-    out_buffer[0] = avdtp_header(sig_packet->transaction_label, sig_packet->packet_type, sig_packet->message_type);
-    memcpy(out_buffer+pos, sig_packet->command + offset, data_len);
-    return l2cap_send_prepared(cid, pos);
-}
-
 static int avdtp_pack_service_capabilities(uint8_t * buffer, int size, avdtp_capabilities_t caps, avdtp_service_category_t category, uint8_t pack_all_capabilities){
     int i;
     // pos = 0 reserved for length
@@ -194,46 +151,32 @@ static uint16_t avdtp_unpack_service_capabilities(avdtp_capabilities_t * caps, u
     return registered_service_categories;
 }
 
-static inline int avdtp_acceptor_send_capabilities(uint16_t cid, avdtp_signaling_packet_state_t * sig_packet, uint8_t transaction_label, avdtp_sep_t sep, uint8_t identifier){
+static inline void avdtp_acceptor_prepare_capabilities_response(avdtp_signaling_packet_t * signaling_packet, uint8_t transaction_label, avdtp_sep_t sep, uint8_t identifier){
+    if (signaling_packet->offset) return;
     uint8_t pack_all_capabilities = 1;
     if (identifier == AVDTP_SI_GET_CAPABILITIES){
         pack_all_capabilities = 0;
     } 
     
-    sig_packet->size = 0;
+    signaling_packet->size = 0;
     int i = 0;
     for (i = 1; i < 9; i++){
         if (get_bit16(sep.registered_service_categories, i)){
             // service category
-            sig_packet->command[sig_packet->size++] = i;
-            sig_packet->size += avdtp_pack_service_capabilities(sig_packet->command+sig_packet->size, sizeof(sig_packet->command)-sig_packet->size, sep.capabilities, (avdtp_service_category_t)i, pack_all_capabilities);
+            signaling_packet->command[signaling_packet->size++] = i;
+            signaling_packet->size += avdtp_pack_service_capabilities(signaling_packet->command+signaling_packet->size, sizeof(signaling_packet->command)-signaling_packet->size, sep.capabilities, (avdtp_service_category_t)i, pack_all_capabilities);
         }
     }
-    sig_packet->command[sig_packet->size++] = 0x04;
-    sig_packet->command[sig_packet->size++] = 0x02;
-    sig_packet->command[sig_packet->size++] = 0x02;
-    sig_packet->command[sig_packet->size++] = 0x00;
+    signaling_packet->command[signaling_packet->size++] = 0x04;
+    signaling_packet->command[signaling_packet->size++] = 0x02;
+    signaling_packet->command[signaling_packet->size++] = 0x02;
+    signaling_packet->command[signaling_packet->size++] = 0x00;
     
     // printf(" avdtp_acceptor_send_capabilities_response: \n");
-    // printf_hexdump(sig_packet->command, sig_packet->size);
-    sig_packet->signal_identifier = identifier;
-    sig_packet->transaction_label = transaction_label;
-    sig_packet->message_type = AVDTP_RESPONSE_ACCEPT_MSG;
-    sig_packet->offset = 0;
-
-    return avdtp_acceptor_signaling_response_send_fragmented(cid, sig_packet);
-}
-
-static int avdtp_acceptor_send_capabilities_response(uint16_t cid, avdtp_signaling_packet_state_t * sig_packet, uint8_t transaction_label, avdtp_sep_t sep){
-    return avdtp_acceptor_send_capabilities(cid, sig_packet, transaction_label, sep, AVDTP_SI_GET_CAPABILITIES);
-}
-
-static int avdtp_acceptor_send_all_capabilities_response(uint16_t cid, avdtp_signaling_packet_state_t * sig_packet, uint8_t transaction_label, avdtp_sep_t sep){
-    return avdtp_acceptor_send_capabilities(cid, sig_packet, transaction_label, sep, AVDTP_SI_GET_ALL_CAPABILITIES);
-}
-
-static int avdtp_acceptor_send_stream_configuration_response(uint16_t cid, avdtp_signaling_packet_state_t * sig_packet, uint8_t transaction_label, avdtp_sep_t sep){
-    return avdtp_acceptor_send_capabilities(cid, sig_packet, transaction_label, sep, AVDTP_SI_GET_CONFIGURATION);
+    // printf_hexdump(signaling_packet->command, signaling_packet->size);
+    signaling_packet->signal_identifier = identifier;
+    signaling_packet->transaction_label = transaction_label;
+    signaling_packet->message_type = AVDTP_RESPONSE_ACCEPT_MSG;
 }
 
 static int avdtp_acceptor_send_accept_response(uint16_t cid,  uint8_t transaction_label, avdtp_signal_identifier_t identifier){
@@ -243,23 +186,23 @@ static int avdtp_acceptor_send_accept_response(uint16_t cid,  uint8_t transactio
     return l2cap_send(cid, command, sizeof(command));
 }
 
-static int avdtp_acceptor_process_chunk(avdtp_signaling_packet_header_t * signaling_header, avdtp_signaling_packet_state_t * sig_packet, uint8_t * packet, uint16_t size){
-    memcpy(sig_packet->command + sig_packet->size, packet, size);
-    sig_packet->size += size;
-    return signaling_header->packet_type == AVDTP_SINGLE_PACKET || signaling_header->packet_type == AVDTP_END_PACKET;
+static int avdtp_acceptor_process_chunk(avdtp_signaling_packet_t * signaling_packet, uint8_t * packet, uint16_t size){
+    memcpy(signaling_packet->command + signaling_packet->size, packet, size);
+    signaling_packet->size += size;
+    return signaling_packet->packet_type == AVDTP_SINGLE_PACKET || signaling_packet->packet_type == AVDTP_END_PACKET;
 }
 
-int avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, avdtp_stream_endpoint_t * stream_endpoint, avdtp_signaling_packet_header_t * signaling_header, uint8_t * packet, uint16_t size){
+int avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, avdtp_stream_endpoint_t * stream_endpoint, uint8_t * packet, uint16_t size){
     if (!stream_endpoint) return 0;
-
-    if (!avdtp_acceptor_process_chunk(signaling_header, &connection->sig_packet, packet, size)) return 0;
-    uint16_t packet_size = connection->sig_packet.size;
-    connection->sig_packet.size = 0;
+    
+    if (!avdtp_acceptor_process_chunk(&connection->signaling_packet, packet, size)) return 0;
+    uint16_t packet_size = connection->signaling_packet.size;
+    connection->signaling_packet.size = 0;
 
     int request_to_send = 1;
     switch (stream_endpoint->acceptor_config_state){
         case AVDTP_ACCEPTOR_STREAM_CONFIG_IDLE:
-            switch (signaling_header->signal_identifier){
+            switch (connection->signaling_packet.signal_identifier){
                 case AVDTP_SI_GET_ALL_CAPABILITIES:
                     printf("    ACP: AVDTP_SI_GET_ALL_CAPABILITIES\n");
                     stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_ANSWER_GET_ALL_CAPABILITIES;
@@ -272,8 +215,8 @@ int avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, avdtp_st
                     printf("    ACP: AVDTP_ACCEPTOR_W2_ANSWER_SET_CONFIGURATION \n");
                     stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_ANSWER_SET_CONFIGURATION;
                     avdtp_sep_t sep;
-                    sep.seid = connection->sig_packet.command[3] >> 2;
-                    sep.registered_service_categories = avdtp_unpack_service_capabilities(&sep.capabilities, connection->sig_packet.command+4, packet_size-4);
+                    sep.seid = connection->signaling_packet.command[3] >> 2;
+                    sep.registered_service_categories = avdtp_unpack_service_capabilities(&sep.capabilities, connection->signaling_packet.command+4, packet_size-4);
                     
                     // find or add sep
                     stream_endpoint->remote_sep_index = 0xFF;
@@ -297,7 +240,7 @@ int avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, avdtp_st
                     //     printf("    ACP: AVDTP_SI_RECONFIGURE, bad state %d \n", stream_endpoint->state);
                     //     stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_REJECT_WITH_ERROR_CODE;
                     //     stream_endpoint->error_code = BAD_STATE;
-                    //     stream_endpoint->reject_signal_identifier = signaling_header->signal_identifier;
+                    //     stream_endpoint->reject_signal_identifier = connection->signaling_packet.signal_identifier;
                     //     break;
                     // }
             
@@ -322,7 +265,7 @@ int avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, avdtp_st
                         printf("    ACP: AVDTP_SI_RECONFIGURE, bad state seid %d not found\n", sep.seid);
                         stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_REJECT_WITH_ERROR_CODE;
                         stream_endpoint->error_code = BAD_ACP_SEID;
-                        stream_endpoint->reject_signal_identifier = signaling_header->signal_identifier;
+                        stream_endpoint->reject_signal_identifier = connection->signaling_packet.signal_identifier;
                         break;
                     }
 
@@ -371,7 +314,7 @@ int avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, avdtp_st
                             printf("    ACP: AVDTP_SI_CLOSE, bad state %d \n", stream_endpoint->state);
                             stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_REJECT_WITH_ERROR_CODE;
                             stream_endpoint->error_code = BAD_STATE;
-                            stream_endpoint->reject_signal_identifier = signaling_header->signal_identifier;
+                            stream_endpoint->reject_signal_identifier = connection->signaling_packet.signal_identifier;
                             break;
                     }
                     break;
@@ -381,9 +324,9 @@ int avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, avdtp_st
                     stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_ANSWER_ABORT_STREAM;
                     break;
                 default:
-                    printf("    ACP: NOT IMPLEMENTED, Reject signal_identifier %02x\n", signaling_header->signal_identifier);
+                    printf("    ACP: NOT IMPLEMENTED, Reject signal_identifier %02x\n", connection->signaling_packet.signal_identifier);
                     stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_REJECT_UNKNOWN_CMD;
-                    stream_endpoint->reject_signal_identifier = signaling_header->signal_identifier;
+                    stream_endpoint->reject_signal_identifier = connection->signaling_packet.signal_identifier;
                     break;
             }
             break;
@@ -421,6 +364,63 @@ static int avdtp_acceptor_send_response_reject_with_error_code(uint16_t cid, avd
     return l2cap_send(cid, command, sizeof(command));
 }
 
+
+static int avdtp_acceptor_signaling_response_create_fragment(avdtp_signaling_packet_t * signaling_packet, uint8_t * out_buffer) {
+    // int mtu = l2cap_get_remote_mtu_for_local_cid(cid);
+    // hack for test
+    int mtu = 6;
+    int data_len = 0;
+
+    uint16_t offset = signaling_packet->offset;
+    uint16_t pos = 1;
+    // printf(" avdtp_acceptor_signaling_response_create_fragment offset %d, packet type %d\n",  signaling_packet->offset, signaling_packet->packet_type);
+    
+    if (offset == 0){
+        if (signaling_packet->size <= mtu - 2){
+            // printf(" AVDTP_SINGLE_PACKET\n");
+            signaling_packet->packet_type = AVDTP_SINGLE_PACKET;
+            out_buffer[pos++] = signaling_packet->signal_identifier;
+            data_len = signaling_packet->size;
+        } else {
+            signaling_packet->packet_type = AVDTP_START_PACKET;
+            out_buffer[pos++] = (mtu + signaling_packet->size)/ (mtu-1);
+            out_buffer[pos++] = signaling_packet->signal_identifier;
+            data_len = mtu - 3;
+            signaling_packet->offset = data_len;
+            // printf(" AVDTP_START_PACKET len %d, offset %d\n", signaling_packet->size, signaling_packet->offset);
+        }
+    } else {
+        int remaining_bytes = signaling_packet->size - offset;
+        if (remaining_bytes <= mtu - 1){
+            //signaling_packet->fragmentation = 1;
+            signaling_packet->packet_type = AVDTP_END_PACKET;
+            data_len = remaining_bytes;
+            signaling_packet->offset = 0;
+            // printf(" AVDTP_END_PACKET len %d, offset %d\n", signaling_packet->size, signaling_packet->offset);
+        } else{
+            signaling_packet->packet_type = AVDTP_CONTINUE_PACKET;
+            data_len = mtu - 1;
+            signaling_packet->offset += data_len;
+            // printf(" AVDTP_CONTINUE_PACKET len %d, offset %d\n", signaling_packet->size, signaling_packet->offset);
+        }
+    }
+    out_buffer[0] = avdtp_header(signaling_packet->transaction_label, signaling_packet->packet_type, signaling_packet->message_type);
+    memcpy(out_buffer+pos, signaling_packet->command + offset, data_len);
+    pos += data_len; 
+    return pos;
+}
+
+static inline int avdtp_acceptor_send_fragmented_packet(uint16_t cid, avdtp_connection_t * connection, avdtp_stream_endpoint_t * stream_endpoint, avdtp_acceptor_stream_endpoint_state_t acceptor_config_state){
+    l2cap_reserve_packet_buffer();
+    uint8_t * out_buffer = l2cap_get_outgoing_buffer();
+    uint16_t pos = avdtp_acceptor_signaling_response_create_fragment(&connection->signaling_packet, out_buffer);
+    if (connection->signaling_packet.packet_type != AVDTP_SINGLE_PACKET && connection->signaling_packet.packet_type != AVDTP_END_PACKET){
+        stream_endpoint->acceptor_config_state = acceptor_config_state;
+        printf("    ACP: fragmented\n");
+    }
+    return l2cap_send_prepared(cid, pos);
+}
+
 int avdtp_acceptor_stream_config_subsm_run(avdtp_connection_t * connection, avdtp_stream_endpoint_t * stream_endpoint){
     if (!stream_endpoint) return 0;
     uint8_t failed_reconfigure_service_category = stream_endpoint->failed_reconfigure_service_category;
@@ -432,20 +432,17 @@ int avdtp_acceptor_stream_config_subsm_run(avdtp_connection_t * connection, avdt
     avdtp_acceptor_stream_endpoint_state_t acceptor_config_state = stream_endpoint->acceptor_config_state;
     stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_STREAM_CONFIG_IDLE;
     int sent = 1;
+
     switch (acceptor_config_state){
         case AVDTP_ACCEPTOR_STREAM_CONFIG_IDLE:
             break;
         case AVDTP_ACCEPTOR_W2_ANSWER_GET_CAPABILITIES:
-            printf("    ACP: DONE\n");
-            avdtp_acceptor_send_capabilities_response(cid, &connection->sig_packet, trid, stream_endpoint->sep);
-            if (connection->sig_packet.packet_type != AVDTP_SINGLE_PACKET && connection->sig_packet.packet_type != AVDTP_END_PACKET){
-                stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_ANSWER_GET_CAPABILITIES;
-
-            }
+            avdtp_acceptor_prepare_capabilities_response(&connection->signaling_packet, trid, stream_endpoint->sep, AVDTP_SI_GET_CAPABILITIES);
+            avdtp_acceptor_send_fragmented_packet(cid, connection, stream_endpoint, acceptor_config_state);
             break;
         case AVDTP_ACCEPTOR_W2_ANSWER_GET_ALL_CAPABILITIES:
-            printf("    ACP: DONE\n");
-            avdtp_acceptor_send_all_capabilities_response(cid, &connection->sig_packet, trid, stream_endpoint->sep);
+            avdtp_acceptor_prepare_capabilities_response(&connection->signaling_packet, trid, stream_endpoint->sep, AVDTP_SI_GET_ALL_CAPABILITIES);
+            avdtp_acceptor_send_fragmented_packet(cid, connection, stream_endpoint, acceptor_config_state);
             break;
         case AVDTP_ACCEPTOR_W2_ANSWER_SET_CONFIGURATION:
             printf("    ACP: DONE\n");
@@ -455,8 +452,8 @@ int avdtp_acceptor_stream_config_subsm_run(avdtp_connection_t * connection, avdt
             avdtp_acceptor_send_accept_response(cid, trid, AVDTP_SI_SET_CONFIGURATION);
             break;
         case AVDTP_ACCEPTOR_W2_ANSWER_GET_CONFIGURATION:
-            printf("    ACP: DONE\n");
-            avdtp_acceptor_send_stream_configuration_response(cid, &connection->sig_packet, trid, stream_endpoint->remote_seps[stream_endpoint->remote_sep_index]);
+            avdtp_acceptor_prepare_capabilities_response(&connection->signaling_packet, trid, stream_endpoint->sep, AVDTP_SI_GET_CONFIGURATION);
+            avdtp_acceptor_send_fragmented_packet(cid, connection, stream_endpoint, acceptor_config_state);
             break;
         case AVDTP_ACCEPTOR_W4_L2CAP_FOR_MEDIA_CONNECTED:
             stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W4_L2CAP_FOR_MEDIA_CONNECTED;
@@ -504,7 +501,7 @@ int avdtp_acceptor_stream_config_subsm_run(avdtp_connection_t * connection, avdt
             printf("    ACP: NOT IMPLEMENTED\n");
             return 0;
     } 
-    if (connection->sig_packet.packet_type != AVDTP_SINGLE_PACKET && connection->sig_packet.packet_type != AVDTP_END_PACKET){
+    if (connection->signaling_packet.packet_type != AVDTP_SINGLE_PACKET && connection->signaling_packet.packet_type != AVDTP_END_PACKET){
         stream_endpoint->acceptor_config_state = acceptor_config_state;
         connection->wait_to_send_acceptor = 1;
     }

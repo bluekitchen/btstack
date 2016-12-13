@@ -64,10 +64,10 @@ static int avdtp_initiator_send_get_capabilities_cmd(uint16_t cid, uint8_t trans
 }
 
 
-int avdtp_initiator_stream_config_subsm(avdtp_connection_t * connection, avdtp_stream_endpoint_t * stream_endpoint, avdtp_signaling_packet_header_t * signaling_header, uint8_t *packet, uint16_t size){
+int avdtp_initiator_stream_config_subsm(avdtp_connection_t * connection, avdtp_stream_endpoint_t * stream_endpoint, uint8_t *packet, uint16_t size){
     //if (!stream_endpoint) return 0;
     if (avdtp_initiator_stream_config_subsm_run(connection, stream_endpoint)) return 1;
-
+    
     int responded = 1;
     
     switch (stream_endpoint->initiator_config_state){
@@ -78,7 +78,7 @@ int avdtp_initiator_stream_config_subsm(avdtp_connection_t * connection, avdtp_s
             printf("    INT : AVDTP_INITIATOR_W4_ALL_CAPABILITIES -> NOT IMPLEMENTED\n");
             return 0;
         default:
-            printf("    INT : NOT IMPLEMENTED sig. ID %02x\n", signaling_header->signal_identifier);
+            printf("    INT : NOT IMPLEMENTED sig. ID %02x\n", connection->signaling_packet.signal_identifier);
             //printf_hexdump( packet, size );
             return 0;
     }

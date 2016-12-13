@@ -250,12 +250,12 @@ typedef struct {
     uint8_t num_frames;
 } avdtp_sbc_codec_header_t;
 
-typedef struct {
-    uint8_t transaction_label;
-    avdtp_packet_type_t packet_type;
-    avdtp_message_type_t message_type;
-    uint8_t signal_identifier;
-} avdtp_signaling_packet_header_t;
+// typedef struct {
+//     uint8_t transaction_label;
+//     avdtp_packet_type_t packet_type;
+//     avdtp_message_type_t message_type;
+//     uint8_t signal_identifier;
+// } avdtp_signaling_packet_header_t;
 
 typedef struct {
     uint8_t version;
@@ -358,7 +358,7 @@ typedef struct {
     avdtp_message_type_t message_type;
     avdtp_packet_type_t  packet_type;
     uint16_t transaction_label;
-} avdtp_signaling_packet_state_t;
+} avdtp_signaling_packet_t;
 
 typedef struct {
     btstack_linked_item_t    item;
@@ -373,7 +373,8 @@ typedef struct {
     avdtp_initiator_connection_state_t initiator_connection_state;
     
     // used for fragmentation
-    avdtp_signaling_packet_state_t sig_packet;
+    // avdtp_signaling_packet_header_t signaling_header;
+    avdtp_signaling_packet_t signaling_packet;
 
     uint8_t disconnect;
     uint8_t initiator_transaction_label;
