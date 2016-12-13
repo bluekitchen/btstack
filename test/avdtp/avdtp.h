@@ -104,7 +104,7 @@ extern "C" {
 #define BAD_ROHC_FORMAT 0x26
 #define BAD_CP_FORMAT 0x27
 #define BAD_MULTIPLEXING_FORMAT 0x28
-#define UNSUPPORTED_CONFIGURAION 0x29
+#define UNSUPPORTED_CONFIGURATION 0x29
 
 // ACP to INT, Procedure Error Codes
 #define BAD_STATE 0x31
@@ -154,6 +154,11 @@ typedef enum{
 } avdtp_media_codec_type_t;
 
 typedef enum{
+    AVDTP_CONTENT_PROTECTION_DTCP = 0x0001,
+    AVDTP_CONTENT_PROTECTION_SCMS_T = 0x0002
+} avdtp_content_protection_type_t;
+
+typedef enum{
     AVDTP_SOURCE = 0,
     AVDTP_SINK
 } avdtp_sep_type_t;
@@ -162,11 +167,11 @@ typedef enum {
     AVDTP_MEDIA_TRANSPORT = 0X01,
     AVDTP_REPORTING,
     AVDTP_RECOVERY,
-    AVDTP_CONTENT_PROTECTION,
-    AVDTP_HEADER_COMPRESSION,
-    AVDTP_MULTIPLEXING,
-    AVDTP_MEDIA_CODEC,
-    AVDTP_DELAY_REPORTING
+    AVDTP_CONTENT_PROTECTION, //4
+    AVDTP_HEADER_COMPRESSION, //5
+    AVDTP_MULTIPLEXING,       //6
+    AVDTP_MEDIA_CODEC,        //7
+    AVDTP_DELAY_REPORTING     //8
 } avdtp_service_category_t;
 
 typedef struct {
@@ -183,8 +188,7 @@ typedef struct {
 } adtvp_media_codec_capabilities_t;
 
 typedef struct {
-    uint8_t cp_type_lsb;
-    uint8_t cp_type_msb;
+    uint16_t cp_type;
     uint16_t cp_type_value_len;
     const uint8_t * cp_type_value;
 } adtvp_content_protection_t;
@@ -317,6 +321,7 @@ typedef enum {
     AVDTP_ACCEPTOR_W2_ANSWER_CLOSE_STREAM,
     AVDTP_ACCEPTOR_W2_ANSWER_ABORT_STREAM,
     AVDTP_ACCEPTOR_W2_REJECT_WITH_ERROR_CODE,
+    AVDTP_ACCEPTOR_W2_REJECT_CATEGORY_WITH_ERROR_CODE,
     AVDTP_ACCEPTOR_W2_REJECT_UNKNOWN_CMD,
     AVDTP_ACCEPTOR_STREAMING
 } avdtp_acceptor_stream_endpoint_state_t;
@@ -411,7 +416,7 @@ typedef struct avdtp_stream_endpoint {
     uint8_t remote_sep_index;
     // register request for L2cap connection release
     uint8_t disconnect;
-    uint8_t failed_reconfigure_service_category;
+    uint8_t reject_service_category;
     avdtp_signal_identifier_t reject_signal_identifier;
     uint8_t error_code;
 } avdtp_stream_endpoint_t;

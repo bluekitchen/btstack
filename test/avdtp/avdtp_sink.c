@@ -219,7 +219,7 @@ void avdtp_sink_register_recovery_category(uint8_t seid, uint8_t maximum_recover
     stream_endpoint->sep.capabilities.recovery.maximum_number_media_packets = maximum_number_media_packets;
 }
 
-void avdtp_sink_register_content_protection_category(uint8_t seid, uint8_t cp_type_lsb,  uint8_t cp_type_msb, const uint8_t * cp_type_value, uint8_t cp_type_value_len){
+void avdtp_sink_register_content_protection_category(uint8_t seid, uint16_t cp_type, const uint8_t * cp_type_value, uint8_t cp_type_value_len){
     avdtp_stream_endpoint_t * stream_endpoint = get_avdtp_stream_endpoint_for_seid(seid);
     if (!stream_endpoint){
         log_error("avdtp_sink_register_media_transport_category: stream endpoint with seid %d is not registered", seid);
@@ -227,8 +227,7 @@ void avdtp_sink_register_content_protection_category(uint8_t seid, uint8_t cp_ty
     }
     uint16_t bitmap = store_bit16(stream_endpoint->sep.registered_service_categories, AVDTP_CONTENT_PROTECTION, 1);
     stream_endpoint->sep.registered_service_categories = bitmap;
-    stream_endpoint->sep.capabilities.content_protection.cp_type_lsb = cp_type_lsb;
-    stream_endpoint->sep.capabilities.content_protection.cp_type_msb = cp_type_msb;
+    stream_endpoint->sep.capabilities.content_protection.cp_type = cp_type;
     stream_endpoint->sep.capabilities.content_protection.cp_type_value = cp_type_value;
     stream_endpoint->sep.capabilities.content_protection.cp_type_value_len = cp_type_value_len;
 }

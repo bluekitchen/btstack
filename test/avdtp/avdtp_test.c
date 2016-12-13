@@ -139,7 +139,11 @@ static FILE * sbc_file;
 static char * sbc_filename = "avdtp_sink.sbc";
 #endif
 
-static bd_addr_t remote = {0x04, 0x0C, 0xCE, 0xE4, 0x85, 0xD3};
+
+// mac: static bd_addr_t remote = {0x04, 0x0C, 0xCE, 0xE4, 0x85, 0xD3};
+// pts: static bd_addr_t remote = {0x00, 0x1B, 0xDC, 0x08, 0x0A, 0xA5};
+static bd_addr_t remote = {0x00, 0x1B, 0xDC, 0x08, 0x0A, 0xA5};
+
 static uint8_t sdp_avdtp_sink_service_buffer[150];
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
