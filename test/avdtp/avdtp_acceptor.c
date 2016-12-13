@@ -100,36 +100,50 @@ static int avdtp_pack_service_capabilities(uint8_t * buffer, int size, avdtp_cap
 static uint16_t avdtp_unpack_service_capabilities(avdtp_capabilities_t * caps, uint8_t * packet, uint16_t size){
     int pos = 0;
     uint16_t registered_service_categories = 0;
-
     avdtp_service_category_t category = (avdtp_service_category_t)packet[pos++];
+    if (category < AVDTP_MEDIA_TRANSPORT || category > AVDTP_DELAY_REPORTING){
+        printf(" avdtp_unpack_service_capabilities wrong category %d\n", category);
+        return 0;
+    }
+    printf("    avdtp_unpack_service_capabilities category %d\n", category);
+    
     uint8_t cap_len = packet[pos++];
+    
     int i;
     while (pos < size){
         switch(category){
             case AVDTP_MEDIA_TRANSPORT:
             case AVDTP_REPORTING:
             case AVDTP_DELAY_REPORTING:
+                // printf(" media, report or delay\n");
                 pos++;
                 break;
             case AVDTP_RECOVERY:
+                // printf(" recovery\n");
                 caps->recovery.recovery_type = packet[pos++];
                 caps->recovery.maximum_recovery_window_size = packet[pos++];
                 caps->recovery.maximum_number_media_packets = packet[pos++];
                 break;
             case AVDTP_CONTENT_PROTECTION:
+                // printf(" content prot.\n");
+                
                 caps->content_protection.cp_type_lsb = packet[pos++];
                 caps->content_protection.cp_type_msb = packet[pos++];
                 caps->content_protection.cp_type_value_len = cap_len - 2;
-                printf_hexdump(packet+pos, caps->content_protection.cp_type_value_len);
+                // printf_hexdump(packet+pos, caps->content_protection.cp_type_value_len);
                 pos += caps->content_protection.cp_type_value_len;
                 break;
             case AVDTP_HEADER_COMPRESSION:
+                // printf("header comp.\n");
+                
                 caps->header_compression.back_ch  = packet[pos] >> 7; 
                 caps->header_compression.media    = packet[pos] >> 6;
                 caps->header_compression.recovery = packet[pos] >> 5;
                 pos++;
                 break;
             case AVDTP_MULTIPLEXING:
+                // printf(" multiplex\n");
+                
                 caps->multiplexing_mode.fragmentation = packet[pos++] >> 7;
                 // read [tsid, tcid] for media, reporting. recovery respectively
                 caps->multiplexing_mode.transport_identifiers_num = 3;
@@ -139,15 +153,18 @@ static uint16_t avdtp_unpack_service_capabilities(avdtp_capabilities_t * caps, u
                 }
                 break;
             case AVDTP_MEDIA_CODEC:
+                // printf(" codec\n");
+                
                 caps->media_codec.media_type = packet[pos++] >> 4;
                 caps->media_codec.media_codec_type = packet[pos++];
                 caps->media_codec.media_codec_information_len = cap_len - 2;
-                printf_hexdump(packet+pos, caps->media_codec.media_codec_information_len);
+                // printf_hexdump(packet+pos, caps->media_codec.media_codec_information_len);
                 pos += caps->media_codec.media_codec_information_len;
                 break;
         }
         registered_service_categories = store_bit16(registered_service_categories, category, 1);
     }
+    // printf(" avdtp_unpack_service_capabilities done\n");
     return registered_service_categories;
 }
 
@@ -196,6 +213,7 @@ int avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, avdtp_st
     if (!stream_endpoint) return 0;
     
     if (!avdtp_acceptor_process_chunk(&connection->signaling_packet, packet, size)) return 0;
+
     uint16_t packet_size = connection->signaling_packet.size;
     connection->signaling_packet.size = 0;
 
@@ -218,6 +236,7 @@ int avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, avdtp_st
                     sep.seid = connection->signaling_packet.command[3] >> 2;
                     sep.registered_service_categories = avdtp_unpack_service_capabilities(&sep.capabilities, connection->signaling_packet.command+4, packet_size-4);
                     
+                    printf("    ACP .. seid %d\n", sep.seid);
                     // find or add sep
                     stream_endpoint->remote_sep_index = 0xFF;
                     int i;
@@ -366,9 +385,9 @@ static int avdtp_acceptor_send_response_reject_with_error_code(uint16_t cid, avd
 
 
 static int avdtp_acceptor_signaling_response_create_fragment(avdtp_signaling_packet_t * signaling_packet, uint8_t * out_buffer) {
-    // int mtu = l2cap_get_remote_mtu_for_local_cid(cid);
+    int mtu = l2cap_get_remote_mtu_for_local_cid(cid);
     // hack for test
-    int mtu = 6;
+    // int mtu = 6;
     int data_len = 0;
 
     uint16_t offset = signaling_packet->offset;

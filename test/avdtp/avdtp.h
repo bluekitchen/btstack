@@ -358,6 +358,7 @@ typedef struct {
     avdtp_message_type_t message_type;
     avdtp_packet_type_t  packet_type;
     uint16_t transaction_label;
+    uint16_t num_packets;
 } avdtp_signaling_packet_t;
 
 typedef struct {

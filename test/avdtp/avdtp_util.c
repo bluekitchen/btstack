@@ -64,8 +64,33 @@ uint8_t store_bit16(uint16_t bitmap, int position, uint8_t value){
 
 void avdtp_read_signaling_header(avdtp_signaling_packet_t * signaling_header, uint8_t * packet, uint16_t size){
     if (size < 2) return;   
-    signaling_header->transaction_label = packet[0] >> 4;
-    signaling_header->packet_type = (avdtp_packet_type_t)((packet[0] >> 2) & 0x03);
-    signaling_header->message_type = (avdtp_message_type_t) (packet[0] & 0x03);
-    signaling_header->signal_identifier = packet[1] & 0x3f;
+    int pos = 0;
+    signaling_header->transaction_label = packet[pos] >> 4;
+    signaling_header->packet_type = (avdtp_packet_type_t)((packet[pos] >> 2) & 0x03);
+    signaling_header->message_type = (avdtp_message_type_t) (packet[pos] & 0x03);
+    pos++;
+    memset(signaling_header->command, 0, sizeof(signaling_header->command));
+    switch (signaling_header->packet_type){
+        case AVDTP_SINGLE_PACKET:
+            signaling_header->num_packets = 0;
+            signaling_header->offset = 0;
+            signaling_header->size = 0;
+            break;
+        case AVDTP_END_PACKET:
+            signaling_header->num_packets = 0;
+            break;
+        case AVDTP_START_PACKET:
+            signaling_header->num_packets = packet[pos++];
+            signaling_header->size = 0;
+            signaling_header->offset = 0;
+            break;
+        case AVDTP_CONTINUE_PACKET:
+            if (signaling_header->num_packets <= 0) {
+                printf("    ERR: wrong num fragmented packets\n");
+                break;
+            }
+            signaling_header->num_packets--;
+            break;
+    }
+    signaling_header->signal_identifier = packet[pos] & 0x3f;
 }
