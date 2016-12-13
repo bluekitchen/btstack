@@ -35,9 +35,9 @@ bluetooth_init_cc2564_2.14.bts: CC2564_BT_BLE_SP_BTS.zip
 	rm -rf CC2564_BT_BLE_SP_BTS
 
 
-# third generation
+# third generation CC256xB - TIInit_6.6.16.bts part of .zip archive
 
-# versioned files for v1.2
+# versioned files for v1.2 from now unmaintained TI Git Repo
 bluetooth_init_cc2560B_1.2_BT_Spec_4.1.bts:
 	curl -O $(BASE_URL)/bluetooth_init_cc2560B_1.2_BT_Spec_4.1.bts
 
@@ -47,12 +47,33 @@ bluetooth_init_cc2564B_1.2_BT_Spec_4.1.bts:
 BLE_init_cc2564B_1.2.bts:
 	curl -O $(BASE_URL)/BLE_init_cc2564B_1.2.bts
 
-# unversioned files for v1.4
+# unversioned files for v1.4 from now unmaintained TI Git Repo
 TIInit_6.7.16_bt_spec_4.1.bts:
 	curl -O https://git.ti.com/ti-bt/service-packs/blobs/raw/54f5c151dacc608b19ab2ce4c30e27a3983048b2/initscripts/TIInit_6.7.16_bt_spec_4.1.bts
 
-TIInit_6.7.16_ble_add-on.bts: 
+TIInit_6.7.16_ble_add-on.bts:
 	curl -O https://git.ti.com/ti-bt/service-packs/blobs/raw/89c8db14929f10d75627b132690432cd71f5f54f/initscripts/TIInit_6.7.16_ble_add-on.bts
+
+# unversioned files for v1.5 from TI Download Center - requires log-in and accepting export restrictions
+initscripts-TIInit_6.7.16_bt_spec_4.1.bts:
+	@echo "Please download the Service Pack for the CC256xB from http://www.ti.com/tool/cc256xb-bt-sp and place 'initscripts-TIInit_6.7.16_bt_spec_4.1.bts' in this folder"
+	@exit 10
+
+initscripts-TIInit_6.7.16_ble_add-on.bts:
+	@echo "Please download the Service Pack for the CC256xB from http://www.ti.com/tool/cc256xb-bt-sp and place 'initscripts-TIInit_6.7.16_ble_add-on.bts' in this folder"
+	@exit 10
+
+# fourth generation CC256xC - TIInit_6.12.26.bts part of .zip archive
+
+# unversioned files for v1.0 from TI Download Center - requires log-in and accepting export restrictions
+initscripts-TIInit_6.12.26.bts:
+	@echo "Please download the Service Pack for the CC256xC from http://www.ti.com/tool/cc256xc-bt-sp and place 'initscripts-TIInit_6.12.26.bts' in this folder"
+	@exit 10
+
+initscripts-TIInit_6.12.26_ble_add-on.bts:
+	@echo "Please download the Service Pack for the CC256xC from http://www.ti.com/tool/cc256xc-bt-sp and place 'initscripts-TIInit_6.12.26_ble_add-on.bts' in this folder"
+	@exit 10
+
 
 # WL chipset
 TIInit_11.8.32.bts:
@@ -64,22 +85,15 @@ TIInit_12.10.28.bts:
 TIInit_12.8.32.bts:
 	curl -O $(BASE_URL)/TIInit_12.8.32.bts
 
+
 # convert to .c files
 bluetooth_init_cc2560_2.44.c: bluetooth_init_cc2560_2.44.bts
 	$(CONVERSION_SCRIPT)
-
 
 bluetooth_init_cc2560A_2.14.c: bluetooth_init_cc2560A_2.14.bts
 	$(CONVERSION_SCRIPT)
 
 bluetooth_init_cc2564_2.14.c: bluetooth_init_cc2564_2.14.bts
-	$(CONVERSION_SCRIPT)
-
-
-bluetooth_init_cc2560B_1.2_BT_Spec_4.0.c: bluetooth_init_cc2560B_1.2_BT_Spec_4.0.bts
-	$(CONVERSION_SCRIPT)
-
-bluetooth_init_cc2564B_1.2_BT_Spec_4.0.c: bluetooth_init_cc2564B_1.2_BT_Spec_4.0.bts BLE_init_cc2564B_1.2.bts
 	$(CONVERSION_SCRIPT)
 
 bluetooth_init_cc2560B_1.2_BT_Spec_4.1.c: bluetooth_init_cc2560B_1.2_BT_Spec_4.1.bts
@@ -97,6 +111,24 @@ bluetooth_init_cc2564B_1.4_BT_Spec_4.1.c: TIInit_6.7.16_bt_spec_4.1.bts TIInit_6
 	cp TIInit_6.7.16_ble_add-on.bts  BLE_init_cc2564B_1.4.bts
 	$(CONVERSION_SCRIPT)
 
+bluetooth_init_cc2560B_1.5_BT_Spec_4.1.c: initscripts-TIInit_6.7.16_bt_spec_4.1.bts
+	cp initscripts-TIInit_6.7.16_bt_spec_4.1.bts bluetooth_init_cc2564B_1.5_BT_Spec_4.1.bts
+	$(CONVERSION_SCRIPT)
+
+bluetooth_init_cc2564B_1.5_BT_Spec_4.1.c: initscripts-TIInit_6.7.16_bt_spec_4.1.bts initscripts-TIInit_6.7.16_ble_add-on.bts
+	cp initscripts-TIInit_6.7.16_bt_spec_4.1.bts bluetooth_init_cc2564B_1.5_BT_Spec_4.1.bts
+	cp initscripts-TIInit_6.7.16_ble_add-on.bts  BLE_init_cc2564B_1.5.bts
+	$(CONVERSION_SCRIPT)
+
+bluetooth_init_cc2560C_1.0.c: initscripts-TIInit_6.12.26.bts
+	cp initscripts-TIInit_6.12.26.bts bluetooth_init_cc2564C_1.0.bts
+	$(CONVERSION_SCRIPT)
+
+bluetooth_init_cc2564C_1.0.c: initscripts-TIInit_6.12.26.bts initscripts-TIInit_6.12.26_ble_add-on.bts
+	cp initscripts-TIInit_6.12.26_bt_spec_4.2.bts bluetooth_init_cc2564C_1.0.bts
+	cp initscripts-TIInit_6.12.26_ble_add-on.bts  BLE_init_cc2564C_1.0.bts
+	$(CONVERSION_SCRIPT)
+
 TIInit_11.8.32.c: TIInit_11.8.32.bts
 	$(CONVERSION_SCRIPT)
 
@@ -106,7 +138,19 @@ TIInit_12.10.28.c: TIInit_12.10.28.bts
 TIInit_12.8.32.c: TIInit_12.8.32.bts
 	$(CONVERSION_SCRIPT)
 
-all-scripts: bluetooth_init_cc2560_2.44.c bluetooth_init_cc2560A_2.14.c bluetooth_init_cc2564_2.14.bts bluetooth_init_cc2560B_1.2_BT_Spec_4.0.c bluetooth_init_cc2564B_1.2_BT_Spec_4.0.c bluetooth_init_cc2560B_1.2_BT_Spec_4.1.c bluetooth_init_cc2564B_1.2_BT_Spec_4.1.c TIInit_11.8.32.c TIInit_12.10.28.c TIInit_12.8.32.c
+all-scripts: \
+	bluetooth_init_cc2560_2.44.c \
+	bluetooth_init_cc2560A_2.14.c \
+	bluetooth_init_cc2564_2.14.bts \
+	bluetooth_init_cc2560B_1.4_BT_Spec_4.1.c \
+	bluetooth_init_cc2564B_1.4_BT_Spec_4.1.c \
+	bluetooth_init_cc2560B_1.5_BT_Spec_4.1.c \
+	bluetooth_init_cc2564B_1.5_BT_Spec_4.1.c \
+	bluetooth_init_cc2560C_1.0.c \
+	bluetooth_init_cc2564C_1.0.c \
+	TIInit_11.8.32.c \
+	TIInit_12.10.28.c \
+	TIInit_12.8.32.c \
 
 clean-scripts:
 	rm -fr CC256*.zip bluetooth_init_cc256*.bts bluetooth_init_cc256*.c TIInit_*.bts TIInit_*.c BLE_init_cc256*.bts BLE_init_cc256*.c 
