@@ -96,7 +96,7 @@ def append_calibration_sequence(additions, str_list, data_indent):
     str_list.append("0x01, 0x80, 0xfd, 0x06, 0x3c, 0xf0, 0x5f, 0x00, 0x00, 0x00,\n\n")
     return 20 
 
-def convert_bts(main_bts_file, bts_add_on, aka):
+def convert_bts(main_bts_file, bts_add_on, aka, lmp_subversion):
     array_name = 'cc256x'
     c_file   = main_bts_file.replace('bts', 'c')
 
@@ -231,6 +231,8 @@ def convert_bts(main_bts_file, bts_add_on, aka):
         fout.write( '\n')
         # if aka != "":
         #     fout.write( 'const char * {0}_init_script_aka = "{1}";\n'.format(array_name, aka))
+        if lmp_subversion != 0:
+            fout.write( 'const uint16_t %s_init_script_lmp_subversion = 0x%04x;\n' % (array_name, lmp_subversion))
         part = 0
         size = 0
         for part_size in part_sizes:
@@ -370,11 +372,25 @@ for name in files:
     if aka != "":
         print ("- AKA TIInit_%s.bts" % aka)
 
+    # map aka to lmp sub revision number
+    if aka == "6.2.31":
+        lmp_subversion = 0x191f
+    if aka == "6.6.15":
+        lmp_subversion = 0x1B0F
+    if aka == "6.7.16":
+        lmp_subversion = 0x1B90
+    if aka == "6.12.26":
+        lmp_subversion = 0x9a1a
+    if lmp_subversion:
+        print ("- LMP Subversion: 0x%04x" % lmp_subversion)
+    else:
+        print ("- LMP Subversion: Unknown")
+
     if add_on != "":
-        print("+ add-on " + add_on)
+        print("+ Add-on " + add_on)
 
     print("--------")  
-    convert_bts(name, add_on, aka)
+    convert_bts(name, add_on, aka, lmp_subversion)
     print
 
 # done
