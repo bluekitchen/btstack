@@ -304,7 +304,7 @@ for name in files:
         print("Skipping " + name)
         continue
 
-    print ("\nBase script " + name)
+    print ("\nMain script " + name)
     
     # check for BLE add-on
     add_on = ""

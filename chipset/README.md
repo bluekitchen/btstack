@@ -31,9 +31,9 @@ Broadcom, whose Bluetooth + Wifi division has been acquired by the Cypress Semic
 
 CSR, which has been acquired by Qualcomm, provides all relevant information on their Support website after signing an NDA.
 
-Chipset              | Type      | HCI Transport  | BD_ADDR (1)  | SCO over HCI (2) | LE DLE | Multiple LE Roles (3)| BTstack folder | Comment 
+Chipset              | Type      | HCI Transport  | BD_ADDR (1)  | SCO over HCI (2) | LE DLE | Multiple LE Roles    | BTstack folder | Comment 
 -------------------- |-----------| ---------------|--------------|------------------|--------|----------------------|----------------|---------
-Broadcom UART        | Dual mode | H4, H5         | rarely       | No (didn't work) | No     |         Maybe        | bcm            | Max UART baudrate 3 mbps
+Broadcom UART        | Dual mode | H4, H5         | rarely       | No (didn't work) | No     |      Maybe (3)       | bcm            | Max UART baudrate 3 mbps
 Broadcom USB Dongles | Dual mode | USB            | Yes          | No (didn't work) | No     |         No           | bcm            | 
 CSR UART             | Dual mode | H4, H5         | rarely       | No (didn't work) | No     |         No           | csr            | 
 CSR USB Dongles      | Dual mode | USB            | Mostly       | Yes              | No     |         No           | csr            |
@@ -43,13 +43,13 @@ EM 9304              | LE        | SPI, H4        | ?            | n.a.         
 Nordic nRF           | LE        | H4             | fixed random | n.a.             | Yes    |         Yes          |                | Requires custom HCI firmware
 STM STLC2500D        | Classic   | H4             | No           | No (didn't try)  | n.a    |         n.a.         | stlc2500d      | Custom deep sleep management not supported
 Toshiba TC35661      | Dual mode | H4             | No           | No (didn't try)  | No     |         No           | tc3566         | HCI version not tested. See below
-TI CC256x, WL183x    | Dual mode | H4, H5, eHCILL | Yes          | Yes              | No     |         No           | cc256x         | Also WL185x, WL187x, and WL189x
+TI CC256x, WL183x    | Dual mode | H4, H5, eHCILL | Yes          | Yes              | No     |    Yes for CC256XC   | cc256x         | Also WL185x, WL187x, and WL189x
 
 **Notes**:
 
   1. BD_ADDR: Not all Bluetooth chipset come with a fixed valid MAC Address. Better Broadcom and CSR dongles come with a MAC address from the dongle manufacturer, but cheaper ones might come with identical addresses.
   2. SCO over HCI: All Bluetooth Classic chipsets support SCO over HCI, for those that are marked with No, we either didn't try or didn't found enough information to configure it correctly.
-  2. Multiple LE Roles: Apple uses Broadcom Bluetooth+Wifi in their iOS devices and newer iOS versions support multipe concurrent LE roles,
+  3. Multiple LE Roles: Apple uses Broadcom Bluetooth+Wifi in their iOS devices and newer iOS versions support multipe concurrent LE roles,
   so at least some Broadcom models support multiple concurrent LE roles.
 
 ## Broadcom
@@ -178,9 +178,11 @@ STMicroelectronics offers the Bluetooth V2.1 + EDR chipset STLC2500D that suppor
 
 ## Texas Instruments CC256x series
 
-The Texas Instruments CC256x series is currently in its third iteration and provides a Classic-only (CC2560), a Dual-mode (CC2564), and a Classic + ANT model (CC2567). A variant of the Dual-mode chipset is also integrated into TI's WiLink 8 Wifi+Bluetooth combo modules of the WL183x, WL185x, WL187x, and WL189x series. 
+The Texas Instruments CC256x series is currently in its fourth iteration and provides a Classic-only (CC2560), a Dual-mode (CC2564), and a Classic + ANT model (CC2567). A variant of the Dual-mode chipset is also integrated into TI's WiLink 8 Wifi+Bluetooth combo modules of the WL183x, WL185x, WL187x, and WL189x series. 
 
 The CC256x chipset is connected via an UART connection and supports the H4, H5 (since third iteration), and eHCILL.
+
+The latest generation CC256xC chipsets support multiple LE roles in parallel.
 
 **SCO data** is routed to the I2S/PCM interface but can be configured with the [HCI_VS_Write_SCO_Configuration](http://processors.wiki.ti.com/index.php/CC256x_VS_HCI_Commands#HCI_VS_Write_SCO_Configuration_.280xFE10.29) command.
 
@@ -209,6 +211,9 @@ if present and merges them into a single .c file.
 the naming scheme previously used on Linux systems. The conversion
 script has been updated to also detect *initscripts_TIInit_6.7.16_bt_spec_4.1.bts*
 and integrates *initscripts_TIInit_6.7.16_ble_add-on.bts* if present.
+
+**Update 3:** The latest (v1.5) version of the init scripts for the third generation CC256xB are not availabe for direct download. 
+Same with v1.0 for then fourth generation CC256xC chipset.
 
 **BTstack integration**: The common code for all CC256x chipsets is provided by *btstack_chipset_cc256x.c*. During the setup, *btstack_chipset_cc256x_instance* function is used to get a *btstack_chiopset_t* instance and passed to *hci_init* function.
 
