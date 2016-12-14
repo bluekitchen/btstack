@@ -60,6 +60,7 @@
 
 #define NUM_CHANNELS 2
 #define SAMPLE_RATE 44100
+#define SMG_BI
 
 #ifdef HAVE_PORTAUDIO
 #include <portaudio.h>
@@ -363,12 +364,13 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
     }
 }
 
+#ifndef SMG_BI
 static const uint8_t media_sbc_codec_info[] = {
     0xFF, // (AVDTP_SBC_44100 << 4) | AVDTP_SBC_STEREO,
     0xFF, // (AVDTP_SBC_BLOCK_LENGTH_16 << 4) | (AVDTP_SBC_SUBBANDS_8 << 2) | AVDTP_SBC_ALLOCATION_METHOD_LOUDNESS,
     2, 53
 }; 
-
+#endif
 
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
@@ -382,10 +384,11 @@ int btstack_main(int argc, const char * argv[]){
     avdtp_sink_init();
     avdtp_sink_register_packet_handler(&packet_handler);
 
+#ifndef SMG_BI
     uint8_t seid = avdtp_sink_create_stream_endpoint(AVDTP_SINK, AVDTP_AUDIO);
     avdtp_sink_register_media_transport_category(seid);
     avdtp_sink_register_media_codec_category(seid, AVDTP_AUDIO, AVDTP_CODEC_SBC, media_sbc_codec_info, sizeof(media_sbc_codec_info));
-    
+#endif
     // uint8_t cp_type_lsb,  uint8_t cp_type_msb, const uint8_t * cp_type_value, uint8_t cp_type_value_len
     // avdtp_sink_register_content_protection_category(seid, 2, 2, NULL, 0);
 

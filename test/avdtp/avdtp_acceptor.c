@@ -392,7 +392,7 @@ static int avdtp_acceptor_send_response_reject(uint16_t cid, avdtp_signal_identi
     return l2cap_send(cid, command, sizeof(command));
 }
 
-static int avdtp_acceptor_send_response_reject_with_error_code(uint16_t cid, avdtp_signal_identifier_t identifier, uint8_t error_code, uint8_t transaction_label){
+int avdtp_acceptor_send_response_reject_with_error_code(uint16_t cid, avdtp_signal_identifier_t identifier, uint8_t error_code, uint8_t transaction_label){
     uint8_t command[3];
     command[0] = avdtp_header(transaction_label, AVDTP_SINGLE_PACKET, AVDTP_RESPONSE_REJECT_MSG);
     command[1] = (uint8_t)identifier;

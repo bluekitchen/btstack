@@ -431,6 +431,10 @@ static void avdtp_sink_handle_can_send_now(avdtp_connection_t * connection, uint
                 connection->acceptor_connection_state = AVDTP_SIGNALING_CONNECTION_ACCEPTOR_IDLE;
                 avdtp_send_seps_response(connection->l2cap_signaling_cid, connection->acceptor_transaction_label, (avdtp_stream_endpoint_t *)&stream_endpoints);
                 return;
+            case AVDTP_SIGNALING_CONNECTION_ACCEPTOR_W2_REJECT_WITH_ERROR_CODE:
+                connection->acceptor_connection_state = AVDTP_SIGNALING_CONNECTION_ACCEPTOR_IDLE;
+                avdtp_acceptor_send_response_reject_with_error_code(connection->l2cap_signaling_cid, connection->reject_signal_identifier, connection->error_code, connection->acceptor_transaction_label);
+                break;
             default:
                 break;
         }
@@ -634,6 +638,11 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             
             stream_endpoint = get_avdtp_stream_endpoint_for_l2cap_cid(channel);
             if (!stream_endpoint){
+                if (!connection) break;
+                connection->error_code = BAD_LENGTH;
+                connection->reject_signal_identifier = connection->signaling_packet.signal_identifier;
+                connection->acceptor_connection_state = AVDTP_SIGNALING_CONNECTION_ACCEPTOR_W2_REJECT_WITH_ERROR_CODE;
+                avdtp_sink_request_can_send_now_self(connection, channel);
                 printf("avdtp L2CAP_DATA_PACKET: no stream enpoint for local cid 0x%02x found", channel);
                 break;
             }
