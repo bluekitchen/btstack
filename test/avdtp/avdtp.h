@@ -346,7 +346,8 @@ typedef enum {
 
 typedef enum {
     AVDTP_SIGNALING_CONNECTION_ACCEPTOR_IDLE,
-    AVDTP_SIGNALING_CONNECTION_ACCEPTOR_W2_ANSWER_DISCOVER_SEPS
+    AVDTP_SIGNALING_CONNECTION_ACCEPTOR_W2_ANSWER_DISCOVER_SEPS,
+    AVDTP_SIGNALING_CONNECTION_ACCEPTOR_W2_REJECT_WITH_ERROR_CODE
 } avdtp_acceptor_connection_state_t;
 
 typedef enum {
@@ -391,6 +392,10 @@ typedef struct {
     uint8_t wait_to_send_initiator;
     uint8_t wait_to_send_self;
     uint8_t confirm_suspend;
+
+    uint8_t reject_service_category;
+    avdtp_signal_identifier_t reject_signal_identifier;
+    uint8_t error_code;
 } avdtp_connection_t;
 
 
@@ -416,9 +421,6 @@ typedef struct avdtp_stream_endpoint {
     uint8_t remote_sep_index;
     // register request for L2cap connection release
     uint8_t disconnect;
-    uint8_t reject_service_category;
-    avdtp_signal_identifier_t reject_signal_identifier;
-    uint8_t error_code;
 } avdtp_stream_endpoint_t;
 
 #if defined __cplusplus

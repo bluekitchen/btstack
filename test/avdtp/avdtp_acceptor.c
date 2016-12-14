@@ -93,7 +93,7 @@ static int avdtp_pack_service_capabilities(uint8_t * buffer, int size, avdtp_cap
     return pos;
 }
 
-static uint16_t avdtp_unpack_service_capabilities(avdtp_stream_endpoint_t * stream_endpoint, avdtp_capabilities_t * caps, uint8_t * packet, uint16_t size){
+static uint16_t avdtp_unpack_service_capabilities(avdtp_connection_t * connection, avdtp_capabilities_t * caps, uint8_t * packet, uint16_t size){
     uint16_t registered_service_categories = 0;
     int pos = 0;
     avdtp_service_category_t category = (avdtp_service_category_t)packet[pos++];
@@ -122,8 +122,8 @@ static uint16_t avdtp_unpack_service_capabilities(avdtp_stream_endpoint_t * stre
                 break;
             case AVDTP_CONTENT_PROTECTION:
                 if (cap_len < 2){
-                    stream_endpoint->reject_service_category = category;
-                    stream_endpoint->error_code = BAD_CP_FORMAT;
+                    connection->reject_service_category = category;
+                    connection->error_code = BAD_CP_FORMAT;
                     return 0;
                 }
                 
@@ -133,8 +133,8 @@ static uint16_t avdtp_unpack_service_capabilities(avdtp_stream_endpoint_t * stre
                 caps->content_protection.cp_type_value_len = cap_len - 2;
                 pos += caps->content_protection.cp_type_value_len;
                 
-                // stream_endpoint->reject_service_category = category;
-                // stream_endpoint->error_code = UNSUPPORTED_CONFIGURATION;
+                // connection->reject_service_category = category;
+                // connection->error_code = UNSUPPORTED_CONFIGURATION;
                 // support for content protection goes here
                 return 0;
                 
@@ -240,15 +240,15 @@ int avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, avdtp_st
                 case AVDTP_SI_SET_CONFIGURATION:{
                     printf("    ACP: AVDTP_ACCEPTOR_W2_ANSWER_SET_CONFIGURATION \n");
                     stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_ANSWER_SET_CONFIGURATION;
-                    stream_endpoint->reject_service_category = 0;
+                    connection->reject_service_category = 0;
                     stream_endpoint->remote_sep_index = 0xFF;
 
                     avdtp_sep_t sep;
                     sep.seid = connection->signaling_packet.command[3] >> 2;
-                    sep.registered_service_categories = avdtp_unpack_service_capabilities(stream_endpoint, &sep.capabilities, connection->signaling_packet.command+4, packet_size-4);
+                    sep.registered_service_categories = avdtp_unpack_service_capabilities(connection, &sep.capabilities, connection->signaling_packet.command+4, packet_size-4);
                     
-                    if (stream_endpoint->error_code){
-                        stream_endpoint->reject_signal_identifier = connection->signaling_packet.signal_identifier;
+                    if (connection->error_code){
+                        connection->reject_signal_identifier = connection->signaling_packet.signal_identifier;
                         stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_REJECT_CATEGORY_WITH_ERROR_CODE;
                         break;
                     }
@@ -275,19 +275,19 @@ int avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, avdtp_st
                     // if (stream_endpoint->state < AVDTP_STREAM_ENDPOINT_OPENED){
                     //     printf("    ACP: AVDTP_SI_RECONFIGURE, bad state %d \n", stream_endpoint->state);
                     //     stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_REJECT_WITH_ERROR_CODE;
-                    //     stream_endpoint->error_code = BAD_STATE;
-                    //     stream_endpoint->reject_signal_identifier = connection->signaling_packet.signal_identifier;
+                    //     connection->error_code = BAD_STATE;
+                    //     connection->reject_signal_identifier = connection->signaling_packet.signal_identifier;
                     //     break;
                     // }
             
                     stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_ANSWER_RECONFIGURE;
-                    stream_endpoint->reject_service_category = 0;
+                    connection->reject_service_category = 0;
                     stream_endpoint->remote_sep_index = 0xFF;
 
                     printf("    ACP: AVDTP_ACCEPTOR_W2_ANSWER_RECONFIGURE %p in state %d (AVDTP_STREAM_ENDPOINT_OPENED %d)\n", stream_endpoint, stream_endpoint->state, AVDTP_STREAM_ENDPOINT_OPENED);
                     avdtp_sep_t sep;
                     sep.seid = packet[3] >> 2;
-                    sep.registered_service_categories = avdtp_unpack_service_capabilities(stream_endpoint, &sep.capabilities, packet+4, packet_size-4);
+                    sep.registered_service_categories = avdtp_unpack_service_capabilities(connection, &sep.capabilities, packet+4, packet_size-4);
                     
                     // find sep or raise error
                     int i;
@@ -300,8 +300,8 @@ int avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, avdtp_st
                     if (stream_endpoint->remote_sep_index == 0xFF){
                         printf("    ACP: AVDTP_SI_RECONFIGURE, bad state seid %d not found\n", sep.seid);
                         stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_REJECT_CATEGORY_WITH_ERROR_CODE;
-                        stream_endpoint->error_code = BAD_ACP_SEID;
-                        stream_endpoint->reject_signal_identifier = connection->signaling_packet.signal_identifier;
+                        connection->error_code = BAD_ACP_SEID;
+                        connection->reject_signal_identifier = connection->signaling_packet.signal_identifier;
                         break;
                     }
 
@@ -318,7 +318,7 @@ int avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, avdtp_st
                     // find first category that shouldn't be reconfigured
                     for (i = 1; i < 9; i++){
                         if (get_bit16(sep.registered_service_categories, i-1)){
-                            stream_endpoint->reject_service_category = i;
+                            connection->reject_service_category = i;
                         }
                     }    
                     break;
@@ -349,8 +349,8 @@ int avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, avdtp_st
                         default:
                             printf("    ACP: AVDTP_SI_CLOSE, bad state %d \n", stream_endpoint->state);
                             stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_REJECT_WITH_ERROR_CODE;
-                            stream_endpoint->error_code = BAD_STATE;
-                            stream_endpoint->reject_signal_identifier = connection->signaling_packet.signal_identifier;
+                            connection->error_code = BAD_STATE;
+                            connection->reject_signal_identifier = connection->signaling_packet.signal_identifier;
                             break;
                     }
                     break;
@@ -362,7 +362,7 @@ int avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, avdtp_st
                 default:
                     printf("    ACP: NOT IMPLEMENTED, Reject signal_identifier %02x\n", connection->signaling_packet.signal_identifier);
                     stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_REJECT_UNKNOWN_CMD;
-                    stream_endpoint->reject_signal_identifier = connection->signaling_packet.signal_identifier;
+                    connection->reject_signal_identifier = connection->signaling_packet.signal_identifier;
                     break;
             }
             break;
@@ -459,9 +459,9 @@ static inline int avdtp_acceptor_send_fragmented_packet(uint16_t cid, avdtp_conn
 
 int avdtp_acceptor_stream_config_subsm_run(avdtp_connection_t * connection, avdtp_stream_endpoint_t * stream_endpoint){
     if (!stream_endpoint) return 0;
-    uint8_t reject_service_category = stream_endpoint->reject_service_category;
-    avdtp_signal_identifier_t reject_signal_identifier = stream_endpoint->reject_signal_identifier;
-    uint8_t error_code = stream_endpoint->error_code;
+    uint8_t reject_service_category = connection->reject_service_category;
+    avdtp_signal_identifier_t reject_signal_identifier = connection->reject_signal_identifier;
+    uint8_t error_code = connection->error_code;
     uint16_t cid = stream_endpoint->connection ? stream_endpoint->connection->l2cap_signaling_cid : connection->l2cap_signaling_cid;
     uint8_t trid = stream_endpoint->connection ? stream_endpoint->connection->acceptor_transaction_label : connection->acceptor_transaction_label;
 
@@ -518,19 +518,19 @@ int avdtp_acceptor_stream_config_subsm_run(avdtp_connection_t * connection, avdt
             break;
         case AVDTP_ACCEPTOR_W2_REJECT_UNKNOWN_CMD:
             printf("    ACP: REJECT\n");
-            stream_endpoint->reject_signal_identifier = 0;
+            connection->reject_signal_identifier = 0;
             avdtp_acceptor_send_response_reject(cid, reject_signal_identifier, trid);
             break;
         case AVDTP_ACCEPTOR_W2_REJECT_CATEGORY_WITH_ERROR_CODE:
             printf("    ACP: REJECT CATEGORY\n");
-            stream_endpoint->reject_service_category = 0;
+            connection->reject_service_category = 0;
             avdtp_acceptor_send_response_reject_service_category(cid, reject_signal_identifier, reject_service_category, error_code, trid);
             break;
     
         case AVDTP_ACCEPTOR_W2_REJECT_WITH_ERROR_CODE:
             printf("    ACP: REJECT\n");
-            stream_endpoint->reject_signal_identifier = 0;
-            stream_endpoint->error_code = 0;
+            connection->reject_signal_identifier = 0;
+            connection->error_code = 0;
             avdtp_acceptor_send_response_reject_with_error_code(cid, reject_signal_identifier, error_code, trid);
             break;
         default:  
