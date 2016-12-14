@@ -187,7 +187,7 @@ The latest generation CC256xC chipsets support multiple LE roles in parallel.
 The different CC256x chipset can be identified by the LMP Subversion returned by the *hci_read_local_version_information* command. TI also uses a numeric way (AKA) to identify their chipsets. The table shows the LMP Subversion and AKA number for the main CC256x series.
 
 Chipset | LMP Subversion |  AKA
----------------------------------
+--------|----------------|-------
 CC2560  |         0x191f | 6.2.31
 CC2560A, CC2564 | 0x1B0F | 6.6.15
 CC256xB |         0x1B90 | 6.7.16
