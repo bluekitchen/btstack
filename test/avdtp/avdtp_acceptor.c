@@ -97,10 +97,18 @@ static uint16_t avdtp_unpack_service_capabilities(avdtp_connection_t * connectio
     uint16_t registered_service_categories = 0;
     int pos = 0;
     avdtp_service_category_t category = (avdtp_service_category_t)packet[pos++];
-    
+    connection->error_code = 0;
     if (category < AVDTP_MEDIA_TRANSPORT || category > AVDTP_DELAY_REPORTING){
-        printf(" avdtp_unpack_service_capabilities wrong category %d\n", category);
+        printf("    ACP: BAD SERVICE CATEGORY %d\n", category);
+        connection->reject_service_category = category;
+        connection->error_code = BAD_SERV_CATEGORY;
         return 0;
+    }
+    if (connection->signaling_packet.signal_identifier == AVDTP_SI_RECONFIGURE){
+        if (category != AVDTP_CONTENT_PROTECTION && category != AVDTP_MEDIA_CODEC){
+            connection->reject_service_category = category;
+            connection->error_code = INVALID_CAPABILITIES;
+        }
     }
     int i;
     uint8_t cap_len = packet[pos++];
@@ -166,13 +174,13 @@ static uint16_t avdtp_unpack_service_capabilities(avdtp_connection_t * connectio
 
         registered_service_categories = store_bit16(registered_service_categories, category, 1);
         processed_cap_len = pos - processed_cap_len;
+        printf("    ACP: avdtp_unpack_service_capabilities 2: category %d, processed_cap_len %d, pos %d\n", category, processed_cap_len, pos);
         if (cap_len <= processed_cap_len && pos < size-2){
             category = (avdtp_service_category_t)packet[pos++];
             cap_len = packet[pos++];
-            printf("    ACP: avdtp_unpack_service_capabilities: category %d, capability len %d, remaining record size %d\n", category, cap_len, size-pos);
         }
     }
-    // printf(" avdtp_unpack_service_capabilities done\n");
+    printf(" avdtp_unpack_service_capabilities done error %d\n", connection->error_code);
     return registered_service_categories;
 }
 
@@ -216,6 +224,7 @@ static int avdtp_acceptor_process_chunk(avdtp_signaling_packet_t * signaling_pac
     signaling_packet->size += size;
     return signaling_packet->packet_type == AVDTP_SINGLE_PACKET || signaling_packet->packet_type == AVDTP_END_PACKET;
 }
+
 
 int avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, avdtp_stream_endpoint_t * stream_endpoint, uint8_t * packet, uint16_t size){
     if (!stream_endpoint) return 0;
@@ -275,7 +284,6 @@ int avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, avdtp_st
                                     break;
                                 }
                             }    
-                            
                             connection->reject_signal_identifier = connection->signaling_packet.signal_identifier;
                             stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_REJECT_CATEGORY_WITH_ERROR_CODE;
                         }
@@ -304,9 +312,17 @@ int avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, avdtp_st
 
                     printf("    ACP: AVDTP_ACCEPTOR_W2_ANSWER_RECONFIGURE %p in state %d (AVDTP_STREAM_ENDPOINT_OPENED %d)\n", stream_endpoint, stream_endpoint->state, AVDTP_STREAM_ENDPOINT_OPENED);
                     avdtp_sep_t sep;
-                    sep.seid = packet[3] >> 2;
-                    sep.registered_service_categories = avdtp_unpack_service_capabilities(connection, &sep.capabilities, packet+4, packet_size-4);
+                    sep.seid = packet[2] >> 2;
+                    sep.registered_service_categories = avdtp_unpack_service_capabilities(connection, &sep.capabilities, connection->signaling_packet.command+3, packet_size-3);
                     
+                    if (connection->error_code){
+                        // fire capabilities parsing errors 
+                        printf("    ACP: REJECT CATEGORY, error code by upacking\n");
+                        connection->reject_signal_identifier = connection->signaling_packet.signal_identifier;
+                        stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_REJECT_CATEGORY_WITH_ERROR_CODE;
+                        break;
+                    }
+
                     // find sep or raise error
                     int i;
                     for (i = 0; i < stream_endpoint->remote_seps_num; i++){
@@ -316,29 +332,12 @@ int avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, avdtp_st
                     }
 
                     if (stream_endpoint->remote_sep_index == 0xFF){
-                        printf("    ACP: AVDTP_SI_RECONFIGURE, bad state seid %d not found\n", sep.seid);
+                        printf("    ACP: REJECT AVDTP_SI_RECONFIGURE, BAD_ACP_SEID\n");
                         stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_REJECT_CATEGORY_WITH_ERROR_CODE;
                         connection->error_code = BAD_ACP_SEID;
                         connection->reject_signal_identifier = connection->signaling_packet.signal_identifier;
                         break;
                     }
-
-                    // only codec, and 
-                    uint16_t remaining_service_categories = sep.registered_service_categories;
-                    if (get_bit16(sep.registered_service_categories, AVDTP_MEDIA_CODEC-1)){
-                        remaining_service_categories = store_bit16(sep.registered_service_categories, AVDTP_MEDIA_CODEC-1, 0);
-                    }
-                    if (get_bit16(sep.registered_service_categories, AVDTP_CONTENT_PROTECTION-1)){
-                        remaining_service_categories = store_bit16(sep.registered_service_categories, AVDTP_CONTENT_PROTECTION-1, 0);
-                    }
-                    if (!remaining_service_categories) break;
-                     
-                    // find first category that shouldn't be reconfigured
-                    for (i = 1; i < 9; i++){
-                        if (get_bit16(sep.registered_service_categories, i-1)){
-                            connection->reject_service_category = i;
-                        }
-                    }    
                     break;
                 }
                 case AVDTP_SI_OPEN:
@@ -394,7 +393,7 @@ int avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, avdtp_st
     return request_to_send;
 }
 
-static int avdtp_acceptor_send_response_reject_service_category(uint16_t cid,  avdtp_signal_identifier_t identifier, uint8_t category, uint8_t error_code, uint8_t transaction_label){
+int avdtp_acceptor_send_response_reject_service_category(uint16_t cid,  avdtp_signal_identifier_t identifier, uint8_t category, uint8_t error_code, uint8_t transaction_label){
     uint8_t command[4];
     command[0] = avdtp_header(transaction_label, AVDTP_SINGLE_PACKET, AVDTP_RESPONSE_REJECT_MSG);
     command[1] = (uint8_t)identifier;

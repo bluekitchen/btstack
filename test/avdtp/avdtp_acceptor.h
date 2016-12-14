@@ -55,6 +55,7 @@ int  avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, avdtp_s
 int  avdtp_acceptor_stream_config_subsm_run(avdtp_connection_t * connection, avdtp_stream_endpoint_t * stream_endpoint);
 
 int avdtp_acceptor_send_response_reject_with_error_code(uint16_t cid, avdtp_signal_identifier_t identifier, uint8_t error_code, uint8_t transaction_label);
+int avdtp_acceptor_send_response_reject_service_category(uint16_t cid,  avdtp_signal_identifier_t identifier, uint8_t category, uint8_t error_code, uint8_t transaction_label);
 
 #if defined __cplusplus
 }

@@ -331,7 +331,7 @@ typedef struct {
     uint8_t in_use;         // 1 bit, 0 - not in use, 1 - in use
     avdtp_media_type_t media_type;     // 4 bit
     avdtp_sep_type_t   type;       // 1 bit, 0 - SRC, 1 - SNK
-    
+
     uint16_t registered_service_categories;
     avdtp_capabilities_t capabilities;
 } avdtp_sep_t;
@@ -347,7 +347,8 @@ typedef enum {
 typedef enum {
     AVDTP_SIGNALING_CONNECTION_ACCEPTOR_IDLE,
     AVDTP_SIGNALING_CONNECTION_ACCEPTOR_W2_ANSWER_DISCOVER_SEPS,
-    AVDTP_SIGNALING_CONNECTION_ACCEPTOR_W2_REJECT_WITH_ERROR_CODE
+    AVDTP_SIGNALING_CONNECTION_ACCEPTOR_W2_REJECT_WITH_ERROR_CODE,
+    AVDTP_SIGNALING_CONNECTION_ACCEPTOR_W2_REJECT_CATEGORY_WITH_ERROR_CODE
 } avdtp_acceptor_connection_state_t;
 
 typedef enum {
