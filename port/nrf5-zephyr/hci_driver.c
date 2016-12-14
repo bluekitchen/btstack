@@ -51,6 +51,9 @@
 
 #include "bluetooth.h"
 
+// temp
+#include "zephyr_diet.h"
+
 #if !defined(CONFIG_BLUETOOTH_DEBUG_HCI_DRIVER)
 #undef BT_DBG
 #define BT_DBG(fmt, ...)
@@ -61,6 +64,21 @@ static uint8_t ALIGNED(4) _ticker_nodes[RADIO_TICKER_NODES][TICKER_NODE_T_SIZE];
 static uint8_t ALIGNED(4) _ticker_users[RADIO_TICKER_USERS][TICKER_USER_T_SIZE];
 static uint8_t ALIGNED(4) _ticker_user_ops[RADIO_TICKER_USER_OPS][TICKER_USER_OP_T_SIZE];
 static uint8_t ALIGNED(4) _radio[LL_MEM_TOTAL];
+
+/**
+ *
+ * @brief Enable an interrupt line
+ *
+ * Enable the interrupt. After this call, the CPU will receive interrupts for
+ * the specified <irq>.
+ *
+ * @return N/A
+ */
+void my_arch_irq_enable(unsigned int irq)
+{
+	_NvicIrqEnable(irq);
+}
+
 
 // BTstack: make public
 void btstack_run_loop_embedded_trigger(void);
@@ -153,14 +171,14 @@ int hci_driver_open(void)
 		return -ENOMEM;
 	}
 
-	IRQ_CONNECT(NRF5_IRQ_RADIO_IRQn, 0, radio_nrf5_isr, 0, 0);
-	IRQ_CONNECT(NRF5_IRQ_RTC0_IRQn, 0, rtc0_nrf5_isr, 0, 0);
-	IRQ_CONNECT(NRF5_IRQ_RNG_IRQn, 1, rng_nrf5_isr, 0, 0);
-	IRQ_CONNECT(NRF5_IRQ_SWI4_IRQn, 0, swi4_nrf5_isr, 0, 0);
-	irq_enable(NRF5_IRQ_RADIO_IRQn);
-	irq_enable(NRF5_IRQ_RTC0_IRQn);
-	irq_enable(NRF5_IRQ_RNG_IRQn);
-	irq_enable(NRF5_IRQ_SWI4_IRQn);
+	MY_IRQ_CONNECT(NRF5_IRQ_RADIO_IRQn, 0, radio_nrf5_isr, 0, 0);
+	MY_IRQ_CONNECT(NRF5_IRQ_RTC0_IRQn, 0, rtc0_nrf5_isr, 0, 0);
+	MY_IRQ_CONNECT(NRF5_IRQ_RNG_IRQn, 1, rng_nrf5_isr, 0, 0);
+	MY_IRQ_CONNECT(NRF5_IRQ_SWI4_IRQn, 0, swi4_nrf5_isr, 0, 0);
+	my_irq_enable(NRF5_IRQ_RADIO_IRQn);
+	my_irq_enable(NRF5_IRQ_RTC0_IRQn);
+	my_irq_enable(NRF5_IRQ_RNG_IRQn);
+	my_irq_enable(NRF5_IRQ_SWI4_IRQn);	// ??
 
 	BT_DBG("Success.");
 
@@ -170,9 +188,6 @@ int hci_driver_open(void)
 //
 // parked here - moving it to main.c is tricky due to incomplete includes - probably.
 //
-
-// temp
-#include "zephyr_diet.h"
 
 // updated hci.c
 int  btstack_hci_cmd_handle(btstack_buf_t *cmd, btstack_buf_t *evt);
