@@ -33,6 +33,14 @@ __attribute__((__progmem__))
 #endif
 '''
 
+get_lmp_subversion = '''
+const uint16_t {prefix}_init_script_lmp_subversion = {lmp_subversion};
+
+uint16_t btstack_chipset_cc256x_lmp_subversion(void){{
+    return {prefix}_init_script_lmp_subversion;
+}}
+'''
+
 data_indent = '    '
 
 def read_little_endian_16(f):
@@ -98,6 +106,7 @@ def append_calibration_sequence(additions, str_list, data_indent):
     str_list.append(data_indent)
     str_list.append("0x01, 0x80, 0xfd, 0x06, 0x3c, 0xf0, 0x5f, 0x00, 0x00, 0x00,\n\n")
     return 20 
+
 
 def convert_bts(output_file, main_bts_file, bts_add_on, aka, lmp_subversion):
     array_name = 'cc256x'
@@ -234,7 +243,7 @@ def convert_bts(output_file, main_bts_file, bts_add_on, aka, lmp_subversion):
         # if aka != "":
         #     fout.write( 'const char * {0}_init_script_aka = "{1}";\n'.format(array_name, aka))
         if lmp_subversion != 0:
-            fout.write( 'const uint16_t %s_init_script_lmp_subversion = 0x%04x;\n' % (array_name, lmp_subversion))
+            fout.write( get_lmp_subversion.format(prefix = array_name, lmp_subversion = "0x%04x" % lmp_subversion))
         part = 0
         size = 0
         for part_size in part_sizes:
@@ -285,27 +294,36 @@ if len(sys.argv) == 4:
     add_on = sys.argv[2]
 output_file = sys.argv[-1]
 
-# get AKA and lmp subversion from file names that include model name
+# get AKA from file names that include model name
 aka = ""
 lmp_subversion = 0
 name_lower = main_bts.lower()
 if 'cc2560_' in name_lower:
     aka = "6.2.31"
-    lmp_subversion = 0x191f
 if 'cc2560a_' in name_lower or 'cc2564_' in name_lower:
     aka = "6.6.15"
-    lmp_subversion = 0x1B0F
 if 'cc2560b_' in name_lower or 'cc2564b_' in name_lower:
     aka = "6.7.16"
-    lmp_subversion = 0x1B90
 if 'cc2564c_' in name_lower:
     aka = "6.12.26"
-    lmp_subversion = 0x9a1a
 
 # use AKA from .bts file that it
 name_parts = re.match('.*TIInit_(\d*\.\d*\.\d*).*.bts', main_bts)
 if name_parts:
     aka = name_parts.group(1)
+
+# get lmp subversion from AKA
+lmp_subversion_for_aka = {
+    '6.2.31'  : 0x191f,
+    '6.6.15'  : 0x1B0F,
+    '6.7.16'  : 0x1B90,
+    '6.12.26' : 0x9a1a
+}
+
+if aka in lmp_subversion_for_aka:
+    lmp_subversion = lmp_subversion_for_aka[aka]
+
+# print summary
 
 print ("Main file: %s"% main_bts)
 if add_on != "":
@@ -320,6 +338,6 @@ else:
 
 convert_bts(output_file, main_bts, add_on, aka, lmp_subversion)
 print
-    
+
 
 
