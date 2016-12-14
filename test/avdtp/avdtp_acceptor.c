@@ -246,8 +246,10 @@ int avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, avdtp_st
                     avdtp_sep_t sep;
                     sep.seid = connection->signaling_packet.command[3] >> 2;
                     sep.registered_service_categories = avdtp_unpack_service_capabilities(connection, &sep.capabilities, connection->signaling_packet.command+4, packet_size-4);
-                    
+                    sep.in_use = 1;
+
                     if (connection->error_code){
+                        // fire capabilities parsing errors 
                         connection->reject_signal_identifier = connection->signaling_packet.signal_identifier;
                         stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_REJECT_CATEGORY_WITH_ERROR_CODE;
                         break;
@@ -255,20 +257,36 @@ int avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, avdtp_st
 
                     printf("    ACP .. seid %d\n", sep.seid);
                     // find or add sep
-                    
                     int i;
                     for (i=0; i < stream_endpoint->remote_seps_num; i++){
                         if (stream_endpoint->remote_seps[i].seid == sep.seid){
                             stream_endpoint->remote_sep_index = i;
                         }
                     }
-                    if (stream_endpoint->remote_sep_index == 0xFF){
+                    if (stream_endpoint->remote_sep_index != 0xFF){
+                        if (stream_endpoint->remote_seps[stream_endpoint->remote_sep_index].in_use){
+                            // reject if already configured
+                            connection->error_code = SEP_IN_USE;
+                            // find first registered category and fire the error
+                            connection->reject_service_category = 0;
+                            for (i = 1; i < 9; i++){
+                                if (get_bit16(sep.registered_service_categories, i-1)){
+                                    connection->reject_service_category = i;
+                                    break;
+                                }
+                            }    
+                            
+                            connection->reject_signal_identifier = connection->signaling_packet.signal_identifier;
+                            stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_REJECT_CATEGORY_WITH_ERROR_CODE;
+                        }
+                    } else {
+                        // add new
                         printf("    ACP: seid %d not found in %p\n", sep.seid, stream_endpoint);
                         stream_endpoint->remote_sep_index = stream_endpoint->remote_seps_num;
                         stream_endpoint->remote_seps_num++;
                         stream_endpoint->remote_seps[stream_endpoint->remote_sep_index] = sep;
                         printf("    ACP: add seid %d, to %p\n", stream_endpoint->remote_seps[stream_endpoint->remote_sep_index].seid, stream_endpoint);
-                    }
+                    } 
                     break;
                 }
                 case AVDTP_SI_RECONFIGURE:{

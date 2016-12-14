@@ -60,7 +60,7 @@
 
 #define NUM_CHANNELS 2
 #define SAMPLE_RATE 44100
-#define SMG_BI
+//#define SMG_BI
 
 #ifdef HAVE_PORTAUDIO
 #include <portaudio.h>
