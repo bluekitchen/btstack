@@ -65,14 +65,8 @@ uint8_t hfp_service_buffer[150];
 const uint8_t    rfcomm_channel_nr = 1;
 const char hfp_ag_service_name[] = "BTstack HFP AG Test";
 
-// PTS
-// static bd_addr_t device_addr = {0x00,0x15,0x83,0x5F,0x9D,0x46};
-// BT-201
-// static bd_addr_t device_addr = {0x00, 0x07, 0xB0, 0x83, 0x02, 0x5E};
-// CC256x
-// bd_addr_t device_addr = { 0xD0, 0x39, 0x72, 0xCD, 0x83, 0x45};
-// Mini Jambox
-bd_addr_t device_addr = { 0x00, 0x15, 0x83, 0x5F, 0x9D, 0x46};
+static bd_addr_t device_addr;
+static const char * device_addr_string = "00:15:83:5F:9D:46";
 
 // static uint8_t codecs[] = {HFP_CODEC_CVSD, HFP_CODEC_MSBC};
 static uint8_t codecs[] = {HFP_CODEC_CVSD};
@@ -729,6 +723,9 @@ int btstack_main(int argc, const char * argv[]){
     printf("SDP service record size: %u\n", de_get_len( hfp_service_buffer));
     sdp_register_service(hfp_service_buffer);
     
+    // parse humand readable Bluetooth address
+    sscanf_bd_addr(device_addr_string, device_addr);
+
 #ifdef HAVE_POSIX_STDIN
     btstack_stdin_setup(stdin_process);
 #endif  

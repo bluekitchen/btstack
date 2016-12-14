@@ -97,7 +97,8 @@ BLE_OBJ    = $(BLE:.c=.o)
 # create firmware image from common objects and example source file
 
 all: led_counter.hex spp_counter.hex gap_inquiry.hex spp_flowcontrol.hex \
-	 sdp_rfcomm_query.hex sdp_general_query.hex ble_server.hex
+	 sdp_rfcomm_query.hex sdp_general_query.hex 
+# ble_server.hex
 
 # fetch and convert init scripts
 include ${BTSTACK_ROOT}/chipset/cc256x/Makefile.inc
