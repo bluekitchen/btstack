@@ -505,6 +505,12 @@ static int handle_l2cap_data_packet_for_signaling_connection(avdtp_connection_t 
                 case AVDTP_SI_ABORT:
                     connection->query_seid  = packet[2] >> 2;
                     stream_endpoint = get_avdtp_stream_endpoint_for_active_seid(connection->query_seid);
+                    if (!stream_endpoint){
+                        connection->error_code = BAD_ACP_SEID;
+                        connection->acceptor_connection_state = AVDTP_SIGNALING_CONNECTION_ACCEPTOR_W2_REJECT_WITH_ERROR_CODE;
+                        connection->reject_signal_identifier = connection->signaling_packet.signal_identifier;
+                        break;
+                    }
                     return handle_l2cap_data_packet_for_stream_endpoint(connection, stream_endpoint, packet, size);
                 case AVDTP_SI_SUSPEND:{
                     int i;
@@ -639,7 +645,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             stream_endpoint = get_avdtp_stream_endpoint_for_l2cap_cid(channel);
             if (!stream_endpoint){
                 if (!connection) break;
-                connection->error_code = BAD_LENGTH;
+                connection->error_code = BAD_ACP_SEID;
                 connection->reject_signal_identifier = connection->signaling_packet.signal_identifier;
                 connection->acceptor_connection_state = AVDTP_SIGNALING_CONNECTION_ACCEPTOR_W2_REJECT_WITH_ERROR_CODE;
                 avdtp_sink_request_can_send_now_self(connection, channel);
