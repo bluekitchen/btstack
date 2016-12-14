@@ -178,11 +178,20 @@ STMicroelectronics offers the Bluetooth V2.1 + EDR chipset STLC2500D that suppor
 
 ## Texas Instruments CC256x series
 
-The Texas Instruments CC256x series is currently in its fourth iteration and provides a Classic-only (CC2560), a Dual-mode (CC2564), and a Classic + ANT model (CC2567). A variant of the Dual-mode chipset is also integrated into TI's WiLink 8 Wifi+Bluetooth combo modules of the WL183x, WL185x, WL187x, and WL189x series. 
+The Texas Instruments CC256x series is currently in its fourth iteration and provides a Classic-only (CC2560), a Dual-mode (CC2564), and a Classic + ANT (CC2567) model. A variant of the Dual-mode chipset is also integrated into TI's WiLink 8 Wifi+Bluetooth combo modules of the WL183x, WL185x, WL187x, and WL189x series. 
 
 The CC256x chipset is connected via an UART connection and supports the H4, H5 (since third iteration), and eHCILL.
 
 The latest generation CC256xC chipsets support multiple LE roles in parallel.
+
+The different CC256x chipset can be identified by the LMP Subversion returned by the *hci_read_local_version_information* command. TI also uses a numeric way (AKA) to identify their chipsets. The table shows the LMP Subversion and AKA number for the main CC256x series.
+
+Chipset | LMP Subversion |  AKA
+---------------------------------
+CC2560  |         0x191f | 6.2.31
+CC2560A, CC2564 | 0x1B0F | 6.6.15
+CC256xB |         0x1B90 | 6.7.16
+CC256xC |         0x9a1a | 6.12.26
 
 **SCO data** is routed to the I2S/PCM interface but can be configured with the [HCI_VS_Write_SCO_Configuration](http://processors.wiki.ti.com/index.php/CC256x_VS_HCI_Commands#HCI_VS_Write_SCO_Configuration_.280xFE10.29) command.
 
@@ -190,32 +199,18 @@ The latest generation CC256xC chipsets support multiple LE roles in parallel.
 
 **BD Addr** can be set with [HCI_VS_Write_BD_Addr](2.2.1 HCI_VS_Write_BD_Addr (0xFC06)) although all chipsets have an official address stored.
 
-**Init Scripts.** In order to use the CC256x chipset an initialization script must be obtained and converted into a C file for use with BTstack. 
+**Init Scripts.** In order to use the CC256x chipset an initialization script must be obtained and converted into a C file for use with BTstack. For newer revisions, TI provides a main.bts and a ble_add_on.bts that need to be combined.
 
-The Makefile at *chipset/cc256x/Makefile* is able to automatically download and convert the requested file. It does this by:
+The Makefile at *chipset/cc256x/Makefile.inc* is able to automatically download and convert the requested file. It does this by:
 
 -   Downloading one or more [BTS files](http://processors.wiki.ti.com/index.php/CC256x_Downloads) for your chipset.
 -   Running the Python script: 
 
 <!-- -->
 
-    ./convert_bts_init_scripts.py
+    ./convert_bts_init_scripts.py main.bts [ble_add_on.bts] output_file.c
 
-**Update:** For the latest revision of the CC256x chipsets, the CC2560B
-and CC2564B, TI decided to split the init script into a main part and
-the BLE part. The conversion script has been updated to detect
-*bluetooth_init_cc256x_1.2.bts* and adds *BLE_init_cc256x_1.2.bts*
-if present and merges them into a single .c file.
-
-**Update 2:** In May 2015, TI renamed the init scripts to match
-the naming scheme previously used on Linux systems. The conversion
-script has been updated to also detect *initscripts_TIInit_6.7.16_bt_spec_4.1.bts*
-and integrates *initscripts_TIInit_6.7.16_ble_add-on.bts* if present.
-
-**Update 3:** The latest (v1.5) version of the init scripts for the third generation CC256xB are not availabe for direct download. 
-Same with v1.0 for then fourth generation CC256xC chipset.
-
-**BTstack integration**: The common code for all CC256x chipsets is provided by *btstack_chipset_cc256x.c*. During the setup, *btstack_chipset_cc256x_instance* function is used to get a *btstack_chiopset_t* instance and passed to *hci_init* function.
+**BTstack integration**: The common code for all CC256x chipsets is provided by *btstack_chipset_cc256x.c*. During the setup, *btstack_chipset_cc256x_instance* function is used to get a *btstack_chipset_t* instance and passed to *hci_init* function. *btstack_chipset_cc256x_lmp_subversion* provides the LMP Subversion for the selected init script.
 
 SCO Data can be routed over HCI, so HFP Wide-Band Speech is supported.
 
