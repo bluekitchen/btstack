@@ -286,6 +286,8 @@ uint32_t radio_init(void *hf_clock, uint8_t sca, uint8_t connection_count_max,
 	uint8_t *mem_radio_end;
 	void *link;
 
+	hf_clock = device_get_binding(CONFIG_CLOCK_CONTROL_NRF5_M16SRC_DRV_NAME);
+
 	/* intialise hf_clock device to use in prepare */
 	_radio.hf_clock = hf_clock;
 

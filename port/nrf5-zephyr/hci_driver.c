@@ -125,9 +125,6 @@ static void swi4_nrf5_isr(void *arg)
 
 int hci_driver_open(void)
 {
-
-
-	struct device *clk_m16;
 	uint32_t err;
 
 	DEBUG_INIT();
@@ -151,12 +148,7 @@ int hci_driver_open(void)
 
 	rand_init(_rand_context, sizeof(_rand_context));
 
-	clk_m16 = device_get_binding(CONFIG_CLOCK_CONTROL_NRF5_M16SRC_DRV_NAME);
-	if (!clk_m16) {
-		return -ENODEV;
-	}
-
-	err = radio_init(clk_m16,
+	err = radio_init(NULL,
 			 CLOCK_CONTROL_NRF5_K32SRC_ACCURACY,
 			 RADIO_CONNECTION_CONTEXT_MAX,
 			 RADIO_PACKET_COUNT_RX_MAX,
