@@ -71,4 +71,7 @@ void clock_k32src_start(void * sub_system);
 void clock_m16src_start(bool blocking);
 void clock_m16src_stop(void);
 
+void btstack_run_loop_rtc0_overflow(void);
+uint64_t btstack_run_loop_zephyr_get_ticks(void);
+
 #endif

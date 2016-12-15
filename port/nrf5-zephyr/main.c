@@ -61,6 +61,7 @@
 #include <zephyr.h>
 #include <kernel_structs.h>
 
+
 // Bluetooth Controller
 #include "ll.h"
 #include <bluetooth/bluetooth.h>
@@ -107,7 +108,6 @@ void btstack_run_loop_embedded_trigger(void){
  */
 static void transport_init(const void *transport_config){
 	/* startup Controller */
-	// bt_enable_raw(NULL);
     hci_driver_open();
 }
 
@@ -189,6 +189,23 @@ static const hci_transport_t * transport_get_instance(void){
 static btstack_linked_list_t timers;
 
 static int sys_clock_ms_per_tick;	// set in btstack_run_loop_zephyr_init()
+
+static volatile uint32_t btstack_run_loop_rtc0_overflow_counter;
+
+void btstack_run_loop_rtc0_overflow(void){
+    btstack_run_loop_rtc0_overflow_counter++;
+}
+
+uint64_t btstack_run_loop_zephyr_get_ticks(void){
+    uint32_t high_ticks_before, high_ticks_after, low_ticks;
+    while (1){
+        high_ticks_before = btstack_run_loop_rtc0_overflow_counter;
+        low_ticks = NRF_RTC0->COUNTER;
+        high_ticks_after  = btstack_run_loop_rtc0_overflow_counter;
+        if (high_ticks_after == high_ticks_before) break;
+    }
+    return (high_ticks_after << 24) | low_ticks;
+}
 
 static uint32_t btstack_run_loop_zephyr_get_time_ms(void){
 	return sys_tick_get_32() * sys_clock_ms_per_tick;
@@ -277,6 +294,8 @@ static void btstack_run_loop_zephyr_execute_once(void) {
     if (hci_rx_pos){
         transport_deliver_packet();
     }
+
+    // printf("Time %u, %lu, %u\n", btstack_run_loop_zephyr_get_ticks());
 
     // process ready
     while (1){

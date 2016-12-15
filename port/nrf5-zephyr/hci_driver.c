@@ -93,11 +93,12 @@ static void radio_nrf5_isr(void *arg)
 
 static void rtc0_nrf5_isr(void *arg)
 {
-	uint32_t compare0, compare1;
+	uint32_t compare0, compare1, overflow;
 
 	/* store interested events */
 	compare0 = NRF_RTC0->EVENTS_COMPARE[0];
 	compare1 = NRF_RTC0->EVENTS_COMPARE[1];
+	overflow = NRF_RTC0->EVENTS_OVRFLW;
 
 	/* On compare0 run ticker worker instance0 */
 	if (compare0) {
@@ -109,6 +110,12 @@ static void rtc0_nrf5_isr(void *arg)
 	if (compare1) {
 		NRF_RTC0->EVENTS_COMPARE[1] = 0;
 		ticker_trigger(1);
+	}
+
+	/* On overflow, just increment high counter */
+	if (overflow){
+		NRF_RTC0->EVENTS_OVRFLW = 0;
+		btstack_run_loop_rtc0_overflow();
 	}
 
 	work_run(RTC0_IRQn);
@@ -133,6 +140,10 @@ int hci_driver_open(void)
 	clock_control_init();
 
 	clock_k32src_start((void *)CLOCK_CONTROL_NRF5_K32SRC);
+
+	// enable ticker overflow couner
+	NRF_RTC0->EVTENSET = RTC_EVTENSET_OVRFLW_Msk;
+	NRF_RTC0->INTENSET = RTC_EVTENSET_OVRFLW_Msk;
 
 	_ticker_users[RADIO_TICKER_USER_ID_WORKER][0] =
 	    RADIO_TICKER_USER_WORKER_OPS;
