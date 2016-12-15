@@ -74,7 +74,7 @@ static uint8_t ALIGNED(4) _radio[LL_MEM_TOTAL];
  *
  * @return N/A
  */
-void my_arch_irq_enable(unsigned int irq)
+void my_irq_enable(unsigned int irq)
 {
 	_NvicIrqEnable(irq);
 }
