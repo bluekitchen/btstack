@@ -34,6 +34,10 @@ sed -i "s|CONTROLLER. += hci/hci.o|CONTROLLER_DISABLED_BY_BTSTACK) += hci/hci.o|
 SUBSYS_BLUETOOTH_HOST_MAKEFILE=${ZEPHYR_BASE}/subsys/bluetooth/host/Makefile
 sed -i "s|CONFIG_BLUETOOTH_STACK_HCI_RAW|CONFIG_BLUETOOTH_STACK_HCI_RAW_DISABLED_BY_BTSTACK|g" ${SUBSYS_BLUETOOTH_HOST_MAKEFILE}
 
+# remove drivers/clock_control/nrf5_clock_control from makefile
+DRIVERS_CLOCK_CONTROL_MAKEFILE=${ZEPHYR_BASE}/drivers/clock_control/Makefile
+sed -i "s|CONFIG_CLOCK_CONTROL_NRF5|CONFIG_CLOCK_CONTROL_NRF5_DISABLED_BY_BTSTACK|g" ${DRIVERS_CLOCK_CONTROL_MAKEFILE}
+
 # add BTstack KConfig to subsys/Kconfig
 SUBSYS_KCONFIG=${ZEPHYR_BASE}/subsys/Kconfig
 grep -q -F btstack ${SUBSYS_KCONFIG} || echo 'source "subsys/btstack/Kconfig"' >> ${SUBSYS_KCONFIG}
