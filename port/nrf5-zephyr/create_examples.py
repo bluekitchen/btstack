@@ -103,7 +103,7 @@ for file in os.listdir(examples_embedded):
     shutil.copyfile(examples_embedded + file, src_folder + "/" + example + ".c")
 
     # copy other files
-    for item in ['main.c', 'hci_driver.c', 'hci.c', 'zephyr_diet.h', 'ctrl.c', 'nrf5_power_clock.c']:
+    for item in ['main.c', 'hci_driver.c', 'hci.c', 'zephyr_diet.h', 'ctrl.c', 'nrf5_power_clock.c', 'nrf5_clock_control.h']:
         shutil.copyfile(script_path + '/' + item, src_folder + '/' + item)
 
     # create update_gatt.sh if .gatt file is present

@@ -19,17 +19,14 @@
 #include <errno.h>
 #include <atomic.h>
 #include <device.h>
-#include <clock_control.h>
 #include <misc/__assert.h>
-#include <stdio.h>
 
 static uint8_t m16src_ref;
 static uint8_t m16src_grd;
 
-static int _m16src_start(struct device *dev, clock_control_subsys_t sub_system)
+static int _m16src_start(bool blocking)
 {
 	uint32_t imask;
-	bool blocking;
 
 	/* If the clock is already started then just increment refcount.
 	 * If the start and stop don't happen in pairs, a rollover will
@@ -56,7 +53,6 @@ static int _m16src_start(struct device *dev, clock_control_subsys_t sub_system)
 	irq_unlock(imask);
 
 	/* If blocking then spin-wait in CPU sleep until 16MHz clock settles. */
-	blocking = POINTER_TO_UINT(sub_system);
 	if (blocking) {
 		uint32_t intenset;
 
@@ -106,11 +102,9 @@ hf_already_started:
 	}
 }
 
-static int _m16src_stop(struct device *dev, clock_control_subsys_t sub_system)
+static int _m16src_stop(void)
 {
 	uint32_t imask;
-
-	ARG_UNUSED(sub_system);
 
 	/* Test for started resource, if so, decrement reference and acquire
 	 * resource guard.
@@ -147,7 +141,7 @@ static int _m16src_stop(struct device *dev, clock_control_subsys_t sub_system)
 	return 0;
 }
 
-static int _k32src_start(struct device *dev, clock_control_subsys_t sub_system)
+static int _k32src_start(void * sub_system)
 {
 	uint32_t lf_clk_src;
 	uint32_t intenset;
@@ -214,7 +208,7 @@ static int _k32src_start(struct device *dev, clock_control_subsys_t sub_system)
 		 */
 		NRF_CLOCK->INTENSET = CLOCK_INTENSET_HFCLKSTARTED_Msk;
 
-		err = _m16src_start(dev, false);
+		err = _m16src_start(false);
 		if (!err) {
 			_NvicIrqPend(POWER_CLOCK_IRQn);
 		} else {
@@ -228,7 +222,6 @@ static int _k32src_start(struct device *dev, clock_control_subsys_t sub_system)
 static void _power_clock_isr(void *arg)
 {
 	uint8_t pof, hf_intenset, hf_stat, hf, lf, done, ctto;
-	struct device *dev = arg;
 
 	pof = (NRF_POWER->EVENTS_POFWARN != 0);
 
@@ -274,7 +267,7 @@ static void _power_clock_isr(void *arg)
 		NRF_CLOCK->EVENTS_DONE = 0;
 
 		/* Calibration done, stop 16M Xtal. */
-		err = _m16src_stop(dev, NULL);
+		err = _m16src_stop();
 		__ASSERT_NO_MSG(!err);
 
 		/* Start timer for next calibration. */
@@ -292,7 +285,7 @@ static void _power_clock_isr(void *arg)
 		 */
 		NRF_CLOCK->INTENSET = CLOCK_INTENSET_HFCLKSTARTED_Msk;
 
-		err = _m16src_start(dev, false);
+		err = _m16src_start(false);
 		if (!err) {
 			_NvicIrqPend(POWER_CLOCK_IRQn);
 		} else {
@@ -301,7 +294,7 @@ static void _power_clock_isr(void *arg)
 	}
 }
 
-static int _clock_control_init(struct device *dev)
+static int _clock_control_init(void)
 {
 	/* TODO: Initialization will be called twice, once for 32KHz and then
 	 * for 16 MHz clock. The vector is also shared for other power related
@@ -319,21 +312,20 @@ static int _clock_control_init(struct device *dev)
 }
 
 // New API
-int clock_control_init(void){
-	_clock_control_init(NULL);
-	return 0;
+void clock_control_init(void){
+	_clock_control_init();
 }
 
-int clock_k32src_start(clock_control_subsys_t sub_system){
-	_k32src_start(NULL, sub_system);
+void clock_k32src_start(void * sub_system){
+	_k32src_start(sub_system);
 }
 
-int clock_m16src_start(clock_control_subsys_t sub_system){
-	_m16src_start(NULL, sub_system);
+void clock_m16src_start(bool blocking){
+	_m16src_start(blocking);
 }
 
-int clock_m16src_stop(clock_control_subsys_t sub_system){
-	_m16src_stop(NULL, sub_system);
+void clock_m16src_stop(void){
+	_m16src_stop();
 }
 
 

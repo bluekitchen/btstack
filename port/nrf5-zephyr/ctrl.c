@@ -2434,7 +2434,7 @@ static inline void isr_radio_state_close(void)
 	event_inactive(0, 0, 0, 0);
 
 	// clock_control_off(_radio.hf_clock, NULL);
-	clock_m16src_start(NULL);
+	clock_m16src_start(false);
 
 	work_enable(WORK_TICKER_JOB0_IRQ);
 
@@ -2602,7 +2602,7 @@ static void work_xtal_start(void *params)
 
 	/* turn on 16MHz clock, non-blocking mode. */
 	// clock_control_on(_radio.hf_clock, NULL);
-	clock_m16src_start(NULL);
+	clock_m16src_start(false);
 }
 
 static void event_xtal(uint32_t ticks_at_expire, uint32_t remainder,
@@ -2626,7 +2626,7 @@ static void work_xtal_stop(void *params)
 	ARG_UNUSED(params);
 
 	// clock_control_off(_radio.hf_clock, NULL);
-	clock_m16src_stop(NULL);
+	clock_m16src_stop();
 
 	DEBUG_RADIO_CLOSE(0);
 }

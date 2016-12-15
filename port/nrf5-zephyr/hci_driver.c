@@ -22,8 +22,6 @@
 #include <zephyr.h>
 #include <soc.h>
 #include <init.h>
-#include <device.h>
-#include <clock_control.h>
 
 #include <misc/util.h>
 #include <misc/stack.h>
@@ -34,9 +32,7 @@
 #include <bluetooth/hci.h>
 #include <drivers/bluetooth/hci_driver.h>
 
-#ifdef CONFIG_CLOCK_CONTROL_NRF5
-#include <drivers/clock_control/nrf5_clock_control.h>
-#endif
+#include "nrf5_clock_control.h"
 
 #include "util/defines.h"
 #include "util/work.h"
