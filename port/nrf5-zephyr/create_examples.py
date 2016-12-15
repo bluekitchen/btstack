@@ -16,6 +16,7 @@ mk_template = '''#
 
 obj-y += EXAMPLE.o
 obj-y += main.o
+obj-y += ctrl.o
 obj-y += hci.o
 obj-y += hci_driver.o
 obj-y += nrf5_power_clock.o
@@ -102,7 +103,7 @@ for file in os.listdir(examples_embedded):
     shutil.copyfile(examples_embedded + file, src_folder + "/" + example + ".c")
 
     # copy other files
-    for item in ['main.c', 'hci_driver.c', 'hci.c', 'zephyr_diet.h', 'nrf5_power_clock.c']:
+    for item in ['main.c', 'hci_driver.c', 'hci.c', 'zephyr_diet.h', 'ctrl.c', 'nrf5_power_clock.c']:
         shutil.copyfile(script_path + '/' + item, src_folder + '/' + item)
 
     # create update_gatt.sh if .gatt file is present

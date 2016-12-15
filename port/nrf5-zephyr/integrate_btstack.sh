@@ -26,9 +26,11 @@ sed -i "s|CONFIG_BLUETOOTH_HCI|CONFIG_DISABLED_BY_BTSTACK_BLUETOOTH_HCI|g" ${SUB
 
 # remove subsys/bluetooth/controller/hci_driver from makefile
 # remove subsys/bluetooth/controller/hci from makefile
+# remove subsys/bluetooth/controller/ctrl from makefile
 SUBSYS_BLUETOOTH_CONTROLLER_MAKEFILE=${ZEPHYR_BASE}/subsys/bluetooth/controller/Makefile
 sed -i "s|CONTROLLER. += hci/hci_driver.o|CONTROLLER_DISABLED_BY_BTSTACK) += hci/hci_driver.o|g" ${SUBSYS_BLUETOOTH_CONTROLLER_MAKEFILE}
 sed -i "s|CONTROLLER. += hci/hci.o|CONTROLLER_DISABLED_BY_BTSTACK) += hci/hci.o|g" ${SUBSYS_BLUETOOTH_CONTROLLER_MAKEFILE}
+sed -i "s|CONTROLLER. += ll/ctrl.o|CONTROLLER_DISABLED_BY_BTSTACK) += ll/ctrl.o|g" ${SUBSYS_BLUETOOTH_CONTROLLER_MAKEFILE}
 
 # remove subsys/bluetooth/controller/hci_driver from makefile
 SUBSYS_BLUETOOTH_HOST_MAKEFILE=${ZEPHYR_BASE}/subsys/bluetooth/host/Makefile
