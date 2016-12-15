@@ -40,6 +40,8 @@
 
 #include "debug.h"
 
+#include "zephyr_diet.h"
+
 #define RADIO_PREAMBLE_TO_ADDRESS_US	40
 #define RADIO_HCTO_US			(150 + 2 + 2 + \
 					 RADIO_PREAMBLE_TO_ADDRESS_US)
@@ -128,7 +130,7 @@ struct observer {
 };
 
 static struct {
-	struct device *hf_clock;
+	// struct device *hf_clock;
 
 	uint32_t ticks_anchor;
 	uint32_t remainder_anchor;
@@ -285,11 +287,6 @@ uint32_t radio_init(void *hf_clock, uint8_t sca, uint8_t connection_count_max,
 	uint16_t packet_tx_ctrl_size;
 	uint8_t *mem_radio_end;
 	void *link;
-
-	hf_clock = device_get_binding(CONFIG_CLOCK_CONTROL_NRF5_M16SRC_DRV_NAME);
-
-	/* intialise hf_clock device to use in prepare */
-	_radio.hf_clock = hf_clock;
 
 	/* initialise SCA */
 	_radio.sca = sca;
@@ -2436,7 +2433,8 @@ static inline void isr_radio_state_close(void)
 
 	event_inactive(0, 0, 0, 0);
 
-	clock_control_off(_radio.hf_clock, NULL);
+	// clock_control_off(_radio.hf_clock, NULL);
+	clock_m16src_start(NULL);
 
 	work_enable(WORK_TICKER_JOB0_IRQ);
 
@@ -2603,7 +2601,8 @@ static void work_xtal_start(void *params)
 	ARG_UNUSED(params);
 
 	/* turn on 16MHz clock, non-blocking mode. */
-	clock_control_on(_radio.hf_clock, NULL);
+	// clock_control_on(_radio.hf_clock, NULL);
+	clock_m16src_start(NULL);
 }
 
 static void event_xtal(uint32_t ticks_at_expire, uint32_t remainder,
@@ -2626,7 +2625,8 @@ static void work_xtal_stop(void *params)
 {
 	ARG_UNUSED(params);
 
-	clock_control_off(_radio.hf_clock, NULL);
+	// clock_control_off(_radio.hf_clock, NULL);
+	clock_m16src_stop(NULL);
 
 	DEBUG_RADIO_CLOSE(0);
 }
