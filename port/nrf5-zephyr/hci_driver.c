@@ -19,9 +19,7 @@
 #include <stddef.h>
 #include <string.h>
 
-#include <zephyr.h>
 #include <soc.h>
-#include <init.h>
 
 #include <misc/util.h>
 #include <misc/stack.h>

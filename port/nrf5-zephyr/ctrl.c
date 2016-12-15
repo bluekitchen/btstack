@@ -19,9 +19,6 @@
 #include <stdint.h>
 #include <string.h>
 
-#include <device.h>
-#include <clock_control.h>
-
 #include "hal_work.h"
 
 #include "defines.h"

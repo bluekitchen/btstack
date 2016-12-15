@@ -18,7 +18,6 @@
 #include <soc.h>
 #include <errno.h>
 #include <atomic.h>
-#include <device.h>
 #include <misc/__assert.h>
 
 static uint8_t m16src_ref;
