@@ -66,4 +66,19 @@ inline void * btstack_buf_pull(btstack_buf_t * buf, uint16_t len){
 	irq_p; \
 })
 
+
+#if 0
+#include <soc.h>
+#include <errno.h>
+#include <atomic.h>
+#include <device.h>
+#include <misc/__assert.h>
+#endif
+#include <clock_control.h>
+
+int clock_control_init(void);
+int clock_m16src_start(clock_control_subsys_t sub_system);
+int clock_m16src_stop(clock_control_subsys_t sub_system);
+int clock_k32src_start(clock_control_subsys_t sub_system);
+
 #endif

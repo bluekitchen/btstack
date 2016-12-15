@@ -125,18 +125,16 @@ static void swi4_nrf5_isr(void *arg)
 
 int hci_driver_open(void)
 {
-	struct device *clk_k32;
+
+
 	struct device *clk_m16;
 	uint32_t err;
 
 	DEBUG_INIT();
 
-	clk_k32 = device_get_binding(CONFIG_CLOCK_CONTROL_NRF5_K32SRC_DRV_NAME);
-	if (!clk_k32) {
-		return -ENODEV;
-	}
+	clock_control_init();
 
-	clock_control_on(clk_k32, (void *)CLOCK_CONTROL_NRF5_K32SRC);
+	clock_k32src_start((void *)CLOCK_CONTROL_NRF5_K32SRC);
 
 	_ticker_users[RADIO_TICKER_USER_ID_WORKER][0] =
 	    RADIO_TICKER_USER_WORKER_OPS;

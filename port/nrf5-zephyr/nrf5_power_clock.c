@@ -21,9 +21,12 @@
 #include <device.h>
 #include <clock_control.h>
 #include <misc/__assert.h>
+#include <stdio.h>
 
 static uint8_t m16src_ref;
 static uint8_t m16src_grd;
+
+static int clock_initialized;
 
 static int _m16src_start(struct device *dev, clock_control_subsys_t sub_system)
 {
@@ -148,6 +151,8 @@ static int _m16src_stop(struct device *dev, clock_control_subsys_t sub_system)
 
 static int _k32src_start(struct device *dev, clock_control_subsys_t sub_system)
 {
+	printf("CLOCK: k32src_start, initialized %u\n", clock_initialized);
+
 	uint32_t lf_clk_src;
 	uint32_t intenset;
 
@@ -302,6 +307,9 @@ static void _power_clock_isr(void *arg)
 
 static int _clock_control_init(struct device *dev)
 {
+	printf("CLOCK: clock_control_init\n");
+	clock_initialized = 1;
+	
 	/* TODO: Initialization will be called twice, once for 32KHz and then
 	 * for 16 MHz clock. The vector is also shared for other power related
 	 * features. Hence, design a better way to init IRQISR when adding
@@ -317,6 +325,10 @@ static int _clock_control_init(struct device *dev)
 	return 0;
 }
 
+static int dummy_clock_control_init(struct device * dev){
+	return 0;
+}
+
 static const struct clock_control_driver_api _m16src_clock_control_api = {
 	.on = _m16src_start,
 	.off = _m16src_stop,
@@ -329,14 +341,17 @@ DEVICE_AND_API_INIT(clock_nrf5_m16src,
 		    CONFIG_KERNEL_INIT_PRIORITY_DEVICE,
 		    &_m16src_clock_control_api);
 
-static const struct clock_control_driver_api _k32src_clock_control_api = {
-	.on = _k32src_start,
-	.off = NULL,
-	.get_rate = NULL,
-};
+// New API
+int clock_control_init(void){
+	_clock_control_init(NULL);
+	return 0;
+}
+int clock_k32src_start(clock_control_subsys_t sub_system){
 
-DEVICE_AND_API_INIT(clock_nrf5_k32src,
-		    CONFIG_CLOCK_CONTROL_NRF5_K32SRC_DRV_NAME,
-		    _clock_control_init, NULL, NULL, PRE_KERNEL_1,
-		    CONFIG_KERNEL_INIT_PRIORITY_DEVICE,
-		    &_k32src_clock_control_api);
+	_k32src_start(NULL, sub_system);
+}
+
+int clock_m16src_start(clock_control_subsys_t sub_system);
+int clock_m16src_stop(clock_control_subsys_t sub_system);
+
+
