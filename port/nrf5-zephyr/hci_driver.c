@@ -99,11 +99,18 @@ static void rtc0_nrf5_isr(void *arg)
 
 	/* store interested events */
 	compare0 = NRF_RTC0->EVENTS_COMPARE[0];
+	compare1 = NRF_RTC0->EVENTS_COMPARE[1];
 
 	/* On compare0 run ticker worker instance0 */
 	if (compare0) {
 		NRF_RTC0->EVENTS_COMPARE[0] = 0;
 		ticker_trigger(0);
+	}
+
+	/* On compare1 run ticker worker instance0 */
+	if (compare1) {
+		NRF_RTC0->EVENTS_COMPARE[1] = 0;
+		ticker_trigger(1);
 	}
 
 	work_run(RTC0_IRQn);
