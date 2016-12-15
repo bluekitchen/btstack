@@ -56,7 +56,6 @@
 #include <misc/sys_log.h>
 #include <misc/util.h>
 #include <net/buf.h>
-#include <sys_clock.h>
 #include <uart.h>
 #include <zephyr.h>
 #include <kernel_structs.h>
@@ -185,12 +184,14 @@ static const hci_transport_t * transport_get_instance(void){
 
 // btstack_run_loop_zephry.c
 
+// RTC0 runs at 32768 Hz
+// ts->timeout is counting ticks / 32
+
 // the run loop
 static btstack_linked_list_t timers;
 
-static int sys_clock_ms_per_tick;	// set in btstack_run_loop_zephyr_init()
-
 static volatile uint32_t btstack_run_loop_rtc0_overflow_counter;
+static uint64_t btstack_run_loop_anchor;
 
 void btstack_run_loop_rtc0_overflow(void){
     btstack_run_loop_rtc0_overflow_counter++;
@@ -208,18 +209,18 @@ uint64_t btstack_run_loop_zephyr_get_ticks(void){
 }
 
 static uint32_t btstack_run_loop_zephyr_get_time_ms(void){
-	return sys_tick_get_32() * sys_clock_ms_per_tick;
+    return btstack_run_loop_zephyr_get_ticks() * 125 / 4096;  // == * 1000 / 32768
 }
 
 static uint32_t btstack_run_loop_zephyr_ticks_for_ms(uint32_t time_in_ms){
-    return time_in_ms / sys_clock_ms_per_tick;
+    return time_in_ms * 4096 / 125; // == * 32768 / 1000
 }
 
 static void btstack_run_loop_zephyr_set_timer(btstack_timer_source_t *ts, uint32_t timeout_in_ms){
     uint32_t ticks = btstack_run_loop_zephyr_ticks_for_ms(timeout_in_ms);
-    if (ticks == 0) ticks++;
-    // time until next tick is < hal_tick_get_tick_period_in_ms() and we don't know, so we add one
-    ts->timeout = sys_tick_get_32() + 1 + ticks; 
+    uint64_t timeout = btstack_run_loop_zephyr_get_ticks() + ticks;
+    // drop resolution to 32 ticks
+    ts->timeout = timeout >> 5;
 }
 
 /**
@@ -296,6 +297,7 @@ static void btstack_run_loop_zephyr_execute_once(void) {
     }
 
     // printf("Time %u, %lu, %u\n", btstack_run_loop_zephyr_get_ticks());
+    // printf("Time %08u ms\n", btstack_run_loop_zephyr_get_time_ms());
 
     // process ready
     while (1){
@@ -308,7 +310,8 @@ static void btstack_run_loop_zephyr_execute_once(void) {
         if (done) break;
     }
 
-    uint32_t now = sys_tick_get_32();
+    uint64_t now = btstack_run_loop_zephyr_get_ticks() >> 5;
+
     // process timers
     while (timers) {
         btstack_timer_source_t *ts = (btstack_timer_source_t *) timers;
@@ -338,8 +341,6 @@ static void btstack_run_loop_zephyr_execute(void) {
 
 static void btstack_run_loop_zephyr_btstack_run_loop_init(void){
     timers = NULL;
-    sys_clock_ms_per_tick  = sys_clock_us_per_tick / 1000;
-    log_info("btstack_run_loop_init: ms_per_tick %u", sys_clock_ms_per_tick);
 }
 
 static const btstack_run_loop_t btstack_run_loop_wiced = {
