@@ -191,7 +191,9 @@ static const hci_transport_t * transport_get_instance(void){
 static btstack_linked_list_t timers;
 
 static volatile uint32_t btstack_run_loop_rtc0_overflow_counter;
-static uint64_t btstack_run_loop_anchor;
+
+// dummy for int table
+void _timer_int_handler(void){}
 
 void btstack_run_loop_rtc0_overflow(void){
     btstack_run_loop_rtc0_overflow_counter++;
