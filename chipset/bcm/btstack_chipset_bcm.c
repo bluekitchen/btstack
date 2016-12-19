@@ -58,6 +58,10 @@
 #include <unistd.h>
 #endif
 
+#ifdef _WIN32
+#include <Windows.h>
+#endif
+
 static int send_download_command;
 static uint32_t init_script_offset;
 
@@ -134,8 +138,11 @@ static btstack_chipset_result_t chipset_next_command(uint8_t * hci_cmd_buffer){
             close(hcd_fd);
 
             // wait for firmware patch to be applied - shorter delay possible
+#ifdef _WIN32
+            Sleep(1000);
+#else
             sleep(1);
-
+#endif
             return BTSTACK_CHIPSET_DONE;
         }
         if (res < 0){

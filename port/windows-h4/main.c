@@ -16,7 +16,7 @@
 #include "hal_led.h"
 #include "btstack_link_key_db_fs.h"
 
-// #include "stdin_support.h"
+#include "stdin_support.h"
 
 #include "btstack_chipset_bcm.h"
 #include "btstack_chipset_csr.h"
@@ -46,10 +46,9 @@ void hal_led_toggle(void){
 
 static void sigint_handler(int param){
 
-#ifndef _WIN32
-    // reset anyway
+    // reset even if not setup before
     btstack_stdin_reset();
-#endif
+
     log_info(" <= SIGINT received, shutting down..\n");   
     // hci_power_control(HCI_POWER_OFF);
     // hci_close();
@@ -71,11 +70,9 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 // terminate, name 248 chars
                 packet[6+248] = 0;
                 printf("Local name: %s\n", &packet[6]);
-#if 0
                 if (is_bcm){
                     btstack_chipset_bcm_set_device_name((const char *)&packet[6]);
                 }
-#endif
             }        
             break;
         default:
@@ -123,14 +120,10 @@ static void local_version_information_callback(uint8_t * packet){
 #endif
             break;
         case COMPANY_ID_BROADCOM_CORPORATION:   
-            printf("Broadcom - not supported on Windows yet.\n");
-#if 0
             printf("Broadcom - using BCM driver.\n");
             hci_set_chipset(btstack_chipset_bcm_instance());
             use_fast_uart();
             is_bcm = 1;
-#else
-#endif
             break;
         case COMPANY_ID_ST_MICROELECTRONICS:   
             printf("ST Microelectronics - using STLC2500d driver.\n");
@@ -157,7 +150,7 @@ int main(int argc, const char * argv[]){
 	btstack_memory_init();
     btstack_run_loop_init(btstack_run_loop_windows_get_instance());
 
-    hci_dump_open(NULL, HCI_DUMP_STDOUT);
+    hci_dump_open("hci_dump.pklg", HCI_DUMP_PACKETLOGGER);
 
     // pick serial port
     config.device_name = "\\\\.\\COM7";
