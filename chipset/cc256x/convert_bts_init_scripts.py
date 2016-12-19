@@ -9,16 +9,19 @@ import re
 import sys
 import os
 
-print('''
-CC256x init script conversion tool for use with BTstack, v0.1
+usage = '''
+CC256x init script conversion tool for use with BTstack, v0.2
 Copyright 2012-2014 BlueKitchen GmbH
-''')
 
-usage = '''This script prepares init scripts for TI's
-CC256x chipsets for use with BTstack .
+Usage:
+$ ./convert_bts_init_scripts.py main.bts [ble-add-on.bts] output.c
 
-Please download the Service Pack for your module from http://processors.wiki.ti.com/index.php/CC256x_Downloads 
-Then, unzip it and copy the *.bts file into this folder and start the script again.
+Please specify the main .bts script and optionally the BLE Add-on to generate the init script .c file.
+
+The Makefile include chipset/cc256x/Makefile.inc automates the process of downloading and converting .bts files.
+
+If this is not an option, you can download the Service Packs for your module from http://processors.wiki.ti.com/index.php/CC256x_Downloads 
+Then, unzip it and copy the *.bts file into this folder before start the script again.
 '''
 
 fartext = '''
@@ -28,6 +31,14 @@ __attribute__((section (".fartext")))
 #ifdef __AVR__
 __attribute__((__progmem__))
 #endif
+'''
+
+get_lmp_subversion = '''
+const uint16_t {prefix}_init_script_lmp_subversion = {lmp_subversion};
+
+uint16_t btstack_chipset_cc256x_lmp_subversion(void){{
+    return {prefix}_init_script_lmp_subversion;
+}}
 '''
 
 data_indent = '    '
@@ -96,15 +107,15 @@ def append_calibration_sequence(additions, str_list, data_indent):
     str_list.append("0x01, 0x80, 0xfd, 0x06, 0x3c, 0xf0, 0x5f, 0x00, 0x00, 0x00,\n\n")
     return 20 
 
-def convert_bts(main_bts_file, bts_add_on):
+
+def convert_bts(output_file, main_bts_file, bts_add_on, aka, lmp_subversion):
     array_name = 'cc256x'
-    c_file   = main_bts_file.replace('bts', 'c')
 
     input_files = [ main_bts_file ]
     if bts_add_on != "":
         input_files.append(bts_add_on)   
     
-    with open(c_file, 'w') as fout:
+    with open(output_file, 'w') as fout:
     
         # assert script contains templates for configuration by BTstack
         have_eHCILL = False
@@ -113,7 +124,7 @@ def convert_bts(main_bts_file, bts_add_on):
         have_power_vector_edr3 = False;
         have_class2_single_power = False;
 
-        print("Creating {0}".format(c_file))
+        print("Creating {0}".format(output_file))
 
         part_size = 0
 
@@ -223,18 +234,24 @@ def convert_bts(main_bts_file, bts_add_on):
 
         fout.write( '// init script created from\n')
         fout.write( '// - {0}\n'.format(main_bts_file))
+        if aka != "":
+            fout.write( '// - AKA TIInit_{0}.bts\n'.format(aka))
         if bts_add_on != "":
             fout.write( '// - {0}\n'.format(bts_add_on))
         fout.write( '#include <stdint.h>\n')
-
+        fout.write( '\n')
+        # if aka != "":
+        #     fout.write( 'const char * {0}_init_script_aka = "{1}";\n'.format(array_name, aka))
+        if lmp_subversion != 0:
+            fout.write( get_lmp_subversion.format(prefix = array_name, lmp_subversion = "0x%04x" % lmp_subversion))
         part = 0
         size = 0
         for part_size in part_sizes:
             part += 1
             size += part_size
-            print("- part", part, "size", part_size)
+            print("- part %u, size %u" % (part,part_size))
 
-        print('- total size', size)
+        print('- total size %u' % size)
 
         print("\n".join(additions))
 
@@ -266,61 +283,61 @@ def convert_bts(main_bts_file, bts_add_on):
         fout.write('const uint32_t {0}_init_script_size = {1};\n\n'.format(array_name,size));
         # fout.write('void main() {0} printf("size {1}\\n", {2}_init_script_size); {3}'.format('{', '%u', array_name,'}'));
 
-# get list of *.bts files
-files =  glob.glob('*.bts')
-if not files:
+# check usage: 2-3 param
+if len(sys.argv) < 3 or len(sys.argv) > 4:
     print(usage)
-    sys.exit(1) 
+    sys.exit(1)
 
-# convert each of them
-for name in files:
-    name_lower = name.lower()
-    # skip BLE and AVRP add-ons
-    if name_lower.startswith('ble_init_cc'):
-        print("Skipping BLE add-on", name)
-        continue
-    if name_lower.startswith('avpr_init_cc'):
-        print("Skipping AVPR add-on", name)
-        continue
-    if re.match("tiinit_.*_ble_add-on.bts", name_lower):
-        print("Skipping BLE add-on", name)
-        continue
-    if re.match("initscripts_tiinit_.*_ble_add-on.bts", name_lower):
-        print("Skipping BLE add-on", name)
-        continue
-    if re.match("initscripts_tiinit_.*_avpr_add-on.bts", name_lower):
-        print("Skipping AVPR add-on", name)
-        continue
+main_bts = sys.argv[1]
+add_on = ""
+if len(sys.argv) == 4:
+    add_on = sys.argv[2]
+output_file = sys.argv[-1]
 
-    print "check", name
-    
-    # check for BLE add-on
-    add_on = ""
-    name_parts = re.match('bluetooth_init_(.....+_...)_.*.bts', name)
-    if name_parts:
-        potential_add_on = 'BLE_init_%s.bts' % name_parts.group(1)
-        if os.path.isfile(potential_add_on):
-            add_on = potential_add_on
-            print("Found", add_on, "add-on for", name)
+# get AKA from file names that include model name
+aka = ""
+lmp_subversion = 0
+name_lower = main_bts.lower()
+if 'cc2560_' in name_lower:
+    aka = "6.2.31"
+if 'cc2560a_' in name_lower or 'cc2564_' in name_lower:
+    aka = "6.6.15"
+if 'cc2560b_' in name_lower or 'cc2564b_' in name_lower:
+    aka = "6.7.16"
+if 'cc2564c_' in name_lower:
+    aka = "6.12.26"
 
-    name_parts = re.match('TIInit_(\d*\.\d*\.\d*)_.*.bts', name)
-    if name_parts:
-        potential_add_on = 'TIInit_%s_ble_add-on.bts' % name_parts.group(1)
-        if os.path.isfile(potential_add_on):
-            add_on = potential_add_on
-            print("Found", add_on, "add-on for", name)
+# use AKA from .bts file that it
+name_parts = re.match('.*TIInit_(\d*\.\d*\.\d*).*.bts', main_bts)
+if name_parts:
+    aka = name_parts.group(1)
 
-    name_parts = re.match('initscripts_TIInit_(\d*\.\d*\.\d*)_.*.bts', name)
-    if name_parts:
-        potential_add_on = 'initscripts_TIInit_%s_ble_add-on.bts' % name_parts.group(1)
-        if os.path.isfile(potential_add_on):
-            add_on = potential_add_on
-            print("Found", add_on, "add-on for", name)
+# get lmp subversion from AKA
+lmp_subversion_for_aka = {
+    '6.2.31'  : 0x191f,
+    '6.6.15'  : 0x1B0F,
+    '6.7.16'  : 0x1B90,
+    '6.12.26' : 0x9a1a
+}
 
-    convert_bts(name, add_on)
+if aka in lmp_subversion_for_aka:
+    lmp_subversion = lmp_subversion_for_aka[aka]
 
-# done
-print('\nConversion(s) successful!\n')
-    
+# print summary
+
+print ("Main file: %s"% main_bts)
+if add_on != "":
+    print ("Add-on file: %s" % add_on)
+if aka != "":
+    print ("- AKA TIInit_%s.bts" % aka)
+
+if lmp_subversion:
+    print ("- LMP Subversion: 0x%04x" % lmp_subversion)
+else:
+    print ("- LMP Subversion: Unknown")
+
+convert_bts(output_file, main_bts, add_on, aka, lmp_subversion)
+print
+
 
 

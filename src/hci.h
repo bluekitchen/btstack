@@ -620,9 +620,6 @@ typedef struct {
     /* callbacks for events */
     btstack_linked_list_t event_handlers;
 
-    // local version information callback
-    void (*local_version_information_callback)(uint8_t * local_version_information);
-
     // hardware error callback
     void (*hardware_error_callback)(uint8_t error);
 
@@ -775,12 +772,6 @@ void hci_set_link_key_db(btstack_link_key_db_t const * link_key_db);
 void hci_set_hardware_error_callback(void (*fn)(uint8_t error));
 
 /**
- * @brief Set callback for local information from Bluetooth controller right after HCI Reset
- * @note Can be used to select chipset driver dynamically during startup
- */
-void hci_set_local_version_information_callback(void (*fn)(uint8_t * local_version_information));
-
-/**
  * @brief Set Public BD ADDR - passed on to Bluetooth chipset during init if supported in bt_control_h
  */
 void hci_set_bd_addr(bd_addr_t addr);
@@ -900,6 +891,10 @@ void hci_release_packet_buffer(void);
 /* API_END */
 
 
+/**
+ * va_list version of hci_send_cmd
+ */
+int hci_send_cmd_va_arg(const hci_cmd_t *cmd, va_list argtr);
 
 /**
  * Get connection iterator. Only used by l2cap.c and sm.c
