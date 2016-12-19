@@ -108,6 +108,12 @@ static void local_version_information_callback(uint8_t * packet){
             break;
         case COMPANY_ID_TEXAS_INSTRUMENTS_INC: 
             printf("Texas Instruments - CC256x compatible chipset.\n");
+            if (lmp_subversion != btstack_chipset_cc256x_lmp_subversion()){
+                printf("Error: LMP Subversion does not match initscript!");
+                printf("Your initscripts is for %s chipset\n", btstack_chipset_cc256x_lmp_subversion() < lmp_subversion ? "an older" : "a newer");
+                printf("Please update Makefile to include the appropriate bluetooth_init_cc256???.c file\n");
+                exit(10);
+            }
             use_fast_uart();
             hci_set_chipset(btstack_chipset_cc256x_instance());
 #ifdef ENABLE_EHCILL
