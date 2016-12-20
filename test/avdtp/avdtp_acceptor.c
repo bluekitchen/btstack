@@ -106,13 +106,13 @@ static uint16_t avdtp_unpack_service_capabilities(avdtp_connection_t * connectio
     }
     if (connection->signaling_packet.signal_identifier == AVDTP_SI_RECONFIGURE){
         if (category != AVDTP_CONTENT_PROTECTION && category != AVDTP_MEDIA_CODEC){
+            printf("    ACP: REJECT CATEGORY, INVALID_CAPABILITIES\n");
             connection->reject_service_category = category;
             connection->error_code = INVALID_CAPABILITIES;
         }
     }
     int i;
     uint8_t cap_len = packet[pos++];
-    printf("    ACP: avdtp_unpack_service_capabilities: category %d, capability len %d, record size %d\n", category, cap_len, size);
     int processed_cap_len = 0;
     while (pos < size){
         processed_cap_len = pos;
@@ -174,13 +174,11 @@ static uint16_t avdtp_unpack_service_capabilities(avdtp_connection_t * connectio
 
         registered_service_categories = store_bit16(registered_service_categories, category, 1);
         processed_cap_len = pos - processed_cap_len;
-        printf("    ACP: avdtp_unpack_service_capabilities 2: category %d, processed_cap_len %d, pos %d\n", category, processed_cap_len, pos);
         if (cap_len <= processed_cap_len && pos < size-2){
             category = (avdtp_service_category_t)packet[pos++];
             cap_len = packet[pos++];
         }
     }
-    printf(" avdtp_unpack_service_capabilities done error %d\n", connection->error_code);
     return registered_service_categories;
 }
 
@@ -317,7 +315,6 @@ int avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, avdtp_st
                     
                     if (connection->error_code){
                         // fire capabilities parsing errors 
-                        printf("    ACP: REJECT CATEGORY, error code by upacking\n");
                         connection->reject_signal_identifier = connection->signaling_packet.signal_identifier;
                         stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_REJECT_CATEGORY_WITH_ERROR_CODE;
                         break;
@@ -340,18 +337,30 @@ int avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, avdtp_st
                     }
                     break;
                 }
-                case AVDTP_SI_OPEN:
-                    if (stream_endpoint->state != AVDTP_STREAM_ENDPOINT_CONFIGURED) return 0;
-                    printf("    ACP: AVDTP_STREAM_ENDPOINT_W2_ANSWER_OPEN_STREAM\n");
-                    stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_ANSWER_OPEN_STREAM;
-                    stream_endpoint->state = AVDTP_STREAM_ENDPOINT_W4_L2CAP_FOR_MEDIA_CONNECTED;
-                    break;
                 case AVDTP_SI_GET_CONFIGURATION:
                     printf("    ACP: AVDTP_ACCEPTOR_W2_ANSWER_GET_CONFIGURATION\n");
                     stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_ANSWER_GET_CONFIGURATION;
                     break;
+                case AVDTP_SI_OPEN:
+                    if (stream_endpoint->state != AVDTP_STREAM_ENDPOINT_CONFIGURED){
+                        printf("    ACP: REJECT AVDTP_SI_OPEN, BAD_STATE\n");
+                        stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_REJECT_WITH_ERROR_CODE;
+                        connection->error_code = BAD_STATE;
+                        connection->reject_signal_identifier = connection->signaling_packet.signal_identifier;
+                        break;
+                    }
+                    printf("    ACP: AVDTP_STREAM_ENDPOINT_W2_ANSWER_OPEN_STREAM\n");
+                    stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_ANSWER_OPEN_STREAM;
+                    stream_endpoint->state = AVDTP_STREAM_ENDPOINT_W4_L2CAP_FOR_MEDIA_CONNECTED;
+                    break;
                 case AVDTP_SI_START:
-                    if (stream_endpoint->state != AVDTP_STREAM_ENDPOINT_OPENED) return 0;
+                    if (stream_endpoint->state != AVDTP_STREAM_ENDPOINT_OPENED){
+                        printf("    ACP: REJECT AVDTP_SI_OPEN, BAD_STATE\n");
+                        stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_REJECT_CATEGORY_WITH_ERROR_CODE;
+                        connection->error_code = BAD_STATE;
+                        connection->reject_signal_identifier = connection->signaling_packet.signal_identifier;
+                        break;
+                    }
                     printf("    ACP: AVDTP_ACCEPTOR_W2_ANSWER_START_STREAM\n");
                     stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_ANSWER_START_STREAM;
                     break;
@@ -534,18 +543,18 @@ int avdtp_acceptor_stream_config_subsm_run(avdtp_connection_t * connection, avdt
             avdtp_acceptor_send_accept_response(cid, trid, AVDTP_SI_ABORT);
             break;
         case AVDTP_ACCEPTOR_W2_REJECT_UNKNOWN_CMD:
-            printf("    ACP: REJECT\n");
+            printf("    ACP: DONE REJECT\n");
             connection->reject_signal_identifier = 0;
             avdtp_acceptor_send_response_reject(cid, reject_signal_identifier, trid);
             break;
         case AVDTP_ACCEPTOR_W2_REJECT_CATEGORY_WITH_ERROR_CODE:
-            printf("    ACP: REJECT CATEGORY\n");
+            printf("    ACP: DONE REJECT CATEGORY\n");
             connection->reject_service_category = 0;
             avdtp_acceptor_send_response_reject_service_category(cid, reject_signal_identifier, reject_service_category, error_code, trid);
             break;
     
         case AVDTP_ACCEPTOR_W2_REJECT_WITH_ERROR_CODE:
-            printf("    ACP: REJECT\n");
+            printf("    ACP: DONE REJECT\n");
             connection->reject_signal_identifier = 0;
             connection->error_code = 0;
             avdtp_acceptor_send_response_reject_with_error_code(cid, reject_signal_identifier, error_code, trid);

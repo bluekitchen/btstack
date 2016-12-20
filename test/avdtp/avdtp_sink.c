@@ -434,11 +434,11 @@ static void avdtp_sink_handle_can_send_now(avdtp_connection_t * connection, uint
             case AVDTP_SIGNALING_CONNECTION_ACCEPTOR_W2_REJECT_WITH_ERROR_CODE:
                 connection->acceptor_connection_state = AVDTP_SIGNALING_CONNECTION_ACCEPTOR_IDLE;
                 avdtp_acceptor_send_response_reject_with_error_code(connection->l2cap_signaling_cid, connection->reject_signal_identifier, connection->error_code, connection->acceptor_transaction_label);
-                break;
+                return;
             case AVDTP_SIGNALING_CONNECTION_ACCEPTOR_W2_REJECT_CATEGORY_WITH_ERROR_CODE:
                 connection->acceptor_connection_state = AVDTP_SIGNALING_CONNECTION_ACCEPTOR_IDLE;
                 avdtp_acceptor_send_response_reject_service_category(connection->l2cap_signaling_cid, connection->reject_signal_identifier, connection->reject_service_category, connection->error_code, connection->acceptor_transaction_label);
-                break;
+                return;
             default:
                 break;
         }
@@ -489,9 +489,6 @@ static int handle_l2cap_data_packet_for_signaling_connection(avdtp_connection_t 
     avdtp_read_signaling_header(&connection->signaling_packet, packet, size);
     switch (connection->signaling_packet.message_type){
         case AVDTP_CMD_MSG:
-            printf("AVDTP_CMD_MSG: ");
-            printf_hexdump(packet, size);
-            printf("\n");
             connection->acceptor_transaction_label = connection->signaling_packet.transaction_label;
             switch (connection->signaling_packet.signal_identifier){
                 case AVDTP_SI_DISCOVER:
@@ -503,7 +500,6 @@ static int handle_l2cap_data_packet_for_signaling_connection(avdtp_connection_t 
                 case AVDTP_SI_GET_ALL_CAPABILITIES:
                 case AVDTP_SI_SET_CONFIGURATION:
                 case AVDTP_SI_GET_CONFIGURATION:
-                case AVDTP_SI_OPEN:
                 case AVDTP_SI_START:
                 case AVDTP_SI_CLOSE:
                 case AVDTP_SI_ABORT:
@@ -514,7 +510,8 @@ static int handle_l2cap_data_packet_for_signaling_connection(avdtp_connection_t 
                         connection->error_code = BAD_ACP_SEID;
                         connection->acceptor_connection_state = AVDTP_SIGNALING_CONNECTION_ACCEPTOR_W2_REJECT_WITH_ERROR_CODE;
                         connection->reject_signal_identifier = connection->signaling_packet.signal_identifier;
-                        return 0;
+                        avdtp_sink_request_can_send_now_self(connection, connection->l2cap_signaling_cid);
+                        return 1;
                     }
                     return handle_l2cap_data_packet_for_stream_endpoint(connection, stream_endpoint, packet, size);
                 case AVDTP_SI_RECONFIGURE:
@@ -526,11 +523,24 @@ static int handle_l2cap_data_packet_for_signaling_connection(avdtp_connection_t 
                         connection->reject_service_category = 0;
                         connection->acceptor_connection_state = AVDTP_SIGNALING_CONNECTION_ACCEPTOR_W2_REJECT_CATEGORY_WITH_ERROR_CODE;
                         connection->reject_signal_identifier = connection->signaling_packet.signal_identifier;
-                        return 0;
+                        avdtp_sink_request_can_send_now_self(connection, connection->l2cap_signaling_cid);
+                        return 1;
                     }
                     return handle_l2cap_data_packet_for_stream_endpoint(connection, stream_endpoint, packet, size);
                 
-                    break;
+                case AVDTP_SI_OPEN:
+                    connection->query_seid  = packet[2] >> 2;
+                    stream_endpoint = get_avdtp_stream_endpoint_for_active_seid(connection->query_seid);
+                    if (!stream_endpoint){
+                        printf("    ACP: RESPONSE REJECT BAD_STATE\n");
+                        connection->error_code = BAD_STATE;
+                        connection->acceptor_connection_state = AVDTP_SIGNALING_CONNECTION_ACCEPTOR_W2_REJECT_WITH_ERROR_CODE;
+                        connection->reject_signal_identifier = connection->signaling_packet.signal_identifier;
+                        avdtp_sink_request_can_send_now_self(connection, connection->l2cap_signaling_cid);
+                        return 1;
+                    }
+                    return handle_l2cap_data_packet_for_stream_endpoint(connection, stream_endpoint, packet, size);
+                
                 case AVDTP_SI_SUSPEND:{
                     int i;
                     for (i=2; i<size; i++){
@@ -666,11 +676,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             stream_endpoint = get_avdtp_stream_endpoint_for_l2cap_cid(channel);
             if (!stream_endpoint){
                 if (!connection) break;
-                printf("avdtp L2CAP_DATA_PACKET: no stream enpoint for local cid 0x%02x found\n", channel);
-                connection->error_code = BAD_ACP_SEID;
-                connection->reject_signal_identifier = connection->signaling_packet.signal_identifier;
-                connection->acceptor_connection_state = AVDTP_SIGNALING_CONNECTION_ACCEPTOR_W2_REJECT_CATEGORY_WITH_ERROR_CODE;
-                avdtp_sink_request_can_send_now_self(connection, channel);
+                handle_l2cap_data_packet_for_signaling_connection(connection, packet, size);
                 break;
             }
 
