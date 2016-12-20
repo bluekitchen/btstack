@@ -2431,7 +2431,7 @@ static inline void isr_radio_state_close(void)
 	event_inactive(0, 0, 0, 0);
 
 	// clock_control_off(_radio.hf_clock, NULL);
-	clock_m16src_start(false);
+	clock_m16src_stop();
 
 	work_enable(WORK_TICKER_JOB0_IRQ);
 
