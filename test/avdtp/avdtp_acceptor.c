@@ -381,9 +381,45 @@ int avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, avdtp_st
                     }
                     break;
                 case AVDTP_SI_ABORT:
-                    printf("    ACP: AVDTP_ACCEPTOR_W2_ANSWER_ABORT_STREAM\n");
-                    stream_endpoint->state = AVDTP_STREAM_ENDPOINT_ABORTING;
-                    stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_ANSWER_ABORT_STREAM;
+                     switch (stream_endpoint->state){
+                        case AVDTP_STREAM_ENDPOINT_CONFIGURED:
+                        case AVDTP_STREAM_ENDPOINT_CLOSING:
+                        case AVDTP_STREAM_ENDPOINT_OPENED:
+                        case AVDTP_STREAM_ENDPOINT_STREAMING:
+                            printf("    ACP: AVDTP_ACCEPTOR_W2_ANSWER_ABORT_STREAM\n");
+                            stream_endpoint->state = AVDTP_STREAM_ENDPOINT_ABORTING;
+                            stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_ANSWER_ABORT_STREAM;
+                            break;
+                        default:
+                            printf("    ACP: AVDTP_SI_ABORT, bad state %d \n", stream_endpoint->state);
+                            stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_REJECT_WITH_ERROR_CODE;
+                            connection->error_code = BAD_STATE;
+                            connection->reject_signal_identifier = connection->signaling_packet.signal_identifier;
+                            break;
+                    }
+                    break;
+                case AVDTP_SI_SUSPEND:
+                    switch (stream_endpoint->state){
+                        case AVDTP_STREAM_ENDPOINT_OPENED:
+                        case AVDTP_STREAM_ENDPOINT_STREAMING:
+                            printf("    ACP: AVDTP_ACCEPTOR_W2_ANSWER_SUSPEND_STREAM\n");
+                            stream_endpoint->state = AVDTP_STREAM_ENDPOINT_OPENED;
+                            connection->num_suspended_seids--;
+                            if (connection->num_suspended_seids <= 0){
+                                printf("    ACP: AVDTP_ACCEPTOR_W2_ANSWER_SUSPEND_STREAM\n");
+                                stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_ANSWER_SUSPEND_STREAM;
+                            }
+                            break;
+                        default:
+                            printf("    ACP: AVDTP_SI_SUSPEND, bad state \n");
+                            stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_REJECT_CATEGORY_WITH_ERROR_CODE;
+                            connection->error_code = BAD_STATE;
+                            connection->reject_signal_identifier = connection->signaling_packet.signal_identifier;
+                            break;
+                    }
+
+                    //stream_endpoint->state = AVDTP_STREAM_ENDPOINT_SUSPENDING;
+                    //stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_SUSPEND_STREAM;
                     break;
                 default:
                     printf("    ACP: NOT IMPLEMENTED, Reject signal_identifier %02x\n", connection->signaling_packet.signal_identifier);
@@ -408,6 +444,13 @@ int avdtp_acceptor_send_response_reject_service_category(uint16_t cid,  avdtp_si
     command[1] = (uint8_t)identifier;
     command[2] = category;
     command[3] = error_code;
+    return l2cap_send(cid, command, sizeof(command));
+}
+
+int avdtp_acceptor_send_response_general_reject(uint16_t cid, avdtp_signal_identifier_t identifier, uint8_t transaction_label){
+    uint8_t command[2];
+    command[0] = avdtp_header(transaction_label, AVDTP_SINGLE_PACKET, AVDTP_GENERAL_REJECT_MSG);
+    command[1] = (uint8_t)identifier;
     return l2cap_send(cid, command, sizeof(command));
 }
 
@@ -532,6 +575,7 @@ int avdtp_acceptor_stream_config_subsm_run(avdtp_connection_t * connection, avdt
         case AVDTP_ACCEPTOR_W2_ANSWER_START_STREAM:
             printf("    ACP: DONE \n");
             printf("    -> AVDTP_STREAM_ENDPOINT_STREAMING \n");
+            stream_endpoint->state = AVDTP_STREAM_ENDPOINT_STREAMING;
             avdtp_acceptor_send_accept_response(cid, trid, AVDTP_SI_START);
             break;
         case AVDTP_ACCEPTOR_W2_ANSWER_CLOSE_STREAM:
@@ -541,6 +585,11 @@ int avdtp_acceptor_stream_config_subsm_run(avdtp_connection_t * connection, avdt
         case AVDTP_ACCEPTOR_W2_ANSWER_ABORT_STREAM:
             printf("    ACP: DONE\n");
             avdtp_acceptor_send_accept_response(cid, trid, AVDTP_SI_ABORT);
+            break;
+        case AVDTP_ACCEPTOR_W2_ANSWER_SUSPEND_STREAM:
+            printf("    ACP: DONE\n");
+            stream_endpoint->state = AVDTP_STREAM_ENDPOINT_OPENED;
+            avdtp_acceptor_send_accept_response(cid, trid, AVDTP_SI_SUSPEND);
             break;
         case AVDTP_ACCEPTOR_W2_REJECT_UNKNOWN_CMD:
             printf("    ACP: DONE REJECT\n");

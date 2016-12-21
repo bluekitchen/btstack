@@ -351,12 +351,12 @@ static avdtp_stream_endpoint_t * get_avdtp_stream_endpoint_for_connection(avdtp_
     return NULL;
 }
 
-static int avdtp_acceptor_send_accept_response(uint16_t cid,  avdtp_signal_identifier_t identifier, uint8_t transaction_label){
-    uint8_t command[2];
-    command[0] = avdtp_header(transaction_label, AVDTP_SINGLE_PACKET, AVDTP_RESPONSE_ACCEPT_MSG);
-    command[1] = (uint8_t)identifier;
-    return l2cap_send(cid, command, sizeof(command));
-}
+// static int avdtp_acceptor_send_accept_response(uint16_t cid,  avdtp_signal_identifier_t identifier, uint8_t transaction_label){
+//     uint8_t command[2];
+//     command[0] = avdtp_header(transaction_label, AVDTP_SINGLE_PACKET, AVDTP_RESPONSE_ACCEPT_MSG);
+//     command[1] = (uint8_t)identifier;
+//     return l2cap_send(cid, command, sizeof(command));
+// }
 
 static int avdtp_send_seps_response(uint16_t cid, uint8_t transaction_label, avdtp_stream_endpoint_t * endpoints){
     uint8_t command[2+2*MAX_NUM_SEPS];
@@ -417,12 +417,12 @@ static void avdtp_sink_handle_can_send_now(avdtp_connection_t * connection, uint
     } else if (connection->wait_to_send_self){
         connection->wait_to_send_self = 0;
 
-        if (connection->confirm_suspend){
-            printf(" -> STREAMS SUSPENDED\n");
-            connection->confirm_suspend = 0;
-            avdtp_acceptor_send_accept_response(connection->l2cap_signaling_cid, AVDTP_SI_SUSPEND, connection->acceptor_transaction_label);
-            return;
-        }
+        // if (connection->confirm_suspend){
+        //     printf(" -> STREAMS SUSPENDED\n");
+        //     connection->confirm_suspend = 0;
+        //     avdtp_acceptor_send_accept_response(connection->l2cap_signaling_cid, AVDTP_SI_SUSPEND, connection->acceptor_transaction_label);
+        //     return;
+        // }
 
         switch (connection->acceptor_connection_state){
             case AVDTP_SIGNALING_CONNECTION_ACCEPTOR_W2_ANSWER_DISCOVER_SEPS:
@@ -439,6 +439,9 @@ static void avdtp_sink_handle_can_send_now(avdtp_connection_t * connection, uint
                 connection->acceptor_connection_state = AVDTP_SIGNALING_CONNECTION_ACCEPTOR_IDLE;
                 avdtp_acceptor_send_response_reject_service_category(connection->l2cap_signaling_cid, connection->reject_signal_identifier, connection->reject_service_category, connection->error_code, connection->acceptor_transaction_label);
                 return;
+            case AVDTP_SIGNALING_CONNECTION_ACCEPTOR_W2_GENERAL_REJECT_WITH_ERROR_CODE:
+                connection->acceptor_connection_state = AVDTP_SIGNALING_CONNECTION_ACCEPTOR_IDLE;
+                avdtp_acceptor_send_response_general_reject(connection->l2cap_signaling_cid, connection->reject_signal_identifier, connection->acceptor_transaction_label);
             default:
                 break;
         }
@@ -464,7 +467,7 @@ static void avdtp_sink_handle_can_send_now(avdtp_connection_t * connection, uint
 /* END: tracking can send now requests pro l2cap cid */
 static int handle_l2cap_data_packet_for_stream_endpoint(avdtp_connection_t * connection, avdtp_stream_endpoint_t * stream_endpoint, uint8_t *packet, uint16_t size){
     avdtp_read_signaling_header(&connection->signaling_packet, packet, size);
-    
+
     if (connection->signaling_packet.message_type == AVDTP_CMD_MSG){
         if (avdtp_acceptor_stream_config_subsm(connection, stream_endpoint, packet, size)){
             avdtp_sink_request_can_send_now_acceptor(connection, connection->l2cap_signaling_cid);
@@ -506,7 +509,7 @@ static int handle_l2cap_data_packet_for_signaling_connection(avdtp_connection_t 
                     connection->query_seid  = packet[2] >> 2;
                     stream_endpoint = get_avdtp_stream_endpoint_for_active_seid(connection->query_seid);
                     if (!stream_endpoint){
-                        printf("    ACP: RESPONSE REJECT BAD_ACP_SEID\n");
+                        printf("    ACP: cmd %d - RESPONSE REJECT BAD_ACP_SEID\n", connection->signaling_packet.signal_identifier);
                         connection->error_code = BAD_ACP_SEID;
                         connection->acceptor_connection_state = AVDTP_SIGNALING_CONNECTION_ACCEPTOR_W2_REJECT_WITH_ERROR_CODE;
                         connection->reject_signal_identifier = connection->signaling_packet.signal_identifier;
@@ -518,7 +521,7 @@ static int handle_l2cap_data_packet_for_signaling_connection(avdtp_connection_t 
                     connection->query_seid  = packet[2] >> 2;
                     stream_endpoint = get_avdtp_stream_endpoint_for_active_seid(connection->query_seid);
                     if (!stream_endpoint){
-                        printf("    ACP: CATEGORY RESPONSE REJECT BAD_ACP_SEID\n");
+                        printf("    ACP: AVDTP_SI_RECONFIGURE - CATEGORY RESPONSE REJECT BAD_ACP_SEID\n");
                         connection->error_code = BAD_ACP_SEID;
                         connection->reject_service_category = 0;
                         connection->acceptor_connection_state = AVDTP_SIGNALING_CONNECTION_ACCEPTOR_W2_REJECT_CATEGORY_WITH_ERROR_CODE;
@@ -532,7 +535,7 @@ static int handle_l2cap_data_packet_for_signaling_connection(avdtp_connection_t 
                     connection->query_seid  = packet[2] >> 2;
                     stream_endpoint = get_avdtp_stream_endpoint_for_active_seid(connection->query_seid);
                     if (!stream_endpoint){
-                        printf("    ACP: RESPONSE REJECT BAD_STATE\n");
+                        printf("    ACP: AVDTP_SI_OPEN - RESPONSE REJECT BAD_STATE\n");
                         connection->error_code = BAD_STATE;
                         connection->acceptor_connection_state = AVDTP_SIGNALING_CONNECTION_ACCEPTOR_W2_REJECT_WITH_ERROR_CODE;
                         connection->reject_signal_identifier = connection->signaling_packet.signal_identifier;
@@ -543,18 +546,49 @@ static int handle_l2cap_data_packet_for_signaling_connection(avdtp_connection_t 
                 
                 case AVDTP_SI_SUSPEND:{
                     int i;
+                    int request_to_send = 0;
+                    printf("    ACP: AVDTP_SI_SUSPEND seids: ");
+                    connection->num_suspended_seids = 0;
+
                     for (i=2; i<size; i++){
-                        stream_endpoint = get_avdtp_stream_endpoint_for_active_seid(packet[i] >> 2);
-                        if (!stream_endpoint) continue;
-                        stream_endpoint->state = AVDTP_STREAM_ENDPOINT_OPENED;
+                        connection->suspended_seids[connection->num_suspended_seids] = packet[i] >> 2;
+                        printf("%d, \n", connection->suspended_seids[connection->num_suspended_seids]);
+                        connection->num_suspended_seids++;
                     }
-                    connection->confirm_suspend = 1;
-                    avdtp_sink_request_can_send_now_self(connection, connection->l2cap_signaling_cid);
-                    return 1;
+                    
+                    if (connection->num_suspended_seids == 0) {
+                        printf("    ACP: CATEGORY RESPONSE REJECT BAD_ACP_SEID\n");
+                        connection->error_code = BAD_ACP_SEID;
+                        connection->reject_service_category = connection->query_seid;
+                        connection->acceptor_connection_state = AVDTP_SIGNALING_CONNECTION_ACCEPTOR_W2_REJECT_CATEGORY_WITH_ERROR_CODE;
+                        connection->reject_signal_identifier = connection->signaling_packet.signal_identifier;
+                        avdtp_sink_request_can_send_now_self(connection, connection->l2cap_signaling_cid);
+                        return 1;
+                    }
+                    // deal with first susspended seid 
+                    for (i = 0; i < connection->num_suspended_seids; i++){
+                        connection->query_seid = connection->suspended_seids[i];
+                        stream_endpoint = get_avdtp_stream_endpoint_for_active_seid(connection->query_seid);
+                        if (!stream_endpoint){
+                            printf("    ACP: stream_endpoint not found, CATEGORY RESPONSE REJECT BAD_ACP_SEID\n");
+                            connection->error_code = BAD_ACP_SEID;
+                            connection->reject_service_category = connection->query_seid;
+                            connection->acceptor_connection_state = AVDTP_SIGNALING_CONNECTION_ACCEPTOR_W2_REJECT_CATEGORY_WITH_ERROR_CODE;
+                            connection->reject_signal_identifier = connection->signaling_packet.signal_identifier;
+                            avdtp_sink_request_can_send_now_self(connection, connection->l2cap_signaling_cid);
+                            connection->num_suspended_seids = 0;
+                            return 1;
+                        }
+                        request_to_send = handle_l2cap_data_packet_for_stream_endpoint(connection, stream_endpoint, packet, size);
+                    }
+                    return request_to_send;
                 }
                 default:
-                    printf("AVDTP_CMD_MSG signal %d not implemented\n", connection->signaling_packet.signal_identifier);
-                    break;
+                    connection->acceptor_connection_state = AVDTP_SIGNALING_CONNECTION_ACCEPTOR_W2_GENERAL_REJECT_WITH_ERROR_CODE;
+                    connection->reject_signal_identifier = connection->signaling_packet.signal_identifier;
+                    avdtp_sink_request_can_send_now_self(connection, connection->l2cap_signaling_cid);
+                    printf("AVDTP_CMD_MSG signal %d not implemented, general reject\n", connection->signaling_packet.signal_identifier);
+                    return 1;
             }
             break;
         case AVDTP_RESPONSE_ACCEPT_MSG:
