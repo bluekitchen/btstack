@@ -483,15 +483,17 @@ static int handle_l2cap_data_packet_for_stream_endpoint(avdtp_connection_t * con
 }
 
 static int handle_l2cap_data_packet_for_signaling_connection(avdtp_connection_t * connection, uint8_t *packet, uint16_t size){
-    if (size < 2) {
-        log_error("l2cap data packet too small");
-        return 0;
-    }
-                    
     avdtp_stream_endpoint_t * stream_endpoint = NULL;
     avdtp_read_signaling_header(&connection->signaling_packet, packet, size);
     switch (connection->signaling_packet.message_type){
         case AVDTP_CMD_MSG:
+            if (size < 3) {
+                connection->error_code = BAD_LENGTH;
+                connection->acceptor_connection_state = AVDTP_SIGNALING_CONNECTION_ACCEPTOR_W2_REJECT_WITH_ERROR_CODE;
+                connection->reject_signal_identifier = connection->signaling_packet.signal_identifier;
+                avdtp_sink_request_can_send_now_self(connection, connection->l2cap_signaling_cid);
+                return 1;
+            }
             connection->acceptor_transaction_label = connection->signaling_packet.transaction_label;
             switch (connection->signaling_packet.signal_identifier){
                 case AVDTP_SI_DISCOVER:
