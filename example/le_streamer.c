@@ -135,7 +135,7 @@ static void test_reset(void){
 }
 
 static void test_track_sent(int bytes_sent){
-    test_data_sent += test_data_len;
+    test_data_sent += bytes_sent;
     // evaluate
     uint32_t now = btstack_run_loop_get_time_ms();
     uint32_t time_passed = now - test_data_start;
@@ -160,6 +160,9 @@ static void test_track_sent(int bytes_sent){
 
 /* LISTING_START(packetHandler): Packet Handler */
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(channel);
+    UNUSED(size);
+    
     int mtu;
     switch (packet_type) {
         case HCI_EVENT_PACKET:
@@ -229,6 +232,9 @@ static void streamer(void){
 
 /* LISTING_START(attWrite): ATT Write */
 static int att_write_callback(hci_con_handle_t con_handle, uint16_t att_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size){
+    UNUSED(con_handle);
+    UNUSED(offset);
+
     // printf("att_write_callback att_handle %04x, transaction mode %u\n", att_handle, transaction_mode);
     if (transaction_mode != ATT_TRANSACTION_MODE_NONE) return 0;
     switch(att_handle){

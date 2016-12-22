@@ -231,6 +231,9 @@ static void dump_advertisement_data(const uint8_t * adv_data, uint8_t adv_size){
 /* LISTING_START(GAPLEAdvPacketHandler): Scanning and receiving advertisements */
 
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(channel);
+    UNUSED(size);
+
     if (packet_type != HCI_EVENT_PACKET) return;
     
     switch (hci_event_packet_get_type(packet)) {

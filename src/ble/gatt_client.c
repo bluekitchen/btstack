@@ -682,6 +682,7 @@ static void report_gatt_long_characteristic_value_blob(gatt_client_t * periphera
 }
 
 static void report_gatt_characteristic_descriptor(gatt_client_t * peripheral, uint16_t descriptor_handle, uint8_t *value, uint16_t value_length, uint16_t value_offset){
+    UNUSED(value_offset);
     uint8_t * packet = setup_characteristic_value_packet(GATT_EVENT_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT, peripheral->con_handle, descriptor_handle, value, value_length);
     emit_event_new(peripheral->callback, packet, value_length + 8);
 }
@@ -996,6 +997,9 @@ static void gatt_client_report_error_if_pending(gatt_client_t *peripheral, uint8
 }
 
 static void gatt_client_hci_event_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(channel);
+    UNUSED(size);
+    
     if (packet_type != HCI_EVENT_PACKET) return;
 
     switch (hci_event_packet_get_type(packet)) {

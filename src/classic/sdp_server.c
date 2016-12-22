@@ -448,6 +448,8 @@ static void sdp_respond(void){
 
 // we assume that we don't get two requests in a row
 static void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(size);
+    
 	uint16_t transaction_id;
     SDP_PDU_ID_t pdu_id;
     uint16_t remote_mtu;

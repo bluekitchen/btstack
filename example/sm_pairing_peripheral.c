@@ -147,6 +147,9 @@ static void sm_peripheral_setup(void){
 
 /* LISTING_START(packetHandler): Packet Handler */
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(channel);
+    UNUSED(size);
+
     bd_addr_t addr;
     switch (packet_type) {
         case HCI_EVENT_PACKET:

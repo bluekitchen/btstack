@@ -60,6 +60,9 @@ static uint16_t battery_value_handle_client_configuration;
 
 
 static uint16_t battery_service_read_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
+	UNUSED(offset);
+	UNUSED(buffer_size);
+
 	if (attribute_handle == battery_value_handle_value){
 		if (buffer) {
 			buffer[0] = battery_value;
@@ -77,6 +80,11 @@ static uint16_t battery_service_read_callback(hci_con_handle_t con_handle, uint1
 }
 
 static int battery_service_write_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size){
+	UNUSED(con_handle);
+	UNUSED(transaction_mode);
+	UNUSED(offset);
+	UNUSED(buffer_size);
+
 	if (attribute_handle == battery_value_handle_client_configuration){
 		battery_value_client_configuration = little_endian_read_16(buffer, 0);
 	}

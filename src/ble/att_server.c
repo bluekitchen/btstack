@@ -132,6 +132,9 @@ static void att_handle_value_indication_timeout(btstack_timer_source_t *ts){
 }
 
 static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+
+    UNUSED(channel);
+    UNUSED(size);
     
     att_server_t * att_server;
     hci_con_handle_t con_handle;

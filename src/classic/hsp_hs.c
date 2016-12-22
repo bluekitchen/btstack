@@ -124,7 +124,12 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 static void handle_query_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
 static btstack_packet_handler_t hsp_hs_callback;
-static void dummy_notify(uint8_t packet_type, uint16_t channel, uint8_t * event, uint16_t size){}
+static void dummy_notify(uint8_t packet_type, uint16_t channel, uint8_t * event, uint16_t size){
+    UNUSED(packet_type);    
+    UNUSED(channel);    
+    UNUSED(event);    
+    UNUSED(size);    
+}
 
 void hsp_hs_register_packet_handler(btstack_packet_handler_t callback){
     if (callback == NULL){
@@ -442,6 +447,8 @@ static void hsp_run(void){
 
 
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(channel);
+
     // printf("packet_handler type %u, packet[0] %x\n", packet_type, packet[0]);
     if (packet_type == RFCOMM_DATA_PACKET){
         // skip over leading newline
@@ -598,6 +605,10 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 }
 
 static void handle_query_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(packet_type);
+    UNUSED(channel);
+    UNUSED(size);
+
     switch (hci_event_packet_get_type(packet)){
         case SDP_EVENT_QUERY_RFCOMM_SERVICE:
             channel_nr = sdp_event_query_rfcomm_service_get_rfcomm_channel(packet);

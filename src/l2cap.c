@@ -197,6 +197,8 @@ void l2cap_register_packet_handler(void (*handler)(uint8_t packet_type, uint16_t
 }
 
 void l2cap_request_can_send_fix_channel_now_event(hci_con_handle_t con_handle, uint16_t channel_id){
+    UNUSED(con_handle);
+
     int index = l2cap_fixed_channel_table_index_for_channel_id(channel_id);
     if (index < 0) return;
     fixed_channels[index].waiting_for_can_send_now = 1;
@@ -204,6 +206,8 @@ void l2cap_request_can_send_fix_channel_now_event(hci_con_handle_t con_handle, u
 }
 
 int  l2cap_can_send_fixed_channel_packet_now(hci_con_handle_t con_handle, uint16_t channel_id){
+    UNUSED(channel_id);
+
     return hci_can_send_acl_packet_now(con_handle);
 }
 
@@ -1070,6 +1074,10 @@ static void l2cap_notify_channel_can_send(void){
 }
 
 static void l2cap_hci_event_handler(uint8_t packet_type, uint16_t cid, uint8_t *packet, uint16_t size){
+
+    UNUSED(packet_type);
+    UNUSED(cid);
+    UNUSED(size);
     
     bd_addr_t address;
     hci_con_handle_t handle;
@@ -1842,7 +1850,9 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
 #endif
 
 static void l2cap_acl_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size ){
-        
+    UNUSED(packet_type);
+    UNUSED(channel);
+            
     l2cap_channel_t * l2cap_channel;
     UNUSED(l2cap_channel);
 

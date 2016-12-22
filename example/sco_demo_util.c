@@ -208,6 +208,9 @@ static int patestCallback( const void *inputBuffer, void *outputBuffer,
 #endif
 
 static void handle_pcm_data(int16_t * data, int num_samples, int num_channels, int sample_rate, void * context){
+    UNUSED(context);
+    UNUSED(sample_rate);
+
     // printf("handle_pcm_data num samples %u, sample rate %d\n", num_samples, num_channels);
 #ifdef USE_PORTAUDIO
     if (!pa_stream_started && btstack_ring_buffer_bytes_available(&ring_buffer) >= MSBC_PREBUFFER_BYTES){
@@ -221,6 +224,8 @@ static void handle_pcm_data(int16_t * data, int num_samples, int num_channels, i
     }
     btstack_ring_buffer_write(&ring_buffer, (uint8_t *)data, num_samples*num_channels*2);
     // printf("bytes avail after write: %d\n", btstack_ring_buffer_bytes_available(&ring_buffer));
+#else
+    UNUSED(num_channels);
 #endif 
 
     if (!num_samples_to_write) return;
