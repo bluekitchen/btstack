@@ -3688,6 +3688,10 @@ void sm_use_fixed_ec_keypair(uint8_t * qx, uint8_t * qy, uint8_t * d){
     memcpy(ec_d, d, 32);
     sm_have_ec_keypair = 1;
     ec_key_generation_state = EC_KEY_GENERATION_DONE;
+#else
+    UNUSED(qx);
+    UNUSED(qy);
+    UNUSED(d);
 #endif
 }
 
