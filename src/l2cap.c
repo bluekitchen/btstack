@@ -1088,7 +1088,8 @@ static void l2cap_hci_event_handler(uint8_t packet_type, uint16_t cid, uint8_t *
     UNUSED(address);
     UNUSED(hci_con_used);
     UNUSED(it);
-
+    UNUSED(handle);
+    
     switch(hci_event_packet_get_type(packet)){
             
         // Notify channel packet handler if they can send now
