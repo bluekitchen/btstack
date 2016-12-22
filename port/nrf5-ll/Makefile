@@ -19,6 +19,7 @@ SRCS = \
 	../../src/l2cap_signaling.c \
 	le_counter.c \
 	hci-ll.c \
+	port.c \
 	retarget_printf.c \
 
 INCLUDES = \
