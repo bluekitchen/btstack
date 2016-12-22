@@ -455,6 +455,10 @@ void hfp_create_sdp_record(uint8_t * service, uint32_t service_record_handle, ui
 static hfp_connection_t * connection_doing_sdp_query = NULL;
 
 static void handle_query_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(packet_type);
+    UNUSED(channel);
+    UNUSED(size);
+
     hfp_connection_t * hfp_connection = connection_doing_sdp_query;
     
     if ( hfp_connection->state != HFP_W4_SDP_QUERY_COMPLETE) return;
@@ -528,6 +532,8 @@ static void hfp_handle_failed_sco_connection(uint8_t status){
 
 
 void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(channel);
+
     bd_addr_t event_addr;
     uint16_t rfcomm_cid, handle;
     hfp_connection_t * hfp_connection = NULL;

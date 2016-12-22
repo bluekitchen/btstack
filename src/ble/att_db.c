@@ -323,6 +323,8 @@ static uint8_t att_validate_security(att_connection_t * att_connection, att_iter
 static uint16_t handle_exchange_mtu_request(att_connection_t * att_connection, uint8_t * request_buffer,  uint16_t request_len,
                                          uint8_t * response_buffer){
 
+    UNUSED(request_len);
+
     uint16_t client_rx_mtu = little_endian_read_16(request_buffer, 1);
     
     // find min(local max mtu, remote mtu) and use as mtu for this connection
@@ -346,6 +348,8 @@ static uint16_t handle_exchange_mtu_request(att_connection_t * att_connection, u
 static uint16_t handle_find_information_request2(att_connection_t * att_connection, uint8_t * response_buffer, uint16_t response_buffer_size,
                                            uint16_t start_handle, uint16_t end_handle){
     
+    UNUSED(att_connection);
+
     log_info("ATT_FIND_INFORMATION_REQUEST: from %04X to %04X", start_handle, end_handle);
     uint8_t request_type = ATT_FIND_INFORMATION_REQUEST;
     
@@ -404,6 +408,7 @@ static uint16_t handle_find_information_request2(att_connection_t * att_connecti
 
 static uint16_t handle_find_information_request(att_connection_t * att_connection, uint8_t * request_buffer,  uint16_t request_len,
                                          uint8_t * response_buffer, uint16_t response_buffer_size){
+    UNUSED(request_len);
     return handle_find_information_request2(att_connection, response_buffer, response_buffer_size, little_endian_read_16(request_buffer, 1), little_endian_read_16(request_buffer, 3));
 }
 
@@ -423,6 +428,8 @@ static uint16_t handle_find_by_type_value_request2(att_connection_t * att_connec
                                            uint16_t start_handle, uint16_t end_handle,
                                            uint16_t attribute_type, uint16_t attribute_len, uint8_t* attribute_value){
     
+    UNUSED(att_connection);
+
     log_info("ATT_FIND_BY_TYPE_VALUE_REQUEST: from %04X to %04X, type %04X, value: ", start_handle, end_handle, attribute_type);
     log_info_hexdump(attribute_value, attribute_len);
     uint8_t request_type = ATT_FIND_BY_TYPE_VALUE_REQUEST;
@@ -635,6 +642,7 @@ static uint16_t handle_read_request2(att_connection_t * att_connection, uint8_t 
 
 static uint16_t handle_read_request(att_connection_t * att_connection, uint8_t * request_buffer,  uint16_t request_len,
                              uint8_t * response_buffer, uint16_t response_buffer_size){
+    UNUSED(request_len);
     return handle_read_request2(att_connection, response_buffer, response_buffer_size, little_endian_read_16(request_buffer, 1));
 }
 
@@ -684,6 +692,7 @@ static uint16_t handle_read_blob_request2(att_connection_t * att_connection, uin
 
 static uint16_t handle_read_blob_request(att_connection_t * att_connection, uint8_t * request_buffer,  uint16_t request_len,
                                   uint8_t * response_buffer, uint16_t response_buffer_size){
+    UNUSED(request_len);
     return handle_read_blob_request2(att_connection, response_buffer, response_buffer_size, little_endian_read_16(request_buffer, 1), little_endian_read_16(request_buffer, 3));
 }
 
@@ -773,6 +782,8 @@ static uint16_t handle_read_by_group_type_request2(att_connection_t * att_connec
                                             uint16_t start_handle, uint16_t end_handle,
                                             uint16_t attribute_type_len, uint8_t * attribute_type){
     
+    UNUSED(att_connection);
+
     log_info("ATT_READ_BY_GROUP_TYPE_REQUEST: from %04X to %04X, buffer size %u, type: ", start_handle, end_handle, response_buffer_size);
     log_info_hexdump(attribute_type, attribute_type_len);
     uint8_t request_type = ATT_READ_BY_GROUP_TYPE_REQUEST;
@@ -876,6 +887,8 @@ static uint16_t handle_read_by_group_type_request(att_connection_t * att_connect
 static uint16_t handle_write_request(att_connection_t * att_connection, uint8_t * request_buffer,  uint16_t request_len,
                               uint8_t * response_buffer, uint16_t response_buffer_size){
 
+    UNUSED(response_buffer_size);
+
     uint8_t request_type = ATT_WRITE_REQUEST;
 
     uint16_t handle = little_endian_read_16(request_buffer, 1);
@@ -911,6 +924,8 @@ static uint16_t handle_write_request(att_connection_t * att_connection, uint8_t 
 // MARK: ATT_PREPARE_WRITE_REQUEST 0x16
 static uint16_t handle_prepare_write_request(att_connection_t * att_connection, uint8_t * request_buffer,  uint16_t request_len,
                                       uint8_t * response_buffer, uint16_t response_buffer_size){
+
+    UNUSED(response_buffer_size);
 
     uint8_t request_type = ATT_PREPARE_WRITE_REQUEST;
 
@@ -981,6 +996,9 @@ void att_clear_transaction_queue(att_connection_t * att_connection){
 static uint16_t handle_execute_write_request(att_connection_t * att_connection, uint8_t * request_buffer,  uint16_t request_len,
                                       uint8_t * response_buffer, uint16_t response_buffer_size){
 
+    UNUSED(request_len);
+    UNUSED(response_buffer_size);
+    
     uint8_t request_type = ATT_EXECUTE_WRITE_REQUEST;
     if (request_buffer[1]) {
         // deliver queued errors
@@ -1004,6 +1022,9 @@ static uint16_t handle_execute_write_request(att_connection_t * att_connection, 
 // "No Error Response or Write Response shall be sent in response to this command"
 static void handle_write_command(att_connection_t * att_connection, uint8_t * request_buffer,  uint16_t request_len,
                                            uint8_t * response_buffer, uint16_t response_buffer_size){
+
+    UNUSED(response_buffer);
+    UNUSED(response_buffer_size);
 
     uint16_t handle = little_endian_read_16(request_buffer, 1);
     att_write_callback_t callback = att_write_callback_for_handle(handle);

@@ -859,6 +859,9 @@ void gap_advertisements_get_address(uint8_t * addr_type, bd_addr_t  addr){
 
 #ifdef ENABLE_BLE
 void le_handle_advertisement_report(uint8_t *packet, int size){
+
+    UNUSED(size);
+
     int offset = 3;
     int num_reports = packet[offset];
     offset += 1;
@@ -896,6 +899,8 @@ static uint32_t hci_transport_uart_get_main_baud_rate(void){
 }
 
 static void hci_initialization_timeout_handler(btstack_timer_source_t * ds){
+    UNUSED(ds);
+
     switch (hci_stack->substate){
         case HCI_INIT_W4_SEND_RESET:
             log_info("Resend HCI Reset");
@@ -1168,6 +1173,8 @@ static void hci_init_done(void){
 }
 
 static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
+    UNUSED(size);
+    
     uint8_t command_completed = 0;
 
     if (hci_event_packet_get_type(packet) == HCI_EVENT_COMMAND_COMPLETE){

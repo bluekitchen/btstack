@@ -436,6 +436,8 @@ static int hfp_ag_retrieve_indicators_status_cmd(uint16_t cid){
 }
 
 static int hfp_ag_set_indicator_status_update_cmd(uint16_t cid, uint8_t activate){
+    UNUSED(activate);
+
     // AT\r\n%s:3,0,0,%d\r\n
     return hfp_ag_ok(cid);
 }
@@ -1815,6 +1817,8 @@ static hfp_generic_status_indicator_t *get_hf_indicator_by_number(int number){
 }
 
 static void hfp_handle_rfcomm_data(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(packet_type);
+    
     hfp_connection_t * hfp_connection = get_hfp_connection_context_for_rfcomm_cid(channel);
     if (!hfp_connection) return;
     

@@ -129,6 +129,9 @@ static void sm_pairing_central_setup(void){
 /* LISTING_START(GAPLEAdvPacketHandler): Scanning and receiving advertisements */
 
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(channel);
+    UNUSED(size);
+
     if (packet_type != HCI_EVENT_PACKET) return;
     hci_con_handle_t con_handle;
 
