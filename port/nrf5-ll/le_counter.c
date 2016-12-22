@@ -53,6 +53,7 @@
 #include "le_counter.h"
 #include "btstack.h"
 #include "ble/gatt-service/battery_service_server.h"
+#include "util.h"
 
 #define HEARTBEAT_PERIOD_MS 1000
 
@@ -110,8 +111,6 @@ static void le_counter_setup(void){
     // setup battery service
     battery_service_server_init(battery);
 
-    gap_random_address_set_mode(GAP_RANDOM_ADDRESS_RESOLVABLE);
-
     // setup advertisements
     uint16_t adv_int_min = 0x0030;
     uint16_t adv_int_max = 0x0030;
@@ -141,12 +140,13 @@ static void le_counter_setup(void){
 
  /* LISTING_START(heartbeat): Hearbeat Handler */
 static int  counter = 0;
-static char counter_string[] = "BTstack Counter";
-static int  counter_string_len = sizeof(counter_string);
+static char counter_string[30];
+static int  counter_string_len;
 
 static void beat(void){
     counter++;
-    // counter_string_len = sprintf(counter_string, "BTstack counter %04u", counter);
+    util_sprintf(counter_string, "BTstack counter %04u", counter);
+    counter_string_len = strlen(counter_string);
     puts(counter_string);
 }
 
@@ -178,6 +178,9 @@ static void heartbeat_handler(struct btstack_timer_source *ts){
 
 /* LISTING_START(packetHandler): Packet Handler */
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(channel);
+    UNUSED(size);
+
     switch (packet_type) {
         case HCI_EVENT_PACKET:
             switch (hci_event_packet_get_type(packet)) {
@@ -209,6 +212,8 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 // - if buffer != NULL, copy data and return number bytes copied
 // @param offset defines start of attribute value
 static uint16_t att_read_callback(hci_con_handle_t connection_handle, uint16_t att_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
+    UNUSED(connection_handle);
+
     if (att_handle == ATT_CHARACTERISTIC_0000FF11_0000_1000_8000_00805F9B34FB_01_VALUE_HANDLE){
         if (buffer){
             memcpy(buffer, &counter_string[offset], buffer_size);
@@ -232,6 +237,10 @@ static uint16_t att_read_callback(hci_con_handle_t connection_handle, uint16_t a
 
 /* LISTING_START(attWrite): ATT Write */
 static int att_write_callback(hci_con_handle_t connection_handle, uint16_t att_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size){
+    UNUSED(transaction_mode);
+    UNUSED(offset);
+    UNUSED(buffer_size);
+    
     if (att_handle != ATT_CHARACTERISTIC_0000FF11_0000_1000_8000_00805F9B34FB_01_CLIENT_CONFIGURATION_HANDLE) return 0;
     le_notification_enabled = little_endian_read_16(buffer, 0) == GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION;
     con_handle = connection_handle;
