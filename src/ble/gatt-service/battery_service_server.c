@@ -93,8 +93,8 @@ void battery_service_server_init(uint8_t value){
 	battery_value = value;
 
 	// get service handle range
-	uint16_t start_handle;
-	uint16_t end_handle;
+	uint16_t start_handle = 0;
+	uint16_t end_handle   = 0xfff;
 	int service_found = gatt_server_get_get_handle_range_for_service_with_uuid16(ORG_BLUETOOTH_SERVICE_BATTERY_SERVICE, &start_handle, &end_handle);
 	if (!service_found) return;
 
