@@ -1130,8 +1130,8 @@ static void l2cap_hci_event_handler(uint8_t packet_type, uint16_t cid, uint8_t *
         // handle disconnection complete events
         case HCI_EVENT_DISCONNECTION_COMPLETE:
             // send l2cap disconnect events for all channels on this handle and free them
-            handle = little_endian_read_16(packet, 3);
 #ifdef ENABLE_CLASSIC
+            handle = little_endian_read_16(packet, 3);
             btstack_linked_list_iterator_init(&it, &l2cap_channels);
             while (btstack_linked_list_iterator_has_next(&it)){
                 l2cap_channel_t * channel = (l2cap_channel_t *) btstack_linked_list_iterator_next(&it);
@@ -1143,6 +1143,7 @@ static void l2cap_hci_event_handler(uint8_t packet_type, uint16_t cid, uint8_t *
             }
 #endif
 #ifdef ENABLE_LE_DATA_CHANNELS
+            handle = little_endian_read_16(packet, 3);
             btstack_linked_list_iterator_init(&it, &l2cap_le_channels);
             while (btstack_linked_list_iterator_has_next(&it)){
                 l2cap_channel_t * channel = (l2cap_channel_t *) btstack_linked_list_iterator_next(&it);
