@@ -36,6 +36,7 @@ static btstack_linked_list_t timers;
  * @param transport_config
  */
 static void transport_init(const void *transport_config){
+    UNUSED(transport_config);
 }
 
 /**
@@ -57,13 +58,6 @@ static int transport_close(void){
  */
 static void transport_register_packet_handler(void (*handler)(uint8_t packet_type, uint8_t *packet, uint16_t size)){
     transport_packet_handler = handler;
-}
-
-static void send_hardware_error(uint8_t error_code){
-    // hci_outgoing_event[0] = HCI_EVENT_HARDWARE_ERROR;
-    // hci_outgoing_event[1] = 1;
-    // hci_outgoing_event[2] = error_code;
-    // hci_outgoing_event_ready = 1;
 }
 
 int hci_driver_handle_cmd(btstack_buf_t * buf, uint8_t * event_buffer, uint16_t * event_size)
@@ -95,7 +89,7 @@ static int transport_send_packet(uint8_t packet_type, uint8_t *packet, int size)
             btstack_hci_acl_handle(packet, size);
             break;
         default:
-            send_hardware_error(0x01);  // invalid HCI packet
+            log_error("transport_send_packet: invalid packet type: %02x", packet_type);
             break;
     }
     return 0;   

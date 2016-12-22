@@ -40,10 +40,14 @@
 #include "defines.h"
 #include "ticker.h"
 #include "mem.h"
+#endif 
 #include "rand.h"
+#if 0
 #include "cpu.h"
+#endif
 #include "ecb.h"
 #include "ll.h"
+#if 0
 #include "hci_internal.h"
 
 #include "debug.h"
@@ -145,6 +149,8 @@ static int link_control_cmd_handle(uint8_t ocf, btstack_buf_t *cmd,
 
 static void set_event_mask(btstack_buf_t *buf, btstack_buf_t *evt)
 {
+	UNUSED(buf);
+
 	struct bt_hci_evt_cc_status *ccst;
 
 	/** TODO */
@@ -155,6 +161,8 @@ static void set_event_mask(btstack_buf_t *buf, btstack_buf_t *evt)
 
 static void reset(btstack_buf_t *buf, btstack_buf_t *evt)
 {
+	UNUSED(buf);
+
 	struct bt_hci_evt_cc_status *ccst;
 
 	/** TODO */
@@ -184,6 +192,8 @@ static int ctrl_bb_cmd_handle(uint8_t ocf, btstack_buf_t *cmd,
 
 static void read_local_version_info(btstack_buf_t *buf, btstack_buf_t *evt)
 {
+	UNUSED(buf);
+
 	struct bt_hci_rp_read_local_version_info *rp;
 
 	rp = cmd_complete(evt, sizeof(*rp));
@@ -198,6 +208,8 @@ static void read_local_version_info(btstack_buf_t *buf, btstack_buf_t *evt)
 
 static void read_supported_commands(btstack_buf_t *buf, btstack_buf_t *evt)
 {
+	UNUSED(buf);
+
 	struct bt_hci_rp_read_supported_commands *rp;
 
 	rp = cmd_complete(evt, sizeof(*rp));
@@ -236,6 +248,8 @@ static void read_supported_commands(btstack_buf_t *buf, btstack_buf_t *evt)
 
 static void read_local_features(btstack_buf_t *buf, btstack_buf_t *evt)
 {
+	UNUSED(buf);
+
 	struct bt_hci_rp_read_local_features *rp;
 
 	rp = cmd_complete(evt, sizeof(*rp));
@@ -248,6 +262,8 @@ static void read_local_features(btstack_buf_t *buf, btstack_buf_t *evt)
 
 static void read_bd_addr(btstack_buf_t *buf, btstack_buf_t *evt)
 {
+	UNUSED(buf);
+
 	struct bt_hci_rp_read_bd_addr *rp;
 
 	rp = cmd_complete(evt, sizeof(*rp));
@@ -285,6 +301,8 @@ static int info_cmd_handle(uint8_t ocf, btstack_buf_t *cmd,
 
 static void le_set_event_mask(btstack_buf_t *buf, btstack_buf_t *evt)
 {
+	UNUSED(buf);
+
 	struct bt_hci_evt_cc_status *ccst;
 
 	/** TODO */
@@ -295,6 +313,8 @@ static void le_set_event_mask(btstack_buf_t *buf, btstack_buf_t *evt)
 
 static void le_read_buffer_size(btstack_buf_t *buf, btstack_buf_t *evt)
 {
+	UNUSED(buf);
+
 	struct bt_hci_rp_le_read_buffer_size *rp;
 
 	rp = cmd_complete(evt, sizeof(*rp));
@@ -307,6 +327,8 @@ static void le_read_buffer_size(btstack_buf_t *buf, btstack_buf_t *evt)
 
 static void le_read_local_features(btstack_buf_t *buf, btstack_buf_t *evt)
 {
+	UNUSED(buf);
+
 	struct bt_hci_rp_le_read_local_features *rp;
 
 	rp = cmd_complete(evt, sizeof(*rp));
@@ -350,6 +372,8 @@ static void le_set_adv_param(btstack_buf_t *buf, btstack_buf_t *evt)
 
 static void le_read_adv_ch_tx_power(btstack_buf_t *buf, btstack_buf_t *evt)
 {
+	UNUSED(buf);
+
 	struct bt_hci_rp_le_read_ch_tx_power *rp;
 
 	rp = cmd_complete(evt, sizeof(*rp));
@@ -450,6 +474,8 @@ static void le_create_connection(btstack_buf_t *buf, btstack_buf_t *evt)
 
 static void le_create_conn_cancel(btstack_buf_t *buf, btstack_buf_t *evt)
 {
+	UNUSED(buf);
+
 	struct bt_hci_evt_cc_status *ccst;
 	uint32_t status;
 
@@ -461,6 +487,8 @@ static void le_create_conn_cancel(btstack_buf_t *buf, btstack_buf_t *evt)
 
 static void le_read_wl_size(btstack_buf_t *buf, btstack_buf_t *evt)
 {
+	UNUSED(buf);
+
 	struct bt_hci_rp_le_read_wl_size *rp;
 
 	rp = cmd_complete(evt, sizeof(*rp));
@@ -471,6 +499,8 @@ static void le_read_wl_size(btstack_buf_t *buf, btstack_buf_t *evt)
 
 static void le_clear_wl(btstack_buf_t *buf, btstack_buf_t *evt)
 {
+	UNUSED(buf);
+
 	struct bt_hci_evt_cc_status *ccst;
 
 	radio_filter_clear();
@@ -564,6 +594,8 @@ static void le_encrypt(btstack_buf_t *buf, btstack_buf_t *evt)
 
 static void le_rand(btstack_buf_t *buf, btstack_buf_t *evt)
 {
+	UNUSED(buf);
+
 	struct bt_hci_rp_le_rand *rp;
 	uint8_t count = sizeof(rp->rand);
 
@@ -626,6 +658,8 @@ static void le_ltk_req_neg_reply(btstack_buf_t *buf, btstack_buf_t *evt)
 
 static void le_read_supp_states(btstack_buf_t *buf, btstack_buf_t *evt)
 {
+	UNUSED(buf);
+
 	struct bt_hci_rp_le_read_supp_states *rp;
 
 	rp = cmd_complete(evt, sizeof(*rp));
@@ -1014,6 +1048,8 @@ static void le_conn_update_complete(struct pdu_data *pdu_data, uint16_t handle,
 static void enc_refresh_complete(struct pdu_data *pdu_data, uint16_t handle,
 				 btstack_buf_t *buf)
 {
+	UNUSED(pdu_data);
+
 	struct bt_hci_evt_encrypt_key_refresh_complete *ep;
 
 	evt_create(buf, BT_HCI_EVT_ENCRYPT_KEY_REFRESH_COMPLETE, sizeof(*ep));
@@ -1026,6 +1062,8 @@ static void enc_refresh_complete(struct pdu_data *pdu_data, uint16_t handle,
 static void auth_payload_timeout_exp(struct pdu_data *pdu_data, uint16_t handle,
 				     btstack_buf_t *buf)
 {
+	UNUSED(pdu_data);
+
 	struct bt_hci_evt_auth_payload_timeout_exp *ep;
 
 	evt_create(buf, BT_HCI_EVT_AUTH_PAYLOAD_TIMEOUT_EXP, sizeof(*ep));
