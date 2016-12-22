@@ -88,10 +88,60 @@ static int16_t  init_power_in_dB    = 13; // 13 dBm
 // support for SCO over HCI
 #ifdef ENABLE_SCO_OVER_HCI
 static int      init_send_route_sco_over_hci = 0;
-// Follow recommendation from https://e2e.ti.com/support/wireless_connectivity/bluetooth_cc256x/f/660/t/397004
-// route SCO over HCI (connection type=1, tx buffer size = 120, tx buffer max latency= 720, accept packets with CRC Error
 static const uint8_t hci_route_sco_over_hci[] = {
+#if 1
+    // Follow recommendation from https://e2e.ti.com/support/wireless_connectivity/bluetooth_cc256x/f/660/t/397004
+    // route SCO over HCI (connection type=1, tx buffer size = 120, tx buffer max latency= 720, accept packets with CRC Error
     0x10, 0xfe, 0x05, 0x01, 0x78, 0xd0, 0x02, 0x01,
+#else
+    // Configure SCO via I2S interface - 256 kbps
+    // Send_HCI_VS_Write_CODEC_Config 0xFD06,
+    0x06, 0xfd, 
+    // len
+    34,
+    //3072, - clock rate 3072000 hz
+    0x00, 0x01, 
+    // 0x00 - clock direction: output = master
+    0x00,
+    // 8000, framesync frequency in hz
+    0x40, 0x1f, 0x00, 0x00,
+    // 0x0001, framesync duty cycle
+    0x01, 0x00,
+    // 1, framesync edge
+    1,
+    // 0x00, framesync polarity
+    0x00,
+    // 0x00, RESERVED
+    0x00,
+    // 16, channel 1 out size
+    8, 0,
+    // 0x0001, channel 1 out offset
+    0x01, 0x00,
+    // 1, channel 1 out edge
+    1,
+    // 16,  channel 1 in size
+    8, 0,
+    // 0x0001, channel 1 in offset
+    0x01, 0x00,
+    // 0, channel 1 in edge
+    0,
+    // 0x00,  RESERVED
+    0x00,
+    // 16, channel 2 out size
+    8, 0,
+    // 17, channel 2 out offset
+    9, 0,
+    // 0x01, channel 2 out edge
+    0x01,
+    // 16,  channel 2 in size
+    8, 0,
+    // 17,  channel 2 in offset
+    9, 0,
+    // 0x00, channel 2 in edge
+    0x00,
+    // 0x0001, RESERVED
+    0x00
+#endif
 };
 #endif
 

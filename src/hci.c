@@ -1524,10 +1524,6 @@ static void event_handler(uint8_t *packet, int size){
                 hci_stack->manufacturer   = little_endian_read_16(packet, 10);
                 // hci_stack->lmp_subversion = little_endian_read_16(packet, 12);
                 log_info("Manufacturer: 0x%04x", hci_stack->manufacturer);
-                // notify app
-                if (hci_stack->local_version_information_callback){
-                    hci_stack->local_version_information_callback(packet);
-                }
             }
             if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_read_local_supported_commands)){
                 hci_stack->local_supported_commands[0] =
@@ -3773,14 +3769,6 @@ int hci_get_sco_packet_length(void){
  */
 void hci_set_hardware_error_callback(void (*fn)(uint8_t error)){
     hci_stack->hardware_error_callback = fn;
-}
-
-/**
- * @brief Set callback for local information from Bluetooth controller right after HCI Reset
- * @note Can be used to select chipset driver dynamically during startup
- */
-void hci_set_local_version_information_callback(void (*fn)(uint8_t * local_version_information)){
-    hci_stack->local_version_information_callback = fn;
 }
 
 void hci_disconnect_all(void){

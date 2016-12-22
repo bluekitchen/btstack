@@ -45,6 +45,8 @@
 #if defined __cplusplus
 extern "C" {
 #endif
+
+/* API_START */
 	
 typedef struct btstack_linked_item {
     struct btstack_linked_item *next; // <-- next element in list, or NULL
@@ -89,7 +91,10 @@ int             btstack_linked_list_iterator_has_next(btstack_linked_list_iterat
 btstack_linked_item_t * btstack_linked_list_iterator_next(btstack_linked_list_iterator_t * it);
 void            btstack_linked_list_iterator_remove(btstack_linked_list_iterator_t * it);
 
+/* API_END */
+
 void test_linked_list(void);
+
 
 #if defined __cplusplus
 }
