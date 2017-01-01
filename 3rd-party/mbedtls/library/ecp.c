@@ -1446,6 +1446,9 @@ static int ecp_mul_naive( mbedtls_ecp_group *grp, mbedtls_ecp_point *R,
                          int (*f_rng)(void *, unsigned char *, size_t),
                          void *p_rng )
 {
+    (void) f_rng;
+    (void) p_rng;
+
     int ret;
     int i;
 

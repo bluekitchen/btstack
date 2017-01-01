@@ -83,6 +83,7 @@ void le_device_db_init(void){
 }
 
 void le_device_db_set_local_bd_addr(bd_addr_t bd_addr){
+    (void)bd_addr;
 }
 
 // @returns number of device in db

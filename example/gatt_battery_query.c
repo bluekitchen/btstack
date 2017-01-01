@@ -140,6 +140,10 @@ static void dump_service(gatt_client_service_t * service){
 
 
 static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(packet_type);
+    UNUSED(channel);
+    UNUSED(size);
+
     int status;
     uint8_t battery_level;
 
@@ -236,6 +240,9 @@ static void fill_advertising_report_from_packet(advertising_report_t * adv_repor
 }
 
 static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(channel);
+    UNUSED(size);
+
     if (packet_type != HCI_EVENT_PACKET) return;
     
     uint8_t event = hci_event_packet_get_type(packet);

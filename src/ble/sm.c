@@ -454,6 +454,8 @@ static void gap_random_address_trigger(void){
 }
 
 static void gap_random_address_update_handler(btstack_timer_source_t * timer){
+    UNUSED(timer);
+
     log_info("GAP Random Address Update due");
     btstack_run_loop_set_timer(&gap_random_address_update_timer, gap_random_adress_update_period);
     btstack_run_loop_add_timer(&gap_random_address_update_timer);
@@ -667,6 +669,8 @@ static void sm_setup_event_base(uint8_t * event, int event_size, uint8_t type, h
 }
 
 static void sm_dispatch_event(uint8_t packet_type, uint16_t channel, uint8_t * packet, uint16_t size){
+    UNUSED(channel);
+
     // log event
     hci_dump_packet(packet_type, 1, packet, size);
     // dispatch to all event handlers
@@ -2706,6 +2710,8 @@ static void sm_handle_encryption_result(uint8_t * data){
 #ifdef USE_MBEDTLS_FOR_ECDH
 
 static int sm_generate_f_rng(void * context, unsigned char * buffer, size_t size){
+    UNUSED(context);
+
     int offset = setup->sm_passkey_bit;
     log_info("sm_generate_f_rng: size %u - offset %u", (int) size, offset);
     while (size) {
@@ -2871,6 +2877,9 @@ static void sm_handle_random_result(uint8_t * data){
 }
 
 static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+
+    UNUSED(channel);
+    UNUSED(size);
 
     sm_connection_t  * sm_conn;
     hci_con_handle_t con_handle;
@@ -3181,6 +3190,8 @@ static int sm_validate_stk_generation_method(void){
 }
 
 static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uint8_t *packet, uint16_t size){
+
+    UNUSED(size);
 
     if (packet_type == HCI_EVENT_PACKET && packet[0] == L2CAP_EVENT_CAN_SEND_NOW){
         sm_run();
@@ -3677,6 +3688,10 @@ void sm_use_fixed_ec_keypair(uint8_t * qx, uint8_t * qy, uint8_t * d){
     memcpy(ec_d, d, 32);
     sm_have_ec_keypair = 1;
     ec_key_generation_state = EC_KEY_GENERATION_DONE;
+#else
+    UNUSED(qx);
+    UNUSED(qy);
+    UNUSED(d);
 #endif
 }
 

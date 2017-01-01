@@ -197,6 +197,8 @@ void l2cap_register_packet_handler(void (*handler)(uint8_t packet_type, uint16_t
 }
 
 void l2cap_request_can_send_fix_channel_now_event(hci_con_handle_t con_handle, uint16_t channel_id){
+    UNUSED(con_handle);
+
     int index = l2cap_fixed_channel_table_index_for_channel_id(channel_id);
     if (index < 0) return;
     fixed_channels[index].waiting_for_can_send_now = 1;
@@ -204,6 +206,8 @@ void l2cap_request_can_send_fix_channel_now_event(hci_con_handle_t con_handle, u
 }
 
 int  l2cap_can_send_fixed_channel_packet_now(hci_con_handle_t con_handle, uint16_t channel_id){
+    UNUSED(channel_id);
+
     return hci_can_send_acl_packet_now(con_handle);
 }
 
@@ -1070,6 +1074,10 @@ static void l2cap_notify_channel_can_send(void){
 }
 
 static void l2cap_hci_event_handler(uint8_t packet_type, uint16_t cid, uint8_t *packet, uint16_t size){
+
+    UNUSED(packet_type);
+    UNUSED(cid);
+    UNUSED(size);
     
     bd_addr_t address;
     hci_con_handle_t handle;
@@ -1080,7 +1088,8 @@ static void l2cap_hci_event_handler(uint8_t packet_type, uint16_t cid, uint8_t *
     UNUSED(address);
     UNUSED(hci_con_used);
     UNUSED(it);
-
+    UNUSED(handle);
+    
     switch(hci_event_packet_get_type(packet)){
             
         // Notify channel packet handler if they can send now
@@ -1122,8 +1131,8 @@ static void l2cap_hci_event_handler(uint8_t packet_type, uint16_t cid, uint8_t *
         // handle disconnection complete events
         case HCI_EVENT_DISCONNECTION_COMPLETE:
             // send l2cap disconnect events for all channels on this handle and free them
-            handle = little_endian_read_16(packet, 3);
 #ifdef ENABLE_CLASSIC
+            handle = little_endian_read_16(packet, 3);
             btstack_linked_list_iterator_init(&it, &l2cap_channels);
             while (btstack_linked_list_iterator_has_next(&it)){
                 l2cap_channel_t * channel = (l2cap_channel_t *) btstack_linked_list_iterator_next(&it);
@@ -1135,6 +1144,7 @@ static void l2cap_hci_event_handler(uint8_t packet_type, uint16_t cid, uint8_t *
             }
 #endif
 #ifdef ENABLE_LE_DATA_CHANNELS
+            handle = little_endian_read_16(packet, 3);
             btstack_linked_list_iterator_init(&it, &l2cap_le_channels);
             while (btstack_linked_list_iterator_has_next(&it)){
                 l2cap_channel_t * channel = (l2cap_channel_t *) btstack_linked_list_iterator_next(&it);
@@ -1842,7 +1852,9 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
 #endif
 
 static void l2cap_acl_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size ){
-        
+    UNUSED(packet_type);
+    UNUSED(channel);
+            
     l2cap_channel_t * l2cap_channel;
     UNUSED(l2cap_channel);
 

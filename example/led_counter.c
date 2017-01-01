@@ -49,6 +49,7 @@
 #include <stdio.h>
 
 #include "btstack_run_loop.h"
+#include "btstack_defines.h"
 #include "hal_led.h"
 
 #define HEARTBEAT_PERIOD_MS 1000
@@ -65,7 +66,9 @@ static btstack_timer_source_t heartbeat;
  */ 
 
 /* LISTING_START(LEDToggler): Periodic counter */  
-static void heartbeat_handler(btstack_timer_source_t *ts){     
+static void heartbeat_handler(btstack_timer_source_t *ts){
+    UNUSED(ts);
+
     // increment counter
     char lineBuffer[30];
     sprintf(lineBuffer, "BTstack counter %04u\n\r", ++counter);
@@ -89,6 +92,8 @@ static void heartbeat_handler(btstack_timer_source_t *ts){
 /* LISTING_START(MainConfiguration): Setup heartbeat timer */
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
+    (void)argc;
+    (void)argv;
 
     // set one-shot timer
     heartbeat.process = &heartbeat_handler;
