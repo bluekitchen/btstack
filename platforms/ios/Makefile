@@ -1,6 +1,3 @@
-# this uses rpetrich's lipoplastic feature not present in dhowett's repository
-# you need to install Xcode 4.4.1 as /Applications/Xcode-4.4.1.app
- 
 SUBPROJECTS = src example PatchBlueTool PrefsBundle
 
 include $(THEOS)/makefiles/common.mk

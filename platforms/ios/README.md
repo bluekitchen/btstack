@@ -13,7 +13,7 @@ Packages that already use BTstack are: BTstack GPS, Blutrol, WeBe++, and various
 
 Note: As BTstack directly uses the Bluetooth hardware, the iOS Bluetooth is automatically disabled for BTstack applications & services. You can always turn BTstack off in Settings->BTstack.
 
-Please visit the [project page at GitHub](https://github.com/bluekitchen/btstack/) for technical information and check the platform/ios subfolder.
+Please visit the [project page at GitHub](https://github.com/bluekitchen/btstack/) for technical information and check the platforms/ios subfolder in the v0.9 branch.
 
 ## How to develop
 
@@ -26,9 +26,10 @@ While it's possible to use Xcode, I highly recommend to use theos to create apps
 ## Compile Instructions for BTstack package
 
 Install the following tools:
-* Xcode 6.4 as /Applications/Xcode.app
-* Xcode 4.4.1 as /Applications/Xcode-4.4.1.app/
-* [rpetrich's theos fork](https://github.com/rpetrich/theos) with "lippoplastic" support
+* Xcode
+* [csu-ios libraries](https://github.com/mringwal/csu-ios) for deployment targets < 6.0 (BTstack compiles againt iOS 3.0 by default)
+* [rpetrich's](https://github.com/rpetrich/theos) or [new official](https://github.com/theos/theos) theos fork with "lippoplastic" support
+
 
 Set the $THEOS environment variable to the location of the theos checkout, e.g. like:
 
