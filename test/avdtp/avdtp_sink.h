@@ -102,6 +102,13 @@ void avdtp_sink_register_media_handler(void (*callback)(avdtp_stream_endpoint_t 
  */
 void avdtp_sink_disconnect(uint16_t con_handle);
 
+/**
+ * @brief Discover stream endpoints
+ * @param con_handle
+ */
+
+void avdtp_sink_stream_endpoint_discovery(uint16_t con_handle);
+
 /* API_END */
 
 #if defined __cplusplus

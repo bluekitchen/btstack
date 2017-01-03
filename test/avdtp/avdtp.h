@@ -391,7 +391,7 @@ typedef struct {
     uint8_t initiator_transaction_label;
     uint8_t acceptor_transaction_label;
     uint8_t query_seid;
-    
+
     uint8_t wait_to_send_acceptor;
     uint8_t wait_to_send_initiator;
     uint8_t wait_to_send_self;

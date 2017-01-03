@@ -144,7 +144,7 @@ static char * sbc_filename = "avdtp_sink.sbc";
 // mac: static bd_addr_t remote = {0x04, 0x0C, 0xCE, 0xE4, 0x85, 0xD3};
 // pts: static bd_addr_t remote = {0x00, 0x1B, 0xDC, 0x08, 0x0A, 0xA5};
 static bd_addr_t remote = {0x00, 0x1B, 0xDC, 0x08, 0x0A, 0xA5};
-
+static uint16_t con_handle = 0;
 static uint8_t sdp_avdtp_sink_service_buffer[150];
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
@@ -289,7 +289,6 @@ static void handle_l2cap_media_data_packet(avdtp_stream_endpoint_t * stream_endp
 
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     bd_addr_t event_addr;
-    
     switch (packet_type) {
         case L2CAP_DATA_PACKET:
             // just dump data for now
@@ -299,7 +298,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             
         case HCI_EVENT_PACKET:
             switch (hci_event_packet_get_type(packet)) {
-
                 case BTSTACK_EVENT_STATE:
                     // bt stack activated, get started 
                     if (btstack_event_state_get_state(packet) == HCI_STATE_WORKING){
@@ -312,20 +310,27 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     hci_event_pin_code_request_get_bd_addr(packet, event_addr);
                     hci_send_cmd(&hci_pin_code_request_reply, &event_addr, 4, "0000");
                     break;
-
                 case HCI_EVENT_DISCONNECTION_COMPLETE:
                     // connection closed -> quit test app
                     printf("\n --- avdtp_test: HCI_EVENT_DISCONNECTION_COMPLETE ---\n");
                     close_media_processing();
                     // exit(0);
                     break;
-                    
+                case HCI_EVENT_AVDTP_META:
+                    switch (packet[2]){
+                        case AVDTP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED:
+                            con_handle = avdtp_subevent_signaling_connection_established_get_con_handle(packet);
+                            printf("\n --- avdtp_test: AVDTP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED, con handle 0x%02x ---\n", con_handle);
+                            break;
+                        default:
+                            printf(" not implemented\n");
+                            break; 
+                    }
+                    break;   
                 default:
-                    // other event
                     break;
             }
             break;
-            
         default:
             // other packet type
             break;
@@ -337,7 +342,9 @@ static void show_usage(void){
     gap_local_bd_addr(iut_address);
     printf("\n--- Bluetooth AVDTP SINK Test Console %s ---\n", bd_addr_to_str(iut_address));
     printf("c      - create connection to addr %s\n", bd_addr_to_str(remote));
-    printf("d      - disconnect\n");
+    printf("C      - disconnect\n");
+    printf("d      - discover stream endpoints\n");
+    
     printf("Ctrl-c - exit\n");
     printf("---\n");
 }
@@ -350,9 +357,12 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
             printf("Creating L2CAP Connection to %s, PSM_AVDTP\n", bd_addr_to_str(remote));
             avdtp_sink_connect(remote);
             break;
-        case 'd':
-            printf("L2CAP Channel Closed\n");
+        case 'C':
+            printf("Disconnect not implemented\n");
             // avdtp_sink_disconnect(local_cid);
+            break;
+        case 'd':
+            avdtp_sink_stream_endpoint_discovery(con_handle);
             break;
         case '\n':
         case '\r':

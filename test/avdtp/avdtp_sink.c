@@ -142,6 +142,22 @@ void a2dp_sink_create_sdp_record(uint8_t * service,  uint32_t service_record_han
     de_add_number(service, DE_UINT, DE_SIZE_16, supported_features);
 }
 
+static void avdtp_emit_signaling_connection_established(btstack_packet_handler_t callback, uint8_t status, uint16_t con_handle, bd_addr_t addr){
+    if (!callback) return;
+    uint8_t event[12];
+    int pos = 0;
+    event[pos++] = HCI_EVENT_AVDTP_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = AVDTP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED;
+    event[pos++] = status;
+    little_endian_store_16(event, pos, con_handle);
+    pos += 2;
+    reverse_bd_addr(addr,&event[pos]);
+    pos += 6;
+    (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
+
 static avdtp_stream_endpoint_t * get_avdtp_stream_endpoint_for_seid(uint16_t seid){
     btstack_linked_list_iterator_t it;    
     btstack_linked_list_iterator_init(&it, (btstack_linked_list_t *) &stream_endpoints);
@@ -417,6 +433,7 @@ static void avdtp_sink_handle_can_send_now(avdtp_connection_t * connection, uint
     } else if (connection->wait_to_send_self){
         connection->wait_to_send_self = 0;
 
+
         // if (connection->confirm_suspend){
         //     printf(" -> STREAMS SUSPENDED\n");
         //     connection->confirm_suspend = 0;
@@ -463,6 +480,8 @@ static void avdtp_sink_handle_can_send_now(avdtp_connection_t * connection, uint
         l2cap_request_can_send_now_event(l2cap_cid);
     }
 }
+
+
 
 /* END: tracking can send now requests pro l2cap cid */
 static int handle_l2cap_data_packet_for_stream_endpoint(avdtp_connection_t * connection, avdtp_stream_endpoint_t * stream_endpoint, uint8_t *packet, uint16_t size){
@@ -615,7 +634,7 @@ static int handle_l2cap_data_packet_for_signaling_connection(avdtp_connection_t 
             }
             break;
         case AVDTP_RESPONSE_ACCEPT_MSG:
-            printf("handle_l2cap_data_packet_for_signaling_connection  AVDTP_RESPONSE_ACCEPT_MSG\n");
+            printf("handle_l2cap_data_packet_for_signaling_connection  AVDTP_RESPONSE_ACCEPT_MSG, identifier %d\n", connection->signaling_packet.signal_identifier);
             
             switch (connection->signaling_packet.signal_identifier){
                 case AVDTP_SI_DISCOVER:
@@ -623,12 +642,12 @@ static int handle_l2cap_data_packet_for_signaling_connection(avdtp_connection_t 
                         printf("unexpected transaction label, got %d, expected %d\n", connection->signaling_packet.transaction_label, connection->initiator_transaction_label);
                         return 0;
                     }
-                   
+                    
                     if (size == 3){
                         printf("ERROR code %02x\n", packet[2]);
                         return 0;
                     }
-                
+                    
                     avdtp_sep_t sep;
                     int i;
                     for (i=2; i<size; i+=2){
@@ -640,14 +659,11 @@ static int handle_l2cap_data_packet_for_signaling_connection(avdtp_connection_t 
                         sep.in_use = (packet[i] >> 1) & 0x01;
                         sep.media_type = (avdtp_media_type_t)(packet[i+1] >> 4);
                         sep.type = (avdtp_sep_type_t)((packet[i+1] >> 3) & 0x01);
-                        stream_endpoint->remote_seps[stream_endpoint->remote_seps_num++] = sep;
-                        // printf("found sep: seid %u, in_use %d, media type %d, sep type %d (1-SNK)\n", 
-                        //     sep.seid, sep.in_use, sep.media_type, sep.type);
+                        printf("found sep: seid %u, in_use %d, media type %d, sep type %d (1-SNK)\n", 
+                            sep.seid, sep.in_use, sep.media_type, sep.type);
                     }
                     connection->initiator_transaction_label++;
-                    printf(" -> AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_DISCOVER_SEPS\n");
-                    connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_DISCOVER_SEPS;
-                    avdtp_sink_request_can_send_now_self(connection, connection->l2cap_signaling_cid);
+                    connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE;
                     break;
                 default:
                     printf("AVDTP_RESPONSE_ACCEPT_MSG signal %d not implemented\n", connection->signaling_packet.signal_identifier);
@@ -819,6 +835,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                         connection->query_seid = 0;
                         connection->state = AVDTP_SIGNALING_CONNECTION_OPENED;
                         printf(" -> AVDTP_SIGNALING_CONNECTION_OPENED, connection %p\n", connection);
+                        avdtp_emit_signaling_connection_established(avdtp_sink_callback, 0, con_handle, event_addr);
                         break;
                     }
 
@@ -932,4 +949,21 @@ void avdtp_sink_disconnect(uint16_t con_handle){
     //avdtp_sink_run(connection);
 }
 
+void avdtp_sink_stream_endpoint_discovery(uint16_t con_handle){
+    avdtp_connection_t * connection = get_avdtp_connection_for_con_handle(con_handle);
+    if (!connection){
+        printf("avdtp_sink_stream_endpoint_discovery: no connection for handle 0x%02x found\n", con_handle);
+        return;
+    }
+    if (connection->state != AVDTP_SIGNALING_CONNECTION_OPENED) return;
 
+    switch (connection->initiator_connection_state){
+        case AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE:
+            connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_DISCOVER_SEPS;
+            avdtp_sink_request_can_send_now_self(connection, connection->l2cap_signaling_cid);
+            break;
+        default:
+            printf("avdtp_sink_stream_endpoint_discovery: wrong state\n");
+            break;
+    }
+}
