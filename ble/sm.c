@@ -523,7 +523,7 @@ static void sm_setup_tk(void){
     }
 
     // Also use just works if unknown io capabilites
-    if ((setup->sm_m_preq.io_capability > IO_CAPABILITY_KEYBOARD_DISPLAY) || (setup->sm_m_preq.io_capability > IO_CAPABILITY_KEYBOARD_DISPLAY)){
+    if ((setup->sm_m_preq.io_capability > IO_CAPABILITY_KEYBOARD_DISPLAY) || (setup->sm_s_pres.io_capability > IO_CAPABILITY_KEYBOARD_DISPLAY)){
         return;
     }
 
