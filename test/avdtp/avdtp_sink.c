@@ -487,7 +487,7 @@ static int handle_l2cap_data_packet_for_signaling_connection(avdtp_connection_t 
     avdtp_read_signaling_header(&connection->signaling_packet, packet, size);
     switch (connection->signaling_packet.message_type){
         case AVDTP_CMD_MSG:
-            if (size < 3) {
+            if (size < 2) {
                 connection->error_code = BAD_LENGTH;
                 connection->acceptor_connection_state = AVDTP_SIGNALING_CONNECTION_ACCEPTOR_W2_REJECT_WITH_ERROR_CODE;
                 connection->reject_signal_identifier = connection->signaling_packet.signal_identifier;
@@ -508,6 +508,13 @@ static int handle_l2cap_data_packet_for_signaling_connection(avdtp_connection_t 
                 case AVDTP_SI_START:
                 case AVDTP_SI_CLOSE:
                 case AVDTP_SI_ABORT:
+                    if (size < 3) {
+                        connection->error_code = BAD_LENGTH;
+                        connection->acceptor_connection_state = AVDTP_SIGNALING_CONNECTION_ACCEPTOR_W2_REJECT_WITH_ERROR_CODE;
+                        connection->reject_signal_identifier = connection->signaling_packet.signal_identifier;
+                        avdtp_sink_request_can_send_now_self(connection, connection->l2cap_signaling_cid);
+                        return 1;
+                    }
                     connection->query_seid  = packet[2] >> 2;
                     stream_endpoint = get_avdtp_stream_endpoint_for_active_seid(connection->query_seid);
                     if (!stream_endpoint){
@@ -520,6 +527,13 @@ static int handle_l2cap_data_packet_for_signaling_connection(avdtp_connection_t 
                     }
                     return handle_l2cap_data_packet_for_stream_endpoint(connection, stream_endpoint, packet, size);
                 case AVDTP_SI_RECONFIGURE:
+                    if (size < 3) {
+                        connection->error_code = BAD_LENGTH;
+                        connection->acceptor_connection_state = AVDTP_SIGNALING_CONNECTION_ACCEPTOR_W2_REJECT_WITH_ERROR_CODE;
+                        connection->reject_signal_identifier = connection->signaling_packet.signal_identifier;
+                        avdtp_sink_request_can_send_now_self(connection, connection->l2cap_signaling_cid);
+                        return 1;
+                    }
                     connection->query_seid  = packet[2] >> 2;
                     stream_endpoint = get_avdtp_stream_endpoint_for_active_seid(connection->query_seid);
                     if (!stream_endpoint){
@@ -534,6 +548,13 @@ static int handle_l2cap_data_packet_for_signaling_connection(avdtp_connection_t 
                     return handle_l2cap_data_packet_for_stream_endpoint(connection, stream_endpoint, packet, size);
                 
                 case AVDTP_SI_OPEN:
+                    if (size < 3) {
+                        connection->error_code = BAD_LENGTH;
+                        connection->acceptor_connection_state = AVDTP_SIGNALING_CONNECTION_ACCEPTOR_W2_REJECT_WITH_ERROR_CODE;
+                        connection->reject_signal_identifier = connection->signaling_packet.signal_identifier;
+                        avdtp_sink_request_can_send_now_self(connection, connection->l2cap_signaling_cid);
+                        return 1;
+                    }
                     connection->query_seid  = packet[2] >> 2;
                     stream_endpoint = get_avdtp_stream_endpoint_for_active_seid(connection->query_seid);
                     if (!stream_endpoint){
@@ -706,7 +727,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
         case L2CAP_DATA_PACKET:
             connection = get_avdtp_connection_for_l2cap_signaling_cid(channel);
             if (connection){
-                if (handle_l2cap_data_packet_for_signaling_connection(connection, packet, size)) return;
+                handle_l2cap_data_packet_for_signaling_connection(connection, packet, size);
+                break;
             }
             
             stream_endpoint = get_avdtp_stream_endpoint_for_l2cap_cid(channel);
