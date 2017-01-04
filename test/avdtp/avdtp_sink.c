@@ -541,15 +541,35 @@ static void avdtp_sink_handle_can_send_now(avdtp_connection_t * connection, uint
             case AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_DISCOVER_SEPS:
                 printf(" -> AVDTP_SIGNALING_CONNECTION_INITIATOR_W4_SEPS_DISCOVERED\n");
                 connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_W4_SEPS_DISCOVERED;
-                connection->initiator_transaction_label++;
                 avdtp_initiator_send_signaling_cmd(connection->l2cap_signaling_cid, AVDTP_SI_DISCOVER, connection->initiator_transaction_label);
                 return;
             case AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_GET_CAPABILITIES:
                 printf(" -> AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_GET_CAPABILITIES\n");
                 connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_W4_CAPABILITIES;
-                connection->initiator_transaction_label++;
                 avdtp_initiator_send_signaling_cmd_with_seid(connection->l2cap_signaling_cid, AVDTP_SI_GET_CAPABILITIES, connection->initiator_transaction_label, connection->query_seid);
                 return;
+            case AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_GET_ALL_CAPABILITIES:
+                printf(" -> AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_GET_ALL_CAPABILITIES\n");
+                connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_W4_ALL_CAPABILITIES;
+                avdtp_initiator_send_signaling_cmd_with_seid(connection->l2cap_signaling_cid, AVDTP_SI_GET_ALL_CAPABILITIES, connection->initiator_transaction_label, connection->query_seid);
+                return;
+            case AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_SET_CAPABILITIES:{
+                printf(" -> AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_SET_CAPABILITIES bitmap %02x\n",  connection->remote_capabilities_bitmap);
+                printf_hexdump(  connection->remote_capabilities.media_codec.media_codec_information,  connection->remote_capabilities.media_codec.media_codec_information_len);
+                connection->signaling_packet.acp_seid = connection->query_seid;
+                connection->signaling_packet.int_seid = connection->int_seid;
+                
+                avdtp_prepare_capabilities(&connection->signaling_packet, connection->initiator_transaction_label, connection->remote_capabilities_bitmap, connection->remote_capabilities, AVDTP_SI_SET_CONFIGURATION);
+                l2cap_reserve_packet_buffer();
+                uint8_t * out_buffer = l2cap_get_outgoing_buffer();
+                uint16_t pos = avdtp_signaling_create_fragment(connection->l2cap_signaling_cid, &connection->signaling_packet, out_buffer);
+                if (connection->signaling_packet.packet_type != AVDTP_SINGLE_PACKET && connection->signaling_packet.packet_type != AVDTP_END_PACKET){
+                    connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_W4_SET_CAPABILITIES;
+                    printf("    ACP: fragmented\n");
+                }
+                l2cap_send_prepared(connection->l2cap_signaling_cid, pos);
+                break;
+            }
             default:
                 break;
         }
@@ -746,9 +766,10 @@ static int handle_l2cap_data_packet_for_signaling_connection(avdtp_connection_t 
                     avdtp_signaling_emit_done(avdtp_sink_callback, connection->con_handle, 0);
                     connection->initiator_transaction_label++;
                     connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE;
-                    break;
+                    return 0;
                 }
-                case AVDTP_SI_GET_CAPABILITIES:{
+                case AVDTP_SI_GET_CAPABILITIES:
+                case AVDTP_SI_GET_ALL_CAPABILITIES:{
                     avdtp_sep_t sep;
                     sep.registered_service_categories = avdtp_unpack_service_capabilities(connection, &sep.capabilities, packet+2, size-2);
                     if (get_bit16(sep.registered_service_categories, AVDTP_MEDIA_CODEC)){
@@ -764,11 +785,14 @@ static int handle_l2cap_data_packet_for_signaling_connection(avdtp_connection_t 
                     avdtp_signaling_emit_done(avdtp_sink_callback, connection->con_handle, 0);
                     //avdtp_signaling_emit_done(avdtp_sink_callback, connection->con_handle, 0);
                     connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE;
-                    break;
+                    return 0;
                 }
+                case AVDTP_SI_SET_CONFIGURATION:
+                    connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE;
+                    return 0;
                 default:
                     printf("AVDTP_RESPONSE_ACCEPT_MSG signal %d not implemented\n", connection->signaling_packet.signal_identifier);
-                    break;
+                    return 0;
                 }
             break;
         case AVDTP_RESPONSE_REJECT_MSG:
@@ -1060,6 +1084,7 @@ void avdtp_sink_discover_stream_endpoints(uint16_t con_handle){
 
     switch (connection->initiator_connection_state){
         case AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE:
+            connection->initiator_transaction_label++;
             connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_DISCOVER_SEPS;
             avdtp_sink_request_can_send_now_self(connection, connection->l2cap_signaling_cid);
             break;
@@ -1078,6 +1103,7 @@ void avdtp_sink_get_capabilities(uint16_t con_handle, uint8_t seid){
     }
     if (connection->state != AVDTP_SIGNALING_CONNECTION_OPENED) return;
     if (connection->initiator_connection_state != AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE) return;
+    connection->initiator_transaction_label++;
     connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_GET_CAPABILITIES;
     connection->query_seid = seid;
     avdtp_sink_request_can_send_now_self(connection, connection->l2cap_signaling_cid);
@@ -1092,21 +1118,26 @@ void avdtp_sink_get_all_capabilities(uint16_t con_handle, uint8_t seid){
     }
     if (connection->state != AVDTP_SIGNALING_CONNECTION_OPENED) return;
     if (connection->initiator_connection_state != AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE) return;
+    connection->initiator_transaction_label++;
     connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_GET_ALL_CAPABILITIES;
     connection->query_seid = seid;
     avdtp_sink_request_can_send_now_self(connection, connection->l2cap_signaling_cid);
 }
 
 
-void avdtp_sink_set_capabilities(uint16_t con_handle, uint8_t seid){
-     avdtp_connection_t * connection = get_avdtp_connection_for_con_handle(con_handle);
+void avdtp_sink_set_capabilities(uint16_t con_handle, uint8_t acp_seid, uint8_t int_seid, uint16_t remote_capabilities_bitmap, avdtp_capabilities_t remote_capabilities){
+    avdtp_connection_t * connection = get_avdtp_connection_for_con_handle(con_handle);
     if (!connection){
         printf("avdtp_sink_discover_stream_endpoints: no connection for handle 0x%02x found\n", con_handle);
         return;
     }
     if (connection->state != AVDTP_SIGNALING_CONNECTION_OPENED) return;
-    avdtp_stream_endpoint_t * stream_endpoint = get_avdtp_stream_endpoint_for_seid(seid);
-    if (!stream_endpoint || stream_endpoint->initiator_config_state != AVDTP_STREAM_ENDPOINT_IDLE) return;
-    stream_endpoint->initiator_config_state = AVDTP_INITIATOR_W2_SET_CONFIGURATION;
-    avdtp_sink_request_can_send_now_initiator(connection, connection->l2cap_signaling_cid);
+    if (connection->initiator_connection_state != AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE) return;
+    connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_SET_CAPABILITIES;
+    connection->initiator_transaction_label++;
+    connection->query_seid = acp_seid;
+    connection->int_seid = int_seid;
+    connection->remote_capabilities = remote_capabilities;
+    connection->remote_capabilities_bitmap = remote_capabilities_bitmap;
+    avdtp_sink_request_can_send_now_self(connection, connection->l2cap_signaling_cid);
 }

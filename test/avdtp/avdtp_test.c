@@ -159,7 +159,9 @@ static uint16_t con_handle = 0;
 static uint8_t sdp_avdtp_sink_service_buffer[150];
 static avdtp_sep_t sep;
 static adtvp_media_codec_information_sbc_t sbc;
-                                        
+static uint16_t remote_capabilities_bitmap;
+static avdtp_capabilities_t remote_capabilities;
+
 typedef enum {
     AVDTP_APPLICATION_IDLE,
     AVDTP_APPLICATION_W2_DISCOVER_SEPS,
@@ -312,12 +314,12 @@ static void handle_l2cap_media_data_packet(avdtp_stream_endpoint_t * stream_endp
 
 static void dump_media_codec_sbc(adtvp_media_codec_information_sbc_t media_codec_sbc){
     printf("Received media codec capability:\n");
-    printf("    - sampling_frequency: %02x\n", media_codec_sbc.sampling_frequency_bitmap);
-    printf("    - channel_mode: %02x\n", media_codec_sbc.channel_mode_bitmap);
-    printf("    - block_length: %02x\n", media_codec_sbc.block_length_bitmap);
-    printf("    - subbands: %02x\n", media_codec_sbc.subbands_bitmap);
-    printf("    - allocation_method: %x\n", media_codec_sbc.allocation_method_bitmap);
-    printf("bitpool_value [%d, %d] \n", media_codec_sbc.min_bitpool_value, media_codec_sbc.max_bitpool_value);
+    printf("    - sampling_frequency: 0x%02x\n", media_codec_sbc.sampling_frequency_bitmap);
+    printf("    - channel_mode: 0x%02x\n", media_codec_sbc.channel_mode_bitmap);
+    printf("    - block_length: 0x%02x\n", media_codec_sbc.block_length_bitmap);
+    printf("    - subbands: 0x%02x\n", media_codec_sbc.subbands_bitmap);
+    printf("    - allocation_method: 0x%02x\n", media_codec_sbc.allocation_method_bitmap);
+    printf("    - bitpool_value [%d, %d] \n", media_codec_sbc.min_bitpool_value, media_codec_sbc.max_bitpool_value);
 }
 
 
@@ -410,6 +412,11 @@ static void show_usage(void){
     printf("---\n");
 }
 
+static const uint8_t media_sbc_codec_info[] = {
+    (AVDTP_SBC_44100 << 4) | AVDTP_SBC_STEREO,
+    (AVDTP_SBC_BLOCK_LENGTH_16 << 4) | (AVDTP_SBC_SUBBANDS_8 << 2) | AVDTP_SBC_ALLOCATION_METHOD_LOUDNESS,
+    2, 53
+}; 
 
 static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type){
     if (app_state != AVDTP_APPLICATION_IDLE) {
@@ -442,7 +449,13 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
             break;
         case 's':
             app_state = AVDTP_APPLICATION_W2_SET_CAPABILITIES;
-            avdtp_sink_set_capabilities(con_handle, sep.seid);
+            remote_capabilities_bitmap = store_bit16(remote_capabilities_bitmap, AVDTP_MEDIA_CODEC, 1);
+            remote_capabilities.media_codec.media_type = AVDTP_AUDIO;
+            remote_capabilities.media_codec.media_codec_type = AVDTP_CODEC_SBC;
+
+            remote_capabilities.media_codec.media_codec_information_len = sizeof(media_sbc_codec_info);
+            remote_capabilities.media_codec.media_codec_information = media_sbc_codec_info;
+            avdtp_sink_set_capabilities(con_handle, sep.seid, 1, remote_capabilities_bitmap, remote_capabilities);
             break;
         case '\n':
         case '\r':
@@ -454,13 +467,6 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
     }
 }
 
-#ifndef SMG_BI
-static const uint8_t media_sbc_codec_info[] = {
-    0xFF, // (AVDTP_SBC_44100 << 4) | AVDTP_SBC_STEREO,
-    0xFF, // (AVDTP_SBC_BLOCK_LENGTH_16 << 4) | (AVDTP_SBC_SUBBANDS_8 << 2) | AVDTP_SBC_ALLOCATION_METHOD_LOUDNESS,
-    2, 53
-}; 
-#endif
 
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){

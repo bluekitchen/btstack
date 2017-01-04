@@ -295,8 +295,6 @@ typedef enum {
 
 typedef enum {
     AVDTP_INITIATOR_STREAM_CONFIG_IDLE,
-    AVDTP_INITIATOR_W2_SET_CONFIGURATION,
-    AVDTP_INITIATOR_W4_CONFIGURATION_SET,
     AVDTP_INITIATOR_W2_GET_CONFIGURATION,
     AVDTP_INITIATOR_W4_CONFIGURATION_RECEIVED,
     AVDTP_INITIATOR_STREAM_CONFIGURED
@@ -358,7 +356,9 @@ typedef enum {
     AVDTP_SIGNALING_CONNECTION_INITIATOR_W4_CAPABILITIES,
     AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_GET_ALL_CAPABILITIES,
     AVDTP_SIGNALING_CONNECTION_INITIATOR_W4_ALL_CAPABILITIES,
-    
+    AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_SET_CAPABILITIES,
+    AVDTP_SIGNALING_CONNECTION_INITIATOR_W4_SET_CAPABILITIES,
+
     AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_REJECT_WITH_ERROR_CODE,
     AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_REJECT_CATEGORY_WITH_ERROR_CODE,
     AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_GENERAL_REJECT_WITH_ERROR_CODE
@@ -371,6 +371,8 @@ typedef struct {
     avdtp_signal_identifier_t signal_identifier;
     avdtp_message_type_t message_type;
     avdtp_packet_type_t  packet_type;
+    uint8_t acp_seid;
+    uint8_t int_seid;
     uint16_t transaction_label;
     uint16_t num_packets;
 } avdtp_signaling_packet_t;
@@ -395,6 +397,10 @@ typedef struct {
     uint8_t initiator_transaction_label;
     uint8_t acceptor_transaction_label;
     uint8_t query_seid;
+    uint8_t int_seid;
+
+    avdtp_capabilities_t remote_capabilities;
+    uint16_t remote_capabilities_bitmap;
 
     uint8_t wait_to_send_acceptor;
     uint8_t wait_to_send_initiator;

@@ -124,7 +124,8 @@ void avdtp_sink_get_all_capabilities(uint16_t con_handle, uint8_t seid);
  * @brief Set capabilities
  * @param con_handle
  */
-void avdtp_sink_set_capabilities(uint16_t con_handle, uint8_t seid);
+void avdtp_sink_set_capabilities(uint16_t con_handle, uint8_t acp_seid, uint8_t int_seid, uint16_t remote_capabilities_bitmap, avdtp_capabilities_t remote_capabilities);
+
 
 /* API_END */
 

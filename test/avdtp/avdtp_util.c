@@ -42,6 +42,7 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "btstack.h"
 #include "avdtp.h"
 #include "avdtp_util.h"
 
@@ -275,3 +276,87 @@ uint16_t avdtp_unpack_service_capabilities(avdtp_connection_t * connection, avdt
     }
     return registered_service_categories;
 }
+
+void avdtp_prepare_capabilities(avdtp_signaling_packet_t * signaling_packet, uint8_t transaction_label, uint16_t registered_service_categories, avdtp_capabilities_t capabilities, uint8_t identifier){
+    if (signaling_packet->offset) return;
+    uint8_t pack_all_capabilities = 1;
+    signaling_packet->size = 0;
+    int i;
+    switch (identifier) {
+        case AVDTP_SI_GET_CAPABILITIES:
+            pack_all_capabilities = 0;
+            break;
+        case AVDTP_SI_SET_CONFIGURATION:
+            signaling_packet->command[signaling_packet->size++] = signaling_packet->acp_seid << 2;
+            signaling_packet->command[signaling_packet->size++] = signaling_packet->int_seid << 2;
+            break;
+        default: 
+            break;
+    } 
+    
+    for (i = 1; i < 9; i++){
+        if (get_bit16(registered_service_categories, i)){
+            // service category
+            signaling_packet->command[signaling_packet->size++] = i;
+            signaling_packet->size += avdtp_pack_service_capabilities(signaling_packet->command+signaling_packet->size, sizeof(signaling_packet->command)-signaling_packet->size, capabilities, (avdtp_service_category_t)i, pack_all_capabilities);
+        }
+    }
+    // signaling_packet->command[signaling_packet->size++] = 0x04;
+    // signaling_packet->command[signaling_packet->size++] = 0x02;
+    // signaling_packet->command[signaling_packet->size++] = 0x02;
+    // signaling_packet->command[signaling_packet->size++] = 0x00;
+    
+    signaling_packet->signal_identifier = identifier;
+    signaling_packet->transaction_label = transaction_label;
+    if (identifier == AVDTP_SI_SET_CONFIGURATION){
+        signaling_packet->message_type = AVDTP_CMD_MSG;
+    } else {
+        signaling_packet->message_type = AVDTP_RESPONSE_ACCEPT_MSG;
+    }
+}
+
+int avdtp_signaling_create_fragment(uint16_t cid, avdtp_signaling_packet_t * signaling_packet, uint8_t * out_buffer) {
+    int mtu = l2cap_get_remote_mtu_for_local_cid(cid);
+    // hack for test
+    // int mtu = 6;
+    int data_len = 0;
+
+    uint16_t offset = signaling_packet->offset;
+    uint16_t pos = 1;
+    // printf(" avdtp_signaling_create_fragment offset %d, packet type %d\n",  signaling_packet->offset, signaling_packet->packet_type);
+    
+    if (offset == 0){
+        if (signaling_packet->size <= mtu - 2){
+            // printf(" AVDTP_SINGLE_PACKET\n");
+            signaling_packet->packet_type = AVDTP_SINGLE_PACKET;
+            out_buffer[pos++] = signaling_packet->signal_identifier;
+            data_len = signaling_packet->size;
+        } else {
+            signaling_packet->packet_type = AVDTP_START_PACKET;
+            out_buffer[pos++] = (mtu + signaling_packet->size)/ (mtu-1);
+            out_buffer[pos++] = signaling_packet->signal_identifier;
+            data_len = mtu - 3;
+            signaling_packet->offset = data_len;
+            // printf(" AVDTP_START_PACKET len %d, offset %d\n", signaling_packet->size, signaling_packet->offset);
+        }
+    } else {
+        int remaining_bytes = signaling_packet->size - offset;
+        if (remaining_bytes <= mtu - 1){
+            //signaling_packet->fragmentation = 1;
+            signaling_packet->packet_type = AVDTP_END_PACKET;
+            data_len = remaining_bytes;
+            signaling_packet->offset = 0;
+            // printf(" AVDTP_END_PACKET len %d, offset %d\n", signaling_packet->size, signaling_packet->offset);
+        } else{
+            signaling_packet->packet_type = AVDTP_CONTINUE_PACKET;
+            data_len = mtu - 1;
+            signaling_packet->offset += data_len;
+            // printf(" AVDTP_CONTINUE_PACKET len %d, offset %d\n", signaling_packet->size, signaling_packet->offset);
+        }
+    }
+    out_buffer[0] = avdtp_header(signaling_packet->transaction_label, signaling_packet->packet_type, signaling_packet->message_type);
+    memcpy(out_buffer+pos, signaling_packet->command + offset, data_len);
+    pos += data_len; 
+    return pos;
+}
+
