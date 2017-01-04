@@ -142,21 +142,49 @@ void a2dp_sink_create_sdp_record(uint8_t * service,  uint32_t service_record_han
     de_add_number(service, DE_UINT, DE_SIZE_16, supported_features);
 }
 
-static void avdtp_emit_signaling_connection_established(btstack_packet_handler_t callback, uint8_t status, uint16_t con_handle, bd_addr_t addr){
+static void avdtp_signaling_emit_connection_established(btstack_packet_handler_t callback, uint16_t con_handle, bd_addr_t addr, uint8_t status){
     if (!callback) return;
     uint8_t event[12];
     int pos = 0;
     event[pos++] = HCI_EVENT_AVDTP_META;
     event[pos++] = sizeof(event) - 2;
     event[pos++] = AVDTP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED;
-    event[pos++] = status;
     little_endian_store_16(event, pos, con_handle);
     pos += 2;
     reverse_bd_addr(addr,&event[pos]);
     pos += 6;
+    event[pos++] = status;
     (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
+static void avdtp_signaling_emit_sep(btstack_packet_handler_t callback, uint16_t con_handle, avdtp_sep_t sep){
+    if (!callback) return;
+    uint8_t event[9];
+    int pos = 0;
+    event[pos++] = HCI_EVENT_AVDTP_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = AVDTP_SUBEVENT_SIGNALING_SEP_FOUND;
+    little_endian_store_16(event, pos, con_handle);
+    pos += 2;
+    event[pos++] = sep.seid;
+    event[pos++] = sep.in_use;
+    event[pos++] = sep.media_type;
+    event[pos++] = sep.type;
+    (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
+static void avdtp_signaling_emit_done(btstack_packet_handler_t callback, uint16_t con_handle, uint8_t status){
+    if (!callback) return;
+    uint8_t event[6];
+    int pos = 0;
+    event[pos++] = HCI_EVENT_AVDTP_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = AVDTP_SUBEVENT_SIGNALING_DONE;
+    little_endian_store_16(event, pos, con_handle);
+    pos += 2;
+    event[pos++] = status;
+    (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
 
 static avdtp_stream_endpoint_t * get_avdtp_stream_endpoint_for_seid(uint16_t seid){
     btstack_linked_list_iterator_t it;    
@@ -654,14 +682,14 @@ static int handle_l2cap_data_packet_for_signaling_connection(avdtp_connection_t 
                         sep.seid = packet[i] >> 2;
                         if (sep.seid < 0x01 || sep.seid > 0x3E){
                             printf("invalid sep id\n");
-                            return 01;
+                            return 0;
                         }
                         sep.in_use = (packet[i] >> 1) & 0x01;
                         sep.media_type = (avdtp_media_type_t)(packet[i+1] >> 4);
                         sep.type = (avdtp_sep_type_t)((packet[i+1] >> 3) & 0x01);
-                        printf("found sep: seid %u, in_use %d, media type %d, sep type %d (1-SNK)\n", 
-                            sep.seid, sep.in_use, sep.media_type, sep.type);
+                        avdtp_signaling_emit_sep(avdtp_sink_callback, connection->con_handle, sep);
                     }
+                    avdtp_signaling_emit_done(avdtp_sink_callback, connection->con_handle, 0);
                     connection->initiator_transaction_label++;
                     connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE;
                     break;
@@ -835,7 +863,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                         connection->query_seid = 0;
                         connection->state = AVDTP_SIGNALING_CONNECTION_OPENED;
                         printf(" -> AVDTP_SIGNALING_CONNECTION_OPENED, connection %p\n", connection);
-                        avdtp_emit_signaling_connection_established(avdtp_sink_callback, 0, con_handle, event_addr);
+                        avdtp_signaling_emit_connection_established(avdtp_sink_callback, con_handle, event_addr, 0);
                         break;
                     }
 

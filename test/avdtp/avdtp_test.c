@@ -147,6 +147,13 @@ static bd_addr_t remote = {0x00, 0x1B, 0xDC, 0x08, 0x0A, 0xA5};
 static uint16_t con_handle = 0;
 static uint8_t sdp_avdtp_sink_service_buffer[150];
 
+typedef enum {
+    AVDTP_APPLICATION_IDLE,
+    AVDTP_APPLICATION_W2_DISCOVER_SEPS
+} avdtp_application_state_t;
+
+avdtp_application_state_t app_state = AVDTP_APPLICATION_IDLE;
+
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 static int media_initialized = 0;
@@ -322,6 +329,19 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             con_handle = avdtp_subevent_signaling_connection_established_get_con_handle(packet);
                             printf("\n --- avdtp_test: AVDTP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED, con handle 0x%02x ---\n", con_handle);
                             break;
+                        case AVDTP_SUBEVENT_SIGNALING_SEP_FOUND:
+                            if (app_state != AVDTP_APPLICATION_W2_DISCOVER_SEPS) return;
+                            avdtp_sep_t sep;
+                            sep.seid = avdtp_subevent_signaling_sep_found_get_seid(packet);
+                            sep.in_use = avdtp_subevent_signaling_sep_found_get_in_use(packet);
+                            sep.media_type = avdtp_subevent_signaling_sep_found_get_media_type(packet);
+                            sep.type = avdtp_subevent_signaling_sep_found_get_sep_type(packet);
+                            printf("found sep: seid %u, in_use %d, media type %d, sep type %d (1-SNK)\n", 
+                            sep.seid, sep.in_use, sep.media_type, sep.type);
+                            break;
+                        case AVDTP_SUBEVENT_SIGNALING_DONE:
+                            app_state = AVDTP_APPLICATION_IDLE;
+                            break;
                         default:
                             printf(" not implemented\n");
                             break; 
@@ -350,6 +370,10 @@ static void show_usage(void){
 }
 
 static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type){
+    if (app_state != AVDTP_APPLICATION_IDLE) {
+        printf("Application is not idle.\n");
+        return;
+    }
     char buffer;
     read(ds->fd, &buffer, 1);
     switch (buffer){
@@ -362,6 +386,7 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
             // avdtp_sink_disconnect(local_cid);
             break;
         case 'd':
+            app_state = AVDTP_APPLICATION_W2_DISCOVER_SEPS;
             avdtp_sink_stream_endpoint_discovery(con_handle);
             break;
         case '\n':
