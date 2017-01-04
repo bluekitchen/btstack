@@ -50,8 +50,8 @@
 #if 0
 #include "hci_internal.h"
 
-#include "debug.h"
 #endif
+#include "debug.h"
 
 // temp
 #include "zephyr_diet.h"

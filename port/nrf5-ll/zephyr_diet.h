@@ -26,8 +26,6 @@ static inline void * btstack_buf_pull(btstack_buf_t * buf, uint16_t len){
 }
 
 //more hacks
-#define LL_ASSERT(a)
-#define BT_ASSERT(a)
 #define sys_cpu_to_le16(a) (a)
 #define sys_le16_to_cpu(a) (a)
 #define BT_ERR(str) log_error(str)

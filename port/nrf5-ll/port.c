@@ -4,12 +4,13 @@
 #include "soc.h"
 #include "cpu.h"
 
+#include "misc.h"
 #include "util.h"
 #include "rand.h"
 #include "ccm.h"
 #include "radio.h"
-#include "ctrl.h"
 #include "pdu.h"
+#include "ctrl.h"
 
 #include "bluetooth.h"
 #include "btstack_debug.h"
