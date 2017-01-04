@@ -141,15 +141,31 @@ static char * sbc_filename = "avdtp_sink.sbc";
 #endif
 
 
+typedef struct {
+    // bitmaps
+    uint8_t sampling_frequency_bitmap;
+    uint8_t channel_mode_bitmap;
+    uint8_t block_length_bitmap;
+    uint8_t subbands_bitmap;
+    uint8_t allocation_method_bitmap;
+    uint8_t min_bitpool_value;
+    uint8_t max_bitpool_value;
+} adtvp_media_codec_information_sbc_t;
+
 // mac: static bd_addr_t remote = {0x04, 0x0C, 0xCE, 0xE4, 0x85, 0xD3};
 // pts: static bd_addr_t remote = {0x00, 0x1B, 0xDC, 0x08, 0x0A, 0xA5};
 static bd_addr_t remote = {0x00, 0x1B, 0xDC, 0x08, 0x0A, 0xA5};
 static uint16_t con_handle = 0;
 static uint8_t sdp_avdtp_sink_service_buffer[150];
-
+static avdtp_sep_t sep;
+static adtvp_media_codec_information_sbc_t sbc;
+                                        
 typedef enum {
     AVDTP_APPLICATION_IDLE,
-    AVDTP_APPLICATION_W2_DISCOVER_SEPS
+    AVDTP_APPLICATION_W2_DISCOVER_SEPS,
+    AVDTP_APPLICATION_W2_GET_CAPABILITIES,
+    AVDTP_APPLICATION_W2_GET_ALL_CAPABILITIES,
+    AVDTP_APPLICATION_W2_SET_CAPABILITIES
 } avdtp_application_state_t;
 
 avdtp_application_state_t app_state = AVDTP_APPLICATION_IDLE;
@@ -294,6 +310,17 @@ static void handle_l2cap_media_data_packet(avdtp_stream_endpoint_t * stream_endp
 #endif
 }
 
+static void dump_media_codec_sbc(adtvp_media_codec_information_sbc_t media_codec_sbc){
+    printf("Received media codec capability:\n");
+    printf("    - sampling_frequency: %02x\n", media_codec_sbc.sampling_frequency_bitmap);
+    printf("    - channel_mode: %02x\n", media_codec_sbc.channel_mode_bitmap);
+    printf("    - block_length: %02x\n", media_codec_sbc.block_length_bitmap);
+    printf("    - subbands: %02x\n", media_codec_sbc.subbands_bitmap);
+    printf("    - allocation_method: %x\n", media_codec_sbc.allocation_method_bitmap);
+    printf("bitpool_value [%d, %d] \n", media_codec_sbc.min_bitpool_value, media_codec_sbc.max_bitpool_value);
+}
+
+
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     bd_addr_t event_addr;
     switch (packet_type) {
@@ -331,13 +358,24 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             break;
                         case AVDTP_SUBEVENT_SIGNALING_SEP_FOUND:
                             if (app_state != AVDTP_APPLICATION_W2_DISCOVER_SEPS) return;
-                            avdtp_sep_t sep;
                             sep.seid = avdtp_subevent_signaling_sep_found_get_seid(packet);
                             sep.in_use = avdtp_subevent_signaling_sep_found_get_in_use(packet);
                             sep.media_type = avdtp_subevent_signaling_sep_found_get_media_type(packet);
                             sep.type = avdtp_subevent_signaling_sep_found_get_sep_type(packet);
-                            printf("found sep: seid %u, in_use %d, media type %d, sep type %d (1-SNK)\n", 
-                            sep.seid, sep.in_use, sep.media_type, sep.type);
+                            printf("found sep: seid %u, in_use %d, media type %d, sep type %d (1-SNK)\n", sep.seid, sep.in_use, sep.media_type, sep.type);
+                            break;
+                        case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC:
+                            sbc.sampling_frequency_bitmap = avdtp_subevent_signaling_media_codec_sbc_get_sampling_frequency(packet);
+                            sbc.channel_mode_bitmap = avdtp_subevent_signaling_media_codec_sbc_get_channel_mode(packet);
+                            sbc.block_length_bitmap = avdtp_subevent_signaling_media_codec_sbc_get_block_length(packet);
+                            sbc.subbands_bitmap = avdtp_subevent_signaling_media_codec_sbc_get_subbands(packet);
+                            sbc.allocation_method_bitmap = avdtp_subevent_signaling_media_codec_sbc_get_allocation_method(packet);
+                            sbc.min_bitpool_value = avdtp_subevent_signaling_media_codec_sbc_get_min_bitpool_value(packet);
+                            sbc.max_bitpool_value = avdtp_subevent_signaling_media_codec_sbc_get_max_bitpool_value(packet);
+                            dump_media_codec_sbc(sbc);
+                            break;
+                        case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER:
+                            printf(" received non SBC codec. not implemented\n");
                             break;
                         case AVDTP_SUBEVENT_SIGNALING_DONE:
                             app_state = AVDTP_APPLICATION_IDLE;
@@ -364,10 +402,14 @@ static void show_usage(void){
     printf("c      - create connection to addr %s\n", bd_addr_to_str(remote));
     printf("C      - disconnect\n");
     printf("d      - discover stream endpoints\n");
-    
+    printf("g      - get capabilities\n");
+    printf("a      - get all capabilities\n");
+    printf("s      - set capabilities\n");
+
     printf("Ctrl-c - exit\n");
     printf("---\n");
 }
+
 
 static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type){
     if (app_state != AVDTP_APPLICATION_IDLE) {
@@ -376,6 +418,7 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
     }
     char buffer;
     read(ds->fd, &buffer, 1);
+    sep.seid = 1;
     switch (buffer){
         case 'c':
             printf("Creating L2CAP Connection to %s, PSM_AVDTP\n", bd_addr_to_str(remote));
@@ -387,7 +430,19 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
             break;
         case 'd':
             app_state = AVDTP_APPLICATION_W2_DISCOVER_SEPS;
-            avdtp_sink_stream_endpoint_discovery(con_handle);
+            avdtp_sink_discover_stream_endpoints(con_handle);
+            break;
+        case 'g':
+            app_state = AVDTP_APPLICATION_W2_GET_CAPABILITIES;
+            avdtp_sink_get_capabilities(con_handle, sep.seid);
+            break;
+        case 'a':
+            app_state = AVDTP_APPLICATION_W2_GET_ALL_CAPABILITIES;
+            avdtp_sink_get_all_capabilities(con_handle, sep.seid);
+            break;
+        case 's':
+            app_state = AVDTP_APPLICATION_W2_SET_CAPABILITIES;
+            avdtp_sink_set_capabilities(con_handle, sep.seid);
             break;
         case '\n':
         case '\r':

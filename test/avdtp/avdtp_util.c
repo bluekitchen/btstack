@@ -94,3 +94,184 @@ void avdtp_read_signaling_header(avdtp_signaling_packet_t * signaling_header, ui
     }
     signaling_header->signal_identifier = packet[pos] & 0x3f;
 }
+
+int avdtp_pack_service_capabilities(uint8_t * buffer, int size, avdtp_capabilities_t caps, avdtp_service_category_t category, uint8_t pack_all_capabilities){
+    int i;
+    // pos = 0 reserved for length
+    int pos = 1;
+    switch(category){
+        case AVDTP_MEDIA_TRANSPORT:
+        case AVDTP_REPORTING:
+            break;
+        case AVDTP_DELAY_REPORTING:
+            if (!pack_all_capabilities) break;
+            break;
+        case AVDTP_RECOVERY:
+            buffer[pos++] = caps.recovery.recovery_type; // 0x01=RFC2733
+            buffer[pos++] = caps.recovery.maximum_recovery_window_size;
+            buffer[pos++] = caps.recovery.maximum_number_media_packets;
+            break;
+        case AVDTP_CONTENT_PROTECTION:
+            buffer[pos++] = caps.content_protection.cp_type_value_len + 2;
+            big_endian_store_16(buffer, pos, caps.content_protection.cp_type);
+            pos += 2;
+            memcpy(buffer+pos, caps.content_protection.cp_type_value, caps.content_protection.cp_type_value_len);
+            printf("AVDTP_CONTENT_PROTECTION 0%04x\n", caps.content_protection.cp_type);
+            break;
+        case AVDTP_HEADER_COMPRESSION:
+            buffer[pos++] = (caps.header_compression.back_ch << 7) | (caps.header_compression.media << 6) | (caps.header_compression.recovery << 5);
+            break;
+        case AVDTP_MULTIPLEXING:
+            buffer[pos++] = caps.multiplexing_mode.fragmentation << 7;
+            for (i=0; i<caps.multiplexing_mode.transport_identifiers_num; i++){
+                buffer[pos++] = caps.multiplexing_mode.transport_session_identifiers[i] << 7;
+                buffer[pos++] = caps.multiplexing_mode.tcid[i] << 7;
+                // media, reporting. recovery
+            }
+            break;
+        case AVDTP_MEDIA_CODEC:
+            buffer[pos++] = ((uint8_t)caps.media_codec.media_type) << 4;
+            buffer[pos++] = (uint8_t)caps.media_codec.media_codec_type;
+            for (i = 0; i<caps.media_codec.media_codec_information_len; i++){
+                buffer[pos++] = caps.media_codec.media_codec_information[i];
+            }
+            break;
+    }
+    buffer[0] = pos - 1; // length
+    return pos;
+}
+
+static int avdtp_unpack_service_capabilities_has_errors(avdtp_connection_t * connection, avdtp_service_category_t category, uint8_t cap_len){
+    connection->error_code = 0;
+        
+    if (category < AVDTP_MEDIA_TRANSPORT || category > AVDTP_DELAY_REPORTING){
+        printf("    ACP: BAD SERVICE CATEGORY %d\n", category);
+        connection->reject_service_category = category;
+        connection->error_code = BAD_SERV_CATEGORY;
+        return 1;
+    }
+    if (connection->signaling_packet.signal_identifier == AVDTP_SI_RECONFIGURE){
+        if (category != AVDTP_CONTENT_PROTECTION && category != AVDTP_MEDIA_CODEC){
+            printf("    ACP: REJECT CATEGORY, INVALID_CAPABILITIES\n");
+            connection->reject_service_category = category;
+            connection->error_code = INVALID_CAPABILITIES;
+            return 1;
+        }
+    }
+
+    switch(category){
+        case AVDTP_MEDIA_TRANSPORT:   
+            if (cap_len != 0){
+                printf("    ACP: REJECT CATEGORY, BAD_MEDIA_TRANSPORT\n");
+                connection->reject_service_category = category;
+                connection->error_code = BAD_MEDIA_TRANSPORT_FORMAT;
+                return 1;
+            }
+            break;
+        case AVDTP_REPORTING:                
+        case AVDTP_DELAY_REPORTING:                
+            if (cap_len != 0){
+                printf("    ACP: REJECT CATEGORY, BAD_LENGTH\n");
+                connection->reject_service_category = category;
+                connection->error_code = BAD_LENGTH;
+                return 1;
+            }
+            break;
+        case AVDTP_RECOVERY:     
+            if (cap_len < 3){
+                printf("    ACP: REJECT CATEGORY, BAD_MEDIA_TRANSPORT\n");
+                connection->reject_service_category = category;
+                connection->error_code = BAD_RECOVERY_FORMAT;
+                return 1;
+            }           
+            break;
+        case AVDTP_CONTENT_PROTECTION:
+            if (cap_len < 2){
+                connection->reject_service_category = category;
+                connection->error_code = BAD_CP_FORMAT;
+                return 1;
+            }
+            break;
+        case AVDTP_HEADER_COMPRESSION:
+            break;
+        case AVDTP_MULTIPLEXING:                
+            break;
+        case AVDTP_MEDIA_CODEC:                
+            break;
+        default:
+            break;
+    }
+    return 0;
+}
+
+uint16_t avdtp_unpack_service_capabilities(avdtp_connection_t * connection, avdtp_capabilities_t * caps, uint8_t * packet, uint16_t size){
+    uint16_t registered_service_categories = 0;
+    int pos = 0;
+    int i;
+    avdtp_service_category_t category = (avdtp_service_category_t)packet[pos++];
+    uint8_t cap_len = packet[pos++];
+    if (avdtp_unpack_service_capabilities_has_errors(connection, category, cap_len)) return 0;
+    
+    int processed_cap_len = 0;
+    while (pos < size){
+        processed_cap_len = pos;
+        switch(category){
+            case AVDTP_MEDIA_TRANSPORT:   
+                break;
+            case AVDTP_REPORTING:                
+                break;
+            case AVDTP_DELAY_REPORTING:                
+                break;
+            case AVDTP_RECOVERY:                
+                caps->recovery.recovery_type = packet[pos++];
+                caps->recovery.maximum_recovery_window_size = packet[pos++];
+                caps->recovery.maximum_number_media_packets = packet[pos++];
+                break;
+            case AVDTP_CONTENT_PROTECTION:
+                caps->content_protection.cp_type = big_endian_read_16(packet, pos);
+                pos+=2;
+                
+                caps->content_protection.cp_type_value_len = cap_len - 2;
+                pos += caps->content_protection.cp_type_value_len;
+                
+                // connection->reject_service_category = category;
+                // connection->error_code = UNSUPPORTED_CONFIGURATION;
+                // support for content protection goes here
+                return 0;
+                
+            case AVDTP_HEADER_COMPRESSION:
+                caps->header_compression.back_ch  = packet[pos] >> 7; 
+                caps->header_compression.media    = packet[pos] >> 6;
+                caps->header_compression.recovery = packet[pos] >> 5;
+                pos++;
+                break;
+            case AVDTP_MULTIPLEXING:                
+                caps->multiplexing_mode.fragmentation = packet[pos++] >> 7;
+                // read [tsid, tcid] for media, reporting. recovery respectively
+                caps->multiplexing_mode.transport_identifiers_num = 3;
+                for (i=0; i<caps->multiplexing_mode.transport_identifiers_num; i++){
+                    caps->multiplexing_mode.transport_session_identifiers[i] = packet[pos++] >> 7;
+                    caps->multiplexing_mode.tcid[i] = packet[pos++] >> 7;
+                }
+                break;
+            case AVDTP_MEDIA_CODEC:                
+                caps->media_codec.media_type = packet[pos++] >> 4;
+                caps->media_codec.media_codec_type = packet[pos++];
+                caps->media_codec.media_codec_information_len = cap_len - 2;
+                caps->media_codec.media_codec_information = &packet[pos];
+                pos += caps->media_codec.media_codec_information_len;
+                break;
+            default:
+                break;
+        }
+
+        registered_service_categories = store_bit16(registered_service_categories, category, 1);
+        processed_cap_len = pos - processed_cap_len;
+        if (cap_len <= processed_cap_len && pos < size-2){
+            category = (avdtp_service_category_t)packet[pos++];
+            cap_len = packet[pos++];
+            if (avdtp_unpack_service_capabilities_has_errors(connection, category, cap_len)) return 0;
+        }
+    }
+    return registered_service_categories;
+}

@@ -186,6 +186,45 @@ static void avdtp_signaling_emit_done(btstack_packet_handler_t callback, uint16_
     (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
+static void avdtp_signaling_emit_media_codec_sbc(btstack_packet_handler_t callback, uint16_t con_handle, adtvp_media_codec_capabilities_t media_codec){
+    if (!callback) return;
+    uint8_t event[13];
+    int pos = 0;
+    event[pos++] = HCI_EVENT_AVDTP_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC;
+    little_endian_store_16(event, pos, con_handle);
+    pos += 2;
+    event[pos++] = media_codec.media_type;
+    event[pos++] = media_codec.media_codec_information[0] >> 4;
+    event[pos++] = media_codec.media_codec_information[0] & 0x0F;
+    event[pos++] = media_codec.media_codec_information[1] >> 4;
+    event[pos++] = (media_codec.media_codec_information[1] & 0x0F) >> 2;
+    event[pos++] = media_codec.media_codec_information[1] & 0x03;
+    event[pos++] = media_codec.media_codec_information[2];
+    event[pos++] = media_codec.media_codec_information[3];
+    (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
+static void avdtp_signaling_emit_media_codec_other(btstack_packet_handler_t callback, uint16_t con_handle, adtvp_media_codec_capabilities_t media_codec){
+    if (!callback) return;
+    uint8_t event[109];
+    int pos = 0;
+    event[pos++] = HCI_EVENT_AVDTP_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER;
+    little_endian_store_16(event, pos, con_handle);
+    pos += 2;
+    event[pos++] = media_codec.media_type;
+    little_endian_store_16(event, pos, media_codec.media_codec_type);
+    pos += 2;
+    little_endian_store_16(event, pos, media_codec.media_codec_information_len);
+    pos += 2;
+    memcpy(event+pos, media_codec.media_codec_information, media_codec.media_codec_information_len);
+
+    (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
 static avdtp_stream_endpoint_t * get_avdtp_stream_endpoint_for_seid(uint16_t seid){
     btstack_linked_list_iterator_t it;    
     btstack_linked_list_iterator_init(&it, (btstack_linked_list_t *) &stream_endpoints);
@@ -425,6 +464,14 @@ static int avdtp_initiator_send_signaling_cmd(uint16_t cid, avdtp_signal_identif
     return l2cap_send(cid, command, sizeof(command));
 }
 
+static int avdtp_initiator_send_signaling_cmd_with_seid(uint16_t cid, avdtp_signal_identifier_t identifier, uint8_t transaction_label, uint8_t sep_id){
+    uint8_t command[3];
+    command[0] = avdtp_header(transaction_label, AVDTP_SINGLE_PACKET, AVDTP_CMD_MSG);
+    command[1] = (uint8_t)identifier;
+    command[2] = sep_id << 2;
+    return l2cap_send(cid, command, sizeof(command));
+}
+
 
 static void avdtp_sink_request_can_send_now_acceptor(avdtp_connection_t * connection, uint16_t l2cap_cid){
     connection->wait_to_send_acceptor = 1;
@@ -494,7 +541,14 @@ static void avdtp_sink_handle_can_send_now(avdtp_connection_t * connection, uint
             case AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_DISCOVER_SEPS:
                 printf(" -> AVDTP_SIGNALING_CONNECTION_INITIATOR_W4_SEPS_DISCOVERED\n");
                 connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_W4_SEPS_DISCOVERED;
+                connection->initiator_transaction_label++;
                 avdtp_initiator_send_signaling_cmd(connection->l2cap_signaling_cid, AVDTP_SI_DISCOVER, connection->initiator_transaction_label);
+                return;
+            case AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_GET_CAPABILITIES:
+                printf(" -> AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_GET_CAPABILITIES\n");
+                connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_W4_CAPABILITIES;
+                connection->initiator_transaction_label++;
+                avdtp_initiator_send_signaling_cmd_with_seid(connection->l2cap_signaling_cid, AVDTP_SI_GET_CAPABILITIES, connection->initiator_transaction_label, connection->query_seid);
                 return;
             default:
                 break;
@@ -665,7 +719,7 @@ static int handle_l2cap_data_packet_for_signaling_connection(avdtp_connection_t 
             printf("handle_l2cap_data_packet_for_signaling_connection  AVDTP_RESPONSE_ACCEPT_MSG, identifier %d\n", connection->signaling_packet.signal_identifier);
             
             switch (connection->signaling_packet.signal_identifier){
-                case AVDTP_SI_DISCOVER:
+                case AVDTP_SI_DISCOVER:{
                     if (connection->signaling_packet.transaction_label != connection->initiator_transaction_label){
                         printf("unexpected transaction label, got %d, expected %d\n", connection->signaling_packet.transaction_label, connection->initiator_transaction_label);
                         return 0;
@@ -693,6 +747,25 @@ static int handle_l2cap_data_packet_for_signaling_connection(avdtp_connection_t 
                     connection->initiator_transaction_label++;
                     connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE;
                     break;
+                }
+                case AVDTP_SI_GET_CAPABILITIES:{
+                    avdtp_sep_t sep;
+                    sep.registered_service_categories = avdtp_unpack_service_capabilities(connection, &sep.capabilities, packet+2, size-2);
+                    if (get_bit16(sep.registered_service_categories, AVDTP_MEDIA_CODEC)){
+                        switch (sep.capabilities.media_codec.media_codec_type){
+                            case AVDTP_CODEC_SBC: 
+                                avdtp_signaling_emit_media_codec_sbc(avdtp_sink_callback, connection->con_handle, sep.capabilities.media_codec);
+                                break;
+                            default:
+                                avdtp_signaling_emit_media_codec_other(avdtp_sink_callback, connection->con_handle, sep.capabilities.media_codec);
+                                break;
+                        }
+                    }
+                    avdtp_signaling_emit_done(avdtp_sink_callback, connection->con_handle, 0);
+                    //avdtp_signaling_emit_done(avdtp_sink_callback, connection->con_handle, 0);
+                    connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE;
+                    break;
+                }
                 default:
                     printf("AVDTP_RESPONSE_ACCEPT_MSG signal %d not implemented\n", connection->signaling_packet.signal_identifier);
                     break;
@@ -977,10 +1050,10 @@ void avdtp_sink_disconnect(uint16_t con_handle){
     //avdtp_sink_run(connection);
 }
 
-void avdtp_sink_stream_endpoint_discovery(uint16_t con_handle){
+void avdtp_sink_discover_stream_endpoints(uint16_t con_handle){
     avdtp_connection_t * connection = get_avdtp_connection_for_con_handle(con_handle);
     if (!connection){
-        printf("avdtp_sink_stream_endpoint_discovery: no connection for handle 0x%02x found\n", con_handle);
+        printf("avdtp_sink_discover_stream_endpoints: no connection for handle 0x%02x found\n", con_handle);
         return;
     }
     if (connection->state != AVDTP_SIGNALING_CONNECTION_OPENED) return;
@@ -991,7 +1064,49 @@ void avdtp_sink_stream_endpoint_discovery(uint16_t con_handle){
             avdtp_sink_request_can_send_now_self(connection, connection->l2cap_signaling_cid);
             break;
         default:
-            printf("avdtp_sink_stream_endpoint_discovery: wrong state\n");
+            printf("avdtp_sink_discover_stream_endpoints: wrong state\n");
             break;
     }
+}
+
+
+void avdtp_sink_get_capabilities(uint16_t con_handle, uint8_t seid){
+    avdtp_connection_t * connection = get_avdtp_connection_for_con_handle(con_handle);
+    if (!connection){
+        printf("avdtp_sink_discover_stream_endpoints: no connection for handle 0x%02x found\n", con_handle);
+        return;
+    }
+    if (connection->state != AVDTP_SIGNALING_CONNECTION_OPENED) return;
+    if (connection->initiator_connection_state != AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE) return;
+    connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_GET_CAPABILITIES;
+    connection->query_seid = seid;
+    avdtp_sink_request_can_send_now_self(connection, connection->l2cap_signaling_cid);
+}
+
+
+void avdtp_sink_get_all_capabilities(uint16_t con_handle, uint8_t seid){
+    avdtp_connection_t * connection = get_avdtp_connection_for_con_handle(con_handle);
+    if (!connection){
+        printf("avdtp_sink_discover_stream_endpoints: no connection for handle 0x%02x found\n", con_handle);
+        return;
+    }
+    if (connection->state != AVDTP_SIGNALING_CONNECTION_OPENED) return;
+    if (connection->initiator_connection_state != AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE) return;
+    connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_GET_ALL_CAPABILITIES;
+    connection->query_seid = seid;
+    avdtp_sink_request_can_send_now_self(connection, connection->l2cap_signaling_cid);
+}
+
+
+void avdtp_sink_set_capabilities(uint16_t con_handle, uint8_t seid){
+     avdtp_connection_t * connection = get_avdtp_connection_for_con_handle(con_handle);
+    if (!connection){
+        printf("avdtp_sink_discover_stream_endpoints: no connection for handle 0x%02x found\n", con_handle);
+        return;
+    }
+    if (connection->state != AVDTP_SIGNALING_CONNECTION_OPENED) return;
+    avdtp_stream_endpoint_t * stream_endpoint = get_avdtp_stream_endpoint_for_seid(seid);
+    if (!stream_endpoint || stream_endpoint->initiator_config_state != AVDTP_STREAM_ENDPOINT_IDLE) return;
+    stream_endpoint->initiator_config_state = AVDTP_INITIATOR_W2_SET_CONFIGURATION;
+    avdtp_sink_request_can_send_now_initiator(connection, connection->l2cap_signaling_cid);
 }

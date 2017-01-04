@@ -106,8 +106,25 @@ void avdtp_sink_disconnect(uint16_t con_handle);
  * @brief Discover stream endpoints
  * @param con_handle
  */
+void avdtp_sink_discover_stream_endpoints(uint16_t con_handle);
 
-void avdtp_sink_stream_endpoint_discovery(uint16_t con_handle);
+/**
+ * @brief Get capabilities
+ * @param con_handle
+ */
+void avdtp_sink_get_capabilities(uint16_t con_handle, uint8_t seid);
+
+/**
+ * @brief Get all capabilities
+ * @param con_handle
+ */
+void avdtp_sink_get_all_capabilities(uint16_t con_handle, uint8_t seid);
+
+/**
+ * @brief Set capabilities
+ * @param con_handle
+ */
+void avdtp_sink_set_capabilities(uint16_t con_handle, uint8_t seid);
 
 /* API_END */
 
