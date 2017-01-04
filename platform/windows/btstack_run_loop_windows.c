@@ -151,7 +151,7 @@ static void btstack_run_loop_windows_execute(void) {
     while (1) {
 
         // collect handles to wait for
-        HANDLE handles[20];
+        HANDLE handles[100];
         memset(handles, 0, sizeof(handles));
         int num_handles = 0;     
         btstack_linked_list_iterator_init(&it, &data_sources);
