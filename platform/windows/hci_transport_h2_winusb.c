@@ -494,14 +494,154 @@ static void usb_process_acl_out(btstack_data_source_t *ds, btstack_data_source_c
     uint8_t event[] = { HCI_EVENT_TRANSPORT_PACKET_SENT, 0};
     packet_handler(HCI_EVENT_PACKET, &event[0], sizeof(event));
 }
-
 #if 0
-// Scan for Bluetooth Endpoints
-// example: https://android.googlesource.com/platform/development/+/master/host/windows/usb/winusb/adb_winusb_interface.cpp
-// example: https://msdn.microsoft.com/en-us/windows/hardware/dn376866(v=vs.85)
-static void usb_scan_for_bluetooth_endpoints(void) {
-}
+        for (r=0;r<interface_descriptor->bNumEndpoints;r++,endpoint++){
+            log_info("- endpoint %x, attributes %x", endpoint->bEndpointAddress, endpoint->bmAttributes);
+
+            switch (endpoint->bmAttributes & 0x3){
+                case LIBUSB_TRANSFER_TYPE_INTERRUPT:
+                    if (event_in_addr) continue;
+                    event_in_addr = endpoint->bEndpointAddress;
+                    log_info("-> using 0x%2.2X for HCI Events", event_in_addr);
+                    break;
+                case LIBUSB_TRANSFER_TYPE_BULK:
+                    if (endpoint->bEndpointAddress & 0x80) {
+                        if (acl_in_addr) continue;
+                        acl_in_addr = endpoint->bEndpointAddress;
+                        log_info("-> using 0x%2.2X for ACL Data In", acl_in_addr);
+                    } else {
+                        if (acl_out_addr) continue;
+                        acl_out_addr = endpoint->bEndpointAddress;
+                        log_info("-> using 0x%2.2X for ACL Data Out", acl_out_addr);
+                    }
+                    break;
+                case LIBUSB_TRANSFER_TYPE_ISOCHRONOUS:
+                    if (endpoint->bEndpointAddress & 0x80) {
+                        if (sco_in_addr) continue;
+                        sco_in_addr = endpoint->bEndpointAddress;
+                        log_info("-> using 0x%2.2X for SCO Data In", sco_in_addr);
+                    } else {
+                        if (sco_out_addr) continue;
+                        sco_out_addr = endpoint->bEndpointAddress;
+                        log_info("-> using 0x%2.2X for SCO Data Out", sco_out_addr);
+                    }
+                    break;
+                default:
+                    break;
+            }
+        }
 #endif
+
+static BOOL usb_scan_for_bluetooth_endpoints(void) {
+    int i;
+    USB_INTERFACE_DESCRIPTOR usb_interface_descriptor;
+
+    // reset
+    event_in_addr = 0;
+    acl_in_addr = 0;
+    acl_out_addr = 0;
+
+    log_info("Scanning USB Entpoints:");
+
+    // look for Event and ACL pipes on Interface #0
+    BOOL result = WinUsb_QueryInterfaceSettings(usb_interface_0_handle, 0, &usb_interface_descriptor);
+    if (!result) goto exit_on_error;
+    for (i=0;i<usb_interface_descriptor.bNumEndpoints;i++){
+        WINUSB_PIPE_INFORMATION pipe;
+        result = WinUsb_QueryPipe(
+                     usb_interface_0_handle,
+                     0,
+                     (UCHAR) i,
+                     &pipe);
+        if (!result) goto exit_on_error;
+        log_info("Interface #0, Alt #0, Pipe idx #%u: type %u, id 0x%02x, max packet size %u,",
+            i, pipe.PipeType, pipe.PipeId, pipe.MaximumPacketSize);
+        switch (pipe.PipeType){
+            case USB_ENDPOINT_TYPE_INTERRUPT:
+                if (event_in_addr) continue;
+                event_in_addr = pipe.PipeId;
+                log_info("-> using 0x%2.2X for HCI Events", event_in_addr);
+                break;
+            case USB_ENDPOINT_TYPE_BULK:
+                if (pipe.PipeId & 0x80) {
+                    if (acl_in_addr) continue;
+                    acl_in_addr = pipe.PipeId;
+                    log_info("-> using 0x%2.2X for ACL Data In", acl_in_addr);
+                } else {
+                    if (acl_out_addr) continue;
+                    acl_out_addr = pipe.PipeId;
+                    log_info("-> using 0x%2.2X for ACL Data Out", acl_out_addr);
+                }
+                break;
+            default:
+                break;
+        }
+    }
+
+#ifdef ENABLE_SCO_OVER_HCI
+    sco_out_addr = 0;
+    sco_in_addr = 0;
+
+    // look for SCO pipes on Interface #1, Alt Setting ALT_SETTING
+    result = WinUsb_QueryInterfaceSettings(usb_interface_1_handle, ALT_SETTING, &usb_interface_descriptor);
+    if (!result) goto exit_on_error;
+    for (i=0;i<usb_interface_descriptor.bNumEndpoints;i++){
+        WINUSB_PIPE_INFORMATION_EX pipe;
+        result = WinUsb_QueryPipeEx(
+                     usb_interface_1_handle,
+                     ALT_SETTING,
+                     (UCHAR) i,
+                     &pipe);
+        if (!result) goto exit_on_error;
+        log_info("Interface #1, Alt #%u, Pipe idx #%u: type %u, id 0x%02x, max packet size %u, interval %u, max bytes per interval %u",
+            ALT_SETTING, i, pipe.PipeType, pipe.PipeId, pipe.MaximumPacketSize, pipe.Interval, (int) pipe.MaximumBytesPerInterval);
+        switch (pipe.PipeType){
+            case USB_ENDPOINT_TYPE_ISOCHRONOUS:
+                if (pipe.PipeId & 0x80) {
+                    if (sco_in_addr) continue;
+                    sco_in_addr = pipe.PipeId;
+                    log_info("-> using 0x%2.2X for SCO Data In", sco_in_addr);
+                } else {
+                    if (sco_out_addr) continue;
+                    sco_out_addr = pipe.PipeId;
+                    log_info("-> using 0x%2.2X for SCO Data Out", sco_out_addr);
+                }
+                break;
+            default:
+                break;
+        }
+    }
+    if (!sco_in_addr){
+        log_error("Couldn't find pipe for SCO IN!");
+        return FALSE;
+    }
+    if (!sco_out_addr){
+        log_error("Couldn't find pipe for SCO IN!");
+        return FALSE;
+    }
+#endif
+
+    // check if all found
+    if (!event_in_addr){
+        log_error("Couldn't find pipe for Event IN!");
+        return FALSE;
+    }
+    if (!acl_in_addr){
+        log_error("Couldn't find pipe for ACL IN!");
+        return FALSE;
+    }
+    if (!acl_out_addr){
+        log_error("Couldn't find pipe for ACL OUT!");
+        return FALSE;
+    }
+
+    // all clear
+    return TRUE;
+
+exit_on_error:    
+    log_error("winusb: last error %lu\n", GetLastError());
+    return FALSE;
+}
 
 // returns 0 if successful, -1 otherwise
 static int usb_try_open_device(const char * device_path){
@@ -541,29 +681,19 @@ static int usb_try_open_device(const char * device_path){
 	if (!result) goto exit_on_error;
 #endif
 
-	// check ISO Pipes
-	USB_INTERFACE_DESCRIPTOR usb_interface_descriptor;
-	result = WinUsb_QueryInterfaceSettings(usb_interface_1_handle, ALT_SETTING, &usb_interface_descriptor);
-	if (!result) goto exit_on_error;
-	int i;
-	for (i=0;i<usb_interface_descriptor.bNumEndpoints;i++){
-		WINUSB_PIPE_INFORMATION_EX pipe;
-		result = WinUsb_QueryPipeEx(
-                 	 usb_interface_1_handle,
-                     ALT_SETTING,
-                     (UCHAR) i,
-                     &pipe);
-		if (!result) continue;
-		log_info("Pipe idx #%u: type %u, id 0x%02x, max packet size %u, interval %u, max bytes per interval %u",
-			i, pipe.PipeType, pipe.PipeId, pipe.MaximumPacketSize, pipe.Interval, (int) pipe.MaximumBytesPerInterval);
-
-		// 
-	}
+    result = usb_scan_for_bluetooth_endpoints();
+    if (!result) {
+        log_error("Could not find all Bluetooth Endpoints!");
+        usb_free_resources();
+        return 0;
+    }
 
 	// AUTO_CLEAR_STALL, RAW_IO is not callable for ISO EP
 	// uint8_t value_on = 1;
 	// result = WinUsb_SetPipePolicy(usb_interface_1_handle, sco_in_addr, RAW_IO, sizeof(value_on), &value_on);
 	// if (!result) goto exit_on_error;
+
+    int i;
 
 	memset(hci_sco_packet_descriptors, 0, sizeof(hci_sco_packet_descriptors));
 	log_info("Size of packet descriptors %u", (int) sizeof(hci_sco_packet_descriptors));
