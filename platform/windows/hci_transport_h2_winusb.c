@@ -494,43 +494,6 @@ static void usb_process_acl_out(btstack_data_source_t *ds, btstack_data_source_c
     uint8_t event[] = { HCI_EVENT_TRANSPORT_PACKET_SENT, 0};
     packet_handler(HCI_EVENT_PACKET, &event[0], sizeof(event));
 }
-#if 0
-        for (r=0;r<interface_descriptor->bNumEndpoints;r++,endpoint++){
-            log_info("- endpoint %x, attributes %x", endpoint->bEndpointAddress, endpoint->bmAttributes);
-
-            switch (endpoint->bmAttributes & 0x3){
-                case LIBUSB_TRANSFER_TYPE_INTERRUPT:
-                    if (event_in_addr) continue;
-                    event_in_addr = endpoint->bEndpointAddress;
-                    log_info("-> using 0x%2.2X for HCI Events", event_in_addr);
-                    break;
-                case LIBUSB_TRANSFER_TYPE_BULK:
-                    if (endpoint->bEndpointAddress & 0x80) {
-                        if (acl_in_addr) continue;
-                        acl_in_addr = endpoint->bEndpointAddress;
-                        log_info("-> using 0x%2.2X for ACL Data In", acl_in_addr);
-                    } else {
-                        if (acl_out_addr) continue;
-                        acl_out_addr = endpoint->bEndpointAddress;
-                        log_info("-> using 0x%2.2X for ACL Data Out", acl_out_addr);
-                    }
-                    break;
-                case LIBUSB_TRANSFER_TYPE_ISOCHRONOUS:
-                    if (endpoint->bEndpointAddress & 0x80) {
-                        if (sco_in_addr) continue;
-                        sco_in_addr = endpoint->bEndpointAddress;
-                        log_info("-> using 0x%2.2X for SCO Data In", sco_in_addr);
-                    } else {
-                        if (sco_out_addr) continue;
-                        sco_out_addr = endpoint->bEndpointAddress;
-                        log_info("-> using 0x%2.2X for SCO Data Out", sco_out_addr);
-                    }
-                    break;
-                default:
-                    break;
-            }
-        }
-#endif
 
 static BOOL usb_scan_for_bluetooth_endpoints(void) {
     int i;
@@ -674,7 +637,6 @@ static int usb_try_open_device(const char * device_path){
 	if (!result) goto exit_on_error;
 	log_info("Claiming interface 1: success");
 
-#if 1
 	log_info("Switching to setting %u on interface 1..", ALT_SETTING);
 	// WinUsb_SetCurrentAlternateSetting returns TRUE if the operation succeeds.
 	result = WinUsb_SetCurrentAlternateSetting(usb_interface_1_handle, ALT_SETTING);
@@ -687,6 +649,8 @@ static int usb_try_open_device(const char * device_path){
         usb_free_resources();
         return 0;
     }
+
+#ifdef ENABLE_SCO_OVER_HCI
 
 	// AUTO_CLEAR_STALL, RAW_IO is not callable for ISO EP
 	// uint8_t value_on = 1;
@@ -701,7 +665,7 @@ static int usb_try_open_device(const char * device_path){
 	if (!result) goto exit_on_error;
 	log_info("hci_sco_in_buffer_handle %p", hci_sco_in_buffer_handle);
 
-	// setup overlapped && btstack handler
+	// setup async io && btstack handler
 	memset(&usb_overlapped_sco_in, 0, sizeof(usb_overlapped_sco_in));
 	for (i=0;i<ISOC_BUFFERS;i++){
 		usb_overlapped_sco_in[i].hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
@@ -709,27 +673,21 @@ static int usb_try_open_device(const char * device_path){
 		usb_data_source_sco_in[i].handle = usb_overlapped_sco_in[i].hEvent;
 	    btstack_run_loop_set_data_source_handler(&usb_data_source_sco_in[i], &usb_process_sco_in);
 	    btstack_run_loop_add_data_source(&usb_data_source_sco_in[i]);
+        usb_submit_sco_in_transfer(i, 0);
 	}
 
-	// test code to not miss a packet/frame
-
+#if 0
+// test code to check continous iso transfers
 // while (1){
 	for (i=0;i<ISOC_BUFFERS;i++){
 		usb_submit_sco_in_transfer(i, 0);
-#if 0
 		HANDLE handles[1];
 		handles[0] = usb_overlapped_sco_in[i].hEvent;
 		int res = WaitForMultipleObjects(1, &handles[0], FALSE, INFINITE);
 		log_info("WaitForMultipleObjects res %x", res);
-
-		// usb_process_sco_in_done(0);
-#else
-	    // IO_PENDING -> wait for completed
-	    // btstack_run_loop_enable_data_source_callbacks(&usb_data_source_sco_in[i], DATA_SOURCE_CALLBACK_READ);
-#endif
 	// }
 }
-
+#endif
 #endif
 
 	// setup async io
@@ -759,7 +717,7 @@ static int usb_try_open_device(const char * device_path){
     btstack_run_loop_set_data_source_handler(&usb_data_source_acl_out, &usb_process_acl_out);
     btstack_run_loop_add_data_source(&usb_data_source_acl_out);
 
-	// re-submit transfer
+	// submit transfers
 	usb_submit_event_in_transfer();
 	usb_submit_acl_in_transfer();
 	return 1;
@@ -770,12 +728,12 @@ exit_on_error:
 	return 0;
 }
 
-#define WinUSB_Lookup(fn) do { fn = (fn##_t) GetProcAddress(h, #fn); log_info("%30s %p", #fn, fn); if (!fn) return; } while(0)
+#define WinUSB_Lookup(fn) do { fn = (fn##_t) GetProcAddress(h, #fn); log_info("%-30s %p", #fn, fn); if (!fn) return; } while(0)
 
 static void usb_lookup_symbols(void){
 	// lookup runtime symbols missing in current mingw64 distribution
 	HMODULE h = GetModuleHandleA("WinUSB");
-	log_info("%30s %p", "WinUSB", h);
+	log_info("%-30s %p", "WinUSB", h);
 	WinUSB_Lookup(WinUsb_QueryPipeEx);
 	WinUSB_Lookup(WinUsb_RegisterIsochBuffer);
 	WinUSB_Lookup(WinUsb_ReadIsochPipe);
