@@ -764,6 +764,8 @@ exit_on_error:
 	return 0;
 }
 
+#ifdef ENABLE_SCO_OVER_HCI
+
 #define WinUSB_Lookup(fn) do { fn = (fn##_t) GetProcAddress(h, #fn); log_info("%-30s %p", #fn, fn); if (!fn) return; } while(0)
 
 static void usb_lookup_symbols(void){
@@ -778,13 +780,16 @@ static void usb_lookup_symbols(void){
 	WinUSB_Lookup(WinUsb_WriteIsochPipeAsap);
 	WinUSB_Lookup(WinUsb_UnregisterIsochBuffer);
 }
+#endif
 
 // returns 0 on success, -1 otherwise
 static int usb_open(void){
 
-	usb_lookup_symbols();
-
     int r = -1;
+
+#ifdef ENABLE_SCO_OVER_HCI
+	usb_lookup_symbols();
+#endif
 
 	HDEVINFO                         hDevInfo;
 	SP_DEVICE_INTERFACE_DATA         DevIntfData;
@@ -904,9 +909,40 @@ static int usb_open(void){
 }
 
 static int usb_close(void){
-    int r = -1;
+    
+    // remove data sources
+    btstack_run_loop_remove_data_source(&usb_data_source_command_out);
+    btstack_run_loop_remove_data_source(&usb_data_source_event_in);
+    btstack_run_loop_remove_data_source(&usb_data_source_acl_in);
+    btstack_run_loop_remove_data_source(&usb_data_source_acl_out);
+
+#ifdef ENABLE_SCO_OVER_HCI
+    int i;
+    for (i=0;i<ISOC_BUFFERS;i++){
+        btstack_run_loop_remove_data_source(&usb_data_source_sco_in[i]);
+    }
+#endif
+
+    // stop transfers
+    WinUsb_AbortPipe(usb_interface_0_handle, event_in_addr);
+    WinUsb_AbortPipe(usb_interface_0_handle, acl_in_addr);
+    WinUsb_AbortPipe(usb_interface_0_handle, acl_out_addr);
+#ifdef ENABLE_SCO_OVER_HCI
+    WinUsb_AbortPipe(usb_interface_0_handle, sco_in_addr);
+    WinUsb_AbortPipe(usb_interface_0_handle, sco_out_addr);
+#endif
+    usb_acl_out_active = 0;
+
+    // control transfer cannot be stopped, just wait for completion
+    if (usb_command_out_active){
+        DWORD bytes_transferred;
+        WinUsb_GetOverlappedResult(usb_interface_0_handle, &usb_overlapped_command_out, &bytes_transferred, TRUE);
+        usb_command_out_active = 0;
+    }
+
+    // free everything
     usb_free_resources();
-    return r;    
+    return 0;    
 }
 
 static int usb_can_send_packet_now(uint8_t packet_type){
