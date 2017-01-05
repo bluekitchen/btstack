@@ -219,6 +219,8 @@ static int usb_acl_out_active;
 static uint8_t hci_event_in_buffer[2 + 255];
 static uint8_t hci_acl_in_buffer[HCI_INCOMING_PRE_BUFFER_SIZE + HCI_ACL_BUFFER_SIZE]; 
 
+#ifdef ENABLE_SCO_OVER_HCI
+
 // SCO Incoming Windows
 static uint8_t hci_sco_in_buffer[ISOC_BUFFERS * SCO_PACKET_SIZE]; 
 static WINUSB_ISOCH_BUFFER_HANDLE hci_sco_in_buffer_handle;
@@ -238,6 +240,8 @@ static H2_SCO_STATE sco_state;
 static uint8_t  sco_buffer[SCO_PACKET_SIZE];
 static uint16_t sco_read_pos;
 static uint16_t sco_bytes_to_read;
+
+#endif
 
 #if 0
 // list of known devices, using VendorID/ProductID tuples
@@ -287,6 +291,13 @@ static void usb_free_resources(void){
 		CloseHandle(usb_device_handle);	
 		usb_device_handle = NULL;
 	}
+
+#ifdef ENABLE_SCO_OVER_HCI
+    if (hci_sco_in_buffer_handle){
+        WinUsb_UnregisterIsochBuffer(hci_sco_in_buffer_handle);
+        hci_sco_in_buffer_handle = NULL;
+    }
+#endif
 }
 
 static void usb_submit_event_in_transfer(void){
