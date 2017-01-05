@@ -239,6 +239,28 @@ static uint8_t  sco_buffer[SCO_PACKET_SIZE];
 static uint16_t sco_read_pos;
 static uint16_t sco_bytes_to_read;
 
+#if 0
+// list of known devices, using VendorID/ProductID tuples
+static const uint16_t known_bluetooth_devices[] = {
+    // DeLOCK Bluetooth 4.0
+    0x0a5c, 0x21e8,
+    // Asus BT400
+    0x0b05, 0x17cb,
+};
+
+static int num_known_devices = sizeof(known_bluetooth_devices) / sizeof(uint16_t) / 2;
+
+static int usb_is_known_bluetooth_device(uint16_t vendor_id, uint16_t product_id){
+    int i;
+    for (i=0; i<num_known_devices; i++){
+        if (known_bluetooth_devices[i*2] == vendor_id && known_bluetooth_devices[i*2+1] == product_id){
+            return 1;
+        }
+    }
+    return 0;
+}
+#endif
+
 static void usb_register_packet_handler(void (*handler)(uint8_t packet_type, uint8_t *packet, uint16_t size)){
     log_info("registering packet handler");
     packet_handler = handler;
@@ -279,7 +301,7 @@ static void usb_submit_event_in_transfer(void){
     return;
 
 exit_on_error:
-	log_error("usb_submit_event_in_transfer: winusb last error %lu\n", GetLastError());
+	log_error("usb_submit_event_in_transfer: winusb last error %lu", GetLastError());
 }
 
 static void usb_submit_acl_in_transfer(void){
@@ -294,7 +316,7 @@ static void usb_submit_acl_in_transfer(void){
     return;
 
 exit_on_error:
-	log_error("usb_submit_acl_in_transfer: winusb last error %lu\n", GetLastError());
+	log_error("usb_submit_acl_in_transfer: winusb last error %lu", GetLastError());
 }
 
 static void usb_submit_sco_in_transfer(int i, int continue_stream){
@@ -333,7 +355,7 @@ static void usb_submit_sco_in_transfer(int i, int continue_stream){
 	return;
 
 exit_on_error:
-	log_error("usb_submit_sco_in_transfer: winusb last error %lu\n", GetLastError());
+	log_error("usb_submit_sco_in_transfer: winusb last error %lu", GetLastError());
 }
 
 static void usb_process_event_in(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type) {
@@ -391,7 +413,7 @@ static void sco_state_machine_init(void){
 }
 
 static void sco_handle_data(uint8_t * buffer, uint16_t size){
-	// printf("sco_handle_data: state %u, pos %u, to read %u, size %u\n", sco_state, sco_read_pos, sco_bytes_to_read, size);
+	// printf("sco_handle_data: state %u, pos %u, to read %u, size %u", sco_state, sco_read_pos, sco_bytes_to_read, size);
     while (size){
         if (size < sco_bytes_to_read){
             // just store incomplete data
@@ -602,7 +624,7 @@ static BOOL usb_scan_for_bluetooth_endpoints(void) {
     return TRUE;
 
 exit_on_error:    
-    log_error("winusb: last error %lu\n", GetLastError());
+    log_error("usb_scan_for_bluetooth_endpoints: last error %lu", GetLastError());
     return FALSE;
 }
 
@@ -617,16 +639,30 @@ static int usb_try_open_device(const char * device_path){
         OPEN_EXISTING,
         FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED,
         NULL);
-	log_info("USB Dev: %p", usb_device_handle);
+	log_info("Opening USB device: %p", usb_device_handle);
 	if (!usb_device_handle) goto exit_on_error;
 
-	log_info("Claiming interface 0...");
-
-	// USB_INTERFACE_DESCRIPTOR iface_descriptor;
 	// WinUsb_Initialize returns TRUE if the operation succeed
 	BOOL result = WinUsb_Initialize(usb_device_handle, &usb_interface_0_handle);
 	if (!result) goto exit_on_error;
-	log_info("Claiming interface 0: success, handle %p", usb_interface_0_handle);
+
+    // Detect USB Dongle based Class, Subclass, and Protocol
+    // The class code (bDeviceClass) is 0xE0 – Wireless Controller. 
+    // The SubClass code (bDeviceSubClass) is 0x01 – RF Controller. 
+    // The Protocol code (bDeviceProtocol) is 0x01 – Bluetooth programming.
+    USB_INTERFACE_DESCRIPTOR usb_interface_descriptor;
+    result = WinUsb_QueryInterfaceSettings(usb_interface_0_handle, 0, &usb_interface_descriptor);
+    if (!result) goto exit_on_error;
+    // 
+    if (usb_interface_descriptor.bInterfaceClass    != 0xe0 ||
+        usb_interface_descriptor.bInterfaceSubClass != 0x01 || 
+        usb_interface_descriptor.bInterfaceProtocol != 0x01){
+
+        // TODO: fallback to whitelist
+        log_info("Class, Subclass, Protocol does not match Bluetooth device");
+        usb_free_resources();
+        return 0;
+    }
 
 #ifdef ENABLE_SCO_OVER_HCI
 	log_info("Claiming interface 1...");
@@ -669,7 +705,7 @@ static int usb_try_open_device(const char * device_path){
 	memset(&usb_overlapped_sco_in, 0, sizeof(usb_overlapped_sco_in));
 	for (i=0;i<ISOC_BUFFERS;i++){
 		usb_overlapped_sco_in[i].hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
-		log_info_hexdump(&usb_overlapped_sco_in[i], sizeof(OVERLAPPED));
+		// log_info_hexdump(&usb_overlapped_sco_in[i], sizeof(OVERLAPPED));
 		usb_data_source_sco_in[i].handle = usb_overlapped_sco_in[i].hEvent;
 	    btstack_run_loop_set_data_source_handler(&usb_data_source_sco_in[i], &usb_process_sco_in);
 	    btstack_run_loop_add_data_source(&usb_data_source_sco_in[i]);
@@ -723,7 +759,7 @@ static int usb_try_open_device(const char * device_path){
 	return 1;
 
 exit_on_error:
-	log_error("winusb: last error %lu\n", GetLastError());
+	log_error("usb_try_open_device: last error %lu", GetLastError());
 	usb_free_resources();
 	return 0;
 }
@@ -824,29 +860,7 @@ static int usb_open(void){
 			log_info("usb_open: Device Path: %s", DevIntfDetailData->DevicePath);
 
 #if 0
-			// to access USB Class, Subclass, .. go through registry
-			// https://msdn.microsoft.com/en-us/library/windows/hardware/jj649944(v=vs.85).aspx
-
-			// DWORD dwType;
-			// HKEY hKey;
-			// BYTE lpData[1024];
-
-			hKey = SetupDiOpenDevRegKey(
-						hDevInfo,
-						&DevData,
-						DICS_FLAG_GLOBAL,
-						0,
-						DIREG_DEV,
-						KEY_READ
-					);
-
-			dwType = REG_SZ;
-			dwSize = sizeof(lpData);
-			RegQueryValueEx(hKey, _T("PortName"), NULL, &dwType, lpData, &dwSize);
-			RegCloseKey(hKey);
-
-#endif				
-
+            // check for hard-coded vendor/product ids
 			char vid_pid_match[30];
 			uint16_t vid = 0x0a12;
 			uint16_t pid = 0x0001;
@@ -862,8 +876,17 @@ static int usb_open(void){
 					log_error("usb_open: Device open failed");					
 				}
 			}
-		}
+#endif
 
+            // try all devices
+            BOOL result = usb_try_open_device(DevIntfDetailData->DevicePath);
+            if (result){
+                log_info("usb_open: Device opened, stop scanning");
+                r = 0;
+            } else {
+                log_error("usb_open: Device open failed");                  
+            }
+        }
 		HeapFree(GetProcessHeap(), 0, DevIntfDetailData);
 
 		if (r == 0) break;
@@ -875,7 +898,7 @@ static int usb_open(void){
 
 	SetupDiDestroyDeviceInfoList(hDevInfo);
 
-	log_info("usb_open: done\n");
+	log_info("usb_open: done");
 
     return r;    
 }
@@ -924,7 +947,7 @@ static int usb_send_cmd_packet(uint8_t *packet, int size){
     return 0;
 
 exit_on_error:
-	log_error("winusb: last error %lu\n", GetLastError());
+	log_error("winusb: last error %lu", GetLastError());
 	return -1;
 }
 
@@ -944,7 +967,7 @@ static int usb_send_acl_packet(uint8_t *packet, int size){
     return 0;
 
 exit_on_error:
-	log_error("winusb: last error %lu\n", GetLastError());
+	log_error("winusb: last error %lu", GetLastError());
 	return -1;
 }
 
