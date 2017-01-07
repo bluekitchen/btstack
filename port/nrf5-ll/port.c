@@ -329,3 +329,62 @@ static const btstack_run_loop_t btstack_run_loop_wiced = {
 const btstack_run_loop_t * btstack_run_loop_zephyr_get_instance(void){
     return &btstack_run_loop_wiced;
 }
+
+// copy from util/util.c, but returns number characters printed and uses <stdarg.h> to access arguments
+
+#include "util.h"
+#include <stdarg.h>
+
+/* Format a string and print it on the screen, just like the libc
+ *         function printf.
+ */
+int sprintf(char *str, const char *format, ...)
+{
+    int len = 0;
+
+    va_list arg;
+    va_start(arg, format);
+
+    int c;
+    char buf[20];
+
+    while ((c = *format++)) {
+        if (c != '%') {
+            *str++ = c;
+            len++;
+        }
+        else {
+            char *p;
+
+            c = *format++;
+            switch (c) {
+            case 'd':
+            case 'u':
+            case 'x':
+                util_itoa(buf, c, va_arg(arg, int));
+                p = buf;
+                goto string;
+            case 's':
+                p = va_arg(arg, char *);
+                if (!p)
+                    p = "(null)";
+string:
+                while (*p){
+                    *str++ = *p++;
+                    len++;
+                }
+                break;
+            default:
+                // looks like %c to me
+                *str++ = va_arg(arg, int);
+                len++;
+                break;
+            }
+        }
+    }
+
+    *str = 0;
+
+    va_end(arg);
+    return len;
+}
