@@ -17,7 +17,6 @@ SRCS = \
 	../../src/hci_dump.c \
 	../../src/l2cap.c \
 	../../src/l2cap_signaling.c \
-	le_counter.c \
 	hci-ll.c \
 	port.c \
 	retarget_printf.c \
@@ -33,4 +32,5 @@ INCLUDES = \
 	-I../../../external/nordic/include \
 	-I../../../arch/arm/cortex_m \
 	-I../../../soc/nrf5/
+
 include ../../../makefile.inc
