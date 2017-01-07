@@ -291,7 +291,7 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
             
             if (cmdline_addr_found){
                 printf("\nDisconnected %s\n", bd_addr_to_str(cmdline_addr));
-                exit(0);
+                return;
             }
 
             printf("\nDisconnected %s\n", bd_addr_to_str(report.address));
@@ -304,14 +304,17 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
     }
 }
 
+#ifdef HAVE_POSIX_STDIN
 static void usage(const char *name){
     fprintf(stderr, "\nUsage: %s [-a|--address aa:bb:cc:dd:ee:ff]\n", name);
     fprintf(stderr, "If no argument is provided, GATT browser will start scanning and connect to the first found device.\nTo connect to a specific device use argument [-a].\n\n");
 }
+#endif
 
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
 
+#ifdef HAVE_POSIX_STDIN
     int arg = 1;
     cmdline_addr_found = 0;
     
@@ -326,6 +329,10 @@ int btstack_main(int argc, const char * argv[]){
         usage(argv[0]);
         return 0;
     }
+#else
+    UNUSED(argc);
+    UNUSED(argv);
+#endif
 
     hci_event_callback_registration.callback = &hci_event_handler;
     hci_add_event_handler(&hci_event_callback_registration);
