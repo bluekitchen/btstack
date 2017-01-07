@@ -70,7 +70,7 @@ typedef struct le_device_memory_db {
 
 } le_device_memory_db_t;
 
-#define LE_DEVICE_MEMORY_SIZE 4
+#define LE_DEVICE_MEMORY_SIZE 0
 #define INVALID_ENTRY_ADDR_TYPE 0xff
 
 static le_device_memory_db_t le_devices[LE_DEVICE_MEMORY_SIZE];
