@@ -179,7 +179,7 @@ static WinUsb_GetCurrentFrameNumber_t   WinUsb_GetCurrentFrameNumber;
 
 // Outgoing SCO packet queue
 // simplified ring buffer implementation
-#define SCO_RING_BUFFER_COUNT  (8)
+#define SCO_RING_BUFFER_COUNT  (20)
 #define SCO_RING_BUFFER_SIZE (SCO_RING_BUFFER_COUNT * SCO_PACKET_SIZE)
 
 /** Request type bits of the "bmRequestType" field in control transfers. */
@@ -585,7 +585,6 @@ static void usb_process_sco_out(btstack_data_source_t *ds,  btstack_data_source_
     // decrease tab
     sco_ring_transfers_active--;
 
-
     // enable next data source callback
     if (sco_ring_transfers_active){
         // update expected and wait for completion
@@ -593,6 +592,8 @@ static void usb_process_sco_out(btstack_data_source_t *ds,  btstack_data_source_
         log_info("usb_process_sco_out_done[%02u]: wait for transfer %02u", transfer_index, usb_sco_out_expected_transfer);
         btstack_run_loop_enable_data_source_callbacks(&usb_data_source_sco_out[usb_sco_out_expected_transfer], DATA_SOURCE_CALLBACK_WRITE);
     }
+
+    log_info("usb_process_sco_out_done: transfers active %u", sco_ring_transfers_active);
 
     // mark free
     if (sco_ring_have_space()) {
@@ -1272,7 +1273,7 @@ static int usb_can_send_packet_now(uint8_t packet_type){
             return !usb_acl_out_active;
 #ifdef ENABLE_SCO_OVER_HCI
         case HCI_SCO_DATA_PACKET:
-            return 0;
+            // return 0;
             return sco_ring_have_space();
 #endif
         default:
@@ -1333,17 +1334,21 @@ static int usb_send_sco_packet(uint8_t *packet, int size){
         return -1;
     }
 
+    // get current frame number
+    ULONG current_frame_number;
+    LARGE_INTEGER timestamp;
+    WinUsb_GetCurrentFrameNumber(usb_interface_0_handle, &current_frame_number, &timestamp);
 
     // store packet in free slot
     int transfer_index = sco_ring_write;
     uint8_t * data = &sco_ring_buffer[transfer_index * SCO_PACKET_SIZE];
     memcpy(data, packet, size);
 
-    log_info("usb_send_sco_packet: using slot #%02u", transfer_index);
 
     // setup transfer
     int continue_stream = sco_ring_transfers_active > 0;
     BOOL ok = WinUsb_WriteIsochPipeAsap(hci_sco_out_buffer_handle, transfer_index * SCO_PACKET_SIZE, size, continue_stream, &usb_overlapped_sco_out[transfer_index]);
+    log_info("usb_send_sco_packet: using slot #%02u, current frame %lu, continue stream %u, ok %u", transfer_index, current_frame_number, continue_stream, ok);
     if (!ok) {
         if (GetLastError() != ERROR_IO_PENDING) goto exit_on_error;
     }
@@ -1361,6 +1366,8 @@ static int usb_send_sco_packet(uint8_t *packet, int size){
     // notify upper stack that provided buffer can be used again
     uint8_t event[] = { HCI_EVENT_TRANSPORT_PACKET_SENT, 0};
     packet_handler(HCI_EVENT_PACKET, &event[0], sizeof(event));
+
+    log_info("usb_send_sco_packet: transfers active %u", sco_ring_transfers_active);
 
     // and if we have more space for SCO packets
     if (sco_ring_have_space()) {
