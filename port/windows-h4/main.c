@@ -26,6 +26,7 @@
 #include "btstack_chipset_tc3566x.h"
 
 int btstack_main(int argc, const char * argv[]);
+static void local_version_information_handler(uint8_t * packet);
 
 static hci_transport_config_uart_t config = {
     HCI_TRANSPORT_CONFIG_UART,
@@ -73,8 +74,12 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 if (is_bcm){
                     btstack_chipset_bcm_set_device_name((const char *)&packet[6]);
                 }
-            }        
+            }
+            if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_read_local_version_information)){
+                local_version_information_handler(packet);
+            }
             break;
+
         default:
             break;
     }
@@ -85,7 +90,7 @@ static void use_fast_uart(void){
     config.baudrate_main = 921600;
 }
 
-static void local_version_information_callback(uint8_t * packet){
+static void local_version_information_handler(uint8_t * packet){
     printf("Local version information:\n");
     uint16_t hci_version    = little_endian_read_16(packet, 4);
     uint16_t hci_revision   = little_endian_read_16(packet, 6);
@@ -165,9 +170,6 @@ int main(int argc, const char * argv[]){
     // inform about BTstack state
     hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
-
-    // setup dynamic chipset driver setup
-    hci_set_local_version_information_callback(&local_version_information_callback);
 
     // handle CTRL-c
     signal(SIGINT, sigint_handler);

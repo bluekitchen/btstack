@@ -15,7 +15,7 @@ COMMON  += \
 			btstack_chipset_em9301.c \
 			btstack_chipset_stlc2500d.c \
 			btstack_chipset_tc3566x.c \
-			# btstack_chipset_bcm.c \
+			btstack_chipset_bcm.c \
 
 # examples
 include ${BTSTACK_ROOT}/example/Makefile.inc
