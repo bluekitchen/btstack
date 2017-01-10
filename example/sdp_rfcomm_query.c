@@ -71,6 +71,9 @@ static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(channel);
+    UNUSED(size);
+
     if (packet_type != HCI_EVENT_PACKET) return;
     uint8_t event = hci_event_packet_get_type(packet);
 
@@ -110,6 +113,10 @@ static void report_found_services(void){
 }
 
 static void handle_query_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(packet_type);
+    UNUSED(channel);
+    UNUSED(size);
+
     switch (packet[0]){
         case SDP_EVENT_QUERY_RFCOMM_SERVICE:
             store_found_service(sdp_event_query_rfcomm_service_get_name(packet), 
@@ -123,6 +130,9 @@ static void handle_query_rfcomm_event(uint8_t packet_type, uint16_t channel, uin
 
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
+
+    (void)argc;
+    (void)argv;
 
     printf("Client HCI init done\r\n");
         

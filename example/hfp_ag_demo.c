@@ -202,6 +202,8 @@ static void continue_remote_names(void){
 }
 
 static void inquiry_packet_handler (uint8_t packet_type, uint8_t *packet, uint16_t size){
+    UNUSED(size);
+
     bd_addr_t addr;
     int i;
     int numResponses;
@@ -329,6 +331,9 @@ static void show_usage(void){
 }
 
 static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type){
+    UNUSED(ds);
+    UNUSED(callback_type);
+
     cmd = btstack_stdin_read();
     switch (cmd){
         case 'a':
@@ -549,6 +554,8 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
 #endif
 
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * event, uint16_t event_size){
+    UNUSED(channel);
+
     switch (packet_type){
         case HCI_EVENT_PACKET:
             switch (event[0]){
@@ -678,6 +685,8 @@ static hfp_phone_number_t subscriber_number = {
 
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
+    (void)argc;
+    (void)argv;
 
     sco_demo_init();
 

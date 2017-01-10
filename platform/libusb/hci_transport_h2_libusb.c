@@ -470,6 +470,10 @@ static void handle_completed_transfer(struct libusb_transfer *transfer){
 }
 
 static void usb_process_ds(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type) {
+
+    UNUSED(ds);
+    UNUSED(callback_type);
+
     if (libusb_state != LIB_USB_TRANSFERS_ALLOCATED) return;
 
     // log_info("begin usb_process_ds");
@@ -497,6 +501,9 @@ static void usb_process_ds(btstack_data_source_t *ds, btstack_data_source_callba
 }
 
 static void usb_process_ts(btstack_timer_source_t *timer) {
+
+    UNUSED(timer);
+
     // log_info("in usb_process_ts");
 
     // timer is deactive, when timer callback gets called
@@ -1171,6 +1178,9 @@ static void usb_register_packet_handler(void (*handler)(uint8_t packet_type, uin
 }
 
 static void dummy_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
+    UNUSED(packet_type);
+    UNUSED(packet);
+    UNUSED(size);
 }
 
 // get usb singleton

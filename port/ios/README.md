@@ -26,9 +26,10 @@ While it's possible to use Xcode, I highly recommend to use theos to create apps
 ## Compile Instructions for BTstack package
 
 Install the following tools:
-* Xcode 6.4 as /Applications/Xcode.app
-* Xcode 4.4.1 as /Applications/Xcode-4.4.1.app/
-* [rpetrich's theos fork](https://github.com/rpetrich/theos) with "lippoplastic" support
+* Xcode
+* [csu-ios libraries](https://github.com/mringwal/csu-ios) for deployment targets < 6.0 (BTstack compiles againt iOS 3.0 by default)
+* [rpetrich's](https://github.com/rpetrich/theos) or [new official](https://github.com/theos/theos) theos fork with "lippoplastic" support
+
 
 Set the $THEOS environment variable to the location of the theos checkout, e.g. like:
 

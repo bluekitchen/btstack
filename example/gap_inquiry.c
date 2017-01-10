@@ -129,6 +129,9 @@ static void continue_remote_names(void){
  */ 
 
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(channel);
+    UNUSED(size);
+
     bd_addr_t addr;
     int i;
     int numResponses;
@@ -272,6 +275,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 /* LISTING_START(MainConfiguration): Setup packet handler for GAP inquiry */
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]) {
+    (void)argc;
+    (void)argv;
 
     hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);

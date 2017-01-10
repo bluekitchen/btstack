@@ -269,6 +269,9 @@ static int tap_alloc(char *dev, bd_addr_t bd_addr)
 /* LISTING_START(processTapData): Process incoming network packets */
 static void process_tap_dev_data(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type) 
 {
+    UNUSED(ds);
+    UNUSED(callback_type);
+
     ssize_t len;
     len = read(ds->fd, network_buffer, sizeof(network_buffer));
     if (len <= 0){
@@ -316,6 +319,10 @@ static char * get_string_from_data_element(uint8_t * element){
  * Section [on SDP BNEP Query example](#sec:sdpbnepqueryExample}.
  */
 static void handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) {
+
+    UNUSED(packet_type);
+    UNUSED(channel);
+    UNUSED(size);
 
     des_iterator_t des_list_it;
     des_iterator_t prot_it;
@@ -424,6 +431,8 @@ static void handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size)
 {
 /* LISTING_PAUSE */
+    UNUSED(channel);
+
     int       rc;
     uint8_t   event;
     bd_addr_t event_addr;
@@ -560,6 +569,9 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
+
+    UNUSED(argc);
+    UNUSED(argv);
 
     printf("Client HCI init done\n");
 

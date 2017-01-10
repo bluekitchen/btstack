@@ -170,6 +170,8 @@ static void one_shot_timer_setup(void){
 
 /* LISTING_START(SppServerPacketHandler): SPP Server - Heartbeat Counter over RFCOMM */
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(channel);
+
 /* LISTING_PAUSE */ 
     bd_addr_t event_addr;
     uint8_t   rfcomm_channel_nr;
@@ -244,6 +246,9 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
+    (void)argc;
+    (void)argv;
+
     one_shot_timer_setup();
     spp_service_setup();
 
