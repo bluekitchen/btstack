@@ -121,11 +121,60 @@ void avdtp_sink_get_capabilities(uint16_t con_handle, uint8_t seid);
 void avdtp_sink_get_all_capabilities(uint16_t con_handle, uint8_t seid);
 
 /**
- * @brief Set capabilities
+ * @brief Set configuration
  * @param con_handle
  */
-void avdtp_sink_set_capabilities(uint16_t con_handle, uint8_t acp_seid, uint8_t int_seid, uint16_t remote_capabilities_bitmap, avdtp_capabilities_t remote_capabilities);
+void avdtp_sink_set_configuration(uint16_t con_handle, uint8_t acp_seid, uint8_t int_seid, uint16_t remote_capabilities_bitmap, avdtp_capabilities_t remote_capabilities);
 
+/**
+ * @brief Get configuration
+ * @param con_handle
+ */
+void avdtp_sink_get_configuration(uint16_t con_handle, uint8_t acp_seid);
+
+/**
+ * @brief Suspend stream
+ * @param con_handle
+ * @param seid
+ */
+void avdtp_sink_suspend(uint16_t con_handle, uint8_t seid);
+
+
+/**
+ * @brief Reconfigure stream
+ * @param con_handle
+ * @param seid
+ */
+void avdtp_sink_reconfigure(uint16_t con_handle, uint8_t seid);
+
+
+/**
+ * @brief Open stream
+ * @param con_handle
+ * @param seid
+ */
+void avdtp_sink_open_stream(uint16_t con_handle, uint8_t seid);
+
+/**
+ * @brief Start stream
+ * @param con_handle
+ * @param seid
+ */
+void avdtp_sink_start_stream(uint16_t con_handle, uint8_t seid);
+
+/**
+ * @brief Start stream
+ * @param con_handle
+ * @param seid
+ */
+void avdtp_sink_abort_stream(uint16_t con_handle, uint8_t seid);
+
+/**
+ * @brief Start stream
+ * @param con_handle
+ * @param seid
+ */
+void avdtp_sink_stop_stream(uint16_t con_handle, uint8_t seid);
 
 /* API_END */
 

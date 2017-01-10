@@ -167,7 +167,14 @@ typedef enum {
     AVDTP_APPLICATION_W2_DISCOVER_SEPS,
     AVDTP_APPLICATION_W2_GET_CAPABILITIES,
     AVDTP_APPLICATION_W2_GET_ALL_CAPABILITIES,
-    AVDTP_APPLICATION_W2_SET_CAPABILITIES
+    AVDTP_APPLICATION_W2_SET_CAPABILITIES,
+    AVDTP_APPLICATION_W2_SUSPEND_STREAM_WITH_SEID,
+    AVDTP_APPLICATION_W2_RECONFIGURE_WITH_SEID,
+    AVDTP_APPLICATION_W2_OPEN_STREAM_WITH_SEID,
+    AVDTP_APPLICATION_W2_START_STREAM_WITH_SEID,
+    AVDTP_APPLICATION_W2_ABORT_STREAM_WITH_SEID,
+    AVDTP_APPLICATION_W2_STOP_STREAM_WITH_SEID,
+    AVDTP_APPLICATION_W2_GET_CONFIGURATION
 } avdtp_application_state_t;
 
 avdtp_application_state_t app_state = AVDTP_APPLICATION_IDLE;
@@ -406,8 +413,14 @@ static void show_usage(void){
     printf("d      - discover stream endpoints\n");
     printf("g      - get capabilities\n");
     printf("a      - get all capabilities\n");
-    printf("s      - set capabilities\n");
-
+    printf("s      - set configuration\n");
+    printf("f      - get configuration\n");
+    printf("R      - reconfigure stream with seid 1\n");
+    printf("o      - open stream with seid 1\n");
+    printf("m      - start stream with seid 1\n");
+    printf("A      - abort stream with seid 1\n");
+    printf("S      - stop stream with seid 1\n");
+    printf("P      - suspend stream with seid 1\n");
     printf("Ctrl-c - exit\n");
     printf("---\n");
 }
@@ -433,7 +446,7 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
             break;
         case 'C':
             printf("Disconnect not implemented\n");
-            // avdtp_sink_disconnect(local_cid);
+            avdtp_sink_disconnect(con_handle);
             break;
         case 'd':
             app_state = AVDTP_APPLICATION_W2_DISCOVER_SEPS;
@@ -442,6 +455,10 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
         case 'g':
             app_state = AVDTP_APPLICATION_W2_GET_CAPABILITIES;
             avdtp_sink_get_capabilities(con_handle, sep.seid);
+            break;
+        case 'f':
+            app_state = AVDTP_APPLICATION_W2_GET_CONFIGURATION;
+            avdtp_sink_get_configuration(con_handle, sep.seid);
             break;
         case 'a':
             app_state = AVDTP_APPLICATION_W2_GET_ALL_CAPABILITIES;
@@ -455,8 +472,31 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
 
             remote_capabilities.media_codec.media_codec_information_len = sizeof(media_sbc_codec_info);
             remote_capabilities.media_codec.media_codec_information = media_sbc_codec_info;
-            avdtp_sink_set_capabilities(con_handle, sep.seid, 1, remote_capabilities_bitmap, remote_capabilities);
+            avdtp_sink_set_configuration(con_handle, sep.seid, 1, remote_capabilities_bitmap, remote_capabilities);
             break;
+        case 'R':
+            app_state = AVDTP_APPLICATION_W2_RECONFIGURE_WITH_SEID;
+            avdtp_sink_reconfigure(con_handle, sep.seid);
+            break;
+        case 'o':
+            app_state = AVDTP_APPLICATION_W2_OPEN_STREAM_WITH_SEID;
+            avdtp_sink_open_stream(con_handle, sep.seid);
+            break;
+        case 'm': 
+            app_state = AVDTP_APPLICATION_W2_START_STREAM_WITH_SEID;
+            avdtp_sink_start_stream(con_handle, sep.seid);
+            break;
+        case 'A':
+            app_state = AVDTP_APPLICATION_W2_ABORT_STREAM_WITH_SEID;
+            avdtp_sink_abort_stream(con_handle, sep.seid);
+        case 'S':
+            app_state = AVDTP_APPLICATION_W2_STOP_STREAM_WITH_SEID;
+            avdtp_sink_stop_stream(con_handle, sep.seid);
+        case 'P':
+            app_state = AVDTP_APPLICATION_W2_SUSPEND_STREAM_WITH_SEID;
+            avdtp_sink_suspend(con_handle, sep.seid);
+            break;
+
         case '\n':
         case '\r':
             break;

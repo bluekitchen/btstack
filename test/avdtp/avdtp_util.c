@@ -63,9 +63,9 @@ uint8_t store_bit16(uint16_t bitmap, int position, uint8_t value){
     return bitmap;
 }
 
-void avdtp_read_signaling_header(avdtp_signaling_packet_t * signaling_header, uint8_t * packet, uint16_t size){
-    if (size < 2) return;   
+int avdtp_read_signaling_header(avdtp_signaling_packet_t * signaling_header, uint8_t * packet, uint16_t size){
     int pos = 0;
+    if (size < 2) return pos;   
     signaling_header->transaction_label = packet[pos] >> 4;
     signaling_header->packet_type = (avdtp_packet_type_t)((packet[pos] >> 2) & 0x03);
     signaling_header->message_type = (avdtp_message_type_t) (packet[pos] & 0x03);
@@ -93,7 +93,8 @@ void avdtp_read_signaling_header(avdtp_signaling_packet_t * signaling_header, ui
             signaling_header->num_packets--;
             break;
     }
-    signaling_header->signal_identifier = packet[pos] & 0x3f;
+    signaling_header->signal_identifier = packet[pos++] & 0x3f;
+    return pos;
 }
 
 int avdtp_pack_service_capabilities(uint8_t * buffer, int size, avdtp_capabilities_t caps, avdtp_service_category_t category, uint8_t pack_all_capabilities){
@@ -145,15 +146,16 @@ int avdtp_pack_service_capabilities(uint8_t * buffer, int size, avdtp_capabiliti
 static int avdtp_unpack_service_capabilities_has_errors(avdtp_connection_t * connection, avdtp_service_category_t category, uint8_t cap_len){
     connection->error_code = 0;
         
-    if (category < AVDTP_MEDIA_TRANSPORT || category > AVDTP_DELAY_REPORTING){
-        printf("    ACP: BAD SERVICE CATEGORY %d\n", category);
+    if (category < AVDTP_MEDIA_TRANSPORT){
+        printf("    ERROR: BAD SERVICE CATEGORY %d\n", category);
         connection->reject_service_category = category;
         connection->error_code = BAD_SERV_CATEGORY;
         return 1;
     }
+
     if (connection->signaling_packet.signal_identifier == AVDTP_SI_RECONFIGURE){
         if (category != AVDTP_CONTENT_PROTECTION && category != AVDTP_MEDIA_CODEC){
-            printf("    ACP: REJECT CATEGORY, INVALID_CAPABILITIES\n");
+            printf("    ERROR: REJECT CATEGORY, INVALID_CAPABILITIES\n");
             connection->reject_service_category = category;
             connection->error_code = INVALID_CAPABILITIES;
             return 1;
@@ -163,7 +165,7 @@ static int avdtp_unpack_service_capabilities_has_errors(avdtp_connection_t * con
     switch(category){
         case AVDTP_MEDIA_TRANSPORT:   
             if (cap_len != 0){
-                printf("    ACP: REJECT CATEGORY, BAD_MEDIA_TRANSPORT\n");
+                printf("    ERROR: REJECT CATEGORY, BAD_MEDIA_TRANSPORT\n");
                 connection->reject_service_category = category;
                 connection->error_code = BAD_MEDIA_TRANSPORT_FORMAT;
                 return 1;
@@ -172,7 +174,7 @@ static int avdtp_unpack_service_capabilities_has_errors(avdtp_connection_t * con
         case AVDTP_REPORTING:                
         case AVDTP_DELAY_REPORTING:                
             if (cap_len != 0){
-                printf("    ACP: REJECT CATEGORY, BAD_LENGTH\n");
+                printf("    ERROR: REJECT CATEGORY, BAD_LENGTH\n");
                 connection->reject_service_category = category;
                 connection->error_code = BAD_LENGTH;
                 return 1;
@@ -180,7 +182,7 @@ static int avdtp_unpack_service_capabilities_has_errors(avdtp_connection_t * con
             break;
         case AVDTP_RECOVERY:     
             if (cap_len < 3){
-                printf("    ACP: REJECT CATEGORY, BAD_MEDIA_TRANSPORT\n");
+                printf("    ERROR: REJECT CATEGORY, BAD_MEDIA_TRANSPORT\n");
                 connection->reject_service_category = category;
                 connection->error_code = BAD_RECOVERY_FORMAT;
                 return 1;
@@ -188,6 +190,7 @@ static int avdtp_unpack_service_capabilities_has_errors(avdtp_connection_t * con
             break;
         case AVDTP_CONTENT_PROTECTION:
             if (cap_len < 2){
+                printf("    ERROR: REJECT CATEGORY, BAD_CP_FORMAT\n");
                 connection->reject_service_category = category;
                 connection->error_code = BAD_CP_FORMAT;
                 return 1;
@@ -211,18 +214,15 @@ uint16_t avdtp_unpack_service_capabilities(avdtp_connection_t * connection, avdt
     int i;
     avdtp_service_category_t category = (avdtp_service_category_t)packet[pos++];
     uint8_t cap_len = packet[pos++];
+   
     if (avdtp_unpack_service_capabilities_has_errors(connection, category, cap_len)) return 0;
-    
     int processed_cap_len = 0;
+    int rfa = 0;
+    
     while (pos < size){
+        rfa = 0;
         processed_cap_len = pos;
         switch(category){
-            case AVDTP_MEDIA_TRANSPORT:   
-                break;
-            case AVDTP_REPORTING:                
-                break;
-            case AVDTP_DELAY_REPORTING:                
-                break;
             case AVDTP_RECOVERY:                
                 caps->recovery.recovery_type = packet[pos++];
                 caps->recovery.maximum_recovery_window_size = packet[pos++];
@@ -238,7 +238,7 @@ uint16_t avdtp_unpack_service_capabilities(avdtp_connection_t * connection, avdt
                 // connection->reject_service_category = category;
                 // connection->error_code = UNSUPPORTED_CONFIGURATION;
                 // support for content protection goes here
-                return 0;
+                break;
                 
             case AVDTP_HEADER_COMPRESSION:
                 caps->header_compression.back_ch  = packet[pos] >> 7; 
@@ -262,17 +262,30 @@ uint16_t avdtp_unpack_service_capabilities(avdtp_connection_t * connection, avdt
                 caps->media_codec.media_codec_information = &packet[pos];
                 pos += caps->media_codec.media_codec_information_len;
                 break;
+            case AVDTP_MEDIA_TRANSPORT:   
+            case AVDTP_REPORTING:                
+            case AVDTP_DELAY_REPORTING:                
+                pos += cap_len;
+                break;
             default:
+                pos += cap_len;
+                rfa = 1;
                 break;
         }
-
-        registered_service_categories = store_bit16(registered_service_categories, category, 1);
         processed_cap_len = pos - processed_cap_len;
-        if (cap_len <= processed_cap_len && pos < size-2){
-            category = (avdtp_service_category_t)packet[pos++];
-            cap_len = packet[pos++];
-            if (avdtp_unpack_service_capabilities_has_errors(connection, category, cap_len)) return 0;
-        }
+        
+        if (cap_len == processed_cap_len){
+            if (!rfa) {
+                registered_service_categories = store_bit16(registered_service_categories, category, 1);
+            }
+            if (pos < size-2){
+                category = (avdtp_service_category_t)packet[pos++];
+                cap_len = packet[pos++];
+                if (avdtp_unpack_service_capabilities_has_errors(connection, category, cap_len)) return 0;
+                // printf("category %d, pos %d + 2 + %d -> %d\n", category, old_pos, cap_len, pos + cap_len);
+                // printf_hexdump(packet+old_pos, size-old_pos);
+            }
+        } 
     }
     return registered_service_categories;
 }
@@ -280,23 +293,34 @@ uint16_t avdtp_unpack_service_capabilities(avdtp_connection_t * connection, avdt
 void avdtp_prepare_capabilities(avdtp_signaling_packet_t * signaling_packet, uint8_t transaction_label, uint16_t registered_service_categories, avdtp_capabilities_t capabilities, uint8_t identifier){
     if (signaling_packet->offset) return;
     uint8_t pack_all_capabilities = 1;
+    signaling_packet->message_type = AVDTP_RESPONSE_ACCEPT_MSG;
     signaling_packet->size = 0;
     int i;
+    signaling_packet->command[signaling_packet->size++] = signaling_packet->acp_seid << 2;
+    
     switch (identifier) {
         case AVDTP_SI_GET_CAPABILITIES:
             pack_all_capabilities = 0;
             break;
+        case AVDTP_SI_GET_ALL_CAPABILITIES:
+            pack_all_capabilities = 1;
+            break;
         case AVDTP_SI_SET_CONFIGURATION:
-            signaling_packet->command[signaling_packet->size++] = signaling_packet->acp_seid << 2;
             signaling_packet->command[signaling_packet->size++] = signaling_packet->int_seid << 2;
+            signaling_packet->message_type = AVDTP_CMD_MSG;
+            break;
+        case AVDTP_SI_RECONFIGURE:
+            signaling_packet->message_type = AVDTP_CMD_MSG;
             break;
         default: 
+            printf("avdtp_prepare_capabilities identifier %d\n", identifier);
             break;
     } 
     
     for (i = 1; i < 9; i++){
         if (get_bit16(registered_service_categories, i)){
             // service category
+            printf(" pack service category %d\n", i);
             signaling_packet->command[signaling_packet->size++] = i;
             signaling_packet->size += avdtp_pack_service_capabilities(signaling_packet->command+signaling_packet->size, sizeof(signaling_packet->command)-signaling_packet->size, capabilities, (avdtp_service_category_t)i, pack_all_capabilities);
         }
@@ -308,11 +332,6 @@ void avdtp_prepare_capabilities(avdtp_signaling_packet_t * signaling_packet, uin
     
     signaling_packet->signal_identifier = identifier;
     signaling_packet->transaction_label = transaction_label;
-    if (identifier == AVDTP_SI_SET_CONFIGURATION){
-        signaling_packet->message_type = AVDTP_CMD_MSG;
-    } else {
-        signaling_packet->message_type = AVDTP_RESPONSE_ACCEPT_MSG;
-    }
 }
 
 int avdtp_signaling_create_fragment(uint16_t cid, avdtp_signaling_packet_t * signaling_packet, uint8_t * out_buffer) {
