@@ -45,8 +45,10 @@
 #include "btstack_config.h"
 
 
+#ifdef ENABLE_CLASSIC
 #ifdef HAVE_EMBEDDED_TICK
 #include "btstack_run_loop_embedded.h"
+#endif
 #endif
 
 #ifdef HAVE_PLATFORM_IPHONE_OS
@@ -814,10 +816,12 @@ uint16_t hci_max_acl_data_packet_length(void){
     return hci_stack->acl_data_packet_length;
 }
 
+#ifdef ENABLE_CLASSIC
 int hci_extended_sco_link_supported(void){
     // No. 31, byte 3, bit 7
     return (hci_stack->local_supported_features[3] & (1 << 7)) != 0;
 }
+#endif
 
 int hci_non_flushable_packet_boundary_flag_supported(void){
     // No. 54, byte 6, bit 6
@@ -3254,6 +3258,7 @@ static void hci_emit_discoverable_enabled(uint8_t enabled){
     hci_emit_event(event, sizeof(event), 1);
 }
 
+#ifdef ENABLE_CLASSIC
 // query if remote side supports eSCO
 int hci_remote_esco_supported(hci_con_handle_t con_handle){
     hci_connection_t * connection = hci_connection_for_handle(con_handle);
@@ -3271,6 +3276,7 @@ int hci_remote_ssp_supported(hci_con_handle_t con_handle){
 int gap_ssp_supported_on_both_sides(hci_con_handle_t handle){
     return hci_local_ssp_activated() && hci_remote_ssp_supported(handle);
 }
+#endif
 
 // GAP API
 /**
