@@ -66,9 +66,6 @@ static btstack_linked_list_t bnep_channels = NULL;
 
 static gap_security_level_t bnep_security_level;
 
-static void (*app_packet_handler)(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
-
-
 static bnep_channel_t * bnep_channel_for_l2cap_cid(uint16_t l2cap_cid);
 static void bnep_channel_finalize(bnep_channel_t *channel);
 static void bnep_channel_start_timer(bnep_channel_t *channel, int timeout);
@@ -1090,8 +1087,10 @@ static int bnep_handle_ethernet_packet(bnep_channel_t *channel, bd_addr_t addr_d
 #endif
     
     /* Notify application layer and deliver the ethernet packet */
-    (*app_packet_handler)(BNEP_DATA_PACKET, channel->l2cap_cid,
-                          ethernet_packet, size + sizeof(uint16_t) + 2 * sizeof(bd_addr_t));
+    if (channel->packet_handler){
+        (*channel->packet_handler)(BNEP_DATA_PACKET, channel->l2cap_cid, ethernet_packet,
+                                   size + sizeof(uint16_t) + 2 * sizeof(bd_addr_t));
+    }
     
     return size;
 }
