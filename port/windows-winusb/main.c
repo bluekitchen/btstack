@@ -131,7 +131,7 @@ int main(int argc, const char * argv[]){
 
     // use logger: format HCI_DUMP_PACKETLOGGER, HCI_DUMP_BLUEZ or HCI_DUMP_STDOUT
 
-#if 0
+#if 1
     char pklg_path[100];
     strcpy(pklg_path, "hci_dump");
 #if 0
