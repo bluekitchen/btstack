@@ -892,6 +892,8 @@ void le_handle_advertisement_report(uint8_t *packet, int size){
 }
 #endif
 
+#if !defined(HAVE_PLATFORM_IPHONE_OS) && !defined (HAVE_HOST_CONTROLLER_API)
+
 static uint32_t hci_transport_uart_get_main_baud_rate(void){
     if (!hci_stack->config) return 0;
     uint32_t baud_rate = ((hci_transport_config_uart_t *)hci_stack->config)->baudrate_main;
@@ -940,6 +942,7 @@ static void hci_initialization_timeout_handler(btstack_timer_source_t * ds){
             break;
     }
 }
+#endif
 
 static void hci_initializing_next_state(void){
     hci_stack->substate = (hci_substate_t )( ((int) hci_stack->substate) + 1);
@@ -952,7 +955,7 @@ static void hci_initializing_run(void){
         case HCI_INIT_SEND_RESET:
             hci_state_reset();
 
-#ifndef HAVE_PLATFORM_IPHONE_OS
+#if !defined(HAVE_PLATFORM_IPHONE_OS) && !defined (HAVE_HOST_CONTROLLER_API)
             // prepare reset if command complete not received in 100ms
             btstack_run_loop_set_timer(&hci_stack->timeout, HCI_RESET_RESEND_TIMEOUT_MS);
             btstack_run_loop_set_timer_handler(&hci_stack->timeout, hci_initialization_timeout_handler);
@@ -970,6 +973,8 @@ static void hci_initializing_run(void){
             hci_send_cmd(&hci_read_local_name);
             hci_stack->substate = HCI_INIT_W4_SEND_READ_LOCAL_NAME;
             break;
+
+#if !defined(HAVE_PLATFORM_IPHONE_OS) && !defined (HAVE_HOST_CONTROLLER_API)
         case HCI_INIT_SEND_RESET_CSR_WARM_BOOT:
             hci_state_reset();
             // prepare reset if command complete not received in 100ms
@@ -1060,11 +1065,6 @@ static void hci_initializing_run(void){
             hci_stack->substate = HCI_INIT_W4_READ_LOCAL_SUPPORTED_COMMANDS;
             hci_send_cmd(&hci_read_local_supported_commands);
             break;            
-        case HCI_INIT_READ_LOCAL_SUPPORTED_COMMANDS:
-            log_info("Resend hci_read_local_supported_commands after CSR Warm Boot double reset");
-            hci_stack->substate = HCI_INIT_W4_READ_LOCAL_SUPPORTED_COMMANDS;
-            hci_send_cmd(&hci_read_local_supported_commands);
-            break;       
         case HCI_INIT_SET_BD_ADDR:
             log_info("Set Public BD ADDR to %s", bd_addr_to_str(hci_stack->custom_bd_addr));
             hci_stack->chipset->set_bd_addr_command(hci_stack->custom_bd_addr, hci_stack->hci_packet_buffer);
@@ -1072,6 +1072,13 @@ static void hci_initializing_run(void){
             hci_stack->substate = HCI_INIT_W4_SET_BD_ADDR;
             hci_send_cmd_packet(hci_stack->hci_packet_buffer, 3 + hci_stack->hci_packet_buffer[2]);
             break;
+#endif
+
+        case HCI_INIT_READ_LOCAL_SUPPORTED_COMMANDS:
+            log_info("Resend hci_read_local_supported_commands after CSR Warm Boot double reset");
+            hci_stack->substate = HCI_INIT_W4_READ_LOCAL_SUPPORTED_COMMANDS;
+            hci_send_cmd(&hci_read_local_supported_commands);
+            break;       
         case HCI_INIT_READ_BD_ADDR:
             hci_stack->substate = HCI_INIT_W4_READ_BD_ADDR;
             hci_send_cmd(&hci_read_bd_addr);
@@ -1206,6 +1213,8 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
         }
     }
 
+#if !defined(HAVE_PLATFORM_IPHONE_OS) && !defined (HAVE_HOST_CONTROLLER_API)
+
     // Vendor == CSR
     if (hci_stack->substate == HCI_INIT_W4_CUSTOM_INIT && hci_event_packet_get_type(packet) == HCI_EVENT_VENDOR_SPECIFIC){
         // TODO: track actual command
@@ -1269,20 +1278,28 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
         }
     }
 
+#endif
 
     if (!command_completed) return;
 
-    int need_baud_change = hci_stack->config
+    int need_baud_change = 0;
+    int need_addr_change = 0;
+
+#if !defined(HAVE_PLATFORM_IPHONE_OS) && !defined (HAVE_HOST_CONTROLLER_API)
+    need_baud_change = hci_stack->config
                         && hci_stack->chipset
                         && hci_stack->chipset->set_baudrate_command
                         && hci_stack->hci_transport->set_baudrate
                         && ((hci_transport_config_uart_t *)hci_stack->config)->baudrate_main;
 
-    int need_addr_change = hci_stack->custom_bd_addr_set
+    need_addr_change = hci_stack->custom_bd_addr_set
                         && hci_stack->chipset
                         && hci_stack->chipset->set_bd_addr_command;
+#endif
 
     switch(hci_stack->substate){
+
+#if !defined(HAVE_PLATFORM_IPHONE_OS) && !defined (HAVE_HOST_CONTROLLER_API)
         case HCI_INIT_SEND_RESET:
             // on CSR with BCSP/H5, resend triggers resend of HCI Reset and leads to substate == HCI_INIT_SEND_RESET
             // fix: just correct substate and behave as command below
@@ -1319,6 +1336,12 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
             // repeat custom init
             hci_stack->substate = HCI_INIT_CUSTOM_INIT;
             return;
+#else
+        case HCI_INIT_W4_SEND_RESET:
+            hci_stack->substate = HCI_INIT_READ_LOCAL_SUPPORTED_COMMANDS;
+            return ;
+#endif
+
         case HCI_INIT_W4_READ_LOCAL_SUPPORTED_COMMANDS:
             if (need_baud_change && hci_stack->manufacturer == COMPANY_ID_BROADCOM_CORPORATION){
                 hci_stack->substate = HCI_INIT_SEND_BAUD_CHANGE_BCM;
@@ -1330,6 +1353,7 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
             }
             hci_stack->substate = HCI_INIT_READ_BD_ADDR;
             return;
+#if !defined(HAVE_PLATFORM_IPHONE_OS) && !defined (HAVE_HOST_CONTROLLER_API)
         case HCI_INIT_W4_SEND_BAUD_CHANGE_BCM:
             if (need_baud_change){
                 uint32_t baud_rate = hci_transport_uart_get_main_baud_rate();
@@ -1354,6 +1378,7 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
         case HCI_INIT_W4_SEND_RESET_ST_WARM_BOOT:
             hci_stack->substate = HCI_INIT_READ_BD_ADDR;
             return;
+#endif
         case HCI_INIT_W4_READ_BD_ADDR:
             // only read buffer size if supported
             if (hci_stack->local_supported_commands[0] & 0x01) {
