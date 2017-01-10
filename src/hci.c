@@ -892,7 +892,7 @@ void le_handle_advertisement_report(uint8_t *packet, int size){
 }
 #endif
 
-#ifndef HAVE_HOST_CONTROLLER_API
+#if !defined(HAVE_PLATFORM_IPHONE_OS) && !defined (HAVE_HOST_CONTROLLER_API)
 
 static uint32_t hci_transport_uart_get_main_baud_rate(void){
     if (!hci_stack->config) return 0;
