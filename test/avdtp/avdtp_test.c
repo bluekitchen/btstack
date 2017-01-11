@@ -78,6 +78,7 @@
 #define BYTES_PER_FRAME     (2*NUM_CHANNELS)
 #define PREBUFFER_MS        150
 #define PREBUFFER_BYTES     (PREBUFFER_MS*SAMPLE_RATE/1000*BYTES_PER_FRAME)
+
 static uint8_t ring_buffer_storage[2*PREBUFFER_BYTES];
 static btstack_ring_buffer_t ring_buffer;
 
@@ -182,11 +183,61 @@ avdtp_application_state_t app_state = AVDTP_APPLICATION_IDLE;
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 static int media_initialized = 0;
-static int init_media_processing(void){
-    if (media_initialized) return 0;
+
+static int init_media_processing(adtvp_media_codec_information_sbc_t media_codec_sbc){
+    int num_channels = NUM_CHANNELS;
+    int sample_rate = SAMPLE_RATE;
+    int frames_per_buffer = FRAMES_PER_BUFFER;
+    int subbands = 8;
+    int block_length = 16;
+
+    if (media_codec_sbc.channel_mode_bitmap & AVDTP_SBC_MONO){
+        num_channels = 1;
+    }
+    if ( (media_codec_sbc.channel_mode_bitmap & AVDTP_SBC_JOINT_STEREO) || 
+         (media_codec_sbc.channel_mode_bitmap & AVDTP_SBC_STEREO) ||
+         (media_codec_sbc.channel_mode_bitmap & AVDTP_SBC_DUAL_CHANNEL) ){
+        num_channels = 2;
+    }
+
+    if (media_codec_sbc.sampling_frequency_bitmap & AVDTP_SBC_16000){
+        sample_rate = 16000;
+    }
+    if (media_codec_sbc.sampling_frequency_bitmap & AVDTP_SBC_32000){
+        sample_rate = 32000;
+    }
+    if (media_codec_sbc.sampling_frequency_bitmap & AVDTP_SBC_44100){
+        sample_rate = 44100;
+    }
+    if (media_codec_sbc.sampling_frequency_bitmap & AVDTP_SBC_48000){
+        sample_rate = 48000;
+    }
+
+    if (media_codec_sbc.subbands_bitmap & AVDTP_SBC_SUBBANDS_4){
+        subbands = 4;
+    }
+    if (media_codec_sbc.subbands_bitmap & AVDTP_SBC_SUBBANDS_8){
+        subbands = 8;
+    }
+
+    if (media_codec_sbc.block_length_bitmap & AVDTP_SBC_BLOCK_LENGTH_4){
+        block_length = 4;
+    }
+    if (media_codec_sbc.block_length_bitmap & AVDTP_SBC_BLOCK_LENGTH_8){
+        block_length = 8;
+    }
+    if (media_codec_sbc.block_length_bitmap & AVDTP_SBC_BLOCK_LENGTH_12){
+        block_length = 12;
+    }
+    if (media_codec_sbc.block_length_bitmap & AVDTP_SBC_BLOCK_LENGTH_16){
+        block_length = 16;
+    }
+
+    frames_per_buffer = subbands * block_length;
+
 #ifdef STORE_SBC_TO_WAV_FILE
     btstack_sbc_decoder_init(&state, mode, handle_pcm_data, NULL);
-    wav_writer_open(wav_filename, NUM_CHANNELS, SAMPLE_RATE);  
+    wav_writer_open(wav_filename, num_channels, sample_rate);  
 #endif
 
 #ifdef STORE_SBC_TO_SBC_FILE    
@@ -205,7 +256,7 @@ static int init_media_processing(void){
     } 
     /* -- setup input and output -- */
     outputParameters.device = Pa_GetDefaultOutputDevice(); /* default output device */
-    outputParameters.channelCount = NUM_CHANNELS;
+    outputParameters.channelCount = num_channels;
     outputParameters.sampleFormat = PA_SAMPLE_TYPE;
     outputParameters.suggestedLatency = Pa_GetDeviceInfo( outputParameters.device )->defaultHighOutputLatency;
     outputParameters.hostApiSpecificStreamInfo = NULL;
@@ -214,8 +265,8 @@ static int init_media_processing(void){
            &stream,
            NULL,                /* &inputParameters */
            &outputParameters,
-           SAMPLE_RATE,
-           FRAMES_PER_BUFFER,
+           sample_rate,
+           frames_per_buffer,
            paClipOff,           /* we won't output out of range samples so don't bother clipping them */
            patestCallback,      /* use callback */
            NULL );   
@@ -309,7 +360,7 @@ static void handle_l2cap_media_data_packet(avdtp_stream_endpoint_t * stream_endp
 
     // printf("SBC HEADER: num_frames %u, fragmented %u, start %u, stop %u\n", sbc_header.num_frames, sbc_header.fragmentation, sbc_header.starting_packet, sbc_header.last_packet);
     // printf_hexdump( packet+pos, size-pos );
-    init_media_processing();
+    
 #ifdef STORE_SBC_TO_WAV_FILE
     btstack_sbc_decoder_process_data(&state, 0, packet+pos, size-pos);
 #endif
@@ -382,6 +433,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             sbc.min_bitpool_value = avdtp_subevent_signaling_media_codec_sbc_get_min_bitpool_value(packet);
                             sbc.max_bitpool_value = avdtp_subevent_signaling_media_codec_sbc_get_max_bitpool_value(packet);
                             dump_media_codec_sbc(sbc);
+                            init_media_processing(sbc);
                             break;
                         case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER:
                             printf(" received non SBC codec. not implemented\n");
@@ -415,12 +467,12 @@ static void show_usage(void){
     printf("a      - get all capabilities\n");
     printf("s      - set configuration\n");
     printf("f      - get configuration\n");
-    printf("R      - reconfigure stream with seid 1\n");
-    printf("o      - open stream with seid 1\n");
-    printf("m      - start stream with seid 1\n");
-    printf("A      - abort stream with seid 1\n");
-    printf("S      - stop stream with seid 1\n");
-    printf("P      - suspend stream with seid 1\n");
+    printf("R      - reconfigure stream with %d\n", sep.seid);
+    printf("o      - open stream with seid %d\n", sep.seid);
+    printf("m      - start stream with %d\n", sep.seid);
+    printf("A      - abort stream with %d\n", sep.seid);
+    printf("S      - stop stream with %d\n", sep.seid);
+    printf("P      - suspend stream with %d\n", sep.seid);
     printf("Ctrl-c - exit\n");
     printf("---\n");
 }

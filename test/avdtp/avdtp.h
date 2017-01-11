@@ -164,6 +164,7 @@ typedef enum{
 } avdtp_sep_type_t;
 
 typedef enum {
+    AVDTP_SERVICE_CATEGORY_INVALID_0 = 0x00,
     AVDTP_MEDIA_TRANSPORT = 0X01,
     AVDTP_REPORTING,
     AVDTP_RECOVERY,
@@ -171,7 +172,8 @@ typedef enum {
     AVDTP_HEADER_COMPRESSION, //5
     AVDTP_MULTIPLEXING,       //6
     AVDTP_MEDIA_CODEC,        //7
-    AVDTP_DELAY_REPORTING     //8
+    AVDTP_DELAY_REPORTING,    //8
+    AVDTP_SERVICE_CATEGORY_INVALID_FF = 0xFF
 } avdtp_service_category_t;
 
 typedef struct {
@@ -334,6 +336,9 @@ typedef struct {
 
     uint16_t registered_service_categories;
     avdtp_capabilities_t capabilities;
+
+    uint16_t configured_service_categories;
+    avdtp_capabilities_t configuration;
 } avdtp_sep_t;
 
 
@@ -398,6 +403,8 @@ typedef struct {
     uint16_t num_packets;
 } avdtp_signaling_packet_t;
 
+btstack_packet_handler_t avdtp_sink_callback;
+
 typedef struct {
     btstack_linked_item_t    item;
 
@@ -439,6 +446,7 @@ typedef struct {
 typedef struct avdtp_stream_endpoint {
     btstack_linked_item_t    item;
     
+    // original capabilities
     avdtp_sep_t sep;
     uint16_t l2cap_media_cid;
     uint16_t l2cap_reporting_cid;
@@ -450,7 +458,7 @@ typedef struct avdtp_stream_endpoint {
     
     // active connection
     avdtp_connection_t * connection;
-    // store remote seps
+    // store configurations with remote seps
     avdtp_sep_t remote_seps[MAX_NUM_SEPS];
     uint8_t remote_seps_num;
 

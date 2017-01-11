@@ -138,6 +138,8 @@ int avdtp_pack_service_capabilities(uint8_t * buffer, int size, avdtp_capabiliti
                 buffer[pos++] = caps.media_codec.media_codec_information[i];
             }
             break;
+        default:
+            break;
     }
     buffer[0] = pos - 1; // length
     return pos;
@@ -145,8 +147,8 @@ int avdtp_pack_service_capabilities(uint8_t * buffer, int size, avdtp_capabiliti
 
 static int avdtp_unpack_service_capabilities_has_errors(avdtp_connection_t * connection, avdtp_service_category_t category, uint8_t cap_len){
     connection->error_code = 0;
-        
-    if (category < AVDTP_MEDIA_TRANSPORT){
+    
+    if (category == AVDTP_SERVICE_CATEGORY_INVALID_0 || category == AVDTP_SERVICE_CATEGORY_INVALID_FF){
         printf("    ERROR: BAD SERVICE CATEGORY %d\n", category);
         connection->reject_service_category = category;
         connection->error_code = BAD_SERV_CATEGORY;
@@ -209,6 +211,8 @@ static int avdtp_unpack_service_capabilities_has_errors(avdtp_connection_t * con
 }
 
 uint16_t avdtp_unpack_service_capabilities(avdtp_connection_t * connection, avdtp_capabilities_t * caps, uint8_t * packet, uint16_t size){
+    if (size == 0) return 0;
+    
     uint16_t registered_service_categories = 0;
     int pos = 0;
     int i;
@@ -379,3 +383,86 @@ int avdtp_signaling_create_fragment(uint16_t cid, avdtp_signaling_packet_t * sig
     return pos;
 }
 
+
+void avdtp_signaling_emit_connection_established(btstack_packet_handler_t callback, uint16_t con_handle, bd_addr_t addr, uint8_t status){
+    if (!callback) return;
+    uint8_t event[12];
+    int pos = 0;
+    event[pos++] = HCI_EVENT_AVDTP_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = AVDTP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED;
+    little_endian_store_16(event, pos, con_handle);
+    pos += 2;
+    reverse_bd_addr(addr,&event[pos]);
+    pos += 6;
+    event[pos++] = status;
+    (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
+void avdtp_signaling_emit_sep(btstack_packet_handler_t callback, uint16_t con_handle, avdtp_sep_t sep){
+    if (!callback) return;
+    uint8_t event[9];
+    int pos = 0;
+    event[pos++] = HCI_EVENT_AVDTP_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = AVDTP_SUBEVENT_SIGNALING_SEP_FOUND;
+    little_endian_store_16(event, pos, con_handle);
+    pos += 2;
+    event[pos++] = sep.seid;
+    event[pos++] = sep.in_use;
+    event[pos++] = sep.media_type;
+    event[pos++] = sep.type;
+    (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
+void avdtp_signaling_emit_done(btstack_packet_handler_t callback, uint16_t con_handle, uint8_t status){
+    if (!callback) return;
+    uint8_t event[6];
+    int pos = 0;
+    event[pos++] = HCI_EVENT_AVDTP_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = AVDTP_SUBEVENT_SIGNALING_DONE;
+    little_endian_store_16(event, pos, con_handle);
+    pos += 2;
+    event[pos++] = status;
+    (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
+void avdtp_signaling_emit_media_codec_sbc(btstack_packet_handler_t callback, uint16_t con_handle, adtvp_media_codec_capabilities_t media_codec){
+    if (!callback) return;
+    uint8_t event[13];
+    int pos = 0;
+    event[pos++] = HCI_EVENT_AVDTP_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC;
+    little_endian_store_16(event, pos, con_handle);
+    pos += 2;
+    event[pos++] = media_codec.media_type;
+    event[pos++] = media_codec.media_codec_information[0] >> 4;
+    event[pos++] = media_codec.media_codec_information[0] & 0x0F;
+    event[pos++] = media_codec.media_codec_information[1] >> 4;
+    event[pos++] = (media_codec.media_codec_information[1] & 0x0F) >> 2;
+    event[pos++] = media_codec.media_codec_information[1] & 0x03;
+    event[pos++] = media_codec.media_codec_information[2];
+    event[pos++] = media_codec.media_codec_information[3];
+    (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
+void avdtp_signaling_emit_media_codec_other(btstack_packet_handler_t callback, uint16_t con_handle, adtvp_media_codec_capabilities_t media_codec){
+    if (!callback) return;
+    uint8_t event[109];
+    int pos = 0;
+    event[pos++] = HCI_EVENT_AVDTP_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER;
+    little_endian_store_16(event, pos, con_handle);
+    pos += 2;
+    event[pos++] = media_codec.media_type;
+    little_endian_store_16(event, pos, media_codec.media_codec_type);
+    pos += 2;
+    little_endian_store_16(event, pos, media_codec.media_codec_information_len);
+    pos += 2;
+    memcpy(event+pos, media_codec.media_codec_information, media_codec.media_codec_information_len);
+
+    (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}

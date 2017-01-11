@@ -58,7 +58,6 @@ static uint16_t stream_endpoints_id_counter;
 
 static btstack_linked_list_t stream_endpoints;
 
-static btstack_packet_handler_t avdtp_sink_callback;
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
 static void (*handle_media_data)(avdtp_stream_endpoint_t * stream_endpoint, uint8_t *packet, uint16_t size);    
@@ -142,88 +141,6 @@ void a2dp_sink_create_sdp_record(uint8_t * service,  uint32_t service_record_han
     de_add_number(service, DE_UINT, DE_SIZE_16, supported_features);
 }
 
-static void avdtp_signaling_emit_connection_established(btstack_packet_handler_t callback, uint16_t con_handle, bd_addr_t addr, uint8_t status){
-    if (!callback) return;
-    uint8_t event[12];
-    int pos = 0;
-    event[pos++] = HCI_EVENT_AVDTP_META;
-    event[pos++] = sizeof(event) - 2;
-    event[pos++] = AVDTP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED;
-    little_endian_store_16(event, pos, con_handle);
-    pos += 2;
-    reverse_bd_addr(addr,&event[pos]);
-    pos += 6;
-    event[pos++] = status;
-    (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
-}
-
-static void avdtp_signaling_emit_sep(btstack_packet_handler_t callback, uint16_t con_handle, avdtp_sep_t sep){
-    if (!callback) return;
-    uint8_t event[9];
-    int pos = 0;
-    event[pos++] = HCI_EVENT_AVDTP_META;
-    event[pos++] = sizeof(event) - 2;
-    event[pos++] = AVDTP_SUBEVENT_SIGNALING_SEP_FOUND;
-    little_endian_store_16(event, pos, con_handle);
-    pos += 2;
-    event[pos++] = sep.seid;
-    event[pos++] = sep.in_use;
-    event[pos++] = sep.media_type;
-    event[pos++] = sep.type;
-    (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
-}
-
-static void avdtp_signaling_emit_done(btstack_packet_handler_t callback, uint16_t con_handle, uint8_t status){
-    if (!callback) return;
-    uint8_t event[6];
-    int pos = 0;
-    event[pos++] = HCI_EVENT_AVDTP_META;
-    event[pos++] = sizeof(event) - 2;
-    event[pos++] = AVDTP_SUBEVENT_SIGNALING_DONE;
-    little_endian_store_16(event, pos, con_handle);
-    pos += 2;
-    event[pos++] = status;
-    (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
-}
-
-static void avdtp_signaling_emit_media_codec_sbc(btstack_packet_handler_t callback, uint16_t con_handle, adtvp_media_codec_capabilities_t media_codec){
-    if (!callback) return;
-    uint8_t event[13];
-    int pos = 0;
-    event[pos++] = HCI_EVENT_AVDTP_META;
-    event[pos++] = sizeof(event) - 2;
-    event[pos++] = AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC;
-    little_endian_store_16(event, pos, con_handle);
-    pos += 2;
-    event[pos++] = media_codec.media_type;
-    event[pos++] = media_codec.media_codec_information[0] >> 4;
-    event[pos++] = media_codec.media_codec_information[0] & 0x0F;
-    event[pos++] = media_codec.media_codec_information[1] >> 4;
-    event[pos++] = (media_codec.media_codec_information[1] & 0x0F) >> 2;
-    event[pos++] = media_codec.media_codec_information[1] & 0x03;
-    event[pos++] = media_codec.media_codec_information[2];
-    event[pos++] = media_codec.media_codec_information[3];
-    (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
-}
-
-static void avdtp_signaling_emit_media_codec_other(btstack_packet_handler_t callback, uint16_t con_handle, adtvp_media_codec_capabilities_t media_codec){
-    if (!callback) return;
-    uint8_t event[109];
-    int pos = 0;
-    event[pos++] = HCI_EVENT_AVDTP_META;
-    event[pos++] = sizeof(event) - 2;
-    event[pos++] = AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER;
-    little_endian_store_16(event, pos, con_handle);
-    pos += 2;
-    event[pos++] = media_codec.media_type;
-    little_endian_store_16(event, pos, media_codec.media_codec_type);
-    pos += 2;
-    little_endian_store_16(event, pos, media_codec.media_codec_information_len);
-    pos += 2;
-    memcpy(event+pos, media_codec.media_codec_information, media_codec.media_codec_information_len);
-
-    (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
-}
 
 static avdtp_stream_endpoint_t * get_avdtp_stream_endpoint_for_seid(uint16_t seid){
     btstack_linked_list_iterator_t it;    
@@ -650,11 +567,11 @@ static void avdtp_sink_handle_can_send_now(avdtp_connection_t * connection, uint
 
 
 /* END: tracking can send now requests pro l2cap cid */
-static int handle_l2cap_data_packet_for_stream_endpoint(avdtp_connection_t * connection, avdtp_stream_endpoint_t * stream_endpoint, uint8_t *packet, uint16_t size){
+static int handle_l2cap_data_packet_for_stream_endpoint(avdtp_connection_t * connection, avdtp_stream_endpoint_t * stream_endpoint, uint8_t *packet, uint16_t size, int offset){
     avdtp_read_signaling_header(&connection->signaling_packet, packet, size);
 
     if (connection->signaling_packet.message_type == AVDTP_CMD_MSG){
-        if (avdtp_acceptor_stream_config_subsm(connection, stream_endpoint, packet, size)){
+        if (avdtp_acceptor_stream_config_subsm(connection, stream_endpoint, packet, size, offset)){
             avdtp_sink_request_can_send_now_acceptor(connection, connection->l2cap_signaling_cid);
             return 1;
         }
@@ -669,7 +586,7 @@ static int handle_l2cap_data_packet_for_stream_endpoint(avdtp_connection_t * con
 
 static int handle_l2cap_data_packet_for_signaling_connection(avdtp_connection_t * connection, uint8_t *packet, uint16_t size){
     avdtp_stream_endpoint_t * stream_endpoint = NULL;
-    int pos = avdtp_read_signaling_header(&connection->signaling_packet, packet, size);
+    int offset = avdtp_read_signaling_header(&connection->signaling_packet, packet, size);
 
     switch (connection->signaling_packet.message_type){
         case AVDTP_CMD_MSG:
@@ -701,7 +618,7 @@ static int handle_l2cap_data_packet_for_signaling_connection(avdtp_connection_t 
                         avdtp_sink_request_can_send_now_self(connection, connection->l2cap_signaling_cid);
                         return 1;
                     }
-                    connection->query_seid  = packet[pos++] >> 2;
+                    connection->query_seid  = packet[offset++] >> 2;
                     stream_endpoint = get_avdtp_stream_endpoint_for_active_seid(connection->query_seid);
                     if (!stream_endpoint){
                         printf("    ACP: cmd %d - RESPONSE REJECT BAD_ACP_SEID\n", connection->signaling_packet.signal_identifier);
@@ -711,7 +628,8 @@ static int handle_l2cap_data_packet_for_signaling_connection(avdtp_connection_t 
                         avdtp_sink_request_can_send_now_self(connection, connection->l2cap_signaling_cid);
                         return 1;
                     }
-                    return handle_l2cap_data_packet_for_stream_endpoint(connection, stream_endpoint, packet, size);
+
+                    return handle_l2cap_data_packet_for_stream_endpoint(connection, stream_endpoint, packet, size, offset);
                 case AVDTP_SI_RECONFIGURE:
                     if (size < 3) {
                         connection->error_code = BAD_LENGTH;
@@ -720,7 +638,7 @@ static int handle_l2cap_data_packet_for_signaling_connection(avdtp_connection_t 
                         avdtp_sink_request_can_send_now_self(connection, connection->l2cap_signaling_cid);
                         return 1;
                     }
-                    connection->query_seid  = packet[pos++] >> 2;
+                    connection->query_seid  = packet[offset++] >> 2;
                     stream_endpoint = get_avdtp_stream_endpoint_for_active_seid(connection->query_seid);
                     if (!stream_endpoint){
                         printf("    ACP: AVDTP_SI_RECONFIGURE - CATEGORY RESPONSE REJECT BAD_ACP_SEID\n");
@@ -731,7 +649,7 @@ static int handle_l2cap_data_packet_for_signaling_connection(avdtp_connection_t 
                         avdtp_sink_request_can_send_now_self(connection, connection->l2cap_signaling_cid);
                         return 1;
                     }
-                    return handle_l2cap_data_packet_for_stream_endpoint(connection, stream_endpoint, packet, size);
+                    return handle_l2cap_data_packet_for_stream_endpoint(connection, stream_endpoint, packet, size, offset);
                 
                 case AVDTP_SI_OPEN:
                     if (size < 3) {
@@ -741,7 +659,7 @@ static int handle_l2cap_data_packet_for_signaling_connection(avdtp_connection_t 
                         avdtp_sink_request_can_send_now_self(connection, connection->l2cap_signaling_cid);
                         return 1;
                     }
-                    connection->query_seid  = packet[pos++] >> 2;
+                    connection->query_seid  = packet[offset++] >> 2;
                     stream_endpoint = get_avdtp_stream_endpoint_for_active_seid(connection->query_seid);
                     if (!stream_endpoint){
                         printf("    ACP: AVDTP_SI_OPEN - RESPONSE REJECT BAD_STATE\n");
@@ -751,7 +669,7 @@ static int handle_l2cap_data_packet_for_signaling_connection(avdtp_connection_t 
                         avdtp_sink_request_can_send_now_self(connection, connection->l2cap_signaling_cid);
                         return 1;
                     }
-                    return handle_l2cap_data_packet_for_stream_endpoint(connection, stream_endpoint, packet, size);
+                    return handle_l2cap_data_packet_for_stream_endpoint(connection, stream_endpoint, packet, size, offset);
                 
                 case AVDTP_SI_SUSPEND:{
                     int i;
@@ -759,8 +677,9 @@ static int handle_l2cap_data_packet_for_signaling_connection(avdtp_connection_t 
                     printf("    ACP: AVDTP_SI_SUSPEND seids: ");
                     connection->num_suspended_seids = 0;
 
-                    for (i=pos; i<size; i++){
+                    for (i = offset; i < size; i++){
                         connection->suspended_seids[connection->num_suspended_seids] = packet[i] >> 2;
+                        offset++;
                         printf("%d, \n", connection->suspended_seids[connection->num_suspended_seids]);
                         connection->num_suspended_seids++;
                     }
@@ -788,7 +707,7 @@ static int handle_l2cap_data_packet_for_signaling_connection(avdtp_connection_t 
                             connection->num_suspended_seids = 0;
                             return 1;
                         }
-                        request_to_send = handle_l2cap_data_packet_for_stream_endpoint(connection, stream_endpoint, packet, size);
+                        request_to_send = handle_l2cap_data_packet_for_stream_endpoint(connection, stream_endpoint, packet, size, offset);
                     }
                     return request_to_send;
                 }
@@ -811,14 +730,15 @@ static int handle_l2cap_data_packet_for_signaling_connection(avdtp_connection_t 
                     }
                     
                     if (size == 3){
-                        printf("    ERROR code %02x\n", packet[pos]);
+                        printf("    ERROR code %02x\n", packet[offset]);
                         return 0;
                     }
                     
                     avdtp_sep_t sep;
                     int i;
-                    for (i = pos; i < size; i += 2){
+                    for (i = offset; i < size; i += 2){
                         sep.seid = packet[i] >> 2;
+                        offset++;
                         if (sep.seid < 0x01 || sep.seid > 0x3E){
                             printf("    invalid sep id\n");
                             return 0;
@@ -838,9 +758,9 @@ static int handle_l2cap_data_packet_for_signaling_connection(avdtp_connection_t 
                 case AVDTP_SI_GET_ALL_CAPABILITIES:
                 case AVDTP_SI_GET_CONFIGURATION:{
                     avdtp_sep_t sep;
-                    sep.registered_service_categories = avdtp_unpack_service_capabilities(connection, &sep.capabilities, packet+pos, size-pos);
+                    sep.registered_service_categories = avdtp_unpack_service_capabilities(connection, &sep.capabilities, packet+offset, size-offset);
                     printf_hexdump(packet, size);
-                    
+
                     if (get_bit16(sep.registered_service_categories, AVDTP_MEDIA_CODEC)){
                         switch (sep.capabilities.media_codec.media_codec_type){
                             case AVDTP_CODEC_SBC: 
@@ -866,16 +786,44 @@ static int handle_l2cap_data_packet_for_signaling_connection(avdtp_connection_t 
                     stream_endpoint->state = AVDTP_STREAM_ENDPOINT_OPENED;
                     avdtp_signaling_emit_done(avdtp_sink_callback, connection->con_handle, 0);
                     return 0;
-                case AVDTP_SI_SET_CONFIGURATION:
+                case AVDTP_SI_SET_CONFIGURATION:{
                     connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE;
-                    stream_endpoint = get_avdtp_stream_endpoint_for_seid(connection->query_seid);
+                    stream_endpoint = get_avdtp_stream_endpoint_for_seid(connection->int_seid);
                     if (!stream_endpoint) {
-                        avdtp_signaling_emit_done(avdtp_sink_callback, connection->con_handle, 0);
+                        avdtp_signaling_emit_done(avdtp_sink_callback, connection->con_handle, 1);
                         return 0;
+                    }
+                    
+                    avdtp_sep_t sep;
+                    sep.seid = connection->signaling_packet.command[3] >> 2;
+                    sep.registered_service_categories = avdtp_unpack_service_capabilities(connection, &sep.capabilities, connection->signaling_packet.command+4, connection->signaling_packet.size-4);
+                    sep.in_use = 1;
+
+                    // find or add sep
+                    int i;
+                    stream_endpoint->remote_sep_index = 0xFF;
+                    for (i=0; i < stream_endpoint->remote_seps_num; i++){
+                        if (stream_endpoint->remote_seps[i].seid == sep.seid){
+                            stream_endpoint->remote_sep_index = i;
+                            break;
+                        }
+                    }
+                    
+                    if (stream_endpoint->remote_sep_index != 0xFF){
+                        stream_endpoint->remote_seps[stream_endpoint->remote_sep_index] = sep;
+                        printf("    INT: update seid %d, to %p\n", stream_endpoint->remote_seps[stream_endpoint->remote_sep_index].seid, stream_endpoint);
+                    } else {
+                        // add new
+                        printf("    INT: seid %d not found in %p\n", sep.seid, stream_endpoint);
+                        stream_endpoint->remote_sep_index = stream_endpoint->remote_seps_num;
+                        stream_endpoint->remote_seps_num++;
+                        stream_endpoint->remote_seps[stream_endpoint->remote_sep_index] = sep;
+                        printf("    INT: add seid %d, to %p\n", stream_endpoint->remote_seps[stream_endpoint->remote_sep_index].seid, stream_endpoint);
                     }
                     stream_endpoint->state = AVDTP_STREAM_ENDPOINT_CONFIGURED;
                     avdtp_signaling_emit_done(avdtp_sink_callback, connection->con_handle, 0);
                     return 0;
+                }
                 case AVDTP_SI_START:
                     connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE;
                     stream_endpoint = get_avdtp_stream_endpoint_for_seid(connection->query_seid);
@@ -949,7 +897,7 @@ static void stream_endpoint_state_machine(avdtp_connection_t * connection, avdtp
     uint16_t local_cid;
     switch (packet_type){
         case L2CAP_DATA_PACKET:
-            handle_l2cap_data_packet_for_stream_endpoint(connection, stream_endpoint, packet, size);
+            handle_l2cap_data_packet_for_stream_endpoint(connection, stream_endpoint, packet, size, 0);
             break;
         case HCI_EVENT_PACKET:
             switch (event){
