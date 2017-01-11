@@ -183,6 +183,9 @@ static void transport_deliver_packet(void){
     transport_packet_handler(type, hci_rx_buffer, size);
 }
 
+void btstack_run_loop_rtc0_overflow(void){
+    btstack_run_loop_rtc0_overflow_counter++;
+}
 uint64_t btstack_run_loop_zephyr_get_ticks(void){
     uint32_t high_ticks_before, high_ticks_after, low_ticks;
     while (1){
@@ -205,7 +208,7 @@ static uint32_t btstack_run_loop_zephyr_ticks_for_ms(uint32_t time_in_ms){
 static void btstack_run_loop_zephyr_set_timer(btstack_timer_source_t *ts, uint32_t timeout_in_ms){
     uint32_t ticks = btstack_run_loop_zephyr_ticks_for_ms(timeout_in_ms);
     uint64_t timeout = btstack_run_loop_zephyr_get_ticks() + ticks;
-    // drop resolution to 32 ticks
+    // drop resolution to 32 ticks ~ 1 ms
     ts->timeout = timeout >> 5;
 }
 
@@ -253,8 +256,7 @@ static void btstack_run_loop_zephyr_execute_once(void) {
         transport_deliver_packet();
     }
 
-    // printf("Time %u, %lu, %u\n", btstack_run_loop_zephyr_get_ticks());
-    // printf("Time %08u ms\n", btstack_run_loop_get_time_ms());
+    // printf("Time %u\n", (int) btstack_run_loop_zephyr_get_ticks() >> 5);
 
     // process ready
     while (1){
@@ -267,20 +269,16 @@ static void btstack_run_loop_zephyr_execute_once(void) {
         if (done) break;
     }
 
-#if 0
-    uint64_t now = btstack_run_loop_zephyr_get_ticks() >> 5;
+    uint32_t now = btstack_run_loop_zephyr_get_ticks() >> 5;
 
     // process timers
     while (timers) {
         btstack_timer_source_t *ts = (btstack_timer_source_t *) timers;
+        // log_info("btstack_run_loop_zephyr_run: now %u, timeout %u", now, ts->timeout);
         if (ts->timeout > now) break;
         btstack_run_loop_remove_timer(ts);
         ts->process(ts);
     }
-
-    // deliver packet if ready
-    if (hci_rx_pos) return;
-#endif
 
 #if 0
     // disable IRQs and check if run loop iteration has been requested. if not, go to sleep
@@ -309,7 +307,7 @@ static void btstack_run_loop_zephyr_btstack_run_loop_init(void){
     timers = NULL;
 }
 
-static const btstack_run_loop_t btstack_run_loop_wiced = {
+static const btstack_run_loop_t btstack_run_loop_zephyr = {
     &btstack_run_loop_zephyr_btstack_run_loop_init,
     NULL,
     NULL,
@@ -327,7 +325,7 @@ static const btstack_run_loop_t btstack_run_loop_wiced = {
  * @brief Provide btstack_run_loop_posix instance for use with btstack_run_loop_init
  */
 const btstack_run_loop_t * btstack_run_loop_zephyr_get_instance(void){
-    return &btstack_run_loop_wiced;
+    return &btstack_run_loop_zephyr;
 }
 
 // copy from util/util.c, but returns number characters printed and uses <stdarg.h> to access arguments
