@@ -31,6 +31,7 @@ static uint8_t  hci_rx_type;
 
 static volatile uint32_t btstack_run_loop_rtc0_overflow_counter;
 static btstack_linked_list_t timers;
+static volatile int trigger_event_received = 0;
 
 /**
  * init transport
@@ -183,6 +184,21 @@ static void transport_deliver_packet(void){
     transport_packet_handler(type, hci_rx_buffer, size);
 }
 
+static void hal_cpu_disable_irqs(void){
+    __disable_irq();
+}
+
+static void hal_cpu_enable_irqs(void){
+    __enable_irq();
+}
+
+static void hal_cpu_enable_irqs_and_sleep(void){
+    __enable_irq();
+    DEBUG_CPU_SLEEP(1);
+    cpu_sleep();
+    DEBUG_CPU_SLEEP(0);
+}
+
 void btstack_run_loop_rtc0_overflow(void){
     btstack_run_loop_rtc0_overflow_counter++;
 }
@@ -280,7 +296,6 @@ static void btstack_run_loop_zephyr_execute_once(void) {
         ts->process(ts);
     }
 
-#if 0
     // disable IRQs and check if run loop iteration has been requested. if not, go to sleep
     hal_cpu_disable_irqs();
     if (trigger_event_received){
@@ -289,17 +304,11 @@ static void btstack_run_loop_zephyr_execute_once(void) {
     } else {
         hal_cpu_enable_irqs_and_sleep();
     }
-#endif
 }
 
 static void btstack_run_loop_zephyr_execute(void) {
     while (1) {
         btstack_run_loop_zephyr_execute_once();
-
-        /* goto sleep */
-        DEBUG_CPU_SLEEP(1);
-        cpu_sleep();
-        DEBUG_CPU_SLEEP(0);
     }
 }
 
@@ -320,6 +329,13 @@ static const btstack_run_loop_t btstack_run_loop_zephyr = {
     &btstack_run_loop_zephyr_dump_timer,
     &btstack_run_loop_zephyr_get_time_ms,
 };
+
+/**
+ * trigger run loop iteration
+ */
+void btstack_run_loop_embedded_trigger(void){
+    trigger_event_received = 1;
+}
 
 /**
  * @brief Provide btstack_run_loop_posix instance for use with btstack_run_loop_init
