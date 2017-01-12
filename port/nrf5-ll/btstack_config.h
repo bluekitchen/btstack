@@ -33,6 +33,13 @@
 #define MAX_NR_BNEP_CHANNELS 0
 #define MAX_NR_SERVICE_RECORD_ITEMS 0
 
+
+// additional ticker for BTstack run loop single shot timer
+#define BTSTACK_TICKER_NODES 1
+#define BTSTACK_USER_ID 3
+#define BTSTACK_USER_OPS 2
+#define BTSTACK_TICKER_ID (RADIO_TICKER_NODES)
+
 #define HAVE_HOST_CONTROLLER_API
 
 #endif
