@@ -11,6 +11,8 @@
 #include "radio.h"
 #include "pdu.h"
 #include "ctrl.h"
+#include "ticker.h"
+#include "cntr.h"
 
 #include "bluetooth.h"
 #include "btstack_debug.h"
@@ -266,6 +268,8 @@ static void btstack_run_loop_zephyr_add_timer(btstack_timer_source_t *ts){
     uint64_t now = btstack_run_loop_zephyr_get_ticks_prescaled();
     uint64_t new_timeout = btstack_run_loop_reconstruct_full_ticks(now, ts->timeout);
 
+    // log_info("btstack_run_loop_zephyr_add_timer: timeout %u", (int) ts->timeout);
+
     btstack_linked_item_t *it;
     for (it = (btstack_linked_item_t *) &timers; it->next ; it = it->next){
         // don't add timer that's already in there
@@ -288,6 +292,7 @@ static void btstack_run_loop_zephyr_add_timer(btstack_timer_source_t *ts){
  * Remove timer from run loop
  */
 static int btstack_run_loop_zephyr_remove_timer(btstack_timer_source_t *ts){
+    // log_info("btstack_run_loop_zephyr_remove_timer: timeout %u", (int) ts->timeout);
     return btstack_linked_list_remove(&timers, (btstack_linked_item_t *) ts);
 }
 
@@ -300,6 +305,51 @@ static void btstack_run_loop_zephyr_dump_timer(void){
         log_info("timer %u, timeout %u\n", i, (unsigned int) ts->timeout);
     }
 #endif
+}
+
+static uint64_t btstack_run_loop_zephyr_singleshot_timeout = 0;
+
+static void btstack_run_loop_zephyr_singleshot_timeout_handler(uint32_t ticks_at_expire, uint32_t remainder, uint16_t lazy, void *context){
+    (void)ticks_at_expire;
+    (void)remainder;
+    (void)lazy;
+    (void)context;
+
+    // just notify run loop
+    trigger_event_received = 1;
+
+    // single shot timer is not active anymore
+    btstack_run_loop_zephyr_singleshot_timeout = 0;
+}
+
+static void btstack_run_loop_zephyr_start_singleshot_timer(uint32_t timeout_ticks){
+    // log_info("btstack_run_loop_zephyr_start_singleshot_timer: %u, current %u", (int) timeout_ticks, (int) cntr_cnt_get());
+    ticker_start(0 /* instance */
+        , BTSTACK_USER_ID /* user */
+        , BTSTACK_TICKER_ID /* ticker id */
+        , timeout_ticks /* anchor point */
+        , 0 /* first interval */
+        , 0 /* periodic interval */
+        , 0 /* remainder */
+        , 0 /* lazy */
+        , 0 /* slot */
+        , btstack_run_loop_zephyr_singleshot_timeout_handler /* timeout callback function */
+        , 0 /* context */
+        , 0 /* op func */
+        , 0 /* op context */
+        );
+    btstack_run_loop_zephyr_singleshot_timeout = timeout_ticks;
+}
+
+static void btstack_run_loop_zephyr_stop_singleshot_timer(void){
+    log_info("btstack_run_loop_zephyr_stop_singleshot_timer");
+    ticker_stop(0 /* instance */
+        , BTSTACK_USER_ID /* user */
+        , BTSTACK_TICKER_ID /* ticker id */
+        , 0 /* op func */
+        , 0 /* op context */
+        );
+    btstack_run_loop_zephyr_singleshot_timeout = 0;
 }
 
 static void btstack_run_loop_zephyr_execute_once(void) {
@@ -322,21 +372,36 @@ static void btstack_run_loop_zephyr_execute_once(void) {
         if (done) break;
     }
 
-    uint64_t now = btstack_run_loop_zephyr_get_ticks_prescaled();
 
     // process timers
+    uint64_t timeout = 0;
     while (timers) {
+        uint64_t now = btstack_run_loop_zephyr_get_ticks_prescaled();
         btstack_timer_source_t *ts = (btstack_timer_source_t *) timers;
-        uint64_t timeout = btstack_run_loop_reconstruct_full_ticks(now, ts->timeout);
-        // log_info("btstack_run_loop_zephyr_run: now %u, timeout %u", now, ts->timeout);
+        timeout = btstack_run_loop_reconstruct_full_ticks(now, ts->timeout);
+        // log_info("btstack_run_loop_zephyr_run: now %u, timeout %u - counter %u", (int) now, (int) ts->timeout, NRF_RTC0->COUNTER >> PRESCALER_TICKS);
 
         if (timeout > now) break;
+        timeout = 0;
+
         btstack_run_loop_remove_timer(ts);
         ts->process(ts);
     }
 
+    // use ticker to wake up if timer is set
+    uint32_t timeout_ticks = (timeout << PRESCALER_TICKS) + 5; // +150 us to be on the safe side
+    if (timeout_ticks != btstack_run_loop_zephyr_singleshot_timeout){
+        if (btstack_run_loop_zephyr_singleshot_timeout){
+            btstack_run_loop_zephyr_stop_singleshot_timer();
+        }  
+        if (timeout_ticks){
+            btstack_run_loop_zephyr_start_singleshot_timer(timeout_ticks);
+        }
+    }
+
     // disable IRQs and check if run loop iteration has been requested. if not, go to sleep
     hal_cpu_disable_irqs();
+    
     if (trigger_event_received){
         trigger_event_received = 0;
         hal_cpu_enable_irqs();
@@ -368,13 +433,6 @@ static const btstack_run_loop_t btstack_run_loop_zephyr = {
     &btstack_run_loop_zephyr_dump_timer,
     &btstack_run_loop_zephyr_get_time_ms,
 };
-
-/**
- * trigger run loop iteration
- */
-void btstack_run_loop_embedded_trigger(void){
-    trigger_event_received = 1;
-}
 
 /**
  * @brief Provide btstack_run_loop_posix instance for use with btstack_run_loop_init
