@@ -144,13 +144,14 @@ static int  counter_string_len;
 
 static void beat(void){
     counter++;
-    counter_string_len = sprintf(counter_string, "BTstack counter %04u", counter);
+    counter_string_len = sprintf(counter_string, "BTstack counter %u", counter);
     puts(counter_string);
 }
 
 static void heartbeat_handler(struct btstack_timer_source *ts){
+    beat();
+
     if (le_notification_enabled) {
-        beat();
         att_server_request_can_send_now_event(con_handle);
     }
 
