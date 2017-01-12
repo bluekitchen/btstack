@@ -202,7 +202,11 @@ static void hal_cpu_enable_irqs_and_sleep(void){
 void btstack_run_loop_rtc0_overflow(void){
     btstack_run_loop_rtc0_overflow_counter++;
 }
-uint64_t btstack_run_loop_zephyr_get_ticks(void){
+
+// drop resolution to 32 ticks ~ 1 ms
+#define PRESCALER_TICKS 5
+
+static uint64_t btstack_run_loop_zephyr_get_ticks(void){
     uint32_t high_ticks_before, high_ticks_after, low_ticks;
     while (1){
         high_ticks_before = btstack_run_loop_rtc0_overflow_counter;
@@ -211,6 +215,10 @@ uint64_t btstack_run_loop_zephyr_get_ticks(void){
         if (high_ticks_after == high_ticks_before) break;
     }
     return (high_ticks_after << 24) | low_ticks;
+}
+
+static uint64_t btstack_run_loop_zephyr_get_ticks_prescaled(void){
+    return btstack_run_loop_zephyr_get_ticks() >> PRESCALER_TICKS;
 }
 
 static uint32_t btstack_run_loop_zephyr_get_time_ms(void){
@@ -225,13 +233,39 @@ static void btstack_run_loop_zephyr_set_timer(btstack_timer_source_t *ts, uint32
     uint32_t ticks = btstack_run_loop_zephyr_ticks_for_ms(timeout_in_ms);
     uint64_t timeout = btstack_run_loop_zephyr_get_ticks() + ticks;
     // drop resolution to 32 ticks ~ 1 ms
-    ts->timeout = timeout >> 5;
+    ts->timeout = timeout >> PRESCALER_TICKS;
+}
+
+static uint64_t btstack_run_loop_reconstruct_full_ticks(uint64_t reference_full, uint32_t ticks_low){
+    
+    uint32_t reference_low  = reference_full & 0x00000000ffffffff;
+    uint32_t reference_high = reference_full & 0xffffffff00000000L;
+
+    int32_t delta = ticks_low - reference_low;
+
+    if (delta >= 0){
+        if (ticks_low >= reference_low) {
+            return reference_high | ticks_low;
+        } else {
+            return reference_high + 0x100000000L + ticks_low;
+        }
+    } else {
+        if (ticks_low < reference_low) {
+            return reference_high | ticks_low;
+        } else {
+            return reference_high - 0x100000000L + ticks_low;
+        }            
+    }
 }
 
 /**
  * Add timer to run_loop (keep list sorted)
  */
 static void btstack_run_loop_zephyr_add_timer(btstack_timer_source_t *ts){
+
+    uint64_t now = btstack_run_loop_zephyr_get_ticks_prescaled();
+    uint64_t new_timeout = btstack_run_loop_reconstruct_full_ticks(now, ts->timeout);
+
     btstack_linked_item_t *it;
     for (it = (btstack_linked_item_t *) &timers; it->next ; it = it->next){
         // don't add timer that's already in there
@@ -239,7 +273,10 @@ static void btstack_run_loop_zephyr_add_timer(btstack_timer_source_t *ts){
             log_error( "btstack_run_loop_timer_add error: timer to add already in list!");
             return;
         }
-        if (ts->timeout < ((btstack_timer_source_t *) it->next)->timeout) {
+        uint32_t next_timeout_low = ((btstack_timer_source_t *) it->next)->timeout;
+        uint64_t next_timeout = btstack_run_loop_reconstruct_full_ticks(now, next_timeout_low);
+
+        if (new_timeout < next_timeout) {
             break;
         }
     }
@@ -285,13 +322,15 @@ static void btstack_run_loop_zephyr_execute_once(void) {
         if (done) break;
     }
 
-    uint32_t now = btstack_run_loop_zephyr_get_ticks() >> 5;
+    uint64_t now = btstack_run_loop_zephyr_get_ticks_prescaled();
 
     // process timers
     while (timers) {
         btstack_timer_source_t *ts = (btstack_timer_source_t *) timers;
+        uint64_t timeout = btstack_run_loop_reconstruct_full_ticks(now, ts->timeout);
         // log_info("btstack_run_loop_zephyr_run: now %u, timeout %u", now, ts->timeout);
-        if (ts->timeout > now) break;
+
+        if (timeout > now) break;
         btstack_run_loop_remove_timer(ts);
         ts->process(ts);
     }
