@@ -1861,6 +1861,7 @@ static void event_handler(uint8_t *packet, int size){
             }
             break;
 
+#ifdef ENABLE_CLASSIC
         case HCI_EVENT_ROLE_CHANGE:
             if (packet[2]) break;   // status != 0
             handle = little_endian_read_16(packet, 3);
@@ -1868,6 +1869,7 @@ static void event_handler(uint8_t *packet, int size){
             if (!conn) break;       // no conn
             conn->role = packet[9];
             break;
+#endif
 
         case HCI_EVENT_TRANSPORT_PACKET_SENT:
             // release packet buffer only for asynchronous transport and if there are not further fragements
