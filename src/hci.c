@@ -116,8 +116,10 @@ static hci_stack_t   hci_stack_static;
 #endif
 static hci_stack_t * hci_stack = NULL;
 
+#ifdef ENABLE_CLASSIC
 // test helper
 static uint8_t disable_l2cap_timeouts = 0;
+#endif
 
 /**
  * create connection for given address
