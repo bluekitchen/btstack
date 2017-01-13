@@ -1120,9 +1120,11 @@ uint16_t att_handle_request(att_connection_t * att_connection,
         case ATT_WRITE_COMMAND:
             handle_write_command(att_connection, request_buffer, request_len, response_buffer, response_buffer_size);
             break;
+#ifdef ENABLE_LE_SIGNED_WRITE
         case ATT_SIGNED_WRITE_COMMAND:
             log_info("handle_signed_write_command preprocessed by att_server.c");
             break;
+#endif
         default:
             log_info("Unhandled ATT Command: %02X, DATA: ", request_buffer[0]);
             log_info_hexdump(&request_buffer[9], request_len-9);
