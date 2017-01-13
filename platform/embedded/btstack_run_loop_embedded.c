@@ -117,11 +117,40 @@ static void btstack_run_loop_embedded_set_timer(btstack_timer_source_t *ts, uint
 #endif
 }
 
+// under the assumption that a tick value is +/- 2^30 away from now, calculate the upper bits of the tick value
+static int btstack_run_loop_embedded_reconstruct_higher_bits(uint32_t now, uint32_t ticks){
+    int32_t delta = ticks - now;
+    if (delta >= 0){
+        if (ticks >= now) {
+            return 0;
+        } else {
+            return 1;
+        }
+    } else {
+        if (ticks < now) {
+            return 0;
+        } else {
+            return -1;
+        }
+    }
+}
+
 /**
  * Add timer to run_loop (keep list sorted)
  */
 static void btstack_run_loop_embedded_add_timer(btstack_timer_source_t *ts){
 #ifdef TIMER_SUPPORT
+
+#ifdef HAVE_EMBEDDED_TICK
+    uint32_t now = system_ticks;
+#endif
+#ifdef HAVE_EMBEDDED_TIME_MS
+    uint32_t now = hal_time_ms();
+#endif
+
+    uint32_t new_low = ts->timeout;
+    int     new_high = btstack_run_loop_embedded_reconstruct_higher_bits(now, new_low);
+
     btstack_linked_item_t *it;
     for (it = (btstack_linked_item_t *) &timers; it->next ; it = it->next){
         // don't add timer that's already in there
@@ -129,7 +158,9 @@ static void btstack_run_loop_embedded_add_timer(btstack_timer_source_t *ts){
             log_error( "btstack_run_loop_timer_add error: timer to add already in list!");
             return;
         }
-        if (ts->timeout < ((btstack_timer_source_t *) it->next)->timeout) {
+        uint32_t next_low  = ((btstack_timer_source_t *) it->next)->timeout;
+        int      next_high = btstack_run_loop_embedded_reconstruct_higher_bits(now, next_low);
+        if (new_high < next_high || ((new_high == next_high) && (new_low < next_low))){
             break;
         }
     }
@@ -185,17 +216,21 @@ void btstack_run_loop_embedded_execute_once(void) {
         }
     }
     
+#ifdef TIMER_SUPPORT
+
 #ifdef HAVE_EMBEDDED_TICK
     uint32_t now = system_ticks;
 #endif
 #ifdef HAVE_EMBEDDED_TIME_MS
     uint32_t now = hal_time_ms();
 #endif
-#ifdef TIMER_SUPPORT
+
     // process timers
     while (timers) {
         btstack_timer_source_t *ts = (btstack_timer_source_t *) timers;
-        if (ts->timeout > now) break;
+        uint32_t timeout_low = ts->timeout;
+        int      timeout_high = btstack_run_loop_embedded_reconstruct_higher_bits(now, timeout_low);
+        if (timeout_high > 0 || ((timeout_high == 0) && (timeout_low > now))) break;
         btstack_run_loop_remove_timer(ts);
         ts->process(ts);
     }
