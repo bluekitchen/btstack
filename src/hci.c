@@ -2192,17 +2192,20 @@ void hci_close(void){
 void gap_set_class_of_device(uint32_t class_of_device){
     hci_stack->class_of_device = class_of_device;
 }
+
+void hci_disable_l2cap_timeout_check(void){
+    disable_l2cap_timeouts = 1;
+}
 #endif
 
+#if !defined(HAVE_PLATFORM_IPHONE_OS) && !defined (HAVE_HOST_CONTROLLER_API)
 // Set Public BD ADDR - passed on to Bluetooth chipset if supported in bt_control_h
 void hci_set_bd_addr(bd_addr_t addr){
     memcpy(hci_stack->custom_bd_addr, addr, 6);
     hci_stack->custom_bd_addr_set = 1;
 }
+#endif
 
-void hci_disable_l2cap_timeout_check(void){
-    disable_l2cap_timeouts = 1;
-}
 // State-Module-Driver overview
 // state                    module  low-level 
 // HCI_STATE_OFF             off      close
@@ -2784,7 +2787,6 @@ static void hci_run(void){
             hci_send_cmd(&hci_user_passkey_request_reply, &connection->address, 000000);
             return;
         }
-#endif
 
         if (connection->bonding_flags & BONDING_REQUEST_REMOTE_FEATURES){
             connection->bonding_flags &= ~BONDING_REQUEST_REMOTE_FEATURES;
@@ -2792,25 +2794,29 @@ static void hci_run(void){
             return;
         }
 
-        if (connection->bonding_flags & BONDING_DISCONNECT_SECURITY_BLOCK){
-            connection->bonding_flags &= ~BONDING_DISCONNECT_SECURITY_BLOCK;
-            hci_send_cmd(&hci_disconnect, connection->con_handle, 0x0005);  // authentication failure
-            return;
-        }
         if (connection->bonding_flags & BONDING_DISCONNECT_DEDICATED_DONE){
             connection->bonding_flags &= ~BONDING_DISCONNECT_DEDICATED_DONE;
             connection->bonding_flags |= BONDING_EMIT_COMPLETE_ON_DISCONNECT;
             hci_send_cmd(&hci_disconnect, connection->con_handle, 0x13);  // authentication done
             return;
         }
+
         if (connection->bonding_flags & BONDING_SEND_AUTHENTICATE_REQUEST){
             connection->bonding_flags &= ~BONDING_SEND_AUTHENTICATE_REQUEST;
             hci_send_cmd(&hci_authentication_requested, connection->con_handle);
             return;
         }
+
         if (connection->bonding_flags & BONDING_SEND_ENCRYPTION_REQUEST){
             connection->bonding_flags &= ~BONDING_SEND_ENCRYPTION_REQUEST;
             hci_send_cmd(&hci_set_connection_encryption, connection->con_handle, 1);
+            return;
+        }
+#endif
+
+        if (connection->bonding_flags & BONDING_DISCONNECT_SECURITY_BLOCK){
+            connection->bonding_flags &= ~BONDING_DISCONNECT_SECURITY_BLOCK;
+            hci_send_cmd(&hci_disconnect, connection->con_handle, 0x0005);  // authentication failure
             return;
         }
 
