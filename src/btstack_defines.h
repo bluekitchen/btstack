@@ -1204,4 +1204,11 @@ typedef uint8_t sm_key_t[16];
  */ 
 #define ANCS_SUBEVENT_CLIENT_DISCONNECTED                           0xF2
 
+
+/**
+ * @format 11
+ * @param subevent_code
+ */
+#define HCI_SUBEVENT_LE_ADVERTISEMENT_INDICATION                    0xE0
+
 #endif

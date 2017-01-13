@@ -1151,6 +1151,9 @@ struct bt_hci_ev_le_direct_adv_report {
 	struct bt_hci_ev_le_direct_adv_info direct_adv_info[0];
 } __packed;
 
+// non-standard extensions
+#define BT_HCI_EVT_LE_ADV_INDICATION           0xe0
+
 #ifdef __cplusplus
 }
 #endif

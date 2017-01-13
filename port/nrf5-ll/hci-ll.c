@@ -954,6 +954,12 @@ int btstack_hci_acl_handle(uint8_t * packet_buffer, uint16_t packet_len)
 	return 0;
 }
 
+#if defined(CONFIG_BLUETOOTH_CONTROLLER_ADV_INDICATION)
+static void adv_indication(btstack_buf_t *buf){
+	meta_evt(buf, HCI_SUBEVENT_LE_ADVERTISEMENT_INDICATION, 0);
+}
+#endif /* CONFIG_BLUETOOTH_CONTROLLER_ADV_INDICATION */
+
 static void le_advertising_report(struct pdu_data *pdu_data, uint8_t *b, btstack_buf_t *buf)
 {
 	const uint8_t c_adv_type[] = { 0x00, 0x01, 0x03, 0xff, 0x04,
@@ -1112,6 +1118,12 @@ static void encode_control(struct radio_pdu_node_rx *node_rx,
 	case NODE_RX_TYPE_PROFILE:
 		/** @todo */
 		return;
+
+#if defined (CONFIG_BLUETOOTH_CONTROLLER_ADV_INDICATION)
+	case NODE_RX_TYPE_ADV_INDICATION:
+		adv_indication(buf);
+		return;
+#endif /* CONFIG_BLUETOOTH_CONTROLLER_ADV_INDICATION */
 
 	default:
 		LL_ASSERT(0);
