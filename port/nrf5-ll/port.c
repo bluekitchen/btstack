@@ -323,11 +323,15 @@ static void btstack_run_loop_zephyr_singleshot_timeout_handler(uint32_t ticks_at
 }
 
 static void btstack_run_loop_zephyr_start_singleshot_timer(uint32_t timeout_ticks){
+
+    // limit ticks to ticker resolution - creatively use tick diff function to not specifiy resolution here
+    uint32_t ticker_ticks = ticker_ticks_diff_get(timeout_ticks, 0);
+
     // log_info("btstack_run_loop_zephyr_start_singleshot_timer: %u, current %u", (int) timeout_ticks, (int) cntr_cnt_get());
     ticker_start(0 /* instance */
         , BTSTACK_USER_ID /* user */
         , BTSTACK_TICKER_ID /* ticker id */
-        , timeout_ticks /* anchor point */
+        , ticker_ticks /* anchor point */
         , 0 /* first interval */
         , 0 /* periodic interval */
         , 0 /* remainder */
