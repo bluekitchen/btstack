@@ -1072,13 +1072,18 @@ static void hci_initializing_run(void){
             hci_stack->substate = HCI_INIT_W4_SET_BD_ADDR;
             hci_send_cmd_packet(hci_stack->hci_packet_buffer, 3 + hci_stack->hci_packet_buffer[2]);
             break;
-#endif
-
         case HCI_INIT_READ_LOCAL_SUPPORTED_COMMANDS:
             log_info("Resend hci_read_local_supported_commands after CSR Warm Boot double reset");
             hci_stack->substate = HCI_INIT_W4_READ_LOCAL_SUPPORTED_COMMANDS;
             hci_send_cmd(&hci_read_local_supported_commands);
             break;       
+#else
+        case HCI_INIT_READ_LOCAL_SUPPORTED_COMMANDS:
+            hci_stack->substate = HCI_INIT_W4_READ_LOCAL_SUPPORTED_COMMANDS;
+            hci_send_cmd(&hci_read_local_supported_commands);
+            break;       
+#endif
+
         case HCI_INIT_READ_BD_ADDR:
             hci_stack->substate = HCI_INIT_W4_READ_BD_ADDR;
             hci_send_cmd(&hci_read_bd_addr);
