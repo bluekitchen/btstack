@@ -31,6 +31,10 @@ static uint16_t hci_rx_pos;
 static uint8_t  hci_rx_buffer[256];
 static uint8_t  hci_rx_type;
 
+static uint16_t   hci_tx_size;
+static uint8_t  * hci_tx_data;
+static uint8_t    hci_tx_type;
+
 static volatile uint32_t btstack_run_loop_rtc0_overflow_counter;
 static btstack_linked_list_t timers;
 static volatile int trigger_event_received = 0;
@@ -74,29 +78,44 @@ int hci_driver_handle_cmd(btstack_buf_t * buf, uint8_t * event_buffer, uint16_t 
 	return err;
 }
 
+static int transport_can_send_packet_now(uint8_t packet_type){
+    UNUSED(packet_type);
+    return hci_tx_type == 0;
+}
+
 static int transport_send_packet(uint8_t packet_type, uint8_t *packet, int size){
-    btstack_buf_t buf;
     switch (packet_type){
         case HCI_COMMAND_DATA_PACKET:
-            buf.data = packet,
-            buf.len  = size;
-            if (hci_rx_pos){
-                log_error("transport_send_packet, but previous event not delivered size %u, type %u", hci_rx_pos, hci_rx_type);
-                log_info_hexdump(hci_rx_buffer, hci_rx_pos);
-            }
-            hci_rx_pos = 0;
+        case HCI_ACL_DATA_PACKET:
+            hci_tx_type = packet_type;
+            hci_tx_data = packet;
+            hci_tx_size = size;
+            return 0;
+        default:
+             log_error("transport_send_packet: invalid packet type: %02x", packet_type);
+            break;
+   }
+   return 0;
+}
+
+static void transport_process_packet(void){
+    btstack_buf_t buf;
+    switch (hci_tx_type){
+        case HCI_COMMAND_DATA_PACKET:
+            hci_rx_pos  = 0;
             hci_rx_type = 0;
+            buf.data = hci_tx_data,
+            buf.len  = hci_tx_size;
             hci_driver_handle_cmd(&buf, hci_rx_buffer, &hci_rx_pos);
             hci_rx_type = HCI_EVENT_PACKET;
             break;
         case HCI_ACL_DATA_PACKET:
-            btstack_hci_acl_handle(packet, size);
+            btstack_hci_acl_handle(hci_tx_data, hci_tx_size);
             break;
         default:
-            log_error("transport_send_packet: invalid packet type: %02x", packet_type);
             break;
     }
-    return 0;   
+    hci_tx_type = 0;
 }
 
 static const hci_transport_t transport = {
@@ -105,7 +124,7 @@ static const hci_transport_t transport = {
     /* int    (*open)(void); */                                     &transport_open,
     /* int    (*close)(void); */                                    &transport_close,
     /* void   (*register_packet_handler)(void (*handler)(...); */   &transport_register_packet_handler,
-    /* int    (*can_send_packet_now)(uint8_t packet_type); */       NULL,
+    /* int    (*can_send_packet_now)(uint8_t packet_type); */       &transport_can_send_packet_now,
     /* int    (*send_packet)(...); */                               &transport_send_packet,
     /* int    (*set_baudrate)(uint32_t baudrate); */                NULL,
     /* void   (*reset_link)(void); */                               NULL,
@@ -358,23 +377,29 @@ static void btstack_run_loop_zephyr_stop_singleshot_timer(void){
 
 static void btstack_run_loop_zephyr_execute_once(void) {
 
-    // deliver packet if ready
-    if (hci_rx_pos){
-        transport_deliver_packet();
-    }
-
     // printf("Time %u\n", (int) btstack_run_loop_zephyr_get_ticks() >> 5);
 
-    // process ready
+    // process queued radio packets
     while (1){
         // get next event from ll
         int done = hci_driver_task_step(&hci_rx_type, hci_rx_buffer, &hci_rx_pos);
-        while (hci_rx_pos){
+        if (hci_rx_pos){
             transport_deliver_packet();
         }
         if (done) break;
     }
 
+    // process queued HCI packets
+    while (hci_tx_type){
+        transport_process_packet();
+        // deliver result to HCI Command
+        if (hci_rx_pos){
+            transport_deliver_packet();
+        }
+        // notify upper stack that provided buffer can be used again
+        uint8_t event[] = { HCI_EVENT_TRANSPORT_PACKET_SENT, 0};
+        transport_packet_handler(HCI_EVENT_PACKET, &event[0], sizeof(event));
+    }
 
     // process timers
     uint64_t timeout = 0;
