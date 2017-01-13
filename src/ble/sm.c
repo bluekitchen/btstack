@@ -68,6 +68,10 @@
 #include "sm_mbedtls_allocator.h" 
 #endif
 
+#if defined(ENABLE_LE_SIGNED_WRITE) || defined(ENABLE_LE_SECURE_CONNECTIONS)
+#define ENABLE_CMAC_ENGINE
+#endif
+
 //
 // SM internal types and globals
 //
@@ -180,6 +184,7 @@ static random_address_update_t rau_state;
 static bd_addr_t sm_random_address;
 
 // CMAC Calculation: General
+#ifdef ENABLE_CMAC_ENGINE
 static cmac_state_t sm_cmac_state;
 static uint16_t     sm_cmac_message_len;
 static sm_key_t     sm_cmac_k;
@@ -189,11 +194,14 @@ static uint8_t      sm_cmac_block_current;
 static uint8_t      sm_cmac_block_count;
 static uint8_t      (*sm_cmac_get_byte)(uint16_t offset);
 static void         (*sm_cmac_done_handler)(uint8_t * hash);
+#endif
 
 // CMAC for ATT Signed Writes
+#ifdef ENABLE_LE_SIGNED_WRITE
 static uint8_t      sm_cmac_header[3];
 static const uint8_t * sm_cmac_message;
 static uint8_t      sm_cmac_sign_counter[4];
+#endif
 
 // CMAC for Secure Connection functions
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
@@ -363,7 +371,6 @@ static void sm_done_for_handle(hci_con_handle_t con_handle);
 static sm_connection_t * sm_get_connection_for_handle(hci_con_handle_t con_handle);
 static inline int sm_calc_actual_encryption_key_size(int other);
 static int sm_validate_stk_generation_method(void);
-static void sm_shift_left_by_one_bit_inplace(int len, uint8_t * data);
 
 static void log_info_hex16(const char * name, uint16_t value){
     log_info("%-6s 0x%04x", name, value);
@@ -841,17 +848,6 @@ int sm_address_resolution_lookup(uint8_t address_type, bd_addr_t address){
     return 0;
 }
 
-// CMAC Implementation using AES128 engine
-static void sm_shift_left_by_one_bit_inplace(int len, uint8_t * data){
-    int i;
-    int carry = 0;
-    for (i=len-1; i >= 0 ; i--){
-        int new_carry = data[i] >> 7;
-        data[i] = data[i] << 1 | carry;
-        carry = new_carry;
-    }
-}
-
 // while x_state++ for an enum is possible in C, it isn't in C++. we use this helpers to avoid compile errors for now
 static inline void sm_next_responding_state(sm_connection_t * sm_conn){
     sm_conn->sm_engine_state = (security_manager_state_t) (((int)sm_conn->sm_engine_state) + 1);
@@ -864,6 +860,7 @@ static inline void rau_next_state(void){
 }
 
 // CMAC calculation using AES Engine
+#ifdef ENABLE_CMAC_ENGINE
 
 static inline void sm_cmac_next_state(void){
     sm_cmac_state = (cmac_state_t) (((int)sm_cmac_state) + 1);
@@ -903,8 +900,10 @@ void sm_cmac_general_start(const sm_key_t key, uint16_t message_len, uint8_t (*g
     // let's go
     sm_run();
 }
+#endif
 
 // cmac for ATT Message signing
+#ifdef ENABLE_LE_SIGNED_WRITE
 static uint8_t sm_cmac_signed_write_message_get_byte(uint16_t offset){
     if (offset >= sm_cmac_message_len) {
         log_error("sm_cmac_signed_write_message_get_byte. out of bounds, access %u, len %u", offset, sm_cmac_message_len);
@@ -933,8 +932,9 @@ void sm_cmac_signed_write_start(const sm_key_t k, uint8_t opcode, hci_con_handle
     sm_cmac_message = message;
     sm_cmac_general_start(k, total_message_len, &sm_cmac_signed_write_message_get_byte, done_handler);
 }
+#endif
 
-
+#ifdef ENABLE_CMAC_ENGINE
 static void sm_cmac_handle_aes_engine_ready(void){
     switch (sm_cmac_state){
         case CMAC_CALC_SUBKEYS: {
@@ -970,6 +970,17 @@ static void sm_cmac_handle_aes_engine_ready(void){
         default:
             log_info("sm_cmac_handle_aes_engine_ready called in state %u", sm_cmac_state);
             break;
+    }
+}
+
+// CMAC Implementation using AES128 engine
+static void sm_shift_left_by_one_bit_inplace(int len, uint8_t * data){
+    int i;
+    int carry = 0;
+    for (i=len-1; i >= 0 ; i--){
+        int new_carry = data[i] >> 7;
+        data[i] = data[i] << 1 | carry;
+        carry = new_carry;
     }
 }
 
@@ -1034,6 +1045,7 @@ static void sm_cmac_handle_encryption_result(sm_key_t data){
             break;
     }
 }
+#endif
 
 static void sm_trigger_user_response(sm_connection_t * sm_conn){
     // notify client for: JUST WORKS confirm, Numeric comparison confirm, PASSKEY display or input
@@ -1857,6 +1869,7 @@ static void sm_run(void){
             break;
     }
 
+#ifdef ENABLE_CMAC_ENGINE
     // CMAC
     switch (sm_cmac_state){
         case CMAC_CALC_SUBKEYS:
@@ -1869,6 +1882,7 @@ static void sm_run(void){
         default:
             break;
     }
+#endif
 
     // CSRK Lookup
     // -- if csrk lookup ready, find connection that require csrk lookup
@@ -2583,6 +2597,7 @@ static void sm_handle_encryption_result(uint8_t * data){
             break;
     }
 
+#ifdef ENABLE_CMAC_ENGINE
     switch (sm_cmac_state){
         case CMAC_W4_SUBKEYS:
         case CMAC_W4_MI:
@@ -2596,6 +2611,7 @@ static void sm_handle_encryption_result(uint8_t * data){
         default:
             break;
     }
+#endif
 
     // retrieve sm_connection provided to sm_aes128_start_encryption
     sm_connection_t * connection = (sm_connection_t*) sm_aes128_context;
@@ -3635,7 +3651,9 @@ void sm_init(void){
     sm_max_encryption_key_size = 16;
     sm_min_encryption_key_size = 7;
     
+#ifdef ENABLE_CMAC_ENGINE
     sm_cmac_state  = CMAC_IDLE;
+#endif
     dkg_state = DKG_W4_WORKING;
     rau_state = RAU_W4_WORKING;
     sm_aes128_state = SM_AES128_IDLE;
