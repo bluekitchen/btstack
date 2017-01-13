@@ -346,7 +346,7 @@ static void btstack_run_loop_zephyr_start_singleshot_timer(uint32_t timeout_tick
 }
 
 static void btstack_run_loop_zephyr_stop_singleshot_timer(void){
-    log_info("btstack_run_loop_zephyr_stop_singleshot_timer");
+    // log_info("btstack_run_loop_zephyr_stop_singleshot_timer");
     ticker_stop(0 /* instance */
         , BTSTACK_USER_ID /* user */
         , BTSTACK_TICKER_ID /* ticker id */
