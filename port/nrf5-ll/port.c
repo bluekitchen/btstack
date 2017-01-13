@@ -370,7 +370,6 @@ static void btstack_run_loop_zephyr_execute_once(void) {
         // get next event from ll
         int done = hci_driver_task_step(&hci_rx_type, hci_rx_buffer, &hci_rx_pos);
         while (hci_rx_pos){
-            log_info("deliver packet received from controller");
             transport_deliver_packet();
         }
         if (done) break;
