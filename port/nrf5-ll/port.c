@@ -369,9 +369,9 @@ static void btstack_run_loop_zephyr_execute_once(void) {
     while (1){
         // get next event from ll
         int done = hci_driver_task_step(&hci_rx_type, hci_rx_buffer, &hci_rx_pos);
-        if (hci_rx_pos){
+        while (hci_rx_pos){
+            log_info("deliver packet received from controller");
             transport_deliver_packet();
-            continue;
         }
         if (done) break;
     }
@@ -393,7 +393,7 @@ static void btstack_run_loop_zephyr_execute_once(void) {
     }
 
     // use ticker to wake up if timer is set
-    uint32_t timeout_ticks = (timeout << PRESCALER_TICKS) + 5; // +150 us to be on the safe side
+    uint32_t timeout_ticks = (timeout << PRESCALER_TICKS);
     if (timeout_ticks != btstack_run_loop_zephyr_singleshot_timeout){
         if (btstack_run_loop_zephyr_singleshot_timeout){
             btstack_run_loop_zephyr_stop_singleshot_timer();
