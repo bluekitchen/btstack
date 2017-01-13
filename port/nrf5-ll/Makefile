@@ -27,6 +27,7 @@ INCLUDES = \
 	-I../../platform/embedded \
 	-I../../../ble/ll \
 	-I../../../util \
+	-I../../../ticker \
 	-I../../../hal \
 	-I../../../external/arm/cmsis/include \
 	-I../../../external/nordic/include \
