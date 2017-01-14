@@ -277,13 +277,14 @@ LIBUSB_CALL static void async_callback(struct libusb_transfer *transfer){
         return;
     }
 
+#ifdef ENABLE_SCO_OVER_HCI
     // mark SCO OUT transfer as done
     for (c=0;c<SCO_OUT_BUFFER_COUNT;c++){
         if (transfer == sco_out_transfers[c]){
             sco_out_transfers_in_flight[c] = 0;
         }
     }
-
+#endif
 
     int r;
     // log_info("begin async_callback endpoint %x, status %x, actual length %u", transfer->endpoint, transfer->status, transfer->actual_length );
