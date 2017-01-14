@@ -1,5 +1,5 @@
 //
-// btstack_config.h for Arduino port
+// btstack_config.h for most tests
 //
 
 #ifndef __BTSTACK_CONFIG
@@ -22,6 +22,8 @@
 #define ENABLE_SDP_EXTRA_QUERIES
 // #define ENABLE_LE_SECURE_CONNECTIONS
 #define ENABLE_LE_SIGNED_WRITE
+#define ENABLE_LE_PERIPHERAL
+#define ENABLE_LE_CENTRAL
 
 // BTstack configuration. buffers, sizes, ...
 #define HCI_ACL_PAYLOAD_SIZE 52
