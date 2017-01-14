@@ -78,6 +78,7 @@ static att_server_t * att_server_for_handle(hci_con_handle_t con_handle){
     return &hci_connection->att_server;
 }
 
+#ifdef ENABLE_LE_SIGNED_WRITE
 static att_server_t * att_server_for_state(att_server_state_t state){
     btstack_linked_list_iterator_t it;
     hci_connections_get_iterator(&it);
@@ -88,6 +89,7 @@ static att_server_t * att_server_for_state(att_server_state_t state){
     }
     return NULL;
 }
+#endif
 
 static void att_handle_value_indication_notify_client(uint8_t status, uint16_t client_handle, uint16_t attribute_handle){
     if (!att_client_packet_handler) return;
