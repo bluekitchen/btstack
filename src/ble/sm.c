@@ -51,6 +51,10 @@
 #include "hci_dump.h"
 #include "l2cap.h"
 
+#if !defined(ENABLE_LE_PERIPHERAL) && !defined(ENABLE_LE_CENTRAL)
+#error "LE Security Manager used, but neither ENABLE_LE_PERIPHERAL nor ENABLE_LE_CENTRAL defined. Please add at least one to btstack_config.h."
+#endif
+
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
 #ifdef HAVE_HCI_CONTROLLER_DHKEY_SUPPORT
 #error "Support for DHKEY Support in HCI Controller not implemented yet. Please use software implementation" 
