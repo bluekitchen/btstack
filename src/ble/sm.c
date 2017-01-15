@@ -3981,16 +3981,21 @@ static int gap_random_address_type_requires_updates(void){
     if (gap_random_adress_type == GAP_RANDOM_ADDRESS_TYPE_OFF) return 0;
     return 1;
 }
+
+#ifdef ENABLE_LE_PERIPHERAL
 static uint8_t own_address_type(void){
     if (gap_random_adress_type == 0) return 0;
     return 1;
 }
+#endif
 
 // GAP LE API
 void gap_random_address_set_mode(gap_random_address_type_t random_address_type){
     gap_random_address_update_stop();
     gap_random_adress_type = random_address_type;
+#ifdef ENABLE_LE_PERIPHERAL
     hci_le_advertisements_set_own_address_type(own_address_type());
+#endif
     if (!gap_random_address_type_requires_updates()) return;
     gap_random_address_update_start();
     gap_random_address_trigger();
@@ -4015,6 +4020,7 @@ void gap_random_address_set(bd_addr_t addr){
     sm_run();
 }
 
+#ifdef ENABLE_LE_PERIPHERAL
 /*
  * @brief Set Advertisement Paramters
  * @param adv_int_min
@@ -4032,4 +4038,5 @@ void gap_advertisements_set_params(uint16_t adv_int_min, uint16_t adv_int_max, u
     hci_le_advertisements_set_params(adv_int_min, adv_int_max, adv_type, own_address_type(),
         direct_address_typ, direct_address, channel_map, filter_policy);
 }
+#endif
 
