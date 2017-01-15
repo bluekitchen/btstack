@@ -30,6 +30,7 @@
 #include "cpu.h"
 
 #include "btstack_debug.h"
+#include "btstack_config.h"
 
 #if 0
 #include <misc/byteorder.h>
@@ -350,6 +351,7 @@ static void le_set_random_address(btstack_buf_t *buf, btstack_buf_t *evt)
 	ccst->status = 0x00;
 }
 
+#ifdef ENABLE_LE_PERIPHERAL
 static void le_set_adv_param(btstack_buf_t *buf, btstack_buf_t *evt)
 {
 	struct bt_hci_cp_le_set_adv_param *cmd = (void *)buf->data;
@@ -416,6 +418,9 @@ static void le_set_adv_enable(btstack_buf_t *buf, btstack_buf_t *evt)
 	ccst = cmd_complete(evt, sizeof(*ccst));
 	ccst->status = (!status) ? 0x00 : BT_HCI_ERR_CMD_DISALLOWED;
 }
+#endif
+
+#ifdef ENABLE_LE_CENTRAL
 
 static void le_set_scan_params(btstack_buf_t *buf, btstack_buf_t *evt)
 {
@@ -484,7 +489,6 @@ static void le_create_conn_cancel(btstack_buf_t *buf, btstack_buf_t *evt)
 	ccst = cmd_complete(evt, sizeof(*ccst));
 	ccst->status = (!status) ? 0x00 : BT_HCI_ERR_CMD_DISALLOWED;
 }
-
 static void le_read_wl_size(btstack_buf_t *buf, btstack_buf_t *evt)
 {
 	UNUSED(buf);
@@ -532,6 +536,7 @@ static void le_rem_dev_from_wl(btstack_buf_t *buf, btstack_buf_t *evt)
 	ccst = cmd_complete(evt, sizeof(*ccst));
 	ccst->status = (!status) ? 0x00 : BT_HCI_ERR_CMD_DISALLOWED;
 }
+#endif
 
 static void le_conn_update(btstack_buf_t *buf, btstack_buf_t *evt)
 {
@@ -745,6 +750,7 @@ static int controller_cmd_handle(uint8_t ocf, btstack_buf_t *cmd,
 		le_set_random_address(cmd, evt);
 		break;
 
+#ifdef ENABLE_LE_PERIPHERAL
 	case BT_OCF(BT_HCI_OP_LE_SET_ADV_PARAM):
 		le_set_adv_param(cmd, evt);
 		break;
@@ -765,6 +771,9 @@ static int controller_cmd_handle(uint8_t ocf, btstack_buf_t *cmd,
 		le_set_adv_enable(cmd, evt);
 		break;
 
+#endif
+
+#ifdef ENABLE_LE_CENTRAL
 	case BT_OCF(BT_HCI_OP_LE_SET_SCAN_PARAMS):
 		le_set_scan_params(cmd, evt);
 		break;
@@ -796,6 +805,7 @@ static int controller_cmd_handle(uint8_t ocf, btstack_buf_t *cmd,
 	case BT_OCF(BT_HCI_OP_LE_REM_DEV_FROM_WL):
 		le_rem_dev_from_wl(cmd, evt);
 		break;
+#endif
 
 	case BT_OCF(BT_HCI_OP_LE_CONN_UPDATE):
 		le_conn_update(cmd, evt);
@@ -955,11 +965,14 @@ int btstack_hci_acl_handle(uint8_t * packet_buffer, uint16_t packet_len)
 }
 
 #if defined(CONFIG_BLUETOOTH_CONTROLLER_ADV_INDICATION)
+#ifdef ENABLE_LE_PERIPHERAL
 static void adv_indication(btstack_buf_t *buf){
 	meta_evt(buf, HCI_SUBEVENT_LE_ADVERTISEMENT_INDICATION, 0);
 }
+#endif
 #endif /* CONFIG_BLUETOOTH_CONTROLLER_ADV_INDICATION */
 
+#ifdef ENABLE_LE_CENTRAL
 static void le_advertising_report(struct pdu_data *pdu_data, uint8_t *b, btstack_buf_t *buf)
 {
 	const uint8_t c_adv_type[] = { 0x00, 0x01, 0x03, 0xff, 0x04,
@@ -998,6 +1011,7 @@ static void le_advertising_report(struct pdu_data *pdu_data, uint8_t *b, btstack
 		  offsetof(struct pdu_adv, payload) + adv->len];
 
 }
+#endif
 
 static void le_conn_complete(struct pdu_data *pdu_data, uint16_t handle,
 			     btstack_buf_t *buf)
@@ -1082,14 +1096,17 @@ static void encode_control(struct radio_pdu_node_rx *node_rx,
 			   struct pdu_data *pdu_data, btstack_buf_t *buf)
 {
 	uint8_t *b = (uint8_t *)node_rx;
+	UNUSED(b);
 	uint16_t handle;
 
 	handle = node_rx->hdr.handle;
 
 	switch (node_rx->hdr.type) {
+#ifdef ENABLE_LE_CENTRAL
 	case NODE_RX_TYPE_REPORT:
 		le_advertising_report(pdu_data, b, buf);
 		break;
+#endif
 
 	case NODE_RX_TYPE_CONNECTION:
 		le_conn_complete(pdu_data, handle, buf);
@@ -1119,11 +1136,13 @@ static void encode_control(struct radio_pdu_node_rx *node_rx,
 		/** @todo */
 		return;
 
+#ifdef ENABLE_LE_PERIPHERAL
 #if defined (CONFIG_BLUETOOTH_CONTROLLER_ADV_INDICATION)
 	case NODE_RX_TYPE_ADV_INDICATION:
 		adv_indication(buf);
 		return;
 #endif /* CONFIG_BLUETOOTH_CONTROLLER_ADV_INDICATION */
+#endif
 
 	default:
 		LL_ASSERT(0);
@@ -1329,42 +1348,6 @@ void hci_acl_encode_btstack(struct radio_pdu_node_rx *node_rx, uint8_t * packet_
 	}
 	*packet_size = offset;
 }
-
-
-#if 0
-void hci_acl_encode(struct radio_pdu_node_rx *node_rx, btstack_buf_t *buf)
-{
-	struct bt_hci_acl_hdr *acl;
-	struct pdu_data *pdu_data;
-	uint16_t handle_flags;
-	uint16_t handle;
-	uint8_t *data;
-
-	pdu_data = (struct pdu_data *)node_rx->pdu_data;
-	handle = node_rx->hdr.handle;
-
-	switch (pdu_data->ll_id) {
-	case PDU_DATA_LLID_DATA_CONTINUE:
-	case PDU_DATA_LLID_DATA_START:
-		acl = (void *)btstack_buf_add(buf, sizeof(*acl));
-		if (pdu_data->ll_id == PDU_DATA_LLID_DATA_START) {
-			handle_flags = bt_acl_handle_pack(handle, BT_ACL_START);
-		} else {
-			handle_flags = bt_acl_handle_pack(handle, BT_ACL_CONT);
-		}
-		acl->handle = sys_cpu_to_le16(handle_flags);
-		acl->len = sys_cpu_to_le16(pdu_data->len);
-		data = (void *)btstack_buf_add(buf, pdu_data->len);
-		memcpy(data, &pdu_data->payload.lldata[0], pdu_data->len);
-		break;
-
-	default:
-		LL_ASSERT(0);
-		break;
-	}
-
-}
-#endif
 
 void btstack_hci_evt_encode(struct radio_pdu_node_rx *node_rx, btstack_buf_t *buf)
 {
