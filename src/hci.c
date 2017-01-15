@@ -105,9 +105,9 @@ static int  hci_is_le_connection(hci_connection_t * connection);
 static int  hci_number_free_acl_slots_for_connection_type( bd_addr_type_t address_type);
 
 #ifdef ENABLE_BLE
+#ifdef ENABLE_LE_CENTRAL
 // called from test/ble_client/advertising_data_parser.c
 void le_handle_advertisement_report(uint8_t *packet, int size);
-#ifdef ENABLE_LE_CENTRAL
 static void hci_remove_from_whitelist(bd_addr_type_t address_type, bd_addr_t address);
 #endif
 #endif
@@ -866,6 +866,7 @@ void gap_advertisements_get_address(uint8_t * addr_type, bd_addr_t  addr){
 }
 
 #ifdef ENABLE_BLE
+#ifdef ENABLE_LE_CENTRAL
 void le_handle_advertisement_report(uint8_t *packet, int size){
 
     UNUSED(size);
@@ -894,6 +895,7 @@ void le_handle_advertisement_report(uint8_t *packet, int size){
         hci_emit_event(event, pos, 1);
     }
 }
+#endif
 #endif
 
 #if !defined(HAVE_PLATFORM_IPHONE_OS) && !defined (HAVE_HOST_CONTROLLER_API)
@@ -1575,11 +1577,13 @@ static void event_handler(uint8_t *packet, int size){
                     (packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1+18] & 0x08);        // bit 3 = Octet 18, bit 3
                     log_info("Local supported commands summary 0x%02x", hci_stack->local_supported_commands[0]); 
             }
+#ifdef ENABLE_CLASSIC
             if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_write_synchronous_flow_control_enable)){
                 if (packet[5] == 0){
                     hci_stack->synchronous_flow_control_enabled = 1;
                 }
             } 
+#endif
             break;
             
         case HCI_EVENT_COMMAND_STATUS:
