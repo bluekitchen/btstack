@@ -720,10 +720,11 @@ static int handle_l2cap_data_packet_for_signaling_connection(avdtp_connection_t 
             }
             break;
         case AVDTP_RESPONSE_ACCEPT_MSG:
-            printf("    AVDTP_RESPONSE_ACCEPT_MSG, identifier %d\n", connection->signaling_packet.signal_identifier);
+            printf("    AVDTP_RESPONSE_ACCEPT_MSG: ");
             
             switch (connection->signaling_packet.signal_identifier){
                 case AVDTP_SI_DISCOVER:{
+                    printf("AVDTP_SI_DISCOVER\n");
                     if (connection->signaling_packet.transaction_label != connection->initiator_transaction_label){
                         printf("    unexpected transaction label, got %d, expected %d\n", connection->signaling_packet.transaction_label, connection->initiator_transaction_label);
                         return 0;
@@ -755,48 +756,88 @@ static int handle_l2cap_data_packet_for_signaling_connection(avdtp_connection_t 
                 }
                 
                 case AVDTP_SI_GET_CAPABILITIES:
-                case AVDTP_SI_GET_ALL_CAPABILITIES:
-                case AVDTP_SI_GET_CONFIGURATION:{
+                case AVDTP_SI_GET_ALL_CAPABILITIES:{
+                    printf("AVDTP_SI_GET(_ALL)_CAPABILITIES\n");
                     avdtp_sep_t sep;
+                    sep.seid = connection->query_seid;
+                    
                     sep.registered_service_categories = avdtp_unpack_service_capabilities(connection, &sep.capabilities, packet+offset, size-offset);
-                    printf_hexdump(packet, size);
+                    // printf_hexdump(packet, size);
 
                     if (get_bit16(sep.registered_service_categories, AVDTP_MEDIA_CODEC)){
                         switch (sep.capabilities.media_codec.media_codec_type){
                             case AVDTP_CODEC_SBC: 
-                                avdtp_signaling_emit_media_codec_sbc(avdtp_sink_callback, connection->con_handle, sep.capabilities.media_codec);
+                                avdtp_signaling_emit_media_codec_sbc_capability(avdtp_sink_callback, connection->con_handle, sep.capabilities.media_codec);
                                 break;
                             default:
-                                avdtp_signaling_emit_media_codec_other(avdtp_sink_callback, connection->con_handle, sep.capabilities.media_codec);
+                                avdtp_signaling_emit_media_codec_other_capability(avdtp_sink_callback, connection->con_handle, sep.capabilities.media_codec);
                                 break;
                         }
                     }
                     avdtp_signaling_emit_done(avdtp_sink_callback, connection->con_handle, 0);
-                    //avdtp_signaling_emit_done(avdtp_sink_callback, connection->con_handle, 0);
                     connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE;
                     return 0;
                 }
-                case AVDTP_SI_SUSPEND:
-                    connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE;
-                    stream_endpoint = get_avdtp_stream_endpoint_for_seid(connection->query_seid);
-                    if (!stream_endpoint) {
-                        avdtp_signaling_emit_done(avdtp_sink_callback, connection->con_handle, 0);
+
+                case AVDTP_SI_GET_CONFIGURATION:{
+                    printf("AVDTP_SI_GET_CONFIGURATION 0\n");
+                    avdtp_sep_t sep;
+                    sep.seid = connection->query_seid;
+                    sep.configured_service_categories = avdtp_unpack_service_capabilities(connection, &sep.configuration, packet+offset, size-offset);
+                    sep.in_use = 1;
+                    
+                    printf("    INT .. seid %d, configured services 0%02x\n", sep.seid, sep.configured_service_categories);
+                    // find or add sep
+                    // int i = 0;
+                    // int remote_sep_index = 0xFF;
+                    // for (i=0; i < stream_endpoint->remote_seps_num; i++){
+                    //     if (stream_endpoint->remote_seps[i].seid == sep.seid){
+                    //         remote_sep_index = i;
+                    //     }
+                    // }
+
+                    // if (remote_sep_index != 0xFF){
+                    //     stream_endpoint->remote_seps[remote_sep_index] = sep;
+                    //     printf("    ACP: update seid %d \n", stream_endpoint->remote_seps[remote_sep_index].seid);
+                    // } else {
+                    //     // add new
+                    //     stream_endpoint->remote_seps_num++;
+                    //     stream_endpoint->remote_seps[stream_endpoint->remote_seps_num] = sep;
+                    //     printf("    ACP: add seid %d\n", stream_endpoint->remote_seps[stream_endpoint->remote_seps_num].seid);
+                    // } 
+
+                    if (get_bit16(sep.configured_service_categories, AVDTP_MEDIA_CODEC)){
+                        printf(" AVDTP_SI_GET_CONFIGURATION 1 %d\n", sep.capabilities.media_codec.media_codec_type);
+                        switch (sep.capabilities.media_codec.media_codec_type){
+                            case AVDTP_CODEC_SBC: 
+                                avdtp_signaling_emit_media_codec_sbc_configuration(avdtp_sink_callback, connection->con_handle, sep.capabilities.media_codec);
+                                break;
+                            default:
+                                avdtp_signaling_emit_media_codec_other_configuration(avdtp_sink_callback, connection->con_handle, sep.capabilities.media_codec);
+                                break;
+                        }
                         return 0;
                     }
-                    stream_endpoint->state = AVDTP_STREAM_ENDPOINT_OPENED;
+                    printf(" AVDTP_SI_GET_CONFIGURATION 2\n");
                     avdtp_signaling_emit_done(avdtp_sink_callback, connection->con_handle, 0);
+                    connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE;
                     return 0;
+                }
+                
                 case AVDTP_SI_SET_CONFIGURATION:{
+                    printf("AVDTP_SI_SET_CONFIGURATION\n");
                     connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE;
                     stream_endpoint = get_avdtp_stream_endpoint_for_seid(connection->int_seid);
+                    
                     if (!stream_endpoint) {
                         avdtp_signaling_emit_done(avdtp_sink_callback, connection->con_handle, 1);
                         return 0;
                     }
                     
                     avdtp_sep_t sep;
-                    sep.seid = connection->signaling_packet.command[3] >> 2;
-                    sep.registered_service_categories = avdtp_unpack_service_capabilities(connection, &sep.capabilities, connection->signaling_packet.command+4, connection->signaling_packet.size-4);
+                    sep.seid = connection->query_seid;
+                    sep.configured_service_categories = connection->remote_capabilities_bitmap;
+                    sep.configuration = connection->remote_capabilities;
                     sep.in_use = 1;
 
                     // find or add sep
@@ -824,7 +865,56 @@ static int handle_l2cap_data_packet_for_signaling_connection(avdtp_connection_t 
                     avdtp_signaling_emit_done(avdtp_sink_callback, connection->con_handle, 0);
                     return 0;
                 }
+
+                case AVDTP_SI_RECONFIGURE:
+                    printf("AVDTP_SI_RECONFIGURE\n");
+                    connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE;
+                    stream_endpoint = get_avdtp_stream_endpoint_for_seid(connection->int_seid);
+                    
+                    if (!stream_endpoint) {
+                        avdtp_signaling_emit_done(avdtp_sink_callback, connection->con_handle, 1);
+                        return 0;
+                    }
+                    
+                    avdtp_sep_t sep;
+                    sep.seid = connection->query_seid;
+                    sep.configured_service_categories = avdtp_unpack_service_capabilities(connection, &sep.configuration, connection->signaling_packet.command+4, connection->signaling_packet.size-4);
+                    sep.in_use = 1;
+
+                    // find or add sep
+                    int i;
+                    stream_endpoint->remote_sep_index = 0xFF;
+                    for (i=0; i < stream_endpoint->remote_seps_num; i++){
+                        if (stream_endpoint->remote_seps[i].seid == sep.seid){
+                            stream_endpoint->remote_sep_index = i;
+                            break;
+                        }
+                    }
+                    
+                    if (stream_endpoint->remote_sep_index != 0xFF){
+                        stream_endpoint->remote_seps[stream_endpoint->remote_sep_index] = sep;
+                        stream_endpoint->state = AVDTP_STREAM_ENDPOINT_CONFIGURED;
+                        printf("    INT: update seid %d, to %p\n", stream_endpoint->remote_seps[stream_endpoint->remote_sep_index].seid, stream_endpoint);
+                    } else {
+                        // add error
+                    }
+                    avdtp_signaling_emit_done(avdtp_sink_callback, connection->con_handle, 0);
+                    return 0;
+
+                case AVDTP_SI_SUSPEND:
+                    printf("AVDTP_SI_SUSPEND\n");
+                    connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE;
+                    stream_endpoint = get_avdtp_stream_endpoint_for_seid(connection->query_seid);
+                    if (!stream_endpoint) {
+                        avdtp_signaling_emit_done(avdtp_sink_callback, connection->con_handle, 0);
+                        return 0;
+                    }
+                    stream_endpoint->state = AVDTP_STREAM_ENDPOINT_OPENED;
+                    avdtp_signaling_emit_done(avdtp_sink_callback, connection->con_handle, 0);
+                    return 0;
+               
                 case AVDTP_SI_START:
+                    printf("AVDTP_SI_START\n");
                     connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE;
                     stream_endpoint = get_avdtp_stream_endpoint_for_seid(connection->query_seid);
                     if (!stream_endpoint) {
@@ -835,6 +925,7 @@ static int handle_l2cap_data_packet_for_signaling_connection(avdtp_connection_t 
                     avdtp_signaling_emit_done(avdtp_sink_callback, connection->con_handle, 0);
                     break;
                 case AVDTP_SI_OPEN:
+                    printf("AVDTP_SI_OPEN\n");
                     connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE;
                     stream_endpoint = get_avdtp_stream_endpoint_for_seid(connection->query_seid);
                     if (!stream_endpoint) {
@@ -846,6 +937,7 @@ static int handle_l2cap_data_packet_for_signaling_connection(avdtp_connection_t 
                     return 0;
 
                 case AVDTP_SI_CLOSE:
+                    printf("AVDTP_SI_CLOSE\n");
                     connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE;
                     stream_endpoint = get_avdtp_stream_endpoint_for_seid(connection->query_seid);
                     if (!stream_endpoint) {
@@ -857,6 +949,7 @@ static int handle_l2cap_data_packet_for_signaling_connection(avdtp_connection_t 
                     return 0;
                 
                 case AVDTP_SI_ABORT:
+                    printf("AVDTP_SI_ABORT\n");
                     connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE;
                     stream_endpoint = get_avdtp_stream_endpoint_for_seid(connection->query_seid);
                     if (!stream_endpoint) {
@@ -867,10 +960,6 @@ static int handle_l2cap_data_packet_for_signaling_connection(avdtp_connection_t 
                     avdtp_signaling_emit_done(avdtp_sink_callback, connection->con_handle, 0);
                     return 0;
 
-                case AVDTP_SI_RECONFIGURE:
-                    connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE;
-                    avdtp_signaling_emit_done(avdtp_sink_callback, connection->con_handle, 0);
-                    return 0;
                 default:
                     avdtp_signaling_emit_done(avdtp_sink_callback, connection->con_handle, 1);
                     printf("    AVDTP_RESPONSE_ACCEPT_MSG, signal %d not implemented\n", connection->signaling_packet.signal_identifier);

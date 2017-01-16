@@ -1247,15 +1247,15 @@ typedef uint8_t sm_key_t[16];
  * @param subevent_code
  * @param con_handle
  * @param media_type
- * @param sampling_frequency
- * @param channel_mode
- * @param block_length
- * @param subbands
- * @param allocation_method
+ * @param sampling_frequency_bitmap
+ * @param channel_mode_bitmap
+ * @param block_length_bitmap
+ * @param subbands_bitmap
+ * @param allocation_method_bitmap
  * @param min_bitpool_value
  * @param max_bitpool_value
  */
-#define AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC          0x05
+#define AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CAPABILITY          0x05
 
 /**
  * @format 1H122
@@ -1266,6 +1266,34 @@ typedef uint8_t sm_key_t[16];
  * @param media_codec_information_len
  * @param media_codec_information
  */
-#define AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER        0x06
+#define AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CAPABILITY        0x06
 
+/**
+ * @format 1H11211111111
+ * @param subevent_code
+ * @param con_handle
+ * @param reconfigure
+ * @param media_type
+ * @param sampling_frequency
+ * @param channel_mode
+ * @param num_channels
+ * @param block_length
+ * @param subbands
+ * @param allocation_method
+ * @param min_bitpool_value
+ * @param max_bitpool_value
+ */
+#define AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION        0x07
+
+/**
+ * @format 1H1122
+ * @param subevent_code
+ * @param con_handle
+ * @param reconfigure
+ * @param media_type
+ * @param media_codec_type
+ * @param media_codec_information_len
+ * @param media_codec_information
+ */
+#define AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CONFIGURATION      0x08
 #endif
