@@ -27,8 +27,13 @@ int btstack_hci_cmd_handle(btstack_buf_t *cmd, btstack_buf_t *evt);
 
 static void (*transport_packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size);
 
+// largest Classic HCI Command: read locale name
+// LE Advertisment Report with single item: 43 bytes
+// Read Local Supported Commands -> Command Complete with 68 bytes payload
+// LE Read Local P-256 Public Key: 66 bytes payload
+
 static uint16_t hci_rx_pos;
-static uint8_t  hci_rx_buffer[256];
+static uint8_t  hci_rx_buffer[HCI_EVENT_HEADER_SIZE + 68];
 static uint8_t  hci_rx_type;
 
 static uint16_t   hci_tx_size;
