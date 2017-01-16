@@ -3,16 +3,16 @@ hci_le_add_device_to_white_list
 hci_le_connection_update
 hci_le_create_connection
 hci_le_create_connection_cancel
-hci_le_encrypt
+hci_le_encrypt 							32
 hci_le_long_term_key_negative_reply
-hci_le_long_term_key_request_reply
+hci_le_long_term_key_request_reply      18
 hci_le_rand
 hci_le_read_buffer_size
 hci_le_read_white_list_size
 hci_le_remove_device_from_white_list
 hci_le_set_advertise_enable
 hci_le_set_advertising_data
-hci_le_set_advertising_parameters
+hci_le_set_advertising_parameters		16
 hci_le_set_random_address
 hci_le_set_scan_enable
 hci_le_set_scan_parameters
@@ -27,3 +27,5 @@ hci_read_remote_supported_features_command
 hci_reset
 hci_set_event_mask
 hci_write_le_host_supported
+
+max parameter length: 32
