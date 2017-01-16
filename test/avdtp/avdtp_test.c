@@ -419,7 +419,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             break;
                         case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION:{
                             app_state = AVDTP_APPLICATION_IDLE;
-                            
                             sbc_configuration.reconfigure = avdtp_subevent_signaling_media_codec_sbc_configuration_get_reconfigure(packet);
                             sbc_configuration.num_channels = avdtp_subevent_signaling_media_codec_sbc_configuration_get_num_channels(packet);
                             sbc_configuration.sampling_frequency = avdtp_subevent_signaling_media_codec_sbc_configuration_get_sampling_frequency(packet);
