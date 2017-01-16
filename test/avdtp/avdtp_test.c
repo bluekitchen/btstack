@@ -366,20 +366,9 @@ static void dump_sbc_configuration(avdtp_media_codec_configuration_sbc_t configu
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     bd_addr_t event_addr;
     switch (packet_type) {
-        case L2CAP_DATA_PACKET:
-            // just dump data for now
-            printf("source cid %x -- ", channel);
-            // printf_hexdump( packet, size );
-            break;
-            
+ 
         case HCI_EVENT_PACKET:
             switch (hci_event_packet_get_type(packet)) {
-                case BTSTACK_EVENT_STATE:
-                    // bt stack activated, get started 
-                    if (btstack_event_state_get_state(packet) == HCI_STATE_WORKING){
-                        
-                    }
-                    break;
                 case HCI_EVENT_PIN_CODE_REQUEST:
                     // inform about pin code request
                     printf("Pin code request - using '0000'\n");
@@ -390,7 +379,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     // connection closed -> quit test app
                     printf("\n --- avdtp_test: HCI_EVENT_DISCONNECTION_COMPLETE ---\n");
                     close_media_processing();
-                    // exit(0);
                     break;
                 case HCI_EVENT_AVDTP_META:
                     switch (packet[2]){
@@ -404,7 +392,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             sep.in_use = avdtp_subevent_signaling_sep_found_get_in_use(packet);
                             sep.media_type = avdtp_subevent_signaling_sep_found_get_media_type(packet);
                             sep.type = avdtp_subevent_signaling_sep_found_get_sep_type(packet);
-                            printf(" found sep: seid %u, in_use %d, media type %d, sep type %d (1-SNK)\n", sep.seid, sep.in_use, sep.media_type, sep.type);
+                            printf("Found sep: seid %u, in_use %d, media type %d, sep type %d (1-SNK)\n", sep.seid, sep.in_use, sep.media_type, sep.type);
                             break;
                         case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CAPABILITY:
                             app_state = AVDTP_APPLICATION_IDLE;
@@ -432,11 +420,9 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             dump_sbc_configuration(sbc_configuration);
                             
                             if (sbc_configuration.reconfigure){
-                                printf(" RECONFIGURE command\n");
                                 close_media_processing();
                                 init_media_processing(sbc_configuration);
                             } else {
-                                printf(" CONFIGURE command\n");
                                 init_media_processing(sbc_configuration);
                             }
                             break;
