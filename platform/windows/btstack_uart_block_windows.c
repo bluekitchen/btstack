@@ -297,7 +297,30 @@ static int btstack_uart_windows_open(void){
     memset(&serial_params, 0, sizeof(DCB));
     serial_params.DCBlength = sizeof(DCB);
         
-    int ok = GetCommState(serial_port_handle, &serial_params);
+    int ok; 
+
+#if 0
+    // test - try to set internal buffer
+    ok = SetupComm(serial_port_handle, 64, 64);
+    printf("SetupCommL ok %u\n", ok);
+#endif
+
+#if 0
+    // test - read internal buffer sizes
+    COMMPROP comm_prop;
+    GetCommProperties(serial_port_handle, &comm_prop);
+    printf("dwMaxTxQueue %ld\n", comm_prop.dwMaxTxQueue);
+    printf("dwMaxRxQueue %ld\n", comm_prop.dwMaxRxQueue);
+    printf("dwCurrentTxQueue %ld\n", comm_prop.dwCurrentTxQueue);
+    printf("dwCurrentRxQueue %ld\n", comm_prop.dwCurrentRxQueue);
+#endif
+
+    // Caveat: with the default FTDI driver and a FT232R on Windows 10, the default USB RX/TX buffer sizes are 4096
+    // this causes a problem when data is received back to back, like with SCO audio data
+
+    // Workaround: manually set these values in the Device Manager to 64 bytes
+
+    ok = GetCommState(serial_port_handle, &serial_params);
 
     if (!ok){
         log_error("windows_open: Couldn't get serial parameters");
