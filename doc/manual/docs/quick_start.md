@@ -1,33 +1,17 @@
 
 ## General Tools
 
+Most ports use a regular Makefile to build the examples.
+
 On Unix-based systems, git, make, and Python are usually installed. If
 not, use the system’s packet manager to install them.
 
-On Windows, you need to manually install and configure GNU Make, Python,
-and optionally git :
+On Windows, there is no packet manager, but it's easy to download and install all requires development packets quickly by hand. You'll need:
 
--   [GNU Make](http://gnuwin32.sourceforge.net/packages/make.htm)
-    for Windows: Add its bin folder to the Windows Path in Environment
-    Variables. The bin folder is where make.exe resides, and it’s
-    usually located in [C:\Program Files\GnuWin32\bin]().
-
--   [Python](http://www.python.org/getit/) for
-    Windows: Add Python installation folder to the Windows Path in
-    Environment Variables.
-
-### Adding paths to the Windows Path variable {#sec:windowsPathQuickStart}
-
--   Go to: Control Panel->System->Advanced tab->Environment Variables.
-
--   The top part contains a list of User variables.
-
--   Click on the Path variable and then click edit.
-
--   Go to the end of the line, then append the path to the list, for
-    example, [C:\Program Files\GnuWin32\bin]() for GNU Make.
-
--   Ensure that there is a semicolon before and after [C:\Program Files\GnuWin32\bin]().
+- [Python](http://www.python.org/getit/) for Windows. When using the official installer, please confirm adding Python to the Windows Path.
+- [MSYS2](https://msys2.github.io) is used to provide the bash shell and most standard POSIX command line tools.
+- [MinGW64](https://mingw-w64.org/doku.php) GCC for Windows 64 & 32 bits incl. make. Can be installed with pacman.
+- [git](https://git-scm.com) is used to download BTstack source code. Can be installed with pacman.
 
 ## Getting BTstack from GitHub
 
@@ -35,7 +19,6 @@ Use git to clone the latest version:
 
     git clone https://github.com/bluekitchen/btstack.git
         
-
 Alternatively, you can download it as a ZIP archive from
 [BTstack’s page](https://github.com/bluekitchen/btstack/archive/master.zip) on
 GitHub.
@@ -69,7 +52,7 @@ setups, toolchains, programmers, and init scripts.
 ### libusb
 
 The quickest way to try BTstack is on a Linux or OS X system with an
-additional USB Bluetooth module. The Makefile [platforms/libusb]() in requires
+additional USB Bluetooth module. The Makefile [port/libusb]() in requires
 [pkg-config](http://www.freedesktop.org/wiki/Software/pkg-config/)
 and [libusb-1.0](http://libusb.info) or higher to be
 installed.
@@ -82,28 +65,18 @@ Bluetooth. For this, execute:
 
     sudo nvram bluetoothHostControllerSwitchBehavior=never
 
-It’s also possible to run the examples on Win32 systems. For this:
+## Windows-WinUSB
 
--   Install [MSYS](http://www.mingw.org/wiki/msys) and
-    [MINGW32](http://www.mingw.org) using the MINGW installer
+While libusb basically also works on Windows, we recommend to use the Windows-WinUSB port that uses a native run loop and the native WinUSB API to access the USB Bluetooth dongle.
 
--   Compile and install libusb-1.0.19 to [/usr/local/]() in msys command
-    shell
+For libusb or WinUSB, you need to install a special device driver to make the USB dongle accessible to user space. It works like this:
 
--   Setup a USB Bluetooth dongle for use with libusb-1.0:
+-   Start [Zadig](http://zadig.akeo.ie)
+-   Select Options -> “List all devices”
+-   Select USB Bluetooth dongle in the big pull down list
+-   Select WinUSB (libusb) in the right pull pull down list
+-   Select “Replace Driver”
 
-    -   Start [Zadig](http://zadig.akeo.ie)
-
-    -   Select Options -> “List all devices”
-
-    -   Select USB Bluetooth dongle in the big pull down list
-
-    -   Select WinUSB (libusb) in the right pull pull down list
-
-    -   Select “Replace Driver”
-
-Now, you can run the examples from the *msys* shell the same way as on
-Linux/OS X.
 
 ### Texas Instruments MSP430-based boards
 
