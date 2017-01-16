@@ -17,7 +17,7 @@
 #define HAVE_EMBEDDED_TICK
 
 // BTstack configuration. buffers, sizes, ...
-#define HCI_ACL_PAYLOAD_SIZE 52
+#define HCI_ACL_PAYLOAD_SIZE 27
 #define MAX_NR_WHITELIST_ENTRIES 1
 #define MAX_NR_HCI_CONNECTIONS 1
 #define MAX_NR_SM_LOOKUP_ENTRIES 1
