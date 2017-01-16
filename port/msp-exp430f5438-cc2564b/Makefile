@@ -93,7 +93,7 @@ LCD_OBJ    = $(LCD:.c=.o)
 
 # create firmware image from common objects and example source file
 
-all: led_counter.hex  gap_inquiry.hex
+all: led_counter.hex  
 
 # fetch and convert init scripts
 include ${BTSTACK_ROOT}/chipset/cc256x/Makefile.inc
@@ -107,6 +107,7 @@ include ${BTSTACK_ROOT}/chipset/cc256x/Makefile.inc
 # spp_flowcontrol.hex 
 # sdp_rfcomm_query.hex
 # sdp_general_query.hex 
+# gap_inquiry.hex
 
 # compiling ant-test requires special ant init script
 # ant-test.hex

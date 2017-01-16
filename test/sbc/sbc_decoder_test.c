@@ -57,12 +57,14 @@
 
 #include "wav_util.h"
 
-static uint8_t read_buffer[24];
+static uint8_t read_buffer[118];
 static int total_num_samples = 0;
 static int frame_count = 0;
+static int wav_writer_opened = 0;
+static char wav_filename[1000];
 
 static void show_usage(void){
-    printf("\n\nUsage: ./sbc_decoder_test input_file msbc|sbc plc_enabled(0|1) corrupt_frame_period\n\n");
+    printf("\n\nUsage: ./sbc_decoder_test input_file msbc plc_enabled corrupt_frame_period \n\n");
 }
 
 static ssize_t __read(int fd, void *buf, size_t count){
@@ -80,63 +82,65 @@ static ssize_t __read(int fd, void *buf, size_t count){
 }
 
 static void handle_pcm_data(int16_t * data, int num_samples, int num_channels, int sample_rate, void * context){
-    wav_writer_write_int16(num_samples, data);
-    total_num_samples+=num_samples;
+    if (!wav_writer_opened){
+        wav_writer_opened = 1;
+        wav_writer_open(wav_filename, num_channels, sample_rate);
+
+    }
+
+    printf("Sampels: num_samples %u, num_channels %u, sample_rate %u\n", num_samples, num_channels, sample_rate);
+    // printf_hexdump(data, num_samples * num_channels * 2);
+    int i;
+    for (i=0;i<num_channels*num_samples;i += 2){
+        if ((i%24) == 0) printf("\n");
+        printf ("%12d ", data[i]);
+    }
+    printf("\n");
+    wav_writer_write_int16(num_samples*num_channels, data);
+
+    total_num_samples+=num_samples*num_channels;
     frame_count++;
 }
 
 int main (int argc, const char * argv[]){
-    if (argc < 4){
+    if (argc < 5){
         show_usage();
         return -1;
     }
     
-    btstack_sbc_mode_t mode = SBC_MODE_STANDARD;
-    
-    const char * filename = argv[1];
-
     char sbc_filename[1000];
-    char wav_filename[1000];
-
+    int argv_pos = 1;
+    const char * filename = argv[argv_pos++];
+    
+    btstack_sbc_mode_t mode = atoi(argv[argv_pos++]) == 0? SBC_MODE_STANDARD : SBC_MODE_mSBC;
+    const int plc_enabled = atoi(argv[argv_pos++]);
+    const int corrupt_frame_period = atoi(argv[argv_pos++]);
+    
     strcpy(sbc_filename, filename);
     strcpy(wav_filename, filename);
-
-    const int plc_enabled = atoi(argv[3]);
-    const int corrupt_frame_period = atoi(argv[4]);
     
-    int sample_rate = 8000;
-
     printf("\n");
-    if (strncmp(argv[2], "msbc", 4) == 0 ){
-        mode = SBC_MODE_mSBC;
+    if (mode == SBC_MODE_mSBC){
         printf("Using SBC_MODE_mSBC mode.\n");
-        sample_rate = 16000;
+        strcat(sbc_filename, ".msbc");
     } else {
         printf("Using SBC_MODE_STANDARD mode.\n");
+        strcat(sbc_filename, ".sbc");
     } 
     
     if (plc_enabled){
         printf("PLC enabled.\n");
+        strcat(wav_filename, "_decoded_bludroid_plc.wav");
     } else {
         printf("PLC disbled.\n"); 
+        strcat(wav_filename, "_decoded_bludroid.wav");
     }
 
     if (corrupt_frame_period > 0){
         printf("Corrupt frame period: every %d frames.\n", corrupt_frame_period);
     }
-    if (mode == SBC_MODE_mSBC){
-        strcat(sbc_filename, ".msbc");
-    } else {
-        strcat(sbc_filename, ".sbc");
-    }
+    
 
-    if (plc_enabled){
-        strcat(wav_filename, "_plc.wav");
-    } else {
-        strcat(wav_filename, ".wav");
-    }
-
-   
     int fd = open(sbc_filename, O_RDONLY);
     if (fd < 0) {
         printf("Can't open file %s", sbc_filename);
@@ -147,11 +151,10 @@ int main (int argc, const char * argv[]){
 
     btstack_sbc_decoder_state_t state;
     btstack_sbc_decoder_init(&state, mode, &handle_pcm_data, NULL);
-    wav_writer_open(wav_filename, 1, sample_rate);
     
-    if (!plc_enabled){
+    //if (!plc_enabled){
         btstack_sbc_decoder_test_disable_plc();
-    }
+    //}
     if (corrupt_frame_period > 0){
         btstack_sbc_decoder_test_simulate_corrupt_frames(corrupt_frame_period);
     }

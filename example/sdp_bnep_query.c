@@ -112,6 +112,9 @@ static void sdp_client_init(void){
 
 /* LISTING_START(SDPQueryUUID): Querying the a list of service records on a remote device. */
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(channel);
+    UNUSED(size);
+
     if (packet_type != HCI_EVENT_PACKET) return;
     uint8_t event = hci_event_packet_get_type(packet);
 
@@ -161,6 +164,10 @@ static char * get_string_from_data_element(uint8_t * element){
 
 /* LISTING_START(HandleSDPQUeryResult): Extracting BNEP Protcol UUID and L2CAP PSM */
 static void handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(packet_type);
+    UNUSED(channel);
+    UNUSED(size);
+
     /* LISTING_PAUSE */
     des_iterator_t des_list_it;
     des_iterator_t prot_it;
@@ -266,6 +273,9 @@ static void handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel
 
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
+    (void)argc;
+    (void)argv;
+
     printf("Client HCI init done\r\n");
     
     sdp_client_init();

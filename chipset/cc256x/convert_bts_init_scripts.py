@@ -239,6 +239,7 @@ def convert_bts(output_file, main_bts_file, bts_add_on, aka, lmp_subversion):
         if bts_add_on != "":
             fout.write( '// - {0}\n'.format(bts_add_on))
         fout.write( '#include <stdint.h>\n')
+        fout.write( '#include "btstack_chipset_cc256x.h"\n')
         fout.write( '\n')
         # if aka != "":
         #     fout.write( 'const char * {0}_init_script_aka = "{1}";\n'.format(array_name, aka))

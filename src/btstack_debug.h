@@ -55,7 +55,9 @@
 #endif
 
 // Avoid complaints of unused arguments when log levels are disabled.
-static inline void __log_unused(const char *format, ...) {}
+static inline void __log_unused(const char *format, ...) {
+	UNUSED(format);
+}
 
 // allow to provide port specific printf
 #ifndef BTSTACK_PRINTF

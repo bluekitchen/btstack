@@ -118,6 +118,9 @@ void hci_dump_open(const char *filename, hci_dump_format_t format){
         }
     }
 #else
+    UNUSED(filename);
+    UNUSED(format);
+    
     dump_file = 1;
 #endif
 }

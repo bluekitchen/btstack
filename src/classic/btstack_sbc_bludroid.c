@@ -503,6 +503,8 @@ void btstack_sbc_decoder_process_data(btstack_sbc_decoder_state_t * state, int p
 void btstack_sbc_encoder_init(btstack_sbc_encoder_state_t * state, btstack_sbc_mode_t mode, 
                         int blocks, int subbands, int allmethod, int sample_rate, int bitpool){
 
+    UNUSED(bitpool);
+
     if (sbc_encoder_state_singleton && sbc_encoder_state_singleton != state ){
         log_error("SBC encoder: different sbc decoder state is allready registered");
     } 

@@ -301,7 +301,7 @@ def write_wav_file(fout, frame):
 
 if __name__ == "__main__":
     usage = '''
-    Usage: ./sbc_decoder.py input.sbc implementation[default=SIG, V1]
+    Usage: ./sbc_decoder.py input.(msbc|sbc) implementation[default=SIG, V1]
     '''
 
     if (len(sys.argv) < 2):
@@ -318,7 +318,7 @@ if __name__ == "__main__":
                 print(usage)
                 sys.exit(1)
         else:
-            wavfile = infile.replace('.sbc', '-decoded.wav')
+            wavfile = infile.replace('.sbc', '-decoded-py.wav')
         
         print "input file: ", infile
         print "output file: ", wavfile
@@ -365,7 +365,10 @@ if __name__ == "__main__":
                         fout.setframerate(sampling_frequencies[frame.sampling_frequency])
                         fout.setnframes(0)
                         fout.setcomptype = 'NONE'
-                    
+                        
+                        print frame.pcm
+
+
                     write_wav_file(fout, frame)
                     frame_count += 1
                     
