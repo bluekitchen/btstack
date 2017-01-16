@@ -75,7 +75,7 @@ extern "C" {
 // 32 from LE Encrypt command
 #if defined(ENABLE_LE_SECURE_CONNECTIONS) && !defined(HAVE_HCI_CONTROLLER_DHKEY_SUPPORT)
 #define HCI_CMD_PAYLOAD_SIZE_LE 64
-#endif
+#else
 #define HCI_CMD_PAYLOAD_SIZE_LE 32
 #endif
 
@@ -88,6 +88,7 @@ extern "C" {
 #else
 #define HCI_CMD_BUFFER_SIZE        (HCI_CMD_HEADER_SIZE   + HCI_CMD_PAYLOAD_SIZE_LE)
 #endif
+
 #define HCI_ACL_BUFFER_SIZE        (HCI_ACL_HEADER_SIZE   + HCI_ACL_PAYLOAD_SIZE)
     
 // size of hci buffers, big enough for command, event, or acl packet without H4 packet type
