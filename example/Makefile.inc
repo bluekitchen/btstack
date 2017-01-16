@@ -224,9 +224,15 @@ hfp_hf_demo: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} ${SBC_DECODE
 clean:
 	rm -f ${EXAMPLES}
 	rm -f  *.o *.out *.hex *.exe
-	rm -f  ancs_client_demo.h profile.h spp_and_le_counter.h
+	rm -f  ancs_client_demo.h profile.h spp_and_le_counter.h le_counter.h le_streamer.h
 	rm -rf *.dSYM
-	rm -rf ${BTSTACK_ROOT}/ble/*.o
 	rm -rf ${BTSTACK_ROOT}/src/*.o
-	
+	rm -rf ${BTSTACK_ROOT}/src/ble/*.o
+	rm -rf ${BTSTACK_ROOT}/src/ble/gatt-service/*.o
+	rm -rf ${BTSTACK_ROOT}/example/*.o
+	rm -rf ${BTSTACK_ROOT}/example/ancs_client_demo.h
+	rm -rf ${BTSTACK_ROOT}/example/profile.h
+	rm -rf ${BTSTACK_ROOT}/example/spp_and_le_counter.h
+	rm -rf ${BTSTACK_ROOT}/example/le_counter.h
+	rm -rf ${BTSTACK_ROOT}/example/le_streamer.h
 	

@@ -152,6 +152,8 @@ static void show_usage(void){
 }
 
 static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type){
+    UNUSED(ds);
+    UNUSED(callback_type);
 
     cmd = btstack_stdin_read();
 
@@ -433,7 +435,8 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
 #endif
 
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * event, uint16_t event_size){
-
+    UNUSED(channel);
+    
     switch (packet_type){
 
         case HCI_SCO_DATA_PACKET:
@@ -552,6 +555,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
 /* LISTING_START(MainConfiguration): Setup HFP Hands-Free unit */
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
+    (void)argc;
+    (void)argv;
 
     sco_demo_init();
 

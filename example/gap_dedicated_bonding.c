@@ -47,6 +47,9 @@ static bd_addr_t remote = {0x84, 0x38, 0x35, 0x65, 0xD1, 0x15};
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(channel);
+    UNUSED(size);
+
     if (packet_type != HCI_EVENT_PACKET) return;
 
     switch (hci_event_packet_get_type(packet)) {
@@ -65,6 +68,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
+    (void)argc;
+    (void)argv;
 
     hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);

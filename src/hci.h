@@ -620,9 +620,6 @@ typedef struct {
     /* callbacks for events */
     btstack_linked_list_t event_handlers;
 
-    // local version information callback
-    void (*local_version_information_callback)(uint8_t * local_version_information);
-
     // hardware error callback
     void (*hardware_error_callback)(uint8_t error);
 
@@ -702,6 +699,7 @@ typedef struct {
     uint8_t   adv_addr_type;
     bd_addr_t adv_address;
 
+#ifdef ENABLE_LE_CENTRAL
     le_scanning_state_t   le_scanning_state;
     le_connecting_state_t le_connecting_state;
 
@@ -710,8 +708,14 @@ typedef struct {
     uint16_t le_scan_interval;  
     uint16_t le_scan_window;
 
+    // LE Whitelist Management
+    uint16_t      le_whitelist_capacity;
+    btstack_linked_list_t le_whitelist;
+#endif
+
     le_connection_parameter_range_t le_connection_parameter_range;
 
+#ifdef ENABLE_LE_PERIPHERAL
     uint8_t  * le_advertisements_data;
     uint8_t    le_advertisements_data_len;
 
@@ -731,10 +735,7 @@ typedef struct {
     uint8_t  le_advertisements_channel_map;
     uint8_t  le_advertisements_filter_policy;
     bd_addr_t le_advertisements_direct_address;
-
-    // LE Whitelist Management
-    uint16_t      le_whitelist_capacity;
-    btstack_linked_list_t le_whitelist;
+#endif
 
     // custom BD ADDR
     bd_addr_t custom_bd_addr; 
@@ -773,12 +774,6 @@ void hci_set_link_key_db(btstack_link_key_db_t const * link_key_db);
  * @brief Set callback for Bluetooth Hardware Error
  */
 void hci_set_hardware_error_callback(void (*fn)(uint8_t error));
-
-/**
- * @brief Set callback for local information from Bluetooth controller right after HCI Reset
- * @note Can be used to select chipset driver dynamically during startup
- */
-void hci_set_local_version_information_callback(void (*fn)(uint8_t * local_version_information));
 
 /**
  * @brief Set Public BD ADDR - passed on to Bluetooth chipset during init if supported in bt_control_h

@@ -909,6 +909,8 @@ static void rfcomm_multiplexer_set_state_and_request_can_send_now_event(rfcomm_m
  * @return handled packet
  */
 static int rfcomm_hci_event_handler(uint8_t *packet, uint16_t size){
+    UNUSED(size);
+
     bd_addr_t event_addr;
     uint16_t  psm;
     uint16_t l2cap_cid;
@@ -1038,6 +1040,7 @@ static int rfcomm_hci_event_handler(uint8_t *packet, uint16_t size){
 }
 
 static int rfcomm_multiplexer_l2cap_packet_handler(uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(size);
     
     // get or create a multiplexer for a certain device
     rfcomm_multiplexer_t *multiplexer = rfcomm_multiplexer_for_l2cap_cid(channel);
@@ -1403,7 +1406,8 @@ static void rfcomm_channel_state_machine_with_dlci(rfcomm_multiplexer_t * multip
 }
 
 static void rfcomm_channel_packet_handler(rfcomm_multiplexer_t * multiplexer,  uint8_t *packet, uint16_t size){
-    
+    UNUSED(size);
+        
     // rfcomm: (0) addr [76543 server channel] [2 direction: initiator uses 1] [1 C/R: CMD by initiator = 1] [0 EA=1]
     const uint8_t frame_dlci = packet[0] >> 2;
     uint8_t message_dlci; // used by commands in UIH(_PF) packets 

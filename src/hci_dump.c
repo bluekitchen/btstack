@@ -107,14 +107,20 @@ void hci_dump_open(const char *filename, hci_dump_format_t format){
         dump_file = fileno(stdout);
     } else {
 
-# ifdef _WIN32
-        dump_file = open(filename, O_WRONLY | O_CREAT | O_TRUNC);
-# else
-        dump_file = open(filename, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
-# endif
+        int oflags = O_WRONLY | O_CREAT | O_TRUNC;
+#ifdef _WIN32
+        oflags |= O_BINARY;
+#endif
 
+        dump_file = open(filename, oflags, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH );
+        if (dump_file < 0){
+            printf("hci_dump_open: failed to open file %s\n", filename);
+        }
     }
 #else
+    UNUSED(filename);
+    UNUSED(format);
+    
     dump_file = 1;
 #endif
 }
@@ -138,6 +144,13 @@ static void printf_packet(uint8_t packet_type, uint8_t in, uint8_t * packet, uin
                 printf("ACL <= ");
             } else {
                 printf("ACL => ");
+            }
+            break;
+        case HCI_SCO_DATA_PACKET:
+            if (in) {
+                printf("SCO <= ");
+            } else {
+                printf("SCO => ");
             }
             break;
         case LOG_MESSAGE_PACKET:

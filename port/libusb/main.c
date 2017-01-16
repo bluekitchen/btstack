@@ -65,6 +65,8 @@ int btstack_main(int argc, const char * argv[]);
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(channel);
+    UNUSED(size);
     if (packet_type != HCI_EVENT_PACKET) return;
     if (hci_event_packet_get_type(packet) != BTSTACK_EVENT_STATE) return;
     if (btstack_event_state_get_state(packet) != HCI_STATE_WORKING) return;
@@ -72,7 +74,8 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 }
 
 static void sigint_handler(int param){
-
+    UNUSED(param);
+    
 #ifndef _WIN32
     // reset anyway
     btstack_stdin_reset();

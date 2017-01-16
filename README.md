@@ -35,11 +35,13 @@ GATT, SM of the Bluetooth 4.2 LE Central and Peripheral roles (QD ID 25340).
 
 ## Supported Protocols and Profiles
 
-Protocols: L2CAP, RFCOMM, SDP, BNEP, ATT, SM
+Protocols: L2CAP, RFCOMM, SDP, BNEP, ATT, SM (incl. LE Secure Connections).
 
-Profiles: GAP, IOP, HFP, HSP, SPP, PAN, GATT
+Profiles: GAP, IOP, HFP, HSP, SPP, PAN, GATT.
 
-Coming next: A2DP, AVRCP, HID, HOGP, BLE, and more.
+Coming next: A2DP, AVRCP, HID, HOGP, BLE Mesh, and more.
+
+For information on MFi/iAP2 support, please <a href="mailto:contact@bluekitchen-gmbh.com">contact us</a>.
 
 ## Evaluation Platforms
 

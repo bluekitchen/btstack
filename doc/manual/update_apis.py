@@ -160,15 +160,21 @@ def createIndex(btstackfolder, apis, githubfolder):
                     functions[ref_function.group(1)] = codeReference(ref_function.group(1), githubfolder, api_tuple[0], linenr)
                     continue
 
-                function = re.match('(.*?)\(.*\(*.*;\n', line)
+                function = re.match('(.*?)\s*\(.*\(*.*;\n', line)
                 if function:
                     parts = function.group(1).split(" ");
                     name = parts[len(parts)-1]
+                    if len(name) == 0:
+                        print(parts);
+                        sys.exit(10)
                     functions[name] = codeReference( name, githubfolder, api_tuple[0], linenr)
                     continue
 
-                function = re.match('.(.*?)\(.*\(*.*', line)
+                function = re.match('.(.*?)\s*\(.*\(*.*', line)
                 if function:
+                    if len(name) == 0:
+                        print(parts);
+                        sys.exit(10)
                     parts = function.group(1).split(" ");
                     name = parts[len(parts)-1]
                     multiline_function_def = 1

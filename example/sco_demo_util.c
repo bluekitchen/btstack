@@ -57,6 +57,8 @@
 #define SCO_DEMO_MODE_SINE		0
 #define SCO_DEMO_MODE_ASCII		1
 #define SCO_DEMO_MODE_COUNTER	2
+#define SCO_DEMO_MODE_55        3
+#define SCO_DEMO_MODE_00        4
 
 
 // SCO demo configuration
@@ -75,6 +77,7 @@
 #if defined(HAVE_PORTAUDIO) && (SCO_DEMO_MODE == SCO_DEMO_MODE_SINE)
 #define USE_PORTAUDIO
 #endif
+
 
 #ifdef USE_PORTAUDIO
 #include <portaudio.h>
@@ -105,12 +108,13 @@ static uint8_t ring_buffer_storage[2*MSBC_PREBUFFER_BYTES];
 static btstack_ring_buffer_t ring_buffer;
 #endif
 
-
 static int dump_data = 1;
 static int count_sent = 0;
 static int count_received = 0;
 static uint8_t negotiated_codec = 0; 
-static int num_audio_frames = 0;
+#if SCO_DEMO_MODE != SCO_DEMO_MODE_55
+static int phase = 0;
+#endif
 
 FILE * msbc_file_in;
 FILE * msbc_file_out;
@@ -141,7 +145,6 @@ static const int16_t sine_int16[] = {
 -19260,  -17557,  -15786,  -13952,  -12062,  -10126,   -8149,   -6140,   -4107,   -2057,
 };
 
-static int phase = 0;
 static void sco_demo_sine_wave_int8(int num_samples, int8_t * data){
     int i;
     for (i=0; i<num_samples; i++){
@@ -160,6 +163,7 @@ static void sco_demo_sine_wave_int16(int num_samples, int16_t * data){
         }
     }
 }
+static int num_audio_frames = 0;
 
 static void sco_demo_fill_audio_frame(void){
     if (!hfp_msbc_can_encode_audio_frame_now()) return;
@@ -169,7 +173,6 @@ static void sco_demo_fill_audio_frame(void){
     hfp_msbc_encode_audio_frame(sample_buffer);
     num_audio_frames++;
 }
-
 #ifdef SCO_WAV_FILENAME
 static btstack_sbc_decoder_state_t decoder_state;
 static btstack_cvsd_plc_state_t cvsd_plc_state;
@@ -205,6 +208,9 @@ static int patestCallback( const void *inputBuffer, void *outputBuffer,
 #endif
 
 static void handle_pcm_data(int16_t * data, int num_samples, int num_channels, int sample_rate, void * context){
+    UNUSED(context);
+    UNUSED(sample_rate);
+
     // printf("handle_pcm_data num samples %u, sample rate %d\n", num_samples, num_channels);
 #ifdef USE_PORTAUDIO
     if (!pa_stream_started && btstack_ring_buffer_bytes_available(&ring_buffer) >= MSBC_PREBUFFER_BYTES){
@@ -218,6 +224,8 @@ static void handle_pcm_data(int16_t * data, int num_samples, int num_channels, i
     }
     btstack_ring_buffer_write(&ring_buffer, (uint8_t *)data, num_samples*num_channels*2);
     // printf("bytes avail after write: %d\n", btstack_ring_buffer_bytes_available(&ring_buffer));
+#else
+    UNUSED(num_channels);
 #endif 
 
     if (!num_samples_to_write) return;
@@ -343,6 +351,7 @@ static void sco_demo_receive_CVSD(uint8_t * packet, uint16_t size){
 
     // memcpy(audio_frame_out, (int8_t*)(packet+3), 24);
     btstack_cvsd_plc_process_data(&cvsd_plc_state, (int8_t *)(packet+3), num_samples, audio_frame_out);
+    // int8_t * audio_frame_out = (int8_t*)&packet[3];
 
     wav_writer_write_int8(samples_to_write, audio_frame_out);
     num_samples_to_write -= samples_to_write;
@@ -459,7 +468,8 @@ void sco_demo_init(void){
 #endif
 }
 
-static void sco_report(void){
+void sco_report(void);
+void sco_report(void){
     printf("SCO: sent %u, received %u\n", count_sent, count_received);
 }
 
@@ -494,16 +504,32 @@ void sco_demo_send(hci_con_handle_t sco_handle){
     } else {
         sco_demo_sine_wave_int8(audio_samples_per_packet, (int8_t *) (sco_packet+3));
     }
-#else
+#endif
 #if SCO_DEMO_MODE == SCO_DEMO_MODE_ASCII
     memset(&sco_packet[3], phase++, audio_samples_per_packet);
     if (phase > 'z') phase = 'a';
-#else
+#endif
+#if SCO_DEMO_MODE == SCO_DEMO_MODE_COUNTER
     int j;
     for (j=0;j<audio_samples_per_packet;j++){
         sco_packet[3+j] = phase++;
     }
 #endif
+#if SCO_DEMO_MODE == SCO_DEMO_MODE_55
+    int j;
+    for (j=0;j<audio_samples_per_packet;j++){
+        // sco_packet[3+j] = j & 1 ? 0x35 : 0x53;
+        sco_packet[3+j] = 0x55;
+    }
+#endif
+#if SCO_DEMO_MODE == SCO_DEMO_MODE_00
+    int j;
+    for (j=0;j<audio_samples_per_packet;j++){
+        sco_packet[3+j] = 0x00;
+    }
+    // additional hack
+    // big_endian_store_16(sco_packet, 5, phase++);
+    (void) phase;
 #endif
 
     hci_send_sco_packet_buffer(sco_packet_length);
@@ -512,19 +538,41 @@ void sco_demo_send(hci_con_handle_t sco_handle){
     hci_request_sco_can_send_now_event();
 
     count_sent++;
+#if SCO_DEMO_MODE != SCO_DEMO_MODE_55
     if ((count_sent % SCO_REPORT_PERIOD) == 0) sco_report();
+#endif
 }
 
 /**
  * @brief Process received data
  */
+#define ANSI_COLOR_RED     "\x1b[31m"
+#define ANSI_COLOR_GREEN   "\x1b[32m"
+#define ANSI_COLOR_YELLOW  "\x1b[33m"
+#define ANSI_COLOR_BLUE    "\x1b[34m"
+#define ANSI_COLOR_MAGENTA "\x1b[35m"
+#define ANSI_COLOR_CYAN    "\x1b[36m"
+#define ANSI_COLOR_RESET   "\x1b[0m"
+
 void sco_demo_receive(uint8_t * packet, uint16_t size){
 
     dump_data = 1;
 
     count_received++;
-    // if ((count_received % SCO_REPORT_PERIOD) == 0) sco_report();
+    static uint32_t packets = 0;
+    static uint32_t crc_errors = 0;
+    static uint32_t data_received = 0;
+    static uint32_t byte_errors = 0;
 
+    data_received += size - 3;
+    packets++;
+    if (data_received > 100000){
+        printf("Summary: data %07u, packets %04u, packet with crc errors %0u, byte errors %04u\n", data_received, packets, crc_errors, byte_errors);
+        crc_errors = 0;
+        byte_errors = 0;
+        data_received = 0;
+        packets = 0;
+    }
 
 #if SCO_DEMO_MODE == SCO_DEMO_MODE_SINE
 #ifdef SCO_WAV_FILENAME
@@ -538,23 +586,59 @@ void sco_demo_receive(uint8_t * packet, uint16_t size){
 #endif
 
     if (packet[1] & 0x30){
-        printf("SCO CRC Error: %x - data: ", (packet[1] & 0x30) >> 4);
-        log_info("SCO CRC Error: %x - data: ", (packet[1] & 0x30) >> 4);
-        printf_hexdump(&packet[3], size-3);
-
+        crc_errors++;
+        // printf("SCO CRC Error: %x - data: ", (packet[1] & 0x30) >> 4);
+        // printf_hexdump(&packet[3], size-3);
         return;
     }
     if (dump_data){
-        printf("data: ");
 #if SCO_DEMO_MODE == SCO_DEMO_MODE_ASCII
+        printf("data: ");
         int i;
         for (i=3;i<size;i++){
             printf("%c", packet[i]);
         }
         printf("\n");
         dump_data = 0;
-#else
-        printf_hexdump(&packet[3], size-3);
+#endif
+#if SCO_DEMO_MODE == SCO_DEMO_MODE_COUNTER
+        // colored hexdump with expected
+        static uint8_t expected_byte = 0;
+        int i;
+        printf("data: ");
+        for (i=3;i<size;i++){
+            if (packet[i] != expected_byte){
+                printf(ANSI_COLOR_RED "%02x " ANSI_COLOR_RESET, packet[i]);
+            } else {
+                printf("%02x ", packet[i]);
+            }
+            expected_byte = packet[i]+1;
+        }
+        printf("\n");
+#endif
+#if SCO_DEMO_MODE == SCO_DEMO_MODE_55 || SCO_DEMO_MODE_00
+        int i;
+        int contains_error = 0;
+        for (i=3;i<size;i++){
+            if (packet[i] != 0x00 && packet[i] != 0x35 && packet[i] != 0x53 && packet[i] != 0x55){
+                contains_error = 1;
+                byte_errors++;
+            }
+        }
+        if (contains_error){
+            printf("data: ");
+            for (i=0;i<3;i++){
+                printf("%02x ", packet[i]);
+            }
+            for (i=3;i<size;i++){
+                if (packet[i] != 0x00 && packet[i] != 0x35 && packet[i] != 0x53 && packet[i] != 0x55){
+                    printf(ANSI_COLOR_RED "%02x " ANSI_COLOR_RESET, packet[i]);
+                } else {
+                    printf("%02x ", packet[i]);
+                }
+            }
+            printf("\n");
+        }
 #endif
     }
 }

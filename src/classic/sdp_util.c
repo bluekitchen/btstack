@@ -371,6 +371,8 @@ struct sdp_context_append_attributes {
 };
 
 static int sdp_traversal_append_attributes(uint16_t attributeID, uint8_t * attributeValue, de_type_t type, de_size_t size, void *my_context){
+    UNUSED(type);
+    UNUSED(size);
     struct sdp_context_append_attributes * context = (struct sdp_context_append_attributes *) my_context;
     if (sdp_attribute_list_constains_id(context->attributeIDList, attributeID)) {
         // DES_HEADER(3) + DES_DATA + (UINT16(3) + attribute)
@@ -429,6 +431,9 @@ static int spd_append_range(struct sdp_context_filter_attributes* context, uint1
 }
 
 static int sdp_traversal_filter_attributes(uint16_t attributeID, uint8_t * attributeValue, de_type_t type, de_size_t size, void *my_context){
+    UNUSED(type);
+    UNUSED(size);
+
     struct sdp_context_filter_attributes * context = (struct sdp_context_filter_attributes *) my_context;
 
     if (!sdp_attribute_list_constains_id(context->attributeIDList, attributeID)) return 0;
@@ -488,6 +493,9 @@ struct sdp_context_get_filtered_size {
 };
 
 static int sdp_traversal_get_filtered_size(uint16_t attributeID, uint8_t * attributeValue, de_type_t type, de_size_t size, void *my_context){
+    UNUSED(type);
+    UNUSED(size);
+
     struct sdp_context_get_filtered_size * context = (struct sdp_context_get_filtered_size *) my_context;
     if (sdp_attribute_list_constains_id(context->attributeIDList, attributeID)) {
         context->size += 3 + de_get_len(attributeValue);
@@ -510,6 +518,9 @@ struct sdp_context_attribute_by_id {
     uint8_t * attributeValue;
 };
 static int sdp_traversal_attribute_by_id(uint16_t attributeID, uint8_t * attributeValue, de_type_t attributeType, de_size_t size, void *my_context){
+    UNUSED(attributeType);
+    UNUSED(size);
+
     struct sdp_context_attribute_by_id * context = (struct sdp_context_attribute_by_id *) my_context;
     if (attributeID == context->attributeID) {
         context->attributeValue = attributeValue;
@@ -574,6 +585,8 @@ struct sdp_context_contains_uuid128 {
 };
 int sdp_record_contains_UUID128(uint8_t *record, uint8_t *uuid128);
 static int sdp_traversal_contains_UUID128(uint8_t * element, de_type_t type, de_size_t size, void *my_context){
+    UNUSED(size);
+
     struct sdp_context_contains_uuid128 * context = (struct sdp_context_contains_uuid128 *) my_context;
     uint8_t normalizedUUID[16];
     if (type == DE_UUID){
@@ -602,6 +615,9 @@ struct sdp_context_match_pattern {
 };
 
 int sdp_traversal_match_pattern(uint8_t * element, de_type_t attributeType, de_size_t size, void *my_context){
+    UNUSED(attributeType);
+    UNUSED(size);
+    
     struct sdp_context_match_pattern * context = (struct sdp_context_match_pattern *) my_context;
     uint8_t normalizedUUID[16];
     uint8_t uuidOK = de_get_normalized_uuid(normalizedUUID, element);

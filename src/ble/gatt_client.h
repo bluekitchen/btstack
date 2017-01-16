@@ -249,7 +249,7 @@ uint8_t gatt_client_discover_characteristics_for_service(btstack_packet_handler_
  */
 uint8_t gatt_client_discover_characteristics_for_handle_range_by_uuid16(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t start_handle, uint16_t end_handle, uint16_t uuid16);
 uint8_t gatt_client_discover_characteristics_for_handle_range_by_uuid128(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t start_handle, uint16_t end_handle, uint8_t  * uuid);
-uint8_t gatt_client_discover_characteristics_for_service_by_uuid16 (btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_service_t  *service, uint16_t  uuid16);
+uint8_t gatt_client_discover_characteristics_for_service_by_uuid16(btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_service_t  *service, uint16_t  uuid16);
 uint8_t gatt_client_discover_characteristics_for_service_by_uuid128(btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_service_t  *service, uint8_t  * uuid128);
 
 /** 

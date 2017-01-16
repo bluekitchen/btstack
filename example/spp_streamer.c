@@ -107,7 +107,7 @@ static void test_reset(void){
 }
 
 static void test_track_sent(int bytes_sent){
-    test_data_sent += test_data_len;
+    test_data_sent += bytes_sent;
     // evaluate
     uint32_t now = btstack_run_loop_get_time_ms();
     uint32_t time_passed = now - test_data_start;
@@ -150,6 +150,9 @@ static void send_packet(void){
 }
 
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(channel);
+    UNUSED(size);
+
     if (packet_type != HCI_EVENT_PACKET) return;
     uint8_t event = hci_event_packet_get_type(packet);
     switch (event) {
@@ -204,6 +207,10 @@ static void handle_found_service(const char * name, uint8_t port){
 }
 
 static void handle_query_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){            
+    UNUSED(packet_type);
+    UNUSED(channel);
+    UNUSED(size);
+
     switch (packet[0]){
         case SDP_EVENT_QUERY_RFCOMM_SERVICE:
             handle_found_service(sdp_event_query_rfcomm_service_get_name(packet), 
@@ -226,6 +233,8 @@ static void handle_query_rfcomm_event(uint8_t packet_type, uint16_t channel, uin
 
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
+    (void)argc;
+    (void)argv;
 
     create_test_data();
 

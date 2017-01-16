@@ -107,6 +107,9 @@ static bd_addr_t remote = {0x04,0x0C,0xCE,0xE4,0x85,0xD3};
 
 /* LISTING_START(SDPQueryUUID): Querying a list of service records on a remote device. */
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(channel);
+    UNUSED(size);
+
     if (packet_type != HCI_EVENT_PACKET) return;
     uint8_t event = hci_event_packet_get_type(packet);
 
@@ -144,6 +147,10 @@ static void assertBuffer(int size){
 
 /* LISTING_START(HandleSDPQUeryResult): Handling query result chunks. */
 static void handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(packet_type);
+    UNUSED(channel);
+    UNUSED(size);
+
     switch (packet[0]){
         case SDP_EVENT_QUERY_ATTRIBUTE_VALUE:
             // handle new record
@@ -162,7 +169,6 @@ static void handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel
             break;
         case SDP_EVENT_QUERY_COMPLETE:
             printf("General query done with status %d.\n\n", sdp_event_query_complete_get_status(packet));
-            exit(0);
             break;
     }
 }
@@ -170,7 +176,9 @@ static void handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel
 
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
- 
+    (void)argc;
+    (void)argv;
+    
     printf("Client HCI init done\r\n");
     
     sdp_client_init();

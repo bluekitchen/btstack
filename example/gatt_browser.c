@@ -164,6 +164,9 @@ static void fill_advertising_report_from_packet(advertising_report_t * report, u
 
 /* LISTING_START(GATTBrowserHCIPacketHandler): Connecting and disconnecting from the GATT client */
 static void handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(channel);
+    UNUSED(size);
+
     if (packet_type != HCI_EVENT_PACKET) return;
     advertising_report_t report;
     
@@ -198,7 +201,6 @@ static void handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *pac
             break;
         case HCI_EVENT_DISCONNECTION_COMPLETE:
             printf("\nGATT browser - DISCONNECTED\n");
-            exit(0);
             break;
         default:
             break;
@@ -221,6 +223,10 @@ static void handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *pac
 static int search_services = 1;
 
 static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(packet_type);
+    UNUSED(channel);
+    UNUSED(size);
+
     gatt_client_service_t service;
     gatt_client_characteristic_t characteristic;
     switch(hci_event_packet_get_type(packet)){
@@ -259,14 +265,17 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
 }
 /* LISTING_END */
 
+#ifdef HAVE_POSIX_STDIN
 static void usage(const char *name){
 	fprintf(stderr, "\nUsage: %s [-a|--address aa:bb:cc:dd:ee:ff]\n", name);
 	fprintf(stderr, "If no argument is provided, GATT browser will start scanning and connect to the first found device.\nTo connect to a specific device use argument [-a].\n\n");
 }
+#endif
 
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
 
+#ifdef HAVE_POSIX_STDIN
     int arg = 1;
     cmdline_addr_found = 0;
     
@@ -280,6 +289,10 @@ int btstack_main(int argc, const char * argv[]){
         usage(argv[0]);
         return 0;
 	}
+#else
+    UNUSED(argc);
+    UNUSED(argv);
+#endif
 
     gatt_client_setup();
 

@@ -214,6 +214,9 @@ void log_info_hexdump(const void *data, int size){
         buffer[j] = 0;
         log_info("%s", buffer);
     }
+#else
+    UNUSED(data);
+    UNUSED(size);
 #endif
 }
 
@@ -229,6 +232,9 @@ void log_info_key(const char * name, sm_key_t key){
     }
     buffer[j] = 0;
     log_info("%-6s %s", name, buffer);
+#else
+    UNUSED(name);
+    UNUSED(key);
 #endif
 }
 

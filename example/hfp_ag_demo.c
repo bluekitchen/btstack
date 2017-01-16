@@ -65,14 +65,8 @@ uint8_t hfp_service_buffer[150];
 const uint8_t    rfcomm_channel_nr = 1;
 const char hfp_ag_service_name[] = "BTstack HFP AG Test";
 
-// PTS
-// static bd_addr_t device_addr = {0x00,0x15,0x83,0x5F,0x9D,0x46};
-// BT-201
-// static bd_addr_t device_addr = {0x00, 0x07, 0xB0, 0x83, 0x02, 0x5E};
-// CC256x
-// bd_addr_t device_addr = { 0xD0, 0x39, 0x72, 0xCD, 0x83, 0x45};
-// Mini Jambox
-bd_addr_t device_addr = { 0x00, 0x15, 0x83, 0x5F, 0x9D, 0x46};
+static bd_addr_t device_addr;
+static const char * device_addr_string = "00:15:83:5F:9D:46";
 
 // static uint8_t codecs[] = {HFP_CODEC_CVSD, HFP_CODEC_MSBC};
 static uint8_t codecs[] = {HFP_CODEC_CVSD};
@@ -208,6 +202,8 @@ static void continue_remote_names(void){
 }
 
 static void inquiry_packet_handler (uint8_t packet_type, uint8_t *packet, uint16_t size){
+    UNUSED(size);
+
     bd_addr_t addr;
     int i;
     int numResponses;
@@ -335,6 +331,9 @@ static void show_usage(void){
 }
 
 static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type){
+    UNUSED(ds);
+    UNUSED(callback_type);
+
     cmd = btstack_stdin_read();
     switch (cmd){
         case 'a':
@@ -555,6 +554,8 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
 #endif
 
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * event, uint16_t event_size){
+    UNUSED(channel);
+
     switch (packet_type){
         case HCI_EVENT_PACKET:
             switch (event[0]){
@@ -684,6 +685,8 @@ static hfp_phone_number_t subscriber_number = {
 
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
+    (void)argc;
+    (void)argv;
 
     sco_demo_init();
 
@@ -729,6 +732,9 @@ int btstack_main(int argc, const char * argv[]){
     printf("SDP service record size: %u\n", de_get_len( hfp_service_buffer));
     sdp_register_service(hfp_service_buffer);
     
+    // parse humand readable Bluetooth address
+    sscanf_bd_addr(device_addr_string, device_addr);
+
 #ifdef HAVE_POSIX_STDIN
     btstack_stdin_setup(stdin_process);
 #endif  

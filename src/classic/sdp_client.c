@@ -385,6 +385,8 @@ static void sdp_client_parse_service_search_attribute_response(uint8_t* packet){
 }
 
 void sdp_client_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(size);
+    
     // uint16_t handle;
     if (packet_type == L2CAP_DATA_PACKET){
         uint16_t responseTransactionID = big_endian_read_16(packet,1);

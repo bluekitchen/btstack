@@ -100,6 +100,8 @@ static void sdp_rfcomm_query_emit_service(void){
 }
 
 static void sdp_client_query_rfcomm_handle_protocol_descriptor_list_data(uint32_t attribute_value_length, uint32_t data_offset, uint8_t data){
+    UNUSED(attribute_value_length);
+    
     // init state on first byte
     if (data_offset == 0){
         pdl_state = GET_PROTOCOL_LIST_LENGTH;
@@ -241,6 +243,9 @@ static void sdp_client_query_rfcomm_handle_service_name_data(uint32_t attribute_
 }
 
 static void sdp_client_query_rfcomm_handle_sdp_parser_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(packet_type);
+    UNUSED(channel);
+
     switch (hci_event_packet_get_type(packet)){
         case SDP_EVENT_QUERY_SERVICE_RECORD_HANDLE:
             // handle service without a name
