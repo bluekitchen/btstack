@@ -381,6 +381,7 @@ exit_on_error:
 	log_error("usb_submit_acl_in_transfer: winusb last error %lu", GetLastError());
 }
 
+#ifdef ENABLE_SCO_OVER_HCI
 #ifdef SCHEDULE_SCO_IN_TRANSFERS_MANUALLY
 
 // frame number gets updated
@@ -433,6 +434,7 @@ exit_on_error:
     log_error("usb_submit_sco_in_transfer: winusb last error %lu", GetLastError());
 }
 #endif
+#endif
 
 static void usb_process_event_in(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type) {
 
@@ -482,6 +484,7 @@ static void usb_process_acl_in(btstack_data_source_t *ds, btstack_data_source_ca
 	usb_submit_acl_in_transfer();
 }
 
+#ifdef ENABLE_SCO_OVER_HCI
 static void sco_state_machine_init(void){
     sco_state = H2_W4_SCO_HEADER;
     sco_read_pos = 0;
@@ -626,6 +629,7 @@ static void usb_process_sco_in(btstack_data_source_t *ds,  btstack_data_source_c
     // log_info("usb_process_sco_in[%02u]: enable data source %02u", transfer_index, usb_sco_in_expected_transfer);
     btstack_run_loop_enable_data_source_callbacks(&usb_data_source_sco_in[usb_sco_in_expected_transfer], DATA_SOURCE_CALLBACK_READ);
 }
+#endif
 
 static void usb_process_command_out(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type){
 
@@ -821,7 +825,6 @@ static int usb_try_open_device(const char * device_path){
     }
 
 #ifdef ENABLE_SCO_OVER_HCI
-
     int i;
 
 	memset(hci_sco_packet_descriptors, 0, sizeof(hci_sco_packet_descriptors));
@@ -854,6 +857,7 @@ static int usb_try_open_device(const char * device_path){
         btstack_run_loop_set_data_source_handler(&usb_data_source_sco_out[i], &usb_process_sco_out);
         btstack_run_loop_add_data_source(&usb_data_source_sco_out[i]);
     }
+#endif
 
 	// setup async io
     memset(&usb_overlapped_event_in,     0, sizeof(usb_overlapped_event_in));
@@ -886,6 +890,8 @@ static int usb_try_open_device(const char * device_path){
 	usb_submit_event_in_transfer();
 	usb_submit_acl_in_transfer();
 
+#ifdef ENABLE_SCO_OVER_HCI
+
 #ifdef SCHEDULE_SCO_IN_TRANSFERS_MANUALLY
     // get current frame number
     ULONG current_frame_number;
@@ -895,8 +901,6 @@ static int usb_try_open_device(const char * device_path){
     // plan for next tranfer
     sco_next_transfer_at_frame = current_frame_number + ISOC_BUFFERS * NUM_ISO_PACKETS;
 #endif
-
-#ifdef ENABLE_SCO_OVER_HCI
 
     for (i=0;i<ISOC_BUFFERS;i++){
 #ifdef SCHEDULE_SCO_IN_TRANSFERS_MANUALLY
@@ -924,8 +928,6 @@ static int usb_try_open_device(const char * device_path){
     if (!result) goto exit_on_error;
 #endif
 
-    // while(1){
-
 #if 0
     while (1){
         // 
@@ -944,13 +946,6 @@ static int usb_try_open_device(const char * device_path){
 
         usb_submit_sco_in_transfer_at_frame(usb_sco_in_expected_transfer, &sco_next_transfer_at_frame);
     }
-#endif
-
-#if 0
-    // stop until working
-    usb_free_resources();
-    return 0;
-#endif
 #endif
 
 #endif
