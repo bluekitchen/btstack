@@ -87,7 +87,7 @@ int avdtp_read_signaling_header(avdtp_signaling_packet_t * signaling_header, uin
             break;
         case AVDTP_CONTINUE_PACKET:
             if (signaling_header->num_packets <= 0) {
-                printf("    ERR: wrong num fragmented packets\n");
+                printf("    ERROR: wrong num fragmented packets\n");
                 break;
             }
             signaling_header->num_packets--;
@@ -118,7 +118,6 @@ int avdtp_pack_service_capabilities(uint8_t * buffer, int size, avdtp_capabiliti
             big_endian_store_16(buffer, pos, caps.content_protection.cp_type);
             pos += 2;
             memcpy(buffer+pos, caps.content_protection.cp_type_value, caps.content_protection.cp_type_value_len);
-            printf("AVDTP_CONTENT_PROTECTION 0%04x\n", caps.content_protection.cp_type);
             break;
         case AVDTP_HEADER_COMPRESSION:
             buffer[pos++] = (caps.header_compression.back_ch << 7) | (caps.header_compression.media << 6) | (caps.header_compression.recovery << 5);
@@ -260,13 +259,11 @@ uint16_t avdtp_unpack_service_capabilities(avdtp_connection_t * connection, avdt
                 }
                 break;
             case AVDTP_MEDIA_CODEC:   
-                printf(" unpack AVDTP_MEDIA_CODEC ");             
                 caps->media_codec.media_type = packet[pos++] >> 4;
                 caps->media_codec.media_codec_type = packet[pos++];
                 caps->media_codec.media_codec_information_len = cap_len - 2;
                 caps->media_codec.media_codec_information = &packet[pos];
                 pos += caps->media_codec.media_codec_information_len;
-                printf(" media_codec_information_len %d \n", caps->media_codec.media_codec_information_len);    
                 break;
             case AVDTP_MEDIA_TRANSPORT:   
             case AVDTP_REPORTING:                
@@ -319,14 +316,13 @@ void avdtp_prepare_capabilities(avdtp_signaling_packet_t * signaling_packet, uin
             signaling_packet->message_type = AVDTP_CMD_MSG;
             break;
         default: 
-            printf("avdtp_prepare_capabilities identifier %d\n", identifier);
+            log_error("avdtp_prepare_capabilities wrong identifier %d", identifier);
             break;
     } 
     
     for (i = 1; i < 9; i++){
         if (get_bit16(registered_service_categories, i)){
             // service category
-            printf(" pack service category %d\n", i);
             signaling_packet->command[signaling_packet->size++] = i;
             signaling_packet->size += avdtp_pack_service_capabilities(signaling_packet->command+signaling_packet->size, sizeof(signaling_packet->command)-signaling_packet->size, capabilities, (avdtp_service_category_t)i, pack_all_capabilities);
         }
@@ -572,7 +568,6 @@ static inline void avdtp_signaling_emit_media_codec_other(btstack_packet_handler
     pos += 2;
     little_endian_store_16(event, pos, media_codec.media_codec_information_len);
     pos += 2;
-    printf("avdtp_signaling_emit_media_codec_other pos %d, info len %d\n", pos, media_codec.media_codec_information_len);
     memcpy(event+pos, media_codec.media_codec_information, media_codec.media_codec_information_len);
 
     (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
