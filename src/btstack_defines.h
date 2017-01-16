@@ -1269,7 +1269,7 @@ typedef uint8_t sm_key_t[16];
 #define AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CAPABILITY        0x06
 
 /**
- * @format 1H11211111111
+ * @format 1H1121111111
  * @param subevent_code
  * @param con_handle
  * @param reconfigure

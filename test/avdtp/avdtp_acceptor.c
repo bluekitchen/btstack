@@ -134,8 +134,7 @@ int avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, avdtp_st
                         stream_endpoint->remote_seps[stream_endpoint->remote_sep_index] = sep;
                         printf("    ACP: add seid %d, to %p\n", stream_endpoint->remote_seps[stream_endpoint->remote_sep_index].seid, stream_endpoint);
                     } 
-                    break;
-
+                    
                     if (get_bit16(sep.configured_service_categories, AVDTP_MEDIA_CODEC)){
                         switch (sep.configuration.media_codec.media_codec_type){
                             case AVDTP_CODEC_SBC: 

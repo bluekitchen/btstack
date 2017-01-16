@@ -154,6 +154,7 @@ typedef struct {
 } adtvp_media_codec_information_sbc_t;
 
 typedef struct {
+    int reconfigure;
     int num_channels;
     int sampling_frequency;
     int channel_mode;
@@ -165,9 +166,10 @@ typedef struct {
     int frames_per_buffer;
 } avdtp_media_codec_configuration_sbc_t;
 
-// mac: static bd_addr_t remote = {0x04, 0x0C, 0xCE, 0xE4, 0x85, 0xD3};
+// mac 2011: static bd_addr_t remote = {0x04, 0x0C, 0xCE, 0xE4, 0x85, 0xD3};
 // pts: static bd_addr_t remote = {0x00, 0x1B, 0xDC, 0x08, 0x0A, 0xA5};
-static bd_addr_t remote = {0x00, 0x1B, 0xDC, 0x08, 0x0A, 0xA5};
+// mac 2013: static bd_addr_t remote = {0x84, 0x38, 0x35, 0x65, 0xd1, 0x15};
+static bd_addr_t remote = {0x84, 0x38, 0x35, 0x65, 0xd1, 0x15};
 static uint16_t con_handle = 0;
 static uint8_t sdp_avdtp_sink_service_buffer[150];
 static avdtp_sep_t sep;
@@ -402,7 +404,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             sep.in_use = avdtp_subevent_signaling_sep_found_get_in_use(packet);
                             sep.media_type = avdtp_subevent_signaling_sep_found_get_media_type(packet);
                             sep.type = avdtp_subevent_signaling_sep_found_get_sep_type(packet);
-                            printf("found sep: seid %u, in_use %d, media type %d, sep type %d (1-SNK)\n", sep.seid, sep.in_use, sep.media_type, sep.type);
+                            printf(" found sep: seid %u, in_use %d, media type %d, sep type %d (1-SNK)\n", sep.seid, sep.in_use, sep.media_type, sep.type);
                             break;
                         case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CAPABILITY:
                             app_state = AVDTP_APPLICATION_IDLE;
@@ -417,6 +419,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             break;
                         case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION:{
                             app_state = AVDTP_APPLICATION_IDLE;
+                            
+                            sbc_configuration.reconfigure = avdtp_subevent_signaling_media_codec_sbc_configuration_get_reconfigure(packet);
                             sbc_configuration.num_channels = avdtp_subevent_signaling_media_codec_sbc_configuration_get_num_channels(packet);
                             sbc_configuration.sampling_frequency = avdtp_subevent_signaling_media_codec_sbc_configuration_get_sampling_frequency(packet);
                             sbc_configuration.channel_mode = avdtp_subevent_signaling_media_codec_sbc_configuration_get_channel_mode(packet);
@@ -427,7 +431,15 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             sbc_configuration.max_bitpool_value = avdtp_subevent_signaling_media_codec_sbc_configuration_get_max_bitpool_value(packet);
                             sbc_configuration.frames_per_buffer = sbc_configuration.subbands * sbc_configuration.block_length;
                             dump_sbc_configuration(sbc_configuration);
-                            init_media_processing(sbc_configuration);
+                            
+                            if (sbc_configuration.reconfigure){
+                                printf(" RECONFIGURE command\n");
+                                close_media_processing();
+                                init_media_processing(sbc_configuration);
+                            } else {
+                                printf(" CONFIGURE command\n");
+                                init_media_processing(sbc_configuration);
+                            }
                             break;
                         }  
                         case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CAPABILITY:
@@ -567,11 +579,11 @@ int btstack_main(int argc, const char * argv[]){
     avdtp_sink_init();
     avdtp_sink_register_packet_handler(&packet_handler);
 
-#ifndef SMG_BI
+//#ifndef SMG_BI
     uint8_t seid = avdtp_sink_create_stream_endpoint(AVDTP_SINK, AVDTP_AUDIO);
     avdtp_sink_register_media_transport_category(seid);
     avdtp_sink_register_media_codec_category(seid, AVDTP_AUDIO, AVDTP_CODEC_SBC, media_sbc_codec_info, sizeof(media_sbc_codec_info));
-#endif
+//#endif
     // uint8_t cp_type_lsb,  uint8_t cp_type_msb, const uint8_t * cp_type_value, uint8_t cp_type_value_len
     // avdtp_sink_register_content_protection_category(seid, 2, 2, NULL, 0);
 

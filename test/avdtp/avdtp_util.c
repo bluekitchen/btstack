@@ -470,15 +470,16 @@ void avdtp_signaling_emit_media_codec_other_capability(btstack_packet_handler_t 
 
 static inline void avdtp_signaling_emit_media_codec_sbc(btstack_packet_handler_t callback, uint16_t con_handle, adtvp_media_codec_capabilities_t media_codec, uint8_t reconfigure){
     if (!callback) return;
-    uint8_t event[15];
+    uint8_t event[14+2];
     int pos = 0;
     event[pos++] = HCI_EVENT_AVDTP_META;
     event[pos++] = sizeof(event) - 2;
+    
     event[pos++] = AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION;
     little_endian_store_16(event, pos, con_handle);
     pos += 2;
     event[pos++] = reconfigure;
-    printf("avdtp_signaling_emit_media_codec_sbc 1\n");
+    
     uint8_t num_channels = 0;
     uint16_t sampling_frequency = 0;
     uint8_t subbands = 0;
@@ -530,7 +531,7 @@ static inline void avdtp_signaling_emit_media_codec_sbc(btstack_packet_handler_t
     if (block_length_bitmap & AVDTP_SBC_BLOCK_LENGTH_16){
         block_length = 16;
     }
-    printf("avdtp_signaling_emit_media_codec_sbc 2\n");
+    
     event[pos++] = media_codec.media_type;
     little_endian_store_16(event, pos, sampling_frequency);
     pos += 2;
@@ -542,7 +543,6 @@ static inline void avdtp_signaling_emit_media_codec_sbc(btstack_packet_handler_t
     event[pos++] = media_codec.media_codec_information[1] & 0x03;
     event[pos++] = media_codec.media_codec_information[2];
     event[pos++] = media_codec.media_codec_information[3];
-    printf("avdtp_signaling_emit_media_codec_sbc 3\n");
     (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
