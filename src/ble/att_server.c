@@ -78,6 +78,7 @@ static att_server_t * att_server_for_handle(hci_con_handle_t con_handle){
     return &hci_connection->att_server;
 }
 
+#ifdef ENABLE_LE_SIGNED_WRITE
 static att_server_t * att_server_for_state(att_server_state_t state){
     btstack_linked_list_iterator_t it;
     hci_connections_get_iterator(&it);
@@ -88,6 +89,7 @@ static att_server_t * att_server_for_state(att_server_state_t state){
     }
     return NULL;
 }
+#endif
 
 static void att_handle_value_indication_notify_client(uint8_t status, uint16_t client_handle, uint16_t attribute_handle){
     if (!att_client_packet_handler) return;
@@ -235,6 +237,7 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
     }
 }
 
+#ifdef ENABLE_LE_SIGNED_WRITE
 static void att_signed_write_handle_cmac_result(uint8_t hash[8]){
     
     att_server_t * att_server = att_server_for_state(ATT_SERVER_W4_SIGNED_WRITE_VALIDATION);
@@ -255,7 +258,7 @@ static void att_signed_write_handle_cmac_result(uint8_t hash[8]){
     att_server->state = ATT_SERVER_REQUEST_RECEIVED_AND_VALIDATED;
     att_dispatch_server_request_can_send_now_event(att_server->connection.con_handle);
 }
-
+#endif
 
 // pre: att_server->state == ATT_SERVER_REQUEST_RECEIVED_AND_VALIDATED
 // pre: can send now
@@ -303,6 +306,7 @@ static int att_server_process_validated_request(att_server_t * att_server){
 static void att_run_for_context(att_server_t * att_server){
     switch (att_server->state){
         case ATT_SERVER_REQUEST_RECEIVED:
+#ifdef ENABLE_LE_SIGNED_WRITE
             if (att_server->request_buffer[0] == ATT_SIGNED_WRITE_COMMAND){
                 log_info("ATT Signed Write!");
                 if (!sm_cmac_ready()) {
@@ -344,7 +348,7 @@ static void att_run_for_context(att_server_t * att_server){
                 sm_cmac_signed_write_start(csrk, att_server->request_buffer[0], attribute_handle, att_server->request_size - 15, &att_server->request_buffer[3], counter_packet, att_signed_write_handle_cmac_result);
                 return;
             } 
-
+#endif
             // move on
             att_server->state = ATT_SERVER_REQUEST_RECEIVED_AND_VALIDATED;
             att_dispatch_server_request_can_send_now_event(att_server->connection.con_handle);

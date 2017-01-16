@@ -699,6 +699,7 @@ typedef struct {
     uint8_t   adv_addr_type;
     bd_addr_t adv_address;
 
+#ifdef ENABLE_LE_CENTRAL
     le_scanning_state_t   le_scanning_state;
     le_connecting_state_t le_connecting_state;
 
@@ -707,8 +708,14 @@ typedef struct {
     uint16_t le_scan_interval;  
     uint16_t le_scan_window;
 
+    // LE Whitelist Management
+    uint16_t      le_whitelist_capacity;
+    btstack_linked_list_t le_whitelist;
+#endif
+
     le_connection_parameter_range_t le_connection_parameter_range;
 
+#ifdef ENABLE_LE_PERIPHERAL
     uint8_t  * le_advertisements_data;
     uint8_t    le_advertisements_data_len;
 
@@ -728,10 +735,7 @@ typedef struct {
     uint8_t  le_advertisements_channel_map;
     uint8_t  le_advertisements_filter_policy;
     bd_addr_t le_advertisements_direct_address;
-
-    // LE Whitelist Management
-    uint16_t      le_whitelist_capacity;
-    btstack_linked_list_t le_whitelist;
+#endif
 
     // custom BD ADDR
     bd_addr_t custom_bd_addr; 

@@ -68,7 +68,10 @@ static uint8_t  pts_suppress_mtu_exchange;
 static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *packet, uint16_t size);
 static void gatt_client_hci_event_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static void gatt_client_report_error_if_pending(gatt_client_t *peripheral, uint8_t error_code);
+
+#ifdef ENABLE_LE_SIGNED_WRITE
 static void att_signed_write_handle_cmac_result(uint8_t hash[8]);
+#endif
 
 static uint16_t peripheral_mtu(gatt_client_t *peripheral){
     if (peripheral->mtu > l2cap_max_le_mtu()){
@@ -275,6 +278,7 @@ static void att_read_multiple_request(uint16_t peripheral_handle, uint16_t num_v
     l2cap_send_prepared_connectionless(peripheral_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, offset);
 }
 
+#ifdef ENABLE_LE_SIGNED_WRITE
 // precondition: can_send_packet_now == TRUE
 static void att_signed_write_request(uint16_t request_type, uint16_t peripheral_handle, uint16_t attribute_handle, uint16_t value_length, uint8_t * value, uint32_t sign_counter, uint8_t sgn[8]){
     l2cap_reserve_packet_buffer();
@@ -286,6 +290,7 @@ static void att_signed_write_request(uint16_t request_type, uint16_t peripheral_
     reverse_64(sgn, &request[3 + value_length + 4]);
     l2cap_send_prepared_connectionless(peripheral_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, 3 + value_length + 12);
 }
+#endif
 
 // precondition: can_send_packet_now == TRUE
 static void att_write_request(uint16_t request_type, uint16_t peripheral_handle, uint16_t attribute_handle, uint16_t value_length, uint8_t * value){
@@ -424,9 +429,11 @@ static void send_gatt_read_characteristic_descriptor_request(gatt_client_t * per
     att_read_request(ATT_READ_REQUEST, peripheral->con_handle, peripheral->attribute_handle);
 }
 
+#ifdef ENABLE_LE_SIGNED_WRITE
 static void send_gatt_signed_write_request(gatt_client_t * peripheral, uint32_t sign_counter){
     att_signed_write_request(ATT_SIGNED_WRITE_COMMAND, peripheral->con_handle, peripheral->attribute_handle, peripheral->attribute_length, peripheral->attribute_value, sign_counter, peripheral->cmac);
 }
+#endif
 
 static uint16_t get_last_result_handle_from_service_list(uint8_t * packet, uint16_t size){
     uint8_t attr_length = packet[1];
@@ -960,6 +967,7 @@ static void gatt_client_run(void){
                 send_gatt_execute_write_request(peripheral);
                 return;
 
+#ifdef ENABLE_LE_SIGNED_WRITE
             case P_W4_CMAC_READY:
                 if (sm_cmac_ready()){
                     sm_key_t csrk;
@@ -982,6 +990,7 @@ static void gatt_client_run(void){
                 gatt_client_handle_transaction_complete(peripheral);
                 return;
             }
+#endif
 
             default:
                 break;
@@ -1346,6 +1355,7 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
     gatt_client_run();
 }
 
+#ifdef ENABLE_LE_SIGNED_WRITE
 static void att_signed_write_handle_cmac_result(uint8_t hash[8]){
     btstack_linked_list_iterator_t it;
     btstack_linked_list_iterator_init(&it, &gatt_client_connections);
@@ -1377,6 +1387,7 @@ uint8_t gatt_client_signed_write_without_response(btstack_packet_handler_t callb
     gatt_client_run();
     return 0; 
 }
+#endif
 
 uint8_t gatt_client_discover_primary_services(btstack_packet_handler_t callback, hci_con_handle_t con_handle){
     gatt_client_t * peripheral = provide_context_for_conn_handle_and_start_timer(con_handle);

@@ -51,6 +51,22 @@
 #include "hci_dump.h"
 #include "l2cap.h"
 
+#if !defined(ENABLE_LE_PERIPHERAL) && !defined(ENABLE_LE_CENTRAL)
+#error "LE Security Manager used, but neither ENABLE_LE_PERIPHERAL nor ENABLE_LE_CENTRAL defined. Please add at least one to btstack_config.h."
+#endif
+
+#if defined(ENABLE_LE_PERIPHERAL) && defined(ENABLE_LE_CENTRAL)
+#define IS_RESPONDER(role) (role)
+#else
+#ifdef ENABLE_LE_CENTRAL
+// only central - never responder (avoid 'unused variable' warnings)
+#define IS_RESPONDER(role) (0 && role)
+#else
+// only peripheral - always responder (avoid 'unused variable' warnings)
+#define IS_RESPONDER(role) (1 || role)
+#endif
+#endif
+
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
 #ifdef HAVE_HCI_CONTROLLER_DHKEY_SUPPORT
 #error "Support for DHKEY Support in HCI Controller not implemented yet. Please use software implementation" 
@@ -59,13 +75,16 @@
 #endif
 #endif
 
-
 // Software ECDH implementation provided by mbedtls
 #ifdef USE_MBEDTLS_FOR_ECDH
 #include "mbedtls/config.h"
 #include "mbedtls/platform.h"
 #include "mbedtls/ecp.h"
 #include "sm_mbedtls_allocator.h" 
+#endif
+
+#if defined(ENABLE_LE_SIGNED_WRITE) || defined(ENABLE_LE_SECURE_CONNECTIONS)
+#define ENABLE_CMAC_ENGINE
 #endif
 
 //
@@ -180,6 +199,7 @@ static random_address_update_t rau_state;
 static bd_addr_t sm_random_address;
 
 // CMAC Calculation: General
+#ifdef ENABLE_CMAC_ENGINE
 static cmac_state_t sm_cmac_state;
 static uint16_t     sm_cmac_message_len;
 static sm_key_t     sm_cmac_k;
@@ -189,11 +209,14 @@ static uint8_t      sm_cmac_block_current;
 static uint8_t      sm_cmac_block_count;
 static uint8_t      (*sm_cmac_get_byte)(uint16_t offset);
 static void         (*sm_cmac_done_handler)(uint8_t * hash);
+#endif
 
 // CMAC for ATT Signed Writes
+#ifdef ENABLE_LE_SIGNED_WRITE
 static uint8_t      sm_cmac_header[3];
 static const uint8_t * sm_cmac_message;
 static uint8_t      sm_cmac_sign_counter[4];
+#endif
 
 // CMAC for Secure Connection functions
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
@@ -363,7 +386,6 @@ static void sm_done_for_handle(hci_con_handle_t con_handle);
 static sm_connection_t * sm_get_connection_for_handle(hci_con_handle_t con_handle);
 static inline int sm_calc_actual_encryption_key_size(int other);
 static int sm_validate_stk_generation_method(void);
-static void sm_shift_left_by_one_bit_inplace(int len, uint8_t * data);
 
 static void log_info_hex16(const char * name, uint16_t value){
     log_info("%-6s 0x%04x", name, value);
@@ -841,17 +863,6 @@ int sm_address_resolution_lookup(uint8_t address_type, bd_addr_t address){
     return 0;
 }
 
-// CMAC Implementation using AES128 engine
-static void sm_shift_left_by_one_bit_inplace(int len, uint8_t * data){
-    int i;
-    int carry = 0;
-    for (i=len-1; i >= 0 ; i--){
-        int new_carry = data[i] >> 7;
-        data[i] = data[i] << 1 | carry;
-        carry = new_carry;
-    }
-}
-
 // while x_state++ for an enum is possible in C, it isn't in C++. we use this helpers to avoid compile errors for now
 static inline void sm_next_responding_state(sm_connection_t * sm_conn){
     sm_conn->sm_engine_state = (security_manager_state_t) (((int)sm_conn->sm_engine_state) + 1);
@@ -864,6 +875,7 @@ static inline void rau_next_state(void){
 }
 
 // CMAC calculation using AES Engine
+#ifdef ENABLE_CMAC_ENGINE
 
 static inline void sm_cmac_next_state(void){
     sm_cmac_state = (cmac_state_t) (((int)sm_cmac_state) + 1);
@@ -903,8 +915,10 @@ void sm_cmac_general_start(const sm_key_t key, uint16_t message_len, uint8_t (*g
     // let's go
     sm_run();
 }
+#endif
 
 // cmac for ATT Message signing
+#ifdef ENABLE_LE_SIGNED_WRITE
 static uint8_t sm_cmac_signed_write_message_get_byte(uint16_t offset){
     if (offset >= sm_cmac_message_len) {
         log_error("sm_cmac_signed_write_message_get_byte. out of bounds, access %u, len %u", offset, sm_cmac_message_len);
@@ -933,8 +947,9 @@ void sm_cmac_signed_write_start(const sm_key_t k, uint8_t opcode, hci_con_handle
     sm_cmac_message = message;
     sm_cmac_general_start(k, total_message_len, &sm_cmac_signed_write_message_get_byte, done_handler);
 }
+#endif
 
-
+#ifdef ENABLE_CMAC_ENGINE
 static void sm_cmac_handle_aes_engine_ready(void){
     switch (sm_cmac_state){
         case CMAC_CALC_SUBKEYS: {
@@ -970,6 +985,17 @@ static void sm_cmac_handle_aes_engine_ready(void){
         default:
             log_info("sm_cmac_handle_aes_engine_ready called in state %u", sm_cmac_state);
             break;
+    }
+}
+
+// CMAC Implementation using AES128 engine
+static void sm_shift_left_by_one_bit_inplace(int len, uint8_t * data){
+    int i;
+    int carry = 0;
+    for (i=len-1; i >= 0 ; i--){
+        int new_carry = data[i] >> 7;
+        data[i] = data[i] << 1 | carry;
+        carry = new_carry;
     }
 }
 
@@ -1034,13 +1060,14 @@ static void sm_cmac_handle_encryption_result(sm_key_t data){
             break;
     }
 }
+#endif
 
 static void sm_trigger_user_response(sm_connection_t * sm_conn){
     // notify client for: JUST WORKS confirm, Numeric comparison confirm, PASSKEY display or input
     setup->sm_user_response = SM_USER_RESPONSE_IDLE;
     switch (setup->sm_stk_generation_method){
         case PK_RESP_INPUT:
-            if (sm_conn->sm_role){
+            if (IS_RESPONDER(sm_conn->sm_role)){
                 setup->sm_user_response = SM_USER_RESPONSE_PENDING;
                 sm_notify_client_base(SM_EVENT_PASSKEY_INPUT_NUMBER, sm_conn->sm_handle, sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address); 
             } else {
@@ -1048,7 +1075,7 @@ static void sm_trigger_user_response(sm_connection_t * sm_conn){
             }
             break;
         case PK_INIT_INPUT:
-            if (sm_conn->sm_role){
+            if (IS_RESPONDER(sm_conn->sm_role)){
                 sm_notify_client_passkey(SM_EVENT_PASSKEY_DISPLAY_NUMBER, sm_conn->sm_handle, sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address, big_endian_read_32(setup->sm_tk, 12)); 
             } else {
                 setup->sm_user_response = SM_USER_RESPONSE_PENDING;
@@ -1075,7 +1102,7 @@ static void sm_trigger_user_response(sm_connection_t * sm_conn){
 
 static int sm_key_distribution_all_received(sm_connection_t * sm_conn){
     int recv_flags;
-    if (sm_conn->sm_role){
+    if (IS_RESPONDER(sm_conn->sm_role)){
         // slave / responder
         recv_flags = sm_key_distribution_flags_for_set(sm_pairing_packet_get_initiator_key_distribution(setup->sm_s_pres));
     } else {
@@ -1123,7 +1150,7 @@ static void sm_init_setup(sm_connection_t * sm_conn){
     }
     
     sm_pairing_packet_t * local_packet;
-    if (sm_conn->sm_role){
+    if (IS_RESPONDER(sm_conn->sm_role)){
         // slave
         local_packet = &setup->sm_s_pres;
         gap_advertisements_get_address(&setup->sm_s_addr_type, setup->sm_s_address);
@@ -1152,7 +1179,7 @@ static int sm_stk_generation_init(sm_connection_t * sm_conn){
 
     sm_pairing_packet_t * remote_packet;
     int                   remote_key_request;
-    if (sm_conn->sm_role){
+    if (IS_RESPONDER(sm_conn->sm_role)){
         // slave / responder
         remote_packet      = &setup->sm_m_preq;
         remote_key_request = sm_pairing_packet_get_responder_key_distribution(setup->sm_m_preq);
@@ -1196,7 +1223,9 @@ static void sm_address_resolution_handle_event(address_resolution_event_t event)
     hci_con_handle_t con_handle = 0;
 
     sm_connection_t * sm_connection;
+#ifdef ENABLE_LE_CENTRAL
     sm_key_t ltk;
+#endif
     switch (mode){
         case ADDRESS_RESOLUTION_GENERAL:
             break;
@@ -1208,6 +1237,7 @@ static void sm_address_resolution_handle_event(address_resolution_event_t event)
                     sm_connection->sm_irk_lookup_state = IRK_LOOKUP_SUCCEEDED;
                     sm_connection->sm_le_db_index = matched_device_id;
                     log_info("ADDRESS_RESOLUTION_SUCEEDED, index %d", sm_connection->sm_le_db_index);
+#ifdef ENABLE_LE_CENTRAL
                     if (sm_connection->sm_role) break;
                     if (!sm_connection->sm_bonding_requested && !sm_connection->sm_security_request_received) break;
                     sm_connection->sm_security_request_received = 0;
@@ -1218,14 +1248,17 @@ static void sm_address_resolution_handle_event(address_resolution_event_t event)
                     } else {
                         sm_connection->sm_engine_state = SM_INITIATOR_PH1_W2_SEND_PAIRING_REQUEST;
                     }
+#endif
                     break;
                 case ADDRESS_RESOLUTION_FAILED:
                     sm_connection->sm_irk_lookup_state = IRK_LOOKUP_FAILED;
+#ifdef ENABLE_LE_CENTRAL
                     if (sm_connection->sm_role) break;
                     if (!sm_connection->sm_bonding_requested && !sm_connection->sm_security_request_received) break;
                     sm_connection->sm_security_request_received = 0;
                     sm_connection->sm_bonding_requested = 0;
                     sm_connection->sm_engine_state = SM_INITIATOR_PH1_W2_SEND_PAIRING_REQUEST;
+#endif
                     break;
             }
             break;
@@ -1357,7 +1390,7 @@ static void sm_sc_start_calculating_local_confirm(sm_connection_t * sm_conn){
 }
 
 static void sm_sc_state_after_receiving_random(sm_connection_t * sm_conn){
-    if (sm_conn->sm_role){
+    if (IS_RESPONDER(sm_conn->sm_role)){
         // Responder
         sm_conn->sm_engine_state = SM_SC_SEND_PAIRING_RANDOM;
     } else {
@@ -1438,7 +1471,7 @@ static void sm_sc_cmac_done(uint8_t * hash){
             break; 
         case SM_SC_W4_CALCULATE_F6_FOR_DHKEY_CHECK:
             memcpy(setup->sm_local_dhkey_check, hash, 16);
-            if (sm_conn->sm_role){
+            if (IS_RESPONDER(sm_conn->sm_role)){
                 // responder
                 if (setup->sm_state_vars & SM_STATE_VAR_DHKEY_COMMAND_RECEIVED){
                     sm_conn->sm_engine_state = SM_SC_W2_CALCULATE_F6_TO_VERIFY_DHKEY_CHECK;
@@ -1454,7 +1487,7 @@ static void sm_sc_cmac_done(uint8_t * hash){
                 sm_pairing_error(sm_conn, SM_REASON_DHKEY_CHECK_FAILED);
                 break;
             }
-            if (sm_conn->sm_role){
+            if (IS_RESPONDER(sm_conn->sm_role)){
                 // responder
                 sm_conn->sm_engine_state = SM_SC_SEND_DHKEY_CHECK_COMMAND;
             } else {
@@ -1470,7 +1503,7 @@ static void sm_sc_cmac_done(uint8_t * hash){
             reverse_128(hash, setup->sm_t);
             link_key_type = sm_conn->sm_connection_authenticated ?
                 AUTHENTICATED_COMBINATION_KEY_GENERATED_FROM_P256 : UNAUTHENTICATED_COMBINATION_KEY_GENERATED_FROM_P256;
-            if (sm_conn->sm_role){
+            if (IS_RESPONDER(sm_conn->sm_role)){
 #ifdef ENABLE_CLASSIC
                 gap_store_link_key_for_bd_addr(setup->sm_m_address, setup->sm_t, link_key_type);
 #endif
@@ -1567,7 +1600,7 @@ static void f5_calculate_mackey(sm_connection_t * sm_conn){
     bd_addr_slave[0]  =  setup->sm_s_addr_type;
     memcpy(&bd_addr_master[1], setup->sm_m_address, 6);
     memcpy(&bd_addr_slave[1],  setup->sm_s_address, 6);
-    if (sm_conn->sm_role){
+    if (IS_RESPONDER(sm_conn->sm_role)){
         // responder
         f5_mackkey(sm_conn, setup->sm_t, setup->sm_peer_nonce, setup->sm_local_nonce, bd_addr_master, bd_addr_slave);
     } else {
@@ -1629,7 +1662,7 @@ static void g2_engine(sm_connection_t * sm_conn, const sm_key256_t u, const sm_k
 
 static void g2_calculate(sm_connection_t * sm_conn) {
     // calc Va if numeric comparison
-    if (sm_conn->sm_role){
+    if (IS_RESPONDER(sm_conn->sm_role)){
         // responder  
         g2_engine(sm_conn, setup->sm_peer_qx, ec_qx, setup->sm_peer_nonce, setup->sm_local_nonce);;
     } else {
@@ -1679,7 +1712,7 @@ static void sm_sc_calculate_f6_for_dhkey_check(sm_connection_t * sm_conn){
     iocap_b[0] = sm_pairing_packet_get_auth_req(setup->sm_s_pres);
     iocap_b[1] = sm_pairing_packet_get_oob_data_flag(setup->sm_s_pres);
     iocap_b[2] = sm_pairing_packet_get_io_capability(setup->sm_s_pres);
-    if (sm_conn->sm_role){
+    if (IS_RESPONDER(sm_conn->sm_role)){
         // responder
         f6_engine(sm_conn, setup->sm_mackey, setup->sm_local_nonce, setup->sm_peer_nonce, setup->sm_ra, iocap_b, bd_addr_slave, bd_addr_master);
     } else {
@@ -1704,7 +1737,7 @@ static void sm_sc_calculate_f6_to_verify_dhkey_check(sm_connection_t * sm_conn){
     iocap_b[0] = sm_pairing_packet_get_auth_req(setup->sm_s_pres);
     iocap_b[1] = sm_pairing_packet_get_oob_data_flag(setup->sm_s_pres);
     iocap_b[2] = sm_pairing_packet_get_io_capability(setup->sm_s_pres);
-    if (sm_conn->sm_role){
+    if (IS_RESPONDER(sm_conn->sm_role)){
         // responder
         f6_engine(sm_conn, setup->sm_mackey, setup->sm_peer_nonce, setup->sm_local_nonce, setup->sm_rb, iocap_a, bd_addr_master, bd_addr_slave);
     } else {
@@ -1754,6 +1787,7 @@ static void h6_calculate_br_edr_link_key(sm_connection_t * sm_conn){
 // key management secure connections:
 // - both devices store same LTK from ECDH key exchange. 
 
+#if defined(ENABLE_LE_SECURE_CONNECTIONS) || defined(ENABLE_LE_CENTRAL)
 static void sm_load_security_info(sm_connection_t * sm_connection){
     int encryption_key_size;
     int authenticated;
@@ -1767,7 +1801,9 @@ static void sm_load_security_info(sm_connection_t * sm_connection){
     sm_connection->sm_connection_authenticated = authenticated;
     sm_connection->sm_connection_authorization_state = authorized ? AUTHORIZATION_GRANTED : AUTHORIZATION_UNKNOWN; 
 }
+#endif
 
+#ifdef ENABLE_LE_PERIPHERAL
 static void sm_start_calculating_ltk_from_ediv_and_rand(sm_connection_t * sm_connection){
     memcpy(setup->sm_local_rand, sm_connection->sm_local_rand, 8);
     setup->sm_local_ediv = sm_connection->sm_local_ediv;
@@ -1780,6 +1816,7 @@ static void sm_start_calculating_ltk_from_ediv_and_rand(sm_connection_t * sm_con
             sm_connection->sm_actual_encryption_key_size, sm_connection->sm_connection_authenticated);
     sm_connection->sm_engine_state = SM_RESPONDER_PH4_Y_GET_ENC;
 }
+#endif
 
 static void sm_run(void){
 
@@ -1857,6 +1894,7 @@ static void sm_run(void){
             break;
     }
 
+#ifdef ENABLE_CMAC_ENGINE
     // CMAC
     switch (sm_cmac_state){
         case CMAC_CALC_SUBKEYS:
@@ -1869,6 +1907,7 @@ static void sm_run(void){
         default:
             break;
     }
+#endif
 
     // CSRK Lookup
     // -- if csrk lookup ready, find connection that require csrk lookup
@@ -1979,7 +2018,9 @@ static void sm_run(void){
             // - if no connection locked and we're ready/waiting for setup context, fetch it and start
             int done = 1;
             int err;
+            UNUSED(err);
             switch (sm_connection->sm_engine_state) {
+#ifdef ENABLE_LE_PERIPHERAL
                 case SM_RESPONDER_SEND_SECURITY_REQUEST:
                     // send packet if possible,
                     if (l2cap_can_send_fixed_channel_packet_now(sm_connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL)){
@@ -2011,14 +2052,16 @@ static void sm_run(void){
                     }
                     sm_connection->sm_engine_state = SM_RESPONDER_PH1_SEND_PAIRING_RESPONSE;
                     break;
+                case SM_RESPONDER_PH0_RECEIVED_LTK_REQUEST:
+                    sm_reset_setup();
+                    sm_start_calculating_ltk_from_ediv_and_rand(sm_connection);
+                    break;
+#endif
+#ifdef ENABLE_LE_CENTRAL
                 case SM_INITIATOR_PH0_HAS_LTK:
                     sm_reset_setup();
                     sm_load_security_info(sm_connection);
                     sm_connection->sm_engine_state = SM_INITIATOR_PH0_SEND_START_ENCRYPTION;
-                    break;
-                case SM_RESPONDER_PH0_RECEIVED_LTK_REQUEST:
-                    sm_reset_setup();
-                    sm_start_calculating_ltk_from_ediv_and_rand(sm_connection);
                     break;
                 case SM_INITIATOR_PH1_W2_SEND_PAIRING_REQUEST:
                     sm_reset_setup();
@@ -2026,6 +2069,7 @@ static void sm_run(void){
                     sm_timeout_start(sm_connection);
                     sm_connection->sm_engine_state = SM_INITIATOR_PH1_SEND_PAIRING_REQUEST;
                     break;
+#endif
 
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
                 case SM_SC_RECEIVED_LTK_REQUEST:
@@ -2090,6 +2134,7 @@ static void sm_run(void){
 
         sm_key_t plaintext;
         int key_distribution_flags;
+        UNUSED(key_distribution_flags);
 
         log_info("sm_run: state %u", connection->sm_engine_state);
 
@@ -2168,6 +2213,7 @@ static void sm_run(void){
                 break;
 #endif
 
+#ifdef ENABLE_LE_CENTRAL
             // initiator side
             case SM_INITIATOR_PH0_SEND_START_ENCRYPTION: {
                 sm_key_t peer_ltk_flipped;
@@ -2186,6 +2232,7 @@ static void sm_run(void){
                 l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) &setup->sm_m_preq, sizeof(sm_pairing_packet_t));
                 sm_timeout_reset(connection);
                 break;
+#endif
 
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
 
@@ -2201,7 +2248,7 @@ static void sm_run(void){
                 switch (setup->sm_stk_generation_method){
                     case JUST_WORKS:
                     case NK_BOTH_INPUT:
-                        if (connection->sm_role){
+                        if (IS_RESPONDER(connection->sm_role)){
                             // responder
                             sm_sc_start_calculating_local_confirm(connection);
                         } else {
@@ -2217,7 +2264,7 @@ static void sm_run(void){
                         memcpy(setup->sm_rb, setup->sm_tk, 16);
                         setup->sm_passkey_bit = 0;
 
-                        if (connection->sm_role){
+                        if (IS_RESPONDER(connection->sm_role)){
                             // responder
                             connection->sm_engine_state = SM_SC_W4_CONFIRMATION;
                         } else {
@@ -2239,7 +2286,7 @@ static void sm_run(void){
                 uint8_t buffer[17];
                 buffer[0] = SM_CODE_PAIRING_CONFIRM;
                 reverse_128(setup->sm_local_confirm, &buffer[1]);
-                if (connection->sm_role){
+                if (IS_RESPONDER(connection->sm_role)){
                     connection->sm_engine_state = SM_SC_W4_PAIRING_RANDOM;
                 } else {
                     connection->sm_engine_state = SM_SC_W4_CONFIRMATION;
@@ -2253,7 +2300,7 @@ static void sm_run(void){
                 buffer[0] = SM_CODE_PAIRING_RANDOM;
                 reverse_128(setup->sm_local_nonce, &buffer[1]);
                 if (setup->sm_stk_generation_method != JUST_WORKS && setup->sm_stk_generation_method != NK_BOTH_INPUT && setup->sm_passkey_bit < 20){
-                    if (connection->sm_role){
+                    if (IS_RESPONDER(connection->sm_role)){
                         // responder
                         connection->sm_engine_state = SM_SC_W4_CONFIRMATION;
                     } else {
@@ -2261,7 +2308,7 @@ static void sm_run(void){
                         connection->sm_engine_state = SM_SC_W4_PAIRING_RANDOM;
                     }                    
                 } else {
-                    if (connection->sm_role){
+                    if (IS_RESPONDER(connection->sm_role)){
                         // responder
                         if (setup->sm_stk_generation_method == NK_BOTH_INPUT){
                             connection->sm_engine_state = SM_SC_W2_CALCULATE_G2;
@@ -2282,7 +2329,7 @@ static void sm_run(void){
                 buffer[0] = SM_CODE_PAIRING_DHKEY_CHECK;
                 reverse_128(setup->sm_local_dhkey_check, &buffer[1]);
 
-                if (connection->sm_role){
+                if (IS_RESPONDER(connection->sm_role)){
                     connection->sm_engine_state = SM_SC_W4_LTK_REQUEST_SC;
                 } else {
                     connection->sm_engine_state = SM_SC_W4_DHKEY_CHECK_COMMAND;
@@ -2294,6 +2341,8 @@ static void sm_run(void){
             }
 
 #endif
+
+#ifdef ENABLE_LE_PERIPHERAL
             case SM_RESPONDER_PH1_SEND_PAIRING_RESPONSE:
                 // echo initiator for now
                 sm_pairing_packet_set_code(setup->sm_s_pres,SM_CODE_PAIRING_RESPONSE);
@@ -2320,12 +2369,13 @@ static void sm_run(void){
                     sm_trigger_user_response(connection);
                 }
                 return;
+#endif
 
             case SM_PH2_SEND_PAIRING_RANDOM: {
                 uint8_t buffer[17];
                 buffer[0] = SM_CODE_PAIRING_RANDOM;
                 reverse_128(setup->sm_local_random, &buffer[1]);
-                if (connection->sm_role){
+                if (IS_RESPONDER(connection->sm_role)){
                     connection->sm_engine_state = SM_RESPONDER_PH2_W4_LTK_REQUEST;
                 } else {
                     connection->sm_engine_state = SM_INITIATOR_PH2_W4_PAIRING_RANDOM;
@@ -2395,7 +2445,7 @@ static void sm_run(void){
                 // already busy?
                 if (sm_aes128_state == SM_AES128_ACTIVE) break;
                 // calculate STK
-                if (connection->sm_role){
+                if (IS_RESPONDER(connection->sm_role)){
                     sm_s1_r_prime(setup->sm_local_random, setup->sm_peer_random, plaintext);
                 } else {
                     sm_s1_r_prime(setup->sm_peer_random, setup->sm_local_random, plaintext);
@@ -2416,7 +2466,7 @@ static void sm_run(void){
                 uint8_t buffer[17];
                 buffer[0] = SM_CODE_PAIRING_CONFIRM;
                 reverse_128(setup->sm_local_confirm, &buffer[1]);
-                if (connection->sm_role){
+                if (IS_RESPONDER(connection->sm_role)){
                     connection->sm_engine_state = SM_RESPONDER_PH2_W4_PAIRING_RANDOM;
                 } else {
                     connection->sm_engine_state = SM_INITIATOR_PH2_W4_PAIRING_CONFIRM;
@@ -2425,18 +2475,12 @@ static void sm_run(void){
                 sm_timeout_reset(connection);
                 return;
             }
+#ifdef ENABLE_LE_PERIPHERAL
             case SM_RESPONDER_PH2_SEND_LTK_REPLY: {
                 sm_key_t stk_flipped;
                 reverse_128(setup->sm_ltk, stk_flipped);
                 connection->sm_engine_state = SM_PH2_W4_CONNECTION_ENCRYPTED;
                 hci_send_cmd(&hci_le_long_term_key_request_reply, connection->sm_handle, stk_flipped);
-                return;
-            }
-            case SM_INITIATOR_PH3_SEND_START_ENCRYPTION: {
-                sm_key_t stk_flipped;
-                reverse_128(setup->sm_ltk, stk_flipped);
-                connection->sm_engine_state = SM_PH2_W4_CONNECTION_ENCRYPTED;
-                hci_send_cmd(&hci_le_start_encryption, connection->sm_handle, 0, 0, 0, stk_flipped);
                 return;
             }
             case SM_RESPONDER_PH4_SEND_LTK_REPLY: {
@@ -2455,6 +2499,16 @@ static void sm_run(void){
                 sm_next_responding_state(connection);
                 sm_aes128_start(sm_persistent_dhk, plaintext, connection);
                 return;
+#endif
+#ifdef ENABLE_LE_CENTRAL
+            case SM_INITIATOR_PH3_SEND_START_ENCRYPTION: {
+                sm_key_t stk_flipped;
+                reverse_128(setup->sm_ltk, stk_flipped);
+                connection->sm_engine_state = SM_PH2_W4_CONNECTION_ENCRYPTED;
+                hci_send_cmd(&hci_le_start_encryption, connection->sm_handle, 0, 0, 0, stk_flipped);
+                return;
+            }
+#endif
 
             case SM_PH3_DISTRIBUTE_KEYS:
                 if (setup->sm_key_distribution_send_set &   SM_KEYDIST_FLAG_ENCRYPTION_INFORMATION){
@@ -2513,7 +2567,7 @@ static void sm_run(void){
                 }
 
                 // keys are sent
-                if (connection->sm_role){
+                if (IS_RESPONDER(connection->sm_role)){
                     // slave -> receive master keys if any
                     if (sm_key_distribution_all_received(connection)){
                         sm_key_distribution_handle_all_received(connection);
@@ -2583,6 +2637,7 @@ static void sm_handle_encryption_result(uint8_t * data){
             break;
     }
 
+#ifdef ENABLE_CMAC_ENGINE
     switch (sm_cmac_state){
         case CMAC_W4_SUBKEYS:
         case CMAC_W4_MI:
@@ -2596,6 +2651,7 @@ static void sm_handle_encryption_result(uint8_t * data){
         default:
             break;
     }
+#endif
 
     // retrieve sm_connection provided to sm_aes128_start_encryption
     sm_connection_t * connection = (sm_connection_t*) sm_aes128_context;
@@ -2625,7 +2681,7 @@ static void sm_handle_encryption_result(uint8_t * data){
                 connection->sm_engine_state = SM_GENERAL_SEND_PAIRING_FAILED;
                 return;
             }
-            if (connection->sm_role){
+            if (IS_RESPONDER(connection->sm_role)){
                 connection->sm_engine_state = SM_PH2_SEND_PAIRING_RANDOM;
             } else {
                 connection->sm_engine_state = SM_PH2_CALC_STK;
@@ -2636,7 +2692,7 @@ static void sm_handle_encryption_result(uint8_t * data){
             reverse_128(data, setup->sm_ltk);
             sm_truncate_key(setup->sm_ltk, connection->sm_actual_encryption_key_size);
             log_info_key("stk", setup->sm_ltk);
-            if (connection->sm_role){
+            if (IS_RESPONDER(connection->sm_role)){
                 connection->sm_engine_state = SM_RESPONDER_PH2_SEND_LTK_REPLY;
             } else {
                 connection->sm_engine_state = SM_INITIATOR_PH3_SEND_START_ENCRYPTION;
@@ -2682,7 +2738,7 @@ static void sm_handle_encryption_result(uint8_t * data){
                 connection->sm_engine_state = SM_PH3_DISTRIBUTE_KEYS;
             } else {
                 // no keys to send, just continue
-                if (connection->sm_role){
+                if (IS_RESPONDER(connection->sm_role)){
                     // slave -> receive master keys
                     connection->sm_engine_state = SM_PH3_RECEIVE_KEYS;
                 } else {
@@ -2696,12 +2752,14 @@ static void sm_handle_encryption_result(uint8_t * data){
                 }                
             }
             return;                                
+#ifdef ENABLE_LE_PERIPHERAL
         case SM_RESPONDER_PH4_LTK_W4_ENC:
             reverse_128(data, setup->sm_ltk);
             sm_truncate_key(setup->sm_ltk, connection->sm_actual_encryption_key_size);
             log_info_key("ltk", setup->sm_ltk);
             connection->sm_engine_state = SM_RESPONDER_PH4_SEND_LTK_REPLY;
             return;                                
+#endif
         default:
             break;
     }
@@ -2833,7 +2891,7 @@ static void sm_handle_random_result(uint8_t * data){
             } 
             sm_reset_tk();
             big_endian_store_32(setup->sm_tk, 12, tk);
-            if (connection->sm_role){
+            if (IS_RESPONDER(connection->sm_role)){
                 connection->sm_engine_state = SM_RESPONDER_PH1_SEND_PAIRING_RESPONSE;
             } else {
                 if (setup->sm_use_secure_connections){
@@ -2951,7 +3009,7 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                             sm_conn->sm_irk_lookup_state = IRK_LOOKUP_W4_READY;
 
                             // just connected -> everything else happens in sm_run()
-                            if (sm_conn->sm_role){
+                            if (IS_RESPONDER(sm_conn->sm_role)){
                                 // slave - state already could be SM_RESPONDER_SEND_SECURITY_REQUEST instead
                                 if (sm_conn->sm_engine_state == SM_GENERAL_IDLE){
                                     if (sm_slave_request_security) {
@@ -3038,7 +3096,7 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                             sm_done_for_handle(sm_conn->sm_handle);
                             break;                        
                         case SM_PH2_W4_CONNECTION_ENCRYPTED:
-                            if (sm_conn->sm_role){
+                            if (IS_RESPONDER(sm_conn->sm_role)){
                                 // slave
                                 if (setup->sm_use_secure_connections){
                                     sm_conn->sm_engine_state = SM_PH3_DISTRIBUTE_KEYS;
@@ -3075,7 +3133,7 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                             sm_done_for_handle(sm_conn->sm_handle);
                             break;                        
                         case SM_PH2_W4_CONNECTION_ENCRYPTED:
-                            if (sm_conn->sm_role){
+                            if (IS_RESPONDER(sm_conn->sm_role)){
                                 // slave
                                 sm_conn->sm_engine_state = SM_PH3_GET_RANDOM;
                             } else {
@@ -3210,6 +3268,7 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
     log_debug("sm_pdu_handler: state %u, pdu 0x%02x", sm_conn->sm_engine_state, packet[0]);
 
     int err;
+    UNUSED(err);
 
     if (packet[0] == SM_CODE_KEYPRESS_NOTIFICATION){
         uint8_t buffer[5];
@@ -3226,6 +3285,8 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
         // a sm timeout requries a new physical connection
         case SM_GENERAL_TIMEOUT:
             return;
+
+#ifdef ENABLE_LE_CENTRAL
 
         // Initiator
         case SM_INITIATOR_CONNECTED:
@@ -3316,7 +3377,9 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
             reverse_128(&packet[1], setup->sm_peer_random);
             sm_conn->sm_engine_state = SM_PH2_C1_GET_ENC_C;
             break;
+#endif
 
+#ifdef ENABLE_LE_PERIPHERAL
         // Responder
         case SM_RESPONDER_IDLE:
         case SM_RESPONDER_SEND_SECURITY_REQUEST: 
@@ -3330,6 +3393,7 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
             memcpy(&sm_conn->sm_m_preq, packet, sizeof(sm_pairing_packet_t));
             sm_conn->sm_engine_state = SM_RESPONDER_PH1_PAIRING_REQUEST_RECEIVED;
             break;
+#endif
 
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
         case SM_SC_W4_PUBLIC_KEY_COMMAND:
@@ -3359,7 +3423,7 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
             }
 
 #endif
-            if (sm_conn->sm_role){
+            if (IS_RESPONDER(sm_conn->sm_role)){
                 // responder
                 sm_conn->sm_engine_state = SM_SC_SEND_PUBLIC_KEY_COMMAND;
             } else {
@@ -3397,7 +3461,7 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
             // received confirm value
             reverse_128(&packet[1], setup->sm_peer_confirm);
 
-            if (sm_conn->sm_role){
+            if (IS_RESPONDER(sm_conn->sm_role)){
                 // responder
                 if (sm_passkey_used(setup->sm_stk_generation_method)){
                     if (setup->sm_user_response != SM_USER_RESPONSE_PASSKEY){
@@ -3461,6 +3525,7 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
             break;
 #endif
 
+#ifdef ENABLE_LE_PERIPHERAL
         case SM_RESPONDER_PH1_W4_PAIRING_CONFIRM:
             if (packet[0] != SM_CODE_PAIRING_CONFIRM){
                 sm_pdu_received_in_wrong_state(sm_conn);
@@ -3502,6 +3567,7 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
             reverse_128(&packet[1], setup->sm_peer_random);
             sm_conn->sm_engine_state = SM_PH2_C1_GET_ENC_C;
             break;
+#endif
 
         case SM_PH3_RECEIVE_KEYS:
             switch(packet[0]){
@@ -3541,7 +3607,7 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
 
                 sm_key_distribution_handle_all_received(sm_conn);
 
-                if (sm_conn->sm_role){
+                if (IS_RESPONDER(sm_conn->sm_role)){
                     if (setup->sm_use_secure_connections && (setup->sm_key_distribution_received_set & SM_KEYDIST_FLAG_IDENTITY_ADDRESS_INFORMATION)){
                         sm_conn->sm_engine_state = SM_SC_W2_CALCULATE_H6_ILK;
                     } else {
@@ -3593,9 +3659,11 @@ void sm_set_io_capabilities(io_capability_t io_capability){
     sm_io_capabilities = io_capability;
 }
 
+#ifdef ENABLE_LE_PERIPHERAL
 void sm_set_request_security(int enable){
     sm_slave_request_security = enable;
 }
+#endif
 
 void sm_set_er(sm_key_t er){
     memcpy(sm_persistent_er, er, 16);
@@ -3635,7 +3703,9 @@ void sm_init(void){
     sm_max_encryption_key_size = 16;
     sm_min_encryption_key_size = 7;
     
+#ifdef ENABLE_CMAC_ENGINE
     sm_cmac_state  = CMAC_IDLE;
+#endif
     dkg_state = DKG_W4_WORKING;
     rau_state = RAU_W4_WORKING;
     sm_aes128_state = SM_AES128_IDLE;
@@ -3770,7 +3840,7 @@ void sm_request_pairing(hci_con_handle_t con_handle){
     if (!sm_conn) return;     // wrong connection
 
     log_info("sm_request_pairing in role %u, state %u", sm_conn->sm_role, sm_conn->sm_engine_state);
-    if (sm_conn->sm_role){
+    if (IS_RESPONDER(sm_conn->sm_role)){
         sm_send_security_request_for_connection(sm_conn);
     } else {
         // used as a trigger to start central/master/initiator security procedures
@@ -3911,16 +3981,21 @@ static int gap_random_address_type_requires_updates(void){
     if (gap_random_adress_type == GAP_RANDOM_ADDRESS_TYPE_OFF) return 0;
     return 1;
 }
+
+#ifdef ENABLE_LE_PERIPHERAL
 static uint8_t own_address_type(void){
     if (gap_random_adress_type == 0) return 0;
     return 1;
 }
+#endif
 
 // GAP LE API
 void gap_random_address_set_mode(gap_random_address_type_t random_address_type){
     gap_random_address_update_stop();
     gap_random_adress_type = random_address_type;
+#ifdef ENABLE_LE_PERIPHERAL
     hci_le_advertisements_set_own_address_type(own_address_type());
+#endif
     if (!gap_random_address_type_requires_updates()) return;
     gap_random_address_update_start();
     gap_random_address_trigger();
@@ -3945,6 +4020,7 @@ void gap_random_address_set(bd_addr_t addr){
     sm_run();
 }
 
+#ifdef ENABLE_LE_PERIPHERAL
 /*
  * @brief Set Advertisement Paramters
  * @param adv_int_min
@@ -3962,4 +4038,5 @@ void gap_advertisements_set_params(uint16_t adv_int_min, uint16_t adv_int_max, u
     hci_le_advertisements_set_params(adv_int_min, adv_int_max, adv_type, own_address_type(),
         direct_address_typ, direct_address, channel_map, filter_policy);
 }
+#endif
 
