@@ -187,6 +187,7 @@ static int patestCallback( const void *inputBuffer, void *outputBuffer,
     (void) timeInfo; /* Prevent unused variable warnings. */
     (void) statusFlags;
     (void) inputBuffer;
+    (void) userData;
     
     uint32_t bytes_read = 0;
     int bytes_per_buffer = framesPerBuffer;
