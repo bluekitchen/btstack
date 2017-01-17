@@ -35,7 +35,6 @@
  *
  */
 
-#include "btstack_config.h"
 
 #include <stdint.h>
 #include <stdio.h>
@@ -43,6 +42,8 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "btstack_config.h"
+#include "btstack_debug.h"
 #include "btstack_event.h"
 #include "btstack_memory.h"
 #include "btstack_run_loop.h"
@@ -58,10 +59,6 @@
 #include "wav_util.h"
 #include "avdtp_util.h"
 
-#define NUM_CHANNELS 2
-#define SAMPLE_RATE 44100
-//#define SMG_BI
-
 #ifdef HAVE_PORTAUDIO
 #include <portaudio.h>
 #include "btstack_ring_buffer.h"
@@ -72,75 +69,44 @@
 #define STORE_SBC_TO_WAV_FILE 
 #endif
 
+#if defined(HAVE_PORTAUDIO) || defined(STORE_SBC_TO_WAV_FILE)
+#define DECODE_SBC
+#endif
+
+#define NUM_CHANNELS 2
+#define SAMPLE_RATE 44100
+
+// SBC Decoder for WAV file or PortAudio
+#ifdef DECODE_SBC
+static btstack_sbc_decoder_state_t state;
+static btstack_sbc_mode_t mode = SBC_MODE_STANDARD;
+static int total_num_samples = 0;
+#endif
+
+// PortAdudio - live playback
 #ifdef HAVE_PORTAUDIO
 #define PA_SAMPLE_TYPE      paInt16
 #define FRAMES_PER_BUFFER   128
 #define BYTES_PER_FRAME     (2*NUM_CHANNELS)
-#define PREBUFFER_MS        150
+#define PREBUFFER_MS        300
 #define PREBUFFER_BYTES     (PREBUFFER_MS*SAMPLE_RATE/1000*BYTES_PER_FRAME)
-
 static uint8_t ring_buffer_storage[2*PREBUFFER_BYTES];
 static btstack_ring_buffer_t ring_buffer;
-
 static PaStream * stream;
-static uint8_t pa_stream_started = 0;
-
-static int patestCallback( const void *inputBuffer, void *outputBuffer,
-                           unsigned long framesPerBuffer,
-                           const PaStreamCallbackTimeInfo* timeInfo,
-                           PaStreamCallbackFlags statusFlags,
-                           void *userData ) {
-    (void) timeInfo; /* Prevent unused variable warnings. */
-    (void) statusFlags;
-    (void) inputBuffer;
-    
-    uint32_t bytes_read = 0;
-    int bytes_per_buffer = framesPerBuffer * BYTES_PER_FRAME;
-
-    if (btstack_ring_buffer_bytes_available(&ring_buffer) >= bytes_per_buffer){
-        btstack_ring_buffer_read(&ring_buffer, outputBuffer, bytes_per_buffer, &bytes_read);
-    } else {
-        memset(outputBuffer, 0, bytes_per_buffer);
-    }
-    // printf("bytes avail after read: %d\n", btstack_ring_buffer_bytes_available(&ring_buffer));
-    return 0;
-}
+static int pa_stream_started = 0;
+static int pa_stream_paused = 0;
 #endif
 
+// WAV File
 #ifdef STORE_SBC_TO_WAV_FILE    
-// store sbc as wav:
-static btstack_sbc_decoder_state_t state;
-static int total_num_samples = 0;
 static int frame_count = 0;
 static char * wav_filename = "avdtp_sink.wav";
-static btstack_sbc_mode_t mode = SBC_MODE_STANDARD;
-
-static void handle_pcm_data(int16_t * data, int num_samples, int num_channels, int sample_rate, void * context){
-    wav_writer_write_int16(num_samples*num_channels, data);
-    total_num_samples+=num_samples*num_channels;
-    frame_count++;
-
-#ifdef HAVE_PORTAUDIO
-    if (!pa_stream_started && btstack_ring_buffer_bytes_available(&ring_buffer) >= PREBUFFER_BYTES){
-        /* -- start stream -- */
-        PaError err = Pa_StartStream(stream);
-        if (err != paNoError){
-            printf("Error starting the stream: \"%s\"\n",  Pa_GetErrorText(err));
-            return;
-        }
-        pa_stream_started = 1; 
-    }
-    btstack_ring_buffer_write(&ring_buffer, (uint8_t *)data, num_samples*num_channels*2);
-    // printf("bytes avail after write: %d\n", btstack_ring_buffer_bytes_available(&ring_buffer));
-#endif
-}
 #endif
 
 #ifdef STORE_SBC_TO_SBC_FILE    
 static FILE * sbc_file;
 static char * sbc_filename = "avdtp_sink.sbc";
 #endif
-
 
 typedef struct {
     // bitmaps
@@ -201,12 +167,87 @@ static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 static int media_initialized = 0;
 
+
+
+#ifdef HAVE_PORTAUDIO
+static int patestCallback( const void *inputBuffer, void *outputBuffer,
+                           unsigned long framesPerBuffer,
+                           const PaStreamCallbackTimeInfo* timeInfo,
+                           PaStreamCallbackFlags statusFlags,
+                           void *userData ) {
+
+    /** patestCallback is called from different thread, don't use hci_dump / log_info here without additional checks */
+
+    (void) timeInfo; /* Prevent unused variable warnings. */
+    (void) statusFlags;
+    (void) inputBuffer;
+    
+    int bytes_to_copy = framesPerBuffer * BYTES_PER_FRAME;
+
+    // fill with silence while paused
+    if (pa_stream_paused){
+
+        if (btstack_ring_buffer_bytes_available(&ring_buffer) < PREBUFFER_BYTES){
+            // printf("PA: silence\n");
+            memset(outputBuffer, 0, bytes_to_copy);
+            return 0;
+        } else {
+            // resume playback
+            pa_stream_paused = 0;
+        }
+    }
+
+    // get data from ringbuffer
+    uint32_t bytes_read = 0;
+    btstack_ring_buffer_read(&ring_buffer, outputBuffer, bytes_to_copy, &bytes_read);
+    bytes_to_copy -= bytes_read;
+
+    // fill with 0 if not enough
+    if (bytes_to_copy){
+        memset(outputBuffer + bytes_read, 0, bytes_to_copy);
+        pa_stream_paused = 1;
+    }
+    return 0;
+}
+#endif
+
+#ifdef DECODE_SBC
+static void handle_pcm_data(int16_t * data, int num_samples, int num_channels, int sample_rate, void * context){
+    UNUSED(sample_rate);
+    UNUSED(context);
+
+#ifdef STORE_SBC_TO_WAV_FILE
+    wav_writer_write_int16(num_samples*num_channels, data);
+    frame_count++;
+#endif
+
+    total_num_samples+=num_samples*num_channels;
+
+#ifdef HAVE_PORTAUDIO
+    if (!pa_stream_started){
+        /* -- start stream -- */
+        PaError err = Pa_StartStream(stream);
+        if (err != paNoError){
+            printf("Error starting the stream: \"%s\"\n",  Pa_GetErrorText(err));
+            return;
+        }
+        pa_stream_started = 1; 
+        pa_stream_paused  = 1;
+    }
+    btstack_ring_buffer_write(&ring_buffer, (uint8_t *)data, num_samples*num_channels*2);
+#endif
+}
+#endif
+
 static int init_media_processing(avdtp_media_codec_configuration_sbc_t configuration){
     int num_channels = configuration.num_channels;
     int sample_rate = configuration.sampling_frequency;
     
-#ifdef STORE_SBC_TO_WAV_FILE
+#ifdef DECODE_SBC
     btstack_sbc_decoder_init(&state, mode, handle_pcm_data, NULL);
+#endif
+
+#ifdef STORE_SBC_TO_WAV_FILE
     wav_writer_open(wav_filename, num_channels, sample_rate);  
 #endif
 
@@ -215,7 +256,7 @@ static int init_media_processing(avdtp_media_codec_configuration_sbc_t configura
 #endif
 
 #ifdef HAVE_PORTAUDIO
-    int frames_per_buffer = configuration.frames_per_buffer;
+    // int frames_per_buffer = configuration.frames_per_buffer;
     PaError err;
     PaStreamParameters outputParameters;
 
@@ -237,7 +278,7 @@ static int init_media_processing(avdtp_media_codec_configuration_sbc_t configura
            NULL,                /* &inputParameters */
            &outputParameters,
            sample_rate,
-           frames_per_buffer,
+           0,
            paClipOff,           /* we won't output out of range samples so don't bother clipping them */
            patestCallback,      /* use callback */
            NULL );   
@@ -291,6 +332,9 @@ static void close_media_processing(void){
 }
 
 static void handle_l2cap_media_data_packet(avdtp_stream_endpoint_t * stream_endpoint, uint8_t *packet, uint16_t size){
+    
+    UNUSED(stream_endpoint);
+
     int pos = 0;
     
     avdtp_media_packet_header_t media_header;
@@ -335,12 +379,15 @@ static void handle_l2cap_media_data_packet(avdtp_stream_endpoint_t * stream_endp
     // printf("SBC HEADER: num_frames %u, fragmented %u, start %u, stop %u\n", sbc_header.num_frames, sbc_header.fragmentation, sbc_header.starting_packet, sbc_header.last_packet);
     // printf_hexdump( packet+pos, size-pos );
     
-#ifdef STORE_SBC_TO_WAV_FILE
+#ifdef DECODE_SBC
     btstack_sbc_decoder_process_data(&state, 0, packet+pos, size-pos);
 #endif
 
 #ifdef STORE_SBC_TO_SBC_FILE
     fwrite(packet+pos, size-pos, 1, sbc_file);
+#endif
+#ifdef HAVE_PORTAUDIO
+    log_info("PA: bytes avail after recv: %d", btstack_ring_buffer_bytes_available(&ring_buffer));
 #endif
 }
 
@@ -367,6 +414,10 @@ static void dump_sbc_configuration(avdtp_media_codec_configuration_sbc_t configu
 
 
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+
+    UNUSED(channel);
+    UNUSED(size);
+
     bd_addr_t event_addr;
     switch (packet_type) {
  
@@ -556,6 +607,9 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
 
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
+
+    UNUSED(argc);
+    (void)argv;
 
     /* Register for HCI events */
     hci_event_callback_registration.callback = &packet_handler;
