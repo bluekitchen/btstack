@@ -912,7 +912,7 @@ typedef uint8_t sm_key_t[16];
 #define HCI_EVENT_HSP_META                                 0xE8
 #define HCI_EVENT_HFP_META                                 0xE9
 #define HCI_EVENT_ANCS_META                                0xEA
-#define HCI_EVENT_AVDTP_META                               0xEA
+#define HCI_EVENT_AVDTP_META                               0xEB
 
 // Potential other meta groups
  // #define HCI_EVENT_BNEP_META                                0xxx

@@ -56,6 +56,10 @@ static const char * default_avdtp_sink_service_provider_name = "BTstack AVDTP Si
 static btstack_linked_list_t avdtp_connections;
 static uint16_t stream_endpoints_id_counter;
 
+btstack_linked_list_t stream_endpoints;
+btstack_packet_handler_t avdtp_sink_callback;
+
+
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
 static void (*handle_media_data)(avdtp_stream_endpoint_t * stream_endpoint, uint8_t *packet, uint16_t size);    

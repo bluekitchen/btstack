@@ -78,7 +78,6 @@ void avdtp_signaling_emit_media_codec_other_reconfiguration(btstack_packet_handl
 void avdtp_sink_request_can_send_now_acceptor(avdtp_connection_t * connection, uint16_t l2cap_cid);
 void avdtp_sink_request_can_send_now_initiator(avdtp_connection_t * connection, uint16_t l2cap_cid);
 void avdtp_sink_request_can_send_now_self(avdtp_connection_t * connection, uint16_t l2cap_cid);
-btstack_linked_list_t stream_endpoints;
 
 #if defined __cplusplus
 }

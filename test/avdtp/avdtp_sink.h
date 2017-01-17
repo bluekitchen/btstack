@@ -178,6 +178,9 @@ void avdtp_sink_stop_stream(uint16_t con_handle, uint8_t seid);
 
 /* API_END */
 
+extern btstack_packet_handler_t avdtp_sink_callback;
+extern btstack_linked_list_t stream_endpoints;
+
 #if defined __cplusplus
 }
 #endif

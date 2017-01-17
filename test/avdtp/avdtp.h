@@ -403,8 +403,6 @@ typedef struct {
     uint16_t num_packets;
 } avdtp_signaling_packet_t;
 
-btstack_packet_handler_t avdtp_sink_callback;
-
 typedef struct {
     btstack_linked_item_t    item;
 
