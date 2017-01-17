@@ -46,13 +46,17 @@ void hal_led_toggle(void){
 }
 
 static void sigint_handler(int param){
+    UNUSED(param);
 
-    // reset even if not setup before
+    printf("CTRL-C = SIGINT received, shutting down..\n");   
+    log_info("sigint_handler: shutting down");
+
+    // reset anyway
     btstack_stdin_reset();
 
-    log_info(" <= SIGINT received, shutting down..\n");   
-    // hci_power_control(HCI_POWER_OFF);
-    // hci_close();
+    // power down
+    hci_power_control(HCI_POWER_OFF);
+    hci_close();
     log_info("Good bye, see you.\n");    
     exit(0);
 }

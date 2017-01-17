@@ -108,13 +108,15 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 }
 
 static void sigint_handler(int param){
+    UNUSED(param);
 
-#ifndef _WIN32
+    printf("CTRL-C - SIGINT received, shutting down..\n");   
+    log_info("sigint_handler: shutting down");
+
     // reset anyway
     btstack_stdin_reset();
-#endif
 
-    log_info(" <= SIGINT received, shutting down..\n");   
+    // power down
     hci_power_control(HCI_POWER_OFF);
     hci_close();
     log_info("Good bye, see you.\n");    
