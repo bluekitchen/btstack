@@ -585,4 +585,16 @@ void avdtp_signaling_emit_media_codec_other_reconfiguration(btstack_packet_handl
 }
                            
 
+void avdtp_sink_request_can_send_now_acceptor(avdtp_connection_t * connection, uint16_t l2cap_cid){
+    connection->wait_to_send_acceptor = 1;
+    l2cap_request_can_send_now_event(l2cap_cid);
+}
+void avdtp_sink_request_can_send_now_initiator(avdtp_connection_t * connection, uint16_t l2cap_cid){
+    connection->wait_to_send_initiator = 1;
+    l2cap_request_can_send_now_event(l2cap_cid);
+}
+void avdtp_sink_request_can_send_now_self(avdtp_connection_t * connection, uint16_t l2cap_cid){
+    connection->wait_to_send_self = 1;
+    l2cap_request_can_send_now_event(l2cap_cid);
+}
                             
