@@ -95,6 +95,7 @@ static int avdtp_acceptor_validate_msg_length(avdtp_signal_identifier_t signal_i
 
 void avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, uint8_t * packet, uint16_t size, int offset){
     avdtp_stream_endpoint_t * stream_endpoint;
+    connection->acceptor_transaction_label = connection->signaling_packet.transaction_label;
     
     if (!avdtp_acceptor_validate_msg_length(connection->signaling_packet.signal_identifier, size)) {
         connection->error_code = BAD_LENGTH;
@@ -221,7 +222,6 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, uint8_t
                         stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_REJECT_CATEGORY_WITH_ERROR_CODE;
                         break;
                     }
-
                     // find or add sep
                     int i;
                     stream_endpoint->remote_sep_index = 0xFF;
@@ -230,7 +230,7 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, uint8_t
                             stream_endpoint->remote_sep_index = i;
                         }
                     }
-                    printf("    ACP .. seid %d, index %02x\n", sep.seid, stream_endpoint->remote_sep_index );
+                    printf("    ACP .. seid %d, index %d, in use %d\n", sep.seid, stream_endpoint->remote_sep_index, stream_endpoint->remote_seps[stream_endpoint->remote_sep_index].in_use );
                     
                     if (stream_endpoint->remote_sep_index != 0xFF){
                         if (stream_endpoint->remote_seps[stream_endpoint->remote_sep_index].in_use){
@@ -473,7 +473,7 @@ static int avdtp_acceptor_send_response_reject_with_error_code(uint16_t cid, avd
 
 void avdtp_acceptor_stream_config_subsm_run(avdtp_connection_t * connection){
     int sent = 1;
-    printf("avdtp_acceptor_stream_config_subsm_run connection state \n");
+    
     switch (connection->acceptor_connection_state){
         case AVDTP_SIGNALING_CONNECTION_ACCEPTOR_W2_ANSWER_DISCOVER_SEPS:
             printf(" -> AVDTP_SIGNALING_CONNECTION_OPENED\n");
@@ -617,9 +617,7 @@ void avdtp_acceptor_stream_config_subsm_run(avdtp_connection_t * connection){
     avdtp_signaling_emit_done(avdtp_sink_callback, connection->con_handle, status);
 
     // check fragmentation
-    if (stream_endpoint->acceptor_config_state != AVDTP_ACCEPTOR_STREAM_CONFIG_IDLE){
+    if (connection->signaling_packet.packet_type != AVDTP_SINGLE_PACKET && connection->signaling_packet.packet_type != AVDTP_END_PACKET){
         avdtp_sink_request_can_send_now_acceptor(connection, connection->l2cap_signaling_cid);
     }
-
-    return;
 }

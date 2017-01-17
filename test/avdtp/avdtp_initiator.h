@@ -51,8 +51,8 @@
 extern "C" {
 #endif
 
-int  avdtp_initiator_stream_config_subsm(avdtp_connection_t * connection, uint8_t *packet, uint16_t size, int offset);
-int  avdtp_initiator_stream_config_subsm_run(avdtp_connection_t * connection);
+void avdtp_initiator_stream_config_subsm(avdtp_connection_t * connection, uint8_t *packet, uint16_t size, int offset);
+void avdtp_initiator_stream_config_subsm_run(avdtp_connection_t * connection);
 
 #if defined __cplusplus
 }
