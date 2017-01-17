@@ -597,4 +597,16 @@ void avdtp_sink_request_can_send_now_self(avdtp_connection_t * connection, uint1
     connection->wait_to_send_self = 1;
     l2cap_request_can_send_now_event(l2cap_cid);
 }
+
+avdtp_stream_endpoint_t * get_avdtp_stream_endpoint_for_seid(uint16_t seid){
+    btstack_linked_list_iterator_t it;    
+    btstack_linked_list_iterator_init(&it, (btstack_linked_list_t *) &stream_endpoints);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        avdtp_stream_endpoint_t * stream_endpoint = (avdtp_stream_endpoint_t *)btstack_linked_list_iterator_next(&it);
+        if (stream_endpoint->sep.seid == seid){
+            return stream_endpoint;
+        }
+    }
+    return NULL;
+}
                             
