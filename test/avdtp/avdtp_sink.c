@@ -555,7 +555,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                         printf("L2CAP_EVENT_CHANNEL_OPENED: stream_endpoint not found");
                         return;
                     }
-                    stream_endpoint->connection = connection;
                     stream_endpoint_state_machine(connection, stream_endpoint, HCI_EVENT_PACKET, L2CAP_EVENT_CHANNEL_OPENED, packet, size);
                     break;
                 
