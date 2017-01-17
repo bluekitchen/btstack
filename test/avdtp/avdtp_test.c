@@ -181,6 +181,7 @@ static int patestCallback( const void *inputBuffer, void *outputBuffer,
     (void) timeInfo; /* Prevent unused variable warnings. */
     (void) statusFlags;
     (void) inputBuffer;
+    (void) userData;
     
     int bytes_to_copy = framesPerBuffer * BYTES_PER_FRAME;
 
