@@ -61,7 +61,9 @@ Status               | Platform
 --------------       | ------ 
 [<img src="http://buildbot.bluekitchen-gmbh.com/btstack/badge.png?builder=port-posix-h4-develop">](https://buildbot.bluekitchen-gmbh.com/btstack/builders/port-posix-h4-develop) | posix: Unix-based system connected to Bluetooth module via serial port   
 [<img src="http://buildbot.bluekitchen-gmbh.com/btstack/badge.png?builder=port-libusb-develop">](https://buildbot.bluekitchen-gmbh.com/btstack/builders/port-libusb-develop)     | libusb: Unix-based system with dedicated USB Bluetooth dongle
-[<img src="http://buildbot.bluekitchen-gmbh.com/btstack/badge.png?builder=port-daemon-develop">](https://buildbot.bluekitchen-gmbh.com/btstack/builders/port-daemon-develop)     | daemon: TCP and Unix domain named socket client-server architecture supporting multiple clients
+[<img src="http://buildbot.bluekitchen-gmbh.com/btstack/badge.png?builder=port-daemon-develop">](https://buildbot.bluekitchen-gmbh.com/btstack/builders/.. | windows-h4: Win32-based system connected to Bluetooth module via serial port   
+.. | windwos-winusb: Win32-based system with dedicated USB Bluetooth dongle
+port-daemon-develop)     | daemon: TCP and Unix domain named socket client-server architecture supporting multiple clients
 [<img src="http://buildbot.bluekitchen-gmbh.com/btstack/badge.png?builder=java-develop">](https://buildbot.bluekitchen-gmbh.com/btstack/builders/java-develop)                   | java: Java wrapper for daemon 
 [<img src="http://buildbot.bluekitchen-gmbh.com/btstack/badge.png?builder=port-ios-develop">](https://buildbot.bluekitchen-gmbh.com/btstack/builders/port-ios-develop)           | iOS: daemon for iOS jailbreak devices, C client-server API
 [<img src="http://buildbot.bluekitchen-gmbh.com/btstack/badge.png?builder=port-mtk-develop">](https://buildbot.bluekitchen-gmbh.com/btstack/builders/port-mtk-develop)           | mtk: daemon for rooted Android devices, based on Mediatek MT65xx processor, Java and C client-server API

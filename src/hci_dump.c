@@ -176,7 +176,7 @@ static void printf_timestamp(void){
 }
 #endif
 
-void hci_dump_packet(uint8_t packet_type, uint8_t in, uint8_t *packet, uint16_t len) {
+void hci_dump_packet(uint8_t packet_type, uint8_t in, uint8_t *packet, uint16_t len) {    
 
     if (dump_file < 0) return; // not activated yet
 

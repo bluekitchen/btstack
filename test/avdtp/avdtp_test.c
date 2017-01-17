@@ -204,7 +204,6 @@ static int media_initialized = 0;
 static int init_media_processing(avdtp_media_codec_configuration_sbc_t configuration){
     int num_channels = configuration.num_channels;
     int sample_rate = configuration.sampling_frequency;
-    int frames_per_buffer = configuration.frames_per_buffer;
     
 #ifdef STORE_SBC_TO_WAV_FILE
     btstack_sbc_decoder_init(&state, mode, handle_pcm_data, NULL);
@@ -216,6 +215,7 @@ static int init_media_processing(avdtp_media_codec_configuration_sbc_t configura
 #endif
 
 #ifdef HAVE_PORTAUDIO
+    int frames_per_buffer = configuration.frames_per_buffer;
     PaError err;
     PaStreamParameters outputParameters;
 
@@ -314,6 +314,8 @@ static void handle_l2cap_media_data_packet(avdtp_stream_endpoint_t * stream_endp
     media_header.synchronization_source = big_endian_read_32(packet, pos);
     pos+=4;
 
+    UNUSED(media_header);
+
     // TODO: read csrc list
     
     // printf_hexdump( packet, pos );
@@ -329,6 +331,7 @@ static void handle_l2cap_media_data_packet(avdtp_stream_endpoint_t * stream_endp
     sbc_header.num_frames = packet[pos] & 0x0f;
     pos++;
 
+    UNUSED(sbc_header);
     // printf("SBC HEADER: num_frames %u, fragmented %u, start %u, stop %u\n", sbc_header.num_frames, sbc_header.fragmentation, sbc_header.starting_packet, sbc_header.last_packet);
     // printf_hexdump( packet+pos, size-pos );
     
@@ -476,14 +479,13 @@ static const uint8_t media_sbc_codec_info[] = {
 }; 
 
 static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type){
-    if (app_state != AVDTP_APPLICATION_IDLE) {
-        printf("Application is not idle.\n");
-        return;
-    }
-    char buffer;
-    read(ds->fd, &buffer, 1);
+    UNUSED(ds);
+    UNUSED(callback_type);
+
+    int cmd = btstack_stdin_read();
+
     sep.seid = 1;
-    switch (buffer){
+    switch (cmd){
         case 'c':
             printf("Creating L2CAP Connection to %s, PSM_AVDTP\n", bd_addr_to_str(remote));
             avdtp_sink_connect(remote);

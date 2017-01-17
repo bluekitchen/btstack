@@ -136,6 +136,7 @@ typedef struct {
 
 // common implementations
 const btstack_uart_block_t * btstack_uart_block_posix_instance(void);
+const btstack_uart_block_t * btstack_uart_block_windows_instance(void);
 const btstack_uart_block_t * btstack_uart_block_embedded_instance(void);
 
 #endif
