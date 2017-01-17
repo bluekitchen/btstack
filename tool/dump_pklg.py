@@ -41,6 +41,7 @@ if len(sys.argv) == 1:
 infile = sys.argv[1]
 
 with open (infile, 'rb') as fin:
+	pos = 0
 	try:
 		while True:
 			len     = read_net_32(fin)
@@ -48,7 +49,11 @@ with open (infile, 'rb') as fin:
 			ts_usec = read_net_32(fin)
 			type    = ord(fin.read(1))
 			packet_len = len - 9;
+			if (packet_len > 66000):
+				print ("Error parsing pklg at offset %u (%x)." % (pos, pos))
+				break
 			packet  = fin.read(packet_len)
+			pos     = pos + 4 + len
 			time    = "[%s.%03u]" % (datetime.datetime.fromtimestamp(ts_sec).strftime("%Y-%m-%d %H:%M:%S"), ts_usec / 1000)
 			if type == 0xfc:
 				print time, "LOG", packet
@@ -56,5 +61,5 @@ with open (infile, 'rb') as fin:
 			if type <= 0x03:
 				print time, packet_types[type], as_hex(packet)
 	except TypeError:
-		exit(0) 
+		print ("Error parsing pklg at offset %u (%x)." % (pos, pos))
 
