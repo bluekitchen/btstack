@@ -376,9 +376,9 @@ void gap_store_link_key_for_bd_addr(bd_addr_t addr, link_key_t link_key, link_ke
 // LE
 
 /**
- * @brief Get addr type and address used in advertisement packets.
+ * @brief Get own addr type and address used for LE
  */
-void gap_advertisements_get_address(uint8_t * addr_type, bd_addr_t addr);
+void gap_le_get_own_address(uint8_t * addr_type, bd_addr_t addr);
 
 
 /* API_END*/

@@ -1153,13 +1153,13 @@ static void sm_init_setup(sm_connection_t * sm_conn){
     if (IS_RESPONDER(sm_conn->sm_role)){
         // slave
         local_packet = &setup->sm_s_pres;
-        gap_advertisements_get_address(&setup->sm_s_addr_type, setup->sm_s_address);
+        gap_le_get_own_address(&setup->sm_s_addr_type, setup->sm_s_address);
         setup->sm_m_addr_type = sm_conn->sm_peer_addr_type;
         memcpy(setup->sm_m_address, sm_conn->sm_peer_address, 6);
     } else {
         // master
         local_packet = &setup->sm_m_preq;
-        gap_advertisements_get_address(&setup->sm_m_addr_type, setup->sm_m_address);
+        gap_le_get_own_address(&setup->sm_m_addr_type, setup->sm_m_address);
         setup->sm_s_addr_type = sm_conn->sm_peer_addr_type;
         memcpy(setup->sm_s_address, sm_conn->sm_peer_address, 6);
 
@@ -2544,7 +2544,7 @@ static void sm_run(void){
                     bd_addr_t local_address;
                     uint8_t buffer[8];
                     buffer[0] = SM_CODE_IDENTITY_ADDRESS_INFORMATION;
-                    gap_advertisements_get_address(&buffer[1], local_address);
+                    gap_le_get_own_address(&buffer[1], local_address);
                     reverse_bd_addr(local_address, &buffer[2]);
                     l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
                     sm_timeout_reset(connection);
@@ -3984,8 +3984,12 @@ static int gap_random_address_type_requires_updates(void){
 
 #ifdef ENABLE_LE_PERIPHERAL
 static uint8_t own_address_type(void){
-    if (gap_random_adress_type == 0) return 0;
-    return 1;
+    switch (gap_random_adress_type){
+        case GAP_RANDOM_ADDRESS_TYPE_OFF:
+            return BD_ADDR_TYPE_LE_PUBLIC;
+        default:
+            return BD_ADDR_TYPE_LE_RANDOM;
+    }
 }
 #endif
 
@@ -3993,9 +3997,7 @@ static uint8_t own_address_type(void){
 void gap_random_address_set_mode(gap_random_address_type_t random_address_type){
     gap_random_address_update_stop();
     gap_random_adress_type = random_address_type;
-#ifdef ENABLE_LE_PERIPHERAL
-    hci_le_advertisements_set_own_address_type(own_address_type());
-#endif
+    hci_le_set_own_address_type(own_address_type());
     if (!gap_random_address_type_requires_updates()) return;
     gap_random_address_update_start();
     gap_random_address_trigger();
@@ -4035,7 +4037,7 @@ void gap_random_address_set(bd_addr_t addr){
  */
 void gap_advertisements_set_params(uint16_t adv_int_min, uint16_t adv_int_max, uint8_t adv_type,
     uint8_t direct_address_typ, bd_addr_t direct_address, uint8_t channel_map, uint8_t filter_policy){
-    hci_le_advertisements_set_params(adv_int_min, adv_int_max, adv_type, own_address_type(),
+    hci_le_advertisements_set_params(adv_int_min, adv_int_max, adv_type,
         direct_address_typ, direct_address, channel_map, filter_policy);
 }
 #endif

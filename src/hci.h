@@ -696,8 +696,11 @@ typedef struct {
     uint8_t   decline_reason;
     bd_addr_t decline_addr;
 
-    uint8_t   adv_addr_type;
-    bd_addr_t adv_address;
+#ifdef ENABLE_BLE
+    uint8_t   le_own_addr_type;
+    bd_addr_t le_random_address;
+    uint8_t   le_random_address_set;
+#endif
 
 #ifdef ENABLE_LE_CENTRAL
     le_scanning_state_t   le_scanning_state;
@@ -725,12 +728,10 @@ typedef struct {
     uint8_t  le_advertisements_active;
     uint8_t  le_advertisements_enabled;
     uint8_t  le_advertisements_todo;
-    uint8_t  le_advertisements_random_address_set;
 
     uint16_t le_advertisements_interval_min;
     uint16_t le_advertisements_interval_max;
     uint8_t  le_advertisements_type;
-    uint8_t  le_advertisements_own_address_type;
     uint8_t  le_advertisements_direct_address_type;
     uint8_t  le_advertisements_channel_map;
     uint8_t  le_advertisements_filter_policy;
@@ -1011,19 +1012,21 @@ int hci_number_free_acl_slots_for_handle(hci_con_handle_t con_handle);
  * @param adv_int_min
  * @param adv_int_max
  * @param adv_type
- * @param own_address_type
  * @param direct_address_type
  * @param direct_address
  * @param channel_map
  * @param filter_policy
  *
- * @note internal use. use gap_advertisements_set_params from gap_le.h instead.
+ * @note internal use. use gap_advertisements_set_params from gap.h instead.
  */
-void hci_le_advertisements_set_params(uint16_t adv_int_min, uint16_t adv_int_max, uint8_t adv_type,
-    uint8_t own_address_type, uint8_t direct_address_typ, bd_addr_t direct_address,
-    uint8_t channel_map, uint8_t filter_policy);
+void hci_le_advertisements_set_params(uint16_t adv_int_min, uint16_t adv_int_max, uint8_t adv_type, 
+    uint8_t direct_address_typ, bd_addr_t direct_address, uint8_t channel_map, uint8_t filter_policy);
 
-void hci_le_advertisements_set_own_address_type(uint8_t own_address_type);
+/** 
+ * 
+ * @note internal use. use gap_random_address_set_mode from gap.h instead.
+ */
+void hci_le_set_own_address_type(uint8_t own_address_type);
 
 /**
  * @brief Get Manufactured
