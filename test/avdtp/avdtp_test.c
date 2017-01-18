@@ -471,7 +471,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                         case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CAPABILITY:
                             printf(" received non SBC codec. not implemented\n");
                             break;
-                        case AVDTP_SUBEVENT_SIGNALING_DONE:
+                        case AVDTP_SUBEVENT_SIGNALING_ACCEPT:
                             app_state = AVDTP_APPLICATION_IDLE;
                             break;
                         default:

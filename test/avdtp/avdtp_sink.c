@@ -845,6 +845,12 @@ void avdtp_sink_set_configuration(uint16_t con_handle, uint8_t acp_seid, uint8_t
     }
     if (connection->state != AVDTP_SIGNALING_CONNECTION_OPENED) return;
     if (connection->initiator_connection_state != AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE) return;
+    
+    avdtp_stream_endpoint_t * stream_endpoint = get_avdtp_stream_endpoint_for_seid(int_seid);
+    if (!stream_endpoint) {
+        printf("avdtp_sink_set_configuration: no initiator stream endpoint for seid %d\n", int_seid);
+        return;
+    }        
     connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_SET_CONFIGURATION;
     connection->initiator_transaction_label++;
     connection->query_seid = acp_seid;
@@ -864,6 +870,7 @@ void avdtp_sink_suspend(uint16_t con_handle, uint8_t seid){
     if (connection->initiator_connection_state != AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE) return;
     avdtp_stream_endpoint_t * stream_endpoint = get_avdtp_stream_endpoint_for_seid(seid);
     if (!stream_endpoint) return;
+    
     connection->initiator_transaction_label++;
     connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_SUSPEND_STREAM_WITH_SEID;
     connection->query_seid = seid;
@@ -877,13 +884,15 @@ void avdtp_sink_reconfigure(uint16_t con_handle, uint8_t seid){
         printf("avdtp_sink_reconfigure: no connection for handle 0x%02x found\n", con_handle);
         return;
     }
+    //TODO: if opened only app capabilities, enable reconfigure for not opened
     if (connection->state != AVDTP_SIGNALING_CONNECTION_OPENED) return;
     if (connection->initiator_connection_state != AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE) return;
     avdtp_stream_endpoint_t * stream_endpoint = get_avdtp_stream_endpoint_for_seid(seid);
     if (!stream_endpoint) return;
     connection->initiator_transaction_label++;
     connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_RECONFIGURE_STREAM_WITH_SEID;
-    connection->query_seid = seid;
 
+    //TODO: check if it is registered in remote_seps
+    connection->query_seid = seid;
     avdtp_sink_request_can_send_now_initiator(connection, connection->l2cap_signaling_cid);
 }
