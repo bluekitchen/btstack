@@ -3982,7 +3982,6 @@ static int gap_random_address_type_requires_updates(void){
     return 1;
 }
 
-#ifdef ENABLE_LE_PERIPHERAL
 static uint8_t own_address_type(void){
     switch (gap_random_adress_type){
         case GAP_RANDOM_ADDRESS_TYPE_OFF:
@@ -3991,7 +3990,6 @@ static uint8_t own_address_type(void){
             return BD_ADDR_TYPE_LE_RANDOM;
     }
 }
-#endif
 
 // GAP LE API
 void gap_random_address_set_mode(gap_random_address_type_t random_address_type){
