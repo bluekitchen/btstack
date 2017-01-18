@@ -1532,7 +1532,7 @@ static void event_handler(uint8_t *packet, int size){
             }         
 #ifdef ENABLE_LE_CENTRAL
             if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_le_read_white_list_size)){
-                hci_stack->le_whitelist_capacity = little_endian_read_16(packet, 6);
+                hci_stack->le_whitelist_capacity = packet[6];
                 log_info("hci_le_read_white_list_size: size %u", hci_stack->le_whitelist_capacity);
             }   
 #endif

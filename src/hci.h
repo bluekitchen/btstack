@@ -712,7 +712,7 @@ typedef struct {
     uint16_t le_scan_window;
 
     // LE Whitelist Management
-    uint16_t      le_whitelist_capacity;
+    uint8_t               le_whitelist_capacity;
     btstack_linked_list_t le_whitelist;
 #endif
 
