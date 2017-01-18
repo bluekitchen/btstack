@@ -3711,10 +3711,14 @@ void hci_le_set_own_address_type(uint8_t own_address_type){
     if (own_address_type == hci_stack->le_own_addr_type) return;
     hci_stack->le_own_addr_type = own_address_type;
 
+#ifdef ENABLE_LE_PERIPHERAL
     // update advertisement parameters, too
     hci_stack->le_advertisements_todo |= LE_ADVERTISEMENT_TASKS_SET_PARAMS;
     gap_advertisments_changed();
+#endif
+#ifdef ENABLE_LE_CENTRAL
     // note: we don't update scan parameters or modify ongoing connection attempts
+#endif
 }
 
 #endif
