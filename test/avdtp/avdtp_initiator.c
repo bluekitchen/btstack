@@ -296,8 +296,6 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t * connection, uint8_
 }
 
 void avdtp_initiator_stream_config_subsm_run(avdtp_connection_t * connection){
-    int sent = 1;
-
     switch (connection->initiator_connection_state){
         case AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_DISCOVER_SEPS:
             printf("    INT: AVDTP_SIGNALING_CONNECTION_INITIATOR_W4_SEPS_DISCOVERED\n");
@@ -382,7 +380,6 @@ void avdtp_initiator_stream_config_subsm_run(avdtp_connection_t * connection){
             avdtp_initiator_send_signaling_cmd_with_seid(connection->l2cap_signaling_cid, AVDTP_SI_ABORT, connection->initiator_transaction_label, connection->query_seid);
             break;
         default:
-            sent = 0;
             break;
     }
 
