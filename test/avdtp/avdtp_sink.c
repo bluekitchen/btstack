@@ -845,7 +845,7 @@ void avdtp_sink_set_configuration(uint16_t con_handle, uint8_t acp_seid, uint8_t
     }
     if (connection->state != AVDTP_SIGNALING_CONNECTION_OPENED) return;
     if (connection->initiator_connection_state != AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE) return;
-    connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_SET_CAPABILITIES;
+    connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_SET_CONFIGURATION;
     connection->initiator_transaction_label++;
     connection->query_seid = acp_seid;
     connection->int_seid = int_seid;
