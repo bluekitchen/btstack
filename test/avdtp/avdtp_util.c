@@ -490,7 +490,11 @@ void avdtp_signaling_emit_media_codec_other_capability(btstack_packet_handler_t 
     pos += 2;
     little_endian_store_16(event, pos, media_codec.media_codec_information_len);
     pos += 2;
-    memcpy(event+pos, media_codec.media_codec_information, media_codec.media_codec_information_len);
+    if (media_codec.media_codec_information_len < 100){
+        memcpy(event+pos, media_codec.media_codec_information, media_codec.media_codec_information_len);
+    } else {
+        memcpy(event+pos, media_codec.media_codec_information, 100);
+    }
     (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
@@ -598,8 +602,12 @@ static inline void avdtp_signaling_emit_media_codec_other(btstack_packet_handler
     pos += 2;
     little_endian_store_16(event, pos, media_codec.media_codec_information_len);
     pos += 2;
-    memcpy(event+pos, media_codec.media_codec_information, media_codec.media_codec_information_len);
 
+    if (media_codec.media_codec_information_len < 100){
+        memcpy(event+pos, media_codec.media_codec_information, media_codec.media_codec_information_len);
+    } else {
+        memcpy(event+pos, media_codec.media_codec_information, 100);
+    }
     (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 

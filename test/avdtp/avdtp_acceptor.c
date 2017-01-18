@@ -230,7 +230,7 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, uint8_t
                             stream_endpoint->remote_sep_index = i;
                         }
                     }
-                    printf("    ACP .. seid %d, index %d, in use %d\n", sep.seid, stream_endpoint->remote_sep_index, stream_endpoint->remote_seps[stream_endpoint->remote_sep_index].in_use );
+                    printf("    ACP .. seid %d, index %d\n", sep.seid, stream_endpoint->remote_sep_index);
                     
                     if (stream_endpoint->remote_sep_index != 0xFF){
                         if (stream_endpoint->remote_seps[stream_endpoint->remote_sep_index].in_use){

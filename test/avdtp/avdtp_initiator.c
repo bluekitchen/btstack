@@ -47,22 +47,27 @@
 #include "avdtp_util.h"
 #include "avdtp_initiator.h"
 
-// static int avdtp_initiator_send_get_all_capabilities_cmd(uint16_t cid, uint8_t transaction_label, uint8_t sep_id){
-//     uint8_t command[3];
-//     command[0] = avdtp_header(transaction_label, AVDTP_SINGLE_PACKET, AVDTP_CMD_MSG);
-//     command[1] = AVDTP_SI_GET_ALL_CAPABILITIES;
-//     command[2] = sep_id << 2;
-//     return l2cap_send(cid, command, sizeof(command));
-// }
-
-// static int avdtp_initiator_send_get_capabilities_cmd(uint16_t cid, uint8_t transaction_label, uint8_t sep_id){
-//     uint8_t command[3];
-//     command[0] = avdtp_header(transaction_label, AVDTP_SINGLE_PACKET, AVDTP_CMD_MSG);
-//     command[1] = AVDTP_SI_GET_CAPABILITIES;
-//     command[2] = sep_id << 2;
-//     return l2cap_send(cid, command, sizeof(command));
-// }
-
+static avdtp_stream_endpoint_t * get_avdtp_stream_endpoint_associated_with_acp_seid(uint16_t acp_seid){
+    btstack_linked_list_iterator_t it;    
+    btstack_linked_list_iterator_init(&it, (btstack_linked_list_t *) &stream_endpoints);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        avdtp_stream_endpoint_t * stream_endpoint = (avdtp_stream_endpoint_t *)btstack_linked_list_iterator_next(&it);
+        if (stream_endpoint->remote_sep_index >= 0 && stream_endpoint->remote_sep_index < MAX_NUM_SEPS){
+            if (stream_endpoint->remote_seps[stream_endpoint->remote_sep_index].seid == acp_seid){
+                return stream_endpoint;
+            }
+        }
+        
+        // int i;
+        // for (i=0; i<stream_endpoint->remote_seps_num; i++){
+        //     if (stream_endpoint->remote_seps[i].seid == acp_seid){
+        //         return stream_endpoint;
+        //     }
+        // }
+    }
+    return NULL;
+}
+ 
 static int avdtp_initiator_send_signaling_cmd(uint16_t cid, avdtp_signal_identifier_t identifier, uint8_t transaction_label){
     uint8_t command[2];
     command[0] = avdtp_header(transaction_label, AVDTP_SINGLE_PACKET, AVDTP_CMD_MSG);
@@ -148,7 +153,6 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t * connection, uint8_
                     avdtp_sep_t sep;
                     sep.seid = connection->query_seid;
                     sep.configured_service_categories = avdtp_unpack_service_capabilities(connection, &sep.configuration, packet+offset, size-offset);
-                    sep.in_use = 1;
                     
                     printf("    INT .. seid %d, configured services 0%02x\n", sep.seid, sep.configured_service_categories);
 
@@ -228,22 +232,47 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t * connection, uint8_
                 
                 case AVDTP_SI_OPEN:
                     printf("AVDTP_SI_OPEN\n");
+                    stream_endpoint = get_avdtp_stream_endpoint_associated_with_acp_seid(connection->query_seid);
+                    if (!stream_endpoint) {
+                        status = 1;
+                        break;
+                    }
                     stream_endpoint->state = AVDTP_STREAM_ENDPOINT_OPENED;
                     break;
                 case AVDTP_SI_START:
                     printf("AVDTP_SI_START\n");
+                    stream_endpoint = get_avdtp_stream_endpoint_associated_with_acp_seid(connection->query_seid);
+                    if (!stream_endpoint) {
+                        status = 1;
+                        break;
+                    }
                     stream_endpoint->state = AVDTP_STREAM_ENDPOINT_STREAMING;
                     break;
                 case AVDTP_SI_SUSPEND:
                     printf("AVDTP_SI_SUSPEND\n");
+                    stream_endpoint = get_avdtp_stream_endpoint_associated_with_acp_seid(connection->query_seid);
+                    if (!stream_endpoint) {
+                        status = 1;
+                        break;
+                    }
                     stream_endpoint->state = AVDTP_STREAM_ENDPOINT_OPENED;
                     break;
                 case AVDTP_SI_CLOSE:
                     printf("AVDTP_SI_CLOSE\n");
+                    stream_endpoint = get_avdtp_stream_endpoint_associated_with_acp_seid(connection->query_seid);
+                    if (!stream_endpoint) {
+                        status = 1;
+                        break;
+                    }
                     stream_endpoint->state = AVDTP_STREAM_ENDPOINT_CLOSING;
                     break;
                 case AVDTP_SI_ABORT:
                     printf("AVDTP_SI_ABORT\n");
+                    stream_endpoint = get_avdtp_stream_endpoint_associated_with_acp_seid(connection->query_seid);
+                    if (!stream_endpoint) {
+                        status = 1;
+                        break;
+                    }
                     stream_endpoint->state = AVDTP_STREAM_ENDPOINT_ABORTING;
                     break;
                 default:
