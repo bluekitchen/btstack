@@ -1416,11 +1416,17 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
                 return;
             }
             break;
+#ifdef ENABLE_BLE            
         case HCI_INIT_W4_LE_READ_BUFFER_SIZE:
             // skip write le host if not supported (e.g. on LE only EM9301)
             if (hci_stack->local_supported_commands[0] & 0x02) break;
-            hci_stack->substate = HCI_INIT_LE_SET_SCAN_PARAMETERS;
+#ifdef ENABLE_LE_CENTRAL
+            hci_stack->substate = HCI_INIT_READ_WHITE_LIST_SIZE;
+#else
+            hci_init_done();
+#endif
             return;
+#endif
         case HCI_INIT_W4_WRITE_LOCAL_NAME:
             // skip write eir data if no eir data set
             if (hci_stack->eir_data) break;
