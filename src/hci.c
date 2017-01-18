@@ -3581,6 +3581,17 @@ uint8_t gap_connect_cancel(void){
 }
 #endif
 
+void hci_le_set_own_address_type(uint8_t own_address_type){
+    log_info("hci_le_set_own_address_type: old %u, new %u", hci_stack->le_own_addr_type, own_address_type);
+    if (own_address_type == hci_stack->le_own_addr_type) return;
+    hci_stack->le_own_addr_type = own_address_type;
+
+    // update advertisement parameters, too
+    hci_stack->le_advertisements_todo |= LE_ADVERTISEMENT_TASKS_SET_PARAMS;
+    gap_advertisments_changed();
+    // note: we don't update scan parameters or modify ongoing connection attempts
+}
+
 /**
  * @brief Updates the connection parameters for a given LE connection
  * @param handle
@@ -3688,17 +3699,6 @@ void gap_scan_response_set_data(uint8_t scan_response_data_length, uint8_t * sca
     hci_stack->le_advertisements_todo |= LE_ADVERTISEMENT_TASKS_SET_PARAMS;
     gap_advertisments_changed();
  }
-
-void hci_le_set_own_address_type(uint8_t own_address_type){
-    log_info("hci_le_set_own_address_type: old %u, new %u", hci_stack->le_own_addr_type, own_address_type);
-    if (own_address_type == hci_stack->le_own_addr_type) return;
-    hci_stack->le_own_addr_type = own_address_type;
-
-    // update advertisement parameters, too
-    hci_stack->le_advertisements_todo |= LE_ADVERTISEMENT_TASKS_SET_PARAMS;
-    gap_advertisments_changed();
-    // note: we don't update scan parameters or modify ongoing connection attempts
-}
 
 /**
  * @brief Enable/Disable Advertisements
