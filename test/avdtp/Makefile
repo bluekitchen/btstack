@@ -28,7 +28,7 @@ COMMON += \
 	sdp_util.c	                \
 	sdp_server.c			            \
 
-CFLAGS += -g -Wall -Wmissing-prototypes -Wstrict-prototypes -Wshadow -Werror 
+CFLAGS += -g -Wall -Wmissing-prototypes -Wstrict-prototypes -Wshadow -Wunused-variable -Wunused-parameter -Werror 
 CFLAGS += -I.
 CFLAGS += -I${BTSTACK_ROOT}/src
 CFLAGS += -I${BTSTACK_ROOT}/src/classic

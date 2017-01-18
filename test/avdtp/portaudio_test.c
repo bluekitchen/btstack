@@ -70,6 +70,7 @@ static int total_num_samples = 0;
 static char * wav_filename = "portaudio_sine.wav";
 
 static void write_wav_data(int16_t * data, int num_frames, int num_channels, int sample_rate){
+    (void)sample_rate;
     wav_writer_write_int16(num_frames*num_channels, data);
     total_num_samples+=num_frames*num_channels;
     if (total_num_samples>5*SAMPLE_RATE) wav_writer_close();
@@ -105,7 +106,8 @@ static int patestCallback( const void *inputBuffer, void *outputBuffer,
     (void) timeInfo; /* Prevent unused variable warnings. */
     (void) statusFlags;
     (void) inputBuffer;
-    
+    (void) userData;
+
     uint32_t bytes_read = 0;
     int bytes_per_buffer = framesPerBuffer * BYTES_PER_FRAME;
 
@@ -120,6 +122,9 @@ static int patestCallback( const void *inputBuffer, void *outputBuffer,
 
 
 int main(int argc, const char * argv[]){
+    (void) argc;
+    (void) argv;
+    
     PaError err;
     static paTestData data;
     static PaStream * stream;

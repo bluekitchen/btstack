@@ -181,6 +181,7 @@ static int patestCallback( const void *inputBuffer, void *outputBuffer,
     (void) timeInfo; /* Prevent unused variable warnings. */
     (void) statusFlags;
     (void) inputBuffer;
+    (void) userData;
     
     int bytes_to_copy = framesPerBuffer * BYTES_PER_FRAME;
 
@@ -213,9 +214,15 @@ static int patestCallback( const void *inputBuffer, void *outputBuffer,
 
 #ifdef DECODE_SBC
 static void handle_pcm_data(int16_t * data, int num_samples, int num_channels, int sample_rate, void * context){
+    UNUSED(sample_rate);
+    UNUSED(context);
+
+#ifdef STORE_SBC_TO_WAV_FILE
     wav_writer_write_int16(num_samples*num_channels, data);
-    total_num_samples+=num_samples*num_channels;
     frame_count++;
+#endif
+
+    total_num_samples+=num_samples*num_channels;
 
 #ifdef HAVE_PORTAUDIO
     if (!pa_stream_started){
@@ -326,6 +333,9 @@ static void close_media_processing(void){
 }
 
 static void handle_l2cap_media_data_packet(avdtp_stream_endpoint_t * stream_endpoint, uint8_t *packet, uint16_t size){
+    
+    UNUSED(stream_endpoint);
+
     int pos = 0;
     
     avdtp_media_packet_header_t media_header;
@@ -405,6 +415,10 @@ static void dump_sbc_configuration(avdtp_media_codec_configuration_sbc_t configu
 
 
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+
+    UNUSED(channel);
+    UNUSED(size);
+
     bd_addr_t event_addr;
     switch (packet_type) {
  
@@ -594,6 +608,9 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
 
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
+
+    UNUSED(argc);
+    (void)argv;
 
     /* Register for HCI events */
     hci_event_callback_registration.callback = &packet_handler;

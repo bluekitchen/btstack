@@ -98,6 +98,8 @@ int avdtp_read_signaling_header(avdtp_signaling_packet_t * signaling_header, uin
 }
 
 int avdtp_pack_service_capabilities(uint8_t * buffer, int size, avdtp_capabilities_t caps, avdtp_service_category_t category, uint8_t pack_all_capabilities){
+    UNUSED(size);
+
     int i;
     // pos = 0 reserved for length
     int pos = 1;
