@@ -1045,10 +1045,8 @@ static int usb_close(void){
             }
             for (c = 0; c < SCO_OUT_BUFFER_COUNT ; c++){
                 if (sco_out_transfers_in_flight[c]) {
-                    log_info("libusb_cancel_transfer sco_out_transfers[%d]", c);
                     libusb_cancel_transfer(sco_out_transfers[c]);
                 } else {
-                    log_info("libusb_free_transfer sco_out_transfers[%d]", c);
                     libusb_free_transfer(sco_out_transfers[c]);
                     sco_out_transfers[c] = 0;
                 }
