@@ -344,15 +344,17 @@ static void sco_demo_init_CVSD(void){
 
 static void sco_demo_receive_CVSD(uint8_t * packet, uint16_t size){
     if (!num_samples_to_write) return;
+    int8_t audio_frame_out[255];    // 
+
+    if (size > sizeof(audio_frame_out)){
+        printf("sco_demo_receive_CVSD: SCO packet larger than local output buffer - dropping data.\n");
+        return;
+    }
 
     const int num_samples = size - 3;
     const int samples_to_write = btstack_min(num_samples, num_samples_to_write);
-    int8_t audio_frame_out[24];
     
-
-    // memcpy(audio_frame_out, (int8_t*)(packet+3), 24);
     btstack_cvsd_plc_process_data(&cvsd_plc_state, (int8_t *)(packet+3), num_samples, audio_frame_out);
-    // int8_t * audio_frame_out = (int8_t*)&packet[3];
 
     wav_writer_write_int8(samples_to_write, audio_frame_out);
     num_samples_to_write -= samples_to_write;
