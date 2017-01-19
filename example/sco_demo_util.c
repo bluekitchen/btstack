@@ -387,7 +387,6 @@ void sco_demo_close(void){
         printf("Used CVSD with PLC, number of proccesed frames: \n - %d good frames, \n - %d bad frames.", cvsd_plc_state.good_frames_nr, cvsd_plc_state.bad_frames_nr);
     }
 #endif
-#endif
 
 #ifdef HAVE_PORTAUDIO
     if (pa_stream_started){
@@ -410,8 +409,6 @@ void sco_demo_close(void){
         }
     } 
 #endif
-
-#if SCO_DEMO_MODE == SCO_DEMO_MODE_SINE
 #ifdef SCO_WAV_FILENAME
     
 #if 0
@@ -617,7 +614,7 @@ void sco_demo_receive(uint8_t * packet, uint16_t size){
         }
         printf("\n");
 #endif
-#if SCO_DEMO_MODE == SCO_DEMO_MODE_55 || SCO_DEMO_MODE_00
+#if SCO_DEMO_MODE == SCO_DEMO_MODE_55 || SCO_DEMO_MODE == SCO_DEMO_MODE_00
         int i;
         int contains_error = 0;
         for (i=3;i<size;i++){
