@@ -230,7 +230,7 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, uint8_t
                             stream_endpoint->remote_sep_index = i;
                         }
                     }
-                    printf("    ACP .. seid %d, index %d, in use %d\n", sep.seid, stream_endpoint->remote_sep_index, stream_endpoint->remote_seps[stream_endpoint->remote_sep_index].in_use );
+                    printf("    ACP .. seid %d, index %d\n", sep.seid, stream_endpoint->remote_sep_index);
                     
                     if (stream_endpoint->remote_sep_index != 0xFF){
                         if (stream_endpoint->remote_seps[stream_endpoint->remote_sep_index].in_use){
@@ -269,7 +269,7 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, uint8_t
                                 break;
                         }
                     }
-                    avdtp_signaling_emit_done(avdtp_sink_callback, connection->con_handle, 0);
+                    avdtp_signaling_emit_accept(avdtp_sink_callback, connection->con_handle, connection->signaling_packet.signal_identifier, 0);
                     break;
                 }
                 case AVDTP_SI_RECONFIGURE:{
@@ -319,7 +319,7 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, uint8_t
                                 break;
                         }
                     }
-                    avdtp_signaling_emit_done(avdtp_sink_callback, connection->con_handle, 0);
+                    avdtp_signaling_emit_accept(avdtp_sink_callback, connection->con_handle, connection->signaling_packet.signal_identifier, 0);
                     break;
                 }
 
@@ -614,7 +614,7 @@ void avdtp_acceptor_stream_config_subsm_run(avdtp_connection_t * connection){
             printf("    ACP: NOT IMPLEMENTED\n");
             sent = 0;
     } 
-    avdtp_signaling_emit_done(avdtp_sink_callback, connection->con_handle, status);
+    avdtp_signaling_emit_accept(avdtp_sink_callback, connection->con_handle, connection->signaling_packet.signal_identifier, status);
 
     // check fragmentation
     if (connection->signaling_packet.packet_type != AVDTP_SINGLE_PACKET && connection->signaling_packet.packet_type != AVDTP_END_PACKET){

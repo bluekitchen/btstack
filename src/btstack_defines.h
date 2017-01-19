@@ -1209,19 +1209,44 @@ typedef uint8_t sm_key_t[16];
 /** AVDTP Subevent */
 
 /**
+ * @format 1H1
+ * @param subevent_code
+ * @param con_handle
+ * @param signal_identifier
+ * @param status 0 == OK
+ */
+#define AVDTP_SUBEVENT_SIGNALING_ACCEPT                     0x01
+
+/**
+ * @format 1H1
+ * @param subevent_code
+ * @param con_handle
+ * @param signal_identifier 
+ */
+#define AVDTP_SUBEVENT_SIGNALING_REJECT                     0x02
+
+/**
+ * @format 1H1
+ * @param subevent_code
+ * @param con_handle
+ * @param signal_identifier
+ */
+#define AVDTP_SUBEVENT_SIGNALING_GENERAL_REJECT             0x03
+
+/**
  * @format 1HB1
  * @param subevent_code
  * @param con_handle
  * @param bd_addr
  * @param status 0 == OK
  */
-#define AVDTP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED  0x01
+#define AVDTP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED     0x04
 
 /**
  * @format 1
  * @param subevent_code
  */
-#define AVDTP_SUBEVENT_SIGNALING_CONNECTION_RELEASED     0x02
+#define AVDTP_SUBEVENT_SIGNALING_CONNECTION_RELEASED        0x05
 
 /**
  * @format 1H1111
@@ -1232,15 +1257,7 @@ typedef uint8_t sm_key_t[16];
  * @param media_type  0-audio, 1-video, 2-multimedia
  * @param sep_type    0-source, 1-sink
  */
-#define AVDTP_SUBEVENT_SIGNALING_SEP_FOUND                0x03
-
-/**
- * @format 1H1
- * @param subevent_code
- * @param con_handle
- * @param status 0 == OK
- */
-#define AVDTP_SUBEVENT_SIGNALING_DONE                     0x04
+#define AVDTP_SUBEVENT_SIGNALING_SEP_FOUND                  0x06
 
 /**
  * @format 1H11111111
@@ -1255,7 +1272,7 @@ typedef uint8_t sm_key_t[16];
  * @param min_bitpool_value
  * @param max_bitpool_value
  */
-#define AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CAPABILITY          0x05
+#define AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CAPABILITY          0x07
 
 /**
  * @format 1H122
@@ -1266,7 +1283,7 @@ typedef uint8_t sm_key_t[16];
  * @param media_codec_information_len
  * @param media_codec_information
  */
-#define AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CAPABILITY        0x06
+#define AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CAPABILITY        0x08
 
 /**
  * @format 1H1121111111
@@ -1283,7 +1300,7 @@ typedef uint8_t sm_key_t[16];
  * @param min_bitpool_value
  * @param max_bitpool_value
  */
-#define AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION        0x07
+#define AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION        0x09
 
 /**
  * @format 1H1122
@@ -1295,5 +1312,5 @@ typedef uint8_t sm_key_t[16];
  * @param media_codec_information_len
  * @param media_codec_information
  */
-#define AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CONFIGURATION      0x08
+#define AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CONFIGURATION      0x0A
 #endif

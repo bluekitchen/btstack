@@ -3793,6 +3793,63 @@ static inline hci_con_handle_t ancs_subevent_client_disconnected_get_handle(cons
 #endif
 
 /**
+ * @brief Get field con_handle from event AVDTP_SUBEVENT_SIGNALING_ACCEPT
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t avdtp_subevent_signaling_accept_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field signal_identifier from event AVDTP_SUBEVENT_SIGNALING_ACCEPT
+ * @param event packet
+ * @return signal_identifier
+ * @note: btstack_type 1
+ */
+static inline uint8_t avdtp_subevent_signaling_accept_get_signal_identifier(const uint8_t * event){
+    return event[5];
+}
+
+/**
+ * @brief Get field con_handle from event AVDTP_SUBEVENT_SIGNALING_REJECT
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t avdtp_subevent_signaling_reject_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field signal_identifier from event AVDTP_SUBEVENT_SIGNALING_REJECT
+ * @param event packet
+ * @return signal_identifier
+ * @note: btstack_type 1
+ */
+static inline uint8_t avdtp_subevent_signaling_reject_get_signal_identifier(const uint8_t * event){
+    return event[5];
+}
+
+/**
+ * @brief Get field con_handle from event AVDTP_SUBEVENT_SIGNALING_GENERAL_REJECT
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t avdtp_subevent_signaling_general_reject_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field signal_identifier from event AVDTP_SUBEVENT_SIGNALING_GENERAL_REJECT
+ * @param event packet
+ * @return signal_identifier
+ * @note: btstack_type 1
+ */
+static inline uint8_t avdtp_subevent_signaling_general_reject_get_signal_identifier(const uint8_t * event){
+    return event[5];
+}
+
+/**
  * @brief Get field con_handle from event AVDTP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED
  * @param event packet
  * @return con_handle
@@ -3865,25 +3922,6 @@ static inline uint8_t avdtp_subevent_signaling_sep_found_get_media_type(const ui
  */
 static inline uint8_t avdtp_subevent_signaling_sep_found_get_sep_type(const uint8_t * event){
     return event[8];
-}
-
-/**
- * @brief Get field con_handle from event AVDTP_SUBEVENT_SIGNALING_DONE
- * @param event packet
- * @return con_handle
- * @note: btstack_type H
- */
-static inline hci_con_handle_t avdtp_subevent_signaling_done_get_con_handle(const uint8_t * event){
-    return little_endian_read_16(event, 3);
-}
-/**
- * @brief Get field status from event AVDTP_SUBEVENT_SIGNALING_DONE
- * @param event packet
- * @return status
- * @note: btstack_type 1
- */
-static inline uint8_t avdtp_subevent_signaling_done_get_status(const uint8_t * event){
-    return event[5];
 }
 
 /**

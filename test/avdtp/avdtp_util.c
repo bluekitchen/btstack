@@ -416,16 +416,43 @@ void avdtp_signaling_emit_sep(btstack_packet_handler_t callback, uint16_t con_ha
     (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-void avdtp_signaling_emit_done(btstack_packet_handler_t callback, uint16_t con_handle, uint8_t status){
+void avdtp_signaling_emit_accept(btstack_packet_handler_t callback, uint16_t con_handle, avdtp_signal_identifier_t identifier, uint8_t status){
+    if (!callback) return;
+    uint8_t event[7];
+    int pos = 0;
+    event[pos++] = HCI_EVENT_AVDTP_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = AVDTP_SUBEVENT_SIGNALING_ACCEPT;
+    little_endian_store_16(event, pos, con_handle);
+    pos += 2;
+    event[pos++] = identifier;
+    event[pos++] = status;
+    (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
+void avdtp_signaling_emit_reject(btstack_packet_handler_t callback, uint16_t con_handle, avdtp_signal_identifier_t identifier){
     if (!callback) return;
     uint8_t event[6];
     int pos = 0;
     event[pos++] = HCI_EVENT_AVDTP_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = AVDTP_SUBEVENT_SIGNALING_DONE;
+    event[pos++] = AVDTP_SUBEVENT_SIGNALING_REJECT;
     little_endian_store_16(event, pos, con_handle);
     pos += 2;
-    event[pos++] = status;
+    event[pos++] = identifier;
+    (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
+void avdtp_signaling_emit_general_reject(btstack_packet_handler_t callback, uint16_t con_handle, avdtp_signal_identifier_t identifier){
+    if (!callback) return;
+    uint8_t event[6];
+    int pos = 0;
+    event[pos++] = HCI_EVENT_AVDTP_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = AVDTP_SUBEVENT_SIGNALING_GENERAL_REJECT;
+    little_endian_store_16(event, pos, con_handle);
+    pos += 2;
+    event[pos++] = identifier;
     (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
@@ -463,7 +490,11 @@ void avdtp_signaling_emit_media_codec_other_capability(btstack_packet_handler_t 
     pos += 2;
     little_endian_store_16(event, pos, media_codec.media_codec_information_len);
     pos += 2;
-    memcpy(event+pos, media_codec.media_codec_information, media_codec.media_codec_information_len);
+    if (media_codec.media_codec_information_len < 100){
+        memcpy(event+pos, media_codec.media_codec_information, media_codec.media_codec_information_len);
+    } else {
+        memcpy(event+pos, media_codec.media_codec_information, 100);
+    }
     (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
@@ -571,8 +602,12 @@ static inline void avdtp_signaling_emit_media_codec_other(btstack_packet_handler
     pos += 2;
     little_endian_store_16(event, pos, media_codec.media_codec_information_len);
     pos += 2;
-    memcpy(event+pos, media_codec.media_codec_information, media_codec.media_codec_information_len);
 
+    if (media_codec.media_codec_information_len < 100){
+        memcpy(event+pos, media_codec.media_codec_information, media_codec.media_codec_information_len);
+    } else {
+        memcpy(event+pos, media_codec.media_codec_information, 100);
+    }
     (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
