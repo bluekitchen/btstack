@@ -87,6 +87,10 @@
 // --> support only a single SCO connection
 #define ALT_SETTING (1)
 
+// alt setting for 1-3 connections and 8/16 bit
+static const int alt_setting_8_bit[]  = {1,2,3};      
+static const int alt_setting_16_bit[] = {2,4,5};
+
 // for ALT_SETTING >= 1 and 8-bit channel, we need the following isochronous packets
 // One complete SCO packet with 24 frames every 3 frames (== 3 ms)
 #define NUM_ISO_PACKETS (3)
@@ -788,10 +792,19 @@ static int usb_sco_start(void){
     sco_state_machine_init();
     sco_ring_init();
 
-    log_info("Switching to setting %u on interface 1..", ALT_SETTING);
-    int r = libusb_set_interface_alt_setting(handle, 1, ALT_SETTING); 
+    int alt_setting;
+    if (sco_voice_setting & 0x0020){
+        // 16-bit PCM  
+        alt_setting = alt_setting_16_bit[sco_num_connections-1];
+    } else {
+        // 8-bit PCM or mSBC
+        alt_setting = alt_setting_8_bit[sco_num_connections-1];
+    }
+
+    log_info("Switching to setting %u on interface 1..", alt_setting);
+    int r = libusb_set_interface_alt_setting(handle, 1, alt_setting); 
     if (r < 0) {
-        log_error("Error setting alternative setting %u for interface 1: %s\n", ALT_SETTING, libusb_error_name(r));
+        log_error("Error setting alternative setting %u for interface 1: %s\n", alt_setting, libusb_error_name(r));
         return r;
     }
 
@@ -1290,17 +1303,17 @@ static int usb_send_packet(uint8_t packet_type, uint8_t * packet, int size){
 
 #ifdef ENABLE_SCO_OVER_HCI
 static void usb_set_sco_config(uint16_t voice_setting, int num_connections){
-    log_info("usb_set_sco_config: voice settings 0x04%x, num connections %u", voice_setting, num_connections);
+    log_info("usb_set_sco_config: voice settings 0x%04x, num connections %u", voice_setting, num_connections);
 
     if (num_connections != sco_num_connections){
         sco_voice_setting = voice_setting;
         if (sco_num_connections){
             usb_sco_stop();
         }
+        sco_num_connections = num_connections;
         if (num_connections){
             usb_sco_start();
         }
-        sco_num_connections = num_connections;
     }
 }
 #endif
