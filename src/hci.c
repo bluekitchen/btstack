@@ -219,6 +219,20 @@ hci_connection_t * hci_connection_for_bd_addr_and_type(bd_addr_t  addr, bd_addr_
 
 #ifdef ENABLE_CLASSIC
 
+#ifdef ENABLE_SCO_OVER_HCI
+static int hci_number_sco_connections(void){
+    int connections = 0;
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &hci_stack->connections);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        hci_connection_t * connection = (hci_connection_t *) btstack_linked_list_iterator_next(&it);
+        if (connection->address_type != BD_ADDR_TYPE_SCO) continue;
+        connections++;
+    } 
+    return connections;
+}
+#endif
+
 static void hci_connection_timeout_handler(btstack_timer_source_t *timer){
     hci_connection_t * connection = (hci_connection_t *) btstack_run_loop_get_timer_context(timer);
 #ifdef HAVE_EMBEDDED_TICK
@@ -749,6 +763,10 @@ static void acl_handler(uint8_t *packet, int size){
 static void hci_shutdown_connection(hci_connection_t *conn){
     log_info("Connection closed: handle 0x%x, %s", conn->con_handle, bd_addr_to_str(conn->address));
 
+#ifdef ENABLE_SCO_OVER_HCI
+    int addr_type = conn->address_type;
+#endif
+
     btstack_run_loop_remove_timer(&conn->timeout);
     
     btstack_linked_list_remove(&hci_stack->connections, (btstack_linked_item_t *) conn);
@@ -756,6 +774,11 @@ static void hci_shutdown_connection(hci_connection_t *conn){
     
     // now it's gone
     hci_emit_nr_connections_changed();
+
+    // update SCO
+    if (addr_type == BD_ADDR_TYPE_SCO && hci_stack->hci_transport && hci_stack->hci_transport->set_sco_config){
+        hci_stack->hci_transport->set_sco_config(hci_stack->sco_voice_setting_active, hci_number_sco_connections());
+    }
 }
 
 #ifdef ENABLE_CLASSIC
@@ -1737,6 +1760,13 @@ static void event_handler(uint8_t *packet, int size){
             }
             conn->state = OPEN;
             conn->con_handle = little_endian_read_16(packet, 3);            
+
+#ifdef ENABLE_SCO_OVER_HCI
+            // update SCO
+            if (conn->address_type == BD_ADDR_TYPE_SCO && hci_stack->hci_transport && hci_stack->hci_transport->set_sco_config){
+                hci_stack->hci_transport->set_sco_config(hci_stack->sco_voice_setting_active, hci_number_sco_connections());
+            }
+#endif
             break;
 
         case HCI_EVENT_READ_REMOTE_SUPPORTED_FEATURES_COMPLETE:
@@ -3087,6 +3117,19 @@ int hci_send_cmd_packet(uint8_t *packet, int size){
             connectionClearAuthenticationFlags(conn, SSP_PAIRING_ACTIVE);
         }
     }
+
+#ifdef ENABLE_SCO_OVER_HCI
+    // setup_synchronous_connection? Voice setting at offset 22
+    if (IS_COMMAND(packet, hci_setup_synchronous_connection)){
+        // TODO: compare to current setting if sco connection already active
+        hci_stack->sco_voice_setting_active = little_endian_read_16(packet, 15);
+    }
+    // accept_synchronus_connection? Voice setting at offset 18
+    if (IS_COMMAND(packet, hci_accept_synchronous_connection)){
+        // TODO: compare to current setting if sco connection already active
+        hci_stack->sco_voice_setting_active = little_endian_read_16(packet, 19);
+    }
+#endif
 #endif
 
 #ifdef ENABLE_BLE

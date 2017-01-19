@@ -773,6 +773,7 @@ static const hci_transport_t hci_transport_h5 = {
     /* int    (*send_packet)(...); */                               &hci_transport_h5_send_packet,
     /* int    (*set_baudrate)(uint32_t baudrate); */                &hci_transport_h5_set_baudrate,
     /* void   (*reset_link)(void); */                               &hci_transport_h5_reset_link,
+    /* void   (*set_sco_config)(uint16_t voice_setting, int num_connections); */ NULL, 
 };
 
 // configure and return h5 singleton

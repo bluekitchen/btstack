@@ -1205,6 +1205,10 @@ static int usb_send_packet(uint8_t packet_type, uint8_t * packet, int size){
     }
 }
 
+static void usb_set_sco_config(uint16_t voice_setting, int num_connections){
+    log_info("usb_set_sco_config: voice settings 0x04%x, num connections %u", voice_setting, num_connections);    
+}
+
 static void usb_register_packet_handler(void (*handler)(uint8_t packet_type, uint8_t *packet, uint16_t size)){
     log_info("registering packet handler");
     packet_handler = handler;
@@ -1227,6 +1231,7 @@ const hci_transport_t * hci_transport_usb_instance(void) {
         hci_transport_usb->register_packet_handler       = usb_register_packet_handler;
         hci_transport_usb->can_send_packet_now           = usb_can_send_packet_now;
         hci_transport_usb->send_packet                   = usb_send_packet;
+        hci_transport_usb->set_sco_config                = usb_set_sco_config;
     }
     return hci_transport_usb;
 }

@@ -698,6 +698,7 @@ typedef struct {
     uint8_t   new_scan_enable_value;
     
     uint16_t  sco_voice_setting;
+    uint16_t  sco_voice_setting_active;
 
     uint8_t   loopback_mode;
 

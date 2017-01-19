@@ -1292,6 +1292,7 @@ static const hci_transport_t hci_transport_usb = {
     /* int    (*send_packet)(...); */                               &usb_send_packet,
     /* int    (*set_baudrate)(uint32_t baudrate); */                NULL,
     /* void   (*reset_link)(void); */                               NULL,
+    /* void   (*set_sco_config)(uint16_t voice_setting, int num_connections); */ NULL, 
 };
 
 const hci_transport_t * hci_transport_usb_instance(void) {
