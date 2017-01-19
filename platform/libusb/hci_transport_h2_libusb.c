@@ -788,6 +788,13 @@ static int usb_sco_start(void){
     sco_state_machine_init();
     sco_ring_init();
 
+    log_info("Switching to setting %u on interface 1..", ALT_SETTING);
+    int r = libusb_set_interface_alt_setting(handle, 1, ALT_SETTING); 
+    if (r < 0) {
+        log_error("Error setting alternative setting %u for interface 1: %s\n", ALT_SETTING, libusb_error_name(r));
+        return r;
+    }
+
     // incoming
     int c;
     for (c = 0 ; c < SCO_IN_BUFFER_COUNT ; c++) {
@@ -800,7 +807,7 @@ static int usb_sco_start(void){
         libusb_fill_iso_transfer(sco_in_transfer[c], handle, sco_in_addr, 
             hci_sco_in_buffer[c], SCO_PACKET_SIZE, NUM_ISO_PACKETS, async_callback, NULL, 0);
         libusb_set_iso_packet_lengths(sco_in_transfer[c], ISO_PACKET_SIZE);
-        int r = libusb_submit_transfer(sco_in_transfer[c]);
+        r = libusb_submit_transfer(sco_in_transfer[c]);
         if (r) {
             log_error("Error submitting isochronous in transfer %d", r);
             usb_close();
@@ -867,6 +874,14 @@ static void usb_sco_stop(void){
     }
     sco_shutdown = 0;
     libusb_set_debug(NULL, LIBUSB_LOG_LEVEL_WARNING);
+
+    log_info("Switching to setting %u on interface 1..", 0);
+    int r = libusb_set_interface_alt_setting(handle, 1, 0); 
+    if (r < 0) {
+        log_error("Error setting alternative setting %u for interface 1: %s", 0, libusb_error_name(r));
+        return;
+    }
+
     printf("usb_sco_stop done\n");
 }
 
