@@ -187,6 +187,10 @@ extern const hci_cmd_t hci_le_set_scan_response_data;
 extern const hci_cmd_t hci_le_start_encryption;
 extern const hci_cmd_t hci_le_test_end;
 extern const hci_cmd_t hci_le_transmitter_test;
+
+// Broadcom / Cypress specific HCI commands
+extern const hci_cmd_t hci_bcm_write_sco_pcm_int;
+
 /**
  * construct HCI Command based on template
  *

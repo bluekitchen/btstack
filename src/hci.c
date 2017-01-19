@@ -1157,6 +1157,13 @@ static void hci_initializing_run(void){
             hci_stack->substate = HCI_INIT_W4_WRITE_DEFAULT_ERRONEOUS_DATA_REPORTING;
             hci_send_cmd(&hci_write_default_erroneous_data_reporting, 1);
             break;
+        // only sent if ENABLE_SCO_OVER_HCI and manufacturer is Broadcom
+        case HCI_INIT_BCM_WRITE_SCO_PCM_INT:
+            hci_stack->substate = HCI_INIT_W4_BCM_WRITE_SCO_PCM_INT;
+            log_info("BCM: Route SCO data via HCI transport");
+            hci_send_cmd(&hci_bcm_write_sco_pcm_int, 1, 0, 0, 0, 0);
+            break;
+
 #endif
 #ifdef ENABLE_BLE
         // LE INIT
@@ -1447,6 +1454,12 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
             // explicit fall through to reduce repetitions
 
         case HCI_INIT_W4_WRITE_DEFAULT_ERRONEOUS_DATA_REPORTING:
+            // skip bcm set sco pcm config on non-Broadcom chipsets
+            if (hci_stack->manufacturer == COMPANY_ID_BROADCOM_CORPORATION) break;
+            hci_stack->substate = HCI_INIT_W4_BCM_WRITE_SCO_PCM_INT;
+            // explicit fall through to reduce repetitions
+
+        case HCI_INIT_W4_BCM_WRITE_SCO_PCM_INT:
             if (!hci_le_supported()){
                 // SKIP LE init for Classic only configuration
                 hci_init_done();
