@@ -78,25 +78,25 @@
 #define USE_PORTAUDIO
 #endif
 
+#define NUM_CHANNELS            1
+#define CVSD_BYTES_PER_FRAME    (1*NUM_CHANNELS)
+#define MSBC_BYTES_PER_FRAME    (2*NUM_CHANNELS)
 
 #ifdef USE_PORTAUDIO
 #include <portaudio.h>
 #include "btstack_ring_buffer.h"
 
 // portaudio config
-#define NUM_CHANNELS            1
 
 #define CVSD_SAMPLE_RATE        8000
 #define CVSD_FRAMES_PER_BUFFER  24
 #define CVSD_PA_SAMPLE_TYPE     paInt8
-#define CVSD_BYTES_PER_FRAME    (1*NUM_CHANNELS)
 #define CVSD_PREBUFFER_MS       5
 #define CVSD_PREBUFFER_BYTES    (CVSD_PREBUFFER_MS * CVSD_SAMPLE_RATE/1000 * CVSD_BYTES_PER_FRAME)
 
 #define MSBC_SAMPLE_RATE        16000
 #define MSBC_FRAMES_PER_BUFFER  120
 #define MSBC_PA_SAMPLE_TYPE     paInt16
-#define MSBC_BYTES_PER_FRAME    (2*NUM_CHANNELS)
 #define MSBC_PREBUFFER_MS       50
 #define MSBC_PREBUFFER_BYTES    (MSBC_PREBUFFER_MS * MSBC_SAMPLE_RATE/1000 * MSBC_BYTES_PER_FRAME)
 
@@ -260,7 +260,7 @@ static void handle_pcm_data(int16_t * data, int num_samples, int num_channels, i
 }
 
 static void sco_demo_init_mSBC(void){
-    printf("SCO Demo: Init CVSD\n");
+    printf("SCO Demo: Init mSBC\n");
 
     int sample_rate = 16000;
     wav_writer_open(SCO_WAV_FILENAME, 1, sample_rate);
@@ -540,25 +540,25 @@ void sco_demo_send(hci_con_handle_t sco_handle){
     }
 #endif
 #if SCO_DEMO_MODE == SCO_DEMO_MODE_ASCII
-    memset(&sco_packet[3], phase++, audio_samples_per_packet);
+    memset(&sco_packet[3], phase++, sco_payload_length);
     if (phase > 'z') phase = 'a';
 #endif
 #if SCO_DEMO_MODE == SCO_DEMO_MODE_COUNTER
     int j;
-    for (j=0;j<audio_samples_per_packet;j++){
+    for (j=0;j<sco_payload_length;j++){
         sco_packet[3+j] = phase++;
     }
 #endif
 #if SCO_DEMO_MODE == SCO_DEMO_MODE_55
     int j;
-    for (j=0;j<audio_samples_per_packet;j++){
+    for (j=0;j<sco_payload_length;j++){
         // sco_packet[3+j] = j & 1 ? 0x35 : 0x53;
         sco_packet[3+j] = 0x55;
     }
 #endif
 #if SCO_DEMO_MODE == SCO_DEMO_MODE_00
     int j;
-    for (j=0;j<audio_samples_per_packet;j++){
+    for (j=0;j<sco_payload_length;j++){
         sco_packet[3+j] = 0x00;
     }
     // additional hack
