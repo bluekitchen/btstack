@@ -610,10 +610,15 @@ void sco_demo_receive(uint8_t * packet, uint16_t size){
 
 #if SCO_DEMO_MODE == SCO_DEMO_MODE_SINE
 #ifdef SCO_WAV_FILENAME
-    if (negotiated_codec == HFP_CODEC_MSBC){
-        sco_demo_receive_mSBC(packet, size);
-    } else {
-        sco_demo_receive_CVSD(packet, size);
+    switch (negotiated_codec){
+        case HFP_CODEC_MSBC:
+            sco_demo_receive_mSBC(packet, size);
+            break;
+        case HFP_CODEC_CVSD:
+            sco_demo_receive_CVSD(packet, size);
+            break;
+        default:
+            break;
     }
     dump_data = 0;
 #endif
