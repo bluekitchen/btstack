@@ -85,7 +85,7 @@
 // 4: Two 8 kHz voice channels with 16-bit encoding or one 16 kHz voice channel with 16-bit encoding
 // 5: Three 8 kHz voice channels with 16-bit encoding or one 8 kHz voice channel with 16-bit encoding and one 16 kHz voice channel with 16-bit encoding
 // --> support only a single SCO connection
-#define ALT_SETTING (1)
+// #define ALT_SETTING (1)
 
 // alt setting for 1-3 connections and 8/16 bit
 static const int alt_setting_8_bit[]  = {1,2,3};      
@@ -105,11 +105,9 @@ const uint16_t iso_packet_size_for_alt_setting[] = {
     63,
 };
 
-#define ISO_PACKET_SIZE (iso_packet_size_for_alt_setting[ALT_SETTING])
-
 // 49 bytes is the max usb packet size for alternate setting 5 (Three 8 kHz 16-bit channels or one 8 kHz 16-bit channel and one 16 kHz 16-bit channel)
 // note: alt setting 6 has max packet size of 63 every 7.5 ms = 472.5 bytes / HCI packet, while max SCO packet has 255 byte payload
-#define SCO_PACKET_SIZE  (49)
+#define SCO_PACKET_SIZE  (49 * NUM_ISO_PACKETS)
 
 // Outgoing SCO packet queue
 // simplified ring buffer implementation
@@ -181,6 +179,9 @@ static int      sco_out_transfers_in_flight[SCO_OUT_BUFFER_COUNT];
 static uint16_t sco_voice_setting;
 static int      sco_num_connections;
 static int      sco_shutdown;
+
+// dynamic SCO configuration
+static uint16_t iso_packet_size;
 
 #endif
 
@@ -349,9 +350,10 @@ static int usb_send_sco_packet(uint8_t *packet, int size){
     memcpy(data, packet, size);
 
     // setup transfer
+    // log_info("usb_send_sco_packet: size %u, max size %u, iso packet size %u", size, NUM_ISO_PACKETS * iso_packet_size, iso_packet_size);
     struct libusb_transfer * sco_transfer = sco_out_transfers[tranfer_index];
-    libusb_fill_iso_transfer(sco_transfer, handle, sco_out_addr, data, size, NUM_ISO_PACKETS, async_callback, NULL, 0);
-    libusb_set_iso_packet_lengths(sco_transfer, ISO_PACKET_SIZE);
+    libusb_fill_iso_transfer(sco_transfer, handle, sco_out_addr, data, NUM_ISO_PACKETS * iso_packet_size, NUM_ISO_PACKETS, async_callback, NULL, 0);
+    libusb_set_iso_packet_lengths(sco_transfer, iso_packet_size);
     r = libusb_submit_transfer(sco_transfer);
     if (r < 0) {
         log_error("Error submitting sco transfer, %d", r);
@@ -746,13 +748,6 @@ static int prepare_device(libusb_device_handle * aHandle){
         libusb_close(aHandle);
         return r;
     }
-    log_info("Switching to setting %u on interface 1..", ALT_SETTING);
-    r = libusb_set_interface_alt_setting(aHandle, 1, ALT_SETTING); 
-    if (r < 0) {
-        fprintf(stderr, "Error setting alternative setting %u for interface 1: %s\n", ALT_SETTING, libusb_error_name(r));
-        libusb_close(aHandle);
-        return r;
-    }
 #endif
 
     return 0;
@@ -800,6 +795,8 @@ static int usb_sco_start(void){
         // 8-bit PCM or mSBC
         alt_setting = alt_setting_8_bit[sco_num_connections-1];
     }
+    // derive iso packet size from alt setting
+    iso_packet_size = iso_packet_size_for_alt_setting[alt_setting];
 
     log_info("Switching to setting %u on interface 1..", alt_setting);
     int r = libusb_set_interface_alt_setting(handle, 1, alt_setting); 
@@ -818,8 +815,8 @@ static int usb_sco_start(void){
         }
         // configure sco_in handlers
         libusb_fill_iso_transfer(sco_in_transfer[c], handle, sco_in_addr, 
-            hci_sco_in_buffer[c], SCO_PACKET_SIZE, NUM_ISO_PACKETS, async_callback, NULL, 0);
-        libusb_set_iso_packet_lengths(sco_in_transfer[c], ISO_PACKET_SIZE);
+            hci_sco_in_buffer[c], NUM_ISO_PACKETS * iso_packet_size, NUM_ISO_PACKETS, async_callback, NULL, 0);
+        libusb_set_iso_packet_lengths(sco_in_transfer[c], iso_packet_size);
         r = libusb_submit_transfer(sco_in_transfer[c]);
         if (r) {
             log_error("Error submitting isochronous in transfer %d", r);
