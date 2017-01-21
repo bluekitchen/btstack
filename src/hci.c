@@ -1409,14 +1409,15 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
         case HCI_INIT_W4_SET_EVENT_MASK:
             // skip Classic init commands for LE only chipsets
             if (!hci_classic_supported()){
+#ifdef ENABLE_BLE
                 if (hci_le_supported()){
                     hci_stack->substate = HCI_INIT_LE_READ_BUFFER_SIZE; // skip all classic command
                     return;
-                } else {
-                    log_error("Neither BR/EDR nor LE supported");
-                    hci_init_done();
-                    return;
                 }
+#endif
+                log_error("Neither BR/EDR nor LE supported");
+                hci_init_done();
+                return;
             }
             if (!gap_ssp_supported()){
                 hci_stack->substate = HCI_INIT_WRITE_PAGE_TIMEOUT;
