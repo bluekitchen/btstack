@@ -40,7 +40,7 @@ def scrape_page(fout, url):
     page = requests.get(url)
     tree = html.fromstring(page.content)
     # get all <tr> elements in <table id="gattTable">
-    rows = tree.xpath('//table[@id="gattTable"]/tr')
+    rows = tree.xpath('//table[@id="gattTable"]/tbody/tr')
     for row in rows:
         children = row.getchildren()
         summary = children[0].text_content()

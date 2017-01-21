@@ -38,7 +38,7 @@ def list_services():
     page = requests.get(url)
     tree = html.fromstring(page.content)
     # get all <tr> elements in <table id="gattTable">
-    rows = tree.xpath('//table[@id="gattTable"]/tr')
+    rows = tree.xpath('//table[@id="gattTable"]/tbody/tr')
     print("%-55s| %-30s| %s" % ('Specification Type', 'Specification Name', 'UUID'))
     print('-'*55 + '+-' + '-' * 30 + '+-' + '-'*10)
     maxlen_type = 0
