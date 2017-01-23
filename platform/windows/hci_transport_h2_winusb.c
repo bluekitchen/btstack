@@ -723,19 +723,20 @@ static BOOL usb_scan_for_bluetooth_endpoints(void) {
     sco_out_addr = 0;
     sco_in_addr = 0;
 
-    // look for SCO pipes on Interface #1, Alt Setting ALT_SETTING
-    result = WinUsb_QueryInterfaceSettings(usb_interface_1_handle, ALT_SETTING, &usb_interface_descriptor);
+    // look for SCO pipes on Interface #1, Alt Setting 1
+    int alt_setting = 1;
+    result = WinUsb_QueryInterfaceSettings(usb_interface_1_handle, alt_setting, &usb_interface_descriptor);
     if (!result) goto exit_on_error;
     for (i=0;i<usb_interface_descriptor.bNumEndpoints;i++){
         WINUSB_PIPE_INFORMATION_EX pipe;
         result = WinUsb_QueryPipeEx(
                      usb_interface_1_handle,
-                     ALT_SETTING,
+                     alt_setting,
                      (UCHAR) i,
                      &pipe);
         if (!result) goto exit_on_error;
         log_info("Interface #1, Alt #%u, Pipe idx #%u: type %u, id 0x%02x, max packet size %u, interval %u, max bytes per interval %u",
-            ALT_SETTING, i, pipe.PipeType, pipe.PipeId, pipe.MaximumPacketSize, pipe.Interval, (int) pipe.MaximumBytesPerInterval);
+            alt_setting, i, pipe.PipeType, pipe.PipeId, pipe.MaximumPacketSize, pipe.Interval, (int) pipe.MaximumBytesPerInterval);
         switch (pipe.PipeType){
             case USB_ENDPOINT_TYPE_ISOCHRONOUS:
                 if (pipe.PipeId & 0x80) {
@@ -1320,7 +1321,6 @@ static void usb_set_sco_config(uint16_t voice_setting, int num_connections){
            usb_sco_start();
         }
     }
-
 }
 #endif
 
