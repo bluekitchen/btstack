@@ -775,10 +775,12 @@ static void hci_shutdown_connection(hci_connection_t *conn){
     // now it's gone
     hci_emit_nr_connections_changed();
 
+#ifdef ENABLE_SCO_OVER_HCI
     // update SCO
     if (addr_type == BD_ADDR_TYPE_SCO && hci_stack->hci_transport && hci_stack->hci_transport->set_sco_config){
         hci_stack->hci_transport->set_sco_config(hci_stack->sco_voice_setting_active, hci_number_sco_connections());
     }
+#endif
 }
 
 #ifdef ENABLE_CLASSIC
