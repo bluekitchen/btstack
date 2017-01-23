@@ -278,6 +278,10 @@ static btstack_data_source_t usb_data_source_sco_out[SCO_RING_BUFFER_COUNT];
 static uint8_t  sco_ring_buffer[SCO_RING_BUFFER_SIZE];
 static int      sco_ring_write;  // packet idx
 
+// SCO Reconfiguration - pause/resume
+static uint16_t sco_voice_setting;
+static int      sco_num_connections;
+
 #endif
 
 #if 0
@@ -1281,6 +1285,24 @@ static int usb_send_packet(uint8_t packet_type, uint8_t * packet, int size){
     }
 }
 
+#ifdef ENABLE_SCO_OVER_HCI
+static void usb_set_sco_config(uint16_t voice_setting, int num_connections){
+    log_info("usb_set_sco_config: voice settings 0x%04x, num connections %u", voice_setting, num_connections);
+
+    if (num_connections != sco_num_connections){
+        sco_voice_setting = voice_setting;
+        if (sco_num_connections){
+//            usb_sco_stop();
+        }
+        sco_num_connections = num_connections;
+        if (num_connections){
+//            usb_sco_start();
+        }
+    }
+
+}
+#endif
+
 // get usb singleton
 static const hci_transport_t hci_transport_usb = {
     /* const char * name; */                                        "H2_WINUSB",
@@ -1292,7 +1314,7 @@ static const hci_transport_t hci_transport_usb = {
     /* int    (*send_packet)(...); */                               &usb_send_packet,
     /* int    (*set_baudrate)(uint32_t baudrate); */                NULL,
     /* void   (*reset_link)(void); */                               NULL,
-    /* void   (*set_sco_config)(uint16_t voice_setting, int num_connections); */ NULL, 
+    /* void   (*set_sco_config)(uint16_t voice_setting, int num_connections); */ usb_set_sco_config, 
 };
 
 const hci_transport_t * hci_transport_usb_instance(void) {
