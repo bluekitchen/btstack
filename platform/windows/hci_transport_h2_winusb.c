@@ -770,6 +770,75 @@ exit_on_error:
     return FALSE;
 }
 
+#ifdef ENABLE_SCO_OVER_HCI
+static int usb_sco_start(void){
+    printf("usb_sco_start\n");
+    log_info("usb_sco_start");
+
+    sco_state_machine_init();
+    sco_ring_init();
+
+#if 0
+    // calc alt setting
+    int alt_setting;
+    if (sco_voice_setting & 0x0020){
+        // 16-bit PCM  
+        alt_setting = alt_setting_16_bit[sco_num_connections-1];
+    } else {
+        // 8-bit PCM or mSBC
+        alt_setting = alt_setting_8_bit[sco_num_connections-1];
+    }
+
+    log_info("Switching to setting %u on interface 1..", alt_setting);
+    // WinUsb_SetCurrentAlternateSetting returns TRUE if the operation succeeds.
+    BOOL result = WinUsb_SetCurrentAlternateSetting(usb_interface_1_handle, alt_setting);
+    if (!result) goto exit_on_error;
+#endif
+
+#ifdef SCHEDULE_SCO_IN_TRANSFERS_MANUALLY
+    // get current frame number
+    ULONG current_frame_number;
+    LARGE_INTEGER timestamp;
+    WinUsb_GetCurrentFrameNumber(usb_interface_0_handle, &current_frame_number, &timestamp);
+    // plan for next tranfer
+    sco_next_transfer_at_frame = current_frame_number + ISOC_BUFFERS * NUM_ISO_PACKETS;
+#endif
+
+    int i;
+    for (i=0;i<ISOC_BUFFERS;i++){
+#ifdef SCHEDULE_SCO_IN_TRANSFERS_MANUALLY
+        usb_submit_sco_in_transfer_at_frame(i, &sco_next_transfer_at_frame);
+#else       
+        usb_submit_sco_in_transfer_asap(i, 0);
+#endif    
+    }
+
+    usb_sco_in_expected_transfer = 0;
+
+    // only await first transfer to return
+    btstack_run_loop_enable_data_source_callbacks(&usb_data_source_sco_in[usb_sco_in_expected_transfer], DATA_SOURCE_CALLBACK_READ);
+    return 1;
+
+#if 0
+exit_on_error:
+    log_error("usb_sco_start: last error %lu", GetLastError());
+    usb_free_resources();
+    return 0;    
+#endif
+}
+
+static void usb_sco_stop(void){
+    WinUsb_AbortPipe(usb_interface_0_handle, sco_in_addr);
+    WinUsb_AbortPipe(usb_interface_0_handle, sco_out_addr);
+#if 0
+    int alt_setting = 0;
+    log_info("Switching to setting %u on interface 1..", alt_setting);
+    // WinUsb_SetCurrentAlternateSetting returns TRUE if the operation succeeds.
+    WinUsb_SetCurrentAlternateSetting(usb_interface_1_handle, alt_setting);
+#endif
+}
+#endif
+
 // returns 0 if successful, -1 otherwise
 static int usb_try_open_device(const char * device_path){
 
@@ -896,6 +965,7 @@ static int usb_try_open_device(const char * device_path){
 
 #ifdef ENABLE_SCO_OVER_HCI
 
+#if 0
 #ifdef SCHEDULE_SCO_IN_TRANSFERS_MANUALLY
     // get current frame number
     ULONG current_frame_number;
@@ -918,6 +988,9 @@ static int usb_try_open_device(const char * device_path){
 
     // only await first transfer to return
     btstack_run_loop_enable_data_source_callbacks(&usb_data_source_sco_in[usb_sco_in_expected_transfer], DATA_SOURCE_CALLBACK_READ);
+#endif
+
+    usb_sco_start();
 
 #if 0
     // AUTO_CLEAR_STALL, RAW_IO, IGNORE_SHORT_PACKETS is not callable for ISO EP
@@ -1135,8 +1208,7 @@ static int usb_close(void){
     WinUsb_AbortPipe(usb_interface_0_handle, acl_in_addr);
     WinUsb_AbortPipe(usb_interface_0_handle, acl_out_addr);
 #ifdef ENABLE_SCO_OVER_HCI
-    WinUsb_AbortPipe(usb_interface_0_handle, sco_in_addr);
-    WinUsb_AbortPipe(usb_interface_0_handle, sco_out_addr);
+    usb_sco_stop();
 #endif
     usb_acl_out_active = 0;
 
