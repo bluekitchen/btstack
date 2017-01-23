@@ -49,7 +49,7 @@
 #include "btstack_cvsd_plc.h"
 #include "btstack_debug.h"
 
-#define SAMPLE_FORMAT int8_t
+#define SAMPLE_FORMAT int16_t
 
 static float rcos[CVSD_OLAL] = {
     0.99148655f,0.96623611f,0.92510857f,0.86950446f,
@@ -130,11 +130,10 @@ static float AmplitudeMatch(SAMPLE_FORMAT *y, SAMPLE_FORMAT bestmatch) {
 
 static SAMPLE_FORMAT crop_sample(float val){
     float croped_val = val;
-    if (croped_val > 127.0)  croped_val= 127.0;
-    if (croped_val < -128.0) croped_val=-128.0; 
+    if (croped_val > 32767.0)  croped_val= 32767.0;
+    if (croped_val < -32768.0) croped_val=-32768.0; 
     return (SAMPLE_FORMAT) croped_val;
 }
-
 
 void btstack_cvsd_plc_init(btstack_cvsd_plc_state_t *plc_state){
     memset(plc_state, 0, sizeof(btstack_cvsd_plc_state_t));
@@ -219,7 +218,7 @@ void btstack_cvsd_plc_good_frame(btstack_cvsd_plc_state_t *plc_state, SAMPLE_FOR
     plc_state->nbf=0;
 }
 
-static int count_equal_bytes(SAMPLE_FORMAT * packet, uint16_t size){
+static int count_equal_samples(SAMPLE_FORMAT * packet, uint16_t size){
     int count = 0;
     int temp_count = 1;
     int i;
@@ -239,13 +238,15 @@ static int count_equal_bytes(SAMPLE_FORMAT * packet, uint16_t size){
     return count;
 }
 
+// @assumption frame len 24 samples
 static int bad_frame(SAMPLE_FORMAT * frame, uint16_t size){
-    return count_equal_bytes(frame, size) > 20;
+    return count_equal_samples(frame, size) > 20;
 }
 
 void btstack_cvsd_plc_process_data(btstack_cvsd_plc_state_t * state, SAMPLE_FORMAT * in, uint16_t size, SAMPLE_FORMAT * out){
     if (size != 24){
         log_error("btstack_cvsd_plc_process_data: audio frame size is incorrect. Expected %d, got %d", CVSD_FS, size);
+        return;
     }
     state->frame_count++;
     if (bad_frame(in,size)){
@@ -258,27 +259,6 @@ void btstack_cvsd_plc_process_data(btstack_cvsd_plc_state_t * state, SAMPLE_FORM
         }
     } else {
         btstack_cvsd_plc_good_frame(state, in, out);
-        state->good_frames_nr++;
-        if (state->good_frames_nr == 1){
-            log_info("First good frame at index %d\n", state->frame_count-1);
-        }        
-    }
-}
-
-void btstack_cvsd_plc_mark_bad_frame(btstack_cvsd_plc_state_t * state, SAMPLE_FORMAT * in, uint16_t size, SAMPLE_FORMAT * out){
-    if (size != 24){
-        log_error("btstack_cvsd_plc_mark_bad_frame: audio frame size is incorrect. Expected %d, got %d", CVSD_FS, size);
-    }
-    state->frame_count++;
-    
-    if (bad_frame(in,size)){
-        memcpy(out, in, size);
-        if (state->good_frames_nr > CVSD_LHIST/CVSD_FS){
-            memset(out, 50, size);
-            state->bad_frames_nr++;
-        } 
-    } else {
-        memcpy(out, in, size);
         state->good_frames_nr++;
         if (state->good_frames_nr == 1){
             log_info("First good frame at index %d\n", state->frame_count-1);

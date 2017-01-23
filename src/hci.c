@@ -2189,8 +2189,8 @@ void hci_init(const hci_transport_t *transport, const void *config){
     hci_stack->ssp_authentication_requirement = SSP_IO_AUTHREQ_MITM_PROTECTION_NOT_REQUIRED_GENERAL_BONDING;
     hci_stack->ssp_auto_accept = 1;
 
-    // voice setting - signed 8 bit pcm data with CVSD over the air
-    hci_stack->sco_voice_setting = 0x40;
+    // voice setting - signed 16 bit pcm data with CVSD over the air
+    hci_stack->sco_voice_setting = 0x60;
 
     hci_state_reset();
 }
