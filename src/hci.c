@@ -1432,14 +1432,15 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
         case HCI_INIT_W4_SET_EVENT_MASK:
             // skip Classic init commands for LE only chipsets
             if (!hci_classic_supported()){
+#ifdef ENABLE_BLE
                 if (hci_le_supported()){
                     hci_stack->substate = HCI_INIT_LE_READ_BUFFER_SIZE; // skip all classic command
                     return;
-                } else {
-                    log_error("Neither BR/EDR nor LE supported");
-                    hci_init_done();
-                    return;
                 }
+#endif
+                log_error("Neither BR/EDR nor LE supported");
+                hci_init_done();
+                return;
             }
             if (!gap_ssp_supported()){
                 hci_stack->substate = HCI_INIT_WRITE_PAGE_TIMEOUT;
@@ -2218,8 +2219,8 @@ void hci_init(const hci_transport_t *transport, const void *config){
     hci_stack->ssp_authentication_requirement = SSP_IO_AUTHREQ_MITM_PROTECTION_NOT_REQUIRED_GENERAL_BONDING;
     hci_stack->ssp_auto_accept = 1;
 
-    // voice setting - signed 8 bit pcm data with CVSD over the air
-    hci_stack->sco_voice_setting = 0x40;
+    // voice setting - signed 16 bit pcm data with CVSD over the air
+    hci_stack->sco_voice_setting = 0x60;
 
     hci_state_reset();
 }
