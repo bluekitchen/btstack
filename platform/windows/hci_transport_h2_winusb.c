@@ -167,9 +167,23 @@ static WinUsb_GetCurrentFrameNumber_t   WinUsb_GetCurrentFrameNumber;
 // --> support only a single SCO connection
 #define ALT_SETTING (1)
 
+// alt setting for 1-3 connections and 8/16 bit
+const int alt_setting_8_bit[]  = {1,2,3};      
+const int alt_setting_16_bit[] = {2,4,5};
+
 // for ALT_SETTING >= 1 and 8-bit channel, we need the following isochronous packets
 // One complete SCO packet with 24 frames every 3 frames (== 3 ms)
 #define NUM_ISO_PACKETS (3)
+
+const uint16_t iso_packet_size_for_alt_setting[] = {
+    0,
+    9,
+    17,
+    25,
+    33,
+    49,
+    63,
+};
 
 // results in 9 bytes per frame
 #define ISO_PACKET_SIZE (9)
@@ -903,7 +917,7 @@ static int usb_try_open_device(const char * device_path){
 	memset(hci_sco_packet_descriptors, 0, sizeof(hci_sco_packet_descriptors));
 	log_info("Size of packet descriptors for SCO IN%u", (int) sizeof(hci_sco_packet_descriptors));
 
-	result = WinUsb_RegisterIsochBuffer(usb_interface_1_handle, sco_in_addr, hci_sco_in_buffer, ISOC_BUFFERS * SCO_PACKET_SIZE, &hci_sco_in_buffer_handle);
+	result = WinUsb_RegisterIsochBuffer(usb_interface_1_handle, sco_in_addr, hci_sco_in_buffer, sizeof(hci_sco_in_buffer), &hci_sco_in_buffer_handle);
 	if (!result) goto exit_on_error;
 	log_info("hci_sco_in_buffer_handle %p", hci_sco_in_buffer_handle);
 
