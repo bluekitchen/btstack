@@ -962,71 +962,6 @@ static int usb_try_open_device(const char * device_path){
 	// submit all incoming transfers
 	usb_submit_event_in_transfer();
 	usb_submit_acl_in_transfer();
-
-#ifdef ENABLE_SCO_OVER_HCI
-
-#if 0
-#ifdef SCHEDULE_SCO_IN_TRANSFERS_MANUALLY
-    // get current frame number
-    ULONG current_frame_number;
-    LARGE_INTEGER timestamp;
-    WinUsb_GetCurrentFrameNumber(usb_interface_0_handle, &current_frame_number, &timestamp);
-
-    // plan for next tranfer
-    sco_next_transfer_at_frame = current_frame_number + ISOC_BUFFERS * NUM_ISO_PACKETS;
-#endif
-
-    for (i=0;i<ISOC_BUFFERS;i++){
-#ifdef SCHEDULE_SCO_IN_TRANSFERS_MANUALLY
-        usb_submit_sco_in_transfer_at_frame(i, &sco_next_transfer_at_frame);
-#else       
-        usb_submit_sco_in_transfer_asap(i, 0);
-#endif    
-    }
-
-    usb_sco_in_expected_transfer = 0;
-
-    // only await first transfer to return
-    btstack_run_loop_enable_data_source_callbacks(&usb_data_source_sco_in[usb_sco_in_expected_transfer], DATA_SOURCE_CALLBACK_READ);
-#endif
-
-    usb_sco_start();
-
-#if 0
-    // AUTO_CLEAR_STALL, RAW_IO, IGNORE_SHORT_PACKETS is not callable for ISO EP
-    uint8_t value = 0;
-    ULONG   value_len = 1;
-    result = WinUsb_GetPipePolicy(usb_interface_0_handle, event_in_addr, IGNORE_SHORT_PACKETS, &value_len, &value);
-    if (!result) goto exit_on_error;
-    log_info("IGNORE_SHORT_PACKETS = %u", value);
-
-    uint8_t value_on = 0;
-    result = WinUsb_SetPipePolicy(usb_interface_1_handle, sco_in_addr, IGNORE_SHORT_PACKETS, sizeof(value_on), &value_on);
-    if (!result) goto exit_on_error;
-#endif
-
-#if 0
-    while (1){
-        // 
-        DWORD bytes_transferred;
-        BOOL ok = WinUsb_GetOverlappedResult(usb_interface_0_handle, &usb_overlapped_sco_in[usb_sco_in_expected_transfer], &bytes_transferred, TRUE);
-
-        // WinUsb_GetCurrentFrameNumber(usb_interface_0_handle, &current_frame_number, &timestamp);
-
-        // log_info("WinUsb_GetOverlappedResult[%02u]: ok = %u, current frame %lu", usb_sco_in_expected_transfer, ok, current_frame_number);
-        if (!ok){
-            log_error("WinUsb_GetOverlappedResult res %x", (int) GetLastError());
-            // return 0;
-        }
-        // update expected and wait for completion
-        usb_sco_in_expected_transfer = (usb_sco_in_expected_transfer + 1) % ISOC_BUFFERS;
-
-        usb_submit_sco_in_transfer_at_frame(usb_sco_in_expected_transfer, &sco_next_transfer_at_frame);
-    }
-#endif
-
-#endif
-
 	return 1;
 
 exit_on_error:
@@ -1364,11 +1299,11 @@ static void usb_set_sco_config(uint16_t voice_setting, int num_connections){
     if (num_connections != sco_num_connections){
         sco_voice_setting = voice_setting;
         if (sco_num_connections){
-//            usb_sco_stop();
+           usb_sco_stop();
         }
         sco_num_connections = num_connections;
         if (num_connections){
-//            usb_sco_start();
+           usb_sco_start();
         }
     }
 
