@@ -185,12 +185,9 @@ const uint16_t iso_packet_size_for_alt_setting[] = {
     63,
 };
 
-// results in 9 bytes per frame
-#define ISO_PACKET_SIZE (9)
-
 // 49 bytes is the max usb packet size for alternate setting 5 (Three 8 kHz 16-bit channels or one 8 kHz 16-bit channel and one 16 kHz 16-bit channel)
 // note: alt setting 6 has max packet size of 63 every 7.5 ms = 472.5 bytes / HCI packet, while max SCO packet has 255 byte payload
-#define SCO_PACKET_SIZE (NUM_ISO_PACKETS * ISO_PACKET_SIZE)
+#define SCO_PACKET_SIZE  (49 * NUM_ISO_PACKETS)
 
 #define ISOC_BUFFERS   8
 
@@ -296,6 +293,8 @@ static int      sco_ring_write;  // packet idx
 static uint16_t sco_voice_setting;
 static int      sco_num_connections;
 static int      sco_shutdown;
+
+static uint16_t iso_packet_size;
 #endif
 
 #if 0
@@ -433,7 +432,7 @@ static void usb_submit_sco_in_transfer_at_frame(int i, ULONG * frame_number){
 
     ULONG frame_before = *frame_number;
 
-    BOOL result = WinUsb_ReadIsochPipe(hci_sco_in_buffer_handle, i * SCO_PACKET_SIZE, SCO_PACKET_SIZE,  
+    BOOL result = WinUsb_ReadIsochPipe(hci_sco_in_buffer_handle, i * SCO_PACKET_SIZE, iso_packet_size * NUM_ISO_PACKETS,  
         frame_number, NUM_ISO_PACKETS, &hci_sco_packet_descriptors[i * NUM_ISO_PACKETS], &usb_overlapped_sco_in[i]);
 
     // log_info("WinUsb_ReadIsochPipe #%02u: current %lu, planned %lu - buffer %lu", i, current_frame_number, frame_before, frame_before - current_frame_number);
@@ -466,7 +465,7 @@ static void usb_submit_sco_in_transfer_asap(int i, int continue_stream){
 
     // log_info("usb_submit_sco_in_transfer[%02u]: current frame %lu", i, current_frame_number);
 
-    BOOL result = WinUsb_ReadIsochPipeAsap(hci_sco_in_buffer_handle, i * SCO_PACKET_SIZE, SCO_PACKET_SIZE,  
+    BOOL result = WinUsb_ReadIsochPipeAsap(hci_sco_in_buffer_handle, i * SCO_PACKET_SIZE, iso_packet_size * NUM_ISO_PACKETS,  
         continue_stream, NUM_ISO_PACKETS, &hci_sco_packet_descriptors[i * NUM_ISO_PACKETS], &usb_overlapped_sco_in[i]);
 
     if (!result) {
@@ -832,7 +831,6 @@ static int usb_sco_start(void){
     sco_state_machine_init();
     sco_ring_init();
 
-#if 0
     // calc alt setting
     int alt_setting;
     if (sco_voice_setting & 0x0020){
@@ -842,12 +840,14 @@ static int usb_sco_start(void){
         // 8-bit PCM or mSBC
         alt_setting = alt_setting_8_bit[sco_num_connections-1];
     }
-#endif
-    int alt_setting = 1;
+
     log_info("Switching to setting %u on interface 1..", alt_setting);
     // WinUsb_SetCurrentAlternateSetting returns TRUE if the operation succeeds.
     BOOL result = WinUsb_SetCurrentAlternateSetting(usb_interface_1_handle, alt_setting);
     if (!result) goto exit_on_error;
+
+    // derive iso packet size from alt setting
+    iso_packet_size = iso_packet_size_for_alt_setting[alt_setting];
 
     // register isochronous buffer after setting alternate setting
     usb_sco_register_buffers();
