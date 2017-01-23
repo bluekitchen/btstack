@@ -328,6 +328,30 @@ static void sco_ring_init(void){
 static int sco_ring_have_space(void){
     return sco_ring_transfers_active < SCO_RING_BUFFER_COUNT;
 }
+static void usb_sco_register_buffers(void){
+    BOOL result;
+    result = WinUsb_RegisterIsochBuffer(usb_interface_1_handle, sco_in_addr, hci_sco_in_buffer, sizeof(hci_sco_in_buffer), &hci_sco_in_buffer_handle);
+    if (!result) {
+        log_error("usb_sco_register_buffers: register in buffer failed, error %lu", GetLastError());
+    }
+    log_info("hci_sco_in_buffer_handle %p", hci_sco_in_buffer_handle);
+
+    result = WinUsb_RegisterIsochBuffer(usb_interface_1_handle, sco_out_addr, sco_ring_buffer, sizeof(sco_ring_buffer), &hci_sco_out_buffer_handle);
+    if (!result) {
+        log_error("usb_sco_unregister_buffers: register out buffer failed, error %lu", GetLastError());
+    }
+    log_info("hci_sco_out_buffer_handle %p", hci_sco_out_buffer_handle);
+}
+static void usb_sco_unregister_buffers(void){
+    if (hci_sco_in_buffer_handle){
+        WinUsb_UnregisterIsochBuffer(hci_sco_in_buffer_handle);
+        hci_sco_in_buffer_handle = NULL;
+    }
+    if (hci_sco_out_buffer_handle){
+        WinUsb_UnregisterIsochBuffer(hci_sco_out_buffer_handle);
+        hci_sco_out_buffer_handle = NULL;
+    }
+}
 #endif
 
 static void usb_register_packet_handler(void (*handler)(uint8_t packet_type, uint8_t *packet, uint16_t size)){
@@ -358,14 +382,7 @@ static void usb_free_resources(void){
 	}
 
 #ifdef ENABLE_SCO_OVER_HCI
-    if (hci_sco_in_buffer_handle){
-        WinUsb_UnregisterIsochBuffer(hci_sco_in_buffer_handle);
-        hci_sco_in_buffer_handle = NULL;
-    }
-    if (hci_sco_out_buffer_handle){
-        WinUsb_UnregisterIsochBuffer(hci_sco_out_buffer_handle);
-        hci_sco_out_buffer_handle = NULL;
-    }
+    usb_sco_unregister_buffers();
 #endif
 }
 
@@ -786,6 +803,7 @@ exit_on_error:
 }
 
 #ifdef ENABLE_SCO_OVER_HCI
+
 static int usb_sco_start(void){
     printf("usb_sco_start\n");
     log_info("usb_sco_start");
@@ -899,10 +917,10 @@ static int usb_try_open_device(const char * device_path){
 	if (!result) goto exit_on_error;
 	log_info("Claiming interface 1: success");
 
-	log_info("Switching to setting %u on interface 1..", ALT_SETTING);
-	// WinUsb_SetCurrentAlternateSetting returns TRUE if the operation succeeds.
-	result = WinUsb_SetCurrentAlternateSetting(usb_interface_1_handle, ALT_SETTING);
-	if (!result) goto exit_on_error;
+	// log_info("Switching to setting %u on interface 1..", ALT_SETTING);
+	// // WinUsb_SetCurrentAlternateSetting returns TRUE if the operation succeeds.
+	// result = WinUsb_SetCurrentAlternateSetting(usb_interface_1_handle, ALT_SETTING);
+	// if (!result) goto exit_on_error;
 #endif
 
     result = usb_scan_for_bluetooth_endpoints();
@@ -917,14 +935,6 @@ static int usb_try_open_device(const char * device_path){
 
 	memset(hci_sco_packet_descriptors, 0, sizeof(hci_sco_packet_descriptors));
 	log_info("Size of packet descriptors for SCO IN%u", (int) sizeof(hci_sco_packet_descriptors));
-
-	result = WinUsb_RegisterIsochBuffer(usb_interface_1_handle, sco_in_addr, hci_sco_in_buffer, sizeof(hci_sco_in_buffer), &hci_sco_in_buffer_handle);
-	if (!result) goto exit_on_error;
-	log_info("hci_sco_in_buffer_handle %p", hci_sco_in_buffer_handle);
-
-    result = WinUsb_RegisterIsochBuffer(usb_interface_1_handle, sco_out_addr, sco_ring_buffer, sizeof(sco_ring_buffer), &hci_sco_out_buffer_handle);
-    if (!result) goto exit_on_error;
-    log_info("hci_sco_out_buffer_handle %p", hci_sco_out_buffer_handle);
 
 	// setup async io && btstack handler
 	memset(&usb_overlapped_sco_in, 0, sizeof(usb_overlapped_sco_in));
@@ -974,9 +984,19 @@ static int usb_try_open_device(const char * device_path){
     btstack_run_loop_set_data_source_handler(&usb_data_source_acl_out, &usb_process_acl_out);
     btstack_run_loop_add_data_source(&usb_data_source_acl_out);
 
-	// submit all incoming transfers
-	usb_submit_event_in_transfer();
-	usb_submit_acl_in_transfer();
+    // submit all incoming transfers
+    usb_submit_event_in_transfer();
+    usb_submit_acl_in_transfer();
+
+#ifdef ENABLE_SCO_OVER_HCI
+    log_info("Switching to setting %u on interface 1..", ALT_SETTING);
+    // WinUsb_SetCurrentAlternateSetting returns TRUE if the operation succeeds.
+    result = WinUsb_SetCurrentAlternateSetting(usb_interface_1_handle, ALT_SETTING);
+    if (!result) goto exit_on_error;
+
+    usb_sco_register_buffers();
+#endif
+    
 	return 1;
 
 exit_on_error:
