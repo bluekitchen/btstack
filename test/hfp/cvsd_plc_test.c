@@ -161,8 +161,8 @@ TEST(CVSD_PLC, CountEqBytes){
 
 TEST(CVSD_PLC, TestLiveWavFile){
     int corruption_step = 10;
-    introduce_bad_frames_to_wav_file("data/sco_input.wav", "results/sco_input.wav", 0);
-    introduce_bad_frames_to_wav_file("data/sco_input.wav", "results/sco_input_with_bad_frames.wav", corruption_step);
+    introduce_bad_frames_to_wav_file("data/sco_input-8bit.wav", "results/sco_input.wav", 0);
+    introduce_bad_frames_to_wav_file("data/sco_input-8bit.wav", "results/sco_input_with_bad_frames.wav", corruption_step);
     
     mark_bad_frames_wav_file("results/sco_input.wav", "results/sco_input_detected_frames.wav");
     process_wav_file_with_plc("results/sco_input.wav", "results/sco_input_after_plc.wav");
