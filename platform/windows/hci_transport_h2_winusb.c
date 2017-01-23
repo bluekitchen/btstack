@@ -295,7 +295,7 @@ static int      sco_ring_write;  // packet idx
 // SCO Reconfiguration - pause/resume
 static uint16_t sco_voice_setting;
 static int      sco_num_connections;
-
+static int      sco_shutdown;
 #endif
 
 #if 0
@@ -422,6 +422,11 @@ exit_on_error:
 // frame number gets updated
 static void usb_submit_sco_in_transfer_at_frame(int i, ULONG * frame_number){
 
+    if (sco_shutdown){
+        log_info("USB SCO Shutdown:: usb_submit_sco_in_transfer_at_frame called");
+        return;
+    }
+
     LARGE_INTEGER timestamp;
     ULONG current_frame_number;
     WinUsb_GetCurrentFrameNumber(usb_interface_0_handle, &current_frame_number, &timestamp);
@@ -431,7 +436,7 @@ static void usb_submit_sco_in_transfer_at_frame(int i, ULONG * frame_number){
     BOOL result = WinUsb_ReadIsochPipe(hci_sco_in_buffer_handle, i * SCO_PACKET_SIZE, SCO_PACKET_SIZE,  
         frame_number, NUM_ISO_PACKETS, &hci_sco_packet_descriptors[i * NUM_ISO_PACKETS], &usb_overlapped_sco_in[i]);
 
-    log_info("WinUsb_ReadIsochPipe #%02u: current %lu, planned %lu - buffer %lu", i, current_frame_number, frame_before, frame_before - current_frame_number);
+    // log_info("WinUsb_ReadIsochPipe #%02u: current %lu, planned %lu - buffer %lu", i, current_frame_number, frame_before, frame_before - current_frame_number);
 
     if (!result) {
         if (GetLastError() == ERROR_IO_PENDING) {
@@ -449,6 +454,11 @@ exit_on_error:
 #else
 
 static void usb_submit_sco_in_transfer_asap(int i, int continue_stream){
+
+    if (sco_shutdown){
+        log_info("USB SCO Shutdown:: usb_submit_sco_in_transfer_at_frame called");
+        return;
+    }
 
     LARGE_INTEGER timestamp;
     ULONG current_frame_number;
@@ -565,6 +575,11 @@ static void usb_process_sco_out(btstack_data_source_t *ds,  btstack_data_source_
 
     btstack_run_loop_disable_data_source_callbacks(ds, DATA_SOURCE_CALLBACK_WRITE);
 
+    if (sco_shutdown){
+        log_info("USB SCO Shutdown:: usb_process_sco_out called");
+        return;
+    }
+
     // get current frame number
     ULONG current_frame_number;
     LARGE_INTEGER timestamp;
@@ -576,11 +591,11 @@ static void usb_process_sco_out(btstack_data_source_t *ds,  btstack_data_source_
         if (ds == &usb_data_source_sco_out[transfer_index]) break;
     }
 
-    log_info("usb_process_sco_out[%02u] -- current frame %lu", transfer_index, current_frame_number);
+    // log_info("usb_process_sco_out[%02u] -- current frame %lu", transfer_index, current_frame_number);
 
     DWORD bytes_transferred;
     BOOL ok = WinUsb_GetOverlappedResult(usb_interface_0_handle, &usb_overlapped_sco_out[transfer_index], &bytes_transferred, FALSE);
-    log_info("usb_process_sco_out_done: #%u result %u, bytes %u, state %u", transfer_index, ok, (int) bytes_transferred, sco_state);
+    // log_info("usb_process_sco_out_done: #%u result %u, bytes %u, state %u", transfer_index, ok, (int) bytes_transferred, sco_state);
     if(!ok){
         DWORD err = GetLastError();
         if (err == ERROR_IO_INCOMPLETE){
@@ -598,11 +613,11 @@ static void usb_process_sco_out(btstack_data_source_t *ds,  btstack_data_source_
     if (sco_ring_transfers_active){
         // update expected and wait for completion
         usb_sco_out_expected_transfer = (transfer_index+ 1) % SCO_RING_BUFFER_COUNT;
-        log_info("usb_process_sco_out_done[%02u]: wait for transfer %02u", transfer_index, usb_sco_out_expected_transfer);
+        // log_info("usb_process_sco_out_done[%02u]: wait for transfer %02u", transfer_index, usb_sco_out_expected_transfer);
         btstack_run_loop_enable_data_source_callbacks(&usb_data_source_sco_out[usb_sco_out_expected_transfer], DATA_SOURCE_CALLBACK_WRITE);
     }
 
-    log_info("usb_process_sco_out_done: transfers active %u", sco_ring_transfers_active);
+    // log_info("usb_process_sco_out_done: transfers active %u", sco_ring_transfers_active);
 
     // mark free
     if (sco_ring_have_space()) {
@@ -615,6 +630,10 @@ static void usb_process_sco_in(btstack_data_source_t *ds,  btstack_data_source_c
 
     btstack_run_loop_disable_data_source_callbacks(ds, DATA_SOURCE_CALLBACK_READ);
 
+    if (sco_shutdown){
+        log_info("USB SCO Shutdown: usb_process_sco_out called");
+        return;
+    }
 
     // find index
     int i;
@@ -808,6 +827,8 @@ static int usb_sco_start(void){
     printf("usb_sco_start\n");
     log_info("usb_sco_start");
 
+    sco_shutdown = 0;
+
     sco_state_machine_init();
     sco_ring_init();
 
@@ -821,12 +842,15 @@ static int usb_sco_start(void){
         // 8-bit PCM or mSBC
         alt_setting = alt_setting_8_bit[sco_num_connections-1];
     }
-
+#endif
+    int alt_setting = 1;
     log_info("Switching to setting %u on interface 1..", alt_setting);
     // WinUsb_SetCurrentAlternateSetting returns TRUE if the operation succeeds.
     BOOL result = WinUsb_SetCurrentAlternateSetting(usb_interface_1_handle, alt_setting);
     if (!result) goto exit_on_error;
-#endif
+
+    // register isochronous buffer after setting alternate setting
+    usb_sco_register_buffers();
 
 #ifdef SCHEDULE_SCO_IN_TRANSFERS_MANUALLY
     // get current frame number
@@ -852,23 +876,29 @@ static int usb_sco_start(void){
     btstack_run_loop_enable_data_source_callbacks(&usb_data_source_sco_in[usb_sco_in_expected_transfer], DATA_SOURCE_CALLBACK_READ);
     return 1;
 
-#if 0
 exit_on_error:
     log_error("usb_sco_start: last error %lu", GetLastError());
     usb_free_resources();
     return 0;    
-#endif
 }
 
 static void usb_sco_stop(void){
+    printf("usb_sco_stop\n");
+    log_info("usb_sco_stop");
+
+    sco_shutdown = 1;
+
+    // abort SCO transfers
     WinUsb_AbortPipe(usb_interface_0_handle, sco_in_addr);
     WinUsb_AbortPipe(usb_interface_0_handle, sco_out_addr);
-#if 0
+
+    // unlock/free SCO buffers
+    usb_sco_unregister_buffers();
+
     int alt_setting = 0;
     log_info("Switching to setting %u on interface 1..", alt_setting);
     // WinUsb_SetCurrentAlternateSetting returns TRUE if the operation succeeds.
     WinUsb_SetCurrentAlternateSetting(usb_interface_1_handle, alt_setting);
-#endif
 }
 #endif
 
@@ -916,11 +946,6 @@ static int usb_try_open_device(const char * device_path){
 	result = WinUsb_GetAssociatedInterface(usb_interface_0_handle, 0, &usb_interface_1_handle);
 	if (!result) goto exit_on_error;
 	log_info("Claiming interface 1: success");
-
-	// log_info("Switching to setting %u on interface 1..", ALT_SETTING);
-	// // WinUsb_SetCurrentAlternateSetting returns TRUE if the operation succeeds.
-	// result = WinUsb_SetCurrentAlternateSetting(usb_interface_1_handle, ALT_SETTING);
-	// if (!result) goto exit_on_error;
 #endif
 
     result = usb_scan_for_bluetooth_endpoints();
@@ -986,17 +1011,7 @@ static int usb_try_open_device(const char * device_path){
 
     // submit all incoming transfers
     usb_submit_event_in_transfer();
-    usb_submit_acl_in_transfer();
-
-#ifdef ENABLE_SCO_OVER_HCI
-    log_info("Switching to setting %u on interface 1..", ALT_SETTING);
-    // WinUsb_SetCurrentAlternateSetting returns TRUE if the operation succeeds.
-    result = WinUsb_SetCurrentAlternateSetting(usb_interface_1_handle, ALT_SETTING);
-    if (!result) goto exit_on_error;
-
-    usb_sco_register_buffers();
-#endif
-    
+    usb_submit_acl_in_transfer();    
 	return 1;
 
 exit_on_error:
@@ -1278,7 +1293,7 @@ static int usb_send_sco_packet(uint8_t *packet, int size){
     // setup transfer
     int continue_stream = sco_ring_transfers_active > 0;
     BOOL ok = WinUsb_WriteIsochPipeAsap(hci_sco_out_buffer_handle, transfer_index * SCO_PACKET_SIZE, size, continue_stream, &usb_overlapped_sco_out[transfer_index]);
-    log_info("usb_send_sco_packet: using slot #%02u, current frame %lu, continue stream %u, ok %u", transfer_index, current_frame_number, continue_stream, ok);
+    // log_info("usb_send_sco_packet: using slot #%02u, current frame %lu, continue stream %u, ok %u", transfer_index, current_frame_number, continue_stream, ok);
     if (!ok) {
         if (GetLastError() != ERROR_IO_PENDING) goto exit_on_error;
     }
@@ -1297,7 +1312,7 @@ static int usb_send_sco_packet(uint8_t *packet, int size){
     uint8_t event[] = { HCI_EVENT_TRANSPORT_PACKET_SENT, 0};
     packet_handler(HCI_EVENT_PACKET, &event[0], sizeof(event));
 
-    log_info("usb_send_sco_packet: transfers active %u", sco_ring_transfers_active);
+    // log_info("usb_send_sco_packet: transfers active %u", sco_ring_transfers_active);
 
     // and if we have more space for SCO packets
     if (sco_ring_have_space()) {
