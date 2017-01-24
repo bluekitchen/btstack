@@ -59,11 +59,12 @@
 
 
 // test modes
-#define SCO_DEMO_MODE_SINE		0
-#define SCO_DEMO_MODE_ASCII		1
-#define SCO_DEMO_MODE_COUNTER	2
-#define SCO_DEMO_MODE_55        3
-#define SCO_DEMO_MODE_00        4
+#define SCO_DEMO_MODE_SINE		 0
+#define SCO_DEMO_MODE_ASCII		 1
+#define SCO_DEMO_MODE_COUNTER	 2
+#define SCO_DEMO_MODE_55         3
+#define SCO_DEMO_MODE_00         4
+#define SCO_DEMO_MODE_MICROPHONE 5
 
 // SCO demo configuration
 #define SCO_DEMO_MODE               SCO_DEMO_MODE_SINE
@@ -90,18 +91,18 @@
 #define MSBC_SAMPLE_RATE        16000
 #define MSBC_BYTES_PER_FRAME    (2*NUM_CHANNELS)
 
-#if defined(HAVE_PORTAUDIO) && (SCO_DEMO_MODE == SCO_DEMO_MODE_SINE)
+#if defined(HAVE_PORTAUDIO) && (SCO_DEMO_MODE == SCO_DEMO_MODE_SINE || SCO_DEMO_MODE_MICROPHONE)
 #define USE_PORTAUDIO
 #define CVSD_PA_PREBUFFER_BYTES (SCO_CVSD_PA_PREBUFFER_MS * CVSD_SAMPLE_RATE/1000 * CVSD_BYTES_PER_FRAME)
 #define MSBC_PA_PREBUFFER_BYTES (SCO_MSBC_PA_PREBUFFER_MS * MSBC_SAMPLE_RATE/1000 * MSBC_BYTES_PER_FRAME)
 #endif
 
 #ifdef USE_PORTAUDIO
-static PaStream * stream;
-static int pa_stream_started = 0;
-static int pa_stream_paused = 0;
-static uint8_t ring_buffer_storage[2*MSBC_PA_PREBUFFER_BYTES];
-static btstack_ring_buffer_t ring_buffer;
+static PaStream *            pa_output_stream;
+static int                   pa_output_started = 0;
+static int                   pa_output_paused = 0;
+static uint8_t               pa_output_ring_buffer_storage[2*MSBC_PA_PREBUFFER_BYTES];
+static btstack_ring_buffer_t pa_output_ring_buffer;
 #endif
 
 static int dump_data = 1;
@@ -186,39 +187,39 @@ static int portaudio_callback( const void *inputBuffer, void *outputBuffer,
     }
 
     // fill with silence while paused
-    if (pa_stream_paused){
-        if (btstack_ring_buffer_bytes_available(&ring_buffer) < prebuffer_bytes){
+    if (pa_output_paused){
+        if (btstack_ring_buffer_bytes_available(&pa_output_ring_buffer) < prebuffer_bytes){
             memset(outputBuffer, 0, bytes_to_copy);
             return 0;
         } else {
             // resume playback
-            pa_stream_paused = 0;
+            pa_output_paused = 0;
         }
     }
 
     // get data from ringbuffer
     uint32_t bytes_read = 0;
-    btstack_ring_buffer_read(&ring_buffer, outputBuffer, bytes_to_copy, &bytes_read);
+    btstack_ring_buffer_read(&pa_output_ring_buffer, outputBuffer, bytes_to_copy, &bytes_read);
     bytes_to_copy -= bytes_read;
 
     // fill with 0 if not enough
     if (bytes_to_copy){
         memset(outputBuffer + bytes_read, 0, bytes_to_copy);
-        pa_stream_paused = 1;
+        pa_output_paused = 1;
     }
     return 0;
 }
 
 static void portaudio_start(void){
-    if (!pa_stream_started){
+    if (!pa_output_started){
         /* -- start stream -- */
-        PaError err = Pa_StartStream(stream);
+        PaError err = Pa_StartStream(pa_output_stream);
         if (err != paNoError){
             printf("Error starting the stream: \"%s\"\n",  Pa_GetErrorText(err));
             return;
         }
-        pa_stream_started = 1; 
-        pa_stream_paused  = 1;
+        pa_output_started = 1; 
+        pa_output_paused  = 1;
     }
 }
 
@@ -252,9 +253,9 @@ static int portaudio_initialize(int sample_rate){
         printf("Error opening portaudio stream: \"%s\"\n",  Pa_GetErrorText(err));
         return 0;
     }
-    memset(ring_buffer_storage, 0, sizeof(ring_buffer_storage));
-    btstack_ring_buffer_init(&ring_buffer, ring_buffer_storage, sizeof(ring_buffer_storage));
-    pa_stream_started = 0;
+    memset(pa_output_ring_buffer_storage, 0, sizeof(pa_output_ring_buffer_storage));
+    btstack_ring_buffer_init(&pa_output_ring_buffer, pa_output_ring_buffer_storage, sizeof(pa_output_ring_buffer_storage));
+    pa_output_started = 0;
     return 1;
 }
 #endif
@@ -267,7 +268,7 @@ static void handle_pcm_data(int16_t * data, int num_samples, int num_channels, i
     // printf("handle_pcm_data num samples %u, sample rate %d\n", num_samples, num_channels);
 #ifdef HAVE_PORTAUDIO
     portaudio_start();
-    btstack_ring_buffer_write(&ring_buffer, (uint8_t *)data, num_samples*num_channels*2);
+    btstack_ring_buffer_write(&pa_output_ring_buffer, (uint8_t *)data, num_samples*num_channels*2);
 #else
     UNUSED(num_channels);
 #endif
@@ -357,7 +358,7 @@ static void sco_demo_receive_CVSD(uint8_t * packet, uint16_t size){
     }
 #ifdef USE_PORTAUDIO
     portaudio_start();
-    btstack_ring_buffer_write(&ring_buffer, (uint8_t *)audio_frame_out, audio_bytes_read);
+    btstack_ring_buffer_write(&pa_output_ring_buffer, (uint8_t *)audio_frame_out, audio_bytes_read);
 #endif
 }
 
@@ -378,16 +379,16 @@ void sco_demo_close(void){
 #endif
 
 #ifdef HAVE_PORTAUDIO
-    if (pa_stream_started){
+    if (pa_output_started){
         printf("PortAudio: Stop Stream\n");
-        PaError err = Pa_StopStream(stream);
+        PaError err = Pa_StopStream(pa_output_stream);
         if (err != paNoError){
             printf("Error stopping the stream: \"%s\"\n",  Pa_GetErrorText(err));
             return;
         } 
-        pa_stream_started = 0;
+        pa_output_started = 0;
         printf("PortAudio: Close Stream\n");
-        err = Pa_CloseStream(stream);
+        err = Pa_CloseStream(pa_output_stream);
         if (err != paNoError){
             printf("Error closing the stream: \"%s\"\n",  Pa_GetErrorText(err));
             return;
