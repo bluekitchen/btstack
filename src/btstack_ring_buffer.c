@@ -42,8 +42,10 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "btstack_ring_buffer.h"
+#include "btstack_util.h"
 
 #define ERROR_CODE_MEMORY_CAPACITY_EXCEEDED 0x07
 
@@ -79,15 +81,27 @@ int btstack_ring_buffer_write(btstack_ring_buffer_t * ring_buffer, uint8_t * dat
     if (btstack_ring_buffer_bytes_free(ring_buffer) < data_length){
         return ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
     }
-    int count = 0;
-    while (count < data_length){
-        if (ring_buffer->last_written_index < ring_buffer->size - 1){
-            ring_buffer->last_written_index++;
-        } else {
-            ring_buffer->last_written_index = 0;
-        }
-        ring_buffer->storage[ring_buffer->last_written_index] = data[count++];
+
+    // copy first chunk
+    unsigned int bytes_until_end = ring_buffer->size - ring_buffer->last_written_index;
+    unsigned int bytes_to_copy = btstack_min(bytes_until_end, data_length);
+    memcpy(&ring_buffer->storage[ring_buffer->last_written_index], data, bytes_to_copy);
+    data_length -= bytes_to_copy;
+    data += bytes_to_copy;
+
+    // update last written index
+    ring_buffer->last_written_index += bytes_to_copy;
+    if (ring_buffer->last_written_index == ring_buffer->size){
+        ring_buffer->last_written_index = 0;
     }
+
+    // copy second chunk
+    if (data_length) {
+        memcpy(&ring_buffer->storage[0], data, data_length);
+        ring_buffer->last_written_index += data_length;
+    }
+
+    // mark buffer as full
     if (ring_buffer->last_written_index == ring_buffer->last_read_index){
         ring_buffer->full = 1;
     }
@@ -96,20 +110,30 @@ int btstack_ring_buffer_write(btstack_ring_buffer_t * ring_buffer, uint8_t * dat
 
 // fetch data_length bytes from ring buffer
 void btstack_ring_buffer_read(btstack_ring_buffer_t * ring_buffer, uint8_t * data, uint32_t data_length, uint32_t * number_of_bytes_read){
-    uint32_t count = 0;
-    while (count < data_length && btstack_ring_buffer_bytes_available(ring_buffer)){
-        if (ring_buffer->last_read_index < ring_buffer->last_written_index ) {
-            ring_buffer->last_read_index++;
-        } else {
-            if (ring_buffer->last_read_index < ring_buffer->size - 1){
-                ring_buffer->last_read_index++;
-            } else {
-                ring_buffer->last_read_index = 0;
-            }
-        }
-        ring_buffer->full = 0;
-        data[count++] = ring_buffer->storage[ring_buffer->last_read_index];
+    // limit data to get and report
+    data_length = btstack_min(data_length, btstack_ring_buffer_bytes_available(ring_buffer));
+    *number_of_bytes_read = data_length;
+
+    // copy first chunk
+    unsigned int bytes_until_end = ring_buffer->size - ring_buffer->last_read_index;
+    unsigned int bytes_to_copy = btstack_min(bytes_until_end, data_length);
+    memcpy(data, &ring_buffer->storage[ring_buffer->last_read_index], bytes_to_copy);
+    data_length -= bytes_to_copy;
+    data += bytes_to_copy;
+
+    // update last read index
+    ring_buffer->last_read_index += bytes_to_copy;
+    if (ring_buffer->last_read_index == ring_buffer->size){
+        ring_buffer->last_read_index = 0;
     }
-    *number_of_bytes_read = count;
+
+    // copy second chunk
+    if (data_length) {
+        memcpy(data, &ring_buffer->storage[0], data_length);
+        ring_buffer->last_read_index += data_length;
+    }
+
+    // clear full flag 
+    ring_buffer->full = 0;
 } 
 
