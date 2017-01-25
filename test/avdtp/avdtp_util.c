@@ -50,6 +50,32 @@ inline uint8_t avdtp_header(uint8_t tr_label, avdtp_packet_type_t packet_type, a
     return (tr_label<<4) | ((uint8_t)packet_type<<2) | (uint8_t)msg_type;
 }
 
+avdtp_stream_endpoint_t * get_avdtp_stream_endpoint_with_seid(uint8_t seid){
+    btstack_linked_list_iterator_t it;    
+    btstack_linked_list_iterator_init(&it, (btstack_linked_list_t *) &stream_endpoints);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        avdtp_stream_endpoint_t * stream_endpoint = (avdtp_stream_endpoint_t *)btstack_linked_list_iterator_next(&it);
+        if (stream_endpoint->sep.seid == seid){
+            return stream_endpoint;
+        }
+    }
+    return NULL;
+}
+
+avdtp_stream_endpoint_t * get_avdtp_stream_endpoint_associated_with_acp_seid(uint16_t acp_seid){
+    btstack_linked_list_iterator_t it;    
+    btstack_linked_list_iterator_init(&it, (btstack_linked_list_t *) &stream_endpoints);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        avdtp_stream_endpoint_t * stream_endpoint = (avdtp_stream_endpoint_t *)btstack_linked_list_iterator_next(&it);
+        if (stream_endpoint->remote_sep_index >= 0 && stream_endpoint->remote_sep_index < MAX_NUM_SEPS){
+            if (stream_endpoint->remote_seps[stream_endpoint->remote_sep_index].seid == acp_seid){
+                return stream_endpoint;
+            }
+        }
+    }
+    return NULL;
+}
+
 int get_bit16(uint16_t bitmap, int position){
     return (bitmap >> position) & 1;
 }
@@ -224,8 +250,14 @@ uint16_t avdtp_unpack_service_capabilities(avdtp_connection_t * connection, avdt
     if (avdtp_unpack_service_capabilities_has_errors(connection, category, cap_len)) return 0;
     int processed_cap_len = 0;
     int rfa = 0;
-    
+    //printf(" size %d, cat size %d\n", size, cap_len);
+
     while (pos < size){
+        if (cap_len > size - pos){
+            connection->reject_service_category = category;
+            connection->error_code = BAD_LENGTH;
+            return 0;
+        }
         rfa = 0;
         processed_cap_len = pos;
         switch(category){
@@ -285,11 +317,12 @@ uint16_t avdtp_unpack_service_capabilities(avdtp_connection_t * connection, avdt
                 registered_service_categories = store_bit16(registered_service_categories, category, 1);
             }
             if (pos < size-2){
+                //int old_pos = pos;
                 category = (avdtp_service_category_t)packet[pos++];
                 cap_len = packet[pos++];
                 if (avdtp_unpack_service_capabilities_has_errors(connection, category, cap_len)) return 0;
-                // printf("category %d, pos %d + 2 + %d -> %d\n", category, old_pos, cap_len, pos + cap_len);
-                // printf_hexdump(packet+old_pos, size-old_pos);
+                //printf("category %d, pos %d + 2 + %d -> %d\n", category, old_pos, cap_len, pos + cap_len);
+                //printf_hexdump(packet+old_pos, size-old_pos);
             }
         } 
     }
@@ -647,3 +680,15 @@ avdtp_stream_endpoint_t * get_avdtp_stream_endpoint_for_seid(uint16_t seid){
     return NULL;
 }
                             
+uint8_t avdtp_get_index_of_remote_stream_endpoint_with_seid(avdtp_stream_endpoint_t * stream_endpoint, uint16_t seid){
+    if (stream_endpoint->remote_seps[stream_endpoint->remote_sep_index].seid == seid){
+        return stream_endpoint->remote_sep_index;
+    }
+    int i;
+    for (i=0; i < stream_endpoint->remote_seps_num; i++){
+        if (stream_endpoint->remote_seps[i].seid == seid){
+            return i;
+        }
+    }
+    return 0xFF;
+}
