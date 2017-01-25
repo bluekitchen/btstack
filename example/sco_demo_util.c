@@ -163,7 +163,7 @@ static void sco_demo_sine_wave_int16_at_8000_hz(int num_samples, int16_t * data)
     }
 }
 
-static void sco_demo_fill_audio_frame(void){
+static void sco_demo_msbc_fill_sine_audio_frame(void){
     if (!hfp_msbc_can_encode_audio_frame_now()) return;
     int num_samples = hfp_msbc_num_audio_samples_per_frame();
     int16_t sample_buffer[num_samples];
@@ -367,7 +367,7 @@ static void sco_demo_init_mSBC(void){
     
     hfp_msbc_init();
 #if SCO_DEMO_MODE == SCO_DEMO_MODE_SINE
-    sco_demo_fill_audio_frame();
+    sco_demo_msbc_fill_sine_audio_frame();
 #endif
 
 #ifdef SCO_MSBC_IN_FILENAME
@@ -546,7 +546,7 @@ void sco_demo_send(hci_con_handle_t sco_handle){
             fwrite(sco_packet + 3, sco_payload_length, 1, msbc_file_out);
         }
 
-        sco_demo_fill_audio_frame();
+        sco_demo_msbc_fill_sine_audio_frame();
     } else {
         const int audio_samples_per_packet = sco_payload_length / CVSD_BYTES_PER_FRAME;  
         sco_demo_sine_wave_int16_at_8000_hz(audio_samples_per_packet, (int16_t *) (sco_packet+3));
@@ -557,27 +557,42 @@ void sco_demo_send(hci_con_handle_t sco_handle){
 
 #ifdef HAVE_PORTAUDIO
     if (negotiated_codec == HFP_CODEC_MSBC){
-#if 1
-        log_error("Microphone not supported with mSBC yet");
-#else
         // MSBC
 
         // overwrite
         sco_payload_length = 24;
         sco_packet_length = sco_payload_length + 3;
 
-        if (hfp_msbc_num_bytes_in_stream() < sco_payload_length){
-            log_error("mSBC stream is empty.");
-        }
-        hfp_msbc_read_from_stream(sco_packet + 3, sco_payload_length);
-        if (msbc_file_out){
-            // log outgoing mSBC data for testing
-            fwrite(sco_packet + 3, sco_payload_length, 1, msbc_file_out);
+        if (pa_input_paused){
+            if (btstack_ring_buffer_bytes_available(&pa_input_ring_buffer) >= MSBC_PA_PREBUFFER_BYTES){
+                // resume sending
+                pa_input_paused = 0;
+            }
         }
 
-        // TODO:
-        sco_demo_fill_audio_frame();
-#endif
+        if (!pa_input_paused){
+            int num_samples = hfp_msbc_num_audio_samples_per_frame();
+            if (hfp_msbc_can_encode_audio_frame_now() && btstack_ring_buffer_bytes_available(&pa_input_ring_buffer) >= (num_samples * MSBC_BYTES_PER_FRAME)){
+                int16_t sample_buffer[num_samples];
+                uint32_t bytes_read;
+                btstack_ring_buffer_read(&pa_input_ring_buffer, (uint8_t*) sample_buffer, num_samples * MSBC_BYTES_PER_FRAME, &bytes_read);
+                hfp_msbc_encode_audio_frame(sample_buffer);
+                num_audio_frames++;
+            }
+        }
+
+        if (hfp_msbc_num_bytes_in_stream() < sco_payload_length){
+            log_error("mSBC stream should not be empty.");
+            memset(sco_packet + 3, 0, sco_payload_length);
+            pa_input_paused = 1;
+        } else {
+            hfp_msbc_read_from_stream(sco_packet + 3, sco_payload_length);
+            if (msbc_file_out){
+                // log outgoing mSBC data for testing
+                fwrite(sco_packet + 3, sco_payload_length, 1, msbc_file_out);
+            }
+        }
+
     } else {
         // CVSD
 
