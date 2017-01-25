@@ -91,33 +91,49 @@
 #define MSBC_SAMPLE_RATE        16000
 #define MSBC_BYTES_PER_FRAME    (2*NUM_CHANNELS)
 
-#if defined(HAVE_PORTAUDIO) && (SCO_DEMO_MODE == SCO_DEMO_MODE_SINE || SCO_DEMO_MODE_MICROPHONE)
+#if defined(HAVE_PORTAUDIO) && (SCO_DEMO_MODE == SCO_DEMO_MODE_SINE || SCO_DEMO_MODE == SCO_DEMO_MODE_MICROPHONE)
 #define USE_PORTAUDIO
 #define CVSD_PA_PREBUFFER_BYTES (SCO_CVSD_PA_PREBUFFER_MS * CVSD_SAMPLE_RATE/1000 * CVSD_BYTES_PER_FRAME)
 #define MSBC_PA_PREBUFFER_BYTES (SCO_MSBC_PA_PREBUFFER_MS * MSBC_SAMPLE_RATE/1000 * MSBC_BYTES_PER_FRAME)
 #endif
 
 #ifdef USE_PORTAUDIO
-static PaStream *            pa_output_stream;
+
+// bidirectional audio stream
+static PaStream *            pa_stream;
+
+// output
 static int                   pa_output_started = 0;
 static int                   pa_output_paused = 0;
 static uint8_t               pa_output_ring_buffer_storage[2*MSBC_PA_PREBUFFER_BYTES];
 static btstack_ring_buffer_t pa_output_ring_buffer;
+
+// input
+#if SCO_DEMO_MODE == SCO_DEMO_MODE_MICROPHONE
+#define USE_PORTAUDIO_INPUT
+static int                   pa_input_started = 0;
+static int                   pa_input_paused = 0;
+static uint8_t               pa_input_ring_buffer_storage[2*8000];  // full second input buffer
+static btstack_ring_buffer_t pa_input_ring_buffer;
+static int                   pa_input_counter;
+#endif
+
 #endif
 
 static int dump_data = 1;
 static int count_sent = 0;
 static int count_received = 0;
 static int negotiated_codec = -1; 
-static int phase = 0;
-static int num_audio_frames = 0;
 
-static btstack_sbc_decoder_state_t decoder_state;
-static btstack_cvsd_plc_state_t cvsd_plc_state;
-static int num_samples_to_write;
+btstack_sbc_decoder_state_t decoder_state;
+btstack_cvsd_plc_state_t cvsd_plc_state;
 
 FILE * msbc_file_in;
 FILE * msbc_file_out;
+
+int num_samples_to_write;
+int num_audio_frames;
+int phase;
 
 #if SCO_DEMO_MODE == SCO_DEMO_MODE_SINE
 
@@ -155,8 +171,8 @@ static void sco_demo_fill_audio_frame(void){
     hfp_msbc_encode_audio_frame(sample_buffer);
     num_audio_frames++;
 }
+#endif
 
-#ifdef SCO_WAV_FILENAME
 #ifdef USE_PORTAUDIO
 static int portaudio_callback( const void *inputBuffer, void *outputBuffer,
                            unsigned long framesPerBuffer,
@@ -168,6 +184,8 @@ static int portaudio_callback( const void *inputBuffer, void *outputBuffer,
     (void) inputBuffer;
     (void) userData;
     
+// output part
+
     // config based on codec
     int bytes_to_copy;
     int prebuffer_bytes;
@@ -207,42 +225,54 @@ static int portaudio_callback( const void *inputBuffer, void *outputBuffer,
         memset(outputBuffer + bytes_read, 0, bytes_to_copy);
         pa_output_paused = 1;
     }
-    return 0;
-}
+// end of output part
 
-static void portaudio_start(void){
-    if (!pa_output_started){
-        /* -- start stream -- */
-        PaError err = Pa_StartStream(pa_output_stream);
-        if (err != paNoError){
-            printf("Error starting the stream: \"%s\"\n",  Pa_GetErrorText(err));
-            return;
-        }
-        pa_output_started = 1; 
-        pa_output_paused  = 1;
-    }
+// input part -- just store in ring buffer
+#ifdef USE_PORTAUDIO_INPUT
+    btstack_ring_buffer_write(&pa_input_ring_buffer, (uint8_t *)inputBuffer, framesPerBuffer * 2);
+    pa_input_counter += framesPerBuffer * 2;
+#endif
+
+    return 0;
 }
 
 // return 1 if ok
 static int portaudio_initialize(int sample_rate){
     PaError err;
-    PaStreamParameters outputParameters;
 
     /* -- initialize PortAudio -- */
     printf("PortAudio: Initialize\n");
     err = Pa_Initialize();
     if( err != paNoError ) return 0;
+
     /* -- setup input and output -- */
+    const PaDeviceInfo *deviceInfo;
+    PaStreamParameters * inputParameters = NULL;
+    PaStreamParameters outputParameters;
     outputParameters.device = Pa_GetDefaultOutputDevice(); /* default output device */
     outputParameters.channelCount = NUM_CHANNELS;
     outputParameters.sampleFormat = paInt16;
     outputParameters.suggestedLatency = Pa_GetDeviceInfo( outputParameters.device )->defaultHighOutputLatency;
     outputParameters.hostApiSpecificStreamInfo = NULL;
-    /* -- setup stream -- */
+    deviceInfo = Pa_GetDeviceInfo( outputParameters.device );
+    log_info("PortAudio: Output device: %s", deviceInfo->name);
+#ifdef USE_PORTAUDIO_INPUT
+    PaStreamParameters theInputParameters;
+    theInputParameters.device = Pa_GetDefaultInputDevice(); /* default input device */
+    theInputParameters.channelCount = NUM_CHANNELS;
+    theInputParameters.sampleFormat = paInt16;
+    theInputParameters.suggestedLatency = Pa_GetDeviceInfo( theInputParameters.device )->defaultHighOutputLatency;
+    theInputParameters.hostApiSpecificStreamInfo = NULL;
+    inputParameters = &theInputParameters;
+    deviceInfo = Pa_GetDeviceInfo( inputParameters->device );
+    log_info("PortAudio: Input device: %s", deviceInfo->name);
+#endif
+
+    /* -- setup output stream -- */
     printf("PortAudio: Open stream\n");
     err = Pa_OpenStream(
-           &stream,
-           NULL, // &inputParameters,
+           &pa_stream,
+           inputParameters,
            &outputParameters,
            sample_rate,
            0,
@@ -255,8 +285,51 @@ static int portaudio_initialize(int sample_rate){
     }
     memset(pa_output_ring_buffer_storage, 0, sizeof(pa_output_ring_buffer_storage));
     btstack_ring_buffer_init(&pa_output_ring_buffer, pa_output_ring_buffer_storage, sizeof(pa_output_ring_buffer_storage));
-    pa_output_started = 0;
+#ifdef USE_PORTAUDIO_INPUT
+    memset(pa_input_ring_buffer_storage, 0, sizeof(pa_input_ring_buffer_storage));
+    btstack_ring_buffer_init(&pa_input_ring_buffer, pa_input_ring_buffer_storage, sizeof(pa_input_ring_buffer_storage));
+    printf("PortAudio: Input buffer size %u\n", btstack_ring_buffer_bytes_free(&pa_input_ring_buffer));
+#endif
+
+    /* -- start stream -- */
+    err = Pa_StartStream(pa_stream);
+    if (err != paNoError){
+        printf("Error starting the stream: \"%s\"\n",  Pa_GetErrorText(err));
+        return 0;
+    }
+    pa_output_started = 1; 
+    pa_output_paused  = 1;
+#ifdef USE_PORTAUDIO_INPUT
+    pa_input_started = 1; 
+    pa_input_paused  = 1;
+#endif
+
     return 1;
+}
+
+static void portaudio_terminate(void){
+    if (!pa_stream) return;
+
+    PaError err;
+    printf("PortAudio: Stop Stream\n");
+    err = Pa_StopStream(pa_stream);
+    if (err != paNoError){
+        printf("Error stopping the stream: \"%s\"\n",  Pa_GetErrorText(err));
+        return;
+    } 
+    printf("PortAudio: Close Stream\n");
+    err = Pa_CloseStream(pa_stream);
+    if (err != paNoError){
+        printf("Error closing the stream: \"%s\"\n",  Pa_GetErrorText(err));
+        return;
+    } 
+    pa_stream = NULL;
+    printf("PortAudio: Terminate\n");
+    err = Pa_Terminate();
+    if (err != paNoError){
+        printf("Error terminating portaudio: \"%s\"\n",  Pa_GetErrorText(err));
+        return;
+    }
 }
 #endif
 
@@ -267,7 +340,6 @@ static void handle_pcm_data(int16_t * data, int num_samples, int num_channels, i
 
     // printf("handle_pcm_data num samples %u, sample rate %d\n", num_samples, num_channels);
 #ifdef HAVE_PORTAUDIO
-    portaudio_start();
     btstack_ring_buffer_write(&pa_output_ring_buffer, (uint8_t *)data, num_samples*num_channels*2);
 #else
     UNUSED(num_channels);
@@ -294,12 +366,15 @@ static void sco_demo_init_mSBC(void){
     num_samples_to_write = MSBC_SAMPLE_RATE * SCO_WAV_DURATION_IN_SECONDS;
     
     hfp_msbc_init();
+#if SCO_DEMO_MODE == SCO_DEMO_MODE_SINE
     sco_demo_fill_audio_frame();
+#endif
 
 #ifdef SCO_MSBC_IN_FILENAME
     msbc_file_in = fopen(SCO_MSBC_IN_FILENAME, "wb");
     printf("SCO Demo: creating mSBC in file %s, %p\n", SCO_MSBC_IN_FILENAME, msbc_file_in);
 #endif   
+
 #ifdef SCO_MSBC_OUT_FILENAME
     msbc_file_out = fopen(SCO_MSBC_OUT_FILENAME, "wb");
     printf("SCO Demo: creating mSBC out file %s, %p\n", SCO_MSBC_OUT_FILENAME, msbc_file_out);
@@ -357,50 +432,26 @@ static void sco_demo_receive_CVSD(uint8_t * packet, uint16_t size){
         sco_demo_close();
     }
 #ifdef USE_PORTAUDIO
-    portaudio_start();
     btstack_ring_buffer_write(&pa_output_ring_buffer, (uint8_t *)audio_frame_out, audio_bytes_read);
 #endif
 }
 
-#endif
-#endif
-
 void sco_demo_close(void){    
     printf("SCO demo close\n");
-#if SCO_DEMO_MODE == SCO_DEMO_MODE_SINE
+#if (SCO_DEMO_MODE == SCO_DEMO_MODE_SINE) || (SCO_DEMO_MODE == SCO_DEMO_MODE_MICROPHONE)
+
 #if defined(SCO_WAV_FILENAME) || defined(SCO_SBC_FILENAME)
     wav_writer_close();
+#endif
     printf("SCO demo statistics: ");
     if (negotiated_codec == HFP_CODEC_MSBC){
         printf("Used mSBC with PLC, number of processed frames: \n - %d good frames, \n - %d zero frames, \n - %d bad frames.", decoder_state.good_frames_nr, decoder_state.zero_frames_nr, decoder_state.bad_frames_nr);
     } else {
         printf("Used CVSD with PLC, number of proccesed frames: \n - %d good frames, \n - %d bad frames.", cvsd_plc_state.good_frames_nr, cvsd_plc_state.bad_frames_nr);
     }
-#endif
 
 #ifdef HAVE_PORTAUDIO
-    if (pa_output_started){
-        printf("PortAudio: Stop Stream\n");
-        PaError err = Pa_StopStream(pa_output_stream);
-        if (err != paNoError){
-            printf("Error stopping the stream: \"%s\"\n",  Pa_GetErrorText(err));
-            return;
-        } 
-        pa_output_started = 0;
-        printf("PortAudio: Close Stream\n");
-        err = Pa_CloseStream(pa_output_stream);
-        if (err != paNoError){
-            printf("Error closing the stream: \"%s\"\n",  Pa_GetErrorText(err));
-            return;
-        } 
-
-        printf("PortAudio: Terminate\n");
-        err = Pa_Terminate();
-        if (err != paNoError){
-            printf("Error terminating portaudio: \"%s\"\n",  Pa_GetErrorText(err));
-            return;
-        }
-    } 
+    portaudio_terminate();
 #endif
 
 #ifdef SCO_WAV_FILENAME
@@ -425,7 +476,7 @@ void sco_demo_close(void){
 void sco_demo_set_codec(uint8_t codec){
     if (negotiated_codec == codec) return;
     negotiated_codec = codec;
-#if SCO_DEMO_MODE == SCO_DEMO_MODE_SINE
+#if (SCO_DEMO_MODE == SCO_DEMO_MODE_SINE) || (SCO_DEMO_MODE == SCO_DEMO_MODE_MICROPHONE)
 #if defined(SCO_WAV_FILENAME) || defined(SCO_SBC_FILENAME)
     if (negotiated_codec == HFP_CODEC_MSBC){
         sco_demo_init_mSBC();
@@ -437,8 +488,10 @@ void sco_demo_set_codec(uint8_t codec){
 }
 
 void sco_demo_init(void){
-
 	// status
+#if SCO_DEMO_MODE == SCO_DEMO_MODE_MICROPHONE
+    printf("SCO Demo: Sending and receiving audio via portaudio.\n");
+#endif
 #if SCO_DEMO_MODE == SCO_DEMO_MODE_SINE
 #ifdef HAVE_PORTAUDIO
 	printf("SCO Demo: Sending sine wave, audio output via portaudio.\n");
@@ -453,7 +506,7 @@ void sco_demo_init(void){
 	printf("SCO Demo: Sending counter value, hexdump received data.\n");
 #endif
 
-#if SCO_DEMO_MODE == SCO_DEMO_MODE_SINE
+#if (SCO_DEMO_MODE == SCO_DEMO_MODE_SINE) || (SCO_DEMO_MODE == SCO_DEMO_MODE_MICROPHONE)
     hci_set_sco_voice_setting(0x60);    // linear, unsigned, 16-bit, CVSD
 #else
     hci_set_sco_voice_setting(0x03);    // linear, unsigned, 8-bit, transparent
@@ -480,7 +533,6 @@ void sco_demo_send(hci_con_handle_t sco_handle){
     uint8_t * sco_packet = hci_get_outgoing_packet_buffer();
 #if SCO_DEMO_MODE == SCO_DEMO_MODE_SINE
     if (negotiated_codec == HFP_CODEC_MSBC){
-
         // overwrite
         sco_payload_length = 24;
         sco_packet_length = sco_payload_length + 3;
@@ -500,6 +552,70 @@ void sco_demo_send(hci_con_handle_t sco_handle){
         sco_demo_sine_wave_int16_at_8000_hz(audio_samples_per_packet, (int16_t *) (sco_packet+3));
     }
 #endif
+
+#if SCO_DEMO_MODE == SCO_DEMO_MODE_MICROPHONE
+
+#ifdef HAVE_PORTAUDIO
+    if (negotiated_codec == HFP_CODEC_MSBC){
+#if 1
+        log_error("Microphone not supported with mSBC yet");
+#else
+        // MSBC
+
+        // overwrite
+        sco_payload_length = 24;
+        sco_packet_length = sco_payload_length + 3;
+
+        if (hfp_msbc_num_bytes_in_stream() < sco_payload_length){
+            log_error("mSBC stream is empty.");
+        }
+        hfp_msbc_read_from_stream(sco_packet + 3, sco_payload_length);
+        if (msbc_file_out){
+            // log outgoing mSBC data for testing
+            fwrite(sco_packet + 3, sco_payload_length, 1, msbc_file_out);
+        }
+
+        // TODO:
+        sco_demo_fill_audio_frame();
+#endif
+    } else {
+        // CVSD
+
+        log_info("send: bytes avail %u, free %u, counter %u", btstack_ring_buffer_bytes_available(&pa_input_ring_buffer), btstack_ring_buffer_bytes_free(&pa_input_ring_buffer), pa_input_counter);
+        // fill with silence while paused
+        int bytes_to_copy = sco_payload_length;
+        if (pa_input_paused){
+            if (btstack_ring_buffer_bytes_available(&pa_input_ring_buffer) >= CVSD_PA_PREBUFFER_BYTES){
+                // resume sending
+                pa_input_paused = 0;
+            }
+        }
+
+        // get data from ringbuffer
+        uint16_t pos = 0;
+        if (!pa_input_paused){
+            uint32_t bytes_read = 0;
+            btstack_ring_buffer_read(&pa_input_ring_buffer, sco_packet + 3, bytes_to_copy, &bytes_read);
+            bytes_to_copy -= bytes_read;
+            pos           += bytes_read;
+        }
+
+        // fill with 0 if not enough
+        if (bytes_to_copy){
+            memset(sco_packet + 3 + pos, 0, bytes_to_copy);
+            pa_input_paused = 1;
+        }
+    }
+#else
+    // just send '0's
+    if (negotiated_codec == HFP_CODEC_MSBC){
+        sco_payload_length = 24;
+        sco_packet_length = sco_payload_length + 3;
+    }
+    memset(sco_packet + 3, 0, sco_payload_length);
+#endif
+#endif
+
 #if SCO_DEMO_MODE == SCO_DEMO_MODE_ASCII
     memset(&sco_packet[3], phase++, sco_payload_length);
     if (phase > 'z') phase = 'a';
@@ -526,6 +642,9 @@ void sco_demo_send(hci_con_handle_t sco_handle){
     // big_endian_store_16(sco_packet, 5, phase++);
     (void) phase;
 #endif
+
+    // test silence
+    // memset(sco_packet+3, 0, sco_payload_length);
 
     // set handle + flags
     little_endian_store_16(sco_packet, 0, sco_handle);
@@ -574,20 +693,18 @@ void sco_demo_receive(uint8_t * packet, uint16_t size){
         packets = 0;
     }
 
-#if SCO_DEMO_MODE == SCO_DEMO_MODE_SINE
-#ifdef SCO_WAV_FILENAME
+#if (SCO_DEMO_MODE == SCO_DEMO_MODE_SINE) || (SCO_DEMO_MODE == SCO_DEMO_MODE_MICROPHONE)
     switch (negotiated_codec){
         case HFP_CODEC_MSBC:
-        sco_demo_receive_mSBC(packet, size);
+            sco_demo_receive_mSBC(packet, size);
             break;
         case HFP_CODEC_CVSD:
-        sco_demo_receive_CVSD(packet, size);
+            sco_demo_receive_CVSD(packet, size);
             break;
         default:
             break;
     }
     dump_data = 0;
-#endif
 #endif
 
     if (packet[1] & 0x30){
