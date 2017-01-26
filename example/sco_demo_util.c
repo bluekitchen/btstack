@@ -353,6 +353,7 @@ static void handle_pcm_data(int16_t * data, int num_samples, int num_channels, i
 
     // printf("handle_pcm_data num samples %u, sample rate %d\n", num_samples, num_channels);
 #ifdef HAVE_PORTAUDIO
+    // samples in callback in host endianess, ready for PortAudio playback
     btstack_ring_buffer_write(&pa_output_ring_buffer, (uint8_t *)data, num_samples*num_channels*2);
 #else
     UNUSED(num_channels);
@@ -423,7 +424,7 @@ static void sco_demo_init_CVSD(void){
 
 static void sco_demo_receive_CVSD(uint8_t * packet, uint16_t size){
     if (!num_samples_to_write) return;
-    int16_t audio_frame_out[255];    // 
+    int16_t audio_frame_out[128];    // 
 
     if (size > sizeof(audio_frame_out)){
         printf("sco_demo_receive_CVSD: SCO packet larger than local output buffer - dropping data.\n");
@@ -432,18 +433,27 @@ static void sco_demo_receive_CVSD(uint8_t * packet, uint16_t size){
     const int audio_bytes_read = size - 3;
     const int num_samples = audio_bytes_read / CVSD_BYTES_PER_FRAME;
     const int samples_to_write = btstack_min(num_samples, num_samples_to_write);
-    
-#if 0
-    btstack_cvsd_plc_process_data(&cvsd_plc_state, (int8_t *)(packet+3), num_samples, audio_frame_out);
-#else
-    memcpy(audio_frame_out, packet+3, audio_bytes_read);
-#endif
 
-    wav_writer_write_int16(samples_to_write, audio_frame_out);
+    // Samples in CVSD SCO packet are in little endian, ready for wav files (take shortcut)
+    wav_writer_write_le_int16(samples_to_write, audio_frame_out);
     num_samples_to_write -= samples_to_write;
     if (num_samples_to_write == 0){
         sco_demo_close();
     }
+
+    // convert into host endian
+    int16_t audio_frame_in[128];
+    int i;
+    for (i=0;i<num_samples;i++){
+        audio_frame_in[i] = little_endian_read_16(packet, 3 + i * 2);
+    }
+
+#if 0
+    btstack_cvsd_plc_process_data(&cvsd_plc_state, (int8_t *) audio_frame_in, num_samples, audio_frame_out);
+#else
+    memcpy(audio_frame_out, audio_frame_in, audio_bytes_read);
+#endif
+
 #ifdef USE_PORTAUDIO
     btstack_ring_buffer_write(&pa_output_ring_buffer, (uint8_t *)audio_frame_out, audio_bytes_read);
 #endif
