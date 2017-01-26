@@ -1,8 +1,13 @@
 #include "CppUTest/TestHarness.h"
 #include "CppUTest/CommandLineTestRunner.h"
 #include "btstack_ring_buffer.h"
+#include "btstack_util.h"
 
 static  uint8_t storage[10];
+
+uint32_t btstack_min(uint32_t a, uint32_t b){
+    return a < b ? a : b;
+}
 
 TEST_GROUP(RingBuffer){
     btstack_ring_buffer_t ring_buffer;
