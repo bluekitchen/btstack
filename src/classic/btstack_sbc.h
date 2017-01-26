@@ -82,7 +82,7 @@ typedef struct {
  * @brief Init SBC decoder
  * @param state
  * @param mode
- * @param callback for decoded PCM data
+ * @param callback for decoded PCM data in host endianess
  * @param context provided in callback
  */
 
@@ -128,8 +128,8 @@ void btstack_sbc_encoder_init(btstack_sbc_encoder_state_t * state, btstack_sbc_m
                         int blocks, int subbands, int allocation_method, int sample_rate, int bitpool);
 
 /**
- * @brief Process received PCM data
- * @param buffer
+ * @brief Encode PCM data
+ * @param buffer with samples in host endianess
  */
 void btstack_sbc_encoder_process_data(int16_t * input_buffer);
 
