@@ -128,6 +128,32 @@ uint32_t big_endian_read_32( const uint8_t * buffer, int pos);
 void big_endian_store_16(uint8_t *buffer, uint16_t pos, uint16_t value);
 void big_endian_store_32(uint8_t *buffer, uint16_t pos, uint32_t value);
 
+
+/**
+ * @brief Swap bytes in 16 bit integer
+ */
+static inline uint16_t btstack_flip_16(uint16_t value){
+    return ((value & 0xff) << 8) | (value >> 8);
+}
+
+/** 
+ * @brief Check for big endian system
+ * @returns 1 if on big endian
+ */
+static inline int btstack_is_big_endian(void){
+	uint16_t sample = 0x0100;
+	return *(uint8_t*) &sample;
+}
+
+/** 
+ * @brief Check for little endian system
+ * @returns 1 if on little endian
+ */
+static inline int btstack_is_little_endian(void){
+	uint16_t sample = 0x0001;
+	return *(uint8_t*) &sample;
+}
+
 /**
  * @brief Copy from source to destination and reverse byte order
  * @param src
