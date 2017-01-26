@@ -631,16 +631,27 @@ void sco_demo_send(hci_con_handle_t sco_handle){
 
         // get data from ringbuffer
         uint16_t pos = 0;
+        uint8_t * sample_data = &sco_packet[3];
         if (!pa_input_paused){
             uint32_t bytes_read = 0;
-            btstack_ring_buffer_read(&pa_input_ring_buffer, sco_packet + 3, bytes_to_copy, &bytes_read);
+            btstack_ring_buffer_read(&pa_input_ring_buffer, sample_data, bytes_to_copy, &bytes_read);
+            // flip 16 on big endian systems
+            // @note We don't use (uint16_t *) casts since all sample addresses are odd which causes crahses on some systems
+            if (btstack_is_big_endian()){
+                int i;
+                for (i=0;i<bytes_read;i+=2){
+                    uint8_t tmp        = sample_data[i*2];
+                    sample_data[i*2]   = sample_data[i*2+1];
+                    sample_data[i*2+1] = tmp;
+                }
+            }
             bytes_to_copy -= bytes_read;
             pos           += bytes_read;
         }
 
         // fill with 0 if not enough
         if (bytes_to_copy){
-            memset(sco_packet + 3 + pos, 0, bytes_to_copy);
+            memset(sample_data + pos, 0, bytes_to_copy);
             pa_input_paused = 1;
         }
     }
