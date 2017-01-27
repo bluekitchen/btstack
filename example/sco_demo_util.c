@@ -448,11 +448,7 @@ static void sco_demo_receive_CVSD(uint8_t * packet, uint16_t size){
         audio_frame_in[i] = little_endian_read_16(packet, 3 + i * 2);
     }
 
-#if 0
     btstack_cvsd_plc_process_data(&cvsd_plc_state, (int8_t *) audio_frame_in, num_samples, audio_frame_out);
-#else
-    memcpy(audio_frame_out, audio_frame_in, audio_bytes_read);
-#endif
 
 #ifdef USE_PORTAUDIO
     btstack_ring_buffer_write(&pa_output_ring_buffer, (uint8_t *)audio_frame_out, audio_bytes_read);
