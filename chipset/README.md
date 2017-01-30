@@ -33,8 +33,8 @@ CSR, which has been acquired by Qualcomm, provides all relevant information on t
 
 Chipset              | Type      | HCI Transport  | BD_ADDR (1)  | SCO over HCI (2) | LE DLE | Multiple LE Roles    | BTstack folder | Comment 
 -------------------- |-----------| ---------------|--------------|------------------|--------|----------------------|----------------|---------
-Broadcom UART        | Dual mode | H4, H5         | rarely       | No (didn't work) | No     |      Maybe (3)       | bcm            | Max UART baudrate 3 mbps
-Broadcom USB Dongles | Dual mode | USB            | Yes          | No (didn't work) | No     |         No           | bcm            | 
+Broadcom UART        | Dual mode | H4, H5         | rarely       | Maybe            | No     |      Maybe (3)       | bcm            | Max UART baudrate 3 mbps
+Broadcom USB Dongles | Dual mode | USB            | Yes          | Yes              | No     |         No           | bcm            | 
 CSR UART             | Dual mode | H4, H5         | rarely       | No (didn't work) | No     |         No           | csr            | 
 CSR USB Dongles      | Dual mode | USB            | Mostly       | Yes              | No     |         No           | csr            |
 Dialog DA14581       | LE        | H4, SPI        | ?            | n.a.             | No     |         No           |                | Waiting for dev kit

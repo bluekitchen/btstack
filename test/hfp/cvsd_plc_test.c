@@ -11,10 +11,10 @@
 #include "btstack_cvsd_plc.h"
 #include "wav_util.h"
 
-const  int audio_samples_per_frame = 24;
-static int8_t audio_frame_in[audio_samples_per_frame];
+const  int    audio_samples_per_frame = 24;
+static int16_t audio_frame_in[audio_samples_per_frame];
 
-static uint8_t test_data[][audio_samples_per_frame] = {
+static int16_t test_data[][audio_samples_per_frame] = {
     { 0x05, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff },
     { 0xff, 0xff, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x05 },
     { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05 },
@@ -22,16 +22,6 @@ static uint8_t test_data[][audio_samples_per_frame] = {
 };
 
 static btstack_cvsd_plc_state_t plc_state;
-
-// input signal: pre-computed sine wave, at 8000 kz
-static const uint8_t sine_uint8[] = {
-      0,  15,  31,  46,  61,  74,  86,  97, 107, 114,
-    120, 124, 126, 126, 124, 120, 114, 107,  97,  86,
-     74,  61,  46,  31,  15,   0, 241, 225, 210, 195,
-    182, 170, 159, 149, 142, 136, 132, 130, 130, 132,
-    136, 142, 149, 159, 170, 182, 195, 210, 225, 241,
-};
-
 
 // input signal: pre-computed sine wave, 160 Hz at 16000 kHz
 static const int16_t sine_int16[] = {
@@ -47,27 +37,7 @@ static const int16_t sine_int16[] = {
 -19260,  -17557,  -15786,  -13952,  -12062,  -10126,   -8149,   -6140,   -4107,   -2057,
 };
 
-static int phase = 0;
-void sco_demo_sine_wave_int8(int num_samples, int8_t * data){
-    int i;
-    for (i=0; i<num_samples; i++){
-        data[i] = (int8_t)sine_uint8[phase];
-        phase++;
-        if (phase >= sizeof(sine_uint8)) phase = 0;
-    }  
-}
-
-void sco_demo_sine_wave_int16(int num_samples, int16_t * data){
-    int i;
-    for (i=0; i < num_samples; i++){
-        data[i] = sine_int16[phase++];
-        if (phase >= (sizeof(sine_int16) / sizeof(int16_t))){
-            phase = 0;
-        }
-    }
-}
-    
-static int count_equal_bytes(uint8_t * packet, uint16_t size){
+static int count_equal_samples(int16_t * packet, uint16_t size){
     int count = 0;
     int temp_count = 1;
     int i;
@@ -87,61 +57,120 @@ static int count_equal_bytes(uint8_t * packet, uint16_t size){
     return count;
 }
 
-static void create_sine_wav(const char * out_filename){
+// @assumption frame len 24 samples
+static int bad_frame(int16_t * frame, uint16_t size){
+    return count_equal_samples(frame, size) > 20;
+}
+
+static void btstack_cvsd_plc_mark_bad_frame(btstack_cvsd_plc_state_t * state, int16_t * in, uint16_t size, int16_t * out){
+    if (size != 24){
+        printf("btstack_cvsd_plc_mark_bad_frame: audio frame size is incorrect. Expected %d, got %d\n", CVSD_FS, size);
+        return;
+    }
+    state->frame_count++;
+    
+    if (bad_frame(in,size)){
+        memcpy(out, in, size * 2);
+        if (state->good_frames_nr > CVSD_LHIST/CVSD_FS){
+            memset(out, 0x33, size * 2);
+            state->bad_frames_nr++;
+        } 
+    } else {
+        memcpy(out, in, size);
+        state->good_frames_nr++;
+        if (state->good_frames_nr == 1){
+            printf("First good frame at index %d\n", state->frame_count-1);
+        }        
+    }
+}
+
+static int phase = 0;
+static void create_sine_wave_int16_data(int num_samples, int16_t * data){
+    int i;
+    for (i=0; i < num_samples; i++){
+        data[i] = sine_int16[phase++];
+        phase++;
+        if (phase >= (sizeof(sine_int16) / sizeof(int16_t))){
+            phase = 0;
+        }
+    }
+}
+    
+static int count_equal_bytes(int16_t * packet, uint16_t size){
+    int count = 0;
+    int temp_count = 1;
+    int i;
+    for (i = 0; i < size-1; i++){
+        if (packet[i] == packet[i+1]){
+            temp_count++;
+            continue;
+        }
+        if (count < temp_count){
+            count = temp_count;
+        }
+        temp_count = 1;
+    }
+    if (temp_count > count + 1){
+        count = temp_count;
+    }
+    return count;
+}
+
+void create_sine_wav(const char * out_filename){
     btstack_cvsd_plc_init(&plc_state);
     wav_writer_open(out_filename, 1, 8000);
     
     int i;
     for (i=0; i<2000; i++){
-        sco_demo_sine_wave_int8(audio_samples_per_frame, audio_frame_in);
-        wav_writer_write_int8(audio_samples_per_frame, audio_frame_in);
+        create_sine_wave_int16_data(audio_samples_per_frame, audio_frame_in);
+        wav_writer_write_int16(audio_samples_per_frame, audio_frame_in);
     } 
     wav_writer_close();
 }
 
-static void introduce_bad_frames_to_wav_file(const char * in_filename, const char * out_filename, int corruption_step){
+void introduce_bad_frames_to_wav_file(const char * in_filename, const char * out_filename, int corruption_step){
     btstack_cvsd_plc_init(&plc_state);
     wav_writer_open(out_filename, 1, 8000);
     wav_reader_open(in_filename);
 
     int fc = 0;
-    while (wav_reader_read_int8(audio_samples_per_frame, audio_frame_in)){
+    while (wav_reader_read_int16(audio_samples_per_frame, audio_frame_in)){
         if (corruption_step > 0 && fc >= corruption_step && fc%corruption_step == 0){
-            memset(audio_frame_in, 50, audio_samples_per_frame);
+            memset(audio_frame_in, 50,  audio_samples_per_frame * 2);
         } 
-        wav_writer_write_int8(audio_samples_per_frame, audio_frame_in);
+        wav_writer_write_int16(audio_samples_per_frame, audio_frame_in);
         fc++;
     } 
     wav_reader_close();
     wav_writer_close();
 }
 
-static void process_wav_file_with_plc(const char * in_filename, const char * out_filename){
+void process_wav_file_with_plc(const char * in_filename, const char * out_filename){
     // printf("\nProcess %s -> %s\n", in_filename, out_filename);
     btstack_cvsd_plc_init(&plc_state);
     wav_writer_open(out_filename, 1, 8000);
     wav_reader_open(in_filename);
     
-    while (wav_reader_read_int8(audio_samples_per_frame, audio_frame_in)){
-        int8_t audio_frame_out[audio_samples_per_frame];
+    while (wav_reader_read_int16(audio_samples_per_frame, audio_frame_in)){
+        int16_t audio_frame_out[audio_samples_per_frame];
         btstack_cvsd_plc_process_data(&plc_state, audio_frame_in, audio_samples_per_frame, audio_frame_out);
-        wav_writer_write_int8(audio_samples_per_frame, audio_frame_out);
+        wav_writer_write_int16(audio_samples_per_frame, audio_frame_out);
     } 
     wav_reader_close();
     wav_writer_close();
     btstack_cvsd_dump_statistics(&plc_state);
 }
 
-static void mark_bad_frames_wav_file(const char * in_filename, const char * out_filename){
+void mark_bad_frames_wav_file(const char * in_filename, const char * out_filename){
     // printf("\nMark bad frame %s -> %s\n", in_filename, out_filename);
     btstack_cvsd_plc_init(&plc_state);
     CHECK_EQUAL(wav_writer_open(out_filename, 1, 8000), 0);
     CHECK_EQUAL(wav_reader_open(in_filename), 0);
     
-    while (wav_reader_read_int8(audio_samples_per_frame, audio_frame_in)){
-        int8_t audio_frame_out[audio_samples_per_frame];
+    while (wav_reader_read_int16(audio_samples_per_frame, audio_frame_in)){
+        int16_t audio_frame_out[audio_samples_per_frame];
         btstack_cvsd_plc_mark_bad_frame(&plc_state, audio_frame_in, audio_samples_per_frame, audio_frame_out);
-        wav_writer_write_int8(audio_samples_per_frame, audio_frame_out);
+        wav_writer_write_int16(audio_samples_per_frame, audio_frame_out);
     } 
     wav_reader_close();
     wav_writer_close();
@@ -161,8 +190,8 @@ TEST(CVSD_PLC, CountEqBytes){
 
 TEST(CVSD_PLC, TestLiveWavFile){
     int corruption_step = 10;
-    introduce_bad_frames_to_wav_file("data/sco_input.wav", "results/sco_input.wav", 0);
-    introduce_bad_frames_to_wav_file("data/sco_input.wav", "results/sco_input_with_bad_frames.wav", corruption_step);
+    introduce_bad_frames_to_wav_file("data/sco_input-16bit.wav", "results/sco_input.wav", 0);
+    introduce_bad_frames_to_wav_file("data/sco_input-16bit.wav", "results/sco_input_with_bad_frames.wav", corruption_step);
     
     mark_bad_frames_wav_file("results/sco_input.wav", "results/sco_input_detected_frames.wav");
     process_wav_file_with_plc("results/sco_input.wav", "results/sco_input_after_plc.wav");

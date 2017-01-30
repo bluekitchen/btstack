@@ -539,7 +539,7 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
     hfp_connection_t * hfp_connection = NULL;
     uint8_t status;
 
-    log_info("AG packet_handler type %u, event type %x, size %u", packet_type, hci_event_packet_get_type(packet), size);
+    log_debug("HFP packet_handler type %u, event type %x, size %u", packet_type, hci_event_packet_get_type(packet), size);
 
     switch (hci_event_packet_get_type(packet)) {
         case HCI_EVENT_CONNECTION_REQUEST:

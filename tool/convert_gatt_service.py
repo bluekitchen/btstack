@@ -38,7 +38,7 @@ def list_services():
     page = requests.get(url)
     tree = html.fromstring(page.content)
     # get all <tr> elements in <table id="gattTable">
-    rows = tree.xpath('//table[@id="gattTable"]/tr')
+    rows = tree.xpath('//table[@id="gattTable"]/tbody/tr')
     print("%-55s| %-30s| %s" % ('Specification Type', 'Specification Name', 'UUID'))
     print('-'*55 + '+-' + '-' * 30 + '+-' + '-'*10)
     maxlen_type = 0
@@ -65,9 +65,14 @@ def parse_properties(element):
     property_list_human = []
     for property in properties:
         property_name = property.tag
+        if property_name == "WriteWithoutResponse":
+            property_name = "Write_Without_Response"
+        if property_name == "InformationText":
+            continue
         property_requirement = property.text
-        if (property_requirement != "Excluded"):
-            property_list_human.append(property_name)
+        if (property_requirement == "Excluded"):
+            continue
+        property_list_human.append(property_name)
     return (property_list_human)
 
     print("Characteristic %s - properties %s" % (name, property_list_human))
@@ -163,7 +168,8 @@ def convert_service(fout, specification_type):
                 continue
 
             if (type == 'org.bluetooth.descriptor.report_reference'):
-                print('-- Descriptor %-40s - WARNING: REPORT_REFERENCE not supported yet' % name)
+                print('-- Descriptor %-40s' % name)
+                fout.write('REPORT_REFERENCE, %s,\n' % properties)
                 continue
 
             if (type == 'org.bluetooth.descriptor.number_of_digitals'):

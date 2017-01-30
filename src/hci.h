@@ -550,6 +550,10 @@ typedef enum hci_init_state{
     HCI_INIT_WRITE_DEFAULT_ERRONEOUS_DATA_REPORTING,
     HCI_INIT_W4_WRITE_DEFAULT_ERRONEOUS_DATA_REPORTING,
 
+    // SCO over HCI Broadcom
+    HCI_INIT_BCM_WRITE_SCO_PCM_INT,
+    HCI_INIT_W4_BCM_WRITE_SCO_PCM_INT,
+
 #ifdef ENABLE_BLE
     HCI_INIT_LE_READ_BUFFER_SIZE,
     HCI_INIT_W4_LE_READ_BUFFER_SIZE,
@@ -694,6 +698,7 @@ typedef struct {
     uint8_t   new_scan_enable_value;
     
     uint16_t  sco_voice_setting;
+    uint16_t  sco_voice_setting_active;
 
     uint8_t   loopback_mode;
 
