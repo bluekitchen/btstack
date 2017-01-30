@@ -62,6 +62,13 @@ SBC_ENCODER += \
 	${BTSTACK_ROOT}/src/classic/btstack_sbc_bludroid.c \
 	${BTSTACK_ROOT}/src/classic/hfp_msbc.c \
 
+AVDTP_SINK += \
+	avdtp_util.c  		\
+	avdtp_initiator.c 	\
+	avdtp_acceptor.c  	\
+	avdtp_source.c 		\
+	avdtp_sink.c  		\
+	btstack_ring_buffer.c \
 
 AVDTP_TESTS = avdtp_test portaudio_test
 
@@ -69,10 +76,11 @@ CORE_OBJ    = $(CORE:.c=.o)
 COMMON_OBJ  = $(COMMON:.c=.o) 
 SBC_DECODER_OBJ  = $(SBC_DECODER:.c=.o) 
 SBC_ENCODER_OBJ  = $(SBC_ENCODER:.c=.o)
+AVDTP_SINK_OBJ  = $(AVDTP_SINK:.c=.o)
 
 all: ${AVDTP_TESTS}
 
-avdtp_test: ${CORE_OBJ} ${COMMON_OBJ} ${SBC_DECODER_OBJ} ${SBC_ENCODER_OBJ} btstack_ring_buffer.o avdtp_util.o avdtp_sink.o avdtp_acceptor.o avdtp_initiator.o avdtp_test.o
+avdtp_test: ${CORE_OBJ} ${COMMON_OBJ} ${SBC_DECODER_OBJ} ${SBC_ENCODER_OBJ} ${AVDTP_SINK_OBJ} avdtp_test.o
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 portaudio_test: btstack_util.o hci_dump.o wav_util.o btstack_ring_buffer.o portaudio_test.c
