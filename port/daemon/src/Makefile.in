@@ -29,6 +29,7 @@ usb_sources = @USB_SOURCES@
 libBTstack_SOURCES =    \
     btstack.c           \
     socket_connection.c \
+    hci_dump.c          \
     hci_cmd.c          \
     daemon_cmds.c       \
     btstack_linked_list.c    \
@@ -79,7 +80,7 @@ libBTstack.$(BTSTACK_LIB_EXTENSION): $(libBTstack_SOURCES)
 #		ranlib $@
 
 BTdaemon: $(BTdaemon_SOURCES)
-		$(CC) $(CFLAGS) -DENABLE_LOG_INTO_HCI_DUMP -o $@ $^ $(LDFLAGS) $(LIBUSB_CFLAGS) $(LIBUSB_LDFLAGS)
+		$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS) $(LIBUSB_CFLAGS) $(LIBUSB_LDFLAGS)
 
 clean:
 	rm -rf libBTstack* BTdaemon *.o
