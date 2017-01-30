@@ -72,7 +72,7 @@
 // number of sco packets until 'report' on console
 #define SCO_REPORT_PERIOD           100
 
-// length and name of wav file on disc
+// length and name of wav file on disk
 #define SCO_WAV_DURATION_IN_SECONDS 15
 #define SCO_WAV_FILENAME            "sco_input.wav"
 
@@ -346,40 +346,48 @@ static void portaudio_terminate(void){
 }
 #endif
 
+#if (SCO_DEMO_MODE == SCO_DEMO_MODE_SINE) || (SCO_DEMO_MODE == SCO_DEMO_MODE_MICROPHONE)
 
 static void handle_pcm_data(int16_t * data, int num_samples, int num_channels, int sample_rate, void * context){
     UNUSED(context);
     UNUSED(sample_rate);
+    UNUSED(data);
+    UNUSED(num_samples);
+    UNUSED(num_channels);
+
+#if (SCO_DEMO_MODE == SCO_DEMO_MODE_SINE) || (SCO_DEMO_MODE == SCO_DEMO_MODE_MICROPHONE)
 
     // printf("handle_pcm_data num samples %u, sample rate %d\n", num_samples, num_channels);
 #ifdef HAVE_PORTAUDIO
     // samples in callback in host endianess, ready for PortAudio playback
     btstack_ring_buffer_write(&pa_output_ring_buffer, (uint8_t *)data, num_samples*num_channels*2);
-#else
-    UNUSED(num_channels);
 #endif
 
+#ifdef SCO_WAV_FILENAME
     if (!num_samples_to_write) return;
-    
     num_samples = btstack_min(num_samples, num_samples_to_write);
     num_samples_to_write -= num_samples;
-
     wav_writer_write_int16(num_samples, data);
-
     if (num_samples_to_write == 0){
-        sco_demo_close();
+        wav_writer_close();
     }
+#endif
+
+#endif
+
 }
 
 static void sco_demo_init_mSBC(void){
     printf("SCO Demo: Init mSBC\n");
 
-    wav_writer_open(SCO_WAV_FILENAME, 1, MSBC_SAMPLE_RATE);
     btstack_sbc_decoder_init(&decoder_state, SBC_MODE_mSBC, &handle_pcm_data, NULL);    
-
-    num_samples_to_write = MSBC_SAMPLE_RATE * SCO_WAV_DURATION_IN_SECONDS;
-    
     hfp_msbc_init();
+
+#ifdef SCO_WAV_FILENAME
+    num_samples_to_write = MSBC_SAMPLE_RATE * SCO_WAV_DURATION_IN_SECONDS;
+    wav_writer_open(SCO_WAV_FILENAME, 1, MSBC_SAMPLE_RATE);
+#endif
+
 #if SCO_DEMO_MODE == SCO_DEMO_MODE_SINE
     sco_demo_msbc_fill_sine_audio_frame();
 #endif
@@ -412,10 +420,12 @@ static void sco_demo_receive_mSBC(uint8_t * packet, uint16_t size){
 static void sco_demo_init_CVSD(void){
     printf("SCO Demo: Init CVSD\n");
 
-    wav_writer_open(SCO_WAV_FILENAME, 1, CVSD_SAMPLE_RATE);
     btstack_cvsd_plc_init(&cvsd_plc_state);
 
+#ifdef SCO_WAV_FILENAME
     num_samples_to_write = CVSD_SAMPLE_RATE * SCO_WAV_DURATION_IN_SECONDS;
+    wav_writer_open(SCO_WAV_FILENAME, 1, CVSD_SAMPLE_RATE);
+#endif
 
 #ifdef USE_PORTAUDIO
     portaudio_initialize(CVSD_SAMPLE_RATE);
@@ -424,22 +434,16 @@ static void sco_demo_init_CVSD(void){
 
 static void sco_demo_receive_CVSD(uint8_t * packet, uint16_t size){
     if (!num_samples_to_write) return;
+
     int16_t audio_frame_out[128];    // 
 
     if (size > sizeof(audio_frame_out)){
         printf("sco_demo_receive_CVSD: SCO packet larger than local output buffer - dropping data.\n");
         return;
     }
+
     const int audio_bytes_read = size - 3;
     const int num_samples = audio_bytes_read / CVSD_BYTES_PER_FRAME;
-    const int samples_to_write = btstack_min(num_samples, num_samples_to_write);
-
-    // Samples in CVSD SCO packet are in little endian, ready for wav files (take shortcut)
-    wav_writer_write_le_int16(samples_to_write, audio_frame_out);
-    num_samples_to_write -= samples_to_write;
-    if (num_samples_to_write == 0){
-        sco_demo_close();
-    }
 
     // convert into host endian
     int16_t audio_frame_in[128];
@@ -450,44 +454,45 @@ static void sco_demo_receive_CVSD(uint8_t * packet, uint16_t size){
 
     btstack_cvsd_plc_process_data(&cvsd_plc_state, audio_frame_in, num_samples, audio_frame_out);
 
+#ifdef SCO_WAV_FILENAME
+    // Samples in CVSD SCO packet are in little endian, ready for wav files (take shortcut)
+    const int samples_to_write = btstack_min(num_samples, num_samples_to_write);
+    wav_writer_write_le_int16(samples_to_write, audio_frame_out);
+    num_samples_to_write -= samples_to_write;
+    if (num_samples_to_write == 0){
+        wav_writer_close();
+    }
+#endif
+
 #ifdef USE_PORTAUDIO
     btstack_ring_buffer_write(&pa_output_ring_buffer, (uint8_t *)audio_frame_out, audio_bytes_read);
 #endif
 }
 
+#endif
+
+
 void sco_demo_close(void){    
     printf("SCO demo close\n");
-#if (SCO_DEMO_MODE == SCO_DEMO_MODE_SINE) || (SCO_DEMO_MODE == SCO_DEMO_MODE_MICROPHONE)
 
-#if defined(SCO_WAV_FILENAME) || defined(SCO_SBC_FILENAME)
-    wav_writer_close();
-#endif
     printf("SCO demo statistics: ");
     if (negotiated_codec == HFP_CODEC_MSBC){
-        printf("Used mSBC with PLC, number of processed frames: \n - %d good frames, \n - %d zero frames, \n - %d bad frames.", decoder_state.good_frames_nr, decoder_state.zero_frames_nr, decoder_state.bad_frames_nr);
+        printf("Used mSBC with PLC, number of processed frames: \n - %d good frames, \n - %d zero frames, \n - %d bad frames.\n", decoder_state.good_frames_nr, decoder_state.zero_frames_nr, decoder_state.bad_frames_nr);
     } else {
-        printf("Used CVSD with PLC, number of proccesed frames: \n - %d good frames, \n - %d bad frames.", cvsd_plc_state.good_frames_nr, cvsd_plc_state.bad_frames_nr);
+        printf("Used CVSD with PLC, number of proccesed frames: \n - %d good frames, \n - %d bad frames.\n", cvsd_plc_state.good_frames_nr, cvsd_plc_state.bad_frames_nr);
     }
+
+    negotiated_codec = -1;
+
+#if (SCO_DEMO_MODE == SCO_DEMO_MODE_SINE) || (SCO_DEMO_MODE == SCO_DEMO_MODE_MICROPHONE)
+
+#if defined(SCO_WAV_FILENAME)
+    wav_writer_close();
+#endif
 
 #ifdef HAVE_PORTAUDIO
     portaudio_terminate();
 #endif
-
-#ifdef SCO_WAV_FILENAME
-#if 0
-    printf("SCO Demo: closing wav file\n");
-    if (negotiated_codec == HFP_CODEC_MSBC){
-        wav_writer_state_t * writer_state = &wav_writer_state;
-        if (!writer_state->wav_file) return;
-        rewind(writer_state->wav_file);
-        write_wav_header(writer_state->wav_file, writer_state->total_num_samples, btstack_sbc_decoder_num_channels(&decoder_state), btstack_sbc_decoder_sample_rate(&decoder_state),2);
-        fclose(writer_state->wav_file);
-        writer_state->wav_file = NULL;
-    }
-#endif
-#endif
-
-    negotiated_codec = -1;
 
 #endif
 }
@@ -495,14 +500,13 @@ void sco_demo_close(void){
 void sco_demo_set_codec(uint8_t codec){
     if (negotiated_codec == codec) return;
     negotiated_codec = codec;
+
 #if (SCO_DEMO_MODE == SCO_DEMO_MODE_SINE) || (SCO_DEMO_MODE == SCO_DEMO_MODE_MICROPHONE)
-#if defined(SCO_WAV_FILENAME) || defined(SCO_SBC_FILENAME)
     if (negotiated_codec == HFP_CODEC_MSBC){
         sco_demo_init_mSBC();
     } else {
         sco_demo_init_CVSD();
     }
-#endif
 #endif
 }
 
