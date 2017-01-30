@@ -61,18 +61,6 @@ static int avdtp_acceptor_process_chunk(avdtp_signaling_packet_t * signaling_pac
     return signaling_packet->packet_type == AVDTP_SINGLE_PACKET || signaling_packet->packet_type == AVDTP_END_PACKET;
 }
 
-static avdtp_stream_endpoint_t * get_avdtp_stream_endpoint_for_active_seid(uint8_t seid){
-    btstack_linked_list_iterator_t it;    
-    btstack_linked_list_iterator_init(&it, (btstack_linked_list_t *) &stream_endpoints);
-    while (btstack_linked_list_iterator_has_next(&it)){
-        avdtp_stream_endpoint_t * stream_endpoint = (avdtp_stream_endpoint_t *)btstack_linked_list_iterator_next(&it);
-        if (stream_endpoint->sep.seid == seid){
-            return stream_endpoint;
-        }
-    }
-    return NULL;
-}
-
 static int avdtp_acceptor_validate_msg_length(avdtp_signal_identifier_t signal_identifier, uint16_t msg_size){
     int minimal_msg_lenght = 2;
     switch (signal_identifier){
@@ -122,7 +110,7 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, uint8_t
         case AVDTP_SI_OPEN:
         case AVDTP_SI_RECONFIGURE:
             connection->query_seid  = packet[offset++] >> 2;
-            stream_endpoint = get_avdtp_stream_endpoint_for_active_seid(connection->query_seid);
+            stream_endpoint = get_avdtp_stream_endpoint_with_seid(connection->query_seid);
             if (!stream_endpoint){
                 printf("    ACP: cmd %d - RESPONSE REJECT\n", connection->signaling_packet.signal_identifier);
                 connection->error_code = BAD_ACP_SEID;
@@ -164,7 +152,7 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, uint8_t
             }
             // deal with first susspended seid 
             connection->query_seid = connection->suspended_seids[0];
-            stream_endpoint = get_avdtp_stream_endpoint_for_active_seid(connection->query_seid);
+            stream_endpoint = get_avdtp_stream_endpoint_with_seid(connection->query_seid);
             if (!stream_endpoint){
                 printf("    ACP: stream_endpoint not found, CATEGORY RESPONSE REJECT BAD_ACP_SEID\n");
                 connection->error_code = BAD_ACP_SEID;

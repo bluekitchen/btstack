@@ -142,6 +142,7 @@ static avdtp_sep_t sep;
 
 static adtvp_media_codec_information_sbc_t sbc_capability;
 static avdtp_media_codec_configuration_sbc_t sbc_configuration;
+static avdtp_stream_endpoint_t * local_stream_endpoint;
 
 static uint16_t remote_configuration_bitmap;
 static avdtp_capabilities_t remote_configuration;
@@ -524,9 +525,21 @@ static void show_usage(void){
     printf("---\n");
 }
 
-static const uint8_t media_sbc_codec_info[] = {
+static const uint8_t media_sbc_codec_capabilities[] = {
     0xFF,//(AVDTP_SBC_44100 << 4) | AVDTP_SBC_STEREO,
     0xFF,//(AVDTP_SBC_BLOCK_LENGTH_16 << 4) | (AVDTP_SBC_SUBBANDS_8 << 2) | AVDTP_SBC_ALLOCATION_METHOD_LOUDNESS,
+    2, 53
+}; 
+
+static const uint8_t media_sbc_codec_configuration[] = {
+    (AVDTP_SBC_44100 << 4) | AVDTP_SBC_STEREO,
+    (AVDTP_SBC_BLOCK_LENGTH_16 << 4) | (AVDTP_SBC_SUBBANDS_8 << 2) | AVDTP_SBC_ALLOCATION_METHOD_LOUDNESS,
+    2, 53
+}; 
+
+static const uint8_t media_sbc_codec_reconfiguration[] = {
+    (AVDTP_SBC_44100 << 4) | AVDTP_SBC_STEREO,
+    (AVDTP_SBC_BLOCK_LENGTH_16 << 4) | (AVDTP_SBC_SUBBANDS_8 << 2) | AVDTP_SBC_ALLOCATION_METHOD_SNR,
     2, 53
 }; 
 
@@ -567,14 +580,18 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
             remote_configuration_bitmap = store_bit16(remote_configuration_bitmap, AVDTP_MEDIA_CODEC, 1);
             remote_configuration.media_codec.media_type = AVDTP_AUDIO;
             remote_configuration.media_codec.media_codec_type = AVDTP_CODEC_SBC;
-
-            remote_configuration.media_codec.media_codec_information_len = sizeof(media_sbc_codec_info);
-            remote_configuration.media_codec.media_codec_information = media_sbc_codec_info;
-            avdtp_sink_set_configuration(con_handle, sep.seid, 1, remote_configuration_bitmap, remote_configuration);
+            remote_configuration.media_codec.media_codec_information_len = sizeof(media_sbc_codec_configuration);
+            remote_configuration.media_codec.media_codec_information = media_sbc_codec_configuration;
+            avdtp_sink_set_configuration(con_handle, local_stream_endpoint->sep.seid, sep.seid, remote_configuration_bitmap, remote_configuration);
             break;
         case 'R':
             app_state = AVDTP_APPLICATION_W2_RECONFIGURE_WITH_SEID;
-            avdtp_sink_reconfigure(con_handle, sep.seid);
+            remote_configuration_bitmap = store_bit16(remote_configuration_bitmap, AVDTP_MEDIA_CODEC, 1);
+            remote_configuration.media_codec.media_type = AVDTP_AUDIO;
+            remote_configuration.media_codec.media_codec_type = AVDTP_CODEC_SBC;
+            remote_configuration.media_codec.media_codec_information_len = sizeof(media_sbc_codec_reconfiguration);
+            remote_configuration.media_codec.media_codec_information = media_sbc_codec_reconfiguration;
+            avdtp_sink_reconfigure(con_handle, sep.seid, remote_configuration_bitmap, remote_configuration);
             break;
         case 'o':
             app_state = AVDTP_APPLICATION_W2_OPEN_STREAM_WITH_SEID;
@@ -587,9 +604,11 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
         case 'A':
             app_state = AVDTP_APPLICATION_W2_ABORT_STREAM_WITH_SEID;
             avdtp_sink_abort_stream(con_handle, sep.seid);
+            break;
         case 'S':
             app_state = AVDTP_APPLICATION_W2_STOP_STREAM_WITH_SEID;
             avdtp_sink_stop_stream(con_handle, sep.seid);
+            break;
         case 'P':
             app_state = AVDTP_APPLICATION_W2_SUSPEND_STREAM_WITH_SEID;
             avdtp_sink_suspend(con_handle, sep.seid);
@@ -622,9 +641,10 @@ int btstack_main(int argc, const char * argv[]){
     avdtp_sink_register_packet_handler(&packet_handler);
 
 //#ifndef SMG_BI
-    uint8_t seid = avdtp_sink_create_stream_endpoint(AVDTP_SINK, AVDTP_AUDIO);
-    avdtp_sink_register_media_transport_category(seid);
-    avdtp_sink_register_media_codec_category(seid, AVDTP_AUDIO, AVDTP_CODEC_SBC, media_sbc_codec_info, sizeof(media_sbc_codec_info));
+    local_stream_endpoint = avdtp_sink_create_stream_endpoint(AVDTP_SINK, AVDTP_AUDIO);
+    local_stream_endpoint->sep.seid = 5;
+    avdtp_sink_register_media_transport_category(local_stream_endpoint->sep.seid);
+    avdtp_sink_register_media_codec_category(local_stream_endpoint->sep.seid, AVDTP_AUDIO, AVDTP_CODEC_SBC, media_sbc_codec_capabilities, sizeof(media_sbc_codec_capabilities));
 //#endif
     // uint8_t cp_type_lsb,  uint8_t cp_type_msb, const uint8_t * cp_type_value, uint8_t cp_type_value_len
     // avdtp_sink_register_content_protection_category(seid, 2, 2, NULL, 0);
