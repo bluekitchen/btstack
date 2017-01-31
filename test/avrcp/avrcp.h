@@ -52,11 +52,38 @@ extern "C" {
 #endif
 
 /* API_START */
+typedef enum {
+    AVRCP_CONTROL_COMMAND = 0,
+    AVRCP_STATUS_COMMAND,
+    AVRCP_INQUIRY_COMMAND,
+    AVRCP_NOTIFY_COMMAND,
+    AVRCP_NOTIFY_RESERVED4_COMMAND,
+    AVRCP_NOTIFY_RESERVED5_COMMAND,
+    AVRCP_NOTIFY_RESERVED6_COMMAND,
+    AVRCP_NOTIFY_RESERVED7_COMMAND,
+    AVRCP_NOT_IMPLEMENTED_RESPONSE = 8,
+    AVRCP_ACCEPTED_RESPONSE,
+    AVRCP_REJECTED_RESPONSE,
+    AVRCP_IN_TRANSITION_RESPONSE,
+    AVRCP_IMPLEMENTED_STABLE_RESPONSE,
+    AVRCP_CHANGED_STABLE_RESPONSE,
+    AVRCP_RESERVED_RESPONSE,
+    AVRCP_INTERIM_RESPONSE
+} avrcp_command_type_t;
+
+typedef enum {
+    AVRCP_SUBUNIT_TYPE_VIDEO_MONITOR = 0,
+    AVRCP_SUBUNIT_TYPE_AVIDEO_CASSETTE_RECORDER = 4,
+    AVRCP_SUBUNIT_TYPE_TV_TUNER = 5,
+    AVRCP_SUBUNIT_TYPE_VIDEO_CAMERA = 7,
+    AVRCP_SUBUNIT_TYPE_VENDOR_UNIQUE = 0x1C,
+    AVRCP_SUBUNIT_TYPE_UNIT = 0x1F
+} avrcp_subunit_type_t;
 
 typedef enum{
     AVRCP_CMD_NONE  = 0,
     AVRCP_UNIT_INFO = 0x30
-} avrcp_command_t;
+} avrcp_command_opcode_t;
 
 typedef enum {
     AVCTP_CONNECTION_IDLE,
@@ -72,12 +99,16 @@ typedef struct {
     bd_addr_t remote_addr;
     hci_con_handle_t con_handle;
     uint16_t l2cap_signaling_cid;
-    uint16_t transaction_label;
-
+    
     avctp_connection_state_t state;
     uint8_t wait_to_send;
 
-    avrcp_command_t cmd_to_send;
+    // command
+    uint8_t transaction_label;
+    avrcp_command_opcode_t cmd_to_send;
+    avrcp_command_type_t command_type;
+    avrcp_subunit_type_t subunit_type;
+    avrcp_subunit_type_t subunit_id;
     uint8_t cmd_operands[5];
     uint8_t cmd_operands_lenght;
 } avrcp_connection_t;

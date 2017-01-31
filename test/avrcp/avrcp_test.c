@@ -59,10 +59,12 @@ static btstack_packet_callback_registration_t hci_event_callback_registration;
 // mac 2011: static bd_addr_t remote = {0x04, 0x0C, 0xCE, 0xE4, 0x85, 0xD3};
 // pts: static bd_addr_t remote = {0x00, 0x1B, 0xDC, 0x08, 0x0A, 0xA5};
 // mac 2013: static bd_addr_t remote = {0x84, 0x38, 0x35, 0x65, 0xd1, 0x15};
-static bd_addr_t remote = {0x84, 0x38, 0x35, 0x65, 0xd1, 0x15};
-// static uint16_t con_handle = 0;
+// phone: static bd_addr_t remote = {0x84, 0x38, 0x35, 0x65, 0xd1, 0x15};
+
+static bd_addr_t remote = {0xD8, 0xBB, 0x2C, 0xDF, 0xF1, 0x08};
+static uint16_t con_handle = 0;
 static uint8_t sdp_avrcp_controller_service_buffer[150];
-static uint16_t con_handle;
+
 
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
@@ -77,7 +79,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     // connection closed -> quit test app
                     printf("--- avrcp_test: HCI_EVENT_DISCONNECTION_COMPLETE\n");
                     break;
-                case HCI_EVENT_AVDTP_META:
+                case HCI_EVENT_AVRCP_META:
                     switch (packet[2]){
                         case AVRCP_SUBEVENT_CONNECTION_ESTABLISHED:
                             con_handle = avrcp_subevent_connection_established_get_con_handle(packet);
@@ -161,7 +163,7 @@ int btstack_main(int argc, const char * argv[]){
     
     gap_set_local_name("BTstack AVRCP Test");
     gap_discoverable_control(1);
-    gap_set_class_of_device(0x200408);
+//     gap_set_class_of_device(0x200408);
     
     // turn on!
     hci_power_control(HCI_POWER_ON);

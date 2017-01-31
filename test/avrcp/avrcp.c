@@ -82,6 +82,18 @@ Bit 8-15 = RFA
 The bits for supported categories are set to 1. Others are set to 0.
 */
 
+// TODO: merge with avdtp_packet_type_t
+typedef enum {
+    AVRCP_SINGLE_PACKET= 0,
+    AVRCP_START_PACKET    ,
+    AVRCP_CONTINUE_PACKET ,
+    AVRCP_END_PACKET
+} avrcp_packet_type_t;
+
+typedef enum {
+    AVRCP_COMMAND_FRAME = 0,
+    AVRCP_RESPONSE_FRAME    
+} avrcp_frame_type_t;
 
 static const char * default_avrcp_controller_service_name = "BTstack AVRCP Controller Service";
 static const char * default_avrcp_controller_service_provider_name = "BTstack AVRCP Controller Service Provider";
@@ -218,7 +230,7 @@ static void avrcp_emit_connection_established(btstack_packet_handler_t callback,
     if (!callback) return;
     uint8_t event[14];
     int pos = 0;
-    event[pos++] = HCI_EVENT_AVDTP_META;
+    event[pos++] = HCI_EVENT_AVRCP_META;
     event[pos++] = sizeof(event) - 2;
     event[pos++] = AVRCP_SUBEVENT_CONNECTION_ESTABLISHED;
     little_endian_store_16(event, pos, con_handle);
@@ -235,7 +247,7 @@ static void avrcp_emit_connection_closed(btstack_packet_handler_t callback, uint
     if (!callback) return;
     uint8_t event[5];
     int pos = 0;
-    event[pos++] = HCI_EVENT_AVDTP_META;
+    event[pos++] = HCI_EVENT_AVRCP_META;
     event[pos++] = sizeof(event) - 2;
     event[pos++] = AVRCP_SUBEVENT_CONNECTION_CLOSED;
     little_endian_store_16(event, pos, con_handle);
@@ -278,18 +290,29 @@ static avrcp_connection_t * get_avrcp_connection_for_l2cap_signaling_cid(uint16_
 
 static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connection_t * connection, uint8_t *packet, uint16_t size){
     if (connection->state != AVCTP_W2_RECEIVE_RESPONSE) return;
-    printf("L2CAP DATA, response\n");
+    printf("L2CAP DATA, response: ");
     printf_hexdump(packet, size);
 }
 
-static int avrcp_send_cmd(uint16_t cid, avrcp_command_t cmd_to_send, uint8_t * cmd_operands, uint8_t cmd_operands_lenght){
+static int avrcp_send_cmd(uint16_t cid, avrcp_connection_t * connection){
     uint8_t command[20];
     int pos = 0; 
-    command[pos++] = 1;
-    command[pos++] = (0x1F << 3) | 7;
-    command[pos++] = (uint8_t)cmd_to_send;
-    memcpy(command+pos, cmd_operands, cmd_operands_lenght);
-    pos += cmd_operands_lenght;
+    // transport header
+    // Transaction label | Packet_type | C/R | IPID (1 == invalid profile identifier)
+    command[pos++] = (connection->transaction_label << 4) | (AVRCP_SINGLE_PACKET << 2) | (AVRCP_COMMAND_FRAME << 1) | 0;
+    // Profile IDentifier (PID)
+    command[pos++] = AV_REMOTE_CONTROL >> 8;
+    command[pos++] = AV_REMOTE_CONTROL & 0x00FF;
+
+    // command_type
+    command[pos++] = connection->command_type;
+    // subunit_type | subunit ID
+    command[pos++] = (connection->subunit_type << 3) | connection->subunit_id;
+    // opcode
+    command[pos++] = (uint8_t)connection->cmd_to_send;
+    // operands
+    memcpy(command+pos, connection->cmd_operands, connection->cmd_operands_lenght);
+    pos += connection->cmd_operands_lenght;
     return l2cap_send(cid, command, sizeof(command));
 }
 
@@ -300,7 +323,7 @@ static void avrcp_handle_can_send_now(avrcp_connection_t * connection, uint16_t 
     if (connection->cmd_to_send){
         connection->wait_to_send = 0;
         connection->state = AVCTP_W2_RECEIVE_RESPONSE;
-        avrcp_send_cmd(connection->l2cap_signaling_cid, connection->cmd_to_send, connection->cmd_operands, connection->cmd_operands_lenght);
+        avrcp_send_cmd(connection->l2cap_signaling_cid, connection);
     }
 
     int more_to_send = connection->wait_to_send;
@@ -322,17 +345,12 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             if (!connection) break;
             avrcp_handle_l2cap_data_packet_for_signaling_connection(connection, packet, size);
             break;
-        case L2CAP_EVENT_CAN_SEND_NOW:
-            connection = get_avrcp_connection_for_l2cap_signaling_cid(channel);
-            if (!connection) break;
-            avrcp_handle_can_send_now(connection, channel);
-            break;
+
         case HCI_EVENT_PACKET:
             switch (hci_event_packet_get_type(packet)) {
                 case L2CAP_EVENT_INCOMING_CONNECTION:
                     l2cap_event_incoming_connection_get_address(packet, event_addr);
                     local_cid = l2cap_event_incoming_connection_get_local_cid(packet);
-                    printf("avrcp: incoming connection with cid %02x\n", local_cid);
                     break;
                     
                 case L2CAP_EVENT_CHANNEL_OPENED:
@@ -345,7 +363,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     }
                     psm = l2cap_event_channel_opened_get_psm(packet); 
                     if (psm != PSM_AVCTP){
-                        log_error("unexpected PSM - Not implemented yet, avdtp sink: L2CAP_EVENT_CHANNEL_OPENED");
+                        log_error("unexpected PSM - Not implemented yet: L2CAP_EVENT_CHANNEL_OPENED");
                         return;
                     }
                     
@@ -354,12 +372,10 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 
                     con_handle = l2cap_event_channel_opened_get_handle(packet);
                     local_cid = l2cap_event_channel_opened_get_local_cid(packet);
-                    printf("L2CAP_EVENT_CHANNEL_OPENED: Channel successfully opened: %s, handle 0x%02x, psm 0x%02x, local cid 0x%02x, remote cid 0x%02x\n",
-                           bd_addr_to_str(event_addr), con_handle, psm, local_cid,  l2cap_event_channel_opened_get_remote_cid(packet));
-                    printf("channel %d, size %d\n", channel, size);
+                    // printf("L2CAP_EVENT_CHANNEL_OPENED: Channel successfully opened: %s, handle 0x%02x, psm 0x%02x, local cid 0x%02x, remote cid 0x%02x\n",
+                    //        bd_addr_to_str(event_addr), con_handle, psm, local_cid,  l2cap_event_channel_opened_get_remote_cid(packet));
                     
                     if (connection->l2cap_signaling_cid == 0) {
-                        if (connection->state != AVDTP_SIGNALING_CONNECTION_W4_L2CAP_CONNECTED) break;
                         connection->l2cap_signaling_cid = local_cid;
                         connection->con_handle = con_handle;
                         connection->state = AVCTP_CONNECTION_OPENED;
@@ -368,6 +384,12 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     }
                     break;
                 
+                case L2CAP_EVENT_CAN_SEND_NOW:
+                    connection = get_avrcp_connection_for_l2cap_signaling_cid(channel);
+                    if (!connection) break;
+                    avrcp_handle_can_send_now(connection, channel);
+                    break;
+
                 case L2CAP_EVENT_CHANNEL_CLOSED:
                     // data: event (8), len(8), channel (16)
                     local_cid = l2cap_event_channel_closed_get_local_cid(packet);
@@ -407,7 +429,7 @@ static avrcp_connection_t * avrcp_create_connection(bd_addr_t remote_addr){
     avrcp_connection_t * connection = btstack_memory_avrcp_connection_get();
     memset(connection, 0, sizeof(avrcp_connection_t));
     connection->state = AVCTP_CONNECTION_IDLE;
-    connection->transaction_label++;
+    connection->transaction_label = 0xFF;
     memcpy(connection->remote_addr, remote_addr, 6);
     btstack_linked_list_add(&avrcp_connections, (btstack_linked_item_t *) connection);
     return connection;
@@ -441,9 +463,13 @@ void avrcp_unit_info(uint16_t con_handle){
     }
     if (connection->state != AVCTP_CONNECTION_OPENED) return;
     connection->state = AVCTP_W2_SEND_COMMAND;
-    // TODO: use bitmap
+    
     connection->cmd_to_send = AVRCP_UNIT_INFO;
     connection->cmd_operands_lenght = 5;
+    connection->subunit_type = 0x1F;
+    connection->subunit_id = 7;
+    connection->command_type = AVRCP_STATUS_COMMAND;
+    connection->transaction_label++;
     memset(connection->cmd_operands, 0xFF, connection->cmd_operands_lenght);
     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
 }
