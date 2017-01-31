@@ -54,25 +54,25 @@ def create_pretty_define(name):
 def clean_remark(remark):
     return " ".join(remark.split())
 
-def process_table(fout, table, pattern):
-    rows = table.getchildren()
+def process_table(fout, tbody, pattern):
+    rows = tbody.getchildren()
     for row in rows:
         columns = row.getchildren()
         name = columns[0].text_content().encode('ascii','ignore')
         value = columns[1].text_content().encode('ascii','ignore')
         remark = columns[2].text_content().encode('ascii','ignore')
-        # skip table headers
+        # skip tbody headers
         if name == "Protocol Name":
             continue
         if name == "Service Class Name":
             continue
-        # skip table footers
+        # skip tbody footers
         if value.startswith('(Max value '):
             continue 
         name = create_pretty_define(name)
         remark = clean_remark(remark)
         fout.write(pattern % (name, value, remark))
-        # print("'%s' = '%s' -- %s" % (name, value, remark))
+        print("'%s' = '%s' -- %s" % (name, value, remark))
     fout.write('\n')
 
 def scrape_page(fout, url):
@@ -83,32 +83,28 @@ def scrape_page(fout, url):
     # get from web
     # r = requests.get(url)
     # content = r.text
+
     # test: fetch from local file 'service-discovery.html'
     f = codecs.open("service-discovery.html", "r", "utf-8")
     content = f.read();
 
     tree = html.fromstring(content)
 
-    # process tables
-    tables = tree.xpath('//table/tbody')
-    index = 0    
-    for table in tables:
-        # table_name = table_names[index]
-        index = index + 1
+    # Protocol Identifiers
+    fout.write('//\n')
+    fout.write('// Protocol Identifiers\n')
+    fout.write('//\n')
+    tables = tree.xpath("//table[preceding-sibling::h3 = 'Protocol Identifiers']")
+    tbody = tables[0].getchildren()[0]
+    process_table(fout, tbody, '#define BLUETOOTH_PROTOCOL_%-55s %s // %s\n')
 
-        # 2 - Protocol Identifiers
-        if index == 2:
-            fout.write('//\n')
-            fout.write('// Protocol Identifiers\n')
-            fout.write('//\n')
-            process_table(fout, table, '#define BLUETOOTH_PROTOCOL_%-55s %s // %s\n')
-
-        # 3 - Service Classes
-        if index == 3:
-            fout.write('//\n')
-            fout.write('// Service Classes\n')
-            fout.write('//\n')
-            process_table(fout, table, '#define BLUEROOTH_SERVICE_CLASS_%-50s %s // %s\n')
+    # Service Classes
+    fout.write('//\n')
+    fout.write('// Service Classes\n')
+    fout.write('//\n')
+    tables = tree.xpath("//table[preceding-sibling::h3 = 'Protocol Identifiers']")
+    tbody = tables[1].getchildren()[0]
+    process_table(fout, tbody, '#define BLUEROOTH_SERVICE_CLASS_%-50s %s // %s\n')
 
 btstack_root = os.path.abspath(os.path.dirname(sys.argv[0]) + '/..')
 gen_path = btstack_root + '/src/bluetooth_sdp.h'
