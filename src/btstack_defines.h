@@ -913,6 +913,7 @@ typedef uint8_t sm_key_t[16];
 #define HCI_EVENT_HFP_META                                 0xE9
 #define HCI_EVENT_ANCS_META                                0xEA
 #define HCI_EVENT_AVDTP_META                               0xEB
+#define HCI_EVENT_AVRCP_META                               0xEC
 
 // Potential other meta groups
  // #define HCI_EVENT_BNEP_META                                0xxx
@@ -1313,4 +1314,25 @@ typedef uint8_t sm_key_t[16];
  * @param media_codec_information
  */
 #define AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CONFIGURATION      0x0A
+
+
+/** AVRCP Subevent */
+
+/**
+ * @format 1H2B1
+ * @param subevent_code
+ * @param con_handle
+ * @param local_cid
+ * @param bd_addr
+ * @param status 0 == OK
+ */
+#define AVRCP_SUBEVENT_CONNECTION_ESTABLISHED     0x01
+
+/**
+ * @format 1H
+ * @param subevent_code
+ * @param con_handle
+ */
+#define AVRCP_SUBEVENT_CONNECTION_CLOSED        0x02
+
 #endif

@@ -54,6 +54,7 @@
 #include "stdin_support.h"
 #include "avrcp.h"
 
+#define AVRCP_BROWSING_ENABLED 0
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 // mac 2011: static bd_addr_t remote = {0x04, 0x0C, 0xCE, 0xE4, 0x85, 0xD3};
 // pts: static bd_addr_t remote = {0x00, 0x1B, 0xDC, 0x08, 0x0A, 0xA5};
@@ -61,11 +62,14 @@ static btstack_packet_callback_registration_t hci_event_callback_registration;
 static bd_addr_t remote = {0x84, 0x38, 0x35, 0x65, 0xd1, 0x15};
 // static uint16_t con_handle = 0;
 static uint8_t sdp_avrcp_controller_service_buffer[150];
+static uint16_t con_handle;
 
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
-    // bd_addr_t event_addr;
+    bd_addr_t event_addr;
+    uint16_t local_cid;
+
     switch (packet_type) {
         case HCI_EVENT_PACKET:
             switch (hci_event_packet_get_type(packet)) {
@@ -75,10 +79,16 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     break;
                 case HCI_EVENT_AVDTP_META:
                     switch (packet[2]){
-                        // case AVRCP_SUBEVENT_CONNECTION_ESTABLISHED:
-                        //     con_handle = avrcp_subevent_connection_established_get_con_handle(packet);
-                        //     printf("AVRCP_SUBEVENT_CONNECTION_ESTABLISHED, con handle 0x%02x", con_handle);
-                        //     break;
+                        case AVRCP_SUBEVENT_CONNECTION_ESTABLISHED:
+                            con_handle = avrcp_subevent_connection_established_get_con_handle(packet);
+                            local_cid = avrcp_subevent_connection_established_get_local_cid(packet);
+                            avrcp_subevent_connection_established_get_bd_addr(packet, event_addr);
+                            printf("AVRCP_SUBEVENT_CONNECTION_ESTABLISHED: Channel successfully opened: %s, handle 0x%02x, local cid 0x%02x\n", bd_addr_to_str(event_addr), con_handle, local_cid);
+                            break;
+                        case AVRCP_SUBEVENT_CONNECTION_CLOSED:
+                            printf("AVRCP_SUBEVENT_CONNECTION_RELEASED: con_handle 0x%02x\n", avrcp_subevent_connection_closed_get_con_handle(packet));
+                            con_handle = 0;
+                            break;
                         default:
                             printf("--- avrcp_test: Not implemented\n");
                             break;
@@ -101,6 +111,7 @@ static void show_usage(void){
     printf("\n--- Bluetooth AVRCP Test Console %s ---\n", bd_addr_to_str(iut_address));
     printf("c      - create connection to addr %s\n", bd_addr_to_str(remote));
     printf("C      - disconnect\n");
+    printf("u      - get unit info\n");
     printf("Ctrl-c - exit\n");
     printf("---\n");
 }
@@ -113,7 +124,12 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
 
     switch (cmd){
         case 'c':
+            printf("c      - create connection to addr %s\n", bd_addr_to_str(remote));
             avrcp_connect(remote);
+            break;
+        case 'u':
+            printf("u      - get unit info\n");
+            avrcp_unit_info(con_handle);
             break;
         default:
             show_usage();
@@ -140,7 +156,7 @@ int btstack_main(int argc, const char * argv[]){
     // Initialize SDP 
     sdp_init();
     memset(sdp_avrcp_controller_service_buffer, 0, sizeof(sdp_avrcp_controller_service_buffer));
-    avrcp_controller_create_sdp_record(sdp_avrcp_controller_service_buffer, 0x10001, 1, NULL, NULL);
+    avrcp_controller_create_sdp_record(sdp_avrcp_controller_service_buffer, 0x10001, AVRCP_BROWSING_ENABLED, 1, NULL, NULL);
     sdp_register_service(sdp_avrcp_controller_service_buffer);
     
     gap_set_local_name("BTstack AVRCP Test");

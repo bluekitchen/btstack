@@ -51,14 +51,19 @@
 extern "C" {
 #endif
 
-// protocols
-#define PSM_AVCTP 0x0017
-
 /* API_START */
+
+typedef enum{
+    AVRCP_CMD_NONE  = 0,
+    AVRCP_UNIT_INFO = 0x30
+} avrcp_command_t;
+
 typedef enum {
     AVCTP_CONNECTION_IDLE,
     AVCTP_CONNECTION_W4_L2CAP_CONNECTED,
     AVCTP_CONNECTION_OPENED,
+    AVCTP_W2_SEND_COMMAND,
+    AVCTP_W2_RECEIVE_RESPONSE,
     AVCTP_CONNECTION_W4_L2CAP_DISCONNECTED
 } avctp_connection_state_t;
 
@@ -70,27 +75,34 @@ typedef struct {
     uint16_t transaction_label;
 
     avctp_connection_state_t state;
+    uint8_t wait_to_send;
+
+    avrcp_command_t cmd_to_send;
+    uint8_t cmd_operands[5];
+    uint8_t cmd_operands_lenght;
 } avrcp_connection_t;
 
 /**
  * @brief AVDTP Sink service record. 
  * @param service
  * @param service_record_handle
+ * @param browsing  1 - supported, 0 - not supported
  * @param supported_features 16-bit bitmap, see AVDTP_SINK_SF_* values in avdtp.h
  * @param service_name
  * @param service_provider_name
  */
-void avrcp_controller_create_sdp_record(uint8_t * service,  uint32_t service_record_handle, uint16_t supported_features, const char * service_name, const char * service_provider_name);
+void avrcp_controller_create_sdp_record(uint8_t * service, uint32_t service_record_handle, uint8_t browsing, uint16_t supported_features, const char * service_name, const char * service_provider_name);
 
 /**
  * @brief AVDTP Sink service record. 
  * @param service
  * @param service_record_handle
+ * @param browsing  1 - supported, 0 - not supported
  * @param supported_features 16-bit bitmap, see AVDTP_SINK_SF_* values in avdtp.h
  * @param service_name
  * @param service_provider_name
  */
-void avrcp_target_create_sdp_record(uint8_t * service,  uint32_t service_record_handle, uint16_t supported_features, const char * service_name, const char * service_provider_name);
+void avrcp_target_create_sdp_record(uint8_t * service, uint32_t service_record_handle, uint8_t browsing, uint16_t supported_features, const char * service_name, const char * service_provider_name);
 
 
 /**
@@ -109,6 +121,13 @@ void avrcp_register_packet_handler(btstack_packet_handler_t callback);
  * @param bd_addr
  */
 void avrcp_connect(bd_addr_t bd_addr);
+
+/**
+ * @brief Pause.
+ * @param con_handle
+ */
+void avrcp_unit_info(uint16_t con_handle);
+
 
 /* API_END */
 #if defined __cplusplus
