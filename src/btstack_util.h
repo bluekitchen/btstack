@@ -126,6 +126,7 @@ uint32_t big_endian_read_32( const uint8_t * buffer, int pos);
  * @param value
  */
 void big_endian_store_16(uint8_t *buffer, uint16_t pos, uint16_t value);
+void big_endian_store_24(uint8_t *buffer, uint16_t pos, uint32_t value);
 void big_endian_store_32(uint8_t *buffer, uint16_t pos, uint32_t value);
 
 

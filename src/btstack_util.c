@@ -104,6 +104,12 @@ void big_endian_store_16(uint8_t *buffer, uint16_t pos, uint16_t value){
     buffer[pos++] = value;
 }
 
+void big_endian_store_24(uint8_t *buffer, uint16_t pos, uint32_t value){
+    buffer[pos++] = value >> 16;
+    buffer[pos++] = value >> 8;
+    buffer[pos++] = value;
+}
+
 void big_endian_store_32(uint8_t *buffer, uint16_t pos, uint32_t value){
     buffer[pos++] = value >> 24;
     buffer[pos++] = value >> 16;
