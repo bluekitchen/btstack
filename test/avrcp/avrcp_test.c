@@ -114,6 +114,8 @@ static void show_usage(void){
     printf("c      - create connection to addr %s\n", bd_addr_to_str(remote));
     printf("C      - disconnect\n");
     printf("u      - get unit info\n");
+    printf("p      - get capabilities\n");
+    
     printf("Ctrl-c - exit\n");
     printf("---\n");
 }
@@ -132,6 +134,10 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
         case 'u':
             printf("u      - get unit info\n");
             avrcp_unit_info(con_handle);
+            break;
+        case 'p':
+            printf("p      - get capabilities\n");
+            avrcp_get_capabilities(con_handle);
             break;
         default:
             show_usage();

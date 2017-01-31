@@ -51,38 +51,58 @@
 extern "C" {
 #endif
 
+#define BT_SIG_COMPANY_ID 0x001958
 /* API_START */
 typedef enum {
-    AVRCP_CONTROL_COMMAND = 0,
-    AVRCP_STATUS_COMMAND,
-    AVRCP_INQUIRY_COMMAND,
-    AVRCP_NOTIFY_COMMAND,
-    AVRCP_NOTIFY_RESERVED4_COMMAND,
-    AVRCP_NOTIFY_RESERVED5_COMMAND,
-    AVRCP_NOTIFY_RESERVED6_COMMAND,
-    AVRCP_NOTIFY_RESERVED7_COMMAND,
-    AVRCP_NOT_IMPLEMENTED_RESPONSE = 8,
-    AVRCP_ACCEPTED_RESPONSE,
-    AVRCP_REJECTED_RESPONSE,
-    AVRCP_IN_TRANSITION_RESPONSE,
-    AVRCP_IMPLEMENTED_STABLE_RESPONSE,
-    AVRCP_CHANGED_STABLE_RESPONSE,
-    AVRCP_RESERVED_RESPONSE,
-    AVRCP_INTERIM_RESPONSE
+    AVRCP_CTYPE_CONTROL = 0,
+    AVRCP_CTYPE_STATUS,
+    AVRCP_CTYPE_SPECIFIC_INQUIRY,
+    AVRCP_CTYPE_NOTIFY,
+    AVRCP_CTYPE_GENERAL_INQUIRY,
+    AVRCP_CTYPE_RESERVED5,
+    AVRCP_CTYPE_RESERVED6,
+    AVRCP_CTYPE_RESERVED7,
+    AVRCP_CTYPE_RESPONSE_NOT_IMPLEMENTED = 8,
+    AVRCP_CTYPE_RESPONSE_ACCEPTED,
+    AVRCP_CTYPE_RESPONSE_REJECTED,
+    AVRCP_CTYPE_RESPONSE_IN_TRANSITION,
+    AVRCP_CTYPE_RESPONSE_IMPLEMENTED_STABLE,
+    AVRCP_CTYPE_RESPONSE_CHANGED_STABLE,
+    AVRCP_CTYPE_RESPONSE_RESERVED,
+    AVRCP_CTYPE_RESPONSE_INTERIM
 } avrcp_command_type_t;
 
 typedef enum {
-    AVRCP_SUBUNIT_TYPE_VIDEO_MONITOR = 0,
-    AVRCP_SUBUNIT_TYPE_AVIDEO_CASSETTE_RECORDER = 4,
-    AVRCP_SUBUNIT_TYPE_TV_TUNER = 5,
-    AVRCP_SUBUNIT_TYPE_VIDEO_CAMERA = 7,
+    AVRCP_SUBUNIT_TYPE_MONITOR = 0,
+    AVRCP_SUBUNIT_TYPE_AUDIO = 1,
+    AVRCP_SUBUNIT_TYPE_PRINTER,
+    AVRCP_SUBUNIT_TYPE_DISC,
+    AVRCP_SUBUNIT_TYPE_TAPE_RECORDER_PLAYER,
+    AVRCP_SUBUNIT_TYPE_TUNER,
+    AVRCP_SUBUNIT_TYPE_CA,
+    AVRCP_SUBUNIT_TYPE_CAMERA,
+    AVRCP_SUBUNIT_TYPE_RESERVED,
+    AVRCP_SUBUNIT_TYPE_PANEL = 9,
+    AVRCP_SUBUNIT_TYPE_BULLETIN_BOARD,
+    AVRCP_SUBUNIT_TYPE_CAMERA_STORAGE,
     AVRCP_SUBUNIT_TYPE_VENDOR_UNIQUE = 0x1C,
+    AVRCP_SUBUNIT_TYPE_RESERVED_FOR_ALL_SUBUNIT_TYPES,
+    AVRCP_SUBUNIT_TYPE_EXTENDED_TO_NEXT_BYTE,
     AVRCP_SUBUNIT_TYPE_UNIT = 0x1F
 } avrcp_subunit_type_t;
 
+typedef enum {
+    AVRCP_SUBUNIT_ID = 0,
+    AVRCP_SUBUNIT_ID_IGNORE = 7
+} avrcp_subunit_id_t;
+
 typedef enum{
-    AVRCP_CMD_NONE  = 0,
-    AVRCP_UNIT_INFO = 0x30
+    AVRCP_CMD_OPCODE_VENDOR_DEPENDENT = 0x00,
+    AVRCP_CMD_OPCODE_RESERVE = 0x01,
+    AVRCP_CMD_OPCODE_UNIT_INFO = 0x30,
+    AVRCP_CMD_OPCODE_SUBUNIT_INFO = 0x31,
+    AVRCP_CMD_OPCODE_VERSION = 0xB0,
+    AVRCP_CMD_OPCODE_POWER = 0xB2
 } avrcp_command_opcode_t;
 
 typedef enum {
@@ -108,8 +128,8 @@ typedef struct {
     avrcp_command_opcode_t cmd_to_send;
     avrcp_command_type_t command_type;
     avrcp_subunit_type_t subunit_type;
-    avrcp_subunit_type_t subunit_id;
-    uint8_t cmd_operands[5];
+    avrcp_subunit_id_t   subunit_id;
+    uint8_t cmd_operands[20];
     uint8_t cmd_operands_lenght;
 } avrcp_connection_t;
 
@@ -154,10 +174,16 @@ void avrcp_register_packet_handler(btstack_packet_handler_t callback);
 void avrcp_connect(bd_addr_t bd_addr);
 
 /**
- * @brief Pause.
+ * @brief Unit info.
  * @param con_handle
  */
 void avrcp_unit_info(uint16_t con_handle);
+
+/**
+ * @brief Unit info.
+ * @param con_handle
+ */
+void avrcp_get_capabilities(uint16_t con_handle);
 
 
 /* API_END */
