@@ -1061,3 +1061,18 @@ OPCODE(OGF_LE_CONTROLLER, 0x26), "QQ"
 };
 
 #endif
+
+// Broadcom / Cypress specific HCI commands
+
+/**
+ * @brief Configure SCO Routing (BCM)
+ * @param sco_routing is 0 for PCM, 1 for Transport, 2 for Codec and 3 for I2S
+ * @param pcm_interface_rate is 0 for 128KBps, 1 for 256 KBps, 2 for 512KBps, 3 for 1024KBps, and 4 for 2048Kbps
+ * @param frame_type is 0 for short and 1 for long
+ * @param sync_mode is 0 for slave and 1 for master
+ * @param clock_mode is 0 for slabe and 1 for master
+ */
+const hci_cmd_t hci_bcm_write_sco_pcm_int = {
+OPCODE(0x3f, 0x1c), "11111"
+// return: status
+};

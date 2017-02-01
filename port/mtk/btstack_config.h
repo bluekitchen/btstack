@@ -17,7 +17,6 @@
 #define ENABLE_LE_CENTRAL
 #define ENABLE_LOG_ERROR
 #define ENABLE_LOG_INFO 
-#define ENABLE_LOG_INTO_HCI_DUMP
 #define ENABLE_SDP_DES_DUMP
 
 // BTstack configuration. buffers, sizes, ...

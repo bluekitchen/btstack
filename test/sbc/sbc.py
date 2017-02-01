@@ -221,7 +221,7 @@ class SBCFrame:
     levels = np.zeros(shape=(2, 8), dtype = np.int32)
 
 
-    def __init__(self, nr_blocks=16, nr_subbands=4, nr_channels=1, bitpool=31, sampling_frequency=44100, allocation_method = 0):
+    def __init__(self, nr_blocks=16, nr_subbands=4, nr_channels=1, bitpool=31, sampling_frequency=44100, allocation_method = 0, force_channel_mode = 0):
         self.nr_blocks = nr_blocks
         self.nr_subbands = nr_subbands
         self.nr_channels = nr_channels
@@ -229,6 +229,7 @@ class SBCFrame:
         self.bitpool = bitpool
         self.allocation_method = allocation_method
         self.init(nr_blocks, nr_subbands, nr_channels)
+        self.channel_mode = force_channel_mode
         return
     
     def init(self, nr_blocks, nr_subbands, nr_channels):

@@ -68,10 +68,14 @@ typedef uint8_t bd_addr_t[BD_ADDR_LEN];
  typedef enum {
     BD_ADDR_TYPE_LE_PUBLIC = 0,
     BD_ADDR_TYPE_LE_RANDOM = 1,
+    BD_ADDR_TYPE_LE_PRIVAT_FALLBACK_PUBLIC = 2,
+    BD_ADDR_TYPE_LE_PRIVAT_FALLBACK_RANDOM = 3,
     BD_ADDR_TYPE_SCO       = 0xfe,
     BD_ADDR_TYPE_CLASSIC   = 0xff,
     BD_ADDR_TYPE_UNKNOWN   = 0xfe
 } bd_addr_type_t;
+
+
 
 /**
  * @brief link key

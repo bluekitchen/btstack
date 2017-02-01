@@ -539,7 +539,7 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
     hfp_connection_t * hfp_connection = NULL;
     uint8_t status;
 
-    log_info("AG packet_handler type %u, event type %x, size %u", packet_type, hci_event_packet_get_type(packet), size);
+    log_debug("HFP packet_handler type %u, event type %x, size %u", packet_type, hci_event_packet_get_type(packet), size);
 
     switch (hci_event_packet_get_type(packet)) {
         case HCI_EVENT_CONNECTION_REQUEST:
@@ -561,7 +561,15 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
             // data: event (8), len(8), address(48), channel (8), rfcomm_cid (16)
             rfcomm_event_incoming_connection_get_bd_addr(packet, event_addr); 
             hfp_connection = provide_hfp_connection_context_for_bd_addr(event_addr);
-            if (!hfp_connection || hfp_connection->state != HFP_IDLE) return;
+            if (!hfp_connection){
+                log_info("hfp: no memory to accept incoming connection - decline");
+                rfcomm_decline_connection(rfcomm_event_incoming_connection_get_rfcomm_cid(packet));
+                return;
+            }
+            if (hfp_connection->state != HFP_IDLE) {
+                log_error("hfp: incoming connection but state != HFP_IDLE");
+                return;
+            }
 
             hfp_connection->rfcomm_cid = rfcomm_event_incoming_connection_get_rfcomm_cid(packet);
             hfp_connection->state = HFP_W4_RFCOMM_CONNECTED;

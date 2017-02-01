@@ -63,6 +63,7 @@ typedef struct sbc_plc_state {
     int     nbf;
 } btstack_sbc_plc_state_t;
 
+// All int16 audio samples are in host endiness
 void btstack_sbc_plc_init(btstack_sbc_plc_state_t *plc_state);
 void btstack_sbc_plc_bad_frame(btstack_sbc_plc_state_t *plc_state, int16_t *ZIRbuf, int16_t *out); 
 void btstack_sbc_plc_good_frame(btstack_sbc_plc_state_t *plc_state, int16_t *in, int16_t *out);

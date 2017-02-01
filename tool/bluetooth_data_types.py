@@ -48,7 +48,7 @@ def scrape_page(fout, url):
     print('-' * 70)
 
     # get all <tr> elements in <table id="gattTable">
-    rows = tree.xpath('//div[@class="table-time"]/table/tbody/tr')
+    rows = tree.xpath('//div[@class="copy-block ta-left"]/table/tbody/tr')
     for row in rows:
         children = row.getchildren()
         data_type_value = children[0].text_content()

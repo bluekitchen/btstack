@@ -67,6 +67,8 @@ extern "C" {
 #include "classic/btstack_link_key_db_memory.h"
 #include "classic/rfcomm.h"
 #include "classic/sdp_server.h"
+#include "classic/avdtp_sink.h"
+#include "classic/avdtp_source.h"
 
 // BLE
 #ifdef ENABLE_BLE
@@ -175,7 +177,9 @@ list_of_structs = [
     ["btstack_link_key_db_memory_entry"],
     ["bnep_service", "bnep_channel"],
     ["hfp_connection"],
-    ["service_record_item"]
+    ["service_record_item"],
+    ["avdtp_stream_endpoint"],
+    ["avdtp_connection"]
 ]
 list_of_le_structs = [["gatt_client", "whitelist_entry", "sm_lookup_entry"]]
 

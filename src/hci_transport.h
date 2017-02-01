@@ -104,6 +104,11 @@ typedef struct {
      */
     void   (*reset_link)(void);
 
+    /**
+     * extension for USB transport implementations: config SCO connections
+     */
+    void   (*set_sco_config)(uint16_t voice_setting, int num_connections);
+
 } hci_transport_t;
 
 typedef enum {

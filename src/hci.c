@@ -219,6 +219,20 @@ hci_connection_t * hci_connection_for_bd_addr_and_type(bd_addr_t  addr, bd_addr_
 
 #ifdef ENABLE_CLASSIC
 
+#ifdef ENABLE_SCO_OVER_HCI
+static int hci_number_sco_connections(void){
+    int connections = 0;
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &hci_stack->connections);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        hci_connection_t * connection = (hci_connection_t *) btstack_linked_list_iterator_next(&it);
+        if (connection->address_type != BD_ADDR_TYPE_SCO) continue;
+        connections++;
+    } 
+    return connections;
+}
+#endif
+
 static void hci_connection_timeout_handler(btstack_timer_source_t *timer){
     hci_connection_t * connection = (hci_connection_t *) btstack_run_loop_get_timer_context(timer);
 #ifdef HAVE_EMBEDDED_TICK
@@ -749,6 +763,10 @@ static void acl_handler(uint8_t *packet, int size){
 static void hci_shutdown_connection(hci_connection_t *conn){
     log_info("Connection closed: handle 0x%x, %s", conn->con_handle, bd_addr_to_str(conn->address));
 
+#ifdef ENABLE_SCO_OVER_HCI
+    int addr_type = conn->address_type;
+#endif
+
     btstack_run_loop_remove_timer(&conn->timeout);
     
     btstack_linked_list_remove(&hci_stack->connections, (btstack_linked_item_t *) conn);
@@ -756,6 +774,13 @@ static void hci_shutdown_connection(hci_connection_t *conn){
     
     // now it's gone
     hci_emit_nr_connections_changed();
+
+#ifdef ENABLE_SCO_OVER_HCI
+    // update SCO
+    if (addr_type == BD_ADDR_TYPE_SCO && hci_stack->hci_transport && hci_stack->hci_transport->set_sco_config){
+        hci_stack->hci_transport->set_sco_config(hci_stack->sco_voice_setting_active, hci_number_sco_connections());
+    }
+#endif
 }
 
 #ifdef ENABLE_CLASSIC
@@ -855,17 +880,20 @@ static int hci_le_supported(void){
 #endif    
 }
 
-// get addr type and address used in advertisement packets
-void gap_advertisements_get_address(uint8_t * addr_type, bd_addr_t  addr){
-    *addr_type = hci_stack->adv_addr_type;
-    if (hci_stack->adv_addr_type){
-        memcpy(addr, hci_stack->adv_address, 6);
+#ifdef ENABLE_BLE
+
+/**
+ * @brief Get addr type and address used for LE in Advertisements, Scan Responses, 
+ */
+void gap_le_get_own_address(uint8_t * addr_type, bd_addr_t addr){
+    *addr_type = hci_stack->le_own_addr_type;
+    if (hci_stack->le_own_addr_type){
+        memcpy(addr, hci_stack->le_random_address, 6);
     } else {
         memcpy(addr, hci_stack->local_bd_addr, 6);
     }
 }
 
-#ifdef ENABLE_BLE
 #ifdef ENABLE_LE_CENTRAL
 void le_handle_advertisement_report(uint8_t *packet, int size){
 
@@ -943,6 +971,11 @@ static void hci_initialization_timeout_handler(btstack_timer_source_t * ds){
                 hci_stack->substate = HCI_INIT_SEND_RESET_CSR_WARM_BOOT;
                 hci_run();
             }
+            break;
+        case HCI_INIT_W4_CUSTOM_INIT_BCM_DELAY:
+            // otherwise continue
+            hci_stack->substate = HCI_INIT_W4_READ_LOCAL_SUPPORTED_COMMANDS;
+            hci_send_cmd(&hci_read_local_supported_commands);
             break;
         default:
             break;
@@ -1052,9 +1085,10 @@ static void hci_initializing_run(void){
                     break;
                 }
                 log_info("Init script done");
-            
-                // Init script download causes baud rate to reset on Broadcom chipsets, restore UART baud rate if needed
+
+                // Init script download on Broadcom chipsets causes:
                 if (hci_stack->manufacturer == COMPANY_ID_BROADCOM_CORPORATION){
+                    // - baud rate to reset, restore UART baud rate if needed
                     int need_baud_change = hci_stack->config
                         && hci_stack->chipset
                         && hci_stack->chipset->set_baudrate_command
@@ -1065,8 +1099,17 @@ static void hci_initializing_run(void){
                         log_info("Local baud rate change to %"PRIu32" after init script (bcm)", baud_rate);
                         hci_stack->hci_transport->set_baudrate(baud_rate);
                     }
-                }
-            }
+
+                    // - RTS will raise during update, but manual RTS/CTS in WICED port on RedBear Duo cannot handle this
+                    //   -> Work around: wait a few milliseconds here.
+                    log_info("BCM delay after init script");
+                    hci_stack->substate = HCI_INIT_W4_CUSTOM_INIT_BCM_DELAY;
+                    btstack_run_loop_set_timer(&hci_stack->timeout, 10);
+                    btstack_run_loop_set_timer_handler(&hci_stack->timeout, hci_initialization_timeout_handler);
+                    btstack_run_loop_add_timer(&hci_stack->timeout);
+                    break;
+                }                
+                        }
             // otherwise continue
             hci_stack->substate = HCI_INIT_W4_READ_LOCAL_SUPPORTED_COMMANDS;
             hci_send_cmd(&hci_read_local_supported_commands);
@@ -1154,6 +1197,13 @@ static void hci_initializing_run(void){
             hci_stack->substate = HCI_INIT_W4_WRITE_DEFAULT_ERRONEOUS_DATA_REPORTING;
             hci_send_cmd(&hci_write_default_erroneous_data_reporting, 1);
             break;
+        // only sent if ENABLE_SCO_OVER_HCI and manufacturer is Broadcom
+        case HCI_INIT_BCM_WRITE_SCO_PCM_INT:
+            hci_stack->substate = HCI_INIT_W4_BCM_WRITE_SCO_PCM_INT;
+            log_info("BCM: Route SCO data via HCI transport");
+            hci_send_cmd(&hci_bcm_write_sco_pcm_int, 1, 0, 0, 0, 0);
+            break;
+
 #endif
 #ifdef ENABLE_BLE
         // LE INIT
@@ -1166,15 +1216,17 @@ static void hci_initializing_run(void){
             hci_stack->substate = HCI_INIT_W4_WRITE_LE_HOST_SUPPORTED;
             hci_send_cmd(&hci_write_le_host_supported, 1, 0);
             break;
+#ifdef ENABLE_LE_CENTRAL
         case HCI_INIT_READ_WHITE_LIST_SIZE:
             hci_stack->substate = HCI_INIT_W4_READ_WHITE_LIST_SIZE;
             hci_send_cmd(&hci_le_read_white_list_size);
             break;
         case HCI_INIT_LE_SET_SCAN_PARAMETERS:
-            // LE Scan Parameters: active scanning, 300 ms interval, 30 ms window, public address, accept all advs
+            // LE Scan Parameters: active scanning, 300 ms interval, 30 ms window, own address type, accept all advs
             hci_stack->substate = HCI_INIT_W4_LE_SET_SCAN_PARAMETERS;
-            hci_send_cmd(&hci_le_set_scan_parameters, 1, 0x1e0, 0x30, 0, 0);
+            hci_send_cmd(&hci_le_set_scan_parameters, 1, 0x1e0, 0x30, hci_stack->le_own_addr_type, 0);
             break;
+#endif
 #endif
         default:
             return;
@@ -1397,25 +1449,32 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
         case HCI_INIT_W4_SET_EVENT_MASK:
             // skip Classic init commands for LE only chipsets
             if (!hci_classic_supported()){
+#ifdef ENABLE_BLE
                 if (hci_le_supported()){
                     hci_stack->substate = HCI_INIT_LE_READ_BUFFER_SIZE; // skip all classic command
                     return;
-                } else {
-                    log_error("Neither BR/EDR nor LE supported");
-                    hci_init_done();
-                    return;
                 }
+#endif
+                log_error("Neither BR/EDR nor LE supported");
+                hci_init_done();
+                return;
             }
             if (!gap_ssp_supported()){
                 hci_stack->substate = HCI_INIT_WRITE_PAGE_TIMEOUT;
                 return;
             }
             break;
+#ifdef ENABLE_BLE            
         case HCI_INIT_W4_LE_READ_BUFFER_SIZE:
             // skip write le host if not supported (e.g. on LE only EM9301)
             if (hci_stack->local_supported_commands[0] & 0x02) break;
-            hci_stack->substate = HCI_INIT_LE_SET_SCAN_PARAMETERS;
+#ifdef ENABLE_LE_CENTRAL
+            hci_stack->substate = HCI_INIT_READ_WHITE_LIST_SIZE;
+#else
+            hci_init_done();
+#endif
             return;
+#endif
         case HCI_INIT_W4_WRITE_LOCAL_NAME:
             // skip write eir data if no eir data set
             if (hci_stack->eir_data) break;
@@ -1436,6 +1495,12 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
             // explicit fall through to reduce repetitions
 
         case HCI_INIT_W4_WRITE_DEFAULT_ERRONEOUS_DATA_REPORTING:
+            // skip bcm set sco pcm config on non-Broadcom chipsets
+            if (hci_stack->manufacturer == COMPANY_ID_BROADCOM_CORPORATION) break;
+            hci_stack->substate = HCI_INIT_W4_BCM_WRITE_SCO_PCM_INT;
+            // explicit fall through to reduce repetitions
+
+        case HCI_INIT_W4_BCM_WRITE_SCO_PCM_INT:
             if (!hci_le_supported()){
                 // SKIP LE init for Classic only configuration
                 hci_init_done();
@@ -1527,7 +1592,7 @@ static void event_handler(uint8_t *packet, int size){
             }         
 #ifdef ENABLE_LE_CENTRAL
             if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_le_read_white_list_size)){
-                hci_stack->le_whitelist_capacity = little_endian_read_16(packet, 6);
+                hci_stack->le_whitelist_capacity = packet[6];
                 log_info("hci_le_read_white_list_size: size %u", hci_stack->le_whitelist_capacity);
             }   
 #endif
@@ -1713,6 +1778,13 @@ static void event_handler(uint8_t *packet, int size){
             }
             conn->state = OPEN;
             conn->con_handle = little_endian_read_16(packet, 3);            
+
+#ifdef ENABLE_SCO_OVER_HCI
+            // update SCO
+            if (conn->address_type == BD_ADDR_TYPE_SCO && hci_stack->hci_transport && hci_stack->hci_transport->set_sco_config){
+                hci_stack->hci_transport->set_sco_config(hci_stack->sco_voice_setting_active, hci_number_sco_connections());
+            }
+#endif
             break;
 
         case HCI_EVENT_READ_REMOTE_SUPPORTED_FEATURES_COMPLETE:
@@ -2081,6 +2153,7 @@ static void hci_state_reset(void){
     // hci_stack->discoverable = 0;
     // hci_stack->connectable = 0;
     // hci_stack->bondable = 1;
+    // hci_stack->own_addr_type = 0;
 
     // buffer is free
     hci_stack->hci_packet_buffer_reserved = 0;
@@ -2090,10 +2163,9 @@ static void hci_state_reset(void){
     hci_stack->new_scan_enable_value = 0xff;
     
     // LE
-#ifdef ENABLE_LE_PERIPHERAL
-    hci_stack->adv_addr_type = 0;
-    hci_stack->le_advertisements_random_address_set = 0;
-    memset(hci_stack->adv_address, 0, 6);
+#ifdef ENABLE_BLE
+    memset(hci_stack->le_random_address, 0, 6);
+    hci_stack->le_random_address_set = 0;
 #endif
 #ifdef ENABLE_LE_CENTRAL
     hci_stack->le_scanning_state = LE_SCAN_IDLE;
@@ -2164,8 +2236,8 @@ void hci_init(const hci_transport_t *transport, const void *config){
     hci_stack->ssp_authentication_requirement = SSP_IO_AUTHREQ_MITM_PROTECTION_NOT_REQUIRED_GENERAL_BONDING;
     hci_stack->ssp_auto_accept = 1;
 
-    // voice setting - signed 8 bit pcm data with CVSD over the air
-    hci_stack->sco_voice_setting = 0x40;
+    // voice setting - signed 16 bit pcm data with CVSD over the air
+    hci_stack->sco_voice_setting = 0x60;
 
     hci_state_reset();
 }
@@ -2564,7 +2636,9 @@ static void hci_run(void){
 #endif
 
 #ifdef ENABLE_BLE
-    if (hci_stack->state == HCI_STATE_WORKING){
+    // advertisements, active scanning, and creating connections requires randaom address to be set if using private address
+    if ((hci_stack->state == HCI_STATE_WORKING)
+    && (hci_stack->le_own_addr_type == BD_ADDR_TYPE_LE_PUBLIC || hci_stack->le_random_address_set)){
 
 #ifdef ENABLE_LE_CENTRAL
         // handle le scan
@@ -2585,7 +2659,7 @@ static void hci_run(void){
             // defaults: active scanning, accept all advertisement packets
             int scan_type = hci_stack->le_scan_type;
             hci_stack->le_scan_type = 0xff;
-            hci_send_cmd(&hci_le_set_scan_parameters, scan_type, hci_stack->le_scan_interval, hci_stack->le_scan_window, hci_stack->adv_addr_type, 0);
+            hci_send_cmd(&hci_le_set_scan_parameters, scan_type, hci_stack->le_scan_interval, hci_stack->le_scan_window, hci_stack->le_own_addr_type, 0);
             return;
         }
 #endif
@@ -2605,7 +2679,7 @@ static void hci_run(void){
                  hci_stack->le_advertisements_interval_min,
                  hci_stack->le_advertisements_interval_max,
                  hci_stack->le_advertisements_type,
-                 hci_stack->le_advertisements_own_address_type,
+                 hci_stack->le_own_addr_type,
                  hci_stack->le_advertisements_direct_address_type,
                  hci_stack->le_advertisements_direct_address,
                  hci_stack->le_advertisements_channel_map,
@@ -2614,8 +2688,7 @@ static void hci_run(void){
         }
         if (hci_stack->le_advertisements_todo & LE_ADVERTISEMENT_TASKS_SET_ADV_DATA){
             hci_stack->le_advertisements_todo &= ~LE_ADVERTISEMENT_TASKS_SET_ADV_DATA;
-            hci_send_cmd(&hci_le_set_advertising_data, hci_stack->le_advertisements_data_len,
-                hci_stack->le_advertisements_data);
+            hci_send_cmd(&hci_le_set_advertising_data, hci_stack->le_advertisements_data_len, hci_stack->le_advertisements_data);
             return;
         }
         if (hci_stack->le_advertisements_todo & LE_ADVERTISEMENT_TASKS_SET_SCAN_DATA){
@@ -2624,9 +2697,7 @@ static void hci_run(void){
                 hci_stack->le_scan_response_data);
             return;
         }
-        // Random address needs to be set before enabling advertisements
-        if ((hci_stack->le_advertisements_todo & LE_ADVERTISEMENT_TASKS_ENABLE)
-        &&  (hci_stack->le_advertisements_own_address_type == 0 || hci_stack->le_advertisements_random_address_set)){
+        if (hci_stack->le_advertisements_todo & LE_ADVERTISEMENT_TASKS_ENABLE){
             hci_stack->le_advertisements_todo &= ~LE_ADVERTISEMENT_TASKS_ENABLE;
             hci_send_cmd(&hci_le_set_advertise_enable, 1);
             return;
@@ -2689,8 +2760,8 @@ static void hci_run(void){
                  0x0030,    // scan interval: 30 ms
                  1,         // use whitelist
                  0,         // peer address type
-                 null_addr,      // peer bd addr
-                 hci_stack->adv_addr_type, // our addr type:
+                 null_addr, // peer bd addr
+                 hci_stack->le_own_addr_type, // our addr type:
                  0x0008,    // conn interval min
                  0x0018,    // conn interval max
                  0,         // conn latency
@@ -2727,7 +2798,7 @@ static void hci_run(void){
                                      0,         // don't use whitelist
                                      connection->address_type, // peer address type
                                      connection->address,      // peer bd addr
-                                     hci_stack->adv_addr_type, // our addr type:
+                                     hci_stack->le_own_addr_type,  // our addr type:
                                      0x0008,    // conn interval min
                                      0x0018,    // conn interval max
                                      0,         // conn latency
@@ -3064,16 +3135,26 @@ int hci_send_cmd_packet(uint8_t *packet, int size){
             connectionClearAuthenticationFlags(conn, SSP_PAIRING_ACTIVE);
         }
     }
+
+#ifdef ENABLE_SCO_OVER_HCI
+    // setup_synchronous_connection? Voice setting at offset 22
+    if (IS_COMMAND(packet, hci_setup_synchronous_connection)){
+        // TODO: compare to current setting if sco connection already active
+        hci_stack->sco_voice_setting_active = little_endian_read_16(packet, 15);
+    }
+    // accept_synchronus_connection? Voice setting at offset 18
+    if (IS_COMMAND(packet, hci_accept_synchronous_connection)){
+        // TODO: compare to current setting if sco connection already active
+        hci_stack->sco_voice_setting_active = little_endian_read_16(packet, 19);
+    }
+#endif
 #endif
 
 #ifdef ENABLE_BLE
 #ifdef ENABLE_LE_PERIPHERAL
     if (IS_COMMAND(packet, hci_le_set_random_address)){
-        hci_stack->le_advertisements_random_address_set = 1;
-        reverse_bd_addr(&packet[3], hci_stack->adv_address);
-    }
-    if (IS_COMMAND(packet, hci_le_set_advertising_parameters)){
-        hci_stack->adv_addr_type = packet[8];
+        hci_stack->le_random_address_set = 1;
+        reverse_bd_addr(&packet[3], hci_stack->le_random_address);
     }
     if (IS_COMMAND(packet, hci_le_set_advertise_enable)){
         hci_stack->le_advertisements_active = packet[3];
@@ -3659,7 +3740,6 @@ void gap_scan_response_set_data(uint8_t scan_response_data_length, uint8_t * sca
  * @param adv_int_min
  * @param adv_int_max
  * @param adv_type
- * @param own_address_type
  * @param direct_address_type
  * @param direct_address
  * @param channel_map
@@ -3668,13 +3748,12 @@ void gap_scan_response_set_data(uint8_t scan_response_data_length, uint8_t * sca
  * @note internal use. use gap_advertisements_set_params from gap_le.h instead.
  */
  void hci_le_advertisements_set_params(uint16_t adv_int_min, uint16_t adv_int_max, uint8_t adv_type,
-    uint8_t own_address_type, uint8_t direct_address_typ, bd_addr_t direct_address,
+    uint8_t direct_address_typ, bd_addr_t direct_address,
     uint8_t channel_map, uint8_t filter_policy) {
 
     hci_stack->le_advertisements_interval_min = adv_int_min;
     hci_stack->le_advertisements_interval_max = adv_int_max;
     hci_stack->le_advertisements_type = adv_type;
-    hci_stack->le_advertisements_own_address_type = own_address_type;
     hci_stack->le_advertisements_direct_address_type = direct_address_typ;
     hci_stack->le_advertisements_channel_map = channel_map;
     hci_stack->le_advertisements_filter_policy = filter_policy;
@@ -3683,12 +3762,6 @@ void gap_scan_response_set_data(uint8_t scan_response_data_length, uint8_t * sca
     hci_stack->le_advertisements_todo |= LE_ADVERTISEMENT_TASKS_SET_PARAMS;
     gap_advertisments_changed();
  }
-
-void hci_le_advertisements_set_own_address_type(uint8_t own_address_type){
-    hci_stack->le_advertisements_own_address_type = own_address_type;
-    hci_stack->le_advertisements_todo |= LE_ADVERTISEMENT_TASKS_SET_PARAMS;
-    gap_advertisments_changed();
-}
 
 /**
  * @brief Enable/Disable Advertisements
@@ -3706,6 +3779,22 @@ void gap_advertisements_enable(int enabled){
 }
 
 #endif
+
+void hci_le_set_own_address_type(uint8_t own_address_type){
+    log_info("hci_le_set_own_address_type: old %u, new %u", hci_stack->le_own_addr_type, own_address_type);
+    if (own_address_type == hci_stack->le_own_addr_type) return;
+    hci_stack->le_own_addr_type = own_address_type;
+
+#ifdef ENABLE_LE_PERIPHERAL
+    // update advertisement parameters, too
+    hci_stack->le_advertisements_todo |= LE_ADVERTISEMENT_TASKS_SET_PARAMS;
+    gap_advertisments_changed();
+#endif
+#ifdef ENABLE_LE_CENTRAL
+    // note: we don't update scan parameters or modify ongoing connection attempts
+#endif
+}
+
 #endif
 
 uint8_t gap_disconnect(hci_con_handle_t handle){

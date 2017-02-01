@@ -71,8 +71,8 @@ Status               | Platform
 
 Chipset              | Type      | HCI Transport   | SCO over HCI (2) | BTstack folder | Comment 
 -------------------- |-----------| ----------------|------------------|----------------|---------
-Broadcom UART        | Dual mode | H4, H5          | No (didn't work) | bcm            | Max UART baudrate 3 mbps
-Broadcom USB Dongles | Dual mode | USB             | No (didn't work) | bcm            | 
+Broadcom UART        | Dual mode | H4, H5          | Probably         | bcm            | Max UART baudrate 2 mbps
+Broadcom USB Dongles | Dual mode | USB             | Yes              | bcm            | 
 CSR UART             | Dual mode | H4, H5          | No (didn't work) | csr            | 
 CSR USB Dongles      | Dual mode | USB             | Yes              | csr            |
 EM 9301              | LE        | SPI             | n.a.             | em9301         | Custom HCI SPI implementation

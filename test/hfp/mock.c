@@ -303,6 +303,10 @@ void rfcomm_accept_connection(uint16_t rfcomm_cid){
 	// printf("rfcomm_accept_connection \n");
 }
 
+void rfcomm_decline_connection(uint16_t rfcomm_cid){
+    // printf("rfcomm_accept_connection \n");
+}
+
 void btstack_run_loop_add_timer(btstack_timer_source_t *timer){
 }
 

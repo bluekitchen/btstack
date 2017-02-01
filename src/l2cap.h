@@ -241,7 +241,7 @@ uint16_t l2cap_max_le_mtu(void);
  * @param psm
  * @param mtu
  * @param local_cid
- * @param status
+ * @return status
  */
 uint8_t l2cap_create_channel(btstack_packet_handler_t packet_handler, bd_addr_t address, uint16_t psm, uint16_t mtu, uint16_t * out_local_cid);
 

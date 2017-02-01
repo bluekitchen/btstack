@@ -33,8 +33,8 @@ CSR, which has been acquired by Qualcomm, provides all relevant information on t
 
 Chipset              | Type      | HCI Transport  | BD_ADDR (1)  | SCO over HCI (2) | LE DLE | Multiple LE Roles    | BTstack folder | Comment 
 -------------------- |-----------| ---------------|--------------|------------------|--------|----------------------|----------------|---------
-Broadcom UART        | Dual mode | H4, H5         | rarely       | No (didn't work) | No     |      Maybe (3)       | bcm            | Max UART baudrate 3 mbps
-Broadcom USB Dongles | Dual mode | USB            | Yes          | No (didn't work) | No     |         No           | bcm            | 
+Broadcom UART        | Dual mode | H4, H5         | rarely       | Probably (2)     | No     |      Maybe (3)       | bcm            | Max UART baudrate 2 mbps
+Broadcom USB Dongles | Dual mode | USB            | Yes          | Yes              | No     |         No           | bcm            | 
 CSR UART             | Dual mode | H4, H5         | rarely       | No (didn't work) | No     |         No           | csr            | 
 CSR USB Dongles      | Dual mode | USB            | Mostly       | Yes              | No     |         No           | csr            |
 Dialog DA14581       | LE        | H4, SPI        | ?            | n.a.             | No     |         No           |                | Waiting for dev kit
@@ -65,17 +65,17 @@ Broadcom USB dongles do not require special configuration, however SCO data is n
 
 To find the correct file, Broadcom chipsets return their model number when asked for their local name.
 
-BTstack supports uploading of the init script in two variants: using .hcd files looked up by name in the posix-h4 port and by linking against the init script in the WICED port.
+BTstack supports uploading of the init script in two variants: using .hcd files looked up by name in the posix-h4 port and by linking against the init script in the WICED port. While the init script is processed, the chipsets RTS line goes high, but only 2 ms after the command complete event for the last command from the init script was sent. BTstack waits for 10 ms after receiving the command complete event for the last command to avoid sending before RTS goes high and the command fails.
 
 **BD Addr** can be set with a custom command. A fixed addres is provided on some modules, e.g. the AP6212A, but not on others. 
 
-**SCO data** can be configured with a custom command found in the bluez sources. We haven't been able to route SCO data over HCI yet.
+**SCO data** can be configured with a custom command found in the bluez sources. It works with USB chipsets. The chipsets don't implement the SCO Flow Control that is used by BTstack for UART connected devices. A forum suggests to send SCO packets as fast as they are received since both directions have the same constant speed.
 
 **Baud rate** can be set with custom command. The baud rate resets during the warm start after uploading the init script. So, the overall scheme is this: start at default baud rate, get local version info, send custom Broadcom baud rate change command, wait for response, set local UART to high baud rate, and then send init script. After sending the last command from the init script, reset the local UART. Finally, send custom baud rate change command, wait for response, and set local UART to high baud rate.
 
 **BTstack integration**: The common code for all Broadcom chipsets is provided by *btstack_chipset_bcm.c*. During the setup, *btstack_chipset_bcm_instance* function is used to get a *btstack_chipset_t* instance and passed to *hci_init* function.
 
-SCO Data can not be routed over HCI via USB or UART, so HFP Wide-Band Speech is not supported currently. HSP and HFP Narrow Band Speech is supported via I2C/PCM pins.
+SCO Data can be routed over HCI for both USB dongles and UART connections, however BTstack does not provide any form of flow control for UART connections. HSP and HFP Narrow Band Speech is supported via I2C/PCM pins.
 
 ## CSR
 

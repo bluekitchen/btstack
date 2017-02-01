@@ -140,7 +140,6 @@ if __name__ == "__main__":
     nr_blocks = 0
     nr_subbands = 0
     
-    print len(sys.argv)
     if (len(sys.argv) < 7):
         print(usage)
         sys.exit(1)
@@ -151,6 +150,7 @@ if __name__ == "__main__":
             sys.exit(1)
         
         msbc_enabled = int(sys.argv[7]) 
+        print("msbc_enabled %d"%msbc_enabled)
         if msbc_enabled:
             sbcfile = infile.replace('.wav', '-encoded.msbc')
         else:
@@ -161,12 +161,9 @@ if __name__ == "__main__":
         bitpool = int(sys.argv[4])
         allocation_method = int(sys.argv[5]) 
         
-        force_channel_mode = 0   
-        if len(sys.argv) == 6:
-            force_channel_mode = int(sys.argv[6]) 
-            if force_channel_mode != 2 or force_channel_mode != 3:
-                print(usage)
-                sys.exit(1)
+        force_channel_mode = int(sys.argv[6]) 
+        print("force_channel_mode %d"%force_channel_mode)
+
 
         fin = wave.open(infile, 'rb')
         nr_channels = fin.getnchannels()
@@ -188,9 +185,10 @@ if __name__ == "__main__":
         fout = open(sbcfile, 'wb')
         while audio_frame_count < nr_audio_frames:
             if subband_frame_count % 200 == 0:
-                print("== Frame %d ==" % (subband_frame_count))
+                print("== Frame %d == "  % (subband_frame_count))
 
-            sbc_encoder_frame = SBCFrame(nr_blocks, nr_subbands, nr_channels, bitpool, sampling_frequency, allocation_method)
+            sbc_encoder_frame = SBCFrame(nr_blocks, nr_subbands, nr_channels, bitpool, sampling_frequency, allocation_method, force_channel_mode)
+            
             if subband_frame_count == 0:
                 print sbc_encoder_frame
             fetch_samples_for_next_sbc_frame(fin, sbc_encoder_frame)
