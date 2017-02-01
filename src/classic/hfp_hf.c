@@ -833,7 +833,7 @@ static void hfp_run_for_context(hfp_connection_t * hfp_connection){
                     hfp_connection->ok_pending = 1;
                     hfp_connection->generic_status_update_bitmap = store_bit(hfp_connection->generic_status_update_bitmap, i, 0);
                     char buffer[30];
-                    sprintf(buffer, "AT%s=%u,%u\r\n", HFP_TRANSFER_HF_INDICATOR_STATUS, hfp_indicators[i], hfp_indicators_value[i]);
+                    sprintf(buffer, "AT%s=%u,%u\r\n", HFP_TRANSFER_HF_INDICATOR_STATUS, hfp_indicators[i], (unsigned int) hfp_indicators_value[i]);
                     send_str_over_rfcomm(hfp_connection->rfcomm_cid, buffer);
                 } else {
                     log_info("Not sending HF indicator %u as it is disabled", hfp_indicators[i]);
