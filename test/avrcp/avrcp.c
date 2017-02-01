@@ -590,7 +590,7 @@ void avrcp_get_capabilities(uint16_t con_handle){
 
 
 void avrcp_play(uint16_t con_handle){
-    request_pass_through_press_control_cmd(con_handle, AVRCP_OPERATION_ID_PLAY, 0x38);
+    request_pass_through_press_control_cmd(con_handle, AVRCP_OPERATION_ID_PLAY, 0);
 }
 
 void avrcp_stop(uint16_t con_handle){
@@ -606,13 +606,13 @@ void avrcp_rewind(uint16_t con_handle){
 }
 
 void avrcp_fast_forward(uint16_t con_handle){
-    request_pass_through_press_control_cmd(con_handle, AVRCP_OPERATION_ID_FAST_FORWARD, 0x3F);
+    request_pass_through_press_control_cmd(con_handle, AVRCP_OPERATION_ID_FAST_FORWARD, 0);
 }
 
 void avrcp_forward(uint16_t con_handle){
-    request_pass_through_press_control_cmd(con_handle, AVRCP_OPERATION_ID_FORWARD, 0x75);
+    request_pass_through_press_control_cmd(con_handle, AVRCP_OPERATION_ID_FORWARD, 0);
 } 
 
 void avrcp_backward(uint16_t con_handle){
-    request_pass_through_press_control_cmd(con_handle, AVRCP_OPERATION_ID_BACKWARD, 0x65);
+    request_pass_through_press_control_cmd(con_handle, AVRCP_OPERATION_ID_BACKWARD, 0);
 }
