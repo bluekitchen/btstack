@@ -288,9 +288,81 @@ static avrcp_connection_t * get_avrcp_connection_for_l2cap_signaling_cid(uint16_
     return NULL;
 }
 
+static void avrcp_request_can_send_now(avrcp_connection_t * connection, uint16_t l2cap_cid){
+    connection->wait_to_send = 1;
+    l2cap_request_can_send_now_event(l2cap_cid);
+}
+
+static void request_pass_through_release_control_cmd(avrcp_connection_t * connection){
+    connection->state = AVCTP_W2_SEND_RELEASE_COMMAND;
+    connection->transaction_label++;
+    connection->cmd_operands[0] = 0x80 | connection->cmd_operands[0];
+    avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
+}
+
+static void request_pass_through_press_control_cmd(uint16_t con_handle, avrcp_operation_id_t opid, uint16_t playback_speed){
+    avrcp_connection_t * connection = get_avrcp_connection_for_con_handle(con_handle);
+    if (!connection){
+        log_error("avrcp: coud not find a connection.");
+        return;
+    }
+    if (connection->state != AVCTP_CONNECTION_OPENED) return;
+    connection->state = AVCTP_W2_SEND_PRESS_COMMAND;
+    
+    connection->transaction_label++;
+    connection->cmd_to_send =  AVRCP_CMD_OPCODE_PASS_THROUGH;
+    connection->command_type = AVRCP_CTYPE_CONTROL;
+    connection->subunit_type = AVRCP_SUBUNIT_TYPE_PANEL; 
+    connection->subunit_id =   0;
+    connection->cmd_operands_lenght = 0;
+
+    connection->cmd_operands_lenght = 2;
+    connection->cmd_operands[0] = opid;
+    if (playback_speed > 0){
+        connection->cmd_operands[2] = playback_speed;
+        connection->cmd_operands_lenght++;
+    }
+    connection->cmd_operands[1] = connection->cmd_operands_lenght - 2;
+    avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
+}
+
+
+static int avrcp_send_cmd(uint16_t cid, avrcp_connection_t * connection){
+    uint8_t command[20];
+    int pos = 0; 
+    // transport header
+    // Transaction label | Packet_type | C/R | IPID (1 == invalid profile identifier)
+    command[pos++] = (connection->transaction_label << 4) | (AVRCP_SINGLE_PACKET << 2) | (AVRCP_COMMAND_FRAME << 1) | 0;
+    // Profile IDentifier (PID)
+    command[pos++] = AV_REMOTE_CONTROL >> 8;
+    command[pos++] = AV_REMOTE_CONTROL & 0x00FF;
+
+    // command_type
+    command[pos++] = connection->command_type;
+    // subunit_type | subunit ID
+    command[pos++] = (connection->subunit_type << 3) | connection->subunit_id;
+    // opcode
+    command[pos++] = (uint8_t)connection->cmd_to_send;
+    // operands
+    memcpy(command+pos, connection->cmd_operands, connection->cmd_operands_lenght);
+    pos += connection->cmd_operands_lenght;
+
+    return l2cap_send(cid, command, pos);
+}
+
+
 static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connection_t * connection, uint8_t *packet, uint16_t size){
-    if (connection->state != AVCTP_W2_RECEIVE_RESPONSE) return;
-    connection->state = AVCTP_CONNECTION_OPENED;
+    switch (connection->state){
+        case AVCTP_W2_RECEIVE_PRESS_RESPONSE:
+            connection->state = AVCTP_W2_SEND_RELEASE_COMMAND;
+            break;
+        case AVCTP_W2_RECEIVE_RESPONSE:
+            connection->state = AVCTP_CONNECTION_OPENED;
+            break;
+        default:
+            return;
+    }
+    
     avrcp_command_type_t ctype;
     avrcp_subunit_type_t subunit_type;
     avrcp_subunit_type_t subunit_id;
@@ -332,37 +404,28 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
         }
         case AVRCP_CMD_OPCODE_VENDOR_DEPENDENT:
             break;
+        case AVRCP_CMD_OPCODE_PASS_THROUGH:
+            if (connection->state == AVCTP_W2_SEND_RELEASE_COMMAND){
+                request_pass_through_release_control_cmd(connection);
+            }
+            break;
         default:
             break;
     }
-    
-}
-
-static int avrcp_send_cmd(uint16_t cid, avrcp_connection_t * connection){
-    uint8_t command[20];
-    int pos = 0; 
-    // transport header
-    // Transaction label | Packet_type | C/R | IPID (1 == invalid profile identifier)
-    command[pos++] = (connection->transaction_label << 4) | (AVRCP_SINGLE_PACKET << 2) | (AVRCP_COMMAND_FRAME << 1) | 0;
-    // Profile IDentifier (PID)
-    command[pos++] = AV_REMOTE_CONTROL >> 8;
-    command[pos++] = AV_REMOTE_CONTROL & 0x00FF;
-
-    // command_type
-    command[pos++] = connection->command_type;
-    // subunit_type | subunit ID
-    command[pos++] = (connection->subunit_type << 3) | connection->subunit_id;
-    // opcode
-    command[pos++] = (uint8_t)connection->cmd_to_send;
-    // operands
-    memcpy(command+pos, connection->cmd_operands, connection->cmd_operands_lenght);
-    pos += connection->cmd_operands_lenght;
-    return l2cap_send(cid, command, sizeof(command));
 }
 
 static void avrcp_handle_can_send_now(avrcp_connection_t * connection){
-    if (connection->state != AVCTP_W2_SEND_COMMAND) return;
-    connection->state = AVCTP_W2_RECEIVE_RESPONSE;
+    switch (connection->state){
+        case AVCTP_W2_SEND_PRESS_COMMAND:
+            connection->state = AVCTP_W2_RECEIVE_PRESS_RESPONSE;
+            break;
+        case AVCTP_W2_SEND_COMMAND:
+        case AVCTP_W2_SEND_RELEASE_COMMAND:
+            connection->state = AVCTP_W2_RECEIVE_RESPONSE;
+            break;
+        default:
+            return;
+    }
     avrcp_send_cmd(connection->l2cap_signaling_cid, connection);
 }
 
@@ -483,12 +546,6 @@ void avrcp_connect(bd_addr_t bd_addr){
     l2cap_create_channel(packet_handler, connection->remote_addr, PSM_AVCTP, 0xffff, NULL);
 }
 
-static void avrcp_request_can_send_now(avrcp_connection_t * connection, uint16_t l2cap_cid){
-    connection->wait_to_send = 1;
-    l2cap_request_can_send_now_event(l2cap_cid);
-}
-
-
 void avrcp_unit_info(uint16_t con_handle){
     avrcp_connection_t * connection = get_avrcp_connection_for_con_handle(con_handle);
     if (!connection){
@@ -498,13 +555,13 @@ void avrcp_unit_info(uint16_t con_handle){
     if (connection->state != AVCTP_CONNECTION_OPENED) return;
     connection->state = AVCTP_W2_SEND_COMMAND;
     
-    connection->cmd_to_send = AVRCP_CMD_OPCODE_UNIT_INFO;
-    connection->cmd_operands_lenght = 5;
-    connection->subunit_type = AVRCP_SUBUNIT_TYPE_UNIT;
-    connection->subunit_id =   AVRCP_SUBUNIT_ID_IGNORE;
-    connection->command_type = AVRCP_CTYPE_STATUS;
     connection->transaction_label++;
+    connection->cmd_to_send = AVRCP_CMD_OPCODE_UNIT_INFO;
+    connection->command_type = AVRCP_CTYPE_STATUS;
+    connection->subunit_type = AVRCP_SUBUNIT_TYPE_UNIT; //vendor unique
+    connection->subunit_id =   AVRCP_SUBUNIT_ID_IGNORE;
     memset(connection->cmd_operands, 0xFF, connection->cmd_operands_lenght);
+    connection->cmd_operands_lenght = 5;
     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
 }
 
@@ -517,11 +574,11 @@ void avrcp_get_capabilities(uint16_t con_handle){
     if (connection->state != AVCTP_CONNECTION_OPENED) return;
     connection->state = AVCTP_W2_SEND_COMMAND;
     
+    connection->transaction_label++;
     connection->cmd_to_send = AVRCP_CMD_OPCODE_VENDOR_DEPENDENT;
     connection->command_type = AVRCP_CTYPE_STATUS;
     connection->subunit_type = AVRCP_SUBUNIT_TYPE_PANEL;
     connection->subunit_id = 0;
-    connection->transaction_label++;
     big_endian_store_24(connection->cmd_operands, 0, BT_SIG_COMPANY_ID);
     connection->cmd_operands[3] = 0x10;
     connection->cmd_operands[4] = 0;
@@ -529,4 +586,33 @@ void avrcp_get_capabilities(uint16_t con_handle){
     connection->cmd_operands[7] = 0x02;
     connection->cmd_operands_lenght = 8;
     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
+}
+
+
+void avrcp_play(uint16_t con_handle){
+    request_pass_through_press_control_cmd(con_handle, AVRCP_OPERATION_ID_PLAY, 0x38);
+}
+
+void avrcp_stop(uint16_t con_handle){
+    request_pass_through_press_control_cmd(con_handle, AVRCP_OPERATION_ID_STOP, 0);
+}
+
+void avrcp_pause(uint16_t con_handle){
+    request_pass_through_press_control_cmd(con_handle, AVRCP_OPERATION_ID_PAUSE, 0);
+}
+
+void avrcp_rewind(uint16_t con_handle){
+    request_pass_through_press_control_cmd(con_handle, AVRCP_OPERATION_ID_REWIND, 0);
+}
+
+void avrcp_fast_forward(uint16_t con_handle){
+    request_pass_through_press_control_cmd(con_handle, AVRCP_OPERATION_ID_FAST_FORWARD, 0x3F);
+}
+
+void avrcp_forward(uint16_t con_handle){
+    request_pass_through_press_control_cmd(con_handle, AVRCP_OPERATION_ID_FORWARD, 0x75);
+} 
+
+void avrcp_backward(uint16_t con_handle){
+    request_pass_through_press_control_cmd(con_handle, AVRCP_OPERATION_ID_BACKWARD, 0x65);
 }

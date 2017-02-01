@@ -65,13 +65,16 @@ typedef enum {
     AVRCP_CTYPE_RESPONSE_NOT_IMPLEMENTED = 8,
     AVRCP_CTYPE_RESPONSE_ACCEPTED,
     AVRCP_CTYPE_RESPONSE_REJECTED,
-    AVRCP_CTYPE_RESPONSE_IN_TRANSITION,
+    AVRCP_CTYPE_RESPONSE_IN_TRANSITION, // target state is in transition. A subsequent STATUS command, may result in the return of a STABLE status
     AVRCP_CTYPE_RESPONSE_IMPLEMENTED_STABLE,
     AVRCP_CTYPE_RESPONSE_CHANGED_STABLE,
     AVRCP_CTYPE_RESPONSE_RESERVED,
-    AVRCP_CTYPE_RESPONSE_INTERIM
+    AVRCP_CTYPE_RESPONSE_INTERIM            // target is unable to respond with either ACCEPTED or REJECTED within 100 millisecond
 } avrcp_command_type_t;
 
+// control command response: accepted, rejected, interim
+// status command response: not implemented, rejected, in transiiton, stable
+// notify command response: not implemented, rejected, changed
 typedef enum {
     AVRCP_SUBUNIT_TYPE_MONITOR = 0,
     AVRCP_SUBUNIT_TYPE_AUDIO = 1,
@@ -87,7 +90,8 @@ typedef enum {
     AVRCP_SUBUNIT_TYPE_CAMERA_STORAGE,
     AVRCP_SUBUNIT_TYPE_VENDOR_UNIQUE = 0x1C,
     AVRCP_SUBUNIT_TYPE_RESERVED_FOR_ALL_SUBUNIT_TYPES,
-    AVRCP_SUBUNIT_TYPE_EXTENDED_TO_NEXT_BYTE,
+    AVRCP_SUBUNIT_TYPE_EXTENDED_TO_NEXT_BYTE, // The unit_type field may take value 1E16, which means that the field is extended to the following byte. In that case, an additional byte for extended_unit_type will be added immediately following operand[1].
+                                              // Further extension is possible when the value of extended_unit_type is FF16, in which case another byte will be added.
     AVRCP_SUBUNIT_TYPE_UNIT = 0x1F
 } avrcp_subunit_type_t;
 
@@ -96,20 +100,34 @@ typedef enum {
     AVRCP_SUBUNIT_ID_IGNORE = 7
 } avrcp_subunit_id_t;
 
-typedef enum{
+typedef enum {
     AVRCP_CMD_OPCODE_VENDOR_DEPENDENT = 0x00,
     AVRCP_CMD_OPCODE_RESERVE = 0x01,
     AVRCP_CMD_OPCODE_UNIT_INFO = 0x30,
     AVRCP_CMD_OPCODE_SUBUNIT_INFO = 0x31,
+    AVRCP_CMD_OPCODE_PASS_THROUGH = 0x7C,
     AVRCP_CMD_OPCODE_VERSION = 0xB0,
     AVRCP_CMD_OPCODE_POWER = 0xB2
 } avrcp_command_opcode_t;
 
 typedef enum {
+    AVRCP_OPERATION_ID_PLAY = 0x44,
+    AVRCP_OPERATION_ID_STOP = 0x45,
+    AVRCP_OPERATION_ID_PAUSE = 0x46,
+    AVRCP_OPERATION_ID_REWIND = 0x48,
+    AVRCP_OPERATION_ID_FAST_FORWARD = 0x49,
+    AVRCP_OPERATION_ID_FORWARD = 0x4B,
+    AVRCP_OPERATION_ID_BACKWARD = 0x4C
+} avrcp_operation_id_t;
+
+typedef enum {
     AVCTP_CONNECTION_IDLE,
     AVCTP_CONNECTION_W4_L2CAP_CONNECTED,
     AVCTP_CONNECTION_OPENED,
+    AVCTP_W2_SEND_PRESS_COMMAND,
+    AVCTP_W2_SEND_RELEASE_COMMAND,
     AVCTP_W2_SEND_COMMAND,
+    AVCTP_W2_RECEIVE_PRESS_RESPONSE,
     AVCTP_W2_RECEIVE_RESPONSE,
     AVCTP_CONNECTION_W4_L2CAP_DISCONNECTED
 } avctp_connection_state_t;
@@ -180,11 +198,71 @@ void avrcp_connect(bd_addr_t bd_addr);
 void avrcp_unit_info(uint16_t con_handle);
 
 /**
- * @brief Unit info.
+ * @brief Get capabilities.
  * @param con_handle
  */
 void avrcp_get_capabilities(uint16_t con_handle);
 
+/**
+ * @brief Play.
+ * @param con_handle
+ */
+void avrcp_play(uint16_t con_handle);
+
+/**
+ * @brief Stop.
+ * @param con_handle
+ */
+void avrcp_stop(uint16_t con_handle);
+
+/**
+ * @brief Pause.
+ * @param con_handle
+ */
+void avrcp_pause(uint16_t con_handle);
+
+/**
+ * @brief Fast forward.
+ * @param con_handle
+ */
+void avrcp_fast_forward(uint16_t con_handle);
+
+/**
+ * @brief Rewind.
+ * @param con_handle
+ */
+void avrcp_rewind(uint16_t con_handle);
+
+/**
+ * @brief Forward.
+ * @param con_handle
+ */
+void avrcp_forward(uint16_t con_handle); 
+
+/**
+ * @brief Backward.
+ * @param con_handle
+ */
+void avrcp_backward(uint16_t con_handle);
+
+
+/**
+ * @brief Register notification.
+ * - EVENT_PLAYBACK_STATUS_CHANGED 
+ * - EVENT_TRACK_CHANGED
+ * - EVENT_NOW_PLAYING_CONTENT_CHANGED
+ * - EVENT_AVAILABLE_PLAYERS_CHANGED
+ * - EVENT_ADDRESSED_PLAYER_CHANGED
+ * - EVENT_VOLUME_CHANGED
+ * @param con_handle
+ */
+// void avrcp_register_notification(uint16_t con_handle);
+
+/**
+ * @brief Get play status.
+ * @param con_handle
+ */
+// void avrcp_get_play_status(uint16_t con_handle);
 
 /* API_END */
 #if defined __cplusplus

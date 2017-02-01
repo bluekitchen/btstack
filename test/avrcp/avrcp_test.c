@@ -114,8 +114,14 @@ static void show_usage(void){
     printf("c      - create connection to addr %s\n", bd_addr_to_str(remote));
     printf("C      - disconnect\n");
     printf("u      - get unit info\n");
-    printf("p      - get capabilities\n");
-    
+    printf("t      - get capabilities\n");
+    printf("l      - avrcp_play\n");
+    printf("s      - avrcp_stop\n");
+    printf("p      - avrcp_pause\n");
+    printf("w      - avrcp_fast_forward\n");
+    printf("r      - avrcp_rewind\n");
+    printf("f      - avrcp_forward\n"); 
+    printf("b      - avrcp_backward\n");
     printf("Ctrl-c - exit\n");
     printf("---\n");
 }
@@ -125,20 +131,39 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
     UNUSED(callback_type);
 
     int cmd = btstack_stdin_read();
-
+    printf("- execute command %c\n", cmd);
     switch (cmd){
         case 'c':
-            printf("c      - create connection to addr %s\n", bd_addr_to_str(remote));
             avrcp_connect(remote);
             break;
         case 'u':
-            printf("u      - get unit info\n");
             avrcp_unit_info(con_handle);
             break;
-        case 'p':
-            printf("p      - get capabilities\n");
+        case 't':
             avrcp_get_capabilities(con_handle);
             break;
+        case 'l':
+            avrcp_play(con_handle);
+            break;
+        case 's':
+            avrcp_stop(con_handle);
+            break;
+        case 'p':
+            avrcp_pause(con_handle);
+            break;
+        case 'w':
+            avrcp_fast_forward(con_handle);
+            break;
+        case 'r':
+            avrcp_rewind(con_handle);
+            break;
+        case 'f':
+            avrcp_forward(con_handle); 
+            break;
+        case 'b':
+            avrcp_backward(con_handle);
+            break;
+
         default:
             show_usage();
             break;
