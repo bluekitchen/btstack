@@ -126,6 +126,7 @@ typedef enum {
     AVCTP_CONNECTION_OPENED,
     AVCTP_W2_SEND_PRESS_COMMAND,
     AVCTP_W2_SEND_RELEASE_COMMAND,
+    AVCTP_W4_STOP,
     AVCTP_W2_SEND_COMMAND,
     AVCTP_W2_RECEIVE_PRESS_RESPONSE,
     AVCTP_W2_RECEIVE_RESPONSE,
@@ -149,6 +150,7 @@ typedef struct {
     avrcp_subunit_id_t   subunit_id;
     uint8_t cmd_operands[20];
     uint8_t cmd_operands_lenght;
+    btstack_timer_source_t press_and_hold_cmd_timer;
 } avrcp_connection_t;
 
 /**
@@ -225,13 +227,15 @@ void avrcp_pause(uint16_t con_handle);
  * @brief Fast forward.
  * @param con_handle
  */
-void avrcp_fast_forward(uint16_t con_handle);
+void avrcp_start_fast_forward(uint16_t con_handle);
+void avrcp_stop_fast_forward(uint16_t con_handle);
 
 /**
  * @brief Rewind.
  * @param con_handle
  */
-void avrcp_rewind(uint16_t con_handle);
+void avrcp_start_rewind(uint16_t con_handle);
+void avrcp_stop_rewind(uint16_t con_handle);
 
 /**
  * @brief Forward.

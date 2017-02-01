@@ -119,7 +119,8 @@ static void show_usage(void){
     printf("s      - avrcp_stop\n");
     printf("p      - avrcp_pause\n");
     printf("w      - avrcp_fast_forward\n");
-    printf("r      - avrcp_rewind\n");
+    printf("r      - avrcp_start_rewind\n");
+    printf("R      - avrcp_stop_rewind\n");
     printf("f      - avrcp_forward\n"); 
     printf("b      - avrcp_backward\n");
     printf("Ctrl-c - exit\n");
@@ -152,10 +153,16 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
             avrcp_pause(con_handle);
             break;
         case 'w':
-            avrcp_fast_forward(con_handle);
+            avrcp_start_fast_forward(con_handle);
+            break;
+        case 'W':
+            avrcp_stop_fast_forward(con_handle);
             break;
         case 'r':
-            avrcp_rewind(con_handle);
+            avrcp_start_rewind(con_handle);
+            break;
+        case 'R':
+            avrcp_stop_rewind(con_handle);
             break;
         case 'f':
             avrcp_forward(con_handle); 
