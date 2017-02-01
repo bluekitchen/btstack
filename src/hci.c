@@ -972,6 +972,11 @@ static void hci_initialization_timeout_handler(btstack_timer_source_t * ds){
                 hci_run();
             }
             break;
+        case HCI_INIT_W4_CUSTOM_INIT_BCM_DELAY:
+            // otherwise continue
+            hci_stack->substate = HCI_INIT_W4_READ_LOCAL_SUPPORTED_COMMANDS;
+            hci_send_cmd(&hci_read_local_supported_commands);
+            break;
         default:
             break;
     }
@@ -1080,9 +1085,10 @@ static void hci_initializing_run(void){
                     break;
                 }
                 log_info("Init script done");
-            
-                // Init script download causes baud rate to reset on Broadcom chipsets, restore UART baud rate if needed
+
+                // Init script download on Broadcom chipsets causes:
                 if (hci_stack->manufacturer == COMPANY_ID_BROADCOM_CORPORATION){
+                    // - baud rate to reset, restore UART baud rate if needed
                     int need_baud_change = hci_stack->config
                         && hci_stack->chipset
                         && hci_stack->chipset->set_baudrate_command
@@ -1093,8 +1099,17 @@ static void hci_initializing_run(void){
                         log_info("Local baud rate change to %"PRIu32" after init script (bcm)", baud_rate);
                         hci_stack->hci_transport->set_baudrate(baud_rate);
                     }
-                }
-            }
+
+                    // - RTS will raise during update, but manual RTS/CTS in WICED port on RedBear Duo cannot handle this
+                    //   -> Work around: wait a few milliseconds here.
+                    log_info("BCM delay after init script");
+                    hci_stack->substate = HCI_INIT_W4_CUSTOM_INIT_BCM_DELAY;
+                    btstack_run_loop_set_timer(&hci_stack->timeout, 10);
+                    btstack_run_loop_set_timer_handler(&hci_stack->timeout, hci_initialization_timeout_handler);
+                    btstack_run_loop_add_timer(&hci_stack->timeout);
+                    break;
+                }                
+                        }
             // otherwise continue
             hci_stack->substate = HCI_INIT_W4_READ_LOCAL_SUPPORTED_COMMANDS;
             hci_send_cmd(&hci_read_local_supported_commands);
