@@ -54,7 +54,7 @@ static btstack_packet_callback_registration_t hci_event_callback_registration;
 static const hci_transport_config_uart_t hci_transport_config_uart = {
     HCI_TRANSPORT_CONFIG_UART,
     115200,
-    0,
+    2000000,    // 300000+ didn't work reliably, the 48 MHz UART config might be needed for this
     1,
     NULL,
 };
@@ -77,6 +77,23 @@ void application_start(void){
     host_platform_init_wlan_powersave_clock();
 
     printf("BTstack on WICED\n");
+
+#if 0
+    // init GPIOs D0-D5 for debugging - not used
+    wiced_gpio_init(D0, OUTPUT_PUSH_PULL);
+    wiced_gpio_init(D1, OUTPUT_PUSH_PULL);
+    wiced_gpio_init(D2, OUTPUT_PUSH_PULL);
+    wiced_gpio_init(D3, OUTPUT_PUSH_PULL);
+    wiced_gpio_init(D4, OUTPUT_PUSH_PULL);
+    wiced_gpio_init(D5, OUTPUT_PUSH_PULL);
+
+    wiced_gpio_output_low(D0);
+    wiced_gpio_output_low(D1);
+    wiced_gpio_output_low(D2);
+    wiced_gpio_output_low(D3);
+    wiced_gpio_output_low(D4);
+    wiced_gpio_output_low(D5);
+#endif
 
     // start with BTstack init - especially configure HCI Transport
     btstack_memory_init();
