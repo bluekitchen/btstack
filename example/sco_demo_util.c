@@ -72,9 +72,11 @@
 // number of sco packets until 'report' on console
 #define SCO_REPORT_PERIOD           100
 
+#ifdef HAVE_POSIX_FILE_IO
 // length and name of wav file on disk
 #define SCO_WAV_DURATION_IN_SECONDS 15
 #define SCO_WAV_FILENAME            "sco_input.wav"
+#endif
 
 // name of sbc test files
 #define SCO_MSBC_OUT_FILENAME       "sco_output.msbc"
@@ -420,7 +422,9 @@ static void sco_demo_receive_mSBC(uint8_t * packet, uint16_t size){
 static void sco_demo_init_CVSD(void){
     printf("SCO Demo: Init CVSD\n");
 
+#if defined(SCO_WAV_FILENAME) || defined(USE_PORTAUDIO)
     btstack_cvsd_plc_init(&cvsd_plc_state);
+#endif
 
 #ifdef SCO_WAV_FILENAME
     num_samples_to_write = CVSD_SAMPLE_RATE * SCO_WAV_DURATION_IN_SECONDS;
@@ -452,7 +456,9 @@ static void sco_demo_receive_CVSD(uint8_t * packet, uint16_t size){
         audio_frame_in[i] = little_endian_read_16(packet, 3 + i * 2);
     }
 
+#if defined(SCO_WAV_FILENAME) || defined(USE_PORTAUDIO)
     btstack_cvsd_plc_process_data(&cvsd_plc_state, audio_frame_in, num_samples, audio_frame_out);
+#endif
 
 #ifdef SCO_WAV_FILENAME
     // Samples in CVSD SCO packet are in little endian, ready for wav files (take shortcut)
@@ -735,7 +741,7 @@ void sco_demo_receive(uint8_t * packet, uint16_t size){
     data_received += size - 3;
     packets++;
     if (data_received > 100000){
-        printf("Summary: data %07u, packets %04u, packet with crc errors %0u, byte errors %04u\n", data_received, packets, crc_errors, byte_errors);
+        printf("Summary: data %07u, packets %04u, packet with crc errors %0u, byte errors %04u\n",  (unsigned int) data_received,  (unsigned int) packets, (unsigned int) crc_errors, (unsigned int) byte_errors);
         crc_errors = 0;
         byte_errors = 0;
         data_received = 0;
