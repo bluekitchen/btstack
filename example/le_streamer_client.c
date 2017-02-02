@@ -1,0 +1,283 @@
+/*
+ * Copyright (C) 2014 BlueKitchen GmbH
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ * 3. Neither the name of the copyright holders nor the names of
+ *    contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
+ * 4. Any redistribution, use, or modification is done solely for
+ *    personal benefit and not for any commercial purpose or for
+ *    monetary gain.
+ *
+ * THIS SOFTWARE IS PROVIDED BY BLUEKITCHEN GMBH AND CONTRIBUTORS
+ * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL MATTHIAS
+ * RINGWALD OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
+ * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+ * AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
+ * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ *
+ * Please inquire about commercial licensing options at 
+ * contact@bluekitchen-gmbh.com
+ *
+ */
+
+// *****************************************************************************
+//
+// LE Streamer Client - connects to 'LE Streamer' and subscribes to test characteristic
+//
+// *****************************************************************************
+
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "btstack.h"
+
+typedef enum {
+    TC_IDLE,
+    TC_W4_SCAN_RESULT,
+    TC_W4_CONNECT,
+    TC_W4_SERVICE_RESULT,
+    TC_W4_CHARACTERISTIC_RESULT,
+    TC_W4_TEST_DATA
+} gc_state_t;
+
+static bd_addr_t cmdline_addr = { };
+static int cmdline_addr_found = 0;
+
+// addr and type of device with correct name
+static bd_addr_t      le_streamer_addr;
+static bd_addr_type_t le_streamer_addr_type;
+
+static hci_con_handle_t connection_handle;
+static uint8_t le_streamer_service_uuid[16]        = { 0x00, 0x00, 0xFF, 0x10, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0x80, 0x5F, 0x9B, 0x34, 0xFB};
+static uint8_t le_streamer_characteristic_uuid[16] = { 0x00, 0x00, 0xFF, 0x11, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0x80, 0x5F, 0x9B, 0x34, 0xFB};
+
+static gatt_client_service_t le_streamer_service;
+static gatt_client_characteristic_t le_streamer_characteristic;
+
+static gatt_client_notification_t notification_registration;
+
+static gc_state_t state = TC_IDLE;
+static btstack_packet_callback_registration_t hci_event_callback_registration;
+
+// returns 1 if name is found in advertisement
+static int advertisement_report_contains_name(const char * name, uint8_t * advertisement_report){
+    // get advertisement from report event
+    const uint8_t * adv_data = gap_event_advertising_report_get_data(advertisement_report);
+    uint16_t        adv_len  = gap_event_advertising_report_get_data_length(advertisement_report);
+    int             name_len = strlen(name);
+
+    // iterate over advertisement data
+    ad_context_t context;
+    for (ad_iterator_init(&context, adv_len, adv_data) ; ad_iterator_has_more(&context) ; ad_iterator_next(&context)){
+        uint8_t data_type    = ad_iterator_get_data_type(&context);
+        uint8_t data_size    = ad_iterator_get_data_len(&context);
+        const uint8_t * data = ad_iterator_get_data(&context);
+        int i;
+        switch (data_type){
+            case BLUETOOTH_DATA_TYPE_SHORTENED_LOCAL_NAME:
+            case BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME:
+                // compare common prefix
+                for (i=0; i<data_size && i<name_len;i++){
+                    if (data[i] != name[i]) break;
+                }
+                // prefix match
+                return 1;
+            default:
+                break;
+        }
+    }
+    return 0;
+}
+
+static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(packet_type);
+    UNUSED(channel);
+    UNUSED(size);
+
+    switch(state){
+        case TC_W4_SERVICE_RESULT:
+            switch(hci_event_packet_get_type(packet)){
+                case GATT_EVENT_SERVICE_QUERY_RESULT:
+                    // store service (we expect only one)
+                    gatt_event_service_query_result_get_service(packet, &le_streamer_service);
+                    break;
+                case GATT_EVENT_QUERY_COMPLETE:
+                    if (packet[4] != 0){
+                        printf("SERVICE_QUERY_RESULT - Error status %x.\n", packet[4]);
+                        gap_disconnect(connection_handle);
+                        break;  
+                    } 
+                    // service query complete, look for characteristic
+                    state = TC_W4_CHARACTERISTIC_RESULT;
+                    printf("Search for LE Streamer test characteristic.\n");
+                    gatt_client_discover_characteristics_for_service_by_uuid128(handle_gatt_client_event, connection_handle, &le_streamer_service, le_streamer_characteristic_uuid);
+                    break;
+                default:
+                    break;
+            }
+            break;
+            
+        case TC_W4_CHARACTERISTIC_RESULT:
+            switch(hci_event_packet_get_type(packet)){
+                case GATT_EVENT_CHARACTERISTIC_QUERY_RESULT:
+                    gatt_event_characteristic_query_result_get_characteristic(packet, &le_streamer_characteristic);
+                    break;
+                case GATT_EVENT_QUERY_COMPLETE:
+                    if (packet[4] != 0){
+                        printf("CHARACTERISTIC_QUERY_RESULT - Error status %x.\n", packet[4]);
+                        gap_disconnect(connection_handle);
+                        break;  
+                    } 
+                    // register handler for notifications
+                    gatt_client_listen_for_characteristic_value_updates(&notification_registration, handle_gatt_client_event, connection_handle, &le_streamer_characteristic);
+                    // enable notifications
+                    state = TC_W4_TEST_DATA;
+                    printf("Start streaming - enable notify on test characteristic.\n");
+                    gatt_client_write_client_characteristic_configuration(handle_gatt_client_event, connection_handle, &le_streamer_characteristic, GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION);
+                    break;
+                default:
+                    break;
+            }
+            break;
+
+        case TC_W4_TEST_DATA:
+            switch(hci_event_packet_get_type(packet)){
+                case GATT_EVENT_NOTIFICATION:
+                    printf("Data: ");
+                    printf_hexdump( gatt_event_notification_get_value(packet), gatt_event_notification_get_value_length(packet));
+                case GATT_EVENT_QUERY_COMPLETE:
+                    break;
+                default:
+                    printf("Unknown packet type %x\n", hci_event_packet_get_type(packet));
+                    break;
+            }
+            break;
+
+        default:
+            printf("error\n");
+            break;
+    }
+    
+}
+
+static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(channel);
+    UNUSED(size);
+
+    if (packet_type != HCI_EVENT_PACKET) return;
+    
+    uint8_t event = hci_event_packet_get_type(packet);
+    switch (event) {
+        case BTSTACK_EVENT_STATE:
+            // BTstack activated, get started
+            if (btstack_event_state_get_state(packet) != HCI_STATE_WORKING) break;
+            if (cmdline_addr_found){
+                printf("Connect to %s\n", bd_addr_to_str(cmdline_addr));
+                state = TC_W4_CONNECT;
+                gap_connect(cmdline_addr, 0);
+                break;
+            }
+            printf("Start scanning!\n");
+            state = TC_W4_SCAN_RESULT;
+            gap_set_scan_parameters(0,0x0030, 0x0030);
+            gap_start_scan();
+            break;
+        case GAP_EVENT_ADVERTISING_REPORT:
+            if (state != TC_W4_SCAN_RESULT) return;
+            // check name in advertisement
+            if (!advertisement_report_contains_name("LE Streamer", packet)) return;
+            // store address and type
+            gap_event_advertising_report_get_address(packet, le_streamer_addr);
+            le_streamer_addr_type = gap_event_advertising_report_get_address_type(packet);
+            // stop scanning, and connect to the device
+            state = TC_W4_CONNECT;
+            gap_stop_scan();
+            printf("Stop scan. Connect to device with addr %s.\n", bd_addr_to_str(le_streamer_addr));
+            gap_connect(le_streamer_addr,le_streamer_addr_type);
+            break;
+        case HCI_EVENT_LE_META:
+            // wait for connection complete
+            if (hci_event_le_meta_get_subevent_code(packet) !=  HCI_SUBEVENT_LE_CONNECTION_COMPLETE) break;
+            if (state != TC_W4_CONNECT) return;
+            connection_handle = hci_subevent_le_connection_complete_get_connection_handle(packet);
+            // initialize gatt client context with handle, and add it to the list of active clients
+            // query primary services
+            printf("Search for LE Streamer service.\n");
+            state = TC_W4_SERVICE_RESULT;
+            gatt_client_discover_primary_services_by_uuid128(handle_gatt_client_event, connection_handle, le_streamer_service_uuid);
+            break;
+        case HCI_EVENT_DISCONNECTION_COMPLETE:
+            if (cmdline_addr_found){
+                printf("Disconnected %s\n", bd_addr_to_str(cmdline_addr));
+                return;
+            }
+            printf("Disconnected %s\n", bd_addr_to_str(le_streamer_addr));
+            break;
+        default:
+            break;
+    }
+}
+
+#ifdef HAVE_POSIX_STDIN
+static void usage(const char *name){
+    fprintf(stderr, "Usage: %s [-a|--address aa:bb:cc:dd:ee:ff]\n", name);
+    fprintf(stderr, "If no argument is provided, LE Streamer Client will start scanning and connect to the first device named 'LE Streamer'.\n");
+    fprintf(stderr, "To connect to a specific device use argument [-a].\n\n");
+}
+#endif
+
+int btstack_main(int argc, const char * argv[]);
+int btstack_main(int argc, const char * argv[]){
+
+#ifdef HAVE_POSIX_STDIN
+    int arg = 1;
+    cmdline_addr_found = 0;
+    
+    while (arg < argc) {
+        if(!strcmp(argv[arg], "-a") || !strcmp(argv[arg], "--address")){
+            arg++;
+            cmdline_addr_found = sscanf_bd_addr(argv[arg], cmdline_addr);
+            arg++;
+            if (!cmdline_addr_found) exit(1);
+            continue;
+        }
+        usage(argv[0]);
+        return 0;
+    }
+#else
+    UNUSED(argc);
+    UNUSED(argv);
+#endif
+
+    hci_event_callback_registration.callback = &hci_event_handler;
+    hci_add_event_handler(&hci_event_callback_registration);
+
+    l2cap_init();
+
+    gatt_client_init();
+
+    sm_init();
+    sm_set_io_capabilities(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);
+
+    // turn on!
+    hci_power_control(HCI_POWER_ON);
+
+    return 0;
+}

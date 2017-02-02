@@ -195,7 +195,8 @@ typedef struct l2cap_signaling_response {
     hci_con_handle_t handle;
     uint8_t  sig_id;
     uint8_t  code;
-    uint16_t data; // infoType for INFORMATION REQUEST, result for CONNECTION request and command unknown
+    uint16_t cid;  // source cid for CONNECTION REQUEST
+    uint16_t data; // infoType for INFORMATION REQUEST, result for CONNECTION REQUEST and COMMAND UNKNOWN
 } l2cap_signaling_response_t;
     
 
