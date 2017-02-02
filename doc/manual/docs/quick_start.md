@@ -10,9 +10,9 @@ On Windows, there is no packet manager, but it's easy to download and install al
 
 - [Python](http://www.python.org/getit/) for Windows. When using the official installer, please confirm adding Python to the Windows Path.
 - [MSYS2](https://msys2.github.io) is used to provide the bash shell and most standard POSIX command line tools.
-- [MinGW64](https://mingw-w64.org/doku.php) GCC for Windows 64 & 32 bits incl. make. To install with MYS2: pacman -S mingw-w64-x86_64-gcc
-- [git](https://git-scm.com) is used to download BTstack source code. To install with MYS2: pacman -S git
-- [winpty](https://github.com/rprichard/winpty) a wrapper to allow for console input when running in msys2: To install with MYS2: pacman -S winpty
+- [MinGW64](https://mingw-w64.org/doku.php) GCC for Windows 64 & 32 bits incl. make. To install with MSYS2: pacman -S mingw-w64-x86_64-gcc
+- [git](https://git-scm.com) is used to download BTstack source code. To install with MSYS2: pacman -S git
+- [winpty](https://github.com/rprichard/winpty) a wrapper to allow for console input when running in MSYS2: To install with MSYS2: pacman -S winpty
 
 ## Getting BTstack from GitHub
 
@@ -68,7 +68,7 @@ Bluetooth. For this, execute:
 
 ## Windows-WinUSB
 
-While libusb basically also works on Windows, we recommend to use the Windows-WinUSB port that uses a native run loop and the native WinUSB API to access the USB Bluetooth dongle.
+Although libusb basically works with the POSIX Run Loop on Windows, we recommend to use the Windows-WinUSB port that uses a native run loop and the native WinUSB API to access a USB Bluetooth dongle.
 
 For libusb or WinUSB, you need to install a special device driver to make the USB dongle accessible to user space. It works like this:
 
@@ -78,8 +78,7 @@ For libusb or WinUSB, you need to install a special device driver to make the US
 -   Select WinUSB (libusb) in the right pull pull down list
 -   Select “Replace Driver”
 
-When running the examples in the MSYS2, the console input (via btstack_stdin_support) doesn't work. It works in the older MSYS and also the regular 
-CMD.exe environment. Another option is to install WinPTY and then start the example via WinPTY like this:
+When running the examples in the MSYS2 shell, the console input (via btstack_stdin_support) doesn't work. It works in the older MSYS and also the regular CMD.exe environment. Another option is to install WinPTY and then start the example via WinPTY like this:
 
     $ winpty ./hfp_hf_demo.exe
 

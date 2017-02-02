@@ -30,16 +30,20 @@ system.
 
 Currently, we have two examples for this:
 
+-   *btstack_run_loop_posix.c* is an implementation for POSIX compliant
+    systems. The data sources are modeled as file descriptors and
+    managed in a linked list. Then, the *select* function is used to wait
+    for the next file descriptor to become ready or timer to expire.
+
 -   *btstack_run_loop_cocoa.c* is an implementation for the CoreFoundation
     Framework used in OS X and iOS. All run loop functions are
     implemented in terms of CoreFoundation calls, data sources and
     timers are modeled as CFSockets and CFRunLoopTimer respectively.
 
--   *btstack_run_loop_posix.c* is an implementation for POSIX compliant
-    systems. The data sources are modeled as file descriptors and
-    managed in a linked list. Then, the*select* function is used to wait
-    for the next file descriptor to become ready or timer to expire.
-
+-   *btstack_run_loop_windows* is an implementation for Windows environment.
+    The data sources are modeled with Event objects and managed in a linked list.
+    Then, the *WaitForMultipleObjects* is used to wait for the next Event to
+    becomre ready or timer to expire.
 
 ## Adapting BTstack for Multi-Threaded Environments {#sec:multithreadingIntegration}
 

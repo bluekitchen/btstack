@@ -73,6 +73,8 @@ ENABLE_LOG_DEBUG             | Enable log_debug messages
 ENABLE_LOG_ERROR             | Enable log_error messages
 ENABLE_LOG_INFO              | Enable log_info messages
 ENABLE_SCO_OVER_HCI          | Enable SCO over HCI for chipsets (only CC256x/WL18xx and USB CSR controllers)
+ENBALE_LE_PERIPHERAL         | Enable support for LE Peripheral Role in HCI and Security Manager
+ENBALE_LE_CENTRAL            | Enable support for LE Central Role in HCI and Security Manager
 ENABLE_LE_SECURE_CONNECTIONS | Enable LE Secure Connections using [mbed TLS library](https://tls.mbed.org)
 ENABLE_LE_DATA_CHANNELS      | Enable LE Data Channels in credit-based flow control mode
 ENABLE_LE_SIGNED_WRITE       | Enable LE Signed Writes in ATT/GATT
@@ -193,10 +195,11 @@ BTstack provides different run loop implementations that implement the *btstack_
 - Embedded: the main implementation for embedded systems, especially without an RTOS.
 - POSIX: implementation for POSIX systems based on the select() call.
 - CoreFoundation: implementation for iOS and OS X applications 
-- WICED: implementation for the Broadcom WICED SDK RTOS abstraction that warps FreeRTOS or ThreadX.
+- WICED: implementation for the Broadcom WICED SDK RTOS abstraction that wraps FreeRTOS or ThreadX.
+- Windows: implementation for Windows based on Event objects and WaitForMultipleObjects() call.
 
 Depending on the platform, data sources are either polled (embedded), or the platform provides a way
-to wait for a data source to become ready for read or write (POSIX, CoreFoundation), or,
+to wait for a data source to become ready for read or write (POSIX, CoreFoundation, Windows), or,
 are not used as the HCI transport driver and the run loop is implemented in a different way (WICED).
 In any case, the callbacks must be to explicitly enabled with the *btstack_run_loop_enable_data_source_callbacks(..)* function.
 
@@ -254,8 +257,13 @@ It supports ready to read and write similar to the POSIX implementation. The cal
 
 To enable the use of timers, make sure that you defined HAVE_POSIX_TIME in the config file.
 
-### Run loop WICED
+### Run loop Windows
 
+The data sources are Event objects. In the run loop implementation WaitForMultipleObjects() call
+is all is used to wait for the Event object to become ready while waiting for the next timeout. 
+
+
+### Run loop WICED
 
 WICED SDK API does not provide asynchronous read and write to the UART and no direct way to wait for 
 one or more peripherals to become ready. Therefore, BTstack does not provide direct support for data sources.
