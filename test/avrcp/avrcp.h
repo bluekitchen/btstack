@@ -53,6 +53,23 @@ extern "C" {
 
 #define BT_SIG_COMPANY_ID 0x001958
 /* API_START */
+
+
+typedef enum {
+    AVRCP_PDU_ID_GET_CAPABILITIES = 0x10,
+    AVRCP_PDU_ID_GET_PLAY_STATUS = 0x30,
+    AVRCP_PDU_ID_REGISTER_NOTIFICATION = 0x31
+} avrcp_pdu_id_t;
+
+typedef enum {
+ AVRCP_NOTIFICATION_EVENT_PLAYBACK_STATUS_CHANGED ,
+ AVRCP_NOTIFICATION_EVENT_TRACK_CHANGED,
+ AVRCP_NOTIFICATION_EVENT_NOW_PLAYING_CONTENT_CHANGED,
+ AVRCP_NOTIFICATION_EVENT_AVAILABLE_PLAYERS_CHANGED,
+ AVRCP_NOTIFICATION_EVENT_ADDRESSED_PLAYER_CHANGED,
+ AVRCP_NOTIFICATION_EVENT_VOLUME_CHANGED
+} avrcp_notification_event_t;
+
 typedef enum {
     AVRCP_CTYPE_CONTROL = 0,
     AVRCP_CTYPE_STATUS,
@@ -153,6 +170,15 @@ typedef struct {
     btstack_timer_source_t press_and_hold_cmd_timer;
 } avrcp_connection_t;
 
+ typedef enum {
+    AVRCP_PLAY_STATUS_STOPPED = 0x00,
+    AVRCP_PLAY_STATUS_PLAYING,
+    AVRCP_PLAY_STATUS_PAUSED,
+    AVRCP_PLAY_STATUS_FWD_SEEK, 
+    AVRCP_PLAY_STATUS_REV_SEEK, 
+    AVRCP_PLAY_STATUS_ERROR = 0xFF
+ } avrcp_play_status_t;
+ 
 /**
  * @brief AVDTP Sink service record. 
  * @param service
@@ -249,6 +275,13 @@ void avrcp_forward(uint16_t con_handle);
  */
 void avrcp_backward(uint16_t con_handle);
 
+
+/**
+ * @brief Get play status. Returns event of type AVRCP_SUBEVENT_PLAY_STATUS (length, position, play_status).
+ * If TG does not support SongLength And SongPosition on TG, then TG shall return 0xFFFFFFFF.
+ * @param con_handle
+ */
+void avrcp_get_play_status(uint16_t con_handle);
 
 /**
  * @brief Register notification.

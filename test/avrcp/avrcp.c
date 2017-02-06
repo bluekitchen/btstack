@@ -412,7 +412,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
     avrcp_subunit_type_t subunit_type;
     avrcp_subunit_type_t subunit_id;
 
-    uint8_t operands[5];
+    uint8_t operands[20];
     uint8_t opcode;
     uint8_t value;
     int pos = 0;
@@ -448,10 +448,48 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
             break;
         }
         case AVRCP_CMD_OPCODE_VENDOR_DEPENDENT:
+            ctype = packet[pos++];
+            value = packet[pos++];
+            subunit_type = value >> 3;
+            subunit_id = value & 0x07;
+            opcode = packet[pos++];
+
+            if (size - pos < 7) {
+                log_error("avrcp: wrong packet size");
+                return;
+            };
+            // operands:
+            memcpy(operands, packet+pos, 7);
+            pos += 7;
+            // uint32_t company_id = operands[0] << 16 | operands[1] << 8 | operands[2];
+            uint8_t pdu_id = operands[3];
+            // uint8_t unit_type = operands[4] >> 3;
+            // uint8_t unit = operands[4] & 0x07;
+            uint16_t param_length = big_endian_read_16(operands, 5);
+
+            // printf("    VENDOR DEPENDENT response: ctype 0x%02x (0C), subunit_type 0x%02x (1F), subunit_id 0x%02x (07), opcode 0x%02x (30), unit_type 0x%02x, unit %d, company_id 0x%06x\n",
+            //     ctype, subunit_type, subunit_id, opcode, unit_type, unit, company_id );
+
+            printf("        VENDOR DEPENDENT response: pdu id 0x%02x, param_length %d\n", pdu_id, param_length);
+            switch (pdu_id){
+                case AVRCP_PDU_ID_GET_PLAY_STATUS:{
+                    uint32_t song_length = big_endian_read_32(packet, pos);
+                    pos += 32;
+                    uint32_t song_position = big_endian_read_32(packet, pos);
+                    pos += 32;
+                    uint8_t status = packet[pos];
+                    printf_hexdump(packet+pos, size - pos);
+                    printf("        GET_PLAY_STATUS length 0x%04X, position 0x%04X, status %d\n", song_length, song_position, status);
+                    break;
+                }
+                default:
+                    break;
+            }
             break;
         case AVRCP_CMD_OPCODE_PASS_THROUGH:
             if (connection->state == AVCTP_W2_SEND_RELEASE_COMMAND){
                 request_pass_through_release_control_cmd(connection);
+                break;
             }
             break;
         default:
@@ -613,7 +651,7 @@ void avrcp_unit_info(uint16_t con_handle){
 void avrcp_get_capabilities(uint16_t con_handle){
     avrcp_connection_t * connection = get_avrcp_connection_for_con_handle(con_handle);
     if (!connection){
-        log_error("avrcp_unit_info: coud not find a connection.");
+        log_error("avrcp_get_capabilities: coud not find a connection.");
         return;
     }
     if (connection->state != AVCTP_CONNECTION_OPENED) return;
@@ -625,7 +663,7 @@ void avrcp_get_capabilities(uint16_t con_handle){
     connection->subunit_type = AVRCP_SUBUNIT_TYPE_PANEL;
     connection->subunit_id = 0;
     big_endian_store_24(connection->cmd_operands, 0, BT_SIG_COMPANY_ID);
-    connection->cmd_operands[3] = 0x10;
+    connection->cmd_operands[3] = AVRCP_PDU_ID_GET_CAPABILITIES; // PDU ID
     connection->cmd_operands[4] = 0;
     big_endian_store_16(connection->cmd_operands, 5, 1);
     connection->cmd_operands[7] = 0x02;
@@ -661,7 +699,7 @@ void avrcp_start_rewind(uint16_t con_handle){
 void avrcp_stop_rewind(uint16_t con_handle){
     avrcp_connection_t * connection = get_avrcp_connection_for_con_handle(con_handle);
     if (!connection){
-        log_error("avrcp_unit_info: coud not find a connection.");
+        log_error("avrcp_stop_rewind: coud not find a connection.");
         return;
     }
     if (connection->state != AVCTP_W4_STOP) return;
@@ -675,9 +713,31 @@ void avrcp_start_fast_forward(uint16_t con_handle){
 void avrcp_stop_fast_forward(uint16_t con_handle){
     avrcp_connection_t * connection = get_avrcp_connection_for_con_handle(con_handle);
     if (!connection){
-        log_error("avrcp_unit_info: coud not find a connection.");
+        log_error("avrcp_stop_fast_forward: coud not find a connection.");
         return;
     }
     if (connection->state != AVCTP_W4_STOP) return;
     request_pass_through_release_control_cmd(connection);
+}
+
+void avrcp_get_play_status(uint16_t con_handle){
+    avrcp_connection_t * connection = get_avrcp_connection_for_con_handle(con_handle);
+    if (!connection){
+        log_error("avrcp_get_play_status: coud not find a connection.");
+        return;
+    }
+    if (connection->state != AVCTP_CONNECTION_OPENED) return;
+    connection->state = AVCTP_W2_SEND_COMMAND;
+
+    connection->transaction_label++;
+    connection->cmd_to_send = AVRCP_CMD_OPCODE_VENDOR_DEPENDENT;
+    connection->command_type = AVRCP_CTYPE_STATUS;
+    connection->subunit_type = AVRCP_SUBUNIT_TYPE_PANEL;
+    connection->subunit_id = 0;
+    big_endian_store_24(connection->cmd_operands, 0, BT_SIG_COMPANY_ID);
+    connection->cmd_operands[3] = AVRCP_PDU_ID_GET_PLAY_STATUS;
+    connection->cmd_operands[4] = 0;                     // reserved(upper 6) | packet_type -> 0
+    big_endian_store_16(connection->cmd_operands, 5, 0); // parameter length
+    connection->cmd_operands_lenght = 7;
+    avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
 }

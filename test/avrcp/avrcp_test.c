@@ -61,11 +61,12 @@ static btstack_packet_callback_registration_t hci_event_callback_registration;
 // mac 2013: static bd_addr_t remote = {0x84, 0x38, 0x35, 0x65, 0xd1, 0x15};
 // phone: static bd_addr_t remote = {0x84, 0x38, 0x35, 0x65, 0xd1, 0x15};
 
-static bd_addr_t remote = {0xD8, 0xBB, 0x2C, 0xDF, 0xF1, 0x08};
+// static bd_addr_t remote = {0xD8, 0xBB, 0x2C, 0xDF, 0xF1, 0x08};
+
 static uint16_t con_handle = 0;
 static uint8_t sdp_avrcp_controller_service_buffer[150];
 
-
+static bd_addr_t remote = {0x84, 0x38, 0x35, 0x65, 0xd1, 0x15};
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
@@ -91,6 +92,9 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             printf("AVRCP_SUBEVENT_CONNECTION_RELEASED: con_handle 0x%02x\n", avrcp_subevent_connection_closed_get_con_handle(packet));
                             con_handle = 0;
                             break;
+                        // case AVRCP_SUBEVENT_PLAY_STATUS:
+                        //     printf("AVRCP_SUBEVENT_PLAY_STATUS\n");
+                        //     break;
                         default:
                             printf("--- avrcp_test: Not implemented\n");
                             break;
@@ -123,6 +127,7 @@ static void show_usage(void){
     printf("R      - avrcp_stop_rewind\n");
     printf("f      - avrcp_forward\n"); 
     printf("b      - avrcp_backward\n");
+    printf("S      - get play status\n");
     printf("Ctrl-c - exit\n");
     printf("---\n");
 }
@@ -170,7 +175,9 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
         case 'b':
             avrcp_backward(con_handle);
             break;
-
+        case 'S':
+            avrcp_get_play_status(con_handle);
+            break;
         default:
             show_usage();
             break;
