@@ -62,13 +62,20 @@ typedef enum {
 } avrcp_pdu_id_t;
 
 typedef enum {
- AVRCP_NOTIFICATION_EVENT_PLAYBACK_STATUS_CHANGED ,
- AVRCP_NOTIFICATION_EVENT_TRACK_CHANGED,
- AVRCP_NOTIFICATION_EVENT_NOW_PLAYING_CONTENT_CHANGED,
- AVRCP_NOTIFICATION_EVENT_AVAILABLE_PLAYERS_CHANGED,
- AVRCP_NOTIFICATION_EVENT_ADDRESSED_PLAYER_CHANGED,
- AVRCP_NOTIFICATION_EVENT_VOLUME_CHANGED
-} avrcp_notification_event_t;
+    AVRCP_NOTIFICATION_EVENT_PLAYBACK_STATUS_CHANGED = 0x01,            // Change in playback status of the current track.
+    AVRCP_NOTIFICATION_EVENT_TRACK_CHANGED = 0x02,                      // Change of current track
+    AVRCP_NOTIFICATION_EVENT_TRACK_REACHED_END = 0x03,                  // Reached end of a track
+    AVRCP_NOTIFICATION_EVENT_TRACK_REACHED_START = 0x04,                // Reached start of a track
+    AVRCP_NOTIFICATION_EVENT_PLAYBACK_POS_CHANGED = 0x05,               // Change in playback position. Returned after the specified playback notification change notification interval
+    AVRCP_NOTIFICATION_EVENT_BATT_STATUS_CHANGED = 0x06,                // Change in battery status
+    AVRCP_NOTIFICATION_EVENT_SYSTEM_STATUS_CHANGED = 0x07,              // Change in system status
+    AVRCP_NOTIFICATION_EVENT_PLAYER_APPLICATION_SETTING_CHANGED = 0x08, // Change in player application setting
+    AVRCP_NOTIFICATION_EVENT_NOW_PLAYING_CONTENT_CHANGED = 0x09,        // The content of the Now Playing list has changed, see 6.9.5.
+    AVRCP_NOTIFICATION_EVENT_AVAILABLE_PLAYERS_CHANGED = 0x0a,          // The available players have changed, see 6.9.4.
+    AVRCP_NOTIFICATION_EVENT_ADDRESSED_PLAYER_CHANGED = 0x0b,           // The Addressed Player has been changed, see 6.9.2.
+    AVRCP_NOTIFICATION_EVENT_UIDS_CHANGED = 0x0c,                       // The UIDs have changed, see 6.10.3.3.
+    AVRCP_NOTIFICATION_EVENT_VOLUME_CHANGED = 0x0d                      // The volume has been changed locally on the TG, see 6.13.3.
+} avrcp_notification_event_id_t;
 
 typedef enum {
     AVRCP_CTYPE_CONTROL = 0,
@@ -283,23 +290,13 @@ void avrcp_backward(uint16_t con_handle);
  */
 void avrcp_get_play_status(uint16_t con_handle);
 
-/**
- * @brief Register notification.
- * - EVENT_PLAYBACK_STATUS_CHANGED 
- * - EVENT_TRACK_CHANGED
- * - EVENT_NOW_PLAYING_CONTENT_CHANGED
- * - EVENT_AVAILABLE_PLAYERS_CHANGED
- * - EVENT_ADDRESSED_PLAYER_CHANGED
- * - EVENT_VOLUME_CHANGED
- * @param con_handle
- */
-// void avrcp_register_notification(uint16_t con_handle);
 
 /**
- * @brief Get play status.
+ * @brief Register notification.
  * @param con_handle
+ * @param event_id
  */
-// void avrcp_get_play_status(uint16_t con_handle);
+void avrcp_register_notification(uint16_t con_handle, avrcp_notification_event_id_t event_id);
 
 /* API_END */
 #if defined __cplusplus

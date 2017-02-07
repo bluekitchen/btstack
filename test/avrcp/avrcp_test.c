@@ -59,14 +59,13 @@ static btstack_packet_callback_registration_t hci_event_callback_registration;
 // mac 2011: static bd_addr_t remote = {0x04, 0x0C, 0xCE, 0xE4, 0x85, 0xD3};
 // pts: static bd_addr_t remote = {0x00, 0x1B, 0xDC, 0x08, 0x0A, 0xA5};
 // mac 2013: static bd_addr_t remote = {0x84, 0x38, 0x35, 0x65, 0xd1, 0x15};
-// phone: static bd_addr_t remote = {0x84, 0x38, 0x35, 0x65, 0xd1, 0x15};
+// phone: static bd_addr_t remote = {0xD8, 0xBB, 0x2C, 0xDF, 0xF1, 0x08};
 
-// static bd_addr_t remote = {0xD8, 0xBB, 0x2C, 0xDF, 0xF1, 0x08};
+static bd_addr_t remote = {0xD8, 0xBB, 0x2C, 0xDF, 0xF1, 0x08};
 
 static uint16_t con_handle = 0;
 static uint8_t sdp_avrcp_controller_service_buffer[150];
 
-static bd_addr_t remote = {0x84, 0x38, 0x35, 0x65, 0xd1, 0x15};
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
@@ -128,6 +127,7 @@ static void show_usage(void){
     printf("f      - avrcp_forward\n"); 
     printf("b      - avrcp_backward\n");
     printf("S      - get play status\n");
+    printf("N      - register notification, AVRCP_NOTIFICATION_EVENT_NOW_PLAYING_CONTENT_CHANGED\n");
     printf("Ctrl-c - exit\n");
     printf("---\n");
 }
@@ -177,6 +177,9 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
             break;
         case 'S':
             avrcp_get_play_status(con_handle);
+            break;
+        case 'N':
+            avrcp_register_notification(con_handle, AVRCP_NOTIFICATION_EVENT_NOW_PLAYING_CONTENT_CHANGED);
             break;
         default:
             show_usage();

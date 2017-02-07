@@ -474,9 +474,9 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
             switch (pdu_id){
                 case AVRCP_PDU_ID_GET_PLAY_STATUS:{
                     uint32_t song_length = big_endian_read_32(packet, pos);
-                    pos += 32;
+                    pos += 4;
                     uint32_t song_position = big_endian_read_32(packet, pos);
-                    pos += 32;
+                    pos += 4;
                     uint8_t status = packet[pos];
                     printf_hexdump(packet+pos, size - pos);
                     printf("        GET_PLAY_STATUS length 0x%04X, position 0x%04X, status %d\n", song_length, song_position, status);
@@ -740,4 +740,28 @@ void avrcp_get_play_status(uint16_t con_handle){
     big_endian_store_16(connection->cmd_operands, 5, 0); // parameter length
     connection->cmd_operands_lenght = 7;
     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
+}
+
+void avrcp_register_notification(uint16_t con_handle, avrcp_notification_event_id_t event_id){
+    avrcp_connection_t * connection = get_avrcp_connection_for_con_handle(con_handle);
+    if (!connection){
+        log_error("avrcp_get_play_status: coud not find a connection.");
+        return;
+    }
+    if (connection->state != AVCTP_CONNECTION_OPENED) return;
+    connection->state = AVCTP_W2_SEND_COMMAND;
+
+    connection->transaction_label++;
+    connection->cmd_to_send = AVRCP_CMD_OPCODE_VENDOR_DEPENDENT;
+    connection->command_type = AVRCP_CTYPE_NOTIFY;
+    connection->subunit_type = AVRCP_SUBUNIT_TYPE_PANEL;
+    connection->subunit_id = 0;
+    big_endian_store_24(connection->cmd_operands, 0, BT_SIG_COMPANY_ID);
+    connection->cmd_operands[3] = AVRCP_PDU_ID_REGISTER_NOTIFICATION;
+    connection->cmd_operands[4] = 0;                     // reserved(upper 6) | packet_type -> 0
+    big_endian_store_16(connection->cmd_operands, 5, 1); // parameter length
+    connection->cmd_operands[7] = event_id; 
+    connection->cmd_operands_lenght = 8;
+    avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
+    // AVRCP_SPEC_V14.pdf 166
 }
