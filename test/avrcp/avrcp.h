@@ -54,9 +54,18 @@ extern "C" {
 #define BT_SIG_COMPANY_ID 0x001958
 /* API_START */
 
+typedef enum {
+    AVRCP_MEDIA_ATTR_TITLE = 1,
+    AVRCP_MEDIA_ATTR_ARTIST,
+    AVRCP_MEDIA_ATTR_ALBUM,
+    AVRCP_MEDIA_ATTR_TOTAL_TRACKS,
+    AVRCP_MEDIA_ATTR_GENRE,
+    AVRCP_MEDIA_ATTR_SONG_LENGTH
+} avrcp_media_attribute_id_t;
 
 typedef enum {
     AVRCP_PDU_ID_GET_CAPABILITIES = 0x10,
+    AVRCP_PDU_ID_GET_ELEMENT_ATTRIBUTES = 0x20,
     AVRCP_PDU_ID_GET_PLAY_STATUS = 0x30,
     AVRCP_PDU_ID_REGISTER_NOTIFICATION = 0x31
 } avrcp_pdu_id_t;
@@ -290,13 +299,18 @@ void avrcp_backward(uint16_t con_handle);
  */
 void avrcp_get_play_status(uint16_t con_handle);
 
-
 /**
  * @brief Register notification.
  * @param con_handle
  * @param event_id
  */
-void avrcp_register_notification(uint16_t con_handle, avrcp_notification_event_id_t event_id);
+void avrcp_register_notification(uint16_t con_handle, avrcp_notification_event_id_t event_id, uint32_t playback_interval_in_seconds);
+
+/**
+ * @brief Get info on now playing media.
+ * @param con_handle
+ */
+void avrcp_get_now_playing_info(uint16_t con_handle);
 
 /* API_END */
 #if defined __cplusplus

@@ -128,6 +128,7 @@ static void show_usage(void){
     printf("b      - avrcp_backward\n");
     printf("S      - get play status\n");
     printf("N      - register notification, AVRCP_NOTIFICATION_EVENT_NOW_PLAYING_CONTENT_CHANGED\n");
+    printf("I      - get now playing info\n");
     printf("Ctrl-c - exit\n");
     printf("---\n");
 }
@@ -179,7 +180,10 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
             avrcp_get_play_status(con_handle);
             break;
         case 'N':
-            avrcp_register_notification(con_handle, AVRCP_NOTIFICATION_EVENT_NOW_PLAYING_CONTENT_CHANGED);
+            avrcp_register_notification(con_handle, AVRCP_NOTIFICATION_EVENT_PLAYBACK_STATUS_CHANGED, 2);
+            break;
+        case 'I':
+            avrcp_get_now_playing_info(con_handle);
             break;
         default:
             show_usage();
