@@ -188,10 +188,12 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
             avrcp_get_play_status(con_handle);
             break;
         case 'n':
-            avrcp_enable_notification(con_handle, AVRCP_NOTIFICATION_EVENT_PLAYBACK_STATUS_CHANGED, 2);
+            //avrcp_enable_notification(con_handle, AVRCP_NOTIFICATION_EVENT_PLAYBACK_STATUS_CHANGED, 2);
+            avrcp_enable_notification(con_handle, AVRCP_NOTIFICATION_EVENT_NOW_PLAYING_CONTENT_CHANGED, 0);
             break;
         case 'N':
-            avrcp_disable_notification(con_handle, AVRCP_NOTIFICATION_EVENT_PLAYBACK_STATUS_CHANGED);
+            //avrcp_disable_notification(con_handle, AVRCP_NOTIFICATION_EVENT_PLAYBACK_STATUS_CHANGED);
+            avrcp_disable_notification(con_handle, AVRCP_NOTIFICATION_EVENT_NOW_PLAYING_CONTENT_CHANGED);
             break;
         case 'I':
             avrcp_get_now_playing_info(con_handle);

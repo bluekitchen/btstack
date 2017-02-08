@@ -95,24 +95,6 @@ typedef enum {
     AVRCP_RESPONSE_FRAME    
 } avrcp_frame_type_t;
 
-static const char * avrcp_play_status_name[] = {
-    "STOPPED", 
-    "PLAYING",
-    "PAUSED",
-    "FORWARD SEEK", 
-    "REVERSE SEEK"
-};
-
-// static const char * avrcp_media_attribute_id_name[] = {
-//     "NONE",
-//     "TITLE",
-//     "ARTIST",
-//     "ALBUM",
-//     "TOTAL TRACKS",
-//     "GENRE",
-//     "SONG LENGTH"
-// };
-
 static const char * default_avrcp_controller_service_name = "BTstack AVRCP Controller Service";
 static const char * default_avrcp_controller_service_provider_name = "BTstack AVRCP Controller Service Provider";
 static const char * default_avrcp_target_service_name = "BTstack AVRCP Target Service";
@@ -154,6 +136,23 @@ static const char * avrcp_operation_name[] = {
 static const char * operation2str(uint8_t index){
     if (index >= 0x3B && index <= 0x4C) return avrcp_operation_name[index - 0x3B];
     return avrcp_operation_name[0];
+}
+
+static const char * avrcp_media_attribute_id_name[] = {
+    "NONE", "TITLE", "ARTIST", "ALBUM", "TRACK", "TOTAL TRACKS", "GENRE", "SONG LENGTH"
+};
+static const char * attribute2str(uint8_t index){
+    if (index >= 1 && index <= 7) return avrcp_media_attribute_id_name[index];
+    return avrcp_media_attribute_id_name[0];
+}
+
+static const char * avrcp_play_status_name[] = {
+    "STOPPED", "PLAYING", "PAUSED", "FORWARD SEEK", "REVERSE SEEK",
+    "ERROR" // 0xFF
+};
+static const char * play_status2str(uint8_t index){
+    if (index >= 1 && index <= 4) return avrcp_play_status_name[index];
+    return avrcp_play_status_name[5];
 }
 
 static const char * avrcp_ctype_name[] = {
@@ -545,8 +544,14 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
             // printf("    VENDOR DEPENDENT response: ctype 0x%02x (0C), subunit_type 0x%02x (1F), subunit_id 0x%02x (07), opcode 0x%02x (30), unit_type 0x%02x, unit %d, company_id 0x%06x\n",
             //     ctype, subunit_type, subunit_id, opcode, unit_type, unit, company_id );
 
+            //if (ctype == AVRCP_CTYPE_RESPONSE_INTERIM) return;
             printf("        VENDOR DEPENDENT response: pdu id 0x%02x, param_length %d, status %s\n", pdu_id, param_length, ctype2str(ctype));
             switch (pdu_id){
+                case AVRCP_PDU_ID_SET_ABSOLUTE_VOLUME:{
+                    uint8_t absolute_volume = packet[pos++];
+                    printf("Set absolut volume %d\n", absolute_volume);
+                    break;
+                }
                 case AVRCP_PDU_ID_GET_CAPABILITIES:{
                     printf_hexdump(packet+pos,size-pos);
                     avrcp_capability_id_t capability_id = packet[pos++];
@@ -580,11 +585,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                     uint32_t song_position = big_endian_read_32(packet, pos);
                     pos += 4;
                     uint8_t status = packet[pos];
-                    if (status == 0xFF){
-                        printf("        GET_PLAY_STATUS ERROR\n");
-                    } else {
-                        printf("        GET_PLAY_STATUS length 0x%04X, position 0x%04X, status %s\n", song_length, song_position, avrcp_play_status_name[status]);
-                    }
+                    printf("        GET_PLAY_STATUS length 0x%04X, position 0x%04X, status %s\n", song_length, song_position, play_status2str(status));
                     break;
                 }
                 case AVRCP_PDU_ID_REGISTER_NOTIFICATION:{
@@ -620,12 +621,45 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                     switch (event_id){
                         case AVRCP_NOTIFICATION_EVENT_PLAYBACK_STATUS_CHANGED:
                             status = packet[pos];
-                            if (status == 0xFF){
-                                printf("PLAYBACK_STATUS_CHANGED ERROR\n");
-                            } else {
-                                printf("PLAYBACK_STATUS_CHANGED status %s\n", avrcp_play_status_name[status]);
-                            }
+                            printf("EVENT_PLAYBACK_STATUS_CHANGED status %s\n", play_status2str(status));
                             break;
+                        case AVRCP_NOTIFICATION_EVENT_TRACK_CHANGED:
+                            status = packet[pos++];
+                            printf("EVENT_VOLUME_CHANGED status %s\n", play_status2str(status));
+                            break;
+
+                        case AVRCP_NOTIFICATION_EVENT_NOW_PLAYING_CONTENT_CHANGED:
+                            printf("EVENT_NOW_PLAYING_CONTENT_CHANGED \n");
+                            break;
+
+                        case AVRCP_NOTIFICATION_EVENT_AVAILABLE_PLAYERS_CHANGED:
+                            printf("EVENT_AVAILABLE_PLAYERS_CHANGED \n");
+                            break;
+                        
+                        case AVRCP_NOTIFICATION_EVENT_VOLUME_CHANGED:{
+                            uint8_t absolute_volume = packet[pos++] & 0x7F;
+                            printf("EVENT_VOLUME_CHANGED: absolute_volume %d\n", absolute_volume);
+                            break;
+                        }
+                        // case AVRCP_NOTIFICATION_EVENT_PLAYER_APPLICATION_SETTING_CHANGED:{
+                        //     uint8_t num_PlayerApplicationSettingAttributes = packet[pos++];
+                        //     int i;
+                        //     for (i = 0; i < num_PlayerApplicationSettingAttributes; i++){
+                        //         uint8_t PlayerApplicationSetting_AttributeID = packet[pos++];
+                        //         uint8_t PlayerApplicationSettingValueID = packet[pos++];
+                        //     }
+                        //     break;
+                        // }
+                        // case AVRCP_NOTIFICATION_EVENT_ADDRESSED_PLAYER_CHANGED:
+                        //     uint16_t player_id = big_endian_read_16(packet, pos);
+                        //     pos += 2;
+                        //     uint16_t uid_counter = big_endian_read_16(packet, pos);
+                        //     pos += 2;
+                        //     break;
+                        // case AVRCP_NOTIFICATION_EVENT_UIDS_CHANGED:
+                        //     uint16_t uid_counter = big_endian_read_16(packet, pos);
+                        //     pos += 2;
+                        //     break;
                         default:
                             printf("not implemented\n");
                             break;
@@ -648,7 +682,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                         memcpy(value, packet+pos, value_len);
                         value[value_len] = 0;
 
-                        printf("attr id %d: %s \n", attr_id, value);
+                        printf("Now Playing Info %s: %s \n", attribute2str(attr_id), value);
                         pos += attr_value_length;
                     }
                     break;

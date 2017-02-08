@@ -1335,4 +1335,23 @@ typedef uint8_t sm_key_t[16];
  */
 #define AVRCP_SUBEVENT_CONNECTION_CLOSED        0x02
 
+#define AVRCP_NOW_PLAYING_INFO                  0x03
+/**
+ * @format 1HJVJVJVJV114
+ * @param subevent_code
+ * @param con_handle
+ * @param title_len
+ * @param title
+ * @param artist_len
+ * @param artist
+ * @param album_len
+ * @param album
+ * @param genre_len
+ * @param genre
+ * @param track
+ * @param total_tracks
+ * @param song_length in ms
+ */
+
+
 #endif
