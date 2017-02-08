@@ -55,6 +55,11 @@ extern "C" {
 /* API_START */
 
 typedef enum {
+    AVRCP_CAPABILITY_ID_COMPANY = 0x02,
+    AVRCP_CAPABILITY_ID_EVENT = 0x03
+} avrcp_capability_id_t;
+
+typedef enum {
     AVRCP_MEDIA_ATTR_TITLE = 1,
     AVRCP_MEDIA_ATTR_ARTIST,
     AVRCP_MEDIA_ATTR_ALBUM,
@@ -67,7 +72,8 @@ typedef enum {
     AVRCP_PDU_ID_GET_CAPABILITIES = 0x10,
     AVRCP_PDU_ID_GET_ELEMENT_ATTRIBUTES = 0x20,
     AVRCP_PDU_ID_GET_PLAY_STATUS = 0x30,
-    AVRCP_PDU_ID_REGISTER_NOTIFICATION = 0x31
+    AVRCP_PDU_ID_REGISTER_NOTIFICATION = 0x31,
+    AVRCP_PDU_ID_SET_ABSOLUTE_VOLUME = 0x50
 } avrcp_pdu_id_t;
 
 typedef enum {
@@ -144,6 +150,11 @@ typedef enum {
 } avrcp_command_opcode_t;
 
 typedef enum {
+    AVRCP_OPERATION_ID_SKIP = 0x3C,
+    AVRCP_OPERATION_ID_VOLUME_UP = 0x41,
+    AVRCP_OPERATION_ID_VOLUME_DOWN = 0x42,
+    AVRCP_OPERATION_ID_MUTE = 0x43,
+    
     AVRCP_OPERATION_ID_PLAY = 0x44,
     AVRCP_OPERATION_ID_STOP = 0x45,
     AVRCP_OPERATION_ID_PAUSE = 0x46,
@@ -245,7 +256,9 @@ void avrcp_unit_info(uint16_t con_handle);
  * @brief Get capabilities.
  * @param con_handle
  */
-void avrcp_get_capabilities(uint16_t con_handle);
+void avrcp_get_supported_company_ids(uint16_t con_handle);
+void avrcp_get_supported_events(uint16_t con_handle);
+
 
 /**
  * @brief Play.
@@ -311,6 +324,36 @@ void avrcp_register_notification(uint16_t con_handle, avrcp_notification_event_i
  * @param con_handle
  */
 void avrcp_get_now_playing_info(uint16_t con_handle);
+
+/**
+ * @brief Set absolute volume 0-127 (corresponds to 0-100%)
+ * @param con_handle
+ */
+void avrcp_set_absolute_volume(uint16_t con_handle, uint8_t volume);
+
+/**
+ * @brief Turns the volume to high.
+ * @param con_handle
+ */
+void avrcp_volume_up(uint16_t con_handle);
+
+/**
+ * @brief Turns the volume to low.
+ * @param con_handle
+ */
+void avrcp_start_volume_down(uint16_t con_handle);
+
+/**
+ * @brief Puts the sound out.
+ * @param con_handle
+ */
+void avrcp_start_mute(uint16_t con_handle);
+
+/**
+ * @brief Skip to next playing media.
+ * @param con_handle
+ */
+void avrcp_start_skip(uint16_t con_handle);
 
 /* API_END */
 #if defined __cplusplus

@@ -80,6 +80,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     printf("--- avrcp_test: HCI_EVENT_DISCONNECTION_COMPLETE\n");
                     break;
                 case HCI_EVENT_AVRCP_META:
+                    printf("app: ");
+
                     switch (packet[2]){
                         case AVRCP_SUBEVENT_CONNECTION_ESTABLISHED:
                             con_handle = avrcp_subevent_connection_established_get_con_handle(packet);
@@ -116,8 +118,8 @@ static void show_usage(void){
     printf("\n--- Bluetooth AVRCP Test Console %s ---\n", bd_addr_to_str(iut_address));
     printf("c      - create connection to addr %s\n", bd_addr_to_str(remote));
     printf("C      - disconnect\n");
-    printf("u      - get unit info\n");
-    printf("t      - get capabilities\n");
+    printf("i      - get unit info\n");
+    printf("e      - get capabilities\n");
     printf("l      - avrcp_play\n");
     printf("s      - avrcp_stop\n");
     printf("p      - avrcp_pause\n");
@@ -129,6 +131,11 @@ static void show_usage(void){
     printf("S      - get play status\n");
     printf("N      - register notification, AVRCP_NOTIFICATION_EVENT_NOW_PLAYING_CONTENT_CHANGED\n");
     printf("I      - get now playing info\n");
+    printf("u      - volume up\n");
+    printf("d      - volume down\n");
+    printf("a      - absolute volume of %d percent\n", 5000/127);
+    printf("m      - mute\n");
+    printf("k      - skip\n");
     printf("Ctrl-c - exit\n");
     printf("---\n");
 }
@@ -143,11 +150,11 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
         case 'c':
             avrcp_connect(remote);
             break;
-        case 'u':
+        case 'i':
             avrcp_unit_info(con_handle);
             break;
-        case 't':
-            avrcp_get_capabilities(con_handle);
+        case 'e':
+            avrcp_get_supported_events(con_handle);
             break;
         case 'l':
             avrcp_play(con_handle);
@@ -185,6 +192,22 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
         case 'I':
             avrcp_get_now_playing_info(con_handle);
             break;
+        case 'a':
+            avrcp_set_absolute_volume(con_handle, 50);
+            break;
+        case 'u':
+            avrcp_volume_up(con_handle);
+            break;
+        case 'd':
+            avrcp_start_volume_down(con_handle);
+            break;
+        case 'm':
+            avrcp_start_mute(con_handle);
+            break;
+        case 'k':
+            avrcp_start_skip(con_handle);
+            break;
+
         default:
             show_usage();
             break;

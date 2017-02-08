@@ -121,6 +121,30 @@ static const char * default_avrcp_target_service_provider_name = "BTstack AVRCP 
 static btstack_linked_list_t avrcp_connections;
 static btstack_packet_handler_t avrcp_callback;
 
+static const char * avrcp_subunit_type_name[] = {
+    "MONITOR", "AUDIO", "PRINTER", "DISC", "TAPE_RECORDER_PLAYER", "TUNER", 
+    "CA", "CAMERA", "RESERVED", "PANEL", "BULLETIN_BOARD", "CAMERA_STORAGE", 
+    "VENDOR_UNIQUE", "RESERVED_FOR_ALL_SUBUNIT_TYPES",
+    "EXTENDED_TO_NEXT_BYTE", "UNIT", "ERROR"
+};
+static const char * subunit2str(uint16_t index){
+    if (index <= 11) return avrcp_subunit_type_name[index];
+    if (index >= 0x1C && index <= 0x1F) return avrcp_subunit_type_name[index - 0x10];
+    return avrcp_subunit_type_name[16];
+}
+
+static const char * avrcp_event_name[] = {
+    "ERROR", "PLAYBACK_STATUS_CHANGED",
+    "TRACK_CHANGED", "TRACK_REACHED_END", "TRACK_REACHED_START",
+    "PLAYBACK_POS_CHANGED", "BATT_STATUS_CHANGED", "SYSTEM_STATUS_CHANGED",
+    "PLAYER_APPLICATION_SETTING_CHANGED", "NOW_PLAYING_CONTENT_CHANGED", 
+    "AVAILABLE_PLAYERS_CHANGED", "ADDRESSED_PLAYER_CHANGED", "UIDS_CHANGED", "VOLUME_CHANGED"
+};
+static const char * event2str(uint16_t index){
+    if (index <= 0x0d) return avrcp_event_name[index];
+    return avrcp_event_name[0];
+}
+
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
 static void avrcp_create_sdp_record(uint8_t controller, uint8_t * service, uint32_t service_record_handle, uint8_t browsing, uint16_t supported_features, const char * service_name, const char * service_provider_name){
@@ -432,20 +456,18 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
     uint8_t operands[20];
     uint8_t opcode;
     int pos = 0;
-
-    uint8_t transport_header = packet[pos++];
+    uint8_t transport_header = packet[0];
     uint8_t transaction_label = transport_header >> 4;
     uint8_t packet_type = (transport_header & 0x0F) >> 2;
     uint8_t frame_type = (transport_header & 0x03) >> 1;
     uint8_t ipid = transport_header & 0x01;
-    uint8_t byte_value = packet[pos++];
-    uint16_t pid = (byte_value << 8) | packet[pos++];
+    uint8_t byte_value = packet[2];
+    uint16_t pid = (byte_value << 8) | packet[2];
+    pos = 3;
 
-    printf("L2CAP DATA, response: ");
-    printf_hexdump(packet, size);
-
-    printf("    Transport header 0x%02x (transaction_label %d, packet_type %d, frame_type %d, ipid %d), pid 0x%4x\n", 
+    log_info("    Transport header 0x%02x (transaction_label %d, packet_type %d, frame_type %d, ipid %d), pid 0x%4x", 
         transport_header, transaction_label, packet_type, frame_type, ipid, pid);
+
     switch (connection->cmd_to_send){
         case AVRCP_CMD_OPCODE_UNIT_INFO:{
             ctype = packet[pos++];
@@ -459,7 +481,8 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
             uint8_t unit_type = operands[1] >> 3;
             uint8_t unit = operands[1] & 0x07;
             uint32_t company_id = operands[2] << 16 | operands[3] << 8 | operands[4];
-            printf("    UNIT INFO response: ctype 0x%02x (0C), subunit_type 0x%02x (1F), subunit_id 0x%02x (07), opcode 0x%02x (30), unit_type 0x%02x, unit %d, company_id 0x%06x\n",
+            printf("    UNIT INFO response: subunit type %s\n", subunit2str(subunit_type));
+            log_info("    UNIT INFO response: ctype 0x%02x (0C), subunit_type 0x%02x (1F), subunit_id 0x%02x (07), opcode 0x%02x (30), unit_type 0x%02x, unit %d, company_id 0x%06x",
                 ctype, subunit_type, subunit_id, opcode, unit_type, unit, company_id );
             break;
         }
@@ -488,6 +511,33 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
 
             printf("        VENDOR DEPENDENT response: pdu id 0x%02x, param_length %d\n", pdu_id, param_length);
             switch (pdu_id){
+                case AVRCP_PDU_ID_GET_CAPABILITIES:{
+                    printf_hexdump(packet+pos,size-pos);
+                    avrcp_capability_id_t capability_id = packet[pos++];
+                    uint8_t capability_count = packet[pos++];
+                    printf(" capability id %02x, count %02x\n", capability_id, capability_count);
+                    printf_hexdump(packet+pos,size-pos);
+                    int i;
+                    switch (capability_id){
+                        case AVRCP_CAPABILITY_ID_COMPANY:
+                            printf("Supported companies %d: \n", capability_count);
+                            for (i = 0; i < capability_count; i++){
+                                uint32_t company_id = big_endian_read_24(packet, pos);
+                                pos += 3;
+                                printf("  0x%06x, \n", company_id);
+                            }
+                            printf("\n");
+                            break;
+                        case AVRCP_CAPABILITY_ID_EVENT:
+                            printf("Supported events %d: \n", capability_count);
+                            for (i = 0; i < capability_count; i++){
+                                uint8_t event_id = packet[pos++];
+                                printf("  0x%02x %s\n", event_id, event2str(event_id));
+                            }
+                            break;
+                    }
+                    break;
+                }
                 case AVRCP_PDU_ID_GET_PLAY_STATUS:{
                     uint32_t song_length = big_endian_read_32(packet, pos);
                     pos += 4;
@@ -707,7 +757,7 @@ void avrcp_unit_info(uint16_t con_handle){
     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
 }
 
-void avrcp_get_capabilities(uint16_t con_handle){
+static void avrcp_get_capabilities(uint16_t con_handle, uint8_t capability_id){
     avrcp_connection_t * connection = get_avrcp_connection_for_con_handle(con_handle);
     if (!connection){
         log_error("avrcp_get_capabilities: coud not find a connection.");
@@ -724,10 +774,18 @@ void avrcp_get_capabilities(uint16_t con_handle){
     big_endian_store_24(connection->cmd_operands, 0, BT_SIG_COMPANY_ID);
     connection->cmd_operands[3] = AVRCP_PDU_ID_GET_CAPABILITIES; // PDU ID
     connection->cmd_operands[4] = 0;
-    big_endian_store_16(connection->cmd_operands, 5, 1);
-    connection->cmd_operands[7] = 0x02;
+    big_endian_store_16(connection->cmd_operands, 5, 1); // parameter length
+    connection->cmd_operands[7] = capability_id;                  // capability ID
     connection->cmd_operands_lenght = 8;
     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
+}
+
+void avrcp_get_supported_company_ids(uint16_t con_handle){
+    avrcp_get_capabilities(con_handle, AVRCP_CAPABILITY_ID_COMPANY);
+}
+
+void avrcp_get_supported_events(uint16_t con_handle){
+    avrcp_get_capabilities(con_handle, AVRCP_CAPABILITY_ID_EVENT);
 }
 
 
@@ -753,6 +811,22 @@ void avrcp_backward(uint16_t con_handle){
 
 void avrcp_start_rewind(uint16_t con_handle){
     request_pass_through_press_control_cmd(con_handle, AVRCP_OPERATION_ID_REWIND, 0);
+}
+
+void avrcp_volume_up(uint16_t con_handle){
+    request_pass_through_press_control_cmd(con_handle, AVRCP_OPERATION_ID_VOLUME_UP, 0);
+}
+
+void avrcp_start_volume_down(uint16_t con_handle){
+    request_pass_through_press_control_cmd(con_handle, AVRCP_OPERATION_ID_VOLUME_DOWN, 0);
+}
+
+void avrcp_start_mute(uint16_t con_handle){
+    request_pass_through_press_control_cmd(con_handle, AVRCP_OPERATION_ID_MUTE, 0);
+}
+
+void avrcp_start_skip(uint16_t con_handle){
+    request_pass_through_press_control_cmd(con_handle, AVRCP_OPERATION_ID_SKIP, 0);
 }
 
 void avrcp_stop_rewind(uint16_t con_handle){
@@ -828,6 +902,7 @@ void avrcp_register_notification(uint16_t con_handle, avrcp_notification_event_i
     connection->cmd_operands_lenght = pos;
     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
     // AVRCP_SPEC_V14.pdf 166
+    // answer page 61
 }
 
 void avrcp_get_now_playing_info(uint16_t con_handle){
@@ -859,11 +934,42 @@ void avrcp_get_now_playing_info(uint16_t con_handle){
     pos += 8;
 
     connection->cmd_operands[pos++] = 0; // attribute count, if 0 get all attributes
-
-    // big_endian_store_32(connection->cmd_operands, pos, TitleOfMedia); // 0x1
-    // pos += 4;
+    // every attribute is 4 bytes long
 
     connection->cmd_operands_lenght = pos;
     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
 
 }
+
+void avrcp_set_absolute_volume(uint16_t con_handle, uint8_t volume){
+     avrcp_connection_t * connection = get_avrcp_connection_for_con_handle(con_handle);
+    if (!connection){
+        log_error("avrcp_get_capabilities: coud not find a connection.");
+        return;
+    }
+    if (connection->state != AVCTP_CONNECTION_OPENED) return;
+    connection->state = AVCTP_W2_SEND_COMMAND;
+
+    connection->state = AVCTP_W2_SEND_COMMAND;
+    
+    connection->transaction_label++;
+    connection->cmd_to_send = AVRCP_CMD_OPCODE_VENDOR_DEPENDENT;
+    connection->command_type = AVRCP_CTYPE_CONTROL;
+    connection->subunit_type = AVRCP_SUBUNIT_TYPE_PANEL;
+    connection->subunit_id = 0;
+    int pos = 0;
+    big_endian_store_24(connection->cmd_operands, pos, BT_SIG_COMPANY_ID);
+    pos += 3;
+    connection->cmd_operands[pos++] = AVRCP_PDU_ID_SET_ABSOLUTE_VOLUME; // PDU ID
+    connection->cmd_operands[pos++] = 0;
+    
+    // Parameter Length
+    big_endian_store_16(connection->cmd_operands, pos, 1);
+    pos += 2;
+    connection->cmd_operands[pos++] = volume;
+
+    connection->cmd_operands_lenght = pos;
+    avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
+}
+
+
