@@ -95,6 +95,10 @@ uint32_t big_endian_read_16( const uint8_t * buffer, int pos) {
     return ((uint16_t) buffer[(pos)+1]) | (((uint16_t)buffer[ pos   ]) << 8);
 }
 
+uint32_t big_endian_read_24( const uint8_t * buffer, int pos) {
+    return ( ((uint32_t)buffer[(pos)+2]) | (((uint32_t)buffer[(pos)+1]) << 8) | (((uint32_t) buffer[pos]) << 16));
+}
+
 uint32_t big_endian_read_32( const uint8_t * buffer, int pos) {
     return ((uint32_t) buffer[(pos)+3]) | (((uint32_t)buffer[(pos)+2]) << 8) | (((uint32_t)buffer[(pos)+1]) << 16) | (((uint32_t) buffer[pos]) << 24);
 }
