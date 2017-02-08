@@ -145,7 +145,41 @@ static const char * event2str(uint16_t index){
     return avrcp_event_name[0];
 }
 
+static const char * avrcp_operation_name[] = {
+    "NOT SUPPORTED", // 0x3B
+    "SKIP", "NOT SUPPORTED", "NOT SUPPORTED", "NOT SUPPORTED", "NOT SUPPORTED", 
+    "VOLUME_UP", "VOLUME_DOWN", "MUTE", "PLAY", "STOP", "PAUSE", "NOT SUPPORTED",
+    "REWIND", "FAST_FORWARD", "NOT SUPPORTED", "FORWARD", "BACKWARD" // 0x4C
+};
+static const char * operation2str(uint8_t index){
+    if (index >= 0x3B && index <= 0x4C) return avrcp_operation_name[index - 0x3B];
+    return avrcp_operation_name[0];
+}
+
+static const char * avrcp_ctype_name[] = {
+    "CONTROL",
+    "STATUS",
+    "SPECIFIC_INQUIRY",
+    "NOTIFY",
+    "GENERAL_INQUIRY",
+    "RESERVED5",
+    "RESERVED6",
+    "RESERVED7",
+    "NOT_IMPLEMENTED",
+    "ACCEPTED",
+    "REJECTED",
+    "IN_TRANSITION", 
+    "IMPLEMENTED_STABLE",
+    "CHANGED_STABLE",
+    "RESERVED",
+    "INTERIM"            
+};
+static const char * ctype2str(uint8_t index){
+    return avrcp_ctype_name[index];
+}
+
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+static void avrcp_register_notification(avrcp_connection_t * connection, avrcp_notification_event_id_t event_id, uint32_t playback_interval_in_seconds);
 
 static void avrcp_create_sdp_record(uint8_t controller, uint8_t * service, uint32_t service_record_handle, uint8_t browsing, uint16_t supported_features, const char * service_name, const char * service_provider_name){
     uint8_t* attribute;
@@ -446,9 +480,10 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
             connection->state = AVCTP_CONNECTION_OPENED;
             break;
         default:
-            return;
+            // check for notifications? move state transition down
+            break;
     }
-    
+
     avrcp_command_type_t ctype;
     avrcp_subunit_type_t subunit_type;
     avrcp_subunit_type_t subunit_id;
@@ -465,9 +500,10 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
     uint16_t pid = (byte_value << 8) | packet[2];
     pos = 3;
 
-    log_info("    Transport header 0x%02x (transaction_label %d, packet_type %d, frame_type %d, ipid %d), pid 0x%4x", 
+    printf("    Transport header 0x%02x (transaction_label %d, packet_type %d, frame_type %d, ipid %d), pid 0x%4x\n", 
         transport_header, transaction_label, packet_type, frame_type, ipid, pid);
-
+    // printf_hexdump(packet+pos, size-pos);
+            
     switch (connection->cmd_to_send){
         case AVRCP_CMD_OPCODE_UNIT_INFO:{
             ctype = packet[pos++];
@@ -509,7 +545,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
             // printf("    VENDOR DEPENDENT response: ctype 0x%02x (0C), subunit_type 0x%02x (1F), subunit_id 0x%02x (07), opcode 0x%02x (30), unit_type 0x%02x, unit %d, company_id 0x%06x\n",
             //     ctype, subunit_type, subunit_id, opcode, unit_type, unit, company_id );
 
-            printf("        VENDOR DEPENDENT response: pdu id 0x%02x, param_length %d\n", pdu_id, param_length);
+            printf("        VENDOR DEPENDENT response: pdu id 0x%02x, param_length %d, status %s\n", pdu_id, param_length, ctype2str(ctype));
             switch (pdu_id){
                 case AVRCP_PDU_ID_GET_CAPABILITIES:{
                     printf_hexdump(packet+pos,size-pos);
@@ -553,6 +589,32 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                 }
                 case AVRCP_PDU_ID_REGISTER_NOTIFICATION:{
                     uint8_t event_id = packet[pos++];
+                    switch (ctype){
+                        case AVRCP_CTYPE_RESPONSE_INTERIM:
+                            connection->notifications_to_register &= (0 << event_id);
+                            if (connection->notifications_to_deregister & (1 << event_id)){
+                                connection->notifications_enabled &= (0 << event_id);
+                                connection->notifications_to_deregister &= (0 << event_id);
+                            } else {
+                                connection->notifications_enabled |= (1 << event_id);
+                            }
+                            break;
+                        case AVRCP_CTYPE_RESPONSE_CHANGED_STABLE:
+                            if (connection->notifications_to_deregister & (1 << event_id)){
+                                connection->notifications_enabled &= (0 << event_id);
+                                connection->notifications_to_deregister &= (0 << event_id);
+                            } else {
+                                connection->notifications_enabled &= (0 << event_id);
+                                avrcp_register_notification(connection, event_id, 2);
+                            }
+                            break;
+                        default:
+                            connection->notifications_to_register &= (0 << event_id);
+                            connection->notifications_enabled &= (0 << event_id);
+                            connection->notifications_to_deregister &= (0 << event_id);
+                            break;
+                    }
+                    
                     uint8_t status;
                     printf("        REGISTER_NOTIFICATION: ");
                     switch (event_id){
@@ -595,12 +657,27 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                     break;
             }
             break;
-        case AVRCP_CMD_OPCODE_PASS_THROUGH:
-            if (connection->state == AVCTP_W2_SEND_RELEASE_COMMAND){
-                request_pass_through_release_control_cmd(connection);
-                break;
+        case AVRCP_CMD_OPCODE_PASS_THROUGH:{
+            // 0x80 | connection->cmd_operands[0]
+            ctype = packet[pos++];
+            byte_value = packet[pos++];
+            subunit_type = byte_value >> 3;
+            subunit_id = byte_value & 0x07;
+            opcode = packet[pos++];
+            uint8_t operation_id = packet[pos++];
+            
+            if (connection->state == AVCTP_CONNECTION_OPENED) {
+                // RELEASE response
+                operation_id = operation_id & 0x7F;
             }
+            if (connection->state == AVCTP_W2_SEND_RELEASE_COMMAND){
+                // PRESS response
+                request_pass_through_release_control_cmd(connection);
+            } 
+            printf("Operation %s, status %s\n", operation2str(operation_id), ctype2str(ctype));
+            
             break;
+        }
         default:
             break;
     }
@@ -616,6 +693,7 @@ static void avrcp_handle_can_send_now(avrcp_connection_t * connection){
             connection->state = AVCTP_W2_RECEIVE_RESPONSE;
             break;
         default:
+
             return;
     }
     avrcp_send_cmd(connection->l2cap_signaling_cid, connection);
@@ -875,13 +953,15 @@ void avrcp_get_play_status(uint16_t con_handle){
     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
 }
 
-void avrcp_register_notification(uint16_t con_handle, avrcp_notification_event_id_t event_id, uint32_t playback_interval_in_seconds){
-    avrcp_connection_t * connection = get_avrcp_connection_for_con_handle(con_handle);
-    if (!connection){
-        log_error("avrcp_get_play_status: coud not find a connection.");
-        return;
-    }
+static void avrcp_register_notification(avrcp_connection_t * connection, avrcp_notification_event_id_t event_id, uint32_t playback_interval_in_seconds){
     if (connection->state != AVCTP_CONNECTION_OPENED) return;
+    if (connection->notifications_to_deregister & (1 << event_id)) return;
+    if (connection->notifications_enabled & (1 << event_id)) return;
+    if (connection->notifications_to_register & (1 << event_id)) return;
+    printf("avrcp_register_notification \n");
+    
+    connection->notifications_to_register |= (1 << event_id);
+
     connection->state = AVCTP_W2_SEND_COMMAND;
 
     connection->transaction_label++;
@@ -903,6 +983,26 @@ void avrcp_register_notification(uint16_t con_handle, avrcp_notification_event_i
     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
     // AVRCP_SPEC_V14.pdf 166
     // answer page 61
+}
+
+void avrcp_enable_notification(uint16_t con_handle, avrcp_notification_event_id_t event_id, uint32_t playback_interval_in_seconds){
+    avrcp_connection_t * connection = get_avrcp_connection_for_con_handle(con_handle);
+    if (!connection){
+        log_error("avrcp_get_play_status: coud not find a connection.");
+        return;
+    }
+    avrcp_register_notification(connection, event_id, playback_interval_in_seconds);
+}
+
+void avrcp_disable_notification(uint16_t con_handle, avrcp_notification_event_id_t event_id){
+    avrcp_connection_t * connection = get_avrcp_connection_for_con_handle(con_handle);
+    if (!connection){
+        log_error("avrcp_get_play_status: coud not find a connection.");
+        return;
+    }
+    if (connection->state != AVCTP_CONNECTION_OPENED) return;
+    if (connection->notifications_to_deregister & (1 << event_id)) return;
+    connection->notifications_to_deregister |= (1 << event_id);
 }
 
 void avrcp_get_now_playing_info(uint16_t con_handle){

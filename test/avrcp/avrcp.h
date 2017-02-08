@@ -195,6 +195,10 @@ typedef struct {
     uint8_t cmd_operands[20];
     uint8_t cmd_operands_lenght;
     btstack_timer_source_t press_and_hold_cmd_timer;
+
+    uint16_t notifications_enabled;
+    uint16_t notifications_to_register;
+    uint16_t notifications_to_deregister; 
 } avrcp_connection_t;
 
  typedef enum {
@@ -317,7 +321,8 @@ void avrcp_get_play_status(uint16_t con_handle);
  * @param con_handle
  * @param event_id
  */
-void avrcp_register_notification(uint16_t con_handle, avrcp_notification_event_id_t event_id, uint32_t playback_interval_in_seconds);
+void avrcp_enable_notification(uint16_t con_handle, avrcp_notification_event_id_t event_id, uint32_t playback_interval_in_seconds);
+void avrcp_disable_notification(uint16_t con_handle, avrcp_notification_event_id_t event_id);
 
 /**
  * @brief Get info on now playing media.

@@ -120,16 +120,17 @@ static void show_usage(void){
     printf("C      - disconnect\n");
     printf("i      - get unit info\n");
     printf("e      - get capabilities\n");
-    printf("l      - avrcp_play\n");
-    printf("s      - avrcp_stop\n");
-    printf("p      - avrcp_pause\n");
-    printf("w      - avrcp_fast_forward\n");
-    printf("r      - avrcp_start_rewind\n");
-    printf("R      - avrcp_stop_rewind\n");
-    printf("f      - avrcp_forward\n"); 
-    printf("b      - avrcp_backward\n");
+    printf("l      - play\n");
+    printf("s      - stop\n");
+    printf("p      - pause\n");
+    printf("w      - fast_forward\n");
+    printf("r      - start_rewind\n");
+    printf("R      - stop_rewind\n");
+    printf("f      - forward\n"); 
+    printf("b      - backward\n");
     printf("S      - get play status\n");
-    printf("N      - register notification, AVRCP_NOTIFICATION_EVENT_NOW_PLAYING_CONTENT_CHANGED\n");
+    printf("n      - enable  notification, AVRCP_NOTIFICATION_EVENT_NOW_PLAYING_CONTENT_CHANGED\n");
+    printf("N      - disable notification, AVRCP_NOTIFICATION_EVENT_NOW_PLAYING_CONTENT_CHANGED\n");
     printf("I      - get now playing info\n");
     printf("u      - volume up\n");
     printf("d      - volume down\n");
@@ -186,8 +187,11 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
         case 'S':
             avrcp_get_play_status(con_handle);
             break;
+        case 'n':
+            avrcp_enable_notification(con_handle, AVRCP_NOTIFICATION_EVENT_PLAYBACK_STATUS_CHANGED, 2);
+            break;
         case 'N':
-            avrcp_register_notification(con_handle, AVRCP_NOTIFICATION_EVENT_PLAYBACK_STATUS_CHANGED, 2);
+            avrcp_disable_notification(con_handle, AVRCP_NOTIFICATION_EVENT_PLAYBACK_STATUS_CHANGED);
             break;
         case 'I':
             avrcp_get_now_playing_info(con_handle);
