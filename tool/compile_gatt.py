@@ -468,8 +468,10 @@ def parseReportReference(fout, parts):
     property_read = property_flags['READ'];
     size = 2 + 2 + 2 + 2 + 1 + 1
 
-    report_id = parts[1]
-    report_type = parts[2]
+    properties = parseProperties(parts[1])
+    
+    report_id = parts[2]
+    report_type = parts[3]
 
     write_indent(fout)
     fout.write('// 0x%04x REPORT_REFERENCE-%s\n' % (handle, '-'.join(parts[1:])))
@@ -583,7 +585,7 @@ def parseLines(fname_in, fin, fout):
 
             # 2902 Client Characteristic Configuration - automatically included in Characteristic if
             # notification / indication is supported
-            if parts[0] == 'CHARACTERISTIC_USER_DESCRIPTION':
+            if parts[0] == 'CLIENT_CHARACTERISTIC_CONFIGURATION':
                 continue
 
             # 2903
