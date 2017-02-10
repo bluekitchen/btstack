@@ -56,12 +56,17 @@
 
 #define AVRCP_BROWSING_ENABLED 0
 static btstack_packet_callback_registration_t hci_event_callback_registration;
-// mac 2011: static bd_addr_t remote = {0x04, 0x0C, 0xCE, 0xE4, 0x85, 0xD3};
-// pts: static bd_addr_t remote = {0x00, 0x1B, 0xDC, 0x08, 0x0A, 0xA5};
-// mac 2013: static bd_addr_t remote = {0x84, 0x38, 0x35, 0x65, 0xd1, 0x15};
-// phone: static bd_addr_t remote = {0xD8, 0xBB, 0x2C, 0xDF, 0xF1, 0x08};
 
-static bd_addr_t remote = {0xD8, 0xBB, 0x2C, 0xDF, 0xF1, 0x08};
+// mac 2011: static bd_addr_t device_addr = {0x04, 0x0C, 0xCE, 0xE4, 0x85, 0xD3};
+// pts: static bd_addr_t device_addr = {0x00, 0x1B, 0xDC, 0x08, 0x0A, 0xA5};
+// mac 2013: static bd_addr_t device_addr = {0x84, 0x38, 0x35, 0x65, 0xd1, 0x15};
+// phone: static bd_addr_t device_addr = {0xD8, 0xBB, 0x2C, 0xDF, 0xF1, 0x08};
+
+// iPhone SE
+// static const char * device_addr_string = "BC:EC:5D:E6:15:03";
+
+static bd_addr_t device_addr;
+static const char * device_addr_string = "BC:EC:5D:E6:15:03";
 
 static uint16_t con_handle = 0;
 static uint8_t sdp_avrcp_controller_service_buffer[150];
@@ -116,7 +121,7 @@ static void show_usage(void){
     bd_addr_t      iut_address;
     gap_local_bd_addr(iut_address);
     printf("\n--- Bluetooth AVRCP Test Console %s ---\n", bd_addr_to_str(iut_address));
-    printf("c      - create connection to addr %s\n", bd_addr_to_str(remote));
+    printf("c      - create connection to addr %s\n", bd_addr_to_str(device_addr));
     printf("C      - disconnect\n");
     printf("i      - get unit info\n");
     printf("e      - get capabilities\n");
@@ -149,7 +154,7 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
     printf("- execute command %c\n", cmd);
     switch (cmd){
         case 'c':
-            avrcp_connect(remote);
+            avrcp_connect(device_addr);
             break;
         case 'i':
             avrcp_unit_info(con_handle);
@@ -246,6 +251,9 @@ int btstack_main(int argc, const char * argv[]){
     gap_discoverable_control(1);
 //     gap_set_class_of_device(0x200408);
     
+    // parse human readable Bluetooth address
+    sscanf_bd_addr(device_addr_string, device_addr);
+
     // turn on!
     hci_power_control(HCI_POWER_ON);
 

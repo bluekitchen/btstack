@@ -549,7 +549,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
             switch (pdu_id){
                 case AVRCP_PDU_ID_SET_ABSOLUTE_VOLUME:{
                     uint8_t absolute_volume = packet[pos++];
-                    printf("Set absolut volume %d\n", absolute_volume);
+                    printf("Absolut volume %d\n", absolute_volume);
                     break;
                 }
                 case AVRCP_PDU_ID_GET_CAPABILITIES:{
