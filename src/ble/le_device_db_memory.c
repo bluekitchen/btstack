@@ -72,14 +72,17 @@ typedef struct le_device_memory_db {
 
 } le_device_memory_db_t;
 
-#define LE_DEVICE_MEMORY_SIZE 4
 #define INVALID_ENTRY_ADDR_TYPE 0xff
 
-static le_device_memory_db_t le_devices[LE_DEVICE_MEMORY_SIZE];
+#ifndef MAX_NR_LE_DEVICE_DB_ENTRIES
+#error "MAX_NR_LE_DEVICE_DB_ENTRIES not defined, please define in btstack_config.h"
+#endif
+
+static le_device_memory_db_t le_devices[MAX_NR_LE_DEVICE_DB_ENTRIES];
 
 void le_device_db_init(void){
     int i;
-    for (i=0;i<LE_DEVICE_MEMORY_SIZE;i++){
+    for (i=0;i<MAX_NR_LE_DEVICE_DB_ENTRIES;i++){
         le_device_db_remove(i);
     }
 }
@@ -92,7 +95,7 @@ void le_device_db_set_local_bd_addr(bd_addr_t bd_addr){
 int le_device_db_count(void){
     int i;
     int counter = 0;
-    for (i=0;i<LE_DEVICE_MEMORY_SIZE;i++){
+    for (i=0;i<MAX_NR_LE_DEVICE_DB_ENTRIES;i++){
         if (le_devices[i].addr_type != INVALID_ENTRY_ADDR_TYPE) counter++;
     }
     return counter;
@@ -106,7 +109,7 @@ void le_device_db_remove(int index){
 int le_device_db_add(int addr_type, bd_addr_t addr, sm_key_t irk){
     int i;
     int index = -1;
-    for (i=0;i<LE_DEVICE_MEMORY_SIZE;i++){
+    for (i=0;i<MAX_NR_LE_DEVICE_DB_ENTRIES;i++){
          if (le_devices[i].addr_type == INVALID_ENTRY_ADDR_TYPE){
             index = i;
             break;
@@ -163,7 +166,7 @@ void le_device_db_encryption_get(int index, uint16_t * ediv, uint8_t rand[8], sm
 
 // get signature key
 void le_device_db_remote_csrk_get(int index, sm_key_t csrk){
-    if (index < 0 || index >= LE_DEVICE_MEMORY_SIZE){
+    if (index < 0 || index >= MAX_NR_LE_DEVICE_DB_ENTRIES){
         log_error("le_device_db_remote_csrk_get called with invalid index %d", index);
         return;
     }
@@ -171,7 +174,7 @@ void le_device_db_remote_csrk_get(int index, sm_key_t csrk){
 }
 
 void le_device_db_remote_csrk_set(int index, sm_key_t csrk){
-    if (index < 0 || index >= LE_DEVICE_MEMORY_SIZE){
+    if (index < 0 || index >= MAX_NR_LE_DEVICE_DB_ENTRIES){
         log_error("le_device_db_remote_csrk_set called with invalid index %d", index);
         return;
     }
@@ -179,7 +182,7 @@ void le_device_db_remote_csrk_set(int index, sm_key_t csrk){
 }
 
 void le_device_db_local_csrk_get(int index, sm_key_t csrk){
-    if (index < 0 || index >= LE_DEVICE_MEMORY_SIZE){
+    if (index < 0 || index >= MAX_NR_LE_DEVICE_DB_ENTRIES){
         log_error("le_device_db_local_csrk_get called with invalid index %d", index);
         return;
     }
@@ -187,7 +190,7 @@ void le_device_db_local_csrk_get(int index, sm_key_t csrk){
 }
 
 void le_device_db_local_csrk_set(int index, sm_key_t csrk){
-    if (index < 0 || index >= LE_DEVICE_MEMORY_SIZE){
+    if (index < 0 || index >= MAX_NR_LE_DEVICE_DB_ENTRIES){
         log_error("le_device_db_local_csrk_set called with invalid index %d", index);
         return;
     }
@@ -219,7 +222,7 @@ void le_device_db_local_counter_set(int index, uint32_t counter){
 void le_device_db_dump(void){
     log_info("Central Device DB dump, devices: %d", le_device_db_count());
     int i;
-    for (i=0;i<LE_DEVICE_MEMORY_SIZE;i++){
+    for (i=0;i<MAX_NR_LE_DEVICE_DB_ENTRIES;i++){
         if (le_devices[i].addr_type == INVALID_ENTRY_ADDR_TYPE) continue;
         log_info("%u: %u %s", i, le_devices[i].addr_type, bd_addr_to_str(le_devices[i].addr));
         log_info_key("irk", le_devices[i].irk);

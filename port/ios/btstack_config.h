@@ -19,6 +19,7 @@
 
 // BTstack configuration. buffers, sizes, ...
 #define HCI_ACL_PAYLOAD_SIZE 1021
+#define MAX_NR_LE_DEVICE_DB_ENTRIES 1
 
 // Daemon configuration
 #define BTSTACK_DEVICE_NAME_DB_INSTANCE btstack_device_name_db_corefoundation_instance

@@ -115,6 +115,7 @@ MAX_NR_RFCOMM_SERVICES | Max number of RFCOMM services
 MAX_NR_SERVICE_RECORD_ITEMS | Max number of SDP service records
 MAX_NR_SM_LOOKUP_ENTRIES | Max number of items in Security Manager lookup queue
 MAX_NR_WHITELIST_ENTRIES | Max number of items in GAP LE Whitelist to connect to
+MAX_NR_LE_DEVICE_DB_ENTRIES | Max number of items in LE Device DB
 
 The memory is set up by calling *btstack_memory_init* function:
 

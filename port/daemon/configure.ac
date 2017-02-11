@@ -145,7 +145,8 @@ echo "#define ENABLE_SDP_DES_DUMP"              >> btstack_config.h
 echo                                            >> btstack_config.h
 
 echo "// BTstack configuration. buffers, sizes, .." >> btstack_config.h
-echo "#define HCI_ACL_PAYLOAD_SIZE 1021" >> btstack_config.h
+echo "#define HCI_ACL_PAYLOAD_SIZE 1021"        >> btstack_config.h
+echo "#define MAX_NR_LE_DEVICE_DB_ENTRIES 1"    >> btstack_config.h
 echo                                            >> btstack_config.h
 
 echo "// Daemon configuration" >> btstack_config.h
