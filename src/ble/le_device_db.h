@@ -121,6 +121,8 @@ void le_device_db_encryption_set(int index, uint16_t ediv, uint8_t rand[8], sm_k
  */
 void le_device_db_encryption_get(int index, uint16_t * ediv, uint8_t rand[8], sm_key_t ltk,  int * key_size, int * authenticated, int * authorized);
 
+#ifdef ENABLE_LE_SIGNED_WRITE
+
 /**
  * @brief set local signing key for this device
  * @param index
@@ -176,6 +178,8 @@ uint32_t le_device_db_local_counter_get(int index);
  * @param counter to store
  */
 void le_device_db_local_counter_set(int index, uint32_t counter);
+
+#endif
 
 /**
  * @brief free device
