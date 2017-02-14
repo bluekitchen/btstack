@@ -2978,6 +2978,15 @@ static inline uint16_t hci_subevent_le_connection_update_complete_get_conn_laten
 }
 
 /**
+ * @brief hci_subevent_le_connection_update_complete_get_conn_supervision_timeout
+ * @param event
+ * @return
+ */
+static inline uint16_t hci_subevent_le_connection_update_complete_get_conn_supervision_timeout(const uint8_t * event){
+    return little_endian_read_16(event, 10);
+}
+
+/**
  * @brief Get field connection_handle from event HCI_SUBEVENT_LE_READ_REMOTE_USED_FEATURES_COMPLETE
  * @param event packet
  * @return connection_handle
