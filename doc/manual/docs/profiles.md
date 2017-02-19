@@ -239,7 +239,7 @@ shows how this is accomplished.
 ### Providing a PANU service
 
 To provide a PANU service, you need to provide a BNEP service with the
-service UUID, e.g. the PANU UUID, and a a maximal ethernet frame size,
+service UUID, e.g. the PANU UUID, and a maximal ethernet frame size,
 as explained in Section [on BNEP service](protocols/#sec:bnepServiceProtocols). Then, you need to
 create an SDP record for it and publish it with the SDP server by
 calling *sdp_register_service*. BTstack provides the

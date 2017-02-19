@@ -94,7 +94,7 @@ to [C:\mspgcc](). Add [C:\mspgcc\bin]() folder to the Windows Path in Environmen
 variable as explained [here](#sec:windowsPathQuickStart).
 
 **Loading Firmware.** To load firmware files onto the MSP430 MCU for the
-MSP-EXP430F5438 Experimeneter board, you need a programmer like the
+MSP-EXP430F5438 Experimenter board, you need a programmer like the
 MSP430 MSP-FET430UIF debugger or something similar. The eZ430-RF2560 and
 MSP430F5529LP contain a basic debugger. Now, you can use one of
 following software tools:
