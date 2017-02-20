@@ -49,6 +49,8 @@
 #include "bluetooth.h"
 #include "bluetooth_data_types.h"
 #include "bluetooth_gatt.h"
+#include "bluetooth_sdp.h"
+#include "bluetooth_company_id.h"
 #include "ad_parser.h"
 #include "btstack_control.h"
 #include "btstack_debug.h"
