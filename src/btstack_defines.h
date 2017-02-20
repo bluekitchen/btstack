@@ -428,7 +428,7 @@ typedef uint8_t sm_key_t[16];
  /** 
   * @format H2
   * @param handle
-  * @result
+  * @param result
   */
 #define L2CAP_EVENT_CONNECTION_PARAMETER_UPDATE_RESPONSE   0x77
 
@@ -658,6 +658,7 @@ typedef uint8_t sm_key_t[16];
 
 /**
  * @format H2LV
+ * @param handle
  * @param descriptor_handle
  * @param descriptor_length
  * @param descriptor
@@ -782,7 +783,7 @@ typedef uint8_t sm_key_t[16];
 #define SM_EVENT_PASSKEY_DISPLAY_CANCEL                          0xD3
 
  /**
-  * @format H1B421
+  * @format H1B
   * @param handle
   * @param addr_type
   * @param address
@@ -807,7 +808,7 @@ typedef uint8_t sm_key_t[16];
 #define SM_EVENT_NUMERIC_COMPARISON_REQUEST                      0xD6
 
  /**
-  * @format H1B4
+  * @format H1B
   * @param handle
   * @param addr_type
   * @param address
@@ -1043,7 +1044,7 @@ typedef uint8_t sm_key_t[16];
 #define HFP_SUBEVENT_AG_INDICATOR_STATUS_CHANGED           0x06
 
 /**
- * @format 1111T
+ * @format 111T
  * @param subevent_code
  * @param network_operator_mode
  * @param network_operator_format
@@ -1210,7 +1211,7 @@ typedef uint8_t sm_key_t[16];
 /** AVDTP Subevent */
 
 /**
- * @format 1H1
+ * @format 1H11
  * @param subevent_code
  * @param con_handle
  * @param signal_identifier
@@ -1276,7 +1277,7 @@ typedef uint8_t sm_key_t[16];
 #define AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CAPABILITY          0x07
 
 /**
- * @format 1H122
+ * @format 1H12LV
  * @param subevent_code
  * @param con_handle
  * @param media_type
@@ -1304,7 +1305,7 @@ typedef uint8_t sm_key_t[16];
 #define AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION        0x09
 
 /**
- * @format 1H1122
+ * @format 1H112LV
  * @param subevent_code
  * @param con_handle
  * @param reconfigure

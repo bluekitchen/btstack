@@ -372,7 +372,7 @@ typedef enum {
 #define HCI_EVENT_COMMAND_STATUS                           0x0F
 
 /**
- * @format 121
+ * @format 1
  * @param hardware_code
  */
 #define HCI_EVENT_HARDWARE_ERROR                           0x10
@@ -554,6 +554,7 @@ typedef enum {
  * @param connection_handle
  * @param conn_interval
  * @param conn_latency
+ * @param supervision_timeout
  */
  #define HCI_SUBEVENT_LE_CONNECTION_UPDATE_COMPLETE         0x03
 
