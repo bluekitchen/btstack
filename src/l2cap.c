@@ -1614,10 +1614,10 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
                 int update_parameter = 1;
                 le_connection_parameter_range_t existing_range;
                 gap_get_connection_parameter_range(&existing_range);
-                uint16_t le_conn_interval_min = little_endian_read_16(command,8);
-                uint16_t le_conn_interval_max = little_endian_read_16(command,10);
-                uint16_t le_conn_latency = little_endian_read_16(command,12);
-                uint16_t le_supervision_timeout = little_endian_read_16(command,14);
+                uint16_t le_conn_interval_min = little_endian_read_16(command,4);
+                uint16_t le_conn_interval_max = little_endian_read_16(command,6);
+                uint16_t le_conn_latency = little_endian_read_16(command,8);
+                uint16_t le_supervision_timeout = little_endian_read_16(command,10);
 
                 if (le_conn_interval_min < existing_range.le_conn_interval_min) update_parameter = 0;
                 if (le_conn_interval_max > existing_range.le_conn_interval_max) update_parameter = 0;
