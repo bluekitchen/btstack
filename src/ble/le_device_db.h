@@ -39,6 +39,7 @@
 #define __LE_DEVICE_DB_H
 
 #include "btstack_util.h"
+#include "btstack_config.h"
 
 #if defined __cplusplus
 extern "C" {
