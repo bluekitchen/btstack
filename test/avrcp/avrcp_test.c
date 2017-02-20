@@ -66,7 +66,7 @@ static btstack_packet_callback_registration_t hci_event_callback_registration;
 // static const char * device_addr_string = "BC:EC:5D:E6:15:03";
 
 static bd_addr_t device_addr;
-static const char * device_addr_string = "BC:EC:5D:E6:15:03";
+static const char * device_addr_string = "D8:BB:2C:DF:F1:08";
 
 static uint16_t con_handle = 0;
 static uint8_t sdp_avrcp_controller_service_buffer[150];
@@ -193,11 +193,11 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
             avrcp_get_play_status(con_handle);
             break;
         case 'n':
-            //avrcp_enable_notification(con_handle, AVRCP_NOTIFICATION_EVENT_PLAYBACK_STATUS_CHANGED, 2);
-            avrcp_enable_notification(con_handle, AVRCP_NOTIFICATION_EVENT_NOW_PLAYING_CONTENT_CHANGED, 0);
+            avrcp_enable_notification(con_handle, AVRCP_NOTIFICATION_EVENT_PLAYBACK_STATUS_CHANGED);
+            avrcp_enable_notification(con_handle, AVRCP_NOTIFICATION_EVENT_NOW_PLAYING_CONTENT_CHANGED);
             break;
         case 'N':
-            //avrcp_disable_notification(con_handle, AVRCP_NOTIFICATION_EVENT_PLAYBACK_STATUS_CHANGED);
+            avrcp_disable_notification(con_handle, AVRCP_NOTIFICATION_EVENT_PLAYBACK_STATUS_CHANGED);
             avrcp_disable_notification(con_handle, AVRCP_NOTIFICATION_EVENT_NOW_PLAYING_CONTENT_CHANGED);
             break;
         case 'I':

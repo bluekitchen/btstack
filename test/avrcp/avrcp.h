@@ -321,7 +321,7 @@ void avrcp_get_play_status(uint16_t con_handle);
  * @param con_handle
  * @param event_id
  */
-void avrcp_enable_notification(uint16_t con_handle, avrcp_notification_event_id_t event_id, uint32_t playback_interval_in_seconds);
+void avrcp_enable_notification(uint16_t con_handle, avrcp_notification_event_id_t event_id);
 void avrcp_disable_notification(uint16_t con_handle, avrcp_notification_event_id_t event_id);
 
 /**
