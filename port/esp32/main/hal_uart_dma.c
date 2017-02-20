@@ -3,6 +3,8 @@
 #include <stdint.h>
 #include <stdio.h>
 
+#include "esp_err.h"
+#include "esp_coexist.h"
 #include "freertos/FreeRTOS.h"
 
 /* VHCI function interface */
@@ -14,9 +16,11 @@ typedef struct vhci_host_callback {
 extern bool API_vhci_host_check_send_available(void);
 extern void API_vhci_host_send_packet(uint8_t *data, uint16_t len);
 extern void API_vhci_host_register_callback(const vhci_host_callback_t *callback);
+extern void btdm_controller_init(void);
 
 void hal_uart_dma_init(void){
     printf("hal_uart_dma_init\n");
+    btdm_controller_init();
 }
 
 void hal_uart_dma_set_block_received( void (*block_handler)(void)){
