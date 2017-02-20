@@ -71,4 +71,3 @@ common options:
     more flexibility.
 
     ![BTstack in multi-threaded environment - solution with daemon.](picts/multithreading-btdaemon.png) {#fig:MTDaemon}
-    
