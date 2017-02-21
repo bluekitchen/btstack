@@ -31,6 +31,7 @@
 
 #include "btstack_debug.h"
 #include "btstack_config.h"
+#include "bluetooth.h"
 
 #if 0
 #include <misc/byteorder.h>
@@ -203,7 +204,7 @@ static void read_local_version_info(btstack_buf_t *buf, btstack_buf_t *evt)
 	rp->hci_version = BT_HCI_VERSION_4_2;
 	rp->hci_revision = sys_cpu_to_le16(0);
 	rp->lmp_version = RADIO_BLE_VERSION_NUMBER;
-	rp->manufacturer = sys_cpu_to_le16(RADIO_BLE_COMPANY_ID);
+	rp->manufacturer = sys_cpu_to_le16(COMPANY_ID_NORDIC_SEMICONDUCTOR_ASA); // was RADIO_BLE_COMPANY_ID
 	rp->lmp_subversion = sys_cpu_to_le16(RADIO_BLE_SUB_VERSION_NUMBER);
 }
 
