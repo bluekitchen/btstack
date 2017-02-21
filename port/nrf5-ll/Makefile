@@ -176,7 +176,6 @@ sm_pairing_peripheral.elf : $(ASMS_APP_BTSTACK:.s=.o)
 sm_pairing_peripheral.elf : sm_pairing_peripheral.h $(SRCS_SM_PAIRING_PERIPHERAL:.c=.o)
 
 SRCS = ${SRCS_BTSTACK} ${SRCS_UTIL} ${SRCS_APP_BTSTACK} ${TARGETS:.elf=.c}
-TOBJS = ${TARGETS:.elf=.h}
 ASMS = ${ASMS_COMMON}  ${ASMS_SOC_NRF5} ${ASMS_APP_BTSTACK}
 
 include ../../../makefile.inc
