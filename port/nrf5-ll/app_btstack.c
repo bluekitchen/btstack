@@ -54,8 +54,8 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 
 int btstack_main(void);
 
-const btstack_run_loop_t * btstack_run_loop_zephyr_get_instance(void);
-const hci_transport_t * hci_transport_zephyr_get_instance();
+const btstack_run_loop_t * btstack_run_loop_phoenix_get_instance(void);
+const hci_transport_t * hci_transport_phoenix_get_instance();
 void btstack_run_loop_rtc0_overflow();
 
 uint8_t __noinit isr_stack[512];
@@ -294,10 +294,10 @@ int main(void)
 
 	// start with BTstack init - especially configure HCI Transport
     btstack_memory_init();
-    btstack_run_loop_init(btstack_run_loop_zephyr_get_instance());
+    btstack_run_loop_init(btstack_run_loop_phoenix_get_instance());
 
     // init HCI
-    hci_init(hci_transport_zephyr_get_instance(), NULL);
+    hci_init(hci_transport_phoenix_get_instance(), NULL);
 
     // enable full log output while porting
     hci_dump_open(NULL, HCI_DUMP_STDOUT);

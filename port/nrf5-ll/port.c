@@ -124,7 +124,7 @@ static void transport_process_packet(void){
 }
 
 static const hci_transport_t transport = {
-    /* const char * name; */                                        "nRF5-Zephyr",
+    /* const char * name; */                                        "nRF5-Phoenix",
     /* void   (*init) (const void *transport_config); */            &transport_init,
     /* int    (*open)(void); */                                     &transport_open,
     /* int    (*close)(void); */                                    &transport_close,
@@ -135,7 +135,7 @@ static const hci_transport_t transport = {
     /* void   (*reset_link)(void); */                               NULL,
 };
 
-const hci_transport_t * hci_transport_zephyr_get_instance(void){
+const hci_transport_t * hci_transport_phoenix_get_instance(void){
 	return &transport;
 }
 
@@ -232,7 +232,7 @@ void btstack_run_loop_rtc0_overflow(void){
 // drop resolution to 32 ticks ~ 1 ms
 #define PRESCALER_TICKS 5
 
-static uint64_t btstack_run_loop_zephyr_get_ticks(void){
+static uint64_t btstack_run_loop_phoenix_get_ticks(void){
     uint32_t high_ticks_before, high_ticks_after, low_ticks;
     while (1){
         high_ticks_before = btstack_run_loop_rtc0_overflow_counter;
@@ -243,21 +243,21 @@ static uint64_t btstack_run_loop_zephyr_get_ticks(void){
     return (high_ticks_after << 24) | low_ticks;
 }
 
-static uint64_t btstack_run_loop_zephyr_get_ticks_prescaled(void){
-    return btstack_run_loop_zephyr_get_ticks() >> PRESCALER_TICKS;
+static uint64_t btstack_run_loop_phoenix_get_ticks_prescaled(void){
+    return btstack_run_loop_phoenix_get_ticks() >> PRESCALER_TICKS;
 }
 
-static uint32_t btstack_run_loop_zephyr_get_time_ms(void){
-    return btstack_run_loop_zephyr_get_ticks() * 125 / 4096;  // == * 1000 / 32768
+static uint32_t btstack_run_loop_phoenix_get_time_ms(void){
+    return btstack_run_loop_phoenix_get_ticks() * 125 / 4096;  // == * 1000 / 32768
 }
 
-static uint32_t btstack_run_loop_zephyr_ticks_for_ms(uint32_t time_in_ms){
+static uint32_t btstack_run_loop_phoenix_ticks_for_ms(uint32_t time_in_ms){
     return time_in_ms * 4096 / 125; // == * 32768 / 1000
 }
 
-static void btstack_run_loop_zephyr_set_timer(btstack_timer_source_t *ts, uint32_t timeout_in_ms){
-    uint32_t ticks = btstack_run_loop_zephyr_ticks_for_ms(timeout_in_ms);
-    uint64_t timeout = btstack_run_loop_zephyr_get_ticks() + ticks;
+static void btstack_run_loop_phoenix_set_timer(btstack_timer_source_t *ts, uint32_t timeout_in_ms){
+    uint32_t ticks = btstack_run_loop_phoenix_ticks_for_ms(timeout_in_ms);
+    uint64_t timeout = btstack_run_loop_phoenix_get_ticks() + ticks;
     // drop resolution to 32 ticks ~ 1 ms
     ts->timeout = timeout >> PRESCALER_TICKS;
 }
@@ -287,12 +287,12 @@ static uint64_t btstack_run_loop_reconstruct_full_ticks(uint64_t reference_full,
 /**
  * Add timer to run_loop (keep list sorted)
  */
-static void btstack_run_loop_zephyr_add_timer(btstack_timer_source_t *ts){
+static void btstack_run_loop_phoenix_add_timer(btstack_timer_source_t *ts){
 
-    uint64_t now = btstack_run_loop_zephyr_get_ticks_prescaled();
+    uint64_t now = btstack_run_loop_phoenix_get_ticks_prescaled();
     uint64_t new_timeout = btstack_run_loop_reconstruct_full_ticks(now, ts->timeout);
 
-    // log_info("btstack_run_loop_zephyr_add_timer: timeout %u", (int) ts->timeout);
+    // log_info("btstack_run_loop_phoenix_add_timer: timeout %u", (int) ts->timeout);
 
     btstack_linked_item_t *it;
     for (it = (btstack_linked_item_t *) &timers; it->next ; it = it->next){
@@ -315,12 +315,12 @@ static void btstack_run_loop_zephyr_add_timer(btstack_timer_source_t *ts){
 /**
  * Remove timer from run loop
  */
-static int btstack_run_loop_zephyr_remove_timer(btstack_timer_source_t *ts){
-    // log_info("btstack_run_loop_zephyr_remove_timer: timeout %u", (int) ts->timeout);
+static int btstack_run_loop_phoenix_remove_timer(btstack_timer_source_t *ts){
+    // log_info("btstack_run_loop_phoenix_remove_timer: timeout %u", (int) ts->timeout);
     return btstack_linked_list_remove(&timers, (btstack_linked_item_t *) ts);
 }
 
-static void btstack_run_loop_zephyr_dump_timer(void){
+static void btstack_run_loop_phoenix_dump_timer(void){
 #ifdef ENABLE_LOG_INFO 
     btstack_linked_item_t *it;
     int i = 0;
@@ -331,9 +331,9 @@ static void btstack_run_loop_zephyr_dump_timer(void){
 #endif
 }
 
-static uint64_t btstack_run_loop_zephyr_singleshot_timeout = 0;
+static uint64_t btstack_run_loop_phoenix_singleshot_timeout = 0;
 
-static void btstack_run_loop_zephyr_singleshot_timeout_handler(uint32_t ticks_at_expire, uint32_t remainder, uint16_t lazy, void *context){
+static void btstack_run_loop_phoenix_singleshot_timeout_handler(uint32_t ticks_at_expire, uint32_t remainder, uint16_t lazy, void *context){
     (void)ticks_at_expire;
     (void)remainder;
     (void)lazy;
@@ -343,15 +343,15 @@ static void btstack_run_loop_zephyr_singleshot_timeout_handler(uint32_t ticks_at
     trigger_event_received = 1;
 
     // single shot timer is not active anymore
-    btstack_run_loop_zephyr_singleshot_timeout = 0;
+    btstack_run_loop_phoenix_singleshot_timeout = 0;
 }
 
-static void btstack_run_loop_zephyr_start_singleshot_timer(uint32_t timeout_ticks){
+static void btstack_run_loop_phoenix_start_singleshot_timer(uint32_t timeout_ticks){
 
     // limit ticks to ticker resolution - creatively use tick diff function to not specifiy resolution here
     uint32_t ticker_ticks = ticker_ticks_diff_get(timeout_ticks, 0);
 
-    // log_info("btstack_run_loop_zephyr_start_singleshot_timer: %u, current %u", (int) timeout_ticks, (int) cntr_cnt_get());
+    // log_info("btstack_run_loop_phoenix_start_singleshot_timer: %u, current %u", (int) timeout_ticks, (int) cntr_cnt_get());
     ticker_start(0 /* instance */
         , BTSTACK_USER_ID /* user */
         , BTSTACK_TICKER_ID /* ticker id */
@@ -361,28 +361,28 @@ static void btstack_run_loop_zephyr_start_singleshot_timer(uint32_t timeout_tick
         , 0 /* remainder */
         , 0 /* lazy */
         , 0 /* slot */
-        , btstack_run_loop_zephyr_singleshot_timeout_handler /* timeout callback function */
+        , btstack_run_loop_phoenix_singleshot_timeout_handler /* timeout callback function */
         , 0 /* context */
         , 0 /* op func */
         , 0 /* op context */
         );
-    btstack_run_loop_zephyr_singleshot_timeout = timeout_ticks;
+    btstack_run_loop_phoenix_singleshot_timeout = timeout_ticks;
 }
 
-static void btstack_run_loop_zephyr_stop_singleshot_timer(void){
-    // log_info("btstack_run_loop_zephyr_stop_singleshot_timer");
+static void btstack_run_loop_phoenix_stop_singleshot_timer(void){
+    // log_info("btstack_run_loop_phoenix_stop_singleshot_timer");
     ticker_stop(0 /* instance */
         , BTSTACK_USER_ID /* user */
         , BTSTACK_TICKER_ID /* ticker id */
         , 0 /* op func */
         , 0 /* op context */
         );
-    btstack_run_loop_zephyr_singleshot_timeout = 0;
+    btstack_run_loop_phoenix_singleshot_timeout = 0;
 }
 
-static void btstack_run_loop_zephyr_execute_once(void) {
+static void btstack_run_loop_phoenix_execute_once(void) {
 
-    // printf("Time %u\n", (int) btstack_run_loop_zephyr_get_ticks() >> 5);
+    // printf("Time %u\n", (int) btstack_run_loop_phoenix_get_ticks() >> 5);
 
     // process queued radio packets
     while (1){
@@ -409,10 +409,10 @@ static void btstack_run_loop_zephyr_execute_once(void) {
     // process timers
     uint64_t timeout = 0;
     while (timers) {
-        uint64_t now = btstack_run_loop_zephyr_get_ticks_prescaled();
+        uint64_t now = btstack_run_loop_phoenix_get_ticks_prescaled();
         btstack_timer_source_t *ts = (btstack_timer_source_t *) timers;
         timeout = btstack_run_loop_reconstruct_full_ticks(now, ts->timeout);
-        // log_info("btstack_run_loop_zephyr_run: now %u, timeout %u - counter %u", (int) now, (int) ts->timeout, NRF_RTC0->COUNTER >> PRESCALER_TICKS);
+        // log_info("btstack_run_loop_phoenix_run: now %u, timeout %u - counter %u", (int) now, (int) ts->timeout, NRF_RTC0->COUNTER >> PRESCALER_TICKS);
 
         if (timeout > now) break;
         timeout = 0;
@@ -423,12 +423,12 @@ static void btstack_run_loop_zephyr_execute_once(void) {
 
     // use ticker to wake up if timer is set
     uint32_t timeout_ticks = (timeout << PRESCALER_TICKS);
-    if (timeout_ticks != btstack_run_loop_zephyr_singleshot_timeout){
-        if (btstack_run_loop_zephyr_singleshot_timeout){
-            btstack_run_loop_zephyr_stop_singleshot_timer();
+    if (timeout_ticks != btstack_run_loop_phoenix_singleshot_timeout){
+        if (btstack_run_loop_phoenix_singleshot_timeout){
+            btstack_run_loop_phoenix_stop_singleshot_timer();
         }  
         if (timeout_ticks){
-            btstack_run_loop_zephyr_start_singleshot_timer(timeout_ticks);
+            btstack_run_loop_phoenix_start_singleshot_timer(timeout_ticks);
         }
     }
 
@@ -443,35 +443,35 @@ static void btstack_run_loop_zephyr_execute_once(void) {
     }
 }
 
-static void btstack_run_loop_zephyr_execute(void) {
+static void btstack_run_loop_phoenix_execute(void) {
     while (1) {
-        btstack_run_loop_zephyr_execute_once();
+        btstack_run_loop_phoenix_execute_once();
     }
 }
 
-static void btstack_run_loop_zephyr_btstack_run_loop_init(void){
+static void btstack_run_loop_phoenix_btstack_run_loop_init(void){
     timers = NULL;
 }
 
-static const btstack_run_loop_t btstack_run_loop_zephyr = {
-    &btstack_run_loop_zephyr_btstack_run_loop_init,
+static const btstack_run_loop_t btstack_run_loop_phoenix = {
+    &btstack_run_loop_phoenix_btstack_run_loop_init,
     NULL,
     NULL,
     NULL,
     NULL,
-    &btstack_run_loop_zephyr_set_timer,
-    &btstack_run_loop_zephyr_add_timer,
-    &btstack_run_loop_zephyr_remove_timer,
-    &btstack_run_loop_zephyr_execute,
-    &btstack_run_loop_zephyr_dump_timer,
-    &btstack_run_loop_zephyr_get_time_ms,
+    &btstack_run_loop_phoenix_set_timer,
+    &btstack_run_loop_phoenix_add_timer,
+    &btstack_run_loop_phoenix_remove_timer,
+    &btstack_run_loop_phoenix_execute,
+    &btstack_run_loop_phoenix_dump_timer,
+    &btstack_run_loop_phoenix_get_time_ms,
 };
 
 /**
  * @brief Provide btstack_run_loop_posix instance for use with btstack_run_loop_init
  */
-const btstack_run_loop_t * btstack_run_loop_zephyr_get_instance(void){
-    return &btstack_run_loop_zephyr;
+const btstack_run_loop_t * btstack_run_loop_phoenix_get_instance(void){
+    return &btstack_run_loop_phoenix;
 }
 
 // copy from util/util.c, but returns number characters printed and uses <stdarg.h> to access arguments
