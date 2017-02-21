@@ -154,9 +154,6 @@ SRCS_SM_PAIRING_PERIPHERAL = \
 ancs_client_demo.elf : $(ASMS_APP_BTSTACK:.s=.o)
 ancs_client_demo.elf : ancs_client_demo.h $(SRCS_ANCS_CLIENT_DEMO:.c=.o)
 
-ancs_client_demo.elf : $(ASMS_APP_BTSTACK:.s=.o)
-ancs_client_demo.elf : ancs_client_demo.h $(SRCS_ANCS_CLIENT_DEMO:.c=.o)
-
 gap_le_advertisements.elf : $(ASMS_APP_BTSTACK:.s=.o)
 gap_le_advertisements.elf : $(SRCS_GAP_LE_ADVERTISEMENTS:.c=.o)
 
@@ -178,5 +175,8 @@ sm_pairing_central.elf : $(SRCS_SM_PAIRING_CENTRAL:.c=.o)
 sm_pairing_peripheral.elf : $(ASMS_APP_BTSTACK:.s=.o)
 sm_pairing_peripheral.elf : sm_pairing_peripheral.h $(SRCS_SM_PAIRING_PERIPHERAL:.c=.o)
 
+SRCS = ${SRCS_BTSTACK} ${SRCS_UTIL} ${SRCS_APP_BTSTACK} ${TARGETS:.elf=.c}
+TOBJS = ${TARGETS:.elf=.h}
+ASMS = ${ASMS_COMMON}  ${ASMS_SOC_NRF5} ${ASMS_APP_BTSTACK}
 
 include ../../../makefile.inc
