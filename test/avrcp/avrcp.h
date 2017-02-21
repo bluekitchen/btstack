@@ -70,6 +70,8 @@ typedef enum {
 
 typedef enum {
     AVRCP_PDU_ID_GET_CAPABILITIES = 0x10,
+    AVRCP_PDU_ID_GetCurrentPlayerApplicationSettingValue = 0x13,
+    AVRCP_PDU_ID_SetPlayerApplicationSettingValue = 0x14,
     AVRCP_PDU_ID_GET_ELEMENT_ATTRIBUTES = 0x20,
     AVRCP_PDU_ID_GET_PLAY_STATUS = 0x30,
     AVRCP_PDU_ID_REGISTER_NOTIFICATION = 0x31,
@@ -201,15 +203,28 @@ typedef struct {
     uint16_t notifications_to_deregister; 
 } avrcp_connection_t;
 
- typedef enum {
+typedef enum {
     AVRCP_PLAY_STATUS_STOPPED = 0x00,
     AVRCP_PLAY_STATUS_PLAYING,
     AVRCP_PLAY_STATUS_PAUSED,
     AVRCP_PLAY_STATUS_FWD_SEEK, 
     AVRCP_PLAY_STATUS_REV_SEEK, 
     AVRCP_PLAY_STATUS_ERROR = 0xFF
- } avrcp_play_status_t;
- 
+} avrcp_play_status_t;
+
+typedef enum {
+    AVRCP_SHUFFLE_MODE_OFF = 0x01,
+    AVRCP_SHUFFLE_MODE_ALL_TRACKS,
+    AVRCP_SHUFFLE_MODE_GROUP
+} avrcp_shuffle_mode_t;
+
+typedef enum {
+    AVRCP_REPEAT_MODE_OFF = 0x01,
+    AVRCP_REPEAT_MODE_SINGLE_TRACK,
+    AVRCP_REPEAT_MODE_ALL_TRACKS,
+    AVRCP_REPEAT_MODE_GROUP
+} avrcp_repeat_mode_t;
+
 /**
  * @brief AVDTP Sink service record. 
  * @param service
@@ -359,6 +374,24 @@ void avrcp_start_mute(uint16_t con_handle);
  * @param con_handle
  */
 void avrcp_start_skip(uint16_t con_handle);
+
+/**
+ * @brief Query repeat and shuffle mode.
+ * @param con_handle
+ */
+void avrcp_query_shuffle_and_repeat_modes(uint16_t con_handle);
+
+/**
+ * @brief Set shuffle mode.
+ * @param con_handle
+ */
+void avrcp_set_shuffle_mode(uint16_t con_handle, avrcp_shuffle_mode_t mode);
+
+/**
+ * @brief Set repeat mode.
+ * @param con_handle
+ */
+void avrcp_set_repeat_mode(uint16_t con_handle, avrcp_repeat_mode_t mode);
 
 /* API_END */
 #if defined __cplusplus

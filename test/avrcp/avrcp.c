@@ -1119,4 +1119,71 @@ void avrcp_set_absolute_volume(uint16_t con_handle, uint8_t volume){
     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
 }
 
+void avrcp_query_shuffle_and_repeat_modes(uint16_t con_handle){
+    avrcp_connection_t * connection = get_avrcp_connection_for_con_handle(con_handle);
+    if (!connection){
+        log_error("avrcp_get_capabilities: coud not find a connection.");
+        return;
+    }
+    if (connection->state != AVCTP_CONNECTION_OPENED) return;
+    connection->state = AVCTP_W2_SEND_COMMAND;
+    
+    connection->transaction_label++;
+    connection->cmd_to_send = AVRCP_CMD_OPCODE_VENDOR_DEPENDENT;
+    connection->command_type = AVRCP_CTYPE_STATUS;
+    connection->subunit_type = AVRCP_SUBUNIT_TYPE_PANEL;
+    connection->subunit_id = 0;
+    big_endian_store_24(connection->cmd_operands, 0, BT_SIG_COMPANY_ID);
+    connection->cmd_operands[3] = AVRCP_PDU_ID_GetCurrentPlayerApplicationSettingValue; // PDU ID
+    connection->cmd_operands[4] = 0;
+    big_endian_store_16(connection->cmd_operands, 5, 5); // parameter length
+    connection->cmd_operands[7] = 4;                     // NumPlayerApplicationSettingAttributeID
+    // PlayerApplicationSettingAttributeID1 AVRCP Spec, Appendix F, 133
+    connection->cmd_operands[8]  = 0x01;    // equalizer  (1-OFF, 2-ON)     
+    connection->cmd_operands[9]  = 0x02;    // repeat     (1-off, 2-single track, 3-all tracks, 4-group repeat)
+    connection->cmd_operands[10] = 0x03;    // shuffle    (1-off, 2-all tracks, 3-group shuffle)
+    connection->cmd_operands[11] = 0x04;    // scan       (1-off, 2-all tracks, 3-group scan)
+    connection->cmd_operands_lenght = 12;
+    avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
+}
 
+
+static void avrcp_set_current_player_application_setting_value(uint16_t con_handle, uint8_t attribute_id, uint8_t attribute_value){
+    avrcp_connection_t * connection = get_avrcp_connection_for_con_handle(con_handle);
+    if (!connection){
+        log_error("avrcp_get_capabilities: coud not find a connection.");
+        return;
+    }
+    if (connection->state != AVCTP_CONNECTION_OPENED) return;
+    connection->state = AVCTP_W2_SEND_COMMAND;
+
+    connection->transaction_label++;
+    connection->cmd_to_send = AVRCP_CMD_OPCODE_VENDOR_DEPENDENT;
+    connection->command_type = AVRCP_CTYPE_CONTROL;
+    connection->subunit_type = AVRCP_SUBUNIT_TYPE_PANEL;
+    connection->subunit_id = 0;
+    int pos = 0;
+    big_endian_store_24(connection->cmd_operands, pos, BT_SIG_COMPANY_ID);
+    pos += 3;
+    connection->cmd_operands[pos++] = AVRCP_PDU_ID_SetPlayerApplicationSettingValue; // PDU ID
+    connection->cmd_operands[pos++] = 0;
+    // Parameter Length
+    big_endian_store_16(connection->cmd_operands, pos, 3);
+    pos += 2;
+    connection->cmd_operands[pos++] = 2;
+    connection->cmd_operands_lenght = pos;
+    connection->cmd_operands[pos++]  = attribute_id;
+    connection->cmd_operands[pos++]  = attribute_value;
+    connection->cmd_operands_lenght = pos;
+    avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
+}
+
+void avrcp_set_shuffle_mode(uint16_t con_handle, avrcp_shuffle_mode_t mode){
+    if (mode < AVRCP_SHUFFLE_MODE_OFF || mode > AVRCP_SHUFFLE_MODE_GROUP) return;
+    avrcp_set_current_player_application_setting_value(con_handle, 0x03, mode);
+}
+
+void avrcp_set_repeat_mode(uint16_t con_handle, avrcp_repeat_mode_t mode){
+    if (mode < AVRCP_REPEAT_MODE_OFF || mode > AVRCP_REPEAT_MODE_GROUP) return;
+    avrcp_set_current_player_application_setting_value(con_handle, 0x02, mode);
+}

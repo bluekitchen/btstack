@@ -142,6 +142,13 @@ static void show_usage(void){
     printf("a      - absolute volume of %d percent\n", 5000/127);
     printf("m      - mute\n");
     printf("k      - skip\n");
+
+    printf("q      - query repeat and shuffle mode\n");
+    printf("x      - set repeat mode: SINGLE_TRACK\n");
+    printf("X      - disable repeat mode\n");
+    printf("y      - set shuffle mode ALL_TRACKS\n");
+    printf("Y      - disable shuffle mode\n");
+
     printf("Ctrl-c - exit\n");
     printf("---\n");
 }
@@ -218,7 +225,22 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
         case 'k':
             avrcp_start_skip(con_handle);
             break;
-
+        case 'q':
+            avrcp_query_shuffle_and_repeat_modes(con_handle);
+            break;
+        case 'x':
+            avrcp_set_repeat_mode(con_handle, AVRCP_REPEAT_MODE_SINGLE_TRACK);
+            break;
+        case 'X':
+            avrcp_set_repeat_mode(con_handle, AVRCP_REPEAT_MODE_OFF);
+            break;
+        case 'y':
+            avrcp_set_shuffle_mode(con_handle, AVRCP_SHUFFLE_MODE_ALL_TRACKS);
+            break;
+        case 'Y':
+            avrcp_set_shuffle_mode(con_handle, AVRCP_SHUFFLE_MODE_OFF);
+            break;
+            
         default:
             show_usage();
             break;

@@ -1327,12 +1327,12 @@ typedef uint8_t sm_key_t[16];
 /** AVRCP Subevent */
 
 /**
- * @format 1H2B1
+ * @format 1H12B1
  * @param subevent_code
  * @param con_handle
+ * @param status 0 == OK
  * @param local_cid
  * @param bd_addr
- * @param status 0 == OK
  */
 #define AVRCP_SUBEVENT_CONNECTION_ESTABLISHED     0x01
 
@@ -1341,13 +1341,13 @@ typedef uint8_t sm_key_t[16];
  * @param subevent_code
  * @param con_handle
  */
-#define AVRCP_SUBEVENT_CONNECTION_CLOSED        0x02
+#define AVRCP_SUBEVENT_CONNECTION_CLOSED          0x02
 
-#define AVRCP_NOW_PLAYING_INFO                  0x03
 /**
- * @format 1HJVJVJVJV114
+ * @format 1H1JVJVJVJV114
  * @param subevent_code
  * @param con_handle
+ * @param status
  * @param title_len
  * @param title
  * @param artist_len
@@ -1360,6 +1360,16 @@ typedef uint8_t sm_key_t[16];
  * @param total_tracks
  * @param song_length in ms
  */
+#define AVRCP_SUBEVENT_NOW_PLAYING_INFO                    0x03
 
+/**
+ * @format 1H111
+ * @param subevent_code
+ * @param con_handle
+ * @param status
+ * @param repeat_mode
+ * @param shuffle_mode
+ */
+#define AVRCP_SUBEVENT_SHUFFLE_AND_REPEAT_MODE             0x04
 
 #endif
