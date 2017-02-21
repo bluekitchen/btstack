@@ -121,7 +121,7 @@ SRCS_APP_BTSTACK = \
 	${PHOENIX_ROOT}/ticker/ticker.c \
 	${PHOENIX_ROOT}/ble/ll/ctrl.c \
 	${PHOENIX_ROOT}/ble/ll/ll.c \
-	${PHOENIX_ROOT}/app/app_btstack.c \
+	app_btstack.c \
 
 SRCS_ANCS_CLIENT_DEMO = \
 	$(SRCS_APP_BTSTACK) \
