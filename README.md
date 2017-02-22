@@ -3,47 +3,29 @@ Please see [Migration notes](https://github.com/bluekitchen/btstack/blob/master/
 
 # Welcome to BTstack
 
-BTstack is [BlueKitchen's](http://bluekitchen-gmbh.com) implementation of the official Bluetooth stack. 
-It is well suited for small, resource-constraint devices 
-such as 8 or 16 bit embedded systems as it is highly configurable and comes with an ultra small memory footprint. 
-A minimal configuration for an SPP server on a MSP430 can run in 32 kB FLASH and only 4 kB of RAM.
+BTstack is [BlueKitchen's](http://bluekitchen-gmbh.com) implementation of the official Bluetooth stack. BTstack is well suited for small, resource-constrained devices such as `8bit` or `16bit` embedded systems. BTstack is highly configurable and comes with an ultra-small memory footprint: with minimal configuration as an `SPP` server running on an `MSP430`, BTstack may function using only `32kB` of FLASH and `4kB` of RAM.
 
-It connects to the Bluetooth modules via a different Bluetooth HCI transport layers (e.g., HCI H4 UART and 
-H5 the "Tree-Wire" protocol, HCI H2 USB). Various platforms can be easily targeted by providing the necessary 
-UART, CPU, and CLOCK implementations. 
+Targeting a variety of platforms is as simple as providing the necessary UART, CPU, and CLOCK implementations.
+BTstack connects to Bluetooth-modules via the following Bluetooth HCI transport-layers: (but NOT `BCSP`)
+- (H2) `HCI USB` 
+- (H4) `HCI UART` 
+- (H5) `HCI Three-Wire UART` 
 
-On smaller embedded systems, a minimal run loop implementation allows to use BTstack without a Real Time OS (RTOS). 
-If a RTOS is already provided, BTstack can be integrated and run as a single thread. 
+On smaller, embedded systems; a minimal run-loop implementation allows the use of the BTstack without a `Real-Time OS` (RTOS). 
+If a `RTOS` is already present, BTstack can be integrated to run as a single-thread.
 
-On larger systems, BTstack provides a daemon that connects to a Bluetooth module. 
+On larger systems; BTstack provides a daemon that can connect to a Bluetooth module. 
 Multiple applications can communicate with this daemon over different inter-process communication methods.
 
-BTstack supports both, the Central and the Peripheral Role of Bluetooth 4.2 Low Energy specification. 
-It can be configures as both a single mode or a dual mode stack.
+BTstack supports both the `Central` and `Peripheral` roles of the `Bluetooth 4.2 Low-Energy` specification. 
+It can be configured to run as either a single-mode stack or a dual-mode stack.
 
-BTstack is free for non-commercial use. For commercial use, <a href="mailto:contact@bluekitchen-gmbh.com">tell us</a> 
+BTstack is free for non-commercial use. However, for commercial use, <a href="mailto:contact@bluekitchen-gmbh.com">tell us</a> 
 a bit about your project to get a quote.
-It has been qualified with the the Bluetooth SIG for GAP, IOP, HFP, HSP, SPP, PAN profiles and 
-GATT, SM of the Bluetooth 4.2 LE Central and Peripheral roles (QD ID 25340).
-
-## Documentation
-- [HTML](http://bluekitchen-gmbh.com/btstack/)
-- [PDF](http://bluekitchen-gmbh.com/btstack.pdf)
-
-## Discussion and Community Support
-[BTstack Google Group](http://groups.google.com/group/btstack-dev)
 
 ## Supported Protocols and Profiles
-
 Protocols: L2CAP, RFCOMM, SDP, BNEP, ATT, SM (incl. LE Secure Connections).
-
 Profiles: GAP, IOP, HFP, HSP, SPP, PAN, GATT.
-
-Coming next: A2DP, AVRCP, HID, HOGP, BLE Mesh, and more.
-
-For information on MFi/iAP2 support, please <a href="mailto:contact@bluekitchen-gmbh.com">contact us</a>.
-
-## Evaluation Platforms
 
 #### Embedded Platforms:      
 Status               | Platform
@@ -66,6 +48,16 @@ Status               | Platform
 [<img src="http://buildbot.bluekitchen-gmbh.com/btstack/badge.png?builder=port-ios-master">](https://buildbot.bluekitchen-gmbh.com/btstack/builders/port-ios-master)      | iOS: daemon for iOS jailbreak devices, C client-server API
 [<img src="http://buildbot.bluekitchen-gmbh.com/btstack/badge.png?builder=port-mtk-master">](https://buildbot.bluekitchen-gmbh.com/btstack/builders/port-mtk-master)     | mtk: daemon for rooted Android devices, based on Mediatek MT65xx processor, Java and C client-server API
 [<img src="http://buildbot.bluekitchen-gmbh.com/btstack/badge.png?builder=port-wiced-master">](https://buildbot.bluekitchen-gmbh.com/btstack/builders/port-wiced-master)    | wiced: Broadcom platforms that support the WICED SDK
+
+#### Next-Work (to be implemented)
+- A2DP
+- AVRCP
+- HID
+- HOGP
+- BLE Mesh
+- Even More!
+
+
 
 ## Supported Chipsets
 
@@ -94,3 +86,14 @@ port                | Complete port for a MCU + Chipset combinations
 src                 | Bluetooth stack implementation
 test                | Unit and PTS tests
 tool                | Helper tools for BTstack
+
+
+
+## Documentation
+- [HTML](http://bluekitchen-gmbh.com/btstack/)
+- [PDF](http://bluekitchen-gmbh.com/btstack.pdf)
+
+## Discussion and Community Support
+[BTstack Google Group](http://groups.google.com/group/btstack-dev)
+
+For information on MFi/iAP2 support, please <a href="mailto:contact@bluekitchen-gmbh.com">contact us</a>.
