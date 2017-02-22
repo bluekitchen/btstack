@@ -42,6 +42,7 @@ CLASSIC += \
 	rfcomm.c	                \
 	bnep.c	                    \
 	sdp_server.c			            \
+	device_id_server.c          \
 
 SDP_CLIENT += \
 	sdp_client.o		        \
