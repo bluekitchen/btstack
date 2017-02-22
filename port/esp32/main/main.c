@@ -30,18 +30,10 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
-
-// *****************************************************************************
-//
-// spp_counter demo - it provides an SPP and sends a counter every second
-//
-// it doesn't use the LCD to get down to a minimal memory footprint
-//
-// *****************************************************************************
 
 #include <stdint.h>
 #include <stdio.h>
@@ -49,12 +41,14 @@
 #include <string.h>
 
 #include "btstack_config.h"
-#include "btstack_event.h" 
+#include "btstack_event.h"
 #include "btstack_memory.h"
 #include "btstack_run_loop.h"
 #include "btstack_run_loop_embedded.h"
 //#include "classic/btstack_link_key_db.h"
 #include "hci.h"
+#include "hci_dump.h"
+#include "bt.h"
 
 static void hw_setup(void){
     // @TODO
@@ -88,15 +82,18 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 }
 
 static void btstack_setup(void){
+
+    hci_dump_open(NULL, HCI_DUMP_STDOUT);
+
     /// GET STARTED with BTstack ///
     btstack_memory_init();
     btstack_run_loop_init(btstack_run_loop_embedded_get_instance());
-    
+
     // init HCI
     hci_init(hci_transport_h4_instance(btstack_uart_block_embedded_instance()), &config);
     //hci_set_link_key_db(btstack_link_key_db_memory_instance()); // @TODO
     //hci_set_chipset(btstack_chipset_cc256x_instance()); // @TODO
-    
+
     // inform about BTstack state
     hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
@@ -108,6 +105,8 @@ extern int btstack_main(int argc, const char * argv[]);
 int app_main(void){
 
     hw_setup();
+
+    esp_bt_controller_init();
 
     btstack_setup();
     btstack_main(0, NULL);

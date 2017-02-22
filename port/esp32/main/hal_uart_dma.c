@@ -2,37 +2,55 @@
 
 #include <stdint.h>
 #include <stdio.h>
+#include <string.h>
 
-#include "esp_err.h"
-#include "esp_coexist.h"
-#include "freertos/FreeRTOS.h"
+#include "bt.h"
 
-/* VHCI function interface */
-typedef struct vhci_host_callback {
-    void (*notify_host_send_available)(void);               /*!< callback used to notify that the host can send packet to controller */
-    int (*notify_host_recv)(uint8_t *data, uint16_t len);   /*!< callback used to notify that the controller has a packet to send to the host*/
-} vhci_host_callback_t;
+void dummy_handler(void){};
 
-extern bool API_vhci_host_check_send_available(void);
-extern void API_vhci_host_send_packet(uint8_t *data, uint16_t len);
-extern void API_vhci_host_register_callback(const vhci_host_callback_t *callback);
-extern void btdm_controller_init(void);
+// handlers
+static void (*rx_done_handler)(void) = dummy_handler;
+static void (*tx_done_handler)(void) = dummy_handler;
+
+static uint8_t _data[1024];
+static uint16_t _data_len;
+
+static void host_send_pkt_available_cb(void)
+{
+    printf("host_send_pkt_available_cb\n");
+}
+
+static int host_recv_pkt_cb(uint8_t *data, uint16_t len)
+{
+    printf("host_recv_pkt_cb: len = %u, data = [", len);
+    for (size_t i = 0; i < len; i++) {
+        printf("%02X ", data[i]);
+    }
+    printf("]\n");
+    memcpy(_data, data, len);
+    _data_len = len;
+    rx_done_handler();
+    return 0;
+}
+
+static const esp_vhci_host_callback_t vhci_host_cb = {
+    .notify_host_send_available = host_send_pkt_available_cb,
+    .notify_host_recv = host_recv_pkt_cb,
+};
 
 void hal_uart_dma_init(void){
     printf("hal_uart_dma_init\n");
-    btdm_controller_init();
+    esp_vhci_host_register_callback(&vhci_host_cb);
 }
 
 void hal_uart_dma_set_block_received( void (*block_handler)(void)){
     printf("hal_uart_dma_set_block_received\n");
+    rx_done_handler = block_handler;
 }
 
 void hal_uart_dma_set_block_sent( void (*block_handler)(void)){
     printf("hal_uart_dma_set_block_sent\n");
-}
-
-void hal_uart_dma_set_csr_irq_handler( void (*csr_irq_handler)(void)){
-    printf("hal_uart_dma_set_csr_irq_handler\n");
+    tx_done_handler = block_handler;
 }
 
 int hal_uart_dma_set_baud(uint32_t baud){
@@ -42,13 +60,12 @@ int hal_uart_dma_set_baud(uint32_t baud){
 
 void hal_uart_dma_send_block(const uint8_t *buffer, uint16_t length){
     printf("hal_uart_dma_send_block\n");
-    API_vhci_host_send_packet(buffer, length);
+    esp_vhci_host_send_packet(buffer, length);
+    tx_done_handler();
 }
 
 void hal_uart_dma_receive_block(uint8_t *buffer, uint16_t len){
     printf("hal_uart_dma_receive_block\n");
+    memcpy(buffer, _data, _data_len);
 }
 
-void hal_uart_dma_set_sleep(uint8_t sleep){
-    printf("hal_uart_dma_set_sleep\n");
-}

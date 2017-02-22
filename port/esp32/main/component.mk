@@ -11,7 +11,7 @@ BTSTACK_ROOT := ../../..
 # Examples
 #include ${BTSTACK_ROOT}/example/Makefile.inc
 
-COMPONENT_ADD_LDFLAGS := -l$(COMPONENT_NAME) $(COMPONENT_PATH)/../components/libbtdm_app/libbtdm_app.a $(COMPONENT_PATH)/../components/libcoexist/libcoexist.a
+#COMPONENT_ADD_LDFLAGS := -l$(COMPONENT_NAME) $(COMPONENT_PATH)/../components/libbtdm_app/libbtdm_app.a $(COMPONENT_PATH)/../components/libcoexist/libcoexist.a $(COMPONENT_PATH)/../components/libphy/libphy.a
 
 COMPONENT_ADD_INCLUDEDIRS := $(BTSTACK_ROOT)/src/ble $(BTSTACK_ROOT)/src $(BTSTACK_ROOT)/platform/embedded .
 
