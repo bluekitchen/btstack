@@ -50,17 +50,87 @@
 #include "hci_dump.h"
 #include "bt.h"
 
-static void hw_setup(void){
-    // @TODO
+static int can_send_packet_now = 0;
+
+static void (*transport_packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size);
+
+static void host_send_pkt_available_cb(void)
+{
+    printf("host_send_pkt_available_cb\n");
+    can_send_packet_now = 1;
 }
 
-static hci_transport_config_uart_t config = {
-    HCI_TRANSPORT_CONFIG_UART,
-    115200,
-    1000000,  // main baudrate
-    1,        // flow control
+static int host_recv_pkt_cb(uint8_t *data, uint16_t len)
+{
+    printf("host_recv_pkt_cb: len = %u, data = [ ", len);
+    for (size_t i = 0; i < len; i++) {
+        printf("%02X ", data[i]);
+    }
+    printf("]\n");
+	transport_packet_handler(HCI_EVENT_PACKET, data, len);
+    return 0;
+}
+
+static const esp_vhci_host_callback_t vhci_host_cb = {
+    .notify_host_send_available = host_send_pkt_available_cb,
+    .notify_host_recv = host_recv_pkt_cb,
+};
+
+/**
+ * init transport
+ * @param transport_config
+ */
+static void transport_init(const void *transport_config){
+	esp_vhci_host_register_callback(&vhci_host_cb);
+}
+
+/**
+ * open transport connection
+ */
+static int transport_open(void){
+    return 0;
+}
+
+/**
+ * close transport connection
+ */
+static int transport_close(void){
+    return 0;
+}
+
+/**
+ * register packet handler for HCI packets: ACL, SCO, and Events
+ */
+static void transport_register_packet_handler(void (*handler)(uint8_t packet_type, uint8_t *packet, uint16_t size)){
+    transport_packet_handler = handler;
+}
+
+static int transport_can_send_packet_now(uint8_t packet_type) {
+    return can_send_packet_now;
+}
+
+static int transport_send_packet(uint8_t packet_type, uint8_t *packet, int size){
+    (void)packet_type;
+    esp_vhci_host_send_packet(packet, size);
+    return 0;
+}
+
+static const hci_transport_t transport = {
+    "VHCI",
+    &transport_init,
+    &transport_open,
+    &transport_close,
+    &transport_register_packet_handler,
+    &transport_can_send_packet_now,
+    &transport_send_packet,
+    NULL,
+    NULL,
     NULL,
 };
+
+static const hci_transport_t * transport_get_instance(void){
+    return &transport;
+}
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
@@ -90,7 +160,7 @@ static void btstack_setup(void){
     btstack_run_loop_init(btstack_run_loop_embedded_get_instance());
 
     // init HCI
-    hci_init(hci_transport_h4_instance(btstack_uart_block_embedded_instance()), &config);
+    hci_init(transport_get_instance(), NULL);
     //hci_set_link_key_db(btstack_link_key_db_memory_instance()); // @TODO
     //hci_set_chipset(btstack_chipset_cc256x_instance()); // @TODO
 
@@ -103,8 +173,6 @@ extern int btstack_main(int argc, const char * argv[]);
 
 // main
 int app_main(void){
-
-    hw_setup();
 
     esp_bt_controller_init();
 
