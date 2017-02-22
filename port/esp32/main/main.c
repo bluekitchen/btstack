@@ -50,7 +50,7 @@
 #include "hci_dump.h"
 #include "bt.h"
 
-static int can_send_packet_now = 0;
+static int can_send_packet_now = 1;
 
 static void (*transport_packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size);
 
@@ -67,7 +67,7 @@ static int host_recv_pkt_cb(uint8_t *data, uint16_t len)
         printf("%02X ", data[i]);
     }
     printf("]\n");
-	transport_packet_handler(HCI_EVENT_PACKET, data, len);
+    transport_packet_handler(HCI_EVENT_PACKET, data, len);
     return 0;
 }
 
@@ -81,13 +81,15 @@ static const esp_vhci_host_callback_t vhci_host_cb = {
  * @param transport_config
  */
 static void transport_init(const void *transport_config){
-	esp_vhci_host_register_callback(&vhci_host_cb);
+    printf("transport_init\n");
+    esp_vhci_host_register_callback(&vhci_host_cb);
 }
 
 /**
  * open transport connection
  */
 static int transport_open(void){
+    printf("transport_open\n");
     return 0;
 }
 
@@ -95,6 +97,7 @@ static int transport_open(void){
  * close transport connection
  */
 static int transport_close(void){
+    printf("transport_close\n");
     return 0;
 }
 
@@ -102,16 +105,20 @@ static int transport_close(void){
  * register packet handler for HCI packets: ACL, SCO, and Events
  */
 static void transport_register_packet_handler(void (*handler)(uint8_t packet_type, uint8_t *packet, uint16_t size)){
+    printf("transport_register_packet_handler\n");
     transport_packet_handler = handler;
 }
 
 static int transport_can_send_packet_now(uint8_t packet_type) {
+    printf("transport_can_send_packet_now\n");
     return can_send_packet_now;
 }
 
 static int transport_send_packet(uint8_t packet_type, uint8_t *packet, int size){
     (void)packet_type;
+    printf("transport_send_packet\n");
     esp_vhci_host_send_packet(packet, size);
+    printf("AFTER transport_send_packet\n");
     return 0;
 }
 
