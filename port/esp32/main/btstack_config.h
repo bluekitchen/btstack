@@ -6,7 +6,7 @@
 #define __BTSTACK_CONFIG
 
 // Port related features
-#define HAVE_EMBEDDED_TICK
+#define HAVE_EMBEDDED_TIME_MS
 #define HAVE_MALLOC
 
 // BTstack features that can be enabled
