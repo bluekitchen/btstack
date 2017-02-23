@@ -69,10 +69,10 @@ typedef enum {
 
 } hci_transport_link_actions_t;
 
-// Configuration Field. No packet buffers -> sliding window = 1, no OOF flow control, no data integrity check
+// Configuration Field. No packet buffers -> sliding window = 1, no OOF flow control, support data integrity check
 #define LINK_CONFIG_SLIDING_WINDOW_SIZE 1
 #define LINK_CONFIG_OOF_FLOW_CONTROL 0
-#define LINK_CONFIG_DATA_INTEGRITY_CHECK 0
+#define LINK_CONFIG_DATA_INTEGRITY_CHECK 1
 #define LINK_CONFIG_VERSION_NR 0
 #define LINK_CONFIG_FIELD (LINK_CONFIG_SLIDING_WINDOW_SIZE | (LINK_CONFIG_OOF_FLOW_CONTROL << 3) | (LINK_CONFIG_DATA_INTEGRITY_CHECK << 4) | (LINK_CONFIG_VERSION_NR << 5))
 
@@ -142,6 +142,44 @@ static void hci_transport_link_set_timer(uint16_t timeout_ms);
 static void hci_transport_link_timeout_handler(btstack_timer_source_t * timer);
 static void hci_transport_link_run(void);
 static void hci_transport_slip_init(void);
+
+// CRC16-CCITT Calculation - compromise: use 32 byte table - 512 byte table would be faster, but that's too large
+
+static const uint16_t crc16_ccitt_table[] ={
+    0x0000, 0x1081, 0x2102, 0x3183,
+    0x4204, 0x5285, 0x6306, 0x7387,
+    0x8408, 0x9489, 0xa50a, 0xb58b,
+    0xc60c, 0xd68d, 0xe70e, 0xf78f
+};
+
+static uint16_t crc16_ccitt_update (uint16_t crc, uint8_t ch){
+    crc = (crc >> 4) ^ crc16_ccitt_table[(crc ^ ch) & 0x000f];
+    crc = (crc >> 4) ^ crc16_ccitt_table[(crc ^ (ch >> 4)) & 0x000f];
+    return crc;
+}
+
+static uint16_t btstack_reverse_bits_16(uint16_t value){
+    int reverse = 0;
+    int i;
+    for (i = 0; i < 16; i++) { 
+        reverse = reverse << 1;
+        reverse |= value & 1;
+        value = value >> 1;
+    }
+    return reverse;
+}
+
+static uint16_t crc16_calc_for_slip_frame(uint8_t * header, uint8_t * payload, uint16_t len){
+    int i;
+    uint16_t crc = 0xffff;
+    for (i=0 ; i < 4 ; i++){
+        crc = crc16_ccitt_update(crc, header[i]);
+    }
+    for (i=0 ; i < len ; i++){
+        crc = crc16_ccitt_update(crc, payload[i]);
+    }
+    return btstack_reverse_bits_16(crc);
+}
 
 // -----------------------------
 static void hci_transport_inactivity_timeout_handler(btstack_timer_source_t * ts){
@@ -431,7 +469,7 @@ static void hci_transport_h5_process_frame(uint16_t frame_size){
     uint8_t  link_packet_type = slip_header[1] & 0x0f;
     uint16_t link_payload_len = (slip_header[1] >> 4) | (slip_header[2] << 4);
 
-    log_info("hci_transport_h5_process_frame, reliable %u, packet type %u, seq_nr %u, ack_nr %u", reliable_packet, link_packet_type, seq_nr, ack_nr);
+    log_info("hci_transport_h5_process_frame, reliable %u, packet type %u, seq_nr %u, ack_nr %u , dic %u", reliable_packet, link_packet_type, seq_nr, ack_nr, data_integrity_check_present);
     log_info_hexdump(slip_header, 4);
     log_info_hexdump(slip_payload, frame_size_without_header);
 
@@ -459,7 +497,15 @@ static void hci_transport_h5_process_frame(uint16_t frame_size){
         return;
     }
 
-    // (TODO data integrity check)
+    // validate data integrity check
+    if (data_integrity_check_present){
+        uint16_t dic_packet = big_endian_read_16(slip_payload, received_payload_len);
+        uint16_t dic_calculate = crc16_calc_for_slip_frame(slip_header, slip_payload, received_payload_len);
+        if (dic_packet != dic_calculate){
+            log_info("h5: expected dic value 0x%04x but got 0x%04x", dic_calculate, dic_packet);
+            return;
+        }
+    }
 
     switch (link_state){
         case LINK_UNINITIALIZED:
@@ -485,11 +531,11 @@ static void hci_transport_h5_process_frame(uint16_t frame_size){
                 hci_transport_link_actions |= HCI_TRANSPORT_LINK_SEND_SYNC_RESPONSE;
             }
             if (memcmp(slip_payload, link_control_config, link_control_config_prefix_len) == 0){
-                log_info("link: received config");
+                log_info("link: received config, 0x%02x", slip_payload[2]);
                 hci_transport_link_actions |= HCI_TRANSPORT_LINK_SEND_CONFIG_RESPONSE;
             }
             if (memcmp(slip_payload, link_control_config_response, link_control_config_response_prefix_len) == 0){
-                log_info("link: received config response");
+                log_info("link: received config response 0x%02x", slip_payload[2]);
                 link_state = LINK_ACTIVE;
                 btstack_run_loop_remove_timer(&link_timer);
                 log_info("link activated");
