@@ -3,7 +3,7 @@
 # project subdirectory.
 #
 
-PROJECT_NAME := advertise
+PROJECT_NAME := esp32_le_counter
 
 include $(IDF_PATH)/make/project.mk
 
