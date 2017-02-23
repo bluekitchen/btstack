@@ -78,7 +78,7 @@ void device_id_create_sdp_record(uint8_t *service, uint32_t service_record_handl
 	
 	// 0x0200 "SpecificationID"
 	de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_SPECIFICATION_ID);
-	de_add_number(service,  DE_UINT, DE_SIZE_16, 0x0102);	// v1.2
+	de_add_number(service,  DE_UINT, DE_SIZE_16, 0x0103);	// v1.3
 
 	// 0x0201 "VendorID"
 	de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_VENDOR_ID);
