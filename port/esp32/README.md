@@ -23,4 +23,4 @@ to upload it to your device.
 
 # Acknowledgments
 
-First HCI Reset was sent to Bluetooth chipset [Matt Kelly](https://github.com/mattkelly)
+First HCI Reset was sent to Bluetooth chipset by [@mattkelly](https://github.com/mattkelly)
