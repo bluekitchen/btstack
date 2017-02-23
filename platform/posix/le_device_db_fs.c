@@ -60,6 +60,7 @@ typedef struct le_device_memory_db {
     uint8_t  authenticated;
     uint8_t  authorized;
 
+#ifdef ENABLE_LE_SIGNED_WRITE
     // Signed Writes by remote
     sm_key_t remote_csrk;
     uint32_t remote_counter;
@@ -67,6 +68,7 @@ typedef struct le_device_memory_db {
     // Signed Writes by us
     sm_key_t local_csrk;
     uint32_t local_counter;
+#endif
 
 } le_device_memory_db_t;
 
@@ -145,10 +147,12 @@ static void le_device_db_store(void) {
         write_value(wFile, le_devices[i].key_size, 1);
         write_value(wFile, le_devices[i].authenticated, 1);
         write_value(wFile, le_devices[i].authorized, 1);
+#ifdef ENABLE_LE_SIGNED_WRITE
         write_hex(wFile,   le_devices[i].remote_csrk, 16);
         write_value(wFile, le_devices[i].remote_counter, 2);
         write_hex(wFile,   le_devices[i].local_csrk, 16);
         write_value(wFile, le_devices[i].local_counter, 2);
+#endif
         fwrite("\n", 1, 1, wFile);
     }
     fclose(wFile);
@@ -206,10 +210,12 @@ static void le_device_db_read(void){
         le_devices[i].key_size      = read_value(wFile, 1);
         le_devices[i].authenticated = read_value(wFile, 1);
         le_devices[i].authorized    = read_value(wFile, 1);
+#ifdef ENABLE_LE_SIGNED_WRITE
         read_hex(wFile,   le_devices[i].remote_csrk, 16);
         le_devices[i].remote_counter = read_value(wFile, 2);
         read_hex(wFile,   le_devices[i].local_csrk, 16);
         le_devices[i].local_counter = read_value(wFile, 2);
+#endif
         // read newling
         fgetc(wFile);
     }
@@ -266,8 +272,9 @@ int le_device_db_add(int addr_type, bd_addr_t addr, sm_key_t irk){
     le_devices[index].addr_type = addr_type;
     memcpy(le_devices[index].addr, addr, 6);
     memcpy(le_devices[index].irk, irk, 16);
+#ifdef ENABLE_LE_SIGNED_WRITE
     le_devices[index].remote_counter = 0; 
-
+#endif
     le_device_db_store();
 
     return index;
@@ -306,6 +313,8 @@ void le_device_db_encryption_get(int index, uint16_t * ediv, uint8_t rand[8], sm
     if (authenticated) *authenticated = device->authenticated;
     if (authorized) *authorized = device->authorized;
 }
+
+#ifdef ENABLE_LE_SIGNED_WRITE
 
 // get signature key
 void le_device_db_remote_csrk_get(int index, sm_key_t csrk){
@@ -367,6 +376,7 @@ void le_device_db_local_counter_set(int index, uint32_t counter){
 
     le_device_db_store();
 }
+#endif
 
 void le_device_db_dump(void){
     log_info("Central Device DB dump, devices: %d", le_device_db_count());
@@ -376,7 +386,9 @@ void le_device_db_dump(void){
         log_info("%u: %u %s", i, le_devices[i].addr_type, bd_addr_to_str(le_devices[i].addr));
         log_info_key("ltk", le_devices[i].ltk);
         log_info_key("irk", le_devices[i].irk);
+#ifdef ENABLE_LE_SIGNED_WRITE
         log_info_key("local csrk", le_devices[i].local_csrk);
         log_info_key("remote csrk", le_devices[i].remote_csrk);
+#endif
     }
 }

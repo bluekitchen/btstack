@@ -239,23 +239,27 @@ def create_events(events):
         for event_type, event_name, format, args in events:
             parts = event_name.split("_")
             event_group = parts[0]
-            if not event_group in [ 'BTSTACK', 'GAP', 'HCI', 'HSP', 'HFP', 'SDP', 'ANCS', 'SM', 'L2CAP', 'RFCOMM', 'GATT', 'BNEP', 'ATT', 'AVDTP']:
+            if not event_group in [ 'BTSTACK', 'GAP', 'HCI', 'HSP', 'HFP', 'SDP', 'ANCS', 'SM', 'L2CAP', 'RFCOMM', 'GATT', 'BNEP', 'ATT', 'AVDTP', 'AVRCP']:
                 print("// %s " % event_name)
                 continue
-            print(event_name)
-            event_name = format_function_name(event_name)
+            # print(event_name)
+            base_name = format_function_name(event_name)
             length_name = ''
             offset = 2
             supported = all_fields_supported(format)
             if is_le_event(event_group):
                 fout.write("#ifdef ENABLE_BLE\n")
+            if len(format) != len(args):
+                print(event_name.upper())
+                print ("Format %s does not match params %s " % (format, args))
+                print
             for f, arg in zip(format, args):
                 field_name = arg
                 if field_name.lower() == 'subevent_code':
                     offset += 1
                     continue
                 field_type = f 
-                text = create_getter(event_name, field_name, field_type, offset, supported)
+                text = create_getter(base_name, field_name, field_type, offset, supported)
                 fout.write(text)
                 if field_type in 'RT':
                     break

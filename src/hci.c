@@ -1507,15 +1507,21 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
                 return;
             }
             break;
-#else
+
+#else /* !ENABLE_SCO_OVER_HCI */
+
         case HCI_INIT_W4_WRITE_SCAN_ENABLE:
-            if (!hci_le_supported()){
-                // SKIP LE init for Classic only configuration
-                hci_init_done();
+#ifdef ENABLE_BLE            
+            if (hci_le_supported()){
+                hci_stack->substate = HCI_INIT_LE_READ_BUFFER_SIZE;
                 return;
             }
 #endif
-            break;
+            // SKIP LE init for Classic only configuration
+            hci_init_done();
+            return;
+#endif /* ENABLE_SCO_OVER_HCI */
+
         // Response to command before init done state -> init done
         case (HCI_INIT_DONE-1):
             hci_init_done();

@@ -372,7 +372,7 @@ typedef enum {
 #define HCI_EVENT_COMMAND_STATUS                           0x0F
 
 /**
- * @format 121
+ * @format 1
  * @param hardware_code
  */
 #define HCI_EVENT_HARDWARE_ERROR                           0x10
@@ -554,6 +554,7 @@ typedef enum {
  * @param connection_handle
  * @param conn_interval
  * @param conn_latency
+ * @param supervision_timeout
  */
  #define HCI_SUBEVENT_LE_CONNECTION_UPDATE_COMPLETE         0x03
 
@@ -725,7 +726,6 @@ typedef enum {
 #define SDP_Headset_HS              0x1131
 #define SDP_GenericAudio            0x1203
 
-
 // PROTOCOLS
 #define SDP_SDPProtocol       0x0001
 #define SDP_UDPProtocol       0x0002
@@ -739,6 +739,10 @@ typedef enum {
 #define SDP_Offest_ServiceName      0x0000
 #define SDP_Offest_ServiceDescription 0x0001
 #define SDP_Offest_ProviderName     0x0002
+
+// Device Vendor ID Sources
+#define DEVICE_ID_VENDOR_ID_SOURCE_BLUETOOTH 0x0001
+#define DEVICE_ID_VENDOR_ID_SOURCE_USB       0x0002
 
 // OBEX
 #define SDP_vCard_2_1       0x01

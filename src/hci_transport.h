@@ -38,7 +38,7 @@
 /*
  *  hci_transport.h
  *
- *  HCI Transport API -- allows BT Daemon to use different transport protcols 
+ *  HCI Transport API -- allows BTstack to use different transport interfaces
  *
  *  Created by Matthias Ringwald on 4/29/09.
  *

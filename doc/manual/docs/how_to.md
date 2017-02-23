@@ -115,6 +115,7 @@ MAX_NR_RFCOMM_SERVICES | Max number of RFCOMM services
 MAX_NR_SERVICE_RECORD_ITEMS | Max number of SDP service records
 MAX_NR_SM_LOOKUP_ENTRIES | Max number of items in Security Manager lookup queue
 MAX_NR_WHITELIST_ENTRIES | Max number of items in GAP LE Whitelist to connect to
+MAX_NR_LE_DEVICE_DB_ENTRIES | Max number of items in LE Device DB
 
 The memory is set up by calling *btstack_memory_init* function:
 
@@ -487,10 +488,10 @@ to the btstack_config.h and recompiling your application.
 
 ## Bluetooth Power Control {#sec:powerControl} 
 
-In most BTstack examples, the device is set to be discoverable and connectable. In this mode, even when there's no active connection, the Bluetooth Controller will periodicaly activate its receiver in order to listen for inquiries or connecting requests from another device. 
+In most BTstack examples, the device is set to be discoverable and connectable. In this mode, even when there's no active connection, the Bluetooth Controller will periodically activate its receiver in order to listen for inquiries or connecting requests from another device.
 The ability to be discoverable requires more energy than the ability to be connected. Being discoverable also announces the device to anybody in the area. Therefore, it is a good idea to pause listening for inquiries when not needed. Other devices that have your Bluetooth address can still connect to your device.
 
-To enable/disable discoverabilty, you can call:
+To enable/disable discoverability, you can call:
     
     /**
      * @brief Allows to control if device is discoverable. OFF by default.
@@ -518,7 +519,7 @@ To enable/disable advertisements, you can call:
      */
     void gap_advertisements_enable(int enabled);
 
-If a Bluetooth Controller is neither discoverable nor conectable, it does not need to periodically turn on its radio and it only needs to respond to commands from the Host. In this case, the Bluetooth Controller is free to enter some kind of deep sleep where the power consumption is minimal.
+If a Bluetooth Controller is neither discoverable nor connectable, it does not need to periodically turn on its radio and it only needs to respond to commands from the Host. In this case, the Bluetooth Controller is free to enter some kind of deep sleep where the power consumption is minimal.
 
 Finally, if that's not sufficient for your application, you could request BTstack to shutdown the Bluetooth Controller. For this, the "on" and "off" functions in the btstack_control_t struct must be implemented. To shutdown the Bluetooth Controller, you can call:
     

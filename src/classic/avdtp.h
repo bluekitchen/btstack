@@ -66,10 +66,7 @@ extern "C" {
 // service classes
 #define AUDIO_SOURCE_GROUP          0x110A
 #define AUDIO_SINK_GROUP            0x110B
-#define AV_REMOTE_CONTROL_TARGET    0X110C
 #define ADVANCED_AUDIO_DISTRIBUTION 0X110D
-#define AV_REMOTE_CONTROL           0X110E
-#define AV_REMOTE_CONTROL_CONTROLER 0X110F
 
 #define MAX_CSRC_NUM 15
 

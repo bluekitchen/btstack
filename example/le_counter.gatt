@@ -1,5 +1,5 @@
 PRIMARY_SERVICE, GAP_SERVICE
-CHARACTERISTIC, GAP_DEVICE_NAME, READ, "SPP+LE Counter"
+CHARACTERISTIC, GAP_DEVICE_NAME, READ, "LE Counter"
 
 // add Battery Service
 #import <battery_service.gatt>

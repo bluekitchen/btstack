@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 BlueKitchen GmbH
+ * Copyright (C) 2016 BlueKitchen GmbH
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -36,67 +36,36 @@
  */
 
 /*
- *  btstack.h
- *  Convenience header to include all public APIs
+ * device_id_server.h
+ * 
+ * Create Device ID SDP Records
  */
 
+#ifndef __DEVICE_ID_SERVER_H
+#define __DEVICE_ID_SERVER_H
 
-#ifndef __BTSTACK_H
-#define __BTSTACK_H
-
-#include "btstack_config.h"
-
-#include "bluetooth.h"
-#include "bluetooth_data_types.h"
-#include "bluetooth_gatt.h"
-#include "bluetooth_sdp.h"
-#include "bluetooth_company_id.h"
-#include "ad_parser.h"
-#include "btstack_control.h"
-#include "btstack_debug.h"
-#include "btstack_event.h"
-#include "btstack_defines.h"
-#include "btstack_linked_list.h"
-#include "btstack_memory.h"
-#include "btstack_memory_pool.h"
-#include "btstack_run_loop.h"
-#include "btstack_util.h"
-#include "gap.h"
-#include "hci.h"
-#include "hci_cmd.h"
-#include "hci_dump.h"
-#include "hci_transport.h"
-#include "l2cap.h"
-#include "l2cap_signaling.h"
-
-#ifdef ENABLE_BLE
-#include "ble/ancs_client.h"
-#include "ble/att_db.h"
-#include "ble/att_db_util.h"
-#include "ble/att_dispatch.h"
-#include "ble/att_server.h"
-#include "ble/gatt_client.h"
-#include "ble/le_device_db.h"
-#include "ble/sm.h"
+#include <stdint.h>
+ 
+#if defined __cplusplus
+extern "C" {
 #endif
 
-// #ifdef HAVE_CLASSIC
-#include "classic/bnep.h"
-#include "classic/btstack_link_key_db.h"
-#include "classic/device_id_server.h"
-#include "classic/hfp.h"
-#include "classic/hfp_ag.h"
-#include "classic/hfp_hf.h"
-#include "classic/hsp_ag.h"
-#include "classic/hsp_hs.h"
-#include "classic/pan.h"
-#include "classic/rfcomm.h"
-#include "classic/sdp_client.h"
-#include "classic/sdp_client_rfcomm.h"
-#include "classic/sdp_server.h"
-#include "classic/sdp_util.h"
-#include "classic/spp_server.h"
-// #endif
+/* API_START */
 
-#endif  // __BTSTACK_H
- 
+/**
+ * @brief Create SDP record for Device ID service
+ * @param service buffer - needs to large enough
+ * @param service_record_handle
+ * @param vendor_id_source usually DEVICE_ID_VENDOR_ID_SOURCE_BLUETOOTH or DEVICE_ID_VENDOR_ID_SOURCE_USB
+ * @param vendor_id
+ * @param product_it
+ * @param version
+ */
+void device_id_create_sdp_record(uint8_t *service, uint32_t service_record_handle, uint16_t vendor_id_source, uint16_t vendor_id, uint16_t product_id, uint16_t version);
+
+/* API_END */
+
+#if defined __cplusplus
+}
+#endif
+#endif // __DEVICE_ID_SERVER_H

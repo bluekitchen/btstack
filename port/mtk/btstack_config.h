@@ -21,6 +21,7 @@
 
 // BTstack configuration. buffers, sizes, ...
 #define HCI_ACL_PAYLOAD_SIZE 1021
+#define MAX_NR_LE_DEVICE_DB_ENTRIES 1
 
 // Daemon configuration
 #define ENABLE_SDP

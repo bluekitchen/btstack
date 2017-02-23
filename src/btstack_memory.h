@@ -66,6 +66,7 @@ extern "C" {
 #include "classic/sdp_server.h"
 #include "classic/avdtp_sink.h"
 #include "classic/avdtp_source.h"
+#include "../test/avrcp/avrcp.h"
 
 // BLE
 #ifdef ENABLE_BLE
@@ -125,6 +126,10 @@ void   btstack_memory_avdtp_stream_endpoint_free(avdtp_stream_endpoint_t *avdtp_
 // avdtp_connection
 avdtp_connection_t * btstack_memory_avdtp_connection_get(void);
 void   btstack_memory_avdtp_connection_free(avdtp_connection_t *avdtp_connection);
+
+// avrcp_connection
+avrcp_connection_t * btstack_memory_avrcp_connection_get(void);
+void   btstack_memory_avrcp_connection_free(avrcp_connection_t *avrcp_connection);
 
 #ifdef ENABLE_BLE
 // gatt_client, whitelist_entry, sm_lookup_entry

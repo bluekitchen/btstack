@@ -326,7 +326,7 @@ The remainder of the API is similar to the one of L2CAP:
 ## RFCOMM - Radio Frequency Communication Protocol
 
 The Radio frequency communication (RFCOMM) protocol provides emulation
-of serial ports over the L2CAP protocol. and reassembly. It is the base
+of serial ports over the L2CAP protocol and reassembly. It is the base
 for the Serial Port Profile and other profiles used for
 telecommunication like Head-Set Profile, Hands-Free Profile, Object
 Exchange (OBEX) etc.
@@ -596,7 +596,7 @@ BTstack contains a complete SDP server and allows to register SDP
 records. An SDP record is a list of SDP Attribute *{ID, Value}* pairs
 that are stored in a Data Element Sequence (DES). The Attribute ID is a
 16-bit number, the value can be of other simple types like integers or
-strings or can itselff contain other DES.
+strings or can itself contain other DES.
 
 To create an SDP record for an SPP service, you can call
 *spp_create_sdp_record* from with a pointer to a buffer to store the
@@ -797,7 +797,7 @@ Long Term Key (LTK) is generated based on the local keypair and the remote publi
 To facilitate the creation of such a keypairs and the calculation of the LTK,
 the Bluetooth Core V4.2 specification introduced appropriate commands for the Bluetooth controller.
 
-As an alternative for controllers that don't provide these primitives, BTstack provides the relevant crytographic functions in software via the Apache 2.0 licensed [mbed TLS library](https://tls.mbed.org).
+As an alternative for controllers that don't provide these primitives, BTstack provides the relevant cryptographic functions in software via the Apache 2.0 licensed [mbed TLS library](https://tls.mbed.org).
 
 There are two details to be aware about using LE Secure Connections:
 
@@ -899,7 +899,7 @@ After the bonding process, *SM_EVENT_JUST_WORKS_CANCEL*, *SM_EVENT_PASSKEY_DISPL
 
 ### Keypress Notifications
 
-As part of Bluetooth Core V4.2 specification, a device with a keyboard but no display can send keypress notifications to provide better user feedback. In BTstack, the *sm_keypress_notification()* function is used for sending notifcations. Notifications are received by BTstack via the *SM_EVENT_KEYPRESS_NOTIFICATION* event.
+As part of Bluetooth Core V4.2 specification, a device with a keyboard but no display can send keypress notifications to provide better user feedback. In BTstack, the *sm_keypress_notification()* function is used for sending notifications. Notifications are received by BTstack via the *SM_EVENT_KEYPRESS_NOTIFICATION* event.
 
 ### Cross-transport Key Derivation for LE Secure Connections
 
@@ -910,7 +910,7 @@ To derive an LE LTK from a BR/EDR link key, the Bluetooth controller needs to su
 ### Out-of-Band Data with LE Legacy Pairing
 
 LE Legacy Pairing can be made secure by providing a way for both devices
-to aquire a pre-shared secret 16 byte key by some fancy method.
+to acquire a pre-shared secret 16 byte key by some fancy method.
 In most cases, this is not an option, especially since popular OS like iOS
 don’t provide a way to specify it. In some applications, where both
 sides of a Bluetooth link are developed together, this could provide a

@@ -1155,6 +1155,15 @@ static inline uint16_t l2cap_event_connection_parameter_update_request_get_timeo
 static inline hci_con_handle_t l2cap_event_connection_parameter_update_response_get_handle(const uint8_t * event){
     return little_endian_read_16(event, 2);
 }
+/**
+ * @brief Get field result from event L2CAP_EVENT_CONNECTION_PARAMETER_UPDATE_RESPONSE
+ * @param event packet
+ * @return result
+ * @note: btstack_type 2
+ */
+static inline uint16_t l2cap_event_connection_parameter_update_response_get_result(const uint8_t * event){
+    return little_endian_read_16(event, 4);
+}
 
 /**
  * @brief Get field local_cid from event L2CAP_EVENT_CAN_SEND_NOW
@@ -1922,31 +1931,40 @@ static inline const uint8_t * gatt_event_indication_get_value(const uint8_t * ev
 
 #ifdef ENABLE_BLE
 /**
+ * @brief Get field handle from event GATT_EVENT_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT
+ * @param event packet
+ * @return handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t gatt_event_characteristic_descriptor_query_result_get_handle(const uint8_t * event){
+    return little_endian_read_16(event, 2);
+}
+/**
  * @brief Get field descriptor_handle from event GATT_EVENT_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT
  * @param event packet
  * @return descriptor_handle
- * @note: btstack_type H
+ * @note: btstack_type 2
  */
-static inline hci_con_handle_t gatt_event_characteristic_descriptor_query_result_get_descriptor_handle(const uint8_t * event){
-    return little_endian_read_16(event, 2);
+static inline uint16_t gatt_event_characteristic_descriptor_query_result_get_descriptor_handle(const uint8_t * event){
+    return little_endian_read_16(event, 4);
 }
 /**
  * @brief Get field descriptor_length from event GATT_EVENT_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT
  * @param event packet
  * @return descriptor_length
- * @note: btstack_type 2
+ * @note: btstack_type L
  */
-static inline uint16_t gatt_event_characteristic_descriptor_query_result_get_descriptor_length(const uint8_t * event){
-    return little_endian_read_16(event, 4);
+static inline int gatt_event_characteristic_descriptor_query_result_get_descriptor_length(const uint8_t * event){
+    return little_endian_read_16(event, 6);
 }
 /**
  * @brief Get field descriptor from event GATT_EVENT_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT
  * @param event packet
  * @return descriptor
- * @note: btstack_type L
+ * @note: btstack_type V
  */
-static inline int gatt_event_characteristic_descriptor_query_result_get_descriptor(const uint8_t * event){
-    return little_endian_read_16(event, 6);
+static inline const uint8_t * gatt_event_characteristic_descriptor_query_result_get_descriptor(const uint8_t * event){
+    return &event[8];
 }
 #endif
 
@@ -2976,6 +2994,15 @@ static inline uint16_t hci_subevent_le_connection_update_complete_get_conn_inter
 static inline uint16_t hci_subevent_le_connection_update_complete_get_conn_latency(const uint8_t * event){
     return little_endian_read_16(event, 8);
 }
+/**
+ * @brief Get field supervision_timeout from event HCI_SUBEVENT_LE_CONNECTION_UPDATE_COMPLETE
+ * @param event packet
+ * @return supervision_timeout
+ * @note: btstack_type 2
+ */
+static inline uint16_t hci_subevent_le_connection_update_complete_get_supervision_timeout(const uint8_t * event){
+    return little_endian_read_16(event, 10);
+}
 
 /**
  * @brief Get field connection_handle from event HCI_SUBEVENT_LE_READ_REMOTE_USED_FEATURES_COMPLETE
@@ -3516,10 +3543,10 @@ static inline uint8_t hfp_subevent_network_operator_changed_get_network_operator
  * @brief Get field network_operator_name from event HFP_SUBEVENT_NETWORK_OPERATOR_CHANGED
  * @param event packet
  * @return network_operator_name
- * @note: btstack_type 1
+ * @note: btstack_type T
  */
-static inline uint8_t hfp_subevent_network_operator_changed_get_network_operator_name(const uint8_t * event){
-    return event[5];
+static inline const char * hfp_subevent_network_operator_changed_get_network_operator_name(const uint8_t * event){
+    return (const char *) &event[5];
 }
 
 /**
@@ -3810,6 +3837,15 @@ static inline hci_con_handle_t avdtp_subevent_signaling_accept_get_con_handle(co
 static inline uint8_t avdtp_subevent_signaling_accept_get_signal_identifier(const uint8_t * event){
     return event[5];
 }
+/**
+ * @brief Get field status from event AVDTP_SUBEVENT_SIGNALING_ACCEPT
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t avdtp_subevent_signaling_accept_get_status(const uint8_t * event){
+    return event[6];
+}
 
 /**
  * @brief Get field con_handle from event AVDTP_SUBEVENT_SIGNALING_REJECT
@@ -4037,10 +4073,19 @@ static inline uint16_t avdtp_subevent_signaling_media_codec_other_capability_get
  * @brief Get field media_codec_information_len from event AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CAPABILITY
  * @param event packet
  * @return media_codec_information_len
- * @note: btstack_type 2
+ * @note: btstack_type L
  */
-static inline uint16_t avdtp_subevent_signaling_media_codec_other_capability_get_media_codec_information_len(const uint8_t * event){
+static inline int avdtp_subevent_signaling_media_codec_other_capability_get_media_codec_information_len(const uint8_t * event){
     return little_endian_read_16(event, 8);
+}
+/**
+ * @brief Get field media_codec_information from event AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CAPABILITY
+ * @param event packet
+ * @return media_codec_information
+ * @note: btstack_type V
+ */
+static inline const uint8_t * avdtp_subevent_signaling_media_codec_other_capability_get_media_codec_information(const uint8_t * event){
+    return &event[10];
 }
 
 /**
@@ -4183,10 +4228,66 @@ static inline uint16_t avdtp_subevent_signaling_media_codec_other_configuration_
  * @brief Get field media_codec_information_len from event AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CONFIGURATION
  * @param event packet
  * @return media_codec_information_len
+ * @note: btstack_type L
+ */
+static inline int avdtp_subevent_signaling_media_codec_other_configuration_get_media_codec_information_len(const uint8_t * event){
+    return little_endian_read_16(event, 9);
+}
+/**
+ * @brief Get field media_codec_information from event AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CONFIGURATION
+ * @param event packet
+ * @return media_codec_information
+ * @note: btstack_type V
+ */
+static inline const uint8_t * avdtp_subevent_signaling_media_codec_other_configuration_get_media_codec_information(const uint8_t * event){
+    return &event[11];
+}
+
+/**
+ * @brief Get field con_handle from event AVRCP_SUBEVENT_CONNECTION_ESTABLISHED
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t avrcp_subevent_connection_established_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field local_cid from event AVRCP_SUBEVENT_CONNECTION_ESTABLISHED
+ * @param event packet
+ * @return local_cid
  * @note: btstack_type 2
  */
-static inline uint16_t avdtp_subevent_signaling_media_codec_other_configuration_get_media_codec_information_len(const uint8_t * event){
-    return little_endian_read_16(event, 9);
+static inline uint16_t avrcp_subevent_connection_established_get_local_cid(const uint8_t * event){
+    return little_endian_read_16(event, 5);
+}
+/**
+ * @brief Get field bd_addr from event AVRCP_SUBEVENT_CONNECTION_ESTABLISHED
+ * @param event packet
+ * @param Pointer to storage for bd_addr
+ * @note: btstack_type B
+ */
+static inline void avrcp_subevent_connection_established_get_bd_addr(const uint8_t * event, bd_addr_t bd_addr){
+    reverse_bd_addr(&event[7], bd_addr);    
+}
+/**
+ * @brief Get field status from event AVRCP_SUBEVENT_CONNECTION_ESTABLISHED
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_subevent_connection_established_get_status(const uint8_t * event){
+    return event[13];
+}
+
+/**
+ * @brief Get field con_handle from event AVRCP_SUBEVENT_CONNECTION_CLOSED
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t avrcp_subevent_connection_closed_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
 }
 
 

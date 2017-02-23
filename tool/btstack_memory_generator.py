@@ -69,6 +69,7 @@ extern "C" {
 #include "classic/sdp_server.h"
 #include "classic/avdtp_sink.h"
 #include "classic/avdtp_source.h"
+#include "../test/avrcp/avrcp.h"
 
 // BLE
 #ifdef ENABLE_BLE
@@ -179,7 +180,8 @@ list_of_structs = [
     ["hfp_connection"],
     ["service_record_item"],
     ["avdtp_stream_endpoint"],
-    ["avdtp_connection"]
+    ["avdtp_connection"],
+    ["avrcp_connection"]    
 ]
 list_of_le_structs = [["gatt_client", "whitelist_entry", "sm_lookup_entry"]]
 
