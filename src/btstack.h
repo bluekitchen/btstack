@@ -83,6 +83,7 @@
 // #ifdef HAVE_CLASSIC
 #include "classic/bnep.h"
 #include "classic/btstack_link_key_db.h"
+#include "classic/device_id_server.h"
 #include "classic/hfp.h"
 #include "classic/hfp_ag.h"
 #include "classic/hfp_hf.h"

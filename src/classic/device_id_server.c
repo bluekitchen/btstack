@@ -41,7 +41,7 @@
  * Creates Device ID SDP Records
  */
 
-#include "device_id_server.h"
+#include "classic/device_id_server.h"
 
 #include <string.h>
 
