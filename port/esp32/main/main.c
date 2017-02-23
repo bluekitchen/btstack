@@ -50,14 +50,19 @@
 #include "hci_dump.h"
 #include "bt.h"
 
-static int can_send_packet_now = 1;
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+
+static uint8_t _hci_cmd_buf[1028];
+
+static int _can_send_packet_now = 1;
 
 static void (*transport_packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size);
 
 static void host_send_pkt_available_cb(void)
 {
     printf("host_send_pkt_available_cb\n");
-    can_send_packet_now = 1;
+    _can_send_packet_now = 1;
 }
 
 static int host_recv_pkt_cb(uint8_t *data, uint16_t len)
@@ -82,7 +87,13 @@ static const esp_vhci_host_callback_t vhci_host_cb = {
  */
 static void transport_init(const void *transport_config){
     printf("transport_init\n");
-    esp_vhci_host_register_callback(&vhci_host_cb);
+}
+
+static btstack_data_source_t hci_transport_data_source;
+
+static void transport_run(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type){
+    (void)ds;
+    (void)callback_type;
 }
 
 /**
@@ -90,6 +101,9 @@ static void transport_init(const void *transport_config){
  */
 static int transport_open(void){
     printf("transport_open\n");
+    btstack_run_loop_set_data_source_handler(&hci_transport_data_source, &transport_run);
+    btstack_run_loop_enable_data_source_callbacks(&hci_transport_data_source, DATA_SOURCE_CALLBACK_POLL);
+    btstack_run_loop_add_data_source(&hci_transport_data_source);
     return 0;
 }
 
@@ -98,6 +112,7 @@ static int transport_open(void){
  */
 static int transport_close(void){
     printf("transport_close\n");
+    btstack_run_loop_remove_data_source(&hci_transport_data_source);
     return 0;
 }
 
@@ -111,14 +126,33 @@ static void transport_register_packet_handler(void (*handler)(uint8_t packet_typ
 
 static int transport_can_send_packet_now(uint8_t packet_type) {
     printf("transport_can_send_packet_now\n");
-    return can_send_packet_now;
+    return _can_send_packet_now;
 }
 
 static int transport_send_packet(uint8_t packet_type, uint8_t *packet, int size){
     (void)packet_type;
-    printf("transport_send_packet\n");
-    esp_vhci_host_send_packet(packet, size);
-    printf("AFTER transport_send_packet\n");
+    printf("transport_send_packet: type = %u, len = %u, data = [ ", packet_type, size);
+    for (size_t i = 0; i < size; i++) {
+        printf("%02X ", packet[i]);
+    }
+    printf("]\n");
+    switch (packet_type){
+        case HCI_COMMAND_DATA_PACKET:
+            _hci_cmd_buf[0] = HCI_COMMAND_DATA_PACKET;
+            break;
+        case HCI_ACL_DATA_PACKET:
+            _hci_cmd_buf[0] = HCI_ACL_DATA_PACKET;
+            break;
+        default:
+            // @TODO
+            break;
+    }
+
+    memcpy(&_hci_cmd_buf[1], packet, size);
+    esp_vhci_host_send_packet(_hci_cmd_buf, size + 1);
+
+    _can_send_packet_now = 0;
+
     return 0;
 }
 
@@ -130,9 +164,9 @@ static const hci_transport_t transport = {
     &transport_register_packet_handler,
     &transport_can_send_packet_now,
     &transport_send_packet,
-    NULL,
-    NULL,
-    NULL,
+    NULL, // set baud rate
+    NULL, // reset link
+    NULL, // set SCO config
 };
 
 static const hci_transport_t * transport_get_instance(void){
@@ -178,17 +212,35 @@ static void btstack_setup(void){
 
 extern int btstack_main(int argc, const char * argv[]);
 
+/*
+ * @brief: send HCI commands to perform BLE advertising;
+ */
+void btstack_task(void *pvParameters)
+{
+    esp_vhci_host_register_callback(&vhci_host_cb);
+    printf("btstack_task start\n");
+
+    printf("-------------- btstack_setup\n");
+    btstack_setup();
+    printf("-------------- btstack_setup end\n");
+
+    printf("-------------- btstack_main\n");
+    btstack_main(0, NULL);
+    printf("-------------- btstack_main end\n");
+
+    printf("Entering btstack run loop!\n");
+    btstack_run_loop_execute();
+    printf("Run loop exited...this is unexpected\n");
+}
+
+void hal_led_toggle() {}
+
 // main
 int app_main(void){
 
     esp_bt_controller_init();
 
-    btstack_setup();
-    btstack_main(0, NULL);
-
-    printf("Entering btstack run loop!\n");
-    btstack_run_loop_execute();
-    printf("Run loop exited...this is unexpected\n");
+    xTaskCreatePinnedToCore(&btstack_task, "btstack_task", 2048, NULL, 5, NULL, 0);
 
     return 0;
 }
