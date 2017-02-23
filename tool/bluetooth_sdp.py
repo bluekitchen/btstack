@@ -53,7 +53,8 @@ def create_pretty_define(name):
     name = name.replace('-','_')
     name = name.replace('PnP', 'PNP')
     name = name.replace('IPv', 'IPV')
-    name = name.replace('ServiceClassID','')
+    name = name.replace('ServiceDiscoveryServerServiceClassID', 'ServiceDiscoveryServer')
+    name = name.replace('BrowseGroupDescriptorServiceClassID', 'BrowseGroupDescriptor')
     name = name.replace('&','and')
     return camel_to_underscore(name).replace('__','_').replace('3_D','3D').replace('L2_CAP','L2CAP')
 

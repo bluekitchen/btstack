@@ -61,7 +61,7 @@ void device_id_create_sdp_record(uint8_t *service, uint32_t service_record_handl
 	de_add_number(service, DE_UINT, DE_SIZE_32, service_record_handle);
     
 	// 0x0001 "Service Class ID List"
-	de_add_number(service,  DE_UINT, DE_SIZE_16, 0x0001);
+	de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_SERVICE_CLASS_ID_LIST);
 	attribute = de_push_sequence(service);
 	{
 		de_add_number(attribute,  DE_UUID, DE_SIZE_16, BLUETOOTH_SERVICE_CLASS_PNP_INFORMATION );

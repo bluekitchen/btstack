@@ -142,7 +142,7 @@
 #define BLUETOOTH_ATTRIBUTE_PRINTER_ADMIN_RUI_TOP_URL                              0x0378
 #define BLUETOOTH_ATTRIBUTE_DEVICE_NAME                                            0x037A
 #define BLUETOOTH_ATTRIBUTE_SERVICE_RECORD_HANDLE                                  0x0000
-#define BLUETOOTH_ATTRIBUTE_LIST                                                   0x0001
+#define BLUETOOTH_ATTRIBUTE_SERVICE_CLASS_ID_LIST                                  0x0001
 #define BLUETOOTH_ATTRIBUTE_SERVICE_RECORD_STATE                                   0x0002
 #define BLUETOOTH_ATTRIBUTE_SERVICE_ID                                             0x0003
 #define BLUETOOTH_ATTRIBUTE_PROTOCOL_DESCRIPTOR_LIST                               0x0004
