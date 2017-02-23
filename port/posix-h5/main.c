@@ -68,6 +68,7 @@
 
 int btstack_main(int argc, const char * argv[]);
 
+
 static hci_transport_config_uart_t config = {
     HCI_TRANSPORT_CONFIG_UART,
     115200,
@@ -76,7 +77,10 @@ static hci_transport_config_uart_t config = {
     NULL,
 };
 
+int is_bcm;
+
 static btstack_packet_callback_registration_t hci_event_callback_registration;
+static void local_version_information_handler(uint8_t * packet);
 
 static void sigint_handler(int param){
     UNUSED(param);
@@ -104,7 +108,7 @@ static void use_fast_uart(void){
     // config.baudrate_main = 921600;
 }
 
-static void local_version_information_callback(uint8_t * packet){
+static void local_version_information_handler(uint8_t * packet){
     printf("Local version information:\n");
     uint16_t hci_version    = little_endian_read_16(packet, 4);
     uint16_t hci_revision   = little_endian_read_16(packet, 6);
@@ -146,13 +150,31 @@ static void local_version_information_callback(uint8_t * packet){
     }
 }
 
-static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     if (packet_type != HCI_EVENT_PACKET) return;
-    if (hci_event_packet_get_type(packet) != BTSTACK_EVENT_STATE) return;
-    if (btstack_event_state_get_state(packet) != HCI_STATE_WORKING) return;
-    printf("BTstack up and running.\n");
+    switch (hci_event_packet_get_type(packet)){
+        case BTSTACK_EVENT_STATE:
+            if (btstack_event_state_get_state(packet) != HCI_STATE_WORKING) break;
+            printf("BTstack up and running.\n");
+            break;
+        case HCI_EVENT_COMMAND_COMPLETE:
+            if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_read_local_name)){
+                if (hci_event_command_complete_get_return_parameters(packet)[0]) break;
+                // terminate, name 248 chars
+                packet[6+248] = 0;
+                printf("Local name: %s\n", &packet[6]);
+                if (is_bcm){
+                    btstack_chipset_bcm_set_device_name((const char *)&packet[6]);
+                }
+            }        
+            if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_read_local_version_information)){
+                local_version_information_handler(packet);
+            }
+            break;
+        default:
+            break;
+    }
 }
-
 
 int main(int argc, const char * argv[]){
 
@@ -175,9 +197,6 @@ int main(int argc, const char * argv[]){
 
     // enable auto-sleep mode
     // hci_transport_h5_set_auto_sleep(300);
-
-    // setup dynamic chipset driver setup
-    hci_set_local_version_information_callback(&local_version_information_callback);
 
     // register for HCI events
     hci_event_callback_registration.callback = &packet_handler;
