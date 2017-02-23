@@ -49,11 +49,15 @@
 #include "hci.h"
 #include "hci_dump.h"
 #include "bt.h"
+#include "btstack_debug.h"
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
-static uint8_t _hci_cmd_buf[1028];
+// assert pre-buffer for packet type is available
+#if !defined(HCI_OUTGOING_PRE_BUFFER_SIZE) || (HCI_OUTGOING_PRE_BUFFER_SIZE == 0)
+#error HCI_OUTGOING_PRE_BUFFER_SIZE not defined. Please update hci.h
+#endif
 
 static int _can_send_packet_now = 1;
 
@@ -61,18 +65,18 @@ static void (*transport_packet_handler)(uint8_t packet_type, uint8_t *packet, ui
 
 static void host_send_pkt_available_cb(void)
 {
-    printf("host_send_pkt_available_cb\n");
     _can_send_packet_now = 1;
+    log_debug("host_send_pkt_available_cb, setting _can_send_packet_now = %u", _can_send_packet_now);
+
+    // notify upper stack that provided buffer can be used again
+    uint8_t event[] = { HCI_EVENT_TRANSPORT_PACKET_SENT, 0};
+    transport_packet_handler(HCI_EVENT_PACKET, &event[0], sizeof(event));
+    log_debug("host_send_pkt_available_cb, after sending HCI_EVENT_TRANSPORT_PACKET_SENT, _can_send_packet_now = %u", _can_send_packet_now);
 }
 
 static int host_recv_pkt_cb(uint8_t *data, uint16_t len)
 {
-    printf("host_recv_pkt_cb: len = %u, data = [ ", len);
-    for (size_t i = 0; i < len; i++) {
-        printf("%02X ", data[i]);
-    }
-    printf("]\n");
-    transport_packet_handler(HCI_EVENT_PACKET, data, len);
+    transport_packet_handler(data[0], &data[1], len-1);
     return 0;
 }
 
@@ -86,7 +90,7 @@ static const esp_vhci_host_callback_t vhci_host_cb = {
  * @param transport_config
  */
 static void transport_init(const void *transport_config){
-    printf("transport_init\n");
+    log_info("transport_init");
 }
 
 static btstack_data_source_t hci_transport_data_source;
@@ -100,7 +104,7 @@ static void transport_run(btstack_data_source_t *ds, btstack_data_source_callbac
  * open transport connection
  */
 static int transport_open(void){
-    printf("transport_open\n");
+    log_info("transport_open");
     btstack_run_loop_set_data_source_handler(&hci_transport_data_source, &transport_run);
     btstack_run_loop_enable_data_source_callbacks(&hci_transport_data_source, DATA_SOURCE_CALLBACK_POLL);
     btstack_run_loop_add_data_source(&hci_transport_data_source);
@@ -111,7 +115,7 @@ static int transport_open(void){
  * close transport connection
  */
 static int transport_close(void){
-    printf("transport_close\n");
+    log_info("transport_close");
     btstack_run_loop_remove_data_source(&hci_transport_data_source);
     return 0;
 }
@@ -120,44 +124,29 @@ static int transport_close(void){
  * register packet handler for HCI packets: ACL, SCO, and Events
  */
 static void transport_register_packet_handler(void (*handler)(uint8_t packet_type, uint8_t *packet, uint16_t size)){
-    printf("transport_register_packet_handler\n");
+    log_info("transport_register_packet_handler");
     transport_packet_handler = handler;
 }
 
 static int transport_can_send_packet_now(uint8_t packet_type) {
-    printf("transport_can_send_packet_now\n");
+    log_debug("transport_can_send_packet_now %u, esp_vhci_host_check_send_available %u\n", _can_send_packet_now, esp_vhci_host_check_send_available());
     return _can_send_packet_now;
 }
 
 static int transport_send_packet(uint8_t packet_type, uint8_t *packet, int size){
-    (void)packet_type;
-    printf("transport_send_packet: type = %u, len = %u, data = [ ", packet_type, size);
-    for (size_t i = 0; i < size; i++) {
-        printf("%02X ", packet[i]);
-    }
-    printf("]\n");
-    switch (packet_type){
-        case HCI_COMMAND_DATA_PACKET:
-            _hci_cmd_buf[0] = HCI_COMMAND_DATA_PACKET;
-            break;
-        case HCI_ACL_DATA_PACKET:
-            _hci_cmd_buf[0] = HCI_ACL_DATA_PACKET;
-            break;
-        default:
-            // @TODO
-            break;
-    }
+    // store packet type before actual data and increase size
+    size++;
+    packet--;
+    *packet = packet_type;
 
-    memcpy(&_hci_cmd_buf[1], packet, size);
-    esp_vhci_host_send_packet(_hci_cmd_buf, size + 1);
-
+    // send packet
     _can_send_packet_now = 0;
-
+    esp_vhci_host_send_packet(packet, size);
     return 0;
 }
 
 static const hci_transport_t transport = {
-    "VHCI",
+    "esp32-vhci",
     &transport_init,
     &transport_open,
     &transport_close,
@@ -228,9 +217,9 @@ void btstack_task(void *pvParameters)
     btstack_main(0, NULL);
     printf("-------------- btstack_main end\n");
 
-    printf("Entering btstack run loop!\n");
-    btstack_run_loop_execute();
-    printf("Run loop exited...this is unexpected\n");
+    // printf("Entering btstack run loop!\n");
+    // btstack_run_loop_execute();
+    // printf("Run loop exited...this is unexpected\n");
 }
 
 void hal_led_toggle() {}
@@ -239,8 +228,9 @@ void hal_led_toggle() {}
 int app_main(void){
 
     esp_bt_controller_init();
+    btstack_task(NULL);
 
-    xTaskCreatePinnedToCore(&btstack_task, "btstack_task", 2048, NULL, 5, NULL, 0);
+    // xTaskCreatePinnedToCore(&btstack_task, "btstack_task", 2048, NULL, 5, NULL, 0);
 
     return 0;
 }
