@@ -92,8 +92,11 @@ extern "C" {
     #endif
 #endif
 
-// additional pre-buffer space for packets to Bluetooth module, for now, used for HCI Transport H4 DMA
+// additional pre- and post-packet buffer for packets to Bluetooth module
+// - pre-buffer used for HCI Transport H4 variants
+// - post-buffer used for HCI Transport H5
 #define HCI_OUTGOING_PRE_BUFFER_SIZE 1
+#define HCI_OUTGOING_POST_BUFFER_SIZE 2
 
 // BNEP may uncompress the IP Header by 16 bytes
 #ifndef HCI_INCOMING_PRE_BUFFER_SIZE
@@ -646,7 +649,7 @@ typedef struct {
 
     // single buffer for HCI packet assembly + additional prebuffer for H4 drivers
     uint8_t   * hci_packet_buffer;
-    uint8_t   hci_packet_buffer_data[HCI_OUTGOING_PRE_BUFFER_SIZE + HCI_PACKET_BUFFER_SIZE];
+    uint8_t   hci_packet_buffer_data[HCI_OUTGOING_PRE_BUFFER_SIZE + HCI_PACKET_BUFFER_SIZE + HCI_OUTGOING_POST_BUFFER_SIZE];
     uint8_t   hci_packet_buffer_reserved;
     uint16_t  acl_fragmentation_pos;
     uint16_t  acl_fragmentation_total_size;
