@@ -114,6 +114,7 @@ static uint8_t  link_seq_nr;
 static uint8_t  link_ack_nr;
 static uint16_t link_resend_timeout_ms;
 static uint8_t  link_peer_asleep;
+static uint8_t  link_peer_supports_data_integrity_check;
 
 // auto sleep-mode
 static btstack_timer_source_t inactivity_timer;
@@ -143,6 +144,7 @@ static void hci_transport_link_timeout_handler(btstack_timer_source_t * timer);
 static void hci_transport_link_run(void);
 static void hci_transport_slip_init(void);
 
+// -----------------------------
 // CRC16-CCITT Calculation - compromise: use 32 byte table - 512 byte table would be faster, but that's too large
 
 static const uint16_t crc16_ccitt_table[] ={
@@ -222,7 +224,7 @@ static inline void hci_transport_slip_send_next_chunk(void){
     hci_transport_slip_encode_chunk_and_send(0);
 }
 
-// format: 0xc0 HEADER PACKER 0xc0
+// format: 0xc0 HEADER PACKET 0xc0
 // @param uint8_t header[4]
 static void hci_transport_slip_send_frame(const uint8_t * header, const uint8_t * packet, uint16_t packet_size){
     
@@ -428,6 +430,7 @@ static void hci_transport_link_timeout_handler(btstack_timer_source_t * timer){
 static void hci_transport_link_init(void){
     link_state = LINK_UNINITIALIZED;
     link_peer_asleep = 0;
+    link_peer_supports_data_integrity_check = 0;
  
     // get started
     hci_transport_link_actions |= HCI_TRANSPORT_LINK_SEND_SYNC;
@@ -535,7 +538,9 @@ static void hci_transport_h5_process_frame(uint16_t frame_size){
                 hci_transport_link_actions |= HCI_TRANSPORT_LINK_SEND_CONFIG_RESPONSE;
             }
             if (memcmp(slip_payload, link_control_config_response, link_control_config_response_prefix_len) == 0){
-                log_info("link: received config response 0x%02x", slip_payload[2]);
+                uint8_t config = slip_payload[2];
+                link_peer_supports_data_integrity_check = (config & 0x10) != 0;
+                log_info("link: received config response 0x%02x, data integrity check supported %u", config, link_peer_supports_data_integrity_check);
                 link_state = LINK_ACTIVE;
                 btstack_run_loop_remove_timer(&link_timer);
                 log_info("link activated");
