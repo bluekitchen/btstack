@@ -105,6 +105,9 @@ static const uint8_t link_control_wakeup[] = { 0x05, 0xfa};
 static const uint8_t link_control_woken[] =  { 0x06, 0xf9};
 static const uint8_t link_control_sleep[] =  { 0x07, 0x78};
 
+// max size of link control messages
+#define LINK_CONTROL_MAX_LEN 3
+
 // incoming pre-bufffer + 4 bytes H5 header + max(acl header + acl payload, event header + event data) + 2 bytes opt CRC
 static uint8_t   hci_packet_with_pre_buffer[HCI_INCOMING_PRE_BUFFER_SIZE + 6 + HCI_PACKET_BUFFER_SIZE];
 
@@ -176,7 +179,7 @@ static uint16_t btstack_reverse_bits_16(uint16_t value){
     return reverse;
 }
 
-static uint16_t crc16_calc_for_slip_frame(uint8_t * header, uint8_t * payload, uint16_t len){
+static uint16_t crc16_calc_for_slip_frame(const uint8_t * header, const uint8_t * payload, uint16_t len){
     int i;
     uint16_t crc = 0xffff;
     for (i=0 ; i < 4 ; i++){
@@ -267,12 +270,6 @@ static void hci_transport_link_calc_header(uint8_t * header,
     uint8_t  packet_type,
     uint16_t payload_length){
 
-    // reset data integrity flag
-    if (data_integrity_check_present){
-        log_error("hci_transport_link_calc_header: data integrity not supported, dropping flag");
-        data_integrity_check_present = 0;
-    }
-
     header[0] = sequence_nr | (acknowledgement_nr << 3) | (data_integrity_check_present << 6) | (reliable_packet << 7);
     header[1] = packet_type | ((payload_length & 0x0f) << 4);
     header[2] = payload_length >> 4;
@@ -281,7 +278,18 @@ static void hci_transport_link_calc_header(uint8_t * header,
 
 static void hci_transport_link_send_control(const uint8_t * message, int message_len){
     uint8_t header[4];
-    hci_transport_link_calc_header(header, 0, 0, 0, 0, LINK_CONTROL_PACKET_TYPE, message_len);
+    hci_transport_link_calc_header(header, 0, 0, link_peer_supports_data_integrity_check, 0, LINK_CONTROL_PACKET_TYPE, message_len);
+    if (link_peer_supports_data_integrity_check){
+        // append data integrity check value / need to copy control message
+        uint8_t message_with_dic[LINK_CONTROL_MAX_LEN + 2];
+        memcpy(message_with_dic, message, message_len);
+        uint16_t dic = crc16_calc_for_slip_frame(header, message, message_len);
+        big_endian_store_16(message_with_dic, message_len, dic);
+        message_len += 2;
+        message = message_with_dic;
+    }
+    log_info("hci_transport_link_send_control: size %u, append dic %u", message_len, link_peer_supports_data_integrity_check);
+    log_info_hexdump(message, message_len);
     hci_transport_slip_send_frame(header, message, message_len);
 }
 
@@ -321,11 +329,20 @@ static void hci_transport_link_send_sleep(void){
 }
 
 static void hci_transport_link_send_queued_packet(void){
-    log_info("hci_transport_link_send_queued_packet: seq %u, ack %u, size %u", link_seq_nr, link_ack_nr, hci_packet_size);
-    log_info_hexdump(hci_packet, hci_packet_size);
 
     uint8_t header[4];
-    hci_transport_link_calc_header(header, link_seq_nr, link_ack_nr, 0, 1, hci_packet_type, hci_packet_size);
+    hci_transport_link_calc_header(header, link_seq_nr, link_ack_nr, link_peer_supports_data_integrity_check, 1, hci_packet_type, hci_packet_size);
+
+    uint16_t dic = 0;
+    if (link_peer_supports_data_integrity_check){
+        // append data integrity check value
+        dic = crc16_calc_for_slip_frame(header, hci_packet, hci_packet_size);
+        big_endian_store_16(hci_packet, hci_packet_size, dic);
+        hci_packet_size += 2;
+    }
+    log_info("hci_transport_link_send_queued_packet: seq %u, ack %u, size %u, append dic %u", link_seq_nr, link_ack_nr, hci_packet_size, link_peer_supports_data_integrity_check);
+    log_info_hexdump(hci_packet, hci_packet_size);
+
     hci_transport_slip_send_frame(header, hci_packet, hci_packet_size);
 
     // reset inactvitiy timer
