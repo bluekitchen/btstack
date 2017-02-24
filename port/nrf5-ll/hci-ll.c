@@ -713,6 +713,7 @@ static void le_conn_param_req_neg_reply(btstack_buf_t *buf,
 	rp->handle = cmd->handle;
 }
 
+#ifdef CONFIG_BLUETOOTH_CONTROLLER_DATA_LENGTH
 static void le_set_data_len(btstack_buf_t *buf, btstack_buf_t *evt)
 {
 	struct bt_hci_cp_le_set_data_len *cmd = (void *)buf->data;
@@ -730,6 +731,7 @@ static void le_set_data_len(btstack_buf_t *buf, btstack_buf_t *evt)
 	rp->status = (!status) ?  0x00 : BT_HCI_ERR_CMD_DISALLOWED;
 	rp->handle = cmd->handle;
 }
+#endif
 
 static int controller_cmd_handle(uint8_t ocf, btstack_buf_t *cmd,
 				 btstack_buf_t *evt)
@@ -852,9 +854,11 @@ static int controller_cmd_handle(uint8_t ocf, btstack_buf_t *cmd,
 		le_conn_param_req_neg_reply(cmd, evt);
 		break;
 
+#ifdef CONFIG_BLUETOOTH_CONTROLLER_DATA_LENGTH
 	case BT_OCF(BT_HCI_OP_LE_SET_DATA_LEN):
 		le_set_data_len(cmd, evt);
 		break;
+#endif
 
 	default:
 		return -EINVAL;
@@ -1080,6 +1084,7 @@ static void enc_refresh_complete(struct pdu_data *pdu_data, uint16_t handle,
 	ep->handle = sys_cpu_to_le16(handle);
 }
 
+#ifdef CONFIG_BLUETOOTH_CONTROLLER_LE_PING
 static void auth_payload_timeout_exp(struct pdu_data *pdu_data, uint16_t handle,
 				     btstack_buf_t *buf)
 {
@@ -1092,6 +1097,7 @@ static void auth_payload_timeout_exp(struct pdu_data *pdu_data, uint16_t handle,
 
 	ep->handle = sys_cpu_to_le16(handle);
 }
+#endif
 
 static void encode_control(struct radio_pdu_node_rx *node_rx,
 			   struct pdu_data *pdu_data, btstack_buf_t *buf)
@@ -1125,9 +1131,11 @@ static void encode_control(struct radio_pdu_node_rx *node_rx,
 		enc_refresh_complete(pdu_data, handle, buf);
 		break;
 
+#ifdef CONFIG_BLUETOOTH_CONTROLLER_LE_PING
 	case NODE_RX_TYPE_APTO:
 		auth_payload_timeout_exp(pdu_data, handle, buf);
 		break;
+#endif
 
 	case NODE_RX_TYPE_RSSI:
 		/** @todo */
