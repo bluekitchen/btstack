@@ -3,12 +3,15 @@
 
 SUBDIRS =  \
 	att_db \
+	avdtp \
+	avrcp \
 	ble_client \
+	btstack_link_key_db \
 	des_iterator \
 	gatt_client \
 	hfp \
 	linked_list \
-	btstack_link_key_db \
+	maths \
 	sdp_client \
 	security_manager \
 
