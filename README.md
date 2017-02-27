@@ -21,7 +21,11 @@ It can be configured to run as either single-mode stack or a dual-mode stack.
 
 BTstack is free for non-commercial use. However, for commercial use, <a href="mailto:contact@bluekitchen-gmbh.com">tell us</a> a bit about your project to get a quote.
 
-#### Supported Protocols and Profiles
+**Documentation:** [HTML](http://bluekitchen-gmbh.com/btstack/develop/), [PDF](http://bluekitchen-gmbh.com/btstack_develop.pdf)
+
+**Discussion and Community Support:** [BTstack Google Group](http://groups.google.com/group/btstack-dev)
+
+### Supported Protocols and Profiles
 
 **Protocols:** L2CAP, RFCOMM, SDP, BNEP, ATT, SM (incl. LE Secure Connections).
 
@@ -32,9 +36,7 @@ BTstack is free for non-commercial use. However, for commercial use, <a href="ma
 It has been qualified with the the Bluetooth SIG for GAP, IOP, HFP, HSP, SPP, PAN profiles and 
 GATT, SM of the Bluetooth 4.2 LE Central and Peripheral roles (QD ID 25340). For information on MFi/iAP2 support, please <a href="mailto:contact@bluekitchen-gmbh.com">contact us</a>.
 
-#### Documentation: [HTML](http://bluekitchen-gmbh.com/btstack/develop/), [PDF](http://bluekitchen-gmbh.com/btstack_develop.pdf)
 
-#### Discussion and Community Support: [BTstack Google Group](http://groups.google.com/group/btstack-dev)
 
 
 ## Evaluation Platforms
