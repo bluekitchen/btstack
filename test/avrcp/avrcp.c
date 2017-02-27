@@ -300,7 +300,22 @@ void avrcp_target_create_sdp_record(uint8_t * service, uint32_t service_record_h
     avrcp_create_sdp_record(0, service, service_record_handle, browsing, supported_features, service_name, service_provider_name);
 }
 
-static void avrcp_emit_connection_established(btstack_packet_handler_t callback, uint16_t con_handle, uint16_t local_cid, bd_addr_t addr, uint8_t status){
+static void avrcp_emit_repeat_and_shuffle_mode(btstack_packet_handler_t callback, uint16_t con_handle, uint8_t status, avrcp_repeat_mode_t repeat_mode, avrcp_shuffle_mode_t shuffle_mode){
+    if (!callback) return;
+    uint8_t event[8];
+    int pos = 0;
+    event[pos++] = HCI_EVENT_AVRCP_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = AVRCP_SUBEVENT_SHUFFLE_AND_REPEAT_MODE;
+    little_endian_store_16(event, pos, con_handle);
+    pos += 2;
+    event[pos++] = status;
+    event[pos++] = repeat_mode;
+    event[pos++] = shuffle_mode;
+    (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
+static void avrcp_emit_connection_established(btstack_packet_handler_t callback, uint16_t con_handle, uint8_t status, uint16_t local_cid, bd_addr_t addr){
     if (!callback) return;
     uint8_t event[14];
     int pos = 0;
@@ -309,11 +324,11 @@ static void avrcp_emit_connection_established(btstack_packet_handler_t callback,
     event[pos++] = AVRCP_SUBEVENT_CONNECTION_ESTABLISHED;
     little_endian_store_16(event, pos, con_handle);
     pos += 2;
+    event[pos++] = status;
     little_endian_store_16(event, pos, local_cid);
     pos += 2;
     reverse_bd_addr(addr,&event[pos]);
     pos += 6;
-    event[pos++] = status;
     (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
@@ -522,18 +537,18 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
     uint8_t operands[20];
     uint8_t opcode;
     int pos = 0;
-    uint8_t transport_header = packet[0];
-    uint8_t transaction_label = transport_header >> 4;
-    uint8_t packet_type = (transport_header & 0x0F) >> 2;
-    uint8_t frame_type = (transport_header & 0x03) >> 1;
-    uint8_t ipid = transport_header & 0x01;
+    // uint8_t transport_header = packet[0];
+    // uint8_t transaction_label = transport_header >> 4;
+    // uint8_t packet_type = (transport_header & 0x0F) >> 2;
+    // uint8_t frame_type = (transport_header & 0x03) >> 1;
+    // uint8_t ipid = transport_header & 0x01;
     uint8_t byte_value = packet[2];
-    uint16_t pid = (byte_value << 8) | packet[2];
+    // uint16_t pid = (byte_value << 8) | packet[2];
     pos = 3;
 
-    printf("    Transport header 0x%02x (transaction_label %d, packet_type %d, frame_type %d, ipid %d), pid 0x%4x\n", 
-        transport_header, transaction_label, packet_type, frame_type, ipid, pid);
-    // printf_hexdump(packet+pos, size-pos);
+    // printf("    Transport header 0x%02x (transaction_label %d, packet_type %d, frame_type %d, ipid %d), pid 0x%4x\n", 
+    //     transport_header, transaction_label, packet_type, frame_type, ipid, pid);
+    // // printf_hexdump(packet+pos, size-pos);
             
     switch (connection->cmd_to_send){
         case AVRCP_CMD_OPCODE_UNIT_INFO:{
@@ -579,9 +594,34 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
             //if (ctype == AVRCP_CTYPE_RESPONSE_INTERIM) return;
             printf("        VENDOR DEPENDENT response: pdu id 0x%02x, param_length %d, status %s\n", pdu_id, param_length, ctype2str(ctype));
             switch (pdu_id){
+                case AVRCP_PDU_ID_GetCurrentPlayerApplicationSettingValue:{
+                    uint8_t num_attributes = packet[pos++];
+                    int i;
+                    uint8_t repeat_mode = 0;
+                    uint8_t shuffle_mode = 0;
+                    for (i = 0; i < num_attributes; i++){
+                        uint8_t attribute_id    = packet[pos++];
+                        uint8_t attribute_value = packet[pos++];
+                        switch (attribute_id){
+                            case 0x02:
+                                repeat_mode = attribute_value;
+                                break;
+                            case 0x03:
+                                shuffle_mode = attribute_value;
+                                break;
+                            default:
+                                break;
+                        }
+                    }
+                    avrcp_emit_repeat_and_shuffle_mode(avrcp_callback, connection->con_handle, ctype, repeat_mode, shuffle_mode);
+                    break;
+                }
+                case AVRCP_PDU_ID_SetPlayerApplicationSettingValue:
+                    printf("AVRCP_PDU_ID_SetPlayerApplicationSettingValue Response \n");
+                    break;
                 case AVRCP_PDU_ID_SET_ABSOLUTE_VOLUME:{
                     uint8_t absolute_volume = packet[pos++];
-                    printf("Absolut volume %d\n", absolute_volume);
+                    printf("Absolute volume %d\n", absolute_volume);
                     break;
                 }
                 case AVRCP_PDU_ID_GET_CAPABILITIES:{
@@ -707,6 +747,16 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                 case AVRCP_PDU_ID_GET_ELEMENT_ATTRIBUTES:{
                     uint8_t num_attributes = packet[pos++];
                     int i;
+                    struct item {
+                        uint16_t len;
+                        uint8_t  * value;
+                    } items[AVRCP_MEDIA_ATTR_COUNT];
+                    memset(items, 0, sizeof(items));
+
+                    uint16_t string_attributes_len = 0;
+                    uint8_t  num_string_attributes = 0;
+                    uint16_t total_event_payload_for_string_attributes = HCI_EVENT_PAYLOAD_SIZE/2;
+                    uint16_t max_string_attribute_value_len = 0;
                     for (i = 0; i < num_attributes; i++){
                         avrcp_media_attribute_id_t attr_id = big_endian_read_32(packet, pos);
                         pos += 4;
@@ -715,14 +765,79 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                         uint16_t attr_value_length = big_endian_read_16(packet, pos);
                         pos += 2;
 
+                        // debug - to remove later
                         uint8_t  value[100];
                         uint16_t value_len = sizeof(value) <= attr_value_length? sizeof(value) - 1 : attr_value_length;
                         memcpy(value, packet+pos, value_len);
                         value[value_len] = 0;
-
                         printf("Now Playing Info %s: %s \n", attribute2str(attr_id), value);
+                        // end debug
+
+                        if ((attr_id >= 1) || (attr_id <= AVRCP_MEDIA_ATTR_COUNT)) {
+                            items[attr_id-1].len = attr_value_length;
+                            items[attr_id-1].value = &packet[pos];
+                            switch (attr_id){
+                                case AVRCP_MEDIA_ATTR_TITLE:
+                                case AVRCP_MEDIA_ATTR_ARTIST:
+                                case AVRCP_MEDIA_ATTR_ALBUM:
+                                case AVRCP_MEDIA_ATTR_GENRE:
+                                    num_string_attributes++;
+                                    total_event_payload_for_string_attributes--; // for storing attr_len
+                                    string_attributes_len += attr_value_length;
+                                    if (max_string_attribute_value_len < attr_value_length){
+                                        max_string_attribute_value_len = attr_value_length;
+                                    }
+                                    break;
+                                case AVRCP_MEDIA_ATTR_SONG_LENGTH:
+                                    total_event_payload_for_string_attributes -= 4; // for storing 4 byte
+                                    break;
+                                default:
+                                    total_event_payload_for_string_attributes--;  // for storing 1 byte
+                                    break;
+                            }
+                        }
                         pos += attr_value_length;
                     }
+                    uint8_t event[HCI_EVENT_BUFFER_SIZE];
+                    uint16_t max_value_len = total_event_payload_for_string_attributes > string_attributes_len? max_string_attribute_value_len : total_event_payload_for_string_attributes/(string_attributes_len+1) - 1;
+                    
+                    // printf("num_string_attributes %d, string_attributes_len %d, total_event_payload_for_string_attributes %d, max_value_len %d \n", num_string_attributes, string_attributes_len, total_event_payload_for_string_attributes, max_value_len);
+                    
+                    event[0] = HCI_EVENT_AVRCP_META;
+                    pos = 2;
+                    event[pos++] = AVRCP_SUBEVENT_NOW_PLAYING_INFO;
+                    little_endian_store_16(event, pos, connection->con_handle);
+                    pos += 2;
+                    event[pos++] = ctype;
+                    
+                    for (i = 0; i < num_attributes; i++){
+                        if (!items[i].value) continue;
+                        // printf(" found value len %d, max %d, %s\n", items[i].len, max_value_len, items[i].value);
+                        avrcp_media_attribute_id_t attr_id = i + 1;
+                        uint16_t value_len;
+                        switch (attr_id){
+                            case AVRCP_MEDIA_ATTR_TITLE:
+                            case AVRCP_MEDIA_ATTR_ARTIST:
+                            case AVRCP_MEDIA_ATTR_ALBUM:
+                            case AVRCP_MEDIA_ATTR_GENRE:
+                                value_len = items[i].len <= max_value_len? items[i].len : max_value_len;
+                                event[pos++] = value_len + 1;
+                                memcpy(event+pos, items[i].value, value_len);
+                                event[pos+value_len] = 0;
+                                pos += value_len + 1;
+                                break;
+                            case AVRCP_MEDIA_ATTR_SONG_LENGTH:
+                                little_endian_store_32(event, pos, btstack_atoi((char *)items[i].value));
+                                pos += 4;
+                                break;
+                            default:
+                                event[pos++] = items[i].value[0];  // for storing 1 byte
+                                break;
+                        }
+                    }
+                    event[1] = pos - 2;
+                    printf_hexdump(event, pos);
+                    (*avrcp_callback)(HCI_EVENT_PACKET, 0, event, pos);
                     break;
                 }
                 default:
@@ -829,7 +944,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                         connection->l2cap_signaling_cid = local_cid;
                         connection->con_handle = con_handle;
                         connection->state = AVCTP_CONNECTION_OPENED;
-                        avrcp_emit_connection_established(avrcp_callback, con_handle, local_cid, event_addr, 0);
+                        avrcp_emit_connection_established(avrcp_callback, con_handle, 0, local_cid, event_addr);
                         break;
                     }
                     break;
@@ -1151,7 +1266,7 @@ void avrcp_query_shuffle_and_repeat_modes(uint16_t con_handle){
 static void avrcp_set_current_player_application_setting_value(uint16_t con_handle, uint8_t attribute_id, uint8_t attribute_value){
     avrcp_connection_t * connection = get_avrcp_connection_for_con_handle(con_handle);
     if (!connection){
-        log_error("avrcp_get_capabilities: coud not find a connection.");
+        log_error("avrcp_get_capabilities: could not find a connection.");
         return;
     }
     if (connection->state != AVCTP_CONNECTION_OPENED) return;
