@@ -11,9 +11,9 @@ SUBDIRS =  \
 	gatt_client \
 	hfp \
 	linked_list \
-	maths \
 	sdp_client \
 	security_manager \
+	# maths \
 
 subdirs:
 	echo Building all tests
