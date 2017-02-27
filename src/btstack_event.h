@@ -2887,6 +2887,161 @@ static inline const uint8_t * gap_event_advertising_report_get_data(const uint8_
 }
 
 /**
+ * @brief Get field con_handle from event AVRCP_NOW_PLAYING_INFO_EVENT
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t avrcp_now_playing_info_event_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field status from event AVRCP_NOW_PLAYING_INFO_EVENT
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_now_playing_info_event_get_status(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field title_len from event AVRCP_NOW_PLAYING_INFO_EVENT
+ * @param event packet
+ * @return title_len
+ * @note: btstack_type J
+ */
+static inline int avrcp_now_playing_info_event_get_title_len(const uint8_t * event){
+    return event[6];
+}
+/**
+ * @brief Get field title from event AVRCP_NOW_PLAYING_INFO_EVENT
+ * @param event packet
+ * @return title
+ * @note: btstack_type V
+ */
+static inline const uint8_t * avrcp_now_playing_info_event_get_title(const uint8_t * event){
+    return &event[7];
+}
+/**
+ * @brief Get field artist_len from event AVRCP_NOW_PLAYING_INFO_EVENT
+ * @param event packet
+ * @return artist_len
+ * @note: btstack_type J
+ */
+static inline int avrcp_now_playing_info_event_get_artist_len(const uint8_t * event){
+    return event[6];
+}
+/**
+ * @brief Get field artist from event AVRCP_NOW_PLAYING_INFO_EVENT
+ * @param event packet
+ * @return artist
+ * @note: btstack_type V
+ */
+static inline const uint8_t * avrcp_now_playing_info_event_get_artist(const uint8_t * event){
+    return &event[7];
+}
+/**
+ * @brief Get field album_len from event AVRCP_NOW_PLAYING_INFO_EVENT
+ * @param event packet
+ * @return album_len
+ * @note: btstack_type J
+ */
+static inline int avrcp_now_playing_info_event_get_album_len(const uint8_t * event){
+    return event[6];
+}
+/**
+ * @brief Get field album from event AVRCP_NOW_PLAYING_INFO_EVENT
+ * @param event packet
+ * @return album
+ * @note: btstack_type V
+ */
+static inline const uint8_t * avrcp_now_playing_info_event_get_album(const uint8_t * event){
+    return &event[7];
+}
+/**
+ * @brief Get field genre_len from event AVRCP_NOW_PLAYING_INFO_EVENT
+ * @param event packet
+ * @return genre_len
+ * @note: btstack_type J
+ */
+static inline int avrcp_now_playing_info_event_get_genre_len(const uint8_t * event){
+    return event[6];
+}
+/**
+ * @brief Get field genre from event AVRCP_NOW_PLAYING_INFO_EVENT
+ * @param event packet
+ * @return genre
+ * @note: btstack_type V
+ */
+static inline const uint8_t * avrcp_now_playing_info_event_get_genre(const uint8_t * event){
+    return &event[7];
+}
+/**
+ * @brief Get field track from event AVRCP_NOW_PLAYING_INFO_EVENT
+ * @param event packet
+ * @return track
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_now_playing_info_event_get_track(const uint8_t * event){
+    return event[6];
+}
+/**
+ * @brief Get field total_tracks from event AVRCP_NOW_PLAYING_INFO_EVENT
+ * @param event packet
+ * @return total_tracks
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_now_playing_info_event_get_total_tracks(const uint8_t * event){
+    return event[7];
+}
+/**
+ * @brief Get field song_length from event AVRCP_NOW_PLAYING_INFO_EVENT
+ * @param event packet
+ * @return song_length
+ * @note: btstack_type 4
+ */
+static inline uint32_t avrcp_now_playing_info_event_get_song_length(const uint8_t * event){
+    return little_endian_read_32(event, 8);
+}
+
+/**
+ * @brief Get field con_handle from event AVRCP_SHUFFLE_AND_REPEAT_MODE_EVENT
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t avrcp_shuffle_and_repeat_mode_event_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field status from event AVRCP_SHUFFLE_AND_REPEAT_MODE_EVENT
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_shuffle_and_repeat_mode_event_get_status(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field repeat_mode from event AVRCP_SHUFFLE_AND_REPEAT_MODE_EVENT
+ * @param event packet
+ * @return repeat_mode
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_shuffle_and_repeat_mode_event_get_repeat_mode(const uint8_t * event){
+    return event[6];
+}
+/**
+ * @brief Get field shuffle_mode from event AVRCP_SHUFFLE_AND_REPEAT_MODE_EVENT
+ * @param event packet
+ * @return shuffle_mode
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_shuffle_and_repeat_mode_event_get_shuffle_mode(const uint8_t * event){
+    return event[7];
+}
+
+/**
  * @brief Get field status from event HCI_SUBEVENT_LE_CONNECTION_COMPLETE
  * @param event packet
  * @return status
@@ -4298,161 +4453,6 @@ static inline void avrcp_subevent_connection_established_get_bd_addr(const uint8
  */
 static inline hci_con_handle_t avrcp_subevent_connection_closed_get_con_handle(const uint8_t * event){
     return little_endian_read_16(event, 3);
-}
-
-/**
- * @brief Get field con_handle from event AVRCP_SUBEVENT_NOW_PLAYING_INFO
- * @param event packet
- * @return con_handle
- * @note: btstack_type H
- */
-static inline hci_con_handle_t avrcp_subevent_now_playing_info_get_con_handle(const uint8_t * event){
-    return little_endian_read_16(event, 3);
-}
-/**
- * @brief Get field status from event AVRCP_SUBEVENT_NOW_PLAYING_INFO
- * @param event packet
- * @return status
- * @note: btstack_type 1
- */
-static inline uint8_t avrcp_subevent_now_playing_info_get_status(const uint8_t * event){
-    return event[5];
-}
-/**
- * @brief Get field title_len from event AVRCP_SUBEVENT_NOW_PLAYING_INFO
- * @param event packet
- * @return title_len
- * @note: btstack_type J
- */
-static inline int avrcp_subevent_now_playing_info_get_title_len(const uint8_t * event){
-    return event[6];
-}
-/**
- * @brief Get field title from event AVRCP_SUBEVENT_NOW_PLAYING_INFO
- * @param event packet
- * @return title
- * @note: btstack_type V
- */
-static inline const uint8_t * avrcp_subevent_now_playing_info_get_title(const uint8_t * event){
-    return &event[7];
-}
-/**
- * @brief Get field artist_len from event AVRCP_SUBEVENT_NOW_PLAYING_INFO
- * @param event packet
- * @return artist_len
- * @note: btstack_type J
- */
-static inline int avrcp_subevent_now_playing_info_get_artist_len(const uint8_t * event){
-    return event[6];
-}
-/**
- * @brief Get field artist from event AVRCP_SUBEVENT_NOW_PLAYING_INFO
- * @param event packet
- * @return artist
- * @note: btstack_type V
- */
-static inline const uint8_t * avrcp_subevent_now_playing_info_get_artist(const uint8_t * event){
-    return &event[7];
-}
-/**
- * @brief Get field album_len from event AVRCP_SUBEVENT_NOW_PLAYING_INFO
- * @param event packet
- * @return album_len
- * @note: btstack_type J
- */
-static inline int avrcp_subevent_now_playing_info_get_album_len(const uint8_t * event){
-    return event[6];
-}
-/**
- * @brief Get field album from event AVRCP_SUBEVENT_NOW_PLAYING_INFO
- * @param event packet
- * @return album
- * @note: btstack_type V
- */
-static inline const uint8_t * avrcp_subevent_now_playing_info_get_album(const uint8_t * event){
-    return &event[7];
-}
-/**
- * @brief Get field genre_len from event AVRCP_SUBEVENT_NOW_PLAYING_INFO
- * @param event packet
- * @return genre_len
- * @note: btstack_type J
- */
-static inline int avrcp_subevent_now_playing_info_get_genre_len(const uint8_t * event){
-    return event[6];
-}
-/**
- * @brief Get field genre from event AVRCP_SUBEVENT_NOW_PLAYING_INFO
- * @param event packet
- * @return genre
- * @note: btstack_type V
- */
-static inline const uint8_t * avrcp_subevent_now_playing_info_get_genre(const uint8_t * event){
-    return &event[7];
-}
-/**
- * @brief Get field track from event AVRCP_SUBEVENT_NOW_PLAYING_INFO
- * @param event packet
- * @return track
- * @note: btstack_type 1
- */
-static inline uint8_t avrcp_subevent_now_playing_info_get_track(const uint8_t * event){
-    return event[6];
-}
-/**
- * @brief Get field total_tracks from event AVRCP_SUBEVENT_NOW_PLAYING_INFO
- * @param event packet
- * @return total_tracks
- * @note: btstack_type 1
- */
-static inline uint8_t avrcp_subevent_now_playing_info_get_total_tracks(const uint8_t * event){
-    return event[7];
-}
-/**
- * @brief Get field song_length from event AVRCP_SUBEVENT_NOW_PLAYING_INFO
- * @param event packet
- * @return song_length
- * @note: btstack_type 4
- */
-static inline uint32_t avrcp_subevent_now_playing_info_get_song_length(const uint8_t * event){
-    return little_endian_read_32(event, 8);
-}
-
-/**
- * @brief Get field con_handle from event AVRCP_SUBEVENT_SHUFFLE_AND_REPEAT_MODE
- * @param event packet
- * @return con_handle
- * @note: btstack_type H
- */
-static inline hci_con_handle_t avrcp_subevent_shuffle_and_repeat_mode_get_con_handle(const uint8_t * event){
-    return little_endian_read_16(event, 3);
-}
-/**
- * @brief Get field status from event AVRCP_SUBEVENT_SHUFFLE_AND_REPEAT_MODE
- * @param event packet
- * @return status
- * @note: btstack_type 1
- */
-static inline uint8_t avrcp_subevent_shuffle_and_repeat_mode_get_status(const uint8_t * event){
-    return event[5];
-}
-/**
- * @brief Get field repeat_mode from event AVRCP_SUBEVENT_SHUFFLE_AND_REPEAT_MODE
- * @param event packet
- * @return repeat_mode
- * @note: btstack_type 1
- */
-static inline uint8_t avrcp_subevent_shuffle_and_repeat_mode_get_repeat_mode(const uint8_t * event){
-    return event[6];
-}
-/**
- * @brief Get field shuffle_mode from event AVRCP_SUBEVENT_SHUFFLE_AND_REPEAT_MODE
- * @param event packet
- * @return shuffle_mode
- * @note: btstack_type 1
- */
-static inline uint8_t avrcp_subevent_shuffle_and_repeat_mode_get_shuffle_mode(const uint8_t * event){
-    return event[7];
 }
 
 
