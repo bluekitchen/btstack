@@ -333,6 +333,19 @@ static void dummy_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
 
 #ifdef ENABLE_EHCILL
 
+static void hci_transport_h4_ehcill_emit_sleep_state(int sleep_active){
+    static int last_state = 0;
+    if (sleep_active == last_state) return;
+    last_state = sleep_active;
+
+    log_info("hci_transport_h4_ehcill_emit_sleep_state: %u", sleep_active);
+    uint8_t event[3];
+    event[0] = HCI_EVENT_TRANSPORT_SLEEP_MODE;
+    event[1] = sizeof(event) - 2;
+    event[2] = sleep_active;
+    packet_handler(HCI_EVENT_PACKET, &event[0], sizeof(event));        
+}
+
 static void hci_transport_h4_ehcill_open(void){
     hci_transport_h4_ehcill_reset_statemachine();
 
@@ -412,6 +425,7 @@ static void hci_transport_h4_ehcill_trigger_wakeup(void){
             break;
     }
     // UART needed again
+    hci_transport_h4_ehcill_emit_sleep_state(0);
     if (btstack_uart_sleep_mode){
         btstack_uart->set_sleep(BTSTACK_UART_SLEEP_OFF);
     }
@@ -461,6 +475,7 @@ static void hci_transport_h4_ehcill_handle_command(uint8_t action){
             switch(action){
                 case EHCILL_WAKE_UP_IND:
                     ehcill_state = EHCILL_STATE_AWAKE;
+                    hci_transport_h4_ehcill_emit_sleep_state(0);
 #ifdef ENABLE_LOG_EHCILL
                     log_info("eHCILL: Received WAKE_UP_IND RX");
 #endif
@@ -524,9 +539,11 @@ static void hci_transport_h4_ehcill_handle_ehcill_command_sent(void){
         if (btstack_uart_sleep_mode != BTSTACK_UART_SLEEP_OFF){
             btstack_uart->set_sleep(btstack_uart_sleep_mode);
         }
+        hci_transport_h4_ehcill_emit_sleep_state(1);
     }
     // already packet ready? then start wakeup
     if (hci_transport_h4_ehcill_outgoing_packet_ready()){
+        hci_transport_h4_ehcill_emit_sleep_state(0);
         if (btstack_uart_sleep_mode){
             btstack_uart->set_sleep(BTSTACK_UART_SLEEP_OFF);
         }

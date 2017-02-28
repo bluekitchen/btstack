@@ -479,6 +479,19 @@ static void hci_transport_h5_queue_packet(uint8_t packet_type, uint8_t *packet, 
     hci_packet_size = size;
 }
 
+static void hci_transport_h5_emit_sleep_state(int sleep_active){
+    static int last_state = 0;
+    if (sleep_active == last_state) return;
+    last_state = sleep_active;
+    
+    log_info("hci_transport_h5_emit_sleep_state: %u", sleep_active);
+    uint8_t event[3];
+    event[0] = HCI_EVENT_TRANSPORT_SLEEP_MODE;
+    event[1] = sizeof(event) - 2;
+    event[2] = sleep_active;
+    packet_handler(HCI_EVENT_PACKET, &event[0], sizeof(event));        
+}
+
 static void hci_transport_h5_process_frame(uint16_t frame_size){
 
     if (frame_size < 4) return;
@@ -619,6 +632,7 @@ static void hci_transport_h5_process_frame(uint16_t frame_size){
                         if (btstack_uart_sleep_mode){
                             log_info("link: received sleep message. Enabling UART Sleep.");
                             btstack_uart->set_sleep(btstack_uart_sleep_mode);
+                            hci_transport_h5_emit_sleep_state(1);
                         } else {
                             log_info("link: received sleep message. UART Sleep not supported");
                         }
@@ -710,6 +724,7 @@ static void hci_transport_h5_block_sent(void){
         } else {
             log_info("link: sent sleep message. UART Sleep not supported");
         }
+        hci_transport_h5_emit_sleep_state(1);
     }
 
     hci_transport_link_run();
@@ -798,6 +813,7 @@ static int hci_transport_h5_send_packet(uint8_t packet_type, uint8_t *packet, in
 
     // send wakeup first
     if (link_peer_asleep){
+        hci_transport_h5_emit_sleep_state(0);
         if (btstack_uart_sleep_mode){
             log_info("h5: disable UART sleep");
             btstack_uart->set_sleep(BTSTACK_UART_SLEEP_OFF);

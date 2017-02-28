@@ -366,6 +366,13 @@ typedef uint8_t sm_key_t[16];
 // additional HCI events
 
 /**
+ * @brief Indicates HCI transport enters/exits Sleep mode
+ * @format 1
+ * @param active
+ */
+#define HCI_EVENT_TRANSPORT_SLEEP_MODE                     0x66
+
+/**
  * @brief Outgoing packet 
  */
 #define HCI_EVENT_TRANSPORT_PACKET_SENT                    0x6E

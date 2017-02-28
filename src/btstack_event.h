@@ -944,6 +944,16 @@ static inline uint8_t btstack_event_discoverable_enabled_get_discoverable(const 
 }
 
 /**
+ * @brief Get field active from event HCI_EVENT_TRANSPORT_SLEEP_MODE
+ * @param event packet
+ * @return active
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_event_transport_sleep_mode_get_active(const uint8_t * event){
+    return event[2];
+}
+
+/**
  * @brief Get field handle from event HCI_EVENT_SCO_CAN_SEND_NOW
  * @param event packet
  * @param Pointer to storage for handle
