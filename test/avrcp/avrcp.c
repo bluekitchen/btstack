@@ -755,7 +755,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
 
                     uint16_t string_attributes_len = 0;
                     uint8_t  num_string_attributes = 0;
-                    uint16_t total_event_payload_for_string_attributes = HCI_EVENT_PAYLOAD_SIZE/2;
+                    uint16_t total_event_payload_for_string_attributes = HCI_EVENT_PAYLOAD_SIZE-2;
                     uint16_t max_string_attribute_value_len = 0;
                     for (i = 0; i < num_attributes; i++){
                         avrcp_media_attribute_id_t attr_id = big_endian_read_32(packet, pos);
@@ -782,56 +782,79 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                                 case AVRCP_MEDIA_ATTR_ALBUM:
                                 case AVRCP_MEDIA_ATTR_GENRE:
                                     num_string_attributes++;
-                                    total_event_payload_for_string_attributes--; // for storing attr_len
                                     string_attributes_len += attr_value_length;
                                     if (max_string_attribute_value_len < attr_value_length){
                                         max_string_attribute_value_len = attr_value_length;
                                     }
                                     break;
-                                case AVRCP_MEDIA_ATTR_SONG_LENGTH:
-                                    total_event_payload_for_string_attributes -= 4; // for storing 4 byte
-                                    break;
                                 default:
-                                    total_event_payload_for_string_attributes--;  // for storing 1 byte
                                     break;
                             }
                         }
                         pos += attr_value_length;
                     }
-                    uint8_t event[HCI_EVENT_BUFFER_SIZE];
+                    // subtract space for fixed fields
+                    total_event_payload_for_string_attributes -= 14 + 4;    // 4 for '\0'
+
+                    // @TODO optimize space by repeatedly decreasing max_string_attribute_value_len until it fits into buffer instead of crude divion
                     uint16_t max_value_len = total_event_payload_for_string_attributes > string_attributes_len? max_string_attribute_value_len : total_event_payload_for_string_attributes/(string_attributes_len+1) - 1;
-                    
                     // printf("num_string_attributes %d, string_attributes_len %d, total_event_payload_for_string_attributes %d, max_value_len %d \n", num_string_attributes, string_attributes_len, total_event_payload_for_string_attributes, max_value_len);
-                    
+
+                    const uint8_t attribute_order[] = {
+                        AVRCP_MEDIA_ATTR_TRACK,
+                        AVRCP_MEDIA_ATTR_TOTAL_TRACKS,
+                        AVRCP_MEDIA_ATTR_SONG_LENGTH,
+                        AVRCP_MEDIA_ATTR_TITLE,
+                        AVRCP_MEDIA_ATTR_ARTIST,
+                        AVRCP_MEDIA_ATTR_ALBUM,
+                        AVRCP_MEDIA_ATTR_GENRE
+                    };
+
+                    uint8_t event[HCI_EVENT_BUFFER_SIZE];
                     event[0] = HCI_EVENT_AVRCP_META;
                     pos = 2;
                     event[pos++] = AVRCP_SUBEVENT_NOW_PLAYING_INFO;
                     little_endian_store_16(event, pos, connection->con_handle);
                     pos += 2;
                     event[pos++] = ctype;
-                    
-                    for (i = 0; i < num_attributes; i++){
-                        if (!items[i].value) continue;
-                        // printf(" found value len %d, max %d, %s\n", items[i].len, max_value_len, items[i].value);
-                        avrcp_media_attribute_id_t attr_id = i + 1;
-                        uint16_t value_len;
+                    for (i = 0; i < sizeof(attribute_order); i++){
+                        avrcp_media_attribute_id_t attr_id = attribute_order[i];
+                        if (items[attr_id-1].value){
+                            printf("Adding attribute id %u, len %d, %s\n", attr_id, items[attr_id-1].len, items[attr_id-1].value);
+                        } else{
+                            printf("Adding empty attribute id %u, len %d\n", attr_id, items[attr_id-1].len);
+                        }
+                        uint16_t value_len = 0;
                         switch (attr_id){
                             case AVRCP_MEDIA_ATTR_TITLE:
                             case AVRCP_MEDIA_ATTR_ARTIST:
                             case AVRCP_MEDIA_ATTR_ALBUM:
                             case AVRCP_MEDIA_ATTR_GENRE:
-                                value_len = items[i].len <= max_value_len? items[i].len : max_value_len;
+                                if (items[attr_id-1].value){
+                                    value_len = items[attr_id-1].len <= max_value_len ? items[attr_id-1].len : max_value_len;
+                                }
                                 event[pos++] = value_len + 1;
-                                memcpy(event+pos, items[i].value, value_len);
-                                event[pos+value_len] = 0;
-                                pos += value_len + 1;
+                                if (value_len){
+                                    memcpy(event+pos, items[attr_id-1].value, value_len);
+                                    pos += value_len;
+                                }
+                                event[pos++] = 0;
                                 break;
                             case AVRCP_MEDIA_ATTR_SONG_LENGTH:
-                                little_endian_store_32(event, pos, btstack_atoi((char *)items[i].value));
+                                if (items[attr_id-1].value){
+                                    little_endian_store_32(event, pos, btstack_atoi((char *)items[attr_id-1].value));
+                                } else {
+                                    little_endian_store_32(event, pos, 0);
+                                }
                                 pos += 4;
                                 break;
-                            default:
-                                event[pos++] = items[i].value[0];  // for storing 1 byte
+                            case AVRCP_MEDIA_ATTR_TRACK:
+                            case AVRCP_MEDIA_ATTR_TOTAL_TRACKS:
+                                if (items[attr_id-1].value){
+                                    event[pos++] = btstack_atoi((char *)items[attr_id-1].value);
+                                } else {
+                                    event[pos++] = 0;
+                                }
                                 break;
                         }
                     }

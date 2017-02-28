@@ -62,11 +62,12 @@ static btstack_packet_callback_registration_t hci_event_callback_registration;
 // mac 2013: static bd_addr_t device_addr = {0x84, 0x38, 0x35, 0x65, 0xd1, 0x15};
 // phone: static bd_addr_t device_addr = {0xD8, 0xBB, 0x2C, 0xDF, 0xF1, 0x08};
 
-// iPhone SE
-// static const char * device_addr_string = "BC:EC:5D:E6:15:03";
 
 static bd_addr_t device_addr;
-static const char * device_addr_string = "D8:BB:2C:DF:F1:08";
+// iPhone SE
+static const char * device_addr_string = "BC:EC:5D:E6:15:03";
+
+// static const char * device_addr_string = "D8:BB:2C:DF:F1:08";
 
 static uint16_t con_handle = 0;
 static uint8_t sdp_avrcp_controller_service_buffer[150];
@@ -101,40 +102,31 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             break;
                         
                         case AVRCP_SUBEVENT_SHUFFLE_AND_REPEAT_MODE:{
-                            uint8_t shuffle_mode = avrcp_shuffle_and_repeat_mode_event_get_shuffle_mode(packet);
-                            uint8_t repeat_mode = avrcp_shuffle_and_repeat_mode_event_get_repeat_mode(packet);
+                            uint8_t shuffle_mode = avrcp_subevent_shuffle_and_repeat_mode_get_shuffle_mode(packet);
+                            uint8_t repeat_mode = avrcp_subevent_shuffle_and_repeat_mode_get_repeat_mode(packet);
                             printf("AVRCP_SUBEVENT_SHUFFLE_AND_REPEAT_MODE: repeat %d, shuffle %d\n", repeat_mode, shuffle_mode);
                             break;
                         }
-                        case AVRCP_SUBEVENT_NOW_PLAYING_INFO:{
-                            uint8_t value[100];
+                        case AVRCP_SUBEVENT_NOW_PLAYING_INFO:
                             printf("Now Playing Info: \n");
                             printf_hexdump(packet, size);
-                            memset(value, 0 , sizeof(value));
-                            if (avrcp_now_playing_info_event_get_title_len(packet) > 0){
-                                memcpy(value, avrcp_now_playing_info_event_get_title(packet), avrcp_now_playing_info_event_get_title_len(packet));
-                                printf("    Title: %s\n", value);
+                            if (avrcp_subevent_now_playing_info_get_title_len(packet) > 0){
+                                printf("    Title: %s\n", avrcp_subevent_now_playing_info_get_title(packet));
                             }    
-                            memset(value, 0 , sizeof(value));
-                            if (avrcp_now_playing_info_event_get_album_len(packet) > 0){
-                                memcpy(value, avrcp_now_playing_info_event_get_album(packet), avrcp_now_playing_info_event_get_album_len(packet));
-                                printf("    Album: %s\n", value);
+                            if (avrcp_subevent_now_playing_info_get_album_len(packet) > 0){
+                                printf("    Album: %s\n", avrcp_subevent_now_playing_info_get_album(packet));
                             }
-                            memset(value, 0 , sizeof(value));
-                            if (avrcp_now_playing_info_event_get_artist_len(packet) > 0){
-                                memcpy(value, avrcp_now_playing_info_event_get_artist(packet), avrcp_now_playing_info_event_get_artist_len(packet));
-                                printf("    Artist: %s\n", value);
+                            if (avrcp_subevent_now_playing_info_get_artist_len(packet) > 0){
+                                printf("    Artist: %s\n", avrcp_subevent_now_playing_info_get_artist(packet));
                             }
-                            memset(value, 0 , sizeof(value));
-                            if (avrcp_now_playing_info_event_get_genre_len(packet) > 0){
-                                memcpy(value, avrcp_now_playing_info_event_get_genre(packet), avrcp_now_playing_info_event_get_genre_len(packet));
-                                printf("    Genre: %s\n", value);
+                            if (avrcp_subevent_now_playing_info_get_genre_len(packet) > 0){
+                                printf("    Genre: %s\n", avrcp_subevent_now_playing_info_get_genre(packet));
                             }
-                            printf("    Track: %d\n", avrcp_now_playing_info_event_get_track(packet));
-                            printf("    Total nr. tracks: %d\n", avrcp_now_playing_info_event_get_total_tracks(packet));
-                            printf("    Song length: %d ms\n", avrcp_now_playing_info_event_get_song_length(packet));
+                            printf("    Track: %d\n", avrcp_subevent_now_playing_info_get_track(packet));
+                            printf("    Total nr. tracks: %d\n", avrcp_subevent_now_playing_info_get_total_tracks(packet));
+                            printf("    Song length: %d ms\n", avrcp_subevent_now_playing_info_get_song_length(packet));
                             break;
-                        }
+
                         // case AVRCP_SUBEVENT_PLAY_STATUS:
                         //     printf("AVRCP_SUBEVENT_PLAY_STATUS\n");
                         //     break;
