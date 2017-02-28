@@ -370,7 +370,7 @@ typedef uint8_t sm_key_t[16];
  * @format 1
  * @param active
  */
-#define HCI_EVENT_TRANSPORT_SLEEP_MODE                     0x66
+#define HCI_EVENT_TRANSPORT_SLEEP_MODE                     0x69
 
 /**
  * @brief Outgoing packet 
