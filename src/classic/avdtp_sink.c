@@ -642,6 +642,7 @@ void avdtp_sink_connect(bd_addr_t bd_addr){
 
 void avdtp_sink_disconnect(uint16_t con_handle){
     avdtp_connection_t * connection = get_avdtp_connection_for_con_handle(con_handle);
+    if (!connection) return;
     if (connection->state == AVDTP_SIGNALING_CONNECTION_IDLE) return;
     if (connection->state == AVDTP_SIGNALING_CONNECTION_W4_L2CAP_DISCONNECTED) return;
     

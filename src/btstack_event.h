@@ -4291,12 +4291,12 @@ static inline void avrcp_subevent_connection_established_get_bd_addr(const uint8
 }
 
 /**
- * @brief Get field con_handle from event AVRCP_SUBEVENT_CONNECTION_CLOSED
+ * @brief Get field con_handle from event AVRCP_SUBEVENT_CONNECTION_RELEASED
  * @param event packet
  * @return con_handle
  * @note: btstack_type H
  */
-static inline hci_con_handle_t avrcp_subevent_connection_closed_get_con_handle(const uint8_t * event){
+static inline hci_con_handle_t avrcp_subevent_connection_released_get_con_handle(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 
@@ -4453,6 +4453,305 @@ static inline uint8_t avrcp_subevent_shuffle_and_repeat_mode_get_repeat_mode(con
  */
 static inline uint8_t avrcp_subevent_shuffle_and_repeat_mode_get_shuffle_mode(const uint8_t * event){
     return event[7];
+}
+
+/**
+ * @brief Get field con_handle from event AVRCP_SUBEVENT_PLAY_STATUS
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t avrcp_subevent_play_status_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field status from event AVRCP_SUBEVENT_PLAY_STATUS
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_subevent_play_status_get_status(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field song_length from event AVRCP_SUBEVENT_PLAY_STATUS
+ * @param event packet
+ * @return song_length
+ * @note: btstack_type 4
+ */
+static inline uint32_t avrcp_subevent_play_status_get_song_length(const uint8_t * event){
+    return little_endian_read_32(event, 6);
+}
+/**
+ * @brief Get field song_position from event AVRCP_SUBEVENT_PLAY_STATUS
+ * @param event packet
+ * @return song_position
+ * @note: btstack_type 4
+ */
+static inline uint32_t avrcp_subevent_play_status_get_song_position(const uint8_t * event){
+    return little_endian_read_32(event, 10);
+}
+/**
+ * @brief Get field play_status from event AVRCP_SUBEVENT_PLAY_STATUS
+ * @param event packet
+ * @return play_status
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_subevent_play_status_get_play_status(const uint8_t * event){
+    return event[14];
+}
+
+/**
+ * @brief Get field con_handle from event AVRCP_SUBEVENT_NOTIFICATION_PLAYBACK_STATUS_CHANGED
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t avrcp_subevent_notification_playback_status_changed_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field status from event AVRCP_SUBEVENT_NOTIFICATION_PLAYBACK_STATUS_CHANGED
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_subevent_notification_playback_status_changed_get_status(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field playback_status from event AVRCP_SUBEVENT_NOTIFICATION_PLAYBACK_STATUS_CHANGED
+ * @param event packet
+ * @return playback_status
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_subevent_notification_playback_status_changed_get_playback_status(const uint8_t * event){
+    return event[6];
+}
+
+/**
+ * @brief Get field con_handle from event AVRCP_SUBEVENT_NOTIFICATION_TRACK_CHANGED
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t avrcp_subevent_notification_track_changed_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field status from event AVRCP_SUBEVENT_NOTIFICATION_TRACK_CHANGED
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_subevent_notification_track_changed_get_status(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field track_status from event AVRCP_SUBEVENT_NOTIFICATION_TRACK_CHANGED
+ * @param event packet
+ * @return track_status
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_subevent_notification_track_changed_get_track_status(const uint8_t * event){
+    return event[6];
+}
+
+/**
+ * @brief Get field con_handle from event AVRCP_SUBEVENT_NOTIFICATION_NOW_PLAYING_CONTENT_CHANGED
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t avrcp_subevent_notification_now_playing_content_changed_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field status from event AVRCP_SUBEVENT_NOTIFICATION_NOW_PLAYING_CONTENT_CHANGED
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_subevent_notification_now_playing_content_changed_get_status(const uint8_t * event){
+    return event[5];
+}
+
+/**
+ * @brief Get field con_handle from event AVRCP_SUBEVENT_NOTIFICATION_AVAILABLE_PLAYERS_CHANGED
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t avrcp_subevent_notification_available_players_changed_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field status from event AVRCP_SUBEVENT_NOTIFICATION_AVAILABLE_PLAYERS_CHANGED
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_subevent_notification_available_players_changed_get_status(const uint8_t * event){
+    return event[5];
+}
+
+/**
+ * @brief Get field con_handle from event AVRCP_SUBEVENT_NOTIFICATION_VOLUME_CHANGED
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t avrcp_subevent_notification_volume_changed_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field status from event AVRCP_SUBEVENT_NOTIFICATION_VOLUME_CHANGED
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_subevent_notification_volume_changed_get_status(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field absolute_volume from event AVRCP_SUBEVENT_NOTIFICATION_VOLUME_CHANGED
+ * @param event packet
+ * @return absolute_volume
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_subevent_notification_volume_changed_get_absolute_volume(const uint8_t * event){
+    return event[6];
+}
+
+/**
+ * @brief Get field con_handle from event AVRCP_SUBEVENT_SET_ABSOLUTE_VOLUME_RESPONSE
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t avrcp_subevent_set_absolute_volume_response_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field status from event AVRCP_SUBEVENT_SET_ABSOLUTE_VOLUME_RESPONSE
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_subevent_set_absolute_volume_response_get_status(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field absolute_volume from event AVRCP_SUBEVENT_SET_ABSOLUTE_VOLUME_RESPONSE
+ * @param event packet
+ * @return absolute_volume
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_subevent_set_absolute_volume_response_get_absolute_volume(const uint8_t * event){
+    return event[6];
+}
+
+/**
+ * @brief Get field con_handle from event AVRCP_SUBEVENT_ENABLE_NOTIFICATION_COMPLETE
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t avrcp_subevent_enable_notification_complete_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field status from event AVRCP_SUBEVENT_ENABLE_NOTIFICATION_COMPLETE
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_subevent_enable_notification_complete_get_status(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field notification_id from event AVRCP_SUBEVENT_ENABLE_NOTIFICATION_COMPLETE
+ * @param event packet
+ * @return notification_id
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_subevent_enable_notification_complete_get_notification_id(const uint8_t * event){
+    return event[6];
+}
+
+/**
+ * @brief Get field con_handle from event AVRCP_SUBEVENT_OPERATION_START
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t avrcp_subevent_operation_start_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field status from event AVRCP_SUBEVENT_OPERATION_START
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_subevent_operation_start_get_status(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field operation_id from event AVRCP_SUBEVENT_OPERATION_START
+ * @param event packet
+ * @return operation_id
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_subevent_operation_start_get_operation_id(const uint8_t * event){
+    return event[6];
+}
+
+/**
+ * @brief Get field con_handle from event AVRCP_SUBEVENT_OPERATION_COMPLETE
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t avrcp_subevent_operation_complete_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field status from event AVRCP_SUBEVENT_OPERATION_COMPLETE
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_subevent_operation_complete_get_status(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field operation_id from event AVRCP_SUBEVENT_OPERATION_COMPLETE
+ * @param event packet
+ * @return operation_id
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_subevent_operation_complete_get_operation_id(const uint8_t * event){
+    return event[6];
+}
+
+/**
+ * @brief Get field con_handle from event AVRCP_SUBEVENT_PLAYER_APPLICATION_VALUE_RESPONSE
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t avrcp_subevent_player_application_value_response_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field status from event AVRCP_SUBEVENT_PLAYER_APPLICATION_VALUE_RESPONSE
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_subevent_player_application_value_response_get_status(const uint8_t * event){
+    return event[5];
 }
 
 
