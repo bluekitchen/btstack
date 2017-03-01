@@ -186,6 +186,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             break;
                         case AVRCP_SUBEVENT_PLAYER_APPLICATION_VALUE_RESPONSE:
                             // response to set shuffle and repeat mode
+                            printf("\n");
                             break;
                         default:
                             printf("Not implemented\n");
