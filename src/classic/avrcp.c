@@ -42,7 +42,7 @@
 #include <unistd.h>
 
 #include "btstack.h"
-#include "avrcp.h"
+#include "classic/avrcp.h"
 
 #define AV_REMOTE_CONTROL_TARGET        0x110C
 #define AV_REMOTE_CONTROL               0x110E

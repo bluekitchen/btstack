@@ -52,7 +52,7 @@
 #include "hci_dump.h"
 #include "l2cap.h"
 #include "stdin_support.h"
-#include "avrcp.h"
+#include "classic/avrcp.h"
 
 #define AVRCP_BROWSING_ENABLED 0
 static btstack_packet_callback_registration_t hci_event_callback_registration;
