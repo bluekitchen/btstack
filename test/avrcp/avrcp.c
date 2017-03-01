@@ -926,11 +926,6 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                     event[pos++] = ctype;
                     for (i = 0; i < sizeof(attribute_order); i++){
                         avrcp_media_attribute_id_t attr_id = attribute_order[i];
-                        if (items[attr_id-1].value){
-                            printf("Adding attribute id %u, len %d, %s\n", attr_id, items[attr_id-1].len, items[attr_id-1].value);
-                        } else{
-                            printf("Adding empty attribute id %u, len %d\n", attr_id, items[attr_id-1].len);
-                        }
                         uint16_t value_len = 0;
                         switch (attr_id){
                             case AVRCP_MEDIA_ATTR_TITLE:
