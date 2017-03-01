@@ -91,6 +91,7 @@ const uint8_t adv_data_len = sizeof(adv_data);
 
 static void le_counter_setup(void){
 
+#if 0
     // register for HCI events
     hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
@@ -127,6 +128,8 @@ static void le_counter_setup(void){
 
     // beat once
     beat();
+#endif
+
 }
 /* LISTING_END */
 

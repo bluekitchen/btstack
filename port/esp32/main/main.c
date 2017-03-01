@@ -44,7 +44,7 @@
 #include "btstack_event.h"
 #include "btstack_memory.h"
 #include "btstack_run_loop.h"
-#include "btstack_run_loop_embedded.h"
+#include "btstack_run_loop_freertos_single_threaded.h"
 //#include "classic/btstack_link_key_db.h"
 #include "hci.h"
 #include "hci_dump.h"
@@ -54,6 +54,13 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
+uint32_t esp_log_timestamp();
+
+uint32_t hal_time_ms(void) {
+    // super hacky way to get ms
+    return esp_log_timestamp();
+}
+
 // assert pre-buffer for packet type is available
 #if !defined(HCI_OUTGOING_PRE_BUFFER_SIZE) || (HCI_OUTGOING_PRE_BUFFER_SIZE == 0)
 #error HCI_OUTGOING_PRE_BUFFER_SIZE not defined. Please update hci.h
@@ -61,22 +68,38 @@
 
 static int _can_send_packet_now = 1;
 
+static uint8_t * received_packet_data;
+static uint16_t  received_packet_len;
+
 static void (*transport_packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size);
 
-static void host_send_pkt_available_cb(void)
-{
-    _can_send_packet_now = 1;
-    log_debug("host_send_pkt_available_cb, setting _can_send_packet_now = %u", _can_send_packet_now);
-
-    // notify upper stack that provided buffer can be used again
-    uint8_t event[] = { HCI_EVENT_TRANSPORT_PACKET_SENT, 0};
-    transport_packet_handler(HCI_EVENT_PACKET, &event[0], sizeof(event));
-    log_debug("host_send_pkt_available_cb, after sending HCI_EVENT_TRANSPORT_PACKET_SENT, _can_send_packet_now = %u", _can_send_packet_now);
+// executed on main run loop
+static void transport_deliver_packet(void *arg){
+    log_info("transport_deliver_packet len %u", received_packet_len);
+    // deliver packet
+    transport_packet_handler(received_packet_data[0], &received_packet_data[1], received_packet_len-1);
 }
 
-static int host_recv_pkt_cb(uint8_t *data, uint16_t len)
-{
-    transport_packet_handler(data[0], &data[1], len-1);
+// executed on main run loop
+static void transport_notify_packet_send(void *arg){
+    // notify upper stack that it might be possible to send again
+    uint8_t event[] = { HCI_EVENT_TRANSPORT_PACKET_SENT, 0};
+    transport_packet_handler(HCI_EVENT_PACKET, &event[0], sizeof(event));
+}
+
+static void host_send_pkt_available_cb(void){
+    _can_send_packet_now = 1;
+    log_debug("host_send_pkt_available_cb, setting _can_send_packet_now = %u", _can_send_packet_now);
+    // notify upper stack that provided buffer can be used again
+    btstack_run_loop_freertos_single_threaded_execute_code_on_main_thread(&transport_notify_packet_send, NULL);
+}
+
+static int host_recv_pkt_cb(uint8_t *data, uint16_t len){
+    printf("host_recv_pkt_cb: %u bytes\n", len);
+    received_packet_data = data;
+    received_packet_len  = len;
+    // probably will need mutex here
+    btstack_run_loop_freertos_single_threaded_execute_code_on_main_thread(&transport_deliver_packet, NULL);
     return 0;
 }
 
@@ -93,21 +116,13 @@ static void transport_init(const void *transport_config){
     log_info("transport_init");
 }
 
-static btstack_data_source_t hci_transport_data_source;
-
-static void transport_run(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type){
-    (void)ds;
-    (void)callback_type;
-}
-
 /**
  * open transport connection
  */
 static int transport_open(void){
     log_info("transport_open");
-    btstack_run_loop_set_data_source_handler(&hci_transport_data_source, &transport_run);
-    btstack_run_loop_enable_data_source_callbacks(&hci_transport_data_source, DATA_SOURCE_CALLBACK_POLL);
-    btstack_run_loop_add_data_source(&hci_transport_data_source);
+    esp_bt_controller_init();
+    esp_vhci_host_register_callback(&vhci_host_cb);
     return 0;
 }
 
@@ -116,7 +131,6 @@ static int transport_open(void){
  */
 static int transport_close(void){
     log_info("transport_close");
-    btstack_run_loop_remove_data_source(&hci_transport_data_source);
     return 0;
 }
 
@@ -187,7 +201,7 @@ static void btstack_setup(void){
 
     /// GET STARTED with BTstack ///
     btstack_memory_init();
-    btstack_run_loop_init(btstack_run_loop_embedded_get_instance());
+    btstack_run_loop_init(btstack_run_loop_freertos_single_threaded_get_instance());
 
     // init HCI
     hci_init(transport_get_instance(), NULL);
@@ -201,12 +215,9 @@ static void btstack_setup(void){
 
 extern int btstack_main(int argc, const char * argv[]);
 
-/*
- * @brief: send HCI commands to perform BLE advertising;
- */
-void btstack_task(void *pvParameters)
-{
-    esp_vhci_host_register_callback(&vhci_host_cb);
+// main
+int app_main(void){
+
     printf("btstack_task start\n");
 
     printf("-------------- btstack_setup\n");
@@ -220,18 +231,8 @@ void btstack_task(void *pvParameters)
     // printf("Entering btstack run loop!\n");
     // btstack_run_loop_execute();
     // printf("Run loop exited...this is unexpected\n");
-}
 
-void hal_led_toggle() {}
-
-// main
-int app_main(void){
-
-    esp_bt_controller_init();
-    btstack_task(NULL);
-
-    // xTaskCreatePinnedToCore(&btstack_task, "btstack_task", 2048, NULL, 5, NULL, 0);
-
+    btstack_run_loop_execute();
     return 0;
 }
 
