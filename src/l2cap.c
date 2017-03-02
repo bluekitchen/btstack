@@ -272,7 +272,7 @@ int l2cap_send_connectionless(hci_con_handle_t con_handle, uint16_t cid, uint8_t
 }
 
 static void l2cap_emit_can_send_now(btstack_packet_handler_t packet_handler, uint16_t channel) {
-    log_info("L2CAP_EVENT_CHANNEL_CAN_SEND_NOW local_cid 0x%x", channel);
+    log_debug("L2CAP_EVENT_CHANNEL_CAN_SEND_NOW local_cid 0x%x", channel);
     uint8_t event[4];
     event[0] = L2CAP_EVENT_CAN_SEND_NOW;
     event[1] = sizeof(event) - 2;
