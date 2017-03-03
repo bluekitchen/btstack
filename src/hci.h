@@ -94,9 +94,8 @@ extern "C" {
 
 // additional pre- and post-packet buffer for packets to Bluetooth module
 // - pre-buffer used for HCI Transport H4 variants
-// - post-buffer used for HCI Transport H5
-#define HCI_OUTGOING_PRE_BUFFER_SIZE 1
-#define HCI_OUTGOING_POST_BUFFER_SIZE 2
+#define HCI_OUTGOING_PRE_BUFFER_SIZE  1
+#define HCI_OUTGOING_POST_BUFFER_SIZE 0
 
 // BNEP may uncompress the IP Header by 16 bytes
 #ifndef HCI_INCOMING_PRE_BUFFER_SIZE
