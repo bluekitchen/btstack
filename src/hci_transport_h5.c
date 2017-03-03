@@ -279,9 +279,9 @@ static void hci_transport_link_calc_header(uint8_t * header,
 static void hci_transport_link_send_control(const uint8_t * message, int message_len){
     uint8_t header[4];
     hci_transport_link_calc_header(header, 0, 0, link_peer_supports_data_integrity_check, 0, LINK_CONTROL_PACKET_TYPE, message_len);
+    uint8_t message_with_dic[LINK_CONTROL_MAX_LEN + 2];
     if (link_peer_supports_data_integrity_check){
         // append data integrity check value / need to copy control message
-        uint8_t message_with_dic[LINK_CONTROL_MAX_LEN + 2];
         memcpy(message_with_dic, message, message_len);
         uint16_t dic = crc16_calc_for_slip_frame(header, message, message_len);
         big_endian_store_16(message_with_dic, message_len, dic);
