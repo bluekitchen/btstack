@@ -49,11 +49,6 @@
 #include "hci_transport.h"
 #include "btstack_uart_block.h"
 
-// assert post-buffer for 16-bit data integrity check is available
-#if !defined(HCI_OUTGOING_POST_BUFFER_SIZE) || (HCI_OUTGOING_POST_BUFFER_SIZE < 2)
-#error HCI_OUTGOING_POST_BUFFER_SIZE not defined. Please update hci.h
-#endif
-
 typedef enum {
     LINK_UNINITIALIZED,
     LINK_INITIALIZED,
