@@ -132,39 +132,50 @@ void btstack_run_loop_freertos_single_threaded_execute_code_on_main_thread_from_
 /**
  * Execute run_loop
  */
-static void btstack_run_loop_freertos_single_threaded_execute(void) {
+static void btstack_run_loop_freertos_single_threaded_task(void *pvParameter){
+    UNUSED(pvParameter);
 
-    log_info("run loop execute");
+    log_debug("RL: execute");
 
     while (1) {
+
         // get next timeout
         uint32_t timeout_ms = portMAX_DELAY;
+        log_debug("RL: portMAX_DELAY %u", portMAX_DELAY);
         if (timers) {
             btstack_timer_source_t * ts = (btstack_timer_source_t *) timers;
+            log_debug("RL: have timer %p", ts);
             uint32_t now = btstack_run_loop_freertos_single_threaded_get_time_ms();
+            log_debug("RL: now %u, expires %u", now, ts->timeout);
             if (ts->timeout < now){
                 // remove timer before processing it to allow handler to re-register with run loop
                 btstack_run_loop_remove_timer(ts);
-                printf("RL: timer %p\n", ts->process);
+                log_debug("RL: first timer %p", ts->process);
                 ts->process(ts);
                 continue;
             }
             timeout_ms = ts->timeout - now;
         }
-                
+
         // pop function call
         function_call_t message = { NULL, NULL };
-        printf("RL: wait with timeout %u\n", (int) timeout_ms);
-        BaseType_t res = xQueueReceive( &btstack_run_loop_queue, &message, pdMS_TO_TICKS(timeout_ms));
-        printf("RL: queue receive res %u\n", res);
+        log_debug("RL: wait with timeout %u", (int) timeout_ms);
+        BaseType_t res = xQueueReceive( btstack_run_loop_queue, &message, pdMS_TO_TICKS(timeout_ms));
+        log_debug("RL: queue receive res %u", res);
         if (res == pdPASS && message.fn){
             // execute code on run loop
-            printf("RL: execute %p\n", message.fn);
+            log_debug("RL: execute %p", message.fn);
             message.fn(message.arg);
         } else {
-            printf("RL: just timeout\n");
+            log_debug("RL: just timeout");
         }
     }
+}
+
+static void btstack_run_loop_freertos_single_threaded_execute(void) {
+    // use dedicated task, might not be needed in all cases
+    xTaskCreate(&btstack_run_loop_freertos_single_threaded_task, "btstack_task", 2048, NULL, 5, NULL);
+    // btstack_run_loop_freertos_single_threaded_task(NULL);
 }
 
 static void btstack_run_loop_freertos_single_threaded_init(void){
@@ -173,7 +184,7 @@ static void btstack_run_loop_freertos_single_threaded_init(void){
     // queue to receive events: up to 2 calls from transport, up to 3 for app
     btstack_run_loop_queue = xQueueCreate(5, sizeof(function_call_t));
 
-    printf("run loop init, queue item size %u\n", (int) sizeof(function_call_t));
+    log_info("run loop init, queue item size %u", (int) sizeof(function_call_t));
 }
 
 /**
