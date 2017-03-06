@@ -45,7 +45,6 @@
 
 #include "btstack_linked_list.h"
 #include "btstack_debug.h"
-#include "btstack_run_loop.h"
 #include "btstack_run_loop_freertos_single_threaded.h"
 
 // #include "hal_time_ms.h"
@@ -168,13 +167,13 @@ static void btstack_run_loop_freertos_single_threaded_execute(void) {
     }
 }
 
-static void btstack_run_loop_freertos_single_threaded_btstack_run_loop_init(void){
+static void btstack_run_loop_freertos_single_threaded_init(void){
     timers = NULL;
 
     // queue to receive events: up to 2 calls from transport, up to 3 for app
     btstack_run_loop_queue = xQueueCreate(5, sizeof(function_call_t));
 
-    log_info("run loop init");
+    printf("run loop init, queue item size %u\n", (int) sizeof(function_call_t));
 }
 
 /**
@@ -185,7 +184,7 @@ const btstack_run_loop_t * btstack_run_loop_freertos_single_threaded_get_instanc
 }
 
 static const btstack_run_loop_t btstack_run_loop_freertos_single_threaded = {
-    &btstack_run_loop_freertos_single_threaded_btstack_run_loop_init,
+    &btstack_run_loop_freertos_single_threaded_init,
     NULL,
     NULL,
     NULL,

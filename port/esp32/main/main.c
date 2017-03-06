@@ -120,8 +120,18 @@ static void transport_init(const void *transport_config){
  * open transport connection
  */
 static int transport_open(void){
+    esp_err_t ret;
+
     log_info("transport_open");
+
     esp_bt_controller_init();
+
+    ret = esp_bt_controller_enable(ESP_BT_MODE_BTDM);
+    if (ret) {
+        log_error("transpprt: esp_bt_controller_enable failed");
+        return -1;
+    }
+
     esp_vhci_host_register_callback(&vhci_host_cb);
     return 0;
 }
