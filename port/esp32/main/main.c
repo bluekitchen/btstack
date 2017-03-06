@@ -53,6 +53,7 @@
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "freertos/semphr.h"
 
 uint32_t esp_log_timestamp();
 
@@ -71,6 +72,8 @@ static int _can_send_packet_now = 1;
 static uint8_t * received_packet_data;
 static uint16_t  received_packet_len;
 
+static SemaphoreHandle_t packet_handled_notify;
+
 static void (*transport_packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size);
 
 // executed on main run loop
@@ -78,6 +81,9 @@ static void transport_deliver_packet(void *arg){
     log_info("transport_deliver_packet len %u", received_packet_len);
     // deliver packet
     transport_packet_handler(received_packet_data[0], &received_packet_data[1], received_packet_len-1);
+    log_info("transport_deliver_packet done");
+    // signal bluetooth task to continue
+    xSemaphoreGive(packet_handled_notify);
 }
 
 // executed on main run loop
@@ -87,19 +93,23 @@ static void transport_notify_packet_send(void *arg){
     transport_packet_handler(HCI_EVENT_PACKET, &event[0], sizeof(event));
 }
 
+// run from VHCI Task
 static void host_send_pkt_available_cb(void){
     _can_send_packet_now = 1;
-    log_debug("host_send_pkt_available_cb, setting _can_send_packet_now = %u", _can_send_packet_now);
+    // log_debug("host_send_pkt_available_cb, setting _can_send_packet_now = %u", _can_send_packet_now);
     // notify upper stack that provided buffer can be used again
     btstack_run_loop_freertos_single_threaded_execute_code_on_main_thread(&transport_notify_packet_send, NULL);
 }
 
+// run from VHCI Task
 static int host_recv_pkt_cb(uint8_t *data, uint16_t len){
-    printf("host_recv_pkt_cb: %u bytes\n", len);
+    // log_info("host_recv_pkt_cb: %u bytes, type %u, begins %02x %02x", len, data[0], data[1], data[2]);
     received_packet_data = data;
     received_packet_len  = len;
     // probably will need mutex here
     btstack_run_loop_freertos_single_threaded_execute_code_on_main_thread(&transport_deliver_packet, NULL);
+    // wait until processed
+    xSemaphoreTake(packet_handled_notify, portMAX_DELAY);
     return 0;
 }
 
@@ -123,6 +133,9 @@ static int transport_open(void){
     esp_err_t ret;
 
     log_info("transport_open");
+
+    // create 
+    packet_handled_notify = xSemaphoreCreateBinary();
 
     esp_bt_controller_init();
 
@@ -153,7 +166,7 @@ static void transport_register_packet_handler(void (*handler)(uint8_t packet_typ
 }
 
 static int transport_can_send_packet_now(uint8_t packet_type) {
-    log_debug("transport_can_send_packet_now %u, esp_vhci_host_check_send_available %u\n", _can_send_packet_now, esp_vhci_host_check_send_available());
+    log_debug("transport_can_send_packet_now %u, esp_vhci_host_check_send_available %u", _can_send_packet_now, esp_vhci_host_check_send_available());
     return _can_send_packet_now;
 }
 
