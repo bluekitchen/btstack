@@ -1255,8 +1255,9 @@ typedef uint8_t sm_key_t[16];
 #define AVDTP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED     0x04
 
 /**
- * @format 1
+ * @format 1H
  * @param subevent_code
+ * @param con_handle
  */
 #define AVDTP_SUBEVENT_SIGNALING_CONNECTION_RELEASED        0x05
 
@@ -1326,11 +1327,27 @@ typedef uint8_t sm_key_t[16];
  */
 #define AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CONFIGURATION        0x0A
 
+/**
+ * @format 1H1
+ * @param subevent_code
+ * @param con_handle
+ * @param status 0 == OK
+ */
+#define AVDTP_SUBEVENT_STREAMING_CONNECTION_ESTABLISHED     0x0B
+
+/**
+ * @format 1H
+ * @param subevent_code
+ * @param con_handle
+ */
+#define AVDTP_SUBEVENT_STREAMING_CONNECTION_RELEASED        0x0C
+
+
 
 /** AVRCP Subevent */
 
 /**
- * @format 1H12B1
+ * @format 1H12B
  * @param subevent_code
  * @param con_handle
  * @param status 0 == OK

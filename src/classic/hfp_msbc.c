@@ -108,7 +108,7 @@ int hfp_msbc_num_bytes_in_stream(void){
 }
 
 int hfp_msbc_num_audio_samples_per_frame(void){
-    return btstack_sbc_encoder_num_audio_samples();
+    return btstack_sbc_encoder_num_audio_frames();
 }
 
 

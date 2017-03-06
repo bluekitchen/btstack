@@ -52,6 +52,8 @@
 
 #include <stdint.h>
 #include "hci.h"
+#include "classic/btstack_sbc.h"
+#include "btstack_ring_buffer.h"
 
 #if defined __cplusplus
 extern "C" {
@@ -284,9 +286,14 @@ typedef enum {
     AVDTP_STREAM_ENDPOINT_IDLE,
     AVDTP_STREAM_ENDPOINT_CONFIGURATION_SUBSTATEMACHINE,
     AVDTP_STREAM_ENDPOINT_CONFIGURED,
+
+    AVDTP_STREAM_ENDPOINT_W2_REQUEST_OPEN_STREAM,
     AVDTP_STREAM_ENDPOINT_W4_L2CAP_FOR_MEDIA_CONNECTED,
+
     AVDTP_STREAM_ENDPOINT_OPENED, 
     AVDTP_STREAM_ENDPOINT_STREAMING, 
+    AVDTP_STREAM_ENDPOINT_STREAMING_W2_SEND,
+
     AVDTP_STREAM_ENDPOINT_CLOSING,
     AVDTP_STREAM_ENDPOINT_ABORTING,
     AVDTP_STREAM_ENDPOINT_W4_L2CAP_FOR_MEDIA_DISCONNECTED
@@ -297,7 +304,9 @@ typedef enum {
     AVDTP_INITIATOR_W2_SET_CONFIGURATION,
     AVDTP_INITIATOR_W2_SUSPEND_STREAM_WITH_SEID,
     AVDTP_INITIATOR_W2_RECONFIGURE_STREAM_WITH_SEID,
-    AVDTP_INITIATOR_W2_MEDIA_CONNECT,
+    
+    AVDTP_INITIATOR_W2_OPEN_STREAM,
+
     AVDTP_INITIATOR_W2_STREAMING_START,
     AVDTP_INITIATOR_W2_STREAMING_STOP,
     AVDTP_INITIATOR_W2_STREAMING_ABORT,
@@ -313,9 +322,6 @@ typedef enum {
     AVDTP_ACCEPTOR_W2_ANSWER_RECONFIGURE,
     AVDTP_ACCEPTOR_W2_ANSWER_GET_CONFIGURATION,
     AVDTP_ACCEPTOR_W2_ANSWER_OPEN_STREAM,
-    
-    AVDTP_ACCEPTOR_W4_L2CAP_FOR_MEDIA_CONNECTED,
-    
     AVDTP_ACCEPTOR_W2_ANSWER_START_STREAM,
     AVDTP_ACCEPTOR_W2_ANSWER_CLOSE_STREAM,
     AVDTP_ACCEPTOR_W2_ANSWER_ABORT_STREAM,
@@ -395,6 +401,7 @@ typedef struct {
     avdtp_signaling_packet_t signaling_packet;
 
     uint8_t disconnect;
+
     uint8_t initiator_transaction_label;
     uint8_t acceptor_transaction_label;
     uint8_t query_seid;
@@ -441,7 +448,55 @@ typedef struct avdtp_stream_endpoint {
     // register request for media L2cap connection release
     uint8_t media_disconnect;
     uint8_t media_connect;
+
+    btstack_timer_source_t fill_audio_ring_buffer_timer;
+    uint32_t time_audio_data_sent; // ms
+    uint32_t acc_num_missed_samples;
+    btstack_sbc_encoder_state_t sbc_encoder_state;
+    uint16_t sequence_number;
+    
+    btstack_ring_buffer_t audio_ring_buffer;
+    btstack_ring_buffer_t sbc_ring_buffer;
 } avdtp_stream_endpoint_t;
+
+typedef struct {
+    btstack_linked_list_t connections;
+    btstack_linked_list_t stream_endpoints;
+    uint16_t stream_endpoints_id_counter;
+    btstack_packet_handler_t avdtp_callback;
+    void (*handle_media_data)(avdtp_stream_endpoint_t * stream_endpoint, uint8_t *packet, uint16_t size);
+    btstack_packet_handler_t packet_handler;
+} avdtp_context_t; 
+
+void avdtp_register_media_transport_category(avdtp_stream_endpoint_t * stream_endpoint);
+void avdtp_register_reporting_category(avdtp_stream_endpoint_t * stream_endpoint);
+void avdtp_register_delay_reporting_category(avdtp_stream_endpoint_t * stream_endpoint);
+void avdtp_register_recovery_category(avdtp_stream_endpoint_t * stream_endpoint, uint8_t maximum_recovery_window_size, uint8_t maximum_number_media_packets);
+void avdtp_register_content_protection_category(avdtp_stream_endpoint_t * stream_endpoint, uint16_t cp_type, const uint8_t * cp_type_value, uint8_t cp_type_value_len);
+void avdtp_register_header_compression_category(avdtp_stream_endpoint_t * stream_endpoint, uint8_t back_ch, uint8_t media, uint8_t recovery);
+void avdtp_register_media_codec_category(avdtp_stream_endpoint_t * stream_endpoint, avdtp_media_type_t media_type, avdtp_media_codec_type_t media_codec_type, const uint8_t * media_codec_info, uint16_t media_codec_info_len);
+void avdtp_register_multiplexing_category(avdtp_stream_endpoint_t * stream_endpoint, uint8_t fragmentation);
+void avdtp_handle_can_send_now(avdtp_connection_t * connection, uint16_t l2cap_cid, avdtp_context_t * context);
+
+void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size, avdtp_context_t * context);
+avdtp_connection_t * avdtp_create_connection(bd_addr_t remote_addr, avdtp_context_t * context);
+avdtp_stream_endpoint_t * avdtp_create_stream_endpoint(avdtp_sep_type_t sep_type, avdtp_media_type_t media_type, avdtp_context_t * context);
+
+void avdtp_disconnect(uint16_t con_handle, avdtp_context_t * context);
+void avdtp_open_stream(uint16_t con_handle, uint8_t acp_seid, avdtp_context_t * context);
+void avdtp_start_stream(uint16_t con_handle, uint8_t acp_seid, avdtp_context_t * context);
+void avdtp_stop_stream(uint16_t con_handle, uint8_t acp_seid, avdtp_context_t * context);
+void avdtp_abort_stream(uint16_t con_handle, uint8_t acp_seid, avdtp_context_t * context);
+void avdtp_discover_stream_endpoints(uint16_t con_handle, avdtp_context_t * context);
+void avdtp_get_capabilities(uint16_t con_handle, uint8_t acp_seid, avdtp_context_t * context);
+void avdtp_get_all_capabilities(uint16_t con_handle, uint8_t acp_seid, avdtp_context_t * context);
+void avdtp_get_configuration(uint16_t con_handle, uint8_t acp_seid, avdtp_context_t * context);
+void avdtp_set_configuration(uint16_t con_handle, uint8_t int_seid, uint8_t acp_seid, uint16_t configured_services_bitmap, avdtp_capabilities_t configuration, avdtp_context_t * context);
+void avdtp_reconfigure(uint16_t con_handle, uint8_t acp_seid, uint16_t configured_services_bitmap, avdtp_capabilities_t configuration, avdtp_context_t * context);
+void avdtp_suspend(uint16_t con_handle, uint8_t acp_seid, avdtp_context_t * context);
+
+void avdtp_source_stream_data_start(uint16_t con_handle);
+void avdtp_source_stream_data_stop(uint16_t con_handle);
 
 #if defined __cplusplus
 }

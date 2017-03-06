@@ -68,7 +68,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 static void gap_le_advertisements_setup(void){
     hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
-
     // Active scanning, 100% (scan interval = scan window)
     gap_set_scan_parameters(1,48,48);
 }

@@ -3933,6 +3933,15 @@ static inline uint8_t avdtp_subevent_signaling_connection_established_get_status
     return event[11];
 }
 
+/**
+ * @brief Get field con_handle from event AVDTP_SUBEVENT_SIGNALING_CONNECTION_RELEASED
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t avdtp_subevent_signaling_connection_released_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
 
 /**
  * @brief Get field handle from event AVDTP_SUBEVENT_SIGNALING_SEP_FOUND
@@ -4261,6 +4270,35 @@ static inline int avdtp_subevent_signaling_media_codec_other_configuration_get_m
  */
 static inline const uint8_t * avdtp_subevent_signaling_media_codec_other_configuration_get_media_codec_information(const uint8_t * event){
     return &event[11];
+}
+
+/**
+ * @brief Get field con_handle from event AVDTP_SUBEVENT_STREAMING_CONNECTION_ESTABLISHED
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t avdtp_subevent_streaming_connection_established_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field status from event AVDTP_SUBEVENT_STREAMING_CONNECTION_ESTABLISHED
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t avdtp_subevent_streaming_connection_established_get_status(const uint8_t * event){
+    return event[5];
+}
+
+/**
+ * @brief Get field con_handle from event AVDTP_SUBEVENT_STREAMING_CONNECTION_RELEASED
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t avdtp_subevent_streaming_connection_released_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
 }
 
 /**
