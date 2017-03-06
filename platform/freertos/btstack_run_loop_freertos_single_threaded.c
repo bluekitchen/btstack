@@ -174,7 +174,7 @@ static void btstack_run_loop_freertos_single_threaded_task(void *pvParameter){
 
 static void btstack_run_loop_freertos_single_threaded_execute(void) {
     // use dedicated task, might not be needed in all cases
-    xTaskCreate(&btstack_run_loop_freertos_single_threaded_task, "btstack_task", 2048, NULL, 5, NULL);
+    xTaskCreate(&btstack_run_loop_freertos_single_threaded_task, "btstack_task", 3072, NULL, 5, NULL);
     // btstack_run_loop_freertos_single_threaded_task(NULL);
 }
 
