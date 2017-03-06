@@ -11,6 +11,7 @@ BTSTACK_ROOT := ../../..
 COMPONENT_ADD_INCLUDEDIRS := \
 	$(BTSTACK_ROOT)/src/ble/gatt-service \
 	$(BTSTACK_ROOT)/src/ble \
+	$(BTSTACK_ROOT)/src/classic \
 	$(BTSTACK_ROOT)/src \
 	$(BTSTACK_ROOT)/platform/freertos \
 	. \
@@ -18,6 +19,7 @@ COMPONENT_ADD_INCLUDEDIRS := \
 COMPONENT_SRCDIRS := \
 	$(BTSTACK_ROOT)/src/ble/gatt-service \
 	$(BTSTACK_ROOT)/src/ble \
+	$(BTSTACK_ROOT)/src/classic \
 	$(BTSTACK_ROOT)/src/ \
 	$(BTSTACK_ROOT)/platform/freertos \
 	. \
