@@ -80,12 +80,12 @@ int main (int argc, const char * argv[]){
     }
     
     hfp_msbc_init();
-    int num_samples = hfp_msbc_num_audio_samples_per_frame() * 2;
+    int num_samples = hfp_msbc_num_audio_samples_per_frame();
 
     while (1){
         if (hfp_msbc_can_encode_audio_frame_now()){
-            int bytes_read = wav_reader_read_int16(num_samples, read_buffer);
-            if (bytes_read < num_samples) break;
+            int error = wav_reader_read_int16(num_samples, read_buffer);
+            if (error) break;
 
             hfp_msbc_encode_audio_frame(read_buffer);
         }

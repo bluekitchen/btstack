@@ -133,9 +133,12 @@ typedef struct {
 } avdtp_media_codec_configuration_sbc_t;
 
 // mac 2011: static bd_addr_t remote = {0x04, 0x0C, 0xCE, 0xE4, 0x85, 0xD3};
-// pts: static bd_addr_t remote = {0x00, 0x1B, 0xDC, 0x08, 0x0A, 0xA5};
+// pts: 
+static bd_addr_t remote = {0x00, 0x1B, 0xDC, 0x08, 0x0A, 0xA5};
 // mac 2013: static bd_addr_t remote = {0x84, 0x38, 0x35, 0x65, 0xd1, 0x15};
-static bd_addr_t remote = {0x84, 0x38, 0x35, 0x65, 0xd1, 0x15};
+
+// bt dongle: -u 02-02 static bd_addr_t remote = {0x00, 0x02, 0x72, 0xDC, 0x31, 0xC1};
+
 static uint16_t con_handle = 0;
 static uint8_t sdp_avdtp_sink_service_buffer[150];
 static avdtp_sep_t sep;
@@ -642,7 +645,7 @@ int btstack_main(int argc, const char * argv[]){
 
 //#ifndef SMG_BI
     local_stream_endpoint = avdtp_sink_create_stream_endpoint(AVDTP_SINK, AVDTP_AUDIO);
-    local_stream_endpoint->sep.seid = 5;
+    local_stream_endpoint->sep.seid = 1;
     avdtp_sink_register_media_transport_category(local_stream_endpoint->sep.seid);
     avdtp_sink_register_media_codec_category(local_stream_endpoint->sep.seid, AVDTP_AUDIO, AVDTP_CODEC_SBC, media_sbc_codec_capabilities, sizeof(media_sbc_codec_capabilities));
 //#endif
@@ -650,17 +653,18 @@ int btstack_main(int argc, const char * argv[]){
     // avdtp_sink_register_content_protection_category(seid, 2, 2, NULL, 0);
 
     avdtp_sink_register_media_handler(&handle_l2cap_media_data_packet);
-
+    printf("reistered media handler\n");
     // Initialize SDP 
     sdp_init();
     memset(sdp_avdtp_sink_service_buffer, 0, sizeof(sdp_avdtp_sink_service_buffer));
     a2dp_sink_create_sdp_record(sdp_avdtp_sink_service_buffer, 0x10001, 1, NULL, NULL);
     sdp_register_service(sdp_avdtp_sink_service_buffer);
     
-    gap_set_local_name("BTstack AVDTP Test");
+    gap_set_local_name("BTstack A2DP Sink Test");
     gap_discoverable_control(1);
     gap_set_class_of_device(0x200408);
-    
+    printf("sdp, gap done\n");
+
     // turn on!
     hci_power_control(HCI_POWER_ON);
 
