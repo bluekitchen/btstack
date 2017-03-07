@@ -3,7 +3,8 @@
 # project subdirectory.
 #
 
-PROJECT_NAME := esp32_le_counter
+PROJECT_NAME := spp_and_le_streamer
+EXTRA_COMPONENT_DIRS := components
 
 include $(IDF_PATH)/make/project.mk
 
