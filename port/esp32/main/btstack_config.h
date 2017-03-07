@@ -20,7 +20,7 @@
 // #define ENABLE_EHCILL
 
 // BTstack configuration. buffers, sizes, ...
-#define HCI_ACL_PAYLOAD_SIZE 52
+#define HCI_ACL_PAYLOAD_SIZE (1691 + 4)
 #define MAX_NR_BNEP_CHANNELS MAX_SPP_CONNECTIONS
 #define MAX_NR_BNEP_SERVICES 1
 #define MAX_NR_BTSTACK_LINK_KEY_DB_MEMORY_ENTRIES  2
