@@ -1,6 +1,6 @@
 # BTstack Port for the Espressif ESP32 Platform
 
-Status: Experimental/initial port. Only LE Counter example provided. Timers are not supported. 
+Status: Initial port. Only SPP + LE Throughput example provided.
 
 ## Setup
 
