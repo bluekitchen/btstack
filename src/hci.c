@@ -1568,21 +1568,20 @@ static void event_handler(uint8_t *packet, int size){
                 log_info("local name: %s", &packet[6]);
             }
             if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_read_buffer_size)){
-                // from offset 5
-                // status 
                 // "The HC_ACL_Data_Packet_Length return parameter will be used to determine the size of the L2CAP segments contained in ACL Data Packets"
-                hci_stack->acl_data_packet_length = little_endian_read_16(packet, 6);
-                hci_stack->sco_data_packet_length = packet[8];
-                hci_stack->acl_packets_total_num  = little_endian_read_16(packet, 9);
-                hci_stack->sco_packets_total_num  = little_endian_read_16(packet, 11); 
-
                 if (hci_stack->state == HCI_STATE_INITIALIZING){
-                    // determine usable ACL payload size
-                    if (HCI_ACL_PAYLOAD_SIZE < hci_stack->acl_data_packet_length){
-                        hci_stack->acl_data_packet_length = HCI_ACL_PAYLOAD_SIZE;
-                    }
-                    log_info("hci_read_buffer_size: acl used size %u, count %u / sco size %u, count %u",
-                             hci_stack->acl_data_packet_length, hci_stack->acl_packets_total_num,
+                    uint16_t acl_len = little_endian_read_16(packet, 6);
+                    uint16_t sco_len = packet[8];
+
+                    // determine usable ACL/SCO payload size
+                    hci_stack->acl_data_packet_length = btstack_min(acl_len, HCI_ACL_PAYLOAD_SIZE);
+                    hci_stack->sco_data_packet_length = btstack_min(sco_len, HCI_ACL_PAYLOAD_SIZE);
+
+                    hci_stack->acl_packets_total_num  = little_endian_read_16(packet, 9);
+                    hci_stack->sco_packets_total_num  = little_endian_read_16(packet, 11); 
+
+                    log_info("hci_read_buffer_size: ACL size module %u -> used %u, count %u / SCO size %u, count %u",
+                             acl_len, hci_stack->acl_data_packet_length, hci_stack->acl_packets_total_num,
                              hci_stack->sco_data_packet_length, hci_stack->sco_packets_total_num); 
                 }
             }
