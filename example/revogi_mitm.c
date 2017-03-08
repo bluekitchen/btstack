@@ -50,7 +50,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "le_counter.h"
+#include "revogi_mitm.h"
 #include "btstack.h"
 
 /* @section Main Application Setup
@@ -68,7 +68,7 @@
 /* LISTING_START(MainConfiguration): Init L2CAP SM ATT Server and start heartbeat timer */
 static int  le_notification_enabled;
 static btstack_packet_callback_registration_t hci_event_callback_registration;
-static hci_con_handle_t con_handle;
+// static hci_con_handle_t con_handle;
 
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static uint16_t att_read_callback(hci_con_handle_t con_handle, uint16_t att_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size);
@@ -77,6 +77,10 @@ static int att_write_callback(hci_con_handle_t con_handle, uint16_t att_handle, 
 const uint8_t adv_data[] = {
     // Flags general discoverable, BR/EDR not supported
     0x02, 0x01, 0x06, 
+    // Service 16-bit: FFF0
+    0x03, 0x02, 0xF0, 0xFF,
+    // Manufacturer specific data (aa bb - address 78:A5:04:82:1B:A4)
+    0x09, 0xFF, 0x04, 0x1E, 0x78, 0xA5, 0x04, 0x82, 0x1B, 0xA4,    
     // Name
     0x08, 0x09, 'D', 'E', 'L', 'I', 'G', 'H', 'T',  
 };
@@ -112,19 +116,6 @@ static void le_counter_setup(void){
 }
 /* LISTING_END */
 
-/*
- * @section Heartbeat Handler
- *
- * @text The heartbeat handler updates the value of the single Characteristic provided in this example,
- * and request a ATT_EVENT_CAN_SEND_NOW to send a notification if enabled see Listing heartbeat.
- */
-
- /* LISTING_START(heartbeat): Hearbeat Handler */
-static char counter_string[30];
-static int  counter_string_len;
-
-/* LISTING_END */
-
 /* 
  * @section Packet Handler
  *
@@ -145,7 +136,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     le_notification_enabled = 0;
                     break;
                 case ATT_EVENT_CAN_SEND_NOW:
-                    att_server_notify(con_handle, ATT_CHARACTERISTIC_0000FF11_0000_1000_8000_00805F9B34FB_01_VALUE_HANDLE, (uint8_t*) counter_string, counter_string_len);
+                    // att_server_notify(con_handle, ATT_CHARACTERISTIC_0000FF11_0000_1000_8000_00805F9B34FB_01_VALUE_HANDLE, (uint8_t*) counter_string, counter_string_len);
                     break;
             }
             break;
@@ -170,14 +161,28 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 // @param offset defines start of attribute value
 static uint16_t att_read_callback(hci_con_handle_t connection_handle, uint16_t att_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
     UNUSED(connection_handle);
-
-    if (att_handle == ATT_CHARACTERISTIC_0000FF11_0000_1000_8000_00805F9B34FB_01_VALUE_HANDLE){
-        if (buffer){
-            memcpy(buffer, &counter_string[offset], buffer_size);
-            return buffer_size;
-        } else {
-            return counter_string_len;
-        }
+    UNUSED(offset);
+    UNUSED(buffer);
+    UNUSED(buffer_size);
+    switch (att_handle){
+        case ATT_CHARACTERISTIC_FFF1_01_VALUE_HANDLE:
+            printf("FFF1 Read\n");
+            break;
+        case ATT_CHARACTERISTIC_FFF2__VALUE_HANDLE:
+            printf("FFF2 Read\n");
+            break;
+        case ATT_CHARACTERISTIC_FFF3_01_VALUE_HANDLE:
+            printf("FFF3 Read\n");
+            break;
+        case ATT_CHARACTERISTIC_FFF4_01_VALUE_HANDLE:
+            printf("FFF4 Read\n");
+            break;
+        case ATT_CHARACTERISTIC_FFF5_01_VALUE_HANDLE:
+            printf("FFF5 Read\n");
+            break;
+        case ATT_CHARACTERISTIC_FFF6_01_VALUE_HANDLE:
+            printf("FFF6 Read\n");
+            break;
     }
     return 0;
 }
@@ -194,13 +199,46 @@ static uint16_t att_read_callback(hci_con_handle_t connection_handle, uint16_t a
 
 /* LISTING_START(attWrite): ATT Write */
 static int att_write_callback(hci_con_handle_t connection_handle, uint16_t att_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size){
+    UNUSED(connection_handle);
+    UNUSED(att_handle);
     UNUSED(transaction_mode);
     UNUSED(offset);
+    UNUSED(buffer);
     UNUSED(buffer_size);
-    
-    if (att_handle != ATT_CHARACTERISTIC_0000FF11_0000_1000_8000_00805F9B34FB_01_CLIENT_CONFIGURATION_HANDLE) return 0;
-    le_notification_enabled = little_endian_read_16(buffer, 0) == GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION;
-    con_handle = connection_handle;
+    uint8_t fff3_set[] = { 0x0F, 0x0D, 0x03, 0x00};
+    switch (att_handle){
+        case ATT_CHARACTERISTIC_FFF1_01_VALUE_HANDLE:
+            printf("FFF1 Write: ");
+            printf_hexdump(buffer, buffer_size);
+            break;
+        case ATT_CHARACTERISTIC_FFF2__VALUE_HANDLE:
+            printf("FFF2 Write: ");
+            printf_hexdump(buffer, buffer_size);
+            break;
+        case ATT_CHARACTERISTIC_FFF3_01_VALUE_HANDLE:
+            if (memcmp(buffer, fff3_set, sizeof(fff3_set)) == 0){
+                printf("Set: R: %02x, G: %02x, B: %02x, Level: %02x\n", buffer[4], buffer[5], buffer[6], buffer[7]);
+            } else {
+                printf("FFF3 Write: ");
+                printf_hexdump(buffer, buffer_size);
+            }
+            break;
+        case ATT_CHARACTERISTIC_FFF4_01_VALUE_HANDLE:
+            printf("FFF4 Write: ");
+            printf_hexdump(buffer, buffer_size);
+            break;
+        case ATT_CHARACTERISTIC_FFF5_01_VALUE_HANDLE:
+            printf("FFF5 Write: ");
+            printf_hexdump(buffer, buffer_size);
+            break;
+        case ATT_CHARACTERISTIC_FFF6_01_VALUE_HANDLE:
+            printf("FFF6 Write: ");
+            printf_hexdump(buffer, buffer_size);
+            break;
+    }
+    // if (att_handle != ATT_CHARACTERISTIC_0000FF11_0000_1000_8000_00805F9B34FB_01_CLIENT_CONFIGURATION_HANDLE) return 0;
+    // le_notification_enabled = little_endian_read_16(buffer, 0) == GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION;
+    // con_handle = connection_handle;
     return 0;
 }
 /* LISTING_END */
