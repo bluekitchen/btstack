@@ -110,7 +110,8 @@ EXAMPLES = 					\
 	hsp_hs_demo             \
 	sm_pairing_peripheral   \
 	sm_pairing_central      \
-
+	revogi_mitm 			\
+	
 EXAMPLES_USING_LE =			\
 	ancs_client_demo		\
 	gatt_battery_query      \
@@ -121,6 +122,7 @@ EXAMPLES_USING_LE =			\
 	gap_le_advertisements   \
 	sm_pairing_peripheral   \
 	sm_pairing_central      \
+	revogi_mitm 			\
 
 # .o for .c
 CORE_OBJ    = $(CORE:.c=.o)
@@ -150,6 +152,8 @@ le_streamer.h: le_streamer.gatt
 	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
 sm_pairing_peripheral.h: sm_pairing_peripheral.gatt
 	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
+revogi_mitm.h: revogi_mitm.gatt
+	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
 
 # examples
 sdp_rfcomm_query: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${PAN_OBJ} ${SDP_CLIENT} sdp_rfcomm_query.c
@@ -164,8 +168,11 @@ sdp_bnep_query: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} sdp_bnep_
 spp_counter: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} spp_counter.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-le_counter: le_counter.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} battery_service_server.o le_counter.c 
+le_counter: le_counter.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} battery_service_server.o le_counter.c 
 	${CC} $(filter-out le_counter.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
+
+revogi_mitm: revogi_mitm.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} revogi_mitm.c 
+	${CC} $(filter-out revogi_mitm.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
 
 sm_pairing_peripheral: sm_pairing_peripheral.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} sm_pairing_peripheral.c 
 	${CC} $(filter-out sm_pairing_peripheral.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
