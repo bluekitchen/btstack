@@ -1,18 +1,12 @@
 #include <stdint.h>
 
-#include "debug.h"
-#include "soc.h"
 #include "cpu.h"
-
-#include "misc.h"
-#include "util.h"
-#include "rand.h"
-#include "ccm.h"
-#include "radio.h"
-#include "pdu.h"
 #include "ctrl.h"
+#include "debug.h"
+#include "pdu.h"
+#include "soc.h"
 #include "ticker.h"
-#include "cntr.h"
+#include "util.h"
 
 #include "bluetooth.h"
 #include "btstack_debug.h"
