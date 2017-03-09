@@ -34,11 +34,12 @@ TARGETS += \
 	le_counter.elf \
 	le_streamer.elf \
 	sm_pairing_peripheral.elf \
+	revogi_mitm.elf \
+	gatt_browser.elf \
+	gap_le_advertisements.elf \
 #   ancs_client_demo.elf \
 #	sm_pairing_central.elf \
-#	gap_le_advertisements.elf \
 #	gatt_battery_query.elf \
-#	gatt_browser.elf \
 
 all : $(SUBDIRS) $(TARGETS)
 
@@ -52,6 +53,8 @@ le_counter.h: ${BTSTACK_ROOT}/example/le_counter.gatt
 le_streamer.h: ${BTSTACK_ROOT}/example/le_streamer.gatt
 	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
 sm_pairing_peripheral.h: ${BTSTACK_ROOT}/example/sm_pairing_peripheral.gatt
+	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
+revogi_mitm.h: ${BTSTACK_ROOT}/example/revogi_mitm.gatt
 	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
 
 
@@ -134,6 +137,11 @@ SRCS_GATT_BROWSER = \
 	gatt_browser.c \
 	$(BTSTACK_ROOT)/src/ble/gatt_client.c \
 
+SRCS_REVOGI_MITM = \
+	$(SRCS_APP_BTSTACK) \
+	revogi_mitm.c \
+	$(BTSTACK_ROOT)/src/ble/gatt_client.c \
+
 SRCS_LE_COUNTER = \
 	$(SRCS_APP_BTSTACK) \
 	le_counter.c
@@ -153,6 +161,9 @@ SRCS_SM_PAIRING_PERIPHERAL = \
 
 ancs_client_demo.elf : $(ASMS_APP_BTSTACK:.s=.o)
 ancs_client_demo.elf : ancs_client_demo.h $(SRCS_ANCS_CLIENT_DEMO:.c=.o)
+
+revogi_mitm.elf : $(ASMS_APP_BTSTACK:.s=.o)
+revogi_mitm.elf : revogi_mitm.h $(SRCS_REVOGI_MITM:.c=.o)
 
 gap_le_advertisements.elf : $(ASMS_APP_BTSTACK:.s=.o)
 gap_le_advertisements.elf : $(SRCS_GAP_LE_ADVERTISEMENTS:.c=.o)

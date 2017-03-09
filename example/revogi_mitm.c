@@ -241,13 +241,16 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 case HCI_EVENT_LE_META:
                     // wait for connection complete
                     if (hci_event_le_meta_get_subevent_code(packet) != HCI_SUBEVENT_LE_CONNECTION_COMPLETE) break;
-                    if (state != W4_OUTGOING_CONNECTED) break;
-                    printf("Connected, query services for FFF0...\n");
-                    bulb_con_handle = hci_subevent_le_connection_complete_get_connection_handle(packet);
-                    gap_update_connection_parameters(bulb_con_handle, 80, 80, 20, 500);
-                    // query primary services
-                    state = W4_QUERY_SERVICE_COMPLETED;
-                    gatt_client_discover_primary_services_by_uuid16(handle_gatt_client_event, bulb_con_handle, 0xfff0);
+                    if (state == W4_OUTGOING_CONNECTED) {
+                        printf("Connected, query services for FFF0...\n");
+                        bulb_con_handle = hci_subevent_le_connection_complete_get_connection_handle(packet);
+                        gap_update_connection_parameters(bulb_con_handle, 80, 80, 20, 500);
+                        // query primary services
+                        state = W4_QUERY_SERVICE_COMPLETED;
+                        gatt_client_discover_primary_services_by_uuid16(handle_gatt_client_event, bulb_con_handle, 0xfff0);
+                    } else {
+                        gap_request_connection_parameter_update(hci_subevent_le_connection_complete_get_connection_handle(packet), 80, 80, 20, 500);                   
+                    }
                     break;
                 case HCI_EVENT_DISCONNECTION_COMPLETE:
                     if (hci_event_disconnection_complete_get_connection_handle(packet) == bulb_con_handle){
