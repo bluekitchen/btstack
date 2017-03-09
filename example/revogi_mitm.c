@@ -80,7 +80,6 @@ const uint8_t adv_data[] = {
 };
 const uint8_t adv_data_len = sizeof(adv_data);
 
-static int  le_notification_enabled;
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 static hci_con_handle_t bulb_con_handle;
 static gatt_client_service_t fff0_service;
@@ -89,7 +88,7 @@ static btstack_timer_source_t heartbeat;
 static bd_addr_t bulb_addr;
 static const char * bulb_addr_string = "78:A5:04:82:1B:A4";
 static state_t state = IDLE;
-static uint8_t message_buffer[17];
+static uint8_t message_buffer[27];
 static uint8_t color_wheel_pos;
 
 static void printUUID(uint8_t * uuid128, uint16_t uuid16){
@@ -165,7 +164,7 @@ static void set_rgb_and_brightness(uint8_t red, uint8_t green, uint8_t blue, uin
     message_buffer[14] = crc;
 
     gatt_client_write_value_of_characteristic_without_response(bulb_con_handle,
-        fff0_characteristics[FFF3_CHARACTERISTIC].value_handle, sizeof(message_buffer), message_buffer);
+        fff0_characteristics[FFF3_CHARACTERISTIC].value_handle, 17, message_buffer);
 }
 
 static void heartbeat_handler(struct btstack_timer_source *ts){
@@ -180,6 +179,13 @@ static void heartbeat_handler(struct btstack_timer_source *ts){
     btstack_run_loop_set_timer(ts, HEARTBEAT_PERIOD_MS);
     btstack_run_loop_add_timer(ts);
 } 
+
+static void start_color_wheel(void){
+    // set one-shot timer
+    heartbeat.process = &heartbeat_handler;
+    btstack_run_loop_set_timer(&heartbeat, 10);
+    btstack_run_loop_add_timer(&heartbeat);
+}
 
 static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(packet_type);
@@ -205,13 +211,8 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                     break;
                 case W4_QUERY_CHARACTERISTICS_COMPLETED:
                     state = CONNECTED;
-
-                    // set one-shot timer
-                    heartbeat.process = &heartbeat_handler;
-                    btstack_run_loop_set_timer(&heartbeat, 10);
-                    btstack_run_loop_add_timer(&heartbeat);
-
-                    set_rgb_and_brightness(0,255,0,200);
+                    printf("Bulb connected, starting color wheel\n");
+                    start_color_wheel();
                     break;
                 default:
                     break;
@@ -243,13 +244,27 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     if (state != W4_OUTGOING_CONNECTED) break;
                     printf("Connected, query services for FFF0...\n");
                     bulb_con_handle = hci_subevent_le_connection_complete_get_connection_handle(packet);
+                    gap_update_connection_parameters(bulb_con_handle, 80, 80, 20, 500);
                     // query primary services
                     state = W4_QUERY_SERVICE_COMPLETED;
                     gatt_client_discover_primary_services_by_uuid16(handle_gatt_client_event, bulb_con_handle, 0xfff0);
                     break;
                 case HCI_EVENT_DISCONNECTION_COMPLETE:
-                    le_notification_enabled = 0;
+                    if (hci_event_disconnection_complete_get_connection_handle(packet) == bulb_con_handle){
+                        printf("Bulb disconnected\n");
+                        bulb_con_handle = 0;
+                        btstack_run_loop_remove_timer(&heartbeat);
+                    }
                     break;
+                case BTSTACK_EVENT_NR_CONNECTIONS_CHANGED:
+                    if (state != CONNECTED) break;
+                    if (btstack_event_nr_connections_changed_get_number_connections(packet) > 1){
+                        printf("Client(s) connected, stopping color wheel\n");
+                        btstack_run_loop_remove_timer(&heartbeat);
+                    } else {
+                        printf("All clients disconnected, starting color wheel\n");
+                        start_color_wheel();
+                    }
                 case ATT_EVENT_CAN_SEND_NOW:
                     // att_server_notify(con_handle, ATT_CHARACTERISTIC_0000FF11_0000_1000_8000_00805F9B34FB_01_VALUE_HANDLE, (uint8_t*) counter_string, counter_string_len);
                     break;
@@ -279,6 +294,7 @@ static uint16_t att_read_callback(hci_con_handle_t connection_handle, uint16_t a
     UNUSED(offset);
     UNUSED(buffer);
     UNUSED(buffer_size);
+#if 0
     switch (att_handle){
         case ATT_CHARACTERISTIC_FFF1_01_VALUE_HANDLE:
             printf("FFF1 Read\n");
@@ -299,6 +315,7 @@ static uint16_t att_read_callback(hci_con_handle_t connection_handle, uint16_t a
             printf("FFF6 Read\n");
             break;
     }
+#endif
     return 0;
 }
 /* LISTING_END */
@@ -337,6 +354,10 @@ static int att_write_callback(hci_con_handle_t connection_handle, uint16_t att_h
                 printf("FFF3 Write: ");
                 printf_hexdump(buffer, buffer_size);
             }
+            if (state != CONNECTED) break;
+            memcpy(message_buffer, buffer, buffer_size);
+            gatt_client_write_value_of_characteristic_without_response(bulb_con_handle,
+                fff0_characteristics[FFF3_CHARACTERISTIC].value_handle, buffer_size, message_buffer);
             break;
         case ATT_CHARACTERISTIC_FFF4_01_VALUE_HANDLE:
             printf("FFF4 Write: ");
@@ -380,7 +401,6 @@ int btstack_main(void)
     // Initialize GATT client 
     gatt_client_init();
 
-#if 0
     // setup advertisements
     uint16_t adv_int_min = 0x0030;
     uint16_t adv_int_max = 0x0030;
@@ -390,7 +410,6 @@ int btstack_main(void)
     gap_advertisements_set_params(adv_int_min, adv_int_max, adv_type, 0, null_addr, 0x07, 0x00);
     gap_advertisements_set_data(adv_data_len, (uint8_t*) adv_data);
     gap_advertisements_enable(1);
-#endif
 
     // turn on!
 	hci_power_control(HCI_POWER_ON);
