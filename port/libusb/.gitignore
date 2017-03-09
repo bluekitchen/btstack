@@ -38,3 +38,4 @@ spp_streamer
 sco_input*
 sco_output*
 revogi_mitm
+revogi_mitm.h

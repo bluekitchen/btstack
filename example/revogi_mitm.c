@@ -35,16 +35,6 @@
  *
  */
 
-// *****************************************************************************
-/* EXAMPLE_START(le_counter): LE Peripheral - Heartbeat Counter over GATT
- *
- * @text All newer operating systems provide GATT Client functionality.
- * The LE Counter examples demonstrates how to specify a minimal GATT Database
- * with a custom GATT Service and a custom Characteristic that sends periodic
- * notifications. 
- */
- // *****************************************************************************
-
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -53,26 +43,30 @@
 #include "revogi_mitm.h"
 #include "btstack.h"
 
-/* @section Main Application Setup
- *
- * @text Listing MainConfiguration shows main application code.
- * It initializes L2CAP, the Security Manager and configures the ATT Server with the pre-compiled
- * ATT Database generated from $le_counter.gatt$. 
- * Additionally, it enables the Battery Service Server with the current battery level.
- * Finally, it configures the advertisements 
- * and the heartbeat handler and boots the Bluetooth stack. 
- * In this example, the Advertisement contains the Flags attribute and the device name.
- * The flag 0x06 indicates: LE General Discoverable Mode and BR/EDR not supported.
- */
- 
-/* LISTING_START(MainConfiguration): Init L2CAP SM ATT Server and start heartbeat timer */
-static int  le_notification_enabled;
-static btstack_packet_callback_registration_t hci_event_callback_registration;
-// static hci_con_handle_t con_handle;
-
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static uint16_t att_read_callback(hci_con_handle_t con_handle, uint16_t att_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size);
 static int att_write_callback(hci_con_handle_t con_handle, uint16_t att_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size);
+
+enum { 
+    FFF1_CHARACTERISTIC,
+    FFF2_CHARACTERISTIC,
+    FFF3_CHARACTERISTIC,
+    FFF4_CHARACTERISTIC,
+    FFF5_CHARACTERISTIC,
+    FFF6_CHARACTERISTIC,
+    //
+    FFF0_CHARACTERSITICS
+};
+
+typedef enum {
+    IDLE,
+    W4_OUTGOING_CONNECTED,
+    W4_QUERY_SERVICE_COMPLETED,
+    W4_QUERY_CHARACTERISTICS_COMPLETED,
+    CONNECTED,
+} state_t;
+
+#define HEARTBEAT_PERIOD_MS 100
 
 const uint8_t adv_data[] = {
     // Flags general discoverable, BR/EDR not supported
@@ -86,45 +80,148 @@ const uint8_t adv_data[] = {
 };
 const uint8_t adv_data_len = sizeof(adv_data);
 
-static void le_counter_setup(void){
+static int  le_notification_enabled;
+static btstack_packet_callback_registration_t hci_event_callback_registration;
+static hci_con_handle_t bulb_con_handle;
+static gatt_client_service_t fff0_service;
+static gatt_client_characteristic_t fff0_characteristics[FFF0_CHARACTERSITICS];
+static btstack_timer_source_t heartbeat;
+static bd_addr_t bulb_addr;
+static const char * bulb_addr_string = "78:A5:04:82:1B:A4";
+static state_t state = IDLE;
+static uint8_t message_buffer[17];
+static uint8_t color_wheel_pos;
 
-    // register for HCI events
-    hci_event_callback_registration.callback = &packet_handler;
-    hci_add_event_handler(&hci_event_callback_registration);
-
-    l2cap_init();
-
-    // setup le device db
-    le_device_db_init();
-
-    // setup SM: Display only
-    sm_init();
-
-    // setup ATT server
-    att_server_init(profile_data, att_read_callback, att_write_callback);    
-    att_server_register_packet_handler(packet_handler);
-
-    // setup advertisements
-    uint16_t adv_int_min = 0x0030;
-    uint16_t adv_int_max = 0x0030;
-    uint8_t adv_type = 0;
-    bd_addr_t null_addr;
-    memset(null_addr, 0, 6);
-    gap_advertisements_set_params(adv_int_min, adv_int_max, adv_type, 0, null_addr, 0x07, 0x00);
-    gap_advertisements_set_data(adv_data_len, (uint8_t*) adv_data);
-    gap_advertisements_enable(1);
+static void printUUID(uint8_t * uuid128, uint16_t uuid16){
+    if (uuid16){
+        printf("%04x",uuid16);
+    } else {
+        printf("%s", uuid128_to_str(uuid128));
+    }
 }
-/* LISTING_END */
 
-/* 
- * @section Packet Handler
- *
- * @text The packet handler is used to:
- *        - stop the counter after a disconnect
- *        - send a notification when the requested ATT_EVENT_CAN_SEND_NOW is received
- */
+static void dump_service(gatt_client_service_t * service){
+    printf("    * service: [0x%04x-0x%04x], uuid ", service->start_group_handle, service->end_group_handle);
+    printUUID(service->uuid128, service->uuid16);
+    printf("\n");
+}
 
-/* LISTING_START(packetHandler): Packet Handler */
+static void dump_characteristic(gatt_client_characteristic_t * characteristic){
+    printf("    * characteristic: [0x%04x-0x%04x-0x%04x], properties 0x%02x, uuid ",
+                            characteristic->start_handle, characteristic->value_handle, characteristic->end_handle, characteristic->properties);
+    printUUID(characteristic->uuid128, characteristic->uuid16);
+    printf("\n");
+}
+
+// Input a value 0 to 255 to get a color value.
+// The colours are a transition r - g - b - back to r.
+static void color_wheel(uint8_t wheel_pos, uint8_t * red, uint8_t * green, uint8_t * blue) {
+    if (wheel_pos < 85) {
+        *red = wheel_pos * 3;
+        *green = 255 - wheel_pos * 3;
+        *blue = 0;
+    } else if(wheel_pos < 170) {
+        wheel_pos -= 85;
+        *red = 255 - wheel_pos * 3;
+        *green = 0;
+        *blue = wheel_pos * 3;
+    } else {
+        wheel_pos -= 170;
+        *red = 0;
+        *green = wheel_pos * 3;
+        *blue = 255 - wheel_pos * 3;
+    }
+}
+
+static void set_rgb_and_brightness(uint8_t red, uint8_t green, uint8_t blue, uint8_t brightness){
+
+    // values 0 - 200
+    brightness = btstack_min(brightness, 200);
+
+    // setup message
+    message_buffer[0] = 0x0F;
+    message_buffer[1] = 0x0D;
+    message_buffer[2] = 0x03;
+    message_buffer[3] = 0x00;
+
+    message_buffer[4] = red;
+    message_buffer[5] = green;
+    message_buffer[6] = blue;
+    message_buffer[7] = brightness;
+
+    message_buffer[8]  = 0x02;
+    message_buffer[9]  = 0xD1;
+    message_buffer[10] = 0x01;
+    message_buffer[11] = 0x66;
+
+    message_buffer[15] = 0xFF;
+    message_buffer[16] = 0xFF;
+
+    uint8_t crc = 1;
+    int i;
+    for(i = 2; i < 14; i++){
+        crc += message_buffer[i];
+    }
+    message_buffer[14] = crc;
+
+    gatt_client_write_value_of_characteristic_without_response(bulb_con_handle,
+        fff0_characteristics[FFF3_CHARACTERISTIC].value_handle, sizeof(message_buffer), message_buffer);
+}
+
+static void heartbeat_handler(struct btstack_timer_source *ts){
+
+    if (!bulb_con_handle) return;
+
+    color_wheel_pos += 5;   // 255 / 5 = ~ 50 = 5s * 10 Hz 
+    uint8_t red, green, blue;
+    color_wheel(color_wheel_pos, &red, &green, &blue);
+    set_rgb_and_brightness(red, green, blue, 200);
+
+    btstack_run_loop_set_timer(ts, HEARTBEAT_PERIOD_MS);
+    btstack_run_loop_add_timer(ts);
+} 
+
+static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(packet_type);
+    UNUSED(channel);
+    UNUSED(size);
+
+    gatt_client_characteristic_t characteristic;
+    switch(hci_event_packet_get_type(packet)){
+        case GATT_EVENT_SERVICE_QUERY_RESULT:
+            gatt_event_service_query_result_get_service(packet, &fff0_service);
+            dump_service(&fff0_service);
+            break;
+        case GATT_EVENT_CHARACTERISTIC_QUERY_RESULT:
+            gatt_event_characteristic_query_result_get_characteristic(packet, &characteristic);
+            memcpy(&fff0_characteristics[characteristic.uuid16 - 0xfff1], &characteristic, sizeof(gatt_client_characteristic_t));
+            dump_characteristic(&characteristic);
+            break;
+        case GATT_EVENT_QUERY_COMPLETE:
+            switch (state){
+                case W4_QUERY_SERVICE_COMPLETED:
+                    state = W4_QUERY_CHARACTERISTICS_COMPLETED;
+                    gatt_client_discover_characteristics_for_service(handle_gatt_client_event, bulb_con_handle, &fff0_service);
+                    break;
+                case W4_QUERY_CHARACTERISTICS_COMPLETED:
+                    state = CONNECTED;
+
+                    // set one-shot timer
+                    heartbeat.process = &heartbeat_handler;
+                    btstack_run_loop_set_timer(&heartbeat, 10);
+                    btstack_run_loop_add_timer(&heartbeat);
+
+                    set_rgb_and_brightness(0,255,0,200);
+                    break;
+                default:
+                    break;
+            }
+            break;
+        default:
+            break;
+    }
+}
+
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
@@ -132,6 +229,24 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
     switch (packet_type) {
         case HCI_EVENT_PACKET:
             switch (hci_event_packet_get_type(packet)) {
+                case BTSTACK_EVENT_STATE:
+                    // BTstack activated, get started
+                    if (btstack_event_state_get_state(packet) != HCI_STATE_WORKING) break;
+                    sscanf_bd_addr(bulb_addr_string, bulb_addr);
+                    printf("BTstack activated, start connecting...\n");
+                    state = W4_OUTGOING_CONNECTED;
+                    gap_connect(bulb_addr, BD_ADDR_TYPE_LE_PUBLIC);
+                    break;
+                case HCI_EVENT_LE_META:
+                    // wait for connection complete
+                    if (hci_event_le_meta_get_subevent_code(packet) != HCI_SUBEVENT_LE_CONNECTION_COMPLETE) break;
+                    if (state != W4_OUTGOING_CONNECTED) break;
+                    printf("Connected, query services for FFF0...\n");
+                    bulb_con_handle = hci_subevent_le_connection_complete_get_connection_handle(packet);
+                    // query primary services
+                    state = W4_QUERY_SERVICE_COMPLETED;
+                    gatt_client_discover_primary_services_by_uuid16(handle_gatt_client_event, bulb_con_handle, 0xfff0);
+                    break;
                 case HCI_EVENT_DISCONNECTION_COMPLETE:
                     le_notification_enabled = 0;
                     break;
@@ -246,7 +361,36 @@ static int att_write_callback(hci_con_handle_t connection_handle, uint16_t att_h
 int btstack_main(void);
 int btstack_main(void)
 {
-    le_counter_setup();
+    // register for HCI events
+    hci_event_callback_registration.callback = &packet_handler;
+    hci_add_event_handler(&hci_event_callback_registration);
+
+    l2cap_init();
+
+    // setup le device db
+    le_device_db_init();
+
+    // setup SM: Display only
+    sm_init();
+
+    // setup ATT server
+    att_server_init(profile_data, att_read_callback, att_write_callback);    
+    att_server_register_packet_handler(packet_handler);
+
+    // Initialize GATT client 
+    gatt_client_init();
+
+#if 0
+    // setup advertisements
+    uint16_t adv_int_min = 0x0030;
+    uint16_t adv_int_max = 0x0030;
+    uint8_t adv_type = 0;
+    bd_addr_t null_addr;
+    memset(null_addr, 0, 6);
+    gap_advertisements_set_params(adv_int_min, adv_int_max, adv_type, 0, null_addr, 0x07, 0x00);
+    gap_advertisements_set_data(adv_data_len, (uint8_t*) adv_data);
+    gap_advertisements_enable(1);
+#endif
 
     // turn on!
 	hci_power_control(HCI_POWER_ON);
