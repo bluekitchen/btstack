@@ -121,17 +121,11 @@ void radio_handler(void)
 	isr_radio(0);
 }
 
-void mayfly_enable(uint8_t caller_id, uint8_t callee_id, uint8_t enable)
+void mayfly_enable_cb(uint8_t caller_id, uint8_t callee_id, uint8_t enable)
 {
 	(void)caller_id;
-
-	ASSERT(callee_id == MAYFLY_CALL_ID_1);
-
-	if (enable) {
-		irq_enable(SWI4_IRQn);
-	} else {
-		irq_disable(SWI4_IRQn);
-	}
+	(void)callee_id;
+	(void)enable;
 }
 
 uint32_t mayfly_is_enabled(uint8_t caller_id, uint8_t callee_id)
@@ -215,12 +209,8 @@ int main(void)
 	uart_init(UART, 1);
 	irq_priority_set(UART0_IRQn, 0xFF);
 	irq_enable(UART0_IRQn);
-
-	uart_tx_str("\n\n\nBLE LL.\n");
-
 	{
 		extern void assert_print(void);
-
 		assert_print();
 	}
 	#endif
