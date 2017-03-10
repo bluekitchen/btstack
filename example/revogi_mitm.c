@@ -90,6 +90,7 @@ static const char * bulb_addr_string = "78:A5:04:82:1B:A4";
 static state_t state = IDLE;
 static uint8_t message_buffer[27];
 static uint8_t color_wheel_pos;
+static int color_wheel_active = 0;
 
 static void printUUID(uint8_t * uuid128, uint16_t uuid16){
     if (uuid16){
@@ -169,6 +170,16 @@ static void set_rgb_and_brightness(uint8_t red, uint8_t green, uint8_t blue, uin
 
 static void heartbeat_handler(struct btstack_timer_source *ts){
 
+    btstack_run_loop_set_timer(ts, HEARTBEAT_PERIOD_MS);
+    btstack_run_loop_add_timer(ts);
+
+    static int counter = 0;
+    counter++;
+    if (counter == 20){
+        printf("(beat)\n");
+        counter = 0;
+    }
+
     if (!bulb_con_handle) return;
 
     color_wheel_pos += 5;   // 255 / 5 = ~ 50 = 5s * 10 Hz 
@@ -176,16 +187,7 @@ static void heartbeat_handler(struct btstack_timer_source *ts){
     color_wheel(color_wheel_pos, &red, &green, &blue);
     set_rgb_and_brightness(red, green, blue, 200);
 
-    btstack_run_loop_set_timer(ts, HEARTBEAT_PERIOD_MS);
-    btstack_run_loop_add_timer(ts);
 } 
-
-static void start_color_wheel(void){
-    // set one-shot timer
-    heartbeat.process = &heartbeat_handler;
-    btstack_run_loop_set_timer(&heartbeat, 10);
-    btstack_run_loop_add_timer(&heartbeat);
-}
 
 static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(packet_type);
@@ -212,7 +214,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                 case W4_QUERY_CHARACTERISTICS_COMPLETED:
                     state = CONNECTED;
                     printf("Bulb connected, starting color wheel\n");
-                    start_color_wheel();
+                    color_wheel_active = 0;
                     break;
                 default:
                     break;
@@ -236,7 +238,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     sscanf_bd_addr(bulb_addr_string, bulb_addr);
                     printf("BTstack activated, start connecting...\n");
                     state = W4_OUTGOING_CONNECTED;
-                    gap_connect(bulb_addr, BD_ADDR_TYPE_LE_PUBLIC);
+                    // gap_connect(bulb_addr, BD_ADDR_TYPE_LE_PUBLIC);
                     break;
                 case HCI_EVENT_LE_META:
                     // wait for connection complete
@@ -256,17 +258,17 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     if (hci_event_disconnection_complete_get_connection_handle(packet) == bulb_con_handle){
                         printf("Bulb disconnected\n");
                         bulb_con_handle = 0;
-                        btstack_run_loop_remove_timer(&heartbeat);
+                        color_wheel_active = 0;
                     }
                     break;
                 case BTSTACK_EVENT_NR_CONNECTIONS_CHANGED:
                     if (state != CONNECTED) break;
                     if (btstack_event_nr_connections_changed_get_number_connections(packet) > 1){
                         printf("Client(s) connected, stopping color wheel\n");
-                        btstack_run_loop_remove_timer(&heartbeat);
+                        color_wheel_active = 0;
                     } else {
                         printf("All clients disconnected, starting color wheel\n");
-                        start_color_wheel();
+                        color_wheel_active = 1;
                     }
                 case ATT_EVENT_CAN_SEND_NOW:
                     // att_server_notify(con_handle, ATT_CHARACTERISTIC_0000FF11_0000_1000_8000_00805F9B34FB_01_VALUE_HANDLE, (uint8_t*) counter_string, counter_string_len);
@@ -413,6 +415,11 @@ int btstack_main(void)
     gap_advertisements_set_params(adv_int_min, adv_int_max, adv_type, 0, null_addr, 0x07, 0x00);
     gap_advertisements_set_data(adv_data_len, (uint8_t*) adv_data);
     gap_advertisements_enable(1);
+
+    // set one-shot timer
+    heartbeat.process = &heartbeat_handler;
+    btstack_run_loop_set_timer(&heartbeat, 10);
+    btstack_run_loop_add_timer(&heartbeat);
 
     // turn on!
 	hci_power_control(HCI_POWER_ON);
