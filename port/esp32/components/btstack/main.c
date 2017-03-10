@@ -45,6 +45,7 @@
 #include "btstack_memory.h"
 #include "btstack_run_loop.h"
 #include "btstack_run_loop_freertos_single_threaded.h"
+#include "btstack_ring_buffer.h"
 //#include "classic/btstack_link_key_db.h"
 #include "hci.h"
 #include "hci_dump.h"
@@ -69,21 +70,32 @@ uint32_t hal_time_ms(void) {
 
 static int _can_send_packet_now = 1;
 
-static uint8_t * received_packet_data;
-static uint16_t  received_packet_len;
-
-static SemaphoreHandle_t packet_handled_notify;
-
 static void (*transport_packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size);
 
+// ring buffer for incoming HCI packets
+#define MAX_NR_HOST_ACL_PACKETS 10
+#define MAX_NR_HOST_EVENT_PACKETS 4
+static uint8_t hci_ringbuffer_storage[MAX_NR_HOST_ACL_PACKETS   * (1 + HCI_ACL_HEADER_SIZE + HCI_ACL_3DH5_SIZE) +
+                                     (MAX_NR_HOST_EVENT_PACKETS * HCI_EVENT_BUFFER_SIZE)];
+
+static btstack_ring_buffer_t hci_ringbuffer;
+static uint8_t hci_receive_buffer[1 + HCI_ACL_HEADER_SIZE + HCI_ACL_3DH5_SIZE];
+static SemaphoreHandle_t ring_buffer_mutex;
+
 // executed on main run loop
-static void transport_deliver_packet(void *arg){
-    log_info("transport_deliver_packet len %u", received_packet_len);
-    // deliver packet
-    transport_packet_handler(received_packet_data[0], &received_packet_data[1], received_packet_len-1);
-    log_info("transport_deliver_packet done");
-    // signal bluetooth task to continue
-    xSemaphoreGive(packet_handled_notify);
+static void transport_deliver_packets(void *arg){
+    xSemaphoreTake(ring_buffer_mutex, portMAX_DELAY);
+    while (btstack_ring_buffer_bytes_available(&hci_ringbuffer)){
+        uint32_t number_read;
+        uint8_t len_tag[2];
+        btstack_ring_buffer_read(&hci_ringbuffer, len_tag, 2, &number_read);
+        uint32_t len = little_endian_read_16(len_tag, 0);
+        btstack_ring_buffer_read(&hci_ringbuffer, hci_receive_buffer, len, &number_read);
+        xSemaphoreGive(ring_buffer_mutex);
+        transport_packet_handler(hci_receive_buffer[0], &hci_receive_buffer[1], len-1);
+        xSemaphoreTake(ring_buffer_mutex, portMAX_DELAY);
+    }
+    xSemaphoreGive(ring_buffer_mutex);
 }
 
 // executed on main run loop
@@ -104,12 +116,29 @@ static void host_send_pkt_available_cb(void){
 // run from VHCI Task
 static int host_recv_pkt_cb(uint8_t *data, uint16_t len){
     // log_info("host_recv_pkt_cb: %u bytes, type %u, begins %02x %02x", len, data[0], data[1], data[2]);
-    received_packet_data = data;
-    received_packet_len  = len;
-    // probably will need mutex here
-    btstack_run_loop_freertos_single_threaded_execute_code_on_main_thread(&transport_deliver_packet, NULL);
-    // wait until processed
-    xSemaphoreTake(packet_handled_notify, portMAX_DELAY);
+
+    xSemaphoreTake(ring_buffer_mutex, portMAX_DELAY);
+
+    // check space
+    uint16_t space = btstack_ring_buffer_bytes_free(&hci_ringbuffer);
+    if (space < len){
+        xSemaphoreGive(ring_buffer_mutex);
+        log_error("transport_recv_pkt_cb packet %u, space %u -> dropping packet", len, space);
+        return 0;
+    }
+
+    // store size in ringbuffer
+    uint8_t len_tag[2];
+    little_endian_store_16(len_tag, 0, len);
+    btstack_ring_buffer_write(&hci_ringbuffer, len_tag, sizeof(len_tag));
+
+    // store in ringbuffer
+    btstack_ring_buffer_write(&hci_ringbuffer, data, len);
+
+    xSemaphoreGive(ring_buffer_mutex);
+
+    // let stack now
+    btstack_run_loop_freertos_single_threaded_execute_code_on_main_thread(&transport_deliver_packets, NULL);
     return 0;
 }
 
@@ -124,6 +153,7 @@ static const esp_vhci_host_callback_t vhci_host_cb = {
  */
 static void transport_init(const void *transport_config){
     log_info("transport_init");
+    ring_buffer_mutex = xSemaphoreCreateMutex();
 }
 
 /**
@@ -134,8 +164,7 @@ static int transport_open(void){
 
     log_info("transport_open");
 
-    // create 
-    packet_handled_notify = xSemaphoreCreateBinary();
+    btstack_ring_buffer_init(&hci_ringbuffer, hci_ringbuffer_storage, sizeof(hci_ringbuffer_storage));
 
     esp_bt_controller_init();
 
