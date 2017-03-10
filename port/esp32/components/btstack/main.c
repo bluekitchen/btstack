@@ -68,8 +68,6 @@ uint32_t hal_time_ms(void) {
 #error HCI_OUTGOING_PRE_BUFFER_SIZE not defined. Please update hci.h
 #endif
 
-static int _can_send_packet_now = 1;
-
 static void (*transport_packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size);
 
 // ring buffer for incoming HCI packets
@@ -107,8 +105,6 @@ static void transport_notify_packet_send(void *arg){
 
 // run from VHCI Task
 static void host_send_pkt_available_cb(void){
-    _can_send_packet_now = 1;
-    // log_debug("host_send_pkt_available_cb, setting _can_send_packet_now = %u", _can_send_packet_now);
     // notify upper stack that provided buffer can be used again
     btstack_run_loop_freertos_single_threaded_execute_code_on_main_thread(&transport_notify_packet_send, NULL);
 }
@@ -195,8 +191,7 @@ static void transport_register_packet_handler(void (*handler)(uint8_t packet_typ
 }
 
 static int transport_can_send_packet_now(uint8_t packet_type) {
-    log_debug("transport_can_send_packet_now %u, esp_vhci_host_check_send_available %u", _can_send_packet_now, esp_vhci_host_check_send_available());
-    return _can_send_packet_now;
+    return esp_vhci_host_check_send_available();
 }
 
 static int transport_send_packet(uint8_t packet_type, uint8_t *packet, int size){
@@ -206,7 +201,6 @@ static int transport_send_packet(uint8_t packet_type, uint8_t *packet, int size)
     *packet = packet_type;
 
     // send packet
-    _can_send_packet_now = 0;
     esp_vhci_host_send_packet(packet, size);
     return 0;
 }
@@ -249,7 +243,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 
 static void btstack_setup(void){
 
-    // hci_dump_open(NULL, HCI_DUMP_STDOUT);
+    hci_dump_open(NULL, HCI_DUMP_STDOUT);
 
     /// GET STARTED with BTstack ///
     btstack_memory_init();
