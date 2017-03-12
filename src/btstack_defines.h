@@ -276,7 +276,10 @@ typedef uint8_t sm_key_t[16];
  */
 #define BTSTACK_EVENT_STATE                                0x60
 
-// data: event(8), len(8), nr hci connections
+/**
+ * @format 1
+ * @param number_connections
+ */
 #define BTSTACK_EVENT_NR_CONNECTIONS_CHANGED               0x61
 
 /**
