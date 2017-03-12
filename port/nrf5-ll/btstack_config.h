@@ -35,7 +35,7 @@
 #define MAX_NR_BNEP_SERVICES 0
 #define MAX_NR_BNEP_CHANNELS 0
 #define MAX_NR_SERVICE_RECORD_ITEMS 0
-
+#define MAX_NR_LE_DEVICE_DB_ENTRIES 0
 
 // additional ticker for BTstack run loop single shot timer
 #define BTSTACK_TICKER_NODES 1
