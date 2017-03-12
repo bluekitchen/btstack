@@ -964,6 +964,16 @@ static inline uint8_t btstack_event_state_get_state(const uint8_t * event){
     return event[2];
 }
 
+/**
+ * @brief Get field number_connections from event BTSTACK_EVENT_NR_CONNECTIONS_CHANGED
+ * @param event packet
+ * @return number_connections
+ * @note: btstack_type 1
+ */
+static inline uint8_t btstack_event_nr_connections_changed_get_number_connections(const uint8_t * event){
+    return event[2];
+}
+
 
 /**
  * @brief Get field discoverable from event BTSTACK_EVENT_DISCOVERABLE_ENABLED
