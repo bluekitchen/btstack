@@ -175,12 +175,13 @@ static void heartbeat_handler(struct btstack_timer_source *ts){
 
     static int counter = 0;
     counter++;
-    if (counter == 20){
+    if (counter == 10){
         printf("(beat)\n");
         counter = 0;
     }
 
-    if (!bulb_con_handle) return;
+    if (!color_wheel_active) return;
+    if (!bulb_con_handle)    return;
 
     color_wheel_pos += 5;   // 255 / 5 = ~ 50 = 5s * 10 Hz 
     uint8_t red, green, blue;
@@ -209,12 +210,13 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
             switch (state){
                 case W4_QUERY_SERVICE_COMPLETED:
                     state = W4_QUERY_CHARACTERISTICS_COMPLETED;
+                    printf("Services discovered, query charcteristics\n");
                     gatt_client_discover_characteristics_for_service(handle_gatt_client_event, bulb_con_handle, &fff0_service);
                     break;
                 case W4_QUERY_CHARACTERISTICS_COMPLETED:
                     state = CONNECTED;
                     printf("Bulb connected, starting color wheel\n");
-                    color_wheel_active = 0;
+                    color_wheel_active = 1;
                     break;
                 default:
                     break;
@@ -238,7 +240,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     sscanf_bd_addr(bulb_addr_string, bulb_addr);
                     printf("BTstack activated, start connecting...\n");
                     state = W4_OUTGOING_CONNECTED;
-                    // gap_connect(bulb_addr, BD_ADDR_TYPE_LE_PUBLIC);
+                    gap_connect(bulb_addr, BD_ADDR_TYPE_LE_PUBLIC);
                     break;
                 case HCI_EVENT_LE_META:
                     // wait for connection complete
@@ -255,6 +257,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     }
                     break;
                 case HCI_EVENT_DISCONNECTION_COMPLETE:
+                    printf("Disconnect handle 0x%04x\n", hci_event_disconnection_complete_get_connection_handle(packet));
                     if (hci_event_disconnection_complete_get_connection_handle(packet) == bulb_con_handle){
                         printf("Bulb disconnected\n");
                         bulb_con_handle = 0;
