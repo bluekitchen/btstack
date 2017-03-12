@@ -66,15 +66,18 @@ static void puth(unsigned n)
     tiny_putc(hex[n & 15]);
 }
  
-int printf(const char * format, ...)
-{
+int printf(const char * format, ...){
+    va_list argptr;
+    va_start(argptr, format);
+    vprintf(format, argptr);
+    va_end(argptr);
+}
+
+int vprintf(const char * format, va_list a){
 	int counter=0;
     char c;
     int i;
     long n;
-    
-    va_list a;
-    va_start(a, format);
     while(1) {
     	c = *format++;
     	if(c == 0) break;
@@ -117,7 +120,5 @@ int printf(const char * format, ...)
 bad_fmt:
 	    	tiny_putc(c);
     }
-    va_end(a);
     return counter;
-
 }
