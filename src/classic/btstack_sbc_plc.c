@@ -47,6 +47,8 @@
 
 #include "btstack_sbc_plc.h"
 
+#define SAMPLE_FORMAT int16_t
+
 static uint8_t indices0[] = { 0xad, 0x00, 0x00, 0xc5, 0x00, 0x00, 0x00, 0x00, 0x77, 0x6d,
 0xb6, 0xdd, 0xdb, 0x6d, 0xb7, 0x76, 0xdb, 0x6d, 0xdd, 0xb6, 0xdb, 0x77, 0x6d,
 0xb6, 0xdd, 0xdb, 0x6d, 0xb7, 0x76, 0xdb, 0x6d, 0xdd, 0xb6, 0xdb, 0x77, 0x6d,
@@ -84,7 +86,7 @@ static float absolute(float x){
      return x;
 }
 
-static float CrossCorrelation(int16_t *x, int16_t *y){
+static float CrossCorrelation(SAMPLE_FORMAT *x, SAMPLE_FORMAT *y){
     float num = 0;
     float den = 0;
     float x2 = 0;
@@ -99,13 +101,13 @@ static float CrossCorrelation(int16_t *x, int16_t *y){
     return num/den;
 }
 
-static int PatternMatch(int16_t *y){
-    float maxCn = -999999.0;  /* large negative number */
+static int PatternMatch(SAMPLE_FORMAT *y){
+    float maxCn = -999999.0;  // large negative number
     int   bestmatch = 0;
     float Cn;
     int   n;
     for (n=0;n<SBC_N;n++){
-        Cn = CrossCorrelation(&y[SBC_LHIST-SBC_M] /* x */, &y[n]); 
+        Cn = CrossCorrelation(&y[SBC_LHIST-SBC_M], &y[n]); 
         if (Cn>maxCn){
             bestmatch=n;
             maxCn = Cn; 
@@ -114,8 +116,7 @@ static int PatternMatch(int16_t *y){
     return bestmatch;
 }
 
-
-static float AmplitudeMatch(int16_t *y, int16_t bestmatch) {
+static float AmplitudeMatch(SAMPLE_FORMAT *y, SAMPLE_FORMAT bestmatch) {
     int   i;
     float sumx = 0;
     float sumy = 0.000001f;
@@ -126,17 +127,17 @@ static float AmplitudeMatch(int16_t *y, int16_t bestmatch) {
         sumy += absolute(y[bestmatch+i]);
     }
     sf = sumx/sumy;
-    /* This is not in the paper, but limit the scaling factor to something reasonable to avoid creating artifacts */
+    // This is not in the paper, but limit the scaling factor to something reasonable to avoid creating artifacts 
     if (sf<0.75f) sf=0.75f;
     if (sf>1.2f) sf=1.2f;
     return sf;
 }
 
-static int16_t crop_to_int16(float val){
+static SAMPLE_FORMAT crop_sample(float val){
     float croped_val = val;
     if (croped_val > 32767.0)  croped_val= 32767.0;
     if (croped_val < -32768.0) croped_val=-32768.0; 
-    return (int16_t) croped_val;
+    return (SAMPLE_FORMAT) croped_val;
 }
 
 uint8_t * btstack_sbc_plc_zero_signal_frame(void){
@@ -149,46 +150,44 @@ void btstack_sbc_plc_init(btstack_sbc_plc_state_t *plc_state){
     memset(plc_state->hist,0,sizeof(plc_state->hist));   
 }
 
-void btstack_sbc_plc_bad_frame(btstack_sbc_plc_state_t *plc_state, int16_t *ZIRbuf, int16_t *out){
+void btstack_sbc_plc_bad_frame(btstack_sbc_plc_state_t *plc_state, SAMPLE_FORMAT *ZIRbuf, SAMPLE_FORMAT *out){
     float val;
     int   i = 0;
     float sf = 1;
-    
     plc_state->nbf++;
    
     if (plc_state->nbf==1){
-        /* Perform pattern matching to find where to replicate */
+        // Perform pattern matching to find where to replicate
         plc_state->bestlag = PatternMatch(plc_state->hist);
-        /* the replication begins after the template match */
+        // the replication begins after the template match
         plc_state->bestlag += SBC_M; 
         
-        /* Compute Scale Factor to Match Amplitude of Substitution Packet to that of Preceding Packet */
+        // Compute Scale Factor to Match Amplitude of Substitution Packet to that of Preceding Packet
         sf = AmplitudeMatch(plc_state->hist, plc_state->bestlag);
         for (i=0;i<SBC_OLAL;i++){
             float left  = ZIRbuf[i];
             float right = sf*plc_state->hist[plc_state->bestlag+i];
             val = left*rcos[i] + right*rcos[SBC_OLAL-1-i];
-            plc_state->hist[SBC_LHIST+i] = crop_to_int16(val);
+            plc_state->hist[SBC_LHIST+i] = crop_sample(val);
         }
         
         for (;i<SBC_FS;i++){
             val = sf*plc_state->hist[plc_state->bestlag+i]; 
-            plc_state->hist[SBC_LHIST+i] = crop_to_int16(val);
+            plc_state->hist[SBC_LHIST+i] = crop_sample(val);
         }
         
         for (;i<SBC_FS+SBC_OLAL;i++){
             float left  = sf*plc_state->hist[plc_state->bestlag+i];
             float right = plc_state->hist[plc_state->bestlag+i];
-            val = left*rcos[i-SBC_FS]+right*rcos[SBC_FS+SBC_OLAL-1-i];
-            plc_state->hist[SBC_LHIST+i] = crop_to_int16(val);
+            val = left*rcos[i-SBC_FS]+right*rcos[SBC_OLAL-1-i+SBC_FS];
+            plc_state->hist[SBC_LHIST+i] = crop_sample(val);
         }
 
         for (;i<SBC_FS+SBC_RT+SBC_OLAL;i++){
             plc_state->hist[SBC_LHIST+i] = plc_state->hist[plc_state->bestlag+i];
         }
-            
     } else {
-        for (i=0;i<SBC_FS+SBC_RT+SBC_OLAL;i++){
+        for (;i<SBC_FS+SBC_RT+SBC_OLAL;i++){
             plc_state->hist[SBC_LHIST+i] = plc_state->hist[plc_state->bestlag+i];
         }
     }
@@ -196,14 +195,13 @@ void btstack_sbc_plc_bad_frame(btstack_sbc_plc_state_t *plc_state, int16_t *ZIRb
         out[i] = plc_state->hist[SBC_LHIST+i];
     }
         
-    /* shift the history buffer */
+   // shift the history buffer 
     for (i=0;i<SBC_LHIST+SBC_RT+SBC_OLAL;i++){
         plc_state->hist[i] = plc_state->hist[i+SBC_FS];
     }
-   
 }
 
-void btstack_sbc_plc_good_frame(btstack_sbc_plc_state_t *plc_state, int16_t *in, int16_t *out){
+void btstack_sbc_plc_good_frame(btstack_sbc_plc_state_t *plc_state, SAMPLE_FORMAT *in, SAMPLE_FORMAT *out){
     float val;
     int i = 0;
     if (plc_state->nbf>0){
@@ -211,22 +209,22 @@ void btstack_sbc_plc_good_frame(btstack_sbc_plc_state_t *plc_state, int16_t *in,
             out[i] = plc_state->hist[SBC_LHIST+i];
         }
             
-        for (;i<SBC_RT+SBC_OLAL;i++){
+        for (i = SBC_RT;i<SBC_RT+SBC_OLAL;i++){
             float left  = plc_state->hist[SBC_LHIST+i];
             float right = in[i];  
-            val = left*rcos[i-SBC_RT] + right*rcos[SBC_OLAL-1-i+SBC_RT];
-            out[i] = (int16_t)val;
+            val = left*rcos[i-SBC_RT] + right*rcos[SBC_OLAL+SBC_RT-1-i];
+            out[i] = (SAMPLE_FORMAT)val;
         }
     }
+
     for (;i<SBC_FS;i++){
         out[i] = in[i];
     }
-
-    /*Copy the output to the history buffer */
+    // Copy the output to the history buffer
     for (i=0;i<SBC_FS;i++){
         plc_state->hist[SBC_LHIST+i] = out[i];
     }
-    /* shift the history buffer */
+    // shift the history buffer
     for (i=0;i<SBC_LHIST;i++){
         plc_state->hist[i] = plc_state->hist[i+SBC_FS];
     }

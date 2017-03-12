@@ -140,15 +140,15 @@ callback for CTS interrupts.
 ### H5
 
 H5, makes use of the SLIP protocol to transmit a packet and can deal
-with packet loss and bit-errors by retranssion. Since it can recover
+with packet loss and bit-errors by retransmission. Since it can recover
 from packet loss, it's also possible for either side to enter sleep
 mode without loosing synchronization.
 
-The use of hardware flow control in H5 is ooptional, however, since
+The use of hardware flow control in H5 is optional, however, since
 BTstack uses hardware flow control to avoid packet buffers, it's
 recommended to only use H5 with RTS/CTS as well.
 
-For porting, the implementation follows the regular H4 procotol described above.
+For porting, the implementation follows the regular H4 protocol described above.
 
 ## Persistent Storage APIs {#sec:persistentStoragePorting}
 

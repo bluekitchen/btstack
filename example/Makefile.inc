@@ -42,6 +42,7 @@ CLASSIC += \
 	rfcomm.c	                \
 	bnep.c	                    \
 	sdp_server.c			            \
+	device_id_server.c          \
 
 SDP_CLIENT += \
 	sdp_client.o		        \
@@ -96,6 +97,7 @@ EXAMPLES = 					\
 	gatt_browser            \
 	le_counter              \
 	le_streamer				\
+	le_streamer_client      \
 	led_counter				\
 	sdp_bnep_query 			\
 	sdp_general_query		\
@@ -118,6 +120,7 @@ EXAMPLES_USING_LE =			\
 	gatt_browser			\
 	le_counter              \
 	le_streamer				\
+	le_streamer_client      \
 	spp_and_le_counter	    \
 	gap_le_advertisements   \
 	sm_pairing_peripheral   \
@@ -182,6 +185,9 @@ sm_pairing_central: ${CORE_OBJ} ${COMMON_OBJ} ${SM_OBJ} ad_parser.o sm_pairing_c
 
 le_streamer: le_streamer.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} le_streamer.c 
 	${CC} $(filter-out le_streamer.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
+
+le_streamer_client: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} ${SM_OBJ} le_streamer_client.c
+	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 spp_and_le_counter: spp_and_le_counter.h ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} spp_and_le_counter.c 
 	${CC} $(filter-out spp_and_le_counter.h,$^)  ${CFLAGS} ${LDFLAGS} -o $@

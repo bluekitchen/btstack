@@ -276,7 +276,10 @@ typedef uint8_t sm_key_t[16];
  */
 #define BTSTACK_EVENT_STATE                                0x60
 
-// data: event(8), len(8), nr hci connections
+/**
+ * @format 1
+ * @param number_connections
+ */
 #define BTSTACK_EVENT_NR_CONNECTIONS_CHANGED               0x61
 
 /**
@@ -366,6 +369,13 @@ typedef uint8_t sm_key_t[16];
 // additional HCI events
 
 /**
+ * @brief Indicates HCI transport enters/exits Sleep mode
+ * @format 1
+ * @param active
+ */
+#define HCI_EVENT_TRANSPORT_SLEEP_MODE                     0x69
+
+/**
  * @brief Outgoing packet 
  */
 #define HCI_EVENT_TRANSPORT_PACKET_SENT                    0x6E
@@ -428,7 +438,7 @@ typedef uint8_t sm_key_t[16];
  /** 
   * @format H2
   * @param handle
-  * @result
+  * @param result
   */
 #define L2CAP_EVENT_CONNECTION_PARAMETER_UPDATE_RESPONSE   0x77
 
@@ -658,6 +668,7 @@ typedef uint8_t sm_key_t[16];
 
 /**
  * @format H2LV
+ * @param handle
  * @param descriptor_handle
  * @param descriptor_length
  * @param descriptor
@@ -782,7 +793,7 @@ typedef uint8_t sm_key_t[16];
 #define SM_EVENT_PASSKEY_DISPLAY_CANCEL                          0xD3
 
  /**
-  * @format H1B421
+  * @format H1B
   * @param handle
   * @param addr_type
   * @param address
@@ -807,7 +818,7 @@ typedef uint8_t sm_key_t[16];
 #define SM_EVENT_NUMERIC_COMPARISON_REQUEST                      0xD6
 
  /**
-  * @format H1B4
+  * @format H1B
   * @param handle
   * @param addr_type
   * @param address
@@ -912,6 +923,8 @@ typedef uint8_t sm_key_t[16];
 #define HCI_EVENT_HSP_META                                 0xE8
 #define HCI_EVENT_HFP_META                                 0xE9
 #define HCI_EVENT_ANCS_META                                0xEA
+#define HCI_EVENT_AVDTP_META                               0xEB
+#define HCI_EVENT_AVRCP_META                               0xEC
 
 // Potential other meta groups
  // #define HCI_EVENT_BNEP_META                                0xxx
@@ -994,7 +1007,7 @@ typedef uint8_t sm_key_t[16];
 /** HFP Subevent */
 
 /**
- * @format 11HB1
+ * @format 11HB
  * @param subevent_code
  * @param status 0 == OK
  * @param con_handle
@@ -1009,7 +1022,7 @@ typedef uint8_t sm_key_t[16];
 #define HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED     0x02
 
 /**
- * @format 11HB11
+ * @format 11HB1
  * @param subevent_code
  * @param status 0 == OK
  * @param handle
@@ -1041,7 +1054,7 @@ typedef uint8_t sm_key_t[16];
 #define HFP_SUBEVENT_AG_INDICATOR_STATUS_CHANGED           0x06
 
 /**
- * @format 1111T
+ * @format 111T
  * @param subevent_code
  * @param network_operator_mode
  * @param network_operator_format
@@ -1210,5 +1223,260 @@ typedef uint8_t sm_key_t[16];
  * @param subevent_code
  */
 #define HCI_SUBEVENT_LE_ADVERTISEMENT_INDICATION                    0xE0
+
+/** AVDTP Subevent */
+
+/**
+ * @format 1H11
+ * @param subevent_code
+ * @param con_handle
+ * @param signal_identifier
+ * @param status 0 == OK
+ */
+#define AVDTP_SUBEVENT_SIGNALING_ACCEPT                     0x01
+
+/**
+ * @format 1H1
+ * @param subevent_code
+ * @param con_handle
+ * @param signal_identifier 
+ */
+#define AVDTP_SUBEVENT_SIGNALING_REJECT                     0x02
+
+/**
+ * @format 1H1
+ * @param subevent_code
+ * @param con_handle
+ * @param signal_identifier
+ */
+#define AVDTP_SUBEVENT_SIGNALING_GENERAL_REJECT             0x03
+
+/**
+ * @format 1HB1
+ * @param subevent_code
+ * @param con_handle
+ * @param bd_addr
+ * @param status 0 == OK
+ */
+#define AVDTP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED     0x04
+
+/**
+ * @format 1
+ * @param subevent_code
+ */
+#define AVDTP_SUBEVENT_SIGNALING_CONNECTION_RELEASED        0x05
+
+/**
+ * @format 1H1111
+ * @param subevent_code
+ * @param handle
+ * @param seid        0x01 – 0x3E
+ * @param in_use      0-not in use, 1-in use
+ * @param media_type  0-audio, 1-video, 2-multimedia
+ * @param sep_type    0-source, 1-sink
+ */
+#define AVDTP_SUBEVENT_SIGNALING_SEP_FOUND                  0x06
+
+/**
+ * @format 1H11111111
+ * @param subevent_code
+ * @param con_handle
+ * @param media_type
+ * @param sampling_frequency_bitmap
+ * @param channel_mode_bitmap
+ * @param block_length_bitmap
+ * @param subbands_bitmap
+ * @param allocation_method_bitmap
+ * @param min_bitpool_value
+ * @param max_bitpool_value
+ */
+#define AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CAPABILITY          0x07
+
+/**
+ * @format 1H12LV
+ * @param subevent_code
+ * @param con_handle
+ * @param media_type
+ * @param media_codec_type
+ * @param media_codec_information_len
+ * @param media_codec_information
+ */
+#define AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CAPABILITY        0x08
+
+/**
+ * @format 1H1121111111
+ * @param subevent_code
+ * @param con_handle
+ * @param reconfigure
+ * @param media_type
+ * @param sampling_frequency
+ * @param channel_mode
+ * @param num_channels
+ * @param block_length
+ * @param subbands
+ * @param allocation_method
+ * @param min_bitpool_value
+ * @param max_bitpool_value
+ */
+#define AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION        0x09
+
+/**
+ * @format 1H112LV
+ * @param subevent_code
+ * @param con_handle
+ * @param reconfigure
+ * @param media_type
+ * @param media_codec_type
+ * @param media_codec_information_len
+ * @param media_codec_information
+ */
+#define AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CONFIGURATION        0x0A
+
+
+/** AVRCP Subevent */
+
+/**
+ * @format 1H12B1
+ * @param subevent_code
+ * @param con_handle
+ * @param status 0 == OK
+ * @param local_cid
+ * @param bd_addr
+ */
+#define AVRCP_SUBEVENT_CONNECTION_ESTABLISHED                           0x01
+
+/**
+ * @format 1H
+ * @param subevent_code
+ * @param con_handle
+ */
+#define AVRCP_SUBEVENT_CONNECTION_RELEASED                              0x02
+
+/**
+ * @format 1H1114JVJVJVJV
+ * @param subevent_code
+ * @param con_handle
+ * @param status
+ * @param track
+ * @param total_tracks
+ * @param song_length in ms
+ * @param title_len
+ * @param title
+ * @param artist_len
+ * @param artist
+ * @param album_len
+ * @param album
+ * @param genre_len
+ * @param genre
+ */
+#define AVRCP_SUBEVENT_NOW_PLAYING_INFO                                 0x03
+
+/**
+ * @format 1H111
+ * @param subevent_code
+ * @param con_handle
+ * @param status
+ * @param repeat_mode
+ * @param shuffle_mode
+ */
+#define AVRCP_SUBEVENT_SHUFFLE_AND_REPEAT_MODE                          0x04
+
+/**
+ * @format 1H1441
+ * @param subevent_code
+ * @param con_handle
+ * @param status
+ * @param song_length
+ * @param song_position
+ * @param play_status
+ */
+ #define AVRCP_SUBEVENT_PLAY_STATUS                                     0x05
+
+/**
+ * @format 1H11
+ * @param subevent_code
+ * @param con_handle
+ * @param status
+ * @param playback_status
+ */
+#define AVRCP_SUBEVENT_NOTIFICATION_PLAYBACK_STATUS_CHANGED             0x06
+
+/**
+ * @format 1H11
+ * @param subevent_code
+ * @param con_handle
+ * @param status
+ * @param track_status
+ */
+#define AVRCP_SUBEVENT_NOTIFICATION_TRACK_CHANGED                       0x07
+  
+/**
+ * @format 1H1
+ * @param subevent_code
+ * @param con_handle
+ * @param status
+ */
+#define AVRCP_SUBEVENT_NOTIFICATION_NOW_PLAYING_CONTENT_CHANGED          0x08
+
+/**
+ * @format 1H1
+ * @param subevent_code
+ * @param con_handle
+ * @param status
+ */
+#define AVRCP_SUBEVENT_NOTIFICATION_AVAILABLE_PLAYERS_CHANGED            0x09
+
+/**
+ * @format 1H11
+ * @param subevent_code
+ * @param con_handle
+ * @param status
+ * @param absolute_volume
+ */
+#define AVRCP_SUBEVENT_NOTIFICATION_VOLUME_CHANGED                       0x0A
+
+/**
+ * @format 1H11
+ * @param subevent_code
+ * @param con_handle
+ * @param status
+ * @param absolute_volume
+ */
+#define AVRCP_SUBEVENT_SET_ABSOLUTE_VOLUME_RESPONSE                      0x0B
+
+/**
+ * @format 1H11
+ * @param subevent_code
+ * @param con_handle
+ * @param status
+ * @param notification_id
+ */
+#define AVRCP_SUBEVENT_ENABLE_NOTIFICATION_COMPLETE                       0x0C
+
+/**
+ * @format 1H11
+ * @param subevent_code
+ * @param con_handle
+ * @param status
+ * @param operation_id
+ */
+#define AVRCP_SUBEVENT_OPERATION_START                                    0x0D
+
+/**
+ * @format 1H11
+ * @param subevent_code
+ * @param con_handle
+ * @param status
+ * @param operation_id
+ */
+#define AVRCP_SUBEVENT_OPERATION_COMPLETE                                 0x0E
+
+/**
+ * @format 1H1
+ * @param subevent_code
+ * @param con_handle
+ * @param status
+ */
+#define AVRCP_SUBEVENT_PLAYER_APPLICATION_VALUE_RESPONSE                   0x0F
 
 #endif

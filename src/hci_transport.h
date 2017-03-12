@@ -38,7 +38,7 @@
 /*
  *  hci_transport.h
  *
- *  HCI Transport API -- allows BT Daemon to use different transport protcols 
+ *  HCI Transport API -- allows BTstack to use different transport interfaces
  *
  *  Created by Matthias Ringwald on 4/29/09.
  *
@@ -103,6 +103,11 @@ typedef struct {
      * extension for UART H5 on CSR: reset BCSP/H5 Link
      */
     void   (*reset_link)(void);
+
+    /**
+     * extension for USB transport implementations: config SCO connections
+     */
+    void   (*set_sco_config)(uint16_t voice_setting, int num_connections);
 
 } hci_transport_t;
 

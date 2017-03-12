@@ -17,11 +17,11 @@
 #define ENABLE_LE_CENTRAL
 #define ENABLE_LOG_ERROR
 #define ENABLE_LOG_INFO 
-#define ENABLE_LOG_INTO_HCI_DUMP
 #define ENABLE_SDP_DES_DUMP
 
 // BTstack configuration. buffers, sizes, ...
 #define HCI_ACL_PAYLOAD_SIZE 1021
+#define MAX_NR_LE_DEVICE_DB_ENTRIES 1
 
 // Daemon configuration
 #define ENABLE_SDP

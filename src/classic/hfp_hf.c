@@ -530,6 +530,8 @@ static int codecs_exchange_state_machine(hfp_connection_t * hfp_connection){
                 hfp_connection->codec_confirmed = hfp_connection->suggested_codec;
                 hfp_connection->ok_pending = 1;
                 hfp_connection->codecs_state = HFP_CODECS_HF_CONFIRMED_CODEC;
+                hfp_connection->negotiated_codec = hfp_connection->suggested_codec;
+                log_info("hfp: codec confirmed: %s", hfp_connection->negotiated_codec == HFP_CODEC_MSBC ? "mSBC" : "CVSD");
                 hfp_hf_cmd_confirm_codec(hfp_connection->rfcomm_cid, hfp_connection->codec_confirmed);
             } else {
                 hfp_connection->codec_confirmed = 0;
@@ -831,7 +833,7 @@ static void hfp_run_for_context(hfp_connection_t * hfp_connection){
                     hfp_connection->ok_pending = 1;
                     hfp_connection->generic_status_update_bitmap = store_bit(hfp_connection->generic_status_update_bitmap, i, 0);
                     char buffer[30];
-                    sprintf(buffer, "AT%s=%u,%u\r\n", HFP_TRANSFER_HF_INDICATOR_STATUS, hfp_indicators[i], hfp_indicators_value[i]);
+                    sprintf(buffer, "AT%s=%u,%u\r\n", HFP_TRANSFER_HF_INDICATOR_STATUS, hfp_indicators[i], (unsigned int) hfp_indicators_value[i]);
                     send_str_over_rfcomm(hfp_connection->rfcomm_cid, buffer);
                 } else {
                     log_info("Not sending HF indicator %u as it is disabled", hfp_indicators[i]);
@@ -965,8 +967,6 @@ static void hfp_hf_switch_on_ok(hfp_connection_t *hfp_connection){
                     break;
                 case HFP_CODECS_HF_CONFIRMED_CODEC:
                     hfp_connection->codecs_state = HFP_CODECS_EXCHANGED;
-                    hfp_connection->negotiated_codec = hfp_connection->suggested_codec;
-                    log_info("hfp: codec confirmed: %s", hfp_connection->negotiated_codec == HFP_CODEC_MSBC ? "mSBC" : "CVSD");
                     break;
                 default:
                     break;

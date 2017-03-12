@@ -202,7 +202,8 @@ typedef struct l2cap_signaling_response {
     hci_con_handle_t handle;
     uint8_t  sig_id;
     uint8_t  code;
-    uint16_t data; // infoType for INFORMATION REQUEST, result for CONNECTION request and command unknown
+    uint16_t cid;  // source cid for CONNECTION REQUEST
+    uint16_t data; // infoType for INFORMATION REQUEST, result for CONNECTION REQUEST and COMMAND UNKNOWN
 } l2cap_signaling_response_t;
     
 
@@ -248,7 +249,7 @@ uint16_t l2cap_max_le_mtu(void);
  * @param psm
  * @param mtu
  * @param local_cid
- * @param status
+ * @return status
  */
 uint8_t l2cap_create_channel(btstack_packet_handler_t packet_handler, bd_addr_t address, uint16_t psm, uint16_t mtu, uint16_t * out_local_cid);
 

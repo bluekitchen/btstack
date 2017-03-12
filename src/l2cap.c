@@ -272,7 +272,7 @@ int l2cap_send_connectionless(hci_con_handle_t con_handle, uint16_t cid, uint8_t
 }
 
 static void l2cap_emit_can_send_now(btstack_packet_handler_t packet_handler, uint16_t channel) {
-    log_info("L2CAP_EVENT_CHANNEL_CAN_SEND_NOW local_cid 0x%x", channel);
+    log_debug("L2CAP_EVENT_CHANNEL_CAN_SEND_NOW local_cid 0x%x", channel);
     uint8_t event[4];
     event[0] = L2CAP_EVENT_CAN_SEND_NOW;
     event[1] = sizeof(event) - 2;
@@ -564,11 +564,11 @@ static void l2cap_run(void){
         
         if (!hci_can_send_acl_packet_now(handle)) break;
 
-        uint8_t  sig_id = signaling_responses[0].sig_id;
-        uint16_t infoType = signaling_responses[0].data;    // INFORMATION_REQUEST
-        uint16_t result   = signaling_responses[0].data;    // CONNECTION_REQUEST, COMMAND_REJECT
+        uint8_t  sig_id        = signaling_responses[0].sig_id;
         uint8_t  response_code = signaling_responses[0].code;
-
+        uint16_t source_cid    = signaling_responses[0].cid;   // CONNECTION_REQUEST
+        uint16_t infoType      = signaling_responses[0].data;  // INFORMATION_REQUEST
+        uint16_t result        = signaling_responses[0].data;  // CONNECTION_REQUEST, COMMAND_REJECT
         UNUSED(infoType);
 
         // remove first item before sending (to avoid sending response mutliple times)
@@ -581,7 +581,7 @@ static void l2cap_run(void){
         switch (response_code){
 #ifdef ENABLE_CLASSIC
             case CONNECTION_REQUEST:
-                l2cap_send_signaling_packet(handle, CONNECTION_RESPONSE, sig_id, 0, 0, result, 0);
+                l2cap_send_signaling_packet(handle, CONNECTION_RESPONSE, sig_id, source_cid, 0, result, 0);
                 // also disconnect if result is 0x0003 - security blocked
                 if (result == 0x0003){
                     hci_disconnect_security_block(handle);
@@ -1233,12 +1233,13 @@ static void l2cap_hci_event_handler(uint8_t packet_type, uint16_t cid, uint8_t *
     l2cap_run();
 }
 
-static void l2cap_register_signaling_response(hci_con_handle_t handle, uint8_t code, uint8_t sig_id, uint16_t data){
+static void l2cap_register_signaling_response(hci_con_handle_t handle, uint8_t code, uint8_t sig_id, uint16_t cid, uint16_t data){
     // Vol 3, Part A, 4.3: "The DCID and SCID fields shall be ignored when the result field indi- cates the connection was refused."
     if (signaling_responses_pending < NR_PENDING_SIGNALING_RESPONSES) {
         signaling_responses[signaling_responses_pending].handle = handle;
         signaling_responses[signaling_responses_pending].code = code;
         signaling_responses[signaling_responses_pending].sig_id = sig_id;
+        signaling_responses[signaling_responses_pending].cid = cid;
         signaling_responses[signaling_responses_pending].data = data;
         signaling_responses_pending++;
         l2cap_run();
@@ -1258,7 +1259,7 @@ static void l2cap_handle_connection_request(hci_con_handle_t handle, uint8_t sig
     l2cap_service_t *service = l2cap_get_service(psm);
     if (!service) {
         // 0x0002 PSM not supported
-        l2cap_register_signaling_response(handle, CONNECTION_REQUEST, sig_id, 0x0002);
+        l2cap_register_signaling_response(handle, CONNECTION_REQUEST, sig_id, source_cid, 0x0002);
         return;
     }
     
@@ -1275,7 +1276,7 @@ static void l2cap_handle_connection_request(hci_con_handle_t handle, uint8_t sig
     psm, service->mtu, service->required_security_level);
     if (!channel){
         // 0x0004 No resources available
-        l2cap_register_signaling_response(handle, CONNECTION_REQUEST, sig_id, 0x0004);
+        l2cap_register_signaling_response(handle, CONNECTION_REQUEST, sig_id, source_cid, 0x0004);
         return;
     }
 
@@ -1509,7 +1510,7 @@ static void l2cap_signaling_handler_dispatch( hci_con_handle_t handle, uint8_t *
     
     // not for a particular channel, and not CONNECTION_REQUEST, ECHO_[REQUEST|RESPONSE], INFORMATION_REQUEST 
     if (code < 1 || code == ECHO_RESPONSE || code > INFORMATION_REQUEST){
-        l2cap_register_signaling_response(handle, COMMAND_REJECT, sig_id, L2CAP_REJ_CMD_UNKNOWN);
+        l2cap_register_signaling_response(handle, COMMAND_REJECT, sig_id, 0, L2CAP_REJ_CMD_UNKNOWN);
         return;
     }
 
@@ -1524,12 +1525,12 @@ static void l2cap_signaling_handler_dispatch( hci_con_handle_t handle, uint8_t *
         }
             
         case ECHO_REQUEST:
-            l2cap_register_signaling_response(handle, code, sig_id, 0);
+            l2cap_register_signaling_response(handle, code, sig_id, 0, 0);
             return;
             
         case INFORMATION_REQUEST: {
             uint16_t infoType = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET);
-            l2cap_register_signaling_response(handle, code, sig_id, infoType);
+            l2cap_register_signaling_response(handle, code, sig_id, 0, infoType);
             return;
         }
             
@@ -1691,7 +1692,7 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
                 uint16_t source_cid = little_endian_read_16(command, 6);
                 if (source_cid < 0x40){
                     // 0x0009 Connection refused - Invalid Source CID
-                    l2cap_register_signaling_response(handle, LE_CREDIT_BASED_CONNECTION_REQUEST, sig_id, 0x0009);
+                    l2cap_register_signaling_response(handle, LE_CREDIT_BASED_CONNECTION_REQUEST, sig_id, source_cid, 0x0009);
                     return 1;
                 }
 
@@ -1702,7 +1703,7 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
                     if (a_channel->con_handle != handle) continue;
                     if (a_channel->remote_cid != source_cid) continue;
                     // 0x000a Connection refused - Source CID already allocated
-                    l2cap_register_signaling_response(handle, LE_CREDIT_BASED_CONNECTION_REQUEST, sig_id, 0x000a);
+                    l2cap_register_signaling_response(handle, LE_CREDIT_BASED_CONNECTION_REQUEST, sig_id, source_cid, 0x000a);
                     return 1;
                 }                    
 
@@ -1710,13 +1711,13 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
                 if (service->required_security_level >= LEVEL_2){
                     if (sm_encryption_key_size(handle) == 0){
                         // 0x0008 Connection refused - insufficient encryption 
-                        l2cap_register_signaling_response(handle, LE_CREDIT_BASED_CONNECTION_REQUEST, sig_id, 0x0008);
+                        l2cap_register_signaling_response(handle, LE_CREDIT_BASED_CONNECTION_REQUEST, sig_id, source_cid, 0x0008);
                         return 1;
                     }
                     // anything less than 16 byte key size is insufficient
                     if (sm_encryption_key_size(handle) < 16){
                         // 0x0007 Connection refused – insufficient encryption key size
-                        l2cap_register_signaling_response(handle, LE_CREDIT_BASED_CONNECTION_REQUEST, sig_id, 0x0007);
+                        l2cap_register_signaling_response(handle, LE_CREDIT_BASED_CONNECTION_REQUEST, sig_id, source_cid, 0x0007);
                         return 1;
                     }
                 }
@@ -1725,7 +1726,7 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
                 if (service->required_security_level >= LEVEL_3){
                     if (!sm_authenticated(handle)){
                         // 0x0005 Connection refused – insufficient authentication
-                        l2cap_register_signaling_response(handle, LE_CREDIT_BASED_CONNECTION_REQUEST, sig_id, 0x0005);
+                        l2cap_register_signaling_response(handle, LE_CREDIT_BASED_CONNECTION_REQUEST, sig_id, source_cid, 0x0005);
                         return 1;
                     }
                 }
@@ -1734,7 +1735,7 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
                 if (service->required_security_level >= LEVEL_4){
                     if (sm_authorization_state(handle) != AUTHORIZATION_GRANTED){
                         // 0x0006 Connection refused – insufficient authorization
-                        l2cap_register_signaling_response(handle, LE_CREDIT_BASED_CONNECTION_REQUEST, sig_id, 0x0006);
+                        l2cap_register_signaling_response(handle, LE_CREDIT_BASED_CONNECTION_REQUEST, sig_id, source_cid, 0x0006);
                         return 1;
                     }
                 }
@@ -1744,7 +1745,7 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
                     BD_ADDR_TYPE_LE_RANDOM, le_psm, service->mtu, service->required_security_level);
                 if (!channel){
                     // 0x0004 Connection refused – no resources available
-                    l2cap_register_signaling_response(handle, LE_CREDIT_BASED_CONNECTION_REQUEST, sig_id, 0x0004);
+                    l2cap_register_signaling_response(handle, LE_CREDIT_BASED_CONNECTION_REQUEST, sig_id, source_cid, 0x0004);
                     return 1;
                 }
 
@@ -1767,7 +1768,7 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
 
             } else {
                 // Connection refused – LE_PSM not supported
-                l2cap_register_signaling_response(handle, LE_CREDIT_BASED_CONNECTION_REQUEST, sig_id, 0x0002);
+                l2cap_register_signaling_response(handle, LE_CREDIT_BASED_CONNECTION_REQUEST, sig_id, source_cid, 0x0002);
             }
             break;
 
@@ -1883,7 +1884,7 @@ static void l2cap_acl_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
             uint16_t sig_id = packet[COMPLETE_L2CAP_HEADER + 1];
             int      valid  = l2cap_le_signaling_handler_dispatch(handle, &packet[COMPLETE_L2CAP_HEADER], sig_id);
             if (!valid){
-                l2cap_register_signaling_response(handle, COMMAND_REJECT_LE, sig_id, L2CAP_REJ_CMD_UNKNOWN);
+                l2cap_register_signaling_response(handle, COMMAND_REJECT_LE, sig_id, 0, L2CAP_REJ_CMD_UNKNOWN);
             }
             break;
         }

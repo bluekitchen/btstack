@@ -16,10 +16,15 @@ $(NAME)_SOURCES += \
 	../../src/ble/att_db.c                \
 	../../src/ble/att_dispatch.c 		  \
 	../../src/ble/att_server.c   		  \
+	../../src/ble/gatt_client.c   		  \
 	../../src/ble/le_device_db_memory.c   \
+	../../src/ble/gatt-service/battery_service_server.c   \
 	../../src/ble/sm.c          		  \
+	../../src/classic/hfp.c 			  \
+	../../src/classic/hfp_ag.c 			  \
+	../../src/classic/hfp_hf.c 			  \
 	../../src/classic/hsp_hs.c            \
-	../../src/classic/btstack_link_key_db_memory.c \
+	../../src/classic/hsp_hs.c            \
 	../../src/classic/rfcomm.c            \
 	../../src/classic/sdp_server.c        \
 	../../src/classic/sdp_client.c        \
@@ -36,6 +41,7 @@ $(NAME)_SOURCES += \
 	../../src/hci_dump.c                  \
 	../../src/l2cap.c                     \
 	../../src/l2cap_signaling.c           \
+	../../example/sco_demo_util.c         \
 
 # WICED port incl. support for Broadcom chipset
 $(NAME)_SOURCES += \

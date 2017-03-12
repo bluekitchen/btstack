@@ -64,6 +64,9 @@ extern "C" {
 #include "classic/btstack_link_key_db_memory.h"
 #include "classic/rfcomm.h"
 #include "classic/sdp_server.h"
+#include "classic/avdtp_sink.h"
+#include "classic/avdtp_source.h"
+#include "classic/avrcp.h"
 
 // BLE
 #ifdef ENABLE_BLE
@@ -115,6 +118,18 @@ void   btstack_memory_hfp_connection_free(hfp_connection_t *hfp_connection);
 // service_record_item
 service_record_item_t * btstack_memory_service_record_item_get(void);
 void   btstack_memory_service_record_item_free(service_record_item_t *service_record_item);
+
+// avdtp_stream_endpoint
+avdtp_stream_endpoint_t * btstack_memory_avdtp_stream_endpoint_get(void);
+void   btstack_memory_avdtp_stream_endpoint_free(avdtp_stream_endpoint_t *avdtp_stream_endpoint);
+
+// avdtp_connection
+avdtp_connection_t * btstack_memory_avdtp_connection_get(void);
+void   btstack_memory_avdtp_connection_free(avdtp_connection_t *avdtp_connection);
+
+// avrcp_connection
+avrcp_connection_t * btstack_memory_avrcp_connection_get(void);
+void   btstack_memory_avrcp_connection_free(avrcp_connection_t *avrcp_connection);
 
 #ifdef ENABLE_BLE
 // gatt_client, whitelist_entry, sm_lookup_entry

@@ -1,1 +1,3 @@
 btstack_ring_buffer_test
+*.sbc
+*.wav

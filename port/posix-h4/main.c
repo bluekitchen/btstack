@@ -108,13 +108,15 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 }
 
 static void sigint_handler(int param){
+    UNUSED(param);
 
-#ifndef _WIN32
+    printf("CTRL-C - SIGINT received, shutting down..\n");   
+    log_info("sigint_handler: shutting down");
+
     // reset anyway
     btstack_stdin_reset();
-#endif
 
-    log_info(" <= SIGINT received, shutting down..\n");   
+    // power down
     hci_power_control(HCI_POWER_OFF);
     hci_close();
     log_info("Good bye, see you.\n");    
@@ -209,8 +211,9 @@ int main(int argc, const char * argv[]){
     hci_dump_open("/tmp/hci_dump.pklg", HCI_DUMP_PACKETLOGGER);
 
     // pick serial port
-    config.device_name = "/dev/tty.usbserial-A900K2WS"; // DFROBOT
-    // config.device_name = "/dev/tty.usbserial-A50285BI"; // BOOST-CC2564MODA New
+    // config.device_name = "/dev/tty.usbserial-A900K2WS"; // DFROBOT
+    config.device_name = "/dev/tty.usbserial-A50285BI"; // BOOST-CC2564MODA New
+    // config.device_name = "/dev/tty.usbserial-A9OVNX5P"; // RedBear IoT pHAT breakout board
 
     // init HCI
     const btstack_uart_block_t * uart_driver = btstack_uart_block_posix_instance();

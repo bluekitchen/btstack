@@ -45,7 +45,11 @@
 
 #include "btstack_util.h"
 
+#ifdef _WIN32
+#define LINK_KEY_PATH ""
+#else
 #define LINK_KEY_PATH "/tmp/"
+#endif
 #define LINK_KEY_PREFIX "btstack_at_"
 #define LINK_KEY_FOR "_link_key_for_"
 #define LINK_KEY_SUFFIX ".txt"

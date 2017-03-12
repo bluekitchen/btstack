@@ -49,11 +49,13 @@
 #include "btstack_cvsd_plc.h"
 #include "btstack_debug.h"
 
+#define SAMPLE_FORMAT int16_t
+
 static float rcos[CVSD_OLAL] = {
-    0.99148655,0.96623611,0.92510857,0.86950446,
-    0.80131732,0.72286918,0.63683150,0.54613418, 
-    0.45386582,0.36316850,0.27713082,0.19868268, 
-    0.13049554,0.07489143,0.03376389,0.00851345};
+    0.99148655f,0.96623611f,0.92510857f,0.86950446f,
+    0.80131732f,0.72286918f,0.63683150f,0.54613418f, 
+    0.45386582f,0.36316850f,0.27713082f,0.19868268f, 
+    0.13049554f,0.07489143f,0.03376389f,0.00851345f};
 
 // taken from http://www.codeproject.com/Articles/69941/Best-Square-Root-Method-Algorithm-Function-Precisi
 // Algorithm: Babylonian Method + some manipulations on IEEE 32 bit floating point representation
@@ -79,7 +81,7 @@ static float absolute(float x){
      return x;
 }
 
-static float CrossCorrelation(int8_t *x, int8_t *y){
+static float CrossCorrelation(SAMPLE_FORMAT *x, SAMPLE_FORMAT *y){
     float num = 0;
     float den = 0;
     float x2 = 0;
@@ -94,7 +96,7 @@ static float CrossCorrelation(int8_t *x, int8_t *y){
     return num/den;
 }
 
-static int PatternMatch(int8_t *y){
+static int PatternMatch(SAMPLE_FORMAT *y){
     float maxCn = -999999.0;  // large negative number
     int   bestmatch = 0;
     float Cn;
@@ -109,7 +111,7 @@ static int PatternMatch(int8_t *y){
     return bestmatch;
 }
 
-static float AmplitudeMatch(int8_t *y, int8_t bestmatch) {
+static float AmplitudeMatch(SAMPLE_FORMAT *y, SAMPLE_FORMAT bestmatch) {
     int   i;
     float sumx = 0;
     float sumy = 0.000001f;
@@ -126,19 +128,18 @@ static float AmplitudeMatch(int8_t *y, int8_t bestmatch) {
     return sf;
 }
 
-static int8_t crop_to_int8(float val){
+static SAMPLE_FORMAT crop_sample(float val){
     float croped_val = val;
-    if (croped_val > 127.0)  croped_val= 127.0;
-    if (croped_val < -128.0) croped_val=-128.0; 
-    return (int8_t) croped_val;
+    if (croped_val > 32767.0)  croped_val= 32767.0;
+    if (croped_val < -32768.0) croped_val=-32768.0; 
+    return (SAMPLE_FORMAT) croped_val;
 }
-
 
 void btstack_cvsd_plc_init(btstack_cvsd_plc_state_t *plc_state){
     memset(plc_state, 0, sizeof(btstack_cvsd_plc_state_t));
 }
 
-void btstack_cvsd_plc_bad_frame(btstack_cvsd_plc_state_t *plc_state, int8_t *out){
+void btstack_cvsd_plc_bad_frame(btstack_cvsd_plc_state_t *plc_state, SAMPLE_FORMAT *out){
     float val;
     int   i = 0;
     float sf = 1;
@@ -154,19 +155,19 @@ void btstack_cvsd_plc_bad_frame(btstack_cvsd_plc_state_t *plc_state, int8_t *out
         sf = AmplitudeMatch(plc_state->hist, plc_state->bestlag);
         for (i=0;i<CVSD_OLAL;i++){
             val = sf*plc_state->hist[plc_state->bestlag+i];
-            plc_state->hist[CVSD_LHIST+i] = crop_to_int8(val);
+            plc_state->hist[CVSD_LHIST+i] = crop_sample(val);
         }
         
         for (;i<CVSD_FS;i++){
             val = sf*plc_state->hist[plc_state->bestlag+i]; 
-            plc_state->hist[CVSD_LHIST+i] = crop_to_int8(val);
+            plc_state->hist[CVSD_LHIST+i] = crop_sample(val);
         }
         
         for (;i<CVSD_FS+CVSD_OLAL;i++){
             float left  = sf*plc_state->hist[plc_state->bestlag+i];
             float right = plc_state->hist[plc_state->bestlag+i];
             val = left*rcos[i-CVSD_FS] + right*rcos[CVSD_OLAL-1-i+CVSD_FS];
-            plc_state->hist[CVSD_LHIST+i] = crop_to_int8(val);
+            plc_state->hist[CVSD_LHIST+i] = crop_sample(val);
         }
 
         for (;i<CVSD_FS+CVSD_RT+CVSD_OLAL;i++){
@@ -187,7 +188,7 @@ void btstack_cvsd_plc_bad_frame(btstack_cvsd_plc_state_t *plc_state, int8_t *out
     }
 }
 
-void btstack_cvsd_plc_good_frame(btstack_cvsd_plc_state_t *plc_state, int8_t *in, int8_t *out){
+void btstack_cvsd_plc_good_frame(btstack_cvsd_plc_state_t *plc_state, SAMPLE_FORMAT *in, SAMPLE_FORMAT *out){
     float val;
     int i = 0;
     if (plc_state->nbf>0){
@@ -199,7 +200,7 @@ void btstack_cvsd_plc_good_frame(btstack_cvsd_plc_state_t *plc_state, int8_t *in
             float left  = plc_state->hist[CVSD_LHIST+i];
             float right = in[i];
             val = left * rcos[i-CVSD_RT] + right *rcos[CVSD_OLAL+CVSD_RT-1-i];
-            out[i] = (int8_t)val;
+            out[i] = (SAMPLE_FORMAT)val;
         }
     }
 
@@ -217,7 +218,7 @@ void btstack_cvsd_plc_good_frame(btstack_cvsd_plc_state_t *plc_state, int8_t *in
     plc_state->nbf=0;
 }
 
-static int count_equal_bytes(int8_t * packet, uint16_t size){
+static int count_equal_samples(SAMPLE_FORMAT * packet, uint16_t size){
     int count = 0;
     int temp_count = 1;
     int i;
@@ -237,13 +238,15 @@ static int count_equal_bytes(int8_t * packet, uint16_t size){
     return count;
 }
 
-static int bad_frame(int8_t * frame, uint16_t size){
-    return count_equal_bytes(frame, size) > 20;
+// @assumption frame len 24 samples
+static int bad_frame(SAMPLE_FORMAT * frame, uint16_t size){
+    return count_equal_samples(frame, size) > 20;
 }
 
-void btstack_cvsd_plc_process_data(btstack_cvsd_plc_state_t * state, int8_t * in, uint16_t size, int8_t * out){
+void btstack_cvsd_plc_process_data(btstack_cvsd_plc_state_t * state, SAMPLE_FORMAT * in, uint16_t size, SAMPLE_FORMAT * out){
     if (size != 24){
         log_error("btstack_cvsd_plc_process_data: audio frame size is incorrect. Expected %d, got %d", CVSD_FS, size);
+        return;
     }
     state->frame_count++;
     if (bad_frame(in,size)){
@@ -256,27 +259,6 @@ void btstack_cvsd_plc_process_data(btstack_cvsd_plc_state_t * state, int8_t * in
         }
     } else {
         btstack_cvsd_plc_good_frame(state, in, out);
-        state->good_frames_nr++;
-        if (state->good_frames_nr == 1){
-            log_info("First good frame at index %d\n", state->frame_count-1);
-        }        
-    }
-}
-
-void btstack_cvsd_plc_mark_bad_frame(btstack_cvsd_plc_state_t * state, int8_t * in, uint16_t size, int8_t * out){
-    if (size != 24){
-        log_error("btstack_cvsd_plc_mark_bad_frame: audio frame size is incorrect. Expected %d, got %d", CVSD_FS, size);
-    }
-    state->frame_count++;
-    
-    if (bad_frame(in,size)){
-        memcpy(out, in, size);
-        if (state->good_frames_nr > CVSD_LHIST/CVSD_FS){
-            memset(out, 50, size);
-            state->bad_frames_nr++;
-        } 
-    } else {
-        memcpy(out, in, size);
         state->good_frames_nr++;
         if (state->good_frames_nr == 1){
             log_info("First good frame at index %d\n", state->frame_count-1);

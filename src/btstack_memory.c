@@ -55,7 +55,7 @@
 // MARK: hci_connection_t
 #if !defined(HAVE_MALLOC) && !defined(MAX_NR_HCI_CONNECTIONS)
     #if defined(MAX_NO_HCI_CONNECTIONS)
-        #error "Deprecated MAX_NO_HCI_CONNECTIONS defined instead of MAX_NR_HCI_CONNECTIONS. Please update your btstack_config.h to use MAX_NR_HCI_CONNECTIONS"
+        #error "Deprecated MAX_NO_HCI_CONNECTIONS defined instead of MAX_NR_HCI_CONNECTIONS. Please update your btstack_config.h to use MAX_NR_HCI_CONNECTIONS."
     #else
         #define MAX_NR_HCI_CONNECTIONS 0
     #endif
@@ -94,7 +94,7 @@ void btstack_memory_hci_connection_free(hci_connection_t *hci_connection){
 // MARK: l2cap_service_t
 #if !defined(HAVE_MALLOC) && !defined(MAX_NR_L2CAP_SERVICES)
     #if defined(MAX_NO_L2CAP_SERVICES)
-        #error "Deprecated MAX_NO_L2CAP_SERVICES defined instead of MAX_NR_L2CAP_SERVICES. Please update your btstack_config.h to use MAX_NR_L2CAP_SERVICES"
+        #error "Deprecated MAX_NO_L2CAP_SERVICES defined instead of MAX_NR_L2CAP_SERVICES. Please update your btstack_config.h to use MAX_NR_L2CAP_SERVICES."
     #else
         #define MAX_NR_L2CAP_SERVICES 0
     #endif
@@ -132,7 +132,7 @@ void btstack_memory_l2cap_service_free(l2cap_service_t *l2cap_service){
 // MARK: l2cap_channel_t
 #if !defined(HAVE_MALLOC) && !defined(MAX_NR_L2CAP_CHANNELS)
     #if defined(MAX_NO_L2CAP_CHANNELS)
-        #error "Deprecated MAX_NO_L2CAP_CHANNELS defined instead of MAX_NR_L2CAP_CHANNELS. Please update your btstack_config.h to use MAX_NR_L2CAP_CHANNELS"
+        #error "Deprecated MAX_NO_L2CAP_CHANNELS defined instead of MAX_NR_L2CAP_CHANNELS. Please update your btstack_config.h to use MAX_NR_L2CAP_CHANNELS."
     #else
         #define MAX_NR_L2CAP_CHANNELS 0
     #endif
@@ -171,7 +171,7 @@ void btstack_memory_l2cap_channel_free(l2cap_channel_t *l2cap_channel){
 // MARK: rfcomm_multiplexer_t
 #if !defined(HAVE_MALLOC) && !defined(MAX_NR_RFCOMM_MULTIPLEXERS)
     #if defined(MAX_NO_RFCOMM_MULTIPLEXERS)
-        #error "Deprecated MAX_NO_RFCOMM_MULTIPLEXERS defined instead of MAX_NR_RFCOMM_MULTIPLEXERS. Please update your btstack_config.h to use MAX_NR_RFCOMM_MULTIPLEXERS"
+        #error "Deprecated MAX_NO_RFCOMM_MULTIPLEXERS defined instead of MAX_NR_RFCOMM_MULTIPLEXERS. Please update your btstack_config.h to use MAX_NR_RFCOMM_MULTIPLEXERS."
     #else
         #define MAX_NR_RFCOMM_MULTIPLEXERS 0
     #endif
@@ -209,7 +209,7 @@ void btstack_memory_rfcomm_multiplexer_free(rfcomm_multiplexer_t *rfcomm_multipl
 // MARK: rfcomm_service_t
 #if !defined(HAVE_MALLOC) && !defined(MAX_NR_RFCOMM_SERVICES)
     #if defined(MAX_NO_RFCOMM_SERVICES)
-        #error "Deprecated MAX_NO_RFCOMM_SERVICES defined instead of MAX_NR_RFCOMM_SERVICES. Please update your btstack_config.h to use MAX_NR_RFCOMM_SERVICES"
+        #error "Deprecated MAX_NO_RFCOMM_SERVICES defined instead of MAX_NR_RFCOMM_SERVICES. Please update your btstack_config.h to use MAX_NR_RFCOMM_SERVICES."
     #else
         #define MAX_NR_RFCOMM_SERVICES 0
     #endif
@@ -247,7 +247,7 @@ void btstack_memory_rfcomm_service_free(rfcomm_service_t *rfcomm_service){
 // MARK: rfcomm_channel_t
 #if !defined(HAVE_MALLOC) && !defined(MAX_NR_RFCOMM_CHANNELS)
     #if defined(MAX_NO_RFCOMM_CHANNELS)
-        #error "Deprecated MAX_NO_RFCOMM_CHANNELS defined instead of MAX_NR_RFCOMM_CHANNELS. Please update your btstack_config.h to use MAX_NR_RFCOMM_CHANNELS"
+        #error "Deprecated MAX_NO_RFCOMM_CHANNELS defined instead of MAX_NR_RFCOMM_CHANNELS. Please update your btstack_config.h to use MAX_NR_RFCOMM_CHANNELS."
     #else
         #define MAX_NR_RFCOMM_CHANNELS 0
     #endif
@@ -286,7 +286,7 @@ void btstack_memory_rfcomm_channel_free(rfcomm_channel_t *rfcomm_channel){
 // MARK: btstack_link_key_db_memory_entry_t
 #if !defined(HAVE_MALLOC) && !defined(MAX_NR_BTSTACK_LINK_KEY_DB_MEMORY_ENTRIES)
     #if defined(MAX_NO_BTSTACK_LINK_KEY_DB_MEMORY_ENTRIES)
-        #error "Deprecated MAX_NO_BTSTACK_LINK_KEY_DB_MEMORY_ENTRIES defined instead of MAX_NR_BTSTACK_LINK_KEY_DB_MEMORY_ENTRIES. Please update your btstack_config.h to use MAX_NR_BTSTACK_LINK_KEY_DB_MEMORY_ENTRIES"
+        #error "Deprecated MAX_NO_BTSTACK_LINK_KEY_DB_MEMORY_ENTRIES defined instead of MAX_NR_BTSTACK_LINK_KEY_DB_MEMORY_ENTRIES. Please update your btstack_config.h to use MAX_NR_BTSTACK_LINK_KEY_DB_MEMORY_ENTRIES."
     #else
         #define MAX_NR_BTSTACK_LINK_KEY_DB_MEMORY_ENTRIES 0
     #endif
@@ -325,7 +325,7 @@ void btstack_memory_btstack_link_key_db_memory_entry_free(btstack_link_key_db_me
 // MARK: bnep_service_t
 #if !defined(HAVE_MALLOC) && !defined(MAX_NR_BNEP_SERVICES)
     #if defined(MAX_NO_BNEP_SERVICES)
-        #error "Deprecated MAX_NO_BNEP_SERVICES defined instead of MAX_NR_BNEP_SERVICES. Please update your btstack_config.h to use MAX_NR_BNEP_SERVICES"
+        #error "Deprecated MAX_NO_BNEP_SERVICES defined instead of MAX_NR_BNEP_SERVICES. Please update your btstack_config.h to use MAX_NR_BNEP_SERVICES."
     #else
         #define MAX_NR_BNEP_SERVICES 0
     #endif
@@ -363,7 +363,7 @@ void btstack_memory_bnep_service_free(bnep_service_t *bnep_service){
 // MARK: bnep_channel_t
 #if !defined(HAVE_MALLOC) && !defined(MAX_NR_BNEP_CHANNELS)
     #if defined(MAX_NO_BNEP_CHANNELS)
-        #error "Deprecated MAX_NO_BNEP_CHANNELS defined instead of MAX_NR_BNEP_CHANNELS. Please update your btstack_config.h to use MAX_NR_BNEP_CHANNELS"
+        #error "Deprecated MAX_NO_BNEP_CHANNELS defined instead of MAX_NR_BNEP_CHANNELS. Please update your btstack_config.h to use MAX_NR_BNEP_CHANNELS."
     #else
         #define MAX_NR_BNEP_CHANNELS 0
     #endif
@@ -402,7 +402,7 @@ void btstack_memory_bnep_channel_free(bnep_channel_t *bnep_channel){
 // MARK: hfp_connection_t
 #if !defined(HAVE_MALLOC) && !defined(MAX_NR_HFP_CONNECTIONS)
     #if defined(MAX_NO_HFP_CONNECTIONS)
-        #error "Deprecated MAX_NO_HFP_CONNECTIONS defined instead of MAX_NR_HFP_CONNECTIONS. Please update your btstack_config.h to use MAX_NR_HFP_CONNECTIONS"
+        #error "Deprecated MAX_NO_HFP_CONNECTIONS defined instead of MAX_NR_HFP_CONNECTIONS. Please update your btstack_config.h to use MAX_NR_HFP_CONNECTIONS."
     #else
         #define MAX_NR_HFP_CONNECTIONS 0
     #endif
@@ -441,7 +441,7 @@ void btstack_memory_hfp_connection_free(hfp_connection_t *hfp_connection){
 // MARK: service_record_item_t
 #if !defined(HAVE_MALLOC) && !defined(MAX_NR_SERVICE_RECORD_ITEMS)
     #if defined(MAX_NO_SERVICE_RECORD_ITEMS)
-        #error "Deprecated MAX_NO_SERVICE_RECORD_ITEMS defined instead of MAX_NR_SERVICE_RECORD_ITEMS. Please update your btstack_config.h to use MAX_NR_SERVICE_RECORD_ITEMS"
+        #error "Deprecated MAX_NO_SERVICE_RECORD_ITEMS defined instead of MAX_NR_SERVICE_RECORD_ITEMS. Please update your btstack_config.h to use MAX_NR_SERVICE_RECORD_ITEMS."
     #else
         #define MAX_NR_SERVICE_RECORD_ITEMS 0
     #endif
@@ -476,12 +476,129 @@ void btstack_memory_service_record_item_free(service_record_item_t *service_reco
 #endif
 
 
+
+// MARK: avdtp_stream_endpoint_t
+#if !defined(HAVE_MALLOC) && !defined(MAX_NR_AVDTP_STREAM_ENDPOINTS)
+    #if defined(MAX_NO_AVDTP_STREAM_ENDPOINTS)
+        #error "Deprecated MAX_NO_AVDTP_STREAM_ENDPOINTS defined instead of MAX_NR_AVDTP_STREAM_ENDPOINTS. Please update your btstack_config.h to use MAX_NR_AVDTP_STREAM_ENDPOINTS."
+    #else
+        #define MAX_NR_AVDTP_STREAM_ENDPOINTS 0
+    #endif
+#endif
+
+#ifdef MAX_NR_AVDTP_STREAM_ENDPOINTS
+#if MAX_NR_AVDTP_STREAM_ENDPOINTS > 0
+static avdtp_stream_endpoint_t avdtp_stream_endpoint_storage[MAX_NR_AVDTP_STREAM_ENDPOINTS];
+static btstack_memory_pool_t avdtp_stream_endpoint_pool;
+avdtp_stream_endpoint_t * btstack_memory_avdtp_stream_endpoint_get(void){
+    return (avdtp_stream_endpoint_t *) btstack_memory_pool_get(&avdtp_stream_endpoint_pool);
+}
+void btstack_memory_avdtp_stream_endpoint_free(avdtp_stream_endpoint_t *avdtp_stream_endpoint){
+    btstack_memory_pool_free(&avdtp_stream_endpoint_pool, avdtp_stream_endpoint);
+}
+#else
+avdtp_stream_endpoint_t * btstack_memory_avdtp_stream_endpoint_get(void){
+    return NULL;
+}
+void btstack_memory_avdtp_stream_endpoint_free(avdtp_stream_endpoint_t *avdtp_stream_endpoint){
+    // silence compiler warning about unused parameter in a portable way
+    (void) avdtp_stream_endpoint;
+};
+#endif
+#elif defined(HAVE_MALLOC)
+avdtp_stream_endpoint_t * btstack_memory_avdtp_stream_endpoint_get(void){
+    return (avdtp_stream_endpoint_t*) malloc(sizeof(avdtp_stream_endpoint_t));
+}
+void btstack_memory_avdtp_stream_endpoint_free(avdtp_stream_endpoint_t *avdtp_stream_endpoint){
+    free(avdtp_stream_endpoint);
+}
+#endif
+
+
+
+// MARK: avdtp_connection_t
+#if !defined(HAVE_MALLOC) && !defined(MAX_NR_AVDTP_CONNECTIONS)
+    #if defined(MAX_NO_AVDTP_CONNECTIONS)
+        #error "Deprecated MAX_NO_AVDTP_CONNECTIONS defined instead of MAX_NR_AVDTP_CONNECTIONS. Please update your btstack_config.h to use MAX_NR_AVDTP_CONNECTIONS."
+    #else
+        #define MAX_NR_AVDTP_CONNECTIONS 0
+    #endif
+#endif
+
+#ifdef MAX_NR_AVDTP_CONNECTIONS
+#if MAX_NR_AVDTP_CONNECTIONS > 0
+static avdtp_connection_t avdtp_connection_storage[MAX_NR_AVDTP_CONNECTIONS];
+static btstack_memory_pool_t avdtp_connection_pool;
+avdtp_connection_t * btstack_memory_avdtp_connection_get(void){
+    return (avdtp_connection_t *) btstack_memory_pool_get(&avdtp_connection_pool);
+}
+void btstack_memory_avdtp_connection_free(avdtp_connection_t *avdtp_connection){
+    btstack_memory_pool_free(&avdtp_connection_pool, avdtp_connection);
+}
+#else
+avdtp_connection_t * btstack_memory_avdtp_connection_get(void){
+    return NULL;
+}
+void btstack_memory_avdtp_connection_free(avdtp_connection_t *avdtp_connection){
+    // silence compiler warning about unused parameter in a portable way
+    (void) avdtp_connection;
+};
+#endif
+#elif defined(HAVE_MALLOC)
+avdtp_connection_t * btstack_memory_avdtp_connection_get(void){
+    return (avdtp_connection_t*) malloc(sizeof(avdtp_connection_t));
+}
+void btstack_memory_avdtp_connection_free(avdtp_connection_t *avdtp_connection){
+    free(avdtp_connection);
+}
+#endif
+
+
+
+// MARK: avrcp_connection_t
+#if !defined(HAVE_MALLOC) && !defined(MAX_NR_AVRCP_CONNECTIONS)
+    #if defined(MAX_NO_AVRCP_CONNECTIONS)
+        #error "Deprecated MAX_NO_AVRCP_CONNECTIONS defined instead of MAX_NR_AVRCP_CONNECTIONS. Please update your btstack_config.h to use MAX_NR_AVRCP_CONNECTIONS."
+    #else
+        #define MAX_NR_AVRCP_CONNECTIONS 0
+    #endif
+#endif
+
+#ifdef MAX_NR_AVRCP_CONNECTIONS
+#if MAX_NR_AVRCP_CONNECTIONS > 0
+static avrcp_connection_t avrcp_connection_storage[MAX_NR_AVRCP_CONNECTIONS];
+static btstack_memory_pool_t avrcp_connection_pool;
+avrcp_connection_t * btstack_memory_avrcp_connection_get(void){
+    return (avrcp_connection_t *) btstack_memory_pool_get(&avrcp_connection_pool);
+}
+void btstack_memory_avrcp_connection_free(avrcp_connection_t *avrcp_connection){
+    btstack_memory_pool_free(&avrcp_connection_pool, avrcp_connection);
+}
+#else
+avrcp_connection_t * btstack_memory_avrcp_connection_get(void){
+    return NULL;
+}
+void btstack_memory_avrcp_connection_free(avrcp_connection_t *avrcp_connection){
+    // silence compiler warning about unused parameter in a portable way
+    (void) avrcp_connection;
+};
+#endif
+#elif defined(HAVE_MALLOC)
+avrcp_connection_t * btstack_memory_avrcp_connection_get(void){
+    return (avrcp_connection_t*) malloc(sizeof(avrcp_connection_t));
+}
+void btstack_memory_avrcp_connection_free(avrcp_connection_t *avrcp_connection){
+    free(avrcp_connection);
+}
+#endif
+
+
 #ifdef ENABLE_BLE
 
 // MARK: gatt_client_t
 #if !defined(HAVE_MALLOC) && !defined(MAX_NR_GATT_CLIENTS)
     #if defined(MAX_NO_GATT_CLIENTS)
-        #error "Deprecated MAX_NO_GATT_CLIENTS defined instead of MAX_NR_GATT_CLIENTS. Please update your btstack_config.h to use MAX_NR_GATT_CLIENTS"
+        #error "Deprecated MAX_NO_GATT_CLIENTS defined instead of MAX_NR_GATT_CLIENTS. Please update your btstack_config.h to use MAX_NR_GATT_CLIENTS."
     #else
         #define MAX_NR_GATT_CLIENTS 0
     #endif
@@ -519,7 +636,7 @@ void btstack_memory_gatt_client_free(gatt_client_t *gatt_client){
 // MARK: whitelist_entry_t
 #if !defined(HAVE_MALLOC) && !defined(MAX_NR_WHITELIST_ENTRIES)
     #if defined(MAX_NO_WHITELIST_ENTRIES)
-        #error "Deprecated MAX_NO_WHITELIST_ENTRIES defined instead of MAX_NR_WHITELIST_ENTRIES. Please update your btstack_config.h to use MAX_NR_WHITELIST_ENTRIES"
+        #error "Deprecated MAX_NO_WHITELIST_ENTRIES defined instead of MAX_NR_WHITELIST_ENTRIES. Please update your btstack_config.h to use MAX_NR_WHITELIST_ENTRIES."
     #else
         #define MAX_NR_WHITELIST_ENTRIES 0
     #endif
@@ -557,7 +674,7 @@ void btstack_memory_whitelist_entry_free(whitelist_entry_t *whitelist_entry){
 // MARK: sm_lookup_entry_t
 #if !defined(HAVE_MALLOC) && !defined(MAX_NR_SM_LOOKUP_ENTRIES)
     #if defined(MAX_NO_SM_LOOKUP_ENTRIES)
-        #error "Deprecated MAX_NO_SM_LOOKUP_ENTRIES defined instead of MAX_NR_SM_LOOKUP_ENTRIES. Please update your btstack_config.h to use MAX_NR_SM_LOOKUP_ENTRIES"
+        #error "Deprecated MAX_NO_SM_LOOKUP_ENTRIES defined instead of MAX_NR_SM_LOOKUP_ENTRIES. Please update your btstack_config.h to use MAX_NR_SM_LOOKUP_ENTRIES."
     #else
         #define MAX_NR_SM_LOOKUP_ENTRIES 0
     #endif
@@ -627,6 +744,15 @@ void btstack_memory_init(void){
 #endif
 #if MAX_NR_SERVICE_RECORD_ITEMS > 0
     btstack_memory_pool_create(&service_record_item_pool, service_record_item_storage, MAX_NR_SERVICE_RECORD_ITEMS, sizeof(service_record_item_t));
+#endif
+#if MAX_NR_AVDTP_STREAM_ENDPOINTS > 0
+    btstack_memory_pool_create(&avdtp_stream_endpoint_pool, avdtp_stream_endpoint_storage, MAX_NR_AVDTP_STREAM_ENDPOINTS, sizeof(avdtp_stream_endpoint_t));
+#endif
+#if MAX_NR_AVDTP_CONNECTIONS > 0
+    btstack_memory_pool_create(&avdtp_connection_pool, avdtp_connection_storage, MAX_NR_AVDTP_CONNECTIONS, sizeof(avdtp_connection_t));
+#endif
+#if MAX_NR_AVRCP_CONNECTIONS > 0
+    btstack_memory_pool_create(&avrcp_connection_pool, avrcp_connection_storage, MAX_NR_AVRCP_CONNECTIONS, sizeof(avrcp_connection_t));
 #endif
 #ifdef ENABLE_BLE
 #if MAX_NR_GATT_CLIENTS > 0

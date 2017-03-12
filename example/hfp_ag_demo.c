@@ -68,8 +68,8 @@ const char hfp_ag_service_name[] = "BTstack HFP AG Test";
 static bd_addr_t device_addr;
 static const char * device_addr_string = "00:15:83:5F:9D:46";
 
-// static uint8_t codecs[] = {HFP_CODEC_CVSD, HFP_CODEC_MSBC};
-static uint8_t codecs[] = {HFP_CODEC_CVSD};
+static uint8_t codecs[] = {HFP_CODEC_CVSD, HFP_CODEC_MSBC};
+// static uint8_t codecs[] = {HFP_CODEC_CVSD};
 static uint8_t negotiated_codec = HFP_CODEC_CVSD;
 
 static hci_con_handle_t acl_handle = -1;
@@ -622,17 +622,18 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                     }
                     break;
                 case HFP_SUBEVENT_AUDIO_CONNECTION_RELEASED:
-                    printf("\n** Audio connection released **\n");
+                    printf("Audio connection released\n");
                     sco_handle = 0;
+                    sco_demo_close();
                     break;
                 case HFP_SUBEVENT_START_RINGINIG:
-                    printf("\n** Start Ringing **\n");
+                    printf("Start Ringing\n");
                     break;        
                 case HFP_SUBEVENT_STOP_RINGINIG:
-                    printf("\n** Stop Ringing **\n");
+                    printf("Stop Ringing\n");
                     break;
                 case HFP_SUBEVENT_PLACE_CALL_WITH_NUMBER:
-                    printf("\n** Outgoing call '%s' **\n", hfp_subevent_place_call_with_number_get_number(event));
+                    printf("Outgoing call '%s'\n", hfp_subevent_place_call_with_number_get_number(event));
                     // validate number
                     if ( strcmp("1234567", hfp_subevent_place_call_with_number_get_number(event)) == 0
                       || strcmp("7654321", hfp_subevent_place_call_with_number_get_number(event)) == 0
@@ -646,11 +647,11 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                     break;
                 
                 case HFP_SUBEVENT_ATTACH_NUMBER_TO_VOICE_TAG:
-                    printf("\n** Attach number to voice tag. Sending '1234567\n");
+                    printf("Attach number to voice tag. Sending '1234567\n");
                     hfp_ag_send_phone_number_for_voice_tag(acl_handle, "1234567");
                     break;
                 case HFP_SUBEVENT_TRANSMIT_DTMF_CODES:
-                    printf("\n** Send DTMF Codes: '%s'\n", hfp_subevent_transmit_dtmf_codes_get_dtmf(event));
+                    printf("Send DTMF Codes: '%s'\n", hfp_subevent_transmit_dtmf_codes_get_dtmf(event));
                     hfp_ag_send_dtmf_code_done(acl_handle);
                     break;
                 case HFP_SUBEVENT_CALL_ANSWERED:

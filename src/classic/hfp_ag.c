@@ -650,7 +650,7 @@ static void hfp_ag_slc_established(hfp_connection_t * hfp_connection){
 }
 
 static int hfp_ag_run_for_context_service_level_connection(hfp_connection_t * hfp_connection){
-    log_info("hfp_ag_run_for_context_service_level_connection state %u, command %u", hfp_connection->state, hfp_connection->command);
+    // log_info("hfp_ag_run_for_context_service_level_connection state %u, command %u", hfp_connection->state, hfp_connection->command);
     if (hfp_connection->state >= HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED) return 0;
     int done = 0;
     switch(hfp_connection->command){
@@ -1641,7 +1641,7 @@ static void hfp_ag_send_call_status(hfp_connection_t * hfp_connection, int call_
 
 static void hfp_run_for_context(hfp_connection_t *hfp_connection){
 
-    log_info("hfp_run_for_context %p", hfp_connection);
+    // log_info("hfp_run_for_context %p", hfp_connection);
 
     if (!hfp_connection) return;
 

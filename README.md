@@ -8,9 +8,7 @@ It is well suited for small, resource-constraint devices
 such as 8 or 16 bit embedded systems as it is highly configurable and comes with an ultra small memory footprint. 
 A minimal configuration for an SPP server on a MSP430 can run in 32 kB FLASH and only 4 kB of RAM.
 
-It connects to the Bluetooth modules via a different Bluetooth HCI transport layers (e.g., HCI H4 UART and 
-H5 the "Tree-Wire" protocol, HCI H2 USB). Various platforms can be easily targeted by providing the necessary 
-UART, CPU, and CLOCK implementations. 
+Targeting a variety of platforms is as simple as providing the necessary UART, CPU, and CLOCK implementations. BTstack is currently capable of connecting to Bluetooth-modules via: (H2) HCI USB, (H4) HCI UART + TI's eHCILL, and (H5) HCI Three-Wire UART.
 
 On smaller embedded systems, a minimal run loop implementation allows to use BTstack without a Real Time OS (RTOS). 
 If a RTOS is already provided, BTstack can be integrated and run as a single thread. 
@@ -18,30 +16,28 @@ If a RTOS is already provided, BTstack can be integrated and run as a single thr
 On larger systems, BTstack provides a daemon that connects to a Bluetooth module. 
 Multiple applications can communicate with this daemon over different inter-process communication methods.
 
-BTstack supports both, the Central and the Peripheral Role of Bluetooth 4.2 Low Energy specification. 
-It can be configures as both a single mode or a dual mode stack.
+BTstack supports the Central and the Peripheral Role of Bluetooth 4.2 Low Energy specification. 
+It can be configured to run as either single-mode stack or a dual-mode stack.
 
-BTstack is free for non-commercial use. For commercial use, <a href="mailto:contact@bluekitchen-gmbh.com">tell us</a> 
-a bit about your project to get a quote.
+BTstack is free for non-commercial use. However, for commercial use, <a href="mailto:contact@bluekitchen-gmbh.com">tell us</a> a bit about your project to get a quote.
+
+**Documentation:** [HTML](http://bluekitchen-gmbh.com/btstack/develop/), [PDF](http://bluekitchen-gmbh.com/btstack_develop.pdf)
+
+**Discussion and Community Support:** [BTstack Google Group](http://groups.google.com/group/btstack-dev)
+
+### Supported Protocols and Profiles
+
+**Protocols:** L2CAP, RFCOMM, SDP, BNEP, ATT, SM (incl. LE Secure Connections).
+
+**Profiles** GAP, IOP, HFP, HSP, SPP, PAN, GATT.
+
+**Coming next** A2DP, AVRCP, HID, HOGP, BLE Mesh, and more.
+
 It has been qualified with the the Bluetooth SIG for GAP, IOP, HFP, HSP, SPP, PAN profiles and 
-GATT, SM of the Bluetooth 4.2 LE Central and Peripheral roles (QD ID 25340).
+GATT, SM of the Bluetooth 4.2 LE Central and Peripheral roles (QD ID 25340). For information on MFi/iAP2 support, please <a href="mailto:contact@bluekitchen-gmbh.com">contact us</a>.
 
-## Documentation
-- [HTML](http://bluekitchen-gmbh.com/btstack/develop/)
-- [PDF](http://bluekitchen-gmbh.com/btstack_develop.pdf)
 
-## Discussion and Community Support
-[BTstack Google Group](http://groups.google.com/group/btstack-dev)
 
-## Supported Protocols and Profiles
-
-Protocols: L2CAP, RFCOMM, SDP, BNEP, ATT, SM (incl. LE Secure Connections).
-
-Profiles: GAP, IOP, HFP, HSP, SPP, PAN, GATT.
-
-Coming next: A2DP, AVRCP, HID, HOGP, BLE Mesh, and more.
-
-For information on MFi/iAP2 support, please <a href="mailto:contact@bluekitchen-gmbh.com">contact us</a>.
 
 ## Evaluation Platforms
 
@@ -61,6 +57,8 @@ Status               | Platform
 --------------       | ------ 
 [<img src="http://buildbot.bluekitchen-gmbh.com/btstack/badge.png?builder=port-posix-h4-develop">](https://buildbot.bluekitchen-gmbh.com/btstack/builders/port-posix-h4-develop) | posix: Unix-based system connected to Bluetooth module via serial port   
 [<img src="http://buildbot.bluekitchen-gmbh.com/btstack/badge.png?builder=port-libusb-develop">](https://buildbot.bluekitchen-gmbh.com/btstack/builders/port-libusb-develop)     | libusb: Unix-based system with dedicated USB Bluetooth dongle
+.. | windows-h4: Win32-based system connected to Bluetooth module via serial port   
+.. | windows-winusb: Win32-based system with dedicated USB Bluetooth dongle
 [<img src="http://buildbot.bluekitchen-gmbh.com/btstack/badge.png?builder=port-daemon-develop">](https://buildbot.bluekitchen-gmbh.com/btstack/builders/port-daemon-develop)     | daemon: TCP and Unix domain named socket client-server architecture supporting multiple clients
 [<img src="http://buildbot.bluekitchen-gmbh.com/btstack/badge.png?builder=java-develop">](https://buildbot.bluekitchen-gmbh.com/btstack/builders/java-develop)                   | java: Java wrapper for daemon 
 [<img src="http://buildbot.bluekitchen-gmbh.com/btstack/badge.png?builder=port-ios-develop">](https://buildbot.bluekitchen-gmbh.com/btstack/builders/port-ios-develop)           | iOS: daemon for iOS jailbreak devices, C client-server API
@@ -71,8 +69,8 @@ Status               | Platform
 
 Chipset              | Type      | HCI Transport   | SCO over HCI (2) | BTstack folder | Comment 
 -------------------- |-----------| ----------------|------------------|----------------|---------
-Broadcom UART        | Dual mode | H4, H5          | No (didn't work) | bcm            | Max UART baudrate 3 mbps
-Broadcom USB Dongles | Dual mode | USB             | No (didn't work) | bcm            | 
+Broadcom UART        | Dual mode | H4, H5          | Probably         | bcm            | Max UART baudrate 2 mbps
+Broadcom USB Dongles | Dual mode | USB             | Yes              | bcm            | 
 CSR UART             | Dual mode | H4, H5          | No (didn't work) | csr            | 
 CSR USB Dongles      | Dual mode | USB             | Yes              | csr            |
 EM 9301              | LE        | SPI             | n.a.             | em9301         | Custom HCI SPI implementation

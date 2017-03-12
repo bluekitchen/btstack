@@ -142,22 +142,21 @@ void hci_connections_get_iterator(btstack_linked_list_iterator_t *it){
 }
 
 // get addr type and address used in advertisement packets
-void gap_advertisements_get_address(uint8_t * addr_type, bd_addr_t addr){
+void gap_le_get_own_address(uint8_t * addr_type, bd_addr_t addr){
     *addr_type = 0;
     uint8_t dummy[] = { 0x00, 0x1b, 0xdc, 0x07, 0x32, 0xef };
     memcpy(addr, dummy, 6);
 }
 
 void hci_le_advertisements_set_params(uint16_t adv_int_min, uint16_t adv_int_max, uint8_t adv_type,
-    uint8_t own_address_type, uint8_t direct_address_typ, bd_addr_t direct_address,
-    uint8_t channel_map, uint8_t filter_policy) {
+    uint8_t direct_address_typ, bd_addr_t direct_address, uint8_t channel_map, uint8_t filter_policy) {
  }
 
 uint16_t hci_get_manufacturer(void){
  return 0xffff;
 };
 
-void hci_le_advertisements_set_own_address_type(uint8_t own_address){
+void hci_le_set_own_address_type(uint8_t own_address){
 }
 
 extern "C" void l2cap_request_can_send_fix_channel_now_event(hci_con_handle_t con_handle, uint16_t cid){

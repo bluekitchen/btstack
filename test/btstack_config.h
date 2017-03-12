@@ -17,7 +17,6 @@
 #define ENABLE_LOG_DEBUG
 #define ENABLE_LOG_ERROR
 #define ENABLE_LOG_INFO 
-#define ENABLE_LOG_INTO_HCI_DUMP
 #define ENABLE_SDP_DES_DUMP
 #define ENABLE_SDP_EXTRA_QUERIES
 // #define ENABLE_LE_SECURE_CONNECTIONS
@@ -28,5 +27,6 @@
 // BTstack configuration. buffers, sizes, ...
 #define HCI_ACL_PAYLOAD_SIZE 52
 #define HCI_INCOMING_PRE_BUFFER_SIZE 4
+#define MAX_NR_LE_DEVICE_DB_ENTRIES 4
 
 #endif
