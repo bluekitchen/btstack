@@ -343,14 +343,15 @@ static void btstack_run_loop_phoenix_singleshot_timeout_handler(uint32_t ticks_a
 static void btstack_run_loop_phoenix_start_singleshot_timer(uint32_t timeout_ticks){
 
     // limit ticks to ticker resolution - creatively use tick diff function to not specifiy resolution here
-    uint32_t ticker_ticks = ticker_ticks_diff_get(timeout_ticks, 0);
+    // uint32_t ticker_ticks = ticker_ticks_diff_get(timeout_ticks, 0);
+    uint32_t ticker_ticks = ticker_ticks_diff_get(timeout_ticks, ticker_ticks_now_get());
 
     // log_info("btstack_run_loop_phoenix_start_singleshot_timer: %u, current %u", (int) timeout_ticks, (int) cntr_cnt_get());
     ticker_start(0 /* instance */
         , BTSTACK_USER_ID /* user */
         , BTSTACK_TICKER_ID /* ticker id */
-        , ticker_ticks /* anchor point */
-        , 0 /* first interval */
+        , ticker_ticks_now_get() /* anchor point */
+        , ticker_ticks /* first interval */
         , 0 /* periodic interval */
         , 0 /* remainder */
         , 0 /* lazy */
