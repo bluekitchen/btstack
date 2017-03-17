@@ -117,7 +117,10 @@ void btstack_run_loop_freertos_single_threaded_execute_code_on_main_thread(void 
     function_call_t message;
     message.fn  = fn;
     message.arg = arg;
-    xQueueSendToBack(btstack_run_loop_queue, &message, portMAX_DELAY);
+    BaseType_t res = xQueueSendToBack(btstack_run_loop_queue, &message, 0); // portMAX_DELAY);
+    if (res != pdTRUE){
+        log_error("Failed to post fn %p", fn);
+    }
 }
 
 // schedules execution from regular thread
@@ -182,7 +185,7 @@ static void btstack_run_loop_freertos_single_threaded_init(void){
     timers = NULL;
 
     // queue to receive events: up to 2 calls from transport, up to 3 for app
-    btstack_run_loop_queue = xQueueCreate(5, sizeof(function_call_t));
+    btstack_run_loop_queue = xQueueCreate(20, sizeof(function_call_t));
 
     log_info("run loop init, queue item size %u", (int) sizeof(function_call_t));
 }
