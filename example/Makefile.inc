@@ -112,6 +112,7 @@ EXAMPLES = 					\
 	hsp_hs_demo             \
 	sm_pairing_peripheral   \
 	sm_pairing_central      \
+	pbap_client				\
 
 EXAMPLES_USING_LE =			\
 	ancs_client_demo		\
@@ -156,6 +157,9 @@ sm_pairing_peripheral.h: sm_pairing_peripheral.gatt
 
 # examples
 sdp_rfcomm_query: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${PAN_OBJ} ${SDP_CLIENT} sdp_rfcomm_query.c
+	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+
+pbap_client: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} obex_iterator.c goep_client.c pbap_client.c pbap_client_demo.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 sdp_general_query: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} sdp_general_query.c  
