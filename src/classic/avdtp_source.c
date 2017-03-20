@@ -271,7 +271,7 @@ typedef struct {
     int right_phase;
 } paTestData;
 
-static uint32_t fill_audio_ring_buffer_timeout = 25; //ms
+static uint32_t fill_audio_ring_buffer_timeout = 50; //ms
 static paTestData sin_data;
 static int total_num_samples = 0;
 static char * wav_filename = "test_output_sine.wav";
