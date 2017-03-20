@@ -11,7 +11,8 @@ INCLUDES = \
 	-I../../../external/arm/cmsis/include \
 	-I../../../external/nordic/include \
 	-I../../../arch/arm/cortex_m \
-	-I../../../soc/nrf5/
+	-I../../../soc/nrf5/ \
+	-lm
 
 LDSCRIPT = ${PHOENIX_ROOT}/arch/arm/cortex_m/link.lds
 
@@ -23,6 +24,7 @@ VPATH += \
 	${BTSTACK_ROOT}/src \
 	${BTSTACK_ROOT}/src/ble \
 	${BTSTACK_ROOT}/src/ble/gatt-service \
+	${BTSTACK_ROOT}/src/classic \
 	${PHOENIX_ROOT}/arch/arm/cortex_m \
 	${PHOENIX_ROOT}/ble/ll \
 	${PHOENIX_ROOT}/hal/nrf5 \
@@ -37,6 +39,7 @@ TARGETS += \
 	revogi_mitm.elf \
 	gatt_browser.elf \
 	gap_le_advertisements.elf \
+	sbc_test.elf \
 #   ancs_client_demo.elf \
 #	sm_pairing_central.elf \
 #	gatt_battery_query.elf \
@@ -159,6 +162,21 @@ SRCS_SM_PAIRING_PERIPHERAL = \
 	$(SRCS_APP_BTSTACK) \
 	sm_pairing_peripheral.c
 
+SRCS_SBC_TEST = \
+	$(SRCS_APP_BTSTACK) \
+	btstack_sbc_bludroid.c \
+	btstack_sbc_plc.c \
+	sbc_test.c \
+	${SBC_ENCODER} \
+	${SBC_DECODER} \
+
+include $(BTSTACK_ROOT)/3rd-party/bluedroid/encoder/Makefile.inc
+include $(BTSTACK_ROOT)/3rd-party/bluedroid/decoder/Makefile.inc
+INCLUDES += -I$(BTSTACK_ROOT)/3rd-party/bluedroid/encoder/include
+INCLUDES += -I$(BTSTACK_ROOT)/3rd-party/bluedroid/decoder/include
+VPATH += $(BTSTACK_ROOT)/3rd-party/bluedroid/encoder/srce
+VPATH += $(BTSTACK_ROOT)/3rd-party/bluedroid/decoder/srce
+
 ancs_client_demo.elf : $(ASMS_APP_BTSTACK:.s=.o)
 ancs_client_demo.elf : ancs_client_demo.h $(SRCS_ANCS_CLIENT_DEMO:.c=.o)
 
@@ -185,6 +203,9 @@ sm_pairing_central.elf : $(SRCS_SM_PAIRING_CENTRAL:.c=.o)
 
 sm_pairing_peripheral.elf : $(ASMS_APP_BTSTACK:.s=.o)
 sm_pairing_peripheral.elf : sm_pairing_peripheral.h $(SRCS_SM_PAIRING_PERIPHERAL:.c=.o)
+
+sbc_test.elf : $(ASMS_APP_BTSTACK:.s=.o)
+sbc_test.elf : $(SRCS_SBC_TEST:.c=.o)
 
 SRCS = ${SRCS_BTSTACK} ${SRCS_UTIL} ${SRCS_APP_BTSTACK} ${TARGETS:.elf=.c}
 ASMS = ${ASMS_COMMON}  ${ASMS_SOC_NRF5} ${ASMS_APP_BTSTACK}
