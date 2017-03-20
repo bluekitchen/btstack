@@ -442,7 +442,7 @@ void avdtp_prepare_capabilities(avdtp_signaling_packet_t * signaling_packet, uin
     // printf_hexdump(signaling_packet->command, signaling_packet->size);
     for (i = 1; i < 9; i++){
         int registered_category = get_bit16(registered_service_categories, i);
-        if (!registered_category && (identifier == AVDTP_SI_SET_CONFIGURATION || identifier == identifier == AVDTP_SI_RECONFIGURE){
+        if (!registered_category && (identifier == AVDTP_SI_SET_CONFIGURATION || identifier == AVDTP_SI_RECONFIGURE){
             // TODO: introduce bitmap of mandatory categories
             if (i == 1){
                 registered_category = 1;
