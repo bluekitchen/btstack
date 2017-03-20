@@ -440,26 +440,26 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
                             //send sbc
                             uint8_t  rtp_version = 2;
                             uint8_t  padding = 0;
-                            uint8_t  extention = 0;
+                            uint8_t  extension = 0;
                             uint8_t  csrc_count = 0;
                             uint8_t  marker = 0;
-                            uint8_t  payload_type = 0;
+                            uint8_t  payload_type = 0x60;
                             uint16_t sequence_number = stream_endpoint->sequence_number;
                             uint32_t timestamp = btstack_run_loop_get_time_ms();
-                            uint32_t ssrc = 0;
+                            uint32_t ssrc = 0x11223344;
 
                             // rtp header (min size 12B)
                             int pos = 0;
                             int mtu = l2cap_get_remote_mtu_for_local_cid(stream_endpoint->l2cap_media_cid);
 
                             uint8_t media_packet[mtu];
-                            media_packet[pos++] = (rtp_version << 7) && (padding << 6) && (padding << 5) && (extention << 4) && csrc_count;
-                            media_packet[pos++] = (marker << 7) && payload_type; 
-                            little_endian_store_16(media_packet, pos, sequence_number);
+                            media_packet[pos++] = (rtp_version << 6) | (padding << 5) | (extension << 4) | csrc_count;
+                            media_packet[pos++] = (marker << 1) | payload_type; 
+                            big_endian_store_16(media_packet, pos, sequence_number);
                             pos += 2;
-                            little_endian_store_32(media_packet, pos, timestamp);
+                            big_endian_store_32(media_packet, pos, timestamp);
                             pos += 4;
-                            little_endian_store_32(media_packet, pos, ssrc); // only used for multicast
+                            big_endian_store_32(media_packet, pos, ssrc); // only used for multicast
                             pos += 4;
                     
                             // media payload
@@ -483,7 +483,7 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
                                 num_frames++;
                                 // printf("send sbc frame: timestamp %d, seq. nr %d\n", timestamp, stream_endpoint->sequence_number);
                             }
-                            media_packet[sbc_header_index] =  (fragmentation << 7) && (starting_packet << 6) && (last_packet << 5) && num_frames;
+                            media_packet[sbc_header_index] =  (fragmentation << 7) | (starting_packet << 6) | (last_packet << 5) | num_frames;
                             stream_endpoint->sequence_number++;
                             l2cap_send(stream_endpoint->l2cap_media_cid, media_packet, pos);
                             if (btstack_ring_buffer_bytes_available(&stream_endpoint->sbc_ring_buffer)){
