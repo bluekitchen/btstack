@@ -88,9 +88,9 @@ typedef struct {
 // pts: static bd_addr_t remote = {0x00, 0x1B, 0xDC, 0x08, 0x0A, 0xA5};
 // mac 2013: static bd_addr_t remote = {0x84, 0x38, 0x35, 0x65, 0xd1, 0x15};
 // phone 2013: static bd_addr_t remote = {0xD8, 0xBB, 0x2C, 0xDF, 0xF0, 0xF2};
-// minijambox: static bd_addr_t remote = {0x00, 0x21, 0x3c, 0xac, 0xf7, 0x38};
-// head phones: 
-static bd_addr_t remote = {0x00, 0x18, 0x09, 0x28, 0x50, 0x18};
+// minijambox: 
+static bd_addr_t remote = {0x00, 0x21, 0x3c, 0xac, 0xf7, 0x38};
+// head phones: static bd_addr_t remote = {0x00, 0x18, 0x09, 0x28, 0x50, 0x18};
 // bt dongle: -u 02-04-01 
 // static bd_addr_t remote = {0x00, 0x15, 0x83, 0x5F, 0x9D, 0x46};
 
@@ -324,19 +324,19 @@ static void show_usage(void){
 static const uint8_t media_sbc_codec_capabilities[] = {
     0xFF,//(AVDTP_SBC_44100 << 4) | AVDTP_SBC_STEREO,
     0xFF,//(AVDTP_SBC_BLOCK_LENGTH_16 << 4) | (AVDTP_SBC_SUBBANDS_8 << 2) | AVDTP_SBC_ALLOCATION_METHOD_LOUDNESS,
-    2, 35
+    2, 53
 }; 
 
 static const uint8_t media_sbc_codec_configuration[] = {
     (AVDTP_SBC_44100 << 4) | AVDTP_SBC_STEREO,
     (AVDTP_SBC_BLOCK_LENGTH_16 << 4) | (AVDTP_SBC_SUBBANDS_8 << 2) | AVDTP_SBC_ALLOCATION_METHOD_LOUDNESS,
-    2, 35
+    2, 53
 }; 
 
 static const uint8_t media_sbc_codec_reconfiguration[] = {
     (AVDTP_SBC_44100 << 4) | AVDTP_SBC_STEREO,
     (AVDTP_SBC_BLOCK_LENGTH_16 << 4) | (AVDTP_SBC_SUBBANDS_8 << 2) | AVDTP_SBC_ALLOCATION_METHOD_SNR,
-    2, 35
+    2, 53
 }; 
 
 static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type){

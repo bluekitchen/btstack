@@ -71,7 +71,7 @@ AVDTP_SINK += \
 	avdtp_sink.c  		\
 	btstack_ring_buffer.c \
 
-AVDTP_TESTS = avdtp_source_test avdtp_sink_test portaudio_test sine_encode_decode_ring_buffer_test sine_encode_decode_test
+AVDTP_TESTS = avdtp_source_test avdtp_sink_test portaudio_test sine_encode_decode_ring_buffer_test sine_encode_decode_test sine_encode_decode_performance_test
 
 CORE_OBJ    = $(CORE:.c=.o)
 COMMON_OBJ  = $(COMMON:.c=.o) 
@@ -96,6 +96,10 @@ sine_encode_decode_test: ${CORE_OBJ} ${COMMON_OBJ} ${SBC_DECODER_OBJ} ${SBC_ENCO
 
 sine_encode_decode_ring_buffer_test: ${CORE_OBJ} ${COMMON_OBJ} ${SBC_DECODER_OBJ} ${SBC_ENCODER_OBJ} ${AVDTP_SINK_OBJ} sine_encode_decode_ring_buffer_test.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+
+sine_encode_decode_performance_test: ${CORE_OBJ} ${COMMON_OBJ} ${SBC_DECODER_OBJ} ${SBC_ENCODER_OBJ} ${AVDTP_SINK_OBJ} sine_encode_decode_performance_test.c
+	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+
 	
 test: all
 

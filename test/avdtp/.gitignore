@@ -3,6 +3,7 @@ avdtp_sink_test
 portaudio_test
 sine_encode_decode_test
 sine_encode_decode_ring_buffer_test
+sine_encode_decode_performance_test
 *.sbc
 *.wav
 
