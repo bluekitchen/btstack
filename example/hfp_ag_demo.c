@@ -68,8 +68,12 @@ const char hfp_ag_service_name[] = "BTstack HFP AG Test";
 static bd_addr_t device_addr;
 static const char * device_addr_string = "00:15:83:5F:9D:46";
 
+#ifdef ENABLE_HFP_WIDE_BAND_SPEECH
 static uint8_t codecs[] = {HFP_CODEC_CVSD, HFP_CODEC_MSBC};
-// static uint8_t codecs[] = {HFP_CODEC_CVSD};
+#else
+static uint8_t codecs[] = {HFP_CODEC_CVSD};
+#endif
+
 static uint8_t negotiated_codec = HFP_CODEC_CVSD;
 
 static hci_con_handle_t acl_handle = -1;

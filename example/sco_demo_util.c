@@ -127,11 +127,16 @@ static int count_sent = 0;
 static int count_received = 0;
 static int negotiated_codec = -1; 
 
+#ifdef ENABLE_HFP_WIDE_BAND_SPEECH
 btstack_sbc_decoder_state_t decoder_state;
+#endif
+
 btstack_cvsd_plc_state_t cvsd_plc_state;
 
+#ifdef ENABLE_HFP_WIDE_BAND_SPEECH
 FILE * msbc_file_in;
 FILE * msbc_file_out;
+#endif
 
 int num_samples_to_write;
 int num_audio_frames;
@@ -153,17 +158,6 @@ static const int16_t sine_int16_at_16000hz[] = {
 -19260,  -17557,  -15786,  -13952,  -12062,  -10126,   -8149,   -6140,   -4107,   -2057,
 };
 
-// 16 kHz samples for mSBC encoder in host endianess
-static void sco_demo_sine_wave_int16_at_16000_hz_host_endian(int num_samples, int16_t * data){
-    int i;
-    for (i=0; i < num_samples; i++){
-        data[i] = sine_int16_at_16000hz[phase++];
-        if (phase >= (sizeof(sine_int16_at_16000hz) / sizeof(int16_t))){
-            phase = 0;
-        }
-    }
-}
-
 // 8 kHz samples for CVSD/SCO packets in little endian
 static void sco_demo_sine_wave_int16_at_8000_hz_little_endian(int num_samples, int16_t * data){
     int i;
@@ -178,6 +172,18 @@ static void sco_demo_sine_wave_int16_at_8000_hz_little_endian(int num_samples, i
     }
 }
 
+// 16 kHz samples for mSBC encoder in host endianess
+#ifdef ENABLE_HFP_WIDE_BAND_SPEECH
+static void sco_demo_sine_wave_int16_at_16000_hz_host_endian(int num_samples, int16_t * data){
+    int i;
+    for (i=0; i < num_samples; i++){
+        data[i] = sine_int16_at_16000hz[phase++];
+        if (phase >= (sizeof(sine_int16_at_16000hz) / sizeof(int16_t))){
+            phase = 0;
+        }
+    }
+}
+
 static void sco_demo_msbc_fill_sine_audio_frame(void){
     if (!hfp_msbc_can_encode_audio_frame_now()) return;
     int num_samples = hfp_msbc_num_audio_samples_per_frame();
@@ -186,6 +192,7 @@ static void sco_demo_msbc_fill_sine_audio_frame(void){
     hfp_msbc_encode_audio_frame(sample_buffer);
     num_audio_frames++;
 }
+#endif
 #endif
 
 #ifdef USE_PORTAUDIO
@@ -350,6 +357,7 @@ static void portaudio_terminate(void){
 
 #if (SCO_DEMO_MODE == SCO_DEMO_MODE_SINE) || (SCO_DEMO_MODE == SCO_DEMO_MODE_MICROPHONE)
 
+#ifdef ENABLE_HFP_WIDE_BAND_SPEECH
 static void handle_pcm_data(int16_t * data, int num_samples, int num_channels, int sample_rate, void * context){
     UNUSED(context);
     UNUSED(sample_rate);
@@ -363,7 +371,7 @@ static void handle_pcm_data(int16_t * data, int num_samples, int num_channels, i
 #ifdef HAVE_PORTAUDIO
     // samples in callback in host endianess, ready for PortAudio playback
     btstack_ring_buffer_write(&pa_output_ring_buffer, (uint8_t *)data, num_samples*num_channels*2);
-#endif
+#endif /* HAVE_PORTAUDIO */
 
 #ifdef SCO_WAV_FILENAME
     if (!num_samples_to_write) return;
@@ -373,11 +381,14 @@ static void handle_pcm_data(int16_t * data, int num_samples, int num_channels, i
     if (num_samples_to_write == 0){
         wav_writer_close();
     }
-#endif
+#endif /* SCO_WAV_FILENAME */
 
-#endif
-
+#endif /* Demo mode sine or microphone */
 }
+#endif /* ENABLE_HFP_WIDE_BAND_SPEECH */
+
+
+#ifdef ENABLE_HFP_WIDE_BAND_SPEECH
 
 static void sco_demo_init_mSBC(void){
     printf("SCO Demo: Init mSBC\n");
@@ -418,6 +429,7 @@ static void sco_demo_receive_mSBC(uint8_t * packet, uint16_t size){
     }
     btstack_sbc_decoder_process_data(&decoder_state, (packet[1] >> 4) & 3, packet+3, size-3);  
 }
+#endif
 
 static void sco_demo_init_CVSD(void){
     printf("SCO Demo: Init CVSD\n");
@@ -482,9 +494,12 @@ void sco_demo_close(void){
     printf("SCO demo close\n");
 
     printf("SCO demo statistics: ");
+#ifdef ENABLE_HFP_WIDE_BAND_SPEECH
     if (negotiated_codec == HFP_CODEC_MSBC){
         printf("Used mSBC with PLC, number of processed frames: \n - %d good frames, \n - %d zero frames, \n - %d bad frames.\n", decoder_state.good_frames_nr, decoder_state.zero_frames_nr, decoder_state.bad_frames_nr);
-    } else {
+    } else 
+#endif
+    {
         printf("Used CVSD with PLC, number of proccesed frames: \n - %d good frames, \n - %d bad frames.\n", cvsd_plc_state.good_frames_nr, cvsd_plc_state.bad_frames_nr);
     }
 
@@ -509,7 +524,9 @@ void sco_demo_set_codec(uint8_t codec){
 
 #if (SCO_DEMO_MODE == SCO_DEMO_MODE_SINE) || (SCO_DEMO_MODE == SCO_DEMO_MODE_MICROPHONE)
     if (negotiated_codec == HFP_CODEC_MSBC){
+#ifdef ENABLE_HFP_WIDE_BAND_SPEECH
         sco_demo_init_mSBC();
+#endif
     } else {
         sco_demo_init_CVSD();
     }
@@ -561,6 +578,7 @@ void sco_demo_send(hci_con_handle_t sco_handle){
     hci_reserve_packet_buffer();
     uint8_t * sco_packet = hci_get_outgoing_packet_buffer();
 #if SCO_DEMO_MODE == SCO_DEMO_MODE_SINE
+#ifdef ENABLE_HFP_WIDE_BAND_SPEECH
     if (negotiated_codec == HFP_CODEC_MSBC){
         // overwrite
         sco_payload_length = 24;
@@ -576,7 +594,9 @@ void sco_demo_send(hci_con_handle_t sco_handle){
         }
 
         sco_demo_msbc_fill_sine_audio_frame();
-    } else {
+    } else
+#endif
+    {
         const int audio_samples_per_packet = sco_payload_length / CVSD_BYTES_PER_FRAME;  
         sco_demo_sine_wave_int16_at_8000_hz_little_endian(audio_samples_per_packet, (int16_t *) (sco_packet+3));
     }
@@ -750,9 +770,11 @@ void sco_demo_receive(uint8_t * packet, uint16_t size){
 
 #if (SCO_DEMO_MODE == SCO_DEMO_MODE_SINE) || (SCO_DEMO_MODE == SCO_DEMO_MODE_MICROPHONE)
     switch (negotiated_codec){
+#ifdef ENABLE_HFP_WIDE_BAND_SPEECH
         case HFP_CODEC_MSBC:
             sco_demo_receive_mSBC(packet, size);
             break;
+#endif
         case HFP_CODEC_CVSD:
             sco_demo_receive_CVSD(packet, size);
             break;
