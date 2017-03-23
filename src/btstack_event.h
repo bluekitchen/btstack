@@ -70,11 +70,35 @@ static inline uint8_t hci_event_packet_get_type(const uint8_t * event){
 }
 
 /***
- * @brief Get subevent code for hsp event
+ * @brief Get subevent code for ancs event
  * @param event packet
  * @return subevent_code
  */
-static inline uint8_t hci_event_hsp_meta_get_subevent_code(const uint8_t * event){
+static inline uint8_t hci_event_ancs_meta_get_subevent_code(const uint8_t * event){
+    return event[2];
+}
+/***
+ * @brief Get subevent code for avdtp event
+ * @param event packet
+ * @return subevent_code
+ */
+static inline uint8_t hci_event_avdtp_meta_get_subevent_code(const uint8_t * event){
+    return event[2];
+}
+/***
+ * @brief Get subevent code for avrcp event
+ * @param event packet
+ * @return subevent_code
+ */
+static inline uint8_t hci_event_avrcp_meta_get_subevent_code(const uint8_t * event){
+    return event[2];
+}
+/***
+ * @brief Get subevent code for goep event
+ * @param event packet
+ * @return subevent_code
+ */
+static inline uint8_t hci_event_goep_meta_get_subevent_code(const uint8_t * event){
     return event[2];
 }
 /***
@@ -86,11 +110,19 @@ static inline uint8_t hci_event_hfp_meta_get_subevent_code(const uint8_t * event
     return event[2];
 }
 /***
- * @brief Get subevent code for ancs event
+ * @brief Get subevent code for hsp event
  * @param event packet
  * @return subevent_code
  */
-static inline uint8_t hci_event_ancs_meta_get_subevent_code(const uint8_t * event){
+static inline uint8_t hci_event_hsp_meta_get_subevent_code(const uint8_t * event){
+    return event[2];
+}
+/***
+ * @brief Get subevent code for pbap event
+ * @param event packet
+ * @return subevent_code
+ */
+static inline uint8_t hci_event_pbap_meta_get_subevent_code(const uint8_t * event){
     return event[2];
 }
 /***
@@ -4799,6 +4831,147 @@ static inline hci_con_handle_t avrcp_subevent_player_application_value_response_
  * @note: btstack_type 1
  */
 static inline uint8_t avrcp_subevent_player_application_value_response_get_status(const uint8_t * event){
+    return event[5];
+}
+
+/**
+ * @brief Get field goep_cid from event GOEP_SUBEVENT_CONNECTION_OPENED
+ * @param event packet
+ * @return goep_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t goep_subevent_connection_opened_get_goep_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field status from event GOEP_SUBEVENT_CONNECTION_OPENED
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t goep_subevent_connection_opened_get_status(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field bd_addr from event GOEP_SUBEVENT_CONNECTION_OPENED
+ * @param event packet
+ * @param Pointer to storage for bd_addr
+ * @note: btstack_type B
+ */
+static inline void goep_subevent_connection_opened_get_bd_addr(const uint8_t * event, bd_addr_t bd_addr){
+    reverse_bd_addr(&event[6], bd_addr);    
+}
+/**
+ * @brief Get field con_handle from event GOEP_SUBEVENT_CONNECTION_OPENED
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t goep_subevent_connection_opened_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 12);
+}
+/**
+ * @brief Get field incoming from event GOEP_SUBEVENT_CONNECTION_OPENED
+ * @param event packet
+ * @return incoming
+ * @note: btstack_type 1
+ */
+static inline uint8_t goep_subevent_connection_opened_get_incoming(const uint8_t * event){
+    return event[14];
+}
+
+/**
+ * @brief Get field goep_cid from event GOEP_SUBEVENT_CONNECTION_CLOSED
+ * @param event packet
+ * @return goep_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t goep_subevent_connection_closed_get_goep_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+
+/**
+ * @brief Get field goep_cid from event GOEP_SUBEVENT_CAN_SEND_NOW
+ * @param event packet
+ * @return goep_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t goep_subevent_can_send_now_get_goep_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+
+/**
+ * @brief Get field pbap_cid from event PBAP_SUBEVENT_CONNECTION_OPENED
+ * @param event packet
+ * @return pbap_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t pbap_subevent_connection_opened_get_pbap_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field status from event PBAP_SUBEVENT_CONNECTION_OPENED
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t pbap_subevent_connection_opened_get_status(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field bd_addr from event PBAP_SUBEVENT_CONNECTION_OPENED
+ * @param event packet
+ * @param Pointer to storage for bd_addr
+ * @note: btstack_type B
+ */
+static inline void pbap_subevent_connection_opened_get_bd_addr(const uint8_t * event, bd_addr_t bd_addr){
+    reverse_bd_addr(&event[6], bd_addr);    
+}
+/**
+ * @brief Get field con_handle from event PBAP_SUBEVENT_CONNECTION_OPENED
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t pbap_subevent_connection_opened_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 12);
+}
+/**
+ * @brief Get field incoming from event PBAP_SUBEVENT_CONNECTION_OPENED
+ * @param event packet
+ * @return incoming
+ * @note: btstack_type 1
+ */
+static inline uint8_t pbap_subevent_connection_opened_get_incoming(const uint8_t * event){
+    return event[14];
+}
+
+/**
+ * @brief Get field goep_cid from event PBAP_SUBEVENT_CONNECTION_CLOSED
+ * @param event packet
+ * @return goep_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t pbap_subevent_connection_closed_get_goep_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+
+/**
+ * @brief Get field goep_cid from event PBAP_SUBEVENT_OPERATION_COMPLETED
+ * @param event packet
+ * @return goep_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t pbap_subevent_operation_completed_get_goep_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field status from event PBAP_SUBEVENT_OPERATION_COMPLETED
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t pbap_subevent_operation_completed_get_status(const uint8_t * event){
     return event[5];
 }
 

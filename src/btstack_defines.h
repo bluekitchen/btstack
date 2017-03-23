@@ -89,7 +89,7 @@ typedef uint8_t sm_key_t[16];
 // Security Manager protocol data
 #define SM_DATA_PACKET          0x09
 
-// SDP query result
+// SDP query result - only used by daemon
 // format: type (8), record_id (16), attribute_id (16), attribute_length (16), attribute_value (max 1k)
 #define SDP_CLIENT_PACKET       0x0a
 
@@ -98,6 +98,12 @@ typedef uint8_t sm_key_t[16];
 
 // Unicast Connectionless Data
 #define UCD_DATA_PACKET         0x0c
+
+// GOEP data
+#define GOEP_DATA_PACKET        0x0d
+
+// PBAP data
+#define PBAP_DATA_PACKET        0x0e
  
 // debug log messages
 #define LOG_MESSAGE_PACKET      0xfc
@@ -158,8 +164,6 @@ typedef uint8_t sm_key_t[16];
 #define BNEP_SERVICE_ALREADY_REGISTERED                    0xA0
 #define BNEP_CHANNEL_NOT_CONNECTED                         0xA1
 #define BNEP_DATA_LEN_EXCEEDS_MTU                          0xA2
-
-
 
 // DAEMON COMMANDS
 
@@ -266,7 +270,11 @@ typedef uint8_t sm_key_t[16];
 #define GATT_WRITE_CLIENT_CHARACTERISTIC_CONFIGURATION           0X81
 #define GATT_GET_MTU                                             0x82
 
-
+// OBEX ERRORS
+#define OBEX_UNKNOWN_ERROR       0x90
+#define OBEX_CONNECT_FAILED      0x91
+#define OBEX_DISCONNECTED        0x92
+#define OBEX_NOT_FOUND           0x93
 
 // EVENTS
 
@@ -925,6 +933,8 @@ typedef uint8_t sm_key_t[16];
 #define HCI_EVENT_ANCS_META                                0xEA
 #define HCI_EVENT_AVDTP_META                               0xEB
 #define HCI_EVENT_AVRCP_META                               0xEC
+#define HCI_EVENT_GOEP_META                                0xED
+#define HCI_EVENT_PBAP_META                                0xEE
 
 // Potential other meta groups
  // #define HCI_EVENT_BNEP_META                                0xxx
@@ -1490,6 +1500,55 @@ typedef uint8_t sm_key_t[16];
  */
 #define AVRCP_SUBEVENT_PLAYER_APPLICATION_VALUE_RESPONSE                   0x0F
 
+/**
+ * @format 121BH1
+ * @param subevent_code
+ * @param goep_cid
+ * @param status
+ * @param bd_addr
+ * @param con_handle
+ * @param incoming
+ */
+#define GOEP_SUBEVENT_CONNECTION_OPENED                                    0x01
 
+/**
+ * @format 12
+ * @param subevent_code
+ * @param goep_cid
+*/
+#define GOEP_SUBEVENT_CONNECTION_CLOSED                                    0x02
+
+/**
+ * @format 12
+ * @param subevent_code
+ * @param goep_cid
+*/
+#define GOEP_SUBEVENT_CAN_SEND_NOW                                         0x03
+
+/**
+ * @format 121BH1
+ * @param subevent_code
+ * @param pbap_cid
+ * @param status
+ * @param bd_addr
+ * @param con_handle
+ * @param incoming
+ */
+#define PBAP_SUBEVENT_CONNECTION_OPENED                                    0x01
+
+/**
+ * @format 12
+ * @param subevent_code
+ * @param goep_cid
+*/
+#define PBAP_SUBEVENT_CONNECTION_CLOSED                                    0x02
+
+/**
+ * @format 121
+ * @param subevent_code
+ * @param goep_cid
+ * @param status
+ */
+#define PBAP_SUBEVENT_OPERATION_COMPLETED                                  0x03
 
 #endif
