@@ -218,7 +218,7 @@ static void rfcomm_emit_port_configuration(rfcomm_channel_t *channel){
 }
 
 static void rfcomm_emit_can_send_now(rfcomm_channel_t *channel) {
-    log_info("RFCOMM_EVENT_CHANNEL_CAN_SEND_NOW local_cid 0x%x", channel->rfcomm_cid);
+    log_debug("RFCOMM_EVENT_CHANNEL_CAN_SEND_NOW local_cid 0x%x", channel->rfcomm_cid);
     uint8_t event[4];
     event[0] = RFCOMM_EVENT_CAN_SEND_NOW;
     event[1] = sizeof(event) - 2;

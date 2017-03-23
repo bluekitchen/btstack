@@ -481,7 +481,7 @@ int  att_server_can_send_packet_now(hci_con_handle_t con_handle){
 }
 
 void att_server_request_can_send_now_event(hci_con_handle_t con_handle){
-    log_info("att_server_request_can_send_now_event 0x%04x", con_handle);
+    log_debug("att_server_request_can_send_now_event 0x%04x", con_handle);
     att_client_waiting_for_can_send = 1;
     att_dispatch_server_request_can_send_now_event(con_handle);
 }

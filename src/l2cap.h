@@ -56,9 +56,16 @@ extern "C" {
 #endif
     
 // check L2CAP MTU
-#if (L2CAP_MINIMAL_MTU + L2CAP_HEADER_SIZE) > HCI_ACL_PAYLOAD_SIZE
+#ifdef ENABLE_CLASSIC
+#if (L2CAP_HEADER_SIZE + L2CAP_MINIMAL_MTU) > HCI_ACL_PAYLOAD_SIZE
 #error "HCI_ACL_PAYLOAD_SIZE too small for minimal L2CAP MTU of 48 bytes"
 #endif    
+#endif
+#ifdef ENABLE_BLE
+#if (L2CAP_HEADER_SIZE + L2CAP_LE_DEFAULT_MTU) > HCI_ACL_PAYLOAD_SIZE
+#error "HCI_ACL_PAYLOAD_SIZE too small for minimal L2CAP LE MTU of 23 bytes"
+#endif
+#endif
 
 #define L2CAP_LE_AUTOMATIC_CREDITS 0xffff
 

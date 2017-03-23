@@ -185,6 +185,9 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     mtu = att_event_mtu_exchange_complete_get_MTU(packet) - 3;
                     printf("ATT MTU = %u\n", mtu);
                     test_data_len = mtu - 3;
+                    if (test_data_len > sizeof(test_data)){
+                        test_data_len = sizeof(test_data);
+                    }
                     break;
                 case ATT_EVENT_CAN_SEND_NOW:
                     streamer();

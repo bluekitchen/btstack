@@ -46,6 +46,7 @@
 #include "classic/sdp_util.h"
 #include "hci.h"
 #include "hci_cmd.h"
+#include "btstack_debug.h"
 
 #include <string.h>
 
@@ -578,12 +579,14 @@ const hci_cmd_t hci_delete_stored_link_key = {
 OPCODE(OGF_CONTROLLER_BASEBAND, 0x12), "B1"
 };
 
+#ifdef ENABLE_CLASSIC
 /**
  * @param local_name (UTF-8, Null Terminated, max 248 octets)
  */
 const hci_cmd_t hci_write_local_name = {
 OPCODE(OGF_CONTROLLER_BASEBAND, 0x13), "N"
 };
+#endif
 
 /**
  */
@@ -1052,6 +1055,7 @@ OPCODE(OGF_LE_CONTROLLER, 0x25), ""
 //  LE Read Local P-256 Public Key Complete is generated on completion
 };
 
+#ifdef HAVE_HCI_CONTROLLER_DHKEY_SUPPORT
 /**
  * @param end_test_cmd
  */
@@ -1059,6 +1063,7 @@ const hci_cmd_t hci_le_generate_dhkey = {
 OPCODE(OGF_LE_CONTROLLER, 0x26), "QQ"
 // LE Generate DHKey Complete is generated on completion
 };
+#endif
 
 #endif
 

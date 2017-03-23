@@ -116,6 +116,8 @@ int main(int argc, const char * argv[]){
             port_str = delimiter+1;
         }
         printf("\n");
+        argc -= 2;
+        memmove(&argv[0], &argv[2], argc * sizeof(char *));
     }
 
 	/// GET STARTED with BTstack ///

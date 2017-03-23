@@ -66,7 +66,7 @@ extern "C" {
 #include "classic/sdp_server.h"
 #include "classic/avdtp_sink.h"
 #include "classic/avdtp_source.h"
-#include "../test/avrcp/avrcp.h"
+#include "classic/avrcp.h"
 
 // BLE
 #ifdef ENABLE_BLE

@@ -11,23 +11,23 @@
 # - Microchip XC32
 
 SUBDIRS =  \
-			posix-cc2564b \
-			posix-csr \
-			posix-h4 \
-			posix-stlc2500d \
-			posix-tc35661 \
-			posix-wl183x \
-			libusb \
 			arduino \
+			deamon \
 			ez430-rf2560 \
+			libusb \
 			msp-exp430f5438-cc2564b \
 			msp430f5229lp-cc2564b \
 			mtk \
+			posix-h4 \
+			posix-h5 \
 			stm32-f103rb-nucleo \
 
 EXCLUDED = \
 			pic32-harmony/app.X \
 			ios \
+			wiced \
+			windows-h4 \
+			windows-winusb \
 
 subdirs:
 	echo Building all ports

@@ -63,13 +63,18 @@ typedef enum {
     AVRCP_MEDIA_ATTR_TITLE = 1,
     AVRCP_MEDIA_ATTR_ARTIST,
     AVRCP_MEDIA_ATTR_ALBUM,
+    AVRCP_MEDIA_ATTR_TRACK,
     AVRCP_MEDIA_ATTR_TOTAL_TRACKS,
     AVRCP_MEDIA_ATTR_GENRE,
     AVRCP_MEDIA_ATTR_SONG_LENGTH
 } avrcp_media_attribute_id_t;
 
+#define AVRCP_MEDIA_ATTR_COUNT 7
+
 typedef enum {
     AVRCP_PDU_ID_GET_CAPABILITIES = 0x10,
+    AVRCP_PDU_ID_GetCurrentPlayerApplicationSettingValue = 0x13,
+    AVRCP_PDU_ID_SetPlayerApplicationSettingValue = 0x14,
     AVRCP_PDU_ID_GET_ELEMENT_ATTRIBUTES = 0x20,
     AVRCP_PDU_ID_GET_PLAY_STATUS = 0x30,
     AVRCP_PDU_ID_REGISTER_NOTIFICATION = 0x31,
@@ -199,17 +204,32 @@ typedef struct {
     uint16_t notifications_enabled;
     uint16_t notifications_to_register;
     uint16_t notifications_to_deregister; 
+
+    uint8_t disconnect;
 } avrcp_connection_t;
 
- typedef enum {
+typedef enum {
     AVRCP_PLAY_STATUS_STOPPED = 0x00,
     AVRCP_PLAY_STATUS_PLAYING,
     AVRCP_PLAY_STATUS_PAUSED,
     AVRCP_PLAY_STATUS_FWD_SEEK, 
     AVRCP_PLAY_STATUS_REV_SEEK, 
     AVRCP_PLAY_STATUS_ERROR = 0xFF
- } avrcp_play_status_t;
- 
+} avrcp_play_status_t;
+
+typedef enum {
+    AVRCP_SHUFFLE_MODE_OFF = 0x01,
+    AVRCP_SHUFFLE_MODE_ALL_TRACKS,
+    AVRCP_SHUFFLE_MODE_GROUP
+} avrcp_shuffle_mode_t;
+
+typedef enum {
+    AVRCP_REPEAT_MODE_OFF = 0x01,
+    AVRCP_REPEAT_MODE_SINGLE_TRACK,
+    AVRCP_REPEAT_MODE_ALL_TRACKS,
+    AVRCP_REPEAT_MODE_GROUP
+} avrcp_repeat_mode_t;
+
 /**
  * @brief AVDTP Sink service record. 
  * @param service
@@ -249,7 +269,7 @@ void avrcp_register_packet_handler(btstack_packet_handler_t callback);
  * @param bd_addr
  */
 void avrcp_connect(bd_addr_t bd_addr);
-
+void avrcp_disconnect(uint16_t con_handle);
 /**
  * @brief Unit info.
  * @param con_handle
@@ -265,45 +285,45 @@ void avrcp_get_supported_events(uint16_t con_handle);
 
 
 /**
- * @brief Play.
+ * @brief Play. Event AVRCP_SUBEVENT_OPERATION_COMPLETE returns operation id and status.
  * @param con_handle
  */
 void avrcp_play(uint16_t con_handle);
 
 /**
- * @brief Stop.
+ * @brief Stop. Event AVRCP_SUBEVENT_OPERATION_COMPLETE returns operation id and status.
  * @param con_handle
  */
 void avrcp_stop(uint16_t con_handle);
 
 /**
- * @brief Pause.
+ * @brief Pause. Event AVRCP_SUBEVENT_OPERATION_COMPLETE returns operation id and status.
  * @param con_handle
  */
 void avrcp_pause(uint16_t con_handle);
 
 /**
- * @brief Fast forward.
+ * @brief Fast forward. Event AVRCP_SUBEVENT_OPERATION_COMPLETE returns operation id and status.
  * @param con_handle
  */
 void avrcp_start_fast_forward(uint16_t con_handle);
 void avrcp_stop_fast_forward(uint16_t con_handle);
 
 /**
- * @brief Rewind.
+ * @brief Rewind. Event AVRCP_SUBEVENT_OPERATION_COMPLETE returns operation id and status.
  * @param con_handle
  */
 void avrcp_start_rewind(uint16_t con_handle);
 void avrcp_stop_rewind(uint16_t con_handle);
 
 /**
- * @brief Forward.
+ * @brief Forward. Event AVRCP_SUBEVENT_OPERATION_COMPLETE returns operation id and status.
  * @param con_handle
  */
 void avrcp_forward(uint16_t con_handle); 
 
 /**
- * @brief Backward.
+ * @brief Backward. Event AVRCP_SUBEVENT_OPERATION_COMPLETE returns operation id and status.
  * @param con_handle
  */
 void avrcp_backward(uint16_t con_handle);
@@ -317,11 +337,11 @@ void avrcp_backward(uint16_t con_handle);
 void avrcp_get_play_status(uint16_t con_handle);
 
 /**
- * @brief Register notification.
+ * @brief Register notification. Response via AVRCP_SUBEVENT_ENABLE_NOTIFICATION_COMPLETE.
  * @param con_handle
  * @param event_id
  */
-void avrcp_enable_notification(uint16_t con_handle, avrcp_notification_event_id_t event_id, uint32_t playback_interval_in_seconds);
+void avrcp_enable_notification(uint16_t con_handle, avrcp_notification_event_id_t event_id);
 void avrcp_disable_notification(uint16_t con_handle, avrcp_notification_event_id_t event_id);
 
 /**
@@ -331,34 +351,61 @@ void avrcp_disable_notification(uint16_t con_handle, avrcp_notification_event_id
 void avrcp_get_now_playing_info(uint16_t con_handle);
 
 /**
- * @brief Set absolute volume 0-127 (corresponds to 0-100%)
+ * @brief Set absolute volume 0-127 (corresponds to 0-100%). Response via AVRCP_SUBEVENT_SET_ABSOLUTE_VOLUME_RESPONSE
  * @param con_handle
  */
 void avrcp_set_absolute_volume(uint16_t con_handle, uint8_t volume);
 
 /**
- * @brief Turns the volume to high.
+ * @brief Turns the volume to high. Event AVRCP_SUBEVENT_OPERATION_COMPLETE returns operation id and status.
  * @param con_handle
  */
 void avrcp_volume_up(uint16_t con_handle);
 
 /**
- * @brief Turns the volume to low.
+ * @brief Turns the volume to low. Event AVRCP_SUBEVENT_OPERATION_COMPLETE returns operation id and status.
  * @param con_handle
  */
-void avrcp_start_volume_down(uint16_t con_handle);
+void avrcp_volume_down(uint16_t con_handle);
 
 /**
- * @brief Puts the sound out.
+ * @brief Puts the sound out. Event AVRCP_SUBEVENT_OPERATION_COMPLETE returns operation id and status.
  * @param con_handle
  */
-void avrcp_start_mute(uint16_t con_handle);
+void avrcp_mute(uint16_t con_handle);
 
 /**
- * @brief Skip to next playing media.
+ * @brief Skip to next playing media. Event AVRCP_SUBEVENT_OPERATION_COMPLETE returns operation id and status.
  * @param con_handle
  */
-void avrcp_start_skip(uint16_t con_handle);
+void avrcp_skip(uint16_t con_handle);
+
+/**
+ * @brief Query repeat and shuffle mode. Response via AVRCP_SUBEVENT_SHUFFLE_AND_REPEAT_MODE.
+ * @param con_handle
+ */
+void avrcp_query_shuffle_and_repeat_modes(uint16_t con_handle);
+
+/**
+ * @brief Set shuffle mode. Event AVRCP_SUBEVENT_OPERATION_COMPLETE returns operation id and status.
+ * @param con_handle
+ */
+void avrcp_set_shuffle_mode(uint16_t con_handle, avrcp_shuffle_mode_t mode);
+
+/**
+ * @brief Set repeat mode. Event AVRCP_SUBEVENT_OPERATION_COMPLETE returns operation id and status.
+ * @param con_handle
+ */
+void avrcp_set_repeat_mode(uint16_t con_handle, avrcp_repeat_mode_t mode);
+
+const char * avrcp_subunit2str(uint16_t index);
+const char * avrcp_event2str(uint16_t index);
+const char * avrcp_operation2str(uint8_t index);
+const char * avrcp_attribute2str(uint8_t index);
+const char * avrcp_play_status2str(uint8_t index);
+const char * avrcp_ctype2str(uint8_t index);
+const char * avrcp_repeat2str(uint8_t index);
+const char * avrcp_shuffle2str(uint8_t index);
 
 /* API_END */
 #if defined __cplusplus
