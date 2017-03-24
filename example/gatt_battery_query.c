@@ -47,6 +47,7 @@
 #include <string.h>
 
 #include "btstack.h"
+#include "gatt_battery_query.h"
 
 typedef struct advertising_report {
     uint8_t   type;
@@ -339,6 +340,10 @@ int btstack_main(int argc, const char * argv[]){
 
     l2cap_init();
 
+    // setup ATT server - only needed if LE Peripheral does ATT queries on its own, e.g. Android phones
+    att_server_init(profile_data, NULL, NULL);    
+
+    // GATT Client setup
     gatt_client_init();
 
     sm_init();

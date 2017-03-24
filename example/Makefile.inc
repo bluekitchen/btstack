@@ -146,6 +146,10 @@ profile.h: profile.gatt
 	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
 ancs_client_demo.h: ancs_client_demo.gatt
 	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
+gatt_browser.h: gatt_browser.gatt
+	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
+gatt_battery_query.h: gatt_battery_query.gatt
+	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
 spp_and_le_counter.h: spp_and_le_counter.gatt
 	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
 le_counter.h: le_counter.gatt
@@ -204,11 +208,11 @@ gap_inquiry: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ad_parser.o gap_inquiry.c
 panu_demo: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} panu_demo.c  
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-gatt_browser: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} ${SM_OBJ} gatt_browser.c
-	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+gatt_browser: gatt_browser.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} gatt_browser.c
+	${CC} $(filter-out gatt_browser.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
 
-gatt_battery_query: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} ${SM_OBJ} gatt_battery_query.c
-	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+gatt_battery_query: gatt_battery_query.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} gatt_battery_query.c
+	${CC} $(filter-out gatt_battery_query.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
 
 ancs_client_demo: ancs_client_demo.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${GATT_CLIENT_OBJ} ${SM_OBJ} ancs_client.c ancs_client_demo.c
 	${CC} $(filter-out ancs_client_demo.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
