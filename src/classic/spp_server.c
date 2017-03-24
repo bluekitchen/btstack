@@ -35,6 +35,8 @@
  *
  */
 
+#define __BTSTACK_FILE__ "spp_server.c"
+
 /*
  *  spp_server.c
  *

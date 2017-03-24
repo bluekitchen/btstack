@@ -35,6 +35,8 @@
  *
  */
 
+#define __BTSTACK_FILE__ "att_dispatch.c"
+
 
 /**
  * Dispatcher for independent implementation of ATT client and server

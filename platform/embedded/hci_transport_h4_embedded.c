@@ -35,6 +35,8 @@
  *
  */
 
+#define __BTSTACK_FILE__ "hci_transport_h4_embedded.c"
+
 /*
  *  hci_h4_transport_dma.c
  *

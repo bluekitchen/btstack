@@ -35,6 +35,8 @@
  *
  */
 
+#define __BTSTACK_FILE__ "spp_flowcontrol.c"
+
 // *****************************************************************************
 /* EXAMPLE_START(spp_flowcontrol): SPP Server - Flow Control
  *

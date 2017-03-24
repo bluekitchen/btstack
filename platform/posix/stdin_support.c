@@ -35,6 +35,8 @@
  *
  */
 
+#define __BTSTACK_FILE__ "stdin_support.c"
+
 #include <errno.h>
 #include <stdio.h>
 #include <unistd.h>

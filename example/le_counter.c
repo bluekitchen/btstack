@@ -35,6 +35,8 @@
  *
  */
 
+#define __BTSTACK_FILE__ "le_counter.c"
+
 // *****************************************************************************
 /* EXAMPLE_START(le_counter): LE Peripheral - Heartbeat Counter over GATT
  *

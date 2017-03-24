@@ -35,6 +35,8 @@
  *
  */
 
+#define __BTSTACK_FILE__ "btstack_memory_pool.c"
+
 /*
  *  btstack_memory_pool.c
  *

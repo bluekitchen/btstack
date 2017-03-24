@@ -35,6 +35,8 @@
  *
  */
 
+#define __BTSTACK_FILE__ "att_server.c"
+
 
 //
 // ATT Server Globals

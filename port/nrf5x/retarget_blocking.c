@@ -10,6 +10,8 @@
  *
  */
 
+#define __BTSTACK_FILE__ "retarget_blocking.c"
+
 // BTstack patch: block on full outgoing buffer
 
 #if !defined(NRF_LOG_USES_RTT) || NRF_LOG_USES_RTT != 1

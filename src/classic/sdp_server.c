@@ -35,6 +35,8 @@
  *
  */
 
+#define __BTSTACK_FILE__ "sdp_server.c"
+
 /*
  * Implementation of the Service Discovery Protocol Server 
  */

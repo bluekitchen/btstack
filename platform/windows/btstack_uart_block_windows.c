@@ -35,6 +35,8 @@
  *
  */
 
+#define __BTSTACK_FILE__ "btstack_uart_block_windows.c"
+
 /*
  *  btstack_uart_block_windows.c
  *

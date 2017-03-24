@@ -34,6 +34,8 @@
  * contact@bluekitchen-gmbh.com
  *
  */
+
+#define __BTSTACK_FILE__ "sco_demo_util.c"
  
 /*
  * sco_demo_util.c - send/receive test data via SCO, used by hfp_*_demo and hsp_*_demo

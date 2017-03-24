@@ -35,6 +35,8 @@
  *
  */
 
+#define __BTSTACK_FILE__ "btstack_chipset_stlc2500d.c"
+
 /*
  *  btstack_chipset_stlc2500d.c
  *

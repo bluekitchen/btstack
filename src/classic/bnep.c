@@ -35,6 +35,8 @@
  *
  */
 
+#define __BTSTACK_FILE__ "bnep.c"
+
 /*
  * bnep.c
  * Author: Ole Reinhardt <ole.reinhardt@kernelconcepts.de>

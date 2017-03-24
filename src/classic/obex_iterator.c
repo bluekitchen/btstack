@@ -34,6 +34,8 @@
  * contact@bluekitchen-gmbh.com
  *
  */
+
+#define __BTSTACK_FILE__ "obex_iterator.c"
  
 #include "btstack_config.h"
 

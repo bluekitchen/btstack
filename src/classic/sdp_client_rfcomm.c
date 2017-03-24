@@ -35,6 +35,8 @@
  *
  */
 
+#define __BTSTACK_FILE__ "sdp_client_rfcomm.c"
+
 /*
  *  sdp_rfcomm_query.c
  */

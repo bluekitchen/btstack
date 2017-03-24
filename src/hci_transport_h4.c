@@ -35,6 +35,8 @@
  *
  */
 
+#define __BTSTACK_FILE__ "hci_transport_h4.c"
+
 /*
  *  hci_h4_transport.c
  *

@@ -35,6 +35,8 @@
  *
  */
 
+#define __BTSTACK_FILE__ "gatt_client.c"
+
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>

@@ -10,6 +10,8 @@
  *
  */
 
+#define __BTSTACK_FILE__ "main.c"
+
 /** 
  * BTstack Link Layer implementation
  */

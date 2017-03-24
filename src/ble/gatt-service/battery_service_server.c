@@ -35,6 +35,8 @@
  *
  */
 
+#define __BTSTACK_FILE__ "battery_service_server.c"
+
 /**
  * Implementation of the GATT Battery Service Server 
  * To use with your application, add '#import <battery_service.gatt' to your .gatt file

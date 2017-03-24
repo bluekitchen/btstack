@@ -41,6 +41,8 @@ const /*
  *  HCI Transport API implementation for basic H4 protocol for use with btstack_run_loop_wiced.c
  */
 
+#define __BTSTACK_FILE__ "hci_transport_h4_wiced.c"
+
 #include "btstack_config.h"
 #include "btstack_run_loop_wiced.h"
 

@@ -35,6 +35,8 @@
  *
  */
 
+#define __BTSTACK_FILE__ "l2cap_server.c"
+
 /*
  *  l2cap_server.c
  * 

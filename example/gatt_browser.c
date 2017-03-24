@@ -35,6 +35,8 @@
  *
  */
 
+#define __BTSTACK_FILE__ "gatt_browser.c"
+
 // *****************************************************************************
 /* EXAMPLE_START(gatt_browser): GATT Client - Discovering primary services and their characteristics
  * 

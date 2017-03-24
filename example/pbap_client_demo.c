@@ -34,6 +34,8 @@
  * contact@bluekitchen-gmbh.com
  *
  */
+
+#define __BTSTACK_FILE__ "pbap_client_demo.c"
  
 #include "btstack_config.h"
 

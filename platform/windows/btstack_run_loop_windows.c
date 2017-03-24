@@ -35,6 +35,8 @@
  *
  */
 
+#define __BTSTACK_FILE__ "btstack_run_loop_windows.c"
+
 /*
  *  btstack_run_loop_windows.c
  */

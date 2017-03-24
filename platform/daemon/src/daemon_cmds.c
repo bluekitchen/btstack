@@ -35,6 +35,8 @@
  *
  */
 
+#define __BTSTACK_FILE__ "daemon_cmds.c"
+
 /*
  *  hci_cmd.c
  *

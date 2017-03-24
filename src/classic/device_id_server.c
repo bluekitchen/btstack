@@ -35,6 +35,8 @@
  *
  */
 
+#define __BTSTACK_FILE__ "device_id_server.c"
+
 /*
  * device_id_server.c
  *

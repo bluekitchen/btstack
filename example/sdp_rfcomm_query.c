@@ -34,6 +34,8 @@
  * contact@bluekitchen-gmbh.com
  *
  */
+
+#define __BTSTACK_FILE__ "sdp_rfcomm_query.c"
  
 // *****************************************************************************
 //

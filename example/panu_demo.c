@@ -35,6 +35,8 @@
  *
  */
 
+#define __BTSTACK_FILE__ "panu_demo.c"
+
 /*
  * panu_demo.c
  * Author: Ole Reinhardt <ole.reinhardt@kernelconcepts.de>
