@@ -53,16 +53,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "btstack_event.h"
-#include "btstack_memory.h"
-#include "btstack_run_loop.h"
-#include "classic/sdp_client.h"
-#include "classic/sdp_util.h"
-#include "hci.h"
-#include "hci_cmd.h"
-#include "hci_dump.h"
-#include "l2cap.h"
-#include "pan.h"
+#include "btstack.h"
 
 int record_id = -1;
 int attribute_id = -1;
@@ -202,9 +193,9 @@ static void handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel
                             if (de_get_element_type(element) != DE_UUID) continue;
                             uint32_t uuid = de_get_uuid32(element);
                             switch (uuid){
-                                case PANU_UUID:
-                                case NAP_UUID:
-                                case GN_UUID:
+                                case BLUETOOTH_SERVICE_CLASS_PANU:
+                                case BLUETOOTH_SERVICE_CLASS_NAP:
+                                case BLUETOOTH_SERVICE_CLASS_GN:
                                     printf(" ** Attribute 0x%04x: BNEP PAN protocol UUID: %04x\n", sdp_event_query_attribute_byte_get_attribute_id(packet), uuid);
                                     break;
                                 default:

@@ -914,12 +914,6 @@ typedef enum rpn_flow_control {
  */
 
 typedef enum {
-    PANU_UUID = 0x1115,
-    NAP_UUID = 0x1116, 
-    GN_UUID = 0x1117
-} bnep_service_uuid_t; 
-
-typedef enum {
     BNEP_SECURITY_NONE = 0x0000,
     BNEP_SECURITY_SERVICE_LEVEL_ENFORCED,
     BNEP_SECURITY_802_1X

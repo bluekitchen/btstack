@@ -403,7 +403,7 @@ static void handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel
                                 printf("l2cap_psm 0x%04x, bnep_version 0x%04x\n", bnep_l2cap_psm, bnep_version);
 
                                 /* Create BNEP connection */
-                                bnep_connect(packet_handler, remote, bnep_l2cap_psm, PANU_UUID, bnep_remote_uuid);
+                                bnep_connect(packet_handler, remote, bnep_l2cap_psm, BLUETOOTH_SERVICE_CLASS_PANU, bnep_remote_uuid);
                             }
                             break;
                         default:
