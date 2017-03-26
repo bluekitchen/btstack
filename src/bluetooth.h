@@ -673,14 +673,14 @@ typedef enum {
 #define L2CAP_ERTX_TIMEOUT_MS 120000
 
 // Fixed PSM numbers
-#define PSM_SDP           0x01
-#define PSM_RFCOMM        0x03
-#define PSM_BNEP          0x0F
+#define PSM_SDP           BLUETOOTH_PROTOCOL_SDP
+#define PSM_RFCOMM        BLUETOOTH_PROTOCOL_RFCOMM
+#define PSM_BNEP          BLUETOOTH_PROTOCOL_BNEP
 #define PSM_HID_CONTROL   0x11
 #define PSM_HID_INTERRUPT 0x13
 
 /**
- * SDP Protocl
+ * SDP Protocol
  */
 
  // PDU Types
@@ -695,45 +695,49 @@ typedef enum {
     SDP_ServiceSearchAttributeResponse
 } SDP_PDU_ID_t;
 
+/* Please use assigned numbers from bluetooth_sdp.h instead for thsese ...*/
+
 // UNIVERSAL ATTRIBUTE DEFINITIONS
-#define SDP_ServiceRecordHandle     0x0000
-#define SDP_ServiceClassIDList      0x0001
-#define SDP_ServiceRecordState      0x0002
-#define SDP_ServiceID               0x0003
-#define SDP_ProtocolDescriptorList  0x0004
-#define SDP_BrowseGroupList         0x0005
-#define SDP_LanguageBaseAttributeIDList 0x0006
-#define SDP_ServiceInfoTimeToLive   0x0007
-#define SDP_ServiceAvailability     0x0008
-#define SDP_BluetoothProfileDescriptorList 0x0009
-#define SDP_DocumentationURL        0x000a
-#define SDP_ClientExecutableURL     0x000b
-#define SDP_IconURL                 0x000c
-#define SDP_AdditionalProtocolDescriptorList 0x000d
-#define SDP_SupportedFormatsList    0x0303
+#define SDP_ServiceRecordHandle               BLUETOOTH_ATTRIBUTE_SERVICE_RECORD_HANDLE
+#define SDP_ServiceClassIDList                BLUETOOTH_ATTRIBUTE_SERVICE_CLASS_ID_LIST
+#define SDP_ServiceRecordState                BLUETOOTH_ATTRIBUTE_SERVICE_RECORD_STATE
+#define SDP_ServiceID                         BLUETOOTH_ATTRIBUTE_SERVICE_ID
+#define SDP_ProtocolDescriptorList            BLUETOOTH_ATTRIBUTE_PROTOCOL_DESCRIPTOR_LIST
+#define SDP_BrowseGroupList                   BLUETOOTH_ATTRIBUTE_BROWSE_GROUP_LIST
+#define SDP_LanguageBaseAttributeIDList       BLUETOOTH_ATTRIBUTE_LANGUAGE_BASE_ATTRIBUTE_ID_LIST
+#define SDP_ServiceInfoTimeToLive             BLUETOOTH_ATTRIBUTE_SERVICE_INFO_TIME_TO_LIVE
+#define SDP_ServiceAvailability               BLUETOOTH_ATTRIBUTE_SERVICE_AVAILABILITY
+#define SDP_BluetoothProfileDescriptorList    BLUETOOTH_ATTRIBUTE_BLUETOOTH_PROFILE_DESCRIPTOR_LIST
+#define SDP_DocumentationURL                  BLUETOOTH_ATTRIBUTE_DOCUMENTATION_URL
+#define SDP_ClientExecutableURL               BLUETOOTH_ATTRIBUTE_CLIENT_EXECUTABLE_URL
+#define SDP_IconURL                           BLUETOOTH_ATTRIBUTE_ICON_URL
+#define SDP_AdditionalProtocolDescriptorList  BLUETOOTH_ATTRIBUTE_ADDITIONAL_PROTOCOL_DESCRIPTOR_LISTS
+#define SDP_SupportedFormatsList              BLUETOOTH_ATTRIBUTE_SUPPORTED_FORMATS_LIST
 
 // SERVICE CLASSES
-#define SDP_OBEXObjectPush          0x1105
-#define SDP_OBEXFileTransfer        0x1106
-#define SDP_PublicBrowseGroup       0x1002
-#define SDP_HSP                     0x1108
-#define SDP_Headset_AG              0x1112
-#define SDP_PANU                    0x1115
-#define SDP_NAP                     0x1116
-#define SDP_GN                      0x1117
-#define SDP_Handsfree               0x111E
-#define SDP_HandsfreeAudioGateway   0x111F
-#define SDP_Headset_HS              0x1131
-#define SDP_GenericAudio            0x1203
+#define SDP_OBEXObjectPush                    BLUETOOTH_SERVICE_CLASS_OBEX_OBJECT_PUSH
+#define SDP_OBEXFileTransfer                  BLUETOOTH_SERVICE_CLASS_OBEX_FILE_TRANSFER
+#define SDP_PublicBrowseGroup                 BLUETOOTH_ATTRIBUTE_PUBLIC_BROWSE_ROOT
+#define SDP_HSP                               BLUETOOTH_SERVICE_CLASS_HEADSET
+#define SDP_Headset_AG                        BLUETOOTH_SERVICE_CLASS_HEADSET_AUDIO_GATEWAY_AG
+#define SDP_PANU                              BLUETOOTH_SERVICE_CLASS_PANU
+#define SDP_NAP                               BLUETOOTH_SERVICE_CLASS_NAP
+#define SDP_GN                                BLUETOOTH_SERVICE_CLASS_GN
+#define SDP_Handsfree                         BLUETOOTH_SERVICE_CLASS_HANDSFREE
+#define SDP_HandsfreeAudioGateway             BLUETOOTH_SERVICE_CLASS_HANDSFREE_AUDIO_GATEWAY
+#define SDP_Headset_HS                        BLUETOOTH_SERVICE_CLASS_HEADSET_HS
+#define SDP_GenericAudio                      BLUETOOTH_SERVICE_CLASS_GENERIC_AUDIO
 
 // PROTOCOLS
-#define SDP_SDPProtocol       0x0001
-#define SDP_UDPProtocol       0x0002
-#define SDP_RFCOMMProtocol    0x0003
-#define SDP_OBEXProtocol      0x0008
-#define SDP_L2CAPProtocol     0x0100
-#define SDP_BNEPProtocol      0x000F
-#define SDP_AVDTPProtocol     0x0019
+#define SDP_SDPProtocol                       BLUETOOTH_PROTOCOL_SDP
+#define SDP_UDPProtocol                       BLUETOOTH_PROTOCOL_UDP
+#define SDP_RFCOMMProtocol                    BLUETOOTH_PROTOCOL_RFCOMM
+#define SDP_OBEXProtocol                      BLUETOOTH_PROTOCOL_OBEX
+#define SDP_L2CAPProtocol                     BLUETOOTH_PROTOCOL_L2CAP
+#define SDP_BNEPProtocol                      BLUETOOTH_PROTOCOL_BNEP
+#define SDP_AVDTPProtocol                     BLUETOOTH_PROTOCOL_AVDTP
+
+/** .. until here ..*/
 
 // OFFSETS FOR LOCALIZED ATTRIBUTES - SDP_LanguageBaseAttributeIDList
 #define SDP_Offest_ServiceName      0x0000

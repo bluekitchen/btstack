@@ -62,8 +62,8 @@ extern "C" {
 #define MAX_NUM_SEPS 10
 
 // protocols
-#define PSM_AVCTP 0x0017
-#define PSM_AVDTP 0x0019
+#define PSM_AVCTP BLUETOOTH_PROTOCOL_AVCTP
+#define PSM_AVDTP BLUETOOTH_PROTOCOL_AVDTP
 
 // service classes
 #define AUDIO_SOURCE_GROUP          0x110A

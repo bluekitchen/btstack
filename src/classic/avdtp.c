@@ -370,7 +370,7 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
                         break;
                     }
                     psm = l2cap_event_channel_opened_get_psm(packet); 
-                    if (psm != PSM_AVDTP){
+                    if (psm != BLUETOOTH_PROTOCOL_AVDTP){
                         log_error("unexpected PSM - Not implemented yet, avdtp sink: L2CAP_EVENT_CHANNEL_OPENED");
                         return;
                     }
@@ -381,7 +381,7 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
                     // printf("L2CAP_EVENT_CHANNEL_OPENED: Channel successfully opened: %s, handle 0x%02x, psm 0x%02x, local cid 0x%02x, remote cid 0x%02x\n",
                     //        bd_addr_to_str(event_addr), con_handle, psm, local_cid,  l2cap_event_channel_opened_get_remote_cid(packet));
 
-                    if (psm != PSM_AVDTP) break;
+                    if (psm != BLUETOOTH_PROTOCOL_AVDTP) break;
                     
                     connection = avdtp_connection_for_bd_addr(event_addr, context);
                     if (!connection) break;

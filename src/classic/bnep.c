@@ -49,6 +49,7 @@
 #include <stdint.h>
 
 #include "bnep.h"
+#include "bluetooth_sdp.h"
 #include "btstack_debug.h"
 #include "btstack_event.h"
 #include "btstack_memory.h"
@@ -821,15 +822,15 @@ static int bnep_handle_connection_request(bnep_channel_t *channel, uint8_t *pack
         channel->uuid_dest = big_endian_read_16(packet, 2 + uuid_offset);
         channel->uuid_source = big_endian_read_16(packet, 2 + uuid_offset + uuid_size);
 
-        if ((channel->uuid_dest != SDP_PANU) && 
-            (channel->uuid_dest != SDP_NAP) &&
-            (channel->uuid_dest != SDP_GN)) {
+        if ((channel->uuid_dest != BLUETOOTH_SERVICE_CLASS_PANU) && 
+            (channel->uuid_dest != BLUETOOTH_SERVICE_CLASS_NAP) &&
+            (channel->uuid_dest != BLUETOOTH_SERVICE_CLASS_GN)) {
             log_error("BNEP_CONNECTION_REQUEST: Invalid destination service UUID: %04x", channel->uuid_dest);
             channel->uuid_dest = 0;
         }    
-        if ((channel->uuid_source != SDP_PANU) && 
-            (channel->uuid_source != SDP_NAP) &&
-            (channel->uuid_source != SDP_GN)) {
+        if ((channel->uuid_source != BLUETOOTH_SERVICE_CLASS_PANU) && 
+            (channel->uuid_source != BLUETOOTH_SERVICE_CLASS_NAP) &&
+            (channel->uuid_source != BLUETOOTH_SERVICE_CLASS_GN)) {
             log_error("BNEP_CONNECTION_REQUEST: Invalid source service UUID: %04x", channel->uuid_source);
             channel->uuid_source = 0;
         }
@@ -842,7 +843,7 @@ static int bnep_handle_connection_request(bnep_channel_t *channel, uint8_t *pack
             // use packet handler for service
             channel->packet_handler = service->packet_handler;
 
-            if ((channel->uuid_source != SDP_PANU) && (channel->uuid_dest != SDP_PANU)) {
+            if ((channel->uuid_source != BLUETOOTH_SERVICE_CLASS_PANU) && (channel->uuid_dest != BLUETOOTH_SERVICE_CLASS_PANU)) {
                 response_code = BNEP_RESP_SETUP_INVALID_SOURCE_UUID;
             }
         } 
@@ -1182,7 +1183,7 @@ static int bnep_hci_event_handler(uint8_t *packet, uint16_t size)
     
     switch (hci_event_packet_get_type(packet)) {
             
-        /* Accept an incoming L2CAP connection on PSM_BNEP */
+        /* Accept an incoming L2CAP connection on BLUETOOTH_PROTOCOL_BNEP */
         case L2CAP_EVENT_INCOMING_CONNECTION:
             /* L2CAP event data: event(8), len(8), address(48), handle (16),  psm (16), source cid(16) dest cid(16) */
             reverse_bd_addr(&packet[2], event_addr);
@@ -1190,12 +1191,12 @@ static int bnep_hci_event_handler(uint8_t *packet, uint16_t size)
             psm        = little_endian_read_16(packet, 10); 
             l2cap_cid  = little_endian_read_16(packet, 12); 
 
-            if (psm != PSM_BNEP) break;
+            if (psm != BLUETOOTH_PROTOCOL_BNEP) break;
 
             channel = bnep_channel_for_addr(event_addr);
 
             if (channel) {                
-                log_error("INCOMING_CONNECTION (l2cap_cid 0x%02x) for PSM_BNEP => decline - channel already exists", l2cap_cid);
+                log_error("INCOMING_CONNECTION (l2cap_cid 0x%02x) for BLUETOOTH_PROTOCOL_BNEP => decline - channel already exists", l2cap_cid);
                 l2cap_decline_connection(l2cap_cid);
                 return 1;
             }
@@ -1204,7 +1205,7 @@ static int bnep_hci_event_handler(uint8_t *packet, uint16_t size)
             channel = bnep_channel_create_for_addr(event_addr);
 
             if (!channel) {
-                log_error("INCOMING_CONNECTION (l2cap_cid 0x%02x) for PSM_BNEP => decline - no memory left", l2cap_cid);
+                log_error("INCOMING_CONNECTION (l2cap_cid 0x%02x) for BLUETOOTH_PROTOCOL_BNEP => decline - no memory left", l2cap_cid);
                 l2cap_decline_connection(l2cap_cid);
                 return 1;
             }
@@ -1219,19 +1220,19 @@ static int bnep_hci_event_handler(uint8_t *packet, uint16_t size)
             /* Start connection timeout timer */
             bnep_channel_start_timer(channel, BNEP_CONNECTION_TIMEOUT_MS);
             
-            log_info("L2CAP_EVENT_INCOMING_CONNECTION (l2cap_cid 0x%02x) for PSM_BNEP => accept", l2cap_cid);
+            log_info("L2CAP_EVENT_INCOMING_CONNECTION (l2cap_cid 0x%02x) for BLUETOOTH_PROTOCOL_BNEP => accept", l2cap_cid);
             l2cap_accept_connection(l2cap_cid);
             return 1;
             
         /* Outgoing L2CAP connection has been opened -> store l2cap_cid, remote_addr */
         case L2CAP_EVENT_CHANNEL_OPENED: 
-            /* Check if the l2cap channel has been opened for PSM_BNEP */ 
-            if (little_endian_read_16(packet, 11) != PSM_BNEP) {
+            /* Check if the l2cap channel has been opened for BLUETOOTH_PROTOCOL_BNEP */ 
+            if (little_endian_read_16(packet, 11) != BLUETOOTH_PROTOCOL_BNEP) {
                 break;
             }
 
             status = packet[2];
-            log_info("L2CAP_EVENT_CHANNEL_OPENED for PSM_BNEP, status %u", status);
+            log_info("L2CAP_EVENT_CHANNEL_OPENED for BLUETOOTH_PROTOCOL_BNEP, status %u", status);
             
             /* Get the bnep channel fpr remote address */
             con_handle = little_endian_read_16(packet, 9);
@@ -1587,9 +1588,9 @@ uint8_t bnep_register_service(btstack_packet_handler_t packet_handler, uint16_t 
     }
 
     /* Only alow one the three service types: PANU, NAP, GN */
-    if ((service_uuid != SDP_PANU) && 
-        (service_uuid != SDP_NAP) &&
-        (service_uuid != SDP_GN)) {
+    if ((service_uuid != BLUETOOTH_SERVICE_CLASS_PANU) && 
+        (service_uuid != BLUETOOTH_SERVICE_CLASS_NAP) &&
+        (service_uuid != BLUETOOTH_SERVICE_CLASS_GN)) {
         log_info("BNEP_REGISTER_SERVICE: Invalid service UUID: %04x", service_uuid);
         return BNEP_SERVICE_ALREADY_REGISTERED; // TODO: define own error
     }
@@ -1602,7 +1603,7 @@ uint8_t bnep_register_service(btstack_packet_handler_t packet_handler, uint16_t 
     memset(service, 0, sizeof(bnep_service_t));
 
     /* register with l2cap if not registered before, max MTU */
-    l2cap_register_service(bnep_packet_handler, PSM_BNEP, 0xffff, bnep_security_level);
+    l2cap_register_service(bnep_packet_handler, BLUETOOTH_PROTOCOL_BNEP, 0xffff, bnep_security_level);
         
     /* Setup the service struct */
     service->max_frame_size = max_frame_size;
@@ -1629,6 +1630,6 @@ void bnep_unregister_service(uint16_t service_uuid)
     btstack_memory_bnep_service_free(service);
     service = NULL;
     
-    l2cap_unregister_service(PSM_BNEP);
+    l2cap_unregister_service(BLUETOOTH_PROTOCOL_BNEP);
 }
 

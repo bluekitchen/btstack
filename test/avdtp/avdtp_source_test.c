@@ -348,7 +348,7 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
     sep.seid = 1;
     switch (cmd){
         case 'c':
-            printf("Creating L2CAP Connection to %s, PSM_AVDTP\n", bd_addr_to_str(remote));
+            printf("Creating L2CAP Connection to %s, BLUETOOTH_PROTOCOL_AVDTP\n", bd_addr_to_str(remote));
             avdtp_source_connect(remote);
             break;
         case 'C':

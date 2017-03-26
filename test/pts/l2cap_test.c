@@ -162,7 +162,7 @@ int btstack_main(int argc, const char * argv[]){
     hci_add_event_handler(&hci_event_callback_registration);
 
     l2cap_init();
-    l2cap_register_service(packet_handler, PSM_SDP, 100, LEVEL_0);
+    l2cap_register_service(packet_handler, BLUETOOTH_PROTOCOL_SDP, 100, LEVEL_0);
     
     // turn on!
     hci_power_control(HCI_POWER_ON);

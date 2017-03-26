@@ -116,7 +116,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             // BTstack activated, get started 
             if (btstack_event_state_get_state(packet) == HCI_STATE_WORKING){
                 printf("Start SDP BNEP query.\n");
-                sdp_client_query_uuid16(&handle_sdp_client_query_result, remote, SDP_BNEPProtocol);
+                sdp_client_query_uuid16(&handle_sdp_client_query_result, remote, BLUETOOTH_PROTOCOL_BNEP);
             }
             break;
         default:
@@ -186,7 +186,7 @@ static void handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel
 
                 switch(sdp_event_query_attribute_byte_get_attribute_id(packet)){
                     // 0x0001 "Service Class ID List"
-                    case SDP_ServiceClassIDList:
+                    case BLUETOOTH_ATTRIBUTE_SERVICE_CLASS_ID_LIST:
                         if (de_get_element_type(attribute_value) != DE_DES) break;
                         for (des_iterator_init(&des_list_it, attribute_value); des_iterator_has_more(&des_list_it); des_iterator_next(&des_list_it)){
                             uint8_t * element = des_iterator_get_element(&des_list_it);
@@ -219,7 +219,7 @@ static void handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel
                      * a DES with the L2CAP Protocol UUID and a PSM,
                      * and another DES with the BNEP UUID and the the BNEP version.
                      */
-                    case SDP_ProtocolDescriptorList:{
+                    case BLUETOOTH_ATTRIBUTE_PROTOCOL_DESCRIPTOR_LIST:{
                             printf(" ** Attribute 0x%04x: ", sdp_event_query_attribute_byte_get_attribute_id(packet));
                             
                             uint16_t l2cap_psm = 0;
@@ -233,12 +233,12 @@ static void handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel
                                 if (de_get_element_type(element) != DE_UUID) continue;
                                 uint32_t uuid = de_get_uuid32(element);
                                 switch (uuid){
-                                    case SDP_L2CAPProtocol:
+                                    case BLUETOOTH_PROTOCOL_L2CAP:
                                         if (!des_iterator_has_more(&prot_it)) continue;
                                         des_iterator_next(&prot_it);
                                         de_element_get_uint16(des_iterator_get_element(&prot_it), &l2cap_psm);
                                         break;
-                                    case SDP_BNEPProtocol:
+                                    case BLUETOOTH_PROTOCOL_BNEP:
                                         if (!des_iterator_has_more(&prot_it)) continue;
                                         des_iterator_next(&prot_it);
                                         de_element_get_uint16(des_iterator_get_element(&prot_it), &bnep_version);

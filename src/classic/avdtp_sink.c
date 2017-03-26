@@ -65,11 +65,11 @@ void a2dp_sink_create_sdp_record(uint8_t * service,  uint32_t service_record_han
     de_create_sequence(service);
 
     // 0x0000 "Service Record Handle"
-    de_add_number(service, DE_UINT, DE_SIZE_16, SDP_ServiceRecordHandle);
+    de_add_number(service, DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_SERVICE_RECORD_HANDLE);
     de_add_number(service, DE_UINT, DE_SIZE_32, service_record_handle);
 
     // 0x0001 "Service Class ID List"
-    de_add_number(service,  DE_UINT, DE_SIZE_16, SDP_ServiceClassIDList);
+    de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_SERVICE_CLASS_ID_LIST);
     attribute = de_push_sequence(service);
     {
         de_add_number(attribute, DE_UUID, DE_SIZE_16, AUDIO_SINK_GROUP); 
@@ -77,19 +77,19 @@ void a2dp_sink_create_sdp_record(uint8_t * service,  uint32_t service_record_han
     de_pop_sequence(service, attribute);
 
     // 0x0004 "Protocol Descriptor List"
-    de_add_number(service,  DE_UINT, DE_SIZE_16, SDP_ProtocolDescriptorList);
+    de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_PROTOCOL_DESCRIPTOR_LIST);
     attribute = de_push_sequence(service);
     {
         uint8_t* l2cpProtocol = de_push_sequence(attribute);
         {
-            de_add_number(l2cpProtocol,  DE_UUID, DE_SIZE_16, SDP_L2CAPProtocol);
-            de_add_number(l2cpProtocol,  DE_UINT, DE_SIZE_16, PSM_AVDTP);  
+            de_add_number(l2cpProtocol,  DE_UUID, DE_SIZE_16, BLUETOOTH_PROTOCOL_L2CAP);
+            de_add_number(l2cpProtocol,  DE_UINT, DE_SIZE_16, BLUETOOTH_PROTOCOL_AVDTP);  
         }
         de_pop_sequence(attribute, l2cpProtocol);
         
         uint8_t* avProtocol = de_push_sequence(attribute);
         {
-            de_add_number(avProtocol,  DE_UUID, DE_SIZE_16, PSM_AVDTP);  // avProtocol_service
+            de_add_number(avProtocol,  DE_UUID, DE_SIZE_16, BLUETOOTH_PROTOCOL_AVDTP);  // avProtocol_service
             de_add_number(avProtocol,  DE_UINT, DE_SIZE_16,  0x0103);  // version
         }
         de_pop_sequence(attribute, avProtocol);
@@ -97,15 +97,15 @@ void a2dp_sink_create_sdp_record(uint8_t * service,  uint32_t service_record_han
     de_pop_sequence(service, attribute);
 
     // 0x0005 "Public Browse Group"
-    de_add_number(service,  DE_UINT, DE_SIZE_16, SDP_BrowseGroupList); // public browse group
+    de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_BROWSE_GROUP_LIST); // public browse group
     attribute = de_push_sequence(service);
     {
-        de_add_number(attribute,  DE_UUID, DE_SIZE_16, SDP_PublicBrowseGroup);
+        de_add_number(attribute,  DE_UUID, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_PUBLIC_BROWSE_ROOT);
     }
     de_pop_sequence(service, attribute);
 
     // 0x0009 "Bluetooth Profile Descriptor List"
-    de_add_number(service,  DE_UINT, DE_SIZE_16, SDP_BluetoothProfileDescriptorList);
+    de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_BLUETOOTH_PROFILE_DESCRIPTOR_LIST);
     attribute = de_push_sequence(service);
     {
         uint8_t *a2dProfile = de_push_sequence(attribute);
@@ -200,7 +200,7 @@ void avdtp_sink_init(void){
     avdtp_sink_context.stream_endpoints_id_counter = 0;
     // TODO: assign dummy  handlers;
 
-    l2cap_register_service(&packet_handler, PSM_AVDTP, 0xffff, LEVEL_0);
+    l2cap_register_service(&packet_handler, BLUETOOTH_PROTOCOL_AVDTP, 0xffff, LEVEL_0);
 }
 
 avdtp_stream_endpoint_t * avdtp_sink_create_stream_endpoint(avdtp_sep_type_t sep_type, avdtp_media_type_t media_type){
@@ -230,7 +230,7 @@ void avdtp_sink_connect(bd_addr_t bd_addr){
     }
     if (connection->state != AVDTP_SIGNALING_CONNECTION_IDLE) return;
     connection->state = AVDTP_SIGNALING_CONNECTION_W4_L2CAP_CONNECTED;
-    l2cap_create_channel(packet_handler, connection->remote_addr, PSM_AVDTP, 0xffff, NULL);
+    l2cap_create_channel(packet_handler, connection->remote_addr, BLUETOOTH_PROTOCOL_AVDTP, 0xffff, NULL);
 }
 
 void avdtp_sink_disconnect(uint16_t con_handle){
