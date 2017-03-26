@@ -11,7 +11,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "bluetooth.h"
+#include "bluetooth_sdp.h"
 
 #include "classic/sdp_util.h"
 #include "CppUTest/TestHarness.h"
