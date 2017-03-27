@@ -65,7 +65,7 @@ void * const isr_stack_top = isr_stack + sizeof(isr_stack);
 void * const main_stack_top = main_stack + sizeof(main_stack);
 
 static uint8_t ALIGNED(4) ticker_nodes[RADIO_TICKER_NODES +  BTSTACK_TICKER_NODES][TICKER_NODE_T_SIZE];
-static uint8_t ALIGNED(4) ticker_users[MAYFLY_CALLER_COUNT + BTSTACK_USERS_COUNT][TICKER_USER_T_SIZE];
+static uint8_t ALIGNED(4) ticker_users[MAYFLY_CALLER_COUNT][TICKER_USER_T_SIZE];
 static uint8_t ALIGNED(4) ticker_user_ops[RADIO_TICKER_USER_OPS + BTSTACK_USER_OPS] [TICKER_USER_OP_T_SIZE];
 
 static uint8_t ALIGNED(4) rng[3 + 4 + 1];
@@ -227,7 +227,6 @@ int main(void)
 	irq_priority_set(RTC0_IRQn, 0xFE);
 	irq_enable(RTC0_IRQn);
 
-#if 0
 	// also enable OVERLOW event
 
 	// enable ticker overflow couner
@@ -237,7 +236,6 @@ int main(void)
     // assert RTC doesn't stop counting when there are no tickers active
     // note: BTstack Run Loop works when RTC gets stopped, however, the system time pauses as well
     cntr_start(); 
-#endif
 	
 	irq_priority_set(SWI4_IRQn, 0xFF);
 	irq_enable(SWI4_IRQn);
