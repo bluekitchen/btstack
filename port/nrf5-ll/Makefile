@@ -4,6 +4,7 @@ INCLUDES = \
 	-I. \
 	-I../../src \
 	-I../../platform/embedded \
+	-I../../.. \
 	-I../../../ble/ll \
 	-I../../../util \
 	-I../../../ticker \
