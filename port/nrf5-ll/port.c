@@ -36,7 +36,7 @@ static uint8_t    hci_tx_type;
 
 static volatile uint32_t btstack_run_loop_rtc0_overflow_counter;
 static btstack_linked_list_t timers;
-static volatile int trigger_event_received = 0;
+static int trigger_event_received = 0;
 
 /**
  * init transport
@@ -204,21 +204,6 @@ static void transport_deliver_packet(void){
     transport_packet_handler(type, hci_rx_buffer, size);
 }
 
-static void hal_cpu_disable_irqs(void){
-    __disable_irq();
-}
-
-static void hal_cpu_enable_irqs(void){
-    __enable_irq();
-}
-
-static void hal_cpu_enable_irqs_and_sleep(void){
-    __enable_irq();
-    DEBUG_CPU_SLEEP(1);
-    cpu_sleep();
-    DEBUG_CPU_SLEEP(0);
-}
-
 void btstack_run_loop_rtc0_overflow(void){
     btstack_run_loop_rtc0_overflow_counter++;
 }
@@ -333,9 +318,6 @@ static void btstack_run_loop_phoenix_singleshot_timeout_handler(uint32_t ticks_a
     (void)lazy;
     (void)context;
 
-    // just notify run loop
-    trigger_event_received = 1;
-
     // single shot timer is not active anymore
     btstack_run_loop_phoenix_singleshot_timeout = 0;
 }
@@ -378,7 +360,8 @@ static void btstack_run_loop_phoenix_stop_singleshot_timer(void){
 static void btstack_run_loop_phoenix_execute_once(void) {
 
     // printf("Time %u\n", (int) btstack_run_loop_phoenix_get_ticks() >> 5);
-
+    trigger_event_received = 0;
+    
     // process queued radio packets
     while (1){
         // get next event from ll
@@ -430,17 +413,12 @@ static void btstack_run_loop_phoenix_execute_once(void) {
     }
 #endif
 
-#if 0
-    // disable IRQs and check if run loop iteration has been requested. if not, go to sleep
-    hal_cpu_disable_irqs();
-    
-    if (trigger_event_received){
-        trigger_event_received = 0;
-        hal_cpu_enable_irqs();
-    } else {
-        hal_cpu_enable_irqs_and_sleep();
+    // trigger event is not expected to be set by ISR, so we don't disable IRQs before checking it.
+    // However, if an ISR or other event happened since the beginning of this function,
+    // Event will be set and cpu sleep returns immediately
+    if (!trigger_event_received){
+        cpu_sleep();
     }
-#endif
 }
 
 static void btstack_run_loop_phoenix_execute(void) {
