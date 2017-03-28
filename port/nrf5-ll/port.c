@@ -403,11 +403,11 @@ static void btstack_run_loop_phoenix_execute_once(void) {
 
     // process timers
     uint64_t timeout = 0;
+    uint64_t now = btstack_run_loop_phoenix_get_ticks_prescaled();
+#if 1
     while (timers) {
-        uint64_t now = btstack_run_loop_phoenix_get_ticks_prescaled();
         btstack_timer_source_t *ts = (btstack_timer_source_t *) timers;
         timeout = btstack_run_loop_reconstruct_full_ticks(now, ts->timeout);
-        // log_info("btstack_run_loop_phoenix_run: now %u, timeout %u - counter %u", (int) now, (int) ts->timeout, NRF_RTC0->COUNTER >> PRESCALER_TICKS);
 
         if (timeout > now) break;
         timeout = 0;
@@ -415,7 +415,9 @@ static void btstack_run_loop_phoenix_execute_once(void) {
         btstack_run_loop_remove_timer(ts);
         ts->process(ts);
     }
+#endif
 
+#if 0
     // use ticker to wake up if timer is set
     uint32_t timeout_ticks = (timeout << PRESCALER_TICKS);
     if (timeout_ticks != btstack_run_loop_phoenix_singleshot_timeout){
@@ -426,7 +428,9 @@ static void btstack_run_loop_phoenix_execute_once(void) {
             btstack_run_loop_phoenix_start_singleshot_timer(timeout_ticks);
         }
     }
+#endif
 
+#if 0
     // disable IRQs and check if run loop iteration has been requested. if not, go to sleep
     hal_cpu_disable_irqs();
     
@@ -436,6 +440,7 @@ static void btstack_run_loop_phoenix_execute_once(void) {
     } else {
         hal_cpu_enable_irqs_and_sleep();
     }
+#endif
 }
 
 static void btstack_run_loop_phoenix_execute(void) {
