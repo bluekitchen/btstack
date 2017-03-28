@@ -35,12 +35,13 @@ VPATH += \
 
 TARGETS += \
 	le_counter.elf \
+	le_counter_periodic.elf \
 	le_streamer.elf \
 	sm_pairing_peripheral.elf \
 	revogi_mitm.elf \
 	gatt_browser.elf \
 	gap_le_advertisements.elf \
-	sbc_test.elf \
+#	sbc_test.elf \
 #   ancs_client_demo.elf \
 #	sm_pairing_central.elf \
 #	gatt_battery_query.elf \
@@ -150,6 +151,10 @@ SRCS_LE_COUNTER = \
 	$(SRCS_APP_BTSTACK) \
 	le_counter.c
 
+SRCS_LE_COUNTER_PERIODIC = \
+	$(SRCS_APP_BTSTACK) \
+	le_counter_periodic.c
+
 SRCS_LE_STREAMER = \
 	$(SRCS_APP_BTSTACK) \
 	le_streamer.c
@@ -189,6 +194,9 @@ gap_le_advertisements.elf : $(SRCS_GAP_LE_ADVERTISEMENTS:.c=.o)
 
 le_counter.elf : $(ASMS_APP_BTSTACK:.s=.o)
 le_counter.elf : le_counter.h $(SRCS_LE_COUNTER:.c=.o)
+
+le_counter_periodic.elf : $(ASMS_APP_BTSTACK:.s=.o)
+le_counter_periodic.elf : le_counter.h $(SRCS_LE_COUNTER_PERIODIC:.c=.o)
 
 gatt_battery_query.elf : $(ASMS_APP_BTSTACK:.s=.o)
 gatt_battery_query.elf : $(SRCS_GATT_BATTERY_QUERY:.c=.o)
