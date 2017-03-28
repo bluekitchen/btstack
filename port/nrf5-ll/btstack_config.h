@@ -39,7 +39,7 @@
 
 // additional ticker for BTstack run loop single shot timer
 #define BTSTACK_TICKER_NODES 1
-#define BTSTACK_USER_ID 3
+#define BTSTACK_USER_ID   (RADIO_TICKER_USER_ID_APP)
 #define BTSTACK_USER_OPS 2
 #define BTSTACK_TICKER_ID (RADIO_TICKER_NODES)
 

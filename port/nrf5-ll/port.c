@@ -1,5 +1,6 @@
 #include <stdint.h>
 
+#include "util/config.h"
 #include "cpu.h"
 #include "ctrl.h"
 #include "debug.h"
