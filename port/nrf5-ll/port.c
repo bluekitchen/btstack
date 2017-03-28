@@ -401,7 +401,7 @@ static void btstack_run_loop_phoenix_execute_once(void) {
     }
 #endif
 
-#if 0
+#if 1
     // use ticker to wake up if timer is set
     uint32_t timeout_ticks = (timeout << PRESCALER_TICKS);
     if (timeout_ticks != btstack_run_loop_phoenix_singleshot_timeout){
