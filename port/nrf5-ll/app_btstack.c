@@ -64,7 +64,7 @@ uint8_t __noinit main_stack[1024+128];
 void * const isr_stack_top = isr_stack + sizeof(isr_stack);
 void * const main_stack_top = main_stack + sizeof(main_stack);
 
-static uint8_t ALIGNED(4) ticker_nodes[RADIO_TICKER_NODES +  BTSTACK_TICKER_NODES][TICKER_NODE_T_SIZE];
+static uint8_t ALIGNED(4) ticker_nodes[RADIO_TICKER_NODES + BTSTACK_TICKER_NODES][TICKER_NODE_T_SIZE];
 static uint8_t ALIGNED(4) ticker_users[MAYFLY_CALLER_COUNT][TICKER_USER_T_SIZE];
 static uint8_t ALIGNED(4) ticker_user_ops[RADIO_TICKER_USER_OPS + BTSTACK_USER_OPS] [TICKER_USER_OP_T_SIZE];
 
@@ -243,11 +243,11 @@ int main(void)
 	ticker_users[MAYFLY_CALL_ID_0][0] = RADIO_TICKER_USER_WORKER_OPS;
 	ticker_users[MAYFLY_CALL_ID_1][0] = RADIO_TICKER_USER_JOB_OPS;
 	ticker_users[MAYFLY_CALL_ID_2][0] = 0;
-	ticker_users[MAYFLY_CALL_ID_PROGRAM][0] = RADIO_TICKER_USER_APP_OPS;
+	ticker_users[MAYFLY_CALL_ID_PROGRAM][0] = RADIO_TICKER_USER_APP_OPS + BTSTACK_USER_OPS;
 
-	uint32_t result = ticker_init(RADIO_TICKER_INSTANCE_ID_RADIO, RADIO_TICKER_NODES,
+	uint32_t result = ticker_init(RADIO_TICKER_INSTANCE_ID_RADIO, RADIO_TICKER_NODES + BTSTACK_TICKER_NODES,
 		    &ticker_nodes[0], MAYFLY_CALLER_COUNT, &ticker_users[0],
-		    RADIO_TICKER_USER_OPS, &ticker_user_ops[0]);
+		    RADIO_TICKER_USER_OPS + BTSTACK_USER_OPS, &ticker_user_ops[0]);
     if (result != 0){
         printf("main: ticker init failed result %u\n", result);
     }
