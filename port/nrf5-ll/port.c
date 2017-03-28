@@ -330,7 +330,7 @@ static void btstack_run_loop_phoenix_start_singleshot_timer(uint32_t timeout_tic
     uint32_t ticker_ticks = ticker_ticks_diff_get(timeout_ticks, ticker_ticks_now_get());
 
     // log_info("btstack_run_loop_phoenix_start_singleshot_timer: %u, current %u", (int) timeout_ticks, (int) cntr_cnt_get());
-    ticker_start(0 /* instance */
+    uint32_t ret = ticker_start (0 /* instance */
         , BTSTACK_USER_ID /* user */
         , BTSTACK_TICKER_ID /* ticker id */
         , ticker_ticks_now_get() /* anchor point */
@@ -344,17 +344,23 @@ static void btstack_run_loop_phoenix_start_singleshot_timer(uint32_t timeout_tic
         , 0 /* op func */
         , 0 /* op context */
         );
+    if (ret){
+        log_error("start ticker failed %u", (int) ret);
+    }
     btstack_run_loop_phoenix_singleshot_timeout = timeout_ticks;
 }
 
 static void btstack_run_loop_phoenix_stop_singleshot_timer(void){
     // log_info("btstack_run_loop_phoenix_stop_singleshot_timer");
-    ticker_stop(0 /* instance */
+    uint32_t ret = ticker_stop(0 /* instance */
         , BTSTACK_USER_ID /* user */
         , BTSTACK_TICKER_ID /* ticker id */
         , 0 /* op func */
         , 0 /* op context */
         );
+    if (ret){
+        log_error("start ticker failed %u", (int) ret);
+    }
     btstack_run_loop_phoenix_singleshot_timeout = 0;
 }
 
