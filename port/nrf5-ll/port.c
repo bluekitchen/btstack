@@ -311,25 +311,49 @@ static void btstack_run_loop_phoenix_dump_timer(void){
 #endif
 }
 
-static uint64_t btstack_run_loop_phoenix_singleshot_timeout = 0;
-static int bstack_run_loop_phoenix_singleshot_active = 0;
+// ticker state: IDLE, scheduled to be active, active, scheduled to be stopped
+typedef enum ticker_state {
+    TICKER_IDLE,
+    TICKER_SCHEDULED_TO_START,
+    TICKER_ACTIVE,
+    TICKER_SCHEDULED_TO_STOP,
+} ticker_state_t;
+static ticker_state_t ticker_state = TICKER_IDLE;
+
+static volatile uint64_t btstack_run_loop_phoenix_singleshot_timeout = 0;
+static uint64_t btstack_run_loop_phoenix_scheduled_timeout = 0;
 
 static void btstack_run_loop_phoenix_singleshot_timeout_handler(uint32_t ticks_at_expire, uint32_t remainder, uint16_t lazy, void *context){
     (void)ticks_at_expire;
     (void)remainder;
     (void)lazy;
     (void)context;
-
-    // single shot timer is not active anymore
-    bstack_run_loop_phoenix_singleshot_active = 0;
+    // timeout -> not active anymore
+    ticker_state = TICKER_IDLE;
 }
 
-static void btstack_run_loop_phoenix_start_singleshot_timer(uint32_t timeout_ticks){
+static void bttack_run_loop_phoenix_ticker_start_callback(uint32_t status, void *op_context){
+    (void) status;
+    (void) op_context;
+    if (status == TICKER_STATUS_SUCCESS){
+         ticker_state = TICKER_ACTIVE;
+         btstack_run_loop_phoenix_singleshot_timeout = btstack_run_loop_phoenix_scheduled_timeout;
+    }
+}
 
+static void bttack_run_loop_phoenix_ticker_stop_callback(uint32_t status, void *op_context){
+    (void) status;
+    (void) op_context;    
+    if (status == TICKER_STATUS_SUCCESS){
+         ticker_state = TICKER_IDLE;
+         btstack_run_loop_phoenix_singleshot_timeout = 0;
+    }
+}
+
+static uint32_t btstack_run_loop_phoenix_start_singleshot_timer(uint32_t timeout_ticks){
+    // log_info("start ticker: %u", (int) timeout_ticks);
     uint32_t ticker_ticks = ticker_ticks_diff_get(timeout_ticks, ticker_ticks_now_get());
-
-    // log_info("btstack_run_loop_phoenix_start_singleshot_timer: %u, current %u", (int) timeout_ticks, (int) cntr_cnt_get());
-    ticker_start (0 /* instance */
+    return ticker_start (0 /* instance */
         , BTSTACK_USER_ID /* user */
         , BTSTACK_TICKER_ID /* ticker id */
         , ticker_ticks_now_get() /* anchor point */
@@ -338,30 +362,25 @@ static void btstack_run_loop_phoenix_start_singleshot_timer(uint32_t timeout_tic
         , 0 /* remainder */
         , 0 /* lazy */
         , 0 /* slot */
-        , btstack_run_loop_phoenix_singleshot_timeout_handler /* timeout callback function */
+        , &btstack_run_loop_phoenix_singleshot_timeout_handler /* timeout callback function */
         , 0 /* context */
-        , 0 /* op func */
+        , &bttack_run_loop_phoenix_ticker_start_callback /* op func */
         , 0 /* op context */
         );
-    btstack_run_loop_phoenix_singleshot_timeout = timeout_ticks;
-    bstack_run_loop_phoenix_singleshot_active = 1;
 }
 
-static void btstack_run_loop_phoenix_stop_singleshot_timer(void){
-    // log_info("btstack_run_loop_phoenix_stop_singleshot_timer");
-    ticker_stop(0 /* instance */
+static uint32_t btstack_run_loop_phoenix_stop_singleshot_timer(void){
+    // log_info("stop ticker: %u");
+    return ticker_stop(0 /* instance */
         , BTSTACK_USER_ID /* user */
         , BTSTACK_TICKER_ID /* ticker id */
-        , 0 /* op func */
+        , &bttack_run_loop_phoenix_ticker_stop_callback /* op func */
         , 0 /* op context */
         );
-    btstack_run_loop_phoenix_singleshot_timeout = 0;
-    bstack_run_loop_phoenix_singleshot_active = 0;
 }
 
 static void btstack_run_loop_phoenix_execute_once(void) {
 
-    // printf("Time %u\n", (int) btstack_run_loop_phoenix_get_ticks() >> 5);
     trigger_event_received = 0;
     
     // process queued radio packets
@@ -401,14 +420,53 @@ static void btstack_run_loop_phoenix_execute_once(void) {
     }
 
 #if 1
-    // use ticker to wake up if timer is set
+    // figure out what to do
     uint32_t timeout_ticks = (timeout << PRESCALER_TICKS);
     if (timeout_ticks != btstack_run_loop_phoenix_singleshot_timeout){
+        // stop
         if (btstack_run_loop_phoenix_singleshot_timeout){
-            btstack_run_loop_phoenix_stop_singleshot_timer();
-        }  
+            switch (ticker_state){
+                case TICKER_ACTIVE:
+                    switch(btstack_run_loop_phoenix_stop_singleshot_timer()){
+                        case TICKER_STATUS_SUCCESS:
+                            ticker_state = TICKER_IDLE;
+                            break;
+                        case TICKER_STATUS_BUSY:
+                            ticker_state = TICKER_SCHEDULED_TO_STOP;
+                            trigger_event_received = 1;
+                            break;
+                        case TICKER_STATUS_FAILURE:
+                            log_info("ticker_stop failure, try later");
+                            trigger_event_received = 1;
+                            break;
+                    }
+                    break;
+                default:
+                    break;
+            }
+        }
         if (timeout_ticks){
-            btstack_run_loop_phoenix_start_singleshot_timer(timeout_ticks);
+            switch (ticker_state){
+                case TICKER_IDLE:
+                    switch(btstack_run_loop_phoenix_start_singleshot_timer(timeout_ticks)){
+                        case TICKER_STATUS_SUCCESS:
+                            btstack_run_loop_phoenix_singleshot_timeout = timeout_ticks;
+                            ticker_state = TICKER_ACTIVE;
+                            break;
+                        case TICKER_STATUS_BUSY:
+                            ticker_state = TICKER_SCHEDULED_TO_START;
+                            btstack_run_loop_phoenix_scheduled_timeout  = timeout_ticks;
+                            trigger_event_received = 1;
+                            break;
+                        case TICKER_STATUS_FAILURE:
+                            log_info("ticker_start failure, try later");
+                            trigger_event_received = 1;
+                            break;
+                    }
+                    break;
+                default:
+                    break;
+            }            
         }
     }
 #endif
