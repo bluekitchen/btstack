@@ -329,7 +329,7 @@ static void btstack_run_loop_phoenix_start_singleshot_timer(uint32_t timeout_tic
     uint32_t ticker_ticks = ticker_ticks_diff_get(timeout_ticks, ticker_ticks_now_get());
 
     // log_info("btstack_run_loop_phoenix_start_singleshot_timer: %u, current %u", (int) timeout_ticks, (int) cntr_cnt_get());
-    uint32_t ret = ticker_start (0 /* instance */
+    ticker_start (0 /* instance */
         , BTSTACK_USER_ID /* user */
         , BTSTACK_TICKER_ID /* ticker id */
         , ticker_ticks_now_get() /* anchor point */
@@ -343,24 +343,18 @@ static void btstack_run_loop_phoenix_start_singleshot_timer(uint32_t timeout_tic
         , 0 /* op func */
         , 0 /* op context */
         );
-    if (ret){
-        log_error("start ticker failed %u", (int) ret);
-    }
     btstack_run_loop_phoenix_singleshot_timeout = timeout_ticks;
     bstack_run_loop_phoenix_singleshot_active = 1;
 }
 
 static void btstack_run_loop_phoenix_stop_singleshot_timer(void){
     // log_info("btstack_run_loop_phoenix_stop_singleshot_timer");
-    uint32_t ret = ticker_stop(0 /* instance */
+    ticker_stop(0 /* instance */
         , BTSTACK_USER_ID /* user */
         , BTSTACK_TICKER_ID /* ticker id */
         , 0 /* op func */
         , 0 /* op context */
         );
-    if (ret){
-        log_error("start ticker failed %u", (int) ret);
-    }
     btstack_run_loop_phoenix_singleshot_timeout = 0;
     bstack_run_loop_phoenix_singleshot_active = 0;
 }
@@ -395,7 +389,6 @@ static void btstack_run_loop_phoenix_execute_once(void) {
     // process timers
     uint64_t timeout = 0;
     uint64_t now = btstack_run_loop_phoenix_get_ticks_prescaled();
-#if 1
     while (timers) {
         btstack_timer_source_t *ts = (btstack_timer_source_t *) timers;
         timeout = btstack_run_loop_reconstruct_full_ticks(now, ts->timeout);
@@ -406,21 +399,16 @@ static void btstack_run_loop_phoenix_execute_once(void) {
         btstack_run_loop_remove_timer(ts);
         ts->process(ts);
     }
-#endif
 
 #if 1
     // use ticker to wake up if timer is set
     uint32_t timeout_ticks = (timeout << PRESCALER_TICKS);
     if (timeout_ticks != btstack_run_loop_phoenix_singleshot_timeout){
-        int need_to_stop  = bstack_run_loop_phoenix_singleshot_active != 0;
-        int need_to_start = timeout_ticks != 0;
-        if (need_to_start && !need_to_stop){
-            // if (btstack_run_loop_phoenix_singleshot_timeout){
-            //     btstack_run_loop_phoenix_stop_singleshot_timer();
-            // }  
-            if (timeout_ticks){
-                btstack_run_loop_phoenix_start_singleshot_timer(timeout_ticks);
-            }
+        if (btstack_run_loop_phoenix_singleshot_timeout){
+            btstack_run_loop_phoenix_stop_singleshot_timer();
+        }  
+        if (timeout_ticks){
+            btstack_run_loop_phoenix_start_singleshot_timer(timeout_ticks);
         }
     }
 #endif
