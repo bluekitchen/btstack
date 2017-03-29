@@ -111,6 +111,11 @@ void swi4_handler(void)
 	mayfly_run(MAYFLY_CALL_ID_1);
 }
 
+void swi5_handler(void)
+{
+	mayfly_run(MAYFLY_CALL_ID_2);
+}
+
 void rng_handler(void)
 {
 	isr_rand(0);
@@ -124,8 +129,14 @@ void radio_handler(void)
 void mayfly_enable_cb(uint8_t caller_id, uint8_t callee_id, uint8_t enable)
 {
 	(void)caller_id;
-	(void)callee_id;
-	(void)enable;
+
+	ASSERT(callee_id == MAYFLY_CALL_ID_1);
+
+	if (enable) {
+		irq_enable(SWI4_IRQn);
+	} else {
+		irq_disable(SWI4_IRQn);
+	}
 }
 
 uint32_t mayfly_is_enabled(uint8_t caller_id, uint8_t callee_id)
@@ -136,20 +147,18 @@ uint32_t mayfly_is_enabled(uint8_t caller_id, uint8_t callee_id)
 		return irq_is_enabled(RTC0_IRQn);
 	} else if (callee_id == MAYFLY_CALL_ID_1) {
 		return irq_is_enabled(SWI4_IRQn);
-	} else {
-		ASSERT(0);
+	} else if (callee_id == MAYFLY_CALL_ID_2) {
+		return irq_is_enabled(SWI5_IRQn);
 	}
+
+	ASSERT(0);
 
 	return 0;
 }
 
 uint32_t mayfly_prio_is_equal(uint8_t caller_id, uint8_t callee_id)
 {
-	return (caller_id == callee_id) ||
-	       ((caller_id == MAYFLY_CALL_ID_0) &&
-		(callee_id == MAYFLY_CALL_ID_1)) ||
-	       ((caller_id == MAYFLY_CALL_ID_1) &&
-		(callee_id == MAYFLY_CALL_ID_0));
+	return (caller_id == callee_id);
 }
 
 void mayfly_pend(uint8_t caller_id, uint8_t callee_id)
@@ -163,6 +172,10 @@ void mayfly_pend(uint8_t caller_id, uint8_t callee_id)
 
 	case MAYFLY_CALL_ID_1:
 		irq_pending_set(SWI4_IRQn);
+		break;
+
+	case MAYFLY_CALL_ID_2:
+		irq_pending_set(SWI5_IRQn);
 		break;
 
 	case MAYFLY_CALL_ID_PROGRAM:
@@ -224,7 +237,7 @@ int main(void)
 	irq_enable(POWER_CLOCK_IRQn);
 
 	cntr_init();
-	irq_priority_set(RTC0_IRQn, 0xFE);
+	irq_priority_set(RTC0_IRQn, 0xFD);
 	irq_enable(RTC0_IRQn);
 
 	// also enable OVERLOW event
@@ -237,8 +250,11 @@ int main(void)
     // note: BTstack Run Loop works when RTC gets stopped, however, the system time pauses as well
     cntr_start(); 
 	
-	irq_priority_set(SWI4_IRQn, 0xFF);
+	irq_priority_set(SWI4_IRQn, 0xFE);
 	irq_enable(SWI4_IRQn);
+
+	irq_priority_set(SWI5_IRQn, 0xFF);
+	irq_enable(SWI5_IRQn);
 
 	ticker_users[MAYFLY_CALL_ID_0][0] = RADIO_TICKER_USER_WORKER_OPS;
 	ticker_users[MAYFLY_CALL_ID_1][0] = RADIO_TICKER_USER_JOB_OPS;
@@ -251,6 +267,7 @@ int main(void)
     if (result != 0){
         printf("main: ticker init failed result %u\n", result);
     }
+
 	rand_init(rng, sizeof(rng));
 	irq_priority_set(RNG_IRQn, 0xFF);
 	irq_enable(RNG_IRQn);
@@ -270,7 +287,7 @@ int main(void)
 	}
 	ASSERT(retval == 0);
 
-	irq_priority_set(RADIO_IRQn, 0xFE);
+	irq_priority_set(RADIO_IRQn, 0xFD);
 
 	/* turn on blue LED */
 	NRF_GPIO->OUTSET = (1 << 21) | (1 << 22) | (1 << 23);
