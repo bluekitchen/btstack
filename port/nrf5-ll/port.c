@@ -312,6 +312,7 @@ static void btstack_run_loop_phoenix_dump_timer(void){
 }
 
 static uint64_t btstack_run_loop_phoenix_singleshot_timeout = 0;
+static int bstack_run_loop_phoenix_singleshot_active = 0;
 
 static void btstack_run_loop_phoenix_singleshot_timeout_handler(uint32_t ticks_at_expire, uint32_t remainder, uint16_t lazy, void *context){
     (void)ticks_at_expire;
@@ -320,13 +321,11 @@ static void btstack_run_loop_phoenix_singleshot_timeout_handler(uint32_t ticks_a
     (void)context;
 
     // single shot timer is not active anymore
-    btstack_run_loop_phoenix_singleshot_timeout = 0;
+    bstack_run_loop_phoenix_singleshot_active = 0;
 }
 
 static void btstack_run_loop_phoenix_start_singleshot_timer(uint32_t timeout_ticks){
 
-    // limit ticks to ticker resolution - creatively use tick diff function to not specifiy resolution here
-    // uint32_t ticker_ticks = ticker_ticks_diff_get(timeout_ticks, 0);
     uint32_t ticker_ticks = ticker_ticks_diff_get(timeout_ticks, ticker_ticks_now_get());
 
     // log_info("btstack_run_loop_phoenix_start_singleshot_timer: %u, current %u", (int) timeout_ticks, (int) cntr_cnt_get());
@@ -348,6 +347,7 @@ static void btstack_run_loop_phoenix_start_singleshot_timer(uint32_t timeout_tic
         log_error("start ticker failed %u", (int) ret);
     }
     btstack_run_loop_phoenix_singleshot_timeout = timeout_ticks;
+    bstack_run_loop_phoenix_singleshot_active = 1;
 }
 
 static void btstack_run_loop_phoenix_stop_singleshot_timer(void){
@@ -362,6 +362,7 @@ static void btstack_run_loop_phoenix_stop_singleshot_timer(void){
         log_error("start ticker failed %u", (int) ret);
     }
     btstack_run_loop_phoenix_singleshot_timeout = 0;
+    bstack_run_loop_phoenix_singleshot_active = 0;
 }
 
 static void btstack_run_loop_phoenix_execute_once(void) {
@@ -411,11 +412,15 @@ static void btstack_run_loop_phoenix_execute_once(void) {
     // use ticker to wake up if timer is set
     uint32_t timeout_ticks = (timeout << PRESCALER_TICKS);
     if (timeout_ticks != btstack_run_loop_phoenix_singleshot_timeout){
-        if (btstack_run_loop_phoenix_singleshot_timeout){
-            btstack_run_loop_phoenix_stop_singleshot_timer();
-        }  
-        if (timeout_ticks){
-            btstack_run_loop_phoenix_start_singleshot_timer(timeout_ticks);
+        int need_to_stop  = bstack_run_loop_phoenix_singleshot_active != 0;
+        int need_to_start = timeout_ticks != 0;
+        if (need_to_start && !need_to_stop){
+            // if (btstack_run_loop_phoenix_singleshot_timeout){
+            //     btstack_run_loop_phoenix_stop_singleshot_timer();
+            // }  
+            if (timeout_ticks){
+                btstack_run_loop_phoenix_start_singleshot_timer(timeout_ticks);
+            }
         }
     }
 #endif
