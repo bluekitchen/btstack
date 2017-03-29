@@ -58,8 +58,8 @@ const btstack_run_loop_t * btstack_run_loop_phoenix_get_instance(void);
 const hci_transport_t * hci_transport_phoenix_get_instance();
 void btstack_run_loop_rtc0_overflow();
 
-uint8_t __noinit isr_stack[512];
-uint8_t __noinit main_stack[1024+128];
+uint8_t isr_stack[1024];
+uint8_t main_stack[2048];
 
 void * const isr_stack_top = isr_stack + sizeof(isr_stack);
 void * const main_stack_top = main_stack + sizeof(main_stack);
@@ -94,7 +94,7 @@ void rtc0_handler(void)
 	if (NRF_RTC0->EVENTS_COMPARE[1]) {
 		NRF_RTC0->EVENTS_COMPARE[1] = 0;
 
-		ticker_trigger(1);
+		// ticker_trigger(1);
 	}
 
 	// Count overflows
@@ -298,7 +298,7 @@ int main(void)
 
     hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
-    
+
     // hand over to btstack embedded code 
     btstack_main();
     btstack_run_loop_execute();
