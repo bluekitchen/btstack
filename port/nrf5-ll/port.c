@@ -321,7 +321,7 @@ typedef enum ticker_state {
 static ticker_state_t ticker_state = TICKER_IDLE;
 
 static volatile uint64_t btstack_run_loop_phoenix_singleshot_timeout = 0;
-static uint64_t btstack_run_loop_phoenix_scheduled_timeout = 0;
+static uint64_t          btstack_run_loop_phoenix_scheduled_timeout = 0;
 
 static void btstack_run_loop_phoenix_singleshot_timeout_handler(uint32_t ticks_at_expire, uint32_t remainder, uint16_t lazy, void *context){
     (void)ticks_at_expire;
@@ -330,6 +330,7 @@ static void btstack_run_loop_phoenix_singleshot_timeout_handler(uint32_t ticks_a
     (void)context;
     // timeout -> not active anymore
     ticker_state = TICKER_IDLE;
+    btstack_run_loop_phoenix_singleshot_timeout = 0;
 }
 
 static void bttack_run_loop_phoenix_ticker_start_callback(uint32_t status, void *op_context){
