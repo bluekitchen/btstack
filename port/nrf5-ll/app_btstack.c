@@ -34,8 +34,6 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #include "ctrl.h"
 #include "ll.h"
 
-#include "config.h"
-
 #include "debug.h"
 
 // btstack includes
@@ -111,11 +109,6 @@ void swi4_handler(void)
 	mayfly_run(MAYFLY_CALL_ID_1);
 }
 
-void swi5_handler(void)
-{
-	mayfly_run(MAYFLY_CALL_ID_2);
-}
-
 void rng_handler(void)
 {
 	isr_rand(0);
@@ -147,8 +140,6 @@ uint32_t mayfly_is_enabled(uint8_t caller_id, uint8_t callee_id)
 		return irq_is_enabled(RTC0_IRQn);
 	} else if (callee_id == MAYFLY_CALL_ID_1) {
 		return irq_is_enabled(SWI4_IRQn);
-	} else if (callee_id == MAYFLY_CALL_ID_2) {
-		return irq_is_enabled(SWI5_IRQn);
 	}
 
 	ASSERT(0);
@@ -172,10 +163,6 @@ void mayfly_pend(uint8_t caller_id, uint8_t callee_id)
 
 	case MAYFLY_CALL_ID_1:
 		irq_pending_set(SWI4_IRQn);
-		break;
-
-	case MAYFLY_CALL_ID_2:
-		irq_pending_set(SWI5_IRQn);
 		break;
 
 	case MAYFLY_CALL_ID_PROGRAM:
@@ -252,9 +239,6 @@ int main(void)
 	
 	irq_priority_set(SWI4_IRQn, 0xFE);
 	irq_enable(SWI4_IRQn);
-
-	irq_priority_set(SWI5_IRQn, 0xFF);
-	irq_enable(SWI5_IRQn);
 
 	ticker_users[MAYFLY_CALL_ID_0][0] = RADIO_TICKER_USER_WORKER_OPS;
 	ticker_users[MAYFLY_CALL_ID_1][0] = RADIO_TICKER_USER_JOB_OPS;
