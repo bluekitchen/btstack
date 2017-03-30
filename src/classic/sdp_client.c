@@ -393,14 +393,20 @@ void sdp_client_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
     // uint16_t handle;
     if (packet_type == L2CAP_DATA_PACKET){
         uint16_t responseTransactionID = big_endian_read_16(packet,1);
-        if ( responseTransactionID != transactionID){
-            log_error("Missmatching transaction ID, expected %u, found %u.", transactionID, responseTransactionID);
+        if (responseTransactionID != transactionID){
+            log_error("Mismatching transaction ID, expected %u, found %u.", transactionID, responseTransactionID);
             return;
         } 
         
+        if (packet[0] == SDP_ErrorResponse){
+            log_error("Received error response with code %u, disconnecting", packet[2]);
+            l2cap_disconnect(sdp_cid, 0);
+            return;
+        }
+
         if (packet[0] != SDP_ServiceSearchAttributeResponse 
-            && packet[0] != SDP_ServiceSearchResponse
-            && packet[0] != SDP_ServiceAttributeResponse){
+         && packet[0] != SDP_ServiceSearchResponse
+         && packet[0] != SDP_ServiceAttributeResponse){
             log_error("Not a valid PDU ID, expected %u, %u or %u, found %u.", SDP_ServiceSearchResponse, 
                                     SDP_ServiceAttributeResponse, SDP_ServiceSearchAttributeResponse, packet[0]);
             return;
