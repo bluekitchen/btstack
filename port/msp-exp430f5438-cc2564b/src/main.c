@@ -57,6 +57,7 @@
 #include "btstack_run_loop.h"
 #include "btstack_run_loop_embedded.h"
 #include "classic/btstack_link_key_db.h"
+#include "bluetooth_company_id.h"
 #include "hal_board.h"
 #include "hal_compat.h"
 #include "hal_usb.h"

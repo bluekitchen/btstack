@@ -57,6 +57,7 @@
 #include "btstack_memory.h"
 #include "btstack_run_loop.h"
 #include "btstack_run_loop_posix.h"
+#include "bluetooth_company_id.h"
 #include "hci.h"
 #include "hci_dump.h"
 #include "stdin_support.h"
@@ -190,7 +191,7 @@ static void local_version_information_handler(uint8_t * packet){
             use_fast_uart();
             hci_set_chipset(btstack_chipset_stlc2500d_instance());
             break;
-        case BUETOOTH_COMPANY_ID_EM_MICROELECTRONICS_MARIN:
+        case BLUETOOTH_COMPANY_ID_EM_MICROELECTRONIC_MARIN_SA:
             printf("EM Microelectronics - using EM9301 driver.\n");
             hci_set_chipset(btstack_chipset_em9301_instance());
             break;

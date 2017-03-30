@@ -54,6 +54,7 @@
 #include "btstack_run_loop.h"
 #include "btstack_run_loop_embedded.h"
 #include "hci.h"
+#include "bluetooth_company_id.h"
 #include "btstack_chipset_cc256x.h"
 #include "btstack_memory.h"
 #include "classic/btstack_link_key_db.h"
