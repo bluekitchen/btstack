@@ -35,6 +35,8 @@
  *
  */
 
+#define __BTSTACK_FILE__ "panu_demo.c"
+
 /*
  * panu_demo.c
  * Author: Ole Reinhardt <ole.reinhardt@kernelconcepts.de>
@@ -147,7 +149,7 @@ static void panu_setup(void){
     // Initialise BNEP
     bnep_init();
     // Minimum L2CAP MTU for bnep is 1691 bytes
-    bnep_register_service(packet_handler, SDP_PANU, 1691);  
+    bnep_register_service(packet_handler, BLUETOOTH_SERVICE_CLASS_PANU, 1691);  
 }
 /* LISTING_END */
 
@@ -342,16 +344,16 @@ static void handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel
                 if ((uint16_t)(sdp_event_query_attribute_byte_get_data_offset(packet)+1) == sdp_event_query_attribute_byte_get_attribute_length(packet)) {
 
                     switch(sdp_event_query_attribute_byte_get_attribute_id(packet)) {
-                        case SDP_ServiceClassIDList:
+                        case BLUETOOTH_ATTRIBUTE_SERVICE_CLASS_ID_LIST:
                             if (de_get_element_type(attribute_value) != DE_DES) break;
                             for (des_iterator_init(&des_list_it, attribute_value); des_iterator_has_more(&des_list_it); des_iterator_next(&des_list_it)) {
                                 uint8_t * element = des_iterator_get_element(&des_list_it);
                                 if (de_get_element_type(element) != DE_UUID) continue;
                                 uint32_t uuid = de_get_uuid32(element);
                                 switch (uuid){
-                                    case SDP_PANU:
-                                    case SDP_NAP:
-                                    case SDP_GN:
+                                    case BLUETOOTH_SERVICE_CLASS_PANU:
+                                    case BLUETOOTH_SERVICE_CLASS_NAP:
+                                    case BLUETOOTH_SERVICE_CLASS_GN:
                                         printf("SDP Attribute 0x%04x: BNEP PAN protocol UUID: %04x\n", sdp_event_query_attribute_byte_get_attribute_id(packet), uuid);
                                         bnep_remote_uuid = uuid;
                                         break;
@@ -366,7 +368,7 @@ static void handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel
                             printf("SDP Attribute: 0x%04x: %s\n", sdp_event_query_attribute_byte_get_attribute_id(packet), str);
                             free(str);
                             break;
-                        case 0x0004: {
+                        case BLUETOOTH_ATTRIBUTE_PROTOCOL_DESCRIPTOR_LIST: {
                                 printf("SDP Attribute: 0x%04x\n", sdp_event_query_attribute_byte_get_attribute_id(packet));
 
                                 for (des_iterator_init(&des_list_it, attribute_value); des_iterator_has_more(&des_list_it); des_iterator_next(&des_list_it)) {                                    
@@ -384,12 +386,12 @@ static void handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel
                                     
                                     uuid = de_get_uuid32(element);
                                     switch (uuid){
-                                        case SDP_L2CAPProtocol:
+                                        case BLUETOOTH_PROTOCOL_L2CAP:
                                             if (!des_iterator_has_more(&prot_it)) continue;
                                             des_iterator_next(&prot_it);
                                             de_element_get_uint16(des_iterator_get_element(&prot_it), &bnep_l2cap_psm);
                                             break;
-                                        case SDP_BNEPProtocol:
+                                        case BLUETOOTH_PROTOCOL_BNEP:
                                             if (!des_iterator_has_more(&prot_it)) continue;
                                             des_iterator_next(&prot_it);
                                             de_element_get_uint16(des_iterator_get_element(&prot_it), &bnep_version);
@@ -401,7 +403,7 @@ static void handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel
                                 printf("l2cap_psm 0x%04x, bnep_version 0x%04x\n", bnep_l2cap_psm, bnep_version);
 
                                 /* Create BNEP connection */
-                                bnep_connect(packet_handler, remote, bnep_l2cap_psm, PANU_UUID, bnep_remote_uuid);
+                                bnep_connect(packet_handler, remote, bnep_l2cap_psm, BLUETOOTH_SERVICE_CLASS_PANU, bnep_remote_uuid);
                             }
                             break;
                         default:
@@ -452,7 +454,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 case BTSTACK_EVENT_STATE:
                     if (btstack_event_state_get_state(packet) == HCI_STATE_WORKING){
                         printf("Start SDP BNEP query.\n");
-                        sdp_client_query_uuid16(&handle_sdp_client_query_result, remote, SDP_BNEPProtocol);
+                        sdp_client_query_uuid16(&handle_sdp_client_query_result, remote, BLUETOOTH_PROTOCOL_BNEP);
                     }
                     break;
 

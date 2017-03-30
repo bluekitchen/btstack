@@ -35,6 +35,8 @@
  *
  */
 
+#define __BTSTACK_FILE__ "device_id_server.c"
+
 /*
  * device_id_server.c
  *
@@ -69,10 +71,10 @@ void device_id_create_sdp_record(uint8_t *service, uint32_t service_record_handl
 	de_pop_sequence(service, attribute);
 	
 	// 0x0005 "Public Browse Group"
-	de_add_number(service,  DE_UINT, DE_SIZE_16, SDP_BrowseGroupList); // public browse group
+	de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_BROWSE_GROUP_LIST); // public browse group
 	attribute = de_push_sequence(service);
 	{
-		de_add_number(attribute,  DE_UUID, DE_SIZE_16, SDP_PublicBrowseGroup );
+		de_add_number(attribute,  DE_UUID, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_PUBLIC_BROWSE_ROOT );
 	}
 	de_pop_sequence(service, attribute);
 	

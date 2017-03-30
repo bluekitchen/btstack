@@ -35,6 +35,8 @@
  *
  */
 
+#define __BTSTACK_FILE__ "ancs_client.c"
+
 #include "btstack_config.h"
 
 #include <stdint.h>

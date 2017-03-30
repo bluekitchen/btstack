@@ -34,6 +34,8 @@
  * contact@bluekitchen-gmbh.com
  *
  */
+
+#define __BTSTACK_FILE__ "btstack_sbc_bludroid.c"
  
 // *****************************************************************************
 //
@@ -503,8 +505,6 @@ void btstack_sbc_decoder_process_data(btstack_sbc_decoder_state_t * state, int p
 void btstack_sbc_encoder_init(btstack_sbc_encoder_state_t * state, btstack_sbc_mode_t mode, 
                         int blocks, int subbands, int allmethod, int sample_rate, int bitpool){
 
-    UNUSED(bitpool);
-
     if (sbc_encoder_state_singleton && sbc_encoder_state_singleton != state ){
         log_error("SBC encoder: different sbc decoder state is allready registered");
     } 
@@ -522,8 +522,10 @@ void btstack_sbc_encoder_init(btstack_sbc_encoder_state_t * state, btstack_sbc_m
             bd_encoder_state.context.s16NumOfBlocks = blocks;                          
             bd_encoder_state.context.s16NumOfSubBands = subbands;                       
             bd_encoder_state.context.s16AllocationMethod = allmethod;                     
-            bd_encoder_state.context.s16BitPool = 31;  
+            bd_encoder_state.context.s16BitPool = bitpool;  
             bd_encoder_state.context.mSBCEnabled = 0;
+            bd_encoder_state.context.s16ChannelMode = SBC_STEREO;
+            bd_encoder_state.context.s16NumOfChannels = 2;
             
             switch(sample_rate){
                 case 16000: bd_encoder_state.context.s16SamplingFreq = SBC_sf16000; break;
@@ -564,9 +566,9 @@ void btstack_sbc_encoder_process_data(int16_t * input_buffer){
     SBC_Encoder(context);
 }
 
-int btstack_sbc_encoder_num_audio_samples(void){
+int btstack_sbc_encoder_num_audio_frames(void){
     SBC_ENC_PARAMS * context = &((bludroid_encoder_state_t *)sbc_encoder_state_singleton->encoder_state)->context;
-    return context->s16NumOfSubBands * context->s16NumOfBlocks * context->s16NumOfChannels;
+    return context->s16NumOfSubBands * context->s16NumOfBlocks;
 }
 
 uint8_t * btstack_sbc_encoder_sbc_buffer(void){

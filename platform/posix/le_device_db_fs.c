@@ -34,6 +34,8 @@
  * contact@bluekitchen-gmbh.com
  *
  */
+
+#define __BTSTACK_FILE__ "le_device_db_fs.c"
  
 #include "ble/le_device_db.h"
 

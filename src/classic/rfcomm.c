@@ -35,6 +35,8 @@
  *
  */
 
+#define __BTSTACK_FILE__ "rfcomm.c"
+
 /*
  *  rfcomm.c
  */
@@ -44,6 +46,7 @@
 #include <string.h> // memcpy
 #include <stdint.h>
 
+#include "bluetooth_sdp.h"
 #include "btstack_debug.h"
 #include "btstack_event.h"
 #include "btstack_memory.h"
@@ -920,7 +923,7 @@ static int rfcomm_hci_event_handler(uint8_t *packet, uint16_t size){
     
     switch (hci_event_packet_get_type(packet)) {
             
-        // accept incoming PSM_RFCOMM connection if no multiplexer exists yet
+        // accept incoming rfcomm connection if no multiplexer exists yet
         case L2CAP_EVENT_INCOMING_CONNECTION:
             // data: event(8), len(8), address(48), handle (16),  psm (16), source cid(16) dest cid(16)
             reverse_bd_addr(&packet[2], event_addr);
@@ -928,12 +931,12 @@ static int rfcomm_hci_event_handler(uint8_t *packet, uint16_t size){
             psm        = little_endian_read_16(packet, 10); 
             l2cap_cid  = little_endian_read_16(packet, 12); 
 
-            if (psm != PSM_RFCOMM) break;
+            if (psm != BLUETOOTH_PROTOCOL_RFCOMM) break;
 
             multiplexer = rfcomm_multiplexer_for_addr(event_addr);
             
             if (multiplexer) {
-                log_info("INCOMING_CONNECTION (l2cap_cid 0x%02x) for PSM_RFCOMM => decline - multiplexer already exists", l2cap_cid);
+                log_info("INCOMING_CONNECTION (l2cap_cid 0x%02x) for BLUETOOTH_PROTOCOL_RFCOMM => decline - multiplexer already exists", l2cap_cid);
                 l2cap_decline_connection(l2cap_cid);
                 return 1;
             }
@@ -941,7 +944,7 @@ static int rfcomm_hci_event_handler(uint8_t *packet, uint16_t size){
             // create and inititialize new multiplexer instance (incoming)
             multiplexer = rfcomm_multiplexer_create_for_addr(event_addr);
             if (!multiplexer){
-                log_info("INCOMING_CONNECTION (l2cap_cid 0x%02x) for PSM_RFCOMM => decline - no memory left", l2cap_cid);
+                log_info("INCOMING_CONNECTION (l2cap_cid 0x%02x) for BLUETOOTH_PROTOCOL_RFCOMM => decline - no memory left", l2cap_cid);
                 l2cap_decline_connection(l2cap_cid); 
                 return 1;
             }
@@ -950,17 +953,17 @@ static int rfcomm_hci_event_handler(uint8_t *packet, uint16_t size){
             multiplexer->l2cap_cid = l2cap_cid;
             // 
             multiplexer->state = RFCOMM_MULTIPLEXER_W4_SABM_0;
-            log_info("L2CAP_EVENT_INCOMING_CONNECTION (l2cap_cid 0x%02x) for PSM_RFCOMM => accept", l2cap_cid);
+            log_info("L2CAP_EVENT_INCOMING_CONNECTION (l2cap_cid 0x%02x) for BLUETOOTH_PROTOCOL_RFCOMM => accept", l2cap_cid);
             l2cap_accept_connection(l2cap_cid);
             return 1;
             
         // l2cap connection opened -> store l2cap_cid, remote_addr
         case L2CAP_EVENT_CHANNEL_OPENED: 
 
-            if (little_endian_read_16(packet, 11) != PSM_RFCOMM) break;
+            if (little_endian_read_16(packet, 11) != BLUETOOTH_PROTOCOL_RFCOMM) break;
             
             status = packet[2];
-            log_info("L2CAP_EVENT_CHANNEL_OPENED for PSM_RFCOMM, status %u", status);
+            log_info("L2CAP_EVENT_CHANNEL_OPENED for BLUETOOTH_PROTOCOL_RFCOMM, status %u", status);
             
             // get multiplexer for remote addr
             con_handle = little_endian_read_16(packet, 9);
@@ -2235,7 +2238,7 @@ static uint8_t rfcomm_channel_create_internal(btstack_packet_handler_t packet_ha
     if (multiplexer->state != RFCOMM_MULTIPLEXER_OPEN) {
         channel->state = RFCOMM_CHANNEL_W4_MULTIPLEXER;
         uint16_t l2cap_cid = 0;
-        status = l2cap_create_channel(rfcomm_packet_handler, addr, PSM_RFCOMM, l2cap_max_mtu(), &l2cap_cid);
+        status = l2cap_create_channel(rfcomm_packet_handler, addr, BLUETOOTH_PROTOCOL_RFCOMM, l2cap_max_mtu(), &l2cap_cid);
         if (status) goto fail;
         multiplexer->l2cap_cid = l2cap_cid;
         return 0;
@@ -2290,7 +2293,7 @@ static uint8_t rfcomm_register_service_internal(btstack_packet_handler_t packet_
     
     // register with l2cap if not registered before, max MTU
     if (btstack_linked_list_empty(&rfcomm_services)){
-        l2cap_register_service(rfcomm_packet_handler, PSM_RFCOMM, 0xffff, rfcomm_security_level);
+        l2cap_register_service(rfcomm_packet_handler, BLUETOOTH_PROTOCOL_RFCOMM, 0xffff, rfcomm_security_level);
     }
     
     // fill in 
@@ -2327,8 +2330,8 @@ void rfcomm_unregister_service(uint8_t service_channel){
     
     // unregister if no services active
     if (btstack_linked_list_empty(&rfcomm_services)){
-        // bt_send_cmd(&l2cap_unregister_service, PSM_RFCOMM);
-        l2cap_unregister_service(PSM_RFCOMM);
+        // bt_send_cmd(&l2cap_unregister_service, BLUETOOTH_PROTOCOL_RFCOMM);
+        l2cap_unregister_service(BLUETOOTH_PROTOCOL_RFCOMM);
     }
 }
 

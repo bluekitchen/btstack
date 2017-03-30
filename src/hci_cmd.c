@@ -35,6 +35,8 @@
  *
  */
 
+#define __BTSTACK_FILE__ "hci_cmd.c"
+
 /*
  *  hci_cmd.c
  *

@@ -34,6 +34,8 @@
  *
  */
 
+#define __BTSTACK_FILE__ "btstack_chipset_bcm.c"
+
 /*
  *  bt_control_bcm.c
  *

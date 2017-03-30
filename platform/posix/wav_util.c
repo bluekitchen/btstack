@@ -35,6 +35,8 @@
  *
  */
 
+#define __BTSTACK_FILE__ "wav_util.c"
+
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -224,7 +226,11 @@ int wav_reader_read_int8(int num_samples, int8_t * data){
             data[i] = buf[0] + 128;
         }
     }
-    return bytes_read == num_samples*bytes_per_sample;
+    if (bytes_read == num_samples*bytes_per_sample) {
+        return 0;
+    } else {
+        return 1;
+    }
 }
 
 int wav_reader_read_int16(int num_samples, int16_t * data){
@@ -236,7 +242,11 @@ int wav_reader_read_int16(int num_samples, int16_t * data){
         bytes_read +=__read(wav_reader_fd, &buf, 2);
         data[i] = little_endian_read_16(buf, 0);  
     }
-    return bytes_read == num_samples*bytes_per_sample;
+    if (bytes_read == num_samples*bytes_per_sample) {
+        return 0;
+    } else {
+        return 1;
+    }
 }
 
 

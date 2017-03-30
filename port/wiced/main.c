@@ -35,6 +35,8 @@
  *
  */
 
+#define __BTSTACK_FILE__ "main.c"
+
 #include "btstack.h"
 #include "btstack_chipset_bcm.h"
 #include "btstack_run_loop_wiced.h"

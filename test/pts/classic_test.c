@@ -607,7 +607,7 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
             hci_send_cmd(&hci_create_connection, remote, hci_usable_acl_packet_types(), 0, 0, 0, 1);
             break;
             // printf("Creating L2CAP Connection to %s, PSM SDP\n", bd_addr_to_str(remote));
-            // l2cap_create_channel(packet_handler, remote, PSM_SDP, 100);
+            // l2cap_create_channel(packet_handler, remote, BLUETOOTH_PROTOCOL_SDP, 100);
             // break;
         // case 'u':
         //     printf("Creating L2CAP Connection to %s, PSM 3\n", bd_addr_to_str(remote));
@@ -694,11 +694,11 @@ static void sdp_create_dummy_service(uint8_t *service, const char *name){
     de_create_sequence(service);
     
     // 0x0000 "Service Record Handle"
-    de_add_number(service, DE_UINT, DE_SIZE_16, SDP_ServiceRecordHandle);
+    de_add_number(service, DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_SERVICE_RECORD_HANDLE);
     de_add_number(service, DE_UINT, DE_SIZE_32, 0x10002);
     
     // 0x0001 "Service Class ID List"
-    de_add_number(service,  DE_UINT, DE_SIZE_16, SDP_ServiceClassIDList);
+    de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_SERVICE_CLASS_ID_LIST);
     attribute = de_push_sequence(service);
     {
         de_add_uuid128(attribute, &dummy_uuid128[0] );
@@ -706,27 +706,27 @@ static void sdp_create_dummy_service(uint8_t *service, const char *name){
     de_pop_sequence(service, attribute);
     
     // 0x0004 "Protocol Descriptor List"
-    de_add_number(service,  DE_UINT, DE_SIZE_16, SDP_ProtocolDescriptorList);
+    de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_PROTOCOL_DESCRIPTOR_LIST);
     attribute = de_push_sequence(service);
     {
         uint8_t* l2cpProtocol = de_push_sequence(attribute);
         {
-            de_add_number(l2cpProtocol,  DE_UUID, DE_SIZE_16, 0x0100);
+            de_add_number(l2cpProtocol,  DE_UUID, DE_SIZE_16, BLUETOOTH_PROTOCOL_L2CAP);
         }
         de_pop_sequence(attribute, l2cpProtocol);
     }
     de_pop_sequence(service, attribute);
     
     // 0x0005 "Public Browse Group"
-    de_add_number(service,  DE_UINT, DE_SIZE_16, SDP_BrowseGroupList); // public browse group
+    de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_BROWSE_GROUP_LIST); // public browse group
     attribute = de_push_sequence(service);
     {
-        de_add_number(attribute,  DE_UUID, DE_SIZE_16, SDP_PublicBrowseGroup);
+        de_add_number(attribute,  DE_UUID, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_PUBLIC_BROWSE_ROOT);
     }
     de_pop_sequence(service, attribute);
     
     // 0x0006
-    de_add_number(service,  DE_UINT, DE_SIZE_16, SDP_LanguageBaseAttributeIDList);
+    de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_LANGUAGE_BASE_ATTRIBUTE_ID_LIST);
     attribute = de_push_sequence(service);
     {
         de_add_number(attribute, DE_UINT, DE_SIZE_16, 0x656e);
@@ -736,7 +736,7 @@ static void sdp_create_dummy_service(uint8_t *service, const char *name){
     de_pop_sequence(service, attribute);
     
     // 0x0009 "Bluetooth Profile Descriptor List"
-    de_add_number(service,  DE_UINT, DE_SIZE_16, SDP_BluetoothProfileDescriptorList);
+    de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_BLUETOOTH_PROFILE_DESCRIPTOR_LIST);
     attribute = de_push_sequence(service);
     {
         uint8_t *sppProfile = de_push_sequence(attribute);

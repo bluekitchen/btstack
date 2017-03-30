@@ -35,6 +35,8 @@
  *
  */
 
+#define __BTSTACK_FILE__ "sdp_server.c"
+
 /*
  * Implementation of the Service Discovery Protocol Server 
  */
@@ -42,6 +44,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "bluetooth_sdp.h"
 #include "btstack_debug.h"
 #include "btstack_event.h"
 #include "btstack_memory.h"
@@ -74,12 +77,12 @@ static uint16_t sdp_response_size = 0;
 
 void sdp_init(void){
     // register with l2cap psm sevices - max MTU
-    l2cap_register_service(sdp_packet_handler, PSM_SDP, 0xffff, LEVEL_0);
+    l2cap_register_service(sdp_packet_handler, BLUETOOTH_PROTOCOL_SDP, 0xffff, LEVEL_0);
 }
 
 uint32_t sdp_get_service_record_handle(const uint8_t * record){
     // TODO: make sdp_get_attribute_value_for_attribute_id accept const data to remove cast
-    uint8_t * serviceRecordHandleAttribute = sdp_get_attribute_value_for_attribute_id((uint8_t *)record, SDP_ServiceRecordHandle);
+    uint8_t * serviceRecordHandleAttribute = sdp_get_attribute_value_for_attribute_id((uint8_t *)record, BLUETOOTH_ATTRIBUTE_SERVICE_RECORD_HANDLE);
     if (!serviceRecordHandleAttribute) return 0;
     if (de_get_element_type(serviceRecordHandleAttribute) != DE_UINT) return 0;
     if (de_get_size_type(serviceRecordHandleAttribute) != DE_SIZE_32) return 0;

@@ -34,6 +34,8 @@
  * contact@bluekitchen-gmbh.com
  *
  */
+
+#define __BTSTACK_FILE__ "hfp.c"
  
 
 #include "btstack_config.h"
@@ -44,6 +46,7 @@
 #include <string.h>
 #include <inttypes.h>
 
+#include "bluetooth_sdp.h"
 #include "btstack_debug.h"
 #include "btstack_event.h"
 #include "btstack_memory.h"
@@ -393,32 +396,32 @@ void hfp_create_sdp_record(uint8_t * service, uint32_t service_record_handle, ui
     de_create_sequence(service);
 
     // 0x0000 "Service Record Handle"
-    de_add_number(service, DE_UINT, DE_SIZE_16, SDP_ServiceRecordHandle);
+    de_add_number(service, DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_SERVICE_RECORD_HANDLE);
     de_add_number(service, DE_UINT, DE_SIZE_32, service_record_handle);
 
     // 0x0001 "Service Class ID List"
-    de_add_number(service,  DE_UINT, DE_SIZE_16, SDP_ServiceClassIDList);
+    de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_SERVICE_CLASS_ID_LIST);
     attribute = de_push_sequence(service);
     {
         //  "UUID for Service"
         de_add_number(attribute, DE_UUID, DE_SIZE_16, service_uuid);
-        de_add_number(attribute, DE_UUID, DE_SIZE_16, SDP_GenericAudio);
+        de_add_number(attribute, DE_UUID, DE_SIZE_16, BLUETOOTH_SERVICE_CLASS_GENERIC_AUDIO);
     }
     de_pop_sequence(service, attribute);
 
     // 0x0004 "Protocol Descriptor List"
-    de_add_number(service,  DE_UINT, DE_SIZE_16, SDP_ProtocolDescriptorList);
+    de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_PROTOCOL_DESCRIPTOR_LIST);
     attribute = de_push_sequence(service);
     {
         uint8_t* l2cpProtocol = de_push_sequence(attribute);
         {
-            de_add_number(l2cpProtocol,  DE_UUID, DE_SIZE_16, SDP_L2CAPProtocol);
+            de_add_number(l2cpProtocol,  DE_UUID, DE_SIZE_16, BLUETOOTH_PROTOCOL_L2CAP);
         }
         de_pop_sequence(attribute, l2cpProtocol);
         
         uint8_t* rfcomm = de_push_sequence(attribute);
         {
-            de_add_number(rfcomm,  DE_UUID, DE_SIZE_16, SDP_RFCOMMProtocol);  // rfcomm_service
+            de_add_number(rfcomm,  DE_UUID, DE_SIZE_16, BLUETOOTH_PROTOCOL_RFCOMM);  // rfcomm_service
             de_add_number(rfcomm,  DE_UINT, DE_SIZE_8,  rfcomm_channel_nr);  // rfcomm channel
         }
         de_pop_sequence(attribute, rfcomm);
@@ -427,20 +430,20 @@ void hfp_create_sdp_record(uint8_t * service, uint32_t service_record_handle, ui
 
     
     // 0x0005 "Public Browse Group"
-    de_add_number(service,  DE_UINT, DE_SIZE_16, SDP_BrowseGroupList); // public browse group
+    de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_BROWSE_GROUP_LIST); // public browse group
     attribute = de_push_sequence(service);
     {
-        de_add_number(attribute,  DE_UUID, DE_SIZE_16, SDP_PublicBrowseGroup);
+        de_add_number(attribute,  DE_UUID, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_PUBLIC_BROWSE_ROOT);
     }
     de_pop_sequence(service, attribute);
 
     // 0x0009 "Bluetooth Profile Descriptor List"
-    de_add_number(service,  DE_UINT, DE_SIZE_16, SDP_BluetoothProfileDescriptorList);
+    de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_BLUETOOTH_PROFILE_DESCRIPTOR_LIST);
     attribute = de_push_sequence(service);
     {
         uint8_t *sppProfile = de_push_sequence(attribute);
         {
-            de_add_number(sppProfile,  DE_UUID, DE_SIZE_16, SDP_Handsfree); 
+            de_add_number(sppProfile,  DE_UUID, DE_SIZE_16, BLUETOOTH_SERVICE_CLASS_HANDSFREE); 
             de_add_number(sppProfile,  DE_UINT, DE_SIZE_16, 0x0107); // Verision 1.7
         }
         de_pop_sequence(attribute, sppProfile);

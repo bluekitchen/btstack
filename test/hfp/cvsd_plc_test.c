@@ -134,7 +134,7 @@ void introduce_bad_frames_to_wav_file(const char * in_filename, const char * out
     wav_reader_open(in_filename);
 
     int fc = 0;
-    while (wav_reader_read_int16(audio_samples_per_frame, audio_frame_in)){
+    while (wav_reader_read_int16(audio_samples_per_frame, audio_frame_in) == 0){
         if (corruption_step > 0 && fc >= corruption_step && fc%corruption_step == 0){
             memset(audio_frame_in, 50,  audio_samples_per_frame * 2);
         } 
@@ -151,7 +151,7 @@ void process_wav_file_with_plc(const char * in_filename, const char * out_filena
     wav_writer_open(out_filename, 1, 8000);
     wav_reader_open(in_filename);
     
-    while (wav_reader_read_int16(audio_samples_per_frame, audio_frame_in)){
+    while (wav_reader_read_int16(audio_samples_per_frame, audio_frame_in) == 0){
         int16_t audio_frame_out[audio_samples_per_frame];
         btstack_cvsd_plc_process_data(&plc_state, audio_frame_in, audio_samples_per_frame, audio_frame_out);
         wav_writer_write_int16(audio_samples_per_frame, audio_frame_out);
@@ -167,7 +167,7 @@ void mark_bad_frames_wav_file(const char * in_filename, const char * out_filenam
     CHECK_EQUAL(wav_writer_open(out_filename, 1, 8000), 0);
     CHECK_EQUAL(wav_reader_open(in_filename), 0);
     
-    while (wav_reader_read_int16(audio_samples_per_frame, audio_frame_in)){
+    while (wav_reader_read_int16(audio_samples_per_frame, audio_frame_in) == 0){
         int16_t audio_frame_out[audio_samples_per_frame];
         btstack_cvsd_plc_mark_bad_frame(&plc_state, audio_frame_in, audio_samples_per_frame, audio_frame_out);
         wav_writer_write_int16(audio_samples_per_frame, audio_frame_out);

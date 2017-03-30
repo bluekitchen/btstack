@@ -64,7 +64,7 @@ static int wav_writer_opened = 0;
 static char wav_filename[1000];
 
 static void show_usage(void){
-    printf("\n\nUsage: ./sbc_decoder_test input_file msbc plc_enabled corrupt_frame_period \n\n");
+    printf("\n\nUsage: ./sbc_decoder_test input_file [0-sbc|1-msbc] plc_enabled corrupt_frame_period \n\n");
 }
 
 static ssize_t __read(int fd, void *buf, size_t count){

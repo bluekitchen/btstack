@@ -35,6 +35,8 @@
  *
  */
 
+#define __BTSTACK_FILE__ "sdp_client_rfcomm.c"
+
 /*
  *  sdp_rfcomm_query.c
  */
@@ -44,6 +46,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "bluetooth_sdp.h"
 #include "btstack_debug.h"
 #include "btstack_event.h"
 #include "classic/core.h"
@@ -179,7 +182,7 @@ static void sdp_client_query_rfcomm_handle_protocol_descriptor_list_data(uint32_
 
             if (protocol_value_bytes_received < protocol_value_size) break;
 
-            if (protocol_id == 0x0003){
+            if (protocol_id == BLUETOOTH_PROTOCOL_RFCOMM){
                 //  log_info("\n\n *******  Data ***** %02x\n\n", data);
                 sdp_rfcomm_channel_nr = data;
             }
@@ -262,7 +265,7 @@ static void sdp_client_query_rfcomm_handle_sdp_parser_event(uint8_t packet_type,
             //          ve->attribute_id, sdp_event_query_attribute_byte_get_attribute_length(packet),
             //          sdp_event_query_attribute_byte_get_data_offset(packet), sdp_event_query_attribute_byte_get_data(packet));
             switch (sdp_event_query_attribute_byte_get_attribute_id(packet)){
-                case SDP_ProtocolDescriptorList:
+                case BLUETOOTH_ATTRIBUTE_PROTOCOL_DESCRIPTOR_LIST:
                     // find rfcomm channel
                     sdp_client_query_rfcomm_handle_protocol_descriptor_list_data(sdp_event_query_attribute_byte_get_attribute_length(packet),
                         sdp_event_query_attribute_byte_get_data_offset(packet),

@@ -35,6 +35,8 @@
  *
  */
 
+#define __BTSTACK_FILE__ "btstack_linked_list.c"
+
 /*
  *  linked_list.c
  *

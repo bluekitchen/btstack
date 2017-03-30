@@ -35,6 +35,8 @@
  *
  */
 
+#define __BTSTACK_FILE__ "gap_inquiry.c"
+
 // *****************************************************************************
 /* EXAMPLE_START(gap_inquiry): GAP Inquiry Example
  *

@@ -1,0 +1,82 @@
+/*
+ * Copyright (C) 2014 BlueKitchen GmbH
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ * 3. Neither the name of the copyright holders nor the names of
+ *    contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
+ * 4. Any redistribution, use, or modification is done solely for
+ *    personal benefit and not for any commercial purpose or for
+ *    monetary gain.
+ *
+ * THIS SOFTWARE IS PROVIDED BY BLUEKITCHEN GMBH AND CONTRIBUTORS
+ * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL MATTHIAS
+ * RINGWALD OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
+ * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+ * AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
+ * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ *
+ * Please inquire about commercial licensing options at 
+ * contact@bluekitchen-gmbh.com
+ *
+ */
+ 
+#ifndef __OBEX_H
+
+#define OBEX_OPCODE_CONNECT                0x80
+#define OBEX_OPCODE_DISCONNECT             0x81
+#define OBEX_OPCODE_PUT                    0x02
+#define OBEX_OPCODE_CLOSE                  0x82
+#define OBEX_OPCODE_GET                    0x03
+#define OBEX_OPCODE_SETPATH                0x85
+#define OBEX_OPCODE_SESSION                0x87
+#define OBEX_OPCODE_ABORT                  0xFF
+
+#define OBEX_RESP_SUCCESS                  0xA0
+#define OBEX_RESP_CONTINUE                 0x90
+#define OBEX_RESP_CANCELED                 0xC1
+#define OBEX_RESP_NOT_FOUND                0xC4
+#define OBEX_RESP_REFUSED                  0xC6
+
+#define OBEX_HEADER_BODY                   0x48
+#define OBEX_HEADER_END_OF_BODY            0x49
+#define OBEX_HEADER_COUNT                  0xC0
+#define OBEX_HEADER_NAME                   0x01
+#define OBEX_HEADER_TYPE                   0x42
+#define OBEX_HEADER_LENGTH                 0xC3
+#define OBEX_HEADER_TIME_ISO_8601          0x44
+#define OBEX_HEADER_TIME_4_BYTE            0xC4
+#define OBEX_HEADER_DESCRIPTION            0x05
+#define OBEX_HEADER_TARGET                 0x46
+#define OBEX_HEADER_HTTP                   0x47
+#define OBEX_HEADER_WHO                    0x4A
+#define OBEX_HEADER_OBJECT_CLASS           0x4F
+#define OBEX_HEADER_APPLICATION_PARAMETERS 0x4C
+#define OBEX_HEADER_CONNECTION_ID          0xCb
+
+#define OBEX_OPCODE_FINAL_BIT_MASK         0x80
+
+#define OBEX_VERSION                       0x14
+
+#define OBEX_PACKET_HEADER_SIZE            3
+#define OBEX_PACKET_OPCODE_OFFSET          0
+#define OBEX_PACKET_LENGTH_OFFSET          1
+#define OBEX_MAX_PACKETLEN_DEFAULT         0xffff
+
+#define OBEX_CONNECTION_ID_INVALID         0xFFFFFFFF
+
+#endif

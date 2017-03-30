@@ -34,6 +34,8 @@
  * contact@bluekitchen-gmbh.com
  *
  */
+
+#define __BTSTACK_FILE__ "sdp_general_query.c"
  
 // *****************************************************************************
 /* EXAMPLE_START(sdp_general_query): Dump remote SDP Records
@@ -50,15 +52,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "btstack_event.h"
-#include "btstack_memory.h"
-#include "btstack_run_loop.h"
-#include "classic/sdp_client.h"
-#include "classic/sdp_util.h"
-#include "hci.h"
-#include "hci_cmd.h"
-#include "hci_dump.h"
-#include "l2cap.h"
+#include "btstack.h"
 
 int record_id = -1;
 int attribute_id = -1;
@@ -117,7 +111,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
         case BTSTACK_EVENT_STATE:
             // BTstack activated, get started 
             if (btstack_event_state_get_state(packet) == HCI_STATE_WORKING){
-                sdp_client_query_uuid16(&handle_sdp_client_query_result, remote, SDP_PublicBrowseGroup);
+                sdp_client_query_uuid16(&handle_sdp_client_query_result, remote, BLUETOOTH_ATTRIBUTE_PUBLIC_BROWSE_ROOT);
             }
             break;
         default:

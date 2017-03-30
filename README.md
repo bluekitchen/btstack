@@ -51,14 +51,15 @@ Status               | Platform
 [<img src="http://buildbot.bluekitchen-gmbh.com/btstack/badge.png?builder=port-pic32-harmony-master">](https://buildbot.bluekitchen-gmbh.com/btstack/builders/port-pic32-harmony-master)                     | [Microchip's PIC32 Bluetooth Audio Development Kit](http://www.microchip.com/Developmenttools/ProductDetails.aspx?PartNO=DV320032)
 [<img src="http://buildbot.bluekitchen-gmbh.com/btstack/badge.png?builder=port-wiced-master">](https://buildbot.bluekitchen-gmbh.com/btstack/builders/port-wiced-master)                                     | [RedBear Duo](https://github.com/redbear/WICED-SDK) with Broadcom BCM43438 A1
 
-
 #### Other Platforms:     
 Status               | Platform
 --------------       | ------
-[<img src="http://buildbot.bluekitchen-gmbh.com/btstack/badge.png?builder=port-posix-h4-master">](https://buildbot.bluekitchen-gmbh.com/btstack/builders/port-posix-h4-master) | posix: Unix-based system talking to Bluetooth module via serial port   
+[<img src="http://buildbot.bluekitchen-gmbh.com/btstack/badge.png?builder=port-posix-h4-master">](https://buildbot.bluekitchen-gmbh.com/btstack/builders/port-posix-h4-master) | posix-h4: Unix-based system talking to Bluetooth module via serial port   
+No build server | posix-h4-da14581: Unix-based system connected to Dialog Semiconductor DA14581 via H4 over serial port   
+No build server | posix-h5: Unix-based system connected to Bluetooth module via H5 over serial port   
 [<img src="http://buildbot.bluekitchen-gmbh.com/btstack/badge.png?builder=port-libusb-master">](https://buildbot.bluekitchen-gmbh.com/btstack/builders/port-libusb-master)   | libusb: Unix-based system talking via USB Bluetooth dongle
-No build server yet | windows-h4: Win32-based system connected to Bluetooth module via serial port   
-No build server yet | windows-winusb: Win32-based system with dedicated USB Bluetooth dongle
+No build server | windows-h4: Win32-based system connected to Bluetooth module via serial port   
+No build server | windows-winusb: Win32-based system with dedicated USB Bluetooth dongle
 [<img src="http://buildbot.bluekitchen-gmbh.com/btstack/badge.png?builder=port-daemon-master">](https://buildbot.bluekitchen-gmbh.com/btstack/builders/port-daemon-master)   | daemon: TCP and Unix domain named socket client-server architecture supporting multiple clients
 [<img src="http://buildbot.bluekitchen-gmbh.com/btstack/badge.png?builder=java-master">](https://buildbot.bluekitchen-gmbh.com/btstack/builders/java-master)          | java: Java wrapper for daemon
 [<img src="http://buildbot.bluekitchen-gmbh.com/btstack/badge.png?builder=port-ios-master">](https://buildbot.bluekitchen-gmbh.com/btstack/builders/port-ios-master)      | iOS: daemon for iOS jailbreak devices, C client-server API
@@ -67,17 +68,18 @@ No build server yet | windows-winusb: Win32-based system with dedicated USB Blue
 
 ## Supported Chipsets
 
-Chipset              | Type      | HCI Transport   | SCO over HCI (2) | BTstack folder | Comment
--------------------- |-----------| ----------------|------------------|----------------|---------
-Broadcom UART        | Dual mode | H4, H5          | Probably         | bcm            | Max UART baudrate 2 mbps
-Broadcom USB Dongles | Dual mode | USB             | Yes              | bcm            |
-CSR UART             | Dual mode | H4, H5          | No (didn't work) | csr            |
-CSR USB Dongles      | Dual mode | USB             | Yes              | csr            |
-EM 9301              | LE        | SPI             | n.a.             | em9301         | Custom HCI SPI implementation
-Nordic nRF           | LE        | H4              | n.a.             |                | Requires custom HCI firmware
-STM STLC2500D        | Classic   | H4              | No (didn't try)  | stlc2500d      | Custom deep sleep management not supported
-Toshiba TC35661      | Dual mode | H4              | No (didn't try)  | tc3566         | HCI version not tested.
-TI CC256x, WL183x    | Dual mode | H4, H5, eHCILL  | Yes              | cc256x         | Also WL185x, WL187x, and WL189x
+Chipset                      | Type      | HCI Transport   | SCO over HCI (2) | BTstack folder | Comment
+---------------------------- |-----------| ----------------|------------------|----------------|---------
+Broadcom UART                | Dual mode | H4, H5          | Probably         | bcm            | Max UART baudrate 2 mbps
+Broadcom USB Dongles         | Dual mode | USB             | Yes              | bcm            |
+CSR UART                     | Dual mode | H4, H5          | No (didn't work) | csr            |
+CSR USB Dongles              | Dual mode | USB             | Yes              | csr            |
+Dialog Semiconductor DA14581 | LE        | H4, SPI         | n.a.             | da14581        | Official HCI firmware used
+EM 9301                      | LE        | SPI             | n.a.             | em9301         | Custom HCI SPI implementation
+Nordic nRF                   | LE        | H4              | n.a.             |                | Requires custom HCI firmware
+STM STLC2500D                | Classic   | H4              | No (didn't try)  | stlc2500d      | Custom deep sleep management not supported
+Toshiba TC35661              | Dual mode | H4              | No (didn't try)  | tc3566         | HCI version not tested.
+TI CC256x, WL183x            | Dual mode | H4, H5, eHCILL  | Yes              | cc256x         | Also WL185x, WL187x, and WL189x
 
 [More infos on supported chipsets](https://bluekitchen-gmbh.com/btstack/chipsets/)
 

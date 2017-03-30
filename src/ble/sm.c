@@ -34,6 +34,8 @@
  * contact@bluekitchen-gmbh.com
  *
  */
+
+#define __BTSTACK_FILE__ "sm.c"
  
 #include <stdio.h>
 #include <string.h>

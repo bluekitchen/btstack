@@ -34,6 +34,8 @@
  * contact@bluekitchen-gmbh.com
  *
  */
+
+#define __BTSTACK_FILE__ "hfp_hf.c"
  
 // *****************************************************************************
 //
@@ -48,6 +50,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "bluetooth_sdp.h"
 #include "btstack_debug.h"
 #include "btstack_memory.h"
 #include "btstack_run_loop.h"
@@ -164,7 +167,7 @@ void hfp_hf_create_sdp_record(uint8_t * service, uint32_t service_record_handle,
     if (!name){
         name = default_hfp_hf_service_name;
     }
-    hfp_create_sdp_record(service, service_record_handle, SDP_Handsfree, rfcomm_channel_nr, name);
+    hfp_create_sdp_record(service, service_record_handle, BLUETOOTH_SERVICE_CLASS_HANDSFREE, rfcomm_channel_nr, name);
 
     // Construct SupportedFeatures for SDP bitmap:
     // 
@@ -1146,7 +1149,7 @@ void hfp_hf_init_hf_indicators(int indicators_nr, uint16_t * indicators){
 }
 
 void hfp_hf_establish_service_level_connection(bd_addr_t bd_addr){
-    hfp_establish_service_level_connection(bd_addr, SDP_HandsfreeAudioGateway);
+    hfp_establish_service_level_connection(bd_addr, BLUETOOTH_SERVICE_CLASS_HANDSFREE_AUDIO_GATEWAY);
 }
 
 void hfp_hf_release_service_level_connection(hci_con_handle_t acl_handle){

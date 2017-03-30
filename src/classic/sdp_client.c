@@ -35,10 +35,13 @@
  *
  */
 
+#define __BTSTACK_FILE__ "sdp_client.c"
+
 /*
  *  sdp_client.c
  */
 
+#include "bluetooth_sdp.h"
 #include "btstack_config.h"
 #include "btstack_debug.h"
 #include "btstack_event.h"
@@ -685,7 +688,7 @@ uint8_t sdp_client_query(btstack_packet_handler_t callback, bd_addr_t remote, co
     PDU_ID = SDP_ServiceSearchAttributeResponse;
 
     sdp_client_state = W4_CONNECT;
-    l2cap_create_channel(sdp_client_packet_handler, remote, PSM_SDP, l2cap_max_mtu(), NULL);
+    l2cap_create_channel(sdp_client_packet_handler, remote, BLUETOOTH_PROTOCOL_SDP, l2cap_max_mtu(), NULL);
     return 0;
 }
 
@@ -717,7 +720,7 @@ uint8_t sdp_client_service_attribute_search(btstack_packet_handler_t callback, b
     PDU_ID = SDP_ServiceAttributeResponse;
 
     sdp_client_state = W4_CONNECT;
-    l2cap_create_channel(sdp_client_packet_handler, remote, PSM_SDP, l2cap_max_mtu(), NULL);
+    l2cap_create_channel(sdp_client_packet_handler, remote, BLUETOOTH_PROTOCOL_SDP, l2cap_max_mtu(), NULL);
     return 0;
 }
 
@@ -731,7 +734,7 @@ uint8_t sdp_client_service_search(btstack_packet_handler_t callback, bd_addr_t r
     PDU_ID = SDP_ServiceSearchResponse;
 
     sdp_client_state = W4_CONNECT;
-    l2cap_create_channel(sdp_client_packet_handler, remote, PSM_SDP, l2cap_max_mtu(), NULL);
+    l2cap_create_channel(sdp_client_packet_handler, remote, BLUETOOTH_PROTOCOL_SDP, l2cap_max_mtu(), NULL);
     return 0;
 }
 #endif

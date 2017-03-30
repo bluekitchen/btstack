@@ -144,9 +144,10 @@ uint8_t * btstack_sbc_encoder_sbc_buffer(void);
 uint16_t  btstack_sbc_encoder_sbc_buffer_length(void);
 
 /**
- * @brief Return number of audio samples in one PCM frame
+ * @brief Return number of audio frames required for one SBC packet
+ * @note  each audio frame contains 2 sample values in stereo modes
  */
-int  btstack_sbc_encoder_num_audio_samples(void);
+int  btstack_sbc_encoder_num_audio_frames(void);
 
 /* API_END */
 

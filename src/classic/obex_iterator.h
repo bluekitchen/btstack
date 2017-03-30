@@ -35,69 +35,42 @@
  *
  */
  
-// *****************************************************************************
-//
-// SBC encoder tests
-//
-// *****************************************************************************
+#ifndef __OBEX_ITERATOR_H
 
-#include "btstack_config.h"
+#if defined __cplusplus
+extern "C" {
+#endif
 
 #include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <fcntl.h>
-#include <unistd.h>
 
-#include "btstack.h"
+/* API_START */
 
-#include "hfp_msbc.h"
-#include "btstack_sbc.h"
-#include "wav_util.h"
+typedef struct obex_iterator {
+     const uint8_t * data;
+     uint8_t   offset;
+     uint8_t   length;
+} obex_iterator_t;
 
-static int16_t read_buffer[8*16*2];
-static uint8_t output_buffer[24];
+// OBEX packet header iterator
+void obex_iterator_init_with_request_packet(obex_iterator_t *context, const uint8_t * packet_data, uint16_t packet_len);
+void obex_iterator_init_with_response_packet(obex_iterator_t *context, uint8_t request_opcode, const uint8_t * packet_data, uint16_t packet_len);
+int  obex_iterator_has_more(const obex_iterator_t * context);
+void obex_iterator_next(obex_iterator_t * context);
 
-int main (int argc, const char * argv[]){
-    if (argc < 3){
-        printf("Usage: %s WAV_FILE mSBC_FILE\n", argv[0]);
-        return -1;
-    }
+// OBEX packet header access functions
+// @note BODY/END-OF-BODY headers might be incomplete
+uint8_t         obex_iterator_get_hi(const obex_iterator_t * context);
+uint8_t         obex_iterator_get_data_8(const obex_iterator_t * context);
+uint32_t        obex_iterator_get_data_32(const obex_iterator_t * context);
+uint32_t        obex_iterator_get_data_len(const obex_iterator_t * context);
+const uint8_t * obex_iterator_get_data(const obex_iterator_t * context);
 
-    const char * wav_filename = argv[1];
-    const char * sbc_filename = argv[2];
-    
-    if (wav_reader_open(wav_filename) != 0) {
-        printf("Can't open file %s", wav_filename);
-        return -1;
-    }
-    
-    FILE * sbc_fd = fopen(sbc_filename, "wb");
-    if (!sbc_fd) {
-        printf("Can't open file %s", sbc_filename);
-        return -1;
-    }
-    
-    hfp_msbc_init();
-    int num_samples = hfp_msbc_num_audio_samples_per_frame() * 2;
+/* API_END */
 
-    while (1){
-        if (hfp_msbc_can_encode_audio_frame_now()){
-            int bytes_read = wav_reader_read_int16(num_samples, read_buffer);
-            if (bytes_read < num_samples) break;
+// debug
+void            obex_dump_packet(uint8_t request_opcode, uint8_t * packet, uint16_t size);
 
-            hfp_msbc_encode_audio_frame(read_buffer);
-        }
-        if (hfp_msbc_num_bytes_in_stream() >= sizeof(output_buffer)){
-            hfp_msbc_read_from_stream(output_buffer, sizeof(output_buffer));
-            fwrite(output_buffer, 1, sizeof(output_buffer), sbc_fd);
-        } 
-    }
-
-    printf("Done\n");
-    wav_reader_close();
-    fclose(sbc_fd);
-    return 0;
+#if defined __cplusplus
 }
-
+#endif
+#endif

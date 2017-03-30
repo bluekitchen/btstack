@@ -35,6 +35,8 @@
  *
  */
 
+#define __BTSTACK_FILE__ "hsp_ag_demo.c"
+
 /*
  * hsp_ag_demo.c
  */

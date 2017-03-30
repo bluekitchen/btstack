@@ -36,6 +36,8 @@
  *
  */
 
+#define __BTSTACK_FILE__ "hfp_hf_demo.c"
+
 /*
  * hfp_hs_demo.c
  */

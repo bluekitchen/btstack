@@ -54,6 +54,11 @@
 #include <avr/pgmspace.h>
 #endif
 
+// fallback to __FILE__ for untagged files
+#ifndef __BTSTACK_FILE__
+#define __BTSTACK_FILE__ __FILE__
+#endif
+
 // Avoid complaints of unused arguments when log levels are disabled.
 static inline void __log_unused(const char *format, ...) {
 	UNUSED(format);
@@ -69,9 +74,9 @@ static inline void __log_unused(const char *format, ...) {
 #endif
 
 #ifdef __AVR__
-#define HCI_DUMP_LOG(log_level, format, ...) hci_dump_log_P(log_level, PSTR(format), ## __VA_ARGS__)
+#define HCI_DUMP_LOG(log_level, format, ...) hci_dump_log_P(log_level, PSTR("%s.%u: " format), __BTSTACK_FILE__, __LINE__, ## __VA_ARGS__)
 #else
-#define HCI_DUMP_LOG(log_level, format, ...) hci_dump_log(log_level, format, ## __VA_ARGS__)
+#define HCI_DUMP_LOG(log_level, format, ...) hci_dump_log(log_level, "%s.%u: " format, __BTSTACK_FILE__, __LINE__, ## __VA_ARGS__)
 #endif
 
 #ifdef ENABLE_LOG_DEBUG

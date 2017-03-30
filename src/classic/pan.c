@@ -35,6 +35,8 @@
  *
  */
 
+#define __BTSTACK_FILE__ "pan.c"
+
 /*
  *  pan.h
  *
@@ -46,6 +48,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "bluetooth_sdp.h"
 #include "btstack_config.h"
 #include "classic/core.h"
 #include "classic/sdp_util.h"
@@ -68,11 +71,11 @@ static void pan_create_service(uint8_t *service, uint32_t service_record_handle,
 	de_create_sequence(service);
 
 	// 0x0000 "Service Record Handle"
-	de_add_number(service, DE_UINT, DE_SIZE_16, SDP_ServiceRecordHandle);
+	de_add_number(service, DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_SERVICE_RECORD_HANDLE);
 	de_add_number(service, DE_UINT, DE_SIZE_32, service_record_handle);
 
 	// 0x0001 "Service Class ID List"
-	de_add_number(service,  DE_UINT, DE_SIZE_16, SDP_ServiceClassIDList);
+	de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_SERVICE_CLASS_ID_LIST);
 	attribute = de_push_sequence(service);
 	{
 		//  "UUID for PAN Service"
@@ -81,19 +84,19 @@ static void pan_create_service(uint8_t *service, uint32_t service_record_handle,
 	de_pop_sequence(service, attribute);
 
 	// 0x0004 "Protocol Descriptor List"
-	de_add_number(service,  DE_UINT, DE_SIZE_16, SDP_ProtocolDescriptorList);
+	de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_PROTOCOL_DESCRIPTOR_LIST);
 	attribute = de_push_sequence(service);
 	{
 		uint8_t* l2cpProtocol = de_push_sequence(attribute);
 		{
-			de_add_number(l2cpProtocol,  DE_UUID, DE_SIZE_16, SDP_L2CAPProtocol);
+			de_add_number(l2cpProtocol,  DE_UUID, DE_SIZE_16, BLUETOOTH_PROTOCOL_L2CAP);
 			de_add_number(l2cpProtocol,  DE_UINT, DE_SIZE_16, PSM_BNEP);  // l2cap psm
 		}
 		de_pop_sequence(attribute, l2cpProtocol);
 		
 		uint8_t* bnep = de_push_sequence(attribute);
 		{
-			de_add_number(bnep,  DE_UUID, DE_SIZE_16, SDP_BNEPProtocol);
+			de_add_number(bnep,  DE_UUID, DE_SIZE_16, BLUETOOTH_PROTOCOL_BNEP);
 			de_add_number(bnep,  DE_UINT, DE_SIZE_16, 0x0100);  // version
 
 			uint8_t * net_packet_type_list = de_push_sequence(bnep);
@@ -111,15 +114,15 @@ static void pan_create_service(uint8_t *service, uint32_t service_record_handle,
 	de_pop_sequence(service, attribute);
 
 	// 0x0005 "Public Browse Group"
-	de_add_number(service,  DE_UINT, DE_SIZE_16, SDP_BrowseGroupList); // public browse group
+	de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_BROWSE_GROUP_LIST); // public browse group
 	attribute = de_push_sequence(service);
 	{
-		de_add_number(attribute,  DE_UUID, DE_SIZE_16, SDP_PublicBrowseGroup);
+		de_add_number(attribute,  DE_UUID, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_PUBLIC_BROWSE_ROOT);
 	}
 	de_pop_sequence(service, attribute);
 
 	// 0x0006 "LanguageBaseAttributeIDList"
-	de_add_number(service,  DE_UINT, DE_SIZE_16, SDP_LanguageBaseAttributeIDList);
+	de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_LANGUAGE_BASE_ATTRIBUTE_ID_LIST);
 	attribute = de_push_sequence(service);
 	{
 		de_add_number(attribute, DE_UINT, DE_SIZE_16, 0x656e);
@@ -133,7 +136,7 @@ static void pan_create_service(uint8_t *service, uint32_t service_record_handle,
 	// de_add_number(service, DE_UINT, DE_SIZE_8, service_availability);
 
 	// 0x0009 "Bluetooth Profile Descriptor List"
-	de_add_number(service,  DE_UINT, DE_SIZE_16, SDP_BluetoothProfileDescriptorList);
+	de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_BLUETOOTH_PROFILE_DESCRIPTOR_LIST);
 	attribute = de_push_sequence(service);
 	{
 		uint8_t *sppProfile = de_push_sequence(attribute);
@@ -151,13 +154,13 @@ static void pan_create_service(uint8_t *service, uint32_t service_record_handle,
 		de_add_data(service,  DE_STRING, strlen(name), (uint8_t *) name);
 	} else {
 		switch (service_uuid){
-			case SDP_PANU:
+			case BLUETOOTH_SERVICE_CLASS_PANU:
 				de_add_data(service,  DE_STRING, strlen(default_panu_service_name), (uint8_t *) default_panu_service_name);
 				break;
-			case SDP_NAP:
+			case BLUETOOTH_SERVICE_CLASS_NAP:
 				de_add_data(service,  DE_STRING, strlen(default_nap_service_name), (uint8_t *) default_nap_service_name);
 				break;
-			case SDP_GN:
+			case BLUETOOTH_SERVICE_CLASS_GN:
 				de_add_data(service,  DE_STRING, strlen(default_gn_service_name), (uint8_t *) default_gn_service_name);
 				break;
 			default:
@@ -171,13 +174,13 @@ static void pan_create_service(uint8_t *service, uint32_t service_record_handle,
 		de_add_data(service,  DE_STRING, strlen(descriptor), (uint8_t *) descriptor);
 	} else {
 		switch (service_uuid){
-			case SDP_PANU:
+			case BLUETOOTH_SERVICE_CLASS_PANU:
 				de_add_data(service,  DE_STRING, strlen(default_panu_service_desc), (uint8_t *) default_panu_service_desc);
 				break;
-			case SDP_NAP:
+			case BLUETOOTH_SERVICE_CLASS_NAP:
 				de_add_data(service,  DE_STRING, strlen(default_nap_service_desc), (uint8_t *) default_nap_service_desc);
 				break;
-			case SDP_GN:
+			case BLUETOOTH_SERVICE_CLASS_GN:
 				de_add_data(service,  DE_STRING, strlen(default_gn_service_desc), (uint8_t *) default_gn_service_desc);
 				break;
 			default:
@@ -189,7 +192,7 @@ static void pan_create_service(uint8_t *service, uint32_t service_record_handle,
 	de_add_number(service, DE_UINT, DE_SIZE_16, 0x030A);
 	de_add_number(service, DE_UINT, DE_SIZE_16, security_desc);
 
-	if (service_uuid == SDP_PANU) return;
+	if (service_uuid == BLUETOOTH_SERVICE_CLASS_PANU) return;
 
 	if (IPv4Subnet){
 		// 0x030D "IPv4Subnet", optional
@@ -203,7 +206,7 @@ static void pan_create_service(uint8_t *service, uint32_t service_record_handle,
 		de_add_data(service,  DE_STRING, strlen(IPv6Subnet), (uint8_t *) IPv6Subnet);
 	}
 
-	if (service_uuid == SDP_GN) return;
+	if (service_uuid == BLUETOOTH_SERVICE_CLASS_GN) return;
 
 	// 0x030B "NetAccessType"
 	de_add_number(service, DE_UINT, DE_SIZE_16, 0x030B);
@@ -219,14 +222,14 @@ static void pan_create_service(uint8_t *service, uint32_t service_record_handle,
 void pan_create_nap_sdp_record(uint8_t *service, uint32_t service_record_handle, uint16_t * network_packet_types, const char *name, const char *description, security_description_t security_desc,
 	net_access_type_t net_access_type, uint32_t max_net_access_rate, const char *IPv4Subnet, const char *IPv6Subnet){
 
-	pan_create_service(service, service_record_handle, SDP_NAP, network_packet_types, name, description, security_desc, net_access_type, max_net_access_rate, IPv4Subnet, IPv6Subnet);
+	pan_create_service(service, service_record_handle, BLUETOOTH_SERVICE_CLASS_NAP, network_packet_types, name, description, security_desc, net_access_type, max_net_access_rate, IPv4Subnet, IPv6Subnet);
 }
 
 void pan_create_gn_sdp_service(uint8_t *service, uint32_t service_record_handle, uint16_t * network_packet_types, const char *name, const char *description, security_description_t security_desc,
 	const char *IPv4Subnet, const char *IPv6Subnet){
-	pan_create_service(service, service_record_handle, SDP_GN, network_packet_types, name, description, security_desc, PAN_NET_ACCESS_TYPE_NONE, 0, IPv4Subnet, IPv6Subnet);
+	pan_create_service(service, service_record_handle, BLUETOOTH_SERVICE_CLASS_GN, network_packet_types, name, description, security_desc, PAN_NET_ACCESS_TYPE_NONE, 0, IPv4Subnet, IPv6Subnet);
 }
 
 void pan_create_panu_sdp_record(uint8_t *service, uint32_t service_record_handle, uint16_t * network_packet_types, const char *name, const char *description, security_description_t security_desc){
-	pan_create_service(service, service_record_handle, SDP_PANU, network_packet_types, name, description, security_desc, PAN_NET_ACCESS_TYPE_NONE, 0, NULL, NULL);
+	pan_create_service(service, service_record_handle, BLUETOOTH_SERVICE_CLASS_PANU, network_packet_types, name, description, security_desc, PAN_NET_ACCESS_TYPE_NONE, 0, NULL, NULL);
 }

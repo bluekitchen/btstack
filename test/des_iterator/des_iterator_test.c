@@ -11,7 +11,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "bluetooth.h"
+#include "bluetooth_sdp.h"
 
 #include "classic/sdp_util.h"
 #include "CppUTest/TestHarness.h"
@@ -90,12 +90,12 @@ TEST(DESParser, DESIterator2){
         CHECK_EQUAL(de_get_element_type(element), DE_UUID);
         uint32_t uuid = de_get_uuid32(element);
         switch (uuid){
-            case SDP_L2CAPProtocol:
+            case BLUETOOTH_PROTOCOL_L2CAP:
                 CHECK_EQUAL(des_iterator_has_more(&prot_it), 1);
                 des_iterator_next(&prot_it);
                 de_element_get_uint16(des_iterator_get_element(&prot_it), &l2cap_psm);
                 break;
-            case SDP_BNEPProtocol:
+            case BLUETOOTH_PROTOCOL_BNEP:
                 CHECK_EQUAL(des_iterator_has_more(&prot_it), 1);
                 des_iterator_next(&prot_it);
                 de_element_get_uint16(des_iterator_get_element(&prot_it), &bnep_version);

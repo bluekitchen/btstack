@@ -34,6 +34,8 @@
  * contact@bluekitchen-gmbh.com
  *
  */
+
+#define __BTSTACK_FILE__ "hfp_ag_demo.c"
  
 /*
  * hfp_ag_demo.c

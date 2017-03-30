@@ -34,6 +34,8 @@
  * contact@bluekitchen-gmbh.com
  *
  */
+
+#define __BTSTACK_FILE__ "main.c"
  
 #include <libopencm3/cm3/nvic.h>
 #include <libopencm3/cm3/systick.h>

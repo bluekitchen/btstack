@@ -34,6 +34,8 @@
  * contact@bluekitchen-gmbh.com
  *
  */
+
+#define __BTSTACK_FILE__ "hfp_ag.c"
  
 // *****************************************************************************
 //
@@ -51,6 +53,7 @@
 #include "hci_cmd.h"
 #include "btstack_run_loop.h"
 
+#include "bluetooth_sdp.h"
 #include "hci.h"
 #include "btstack_memory.h"
 #include "hci_dump.h"
@@ -184,7 +187,7 @@ void hfp_ag_create_sdp_record(uint8_t * service, uint32_t service_record_handle,
     if (!name){
         name = default_hfp_ag_service_name;
     }
-    hfp_create_sdp_record(service, service_record_handle, SDP_HandsfreeAudioGateway, rfcomm_channel_nr, name);
+    hfp_create_sdp_record(service, service_record_handle, BLUETOOTH_SERVICE_CLASS_HANDSFREE_AUDIO_GATEWAY, rfcomm_channel_nr, name);
     
     /*
      * 0x01 – Ability to reject a call
@@ -2091,7 +2094,7 @@ void hfp_ag_init(uint16_t rfcomm_channel_nr){
 }
 
 void hfp_ag_establish_service_level_connection(bd_addr_t bd_addr){
-    hfp_establish_service_level_connection(bd_addr, SDP_Handsfree);
+    hfp_establish_service_level_connection(bd_addr, BLUETOOTH_SERVICE_CLASS_HANDSFREE);
 }
 
 void hfp_ag_release_service_level_connection(hci_con_handle_t acl_handle){

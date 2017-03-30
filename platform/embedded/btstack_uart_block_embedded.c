@@ -35,6 +35,8 @@
  *
  */
 
+#define __BTSTACK_FILE__ "btstack_uart_block_embedded.c"
+
 /*
  *  btstack_uart_block_embedded.c
  *

@@ -64,13 +64,14 @@ SBC_ENCODER += \
 
 AVDTP_SINK += \
 	avdtp_util.c  		\
+	avdtp.c  			\
 	avdtp_initiator.c 	\
 	avdtp_acceptor.c  	\
 	avdtp_source.c 		\
 	avdtp_sink.c  		\
 	btstack_ring_buffer.c \
 
-AVDTP_TESTS = avdtp_test portaudio_test
+AVDTP_TESTS = avdtp_source_test avdtp_sink_test portaudio_test sine_encode_decode_ring_buffer_test sine_encode_decode_test sine_encode_decode_performance_test
 
 CORE_OBJ    = $(CORE:.c=.o)
 COMMON_OBJ  = $(COMMON:.c=.o) 
@@ -80,12 +81,26 @@ AVDTP_SINK_OBJ  = $(AVDTP_SINK:.c=.o)
 
 all: ${AVDTP_TESTS}
 
-avdtp_test: ${CORE_OBJ} ${COMMON_OBJ} ${SBC_DECODER_OBJ} ${SBC_ENCODER_OBJ} ${AVDTP_SINK_OBJ} avdtp_test.o
+avdtp_sink_test: ${CORE_OBJ} ${COMMON_OBJ} ${SBC_DECODER_OBJ} ${SBC_ENCODER_OBJ} ${AVDTP_SINK_OBJ} avdtp_sink_test.o
+	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+
+avdtp_source_test: ${CORE_OBJ} ${COMMON_OBJ} ${SBC_DECODER_OBJ} ${SBC_ENCODER_OBJ} ${AVDTP_SINK_OBJ} avdtp_source_test.o
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 portaudio_test: btstack_util.o hci_dump.o wav_util.o btstack_ring_buffer.o portaudio_test.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
+
+sine_encode_decode_test: ${CORE_OBJ} ${COMMON_OBJ} ${SBC_DECODER_OBJ} ${SBC_ENCODER_OBJ} ${AVDTP_SINK_OBJ} sine_encode_decode_test.c
+	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+
+sine_encode_decode_ring_buffer_test: ${CORE_OBJ} ${COMMON_OBJ} ${SBC_DECODER_OBJ} ${SBC_ENCODER_OBJ} ${AVDTP_SINK_OBJ} sine_encode_decode_ring_buffer_test.c
+	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+
+sine_encode_decode_performance_test: ${CORE_OBJ} ${COMMON_OBJ} ${SBC_DECODER_OBJ} ${SBC_ENCODER_OBJ} ${AVDTP_SINK_OBJ} sine_encode_decode_performance_test.c
+	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+
+	
 test: all
 
 clean:

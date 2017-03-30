@@ -35,6 +35,8 @@
  *
  */
 
+#define __BTSTACK_FILE__ "btstack_chipset_tc3566x.c"
+
 /*
  *  btstack_chipset_tc3566x.c
  *

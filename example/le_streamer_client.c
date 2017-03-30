@@ -35,6 +35,8 @@
  *
  */
 
+#define __BTSTACK_FILE__ "le_streamer_client.c"
+
 // *****************************************************************************
 //
 // LE Streamer Client - connects to 'LE Streamer' and subscribes to test characteristic

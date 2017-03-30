@@ -35,6 +35,8 @@
  *
  */
 
+#define __BTSTACK_FILE__ "sm_pairing_peripheral.c"
+
 // *****************************************************************************
 /* EXAMPLE_START(sm_pairing_peripheral): LE Peripheral - Test pairing combinations
  *
@@ -99,7 +101,7 @@ static void sm_peripheral_setup(void){
      */
 
     // LE Legacy Pairing, Just Works
-    sm_set_io_capabilities(IO_CAPABILITY_DISPLAY_YES_NO);
+    sm_set_io_capabilities(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);
     sm_set_authentication_requirements(0);
 
     // LE Legacy Pairing, Passkey entry initiator enter, responder (us) displays

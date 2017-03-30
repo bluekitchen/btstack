@@ -35,6 +35,8 @@
  *
  */
 
+#define __BTSTACK_FILE__ "sm_mbedtls_allocator.c"
+
 #include "btstack_config.h"
 
 #include <stdint.h>

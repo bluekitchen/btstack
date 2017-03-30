@@ -34,6 +34,8 @@
  * contact@bluekitchen-gmbh.com
  *
  */
+
+#define __BTSTACK_FILE__ "main.c"
  /**
   * BTstack port for Zephyr Bluetooth Controller
   *

@@ -35,6 +35,8 @@
  *
  */
 
+#define __BTSTACK_FILE__ "gatt_browser.c"
+
 // *****************************************************************************
 /* EXAMPLE_START(gatt_browser): GATT Client - Discovering primary services and their characteristics
  * 
@@ -57,6 +59,7 @@
 #include <string.h>
 
 #include "btstack.h"
+#include "gatt_browser.h"
 
 typedef struct advertising_report {
     uint8_t   type;
@@ -294,6 +297,10 @@ int btstack_main(int argc, const char * argv[]){
     UNUSED(argv);
 #endif
 
+    // setup ATT server - only needed if LE Peripheral does ATT queries on its own, e.g. Android phones
+    att_server_init(profile_data, NULL, NULL);    
+
+    // setup GATT client
     gatt_client_setup();
 
     // turn on!

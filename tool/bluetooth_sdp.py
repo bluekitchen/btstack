@@ -71,7 +71,7 @@ def process_table(fout, tbody, pattern):
         if (len(columns) > 2):
             remark = columns[2].text_content().encode('ascii','ignore')
         # skip tbody headers
-        if name in ["Protocol Name", "Service Class Name", "Attribute Name", 
+        if name in ["Protocol Name", "Service Class Name", "Attribute Name", "UUID Name", 
             "Reserved", 'Reserved for HID Attributes', 'Available for HID Language Strings']:
             continue
         # skip tbody footers
@@ -89,7 +89,7 @@ def process_table(fout, tbody, pattern):
 def scrape_attributes(fout, tree, table_name):
     tables = tree.xpath("//table[preceding-sibling::h3 = '" + table_name +"']")
     tbody = tables[0].getchildren()[0]
-    process_table(fout, tbody, '#define BLUETOOTH_ATTRIBUTE_%-54s %s%s\n')
+    process_table(fout, tbody, '#define BLUETOOTH_ATTRIBUTE_%-54s %s // %s\n')
 
 def scrape_page(fout, url):
     print("Parsing %s" % url)    
@@ -129,7 +129,7 @@ def scrape_page(fout, url):
     fout.write(' */\n')
     table_names = [
         # 'Base Universally Unique Identifier (UUID)',
-        # 'Browse Group Identifiers',
+        'Browse Group Identifiers',
         'Attribute Identifiers',
         # 'Audio/Video Remote Control Profile (AVRCP)',
         'Basic Imaging Profile (BIP)',

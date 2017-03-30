@@ -34,6 +34,8 @@
  * contact@bluekitchen-gmbh.com
  *
  */
+
+#define __BTSTACK_FILE__ "sdp_rfcomm_query.c"
  
 // *****************************************************************************
 //
@@ -52,12 +54,7 @@
 #include "hci_cmd.h"
 #include "btstack_run_loop.h"
 
-#include "hci.h"
-#include "btstack_memory.h"
-#include "hci_dump.h"
-#include "l2cap.h"
-#include "classic/sdp_client_rfcomm.h"
-#include "btstack_event.h"
+#include "btstack.h"
 
 static void handle_query_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
@@ -81,7 +78,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
         case BTSTACK_EVENT_STATE:
             // BTstack activated, get started 
             if (btstack_event_state_get_state(packet) == HCI_STATE_WORKING){
-                sdp_client_query_rfcomm_channel_and_name_for_uuid(&handle_query_rfcomm_event, remote, SDP_PublicBrowseGroup);
+                sdp_client_query_rfcomm_channel_and_name_for_uuid(&handle_query_rfcomm_event, remote, BLUETOOTH_ATTRIBUTE_PUBLIC_BROWSE_ROOT);
             }
             break;
         default:

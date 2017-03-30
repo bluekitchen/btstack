@@ -8,6 +8,30 @@ import os
 
 import btstack_parser as parser
 
+meta_events = [
+    'ANCS',
+    'AVDTP',
+    'AVRCP',
+    'GOEP',
+    'HFP',
+    'HSP',
+    'PBAP',
+    'LE'
+]
+
+supported_event_groups = meta_events + [
+    'BTSTACK',
+    'GAP',
+    'HCI',
+    'SDP',
+    'SM',
+    'L2CAP',
+    'RFCOMM',
+    'GATT',
+    'BNEP',
+    'ATT',
+]
+
 program_info = '''
 BTstack Event Getter Generator for BTstack
 Copyright 2016, BlueKitchen GmbH
@@ -232,14 +256,13 @@ def create_events(events):
         fout.write(copyright)
         fout.write(hfile_header_begin)
 
-        meta_events = ['HSP', 'HFP', 'ANCS', 'LE'];
         for meta_event in meta_events:
             fout.write(meta_event_template.format(meta_event=meta_event.lower()))
 
         for event_type, event_name, format, args in events:
             parts = event_name.split("_")
             event_group = parts[0]
-            if not event_group in [ 'BTSTACK', 'GAP', 'HCI', 'HSP', 'HFP', 'SDP', 'ANCS', 'SM', 'L2CAP', 'RFCOMM', 'GATT', 'BNEP', 'ATT', 'AVDTP', 'AVRCP']:
+            if not event_group in supported_event_groups:
                 print("// %s " % event_name)
                 continue
             # print(event_name)

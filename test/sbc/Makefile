@@ -35,14 +35,14 @@ COMMON += \
 
 COMMON_OBJ  = $(COMMON:.c=.o) 
 
-SBC_TESTS = sbc_decoder_test sbc_encoder_test 
+SBC_TESTS = sbc_decoder_test msbc_encoder_test 
 
 all: ${SBC_TESTS}
 
 sbc_decoder_test: ${SBC_DECODER_OBJ} ${SBC_ENCODER_OBJ} ${COMMON_OBJ} sbc_decoder_test.o  
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-sbc_encoder_test: ${SBC_DECODER_OBJ} ${SBC_ENCODER_OBJ} ${COMMON_OBJ} sbc_encoder_test.o  
+msbc_encoder_test: ${SBC_DECODER_OBJ} ${SBC_ENCODER_OBJ} ${COMMON_OBJ} msbc_encoder_test.o  
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 test: all
