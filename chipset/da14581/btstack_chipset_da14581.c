@@ -86,7 +86,7 @@ static void da14581_start(void){
 }
 
 static void da14581_w4_stx(void){
-    log_info("da14581_w4_stx: read %x", response_buffer[0]);
+    log_debug("da14581_w4_stx: read %x", response_buffer[0]);
     switch (response_buffer[0]){
         case STX:
             log_info("da14581_w4_stx: send download command");
@@ -149,7 +149,21 @@ static void da14581_w4_fw_sent(void){
 static void da14581_w4_crc(void){
     log_info("da14581_w4_crc: read %x\n", response_buffer[0]);
 
-    // send final ack
+    // calculate crc
+    int i;
+    uint8_t fcrc = CRC_INIT;
+    for (i = 0; i < fw_size; i++){
+        fcrc ^= fw_data[i];
+    }
+
+    // check crc
+    if (fcrc != response_buffer[0]){
+        log_error("da14581_w4_crc: got 0x%02x expected 0x%02x", response_buffer[0], fcrc);
+        download_complete(1);
+        return;
+    }
+
+    // everything's fine, send final ack
     the_uart_driver->set_block_sent(&da14581_w4_final_ack_sent);
     the_uart_driver->send_block(&final_ack, sizeof(final_ack));
 }
