@@ -51,7 +51,7 @@ Broadcom UART        | Dual mode | H4, H5         | rarely       | Probably (2) 
 Broadcom USB Dongles | Dual mode | USB            | Yes          | Yes              | No     |         No           | bcm            |
 CSR UART             | Dual mode | H4, H5         | rarely       | No (didn't work) | No     |         No           | csr            |
 CSR USB Dongles      | Dual mode | USB            | Mostly       | Yes              | No     |         No           | csr            |
-Dialog DA14581       | LE        | H4, SPI        | ?            | n.a.             | No     |         No           |                | Waiting for dev kit
+Dialog DA14581       | LE        | H4, SPI        | ?            | n.a.             | No     |         No           | da14581        | Official HCI firmware included in BTstack
 EM 9301              | LE        | SPI            | No           | n.a.             | No     |         No           | em9301         | Custom HCI SPI implementation
 EM 9304              | LE        | SPI, H4        | ?            | n.a.             | Yes    |         No           |                | Waiting for dev kit
 Nordic nRF           | LE        | H4             | fixed random | n.a.             | Yes    |         Yes          |                | Requires custom HCI firmware
@@ -114,7 +114,11 @@ SCO Data is routed over HCI for USB dongles, but not for UART connections. HSP a
 
 Dialog Semiconductor offers the DA14581, an LE-only SoC that can be programmed with an HCI firmware. The HCI firmware can be uploaded on boot into SRAM or stored in the OTP (One-time programmable) memory, or in an external SPI.
 
-We just ordered a Dev Kit and will try to implement the firmware upload to SRAM option. This chipset supports the Bluetooth 4.2. specification but does not seem to implement the Data Length Extension nor supports multiple concurrent roles.
+IT does not implement the Data Length Extension or supports multiple concurrent roles.
+
+**Baud rate**: The baud rate is fixed at 115200 with the provided firmware. A higher baud rate could be achieved by re-compiling the HCI firmware using Dialog's HCI SDK.
+
+**BTStack integration**: *btstack_chipset_da14581.c* contains the code to download the provided HCI firmware into the SRAM of the DA14581. After that, it can be used as any other HCI chipset.
 
 ## EM Microelectronic Marin
 
