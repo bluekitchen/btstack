@@ -47,21 +47,21 @@ CSR, which has been acquired by Qualcomm, provides all relevant information on t
 
 Chipset              | Type      | HCI Transport  | BD_ADDR (1)  | SCO over HCI (2) | LE DLE | Multiple LE Roles    | BTstack folder | Comment
 -------------------- |-----------| ---------------|--------------|------------------|--------|----------------------|----------------|---------
-Broadcom UART        | Dual mode | H4, H5         | rarely       | Probably (2)     | No     |      Maybe (3)       | bcm            | Max UART baudrate 2 mbps
+Broadcom UART        | Dual mode | H4, H5         | Rarely       | Probably (2)     | No     |      Maybe (3)       | bcm            | Max UART baudrate 2 mbps
 Broadcom USB Dongles | Dual mode | USB            | Yes          | Yes              | No     |         No           | bcm            |
-CSR UART             | Dual mode | H4, H5         | rarely       | No (didn't work) | No     |         No           | csr            |
+CSR UART             | Dual mode | H4, H5         | Rarely       | No (didn't work) | No     |         No           | csr            |
 CSR USB Dongles      | Dual mode | USB            | Mostly       | Yes              | No     |         No           | csr            |
-Dialog DA14581       | LE        | H4, SPI        | ?            | n.a.             | No     |         No           | da14581        | Official HCI firmware included in BTstack
+Dialog DA14581       | LE        | H4, SPI        | No           | n.a.             | No     |         No           | da14581        | Official HCI firmware included in BTstack
 EM 9301              | LE        | SPI            | No           | n.a.             | No     |         No           | em9301         | Custom HCI SPI implementation
 EM 9304              | LE        | SPI, H4        | ?            | n.a.             | Yes    |         No           |                | Waiting for dev kit
-Nordic nRF           | LE        | H4             | fixed random | n.a.             | Yes    |         Yes          |                | Requires custom HCI firmware
+Nordic nRF           | LE        | H4             | Fixed Random | n.a.             | Yes    |         Yes          |                | Requires custom HCI firmware
 STM STLC2500D        | Classic   | H4             | No           | No (didn't try)  | n.a    |         n.a.         | stlc2500d      | Custom deep sleep management not supported
 Toshiba TC35661      | Dual mode | H4             | No           | No (didn't try)  | No     |         No           | tc3566         | HCI version not tested. See below
 TI CC256x, WL183x    | Dual mode | H4, H5, eHCILL | Yes          | Yes              | No     |    Yes for CC256XC   | cc256x         | Also WL185x, WL187x, and WL189x
 
 **Notes**:
 
-  1. BD_ADDR: Not all Bluetooth chipset come with a fixed valid MAC Address. Better Broadcom and CSR dongles come with a MAC address from the dongle manufacturer, but cheaper ones might come with identical addresses.
+  1. BD_ADDR: Indciates if Bluetooth chipset compes with its own valid MAC Addess. Better Broadcom and CSR dongles usually come with a MAC address from the dongle manufacturer, but cheaper ones might come with identical addresses.
   2. SCO over HCI: All Bluetooth Classic chipsets support SCO over HCI, for those that are marked with No, we either didn't try or didn't found enough information to configure it correctly.
   3. Multiple LE Roles: Apple uses Broadcom Bluetooth+Wifi in their iOS devices and newer iOS versions support multiple concurrent LE roles,
   so at least some Broadcom models support multiple concurrent LE roles.
@@ -116,9 +116,11 @@ Dialog Semiconductor offers the DA14581, an LE-only SoC that can be programmed w
 
 IT does not implement the Data Length Extension or supports multiple concurrent roles.
 
+**BD Addr** fixed to 80:EA:CA:00:00:01. No command in HCI firmware to set it differently. Random addresses could be used instead.
+
 **Baud rate**: The baud rate is fixed at 115200 with the provided firmware. A higher baud rate could be achieved by re-compiling the HCI firmware using Dialog's HCI SDK.
 
-**BTStack integration**: *btstack_chipset_da14581.c* contains the code to download the provided HCI firmware into the SRAM of the DA14581. After that, it can be used as any other HCI chipset.
+**BTstack integration**: *btstack_chipset_da14581.c* contains the code to download the provided HCI firmware into the SRAM of the DA14581. After that, it can be used as any other HCI chipset.
 
 ## EM Microelectronic Marin
 
