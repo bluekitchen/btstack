@@ -41,3 +41,10 @@ spp_counter
 spp_streamer
 TIInit_12.10.28.c
 TIInit_12.8.32.c
+gatt_battery_query.h
+gatt_browser.h
+le_streamer_client
+pbap_client_demo
+sm_pairing_central
+sm_pairing_peripheral
+
