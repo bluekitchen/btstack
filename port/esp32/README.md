@@ -10,11 +10,11 @@ Status: Initial port. Only SPP + LE Throughput example provided.
 	
 ## Usage
 
-In port/esp32, run
+In port/esp32/template, run
 
 	make
 
-to compile the LE Counter example
+to compile the SPP and LE Streamer example
 
 Run 
 	
