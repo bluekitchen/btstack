@@ -10,11 +10,15 @@ Status: Initial port. Only SPP + LE Throughput example provided.
 	
 ## Usage
 
-In port/esp32/template, run
+In port/esp32, run
+
+	./creat_examples.py
+
+Now, it creates project folders for all examples. Inside an example, e.g. in port/esp32/le_counter, run
 
 	make
 
-to compile the SPP and LE Streamer example
+to compile the example
 
 Run 
 	
