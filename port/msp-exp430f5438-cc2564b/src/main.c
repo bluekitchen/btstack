@@ -57,6 +57,7 @@
 #include "btstack_run_loop.h"
 #include "btstack_run_loop_embedded.h"
 #include "classic/btstack_link_key_db.h"
+#include "bluetooth_company_id.h"
 #include "hal_board.h"
 #include "hal_compat.h"
 #include "hal_usb.h"
@@ -106,7 +107,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 uint16_t manufacturer   = little_endian_read_16(packet, 10);
                 uint16_t lmp_subversion = little_endian_read_16(packet, 12);
                 // assert manufacturer is TI
-                if (manufacturer != COMPANY_ID_TEXAS_INSTRUMENTS_INC){
+                if (manufacturer != BLUETOOTH_COMPANY_ID_TEXAS_INSTRUMENTS_INC){
                     printf("ERROR: Expected Bluetooth Chipset from TI but got manufacturer 0x%04x\n", manufacturer);
                     break;
                 }

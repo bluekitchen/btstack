@@ -70,6 +70,7 @@
 #include "btstack_event.h"
 #include "btstack_linked_list.h"
 #include "btstack_memory.h"
+#include "bluetooth_company_id.h"
 #include "gap.h"
 #include "hci.h"
 #include "hci_cmd.h"
@@ -934,7 +935,7 @@ static uint32_t hci_transport_uart_get_main_baud_rate(void){
     if (!hci_stack->config) return 0;
     uint32_t baud_rate = ((hci_transport_config_uart_t *)hci_stack->config)->baudrate_main;
     // Limit baud rate for Broadcom chipsets to 3 mbps
-    if (hci_stack->manufacturer == COMPANY_ID_BROADCOM_CORPORATION && baud_rate > 3000000){
+    if (hci_stack->manufacturer == BLUETOOTH_COMPANY_ID_BROADCOM_CORPORATION && baud_rate > 3000000){
         baud_rate = 3000000;
     }
     return baud_rate;
@@ -969,7 +970,7 @@ static void hci_initialization_timeout_handler(btstack_timer_source_t * ds){
                 hci_stack->hci_transport->set_baudrate(baud_rate);
             }
             // For CSR, HCI Reset is sent on new baud rate
-            if (hci_stack->manufacturer == COMPANY_ID_CAMBRIDGE_SILICON_RADIO){
+            if (hci_stack->manufacturer == BLUETOOTH_COMPANY_ID_CAMBRIDGE_SILICON_RADIO){
                 hci_stack->substate = HCI_INIT_SEND_RESET_CSR_WARM_BOOT;
                 hci_run();
             }
@@ -1039,7 +1040,7 @@ static void hci_initializing_run(void){
             hci_send_cmd_packet(hci_stack->hci_packet_buffer, 3 + hci_stack->hci_packet_buffer[2]);
             // STLC25000D: baudrate change happens within 0.5 s after command was send,
             // use timer to update baud rate after 100 ms (knowing exactly, when command was sent is non-trivial)
-            if (hci_stack->manufacturer == COMPANY_ID_ST_MICROELECTRONICS){
+            if (hci_stack->manufacturer == BLUETOOTH_COMPANY_ID_ST_MICROELECTRONICS){
                 btstack_run_loop_set_timer(&hci_stack->timeout, HCI_RESET_RESEND_TIMEOUT_MS);
                 btstack_run_loop_add_timer(&hci_stack->timeout);
             }
@@ -1071,7 +1072,7 @@ static void hci_initializing_run(void){
                             btstack_run_loop_set_timer(&hci_stack->timeout, HCI_RESET_RESEND_TIMEOUT_MS);
                             btstack_run_loop_set_timer_handler(&hci_stack->timeout, hci_initialization_timeout_handler);
                             btstack_run_loop_add_timer(&hci_stack->timeout);
-                            if (hci_stack->manufacturer == COMPANY_ID_CAMBRIDGE_SILICON_RADIO
+                            if (hci_stack->manufacturer == BLUETOOTH_COMPANY_ID_CAMBRIDGE_SILICON_RADIO
                                 && hci_stack->config
                                 && hci_stack->chipset
                                 // && hci_stack->chipset->set_baudrate_command -- there's no such command
@@ -1089,7 +1090,7 @@ static void hci_initializing_run(void){
                 log_info("Init script done");
 
                 // Init script download on Broadcom chipsets causes:
-                if (hci_stack->manufacturer == COMPANY_ID_BROADCOM_CORPORATION){
+                if (hci_stack->manufacturer == BLUETOOTH_COMPANY_ID_BROADCOM_CORPORATION){
                     // - baud rate to reset, restore UART baud rate if needed
                     int need_baud_change = hci_stack->config
                         && hci_stack->chipset
@@ -1381,7 +1382,7 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
         case HCI_INIT_W4_SEND_BAUD_CHANGE:
             // for STLC2500D, baud rate change already happened.
             // for others, baud rate gets changed now
-            if ((hci_stack->manufacturer != COMPANY_ID_ST_MICROELECTRONICS) && need_baud_change){
+            if ((hci_stack->manufacturer != BLUETOOTH_COMPANY_ID_ST_MICROELECTRONICS) && need_baud_change){
                 uint32_t baud_rate = hci_transport_uart_get_main_baud_rate();
                 log_info("Local baud rate change to %"PRIu32"(w4_send_baud_change)", baud_rate);
                 hci_stack->hci_transport->set_baudrate(baud_rate);
@@ -1403,7 +1404,7 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
 #endif
 
         case HCI_INIT_W4_READ_LOCAL_SUPPORTED_COMMANDS:
-            if (need_baud_change && hci_stack->manufacturer == COMPANY_ID_BROADCOM_CORPORATION){
+            if (need_baud_change && hci_stack->manufacturer == BLUETOOTH_COMPANY_ID_BROADCOM_CORPORATION){
                 hci_stack->substate = HCI_INIT_SEND_BAUD_CHANGE_BCM;
                 return;
             }
@@ -1428,7 +1429,7 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
             return;            
         case HCI_INIT_W4_SET_BD_ADDR:
             // for STLC2500D, bd addr change only gets active after sending reset command
-            if (hci_stack->manufacturer == COMPANY_ID_ST_MICROELECTRONICS){
+            if (hci_stack->manufacturer == BLUETOOTH_COMPANY_ID_ST_MICROELECTRONICS){
                 hci_stack->substate = HCI_INIT_SEND_RESET_ST_WARM_BOOT;
                 return;
             }
@@ -1498,7 +1499,7 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
 
         case HCI_INIT_W4_WRITE_DEFAULT_ERRONEOUS_DATA_REPORTING:
             // skip bcm set sco pcm config on non-Broadcom chipsets
-            if (hci_stack->manufacturer == COMPANY_ID_BROADCOM_CORPORATION) break;
+            if (hci_stack->manufacturer == BLUETOOTH_COMPANY_ID_BROADCOM_CORPORATION) break;
             hci_stack->substate = HCI_INIT_W4_BCM_WRITE_SCO_PCM_INT;
             // explicit fall through to reduce repetitions
 

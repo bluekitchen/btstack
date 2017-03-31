@@ -57,6 +57,7 @@
 #include "btstack_memory.h"
 #include "btstack_run_loop.h"
 #include "btstack_run_loop_posix.h"
+#include "bluetooth_company_id.h"
 #include "hci.h"
 #include "hci_dump.h"
 #include "stdin_support.h"
@@ -156,12 +157,12 @@ static void local_version_information_handler(uint8_t * packet){
     printf("- LMP Subversion 0x%04x\n", lmp_subversion);
     printf("- Manufacturer 0x%04x\n", manufacturer);
     switch (manufacturer){
-        case COMPANY_ID_CAMBRIDGE_SILICON_RADIO:
+        case BLUETOOTH_COMPANY_ID_CAMBRIDGE_SILICON_RADIO:
             printf("Cambridge Silicon Radio - CSR chipset.\n");
             use_fast_uart();
             hci_set_chipset(btstack_chipset_csr_instance());
             break;
-        case COMPANY_ID_TEXAS_INSTRUMENTS_INC: 
+        case BLUETOOTH_COMPANY_ID_TEXAS_INSTRUMENTS_INC: 
             printf("Texas Instruments - CC256x compatible chipset.\n");
             if (lmp_subversion != btstack_chipset_cc256x_lmp_subversion()){
                 printf("Error: LMP Subversion does not match initscript! ");
@@ -178,23 +179,23 @@ static void local_version_information_handler(uint8_t * packet){
 #endif
 
             break;
-        case COMPANY_ID_BROADCOM_CORPORATION:   
+        case BLUETOOTH_COMPANY_ID_BROADCOM_CORPORATION:   
             printf("Broadcom - using BCM driver.\n");
             hci_set_chipset(btstack_chipset_bcm_instance());
 
             use_fast_uart();
             is_bcm = 1;
             break;
-        case COMPANY_ID_ST_MICROELECTRONICS:   
+        case BLUETOOTH_COMPANY_ID_ST_MICROELECTRONICS:   
             printf("ST Microelectronics - using STLC2500d driver.\n");
             use_fast_uart();
             hci_set_chipset(btstack_chipset_stlc2500d_instance());
             break;
-        case COMPANY_ID_EM_MICROELECTRONICS_MARIN:
+        case BLUETOOTH_COMPANY_ID_EM_MICROELECTRONIC_MARIN_SA:
             printf("EM Microelectronics - using EM9301 driver.\n");
             hci_set_chipset(btstack_chipset_em9301_instance());
             break;
-        case COMPANY_ID_NORDIC_SEMICONDUCTOR_ASA:
+        case BLUETOOTH_COMPANY_ID_NORDIC_SEMICONDUCTOR_ASA:
             printf("Nordic Semiconductor nRF5 chipset.\n");
             break;        
         default:
