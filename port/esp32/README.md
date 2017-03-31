@@ -5,7 +5,7 @@ Status: Initial port. Only SPP + LE Throughput example provided.
 ## Setup
 
 - Follow [Espressif IoT Development Framework (IDF) setup](https://github.com/espressif/esp-idf) to install xtensa toolchain.
-- Checkout our [esp-idf fork](https://github.com/mringwal/esp-idf) and switch to branch 'support-alternative-bluetooth-stack' to allow alternative Bluetooth stack and make IDF_PATH point to it.
+- Checkout our [esp-idf fork](https://github.com/mringwal/esp-idf) make IDF_PATH point to it.
 - In port/esp32, configure serial port for firmware upload as described before
 	
 ## Usage
