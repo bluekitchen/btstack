@@ -644,6 +644,15 @@ const hci_cmd_t hci_write_synchronous_flow_control_enable = {
 OPCODE(OGF_CONTROLLER_BASEBAND, 0x2f), "1"
 };
 
+#ifdef ENABLE_HCI_CONTROLLER_TO_HOST_FLOW_CONTROL
+
+/**
+ * @param flow_control_enable - 0: off, 1: ACL only, 2: SCO only, 3: ACL + SCO
+ */
+const hci_cmd_t hci_set_controller_to_host_flow_control = {
+OPCODE(OGF_CONTROLLER_BASEBAND, 0x31), "1"
+};
+
 /**
  * @param host_acl_data_packet_length
  * @param host_synchronous_data_packet_length
@@ -653,6 +662,23 @@ OPCODE(OGF_CONTROLLER_BASEBAND, 0x2f), "1"
 const hci_cmd_t hci_host_buffer_size = {
 OPCODE(OGF_CONTROLLER_BASEBAND, 0x33), "2122"
 };
+
+#if 0
+//
+// command sent manually sent by hci_host_num_completed_packets
+//
+/**
+ * @note only single handle supported by BTstack command generator
+ * @param number_of_handles must be 1
+ * @param connection_handle
+ * @param host_num_of_completed_packets for the given connection handle
+ */
+const hci_cmd_t hci_host_number_of_completed_packets = {
+OPCODE(OGF_CONTROLLER_BASEBAND, 0x35), "1H2"
+};
+#endif
+
+#endif
 
 /**
  * @param handle
