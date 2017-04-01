@@ -71,9 +71,9 @@ uint32_t hal_time_ms(void) {
 static void (*transport_packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size);
 
 // ring buffer for incoming HCI packets
-#define MAX_NR_HOST_ACL_PACKETS 10
 #define MAX_NR_HOST_EVENT_PACKETS 4
-static uint8_t hci_ringbuffer_storage[MAX_NR_HOST_ACL_PACKETS   * (1 + HCI_ACL_HEADER_SIZE + HCI_ACL_3DH5_SIZE) +
+static uint8_t hci_ringbuffer_storage[HCI_HOST_ACL_PACKET_NUM   * (1 + HCI_ACL_HEADER_SIZE + HCI_HOST_ACL_PACKET_LEN) +
+                                      HCI_HOST_SCO_PACKET_NUM   * (1 + HCI_SCO_HEADER_SIZE + HCI_HOST_SCO_PACKET_LEN) +
                                      (MAX_NR_HOST_EVENT_PACKETS * HCI_EVENT_BUFFER_SIZE)];
 
 static btstack_ring_buffer_t hci_ringbuffer;
