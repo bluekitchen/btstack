@@ -35,6 +35,8 @@
  *
  */
 
+#define __BTSTACK_FILE__ "main.c"
+
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>

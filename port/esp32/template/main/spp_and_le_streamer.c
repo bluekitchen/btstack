@@ -35,6 +35,8 @@
  *
  */
 
+#define __BTSTACK_FILE__ "spp_and_le_streamer.c"
+
 // *****************************************************************************
 /* EXAMPLE_START(spp_and_le_counter): Dual mode example
  * 
