@@ -37,13 +37,13 @@
 
 #define __BTSTACK_FILE__ "le_device_db_fs.c"
  
-#include "ble/le_device_db.h"
-
-#include "ble/core.h"
-
 #include <stdio.h>
 #include <string.h>
+
+#include "btstack_config.h"
 #include "btstack_debug.h"
+#include "ble/le_device_db.h"
+#include "ble/core.h"
 
 // Central Device db implemenation using static memory
 typedef struct le_device_memory_db {
@@ -76,7 +76,17 @@ typedef struct le_device_memory_db {
 
 #define LE_DEVICE_MEMORY_SIZE 20
 #define INVALID_ENTRY_ADDR_TYPE 0xff
-#define DB_PATH_TEMPLATE "/tmp/btstack_at_%s_le_device_db.txt"
+
+#ifndef LE_DEVICE_DB_PATH
+#ifdef _WIN32
+#define LE_DEVICE_DB_PATH ""
+#else
+#define LE_DEVICE_DB_PATH "/tmp/"
+#endif
+#endif
+
+#define DB_PATH_TEMPLATE (LE_DEVICE_DB_PATH "btstack_at_%s_le_device_db.txt")
+
 const  char * csv_header = "# addr_type, addr, irk, ltk, ediv, rand[8], key_size, authenticated, authorized, remote_csrk, remote_counter, local_csrk, local_counter";
 static char db_path[sizeof(DB_PATH_TEMPLATE) - 2 + 17 + 1];
 
