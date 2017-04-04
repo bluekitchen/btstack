@@ -190,14 +190,6 @@ avdtp_connection_t * avdtp_create_connection(bd_addr_t remote_addr, avdtp_contex
     return connection;
 }
 
-void avdtp_init_audio_buffer(avdtp_stream_endpoint_t * stream_endpoint, uint8_t * storage, int storage_size){
-    if (!stream_endpoint){
-        printf("cannot init audio buffer, no stream_endpoint\n");
-        return;
-    }
-    btstack_ring_buffer_init(&stream_endpoint->audio_ring_buffer, storage, storage_size);
-}
-
 void avdtp_init_sbc_buffer(avdtp_stream_endpoint_t * stream_endpoint, uint8_t * storage, int storage_size){
     if (!stream_endpoint){
         printf("cannot init audio buffer, no stream_endpoint\n");

@@ -454,9 +454,7 @@ typedef struct avdtp_stream_endpoint {
     uint32_t acc_num_missed_samples;
     btstack_sbc_encoder_state_t sbc_encoder_state;
     uint16_t sequence_number;
-    uint32_t fill_audio_ring_buffer_timeout_ms;
     
-    btstack_ring_buffer_t audio_ring_buffer;
     btstack_ring_buffer_t sbc_ring_buffer;
 } avdtp_stream_endpoint_t;
 
@@ -496,9 +494,7 @@ void avdtp_set_configuration(uint16_t con_handle, uint8_t int_seid, uint8_t acp_
 void avdtp_reconfigure(uint16_t con_handle, uint8_t acp_seid, uint16_t configured_services_bitmap, avdtp_capabilities_t configuration, avdtp_context_t * context);
 void avdtp_suspend(uint16_t con_handle, uint8_t acp_seid, avdtp_context_t * context);
 
-void avdtp_init_audio_buffer(avdtp_stream_endpoint_t * stream_endpoint, uint8_t * storage, int storage_size);
 void avdtp_init_sbc_buffer(avdtp_stream_endpoint_t * stream_endpoint, uint8_t * storage, int storage_size);
-
 #if defined __cplusplus
 }
 #endif

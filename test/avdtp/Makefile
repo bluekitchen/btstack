@@ -71,7 +71,8 @@ AVDTP += \
 	avdtp_sink.c  		\
 	btstack_ring_buffer.c \
 
-AVDTP_TESTS = avdtp_source_demo avdtp_sink_test portaudio_test sine_encode_decode_ring_buffer_test sine_encode_decode_test sine_encode_decode_performance_test
+AVDTP_TESTS = avdtp_source_demo avdtp_sink_test portaudio_test
+#sine_encode_decode_ring_buffer_test sine_encode_decode_test sine_encode_decode_performance_test
 
 CORE_OBJ    = $(CORE:.c=.o)
 COMMON_OBJ  = $(COMMON:.c=.o) 
