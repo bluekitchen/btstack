@@ -467,20 +467,23 @@ static  uint8_t media_sbc_codec_capabilities[] = {
 #endif
 #define TABLE_SIZE_441HZ   100
 
+static uint8_t audio_samples_storage[44100*4]; // 1s buffer
+static uint8_t sbc_samples_storage[44100*4];
+
 typedef struct {
     int16_t source[TABLE_SIZE_441HZ];
     int left_phase;
     int right_phase;
 } paTestData;
 
-static uint32_t fill_audio_ring_buffer_timeout_ms = 50;
+typedef struct {
+// to app
+    uint32_t fill_audio_ring_buffer_timeout_ms;
+    btstack_ring_buffer_t audio_ring_buffer;
+} avdtp_stream_endpoint_context_t;
 
-static uint8_t audio_samples_storage[44100*4]; // 1s buffer
-static btstack_ring_buffer_t audio_ring_buffer;
-
-static uint8_t sbc_samples_storage[44100*4];
-// static btstack_ring_buffer_t sbc_ring_buffer;
 static paTestData sin_data;
+static avdtp_stream_endpoint_context_t streaming_context;
 
 static void fill_sbc_ring_buffer(uint8_t * sbc_frame, int sbc_frame_size, avdtp_stream_endpoint_t * stream_endpoint){
     if (btstack_ring_buffer_bytes_free(&stream_endpoint->sbc_ring_buffer) >= sbc_frame_size ){
@@ -500,15 +503,15 @@ static void avdtp_source_stream_endpoint_run(avdtp_stream_endpoint_t * stream_en
     int audio_bytes_to_read = num_audio_samples_to_read * BYTES_PER_AUDIO_SAMPLE; 
 
     // printf("run: audio_bytes_to_read:        %d\n", audio_bytes_to_read);
-    // printf("     audio buf, bytes available: %d\n", btstack_ring_buffer_bytes_available(&audio_ring_buffer));
+    // printf("     audio buf, bytes available: %d\n", btstack_ring_buffer_bytes_available(&streaming_context.audio_ring_buffer));
     // printf("     sbc buf,   bytes free:      %d\n", btstack_ring_buffer_bytes_free(&stream_endpoint->sbc_ring_buffer));
 
-    while (btstack_ring_buffer_bytes_available(&audio_ring_buffer) >= audio_bytes_to_read
+    while (btstack_ring_buffer_bytes_available(&streaming_context.audio_ring_buffer) >= audio_bytes_to_read
         && btstack_ring_buffer_bytes_free(&stream_endpoint->sbc_ring_buffer) >= 120){ // TODO use real value
         
         uint32_t number_of_bytes_read = 0;
         uint8_t pcm_frame[256*BYTES_PER_AUDIO_SAMPLE];
-        btstack_ring_buffer_read(&audio_ring_buffer, pcm_frame, audio_bytes_to_read, &number_of_bytes_read); 
+        btstack_ring_buffer_read(&streaming_context.audio_ring_buffer, pcm_frame, audio_bytes_to_read, &number_of_bytes_read); 
         // printf("     num audio bytes read %d\n", number_of_bytes_read);
         btstack_sbc_encoder_process_data((int16_t *) pcm_frame);
         
@@ -527,12 +530,12 @@ static void avdtp_source_stream_endpoint_run(avdtp_stream_endpoint_t * stream_en
 static void fill_audio_ring_buffer(void *userData, int num_samples_to_write){
     paTestData *data = (paTestData*)userData;
     int count = 0;
-    while (btstack_ring_buffer_bytes_free(&audio_ring_buffer) >= BYTES_PER_AUDIO_SAMPLE && count < num_samples_to_write){
+    while (btstack_ring_buffer_bytes_free(&streaming_context.audio_ring_buffer) >= BYTES_PER_AUDIO_SAMPLE && count < num_samples_to_write){
         uint8_t write_data[BYTES_PER_AUDIO_SAMPLE];
         *(int16_t*)&write_data[0] = data->source[data->left_phase];
         *(int16_t*)&write_data[2] = data->source[data->right_phase];
         
-        btstack_ring_buffer_write(&audio_ring_buffer, write_data, BYTES_PER_AUDIO_SAMPLE);
+        btstack_ring_buffer_write(&streaming_context.audio_ring_buffer, write_data, BYTES_PER_AUDIO_SAMPLE);
         count++;
 
         data->left_phase += 1;
@@ -548,11 +551,11 @@ static void fill_audio_ring_buffer(void *userData, int num_samples_to_write){
 
 static void avdtp_fill_audio_ring_buffer_timeout_handler(btstack_timer_source_t * timer){
     avdtp_stream_endpoint_t * stream_endpoint = btstack_run_loop_get_timer_context(timer);
-    btstack_run_loop_set_timer(&stream_endpoint->fill_audio_ring_buffer_timer, fill_audio_ring_buffer_timeout_ms); // 2 seconds timeout
+    btstack_run_loop_set_timer(&stream_endpoint->fill_audio_ring_buffer_timer, streaming_context.fill_audio_ring_buffer_timeout_ms); // 2 seconds timeout
     btstack_run_loop_add_timer(&stream_endpoint->fill_audio_ring_buffer_timer);
     uint32_t now = btstack_run_loop_get_time_ms();
 
-    uint32_t update_period_ms = fill_audio_ring_buffer_timeout_ms;
+    uint32_t update_period_ms = streaming_context.fill_audio_ring_buffer_timeout_ms;
     if (stream_endpoint->time_audio_data_sent > 0){
         update_period_ms = now - stream_endpoint->time_audio_data_sent;
     } 
@@ -575,7 +578,7 @@ static void avdtp_fill_audio_ring_buffer_timer_start(avdtp_stream_endpoint_t * s
     btstack_run_loop_remove_timer(&stream_endpoint->fill_audio_ring_buffer_timer);
     btstack_run_loop_set_timer_handler(&stream_endpoint->fill_audio_ring_buffer_timer, avdtp_fill_audio_ring_buffer_timeout_handler);
     btstack_run_loop_set_timer_context(&stream_endpoint->fill_audio_ring_buffer_timer, stream_endpoint);
-    btstack_run_loop_set_timer(&stream_endpoint->fill_audio_ring_buffer_timer, fill_audio_ring_buffer_timeout_ms); // 50 ms timeout
+    btstack_run_loop_set_timer(&stream_endpoint->fill_audio_ring_buffer_timer, streaming_context.fill_audio_ring_buffer_timeout_ms); // 50 ms timeout
     btstack_run_loop_add_timer(&stream_endpoint->fill_audio_ring_buffer_timer);
 }
 
@@ -775,9 +778,11 @@ int btstack_main(int argc, const char * argv[]){
     memset(audio_samples_storage, 0, sizeof(audio_samples_storage));
     memset(sbc_samples_storage, 0, sizeof(sbc_samples_storage));
     
-    btstack_ring_buffer_init(&audio_ring_buffer, audio_samples_storage, sizeof(audio_samples_storage));
     avdtp_init_sbc_buffer(local_stream_endpoint, sbc_samples_storage, sizeof(sbc_samples_storage));
-        
+    
+    btstack_ring_buffer_init(&streaming_context.audio_ring_buffer, audio_samples_storage, sizeof(audio_samples_storage));
+    streaming_context.fill_audio_ring_buffer_timeout_ms = 50;
+
     /* initialise sinusoidal wavetable */
     int i;
     for (i=0; i<TABLE_SIZE_441HZ; i++){
