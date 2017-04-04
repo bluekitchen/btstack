@@ -190,14 +190,6 @@ avdtp_connection_t * avdtp_create_connection(bd_addr_t remote_addr, avdtp_contex
     return connection;
 }
 
-void avdtp_init_sbc_buffer(avdtp_stream_endpoint_t * stream_endpoint, uint8_t * storage, int storage_size){
-    if (!stream_endpoint){
-        printf("cannot init audio buffer, no stream_endpoint\n");
-        return;
-    }
-    btstack_ring_buffer_init(&stream_endpoint->sbc_ring_buffer, storage, storage_size);
-}
-
 avdtp_stream_endpoint_t * avdtp_create_stream_endpoint(avdtp_sep_type_t sep_type, avdtp_media_type_t media_type, avdtp_context_t * context){
     avdtp_stream_endpoint_t * stream_endpoint = btstack_memory_avdtp_stream_endpoint_get();
     memset(stream_endpoint, 0, sizeof(avdtp_stream_endpoint_t));
