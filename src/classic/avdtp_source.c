@@ -261,41 +261,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 #define BYTES_PER_AUDIO_SAMPLE   (2*NUM_CHANNELS)
 #define LATENCY             300 // ms
 
-#ifndef M_PI
-#define M_PI  3.14159265
-#endif
-#define TABLE_SIZE_441HZ   100
-
-typedef struct {
-    int16_t source[TABLE_SIZE_441HZ];
-    int left_phase;
-    int right_phase;
-} paTestData;
-
-static paTestData sin_data;
-
-static void fill_audio_ring_buffer(void *userData, int num_samples_to_write, avdtp_stream_endpoint_t * stream_endpoint){
-    paTestData *data = (paTestData*)userData;
-    int count = 0;
-    while (btstack_ring_buffer_bytes_free(&stream_endpoint->audio_ring_buffer) >= BYTES_PER_AUDIO_SAMPLE && count < num_samples_to_write){
-        uint8_t write_data[BYTES_PER_AUDIO_SAMPLE];
-        *(int16_t*)&write_data[0] = data->source[data->left_phase];
-        *(int16_t*)&write_data[2] = data->source[data->right_phase];
-        
-        btstack_ring_buffer_write(&stream_endpoint->audio_ring_buffer, write_data, BYTES_PER_AUDIO_SAMPLE);
-        count++;
-
-        data->left_phase += 1;
-        if (data->left_phase >= TABLE_SIZE_441HZ){
-            data->left_phase -= TABLE_SIZE_441HZ;
-        }
-        data->right_phase += 1; 
-        if (data->right_phase >= TABLE_SIZE_441HZ){
-            data->right_phase -= TABLE_SIZE_441HZ;
-        } 
-    }
-}
-
 static void fill_sbc_ring_buffer(uint8_t * sbc_frame, int sbc_frame_size, avdtp_stream_endpoint_t * stream_endpoint){
     if (btstack_ring_buffer_bytes_free(&stream_endpoint->sbc_ring_buffer) >= sbc_frame_size ){
         // printf("    fill_sbc_ring_buffer\n");
@@ -308,7 +273,7 @@ static void fill_sbc_ring_buffer(uint8_t * sbc_frame, int sbc_frame_size, avdtp_
 }
 
 
-static void avdtp_source_stream_endpoint_run(avdtp_stream_endpoint_t * stream_endpoint){
+void avdtp_source_stream_endpoint_run2(avdtp_stream_endpoint_t * stream_endpoint){
     // performe sbc encoding
     int total_num_bytes_read = 0;
     int num_audio_samples_to_read = btstack_sbc_encoder_num_audio_frames();
@@ -339,31 +304,6 @@ static void avdtp_source_stream_endpoint_run(avdtp_stream_endpoint_t * stream_en
     }
 }
 
-void avdtp_fill_audio_ring_buffer_timeout_handler(btstack_timer_source_t * timer){
-    avdtp_stream_endpoint_t * stream_endpoint = btstack_run_loop_get_timer_context(timer);
-    btstack_run_loop_set_timer(&stream_endpoint->fill_audio_ring_buffer_timer, stream_endpoint->fill_audio_ring_buffer_timeout_ms); // 2 seconds timeout
-    btstack_run_loop_add_timer(&stream_endpoint->fill_audio_ring_buffer_timer);
-    uint32_t now = btstack_run_loop_get_time_ms();
-
-    uint32_t update_period_ms = stream_endpoint->fill_audio_ring_buffer_timeout_ms;
-    if (stream_endpoint->time_audio_data_sent > 0){
-        update_period_ms = now - stream_endpoint->time_audio_data_sent;
-    } 
-    uint32_t num_samples = (update_period_ms * 44100) / 1000;
-    stream_endpoint->acc_num_missed_samples += (update_period_ms * 44100) % 1000;
-
-    if (stream_endpoint->acc_num_missed_samples >= 1000){
-        num_samples++;
-        stream_endpoint->acc_num_missed_samples -= 1000;
-    }
-
-    fill_audio_ring_buffer(&sin_data, num_samples, stream_endpoint);
-    stream_endpoint->time_audio_data_sent = now;
-
-    avdtp_source_stream_endpoint_run(stream_endpoint);
-    // 
-}
-
 void avdtp_set_fill_audio_ring_buffer_timeout_ms(avdtp_stream_endpoint_t * stream_endpoint, uint32_t timeout_ms){
     if (!stream_endpoint){
         printf("avdtp_set_fill_audio_ring_buffer_timeout_ms: stream_endpoint does not exist\n");
@@ -377,13 +317,6 @@ void avdtp_source_init(void){
     avdtp_source_context.connections = NULL;
     avdtp_source_context.stream_endpoints_id_counter = 0;
     avdtp_source_context.packet_handler = packet_handler;
-
-    /* initialise sinusoidal wavetable */
-    int i;
-    for (i=0; i<TABLE_SIZE_441HZ; i++){
-        sin_data.source[i] = sin(((double)i/(double)TABLE_SIZE_441HZ) * M_PI * 2.)*32767;
-    }
-    sin_data.left_phase = sin_data.right_phase = 0;
 
     l2cap_register_service(&packet_handler, BLUETOOTH_PROTOCOL_AVDTP, 0xffff, LEVEL_0);
 }
