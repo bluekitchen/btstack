@@ -50,12 +50,6 @@
 #include "avdtp_acceptor.h"
 #include "avdtp_initiator.h"
 
-static uint8_t audio_samples_storage[44100*4]; // 1s buffer
-// static btstack_ring_buffer_t audio_ring_buffer;
-
-static uint8_t sbc_samples_storage[44100*4];
-// static btstack_ring_buffer_t sbc_ring_buffer;
-
 static void (*handle_media_data)(avdtp_stream_endpoint_t * stream_endpoint, uint8_t *packet, uint16_t size);
 
 void avdtp_register_media_transport_category(avdtp_stream_endpoint_t * stream_endpoint){
@@ -196,6 +190,22 @@ avdtp_connection_t * avdtp_create_connection(bd_addr_t remote_addr, avdtp_contex
     return connection;
 }
 
+void avdtp_init_audio_buffer(avdtp_stream_endpoint_t * stream_endpoint, uint8_t * storage, int storage_size){
+    if (!stream_endpoint){
+        printf("cannot init audio buffer, no stream_endpoint\n");
+        return;
+    }
+    btstack_ring_buffer_init(&stream_endpoint->audio_ring_buffer, storage, storage_size);
+}
+
+void avdtp_init_sbc_buffer(avdtp_stream_endpoint_t * stream_endpoint, uint8_t * storage, int storage_size){
+    if (!stream_endpoint){
+        printf("cannot init audio buffer, no stream_endpoint\n");
+        return;
+    }
+    btstack_ring_buffer_init(&stream_endpoint->sbc_ring_buffer, storage, storage_size);
+}
+
 avdtp_stream_endpoint_t * avdtp_create_stream_endpoint(avdtp_sep_type_t sep_type, avdtp_media_type_t media_type, avdtp_context_t * context){
     avdtp_stream_endpoint_t * stream_endpoint = btstack_memory_avdtp_stream_endpoint_get();
     memset(stream_endpoint, 0, sizeof(avdtp_stream_endpoint_t));
@@ -203,14 +213,6 @@ avdtp_stream_endpoint_t * avdtp_create_stream_endpoint(avdtp_sep_type_t sep_type
     stream_endpoint->sep.seid = context->stream_endpoints_id_counter;
     stream_endpoint->sep.media_type = media_type;
     stream_endpoint->sep.type = sep_type;
-    
-    memset(audio_samples_storage, 0, sizeof(audio_samples_storage));
-    btstack_ring_buffer_init(&stream_endpoint->audio_ring_buffer, audio_samples_storage, sizeof(audio_samples_storage));
-
-    memset(sbc_samples_storage, 0, sizeof(sbc_samples_storage));
-    btstack_ring_buffer_init(&stream_endpoint->sbc_ring_buffer, sbc_samples_storage, sizeof(sbc_samples_storage));
-
-
     btstack_linked_list_add(&context->stream_endpoints, (btstack_linked_item_t *) stream_endpoint);
     return stream_endpoint;
 }

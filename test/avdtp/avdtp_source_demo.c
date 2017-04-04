@@ -468,6 +468,11 @@ typedef struct {
     int right_phase;
 } paTestData;
 
+static uint8_t audio_samples_storage[44100*4]; // 1s buffer
+// static btstack_ring_buffer_t audio_ring_buffer;
+
+static uint8_t sbc_samples_storage[44100*4];
+// static btstack_ring_buffer_t sbc_ring_buffer;
 static paTestData sin_data;
 
 static void fill_sbc_ring_buffer(uint8_t * sbc_frame, int sbc_frame_size, avdtp_stream_endpoint_t * stream_endpoint){
@@ -699,6 +704,12 @@ int btstack_main(int argc, const char * argv[]){
     gap_set_class_of_device(0x200408);
     
     avdtp_set_fill_audio_ring_buffer_timeout_ms(local_stream_endpoint, 50);
+    memset(audio_samples_storage, 0, sizeof(audio_samples_storage));
+    memset(sbc_samples_storage, 0, sizeof(sbc_samples_storage));
+    
+    avdtp_init_audio_buffer(local_stream_endpoint, audio_samples_storage, sizeof(audio_samples_storage));
+    avdtp_init_sbc_buffer(local_stream_endpoint, sbc_samples_storage, sizeof(sbc_samples_storage));
+        
     /* initialise sinusoidal wavetable */
     int i;
     for (i=0; i<TABLE_SIZE_441HZ; i++){
