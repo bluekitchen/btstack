@@ -141,6 +141,8 @@ static uint8_t media_sbc_codec_configuration[4];
                             
 static uint8_t audio_samples_storage[44100*4]; // 1s buffer
 static uint8_t sbc_samples_storage[44100*4];
+static uint8_t media_packet[1024];
+
 static avdtp_stream_endpoint_context_t streaming_context;
 static paTestData sin_data;
 
@@ -184,7 +186,7 @@ avdtp_application_state_t app_state = AVDTP_APPLICATION_IDLE;
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
-static void send_media_packet_now(avdtp_stream_endpoint_t * stream_endpoint);
+static void send_media_packet_now(uint16_t l2cap_media_cid, int mtu, uint16_t sequence_number);
 
 static const char * avdtp_si2str(uint16_t index){
     if (index <= 0 || index > sizeof(avdtp_si_name)) return avdtp_si_name[0];
@@ -433,9 +435,11 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             signal_identifier = avdtp_subevent_signaling_general_reject_get_signal_identifier(packet);
                             printf(" --- avdtp source ---  Rejected %s\n", avdtp_si2str(signal_identifier));
                             break;
-                        case AVDTP_SUBEVENT_STREAMING_CAN_SEND_MEDIA_PACKET_NOW:
-                            send_media_packet_now(local_stream_endpoint);
+                        case AVDTP_SUBEVENT_STREAMING_CAN_SEND_MEDIA_PACKET_NOW: {
+                            uint16_t sequence_number = avdtp_subevent_streaming_can_send_media_packet_now_get_sequence_number(packet);
+                            send_media_packet_now(local_stream_endpoint->l2cap_media_cid, l2cap_get_remote_mtu_for_local_cid(local_stream_endpoint->l2cap_media_cid), sequence_number);
                             break;
+                        }
                         default:
                             app_state = AVDTP_APPLICATION_IDLE;
                             printf(" --- avdtp source ---  not implemented\n");
@@ -493,7 +497,7 @@ static void fill_sbc_ring_buffer(uint8_t * sbc_frame, int sbc_frame_size, avdtp_
     }
 }
 
-static void avdtp_source_stream_endpoint_run(avdtp_stream_endpoint_t * stream_endpoint){
+static void avdtp_source_stream_endpoint_run(void){
     // performe sbc encoding
     int total_num_bytes_read = 0;
     int num_audio_samples_to_read = btstack_sbc_encoder_num_audio_frames();
@@ -515,8 +519,7 @@ static void avdtp_source_stream_endpoint_run(avdtp_stream_endpoint_t * stream_en
     }
     // schedule sending
     if (total_num_bytes_read != 0){
-        stream_endpoint->state = AVDTP_STREAM_ENDPOINT_STREAMING_W2_SEND;
-        avdtp_request_can_send_now_self(stream_endpoint->connection, stream_endpoint->l2cap_media_cid);
+        avdtp_source_request_can_send_now(media_con_handle);
     }
 }
 
@@ -543,7 +546,7 @@ static void fill_audio_ring_buffer(void *userData, int num_samples_to_write){
 }
 
 static void avdtp_fill_audio_ring_buffer_timeout_handler(btstack_timer_source_t * timer){
-    avdtp_stream_endpoint_t * stream_endpoint = btstack_run_loop_get_timer_context(timer);
+    UNUSED(timer);
     btstack_run_loop_set_timer(&streaming_context.fill_audio_ring_buffer_timer, streaming_context.fill_audio_ring_buffer_timeout_ms); // 2 seconds timeout
     btstack_run_loop_add_timer(&streaming_context.fill_audio_ring_buffer_timer);
     uint32_t now = btstack_run_loop_get_time_ms();
@@ -563,14 +566,14 @@ static void avdtp_fill_audio_ring_buffer_timeout_handler(btstack_timer_source_t 
     fill_audio_ring_buffer(&sin_data, num_samples);
     streaming_context.time_audio_data_sent = now;
 
-    avdtp_source_stream_endpoint_run(stream_endpoint);
+    avdtp_source_stream_endpoint_run();
     // 
 }
 
-static void avdtp_fill_audio_ring_buffer_timer_start(avdtp_stream_endpoint_t * stream_endpoint){
+static void avdtp_fill_audio_ring_buffer_timer_start(void){
     btstack_run_loop_remove_timer(&streaming_context.fill_audio_ring_buffer_timer);
     btstack_run_loop_set_timer_handler(&streaming_context.fill_audio_ring_buffer_timer, avdtp_fill_audio_ring_buffer_timeout_handler);
-    btstack_run_loop_set_timer_context(&streaming_context.fill_audio_ring_buffer_timer, stream_endpoint);
+    // btstack_run_loop_set_timer_context(&streaming_context.fill_audio_ring_buffer_timer, stream_endpoint);
     btstack_run_loop_set_timer(&streaming_context.fill_audio_ring_buffer_timer, streaming_context.fill_audio_ring_buffer_timeout_ms); // 50 ms timeout
     btstack_run_loop_add_timer(&streaming_context.fill_audio_ring_buffer_timer);
 }
@@ -579,39 +582,17 @@ static void avdtp_fill_audio_ring_buffer_timer_stop(void){
     btstack_run_loop_remove_timer(&streaming_context.fill_audio_ring_buffer_timer);
 } 
 
-static void avdtp_source_stream_data_start(avdtp_stream_endpoint_t * stream_endpoint){
-    if (!stream_endpoint) {
-        printf("no stream_endpoint found for 0x%02x", con_handle);
-        return;
-    }
-    if (stream_endpoint->state != AVDTP_STREAM_ENDPOINT_STREAMING){
-        printf("stream_endpoint in wrong state %d\n", stream_endpoint->state);
-        return;
-    } 
-    avdtp_fill_audio_ring_buffer_timer_start(stream_endpoint);
+static void avdtp_source_stream_data_start(void){
+    if (!avdtp_source_streaming_endpoint_ready(media_con_handle)) return;
+    avdtp_fill_audio_ring_buffer_timer_start();
 }
 
-static void avdtp_source_stream_data_stop(avdtp_stream_endpoint_t * stream_endpoint){
-    if (!stream_endpoint) {
-        log_error("no stream_endpoint found");
-        return;
-    }
-    switch (stream_endpoint->state){
-        case AVDTP_STREAM_ENDPOINT_STREAMING_W2_SEND:
-        case AVDTP_STREAM_ENDPOINT_STREAMING:
-            // TODO: initialize randomly sequence number
-            stream_endpoint->sequence_number = 0;
-            stream_endpoint->state = AVDTP_STREAM_ENDPOINT_STREAMING;
-            avdtp_fill_audio_ring_buffer_timer_stop();
-            break;
-        default:
-            printf("stream_endpoint in wrong state %d\n", stream_endpoint->state);
-            return;
-    } 
+static void avdtp_source_stream_data_stop(){
+    if (!avdtp_source_streaming_endpoint_ready(media_con_handle)) return;
+    avdtp_fill_audio_ring_buffer_timer_stop(); 
 }
 
-static void send_media_packet_now(avdtp_stream_endpoint_t * stream_endpoint){
-
+static void send_media_packet_now(uint16_t l2cap_media_cid, int mtu, uint16_t sequence_number){
     //send sbc
     uint8_t  rtp_version = 2;
     uint8_t  padding = 0;
@@ -619,15 +600,14 @@ static void send_media_packet_now(avdtp_stream_endpoint_t * stream_endpoint){
     uint8_t  csrc_count = 0;
     uint8_t  marker = 0;
     uint8_t  payload_type = 0x60;
-    uint16_t sequence_number = stream_endpoint->sequence_number;
+    // uint16_t sequence_number = stream_endpoint->sequence_number;
     uint32_t timestamp = btstack_run_loop_get_time_ms();
     uint32_t ssrc = 0x11223344;
 
     // rtp header (min size 12B)
     int pos = 0;
-    int mtu = l2cap_get_remote_mtu_for_local_cid(stream_endpoint->l2cap_media_cid);
+    // int mtu = l2cap_get_remote_mtu_for_local_cid(stream_endpoint->l2cap_media_cid);
 
-    uint8_t media_packet[mtu];
     media_packet[pos++] = (rtp_version << 6) | (padding << 5) | (extension << 4) | csrc_count;
     media_packet[pos++] = (marker << 1) | payload_type; 
     big_endian_store_16(media_packet, pos, sequence_number);
@@ -659,11 +639,10 @@ static void send_media_packet_now(avdtp_stream_endpoint_t * stream_endpoint){
         // printf("send sbc frame: timestamp %d, seq. nr %d\n", timestamp, stream_endpoint->sequence_number);
     }
     media_packet[sbc_header_index] =  (fragmentation << 7) | (starting_packet << 6) | (last_packet << 5) | num_frames;
-    stream_endpoint->sequence_number++;
-    l2cap_send(stream_endpoint->l2cap_media_cid, media_packet, pos);
+    l2cap_send(l2cap_media_cid, media_packet, pos);
+
     if (btstack_ring_buffer_bytes_available(&streaming_context.sbc_ring_buffer)){
-        stream_endpoint->state = AVDTP_STREAM_ENDPOINT_STREAMING_W2_SEND;
-        l2cap_request_can_send_now_event(stream_endpoint->l2cap_media_cid);
+        avdtp_source_request_can_send_now(media_con_handle);
     }
 }
 
@@ -717,11 +696,11 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
             break;
         case 'x':
             printf("start streaming sine\n");
-            avdtp_source_stream_data_start(local_stream_endpoint);
+            avdtp_source_stream_data_start();
             break;
         case 'X':
             printf("stop streaming sine\n");
-            avdtp_source_stream_data_stop(local_stream_endpoint);
+            avdtp_source_stream_data_stop();
             break;
             
         case '\n':

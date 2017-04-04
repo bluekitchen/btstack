@@ -262,3 +262,22 @@ void avdtp_source_init(void){
 
     l2cap_register_service(&packet_handler, BLUETOOTH_PROTOCOL_AVDTP, 0xffff, LEVEL_0);
 }
+
+int avdtp_source_streaming_endpoint_ready(uint16_t con_handle){
+    avdtp_stream_endpoint_t * stream_endpoint = avdtp_stream_endpoint_for_l2cap_cid(con_handle, &avdtp_source_context);
+    if (!stream_endpoint) {
+        printf("no stream_endpoint found for 0x%02x", con_handle);
+        return 0;
+    }
+    return (stream_endpoint->state == AVDTP_STREAM_ENDPOINT_STREAMING);
+}
+
+void avdtp_source_request_can_send_now(uint16_t con_handle){
+    avdtp_stream_endpoint_t * stream_endpoint = avdtp_stream_endpoint_for_l2cap_cid(con_handle, &avdtp_source_context);
+    if (!stream_endpoint) {
+        printf("no stream_endpoint found for 0x%02x", con_handle);
+        return;
+    }
+    stream_endpoint->state = AVDTP_STREAM_ENDPOINT_STREAMING_W2_SEND;
+    avdtp_request_can_send_now_self(stream_endpoint->connection, stream_endpoint->l2cap_media_cid);
+}

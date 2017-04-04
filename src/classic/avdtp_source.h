@@ -165,6 +165,8 @@ void avdtp_source_stop_stream(uint16_t con_handle, uint8_t acp_seid);
 
 avdtp_stream_endpoint_t * avdtp_source_create_stream_endpoint(avdtp_sep_type_t sep_type, avdtp_media_type_t media_type);
 
+int avdtp_source_streaming_endpoint_ready(uint16_t con_handle);
+void avdtp_source_request_can_send_now(uint16_t con_handle);
 /* API_END */
 
 #if defined __cplusplus

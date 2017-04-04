@@ -425,7 +425,8 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
                         if (!stream_endpoint->connection) break;
                         if (stream_endpoint->state == AVDTP_STREAM_ENDPOINT_STREAMING_W2_SEND){
                             stream_endpoint->state = AVDTP_STREAM_ENDPOINT_STREAMING;
-                            avdtp_streaming_emit_can_send_media_packet_now(context->avdtp_callback, stream_endpoint->l2cap_media_cid, stream_endpoint->sep.seid);
+                            stream_endpoint->sequence_number++;
+                            avdtp_streaming_emit_can_send_media_packet_now(context->avdtp_callback, stream_endpoint->l2cap_media_cid, stream_endpoint->sep.seid, stream_endpoint->sequence_number);
                         }
                         connection = stream_endpoint->connection;
                     }

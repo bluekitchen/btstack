@@ -1353,10 +1353,11 @@ typedef uint8_t sm_key_t[16];
 #define AVDTP_SUBEVENT_STREAMING_CONNECTION_RELEASED        0x0C
 
 /**
- * @format 1H1
+ * @format 1H12
  * @param subevent_code
  * @param con_handle
  * @param seid
+ * @param sequence_number
  */
 #define AVDTP_SUBEVENT_STREAMING_CAN_SEND_MEDIA_PACKET_NOW   0x0D
 
