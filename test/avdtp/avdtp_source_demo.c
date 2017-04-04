@@ -480,6 +480,8 @@ typedef struct {
 // to app
     uint32_t fill_audio_ring_buffer_timeout_ms;
     btstack_ring_buffer_t audio_ring_buffer;
+    uint32_t time_audio_data_sent; // ms
+    uint32_t acc_num_missed_samples;
 } avdtp_stream_endpoint_context_t;
 
 static paTestData sin_data;
@@ -556,19 +558,19 @@ static void avdtp_fill_audio_ring_buffer_timeout_handler(btstack_timer_source_t 
     uint32_t now = btstack_run_loop_get_time_ms();
 
     uint32_t update_period_ms = streaming_context.fill_audio_ring_buffer_timeout_ms;
-    if (stream_endpoint->time_audio_data_sent > 0){
-        update_period_ms = now - stream_endpoint->time_audio_data_sent;
+    if (streaming_context.time_audio_data_sent > 0){
+        update_period_ms = now - streaming_context.time_audio_data_sent;
     } 
     uint32_t num_samples = (update_period_ms * 44100) / 1000;
-    stream_endpoint->acc_num_missed_samples += (update_period_ms * 44100) % 1000;
+    streaming_context.acc_num_missed_samples += (update_period_ms * 44100) % 1000;
 
-    if (stream_endpoint->acc_num_missed_samples >= 1000){
+    if (streaming_context.acc_num_missed_samples >= 1000){
         num_samples++;
-        stream_endpoint->acc_num_missed_samples -= 1000;
+        streaming_context.acc_num_missed_samples -= 1000;
     }
 
     fill_audio_ring_buffer(&sin_data, num_samples);
-    stream_endpoint->time_audio_data_sent = now;
+    streaming_context.time_audio_data_sent = now;
 
     avdtp_source_stream_endpoint_run(stream_endpoint);
     // 
