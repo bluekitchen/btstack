@@ -451,7 +451,6 @@ typedef struct avdtp_stream_endpoint {
     uint16_t sequence_number;
 
     // to app
-    btstack_timer_source_t fill_audio_ring_buffer_timer;
     btstack_sbc_encoder_state_t sbc_encoder_state;
     btstack_ring_buffer_t sbc_ring_buffer;
 } avdtp_stream_endpoint_t;
