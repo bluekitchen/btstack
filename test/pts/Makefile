@@ -8,8 +8,8 @@ CORE += \
 	btstack_memory_pool.c       \
 	btstack_run_loop.c		    \
 	btstack_util.c 	            \
-	main.c 	\
-	stdin_support.c \
+	main.c 						\
+	stdin_support.c 			\
 	
 COMMON += \
 	hci.c			            \
@@ -17,16 +17,33 @@ COMMON += \
 	hci_dump.c		            \
 	l2cap.c			            \
 	l2cap_signaling.c	        \
-	hci_transport_h2_libusb.c \
-	btstack_run_loop_posix.c \
-	btstack_link_key_db_fs.c \
-	le_device_db_fs.c \
-	wav_util.c \
+	hci_transport_h2_libusb.c 	\
+	btstack_run_loop_posix.c 	\
+	btstack_link_key_db_fs.c 	\
+	le_device_db_fs.c 			\
+	wav_util.c 					\
 	sdp_util.c	                \
-	sdp_server.c			            \
+	sdp_server.c		        \
 
+SBC_DECODER += \
+	${BTSTACK_ROOT}/src/classic/btstack_sbc_plc.c \
+	${BTSTACK_ROOT}/src/classic/btstack_sbc_bludroid.c \
+
+SBC_ENCODER += \
+	${BTSTACK_ROOT}/src/classic/btstack_sbc_bludroid.c \
+	${BTSTACK_ROOT}/src/classic/hfp_msbc.c \
+
+AVDTP += \
+	avdtp_util.c  			\
+	avdtp.c  				\
+	avdtp_initiator.c 		\
+	avdtp_acceptor.c  		\
+	avdtp_source.c 			\
+	btstack_ring_buffer.c 	\
 
 include ${BTSTACK_ROOT}/example/Makefile.inc
+include ${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/Makefile.inc
+include ${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/Makefile.inc
 
 CFLAGS += -g -Wall -Wmissing-prototypes -Wstrict-prototypes -Wshadow -Wunused-variable -Wunused-parameter -Werror 
 CFLAGS += -I.
@@ -54,26 +71,11 @@ LDFLAGS += $(shell pkg-config libusb-1.0 --libs)
 CFLAGS  += $(shell pkg-config portaudio-2.0 --cflags) -DHAVE_PORTAUDIO 
 LDFLAGS += $(shell pkg-config portaudio-2.0 --libs)
 
-include ${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/Makefile.inc
-include ${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/Makefile.inc
-
-
-SBC_DECODER += \
-	${BTSTACK_ROOT}/src/classic/btstack_sbc_plc.c \
-	${BTSTACK_ROOT}/src/classic/btstack_sbc_bludroid.c \
-
-SBC_ENCODER += \
-	${BTSTACK_ROOT}/src/classic/btstack_sbc_bludroid.c \
-	${BTSTACK_ROOT}/src/classic/hfp_msbc.c \
-
-AVDTP_SINK += \
-	avdtp_util.c  		\
-	avdtp.c  			\
-	avdtp_initiator.c 	\
-	avdtp_acceptor.c  	\
-	avdtp_source.c 		\
-	avdtp_sink.c  		\
-	btstack_ring_buffer.c \
+CORE_OBJ    = $(CORE:.c=.o)
+COMMON_OBJ  = $(COMMON:.c=.o) 
+SBC_DECODER_OBJ  = $(SBC_DECODER:.c=.o) 
+SBC_ENCODER_OBJ  = $(SBC_ENCODER:.c=.o)
+AVDTP_OBJ  = $(AVDTP:.c=.o)
 
 EXAMPLES = iopt ble_peripheral_test ble_central_test l2cap_test classic_test bnep_test hsp_ag_test hsp_hs_test sco_loopback le_data_channel
 EXAMPLES = avdtp_source_test le_data_channel 
@@ -81,11 +83,12 @@ EXAMPLES = avdtp_source_test le_data_channel
 all: ${EXAMPLES}
 
 # compile .gatt descriptions
-avdtp_source_test: ${CORE_OBJ} ${COMMON_OBJ} ${SBC_DECODER_OBJ} ${SBC_ENCODER_OBJ} ${AVDTP_SINK_OBJ} avdtp_source_test.o
+avdtp_source_test: ${CORE_OBJ} ${COMMON_OBJ} ${SBC_DECODER_OBJ} ${SM_OBJ} ${SBC_ENCODER_OBJ} ${AVDTP_OBJ} avdtp_source_test.o
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 ble_peripheral_test.h: ble_peripheral_test.gatt
 	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
+
 ble_central_test.h: ble_central_test.gatt
 	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
 	
