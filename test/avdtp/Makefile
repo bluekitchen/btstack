@@ -62,7 +62,7 @@ SBC_ENCODER += \
 	${BTSTACK_ROOT}/src/classic/btstack_sbc_bludroid.c \
 	${BTSTACK_ROOT}/src/classic/hfp_msbc.c \
 
-AVDTP_SINK += \
+AVDTP += \
 	avdtp_util.c  		\
 	avdtp.c  			\
 	avdtp_initiator.c 	\
@@ -77,27 +77,27 @@ CORE_OBJ    = $(CORE:.c=.o)
 COMMON_OBJ  = $(COMMON:.c=.o) 
 SBC_DECODER_OBJ  = $(SBC_DECODER:.c=.o) 
 SBC_ENCODER_OBJ  = $(SBC_ENCODER:.c=.o)
-AVDTP_SINK_OBJ  = $(AVDTP_SINK:.c=.o)
+AVDTP_OBJ  = $(AVDTP:.c=.o)
 
 all: ${AVDTP_TESTS}
 
-avdtp_sink_test: ${CORE_OBJ} ${COMMON_OBJ} ${SBC_DECODER_OBJ} ${SBC_ENCODER_OBJ} ${AVDTP_SINK_OBJ} avdtp_sink_test.o
+avdtp_sink_test: ${CORE_OBJ} ${COMMON_OBJ} ${SBC_DECODER_OBJ} ${SBC_ENCODER_OBJ} ${AVDTP_OBJ} avdtp_sink_test.o
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-avdtp_source_demo: ${CORE_OBJ} ${COMMON_OBJ} ${SBC_DECODER_OBJ} ${SBC_ENCODER_OBJ} ${AVDTP_SINK_OBJ} avdtp_source_demo.o
+avdtp_source_demo: ${CORE_OBJ} ${COMMON_OBJ} ${SBC_DECODER_OBJ} ${SBC_ENCODER_OBJ} ${AVDTP_OBJ} avdtp_source_demo.o
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 portaudio_test: btstack_util.o hci_dump.o wav_util.o btstack_ring_buffer.o portaudio_test.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 
-sine_encode_decode_test: ${CORE_OBJ} ${COMMON_OBJ} ${SBC_DECODER_OBJ} ${SBC_ENCODER_OBJ} ${AVDTP_SINK_OBJ} sine_encode_decode_test.c
+sine_encode_decode_test: ${CORE_OBJ} ${COMMON_OBJ} ${SBC_DECODER_OBJ} ${SBC_ENCODER_OBJ} ${AVDTP_OBJ} sine_encode_decode_test.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-sine_encode_decode_ring_buffer_test: ${CORE_OBJ} ${COMMON_OBJ} ${SBC_DECODER_OBJ} ${SBC_ENCODER_OBJ} ${AVDTP_SINK_OBJ} sine_encode_decode_ring_buffer_test.c
+sine_encode_decode_ring_buffer_test: ${CORE_OBJ} ${COMMON_OBJ} ${SBC_DECODER_OBJ} ${SBC_ENCODER_OBJ} ${AVDTP_OBJ} sine_encode_decode_ring_buffer_test.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-sine_encode_decode_performance_test: ${CORE_OBJ} ${COMMON_OBJ} ${SBC_DECODER_OBJ} ${SBC_ENCODER_OBJ} ${AVDTP_SINK_OBJ} sine_encode_decode_performance_test.c
+sine_encode_decode_performance_test: ${CORE_OBJ} ${COMMON_OBJ} ${SBC_DECODER_OBJ} ${SBC_ENCODER_OBJ} ${AVDTP_OBJ} sine_encode_decode_performance_test.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 	

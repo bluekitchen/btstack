@@ -495,9 +495,6 @@ void avdtp_set_configuration(uint16_t con_handle, uint8_t int_seid, uint8_t acp_
 void avdtp_reconfigure(uint16_t con_handle, uint8_t acp_seid, uint16_t configured_services_bitmap, avdtp_capabilities_t configuration, avdtp_context_t * context);
 void avdtp_suspend(uint16_t con_handle, uint8_t acp_seid, avdtp_context_t * context);
 
-void avdtp_source_stream_data_start(uint16_t con_handle);
-void avdtp_source_stream_data_stop(uint16_t con_handle);
-
 #if defined __cplusplus
 }
 #endif

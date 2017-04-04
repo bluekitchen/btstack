@@ -452,6 +452,32 @@ static  uint8_t media_sbc_codec_capabilities[] = {
 //     2, 53
 // }; 
 
+static void avdtp_source_stream_data_start(avdtp_stream_endpoint_t * stream_endpoint){
+    if (!stream_endpoint) {
+        printf("no stream_endpoint found for 0x%02x", con_handle);
+        return;
+    }
+    if (stream_endpoint->state != AVDTP_STREAM_ENDPOINT_STREAMING){
+        printf("stream_endpoint in wrong state %d\n", stream_endpoint->state);
+        return;
+    } 
+    avdtp_fill_audio_ring_buffer_timer_start(stream_endpoint);
+}
+
+static void avdtp_source_stream_data_stop(avdtp_stream_endpoint_t * stream_endpoint){
+    if (!stream_endpoint) {
+        log_error("no stream_endpoint found");
+        return;
+    }
+    if (stream_endpoint->state != AVDTP_STREAM_ENDPOINT_STREAMING) {
+        printf("stream_endpoint in wrong state %d\n", stream_endpoint->state);
+        return;
+    } 
+    // TODO: initialize randomly sequence number
+    stream_endpoint->sequence_number = 0;
+    avdtp_fill_audio_ring_buffer_timer_stop(stream_endpoint);
+}
+
 static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type){
     UNUSED(ds);
     UNUSED(callback_type);
@@ -502,11 +528,11 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
             break;
         case 'x':
             printf("start streaming sine\n");
-            avdtp_source_stream_data_start(media_con_handle);
+            avdtp_source_stream_data_start(local_stream_endpoint);
             break;
         case 'X':
             printf("stop streaming sine\n");
-            avdtp_source_stream_data_stop(media_con_handle);
+            avdtp_source_stream_data_stop(local_stream_endpoint);
             break;
             
         case '\n':
@@ -546,7 +572,7 @@ int btstack_main(int argc, const char * argv[]){
     // Initialize SDP 
     sdp_init();
     memset(sdp_avdtp_source_service_buffer, 0, sizeof(sdp_avdtp_source_service_buffer));
-    a2dp_sink_create_sdp_record(sdp_avdtp_source_service_buffer, 0x10002, 1, NULL, NULL);
+    a2dp_source_create_sdp_record(sdp_avdtp_source_service_buffer, 0x10002, 1, NULL, NULL);
     sdp_register_service(sdp_avdtp_source_service_buffer);
     
     gap_set_local_name(device_name);

@@ -365,7 +365,7 @@ static void test_fill_audio_ring_buffer_timeout_handler(btstack_timer_source_t *
     // 
 }
 
-static void test_fill_audio_ring_buffer_timer_start(avdtp_stream_endpoint_t * stream_endpoint){
+void avdtp_fill_audio_ring_buffer_timer_start(avdtp_stream_endpoint_t * stream_endpoint){
     btstack_run_loop_remove_timer(&stream_endpoint->fill_audio_ring_buffer_timer);
     btstack_run_loop_set_timer_handler(&stream_endpoint->fill_audio_ring_buffer_timer, test_fill_audio_ring_buffer_timeout_handler);
     btstack_run_loop_set_timer_context(&stream_endpoint->fill_audio_ring_buffer_timer, stream_endpoint);
@@ -373,38 +373,9 @@ static void test_fill_audio_ring_buffer_timer_start(avdtp_stream_endpoint_t * st
     btstack_run_loop_add_timer(&stream_endpoint->fill_audio_ring_buffer_timer);
 }
 
-static void test_fill_audio_ring_buffer_timer_stop(avdtp_stream_endpoint_t * stream_endpoint){
+void avdtp_fill_audio_ring_buffer_timer_stop(avdtp_stream_endpoint_t * stream_endpoint){
     btstack_run_loop_remove_timer(&stream_endpoint->fill_audio_ring_buffer_timer);
 } 
-
-void avdtp_source_stream_data_start(uint16_t con_handle){
-    avdtp_stream_endpoint_t * stream_endpoint = avdtp_stream_endpoint_for_l2cap_cid(con_handle, &avdtp_source_context);
-    if (!stream_endpoint) {
-        printf("no stream_endpoint found for 0x%02x", con_handle);
-        return;
-    }
-    if (stream_endpoint->state != AVDTP_STREAM_ENDPOINT_STREAMING){
-        printf("stream_endpoint in wrong state %d\n", stream_endpoint->state);
-        return;
-    } 
-
-    test_fill_audio_ring_buffer_timer_start(stream_endpoint);
-}
-
-void avdtp_source_stream_data_stop(uint16_t con_handle){
-    avdtp_stream_endpoint_t * stream_endpoint = avdtp_stream_endpoint_for_l2cap_cid(con_handle, &avdtp_source_context);
-    if (!stream_endpoint) {
-        log_error("no stream_endpoint found");
-        return;
-    }
-    if (stream_endpoint->state != AVDTP_STREAM_ENDPOINT_STREAMING) {
-        printf("stream_endpoint in wrong state %d\n", stream_endpoint->state);
-        return;
-    } 
-    // TODO: initialize randomly sequence number
-    stream_endpoint->sequence_number = 0;
-    test_fill_audio_ring_buffer_timer_stop(stream_endpoint);
-}
 
 void avdtp_source_init(void){
     avdtp_source_context.stream_endpoints = NULL;
