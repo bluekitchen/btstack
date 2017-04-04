@@ -1,20 +1,51 @@
 # Makefile for libusb based PTS tests
 BTSTACK_ROOT = ../..
 
-CORE += main.c stdin_support.c
+CORE += \
+	btstack_memory.c            \
+	btstack_linked_list.c	    \
+	btstack_memory_pool.c       \
+	btstack_run_loop.c		    \
+	btstack_util.c 	            \
+	main.c 	\
+	stdin_support.c \
+	
 
-COMMON += hci_transport_h2_libusb.c btstack_run_loop_posix.c btstack_link_key_db_fs.c le_device_db_fs.c
+COMMON += \
+	hci.c			            \
+	hci_cmd.c		            \
+	hci_dump.c		            \
+	l2cap.c			            \
+	l2cap_signaling.c	        \
+	hci_transport_h2_libusb.c \
+	btstack_run_loop_posix.c \
+	btstack_link_key_db_fs.c \
+	le_device_db_fs.c \
+	wav_util.c \
+	sdp_util.c	                \
+	sdp_server.c			            \
+
 
 include ${BTSTACK_ROOT}/example/Makefile.inc
 
-CFLAGS += -g -Wall -Wmissing-prototypes -Wstrict-prototypes -Wshadow -Werror \
-          -I${BTSTACK_ROOT}/platform/posix \
-          -I${BTSTACK_ROOT}/platform/embedded \
-	      -I${BTSTACK_ROOT}/port/libusb \
-	      -D ENABLE_LE_DATA_CHANNELS
+CFLAGS += -g -Wall -Wmissing-prototypes -Wstrict-prototypes -Wshadow -Wunused-variable -Wunused-parameter -Werror 
+CFLAGS += -I.
+CFLAGS += -I${BTSTACK_ROOT}/src
+CFLAGS += -I${BTSTACK_ROOT}/src/classic
+CFLAGS += -I${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/include -D OI_DEBUG
+CFLAGS += -I${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/include
+CFLAGS += -I${BTSTACK_ROOT}/platform/posix 
+CFLAGS += -I${BTSTACK_ROOT}/platform/embedded 
+CFLAGS += -I${BTSTACK_ROOT}/port/libusb 
+CFLAGS += -D ENABLE_LE_DATA_CHANNELS
 
+VPATH += ${BTSTACK_ROOT}/src
+VPATH += ${BTSTACK_ROOT}/src/classic
 VPATH += ${BTSTACK_ROOT}/platform/posix
+VPATH += ${BTSTACK_ROOT}/platform/libusb
 VPATH += ${BTSTACK_ROOT}/port/libusb
+# VPATH += ${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/srce 
+# VPATH += ${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/srce 
 
 # use pkg-config for libusb
 CFLAGS  += $(shell pkg-config libusb-1.0 --cflags)
