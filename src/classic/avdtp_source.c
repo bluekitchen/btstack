@@ -254,56 +254,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
     avdtp_packet_handler(packet_type, channel, packet, size, &avdtp_source_context);      
 }
 
-
-/* streaming part */
-#define NUM_CHANNELS        2
-#define SAMPLE_RATE         44100
-#define BYTES_PER_AUDIO_SAMPLE   (2*NUM_CHANNELS)
-#define LATENCY             300 // ms
-
-static void fill_sbc_ring_buffer(uint8_t * sbc_frame, int sbc_frame_size, avdtp_stream_endpoint_t * stream_endpoint){
-    if (btstack_ring_buffer_bytes_free(&stream_endpoint->sbc_ring_buffer) >= sbc_frame_size ){
-        // printf("    fill_sbc_ring_buffer\n");
-        uint8_t size_buffer = sbc_frame_size;
-        btstack_ring_buffer_write(&stream_endpoint->sbc_ring_buffer, &size_buffer, 1);
-        btstack_ring_buffer_write(&stream_endpoint->sbc_ring_buffer, sbc_frame, sbc_frame_size);
-    } else {
-        printf("No space in sbc buffer\n");
-    }
-}
-
-
-void avdtp_source_stream_endpoint_run2(avdtp_stream_endpoint_t * stream_endpoint){
-    // performe sbc encoding
-    int total_num_bytes_read = 0;
-    int num_audio_samples_to_read = btstack_sbc_encoder_num_audio_frames();
-    int audio_bytes_to_read = num_audio_samples_to_read * BYTES_PER_AUDIO_SAMPLE; 
-
-    // printf("run: audio_bytes_to_read:        %d\n", audio_bytes_to_read);
-    // printf("     audio buf, bytes available: %d\n", btstack_ring_buffer_bytes_available(&stream_endpoint->audio_ring_buffer));
-    // printf("     sbc buf,   bytes free:      %d\n", btstack_ring_buffer_bytes_free(&stream_endpoint->sbc_ring_buffer));
-
-    while (btstack_ring_buffer_bytes_available(&stream_endpoint->audio_ring_buffer) >= audio_bytes_to_read
-        && btstack_ring_buffer_bytes_free(&stream_endpoint->sbc_ring_buffer) >= 120){ // TODO use real value
-        
-        uint32_t number_of_bytes_read = 0;
-        uint8_t pcm_frame[256*BYTES_PER_AUDIO_SAMPLE];
-        btstack_ring_buffer_read(&stream_endpoint->audio_ring_buffer, pcm_frame, audio_bytes_to_read, &number_of_bytes_read); 
-        // printf("     num audio bytes read %d\n", number_of_bytes_read);
-        btstack_sbc_encoder_process_data((int16_t *) pcm_frame);
-        
-        uint16_t sbc_frame_bytes = 119; //btstack_sbc_encoder_sbc_buffer_length();
-
-        total_num_bytes_read += number_of_bytes_read;
-        fill_sbc_ring_buffer(btstack_sbc_encoder_sbc_buffer(), sbc_frame_bytes, stream_endpoint);
-    }
-    // schedule sending
-    if (total_num_bytes_read != 0){
-        stream_endpoint->state = AVDTP_STREAM_ENDPOINT_STREAMING_W2_SEND;
-        avdtp_request_can_send_now_self(stream_endpoint->connection, stream_endpoint->l2cap_media_cid);
-    }
-}
-
 void avdtp_set_fill_audio_ring_buffer_timeout_ms(avdtp_stream_endpoint_t * stream_endpoint, uint32_t timeout_ms){
     if (!stream_endpoint){
         printf("avdtp_set_fill_audio_ring_buffer_timeout_ms: stream_endpoint does not exist\n");
