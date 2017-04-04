@@ -112,7 +112,7 @@ static const char * avdtp_si_name[] = {
     "AVDTP_SI_GET_CAPABILITIES",
     "AVDTP_SI_SET_CONFIGURATION",
     "AVDTP_SI_GET_CONFIGURATION",
-    "AVDTP_SI_RECONFIGURE," 
+    "AVDTP_SI_RECONFIGURE", 
     "AVDTP_SI_OPEN", 
     "AVDTP_SI_START", 
     "AVDTP_SI_CLOSE",

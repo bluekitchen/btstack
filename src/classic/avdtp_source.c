@@ -397,7 +397,10 @@ void avdtp_source_stream_data_stop(uint16_t con_handle){
         log_error("no stream_endpoint found");
         return;
     }
-    if (stream_endpoint->state != AVDTP_STREAM_ENDPOINT_STREAMING) return;
+    if (stream_endpoint->state != AVDTP_STREAM_ENDPOINT_STREAMING) {
+        printf("stream_endpoint in wrong state %d\n", stream_endpoint->state);
+        return;
+    } 
     // TODO: initialize randomly sequence number
     stream_endpoint->sequence_number = 0;
     test_fill_audio_ring_buffer_timer_stop(stream_endpoint);
