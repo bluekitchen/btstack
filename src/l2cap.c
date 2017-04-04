@@ -1595,6 +1595,7 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
     uint16_t new_credits;
     uint16_t credits_before;
     l2cap_service_t * service;
+    uint16_t source_cid;
 #endif
 
     uint8_t code   = command[L2CAP_SIGNALING_COMMAND_CODE_OFFSET];
@@ -1689,10 +1690,9 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
             // check if service registered
             le_psm  = little_endian_read_16(command, 4);
             service = l2cap_le_get_service(le_psm);
-
+            source_cid = little_endian_read_16(command, 6);
+                
             if (service){
-
-                uint16_t source_cid = little_endian_read_16(command, 6);
                 if (source_cid < 0x40){
                     // 0x0009 Connection refused - Invalid Source CID
                     l2cap_register_signaling_response(handle, LE_CREDIT_BASED_CONNECTION_REQUEST, sig_id, source_cid, 0x0009);
