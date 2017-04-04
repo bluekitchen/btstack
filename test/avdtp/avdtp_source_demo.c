@@ -153,6 +153,8 @@ avdtp_application_state_t app_state = AVDTP_APPLICATION_IDLE;
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
+static void send_media_packet_now(avdtp_stream_endpoint_t * stream_endpoint);
+
 static const char * avdtp_si2str(uint16_t index){
     if (index <= 0 || index > sizeof(avdtp_si_name)) return avdtp_si_name[0];
     return avdtp_si_name[index];
@@ -400,6 +402,9 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             signal_identifier = avdtp_subevent_signaling_general_reject_get_signal_identifier(packet);
                             printf(" --- avdtp source ---  Rejected %s\n", avdtp_si2str(signal_identifier));
                             break;
+                        case AVDTP_SUBEVENT_STREAMING_CAN_SEND_MEDIA_PACKET_NOW:
+                            send_media_packet_now(local_stream_endpoint);
+                            break;
                         default:
                             app_state = AVDTP_APPLICATION_IDLE;
                             printf(" --- avdtp source ---  not implemented\n");
@@ -607,6 +612,63 @@ static void avdtp_source_stream_data_stop(avdtp_stream_endpoint_t * stream_endpo
             printf("stream_endpoint in wrong state %d\n", stream_endpoint->state);
             return;
     } 
+}
+
+static void send_media_packet_now(avdtp_stream_endpoint_t * stream_endpoint){
+
+    //send sbc
+    uint8_t  rtp_version = 2;
+    uint8_t  padding = 0;
+    uint8_t  extension = 0;
+    uint8_t  csrc_count = 0;
+    uint8_t  marker = 0;
+    uint8_t  payload_type = 0x60;
+    uint16_t sequence_number = stream_endpoint->sequence_number;
+    uint32_t timestamp = btstack_run_loop_get_time_ms();
+    uint32_t ssrc = 0x11223344;
+
+    // rtp header (min size 12B)
+    int pos = 0;
+    int mtu = l2cap_get_remote_mtu_for_local_cid(stream_endpoint->l2cap_media_cid);
+
+    uint8_t media_packet[mtu];
+    media_packet[pos++] = (rtp_version << 6) | (padding << 5) | (extension << 4) | csrc_count;
+    media_packet[pos++] = (marker << 1) | payload_type; 
+    big_endian_store_16(media_packet, pos, sequence_number);
+    pos += 2;
+    big_endian_store_32(media_packet, pos, timestamp);
+    pos += 4;
+    big_endian_store_32(media_packet, pos, ssrc); // only used for multicast
+    pos += 4;
+
+    // media payload
+    // sbc_header (size 1B)
+    uint8_t sbc_header_index = pos;
+    pos++;
+    uint8_t fragmentation = 0;
+    uint8_t starting_packet = 0; // set to 1 for the first packet of a fragmented SBC frame
+    uint8_t last_packet = 0;     // set to 1 for the last packet of a fragmented SBC frame
+    uint8_t num_frames = 0;
+    
+    uint32_t total_sbc_bytes_read = 0;
+    uint8_t  sbc_frame_size = 0;
+    // payload
+    while (mtu - 13 - total_sbc_bytes_read >= 120 && btstack_ring_buffer_bytes_available(&stream_endpoint->sbc_ring_buffer)){
+        uint32_t number_of_bytes_read = 0;
+        btstack_ring_buffer_read(&stream_endpoint->sbc_ring_buffer, &sbc_frame_size, 1, &number_of_bytes_read);
+        btstack_ring_buffer_read(&stream_endpoint->sbc_ring_buffer, media_packet + pos, sbc_frame_size, &number_of_bytes_read); 
+        pos += sbc_frame_size;
+        total_sbc_bytes_read += sbc_frame_size;
+        num_frames++;
+        // printf("send sbc frame: timestamp %d, seq. nr %d\n", timestamp, stream_endpoint->sequence_number);
+    }
+    media_packet[sbc_header_index] =  (fragmentation << 7) | (starting_packet << 6) | (last_packet << 5) | num_frames;
+    stream_endpoint->sequence_number++;
+    l2cap_send(stream_endpoint->l2cap_media_cid, media_packet, pos);
+    if (btstack_ring_buffer_bytes_available(&stream_endpoint->sbc_ring_buffer)){
+        stream_endpoint->state = AVDTP_STREAM_ENDPOINT_STREAMING_W2_SEND;
+        l2cap_request_can_send_now_event(stream_endpoint->l2cap_media_cid);
+    }
 }
 
 static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type){

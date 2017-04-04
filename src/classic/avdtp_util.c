@@ -525,6 +525,19 @@ void avdtp_signaling_emit_connection_established(btstack_packet_handler_t callba
     (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
+void avdtp_streaming_emit_can_send_media_packet_now(btstack_packet_handler_t callback, uint16_t con_handle, uint8_t seid){
+    if (!callback) return;
+    uint8_t event[6];
+    int pos = 0;
+    event[pos++] = HCI_EVENT_AVDTP_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = AVDTP_SUBEVENT_STREAMING_CAN_SEND_MEDIA_PACKET_NOW;
+    little_endian_store_16(event, pos, con_handle);
+    pos += 2;
+    event[pos++] = seid;
+    (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
 void avdtp_streaming_emit_connection_established(btstack_packet_handler_t callback, uint16_t con_handle, uint8_t status){
     if (!callback) return;
     uint8_t event[6];

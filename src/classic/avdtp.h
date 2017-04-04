@@ -448,13 +448,13 @@ typedef struct avdtp_stream_endpoint {
     // register request for media L2cap connection release
     uint8_t media_disconnect;
     uint8_t media_connect;
+    uint16_t sequence_number;
 
+    // to app
     btstack_timer_source_t fill_audio_ring_buffer_timer;
     uint32_t time_audio_data_sent; // ms
     uint32_t acc_num_missed_samples;
     btstack_sbc_encoder_state_t sbc_encoder_state;
-    uint16_t sequence_number;
-    
     btstack_ring_buffer_t sbc_ring_buffer;
 } avdtp_stream_endpoint_t;
 

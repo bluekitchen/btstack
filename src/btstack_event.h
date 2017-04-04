@@ -4334,6 +4334,25 @@ static inline hci_con_handle_t avdtp_subevent_streaming_connection_released_get_
 }
 
 /**
+ * @brief Get field con_handle from event AVDTP_SUBEVENT_STREAMING_CAN_SEND_MEDIA_PACKET_NOW
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t avdtp_subevent_streaming_can_send_media_packet_now_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field seid from event AVDTP_SUBEVENT_STREAMING_CAN_SEND_MEDIA_PACKET_NOW
+ * @param event packet
+ * @return seid
+ * @note: btstack_type 1
+ */
+static inline uint8_t avdtp_subevent_streaming_can_send_media_packet_now_get_seid(const uint8_t * event){
+    return event[5];
+}
+
+/**
  * @brief Get field con_handle from event AVRCP_SUBEVENT_CONNECTION_ESTABLISHED
  * @param event packet
  * @return con_handle
