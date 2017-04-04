@@ -607,7 +607,6 @@ static void avdtp_source_stream_data_stop(avdtp_stream_endpoint_t * stream_endpo
             printf("stream_endpoint in wrong state %d\n", stream_endpoint->state);
             return;
     } 
-
 }
 
 static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type){
@@ -711,7 +710,6 @@ int btstack_main(int argc, const char * argv[]){
     gap_discoverable_control(1);
     gap_set_class_of_device(0x200408);
     
-    avdtp_set_fill_audio_ring_buffer_timeout_ms(local_stream_endpoint, 50);
     memset(audio_samples_storage, 0, sizeof(audio_samples_storage));
     memset(sbc_samples_storage, 0, sizeof(sbc_samples_storage));
     

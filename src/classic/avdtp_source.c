@@ -254,14 +254,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
     avdtp_packet_handler(packet_type, channel, packet, size, &avdtp_source_context);      
 }
 
-void avdtp_set_fill_audio_ring_buffer_timeout_ms(avdtp_stream_endpoint_t * stream_endpoint, uint32_t timeout_ms){
-    if (!stream_endpoint){
-        printf("avdtp_set_fill_audio_ring_buffer_timeout_ms: stream_endpoint does not exist\n");
-        return;
-    }
-    stream_endpoint->fill_audio_ring_buffer_timeout_ms = timeout_ms;
-}
-
 void avdtp_source_init(void){
     avdtp_source_context.stream_endpoints = NULL;
     avdtp_source_context.connections = NULL;

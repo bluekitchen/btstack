@@ -165,8 +165,6 @@ void avdtp_source_stop_stream(uint16_t con_handle, uint8_t acp_seid);
 
 avdtp_stream_endpoint_t * avdtp_source_create_stream_endpoint(avdtp_sep_type_t sep_type, avdtp_media_type_t media_type);
 
-void avdtp_set_fill_audio_ring_buffer_timeout_ms(avdtp_stream_endpoint_t * stream_endpoint, uint32_t timeout_ms);
-
 /* API_END */
 
 #if defined __cplusplus
