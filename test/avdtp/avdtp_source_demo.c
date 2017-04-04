@@ -452,6 +452,20 @@ static  uint8_t media_sbc_codec_capabilities[] = {
 //     2, 53
 // }; 
 
+static uint32_t fill_audio_ring_buffer_timeout_ms = 50; //ms
+
+static void avdtp_fill_audio_ring_buffer_timer_start(avdtp_stream_endpoint_t * stream_endpoint){
+    btstack_run_loop_remove_timer(&stream_endpoint->fill_audio_ring_buffer_timer);
+    btstack_run_loop_set_timer_handler(&stream_endpoint->fill_audio_ring_buffer_timer, avdtp_fill_audio_ring_buffer_timeout_handler);
+    btstack_run_loop_set_timer_context(&stream_endpoint->fill_audio_ring_buffer_timer, stream_endpoint);
+    btstack_run_loop_set_timer(&stream_endpoint->fill_audio_ring_buffer_timer, fill_audio_ring_buffer_timeout_ms); // 50 ms timeout
+    btstack_run_loop_add_timer(&stream_endpoint->fill_audio_ring_buffer_timer);
+}
+
+static void avdtp_fill_audio_ring_buffer_timer_stop(avdtp_stream_endpoint_t * stream_endpoint){
+    btstack_run_loop_remove_timer(&stream_endpoint->fill_audio_ring_buffer_timer);
+} 
+
 static void avdtp_source_stream_data_start(avdtp_stream_endpoint_t * stream_endpoint){
     if (!stream_endpoint) {
         printf("no stream_endpoint found for 0x%02x", con_handle);
@@ -578,6 +592,8 @@ int btstack_main(int argc, const char * argv[]){
     gap_set_local_name(device_name);
     gap_discoverable_control(1);
     gap_set_class_of_device(0x200408);
+    
+    avdtp_set_fill_audio_ring_buffer_timeout_ms(local_stream_endpoint, 50);
     
     // turn on!
     hci_power_control(HCI_POWER_ON);

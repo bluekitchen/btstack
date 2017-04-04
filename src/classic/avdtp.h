@@ -454,6 +454,7 @@ typedef struct avdtp_stream_endpoint {
     uint32_t acc_num_missed_samples;
     btstack_sbc_encoder_state_t sbc_encoder_state;
     uint16_t sequence_number;
+    uint32_t fill_audio_ring_buffer_timeout_ms;
     
     btstack_ring_buffer_t audio_ring_buffer;
     btstack_ring_buffer_t sbc_ring_buffer;

@@ -272,7 +272,6 @@ typedef struct {
     int right_phase;
 } paTestData;
 
-static uint32_t fill_audio_ring_buffer_timeout = 50; //ms
 static paTestData sin_data;
 
 static void fill_audio_ring_buffer(void *userData, int num_samples_to_write, avdtp_stream_endpoint_t * stream_endpoint){
@@ -340,13 +339,13 @@ static void avdtp_source_stream_endpoint_run(avdtp_stream_endpoint_t * stream_en
     }
 }
 
-static void test_fill_audio_ring_buffer_timeout_handler(btstack_timer_source_t * timer){
+void avdtp_fill_audio_ring_buffer_timeout_handler(btstack_timer_source_t * timer){
     avdtp_stream_endpoint_t * stream_endpoint = btstack_run_loop_get_timer_context(timer);
-    btstack_run_loop_set_timer(&stream_endpoint->fill_audio_ring_buffer_timer, fill_audio_ring_buffer_timeout); // 2 seconds timeout
+    btstack_run_loop_set_timer(&stream_endpoint->fill_audio_ring_buffer_timer, stream_endpoint->fill_audio_ring_buffer_timeout_ms); // 2 seconds timeout
     btstack_run_loop_add_timer(&stream_endpoint->fill_audio_ring_buffer_timer);
     uint32_t now = btstack_run_loop_get_time_ms();
 
-    uint32_t update_period_ms = fill_audio_ring_buffer_timeout;
+    uint32_t update_period_ms = stream_endpoint->fill_audio_ring_buffer_timeout_ms;
     if (stream_endpoint->time_audio_data_sent > 0){
         update_period_ms = now - stream_endpoint->time_audio_data_sent;
     } 
@@ -365,17 +364,13 @@ static void test_fill_audio_ring_buffer_timeout_handler(btstack_timer_source_t *
     // 
 }
 
-void avdtp_fill_audio_ring_buffer_timer_start(avdtp_stream_endpoint_t * stream_endpoint){
-    btstack_run_loop_remove_timer(&stream_endpoint->fill_audio_ring_buffer_timer);
-    btstack_run_loop_set_timer_handler(&stream_endpoint->fill_audio_ring_buffer_timer, test_fill_audio_ring_buffer_timeout_handler);
-    btstack_run_loop_set_timer_context(&stream_endpoint->fill_audio_ring_buffer_timer, stream_endpoint);
-    btstack_run_loop_set_timer(&stream_endpoint->fill_audio_ring_buffer_timer, fill_audio_ring_buffer_timeout); // 50 ms timeout
-    btstack_run_loop_add_timer(&stream_endpoint->fill_audio_ring_buffer_timer);
+void avdtp_set_fill_audio_ring_buffer_timeout_ms(avdtp_stream_endpoint_t * stream_endpoint, uint32_t timeout_ms){
+    if (!stream_endpoint){
+        printf("avdtp_set_fill_audio_ring_buffer_timeout_ms: stream_endpoint does not exist\n");
+        return;
+    }
+    stream_endpoint->fill_audio_ring_buffer_timeout_ms = timeout_ms;
 }
-
-void avdtp_fill_audio_ring_buffer_timer_stop(avdtp_stream_endpoint_t * stream_endpoint){
-    btstack_run_loop_remove_timer(&stream_endpoint->fill_audio_ring_buffer_timer);
-} 
 
 void avdtp_source_init(void){
     avdtp_source_context.stream_endpoints = NULL;
