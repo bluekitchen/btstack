@@ -449,9 +449,6 @@ typedef struct avdtp_stream_endpoint {
     uint8_t media_disconnect;
     uint8_t media_connect;
     uint16_t sequence_number;
-
-    // to app
-    btstack_sbc_encoder_state_t sbc_encoder_state;
 } avdtp_stream_endpoint_t;
 
 typedef struct {

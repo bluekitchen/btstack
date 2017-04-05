@@ -83,6 +83,7 @@ typedef struct {
     uint32_t acc_num_missed_samples;
     btstack_timer_source_t fill_audio_ring_buffer_timer;
     btstack_ring_buffer_t sbc_ring_buffer;
+    btstack_sbc_encoder_state_t sbc_encoder_state;
 } avdtp_stream_endpoint_context_t;
 
 typedef struct {
@@ -170,6 +171,7 @@ typedef enum {
     AVDTP_APPLICATION_W2_GET_CAPABILITIES,
     AVDTP_APPLICATION_W2_GET_ALL_CAPABILITIES,
     AVDTP_APPLICATION_W2_SET_CONFIGURATION,
+    AVDTP_APPLICATION_W4_GET_CONFIGURATION,
     AVDTP_APPLICATION_W4_SET_CONFIGURATION,
     AVDTP_APPLICATION_W2_SUSPEND_STREAM_WITH_SEID,
     AVDTP_APPLICATION_W2_RECONFIGURE_WITH_SEID,
@@ -359,7 +361,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             break;
                         
                         case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION:{
-                            app_state = AVDTP_APPLICATION_IDLE;
                             sbc_configuration.reconfigure = avdtp_subevent_signaling_media_codec_sbc_configuration_get_reconfigure(packet);
                             sbc_configuration.num_channels = avdtp_subevent_signaling_media_codec_sbc_configuration_get_num_channels(packet);
                             sbc_configuration.sampling_frequency = avdtp_subevent_signaling_media_codec_sbc_configuration_get_sampling_frequency(packet);
@@ -378,7 +379,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                         case AVDTP_SUBEVENT_SIGNALING_ACCEPT:
                             signal_identifier = avdtp_subevent_signaling_accept_get_signal_identifier(packet);
                             status = avdtp_subevent_signaling_accept_get_status(packet);
-                            printf(" --- avdtp source ---  Accepted %d %s\n", signal_identifier, avdtp_si2str(signal_identifier));
+                            printf(" --- avdtp source ---  Accepted %d %s, app state %d\n", signal_identifier, avdtp_si2str(signal_identifier), app_state);
+                            
                             switch (app_state){
                                 case AVDTP_APPLICATION_W2_DISCOVER_SEPS:
                                     app_state = AVDTP_APPLICATION_W2_GET_ALL_CAPABILITIES;
@@ -398,11 +400,17 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                                     }
                                     break;
                                 case AVDTP_APPLICATION_W2_SET_CONFIGURATION:
-                                    app_state = AVDTP_APPLICATION_W4_SET_CONFIGURATION;
+                                    app_state = AVDTP_APPLICATION_W2_GET_CONFIGURATION;
                                     avdtp_source_set_configuration(con_handle, local_stream_endpoint->sep.seid, active_remote_sep->seid, remote_configuration_bitmap, remote_configuration);
                                     break;
-                                case AVDTP_APPLICATION_W4_SET_CONFIGURATION:
+                                case AVDTP_APPLICATION_W2_GET_CONFIGURATION:
+                                    app_state = AVDTP_APPLICATION_W2_OPEN_STREAM_WITH_SEID;
+                                    avdtp_source_get_configuration(con_handle, active_remote_sep->seid);
+                                    break;
+                                case AVDTP_APPLICATION_W2_OPEN_STREAM_WITH_SEID:
                                     app_state = AVDTP_APPLICATION_W4_OPEN_STREAM_WITH_SEID;
+                                    btstack_sbc_encoder_init(&streaming_context.sbc_encoder_state, SBC_MODE_STANDARD, sbc_configuration.block_length, sbc_configuration.subbands, sbc_configuration.num_channels, sbc_configuration.sampling_frequency, 53);
+                                    dump_sbc_configuration(sbc_configuration);
                                     avdtp_source_open_stream(con_handle, active_remote_sep->seid);
                                     break;
                                 case AVDTP_APPLICATION_STREAMING_OPENED:

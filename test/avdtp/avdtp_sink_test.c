@@ -477,7 +477,9 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             sbc_configuration.max_bitpool_value = avdtp_subevent_signaling_media_codec_sbc_configuration_get_max_bitpool_value(packet);
                             sbc_configuration.frames_per_buffer = sbc_configuration.subbands * sbc_configuration.block_length;
                             dump_sbc_configuration(sbc_configuration);
-                            
+                            // // TODO: use actual config
+                            // btstack_sbc_encoder_init(&local_stream_endpoint->sbc_encoder_state, SBC_MODE_STANDARD, 16, 8, 2, 44100, 53);
+
                             if (sbc_configuration.reconfigure){
                                 close_media_processing();
                                 init_media_processing(sbc_configuration);

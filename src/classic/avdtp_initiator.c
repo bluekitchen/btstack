@@ -65,32 +65,6 @@ static int avdtp_initiator_send_signaling_cmd_with_seid(uint16_t cid, avdtp_sign
     return l2cap_send(cid, command, sizeof(command));
 }
 
-static void avdtp_signaling_emit_media_codec_capability(btstack_packet_handler_t callback, uint16_t con_handle, avdtp_sep_t sep){
-    if (get_bit16(sep.registered_service_categories, AVDTP_MEDIA_CODEC)){
-        switch (sep.capabilities.media_codec.media_codec_type){
-            case AVDTP_CODEC_SBC: 
-                avdtp_signaling_emit_media_codec_sbc_capability(callback, con_handle, sep.capabilities.media_codec);
-                break;
-            default:
-                avdtp_signaling_emit_media_codec_other_capability(callback, con_handle, sep.capabilities.media_codec);
-                break;
-        }
-    }
-}
-
-static void avdtp_signaling_emit_media_codec_configuration(btstack_packet_handler_t callback, uint16_t con_handle, avdtp_sep_t sep){
-    if (get_bit16(sep.registered_service_categories, AVDTP_MEDIA_CODEC)){
-        switch (sep.capabilities.media_codec.media_codec_type){
-            case AVDTP_CODEC_SBC: 
-                avdtp_signaling_emit_media_codec_sbc_configuration(callback, con_handle, sep.capabilities.media_codec);
-                break;
-            default:
-                avdtp_signaling_emit_media_codec_other_configuration(callback, con_handle, sep.capabilities.media_codec);
-                break;
-        }
-    }
-}
-
 void avdtp_initiator_stream_config_subsm(avdtp_connection_t * connection, uint8_t *packet, uint16_t size, int offset, avdtp_context_t * context){
     int status = 0;
     avdtp_stream_endpoint_t * stream_endpoint = NULL;
@@ -151,14 +125,31 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t * connection, uint8_
                 case AVDTP_SI_GET_ALL_CAPABILITIES:
                     printf("AVDTP_SI_GET(_ALL)_CAPABILITIES\n");
                     sep.registered_service_categories = avdtp_unpack_service_capabilities(connection, &sep.capabilities, packet+offset, size-offset);
-                    avdtp_signaling_emit_media_codec_capability(context->avdtp_callback, connection->con_handle, sep);
+                    if (get_bit16(sep.registered_service_categories, AVDTP_MEDIA_CODEC)){
+                        switch (sep.capabilities.media_codec.media_codec_type){
+                            case AVDTP_CODEC_SBC: 
+                                avdtp_signaling_emit_media_codec_sbc_capability(context->avdtp_callback, connection->con_handle, sep.capabilities.media_codec);
+                                break;
+                            default:
+                                avdtp_signaling_emit_media_codec_other_capability(context->avdtp_callback, connection->con_handle, sep.capabilities.media_codec);
+                                break;
+                        }
+                    }
                     break;
                 
                 case AVDTP_SI_GET_CONFIGURATION:
                     printf("AVDTP_SI_GET_CONFIGURATION\n");
                     sep.configured_service_categories = avdtp_unpack_service_capabilities(connection, &sep.configuration, packet+offset, size-offset);
-                
-                    avdtp_signaling_emit_media_codec_configuration(context->avdtp_callback, connection->con_handle, sep);
+                    if (get_bit16(sep.configured_service_categories, AVDTP_MEDIA_CODEC)){
+                        switch (sep.configuration.media_codec.media_codec_type){
+                            case AVDTP_CODEC_SBC: 
+                                avdtp_signaling_emit_media_codec_sbc_configuration(context->avdtp_callback, connection->con_handle, sep.configuration.media_codec);
+                                break;
+                            default:
+                                avdtp_signaling_emit_media_codec_other_configuration(context->avdtp_callback, connection->con_handle, sep.configuration.media_codec);
+                                break;
+                        }
+                    }
                     break;
                 
                 case AVDTP_SI_RECONFIGURE:
@@ -193,10 +184,6 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t * connection, uint8_
                     stream_endpoint->remote_seps[stream_endpoint->remote_sep_index] = sep;
                     printf("    INT: configured remote seid %d, to %p\n", stream_endpoint->remote_seps[stream_endpoint->remote_sep_index].seid, stream_endpoint);
                     stream_endpoint->state = AVDTP_STREAM_ENDPOINT_CONFIGURED;
-
-                    // TODO: use actual config
-                    // TODO: consider reconfiguration
-                    btstack_sbc_encoder_init(&stream_endpoint->sbc_encoder_state, SBC_MODE_STANDARD, 16, 8, 2, 44100, 53);
                     break;
                 }
                 

@@ -248,7 +248,6 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, uint8_t
                         stream_endpoint->remote_seps[stream_endpoint->remote_sep_index] = sep;
                         printf("    ACP: add seid %d, to %p\n", stream_endpoint->remote_seps[stream_endpoint->remote_sep_index].seid, stream_endpoint);
                     } 
-                    
                     if (get_bit16(sep.configured_service_categories, AVDTP_MEDIA_CODEC)){
                         switch (sep.configuration.media_codec.media_codec_type){
                             case AVDTP_CODEC_SBC: 
@@ -541,10 +540,7 @@ void avdtp_acceptor_stream_config_subsm_run(avdtp_connection_t * connection, avd
             printf("    -> AVDTP_STREAM_ENDPOINT_CONFIGURED\n");
             stream_endpoint->connection = connection;
             stream_endpoint->state = AVDTP_STREAM_ENDPOINT_CONFIGURED;
-            // TODO: use actual config
             // TODO: consider reconfiguration
-            btstack_sbc_encoder_init(&stream_endpoint->sbc_encoder_state, SBC_MODE_STANDARD, 16, 8, 2, 44100, 53);
-
             avdtp_acceptor_send_accept_response(cid, trid, AVDTP_SI_SET_CONFIGURATION);
             break;
         case AVDTP_ACCEPTOR_W2_ANSWER_RECONFIGURE:
