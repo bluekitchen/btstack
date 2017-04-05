@@ -517,10 +517,9 @@ static void avdtp_source_stream_endpoint_run(void){
         uint32_t number_of_bytes_read = 0;
         uint8_t pcm_frame[256*BYTES_PER_AUDIO_SAMPLE];
         btstack_ring_buffer_read(&streaming_context.audio_ring_buffer, pcm_frame, audio_bytes_to_read, &number_of_bytes_read); 
-        // printf("     num audio bytes read %d\n", number_of_bytes_read);
         btstack_sbc_encoder_process_data((int16_t *) pcm_frame);
         
-        uint16_t sbc_frame_bytes = 119; //btstack_sbc_encoder_sbc_buffer_length();
+        uint16_t sbc_frame_bytes = btstack_sbc_encoder_sbc_buffer_length(); 
 
         total_num_bytes_read += number_of_bytes_read;
         fill_sbc_ring_buffer(btstack_sbc_encoder_sbc_buffer(), sbc_frame_bytes, &streaming_context);
@@ -637,7 +636,9 @@ static void send_media_packet_now(uint16_t l2cap_media_cid, int mtu, uint16_t se
     uint32_t total_sbc_bytes_read = 0;
     uint8_t  sbc_frame_size = 0;
     // payload
-    while (mtu - 13 - total_sbc_bytes_read >= 120 && btstack_ring_buffer_bytes_available(&streaming_context.sbc_ring_buffer)){
+    uint16_t sbc_frame_bytes = btstack_sbc_encoder_sbc_buffer_length();
+
+    while (mtu - 13 - total_sbc_bytes_read >= sbc_frame_bytes && btstack_ring_buffer_bytes_available(&streaming_context.sbc_ring_buffer)){
         uint32_t number_of_bytes_read = 0;
         btstack_ring_buffer_read(&streaming_context.sbc_ring_buffer, &sbc_frame_size, 1, &number_of_bytes_read);
         btstack_ring_buffer_read(&streaming_context.sbc_ring_buffer, media_packet + pos, sbc_frame_size, &number_of_bytes_read); 
