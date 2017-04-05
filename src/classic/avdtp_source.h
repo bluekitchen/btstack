@@ -167,6 +167,7 @@ avdtp_stream_endpoint_t * avdtp_source_create_stream_endpoint(avdtp_sep_type_t s
 
 int avdtp_source_streaming_endpoint_ready(uint16_t con_handle);
 void avdtp_source_request_can_send_now(uint16_t con_handle);
+void avdtp_source_stream_send_media_payload(uint16_t l2cap_media_cid, btstack_ring_buffer_t * sbc_ring_buffer, uint8_t marker);
 /* API_END */
 
 #if defined __cplusplus

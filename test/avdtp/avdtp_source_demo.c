@@ -142,7 +142,6 @@ static uint8_t media_sbc_codec_configuration[4];
                             
 static uint8_t audio_samples_storage[44100*4]; // 1s buffer
 static uint8_t sbc_samples_storage[44100*4];
-static uint8_t media_packet[1024];
 
 static avdtp_stream_endpoint_context_t streaming_context;
 static paTestData sin_data;
@@ -187,8 +186,6 @@ typedef enum {
 avdtp_application_state_t app_state = AVDTP_APPLICATION_IDLE;
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
-
-static void send_media_packet_now(uint16_t l2cap_media_cid, int mtu, uint16_t sequence_number);
 
 static const char * avdtp_si2str(uint16_t index){
     if (index <= 0 || index > sizeof(avdtp_si_name)) return avdtp_si_name[0];
@@ -444,8 +441,10 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             printf(" --- avdtp source ---  Rejected %s\n", avdtp_si2str(signal_identifier));
                             break;
                         case AVDTP_SUBEVENT_STREAMING_CAN_SEND_MEDIA_PACKET_NOW: {
-                            uint16_t sequence_number = avdtp_subevent_streaming_can_send_media_packet_now_get_sequence_number(packet);
-                            send_media_packet_now(local_stream_endpoint->l2cap_media_cid, l2cap_get_remote_mtu_for_local_cid(local_stream_endpoint->l2cap_media_cid), sequence_number);
+                            avdtp_source_stream_send_media_payload(local_stream_endpoint->l2cap_media_cid, &streaming_context.sbc_ring_buffer, 0);
+                            if (btstack_ring_buffer_bytes_available(&streaming_context.sbc_ring_buffer)){
+                                avdtp_source_request_can_send_now(local_stream_endpoint->l2cap_media_cid);
+                            }
                             break;
                         }
                         default:
@@ -494,40 +493,35 @@ static  uint8_t media_sbc_codec_capabilities[] = {
     2, 53
 }; 
 
-static void fill_sbc_ring_buffer(uint8_t * sbc_frame, int sbc_frame_size, avdtp_stream_endpoint_context_t * context){
-    if (btstack_ring_buffer_bytes_free(&context->sbc_ring_buffer) >= sbc_frame_size ){
-        // printf("    fill_sbc_ring_buffer\n");
-        uint8_t size_buffer = sbc_frame_size;
-        btstack_ring_buffer_write(&context->sbc_ring_buffer, &size_buffer, 1);
-        btstack_ring_buffer_write(&context->sbc_ring_buffer, sbc_frame, sbc_frame_size);
-    } else {
-        printf("No space in sbc buffer\n");
-    }
-}
 
-static void avdtp_source_stream_endpoint_run(void){
+static int fill_sbc_ring_buffer(void){
     // performe sbc encoding
     int total_num_bytes_read = 0;
     int num_audio_samples_to_read = btstack_sbc_encoder_num_audio_frames();
     int audio_bytes_to_read = num_audio_samples_to_read * BYTES_PER_AUDIO_SAMPLE; 
 
     while (btstack_ring_buffer_bytes_available(&streaming_context.audio_ring_buffer) >= audio_bytes_to_read
-        && btstack_ring_buffer_bytes_free(&streaming_context.sbc_ring_buffer) >= 120){ // TODO use real value
+        && btstack_ring_buffer_bytes_free(&streaming_context.sbc_ring_buffer) >= btstack_sbc_encoder_sbc_buffer_length()){ // TODO use real value
         
         uint32_t number_of_bytes_read = 0;
         uint8_t pcm_frame[256*BYTES_PER_AUDIO_SAMPLE];
         btstack_ring_buffer_read(&streaming_context.audio_ring_buffer, pcm_frame, audio_bytes_to_read, &number_of_bytes_read); 
         btstack_sbc_encoder_process_data((int16_t *) pcm_frame);
         
-        uint16_t sbc_frame_bytes = btstack_sbc_encoder_sbc_buffer_length(); 
-
+        uint16_t sbc_frame_size = btstack_sbc_encoder_sbc_buffer_length(); 
+        uint8_t * sbc_frame = btstack_sbc_encoder_sbc_buffer();
+        
         total_num_bytes_read += number_of_bytes_read;
-        fill_sbc_ring_buffer(btstack_sbc_encoder_sbc_buffer(), sbc_frame_bytes, &streaming_context);
+        
+        if (btstack_ring_buffer_bytes_free(&streaming_context.sbc_ring_buffer) >= sbc_frame_size ){
+            uint8_t size_buffer = sbc_frame_size;
+            btstack_ring_buffer_write(&streaming_context.sbc_ring_buffer, &size_buffer, 1);
+            btstack_ring_buffer_write(&streaming_context.sbc_ring_buffer, sbc_frame, sbc_frame_size);
+        } else {
+            printf("No space in sbc buffer\n");
+        }
     }
-    // schedule sending
-    if (total_num_bytes_read != 0){
-        avdtp_source_request_can_send_now(media_con_handle);
-    }
+    return total_num_bytes_read;
 }
 
 static void fill_audio_ring_buffer(void *userData, int num_samples_to_write){
@@ -573,8 +567,11 @@ static void avdtp_fill_audio_ring_buffer_timeout_handler(btstack_timer_source_t 
     fill_audio_ring_buffer(&sin_data, num_samples);
     streaming_context.time_audio_data_sent = now;
 
-    avdtp_source_stream_endpoint_run();
-    // 
+    int total_num_bytes_read = fill_sbc_ring_buffer();
+     // schedule sending
+    if (total_num_bytes_read != 0){
+        avdtp_source_request_can_send_now(media_con_handle);
+    }
 }
 
 static void avdtp_fill_audio_ring_buffer_timer_start(void){
@@ -599,61 +596,6 @@ static void avdtp_source_stream_data_stop(){
     avdtp_fill_audio_ring_buffer_timer_stop(); 
 }
 
-static void send_media_packet_now(uint16_t l2cap_media_cid, int mtu, uint16_t sequence_number){
-    //send sbc
-    uint8_t  rtp_version = 2;
-    uint8_t  padding = 0;
-    uint8_t  extension = 0;
-    uint8_t  csrc_count = 0;
-    uint8_t  marker = 0;
-    uint8_t  payload_type = 0x60;
-    // uint16_t sequence_number = stream_endpoint->sequence_number;
-    uint32_t timestamp = btstack_run_loop_get_time_ms();
-    uint32_t ssrc = 0x11223344;
-
-    // rtp header (min size 12B)
-    int pos = 0;
-    // int mtu = l2cap_get_remote_mtu_for_local_cid(stream_endpoint->l2cap_media_cid);
-
-    media_packet[pos++] = (rtp_version << 6) | (padding << 5) | (extension << 4) | csrc_count;
-    media_packet[pos++] = (marker << 1) | payload_type; 
-    big_endian_store_16(media_packet, pos, sequence_number);
-    pos += 2;
-    big_endian_store_32(media_packet, pos, timestamp);
-    pos += 4;
-    big_endian_store_32(media_packet, pos, ssrc); // only used for multicast
-    pos += 4;
-
-    // media payload
-    // sbc_header (size 1B)
-    uint8_t sbc_header_index = pos;
-    pos++;
-    uint8_t fragmentation = 0;
-    uint8_t starting_packet = 0; // set to 1 for the first packet of a fragmented SBC frame
-    uint8_t last_packet = 0;     // set to 1 for the last packet of a fragmented SBC frame
-    uint8_t num_frames = 0;
-    
-    uint32_t total_sbc_bytes_read = 0;
-    uint8_t  sbc_frame_size = 0;
-    // payload
-    uint16_t sbc_frame_bytes = btstack_sbc_encoder_sbc_buffer_length();
-
-    while (mtu - 13 - total_sbc_bytes_read >= sbc_frame_bytes && btstack_ring_buffer_bytes_available(&streaming_context.sbc_ring_buffer)){
-        uint32_t number_of_bytes_read = 0;
-        btstack_ring_buffer_read(&streaming_context.sbc_ring_buffer, &sbc_frame_size, 1, &number_of_bytes_read);
-        btstack_ring_buffer_read(&streaming_context.sbc_ring_buffer, media_packet + pos, sbc_frame_size, &number_of_bytes_read); 
-        pos += sbc_frame_size;
-        total_sbc_bytes_read += sbc_frame_size;
-        num_frames++;
-        // printf("send sbc frame: timestamp %d, seq. nr %d\n", timestamp, stream_endpoint->sequence_number);
-    }
-    media_packet[sbc_header_index] =  (fragmentation << 7) | (starting_packet << 6) | (last_packet << 5) | num_frames;
-    l2cap_send(l2cap_media_cid, media_packet, pos);
-
-    if (btstack_ring_buffer_bytes_available(&streaming_context.sbc_ring_buffer)){
-        avdtp_source_request_can_send_now(media_con_handle);
-    }
-}
 
 static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type){
     UNUSED(ds);
@@ -721,7 +663,6 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
 
     }
 }
-
 
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
