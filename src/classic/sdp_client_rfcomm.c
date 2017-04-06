@@ -304,7 +304,7 @@ void sdp_client_query_rfcomm_init(void){
 
 // Public API
 
-uint8_t sdp_client_query_rfcomm_channel_and_name_for_search_pattern(btstack_packet_handler_t callback, bd_addr_t remote, uint8_t * service_search_pattern){
+uint8_t sdp_client_query_rfcomm_channel_and_name_for_search_pattern(btstack_packet_handler_t callback, bd_addr_t remote, const uint8_t * service_search_pattern){
 
     if (!sdp_client_ready()) return SDP_QUERY_BUSY;
 
@@ -323,7 +323,7 @@ uint8_t sdp_client_query_rfcomm_channel_and_name_for_uuid(btstack_packet_handler
     return 0;
 }
 
-uint8_t sdp_client_query_rfcomm_channel_and_name_for_uuid128(btstack_packet_handler_t callback, bd_addr_t remote, uint8_t * uuid128){
+uint8_t sdp_client_query_rfcomm_channel_and_name_for_uuid128(btstack_packet_handler_t callback, bd_addr_t remote, const uint8_t * uuid128){
 
     if (!sdp_client_ready()) return SDP_QUERY_BUSY;
 
