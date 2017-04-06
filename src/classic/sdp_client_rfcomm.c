@@ -70,9 +70,8 @@ typedef enum {
 
 // higher layer query - get rfcomm channel and name
 
-const uint8_t des_attributeIDList[]    = { 0x35, 0x05, 0x0A, 0x00, 0x01, 0x01, 0x00};  // Arribute: 0x0001 - 0x0100
-
-static uint8_t des_service_search_pattern[5] = {0x35, 0x03, 0x19, 0x00, 0x00};
+// All attributes: 0x0001 - 0x0100
+static const uint8_t des_attributeIDList[]    = { 0x35, 0x05, 0x0A, 0x00, 0x01, 0x01, 0x00};  
 
 static uint8_t sdp_service_name[SDP_SERVICE_NAME_LEN+1];
 static uint8_t sdp_service_name_len = 0;
@@ -315,11 +314,20 @@ uint8_t sdp_client_query_rfcomm_channel_and_name_for_search_pattern(btstack_pack
     return 0;
 }
 
-uint8_t sdp_client_query_rfcomm_channel_and_name_for_uuid(btstack_packet_handler_t callback, bd_addr_t remote, uint16_t uuid){
+uint8_t sdp_client_query_rfcomm_channel_and_name_for_uuid(btstack_packet_handler_t callback, bd_addr_t remote, uint16_t uuid16){
 
     if (!sdp_client_ready()) return SDP_QUERY_BUSY;
 
-    big_endian_store_16(des_service_search_pattern, 3, uuid);
-    sdp_client_query_rfcomm_channel_and_name_for_search_pattern(callback, remote, (uint8_t*)des_service_search_pattern);
+    uint8_t * service_search_pattern = sdp_service_search_pattern_for_uuid16(uuid16);
+    sdp_client_query_rfcomm_channel_and_name_for_search_pattern(callback, remote, service_search_pattern);
+    return 0;
+}
+
+uint8_t sdp_client_query_rfcomm_channel_and_name_for_uuid128(btstack_packet_handler_t callback, bd_addr_t remote, uint8_t * uuid128){
+
+    if (!sdp_client_ready()) return SDP_QUERY_BUSY;
+
+    uint8_t * service_search_pattern = sdp_service_search_pattern_for_uuid128(uuid128);
+    sdp_client_query_rfcomm_channel_and_name_for_search_pattern(callback, remote, service_search_pattern);
     return 0;
 }
