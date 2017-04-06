@@ -196,14 +196,14 @@ int nibble_for_char(char c);
  * @param b
  * @return true if equal
  */
-int bd_addr_cmp(bd_addr_t a, bd_addr_t b);
+int bd_addr_cmp(const bd_addr_t a, const bd_addr_t b);
 
 /**
  * @brief Copy Bluetooth address
  * @param dest
  * @param src
  */
-void bd_addr_copy(bd_addr_t dest, bd_addr_t src);
+void bd_addr_copy(bd_addr_t dest, const bd_addr_t src);
 
 /**
  * @brief Use printf to write hexdump as single line of data
@@ -215,14 +215,14 @@ void printf_hexdump(const void *data, int size);
  * @note uses fixed global buffer
  * @return pointer to UUID128 string
  */
-char * uuid128_to_str(uint8_t * uuid);
+char * uuid128_to_str(const uint8_t * uuid);
 
 /**
  * @brief Create human readable represenationt of Bluetooth address
  * @note uses fixed global buffer
  * @return pointer to Bluetooth address string
  */
-char * bd_addr_to_str(bd_addr_t addr);
+char * bd_addr_to_str(const bd_addr_t addr);
 
 /** 
  * @brief Parse Bluetooth address
@@ -244,7 +244,7 @@ void uuid_add_bluetooth_prefix(uint8_t * uuid128, uint32_t short_uuid);
  * @param uui128 to test
  * @return 1 if it can be expressed as UUID32
  */
-int  uuid_has_bluetooth_prefix(uint8_t * uuid128);
+int  uuid_has_bluetooth_prefix(const uint8_t * uuid128);
 
 /**
  * @brief Parse unsigned number 
