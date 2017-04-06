@@ -63,9 +63,9 @@
 const char * const type_names[] = { "NIL", "UINT", "INT", "UUID", "STRING", "BOOL", "DES", "DEA", "URL"};
 #endif
 
-static uint8_t des_serviceSearchPattern[] = {0x35, 0x03, 0x19, 0x00, 0x00};
+static uint8_t des_serviceSearchPatternUUID16[]  = {0x35, 0x03, 0x19, 0x00, 0x00};
 static uint8_t des_serviceSearchPatternUUID128[] = {
-    0x35, 0x10, 0x19, 
+    0x35, 0x11, 0x1c, 
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
@@ -701,8 +701,8 @@ void de_dump_data_element(const uint8_t * record){
 }
 
 uint8_t* sdp_service_search_pattern_for_uuid16(uint16_t uuid16){
-    big_endian_store_16(des_serviceSearchPattern, 3, uuid16);
-    return (uint8_t*)des_serviceSearchPattern;
+    big_endian_store_16(des_serviceSearchPatternUUID16, 3, uuid16);
+    return (uint8_t*)des_serviceSearchPatternUUID16;
 }
 
 uint8_t* sdp_service_search_pattern_for_uuid128(const uint8_t * uuid128){
