@@ -189,6 +189,25 @@ typedef struct {
 } adtvp_media_codec_capabilities_t;
 
 typedef struct {
+    // bitmaps
+    uint8_t sampling_frequency_bitmap;
+    uint8_t channel_mode_bitmap;
+    uint8_t block_length_bitmap;
+    uint8_t subbands_bitmap;
+    uint8_t allocation_method_bitmap;
+    uint8_t min_bitpool_value;
+    uint8_t max_bitpool_value;
+} adtvp_media_codec_information_sbc_t;
+
+typedef struct {
+    int sampling_frequency;
+    int block_length;
+    int subbands;
+    int allocation_method;
+    int max_bitpool_value;
+} avdtp_media_codec_configuration_sbc_t;
+
+typedef struct {
     uint16_t cp_type;
     uint16_t cp_type_value_len;
     const uint8_t * cp_type_value;
