@@ -110,4 +110,10 @@ void log_info_key(const char * name, sm_key_t key);
  */
 void log_info_hexdump(const void *data, int size);
 
+/**
+ * @brief Hexdump via log_debug * @param data
+ * @param size
+ */
+void log_debug_hexdump(const void *data, int size);
+
 #endif // __DEBUG_H
