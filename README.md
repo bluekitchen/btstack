@@ -72,7 +72,7 @@ Chipset                      | Type      | HCI Transport   | SCO over HCI (2) | 
 ---------------------------- |-----------| ----------------|------------------|----------------|---------
 Broadcom UART                | Dual mode | H4, H5          | Probably         | bcm            | Max UART baudrate 2 mbps
 Broadcom USB Dongles         | Dual mode | USB             | Yes              | bcm            |
-CSR UART                     | Dual mode | H4, H5          | No (didn't work) | csr            |
+CSR UART                     | Dual mode | H4, H5, BCSP    | No (didn't work) | csr            |
 CSR USB Dongles              | Dual mode | USB             | Yes              | csr            |
 Dialog Semiconductor DA14581 | LE        | H4, SPI         | n.a.             | da14581        | Official HCI firmware used
 EM 9301                      | LE        | SPI             | n.a.             | em9301         | Custom HCI SPI implementation

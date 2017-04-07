@@ -136,6 +136,7 @@ extern "C" {
 
 // ACL Packet
 #define READ_ACL_CONNECTION_HANDLE( buffer ) ( little_endian_read_16(buffer,0) & 0x0fff)
+#define READ_SCO_CONNECTION_HANDLE( buffer ) ( little_endian_read_16(buffer,0) & 0x0fff)
 #define READ_ACL_FLAGS( buffer )      ( buffer[1] >> 4 )
 #define READ_ACL_LENGTH( buffer )     (little_endian_read_16(buffer, 2))
 
@@ -494,6 +495,10 @@ typedef struct {
     uint8_t num_acl_packets_sent;
     uint8_t num_sco_packets_sent;
 
+#ifdef ENABLE_HCI_CONTROLLER_TO_HOST_FLOW_CONTROL
+    uint8_t num_packets_completed;
+#endif
+
     // LE Connection parameter update
     le_con_parameter_update_state_t le_con_parameter_update_state;
     uint8_t  le_con_param_update_identifier;
@@ -552,8 +557,17 @@ typedef enum hci_init_state{
     HCI_INIT_W4_READ_BUFFER_SIZE,
     HCI_INIT_READ_LOCAL_SUPPORTED_FEATURES,
     HCI_INIT_W4_READ_LOCAL_SUPPORTED_FEATURES,
+
+#ifdef ENABLE_HCI_CONTROLLER_TO_HOST_FLOW_CONTROL
+    HCI_INIT_HOST_BUFFER_SIZE,
+    HCI_INIT_W4_HOST_BUFFER_SIZE,
+    HCI_INIT_SET_CONTROLLER_TO_HOST_FLOW_CONTROL,
+    HCI_INIT_W4_SET_CONTROLLER_TO_HOST_FLOW_CONTROL,
+#endif
+
     HCI_INIT_SET_EVENT_MASK,
     HCI_INIT_W4_SET_EVENT_MASK,
+
     HCI_INIT_WRITE_SIMPLE_PAIRING_MODE,
     HCI_INIT_W4_WRITE_SIMPLE_PAIRING_MODE,
     HCI_INIT_WRITE_PAGE_TIMEOUT,
@@ -730,6 +744,10 @@ typedef struct {
     // buffer for single connection decline
     uint8_t   decline_reason;
     bd_addr_t decline_addr;
+
+#ifdef ENABLE_HCI_CONTROLLER_TO_HOST_FLOW_CONTROL
+    uint8_t   host_completed_packets;
+#endif
 
 #ifdef ENABLE_BLE
     uint8_t   le_own_addr_type;

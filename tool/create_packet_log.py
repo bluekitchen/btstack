@@ -106,6 +106,11 @@ with open (outfile, 'wb') as fout:
 		packet_counter = 0
 		for line in fin:
 			timestamp = None
+			# strip newlines
+			line = line.strip("\n\r")
+			# skip empyt lines
+			if len(line) == 0: 
+				continue
 			parts = re.match('\[(.*)\] (.*)', line)
 			if parts and len(parts.groups()) == 2:
 				(timestamp, line) = parts.groups()

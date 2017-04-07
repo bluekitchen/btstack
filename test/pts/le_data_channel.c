@@ -275,9 +275,8 @@ void show_usage(void){
     bd_addr_t iut_address;
     uint8_t uit_addr_type;
 
-    // gap_local_bd_addr(iut_address);
-    gap_advertisements_get_address(&uit_addr_type, iut_address);
-
+    gap_le_get_own_address(&uit_addr_type, iut_address);
+    
     printf("\n--- CLI for LE Data Channel %s ---\n", bd_addr_to_str(iut_address));
     printf("a - create HCI connection to type %u address %s\n", pts_address_type, bd_addr_to_str(pts_address));
     printf("b - connect to PSM 0x%02x (TSPX_le_psm - LE)\n", TSPX_le_psm);
@@ -295,6 +294,7 @@ void show_usage(void){
 }
 
 static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type){
+    UNUSED(callback_type);
     char buffer;
     read(ds->fd, &buffer, 1);
 
@@ -378,7 +378,8 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
 
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
-    
+    (void)argc;
+    (void)argv;
     printf("BTstack LE Data Channel test starting up...\n");
 
     // register for HCI events

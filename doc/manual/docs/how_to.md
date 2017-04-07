@@ -14,13 +14,13 @@ The configuration of BTstack is done both at compile time as well as at run time
     - provided services
     - packet handlers
 
-In the following, we provide an overview of the configuration 
-that is necessary to setup BTstack. From the point when the run loop 
+In the following, we provide an overview of the configuration
+that is necessary to setup BTstack. From the point when the run loop
 is executed, the application runs as a finite
 state machine, which processes events received from BTstack. BTstack
-groups events logically and provides them via packet handlers. 
+groups events logically and provides them via packet handlers.
 We provide their overview here. For the case that there is a need to inspect the data exchanged
-between BTstack and the Bluetooth chipset, we describe how to configure 
+between BTstack and the Bluetooth chipset, we describe how to configure
 packet logging mechanism. Finally, we provide an overview on power management in Bluetooth in general and how to save energy in BTstack.
 
 
@@ -28,7 +28,7 @@ packet logging mechanism. Finally, we provide an overview on power management in
 The file *btstack_config.h* contains three parts:
 
 - \#define HAVE_* directives [listed here](#sec:haveDirectives). These directives describe available system properties, similar to config.h in a autoconf setup.
-- \#define ENABLE_* directives [listed here](#sec:enableDirectives). These directives list enabled properties, most importantly ENABLE_CLASSIC and ENABLE_BLE. 
+- \#define ENABLE_* directives [listed here](#sec:enableDirectives). These directives list enabled properties, most importantly ENABLE_CLASSIC and ENABLE_BLE.
 - other #define directives for BTstack configuration, most notably static memory, [see next section](#sec:memoryConfigurationHowTo).
 
 <!-- a name "lst:platformConfiguration"></a-->
@@ -57,7 +57,8 @@ HAVE_POSIX_B600_MAPPED_TO_3000000  | Workaround to use serial port with 3 mpbs
 HAVE_POSIX_FILE_IO                 | POSIX File i/o used for hci dump
 HAVE_POSIX_STDIN                   | STDIN is available for CLI interface
 HAVE_POSIX_TIME                    | System provides time function
-
+LINK_KEY_PATH                      | Path to stored link keys
+LE_DEVICE_DB_PATH                  | Path to stored LE device information
 <!-- a name "lst:btstackFeatureConfiguration"></a-->
 <!-- -->
 
@@ -79,6 +80,21 @@ ENBALE_LE_CENTRAL            | Enable support for LE Central Role in HCI and Sec
 ENABLE_LE_SECURE_CONNECTIONS | Enable LE Secure Connections using [mbed TLS library](https://tls.mbed.org)
 ENABLE_LE_DATA_CHANNELS      | Enable LE Data Channels in credit-based flow control mode
 ENABLE_LE_SIGNED_WRITE       | Enable LE Signed Writes in ATT/GATT
+ENABLE_HCI_CONTROLLER_TO_HOST_FLOW_CONTROL | Enable HCI Controller to Host Flow Control, see below
+
+
+### HCI Controller to Host Flow Control
+In general, BTstack relies on flow control of the HCI transport, either via Hardware CTS/RTS flow control for UART or regular USB flow control. If this is not possible, e.g on an SoC, BTstack can use HCI Controller to Host Flow Control by defining ENABLE_HCI_CONTROLLER_TO_HOST_FLOW_CONTROL. If enabled, the HCI Transport implementation must be able to buffer the specified packets. In addition, it also need to be able to buffer a few HCI Events. Using a low number of host buffers might result in less throughput.
+
+Host buffer configuration for HCI Controller to Host Flow Control:
+
+#define         | Description
+------------------|------------
+HCI_HOST_ACL_PACKET_NUM | Max number of ACL packets
+HCI_HOST_ACL_PACKET_LEN | Max size of HCI Host ACL packets
+HCI_HOST_SCO_PACKET_NUM | Max number of ACL packets
+HCI_HOST_SCO_PACKET_LEN | Max size of HCI Host SCO packets
+
 
 ### Memory configuration directives {#sec:memoryConfigurationHowTo}
 
@@ -99,7 +115,7 @@ For each HCI connection, a buffer of size HCI_ACL_PAYLOAD_SIZE is reserved. For 
 <!-- a name "lst:memoryConfiguration"></a-->
 <!-- -->
 
-#define | Description 
+#define | Description
 --------|------------
 HCI_ACL_PAYLOAD_SIZE | Max size of HCI ACL payloads
 MAX_NR_BNEP_CHANNELS | Max number of BNEP channels
@@ -117,6 +133,7 @@ MAX_NR_SERVICE_RECORD_ITEMS | Max number of SDP service records
 MAX_NR_SM_LOOKUP_ENTRIES | Max number of items in Security Manager lookup queue
 MAX_NR_WHITELIST_ENTRIES | Max number of items in GAP LE Whitelist to connect to
 MAX_NR_LE_DEVICE_DB_ENTRIES | Max number of items in LE Device DB
+
 
 The memory is set up by calling *btstack_memory_init* function:
 
@@ -178,7 +195,7 @@ various Bluetooth-related timeouts. They can also be used to handle
 periodic events.
 
 Data sources and timers are represented by the *btstack_data_source_t* and
-*btstack_timer_source_t* structs respectively. Each of these structs contain 
+*btstack_timer_source_t* structs respectively. Each of these structs contain
 at least a linked list node and a pointer to a callback function. All active timers
 and data sources are kept in link lists. While the list of data sources
 is unsorted, the timers are sorted by expiration timeout for efficient
@@ -189,14 +206,14 @@ before its event handler callback is executed. If you need a periodic
 timer, you can re-register the same timer source in the callback
 function, as shown in Listing [PeriodicTimerHandler]. Note that BTstack
 expects to get called periodically to keep its time, see Section
-[on time abstraction](#sec:timeAbstractionPorting) for more on the 
-tick hardware abstraction. 
+[on time abstraction](#sec:timeAbstractionPorting) for more on the
+tick hardware abstraction.
 
 BTstack provides different run loop implementations that implement the *btstack_run_loop_t* interface:
 
 - Embedded: the main implementation for embedded systems, especially without an RTOS.
 - POSIX: implementation for POSIX systems based on the select() call.
-- CoreFoundation: implementation for iOS and OS X applications 
+- CoreFoundation: implementation for iOS and OS X applications
 - WICED: implementation for the Broadcom WICED SDK RTOS abstraction that wraps FreeRTOS or ThreadX.
 - Windows: implementation for Windows based on Event objects and WaitForMultipleObjects() call.
 
@@ -221,7 +238,7 @@ The complete Run loop API is provided [here](appendix/apis/#sec:runLoopAPIAppend
 
 ### Run loop embedded
 
-In the embedded run loop implementation, data sources are constantly polled and 
+In the embedded run loop implementation, data sources are constantly polled and
 the system is put to sleep if no IRQ happens during the poll of all data sources.
 
 The complete run loop cycle looks like this: first, the callback
@@ -235,7 +252,7 @@ Incoming data over the UART, USB, or timer ticks will generate an
 interrupt and wake up the microcontroller. In order to avoid the
 situation where a data source becomes ready just before the run loop
 enters sleep mode, an interrupt-driven data source has to call the
-*btstack_run_loop_embedded_trigger* function. The call to 
+*btstack_run_loop_embedded_trigger* function. The call to
 *btstack_run_loop_embedded_trigger* sets an
 internal flag that is checked in the critical section just before
 entering sleep mode causing another run loop cycle.
@@ -247,7 +264,7 @@ config file.
 
 The data sources are standard File Descriptors. In the run loop execute implementation,
 select() call is used to wait for file descriptors to become ready to read or write,
-while waiting for the next timeout. 
+while waiting for the next timeout.
 
 To enable the use of timers, make sure that you defined HAVE_POSIX_TIME in the config file.
 
@@ -262,30 +279,30 @@ To enable the use of timers, make sure that you defined HAVE_POSIX_TIME in the c
 ### Run loop Windows
 
 The data sources are Event objects. In the run loop implementation WaitForMultipleObjects() call
-is all is used to wait for the Event object to become ready while waiting for the next timeout. 
+is all is used to wait for the Event object to become ready while waiting for the next timeout.
 
 
 ### Run loop WICED
 
-WICED SDK API does not provide asynchronous read and write to the UART and no direct way to wait for 
+WICED SDK API does not provide asynchronous read and write to the UART and no direct way to wait for
 one or more peripherals to become ready. Therefore, BTstack does not provide direct support for data sources.
 Instead, the run loop provides a message queue that allows to schedule functions calls on its thread via
-*btstack_run_loop_wiced_execute_code_on_main_thread()*. 
+*btstack_run_loop_wiced_execute_code_on_main_thread()*.
 
-The HCI transport H4 implementation then uses two lightweight threads to do the 
+The HCI transport H4 implementation then uses two lightweight threads to do the
 blocking read and write operations. When a read or write is complete on
 the helper threads, a callback to BTstack is scheduled.
 
 
 ## HCI Transport configuration
 
-The HCI initialization has to adapt BTstack to the used platform. The first 
+The HCI initialization has to adapt BTstack to the used platform. The first
 call is to *hci_init()* and requires information about the HCI Transport to use.
 The arguments are:
 
 -   *HCI Transport implementation*: On embedded systems, a Bluetooth
     module can be connected via USB or an UART port. On embedded, BTstack implements HCI UART Transport Layer (H4) and H4 with eHCILL support, a lightweight low-power variant by Texas Instruments. For POSIX, there is an implementation for HCI H4, HCI H5 and H2 libUSB, and for WICED HCI H4 WICED.
-    These are accessed by linking the appropriate file, e.g., 
+    These are accessed by linking the appropriate file, e.g.,
     [platform/embedded/hci_transport_h4_embedded.c]()
     and then getting a pointer to HCI Transport implementation.
     For more information on adapting HCI Transport to different
@@ -302,8 +319,8 @@ The arguments are:
     layer of BTstack will change the init baud rate to the main one
     after the basic setup of the Bluetooth module. A baud rate change
     has to be done in a coordinated way at both HCI and hardware level.
-    For example, on the CC256x, the HCI command to change the baud rate 
-    is sent first, then it is necessary to wait for the confirmation event 
+    For example, on the CC256x, the HCI command to change the baud rate
+    is sent first, then it is necessary to wait for the confirmation event
     from the Bluetooth module. Only now, can the UART baud rate changed.
 
 <!-- -->
@@ -316,7 +333,7 @@ After these are ready, HCI is initialized like this:
 
 
 In addition to these, most UART-based Bluetooth chipset require some
-special logic for correct initialization that is not covered by the 
+special logic for correct initialization that is not covered by the
 Bluetooth specification. In particular, this covers:
 
 - setting the baudrate
@@ -340,7 +357,7 @@ Finally, the HCI implementation requires some form of persistent storage for lin
 during either legacy pairing or the Secure Simple Pairing (SSP). This commonly requires platform
 specific code to access the MCU’s EEPROM of Flash storage. For the
 first steps, BTstack provides a (non) persistent store in memory.
-For more see [here](porting/#sec:persistentStoragePorting). 
+For more see [here](porting/#sec:persistentStoragePorting).
 
 <!-- -->
 
@@ -376,7 +393,7 @@ functions, which in turn may send commands to the Bluetooth module. The
 resulting events are delivered back to the application. Instead of
 writing a single callback handler for each possible event (as it is done
 in some other Bluetooth stacks), BTstack groups events logically and
-provides them over a single generic interface. Appendix 
+provides them over a single generic interface. Appendix
 [Events and Errors](generated/appendix/#sec:eventsAndErrorsAppendix)
 summarizes the parameters and event
 codes of L2CAP and RFCOMM events, as well as possible errors and the
@@ -444,12 +461,12 @@ services for the HID Control and HID Interrupt PSMs using
 *l2cap_register_service*. In this call, you’ll also specify
 a packet handler to accept and receive keyboard data.
 
-All events names have the form MODULE_EVENT_NAME now, e.g., *gap_event_advertising_report*. 
+All events names have the form MODULE_EVENT_NAME now, e.g., *gap_event_advertising_report*.
 To facilitate working with
-events and get rid of manually calculating offsets into packets, BTstack provides 
-auto-generated getters for all fields of all events in *src/hci_event.h*. All 
-functions are defined as static inline, so they are not wasting any program memory 
-if not used. If used, the memory footprint should be identical to accessing the 
+events and get rid of manually calculating offsets into packets, BTstack provides
+auto-generated getters for all fields of all events in *src/hci_event.h*. All
+functions are defined as static inline, so they are not wasting any program memory
+if not used. If used, the memory footprint should be identical to accessing the
 field directly via offsets into the packet. For example, to access fields address_type
 and address from the *gap_event_advertising_report* event use following getters:
 
@@ -469,31 +486,31 @@ For this, BTstack provides a configurable packet logging mechanism via hci_dump.
     // formats: HCI_DUMP_BLUEZ, HCI_DUMP_PACKETLOGGER, HCI_DUMP_STDOUT
     void hci_dump_open(const char *filename, hci_dump_format_t format);
 
-On POSIX systems, you can call *hci_dump_open* with a path and *HCI_DUMP_BLUEZ* 
+On POSIX systems, you can call *hci_dump_open* with a path and *HCI_DUMP_BLUEZ*
 or *HCI_DUMP_PACKETLOGGER* in the setup, i.e., before entering the run loop.
-The resulting file can be analyzed with Wireshark 
+The resulting file can be analyzed with Wireshark
 or the Apple's PacketLogger tool.
 
 On embedded systems without a file system, you still can call *hci_dump_open(NULL, HCI_DUMP_STDOUT)*.
 It will log all HCI packets to the console via printf.
-If you capture the console output, incl. your own debug messages, you can use 
+If you capture the console output, incl. your own debug messages, you can use
 the create_packet_log.py tool in the tools folder to convert a text output into a
 PacketLogger file.
 
 In addition to the HCI packets, you can also enable BTstack's debug information by adding
 
-    #define ENABLE_LOG_INFO 
+    #define ENABLE_LOG_INFO
     #define ENABLE_LOG_ERROR
 
 to the btstack_config.h and recompiling your application.
 
-## Bluetooth Power Control {#sec:powerControl} 
+## Bluetooth Power Control {#sec:powerControl}
 
 In most BTstack examples, the device is set to be discoverable and connectable. In this mode, even when there's no active connection, the Bluetooth Controller will periodically activate its receiver in order to listen for inquiries or connecting requests from another device.
 The ability to be discoverable requires more energy than the ability to be connected. Being discoverable also announces the device to anybody in the area. Therefore, it is a good idea to pause listening for inquiries when not needed. Other devices that have your Bluetooth address can still connect to your device.
 
 To enable/disable discoverability, you can call:
-    
+
     /**
      * @brief Allows to control if device is discoverable. OFF by default.
      */
@@ -514,7 +531,7 @@ For Bluetooth Low Energy, the radio is periodically used to broadcast advertisem
 
 To enable/disable advertisements, you can call:
 
-    /** 
+    /**
      * @brief Enable/Disable Advertisements. OFF by default.
      * @param enabled
      */
@@ -523,13 +540,10 @@ To enable/disable advertisements, you can call:
 If a Bluetooth Controller is neither discoverable nor connectable, it does not need to periodically turn on its radio and it only needs to respond to commands from the Host. In this case, the Bluetooth Controller is free to enter some kind of deep sleep where the power consumption is minimal.
 
 Finally, if that's not sufficient for your application, you could request BTstack to shutdown the Bluetooth Controller. For this, the "on" and "off" functions in the btstack_control_t struct must be implemented. To shutdown the Bluetooth Controller, you can call:
-    
+
     /**
      * @brief Requests the change of BTstack power mode.
      */
     int  hci_power_control(HCI_POWER_MODE mode);
 
 with mode set to *HCI_POWER_OFF*. When needed later, Bluetooth can be started again via by calling it with mode *HCI_POWER_ON*, as seen in all examples.
-
-
-

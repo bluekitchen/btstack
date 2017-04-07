@@ -19,6 +19,9 @@ The most common one is the official "UART Transport", also called H4. It require
 ### HCI H5
 The "Three-Wire UART Transport", also called H5, makes use of the SLIP protocol to transmit a packet and can deal with packet loss and bit-errors by retransmission. While it is possible to use H5 really with "three wires" without hardware handshake, we recommend to use a full UART with hardware handshake. If your design lacks the hardware handshake, H5 is your only option.
 
+### BCSP
+The predecessor of H5. The main difference to H5 is that Even Parity is used for BCSP. To use BCSP with BTstack, you use the H5 transport and can call *hci_transport_h5_enable_bcsp_mode*
+
 ### eHCILL
 Finally, Texas Instruments extended H4 to create the "eHCILL transport" layer that allows both sides to enter sleep mode without loosing synchronisation. While it is easier to implement than H5, it it is only supported by TI chipsets and cannot handle packet loss or bit-errors.
 
@@ -49,7 +52,7 @@ Chipset              | Type      | HCI Transport  | BD_ADDR (1)  | SCO over HCI 
 -------------------- |-----------| ---------------|--------------|------------------|--------|----------------------|----------------|---------
 Broadcom UART        | Dual mode | H4, H5         | Rarely       | Probably (2)     | No     |      Maybe (3)       | bcm            | Max UART baudrate 2 mbps
 Broadcom USB Dongles | Dual mode | USB            | Yes          | Yes              | No     |         No           | bcm            |
-CSR UART             | Dual mode | H4, H5         | Rarely       | No (didn't work) | No     |         No           | csr            |
+CSR UART             | Dual mode | H4, H5, BCSP   | Rarely       | No (didn't work) | No     |         No           | csr            |
 CSR USB Dongles      | Dual mode | USB            | Mostly       | Yes              | No     |         No           | csr            |
 Dialog DA14581       | LE        | H4, SPI        | No           | n.a.             | No     |         No           | da14581        | Official HCI firmware included in BTstack
 EM 9301              | LE        | SPI            | No           | n.a.             | No     |         No           | em9301         | Custom HCI SPI implementation

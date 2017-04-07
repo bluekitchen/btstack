@@ -52,7 +52,6 @@
 #include "avdtp_source.h"
 
 #include "btstack_ring_buffer.h"
-#include "wav_util.h"
 
 static const char * default_avdtp_source_service_name = "BTstack AVDTP Source Service";
 static const char * default_avdtp_source_service_provider_name = "BTstack AVDTP Source Service Provider";
@@ -275,22 +274,6 @@ typedef struct {
 
 static uint32_t fill_audio_ring_buffer_timeout = 50; //ms
 static paTestData sin_data;
-static int total_num_samples = 0;
-static char * wav_filename = "test_output_sine.wav";
-
-static btstack_sbc_decoder_state_t state;
-static btstack_sbc_mode_t mode = SBC_MODE_STANDARD;
-
-
-
-static void handle_pcm_data(int16_t * data, int num_samples, int num_channels, int sample_rate, void * context){
-    UNUSED(sample_rate);
-    UNUSED(context);
-    printf("store %d samples\n",num_samples*num_channels);
-    wav_writer_write_int16(num_samples*num_channels, data);
-    // frame_count++;
-    total_num_samples+=num_samples*num_channels;
-}
 
 static void fill_audio_ring_buffer(void *userData, int num_samples_to_write, avdtp_stream_endpoint_t * stream_endpoint){
     paTestData *data = (paTestData*)userData;
@@ -418,7 +401,6 @@ void avdtp_source_stream_data_stop(uint16_t con_handle){
     // TODO: initialize randomly sequence number
     stream_endpoint->sequence_number = 0;
     test_fill_audio_ring_buffer_timer_stop(stream_endpoint);
-    wav_writer_close();
 }
 
 void avdtp_source_init(void){
@@ -433,8 +415,6 @@ void avdtp_source_init(void){
         sin_data.source[i] = sin(((double)i/(double)TABLE_SIZE_441HZ) * M_PI * 2.)*32767;
     }
     sin_data.left_phase = sin_data.right_phase = 0;
-    wav_writer_open(wav_filename, NUM_CHANNELS, SAMPLE_RATE);
-    btstack_sbc_decoder_init(&state, mode, handle_pcm_data, NULL);
 
     l2cap_register_service(&packet_handler, BLUETOOTH_PROTOCOL_AVDTP, 0xffff, LEVEL_0);
 }

@@ -198,6 +198,9 @@ int main(int argc, const char * argv[]){
 	hci_init(transport, (void*) &config);
     hci_set_link_key_db(link_key_db);
 
+    // enable BCSP mode for CSR chipsets - auto detect might not work
+    // hci_transport_h5_enable_bcsp_mode();
+
     // enable auto-sleep mode
     // hci_transport_h5_set_auto_sleep(300);
 

@@ -42,16 +42,20 @@
 #include <stdio.h>
 #include <unistd.h>
 
+#include "btstack_config.h"
 #include "btstack_link_key_db_fs.h"
 #include "btstack_debug.h"
-
 #include "btstack_util.h"
 
+// allow to pre-set LINK_KEY_PATH from btstack_config.h
+#ifndef LINK_KEY_PATH
 #ifdef _WIN32
 #define LINK_KEY_PATH ""
 #else
 #define LINK_KEY_PATH "/tmp/"
 #endif
+#endif
+
 #define LINK_KEY_PREFIX "btstack_at_"
 #define LINK_KEY_FOR "_link_key_for_"
 #define LINK_KEY_SUFFIX ".txt"

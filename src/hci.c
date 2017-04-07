@@ -76,6 +76,20 @@
 #include "hci_cmd.h"
 #include "hci_dump.h"
 
+#ifdef ENABLE_HCI_CONTROLLER_TO_HOST_FLOW_CONTROL
+#ifndef HCI_HOST_ACL_PACKET_NUM
+#error "ENABLE_HCI_CONTROLLER_TO_HOST_FLOW_CONTROL requires to define HCI_HOST_ACL_PACKET_NUM"
+#endif
+#ifndef HCI_HOST_ACL_PACKET_LEN
+#error "ENABLE_HCI_CONTROLLER_TO_HOST_FLOW_CONTROL requires to define HCI_HOST_ACL_PACKET_LEN"
+#endif
+#ifndef HCI_HOST_SCO_PACKET_NUM
+#error "ENABLE_HCI_CONTROLLER_TO_HOST_FLOW_CONTROL requires to define HCI_HOST_SCO_PACKET_NUM"
+#endif
+#ifndef HCI_HOST_SCO_PACKET_LEN
+#error "ENABLE_HCI_CONTROLLER_TO_HOST_FLOW_CONTROL requires to define HCI_HOST_SCO_PACKET_LEN"
+#endif
+#endif
 
 #define HCI_CONNECTION_TIMEOUT_MS 10000
 #define HCI_RESET_RESEND_TIMEOUT_MS 200
@@ -401,8 +415,8 @@ static int hci_number_free_sco_slots(void){
 }
 #endif
 
-// new functions replacing hci_can_send_packet_now[_using_packet_buffer]
-int hci_can_send_command_packet_now(void){
+// only used to send HCI Host Number Completed Packets
+static int hci_can_send_comand_packet_transport(void){
     if (hci_stack->hci_packet_buffer_reserved) return 0;
 
     // check for async hci transport implementations
@@ -411,7 +425,12 @@ int hci_can_send_command_packet_now(void){
             return 0;
         }
     }
+    return 1;
+}
 
+// new functions replacing hci_can_send_packet_now[_using_packet_buffer]
+int hci_can_send_command_packet_now(void){
+    if (hci_can_send_comand_packet_transport() == 0) return 0;
     return hci_stack->num_cmd_packets > 0;
 }
 
@@ -685,6 +704,11 @@ static void acl_handler(uint8_t *packet, int size){
 #ifdef ENABLE_CLASSIC
     // update idle timestamp
     hci_connection_timestamp(conn);
+#endif
+
+#ifdef ENABLE_HCI_CONTROLLER_TO_HOST_FLOW_CONTROL
+    hci_stack->host_completed_packets = 1;
+    conn->num_packets_completed++;
 #endif
 
     // handle different packet types
@@ -969,8 +993,12 @@ static void hci_initialization_timeout_handler(btstack_timer_source_t * ds){
                 log_info("Local baud rate change to %"PRIu32"(timeout handler)", baud_rate);
                 hci_stack->hci_transport->set_baudrate(baud_rate);
             }
-            // For CSR, HCI Reset is sent on new baud rate
+            // For CSR, HCI Reset is sent on new baud rate. Don't forget to reset link for H5/BCSP
             if (hci_stack->manufacturer == BLUETOOTH_COMPANY_ID_CAMBRIDGE_SILICON_RADIO){
+                if (hci_stack->hci_transport->reset_link){
+                    log_info("Link Reset");
+                    hci_stack->hci_transport->reset_link();
+                }
                 hci_stack->substate = HCI_INIT_SEND_RESET_CSR_WARM_BOOT;
                 hci_run();
             }
@@ -1143,6 +1171,19 @@ static void hci_initializing_run(void){
             hci_stack->substate = HCI_INIT_W4_READ_LOCAL_SUPPORTED_FEATURES;
             hci_send_cmd(&hci_read_local_supported_features);
             break;                
+
+#ifdef ENABLE_HCI_CONTROLLER_TO_HOST_FLOW_CONTROL
+        case HCI_INIT_SET_CONTROLLER_TO_HOST_FLOW_CONTROL:
+            hci_stack->substate = HCI_INIT_W4_SET_CONTROLLER_TO_HOST_FLOW_CONTROL;
+            hci_send_cmd(&hci_set_controller_to_host_flow_control, 3);  // ACL + SCO Flow Control
+            break;
+        case HCI_INIT_HOST_BUFFER_SIZE:
+            hci_stack->substate = HCI_INIT_W4_HOST_BUFFER_SIZE;
+            hci_send_cmd(&hci_host_buffer_size, HCI_HOST_ACL_PACKET_LEN, HCI_HOST_SCO_PACKET_LEN, 
+                                                HCI_HOST_ACL_PACKET_NUM, HCI_HOST_SCO_PACKET_NUM);
+            break;            
+#endif
+
         case HCI_INIT_SET_EVENT_MASK:
             hci_stack->substate = HCI_INIT_W4_SET_EVENT_MASK;
             if (hci_le_supported()){
@@ -1152,6 +1193,7 @@ static void hci_initializing_run(void){
                 hci_send_cmd(&hci_set_event_mask,0xffffffff, 0x1FFFFFFF);
             }
             break;
+
 #ifdef ENABLE_CLASSIC
         case HCI_INIT_WRITE_SIMPLE_PAIRING_MODE:
             hci_stack->substate = HCI_INIT_W4_WRITE_SIMPLE_PAIRING_MODE;
@@ -2109,6 +2151,15 @@ static void event_handler(uint8_t *packet, int size){
 static void sco_handler(uint8_t * packet, uint16_t size){
     if (!hci_stack->sco_packet_handler) return;
     hci_stack->sco_packet_handler(HCI_SCO_DATA_PACKET, 0, packet, size);
+#ifdef ENABLE_HCI_CONTROLLER_TO_HOST_FLOW_CONTROL
+    hci_con_handle_t con_handle = READ_SCO_CONNECTION_HANDLE(packet);
+    hci_connection_t *conn      = hci_connection_for_handle(con_handle);
+    if (conn){
+        conn->num_packets_completed++;
+        hci_stack->host_completed_packets = 1;
+        hci_run();
+    }
+#endif    
 }
 #endif
 
@@ -2600,6 +2651,50 @@ void gap_local_bd_addr(bd_addr_t address_buffer){
     memcpy(address_buffer, hci_stack->local_bd_addr, 6);
 }
 
+#ifdef ENABLE_HCI_CONTROLLER_TO_HOST_FLOW_CONTROL
+static void hci_host_num_completed_packets(void){
+
+    // create packet manually as arrays are not supported and num_commands should not get reduced
+    hci_reserve_packet_buffer();
+    uint8_t * packet = hci_get_outgoing_packet_buffer();
+
+    uint16_t size = 0;
+    uint16_t num_handles = 0;
+    packet[size++] = 0x35;
+    packet[size++] = 0x0c;
+    size++;  // skip param len
+    size++;  // skip num handles
+
+    // add { handle, packets } entries
+    btstack_linked_item_t * it;
+    for (it = (btstack_linked_item_t *) hci_stack->connections; it ; it = it->next){
+        hci_connection_t * connection = (hci_connection_t *) it;
+        if (connection->num_packets_completed){
+            little_endian_store_16(packet, size, connection->con_handle);
+            size += 2;
+            little_endian_store_16(packet, size, connection->num_packets_completed);
+            size += 2;
+            //
+            num_handles++;
+            connection->num_packets_completed = 0;
+        }
+    }    
+
+    packet[2] = size - 3;
+    packet[3] = num_handles;
+
+    hci_stack->host_completed_packets = 0;
+
+    hci_dump_packet(HCI_COMMAND_DATA_PACKET, 0, packet, size);
+    hci_stack->hci_transport->send_packet(HCI_COMMAND_DATA_PACKET, packet, size);
+
+    // release packet buffer for synchronous transport implementations    
+    if (hci_transport_synchronous()){
+        hci_stack->hci_packet_buffer_reserved = 0;
+    }
+}
+#endif
+
 static void hci_run(void){
     
     // log_info("hci_run: entered");
@@ -2621,6 +2716,15 @@ static void hci_run(void){
             hci_stack->acl_fragmentation_pos = 0;
         }
     }
+
+#ifdef ENABLE_HCI_CONTROLLER_TO_HOST_FLOW_CONTROL
+    // send host num completed packets next as they don't require num_cmd_packets > 0
+    if (!hci_can_send_comand_packet_transport()) return;
+    if (hci_stack->host_completed_packets){
+        hci_host_num_completed_packets();        
+        return;
+    }
+#endif
 
     if (!hci_can_send_command_packet_now()) return;
 

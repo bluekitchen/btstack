@@ -58,7 +58,7 @@
  * @param b
  * @return 0 if equal
  */
-int bd_addr_cmp(bd_addr_t a, bd_addr_t b){
+int bd_addr_cmp(const bd_addr_t a, const bd_addr_t b){
     return memcmp(a,b, BD_ADDR_LEN);
 }
 
@@ -67,7 +67,7 @@ int bd_addr_cmp(bd_addr_t a, bd_addr_t b){
  * @param dest
  * @param src
  */
-void bd_addr_copy(bd_addr_t dest, bd_addr_t src){
+void bd_addr_copy(bd_addr_t dest, const bd_addr_t src){
     memcpy(dest,src,BD_ADDR_LEN);
 }
 
@@ -261,12 +261,12 @@ void uuid_add_bluetooth_prefix(uint8_t *uuid, uint32_t shortUUID){
     big_endian_store_32(uuid, 0, shortUUID);
 }
 
-int uuid_has_bluetooth_prefix(uint8_t * uuid128){
+int uuid_has_bluetooth_prefix(const uint8_t * uuid128){
     return memcmp(&uuid128[4], &bluetooth_base_uuid[4], 12) == 0;
 }
 
 static char uuid128_to_str_buffer[32+4+1];
-char * uuid128_to_str(uint8_t * uuid){
+char * uuid128_to_str(const uint8_t * uuid){
     int i;
     int j = 0;
     // after 4, 6, 8, and 10 bytes = XYXYXYXY-XYXY-XYXY-XYXY-XYXYXYXYXYXY, there's a dash
@@ -283,7 +283,7 @@ char * uuid128_to_str(uint8_t * uuid){
 }
 
 static char bd_addr_to_str_buffer[6*3];  // 12:45:78:01:34:67\0
-char * bd_addr_to_str(bd_addr_t addr){
+char * bd_addr_to_str(const bd_addr_t addr){
     // orig code
     // sprintf(bd_addr_to_str_buffer, "%02x:%02x:%02x:%02x:%02x:%02x", addr[0], addr[1], addr[2], addr[3], addr[4], addr[5]);
     // sprintf-free code
