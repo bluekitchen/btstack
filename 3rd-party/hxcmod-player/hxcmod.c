@@ -194,6 +194,7 @@ static int memcompare( unsigned char * buf1, unsigned char * buf2, unsigned int 
 
 static int getnote( modcontext * mod, unsigned short period, int finetune )
 {
+	(void) finetune;
 	int i;
 
 	for(i = 0; i < FULL_PERIOD_TABLE_LENGTH; i++)
@@ -209,6 +210,7 @@ static int getnote( modcontext * mod, unsigned short period, int finetune )
 
 static void worknote( note * nptr, channel * cptr,char t,modcontext * mod )
 {
+	(void) t;
 	muint sample, period, effect, operiod;
 	muint curnote, arpnote;
 
@@ -685,6 +687,8 @@ static void worknote( note * nptr, channel * cptr,char t,modcontext * mod )
 
 static void workeffect( note * nptr, channel * cptr )
 {
+	(void) nptr;
+	
 	switch(cptr->effect)
 	{
 		case EFFECT_ARPEGGIO:

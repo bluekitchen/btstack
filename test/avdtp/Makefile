@@ -34,6 +34,7 @@ CFLAGS += -I${BTSTACK_ROOT}/src
 CFLAGS += -I${BTSTACK_ROOT}/src/classic
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/include -D OI_DEBUG
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/include
+CFLAGS += -I${BTSTACK_ROOT}/3rd-party/hxcmod-player
 CFLAGS += -I${BTSTACK_ROOT}/platform/posix 
 CFLAGS += -I${BTSTACK_ROOT}/platform/embedded 
 CFLAGS += -I${BTSTACK_ROOT}/port/libusb 
@@ -45,6 +46,7 @@ VPATH += ${BTSTACK_ROOT}/platform/libusb
 VPATH += ${BTSTACK_ROOT}/port/libusb
 VPATH += ${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/srce 
 VPATH += ${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/srce 
+VPATH += ${BTSTACK_ROOT}/3rd-party/hxcmod-player
 
 # use pkg-config for libusb
 CFLAGS  += $(shell pkg-config libusb-1.0 --cflags)
@@ -71,6 +73,9 @@ AVDTP += \
 	avdtp_sink.c  		\
 	btstack_ring_buffer.c \
 
+HXCMOD_PLAYER = \
+	${BTSTACK_ROOT}/3rd-party/hxcmod-player/hxcmod.c
+
 AVDTP_TESTS = avdtp_source_demo avdtp_sink_test portaudio_test
 #sine_encode_decode_ring_buffer_test sine_encode_decode_test sine_encode_decode_performance_test
 
@@ -79,13 +84,14 @@ COMMON_OBJ  = $(COMMON:.c=.o)
 SBC_DECODER_OBJ  = $(SBC_DECODER:.c=.o) 
 SBC_ENCODER_OBJ  = $(SBC_ENCODER:.c=.o)
 AVDTP_OBJ  = $(AVDTP:.c=.o)
+HXCMOD_PLAYER_OBJ = $(HXCMOD_PLAYER:.c=.o)
 
 all: ${AVDTP_TESTS}
 
 avdtp_sink_test: ${CORE_OBJ} ${COMMON_OBJ} ${SBC_DECODER_OBJ} ${SBC_ENCODER_OBJ} ${AVDTP_OBJ} avdtp_sink_test.o
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-avdtp_source_demo: ${CORE_OBJ} ${COMMON_OBJ} ${SBC_DECODER_OBJ} ${SBC_ENCODER_OBJ} ${AVDTP_OBJ} avdtp_source_demo.o
+avdtp_source_demo: ${CORE_OBJ} ${COMMON_OBJ} ${SBC_DECODER_OBJ} ${SBC_ENCODER_OBJ} ${AVDTP_OBJ} ${HXCMOD_PLAYER_OBJ} avdtp_source_demo.o
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 portaudio_test: btstack_util.o hci_dump.o wav_util.o btstack_ring_buffer.o portaudio_test.c
