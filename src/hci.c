@@ -993,8 +993,12 @@ static void hci_initialization_timeout_handler(btstack_timer_source_t * ds){
                 log_info("Local baud rate change to %"PRIu32"(timeout handler)", baud_rate);
                 hci_stack->hci_transport->set_baudrate(baud_rate);
             }
-            // For CSR, HCI Reset is sent on new baud rate
+            // For CSR, HCI Reset is sent on new baud rate. Don't forget to reset link for H5/BCSP
             if (hci_stack->manufacturer == BLUETOOTH_COMPANY_ID_CAMBRIDGE_SILICON_RADIO){
+                if (hci_stack->hci_transport->reset_link){
+                    log_info("Link Reset");
+                    hci_stack->hci_transport->reset_link();
+                }
                 hci_stack->substate = HCI_INIT_SEND_RESET_CSR_WARM_BOOT;
                 hci_run();
             }
