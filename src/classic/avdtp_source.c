@@ -269,7 +269,7 @@ int avdtp_source_streaming_endpoint_ready(uint16_t con_handle){
         printf("no stream_endpoint found for 0x%02x", con_handle);
         return 0;
     }
-    return (stream_endpoint->state == AVDTP_STREAM_ENDPOINT_STREAMING);
+    return (stream_endpoint->state == AVDTP_STREAM_ENDPOINT_STREAMING || stream_endpoint->state == AVDTP_STREAM_ENDPOINT_STREAMING_W2_SEND);
 }
 
 void avdtp_source_request_can_send_now(uint16_t con_handle){

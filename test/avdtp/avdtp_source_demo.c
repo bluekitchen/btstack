@@ -58,6 +58,8 @@
 
 #include "btstack_sbc.h"
 #include "avdtp_util.h"
+#include "hxcmod.h"
+#include "nao-deceased_by_disease.h"
 
 #define NUM_CHANNELS        2
 #define SAMPLE_RATE         44100
@@ -146,6 +148,10 @@ static uint8_t sbc_samples_storage[44100*4];
 static avdtp_stream_endpoint_context_t streaming_context;
 static paTestData sin_data;
 
+static int hxcmod_initialized = 0;
+static modcontext mod_context;
+static tracker_buffer_state trkbuf;
+
 static const char * avdtp_si_name[] = {
     "ERROR",
     "AVDTP_SI_DISCOVER",            
@@ -162,6 +168,10 @@ static const char * avdtp_si_name[] = {
     "AVDTP_SI_GET_ALL_CAPABILITIES", 
     "AVDTP_SI_DELAY_REPORT" 
 };
+typedef enum {
+    STREAM_SINE,
+    STREAM_MOD
+} stream_data_source_t;
 
 typedef enum {
     AVDTP_APPLICATION_IDLE,
@@ -184,6 +194,7 @@ typedef enum {
 } avdtp_application_state_t;
 
 avdtp_application_state_t app_state = AVDTP_APPLICATION_IDLE;
+stream_data_source_t data_source = STREAM_SINE;
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
@@ -476,10 +487,12 @@ static void show_usage(void){
         printf("---\n");
         return;
     }
-
     printf("m      - start stream with %d\n", active_remote_sep->seid);
-    printf("x      - start data stream\n");
-    printf("X      - stop  data stream\n");
+    printf("x      - start streaming sine\n");
+    if (hxcmod_initialized){
+        printf("z      - start streaming '%s'\n", mod_name);
+    }
+    printf("X      - stop streaming\n");
     printf("A      - abort stream with %d\n", active_remote_sep->seid);
     printf("S      - stop stream with %d\n", active_remote_sep->seid);
     printf("P      - suspend stream with %d\n", active_remote_sep->seid);
@@ -524,8 +537,8 @@ static int fill_sbc_ring_buffer(void){
     return total_num_bytes_read;
 }
 
-static void fill_audio_ring_buffer(void *userData, int num_samples_to_write){
-    paTestData *data = (paTestData*)userData;
+static void fill_audio_ring_buffer(void *user_data, int num_samples_to_write){
+    paTestData *data = (paTestData*)user_data;
     int count = 0;
     while (btstack_ring_buffer_bytes_free(&streaming_context.audio_ring_buffer) >= BYTES_PER_AUDIO_SAMPLE && count < num_samples_to_write){
         uint8_t write_data[BYTES_PER_AUDIO_SAMPLE];
@@ -543,6 +556,17 @@ static void fill_audio_ring_buffer(void *userData, int num_samples_to_write){
         if (data->right_phase >= TABLE_SIZE_441HZ){
             data->right_phase -= TABLE_SIZE_441HZ;
         } 
+    }
+}
+
+#define NUM_SAMPLES_IN_TEMP_BUFFER 16
+static void fill_audio_ring_buffer_with_mod_data(int num_samples_to_write){
+    uint16_t buffer[NUM_SAMPLES_IN_TEMP_BUFFER*BYTES_PER_AUDIO_SAMPLE];
+    while (num_samples_to_write){
+        int samples_this_time = btstack_min(num_samples_to_write, NUM_SAMPLES_IN_TEMP_BUFFER);
+        hxcmod_fillbuffer(&mod_context, (unsigned short *) &buffer[0], samples_this_time, &trkbuf);
+        btstack_ring_buffer_write(&streaming_context.audio_ring_buffer, (uint8_t*) &buffer[0], samples_this_time * BYTES_PER_AUDIO_SAMPLE);
+        num_samples_to_write -= samples_this_time;
     }
 }
 
@@ -564,7 +588,15 @@ static void avdtp_fill_audio_ring_buffer_timeout_handler(btstack_timer_source_t 
         streaming_context.acc_num_missed_samples -= 1000;
     }
 
-    fill_audio_ring_buffer(&sin_data, num_samples);
+    int num_samples_to_write = btstack_min(btstack_ring_buffer_bytes_free(&streaming_context.audio_ring_buffer)/BYTES_PER_AUDIO_SAMPLE, num_samples);
+    switch (data_source){
+        case STREAM_SINE:
+            fill_audio_ring_buffer(&sin_data, num_samples_to_write);
+            break;
+        case STREAM_MOD:
+            fill_audio_ring_buffer_with_mod_data(num_samples_to_write);
+            break;
+    }
     streaming_context.time_audio_data_sent = now;
 
     int total_num_bytes_read = fill_sbc_ring_buffer();
@@ -646,14 +678,20 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
             avdtp_source_suspend(con_handle, active_remote_sep->seid);
             break;
         case 'x':
-            printf("start streaming sine\n");
+            printf("Start streaming sine.\n");
+            data_source = STREAM_SINE;
+            avdtp_source_stream_data_start();
+            break;
+        case 'z':
+            printf("Start streaming '%s'.\n", mod_name);
+            data_source = STREAM_MOD;
             avdtp_source_stream_data_start();
             break;
         case 'X':
-            printf("stop streaming sine\n");
+            printf("Stop streaming.\n");
             avdtp_source_stream_data_stop();
             break;
-            
+                       
         case '\n':
         case '\r':
             break;
@@ -710,6 +748,13 @@ int btstack_main(int argc, const char * argv[]){
         sin_data.source[i] = sin(((double)i/(double)TABLE_SIZE_441HZ) * M_PI * 2.)*32767;
     }
     sin_data.left_phase = sin_data.right_phase = 0;
+
+    hxcmod_initialized = hxcmod_init(&mod_context);
+    if (hxcmod_initialized){
+        hxcmod_setcfg(&mod_context, 44100, 16, 1, 1, 1);
+        hxcmod_load(&mod_context, (void *) &mod_data, mod_len);
+        printf("loaded mod '%s', size %u\n", mod_name, mod_len);
+    }
 
     // turn on!
     hci_power_control(HCI_POWER_ON);

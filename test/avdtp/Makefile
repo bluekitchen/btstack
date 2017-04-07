@@ -35,6 +35,7 @@ CFLAGS += -I${BTSTACK_ROOT}/src/classic
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/include -D OI_DEBUG
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/include
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/hxcmod-player
+CFLAGS += -I${BTSTACK_ROOT}/3rd-party/hxcmod-player/mods
 CFLAGS += -I${BTSTACK_ROOT}/platform/posix 
 CFLAGS += -I${BTSTACK_ROOT}/platform/embedded 
 CFLAGS += -I${BTSTACK_ROOT}/port/libusb 
@@ -47,6 +48,7 @@ VPATH += ${BTSTACK_ROOT}/port/libusb
 VPATH += ${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/srce 
 VPATH += ${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/srce 
 VPATH += ${BTSTACK_ROOT}/3rd-party/hxcmod-player
+VPATH += ${BTSTACK_ROOT}/3rd-party/hxcmod-player/mods
 
 # use pkg-config for libusb
 CFLAGS  += $(shell pkg-config libusb-1.0 --cflags)
@@ -74,8 +76,9 @@ AVDTP += \
 	btstack_ring_buffer.c \
 
 HXCMOD_PLAYER = \
-	${BTSTACK_ROOT}/3rd-party/hxcmod-player/hxcmod.c
-
+	${BTSTACK_ROOT}/3rd-party/hxcmod-player/hxcmod.c 						\
+	${BTSTACK_ROOT}/3rd-party/hxcmod-player/mods/nao-deceased_by_disease.c 	\
+ 
 AVDTP_TESTS = avdtp_source_demo avdtp_sink_test portaudio_test
 #sine_encode_decode_ring_buffer_test sine_encode_decode_test sine_encode_decode_performance_test
 
