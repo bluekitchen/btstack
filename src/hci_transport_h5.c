@@ -141,6 +141,7 @@ static int hci_transport_link_actions;
 static const btstack_uart_block_t * btstack_uart;
 static btstack_uart_config_t uart_config;
 static btstack_uart_sleep_mode_t btstack_uart_sleep_mode;
+static int hci_transport_bcsp_mode;
 
 // Prototypes
 static void hci_transport_h5_process_frame(uint16_t frame_size);
@@ -766,6 +767,12 @@ static int hci_transport_h5_open(void){
         return res;
     }        
     
+    // 
+    if (hci_transport_bcsp_mode){
+        log_info("H5: enable even parity for BCSP mode");
+        btstack_uart->set_parity(1);
+    }
+
     // check if wake on RX can be used
     btstack_uart_sleep_mode = BTSTACK_UART_SLEEP_OFF;
     int supported_sleep_modes = 0;
@@ -880,4 +887,8 @@ const hci_transport_t * hci_transport_h5_instance(const btstack_uart_block_t * u
 
 void hci_transport_h5_set_auto_sleep(uint16_t inactivity_timeout_ms){
     link_inactivity_timeout_ms = inactivity_timeout_ms;
+}
+
+void hci_transport_h5_enable_bcsp_mode(void){
+    hci_transport_bcsp_mode = 1;
 }

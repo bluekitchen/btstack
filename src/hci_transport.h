@@ -150,6 +150,11 @@ const hci_transport_t * hci_transport_h5_instance(const btstack_uart_block_t * u
 void hci_transport_h5_set_auto_sleep(uint16_t inactivity_timeout_ms);
 
 /*
+ * @brief Enable BSCP mode H5, by enabling event parity
+ */
+void hci_transport_h5_enable_bcsp_mode(void);
+
+/*
  * @brief
  */
 const hci_transport_t * hci_transport_usb_instance(void);
