@@ -228,7 +228,7 @@ static void log_hexdump(int level, const void * data, int size){
 #endif
 
 void log_debug_hexdump(const void *data, int size){
-#ifdef ENABLE_LOG_INFO
+#ifdef ENABLE_LOG_DEBUG
     log_hexdump(LOG_LEVEL_DEBUG, data, size);
 #else
     UNUSED(data);
