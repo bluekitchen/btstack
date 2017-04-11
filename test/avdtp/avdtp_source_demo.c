@@ -72,6 +72,30 @@
 #endif
 #define TABLE_SIZE_441HZ   100
 
+
+typedef struct {
+    // bitmaps
+    uint8_t sampling_frequency_bitmap;
+    uint8_t channel_mode_bitmap;
+    uint8_t block_length_bitmap;
+    uint8_t subbands_bitmap;
+    uint8_t allocation_method_bitmap;
+    uint8_t min_bitpool_value;
+    uint8_t max_bitpool_value;
+} adtvp_media_codec_information_sbc_t;
+
+typedef struct {
+    int reconfigure;
+    int num_channels;
+    int sampling_frequency;
+    int channel_mode;
+    int block_length;
+    int subbands;
+    int allocation_method;
+    int min_bitpool_value;
+    int max_bitpool_value;
+} avdtp_media_codec_configuration_sbc_t;
+
 typedef struct {
     int16_t source[TABLE_SIZE_441HZ];
     int left_phase;
@@ -81,9 +105,9 @@ typedef struct {
 typedef struct {
 // to app
     uint32_t fill_audio_ring_buffer_timeout_ms;
-    btstack_ring_buffer_t audio_ring_buffer;
     uint32_t time_audio_data_sent; // ms
     uint32_t acc_num_missed_samples;
+    uint32_t samples_ready;
     btstack_timer_source_t fill_audio_ring_buffer_timer;
     btstack_ring_buffer_t sbc_ring_buffer;
     btstack_sbc_encoder_state_t sbc_encoder_state;
@@ -120,7 +144,6 @@ static avdtp_sep_t * active_remote_sep = NULL;
 
 static uint8_t media_sbc_codec_configuration[4];
                             
-static uint8_t audio_samples_storage[44100*4]; // 1s buffer
 static uint8_t sbc_samples_storage[44100*4];
 
 static avdtp_stream_endpoint_context_t streaming_context;
@@ -476,46 +499,12 @@ static  uint8_t media_sbc_codec_capabilities[] = {
 }; 
 
 
-static int fill_sbc_ring_buffer(void){
-    // performe sbc encoding
-    int total_num_bytes_read = 0;
-    int num_audio_samples_to_read = btstack_sbc_encoder_num_audio_frames();
-    int audio_bytes_to_read = num_audio_samples_to_read * BYTES_PER_AUDIO_SAMPLE; 
-
-    while (btstack_ring_buffer_bytes_available(&streaming_context.audio_ring_buffer) >= audio_bytes_to_read
-        && btstack_ring_buffer_bytes_free(&streaming_context.sbc_ring_buffer) >= btstack_sbc_encoder_sbc_buffer_length()){ // TODO use real value
-        
-        uint32_t number_of_bytes_read = 0;
-        uint8_t pcm_frame[256*BYTES_PER_AUDIO_SAMPLE];
-        btstack_ring_buffer_read(&streaming_context.audio_ring_buffer, pcm_frame, audio_bytes_to_read, &number_of_bytes_read); 
-        btstack_sbc_encoder_process_data((int16_t *) pcm_frame);
-        
-        uint16_t sbc_frame_size = btstack_sbc_encoder_sbc_buffer_length(); 
-        uint8_t * sbc_frame = btstack_sbc_encoder_sbc_buffer();
-        
-        total_num_bytes_read += number_of_bytes_read;
-        
-        if (btstack_ring_buffer_bytes_free(&streaming_context.sbc_ring_buffer) >= sbc_frame_size ){
-            uint8_t size_buffer = sbc_frame_size;
-            btstack_ring_buffer_write(&streaming_context.sbc_ring_buffer, &size_buffer, 1);
-            btstack_ring_buffer_write(&streaming_context.sbc_ring_buffer, sbc_frame, sbc_frame_size);
-        } else {
-            printf("No space in sbc buffer\n");
-        }
-    }
-    return total_num_bytes_read;
-}
-
-static void fill_audio_ring_buffer(void *user_data, int num_samples_to_write){
+static void produce_sine_audio(int16_t * pcm_buffer, void *user_data, int num_samples_to_write){
     paTestData *data = (paTestData*)user_data;
-    int count = 0;
-    while (btstack_ring_buffer_bytes_free(&streaming_context.audio_ring_buffer) >= BYTES_PER_AUDIO_SAMPLE && count < num_samples_to_write){
-        uint8_t write_data[BYTES_PER_AUDIO_SAMPLE];
-        *(int16_t*)&write_data[0] = data->source[data->left_phase];
-        *(int16_t*)&write_data[2] = data->source[data->right_phase];
-        
-        btstack_ring_buffer_write(&streaming_context.audio_ring_buffer, write_data, BYTES_PER_AUDIO_SAMPLE);
-        count++;
+    int count;
+    for (count = 0; count < num_samples_to_write ; count++){
+        pcm_buffer[count * 2]     = data->source[data->left_phase];
+        pcm_buffer[count * 2 + 1] = data->source[data->right_phase];
 
         data->left_phase += 1;
         if (data->left_phase >= TABLE_SIZE_441HZ){
@@ -528,15 +517,49 @@ static void fill_audio_ring_buffer(void *user_data, int num_samples_to_write){
     }
 }
 
-#define NUM_SAMPLES_IN_TEMP_BUFFER 16
-static void fill_audio_ring_buffer_with_mod_data(int num_samples_to_write){
-    uint16_t buffer[NUM_SAMPLES_IN_TEMP_BUFFER*BYTES_PER_AUDIO_SAMPLE];
-    while (num_samples_to_write){
-        int samples_this_time = btstack_min(num_samples_to_write, NUM_SAMPLES_IN_TEMP_BUFFER);
-        hxcmod_fillbuffer(&mod_context, (unsigned short *) &buffer[0], samples_this_time, &trkbuf);
-        btstack_ring_buffer_write(&streaming_context.audio_ring_buffer, (uint8_t*) &buffer[0], samples_this_time * BYTES_PER_AUDIO_SAMPLE);
-        num_samples_to_write -= samples_this_time;
+static void produce_mod_audio(int16_t * pcm_buffer, int num_samples_to_write){
+    hxcmod_fillbuffer(&mod_context, (unsigned short *) &pcm_buffer[0], num_samples_to_write, &trkbuf);
+}
+
+static void produce_audio(int16_t * pcm_buffer, int num_samples){
+    switch (data_source){
+        case STREAM_SINE:
+            produce_sine_audio(pcm_buffer, &sin_data, num_samples);
+            break;
+        case STREAM_MOD:
+            produce_mod_audio(pcm_buffer, num_samples);
+            break;
+    }    
+}
+
+static int fill_sbc_ring_buffer(void){
+    // performe sbc encoding
+    int total_num_bytes_read = 0;
+    int num_audio_samples_per_sbc_buffer = btstack_sbc_encoder_num_audio_frames();
+    // int audio_bytes_to_read = num_audio_samples_per_sbc_buffer * BYTES_PER_AUDIO_SAMPLE; 
+
+    while (streaming_context.samples_ready >= num_audio_samples_per_sbc_buffer
+        && btstack_ring_buffer_bytes_free(&streaming_context.sbc_ring_buffer) >= btstack_sbc_encoder_sbc_buffer_length()){ 
+
+        uint8_t pcm_frame[256*BYTES_PER_AUDIO_SAMPLE];
+
+        produce_audio((int16_t *) pcm_frame, num_audio_samples_per_sbc_buffer);
+        btstack_sbc_encoder_process_data((int16_t *) pcm_frame);
+        
+        uint16_t sbc_frame_size = btstack_sbc_encoder_sbc_buffer_length(); 
+        uint8_t * sbc_frame = btstack_sbc_encoder_sbc_buffer();
+        
+        total_num_bytes_read += num_audio_samples_per_sbc_buffer;
+        
+        if (btstack_ring_buffer_bytes_free(&streaming_context.sbc_ring_buffer) >= sbc_frame_size ){
+            uint8_t size_buffer = sbc_frame_size;
+            btstack_ring_buffer_write(&streaming_context.sbc_ring_buffer, &size_buffer, 1);
+            btstack_ring_buffer_write(&streaming_context.sbc_ring_buffer, sbc_frame, sbc_frame_size);
+        } else {
+            printf("No space in sbc buffer\n");
+        }
     }
+    return total_num_bytes_read;
 }
 
 static void avdtp_fill_audio_ring_buffer_timeout_handler(btstack_timer_source_t * timer){
@@ -557,16 +580,8 @@ static void avdtp_fill_audio_ring_buffer_timeout_handler(btstack_timer_source_t 
         streaming_context.acc_num_missed_samples -= 1000;
     }
 
-    int num_samples_to_write = btstack_min(btstack_ring_buffer_bytes_free(&streaming_context.audio_ring_buffer)/BYTES_PER_AUDIO_SAMPLE, num_samples);
-    switch (data_source){
-        case STREAM_SINE:
-            fill_audio_ring_buffer(&sin_data, num_samples_to_write);
-            break;
-        case STREAM_MOD:
-            fill_audio_ring_buffer_with_mod_data(num_samples_to_write);
-            break;
-    }
     streaming_context.time_audio_data_sent = now;
+    streaming_context.samples_ready += num_samples;
 
     int total_num_bytes_read = fill_sbc_ring_buffer();
      // schedule sending
@@ -704,10 +719,7 @@ int btstack_main(int argc, const char * argv[]){
     gap_discoverable_control(1);
     gap_set_class_of_device(0x200408);
     
-    memset(audio_samples_storage, 0, sizeof(audio_samples_storage));
     memset(sbc_samples_storage, 0, sizeof(sbc_samples_storage));
-    
-    btstack_ring_buffer_init(&streaming_context.audio_ring_buffer, audio_samples_storage, sizeof(audio_samples_storage));
     btstack_ring_buffer_init(&streaming_context.sbc_ring_buffer, sbc_samples_storage, sizeof(sbc_samples_storage));
     streaming_context.fill_audio_ring_buffer_timeout_ms = 50;
 
