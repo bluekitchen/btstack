@@ -116,6 +116,10 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t * connection, uint8_
                         sep.in_use = (packet[i] >> 1) & 0x01;
                         sep.media_type = (avdtp_media_type_t)(packet[i+1] >> 4);
                         sep.type = (avdtp_sep_type_t)((packet[i+1] >> 3) & 0x01);
+
+                        if (avdtp_find_remote_sep(stream_endpoint->connection, sep.seid) == 0xFF){
+                            connection->remote_seps[connection->remote_seps_num++] = sep;
+                        }
                         avdtp_signaling_emit_sep(context->avdtp_callback, connection->con_handle, sep);
                     }
                     break;
@@ -157,7 +161,7 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t * connection, uint8_
                     sep.configured_service_categories = avdtp_unpack_service_capabilities(connection, &sep.configuration, connection->signaling_packet.command+4, connection->signaling_packet.size-4);
                     // TODO check if configuration is supported
                     
-                    remote_sep_index = avdtp_get_index_of_remote_stream_endpoint_with_seid(stream_endpoint, sep.seid);
+                    remote_sep_index = avdtp_find_remote_sep(stream_endpoint->connection, sep.seid);
                     if (remote_sep_index != 0xFF){
                         stream_endpoint->remote_sep_index = remote_sep_index;
                         stream_endpoint->connection->remote_seps[stream_endpoint->remote_sep_index] = sep;
@@ -174,7 +178,7 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t * connection, uint8_
                     // TODO check if configuration is supported
                     
                     // find or add sep
-                    remote_sep_index = avdtp_get_index_of_remote_stream_endpoint_with_seid(stream_endpoint, sep.seid);
+                    remote_sep_index = avdtp_find_remote_sep(stream_endpoint->connection, sep.seid);
                     if (remote_sep_index != 0xFF){
                         stream_endpoint->remote_sep_index = remote_sep_index;
                     } else {

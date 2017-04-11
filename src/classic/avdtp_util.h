@@ -94,6 +94,7 @@ void avdtp_request_can_send_now_self(avdtp_connection_t * connection, uint16_t l
 uint8_t avdtp_get_index_of_remote_stream_endpoint_with_seid(avdtp_stream_endpoint_t * stream_endpoint, uint16_t acp_seid);
 
 void avdtp_initialize_stream_endpoint(avdtp_stream_endpoint_t * stream_endpoint);
+uint8_t avdtp_find_remote_sep(avdtp_connection_t * connection, uint8_t remote_seid);
 
 #if defined __cplusplus
 }

@@ -213,13 +213,7 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, uint8_t
                         break;
                     }
                     // find or add sep
-                    int i;
-                    stream_endpoint->remote_sep_index = 0xFF;
-                    for (i=0; i < stream_endpoint->connection->remote_seps_num; i++){
-                        if (stream_endpoint->connection->remote_seps[i].seid == sep.seid){
-                            stream_endpoint->remote_sep_index = i;
-                        }
-                    }
+                    stream_endpoint->remote_sep_index = avdtp_find_remote_sep(stream_endpoint->connection, sep.seid);
                     printf("    ACP .. seid %d, index %d\n", sep.seid, stream_endpoint->remote_sep_index);
                     
                     if (stream_endpoint->remote_sep_index != 0xFF){
@@ -228,6 +222,7 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, uint8_t
                             connection->error_code = SEP_IN_USE;
                             // find first registered category and fire the error
                             connection->reject_service_category = 0;
+                            int i;
                             for (i = 1; i < 9; i++){
                                 if (get_bit16(sep.configured_service_categories, i)){
                                     connection->reject_service_category = i;
@@ -280,14 +275,7 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, uint8_t
                     }
 
                     // find sep or raise error
-                    int i;
-                    stream_endpoint->remote_sep_index = 0xFF;
-                    for (i = 0; i < stream_endpoint->connection->remote_seps_num; i++){
-                        if (stream_endpoint->connection->remote_seps[i].seid == sep.seid){
-                            stream_endpoint->remote_sep_index = i;
-                        }
-                    }
-
+                    stream_endpoint->remote_sep_index = avdtp_find_remote_sep(stream_endpoint->connection, sep.seid);
                     if (stream_endpoint->remote_sep_index == 0xFF){
                         printf("    ACP: REJECT AVDTP_SI_RECONFIGURE, BAD_ACP_SEID\n");
                         stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_REJECT_CATEGORY_WITH_ERROR_CODE;
