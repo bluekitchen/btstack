@@ -160,9 +160,9 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t * connection, uint8_
                     remote_sep_index = avdtp_get_index_of_remote_stream_endpoint_with_seid(stream_endpoint, sep.seid);
                     if (remote_sep_index != 0xFF){
                         stream_endpoint->remote_sep_index = remote_sep_index;
-                        stream_endpoint->remote_seps[stream_endpoint->remote_sep_index] = sep;
+                        stream_endpoint->connection->remote_seps[stream_endpoint->remote_sep_index] = sep;
                         stream_endpoint->state = AVDTP_STREAM_ENDPOINT_CONFIGURED;
-                        printf("    INT: update seid %d, to %p\n", stream_endpoint->remote_seps[stream_endpoint->remote_sep_index].seid, stream_endpoint);
+                        printf("    INT: update seid %d, to %p\n", stream_endpoint->connection->remote_seps[stream_endpoint->remote_sep_index].seid, stream_endpoint);
                     } 
                     break;
 
@@ -178,11 +178,11 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t * connection, uint8_
                     if (remote_sep_index != 0xFF){
                         stream_endpoint->remote_sep_index = remote_sep_index;
                     } else {
-                        stream_endpoint->remote_sep_index = stream_endpoint->remote_seps_num;
-                        stream_endpoint->remote_seps_num++;
+                        stream_endpoint->remote_sep_index = stream_endpoint->connection->remote_seps_num;
+                        stream_endpoint->connection->remote_seps_num++;
                     }
-                    stream_endpoint->remote_seps[stream_endpoint->remote_sep_index] = sep;
-                    printf("    INT: configured remote seid %d, to %p\n", stream_endpoint->remote_seps[stream_endpoint->remote_sep_index].seid, stream_endpoint);
+                    stream_endpoint->connection->remote_seps[stream_endpoint->remote_sep_index] = sep;
+                    printf("    INT: configured remote seid %d, to %p\n", stream_endpoint->connection->remote_seps[stream_endpoint->remote_sep_index].seid, stream_endpoint);
                     stream_endpoint->state = AVDTP_STREAM_ENDPOINT_CONFIGURED;
                     break;
                 }

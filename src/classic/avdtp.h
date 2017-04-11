@@ -422,6 +422,10 @@ typedef struct {
     uint8_t reject_service_category;
     avdtp_signal_identifier_t reject_signal_identifier;
     uint8_t error_code;
+
+    // store configurations with remote seps
+    avdtp_sep_t remote_seps[MAX_NUM_SEPS];
+    uint8_t remote_seps_num;
 } avdtp_connection_t;
 
 
@@ -440,10 +444,6 @@ typedef struct avdtp_stream_endpoint {
     
     // active connection
     avdtp_connection_t * connection;
-    // store configurations with remote seps
-    avdtp_sep_t remote_seps[MAX_NUM_SEPS];
-    uint8_t remote_seps_num;
-
     // currently active remote seid
     uint8_t remote_sep_index;
     // register request for media L2cap connection release

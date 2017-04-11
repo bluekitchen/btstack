@@ -59,9 +59,7 @@ void avdtp_initialize_stream_endpoint(avdtp_stream_endpoint_t * stream_endpoint)
     stream_endpoint->initiator_config_state = AVDTP_INITIATOR_STREAM_CONFIG_IDLE;
     stream_endpoint->remote_sep_index = 0;
     stream_endpoint->media_disconnect = 0;
-    stream_endpoint->remote_seps_num = 0;
     stream_endpoint->sep.in_use = 0;
-    memset(stream_endpoint->remote_seps, 0, sizeof(stream_endpoint->remote_seps));
     stream_endpoint->remote_sep_index = 0;
 }
 
@@ -146,7 +144,8 @@ avdtp_stream_endpoint_t * avdtp_stream_endpoint_associated_with_acp_seid(uint16_
     while (btstack_linked_list_iterator_has_next(&it)){
         avdtp_stream_endpoint_t * stream_endpoint = (avdtp_stream_endpoint_t *)btstack_linked_list_iterator_next(&it);
         if (stream_endpoint->remote_sep_index >= 0 && stream_endpoint->remote_sep_index < MAX_NUM_SEPS){
-            if (stream_endpoint->remote_seps[stream_endpoint->remote_sep_index].seid == acp_seid){
+            if (!stream_endpoint->connection) continue;
+            if (stream_endpoint->connection->remote_seps[stream_endpoint->remote_sep_index].seid == acp_seid){
                 return stream_endpoint;
             }
         }
@@ -789,12 +788,13 @@ void avdtp_request_can_send_now_self(avdtp_connection_t * connection, uint16_t l
 }
 
 uint8_t avdtp_get_index_of_remote_stream_endpoint_with_seid(avdtp_stream_endpoint_t * stream_endpoint, uint16_t seid){
-    if (stream_endpoint->remote_seps[stream_endpoint->remote_sep_index].seid == seid){
+    if (!stream_endpoint->connection) return 0xFF;
+    if (stream_endpoint->connection->remote_seps[stream_endpoint->remote_sep_index].seid == seid){
         return stream_endpoint->remote_sep_index;
     }
     int i;
-    for (i=0; i < stream_endpoint->remote_seps_num; i++){
-        if (stream_endpoint->remote_seps[i].seid == seid){
+    for (i=0; i < stream_endpoint->connection->remote_seps_num; i++){
+        if (stream_endpoint->connection->remote_seps[i].seid == seid){
             return i;
         }
     }

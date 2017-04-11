@@ -215,15 +215,15 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, uint8_t
                     // find or add sep
                     int i;
                     stream_endpoint->remote_sep_index = 0xFF;
-                    for (i=0; i < stream_endpoint->remote_seps_num; i++){
-                        if (stream_endpoint->remote_seps[i].seid == sep.seid){
+                    for (i=0; i < stream_endpoint->connection->remote_seps_num; i++){
+                        if (stream_endpoint->connection->remote_seps[i].seid == sep.seid){
                             stream_endpoint->remote_sep_index = i;
                         }
                     }
                     printf("    ACP .. seid %d, index %d\n", sep.seid, stream_endpoint->remote_sep_index);
                     
                     if (stream_endpoint->remote_sep_index != 0xFF){
-                        if (stream_endpoint->remote_seps[stream_endpoint->remote_sep_index].in_use){
+                        if (stream_endpoint->connection->remote_seps[stream_endpoint->remote_sep_index].in_use){
                             // reject if already configured
                             connection->error_code = SEP_IN_USE;
                             // find first registered category and fire the error
@@ -237,16 +237,16 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, uint8_t
                             connection->reject_signal_identifier = connection->signaling_packet.signal_identifier;
                             stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_REJECT_CATEGORY_WITH_ERROR_CODE;
                         } else {
-                            stream_endpoint->remote_seps[stream_endpoint->remote_sep_index] = sep;
-                            printf("    ACP: update seid %d, to %p\n", stream_endpoint->remote_seps[stream_endpoint->remote_sep_index].seid, stream_endpoint);
+                            stream_endpoint->connection->remote_seps[stream_endpoint->remote_sep_index] = sep;
+                            printf("    ACP: update seid %d, to %p\n", stream_endpoint->connection->remote_seps[stream_endpoint->remote_sep_index].seid, stream_endpoint);
                         }
                     } else {
                         // add new
                         printf("    ACP: seid %d not found in %p\n", sep.seid, stream_endpoint);
-                        stream_endpoint->remote_sep_index = stream_endpoint->remote_seps_num;
-                        stream_endpoint->remote_seps_num++;
-                        stream_endpoint->remote_seps[stream_endpoint->remote_sep_index] = sep;
-                        printf("    ACP: add seid %d, to %p\n", stream_endpoint->remote_seps[stream_endpoint->remote_sep_index].seid, stream_endpoint);
+                        stream_endpoint->remote_sep_index = stream_endpoint->connection->remote_seps_num;
+                        stream_endpoint->connection->remote_seps_num++;
+                        stream_endpoint->connection->remote_seps[stream_endpoint->remote_sep_index] = sep;
+                        printf("    ACP: add seid %d, to %p\n", stream_endpoint->connection->remote_seps[stream_endpoint->remote_sep_index].seid, stream_endpoint);
                     } 
                     if (get_bit16(sep.configured_service_categories, AVDTP_MEDIA_CODEC)){
                         switch (sep.configuration.media_codec.media_codec_type){
@@ -282,8 +282,8 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, uint8_t
                     // find sep or raise error
                     int i;
                     stream_endpoint->remote_sep_index = 0xFF;
-                    for (i = 0; i < stream_endpoint->remote_seps_num; i++){
-                        if (stream_endpoint->remote_seps[i].seid == sep.seid){
+                    for (i = 0; i < stream_endpoint->connection->remote_seps_num; i++){
+                        if (stream_endpoint->connection->remote_seps[i].seid == sep.seid){
                             stream_endpoint->remote_sep_index = i;
                         }
                     }
@@ -295,8 +295,8 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, uint8_t
                         connection->reject_signal_identifier = connection->signaling_packet.signal_identifier;
                         break;
                     }
-                    stream_endpoint->remote_seps[stream_endpoint->remote_sep_index] = sep;
-                    printf("    ACP: update seid %d, to %p\n", stream_endpoint->remote_seps[stream_endpoint->remote_sep_index].seid, stream_endpoint);
+                    stream_endpoint->connection->remote_seps[stream_endpoint->remote_sep_index] = sep;
+                    printf("    ACP: update seid %d, to %p\n", stream_endpoint->connection->remote_seps[stream_endpoint->remote_sep_index].seid, stream_endpoint);
 
                     if (get_bit16(sep.configured_service_categories, AVDTP_MEDIA_CODEC)){
                         switch (sep.capabilities.media_codec.media_codec_type){
@@ -549,7 +549,7 @@ void avdtp_acceptor_stream_config_subsm_run(avdtp_connection_t * connection, avd
             break;
 
         case AVDTP_ACCEPTOR_W2_ANSWER_GET_CONFIGURATION:{
-            avdtp_sep_t sep = stream_endpoint->remote_seps[stream_endpoint->remote_sep_index];
+            avdtp_sep_t sep = stream_endpoint->connection->remote_seps[stream_endpoint->remote_sep_index];
             avdtp_prepare_capabilities(&connection->signaling_packet, trid, sep.configured_service_categories, sep.configuration, AVDTP_SI_GET_CONFIGURATION);
             l2cap_reserve_packet_buffer();
             out_buffer = l2cap_get_outgoing_buffer();
