@@ -24,10 +24,10 @@ undiscoverable again, once a connection is established. See Listing
 ~~~~ {#lst:Discoverable .c caption="{Setting discoverable mode.}"}
 
     int main(void){
-        ... 
+        ...
         // make discoverable
         gap_discoverable_control(1);
-        btstack_run_loop_execute(); 
+        btstack_run_loop_execute();
         return 0;
     }
     void packet_handler (uint8_t packet_type, uint8_t *packet, uint16_t size){
@@ -39,7 +39,7 @@ undiscoverable again, once a connection is established. See Listing
               ...
          }
      }
-~~~~ 
+~~~~
 
 ### Discover remote devices {#sec:GAPdiscoverRemoteDevices}
 
@@ -50,7 +50,7 @@ remote devices are reported as a part of:
 
 - HCI_EVENT-_INQUIRY_RESULT_WITH_RSSI, or
 
-- HCI_EVENT_EXTENDED_INQUIRY_RESPONSE events. 
+- HCI_EVENT_EXTENDED_INQUIRY_RESPONSE events.
 
 Each response contains at least the Bluetooth address, the class of device, the page scan
 repetition mode, and the clock offset of found device. The latter events
@@ -104,7 +104,7 @@ Extended Inquiry Result (EIR). A code snippet is shown in Listing
            ...
         }
     }
-~~~~ 
+~~~~
 
 By default, neither RSSI values nor EIR are reported. If the Bluetooth
 device implements Bluetooth Specification 2.1 or higher, the
@@ -137,14 +137,14 @@ PIN, see Listing [below](#lst:PinCodeRequest).
                 // inform about pin code request
                 printf("Pin code request - using '0000'\n\r");
                 hci_event_pin_code_request_get_bd_addr(packet, bd_addr);
-                
+
                 // baseband address, pin length, PIN: c-string
                 hci_send_cmd(&hci_pin_code_request_reply, &bd_addr, 4, "0000");
                 break;
            ...
         }
     }
-~~~~ 
+~~~~
 
 The Bluetooth v2.1 specification introduces Secure Simple Pairing (SSP),
 which is a better approach as it both improves security and is better
@@ -158,7 +158,7 @@ user.
 
 Regardless of the authentication mechanism (PIN/SSP), on success, both
 devices will generate a link key. The link key can be stored either in
-the Bluetooth module itself or in a persistent storage, see 
+the Bluetooth module itself or in a persistent storage, see
 [here](porting/#sec:persistentStoragePorting). The next time the device connects and
 requests an authenticated connection, both devices can use the
 previously generated link key. Please note that the pairing must be
@@ -180,17 +180,17 @@ two Bluetooth enabled devices.
 ### Accessing an SPP Server on a remote device
 
 To access a remote SPP server, you first need to query the remote device
-for its SPP services. Section [on querying remote SDP service](#sec:querySDPProtocols) 
-shows how to query for all RFCOMM channels. For SPP, you can do the same 
-but use the SPP UUID 0x1101 for the query. After you have identified the 
-correct RFCOMM channel, you can create an RFCOMM connection as shown 
+for its SPP services. Section [on querying remote SDP service](#sec:querySDPProtocols)
+shows how to query for all RFCOMM channels. For SPP, you can do the same
+but use the SPP UUID 0x1101 for the query. After you have identified the
+correct RFCOMM channel, you can create an RFCOMM connection as shown
 [here](protocols/#sec:rfcommClientProtocols).
 
 ### Providing an SPP Server
 
 To provide an SPP Server, you need to provide an RFCOMM service with a
-specific RFCOMM channel number as explained in section on 
-[RFCOMM service](protocols/#sec:rfcommServiceProtocols). Then, you need to create 
+specific RFCOMM channel number as explained in section on
+[RFCOMM service](protocols/#sec:rfcommServiceProtocols). Then, you need to create
 an SDP record for it and publish it with the SDP server by calling
 *sdp_register_service*. BTstack provides the
 *spp_create_sdp_record* function in that requires an empty buffer of
@@ -249,8 +249,8 @@ description.
 
 ## HSP - Headset Profile
 
-The HSP profile defines how a Bluetooth-enabled headset should communicate 
-with another Bluetooth enabled device. It relies on SCO for audio encoded 
+The HSP profile defines how a Bluetooth-enabled headset should communicate
+with another Bluetooth enabled device. It relies on SCO for audio encoded
 in 64 kbit/s CVSD and a subset of AT commands from GSM 07.07 for
 minimal controls including the ability to ring, answer a call, hang up and adjust the volume.
 
@@ -305,7 +305,7 @@ To toggle privacy mode using private addresses, call the
 with *gap_random_address_set_update_period*.
 
 After a connection is established, the Security Manager will try to
-resolve the peer Bluetooth address as explained in Section on 
+resolve the peer Bluetooth address as explained in Section on
 [SMP](protocols/#sec:smpProtocols).
 
 ### Advertising and Discovery
@@ -381,7 +381,7 @@ perform a GATT query on a particular connection using
 *le_event*s are returned before a *GATT_EVENT_QUERY_COMPLETE* event
 completes the query.
 
-For more details on the available GATT queries, please consult 
+For more details on the available GATT queries, please consult
 [GATT Client API](#sec:gattClientAPIAppendix).
 
 
@@ -418,10 +418,10 @@ The current format is shown in Listing [below](#lst:GATTServerProfile).
     PRIMARY_SERVICE, {SERVICE_UUID}
     CHARACTERISTIC, {ATTRIBUTE_TYPE_UUID}, {PROPERTIES}, {VALUE}
     ...
-~~~~ 
+~~~~
 
-Properties can be a list of READ $|$ WRITE $|$ WRITE_WITHOUT_RESPONSE
-$|$ NOTIFY $|$ INDICATE $|$ DYNAMIC.
+Properties can be a list of READ | WRITE | WRITE_WITHOUT_RESPONSE
+| NOTIFY | INDICATE | DYNAMIC.
 
 Value can either be a string (“this is a string”), or, a sequence of hex
 bytes (e.g. 01 02 03).
@@ -457,7 +457,7 @@ to receive a ATT_EVENT_CAN_SEND_NOW event.
 ### Implementing Standard GATT Services {#sec:GATTStandardServices}
 
 Implementation of a standard GATT Service consists of the following 4 steps:
-  
+
   1. Identify full Service Name
   2. Use Service Name to fetch XML definition at Bluetooth SIG site and convert into generic .gatt file
   3. Edit .gatt file to set constant values and exclude unwanted Characteristics
@@ -467,7 +467,7 @@ Step 1:
 
 To facilitate the creation of .gatt files for standard profiles defined by the Bluetooth SIG,
 the *tool/convert_gatt_service.py* script can be used. When run without a parameter, it queries the
-Bluetooth SIG website and lists the available Services by their Specification Name, e.g., 
+Bluetooth SIG website and lists the available Services by their Specification Name, e.g.,
 *org.bluetooth.service.battery_service*.
 
     $ tool/convert_gatt_service.py
@@ -523,12 +523,12 @@ Please compare the .gatt file against the [Adopted Specifications](https://www.b
 
 Step 4:
 
-As described [above](#sec:GATTServerProfiles) all read/write requests are handled by the application. 
-To implement the new services as a reusable module, it's neccessary to get access to all read/write requests related to this service. 
+As described [above](#sec:GATTServerProfiles) all read/write requests are handled by the application.
+To implement the new services as a reusable module, it's neccessary to get access to all read/write requests related to this service.
 
 For this, the ATT DB allows to register read/write callbacks for a specific handle range with *att_server_register_can_send_now_callback()*.
 
-Since the handle range depends on the application's .gatt file, the handle range for Primary and Secondary Services can be queried with *gatt_server_get_get_handle_range_for_service_with_uuid16*. 
+Since the handle range depends on the application's .gatt file, the handle range for Primary and Secondary Services can be queried with *gatt_server_get_get_handle_range_for_service_with_uuid16*.
 
 Similarly, you will need to know the attribute handle for particular Characteristics to handle Characteristic read/writes requests. You can get the attribute value handle for a Characteristics *gatt_server_get_value_handle_for_characteristic_with_uuid16()*.
 
@@ -537,4 +537,3 @@ In addition to the attribute value handle, the handle for the Client Characteris
 Finally, in order to send Notifications and Indications independently from the main application, *att_server_register_can_send_now_callback* can be used to request a callback when it's possible to send a Notification or Indication.
 
 To see how this works together, please check out the Battery Service Server in *src/ble/battery_service_server.c*.
-
