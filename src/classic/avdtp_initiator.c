@@ -117,7 +117,7 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t * connection, uint8_
                         sep.media_type = (avdtp_media_type_t)(packet[i+1] >> 4);
                         sep.type = (avdtp_sep_type_t)((packet[i+1] >> 3) & 0x01);
 
-                        if (avdtp_find_remote_sep(stream_endpoint->connection, sep.seid) == 0xFF){
+                        if (avdtp_find_remote_sep(connection, sep.seid) == 0xFF){
                             connection->remote_seps[connection->remote_seps_num++] = sep;
                         }
                         avdtp_signaling_emit_sep(context->avdtp_callback, connection->con_handle, sep);
@@ -161,12 +161,12 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t * connection, uint8_
                     sep.configured_service_categories = avdtp_unpack_service_capabilities(connection, &sep.configuration, connection->signaling_packet.command+4, connection->signaling_packet.size-4);
                     // TODO check if configuration is supported
                     
-                    remote_sep_index = avdtp_find_remote_sep(stream_endpoint->connection, sep.seid);
+                    remote_sep_index = avdtp_find_remote_sep(connection, sep.seid);
                     if (remote_sep_index != 0xFF){
                         stream_endpoint->remote_sep_index = remote_sep_index;
-                        stream_endpoint->connection->remote_seps[stream_endpoint->remote_sep_index] = sep;
+                        connection->remote_seps[stream_endpoint->remote_sep_index] = sep;
                         stream_endpoint->state = AVDTP_STREAM_ENDPOINT_CONFIGURED;
-                        printf("    INT: update seid %d, to %p\n", stream_endpoint->connection->remote_seps[stream_endpoint->remote_sep_index].seid, stream_endpoint);
+                        printf("    INT: update seid %d, to %p\n", connection->remote_seps[stream_endpoint->remote_sep_index].seid, stream_endpoint);
                     } 
                     break;
 
@@ -178,15 +178,15 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t * connection, uint8_
                     // TODO check if configuration is supported
                     
                     // find or add sep
-                    remote_sep_index = avdtp_find_remote_sep(stream_endpoint->connection, sep.seid);
+                    remote_sep_index = avdtp_find_remote_sep(connection, sep.seid);
                     if (remote_sep_index != 0xFF){
                         stream_endpoint->remote_sep_index = remote_sep_index;
                     } else {
-                        stream_endpoint->remote_sep_index = stream_endpoint->connection->remote_seps_num;
+                        stream_endpoint->remote_sep_index = connection->remote_seps_num;
                         stream_endpoint->connection->remote_seps_num++;
                     }
-                    stream_endpoint->connection->remote_seps[stream_endpoint->remote_sep_index] = sep;
-                    printf("    INT: configured remote seid %d, to %p\n", stream_endpoint->connection->remote_seps[stream_endpoint->remote_sep_index].seid, stream_endpoint);
+                    connection->remote_seps[stream_endpoint->remote_sep_index] = sep;
+                    printf("    INT: configured remote seid %d, to %p\n", connection->remote_seps[stream_endpoint->remote_sep_index].seid, stream_endpoint);
                     stream_endpoint->state = AVDTP_STREAM_ENDPOINT_CONFIGURED;
                     break;
                 }

@@ -152,28 +152,28 @@ void avdtp_sink_suspend(uint16_t con_handle, uint8_t acp_seid);
  * @param con_handle
  * @param seid
  */
-void avdtp_sink_open_stream(uint16_t con_handle, uint8_t acp_seid);
+void avdtp_sink_open_stream(uint16_t con_handle,  uint8_t int_seid, uint8_t acp_seid);
 
 /**
  * @brief Start stream
  * @param con_handle
  * @param seid
  */
-void avdtp_sink_start_stream(uint16_t con_handle, uint8_t acp_seid);
+void avdtp_sink_start_stream(uint16_t con_handle,  uint8_t int_seid, uint8_t acp_seid);
 
 /**
  * @brief Start stream
  * @param con_handle
  * @param seid
  */
-void avdtp_sink_abort_stream(uint16_t con_handle, uint8_t acp_seid);
+void avdtp_sink_abort_stream(uint16_t con_handle,  uint8_t int_seid, uint8_t acp_seid);
 
 /**
  * @brief Start stream
  * @param con_handle
  * @param seid
  */
-void avdtp_sink_stop_stream(uint16_t con_handle, uint8_t acp_seid);
+void avdtp_sink_stop_stream(uint16_t con_handle,  uint8_t int_seid, uint8_t acp_seid);
 
 /* API_END */
 

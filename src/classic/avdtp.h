@@ -476,10 +476,11 @@ avdtp_connection_t * avdtp_create_connection(bd_addr_t remote_addr, avdtp_contex
 avdtp_stream_endpoint_t * avdtp_create_stream_endpoint(avdtp_sep_type_t sep_type, avdtp_media_type_t media_type, avdtp_context_t * context);
 
 void avdtp_disconnect(uint16_t con_handle, avdtp_context_t * context);
-void avdtp_open_stream(uint16_t con_handle, uint8_t acp_seid, avdtp_context_t * context);
-void avdtp_start_stream(uint16_t con_handle, uint8_t acp_seid, avdtp_context_t * context);
-void avdtp_stop_stream(uint16_t con_handle, uint8_t acp_seid, avdtp_context_t * context);
-void avdtp_abort_stream(uint16_t con_handle, uint8_t acp_seid, avdtp_context_t * context);
+void avdtp_open_stream(uint16_t con_handle, uint8_t int_seid, uint8_t acp_seid, avdtp_context_t * context);
+void avdtp_start_stream(uint16_t con_handle, uint8_t int_seid, uint8_t acp_seid, avdtp_context_t * context);
+void avdtp_stop_stream(uint16_t con_handle, uint8_t int_seid, uint8_t acp_seid, avdtp_context_t * context);
+void avdtp_abort_stream(uint16_t con_handle, uint8_t int_seid, uint8_t acp_seid, avdtp_context_t * context);
+
 void avdtp_discover_stream_endpoints(uint16_t con_handle, avdtp_context_t * context);
 void avdtp_get_capabilities(uint16_t con_handle, uint8_t acp_seid, avdtp_context_t * context);
 void avdtp_get_all_capabilities(uint16_t con_handle, uint8_t acp_seid, avdtp_context_t * context);
@@ -487,6 +488,8 @@ void avdtp_get_configuration(uint16_t con_handle, uint8_t acp_seid, avdtp_contex
 void avdtp_set_configuration(uint16_t con_handle, uint8_t int_seid, uint8_t acp_seid, uint16_t configured_services_bitmap, avdtp_capabilities_t configuration, avdtp_context_t * context);
 void avdtp_reconfigure(uint16_t con_handle, uint8_t acp_seid, uint16_t configured_services_bitmap, avdtp_capabilities_t configuration, avdtp_context_t * context);
 void avdtp_suspend(uint16_t con_handle, uint8_t acp_seid, avdtp_context_t * context);
+uint8_t avdtp_remote_seps_num(uint16_t con_handle, avdtp_context_t * context);
+avdtp_sep_t * avdtp_remote_sep(uint16_t con_handle, uint8_t index, avdtp_context_t * context);
 
 #if defined __cplusplus
 }

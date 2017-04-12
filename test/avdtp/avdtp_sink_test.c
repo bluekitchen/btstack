@@ -600,19 +600,19 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
             break;
         case 'o':
             app_state = AVDTP_APPLICATION_W2_OPEN_STREAM_WITH_SEID;
-            avdtp_sink_open_stream(con_handle, sep.seid);
+            avdtp_sink_open_stream(con_handle, local_stream_endpoint->sep.seid, sep.seid);
             break;
         case 'm': 
             app_state = AVDTP_APPLICATION_W2_START_STREAM_WITH_SEID;
-            avdtp_sink_start_stream(con_handle, sep.seid);
+            avdtp_sink_start_stream(con_handle, local_stream_endpoint->sep.seid, sep.seid);
             break;
         case 'A':
             app_state = AVDTP_APPLICATION_W2_ABORT_STREAM_WITH_SEID;
-            avdtp_sink_abort_stream(con_handle, sep.seid);
+            avdtp_sink_abort_stream(con_handle, local_stream_endpoint->sep.seid, sep.seid);
             break;
         case 'S':
             app_state = AVDTP_APPLICATION_W2_STOP_STREAM_WITH_SEID;
-            avdtp_sink_stop_stream(con_handle, sep.seid);
+            avdtp_sink_stop_stream(con_handle, local_stream_endpoint->sep.seid, sep.seid);
             break;
         case 'P':
             app_state = AVDTP_APPLICATION_W2_SUSPEND_STREAM_WITH_SEID;

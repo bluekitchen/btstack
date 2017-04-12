@@ -451,21 +451,25 @@ void avdtp_disconnect(uint16_t con_handle, avdtp_context_t * context){
     avdtp_request_can_send_now_self(connection, connection->l2cap_signaling_cid);
 }
 
-void avdtp_open_stream(uint16_t con_handle, uint8_t acp_seid, avdtp_context_t * context){
+void avdtp_open_stream(uint16_t con_handle, uint8_t int_seid, uint8_t acp_seid, avdtp_context_t * context){
     avdtp_connection_t * connection = avdtp_connection_for_con_handle(con_handle, context);
     if (!connection){
         printf("avdtp_media_connect: no connection for handle 0x%02x found\n", con_handle);
         return;
     }
-    
+    if (avdtp_find_remote_sep(connection, acp_seid) == 0xFF){
+        printf("avdtp_media_connect: no remote sep for seid %d found\n", acp_seid);
+        return;
+    }
+
     if (connection->state != AVDTP_SIGNALING_CONNECTION_OPENED) {
         printf("avdtp_media_connect: wrong connection state %d\n", connection->state);
         return;
     }
 
-    avdtp_stream_endpoint_t * stream_endpoint = avdtp_stream_endpoint_associated_with_acp_seid(acp_seid, context);
+    avdtp_stream_endpoint_t * stream_endpoint = avdtp_stream_endpoint_with_seid(int_seid, context);
     if (!stream_endpoint) {
-        printf("avdtp_media_connect: no stream_endpoint with acp seid %d found\n", acp_seid);
+        printf("avdtp_media_connect: no stream_endpoint with seid %d found\n", int_seid);
         return;
     }
     
@@ -480,21 +484,25 @@ void avdtp_open_stream(uint16_t con_handle, uint8_t acp_seid, avdtp_context_t * 
     avdtp_request_can_send_now_initiator(connection, connection->l2cap_signaling_cid);
 }
 
-void avdtp_start_stream(uint16_t con_handle, uint8_t acp_seid, avdtp_context_t * context){
+void avdtp_start_stream(uint16_t con_handle, uint8_t int_seid, uint8_t acp_seid, avdtp_context_t * context){
     avdtp_connection_t * connection = avdtp_connection_for_con_handle(con_handle, context);
     if (!connection){
-        printf("avdtp_media_connect: no connection for handle 0x%02x found\n", con_handle);
+        printf("avdtp_start_stream: no connection for handle 0x%02x found\n", con_handle);
+        return;
+    }
+    if (avdtp_find_remote_sep(connection, acp_seid) == 0xFF){
+        printf("avdtp_start_stream: no remote sep for seid %d found\n", acp_seid);
         return;
     }
     
     if (connection->state != AVDTP_SIGNALING_CONNECTION_OPENED) {
-        printf("avdtp_media_connect: wrong connection state %d\n", connection->state);
+        printf("avdtp_start_stream: wrong connection state %d\n", connection->state);
         return;
     }
 
-    avdtp_stream_endpoint_t * stream_endpoint = avdtp_stream_endpoint_associated_with_acp_seid(acp_seid, context);
+    avdtp_stream_endpoint_t * stream_endpoint = avdtp_stream_endpoint_with_seid(int_seid, context);
     if (!stream_endpoint) {
-        printf("avdtp_media_connect: no stream_endpoint with acp_seid %d found\n", acp_seid);
+        printf("avdtp_start_stream: no stream_endpoint with seid %d found\n", int_seid);
         return;
     }
     if (stream_endpoint->remote_sep_index == 0xFF) return;
@@ -506,20 +514,25 @@ void avdtp_start_stream(uint16_t con_handle, uint8_t acp_seid, avdtp_context_t *
     avdtp_request_can_send_now_initiator(connection, connection->l2cap_signaling_cid);
 }
 
-void avdtp_stop_stream(uint16_t con_handle, uint8_t acp_seid, avdtp_context_t * context){
+void avdtp_stop_stream(uint16_t con_handle, uint8_t int_seid, uint8_t acp_seid, avdtp_context_t * context){
     avdtp_connection_t * connection = avdtp_connection_for_con_handle(con_handle, context);
     if (!connection){
         printf("avdtp_stop_stream: no connection for handle 0x%02x found\n", con_handle);
         return;
     }
+    if (avdtp_find_remote_sep(connection, acp_seid) == 0xFF){
+        printf("avdtp_stop_stream: no remote sep for seid %d found\n", acp_seid);
+        return;
+    }
+
     if (connection->state != AVDTP_SIGNALING_CONNECTION_OPENED) {
         printf("avdtp_stop_stream: wrong connection state %d\n", connection->state);
         return;
     }
 
-    avdtp_stream_endpoint_t * stream_endpoint = avdtp_stream_endpoint_associated_with_acp_seid(acp_seid, context);
+    avdtp_stream_endpoint_t * stream_endpoint = avdtp_stream_endpoint_with_seid(int_seid, context);
     if (!stream_endpoint) {
-        printf("avdtp_stop_stream: no stream_endpoint with acp seid %d found\n", acp_seid);
+        printf("avdtp_stop_stream: no stream_endpoint with seid %d found\n", int_seid);
         return;
     }
     if (stream_endpoint->remote_sep_index == 0xFF) return;
@@ -538,21 +551,25 @@ void avdtp_stop_stream(uint16_t con_handle, uint8_t acp_seid, avdtp_context_t * 
     }
 }
 
-void avdtp_abort_stream(uint16_t con_handle, uint8_t acp_seid, avdtp_context_t * context){
+void avdtp_abort_stream(uint16_t con_handle, uint8_t int_seid, uint8_t acp_seid, avdtp_context_t * context){
     avdtp_connection_t * connection = avdtp_connection_for_con_handle(con_handle, context);
     if (!connection){
         printf("avdtp_abort_stream: no connection for handle 0x%02x found\n", con_handle);
         return;
     }
-    
+    if (avdtp_find_remote_sep(connection, acp_seid) == 0xFF){
+        printf("avdtp_abort_stream: no remote sep for seid %d found\n", acp_seid);
+        return;
+    }
+
     if (connection->state != AVDTP_SIGNALING_CONNECTION_OPENED) {
         printf("avdtp_abort_stream: wrong connection state %d\n", connection->state);
         return;
     }
 
-    avdtp_stream_endpoint_t * stream_endpoint = avdtp_stream_endpoint_associated_with_acp_seid(acp_seid, context);
+    avdtp_stream_endpoint_t * stream_endpoint = avdtp_stream_endpoint_with_seid(int_seid, context);
     if (!stream_endpoint) {
-        printf("avdtp_abort_stream: no stream_endpoint for seid %d found\n", acp_seid);
+        printf("avdtp_abort_stream: no stream_endpoint with seid %d found\n", int_seid);
         return;
     }
     if (stream_endpoint->remote_sep_index == 0xFF) return;
@@ -672,6 +689,7 @@ void avdtp_reconfigure(uint16_t con_handle, uint8_t acp_seid, uint16_t configure
     if (connection->state < AVDTP_SIGNALING_CONNECTION_OPENED) return;
     if (connection->initiator_connection_state != AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE) return;
     avdtp_stream_endpoint_t * stream_endpoint = avdtp_stream_endpoint_associated_with_acp_seid(acp_seid, context);
+    
     if (!stream_endpoint) return;
     if (stream_endpoint->remote_sep_index == 0xFF) return;
     connection->initiator_transaction_label++;
@@ -699,4 +717,22 @@ void avdtp_suspend(uint16_t con_handle, uint8_t acp_seid, avdtp_context_t * cont
     connection->int_seid = stream_endpoint->sep.seid;
     stream_endpoint->initiator_config_state = AVDTP_INITIATOR_W2_SUSPEND_STREAM_WITH_SEID;
     avdtp_request_can_send_now_initiator(connection, connection->l2cap_signaling_cid);
+}
+
+uint8_t avdtp_remote_seps_num(uint16_t con_handle, avdtp_context_t * context){
+    avdtp_connection_t * connection = avdtp_connection_for_con_handle(con_handle, context);
+    if (!connection){
+        printf("avdtp_suspend: no connection for handle 0x%02x found\n", con_handle);
+        return 0;
+    }
+    return connection->remote_seps_num;
+}
+
+avdtp_sep_t * avdtp_remote_sep(uint16_t con_handle, uint8_t index, avdtp_context_t * context){
+    avdtp_connection_t * connection = avdtp_connection_for_con_handle(con_handle, context);
+    if (!connection){
+        printf("avdtp_suspend: no connection for handle 0x%02x found\n", con_handle);
+        return NULL;
+    }
+    return &connection->remote_seps[index];
 }

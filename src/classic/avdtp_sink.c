@@ -237,20 +237,20 @@ void avdtp_sink_disconnect(uint16_t con_handle){
     avdtp_disconnect(con_handle, &avdtp_sink_context);
 }
 
-void avdtp_sink_open_stream(uint16_t con_handle, uint8_t acp_seid){
-    avdtp_open_stream(con_handle, acp_seid, &avdtp_sink_context);
+void avdtp_sink_open_stream(uint16_t con_handle, uint8_t int_seid, uint8_t acp_seid){
+    avdtp_open_stream(con_handle, int_seid, acp_seid, &avdtp_sink_context);
 }
 
-void avdtp_sink_start_stream(uint16_t con_handle, uint8_t acp_seid){
-    avdtp_start_stream(con_handle, acp_seid, &avdtp_sink_context);
+void avdtp_sink_start_stream(uint16_t con_handle, uint8_t int_seid, uint8_t acp_seid){
+    avdtp_start_stream(con_handle, int_seid, acp_seid, &avdtp_sink_context);
 }
 
-void avdtp_sink_stop_stream(uint16_t con_handle, uint8_t acp_seid){
-    avdtp_stop_stream(con_handle, acp_seid, &avdtp_sink_context);
+void avdtp_sink_stop_stream(uint16_t con_handle, uint8_t int_seid, uint8_t acp_seid){
+    avdtp_stop_stream(con_handle, int_seid, acp_seid, &avdtp_sink_context);
 }
 
-void avdtp_sink_abort_stream(uint16_t con_handle, uint8_t acp_seid){
-    avdtp_abort_stream(con_handle, acp_seid, &avdtp_sink_context);
+void avdtp_sink_abort_stream(uint16_t con_handle, uint8_t int_seid, uint8_t acp_seid){
+    avdtp_abort_stream(con_handle, int_seid, acp_seid, &avdtp_sink_context);
 }
 
 void avdtp_sink_discover_stream_endpoints(uint16_t con_handle){

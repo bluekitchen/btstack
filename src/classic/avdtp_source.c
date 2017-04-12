@@ -206,20 +206,20 @@ void avdtp_source_disconnect(uint16_t con_handle){
     avdtp_disconnect(con_handle, &avdtp_source_context);
 }
 
-void avdtp_source_open_stream(uint16_t con_handle, uint8_t acp_seid){
-    avdtp_open_stream(con_handle, acp_seid, &avdtp_source_context);
+void avdtp_source_open_stream(uint16_t con_handle, uint8_t int_seid, uint8_t acp_seid){
+    avdtp_open_stream(con_handle, int_seid, acp_seid, &avdtp_source_context);
 }
 
-void avdtp_source_start_stream(uint16_t con_handle, uint8_t acp_seid){
-    avdtp_start_stream(con_handle, acp_seid, &avdtp_source_context);
+void avdtp_source_start_stream(uint16_t con_handle, uint8_t int_seid, uint8_t acp_seid){
+    avdtp_start_stream(con_handle, int_seid, acp_seid, &avdtp_source_context);
 }
 
-void avdtp_source_stop_stream(uint16_t con_handle, uint8_t acp_seid){
-    avdtp_stop_stream(con_handle, acp_seid, &avdtp_source_context);
+void avdtp_source_stop_stream(uint16_t con_handle, uint8_t int_seid, uint8_t acp_seid){
+    avdtp_stop_stream(con_handle, int_seid, acp_seid, &avdtp_source_context);
 }
 
-void avdtp_source_abort_stream(uint16_t con_handle, uint8_t acp_seid){
-    avdtp_abort_stream(con_handle, acp_seid, &avdtp_source_context);
+void avdtp_source_abort_stream(uint16_t con_handle, uint8_t int_seid, uint8_t acp_seid){
+    avdtp_abort_stream(con_handle, int_seid, acp_seid, &avdtp_source_context);
 }
 
 void avdtp_source_discover_stream_endpoints(uint16_t con_handle){
@@ -365,3 +365,10 @@ void avdtp_source_stream_send_media_payload(uint16_t l2cap_media_cid, btstack_ri
     l2cap_send_prepared(l2cap_media_cid, offset);
 }
 
+uint8_t avdtp_source_remote_seps_num(uint16_t con_handle){
+    return avdtp_remote_seps_num(con_handle, &avdtp_source_context);
+}
+
+avdtp_sep_t * avdtp_source_remote_sep(uint16_t con_handle, uint8_t index){
+    return avdtp_remote_sep(con_handle, index, &avdtp_source_context);
+}
