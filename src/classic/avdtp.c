@@ -378,7 +378,7 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
                         connection->query_seid = 0;
                         connection->state = AVDTP_SIGNALING_CONNECTION_OPENED;
                         printf(" -> AVDTP_SIGNALING_CONNECTION_OPENED, connection %p\n", connection);
-                        avdtp_signaling_emit_connection_established(context->avdtp_callback, con_handle, event_addr, 0);
+                        avdtp_signaling_emit_connection_established(context->avdtp_callback, connection->l2cap_signaling_cid, event_addr, 0);
                         break;
                     }
 
@@ -442,8 +442,8 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
     }
 }
 
-void avdtp_disconnect(uint16_t con_handle, avdtp_context_t * context){
-    avdtp_connection_t * connection = avdtp_connection_for_con_handle(con_handle, context);
+void avdtp_disconnect(uint16_t avdtp_cid, avdtp_context_t * context){
+    avdtp_connection_t * connection = avdtp_connection_for_l2cap_signaling_cid(avdtp_cid, context);
     if (!connection) return;
     if (connection->state == AVDTP_SIGNALING_CONNECTION_IDLE) return;
     if (connection->state == AVDTP_SIGNALING_CONNECTION_W4_L2CAP_DISCONNECTED) return;
@@ -452,10 +452,10 @@ void avdtp_disconnect(uint16_t con_handle, avdtp_context_t * context){
     avdtp_request_can_send_now_self(connection, connection->l2cap_signaling_cid);
 }
 
-void avdtp_open_stream(uint16_t con_handle, uint8_t int_seid, uint8_t acp_seid, avdtp_context_t * context){
-    avdtp_connection_t * connection = avdtp_connection_for_con_handle(con_handle, context);
+void avdtp_open_stream(uint16_t avdtp_cid, uint8_t int_seid, uint8_t acp_seid, avdtp_context_t * context){
+    avdtp_connection_t * connection = avdtp_connection_for_l2cap_signaling_cid(avdtp_cid, context);
     if (!connection){
-        printf("avdtp_media_connect: no connection for handle 0x%02x found\n", con_handle);
+        printf("avdtp_media_connect: no connection for signaling cid 0x%02x found\n", avdtp_cid);
         return;
     }
     if (avdtp_find_remote_sep(connection, acp_seid) == 0xFF){
@@ -485,10 +485,10 @@ void avdtp_open_stream(uint16_t con_handle, uint8_t int_seid, uint8_t acp_seid, 
     avdtp_request_can_send_now_initiator(connection, connection->l2cap_signaling_cid);
 }
 
-void avdtp_start_stream(uint16_t con_handle, uint8_t int_seid, uint8_t acp_seid, avdtp_context_t * context){
-    avdtp_connection_t * connection = avdtp_connection_for_con_handle(con_handle, context);
+void avdtp_start_stream(uint16_t avdtp_cid, uint8_t int_seid, uint8_t acp_seid, avdtp_context_t * context){
+    avdtp_connection_t * connection = avdtp_connection_for_l2cap_signaling_cid(avdtp_cid, context);
     if (!connection){
-        printf("avdtp_start_stream: no connection for handle 0x%02x found\n", con_handle);
+        printf("avdtp_start_stream: no connection for signaling cid 0x%02x found\n", avdtp_cid);
         return;
     }
     if (avdtp_find_remote_sep(connection, acp_seid) == 0xFF){
@@ -515,10 +515,10 @@ void avdtp_start_stream(uint16_t con_handle, uint8_t int_seid, uint8_t acp_seid,
     avdtp_request_can_send_now_initiator(connection, connection->l2cap_signaling_cid);
 }
 
-void avdtp_stop_stream(uint16_t con_handle, uint8_t int_seid, uint8_t acp_seid, avdtp_context_t * context){
-    avdtp_connection_t * connection = avdtp_connection_for_con_handle(con_handle, context);
+void avdtp_stop_stream(uint16_t avdtp_cid, uint8_t int_seid, uint8_t acp_seid, avdtp_context_t * context){
+    avdtp_connection_t * connection = avdtp_connection_for_l2cap_signaling_cid(avdtp_cid, context);
     if (!connection){
-        printf("avdtp_stop_stream: no connection for handle 0x%02x found\n", con_handle);
+        printf("avdtp_stop_stream: no connection for signaling cid 0x%02x found\n", avdtp_cid);
         return;
     }
     if (avdtp_find_remote_sep(connection, acp_seid) == 0xFF){
@@ -552,10 +552,10 @@ void avdtp_stop_stream(uint16_t con_handle, uint8_t int_seid, uint8_t acp_seid, 
     }
 }
 
-void avdtp_abort_stream(uint16_t con_handle, uint8_t int_seid, uint8_t acp_seid, avdtp_context_t * context){
-    avdtp_connection_t * connection = avdtp_connection_for_con_handle(con_handle, context);
+void avdtp_abort_stream(uint16_t avdtp_cid, uint8_t int_seid, uint8_t acp_seid, avdtp_context_t * context){
+    avdtp_connection_t * connection = avdtp_connection_for_l2cap_signaling_cid(avdtp_cid, context);
     if (!connection){
-        printf("avdtp_abort_stream: no connection for handle 0x%02x found\n", con_handle);
+        printf("avdtp_abort_stream: no connection for signaling cid 0x%02x found\n", avdtp_cid);
         return;
     }
     if (avdtp_find_remote_sep(connection, acp_seid) == 0xFF){
@@ -591,10 +591,10 @@ void avdtp_abort_stream(uint16_t con_handle, uint8_t int_seid, uint8_t acp_seid,
     }
 }
 
-void avdtp_discover_stream_endpoints(uint16_t con_handle, avdtp_context_t * context){
-    avdtp_connection_t * connection = avdtp_connection_for_con_handle(con_handle, context);
+void avdtp_discover_stream_endpoints(uint16_t avdtp_cid, avdtp_context_t * context){
+    avdtp_connection_t * connection = avdtp_connection_for_l2cap_signaling_cid(avdtp_cid, context);
     if (!connection){
-        printf("avdtp_discover_stream_endpoints: no connection for handle 0x%02x found\n", con_handle);
+        printf("avdtp_discover_stream_endpoints: no connection for signaling cid 0x%02x found\n", avdtp_cid);
         return;
     }
     if (connection->state != AVDTP_SIGNALING_CONNECTION_OPENED) return;
@@ -612,10 +612,10 @@ void avdtp_discover_stream_endpoints(uint16_t con_handle, avdtp_context_t * cont
 }
 
 
-void avdtp_get_capabilities(uint16_t con_handle, uint8_t acp_seid, avdtp_context_t * context){
-    avdtp_connection_t * connection = avdtp_connection_for_con_handle(con_handle, context);
+void avdtp_get_capabilities(uint16_t avdtp_cid, uint8_t acp_seid, avdtp_context_t * context){
+    avdtp_connection_t * connection = avdtp_connection_for_l2cap_signaling_cid(avdtp_cid, context);
     if (!connection){
-        printf("avdtp_get_capabilities: no connection for handle 0x%02x found\n", con_handle);
+        printf("avdtp_get_capabilities: no connection for signaling cid 0x%02x found\n", avdtp_cid);
         return;
     }
     if (connection->state != AVDTP_SIGNALING_CONNECTION_OPENED) return;
@@ -627,10 +627,10 @@ void avdtp_get_capabilities(uint16_t con_handle, uint8_t acp_seid, avdtp_context
 }
 
 
-void avdtp_get_all_capabilities(uint16_t con_handle, uint8_t acp_seid, avdtp_context_t * context){
-    avdtp_connection_t * connection = avdtp_connection_for_con_handle(con_handle, context);
+void avdtp_get_all_capabilities(uint16_t avdtp_cid, uint8_t acp_seid, avdtp_context_t * context){
+    avdtp_connection_t * connection = avdtp_connection_for_l2cap_signaling_cid(avdtp_cid, context);
     if (!connection){
-        printf("avdtp_get_all_capabilities: no connection for handle 0x%02x found\n", con_handle);
+        printf("avdtp_get_all_capabilities: no connection for signaling cid 0x%02x found\n", avdtp_cid);
         return;
     }
     if (connection->state != AVDTP_SIGNALING_CONNECTION_OPENED) return;
@@ -641,10 +641,10 @@ void avdtp_get_all_capabilities(uint16_t con_handle, uint8_t acp_seid, avdtp_con
     avdtp_request_can_send_now_initiator(connection, connection->l2cap_signaling_cid);
 }
 
-void avdtp_get_configuration(uint16_t con_handle, uint8_t acp_seid, avdtp_context_t * context){
-    avdtp_connection_t * connection = avdtp_connection_for_con_handle(con_handle, context);
+void avdtp_get_configuration(uint16_t avdtp_cid, uint8_t acp_seid, avdtp_context_t * context){
+    avdtp_connection_t * connection = avdtp_connection_for_l2cap_signaling_cid(avdtp_cid, context);
     if (!connection){
-        printf("avdtp_get_configuration: no connection for handle 0x%02x found\n", con_handle);
+        printf("avdtp_get_configuration: no connection for signaling cid 0x%02x found\n", avdtp_cid);
         return;
     }
     if (connection->state != AVDTP_SIGNALING_CONNECTION_OPENED) return;
@@ -655,10 +655,10 @@ void avdtp_get_configuration(uint16_t con_handle, uint8_t acp_seid, avdtp_contex
     avdtp_request_can_send_now_initiator(connection, connection->l2cap_signaling_cid);
 }
 
-void avdtp_set_configuration(uint16_t con_handle, uint8_t int_seid, uint8_t acp_seid, uint16_t configured_services_bitmap, avdtp_capabilities_t configuration, avdtp_context_t * context){
-    avdtp_connection_t * connection = avdtp_connection_for_con_handle(con_handle, context);
+void avdtp_set_configuration(uint16_t avdtp_cid, uint8_t int_seid, uint8_t acp_seid, uint16_t configured_services_bitmap, avdtp_capabilities_t configuration, avdtp_context_t * context){
+    avdtp_connection_t * connection = avdtp_connection_for_l2cap_signaling_cid(avdtp_cid, context);
     if (!connection){
-        log_error("avdtp_set_configuration: no connection for handle 0x%02x found\n", con_handle);
+        log_error("avdtp_set_configuration: no connection for signaling cid 0x%02x found\n", avdtp_cid);
         return;
     }
     if (connection->state != AVDTP_SIGNALING_CONNECTION_OPENED) return;
@@ -680,10 +680,10 @@ void avdtp_set_configuration(uint16_t con_handle, uint8_t int_seid, uint8_t acp_
     avdtp_request_can_send_now_initiator(connection, connection->l2cap_signaling_cid);
 }
 
-void avdtp_reconfigure(uint16_t con_handle, uint8_t acp_seid, uint16_t configured_services_bitmap, avdtp_capabilities_t configuration, avdtp_context_t * context){
-    avdtp_connection_t * connection = avdtp_connection_for_con_handle(con_handle, context);
+void avdtp_reconfigure(uint16_t avdtp_cid, uint8_t acp_seid, uint16_t configured_services_bitmap, avdtp_capabilities_t configuration, avdtp_context_t * context){
+    avdtp_connection_t * connection = avdtp_connection_for_l2cap_signaling_cid(avdtp_cid, context);
     if (!connection){
-        printf("avdtp_reconfigure: no connection for handle 0x%02x found\n", con_handle);
+        printf("avdtp_reconfigure: no connection for signaling cid 0x%02x found\n", avdtp_cid);
         return;
     }
     //TODO: if opened only app capabilities, enable reconfigure for not opened
@@ -702,10 +702,10 @@ void avdtp_reconfigure(uint16_t con_handle, uint8_t acp_seid, uint16_t configure
     avdtp_request_can_send_now_initiator(connection, connection->l2cap_signaling_cid);
 }
 
-void avdtp_suspend(uint16_t con_handle, uint8_t acp_seid, avdtp_context_t * context){
-    avdtp_connection_t * connection = avdtp_connection_for_con_handle(con_handle, context);
+void avdtp_suspend(uint16_t avdtp_cid, uint8_t acp_seid, avdtp_context_t * context){
+    avdtp_connection_t * connection = avdtp_connection_for_l2cap_signaling_cid(avdtp_cid, context);
     if (!connection){
-        printf("avdtp_suspend: no connection for handle 0x%02x found\n", con_handle);
+        printf("avdtp_suspend: no connection for signaling cid 0x%02x found\n", avdtp_cid);
         return;
     }
     if (connection->state != AVDTP_SIGNALING_CONNECTION_OPENED) return;
@@ -720,19 +720,19 @@ void avdtp_suspend(uint16_t con_handle, uint8_t acp_seid, avdtp_context_t * cont
     avdtp_request_can_send_now_initiator(connection, connection->l2cap_signaling_cid);
 }
 
-uint8_t avdtp_remote_seps_num(uint16_t con_handle, avdtp_context_t * context){
-    avdtp_connection_t * connection = avdtp_connection_for_con_handle(con_handle, context);
+uint8_t avdtp_remote_seps_num(uint16_t avdtp_cid, avdtp_context_t * context){
+    avdtp_connection_t * connection = avdtp_connection_for_l2cap_signaling_cid(avdtp_cid, context);
     if (!connection){
-        printf("avdtp_suspend: no connection for handle 0x%02x found\n", con_handle);
+        printf("avdtp_suspend: no connection for signaling cid 0x%02x found\n", avdtp_cid);
         return 0;
     }
     return connection->remote_seps_num;
 }
 
-avdtp_sep_t * avdtp_remote_sep(uint16_t con_handle, uint8_t index, avdtp_context_t * context){
-    avdtp_connection_t * connection = avdtp_connection_for_con_handle(con_handle, context);
+avdtp_sep_t * avdtp_remote_sep(uint16_t avdtp_cid, uint8_t index, avdtp_context_t * context){
+    avdtp_connection_t * connection = avdtp_connection_for_l2cap_signaling_cid(avdtp_cid, context);
     if (!connection){
-        printf("avdtp_suspend: no connection for handle 0x%02x found\n", con_handle);
+        printf("avdtp_suspend: no connection for signaling cid 0x%02x found\n", avdtp_cid);
         return NULL;
     }
     return &connection->remote_seps[index];

@@ -233,50 +233,50 @@ void avdtp_sink_connect(bd_addr_t bd_addr){
     l2cap_create_channel(packet_handler, connection->remote_addr, BLUETOOTH_PROTOCOL_AVDTP, 0xffff, NULL);
 }
 
-void avdtp_sink_disconnect(uint16_t con_handle){
-    avdtp_disconnect(con_handle, &avdtp_sink_context);
+void avdtp_sink_disconnect(uint16_t avdtp_cid){
+    avdtp_disconnect(avdtp_cid, &avdtp_sink_context);
 }
 
-void avdtp_sink_open_stream(uint16_t con_handle, uint8_t int_seid, uint8_t acp_seid){
-    avdtp_open_stream(con_handle, int_seid, acp_seid, &avdtp_sink_context);
+void avdtp_sink_open_stream(uint16_t avdtp_cid, uint8_t int_seid, uint8_t acp_seid){
+    avdtp_open_stream(avdtp_cid, int_seid, acp_seid, &avdtp_sink_context);
 }
 
-void avdtp_sink_start_stream(uint16_t con_handle, uint8_t int_seid, uint8_t acp_seid){
-    avdtp_start_stream(con_handle, int_seid, acp_seid, &avdtp_sink_context);
+void avdtp_sink_start_stream(uint16_t avdtp_cid, uint8_t int_seid, uint8_t acp_seid){
+    avdtp_start_stream(avdtp_cid, int_seid, acp_seid, &avdtp_sink_context);
 }
 
-void avdtp_sink_stop_stream(uint16_t con_handle, uint8_t int_seid, uint8_t acp_seid){
-    avdtp_stop_stream(con_handle, int_seid, acp_seid, &avdtp_sink_context);
+void avdtp_sink_stop_stream(uint16_t avdtp_cid, uint8_t int_seid, uint8_t acp_seid){
+    avdtp_stop_stream(avdtp_cid, int_seid, acp_seid, &avdtp_sink_context);
 }
 
-void avdtp_sink_abort_stream(uint16_t con_handle, uint8_t int_seid, uint8_t acp_seid){
-    avdtp_abort_stream(con_handle, int_seid, acp_seid, &avdtp_sink_context);
+void avdtp_sink_abort_stream(uint16_t avdtp_cid, uint8_t int_seid, uint8_t acp_seid){
+    avdtp_abort_stream(avdtp_cid, int_seid, acp_seid, &avdtp_sink_context);
 }
 
-void avdtp_sink_discover_stream_endpoints(uint16_t con_handle){
-    avdtp_discover_stream_endpoints(con_handle, &avdtp_sink_context);
+void avdtp_sink_discover_stream_endpoints(uint16_t avdtp_cid){
+    avdtp_discover_stream_endpoints(avdtp_cid, &avdtp_sink_context);
 }
 
-void avdtp_sink_get_capabilities(uint16_t con_handle, uint8_t acp_seid){
-    avdtp_get_capabilities(con_handle, acp_seid, &avdtp_sink_context);
+void avdtp_sink_get_capabilities(uint16_t avdtp_cid, uint8_t acp_seid){
+    avdtp_get_capabilities(avdtp_cid, acp_seid, &avdtp_sink_context);
 }
 
-void avdtp_sink_get_all_capabilities(uint16_t con_handle, uint8_t acp_seid){
-    avdtp_get_all_capabilities(con_handle, acp_seid, &avdtp_sink_context);
+void avdtp_sink_get_all_capabilities(uint16_t avdtp_cid, uint8_t acp_seid){
+    avdtp_get_all_capabilities(avdtp_cid, acp_seid, &avdtp_sink_context);
 }
 
-void avdtp_sink_get_configuration(uint16_t con_handle, uint8_t acp_seid){
-    avdtp_get_configuration(con_handle, acp_seid, &avdtp_sink_context);
+void avdtp_sink_get_configuration(uint16_t avdtp_cid, uint8_t acp_seid){
+    avdtp_get_configuration(avdtp_cid, acp_seid, &avdtp_sink_context);
 }
 
-void avdtp_sink_set_configuration(uint16_t con_handle, uint8_t int_seid, uint8_t acp_seid, uint16_t configured_services_bitmap, avdtp_capabilities_t configuration){
-    avdtp_set_configuration(con_handle, int_seid, acp_seid, configured_services_bitmap, configuration, &avdtp_sink_context);
+void avdtp_sink_set_configuration(uint16_t avdtp_cid, uint8_t int_seid, uint8_t acp_seid, uint16_t configured_services_bitmap, avdtp_capabilities_t configuration){
+    avdtp_set_configuration(avdtp_cid, int_seid, acp_seid, configured_services_bitmap, configuration, &avdtp_sink_context);
 }
 
-void avdtp_sink_reconfigure(uint16_t con_handle, uint8_t acp_seid, uint16_t configured_services_bitmap, avdtp_capabilities_t configuration){
-    avdtp_reconfigure(con_handle, acp_seid, configured_services_bitmap, configuration, &avdtp_sink_context);
+void avdtp_sink_reconfigure(uint16_t avdtp_cid, uint8_t acp_seid, uint16_t configured_services_bitmap, avdtp_capabilities_t configuration){
+    avdtp_reconfigure(avdtp_cid, acp_seid, configured_services_bitmap, configuration, &avdtp_sink_context);
 }
 
-void avdtp_sink_suspend(uint16_t con_handle, uint8_t acp_seid){
-    avdtp_suspend(con_handle, acp_seid, &avdtp_sink_context);
+void avdtp_sink_suspend(uint16_t avdtp_cid, uint8_t acp_seid){
+    avdtp_suspend(avdtp_cid, acp_seid, &avdtp_sink_context);
 }

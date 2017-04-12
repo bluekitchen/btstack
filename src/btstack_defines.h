@@ -1233,7 +1233,7 @@ typedef uint8_t sm_key_t[16];
 /**
  * @format 1H11
  * @param subevent_code
- * @param con_handle
+ * @param avdtp_cid
  * @param signal_identifier
  * @param status 0 == OK
  */
@@ -1242,7 +1242,7 @@ typedef uint8_t sm_key_t[16];
 /**
  * @format 1H1
  * @param subevent_code
- * @param con_handle
+ * @param avdtp_cid
  * @param signal_identifier 
  */
 #define AVDTP_SUBEVENT_SIGNALING_REJECT                     0x02
@@ -1250,7 +1250,7 @@ typedef uint8_t sm_key_t[16];
 /**
  * @format 1H1
  * @param subevent_code
- * @param con_handle
+ * @param avdtp_cid
  * @param signal_identifier
  */
 #define AVDTP_SUBEVENT_SIGNALING_GENERAL_REJECT             0x03
@@ -1258,7 +1258,7 @@ typedef uint8_t sm_key_t[16];
 /**
  * @format 1HB1
  * @param subevent_code
- * @param con_handle
+ * @param avdtp_cid
  * @param bd_addr
  * @param status 0 == OK
  */
@@ -1267,14 +1267,14 @@ typedef uint8_t sm_key_t[16];
 /**
  * @format 1H
  * @param subevent_code
- * @param con_handle
+ * @param avdtp_cid
  */
 #define AVDTP_SUBEVENT_SIGNALING_CONNECTION_RELEASED        0x05
 
 /**
  * @format 1H1111
  * @param subevent_code
- * @param handle
+ * @param avdtp_cid
  * @param seid        0x01 – 0x3E
  * @param in_use      0-not in use, 1-in use
  * @param media_type  0-audio, 1-video, 2-multimedia
@@ -1285,7 +1285,7 @@ typedef uint8_t sm_key_t[16];
 /**
  * @format 1H11111111
  * @param subevent_code
- * @param con_handle
+ * @param avdtp_cid
  * @param media_type
  * @param sampling_frequency_bitmap
  * @param channel_mode_bitmap
@@ -1300,7 +1300,7 @@ typedef uint8_t sm_key_t[16];
 /**
  * @format 1H12LV
  * @param subevent_code
- * @param con_handle
+ * @param avdtp_cid
  * @param media_type
  * @param media_codec_type
  * @param media_codec_information_len
@@ -1311,7 +1311,7 @@ typedef uint8_t sm_key_t[16];
 /**
  * @format 1H1121111111
  * @param subevent_code
- * @param con_handle
+ * @param avdtp_cid
  * @param reconfigure
  * @param media_type
  * @param sampling_frequency
@@ -1328,7 +1328,7 @@ typedef uint8_t sm_key_t[16];
 /**
  * @format 1H112LV
  * @param subevent_code
- * @param con_handle
+ * @param avdtp_cid
  * @param reconfigure
  * @param media_type
  * @param media_codec_type
@@ -1340,7 +1340,7 @@ typedef uint8_t sm_key_t[16];
 /**
  * @format 1H1
  * @param subevent_code
- * @param con_handle
+ * @param avdtp_cid
  * @param status 0 == OK
  */
 #define AVDTP_SUBEVENT_STREAMING_CONNECTION_ESTABLISHED     0x0B
@@ -1348,14 +1348,14 @@ typedef uint8_t sm_key_t[16];
 /**
  * @format 1H
  * @param subevent_code
- * @param con_handle
+ * @param avdtp_cid
  */
 #define AVDTP_SUBEVENT_STREAMING_CONNECTION_RELEASED        0x0C
 
 /**
  * @format 1H12
  * @param subevent_code
- * @param con_handle
+ * @param avdtp_cid
  * @param seid
  * @param sequence_number
  */

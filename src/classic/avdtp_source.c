@@ -263,19 +263,17 @@ void avdtp_source_init(void){
     l2cap_register_service(&packet_handler, BLUETOOTH_PROTOCOL_AVDTP, 0xffff, LEVEL_0);
 }
 
-int avdtp_source_streaming_endpoint_ready(uint16_t con_handle){
-    avdtp_stream_endpoint_t * stream_endpoint = avdtp_stream_endpoint_for_l2cap_cid(con_handle, &avdtp_source_context);
+int avdtp_source_stream_endpoint_ready(avdtp_stream_endpoint_t * stream_endpoint){
     if (!stream_endpoint) {
-        printf("no stream_endpoint found for 0x%02x", con_handle);
+        printf("no stream_endpoint");
         return 0;
     }
     return (stream_endpoint->state == AVDTP_STREAM_ENDPOINT_STREAMING || stream_endpoint->state == AVDTP_STREAM_ENDPOINT_STREAMING_W2_SEND);
 }
 
-void avdtp_source_request_can_send_now(uint16_t con_handle){
-    avdtp_stream_endpoint_t * stream_endpoint = avdtp_stream_endpoint_for_l2cap_cid(con_handle, &avdtp_source_context);
+void avdtp_source_stream_endpoint_request_can_send_now(avdtp_stream_endpoint_t * stream_endpoint){
     if (!stream_endpoint) {
-        printf("no stream_endpoint found for 0x%02x", con_handle);
+        printf("no stream_endpoint");
         return;
     }
     stream_endpoint->state = AVDTP_STREAM_ENDPOINT_STREAMING_W2_SEND;
@@ -365,10 +363,10 @@ void avdtp_source_stream_send_media_payload(uint16_t l2cap_media_cid, btstack_ri
     l2cap_send_prepared(l2cap_media_cid, offset);
 }
 
-uint8_t avdtp_source_remote_seps_num(uint16_t con_handle){
-    return avdtp_remote_seps_num(con_handle, &avdtp_source_context);
+uint8_t avdtp_source_remote_seps_num(uint16_t avdtp_cid){
+    return avdtp_remote_seps_num(avdtp_cid, &avdtp_source_context);
 }
 
-avdtp_sep_t * avdtp_source_remote_sep(uint16_t con_handle, uint8_t index){
-    return avdtp_remote_sep(con_handle, index, &avdtp_source_context);
+avdtp_sep_t * avdtp_source_remote_sep(uint16_t avdtp_cid, uint8_t index){
+    return avdtp_remote_sep(avdtp_cid, index, &avdtp_source_context);
 }
