@@ -234,7 +234,8 @@ static void stream_endpoint_state_machine(avdtp_connection_t * connection, avdtp
                         stream_endpoint->state = AVDTP_STREAM_ENDPOINT_OPENED;
                         stream_endpoint->connection = connection;
                         stream_endpoint->l2cap_media_cid = l2cap_event_channel_opened_get_local_cid(packet);
-                        printf(" -> AVDTP_STREAM_ENDPOINT_OPENED, stream endpoint %p, connection %p\n", stream_endpoint, connection);
+                        stream_endpoint->media_con_handle = l2cap_event_channel_opened_get_handle(packet);
+                        printf(" -> AVDTP_STREAM_ENDPOINT_OPENED, media con handle 0x%02x, l2cap_media_cid 0x%02x\n", stream_endpoint->media_con_handle, stream_endpoint->l2cap_media_cid);
                         avdtp_streaming_emit_connection_established(context->avdtp_callback, stream_endpoint->l2cap_media_cid, 0);
                         break;
                     }
@@ -689,7 +690,7 @@ void avdtp_reconfigure(uint16_t con_handle, uint8_t acp_seid, uint16_t configure
     if (connection->state < AVDTP_SIGNALING_CONNECTION_OPENED) return;
     if (connection->initiator_connection_state != AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE) return;
     avdtp_stream_endpoint_t * stream_endpoint = avdtp_stream_endpoint_associated_with_acp_seid(acp_seid, context);
-    
+
     if (!stream_endpoint) return;
     if (stream_endpoint->remote_sep_index == 0xFF) return;
     connection->initiator_transaction_label++;

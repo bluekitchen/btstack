@@ -434,6 +434,7 @@ typedef struct avdtp_stream_endpoint {
     
     // original capabilities
     avdtp_sep_t sep;
+    hci_con_handle_t media_con_handle;
     uint16_t l2cap_media_cid;
     uint16_t l2cap_reporting_cid;
     uint16_t l2cap_recovery_cid;
