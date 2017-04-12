@@ -116,7 +116,7 @@ void avdtp_register_header_compression_category(avdtp_stream_endpoint_t * stream
     stream_endpoint->sep.capabilities.header_compression.recovery = recovery;
 }
 
-void avdtp_register_media_codec_category(avdtp_stream_endpoint_t * stream_endpoint, avdtp_media_type_t media_type, avdtp_media_codec_type_t media_codec_type, const uint8_t * media_codec_info, uint16_t media_codec_info_len){
+void avdtp_register_media_codec_category(avdtp_stream_endpoint_t * stream_endpoint, avdtp_media_type_t media_type, avdtp_media_codec_type_t media_codec_type, uint8_t * media_codec_info, uint16_t media_codec_info_len){
     if (!stream_endpoint){
         log_error("avdtp_register_media_transport_category: stream endpoint with given seid is not registered");
         return;
@@ -680,7 +680,7 @@ void avdtp_set_configuration(uint16_t avdtp_cid, uint8_t int_seid, uint8_t acp_s
     avdtp_request_can_send_now_initiator(connection, connection->l2cap_signaling_cid);
 }
 
-void avdtp_reconfigure(uint16_t avdtp_cid, uint8_t acp_seid, uint16_t configured_services_bitmap, avdtp_capabilities_t configuration, avdtp_context_t * context){
+void avdtp_reconfigure(uint16_t avdtp_cid, uint8_t int_seid, uint8_t acp_seid, uint16_t configured_services_bitmap, avdtp_capabilities_t configuration, avdtp_context_t * context){
     avdtp_connection_t * connection = avdtp_connection_for_l2cap_signaling_cid(avdtp_cid, context);
     if (!connection){
         printf("avdtp_reconfigure: no connection for signaling cid 0x%02x found\n", avdtp_cid);
@@ -689,10 +689,18 @@ void avdtp_reconfigure(uint16_t avdtp_cid, uint8_t acp_seid, uint16_t configured
     //TODO: if opened only app capabilities, enable reconfigure for not opened
     if (connection->state < AVDTP_SIGNALING_CONNECTION_OPENED) return;
     if (connection->initiator_connection_state != AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE) return;
-    avdtp_stream_endpoint_t * stream_endpoint = avdtp_stream_endpoint_associated_with_acp_seid(acp_seid, context);
+   
+    avdtp_stream_endpoint_t * stream_endpoint = avdtp_stream_endpoint_for_seid(int_seid, context);
+    if (!stream_endpoint) {
+        log_error("avdtp_reconfigure: no initiator stream endpoint for seid %d\n", int_seid);
+        return;
+    }  
 
-    if (!stream_endpoint) return;
-    if (stream_endpoint->remote_sep_index == 0xFF) return;
+    if (stream_endpoint->remote_sep_index == 0xFF){
+        log_error("avdtp_reconfigure: no associated remote sep\n");
+        return;
+    } 
+
     connection->initiator_transaction_label++;
     connection->acp_seid = acp_seid;
     connection->int_seid = stream_endpoint->sep.seid;
@@ -702,7 +710,7 @@ void avdtp_reconfigure(uint16_t avdtp_cid, uint8_t acp_seid, uint16_t configured
     avdtp_request_can_send_now_initiator(connection, connection->l2cap_signaling_cid);
 }
 
-void avdtp_suspend(uint16_t avdtp_cid, uint8_t acp_seid, avdtp_context_t * context){
+void avdtp_suspend(uint16_t avdtp_cid, uint8_t int_seid, uint8_t acp_seid, avdtp_context_t * context){
     avdtp_connection_t * connection = avdtp_connection_for_l2cap_signaling_cid(avdtp_cid, context);
     if (!connection){
         printf("avdtp_suspend: no connection for signaling cid 0x%02x found\n", avdtp_cid);
@@ -710,9 +718,16 @@ void avdtp_suspend(uint16_t avdtp_cid, uint8_t acp_seid, avdtp_context_t * conte
     }
     if (connection->state != AVDTP_SIGNALING_CONNECTION_OPENED) return;
     if (connection->initiator_connection_state != AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE) return;
-    avdtp_stream_endpoint_t * stream_endpoint = avdtp_stream_endpoint_associated_with_acp_seid(acp_seid, context);
-    if (!stream_endpoint) return;
-    if (stream_endpoint->remote_sep_index == 0xFF) return;
+    avdtp_stream_endpoint_t * stream_endpoint = avdtp_stream_endpoint_for_seid(int_seid, context);
+    if (!stream_endpoint) {
+        log_error("avdtp_reconfigure: no initiator stream endpoint for seid %d\n", int_seid);
+        return;
+    }  
+    
+    if (stream_endpoint->remote_sep_index == 0xFF){
+        log_error("avdtp_reconfigure: no associated remote sep\n");
+        return;
+    } 
     connection->initiator_transaction_label++;
     connection->acp_seid = acp_seid;
     connection->int_seid = stream_endpoint->sep.seid;
@@ -736,4 +751,102 @@ avdtp_sep_t * avdtp_remote_sep(uint16_t avdtp_cid, uint8_t index, avdtp_context_
         return NULL;
     }
     return &connection->remote_seps[index];
+}
+
+void avdtp_store_sbc_configuration(uint8_t * config_storage, uint16_t size, uint8_t sampling_frequency, uint8_t channel_mode, uint8_t block_length, uint8_t subbands, uint8_t allocation_method, uint8_t max_bitpool_value, uint8_t min_bitpool_value){
+    if (size < 4) {
+        printf("storage must have 4 bytes\n");
+        return;
+    }
+    config_storage[0] = (sampling_frequency << 4) | channel_mode;
+    config_storage[1] = (block_length << 4) | (subbands << 2) | allocation_method;
+    config_storage[2] = min_bitpool_value;
+    config_storage[3] = max_bitpool_value;
+}
+
+uint8_t avdtp_choose_sbc_channel_mode(avdtp_stream_endpoint_t * stream_endpoint, uint8_t remote_channel_mode_bitmap){
+    uint8_t * media_codec = stream_endpoint->sep.capabilities.media_codec.media_codec_information;
+    uint8_t channel_mode_bitmap = (media_codec[0] & 0x0F) & remote_channel_mode_bitmap;
+    
+    uint8_t channel_mode = AVDTP_SBC_STEREO;
+    if (channel_mode_bitmap & AVDTP_SBC_JOINT_STEREO){
+        channel_mode = AVDTP_SBC_JOINT_STEREO;
+    } else if (channel_mode_bitmap & AVDTP_SBC_STEREO){
+        channel_mode = AVDTP_SBC_STEREO;
+    } else if (channel_mode_bitmap & AVDTP_SBC_DUAL_CHANNEL){
+        channel_mode = AVDTP_SBC_DUAL_CHANNEL;
+    } else if (channel_mode_bitmap & AVDTP_SBC_MONO){
+        channel_mode = AVDTP_SBC_MONO;
+    } 
+    return channel_mode;
+}
+
+uint8_t avdtp_choose_sbc_allocation_method(avdtp_stream_endpoint_t * stream_endpoint, uint8_t remote_allocation_method_bitmap){
+    uint8_t * media_codec = stream_endpoint->sep.capabilities.media_codec.media_codec_information;
+    uint8_t allocation_method_bitmap = (media_codec[1] & 0x03) & remote_allocation_method_bitmap;
+    
+    uint8_t allocation_method = AVDTP_SBC_ALLOCATION_METHOD_LOUDNESS;
+    if (allocation_method_bitmap & AVDTP_SBC_ALLOCATION_METHOD_LOUDNESS){
+        allocation_method = AVDTP_SBC_ALLOCATION_METHOD_LOUDNESS;
+    } else if (allocation_method_bitmap & AVDTP_SBC_ALLOCATION_METHOD_SNR){
+        allocation_method = AVDTP_SBC_ALLOCATION_METHOD_SNR;
+    }
+    return allocation_method;
+}
+
+uint8_t avdtp_choose_sbc_subbands(avdtp_stream_endpoint_t * stream_endpoint, uint8_t remote_subbands_bitmap){
+    uint8_t * media_codec = stream_endpoint->sep.capabilities.media_codec.media_codec_information;
+    uint8_t subbands_bitmap = ((media_codec[1] >> 2) & 0x03) & remote_subbands_bitmap;
+    
+    uint8_t subbands = AVDTP_SBC_SUBBANDS_8;
+    if (subbands_bitmap & AVDTP_SBC_SUBBANDS_8){
+        subbands = AVDTP_SBC_SUBBANDS_8;
+    } else if (subbands_bitmap & AVDTP_SBC_SUBBANDS_4){
+        subbands = AVDTP_SBC_SUBBANDS_4;
+    }
+    return subbands;
+}
+
+uint8_t avdtp_choose_sbc_block_length(avdtp_stream_endpoint_t * stream_endpoint, uint8_t remote_block_length_bitmap){
+    uint8_t * media_codec = stream_endpoint->sep.capabilities.media_codec.media_codec_information;
+    uint8_t block_length_bitmap = (media_codec[1] >> 4) & remote_block_length_bitmap;
+    
+    uint8_t block_length = AVDTP_SBC_BLOCK_LENGTH_16;
+    if (block_length_bitmap & AVDTP_SBC_BLOCK_LENGTH_16){
+        block_length = AVDTP_SBC_BLOCK_LENGTH_16;
+    } else if (block_length_bitmap & AVDTP_SBC_BLOCK_LENGTH_12){
+        block_length = AVDTP_SBC_BLOCK_LENGTH_12;
+    } else if (block_length_bitmap & AVDTP_SBC_BLOCK_LENGTH_8){
+        block_length = AVDTP_SBC_BLOCK_LENGTH_8;
+    } else if (block_length_bitmap & AVDTP_SBC_BLOCK_LENGTH_4){
+        block_length = AVDTP_SBC_BLOCK_LENGTH_4;
+    } 
+    return block_length;
+}
+
+uint8_t avdtp_choose_sbc_sampling_frequency(avdtp_stream_endpoint_t * stream_endpoint, uint8_t remote_sampling_frequency_bitmap){
+    uint8_t * media_codec = stream_endpoint->sep.capabilities.media_codec.media_codec_information;
+    uint8_t sampling_frequency_bitmap = (media_codec[0] >> 4) & remote_sampling_frequency_bitmap;
+
+    uint8_t sampling_frequency = AVDTP_SBC_44100;
+    if (sampling_frequency_bitmap & AVDTP_SBC_48000){
+        sampling_frequency = AVDTP_SBC_48000;
+    } else if (sampling_frequency_bitmap & AVDTP_SBC_44100){
+        sampling_frequency = AVDTP_SBC_44100;
+    } else if (sampling_frequency_bitmap & AVDTP_SBC_32000){
+        sampling_frequency = AVDTP_SBC_32000;
+    } else if (sampling_frequency_bitmap & AVDTP_SBC_16000){
+        sampling_frequency = AVDTP_SBC_16000;
+    } 
+    return sampling_frequency;
+}
+
+uint8_t avdtp_choose_sbc_max_bitpool_value(avdtp_stream_endpoint_t * stream_endpoint, uint8_t remote_max_bitpool_value){
+    uint8_t * media_codec = stream_endpoint->sep.capabilities.media_codec.media_codec_information;
+    return btstack_min(media_codec[3], remote_max_bitpool_value);
+}
+
+uint8_t avdtp_choose_sbc_min_bitpool_value(avdtp_stream_endpoint_t * stream_endpoint, uint8_t remote_min_bitpool_value){
+    uint8_t * media_codec = stream_endpoint->sep.capabilities.media_codec.media_codec_information;
+    return btstack_max(media_codec[2], remote_min_bitpool_value);
 }

@@ -70,7 +70,7 @@ void avdtp_source_register_delay_reporting_category(uint8_t seid);
 void avdtp_source_register_recovery_category(uint8_t seid, uint8_t maximum_recovery_window_size, uint8_t maximum_number_media_packets);
 void avdtp_source_register_content_protection_category(uint8_t seid, uint16_t cp_type, const uint8_t * cp_type_value, uint8_t cp_type_value_len);
 void avdtp_source_register_header_compression_category(uint8_t seid, uint8_t back_ch, uint8_t media, uint8_t recovery);
-void avdtp_source_register_media_codec_category(uint8_t seid, avdtp_media_type_t media_type, avdtp_media_codec_type_t media_codec_type, const uint8_t * media_codec_info, uint16_t media_codec_info_len);
+void avdtp_source_register_media_codec_category(uint8_t seid, avdtp_media_type_t media_type, avdtp_media_codec_type_t media_codec_type, uint8_t * media_codec_info, uint16_t media_codec_info_len);
 void avdtp_source_register_multiplexing_category(uint8_t seid, uint8_t fragmentation);
 
 
@@ -119,7 +119,7 @@ void avdtp_source_set_configuration(uint16_t avdtp_cid, uint8_t int_seid, uint8_
  * @param avdtp_cid
  * @param seid
  */
-void avdtp_source_reconfigure(uint16_t avdtp_cid, uint8_t acp_seid, uint16_t configured_services_bitmap, avdtp_capabilities_t configuration);
+void avdtp_source_reconfigure(uint16_t avdtp_cid, uint8_t int_seid, uint8_t acp_seid, uint16_t configured_services_bitmap, avdtp_capabilities_t configuration);
 
 /**
  * @brief Get configuration
@@ -132,7 +132,7 @@ void avdtp_source_get_configuration(uint16_t avdtp_cid, uint8_t acp_seid);
  * @param avdtp_cid
  * @param seid
  */
-void avdtp_source_suspend(uint16_t avdtp_cid, uint8_t acp_seid);
+void avdtp_source_suspend(uint16_t avdtp_cid, uint8_t int_seid, uint8_t acp_seid);
 
 
 /**

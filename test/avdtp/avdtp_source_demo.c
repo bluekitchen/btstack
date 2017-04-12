@@ -130,7 +130,6 @@ static uint16_t avdtp_cid = 0;
 
 static uint8_t sdp_avdtp_source_service_buffer[150];
 
-static adtvp_media_codec_information_sbc_t sbc_capability;
 static avdtp_media_codec_configuration_sbc_t sbc_configuration;
 static avdtp_stream_endpoint_t * local_stream_endpoint;
 
@@ -204,63 +203,6 @@ static const char * avdtp_si2str(uint16_t index){
     return avdtp_si_name[index];
 }
 
-static void dump_sbc_capability(adtvp_media_codec_information_sbc_t media_codec_sbc){
-    printf(" --- avdtp source --- Received media codec capability:\n");
-    printf("  - sampling_frequency: 0x%02x\n", media_codec_sbc.sampling_frequency_bitmap);
-    printf("  - channel_mode: 0x%02x\n", media_codec_sbc.channel_mode_bitmap);
-    printf("  - block_length: 0x%02x\n", media_codec_sbc.block_length_bitmap);
-    printf("  - subbands: 0x%02x\n", media_codec_sbc.subbands_bitmap);
-    printf("  - allocation_method: 0x%02x\n", media_codec_sbc.allocation_method_bitmap);
-    printf("  - bitpool_value [%d, %d] \n", media_codec_sbc.min_bitpool_value, media_codec_sbc.max_bitpool_value);
-    printf("\n");
-}
-
-static void avdtp_choose_sbc_configuration_from_sbc_codec_information(adtvp_media_codec_information_sbc_t * media_codec_information, uint8_t * configuration){
-    uint8_t sampling_frequency = AVDTP_SBC_44100;
-    uint8_t channel_mode = AVDTP_SBC_STEREO;
-    uint8_t block_length = AVDTP_SBC_BLOCK_LENGTH_16;
-    uint8_t subbands = AVDTP_SBC_SUBBANDS_8;
-    uint8_t allocation_method = AVDTP_SBC_ALLOCATION_METHOD_LOUDNESS;
-
-    if (media_codec_information->channel_mode_bitmap & AVDTP_SBC_JOINT_STEREO){
-        channel_mode = AVDTP_SBC_JOINT_STEREO;
-    } else if (media_codec_information->channel_mode_bitmap & AVDTP_SBC_STEREO){
-        channel_mode = AVDTP_SBC_STEREO;
-    } else if (media_codec_information->channel_mode_bitmap & AVDTP_SBC_DUAL_CHANNEL){
-        channel_mode = AVDTP_SBC_DUAL_CHANNEL;
-    } else if (media_codec_information->channel_mode_bitmap & AVDTP_SBC_MONO){
-        channel_mode = AVDTP_SBC_MONO;
-    } 
-
-    if (media_codec_information->block_length_bitmap & AVDTP_SBC_BLOCK_LENGTH_16){
-        block_length = AVDTP_SBC_BLOCK_LENGTH_16;
-    } else if (media_codec_information->block_length_bitmap & AVDTP_SBC_BLOCK_LENGTH_12){
-        block_length = AVDTP_SBC_BLOCK_LENGTH_12;
-    } else if (media_codec_information->block_length_bitmap & AVDTP_SBC_BLOCK_LENGTH_8){
-        block_length = AVDTP_SBC_BLOCK_LENGTH_8;
-    } else if (media_codec_information->block_length_bitmap & AVDTP_SBC_BLOCK_LENGTH_4){
-        block_length = AVDTP_SBC_BLOCK_LENGTH_4;
-    } 
-
-    if (media_codec_information->subbands_bitmap & AVDTP_SBC_SUBBANDS_8){
-        subbands = AVDTP_SBC_SUBBANDS_8;
-    } else if (media_codec_information->subbands_bitmap & AVDTP_SBC_SUBBANDS_4){
-        subbands = AVDTP_SBC_SUBBANDS_4;
-    }
-
-    if (media_codec_information->allocation_method_bitmap & AVDTP_SBC_ALLOCATION_METHOD_LOUDNESS){
-        allocation_method = AVDTP_SBC_ALLOCATION_METHOD_LOUDNESS;
-    } else if (media_codec_information->allocation_method_bitmap & AVDTP_SBC_ALLOCATION_METHOD_SNR){
-        allocation_method = AVDTP_SBC_ALLOCATION_METHOD_SNR;
-    }
-
-    configuration[0] = (sampling_frequency << 4) | channel_mode;
-    configuration[1] = (block_length << 4) | (subbands << 2) | allocation_method;
-    configuration[2] = media_codec_information->min_bitpool_value;
-    configuration[3] = media_codec_information->max_bitpool_value;
-    printf(" --- avdtp source --- SBC settings: frequency %d, channel_mode %d, block_length %d, subbands %d, allocation_method %d, bitpool [%d,%d] \n", sampling_frequency, channel_mode, block_length, 
-        subbands, allocation_method, media_codec_information->min_bitpool_value, media_codec_information->max_bitpool_value);
-}
 
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
@@ -320,25 +262,19 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             break;
 
                         case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CAPABILITY:{
-                            sbc_capability.sampling_frequency_bitmap = avdtp_subevent_signaling_media_codec_sbc_capability_get_sampling_frequency_bitmap(packet);
-                            sbc_capability.channel_mode_bitmap = avdtp_subevent_signaling_media_codec_sbc_capability_get_channel_mode_bitmap(packet);
-                            sbc_capability.block_length_bitmap = avdtp_subevent_signaling_media_codec_sbc_capability_get_block_length_bitmap(packet);
-                            sbc_capability.subbands_bitmap = avdtp_subevent_signaling_media_codec_sbc_capability_get_subbands_bitmap(packet);
-                            sbc_capability.allocation_method_bitmap = avdtp_subevent_signaling_media_codec_sbc_capability_get_allocation_method_bitmap(packet);
-                            sbc_capability.min_bitpool_value = avdtp_subevent_signaling_media_codec_sbc_capability_get_min_bitpool_value(packet);
-                            sbc_capability.max_bitpool_value = avdtp_subevent_signaling_media_codec_sbc_capability_get_max_bitpool_value(packet);
+                            uint8_t sampling_frequency = avdtp_choose_sbc_sampling_frequency(local_stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_sampling_frequency_bitmap(packet));
+                            uint8_t channel_mode = avdtp_choose_sbc_channel_mode(local_stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_channel_mode_bitmap(packet));
+                            uint8_t block_length = avdtp_choose_sbc_block_length(local_stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_block_length_bitmap(packet));
+                            uint8_t subbands = avdtp_choose_sbc_subbands(local_stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_subbands_bitmap(packet));
                             
-                            dump_sbc_capability(sbc_capability);
-                            
-                            if (!sbc_capability.sampling_frequency_bitmap) break;
-                            if (!sbc_capability.channel_mode_bitmap) break;
-                            if (!sbc_capability.block_length_bitmap) break;
-                            if (!sbc_capability.allocation_method_bitmap) break;
-                            if (!sbc_capability.subbands_bitmap) break;
-                            
-                            if (!(sbc_capability.sampling_frequency_bitmap & AVDTP_SBC_44100)) break;
+                            uint8_t allocation_method = avdtp_choose_sbc_allocation_method(local_stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_allocation_method_bitmap(packet));
+                            uint8_t max_bitpool_value = avdtp_choose_sbc_max_bitpool_value(local_stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_max_bitpool_value(packet));
+                            uint8_t min_bitpool_value = avdtp_choose_sbc_min_bitpool_value(local_stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_min_bitpool_value(packet));
+    
+                            avdtp_store_sbc_configuration(media_sbc_codec_configuration, sizeof(media_sbc_codec_configuration), 
+                                sampling_frequency, channel_mode, block_length, subbands, 
+                                allocation_method, max_bitpool_value, min_bitpool_value);
 
-                            avdtp_choose_sbc_configuration_from_sbc_codec_information(&sbc_capability, media_sbc_codec_configuration);
                             app_state = AVDTP_APPLICATION_W2_SET_CONFIGURATION;
                             
                             active_remote_sep = avdtp_source_remote_sep(avdtp_cid, next_remote_sep_index_to_query);
@@ -657,7 +593,7 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
             break;
         case 'P':
             app_state = AVDTP_APPLICATION_W2_SUSPEND_STREAM_WITH_SEID;
-            avdtp_source_suspend(avdtp_cid, active_remote_sep->seid);
+            avdtp_source_suspend(avdtp_cid, local_stream_endpoint->sep.seid, active_remote_sep->seid);
             break;
         case 'x':
             printf("Start streaming sine.\n");

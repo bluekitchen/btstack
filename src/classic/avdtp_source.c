@@ -170,7 +170,7 @@ void avdtp_source_register_header_compression_category(uint8_t seid, uint8_t bac
     avdtp_register_header_compression_category(stream_endpoint, back_ch, media, recovery);
 }
 
-void avdtp_source_register_media_codec_category(uint8_t seid, avdtp_media_type_t media_type, avdtp_media_codec_type_t media_codec_type, const uint8_t * media_codec_info, uint16_t media_codec_info_len){
+void avdtp_source_register_media_codec_category(uint8_t seid, avdtp_media_type_t media_type, avdtp_media_codec_type_t media_codec_type, uint8_t * media_codec_info, uint16_t media_codec_info_len){
     avdtp_stream_endpoint_t * stream_endpoint = avdtp_stream_endpoint_for_seid(seid, &avdtp_source_context);
     avdtp_register_media_codec_category(stream_endpoint, media_type, media_codec_type, media_codec_info, media_codec_info_len);
 }
@@ -242,12 +242,12 @@ void avdtp_source_set_configuration(uint16_t con_handle, uint8_t int_seid, uint8
     avdtp_set_configuration(con_handle, int_seid, acp_seid, configured_services_bitmap, configuration, &avdtp_source_context);
 }
 
-void avdtp_source_reconfigure(uint16_t con_handle, uint8_t acp_seid, uint16_t configured_services_bitmap, avdtp_capabilities_t configuration){
-    avdtp_reconfigure(con_handle, acp_seid, configured_services_bitmap, configuration, &avdtp_source_context);
+void avdtp_source_reconfigure(uint16_t con_handle, uint8_t int_seid, uint8_t acp_seid, uint16_t configured_services_bitmap, avdtp_capabilities_t configuration){
+    avdtp_reconfigure(con_handle, int_seid, acp_seid, configured_services_bitmap, configuration, &avdtp_source_context);
 }
 
-void avdtp_source_suspend(uint16_t con_handle, uint8_t acp_seid){
-    avdtp_suspend(con_handle, acp_seid, &avdtp_source_context);
+void avdtp_source_suspend(uint16_t con_handle, uint8_t int_seid, uint8_t acp_seid){
+    avdtp_suspend(con_handle, int_seid, acp_seid, &avdtp_source_context);
 }
 
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){

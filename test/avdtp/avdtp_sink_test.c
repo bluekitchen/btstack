@@ -530,19 +530,19 @@ static void show_usage(void){
     printf("---\n");
 }
 
-static const uint8_t media_sbc_codec_capabilities[] = {
+static uint8_t media_sbc_codec_capabilities[] = {
     0xFF,//(AVDTP_SBC_44100 << 4) | AVDTP_SBC_STEREO,
     0xFF,//(AVDTP_SBC_BLOCK_LENGTH_16 << 4) | (AVDTP_SBC_SUBBANDS_8 << 2) | AVDTP_SBC_ALLOCATION_METHOD_LOUDNESS,
     2, 53
 }; 
 
-static const uint8_t media_sbc_codec_configuration[] = {
+static uint8_t media_sbc_codec_configuration[] = {
     (AVDTP_SBC_44100 << 4) | AVDTP_SBC_STEREO,
     (AVDTP_SBC_BLOCK_LENGTH_16 << 4) | (AVDTP_SBC_SUBBANDS_8 << 2) | AVDTP_SBC_ALLOCATION_METHOD_LOUDNESS,
     2, 53
 }; 
 
-static const uint8_t media_sbc_codec_reconfiguration[] = {
+static uint8_t media_sbc_codec_reconfiguration[] = {
     (AVDTP_SBC_44100 << 4) | AVDTP_SBC_STEREO,
     (AVDTP_SBC_BLOCK_LENGTH_16 << 4) | (AVDTP_SBC_SUBBANDS_8 << 2) | AVDTP_SBC_ALLOCATION_METHOD_SNR,
     2, 53
@@ -596,7 +596,7 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
             remote_configuration.media_codec.media_codec_type = AVDTP_CODEC_SBC;
             remote_configuration.media_codec.media_codec_information_len = sizeof(media_sbc_codec_reconfiguration);
             remote_configuration.media_codec.media_codec_information = media_sbc_codec_reconfiguration;
-            avdtp_sink_reconfigure(avdtp_cid, sep.seid, remote_configuration_bitmap, remote_configuration);
+            avdtp_sink_reconfigure(avdtp_cid, local_stream_endpoint->sep.seid, sep.seid, remote_configuration_bitmap, remote_configuration);
             break;
         case 'o':
             app_state = AVDTP_APPLICATION_W2_OPEN_STREAM_WITH_SEID;
@@ -616,7 +616,7 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
             break;
         case 'P':
             app_state = AVDTP_APPLICATION_W2_SUSPEND_STREAM_WITH_SEID;
-            avdtp_sink_suspend(avdtp_cid, sep.seid);
+            avdtp_sink_suspend(avdtp_cid, local_stream_endpoint->sep.seid, sep.seid);
             break;
 
         case '\n':
