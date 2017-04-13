@@ -71,6 +71,11 @@
 #endif
 
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
+// assert SM Public Key can be sent/received
+#if HCI_ACL_PAYLOAD_SIZE < 69
+#error "HCI_ACL_PAYLOAD_SIZE must be at least 69 bytes when using LE Secure Conection. Please increase HCI_ACL_PAYLOAD_SIZE or disable ENABLE_LE_SECURE_CONNECTIONS"
+#endif
+
 #ifdef HAVE_HCI_CONTROLLER_DHKEY_SUPPORT
 #error "Support for DHKEY Support in HCI Controller not implemented yet. Please use software implementation" 
 #else
