@@ -2777,7 +2777,9 @@ static void sm_handle_encryption_result(uint8_t * data){
 }
 
 #ifndef HAVE_HCI_CONTROLLER_DHKEY_SUPPORT
+// @return OK
 static int sm_generate_f_rng(unsigned char * buffer, unsigned size){
+    if (ec_key_generation_state != EC_KEY_GENERATION_ACTIVE) return 0;
     int offset = setup->sm_passkey_bit;
     log_info("sm_generate_f_rng: size %u - offset %u", (int) size, offset);
     while (size) {
@@ -2785,12 +2787,13 @@ static int sm_generate_f_rng(unsigned char * buffer, unsigned size){
         size--;
     }
     setup->sm_passkey_bit = offset;
-    return 0;
+    return 1;
 }
 #ifdef USE_MBEDTLS_FOR_ECDH
+// @return error
 static int sm_generate_f_rng_mbedtls(void * context, unsigned char * buffer, size_t size){
     UNUSED(context);
-    return sm_generate_f_rng(buffer, size);
+    return sm_generate_f_rng(buffer, size) == 1;
 }
 #endif
 #endif
