@@ -2781,6 +2781,7 @@ static void sm_handle_encryption_result(uint8_t * data){
     }
 }
 
+#ifdef ENABLE_LE_SECURE_CONNECTIONS
 #ifndef HAVE_HCI_CONTROLLER_DHKEY_SUPPORT
 // @return OK
 static int sm_generate_f_rng(unsigned char * buffer, unsigned size){
@@ -2802,10 +2803,12 @@ static int sm_generate_f_rng_mbedtls(void * context, unsigned char * buffer, siz
 }
 #endif
 #endif
+#endif
 
 // note: random generator is ready. this doesn NOT imply that aes engine is unused!
 static void sm_handle_random_result(uint8_t * data){
 
+#ifdef ENABLE_LE_SECURE_CONNECTIONS
 #ifndef HAVE_HCI_CONTROLLER_DHKEY_SUPPORT
 
     if (ec_key_generation_state == EC_KEY_GENERATION_ACTIVE){
@@ -2845,7 +2848,8 @@ static void sm_handle_random_result(uint8_t * data){
         }
     }
 #endif
-
+#endif
+    
     switch (rau_state){
         case RAU_W4_RANDOM:
             // non-resolvable vs. resolvable
