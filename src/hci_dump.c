@@ -290,6 +290,7 @@ void hci_dump_log_va_arg(int log_level, const char * format, va_list argptr){
     if (dump_file >= 0){
         int len = vsnprintf(log_message_buffer, sizeof(log_message_buffer), format, argptr);
         hci_dump_packet(LOG_MESSAGE_PACKET, 0, (uint8_t*) log_message_buffer, len);
+        return;
     }
 #endif
 
