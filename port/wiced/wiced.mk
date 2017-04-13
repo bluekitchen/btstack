@@ -8,7 +8,13 @@ endif
 
 NAME := BTstack_for_BCM$(BT_CHIP)$(BT_CHIP_REVISION)
 
-GLOBAL_INCLUDES += . ../../src ../../platform/embedded ../../chipset/bcm ../../../../
+GLOBAL_INCLUDES += \
+	. \
+	../../src \
+	../../platform/embedded \
+	../../chipset/bcm \
+	../../3rd-party/micro-ecc \
+	../../../../
 
 # core BTstack sources
 $(NAME)_SOURCES += \
@@ -42,6 +48,10 @@ $(NAME)_SOURCES += \
 	../../src/l2cap.c                     \
 	../../src/l2cap_signaling.c           \
 	../../example/sco_demo_util.c         \
+
+# micro-ecc for LE Secure Connection
+$(NAME)_SOURCES += \
+	../../3rd-party/micro-ecc/uECC.c 				\
 
 # WICED port incl. support for Broadcom chipset
 $(NAME)_SOURCES += \

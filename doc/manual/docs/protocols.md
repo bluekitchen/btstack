@@ -797,12 +797,9 @@ Long Term Key (LTK) is generated based on the local keypair and the remote publi
 To facilitate the creation of such a keypairs and the calculation of the LTK,
 the Bluetooth Core V4.2 specification introduced appropriate commands for the Bluetooth controller.
 
-As an alternative for controllers that don't provide these primitives, BTstack provides the relevant cryptographic functions in software via the Apache 2.0 licensed [mbed TLS library](https://tls.mbed.org).
+As an alternative for controllers that don't provide these primitives, BTstack provides the relevant cryptographic functions in software via the BSD-2-Clause licensed [micro-ecc library](https://github.com/kmackay/micro-ecc/tree/static).
 
-There are two details to be aware about using LE Secure Connections:
-
- - More RAM: It requires an additional 1.5 kB RAM when using mbed TLS instead of hardware support by the Bluetooth controller.
- - Peripheral must store LTK: Even an LE Peripheral needs to store the LTK in non-volatile memory.
+When using using LE Secure Connections, the Peripheral must store LTK in non-volatile memory.
 
 
 ### Initialization

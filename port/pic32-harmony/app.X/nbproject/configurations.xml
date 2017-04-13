@@ -53,16 +53,11 @@
               <itemPath>../../../3rd-party/bluedroid/encoder/Makefile.inc</itemPath>
             </logicalFolder>
           </logicalFolder>
-          <logicalFolder name="mbedtls" displayName="mbedtls" projectFiles="true">
+          <logicalFolder name="micro-ecc" displayName="micro-ecc" projectFiles="true">
             <logicalFolder name="include" displayName="include" projectFiles="true">
-              <logicalFolder name="mbedtls" displayName="mbedtls" projectFiles="true">
-                <itemPath>../../../3rd-party/mbedtls/include/mbedtls/bignum.h</itemPath>
-                <itemPath>../../../3rd-party/mbedtls/include/mbedtls/bn_mul.h</itemPath>
-                <itemPath>../../../3rd-party/mbedtls/include/mbedtls/check_config.h</itemPath>
-                <itemPath>../../../3rd-party/mbedtls/include/mbedtls/config.h</itemPath>
-                <itemPath>../../../3rd-party/mbedtls/include/mbedtls/ecp.h</itemPath>
-                <itemPath>../../../3rd-party/mbedtls/include/mbedtls/memory_buffer_alloc.h</itemPath>
-                <itemPath>../../../3rd-party/mbedtls/include/mbedtls/platform.h</itemPath>
+              <logicalFolder name="micro-ecc" displayName="micro-ecc" projectFiles="true">
+                <itemPath>../../../3rd-party/micro-ecc/include/uECC.h</itemPath>
+                <itemPath>../../../3rd-party/micro-ecc/include/btstack_config_eCC.h</itemPath>
               </logicalFolder>
             </logicalFolder>
           </logicalFolder>
@@ -194,17 +189,13 @@
               </logicalFolder>
             </logicalFolder>
           </logicalFolder>
-          <logicalFolder name="mbedtls" displayName="mbedtls" projectFiles="true">
+          <logicalFolder name="micro-ecc" displayName="micro-ecc" projectFiles="true">
             <logicalFolder name="include" displayName="include" projectFiles="true">
-              <logicalFolder name="mbedtls" displayName="mbedtls" projectFiles="true">
+              <logicalFolder name="micro-ecc" displayName="micro-ecc" projectFiles="true">
               </logicalFolder>
             </logicalFolder>
             <logicalFolder name="library" displayName="library" projectFiles="true">
-              <itemPath>../../../3rd-party/mbedtls/library/bignum.c</itemPath>
-              <itemPath>../../../3rd-party/mbedtls/library/ecp.c</itemPath>
-              <itemPath>../../../3rd-party/mbedtls/library/ecp_curves.c</itemPath>
-              <itemPath>../../../3rd-party/mbedtls/library/memory_buffer_alloc.c</itemPath>
-              <itemPath>../../../3rd-party/mbedtls/library/platform.c</itemPath>
+              <itemPath>../../../3rd-party/micro-ecc/uECC.c</itemPath>
             </logicalFolder>
           </logicalFolder>
         </logicalFolder>
@@ -214,7 +205,6 @@
           <itemPath>../../../src/ble/att_server.c</itemPath>
           <itemPath>../../../src/ble/le_device_db_memory.c</itemPath>
           <itemPath>../../../src/ble/sm.c</itemPath>
-          <itemPath>../../../src/ble/sm_mbedtls_allocator.c</itemPath>
         </logicalFolder>
         <logicalFolder name="chipset-csr" displayName="chipset-csr" projectFiles="true">
           <itemPath>../../../chipset/csr/btstack_chipset_csr.c</itemPath>
@@ -346,7 +336,7 @@
         <property key="enable-unroll-loops" value="false"/>
         <property key="exclude-floating-point" value="false"/>
         <property key="extra-include-directories"
-                  value=".;../../../..;../src;../src/system_config/bt_audio_dk;../../../src;../../../chipset/csr;../../../platform/embedded;../../../3rd-party/mbedtls/include;../../../3rd-party/bluedroid/decoder/include;../../../3rd-party/bluedroid/encoder/include"/>
+                  value=".;../../../..;../src;../src/system_config/bt_audio_dk;../../../src;../../../chipset/csr;../../../platform/embedded;../../../3rd-party/micro-ecc;../../../3rd-party/bluedroid/decoder/include;../../../3rd-party/bluedroid/encoder/include"/>
         <property key="generate-16-bit-code" value="false"/>
         <property key="generate-micro-compressed-code" value="false"/>
         <property key="isolate-each-function" value="false"/>

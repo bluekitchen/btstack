@@ -18,7 +18,7 @@
 #define ENABLE_LOG_ERROR
 
 // BTstack configuration. buffers, sizes, ...
-#define HCI_ACL_PAYLOAD_SIZE 52
+#define HCI_ACL_PAYLOAD_SIZE 100
 #define MAX_SPP_CONNECTIONS 1
 #define MAX_NR_GATT_CLIENTS 1
 #define MAX_NR_HCI_CONNECTIONS MAX_SPP_CONNECTIONS

@@ -191,13 +191,11 @@ void printf_hexdump(const void *data, int size){
     printf("\n");
 }
 
-void log_info_hexdump(const void *data, int size){
-#ifdef ENABLE_LOG_INFO
-
+#if defined(ENABLE_LOG_INFO) || defined(ENABLE_LOG_DEBUG)
+static void log_hexdump(int level, const void * data, int size){
 #define ITEMS_PER_LINE 16
 // template '0x12, '
 #define BYTES_PER_BYTE  6
-
     char buffer[BYTES_PER_BYTE*ITEMS_PER_LINE+1];
     int i, j;
     j = 0;
@@ -218,14 +216,29 @@ void log_info_hexdump(const void *data, int size){
 
         if (j >= BYTES_PER_BYTE * ITEMS_PER_LINE ){
             buffer[j] = 0;
-            log_info("%s", buffer);
+            HCI_DUMP_LOG(level, "%s", buffer);
             j = 0;
         }
     }
     if (j != 0){
         buffer[j] = 0;
-        log_info("%s", buffer);
+        HCI_DUMP_LOG(level, "%s", buffer);
     }
+}
+#endif
+
+void log_debug_hexdump(const void *data, int size){
+#ifdef ENABLE_LOG_DEBUG
+    log_hexdump(LOG_LEVEL_DEBUG, data, size);
+#else
+    UNUSED(data);
+    UNUSED(size);
+#endif
+}
+
+void log_info_hexdump(const void *data, int size){
+#ifdef ENABLE_LOG_INFO
+    log_hexdump(LOG_LEVEL_INFO, data, size);
 #else
     UNUSED(data);
     UNUSED(size);
@@ -246,7 +259,7 @@ void log_info_key(const char * name, sm_key_t key){
     log_info("%-6s %s", name, buffer);
 #else
     UNUSED(name);
-    UNUSED(key);
+    (void)key;
 #endif
 }
 

@@ -5,7 +5,7 @@ Status: All examples working, polling UART driver. Tested on Bluetooth Audio Dev
 ## Setup
 
 - Place BTstack tree into harmony/framework folder. 
--Rrun port/pic32-harmony/create_examples.py to create examples in harmony/apps/btstack folder.
+- Run port/pic32-harmony/create_examples.py to create examples in harmony/apps/btstack folder.
 
 ## Usage
 
