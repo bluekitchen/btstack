@@ -66,7 +66,8 @@ test: all
 	./security_manager
 	./aes_cmac_test
 	./aestest
-	./ectest
+	./ecc_mbed_tls
+	./ecc_micro_ecc
 	./aes_cmac_test
 	
 clean:
