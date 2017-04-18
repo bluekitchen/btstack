@@ -172,8 +172,8 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t * connection, uint8_
 
                 case AVDTP_SI_SET_CONFIGURATION:{
                     printf("AVDTP_SI_SET_CONFIGURATION\n");
-                    sep.configured_service_categories = connection->remote_capabilities_bitmap;
-                    sep.configuration = connection->remote_capabilities;
+                    sep.configured_service_categories = stream_endpoint->remote_capabilities_bitmap;
+                    sep.configuration = stream_endpoint->remote_capabilities;
                     sep.in_use = 1;
                     // TODO check if configuration is supported
                     
@@ -307,7 +307,7 @@ void avdtp_initiator_stream_config_subsm_run(avdtp_connection_t * connection, av
                 connection->signaling_packet.signal_identifier = AVDTP_SI_RECONFIGURE;
             }
             
-            avdtp_prepare_capabilities(&connection->signaling_packet, connection->initiator_transaction_label, connection->remote_capabilities_bitmap, connection->remote_capabilities, connection->signaling_packet.signal_identifier);
+            avdtp_prepare_capabilities(&connection->signaling_packet, connection->initiator_transaction_label, stream_endpoint->remote_capabilities_bitmap, stream_endpoint->remote_capabilities, connection->signaling_packet.signal_identifier);
             l2cap_reserve_packet_buffer();
             uint8_t * out_buffer = l2cap_get_outgoing_buffer();
             uint16_t pos = avdtp_signaling_create_fragment(connection->l2cap_signaling_cid, &connection->signaling_packet, out_buffer);

@@ -674,8 +674,8 @@ void avdtp_set_configuration(uint16_t avdtp_cid, uint8_t int_seid, uint8_t acp_s
     connection->initiator_transaction_label++;
     connection->acp_seid = acp_seid;
     connection->int_seid = int_seid;
-    connection->remote_capabilities_bitmap = configured_services_bitmap;
-    connection->remote_capabilities = configuration;
+    stream_endpoint->remote_capabilities_bitmap = configured_services_bitmap;
+    stream_endpoint->remote_capabilities = configuration;
     stream_endpoint->initiator_config_state = AVDTP_INITIATOR_W2_SET_CONFIGURATION;
     avdtp_request_can_send_now_initiator(connection, connection->l2cap_signaling_cid);
 }
@@ -704,8 +704,8 @@ void avdtp_reconfigure(uint16_t avdtp_cid, uint8_t int_seid, uint8_t acp_seid, u
     connection->initiator_transaction_label++;
     connection->acp_seid = acp_seid;
     connection->int_seid = stream_endpoint->sep.seid;
-    connection->remote_capabilities_bitmap = configured_services_bitmap;
-    connection->remote_capabilities = configuration;
+    stream_endpoint->remote_capabilities_bitmap = configured_services_bitmap;
+    stream_endpoint->remote_capabilities = configuration;
     stream_endpoint->initiator_config_state = AVDTP_INITIATOR_W2_RECONFIGURE_STREAM_WITH_SEID;
     avdtp_request_can_send_now_initiator(connection, connection->l2cap_signaling_cid);
 }
@@ -772,6 +772,12 @@ void avdtp_initialize_sbc_configuration_storage(avdtp_stream_endpoint_t * stream
     config_storage[1] = (block_length << 4) | (subbands << 2) | allocation_method;
     config_storage[2] = min_bitpool_value;
     config_storage[3] = max_bitpool_value;
+
+    stream_endpoint->remote_configuration_bitmap = store_bit16(stream_endpoint->remote_configuration_bitmap, AVDTP_MEDIA_CODEC, 1);
+    stream_endpoint->remote_configuration.media_codec.media_type = AVDTP_AUDIO;
+    stream_endpoint->remote_configuration.media_codec.media_codec_type = AVDTP_CODEC_SBC;
+    stream_endpoint->remote_configuration.media_codec.media_codec_information_len = storage_size;
+    stream_endpoint->remote_configuration.media_codec.media_codec_information = config_storage;
 }
 
 uint8_t avdtp_choose_sbc_channel_mode(avdtp_stream_endpoint_t * stream_endpoint, uint8_t remote_channel_mode_bitmap){

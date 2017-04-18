@@ -410,9 +410,6 @@ typedef struct {
     uint8_t int_seid;
     uint8_t acp_seid;
 
-    avdtp_capabilities_t remote_capabilities;
-    uint16_t remote_capabilities_bitmap;
-
     uint8_t wait_to_send_acceptor;
     uint8_t wait_to_send_initiator;
     uint8_t wait_to_send_self;
@@ -448,6 +445,11 @@ typedef struct avdtp_stream_endpoint {
     avdtp_connection_t * connection;
     // currently active remote seid
     uint8_t remote_sep_index;
+    avdtp_capabilities_t remote_capabilities;
+    uint16_t remote_capabilities_bitmap;
+    
+    uint16_t remote_configuration_bitmap;
+    avdtp_capabilities_t remote_configuration;  
     // register request for media L2cap connection release
     uint8_t media_disconnect;
     uint8_t media_connect;

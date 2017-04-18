@@ -117,11 +117,7 @@ static uint8_t sdp_avdtp_source_service_buffer[150];
 
 static avdtp_stream_endpoint_t * local_stream_endpoint;
 
-static uint16_t remote_configuration_bitmap;
-static avdtp_capabilities_t remote_configuration;
 
-// static avdtp_sep_t remote_seps[MAX_NUM_SEPS];
-// static uint16_t num_remote_seps = 0;
 static int next_remote_sep_index_to_query = -1;
 static avdtp_sep_t * active_remote_sep = NULL;
 
@@ -246,17 +242,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             break;
 
                         case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CAPABILITY:{
-                            
                             avdtp_initialize_sbc_configuration_storage(local_stream_endpoint, media_sbc_codec_configuration, sizeof(media_sbc_codec_configuration), packet, size);
-
-                            app_state = AVDTP_APPLICATION_W2_SET_CONFIGURATION;
-                            
                             active_remote_sep = avdtp_source_remote_sep(avdtp_cid, next_remote_sep_index_to_query);
-                            remote_configuration_bitmap = store_bit16(remote_configuration_bitmap, AVDTP_MEDIA_CODEC, 1);
-                            remote_configuration.media_codec.media_type = AVDTP_AUDIO;
-                            remote_configuration.media_codec.media_codec_type = AVDTP_CODEC_SBC;
-                            remote_configuration.media_codec.media_codec_information_len = sizeof(media_sbc_codec_configuration);
-                            remote_configuration.media_codec.media_codec_information = media_sbc_codec_configuration;
                             app_state = AVDTP_APPLICATION_W2_SET_CONFIGURATION;
                             break;
                         }
@@ -306,7 +293,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                                     break;
                                 case AVDTP_APPLICATION_W2_SET_CONFIGURATION:
                                     app_state = AVDTP_APPLICATION_W2_GET_CONFIGURATION;
-                                    avdtp_source_set_configuration(avdtp_cid, local_stream_endpoint->sep.seid, active_remote_sep->seid, remote_configuration_bitmap, remote_configuration);
+                                    avdtp_source_set_configuration(avdtp_cid, local_stream_endpoint->sep.seid, active_remote_sep->seid, local_stream_endpoint->remote_configuration_bitmap, local_stream_endpoint->remote_configuration);
                                     break;
                                 case AVDTP_APPLICATION_W2_GET_CONFIGURATION:
                                     app_state = AVDTP_APPLICATION_W2_OPEN_STREAM_WITH_SEID;
