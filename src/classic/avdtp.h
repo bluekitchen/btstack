@@ -493,7 +493,7 @@ void avdtp_suspend(uint16_t avdtp_cid, uint8_t int_seid, uint8_t acp_seid, avdtp
 uint8_t avdtp_remote_seps_num(uint16_t avdtp_cid, avdtp_context_t * context);
 avdtp_sep_t * avdtp_remote_sep(uint16_t avdtp_cid, uint8_t index, avdtp_context_t * context);
 
-void avdtp_store_sbc_configuration(uint8_t * config_storage, uint16_t size, uint8_t sampling_frequency, uint8_t channel_mode, uint8_t block_length, uint8_t subbands, uint8_t allocation_method, uint8_t max_bitpool_value, uint8_t min_bitpool_value);
+void avdtp_initialize_sbc_configuration_storage(avdtp_stream_endpoint_t * stream_endpoint, uint8_t * config_storage, uint16_t storage_size, uint8_t * packet, uint16_t packet_size);
 uint8_t avdtp_choose_sbc_channel_mode(avdtp_stream_endpoint_t * stream_endpoint, uint8_t remote_channel_mode_bitmap);
 uint8_t avdtp_choose_sbc_allocation_method(avdtp_stream_endpoint_t * stream_endpoint, uint8_t remote_allocation_method_bitmap);
 

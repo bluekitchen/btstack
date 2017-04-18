@@ -753,11 +753,21 @@ avdtp_sep_t * avdtp_remote_sep(uint16_t avdtp_cid, uint8_t index, avdtp_context_
     return &connection->remote_seps[index];
 }
 
-void avdtp_store_sbc_configuration(uint8_t * config_storage, uint16_t size, uint8_t sampling_frequency, uint8_t channel_mode, uint8_t block_length, uint8_t subbands, uint8_t allocation_method, uint8_t max_bitpool_value, uint8_t min_bitpool_value){
-    if (size < 4) {
+void avdtp_initialize_sbc_configuration_storage(avdtp_stream_endpoint_t * stream_endpoint, uint8_t * config_storage, uint16_t storage_size, uint8_t * packet, uint16_t packet_size){
+    UNUSED(packet_size);
+    if (storage_size < 4) {
         printf("storage must have 4 bytes\n");
         return;
     }
+    uint8_t sampling_frequency = avdtp_choose_sbc_sampling_frequency(stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_sampling_frequency_bitmap(packet));
+    uint8_t channel_mode = avdtp_choose_sbc_channel_mode(stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_channel_mode_bitmap(packet));
+    uint8_t block_length = avdtp_choose_sbc_block_length(stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_block_length_bitmap(packet));
+    uint8_t subbands = avdtp_choose_sbc_subbands(stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_subbands_bitmap(packet));
+    
+    uint8_t allocation_method = avdtp_choose_sbc_allocation_method(stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_allocation_method_bitmap(packet));
+    uint8_t max_bitpool_value = avdtp_choose_sbc_max_bitpool_value(stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_max_bitpool_value(packet));
+    uint8_t min_bitpool_value = avdtp_choose_sbc_min_bitpool_value(stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_min_bitpool_value(packet));
+
     config_storage[0] = (sampling_frequency << 4) | channel_mode;
     config_storage[1] = (block_length << 4) | (subbands << 2) | allocation_method;
     config_storage[2] = min_bitpool_value;

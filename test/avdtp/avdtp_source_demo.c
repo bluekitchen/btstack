@@ -72,36 +72,6 @@
 #endif
 #define TABLE_SIZE_441HZ   100
 
-
-typedef struct {
-    // bitmaps
-    uint8_t sampling_frequency_bitmap;
-    uint8_t channel_mode_bitmap;
-    uint8_t block_length_bitmap;
-    uint8_t subbands_bitmap;
-    uint8_t allocation_method_bitmap;
-    uint8_t min_bitpool_value;
-    uint8_t max_bitpool_value;
-} adtvp_media_codec_information_sbc_t;
-
-typedef struct {
-    int reconfigure;
-    int num_channels;
-    int sampling_frequency;
-    int channel_mode;
-    int block_length;
-    int subbands;
-    int allocation_method;
-    int min_bitpool_value;
-    int max_bitpool_value;
-} avdtp_media_codec_configuration_sbc_t;
-
-typedef struct {
-    int16_t source[TABLE_SIZE_441HZ];
-    int left_phase;
-    int right_phase;
-} paTestData;
-
 typedef struct {
 // to app
     uint32_t fill_audio_ring_buffer_timeout_ms;
@@ -111,8 +81,23 @@ typedef struct {
     btstack_timer_source_t fill_audio_ring_buffer_timer;
     btstack_ring_buffer_t sbc_ring_buffer;
     btstack_sbc_encoder_state_t sbc_encoder_state;
+    
+    int reconfigure;
+    int num_channels;
+    int sampling_frequency;
+    int channel_mode;
+    int block_length;
+    int subbands;
+    int allocation_method;
+    int min_bitpool_value;
+    int max_bitpool_value;
 } avdtp_stream_endpoint_context_t;
 
+typedef struct {
+    int16_t source[TABLE_SIZE_441HZ];
+    int left_phase;
+    int right_phase;
+} paTestData;
 
 static char * device_name = "A2DP Source BTstack";
 
@@ -130,7 +115,6 @@ static uint16_t avdtp_cid = 0;
 
 static uint8_t sdp_avdtp_source_service_buffer[150];
 
-static avdtp_media_codec_configuration_sbc_t sbc_configuration;
 static avdtp_stream_endpoint_t * local_stream_endpoint;
 
 static uint16_t remote_configuration_bitmap;
@@ -145,7 +129,7 @@ static uint8_t media_sbc_codec_configuration[4];
                             
 static uint8_t sbc_samples_storage[44100*4];
 
-static avdtp_stream_endpoint_context_t streaming_context;
+static avdtp_stream_endpoint_context_t sc;
 static paTestData sin_data;
 
 static int hxcmod_initialized = 0;
@@ -262,18 +246,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             break;
 
                         case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CAPABILITY:{
-                            uint8_t sampling_frequency = avdtp_choose_sbc_sampling_frequency(local_stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_sampling_frequency_bitmap(packet));
-                            uint8_t channel_mode = avdtp_choose_sbc_channel_mode(local_stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_channel_mode_bitmap(packet));
-                            uint8_t block_length = avdtp_choose_sbc_block_length(local_stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_block_length_bitmap(packet));
-                            uint8_t subbands = avdtp_choose_sbc_subbands(local_stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_subbands_bitmap(packet));
                             
-                            uint8_t allocation_method = avdtp_choose_sbc_allocation_method(local_stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_allocation_method_bitmap(packet));
-                            uint8_t max_bitpool_value = avdtp_choose_sbc_max_bitpool_value(local_stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_max_bitpool_value(packet));
-                            uint8_t min_bitpool_value = avdtp_choose_sbc_min_bitpool_value(local_stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_min_bitpool_value(packet));
-    
-                            avdtp_store_sbc_configuration(media_sbc_codec_configuration, sizeof(media_sbc_codec_configuration), 
-                                sampling_frequency, channel_mode, block_length, subbands, 
-                                allocation_method, max_bitpool_value, min_bitpool_value);
+                            avdtp_initialize_sbc_configuration_storage(local_stream_endpoint, media_sbc_codec_configuration, sizeof(media_sbc_codec_configuration), packet, size);
 
                             app_state = AVDTP_APPLICATION_W2_SET_CONFIGURATION;
                             
@@ -291,18 +265,18 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             break;
                         
                         case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION:{
-                            sbc_configuration.sampling_frequency = avdtp_subevent_signaling_media_codec_sbc_configuration_get_sampling_frequency(packet);
-                            sbc_configuration.block_length = avdtp_subevent_signaling_media_codec_sbc_configuration_get_block_length(packet);
-                            sbc_configuration.subbands = avdtp_subevent_signaling_media_codec_sbc_configuration_get_subbands(packet);
+                            sc.sampling_frequency = avdtp_subevent_signaling_media_codec_sbc_configuration_get_sampling_frequency(packet);
+                            sc.block_length = avdtp_subevent_signaling_media_codec_sbc_configuration_get_block_length(packet);
+                            sc.subbands = avdtp_subevent_signaling_media_codec_sbc_configuration_get_subbands(packet);
                             switch (avdtp_subevent_signaling_media_codec_sbc_configuration_get_allocation_method(packet)){
                                 case AVDTP_SBC_ALLOCATION_METHOD_LOUDNESS:
-                                    sbc_configuration.allocation_method = SBC_LOUDNESS;
+                                    sc.allocation_method = SBC_LOUDNESS;
                                     break;
                                 case AVDTP_SBC_ALLOCATION_METHOD_SNR:
-                                    sbc_configuration.allocation_method = SBC_SNR;
+                                    sc.allocation_method = SBC_SNR;
                                     break;
                             }
-                            sbc_configuration.max_bitpool_value = avdtp_subevent_signaling_media_codec_sbc_configuration_get_max_bitpool_value(packet);
+                            sc.max_bitpool_value = avdtp_subevent_signaling_media_codec_sbc_configuration_get_max_bitpool_value(packet);
                             // TODO: deal with reconfigure: avdtp_subevent_signaling_media_codec_sbc_configuration_get_reconfigure(packet);
                             break;
                         }  
@@ -340,10 +314,10 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                                     break;
                                 case AVDTP_APPLICATION_W2_OPEN_STREAM_WITH_SEID:
                                     app_state = AVDTP_APPLICATION_W4_OPEN_STREAM_WITH_SEID;
-                                    btstack_sbc_encoder_init(&streaming_context.sbc_encoder_state, SBC_MODE_STANDARD, 
-                                        sbc_configuration.block_length, sbc_configuration.subbands, 
-                                        sbc_configuration.allocation_method, sbc_configuration.sampling_frequency, 
-                                        sbc_configuration.max_bitpool_value);
+                                    btstack_sbc_encoder_init(&sc.sbc_encoder_state, SBC_MODE_STANDARD, 
+                                        sc.block_length, sc.subbands, 
+                                        sc.allocation_method, sc.sampling_frequency, 
+                                        sc.max_bitpool_value);
                                     avdtp_source_open_stream(avdtp_cid, local_stream_endpoint->sep.seid, active_remote_sep->seid);
                                     break;
                                 case AVDTP_APPLICATION_STREAMING_OPENED:
@@ -377,8 +351,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             printf(" --- avdtp source ---  Rejected %s\n", avdtp_si2str(signal_identifier));
                             break;
                         case AVDTP_SUBEVENT_STREAMING_CAN_SEND_MEDIA_PACKET_NOW: {
-                            avdtp_source_stream_send_media_payload(local_stream_endpoint->l2cap_media_cid, &streaming_context.sbc_ring_buffer, 0);
-                            if (btstack_ring_buffer_bytes_available(&streaming_context.sbc_ring_buffer)){
+                            avdtp_source_stream_send_media_payload(local_stream_endpoint->l2cap_media_cid, &sc.sbc_ring_buffer, 0);
+                            if (btstack_ring_buffer_bytes_available(&sc.sbc_ring_buffer)){
                                 avdtp_source_stream_endpoint_request_can_send_now(local_stream_endpoint);
                             }
                             break;
@@ -471,8 +445,8 @@ static int fill_sbc_ring_buffer(void){
     int num_audio_samples_per_sbc_buffer = btstack_sbc_encoder_num_audio_frames();
     // int audio_bytes_to_read = num_audio_samples_per_sbc_buffer * BYTES_PER_AUDIO_SAMPLE; 
 
-    while (streaming_context.samples_ready >= num_audio_samples_per_sbc_buffer
-        && btstack_ring_buffer_bytes_free(&streaming_context.sbc_ring_buffer) >= btstack_sbc_encoder_sbc_buffer_length()){ 
+    while (sc.samples_ready >= num_audio_samples_per_sbc_buffer
+        && btstack_ring_buffer_bytes_free(&sc.sbc_ring_buffer) >= btstack_sbc_encoder_sbc_buffer_length()){ 
 
         uint8_t pcm_frame[256*BYTES_PER_AUDIO_SAMPLE];
 
@@ -484,10 +458,10 @@ static int fill_sbc_ring_buffer(void){
         
         total_num_bytes_read += num_audio_samples_per_sbc_buffer;
         
-        if (btstack_ring_buffer_bytes_free(&streaming_context.sbc_ring_buffer) >= sbc_frame_size ){
+        if (btstack_ring_buffer_bytes_free(&sc.sbc_ring_buffer) >= sbc_frame_size ){
             uint8_t size_buffer = sbc_frame_size;
-            btstack_ring_buffer_write(&streaming_context.sbc_ring_buffer, &size_buffer, 1);
-            btstack_ring_buffer_write(&streaming_context.sbc_ring_buffer, sbc_frame, sbc_frame_size);
+            btstack_ring_buffer_write(&sc.sbc_ring_buffer, &size_buffer, 1);
+            btstack_ring_buffer_write(&sc.sbc_ring_buffer, sbc_frame, sbc_frame_size);
         } else {
             printf("No space in sbc buffer\n");
         }
@@ -497,24 +471,24 @@ static int fill_sbc_ring_buffer(void){
 
 static void avdtp_fill_audio_ring_buffer_timeout_handler(btstack_timer_source_t * timer){
     UNUSED(timer);
-    btstack_run_loop_set_timer(&streaming_context.fill_audio_ring_buffer_timer, streaming_context.fill_audio_ring_buffer_timeout_ms); // 2 seconds timeout
-    btstack_run_loop_add_timer(&streaming_context.fill_audio_ring_buffer_timer);
+    btstack_run_loop_set_timer(&sc.fill_audio_ring_buffer_timer, sc.fill_audio_ring_buffer_timeout_ms); // 2 seconds timeout
+    btstack_run_loop_add_timer(&sc.fill_audio_ring_buffer_timer);
     uint32_t now = btstack_run_loop_get_time_ms();
 
-    uint32_t update_period_ms = streaming_context.fill_audio_ring_buffer_timeout_ms;
-    if (streaming_context.time_audio_data_sent > 0){
-        update_period_ms = now - streaming_context.time_audio_data_sent;
+    uint32_t update_period_ms = sc.fill_audio_ring_buffer_timeout_ms;
+    if (sc.time_audio_data_sent > 0){
+        update_period_ms = now - sc.time_audio_data_sent;
     } 
     uint32_t num_samples = (update_period_ms * 44100) / 1000;
-    streaming_context.acc_num_missed_samples += (update_period_ms * 44100) % 1000;
+    sc.acc_num_missed_samples += (update_period_ms * 44100) % 1000;
 
-    if (streaming_context.acc_num_missed_samples >= 1000){
+    if (sc.acc_num_missed_samples >= 1000){
         num_samples++;
-        streaming_context.acc_num_missed_samples -= 1000;
+        sc.acc_num_missed_samples -= 1000;
     }
 
-    streaming_context.time_audio_data_sent = now;
-    streaming_context.samples_ready += num_samples;
+    sc.time_audio_data_sent = now;
+    sc.samples_ready += num_samples;
 
     int total_num_bytes_read = fill_sbc_ring_buffer();
      // schedule sending
@@ -524,15 +498,15 @@ static void avdtp_fill_audio_ring_buffer_timeout_handler(btstack_timer_source_t 
 }
 
 static void avdtp_fill_audio_ring_buffer_timer_start(void){
-    btstack_run_loop_remove_timer(&streaming_context.fill_audio_ring_buffer_timer);
-    btstack_run_loop_set_timer_handler(&streaming_context.fill_audio_ring_buffer_timer, avdtp_fill_audio_ring_buffer_timeout_handler);
-    // btstack_run_loop_set_timer_context(&streaming_context.fill_audio_ring_buffer_timer, stream_endpoint);
-    btstack_run_loop_set_timer(&streaming_context.fill_audio_ring_buffer_timer, streaming_context.fill_audio_ring_buffer_timeout_ms); // 50 ms timeout
-    btstack_run_loop_add_timer(&streaming_context.fill_audio_ring_buffer_timer);
+    btstack_run_loop_remove_timer(&sc.fill_audio_ring_buffer_timer);
+    btstack_run_loop_set_timer_handler(&sc.fill_audio_ring_buffer_timer, avdtp_fill_audio_ring_buffer_timeout_handler);
+    // btstack_run_loop_set_timer_context(&sc.fill_audio_ring_buffer_timer, stream_endpoint);
+    btstack_run_loop_set_timer(&sc.fill_audio_ring_buffer_timer, sc.fill_audio_ring_buffer_timeout_ms); // 50 ms timeout
+    btstack_run_loop_add_timer(&sc.fill_audio_ring_buffer_timer);
 }
 
 static void avdtp_fill_audio_ring_buffer_timer_stop(void){
-    btstack_run_loop_remove_timer(&streaming_context.fill_audio_ring_buffer_timer);
+    btstack_run_loop_remove_timer(&sc.fill_audio_ring_buffer_timer);
 } 
 
 static void avdtp_source_stream_data_start(void){
@@ -654,8 +628,8 @@ int btstack_main(int argc, const char * argv[]){
     gap_set_class_of_device(0x200408);
     
     memset(sbc_samples_storage, 0, sizeof(sbc_samples_storage));
-    btstack_ring_buffer_init(&streaming_context.sbc_ring_buffer, sbc_samples_storage, sizeof(sbc_samples_storage));
-    streaming_context.fill_audio_ring_buffer_timeout_ms = 50;
+    btstack_ring_buffer_init(&sc.sbc_ring_buffer, sbc_samples_storage, sizeof(sbc_samples_storage));
+    sc.fill_audio_ring_buffer_timeout_ms = 50;
 
     /* initialise sinusoidal wavetable */
     int i;
