@@ -72,7 +72,7 @@ void a2dp_sink_create_sdp_record(uint8_t * service,  uint32_t service_record_han
     de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_SERVICE_CLASS_ID_LIST);
     attribute = de_push_sequence(service);
     {
-        de_add_number(attribute, DE_UUID, DE_SIZE_16, AUDIO_SINK_GROUP); 
+        de_add_number(attribute, DE_UUID, DE_SIZE_16, BLUETOOTH_SERVICE_CLASS_AUDIO_SINK); 
     }
     de_pop_sequence(service, attribute);
 
@@ -110,7 +110,7 @@ void a2dp_sink_create_sdp_record(uint8_t * service,  uint32_t service_record_han
     {
         uint8_t *a2dProfile = de_push_sequence(attribute);
         {
-            de_add_number(a2dProfile,  DE_UUID, DE_SIZE_16, ADVANCED_AUDIO_DISTRIBUTION); 
+            de_add_number(a2dProfile,  DE_UUID, DE_SIZE_16, BLUETOOTH_SERVICE_CLASS_ADVANCED_AUDIO_DISTRIBUTION); 
             de_add_number(a2dProfile,  DE_UINT, DE_SIZE_16, 0x0103); 
         }
         de_pop_sequence(attribute, a2dProfile);

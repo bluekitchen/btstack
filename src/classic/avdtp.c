@@ -810,6 +810,10 @@ uint8_t avdtp_choose_sbc_allocation_method(avdtp_stream_endpoint_t * stream_endp
     return allocation_method;
 }
 
+uint8_t avdtp_stream_endpoint_seid(avdtp_stream_endpoint_t * stream_endpoint){
+    if (!stream_endpoint) return 0;
+    return stream_endpoint->sep.seid;
+}
 uint8_t avdtp_choose_sbc_subbands(avdtp_stream_endpoint_t * stream_endpoint, uint8_t remote_subbands_bitmap){
     uint8_t * media_codec = stream_endpoint->sep.capabilities.media_codec.media_codec_information;
     uint8_t subbands_bitmap = ((media_codec[1] >> 2) & 0x03) & remote_subbands_bitmap;

@@ -60,16 +60,6 @@ extern "C" {
 #endif
 
 #define MAX_NUM_SEPS 10
-
-// protocols
-#define PSM_AVCTP BLUETOOTH_PROTOCOL_AVCTP
-#define PSM_AVDTP BLUETOOTH_PROTOCOL_AVDTP
-
-// service classes
-#define AUDIO_SOURCE_GROUP          0x110A
-#define AUDIO_SINK_GROUP            0x110B
-#define ADVANCED_AUDIO_DISTRIBUTION 0X110D
-
 #define MAX_CSRC_NUM 15
 
 // Supported Features
@@ -505,6 +495,7 @@ uint8_t avdtp_choose_sbc_sampling_frequency(avdtp_stream_endpoint_t * stream_end
 uint8_t avdtp_choose_sbc_max_bitpool_value(avdtp_stream_endpoint_t * stream_endpoint, uint8_t remote_max_bitpool_value);
 uint8_t avdtp_choose_sbc_min_bitpool_value(avdtp_stream_endpoint_t * stream_endpoint, uint8_t remote_min_bitpool_value);
 
+uint8_t avdtp_stream_endpoint_seid(avdtp_stream_endpoint_t * stream_endpoint);
 #if defined __cplusplus
 }
 #endif
