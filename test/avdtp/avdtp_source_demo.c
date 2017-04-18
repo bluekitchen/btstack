@@ -569,13 +569,11 @@ int btstack_main(int argc, const char * argv[]){
 
     l2cap_init();
     // Initialize AVDTP Sink
-    avdtp_source_init();
-    avdtp_source_register_packet_handler(&packet_handler);
+    a2dp_source_init();
+    a2dp_source_register_packet_handler(&packet_handler);
 
-//#ifndef SMG_BI
-    local_stream_endpoint = avdtp_source_create_stream_endpoint(AVDTP_SOURCE, AVDTP_AUDIO);
-    avdtp_source_register_media_transport_category(avdtp_stream_endpoint_seid(local_stream_endpoint));
-    avdtp_source_register_media_codec_category(avdtp_stream_endpoint_seid(local_stream_endpoint), AVDTP_AUDIO, AVDTP_CODEC_SBC, media_sbc_codec_capabilities, sizeof(media_sbc_codec_capabilities));
+    //#ifndef SMG_BI
+    local_stream_endpoint = a2dp_source_create_stream_endpoint(AVDTP_AUDIO, AVDTP_CODEC_SBC, media_sbc_codec_capabilities, sizeof(media_sbc_codec_capabilities));
 
     // Initialize SDP 
     sdp_init();

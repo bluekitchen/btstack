@@ -62,7 +62,35 @@ extern "C" {
  * @param service_name
  * @param service_provider_name
  */
-void a2dp_source_create_sdp_record(uint8_t * service,  uint32_t service_record_handle, uint16_t supported_features, const char * service_name, const char * service_provider_name);
+void a2dp_source_create_sdp_record(uint8_t * service, uint32_t service_record_handle, uint16_t supported_features, const char * service_name, const char * service_provider_name);
+
+void a2dp_source_init(void);
+
+void a2dp_source_register_packet_handler(btstack_packet_handler_t callback);
+
+avdtp_stream_endpoint_t * a2dp_source_create_stream_endpoint(avdtp_media_type_t media_type, avdtp_media_codec_type_t media_codec_type, uint8_t * media_codec_info, uint16_t media_codec_info_len);
+
+void a2dp_source_connect(bd_addr_t bd_addr);
+
+/**
+ * @brief Start stream
+ * @param avdtp_cid
+ * @param seid
+ */
+void a2dp_source_start_stream(uint16_t avdtp_cid, uint8_t int_seid, uint8_t acp_seid);
+
+/**
+ * @brief Start stream
+ * @param avdtp_cid
+ * @param seid
+ */
+void a2dp_source_stop_stream(uint16_t avdtp_cid, uint8_t int_seid, uint8_t acp_seid);
+
+/**
+ * @brief Disconnect from device with connection handle. 
+ * @param avdtp_cid
+ */
+void a2dp_source_disconnect(uint16_t avdtp_cid);
 
 /* API_END */
 

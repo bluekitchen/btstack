@@ -64,7 +64,7 @@ void avdtp_source_register_media_codec_category(uint8_t seid, avdtp_media_type_t
 void avdtp_source_register_multiplexing_category(uint8_t seid, uint8_t fragmentation);
 
 
-void avdtp_source_init(void);
+void avdtp_source_init(avdtp_context_t * avdtp_context);
 void avdtp_source_register_packet_handler(btstack_packet_handler_t callback);
 
 /**
@@ -73,7 +73,6 @@ void avdtp_source_register_packet_handler(btstack_packet_handler_t callback);
  */
 void avdtp_source_connect(bd_addr_t bd_addr);
 
-void avdtp_source_register_media_handler(void (*callback)(avdtp_stream_endpoint_t * stream_endpoint, uint8_t *packet, uint16_t size));
 /**
  * @brief Disconnect from device with connection handle. 
  * @param avdtp_cid
