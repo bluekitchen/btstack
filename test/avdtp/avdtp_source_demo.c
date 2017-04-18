@@ -93,6 +93,10 @@ typedef struct {
     int min_bitpool_value;
     int max_bitpool_value;
 } avdtp_stream_endpoint_context_t;
+static avdtp_stream_endpoint_context_t sc;
+
+static uint8_t int_seid;
+// static uint8_t acp_seid;
 
 typedef struct {
     int16_t source[TABLE_SIZE_441HZ];
@@ -117,13 +121,12 @@ static uint16_t avdtp_cid = 0;
 static uint8_t sdp_avdtp_source_service_buffer[150];
 static avdtp_stream_endpoint_t * local_stream_endpoint;
 
-static int next_remote_sep_index_to_query = -1;
 static avdtp_sep_t * active_remote_sep = NULL;
 
 static uint8_t media_sbc_codec_configuration[4];
 static uint8_t sbc_samples_storage[44100*4];
 
-static avdtp_stream_endpoint_context_t sc;
+
 static paTestData sin_data;
 
 static int hxcmod_initialized = 0;
@@ -136,27 +139,8 @@ typedef enum {
     STREAM_MOD
 } stream_data_source_t;
 
-typedef enum {
-    AVDTP_APPLICATION_IDLE,
-    AVDTP_APPLICATION_CONNECTED,
-    AVDTP_APPLICATION_W2_DISCOVER_SEPS,
-    AVDTP_APPLICATION_W2_GET_CAPABILITIES,
-    AVDTP_APPLICATION_W2_GET_ALL_CAPABILITIES,
-    AVDTP_APPLICATION_W2_SET_CONFIGURATION,
-    AVDTP_APPLICATION_W4_GET_CONFIGURATION,
-    AVDTP_APPLICATION_W4_SET_CONFIGURATION,
-    AVDTP_APPLICATION_W2_SUSPEND_STREAM_WITH_SEID,
-    AVDTP_APPLICATION_W2_RECONFIGURE_WITH_SEID,
-    AVDTP_APPLICATION_W2_OPEN_STREAM_WITH_SEID,
-    AVDTP_APPLICATION_W4_OPEN_STREAM_WITH_SEID,
-    AVDTP_APPLICATION_W2_START_STREAM_WITH_SEID,
-    AVDTP_APPLICATION_W2_ABORT_STREAM_WITH_SEID,
-    AVDTP_APPLICATION_W2_STOP_STREAM_WITH_SEID,
-    AVDTP_APPLICATION_W2_GET_CONFIGURATION, 
-    AVDTP_APPLICATION_STREAMING_OPENED
-} avdtp_application_state_t;
 
-avdtp_application_state_t app_state = AVDTP_APPLICATION_IDLE;
+a2dp_state_t app_state = A2DP_IDLE;
 stream_data_source_t data_source = STREAM_SINE;
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
@@ -166,9 +150,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
     UNUSED(size);
 
     bd_addr_t event_addr;
-    uint8_t signal_identifier;
-    uint8_t status;
-    avdtp_sep_t sep;
 
     switch (packet_type) {
  
@@ -182,138 +163,10 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     break;
                 case HCI_EVENT_DISCONNECTION_COMPLETE:
                     // connection closed -> quit test app
-                    printf("\n --- avdtp source --- HCI_EVENT_DISCONNECTION_COMPLETE ---\n");
+                    printf("\n --- application --- HCI_EVENT_DISCONNECTION_COMPLETE ---\n");
                     break;
                 case HCI_EVENT_AVDTP_META:
                     switch (packet[2]){
-                        case AVDTP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED:
-                            avdtp_cid = avdtp_subevent_signaling_connection_established_get_avdtp_cid(packet);
-                            status = avdtp_subevent_signaling_connection_established_get_status(packet);
-                            if (status != 0){
-                                printf(" --- avdtp source --- AVDTP_SUBEVENT_SIGNALING_CONNECTION could not be established, status %d ---\n", status);
-                                break;
-                            }
-                            active_remote_sep = NULL;
-                            next_remote_sep_index_to_query = -1;
-                            app_state = AVDTP_APPLICATION_CONNECTED;
-                            printf(" --- avdtp source --- AVDTP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED, avdtp cid 0x%02x ---\n", avdtp_cid);
-                            break;
-                        
-                        case AVDTP_SUBEVENT_STREAMING_CONNECTION_ESTABLISHED:
-                            status = avdtp_subevent_streaming_connection_established_get_status(packet);
-                            if (status != 0){
-                                printf(" --- avdtp source --- AVDTP_SUBEVENT_STREAMING_CONNECTION could not be established, status %d ---\n", status);
-                                break;
-                            }
-                            app_state = AVDTP_APPLICATION_STREAMING_OPENED;
-                            printf(" --- avdtp source --- AVDTP_SUBEVENT_STREAMING_CONNECTION_ESTABLISHED ---\n");
-                            break;
-
-                        case AVDTP_SUBEVENT_SIGNALING_SEP_FOUND:
-                            if (app_state != AVDTP_APPLICATION_W2_DISCOVER_SEPS) return;
-                            sep.seid = avdtp_subevent_signaling_sep_found_get_seid(packet);
-                            sep.in_use = avdtp_subevent_signaling_sep_found_get_in_use(packet);
-                            sep.media_type = avdtp_subevent_signaling_sep_found_get_media_type(packet);
-                            sep.type = avdtp_subevent_signaling_sep_found_get_sep_type(packet);
-                            printf(" --- avdtp source --- Found sep: seid %u, in_use %d, media type %d, sep type %d (1-SNK)\n", sep.seid, sep.in_use, sep.media_type, sep.type);
-                            break;
-
-                        case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CAPABILITY:{
-                            avdtp_initialize_sbc_configuration_storage(local_stream_endpoint, media_sbc_codec_configuration, sizeof(media_sbc_codec_configuration), packet, size);
-                            active_remote_sep = avdtp_source_remote_sep(avdtp_cid, next_remote_sep_index_to_query);
-                            app_state = AVDTP_APPLICATION_W2_SET_CONFIGURATION;
-                            break;
-                        }
-                        case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CAPABILITY:
-                            printf(" --- avdtp source ---  received non SBC codec. not implemented\n");
-                            break;
-                        
-                        case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION:{
-                            sc.sampling_frequency = avdtp_subevent_signaling_media_codec_sbc_configuration_get_sampling_frequency(packet);
-                            sc.block_length = avdtp_subevent_signaling_media_codec_sbc_configuration_get_block_length(packet);
-                            sc.subbands = avdtp_subevent_signaling_media_codec_sbc_configuration_get_subbands(packet);
-                            switch (avdtp_subevent_signaling_media_codec_sbc_configuration_get_allocation_method(packet)){
-                                case AVDTP_SBC_ALLOCATION_METHOD_LOUDNESS:
-                                    sc.allocation_method = SBC_LOUDNESS;
-                                    break;
-                                case AVDTP_SBC_ALLOCATION_METHOD_SNR:
-                                    sc.allocation_method = SBC_SNR;
-                                    break;
-                            }
-                            sc.max_bitpool_value = avdtp_subevent_signaling_media_codec_sbc_configuration_get_max_bitpool_value(packet);
-                            // TODO: deal with reconfigure: avdtp_subevent_signaling_media_codec_sbc_configuration_get_reconfigure(packet);
-                            break;
-                        }  
-                        
-                        case AVDTP_SUBEVENT_SIGNALING_ACCEPT:
-                            signal_identifier = avdtp_subevent_signaling_accept_get_signal_identifier(packet);
-                            status = avdtp_subevent_signaling_accept_get_status(packet);
-                            printf(" --- avdtp source ---  Accepted %d\n", signal_identifier);
-                            
-                            switch (app_state){
-                                case AVDTP_APPLICATION_W2_DISCOVER_SEPS:
-                                    app_state = AVDTP_APPLICATION_W2_GET_ALL_CAPABILITIES;
-                                    next_remote_sep_index_to_query = 0;
-                                    printf(" --- avdtp source ---  Query get caps for seid %d\n", avdtp_source_remote_sep(avdtp_cid, next_remote_sep_index_to_query)->seid);
-                                    avdtp_source_get_capabilities(avdtp_cid, avdtp_source_remote_sep(avdtp_cid, next_remote_sep_index_to_query)->seid);
-                                    break;
-                                case AVDTP_APPLICATION_W2_GET_CAPABILITIES:
-                                case AVDTP_APPLICATION_W2_GET_ALL_CAPABILITIES:
-                                    if (next_remote_sep_index_to_query < avdtp_source_remote_seps_num(avdtp_cid) - 1){
-                                        next_remote_sep_index_to_query++;
-                                        printf(" --- avdtp source ---  Query get caps for seid %d\n", avdtp_source_remote_sep(avdtp_cid, next_remote_sep_index_to_query)->seid);
-                                        avdtp_source_get_capabilities(avdtp_cid, avdtp_source_remote_sep(avdtp_cid, next_remote_sep_index_to_query)->seid);
-                                    } else {
-                                        printf(" --- avdtp source ---  Cannot query get caps, index %d\n", next_remote_sep_index_to_query);
-                                        app_state = AVDTP_APPLICATION_IDLE;
-                                    }
-                                    break;
-                                case AVDTP_APPLICATION_W2_SET_CONFIGURATION:
-                                    app_state = AVDTP_APPLICATION_W2_GET_CONFIGURATION;
-                                    avdtp_source_set_configuration(avdtp_cid, avdtp_stream_endpoint_seid(local_stream_endpoint), active_remote_sep->seid, local_stream_endpoint->remote_configuration_bitmap, local_stream_endpoint->remote_configuration);
-                                    break;
-                                case AVDTP_APPLICATION_W2_GET_CONFIGURATION:
-                                    app_state = AVDTP_APPLICATION_W2_OPEN_STREAM_WITH_SEID;
-                                    avdtp_source_get_configuration(avdtp_cid, active_remote_sep->seid);
-                                    break;
-                                case AVDTP_APPLICATION_W2_OPEN_STREAM_WITH_SEID:
-                                    app_state = AVDTP_APPLICATION_W4_OPEN_STREAM_WITH_SEID;
-                                    btstack_sbc_encoder_init(&sc.sbc_encoder_state, SBC_MODE_STANDARD, 
-                                        sc.block_length, sc.subbands, 
-                                        sc.allocation_method, sc.sampling_frequency, 
-                                        sc.max_bitpool_value);
-                                    avdtp_source_open_stream(avdtp_cid, avdtp_stream_endpoint_seid(local_stream_endpoint), active_remote_sep->seid);
-                                    break;
-                                case AVDTP_APPLICATION_STREAMING_OPENED:
-                                    switch (signal_identifier){
-                                        case AVDTP_SI_START:
-                                            break;
-                                        case AVDTP_SI_CLOSE:
-                                            break;
-                                        case AVDTP_SI_SUSPEND:
-                                            break;
-                                        case AVDTP_SI_ABORT:
-                                            break;
-                                        default:
-                                            break;
-                                    }
-                                    break;
-                                default:
-                                    app_state = AVDTP_APPLICATION_IDLE;
-                                    break;
-                            }
-                            
-                            break;
-                        case AVDTP_SUBEVENT_SIGNALING_REJECT:
-                            app_state = AVDTP_APPLICATION_IDLE;
-                            signal_identifier = avdtp_subevent_signaling_reject_get_signal_identifier(packet);
-                            printf(" --- avdtp source ---  Rejected %d\n", signal_identifier);
-                            break;
-                        case AVDTP_SUBEVENT_SIGNALING_GENERAL_REJECT:
-                            app_state = AVDTP_APPLICATION_IDLE;
-                            signal_identifier = avdtp_subevent_signaling_general_reject_get_signal_identifier(packet);
-                            printf(" --- avdtp source ---  Rejected %d\n", signal_identifier);
-                            break;
                         case AVDTP_SUBEVENT_STREAMING_CAN_SEND_MEDIA_PACKET_NOW: {
                             avdtp_source_stream_send_media_payload(local_stream_endpoint->l2cap_media_cid, &sc.sbc_ring_buffer, 0);
                             if (btstack_ring_buffer_bytes_available(&sc.sbc_ring_buffer)){
@@ -322,8 +175,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             break;
                         }
                         default:
-                            app_state = AVDTP_APPLICATION_IDLE;
-                            printf(" --- avdtp source ---  not implemented\n");
+                            app_state = A2DP_IDLE;
+                            printf(" --- application ---  not implemented\n");
                             break; 
                     }
                     break;   
@@ -493,68 +346,23 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
     switch (cmd){
         case 'c':
             printf("Creating L2CAP Connection to %s, PSM_AVDTP\n", bd_addr_to_str(remote));
-            avdtp_source_connect(remote);
+            a2dp_source_connect(remote, int_seid);
             break;
         case 'C':
             printf("Disconnect not implemented\n");
-            avdtp_source_disconnect(avdtp_cid);
-            break;
-        case 'd':
-            app_state = AVDTP_APPLICATION_W2_DISCOVER_SEPS;
-            printf("Discover stream endpoints, cid 0x%02x \n", avdtp_cid);
-            avdtp_source_discover_stream_endpoints(avdtp_cid);
-            break;
-        default:
-            if (!active_remote_sep){
-                show_usage();
-                return;
-            }
-            break;
-    }
-    if (!active_remote_sep) return;
-    switch (cmd){
-        case 'f':
-            app_state = AVDTP_APPLICATION_W2_GET_CONFIGURATION;
-            avdtp_source_get_configuration(avdtp_cid, active_remote_sep->seid);
-            break;
-        case 'm': 
-            app_state = AVDTP_APPLICATION_W2_START_STREAM_WITH_SEID;
-            avdtp_source_start_stream(avdtp_cid, avdtp_stream_endpoint_seid(local_stream_endpoint), active_remote_sep->seid);
-            break;
-        case 'A':
-            app_state = AVDTP_APPLICATION_W2_ABORT_STREAM_WITH_SEID;
-            avdtp_source_abort_stream(avdtp_cid, avdtp_stream_endpoint_seid(local_stream_endpoint), active_remote_sep->seid);
-            break;
-        case 'S':
-            app_state = AVDTP_APPLICATION_W2_STOP_STREAM_WITH_SEID;
-            avdtp_source_stop_stream(avdtp_cid, avdtp_stream_endpoint_seid(local_stream_endpoint), active_remote_sep->seid);
-            break;
-        case 'P':
-            app_state = AVDTP_APPLICATION_W2_SUSPEND_STREAM_WITH_SEID;
-            avdtp_source_suspend(avdtp_cid, avdtp_stream_endpoint_seid(local_stream_endpoint), active_remote_sep->seid);
+            a2dp_source_disconnect(avdtp_cid);
             break;
         case 'x':
-            printf("Start streaming sine.\n");
-            data_source = STREAM_SINE;
-            avdtp_source_stream_data_start();
-            break;
-        case 'z':
-            printf("Start streaming '%s'.\n", mod_name);
-            data_source = STREAM_MOD;
+            // a2dp_source_start_stream(avdtp_cid, int_seid, acp_seid);
             avdtp_source_stream_data_start();
             break;
         case 'X':
-            printf("Stop streaming.\n");
+            // a2dp_source_stop_stream(avdtp_cid, int_seid, acp_seid);
             avdtp_source_stream_data_stop();
-            break;
-                       
-        case '\n':
-        case '\r':
             break;
         default:
             show_usage();
             break;
-
     }
 }
 
@@ -573,7 +381,7 @@ int btstack_main(int argc, const char * argv[]){
     a2dp_source_register_packet_handler(&packet_handler);
 
     //#ifndef SMG_BI
-    local_stream_endpoint = a2dp_source_create_stream_endpoint(AVDTP_AUDIO, AVDTP_CODEC_SBC, media_sbc_codec_capabilities, sizeof(media_sbc_codec_capabilities));
+    int_seid = a2dp_source_create_stream_endpoint(AVDTP_AUDIO, AVDTP_CODEC_SBC, media_sbc_codec_capabilities, sizeof(media_sbc_codec_capabilities), media_sbc_codec_configuration, sizeof(media_sbc_codec_configuration));
 
     // Initialize SDP 
     sdp_init();

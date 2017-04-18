@@ -416,6 +416,25 @@ typedef struct {
     uint8_t remote_seps_num;
 } avdtp_connection_t;
 
+typedef enum {
+    A2DP_IDLE,
+    A2DP_CONNECTED,
+    A2DP_W2_DISCOVER_SEPS,
+    A2DP_W2_GET_CAPABILITIES,
+    A2DP_W2_GET_ALL_CAPABILITIES,
+    A2DP_W2_SET_CONFIGURATION,
+    A2DP_W4_GET_CONFIGURATION,
+    A2DP_W4_SET_CONFIGURATION,
+    A2DP_W2_SUSPEND_STREAM_WITH_SEID,
+    A2DP_W2_RECONFIGURE_WITH_SEID,
+    A2DP_W2_OPEN_STREAM_WITH_SEID,
+    A2DP_W4_OPEN_STREAM_WITH_SEID,
+    A2DP_W2_START_STREAM_WITH_SEID,
+    A2DP_W2_ABORT_STREAM_WITH_SEID,
+    A2DP_W2_STOP_STREAM_WITH_SEID,
+    A2DP_W2_GET_CONFIGURATION, 
+    A2DP_STREAMING_OPENED
+} a2dp_state_t;
 
 typedef struct avdtp_stream_endpoint {
     btstack_linked_item_t    item;
@@ -430,7 +449,7 @@ typedef struct avdtp_stream_endpoint {
     avdtp_stream_endpoint_state_t  state;
     avdtp_acceptor_stream_endpoint_state_t  acceptor_config_state;
     avdtp_initiator_stream_endpoint_state_t initiator_config_state;
-    
+    a2dp_state_t a2dp_state;
     // active connection
     avdtp_connection_t * connection;
     // currently active remote seid

@@ -127,15 +127,15 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t * connection, uint8_
                 
                 case AVDTP_SI_GET_CAPABILITIES:
                 case AVDTP_SI_GET_ALL_CAPABILITIES:
-                    printf("AVDTP_SI_GET(_ALL)_CAPABILITIES\n");
+                    printf("AVDTP_SI_GET(_ALL)_CAPABILITIES int %d, acp %d\n",  connection->int_seid, connection->acp_seid);
                     sep.registered_service_categories = avdtp_unpack_service_capabilities(connection, &sep.capabilities, packet+offset, size-offset);
                     if (get_bit16(sep.registered_service_categories, AVDTP_MEDIA_CODEC)){
                         switch (sep.capabilities.media_codec.media_codec_type){
                             case AVDTP_CODEC_SBC: 
-                                avdtp_signaling_emit_media_codec_sbc_capability(context->avdtp_callback, connection->l2cap_signaling_cid, sep.capabilities.media_codec);
+                                avdtp_signaling_emit_media_codec_sbc_capability(context->avdtp_callback, connection->l2cap_signaling_cid, connection->int_seid, connection->acp_seid, sep.capabilities.media_codec);
                                 break;
                             default:
-                                avdtp_signaling_emit_media_codec_other_capability(context->avdtp_callback, connection->l2cap_signaling_cid, sep.capabilities.media_codec);
+                                avdtp_signaling_emit_media_codec_other_capability(context->avdtp_callback, connection->l2cap_signaling_cid, connection->int_seid, connection->acp_seid, sep.capabilities.media_codec);
                                 break;
                         }
                     }
@@ -147,10 +147,10 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t * connection, uint8_
                     if (get_bit16(sep.configured_service_categories, AVDTP_MEDIA_CODEC)){
                         switch (sep.configuration.media_codec.media_codec_type){
                             case AVDTP_CODEC_SBC: 
-                                avdtp_signaling_emit_media_codec_sbc_configuration(context->avdtp_callback, connection->l2cap_signaling_cid, sep.configuration.media_codec);
+                                avdtp_signaling_emit_media_codec_sbc_configuration(context->avdtp_callback, connection->l2cap_signaling_cid, connection->int_seid, connection->acp_seid, sep.configuration.media_codec);
                                 break;
                             default:
-                                avdtp_signaling_emit_media_codec_other_configuration(context->avdtp_callback, connection->l2cap_signaling_cid, sep.configuration.media_codec);
+                                avdtp_signaling_emit_media_codec_other_configuration(context->avdtp_callback, connection->l2cap_signaling_cid, connection->int_seid,  connection->acp_seid, sep.configuration.media_codec);
                                 break;
                         }
                     }
@@ -233,20 +233,20 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t * connection, uint8_
             break;
         case AVDTP_RESPONSE_REJECT_MSG:
             printf("    AVDTP_RESPONSE_REJECT_MSG signal %d\n", connection->signaling_packet.signal_identifier);
-            avdtp_signaling_emit_reject(context->avdtp_callback, connection->l2cap_signaling_cid, connection->signaling_packet.signal_identifier);
+            avdtp_signaling_emit_reject(context->avdtp_callback, connection->l2cap_signaling_cid, connection->int_seid, connection->signaling_packet.signal_identifier);
             return;
         case AVDTP_GENERAL_REJECT_MSG:
             printf("    AVDTP_GENERAL_REJECT_MSG signal %d\n", connection->signaling_packet.signal_identifier);
-            avdtp_signaling_emit_general_reject(context->avdtp_callback, connection->l2cap_signaling_cid, connection->signaling_packet.signal_identifier);
+            avdtp_signaling_emit_general_reject(context->avdtp_callback, connection->l2cap_signaling_cid, connection->int_seid, connection->signaling_packet.signal_identifier);
             return;
         default:
             break;
     }
-
+    
+    avdtp_signaling_emit_accept(context->avdtp_callback, connection->l2cap_signaling_cid, 0, connection->signaling_packet.signal_identifier, status);
     connection->initiator_transaction_label++;
-    connection->int_seid = 0;
-    connection->acp_seid = 0;
-    avdtp_signaling_emit_accept(context->avdtp_callback, connection->l2cap_signaling_cid, connection->signaling_packet.signal_identifier, status);
+    // connection->int_seid = 0;
+    // connection->acp_seid = 0;
 }
 
 void avdtp_initiator_stream_config_subsm_run(avdtp_connection_t * connection, avdtp_context_t * context){

@@ -613,6 +613,7 @@ void avdtp_discover_stream_endpoints(uint16_t avdtp_cid, avdtp_context_t * conte
 
 
 void avdtp_get_capabilities(uint16_t avdtp_cid, uint8_t acp_seid, avdtp_context_t * context){
+    printf("avdtp_get_capabilities: acp_seid %d\n", acp_seid);
     avdtp_connection_t * connection = avdtp_connection_for_l2cap_signaling_cid(avdtp_cid, context);
     if (!connection){
         printf("avdtp_get_capabilities: no connection for signaling cid 0x%02x found\n", avdtp_cid);
@@ -628,6 +629,7 @@ void avdtp_get_capabilities(uint16_t avdtp_cid, uint8_t acp_seid, avdtp_context_
 
 
 void avdtp_get_all_capabilities(uint16_t avdtp_cid, uint8_t acp_seid, avdtp_context_t * context){
+    printf("avdtp_get_all_capabilities: acp_seid %d\n", acp_seid);
     avdtp_connection_t * connection = avdtp_connection_for_l2cap_signaling_cid(avdtp_cid, context);
     if (!connection){
         printf("avdtp_get_all_capabilities: no connection for signaling cid 0x%02x found\n", avdtp_cid);

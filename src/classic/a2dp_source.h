@@ -68,9 +68,11 @@ void a2dp_source_init(void);
 
 void a2dp_source_register_packet_handler(btstack_packet_handler_t callback);
 
-avdtp_stream_endpoint_t * a2dp_source_create_stream_endpoint(avdtp_media_type_t media_type, avdtp_media_codec_type_t media_codec_type, uint8_t * media_codec_info, uint16_t media_codec_info_len);
+uint8_t a2dp_source_create_stream_endpoint(avdtp_media_type_t media_type, avdtp_media_codec_type_t media_codec_type, 
+	uint8_t * codec_capabilities, uint16_t codec_capabilities_len,
+	uint8_t * codec_configuration, uint16_t codec_configuration_len);
 
-void a2dp_source_connect(bd_addr_t bd_addr);
+void a2dp_source_connect(bd_addr_t bd_addr, uint8_t local_seid);
 
 /**
  * @brief Start stream

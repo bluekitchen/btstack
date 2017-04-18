@@ -246,14 +246,14 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, uint8_t
                     if (get_bit16(sep.configured_service_categories, AVDTP_MEDIA_CODEC)){
                         switch (sep.configuration.media_codec.media_codec_type){
                             case AVDTP_CODEC_SBC: 
-                                avdtp_signaling_emit_media_codec_sbc_configuration(context->avdtp_callback, connection->con_handle, sep.configuration.media_codec);
+                                avdtp_signaling_emit_media_codec_sbc_configuration(context->avdtp_callback, connection->con_handle, connection->int_seid, connection->acp_seid, sep.configuration.media_codec);
                                 break;
                             default:
-                                avdtp_signaling_emit_media_codec_other_configuration(context->avdtp_callback, connection->con_handle, sep.configuration.media_codec);
+                                avdtp_signaling_emit_media_codec_other_configuration(context->avdtp_callback, connection->con_handle, connection->int_seid, connection->acp_seid, sep.configuration.media_codec);
                                 break;
                         }
                     }
-                    avdtp_signaling_emit_accept(context->avdtp_callback, connection->con_handle, connection->signaling_packet.signal_identifier, 0);
+                    avdtp_signaling_emit_accept(context->avdtp_callback, connection->con_handle, connection->int_seid, connection->signaling_packet.signal_identifier, 0);
                     break;
                 }
                 case AVDTP_SI_RECONFIGURE:{
@@ -289,14 +289,14 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, uint8_t
                     if (get_bit16(sep.configured_service_categories, AVDTP_MEDIA_CODEC)){
                         switch (sep.capabilities.media_codec.media_codec_type){
                             case AVDTP_CODEC_SBC: 
-                                avdtp_signaling_emit_media_codec_sbc_reconfiguration(context->avdtp_callback, connection->con_handle, sep.capabilities.media_codec);
+                                avdtp_signaling_emit_media_codec_sbc_reconfiguration(context->avdtp_callback, connection->con_handle, connection->int_seid, connection->acp_seid, sep.capabilities.media_codec);
                                 break;
                             default:
-                                avdtp_signaling_emit_media_codec_other_reconfiguration(context->avdtp_callback, connection->con_handle, sep.capabilities.media_codec);
+                                avdtp_signaling_emit_media_codec_other_reconfiguration(context->avdtp_callback, connection->con_handle, connection->int_seid, connection->acp_seid, sep.capabilities.media_codec);
                                 break;
                         }
                     }
-                    avdtp_signaling_emit_accept(context->avdtp_callback, connection->con_handle, connection->signaling_packet.signal_identifier, 0);
+                    avdtp_signaling_emit_accept(context->avdtp_callback, connection->con_handle, connection->int_seid, connection->signaling_packet.signal_identifier, 0);
                     break;
                 }
 
@@ -599,7 +599,7 @@ void avdtp_acceptor_stream_config_subsm_run(avdtp_connection_t * connection, avd
             printf("    ACP: NOT IMPLEMENTED\n");
             sent = 0;
     } 
-    avdtp_signaling_emit_accept(context->avdtp_callback, connection->con_handle, connection->signaling_packet.signal_identifier, status);
+    avdtp_signaling_emit_accept(context->avdtp_callback, connection->con_handle, connection->int_seid, connection->signaling_packet.signal_identifier, status);
 
     // check fragmentation
     if (connection->signaling_packet.packet_type != AVDTP_SINGLE_PACKET && connection->signaling_packet.packet_type != AVDTP_END_PACKET){
