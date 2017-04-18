@@ -54,6 +54,7 @@
 #include "l2cap.h"
 #include "stdin_support.h"
 #include "avdtp_sink.h"
+#include "a2dp_sink.h"
 
 #include "btstack_sbc.h"
 #include "wav_util.h"

@@ -73,6 +73,8 @@ AVDTP += \
 	avdtp_acceptor.c  	\
 	avdtp_source.c 		\
 	avdtp_sink.c  		\
+	a2dp_source.c 		\
+	a2dp_sink.c  		\
 	btstack_ring_buffer.c \
 
 HXCMOD_PLAYER = \

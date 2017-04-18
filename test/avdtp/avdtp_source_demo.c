@@ -55,6 +55,7 @@
 #include "l2cap.h"
 #include "stdin_support.h"
 #include "avdtp_source.h"
+#include "a2dp_source.h"
 
 #include "btstack_sbc.h"
 #include "sbc_encoder.h"

@@ -55,15 +55,6 @@ extern "C" {
 #endif
 
 /* API_START */
-/**
- * @brief AVDTP Sink service record. 
- * @param service
- * @param service_record_handle
- * @param supported_features 16-bit bitmap, see AVDTP_SINK_SF_* values in avdtp.h
- * @param service_name
- * @param service_provider_name
- */
-void a2dp_sink_create_sdp_record(uint8_t * service, uint32_t service_record_handle, uint16_t supported_features, const char * service_name, const char * service_provider_name);
 
 /**
  * @brief Set up AVDTP Sink device.

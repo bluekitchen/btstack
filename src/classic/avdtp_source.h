@@ -54,16 +54,6 @@ extern "C" {
 
 /* API_START */
 
-/**
- * @brief AVDTP Source service record. 
- * @param service
- * @param service_record_handle
- * @param supported_features 16-bit bitmap, see AVDTP_SOURCE_SF_* values in avdtp.h
- * @param service_name
- * @param service_provider_name
- */
-void a2dp_source_create_sdp_record(uint8_t * service,  uint32_t service_record_handle, uint16_t supported_features, const char * service_name, const char * service_provider_name);
-
 void avdtp_source_register_media_transport_category(uint8_t seid);
 void avdtp_source_register_reporting_category(uint8_t seid);
 void avdtp_source_register_delay_reporting_category(uint8_t seid);
