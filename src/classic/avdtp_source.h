@@ -154,9 +154,9 @@ void avdtp_source_stop_stream(uint16_t avdtp_cid, uint8_t int_seid, uint8_t acp_
 
 avdtp_stream_endpoint_t * avdtp_source_create_stream_endpoint(avdtp_sep_type_t sep_type, avdtp_media_type_t media_type);
 
-void avdtp_source_stream_endpoint_request_can_send_now(avdtp_stream_endpoint_t * stream_endpoint);
-int  avdtp_source_stream_endpoint_ready(avdtp_stream_endpoint_t * stream_endpoint);
-void avdtp_source_stream_send_media_payload(uint16_t l2cap_media_cid, btstack_ring_buffer_t * sbc_ring_buffer, uint8_t marker);
+void avdtp_source_stream_endpoint_request_can_send_now(uint8_t local_seid);
+int  avdtp_source_stream_endpoint_ready(uint8_t local_seid);
+void avdtp_source_stream_send_media_payload(uint8_t local_seid, btstack_ring_buffer_t * sbc_ring_buffer, uint8_t marker);
 
 uint8_t avdtp_source_remote_seps_num(uint16_t avdtp_cid);
 avdtp_sep_t * avdtp_source_remote_sep(uint16_t avdtp_cid, uint8_t index);

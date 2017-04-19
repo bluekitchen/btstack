@@ -236,7 +236,7 @@ static void stream_endpoint_state_machine(avdtp_connection_t * connection, avdtp
                         stream_endpoint->l2cap_media_cid = l2cap_event_channel_opened_get_local_cid(packet);
                         stream_endpoint->media_con_handle = l2cap_event_channel_opened_get_handle(packet);
                         printf(" -> AVDTP_STREAM_ENDPOINT_OPENED, media con handle 0x%02x, l2cap_media_cid 0x%02x\n", stream_endpoint->media_con_handle, stream_endpoint->l2cap_media_cid);
-                        avdtp_streaming_emit_connection_established(context->avdtp_callback, stream_endpoint->l2cap_media_cid, 0);
+                        avdtp_streaming_emit_connection_established(context->avdtp_callback, connection->l2cap_signaling_cid, stream_endpoint->sep.seid, connection->remote_seps[stream_endpoint->remote_sep_index].seid, 0);
                         break;
                     }
                     break;

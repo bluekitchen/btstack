@@ -1349,9 +1349,11 @@ typedef uint8_t sm_key_t[16];
 #define AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CONFIGURATION        0x0A
 
 /**
- * @format 1H1
+ * @format 1H111
  * @param subevent_code
  * @param avdtp_cid
+ * @param int_seid
+ * @param acp_seid
  * @param status 0 == OK
  */
 #define AVDTP_SUBEVENT_STREAMING_CONNECTION_ESTABLISHED     0x0B

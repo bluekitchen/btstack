@@ -74,35 +74,21 @@
 #define TABLE_SIZE_441HZ   100
 
 typedef struct {
-// to app
-    uint32_t fill_audio_ring_buffer_timeout_ms;
-    uint32_t time_audio_data_sent; // ms
-    uint32_t acc_num_missed_samples;
-    uint32_t samples_ready;
-    btstack_timer_source_t fill_audio_ring_buffer_timer;
-    btstack_ring_buffer_t sbc_ring_buffer;
-    btstack_sbc_encoder_state_t sbc_encoder_state;
-    
-    int reconfigure;
-    int num_channels;
-    int sampling_frequency;
-    int channel_mode;
-    int block_length;
-    int subbands;
-    int allocation_method;
-    int min_bitpool_value;
-    int max_bitpool_value;
-} avdtp_stream_endpoint_context_t;
-static avdtp_stream_endpoint_context_t sc;
-
-static uint8_t int_seid;
-// static uint8_t acp_seid;
-
-typedef struct {
     int16_t source[TABLE_SIZE_441HZ];
     int left_phase;
     int right_phase;
 } paTestData;
+
+typedef enum {
+    STREAM_SINE,
+    STREAM_MOD
+} stream_data_source_t;
+
+static  uint8_t media_sbc_codec_capabilities[] = {
+    0xFF,//(AVDTP_SBC_44100 << 4) | AVDTP_SBC_STEREO,
+    0xFF,//(AVDTP_SBC_BLOCK_LENGTH_16 << 4) | (AVDTP_SBC_SUBBANDS_8 << 2) | AVDTP_SBC_ALLOCATION_METHOD_LOUDNESS,
+    2, 53
+}; 
 
 static char * device_name = "A2DP Source BTstack";
 
@@ -116,16 +102,17 @@ static bd_addr_t remote = {0x00, 0x21, 0x3c, 0xac, 0xf7, 0x38};
 // bt dongle: -u 02-04-01 
 // static bd_addr_t remote = {0x00, 0x15, 0x83, 0x5F, 0x9D, 0x46};
 
-static uint16_t avdtp_cid = 0;
 
 static uint8_t sdp_avdtp_source_service_buffer[150];
-static avdtp_stream_endpoint_t * local_stream_endpoint;
-
-static avdtp_sep_t * active_remote_sep = NULL;
-
 static uint8_t media_sbc_codec_configuration[4];
-static uint8_t sbc_samples_storage[44100*4];
 
+static uint8_t sbc_samples_storage[44100*4];
+static uint32_t fill_audio_ring_buffer_timeout_ms;
+static uint32_t time_audio_data_sent; // ms
+static uint32_t acc_num_missed_samples;
+static uint32_t samples_ready;
+static btstack_timer_source_t fill_audio_ring_buffer_timer;
+static btstack_ring_buffer_t sbc_ring_buffer;
 
 static paTestData sin_data;
 
@@ -133,23 +120,24 @@ static int hxcmod_initialized = 0;
 static modcontext mod_context;
 static tracker_buffer_state trkbuf;
 
-
-typedef enum {
-    STREAM_SINE,
-    STREAM_MOD
-} stream_data_source_t;
-
+static uint8_t int_seid = 0;
+static uint8_t acp_seid = 0;
+static uint16_t a2dp_cid = 0;
+static int start_streaming_timer = 0;
 
 a2dp_state_t app_state = A2DP_IDLE;
 stream_data_source_t data_source = STREAM_SINE;
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
+static void avdtp_fill_audio_ring_buffer_timer_start(void);
 
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
 
     bd_addr_t event_addr;
+    uint8_t signal_identifier;
+    uint8_t status;
 
     switch (packet_type) {
  
@@ -167,13 +155,36 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     break;
                 case HCI_EVENT_AVDTP_META:
                     switch (packet[2]){
-                        case AVDTP_SUBEVENT_STREAMING_CAN_SEND_MEDIA_PACKET_NOW: {
-                            avdtp_source_stream_send_media_payload(local_stream_endpoint->l2cap_media_cid, &sc.sbc_ring_buffer, 0);
-                            if (btstack_ring_buffer_bytes_available(&sc.sbc_ring_buffer)){
-                                avdtp_source_stream_endpoint_request_can_send_now(local_stream_endpoint);
+                        case AVDTP_SUBEVENT_STREAMING_CONNECTION_ESTABLISHED:
+                            int_seid = avdtp_subevent_streaming_connection_established_get_int_seid(packet);
+                            acp_seid = avdtp_subevent_streaming_connection_established_get_acp_seid(packet);
+                            a2dp_cid = avdtp_subevent_streaming_connection_established_get_avdtp_cid(packet);
+                            printf(" --- application --- AVDTP_SUBEVENT_STREAMING_CONNECTION_ESTABLISHED --- a2dp_cid 0x%02x, local seid %d, remote seid %d\n", a2dp_cid, int_seid, acp_seid);
+                            break;
+                        case AVDTP_SUBEVENT_SIGNALING_ACCEPT:
+                            signal_identifier = avdtp_subevent_signaling_accept_get_signal_identifier(packet);
+                            status = avdtp_subevent_signaling_accept_get_status(packet);
+                            printf(" --- application ---  Accepted %d\n", signal_identifier);
+                            switch (signal_identifier){
+                                case AVDTP_SI_START:
+                                    if (start_streaming_timer){
+                                        if (avdtp_source_stream_endpoint_ready(int_seid)){
+                                            avdtp_fill_audio_ring_buffer_timer_start();
+                                            start_streaming_timer = 0;
+                                        }
+                                    }
+                                    break;
+                                default:
+                                    break;
                             }
                             break;
-                        }
+                        case AVDTP_SUBEVENT_STREAMING_CAN_SEND_MEDIA_PACKET_NOW: 
+                            avdtp_source_stream_send_media_payload(int_seid, &sbc_ring_buffer, 0);
+                            if (btstack_ring_buffer_bytes_available(&sbc_ring_buffer)){
+                                avdtp_source_stream_endpoint_request_can_send_now(int_seid);
+                            }
+                            break;
+                            
                         default:
                             app_state = A2DP_IDLE;
                             printf(" --- application ---  not implemented\n");
@@ -187,7 +198,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
         default:
             // other packet type
             break;
-    }
+    }    
 }
 
 static void show_usage(void){
@@ -196,32 +207,14 @@ static void show_usage(void){
     printf("\n--- Bluetooth AVDTP SOURCE Test Console %s ---\n", bd_addr_to_str(iut_address));
     printf("c      - create connection to addr %s\n", bd_addr_to_str(remote));
     printf("C      - disconnect\n");
-    printf("d      - discover stream endpoints\n");
-    
-    if (!active_remote_sep){
-        printf("Ctrl-c - exit\n");
-        printf("---\n");
-        return;
-    }
-    printf("m      - start stream with %d\n", active_remote_sep->seid);
     printf("x      - start streaming sine\n");
     if (hxcmod_initialized){
         printf("z      - start streaming '%s'\n", mod_name);
     }
     printf("X      - stop streaming\n");
-    printf("A      - abort stream with %d\n", active_remote_sep->seid);
-    printf("S      - stop stream with %d\n", active_remote_sep->seid);
-    printf("P      - suspend stream with %d\n", active_remote_sep->seid);
     printf("Ctrl-c - exit\n");
     printf("---\n");
 }
-
-static  uint8_t media_sbc_codec_capabilities[] = {
-    0xFF,//(AVDTP_SBC_44100 << 4) | AVDTP_SBC_STEREO,
-    0xFF,//(AVDTP_SBC_BLOCK_LENGTH_16 << 4) | (AVDTP_SBC_SUBBANDS_8 << 2) | AVDTP_SBC_ALLOCATION_METHOD_LOUDNESS,
-    2, 53
-}; 
-
 
 static void produce_sine_audio(int16_t * pcm_buffer, void *user_data, int num_samples_to_write){
     paTestData *data = (paTestData*)user_data;
@@ -262,8 +255,8 @@ static int fill_sbc_ring_buffer(void){
     int num_audio_samples_per_sbc_buffer = btstack_sbc_encoder_num_audio_frames();
     // int audio_bytes_to_read = num_audio_samples_per_sbc_buffer * BYTES_PER_AUDIO_SAMPLE; 
 
-    while (sc.samples_ready >= num_audio_samples_per_sbc_buffer
-        && btstack_ring_buffer_bytes_free(&sc.sbc_ring_buffer) >= btstack_sbc_encoder_sbc_buffer_length()){ 
+    while (samples_ready >= num_audio_samples_per_sbc_buffer
+        && btstack_ring_buffer_bytes_free(&sbc_ring_buffer) >= btstack_sbc_encoder_sbc_buffer_length()){ 
 
         uint8_t pcm_frame[256*BYTES_PER_AUDIO_SAMPLE];
 
@@ -275,10 +268,10 @@ static int fill_sbc_ring_buffer(void){
         
         total_num_bytes_read += num_audio_samples_per_sbc_buffer;
         
-        if (btstack_ring_buffer_bytes_free(&sc.sbc_ring_buffer) >= sbc_frame_size ){
+        if (btstack_ring_buffer_bytes_free(&sbc_ring_buffer) >= sbc_frame_size ){
             uint8_t size_buffer = sbc_frame_size;
-            btstack_ring_buffer_write(&sc.sbc_ring_buffer, &size_buffer, 1);
-            btstack_ring_buffer_write(&sc.sbc_ring_buffer, sbc_frame, sbc_frame_size);
+            btstack_ring_buffer_write(&sbc_ring_buffer, &size_buffer, 1);
+            btstack_ring_buffer_write(&sbc_ring_buffer, sbc_frame, sbc_frame_size);
         } else {
             printf("No space in sbc buffer\n");
         }
@@ -288,51 +281,53 @@ static int fill_sbc_ring_buffer(void){
 
 static void avdtp_fill_audio_ring_buffer_timeout_handler(btstack_timer_source_t * timer){
     UNUSED(timer);
-    btstack_run_loop_set_timer(&sc.fill_audio_ring_buffer_timer, sc.fill_audio_ring_buffer_timeout_ms); // 2 seconds timeout
-    btstack_run_loop_add_timer(&sc.fill_audio_ring_buffer_timer);
+    btstack_run_loop_set_timer(&fill_audio_ring_buffer_timer, fill_audio_ring_buffer_timeout_ms); // 2 seconds timeout
+    btstack_run_loop_add_timer(&fill_audio_ring_buffer_timer);
     uint32_t now = btstack_run_loop_get_time_ms();
 
-    uint32_t update_period_ms = sc.fill_audio_ring_buffer_timeout_ms;
-    if (sc.time_audio_data_sent > 0){
-        update_period_ms = now - sc.time_audio_data_sent;
+    uint32_t update_period_ms = fill_audio_ring_buffer_timeout_ms;
+    if (time_audio_data_sent > 0){
+        update_period_ms = now - time_audio_data_sent;
     } 
     uint32_t num_samples = (update_period_ms * 44100) / 1000;
-    sc.acc_num_missed_samples += (update_period_ms * 44100) % 1000;
+    acc_num_missed_samples += (update_period_ms * 44100) % 1000;
 
-    if (sc.acc_num_missed_samples >= 1000){
+    if (acc_num_missed_samples >= 1000){
         num_samples++;
-        sc.acc_num_missed_samples -= 1000;
+        acc_num_missed_samples -= 1000;
     }
 
-    sc.time_audio_data_sent = now;
-    sc.samples_ready += num_samples;
+    time_audio_data_sent = now;
+    samples_ready += num_samples;
 
     int total_num_bytes_read = fill_sbc_ring_buffer();
      // schedule sending
     if (total_num_bytes_read != 0){
-        avdtp_source_stream_endpoint_request_can_send_now(local_stream_endpoint);
+        avdtp_source_stream_endpoint_request_can_send_now(int_seid);
     }
 }
 
 static void avdtp_fill_audio_ring_buffer_timer_start(void){
-    btstack_run_loop_remove_timer(&sc.fill_audio_ring_buffer_timer);
-    btstack_run_loop_set_timer_handler(&sc.fill_audio_ring_buffer_timer, avdtp_fill_audio_ring_buffer_timeout_handler);
-    // btstack_run_loop_set_timer_context(&sc.fill_audio_ring_buffer_timer, stream_endpoint);
-    btstack_run_loop_set_timer(&sc.fill_audio_ring_buffer_timer, sc.fill_audio_ring_buffer_timeout_ms); // 50 ms timeout
-    btstack_run_loop_add_timer(&sc.fill_audio_ring_buffer_timer);
+    btstack_run_loop_remove_timer(&fill_audio_ring_buffer_timer);
+    btstack_run_loop_set_timer_handler(&fill_audio_ring_buffer_timer, avdtp_fill_audio_ring_buffer_timeout_handler);
+    // btstack_run_loop_set_timer_context(&fill_audio_ring_buffer_timer, stream_endpoint);
+    btstack_run_loop_set_timer(&fill_audio_ring_buffer_timer, fill_audio_ring_buffer_timeout_ms); // 50 ms timeout
+    btstack_run_loop_add_timer(&fill_audio_ring_buffer_timer);
 }
 
 static void avdtp_fill_audio_ring_buffer_timer_stop(void){
-    btstack_run_loop_remove_timer(&sc.fill_audio_ring_buffer_timer);
+    btstack_run_loop_remove_timer(&fill_audio_ring_buffer_timer);
 } 
 
 static void avdtp_source_stream_data_start(void){
-    if (!avdtp_source_stream_endpoint_ready(local_stream_endpoint)) return;
-    avdtp_fill_audio_ring_buffer_timer_start();
+    printf(" --- application --- avdtp_source_stream_data_start --- local seid %d, remote seid %d\n", int_seid, acp_seid);
+    a2dp_source_start_stream(a2dp_cid, int_seid, acp_seid);
+    start_streaming_timer = 1;
 }
 
 static void avdtp_source_stream_data_stop(){
-    if (!avdtp_source_stream_endpoint_ready(local_stream_endpoint)) return;
+    a2dp_source_stop_stream(a2dp_cid, int_seid, acp_seid);
+    if (!avdtp_source_stream_endpoint_ready(int_seid)) return;
     avdtp_fill_audio_ring_buffer_timer_stop(); 
 }
 
@@ -350,14 +345,15 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
             break;
         case 'C':
             printf("Disconnect not implemented\n");
-            a2dp_source_disconnect(avdtp_cid);
+            a2dp_source_disconnect(a2dp_cid);
             break;
         case 'x':
-            // a2dp_source_start_stream(avdtp_cid, int_seid, acp_seid);
+            avdtp_source_stream_data_start();
+            break;
+        case 'z':
             avdtp_source_stream_data_start();
             break;
         case 'X':
-            // a2dp_source_stop_stream(avdtp_cid, int_seid, acp_seid);
             avdtp_source_stream_data_stop();
             break;
         default:
@@ -394,8 +390,8 @@ int btstack_main(int argc, const char * argv[]){
     gap_set_class_of_device(0x200408);
     
     memset(sbc_samples_storage, 0, sizeof(sbc_samples_storage));
-    btstack_ring_buffer_init(&sc.sbc_ring_buffer, sbc_samples_storage, sizeof(sbc_samples_storage));
-    sc.fill_audio_ring_buffer_timeout_ms = 50;
+    btstack_ring_buffer_init(&sbc_ring_buffer, sbc_samples_storage, sizeof(sbc_samples_storage));
+    fill_audio_ring_buffer_timeout_ms = 50;
 
     /* initialise sinusoidal wavetable */
     int i;

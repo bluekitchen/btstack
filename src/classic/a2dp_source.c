@@ -172,7 +172,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
     uint8_t signal_identifier;
     uint8_t status;
     avdtp_sep_t sep;
-    // 
+    uint8_t int_seid;
+    uint8_t acp_seid;
 
     switch (packet_type) {
  
@@ -206,12 +207,17 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                         
                         case AVDTP_SUBEVENT_STREAMING_CONNECTION_ESTABLISHED:
                             status = avdtp_subevent_streaming_connection_established_get_status(packet);
+                            avdtp_cid = avdtp_subevent_streaming_connection_established_get_avdtp_cid(packet);
+                            int_seid = avdtp_subevent_streaming_connection_established_get_int_seid(packet);
+                            acp_seid = avdtp_subevent_streaming_connection_established_get_acp_seid(packet);
+
                             if (status != 0){
                                 printf(" --- a2dp source --- AVDTP_SUBEVENT_STREAMING_CONNECTION could not be established, status %d ---\n", status);
                                 break;
                             }
                             app_state = A2DP_STREAMING_OPENED;
-                            printf(" --- a2dp source --- AVDTP_SUBEVENT_STREAMING_CONNECTION_ESTABLISHED ---\n");
+                            avdtp_streaming_emit_connection_established(a2dp_source_context.a2dp_callback, avdtp_cid, int_seid, acp_seid, 0);
+                            printf(" --- a2dp source --- AVDTP_SUBEVENT_STREAMING_CONNECTION_ESTABLISHED --- avdtp_cid 0x%02x, local seid %d, remote seid %d\n", avdtp_cid, int_seid, acp_seid);
                             break;
 
                         case AVDTP_SUBEVENT_SIGNALING_SEP_FOUND:
@@ -268,6 +274,9 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             // TODO: deal with reconfigure: avdtp_subevent_signaling_media_codec_sbc_configuration_get_reconfigure(packet);
                             break;
                         }  
+                        case AVDTP_SUBEVENT_STREAMING_CAN_SEND_MEDIA_PACKET_NOW: 
+                            avdtp_streaming_emit_can_send_media_packet_now(a2dp_source_context.a2dp_callback, avdtp_cid, 0, 0);
+                            break;
                         
                         case AVDTP_SUBEVENT_SIGNALING_ACCEPT:
                             signal_identifier = avdtp_subevent_signaling_accept_get_signal_identifier(packet);
@@ -314,6 +323,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                                 case A2DP_STREAMING_OPENED:
                                     switch (signal_identifier){
                                         case AVDTP_SI_START:
+                                            printf(" AVDTP_SI_START successful\n");
+                                            avdtp_signaling_emit_accept(a2dp_source_context.a2dp_callback, avdtp_cid, 0, signal_identifier, 0);
                                             break;
                                         case AVDTP_SI_CLOSE:
                                             break;
@@ -394,5 +405,13 @@ void a2dp_source_connect(bd_addr_t bd_addr, uint8_t local_seid){
 
 void a2dp_source_disconnect(uint16_t con_handle){
     avdtp_disconnect(con_handle, &a2dp_source_context);
+}
+
+void a2dp_source_start_stream(uint16_t cid, uint8_t int_seid, uint8_t acp_seid){
+    avdtp_start_stream(cid, int_seid, acp_seid, &a2dp_source_context);
+}
+
+void a2dp_source_stop_stream(uint16_t cid, uint8_t int_seid, uint8_t acp_seid){
+    avdtp_stop_stream(cid, int_seid, acp_seid, &a2dp_source_context);
 }
 

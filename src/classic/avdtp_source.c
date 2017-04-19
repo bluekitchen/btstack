@@ -183,7 +183,8 @@ void avdtp_source_init(avdtp_context_t * avdtp_context){
     l2cap_register_service(&packet_handler, BLUETOOTH_PROTOCOL_AVDTP, 0xffff, LEVEL_0);
 }
 
-int avdtp_source_stream_endpoint_ready(avdtp_stream_endpoint_t * stream_endpoint){
+int avdtp_source_stream_endpoint_ready(uint8_t local_seid){
+    avdtp_stream_endpoint_t * stream_endpoint = avdtp_stream_endpoint_for_seid(local_seid, avdtp_source_context);
     if (!stream_endpoint) {
         printf("no stream_endpoint");
         return 0;
@@ -191,7 +192,8 @@ int avdtp_source_stream_endpoint_ready(avdtp_stream_endpoint_t * stream_endpoint
     return (stream_endpoint->state == AVDTP_STREAM_ENDPOINT_STREAMING || stream_endpoint->state == AVDTP_STREAM_ENDPOINT_STREAMING_W2_SEND);
 }
 
-void avdtp_source_stream_endpoint_request_can_send_now(avdtp_stream_endpoint_t * stream_endpoint){
+void avdtp_source_stream_endpoint_request_can_send_now(uint8_t local_seid){
+    avdtp_stream_endpoint_t * stream_endpoint = avdtp_stream_endpoint_for_seid(local_seid, avdtp_source_context);
     if (!stream_endpoint) {
         printf("no stream_endpoint");
         return;
@@ -264,23 +266,28 @@ static void avdtp_source_copy_media_payload(uint8_t * media_packet, int size, in
     *offset = pos;
 }
 
-void avdtp_source_stream_send_media_payload(uint16_t l2cap_media_cid, btstack_ring_buffer_t * sbc_ring_buffer, uint8_t marker){
-    avdtp_stream_endpoint_t * stream_endpoint = avdtp_stream_endpoint_for_l2cap_cid(l2cap_media_cid, avdtp_source_context);
+void avdtp_source_stream_send_media_payload(uint8_t int_seid, btstack_ring_buffer_t * sbc_ring_buffer, uint8_t marker){
+    avdtp_stream_endpoint_t * stream_endpoint = avdtp_stream_endpoint_for_seid(int_seid, avdtp_source_context);
     if (!stream_endpoint) {
-        printf("no stream_endpoint found for 0x%02x", l2cap_media_cid);
+        printf("no stream_endpoint found for seid %d", int_seid);
         return;
     }
 
-    int size = l2cap_get_remote_mtu_for_local_cid(l2cap_media_cid);
+    if (stream_endpoint->l2cap_media_cid == 0){
+        printf("no media cid found for seid %d", int_seid);
+        return;
+    }        
+
+    int size = l2cap_get_remote_mtu_for_local_cid(stream_endpoint->l2cap_media_cid);
     int offset = 0;
 
     l2cap_reserve_packet_buffer();
     uint8_t * media_packet = l2cap_get_outgoing_buffer();
-    //int size = l2cap_get_remote_mtu_for_local_cid(l2cap_media_cid);
+    //int size = l2cap_get_remote_mtu_for_local_cid(stream_endpoint->l2cap_media_cid);
     avdtp_source_setup_media_header(media_packet, size, &offset, marker, stream_endpoint->sequence_number);
     avdtp_source_copy_media_payload(media_packet, size, &offset, sbc_ring_buffer);
     stream_endpoint->sequence_number++;
-    l2cap_send_prepared(l2cap_media_cid, offset);
+    l2cap_send_prepared(stream_endpoint->l2cap_media_cid, offset);
 }
 
 uint8_t avdtp_source_remote_seps_num(uint16_t avdtp_cid){

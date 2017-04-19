@@ -4413,13 +4413,31 @@ static inline hci_con_handle_t avdtp_subevent_streaming_connection_established_g
     return little_endian_read_16(event, 3);
 }
 /**
+ * @brief Get field int_seid from event AVDTP_SUBEVENT_STREAMING_CONNECTION_ESTABLISHED
+ * @param event packet
+ * @return int_seid
+ * @note: btstack_type 1
+ */
+static inline uint8_t avdtp_subevent_streaming_connection_established_get_int_seid(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field acp_seid from event AVDTP_SUBEVENT_STREAMING_CONNECTION_ESTABLISHED
+ * @param event packet
+ * @return acp_seid
+ * @note: btstack_type 1
+ */
+static inline uint8_t avdtp_subevent_streaming_connection_established_get_acp_seid(const uint8_t * event){
+    return event[6];
+}
+/**
  * @brief Get field status from event AVDTP_SUBEVENT_STREAMING_CONNECTION_ESTABLISHED
  * @param event packet
  * @return status
  * @note: btstack_type 1
  */
 static inline uint8_t avdtp_subevent_streaming_connection_established_get_status(const uint8_t * event){
-    return event[5];
+    return event[7];
 }
 
 /**
