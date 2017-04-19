@@ -71,12 +71,12 @@ static void btstack_uart_block_sent_thread(void * arg){
 
 // called from ISR context
 static void btstack_uart_block_received_isr(void){
-    btstack_run_loop_freertos_single_threaded_execute_code_on_main_thread(&btstack_uart_block_received_thread, NULL);
+    btstack_run_loop_freertos_single_threaded_execute_code_on_main_thread_from_isr(&btstack_uart_block_received_thread, NULL);
 }
 
 static void btstack_uart_block_sent_isr(void){
     // notify upper stack that provided buffer can be used again
-    btstack_run_loop_freertos_single_threaded_execute_code_on_main_thread(&btstack_uart_block_sent_thread, NULL);
+    btstack_run_loop_freertos_single_threaded_execute_code_on_main_thread_from_isr(&btstack_uart_block_sent_thread, NULL);
 }
 
 //
