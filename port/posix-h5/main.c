@@ -153,12 +153,14 @@ static void local_version_information_handler(uint8_t * packet){
     }
 }
 
-static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    bd_addr_t addr;
     if (packet_type != HCI_EVENT_PACKET) return;
     switch (hci_event_packet_get_type(packet)){
         case BTSTACK_EVENT_STATE:
             if (btstack_event_state_get_state(packet) != HCI_STATE_WORKING) break;
-            printf("BTstack up and running.\n");
+            gap_local_bd_addr(addr);
+            printf("BTstack up and running at %s\n",  bd_addr_to_str(addr));
             break;
         case HCI_EVENT_COMMAND_COMPLETE:
             if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_read_local_name)){
@@ -189,7 +191,10 @@ int main(int argc, const char * argv[]){
     hci_dump_open("/tmp/hci_dump.pklg", HCI_DUMP_PACKETLOGGER);
 
     // pick serial port
-    config.device_name = "/dev/tty.usbserial-A900K0VK";
+    // config.device_name = "/dev/tty.usbserial-A900K2WS"; // DFROBOT
+    // config.device_name = "/dev/tty.usbserial-A50285BI"; // BOOST-CC2564MODA New
+    // config.device_name = "/dev/tty.usbserial-A9OVNX5P"; // RedBear IoT pHAT breakout board
+    config.device_name = "/dev/tty.usbserial-A900K0VK"; // CSR8811 breakout board
 
     // init HCI
     const btstack_uart_block_t * uart_driver = btstack_uart_block_posix_instance();
