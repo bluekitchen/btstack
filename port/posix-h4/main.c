@@ -227,6 +227,10 @@ int main(int argc, const char * argv[]){
     const btstack_link_key_db_t * link_key_db = btstack_link_key_db_fs_instance();
 	hci_init(transport, (void*) &config);
     hci_set_link_key_db(link_key_db);
+
+    // set BD_ADDR for CSR without Flash/unique address
+    // bd_addr_t own_address = { 0x11, 0x22, 0x33, 0x44, 0x55, 0x66};
+    // btstack_chipset_csr_set_bd_addr(own_address);
     
     // inform about BTstack state
     hci_event_callback_registration.callback = &packet_handler;

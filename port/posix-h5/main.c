@@ -206,6 +206,10 @@ int main(int argc, const char * argv[]){
     // enable BCSP mode for CSR chipsets - auto detect might not work
     // hci_transport_h5_enable_bcsp_mode();
 
+    // set BD_ADDR for CSR without Flash/unique address
+    // bd_addr_t own_address = { 0x11, 0x22, 0x33, 0x44, 0x55, 0x66};
+    // btstack_chipset_csr_set_bd_addr(own_address);
+
     // enable auto-sleep mode
     // hci_transport_h5_set_auto_sleep(300);
 
