@@ -70,7 +70,9 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
     if (packet_type != HCI_EVENT_PACKET) return;
     if (hci_event_packet_get_type(packet) != BTSTACK_EVENT_STATE) return;
     if (btstack_event_state_get_state(packet) != HCI_STATE_WORKING) return;
-    printf("BTstack up and running.\n");
+    bd_addr_t addr;
+    gap_local_bd_addr(addr);
+    printf("BTstack up and running at %s\n",  bd_addr_to_str(addr));
 }
 
 static void sigint_handler(int param){

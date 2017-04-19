@@ -50,7 +50,17 @@ extern "C" {
 
 #include <stdint.h>
 #include "btstack_chipset.h"
+#include "bluetooth.h"
+	
+/** 
+ * Set BD ADDR before HCI POWER_ON
+ * @param bd_addr
+ */
+void btstack_chipset_csr_set_bd_addr(bd_addr_t bd_addr);
 
+/**
+ * Get chipset instance for CSR chipsets
+ */
 const btstack_chipset_t * btstack_chipset_csr_instance(void);
 
 #if defined __cplusplus
