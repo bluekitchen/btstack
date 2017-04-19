@@ -105,15 +105,30 @@ static void transport_notify_packet_send(void *arg){
     transport_packet_handler(HCI_EVENT_PACKET, &event[0], sizeof(event));
 }
 
+void report_recv_called_from_isr(void){
+     printf("host_recv_pkt_cb called from ISR!\n");
+}
+
 // run from VHCI Task
 static void host_send_pkt_available_cb(void){
-    // notify upper stack that provided buffer can be used again
-    btstack_run_loop_freertos_single_threaded_execute_code_on_main_thread(&transport_notify_packet_send, NULL);
+
+    if (xPortInIsrContext()){
+        // notify upper stack that provided buffer can be used again
+        btstack_run_loop_freertos_single_threaded_execute_code_on_main_thread_from_isr(&transport_notify_packet_send, NULL);
+    } else {
+        // notify upper stack that provided buffer can be used again
+        btstack_run_loop_freertos_single_threaded_execute_code_on_main_thread(&transport_notify_packet_send, NULL);
+    }
 }
 
 // run from VHCI Task
 static int host_recv_pkt_cb(uint8_t *data, uint16_t len){
     // log_info("host_recv_pkt_cb: %u bytes, type %u, begins %02x %02x", len, data[0], data[1], data[2]);
+
+    if (xPortInIsrContext()){
+        report_recv_called_from_isr();
+        return 0;
+    }
 
     xSemaphoreTake(ring_buffer_mutex, portMAX_DELAY);
 
@@ -157,6 +172,7 @@ static void transport_init(const void *transport_config){
 /**
  * open transport connection
  */
+
 static int transport_open(void){
     esp_err_t ret;
 
@@ -164,11 +180,17 @@ static int transport_open(void){
 
     btstack_ring_buffer_init(&hci_ringbuffer, hci_ringbuffer_storage, sizeof(hci_ringbuffer_storage));
 
-    esp_bt_controller_init();
+
+    esp_bt_controller_config_t bt_cfg = BT_CONTROLLER_INIT_CONFIG_DEFAULT();
+    ret = esp_bt_controller_init(&bt_cfg);
+    if (ret) {
+        log_error("transport: esp_bt_controller_init failed");
+        return -1;
+    }
 
     ret = esp_bt_controller_enable(ESP_BT_MODE_BTDM);
     if (ret) {
-        log_error("transpprt: esp_bt_controller_enable failed");
+        log_error("transport: esp_bt_controller_enable failed");
         return -1;
     }
 
