@@ -144,5 +144,6 @@ typedef struct {
 const btstack_uart_block_t * btstack_uart_block_posix_instance(void);
 const btstack_uart_block_t * btstack_uart_block_windows_instance(void);
 const btstack_uart_block_t * btstack_uart_block_embedded_instance(void);
+const btstack_uart_block_t * btstack_uart_block_freertos_single_threaded_instance(void);
 
 #endif

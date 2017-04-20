@@ -41,7 +41,7 @@
  *  btstack_uart_block_freertos.c
  *
  *  Adapter to IRQ-driven hal_uart_dma.h with FreeRTOS BTstack Run Loop and 
- *  Callbacks are executed on main thread via btstack_run_loop_freertos_single_threaded_execute_code_on_main_thread()
+ *  Callbacks are executed on main thread via data source and btstack_run_loop_freertos_trigger_from_isr
  *
  */
 
@@ -53,30 +53,41 @@
 // uart config
 static const btstack_uart_config_t * uart_config;
 
+// data source for integration with BTstack Runloop
+static btstack_data_source_t transport_data_source;
+
 // callbacks
 static void (*block_sent)(void);
 static void (*block_received)(void);
 
+static int send_complete;
+static int receive_complete;
 
-// called from main thread context
-static void btstack_uart_block_received_thread(void * arg){
-    UNUSED(arg);
-    block_received();
-}
-
-static void btstack_uart_block_sent_thread(void * arg){
-    UNUSED(arg);
-    block_sent();
-}
-
-// called from ISR context
 static void btstack_uart_block_received_isr(void){
-    btstack_run_loop_freertos_single_threaded_execute_code_on_main_thread_from_isr(&btstack_uart_block_received_thread, NULL);
+    receive_complete = 1;
+    btstack_run_loop_freertos_trigger_from_isr();
 }
 
 static void btstack_uart_block_sent_isr(void){
-    // notify upper stack that provided buffer can be used again
-    btstack_run_loop_freertos_single_threaded_execute_code_on_main_thread_from_isr(&btstack_uart_block_sent_thread, NULL);
+    send_complete = 1;
+    btstack_run_loop_freertos_trigger_from_isr();
+}
+
+static void btstack_uart_block_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type) {
+    switch (callback_type){
+        case DATA_SOURCE_CALLBACK_POLL:
+            if (send_complete){
+                send_complete = 0;
+                block_sent();
+            }
+            if (receive_complete){
+                receive_complete = 0;
+                block_received();
+            }
+            break;
+        default:
+            break;
+    }
 }
 
 //
@@ -84,6 +95,11 @@ static int btstack_uart_block_init(const btstack_uart_config_t * config){
     uart_config = config;
     hal_uart_dma_set_block_received(&btstack_uart_block_received_isr);
     hal_uart_dma_set_block_sent(&btstack_uart_block_sent_isr);
+
+    // set up polling data_source
+    btstack_run_loop_set_data_source_handler(&transport_data_source, &btstack_uart_block_process);
+    btstack_run_loop_enable_data_source_callbacks(&transport_data_source, DATA_SOURCE_CALLBACK_POLL);
+    btstack_run_loop_add_data_source(&transport_data_source);
     return 0;
 }
 
@@ -132,6 +148,6 @@ static const btstack_uart_block_t btstack_uart_embedded = {
     /* void (*set_sleep)(btstack_uart_sleep_mode_t sleep_mode); */    NULL
 };
 
-const btstack_uart_block_t * btstack_uart_block_embedded_instance(void){
+const btstack_uart_block_t * btstack_uart_block_freertos_single_threaded_instance(void){
 	return &btstack_uart_embedded;
 }
