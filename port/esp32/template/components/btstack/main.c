@@ -109,16 +109,20 @@ void report_recv_called_from_isr(void){
      printf("host_recv_pkt_cb called from ISR!\n");
 }
 
+void report_sent_called_from_isr(void){
+     printf("host_send_pkt_available_cb called from ISR!\n");
+}
+
 // run from VHCI Task
 static void host_send_pkt_available_cb(void){
 
     if (xPortInIsrContext()){
-        // notify upper stack that provided buffer can be used again
-        btstack_run_loop_freertos_single_threaded_execute_code_on_main_thread_from_isr(&transport_notify_packet_send, NULL);
-    } else {
-        // notify upper stack that provided buffer can be used again
-        btstack_run_loop_freertos_single_threaded_execute_code_on_main_thread(&transport_notify_packet_send, NULL);
+        report_sent_called_from_isr();
+        return;
     }
+
+    // notify upper stack that provided buffer can be used again
+    btstack_run_loop_freertos_single_threaded_execute_code_on_main_thread(&transport_notify_packet_send, NULL);
 }
 
 // run from VHCI Task
