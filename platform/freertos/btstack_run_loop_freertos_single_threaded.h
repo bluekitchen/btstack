@@ -66,6 +66,16 @@ void btstack_run_loop_freertos_single_threaded_execute_code_on_main_thread(void 
  */
 void btstack_run_loop_freertos_single_threaded_execute_code_on_main_thread_from_isr(void (*fn)(void *arg), void * arg);
 
+/**
+ * @brief Triggers processing of data sources from thread context. Has to be called after enabling a poll data source to wake-pup run loop.
+ */
+void btstack_run_loop_freertos_trigger(void);    
+
+/**
+ * @brief Triggers processing of data sources from an ISR. Has to be called after enabling a poll data source to wake-pup run loop.
+ */
+void btstack_run_loop_freertos_trigger_from_isr(void);    
+
 /* API_END */
 
 #if defined __cplusplus

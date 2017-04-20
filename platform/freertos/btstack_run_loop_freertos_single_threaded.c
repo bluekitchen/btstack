@@ -53,6 +53,7 @@ uint32_t hal_time_ms(void);
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/queue.h"
+#include "freertos/event_groups.h"
 
 typedef struct function_call {
     void (*fn)(void * arg);
@@ -61,7 +62,11 @@ typedef struct function_call {
 
 static const btstack_run_loop_t btstack_run_loop_freertos_single_threaded;
 
-static QueueHandle_t btstack_run_loop_queue;
+static QueueHandle_t        btstack_run_loop_queue;
+static EventGroupHandle_t   btstack_run_loop_event_group;
+
+// bit 0 event group reserved to wakeup run loop
+#define EVENT_GROUP_FLAG_RUN_LOOP 1
 
 // the run loop
 static btstack_linked_list_t timers;
@@ -113,6 +118,10 @@ static void btstack_run_loop_freertos_single_threaded_dump_timer(void){
 }
 
 // schedules execution from regular thread
+void btstack_run_loop_freertos_trigger(void){
+    xEventGroupSetBits(btstack_run_loop_event_group, EVENT_GROUP_FLAG_RUN_LOOP);
+}
+
 void btstack_run_loop_freertos_single_threaded_execute_code_on_main_thread(void (*fn)(void *arg), void * arg){
     function_call_t message;
     message.fn  = fn;
@@ -121,16 +130,23 @@ void btstack_run_loop_freertos_single_threaded_execute_code_on_main_thread(void 
     if (res != pdTRUE){
         log_error("Failed to post fn %p", fn);
     }
+    btstack_run_loop_freertos_trigger();
 }
 
-// schedules execution from regular thread
+#if (INCLUDE_xEventGroupSetBitFromISR == 1)
+void btstack_run_loop_freertos_trigger_from_isr(void){
+    xEventGroupSetBits(btstack_run_loop_event_group, EVENT_GROUP_FLAG_RUN_LOOP);
+}
+
 void btstack_run_loop_freertos_single_threaded_execute_code_on_main_thread_from_isr(void (*fn)(void *arg), void * arg){
     function_call_t message;
     message.fn  = fn;
     message.arg = arg;
     BaseType_t xHigherPriorityTaskWoken;
     xQueueSendToBackFromISR(btstack_run_loop_queue, &message, &xHigherPriorityTaskWoken);
+    btstack_run_loop_freertos_trigger_from_isr();
 }
+#endif
 
 /**
  * Execute run_loop
@@ -160,17 +176,16 @@ static void btstack_run_loop_freertos_single_threaded_task(void *pvParameter){
             timeout_ms = ts->timeout - now;
         }
 
-        // pop function call
-        function_call_t message = { NULL, NULL };
+        // wait for timeout of event group
         log_debug("RL: wait with timeout %u", (int) timeout_ms);
-        BaseType_t res = xQueueReceive( btstack_run_loop_queue, &message, pdMS_TO_TICKS(timeout_ms));
-        log_debug("RL: queue receive res %u", res);
-        if (res == pdPASS && message.fn){
+        xEventGroupWaitBits(btstack_run_loop_event_group, EVENT_GROUP_FLAG_RUN_LOOP, 1, 0, pdMS_TO_TICKS(timeout_ms));
+
+        // try pop function call
+        function_call_t message = { NULL, NULL };
+        BaseType_t res = xQueueReceive( btstack_run_loop_queue, &message, 0);
+        if (res == pdTRUE && message.fn){
             // execute code on run loop
-            log_debug("RL: execute %p", message.fn);
             message.fn(message.arg);
-        } else {
-            log_debug("RL: just timeout");
         }
     }
 }
@@ -186,6 +201,9 @@ static void btstack_run_loop_freertos_single_threaded_init(void){
 
     // queue to receive events: up to 2 calls from transport, up to 3 for app
     btstack_run_loop_queue = xQueueCreate(20, sizeof(function_call_t));
+
+    // event group to wake run loop
+    btstack_run_loop_event_group = xEventGroupCreate();
 
     log_info("run loop init, queue item size %u", (int) sizeof(function_call_t));
 }
