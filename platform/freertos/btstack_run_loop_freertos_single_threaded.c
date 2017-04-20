@@ -70,6 +70,7 @@ static EventGroupHandle_t   btstack_run_loop_event_group;
 
 // the run loop
 static btstack_linked_list_t timers;
+static btstack_linked_list_t data_sources;
 
 static uint32_t btstack_run_loop_freertos_single_threaded_get_time_ms(void){
     return hal_time_ms();
@@ -158,35 +159,46 @@ static void btstack_run_loop_freertos_single_threaded_task(void *pvParameter){
 
     while (1) {
 
-        // get next timeout
+        // process data sources
+        btstack_data_source_t *ds;
+        btstack_data_source_t *next;
+        for (ds = (btstack_data_source_t *) data_sources; ds != NULL ; ds = next){
+            next = (btstack_data_source_t *) ds->item.next; // cache pointer to next data_source to allow data source to remove itself
+            if (ds->flags & DATA_SOURCE_CALLBACK_POLL){
+                ds->process(ds, DATA_SOURCE_CALLBACK_POLL);
+            }
+        }
+
+        // process registered function calls on run loop thread
+        while (1){
+            function_call_t message = { NULL, NULL };
+            BaseType_t res = xQueueReceive( btstack_run_loop_queue, &message, 0);
+            if (res == pdFALSE) break;
+            if (message.fn){
+                message.fn(message.arg);
+            }
+        }
+
+        // process timers and get et next timeout
         uint32_t timeout_ms = portMAX_DELAY;
         log_debug("RL: portMAX_DELAY %u", portMAX_DELAY);
-        if (timers) {
+        while (timers) {
             btstack_timer_source_t * ts = (btstack_timer_source_t *) timers;
-            log_debug("RL: have timer %p", ts);
             uint32_t now = btstack_run_loop_freertos_single_threaded_get_time_ms();
             log_debug("RL: now %u, expires %u", now, ts->timeout);
-            if (ts->timeout < now){
-                // remove timer before processing it to allow handler to re-register with run loop
-                btstack_run_loop_remove_timer(ts);
-                log_debug("RL: first timer %p", ts->process);
-                ts->process(ts);
-                continue;
+            if (ts->timeout > now){
+                timeout_ms = ts->timeout - now;
+                break;
             }
-            timeout_ms = ts->timeout - now;
+            // remove timer before processing it to allow handler to re-register with run loop
+            btstack_run_loop_remove_timer(ts);
+            log_debug("RL: first timer %p", ts->process);
+            ts->process(ts);
         }
 
-        // wait for timeout of event group
+        // wait for timeout or event group
         log_debug("RL: wait with timeout %u", (int) timeout_ms);
         xEventGroupWaitBits(btstack_run_loop_event_group, EVENT_GROUP_FLAG_RUN_LOOP, 1, 0, pdMS_TO_TICKS(timeout_ms));
-
-        // try pop function call
-        function_call_t message = { NULL, NULL };
-        BaseType_t res = xQueueReceive( btstack_run_loop_queue, &message, 0);
-        if (res == pdTRUE && message.fn){
-            // execute code on run loop
-            message.fn(message.arg);
-        }
     }
 }
 
@@ -194,6 +206,22 @@ static void btstack_run_loop_freertos_single_threaded_execute(void) {
     // use dedicated task, might not be needed in all cases
     xTaskCreate(&btstack_run_loop_freertos_single_threaded_task, "btstack_task", 3072, NULL, 5, NULL);
     // btstack_run_loop_freertos_single_threaded_task(NULL);
+}
+
+static void btstack_run_loop_freertos_single_threaded_add_data_source(btstack_data_source_t *ds){
+    btstack_linked_list_add(&data_sources, (btstack_linked_item_t *) ds);
+}
+
+static int btstack_run_loop_freertos_single_threaded_remove_data_source(btstack_data_source_t *ds){
+    return btstack_linked_list_remove(&data_sources, (btstack_linked_item_t *) ds);
+}
+
+static void btstack_run_loop_freertos_single_threaded_enable_data_source_callbacks(btstack_data_source_t * ds, uint16_t callback_types){
+    ds->flags |= callback_types;
+}
+
+static void btstack_run_loop_freertos_single_threaded_disable_data_source_callbacks(btstack_data_source_t * ds, uint16_t callback_types){
+    ds->flags &= ~callback_types;
 }
 
 static void btstack_run_loop_freertos_single_threaded_init(void){
@@ -217,10 +245,10 @@ const btstack_run_loop_t * btstack_run_loop_freertos_single_threaded_get_instanc
 
 static const btstack_run_loop_t btstack_run_loop_freertos_single_threaded = {
     &btstack_run_loop_freertos_single_threaded_init,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
+    &btstack_run_loop_freertos_single_threaded_add_data_source,
+    &btstack_run_loop_freertos_single_threaded_remove_data_source,
+    &btstack_run_loop_freertos_single_threaded_enable_data_source_callbacks,
+    &btstack_run_loop_freertos_single_threaded_disable_data_source_callbacks,
     &btstack_run_loop_freertos_single_threaded_set_timer,
     &btstack_run_loop_freertos_single_threaded_add_timer,
     &btstack_run_loop_freertos_single_threaded_remove_timer,
