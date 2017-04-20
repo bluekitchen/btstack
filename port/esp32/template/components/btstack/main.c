@@ -82,29 +82,12 @@ static btstack_ring_buffer_t hci_ringbuffer;
 static uint8_t hci_receive_buffer[1 + HCI_PACKET_BUFFER_SIZE];
 static SemaphoreHandle_t ring_buffer_mutex;
 
-// executed on main run loop
-static void transport_deliver_packets(void *arg){
-    xSemaphoreTake(ring_buffer_mutex, portMAX_DELAY);
-    while (btstack_ring_buffer_bytes_available(&hci_ringbuffer)){
-        uint32_t number_read;
-        uint8_t len_tag[2];
-        btstack_ring_buffer_read(&hci_ringbuffer, len_tag, 2, &number_read);
-        uint32_t len = little_endian_read_16(len_tag, 0);
-        btstack_ring_buffer_read(&hci_ringbuffer, hci_receive_buffer, len, &number_read);
-        xSemaphoreGive(ring_buffer_mutex);
-        transport_packet_handler(hci_receive_buffer[0], &hci_receive_buffer[1], len-1);
-        xSemaphoreTake(ring_buffer_mutex, portMAX_DELAY);
-    }
-    xSemaphoreGive(ring_buffer_mutex);
-}
+// data source for integration with BTstack Runloop
+static btstack_data_source_t transport_data_source;
+static int                   transport_signal_sent;
+static int                   transport_packets_to_deliver;
 
-// executed on main run loop
-static void transport_notify_packet_send(void *arg){
-    // notify upper stack that it might be possible to send again
-    uint8_t event[] = { HCI_EVENT_TRANSPORT_PACKET_SENT, 0};
-    transport_packet_handler(HCI_EVENT_PACKET, &event[0], sizeof(event));
-}
-
+// TODO: remove once stable 
 void report_recv_called_from_isr(void){
      printf("host_recv_pkt_cb called from ISR!\n");
 }
@@ -113,7 +96,8 @@ void report_sent_called_from_isr(void){
      printf("host_send_pkt_available_cb called from ISR!\n");
 }
 
-// run from VHCI Task
+// VHCI callbacks, run from VHCI Task "BT Controller"
+
 static void host_send_pkt_available_cb(void){
 
     if (xPortInIsrContext()){
@@ -121,13 +105,12 @@ static void host_send_pkt_available_cb(void){
         return;
     }
 
-    // notify upper stack that provided buffer can be used again
-    btstack_run_loop_freertos_single_threaded_execute_code_on_main_thread(&transport_notify_packet_send, NULL);
+    // set flag and trigger polling of transport data source on main thread
+    transport_signal_sent = 1;
+    btstack_run_loop_freertos_trigger();
 }
 
-// run from VHCI Task
 static int host_recv_pkt_cb(uint8_t *data, uint16_t len){
-    // log_info("host_recv_pkt_cb: %u bytes, type %u, begins %02x %02x", len, data[0], data[1], data[2]);
 
     if (xPortInIsrContext()){
         report_recv_called_from_isr();
@@ -154,8 +137,9 @@ static int host_recv_pkt_cb(uint8_t *data, uint16_t len){
 
     xSemaphoreGive(ring_buffer_mutex);
 
-    // let stack now
-    btstack_run_loop_freertos_single_threaded_execute_code_on_main_thread(&transport_deliver_packets, NULL);
+    // set flag and trigger delivery of packets on main thread
+    transport_packets_to_deliver = 1;
+    btstack_run_loop_freertos_trigger();
     return 0;
 }
 
@@ -164,6 +148,47 @@ static const esp_vhci_host_callback_t vhci_host_cb = {
     .notify_host_recv = host_recv_pkt_cb,
 };
 
+// run from main thread
+
+static void transport_notify_packet_send(void){
+    // notify upper stack that it might be possible to send again
+    uint8_t event[] = { HCI_EVENT_TRANSPORT_PACKET_SENT, 0};
+    transport_packet_handler(HCI_EVENT_PACKET, &event[0], sizeof(event));
+}
+
+static void transport_deliver_packets(void){
+    xSemaphoreTake(ring_buffer_mutex, portMAX_DELAY);
+    while (btstack_ring_buffer_bytes_available(&hci_ringbuffer)){
+        uint32_t number_read;
+        uint8_t len_tag[2];
+        btstack_ring_buffer_read(&hci_ringbuffer, len_tag, 2, &number_read);
+        uint32_t len = little_endian_read_16(len_tag, 0);
+        btstack_ring_buffer_read(&hci_ringbuffer, hci_receive_buffer, len, &number_read);
+        xSemaphoreGive(ring_buffer_mutex);
+        transport_packet_handler(hci_receive_buffer[0], &hci_receive_buffer[1], len-1);
+        xSemaphoreTake(ring_buffer_mutex, portMAX_DELAY);
+    }
+    xSemaphoreGive(ring_buffer_mutex);
+}
+
+
+static void transport_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type) {
+    switch (callback_type){
+        case DATA_SOURCE_CALLBACK_POLL:
+            if (transport_signal_sent){
+                transport_signal_sent = 0;
+                transport_notify_packet_send();
+            }
+            if (transport_packets_to_deliver){
+                transport_packets_to_deliver = 0;
+                transport_deliver_packets();
+            }
+            break;
+        default:
+            break;
+    }
+}
+
 /**
  * init transport
  * @param transport_config
@@ -171,6 +196,11 @@ static const esp_vhci_host_callback_t vhci_host_cb = {
 static void transport_init(const void *transport_config){
     log_info("transport_init");
     ring_buffer_mutex = xSemaphoreCreateMutex();
+
+    // set up polling data_source
+    btstack_run_loop_set_data_source_handler(&transport_data_source, &transport_process);
+    btstack_run_loop_enable_data_source_callbacks(&transport_data_source, DATA_SOURCE_CALLBACK_POLL);
+    btstack_run_loop_add_data_source(&transport_data_source);
 }
 
 /**
