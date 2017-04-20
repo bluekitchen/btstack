@@ -66,20 +66,20 @@ uint32_t hal_time_ms(void) {
 }
 
 // assert pre-buffer for packet type is available
-#if !defined(HCI_OUTGOING_PRE_BUFFER_SIZE) || (HCI_OUTGOING_PRE_BUFFER_SIZE == 0)
-#error HCI_OUTGOING_PRE_BUFFER_SIZE not defined. Please update hci.h
+#if !defined(HCI_OUTGOING_PRE_BUFFER_SIZE) || (HCI_OUTGOING_PRE_BUFFER_SIZE < 1)
+#error HCI_OUTGOING_PRE_BUFFER_SIZE not defined or smaller than 1. Please update hci.h
 #endif
 
 static void (*transport_packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size);
 
-// ring buffer for incoming HCI packets
+// ring buffer for incoming HCI packets. Each packet has 2 byte len tag + H4 packet type + packet itself
 #define MAX_NR_HOST_EVENT_PACKETS 4
-static uint8_t hci_ringbuffer_storage[HCI_HOST_ACL_PACKET_NUM   * (1 + HCI_ACL_HEADER_SIZE + HCI_HOST_ACL_PACKET_LEN) +
-                                      HCI_HOST_SCO_PACKET_NUM   * (1 + HCI_SCO_HEADER_SIZE + HCI_HOST_SCO_PACKET_LEN) +
-                                     (MAX_NR_HOST_EVENT_PACKETS * HCI_EVENT_BUFFER_SIZE)];
+static uint8_t hci_ringbuffer_storage[HCI_HOST_ACL_PACKET_NUM   * (2 + 1 + HCI_ACL_HEADER_SIZE + HCI_HOST_ACL_PACKET_LEN) +
+                                      HCI_HOST_SCO_PACKET_NUM   * (2 + 1 + HCI_SCO_HEADER_SIZE + HCI_HOST_SCO_PACKET_LEN) +
+                                      MAX_NR_HOST_EVENT_PACKETS * (2 + 1 + HCI_EVENT_BUFFER_SIZE)];
 
 static btstack_ring_buffer_t hci_ringbuffer;
-static uint8_t hci_receive_buffer[1 + HCI_ACL_HEADER_SIZE + HCI_ACL_3DH5_SIZE];
+static uint8_t hci_receive_buffer[1 + HCI_PACKET_BUFFER_SIZE];
 static SemaphoreHandle_t ring_buffer_mutex;
 
 // executed on main run loop
