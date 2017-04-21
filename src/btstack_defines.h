@@ -932,9 +932,10 @@ typedef uint8_t sm_key_t[16];
 #define HCI_EVENT_HFP_META                                 0xE9
 #define HCI_EVENT_ANCS_META                                0xEA
 #define HCI_EVENT_AVDTP_META                               0xEB
-#define HCI_EVENT_AVRCP_META                               0xEC
-#define HCI_EVENT_GOEP_META                                0xED
-#define HCI_EVENT_PBAP_META                                0xEE
+#define HCI_EVENT_A2DP_META                                0xEC
+#define HCI_EVENT_AVRCP_META                               0xED
+#define HCI_EVENT_GOEP_META                                0xEE
+#define HCI_EVENT_PBAP_META                                0xEF
 
 // Potential other meta groups
  // #define HCI_EVENT_BNEP_META                                0xxx
@@ -1374,24 +1375,50 @@ typedef uint8_t sm_key_t[16];
  */
 #define AVDTP_SUBEVENT_STREAMING_CAN_SEND_MEDIA_PACKET_NOW   0x0D
 
+
+/** A2DP Subevent */
+
+/**
+ * @format 1H111
+ * @param subevent_code
+ * @param a2dp_cid
+ * @param local_seid
+ * @param remote_seid
+ * @param status
+ */
+#define A2DP_SUBEVENT_STREAM_ESTABLISHED                           0x01
+
+/**
+ * @format 1H1
+ * @param subevent_code
+ * @param a2dp_cid
+ * @param local_seid
+ */
+#define A2DP_SUBEVENT_STREAM_START_ACCEPTED                        0x02
+
+/**
+ * @format 1H1
+ * @param subevent_code
+ * @param a2dp_cid
+ * @param local_seid
+ */
+#define A2DP_SUBEVENT_STREAM_SUSPENDED                              0x03
+
 /**
  * @format 1H1
  * @param subevent_code
  * @param avdtp_cid
- * @param int_seid
+ * @param local_seid
  */
-#define AVDTP_SUBEVENT_START_STREAMING                        0x0E
+#define A2DP_SUBEVENT_STREAMING_CAN_SEND_MEDIA_PACKET_NOW          0x04
 
 /**
  * @format 1H1
  * @param subevent_code
  * @param avdtp_cid
- * @param int_seid
+ * @param local_seid
  */
-#define AVDTP_SUBEVENT_STOP_STREAMING                        0x0F
-
-
-
+#define A2DP_SUBEVENT_STREAM_RELEASED                                0x05
 
 /** AVRCP Subevent */
 

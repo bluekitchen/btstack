@@ -485,67 +485,52 @@ void avdtp_open_stream(uint16_t avdtp_cid, uint8_t int_seid, uint8_t acp_seid, a
     avdtp_request_can_send_now_initiator(connection, connection->l2cap_signaling_cid);
 }
 
-void avdtp_start_stream(uint16_t avdtp_cid, uint8_t int_seid, uint8_t acp_seid, avdtp_context_t * context){
-    avdtp_connection_t * connection = avdtp_connection_for_l2cap_signaling_cid(avdtp_cid, context);
-    if (!connection){
-        printf("avdtp_start_stream: no connection for signaling cid 0x%02x found\n", avdtp_cid);
-        return;
-    }
-    if (avdtp_find_remote_sep(connection, acp_seid) == 0xFF){
-        printf("avdtp_start_stream: no remote sep for seid %d found\n", acp_seid);
-        return;
-    }
-    
-    if (connection->state != AVDTP_SIGNALING_CONNECTION_OPENED) {
-        printf("avdtp_start_stream: wrong connection state %d\n", connection->state);
-        return;
-    }
-
+void avdtp_start_stream(uint8_t int_seid, avdtp_context_t * context){
     avdtp_stream_endpoint_t * stream_endpoint = avdtp_stream_endpoint_with_seid(int_seid, context);
     if (!stream_endpoint) {
         printf("avdtp_start_stream: no stream_endpoint with seid %d found\n", int_seid);
         return;
     }
+    
+    avdtp_connection_t * connection = stream_endpoint->connection;
+    if (!connection){
+        printf("avdtp_start_stream: no connection for seid %d found\n", int_seid);
+        return;
+    }
+
     if (stream_endpoint->remote_sep_index == 0xFF) return;
     if (stream_endpoint->state < AVDTP_STREAM_ENDPOINT_OPENED) return;
     connection->initiator_transaction_label++;
-    connection->acp_seid = acp_seid;
+    connection->acp_seid = stream_endpoint->connection->remote_seps[stream_endpoint->remote_sep_index].seid;
     connection->int_seid = stream_endpoint->sep.seid;
     stream_endpoint->initiator_config_state = AVDTP_INITIATOR_W2_STREAMING_START;
     avdtp_request_can_send_now_initiator(connection, connection->l2cap_signaling_cid);
 }
 
-void avdtp_stop_stream(uint16_t avdtp_cid, uint8_t int_seid, uint8_t acp_seid, avdtp_context_t * context){
-    avdtp_connection_t * connection = avdtp_connection_for_l2cap_signaling_cid(avdtp_cid, context);
-    if (!connection){
-        printf("avdtp_stop_stream: no connection for signaling cid 0x%02x found\n", avdtp_cid);
-        return;
-    }
-    if (avdtp_find_remote_sep(connection, acp_seid) == 0xFF){
-        printf("avdtp_stop_stream: no remote sep for seid %d found\n", acp_seid);
-        return;
-    }
-
-    if (connection->state != AVDTP_SIGNALING_CONNECTION_OPENED) {
-        printf("avdtp_stop_stream: wrong connection state %d\n", connection->state);
-        return;
-    }
-
+void avdtp_stop_stream(uint8_t int_seid, avdtp_context_t * context){
     avdtp_stream_endpoint_t * stream_endpoint = avdtp_stream_endpoint_with_seid(int_seid, context);
     if (!stream_endpoint) {
         printf("avdtp_stop_stream: no stream_endpoint with seid %d found\n", int_seid);
         return;
     }
+
     if (stream_endpoint->remote_sep_index == 0xFF) return;
+
     switch (stream_endpoint->state){
         case AVDTP_STREAM_ENDPOINT_OPENED:
         case AVDTP_STREAM_ENDPOINT_STREAMING:
+
+            if (!stream_endpoint->connection){
+                printf("avdtp_stop_stream: no connection for seid %d found\n",stream_endpoint->sep.seid);
+                return;
+            }
+            
             printf(" AVDTP_INITIATOR_W2_STREAMING_STOP \n");
-            connection->initiator_transaction_label++;
-            connection->acp_seid = acp_seid;
-            connection->int_seid = stream_endpoint->sep.seid;
+            stream_endpoint->connection->initiator_transaction_label++;
+            stream_endpoint->connection->acp_seid = stream_endpoint->connection->remote_seps[stream_endpoint->remote_sep_index].seid;
+            stream_endpoint->connection->int_seid = stream_endpoint->sep.seid;
             stream_endpoint->initiator_config_state = AVDTP_INITIATOR_W2_STREAMING_STOP;
-            avdtp_request_can_send_now_initiator(connection, connection->l2cap_signaling_cid);
+            avdtp_request_can_send_now_initiator(stream_endpoint->connection, stream_endpoint->connection->l2cap_signaling_cid);
             break;
         default:
             break;

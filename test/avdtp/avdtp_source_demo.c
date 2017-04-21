@@ -109,8 +109,8 @@ static uint8_t sbc_storage[44100*4];
     
 typedef struct {
     uint16_t a2dp_cid;
-    uint8_t int_seid;
-    uint8_t acp_seid;
+    uint8_t local_seid;
+    uint8_t remote_seid;
     
     uint32_t fill_audio_ring_buffer_timeout_ms;
     uint32_t time_audio_data_sent; // ms
@@ -130,65 +130,56 @@ static modcontext mod_context;
 static tracker_buffer_state trkbuf;
 
 static uint8_t local_seid = 0;
-a2dp_state_t app_state = A2DP_IDLE;
 stream_data_source_t data_source = STREAM_SINE;
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
-static void avdtp_fill_audio_ring_buffer_timer_start(a2dp_media_sending_context_t * context);
-static void avdtp_fill_audio_ring_buffer_timer_stop(a2dp_media_sending_context_t * context);
+static void a2dp_fill_audio_ring_buffer_timer_start(a2dp_media_sending_context_t * context);
+static void a2dp_fill_audio_ring_buffer_timer_stop(a2dp_media_sending_context_t * context);
 
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
 
-    bd_addr_t event_addr;
     switch (packet_type) {
  
         case HCI_EVENT_PACKET:
             switch (hci_event_packet_get_type(packet)) {
-                case HCI_EVENT_PIN_CODE_REQUEST:
-                    // inform about pin code request
-                    printf("Pin code request - using '0000'\n");
-                    hci_event_pin_code_request_get_bd_addr(packet, event_addr);
-                    hci_send_cmd(&hci_pin_code_request_reply, &event_addr, 4, "0000");
-                    break;
-                case HCI_EVENT_DISCONNECTION_COMPLETE:
-                    // connection closed -> quit test app
-                    printf("\n --- application --- HCI_EVENT_DISCONNECTION_COMPLETE ---\n");
-                    break;
-                case HCI_EVENT_AVDTP_META:
+                case HCI_EVENT_A2DP_META:
                     switch (packet[2]){
-                        case AVDTP_SUBEVENT_STREAMING_CONNECTION_ESTABLISHED:
-                            media_tracker.int_seid = avdtp_subevent_streaming_connection_established_get_int_seid(packet);
-                            media_tracker.acp_seid = avdtp_subevent_streaming_connection_established_get_acp_seid(packet);
-                            media_tracker.a2dp_cid = avdtp_subevent_streaming_connection_established_get_avdtp_cid(packet);
-                            printf(" --- application --- AVDTP_SUBEVENT_STREAMING_CONNECTION_ESTABLISHED --- a2dp_cid 0x%02x, local seid %d, remote seid %d\n", 
-                                media_tracker.a2dp_cid, media_tracker.int_seid, media_tracker.acp_seid);
+                        case A2DP_SUBEVENT_STREAM_ESTABLISHED:
+                            media_tracker.local_seid = a2dp_subevent_stream_established_get_local_seid(packet);
+                            media_tracker.remote_seid = a2dp_subevent_stream_established_get_remote_seid(packet);
+                            media_tracker.a2dp_cid = a2dp_subevent_stream_established_get_a2dp_cid(packet);
+                            printf(" --- application --- A2DP_SUBEVENT_STREAM_ESTABLISHED, a2dp_cid 0x%02x, local seid %d, remote seid %d\n", 
+                                media_tracker.a2dp_cid, media_tracker.local_seid, media_tracker.remote_seid);
                             break;
                         
-                        case AVDTP_SUBEVENT_START_STREAMING:
-                            if (local_seid != media_tracker.int_seid) break;
-                            if (!avdtp_source_stream_endpoint_ready(media_tracker.int_seid)) break;
-                            printf(" --- application ---  start streaming : int seid %d\n", media_tracker.int_seid);
-                            avdtp_fill_audio_ring_buffer_timer_start(&media_tracker);
+                        case A2DP_SUBEVENT_STREAM_START_ACCEPTED:
+                            if (local_seid != media_tracker.local_seid) break;
+                            if (!a2dp_source_stream_endpoint_ready(media_tracker.local_seid)) break;
+                            printf(" --- application ---  A2DP_SUBEVENT_STREAM_START_ACCEPTED, local seid %d\n", media_tracker.local_seid);
+                            a2dp_fill_audio_ring_buffer_timer_start(&media_tracker);
                             break;
-
-                        case AVDTP_SUBEVENT_STOP_STREAMING:
-                            if (local_seid != media_tracker.int_seid) break;
-                            avdtp_fill_audio_ring_buffer_timer_stop(&media_tracker); 
-                            break;
-
-                        case AVDTP_SUBEVENT_STREAMING_CAN_SEND_MEDIA_PACKET_NOW: 
-                            if (local_seid != media_tracker.int_seid) break;
-                            avdtp_source_stream_send_media_payload(media_tracker.int_seid, &media_tracker.sbc_ring_buffer, 0);
+                        
+                        case A2DP_SUBEVENT_STREAMING_CAN_SEND_MEDIA_PACKET_NOW: 
+                            if (local_seid != media_tracker.local_seid) break;
+                            a2dp_source_stream_send_media_payload(media_tracker.local_seid, &media_tracker.sbc_ring_buffer, 0);
                             if (btstack_ring_buffer_bytes_available(&media_tracker.sbc_ring_buffer)){
-                                avdtp_source_stream_endpoint_request_can_send_now(media_tracker.int_seid);
+                                a2dp_source_stream_endpoint_request_can_send_now(media_tracker.local_seid);
                             }
                             break;
-                            
+
+                        case A2DP_SUBEVENT_STREAM_SUSPENDED:
+                            if (local_seid != media_tracker.local_seid) break;
+                            printf(" --- application ---  A2DP_SUBEVENT_STREAM_SUSPENDED, local seid %d\n", media_tracker.local_seid);
+                            a2dp_fill_audio_ring_buffer_timer_stop(&media_tracker); 
+                            break;
+
+                        case A2DP_SUBEVENT_STREAM_RELEASED:
+                            printf(" --- application ---  A2DP_SUBEVENT_STREAM_RELEASED, local seid %d\n", media_tracker.local_seid);
+                            break;
                         default:
-                            app_state = A2DP_IDLE;
                             printf(" --- application ---  not implemented\n");
                             break; 
                     }
@@ -306,11 +297,11 @@ static void avdtp_fill_audio_ring_buffer_timeout_handler(btstack_timer_source_t 
     int total_num_bytes_read = fill_sbc_ring_buffer(context);
      // schedule sending
     if (total_num_bytes_read != 0){
-        avdtp_source_stream_endpoint_request_can_send_now(context->int_seid);
+        a2dp_source_stream_endpoint_request_can_send_now(context->local_seid);
     }
 }
 
-static void avdtp_fill_audio_ring_buffer_timer_start(a2dp_media_sending_context_t * context){
+static void a2dp_fill_audio_ring_buffer_timer_start(a2dp_media_sending_context_t * context){
     btstack_run_loop_remove_timer(&context->fill_audio_ring_buffer_timer);
     btstack_run_loop_set_timer_handler(&context->fill_audio_ring_buffer_timer, avdtp_fill_audio_ring_buffer_timeout_handler);
     btstack_run_loop_set_timer_context(&context->fill_audio_ring_buffer_timer, context);
@@ -318,7 +309,7 @@ static void avdtp_fill_audio_ring_buffer_timer_start(a2dp_media_sending_context_
     btstack_run_loop_add_timer(&context->fill_audio_ring_buffer_timer);
 }
 
-static void avdtp_fill_audio_ring_buffer_timer_stop(a2dp_media_sending_context_t * context){
+static void a2dp_fill_audio_ring_buffer_timer_stop(a2dp_media_sending_context_t * context){
     btstack_run_loop_remove_timer(&context->fill_audio_ring_buffer_timer);
 } 
 
@@ -338,18 +329,18 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
     switch (cmd){
         case 'c':
             printf("Creating L2CAP Connection to %s, PSM_AVDTP\n", bd_addr_to_str(remote));
-            a2dp_source_connect(remote, local_seid);
+            a2dp_source_establish_stream(remote, local_seid);
             break;
         case 'C':
             printf("Disconnect not implemented\n");
             a2dp_source_disconnect(media_tracker.a2dp_cid);
             break;
         case 'x':
-            printf(" --- application --- a2dp_source_stream_data_start --- local seid %d, remote seid %d\n", media_tracker.int_seid, media_tracker.acp_seid);
-            a2dp_source_start_stream(media_tracker.a2dp_cid, media_tracker.int_seid, media_tracker.acp_seid);
+            printf(" --- application --- a2dp_source_stream_data_start --- local seid %d, remote seid %d\n", media_tracker.local_seid, media_tracker.remote_seid);
+            a2dp_source_start_stream(media_tracker.local_seid);
             break;
-        case 'X':
-            a2dp_source_stop_stream(media_tracker.a2dp_cid, media_tracker.int_seid, media_tracker.acp_seid);
+       case 'X':
+            a2dp_source_release_stream(media_tracker.local_seid);
             break;
         default:
             show_usage();

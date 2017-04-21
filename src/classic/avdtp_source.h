@@ -129,14 +129,14 @@ void avdtp_source_suspend(uint16_t avdtp_cid, uint8_t int_seid, uint8_t acp_seid
  * @param avdtp_cid
  * @param seid
  */
-void avdtp_source_open_stream(uint16_t avdtp_cid, uint8_t int_seid, uint8_t acp_seid);
+void avdtp_source_open_stream(uint16_t con_handle, uint8_t int_seid, uint8_t acp_seid);
 
 /**
  * @brief Start stream
  * @param avdtp_cid
  * @param seid
  */
-void avdtp_source_start_stream(uint16_t avdtp_cid, uint8_t int_seid, uint8_t acp_seid);
+void avdtp_source_start_stream(uint8_t int_seid);
 
 /**
  * @brief Start stream
@@ -150,13 +150,9 @@ void avdtp_source_abort_stream(uint16_t avdtp_cid, uint8_t int_seid, uint8_t acp
  * @param avdtp_cid
  * @param seid
  */
-void avdtp_source_stop_stream(uint16_t avdtp_cid, uint8_t int_seid, uint8_t acp_seid);
+void avdtp_source_stop_stream(uint8_t int_seid);
 
 avdtp_stream_endpoint_t * avdtp_source_create_stream_endpoint(avdtp_sep_type_t sep_type, avdtp_media_type_t media_type);
-
-void avdtp_source_stream_endpoint_request_can_send_now(uint8_t local_seid);
-int  avdtp_source_stream_endpoint_ready(uint8_t local_seid);
-void avdtp_source_stream_send_media_payload(uint8_t local_seid, btstack_ring_buffer_t * sbc_ring_buffer, uint8_t marker);
 
 uint8_t avdtp_source_remote_seps_num(uint16_t avdtp_cid);
 avdtp_sep_t * avdtp_source_remote_sep(uint16_t avdtp_cid, uint8_t index);

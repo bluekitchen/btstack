@@ -491,8 +491,8 @@ avdtp_stream_endpoint_t * avdtp_create_stream_endpoint(avdtp_sep_type_t sep_type
 
 void avdtp_disconnect(uint16_t avdtp_cid, avdtp_context_t * context);
 void avdtp_open_stream(uint16_t avdtp_cid, uint8_t int_seid, uint8_t acp_seid, avdtp_context_t * context);
-void avdtp_start_stream(uint16_t avdtp_cid, uint8_t int_seid, uint8_t acp_seid, avdtp_context_t * context);
-void avdtp_stop_stream(uint16_t avdtp_cid, uint8_t int_seid, uint8_t acp_seid, avdtp_context_t * context);
+void avdtp_start_stream(uint8_t int_seid, avdtp_context_t * context);
+void avdtp_stop_stream (uint8_t int_seid, avdtp_context_t * context);
 void avdtp_abort_stream(uint16_t avdtp_cid, uint8_t int_seid, uint8_t acp_seid, avdtp_context_t * context);
 
 void avdtp_discover_stream_endpoints(uint16_t avdtp_cid, avdtp_context_t * context);

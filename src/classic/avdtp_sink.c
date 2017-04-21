@@ -155,12 +155,12 @@ void avdtp_sink_open_stream(uint16_t avdtp_cid, uint8_t int_seid, uint8_t acp_se
     avdtp_open_stream(avdtp_cid, int_seid, acp_seid, &avdtp_sink_context);
 }
 
-void avdtp_sink_start_stream(uint16_t avdtp_cid, uint8_t int_seid, uint8_t acp_seid){
-    avdtp_start_stream(avdtp_cid, int_seid, acp_seid, &avdtp_sink_context);
+void avdtp_sink_start_stream(uint8_t int_seid){
+    avdtp_start_stream(int_seid, &avdtp_sink_context);
 }
 
-void avdtp_sink_stop_stream(uint16_t avdtp_cid, uint8_t int_seid, uint8_t acp_seid){
-    avdtp_stop_stream(avdtp_cid, int_seid, acp_seid, &avdtp_sink_context);
+void avdtp_sink_stop_stream(uint8_t int_seid){
+    avdtp_stop_stream(int_seid, &avdtp_sink_context);
 }
 
 void avdtp_sink_abort_stream(uint16_t avdtp_cid, uint8_t int_seid, uint8_t acp_seid){

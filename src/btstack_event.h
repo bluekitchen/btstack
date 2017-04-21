@@ -86,6 +86,14 @@ static inline uint8_t hci_event_avdtp_meta_get_subevent_code(const uint8_t * eve
     return event[2];
 }
 /***
+ * @brief Get subevent code for a2dp event
+ * @param event packet
+ * @return subevent_code
+ */
+static inline uint8_t hci_event_a2dp_meta_get_subevent_code(const uint8_t * event){
+    return event[2];
+}
+/***
  * @brief Get subevent code for avrcp event
  * @param event packet
  * @return subevent_code
@@ -4479,40 +4487,115 @@ static inline uint16_t avdtp_subevent_streaming_can_send_media_packet_now_get_se
 }
 
 /**
- * @brief Get field avdtp_cid from event AVDTP_SUBEVENT_START_STREAMING
+ * @brief Get field a2dp_cid from event A2DP_SUBEVENT_STREAM_ESTABLISHED
  * @param event packet
- * @return avdtp_cid
+ * @return a2dp_cid
  * @note: btstack_type H
  */
-static inline hci_con_handle_t avdtp_subevent_start_streaming_get_avdtp_cid(const uint8_t * event){
+static inline hci_con_handle_t a2dp_subevent_stream_established_get_a2dp_cid(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 /**
- * @brief Get field int_seid from event AVDTP_SUBEVENT_START_STREAMING
+ * @brief Get field local_seid from event A2DP_SUBEVENT_STREAM_ESTABLISHED
  * @param event packet
- * @return int_seid
+ * @return local_seid
  * @note: btstack_type 1
  */
-static inline uint8_t avdtp_subevent_start_streaming_get_int_seid(const uint8_t * event){
+static inline uint8_t a2dp_subevent_stream_established_get_local_seid(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field remote_seid from event A2DP_SUBEVENT_STREAM_ESTABLISHED
+ * @param event packet
+ * @return remote_seid
+ * @note: btstack_type 1
+ */
+static inline uint8_t a2dp_subevent_stream_established_get_remote_seid(const uint8_t * event){
+    return event[6];
+}
+/**
+ * @brief Get field status from event A2DP_SUBEVENT_STREAM_ESTABLISHED
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t a2dp_subevent_stream_established_get_status(const uint8_t * event){
+    return event[7];
+}
+
+/**
+ * @brief Get field a2dp_cid from event A2DP_SUBEVENT_STREAM_START_ACCEPTED
+ * @param event packet
+ * @return a2dp_cid
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t a2dp_subevent_stream_start_accepted_get_a2dp_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field local_seid from event A2DP_SUBEVENT_STREAM_START_ACCEPTED
+ * @param event packet
+ * @return local_seid
+ * @note: btstack_type 1
+ */
+static inline uint8_t a2dp_subevent_stream_start_accepted_get_local_seid(const uint8_t * event){
     return event[5];
 }
 
 /**
- * @brief Get field avdtp_cid from event AVDTP_SUBEVENT_STOP_STREAMING
+ * @brief Get field a2dp_cid from event A2DP_SUBEVENT_STREAM_SUSPENDED
+ * @param event packet
+ * @return a2dp_cid
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t a2dp_subevent_stream_suspended_get_a2dp_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field local_seid from event A2DP_SUBEVENT_STREAM_SUSPENDED
+ * @param event packet
+ * @return local_seid
+ * @note: btstack_type 1
+ */
+static inline uint8_t a2dp_subevent_stream_suspended_get_local_seid(const uint8_t * event){
+    return event[5];
+}
+
+/**
+ * @brief Get field avdtp_cid from event A2DP_SUBEVENT_STREAMING_CAN_SEND_MEDIA_PACKET_NOW
  * @param event packet
  * @return avdtp_cid
  * @note: btstack_type H
  */
-static inline hci_con_handle_t avdtp_subevent_stop_streaming_get_avdtp_cid(const uint8_t * event){
+static inline hci_con_handle_t a2dp_subevent_streaming_can_send_media_packet_now_get_avdtp_cid(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 /**
- * @brief Get field int_seid from event AVDTP_SUBEVENT_STOP_STREAMING
+ * @brief Get field local_seid from event A2DP_SUBEVENT_STREAMING_CAN_SEND_MEDIA_PACKET_NOW
  * @param event packet
- * @return int_seid
+ * @return local_seid
  * @note: btstack_type 1
  */
-static inline uint8_t avdtp_subevent_stop_streaming_get_int_seid(const uint8_t * event){
+static inline uint8_t a2dp_subevent_streaming_can_send_media_packet_now_get_local_seid(const uint8_t * event){
+    return event[5];
+}
+
+/**
+ * @brief Get field avdtp_cid from event A2DP_SUBEVENT_STREAM_RELEASED
+ * @param event packet
+ * @return avdtp_cid
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t a2dp_subevent_stream_released_get_avdtp_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field local_seid from event A2DP_SUBEVENT_STREAM_RELEASED
+ * @param event packet
+ * @return local_seid
+ * @note: btstack_type 1
+ */
+static inline uint8_t a2dp_subevent_stream_released_get_local_seid(const uint8_t * event){
     return event[5];
 }
 

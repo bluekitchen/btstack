@@ -164,6 +164,34 @@ void a2dp_source_create_sdp_record(uint8_t * service, uint32_t service_record_ha
     de_add_number(service, DE_UINT, DE_SIZE_16, supported_features);
 }
 
+static void a2dp_streaming_emit_connection_established(btstack_packet_handler_t callback, uint16_t cid, uint8_t local_seid, uint8_t remote_seid, uint8_t status){
+    if (!callback) return;
+    uint8_t event[8];
+    int pos = 0;
+    event[pos++] = HCI_EVENT_A2DP_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = A2DP_SUBEVENT_STREAM_ESTABLISHED;
+    little_endian_store_16(event, pos, cid);
+    pos += 2;
+    event[pos++] = local_seid;
+    event[pos++] = remote_seid;
+    event[pos++] = status;
+    (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
+static void a2dp_streaming_emit_can_send_media_packet_now(btstack_packet_handler_t callback, uint16_t cid, uint8_t seid){
+    if (!callback) return;
+    uint8_t event[8];
+    int pos = 0;
+    event[pos++] = HCI_EVENT_A2DP_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = A2DP_SUBEVENT_STREAMING_CAN_SEND_MEDIA_PACKET_NOW;
+    little_endian_store_16(event, pos, cid);
+    pos += 2;
+    event[pos++] = seid;
+    (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
@@ -188,6 +216,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                 case HCI_EVENT_DISCONNECTION_COMPLETE:
                     // connection closed -> quit test app
                     printf("\n --- a2dp source --- HCI_EVENT_DISCONNECTION_COMPLETE ---\n");
+
                     break;
                 case HCI_EVENT_AVDTP_META:
                     switch (packet[2]){
@@ -216,7 +245,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                                 break;
                             }
                             app_state = A2DP_STREAMING_OPENED;
-                            avdtp_streaming_emit_connection_established(a2dp_source_context.a2dp_callback, avdtp_cid, int_seid, acp_seid, 0);
+                            a2dp_streaming_emit_connection_established(a2dp_source_context.a2dp_callback, avdtp_cid, int_seid, acp_seid, 0);
                             printf(" --- a2dp source --- AVDTP_SUBEVENT_STREAMING_CONNECTION_ESTABLISHED --- avdtp_cid 0x%02x, local seid %d, remote seid %d\n", avdtp_cid, int_seid, acp_seid);
                             break;
 
@@ -275,7 +304,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             break;
                         }  
                         case AVDTP_SUBEVENT_STREAMING_CAN_SEND_MEDIA_PACKET_NOW: 
-                            avdtp_streaming_emit_can_send_media_packet_now(a2dp_source_context.a2dp_callback, avdtp_cid, 0, 0);
+                            a2dp_streaming_emit_can_send_media_packet_now(a2dp_source_context.a2dp_callback, avdtp_cid, 0);
                             break;
                         
                         case AVDTP_SUBEVENT_SIGNALING_ACCEPT:
@@ -326,23 +355,34 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                                         case AVDTP_SI_START:{
                                             uint8_t event[6];
                                             int pos = 0;
-                                            event[pos++] = HCI_EVENT_AVDTP_META;
+                                            event[pos++] = HCI_EVENT_A2DP_META;
                                             event[pos++] = sizeof(event) - 2;
-                                            event[pos++] = AVDTP_SUBEVENT_START_STREAMING;
+                                            event[pos++] = A2DP_SUBEVENT_STREAM_START_ACCEPTED;
                                             little_endian_store_16(event, pos, avdtp_cid);
                                             pos += 2;
                                             event[pos++] = avdtp_stream_endpoint_seid(sc.local_stream_endpoint);
                                             (*a2dp_source_context.a2dp_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
                                             break;
                                         }
-                                        case AVDTP_SI_CLOSE:
-                                        case AVDTP_SI_SUSPEND:
-                                        case AVDTP_SI_ABORT:{
+                                        case AVDTP_SI_CLOSE:{
                                             uint8_t event[6];
                                             int pos = 0;
-                                            event[pos++] = HCI_EVENT_AVDTP_META;
+                                            event[pos++] = HCI_EVENT_A2DP_META;
                                             event[pos++] = sizeof(event) - 2;
-                                            event[pos++] = AVDTP_SUBEVENT_STOP_STREAMING;
+                                            event[pos++] = A2DP_SUBEVENT_STREAM_RELEASED;
+                                            little_endian_store_16(event, pos, avdtp_cid);
+                                            pos += 2;
+                                            event[pos++] = avdtp_stream_endpoint_seid(sc.local_stream_endpoint);
+                                            (*a2dp_source_context.a2dp_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+                                            break;
+                                        }
+                                        
+                                        case AVDTP_SI_SUSPEND:{
+                                            uint8_t event[6];
+                                            int pos = 0;
+                                            event[pos++] = HCI_EVENT_A2DP_META;
+                                            event[pos++] = sizeof(event) - 2;
+                                            event[pos++] = A2DP_SUBEVENT_STREAM_SUSPENDED;
                                             little_endian_store_16(event, pos, avdtp_cid);
                                             pos += 2;
                                             event[pos++] = avdtp_stream_endpoint_seid(sc.local_stream_endpoint);
@@ -411,7 +451,7 @@ uint8_t a2dp_source_create_stream_endpoint(avdtp_media_type_t media_type, avdtp_
     return local_stream_endpoint->sep.seid;
 }
 
-void a2dp_source_connect(bd_addr_t bd_addr, uint8_t local_seid){
+void a2dp_source_establish_stream(bd_addr_t bd_addr, uint8_t local_seid){
     sc.local_stream_endpoint = avdtp_stream_endpoint_for_seid(local_seid, &a2dp_source_context);
     if (!sc.local_stream_endpoint){
         printf(" no local_stream_endpoint for seid %d\n", local_seid);
@@ -424,11 +464,116 @@ void a2dp_source_disconnect(uint16_t con_handle){
     avdtp_disconnect(con_handle, &a2dp_source_context);
 }
 
-void a2dp_source_start_stream(uint16_t cid, uint8_t int_seid, uint8_t acp_seid){
-    avdtp_start_stream(cid, int_seid, acp_seid, &a2dp_source_context);
+void a2dp_source_start_stream(uint8_t int_seid){
+    avdtp_start_stream(int_seid, &a2dp_source_context);
 }
 
-void a2dp_source_stop_stream(uint16_t cid, uint8_t int_seid, uint8_t acp_seid){
-    avdtp_stop_stream(cid, int_seid, acp_seid, &a2dp_source_context);
+void a2dp_source_release_stream(uint8_t int_seid){
+    avdtp_stop_stream(int_seid, &a2dp_source_context);
 }
 
+uint8_t a2dp_source_stream_endpoint_ready(uint8_t local_seid){
+    avdtp_stream_endpoint_t * stream_endpoint = avdtp_stream_endpoint_for_seid(local_seid, &a2dp_source_context);
+    if (!stream_endpoint) {
+        printf("no stream_endpoint");
+        return 0;
+    }
+    return (stream_endpoint->state == AVDTP_STREAM_ENDPOINT_STREAMING || stream_endpoint->state == AVDTP_STREAM_ENDPOINT_STREAMING_W2_SEND);
+}
+
+
+static void a2dp_source_setup_media_header(uint8_t * media_packet, int size, int *offset, uint8_t marker, uint16_t sequence_number){
+    if (size < 12){
+        printf("small outgoing buffer\n");
+        return;
+    }
+
+    uint8_t  rtp_version = 2;
+    uint8_t  padding = 0;
+    uint8_t  extension = 0;
+    uint8_t  csrc_count = 0;
+    uint8_t  payload_type = 0x60;
+    // uint16_t sequence_number = stream_endpoint->sequence_number;
+    uint32_t timestamp = btstack_run_loop_get_time_ms();
+    uint32_t ssrc = 0x11223344;
+
+    // rtp header (min size 12B)
+    int pos = 0;
+    // int mtu = l2cap_get_remote_mtu_for_local_cid(stream_endpoint->l2cap_media_cid);
+
+    media_packet[pos++] = (rtp_version << 6) | (padding << 5) | (extension << 4) | csrc_count;
+    media_packet[pos++] = (marker << 1) | payload_type;
+    big_endian_store_16(media_packet, pos, sequence_number);
+    pos += 2;
+    big_endian_store_32(media_packet, pos, timestamp);
+    pos += 4;
+    big_endian_store_32(media_packet, pos, ssrc); // only used for multicast
+    pos += 4;
+    *offset = pos;
+}
+
+static void a2dp_source_copy_media_payload(uint8_t * media_packet, int size, int * offset, btstack_ring_buffer_t * sbc_ring_buffer){
+    if (size < 18){
+        printf("small outgoing buffer\n");
+        return;
+    }
+    int pos = *offset;
+    // media payload
+    // sbc_header (size 1B)
+    uint8_t sbc_header_index = pos;
+    pos++;
+    uint8_t fragmentation = 0;
+    uint8_t starting_packet = 0; // set to 1 for the first packet of a fragmented SBC frame
+    uint8_t last_packet = 0;     // set to 1 for the last packet of a fragmented SBC frame
+    uint8_t num_frames = 0;
+
+    uint32_t total_sbc_bytes_read = 0;
+    uint8_t  sbc_frame_size = 0;
+    // payload
+    uint16_t sbc_frame_bytes = btstack_sbc_encoder_sbc_buffer_length();
+
+    while (size - 13 - total_sbc_bytes_read >= sbc_frame_bytes && btstack_ring_buffer_bytes_available(sbc_ring_buffer)){
+        uint32_t number_of_bytes_read = 0;
+        btstack_ring_buffer_read(sbc_ring_buffer, &sbc_frame_size, 1, &number_of_bytes_read);
+        btstack_ring_buffer_read(sbc_ring_buffer, media_packet + pos, sbc_frame_size, &number_of_bytes_read);
+        pos += sbc_frame_size;
+        total_sbc_bytes_read += sbc_frame_size;
+        num_frames++;
+        // printf("send sbc frame: timestamp %d, seq. nr %d\n", timestamp, stream_endpoint->sequence_number);
+    }
+    media_packet[sbc_header_index] =  (fragmentation << 7) | (starting_packet << 6) | (last_packet << 5) | num_frames;
+    *offset = pos;
+}
+void a2dp_source_stream_endpoint_request_can_send_now(uint8_t local_seid){
+    avdtp_stream_endpoint_t * stream_endpoint = avdtp_stream_endpoint_for_seid(local_seid, &a2dp_source_context);
+    if (!stream_endpoint) {
+        printf("no stream_endpoint");
+        return;
+    }
+    stream_endpoint->state = AVDTP_STREAM_ENDPOINT_STREAMING_W2_SEND;
+    avdtp_request_can_send_now_self(stream_endpoint->connection, stream_endpoint->l2cap_media_cid);
+}
+
+void a2dp_source_stream_send_media_payload(uint8_t int_seid, btstack_ring_buffer_t * sbc_ring_buffer, uint8_t marker){
+    avdtp_stream_endpoint_t * stream_endpoint = avdtp_stream_endpoint_for_seid(int_seid, &a2dp_source_context);
+    if (!stream_endpoint) {
+        printf("no stream_endpoint found for seid %d", int_seid);
+        return;
+    }
+
+    if (stream_endpoint->l2cap_media_cid == 0){
+        printf("no media cid found for seid %d", int_seid);
+        return;
+    }        
+
+    int size = l2cap_get_remote_mtu_for_local_cid(stream_endpoint->l2cap_media_cid);
+    int offset = 0;
+
+    l2cap_reserve_packet_buffer();
+    uint8_t * media_packet = l2cap_get_outgoing_buffer();
+    //int size = l2cap_get_remote_mtu_for_local_cid(stream_endpoint->l2cap_media_cid);
+    a2dp_source_setup_media_header(media_packet, size, &offset, marker, stream_endpoint->sequence_number);
+    a2dp_source_copy_media_payload(media_packet, size, &offset, sbc_ring_buffer);
+    stream_endpoint->sequence_number++;
+    l2cap_send_prepared(stream_endpoint->l2cap_media_cid, offset);
+}

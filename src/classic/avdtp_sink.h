@@ -150,7 +150,7 @@ void avdtp_sink_open_stream(uint16_t avdtp_cid, uint8_t int_seid, uint8_t acp_se
  * @param avdtp_cid
  * @param seid
  */
-void avdtp_sink_start_stream(uint16_t avdtp_cid, uint8_t int_seid, uint8_t acp_seid);
+void avdtp_sink_start_stream(uint8_t int_seid);
 
 /**
  * @brief Start stream
@@ -164,7 +164,7 @@ void avdtp_sink_abort_stream(uint16_t avdtp_cid, uint8_t int_seid, uint8_t acp_s
  * @param avdtp_cid
  * @param seid
  */
-void avdtp_sink_stop_stream(uint16_t avdtp_cid, uint8_t int_seid, uint8_t acp_seid);
+void avdtp_sink_stop_stream(uint8_t int_seid);
 
 /* API_END */
 

@@ -72,21 +72,26 @@ uint8_t a2dp_source_create_stream_endpoint(avdtp_media_type_t media_type, avdtp_
 	uint8_t * codec_capabilities, uint16_t codec_capabilities_len,
 	uint8_t * codec_configuration, uint16_t codec_configuration_len);
 
-void a2dp_source_connect(bd_addr_t bd_addr, uint8_t local_seid);
+/**
+ * @brief Start stream
+ * @param avdtp_cid
+ * @param seid
+ */
+void a2dp_source_establish_stream(bd_addr_t bd_addr, uint8_t local_seid);
 
 /**
  * @brief Start stream
  * @param avdtp_cid
  * @param seid
  */
-void a2dp_source_start_stream(uint16_t avdtp_cid, uint8_t int_seid, uint8_t acp_seid);
+void a2dp_source_start_stream(uint8_t int_seid);
 
 /**
  * @brief Start stream
  * @param avdtp_cid
  * @param seid
  */
-void a2dp_source_stop_stream(uint16_t avdtp_cid, uint8_t int_seid, uint8_t acp_seid);
+void a2dp_source_release_stream(uint8_t int_seid);
 
 /**
  * @brief Disconnect from device with connection handle. 
@@ -94,6 +99,10 @@ void a2dp_source_stop_stream(uint16_t avdtp_cid, uint8_t int_seid, uint8_t acp_s
  */
 void a2dp_source_disconnect(uint16_t avdtp_cid);
 
+
+uint8_t a2dp_source_stream_endpoint_ready(uint8_t local_seid);
+void 	a2dp_source_stream_endpoint_request_can_send_now(uint8_t local_seid);
+void 	a2dp_source_stream_send_media_payload(uint8_t int_seid, btstack_ring_buffer_t * sbc_ring_buffer, uint8_t marker);
 /* API_END */
 
 #if defined __cplusplus

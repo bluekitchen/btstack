@@ -125,12 +125,12 @@ void avdtp_source_open_stream(uint16_t con_handle, uint8_t int_seid, uint8_t acp
     avdtp_open_stream(con_handle, int_seid, acp_seid, avdtp_source_context);
 }
 
-void avdtp_source_start_stream(uint16_t con_handle, uint8_t int_seid, uint8_t acp_seid){
-    avdtp_start_stream(con_handle, int_seid, acp_seid, avdtp_source_context);
+void avdtp_source_start_stream(uint8_t int_seid){
+    avdtp_start_stream(int_seid, avdtp_source_context);
 }
 
-void avdtp_source_stop_stream(uint16_t con_handle, uint8_t int_seid, uint8_t acp_seid){
-    avdtp_stop_stream(con_handle, int_seid, acp_seid, avdtp_source_context);
+void avdtp_source_stop_stream(uint8_t int_seid){
+    avdtp_stop_stream(int_seid, avdtp_source_context);
 }
 
 void avdtp_source_abort_stream(uint16_t con_handle, uint8_t int_seid, uint8_t acp_seid){
@@ -181,113 +181,6 @@ void avdtp_source_init(avdtp_context_t * avdtp_context){
     avdtp_source_context->packet_handler = packet_handler;
 
     l2cap_register_service(&packet_handler, BLUETOOTH_PROTOCOL_AVDTP, 0xffff, LEVEL_0);
-}
-
-int avdtp_source_stream_endpoint_ready(uint8_t local_seid){
-    avdtp_stream_endpoint_t * stream_endpoint = avdtp_stream_endpoint_for_seid(local_seid, avdtp_source_context);
-    if (!stream_endpoint) {
-        printf("no stream_endpoint");
-        return 0;
-    }
-    return (stream_endpoint->state == AVDTP_STREAM_ENDPOINT_STREAMING || stream_endpoint->state == AVDTP_STREAM_ENDPOINT_STREAMING_W2_SEND);
-}
-
-void avdtp_source_stream_endpoint_request_can_send_now(uint8_t local_seid){
-    avdtp_stream_endpoint_t * stream_endpoint = avdtp_stream_endpoint_for_seid(local_seid, avdtp_source_context);
-    if (!stream_endpoint) {
-        printf("no stream_endpoint");
-        return;
-    }
-    stream_endpoint->state = AVDTP_STREAM_ENDPOINT_STREAMING_W2_SEND;
-    avdtp_request_can_send_now_self(stream_endpoint->connection, stream_endpoint->l2cap_media_cid);
-}
-
-
-static void avdtp_source_setup_media_header(uint8_t * media_packet, int size, int *offset, uint8_t marker, uint16_t sequence_number){
-    if (size < 12){
-        printf("small outgoing buffer\n");
-        return;
-    }
-
-    uint8_t  rtp_version = 2;
-    uint8_t  padding = 0;
-    uint8_t  extension = 0;
-    uint8_t  csrc_count = 0;
-    uint8_t  payload_type = 0x60;
-    // uint16_t sequence_number = stream_endpoint->sequence_number;
-    uint32_t timestamp = btstack_run_loop_get_time_ms();
-    uint32_t ssrc = 0x11223344;
-
-    // rtp header (min size 12B)
-    int pos = 0;
-    // int mtu = l2cap_get_remote_mtu_for_local_cid(stream_endpoint->l2cap_media_cid);
-
-    media_packet[pos++] = (rtp_version << 6) | (padding << 5) | (extension << 4) | csrc_count;
-    media_packet[pos++] = (marker << 1) | payload_type;
-    big_endian_store_16(media_packet, pos, sequence_number);
-    pos += 2;
-    big_endian_store_32(media_packet, pos, timestamp);
-    pos += 4;
-    big_endian_store_32(media_packet, pos, ssrc); // only used for multicast
-    pos += 4;
-    *offset = pos;
-}
-
-static void avdtp_source_copy_media_payload(uint8_t * media_packet, int size, int * offset, btstack_ring_buffer_t * sbc_ring_buffer){
-    if (size < 18){
-        printf("small outgoing buffer\n");
-        return;
-    }
-    int pos = *offset;
-    // media payload
-    // sbc_header (size 1B)
-    uint8_t sbc_header_index = pos;
-    pos++;
-    uint8_t fragmentation = 0;
-    uint8_t starting_packet = 0; // set to 1 for the first packet of a fragmented SBC frame
-    uint8_t last_packet = 0;     // set to 1 for the last packet of a fragmented SBC frame
-    uint8_t num_frames = 0;
-
-    uint32_t total_sbc_bytes_read = 0;
-    uint8_t  sbc_frame_size = 0;
-    // payload
-    uint16_t sbc_frame_bytes = btstack_sbc_encoder_sbc_buffer_length();
-
-    while (size - 13 - total_sbc_bytes_read >= sbc_frame_bytes && btstack_ring_buffer_bytes_available(sbc_ring_buffer)){
-        uint32_t number_of_bytes_read = 0;
-        btstack_ring_buffer_read(sbc_ring_buffer, &sbc_frame_size, 1, &number_of_bytes_read);
-        btstack_ring_buffer_read(sbc_ring_buffer, media_packet + pos, sbc_frame_size, &number_of_bytes_read);
-        pos += sbc_frame_size;
-        total_sbc_bytes_read += sbc_frame_size;
-        num_frames++;
-        // printf("send sbc frame: timestamp %d, seq. nr %d\n", timestamp, stream_endpoint->sequence_number);
-    }
-    media_packet[sbc_header_index] =  (fragmentation << 7) | (starting_packet << 6) | (last_packet << 5) | num_frames;
-    *offset = pos;
-}
-
-void avdtp_source_stream_send_media_payload(uint8_t int_seid, btstack_ring_buffer_t * sbc_ring_buffer, uint8_t marker){
-    avdtp_stream_endpoint_t * stream_endpoint = avdtp_stream_endpoint_for_seid(int_seid, avdtp_source_context);
-    if (!stream_endpoint) {
-        printf("no stream_endpoint found for seid %d", int_seid);
-        return;
-    }
-
-    if (stream_endpoint->l2cap_media_cid == 0){
-        printf("no media cid found for seid %d", int_seid);
-        return;
-    }        
-
-    int size = l2cap_get_remote_mtu_for_local_cid(stream_endpoint->l2cap_media_cid);
-    int offset = 0;
-
-    l2cap_reserve_packet_buffer();
-    uint8_t * media_packet = l2cap_get_outgoing_buffer();
-    //int size = l2cap_get_remote_mtu_for_local_cid(stream_endpoint->l2cap_media_cid);
-    avdtp_source_setup_media_header(media_packet, size, &offset, marker, stream_endpoint->sequence_number);
-    avdtp_source_copy_media_payload(media_packet, size, &offset, sbc_ring_buffer);
-    stream_endpoint->sequence_number++;
-    l2cap_send_prepared(stream_endpoint->l2cap_media_cid, offset);
 }
 
 uint8_t avdtp_source_remote_seps_num(uint16_t avdtp_cid){
