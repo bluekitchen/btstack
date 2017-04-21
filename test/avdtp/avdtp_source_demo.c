@@ -109,17 +109,16 @@ static uint8_t sbc_storage[44100*4];
     
 typedef struct {
     uint16_t a2dp_cid;
-    int start_streaming_timer;
     uint8_t int_seid;
     uint8_t acp_seid;
     
+    uint8_t start_streaming_timer;
     uint32_t fill_audio_ring_buffer_timeout_ms;
     uint32_t time_audio_data_sent; // ms
     uint32_t acc_num_missed_samples;
     uint32_t samples_ready;
     btstack_timer_source_t fill_audio_ring_buffer_timer;
 
-    uint8_t * sbc_samples_storage;
     btstack_ring_buffer_t sbc_ring_buffer;
 } a2dp_media_sending_context_t;
 
@@ -171,19 +170,22 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             break;
                         
                         case AVDTP_SUBEVENT_START_STREAMING:
+                            if (local_seid != media_tracker.int_seid) return;
                             if (!media_tracker.start_streaming_timer) break;
                             if (!avdtp_source_stream_endpoint_ready(media_tracker.int_seid)) break;
-                            
                             printf(" --- application ---  start streaming : int seid %d\n", media_tracker.int_seid);
                             avdtp_fill_audio_ring_buffer_timer_start(&media_tracker);
                             media_tracker.start_streaming_timer = 0;
                             break;
+
                         case AVDTP_SUBEVENT_STOP_STREAMING:
+                            if (local_seid != media_tracker.int_seid) return;
                             if (!avdtp_source_stream_endpoint_ready(media_tracker.int_seid)) return;
                             avdtp_fill_audio_ring_buffer_timer_stop(&media_tracker); 
                             break;
 
                         case AVDTP_SUBEVENT_STREAMING_CAN_SEND_MEDIA_PACKET_NOW: 
+                            if (local_seid != media_tracker.int_seid) return;
                             avdtp_source_stream_send_media_payload(media_tracker.int_seid, &media_tracker.sbc_ring_buffer, 0);
                             if (btstack_ring_buffer_bytes_available(&media_tracker.sbc_ring_buffer)){
                                 avdtp_source_stream_endpoint_request_can_send_now(media_tracker.int_seid);
@@ -326,9 +328,8 @@ static void avdtp_fill_audio_ring_buffer_timer_stop(a2dp_media_sending_context_t
 } 
 
 static void a2dp_init_media_tracker(a2dp_media_sending_context_t * context, uint8_t * storage, int size){
-    context->sbc_samples_storage = storage;
-    memset(&context->sbc_samples_storage[0], 0, size);
-    btstack_ring_buffer_init(&context->sbc_ring_buffer, context->sbc_samples_storage, size);
+    memset(storage, 0, size);
+    btstack_ring_buffer_init(&context->sbc_ring_buffer, storage, size);
     context->fill_audio_ring_buffer_timeout_ms = 50;
 }
 
