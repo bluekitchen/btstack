@@ -1374,6 +1374,23 @@ typedef uint8_t sm_key_t[16];
  */
 #define AVDTP_SUBEVENT_STREAMING_CAN_SEND_MEDIA_PACKET_NOW   0x0D
 
+/**
+ * @format 1H1
+ * @param subevent_code
+ * @param avdtp_cid
+ * @param int_seid
+ */
+#define AVDTP_SUBEVENT_START_STREAMING                        0x0E
+
+/**
+ * @format 1H1
+ * @param subevent_code
+ * @param avdtp_cid
+ * @param int_seid
+ */
+#define AVDTP_SUBEVENT_STOP_STREAMING                        0x0F
+
+
 
 
 /** AVRCP Subevent */

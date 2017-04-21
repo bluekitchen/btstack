@@ -321,17 +321,34 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                                     break;
                                 }
                                 case A2DP_STREAMING_OPENED:
+                                    if (!a2dp_source_context.a2dp_callback) return;
                                     switch (signal_identifier){
-                                        case AVDTP_SI_START:
-                                            printf(" AVDTP_SI_START successful\n");
-                                            avdtp_signaling_emit_accept(a2dp_source_context.a2dp_callback, avdtp_cid, 0, signal_identifier, 0);
+                                        case AVDTP_SI_START:{
+                                            uint8_t event[6];
+                                            int pos = 0;
+                                            event[pos++] = HCI_EVENT_AVDTP_META;
+                                            event[pos++] = sizeof(event) - 2;
+                                            event[pos++] = AVDTP_SUBEVENT_START_STREAMING;
+                                            little_endian_store_16(event, pos, avdtp_cid);
+                                            pos += 2;
+                                            event[pos++] = avdtp_stream_endpoint_seid(sc.local_stream_endpoint);
+                                            (*a2dp_source_context.a2dp_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
                                             break;
+                                        }
                                         case AVDTP_SI_CLOSE:
-                                            break;
                                         case AVDTP_SI_SUSPEND:
+                                        case AVDTP_SI_ABORT:{
+                                            uint8_t event[6];
+                                            int pos = 0;
+                                            event[pos++] = HCI_EVENT_AVDTP_META;
+                                            event[pos++] = sizeof(event) - 2;
+                                            event[pos++] = AVDTP_SUBEVENT_STOP_STREAMING;
+                                            little_endian_store_16(event, pos, avdtp_cid);
+                                            pos += 2;
+                                            event[pos++] = avdtp_stream_endpoint_seid(sc.local_stream_endpoint);
+                                            (*a2dp_source_context.a2dp_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
                                             break;
-                                        case AVDTP_SI_ABORT:
-                                            break;
+                                        }
                                         default:
                                             break;
                                     }

@@ -4479,6 +4479,44 @@ static inline uint16_t avdtp_subevent_streaming_can_send_media_packet_now_get_se
 }
 
 /**
+ * @brief Get field avdtp_cid from event AVDTP_SUBEVENT_START_STREAMING
+ * @param event packet
+ * @return avdtp_cid
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t avdtp_subevent_start_streaming_get_avdtp_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field int_seid from event AVDTP_SUBEVENT_START_STREAMING
+ * @param event packet
+ * @return int_seid
+ * @note: btstack_type 1
+ */
+static inline uint8_t avdtp_subevent_start_streaming_get_int_seid(const uint8_t * event){
+    return event[5];
+}
+
+/**
+ * @brief Get field avdtp_cid from event AVDTP_SUBEVENT_STOP_STREAMING
+ * @param event packet
+ * @return avdtp_cid
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t avdtp_subevent_stop_streaming_get_avdtp_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field int_seid from event AVDTP_SUBEVENT_STOP_STREAMING
+ * @param event packet
+ * @return int_seid
+ * @note: btstack_type 1
+ */
+static inline uint8_t avdtp_subevent_stop_streaming_get_int_seid(const uint8_t * event){
+    return event[5];
+}
+
+/**
  * @brief Get field con_handle from event AVRCP_SUBEVENT_CONNECTION_ESTABLISHED
  * @param event packet
  * @return con_handle
