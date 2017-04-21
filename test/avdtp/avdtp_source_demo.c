@@ -112,7 +112,6 @@ typedef struct {
     uint8_t int_seid;
     uint8_t acp_seid;
     
-    uint8_t start_streaming_timer;
     uint32_t fill_audio_ring_buffer_timeout_ms;
     uint32_t time_audio_data_sent; // ms
     uint32_t acc_num_missed_samples;
@@ -164,28 +163,24 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             media_tracker.int_seid = avdtp_subevent_streaming_connection_established_get_int_seid(packet);
                             media_tracker.acp_seid = avdtp_subevent_streaming_connection_established_get_acp_seid(packet);
                             media_tracker.a2dp_cid = avdtp_subevent_streaming_connection_established_get_avdtp_cid(packet);
-                            media_tracker.start_streaming_timer = 0;
                             printf(" --- application --- AVDTP_SUBEVENT_STREAMING_CONNECTION_ESTABLISHED --- a2dp_cid 0x%02x, local seid %d, remote seid %d\n", 
                                 media_tracker.a2dp_cid, media_tracker.int_seid, media_tracker.acp_seid);
                             break;
                         
                         case AVDTP_SUBEVENT_START_STREAMING:
-                            if (local_seid != media_tracker.int_seid) return;
-                            if (!media_tracker.start_streaming_timer) break;
+                            if (local_seid != media_tracker.int_seid) break;
                             if (!avdtp_source_stream_endpoint_ready(media_tracker.int_seid)) break;
                             printf(" --- application ---  start streaming : int seid %d\n", media_tracker.int_seid);
                             avdtp_fill_audio_ring_buffer_timer_start(&media_tracker);
-                            media_tracker.start_streaming_timer = 0;
                             break;
 
                         case AVDTP_SUBEVENT_STOP_STREAMING:
-                            if (local_seid != media_tracker.int_seid) return;
-                            if (!avdtp_source_stream_endpoint_ready(media_tracker.int_seid)) return;
+                            if (local_seid != media_tracker.int_seid) break;
                             avdtp_fill_audio_ring_buffer_timer_stop(&media_tracker); 
                             break;
 
                         case AVDTP_SUBEVENT_STREAMING_CAN_SEND_MEDIA_PACKET_NOW: 
-                            if (local_seid != media_tracker.int_seid) return;
+                            if (local_seid != media_tracker.int_seid) break;
                             avdtp_source_stream_send_media_payload(media_tracker.int_seid, &media_tracker.sbc_ring_buffer, 0);
                             if (btstack_ring_buffer_bytes_available(&media_tracker.sbc_ring_buffer)){
                                 avdtp_source_stream_endpoint_request_can_send_now(media_tracker.int_seid);
@@ -352,7 +347,6 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
         case 'x':
             printf(" --- application --- a2dp_source_stream_data_start --- local seid %d, remote seid %d\n", media_tracker.int_seid, media_tracker.acp_seid);
             a2dp_source_start_stream(media_tracker.a2dp_cid, media_tracker.int_seid, media_tracker.acp_seid);
-            media_tracker.start_streaming_timer = 1;
             break;
         case 'X':
             a2dp_source_stop_stream(media_tracker.a2dp_cid, media_tracker.int_seid, media_tracker.acp_seid);
