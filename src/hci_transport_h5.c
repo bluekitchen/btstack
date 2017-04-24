@@ -630,7 +630,7 @@ static void hci_transport_h5_process_frame(uint16_t frame_size){
                 link_ack_nr = hci_transport_link_inc_seq_nr(link_ack_nr);
                 hci_transport_link_actions |= HCI_TRANSPORT_LINK_SEND_ACK_PACKET;
             }
-          
+
             // Process ACKs in reliable packet and explicit ack packets
             if (reliable_packet || link_packet_type == LINK_ACKNOWLEDGEMENT_TYPE){
                 // our packet is good if the remote expects our seq nr + 1
@@ -724,12 +724,10 @@ static void hci_transport_link_update_resend_timeout(uint32_t baudrate){
 static uint8_t hci_transport_link_read_byte;
 
 static void hci_transport_h5_read_next_byte(void){
-    log_debug("rx nxt");
     btstack_uart->receive_block(&hci_transport_link_read_byte, 1);    
 }
 
 static void hci_transport_h5_block_received(){
-    log_debug("slip: process 0x%02x", hci_transport_link_read_byte);
     btstack_slip_decoder_process(hci_transport_link_read_byte);
     uint16_t frame_size = btstack_slip_decoder_frame_size();
     if (frame_size) {
