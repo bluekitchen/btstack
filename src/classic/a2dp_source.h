@@ -73,7 +73,7 @@ uint8_t a2dp_source_create_stream_endpoint(avdtp_media_type_t media_type, avdtp_
 	uint8_t * codec_configuration, uint16_t codec_configuration_len);
 
 /**
- * @brief Start stream
+ * @brief Open stream
  * @param avdtp_cid
  * @param seid
  */
@@ -88,6 +88,13 @@ void a2dp_source_start_stream(uint8_t int_seid);
 
 /**
  * @brief Start stream
+ * @param avdtp_cid
+ * @param seid
+ */
+void a2dp_source_pause_stream(uint8_t int_seid);
+
+/**
+ * @brief Close stream
  * @param avdtp_cid
  * @param seid
  */

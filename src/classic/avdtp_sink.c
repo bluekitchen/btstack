@@ -163,8 +163,12 @@ void avdtp_sink_stop_stream(uint8_t int_seid){
     avdtp_stop_stream(int_seid, &avdtp_sink_context);
 }
 
-void avdtp_sink_abort_stream(uint16_t avdtp_cid, uint8_t int_seid, uint8_t acp_seid){
-    avdtp_abort_stream(avdtp_cid, int_seid, acp_seid, &avdtp_sink_context);
+void avdtp_sink_abort_stream(uint8_t int_seid){
+    avdtp_abort_stream(int_seid, &avdtp_sink_context);
+}
+
+void avdtp_sink_suspend(uint8_t int_seid){
+    avdtp_suspend_stream(int_seid, &avdtp_sink_context);
 }
 
 void avdtp_sink_discover_stream_endpoints(uint16_t avdtp_cid){
@@ -191,6 +195,3 @@ void avdtp_sink_reconfigure(uint16_t avdtp_cid, uint8_t int_seid, uint8_t acp_se
     avdtp_reconfigure(avdtp_cid, int_seid, acp_seid, configured_services_bitmap, configuration, &avdtp_sink_context);
 }
 
-void avdtp_sink_suspend(uint16_t avdtp_cid, uint8_t int_seid, uint8_t acp_seid){
-    avdtp_suspend(avdtp_cid, int_seid, acp_seid, &avdtp_sink_context);
-}

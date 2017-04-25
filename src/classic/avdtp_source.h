@@ -116,13 +116,6 @@ void avdtp_source_reconfigure(uint16_t avdtp_cid, uint8_t int_seid, uint8_t acp_
  */
 void avdtp_source_get_configuration(uint16_t avdtp_cid, uint8_t acp_seid);
 
-/**
- * @brief Suspend stream
- * @param avdtp_cid
- * @param seid
- */
-void avdtp_source_suspend(uint16_t avdtp_cid, uint8_t int_seid, uint8_t acp_seid);
-
 
 /**
  * @brief Open stream
@@ -133,24 +126,28 @@ void avdtp_source_open_stream(uint16_t con_handle, uint8_t int_seid, uint8_t acp
 
 /**
  * @brief Start stream
- * @param avdtp_cid
- * @param seid
+ * @param local_seid
  */
-void avdtp_source_start_stream(uint8_t int_seid);
+void avdtp_source_start_stream(uint8_t local_seid);
+
+/**
+ * @brief Abort stream
+ * @param local_seid
+ */
+void avdtp_source_abort_stream(uint8_t local_seid);
 
 /**
  * @brief Start stream
- * @param avdtp_cid
- * @param seid
+ * @param local_seid
  */
-void avdtp_source_abort_stream(uint16_t avdtp_cid, uint8_t int_seid, uint8_t acp_seid);
+void avdtp_source_stop_stream(uint8_t local_seid);
 
 /**
- * @brief Start stream
- * @param avdtp_cid
- * @param seid
+ * @brief Suspend stream
+ * @param local_seid
  */
-void avdtp_source_stop_stream(uint8_t int_seid);
+void avdtp_source_suspend(uint8_t local_seid);
+
 
 avdtp_stream_endpoint_t * avdtp_source_create_stream_endpoint(avdtp_sep_type_t sep_type, avdtp_media_type_t media_type);
 

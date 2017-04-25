@@ -283,7 +283,6 @@ typedef enum {
 
     AVDTP_STREAM_ENDPOINT_OPENED, 
     AVDTP_STREAM_ENDPOINT_STREAMING, 
-    AVDTP_STREAM_ENDPOINT_STREAMING_W2_SEND,
 
     AVDTP_STREAM_ENDPOINT_CLOSING,
     AVDTP_STREAM_ENDPOINT_ABORTING,
@@ -298,8 +297,6 @@ typedef enum {
     
     AVDTP_INITIATOR_W2_OPEN_STREAM,
 
-    AVDTP_INITIATOR_W2_STREAMING_START,
-    AVDTP_INITIATOR_W2_STREAMING_STOP,
     AVDTP_INITIATOR_W2_STREAMING_ABORT,
     AVDTP_INITIATOR_FRAGMENTATED_COMMAND,
     AVDTP_INITIATOR_W4_ANSWER
@@ -462,6 +459,12 @@ typedef struct avdtp_stream_endpoint {
     // register request for media L2cap connection release
     uint8_t media_disconnect;
     uint8_t media_connect;
+    uint8_t start_stream;
+    uint8_t stop_stream;
+    uint8_t send_stream;
+    uint8_t abort_stream;
+    uint8_t suspend_stream;
+    
     uint16_t sequence_number;
 } avdtp_stream_endpoint_t;
 
@@ -493,7 +496,8 @@ void avdtp_disconnect(uint16_t avdtp_cid, avdtp_context_t * context);
 void avdtp_open_stream(uint16_t avdtp_cid, uint8_t int_seid, uint8_t acp_seid, avdtp_context_t * context);
 void avdtp_start_stream(uint8_t int_seid, avdtp_context_t * context);
 void avdtp_stop_stream (uint8_t int_seid, avdtp_context_t * context);
-void avdtp_abort_stream(uint16_t avdtp_cid, uint8_t int_seid, uint8_t acp_seid, avdtp_context_t * context);
+void avdtp_abort_stream(uint8_t int_seid, avdtp_context_t * context);
+void avdtp_suspend_stream(uint8_t int_seid, avdtp_context_t * context);
 
 void avdtp_discover_stream_endpoints(uint16_t avdtp_cid, avdtp_context_t * context);
 void avdtp_get_capabilities(uint16_t avdtp_cid, uint8_t acp_seid, avdtp_context_t * context);
@@ -501,7 +505,6 @@ void avdtp_get_all_capabilities(uint16_t avdtp_cid, uint8_t acp_seid, avdtp_cont
 void avdtp_get_configuration(uint16_t avdtp_cid, uint8_t acp_seid, avdtp_context_t * context);
 void avdtp_set_configuration(uint16_t avdtp_cid, uint8_t int_seid, uint8_t acp_seid, uint16_t configured_services_bitmap, avdtp_capabilities_t configuration, avdtp_context_t * context);
 void avdtp_reconfigure(uint16_t avdtp_cid, uint8_t int_seid, uint8_t acp_seid, uint16_t configured_services_bitmap, avdtp_capabilities_t configuration, avdtp_context_t * context);
-void avdtp_suspend(uint16_t avdtp_cid, uint8_t int_seid, uint8_t acp_seid, avdtp_context_t * context);
 uint8_t avdtp_remote_seps_num(uint16_t avdtp_cid, avdtp_context_t * context);
 avdtp_sep_t * avdtp_remote_sep(uint16_t avdtp_cid, uint8_t index, avdtp_context_t * context);
 

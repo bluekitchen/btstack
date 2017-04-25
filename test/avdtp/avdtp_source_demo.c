@@ -110,13 +110,14 @@ static uint8_t sbc_storage[44100*4];
 typedef struct {
     uint16_t a2dp_cid;
     uint8_t local_seid;
-    uint8_t remote_seid;
     
     uint32_t fill_audio_ring_buffer_timeout_ms;
     uint32_t time_audio_data_sent; // ms
     uint32_t acc_num_missed_samples;
     uint32_t samples_ready;
     btstack_timer_source_t fill_audio_ring_buffer_timer;
+    uint32_t paused_at_ms;
+    uint8_t paused;
 
     btstack_ring_buffer_t sbc_ring_buffer;
 } a2dp_media_sending_context_t;
@@ -136,6 +137,7 @@ static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 static void a2dp_fill_audio_ring_buffer_timer_start(a2dp_media_sending_context_t * context);
 static void a2dp_fill_audio_ring_buffer_timer_stop(a2dp_media_sending_context_t * context);
+static void a2dp_fill_audio_ring_buffer_timer_pause(a2dp_media_sending_context_t * context);
 
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
@@ -149,17 +151,16 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     switch (packet[2]){
                         case A2DP_SUBEVENT_STREAM_ESTABLISHED:
                             media_tracker.local_seid = a2dp_subevent_stream_established_get_local_seid(packet);
-                            media_tracker.remote_seid = a2dp_subevent_stream_established_get_remote_seid(packet);
                             media_tracker.a2dp_cid = a2dp_subevent_stream_established_get_a2dp_cid(packet);
                             printf(" --- application --- A2DP_SUBEVENT_STREAM_ESTABLISHED, a2dp_cid 0x%02x, local seid %d, remote seid %d\n", 
-                                media_tracker.a2dp_cid, media_tracker.local_seid, media_tracker.remote_seid);
+                                media_tracker.a2dp_cid, media_tracker.local_seid, a2dp_subevent_stream_established_get_remote_seid(packet));
                             break;
                         
                         case A2DP_SUBEVENT_STREAM_START_ACCEPTED:
                             if (local_seid != media_tracker.local_seid) break;
                             if (!a2dp_source_stream_endpoint_ready(media_tracker.local_seid)) break;
-                            printf(" --- application ---  A2DP_SUBEVENT_STREAM_START_ACCEPTED, local seid %d\n", media_tracker.local_seid);
                             a2dp_fill_audio_ring_buffer_timer_start(&media_tracker);
+                            printf(" --- application ---  A2DP_SUBEVENT_STREAM_START_ACCEPTED, local seid %d\n", media_tracker.local_seid);
                             break;
                         
                         case A2DP_SUBEVENT_STREAMING_CAN_SEND_MEDIA_PACKET_NOW: 
@@ -169,15 +170,15 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                                 a2dp_source_stream_endpoint_request_can_send_now(media_tracker.local_seid);
                             }
                             break;
-
+                        
                         case A2DP_SUBEVENT_STREAM_SUSPENDED:
-                            if (local_seid != media_tracker.local_seid) break;
                             printf(" --- application ---  A2DP_SUBEVENT_STREAM_SUSPENDED, local seid %d\n", media_tracker.local_seid);
-                            a2dp_fill_audio_ring_buffer_timer_stop(&media_tracker); 
+                            a2dp_fill_audio_ring_buffer_timer_pause(&media_tracker);
                             break;
 
                         case A2DP_SUBEVENT_STREAM_RELEASED:
                             printf(" --- application ---  A2DP_SUBEVENT_STREAM_RELEASED, local seid %d\n", media_tracker.local_seid);
+                            a2dp_fill_audio_ring_buffer_timer_stop(&media_tracker);
                             break;
                         default:
                             printf(" --- application ---  not implemented\n");
@@ -281,8 +282,14 @@ static void avdtp_fill_audio_ring_buffer_timeout_handler(btstack_timer_source_t 
 
     uint32_t update_period_ms = context->fill_audio_ring_buffer_timeout_ms;
     if (context->time_audio_data_sent > 0){
-        update_period_ms = now - context->time_audio_data_sent;
+        if (context->paused_at_ms > 0){
+            update_period_ms = context->paused_at_ms - context->time_audio_data_sent;
+            context->paused_at_ms = 0;
+        } else {
+            update_period_ms = now - context->time_audio_data_sent;
+        }
     } 
+
     uint32_t num_samples = (update_period_ms * 44100) / 1000;
     context->acc_num_missed_samples += (update_period_ms * 44100) % 1000;
 
@@ -310,6 +317,14 @@ static void a2dp_fill_audio_ring_buffer_timer_start(a2dp_media_sending_context_t
 }
 
 static void a2dp_fill_audio_ring_buffer_timer_stop(a2dp_media_sending_context_t * context){
+    context->paused_at_ms = 0;
+    context->time_audio_data_sent = 0;
+    btstack_run_loop_remove_timer(&context->fill_audio_ring_buffer_timer);
+} 
+
+static void a2dp_fill_audio_ring_buffer_timer_pause(a2dp_media_sending_context_t * context){
+    context->paused_at_ms = btstack_run_loop_get_time_ms();
+    context->time_audio_data_sent = 0;
     btstack_run_loop_remove_timer(&context->fill_audio_ring_buffer_timer);
 } 
 
@@ -336,10 +351,15 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
             a2dp_source_disconnect(media_tracker.a2dp_cid);
             break;
         case 'x':
-            printf(" --- application --- a2dp_source_stream_data_start --- local seid %d, remote seid %d\n", media_tracker.local_seid, media_tracker.remote_seid);
+            printf(" --- application --- call a2dp_source_stream_data_start --- local seid %d\n", media_tracker.local_seid);
             a2dp_source_start_stream(media_tracker.local_seid);
             break;
-       case 'X':
+        case 'p':
+            printf(" --- application --- call a2dp_source_stream_data_pause --- local seid %d\n", media_tracker.local_seid);
+            a2dp_source_pause_stream(media_tracker.local_seid);
+            break;
+        case 'X':
+            printf(" --- application --- call a2dp_source_release_stream --- local seid %d\n", media_tracker.local_seid);
             a2dp_source_release_stream(media_tracker.local_seid);
             break;
         default:

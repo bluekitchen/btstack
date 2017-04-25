@@ -352,7 +352,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                                 case A2DP_STREAMING_OPENED:
                                     if (!a2dp_source_context.a2dp_callback) return;
                                     switch (signal_identifier){
-                                        case AVDTP_SI_START:{
+                                        case  AVDTP_SI_START:{
                                             uint8_t event[6];
                                             int pos = 0;
                                             event[pos++] = HCI_EVENT_A2DP_META;
@@ -372,11 +372,11 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                                             event[pos++] = A2DP_SUBEVENT_STREAM_RELEASED;
                                             little_endian_store_16(event, pos, avdtp_cid);
                                             pos += 2;
+                                            printf("send A2DP_SUBEVENT_STREAM_RELEASED to app\n");
                                             event[pos++] = avdtp_stream_endpoint_seid(sc.local_stream_endpoint);
                                             (*a2dp_source_context.a2dp_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
                                             break;
                                         }
-                                        
                                         case AVDTP_SI_SUSPEND:{
                                             uint8_t event[6];
                                             int pos = 0;
@@ -472,13 +472,17 @@ void a2dp_source_release_stream(uint8_t int_seid){
     avdtp_stop_stream(int_seid, &a2dp_source_context);
 }
 
+void a2dp_source_pause_stream(uint8_t int_seid){
+    avdtp_suspend_stream(int_seid, &a2dp_source_context);
+}
+
 uint8_t a2dp_source_stream_endpoint_ready(uint8_t local_seid){
     avdtp_stream_endpoint_t * stream_endpoint = avdtp_stream_endpoint_for_seid(local_seid, &a2dp_source_context);
     if (!stream_endpoint) {
         printf("no stream_endpoint");
         return 0;
     }
-    return (stream_endpoint->state == AVDTP_STREAM_ENDPOINT_STREAMING || stream_endpoint->state == AVDTP_STREAM_ENDPOINT_STREAMING_W2_SEND);
+    return (stream_endpoint->state == AVDTP_STREAM_ENDPOINT_STREAMING);
 }
 
 
@@ -544,14 +548,15 @@ static void a2dp_source_copy_media_payload(uint8_t * media_packet, int size, int
     media_packet[sbc_header_index] =  (fragmentation << 7) | (starting_packet << 6) | (last_packet << 5) | num_frames;
     *offset = pos;
 }
+
 void a2dp_source_stream_endpoint_request_can_send_now(uint8_t local_seid){
     avdtp_stream_endpoint_t * stream_endpoint = avdtp_stream_endpoint_for_seid(local_seid, &a2dp_source_context);
     if (!stream_endpoint) {
         printf("no stream_endpoint");
         return;
     }
-    stream_endpoint->state = AVDTP_STREAM_ENDPOINT_STREAMING_W2_SEND;
-    avdtp_request_can_send_now_self(stream_endpoint->connection, stream_endpoint->l2cap_media_cid);
+    stream_endpoint->send_stream = 1;
+    avdtp_request_can_send_now_initiator(stream_endpoint->connection, stream_endpoint->l2cap_media_cid);
 }
 
 void a2dp_source_stream_send_media_payload(uint8_t int_seid, btstack_ring_buffer_t * sbc_ring_buffer, uint8_t marker){

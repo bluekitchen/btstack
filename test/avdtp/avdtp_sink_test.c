@@ -609,7 +609,7 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
             break;
         case 'A':
             app_state = AVDTP_APPLICATION_W2_ABORT_STREAM_WITH_SEID;
-            avdtp_sink_abort_stream(avdtp_cid, local_stream_endpoint->sep.seid, sep.seid);
+            avdtp_sink_abort_stream(local_stream_endpoint->sep.seid);
             break;
         case 'S':
             app_state = AVDTP_APPLICATION_W2_STOP_STREAM_WITH_SEID;
@@ -617,7 +617,7 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
             break;
         case 'P':
             app_state = AVDTP_APPLICATION_W2_SUSPEND_STREAM_WITH_SEID;
-            avdtp_sink_suspend(avdtp_cid, local_stream_endpoint->sep.seid, sep.seid);
+            avdtp_sink_suspend(local_stream_endpoint->sep.seid);
             break;
 
         case '\n':

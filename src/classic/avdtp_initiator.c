@@ -88,7 +88,6 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t * connection, uint8_
     
     switch (connection->signaling_packet.message_type){
         case AVDTP_RESPONSE_ACCEPT_MSG:
-            printf("    INT: AVDTP_RESPONSE_ACCEPT_MSG: ");
             switch (connection->signaling_packet.signal_identifier){
                 case AVDTP_SI_DISCOVER:{
                     printf("AVDTP_SI_DISCOVER\n");
@@ -229,7 +228,9 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t * connection, uint8_
                     status = 1;
                     printf("    AVDTP_RESPONSE_ACCEPT_MSG, signal %d not implemented\n", connection->signaling_packet.signal_identifier);
                     break;
-                }
+            }
+            avdtp_signaling_emit_accept(context->avdtp_callback, connection->l2cap_signaling_cid, 0, connection->signaling_packet.signal_identifier, status);
+            connection->initiator_transaction_label++;
             break;
         case AVDTP_RESPONSE_REJECT_MSG:
             printf("    AVDTP_RESPONSE_REJECT_MSG signal %d\n", connection->signaling_packet.signal_identifier);
@@ -242,11 +243,6 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t * connection, uint8_
         default:
             break;
     }
-    
-    avdtp_signaling_emit_accept(context->avdtp_callback, connection->l2cap_signaling_cid, 0, connection->signaling_packet.signal_identifier, status);
-    connection->initiator_transaction_label++;
-    // connection->int_seid = 0;
-    // connection->acp_seid = 0;
 }
 
 void avdtp_initiator_stream_config_subsm_run(avdtp_connection_t * connection, avdtp_context_t * context){
@@ -292,6 +288,64 @@ void avdtp_initiator_stream_config_subsm_run(avdtp_connection_t * connection, av
     
     avdtp_initiator_stream_endpoint_state_t stream_endpoint_state = stream_endpoint->initiator_config_state;
     stream_endpoint->initiator_config_state = AVDTP_INITIATOR_W4_ANSWER;
+    
+    if (stream_endpoint->start_stream){
+        if (stream_endpoint->state == AVDTP_STREAM_ENDPOINT_OPENED){
+            stream_endpoint->start_stream = 0;
+            connection->int_seid = stream_endpoint->sep.seid;
+            connection->acp_seid = connection->remote_seps[stream_endpoint->remote_sep_index].seid;
+            avdtp_initiator_send_signaling_cmd_with_seid(connection->l2cap_signaling_cid, AVDTP_SI_START, connection->initiator_transaction_label++, connection->acp_seid);
+            return;            
+        } 
+        avdtp_request_can_send_now_initiator(connection, connection->l2cap_signaling_cid);
+        return;
+    }
+
+    if (stream_endpoint->stop_stream){
+        if (stream_endpoint->state >= AVDTP_STREAM_ENDPOINT_OPENED){
+            stream_endpoint->stop_stream = 0;
+            connection->int_seid = stream_endpoint->sep.seid;
+            connection->acp_seid = connection->remote_seps[stream_endpoint->remote_sep_index].seid;
+            avdtp_initiator_send_signaling_cmd_with_seid(connection->l2cap_signaling_cid, AVDTP_SI_CLOSE, connection->initiator_transaction_label++, connection->acp_seid);
+            return;            
+        }
+    }
+
+    if (stream_endpoint->abort_stream){
+        switch (stream_endpoint->state){
+            case AVDTP_STREAM_ENDPOINT_CONFIGURED:
+            case AVDTP_STREAM_ENDPOINT_CLOSING:
+            case AVDTP_STREAM_ENDPOINT_OPENED:
+            case AVDTP_STREAM_ENDPOINT_STREAMING:
+                stream_endpoint->abort_stream = 0;
+                connection->int_seid = stream_endpoint->sep.seid;
+                connection->acp_seid = connection->remote_seps[stream_endpoint->remote_sep_index].seid;
+                stream_endpoint->state = AVDTP_STREAM_ENDPOINT_ABORTING;
+                avdtp_initiator_send_signaling_cmd_with_seid(connection->l2cap_signaling_cid, AVDTP_SI_ABORT, connection->initiator_transaction_label++, connection->acp_seid);
+                return;
+            default:
+                break;
+        }
+    }
+
+    if (stream_endpoint->suspend_stream){
+        if (stream_endpoint->state == AVDTP_STREAM_ENDPOINT_STREAMING){
+            stream_endpoint->suspend_stream = 0;
+            stream_endpoint->state = AVDTP_STREAM_ENDPOINT_STREAMING;
+            avdtp_initiator_send_signaling_cmd_with_seid(connection->l2cap_signaling_cid, AVDTP_SI_SUSPEND, connection->initiator_transaction_label, connection->acp_seid);
+            return;
+        }
+    }
+
+    if (stream_endpoint->send_stream){
+        if (stream_endpoint->state == AVDTP_STREAM_ENDPOINT_STREAMING){
+            stream_endpoint->send_stream = 0;
+            stream_endpoint->state = AVDTP_STREAM_ENDPOINT_STREAMING;
+            avdtp_streaming_emit_can_send_media_packet_now(context->avdtp_callback, stream_endpoint->l2cap_media_cid, stream_endpoint->sep.seid, stream_endpoint->sequence_number);
+            return;
+        }
+    }
+
 
     switch (stream_endpoint_state){
         case AVDTP_INITIATOR_W2_SET_CONFIGURATION:
@@ -336,30 +390,14 @@ void avdtp_initiator_stream_config_subsm_run(avdtp_connection_t * connection, av
                     avdtp_initiator_send_signaling_cmd_with_seid(connection->l2cap_signaling_cid, AVDTP_SI_OPEN, connection->initiator_transaction_label, connection->acp_seid);
                     break;
                 default:
+                    sent = 0;
                     break;
             }
             break;
-        case AVDTP_INITIATOR_W2_SUSPEND_STREAM_WITH_SEID:
-            printf("    INT: AVDTP_INITIATOR_W4_SUSPEND_STREAM_WITH_SEID\n");
-            avdtp_initiator_send_signaling_cmd_with_seid(connection->l2cap_signaling_cid, AVDTP_SI_SUSPEND, connection->initiator_transaction_label, connection->acp_seid);
-            break;
-        case AVDTP_INITIATOR_W2_STREAMING_START:
-            printf("    INT: AVDTP_INITIATOR_W4_STREAMING_START\n");
-            avdtp_initiator_send_signaling_cmd_with_seid(connection->l2cap_signaling_cid, AVDTP_SI_START, connection->initiator_transaction_label, connection->acp_seid);
-            break;
-        case AVDTP_INITIATOR_W2_STREAMING_STOP:
-            printf("    INT: AVDTP_INITIATOR_W4_STREAMING_STOP\n");
-            avdtp_initiator_send_signaling_cmd_with_seid(connection->l2cap_signaling_cid, AVDTP_SI_CLOSE, connection->initiator_transaction_label, connection->acp_seid);
-            break;
-        case AVDTP_INITIATOR_W2_STREAMING_ABORT:
-            printf("    INT: AVDTP_INITIATOR_W4_STREAMING_ABORT\n");
-            stream_endpoint->state = AVDTP_STREAM_ENDPOINT_ABORTING;
-            avdtp_initiator_send_signaling_cmd_with_seid(connection->l2cap_signaling_cid, AVDTP_SI_ABORT, connection->initiator_transaction_label, connection->acp_seid);
-            break;
         default:
+            sent = 0;
             break;
     }
-
 
     // check fragmentation
     if (connection->signaling_packet.packet_type != AVDTP_SINGLE_PACKET && connection->signaling_packet.packet_type != AVDTP_END_PACKET){

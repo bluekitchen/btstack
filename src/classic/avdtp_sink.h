@@ -130,13 +130,6 @@ void avdtp_sink_reconfigure(uint16_t avdtp_cid, uint8_t int_seid, uint8_t acp_se
  */
 void avdtp_sink_get_configuration(uint16_t avdtp_cid, uint8_t acp_seid);
 
-/**
- * @brief Suspend stream
- * @param avdtp_cid
- * @param seid
- */
-void avdtp_sink_suspend(uint16_t avdtp_cid, uint8_t int_seid, uint8_t acp_seid);
-
 
 /**
  * @brief Open stream
@@ -145,26 +138,30 @@ void avdtp_sink_suspend(uint16_t avdtp_cid, uint8_t int_seid, uint8_t acp_seid);
  */
 void avdtp_sink_open_stream(uint16_t avdtp_cid, uint8_t int_seid, uint8_t acp_seid);
 
-/**
- * @brief Start stream
- * @param avdtp_cid
- * @param seid
- */
-void avdtp_sink_start_stream(uint8_t int_seid);
 
 /**
  * @brief Start stream
- * @param avdtp_cid
- * @param seid
+ * @param local_seid
  */
-void avdtp_sink_abort_stream(uint16_t avdtp_cid, uint8_t int_seid, uint8_t acp_seid);
+void avdtp_sink_start_stream(uint8_t local_seid);
+
+/**
+ * @brief Abort stream
+ * @param local_seid
+ */
+void avdtp_sink_abort_stream(uint8_t local_seid);
 
 /**
  * @brief Start stream
- * @param avdtp_cid
- * @param seid
+ * @param local_seid
  */
-void avdtp_sink_stop_stream(uint8_t int_seid);
+void avdtp_sink_stop_stream(uint8_t local_seid);
+
+/**
+ * @brief Suspend stream
+ * @param local_seid
+ */
+void avdtp_sink_suspend(uint8_t local_seid);
 
 /* API_END */
 
