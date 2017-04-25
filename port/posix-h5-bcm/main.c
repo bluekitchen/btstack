@@ -122,19 +122,20 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 // download firmware implementation
 // requires hci_dump
 // supports higher baudrate for patch upload
-// TODO: use hci_dump instead of self-made logger
 
 #include <unistd.h>
+#include "hci_dump.h"
 
 static void bcm_send_hci_baudrate(void);
 static void bcm_send_next_init_script_command(void);
 static void bcm_set_local_baudrate(void);
+static void bcm_w4_command_complete(void);
 
 static uint8_t response_buffer[260];
 static uint8_t command_buffer[260];
 
 static const int hci_command_complete_len = 7;
-static const uint8_t hci_reset_cmd[] = { 0x01, 0x03, 0x0c, 0x00 };
+static const uint8_t hci_reset_cmd[] = { 0x03, 0x0c, 0x00 };
 // static const uint8_t hci_update_baud_rate[] = { 0x01, 0x18, 0xfc, 0x06, 0x00, 0x00,0x00, 0x00, 0x00, 0x00 };
 static void (*download_complete)(int result);
 static int baudrate;
@@ -143,26 +144,24 @@ static void bcm_send_prepared_command(void){
     uart_driver->receive_block(&response_buffer[0], hci_command_complete_len);
     int size = 1 + 3 + command_buffer[3];
     command_buffer[0] = 1;
-    log_info("bcm: h4 command, len %u", size-1);
-    log_info_hexdump(&command_buffer[1], size-1);
+    hci_dump_packet(HCI_COMMAND_DATA_PACKET, 0, &command_buffer[1], size-1);
     uart_driver->send_block(command_buffer, size);
 }
 
 static void bcm_send_hci_reset(void){
     if (baudrate == 0 || baudrate == 115200){
-        uart_driver->set_block_received(&bcm_send_next_init_script_command);
+        uart_driver->set_block_received(&bcm_w4_command_complete);
     } else {
         uart_driver->set_block_received(&bcm_send_hci_baudrate);
     }
     log_info("bcm: send HCI Reset");
     uart_driver->receive_block(&response_buffer[0], hci_command_complete_len);
-    uart_driver->send_block(hci_reset_cmd, sizeof(hci_reset_cmd));
+    memcpy(&command_buffer[1], hci_reset_cmd, sizeof(hci_reset_cmd));
+    bcm_send_prepared_command();
 }
 
 static void bcm_send_hci_baudrate(void){
-    log_info("bcm: event");
-    log_info_hexdump(response_buffer, hci_command_complete_len);
-
+    hci_dump_packet(HCI_EVENT_PACKET, 0, &response_buffer[1], hci_command_complete_len-1);
     chipset->set_baudrate_command(baudrate, &command_buffer[1]);
     uart_driver->set_block_received(&bcm_set_local_baudrate);
     uart_driver->receive_block(&response_buffer[0], hci_command_complete_len);
@@ -171,14 +170,18 @@ static void bcm_send_hci_baudrate(void){
 }
 
 static void bcm_set_local_baudrate(void){
+    hci_dump_packet(HCI_EVENT_PACKET, 0, &response_buffer[1], hci_command_complete_len-1);
     uart_driver->set_baudrate(baudrate);
+    uart_driver->set_block_received(&bcm_w4_command_complete);
+    bcm_send_next_init_script_command();
+}
+
+static void bcm_w4_command_complete(void){
+    hci_dump_packet(HCI_EVENT_PACKET, 0, &response_buffer[1], hci_command_complete_len-1);
     bcm_send_next_init_script_command();
 }
 
 static void bcm_send_next_init_script_command(void){
-    log_info("bcm: event");
-    log_info_hexdump(response_buffer, hci_command_complete_len);
-
     int res = chipset->next_command(&command_buffer[1]);
     switch (res){
         case BTSTACK_CHIPSET_VALID_COMMAND:
@@ -213,9 +216,6 @@ void btstack_chipset_bcm_download_firmware(const btstack_uart_block_t * the_uart
         return;
     }
 
-    // TODO: move to bstack_uart_block_posix.c
-    sleep(1);
-
     bcm_send_hci_reset();
 }
 // end of download firmware
@@ -225,11 +225,13 @@ int main(int argc, const char * argv[]){
 
     /// GET STARTED with BTstack ///
     btstack_memory_init();
+
+    // use logger: format HCI_DUMP_PACKETLOGGER, HCI_DUMP_BLUEZ or HCI_DUMP_STDOUT
+    hci_dump_open("/tmp/hci_dump.pklg", HCI_DUMP_PACKETLOGGER);
+
+    // setup run loop
     btstack_run_loop_init(btstack_run_loop_posix_get_instance());
         
-    // use logger: format HCI_DUMP_PACKETLOGGER, HCI_DUMP_BLUEZ or HCI_DUMP_STDOUT
-    hci_dump_open("/tmp/hci_dump.pklg", HCI_DUMP_STDOUT);
-
     // pick serial port and configure uart block driver
     transport_config.device_name = "/dev/tty.usbserial-A9OVNX5P"; // RedBear IoT pHAT breakout board
 
