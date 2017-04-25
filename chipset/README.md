@@ -220,7 +220,24 @@ CC256xC |         0x9a1a | 6.12.26
 
 **Baud rate** can be set with [HCI_VS_Update_UART_HCI_Baudrate](http://processors.wiki.ti.com/index.php/CC256x_VS_HCI_Commands#HCI_VS_Update_UART_HCI_Baudrate_.280xFF36.29). The chipset confirms the change with a command complete event after which the local UART is set to the new speed. Oddly enough, the CC256x chipsets ignore the incoming CTS line during this particular command complete response. See next paragraph for a workaround.
 
-**Work around for CTS bug while HCI Command Complete for HCI VS Update Baudrate in H4 or eHCILL**
+**BD Addr** can be set with [HCI_VS_Write_BD_Addr](2.2.1 HCI_VS_Write_BD_Addr (0xFC06)) although all chipsets have an official address stored.
+
+**Init Scripts.** In order to use the CC256x chipset an initialization script must be obtained and converted into a C file for use with BTstack. For newer revisions, TI provides a main.bts and a ble_add_on.bts that need to be combined.
+
+The Makefile at *chipset/cc256x/Makefile.inc* is able to automatically download and convert the requested file. It does this by:
+
+-   Downloading one or more [BTS files](http://processors.wiki.ti.com/index.php/CC256x_Downloads) for your chipset.
+-   Running the Python script:
+
+<!-- -->
+
+    ./convert_bts_init_scripts.py main.bts [ble_add_on.bts] output_file.c
+
+**BTstack integration**: The common code for all CC256x chipsets is provided by *btstack_chipset_cc256x.c*. During the setup, *btstack_chipset_cc256x_instance* function is used to get a *btstack_chipset_t* instance and passed to *hci_init* function. *btstack_chipset_cc256x_lmp_subversion* provides the LMP Subversion for the selected init script.
+
+SCO Data can be routed over HCI, so HFP Wide-Band Speech is supported.
+
+**Work around for CTS bug while HCI Command Complete Event of HCI VS Update Baudrate with H4/eHCILL**
 
 If you're using a RTOS port (e.g. FreeRTOS) and have implemented the *hal_uart_dma.h* API directly, chances are, you're getting a UART overrun errors in this situation, and the bootup will get stuck at this point.
 
@@ -231,8 +248,6 @@ We recommend to add the following workaround in the *hal_uart_dma.h* implementat
 The idea is to detect the HCI VS Baudrate Command and then to ignore all received data for 100 ms. After that, send the appropriate HCI Command Complete Event to the HCI transport.
 
 Let's assume that your hal_uart_dma.h implementation contains *hal_uart_dma_rx_complete()* and *hal_uart_dma_tx_complete* that are called when the corresponding asynchronous request has been completed, and that you've stored the registered callbacks in *rx_done_handler* and *tx_done_handler*. Please provide new functions *hal_uart_dma_sleep_ms* that just blocks (you might have needed a similar to implement the CC256x power cycle before) and *hci_uart_dma_rx_flush* that clear all errors and flushes all incoming buffers (might not be needed on most platforms).
-
-~~~~ {#lst:hal_uart_dma_cc256x_cts_work_around  caption="{Workaround for CTS Bug Receiving HCI VS Update Baudrate}"}
 
     // types & declaration
     static enum {
@@ -320,25 +335,6 @@ Let's assume that your hal_uart_dma.h implementation contains *hal_uart_dma_rx_c
               }
           }
       }
-
-~~~~
-
-**BD Addr** can be set with [HCI_VS_Write_BD_Addr](2.2.1 HCI_VS_Write_BD_Addr (0xFC06)) although all chipsets have an official address stored.
-
-**Init Scripts.** In order to use the CC256x chipset an initialization script must be obtained and converted into a C file for use with BTstack. For newer revisions, TI provides a main.bts and a ble_add_on.bts that need to be combined.
-
-The Makefile at *chipset/cc256x/Makefile.inc* is able to automatically download and convert the requested file. It does this by:
-
--   Downloading one or more [BTS files](http://processors.wiki.ti.com/index.php/CC256x_Downloads) for your chipset.
--   Running the Python script:
-
-<!-- -->
-
-    ./convert_bts_init_scripts.py main.bts [ble_add_on.bts] output_file.c
-
-**BTstack integration**: The common code for all CC256x chipsets is provided by *btstack_chipset_cc256x.c*. During the setup, *btstack_chipset_cc256x_instance* function is used to get a *btstack_chipset_t* instance and passed to *hci_init* function. *btstack_chipset_cc256x_lmp_subversion* provides the LMP Subversion for the selected init script.
-
-SCO Data can be routed over HCI, so HFP Wide-Band Speech is supported.
 
 ## Toshiba
 
