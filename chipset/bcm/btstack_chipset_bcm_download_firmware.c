@@ -116,7 +116,11 @@ static void bcm_send_next_init_script_command(void){
             break;
         case BTSTACK_CHIPSET_DONE:
             log_info("bcm: init script done");
+            // disable init script for main startup
+            btstack_chipset_bcm_enable_init_script(0);
+            // reset baudreate to default
             uart_driver->set_baudrate(115200);
+            // notify main
             download_complete(0);
             break;
         default:

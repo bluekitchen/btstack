@@ -151,6 +151,18 @@ int main(int argc, const char * argv[]){
     uart_config.device_name = transport_config.device_name;
     uart_driver->init(&uart_config);
 
+    // setup HCI (to be able to use bcm chipset driver)
+    // init HCI
+    const hci_transport_t * transport = hci_transport_h5_instance(uart_driver);
+    const btstack_link_key_db_t * link_key_db = btstack_link_key_db_fs_instance();
+    hci_init(transport, (void*) &transport_config);
+    hci_set_link_key_db(link_key_db);
+    hci_set_chipset(btstack_chipset_bcm_instance());
+
+    // inform about BTstack state
+    hci_event_callback_registration.callback = &packet_handler;
+    hci_add_event_handler(&hci_event_callback_registration);
+
     // handle CTRL-c
     signal(SIGINT, sigint_handler);
 
@@ -176,16 +188,6 @@ static void phase2(int status){
     }
 
     printf("Phase 2: Main app\n");
-
-    // init HCI
-    const hci_transport_t * transport = hci_transport_h5_instance(uart_driver);
-    const btstack_link_key_db_t * link_key_db = btstack_link_key_db_fs_instance();
-    hci_init(transport, (void*) &transport_config);
-    hci_set_link_key_db(link_key_db);
-    
-    // inform about BTstack state
-    hci_event_callback_registration.callback = &packet_handler;
-    hci_add_event_handler(&hci_event_callback_registration);
 
     // setup app
     btstack_main(main_argc, main_argv);

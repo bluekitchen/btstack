@@ -73,6 +73,12 @@ void btstack_chipset_bcm_set_hcd_folder_path(const char * path);
  */
 void btstack_chipset_bcm_set_device_name(const char * path);
 
+/**
+ * @brief Enable init file - needed by btstack_chipset_bcm_download_firmware when using h5
+ * @param enabled
+ */
+void btstack_chipset_bcm_enable_init_script(int enabled);
+
 #if defined __cplusplus
 }
 #endif
