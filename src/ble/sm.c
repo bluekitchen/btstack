@@ -2783,6 +2783,7 @@ static void sm_handle_encryption_result(uint8_t * data){
 
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
 #ifndef HAVE_HCI_CONTROLLER_DHKEY_SUPPORT
+#if !defined(WICED_VERSION) || defined(USE_MBEDTLS_FOR_ECDH) 
 // @return OK
 static int sm_generate_f_rng(unsigned char * buffer, unsigned size){
     if (ec_key_generation_state != EC_KEY_GENERATION_ACTIVE) return 0;
@@ -2795,6 +2796,7 @@ static int sm_generate_f_rng(unsigned char * buffer, unsigned size){
     setup->sm_passkey_bit = offset;
     return 1;
 }
+#endif
 #ifdef USE_MBEDTLS_FOR_ECDH
 // @return error
 static int sm_generate_f_rng_mbedtls(void * context, unsigned char * buffer, size_t size){
@@ -2837,7 +2839,10 @@ static void sm_handle_random_result(uint8_t * data){
             mbedtls_mpi_free(&d);
 #endif
 #ifdef USE_MICROECC_FOR_ECDH
+#ifndef WICED_VERSION
+            // micro-ecc from WICED SDK uses its wiced_crypto_get_random by default
             uECC_set_rng(&sm_generate_f_rng);
+#endif
             uECC_make_key(ec_q, ec_d);
 #endif
 
