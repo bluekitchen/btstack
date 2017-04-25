@@ -70,8 +70,8 @@ int btstack_main(int argc, const char * argv[]);
 static hci_transport_config_uart_t transport_config = {
     HCI_TRANSPORT_CONFIG_UART,
     115200,
-    0,  // main baudrate
-    0,  // flow control
+    921600,  // main baudrate
+    0,       // flow control
     NULL,
 };
 static btstack_uart_config_t uart_config;
@@ -120,7 +120,15 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 }
 
 // download firmware implementation
+// requires hci_dump
+// supports higher baudrate for patch upload
+// TODO: use hci_dump instead of self-made logger
+
 #include <unistd.h>
+
+static void bcm_send_hci_baudrate(void);
+static void bcm_send_next_init_script_command(void);
+static void bcm_set_local_baudrate(void);
 
 static uint8_t response_buffer[260];
 static uint8_t command_buffer[260];
@@ -129,24 +137,56 @@ static const int hci_command_complete_len = 7;
 static const uint8_t hci_reset_cmd[] = { 0x01, 0x03, 0x0c, 0x00 };
 // static const uint8_t hci_update_baud_rate[] = { 0x01, 0x18, 0xfc, 0x06, 0x00, 0x00,0x00, 0x00, 0x00, 0x00 };
 static void (*download_complete)(int result);
+static int baudrate;
 
-static void bcm_w4_hci_command_complete(void){
-    log_info("bcm: response");
+static void bcm_send_prepared_command(void){
+    uart_driver->receive_block(&response_buffer[0], hci_command_complete_len);
+    int size = 1 + 3 + command_buffer[3];
+    command_buffer[0] = 1;
+    log_info("bcm: h4 command, len %u", size-1);
+    log_info_hexdump(&command_buffer[1], size-1);
+    uart_driver->send_block(command_buffer, size);
+}
+
+static void bcm_send_hci_reset(void){
+    if (baudrate == 0 || baudrate == 115200){
+        uart_driver->set_block_received(&bcm_send_next_init_script_command);
+    } else {
+        uart_driver->set_block_received(&bcm_send_hci_baudrate);
+    }
+    log_info("bcm: send HCI Reset");
+    uart_driver->receive_block(&response_buffer[0], hci_command_complete_len);
+    uart_driver->send_block(hci_reset_cmd, sizeof(hci_reset_cmd));
+}
+
+static void bcm_send_hci_baudrate(void){
+    log_info("bcm: event");
+    log_info_hexdump(response_buffer, hci_command_complete_len);
+
+    chipset->set_baudrate_command(baudrate, &command_buffer[1]);
+    uart_driver->set_block_received(&bcm_set_local_baudrate);
+    uart_driver->receive_block(&response_buffer[0], hci_command_complete_len);
+    log_info("bcm: send baud rate command");
+    bcm_send_prepared_command();
+}
+
+static void bcm_set_local_baudrate(void){
+    uart_driver->set_baudrate(baudrate);
+    bcm_send_next_init_script_command();
+}
+
+static void bcm_send_next_init_script_command(void){
+    log_info("bcm: event");
     log_info_hexdump(response_buffer, hci_command_complete_len);
 
     int res = chipset->next_command(&command_buffer[1]);
-    int size; 
     switch (res){
         case BTSTACK_CHIPSET_VALID_COMMAND:
-            size = 1 + 3 + command_buffer[3];
-            command_buffer[0] = 1;
-            log_info("bcm: h4 command, len %u", size-1);
-            log_info_hexdump(&command_buffer[1], size-1);
-            uart_driver->receive_block(&response_buffer[0], hci_command_complete_len);
-            uart_driver->send_block(command_buffer, size);
+            bcm_send_prepared_command();
             break;
         case BTSTACK_CHIPSET_DONE:
             log_info("bcm: init script done");
+            uart_driver->set_baudrate(115200);
             download_complete(0);
             break;
         default:
@@ -160,9 +200,10 @@ static void bcm_w4_hci_command_complete(void){
  * @param done callback. 0 = Success
  */
 
-void btstack_chipset_bcm_download_firmware(const btstack_uart_block_t * the_uart_driver, void (*done)(int result)){
+void btstack_chipset_bcm_download_firmware(const btstack_uart_block_t * the_uart_driver, int baudrate_upload, void (*done)(int result)){
     // 
     uart_driver = the_uart_driver;
+    baudrate    = baudrate_upload; 
     download_complete = done;
 
     int res = uart_driver->open();
@@ -175,11 +216,7 @@ void btstack_chipset_bcm_download_firmware(const btstack_uart_block_t * the_uart
     // TODO: move to bstack_uart_block_posix.c
     sleep(1);
 
-    uart_driver->set_block_received(&bcm_w4_hci_command_complete);
-    uart_driver->receive_block(&response_buffer[0], hci_command_complete_len);
-
-    log_info("bcm: send HCI Reset");
-    uart_driver->send_block(hci_reset_cmd, sizeof(hci_reset_cmd));
+    bcm_send_hci_reset();
 }
 // end of download firmware
 
@@ -206,8 +243,8 @@ int main(int argc, const char * argv[]){
     // setup UART driver
     uart_driver = btstack_uart_block_posix_instance();
 
-    // extract UART config from transport config, but overide initial uart speed
-    uart_config.baudrate    = 115200;
+    // extract UART config from transport config
+    uart_config.baudrate    = transport_config.baudrate_init;
     uart_config.flowcontrol = transport_config.flowcontrol;
     uart_config.device_name = transport_config.device_name;
     uart_driver->init(&uart_config);
@@ -222,7 +259,7 @@ int main(int argc, const char * argv[]){
     printf("Phase 1: Download firmware\n");
 
     // phase #2 start main app
-    btstack_chipset_bcm_download_firmware(uart_driver, &phase2);
+    btstack_chipset_bcm_download_firmware(uart_driver, transport_config.baudrate_main, &phase2);
 
     // go
     btstack_run_loop_execute();    
