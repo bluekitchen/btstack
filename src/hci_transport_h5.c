@@ -58,16 +58,17 @@ typedef enum {
 } hci_transport_link_state_t;
 
 typedef enum {
-    HCI_TRANSPORT_LINK_SEND_SYNC            = 1 << 0,
-    HCI_TRANSPORT_LINK_SEND_SYNC_RESPONSE   = 1 << 1,
-    HCI_TRANSPORT_LINK_SEND_CONFIG          = 1 << 2,
-    HCI_TRANSPORT_LINK_SEND_CONFIG_RESPONSE = 1 << 3,
-    HCI_TRANSPORT_LINK_SEND_SLEEP           = 1 << 4,
-    HCI_TRANSPORT_LINK_SEND_WOKEN           = 1 << 5,
-    HCI_TRANSPORT_LINK_SEND_WAKEUP          = 1 << 6,
-    HCI_TRANSPORT_LINK_SEND_QUEUED_PACKET   = 1 << 7,
-    HCI_TRANSPORT_LINK_SEND_ACK_PACKET      = 1 << 8,
-    HCI_TRANSPORT_LINK_ENTER_SLEEP          = 1 << 9,
+    HCI_TRANSPORT_LINK_SEND_SYNC                  = 1 <<  0,
+    HCI_TRANSPORT_LINK_SEND_SYNC_RESPONSE         = 1 <<  1,
+    HCI_TRANSPORT_LINK_SEND_CONFIG                = 1 <<  2,
+    HCI_TRANSPORT_LINK_SEND_CONFIG_RESPONSE_EMPTY = 1 <<  3,
+    HCI_TRANSPORT_LINK_SEND_CONFIG_RESPONSE       = 1 <<  4,
+    HCI_TRANSPORT_LINK_SEND_SLEEP                 = 1 <<  5,
+    HCI_TRANSPORT_LINK_SEND_WOKEN                 = 1 <<  6,
+    HCI_TRANSPORT_LINK_SEND_WAKEUP                = 1 <<  7,
+    HCI_TRANSPORT_LINK_SEND_QUEUED_PACKET         = 1 <<  8,
+    HCI_TRANSPORT_LINK_SEND_ACK_PACKET            = 1 <<  9,
+    HCI_TRANSPORT_LINK_ENTER_SLEEP                = 1 << 10,
 
 } hci_transport_link_actions_t;
 
@@ -96,6 +97,7 @@ static const uint8_t link_control_sync[] =   { 0x01, 0x7e};
 static const uint8_t link_control_sync_response[] = { 0x02, 0x7d};
 static const uint8_t link_control_config[] = { 0x03, 0xfc, LINK_CONFIG_FIELD};
 static const uint8_t link_control_config_prefix_len  = 2;
+static const uint8_t link_control_config_response_empty[] = { 0x04, 0x7b};
 static const uint8_t link_control_config_response[] = { 0x04, 0x7b, LINK_CONFIG_FIELD};
 static const uint8_t link_control_config_response_prefix_len  = 2;
 static const uint8_t link_control_wakeup[] = { 0x05, 0xfa};
@@ -323,6 +325,11 @@ static void hci_transport_link_send_config_response(void){
     hci_transport_link_send_control(link_control_config_response, sizeof(link_control_config_response));
 }
 
+static void hci_transport_link_send_config_response_empty(void){
+    log_debug("link send config response empty");
+    hci_transport_link_send_control(link_control_config_response_empty, sizeof(link_control_config_response_empty));
+}
+
 static void hci_transport_link_send_woken(void){
     log_debug("link send woken");
     hci_transport_link_send_control(link_control_woken, sizeof(link_control_woken));
@@ -387,6 +394,11 @@ static void hci_transport_link_run(void){
     if (hci_transport_link_actions & HCI_TRANSPORT_LINK_SEND_CONFIG_RESPONSE){
         hci_transport_link_actions &= ~HCI_TRANSPORT_LINK_SEND_CONFIG_RESPONSE;
         hci_transport_link_send_config_response();
+        return;
+    }
+    if (hci_transport_link_actions & HCI_TRANSPORT_LINK_SEND_CONFIG_RESPONSE_EMPTY){
+        hci_transport_link_actions &= ~HCI_TRANSPORT_LINK_SEND_CONFIG_RESPONSE_EMPTY;
+        hci_transport_link_send_config_response_empty();
         return;
     }
     if (hci_transport_link_actions & HCI_TRANSPORT_LINK_SEND_WOKEN){
@@ -559,6 +571,7 @@ static void hci_transport_h5_process_frame(uint16_t frame_size){
             if (memcmp(slip_payload, link_control_sync, sizeof(link_control_sync)) == 0){
                 log_debug("link received sync");
                 hci_transport_link_actions |= HCI_TRANSPORT_LINK_SEND_SYNC_RESPONSE;
+                break;
             }
             if (memcmp(slip_payload, link_control_sync_response, sizeof(link_control_sync_response)) == 0){
                 log_debug("link received sync response");
@@ -568,6 +581,7 @@ static void hci_transport_h5_process_frame(uint16_t frame_size){
                 //
                 hci_transport_link_actions |= HCI_TRANSPORT_LINK_SEND_CONFIG;
                 hci_transport_link_set_timer(LINK_PERIOD_MS);
+                break;
             }
             break;
         case LINK_INITIALIZED:
@@ -575,10 +589,17 @@ static void hci_transport_h5_process_frame(uint16_t frame_size){
             if (memcmp(slip_payload, link_control_sync, sizeof(link_control_sync)) == 0){
                 log_debug("link received sync");
                 hci_transport_link_actions |= HCI_TRANSPORT_LINK_SEND_SYNC_RESPONSE;
+                break;
             }
             if (memcmp(slip_payload, link_control_config, link_control_config_prefix_len) == 0){
-                log_debug("link received config, 0x%02x", slip_payload[2]);
-                hci_transport_link_actions |= HCI_TRANSPORT_LINK_SEND_CONFIG_RESPONSE;
+                if (link_payload_len == link_control_config_prefix_len){
+                    log_debug("link received config, no config field");
+                    hci_transport_link_actions |= HCI_TRANSPORT_LINK_SEND_CONFIG_RESPONSE_EMPTY;
+                } else {
+                    log_debug("link received config, 0x%02x", slip_payload[2]);
+                    hci_transport_link_actions |= HCI_TRANSPORT_LINK_SEND_CONFIG_RESPONSE;
+                }
+                break;
             }
             if (memcmp(slip_payload, link_control_config_response, link_control_config_response_prefix_len) == 0){
                 uint8_t config = slip_payload[2];
@@ -593,6 +614,7 @@ static void hci_transport_h5_process_frame(uint16_t frame_size){
                 // notify upper stack that it can start
                 uint8_t event[] = { HCI_EVENT_TRANSPORT_PACKET_SENT, 0};
                 packet_handler(HCI_EVENT_PACKET, &event[0], sizeof(event));
+                break;
             }
             break;
         case LINK_ACTIVE:
@@ -608,7 +630,7 @@ static void hci_transport_h5_process_frame(uint16_t frame_size){
                 link_ack_nr = hci_transport_link_inc_seq_nr(link_ack_nr);
                 hci_transport_link_actions |= HCI_TRANSPORT_LINK_SEND_ACK_PACKET;
             }
-          
+
             // Process ACKs in reliable packet and explicit ack packets
             if (reliable_packet || link_packet_type == LINK_ACKNOWLEDGEMENT_TYPE){
                 // our packet is good if the remote expects our seq nr + 1
@@ -627,8 +649,13 @@ static void hci_transport_h5_process_frame(uint16_t frame_size){
             switch (link_packet_type){
                 case LINK_CONTROL_PACKET_TYPE:
                     if (memcmp(slip_payload, link_control_config, sizeof(link_control_config)) == 0){
-                        log_debug("link received config");
-                        hci_transport_link_actions |= HCI_TRANSPORT_LINK_SEND_CONFIG_RESPONSE;
+                        if (link_payload_len == link_control_config_prefix_len){
+                            log_debug("link received config, no config field");
+                            hci_transport_link_actions |= HCI_TRANSPORT_LINK_SEND_CONFIG_RESPONSE_EMPTY;
+                        } else {
+                            log_debug("link received config, 0x%02x", slip_payload[2]);
+                            hci_transport_link_actions |= HCI_TRANSPORT_LINK_SEND_CONFIG_RESPONSE;
+                        }
                         break;
                     }
                     if (memcmp(slip_payload, link_control_sync, sizeof(link_control_sync)) == 0){
@@ -697,12 +724,10 @@ static void hci_transport_link_update_resend_timeout(uint32_t baudrate){
 static uint8_t hci_transport_link_read_byte;
 
 static void hci_transport_h5_read_next_byte(void){
-    log_debug("rx nxt");
     btstack_uart->receive_block(&hci_transport_link_read_byte, 1);    
 }
 
 static void hci_transport_h5_block_received(){
-    log_debug("slip: process 0x%02x", hci_transport_link_read_byte);
     btstack_slip_decoder_process(hci_transport_link_read_byte);
     uint16_t frame_size = btstack_slip_decoder_frame_size();
     if (frame_size) {

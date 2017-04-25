@@ -13,8 +13,10 @@ GLOBAL_INCLUDES += \
 	../../src \
 	../../platform/embedded \
 	../../chipset/bcm \
-	../../3rd-party/micro-ecc \
 	../../../../
+
+# micro-ecc of WICED tree used for SECP256R1 in LE Secure Connections
+$(NAME)_COMPONENTS += crypto/micro-ecc
 
 # core BTstack sources
 $(NAME)_SOURCES += \
@@ -48,10 +50,6 @@ $(NAME)_SOURCES += \
 	../../src/l2cap.c                     \
 	../../src/l2cap_signaling.c           \
 	../../example/sco_demo_util.c         \
-
-# micro-ecc for LE Secure Connection
-$(NAME)_SOURCES += \
-	../../3rd-party/micro-ecc/uECC.c 				\
 
 # WICED port incl. support for Broadcom chipset
 $(NAME)_SOURCES += \

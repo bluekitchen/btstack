@@ -218,7 +218,7 @@ CC256xC |         0x9a1a | 6.12.26
 
 **SCO data** is routed to the I2S/PCM interface but can be configured with the [HCI_VS_Write_SCO_Configuration](http://processors.wiki.ti.com/index.php/CC256x_VS_HCI_Commands#HCI_VS_Write_SCO_Configuration_.280xFE10.29) command.
 
-**Baud rate** can be set with [HCI_VS_Update_UART_HCI_Baudrate](http://processors.wiki.ti.com/index.php/CC256x_VS_HCI_Commands#HCI_VS_Update_UART_HCI_Baudrate_.280xFF36.29). The chipset confirms the change with a command complete event after which the local UART is set to the new speed. Oddly enough, the CC256x chipsets ignore the incoming CTS line during this particular command complete response. If the MCU gets UART overrun errors in this situation, a work around could be to set a timer for 100 ms and ignore all incoming data (i.e. the command complete event) during that period. Then, after the timeout, the UART can be set to the new speed safely.
+**Baud rate** can be set with [HCI_VS_Update_UART_HCI_Baudrate](http://processors.wiki.ti.com/index.php/CC256x_VS_HCI_Commands#HCI_VS_Update_UART_HCI_Baudrate_.280xFF36.29). The chipset confirms the change with a command complete event after which the local UART is set to the new speed. Oddly enough, the CC256x chipsets ignore the incoming CTS line during this particular command complete response. See next paragraph for a workaround.
 
 **BD Addr** can be set with [HCI_VS_Write_BD_Addr](2.2.1 HCI_VS_Write_BD_Addr (0xFC06)) although all chipsets have an official address stored.
 
@@ -236,6 +236,105 @@ The Makefile at *chipset/cc256x/Makefile.inc* is able to automatically download 
 **BTstack integration**: The common code for all CC256x chipsets is provided by *btstack_chipset_cc256x.c*. During the setup, *btstack_chipset_cc256x_instance* function is used to get a *btstack_chipset_t* instance and passed to *hci_init* function. *btstack_chipset_cc256x_lmp_subversion* provides the LMP Subversion for the selected init script.
 
 SCO Data can be routed over HCI, so HFP Wide-Band Speech is supported.
+
+**Work around for CTS bug while HCI Command Complete Event of HCI VS Update Baudrate with H4/eHCILL**
+
+If you're using a RTOS port (e.g. FreeRTOS) and have implemented the *hal_uart_dma.h* API directly, chances are, you're getting a UART overrun errors in this situation, and the bootup will get stuck at this point.
+
+BTstack currently cannot deal with this situation since it would need to request a read for the complete HCI Command Complete before sending the HCI VS Baudrate Command.
+
+We recommend to add the following workaround in the *hal_uart_dma.h* implementation to deal with this bug in the lowest layer.
+
+The idea is to detect the HCI VS Baudrate Command and then to ignore all received data for 100 ms. After that, send the appropriate HCI Command Complete Event to the HCI transport.
+
+Let's assume that your hal_uart_dma.h implementation contains *hal_uart_dma_rx_complete()* and *hal_uart_dma_tx_complete* that are called when the corresponding asynchronous request has been completed, and that you've stored the registered callbacks in *rx_done_handler* and *tx_done_handler*. Please provide new functions *hal_uart_dma_sleep_ms* that just blocks (you might have needed a similar to implement the CC256x power cycle before) and *hci_uart_dma_rx_flush* that clear all errors and flushes all incoming buffers (might not be needed on most platforms).
+
+    // types & declaration
+    static enum {
+        CC256X_HACK_IDLE,
+        CC256X_HACK_W4_SENT,
+        CC256X_HACK_W4_READ_HEADER,
+        CC256X_HACK_W4_READ_PAYLOAD,
+    } cc256x_hack_state;
+
+    ...
+
+    void hal_uart_dma_send_block(const uint8_t *buffer, uint16_t length){
+        // detect CC256x set baudrate command
+        const uint8_t baud_rate_command_prefix[] = { 0x01, 0x36, 0xff, 0x04};
+        if (memcmp(data, baud_rate_command_prefix, sizeof(baud_rate_command_prefix)) == 0) {
+            log_info("CC256x baud rate command detected");
+            cc256x_hack_state = CC256X_HACK_W4_SENT;
+        }
+
+        // your code to trigger buffer send follow
+        ...
+    }
+
+    void hal_uart_dma_receive_block(uint8_t *buffer, uint16_t len){
+        switch (cc256x_hack_state){
+            case CC256X_HACK_W4_READ_HEADER:
+                cc256x_hack_state = CC256X_HACK_W4_READ_PAYLOAD;
+                // HCI Command Complete
+                *buffer++ = 0x0e;
+                *buffer++ = 0x04;
+                (*rx_done_handler)();
+                return;
+            case CC256X_HACK_W4_READ_PAYLOAD:
+                cc256x_hack_state = CC256X_HACK_IDLE;
+                // commands 0, opcode 0xff36, status 0
+                *buffer++ = 0x01;
+                *buffer++ = 0x36;
+                *buffer++ = 0xff;
+                *buffer++ = 0x00;
+                (*rx_done_handler)();
+                return;
+            default:
+                break;
+        }
+
+        // your code to trigger buffer read follows
+        ...
+      }
+
+      static void hal_uart_dma_rx_complete(void){
+          switch (cc256x_hack_state){
+              case CC256X_HACK_W4_SENT:
+                  // ignore until sent & event received;
+                  return;
+              default:
+                  break;
+          }
+
+          // your code to call complete handler, probably looks like
+          if(rx_done_handler){
+              (*rx_done_handler)();
+          }
+      }
+
+      static void tx_done_handler(void){
+          // your code to call complete handler, probably looks like
+          if(tx_done_handler){
+              (*tx_done_handler)();
+
+              // cc256x hack
+              switch (cc256x_hack_state){
+                  case CC256X_HACK_W4_SENT:
+                      log_info("cc256x hack: sleep");
+                      hal_uart_dma_sleep_ms(100);
+                      log_info("cc256x hack: flush");
+                      hal_uart_block_reset_rx();
+                      log_info("cc256x hack: simulate command complete");
+                      *read_bytes_data++ = 0x04;
+                      read_bytes_len--;
+                      cc256x_hack_state = CC256X_HACK_W4_READ_HEADER;
+                      (*rx_done_handler)();
+                      break;
+                  default:
+                      break;
+              }
+          }
+      }
 
 ## Toshiba
 
