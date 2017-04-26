@@ -79,8 +79,6 @@ static btstack_uart_config_t uart_config;
 
 static int main_argc;
 static const char ** main_argv;
-static const btstack_uart_block_t * uart_driver;
-static const btstack_chipset_t * chipset;
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
@@ -136,14 +134,14 @@ int main(int argc, const char * argv[]){
     transport_config.device_name = "/dev/tty.usbserial-A9OVNX5P"; // RedBear IoT pHAT breakout board
 
     // get BCM chipset driver
-    chipset = btstack_chipset_bcm_instance();
+    btstack_chipset_t * chipset = btstack_chipset_bcm_instance();
     chipset->init(&transport_config);
 
     // set chipset name
     btstack_chipset_bcm_set_device_name("BCM43430A1");
 
     // setup UART driver
-    uart_driver = btstack_uart_block_posix_instance();
+    const btstack_uart_block_t * uart_driver = btstack_uart_block_posix_instance();
 
     // extract UART config from transport config
     uart_config.baudrate    = transport_config.baudrate_init;
