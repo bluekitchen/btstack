@@ -52,15 +52,20 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <inttypes.h>
 
 #include "btstack.h"
 #ifdef HAVE_POSIX_STDIN
 #include "stdin_support.h"
 #endif
 
-uint8_t hid_service_buffer[200];
+uint8_t hid_service_buffer[250];
 const char hid_device_name[] = "BTstack HID Keyboard";
 static btstack_packet_callback_registration_t hci_event_callback_registration;
+
+// hid device state
+static uint16_t hid_control_cid;
+static uint16_t hid_interrupt_cid;
 
 // from USB HID Specification 1.1, Appendix B.1
 const uint8_t hid_descriptor_keyboard_boot_mode[] = {
@@ -125,6 +130,7 @@ void hid_create_sdp_record(
     uint8_t  hid_boot_device,
     const uint8_t * hid_descriptor, uint16_t hid_descriptor_size,
     const char *device_name);
+
 void hid_create_sdp_record(
     uint8_t *service, 
     uint32_t service_record_handle,
@@ -280,12 +286,68 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
 }
 #endif
 
-static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * event, uint16_t event_size){
+static int hid_connected(void){
+    return hid_control_cid && hid_interrupt_cid;
+}
+
+static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * packet, uint16_t packet_size){
     UNUSED(channel);
-    UNUSED(event_size);
+    UNUSED(packet_size);
+    int connected_before;
     switch (packet_type){
         case HCI_EVENT_PACKET:
-            switch (event[0]){
+            switch (packet[0]){
+                case HCI_EVENT_USER_CONFIRMATION_REQUEST:
+                    // ssp: inform about user confirmation request
+                    log_info("SSP User Confirmation Request with numeric value '%06"PRIu32"'\n", hci_event_user_confirmation_request_get_numeric_value(packet));
+                    log_info("SSP User Confirmation Auto accept\n");                   
+                    break; 
+
+                // into HID Device/Server
+                case L2CAP_EVENT_INCOMING_CONNECTION:
+                    switch (l2cap_event_incoming_connection_get_psm(packet)){
+                        case PSM_HID_CONTROL:
+                        case PSM_HID_INTERRUPT:
+                            l2cap_accept_connection(channel);
+                            break;
+                        default:
+                            l2cap_decline_connection(channel);
+                            break;
+                    }
+                    break;
+                case L2CAP_EVENT_CHANNEL_OPENED:
+                    if (packet[2]) return;
+                    connected_before = hid_connected();
+                    switch (l2cap_event_channel_opened_get_psm(packet)){
+                        case PSM_HID_CONTROL:
+                            hid_control_cid = l2cap_event_channel_opened_get_local_cid(packet);
+                            log_info("HID Control opened, cid 0x%02x", hid_control_cid);
+                            break;
+                        case PSM_HID_INTERRUPT:
+                            hid_interrupt_cid = l2cap_event_channel_opened_get_local_cid(packet);
+                            log_info("HID Interrupt opened, cid 0x%02x", hid_interrupt_cid);
+                            break;
+                        default:
+                            break;
+                    }
+                    if (!connected_before && hid_connected()){
+                        printf("HID Connected\n");
+                    }
+                    break;
+                case L2CAP_EVENT_CHANNEL_CLOSED:
+                    connected_before = hid_connected();
+                    if (l2cap_event_channel_closed_get_local_cid(packet) == hid_control_cid){
+                        log_info("HID Control closed");
+                        hid_control_cid = 0;
+                    }
+                    if (l2cap_event_channel_closed_get_local_cid(packet) == hid_interrupt_cid){
+                        log_info("HID Interrupt closed");
+                        hid_interrupt_cid = 0;
+                    }
+                    if (connected_before && !hid_connected()){
+                        printf("HID Disconnected\n");
+                    }
+                    break;
                 default:
                     break;
             }
@@ -316,11 +378,12 @@ int btstack_main(int argc, const char * argv[]){
 
     gap_discoverable_control(1);
     gap_set_class_of_device(0x2540);
-
+    gap_set_local_name(hid_device_name);
+    
     // L2CAP
     l2cap_init();
-
-    // HID Device / Server
+    l2cap_register_service(packet_handler, PSM_HID_INTERRUPT, 100, LEVEL_0);
+    l2cap_register_service(packet_handler, PSM_HID_CONTROL,   100, LEVEL_0);                                      
 
     // SDP Server
     sdp_init();
