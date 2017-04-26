@@ -276,7 +276,6 @@ void avdtp_initiator_stream_config_subsm_run(avdtp_connection_t * connection, av
     
     if (sent) return;
     sent = 1;
-    printf("avdtp_initiator_stream_config_subsm_run, acp seid %d\n", connection->acp_seid);
     
     avdtp_stream_endpoint_t * stream_endpoint = NULL;
     
@@ -285,26 +284,24 @@ void avdtp_initiator_stream_config_subsm_run(avdtp_connection_t * connection, av
         stream_endpoint = avdtp_stream_endpoint_with_seid(connection->int_seid, context);
     }
     if (!stream_endpoint) return;
-    printf(" avdtp_initiator_stream_config_subsm_run 1\n");
     
     avdtp_initiator_stream_endpoint_state_t stream_endpoint_state = stream_endpoint->initiator_config_state;
     stream_endpoint->initiator_config_state = AVDTP_INITIATOR_W4_ANSWER;
     
     if (stream_endpoint->start_stream){
+        stream_endpoint->start_stream = 0;
         if (stream_endpoint->state == AVDTP_STREAM_ENDPOINT_OPENED){
-            stream_endpoint->start_stream = 0;
             connection->int_seid = stream_endpoint->sep.seid;
             connection->acp_seid = connection->remote_seps[stream_endpoint->remote_sep_index].seid;
             avdtp_initiator_send_signaling_cmd_with_seid(connection->l2cap_signaling_cid, AVDTP_SI_START, connection->initiator_transaction_label++, connection->acp_seid);
             return;            
         } 
-        avdtp_request_can_send_now_initiator(connection, connection->l2cap_signaling_cid);
         return;
     }
 
     if (stream_endpoint->stop_stream){
+        stream_endpoint->stop_stream = 0;
         if (stream_endpoint->state >= AVDTP_STREAM_ENDPOINT_OPENED){
-            stream_endpoint->stop_stream = 0;
             connection->int_seid = stream_endpoint->sep.seid;
             connection->acp_seid = connection->remote_seps[stream_endpoint->remote_sep_index].seid;
             avdtp_initiator_send_signaling_cmd_with_seid(connection->l2cap_signaling_cid, AVDTP_SI_CLOSE, connection->initiator_transaction_label++, connection->acp_seid);
@@ -313,12 +310,12 @@ void avdtp_initiator_stream_config_subsm_run(avdtp_connection_t * connection, av
     }
 
     if (stream_endpoint->abort_stream){
+        stream_endpoint->abort_stream = 0;
         switch (stream_endpoint->state){
             case AVDTP_STREAM_ENDPOINT_CONFIGURED:
             case AVDTP_STREAM_ENDPOINT_CLOSING:
             case AVDTP_STREAM_ENDPOINT_OPENED:
             case AVDTP_STREAM_ENDPOINT_STREAMING:
-                stream_endpoint->abort_stream = 0;
                 connection->int_seid = stream_endpoint->sep.seid;
                 connection->acp_seid = connection->remote_seps[stream_endpoint->remote_sep_index].seid;
                 stream_endpoint->state = AVDTP_STREAM_ENDPOINT_ABORTING;
@@ -330,8 +327,8 @@ void avdtp_initiator_stream_config_subsm_run(avdtp_connection_t * connection, av
     }
 
     if (stream_endpoint->suspend_stream){
+        stream_endpoint->suspend_stream = 0;
         if (stream_endpoint->state == AVDTP_STREAM_ENDPOINT_STREAMING){
-            stream_endpoint->suspend_stream = 0;
             stream_endpoint->state = AVDTP_STREAM_ENDPOINT_STREAMING;
             avdtp_initiator_send_signaling_cmd_with_seid(connection->l2cap_signaling_cid, AVDTP_SI_SUSPEND, connection->initiator_transaction_label, connection->acp_seid);
             return;
@@ -339,8 +336,8 @@ void avdtp_initiator_stream_config_subsm_run(avdtp_connection_t * connection, av
     }
 
     if (stream_endpoint->send_stream){
+        stream_endpoint->send_stream = 0;
         if (stream_endpoint->state == AVDTP_STREAM_ENDPOINT_STREAMING){
-            stream_endpoint->send_stream = 0;
             stream_endpoint->state = AVDTP_STREAM_ENDPOINT_STREAMING;
             avdtp_streaming_emit_can_send_media_packet_now(context->avdtp_callback, stream_endpoint->l2cap_media_cid, stream_endpoint->sep.seid, stream_endpoint->sequence_number);
             return;
