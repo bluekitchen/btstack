@@ -91,7 +91,7 @@ const uint8_t hid_descriptor_keyboard_boot_mode[] = {
     0x95, 0x08,                    //   Report Count (8)
     0x81, 0x03,                    //   Input (Constant, Variable, Absolute)
 
-    // LED report
+    // LED report + padding
 
     0x95, 0x05,                    //   Report Count (5)
     0x75, 0x01,                    //   Report Size (1)
@@ -99,8 +99,6 @@ const uint8_t hid_descriptor_keyboard_boot_mode[] = {
     0x19, 0x01,                    //   Usage Minimum (Num Lock)
     0x29, 0x05,                    //   Usage Maxium (Kana)
     0x91, 0x02,                    //   Output (Data, Variable, Absolute)
-
-    // LED padding
 
     0x95, 0x01,                    //   Report Count (1)
     0x75, 0x03,                    //   Report Size (3)
@@ -256,6 +254,20 @@ void hid_create_sdp_record(
     de_add_number(service,  DE_BOOL, DE_SIZE_8,  hid_boot_device);
 }   
 
+static int send_keycode;
+static int send_modifier;
+
+static void send_key(int modifier, int keycode){
+    send_keycode = keycode;
+    send_modifier = modifier;
+    l2cap_request_can_send_now_event(hid_interrupt_cid);
+}
+
+static void send_report(int modifier, int keycode){
+    uint8_t report[] = { 0xa1, modifier, 0, 0, keycode, 0, 0, 0, 0, 0};
+    l2cap_send(hid_interrupt_cid, &report[0], sizeof(report));
+}
+
 #ifdef HAVE_POSIX_STDIN
 
 // prototypes
@@ -278,11 +290,39 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
     UNUSED(callback_type);
 
     char cmd = btstack_stdin_read();
-    switch (cmd){
-        default:
-            show_usage();
-            break;
+    // switch (cmd){
+    //     default:
+    //         show_usage();
+    //         break;
+    // }
+
+    // naive translation
+    if (cmd >= 'a' && cmd <= 'z'){
+        send_key(0, cmd - 'a' + 0x04);
+        return;
     }
+    if (cmd >= 'A' && cmd <= 'Z'){
+        send_key(2, cmd - 'A' + 0x04);
+        return;
+    }
+    if (cmd == '0'){
+        send_key(0, 0x27);
+        return;
+    }
+    if (cmd == 127){
+        send_key(0, 0x2a);
+        return;
+    }
+    if (cmd == ' '){
+        send_key(0, 0x2c);
+        return;
+    }
+    if (cmd >= '1' && cmd <= '9'){
+       send_key(0, cmd - '1' + 0x1e);
+        return;
+    }
+
+    show_usage();
 }
 #endif
 
@@ -348,6 +388,15 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                         printf("HID Disconnected\n");
                     }
                     break;
+                case L2CAP_EVENT_CAN_SEND_NOW:
+                    if (send_keycode){
+                        send_report(send_modifier, send_keycode);
+                        send_keycode = 0;
+                        send_modifier = 0;
+                        l2cap_request_can_send_now_event(hid_interrupt_cid);
+                    } else {
+                        send_report(0, 0);
+                    }
                 default:
                     break;
             }
