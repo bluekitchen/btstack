@@ -559,16 +559,31 @@ void a2dp_source_stream_endpoint_request_can_send_now(uint8_t local_seid){
     avdtp_request_can_send_now_initiator(stream_endpoint->connection, stream_endpoint->l2cap_media_cid);
 }
 
-void a2dp_source_stream_send_media_payload(uint8_t int_seid, btstack_ring_buffer_t * sbc_ring_buffer, uint8_t marker){
+int a2dp_max_media_payload_size(uint8_t int_seid){
     avdtp_stream_endpoint_t * stream_endpoint = avdtp_stream_endpoint_for_seid(int_seid, &a2dp_source_context);
     if (!stream_endpoint) {
         printf("no stream_endpoint found for seid %d", int_seid);
-        return;
+        return 0;
     }
 
     if (stream_endpoint->l2cap_media_cid == 0){
         printf("no media cid found for seid %d", int_seid);
-        return;
+        return 0;
+    }  
+    int sbc_header_size = 12;
+    return l2cap_get_remote_mtu_for_local_cid(stream_endpoint->l2cap_media_cid) - sbc_header_size;
+}
+    
+int a2dp_source_stream_send_media_payload(uint8_t int_seid, btstack_ring_buffer_t * sbc_ring_buffer, uint8_t marker){
+    avdtp_stream_endpoint_t * stream_endpoint = avdtp_stream_endpoint_for_seid(int_seid, &a2dp_source_context);
+    if (!stream_endpoint) {
+        printf("no stream_endpoint found for seid %d", int_seid);
+        return 0;
+    }
+
+    if (stream_endpoint->l2cap_media_cid == 0){
+        printf("no media cid found for seid %d", int_seid);
+        return 0;
     }        
 
     int size = l2cap_get_remote_mtu_for_local_cid(stream_endpoint->l2cap_media_cid);
@@ -581,4 +596,5 @@ void a2dp_source_stream_send_media_payload(uint8_t int_seid, btstack_ring_buffer
     a2dp_source_copy_media_payload(media_packet, size, &offset, sbc_ring_buffer);
     stream_endpoint->sequence_number++;
     l2cap_send_prepared(stream_endpoint->l2cap_media_cid, offset);
+    return size;
 }

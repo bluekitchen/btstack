@@ -200,7 +200,7 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, uint8_t
                     printf("    ACP: AVDTP_ACCEPTOR_W2_ANSWER_SET_CONFIGURATION \n");
                     stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_ANSWER_SET_CONFIGURATION;
                     connection->reject_service_category = 0;
-                    
+                    stream_endpoint->connection = connection;
                     avdtp_sep_t sep;
                     sep.seid = connection->signaling_packet.command[offset++] >> 2;
                     sep.configured_service_categories = avdtp_unpack_service_capabilities(connection, &sep.configuration, connection->signaling_packet.command+offset, packet_size-offset);
@@ -238,10 +238,10 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, uint8_t
                     } else {
                         // add new
                         printf("    ACP: seid %d not found in %p\n", sep.seid, stream_endpoint);
-                        stream_endpoint->remote_sep_index = stream_endpoint->connection->remote_seps_num;
-                        stream_endpoint->connection->remote_seps_num++;
-                        stream_endpoint->connection->remote_seps[stream_endpoint->remote_sep_index] = sep;
-                        printf("    ACP: add seid %d, to %p\n", stream_endpoint->connection->remote_seps[stream_endpoint->remote_sep_index].seid, stream_endpoint);
+                        stream_endpoint->remote_sep_index = connection->remote_seps_num;
+                        connection->remote_seps_num++;
+                        connection->remote_seps[stream_endpoint->remote_sep_index] = sep;
+                        printf("    ACP: add seid %d, to %p\n", connection->remote_seps[stream_endpoint->remote_sep_index].seid, stream_endpoint);
                     } 
                     if (get_bit16(sep.configured_service_categories, AVDTP_MEDIA_CODEC)){
                         switch (sep.configuration.media_codec.media_codec_type){

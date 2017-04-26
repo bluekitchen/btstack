@@ -489,11 +489,13 @@ void avdtp_start_stream(uint8_t int_seid, avdtp_context_t * context){
     }
     avdtp_connection_t * connection = stream_endpoint->connection;
     if (!connection){
-        printf("avdtp_stop_stream: no connection for seid %d found\n",stream_endpoint->sep.seid);
+        printf("avdtp_start_stream: no connection for seid %d found\n",stream_endpoint->sep.seid);
         return;
     }
+        
     if (stream_endpoint->remote_sep_index == 0xFF || stream_endpoint->start_stream) return;
     stream_endpoint->start_stream = 1;
+    connection->int_seid = int_seid;
     avdtp_request_can_send_now_initiator(connection, connection->l2cap_signaling_cid);
 }
 
@@ -510,6 +512,7 @@ void avdtp_stop_stream(uint8_t int_seid, avdtp_context_t * context){
     }
     if (stream_endpoint->remote_sep_index == 0xFF || stream_endpoint->stop_stream) return;
     stream_endpoint->stop_stream = 1;
+    connection->int_seid = int_seid;
     avdtp_request_can_send_now_initiator(connection, connection->l2cap_signaling_cid);
 }
 
@@ -542,6 +545,7 @@ void avdtp_suspend_stream(uint8_t int_seid, avdtp_context_t * context){
     }
     if (stream_endpoint->remote_sep_index == 0xFF || stream_endpoint->suspend_stream) return;
     stream_endpoint->suspend_stream = 1;
+    connection->int_seid = int_seid;
     avdtp_request_can_send_now_initiator(connection, connection->l2cap_signaling_cid);
 }
 

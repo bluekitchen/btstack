@@ -109,7 +109,9 @@ void a2dp_source_disconnect(uint16_t avdtp_cid);
 
 uint8_t a2dp_source_stream_endpoint_ready(uint8_t local_seid);
 void 	a2dp_source_stream_endpoint_request_can_send_now(uint8_t local_seid);
-void 	a2dp_source_stream_send_media_payload(uint8_t int_seid, btstack_ring_buffer_t * sbc_ring_buffer, uint8_t marker);
+int  	a2dp_source_stream_send_media_payload(uint8_t int_seid, btstack_ring_buffer_t * sbc_ring_buffer, uint8_t marker);
+int 	a2dp_max_media_payload_size(uint8_t int_seid);
+
 /* API_END */
 
 #if defined __cplusplus

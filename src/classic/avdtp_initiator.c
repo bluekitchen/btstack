@@ -206,6 +206,7 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t * connection, uint8_
                         log_error("AVDTP_SI_START in wrong stream endpoint state");
                         return;
                     }
+                    printf("AVDTP_STREAM_ENDPOINT_STREAMING\n");
                     stream_endpoint->state = AVDTP_STREAM_ENDPOINT_STREAMING;
                     break;
                 case AVDTP_SI_SUSPEND:
@@ -247,7 +248,6 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t * connection, uint8_
 
 void avdtp_initiator_stream_config_subsm_run(avdtp_connection_t * connection, avdtp_context_t * context){
     int sent = 1;
-
     switch (connection->initiator_connection_state){
         case AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_DISCOVER_SEPS:
             printf("    INT: AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_DISCOVER_SEPS\n");
@@ -276,15 +276,16 @@ void avdtp_initiator_stream_config_subsm_run(avdtp_connection_t * connection, av
     
     if (sent) return;
     sent = 1;
-    avdtp_stream_endpoint_t * stream_endpoint = NULL;
+    printf("avdtp_initiator_stream_config_subsm_run, acp seid %d\n", connection->acp_seid);
     
-    // printf("   run int seid %d, acp seid %d\n", connection->int_seid, connection->acp_seid);
+    avdtp_stream_endpoint_t * stream_endpoint = NULL;
     
     stream_endpoint = avdtp_stream_endpoint_associated_with_acp_seid(connection->acp_seid, context);
     if (!stream_endpoint){
         stream_endpoint = avdtp_stream_endpoint_with_seid(connection->int_seid, context);
     }
     if (!stream_endpoint) return;
+    printf(" avdtp_initiator_stream_config_subsm_run 1\n");
     
     avdtp_initiator_stream_endpoint_state_t stream_endpoint_state = stream_endpoint->initiator_config_state;
     stream_endpoint->initiator_config_state = AVDTP_INITIATOR_W4_ANSWER;

@@ -134,9 +134,9 @@ typedef struct {
 } avdtp_media_codec_configuration_sbc_t;
 
 // mac 2011: static bd_addr_t remote = {0x04, 0x0C, 0xCE, 0xE4, 0x85, 0xD3};
-// pts: 
-static bd_addr_t remote = {0x00, 0x1B, 0xDC, 0x08, 0x0A, 0xA5};
-// mac 2013: static bd_addr_t remote = {0x84, 0x38, 0x35, 0x65, 0xd1, 0x15};
+// pts: static bd_addr_t remote = {0x00, 0x1B, 0xDC, 0x08, 0x0A, 0xA5};
+// mac 2013: 
+static bd_addr_t remote = {0x84, 0x38, 0x35, 0x65, 0xd1, 0x15};
 
 // bt dongle: -u 02-02 static bd_addr_t remote = {0x00, 0x02, 0x72, 0xDC, 0x31, 0xC1};
 
@@ -489,6 +489,9 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             }
                             break;
                         }  
+                        case AVDTP_SUBEVENT_STREAMING_CONNECTION_ESTABLISHED:
+                            // printf("AVDTP_SUBEVENT_STREAMING_CONNECTION_ESTABLISHED, local seid %d, remote seid index %d \n", local_stream_endpoint->sep.seid, );
+                            break;
                         case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CAPABILITY:
                             printf(" received non SBC codec. not implemented\n");
                             break;
@@ -604,6 +607,7 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
             avdtp_sink_open_stream(avdtp_cid, local_stream_endpoint->sep.seid, sep.seid);
             break;
         case 'm': 
+            printf("AVDTP_APPLICATION_W2_START_STREAM_WITH_SEID \n");
             app_state = AVDTP_APPLICATION_W2_START_STREAM_WITH_SEID;
             avdtp_sink_start_stream(local_stream_endpoint->sep.seid);
             break;
