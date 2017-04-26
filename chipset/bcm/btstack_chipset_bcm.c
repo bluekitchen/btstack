@@ -291,7 +291,7 @@ static btstack_chipset_result_t chipset_next_command(uint8_t * hci_cmd_buffer){
 #endif
 
 
-static const btstack_chipset_t btstack_chipset_bcm = {
+static btstack_chipset_t btstack_chipset_bcm = {
     "BCM",
     chipset_init,
     chipset_next_command,
@@ -302,4 +302,16 @@ static const btstack_chipset_t btstack_chipset_bcm = {
 // MARK: public API
 const btstack_chipset_t * btstack_chipset_bcm_instance(void){
     return &btstack_chipset_bcm;
+}
+
+/**
+ * @brief Enable init file - needed by btstack_chipset_bcm_download_firmware when using h5
+ * @param enabled
+ */
+void btstack_chipset_bcm_enable_init_script(int enabled){
+    if (enabled){
+        btstack_chipset_bcm.next_command = &chipset_next_command;
+    } else {
+        btstack_chipset_bcm.next_command = NULL;
+    }
 }

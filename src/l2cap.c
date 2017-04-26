@@ -569,9 +569,11 @@ static void l2cap_run(void){
 
         uint8_t  sig_id        = signaling_responses[0].sig_id;
         uint8_t  response_code = signaling_responses[0].code;
-        uint16_t source_cid    = signaling_responses[0].cid;   // CONNECTION_REQUEST
         uint16_t infoType      = signaling_responses[0].data;  // INFORMATION_REQUEST
         uint16_t result        = signaling_responses[0].data;  // CONNECTION_REQUEST, COMMAND_REJECT
+#ifdef ENABLE_CLASSIC
+        uint16_t source_cid    = signaling_responses[0].cid;   // CONNECTION_REQUEST
+#endif
         UNUSED(infoType);
 
         // remove first item before sending (to avoid sending response mutliple times)

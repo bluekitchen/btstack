@@ -299,6 +299,9 @@ static int btstack_uart_posix_open(void){
     btstack_run_loop_set_data_source_handler(&transport_data_source, &hci_transport_h5_process);
     btstack_run_loop_add_data_source(&transport_data_source);
 
+    // wait a bit - at least cheap FTDI232 clones might send the first byte out incorrectly
+    usleep(100000);
+
     return 0;
 } 
 

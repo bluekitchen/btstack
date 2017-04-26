@@ -35,52 +35,16 @@
  */
 
 /*
- *  btstack_control_bcm.h
+ *  btstack_chipset_bcm_download_firmware.h
  *
- *  Adapter to use Broadcom-based chipsets with BTstack
+ *  Helper to upload patchram before starting up stack in H5 mode
  */
- 
-#ifndef __BTSTACK_CHIPSET_BCM_H
-#define __BTSTACK_CHIPSET_BCM_H
 
-#if defined __cplusplus
-extern "C" {
-#endif
+#include "btstack_uart_block.h"
 
-#include <stdint.h>
-#include "btstack_chipset.h"
-
-const btstack_chipset_t * btstack_chipset_bcm_instance(void);
-
-
-// Support for loading .hcd init files on POSIX systems
-
-/** 
- * @brief Set path to .hcd init file
- * @param path
+ /**
+ * @brief Download firmware via uart_driver
+ * @param uart_driver -- already initialized
+ * @param done callback. 0 = Success
  */
-void btstack_chipset_bcm_set_hcd_file_path(const char * path);
-
-/**
- * @brief Set folder to look for .hcd init files
- * @param path
- */
-void btstack_chipset_bcm_set_hcd_folder_path(const char * path);
-
-/**
- * @brief Look for .hcd init file based on device name
- * @param device_name e.g. BCM43430A1
- */
-void btstack_chipset_bcm_set_device_name(const char * path);
-
-/**
- * @brief Enable init file - needed by btstack_chipset_bcm_download_firmware when using h5
- * @param enabled
- */
-void btstack_chipset_bcm_enable_init_script(int enabled);
-
-#if defined __cplusplus
-}
-#endif
-
-#endif // __BTSTACK_CHIPSET_BCM_H
+void btstack_chipset_bcm_download_firmware(const btstack_uart_block_t * the_uart_driver, int baudrate_upload, void (*done)(int result));
