@@ -935,6 +935,7 @@ typedef uint8_t sm_key_t[16];
 #define HCI_EVENT_AVRCP_META                               0xEC
 #define HCI_EVENT_GOEP_META                                0xED
 #define HCI_EVENT_PBAP_META                                0xEE
+#define HCI_EVENT_HID_META                                 0xEF
 
 // Potential other meta groups
  // #define HCI_EVENT_BNEP_META                                0xxx
@@ -1550,5 +1551,30 @@ typedef uint8_t sm_key_t[16];
  * @param status
  */
 #define PBAP_SUBEVENT_OPERATION_COMPLETED                                  0x03
+
+/**
+ * @format 121BH1
+ * @param subevent_code
+ * @param hid_cid
+ * @param status
+ * @param bd_addr
+ * @param con_handle
+ * @param incoming
+ */
+#define HID_SUBEVENT_CONNECTION_OPENED                                     0x01
+
+/**
+ * @format 12
+ * @param subevent_code
+ * @param hid_cid
+*/
+#define HID_SUBEVENT_CONNECTION_CLOSED                                     0x02
+
+/**
+ * @format 12
+ * @param subevent_code
+ * @param hid_cid
+*/
+#define HID_SUBEVENT_CAN_SEND_NOW                                          0x03
 
 #endif
