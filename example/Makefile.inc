@@ -100,6 +100,7 @@ EXAMPLES = 					\
 	gap_inquiry 			\
 	gatt_battery_query		\
 	gatt_browser            \
+	hid_keyboard_demo 	    \
 	le_counter              \
 	le_streamer				\
 	le_streamer_client      \
@@ -238,6 +239,9 @@ hfp_ag_demo: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} ${SBC_DECODE
 	${CC} $^ ${CFLAGS} -I${BTSTACK_ROOT}/platform/posix ${LDFLAGS} -o $@
 
 hfp_hf_demo: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} ${SBC_DECODER_OBJ} ${SBC_ENCODER_OBJ} ${CVSD_PLC_OBJ} wav_util.o sco_demo_util.o btstack_ring_buffer.o hfp.o hfp_hf.o hfp_hf_demo.c
+	${CC} $^ ${CFLAGS} -I${BTSTACK_ROOT}/platform/posix ${LDFLAGS} -o $@
+
+hid_keyboard_demo: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} btstack_ring_buffer.o hid_device.o hid_keyboard_demo.o
 	${CC} $^ ${CFLAGS} -I${BTSTACK_ROOT}/platform/posix ${LDFLAGS} -o $@
 
 clean:

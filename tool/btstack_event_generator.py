@@ -16,7 +16,8 @@ meta_events = [
     'HFP',
     'HSP',
     'PBAP',
-    'LE'
+    'LE',
+    'HID',
 ]
 
 supported_event_groups = meta_events + [
@@ -30,6 +31,7 @@ supported_event_groups = meta_events + [
     'GATT',
     'BNEP',
     'ATT',
+    'HID',
 ]
 
 program_info = '''

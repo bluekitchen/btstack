@@ -133,6 +133,14 @@ static inline uint8_t hci_event_pbap_meta_get_subevent_code(const uint8_t * even
 static inline uint8_t hci_event_le_meta_get_subevent_code(const uint8_t * event){
     return event[2];
 }
+/***
+ * @brief Get subevent code for hid event
+ * @param event packet
+ * @return subevent_code
+ */
+static inline uint8_t hci_event_hid_meta_get_subevent_code(const uint8_t * event){
+    return event[2];
+}
 /**
  * @brief Get field status from event HCI_EVENT_INQUIRY_COMPLETE
  * @param event packet
@@ -4973,6 +4981,72 @@ static inline uint16_t pbap_subevent_operation_completed_get_goep_cid(const uint
  */
 static inline uint8_t pbap_subevent_operation_completed_get_status(const uint8_t * event){
     return event[5];
+}
+
+/**
+ * @brief Get field hid_cid from event HID_SUBEVENT_CONNECTION_OPENED
+ * @param event packet
+ * @return hid_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t hid_subevent_connection_opened_get_hid_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field status from event HID_SUBEVENT_CONNECTION_OPENED
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t hid_subevent_connection_opened_get_status(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field bd_addr from event HID_SUBEVENT_CONNECTION_OPENED
+ * @param event packet
+ * @param Pointer to storage for bd_addr
+ * @note: btstack_type B
+ */
+static inline void hid_subevent_connection_opened_get_bd_addr(const uint8_t * event, bd_addr_t bd_addr){
+    reverse_bd_addr(&event[6], bd_addr);    
+}
+/**
+ * @brief Get field con_handle from event HID_SUBEVENT_CONNECTION_OPENED
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t hid_subevent_connection_opened_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 12);
+}
+/**
+ * @brief Get field incoming from event HID_SUBEVENT_CONNECTION_OPENED
+ * @param event packet
+ * @return incoming
+ * @note: btstack_type 1
+ */
+static inline uint8_t hid_subevent_connection_opened_get_incoming(const uint8_t * event){
+    return event[14];
+}
+
+/**
+ * @brief Get field hid_cid from event HID_SUBEVENT_CONNECTION_CLOSED
+ * @param event packet
+ * @return hid_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t hid_subevent_connection_closed_get_hid_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+
+/**
+ * @brief Get field hid_cid from event HID_SUBEVENT_CAN_SEND_NOW
+ * @param event packet
+ * @return hid_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t hid_subevent_can_send_now_get_hid_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
 }
 
 
