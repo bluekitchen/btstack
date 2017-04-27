@@ -36,7 +36,7 @@
  */
 
 #include <stdint.h>
-
+#include "btstack_defines.h"
 /**
  * @brief Create HID Device SDP service record. 
  * @param service Empty buffer in which a new service record will be stored.
@@ -63,4 +63,35 @@ void hid_create_sdp_record(
     const uint8_t * hid_descriptor,
     uint16_t 		hid_descriptor_size,
     const char *    device_name);
+
+/**
+ * @brief Set up HID Device 
+ */
+void hid_device_init(void);
+
+/**
+ * @brief Register callback for the HID Device client. 
+ * @param callback
+ */
+void hid_device_register_packet_handler(btstack_packet_handler_t callback);
+
+/**
+ * @brief Request can send now event to send HID Report
+ * Generates an HID_SUBEVENT_CAN_SEND_NOW subevent
+ * @param hid_cid
+ */
+void hid_device_request_can_send_now_event(uint16_t hid_cid);
+
+/**
+ * @brief Send HID messageon interrupt channel
+ * @param hid_cid
+ */
+void hid_device_send_interrupt_message(uint16_t hid_cid, const uint8_t * message, uint16_t message_len);
+
+/**
+ * @brief Send HID messageon control channel
+ * @param hid_cid
+ */
+void hid_device_send_contro_message(uint16_t hid_cid, const uint8_t * message, uint16_t message_len);
+
 
