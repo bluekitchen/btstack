@@ -35,69 +35,32 @@
  *
  */
 
-/*
- *  btstack.h
- *  Convenience header to include all public APIs
+#include <stdint.h>
+
+/**
+ * @brief Create HID Device SDP service record. 
+ * @param service Empty buffer in which a new service record will be stored.
+ * @param have_remote_audio_control 
+ * @param service
+ * @param service_record_handle
+ * @param hid_device_subclass
+ * @param hid_country_code
+ * @param hid_virtual_cable
+ * @param hid_reconnect_initiate
+ * @param hid_boot_device
+ * @param hid_descriptor
+ * @param hid_descriptor_size size of hid_descriptor
+ * @param device_name
  */
+void hid_create_sdp_record(
+    uint8_t *       service, 
+    uint32_t        service_record_handle,
+    uint16_t        hid_device_subclass,
+    uint8_t         hid_country_code,
+    uint8_t         hid_virtual_cable,
+    uint8_t         hid_reconnect_initiate,
+    uint8_t         hid_boot_device,
+    const uint8_t * hid_descriptor,
+    uint16_t 		hid_descriptor_size,
+    const char *    device_name);
 
-
-#ifndef __BTSTACK_H
-#define __BTSTACK_H
-
-#include "btstack_config.h"
-
-#include "bluetooth.h"
-#include "bluetooth_data_types.h"
-#include "bluetooth_gatt.h"
-#include "bluetooth_sdp.h"
-#include "bluetooth_company_id.h"
-#include "ad_parser.h"
-#include "btstack_control.h"
-#include "btstack_debug.h"
-#include "btstack_event.h"
-#include "btstack_defines.h"
-#include "btstack_linked_list.h"
-#include "btstack_memory.h"
-#include "btstack_memory_pool.h"
-#include "btstack_run_loop.h"
-#include "btstack_util.h"
-#include "gap.h"
-#include "hci.h"
-#include "hci_cmd.h"
-#include "hci_dump.h"
-#include "hci_transport.h"
-#include "l2cap.h"
-#include "l2cap_signaling.h"
-
-#ifdef ENABLE_BLE
-#include "ble/ancs_client.h"
-#include "ble/att_db.h"
-#include "ble/att_db_util.h"
-#include "ble/att_dispatch.h"
-#include "ble/att_server.h"
-#include "ble/gatt_client.h"
-#include "ble/le_device_db.h"
-#include "ble/sm.h"
-#endif
-
-// #ifdef ENABLE_CLASSIC
-#include "classic/bnep.h"
-#include "classic/btstack_link_key_db.h"
-#include "classic/device_id_server.h"
-#include "classic/hfp.h"
-#include "classic/hfp_ag.h"
-#include "classic/hfp_hf.h"
-#include "classic/hid_device.h"
-#include "classic/hsp_ag.h"
-#include "classic/hsp_hs.h"
-#include "classic/pan.h"
-#include "classic/rfcomm.h"
-#include "classic/sdp_client.h"
-#include "classic/sdp_client_rfcomm.h"
-#include "classic/sdp_server.h"
-#include "classic/sdp_util.h"
-#include "classic/spp_server.h"
-// #endif
-
-#endif  // __BTSTACK_H
- 
