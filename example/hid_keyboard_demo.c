@@ -41,8 +41,8 @@
 /* EXAMPLE_START(hid_device_demo): HID Device (Server) Demo
  *
  * @text This HID Device example demonstrates how to implement
- * an HID keyboard. Without a HAVE_POSIX_STDIN, a fixed message is sent
- * If HAVE_POSIX_STDIN is defined, you can control and type from the terminal
+ * an HID keyboard. Without a HAVE_POSIX_STDIN, a fixed demo text is sent
+ * If HAVE_POSIX_STDIN is defined, you can type from the terminal
  */
 // *****************************************************************************
 
@@ -55,6 +55,9 @@
 #include <inttypes.h>
 
 #include "btstack.h"
+
+#undef HAVE_POSIX_STDIN
+
 #ifdef HAVE_POSIX_STDIN
 #include "stdin_support.h"
 #endif
@@ -347,7 +350,9 @@ static void send_report(int modifier, int keycode){
     l2cap_send(hid_interrupt_cid, &report[0], sizeof(report));
 }
 
-
+static int hid_connected(void){
+    return hid_control_cid && hid_interrupt_cid;
+}
 
 #ifdef HAVE_POSIX_STDIN
 
@@ -381,11 +386,49 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
     }
     show_usage();
 }
-#endif
+#else
 
-static int hid_connected(void){
-    return hid_control_cid && hid_interrupt_cid;
+// On embedded systems, send constant demo text with fixed period
+
+#define TYPING_PERIOD_MS 100
+static const char * demo_text = "\n\nHello World!\n\nThis is the BTstack HID Keyboard Demo running on an Embedded Device.\n\n";
+
+static int demo_pos;
+static btstack_timer_source_t typing_timer;
+
+static void typing_timer_handler(btstack_timer_source_t * ts){
+
+    // abort if not connected
+    if (!hid_connected()) return;
+
+    // get next character
+    uint8_t character = demo_text[demo_pos++];
+    if (demo_text[demo_pos] == 0){
+        demo_pos = 0;
+    }
+
+    // get keycodeand send
+    uint8_t modifier;
+    uint8_t keycode;
+    int found = keycode_and_modifer_us_for_character(character, &keycode, &modifier);
+    if (found){
+        send_key(modifier, keycode);
+    }
+
+    // set next timer
+    btstack_run_loop_set_timer(ts, TYPING_PERIOD_MS);
+    btstack_run_loop_add_timer(ts);
 }
+
+static void hid_start_typing(void){
+    demo_pos = 0;
+    // set one-shot timer
+    typing_timer.process = &typing_timer_handler;
+    btstack_run_loop_set_timer(&typing_timer, TYPING_PERIOD_MS);
+    btstack_run_loop_add_timer(&typing_timer);
+}
+
+#endif
 
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * packet, uint16_t packet_size){
     UNUSED(channel);
@@ -429,6 +472,9 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                     }
                     if (!connected_before && hid_connected()){
                         printf("HID Connected\n");
+#ifndef HAVE_POSIX_STDIN                        
+                        hid_start_typing();
+#endif
                     }
                     break;
                 case L2CAP_EVENT_CHANNEL_CLOSED:
