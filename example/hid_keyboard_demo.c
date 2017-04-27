@@ -118,6 +118,58 @@ const uint8_t hid_descriptor_keyboard_boot_mode[] = {
     0xc0,                          // End collection  
 };
 
+// 
+
+#define CHAR_ILLEGAL     0xff
+#define CHAR_RETURN     '\n'
+#define CHAR_ESCAPE      27
+#define CHAR_TAB         '\t'
+#define CHAR_BACKSPACE   0x7f
+
+// Simplified US Keyboard with Shift modifier
+
+/**
+ * English (US)
+ */
+static const uint8_t keytable_us_none [] = {
+    CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,             /*   0-3 */
+    'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j',                   /*  4-13 */
+    'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't',                   /* 14-23 */
+    'u', 'v', 'w', 'x', 'y', 'z',                                       /* 24-29 */
+    '1', '2', '3', '4', '5', '6', '7', '8', '9', '0',                   /* 30-39 */
+    CHAR_RETURN, CHAR_ESCAPE, CHAR_BACKSPACE, CHAR_TAB, ' ',            /* 40-44 */
+    '-', '=', '[', ']', '\\', CHAR_ILLEGAL, ';', '\'', 0x60, ',',       /* 45-54 */
+    '.', '/', CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,   /* 55-60 */
+    CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,             /* 61-64 */
+    CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,             /* 65-68 */
+    CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,             /* 69-72 */
+    CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,             /* 73-76 */
+    CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,             /* 77-80 */
+    CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,             /* 81-84 */
+    '*', '-', '+', '\n', '1', '2', '3', '4', '5',                       /* 85-97 */
+    '6', '7', '8', '9', '0', '.', 0xa7,                                 /* 97-100 */
+}; 
+
+static const uint8_t keytable_us_shift[] = {
+    CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,             /*  0-3  */
+    'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J',                   /*  4-13 */
+    'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T',                   /* 14-23 */
+    'U', 'V', 'W', 'X', 'Y', 'Z',                                       /* 24-29 */
+    '!', '@', '#', '$', '%', '^', '&', '*', '(', ')',                   /* 30-39 */
+    CHAR_RETURN, CHAR_ESCAPE, CHAR_BACKSPACE, CHAR_TAB, ' ',            /* 40-44 */
+    '_', '+', '{', '}', '|', CHAR_ILLEGAL, ':', '"', 0x7E, '<',         /* 45-54 */
+    '>', '?', CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,   /* 55-60 */
+    CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,             /* 61-64 */
+    CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,             /* 65-68 */
+    CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,             /* 69-72 */
+    CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,             /* 73-76 */
+    CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,             /* 77-80 */
+    CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,             /* 81-84 */
+    '*', '-', '+', '\n', '1', '2', '3', '4', '5',                       /* 85-97 */
+    '6', '7', '8', '9', '0', '.', 0xb1,                                 /* 97-100 */
+}; 
+
+
 void hid_create_sdp_record(
     uint8_t *service, 
     uint32_t service_record_handle,
@@ -254,6 +306,33 @@ void hid_create_sdp_record(
     de_add_number(service,  DE_BOOL, DE_SIZE_8,  hid_boot_device);
 }   
 
+// HID Keyboard lookup
+static int lookup_keycode(uint8_t character, const uint8_t * table, int size, uint8_t * keycode){
+    int i;
+    for (i=0;i<size;i++){
+        if (table[i] != character) continue;
+        *keycode = i;
+        return 1;
+    }
+    return 0;
+}
+
+static int keycode_and_modifer_us_for_character(uint8_t character, uint8_t * keycode, uint8_t * modifier){
+    int found;
+    found = lookup_keycode(character, keytable_us_none, sizeof(keytable_us_none), keycode);
+    if (found) {
+        *modifier = 0;  // none
+        return 1;
+    }
+    found = lookup_keycode(character, keytable_us_shift, sizeof(keytable_us_shift), keycode);
+    if (found) {
+        *modifier = 2;  // shift
+        return 1;
+    }
+    return 0;
+}
+
+// HID Report sending
 static int send_keycode;
 static int send_modifier;
 
@@ -267,6 +346,8 @@ static void send_report(int modifier, int keycode){
     uint8_t report[] = { 0xa1, modifier, 0, 0, keycode, 0, 0, 0, 0, 0};
     l2cap_send(hid_interrupt_cid, &report[0], sizeof(report));
 }
+
+
 
 #ifdef HAVE_POSIX_STDIN
 
@@ -289,39 +370,15 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
     UNUSED(ds);
     UNUSED(callback_type);
 
-    char cmd = btstack_stdin_read();
-    // switch (cmd){
-    //     default:
-    //         show_usage();
-    //         break;
-    // }
+    char character = btstack_stdin_read();
 
-    // naive translation
-    if (cmd >= 'a' && cmd <= 'z'){
-        send_key(0, cmd - 'a' + 0x04);
+    uint8_t modifier;
+    uint8_t keycode;
+    int found = keycode_and_modifer_us_for_character(character, &keycode, &modifier);
+    if (found){
+        send_key(modifier, keycode);
         return;
     }
-    if (cmd >= 'A' && cmd <= 'Z'){
-        send_key(2, cmd - 'A' + 0x04);
-        return;
-    }
-    if (cmd == '0'){
-        send_key(0, 0x27);
-        return;
-    }
-    if (cmd == 127){
-        send_key(0, 0x2a);
-        return;
-    }
-    if (cmd == ' '){
-        send_key(0, 0x2c);
-        return;
-    }
-    if (cmd >= '1' && cmd <= '9'){
-       send_key(0, cmd - '1' + 0x1e);
-        return;
-    }
-
     show_usage();
 }
 #endif
