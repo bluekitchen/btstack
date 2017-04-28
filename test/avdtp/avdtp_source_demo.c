@@ -122,6 +122,9 @@ typedef struct {
                             
     int max_media_payload_size;
     btstack_ring_buffer_t sbc_ring_buffer;
+    
+    uint8_t sbc_storage[1030];
+    uint8_t sbc_storage_count;
 } a2dp_media_sending_context_t;
 
 static a2dp_media_sending_context_t media_tracker;
@@ -167,7 +170,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                         
                         case A2DP_SUBEVENT_STREAMING_CAN_SEND_MEDIA_PACKET_NOW:
                             if (local_seid != media_tracker.local_seid) break;
-                            a2dp_source_stream_send_media_payload(media_tracker.local_seid, &media_tracker.sbc_ring_buffer, 0);
+                            a2dp_source_stream_send_media_payload(media_tracker.local_seid, &media_tracker.sbc_ring_buffer, btstack_sbc_encoder_sbc_buffer_length(), 0);
                             if (btstack_ring_buffer_bytes_available(&media_tracker.sbc_ring_buffer)){
                                 a2dp_source_stream_endpoint_request_can_send_now(media_tracker.local_seid);
                             }

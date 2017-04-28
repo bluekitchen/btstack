@@ -49,7 +49,6 @@
 #include "avdtp_util.h"
 #include "avdtp_source.h"
 #include "a2dp_source.h"
-#include "sbc_encoder.h"
 
 static const char * default_a2dp_source_service_name = "BTstack A2DP Source Service";
 static const char * default_a2dp_source_service_provider_name = "BTstack A2DP Source Service Provider";
@@ -291,14 +290,15 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             sc.sampling_frequency = avdtp_subevent_signaling_media_codec_sbc_configuration_get_sampling_frequency(packet);
                             sc.block_length = avdtp_subevent_signaling_media_codec_sbc_configuration_get_block_length(packet);
                             sc.subbands = avdtp_subevent_signaling_media_codec_sbc_configuration_get_subbands(packet);
-                            switch (avdtp_subevent_signaling_media_codec_sbc_configuration_get_allocation_method(packet)){
-                                case AVDTP_SBC_ALLOCATION_METHOD_LOUDNESS:
-                                    sc.allocation_method = SBC_LOUDNESS;
-                                    break;
-                                case AVDTP_SBC_ALLOCATION_METHOD_SNR:
-                                    sc.allocation_method = SBC_SNR;
-                                    break;
-                            }
+                            // switch (avdtp_subevent_signaling_media_codec_sbc_configuration_get_allocation_method(packet)){
+                            //     case AVDTP_SBC_ALLOCATION_METHOD_LOUDNESS:
+                            //         sc.allocation_method = SBC_LOUDNESS;
+                            //         break;
+                            //     case AVDTP_SBC_ALLOCATION_METHOD_SNR:
+                            //         sc.allocation_method = SBC_SNR;
+                            //         break;
+                            // }
+                            sc.allocation_method = avdtp_subevent_signaling_media_codec_sbc_configuration_get_allocation_method(packet) - 1;
                             sc.max_bitpool_value = avdtp_subevent_signaling_media_codec_sbc_configuration_get_max_bitpool_value(packet);
                             // TODO: deal with reconfigure: avdtp_subevent_signaling_media_codec_sbc_configuration_get_reconfigure(packet);
                             break;
@@ -516,7 +516,7 @@ static void a2dp_source_setup_media_header(uint8_t * media_packet, int size, int
     *offset = pos;
 }
 
-static void a2dp_source_copy_media_payload(uint8_t * media_packet, int size, int * offset, btstack_ring_buffer_t * sbc_ring_buffer){
+static void a2dp_source_copy_media_payload(uint8_t * media_packet, int size, int * offset, btstack_ring_buffer_t * sbc_ring_buffer, uint16_t sbc_frame_bytes){
     if (size < 18){
         printf("small outgoing buffer\n");
         return;
@@ -534,8 +534,6 @@ static void a2dp_source_copy_media_payload(uint8_t * media_packet, int size, int
     uint32_t total_sbc_bytes_read = 0;
     uint8_t  sbc_frame_size = 0;
     // payload
-    uint16_t sbc_frame_bytes = btstack_sbc_encoder_sbc_buffer_length();
-
     while (size - 13 - total_sbc_bytes_read >= sbc_frame_bytes && btstack_ring_buffer_bytes_available(sbc_ring_buffer)){
         uint32_t number_of_bytes_read = 0;
         btstack_ring_buffer_read(sbc_ring_buffer, &sbc_frame_size, 1, &number_of_bytes_read);
@@ -574,7 +572,7 @@ int a2dp_max_media_payload_size(uint8_t int_seid){
     return l2cap_get_remote_mtu_for_local_cid(stream_endpoint->l2cap_media_cid) - sbc_header_size;
 }
     
-int a2dp_source_stream_send_media_payload(uint8_t int_seid, btstack_ring_buffer_t * sbc_ring_buffer, uint8_t marker){
+int a2dp_source_stream_send_media_payload(uint8_t int_seid, btstack_ring_buffer_t * sbc_ring_buffer, uint16_t sbc_frame_bytes, uint8_t marker){
     avdtp_stream_endpoint_t * stream_endpoint = avdtp_stream_endpoint_for_seid(int_seid, &a2dp_source_context);
     if (!stream_endpoint) {
         printf("no stream_endpoint found for seid %d", int_seid);
@@ -593,7 +591,7 @@ int a2dp_source_stream_send_media_payload(uint8_t int_seid, btstack_ring_buffer_
     uint8_t * media_packet = l2cap_get_outgoing_buffer();
     //int size = l2cap_get_remote_mtu_for_local_cid(stream_endpoint->l2cap_media_cid);
     a2dp_source_setup_media_header(media_packet, size, &offset, marker, stream_endpoint->sequence_number);
-    a2dp_source_copy_media_payload(media_packet, size, &offset, sbc_ring_buffer);
+    a2dp_source_copy_media_payload(media_packet, size, &offset, sbc_ring_buffer, sbc_frame_bytes);
     stream_endpoint->sequence_number++;
     l2cap_send_prepared(stream_endpoint->l2cap_media_cid, offset);
     return size;
