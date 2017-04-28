@@ -560,38 +560,16 @@ uint8_t a2dp_num_frames(uint8_t int_seid, int header_size, int num_bytes_in_fram
 
 static uint8_t sbc_storage[1030];
 
-static void a2dp_source_copy_media_payload(uint8_t * media_packet, int size, int * offset, btstack_ring_buffer_t * sbc_ring_buffer, uint16_t sbc_frame_bytes, uint8_t num_frames){
-    // UNUSED(sbc_frame_bytes);
+static void a2dp_source_copy_media_payload(uint8_t * media_packet, int size, int * offset, uint8_t * storage, int num_bytes_to_copy, uint8_t num_frames){
     if (size < 18){
         printf("small outgoing buffer\n");
         return;
     }
-    int pos = *offset;
-    // media payload
-    // sbc_header (size 1B)
-    uint8_t sbc_header_index = pos;
-    pos++;
-    uint8_t fragmentation = 0;
-    uint8_t starting_packet = 0; // set to 1 for the first packet of a fragmented SBC frame
-    uint8_t last_packet = 0;     // set to 1 for the last packet of a fragmented SBC frame
     
-    uint32_t total_sbc_bytes_read = 0;
-    uint8_t  sbc_frame_size = 0;
-    // payload
-    int i;
-    int storage_offset = 0;
-    for (i = 0; i < num_frames; i++){
-        uint32_t number_of_bytes_read = 0;
-        btstack_ring_buffer_read(sbc_ring_buffer, &sbc_frame_size, 1, &number_of_bytes_read);
-        btstack_ring_buffer_read(sbc_ring_buffer, sbc_storage + storage_offset, sbc_frame_size, &number_of_bytes_read);
-        pos += sbc_frame_size;
-        storage_offset += sbc_frame_size;
-        total_sbc_bytes_read += sbc_frame_size;
-    }
-   
-    memcpy(media_packet + sbc_header_index + 1, sbc_storage, num_frames*sbc_frame_bytes);
-    media_packet[sbc_header_index] =  (fragmentation << 7) | (starting_packet << 6) | (last_packet << 5) | num_frames;
-    // printf("calculated num frames %d, num frames %d\n", num_frames, _num_frames);
+    int pos = *offset;
+    media_packet[pos++] = num_frames; // (fragmentation << 7) | (starting_packet << 6) | (last_packet << 5) | num_frames;
+    memcpy(media_packet + pos, storage, num_bytes_to_copy);
+    pos += num_bytes_to_copy;
     *offset = pos;
 }
 
@@ -614,7 +592,22 @@ int a2dp_source_stream_send_media_payload(uint8_t int_seid, btstack_ring_buffer_
     uint8_t * media_packet = l2cap_get_outgoing_buffer();
     //int size = l2cap_get_remote_mtu_for_local_cid(stream_endpoint->l2cap_media_cid);
     a2dp_source_setup_media_header(media_packet, size, &offset, marker, stream_endpoint->sequence_number);
-    a2dp_source_copy_media_payload(media_packet, size, &offset, sbc_ring_buffer, sbc_frame_bytes, num_frames);
+
+
+    // payload
+    int i;
+    int storage_offset = 0;
+    for (i = 0; i < num_frames; i++){
+        uint8_t  sbc_frame_size = 0;
+        uint32_t number_of_bytes_read = 0;
+        btstack_ring_buffer_read(sbc_ring_buffer, &sbc_frame_size, 1, &number_of_bytes_read);
+        btstack_ring_buffer_read(sbc_ring_buffer, sbc_storage + storage_offset, sbc_frame_bytes, &number_of_bytes_read);
+        storage_offset += sbc_frame_size;
+    }
+    
+    int num_bytes_to_copy = num_frames*sbc_frame_bytes;
+    
+    a2dp_source_copy_media_payload(media_packet, size, &offset, &sbc_storage[0], num_bytes_to_copy, num_frames);
     stream_endpoint->sequence_number++;
     l2cap_send_prepared(stream_endpoint->l2cap_media_cid, offset);
     return size;
