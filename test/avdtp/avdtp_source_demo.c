@@ -169,10 +169,12 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             break;
                         
                         case A2DP_SUBEVENT_STREAMING_CAN_SEND_MEDIA_PACKET_NOW:{
+                            if (local_seid != media_tracker.local_seid) break;
+                            
                             int num_bytes_in_frame =  btstack_sbc_encoder_sbc_buffer_length();
                             int bytes_in_storage = btstack_ring_buffer_bytes_available(&media_tracker.sbc_ring_buffer);
                             uint8_t num_frames = a2dp_num_frames(media_tracker.local_seid, 13, num_bytes_in_frame, bytes_in_storage);
-                            if (local_seid != media_tracker.local_seid) break;
+                            
                             a2dp_source_stream_send_media_payload(media_tracker.local_seid, &media_tracker.sbc_ring_buffer, num_bytes_in_frame, num_frames, 0);
 
                             if (btstack_ring_buffer_bytes_available(&media_tracker.sbc_ring_buffer)){

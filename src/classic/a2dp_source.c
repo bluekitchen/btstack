@@ -558,7 +558,10 @@ uint8_t a2dp_num_frames(uint8_t int_seid, int header_size, int num_bytes_in_fram
     return (uint8_t)calc_num_frames;
 }
 
+static uint8_t sbc_storage[1030];
+
 static void a2dp_source_copy_media_payload(uint8_t * media_packet, int size, int * offset, btstack_ring_buffer_t * sbc_ring_buffer, uint16_t sbc_frame_bytes, uint8_t num_frames){
+    // UNUSED(sbc_frame_bytes);
     if (size < 18){
         printf("small outgoing buffer\n");
         return;
@@ -571,22 +574,24 @@ static void a2dp_source_copy_media_payload(uint8_t * media_packet, int size, int
     uint8_t fragmentation = 0;
     uint8_t starting_packet = 0; // set to 1 for the first packet of a fragmented SBC frame
     uint8_t last_packet = 0;     // set to 1 for the last packet of a fragmented SBC frame
-    uint8_t _num_frames = 0;
-
+    
     uint32_t total_sbc_bytes_read = 0;
     uint8_t  sbc_frame_size = 0;
     // payload
-    while (size - 13 - total_sbc_bytes_read >= sbc_frame_bytes && btstack_ring_buffer_bytes_available(sbc_ring_buffer)){
+    int i;
+    int storage_offset = 0;
+    for (i = 0; i < num_frames; i++){
         uint32_t number_of_bytes_read = 0;
         btstack_ring_buffer_read(sbc_ring_buffer, &sbc_frame_size, 1, &number_of_bytes_read);
-        btstack_ring_buffer_read(sbc_ring_buffer, media_packet + pos, sbc_frame_size, &number_of_bytes_read);
+        btstack_ring_buffer_read(sbc_ring_buffer, sbc_storage + storage_offset, sbc_frame_size, &number_of_bytes_read);
         pos += sbc_frame_size;
+        storage_offset += sbc_frame_size;
         total_sbc_bytes_read += sbc_frame_size;
-        _num_frames++;
-        // printf("send sbc frame: timestamp %d, seq. nr %d\n", timestamp, stream_endpoint->sequence_number);
     }
-    media_packet[sbc_header_index] =  (fragmentation << 7) | (starting_packet << 6) | (last_packet << 5) | _num_frames;
-    printf("calculated num frames %d, num frames %d\n", num_frames, _num_frames);
+   
+    memcpy(media_packet + sbc_header_index + 1, sbc_storage, num_frames*sbc_frame_bytes);
+    media_packet[sbc_header_index] =  (fragmentation << 7) | (starting_packet << 6) | (last_packet << 5) | num_frames;
+    // printf("calculated num frames %d, num frames %d\n", num_frames, _num_frames);
     *offset = pos;
 }
 
