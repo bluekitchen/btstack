@@ -168,13 +168,18 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             printf(" --- application ---  A2DP_SUBEVENT_STREAM_START_ACCEPTED, local seid %d\n", media_tracker.local_seid);
                             break;
                         
-                        case A2DP_SUBEVENT_STREAMING_CAN_SEND_MEDIA_PACKET_NOW:
+                        case A2DP_SUBEVENT_STREAMING_CAN_SEND_MEDIA_PACKET_NOW:{
+                            int num_bytes_in_frame =  btstack_sbc_encoder_sbc_buffer_length();
+                            int bytes_in_storage = btstack_ring_buffer_bytes_available(&media_tracker.sbc_ring_buffer);
+                            uint8_t num_frames = a2dp_num_frames(media_tracker.local_seid, 13, num_bytes_in_frame, bytes_in_storage);
                             if (local_seid != media_tracker.local_seid) break;
-                            a2dp_source_stream_send_media_payload(media_tracker.local_seid, &media_tracker.sbc_ring_buffer, btstack_sbc_encoder_sbc_buffer_length(), 0);
+                            a2dp_source_stream_send_media_payload(media_tracker.local_seid, &media_tracker.sbc_ring_buffer, num_bytes_in_frame, num_frames, 0);
+
                             if (btstack_ring_buffer_bytes_available(&media_tracker.sbc_ring_buffer)){
                                 a2dp_source_stream_endpoint_request_can_send_now(media_tracker.local_seid);
                             }
-                            break;
+                            break;        
+                        }
                         case A2DP_SUBEVENT_STREAM_SUSPENDED:
                             printf(" --- application ---  A2DP_SUBEVENT_STREAM_SUSPENDED, local seid %d\n", media_tracker.local_seid);
                             a2dp_fill_audio_ring_buffer_timer_pause(&media_tracker);

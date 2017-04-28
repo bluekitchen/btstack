@@ -516,37 +516,6 @@ static void a2dp_source_setup_media_header(uint8_t * media_packet, int size, int
     *offset = pos;
 }
 
-static void a2dp_source_copy_media_payload(uint8_t * media_packet, int size, int * offset, btstack_ring_buffer_t * sbc_ring_buffer, uint16_t sbc_frame_bytes){
-    if (size < 18){
-        printf("small outgoing buffer\n");
-        return;
-    }
-    int pos = *offset;
-    // media payload
-    // sbc_header (size 1B)
-    uint8_t sbc_header_index = pos;
-    pos++;
-    uint8_t fragmentation = 0;
-    uint8_t starting_packet = 0; // set to 1 for the first packet of a fragmented SBC frame
-    uint8_t last_packet = 0;     // set to 1 for the last packet of a fragmented SBC frame
-    uint8_t num_frames = 0;
-
-    uint32_t total_sbc_bytes_read = 0;
-    uint8_t  sbc_frame_size = 0;
-    // payload
-    while (size - 13 - total_sbc_bytes_read >= sbc_frame_bytes && btstack_ring_buffer_bytes_available(sbc_ring_buffer)){
-        uint32_t number_of_bytes_read = 0;
-        btstack_ring_buffer_read(sbc_ring_buffer, &sbc_frame_size, 1, &number_of_bytes_read);
-        btstack_ring_buffer_read(sbc_ring_buffer, media_packet + pos, sbc_frame_size, &number_of_bytes_read);
-        pos += sbc_frame_size;
-        total_sbc_bytes_read += sbc_frame_size;
-        num_frames++;
-        // printf("send sbc frame: timestamp %d, seq. nr %d\n", timestamp, stream_endpoint->sequence_number);
-    }
-    media_packet[sbc_header_index] =  (fragmentation << 7) | (starting_packet << 6) | (last_packet << 5) | num_frames;
-    *offset = pos;
-}
-
 void a2dp_source_stream_endpoint_request_can_send_now(uint8_t local_seid){
     avdtp_stream_endpoint_t * stream_endpoint = avdtp_stream_endpoint_for_seid(local_seid, &a2dp_source_context);
     if (!stream_endpoint) {
@@ -571,8 +540,57 @@ int a2dp_max_media_payload_size(uint8_t int_seid){
     int sbc_header_size = 12;
     return l2cap_get_remote_mtu_for_local_cid(stream_endpoint->l2cap_media_cid) - sbc_header_size;
 }
-    
-int a2dp_source_stream_send_media_payload(uint8_t int_seid, btstack_ring_buffer_t * sbc_ring_buffer, uint16_t sbc_frame_bytes, uint8_t marker){
+
+uint8_t a2dp_num_frames(uint8_t int_seid, int header_size, int num_bytes_in_frame, int bytes_in_storage){
+    avdtp_stream_endpoint_t * stream_endpoint = avdtp_stream_endpoint_for_seid(int_seid, &a2dp_source_context);
+    if (!stream_endpoint) {
+        printf("no stream_endpoint found for seid %d", int_seid);
+        return 0;
+    }
+
+    if (stream_endpoint->l2cap_media_cid == 0){
+        printf("no media cid found for seid %d", int_seid);
+        return 0;
+    }        
+
+    int num_bytes_to_populate = l2cap_get_remote_mtu_for_local_cid(stream_endpoint->l2cap_media_cid) - header_size;
+    int calc_num_frames = btstack_min(num_bytes_to_populate/num_bytes_in_frame, bytes_in_storage/num_bytes_in_frame);
+    return (uint8_t)calc_num_frames;
+}
+
+static void a2dp_source_copy_media_payload(uint8_t * media_packet, int size, int * offset, btstack_ring_buffer_t * sbc_ring_buffer, uint16_t sbc_frame_bytes, uint8_t num_frames){
+    if (size < 18){
+        printf("small outgoing buffer\n");
+        return;
+    }
+    int pos = *offset;
+    // media payload
+    // sbc_header (size 1B)
+    uint8_t sbc_header_index = pos;
+    pos++;
+    uint8_t fragmentation = 0;
+    uint8_t starting_packet = 0; // set to 1 for the first packet of a fragmented SBC frame
+    uint8_t last_packet = 0;     // set to 1 for the last packet of a fragmented SBC frame
+    uint8_t _num_frames = 0;
+
+    uint32_t total_sbc_bytes_read = 0;
+    uint8_t  sbc_frame_size = 0;
+    // payload
+    while (size - 13 - total_sbc_bytes_read >= sbc_frame_bytes && btstack_ring_buffer_bytes_available(sbc_ring_buffer)){
+        uint32_t number_of_bytes_read = 0;
+        btstack_ring_buffer_read(sbc_ring_buffer, &sbc_frame_size, 1, &number_of_bytes_read);
+        btstack_ring_buffer_read(sbc_ring_buffer, media_packet + pos, sbc_frame_size, &number_of_bytes_read);
+        pos += sbc_frame_size;
+        total_sbc_bytes_read += sbc_frame_size;
+        _num_frames++;
+        // printf("send sbc frame: timestamp %d, seq. nr %d\n", timestamp, stream_endpoint->sequence_number);
+    }
+    media_packet[sbc_header_index] =  (fragmentation << 7) | (starting_packet << 6) | (last_packet << 5) | _num_frames;
+    printf("calculated num frames %d, num frames %d\n", num_frames, _num_frames);
+    *offset = pos;
+}
+
+int a2dp_source_stream_send_media_payload(uint8_t int_seid, btstack_ring_buffer_t * sbc_ring_buffer, uint16_t sbc_frame_bytes, uint8_t num_frames, uint8_t marker){
     avdtp_stream_endpoint_t * stream_endpoint = avdtp_stream_endpoint_for_seid(int_seid, &a2dp_source_context);
     if (!stream_endpoint) {
         printf("no stream_endpoint found for seid %d", int_seid);
@@ -591,7 +609,7 @@ int a2dp_source_stream_send_media_payload(uint8_t int_seid, btstack_ring_buffer_
     uint8_t * media_packet = l2cap_get_outgoing_buffer();
     //int size = l2cap_get_remote_mtu_for_local_cid(stream_endpoint->l2cap_media_cid);
     a2dp_source_setup_media_header(media_packet, size, &offset, marker, stream_endpoint->sequence_number);
-    a2dp_source_copy_media_payload(media_packet, size, &offset, sbc_ring_buffer, sbc_frame_bytes);
+    a2dp_source_copy_media_payload(media_packet, size, &offset, sbc_ring_buffer, sbc_frame_bytes, num_frames);
     stream_endpoint->sequence_number++;
     l2cap_send_prepared(stream_endpoint->l2cap_media_cid, offset);
     return size;

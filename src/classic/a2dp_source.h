@@ -109,8 +109,9 @@ void a2dp_source_disconnect(uint16_t avdtp_cid);
 
 uint8_t a2dp_source_stream_endpoint_ready(uint8_t local_seid);
 void 	a2dp_source_stream_endpoint_request_can_send_now(uint8_t local_seid);
-int  	a2dp_source_stream_send_media_payload(uint8_t int_seid, btstack_ring_buffer_t * sbc_ring_buffer, uint16_t sbc_frame_bytes, uint8_t marker);
+int  	a2dp_source_stream_send_media_payload(uint8_t int_seid, btstack_ring_buffer_t * sbc_ring_buffer, uint16_t sbc_frame_bytes, uint8_t num_frames, uint8_t marker);
 int 	a2dp_max_media_payload_size(uint8_t int_seid);
+uint8_t a2dp_num_frames(uint8_t int_seid, int header_size, int num_bytes_in_frame, int bytes_in_storage);
 
 /* API_END */
 
