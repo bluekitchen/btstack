@@ -81,7 +81,7 @@ ENABLE_LE_SECURE_CONNECTIONS | Enable LE Secure Connections using [mbed TLS libr
 ENABLE_LE_DATA_CHANNELS      | Enable LE Data Channels in credit-based flow control mode
 ENABLE_LE_SIGNED_WRITE       | Enable LE Signed Writes in ATT/GATT
 ENABLE_HCI_CONTROLLER_TO_HOST_FLOW_CONTROL | Enable HCI Controller to Host Flow Control, see below
-
+ENABLE_CC256X_BAUDRATE_CHANGE_FLOWCONTROL_BUG_WORKAROUND | Enable workaround for bug in CC256x Flow Control during baud rate change, see chipset docs.
 
 ### HCI Controller to Host Flow Control
 In general, BTstack relies on flow control of the HCI transport, either via Hardware CTS/RTS flow control for UART or regular USB flow control. If this is not possible, e.g on an SoC, BTstack can use HCI Controller to Host Flow Control by defining ENABLE_HCI_CONTROLLER_TO_HOST_FLOW_CONTROL. If enabled, the HCI Transport implementation must be able to buffer the specified packets. In addition, it also need to be able to buffer a few HCI Events. Using a low number of host buffers might result in less throughput.
