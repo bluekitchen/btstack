@@ -323,7 +323,8 @@ static const btstack_uart_block_t btstack_uart_block_wiced = {
     /* void (*receive_block)(uint8_t *buffer, uint16_t len); */       &btstack_uart_block_wiced_receive_block,
     /* void (*send_block)(const uint8_t *buffer, uint16_t length); */ &btstack_uart_block_wiced_send_block,
     /* int (*get_supported_sleep_modes); */                           NULL,
-    /* void (*set_sleep)(btstack_uart_sleep_mode_t sleep_mode); */    NULL
+    /* void (*set_sleep)(btstack_uart_sleep_mode_t sleep_mode); */    NULL,
+    /* void (*set_wakeup_handler)(void (*handler)(void)); */          NULL,
 };
 
 const btstack_uart_block_t * btstack_uart_block_wiced_instance(void){
