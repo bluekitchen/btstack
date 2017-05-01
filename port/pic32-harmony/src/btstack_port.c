@@ -185,6 +185,10 @@ void hal_uart_dma_set_block_sent( void (*the_block_handler)(void)){
 void hal_uart_dma_set_csr_irq_handler( void (*the_irq_handler)(void)){
     // not needed for regular H4 module (but needed for TI's eHCILL)
 }
+void hal_uart_dma_set_sleep(uint8_t sleep){
+    // not needed for regualr h4 module (but needed for eHCILL or h5)
+    UNUSED(sleep);
+}
 
 int  hal_uart_dma_set_baud(uint32_t baud){
 //    PLIB_USART_Disable(BT_USART_ID);
