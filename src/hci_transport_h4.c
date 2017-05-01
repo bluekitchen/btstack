@@ -58,10 +58,12 @@
 #ifdef ENABLE_EHCILL
 
 // eHCILL commands
-static const uint8_t EHCILL_GO_TO_SLEEP_IND = 0x030;
-static const uint8_t EHCILL_GO_TO_SLEEP_ACK = 0x031;
-static const uint8_t EHCILL_WAKE_UP_IND     = 0x032;
-static const uint8_t EHCILL_WAKE_UP_ACK     = 0x033;
+enum EHCILL_MESSAGES {
+	EHCILL_GO_TO_SLEEP_IND = 0x030,
+	EHCILL_GO_TO_SLEEP_ACK = 0x031,
+	EHCILL_WAKE_UP_IND     = 0x032,
+	EHCILL_WAKE_UP_ACK     = 0x033,
+};
 
 static int  hci_transport_h4_ehcill_outgoing_packet_ready(void);
 static void hci_transport_h4_echill_send_wakeup_ind(void);
