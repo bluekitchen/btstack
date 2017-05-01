@@ -63,6 +63,7 @@ enum EHCILL_MESSAGES {
 	EHCILL_GO_TO_SLEEP_ACK = 0x031,
 	EHCILL_WAKE_UP_IND     = 0x032,
 	EHCILL_WAKE_UP_ACK     = 0x033,
+	EHCILL_WAKEUP_SIGNAL   = 0x034,
 };
 
 static int  hci_transport_h4_ehcill_outgoing_packet_ready(void);
@@ -276,6 +277,7 @@ static void hci_transport_h4_block_sent(void){
 
 #ifdef ENABLE_EHCILL        
         case TX_W4_EHCILL_SENT: 
+        case TX_W4_WAKEUP:
             hci_transport_h4_ehcill_handle_ehcill_command_sent();
             break;
 #endif
@@ -314,6 +316,7 @@ static int hci_transport_h4_send_packet(uint8_t packet_type, uint8_t * packet, i
             hci_transport_h4_ehcill_trigger_wakeup();
             return 0;
         case EHCILL_STATE_W2_SEND_SLEEP_ACK:
+            log_info("eHILL: send next packet, state EHCILL_STATE_W2_SEND_SLEEP_ACK");
             return 0;
         default:
             break;    
@@ -395,6 +398,13 @@ static void hci_transport_h4_ehcill_emit_sleep_state(int sleep_active){
     packet_handler(HCI_EVENT_PACKET, &event[0], sizeof(event));        
 }
 
+static void hci_transport_h4_ehcill_wakeup_handler(void){
+#ifdef ENABLE_LOG_EHCILL
+    log_info("eHCILL: UART wakeup received");
+#endif
+    hci_transport_h4_ehcill_handle_command(EHCILL_WAKEUP_SIGNAL);
+}
+
 static void hci_transport_h4_ehcill_open(void){
     hci_transport_h4_ehcill_reset_statemachine();
 
@@ -412,6 +422,9 @@ static void hci_transport_h4_ehcill_open(void){
         btstack_uart_sleep_mode = BTSTACK_UART_SLEEP_RTS_LOW_WAKE_ON_RX_EDGE;
     } else {
         log_info("eHCILL: UART driver does not provide compatible sleep mode");
+    }
+    if (btstack_uart->set_wakeup_handler){
+        btstack_uart->set_wakeup_handler(&hci_transport_h4_ehcill_wakeup_handler);
     }
 }
 
@@ -446,6 +459,7 @@ static void hci_transport_h4_ehcill_send_ehcill_command(void){
 }
 
 static void hci_transport_h4_ehcill_sleep_ack_timer_handler(btstack_timer_source_t * timer){
+	UNUSED(timer);
 #ifdef ENABLE_LOG_EHCILL
     log_info("eHCILL: timer triggered");
 #endif
@@ -519,12 +533,39 @@ static void hci_transport_h4_ehcill_handle_command(uint8_t action){
             }
             break;
             
-        case EHCILL_STATE_SLEEP:
         case EHCILL_STATE_W2_SEND_SLEEP_ACK:
             switch(action){
                 case EHCILL_WAKE_UP_IND:
                     ehcill_state = EHCILL_STATE_AWAKE;
                     hci_transport_h4_ehcill_emit_sleep_state(0);
+                    if (btstack_uart_sleep_mode){
+                        btstack_uart->set_sleep(BTSTACK_UART_SLEEP_OFF);
+                    }
+#ifdef ENABLE_LOG_EHCILL
+                    log_info("eHCILL: Received WAKE_UP_IND RX");
+#endif
+                    hci_transport_h4_ehcill_schedule_ehcill_command(EHCILL_WAKE_UP_ACK);
+                    break;
+                    
+                default:
+                    break;
+            }
+            break;
+
+        case EHCILL_STATE_SLEEP:
+            switch(action){
+                case EHCILL_WAKEUP_SIGNAL:
+                    hci_transport_h4_ehcill_emit_sleep_state(0);
+                    if (btstack_uart_sleep_mode){
+                        btstack_uart->set_sleep(BTSTACK_UART_SLEEP_OFF);
+                    }
+                    break;
+                case EHCILL_WAKE_UP_IND:
+                    ehcill_state = EHCILL_STATE_AWAKE;
+                    hci_transport_h4_ehcill_emit_sleep_state(0);
+                    if (btstack_uart_sleep_mode){
+                        btstack_uart->set_sleep(BTSTACK_UART_SLEEP_OFF);
+                    }
 #ifdef ENABLE_LOG_EHCILL
                     log_info("eHCILL: Received WAKE_UP_IND RX");
 #endif
@@ -593,7 +634,7 @@ static void hci_transport_h4_ehcill_handle_ehcill_command_sent(void){
     // already packet ready? then start wakeup
     if (hci_transport_h4_ehcill_outgoing_packet_ready()){
         hci_transport_h4_ehcill_emit_sleep_state(0);
-        if (btstack_uart_sleep_mode){
+        if (btstack_uart_sleep_mode != BTSTACK_UART_SLEEP_OFF){
             btstack_uart->set_sleep(BTSTACK_UART_SLEEP_OFF);
         }
         if (command != EHCILL_WAKE_UP_IND){
