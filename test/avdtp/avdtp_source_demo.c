@@ -180,11 +180,9 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             int i;
                             int storage_offset = 0;
                             for (i = 0; i < num_frames; i++){
-                                uint8_t  sbc_frame_size = 0;
                                 uint32_t number_of_bytes_read = 0;
-                                btstack_ring_buffer_read(&media_tracker.sbc_ring_buffer, &sbc_frame_size, 1, &number_of_bytes_read);
                                 btstack_ring_buffer_read(&media_tracker.sbc_ring_buffer, media_tracker.sbc_storage + storage_offset, num_bytes_in_frame, &number_of_bytes_read);
-                                storage_offset += sbc_frame_size;
+                                storage_offset += num_bytes_in_frame;
                             }
                             
                             a2dp_source_stream_send_media_payload(media_tracker.local_seid, media_tracker.sbc_storage, num_bytes_to_copy, num_frames, 0);
@@ -284,9 +282,6 @@ static int fill_sbc_ring_buffer(a2dp_media_sending_context_t * context){
         uint8_t * sbc_frame = btstack_sbc_encoder_sbc_buffer();
         
         total_num_bytes_read += num_audio_samples_per_sbc_buffer;
-        
-        uint8_t size_buffer = sbc_frame_size;
-        btstack_ring_buffer_write(&context->sbc_ring_buffer, &size_buffer, 1);
         btstack_ring_buffer_write(&context->sbc_ring_buffer, sbc_frame, sbc_frame_size);
 
         context->samples_ready -= num_audio_samples_per_sbc_buffer;
