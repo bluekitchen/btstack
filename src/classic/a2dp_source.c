@@ -558,10 +558,8 @@ uint8_t a2dp_num_frames(uint8_t int_seid, int header_size, int num_bytes_in_fram
     return (uint8_t)calc_num_frames;
 }
 
-static uint8_t sbc_storage[1030];
-
 static void a2dp_source_copy_media_payload(uint8_t * media_packet, int size, int * offset, uint8_t * storage, int num_bytes_to_copy, uint8_t num_frames){
-    if (size < 18){
+    if (size < num_bytes_to_copy + 1){
         printf("small outgoing buffer\n");
         return;
     }
@@ -573,7 +571,7 @@ static void a2dp_source_copy_media_payload(uint8_t * media_packet, int size, int
     *offset = pos;
 }
 
-int a2dp_source_stream_send_media_payload(uint8_t int_seid, btstack_ring_buffer_t * sbc_ring_buffer, uint16_t sbc_frame_bytes, uint8_t num_frames, uint8_t marker){
+int a2dp_source_stream_send_media_payload(uint8_t int_seid, uint8_t * storage, int num_bytes_to_copy, uint8_t num_frames, uint8_t marker){
     avdtp_stream_endpoint_t * stream_endpoint = avdtp_stream_endpoint_for_seid(int_seid, &a2dp_source_context);
     if (!stream_endpoint) {
         printf("no stream_endpoint found for seid %d", int_seid);
@@ -592,22 +590,7 @@ int a2dp_source_stream_send_media_payload(uint8_t int_seid, btstack_ring_buffer_
     uint8_t * media_packet = l2cap_get_outgoing_buffer();
     //int size = l2cap_get_remote_mtu_for_local_cid(stream_endpoint->l2cap_media_cid);
     a2dp_source_setup_media_header(media_packet, size, &offset, marker, stream_endpoint->sequence_number);
-
-
-    // payload
-    int i;
-    int storage_offset = 0;
-    for (i = 0; i < num_frames; i++){
-        uint8_t  sbc_frame_size = 0;
-        uint32_t number_of_bytes_read = 0;
-        btstack_ring_buffer_read(sbc_ring_buffer, &sbc_frame_size, 1, &number_of_bytes_read);
-        btstack_ring_buffer_read(sbc_ring_buffer, sbc_storage + storage_offset, sbc_frame_bytes, &number_of_bytes_read);
-        storage_offset += sbc_frame_size;
-    }
-    
-    int num_bytes_to_copy = num_frames*sbc_frame_bytes;
-    
-    a2dp_source_copy_media_payload(media_packet, size, &offset, &sbc_storage[0], num_bytes_to_copy, num_frames);
+    a2dp_source_copy_media_payload(media_packet, size, &offset, storage, num_bytes_to_copy, num_frames);
     stream_endpoint->sequence_number++;
     l2cap_send_prepared(stream_endpoint->l2cap_media_cid, offset);
     return size;

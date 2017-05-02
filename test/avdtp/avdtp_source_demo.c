@@ -174,8 +174,20 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             int num_bytes_in_frame =  btstack_sbc_encoder_sbc_buffer_length();
                             int bytes_in_storage = btstack_ring_buffer_bytes_available(&media_tracker.sbc_ring_buffer);
                             uint8_t num_frames = a2dp_num_frames(media_tracker.local_seid, 13, num_bytes_in_frame, bytes_in_storage);
+                            int num_bytes_to_copy = num_frames * num_bytes_in_frame;
                             
-                            a2dp_source_stream_send_media_payload(media_tracker.local_seid, &media_tracker.sbc_ring_buffer, num_bytes_in_frame, num_frames, 0);
+                            // payload
+                            int i;
+                            int storage_offset = 0;
+                            for (i = 0; i < num_frames; i++){
+                                uint8_t  sbc_frame_size = 0;
+                                uint32_t number_of_bytes_read = 0;
+                                btstack_ring_buffer_read(&media_tracker.sbc_ring_buffer, &sbc_frame_size, 1, &number_of_bytes_read);
+                                btstack_ring_buffer_read(&media_tracker.sbc_ring_buffer, media_tracker.sbc_storage + storage_offset, num_bytes_in_frame, &number_of_bytes_read);
+                                storage_offset += sbc_frame_size;
+                            }
+                            
+                            a2dp_source_stream_send_media_payload(media_tracker.local_seid, media_tracker.sbc_storage, num_bytes_to_copy, num_frames, 0);
 
                             if (btstack_ring_buffer_bytes_available(&media_tracker.sbc_ring_buffer)){
                                 a2dp_source_stream_endpoint_request_can_send_now(media_tracker.local_seid);
