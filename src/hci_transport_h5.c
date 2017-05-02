@@ -42,8 +42,10 @@
  *
  *  HCI Transport API implementation for basic H5 protocol
  *
- *  Created by Matthias Ringwald on 4/29/09.
+ *  Created by Matthias Ringw ald on 4/29/09.
  */
+
+#include <inttypes.h>
 
 #include "hci.h"
 #include "btstack_slip.h"
@@ -715,7 +717,7 @@ static uint16_t hci_transport_link_calc_resend_timeout(uint32_t baudrate){
     // allow for BTstack logging and other delays
     t_max_x3_ms += 50;
 
-    log_info("resend timeout for %u baud: %u ms", baudrate, t_max_x3_ms);
+    log_info("resend timeout for %"PRIu32" baud: %u ms", baudrate, (int) t_max_x3_ms);
     return t_max_x3_ms;
 }
 
@@ -873,7 +875,7 @@ static int hci_transport_h5_send_packet(uint8_t packet_type, uint8_t *packet, in
 
 static int hci_transport_h5_set_baudrate(uint32_t baudrate){
 
-    log_info("set_baudrate %u", baudrate);
+    log_info("set_baudrate %"PRIu32, baudrate);
     int res = btstack_uart->set_baudrate(baudrate);
 
     if (res) return res;
