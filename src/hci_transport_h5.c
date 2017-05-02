@@ -711,6 +711,10 @@ static void hci_transport_h5_process_frame(uint16_t frame_size){
 static uint16_t hci_transport_link_calc_resend_timeout(uint32_t baudrate){
     uint32_t max_packet_size_in_bit = (HCI_PACKET_BUFFER_SIZE + 6) << 3;
     uint32_t t_max_x3_ms = max_packet_size_in_bit * 3000 / baudrate;
+
+    // allow for BTstack logging and other delays
+    t_max_x3_ms += 50;
+
     log_info("resend timeout for %u baud: %u ms", baudrate, t_max_x3_ms);
     return t_max_x3_ms;
 }

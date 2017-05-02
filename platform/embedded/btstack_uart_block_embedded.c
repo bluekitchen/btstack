@@ -57,10 +57,12 @@ static btstack_data_source_t transport_data_source;
 
 static int send_complete;
 static int receive_complete;
+static int wakeup_event;
 
 // callbacks
 static void (*block_sent)(void);
 static void (*block_received)(void);
+static void (*wakeup_handler)(void);
 
 
 static void btstack_uart_block_received(void){
@@ -70,6 +72,11 @@ static void btstack_uart_block_received(void){
 
 static void btstack_uart_block_sent(void){
     send_complete = 1;
+    btstack_run_loop_embedded_trigger();
+}
+
+static void btstack_uart_cts_pulse(void){
+    wakeup_event = 1;
     btstack_run_loop_embedded_trigger();
 }
 
@@ -90,6 +97,10 @@ static void btstack_uart_embedded_process(btstack_data_source_t *ds, btstack_dat
             if (receive_complete){
                 receive_complete = 0;
                 block_received();
+            }
+            if (wakeup_event){
+                wakeup_event = 0;
+                wakeup_handler();
             }
             break;
         default:
@@ -127,6 +138,10 @@ static void btstack_uart_embedded_set_block_sent( void (*block_handler)(void)){
     block_sent = block_handler;
 }
 
+static void btstack_uart_embedded_set_wakeup_handler( void (*the_wakeup_handler)(void)){
+    wakeup_handler = the_wakeup_handler;
+}
+
 static int btstack_uart_embedded_set_parity(int parity){
     return 0;
 }
@@ -139,11 +154,29 @@ static void btstack_uart_embedded_receive_block(uint8_t *buffer, uint16_t len){
     hal_uart_dma_receive_block(buffer, len);
 }
 
-// static void btstack_uart_embedded_set_sleep(uint8_t sleep){
-// }
+static int btstack_uart_embedded_get_supported_sleep_modes(void){
+#ifdef HAVE_HAL_UART_DMA_SLEEP_MODES
+	return hal_uart_dma_get_supported_sleep_modes();
+#else
+	return BTSTACK_UART_SLEEP_MASK_RTS_HIGH_WAKE_ON_CTS_PULSE;
+#endif
+}
 
-// static void btstack_uart_embedded_set_csr_irq_handler( void (*csr_irq_handler)(void)){
-// }
+static void btstack_uart_embedded_set_sleep(btstack_uart_sleep_mode_t sleep_mode){
+	log_info("set sleep %u", sleep_mode);
+	if (sleep_mode == BTSTACK_UART_SLEEP_RTS_HIGH_WAKE_ON_CTS_PULSE){
+		hal_uart_dma_set_csr_irq_handler(&btstack_uart_cts_pulse);
+	} else {
+		hal_uart_dma_set_csr_irq_handler(NULL);
+	}
+
+#ifdef HAVE_HAL_UART_DMA_SLEEP_MODES
+	hal_uart_dma_set_sleep_mode(sleep_mode);
+#else
+	hal_uart_dma_set_sleep(sleep_mode != BTSTACK_UART_SLEEP_OFF);
+#endif
+	log_info("done");
+}
 
 static const btstack_uart_block_t btstack_uart_embedded = {
     /* int  (*init)(hci_transport_config_uart_t * config); */         &btstack_uart_embedded_init,
@@ -155,8 +188,9 @@ static const btstack_uart_block_t btstack_uart_embedded = {
     /* int  (*set_parity)(int parity); */                             &btstack_uart_embedded_set_parity,
     /* void (*receive_block)(uint8_t *buffer, uint16_t len); */       &btstack_uart_embedded_receive_block,
     /* void (*send_block)(const uint8_t *buffer, uint16_t length); */ &btstack_uart_embedded_send_block,    
-    /* int (*get_supported_sleep_modes); */                           NULL,
-    /* void (*set_sleep)(btstack_uart_sleep_mode_t sleep_mode); */    NULL
+	/* int (*get_supported_sleep_modes); */                           &btstack_uart_embedded_get_supported_sleep_modes,
+    /* void (*set_sleep)(btstack_uart_sleep_mode_t sleep_mode); */    &btstack_uart_embedded_set_sleep,
+    /* void (*set_wakeup_handler)(void (*handler)(void)); */          &btstack_uart_embedded_set_wakeup_handler,
 };
 
 const btstack_uart_block_t * btstack_uart_block_embedded_instance(void){

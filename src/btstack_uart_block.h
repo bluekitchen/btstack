@@ -132,6 +132,12 @@ typedef struct {
      */
     void (*set_sleep)(btstack_uart_sleep_mode_t sleep_mode);
 
+    /** 
+     * set wakeup handler - needed to notify hci transport of wakeup requests by Bluetooth controller
+     * Called upon CTS pulse or RX data. See sleep modes.
+     */
+    void (*set_wakeup_handler)(void (*wakeup_handler)(void));
+
 } btstack_uart_block_t;
 
 // common implementations

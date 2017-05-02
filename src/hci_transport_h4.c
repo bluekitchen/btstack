@@ -45,11 +45,14 @@
  *  Created by Matthias Ringwald on 4/29/09.
  */
 
+#include <inttypes.h>
+
 #include "btstack_config.h"
 
 #include "btstack_debug.h"
 #include "hci.h"
 #include "hci_transport.h"
+#include "bluetooth_company_id.h"
 #include "btstack_uart_block.h"
 
 #define ENABLE_LOG_EHCILL
@@ -57,10 +60,13 @@
 #ifdef ENABLE_EHCILL
 
 // eHCILL commands
-static const uint8_t EHCILL_GO_TO_SLEEP_IND = 0x030;
-static const uint8_t EHCILL_GO_TO_SLEEP_ACK = 0x031;
-static const uint8_t EHCILL_WAKE_UP_IND     = 0x032;
-static const uint8_t EHCILL_WAKE_UP_ACK     = 0x033;
+enum EHCILL_MESSAGES {
+	EHCILL_GO_TO_SLEEP_IND = 0x030,
+	EHCILL_GO_TO_SLEEP_ACK = 0x031,
+	EHCILL_WAKE_UP_IND     = 0x032,
+	EHCILL_WAKE_UP_ACK     = 0x033,
+	EHCILL_WAKEUP_SIGNAL   = 0x034,
+};
 
 static int  hci_transport_h4_ehcill_outgoing_packet_ready(void);
 static void hci_transport_h4_echill_send_wakeup_ind(void);
@@ -139,8 +145,19 @@ static int read_pos;
 static uint8_t hci_packet_with_pre_buffer[HCI_INCOMING_PRE_BUFFER_SIZE + 1 + HCI_PACKET_BUFFER_SIZE]; // packet type + max(acl header + acl payload, event header + event data)
 static uint8_t * hci_packet = &hci_packet_with_pre_buffer[HCI_INCOMING_PRE_BUFFER_SIZE];
 
+#ifdef ENABLE_CC256X_BAUDRATE_CHANGE_FLOWCONTROL_BUG_WORKAROUND
+static const uint8_t local_version_event_prefix[] = { 0x04, 0x0e, 0x0c, 0x01, 0x01, 0x10};
+static const uint8_t baud_rate_command_prefix[]   = { 0x01, 0x36, 0xff, 0x04};
+static enum {
+    CC256X_WORKAROUND_IDLE,
+    CC256X_WORKAROUND_CHIPSET_DETECTED,
+    CC256X_WORKAROUND_BAUDRATE_COMMAND_SENT,
+    CC256X_WORKAROUND_DONE
+} cc256x_workaround_state;
+#endif
+
 static int hci_transport_h4_set_baudrate(uint32_t baudrate){
-    log_info("hci_transport_h4_set_baudrate %u", baudrate);
+    log_info("hci_transport_h4_set_baudrate %"PRIu32, baudrate);
     return btstack_uart->set_baudrate(baudrate);
 }
 
@@ -212,12 +229,36 @@ static void hci_transport_h4_block_read(void){
             break;
 
         case H4_W4_PAYLOAD:
+#ifdef ENABLE_CC256X_BAUDRATE_CHANGE_FLOWCONTROL_BUG_WORKAROUND
+            if (cc256x_workaround_state == CC256X_WORKAROUND_IDLE
+            && memcmp(hci_packet, local_version_event_prefix, sizeof(local_version_event_prefix)) == 0){
+                if (little_endian_read_16(hci_packet, 11) == BLUETOOTH_COMPANY_ID_TEXAS_INSTRUMENTS_INC){
+                    // detect TI CC256x controller based on manufacturer
+                    log_info("Detected CC256x controller");
+                    cc256x_workaround_state = CC256X_WORKAROUND_CHIPSET_DETECTED;
+                } else {
+                    // work around not needed
+                    log_info("Bluetooth controller not by TI");
+                    cc256x_workaround_state = CC256X_WORKAROUND_DONE;
+                }
+            }
+#endif
             packet_handler(hci_packet[0], &hci_packet[1], read_pos-1);
             hci_transport_h4_reset_statemachine();
             break;
         default:
             break;
     }
+
+#ifdef ENABLE_CC256X_BAUDRATE_CHANGE_FLOWCONTROL_BUG_WORKAROUND
+    if (cc256x_workaround_state == CC256X_WORKAROUND_BAUDRATE_COMMAND_SENT){
+        cc256x_workaround_state = CC256X_WORKAROUND_IDLE;
+        // avoid flowcontrol problem by reading expected hci command complete event of 7 bytes in a single block read
+        h4_state = H4_W4_PAYLOAD;
+        bytes_to_read = 7;
+    }
+#endif
+
     hci_transport_h4_trigger_next_read();
 }
 
@@ -238,6 +279,7 @@ static void hci_transport_h4_block_sent(void){
 
 #ifdef ENABLE_EHCILL        
         case TX_W4_EHCILL_SENT: 
+        case TX_W4_WAKEUP:
             hci_transport_h4_ehcill_handle_ehcill_command_sent();
             break;
 #endif
@@ -252,10 +294,19 @@ static int hci_transport_h4_can_send_now(uint8_t packet_type){
 }
 
 static int hci_transport_h4_send_packet(uint8_t packet_type, uint8_t * packet, int size){
+
     // store packet type before actual data and increase size
     size++;
     packet--;
     *packet = packet_type;
+
+#ifdef ENABLE_CC256X_BAUDRATE_CHANGE_FLOWCONTROL_BUG_WORKAROUND
+    if ((cc256x_workaround_state == CC256X_WORKAROUND_CHIPSET_DETECTED)
+    && (memcmp(packet, baud_rate_command_prefix, sizeof(baud_rate_command_prefix)) == 0)) {
+        log_info("CC256x baud rate command detected, expect command complete event next");
+        cc256x_workaround_state = CC256X_WORKAROUND_BAUDRATE_COMMAND_SENT;
+    }
+#endif
 
     // store request
     tx_len   = size;
@@ -267,6 +318,7 @@ static int hci_transport_h4_send_packet(uint8_t packet_type, uint8_t * packet, i
             hci_transport_h4_ehcill_trigger_wakeup();
             return 0;
         case EHCILL_STATE_W2_SEND_SLEEP_ACK:
+            log_info("eHILL: send next packet, state EHCILL_STATE_W2_SEND_SLEEP_ACK");
             return 0;
         default:
             break;    
@@ -348,6 +400,13 @@ static void hci_transport_h4_ehcill_emit_sleep_state(int sleep_active){
     packet_handler(HCI_EVENT_PACKET, &event[0], sizeof(event));        
 }
 
+static void hci_transport_h4_ehcill_wakeup_handler(void){
+#ifdef ENABLE_LOG_EHCILL
+    log_info("eHCILL: UART wakeup received");
+#endif
+    hci_transport_h4_ehcill_handle_command(EHCILL_WAKEUP_SIGNAL);
+}
+
 static void hci_transport_h4_ehcill_open(void){
     hci_transport_h4_ehcill_reset_statemachine();
 
@@ -365,6 +424,9 @@ static void hci_transport_h4_ehcill_open(void){
         btstack_uart_sleep_mode = BTSTACK_UART_SLEEP_RTS_LOW_WAKE_ON_RX_EDGE;
     } else {
         log_info("eHCILL: UART driver does not provide compatible sleep mode");
+    }
+    if (btstack_uart->set_wakeup_handler){
+        btstack_uart->set_wakeup_handler(&hci_transport_h4_ehcill_wakeup_handler);
     }
 }
 
@@ -399,6 +461,7 @@ static void hci_transport_h4_ehcill_send_ehcill_command(void){
 }
 
 static void hci_transport_h4_ehcill_sleep_ack_timer_handler(btstack_timer_source_t * timer){
+	UNUSED(timer);
 #ifdef ENABLE_LOG_EHCILL
     log_info("eHCILL: timer triggered");
 #endif
@@ -472,12 +535,39 @@ static void hci_transport_h4_ehcill_handle_command(uint8_t action){
             }
             break;
             
-        case EHCILL_STATE_SLEEP:
         case EHCILL_STATE_W2_SEND_SLEEP_ACK:
             switch(action){
                 case EHCILL_WAKE_UP_IND:
                     ehcill_state = EHCILL_STATE_AWAKE;
                     hci_transport_h4_ehcill_emit_sleep_state(0);
+                    if (btstack_uart_sleep_mode){
+                        btstack_uart->set_sleep(BTSTACK_UART_SLEEP_OFF);
+                    }
+#ifdef ENABLE_LOG_EHCILL
+                    log_info("eHCILL: Received WAKE_UP_IND RX");
+#endif
+                    hci_transport_h4_ehcill_schedule_ehcill_command(EHCILL_WAKE_UP_ACK);
+                    break;
+                    
+                default:
+                    break;
+            }
+            break;
+
+        case EHCILL_STATE_SLEEP:
+            switch(action){
+                case EHCILL_WAKEUP_SIGNAL:
+                    hci_transport_h4_ehcill_emit_sleep_state(0);
+                    if (btstack_uart_sleep_mode){
+                        btstack_uart->set_sleep(BTSTACK_UART_SLEEP_OFF);
+                    }
+                    break;
+                case EHCILL_WAKE_UP_IND:
+                    ehcill_state = EHCILL_STATE_AWAKE;
+                    hci_transport_h4_ehcill_emit_sleep_state(0);
+                    if (btstack_uart_sleep_mode){
+                        btstack_uart->set_sleep(BTSTACK_UART_SLEEP_OFF);
+                    }
 #ifdef ENABLE_LOG_EHCILL
                     log_info("eHCILL: Received WAKE_UP_IND RX");
 #endif
@@ -546,7 +636,7 @@ static void hci_transport_h4_ehcill_handle_ehcill_command_sent(void){
     // already packet ready? then start wakeup
     if (hci_transport_h4_ehcill_outgoing_packet_ready()){
         hci_transport_h4_ehcill_emit_sleep_state(0);
-        if (btstack_uart_sleep_mode){
+        if (btstack_uart_sleep_mode != BTSTACK_UART_SLEEP_OFF){
             btstack_uart->set_sleep(BTSTACK_UART_SLEEP_OFF);
         }
         if (command != EHCILL_WAKE_UP_IND){

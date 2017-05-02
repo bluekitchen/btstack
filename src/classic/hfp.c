@@ -1253,7 +1253,7 @@ static void parse_sequence(hfp_connection_t * hfp_connection){
             break;
         case HFP_CMD_SUPPORTED_FEATURES:
             hfp_connection->remote_supported_features = btstack_atoi((char*)hfp_connection->line_buffer);
-            log_info("Parsed supported feature %d\n", hfp_connection->remote_supported_features);
+            log_info("Parsed supported feature %d\n", (int) hfp_connection->remote_supported_features);
             break;
         case HFP_CMD_AVAILABLE_CODECS:
             log_info("Parsed codec %s\n", hfp_connection->line_buffer);

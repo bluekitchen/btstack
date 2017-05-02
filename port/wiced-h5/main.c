@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 BlueKitchen GmbH
+ * Copyright (C) 2015 BlueKitchen GmbH
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -37,111 +37,88 @@
 
 #define __BTSTACK_FILE__ "main.c"
 
-// *****************************************************************************
-//
-// minimal setup for HCI code
-//
-// *****************************************************************************
-
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <signal.h>
-
-#include "btstack_config.h"
-
-#include "btstack_debug.h"
-#include "btstack_event.h"
-#include "btstack_link_key_db_fs.h"
-#include "btstack_memory.h"
-#include "btstack_run_loop.h"
-#include "btstack_run_loop_posix.h"
-#include "bluetooth_company_id.h"
-#include "hci.h"
-#include "hci_dump.h"
-#include "stdin_support.h"
-
+#include "btstack.h"
 #include "btstack_chipset_bcm.h"
 #include "btstack_chipset_bcm_download_firmware.h"
+#include "btstack_run_loop_wiced.h"
+#include "btstack_link_key_db_wiced_dct.h"
 
-int btstack_main(int argc, const char * argv[]);
+#include "generated_mac_address.txt"
 
+#include "platform_bluetooth.h"
+#include "wiced.h"
+#include "platform/wwd_platform_interface.h"
 
-static hci_transport_config_uart_t transport_config = {
-    HCI_TRANSPORT_CONFIG_UART,
-    115200,
-    921600,  // main baudrate
-    0,       // flow control
-    NULL,
-};
-static btstack_uart_config_t uart_config;
+extern int btstack_main(int argc, char ** argv);
+extern const btstack_uart_block_t * btstack_uart_block_wiced_instance(void);
 
-static int main_argc;
-static const char ** main_argv;
+static void phase2(int status);
+
+// see generated_mac_address.txt - "macaddr=02:0A:F7:3d:76:be"
+static const char * wifi_mac_address = NVRAM_GENERATED_MAC_ADDRESS;
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
-static void sigint_handler(int param){
-    UNUSED(param);
+static btstack_uart_config_t uart_config;
 
-    printf("CTRL-C - SIGINT received, shutting down..\n");   
-    log_info("sigint_handler: shutting down");
+static const hci_transport_config_uart_t transport_config = {
+    HCI_TRANSPORT_CONFIG_UART,
+    115200,
+    200000,    // 300000+ didn't work reliably, the 48 MHz UART config might be needed for this
+    0,
+    NULL,
+};
 
-    // reset anyway
-    btstack_stdin_reset();
-
-    // power down
-    hci_power_control(HCI_POWER_OFF);
-    hci_close();
-    log_info("Good bye, see you.\n");    
-    exit(0);
-}
-
-static int led_state = 0;
-void hal_led_toggle(void){
-    led_state = 1 - led_state;
-    printf("LED State %u\n", led_state);
-}
 
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    bd_addr_t addr;
     if (packet_type != HCI_EVENT_PACKET) return;
-    switch (hci_event_packet_get_type(packet)){
-        case BTSTACK_EVENT_STATE:
-            if (btstack_event_state_get_state(packet) != HCI_STATE_WORKING) break;
-            gap_local_bd_addr(addr);
-            printf("BTstack up and running at %s\n",  bd_addr_to_str(addr));
-            break;
-        default:
-            break;
-    }
+    if (hci_event_packet_get_type(packet) != BTSTACK_EVENT_STATE) return;
+    if (btstack_event_state_get_state(packet) != HCI_STATE_WORKING) return;
+    printf("BTstack up and running.\n");
 }
 
-static void phase2(int status);
-int main(int argc, const char * argv[]){
+void application_start(void){
 
-    /// GET STARTED with BTstack ///
+    /* Initialise the WICED device without WLAN */
+    wiced_core_init();
+    
+    /* 32 kHz clock also needed for Bluetooth */
+    host_platform_init_wlan_powersave_clock();
+
+    printf("BTstack on WICED\n");
+
+#if 0
+    // init GPIOs D0-D5 for debugging - not used
+    wiced_gpio_init(D0, OUTPUT_PUSH_PULL);
+    wiced_gpio_init(D1, OUTPUT_PUSH_PULL);
+    wiced_gpio_init(D2, OUTPUT_PUSH_PULL);
+    wiced_gpio_init(D3, OUTPUT_PUSH_PULL);
+    wiced_gpio_init(D4, OUTPUT_PUSH_PULL);
+    wiced_gpio_init(D5, OUTPUT_PUSH_PULL);
+
+    wiced_gpio_output_low(D0);
+    wiced_gpio_output_low(D1);
+    wiced_gpio_output_low(D2);
+    wiced_gpio_output_low(D3);
+    wiced_gpio_output_low(D4);
+    wiced_gpio_output_low(D5);
+#endif
+
+    // start with BTstack init - especially configure HCI Transport
     btstack_memory_init();
 
-    // use logger: format HCI_DUMP_PACKETLOGGER, HCI_DUMP_BLUEZ or HCI_DUMP_STDOUT
-    hci_dump_open("/tmp/hci_dump.pklg", HCI_DUMP_PACKETLOGGER);
+    // enable full log output while porting
+    // hci_dump_open(NULL, HCI_DUMP_STDOUT);
 
     // setup run loop
-    btstack_run_loop_init(btstack_run_loop_posix_get_instance());
-        
-    // pick serial port and configure uart block driver
-    transport_config.device_name = "/dev/tty.usbserial-A9OVNX5P"; // RedBear IoT pHAT breakout board
+    btstack_run_loop_init(btstack_run_loop_wiced_get_instance());
 
     // get BCM chipset driver
-    btstack_chipset_t * chipset = btstack_chipset_bcm_instance();
+    const btstack_chipset_t *  chipset = btstack_chipset_bcm_instance();
     chipset->init(&transport_config);
 
-    // set chipset name
-    btstack_chipset_bcm_set_device_name("BCM43430A1");
-
-    // setup UART driver
-    const btstack_uart_block_t * uart_driver = btstack_uart_block_posix_instance();
+    // setup uart driver
+    const btstack_uart_block_t * uart_driver = btstack_uart_block_wiced_instance();
 
     // extract UART config from transport config
     uart_config.baudrate    = transport_config.baudrate_init;
@@ -149,24 +126,22 @@ int main(int argc, const char * argv[]){
     uart_config.device_name = transport_config.device_name;
     uart_driver->init(&uart_config);
 
-    // setup HCI (to be able to use bcm chipset driver)
     // init HCI
     const hci_transport_t * transport = hci_transport_h5_instance(uart_driver);
-    const btstack_link_key_db_t * link_key_db = btstack_link_key_db_fs_instance();
     hci_init(transport, (void*) &transport_config);
-    hci_set_link_key_db(link_key_db);
-    hci_set_chipset(btstack_chipset_bcm_instance());
+    hci_set_link_key_db(btstack_link_key_db_wiced_dct_instance());
+    hci_set_chipset(chipset);
 
     // inform about BTstack state
     hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
 
-    // handle CTRL-c
-    signal(SIGINT, sigint_handler);
-
-    main_argc = argc;
-    main_argv = argv;
-
+    // use WIFI Mac address + 1 for Bluetooth
+    bd_addr_t dummy = { 1,2,3,4,5,6};
+    sscanf_bd_addr(&wifi_mac_address[8], dummy);
+    dummy[5]++;
+    hci_set_bd_addr(dummy);
+    
     // phase #1 download firmware
     printf("Phase 1: Download firmware\n");
 
@@ -174,8 +149,7 @@ int main(int argc, const char * argv[]){
     btstack_chipset_bcm_download_firmware(uart_driver, transport_config.baudrate_main, &phase2);
 
     // go
-    btstack_run_loop_execute();    
-    return 0;
+    btstack_run_loop_execute();
 }
 
 static void phase2(int status){
@@ -188,6 +162,5 @@ static void phase2(int status){
     printf("Phase 2: Main app\n");
 
     // setup app
-    btstack_main(main_argc, main_argv);
+    btstack_main(0, NULL);
 }
-
