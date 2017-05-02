@@ -65,7 +65,7 @@
 #error HCI_OUTGOING_PRE_BUFFER_SIZE not defined. Please update hci.h
 #endif
 
-/* Default of 512 bytes should be fine. Only needed if WICED_BT_UART_MANUAL_CTS_RTS */
+// Default of 512 bytes should be fine. Only needed with BTSTACK_FLOW_CONTROL_UART
 #ifndef RX_RING_BUFFER_SIZE
 #define RX_RING_BUFFER_SIZE 512
 #endif
@@ -89,10 +89,8 @@ static wiced_worker_thread_t rx_worker_thread;
 static uint8_t *             rx_worker_read_buffer;
 static uint16_t              rx_worker_read_size;
 
-#ifdef WICED_BT_UART_MANUAL_CTS_RTS
-static volatile wiced_ring_buffer_t rx_ring_buffer;
-static volatile uint8_t             rx_data[RX_RING_BUFFER_SIZE];
-#endif
+static wiced_ring_buffer_t   rx_ring_buffer;
+static uint8_t               rx_data[RX_RING_BUFFER_SIZE];
 
 // uart config
 static const btstack_uart_config_t * uart_config;
@@ -119,14 +117,16 @@ static wiced_result_t btstack_uart_block_wiced_main_notify_block_read(void *arg)
 
 // executed on tx worker thread
 static wiced_result_t btstack_uart_block_wiced_tx_worker_send_block(void * arg){
-    if (btstack_flow_control_mode == BTSTACK_FLOW_CONTROL_MANUAL){
+    // wait for CTS to become low in manual flow control mode
+    if (btstack_flow_control_mode == BTSTACK_FLOW_CONTROL_MANUAL && wiced_bt_uart_pins[WICED_BT_PIN_UART_CTS]){
         while (platform_gpio_input_get(wiced_bt_uart_pins[WICED_BT_PIN_UART_CTS]) == WICED_TRUE){
-            wiced_rtos_delay_milliseconds(100);
+            wiced_rtos_delay_milliseconds(10);
         }        
     }
 
     // blocking send
     platform_uart_transmit_bytes(wiced_bt_uart_driver, tx_worker_data_buffer, tx_worker_data_size);
+
     // let transport know
     btstack_run_loop_wiced_execute_code_on_main_thread(&btstack_uart_block_wiced_main_notify_block_send, NULL);
     return WICED_SUCCESS;
@@ -135,7 +135,7 @@ static wiced_result_t btstack_uart_block_wiced_tx_worker_send_block(void * arg){
 // executed on rx worker thread
 static wiced_result_t btstack_uart_block_wiced_rx_worker_receive_block(void * arg){
 
-    if (btstack_flow_control_mode == BTSTACK_FLOW_CONTROL_MANUAL){
+    if (btstack_flow_control_mode == BTSTACK_FLOW_CONTROL_MANUAL && wiced_bt_uart_pins[WICED_BT_PIN_UART_CTS]){
         platform_gpio_output_low(wiced_bt_uart_pins[WICED_BT_PIN_UART_RTS]);
     }
 
@@ -149,7 +149,7 @@ static wiced_result_t btstack_uart_block_wiced_rx_worker_receive_block(void * ar
     // assumption: bytes = bytes_to_read as timeout is never    
 #endif
 
-    if (btstack_flow_control_mode == BTSTACK_FLOW_CONTROL_MANUAL){
+    if (btstack_flow_control_mode == BTSTACK_FLOW_CONTROL_MANUAL && wiced_bt_uart_pins[WICED_BT_PIN_UART_CTS]){
         platform_gpio_output_high(wiced_bt_uart_pins[WICED_BT_PIN_UART_RTS]);
     }
 
@@ -205,20 +205,47 @@ static int btstack_uart_block_wiced_open(void){
 
     wiced_rtos_delay_milliseconds( 100 );
 
-    // -- init UART
-#ifdef WICED_BT_UART_MANUAL_CTS_RTS
-    // configure RTS pin as output and set to high
-    platform_gpio_init(wiced_bt_uart_pins[WICED_BT_PIN_UART_RTS], OUTPUT_PUSH_PULL);
-    platform_gpio_output_high(wiced_bt_uart_pins[WICED_BT_PIN_UART_RTS]);
+    // Configure RTS
+    if (wiced_bt_uart_pins[WICED_BT_PIN_UART_RTS]){
+        switch (btstack_flow_control_mode){
+            case BTSTACK_FLOW_CONTROL_OFF:
+                // configure RTS pin as output and set to low - always on
+                platform_gpio_init(wiced_bt_uart_pins[WICED_BT_PIN_UART_RTS], OUTPUT_PUSH_PULL);
+                platform_gpio_output_low(wiced_bt_uart_pins[WICED_BT_PIN_UART_RTS]);
+                break;
+            case BTSTACK_FLOW_CONTROL_UART:
+                // configuration done by platform_uart_init
+                break;
+            case BTSTACK_FLOW_CONTROL_MANUAL:
+                // configure RTS pin as output and set to high - controlled by btstack_uart_block_wiced_rx_worker_receive_block
+                platform_gpio_init(wiced_bt_uart_pins[WICED_BT_PIN_UART_RTS], OUTPUT_PUSH_PULL);
+                platform_gpio_output_high(wiced_bt_uart_pins[WICED_BT_PIN_UART_RTS]);
+                break;
+        }
+    }
 
-    // configure CTS to input, pull-up
-    platform_gpio_init(wiced_bt_uart_pins[WICED_BT_PIN_UART_CTS], INPUT_PULL_UP);
+    // Configure CTS
+    if (wiced_bt_uart_pins[WICED_BT_PIN_UART_CTS]){
+        switch (btstack_flow_control_mode){
+            case BTSTACK_FLOW_CONTROL_OFF:
+                // don't care
+                break;
+            case BTSTACK_FLOW_CONTROL_UART:
+                // configuration done by platform_uart_init
+                break;
+            case BTSTACK_FLOW_CONTROL_MANUAL:
+                // configure CTS to input, pull-up
+                platform_gpio_init(wiced_bt_uart_pins[WICED_BT_PIN_UART_CTS], INPUT_PULL_UP);
+                break;
+        }
+    }
 
-    // use ring buffer to allow to receive RX_RING_BUFFER_SIZE/2 addition bytes before raising RTS
-    // casts avoid warnings because of volatile qualifier
-    ring_buffer_init((wiced_ring_buffer_t *) &rx_ring_buffer, (uint8_t*) rx_data, sizeof( rx_data ) );
-    ring_buffer = (wiced_ring_buffer_t *) &rx_ring_buffer;
-#endif
+    // use ring buffer to allow to receive RX_RING_BUFFER_SIZE/2 addition bytes - not needed with hardware UART
+    if (btstack_flow_control_mode != BTSTACK_FLOW_CONTROL_UART){
+        ring_buffer_init((wiced_ring_buffer_t *) &rx_ring_buffer, (uint8_t*) rx_data, sizeof( rx_data ) );
+        ring_buffer = (wiced_ring_buffer_t *) &rx_ring_buffer;
+    }
+
     platform_uart_init( wiced_bt_uart_driver, wiced_bt_uart_peripheral, &wiced_uart_config, ring_buffer );
 
 
