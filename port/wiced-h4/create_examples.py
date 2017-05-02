@@ -19,7 +19,7 @@ NAME := EXAMPLE
 GLOBAL_INCLUDES += .
 
 $(NAME)_SOURCES := ../../../libraries/btstack/example/EXAMPLE.c
-$(NAME)_COMPONENTS += btstack/port/wiced
+$(NAME)_COMPONENTS += btstack/port/wiced-h4
 $(NAME)_CFLAGS += ADDITIONAL_CFLAGS
 '''
 
