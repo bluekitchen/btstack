@@ -40,6 +40,7 @@ System properties:
 #define | Description
 -----------------------------------|-------------------------------------
 HAVE_MALLOC                        | Use dynamic memory
+HAVE_AES128                        | Use platform AES128 engine - not needed usually
 
 Embedded platform properties:
 

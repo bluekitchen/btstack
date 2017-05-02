@@ -251,6 +251,13 @@ static btstack_linked_list_t sm_address_resolution_general_queue;
 static sm_aes128_state_t  sm_aes128_state;
 static void *             sm_aes128_context;
 
+// use aes128 provided by MCU - not needed usually
+#ifdef HAVE_AES128
+static uint8_t                aes128_result_flipped[16];
+static btstack_timer_source_t aes128_timer;
+static void btstack_aes128_calc(uint8_t * key, uint8_t * plaintext, uint8_t * result);
+#endif
+
 // random engine. store context (ususally sm_connection_t)
 static void * sm_random_context;
 
@@ -398,6 +405,7 @@ static void sm_done_for_handle(hci_con_handle_t con_handle);
 static sm_connection_t * sm_get_connection_for_handle(hci_con_handle_t con_handle);
 static inline int sm_calc_actual_encryption_key_size(int other);
 static int sm_validate_stk_generation_method(void);
+static void sm_handle_encryption_result(uint8_t * data);
 
 static void log_info_hex16(const char * name, uint16_t value){
     log_info("%-6s 0x%04x", name, value);
@@ -512,15 +520,43 @@ static void sm_random_start(void * context){
     hci_send_cmd(&hci_le_rand);
 }
 
+#ifdef HAVE_AES128
+static void aes128_completed(btstack_timer_source_t * ts){
+    UNUSED(ts);
+    sm_handle_encryption_result(&aes128_result_flipped[0]);
+    sm_run();
+}
+#endif
+
 // pre: sm_aes128_state != SM_AES128_ACTIVE, hci_can_send_command == 1
 // context is made availabe to aes128 result handler by this
 static void sm_aes128_start(sm_key_t key, sm_key_t plaintext, void * context){
     sm_aes128_state = SM_AES128_ACTIVE;
+    sm_aes128_context = context;
+
+#ifdef HAVE_AES128
+    // calc result directly
+    sm_key_t result;
+    btstack_aes128_calc(key, plaintext, result);
+
+    // log
+    log_info_key("key", key);
+    log_info_key("txt", plaintext);
+    log_info_key("res", result);
+
+    // flip
+    reverse_128(&result[0], &aes128_result_flipped[0]);
+
+    // deliver via timer
+    btstack_run_loop_set_timer_handler(&aes128_timer, &aes128_completed);
+    btstack_run_loop_set_timer(&aes128_timer, 0);    // no delay
+    btstack_run_loop_add_timer(&aes128_timer);
+#else
     sm_key_t key_flipped, plaintext_flipped;
     reverse_128(key, key_flipped);
     reverse_128(plaintext, plaintext_flipped);
-    sm_aes128_context = context;
     hci_send_cmd(&hci_le_encrypt, key_flipped, plaintext_flipped);
+#endif
 }
 
 // ah(k,r) helper
