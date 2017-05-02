@@ -107,11 +107,14 @@ void a2dp_source_release_stream(uint8_t int_seid);
 void a2dp_source_disconnect(uint16_t avdtp_cid);
 
 
-uint8_t a2dp_source_stream_endpoint_ready(uint8_t local_seid);
-void 	a2dp_source_stream_endpoint_request_can_send_now(uint8_t local_seid);
-int  	a2dp_source_stream_send_media_payload(uint8_t int_seid, uint8_t * storage, int num_bytes_to_copy, uint8_t num_frames, uint8_t marker);
+// size for media (does not include media header)
 int 	a2dp_max_media_payload_size(uint8_t int_seid);
-uint8_t a2dp_num_frames(uint8_t int_seid, int header_size, int num_bytes_in_frame, int bytes_in_storage);
+
+uint8_t a2dp_source_stream_endpoint_ready(uint8_t local_seid);
+
+void 	a2dp_source_stream_endpoint_request_can_send_now(uint8_t local_seid);
+
+int  	a2dp_source_stream_send_media_payload(uint8_t int_seid, uint8_t * storage, int num_bytes_to_copy, uint8_t num_frames, uint8_t marker);
 
 /* API_END */
 
