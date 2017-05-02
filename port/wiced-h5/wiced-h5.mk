@@ -12,6 +12,7 @@ GLOBAL_INCLUDES += \
 	. \
 	../../src \
 	../../platform/embedded \
+	../../platform/wiced \
 	../../chipset/bcm \
 	../../../../
 
@@ -55,13 +56,13 @@ $(NAME)_SOURCES += \
 
 # WICED port incl. support for Broadcom chipset
 $(NAME)_SOURCES += \
-	main.c                                     \
-	btstack_link_key_db_wiced_dct.c  		   \
-	btstack_run_loop_wiced.c                   \
-	btstack_uart_block_wiced.c 		           \
-	btstack_aes128_wiced.c 					   \
-	../../chipset/bcm/btstack_chipset_bcm.c    \
-	../../chipset/bcm/btstack_chipset_bcm_download_firmware.c    \
+	main.c                                     			       \
+	btstack_aes128_wiced.c 					  			       \
+	../../platform/wiced/btstack_link_key_db_wiced_dct.c       \
+	../../platform/wiced/btstack_run_loop_wiced.c              \
+	../../platform/wiced/btstack_uart_block_wiced.c 		   \
+	../../chipset/bcm/btstack_chipset_bcm.c    				   \
+	../../chipset/bcm/btstack_chipset_bcm_download_firmware.c  \
 
 ifeq ($(BT_CHIP_XTAL_FREQUENCY),)
 $(NAME)_SOURCES += ../../../drivers/bluetooth/firmware/$(BT_CHIP)$(BT_CHIP_REVISION)/bt_firmware_image.c
