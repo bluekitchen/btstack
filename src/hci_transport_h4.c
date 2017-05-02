@@ -45,6 +45,8 @@
  *  Created by Matthias Ringwald on 4/29/09.
  */
 
+#include <inttypes.h>
+
 #include "btstack_config.h"
 
 #include "btstack_debug.h"
@@ -155,7 +157,7 @@ static enum {
 #endif
 
 static int hci_transport_h4_set_baudrate(uint32_t baudrate){
-    log_info("hci_transport_h4_set_baudrate %u", baudrate);
+    log_info("hci_transport_h4_set_baudrate %"PRIu32, baudrate);
     return btstack_uart->set_baudrate(baudrate);
 }
 

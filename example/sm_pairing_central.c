@@ -166,11 +166,11 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             sm_just_works_confirm(sm_event_just_works_request_get_handle(packet));
             break;
         case SM_EVENT_NUMERIC_COMPARISON_REQUEST:
-            printf("Confirming numeric comparison: %u\n", sm_event_numeric_comparison_request_get_passkey(packet));
+            printf("Confirming numeric comparison: %"PRIu32"\n", sm_event_numeric_comparison_request_get_passkey(packet));
             sm_numeric_comparison_confirm(sm_event_passkey_display_number_get_handle(packet));
             break;
         case SM_EVENT_PASSKEY_DISPLAY_NUMBER:
-            printf("Display Passkey: %u\n", sm_event_passkey_display_number_get_passkey(packet));
+            printf("Display Passkey: %"PRIu32"\n", sm_event_passkey_display_number_get_passkey(packet));
             break;
 
         case HCI_EVENT_LE_META:
