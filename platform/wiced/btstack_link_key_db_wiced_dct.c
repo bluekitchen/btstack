@@ -223,6 +223,10 @@ void btstack_link_key_db_wiced_dct_delete_all(void){
 	}
 }
 
+int btstack_link_key_db_wiced_dct_get_storage_size(void){
+	return NVM_NUM_LINK_KEYS * sizeof(link_key_nvm_t);
+}
+
 const btstack_link_key_db_t * btstack_link_key_db_wiced_dct_instance(void){
     return &btstack_link_key_db_wiced_dct;
 }
