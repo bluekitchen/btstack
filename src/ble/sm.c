@@ -255,7 +255,7 @@ static void *             sm_aes128_context;
 #ifdef HAVE_AES128
 static uint8_t                aes128_result_flipped[16];
 static btstack_timer_source_t aes128_timer;
-static void btstack_aes128_calc(uint8_t * key, uint8_t * plaintext, uint8_t * result);
+void btstack_aes128_calc(uint8_t * key, uint8_t * plaintext, uint8_t * result);
 #endif
 
 // random engine. store context (ususally sm_connection_t)

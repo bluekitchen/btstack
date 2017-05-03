@@ -61,6 +61,11 @@ const btstack_link_key_db_t * btstack_link_key_db_wiced_dct_instance(void);
  */
 void btstack_link_key_db_wiced_dct_delete_all(void);
 
+/*
+ * @brief Get Size of Link DB DCT part
+ */
+int btstack_link_key_db_wiced_dct_get_storage_size(void);
+
 /* API_END */
 
 #if defined __cplusplus

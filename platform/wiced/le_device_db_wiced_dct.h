@@ -36,30 +36,29 @@
  */
 
 /*
- *  btstack_link_key_db_wiced_dct.c
+ *  le_device_db_wiced_dct.c
  *
  *  Persistent Link Key implemenetation for WICED using DCT mechanism
  */
 
-#ifndef __BTSTACK_LINK_KEY_WICED_DCT_H
-#define __BTSTACK_LINK_KEY_WICED_DCT_H
-
-#include "btstack_config.h"
-#include "classic/btstack_link_key_db.h"
+#ifndef __LE_DEVICE_DB_WICED_DCT_H
+#define __LE_DEVICE_DB_WICED_DCT_H
 
 #if defined __cplusplus
 extern "C" {
 #endif
 
+/* API_START */
+
 /**
- * @brief Get btstack_link_key_db_t instance
+ * @brief Set start address for DCT storage
  */
-const btstack_link_key_db_t * btstack_link_key_db_wiced_dct_instance(void);
+void le_device_db_wiced_dct_set_start_address(uint32_t start_address);
 
 /*
- * @brief Delete all link keys
+ * @brief Delete all le device entries
  */
-void btstack_link_key_db_wiced_dct_delete_all(void);
+void le_device_db_wiced_dct_delete_all(void);
 
 /* API_END */
 
@@ -67,4 +66,4 @@ void btstack_link_key_db_wiced_dct_delete_all(void);
 }
 #endif
 
-#endif // __BTSTACK_LINK_KEY_DB_MEMORY_H
+#endif // __LE_DEVICE_DB_WICED_DCT_H
