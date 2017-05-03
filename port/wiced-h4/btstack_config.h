@@ -16,7 +16,7 @@
 #define ENABLE_LE_CENTRAL
 #define ENABLE_LE_SECURE_CONNECTIONS
 #define ENABLE_LOG_ERROR
-// #define ENABLE_LOG_INFO
+#define ENABLE_LOG_INFO
 
 // BTstack configuration. buffers, sizes, ...
 #define HCI_ACL_PAYLOAD_SIZE 100
@@ -37,7 +37,10 @@
 #define MAX_NR_SERVICE_RECORD_ITEMS 1
 #define MAX_NR_LE_DEVICE_DB_ENTRIES 1
 
-// Nun Link Keys stored in WICED DCT
+// WICED DCT used to store:
+// - Num Classic Link Keys
 #define NVM_NUM_LINK_KEYS 10
+// - Num LE Device entries
+#define NVM_NUM_LE_DEVICES 10
 
 #endif
