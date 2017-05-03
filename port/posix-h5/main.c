@@ -62,7 +62,6 @@
 #include "hci_dump.h"
 #include "stdin_support.h"
 
-#include "btstack_chipset_bcm.h"
 #include "btstack_chipset_csr.h"
 #include "btstack_chipset_cc256x.h"
 #include "btstack_chipset_em9301.h"
@@ -79,8 +78,6 @@ static hci_transport_config_uart_t config = {
     1,  // flow control
     NULL,
 };
-
-int is_bcm;
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 static void local_version_information_handler(uint8_t * packet);
@@ -135,8 +132,8 @@ static void local_version_information_handler(uint8_t * packet){
             hci_set_chipset(btstack_chipset_cc256x_instance());
             break;
         case BLUETOOTH_COMPANY_ID_BROADCOM_CORPORATION:   
-            printf("Broadcom chipset. Not supported yet\n");
-            // hci_set_chipset(btstack_chipset_bcm_instance());
+            printf("Broadcom chipset. Not supported by posix-h5 port, please use port/posix-h5-bcm\n");
+            exit(10);
             break;
         case BLUETOOTH_COMPANY_ID_ST_MICROELECTRONICS:   
             printf("ST Microelectronics - using STLC2500d driver.\n");
@@ -168,9 +165,6 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 // terminate, name 248 chars
                 packet[6+248] = 0;
                 printf("Local name: %s\n", &packet[6]);
-                if (is_bcm){
-                    btstack_chipset_bcm_set_device_name((const char *)&packet[6]);
-                }
             }        
             if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_read_local_version_information)){
                 local_version_information_handler(packet);
