@@ -59,6 +59,7 @@ $(NAME)_SOURCES += \
 	../../platform/wiced/btstack_link_key_db_wiced_dct.c \
 	../../platform/wiced/btstack_run_loop_wiced.c        \
 	../../platform/wiced/btstack_uart_block_wiced.c 	 \
+	../../platform/wiced/le_device_db_wiced_dct.c        \
 	../../chipset/bcm/btstack_chipset_bcm.c              \
 
 ifeq ($(BT_CHIP_XTAL_FREQUENCY),)

@@ -41,6 +41,7 @@
 #include "btstack_chipset_bcm.h"
 #include "btstack_run_loop_wiced.h"
 #include "btstack_link_key_db_wiced_dct.h"
+#include "le_device_db_wiced_dct.h"
 
 #include "generated_mac_address.txt"
 
@@ -106,6 +107,10 @@ void application_start(void){
     // enable full log output while porting
     // hci_dump_open(NULL, HCI_DUMP_STDOUT);
 
+    // setup le device db storage -- not needed if used LE-only (-> start address == 0)
+    le_device_db_wiced_dct_set_start_address(btstack_link_key_db_wiced_dct_get_storage_size());
+    le_device_db_dump();
+    
     // init HCI
     const btstack_uart_block_t * uart_driver = btstack_uart_block_wiced_instance();
     const hci_transport_t * transport = hci_transport_h4_instance(uart_driver);
