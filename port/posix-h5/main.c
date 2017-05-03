@@ -110,9 +110,9 @@ static void use_fast_uart(void){
 
 static void local_version_information_handler(uint8_t * packet){
     printf("Local version information:\n");
-    uint16_t hci_version    = little_endian_read_16(packet, 4);
-    uint16_t hci_revision   = little_endian_read_16(packet, 6);
-    uint16_t lmp_version    = little_endian_read_16(packet, 8);
+    uint16_t hci_version    = packet[6];
+    uint16_t hci_revision   = little_endian_read_16(packet, 7);
+    uint16_t lmp_version    = packet[9];
     uint16_t manufacturer   = little_endian_read_16(packet, 10);
     uint16_t lmp_subversion = little_endian_read_16(packet, 12);
     printf("- HCI Version  0x%04x\n", hci_version);
