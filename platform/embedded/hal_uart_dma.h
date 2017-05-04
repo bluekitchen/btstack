@@ -39,8 +39,11 @@
  *  hal_uart_dma.h
  *
  *  Hardware abstraction layer that provides
- *  - blockwise IRQ-driven read/write
- *  - CSR IRQs
+ *  - block wise IRQ-driven read/write
+ *  - baud control
+ *  - wake-up on CTS pulse (BTSTACK_UART_SLEEP_RTS_HIGH_WAKE_ON_CTS_PULSE)
+ *
+ * If HAVE_HAL_UART_DMA_SLEEP_MODES is defined, different sleeps modes can be provided and used
  *
  */
 
@@ -53,14 +56,71 @@
 extern "C" {
 #endif
 
+/**
+ * @brief Init and open device
+ */
 void hal_uart_dma_init(void);
-void hal_uart_dma_set_block_received( void (*block_handler)(void));
-void hal_uart_dma_set_block_sent( void (*block_handler)(void));
-void hal_uart_dma_set_csr_irq_handler( void (*csr_irq_handler)(void));
+
+/**
+ * @brief Set callback for block received - can be called from ISR context
+ * @param callback
+ */
+void hal_uart_dma_set_block_received( void (*callback)(void));
+
+/**
+ * @brief Set callback for block sent - can be called from ISR context
+ * @param callback
+ */
+void hal_uart_dma_set_block_sent( void (*callback)(void));
+
+/**
+ * @brief Set baud rate
+ * @note During baud change, TX line should stay high and no data should be received on RX accidentally
+ * @param block_received callback
+ */
 int  hal_uart_dma_set_baud(uint32_t baud);
+
+/**
+ * @brief Send block. When done, callback set by hal_uart_set_block_sent must be called
+ * @param buffer
+ * @param lengh
+ */
 void hal_uart_dma_send_block(const uint8_t *buffer, uint16_t length);
+
+/**
+ * @brief Receive block. When done, callback set by hal_uart_dma_set_block_received must be called
+ * @param buffer
+ * @param lengh
+ */
 void hal_uart_dma_receive_block(uint8_t *buffer, uint16_t len);
+
+/**
+ * @brief Set or clear callback for CSR pulse - can be called from ISR context
+ * @param csr_irq_handler or NULL to disable IRQ handler
+ */
+void hal_uart_dma_set_csr_irq_handler( void (*csr_irq_handler)(void));
+
+/**
+ * @brief Set sleep mode
+ * @param block_received callback
+ */
 void hal_uart_dma_set_sleep(uint8_t sleep);
+
+#ifdef HAVE_HAL_UART_DMA_SLEEP_MODES
+
+/**
+ * @brief Set callback for block received - can be called from ISR context
+ * @returns list of supported sleep modes
+ */
+int  hal_uart_dma_get_supported_sleep_modes(void);
+
+/**
+ * @brief Set sleep mode
+ * @param sleep_mode
+ */
+void hal_uart_dma_set_sleep_mode(btstack_uart_sleep_mode_t sleep_mode);
+
+#endif
 
 #if defined __cplusplus
 }
