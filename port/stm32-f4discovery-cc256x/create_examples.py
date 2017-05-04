@@ -126,3 +126,4 @@ for file in example_files:
     else:
         print("- %s" % example)
 
+print("Projects are ready for import into Eclipse CDT. See README for details.")

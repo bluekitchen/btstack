@@ -1,6 +1,6 @@
 # BTstack port for STM32 F4 Discovery Board with CC256x
 
-This port uses the STM32 F4 Discovery Board with TI's CC256XEM ST Adapter Kit that allows to plug in a CC256xB or CC256xC module.
+This port uses the STM32 F4 Discovery Board with TI's CC256XEM ST Adapter Kit that allows to plug in a CC256xB or CC256xC Bluetooth module.
 STCubeMX was used to provide the HAL and initialize the device. Finally, Eclipse CDT + GNU ARM Eclipse projects for all examples are provided.
 GNU ARM Eclipse OpenOCD was used to flash and debug the examples.
 
@@ -19,32 +19,33 @@ The module with the older CC2564B is around USD 20, while the one with the new C
 ## Software
 
 To compile and flash the examples, Eclipse CDT with GNU ARM Eclipse is used. Please follow the installation instructions here: http://gnuarmeclipse.github.io
-You also need to install the GNU ARM Eclipse OpenOCD debugger plug-in.
+You also need to install the GNU ARM Eclipse [OpenOCD debugger](http://gnuarmeclipse.github.io/openocd/install/) plug-in.
 
 ## Create Example Projects
-Since Eclipse requires a separate project per example, the example projects are created based on a template together with one of the original BTstack examples. To create all example projects, navigate to this directory (btstack/port/stm32-f4discovery-cc256x) and run:
+
+Eclipse requires a separate project per example. To create all example projects, navigate to this directory (btstack/port/stm32-f4discovery-cc256x) and run:
 
 	./create_examples.py
 
 This will create an example subfolder with one project per example. Note: it currently requires about 500 MB.
 
 ## Import Example Project
-In Eclipse CDT, select "File -> Import...", then choose General->Existing Project into Workspace and click Next>. In "Import Projects" dialog, select either the generated examples folder to import all projects or pick a single example.
+In Eclipse CDT, select "File -> Import...", then choose General->Existing Project into Workspace and click Next>. In the "Import Projects" dialog, select either the generated examples folder to import all projects or pick a single example.
 
 ## Run Example Project
-Build one the examples via the 'Hammer' tool then start it via the provided Debug configurations. It's not clear why there are two debug configurations for each example project.
+Build one of the examples by clicking on the 'Hammer' icon, then start it via the provided Debug Launch configuration "example-debug". Note: It's not clear why there are two debug configurations for an example project sometimes.
 
 ## Debug output
 printf is routed to USART2. To get the console output, connect PA2 (USART2 TX) of the Discovery board to an USB-2-UART adapter and open a terminal at 115200.
 
 In src/btstack_config.h resp. in example/btstack_config.h of the generated projects, additional debug information can be enabled by uncommenting ENABLE_LOG_INFO.
 
-Also, the full packet log can be enabled in src/port.c resp. btstack/port/stm32-f4discovery-cc256x/src/port.c by uncommentin the hci_dump_open(..) line. The console output can then be converted into .pklg files for OS X PacketLogger or WireShark by running tool/create_packet_log.py
+Also, the full packet log can be enabled in src/port.c resp. btstack/port/stm32-f4discovery-cc256x/src/port.c by uncommenting the hci_dump_open(..) line. The console output can then be converted into .pklg files for OS X PacketLogger or WireShark by running tool/create_packet_log.py
 
 ## GATT Database
-In BTstack, the GATT Database is defined via the .gatt file in the example folder. Before it can be used, it needs to be compiled with the script tool/compile_gatt.py by running the provided update_gatt_db.sh script in each project folder.
+In BTstack, the GATT Database is defined via the .gatt file in the example folder. Before it can be used, run the provided update_gatt_db.sh script in each project folder.
 
-In theory, this can be integrated into the Eclipse project, in fact, it's easy to configure it as an Eclipse Builder, but it got tricky to correctly add it to the create_examples.py tool. So, whenever you're updating the .gatt file, please run ./update_gatt_db.sh manually.
+Note: In theory, this can be integrated into the Eclipse project, in fact, it's easy to configure it as an Eclipse Builder, but it got tricky to correctly add it to the create_examples.py tool. So, whenever you're updating the .gatt file, please run ./update_gatt_db.sh manually.
 
 ## TODOs
   - move unmodified STM32 Cube files provided by ST32CubeMx into 3rd-party/STM32
@@ -66,4 +67,5 @@ This uses local Eclipse project generated manually from STM32 template provided 
     ./import_cubemx_into_eclipse.sh
 
 ### Update eclipse-template from local Eclipse project
-- ./update_from_eclipse.sh
+
+	./update_from_eclipse.sh
