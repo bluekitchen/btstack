@@ -1,0 +1,77 @@
+diff -ur cubemx-f4discovery-cc256x-orig/.cproject cubemx-f4discovery-cc256x/.cproject
+--- cubemx-f4discovery-cc256x-orig/.cproject	2017-05-04 11:31:15.000000000 +0200
++++ cubemx-f4discovery-cc256x/.cproject	2017-05-04 11:31:15.000000000 +0200
+@@ -33,7 +33,7 @@
+ 							<tool id="fr.ac6.managedbuild.tool.gnu.cross.c.compiler.992730768" name="MCU GCC Compiler" superClass="fr.ac6.managedbuild.tool.gnu.cross.c.compiler">
+ 								<option defaultValue="gnu.c.optimization.level.none" id="fr.ac6.managedbuild.gnu.c.compiler.option.optimization.level.810823039" name="Optimization Level" superClass="fr.ac6.managedbuild.gnu.c.compiler.option.optimization.level" useByScannerDiscovery="false" value="fr.ac6.managedbuild.gnu.c.optimization.level.debug" valueType="enumerated" />
+ 								<option id="gnu.c.compiler.option.debugging.level.674794525" name="Debug Level" superClass="gnu.c.compiler.option.debugging.level" useByScannerDiscovery="false" value="gnu.c.debugging.level.max" valueType="enumerated" />
+-								<option id="gnu.c.compiler.option.include.paths.180086060" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath"><listOptionValue builtIn="false" value="../Inc" /><listOptionValue builtIn="false" value="../Drivers/STM32F4xx_HAL_Driver/Inc" /><listOptionValue builtIn="false" value="../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy" /><listOptionValue builtIn="false" value="../Drivers/CMSIS/Device/ST/STM32F4xx/Include" /><listOptionValue builtIn="false" value="../Drivers/CMSIS/Include" /></option>
++								<option id="gnu.c.compiler.option.include.paths.180086060" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath"><listOptionValue builtIn="false" value="../Inc" /><listOptionValue builtIn="false" value="../Drivers/STM32F4xx_HAL_Driver/Inc" /><listOptionValue builtIn="false" value="../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy" /><listOptionValue builtIn="false" value="../Drivers/CMSIS/Device/ST/STM32F4xx/Include" /><listOptionValue builtIn="false" value="../Drivers/CMSIS/Include" /><listOptionValue builtIn="false" value="../Inc" /></option>
+ 								<option id="gnu.c.compiler.option.preprocessor.def.symbols.1293032252" name="Defined symbols (-D)" superClass="gnu.c.compiler.option.preprocessor.def.symbols" useByScannerDiscovery="false" valueType="definedSymbols"><listOptionValue builtIn="false" value="__weak=&quot;__attribute__((weak))&quot;" /><listOptionValue builtIn="false" value="__packed=&quot;__attribute__((__packed__))&quot;" /><listOptionValue builtIn="false" value="USE_HAL_DRIVER" /><listOptionValue builtIn="false" value="STM32F407xx" /></option>
+ 								<option id="fr.ac6.managedbuild.gnu.c.compiler.option.misc.other.1402773972" superClass="fr.ac6.managedbuild.gnu.c.compiler.option.misc.other" value="-fmessage-length=0" valueType="string" />
+ 								<inputType id="fr.ac6.managedbuild.tool.gnu.cross.c.compiler.input.c.10105003" superClass="fr.ac6.managedbuild.tool.gnu.cross.c.compiler.input.c" />
+@@ -103,7 +103,7 @@
+ 							<tool id="fr.ac6.managedbuild.tool.gnu.cross.c.compiler.992730768" name="MCU GCC Compiler" superClass="fr.ac6.managedbuild.tool.gnu.cross.c.compiler">
+ 								<option defaultValue="gnu.c.optimization.level.none" id="fr.ac6.managedbuild.gnu.c.compiler.option.optimization.level.810823039" name="Optimization Level" superClass="fr.ac6.managedbuild.gnu.c.compiler.option.optimization.level" useByScannerDiscovery="false" value="fr.ac6.managedbuild.gnu.c.optimization.level.debug" valueType="enumerated" />
+ 								<option id="gnu.c.compiler.option.debugging.level.674794525" name="Debug Level" superClass="gnu.c.compiler.option.debugging.level" useByScannerDiscovery="false" value="gnu.c.debugging.level.max" valueType="enumerated" />
+-								<option id="gnu.c.compiler.option.include.paths.180086060" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath"><listOptionValue builtIn="false" value="../Inc" /><listOptionValue builtIn="false" value="../Drivers/STM32F4xx_HAL_Driver/Inc" /><listOptionValue builtIn="false" value="../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy" /><listOptionValue builtIn="false" value="../Drivers/CMSIS/Device/ST/STM32F4xx/Include" /><listOptionValue builtIn="false" value="../Drivers/CMSIS/Include" /></option>
++								<option id="gnu.c.compiler.option.include.paths.180086060" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath"><listOptionValue builtIn="false" value="../Inc" /><listOptionValue builtIn="false" value="../Drivers/STM32F4xx_HAL_Driver/Inc" /><listOptionValue builtIn="false" value="../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy" /><listOptionValue builtIn="false" value="../Drivers/CMSIS/Device/ST/STM32F4xx/Include" /><listOptionValue builtIn="false" value="../Drivers/CMSIS/Include" /><listOptionValue builtIn="false" value="../Inc" /></option>
+ 								<option id="gnu.c.compiler.option.preprocessor.def.symbols.1293032252" name="Defined symbols (-D)" superClass="gnu.c.compiler.option.preprocessor.def.symbols" useByScannerDiscovery="false" valueType="definedSymbols"><listOptionValue builtIn="false" value="__weak=&quot;__attribute__((weak))&quot;" /><listOptionValue builtIn="false" value="__packed=&quot;__attribute__((__packed__))&quot;" /><listOptionValue builtIn="false" value="USE_HAL_DRIVER" /><listOptionValue builtIn="false" value="STM32F407xx" /></option>
+ 								<option id="fr.ac6.managedbuild.gnu.c.compiler.option.misc.other.1402773972" superClass="fr.ac6.managedbuild.gnu.c.compiler.option.misc.other" value="-fmessage-length=0" valueType="string" />
+ 								<inputType id="fr.ac6.managedbuild.tool.gnu.cross.c.compiler.input.c.10105003" superClass="fr.ac6.managedbuild.tool.gnu.cross.c.compiler.input.c" />
+diff -ur cubemx-f4discovery-cc256x-orig/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_uart.c cubemx-f4discovery-cc256x/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_uart.c
+--- cubemx-f4discovery-cc256x-orig/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_uart.c	2017-05-04 11:31:15.000000000 +0200
++++ cubemx-f4discovery-cc256x/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_uart.c	2017-05-04 11:52:20.000000000 +0200
+@@ -974,8 +974,12 @@
+     tmp = (uint32_t*)&pData;
+     HAL_DMA_Start_IT(huart->hdmarx, (uint32_t)&huart->Instance->DR, *(uint32_t*)tmp, Size);
+ 
+-    /* Clear the Overrun flag just before enabling the DMA Rx request: can be mandatory for the second transfer */
+-    __HAL_UART_CLEAR_OREFLAG(huart);
++    //
++    //  BK: __HAL_UART_CLEAR_OREFLAG (also) reads Data Register -> loosing an already received byte
++    //
++    //  /* Clear the Overrun flag just before enabling the DMA Rx request: can be mandatory for the second transfer */
++    //  __HAL_UART_CLEAR_OREFLAG(huart);
++    //
+ 
+     /* Process Unlocked */
+     __HAL_UNLOCK(huart);
+diff -ur cubemx-f4discovery-cc256x-orig/Src/main.c cubemx-f4discovery-cc256x/Src/main.c
+--- cubemx-f4discovery-cc256x-orig/Src/main.c	2017-05-04 11:31:15.000000000 +0200
++++ cubemx-f4discovery-cc256x/Src/main.c	2017-05-04 11:54:03.000000000 +0200
+@@ -37,6 +37,8 @@
+ #include "usart.h"
+ #include "gpio.h"
+ 
++#include "port.h"
++
+ /* USER CODE BEGIN Includes */
+ 
+ /* USER CODE END Includes */
+@@ -82,21 +84,10 @@
+   MX_USART2_UART_Init();
+   MX_USART3_UART_Init();
+ 
+-  /* USER CODE BEGIN 2 */
+-
+-  /* USER CODE END 2 */
+-
+-  /* Infinite loop */
+-  /* USER CODE BEGIN WHILE */
+-  while (1)
+-  {
+-  /* USER CODE END WHILE */
+-
+-  /* USER CODE BEGIN 3 */
+-
+-  }
+-  /* USER CODE END 3 */
++  // jump to BTstack port
++  port_main();
+ 
++  while (1);
+ }
+ 
+ /** System Clock Configuration
+Only in cubemx-f4discovery-cc256x: cubemx-f4discovery-cc256x.patch
