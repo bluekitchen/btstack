@@ -46,7 +46,7 @@
 
 #include "btstack_run_loop.h"
 #include "l2cap.h"
-#include "rfcomm.h"
+#include "classic/rfcomm.h"
 #include "btstack_event.h"
 #include "classic/goep_client.h"
 #include "classic/pbap_client.h"
