@@ -17,7 +17,7 @@ static btstack_packet_callback_registration_t hci_event_callback_registration;
 static const hci_transport_config_uart_t config = {
 	HCI_TRANSPORT_CONFIG_UART,
     115200,
-    0,
+    400000,
     1,
     NULL
 };
