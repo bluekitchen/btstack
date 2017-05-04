@@ -40,7 +40,13 @@
 // 
 
 // HCI Controller to Host Flow Control
-#define ENABLE_HCI_CONTROLLER_TO_HOST_FLOW_CONTROL
+//
+// Needed on the ESP32, but not working yet
+// see https://github.com/espressif/esp-idf/issues/480
+//
+// #define ENABLE_HCI_CONTROLLER_TO_HOST_FLOW_CONTROL
+
+// Interal ring buffer
 #define HCI_HOST_ACL_PACKET_NUM 10
 #define HCI_HOST_ACL_PACKET_LEN 1024
 #define HCI_HOST_SCO_PACKET_NUM 10

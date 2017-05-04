@@ -301,7 +301,8 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 
 static void btstack_setup(void){
 
-    hci_dump_open(NULL, HCI_DUMP_STDOUT);
+    // enable packet logger
+    // hci_dump_open(NULL, HCI_DUMP_STDOUT);
 
     /// GET STARTED with BTstack ///
     btstack_memory_init();
