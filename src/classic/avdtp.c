@@ -263,7 +263,7 @@ static void stream_endpoint_state_machine(avdtp_connection_t * connection, avdtp
                         stream_endpoint->initiator_config_state = AVDTP_INITIATOR_STREAM_CONFIG_IDLE;
                         stream_endpoint->remote_seps_num = 0;
                         memset(stream_endpoint->remote_seps, 0, sizeof(avdtp_sep_t)*MAX_NUM_SEPS);
-                        stream_endpoint->remote_sep_index = 0;
+                        stream_endpoint->remote_sep_index = AVDTP_INVALID_SEP_INDEX;
                         break;
                     }
                     if (stream_endpoint->l2cap_recovery_cid == local_cid){
@@ -538,7 +538,7 @@ void avdtp_open_stream(uint16_t con_handle, uint8_t acp_seid, avdtp_context_t * 
     }
     
     if (stream_endpoint->state < AVDTP_STREAM_ENDPOINT_CONFIGURED) return;
-    if (stream_endpoint->remote_sep_index == 0xFF) return;
+    if (stream_endpoint->remote_sep_index == AVDTP_INVALID_SEP_INDEX) return;
 
     connection->initiator_transaction_label++;
     connection->acp_seid = acp_seid;
@@ -565,7 +565,7 @@ void avdtp_start_stream(uint16_t con_handle, uint8_t acp_seid, avdtp_context_t *
         printf("avdtp_media_connect: no stream_endpoint with acp_seid %d found\n", acp_seid);
         return;
     }
-    if (stream_endpoint->remote_sep_index == 0xFF) return;
+    if (stream_endpoint->remote_sep_index == AVDTP_INVALID_SEP_INDEX) return;
     if (stream_endpoint->state < AVDTP_STREAM_ENDPOINT_OPENED) return;
     connection->initiator_transaction_label++;
     connection->acp_seid = acp_seid;
@@ -590,7 +590,7 @@ void avdtp_stop_stream(uint16_t con_handle, uint8_t acp_seid, avdtp_context_t * 
         printf("avdtp_stop_stream: no stream_endpoint with acp seid %d found\n", acp_seid);
         return;
     }
-    if (stream_endpoint->remote_sep_index == 0xFF) return;
+    if (stream_endpoint->remote_sep_index == AVDTP_INVALID_SEP_INDEX) return;
     switch (stream_endpoint->state){
         case AVDTP_STREAM_ENDPOINT_OPENED:
         case AVDTP_STREAM_ENDPOINT_STREAMING:
@@ -623,7 +623,7 @@ void avdtp_abort_stream(uint16_t con_handle, uint8_t acp_seid, avdtp_context_t *
         printf("avdtp_abort_stream: no stream_endpoint for seid %d found\n", acp_seid);
         return;
     }
-    if (stream_endpoint->remote_sep_index == 0xFF) return;
+    if (stream_endpoint->remote_sep_index == AVDTP_INVALID_SEP_INDEX) return;
     switch (stream_endpoint->state){
         case AVDTP_STREAM_ENDPOINT_CONFIGURED:
         case AVDTP_STREAM_ENDPOINT_CLOSING:
@@ -741,7 +741,7 @@ void avdtp_reconfigure(uint16_t con_handle, uint8_t acp_seid, uint16_t configure
     if (connection->initiator_connection_state != AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE) return;
     avdtp_stream_endpoint_t * stream_endpoint = avdtp_stream_endpoint_associated_with_acp_seid(acp_seid, context);
     if (!stream_endpoint) return;
-    if (stream_endpoint->remote_sep_index == 0xFF) return;
+    if (stream_endpoint->remote_sep_index == AVDTP_INVALID_SEP_INDEX) return;
     connection->initiator_transaction_label++;
     connection->acp_seid = acp_seid;
     connection->int_seid = stream_endpoint->sep.seid;
@@ -761,7 +761,7 @@ void avdtp_suspend(uint16_t con_handle, uint8_t acp_seid, avdtp_context_t * cont
     if (connection->initiator_connection_state != AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE) return;
     avdtp_stream_endpoint_t * stream_endpoint = avdtp_stream_endpoint_associated_with_acp_seid(acp_seid, context);
     if (!stream_endpoint) return;
-    if (stream_endpoint->remote_sep_index == 0xFF) return;
+    if (stream_endpoint->remote_sep_index == AVDTP_INVALID_SEP_INDEX) return;
     connection->initiator_transaction_label++;
     connection->acp_seid = acp_seid;
     connection->int_seid = stream_endpoint->sep.seid;

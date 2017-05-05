@@ -134,7 +134,7 @@ int main(int argc, const char * argv[]){
     transport_config.device_name = "/dev/tty.usbserial-A9OVNX5P"; // RedBear IoT pHAT breakout board
 
     // get BCM chipset driver
-    btstack_chipset_t * chipset = btstack_chipset_bcm_instance();
+    const btstack_chipset_t * chipset = btstack_chipset_bcm_instance();
     chipset->init(&transport_config);
 
     // set chipset name

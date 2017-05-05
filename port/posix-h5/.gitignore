@@ -32,4 +32,6 @@ spp_and_le_counter
 spp_and_le_counter.h
 spp_counter
 spp_streamer
-bluetooth_init_cc2560B_1.2_BT_Spec_4.0.c
+bluetooth_init_cc2560B_1.2_BT_Spec_4.0.c./gatt_battery_query.h
+./gatt_browser.h
+./sm_pairing_peripheral.h

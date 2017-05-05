@@ -248,6 +248,7 @@ clean:
 	rm -f ${EXAMPLES}
 	rm -f  *.o *.out *.hex *.exe
 	rm -f  ancs_client_demo.h profile.h spp_and_le_counter.h le_counter.h le_streamer.h
+	rm -f  gatt_battery_query.h gatt_browser.h sm_pairing_peripheral.h
 	rm -rf *.dSYM
 	rm -rf ${BTSTACK_ROOT}/src/*.o
 	rm -rf ${BTSTACK_ROOT}/src/ble/*.o
@@ -258,4 +259,3 @@ clean:
 	rm -rf ${BTSTACK_ROOT}/example/spp_and_le_counter.h
 	rm -rf ${BTSTACK_ROOT}/example/le_counter.h
 	rm -rf ${BTSTACK_ROOT}/example/le_streamer.h
-	

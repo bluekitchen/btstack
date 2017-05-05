@@ -344,7 +344,7 @@ void hsp_hs_release_audio_connection(void){
 }
 
 void hsp_hs_set_microphone_gain(uint8_t gain){
-    if (gain < 0 || gain >15) {
+    if (gain >15) {
         log_info("Gain must be in interval [0..15], it is given %d", gain);
         return; 
     }
@@ -354,7 +354,7 @@ void hsp_hs_set_microphone_gain(uint8_t gain){
 
 // AG +VGS=5  [0..15] ; HS AT+VGM=6 | AG OK
 void hsp_hs_set_speaker_gain(uint8_t gain){
-    if (gain < 0 || gain >15) {
+    if (gain >15) {
         log_info("Gain must be in interval [0..15], it is given %d", gain);
         return; 
     }
