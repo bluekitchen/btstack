@@ -373,7 +373,7 @@ static sm_setup_context_t the_setup;
 static sm_setup_context_t * setup = &the_setup;
 
 // active connection - the one for which the_setup is used for
-static uint16_t sm_active_connection = 0;
+static uint16_t sm_active_connection_handle = HCI_CON_HANDLE_INVALID;
 
 // @returns 1 if oob data is available
 // stores oob data in provided 16 byte buffer if not null
@@ -1162,9 +1162,9 @@ static int sm_key_distribution_all_received(sm_connection_t * sm_conn){
 }
 
 static void sm_done_for_handle(hci_con_handle_t con_handle){
-    if (sm_active_connection == con_handle){
+    if (sm_active_connection_handle == con_handle){
         sm_timeout_stop();
-        sm_active_connection = 0;
+        sm_active_connection_handle = HCI_CON_HANDLE_INVALID;
         log_info("sm: connection 0x%x released setup context", con_handle);
     }
 }
@@ -2028,7 +2028,7 @@ static void sm_run(void){
 
     // handle basic actions that don't requires the full context
     hci_connections_get_iterator(&it);
-    while(!sm_active_connection && btstack_linked_list_iterator_has_next(&it)){
+    while((sm_active_connection_handle == HCI_CON_HANDLE_INVALID) && btstack_linked_list_iterator_has_next(&it)){
         hci_connection_t * hci_connection = (hci_connection_t *) btstack_linked_list_iterator_next(&it);
         sm_connection_t  * sm_connection = &hci_connection->sm_connection;
         switch(sm_connection->sm_engine_state){
@@ -2064,7 +2064,7 @@ static void sm_run(void){
 
         // Find connections that requires setup context and make active if no other is locked
         hci_connections_get_iterator(&it);
-        while(!sm_active_connection && btstack_linked_list_iterator_has_next(&it)){
+        while((sm_active_connection_handle == HCI_CON_HANDLE_INVALID) && btstack_linked_list_iterator_has_next(&it)){
             hci_connection_t * hci_connection = (hci_connection_t *) btstack_linked_list_iterator_next(&it);
             sm_connection_t  * sm_connection = &hci_connection->sm_connection;
             // - if no connection locked and we're ready/waiting for setup context, fetch it and start
@@ -2154,8 +2154,8 @@ static void sm_run(void){
                     break;
             }
             if (done){
-                sm_active_connection = sm_connection->sm_handle;
-                log_info("sm: connection 0x%04x locked setup context as %s", sm_active_connection, sm_connection->sm_role ? "responder" : "initiator");
+                sm_active_connection_handle = sm_connection->sm_handle;
+                log_info("sm: connection 0x%04x locked setup context as %s, state %u", sm_active_connection_handle, sm_connection->sm_role ? "responder" : "initiator", sm_connection->sm_engine_state);
             }
         }
 
@@ -2163,16 +2163,20 @@ static void sm_run(void){
         // active connection handling
         // 
 
-        if (sm_active_connection == 0) return;
+        if (sm_active_connection_handle == HCI_CON_HANDLE_INVALID) return;
 
         // assert that we could send a SM PDU - not needed for all of the following
-        if (!l2cap_can_send_fixed_channel_packet_now(sm_active_connection, L2CAP_CID_SECURITY_MANAGER_PROTOCOL)) {
-            l2cap_request_can_send_fix_channel_now_event(sm_active_connection, L2CAP_CID_SECURITY_MANAGER_PROTOCOL);
+        if (!l2cap_can_send_fixed_channel_packet_now(sm_active_connection_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL)) {
+            log_info("cannot send now, requesting can send now event");
+            l2cap_request_can_send_fix_channel_now_event(sm_active_connection_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL);
             return;
         }
 
-        sm_connection_t * connection = sm_get_connection_for_handle(sm_active_connection);
-        if (!connection) return;
+        sm_connection_t * connection = sm_get_connection_for_handle(sm_active_connection_handle);
+        if (!connection) {
+            log_info("no connection for handle 0x%04x", sm_active_connection_handle);
+            return;
+        }
 
         // send keypress notifications
         if (setup->sm_keypress_notification != 0xff){
@@ -2640,7 +2644,7 @@ static void sm_run(void){
         }
 
         // check again if active connection was released
-        if (sm_active_connection) break;
+        if (sm_active_connection_handle != HCI_CON_HANDLE_INVALID) break;
     }
 }
 
@@ -2874,14 +2878,14 @@ static void sm_handle_random_result(uint8_t * data){
             mbedtls_ecp_point_free(&P);
             mbedtls_mpi_free(&d);
 #endif
+
 #ifdef USE_MICROECC_FOR_ECDH
 #ifndef WICED_VERSION
-            // micro-ecc from WICED SDK uses its wiced_crypto_get_random by default
+            // micro-ecc from WICED SDK uses its wiced_crypto_get_random by default - no need to set it
             uECC_set_rng(&sm_generate_f_rng);
-#endif
+#endif /* WICED_VERSION */
             uECC_make_key(ec_q, ec_d);
-#endif
-
+#endif /* USE_MICROECC_FOR_ECDH */
             ec_key_generation_state = EC_KEY_GENERATION_DONE;
             log_info("Elliptic curve: d");
             log_info_hexdump(ec_d,32);
@@ -3777,7 +3781,7 @@ void sm_init(void){
     sm_address_resolution_general_queue = NULL;
     
     gap_random_adress_update_period = 15 * 60 * 1000L;
-    sm_active_connection = 0;
+    sm_active_connection_handle = HCI_CON_HANDLE_INVALID;
 
     test_use_fixed_local_csrk = 0;
 

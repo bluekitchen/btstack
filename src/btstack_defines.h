@@ -75,6 +75,10 @@ typedef uint8_t sm_key_t[16];
 
 // DEFINES
 
+// hci con handles (12 bit): 0x0000..0x0fff
+#define HCI_CON_HANDLE_INVALID 0xffff
+
+
 #define DAEMON_EVENT_PACKET     0x05
     
 // L2CAP data
