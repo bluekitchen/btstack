@@ -8,6 +8,9 @@
 #
 BTSTACK_ROOT := ../../../../..
 
+# micro-ecc of WICED tree used for SECP256R1 in LE Secure Connections
+$(NAME)_COMPONENTS += micro-ecc
+
 COMPONENT_ADD_INCLUDEDIRS := \
 	${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/include \
 	${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/include \
