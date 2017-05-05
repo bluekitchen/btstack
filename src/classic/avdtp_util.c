@@ -57,12 +57,11 @@ void avdtp_initialize_stream_endpoint(avdtp_stream_endpoint_t * stream_endpoint)
     stream_endpoint->state = AVDTP_STREAM_ENDPOINT_IDLE;
     stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_STREAM_CONFIG_IDLE;
     stream_endpoint->initiator_config_state = AVDTP_INITIATOR_STREAM_CONFIG_IDLE;
-    stream_endpoint->remote_sep_index = 0;
+    stream_endpoint->remote_sep_index = AVDTP_INVALID_SEP_INDEX;
     stream_endpoint->media_disconnect = 0;
     stream_endpoint->remote_seps_num = 0;
     stream_endpoint->sep.in_use = 0;
     memset(stream_endpoint->remote_seps, 0, sizeof(stream_endpoint->remote_seps));
-    stream_endpoint->remote_sep_index = 0;
 }
 
 avdtp_stream_endpoint_t * avdtp_stream_endpoint_for_seid(uint16_t seid, avdtp_context_t * context){

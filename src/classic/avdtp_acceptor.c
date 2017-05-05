@@ -214,7 +214,7 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, uint8_t
                     }
                     // find or add sep
                     int i;
-                    stream_endpoint->remote_sep_index = 0xFF;
+                    stream_endpoint->remote_sep_index = AVDTP_INVALID_SEP_INDEX;
                     for (i=0; i < stream_endpoint->remote_seps_num; i++){
                         if (stream_endpoint->remote_seps[i].seid == sep.seid){
                             stream_endpoint->remote_sep_index = i;
@@ -222,7 +222,7 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, uint8_t
                     }
                     printf("    ACP .. seid %d, index %d\n", sep.seid, stream_endpoint->remote_sep_index);
                     
-                    if (stream_endpoint->remote_sep_index != 0xFF){
+                    if (stream_endpoint->remote_sep_index != AVDTP_INVALID_SEP_INDEX){
                         if (stream_endpoint->remote_seps[stream_endpoint->remote_sep_index].in_use){
                             // reject if already configured
                             connection->error_code = SEP_IN_USE;
@@ -282,14 +282,14 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, uint8_t
 
                     // find sep or raise error
                     int i;
-                    stream_endpoint->remote_sep_index = 0xFF;
+                    stream_endpoint->remote_sep_index = AVDTP_INVALID_SEP_INDEX;
                     for (i = 0; i < stream_endpoint->remote_seps_num; i++){
                         if (stream_endpoint->remote_seps[i].seid == sep.seid){
                             stream_endpoint->remote_sep_index = i;
                         }
                     }
 
-                    if (stream_endpoint->remote_sep_index == 0xFF){
+                    if (stream_endpoint->remote_sep_index == AVDTP_INVALID_SEP_INDEX){
                         printf("    ACP: REJECT AVDTP_SI_RECONFIGURE, BAD_ACP_SEID\n");
                         stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_REJECT_CATEGORY_WITH_ERROR_CODE;
                         connection->error_code = BAD_ACP_SEID;
