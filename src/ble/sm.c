@@ -1590,6 +1590,7 @@ static const uint8_t f5_key_id[] = { 0x62, 0x74, 0x6c, 0x65 };
 static const uint8_t f5_length[] = { 0x01, 0x00};  
 
 static void sm_sc_calculate_dhkey(sm_key256_t dhkey){
+    memset(dhkey, 0, 32);
 #ifdef USE_MBEDTLS_FOR_ECDH
     // da * Pb
     mbedtls_mpi d;
@@ -1609,7 +1610,13 @@ static void sm_sc_calculate_dhkey(sm_key256_t dhkey){
     mbedtls_ecp_point_free(&Q);
 #endif
 #ifdef USE_MICROECC_FOR_ECDH
+#if uECC_SUPPORTS_secp256r1
+    // standard version
+    uECC_shared_secret(setup->sm_peer_q, ec_d, dhkey, uECC_secp256r1());
+#else
+    // static version
     uECC_shared_secret(setup->sm_peer_q, ec_d, dhkey);
+#endif
 #endif
     log_info("dhkey");
     log_info_hexdump(dhkey, 32);
@@ -2880,12 +2887,29 @@ static void sm_handle_random_result(uint8_t * data){
 #endif
 
 #ifdef USE_MICROECC_FOR_ECDH
+
 #ifndef WICED_VERSION
             // micro-ecc from WICED SDK uses its wiced_crypto_get_random by default - no need to set it
             uECC_set_rng(&sm_generate_f_rng);
 #endif /* WICED_VERSION */
+
+#if uECC_SUPPORTS_secp256r1
+            // standard version
+            uECC_make_key(ec_q, ec_d, uECC_secp256r1());
+#else
+            // static version
             uECC_make_key(ec_q, ec_d);
+#endif
+
+#ifndef WICED_VERSION
+            // disable rng generator as we don't have any random bits left
+            // we can do this because we don't generate another key
+            // we need to to this because shared key calculation fails if rng returns 0
+            uECC_set_rng(NULL);
+#endif /* WICED_VERSION */
+
 #endif /* USE_MICROECC_FOR_ECDH */
+
             ec_key_generation_state = EC_KEY_GENERATION_DONE;
             log_info("Elliptic curve: d");
             log_info_hexdump(ec_d,32);
@@ -3479,7 +3503,13 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
             mbedtls_ecp_point_free( & Q);
 #endif
 #ifdef USE_MICROECC_FOR_ECDH
+#if uECC_SUPPORTS_secp256r1
+            // standard version
+            err = uECC_valid_public_key(setup->sm_peer_q, uECC_secp256r1()) == 0;
+#else
+            // static version
             err = uECC_valid_public_key(setup->sm_peer_q) == 0;
+#endif
 #endif
 
             if (err){
