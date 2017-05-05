@@ -826,7 +826,7 @@ static void rfcomm_multiplexer_opened(rfcomm_multiplexer_t *multiplexer){
     log_info("Multiplexer up and running");
     multiplexer->state = RFCOMM_MULTIPLEXER_OPEN;
     
-    const rfcomm_channel_event_t event = { CH_EVT_MULTIPLEXER_READY };
+    const rfcomm_channel_event_t event = { CH_EVT_MULTIPLEXER_READY, 0};
     
     // transition of channels that wait for multiplexer 
     btstack_linked_item_t *it;
@@ -874,7 +874,7 @@ static void rfcomm_handle_can_send_now(uint16_t l2cap_cid){
         if (rfcomm_channel_ready_to_send(channel)){
             log_debug("rfcomm_handle_can_send_now enter: channel token");
             token_consumed = 1;
-            const rfcomm_channel_event_t event = { CH_EVT_READY_TO_SEND };
+            const rfcomm_channel_event_t event = { CH_EVT_READY_TO_SEND, 0 };
             rfcomm_channel_state_machine_with_channel(channel, &event);
         }
     }
@@ -1289,7 +1289,7 @@ static void rfcomm_channel_packet_handler_uih(rfcomm_multiplexer_t *multiplexer,
         log_info( "RFCOMM data UIH_PF, new credits: %u, now %u", new_credits, channel->credits_outgoing);
 
         // notify channel statemachine 
-        rfcomm_channel_event_t channel_event = { CH_EVT_RCVD_CREDITS };
+        rfcomm_channel_event_t channel_event = { CH_EVT_RCVD_CREDITS, 0 };
         rfcomm_channel_state_machine_with_channel(channel, &channel_event);
         if (rfcomm_channel_ready_to_send(channel)){
             l2cap_request_can_send_now_event(multiplexer->l2cap_cid);
