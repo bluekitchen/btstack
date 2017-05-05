@@ -144,7 +144,7 @@ avdtp_stream_endpoint_t * avdtp_stream_endpoint_associated_with_acp_seid(uint16_
     btstack_linked_list_iterator_init(&it, &context->stream_endpoints);
     while (btstack_linked_list_iterator_has_next(&it)){
         avdtp_stream_endpoint_t * stream_endpoint = (avdtp_stream_endpoint_t *)btstack_linked_list_iterator_next(&it);
-        if (stream_endpoint->remote_sep_index >= 0 && stream_endpoint->remote_sep_index < MAX_NUM_SEPS){
+        if (stream_endpoint->remote_sep_index != AVDTP_INVALID_SEP_INDEX){
             if (stream_endpoint->remote_seps[stream_endpoint->remote_sep_index].seid == acp_seid){
                 return stream_endpoint;
             }
