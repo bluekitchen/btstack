@@ -33,10 +33,10 @@ You can quit the monitor with CTRL-].
 
 ## Limitations
 
-### Bug in ESP32 VHCI implementation
+### Bug in ESP32 VHCI Implementation
 The Host Controller to Host Flow Control of the Virtual HCI (VHCI) on the ESP32 does not work currently. Without it, it is not possible to slow down incoming data. For most applications, this won't be an issue, but please keep it in mind. See https://github.com/espressif/esp-idf/issues/480
 
-### Multi-threading
+### Multi-Threading
 
 BTstack is not thread-safe, but you're using a multi-threading OS. Any function that is called from BTstack, e.g. packet handlers, can directly call into BTstack without issues. For other situations, you need to provide some general 'do BTstack tasks' function and trigger BTstack to execute it on its thread.
 To call a function from the BTstack thread, there are currently two options:
