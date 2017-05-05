@@ -2899,7 +2899,7 @@ static void sm_handle_random_result(uint8_t * data){
 #else
             // static version
             uECC_make_key(ec_q, ec_d);
-#endif
+#endif /* USE_MICROECC_FOR_ECDH */
 
 #ifndef WICED_VERSION
             // disable rng generator as we don't have any random bits left
