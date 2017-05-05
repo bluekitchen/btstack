@@ -176,7 +176,7 @@ static const char * avrcp_ctype_name[] = {
     "INTERIM"            
 };
 const char * avrcp_ctype2str(uint8_t index){
-    if (index >= 0 && index < sizeof(avrcp_ctype_name)){
+    if (index < sizeof(avrcp_ctype_name)){
         return avrcp_ctype_name[index];
     }
     return "NONE";
