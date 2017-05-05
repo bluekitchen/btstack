@@ -46,7 +46,7 @@
 #include "btstack_event.h"
 #include "btstack_memory.h"
 #include "btstack_run_loop.h"
-#include "btstack_run_loop_freertos_single_threaded.h"
+#include "btstack_run_loop_freertos.h"
 #include "btstack_ring_buffer.h"
 //#include "classic/btstack_link_key_db.h"
 #include "hci.h"
@@ -306,7 +306,7 @@ static void btstack_setup(void){
 
     /// GET STARTED with BTstack ///
     btstack_memory_init();
-    btstack_run_loop_init(btstack_run_loop_freertos_single_threaded_get_instance());
+    btstack_run_loop_init(btstack_run_loop_freertos_get_instance());
 
     // init HCI
     hci_init(transport_get_instance(), NULL);

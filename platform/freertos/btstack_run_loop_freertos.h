@@ -36,13 +36,13 @@
  */
 
 /*
- * btstack_run_loop_wiced.h
+ * btstack_run_loop_freertos.h
  *
  * Functions relevant for BTstack WICED port 
  */
 
-#ifndef __BTSTACK_RUN_LOOP_FREERTOS_SINGLE_THREADED_H
-#define __BTSTACK_RUN_LOOP_FREERTOS_SINGLE_THREADED_H
+#ifndef __BTSTACK_RUN_LOOP_FREERTOS_H
+#define __BTSTACK_RUN_LOOP_FREERTOS_H
 
 #include "btstack_config.h"
 #include "btstack_run_loop.h"
@@ -52,27 +52,29 @@ extern "C" {
 #endif
 
 /**
- * @brief Provide btstack_run_loop_freertos_single_threaded instance for use with btstack_run_loop_init
+ * @brief Provide btstack_run_loop_freertos instance for use with btstack_run_loop_init
  */
-const btstack_run_loop_t * btstack_run_loop_freertos_single_threaded_get_instance(void);
+const btstack_run_loop_t * btstack_run_loop_freertos_get_instance(void);
 
 /*
  * @brief Execute code on BTstack run loop. Can be used to control BTstack from a different thread
  */
-void btstack_run_loop_freertos_single_threaded_execute_code_on_main_thread(void (*fn)(void *arg), void * arg);
+void btstack_run_loop_freertos_execute_code_on_main_thread(void (*fn)(void *arg), void * arg);
 
 /*
  * @brief Execute code on BTstack run loop. Can be used to control BTstack from an ISR
  */
-void btstack_run_loop_freertos_single_threaded_execute_code_on_main_thread_from_isr(void (*fn)(void *arg), void * arg);
+void btstack_run_loop_freertos_execute_code_on_main_thread_from_isr(void (*fn)(void *arg), void * arg);
 
 /**
- * @brief Triggers processing of data sources from thread context. Has to be called after enabling a poll data source to wake-pup run loop.
+ * @brief Triggers processing of data sources from thread context. 
+ * Has to be called after enabling a poll data source to wake-pup run loop.
  */
 void btstack_run_loop_freertos_trigger(void);    
 
 /**
- * @brief Triggers processing of data sources from an ISR. Has to be called after enabling a poll data source to wake-pup run loop.
+ * @brief Triggers processing of data sources from an ISR.
+ * Has to be called after enabling a poll data source to wake-pup run loop.
  */
 void btstack_run_loop_freertos_trigger_from_isr(void);    
 

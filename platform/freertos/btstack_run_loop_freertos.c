@@ -36,7 +36,7 @@
  */
 
 /*
- *  btstack_run_loop_freertos_single_threaded.c
+ *  btstack_run_loop_freertos.c
  *
  *  Run loop on dedicated thread on FreeRTOS
  */
@@ -45,7 +45,7 @@
 
 #include "btstack_linked_list.h"
 #include "btstack_debug.h"
-#include "btstack_run_loop_freertos_single_threaded.h"
+#include "btstack_run_loop_freertos.h"
 
 // #include "hal_time_ms.h"
 uint32_t hal_time_ms(void);
@@ -60,7 +60,7 @@ typedef struct function_call {
     void * arg;
 } function_call_t;
 
-static const btstack_run_loop_t btstack_run_loop_freertos_single_threaded;
+static const btstack_run_loop_t btstack_run_loop_freertos;
 
 static QueueHandle_t        btstack_run_loop_queue;
 static EventGroupHandle_t   btstack_run_loop_event_group;
@@ -72,19 +72,19 @@ static EventGroupHandle_t   btstack_run_loop_event_group;
 static btstack_linked_list_t timers;
 static btstack_linked_list_t data_sources;
 
-static uint32_t btstack_run_loop_freertos_single_threaded_get_time_ms(void){
+static uint32_t btstack_run_loop_freertos_get_time_ms(void){
     return hal_time_ms();
 }
 
 // set timer
-static void btstack_run_loop_freertos_single_threaded_set_timer(btstack_timer_source_t *ts, uint32_t timeout_in_ms){
-    ts->timeout = btstack_run_loop_freertos_single_threaded_get_time_ms() + timeout_in_ms + 1;
+static void btstack_run_loop_freertos_set_timer(btstack_timer_source_t *ts, uint32_t timeout_in_ms){
+    ts->timeout = btstack_run_loop_freertos_get_time_ms() + timeout_in_ms + 1;
 }
 
 /**
  * Add timer to run_loop (keep list sorted)
  */
-static void btstack_run_loop_freertos_single_threaded_add_timer(btstack_timer_source_t *ts){
+static void btstack_run_loop_freertos_add_timer(btstack_timer_source_t *ts){
     btstack_linked_item_t *it;
     for (it = (btstack_linked_item_t *) &timers; it->next ; it = it->next){
         // don't add timer that's already in there
@@ -103,11 +103,11 @@ static void btstack_run_loop_freertos_single_threaded_add_timer(btstack_timer_so
 /**
  * Remove timer from run loop
  */
-static int btstack_run_loop_freertos_single_threaded_remove_timer(btstack_timer_source_t *ts){
+static int btstack_run_loop_freertos_remove_timer(btstack_timer_source_t *ts){
     return btstack_linked_list_remove(&timers, (btstack_linked_item_t *) ts);
 }
 
-static void btstack_run_loop_freertos_single_threaded_dump_timer(void){
+static void btstack_run_loop_freertos_dump_timer(void){
 #ifdef ENABLE_LOG_INFO 
     btstack_linked_item_t *it;
     int i = 0;
@@ -123,7 +123,7 @@ void btstack_run_loop_freertos_trigger(void){
     xEventGroupSetBits(btstack_run_loop_event_group, EVENT_GROUP_FLAG_RUN_LOOP);
 }
 
-void btstack_run_loop_freertos_single_threaded_execute_code_on_main_thread(void (*fn)(void *arg), void * arg){
+void btstack_run_loop_freertos_execute_code_on_main_thread(void (*fn)(void *arg), void * arg){
     function_call_t message;
     message.fn  = fn;
     message.arg = arg;
@@ -139,7 +139,7 @@ void btstack_run_loop_freertos_trigger_from_isr(void){
     xEventGroupSetBits(btstack_run_loop_event_group, EVENT_GROUP_FLAG_RUN_LOOP);
 }
 
-void btstack_run_loop_freertos_single_threaded_execute_code_on_main_thread_from_isr(void (*fn)(void *arg), void * arg){
+void btstack_run_loop_freertos_execute_code_on_main_thread_from_isr(void (*fn)(void *arg), void * arg){
     function_call_t message;
     message.fn  = fn;
     message.arg = arg;
@@ -152,7 +152,7 @@ void btstack_run_loop_freertos_single_threaded_execute_code_on_main_thread_from_
 /**
  * Execute run_loop
  */
-static void btstack_run_loop_freertos_single_threaded_task(void *pvParameter){
+static void btstack_run_loop_freertos_task(void *pvParameter){
     UNUSED(pvParameter);
 
     log_debug("RL: execute");
@@ -184,7 +184,7 @@ static void btstack_run_loop_freertos_single_threaded_task(void *pvParameter){
         log_debug("RL: portMAX_DELAY %u", portMAX_DELAY);
         while (timers) {
             btstack_timer_source_t * ts = (btstack_timer_source_t *) timers;
-            uint32_t now = btstack_run_loop_freertos_single_threaded_get_time_ms();
+            uint32_t now = btstack_run_loop_freertos_get_time_ms();
             log_debug("RL: now %u, expires %u", now, ts->timeout);
             if (ts->timeout > now){
                 timeout_ms = ts->timeout - now;
@@ -202,29 +202,29 @@ static void btstack_run_loop_freertos_single_threaded_task(void *pvParameter){
     }
 }
 
-static void btstack_run_loop_freertos_single_threaded_execute(void) {
+static void btstack_run_loop_freertos_execute(void) {
     // use dedicated task, might not be needed in all cases
-    xTaskCreate(&btstack_run_loop_freertos_single_threaded_task, "btstack_task", 3072, NULL, 5, NULL);
-    // btstack_run_loop_freertos_single_threaded_task(NULL);
+    xTaskCreate(&btstack_run_loop_freertos_task, "btstack_task", 3072, NULL, 5, NULL);
+    // btstack_run_loop_freertos_task(NULL);
 }
 
-static void btstack_run_loop_freertos_single_threaded_add_data_source(btstack_data_source_t *ds){
+static void btstack_run_loop_freertos_add_data_source(btstack_data_source_t *ds){
     btstack_linked_list_add(&data_sources, (btstack_linked_item_t *) ds);
 }
 
-static int btstack_run_loop_freertos_single_threaded_remove_data_source(btstack_data_source_t *ds){
+static int btstack_run_loop_freertos_remove_data_source(btstack_data_source_t *ds){
     return btstack_linked_list_remove(&data_sources, (btstack_linked_item_t *) ds);
 }
 
-static void btstack_run_loop_freertos_single_threaded_enable_data_source_callbacks(btstack_data_source_t * ds, uint16_t callback_types){
+static void btstack_run_loop_freertos_enable_data_source_callbacks(btstack_data_source_t * ds, uint16_t callback_types){
     ds->flags |= callback_types;
 }
 
-static void btstack_run_loop_freertos_single_threaded_disable_data_source_callbacks(btstack_data_source_t * ds, uint16_t callback_types){
+static void btstack_run_loop_freertos_disable_data_source_callbacks(btstack_data_source_t * ds, uint16_t callback_types){
     ds->flags &= ~callback_types;
 }
 
-static void btstack_run_loop_freertos_single_threaded_init(void){
+static void btstack_run_loop_freertos_init(void){
     timers = NULL;
 
     // queue to receive events: up to 2 calls from transport, up to 3 for app
@@ -239,20 +239,20 @@ static void btstack_run_loop_freertos_single_threaded_init(void){
 /**
  * @brief Provide btstack_run_loop_posix instance for use with btstack_run_loop_init
  */
-const btstack_run_loop_t * btstack_run_loop_freertos_single_threaded_get_instance(void){
-    return &btstack_run_loop_freertos_single_threaded;
+const btstack_run_loop_t * btstack_run_loop_freertos_get_instance(void){
+    return &btstack_run_loop_freertos;
 }
 
-static const btstack_run_loop_t btstack_run_loop_freertos_single_threaded = {
-    &btstack_run_loop_freertos_single_threaded_init,
-    &btstack_run_loop_freertos_single_threaded_add_data_source,
-    &btstack_run_loop_freertos_single_threaded_remove_data_source,
-    &btstack_run_loop_freertos_single_threaded_enable_data_source_callbacks,
-    &btstack_run_loop_freertos_single_threaded_disable_data_source_callbacks,
-    &btstack_run_loop_freertos_single_threaded_set_timer,
-    &btstack_run_loop_freertos_single_threaded_add_timer,
-    &btstack_run_loop_freertos_single_threaded_remove_timer,
-    &btstack_run_loop_freertos_single_threaded_execute,
-    &btstack_run_loop_freertos_single_threaded_dump_timer,
-    &btstack_run_loop_freertos_single_threaded_get_time_ms,
+static const btstack_run_loop_t btstack_run_loop_freertos = {
+    &btstack_run_loop_freertos_init,
+    &btstack_run_loop_freertos_add_data_source,
+    &btstack_run_loop_freertos_remove_data_source,
+    &btstack_run_loop_freertos_enable_data_source_callbacks,
+    &btstack_run_loop_freertos_disable_data_source_callbacks,
+    &btstack_run_loop_freertos_set_timer,
+    &btstack_run_loop_freertos_add_timer,
+    &btstack_run_loop_freertos_remove_timer,
+    &btstack_run_loop_freertos_execute,
+    &btstack_run_loop_freertos_dump_timer,
+    &btstack_run_loop_freertos_get_time_ms,
 };
