@@ -44,7 +44,7 @@ BTdaemon_FILES = \
 	$(BTSTACK_ROOT)/platforms/cocoa/remote_device_db_cocoa.m  	\
 
 BTdaemon_CFLAGS = -I$(BTSTACK_ROOT)/include -I$(BTSTACK_ROOT)/ble -I$(BTSTACK_ROOT)/src -I..
-BTdaemon_PRIVATE_FRAMEWORKS = IOKIT
+BTdaemon_PRIVATE_FRAMEWORKS = IOKit
 
 before-all::
 	../../../tools/get_version.sh
