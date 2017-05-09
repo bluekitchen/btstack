@@ -49,7 +49,7 @@ BTdaemon_CFLAGS = \
 	-I$(BTSTACK_ROOT)/platform/daemon/src \
 	-I$(BTSTACK_ROOT)/platform/corefoundation \
 	-I..
-BTdaemon_PRIVATE_FRAMEWORKS = IOKIT
+BTdaemon_PRIVATE_FRAMEWORKS = IOKit
 
 
 include $(THEOS)/makefiles/common.mk
