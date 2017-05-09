@@ -26,7 +26,8 @@ COMMON += \
 	le_device_db_fs.c \
 	wav_util.c \
 	sdp_util.c	                \
-	sdp_server.c			            \
+	sdp_server.c			    \
+	sdp_client.c 				\
 
 CFLAGS += -g -Wall -Wmissing-prototypes -Wstrict-prototypes -Wshadow -Wunused-variable -Wunused-parameter -Werror 
 CFLAGS += -I.
