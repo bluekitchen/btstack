@@ -65,6 +65,17 @@ const btstack_chipset_t * btstack_chipset_cc256x_instance(void);
  */
 uint16_t btstack_chipset_cc256x_lmp_subversion(void);
 
+/**
+ * Set init script to use for next power up
+ *
+ * Note: Only needed when switching between different add-ons (BLE, AVRP, ANT+)
+ * Note: Not supported by MSP430 "init script at 0x10000" workaround
+ *
+ * @param init_script_data or 0 for default script
+ * @param init_script_size or 0 for default script
+ */
+void btstack_chipset_cc256x_set_init_script(uint8_t * data, uint32_t size);
+
 #if defined __cplusplus
 }
 #endif

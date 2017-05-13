@@ -63,6 +63,7 @@
 
 #include "btstack_config.h"
 #include "btstack_chipset_cc256x.h"
+#include "btstack_debug.h"
 
 #include <stddef.h>   /* NULL */
 #include <stdio.h> 
@@ -79,13 +80,24 @@
 #include "btstack_control.h"
 
 
-// actual init script provided by seperate .c file
+// default init script provided by separate .c file
 extern const uint8_t  cc256x_init_script[];
 extern const uint32_t cc256x_init_script_size;
 
-// init script
-static uint32_t init_script_offset  = 0;
-static int16_t  init_power_in_dB    = 13; // 13 dBm
+// custom init script set by btstack_chipset_cc256x_set_init_script
+// used to select init scripts before each power up
+static const uint8_t  * custom_init_script;
+static uint32_t         custom_init_script_size;
+
+// init script to use: either cc256x_init_script or custom_init_script
+static const uint8_t  * init_script;
+static uint32_t         init_script_size;
+
+// power in db - set by btstack_chipset_cc256x_set_power
+static int16_t    init_power_in_dB    = 13; // 13 dBm
+
+// upload position
+static uint32_t   init_script_offset  = 0;
 
 // support for SCO over HCI
 #ifdef ENABLE_SCO_OVER_HCI
@@ -149,6 +161,20 @@ static const uint8_t hci_route_sco_over_hci[] = {
 
 static void chipset_init(const void * config){
     init_script_offset = 0;
+#if defined(__GNUC__) && defined(__MSP430X__) && (__MSP430X__ > 0)
+    // On MSP430, custom init script is not supported
+    init_script_size = cc256x_init_script_size;
+#else
+    if (custom_init_script){
+        log_info("cc256x: using custom init script");
+        init_script      = custom_init_script;
+        init_script_size = custom_init_script_size;
+    } else {
+        log_info("cc256x: using default init script");
+        init_script      = cc256x_init_script;
+        init_script_size = cc256x_init_script_size;
+    }
+#endif
 #ifdef ENABLE_SCO_OVER_HCI
     init_send_route_sco_over_hci = 1;
 #endif
@@ -274,7 +300,7 @@ static void update_init_script_command(uint8_t *hci_cmd_buffer){
 }
 
 static btstack_chipset_result_t chipset_next_command(uint8_t * hci_cmd_buffer){
-    if (init_script_offset >= cc256x_init_script_size) {
+    if (init_script_offset >= init_script_size) {
 
 #ifdef ENABLE_SCO_OVER_HCI
         // append send route SCO over HCI if requested
@@ -303,15 +329,15 @@ static btstack_chipset_result_t chipset_next_command(uint8_t * hci_cmd_buffer){
 #elif defined (__AVR__)
 
     // workaround: use memcpy_P to access init script in lower 64 kB of flash
-    memcpy_P(&hci_cmd_buffer[0], &cc256x_init_script[init_script_offset], 3);
+    memcpy_P(&hci_cmd_buffer[0], &init_script[init_script_offset], 3);
     init_script_offset += 3;
     int payload_len = hci_cmd_buffer[2];
-    memcpy_P(&hci_cmd_buffer[3], &cc256x_init_script[init_script_offset], payload_len);
+    memcpy_P(&hci_cmd_buffer[3], &init_script[init_script_offset], payload_len);
 
 #else    
 
     // use memcpy with pointer
-    uint8_t * init_script_ptr = (uint8_t*) &cc256x_init_script[0];
+    uint8_t * init_script_ptr = (uint8_t*) &init_script[0];
     memcpy(&hci_cmd_buffer[0], init_script_ptr + init_script_offset, 3);  // cmd header
     init_script_offset += 3;
     int payload_len = hci_cmd_buffer[2];
@@ -331,6 +357,11 @@ static btstack_chipset_result_t chipset_next_command(uint8_t * hci_cmd_buffer){
 // MARK: public API
 void btstack_chipset_cc256x_set_power(int16_t power_in_dB){
     init_power_in_dB = power_in_dB;
+}
+
+void btstack_chipset_cc256x_set_init_script(uint8_t * data, uint32_t size){
+    custom_init_script      = data;
+    custom_init_script_size = size;
 }
 
 static const btstack_chipset_t btstack_chipset_cc256x = {

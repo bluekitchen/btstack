@@ -18,7 +18,7 @@ $PROJECT_LOC/btstack/tool/compile_gatt.py $PROJECT_LOC/example/EXAMPLE.gatt $PRO
 
 ## pick correct init script based on your hardware
 # - init script for CC2564B
-cc256x_init_script = 'bluetooth_init_cc2564B_1.5_BT_Spec_4.1.c'
+cc256x_init_script = 'bluetooth_init_cc2564B_1.6_BT_Spec_4.1.c'
 # - init script for CC2564C
 # cc256x_init_script = 'bluetooth_init_cc2564C_1.0.c'
 
