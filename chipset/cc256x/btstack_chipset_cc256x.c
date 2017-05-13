@@ -161,6 +161,10 @@ static const uint8_t hci_route_sco_over_hci[] = {
 
 static void chipset_init(const void * config){
     init_script_offset = 0;
+#if defined(__GNUC__) && defined(__MSP430X__) && (__MSP430X__ > 0)
+    // On MSP430, custom init script is not supported
+    init_script_size = cc256x_init_script_size;
+#else
     if (custom_init_script){
         log_info("cc256x: using custom init script");
         init_script      = custom_init_script;
@@ -170,6 +174,7 @@ static void chipset_init(const void * config){
         init_script      = cc256x_init_script;
         init_script_size = cc256x_init_script_size;
     }
+#endif
 #ifdef ENABLE_SCO_OVER_HCI
     init_send_route_sco_over_hci = 1;
 #endif
