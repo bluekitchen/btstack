@@ -136,7 +136,8 @@ void btstack_run_loop_freertos_execute_code_on_main_thread(void (*fn)(void *arg)
 
 #if (INCLUDE_xEventGroupSetBitFromISR == 1)
 void btstack_run_loop_freertos_trigger_from_isr(void){
-    xEventGroupSetBits(btstack_run_loop_event_group, EVENT_GROUP_FLAG_RUN_LOOP);
+    BaseType_t xHigherPriorityTaskWoken;
+    xEventGroupSetBitsFromISR(btstack_run_loop_event_group, EVENT_GROUP_FLAG_RUN_LOOP, &xHigherPriorityTaskWoken);
 }
 
 void btstack_run_loop_freertos_execute_code_on_main_thread_from_isr(void (*fn)(void *arg), void * arg){
