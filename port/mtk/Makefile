@@ -38,6 +38,7 @@ libBTstack_OBJS  = 		           \
 	socket_connection.o            \
 
 BTdaemon_OBJS = $(libBTstack_OBJS) \
+	ad_parser.o 			       \
 	att_dispatch.o                 \
 	btstack_link_key_db_memory.o   \
 	btstack_memory.o               \

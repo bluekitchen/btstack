@@ -15,18 +15,19 @@ CORE += \
 	
 
 COMMON += \
+	ad_parser.c 				\
+	btstack_link_key_db_fs.c    \
+	btstack_run_loop_posix.c    \
 	hci.c			            \
 	hci_cmd.c		            \
 	hci_dump.c		            \
+	hci_transport_h2_libusb.c   \
 	l2cap.c			            \
 	l2cap_signaling.c	        \
-	hci_transport_h2_libusb.c \
-	btstack_run_loop_posix.c \
-	btstack_link_key_db_fs.c \
-	le_device_db_fs.c \
-	wav_util.c \
+	le_device_db_fs.c           \
+	sdp_server.c			    \
 	sdp_util.c	                \
-	sdp_server.c			            \
+	wav_util.c 					\
 
 CFLAGS += -g -Wall -Wmissing-prototypes -Wstrict-prototypes -Wshadow -Wunused-variable -Wunused-parameter -Werror 
 CFLAGS += -I.

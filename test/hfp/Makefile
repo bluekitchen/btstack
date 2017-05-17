@@ -8,23 +8,24 @@ CPPUTEST_HOME = ${BTSTACK_ROOT}/test/cpputest
 include ${BTSTACK_ROOT}/example/Makefile.inc
 
 COMMON = \
-	sdp_server.c			            \
-	sdp_client_rfcomm.c		    \
+	ad_parser.c 				 \
+	sdp_server.c			     \
+	sdp_client_rfcomm.c		     \
     btstack_link_key_db_memory.c \
-    btstack_linked_list.c	    \
-    btstack_memory.c            \
-    btstack_memory_pool.c       \
-    btstack_run_loop.c		    \
-    btstack_run_loop_posix.c    \
-    btstack_util.c			    \
-    hci.c			            \
-    hci_cmd.c		            \
-    hci_dump.c		            \
-    l2cap.c			            \
-    l2cap_signaling.c 			\
-    rfcomm.c			        \
-    sdp_client.c		        \
-    sdp_util.c	                \
+    btstack_linked_list.c	     \
+    btstack_memory.c             \
+    btstack_memory_pool.c        \
+    btstack_run_loop.c		     \
+    btstack_run_loop_posix.c     \
+    btstack_util.c			     \
+    hci.c			             \
+    hci_cmd.c		             \
+    hci_dump.c		             \
+    l2cap.c			             \
+    l2cap_signaling.c 			 \
+    rfcomm.c			         \
+    sdp_client.c		         \
+    sdp_util.c	                 \
 
 
 MOCK = \
