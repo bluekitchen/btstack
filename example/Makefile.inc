@@ -31,6 +31,7 @@ CORE += \
 	btstack_util.c 	            \
 
 COMMON += \
+	ad_parser.c                 \
 	hci.c			            \
 	hci_cmd.c		            \
 	hci_dump.c		            \
@@ -58,7 +59,6 @@ GATT_SERVER += \
 	att_server.c        	    \
 
 GATT_CLIENT += \
-	ad_parser.c                 \
 	gatt_client.c        	    \
 
 SM += \
@@ -187,7 +187,7 @@ le_counter: le_counter.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ}
 sm_pairing_peripheral: sm_pairing_peripheral.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} sm_pairing_peripheral.c 
 	${CC} $(filter-out sm_pairing_peripheral.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
 
-sm_pairing_central: ${CORE_OBJ} ${COMMON_OBJ} ${SM_OBJ} ad_parser.o sm_pairing_central.o 
+sm_pairing_central: ${CORE_OBJ} ${COMMON_OBJ} ${SM_OBJ} sm_pairing_central.o 
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 le_streamer: le_streamer.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} le_streamer.c 
@@ -208,7 +208,7 @@ spp_streamer: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} spp_streame
 gap_dedicated_bonding: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} gap_dedicated_bonding.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-gap_inquiry: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ad_parser.o gap_inquiry.c
+gap_inquiry: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} gap_inquiry.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 panu_demo: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} panu_demo.c  
@@ -226,7 +226,7 @@ ancs_client_demo: ancs_client_demo.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT
 led_counter: ${CORE_OBJ} ${COMMON_OBJ} led_counter.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-gap_le_advertisements: ${CORE_OBJ} ${COMMON_OBJ} ad_parser.c gap_le_advertisements.c
+gap_le_advertisements: ${CORE_OBJ} ${COMMON_OBJ} gap_le_advertisements.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 hsp_hs_demo: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} ${SBC_DECODER_OBJ} ${SBC_ENCODER_OBJ} ${CVSD_PLC_OBJ} wav_util.o sco_demo_util.o btstack_ring_buffer.o hsp_hs.o hsp_hs_demo.c

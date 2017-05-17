@@ -71,10 +71,12 @@
 #include "btstack_linked_list.h"
 #include "btstack_memory.h"
 #include "bluetooth_company_id.h"
+#include "bluetooth_data_types.h"
 #include "gap.h"
 #include "hci.h"
 #include "hci_cmd.h"
 #include "hci_dump.h"
+#include "ad_parser.h"
 
 #ifdef ENABLE_HCI_CONTROLLER_TO_HOST_FLOW_CONTROL
 #ifndef HCI_HOST_ACL_PACKET_NUM
@@ -94,6 +96,11 @@
 #define HCI_CONNECTION_TIMEOUT_MS 10000
 #define HCI_RESET_RESEND_TIMEOUT_MS 200
 
+// Names are arbitrarily shortened to 32 bytes if not requested otherwise
+#ifndef GAP_INQUIRY_MAX_NAME_LEN
+#define GAP_INQUIRY_MAX_NAME_LEN 32
+#endif
+
 // prototypes
 #ifdef ENABLE_CLASSIC
 static void hci_update_scan_enable(void);
@@ -107,7 +114,9 @@ static void hci_emit_security_level(hci_con_handle_t con_handle, gap_security_le
 static void hci_connection_timeout_handler(btstack_timer_source_t *timer);
 static void hci_connection_timestamp(hci_connection_t *connection);
 static void hci_emit_l2cap_check_timeout(hci_connection_t *conn);
+static void gap_inquiry_explode(uint8_t * packet);
 #endif
+
 static int  hci_power_control_on(void);
 static void hci_power_control_off(void);
 static void hci_state_reset(void);
@@ -2029,6 +2038,13 @@ static void event_handler(uint8_t *packet, int size){
             // For SCO, we do the can_send_now_check here
             hci_notify_if_sco_can_send_now();
             return;
+
+        // explode inquriy results for easier consumption
+        case HCI_EVENT_INQUIRY_RESULT:
+        case HCI_EVENT_INQUIRY_RESULT_WITH_RSSI:
+        case HCI_EVENT_EXTENDED_INQUIRY_RESPONSE:
+            gap_inquiry_explode(packet);
+            break;
 #endif
 
 #ifdef ENABLE_BLE
@@ -3407,6 +3423,79 @@ static void hci_notify_if_sco_can_send_now(void){
         uint8_t event[2] = { HCI_EVENT_SCO_CAN_SEND_NOW, 0 };
         hci_dump_packet(HCI_EVENT_PACKET, 1, event, sizeof(event));
         hci_stack->sco_packet_handler(HCI_EVENT_PACKET, 0, event, sizeof(event));
+    }
+}
+
+// parsing end emitting has been merged to reduce code size
+static void gap_inquiry_explode(uint8_t * packet){
+    uint8_t event[15+GAP_INQUIRY_MAX_NAME_LEN];
+
+    uint8_t * eir_data;
+    ad_context_t context;
+    const uint8_t * name;
+    uint8_t         name_len;
+
+    int event_type = hci_event_packet_get_type(packet);
+    int num_reserved_fields = event_type == HCI_EVENT_INQUIRY_RESULT ? 2 : 1;    // 2 for old event, 1 otherwise
+    int num_responses       = hci_event_inquiry_result_get_num_responses(packet);
+
+    // event[1] is set at the end
+    int i;
+    for (i=0; i<num_responses;i++){
+        memset(event, 0, sizeof(event));
+        event[0] = GAP_EVENT_INQUIRY_RESULT;
+        uint8_t event_size = 18;    // if name is not set by EIR
+
+        memcpy(&event[2],  &packet[3 +                                             i*6], 6); // bd_addr
+        event[8] =          packet[3 + num_responses*(6)                         + i*1];     // page_scan_repetition_mode
+        memcpy(&event[9],  &packet[3 + num_responses*(6+1+num_reserved_fields)   + i*3], 3); // class of device
+        memcpy(&event[12], &packet[3 + num_responses*(6+1+num_reserved_fields+3) + i*2], 2); // clock offset
+
+        switch (event_type){
+            case HCI_EVENT_INQUIRY_RESULT:
+                // 14,15,16,17 = 0, size 18
+                break;
+            case HCI_EVENT_INQUIRY_RESULT_WITH_RSSI:
+                event[14] = 1;
+                event[15] = packet [3 + num_responses*(6+1+num_reserved_fields+3+2) + i*1]; // rssi
+                // 16,17 = 0, size 18
+                break;
+            case HCI_EVENT_EXTENDED_INQUIRY_RESPONSE:
+                event[14] = 1;
+                event[15] = packet [3 + num_responses*(6+1+num_reserved_fields+3+2) + i*1]; // rssi
+                // for EIR packets, there is only one reponse in it
+                eir_data = &packet[3 + (6+1+num_reserved_fields+3+2+1)];
+                name = NULL;
+                // EIR data is 240 bytes in EIR event
+                for (ad_iterator_init(&context, 240, eir_data) ; ad_iterator_has_more(&context) ; ad_iterator_next(&context)){
+                    uint8_t data_type    = ad_iterator_get_data_type(&context);
+                    uint8_t data_size    = ad_iterator_get_data_len(&context);
+                    const uint8_t * data = ad_iterator_get_data(&context);
+                    // Prefer Complete Local Name over Shortend Local Name
+                    switch (data_type){
+                        case BLUETOOTH_DATA_TYPE_SHORTENED_LOCAL_NAME:
+                            if (name) continue;
+                            /* explicit fall-through */
+                        case BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME:
+                            name = data;
+                            name_len = data_size;
+                            break;
+                        default:
+                            break;
+                    }
+                }
+                if (name){
+                    event[16] = 1;
+                    // truncate name if needed
+                    int len = btstack_min(name_len, GAP_INQUIRY_MAX_NAME_LEN);
+                    event[17] = len;
+                    memcpy(&event[18], name, len);
+                    event_size += len;
+                }
+                break;
+        }
+        event[1] = event_size - 2;
+        hci_emit_event(event, event_size, 1);
     }
 }
 #endif

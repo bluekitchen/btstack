@@ -930,6 +930,26 @@ typedef uint8_t sm_key_t[16];
  */
 #define GAP_EVENT_ADVERTISING_REPORT                          0xE2
 
+ /**
+ * @format B132111JV
+ * @param bd_addr
+ * @param page_scan_repetition_mode
+ * @param class_of_device
+ * @param clock_offset
+ * @param rssi_availabe
+ * @param rssi
+ * @param name_available
+ * @param name_len
+ * @param name
+ */
+#define GAP_EVENT_INQUIRY_RESULT                              0xE3
+
+/**
+ * @format 1
+ * @param status
+ */
+#define GAP_EVENT_INQUIRY_COMPLETE                            0xE4
+
 
 // Meta Events, see below for sub events
 #define HCI_EVENT_HSP_META                                 0xE8
@@ -942,7 +962,7 @@ typedef uint8_t sm_key_t[16];
 #define HCI_EVENT_HID_META                                 0xEF
 
 // Potential other meta groups
- // #define HCI_EVENT_BNEP_META                                0xxx
+// #define HCI_EVENT_BNEP_META                                0xxx
 // #define HCI_EVENT_GAP_META                                 0xxx
 // #define HCI_EVENT_GATT_META                                0xxx
 // #define HCI_EVENT_PAN_META                                 0xxx

@@ -57,14 +57,12 @@
 
 #include "btstack.h"
  
-#define MAX_DEVICES 10
+#define MAX_DEVICES 20
 enum DEVICE_STATE { REMOTE_NAME_REQUEST, REMOTE_NAME_INQUIRED, REMOTE_NAME_FETCHED };
 struct device {
-    bd_addr_t  address;
-    uint16_t   clockOffset;
-    uint32_t   classOfDevice;
-    uint8_t    pageScanRepetitionMode;
-    uint8_t    rssi;
+    bd_addr_t          address;
+    uint8_t            pageScanRepetitionMode;
+    uint16_t           clockOffset;
     enum DEVICE_STATE  state; 
 };
 
@@ -136,7 +134,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 
     bd_addr_t addr;
     int i;
-    int numResponses;
     int index;
     
     if (packet_type != HCI_EVENT_PACKET) return;
@@ -161,75 +158,48 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             break;
 
         /* @text In ACTIVE, the following events are processed:
-         *  - Inquiry result event: the list of discovered devices is processed and the 
-         *    Class of Device (CoD), page scan mode, clock offset, and RSSI are stored in a table.
+         *  - GAP Inquiry result event: BTstack provides a unified inquiry result that contain
+         *    Class of Device (CoD), page scan mode, clock offset. RSSI and name (from EIR) are optional.
          *  - Inquiry complete event: the remote name is requested for devices without a fetched 
          *    name. The state of a remote name can be one of the following: 
          *    REMOTE_NAME_REQUEST, REMOTE_NAME_INQUIRED, or REMOTE_NAME_FETCHED.
-         *  - Remote name cached event: prints cached remote names provided by BTstack, 
-         *    if persistent storage is provided.
          *  - Remote name request complete event: the remote name is stored in the table and the 
          *    state is updated to REMOTE_NAME_FETCHED. The query of remote names is continued.
          */
         case ACTIVE:
             switch(event){
-                case HCI_EVENT_INQUIRY_RESULT:
-                case HCI_EVENT_INQUIRY_RESULT_WITH_RSSI:
-                case HCI_EVENT_EXTENDED_INQUIRY_RESPONSE:
-                    numResponses = hci_event_inquiry_result_get_num_responses(packet);
-                    for (i=0; i<numResponses && deviceCount < MAX_DEVICES;i++){
-                        reverse_bd_addr(&packet[3 + i * 6], addr);
-                        index = getDeviceIndexForAddress(addr);
-                        if (index >= 0) continue;   // already in our list
 
-                        memcpy(devices[deviceCount].address, addr, 6);
-                        devices[deviceCount].pageScanRepetitionMode =   packet [3 + numResponses*(6)         + i*1];
-                        if (event == HCI_EVENT_INQUIRY_RESULT){
-                            devices[deviceCount].classOfDevice = little_endian_read_24(packet, 3 + numResponses*(6+1+1+1)   + i*3);
-                            devices[deviceCount].clockOffset =   little_endian_read_16(packet, 3 + numResponses*(6+1+1+1+3) + i*2) & 0x7fff;
-                            devices[deviceCount].rssi  = 0;
-                        } else {
-                            devices[deviceCount].classOfDevice = little_endian_read_24(packet, 3 + numResponses*(6+1+1)     + i*3);
-                            devices[deviceCount].clockOffset =   little_endian_read_16(packet, 3 + numResponses*(6+1+1+3)   + i*2) & 0x7fff;
-                            devices[deviceCount].rssi  =                               packet [3 + numResponses*(6+1+1+3+2) + i*1];
-                        }
-                        devices[deviceCount].state = REMOTE_NAME_REQUEST;
-                        char name_buffer[240];
-                        if (event == HCI_EVENT_EXTENDED_INQUIRY_RESPONSE){
-                            uint8_t * eir_data = &packet[3 + (6+1+1+3+2) + 1];
-                            ad_context_t context;
-                            for (ad_iterator_init(&context, 240, eir_data) ; ad_iterator_has_more(&context) ; ad_iterator_next(&context)){
-                                uint8_t data_type    = ad_iterator_get_data_type(&context);
-                                uint8_t data_size    = ad_iterator_get_data_len(&context);
-                                const uint8_t * data = ad_iterator_get_data(&context);
-                                // Prefer Complete Local Name over Shortend Local Name
-                                switch (data_type){
-                                    case BLUETOOTH_DATA_TYPE_SHORTENED_LOCAL_NAME:
-                                        if (devices[deviceCount].state == REMOTE_NAME_FETCHED) break;
-                                    case BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME:
-                                        devices[deviceCount].state = REMOTE_NAME_FETCHED;
-                                        memcpy(name_buffer, data, data_size);
-                                        name_buffer[data_size] = 0;
-                                        break;
-                                    default:
-                                        break;
-                                }
-                            }
-                        }
-                        printf("Device found: %s with COD: 0x%06x, pageScan %d, clock offset 0x%04x", bd_addr_to_str(addr),
-                                (unsigned int) devices[deviceCount].classOfDevice, devices[deviceCount].pageScanRepetitionMode,
-                                devices[deviceCount].clockOffset);
-                        if (event >= HCI_EVENT_INQUIRY_RESULT_WITH_RSSI){
-                            printf(", rssi 0x%02x", devices[deviceCount].rssi);
-                        }
-                        if (devices[deviceCount].state == REMOTE_NAME_FETCHED){
-                            printf(", name '%s'", name_buffer);
-                        }
-                        printf("\n");
-                        deviceCount++;
+                case GAP_EVENT_INQUIRY_RESULT:
+                    if (deviceCount >= MAX_DEVICES) break;  // already full
+                    gap_event_inquiry_result_get_bd_addr(packet, addr);
+                    index = getDeviceIndexForAddress(addr);
+                    if (index >= 0) break;   // already in our list
+
+                    memcpy(devices[deviceCount].address, addr, 6);
+                    devices[deviceCount].pageScanRepetitionMode = gap_event_inquiry_result_get_page_scan_repetition_mode(packet);
+                    devices[deviceCount].clockOffset = gap_event_inquiry_result_get_clock_offset(packet);
+                    // print info
+                    printf("Device found: %s ",  bd_addr_to_str(addr));
+                    printf("with COD: 0x%06x, ", (unsigned int) gap_event_inquiry_result_get_class_of_device(packet));
+                    printf("pageScan %d, ",      devices[deviceCount].pageScanRepetitionMode);
+                    printf("clock offset 0x%04x",devices[deviceCount].clockOffset);
+                    if (gap_event_inquiry_result_get_rssi_availabe(packet)){
+                        printf(", rssi %d dBm", (int8_t) gap_event_inquiry_result_get_rssi(packet));
                     }
+                    if (gap_event_inquiry_result_get_name_available(packet)){
+                        char name_buffer[240];
+                        int name_len = gap_event_inquiry_result_get_name_len(packet);
+                        memcpy(name_buffer, gap_event_inquiry_result_get_name(packet), name_len);
+                        name_buffer[name_len] = 0;
+                        printf(", name '%s'", name_buffer);
+                        devices[deviceCount].state = REMOTE_NAME_FETCHED;;
+                    } else {
+                        devices[deviceCount].state = REMOTE_NAME_REQUEST;
+                    }
+                    printf("\n");
+                    deviceCount++;
                     break;
-                    
+
                 case HCI_EVENT_INQUIRY_COMPLETE:
                     for (i=0;i<deviceCount;i++) {
                         // retry remote name request
