@@ -190,7 +190,7 @@ void btstack_sbc_decoder_init(btstack_sbc_decoder_state_t * state, btstack_sbc_m
     if (sbc_decoder_state_singleton && sbc_decoder_state_singleton != state ){
         log_error("SBC decoder: different sbc decoder state is allready registered");
     } 
-    OI_STATUS status = 0;
+    OI_STATUS status = OI_STATUS_SUCCESS;
     switch (mode){
         case SBC_MODE_STANDARD:
             // note: we always request stereo output, even for mono input
@@ -203,7 +203,7 @@ void btstack_sbc_decoder_init(btstack_sbc_decoder_state_t * state, btstack_sbc_m
             break;
     }
 
-    if (status != 0){
+    if (status != OI_STATUS_SUCCESS){
         log_error("SBC decoder: error during reset %d\n", status);
     }
     
@@ -266,7 +266,7 @@ static void btstack_sbc_decoder_process_sbc_data(btstack_sbc_decoder_state_t * s
                 }
             }
 
-            OI_STATUS status = 0;
+            OI_STATUS status = OI_STATUS_SUCCESS;
             int bad_frame = 0;
             int zero_seq_found = 0;
 
@@ -289,7 +289,7 @@ static void btstack_sbc_decoder_process_sbc_data(btstack_sbc_decoder_state_t * s
             
             bytes_processed = bytes_in_buffer_before - decoder_state->bytes_in_frame_buffer;
             switch(status){
-                case 0:
+                case OI_STATUS_SUCCESS:
                     decoder_state->first_good_frame_found = 1;
                     
                     if (state->mode == SBC_MODE_mSBC){
@@ -329,7 +329,7 @@ static void btstack_sbc_decoder_process_sbc_data(btstack_sbc_decoder_state_t * s
             }   
 
             memmove(decoder_state->frame_buffer, decoder_state->frame_buffer + bytes_processed, decoder_state->bytes_in_frame_buffer);
-            if (status || decoder_state->bytes_in_frame_buffer == 0) break;
+            if ((status != OI_STATUS_SUCCESS) || (decoder_state->bytes_in_frame_buffer == 0)) break;
 
         }
     }
@@ -377,7 +377,7 @@ static void btstack_sbc_decoder_process_msbc_data(btstack_sbc_decoder_state_t * 
             }
         }
 
-        OI_STATUS status = 0;
+        OI_STATUS status = OI_STATUS_SUCCESS;
         int bad_frame = 0;
         int zero_seq_found = 0;
 
@@ -406,6 +406,7 @@ static void btstack_sbc_decoder_process_msbc_data(btstack_sbc_decoder_state_t * 
         }        
     
         bytes_processed = bytes_in_buffer_before - decoder_state->bytes_in_frame_buffer;
+        OI_UINT32 bytes_in_frame_buffer = msbc_frame_size;
 
         switch(status){
             case 0:
@@ -461,8 +462,7 @@ static void btstack_sbc_decoder_process_msbc_data(btstack_sbc_decoder_state_t * 
                 if (!plc_enabled) break;
                 
                 frame_data = btstack_sbc_plc_zero_signal_frame();
-                OI_UINT32 bytes_in_frame_buffer = msbc_frame_size;
-                
+
                 status = OI_CODEC_SBC_DecodeFrame(&(decoder_state->decoder_context), 
                                                     &frame_data, 
                                                     &bytes_in_frame_buffer, 
