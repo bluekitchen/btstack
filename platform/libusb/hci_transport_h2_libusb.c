@@ -97,7 +97,7 @@ static const int alt_setting_16_bit[] = {2,4,5};
 // One complete SCO packet with 24 frames every 3 frames (== 3 ms)
 #define NUM_ISO_PACKETS (3)
 
-const uint16_t iso_packet_size_for_alt_setting[] = {
+static const uint16_t iso_packet_size_for_alt_setting[] = {
     0,
     9,
     17,
