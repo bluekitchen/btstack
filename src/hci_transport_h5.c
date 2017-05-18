@@ -834,7 +834,6 @@ static int hci_transport_h5_open(void){
 
 static int hci_transport_h5_close(void){
     return btstack_uart->close();
-    return 0;
 }
 
 static void hci_transport_h5_register_packet_handler(void (*handler)(uint8_t packet_type, uint8_t *packet, uint16_t size)){
