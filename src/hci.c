@@ -1603,13 +1603,12 @@ static void event_handler(uint8_t *packet, int size){
 
     bd_addr_t addr;
     bd_addr_type_t addr_type;
-    uint8_t link_type;
     hci_con_handle_t handle;
     hci_connection_t * conn;
     int i;
-        
-    // warnings
-    (void) link_type;
+#ifdef ENABLE_CLASSIC
+    uint8_t link_type;
+#endif
 
     // log_info("HCI:EVENT:%02x", hci_event_packet_get_type(packet));
     
