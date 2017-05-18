@@ -24,6 +24,7 @@ CORE = \
     btstack_run_loop_embedded.c \
 
 COMMON = \
+	ad_parser.c 			 \
 	bluetooth_init_cc2564B_1.6_BT_Spec_4.1.c   \
 	btstack_chipset_cc256x.c   \
 	btstack_link_key_db_memory.c \

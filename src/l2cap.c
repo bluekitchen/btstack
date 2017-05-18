@@ -131,9 +131,12 @@ static l2cap_signaling_response_t signaling_responses[NR_PENDING_SIGNALING_RESPO
 static int signaling_responses_pending;
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
-
-static btstack_packet_handler_t l2cap_event_packet_handler;
 static l2cap_fixed_channel_t fixed_channels[L2CAP_FIXED_CHANNEL_TABLE_SIZE];
+
+#ifdef ENABLE_BLE
+// only used for connection parameter update events
+static btstack_packet_handler_t l2cap_event_packet_handler;
+#endif
 
 static uint16_t l2cap_fixed_channel_table_channel_id_for_index(int index){
     switch (index){
@@ -179,7 +182,9 @@ void l2cap_init(void){
     l2cap_le_channels = NULL;
 #endif
 
+#ifdef ENABLE_BLE
     l2cap_event_packet_handler = NULL;
+#endif
     memset(fixed_channels, 0, sizeof(fixed_channels));
 
     // 
@@ -196,7 +201,11 @@ void l2cap_init(void){
 }
 
 void l2cap_register_packet_handler(void (*handler)(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size)){
+#ifdef ENABLE_BLE
     l2cap_event_packet_handler = handler;
+#else
+    UNUSED(handler);
+#endif
 }
 
 void l2cap_request_can_send_fix_channel_now_event(hci_con_handle_t con_handle, uint16_t channel_id){

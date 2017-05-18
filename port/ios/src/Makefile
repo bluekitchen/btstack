@@ -25,13 +25,14 @@ libBTstack_CFLAGS = -I$(BTSTACK_ROOT)/src/ble -I$(BTSTACK_ROOT)/src -I..
 TOOL_NAME = BTdaemon
 BTdaemon_FILES = \
 	$(libBTstack_FILES)  	  							  \
-	$(BTSTACK_ROOT)/src/hci.c                             \
-	$(BTSTACK_ROOT)/src/l2cap.c                           \
-	$(BTSTACK_ROOT)/src/l2cap_signaling.c                 \
+	$(BTSTACK_ROOT)/src/ad_parser.c                       \
 	$(BTSTACK_ROOT)/src/btstack_memory.c                  \
 	$(BTSTACK_ROOT)/src/btstack_memory_pool.c             \
 	$(BTSTACK_ROOT)/src/classic/rfcomm.c                  \
 	$(BTSTACK_ROOT)/src/classic/sdp_server.c              \
+	$(BTSTACK_ROOT)/src/hci.c                             \
+	$(BTSTACK_ROOT)/src/l2cap.c                           \
+	$(BTSTACK_ROOT)/src/l2cap_signaling.c                 \
     $(BTSTACK_ROOT)/src/classic/sdp_client.c              \
     $(BTSTACK_ROOT)/src/classic/sdp_client_rfcomm.c       \
 	$(BTSTACK_ROOT)/platform/corefoundation/btstack_device_name_db_corefoundation.m  \

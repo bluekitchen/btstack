@@ -2937,6 +2937,98 @@ static inline const uint8_t * gap_event_advertising_report_get_data(const uint8_
 }
 
 /**
+ * @brief Get field bd_addr from event GAP_EVENT_INQUIRY_RESULT
+ * @param event packet
+ * @param Pointer to storage for bd_addr
+ * @note: btstack_type B
+ */
+static inline void gap_event_inquiry_result_get_bd_addr(const uint8_t * event, bd_addr_t bd_addr){
+    reverse_bd_addr(&event[2], bd_addr);    
+}
+/**
+ * @brief Get field page_scan_repetition_mode from event GAP_EVENT_INQUIRY_RESULT
+ * @param event packet
+ * @return page_scan_repetition_mode
+ * @note: btstack_type 1
+ */
+static inline uint8_t gap_event_inquiry_result_get_page_scan_repetition_mode(const uint8_t * event){
+    return event[8];
+}
+/**
+ * @brief Get field class_of_device from event GAP_EVENT_INQUIRY_RESULT
+ * @param event packet
+ * @return class_of_device
+ * @note: btstack_type 3
+ */
+static inline uint32_t gap_event_inquiry_result_get_class_of_device(const uint8_t * event){
+    return little_endian_read_24(event, 9);
+}
+/**
+ * @brief Get field clock_offset from event GAP_EVENT_INQUIRY_RESULT
+ * @param event packet
+ * @return clock_offset
+ * @note: btstack_type 2
+ */
+static inline uint16_t gap_event_inquiry_result_get_clock_offset(const uint8_t * event){
+    return little_endian_read_16(event, 12);
+}
+/**
+ * @brief Get field rssi_availabe from event GAP_EVENT_INQUIRY_RESULT
+ * @param event packet
+ * @return rssi_availabe
+ * @note: btstack_type 1
+ */
+static inline uint8_t gap_event_inquiry_result_get_rssi_availabe(const uint8_t * event){
+    return event[14];
+}
+/**
+ * @brief Get field rssi from event GAP_EVENT_INQUIRY_RESULT
+ * @param event packet
+ * @return rssi
+ * @note: btstack_type 1
+ */
+static inline uint8_t gap_event_inquiry_result_get_rssi(const uint8_t * event){
+    return event[15];
+}
+/**
+ * @brief Get field name_available from event GAP_EVENT_INQUIRY_RESULT
+ * @param event packet
+ * @return name_available
+ * @note: btstack_type 1
+ */
+static inline uint8_t gap_event_inquiry_result_get_name_available(const uint8_t * event){
+    return event[16];
+}
+/**
+ * @brief Get field name_len from event GAP_EVENT_INQUIRY_RESULT
+ * @param event packet
+ * @return name_len
+ * @note: btstack_type J
+ */
+static inline int gap_event_inquiry_result_get_name_len(const uint8_t * event){
+    return event[17];
+}
+/**
+ * @brief Get field name from event GAP_EVENT_INQUIRY_RESULT
+ * @param event packet
+ * @return name
+ * @note: btstack_type V
+ */
+static inline const uint8_t * gap_event_inquiry_result_get_name(const uint8_t * event){
+    return &event[18];
+}
+
+/**
+ * @brief Get field status from event GAP_EVENT_INQUIRY_COMPLETE
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t gap_event_inquiry_complete_get_status(const uint8_t * event){
+    return event[2];
+}
+
+/**
  * @brief Get field status from event HCI_SUBEVENT_LE_CONNECTION_COMPLETE
  * @param event packet
  * @return status

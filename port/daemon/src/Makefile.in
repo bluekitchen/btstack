@@ -40,29 +40,30 @@ libBTstack_SOURCES =    \
     $(btstack_run_loop_sources) \
 			  
 BTdaemon_SOURCES =      \
-    daemon.c            \
-    btstack_uart_block_posix.c \
-    hci_transport_h4.c  \
-    $(libBTstack_SOURCES) \
-    btstack_memory.c    \
-    hci.c               \
-    hci_dump.c          \
-    l2cap.c             \
-    l2cap_signaling.c   \
+    $(libBTstack_SOURCES)       \
+    $(usb_sources)              \
+    $(remote_device_db_sources) \
+    ad_parser.c                 \
+    att_db.c                    \
+    att_dispatch.c              \
+    att_server.c                \
+    bnep.c                      \
+    btstack_memory.c            \
     btstack_memory_pool.c       \
-    rfcomm.c            \
-    bnep.c              \
-    sdp_server.c               \
-    sdp_client.c        \
-    sdp_client_rfcomm.c  \
-    att_dispatch.c      \
-    gatt_client.c       \
-    att_db.c               \
-    att_server.c        \
-    sm.c                \
-    le_device_db_memory.c \
-    $(usb_sources)                \
-    $(remote_device_db_sources)   \
+    btstack_uart_block_posix.c  \
+    daemon.c                    \
+    gatt_client.c               \
+    hci.c                       \
+    hci_dump.c                  \
+    hci_transport_h4.c          \
+    l2cap.c                     \
+    l2cap_signaling.c           \
+    le_device_db_memory.c       \
+    rfcomm.c                    \
+    sdp_client.c                \
+    sdp_client_rfcomm.c         \
+    sdp_server.c                \
+    sm.c                        \
 
 # use $(CC) for Objective-C files
 .m.o:

@@ -129,8 +129,10 @@ static btstack_uart_config_t uart_config;
 
 // write state
 static TX_STATE tx_state;         
-static uint8_t * tx_data;
-static uint16_t  tx_len;   // 0 == no outgoing packet
+#ifdef ENABLE_EHCILL
+static uint8_t * ehcill_tx_data;
+static uint16_t  ehcill_tx_len;   // 0 == no outgoing packet
+#endif
 
 static uint8_t packet_sent_event[] = { HCI_EVENT_TRANSPORT_PACKET_SENT, 0};
 
@@ -266,7 +268,9 @@ static void hci_transport_h4_block_sent(void){
     switch (tx_state){
         case TX_W4_PACKET_SENT:
             // packet fully sent, reset state
-            tx_len = 0;
+#ifdef ENABLE_EHCILL
+            ehcill_tx_len = 0;
+#endif
             tx_state = TX_IDLE;
 
 #ifdef ENABLE_EHCILL
@@ -308,11 +312,10 @@ static int hci_transport_h4_send_packet(uint8_t packet_type, uint8_t * packet, i
     }
 #endif
 
-    // store request
-    tx_len   = size;
-    tx_data  = packet;
-
 #ifdef ENABLE_EHCILL
+    // store request for later
+    ehcill_tx_len   = size;
+    ehcill_tx_data  = packet;
     switch (ehcill_state){
         case EHCILL_STATE_SLEEP:
             hci_transport_h4_ehcill_trigger_wakeup();
@@ -442,7 +445,7 @@ static void hci_transport_h4_echill_send_wakeup_ind(void){
 }
 
 static int hci_transport_h4_ehcill_outgoing_packet_ready(void){
-    return tx_len != 0;
+    return ehcill_tx_len != 0;
 }
 
 static void hci_transport_h4_ehcill_reset_statemachine(void){
@@ -588,7 +591,7 @@ static void hci_transport_h4_ehcill_handle_command(uint8_t action){
 #endif
                     tx_state = TX_W4_PACKET_SENT;
                     ehcill_state = EHCILL_STATE_AWAKE;
-                    btstack_uart->send_block(tx_data, tx_len);
+                    btstack_uart->send_block(ehcill_tx_data, ehcill_tx_len);
                     break;
                 default:
                     break;
