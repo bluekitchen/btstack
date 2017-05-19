@@ -772,7 +772,7 @@ void avdtp_request_can_send_now_self(avdtp_connection_t * connection, uint16_t l
 }
 
 uint8_t avdtp_get_index_of_remote_stream_endpoint_with_seid(avdtp_stream_endpoint_t * stream_endpoint, uint16_t seid){
-    if (!stream_endpoint->connection) return 0xFF;
+    if (!stream_endpoint->connection) return AVDTP_INVALID_SEP_INDEX;
     if (stream_endpoint->connection->remote_seps[stream_endpoint->remote_sep_index].seid == seid){
         return stream_endpoint->remote_sep_index;
     }
@@ -782,17 +782,17 @@ uint8_t avdtp_get_index_of_remote_stream_endpoint_with_seid(avdtp_stream_endpoin
             return i;
         }
     }
-    return 0xFF;
+    return AVDTP_INVALID_SEP_INDEX;
 }
 
 uint8_t avdtp_find_remote_sep(avdtp_connection_t * connection, uint8_t remote_seid){
-    if (!connection) return 0xFF;    
+    if (!connection) return AVDTP_INVALID_SEP_INDEX;    
     int i;
     for (i = 0; i < connection->remote_seps_num; i++){
         if (connection->remote_seps[i].seid == remote_seid){
             return i;
         }
     }
-    return 0xFF;
+    return AVDTP_INVALID_SEP_INDEX;
 }
     
