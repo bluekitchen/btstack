@@ -55,15 +55,6 @@ extern "C" {
 #endif
 
 /* API_START */
-/**
- * @brief AVDTP Sink service record. 
- * @param service
- * @param service_record_handle
- * @param supported_features 16-bit bitmap, see AVDTP_SINK_SF_* values in avdtp.h
- * @param service_name
- * @param service_provider_name
- */
-void a2dp_sink_create_sdp_record(uint8_t * service,  uint32_t service_record_handle, uint16_t supported_features, const char * service_name, const char * service_provider_name);
 
 /**
  * @brief Set up AVDTP Sink device.
@@ -80,7 +71,7 @@ void avdtp_sink_register_recovery_category(uint8_t seid, uint8_t maximum_recover
 void avdtp_sink_register_header_compression_category(uint8_t seid, uint8_t back_ch, uint8_t media, uint8_t recovery);
 void avdtp_sink_register_multiplexing_category(uint8_t seid, uint8_t fragmentation);
 
-void avdtp_sink_register_media_codec_category(uint8_t seid, avdtp_media_type_t media_type, avdtp_media_codec_type_t media_codec_type, const uint8_t * media_codec_info, uint16_t media_codec_info_len);
+void avdtp_sink_register_media_codec_category(uint8_t seid, avdtp_media_type_t media_type, avdtp_media_codec_type_t media_codec_type, uint8_t * media_codec_info, uint16_t media_codec_info_len);
 void avdtp_sink_register_content_protection_category(uint8_t seid, uint16_t cp_type, const uint8_t * cp_type_value, uint8_t cp_type_value_len);
 
 /**
@@ -98,82 +89,79 @@ void avdtp_sink_connect(bd_addr_t bd_addr);
 void avdtp_sink_register_media_handler(void (*callback)(avdtp_stream_endpoint_t * stream_endpoint, uint8_t *packet, uint16_t size));
 /**
  * @brief Disconnect from device with connection handle. 
- * @param con_handle
+ * @param avdtp_cid
  */
-void avdtp_sink_disconnect(uint16_t con_handle);
+void avdtp_sink_disconnect(uint16_t avdtp_cid);
 
 /**
  * @brief Discover stream endpoints
- * @param con_handle
+ * @param avdtp_cid
  */
-void avdtp_sink_discover_stream_endpoints(uint16_t con_handle);
+void avdtp_sink_discover_stream_endpoints(uint16_t avdtp_cid);
 
 /**
  * @brief Get capabilities
- * @param con_handle
+ * @param avdtp_cid
  */
-void avdtp_sink_get_capabilities(uint16_t con_handle, uint8_t acp_seid);
+void avdtp_sink_get_capabilities(uint16_t avdtp_cid, uint8_t acp_seid);
 
 /**
  * @brief Get all capabilities
- * @param con_handle
+ * @param avdtp_cid
  */
-void avdtp_sink_get_all_capabilities(uint16_t con_handle, uint8_t acp_seid);
+void avdtp_sink_get_all_capabilities(uint16_t avdtp_cid, uint8_t acp_seid);
 
 /**
  * @brief Set configuration
- * @param con_handle
+ * @param avdtp_cid
  */
-void avdtp_sink_set_configuration(uint16_t con_handle, uint8_t int_seid, uint8_t acp_seid, uint16_t configured_services_bitmap, avdtp_capabilities_t configuration);
+void avdtp_sink_set_configuration(uint16_t avdtp_cid, uint8_t int_seid, uint8_t acp_seid, uint16_t configured_services_bitmap, avdtp_capabilities_t configuration);
 
 /**
  * @brief Reconfigure stream
- * @param con_handle
+ * @param avdtp_cid
  * @param seid
  */
-void avdtp_sink_reconfigure(uint16_t con_handle, uint8_t acp_seid, uint16_t configured_services_bitmap, avdtp_capabilities_t configuration);
+void avdtp_sink_reconfigure(uint16_t avdtp_cid, uint8_t int_seid, uint8_t acp_seid, uint16_t configured_services_bitmap, avdtp_capabilities_t configuration);
 
 /**
  * @brief Get configuration
- * @param con_handle
+ * @param avdtp_cid
  */
-void avdtp_sink_get_configuration(uint16_t con_handle, uint8_t acp_seid);
-
-/**
- * @brief Suspend stream
- * @param con_handle
- * @param seid
- */
-void avdtp_sink_suspend(uint16_t con_handle, uint8_t acp_seid);
+void avdtp_sink_get_configuration(uint16_t avdtp_cid, uint8_t acp_seid);
 
 
 /**
  * @brief Open stream
- * @param con_handle
+ * @param avdtp_cid
  * @param seid
  */
-void avdtp_sink_open_stream(uint16_t con_handle, uint8_t acp_seid);
+void avdtp_sink_open_stream(uint16_t avdtp_cid, uint8_t int_seid, uint8_t acp_seid);
+
 
 /**
  * @brief Start stream
- * @param con_handle
- * @param seid
+ * @param local_seid
  */
-void avdtp_sink_start_stream(uint16_t con_handle, uint8_t acp_seid);
+void avdtp_sink_start_stream(uint8_t local_seid);
+
+/**
+ * @brief Abort stream
+ * @param local_seid
+ */
+void avdtp_sink_abort_stream(uint8_t local_seid);
 
 /**
  * @brief Start stream
- * @param con_handle
- * @param seid
+ * @param local_seid
  */
-void avdtp_sink_abort_stream(uint16_t con_handle, uint8_t acp_seid);
+void avdtp_sink_stop_stream(uint8_t local_seid);
 
 /**
- * @brief Start stream
- * @param con_handle
- * @param seid
+ * @brief Suspend stream
+ * @param local_seid
  */
-void avdtp_sink_stop_stream(uint16_t con_handle, uint8_t acp_seid);
+void avdtp_sink_suspend(uint8_t local_seid);
 
 /* API_END */
 

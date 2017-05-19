@@ -1,4 +1,4 @@
-avdtp_source_test
+avdtp_source_demo
 avdtp_sink_test
 portaudio_test
 sine_encode_decode_test
