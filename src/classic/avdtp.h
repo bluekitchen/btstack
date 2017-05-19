@@ -493,6 +493,7 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
 avdtp_connection_t * avdtp_create_connection(bd_addr_t remote_addr, avdtp_context_t * context);
 avdtp_stream_endpoint_t * avdtp_create_stream_endpoint(avdtp_sep_type_t sep_type, avdtp_media_type_t media_type, avdtp_context_t * context);
 
+void avdtp_connect(bd_addr_t remote, avdtp_sep_type_t query_role, avdtp_context_t * context);
 void avdtp_disconnect(uint16_t avdtp_cid, avdtp_context_t * context);
 void avdtp_open_stream(uint16_t avdtp_cid, uint8_t int_seid, uint8_t acp_seid, avdtp_context_t * context);
 void avdtp_start_stream(uint8_t int_seid, avdtp_context_t * context);
@@ -520,6 +521,7 @@ uint8_t avdtp_choose_sbc_max_bitpool_value(avdtp_stream_endpoint_t * stream_endp
 uint8_t avdtp_choose_sbc_min_bitpool_value(avdtp_stream_endpoint_t * stream_endpoint, uint8_t remote_min_bitpool_value);
 
 uint8_t avdtp_stream_endpoint_seid(avdtp_stream_endpoint_t * stream_endpoint);
+
 #if defined __cplusplus
 }
 #endif

@@ -137,14 +137,8 @@ void avdtp_sink_register_packet_handler(btstack_packet_handler_t callback){
     avdtp_sink_context.avdtp_callback = callback;
 }
 
-void avdtp_sink_connect(bd_addr_t bd_addr){
-    avdtp_connection_t * connection = avdtp_connection_for_bd_addr(bd_addr, &avdtp_sink_context);
-    if (!connection){
-        connection = avdtp_create_connection(bd_addr, &avdtp_sink_context);
-    }
-    if (connection->state != AVDTP_SIGNALING_CONNECTION_IDLE) return;
-    connection->state = AVDTP_SIGNALING_CONNECTION_W4_L2CAP_CONNECTED;
-    l2cap_create_channel(packet_handler, connection->remote_addr, BLUETOOTH_PROTOCOL_AVDTP, 0xffff, NULL);
+void avdtp_sink_connect(bd_addr_t remote){
+    avdtp_connect(remote, AVDTP_SOURCE, &avdtp_sink_context);
 }
 
 void avdtp_sink_disconnect(uint16_t avdtp_cid){

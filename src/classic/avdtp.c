@@ -50,7 +50,37 @@
 #include "avdtp_acceptor.h"
 #include "avdtp_initiator.h"
 
+static int record_id = -1;
+static uint8_t   attribute_value[1000];
+static const unsigned int attribute_value_buffer_size = sizeof(attribute_value);
+
+typedef struct {
+    avdtp_connection_t * connection;
+    btstack_packet_handler_t avdtp_callback;
+    avdtp_sep_type_t query_role;
+    btstack_packet_handler_t packet_handler;
+} avdtp_sdp_query_context_t;
+
+static avdtp_sdp_query_context_t sdp_query_context;
+
 static void (*handle_media_data)(avdtp_stream_endpoint_t * stream_endpoint, uint8_t *packet, uint16_t size);
+static void avdtp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+
+void avdtp_connect(bd_addr_t remote, avdtp_sep_type_t query_role, avdtp_context_t * avdtp_context){
+    sdp_query_context.connection = NULL;
+    avdtp_connection_t * connection = avdtp_connection_for_bd_addr(remote, avdtp_context);
+    if (!connection){
+        connection = avdtp_create_connection(remote, avdtp_context);
+    }
+    if (connection->state != AVDTP_SIGNALING_CONNECTION_IDLE) return;
+    connection->state = AVDTP_SIGNALING_W4_SDP_QUERY_COMPLETE;
+    sdp_query_context.connection = connection;
+    sdp_query_context.query_role = query_role;
+    sdp_query_context.avdtp_callback = avdtp_context->avdtp_callback;
+    sdp_query_context.packet_handler = avdtp_context->packet_handler;
+    
+    sdp_client_query_uuid16(&avdtp_handle_sdp_client_query_result, remote, BLUETOOTH_PROTOCOL_AVDTP);
+}
 
 void avdtp_register_media_transport_category(avdtp_stream_endpoint_t * stream_endpoint){
     if (!stream_endpoint){
@@ -271,6 +301,119 @@ static void stream_endpoint_state_machine(avdtp_connection_t * connection, avdtp
             break;
     }
 }
+
+static void avdtp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(packet_type);
+    UNUSED(channel);
+    UNUSED(size);
+
+    des_iterator_t des_list_it;
+    des_iterator_t prot_it;
+    uint32_t avdtp_remote_uuid    = 0;
+    uint16_t avdtp_l2cap_psm      = 0;
+    uint16_t avdtp_version        = 0;
+    
+    if (!sdp_query_context.connection) return;
+
+    switch (hci_event_packet_get_type(packet)){
+        case SDP_EVENT_QUERY_ATTRIBUTE_VALUE:
+            // Handle new SDP record 
+            if (sdp_event_query_attribute_byte_get_record_id(packet) != record_id) {
+                record_id = sdp_event_query_attribute_byte_get_record_id(packet);
+                printf("SDP Record: Nr: %d\n", record_id);
+            }
+
+            if (sdp_event_query_attribute_byte_get_attribute_length(packet) <= attribute_value_buffer_size) {
+                attribute_value[sdp_event_query_attribute_byte_get_data_offset(packet)] = sdp_event_query_attribute_byte_get_data(packet);
+                
+                if ((uint16_t)(sdp_event_query_attribute_byte_get_data_offset(packet)+1) == sdp_event_query_attribute_byte_get_attribute_length(packet)) {
+
+                    switch(sdp_event_query_attribute_byte_get_attribute_id(packet)) {
+                        case BLUETOOTH_ATTRIBUTE_SERVICE_CLASS_ID_LIST:
+                            if (de_get_element_type(attribute_value) != DE_DES) break;
+                            for (des_iterator_init(&des_list_it, attribute_value); des_iterator_has_more(&des_list_it); des_iterator_next(&des_list_it)) {
+                                uint8_t * element = des_iterator_get_element(&des_list_it);
+                                if (de_get_element_type(element) != DE_UUID) continue;
+                                uint32_t uuid = de_get_uuid32(element);
+                                switch (uuid){
+                                    case BLUETOOTH_SERVICE_CLASS_AUDIO_SOURCE:
+                                        if (sdp_query_context.query_role != AVDTP_SOURCE) {
+                                            sdp_query_context.connection->state = AVDTP_SIGNALING_CONNECTION_IDLE;
+                                            avdtp_signaling_emit_connection_established(sdp_query_context.avdtp_callback, sdp_query_context.connection->l2cap_signaling_cid, sdp_query_context.connection->remote_addr, 0);
+                                            break;
+                                        }
+                                        printf("SDP Attribute 0x%04x: AVDTP SOURCE protocol UUID: 0x%04x\n", sdp_event_query_attribute_byte_get_attribute_id(packet), uuid);
+                                        avdtp_remote_uuid = uuid;
+                                        break;
+                                    case BLUETOOTH_SERVICE_CLASS_AUDIO_SINK:
+                                        if (sdp_query_context.query_role != AVDTP_SINK) {
+                                            sdp_query_context.connection->state = AVDTP_SIGNALING_CONNECTION_IDLE;
+                                            avdtp_signaling_emit_connection_established(sdp_query_context.avdtp_callback, sdp_query_context.connection->l2cap_signaling_cid, sdp_query_context.connection->remote_addr, 0);
+                                            break;
+                                        }
+                                        printf("SDP Attribute 0x%04x: AVDTP SINK protocol UUID: 0x%04x\n", sdp_event_query_attribute_byte_get_attribute_id(packet), uuid);
+                                        avdtp_remote_uuid = uuid;
+                                        break;
+                                    default:
+                                        break;
+                                }
+                            }
+                            break;
+                        
+                        case BLUETOOTH_ATTRIBUTE_PROTOCOL_DESCRIPTOR_LIST: {
+                                printf("SDP Attribute: 0x%04x\n", sdp_event_query_attribute_byte_get_attribute_id(packet));
+
+                                for (des_iterator_init(&des_list_it, attribute_value); des_iterator_has_more(&des_list_it); des_iterator_next(&des_list_it)) {                                    
+                                    uint8_t       *des_element;
+                                    uint8_t       *element;
+                                    uint32_t       uuid;
+
+                                    if (des_iterator_get_type(&des_list_it) != DE_DES) continue;
+
+                                    des_element = des_iterator_get_element(&des_list_it);
+                                    des_iterator_init(&prot_it, des_element);
+                                    element = des_iterator_get_element(&prot_it);
+                                    
+                                    if (de_get_element_type(element) != DE_UUID) continue;
+                                    
+                                    uuid = de_get_uuid32(element);
+                                    switch (uuid){
+                                        case BLUETOOTH_PROTOCOL_L2CAP:
+                                            if (!des_iterator_has_more(&prot_it)) continue;
+                                            des_iterator_next(&prot_it);
+                                            de_element_get_uint16(des_iterator_get_element(&prot_it), &avdtp_l2cap_psm);
+                                            break;
+                                        case BLUETOOTH_PROTOCOL_AVDTP:
+                                            if (!des_iterator_has_more(&prot_it)) continue;
+                                            des_iterator_next(&prot_it);
+                                            de_element_get_uint16(des_iterator_get_element(&prot_it), &avdtp_version);
+                                            break;
+                                        default:
+                                            break;
+                                    }
+                                }
+                                printf("l2cap_psm 0x%04x, avdtp_version 0x%04x\n", avdtp_l2cap_psm, avdtp_version);
+
+                                /* Create AVDTP connection */
+                                sdp_query_context.connection->state = AVDTP_SIGNALING_CONNECTION_W4_L2CAP_CONNECTED;
+                                l2cap_create_channel(sdp_query_context.packet_handler, sdp_query_context.connection->remote_addr, avdtp_l2cap_psm, l2cap_max_mtu(), NULL);
+                            }
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            } else {
+                fprintf(stderr, "SDP attribute value buffer size exceeded: available %d, required %d\n", attribute_value_buffer_size, sdp_event_query_attribute_byte_get_attribute_length(packet));
+            }
+            break;
+            
+        case SDP_EVENT_QUERY_COMPLETE:
+            fprintf(stderr, "General query done with status %d.\n", sdp_event_query_complete_get_status(packet));
+            break;
+    }
+}
+
 
 void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size, avdtp_context_t * context){
     bd_addr_t event_addr;
