@@ -210,13 +210,13 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             switch (hci_event_packet_get_type(packet)) {
                 case HCI_EVENT_PIN_CODE_REQUEST:
                     // inform about pin code request
-                    printf("Pin code request - using '0000'\n");
+                    log_info("Pin code request - using '0000'");
                     hci_event_pin_code_request_get_bd_addr(packet, event_addr);
                     hci_send_cmd(&hci_pin_code_request_reply, &event_addr, 4, "0000");
                     break;
                 case HCI_EVENT_DISCONNECTION_COMPLETE:
                     // connection closed -> quit test app
-                    printf("\n --- a2dp source --- HCI_EVENT_DISCONNECTION_COMPLETE ---\n");
+                    log_info("\n --- a2dp source --- HCI_EVENT_DISCONNECTION_COMPLETE ---");
 
                     break;
                 case HCI_EVENT_AVDTP_META:
@@ -225,13 +225,13 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             avdtp_cid = avdtp_subevent_signaling_connection_established_get_avdtp_cid(packet);
                             status = avdtp_subevent_signaling_connection_established_get_status(packet);
                             if (status != 0){
-                                printf(" --- a2dp source --- AVDTP_SUBEVENT_SIGNALING_CONNECTION could not be established, status %d ---\n", status);
+                                log_info(" --- a2dp source --- AVDTP_SUBEVENT_SIGNALING_CONNECTION could not be established, status %d ---", status);
                                 break;
                             }
                             sc.active_remote_sep = NULL;
                             next_remote_sep_index_to_query = 0;
                             app_state = A2DP_W2_DISCOVER_SEPS;
-                            printf(" --- a2dp source --- AVDTP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED, avdtp cid 0x%02x ---\n", avdtp_cid);
+                            log_info(" --- a2dp source --- AVDTP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED, avdtp cid 0x%02x ---", avdtp_cid);
                             avdtp_source_discover_stream_endpoints(avdtp_cid);
                             break;
                         
@@ -242,12 +242,12 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             acp_seid = avdtp_subevent_streaming_connection_established_get_acp_seid(packet);
 
                             if (status != 0){
-                                printf(" --- a2dp source --- AVDTP_SUBEVENT_STREAMING_CONNECTION could not be established, status %d ---\n", status);
+                                log_info(" --- a2dp source --- AVDTP_SUBEVENT_STREAMING_CONNECTION could not be established, status %d ---", status);
                                 break;
                             }
                             app_state = A2DP_STREAMING_OPENED;
                             a2dp_streaming_emit_connection_established(a2dp_source_context.a2dp_callback, avdtp_cid, int_seid, acp_seid, 0);
-                            printf(" --- a2dp source --- AVDTP_SUBEVENT_STREAMING_CONNECTION_ESTABLISHED --- avdtp_cid 0x%02x, local seid %d, remote seid %d\n", avdtp_cid, int_seid, acp_seid);
+                            log_info(" --- a2dp source --- AVDTP_SUBEVENT_STREAMING_CONNECTION_ESTABLISHED --- avdtp_cid 0x%02x, local seid %d, remote seid %d", avdtp_cid, int_seid, acp_seid);
                             break;
 
                         case AVDTP_SUBEVENT_SIGNALING_SEP_FOUND:
@@ -256,13 +256,11 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             sep.in_use = avdtp_subevent_signaling_sep_found_get_in_use(packet);
                             sep.media_type = avdtp_subevent_signaling_sep_found_get_media_type(packet);
                             sep.type = avdtp_subevent_signaling_sep_found_get_sep_type(packet);
-                            printf(" --- a2dp source --- Found sep: seid %u, in_use %d, media type %d, sep type %d (1-SNK)\n", sep.seid, sep.in_use, sep.media_type, sep.type);
+                            log_info(" --- a2dp source --- Found sep: seid %u, in_use %d, media type %d, sep type %d (1-SNK)", sep.seid, sep.in_use, sep.media_type, sep.type);
                             break;
 
                         case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CAPABILITY:{
-                            printf(" AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CAPABILITY 0\n");
                             if (!sc.local_stream_endpoint) return;
-                            printf(" AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CAPABILITY 1\n");
                             uint8_t sampling_frequency = avdtp_choose_sbc_sampling_frequency(sc.local_stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_sampling_frequency_bitmap(packet));
                             uint8_t channel_mode = avdtp_choose_sbc_channel_mode(sc.local_stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_channel_mode_bitmap(packet));
                             uint8_t block_length = avdtp_choose_sbc_block_length(sc.local_stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_block_length_bitmap(packet));
@@ -285,21 +283,13 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             break;
                         }
                         case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CAPABILITY:
-                            printf(" --- a2dp source ---  received non SBC codec. not implemented\n");
+                            log_info(" --- a2dp source ---  received non SBC codec. not implemented");
                             break;
                         
                         case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION:{
                             sc.sampling_frequency = avdtp_subevent_signaling_media_codec_sbc_configuration_get_sampling_frequency(packet);
                             sc.block_length = avdtp_subevent_signaling_media_codec_sbc_configuration_get_block_length(packet);
                             sc.subbands = avdtp_subevent_signaling_media_codec_sbc_configuration_get_subbands(packet);
-                            // switch (avdtp_subevent_signaling_media_codec_sbc_configuration_get_allocation_method(packet)){
-                            //     case AVDTP_SBC_ALLOCATION_METHOD_LOUDNESS:
-                            //         sc.allocation_method = SBC_LOUDNESS;
-                            //         break;
-                            //     case AVDTP_SBC_ALLOCATION_METHOD_SNR:
-                            //         sc.allocation_method = SBC_SNR;
-                            //         break;
-                            // }
                             sc.allocation_method = avdtp_subevent_signaling_media_codec_sbc_configuration_get_allocation_method(packet) - 1;
                             sc.max_bitpool_value = avdtp_subevent_signaling_media_codec_sbc_configuration_get_max_bitpool_value(packet);
                             // TODO: deal with reconfigure: avdtp_subevent_signaling_media_codec_sbc_configuration_get_reconfigure(packet);
@@ -312,23 +302,23 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                         case AVDTP_SUBEVENT_SIGNALING_ACCEPT:
                             signal_identifier = avdtp_subevent_signaling_accept_get_signal_identifier(packet);
                             status = avdtp_subevent_signaling_accept_get_status(packet);
-                            printf(" --- a2dp source ---  Accepted %d\n", signal_identifier);
+                            log_info(" --- a2dp source ---  Accepted %d", signal_identifier);
                             
                             switch (app_state){
                                 case A2DP_W2_DISCOVER_SEPS:
                                     app_state = A2DP_W2_GET_ALL_CAPABILITIES;
                                     sc.active_remote_sep = avdtp_source_remote_sep(avdtp_cid, next_remote_sep_index_to_query++);
-                                    printf(" --- a2dp source ---  Query get caps for seid %d\n", sc.active_remote_sep->seid);
+                                    log_info(" --- a2dp source ---  Query get caps for seid %d", sc.active_remote_sep->seid);
                                     avdtp_source_get_capabilities(avdtp_cid, sc.active_remote_sep->seid);
                                     break;
                                 case A2DP_W2_GET_CAPABILITIES:
                                 case A2DP_W2_GET_ALL_CAPABILITIES:
                                     if (next_remote_sep_index_to_query < avdtp_source_remote_seps_num(avdtp_cid)){
                                         sc.active_remote_sep = avdtp_source_remote_sep(avdtp_cid, next_remote_sep_index_to_query++);
-                                        printf(" --- a2dp source ---  Query get caps for seid %d\n", sc.active_remote_sep->seid);
+                                        log_info(" --- a2dp source ---  Query get caps for seid %d", sc.active_remote_sep->seid);
                                         avdtp_source_get_capabilities(avdtp_cid, sc.active_remote_sep->seid);
                                     } else {
-                                        printf(" --- a2dp source ---  No more remote seps found\n");
+                                        log_info(" --- a2dp source ---  No more remote seps found");
                                         app_state = A2DP_IDLE;
                                     }
                                     break;
@@ -374,7 +364,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                                             event[pos++] = A2DP_SUBEVENT_STREAM_RELEASED;
                                             little_endian_store_16(event, pos, avdtp_cid);
                                             pos += 2;
-                                            printf("send A2DP_SUBEVENT_STREAM_RELEASED to app\n");
+                                            log_info("send A2DP_SUBEVENT_STREAM_RELEASED to app");
                                             event[pos++] = avdtp_stream_endpoint_seid(sc.local_stream_endpoint);
                                             (*a2dp_source_context.a2dp_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
                                             break;
@@ -404,16 +394,16 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                         case AVDTP_SUBEVENT_SIGNALING_REJECT:
                             app_state = A2DP_IDLE;
                             signal_identifier = avdtp_subevent_signaling_reject_get_signal_identifier(packet);
-                            printf(" --- a2dp source ---  Rejected %d\n", signal_identifier);
+                            log_info(" --- a2dp source ---  Rejected %d", signal_identifier);
                             break;
                         case AVDTP_SUBEVENT_SIGNALING_GENERAL_REJECT:
                             app_state = A2DP_IDLE;
                             signal_identifier = avdtp_subevent_signaling_general_reject_get_signal_identifier(packet);
-                            printf(" --- a2dp source ---  Rejected %d\n", signal_identifier);
+                            log_info(" --- a2dp source ---  Rejected %d", signal_identifier);
                             break;
                         default:
                             app_state = A2DP_IDLE;
-                            printf(" --- a2dp source ---  not implemented\n");
+                            log_info(" --- a2dp source ---  not implemented");
                             break; 
                     }
                     break;   
@@ -456,10 +446,10 @@ uint8_t a2dp_source_create_stream_endpoint(avdtp_media_type_t media_type, avdtp_
 void a2dp_source_establish_stream(bd_addr_t bd_addr, uint8_t local_seid){
     sc.local_stream_endpoint = avdtp_stream_endpoint_for_seid(local_seid, &a2dp_source_context);
     if (!sc.local_stream_endpoint){
-        printf(" no local_stream_endpoint for seid %d\n", local_seid);
+        log_error(" no local_stream_endpoint for seid %d", local_seid);
+        return;
     }
     avdtp_source_connect(bd_addr);
-
 }
 
 void a2dp_source_disconnect(uint16_t con_handle){
@@ -481,7 +471,7 @@ void a2dp_source_pause_stream(uint8_t int_seid){
 uint8_t a2dp_source_stream_endpoint_ready(uint8_t local_seid){
     avdtp_stream_endpoint_t * stream_endpoint = avdtp_stream_endpoint_for_seid(local_seid, &a2dp_source_context);
     if (!stream_endpoint) {
-        printf("no stream_endpoint");
+        log_error("No stream_endpoint with seid %d", local_seid);
         return 0;
     }
     return (stream_endpoint->state == AVDTP_STREAM_ENDPOINT_STREAMING);
@@ -490,7 +480,7 @@ uint8_t a2dp_source_stream_endpoint_ready(uint8_t local_seid){
 
 static void a2dp_source_setup_media_header(uint8_t * media_packet, int size, int *offset, uint8_t marker, uint16_t sequence_number){
     if (size < AVDTP_MEDIA_PAYLOAD_HEADER_SIZE){
-        printf("small outgoing buffer\n");
+        log_error("small outgoing buffer");
         return;
     }
 
@@ -521,7 +511,7 @@ static void a2dp_source_setup_media_header(uint8_t * media_packet, int size, int
 void a2dp_source_stream_endpoint_request_can_send_now(uint8_t local_seid){
     avdtp_stream_endpoint_t * stream_endpoint = avdtp_stream_endpoint_for_seid(local_seid, &a2dp_source_context);
     if (!stream_endpoint) {
-        printf("no stream_endpoint");
+        log_error("no stream_endpoint for seid %d", local_seid);
         return;
     }
     stream_endpoint->send_stream = 1;
@@ -531,11 +521,11 @@ void a2dp_source_stream_endpoint_request_can_send_now(uint8_t local_seid){
 int a2dp_max_media_payload_size(uint8_t int_seid){
     avdtp_stream_endpoint_t * stream_endpoint = avdtp_stream_endpoint_for_seid(int_seid, &a2dp_source_context);
     if (!stream_endpoint) {
-        printf("no stream_endpoint found for seid %d", int_seid);
+        log_error("no stream_endpoint found for seid %d", int_seid);
         return 0;
     }
     if (stream_endpoint->l2cap_media_cid == 0){
-        printf("no media cid found for seid %d", int_seid);
+        log_error("no media cid found for seid %d", int_seid);
         return 0;
     }  
     return l2cap_get_remote_mtu_for_local_cid(stream_endpoint->l2cap_media_cid) - AVDTP_MEDIA_PAYLOAD_HEADER_SIZE;
@@ -543,7 +533,7 @@ int a2dp_max_media_payload_size(uint8_t int_seid){
 
 static void a2dp_source_copy_media_payload(uint8_t * media_packet, int size, int * offset, uint8_t * storage, int num_bytes_to_copy, uint8_t num_frames){
     if (size < num_bytes_to_copy + 1){
-        printf("small outgoing buffer\n");
+        log_error("small outgoing buffer");
         return;
     }
     
@@ -557,12 +547,12 @@ static void a2dp_source_copy_media_payload(uint8_t * media_packet, int size, int
 int a2dp_source_stream_send_media_payload(uint8_t int_seid, uint8_t * storage, int num_bytes_to_copy, uint8_t num_frames, uint8_t marker){
     avdtp_stream_endpoint_t * stream_endpoint = avdtp_stream_endpoint_for_seid(int_seid, &a2dp_source_context);
     if (!stream_endpoint) {
-        printf("no stream_endpoint found for seid %d", int_seid);
+        log_error("no stream_endpoint found for seid %d", int_seid);
         return 0;
     }
 
     if (stream_endpoint->l2cap_media_cid == 0){
-        printf("no media cid found for seid %d", int_seid);
+        log_error("no media cid found for seid %d", int_seid);
         return 0;
     }        
 
