@@ -78,11 +78,14 @@ SBC_ENCODER_OBJ  = $(SBC_ENCODER:.c=.o)
 AVDTP_OBJ  = $(AVDTP:.c=.o)
 
 EXAMPLES = iopt ble_peripheral_test ble_central_test l2cap_test classic_test bnep_test hsp_ag_test hsp_hs_test sco_loopback le_data_channel
-EXAMPLES = avdtp_source_test le_data_channel 
+EXAMPLES = avdtp_source_test avdtp_sink_test le_data_channel 
 
 all: ${EXAMPLES}
 
 # compile .gatt descriptions
+avdtp_sink_test: ${CORE_OBJ} ${COMMON_OBJ} ${SBC_DECODER_OBJ} ${SM_OBJ} ${SBC_ENCODER_OBJ} ${AVDTP_OBJ} avdtp_sink_test.o
+	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+
 avdtp_source_test: ${CORE_OBJ} ${COMMON_OBJ} ${SBC_DECODER_OBJ} ${SM_OBJ} ${SBC_ENCODER_OBJ} ${AVDTP_OBJ} avdtp_source_test.o
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 

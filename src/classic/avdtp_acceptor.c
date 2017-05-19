@@ -35,9 +35,6 @@
  *
  */
 
-#define __BTSTACK_FILE__ "avdtp_acceptor.c"
-
-
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -45,9 +42,9 @@
 #include <unistd.h>
 
 #include "btstack.h"
-#include "avdtp.h"
-#include "avdtp_util.h"
-#include "avdtp_acceptor.h"
+#include "classic/avdtp.h"
+#include "classic/avdtp_util.h"
+#include "classic/avdtp_acceptor.h"
 
 
 static int avdtp_acceptor_send_accept_response(uint16_t cid,  uint8_t transaction_label, avdtp_signal_identifier_t identifier){

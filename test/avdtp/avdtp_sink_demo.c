@@ -53,12 +53,13 @@
 #include "hci_dump.h"
 #include "l2cap.h"
 #include "stdin_support.h"
-#include "avdtp_sink.h"
-#include "a2dp_sink.h"
 
-#include "btstack_sbc.h"
 #include "wav_util.h"
-#include "avdtp_util.h"
+
+#include "classic/avdtp_sink.h"
+#include "classic/a2dp_sink.h"
+#include "classic/btstack_sbc.h"
+#include "classic/avdtp_util.h"
 
 #ifdef HAVE_PORTAUDIO
 #include <portaudio.h>
