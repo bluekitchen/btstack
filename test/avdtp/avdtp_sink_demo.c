@@ -565,7 +565,7 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
             avdtp_sink_connect(remote);
             break;
         case 'C':
-            printf("Disconnect not implemented\n");
+            printf("Disconnect\n");
             avdtp_sink_disconnect(avdtp_cid);
             break;
         case 'd':

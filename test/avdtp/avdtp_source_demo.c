@@ -356,7 +356,7 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
             a2dp_source_establish_stream(remote, local_seid);
             break;
         case 'C':
-            printf("Disconnect not implemented\n");
+            printf("Disconnect\n");
             a2dp_source_disconnect(media_tracker.a2dp_cid);
             break;
         case 'x':
