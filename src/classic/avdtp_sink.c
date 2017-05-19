@@ -112,7 +112,7 @@ void avdtp_sink_init(void){
     avdtp_sink_context.stream_endpoints = NULL;
     avdtp_sink_context.connections = NULL;
     avdtp_sink_context.stream_endpoints_id_counter = 0;
-    // TODO: assign dummy  handlers;
+    avdtp_sink_context.packet_handler = packet_handler;
 
     l2cap_register_service(&packet_handler, BLUETOOTH_PROTOCOL_AVDTP, 0xffff, LEVEL_0);
 }

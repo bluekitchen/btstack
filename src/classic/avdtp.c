@@ -79,6 +79,7 @@ void avdtp_connect(bd_addr_t remote, avdtp_sep_type_t query_role, avdtp_context_
     sdp_query_context.avdtp_callback = avdtp_context->avdtp_callback;
     sdp_query_context.packet_handler = avdtp_context->packet_handler;
     
+    printf("packet handler %p, avdtp_callback %p\n", sdp_query_context.packet_handler, sdp_query_context.avdtp_callback);
     sdp_client_query_uuid16(&avdtp_handle_sdp_client_query_result, remote, BLUETOOTH_PROTOCOL_AVDTP);
 }
 
@@ -234,6 +235,7 @@ avdtp_stream_endpoint_t * avdtp_create_stream_endpoint(avdtp_sep_type_t sep_type
 
 static void handle_l2cap_data_packet_for_signaling_connection(avdtp_connection_t * connection, uint8_t *packet, uint16_t size, avdtp_context_t * context){
     int offset = avdtp_read_signaling_header(&connection->signaling_packet, packet, size);
+    // printf("handle_l2cap_data_packet_for_signaling_connection \n");
     switch (connection->signaling_packet.message_type){
         case AVDTP_CMD_MSG:
             avdtp_acceptor_stream_config_subsm(connection, packet, size, offset, context);
@@ -387,16 +389,17 @@ static void avdtp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t c
                                             if (!des_iterator_has_more(&prot_it)) continue;
                                             des_iterator_next(&prot_it);
                                             de_element_get_uint16(des_iterator_get_element(&prot_it), &avdtp_version);
+                                            sdp_query_context.connection->state = AVDTP_SIGNALING_CONNECTION_W2_L2CAP_CONNECT;
                                             break;
                                         default:
                                             break;
                                     }
                                 }
                                 printf("l2cap_psm 0x%04x, avdtp_version 0x%04x\n", avdtp_l2cap_psm, avdtp_version);
-
-                                /* Create AVDTP connection */
+                                printf("Create AVDTP connection, handler %p, addr %s\n", sdp_query_context.packet_handler, bd_addr_to_str(sdp_query_context.connection->remote_addr));
                                 sdp_query_context.connection->state = AVDTP_SIGNALING_CONNECTION_W4_L2CAP_CONNECTED;
                                 l2cap_create_channel(sdp_query_context.packet_handler, sdp_query_context.connection->remote_addr, avdtp_l2cap_psm, l2cap_max_mtu(), NULL);
+                                
                             }
                             break;
                         default:
@@ -409,7 +412,7 @@ static void avdtp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t c
             break;
             
         case SDP_EVENT_QUERY_COMPLETE:
-            fprintf(stderr, "General query done with status %d.\n", sdp_event_query_complete_get_status(packet));
+            printf("General query done with status %d.\n", sdp_event_query_complete_get_status(packet));
             break;
     }
 }
@@ -469,9 +472,11 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
                     local_cid = l2cap_event_incoming_connection_get_local_cid(packet);
                     
                     connection = avdtp_connection_for_bd_addr(event_addr, context);
-                    if (!connection){
+                    
+                    if (!connection || connection->state == AVDTP_SIGNALING_CONNECTION_W4_L2CAP_CONNECTED){
                         connection = avdtp_create_connection(event_addr, context);
                         connection->state = AVDTP_SIGNALING_CONNECTION_W4_L2CAP_CONNECTED;
+                        printf("L2CAP_EVENT_INCOMING_CONNECTION, connection %p, state connection %d\n", connection, connection->state);
                         l2cap_accept_connection(local_cid);
                         break;
                     }
@@ -506,8 +511,8 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
                     con_handle = l2cap_event_channel_opened_get_handle(packet);
                     local_cid = l2cap_event_channel_opened_get_local_cid(packet);
 
-                    // printf("L2CAP_EVENT_CHANNEL_OPENED: Channel successfully opened: %s, handle 0x%02x, psm 0x%02x, local cid 0x%02x, remote cid 0x%02x\n",
-                    //        bd_addr_to_str(event_addr), con_handle, psm, local_cid,  l2cap_event_channel_opened_get_remote_cid(packet));
+                    printf("L2CAP_EVENT_CHANNEL_OPENED: Channel successfully opened: %s, handle 0x%02x, psm 0x%02x, local cid 0x%02x, remote cid 0x%02x\n",
+                           bd_addr_to_str(event_addr), con_handle, psm, local_cid,  l2cap_event_channel_opened_get_remote_cid(packet));
 
                     if (psm != BLUETOOTH_PROTOCOL_AVDTP) break;
                     

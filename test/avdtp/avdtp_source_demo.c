@@ -41,7 +41,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <math.h>
 
 #include "btstack_config.h"
 #include "btstack_debug.h"
@@ -74,7 +73,6 @@
 #define TABLE_SIZE_441HZ   100
 
 typedef struct {
-    int16_t source[TABLE_SIZE_441HZ];
     int left_phase;
     int right_phase;
 } paTestData;
@@ -89,6 +87,19 @@ static  uint8_t media_sbc_codec_capabilities[] = {
     0xFF,//(AVDTP_SBC_BLOCK_LENGTH_16 << 4) | (AVDTP_SBC_SUBBANDS_8 << 2) | AVDTP_SBC_ALLOCATION_METHOD_LOUDNESS,
     2, 53
 }; 
+
+static const int16_t sine_int16[] = {
+     0,    2057,    4107,    6140,    8149,   10126,   12062,   13952,   15786,   17557,
+ 19260,   20886,   22431,   23886,   25247,   26509,   27666,   28714,   29648,   30466,
+ 31163,   31738,   32187,   32509,   32702,   32767,   32702,   32509,   32187,   31738,
+ 31163,   30466,   29648,   28714,   27666,   26509,   25247,   23886,   22431,   20886,
+ 19260,   17557,   15786,   13952,   12062,   10126,    8149,    6140,    4107,    2057,
+     0,   -2057,   -4107,   -6140,   -8149,  -10126,  -12062,  -13952,  -15786,  -17557,
+-19260,  -20886,  -22431,  -23886,  -25247,  -26509,  -27666,  -28714,  -29648,  -30466,
+-31163,  -31738,  -32187,  -32509,  -32702,  -32767,  -32702,  -32509,  -32187,  -31738,
+-31163,  -30466,  -29648,  -28714,  -27666,  -26509,  -25247,  -23886,  -22431,  -20886,
+-19260,  -17557,  -15786,  -13952,  -12062,  -10126,   -8149,   -6140,   -4107,   -2057,
+};
 
 static char * device_name = "A2DP Source BTstack";
 
@@ -221,8 +232,8 @@ static void produce_sine_audio(int16_t * pcm_buffer, void *user_data, int num_sa
     paTestData *data = (paTestData*)user_data;
     int count;
     for (count = 0; count < num_samples_to_write ; count++){
-        pcm_buffer[count * 2]     = data->source[data->left_phase];
-        pcm_buffer[count * 2 + 1] = data->source[data->right_phase];
+        pcm_buffer[count * 2]     = sine_int16[data->left_phase];
+        pcm_buffer[count * 2 + 1] = sine_int16[data->right_phase];
 
         data->left_phase += 1;
         if (data->left_phase >= TABLE_SIZE_441HZ){
@@ -399,13 +410,6 @@ int btstack_main(int argc, const char * argv[]){
     gap_discoverable_control(1);
     gap_set_class_of_device(0x200408);
     
-    /* initialise sinusoidal wavetable */
-    int i;
-    for (i=0; i<TABLE_SIZE_441HZ; i++){
-        sin_data.source[i] = sin(((double)i/(double)TABLE_SIZE_441HZ) * M_PI * 2.)*32767;
-    }
-    sin_data.left_phase = sin_data.right_phase = 0;
-
     hxcmod_initialized = hxcmod_init(&mod_context);
     if (hxcmod_initialized){
         hxcmod_setcfg(&mod_context, A2DP_SAMPLE_RATE, 16, 1, 1, 1);

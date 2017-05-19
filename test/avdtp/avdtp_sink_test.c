@@ -490,7 +490,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             break;
                         }  
                         case AVDTP_SUBEVENT_STREAMING_CONNECTION_ESTABLISHED:
-                            // printf("AVDTP_SUBEVENT_STREAMING_CONNECTION_ESTABLISHED, local seid %d, remote seid index %d \n", local_stream_endpoint->sep.seid, );
                             break;
                         case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CAPABILITY:
                             printf(" received non SBC codec. not implemented\n");
