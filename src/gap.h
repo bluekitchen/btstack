@@ -389,6 +389,15 @@ int gap_inquiry_start(uint8_t duration_in_1280ms_units);
  */
 int gap_inquiry_stop(void);
 
+/**
+ * @brief Remote Name Request
+ * @param addr
+ * @param page_scan_repetition_mode
+ * @param clock_offset only used when bit 15 is set - pass 0 if not known
+ * @events: HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE
+ */
+int gap_remote_name_request(bd_addr_t addr, uint8_t page_scan_repetition_mode, uint16_t clock_offset);
+
 // LE
 
 /**

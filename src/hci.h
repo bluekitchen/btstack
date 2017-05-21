@@ -731,6 +731,11 @@ typedef struct {
     uint8_t   cmds_ready;
     uint8_t   inquiry_state;    // see hci.c for state defines
 
+    bd_addr_t remote_name_addr;
+    uint16_t  remote_name_clock_offset;
+    uint8_t   remote_name_page_scan_repetition_mode;
+    uint8_t   remote_name_state;    // see hci.c for state defines
+
     uint8_t   discoverable;
     uint8_t   connectable;
     uint8_t   bondable;

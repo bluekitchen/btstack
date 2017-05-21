@@ -109,6 +109,11 @@
 #define GAP_INQUIRY_STATE_W2_CANCEL 0x81
 #define GAP_INQUIRY_STATE_W4_CANCELLED 0x82
 
+// GAP Remote Name Request
+#define GAP_REMOTE_NAME_STATE_IDLE 0
+#define GAP_REMOTE_NAME_STATE_W2_SEND 1
+#define GAP_REMOTE_NAME_STATE_W4_COMPLETE 2
+
 // prototypes
 #ifdef ENABLE_CLASSIC
 static void hci_update_scan_enable(void);
@@ -1778,6 +1783,11 @@ static void event_handler(uint8_t *packet, int size){
                 hci_emit_event(event, sizeof(event), 1);
             }
             break;
+        case HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE:
+            if (hci_stack->remote_name_state == GAP_REMOTE_NAME_STATE_W4_COMPLETE){
+                hci_stack->remote_name_state = GAP_REMOTE_NAME_STATE_IDLE;
+            }
+            break;
         case HCI_EVENT_CONNECTION_REQUEST:
             reverse_bd_addr(&packet[2], addr);
             // TODO: eval COD 8-10
@@ -2796,6 +2806,12 @@ static void hci_run(void){
         hci_stack->inquiry_state = GAP_INQUIRY_STATE_W4_CANCELLED;
         hci_send_cmd(&hci_inquiry_cancel);
         return;
+    }
+    // remote name request
+    if (hci_stack->remote_name_state == GAP_REMOTE_NAME_STATE_W2_SEND){
+        hci_stack->remote_name_state = GAP_REMOTE_NAME_STATE_W4_COMPLETE;
+        hci_send_cmd(&hci_remote_name_request, hci_stack->remote_name_addr, 
+            hci_stack->remote_name_page_scan_repetition_mode, hci_stack->remote_name_clock_offset);
     }
 #endif
 
@@ -4184,6 +4200,24 @@ int gap_inquiry_stop(void){
     hci_run();
     return 0;
 }    
+
+
+/**
+ * @brief Remote Name Request
+ * @param addr
+ * @param page_scan_repetition_mode
+ * @param clock_offset only used when bit 15 is set
+ * @events: HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE
+ */
+int gap_remote_name_request(bd_addr_t addr, uint8_t page_scan_repetition_mode, uint16_t clock_offset){
+    if (hci_stack->remote_name_state != GAP_REMOTE_NAME_STATE_IDLE) return ERROR_CODE_COMMAND_DISALLOWED;
+    memcpy(hci_stack->remote_name_addr, addr, 6);
+    hci_stack->remote_name_page_scan_repetition_mode = page_scan_repetition_mode;
+    hci_stack->remote_name_clock_offset = clock_offset;
+    hci_stack->remote_name_state = GAP_REMOTE_NAME_STATE_W2_SEND;
+    hci_run();
+    return 0;
+}
 
 /**
  * @brief Set inquiry mode: standard, with RSSI, with RSSI + Extended Inquiry Results. Has to be called before power on.
