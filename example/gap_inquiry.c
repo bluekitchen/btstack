@@ -88,7 +88,7 @@ static int getDeviceIndexForAddress( bd_addr_t addr){
 
 static void start_scan(void){
     printf("Starting inquiry scan..\n");
-    hci_send_cmd(&hci_inquiry, HCI_INQUIRY_LAP, INQUIRY_INTERVAL, 0);
+    gap_inquiry_start(INQUIRY_INTERVAL);
 }
 
 static int has_more_remote_name_requests(void){
@@ -200,7 +200,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     deviceCount++;
                     break;
 
-                case HCI_EVENT_INQUIRY_COMPLETE:
+                case GAP_EVENT_INQUIRY_COMPLETE:
                     for (i=0;i<deviceCount;i++) {
                         // retry remote name request
                         if (devices[i].state == REMOTE_NAME_INQUIRED)

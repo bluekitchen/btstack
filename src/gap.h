@@ -373,6 +373,22 @@ void gap_drop_link_key_for_bd_addr(bd_addr_t addr);
  */
 void gap_store_link_key_for_bd_addr(bd_addr_t addr, link_key_t link_key, link_key_type_t type);
 
+/**
+ * @brief Start GAP Classic Inquiry
+ * @param duration in 1.28s units
+ * @return 0 if ok
+ * @events: GAP_EVENT_INQUIRY_RESULT, GAP_EVENT_INQUIRY_COMPLETE
+ */
+int gap_inquiry_start(uint8_t duration_in_1280ms_units);
+
+/**
+ * @brief Stop GAP Classic Inquiry
+ * @brief Stop GAP Classic Inquiry
+ * @returns 0 if ok
+ * @events: GAP_EVENT_INQUIRY_COMPLETE
+ */
+int gap_inquiry_stop(void);
+
 // LE
 
 /**

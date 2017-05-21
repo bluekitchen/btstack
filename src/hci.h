@@ -725,9 +725,11 @@ typedef struct {
     HCI_STATE      state;
     hci_substate_t substate;
     btstack_timer_source_t timeout;
-    uint8_t   cmds_ready;
-    
+
     uint16_t  last_cmd_opcode;
+
+    uint8_t   cmds_ready;
+    uint8_t   inquiry_state;    // see hci.c for state defines
 
     uint8_t   discoverable;
     uint8_t   connectable;
@@ -735,6 +737,8 @@ typedef struct {
 
     /* buffer for scan enable cmd - 0xff no change */
     uint8_t   new_scan_enable_value;
+
+
     
     uint16_t  sco_voice_setting;
     uint16_t  sco_voice_setting_active;

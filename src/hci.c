@@ -101,6 +101,14 @@
 #define GAP_INQUIRY_MAX_NAME_LEN 32
 #endif
 
+// GAP inquiry state: 0 = off, 0x01 - 0x30 = requested duration, 0xfe = active, 0xff = stop requested
+#define GAP_INQUIRY_DURATION_MIN 0x01
+#define GAP_INQUIRY_DURATION_MAX 0x30
+#define GAP_INQUIRY_STATE_ACTIVE 0x80
+#define GAP_INQUIRY_STATE_IDLE 0
+#define GAP_INQUIRY_STATE_W2_CANCEL 0x81
+#define GAP_INQUIRY_STATE_W4_CANCELLED 0x82
+
 // prototypes
 #ifdef ENABLE_CLASSIC
 static void hci_update_scan_enable(void);
@@ -1674,6 +1682,13 @@ static void event_handler(uint8_t *packet, int size){
             if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_write_scan_enable)){
                 hci_emit_discoverable_enabled(hci_stack->discoverable);
             }
+            if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_inquiry_cancel)){
+                if (hci_stack->inquiry_state == GAP_INQUIRY_STATE_W4_CANCELLED){
+                    hci_stack->inquiry_state = GAP_INQUIRY_STATE_IDLE;
+                    uint8_t event[] = { GAP_EVENT_INQUIRY_COMPLETE, 1, 0};
+                    hci_emit_event(event, sizeof(event), 1);
+                }
+            }
 #endif
 
             // Note: HCI init checks 
@@ -1756,6 +1771,13 @@ static void event_handler(uint8_t *packet, int size){
         }
 
 #ifdef ENABLE_CLASSIC
+        case HCI_EVENT_INQUIRY_COMPLETE:
+            if (hci_stack->inquiry_state == GAP_INQUIRY_STATE_ACTIVE){
+                hci_stack->inquiry_state = GAP_INQUIRY_STATE_IDLE;
+                uint8_t event[] = { GAP_EVENT_INQUIRY_COMPLETE, 1, 0};
+                hci_emit_event(event, sizeof(event), 1);
+            }
+            break;
         case HCI_EVENT_CONNECTION_REQUEST:
             reverse_bd_addr(&packet[2], addr);
             // TODO: eval COD 8-10
@@ -2757,11 +2779,22 @@ static void hci_run(void){
         hci_send_cmd(&hci_reject_connection_request, hci_stack->decline_addr, reason);
         return;
     }
-
     // send scan enable
     if (hci_stack->state == HCI_STATE_WORKING && hci_stack->new_scan_enable_value != 0xff && hci_classic_supported()){
         hci_send_cmd(&hci_write_scan_enable, hci_stack->new_scan_enable_value);
         hci_stack->new_scan_enable_value = 0xff;
+        return;
+    }
+    // start/stop inquiry
+    if (hci_stack->inquiry_state >= GAP_INQUIRY_DURATION_MIN && hci_stack->inquiry_state <= GAP_INQUIRY_DURATION_MAX){
+        uint8_t duration = hci_stack->inquiry_state;
+        hci_stack->inquiry_state = GAP_INQUIRY_STATE_ACTIVE;
+        hci_send_cmd(&hci_inquiry, HCI_INQUIRY_LAP, duration, 0);
+        return;
+    }
+    if (hci_stack->inquiry_state == GAP_INQUIRY_STATE_W2_CANCEL){
+        hci_stack->inquiry_state = GAP_INQUIRY_STATE_W4_CANCELLED;
+        hci_send_cmd(&hci_inquiry_cancel);
         return;
     }
 #endif
@@ -4120,8 +4153,41 @@ void gap_set_extended_inquiry_response(const uint8_t * data){
 }
 
 /**
+ * @brief Start GAP Classic Inquiry
+ * @param duration in 1.28s units
+ * @return 0 if ok
+ * @events: GAP_EVENT_INQUIRY_RESULT, GAP_EVENT_INQUIRY_COMPLETE
+ */
+int gap_inquiry_start(uint8_t duration_in_1280ms_units){
+    if (hci_stack->inquiry_state != GAP_INQUIRY_STATE_IDLE) return ERROR_CODE_COMMAND_DISALLOWED;
+    if (duration_in_1280ms_units < GAP_INQUIRY_DURATION_MIN || duration_in_1280ms_units > GAP_INQUIRY_DURATION_MAX){
+        return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+    }
+    hci_stack->inquiry_state = duration_in_1280ms_units;
+    hci_run();
+    return 0;
+}
+
+/**
+ * @brief Stop GAP Classic Inquiry
+ * @returns 0 if ok
+ */
+int gap_inquiry_stop(void){
+    if (hci_stack->inquiry_state >= GAP_INQUIRY_DURATION_MIN || hci_stack->inquiry_state <= GAP_INQUIRY_DURATION_MAX) {
+        // emit inquiry complete event, before it even started
+        uint8_t event[] = { GAP_EVENT_INQUIRY_COMPLETE, 1, 0};
+        hci_emit_event(event, sizeof(event), 1);
+        return 0;
+    }
+    if (hci_stack->inquiry_state != GAP_INQUIRY_STATE_ACTIVE) return ERROR_CODE_COMMAND_DISALLOWED;
+    hci_stack->inquiry_state = GAP_INQUIRY_STATE_W2_CANCEL;
+    hci_run();
+    return 0;
+}    
+
+/**
  * @brief Set inquiry mode: standard, with RSSI, with RSSI + Extended Inquiry Results. Has to be called before power on.
- * @param inquriy_mode see bluetooth_defines.h
+ * @param inquiry_mode see bluetooth_defines.h
  */
 void hci_set_inquiry_mode(inquiry_mode_t mode){
     hci_stack->inquiry_mode = mode;
