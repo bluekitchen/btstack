@@ -197,7 +197,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
     UNUSED(channel);
     UNUSED(size);
 
-    bd_addr_t event_addr;
     uint8_t signal_identifier;
     uint8_t status;
     avdtp_sep_t sep;
@@ -208,16 +207,9 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
  
         case HCI_EVENT_PACKET:
             switch (hci_event_packet_get_type(packet)) {
-                case HCI_EVENT_PIN_CODE_REQUEST:
-                    // inform about pin code request
-                    log_info("Pin code request - using '0000'");
-                    hci_event_pin_code_request_get_bd_addr(packet, event_addr);
-                    hci_send_cmd(&hci_pin_code_request_reply, &event_addr, 4, "0000");
-                    break;
                 case HCI_EVENT_DISCONNECTION_COMPLETE:
                     // connection closed -> quit test app
                     log_info("\n --- a2dp source --- HCI_EVENT_DISCONNECTION_COMPLETE ---");
-
                     break;
                 case HCI_EVENT_AVDTP_META:
                     switch (packet[2]){
