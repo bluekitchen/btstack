@@ -83,16 +83,7 @@
 #include <linux/if_tun.h>
 #endif
 
-#include "btstack_memory.h"
-#include "btstack_event.h"
-#include "btstack_run_loop.h"
-#include "classic/sdp_client.h"
-#include "classic/sdp_util.h"
-#include "hci.h"
-#include "hci_cmd.h"
-#include "hci_dump.h"
-#include "l2cap.h"
-#include "pan.h"
+#include "btstack.h"
 
 static int record_id = -1;
 static uint16_t bnep_l2cap_psm      = 0;
@@ -463,7 +454,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 					// inform about pin code request
                     printf("Pin code request - using '0000'\n");
                     hci_event_pin_code_request_get_bd_addr(packet, event_addr);
-					hci_send_cmd(&hci_pin_code_request_reply, &event_addr, 4, "0000");
+                    gap_pin_code_response(event_addr, "0000");
 					break;
 
                 case HCI_EVENT_USER_CONFIRMATION_REQUEST:
@@ -573,7 +564,7 @@ int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
 
     UNUSED(argc);
-    UNUSED(argv);
+    (void)(argv);
 
     printf("Client HCI init done\n");
 
