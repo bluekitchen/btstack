@@ -100,7 +100,7 @@ typedef struct {
 
 	muint   patternloopcnt;
 	muint   patternloopstartpoint;
-} channel;
+} hxcmod_channel;
 
 typedef struct {
 	module  song;
@@ -120,7 +120,7 @@ typedef struct {
 
 	mulong  samplenb;
 
-	channel channels[NUMMAXCHANNELS];
+	hxcmod_channel channels[NUMMAXCHANNELS];
 
 	muint   number_of_channels;
 

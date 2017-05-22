@@ -208,7 +208,7 @@ static int getnote( modcontext * mod, unsigned short period, int finetune )
 	return MAXNOTES;
 }
 
-static void worknote( note * nptr, channel * cptr,char t,modcontext * mod )
+static void worknote( note * nptr, hxcmod_channel * cptr,char t,modcontext * mod )
 {
 	(void) t;
 	muint _sample, period, effect, operiod;
@@ -685,7 +685,7 @@ static void worknote( note * nptr, channel * cptr,char t,modcontext * mod )
 
 }
 
-static void workeffect( note * nptr, channel * cptr )
+static void workeffect( note * nptr, hxcmod_channel * cptr )
 {
 	(void) nptr;
 	
@@ -1031,7 +1031,7 @@ void hxcmod_fillbuffer( modcontext * modctx, unsigned short * outbuffer, unsigne
 	int tl,tr;
 	short finalperiod;
 	note	*nptr;
-	channel *cptr;
+	hxcmod_channel *cptr;
 
 	if( modctx && outbuffer )
 	{
@@ -1070,7 +1070,7 @@ void hxcmod_fillbuffer( modcontext * modctx, unsigned short * outbuffer, unsigne
 
 						for(c=0;c<modctx->number_of_channels;c++)
 						{
-							worknote((note*)(nptr+c), (channel*)(cptr+c),(char)(c+1),modctx);
+							worknote((note*)(nptr+c), (hxcmod_channel*)(cptr+c),(char)(c+1),modctx);
 						}
 
 						if( !modctx->jump_loop_effect )
