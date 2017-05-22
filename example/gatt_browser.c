@@ -293,8 +293,8 @@ int btstack_main(int argc, const char * argv[]){
         return 0;
 	}
 #else
-    UNUSED(argc);
-    UNUSED(argv);
+    (void)argc;
+    (void)argv;
 #endif
 
     // setup ATT server - only needed if LE Peripheral does ATT queries on its own, e.g. Android phones

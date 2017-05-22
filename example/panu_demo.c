@@ -563,8 +563,8 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
 
-    UNUSED(argc);
-    (void)(argv);
+    (void)argc;
+    (void)argv;
 
     printf("Client HCI init done\n");
 

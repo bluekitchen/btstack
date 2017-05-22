@@ -333,8 +333,8 @@ int btstack_main(int argc, const char * argv[]){
         return 0;
     }
 #else
-    UNUSED(argc);
-    UNUSED(argv);
+    (void)argc;
+    (void)argv;
 #endif
 
     hci_event_callback_registration.callback = &hci_event_handler;
