@@ -211,23 +211,23 @@ static int getnote( modcontext * mod, unsigned short period, int finetune )
 static void worknote( note * nptr, channel * cptr,char t,modcontext * mod )
 {
 	(void) t;
-	muint sample, period, effect, operiod;
+	muint _sample, period, effect, operiod;
 	muint curnote, arpnote;
 
-	sample = (nptr->sampperiod & 0xF0) | (nptr->sampeffect >> 4);
+	_sample = (nptr->sampperiod & 0xF0) | (nptr->sampeffect >> 4);
 	period = ((nptr->sampperiod & 0xF) << 8) | nptr->period;
 	effect = ((nptr->sampeffect & 0xF) << 8) | nptr->effect;
 
 	operiod = cptr->period;
 
-	if ( period || sample )
+	if ( period || _sample )
 	{
-		if( sample && sample<32 )
+		if( _sample && _sample<32 )
 		{
-			cptr->sampnum = sample - 1;
+			cptr->sampnum = _sample - 1;
 		}
 
-		if( period || sample )
+		if( period || _sample )
 		{
 			cptr->sampdata =(char *) mod->sampledata[cptr->sampnum];
 			cptr->length = mod->song.samples[cptr->sampnum].length;
@@ -243,7 +243,7 @@ static void worknote( note * nptr, channel * cptr,char t,modcontext * mod )
 			}
 		}
 
-		if( (sample != 0) && ( (effect>>8) != EFFECT_VOLSLIDE_TONEPORTA ) )
+		if( (_sample != 0) && ( (effect>>8) != EFFECT_VOLSLIDE_TONEPORTA ) )
 		{
 			cptr->volume = mod->song.samples[cptr->sampnum].volume;
 			cptr->volumeslide = 0;
