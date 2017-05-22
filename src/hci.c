@@ -114,6 +114,16 @@
 #define GAP_REMOTE_NAME_STATE_W2_SEND 1
 #define GAP_REMOTE_NAME_STATE_W4_COMPLETE 2
 
+// GAP Pairing
+#define GAP_PAIRING_STATE_IDLE                       0
+#define GAP_PAIRING_STATE_SEND_PIN                   1
+#define GAP_PAIRING_STATE_SEND_PIN_NEGATIVE          2
+#define GAP_PAIRING_STATE_SEND_PASSKEY               3
+#define GAP_PAIRING_STATE_SEND_PASSKEY_NEGATIVE      4
+#define GAP_PAIRING_STATE_SEND_CONFIRMATION          5
+#define GAP_PAIRING_STATE_SEND_CONFIRMATION_NEGATIVE 6
+
+
 // prototypes
 #ifdef ENABLE_CLASSIC
 static void hci_update_scan_enable(void);
@@ -2813,6 +2823,34 @@ static void hci_run(void){
         hci_send_cmd(&hci_remote_name_request, hci_stack->remote_name_addr, 
             hci_stack->remote_name_page_scan_repetition_mode, hci_stack->remote_name_clock_offset);
     }
+    // pairing
+    if (hci_stack->gap_pairing_state != GAP_PAIRING_STATE_IDLE){
+        uint8_t state = hci_stack->gap_pairing_state;
+        hci_stack->gap_pairing_state = GAP_PAIRING_STATE_IDLE;
+        switch (state){
+            case GAP_PAIRING_STATE_SEND_PIN:
+                hci_send_cmd(&hci_pin_code_request_reply, hci_stack->gap_pairing_addr, hci_stack->gap_pairing_pin);
+                break;
+            case GAP_PAIRING_STATE_SEND_PIN_NEGATIVE:
+                hci_send_cmd(&hci_pin_code_request_negative_reply, hci_stack->gap_pairing_addr);
+                break;
+            case GAP_PAIRING_STATE_SEND_PASSKEY:
+                hci_send_cmd(&hci_user_passkey_request_reply, hci_stack->gap_pairing_addr, hci_stack->gap_pairing_passkey);
+                break;
+            case GAP_PAIRING_STATE_SEND_PASSKEY_NEGATIVE:
+                hci_send_cmd(&hci_user_passkey_request_negative_reply, hci_stack->gap_pairing_addr);
+                break;
+            case GAP_PAIRING_STATE_SEND_CONFIRMATION:
+                hci_send_cmd(&hci_user_confirmation_request_reply, hci_stack->gap_pairing_addr);
+                break;
+            case GAP_PAIRING_STATE_SEND_CONFIRMATION_NEGATIVE:
+                hci_send_cmd(&hci_user_confirmation_request_negative_reply, hci_stack->gap_pairing_addr);
+                break;
+            default:
+                break;
+        }
+        return;
+    }
 #endif
 
 #ifdef ENABLE_BLE
@@ -4217,6 +4255,81 @@ int gap_remote_name_request(bd_addr_t addr, uint8_t page_scan_repetition_mode, u
     hci_stack->remote_name_state = GAP_REMOTE_NAME_STATE_W2_SEND;
     hci_run();
     return 0;
+}
+
+static int gap_pairing_set_state_and_run(bd_addr_t addr, uint8_t state){
+    hci_stack->gap_pairing_state = state;
+    memcpy(hci_stack->gap_pairing_addr, addr, 6);
+    hci_run();
+    return 0;
+}
+
+/**
+ * @brief Legacy Pairing Pin Code Response
+ * @param addr
+ * @param pin
+ * @return 0 if ok
+ */
+int gap_pin_code_response(bd_addr_t addr, const char * pin){
+    if (hci_stack->gap_pairing_state != GAP_INQUIRY_STATE_IDLE) return ERROR_CODE_COMMAND_DISALLOWED;
+    hci_stack->gap_pairing_pin = pin;
+    return gap_pairing_set_state_and_run(addr, GAP_PAIRING_STATE_SEND_PIN);
+}
+
+/**
+ * @brief Abort Legacy Pairing
+ * @param addr
+ * @param pin
+ * @return 0 if ok
+ */
+int gap_pin_code_negative(bd_addr_t addr){
+    if (hci_stack->gap_pairing_state != GAP_INQUIRY_STATE_IDLE) return ERROR_CODE_COMMAND_DISALLOWED;
+    return gap_pairing_set_state_and_run(addr, GAP_PAIRING_STATE_SEND_PIN_NEGATIVE);
+}
+
+/**
+ * @brief SSP Passkey Response
+ * @param addr
+ * @param passkey
+ * @return 0 if ok
+ */
+int gap_ssp_passkey_response(bd_addr_t addr, uint32_t passkey){
+    if (hci_stack->gap_pairing_state != GAP_INQUIRY_STATE_IDLE) return ERROR_CODE_COMMAND_DISALLOWED;
+    hci_stack->gap_pairing_passkey = passkey;
+    return gap_pairing_set_state_and_run(addr, GAP_PAIRING_STATE_SEND_PASSKEY);
+}
+
+/**
+ * @brief Abort SSP Passkey Entry/Pairing
+ * @param addr
+ * @param pin
+ * @return 0 if ok
+ */
+int gap_ssp_passkey_negative(bd_addr_t addr){
+    if (hci_stack->gap_pairing_state != GAP_INQUIRY_STATE_IDLE) return ERROR_CODE_COMMAND_DISALLOWED;
+    return gap_pairing_set_state_and_run(addr, GAP_PAIRING_STATE_SEND_PASSKEY_NEGATIVE);
+}
+
+/**
+ * @brief Accept SSP Numeric Comparison
+ * @param addr
+ * @param passkey
+ * @return 0 if ok
+ */
+int gap_ssp_confirmation_response(bd_addr_t addr){
+    if (hci_stack->gap_pairing_state != GAP_INQUIRY_STATE_IDLE) return ERROR_CODE_COMMAND_DISALLOWED;
+    return gap_pairing_set_state_and_run(addr, GAP_PAIRING_STATE_SEND_CONFIRMATION);
+}
+
+/**
+ * @brief Abort SSP Numeric Comparison/Pairing
+ * @param addr
+ * @param pin
+ * @return 0 if ok
+ */
+int gap_ssp_confirmation_negative(bd_addr_t addr){
+    if (hci_stack->gap_pairing_state != GAP_INQUIRY_STATE_IDLE) return ERROR_CODE_COMMAND_DISALLOWED;
+    return gap_pairing_set_state_and_run(addr, GAP_PAIRING_STATE_SEND_CONFIRMATION_NEGATIVE);
 }
 
 /**
