@@ -2829,7 +2829,7 @@ static void hci_run(void){
         hci_stack->gap_pairing_state = GAP_PAIRING_STATE_IDLE;
         switch (state){
             case GAP_PAIRING_STATE_SEND_PIN:
-                hci_send_cmd(&hci_pin_code_request_reply, hci_stack->gap_pairing_addr, hci_stack->gap_pairing_pin);
+                hci_send_cmd(&hci_pin_code_request_reply, hci_stack->gap_pairing_addr, strlen(hci_stack->gap_pairing_pin), hci_stack->gap_pairing_pin);
                 break;
             case GAP_PAIRING_STATE_SEND_PIN_NEGATIVE:
                 hci_send_cmd(&hci_pin_code_request_negative_reply, hci_stack->gap_pairing_addr);
