@@ -307,9 +307,9 @@ static void avdtp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t c
 
     des_iterator_t des_list_it;
     des_iterator_t prot_it;
-    uint32_t avdtp_remote_uuid    = 0;
     uint16_t avdtp_l2cap_psm      = 0;
     uint16_t avdtp_version        = 0;
+    // uint32_t avdtp_remote_uuid    = 0;
     
     if (!sdp_query_context.connection) return;
 
@@ -341,7 +341,7 @@ static void avdtp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t c
                                             break;
                                         }
                                         // log_info("SDP Attribute 0x%04x: AVDTP SOURCE protocol UUID: 0x%04x", sdp_event_query_attribute_byte_get_attribute_id(packet), uuid);
-                                        avdtp_remote_uuid = uuid;
+                                        // avdtp_remote_uuid = uuid;
                                         break;
                                     case BLUETOOTH_SERVICE_CLASS_AUDIO_SINK:
                                         if (sdp_query_context.query_role != AVDTP_SINK) {
@@ -350,7 +350,7 @@ static void avdtp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t c
                                             break;
                                         }
                                         // log_info("SDP Attribute 0x%04x: AVDTP SINK protocol UUID: 0x%04x", sdp_event_query_attribute_byte_get_attribute_id(packet), uuid);
-                                        avdtp_remote_uuid = uuid;
+                                        // avdtp_remote_uuid = uuid;
                                         break;
                                     default:
                                         break;
