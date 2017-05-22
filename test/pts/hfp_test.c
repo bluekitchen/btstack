@@ -113,9 +113,9 @@ static void packet_handler(void * connection, uint8_t packet_type, uint16_t chan
 
         case HCI_EVENT_PIN_CODE_REQUEST:
             // inform about pin code request
-            printf("Pin code request - using '0000'\n\r");
+            printf("Pin code request - using '0000'\n");
             hci_event_pin_code_request_get_bd_addr(packet, event_addr);
-            hci_send_cmd(&hci_pin_code_request_reply, &event_addr, 4, "0000");
+            gap_pin_code_response(event_addr, "0000");
             break;
 
         case RFCOMM_EVENT_CHANNEL_OPENED:

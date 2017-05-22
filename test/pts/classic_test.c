@@ -493,7 +493,8 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
         fflush(stdout);
         if (buffer == '\n'){
             printf("\nSending Pin '%s'\n", ui_pin);
-            hci_send_cmd(&hci_pin_code_request_reply, remote, ui_pin_offset, ui_pin);
+            ui_pin[ui_pin_offset] = 0;
+            gap_pin_code_response(event_addr, ui_pin);
         } else {
             ui_pin[ui_pin_offset++] = buffer;
         }
