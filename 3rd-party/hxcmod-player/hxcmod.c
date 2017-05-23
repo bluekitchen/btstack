@@ -94,6 +94,8 @@
 #define PERIOD_TABLE_LENGTH  MAXNOTES
 #define FULL_PERIOD_TABLE_LENGTH  ( PERIOD_TABLE_LENGTH * 8 )
 
+static void memcopy( void * dest, void *source, unsigned long size );
+
 static const short periodtable[]=
 {
 	27392, 25856, 24384, 23040, 21696, 20480, 19328, 18240, 17216, 16256, 15360, 14496,
@@ -936,7 +938,7 @@ int hxcmod_load( modcontext * modctx, void * mod_data, int mod_data_size )
 			{
 				// 15 Samples modules support
 				// Shift the whole datas to make it look likes a standard 4 channels mod.
-				memcopy(&(modctx->song.signature), "M.K.", 4);
+				memcopy(&(modctx->song.signature), (void*)"M.K.", 4);
 				memcopy(&(modctx->song.length), &(modctx->song.samples[15]), 130);
 				memclear(&(modctx->song.samples[15]), 0, 480);
 				modmemory += 600;

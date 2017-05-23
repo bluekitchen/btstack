@@ -577,7 +577,7 @@ void avdtp_acceptor_stream_config_subsm_run(avdtp_connection_t * connection, avd
         case AVDTP_ACCEPTOR_W2_REJECT_UNKNOWN_CMD:
             status = 1;
             log_info("    ACP: DONE REJECT");
-            connection->reject_signal_identifier = 0;
+            connection->reject_signal_identifier = AVDTP_SI_NONE;
             avdtp_acceptor_send_response_reject(cid, reject_signal_identifier, trid);
             break;
         case AVDTP_ACCEPTOR_W2_REJECT_CATEGORY_WITH_ERROR_CODE:
@@ -590,7 +590,7 @@ void avdtp_acceptor_stream_config_subsm_run(avdtp_connection_t * connection, avd
         case AVDTP_ACCEPTOR_W2_REJECT_WITH_ERROR_CODE:
             status = 1;
             log_info("    ACP: DONE REJECT");
-            connection->reject_signal_identifier = 0;
+            connection->reject_signal_identifier = AVDTP_SI_NONE;
             connection->error_code = 0;
             avdtp_acceptor_send_response_reject_with_error_code(cid, reject_signal_identifier, error_code, trid);
             break;

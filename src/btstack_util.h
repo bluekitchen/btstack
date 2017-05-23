@@ -135,7 +135,7 @@ void big_endian_store_32(uint8_t *buffer, uint16_t pos, uint32_t value);
  * @brief Swap bytes in 16 bit integer
  */
 static inline uint16_t btstack_flip_16(uint16_t value){
-    return ((value & 0xff) << 8) | (value >> 8);
+    return (uint16_t)((value & 0xff) << 8) | (value >> 8);
 }
 
 /** 

@@ -354,7 +354,7 @@ PRIVATE void OI_SBC_SynthFrame_Enhanced(OI_CODEC_SBC_DECODER_CONTEXT *context, O
 }
 
 static const SYNTH_FRAME SynthFrameEnhanced[] = {
-    NULL,                       /* invalid */
+    (const SYNTH_FRAME) NULL,   /* invalid */
     OI_SBC_SynthFrame_Enhanced, /* mono */
     OI_SBC_SynthFrame_Enhanced  /* stereo */
 };
@@ -362,14 +362,14 @@ static const SYNTH_FRAME SynthFrameEnhanced[] = {
 #endif
 
 static const SYNTH_FRAME SynthFrame8SB[] = {
-    NULL,             /* invalid */
+    (const SYNTH_FRAME) NULL, /* invalid */
     OI_SBC_SynthFrame_80, /* mono */
     OI_SBC_SynthFrame_80  /* stereo */
 };
 
 
 static const SYNTH_FRAME SynthFrame4SB[] = {
-    NULL,                  /* invalid */
+    (const SYNTH_FRAME) NULL, /* invalid */
     OI_SBC_SynthFrame_4SB, /* mono */
     OI_SBC_SynthFrame_4SB  /* stereo */
 };

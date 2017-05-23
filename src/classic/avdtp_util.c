@@ -186,7 +186,7 @@ int avdtp_read_signaling_header(avdtp_signaling_packet_t * signaling_header, uin
             signaling_header->num_packets--;
             break;
     }
-    signaling_header->signal_identifier = packet[pos++] & 0x3f;
+    signaling_header->signal_identifier = (avdtp_signal_identifier_t)(packet[pos++] & 0x3f);
     return pos;
 }
 
@@ -360,8 +360,8 @@ uint16_t avdtp_unpack_service_capabilities(avdtp_connection_t * connection, avdt
                 }
                 break;
             case AVDTP_MEDIA_CODEC:   
-                caps->media_codec.media_type = packet[pos++] >> 4;
-                caps->media_codec.media_codec_type = packet[pos++];
+                caps->media_codec.media_type = (avdtp_media_type_t)(packet[pos++] >> 4);
+                caps->media_codec.media_codec_type = (avdtp_media_codec_type_t)(packet[pos++]);
                 caps->media_codec.media_codec_information_len = cap_len - 2;
                 caps->media_codec.media_codec_information = &packet[pos];
                 pos += caps->media_codec.media_codec_information_len;
@@ -439,7 +439,7 @@ void avdtp_prepare_capabilities(avdtp_signaling_packet_t * signaling_packet, uin
         }
     }
     
-    signaling_packet->signal_identifier = identifier;
+    signaling_packet->signal_identifier = (avdtp_signal_identifier_t)identifier;
     signaling_packet->transaction_label = transaction_label;
 }
 

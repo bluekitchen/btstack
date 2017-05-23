@@ -99,6 +99,7 @@ extern "C" {
 #define BAD_STATE 0x31
 // Signal Identifier fields
 typedef enum {
+    AVDTP_SI_NONE = 0x00,
     AVDTP_SI_DISCOVER = 0x01,
     AVDTP_SI_GET_CAPABILITIES,
     AVDTP_SI_SET_CONFIGURATION,

@@ -1072,7 +1072,7 @@ static int usb_open(void){
 
         const struct libusb_pollfd ** pollfd = libusb_get_pollfds(NULL);
         for (num_pollfds = 0 ; pollfd[num_pollfds] ; num_pollfds++);
-        pollfd_data_sources = malloc(sizeof(btstack_data_source_t) * num_pollfds);
+        pollfd_data_sources = (btstack_data_source_t *)malloc(sizeof(btstack_data_source_t) * num_pollfds);
         if (!pollfd_data_sources){
             log_error("Cannot allocate data sources for pollfds");
             usb_close();
@@ -1101,6 +1101,8 @@ static int usb_open(void){
 
 static int usb_close(void){
     int c;
+    int completed = 0;
+
     switch (libusb_state){
         case LIB_USB_CLOSED:
             break;
@@ -1150,7 +1152,6 @@ static int usb_close(void){
             libusb_set_debug(NULL, LIBUSB_LOG_LEVEL_WARNING);
 
             // wait until all transfers are completed
-            int completed = 0;
             while (!completed){
                 struct timeval tv;
                 memset(&tv, 0, sizeof(struct timeval));

@@ -17,6 +17,14 @@
 // Change History (most recent first):
 ///////////////////////////////////////////////////////////////////////////////////
 
+#ifndef __HXCMOD_H
+#define __HXCMOD_H
+
+#if defined __cplusplus
+extern "C" {
+#endif
+
+
 #ifndef MODPLAY_DEF
 #define MODPLAY_DEF
 
@@ -213,3 +221,9 @@ void hxcmod_unload( modcontext * modctx );
 
 #endif
 
+
+#if defined __cplusplus
+}
+#endif
+
+#endif // __HXCMOD_H
