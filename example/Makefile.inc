@@ -112,6 +112,7 @@ EXAMPLES = 					\
 	spp_and_le_streamer     \
 	spp_counter 			\
 	spp_streamer			\
+	spp_streamer_client     \
 	gap_le_advertisements   \
 	hfp_ag_demo             \
 	hfp_hf_demo             \
@@ -205,10 +206,10 @@ spp_and_le_counter: spp_and_le_counter.h ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ
 spp_and_le_streamer: spp_and_le_streamer.h ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} spp_and_le_streamer.c 
 	${CC} $(filter-out spp_and_le_streamer.h,$^)  ${CFLAGS} ${LDFLAGS} -o $@
 
-spp_counter_ssp: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} spp_counter_ssp.c
+spp_streamer: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} spp_streamer.c  
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-spp_streamer: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} spp_streamer.c  
+spp_streamer_client: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} spp_streamer_client.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 gap_dedicated_bonding: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} gap_dedicated_bonding.c
