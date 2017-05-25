@@ -202,6 +202,7 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
             log_info("USER:\'%c\'", cmd);
             printf("Enable registration status update for all AG indicators.\n");
             hfp_hf_enable_status_update_for_all_ag_indicators(acl_handle);
+            break;
         case 'c':
             log_info("USER:\'%c\'", cmd);
             printf("Disable registration status update for all AG indicators.\n");
