@@ -11,7 +11,7 @@ CORE += \
 	btstack_run_loop.c		    \
 	btstack_util.c 	            \
 	main.c 	\
-	stdin_support.c \
+	btstack_stdin_posix.c \
 	
 
 COMMON += \

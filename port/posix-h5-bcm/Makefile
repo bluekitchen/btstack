@@ -11,7 +11,7 @@ CORE += \
 	hci_transport_h5.c \
 	le_device_db_fs.c \
 	main.c \
-	stdin_support.c \
+	btstack_stdin.c \
 
 # examples
 include ${BTSTACK_ROOT}/example/Makefile.inc

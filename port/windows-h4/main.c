@@ -55,7 +55,7 @@
 #include "hal_led.h"
 #include "btstack_link_key_db_fs.h"
 
-#include "stdin_support.h"
+#include "btstack_stdin.h"
 
 #include "btstack_chipset_bcm.h"
 #include "btstack_chipset_csr.h"

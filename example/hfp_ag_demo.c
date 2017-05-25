@@ -46,7 +46,7 @@
  *
  * @text This HFP Audio Gateway example demonstrates how to receive 
  * an output from a remote HFP Hands-Free (HF) unit, and, 
- * if HAVE_POSIX_STDIN is defined, how to control the HFP HF. 
+ * if HAVE_BTSTACK_STDIN is defined, how to control the HFP HF. 
  */
 // *****************************************************************************
 
@@ -59,8 +59,8 @@
 
 #include "btstack.h"
 #include "sco_demo_util.h"
-#ifdef HAVE_POSIX_STDIN
-#include "stdin_support.h"
+#ifdef HAVE_BTSTACK_STDIN
+#include "btstack_stdin.h"
 #endif
 
 uint8_t hfp_service_buffer[150];
@@ -133,7 +133,7 @@ static void dump_supported_codecs(void){
     }
 }
 
-#ifdef HAVE_POSIX_STDIN
+#ifdef HAVE_BTSTACK_STDIN
 // Testig User Interface 
 static void show_usage(void){
     bd_addr_t iut_address;
@@ -597,7 +597,7 @@ int btstack_main(int argc, const char * argv[]){
     // parse humand readable Bluetooth address
     sscanf_bd_addr(device_addr_string, device_addr);
 
-#ifdef HAVE_POSIX_STDIN
+#ifdef HAVE_BTSTACK_STDIN
     btstack_stdin_setup(stdin_process);
 #endif  
     // turn on!

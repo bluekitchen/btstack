@@ -59,7 +59,7 @@
 #include "hci.h"
 #include "hci_dump.h"
 #include "l2cap.h"
-#include "stdin_support.h"
+#include "btstack_stdin.h"
  
  static void show_usage(void);
 

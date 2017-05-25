@@ -62,7 +62,7 @@
 #include "hci.h"
 #include "hci_dump.h"
 #include "l2cap.h"
-#include "stdin_support.h"
+#include "btstack_stdin.h"
 
 // test profile
 #include "ble_central_test.h"

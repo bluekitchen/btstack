@@ -237,7 +237,7 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
     }
 }
 
-#ifdef HAVE_POSIX_STDIN
+#ifdef HAVE_BTSTACK_STDIN
 static void usage(const char *name){
     fprintf(stderr, "Usage: %s [-a|--address aa:bb:cc:dd:ee:ff]\n", name);
     fprintf(stderr, "If no argument is provided, LE Streamer Client will start scanning and connect to the first device named 'LE Streamer'.\n");
@@ -248,7 +248,7 @@ static void usage(const char *name){
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
 
-#ifdef HAVE_POSIX_STDIN
+#ifdef HAVE_BTSTACK_STDIN
     int arg = 1;
     cmdline_addr_found = 0;
     

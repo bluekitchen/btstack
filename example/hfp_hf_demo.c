@@ -47,7 +47,7 @@
  *
  * @text This  HFP Hands-Free example demonstrates how to receive 
  * an output from a remote HFP audio gateway (AG), and, 
- * if HAVE_POSIX_STDIN is defined, how to control the HFP AG. 
+ * if HAVE_BTSTACK_STDIN is defined, how to control the HFP AG. 
  */
 // *****************************************************************************
 
@@ -62,9 +62,8 @@
 
 #include "sco_demo_util.h"
 
-#ifdef HAVE_POSIX_STDIN
-#include <unistd.h>
-#include "stdin_support.h"
+#ifdef HAVE_BTSTACK_STDIN
+#include "btstack_stdin.h"
 #endif
 
 uint8_t hfp_service_buffer[150];
@@ -72,7 +71,7 @@ const uint8_t   rfcomm_channel_nr = 1;
 const char hfp_hf_service_name[] = "BTstack HFP HF Demo";
 static bd_addr_t device_addr = {0x80,0xbe,0x05,0xd5,0x28,0x48};
 
-#ifdef HAVE_POSIX_STDIN
+#ifdef HAVE_BTSTACK_STDIN
 // 80:BE:05:D5:28:48
 // prototypes
 static void show_usage(void);
@@ -113,7 +112,7 @@ static void dump_supported_codecs(void){
     }
 }
 
-#ifdef HAVE_POSIX_STDIN
+#ifdef HAVE_BTSTACK_STDIN
 
 // Testig User Interface 
 static void show_usage(void){
@@ -603,7 +602,7 @@ int btstack_main(int argc, const char * argv[]){
     sdp_register_service(hfp_service_buffer);
 
     
-#ifdef HAVE_POSIX_STDIN
+#ifdef HAVE_BTSTACK_STDIN
     btstack_stdin_setup(stdin_process);
 #endif    
     // turn on!

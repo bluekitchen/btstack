@@ -35,26 +35,64 @@
  *
  */
 
-#ifndef __STDIN_SUPPORT_H
-#define __STDIN_SUPPORT_H
+#define __BTSTACK_FILE__ "btstack_stdin_posix.c"
+
+#include <errno.h>
+#include <stdio.h>
+#include <unistd.h>
 
 #include "btstack_run_loop.h"
+#include <stdlib.h>
 
-#if defined __cplusplus
-extern "C" {
-#endif
+#include "btstack_stdin.h"
+#include <termios.h>
 
-// setup handler for command line interface
-void btstack_stdin_setup(void (*stdin_handler)(btstack_data_source_t *_ds, btstack_data_source_callback_type_t callback_type));
+static btstack_data_source_t stdin_source;
+static int activated = 0;
+
+void btstack_stdin_setup(void (*stdin_process)(btstack_data_source_t *_ds, btstack_data_source_callback_type_t callback_type)){
+
+    if (activated) return;
+
+    // disable line buffering
+    struct termios term = {0};
+    if (tcgetattr(0, &term) < 0)
+            perror("tcsetattr()");
+    term.c_lflag &= ~ICANON;
+    term.c_lflag &= ~ECHO;
+    if (tcsetattr(0, TCSANOW, &term) < 0) {
+        perror("tcsetattr ICANON");
+    }
+
+    btstack_run_loop_set_data_source_fd(&stdin_source, 0); // stdin
+
+    btstack_run_loop_enable_data_source_callbacks(&stdin_source, DATA_SOURCE_CALLBACK_READ);
+    btstack_run_loop_set_data_source_handler(&stdin_source, stdin_process);
+    btstack_run_loop_add_data_source(&stdin_source);
+
+    activated = 1;
+}
+
+void btstack_stdin_reset(void){
+    if (!activated) return;
+    activated = 0;
+    
+    btstack_run_loop_remove_data_source(&stdin_source);    
+
+    struct termios term = {0};
+    if (tcgetattr(0, &term) < 0){
+        perror("tcsetattr()");
+    }
+    term.c_lflag |= ICANON;
+    term.c_lflag |= ECHO;
+    if (tcsetattr(0, TCSANOW, &term) < 0){
+        perror("tcsetattr ICANON");
+    }
+}
 
 // read single byte after data source callback was triggered
-char btstack_stdin_read(void);
-
-// gets called by main.c
-void btstack_stdin_reset(void);
-
-#if defined __cplusplus
+char btstack_stdin_read(void){
+    char data;
+    read(stdin_source.fd, &data, 1);
+    return data;
 }
-#endif
-
-#endif

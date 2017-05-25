@@ -44,7 +44,7 @@
 #include "btstack_sbc.h"
 #include "avdtp.h"
 #include "avdtp_source.h"
-#include "stdin_support.h"
+#include "btstack_stdin.h"
 
 #define NUM_CHANNELS        2
 #define SAMPLE_RATE         44100

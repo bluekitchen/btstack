@@ -60,7 +60,7 @@
 #include "hal_led.h"
 #include "hci.h"
 #include "hci_dump.h"
-#include "stdin_support.h"
+#include "btstack_stdin.h"
 
 int btstack_main(int argc, const char * argv[]);
 

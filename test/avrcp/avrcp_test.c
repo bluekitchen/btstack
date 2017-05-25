@@ -51,7 +51,7 @@
 #include "hci_cmd.h"
 #include "hci_dump.h"
 #include "l2cap.h"
-#include "stdin_support.h"
+#include "btstack_stdin.h"
 #include "classic/avrcp.h"
 
 #define AVRCP_BROWSING_ENABLED 0

@@ -65,7 +65,7 @@
 #include "hci_dump.h"
 #include "l2cap.h"
 #include "pan.h"
-#include "stdin_support.h"
+#include "btstack_stdin.h"
 
 #define HARDWARE_TYPE_ETHERNET 0x0001
 

@@ -46,7 +46,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include "stdin_support.h"
+#include "btstack_stdin.h"
 
 #include "btstack.h"
 

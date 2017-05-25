@@ -43,8 +43,8 @@
  * Status: Basic implementation. HID Request from Host are not answered yet. Works with iOS.
  *
  * @text This HID Device example demonstrates how to implement
- * an HID keyboard. Without a HAVE_POSIX_STDIN, a fixed demo text is sent
- * If HAVE_POSIX_STDIN is defined, you can type from the terminal
+ * an HID keyboard. Without a HAVE_BTSTACK_STDIN, a fixed demo text is sent
+ * If HAVE_BTSTACK_STDIN is defined, you can type from the terminal
  */
 // *****************************************************************************
 
@@ -53,17 +53,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 #include <inttypes.h>
 
 #include "btstack.h"
 
-#ifdef HAVE_POSIX_STDIN
-#include "stdin_support.h"
+#ifdef HAVE_BTSTACK_STDIN
+#include "btstack_stdin.h"
 #endif
 
 // to enable demo text on POSIX systems
-// #undef HAVE_POSIX_STDIN
+// #undef HAVE_BTSTACK_STDIN
 
 static uint8_t hid_service_buffer[250];
 static const char hid_device_name[] = "BTstack HID Keyboard";
@@ -214,7 +213,7 @@ static void send_report(int modifier, int keycode){
 
 // Demo Application
 
-#ifdef HAVE_POSIX_STDIN
+#ifdef HAVE_BTSTACK_STDIN
 
 // On systems with STDIN, we can directly type on the console
 
@@ -293,7 +292,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                         case HID_SUBEVENT_CONNECTION_OPENED:
                             if (hid_subevent_connection_opened_get_status(packet)) return;
                             hid_cid = hid_subevent_connection_opened_get_hid_cid(packet);
-#ifdef HAVE_POSIX_STDIN                        
+#ifdef HAVE_BTSTACK_STDIN                        
                             printf("HID Connected, please start typing...\n");
 #else                        
                             printf("HID Connected, sending demo text...\n");
@@ -365,7 +364,7 @@ int btstack_main(int argc, const char * argv[]){
     hid_device_init();
     hid_device_register_packet_handler(&packet_handler);
 
-#ifdef HAVE_POSIX_STDIN
+#ifdef HAVE_BTSTACK_STDIN
     btstack_stdin_setup(stdin_process);
 #endif  
     // turn on!
