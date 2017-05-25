@@ -310,8 +310,7 @@ static void btstack_setup(void){
 
     // init HCI
     hci_init(transport_get_instance(), NULL);
-    //hci_set_link_key_db(btstack_link_key_db_memory_instance()); // @TODO
-    //hci_set_chipset(btstack_chipset_cc256x_instance()); // @TODO
+    hci_set_link_key_db(btstack_link_key_db_memory_instance()); // @TODO
 
     // inform about BTstack state
     hci_event_callback_registration.callback = &packet_handler;
