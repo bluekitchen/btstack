@@ -41,6 +41,7 @@ System properties:
 -----------------------------------|-------------------------------------
 HAVE_MALLOC                        | Use dynamic memory
 HAVE_AES128                        | Use platform AES128 engine - not needed usually
+HAVE_BTSTACK_STDIN                 | STDIN is available for CLI interface
 
 Embedded platform properties:
 
@@ -56,7 +57,6 @@ POSIX platform properties:
 HAVE_POSIX_B300_MAPPED_TO_2000000  | Workaround to use serial port with 2 mbps
 HAVE_POSIX_B600_MAPPED_TO_3000000  | Workaround to use serial port with 3 mpbs
 HAVE_POSIX_FILE_IO                 | POSIX File i/o used for hci dump
-HAVE_POSIX_STDIN                   | STDIN is available for CLI interface
 HAVE_POSIX_TIME                    | System provides time function
 LINK_KEY_PATH                      | Path to stored link keys
 LE_DEVICE_DB_PATH                  | Path to stored LE device information
