@@ -469,6 +469,7 @@ void avdtp_acceptor_stream_config_subsm_run(avdtp_connection_t * connection, avd
         case AVDTP_SIGNALING_CONNECTION_ACCEPTOR_W2_GENERAL_REJECT_WITH_ERROR_CODE:
             connection->acceptor_connection_state = AVDTP_SIGNALING_CONNECTION_ACCEPTOR_IDLE;
             avdtp_acceptor_send_response_general_reject(connection->l2cap_signaling_cid, connection->reject_signal_identifier, connection->acceptor_transaction_label);
+            break;
         default:
             sent = 0;
             break;

@@ -507,6 +507,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                                     break;
                                 case 'e':
                                     printf("HFP AG registration status update for individual indicators set.\n");
+                                    break;
                                 default:
                                     break;
                             }
