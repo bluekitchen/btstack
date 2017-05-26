@@ -42,6 +42,7 @@
 #include <unistd.h>
 
 #include "btstack_run_loop.h"
+#include "btstack_defines.h"
 #include <stdlib.h>
 
 #include "btstack_stdin.h"
@@ -60,18 +61,37 @@ static int activated = 0;
 static HANDLE stdin_reader_thread_handle;
 static char   key_read_buffer;
 static HANDLE key_processed_handle;
+static void (*stdin_handler)(char c);
 
 static WINAPI DWORD stdin_reader_thread_process(void * p){
     while (1){
         key_read_buffer = getch();
-        SignalObjectAndWait(stdin_source.handle , key_processed_handle, INFINITE, FALSE);        
+        SignalObjectAndWait(stdin_source.handle, key_processed_handle, INFINITE, FALSE);        
     }
     return 0;
 }
 
-void btstack_stdin_setup(void (*stdin_process)(btstack_data_source_t *_ds, btstack_data_source_callback_type_t callback_type)){
+static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type){
+
+    // raise SIGINT for CTRL-c on main thread
+    if (key_read_buffer == 0x03){
+        raise(SIGINT);
+        return;
+    }
+
+    SetEvent(key_processed_handle);
+
+    if (stdin_handler){
+        (*stdin_handler)(key_read_buffer);
+    }
+}
+
+void btstack_stdin_setup(void (*handler)(char c)){
 
     if (activated) return;
+
+
+    stdin_handler = handler;
 
     // asynchronous io on stdin via OVERLAPPED seems to be problematic. 
 
@@ -91,6 +111,7 @@ void btstack_stdin_setup(void (*stdin_process)(btstack_data_source_t *_ds, btsta
 void btstack_stdin_reset(void){
     if (!activated) return;
     activated = 0;
+    stdin_handler = NULL;
     
     btstack_run_loop_remove_data_source(&stdin_source);    
 
@@ -102,20 +123,5 @@ void btstack_stdin_reset(void){
     // free events
     CloseHandle(stdin_source.handle);
     CloseHandle(key_processed_handle);
-}
-
-// read single byte after data source callback was triggered
-char btstack_stdin_read(void){
-
-    // raise SIGINT for CTRL-c on main thread
-    if (key_read_buffer == 0x03){
-        raise(SIGINT);
-        return 0;
-    }
-
-    char data = key_read_buffer;
-    SetEvent(key_processed_handle);
-
-    return data;
 }
 

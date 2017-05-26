@@ -156,11 +156,8 @@ static void show_usage(void){
     printf("---\n");
 }
 
-static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type){
-    UNUSED(ds);
-    UNUSED(callback_type);
-
-    cmd = btstack_stdin_read();
+static void stdin_process(char c){
+    cmd = c;    // used in packet handler
 
     if (cmd >= '0' && cmd <= '9'){
         printf("DTMF Code: %c\n", cmd);

@@ -88,13 +88,8 @@ static void show_usage(void){
     printf("---\n");
 }
 
-static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type){
-    UNUSED(ds);
-    UNUSED(callback_type);
-
-    char cmd = btstack_stdin_read();
-
-    switch (cmd){
+static void stdin_process(char c){
+    switch (c){
         case 'a':
             printf("[+] Connecting to %s...\n", bd_addr_to_str(remote_addr));
             pbap_connect(&packet_handler, remote_addr, &pbap_cid);

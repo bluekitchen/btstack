@@ -545,14 +545,9 @@ static uint8_t media_sbc_codec_reconfiguration[] = {
     2, 53
 }; 
 
-static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type){
-    UNUSED(ds);
-    UNUSED(callback_type);
-
-    int cmd = btstack_stdin_read();
-
+static void stdin_process(char c){
     sep.seid = 1;
-    switch (cmd){
+    switch (c){
         case 'c':
             printf("Creating L2CAP Connection to %s, BLUETOOTH_PROTOCOL_AVDTP\n", bd_addr_to_str(remote));
             avdtp_sink_connect(remote);

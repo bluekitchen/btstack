@@ -35,8 +35,8 @@
  *
  */
 
-#ifndef __STDIN_SUPPORT_H
-#define __STDIN_SUPPORT_H
+#ifndef __BTSTACK_STDIN_H
+#define __BTSTACK_STDIN_H
 
 #include "btstack_run_loop.h"
 
@@ -45,10 +45,7 @@ extern "C" {
 #endif
 
 // setup handler for command line interface
-void btstack_stdin_setup(void (*stdin_handler)(btstack_data_source_t *_ds, btstack_data_source_callback_type_t callback_type));
-
-// read single byte after data source callback was triggered
-char btstack_stdin_read(void);
+void btstack_stdin_setup(void (*stdin_handler)(char c));
 
 // gets called by main.c
 void btstack_stdin_reset(void);

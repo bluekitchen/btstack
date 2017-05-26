@@ -344,12 +344,7 @@ static void a2dp_fill_audio_buffer_timer_pause(a2dp_media_sending_context_t * co
     btstack_run_loop_remove_timer(&context->fill_audio_buffer_timer);
 } 
 
-static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type){
-    UNUSED(ds);
-    UNUSED(callback_type);
-
-    int cmd = btstack_stdin_read();
-
+static void stdin_process(char cmd){
     switch (cmd){
         case 'c':
             printf("Creating L2CAP Connection to %s, PSM_AVDTP\n", bd_addr_to_str(remote));

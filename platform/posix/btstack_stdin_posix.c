@@ -41,6 +41,7 @@
 #include <stdio.h>
 #include <unistd.h>
 
+#include "btstack_defines.h"
 #include "btstack_run_loop.h"
 #include <stdlib.h>
 
@@ -49,8 +50,21 @@
 
 static btstack_data_source_t stdin_source;
 static int activated = 0;
+static void (*stdin_handler)(char c);
 
-void btstack_stdin_setup(void (*stdin_process)(btstack_data_source_t *_ds, btstack_data_source_callback_type_t callback_type)){
+// read single byte after data source callback was triggered
+static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type){
+    UNUSED(ds);
+    UNUSED(callback_type);
+
+    char data;
+    read(stdin_source.fd, &data, 1);
+    if (stdin_handler){
+        (*stdin_handler)(data);
+    }
+}
+
+void btstack_stdin_setup(void (*handler)(char c)){
 
     if (activated) return;
 
@@ -64,6 +78,8 @@ void btstack_stdin_setup(void (*stdin_process)(btstack_data_source_t *_ds, btsta
         perror("tcsetattr ICANON");
     }
 
+    stdin_handler = handler;
+
     btstack_run_loop_set_data_source_fd(&stdin_source, 0); // stdin
 
     btstack_run_loop_enable_data_source_callbacks(&stdin_source, DATA_SOURCE_CALLBACK_READ);
@@ -76,7 +92,8 @@ void btstack_stdin_setup(void (*stdin_process)(btstack_data_source_t *_ds, btsta
 void btstack_stdin_reset(void){
     if (!activated) return;
     activated = 0;
-    
+    stdin_handler = NULL;
+
     btstack_run_loop_remove_data_source(&stdin_source);    
 
     struct termios term = {0};
@@ -90,9 +107,3 @@ void btstack_stdin_reset(void){
     }
 }
 
-// read single byte after data source callback was triggered
-char btstack_stdin_read(void){
-    char data;
-    read(stdin_source.fd, &data, 1);
-    return data;
-}

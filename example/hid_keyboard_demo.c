@@ -217,12 +217,7 @@ static void send_report(int modifier, int keycode){
 
 // On systems with STDIN, we can directly type on the console
 
-static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type){
-    UNUSED(ds);
-    UNUSED(callback_type);
-
-    char character = btstack_stdin_read();
-
+static void stdin_process(char character){
     uint8_t modifier;
     uint8_t keycode;
     int found = keycode_and_modifer_us_for_character(character, &keycode, &modifier);

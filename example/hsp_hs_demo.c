@@ -121,13 +121,8 @@ static void show_usage(void){
 }
 
 #ifdef HAVE_BTSTACK_STDIN
-static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type){
-    UNUSED(ds);
-    UNUSED(callback_type);
-
-    char buffer = btstack_stdin_read();
-
-    switch (buffer){
+static void stdin_process(char c){
+    switch (c){
         case 'c':
             printf("Connect to %s\n", bd_addr_to_str(device_addr));
             hsp_hs_connect(device_addr);

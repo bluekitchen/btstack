@@ -239,12 +239,7 @@ static void show_usage(void){
     printf("---\n");
 }
 
-static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type){
-    UNUSED(ds);
-    UNUSED(callback_type);
-
-    int cmd = btstack_stdin_read();
-
+static void stdin_process(char cmd){
     switch (cmd){
         case 'c':
             printf(" - Create AVRCP connection to addr %s.\n", bd_addr_to_str(device_addr));

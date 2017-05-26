@@ -340,12 +340,7 @@ static const uint8_t media_sbc_codec_reconfiguration[] = {
     2, 53
 }; 
 
-static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type){
-    UNUSED(ds);
-    UNUSED(callback_type);
-
-    int cmd = btstack_stdin_read();
-
+static void stdin_process(char cmd){
     sep.seid = 1;
     switch (cmd){
         case 'c':
