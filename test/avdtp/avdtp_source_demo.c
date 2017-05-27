@@ -53,14 +53,14 @@
 #include "hci_dump.h"
 #include "l2cap.h"
 #include "btstack_stdin.h"
-#include "avdtp_source.h"
-#include "a2dp_source.h"
+#include "classic/a2dp_source.h"
+#include "classic/avdtp_source.h"
+#include "classic/avdtp_util.h"
+#include "classic/btstack_sbc.h"
 
-#include "btstack_sbc.h"
 #include "sbc_encoder.h"
-#include "avdtp_util.h"
 #include "hxcmod.h"
-#include "mod.h"
+#include "mods/mod.h"
 
 #define NUM_CHANNELS        2
 #define A2DP_SAMPLE_RATE         44100
