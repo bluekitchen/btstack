@@ -44,6 +44,23 @@ void hal_cpu_enable_irqs_and_sleep(void){
 	__asm__("wfe");	// go to sleep if event flag isn't set. if set, just clear it. IRQs set event flag
 }
 
+// hal_stdin.h
+#include "hal_stdin.h"
+static uint8_t stdin_buffer[1];
+static void (*stdin_handler)(char c);
+void hal_stdin_setup(void (*handler)(char c)){
+    stdin_handler = handler;
+    // start receiving
+	HAL_UART_Receive_IT(&huart2, &stdin_buffer[0], 1);
+}
+
+static void stdin_rx_complete(void){
+    if (stdin_handler){
+        (*stdin_handler)(stdin_buffer[0]);
+    }
+    HAL_UART_Receive_IT(&huart2, &stdin_buffer[0], 1);
+}
+
 // hal_uart_dma.h
 
 // hal_uart_dma.c implementation
@@ -101,6 +118,9 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart){
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart){
 	if (huart == &huart3){
 		(*rx_done_handler)();
+	}
+    if (huart == &huart2){
+        stdin_rx_complete();
 	}
 }
 
@@ -259,8 +279,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 int btstack_main(int argc, char ** argv);
 void port_main(void){
 
-
-	// start with BTstack init - especially configure HCI Transport
+    // start with BTstack init - especially configure HCI Transport
     btstack_memory_init();
     btstack_run_loop_init(btstack_run_loop_embedded_get_instance());
 
