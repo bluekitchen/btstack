@@ -46,7 +46,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include "stdin_support.h"
+#include "btstack_stdin.h"
 
 #include "btstack.h"
 
@@ -65,9 +65,7 @@ static void show_usage(void){
     printf("---\n");
 }
 
-static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type){
-    char buffer;
-    read(ds->fd, &buffer, 1);
+static void stdin_process(char buffer){
     switch (buffer){
         default:
             show_usage();
@@ -85,6 +83,8 @@ static uint8_t hfp_hf_service_buffer[200];  // rfcomm 5
 
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
+    (void)argv;
+    (void)argc;
 
     l2cap_init();
 

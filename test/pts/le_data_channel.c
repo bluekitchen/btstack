@@ -59,7 +59,7 @@
 #include "hci.h"
 #include "hci_dump.h"
 #include "l2cap.h"
-#include "stdin_support.h"
+#include "btstack_stdin.h"
  
  static void show_usage(void);
 
@@ -293,11 +293,7 @@ void show_usage(void){
     printf("---\n");
 }
 
-static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type){
-    UNUSED(callback_type);
-    char buffer;
-    read(ds->fd, &buffer, 1);
-
+static void stdin_process(char buffer){
     // passkey input
     if (ui_digits_for_passkey){
         if (buffer < '0' || buffer > '9') return;

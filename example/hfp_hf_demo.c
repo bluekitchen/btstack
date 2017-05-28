@@ -47,7 +47,7 @@
  *
  * @text This  HFP Hands-Free example demonstrates how to receive 
  * an output from a remote HFP audio gateway (AG), and, 
- * if HAVE_POSIX_STDIN is defined, how to control the HFP AG. 
+ * if HAVE_BTSTACK_STDIN is defined, how to control the HFP AG. 
  */
 // *****************************************************************************
 
@@ -62,9 +62,8 @@
 
 #include "sco_demo_util.h"
 
-#ifdef HAVE_POSIX_STDIN
-#include <unistd.h>
-#include "stdin_support.h"
+#ifdef HAVE_BTSTACK_STDIN
+#include "btstack_stdin.h"
 #endif
 
 uint8_t hfp_service_buffer[150];
@@ -72,7 +71,7 @@ const uint8_t   rfcomm_channel_nr = 1;
 const char hfp_hf_service_name[] = "BTstack HFP HF Demo";
 static bd_addr_t device_addr = {0x80,0xbe,0x05,0xd5,0x28,0x48};
 
-#ifdef HAVE_POSIX_STDIN
+#ifdef HAVE_BTSTACK_STDIN
 // 80:BE:05:D5:28:48
 // prototypes
 static void show_usage(void);
@@ -113,7 +112,7 @@ static void dump_supported_codecs(void){
     }
 }
 
-#ifdef HAVE_POSIX_STDIN
+#ifdef HAVE_BTSTACK_STDIN
 
 // Testig User Interface 
 static void show_usage(void){
@@ -157,11 +156,8 @@ static void show_usage(void){
     printf("---\n");
 }
 
-static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type){
-    UNUSED(ds);
-    UNUSED(callback_type);
-
-    cmd = btstack_stdin_read();
+static void stdin_process(char c){
+    cmd = c;    // used in packet handler
 
     if (cmd >= '0' && cmd <= '9'){
         printf("DTMF Code: %c\n", cmd);
@@ -202,6 +198,7 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
             log_info("USER:\'%c\'", cmd);
             printf("Enable registration status update for all AG indicators.\n");
             hfp_hf_enable_status_update_for_all_ag_indicators(acl_handle);
+            break;
         case 'c':
             log_info("USER:\'%c\'", cmd);
             printf("Disable registration status update for all AG indicators.\n");
@@ -506,6 +503,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                                     break;
                                 case 'e':
                                     printf("HFP AG registration status update for individual indicators set.\n");
+                                    break;
                                 default:
                                     break;
                             }
@@ -601,7 +599,7 @@ int btstack_main(int argc, const char * argv[]){
     sdp_register_service(hfp_service_buffer);
 
     
-#ifdef HAVE_POSIX_STDIN
+#ifdef HAVE_BTSTACK_STDIN
     btstack_stdin_setup(stdin_process);
 #endif    
     // turn on!

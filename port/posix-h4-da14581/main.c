@@ -59,7 +59,7 @@
 #include "btstack_run_loop_posix.h"
 #include "hci.h"
 #include "hci_dump.h"
-#include "stdin_support.h"
+#include "btstack_stdin.h"
 
 #include "btstack_chipset_da14581.h"
 #include "hci_581_active_uart.h"

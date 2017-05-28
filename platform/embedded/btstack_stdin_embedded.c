@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 BlueKitchen GmbH
+ * Copyright (C) 2017 BlueKitchen GmbH
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -30,31 +30,54 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
 
-#ifndef __STDIN_SUPPORT_H
-#define __STDIN_SUPPORT_H
+#define __BTSTACK_FILE__ "btstack_stdin_embedded.c"
 
+/*
+ *  btstack_stdin_embedded.c
+ *
+ *  Common code to provide console input using an IRQ-driven console UART in hal_stdin.h
+ *
+ */
+
+#include "hal_stdin.h"
+
+#include "btstack_stdin.h"
 #include "btstack_run_loop.h"
+#include "btstack_run_loop_embedded.h"
 
-#if defined __cplusplus
-extern "C" {
-#endif
+volatile int stdin_character_received;
+volatile char stdin_character;
+static void (*stdin_handler)(char c);
+static btstack_data_source_t stdin_data_source;
 
-// setup handler for command line interface
-void btstack_stdin_setup(void (*stdin_handler)(btstack_data_source_t *_ds, btstack_data_source_callback_type_t callback_type));
-
-// read single byte after data source callback was triggered
-char btstack_stdin_read(void);
-
-// gets called by main.c
-void btstack_stdin_reset(void);
-
-#if defined __cplusplus
+static void btstack_stdin_handler(char c){
+	stdin_character = c;
+	stdin_character_received = 1;
+	btstack_run_loop_embedded_trigger();
 }
-#endif
 
-#endif
+static void btstack_stdin_process(struct btstack_data_source *ds, btstack_data_source_callback_type_t callback_type){
+	if (!stdin_character_received) return;
+	if (stdin_handler){
+		(*stdin_handler)(stdin_character);
+	}
+	stdin_character_received = 0;
+}
+
+void btstack_stdin_setup(void (*handler)(char c)){
+	// set handler
+	stdin_handler = handler;
+
+	// set up polling data_source
+	btstack_run_loop_set_data_source_handler(&stdin_data_source, &btstack_stdin_process);
+	btstack_run_loop_enable_data_source_callbacks(&stdin_data_source, DATA_SOURCE_CALLBACK_POLL);
+	btstack_run_loop_add_data_source(&stdin_data_source);
+
+	// start receiving
+	hal_stdin_setup(&btstack_stdin_handler);
+}

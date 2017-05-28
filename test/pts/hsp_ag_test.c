@@ -64,7 +64,7 @@
 #include "hsp_ag.h"
 #include "l2cap.h"
 #include "rfcomm.h"
-#include "stdin_support.h"
+#include "btstack_stdin.h"
  
 static uint32_t   hsp_service_buffer[150/4]; // implicit alignment to 4-byte memory address
 static uint8_t    rfcomm_channel_nr = 1;
@@ -97,10 +97,7 @@ static void show_usage(void){
     printf("---\n");
 }
 
-static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type){
-    char buffer;
-    read(ds->fd, &buffer, 1);
-
+static void stdin_process(char buffer){
     switch (buffer){
         case 'p':
             printf("Establishing service level connection to PTS module %s...\n", bd_addr_to_str(pts_addr));

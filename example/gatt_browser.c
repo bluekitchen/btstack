@@ -268,7 +268,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
 }
 /* LISTING_END */
 
-#ifdef HAVE_POSIX_STDIN
+#ifdef HAVE_BTSTACK_STDIN
 static void usage(const char *name){
 	fprintf(stderr, "\nUsage: %s [-a|--address aa:bb:cc:dd:ee:ff]\n", name);
 	fprintf(stderr, "If no argument is provided, GATT browser will start scanning and connect to the first found device.\nTo connect to a specific device use argument [-a].\n\n");
@@ -278,7 +278,7 @@ static void usage(const char *name){
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
 
-#ifdef HAVE_POSIX_STDIN
+#ifdef HAVE_BTSTACK_STDIN
     int arg = 1;
     cmdline_addr_found = 0;
     
@@ -293,8 +293,8 @@ int btstack_main(int argc, const char * argv[]){
         return 0;
 	}
 #else
-    UNUSED(argc);
-    UNUSED(argv);
+    (void)argc;
+    (void)argv;
 #endif
 
     // setup ATT server - only needed if LE Peripheral does ATT queries on its own, e.g. Android phones

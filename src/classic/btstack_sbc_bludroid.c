@@ -181,7 +181,7 @@ int btstack_sbc_decoder_sample_rate(btstack_sbc_decoder_state_t * state){
 }
 
 #ifdef OI_DEBUG
-void OI_AssertFail(char* file, int line, char* reason){
+void OI_AssertFail(const char* file, int line, const char* reason){
     log_error("AssertFail file %s, line %d, reason %s", file, line, reason);
 }
 #endif

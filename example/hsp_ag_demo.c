@@ -47,7 +47,7 @@
  * @text This example implements a HSP Audio Gateway device that sends and receives 
  * audio signal over HCI SCO. It demonstrates how to receive 
  * an output from a remote headset (HS), and, 
- * if HAVE_POSIX_STDIN is defined, how to control the HS. 
+ * if HAVE_BTSTACK_STDIN is defined, how to control the HS. 
  */
 // *****************************************************************************
 
@@ -57,12 +57,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 
 #include "btstack.h"
 #include "sco_demo_util.h"
-#ifdef HAVE_POSIX_STDIN
-#include "stdin_support.h"
+#ifdef HAVE_BTSTACK_STDIN
+#include "btstack_stdin.h"
 #endif
 
 static uint8_t       hsp_service_buffer[150];
@@ -121,14 +120,9 @@ static void show_usage(void){
     printf("---\n");
 }
 
-#ifdef HAVE_POSIX_STDIN
-static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type){
-    UNUSED(ds);
-    UNUSED(callback_type);
-
-    char buffer = btstack_stdin_read();
-
-    switch (buffer){
+#ifdef HAVE_BTSTACK_STDIN
+static void stdin_process(char c){
+    switch (c){
         case 'c':
             printf("Connect to %s\n", bd_addr_to_str(device_addr));
             hsp_ag_connect(device_addr);
@@ -298,7 +292,7 @@ int btstack_main(int argc, const char * argv[]){
     hsp_ag_register_packet_handler(&packet_handler);
     hci_register_sco_packet_handler(&packet_handler);
 
-#ifdef HAVE_POSIX_STDIN
+#ifdef HAVE_BTSTACK_STDIN
     btstack_stdin_setup(stdin_process);
 #endif
 

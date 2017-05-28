@@ -101,6 +101,29 @@
 #define GAP_INQUIRY_MAX_NAME_LEN 32
 #endif
 
+// GAP inquiry state: 0 = off, 0x01 - 0x30 = requested duration, 0xfe = active, 0xff = stop requested
+#define GAP_INQUIRY_DURATION_MIN 0x01
+#define GAP_INQUIRY_DURATION_MAX 0x30
+#define GAP_INQUIRY_STATE_ACTIVE 0x80
+#define GAP_INQUIRY_STATE_IDLE 0
+#define GAP_INQUIRY_STATE_W2_CANCEL 0x81
+#define GAP_INQUIRY_STATE_W4_CANCELLED 0x82
+
+// GAP Remote Name Request
+#define GAP_REMOTE_NAME_STATE_IDLE 0
+#define GAP_REMOTE_NAME_STATE_W2_SEND 1
+#define GAP_REMOTE_NAME_STATE_W4_COMPLETE 2
+
+// GAP Pairing
+#define GAP_PAIRING_STATE_IDLE                       0
+#define GAP_PAIRING_STATE_SEND_PIN                   1
+#define GAP_PAIRING_STATE_SEND_PIN_NEGATIVE          2
+#define GAP_PAIRING_STATE_SEND_PASSKEY               3
+#define GAP_PAIRING_STATE_SEND_PASSKEY_NEGATIVE      4
+#define GAP_PAIRING_STATE_SEND_CONFIRMATION          5
+#define GAP_PAIRING_STATE_SEND_CONFIRMATION_NEGATIVE 6
+
+
 // prototypes
 #ifdef ENABLE_CLASSIC
 static void hci_update_scan_enable(void);
@@ -1674,6 +1697,13 @@ static void event_handler(uint8_t *packet, int size){
             if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_write_scan_enable)){
                 hci_emit_discoverable_enabled(hci_stack->discoverable);
             }
+            if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_inquiry_cancel)){
+                if (hci_stack->inquiry_state == GAP_INQUIRY_STATE_W4_CANCELLED){
+                    hci_stack->inquiry_state = GAP_INQUIRY_STATE_IDLE;
+                    uint8_t event[] = { GAP_EVENT_INQUIRY_COMPLETE, 1, 0};
+                    hci_emit_event(event, sizeof(event), 1);
+                }
+            }
 #endif
 
             // Note: HCI init checks 
@@ -1756,6 +1786,18 @@ static void event_handler(uint8_t *packet, int size){
         }
 
 #ifdef ENABLE_CLASSIC
+        case HCI_EVENT_INQUIRY_COMPLETE:
+            if (hci_stack->inquiry_state == GAP_INQUIRY_STATE_ACTIVE){
+                hci_stack->inquiry_state = GAP_INQUIRY_STATE_IDLE;
+                uint8_t event[] = { GAP_EVENT_INQUIRY_COMPLETE, 1, 0};
+                hci_emit_event(event, sizeof(event), 1);
+            }
+            break;
+        case HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE:
+            if (hci_stack->remote_name_state == GAP_REMOTE_NAME_STATE_W4_COMPLETE){
+                hci_stack->remote_name_state = GAP_REMOTE_NAME_STATE_IDLE;
+            }
+            break;
         case HCI_EVENT_CONNECTION_REQUEST:
             reverse_bd_addr(&packet[2], addr);
             // TODO: eval COD 8-10
@@ -2757,11 +2799,56 @@ static void hci_run(void){
         hci_send_cmd(&hci_reject_connection_request, hci_stack->decline_addr, reason);
         return;
     }
-
     // send scan enable
     if (hci_stack->state == HCI_STATE_WORKING && hci_stack->new_scan_enable_value != 0xff && hci_classic_supported()){
         hci_send_cmd(&hci_write_scan_enable, hci_stack->new_scan_enable_value);
         hci_stack->new_scan_enable_value = 0xff;
+        return;
+    }
+    // start/stop inquiry
+    if (hci_stack->inquiry_state >= GAP_INQUIRY_DURATION_MIN && hci_stack->inquiry_state <= GAP_INQUIRY_DURATION_MAX){
+        uint8_t duration = hci_stack->inquiry_state;
+        hci_stack->inquiry_state = GAP_INQUIRY_STATE_ACTIVE;
+        hci_send_cmd(&hci_inquiry, HCI_INQUIRY_LAP, duration, 0);
+        return;
+    }
+    if (hci_stack->inquiry_state == GAP_INQUIRY_STATE_W2_CANCEL){
+        hci_stack->inquiry_state = GAP_INQUIRY_STATE_W4_CANCELLED;
+        hci_send_cmd(&hci_inquiry_cancel);
+        return;
+    }
+    // remote name request
+    if (hci_stack->remote_name_state == GAP_REMOTE_NAME_STATE_W2_SEND){
+        hci_stack->remote_name_state = GAP_REMOTE_NAME_STATE_W4_COMPLETE;
+        hci_send_cmd(&hci_remote_name_request, hci_stack->remote_name_addr, 
+            hci_stack->remote_name_page_scan_repetition_mode, hci_stack->remote_name_clock_offset);
+    }
+    // pairing
+    if (hci_stack->gap_pairing_state != GAP_PAIRING_STATE_IDLE){
+        uint8_t state = hci_stack->gap_pairing_state;
+        hci_stack->gap_pairing_state = GAP_PAIRING_STATE_IDLE;
+        switch (state){
+            case GAP_PAIRING_STATE_SEND_PIN:
+                hci_send_cmd(&hci_pin_code_request_reply, hci_stack->gap_pairing_addr, strlen(hci_stack->gap_pairing_pin), hci_stack->gap_pairing_pin);
+                break;
+            case GAP_PAIRING_STATE_SEND_PIN_NEGATIVE:
+                hci_send_cmd(&hci_pin_code_request_negative_reply, hci_stack->gap_pairing_addr);
+                break;
+            case GAP_PAIRING_STATE_SEND_PASSKEY:
+                hci_send_cmd(&hci_user_passkey_request_reply, hci_stack->gap_pairing_addr, hci_stack->gap_pairing_passkey);
+                break;
+            case GAP_PAIRING_STATE_SEND_PASSKEY_NEGATIVE:
+                hci_send_cmd(&hci_user_passkey_request_negative_reply, hci_stack->gap_pairing_addr);
+                break;
+            case GAP_PAIRING_STATE_SEND_CONFIRMATION:
+                hci_send_cmd(&hci_user_confirmation_request_reply, hci_stack->gap_pairing_addr);
+                break;
+            case GAP_PAIRING_STATE_SEND_CONFIRMATION_NEGATIVE:
+                hci_send_cmd(&hci_user_confirmation_request_negative_reply, hci_stack->gap_pairing_addr);
+                break;
+            default:
+                break;
+        }
         return;
     }
 #endif
@@ -4120,8 +4207,134 @@ void gap_set_extended_inquiry_response(const uint8_t * data){
 }
 
 /**
+ * @brief Start GAP Classic Inquiry
+ * @param duration in 1.28s units
+ * @return 0 if ok
+ * @events: GAP_EVENT_INQUIRY_RESULT, GAP_EVENT_INQUIRY_COMPLETE
+ */
+int gap_inquiry_start(uint8_t duration_in_1280ms_units){
+    if (hci_stack->inquiry_state != GAP_INQUIRY_STATE_IDLE) return ERROR_CODE_COMMAND_DISALLOWED;
+    if (duration_in_1280ms_units < GAP_INQUIRY_DURATION_MIN || duration_in_1280ms_units > GAP_INQUIRY_DURATION_MAX){
+        return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+    }
+    hci_stack->inquiry_state = duration_in_1280ms_units;
+    hci_run();
+    return 0;
+}
+
+/**
+ * @brief Stop GAP Classic Inquiry
+ * @returns 0 if ok
+ */
+int gap_inquiry_stop(void){
+    if (hci_stack->inquiry_state >= GAP_INQUIRY_DURATION_MIN || hci_stack->inquiry_state <= GAP_INQUIRY_DURATION_MAX) {
+        // emit inquiry complete event, before it even started
+        uint8_t event[] = { GAP_EVENT_INQUIRY_COMPLETE, 1, 0};
+        hci_emit_event(event, sizeof(event), 1);
+        return 0;
+    }
+    if (hci_stack->inquiry_state != GAP_INQUIRY_STATE_ACTIVE) return ERROR_CODE_COMMAND_DISALLOWED;
+    hci_stack->inquiry_state = GAP_INQUIRY_STATE_W2_CANCEL;
+    hci_run();
+    return 0;
+}    
+
+
+/**
+ * @brief Remote Name Request
+ * @param addr
+ * @param page_scan_repetition_mode
+ * @param clock_offset only used when bit 15 is set
+ * @events: HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE
+ */
+int gap_remote_name_request(bd_addr_t addr, uint8_t page_scan_repetition_mode, uint16_t clock_offset){
+    if (hci_stack->remote_name_state != GAP_REMOTE_NAME_STATE_IDLE) return ERROR_CODE_COMMAND_DISALLOWED;
+    memcpy(hci_stack->remote_name_addr, addr, 6);
+    hci_stack->remote_name_page_scan_repetition_mode = page_scan_repetition_mode;
+    hci_stack->remote_name_clock_offset = clock_offset;
+    hci_stack->remote_name_state = GAP_REMOTE_NAME_STATE_W2_SEND;
+    hci_run();
+    return 0;
+}
+
+static int gap_pairing_set_state_and_run(bd_addr_t addr, uint8_t state){
+    hci_stack->gap_pairing_state = state;
+    memcpy(hci_stack->gap_pairing_addr, addr, 6);
+    hci_run();
+    return 0;
+}
+
+/**
+ * @brief Legacy Pairing Pin Code Response
+ * @param addr
+ * @param pin
+ * @return 0 if ok
+ */
+int gap_pin_code_response(bd_addr_t addr, const char * pin){
+    if (hci_stack->gap_pairing_state != GAP_INQUIRY_STATE_IDLE) return ERROR_CODE_COMMAND_DISALLOWED;
+    hci_stack->gap_pairing_pin = pin;
+    return gap_pairing_set_state_and_run(addr, GAP_PAIRING_STATE_SEND_PIN);
+}
+
+/**
+ * @brief Abort Legacy Pairing
+ * @param addr
+ * @param pin
+ * @return 0 if ok
+ */
+int gap_pin_code_negative(bd_addr_t addr){
+    if (hci_stack->gap_pairing_state != GAP_INQUIRY_STATE_IDLE) return ERROR_CODE_COMMAND_DISALLOWED;
+    return gap_pairing_set_state_and_run(addr, GAP_PAIRING_STATE_SEND_PIN_NEGATIVE);
+}
+
+/**
+ * @brief SSP Passkey Response
+ * @param addr
+ * @param passkey
+ * @return 0 if ok
+ */
+int gap_ssp_passkey_response(bd_addr_t addr, uint32_t passkey){
+    if (hci_stack->gap_pairing_state != GAP_INQUIRY_STATE_IDLE) return ERROR_CODE_COMMAND_DISALLOWED;
+    hci_stack->gap_pairing_passkey = passkey;
+    return gap_pairing_set_state_and_run(addr, GAP_PAIRING_STATE_SEND_PASSKEY);
+}
+
+/**
+ * @brief Abort SSP Passkey Entry/Pairing
+ * @param addr
+ * @param pin
+ * @return 0 if ok
+ */
+int gap_ssp_passkey_negative(bd_addr_t addr){
+    if (hci_stack->gap_pairing_state != GAP_INQUIRY_STATE_IDLE) return ERROR_CODE_COMMAND_DISALLOWED;
+    return gap_pairing_set_state_and_run(addr, GAP_PAIRING_STATE_SEND_PASSKEY_NEGATIVE);
+}
+
+/**
+ * @brief Accept SSP Numeric Comparison
+ * @param addr
+ * @param passkey
+ * @return 0 if ok
+ */
+int gap_ssp_confirmation_response(bd_addr_t addr){
+    if (hci_stack->gap_pairing_state != GAP_INQUIRY_STATE_IDLE) return ERROR_CODE_COMMAND_DISALLOWED;
+    return gap_pairing_set_state_and_run(addr, GAP_PAIRING_STATE_SEND_CONFIRMATION);
+}
+
+/**
+ * @brief Abort SSP Numeric Comparison/Pairing
+ * @param addr
+ * @param pin
+ * @return 0 if ok
+ */
+int gap_ssp_confirmation_negative(bd_addr_t addr){
+    if (hci_stack->gap_pairing_state != GAP_INQUIRY_STATE_IDLE) return ERROR_CODE_COMMAND_DISALLOWED;
+    return gap_pairing_set_state_and_run(addr, GAP_PAIRING_STATE_SEND_CONFIRMATION_NEGATIVE);
+}
+
+/**
  * @brief Set inquiry mode: standard, with RSSI, with RSSI + Extended Inquiry Results. Has to be called before power on.
- * @param inquriy_mode see bluetooth_defines.h
+ * @param inquiry_mode see bluetooth_defines.h
  */
 void hci_set_inquiry_mode(inquiry_mode_t mode){
     hci_stack->inquiry_mode = mode;

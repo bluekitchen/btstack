@@ -63,7 +63,7 @@
 #include "hci_cmd.h"
 #include "hci_dump.h"
 #include "l2cap.h"
-#include "stdin_support.h"
+#include "btstack_stdin.h"
 
 static void show_usage(void);
 
@@ -473,15 +473,12 @@ static void show_usage(void){
     printf("---\n");
 }
 
-static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type){
-    char buffer;
-    read(ds->fd, &buffer, 1);
-
+static void stdin_process(char c){
     // passkey input
     if (ui_digits_for_passkey){
-        printf("%c", buffer);
+        printf("%c", c);
         fflush(stdout);
-        ui_passkey = ui_passkey * 10 + buffer - '0';
+        ui_passkey = ui_passkey * 10 + c - '0';
         ui_digits_for_passkey--;
         if (ui_digits_for_passkey == 0){
             printf("\nSending Passkey '%06u'\n", ui_passkey);
@@ -489,17 +486,18 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
         }
     }
     if (ui_chars_for_pin){
-        printf("%c", buffer);
+        printf("%c", c);
         fflush(stdout);
-        if (buffer == '\n'){
+        if (c == '\n'){
             printf("\nSending Pin '%s'\n", ui_pin);
-            hci_send_cmd(&hci_pin_code_request_reply, remote, ui_pin_offset, ui_pin);
+            ui_pin[ui_pin_offset] = 0;
+            gap_pin_code_response(event_addr, ui_pin);
         } else {
-            ui_pin[ui_pin_offset++] = buffer;
+            ui_pin[ui_pin_offset++] = c;
         }
     }
 
-    switch (buffer){
+    switch (c){
         case 'c':
             gap_connectable = 0;
             gap_connectable_control(0);

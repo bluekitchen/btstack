@@ -15,3 +15,5 @@ sco_loopbackiopt
 sco_loopback
 iopt
 le_data_channel
+avdtp_sink_test
+avdtp_source_test

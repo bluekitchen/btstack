@@ -1,32 +1,49 @@
 # Makefile for libusb based PTS tests
 BTSTACK_ROOT = ../..
 
+
 CORE += \
 	btstack_memory.c            \
 	btstack_linked_list.c	    \
 	btstack_memory_pool.c       \
 	btstack_run_loop.c		    \
 	btstack_util.c 	            \
-	main.c 	\
-	stdin_support.c \
+	main.c 						\
+	btstack_stdin_posix.c       \
 	
-
 COMMON += \
 	hci.c			            \
 	hci_cmd.c		            \
 	hci_dump.c		            \
 	l2cap.c			            \
 	l2cap_signaling.c	        \
-	hci_transport_h2_libusb.c \
-	btstack_run_loop_posix.c \
-	btstack_link_key_db_fs.c \
-	le_device_db_fs.c \
-	wav_util.c \
+	hci_transport_h2_libusb.c 	\
+	btstack_run_loop_posix.c 	\
+	btstack_link_key_db_fs.c 	\
+	le_device_db_fs.c 			\
+	wav_util.c 					\
 	sdp_util.c	                \
-	sdp_server.c			            \
+	sdp_server.c		        \
 
+SBC_DECODER += \
+	${BTSTACK_ROOT}/src/classic/btstack_sbc_plc.c \
+	${BTSTACK_ROOT}/src/classic/btstack_sbc_bludroid.c \
+
+SBC_ENCODER += \
+	${BTSTACK_ROOT}/src/classic/btstack_sbc_bludroid.c \
+	${BTSTACK_ROOT}/src/classic/hfp_msbc.c \
+
+AVDTP += \
+	avdtp_util.c  			\
+	avdtp.c  				\
+	avdtp_initiator.c 		\
+	avdtp_acceptor.c  		\
+	avdtp_source.c 			\
+	btstack_ring_buffer.c 	\
 
 include ${BTSTACK_ROOT}/example/Makefile.inc
+include ${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/Makefile.inc
+include ${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/Makefile.inc
 
 CFLAGS += -g -Wall -Wmissing-prototypes -Wstrict-prototypes -Wshadow -Wunused-variable -Wunused-parameter -Werror 
 CFLAGS += -I.
@@ -44,31 +61,37 @@ VPATH += ${BTSTACK_ROOT}/src/classic
 VPATH += ${BTSTACK_ROOT}/platform/posix
 VPATH += ${BTSTACK_ROOT}/platform/libusb
 VPATH += ${BTSTACK_ROOT}/port/libusb
-# VPATH += ${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/srce 
-# VPATH += ${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/srce 
+VPATH += ${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/srce 
+VPATH += ${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/srce 
 
 # use pkg-config for libusb
 CFLAGS  += $(shell pkg-config libusb-1.0 --cflags)
 LDFLAGS += $(shell pkg-config libusb-1.0 --libs)
-# hard coded flags for libusb in /usr/local/lib
-# CFLAGS  += -I/usr/local/include
-# LDFLAGS += -L/usr/local/lib -lusb-1.0
-
 # use pkg-config for portaudio
-# CFLAGS  += $(shell pkg-config portaudio-2.0 --cflags)
-# LDFLAGS += $(shell pkg-config portaudio-2.0 --libs)
-# hard coded flags for portaudio in /usr/local/lib
-# CFLAGS  += -I/usr/local/include
-# LDFLAGS += -L/sw/lib -lportaudio -Wl,-framework,CoreAudio -Wl,-framework,AudioToolbox -Wl,-framework,AudioUnit -Wl,-framework,Carbon
+CFLAGS  += $(shell pkg-config portaudio-2.0 --cflags) -DHAVE_PORTAUDIO 
+LDFLAGS += $(shell pkg-config portaudio-2.0 --libs)
+
+CORE_OBJ    = $(CORE:.c=.o)
+COMMON_OBJ  = $(COMMON:.c=.o) 
+SBC_DECODER_OBJ  = $(SBC_DECODER:.c=.o) 
+SBC_ENCODER_OBJ  = $(SBC_ENCODER:.c=.o)
+AVDTP_OBJ  = $(AVDTP:.c=.o)
 
 EXAMPLES = iopt ble_peripheral_test ble_central_test l2cap_test classic_test bnep_test hsp_ag_test hsp_hs_test sco_loopback le_data_channel
-EXAMPLES = le_data_channel
+EXAMPLES = avdtp_source_test avdtp_sink_test le_data_channel 
 
 all: ${EXAMPLES}
 
 # compile .gatt descriptions
+avdtp_sink_test: ${CORE_OBJ} ${COMMON_OBJ} ${SBC_DECODER_OBJ} ${SM_OBJ} ${SBC_ENCODER_OBJ} ${AVDTP_OBJ} avdtp_sink_test.o
+	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+
+avdtp_source_test: ${CORE_OBJ} ${COMMON_OBJ} ${SBC_DECODER_OBJ} ${SM_OBJ} ${SBC_ENCODER_OBJ} ${AVDTP_OBJ} avdtp_source_test.o
+	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+
 ble_peripheral_test.h: ble_peripheral_test.gatt
 	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
+
 ble_central_test.h: ble_central_test.gatt
 	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
 	
@@ -101,4 +124,6 @@ sco_loopback: ${CORE_OBJ} ${COMMON_OBJ} sco_loopback.c
 
 iopt: ${CORE_OBJ} ${COMMON_OBJ} pan.o hsp_ag.o hsp_hs.o hfp_ag.o hfp_hf.o hfp_gsm_model.o iopt.c hfp.o ${SDP_CLIENT}
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
-	
+
+clean:
+	rm -rf *.pyc *.o $(AVDTP_TESTS) *.dSYM *_test *.wav *.sbc ${BTSTACK_ROOT}/port/libusb/*.o	

@@ -725,16 +725,31 @@ typedef struct {
     HCI_STATE      state;
     hci_substate_t substate;
     btstack_timer_source_t timeout;
-    uint8_t   cmds_ready;
-    
+
     uint16_t  last_cmd_opcode;
+
+    uint8_t   cmds_ready;
+
+    /* buffer for scan enable cmd - 0xff no change */
+    uint8_t   new_scan_enable_value;
 
     uint8_t   discoverable;
     uint8_t   connectable;
     uint8_t   bondable;
 
-    /* buffer for scan enable cmd - 0xff no change */
-    uint8_t   new_scan_enable_value;
+    uint8_t   inquiry_state;    // see hci.c for state defines
+
+    bd_addr_t remote_name_addr;
+    uint16_t  remote_name_clock_offset;
+    uint8_t   remote_name_page_scan_repetition_mode;
+    uint8_t   remote_name_state;    // see hci.c for state defines
+
+    bd_addr_t gap_pairing_addr;
+    uint8_t   gap_pairing_state;    // see hci.c for state defines
+    union {
+        const char * gap_pairing_pin;
+        uint32_t     gap_pairing_passkey;
+    };
     
     uint16_t  sco_voice_setting;
     uint16_t  sco_voice_setting_active;

@@ -373,6 +373,81 @@ void gap_drop_link_key_for_bd_addr(bd_addr_t addr);
  */
 void gap_store_link_key_for_bd_addr(bd_addr_t addr, link_key_t link_key, link_key_type_t type);
 
+/**
+ * @brief Start GAP Classic Inquiry
+ * @param duration in 1.28s units
+ * @return 0 if ok
+ * @events: GAP_EVENT_INQUIRY_RESULT, GAP_EVENT_INQUIRY_COMPLETE
+ */
+int gap_inquiry_start(uint8_t duration_in_1280ms_units);
+
+/**
+ * @brief Stop GAP Classic Inquiry
+ * @brief Stop GAP Classic Inquiry
+ * @returns 0 if ok
+ * @events: GAP_EVENT_INQUIRY_COMPLETE
+ */
+int gap_inquiry_stop(void);
+
+/**
+ * @brief Remote Name Request
+ * @param addr
+ * @param page_scan_repetition_mode
+ * @param clock_offset only used when bit 15 is set - pass 0 if not known
+ * @events: HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE
+ */
+int gap_remote_name_request(bd_addr_t addr, uint8_t page_scan_repetition_mode, uint16_t clock_offset);
+
+/**
+ * @brief Legacy Pairing Pin Code Response
+ * @param addr
+ * @param pin
+ * @return 0 if ok
+ */
+int gap_pin_code_response(bd_addr_t addr, const char * pin);
+
+/**
+ * @brief Abort Legacy Pairing
+ * @param addr
+ * @param pin
+ * @return 0 if ok
+ */
+int gap_pin_code_negative(bd_addr_t addr);
+
+/**
+ * @brief SSP Passkey Response
+ * @param addr
+ * @param passkey [0..999999]
+ * @return 0 if ok
+ */
+int gap_ssp_passkey_response(bd_addr_t addr, uint32_t passkey);
+
+/**
+ * @brief Abort SSP Passkey Entry/Pairing
+ * @param addr
+ * @param pin
+ * @return 0 if ok
+ */
+int gap_ssp_passkey_negative(bd_addr_t addr);
+
+/**
+ * @brief Accept SSP Numeric Comparison
+ * @param addr
+ * @param passkey
+ * @return 0 if ok
+ */
+int gap_ssp_confirmation_response(bd_addr_t addr);
+
+/**
+ * @brief Abort SSP Numeric Comparison/Pairing
+ * @param addr
+ * @param pin
+ * @return 0 if ok
+ */
+int gap_ssp_confirmation_negative(bd_addr_t addr);
+
+
+
 // LE
 
 /**

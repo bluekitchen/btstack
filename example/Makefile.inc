@@ -109,8 +109,10 @@ EXAMPLES = 					\
 	sdp_general_query		\
 	sdp_rfcomm_query		\
 	spp_and_le_counter 		\
+	spp_and_le_streamer     \
 	spp_counter 			\
 	spp_streamer			\
+	spp_streamer_client     \
 	gap_le_advertisements   \
 	hfp_ag_demo             \
 	hfp_hf_demo             \
@@ -158,6 +160,8 @@ gatt_battery_query.h: gatt_battery_query.gatt
 	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
 spp_and_le_counter.h: spp_and_le_counter.gatt
 	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
+spp_and_le_streamer.h: spp_and_le_counter.gatt
+	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
 le_counter.h: le_counter.gatt
 	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
 le_streamer.h: le_streamer.gatt
@@ -199,10 +203,13 @@ le_streamer_client: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} ${SM
 spp_and_le_counter: spp_and_le_counter.h ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} spp_and_le_counter.c 
 	${CC} $(filter-out spp_and_le_counter.h,$^)  ${CFLAGS} ${LDFLAGS} -o $@
 
-spp_counter_ssp: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} spp_counter_ssp.c
-	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+spp_and_le_streamer: spp_and_le_streamer.h ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} spp_and_le_streamer.c 
+	${CC} $(filter-out spp_and_le_streamer.h,$^)  ${CFLAGS} ${LDFLAGS} -o $@
 
 spp_streamer: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} spp_streamer.c  
+	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+
+spp_streamer_client: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} spp_streamer_client.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 gap_dedicated_bonding: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} gap_dedicated_bonding.c

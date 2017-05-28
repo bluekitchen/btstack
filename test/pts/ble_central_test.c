@@ -62,7 +62,7 @@
 #include "hci.h"
 #include "hci_dump.h"
 #include "l2cap.h"
-#include "stdin_support.h"
+#include "btstack_stdin.h"
 
 // test profile
 #include "ble_central_test.h"
@@ -1597,31 +1597,28 @@ static void ui_process_command(char buffer){
     }
 }
 
-static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type){
-    char buffer;
-    read(ds->fd, &buffer, 1);
-
+static void stdin_process(char c){
     if (ui_digits_for_passkey){
-        ui_process_digits_for_passkey(buffer);
+        ui_process_digits_for_passkey(c);
         return;
     }
 
     if (ui_uint16_request){
-        ui_process_uint16_request(buffer);
+        ui_process_uint16_request(c);
         return;
     }
 
     if (ui_uuid128_request){
-        ui_process_uuid128_request(buffer);
+        ui_process_uuid128_request(c);
         return;
     }
 
     if (ui_value_request){
-        ui_process_data_request(buffer);        
+        ui_process_data_request(c);        
         return;
     }
 
-    ui_process_command(buffer);
+    ui_process_command(c);
 
     return;
 }

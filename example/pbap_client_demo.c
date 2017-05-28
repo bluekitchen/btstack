@@ -51,12 +51,11 @@
 #include "classic/goep_client.h"
 #include "classic/pbap_client.h"
 
-#ifdef HAVE_POSIX_STDIN
-#include <unistd.h>
-#include "stdin_support.h"
+#ifdef HAVE_BTSTACK_STDIN
+#include "btstack_stdin.h"
 #endif
 
-#ifndef HAVE_POSIX_STDIN
+#ifndef HAVE_BTSTACK_STDIN
 static int step = 0;
 #endif
 
@@ -70,7 +69,7 @@ static const char * remote_addr_string = "30-85-A9-54-2E-78";
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 static uint16_t pbap_cid;
 
-#ifdef HAVE_POSIX_STDIN
+#ifdef HAVE_BTSTACK_STDIN
 
 // Testig User Interface 
 static void show_usage(void){
@@ -89,13 +88,8 @@ static void show_usage(void){
     printf("---\n");
 }
 
-static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type){
-    UNUSED(ds);
-    UNUSED(callback_type);
-
-    char cmd = btstack_stdin_read();
-
-    switch (cmd){
+static void stdin_process(char c){
+    switch (c){
         case 'a':
             printf("[+] Connecting to %s...\n", bd_addr_to_str(remote_addr));
             pbap_connect(&packet_handler, remote_addr, &pbap_cid);
@@ -237,7 +231,7 @@ int btstack_main(int argc, const char * argv[]){
     // init PBAP Client
     pbap_client_init();
 
-#ifdef HAVE_POSIX_STDIN
+#ifdef HAVE_BTSTACK_STDIN
     btstack_stdin_setup(stdin_process);
 #endif    
 

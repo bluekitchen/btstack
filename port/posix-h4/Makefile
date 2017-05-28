@@ -15,7 +15,7 @@ CORE += \
 	hci_transport_h4.c \
 	le_device_db_fs.c \
 	main.c \
-	stdin_support.c \
+	btstack_stdin_posix.c \
 	# bluetooth_init_cc2564_2.14.c \
 	# bluetooth_init_cc2564C_1.0.c \
 

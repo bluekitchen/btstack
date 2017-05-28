@@ -53,10 +53,11 @@
 #include "hci_cmd.h"
 #include "hci_dump.h"
 #include "l2cap.h"
-#include "stdin_support.h"
-#include "avdtp_source.h"
+#include "btstack_stdin.h"
 
 #include "btstack_sbc.h"
+#include "avdtp.h"
+#include "avdtp_source.h"
 #include "avdtp_util.h"
 
 typedef struct {
@@ -112,7 +113,7 @@ static const char * avdtp_si_name[] = {
     "AVDTP_SI_GET_CAPABILITIES",
     "AVDTP_SI_SET_CONFIGURATION",
     "AVDTP_SI_GET_CONFIGURATION",
-    "AVDTP_SI_RECONFIGURE," 
+    "AVDTP_SI_RECONFIGURE", 
     "AVDTP_SI_OPEN", 
     "AVDTP_SI_START", 
     "AVDTP_SI_CLOSE",
@@ -339,12 +340,7 @@ static const uint8_t media_sbc_codec_reconfiguration[] = {
     2, 53
 }; 
 
-static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type){
-    UNUSED(ds);
-    UNUSED(callback_type);
-
-    int cmd = btstack_stdin_read();
-
+static void stdin_process(char cmd){
     sep.seid = 1;
     switch (cmd){
         case 'c':
@@ -455,7 +451,7 @@ int btstack_main(int argc, const char * argv[]){
     // Initialize SDP 
     sdp_init();
     memset(sdp_avdtp_source_service_buffer, 0, sizeof(sdp_avdtp_source_service_buffer));
-    a2dp_sink_create_sdp_record(sdp_avdtp_source_service_buffer, 0x10002, 1, NULL, NULL);
+    a2dp_source_create_sdp_record(sdp_avdtp_source_service_buffer, 0x10002, 1, NULL, NULL);
     sdp_register_service(sdp_avdtp_source_service_buffer);
     
     gap_set_local_name("BTstack A2DP Source Test");

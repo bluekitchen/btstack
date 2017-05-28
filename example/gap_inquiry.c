@@ -88,7 +88,7 @@ static int getDeviceIndexForAddress( bd_addr_t addr){
 
 static void start_scan(void){
     printf("Starting inquiry scan..\n");
-    hci_send_cmd(&hci_inquiry, HCI_INQUIRY_LAP, INQUIRY_INTERVAL, 0);
+    gap_inquiry_start(INQUIRY_INTERVAL);
 }
 
 static int has_more_remote_name_requests(void){
@@ -106,8 +106,7 @@ static void do_next_remote_name_request(void){
         if (devices[i].state == REMOTE_NAME_REQUEST){
             devices[i].state = REMOTE_NAME_INQUIRED;
             printf("Get remote name of %s...\n", bd_addr_to_str(devices[i].address));
-            hci_send_cmd(&hci_remote_name_request, devices[i].address,
-                        devices[i].pageScanRepetitionMode, 0, devices[i].clockOffset | 0x8000);
+            gap_remote_name_request( devices[i].address, devices[i].pageScanRepetitionMode,  devices[i].clockOffset | 0x8000);
             return;
         }
     }
@@ -182,7 +181,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     printf("Device found: %s ",  bd_addr_to_str(addr));
                     printf("with COD: 0x%06x, ", (unsigned int) gap_event_inquiry_result_get_class_of_device(packet));
                     printf("pageScan %d, ",      devices[deviceCount].pageScanRepetitionMode);
-                    printf("clock offset 0x%04x",devices[deviceCount].clockOffset);
+                    printf("clock offset 0x%04x",devices[deviceCount].clockOffset & 0x7fff);
                     if (gap_event_inquiry_result_get_rssi_availabe(packet)){
                         printf(", rssi %d dBm", (int8_t) gap_event_inquiry_result_get_rssi(packet));
                     }
@@ -200,7 +199,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     deviceCount++;
                     break;
 
-                case HCI_EVENT_INQUIRY_COMPLETE:
+                case GAP_EVENT_INQUIRY_COMPLETE:
                     for (i=0;i<deviceCount;i++) {
                         // retry remote name request
                         if (devices[i].state == REMOTE_NAME_INQUIRED)

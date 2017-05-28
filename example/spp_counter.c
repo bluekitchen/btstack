@@ -185,10 +185,10 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             switch (hci_event_packet_get_type(packet)) {
 /* LISTING_RESUME */ 
                 case HCI_EVENT_PIN_CODE_REQUEST:
-                    // pre-ssp: inform about pin code request
+                    // inform about pin code request
                     printf("Pin code request - using '0000'\n");
                     hci_event_pin_code_request_get_bd_addr(packet, event_addr);
-                    hci_send_cmd(&hci_pin_code_request_reply, &event_addr, 4, "0000");
+                    gap_pin_code_response(event_addr, "0000");
                     break;
 
                 case HCI_EVENT_USER_CONFIRMATION_REQUEST:

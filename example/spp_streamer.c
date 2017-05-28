@@ -35,50 +35,42 @@
  *
  */
 
-#define __BTSTACK_FILE__ "spp_streamer.c"
- 
 // *****************************************************************************
-//
-// minimal setup for SDP client over USB or UART
-//
+/* EXAMPLE_START(spp_streamer): Send test data via SPP as fast as possible
+ * @text After RFCOMM connections gets open, request a
+ * RFCOMM_EVENT_CAN_SEND_NOW via rfcomm_request_can_send_now_event().
+ * When we get the RFCOMM_EVENT_CAN_SEND_NOW, send data and request another one.
+ */
 // *****************************************************************************
 
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
+#include <inttypes.h>
+ 
 #include "btstack.h"
 
+int btstack_main(int argc, const char * argv[]);
 
+#define RFCOMM_SERVER_CHANNEL 1
+
+#define TEST_COD 0x1234
 #define NUM_ROWS 25
 #define NUM_COLS 40
-
-typedef enum {
-    W4_SDP_RESULT,
-    W4_SDP_COMPLETE,
-    W4_RFCOMM_CHANNEL,
-    SENDING,
-    DONE
-} state_t;
-
-static void handle_query_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
-
 #define DATA_VOLUME (10 * 1000 * 1000)
 
-// configuration area {
-static bd_addr_t remote = {0x84, 0x38, 0x35, 0x65, 0xD1, 0x15};     // address of remote device
-static const char * spp_service_name_prefix = "Bluetooth-Incoming"; // default on OS X
-// configuration area }
+static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 static uint8_t  test_data[NUM_ROWS * NUM_COLS];
-static uint16_t test_data_len = sizeof(test_data);
-static uint8_t  channel_nr = 0;
-static uint16_t mtu;
-static uint16_t rfcomm_cid = 0;
-static uint32_t data_to_send =  DATA_VOLUME;
-static state_t state = W4_SDP_RESULT;
-static btstack_packet_callback_registration_t hci_event_callback_registration;
+
+// SPP
+static uint8_t   spp_service_buffer[150];
+
+static uint16_t  spp_test_data_len;
+static uint16_t  rfcomm_mtu;
+static uint16_t  rfcomm_cid = 0;
+// static uint32_t  data_to_send =  DATA_VOLUME;
 
 /*
  * @section Track throughput
@@ -89,32 +81,32 @@ static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 /* LISTING_START(tracking): Tracking throughput */
 #define REPORT_INTERVAL_MS 3000
-static uint32_t test_data_sent;
+static uint32_t test_data_transferred;
 static uint32_t test_data_start;
 
 static void test_reset(void){
     test_data_start = btstack_run_loop_get_time_ms();
-    test_data_sent = 0;
+    test_data_transferred = 0;
 }
 
-static void test_track_sent(int bytes_sent){
-    test_data_sent += bytes_sent;
+static void test_track_transferred(int bytes_sent){
+    test_data_transferred += bytes_sent;
     // evaluate
     uint32_t now = btstack_run_loop_get_time_ms();
     uint32_t time_passed = now - test_data_start;
     if (time_passed < REPORT_INTERVAL_MS) return;
     // print speed
-    int bytes_per_second = test_data_sent * 1000 / time_passed;
-    printf("%u bytes sent-> %u.%03u kB/s\n", (int) test_data_sent, (int) bytes_per_second / 1000, bytes_per_second % 1000);
+    int bytes_per_second = test_data_transferred * 1000 / time_passed;
+    printf("%u bytes -> %u.%03u kB/s\n", (int) test_data_transferred, (int) bytes_per_second / 1000, bytes_per_second % 1000);
 
     // restart
     test_data_start = now;
-    test_data_sent  = 0;
+    test_data_transferred  = 0;
 }
 /* LISTING_END(tracking): Tracking throughput */
 
 
-static void create_test_data(void){
+static void spp_create_test_data(void){
     int x,y;
     for (y=0;y<NUM_ROWS;y++){
         for (x=0;x<NUM_COLS-2;x++){
@@ -125,121 +117,151 @@ static void create_test_data(void){
     }
 }
 
-static void send_packet(void){
-    rfcomm_send(rfcomm_cid, (uint8_t*) test_data, test_data_len);
+static void spp_send_packet(void){
+    rfcomm_send(rfcomm_cid, (uint8_t*) test_data, spp_test_data_len);
 
-    test_track_sent(test_data_len);
-    if (data_to_send <= test_data_len){
-        state = DONE;
+    test_track_transferred(spp_test_data_len);
+#if 0
+    if (data_to_send <= spp_test_data_len){
         printf("SPP Streamer: enough data send, closing channel\n");
         rfcomm_disconnect(rfcomm_cid);
         rfcomm_cid = 0;
         return;
     }
-    data_to_send -= test_data_len;
+    data_to_send -= spp_test_data_len;
+#endif
     rfcomm_request_can_send_now_event(rfcomm_cid);
 }
 
+/* 
+ * @section Packet Handler
+ * 
+ * @text The packet handler of the combined example is just the combination of the individual packet handlers.
+ */
+
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
-    UNUSED(size);
 
-    if (packet_type != HCI_EVENT_PACKET) return;
-    uint8_t event = hci_event_packet_get_type(packet);
-    switch (event) {
-        case BTSTACK_EVENT_STATE:
-            // bt stack activated, get started 
-            if (btstack_event_state_get_state(packet) == HCI_STATE_WORKING){
-                printf("SDP Query for RFCOMM services on %s started\n", bd_addr_to_str(remote));
-                sdp_client_query_rfcomm_channel_and_name_for_uuid(&handle_query_rfcomm_event, remote, BLUETOOTH_ATTRIBUTE_PUBLIC_BROWSE_ROOT);
+    bd_addr_t event_addr;
+    uint8_t   rfcomm_channel_nr;
+
+	switch (packet_type) {
+		case HCI_EVENT_PACKET:
+			switch (hci_event_packet_get_type(packet)) {
+
+                case HCI_EVENT_PIN_CODE_REQUEST:
+                    // inform about pin code request
+                    printf("Pin code request - using '0000'\n");
+                    hci_event_pin_code_request_get_bd_addr(packet, event_addr);
+                    gap_pin_code_response(event_addr, "0000");
+                    break;
+
+                case HCI_EVENT_USER_CONFIRMATION_REQUEST:
+                    // inform about user confirmation request
+                    printf("SSP User Confirmation Request with numeric value '%06"PRIu32"'\n", little_endian_read_32(packet, 8));
+                    printf("SSP User Confirmation Auto accept\n");
+                    break;
+
+                case RFCOMM_EVENT_INCOMING_CONNECTION:
+					// data: event (8), len(8), address(48), channel (8), rfcomm_cid (16)
+                    rfcomm_event_incoming_connection_get_bd_addr(packet, event_addr); 
+                    rfcomm_channel_nr = rfcomm_event_incoming_connection_get_server_channel(packet);
+                    rfcomm_cid = rfcomm_event_incoming_connection_get_rfcomm_cid(packet);
+                    printf("RFCOMM channel %u requested for %s\n", rfcomm_channel_nr, bd_addr_to_str(event_addr));
+                    rfcomm_accept_connection(rfcomm_cid);
+					break;
+					
+				case RFCOMM_EVENT_CHANNEL_OPENED:
+					// data: event(8), len(8), status (8), address (48), server channel(8), rfcomm_cid(16), max frame size(16)
+					if (rfcomm_event_channel_opened_get_status(packet)) {
+                        printf("RFCOMM channel open failed, status %u\n", rfcomm_event_channel_opened_get_status(packet));
+                    } else {
+                        rfcomm_cid = rfcomm_event_channel_opened_get_rfcomm_cid(packet);
+                        rfcomm_mtu = rfcomm_event_channel_opened_get_max_frame_size(packet);
+                        printf("RFCOMM channel open succeeded. New RFCOMM Channel ID %u, max frame size %u\n", rfcomm_cid, rfcomm_mtu);
+
+                        spp_test_data_len = rfcomm_mtu;
+                        if (spp_test_data_len > sizeof(test_data)){
+                            spp_test_data_len = sizeof(test_data);
+                        }
+
+                        test_reset();
+                        rfcomm_request_can_send_now_event(rfcomm_cid);
+                    }
+					break;
+
+                case RFCOMM_EVENT_CAN_SEND_NOW:
+                    spp_send_packet();
+                    break;
+
+                case RFCOMM_EVENT_CHANNEL_CLOSED:
+                    printf("RFCOMM channel closed\n");
+                    rfcomm_cid = 0;
+                    break;
+
+                default:
+                    break;
+			}
+            break;
+                        
+        case RFCOMM_DATA_PACKET:
+            test_track_transferred(size);
+#if 0
+            printf("RCV: '");
+            for (i=0;i<size;i++){
+                putchar(packet[i]);
             }
+            printf("'\n");
+#endif
             break;
-        case RFCOMM_EVENT_CHANNEL_OPENED:
-            // data: event(8), len(8), status (8), address (48), handle(16), server channel(8), rfcomm_cid(16), max frame size(16)
-            if (packet[2]) {
-                state = DONE;
-                printf("RFCOMM channel open failed, status %u\n", packet[2]);
-            } else {
-                // data: event(8), len(8), status (8), address (48), handle (16), server channel(8), rfcomm_cid(16), max frame size(16)
-                state = SENDING;
-                rfcomm_cid = little_endian_read_16(packet, 12);
-                mtu = little_endian_read_16(packet, 14);
-                printf("RFCOMM channel open succeeded. New RFCOMM Channel ID %u, max frame size %u\n", rfcomm_cid, mtu);
-                if ((test_data_len > mtu)) {
-                    test_data_len = mtu;
-                }
-                test_reset();
-                rfcomm_request_can_send_now_event(rfcomm_cid);
-                break;
-            }
-            break;
-        case RFCOMM_EVENT_CAN_SEND_NOW:
-            send_packet();
-            break;
-        case RFCOMM_EVENT_CHANNEL_CLOSED:
-            if (state != DONE) {
-                printf("RFCOMM_EVENT_CHANNEL_CLOSED received before all test data was sent\n");
-                state = DONE;
-            }
-            break;
+
         default:
             break;
-    }
+	}
 }
 
-static void handle_found_service(const char * name, uint8_t port){
-    printf("APP: Service name: '%s', RFCOMM port %u\n", name, port);
+/*
+ * @section Main Application Setup
+ *
+ * @text As with the packet and the heartbeat handlers, the combined app setup contains the code from the individual example setups.
+ */
 
-    if (strncmp(name, spp_service_name_prefix, strlen(spp_service_name_prefix)) != 0) return;
 
-    printf("APP: matches requested SPP Service Name\n");
-    channel_nr = port;
-    state = W4_SDP_COMPLETE;
-}
-
-static void handle_query_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){            
-    UNUSED(packet_type);
-    UNUSED(channel);
-    UNUSED(size);
-
-    switch (packet[0]){
-        case SDP_EVENT_QUERY_RFCOMM_SERVICE:
-            handle_found_service(sdp_event_query_rfcomm_service_get_name(packet), 
-                                 sdp_event_query_rfcomm_service_get_rfcomm_channel(packet));
-            break;
-        case SDP_EVENT_QUERY_COMPLETE:
-            if (state != W4_SDP_COMPLETE){
-                printf("Requested SPP Service %s not found \n", spp_service_name_prefix);
-                break;
-            }
-            // connect
-            printf("Requested SPP Service found, creating RFCOMM channel\n");
-            state = W4_RFCOMM_CHANNEL;
-            rfcomm_create_channel(packet_handler, remote, channel_nr, NULL); 
-            break;
-        default: 
-            break;
-    }
-}
-
-int btstack_main(int argc, const char * argv[]);
-int btstack_main(int argc, const char * argv[]){
+/* LISTING_START(MainConfiguration): Init L2CAP RFCOMM SDP SPP */
+int btstack_main(int argc, const char * argv[])
+{
     (void)argc;
     (void)argv;
 
-    create_test_data();
-
-    printf("Client HCI init done\r\n");
-    
     // register for HCI events
     hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
 
-    // init L2CAP
     l2cap_init();
 
-    // turn on!
-    hci_power_control(HCI_POWER_ON);
+    rfcomm_init();
+    rfcomm_register_service(packet_handler, RFCOMM_SERVER_CHANNEL, 0xffff);
 
+    // init SDP, create record for SPP and register with SDP
+    sdp_init();
+    memset(spp_service_buffer, 0, sizeof(spp_service_buffer));
+    spp_create_sdp_record(spp_service_buffer, 0x10001, RFCOMM_SERVER_CHANNEL, "SPP Streamer");
+    sdp_register_service(spp_service_buffer);
+    // printf("SDP service record size: %u\n", de_get_len(spp_service_buffer));
+
+    gap_ssp_set_io_capability(SSP_IO_CAPABILITY_DISPLAY_YES_NO);
+
+    // short-cut to find other SPP Streamer
+    gap_set_class_of_device(TEST_COD);
+
+    gap_discoverable_control(1);
+
+    spp_create_test_data();
+
+    // turn on!
+	hci_power_control(HCI_POWER_ON);
+	    
     return 0;
 }
+/* LISTING_END */
+/* EXAMPLE_END */

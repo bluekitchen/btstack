@@ -11,6 +11,7 @@ import btstack_parser as parser
 meta_events = [
     'ANCS',
     'AVDTP',
+    'A2DP',
     'AVRCP',
     'GOEP',
     'HFP',

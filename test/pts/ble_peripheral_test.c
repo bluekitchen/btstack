@@ -61,7 +61,7 @@
 #include "hci.h"
 #include "hci_dump.h"
 #include "l2cap.h"
-#include "stdin_support.h"
+#include "btstack_stdin.h"
  
 #define HEARTBEAT_PERIOD_MS 1000
 
@@ -710,16 +710,14 @@ static void update_auth_req(void){
     sm_set_authentication_requirements(auth_req);
 }
 
-static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type){
-    char buffer;
-    read(ds->fd, &buffer, 1);
+static void stdin_process(char c){
 
     // passkey input
     if (ui_digits_for_passkey){
-        if (buffer < '0' || buffer > '9') return;
-        printf("%c", buffer);
+        if (c < '0' || c > '9') return;
+        printf("%c", c);
         fflush(stdout);
-        ui_passkey = ui_passkey * 10 + buffer - '0';
+        ui_passkey = ui_passkey * 10 + c - '0';
         ui_digits_for_passkey--;
         if (ui_digits_for_passkey == 0){
             printf("\nSending Passkey '%06x'\n", ui_passkey);
@@ -728,7 +726,7 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
         return;
     }
 
-    switch (buffer){
+    switch (c){
         case 'a':
             gap_advertisements = 0;
             update_advertisements();
@@ -799,7 +797,7 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
         case '8':
         case '9':
         case '0':
-            advertisement_index = buffer - '0';
+            advertisement_index = c - '0';
             update_advertisements();
             break;
         case '+':

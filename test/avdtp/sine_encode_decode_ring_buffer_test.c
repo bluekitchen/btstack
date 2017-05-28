@@ -46,7 +46,7 @@
 #include "wav_util.h"
 #include "avdtp.h"
 #include "avdtp_source.h"
-#include "stdin_support.h"
+#include "btstack_stdin.h"
 
 #define NUM_CHANNELS        2
 #define SAMPLE_RATE         44100
@@ -199,12 +199,7 @@ static void show_usage(void){
     printf("---\n");
 }
 
-static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type){
-    UNUSED(ds);
-    UNUSED(callback_type);
-
-    int cmd = btstack_stdin_read();
-
+static void stdin_process(char cmd){
     switch (cmd){
         case 'x':
             printf("start streaming sine\n");
@@ -221,7 +216,6 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
         default:
             show_usage();
             break;
-
     }
 }
 

@@ -60,7 +60,7 @@
 #include "bluetooth_company_id.h"
 #include "hci.h"
 #include "hci_dump.h"
-#include "stdin_support.h"
+#include "btstack_stdin.h"
 
 #include "btstack_chipset_bcm.h"
 #include "btstack_chipset_bcm_download_firmware.h"
