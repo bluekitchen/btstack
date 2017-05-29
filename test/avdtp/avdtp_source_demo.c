@@ -306,9 +306,9 @@ static void avdtp_fill_audio_buffer_timeout_handler(btstack_timer_source_t * tim
     context->time_audio_data_sent = now;
     context->samples_ready += num_samples;
 
-    if (!context->sbc_ready_to_send){
-        fill_sbc_audio_buffer(context);
-    }
+    if (!context->sbc_ready_to_send) return;
+
+    fill_sbc_audio_buffer(context);
 
     if ((context->sbc_storage_count + btstack_sbc_encoder_sbc_buffer_length()) > context->max_media_payload_size){
         // schedule sending
