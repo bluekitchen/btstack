@@ -672,12 +672,17 @@ typedef enum {
 // Extended Response Timeout eXpired
 #define L2CAP_ERTX_TIMEOUT_MS 120000
 
-// Fixed PSM numbers
+//
+// Fixed PSM numbers from https://www.bluetooth.com/specifications/assigned-numbers/logical-link-control 
+//
+// @TODO: replace with BLUETOOTH_PROTOCOL_xxx in rest of code
 #define PSM_SDP           BLUETOOTH_PROTOCOL_SDP
 #define PSM_RFCOMM        BLUETOOTH_PROTOCOL_RFCOMM
 #define PSM_BNEP          BLUETOOTH_PROTOCOL_BNEP
+// @TODO: scrape PSMs Bluetooth SIG site and put in bluetooth_psm.h or bluetooth_l2cap.h
 #define PSM_HID_CONTROL   0x11
 #define PSM_HID_INTERRUPT 0x13
+#define PSM_IPSP          0x23
 
 /**
  * SDP Protocol

@@ -518,6 +518,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                     printf("Event not handled %u\n", event[2]);
                     break;
             }
+            break;
         case HCI_SCO_DATA_PACKET:
             sco_demo_receive(event, event_size);
             break;

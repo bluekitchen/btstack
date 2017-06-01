@@ -53,14 +53,14 @@
 #include "hci_dump.h"
 #include "l2cap.h"
 #include "btstack_stdin.h"
-#include "avdtp_source.h"
-#include "a2dp_source.h"
+#include "classic/a2dp_source.h"
+#include "classic/avdtp_source.h"
+#include "classic/avdtp_util.h"
+#include "classic/btstack_sbc.h"
 
-#include "btstack_sbc.h"
 #include "sbc_encoder.h"
-#include "avdtp_util.h"
 #include "hxcmod.h"
-#include "mod.h"
+#include "mods/mod.h"
 
 #define NUM_CHANNELS        2
 #define A2DP_SAMPLE_RATE         44100
@@ -285,7 +285,6 @@ static int fill_sbc_audio_buffer(a2dp_media_sending_context_t * context){
 }
 
 static void avdtp_fill_audio_buffer_timeout_handler(btstack_timer_source_t * timer){
-    log_info("timer");
     a2dp_media_sending_context_t * context = (a2dp_media_sending_context_t *) btstack_run_loop_get_timer_context(timer);
     btstack_run_loop_set_timer(&context->fill_audio_buffer_timer, FILL_AUDIO_BUFFER_TIMEOUT_MS); 
     btstack_run_loop_add_timer(&context->fill_audio_buffer_timer);
@@ -306,9 +305,9 @@ static void avdtp_fill_audio_buffer_timeout_handler(btstack_timer_source_t * tim
     context->time_audio_data_sent = now;
     context->samples_ready += num_samples;
 
-    if (!context->sbc_ready_to_send){
-        fill_sbc_audio_buffer(context);
-    }
+    if (context->sbc_ready_to_send) return;
+
+    fill_sbc_audio_buffer(context);
 
     if ((context->sbc_storage_count + btstack_sbc_encoder_sbc_buffer_length()) > context->max_media_payload_size){
         // schedule sending

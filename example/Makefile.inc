@@ -4,6 +4,7 @@ VPATH += ${BTSTACK_ROOT}/src/ble
 VPATH += ${BTSTACK_ROOT}/src/ble/gatt-service
 VPATH += ${BTSTACK_ROOT}/src/classic
 VPATH += ${BTSTACK_ROOT}/example
+VPATH += ${BTSTACK_ROOT}/3rd-party/hxcmod-player
 VPATH += ${BTSTACK_ROOT}/3rd-party/mbedtls/library
 VPATH += ${BTSTACK_ROOT}/3rd-party/micro-ecc
 VPATH += ${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/srce 
@@ -13,12 +14,10 @@ CFLAGS += -I.
 CFLAGS += -I${BTSTACK_ROOT}/src/ble
 CFLAGS += -I${BTSTACK_ROOT}/src/classic
 CFLAGS += -I${BTSTACK_ROOT}/src
-CFLAGS += -I${BTSTACK_ROOT}/3rd-party/mbedtls/include
+CFLAGS += -I${BTSTACK_ROOT}/3rd-party/hxcmod-player
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/micro-ecc
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/include
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/include
-
-CFLAGS += -I${BTSTACK_ROOT}/test/security_manager
 
 # for CVSD/SBC PLC
 LDFLAGS += -lm
@@ -93,8 +92,23 @@ SBC_ENCODER += \
 CVSD_PLC = \
 	btstack_cvsd_plc.c \
 
+AVDTP += \
+	avdtp_util.c  		\
+	avdtp.c  			\
+	avdtp_initiator.c 	\
+	avdtp_acceptor.c  	\
+	avdtp_source.c 		\
+	avdtp_sink.c  		\
+	a2dp_source.c 		\
+	a2dp_sink.c  		\
+	btstack_ring_buffer.c \
+
+HXCMOD_PLAYER = \
+	${BTSTACK_ROOT}/3rd-party/hxcmod-player/hxcmod.c 						\
+	${BTSTACK_ROOT}/3rd-party/hxcmod-player/mods/nao-deceased_by_disease.c 	\
 
 EXAMPLES = 					\
+	avdtp_source_demo       \
 	ancs_client_demo		\
 	gap_dedicated_bonding	\
 	gap_inquiry 			\
@@ -146,6 +160,8 @@ PAN_OBJ = $(PAN:.c=.o)
 SBC_DECODER_OBJ  = $(SBC_DECODER:.c=.o) 
 SBC_ENCODER_OBJ  = $(SBC_ENCODER:.c=.o)
 CVSD_PLC_OBJ = $(CVSD_PLC:.c=.o)
+AVDTP_OBJ  = $(AVDTP:.c=.o)
+HXCMOD_PLAYER_OBJ = $(HXCMOD_PLAYER:.c=.o)
 
 default_target: all
 
@@ -250,6 +266,10 @@ hfp_hf_demo: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} ${SBC_DECODE
 
 hid_keyboard_demo: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} btstack_ring_buffer.o hid_device.o hid_keyboard_demo.o
 	${CC} $^ ${CFLAGS} -I${BTSTACK_ROOT}/platform/posix ${LDFLAGS} -o $@
+
+avdtp_source_demo: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} ${SBC_ENCODER_OBJ} ${SBC_DECODER_OBJ} ${AVDTP_OBJ} ${HXCMOD_PLAYER_OBJ} avdtp_source_demo.c
+	${CC} $^ ${CFLAGS} -I${BTSTACK_ROOT}/platform/posix ${LDFLAGS} -o $@
+
 
 clean:
 	rm -f ${EXAMPLES}
