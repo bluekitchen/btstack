@@ -736,8 +736,6 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                         case AVRCP_CTYPE_RESPONSE_INTERIM:
                             // register as enabled
                             connection->notifications_enabled |= event_mask;
-                            // clear registration bit
-                            connection->notifications_to_register &= reset_event_mask;
                             connection->state = AVCTP_CONNECTION_OPENED;
                             // printf("INTERIM notifications_enabled 0x%2x, notifications_to_register 0x%2x\n", connection->notifications_enabled,  connection->notifications_to_register);
                             break;
@@ -1020,6 +1018,8 @@ static void avrcp_handle_can_send_now(avrcp_connection_t * connection){
             if (connection->notifications_to_register != 0){
                 for (i = 1; i < 13; i++){
                     if (connection->notifications_to_register & (1<<i)){
+                         // clear registration bit before sending command
+                        connection->notifications_to_register &= ~ (1 <<i);
                         avrcp_prepare_notification(connection, i);
                         avrcp_send_cmd(connection->l2cap_signaling_cid, connection);
                         return;    
