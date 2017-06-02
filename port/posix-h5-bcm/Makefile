@@ -11,6 +11,7 @@ CORE += \
 	hci_transport_h5.c \
 	le_device_db_fs.c \
 	main.c \
+	wav_util.c 					\
 	btstack_stdin.c \
 
 # examples

@@ -15,6 +15,7 @@ CORE += \
 	hci_transport_h5.c \
 	le_device_db_fs.c \
 	main.c \
+	wav_util.c 					\
 	btstack_stdin.c \
 
 # TI-WL183x requires TIInit_11.8.32.c

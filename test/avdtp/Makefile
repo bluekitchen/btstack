@@ -84,7 +84,7 @@ HXCMOD_PLAYER = \
 	${BTSTACK_ROOT}/3rd-party/hxcmod-player/hxcmod.c 						\
 	${BTSTACK_ROOT}/3rd-party/hxcmod-player/mods/nao-deceased_by_disease.c 	\
  
-AVDTP_TESTS = avdtp_sink_demo portaudio_test
+AVDTP_TESTS = portaudio_test
 #sine_encode_decode_ring_buffer_test sine_encode_decode_test sine_encode_decode_performance_test
 
 CORE_OBJ    = $(CORE:.c=.o)
@@ -98,9 +98,6 @@ HXCMOD_PLAYER_OBJ = $(HXCMOD_PLAYER:.c=.o)
 # CC=g++
 
 all: ${AVDTP_TESTS}
-
-avdtp_sink_demo: ${CORE_OBJ} ${COMMON_OBJ} ${SBC_DECODER_OBJ} ${SBC_ENCODER_OBJ} ${AVDTP_OBJ} avdtp_sink_demo.o
-	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 portaudio_test: btstack_util.o hci_dump.o wav_util.o btstack_ring_buffer.o portaudio_test.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
