@@ -864,42 +864,45 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                     uint8_t  num_string_attributes = 0;
                     uint16_t total_event_payload_for_string_attributes = HCI_EVENT_PAYLOAD_SIZE-2;
                     uint16_t max_string_attribute_value_len = 0;
-                    for (i = 0; i < num_attributes; i++){
-                        avrcp_media_attribute_id_t attr_id = big_endian_read_32(packet, pos);
-                        pos += 4;
-                        // uint16_t character_set = big_endian_read_16(packet, pos);
-                        pos += 2;
-                        uint16_t attr_value_length = big_endian_read_16(packet, pos);
-                        pos += 2;
+                    if (ctype == AVRCP_CTYPE_RESPONSE_IMPLEMENTED_STABLE || ctype == AVRCP_CTYPE_RESPONSE_CHANGED_STABLE){
+                        for (i = 0; i < num_attributes; i++){
+                            avrcp_media_attribute_id_t attr_id = big_endian_read_32(packet, pos);
+                            pos += 4;
+                            // uint16_t character_set = big_endian_read_16(packet, pos);
+                            pos += 2;
+                            uint16_t attr_value_length = big_endian_read_16(packet, pos);
+                            pos += 2;
 
-                        // debug - to remove later
-                        uint8_t  value[100];
-                        uint16_t value_len = sizeof(value) <= attr_value_length? sizeof(value) - 1 : attr_value_length;
-                        memcpy(value, packet+pos, value_len);
-                        value[value_len] = 0;
-                        // printf("Now Playing Info %s: %s \n", attribute2str(attr_id), value);
-                        // end debug
+                            // debug - to remove later
+                            uint8_t  value[100];
+                            uint16_t value_len = sizeof(value) <= attr_value_length? sizeof(value) - 1 : attr_value_length;
+                            memcpy(value, packet+pos, value_len);
+                            value[value_len] = 0;
+                            // printf("Now Playing Info %s: %s \n", attribute2str(attr_id), value);
+                            // end debug
 
-                        if ((attr_id >= 1) || (attr_id <= AVRCP_MEDIA_ATTR_COUNT)) {
-                            items[attr_id-1].len = attr_value_length;
-                            items[attr_id-1].value = &packet[pos];
-                            switch (attr_id){
-                                case AVRCP_MEDIA_ATTR_TITLE:
-                                case AVRCP_MEDIA_ATTR_ARTIST:
-                                case AVRCP_MEDIA_ATTR_ALBUM:
-                                case AVRCP_MEDIA_ATTR_GENRE:
-                                    num_string_attributes++;
-                                    string_attributes_len += attr_value_length;
-                                    if (max_string_attribute_value_len < attr_value_length){
-                                        max_string_attribute_value_len = attr_value_length;
-                                    }
-                                    break;
-                                default:
-                                    break;
+                            if ((attr_id >= 1) || (attr_id <= AVRCP_MEDIA_ATTR_COUNT)) {
+                                items[attr_id-1].len = attr_value_length;
+                                items[attr_id-1].value = &packet[pos];
+                                switch (attr_id){
+                                    case AVRCP_MEDIA_ATTR_TITLE:
+                                    case AVRCP_MEDIA_ATTR_ARTIST:
+                                    case AVRCP_MEDIA_ATTR_ALBUM:
+                                    case AVRCP_MEDIA_ATTR_GENRE:
+                                        num_string_attributes++;
+                                        string_attributes_len += attr_value_length;
+                                        if (max_string_attribute_value_len < attr_value_length){
+                                            max_string_attribute_value_len = attr_value_length;
+                                        }
+                                        break;
+                                    default:
+                                        break;
+                                }
                             }
+                            pos += attr_value_length;
                         }
-                        pos += attr_value_length;
                     }
+
                     // subtract space for fixed fields
                     total_event_payload_for_string_attributes -= 14 + 4;    // 4 for '\0'
 
