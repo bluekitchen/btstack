@@ -3,6 +3,7 @@
 #include "btstack_debug.h"
 #include "btstack_chipset_cc256x.h"
 #include "btstack_run_loop_embedded.h"
+#include "btstack_link_key_db_fixed.h"
 #include "stm32f4xx_hal.h"
 
 #define __BTSTACK_FILE__ "port.c"
@@ -121,7 +122,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart){
 	}
     if (huart == &huart2){
         stdin_rx_complete();
-	}
+    }
 }
 
 void hal_uart_dma_init(void){
@@ -287,7 +288,7 @@ void port_main(void){
 
 	// init HCI
     hci_init(hci_transport_h4_instance(btstack_uart_block_embedded_instance()), (void*) &config);
-    hci_set_link_key_db(btstack_link_key_db_memory_instance());
+    hci_set_link_key_db(btstack_link_key_db_fixed_instance());
     hci_set_chipset(btstack_chipset_cc256x_instance());
 
     // inform about BTstack state
