@@ -84,7 +84,7 @@ HXCMOD_PLAYER = \
 	${BTSTACK_ROOT}/3rd-party/hxcmod-player/hxcmod.c 						\
 	${BTSTACK_ROOT}/3rd-party/hxcmod-player/mods/nao-deceased_by_disease.c 	\
  
-AVDTP_TESTS = avdtp_sink_demo portaudio_test
+AVDTP_TESTS = portaudio_test
 #sine_encode_decode_ring_buffer_test sine_encode_decode_test sine_encode_decode_performance_test
 
 CORE_OBJ    = $(CORE:.c=.o)
