@@ -99,9 +99,6 @@ HXCMOD_PLAYER_OBJ = $(HXCMOD_PLAYER:.c=.o)
 
 all: ${AVDTP_TESTS}
 
-avdtp_sink_demo: ${CORE_OBJ} ${COMMON_OBJ} ${SBC_DECODER_OBJ} ${SBC_ENCODER_OBJ} ${AVDTP_OBJ} avdtp_sink_demo.o
-	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
-
 portaudio_test: btstack_util.o hci_dump.o wav_util.o btstack_ring_buffer.o portaudio_test.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 

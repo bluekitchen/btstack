@@ -10,6 +10,7 @@ CORE += \
 	hci_transport_h4.c \
 	le_device_db_fs.c \
 	main.c \
+	wav_util.c 					\
 	stdin_support.c \
 
 # examples
