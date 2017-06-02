@@ -89,7 +89,6 @@
 #ifdef DECODE_SBC
 static btstack_sbc_decoder_state_t state;
 static btstack_sbc_mode_t mode = SBC_MODE_STANDARD;
-static int total_num_samples = 0;
 #endif
 
 #if defined(HAVE_PORTAUDIO) || defined (HAVE_AUDIO_DMA)
@@ -127,6 +126,7 @@ static int sbc_samples_fix;
 static PaStream * stream;
 static uint8_t ring_buffer_storage[2*PREBUFFER_BYTES];
 static btstack_ring_buffer_t ring_buffer;
+static int total_num_samples = 0;
 #endif
 
 // WAV File
@@ -280,11 +280,12 @@ void hal_audio_dma_done(void){
 	playback_buffer = next_playback_buffer;
 	playback_data = start_of_buffer(playback_buffer);
 	hal_audio_dma_play(playback_data, audio_samples_len[playback_buffer]);
-//	btstack_run_loop_embedded_trigger();
+    // btstack_run_loop_embedded_trigger();
 }
 #endif
 
-#ifdef HAVE_PORTAUDIO
+#if defined(HAVE_PORTAUDIO) || defined(STORE_SBC_TO_WAV_FILE) 
+
 static void handle_pcm_data(int16_t * data, int num_samples, int num_channels, int sample_rate, void * context){
     UNUSED(sample_rate);
     UNUSED(context);
@@ -294,6 +295,7 @@ static void handle_pcm_data(int16_t * data, int num_samples, int num_channels, i
     frame_count++;
 #endif
 
+#ifdef HAVE_PORTAUDIO
     total_num_samples+=num_samples*num_channels;
 
     // store pcm samples in ringbuffer
@@ -309,8 +311,11 @@ static void handle_pcm_data(int16_t * data, int num_samples, int num_channels, i
         }
         audio_stream_started = 1; 
     }
+#endif
+
 }
 #endif
+
 
 #ifdef HAVE_AUDIO_DMA
 
@@ -528,10 +533,10 @@ static void handle_l2cap_media_data_packet(avdtp_stream_endpoint_t * stream_endp
     // printf("SBC HEADER: num_frames %u, fragmented %u, start %u, stop %u\n", sbc_header.num_frames, sbc_header.fragmentation, sbc_header.starting_packet, sbc_header.last_packet);
     // printf_hexdump( packet+pos, size-pos );
     
-#ifdef HAVE_PORTAUDIO
+#if defined(HAVE_PORTAUDIO) || defined(STORE_SBC_TO_WAV_FILE)
     btstack_sbc_decoder_process_data(&state, 0, packet+pos, size-pos);
-    log_info("PA: bytes avail after recv: %d", btstack_ring_buffer_bytes_available(&ring_buffer));
 #endif
+
 #ifdef HAVE_AUDIO_DMA
     btstack_ring_buffer_write(&ring_buffer,  packet+pos, size-pos);
 
