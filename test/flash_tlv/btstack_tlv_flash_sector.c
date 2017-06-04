@@ -74,11 +74,16 @@ static void btstack_tlv_flash_sector_iterator_init(btstack_tlv_flash_sector_t * 
 
 static int btstack_tlv_flash_sector_iterator_has_next(btstack_tlv_flash_sector_t * self, tlv_iterator_t * it){
 	if (it->tag == 0xffffffff) return 0;
-	return it->offset + 8 + it->len < self->hal_flash_sector_impl->get_size(self->hal_flash_sector_context);
+	return 1;
 }
 
 static void tlv_iterator_fetch_next(btstack_tlv_flash_sector_t * self, tlv_iterator_t * it){
 	it->offset += 8 + it->len;
+	if (it->offset >= self->hal_flash_sector_impl->get_size(self->hal_flash_sector_context)) {
+		it->tag = 0xffffffff;
+		it->len = 0;
+		return;
+	}
 	btstack_tlv_flash_sector_iterator_fetch_tag_len(self, it);
 }
 
@@ -190,6 +195,7 @@ static int btstack_tlv_flash_sector_get_tag(void * context, uint32_t tag, uint8_
 	tlv_iterator_t it;
 	btstack_tlv_flash_sector_iterator_init(self, &it, self->current_bank);
 	while (btstack_tlv_flash_sector_iterator_has_next(self, &it)){
+		log_info("Offset %u, tag %x", it.offset, it.tag);
 		if (it.tag == tag){
 			log_info("Found tag '%x' at position %u", tag, it.offset);
 			tag_index = it.offset;

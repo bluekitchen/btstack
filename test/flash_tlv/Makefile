@@ -5,10 +5,11 @@ POSIX_ROOT= ${BTSTACK_ROOT}/platform/posix
 CPPUTEST_HOME = ${BTSTACK_ROOT}/test/cpputest
 
 COMMON = \
-	hal_flash_sector_memory.c \
+	btstack_link_key_db_tlv.c \
 	btstack_tlv_flash_sector.c \
-	hci_dump.c \
 	btstack_util.c \
+	hal_flash_sector_memory.c \
+	hci_dump.c \
 
 COMMON_OBJ  = $(COMMON:.c=.o) 
 
