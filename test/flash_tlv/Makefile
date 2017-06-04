@@ -35,7 +35,7 @@ all: ${TESTS}
 clean:
 	rm -rf *.o $(TESTS) *.dSYM *.pklg
 
-tlv_test: ${COMMON_OBJ} tlv_test.c  
+tlv_test: ${COMMON_OBJ} tlv_test.o  
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 test: all

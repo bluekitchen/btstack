@@ -49,7 +49,7 @@ extern "C" {
 /**
  * Init Tag Length Value Store
  */
-void btstack_tlv_init(const hal_flash_sector_t * hal_flash_sector);
+void btstack_tlv_init(const hal_flash_sector_t * hal_flash_sector_impl, void * hal_flash_sector_context);
 
 /**
  * Get Value for Tag

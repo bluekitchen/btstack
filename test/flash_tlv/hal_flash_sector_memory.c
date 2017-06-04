@@ -46,45 +46,42 @@
 #include <stdlib.h>	// exit(..)
 #endif
 
-#define HAL_FLASH_SECTOR_SIZE 128
-#define HAL_FLASH_SECTOR_NUM 2
-
-static uint8_t hal_flash_storage_bank_1[HAL_FLASH_SECTOR_SIZE];
-static uint8_t hal_flash_storage_bank_2[HAL_FLASH_SECTOR_SIZE];
-static uint8_t * hal_flash_storage_banks[] = {hal_flash_storage_bank_1, hal_flash_storage_bank_2};
-
 static uint32_t hal_flash_sector_memory_get_size(void * context){
-	return HAL_FLASH_SECTOR_SIZE;
+	hal_flash_sector_memory_t * self = (hal_flash_sector_memory_t *) context;
+	return self->bank_size;
 }
 
 static void hal_flash_sector_memory_erase(void * context, int bank){
+	hal_flash_sector_memory_t * self = (hal_flash_sector_memory_t *) context;
 	if (bank > 1) return;
-	memset(hal_flash_storage_banks[bank], 0xff, HAL_FLASH_SECTOR_SIZE);
+	memset(self->banks[bank], 0xff, self->bank_size);
 }
 
 static void hal_flash_sector_memory_read(void * context, int bank, uint32_t offset, uint8_t * buffer, uint32_t size){
+	hal_flash_sector_memory_t * self = (hal_flash_sector_memory_t *) context;
 
 	// log_info("read offset %u, len %u", offset, size);
 
 	if (bank > 1) return;
-	if (offset > HAL_FLASH_SECTOR_SIZE) return;
-	if ((offset + size) > HAL_FLASH_SECTOR_SIZE) return;
+	if (offset > self->bank_size) return;
+	if ((offset + size) > self->bank_size) return;
 
-	memcpy(buffer, &hal_flash_storage_banks[bank][offset], size);
+	memcpy(buffer, &self->banks[bank][offset], size);
 }
 
 static void hal_flash_sector_memory_write(void * context, int bank, uint32_t offset, const uint8_t * data, uint32_t size){
+	hal_flash_sector_memory_t * self = (hal_flash_sector_memory_t *) context;
 
 	// log_info("write offset %u, len %u", offset, size);
 
 	if (bank > 1) return;
-	if (offset > HAL_FLASH_SECTOR_SIZE) return;
-	if ((offset + size) > HAL_FLASH_SECTOR_SIZE) return;
+	if (offset > self->bank_size) return;
+	if ((offset + size) > self->bank_size) return;
 
 #ifdef BTSTACK_TEST
 	int i;
 	for (i=0;i<size;i++){
-		if (hal_flash_storage_banks[bank][offset] != 0xff){
+		if (self->banks[bank][offset] != 0xff){
 			printf("Error: offset %u written twice!\n", offset+i);
 			exit(10);
 			return;			
@@ -92,7 +89,7 @@ static void hal_flash_sector_memory_write(void * context, int bank, uint32_t off
 	}
 #endif
 
-	memcpy(&hal_flash_storage_banks[bank][offset], data, size);
+	memcpy(&self->banks[bank][offset], data, size);
 }
 
 static const hal_flash_sector_t hal_flash_sector_memory_instance = {
@@ -101,10 +98,14 @@ static const hal_flash_sector_t hal_flash_sector_memory_instance = {
 	/* void (*read)(..);      */ &hal_flash_sector_memory_read,
 	/* void (*write)(..);     */ &hal_flash_sector_memory_write,
 };
+
 /** 
  * Initialize instance
  */
-const hal_flash_sector_t * hal_flash_sector_memory_get_instance(void){
+const hal_flash_sector_t * hal_flash_sector_memory_init_instance(hal_flash_sector_memory_t * self, uint8_t * storage, uint32_t storage_size){
+	self->bank_size = storage_size / 2;
+	self->banks[0] = storage;
+	self->banks[1] = &storage[self->bank_size];		
 	return &hal_flash_sector_memory_instance;
 }
 

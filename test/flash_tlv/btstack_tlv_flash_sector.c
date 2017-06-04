@@ -180,10 +180,11 @@ static void btstack_tlv_migrate(void){
 /**
  * Init Tag Length Value Store
  */
-void btstack_tlv_init(const hal_flash_sector_t * hal_flash_sector){
+void btstack_tlv_init(const hal_flash_sector_t * hal_flash_sector, void * context){
 
 	hal_flash_sector_impl = hal_flash_sector;
-
+	hal_flash_sector_context = context;
+	
 	// find current bank and erase both if none found
 	int current_bank = btstack_tlv_get_latest_bank();
 	log_info("found bank %d", current_bank);
