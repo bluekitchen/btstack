@@ -77,7 +77,7 @@ static int btstack_tlv_flash_sector_iterator_has_next(btstack_tlv_flash_sector_t
 	return it->offset + 8 + it->len < self->hal_flash_sector_impl->get_size(self->hal_flash_sector_context);
 }
 
-static void btstack_tlv_flash_sector_iterator_fetch_next(btstack_tlv_flash_sector_t * self, tlv_iterator_t * it){
+static void tlv_iterator_fetch_next(btstack_tlv_flash_sector_t * self, tlv_iterator_t * it){
 	it->offset += 8 + it->len;
 	btstack_tlv_flash_sector_iterator_fetch_tag_len(self, it);
 }
@@ -130,11 +130,11 @@ static void btstack_tlv_flash_sector_migrate(btstack_tlv_flash_sector_t * self){
 				found = 1;
 				break;
 			}
-			btstack_tlv_flash_sector_iterator_fetch_next(self, &next_it);
+			tlv_iterator_fetch_next(self, &next_it);
 		}
 		log_info("tag %x in next bank %u", it.tag, found);
 		if (found) {
-			btstack_tlv_flash_sector_iterator_fetch_next(self, &it);
+			tlv_iterator_fetch_next(self, &it);
 			continue;
 		}
 	
@@ -148,7 +148,7 @@ static void btstack_tlv_flash_sector_migrate(btstack_tlv_flash_sector_t * self){
 				tag_index = scan_it.offset;
 				tag_len   = scan_it.len;
 			}
-			btstack_tlv_flash_sector_iterator_fetch_next(self, &scan_it);
+			tlv_iterator_fetch_next(self, &scan_it);
 		}
 		// copy
 		int bytes_to_copy = 8 + tag_len;
@@ -163,7 +163,7 @@ static void btstack_tlv_flash_sector_migrate(btstack_tlv_flash_sector_t * self){
 			bytes_to_copy  -= bytes_this_iteration;
 		}
 
-		btstack_tlv_flash_sector_iterator_fetch_next(self, &it);
+		tlv_iterator_fetch_next(self, &it);
 	}
 
 	// prepare new one
@@ -195,7 +195,7 @@ static int btstack_tlv_flash_sector_get_tag(void * context, uint32_t tag, uint8_
 			tag_index = it.offset;
 			tag_len   = it.len;
 		}
-		btstack_tlv_flash_sector_iterator_fetch_next(self, &it);
+		tlv_iterator_fetch_next(self, &it);
 	}
 	if (tag_index == 0) return 0;
 	if (!buffer) return tag_len;
@@ -272,7 +272,7 @@ const btstack_tlv_t * btstack_tlv_flash_sector_init_instance(btstack_tlv_flash_s
 	tlv_iterator_t it;
 	btstack_tlv_flash_sector_iterator_init(self, &it, self->current_bank);
 	while (btstack_tlv_flash_sector_iterator_has_next(self, &it)){
-		btstack_tlv_flash_sector_iterator_fetch_next(self, &it);
+		tlv_iterator_fetch_next(self, &it);
 	}
 	self->write_offset = it.offset;
 	log_info("write offset %u", self->write_offset);
