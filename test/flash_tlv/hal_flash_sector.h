@@ -48,34 +48,38 @@ extern "C" {
 // Number of flash banks
 #define HAL_FLASH_SECTOR_NUM 2
 
-/**
- * Get size of flash banks
- */
-uint32_t hal_flash_sector_get_size(void);
+typedef struct {
 
-/**
- * Erase a bank
- * @param bank
- */
-void hal_flash_sector_erase(int bank);
+	/**
+	 * Get size of flash banks
+	 */
+	uint32_t (*get_size)(void);
 
-/**
- * Read from flash into provided buffer
- * @param bank
- * @param offset into flash bank
- * @param buffer to read data
- * @param size of data to read
- */
-void hal_flash_sector_read(int bank, uint32_t offset, uint8_t * buffer, uint32_t size);
+	/**
+	 * Erase a bank
+	 * @param bank
+	 */
+	void (*erase)(int bank);
 
-/**
- * Write data into flash. Each offset can only be written once after bank was erased
- * @param bank
- * @param offset into flash bank
-  to read data
- * @param size of data to store
- */
-void hal_flash_sector_write(int bank, uint32_t offset, const uint8_t * data, uint32_t size);
+	/**
+	 * Read from flash into provided buffer
+	 * @param bank
+	 * @param offset into flash bank
+	 * @param buffer to read data
+	 * @param size of data to read
+	 */
+	void (*read)(int bank, uint32_t offset, uint8_t * buffer, uint32_t size);
+
+	/**
+	 * Write data into flash. Each offset can only be written once after bank was erased
+	 * @param bank
+	 * @param offset into flash bank
+	  to read data
+	 * @param size of data to store
+	 */
+	void (*write)(int bank, uint32_t offset, const uint8_t * data, uint32_t size);
+
+} hal_flash_sector_t;
 
 #if defined __cplusplus
 }

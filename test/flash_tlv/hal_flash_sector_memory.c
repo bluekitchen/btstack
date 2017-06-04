@@ -35,6 +35,7 @@
  */
 
 #include "hal_flash_sector.h"
+#include "hal_flash_sector_memory.h"
 #include "btstack_debug.h"
 
 #include "stdint.h"
@@ -52,16 +53,16 @@ static uint8_t hal_flash_storage_bank_1[HAL_FLASH_SECTOR_SIZE];
 static uint8_t hal_flash_storage_bank_2[HAL_FLASH_SECTOR_SIZE];
 static uint8_t * hal_flash_storage_banks[] = {hal_flash_storage_bank_1, hal_flash_storage_bank_2};
 
-uint32_t hal_flash_sector_get_size(void){
+static uint32_t hal_flash_sector_memory_get_size(void){
 	return HAL_FLASH_SECTOR_SIZE;
 }
 
-void hal_flash_sector_erase(int bank){
+static void hal_flash_sector_memory_erase(int bank){
 	if (bank > 1) return;
 	memset(hal_flash_storage_banks[bank], 0xff, HAL_FLASH_SECTOR_SIZE);
 }
 
-void hal_flash_sector_read(int bank, uint32_t offset, uint8_t * buffer, uint32_t size){
+static void hal_flash_sector_memory_read(int bank, uint32_t offset, uint8_t * buffer, uint32_t size){
 
 	// log_info("read offset %u, len %u", offset, size);
 
@@ -72,7 +73,7 @@ void hal_flash_sector_read(int bank, uint32_t offset, uint8_t * buffer, uint32_t
 	memcpy(buffer, &hal_flash_storage_banks[bank][offset], size);
 }
 
-void hal_flash_sector_write(int bank, uint32_t offset, const uint8_t * data, uint32_t size){
+static void hal_flash_sector_memory_write(int bank, uint32_t offset, const uint8_t * data, uint32_t size){
 
 	// log_info("write offset %u, len %u", offset, size);
 
@@ -93,3 +94,17 @@ void hal_flash_sector_write(int bank, uint32_t offset, const uint8_t * data, uin
 
 	memcpy(&hal_flash_storage_banks[bank][offset], data, size);
 }
+
+static const hal_flash_sector_t hal_flash_sector_memory_instance = {
+	/* uint32_t (*get_size)() */ &hal_flash_sector_memory_get_size,
+	/* void (*erase)(int);    */ &hal_flash_sector_memory_erase,
+	/* void (*read)(..);      */ &hal_flash_sector_memory_read,
+	/* void (*write)(..);     */ &hal_flash_sector_memory_write,
+};
+/** 
+ * Initialize instance
+ */
+const hal_flash_sector_t * hal_flash_sector_memory_get_instance(void){
+	return &hal_flash_sector_memory_instance;
+}
+

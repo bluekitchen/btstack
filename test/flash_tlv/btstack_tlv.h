@@ -40,6 +40,7 @@
 #define __BTSTACK_TLV_H
 
 #include <stdint.h>
+#include "hal_flash_sector.h"
 
 #if defined __cplusplus
 extern "C" {
@@ -48,7 +49,7 @@ extern "C" {
 /**
  * Init Tag Length Value Store
  */
-void btstack_tlv_init(void);
+void btstack_tlv_init(const hal_flash_sector_t * hal_flash_sector);
 
 /**
  * Get Value for Tag
