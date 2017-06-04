@@ -49,12 +49,6 @@ extern "C" {
 #define HAL_FLASH_SECTOR_NUM 2
 
 /**
- * Initialize flash sector implementation. 
- */
-
-void hal_flash_sector_init(void);
-
-/**
  * Get size of flash banks
  */
 uint32_t hal_flash_sector_get_size(void);

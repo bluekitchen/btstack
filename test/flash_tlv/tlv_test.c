@@ -8,7 +8,8 @@
 
 TEST_GROUP(HAL_FLASH_SECTOR){
     void setup(void){
-    	hal_flash_sector_init();
+		hal_flash_sector_erase(0);
+		hal_flash_sector_erase(1);
     }
 };
 
@@ -68,7 +69,8 @@ TEST(HAL_FLASH_SECTOR, TestWriteErase){
 
 TEST_GROUP(BSTACK_TLV){
     void setup(void){
-    	hal_flash_sector_init();
+		hal_flash_sector_erase(0);
+		hal_flash_sector_erase(1);
     }
 };
 

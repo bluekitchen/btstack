@@ -61,11 +61,6 @@ void hal_flash_sector_erase(int bank){
 	memset(hal_flash_storage_banks[bank], 0xff, HAL_FLASH_SECTOR_SIZE);
 }
 
-void hal_flash_sector_init(void){
-	hal_flash_sector_erase(0);
-	hal_flash_sector_erase(1);
-}
-
 void hal_flash_sector_read(int bank, uint32_t offset, uint8_t * buffer, uint32_t size){
 
 	// log_info("read offset %u, len %u", offset, size);
