@@ -4,6 +4,7 @@
 
 #include "hal_flash_sector.h"
 #include "btstack_tlv.h"
+#include "hci_dump.h"
 
 TEST_GROUP(HAL_FLASH_SECTOR){
     void setup(void){
@@ -105,6 +106,20 @@ TEST(BSTACK_TLV, TestWriteWriteRead){
 	CHECK_EQUAL(buffer, data);
 }
 
+TEST(BSTACK_TLV, TestWriteDeleteRead){
+	btstack_tlv_init();
+	uint32_t tag = 'abcd';
+	uint8_t  data = 7;
+	uint8_t  buffer = data;
+	btstack_tlv_store_tag(tag, &buffer, 1);
+	data++;
+	buffer = data;
+	btstack_tlv_store_tag(tag, &buffer, 1);
+	btstack_tlv_delete_tag(tag);
+	int size = btstack_tlv_get_tag(tag, NULL, 0);
+	CHECK_EQUAL(size, 0);
+}
+
 TEST(BSTACK_TLV, TestMigrate){
 
 	btstack_tlv_init();
@@ -157,5 +172,6 @@ TEST(BSTACK_TLV, TestMigrate2){
 }
 
 int main (int argc, const char * argv[]){
+	hci_dump_open("tlv_test.pklg", HCI_DUMP_PACKETLOGGER);
     return CommandLineTestRunner::RunAllTests(argc, argv);
 }

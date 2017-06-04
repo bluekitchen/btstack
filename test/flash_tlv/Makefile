@@ -32,7 +32,7 @@ TESTS = tlv_test
 all: ${TESTS}
 
 clean:
-	rm -rf *.o $(TESTS) *.dSYM
+	rm -rf *.o $(TESTS) *.dSYM *.pklg
 
 tlv_test: ${COMMON_OBJ} tlv_test.c  
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
