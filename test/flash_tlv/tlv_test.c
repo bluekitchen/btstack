@@ -5,6 +5,7 @@
 #include "hal_flash_sector.h"
 #include "hal_flash_sector_memory.h"
 #include "btstack_tlv.h"
+#include "btstack_tlv_flash_sector.h"
 #include "hci_dump.h"
 
 #define HAL_FLASH_SECTOR_MEMORY_STORAGE_SIZE 256
@@ -74,9 +75,16 @@ TEST(HAL_FLASH_SECTOR, TestWriteErase){
     CHECK_EQUAL(buffer, 0xff);
 }
 
+/// TLV
+
 TEST_GROUP(BSTACK_TLV){
+	
 	const hal_flash_sector_t * hal_flash_sector_impl;
-	hal_flash_sector_memory_t hal_flash_sector_context;
+	hal_flash_sector_memory_t  hal_flash_sector_context;
+
+	const btstack_tlv_t *      btstack_tlv_impl;
+	btstack_tlv_flash_sector_t btstack_tlv_context;
+
     void setup(void){
     	hal_flash_sector_impl = hal_flash_sector_memory_init_instance(&hal_flash_sector_context, hal_flash_sector_memory_storage, HAL_FLASH_SECTOR_MEMORY_STORAGE_SIZE);
 		hal_flash_sector_impl->erase(&hal_flash_sector_context, 0);
@@ -85,56 +93,56 @@ TEST_GROUP(BSTACK_TLV){
 };
 
 TEST(BSTACK_TLV, TestMissingTag){
-	btstack_tlv_init(hal_flash_sector_impl, &hal_flash_sector_context);
+	btstack_tlv_impl = btstack_tlv_flash_sector_init_instance(&btstack_tlv_context, hal_flash_sector_impl, &hal_flash_sector_context);
 	uint32_t tag = 'abcd';
-	int size = btstack_tlv_get_tag(tag, NULL, 0);
+	int size = btstack_tlv_impl->get_tag(&btstack_tlv_context, tag, NULL, 0);
 	CHECK_EQUAL(size, 0);
 }
 
 TEST(BSTACK_TLV, TestWriteRead){
-	btstack_tlv_init(hal_flash_sector_impl, &hal_flash_sector_context);
+	btstack_tlv_impl = btstack_tlv_flash_sector_init_instance(&btstack_tlv_context, hal_flash_sector_impl, &hal_flash_sector_context);
 	uint32_t tag = 'abcd';
 	uint8_t  data = 7;
 	uint8_t  buffer = data;
-	btstack_tlv_store_tag(tag, &buffer, 1);
-	int size = btstack_tlv_get_tag(tag, NULL, 0);
+	btstack_tlv_impl->store_tag(&btstack_tlv_context, tag, &buffer, 1);
+	int size = btstack_tlv_impl->get_tag(&btstack_tlv_context, tag, NULL, 0);
 	CHECK_EQUAL(size, 1);
-	btstack_tlv_get_tag(tag, &buffer, 1);
+	btstack_tlv_impl->get_tag(&btstack_tlv_context, tag, &buffer, 1);
 	CHECK_EQUAL(buffer, data);
 }
 
 TEST(BSTACK_TLV, TestWriteWriteRead){
-	btstack_tlv_init(hal_flash_sector_impl, &hal_flash_sector_context);
+	btstack_tlv_impl = btstack_tlv_flash_sector_init_instance(&btstack_tlv_context, hal_flash_sector_impl, &hal_flash_sector_context);
 	uint32_t tag = 'abcd';
 	uint8_t  data = 7;
 	uint8_t  buffer = data;
-	btstack_tlv_store_tag(tag, &buffer, 1);
+	btstack_tlv_impl->store_tag(&btstack_tlv_context, tag, &buffer, 1);
 	data++;
 	buffer = data;
-	btstack_tlv_store_tag(tag, &buffer, 1);
-	int size = btstack_tlv_get_tag(tag, NULL, 0);
+	btstack_tlv_impl->store_tag(&btstack_tlv_context, tag, &buffer, 1);
+	int size = btstack_tlv_impl->get_tag(&btstack_tlv_context, tag, NULL, 0);
 	CHECK_EQUAL(size, 1);
-	btstack_tlv_get_tag(tag, &buffer, 1);
+	btstack_tlv_impl->get_tag(&btstack_tlv_context, tag, &buffer, 1);
 	CHECK_EQUAL(buffer, data);
 }
 
 TEST(BSTACK_TLV, TestWriteDeleteRead){
-	btstack_tlv_init(hal_flash_sector_impl, &hal_flash_sector_context);
+	btstack_tlv_impl = btstack_tlv_flash_sector_init_instance(&btstack_tlv_context, hal_flash_sector_impl, &hal_flash_sector_context);
 	uint32_t tag = 'abcd';
 	uint8_t  data = 7;
 	uint8_t  buffer = data;
-	btstack_tlv_store_tag(tag, &buffer, 1);
+	btstack_tlv_impl->store_tag(&btstack_tlv_context, tag, &buffer, 1);
 	data++;
 	buffer = data;
-	btstack_tlv_store_tag(tag, &buffer, 1);
-	btstack_tlv_delete_tag(tag);
-	int size = btstack_tlv_get_tag(tag, NULL, 0);
+	btstack_tlv_impl->store_tag(&btstack_tlv_context, tag, &buffer, 1);
+	btstack_tlv_impl->delete_tag(&btstack_tlv_context, tag);
+	int size = btstack_tlv_impl->get_tag(&btstack_tlv_context, tag, NULL, 0);
 	CHECK_EQUAL(size, 0);
 }
 
 TEST(BSTACK_TLV, TestMigrate){
 
-	btstack_tlv_init(hal_flash_sector_impl, &hal_flash_sector_context);
+	btstack_tlv_impl = btstack_tlv_flash_sector_init_instance(&btstack_tlv_context, hal_flash_sector_impl, &hal_flash_sector_context);
 
 	uint32_t tag = 'abcd';
 	uint8_t  data[8];
@@ -144,19 +152,19 @@ TEST(BSTACK_TLV, TestMigrate){
 	int i;
 	for (i=0;i<8;i++){
 		data[0] = '0' + i;
-		btstack_tlv_store_tag(tag, &data[0], 8);
+		btstack_tlv_impl->store_tag(&btstack_tlv_context, tag, &data[0], 8);
 	}
 
-	btstack_tlv_init(hal_flash_sector_impl, &hal_flash_sector_context);
+	btstack_tlv_impl = btstack_tlv_flash_sector_init_instance(&btstack_tlv_context, hal_flash_sector_impl, &hal_flash_sector_context);
 
 	uint8_t buffer[8];
-	btstack_tlv_get_tag(tag, &buffer[0], 1);
+	btstack_tlv_impl->get_tag(&btstack_tlv_context, tag, &buffer[0], 1);
 	CHECK_EQUAL(buffer[0], data[0]);
 }
 
 TEST(BSTACK_TLV, TestMigrate2){
 
-	btstack_tlv_init(hal_flash_sector_impl, &hal_flash_sector_context);
+	btstack_tlv_impl = btstack_tlv_flash_sector_init_instance(&btstack_tlv_context, hal_flash_sector_impl, &hal_flash_sector_context);
 
 	uint32_t tag1 = 0x11223344;
 	uint32_t tag2 = 0x44556677;
@@ -170,16 +178,16 @@ TEST(BSTACK_TLV, TestMigrate2){
 	for (i=0;i<8;i++){
 		data1[0] = '0' + i;
 		data2[0] = 'a' + i;
-		btstack_tlv_store_tag(tag1, data1, 8);
-		btstack_tlv_store_tag(tag2, data2, 8);
+		btstack_tlv_impl->store_tag(&btstack_tlv_context, tag1, data1, 8);
+		btstack_tlv_impl->store_tag(&btstack_tlv_context, tag2, data2, 8);
 	}
 
-	btstack_tlv_init(hal_flash_sector_impl, &hal_flash_sector_context);
+	btstack_tlv_impl = btstack_tlv_flash_sector_init_instance(&btstack_tlv_context, hal_flash_sector_impl, &hal_flash_sector_context);
 
 	uint8_t buffer[8];
-	btstack_tlv_get_tag(tag1, &buffer[0], 1);
+	btstack_tlv_impl->get_tag(&btstack_tlv_context, tag1, &buffer[0], 1);
 	CHECK_EQUAL(buffer[0], data1[0]);
-	btstack_tlv_get_tag(tag2, &buffer[0], 1);
+	btstack_tlv_impl->get_tag(&btstack_tlv_context, tag2, &buffer[0], 1);
 	CHECK_EQUAL(buffer[0], data2[0]);
 }
 

@@ -46,33 +46,35 @@
 extern "C" {
 #endif
 
-/**
- * Init Tag Length Value Store
- */
-void btstack_tlv_init(const hal_flash_sector_t * hal_flash_sector_impl, void * hal_flash_sector_context);
+typedef struct {
 
-/**
- * Get Value for Tag
- * @param tag
- * @param buffer
- * @param buffer_size
- * @returns size of value
- */
-int btstack_tlv_get_tag(uint32_t tag, uint8_t * buffer, uint32_t buffer_size);
+	/**
+	 * Get Value for Tag
+	 * @param context
+	 * @param tag
+	 * @param buffer
+	 * @param buffer_size
+	 * @returns size of value
+	 */
+	int (*get_tag)(void * context, uint32_t tag, uint8_t * buffer, uint32_t buffer_size);
 
-/**
- * Store Tag 
- * @param tag
- * @param data
- * @param data_size
- */
-void btstack_tlv_store_tag(uint32_t tag, const uint8_t * data, uint32_t data_size);
+	/**
+	 * Store Tag 
+	 * @param context
+	 * @param tag
+	 * @param data
+	 * @param data_size
+	 */
+	void (*store_tag)(void * context, uint32_t tag, const uint8_t * data, uint32_t data_size);
 
-/**
- * Delete Tag
- * @param tag
- */
-void btstack_tlv_delete_tag(uint32_t tag);
+	/**
+	 * Delete Tag
+	 * @param context
+	 * @param tag
+	 */
+	void (*delete_tag)(void * context,  uint32_t tag);
+
+} btstack_tlv_t;
 
 #if defined __cplusplus
 }
