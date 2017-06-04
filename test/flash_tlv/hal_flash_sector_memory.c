@@ -52,12 +52,6 @@ static uint8_t hal_flash_storage_bank_1[HAL_FLASH_SECTOR_SIZE];
 static uint8_t hal_flash_storage_bank_2[HAL_FLASH_SECTOR_SIZE];
 static uint8_t * hal_flash_storage_banks[] = {hal_flash_storage_bank_1, hal_flash_storage_bank_2};
 
-#ifdef BTSTACK_TEST
-static uint8_t hal_flash_storage_bank_1_written[HAL_FLASH_SECTOR_SIZE];
-static uint8_t hal_flash_storage_bank_2_written[HAL_FLASH_SECTOR_SIZE];
-static uint8_t * hal_flash_storage_banks_written[] = {hal_flash_storage_bank_1_written, hal_flash_storage_bank_2_written};
-#endif
-
 uint32_t hal_flash_sector_get_size(void){
 	return HAL_FLASH_SECTOR_SIZE;
 }
@@ -65,9 +59,6 @@ uint32_t hal_flash_sector_get_size(void){
 void hal_flash_sector_erase(int bank){
 	if (bank > 1) return;
 	memset(hal_flash_storage_banks[bank], 0xff, HAL_FLASH_SECTOR_SIZE);
-#ifdef BTSTACK_TEST
-	memset(hal_flash_storage_banks_written[bank], 0, HAL_FLASH_SECTOR_SIZE);
-#endif
 }
 
 void hal_flash_sector_init(void){
@@ -97,13 +88,12 @@ void hal_flash_sector_write(int bank, uint32_t offset, const uint8_t * data, uin
 #ifdef BTSTACK_TEST
 	int i;
 	for (i=0;i<size;i++){
-		if (hal_flash_storage_banks_written[bank][offset+i]) {
+		if (hal_flash_storage_banks[bank][offset] != 0xff){
 			printf("Error: offset %u written twice!\n", offset+i);
 			exit(10);
 			return;			
 		}
 	}
-	memset(&hal_flash_storage_banks_written[bank][offset], 1, size);
 #endif
 
 	memcpy(&hal_flash_storage_banks[bank][offset], data, size);
