@@ -53,16 +53,16 @@ static uint8_t hal_flash_storage_bank_1[HAL_FLASH_SECTOR_SIZE];
 static uint8_t hal_flash_storage_bank_2[HAL_FLASH_SECTOR_SIZE];
 static uint8_t * hal_flash_storage_banks[] = {hal_flash_storage_bank_1, hal_flash_storage_bank_2};
 
-static uint32_t hal_flash_sector_memory_get_size(void){
+static uint32_t hal_flash_sector_memory_get_size(void * context){
 	return HAL_FLASH_SECTOR_SIZE;
 }
 
-static void hal_flash_sector_memory_erase(int bank){
+static void hal_flash_sector_memory_erase(void * context, int bank){
 	if (bank > 1) return;
 	memset(hal_flash_storage_banks[bank], 0xff, HAL_FLASH_SECTOR_SIZE);
 }
 
-static void hal_flash_sector_memory_read(int bank, uint32_t offset, uint8_t * buffer, uint32_t size){
+static void hal_flash_sector_memory_read(void * context, int bank, uint32_t offset, uint8_t * buffer, uint32_t size){
 
 	// log_info("read offset %u, len %u", offset, size);
 
@@ -73,7 +73,7 @@ static void hal_flash_sector_memory_read(int bank, uint32_t offset, uint8_t * bu
 	memcpy(buffer, &hal_flash_storage_banks[bank][offset], size);
 }
 
-static void hal_flash_sector_memory_write(int bank, uint32_t offset, const uint8_t * data, uint32_t size){
+static void hal_flash_sector_memory_write(void * context, int bank, uint32_t offset, const uint8_t * data, uint32_t size){
 
 	// log_info("write offset %u, len %u", offset, size);
 

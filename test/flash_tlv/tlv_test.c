@@ -8,11 +8,12 @@
 #include "hci_dump.h"
 
 TEST_GROUP(HAL_FLASH_SECTOR){
-	const hal_flash_sector_t * hal_flash_sector;
+	const hal_flash_sector_t * hal_flash_sector_impl;
+	void * hal_flash_sector_context;
     void setup(void){
-    	hal_flash_sector = hal_flash_sector_memory_get_instance();
-		hal_flash_sector->erase(0);
-		hal_flash_sector->erase(1);
+    	hal_flash_sector_impl = hal_flash_sector_memory_get_instance();
+		hal_flash_sector_impl->erase(hal_flash_sector_context, 0);
+		hal_flash_sector_impl->erase(hal_flash_sector_context, 1);
     }
 };
 
@@ -23,7 +24,7 @@ TEST(HAL_FLASH_SECTOR, TestErased){
 	for (i=0;i<sizeof(offsets)/sizeof(int);i++){
 		int bank;
 		for (bank=0;bank<2;bank++){
-			hal_flash_sector->read(bank, offsets[i], &buffer, 1);	
+			hal_flash_sector_impl->read(hal_flash_sector_context, bank, offsets[i], &buffer, 1);	
 		    CHECK_EQUAL(buffer, 0xff);
 		}
 	}
@@ -37,13 +38,13 @@ TEST(HAL_FLASH_SECTOR, TestWrite){
 		int bank;
 		for (bank=0;bank<2;bank++){
 			buffer = i;
-			hal_flash_sector->write(bank, offsets[i], &buffer, 1);	
+			hal_flash_sector_impl->write(hal_flash_sector_context, bank, offsets[i], &buffer, 1);	
 		}
 	}
 	for (i=0;i<sizeof(offsets)/sizeof(int);i++){
 		int bank;
 		for (bank=0;bank<2;bank++){
-			hal_flash_sector->read(bank, offsets[i], &buffer, 1);	
+			hal_flash_sector_impl->read(hal_flash_sector_context, bank, offsets[i], &buffer, 1);	
 		    CHECK_EQUAL(buffer, i);
 		}
 	}
@@ -53,8 +54,8 @@ TEST(HAL_FLASH_SECTOR, TestWrite){
 // prints error and exits tests. maybe all functions need to return ok
 TEST(HAL_FLASH_SECTOR, TestWriteTwice){
 	uint8_t buffer = 5;
-	hal_flash_sector->write(0, 5, &buffer, 1);	
-	hal_flash_sector->write(0, 5, &buffer, 1);	
+	hal_flash_sector_impl->write(hal_flash_sector_context, 0, 5, &buffer, 1);	
+	hal_flash_sector_impl->write(hal_flash_sector_context, 0, 5, &buffer, 1);	
 }
 #endif
 
@@ -62,32 +63,33 @@ TEST(HAL_FLASH_SECTOR, TestWriteErase){
 	uint32_t offset = 7;
 	uint8_t value = 9;
 	uint8_t buffer = value;
-	hal_flash_sector->write(0, offset, &buffer, 1);
-	hal_flash_sector->read(0, offset, &buffer, 1);	
+	hal_flash_sector_impl->write(hal_flash_sector_context, 0, offset, &buffer, 1);
+	hal_flash_sector_impl->read(hal_flash_sector_context, 0, offset, &buffer, 1);	
     CHECK_EQUAL(buffer, value);
-	hal_flash_sector->erase(0);
-	hal_flash_sector->read(0, offset, &buffer, 1);	
+	hal_flash_sector_impl->erase(hal_flash_sector_context, 0);
+	hal_flash_sector_impl->read(hal_flash_sector_context, 0, offset, &buffer, 1);	
     CHECK_EQUAL(buffer, 0xff);
 }
 
 TEST_GROUP(BSTACK_TLV){
-	const hal_flash_sector_t * hal_flash_sector;
+	const hal_flash_sector_t * hal_flash_sector_impl;
+	void * hal_flash_sector_context;
     void setup(void){
-    	hal_flash_sector = hal_flash_sector_memory_get_instance();
-		hal_flash_sector->erase(0);
-		hal_flash_sector->erase(1);
+    	hal_flash_sector_impl = hal_flash_sector_memory_get_instance();
+		hal_flash_sector_impl->erase(hal_flash_sector_context, 0);
+		hal_flash_sector_impl->erase(hal_flash_sector_context, 1);
     }
 };
 
 TEST(BSTACK_TLV, TestMissingTag){
-	btstack_tlv_init(hal_flash_sector);
+	btstack_tlv_init(hal_flash_sector_impl);
 	uint32_t tag = 'abcd';
 	int size = btstack_tlv_get_tag(tag, NULL, 0);
 	CHECK_EQUAL(size, 0);
 }
 
 TEST(BSTACK_TLV, TestWriteRead){
-	btstack_tlv_init(hal_flash_sector);
+	btstack_tlv_init(hal_flash_sector_impl);
 	uint32_t tag = 'abcd';
 	uint8_t  data = 7;
 	uint8_t  buffer = data;
@@ -99,7 +101,7 @@ TEST(BSTACK_TLV, TestWriteRead){
 }
 
 TEST(BSTACK_TLV, TestWriteWriteRead){
-	btstack_tlv_init(hal_flash_sector);
+	btstack_tlv_init(hal_flash_sector_impl);
 	uint32_t tag = 'abcd';
 	uint8_t  data = 7;
 	uint8_t  buffer = data;
@@ -114,7 +116,7 @@ TEST(BSTACK_TLV, TestWriteWriteRead){
 }
 
 TEST(BSTACK_TLV, TestWriteDeleteRead){
-	btstack_tlv_init(hal_flash_sector);
+	btstack_tlv_init(hal_flash_sector_impl);
 	uint32_t tag = 'abcd';
 	uint8_t  data = 7;
 	uint8_t  buffer = data;
@@ -129,7 +131,7 @@ TEST(BSTACK_TLV, TestWriteDeleteRead){
 
 TEST(BSTACK_TLV, TestMigrate){
 
-	btstack_tlv_init(hal_flash_sector);
+	btstack_tlv_init(hal_flash_sector_impl);
 
 	uint32_t tag = 'abcd';
 	uint8_t  data[8];
@@ -142,7 +144,7 @@ TEST(BSTACK_TLV, TestMigrate){
 		btstack_tlv_store_tag(tag, &data[0], 8);
 	}
 
-	btstack_tlv_init(hal_flash_sector);
+	btstack_tlv_init(hal_flash_sector_impl);
 
 	uint8_t buffer[8];
 	btstack_tlv_get_tag(tag, &buffer[0], 1);
@@ -151,7 +153,7 @@ TEST(BSTACK_TLV, TestMigrate){
 
 TEST(BSTACK_TLV, TestMigrate2){
 
-	btstack_tlv_init(hal_flash_sector);
+	btstack_tlv_init(hal_flash_sector_impl);
 
 	uint32_t tag1 = 0x11223344;
 	uint32_t tag2 = 0x44556677;
@@ -169,7 +171,7 @@ TEST(BSTACK_TLV, TestMigrate2){
 		btstack_tlv_store_tag(tag2, data2, 8);
 	}
 
-	btstack_tlv_init(hal_flash_sector);
+	btstack_tlv_init(hal_flash_sector_impl);
 
 	uint8_t buffer[8];
 	btstack_tlv_get_tag(tag1, &buffer[0], 1);

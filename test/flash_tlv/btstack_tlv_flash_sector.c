@@ -52,7 +52,9 @@ static const char * btstack_tlv_header_magic = "BTstack";
 // globals
 static int btstack_tlv_current_bank;
 static int btstack_tlv_write_offset;
-static const hal_flash_sector_t * hal_flash_sector;
+static const hal_flash_sector_t * hal_flash_sector_impl;
+static void * hal_flash_sector_context;
+
 // TLV Iterator
 
 typedef struct {
@@ -64,7 +66,7 @@ typedef struct {
 
 static void tlv_iterator_fetch_tag_len(tlv_iterator_t * it){
 	uint8_t entry[8];
-	hal_flash_sector->read(it->bank, it->offset, entry, 8);
+	hal_flash_sector_impl->read(hal_flash_sector_context, it->bank, it->offset, entry, 8);
 	it->tag = big_endian_read_32(entry, 0);
 	it->len = big_endian_read_32(entry, 4);
 }
@@ -78,7 +80,7 @@ static void tlv_iterator_init(tlv_iterator_t * it, int bank){
 
 static int tlv_iterator_has_next(tlv_iterator_t * it){
 	if (it->tag == 0xffffffff) return 0;
-	return it->offset + 8 + it->len < hal_flash_sector->get_size();
+	return it->offset + 8 + it->len < hal_flash_sector_impl->get_size(hal_flash_sector_context);
 }
 
 static void tlv_iterator_fetch_next(tlv_iterator_t * it){
@@ -91,8 +93,8 @@ static void tlv_iterator_fetch_next(tlv_iterator_t * it){
 static int btstack_tlv_get_latest_bank(void){
  	uint8_t header0[BTSTACK_TLV_HEADER_LEN];
  	uint8_t header1[BTSTACK_TLV_HEADER_LEN];
- 	hal_flash_sector->read(0, 0, &header0[0], BTSTACK_TLV_HEADER_LEN);
- 	hal_flash_sector->read(1, 0, &header1[0], BTSTACK_TLV_HEADER_LEN);
+ 	hal_flash_sector_impl->read(hal_flash_sector_context, 0, 0, &header0[0], BTSTACK_TLV_HEADER_LEN);
+ 	hal_flash_sector_impl->read(hal_flash_sector_context, 1, 0, &header1[0], BTSTACK_TLV_HEADER_LEN);
  	int valid0 = memcmp(header1, btstack_tlv_header_magic, BTSTACK_TLV_HEADER_LEN-1) == 0;
  	int valid1 = memcmp(header1, btstack_tlv_header_magic, BTSTACK_TLV_HEADER_LEN-1) == 0;
 	if (!valid0 && !valid1) return -1;
@@ -109,14 +111,14 @@ static void btstack_tlv_write_header(int bank, int epoch){
 	uint8_t header[BTSTACK_TLV_HEADER_LEN];
 	memcpy(&header[0], btstack_tlv_header_magic, BTSTACK_TLV_HEADER_LEN-1);
 	header[BTSTACK_TLV_HEADER_LEN-1] = epoch;
-	hal_flash_sector->write(bank, 0, header, BTSTACK_TLV_HEADER_LEN);
+	hal_flash_sector_impl->write(hal_flash_sector_context, bank, 0, header, BTSTACK_TLV_HEADER_LEN);
 }
 
 static void btstack_tlv_migrate(void){
 	int next_bank = 1 - btstack_tlv_current_bank;
 
 	// @TODO erase might not be needed - resp. already been performed
-	hal_flash_sector->erase(next_bank);
+	hal_flash_sector_impl->erase(hal_flash_sector_context, next_bank);
 	int next_write_pos = 8;
 
 	tlv_iterator_t it;
@@ -157,8 +159,8 @@ static void btstack_tlv_migrate(void){
 		uint8_t copy_buffer[32];
 		while (bytes_to_copy){
 			int bytes_this_iteration = btstack_min(bytes_to_copy, sizeof(copy_buffer));
-			hal_flash_sector->read(btstack_tlv_current_bank, tag_index, copy_buffer, bytes_this_iteration);
-			hal_flash_sector->write(next_bank, next_write_pos, copy_buffer, bytes_this_iteration);
+			hal_flash_sector_impl->read(hal_flash_sector_context, btstack_tlv_current_bank, tag_index, copy_buffer, bytes_this_iteration);
+			hal_flash_sector_impl->write(hal_flash_sector_context, next_bank, next_write_pos, copy_buffer, bytes_this_iteration);
 			tag_index      += bytes_this_iteration;
 			next_write_pos += bytes_this_iteration;
 			bytes_to_copy  -= bytes_this_iteration;
@@ -169,7 +171,7 @@ static void btstack_tlv_migrate(void){
 
 	// prepare new one
 	uint8_t epoch_buffer;
-	hal_flash_sector->read(btstack_tlv_current_bank, BTSTACK_TLV_HEADER_LEN-1, &epoch_buffer, 1);
+	hal_flash_sector_impl->read(hal_flash_sector_context, btstack_tlv_current_bank, BTSTACK_TLV_HEADER_LEN-1, &epoch_buffer, 1);
 	btstack_tlv_write_header(next_bank, (epoch_buffer + 1) & 3);
 	btstack_tlv_current_bank = next_bank;
 	btstack_tlv_write_offset = next_write_pos;
@@ -178,9 +180,9 @@ static void btstack_tlv_migrate(void){
 /**
  * Init Tag Length Value Store
  */
-void btstack_tlv_init(const hal_flash_sector_t * hal_flash_sector_impl){
+void btstack_tlv_init(const hal_flash_sector_t * hal_flash_sector){
 
-	hal_flash_sector = hal_flash_sector_impl;
+	hal_flash_sector_impl = hal_flash_sector;
 
 	// find current bank and erase both if none found
 	int current_bank = btstack_tlv_get_latest_bank();
@@ -188,8 +190,8 @@ void btstack_tlv_init(const hal_flash_sector_t * hal_flash_sector_impl){
 	if (current_bank < 0){
 		log_info("erase both banks");
 		// erase both to get into stable state
-		hal_flash_sector->erase(0);
-		hal_flash_sector->erase(1);
+		hal_flash_sector_impl->erase(hal_flash_sector_context, 0);
+		hal_flash_sector_impl->erase(hal_flash_sector_context, 1);
 		current_bank = 0;
 		btstack_tlv_write_header(current_bank, 0);	// epoch = 0;
 	}
@@ -228,7 +230,7 @@ int btstack_tlv_get_tag(uint32_t tag, uint8_t * buffer, uint32_t buffer_size){
 	if (tag_index == 0) return 0;
 	if (!buffer) return tag_len;
 	int copy_size = btstack_min(buffer_size, tag_len);
-	hal_flash_sector->read(btstack_tlv_current_bank, tag_index + 8, buffer, copy_size);
+	hal_flash_sector_impl->read(hal_flash_sector_context, btstack_tlv_current_bank, tag_index + 8, buffer, copy_size);
 	return copy_size;
 }
 
@@ -239,7 +241,7 @@ int btstack_tlv_get_tag(uint32_t tag, uint8_t * buffer, uint32_t buffer_size){
  * @param data_size
  */
 void btstack_tlv_store_tag(uint32_t tag, const uint8_t * data, uint32_t data_size){
-	if (btstack_tlv_write_offset + 8 + data_size > hal_flash_sector->get_size()){
+	if (btstack_tlv_write_offset + 8 + data_size > hal_flash_sector_impl->get_size(hal_flash_sector_context)){
 		btstack_tlv_migrate();
 	}
 	// prepare entry
@@ -250,10 +252,10 @@ void btstack_tlv_store_tag(uint32_t tag, const uint8_t * data, uint32_t data_siz
 	log_info("write '%x', len %u at %u", tag, data_size, btstack_tlv_write_offset);
 
 	// write value first
-	hal_flash_sector->write(btstack_tlv_current_bank, btstack_tlv_write_offset + 8, data, data_size);
+	hal_flash_sector_impl->write(hal_flash_sector_context, btstack_tlv_current_bank, btstack_tlv_write_offset + 8, data, data_size);
 
 	// then entry
-	hal_flash_sector->write(btstack_tlv_current_bank, btstack_tlv_write_offset, entry, sizeof(entry));
+	hal_flash_sector_impl->write(hal_flash_sector_context, btstack_tlv_current_bank, btstack_tlv_write_offset, entry, sizeof(entry));
 
 	btstack_tlv_write_offset += sizeof(entry) + data_size;
 }
