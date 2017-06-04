@@ -16,6 +16,7 @@ VPATH = \
 	${BTSTACK_ROOT}/src
 
 CFLAGS  = \
+    -DBTSTACK_TEST \
     -g \
     -Wall \
     -Wmissing-prototypes \
