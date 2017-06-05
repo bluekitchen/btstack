@@ -8,7 +8,7 @@
 #include "btstack_tlv_flash_sector.h"
 #include "hci_dump.h"
 #include "classic/btstack_link_key_db.h"
-#include "btstack_link_key_db_tlv.h"
+#include "classic/btstack_link_key_db_tlv.h"
 #include "btstack_util.h"
 #include "btstack_config.h"
 #include "btstack_debug.h"

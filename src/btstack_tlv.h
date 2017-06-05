@@ -30,38 +30,52 @@
  */
 
 /*
- *  btstack_tlv_flash_sector.h
+ *  btstack_tlv_.h
  *
- *  Implementation for BTstack's Tag Value Length Persistent Storage implementations
- *  using hal_flash_sector storage
+ *  Inteface for BTstack's Tag Value Length Persistent Storage implementations
+ *  used to store pairing/bonding data
  */
 
-#ifndef __BTSTACK_TLV_FLASH_SECTOR_H
-#define __BTSTACK_TLV_FLASH_SECTOR_H
+#ifndef __BTSTACK_TLV_H
+#define __BTSTACK_TLV_H
 
 #include <stdint.h>
-#include "btstack_tlv.h"
 
 #if defined __cplusplus
 extern "C" {
 #endif
 
 typedef struct {
-	const hal_flash_sector_t * hal_flash_sector_impl;
-	void * hal_flash_sector_context;
-	int current_bank;
-	int write_offset;
-} btstack_tlv_flash_sector_t;
 
-/**
- * Init Tag Length Value Store
- * @param context btstack_tlv_flash_sector_t 
- * @param hal_flash_sector_impl of hal_flash_sector interface
- * @Param hal_flash_sector_context of hal_flash_sector_interface
- */
-const btstack_tlv_t * btstack_tlv_flash_sector_init_instance(btstack_tlv_flash_sector_t * context, const hal_flash_sector_t * hal_flash_sector_impl, void * hal_flash_sector_context);
+	/**
+	 * Get Value for Tag
+	 * @param context
+	 * @param tag
+	 * @param buffer
+	 * @param buffer_size
+	 * @returns size of value
+	 */
+	int (*get_tag)(void * context, uint32_t tag, uint8_t * buffer, uint32_t buffer_size);
+
+	/**
+	 * Store Tag 
+	 * @param context
+	 * @param tag
+	 * @param data
+	 * @param data_size
+	 */
+	void (*store_tag)(void * context, uint32_t tag, const uint8_t * data, uint32_t data_size);
+
+	/**
+	 * Delete Tag
+	 * @param context
+	 * @param tag
+	 */
+	void (*delete_tag)(void * context,  uint32_t tag);
+
+} btstack_tlv_t;
 
 #if defined __cplusplus
 }
 #endif
-#endif // __BTSTACK_TLV_FLASH_SECTOR_H
+#endif // __BTSTACK_TLV_H

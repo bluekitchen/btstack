@@ -1,7 +1,6 @@
 CC=g++
 
 BTSTACK_ROOT = ../..
-POSIX_ROOT= ${BTSTACK_ROOT}/platform/posix
 CPPUTEST_HOME = ${BTSTACK_ROOT}/test/cpputest
 
 COMMON = \
@@ -14,7 +13,9 @@ COMMON = \
 COMMON_OBJ  = $(COMMON:.c=.o) 
 
 VPATH = \
-	${BTSTACK_ROOT}/src
+	${BTSTACK_ROOT}/src \
+	${BTSTACK_ROOT}/src/classic \
+	${BTSTACK_ROOT}/platform/embedded \
 
 CFLAGS  = \
     -DBTSTACK_TEST \
@@ -25,7 +26,7 @@ CFLAGS  = \
     -I. \
     -I.. \
     -I${BTSTACK_ROOT}/src \
-    -I${BTSTACK_ROOT}/platform/posix \
+    -I${BTSTACK_ROOT}/platform/embedded \
 
 LDFLAGS += -lCppUTest -lCppUTestExt
 
