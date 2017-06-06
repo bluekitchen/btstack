@@ -471,15 +471,15 @@ static void request_pass_through_press_control_cmd(uint16_t con_handle, avrcp_op
     connection->command_type = AVRCP_CTYPE_CONTROL;
     connection->subunit_type = AVRCP_SUBUNIT_TYPE_PANEL; 
     connection->subunit_id =   0;
-    connection->cmd_operands_lenght = 0;
+    connection->cmd_operands_length = 0;
 
-    connection->cmd_operands_lenght = 2;
+    connection->cmd_operands_length = 2;
     connection->cmd_operands[0] = opid;
     if (playback_speed > 0){
         connection->cmd_operands[2] = playback_speed;
-        connection->cmd_operands_lenght++;
+        connection->cmd_operands_length++;
     }
-    connection->cmd_operands[1] = connection->cmd_operands_lenght - 2;
+    connection->cmd_operands[1] = connection->cmd_operands_length - 2;
     
     switch (connection->cmd_operands[0]){
         case AVRCP_OPERATION_ID_REWIND:
@@ -495,7 +495,7 @@ static void request_pass_through_press_control_cmd(uint16_t con_handle, avrcp_op
 
 
 static int avrcp_send_cmd(uint16_t cid, avrcp_connection_t * connection){
-    uint8_t command[20];
+    uint8_t command[30];
     int pos = 0; 
     // transport header
     // Transaction label | Packet_type | C/R | IPID (1 == invalid profile identifier)
@@ -511,8 +511,8 @@ static int avrcp_send_cmd(uint16_t cid, avrcp_connection_t * connection){
     // opcode
     command[pos++] = (uint8_t)connection->cmd_to_send;
     // operands
-    memcpy(command+pos, connection->cmd_operands, connection->cmd_operands_lenght);
-    pos += connection->cmd_operands_lenght;
+    memcpy(command+pos, connection->cmd_operands, connection->cmd_operands_length);
+    pos += connection->cmd_operands_length;
 
     return l2cap_send(cid, command, pos);
 }
@@ -545,7 +545,7 @@ static void avrcp_prepare_notification(avrcp_connection_t * connection, avrcp_no
     connection->cmd_operands[pos++] = event_id; 
     big_endian_store_32(connection->cmd_operands, pos, 0);
     pos += 4;
-    connection->cmd_operands_lenght = pos;
+    connection->cmd_operands_length = pos;
     // AVRCP_SPEC_V14.pdf 166
     // answer page 61
 }
@@ -1171,8 +1171,8 @@ void avrcp_unit_info(uint16_t con_handle){
     connection->command_type = AVRCP_CTYPE_STATUS;
     connection->subunit_type = AVRCP_SUBUNIT_TYPE_UNIT; //vendor unique
     connection->subunit_id =   AVRCP_SUBUNIT_ID_IGNORE;
-    memset(connection->cmd_operands, 0xFF, connection->cmd_operands_lenght);
-    connection->cmd_operands_lenght = 5;
+    memset(connection->cmd_operands, 0xFF, connection->cmd_operands_length);
+    connection->cmd_operands_length = 5;
     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
 }
 
@@ -1195,7 +1195,7 @@ static void avrcp_get_capabilities(uint16_t con_handle, uint8_t capability_id){
     connection->cmd_operands[4] = 0;
     big_endian_store_16(connection->cmd_operands, 5, 1); // parameter length
     connection->cmd_operands[7] = capability_id;                  // capability ID
-    connection->cmd_operands_lenght = 8;
+    connection->cmd_operands_length = 8;
     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
 }
 
@@ -1290,7 +1290,7 @@ void avrcp_get_play_status(uint16_t con_handle){
     connection->cmd_operands[3] = AVRCP_PDU_ID_GET_PLAY_STATUS;
     connection->cmd_operands[4] = 0;                     // reserved(upper 6) | packet_type -> 0
     big_endian_store_16(connection->cmd_operands, 5, 0); // parameter length
-    connection->cmd_operands_lenght = 7;
+    connection->cmd_operands_length = 7;
     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
 }
 
@@ -1343,7 +1343,7 @@ void avrcp_get_now_playing_info(uint16_t con_handle){
     connection->cmd_operands[pos++] = 0; // attribute count, if 0 get all attributes
     // every attribute is 4 bytes long
 
-    connection->cmd_operands_lenght = pos;
+    connection->cmd_operands_length = pos;
     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
 
 }
@@ -1373,7 +1373,7 @@ void avrcp_set_absolute_volume(uint16_t con_handle, uint8_t volume){
     pos += 2;
     connection->cmd_operands[pos++] = volume;
 
-    connection->cmd_operands_lenght = pos;
+    connection->cmd_operands_length = pos;
     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
 }
 
@@ -1401,7 +1401,7 @@ void avrcp_query_shuffle_and_repeat_modes(uint16_t con_handle){
     connection->cmd_operands[9]  = 0x02;    // repeat     (1-off, 2-single track, 3-all tracks, 4-group repeat)
     connection->cmd_operands[10] = 0x03;    // shuffle    (1-off, 2-all tracks, 3-group shuffle)
     connection->cmd_operands[11] = 0x04;    // scan       (1-off, 2-all tracks, 3-group scan)
-    connection->cmd_operands_lenght = 12;
+    connection->cmd_operands_length = 12;
     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
 }
 
@@ -1429,10 +1429,10 @@ static void avrcp_set_current_player_application_setting_value(uint16_t con_hand
     big_endian_store_16(connection->cmd_operands, pos, 3);
     pos += 2;
     connection->cmd_operands[pos++] = 2;
-    connection->cmd_operands_lenght = pos;
+    connection->cmd_operands_length = pos;
     connection->cmd_operands[pos++]  = attribute_id;
     connection->cmd_operands[pos++]  = attribute_value;
-    connection->cmd_operands_lenght = pos;
+    connection->cmd_operands_length = pos;
     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
 }
 
