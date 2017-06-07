@@ -516,7 +516,7 @@ int att_server_indicate(hci_con_handle_t con_handle, uint16_t attribute_handle, 
     att_server_t * att_server = att_server_for_handle(con_handle);
     if (!att_server) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
 
-    if (att_server->value_indication_handle) return ATT_HANDLE_VALUE_INDICATION_IN_PORGRESS;
+    if (att_server->value_indication_handle) return ATT_HANDLE_VALUE_INDICATION_IN_PROGRESS;
     if (!att_dispatch_server_can_send_now(con_handle)) return BTSTACK_ACL_BUFFERS_FULL;
 
     // track indication

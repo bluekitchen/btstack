@@ -182,7 +182,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     printf("with COD: 0x%06x, ", (unsigned int) gap_event_inquiry_result_get_class_of_device(packet));
                     printf("pageScan %d, ",      devices[deviceCount].pageScanRepetitionMode);
                     printf("clock offset 0x%04x",devices[deviceCount].clockOffset & 0x7fff);
-                    if (gap_event_inquiry_result_get_rssi_availabe(packet)){
+                    if (gap_event_inquiry_result_get_rssi_available(packet)){
                         printf(", rssi %d dBm", (int8_t) gap_event_inquiry_result_get_rssi(packet));
                     }
                     if (gap_event_inquiry_result_get_name_available(packet)){
