@@ -71,7 +71,10 @@ void avdtp_connect(bd_addr_t remote, avdtp_sep_type_t query_role, avdtp_context_
     if (!connection){
         connection = avdtp_create_connection(remote, avdtp_context);
     }
-    if (connection->state != AVDTP_SIGNALING_CONNECTION_IDLE) return;
+    if (connection->state != AVDTP_SIGNALING_CONNECTION_IDLE){
+        log_error("avdtp_connect: sink in wrong state,");
+        return;
+    } 
     connection->state = AVDTP_SIGNALING_W4_SDP_QUERY_COMPLETE;
     sdp_query_context.connection = connection;
     sdp_query_context.query_role = query_role;
@@ -540,6 +543,12 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
                     connection = avdtp_connection_for_l2cap_signaling_cid(local_cid, context);
                     log_info(" -> L2CAP_EVENT_CHANNEL_CLOSED signaling cid 0x%0x", local_cid);
                     
+                    stream_endpoint = avdtp_stream_endpoint_for_l2cap_cid(local_cid, context);
+                    if (stream_endpoint){ 
+                        stream_endpoint_state_machine(connection, stream_endpoint, HCI_EVENT_PACKET, L2CAP_EVENT_CHANNEL_CLOSED, packet, size, context);
+                        break;
+                    }
+                    
                     if (connection){
                         log_info(" -> AVDTP_STREAM_ENDPOINT_IDLE, connection closed");
                         btstack_linked_list_remove(avdtp_connections, (btstack_linked_item_t*) connection); 
@@ -551,11 +560,6 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
                         }
                         break;
                     }
-
-                    stream_endpoint = avdtp_stream_endpoint_for_l2cap_cid(local_cid, context);
-                    if (!stream_endpoint) return;
-                    
-                    stream_endpoint_state_machine(connection, stream_endpoint, HCI_EVENT_PACKET, L2CAP_EVENT_CHANNEL_CLOSED, packet, size, context);
                     break;
 
                 case HCI_EVENT_DISCONNECTION_COMPLETE:
