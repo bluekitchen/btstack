@@ -938,7 +938,7 @@ typedef uint8_t sm_key_t[16];
  * @param page_scan_repetition_mode
  * @param class_of_device
  * @param clock_offset
- * @param rssi_availabe
+ * @param rssi_available
  * @param rssi
  * @param name_available
  * @param name_len

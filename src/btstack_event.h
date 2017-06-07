@@ -2981,12 +2981,12 @@ static inline uint16_t gap_event_inquiry_result_get_clock_offset(const uint8_t *
     return little_endian_read_16(event, 12);
 }
 /**
- * @brief Get field rssi_availabe from event GAP_EVENT_INQUIRY_RESULT
+ * @brief Get field rssi_available from event GAP_EVENT_INQUIRY_RESULT
  * @param event packet
- * @return rssi_availabe
+ * @return rssi_available
  * @note: btstack_type 1
  */
-static inline uint8_t gap_event_inquiry_result_get_rssi_availabe(const uint8_t * event){
+static inline uint8_t gap_event_inquiry_result_get_rssi_available(const uint8_t * event){
     return event[14];
 }
 /**
