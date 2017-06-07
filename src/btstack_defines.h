@@ -116,8 +116,9 @@ typedef uint8_t sm_key_t[16];
 
 
 // ERRORS
-
 // last error code in 2.1 is 0x38 - we start with 0x50 for BTstack errors
+
+/* ENUM_START: BTSTACK_ERROR_CODE */
 #define BTSTACK_CONNECTION_TO_BTDAEMON_FAILED              0x50
 #define BTSTACK_ACTIVATION_FAILED_SYSTEM_BLUETOOTH         0x51
 #define BTSTACK_ACTIVATION_POWERON_FAILED                  0x52
@@ -156,7 +157,7 @@ typedef uint8_t sm_key_t[16];
 #define SDP_HANDLE_INVALID                                 0x83
 #define SDP_QUERY_BUSY                                     0x84
 
-#define ATT_HANDLE_VALUE_INDICATION_IN_PORGRESS            0x90 
+#define ATT_HANDLE_VALUE_INDICATION_IN_PROGRESS            0x90 
 #define ATT_HANDLE_VALUE_INDICATION_TIMEOUT                0x91
 
 #define GATT_CLIENT_NOT_CONNECTED                          0x93
@@ -170,6 +171,13 @@ typedef uint8_t sm_key_t[16];
 #define BNEP_SERVICE_ALREADY_REGISTERED                    0xA0
 #define BNEP_CHANNEL_NOT_CONNECTED                         0xA1
 #define BNEP_DATA_LEN_EXCEEDS_MTU                          0xA2
+
+// OBEX ERRORS
+#define OBEX_UNKNOWN_ERROR                                 0xB0
+#define OBEX_CONNECT_FAILED                                0xB1
+#define OBEX_DISCONNECTED                                  0xB2
+#define OBEX_NOT_FOUND                                     0xB3
+/* ENUM_END */
 
 // DAEMON COMMANDS
 
@@ -276,11 +284,6 @@ typedef uint8_t sm_key_t[16];
 #define GATT_WRITE_CLIENT_CHARACTERISTIC_CONFIGURATION           0X81
 #define GATT_GET_MTU                                             0x82
 
-// OBEX ERRORS
-#define OBEX_UNKNOWN_ERROR       0x90
-#define OBEX_CONNECT_FAILED      0x91
-#define OBEX_DISCONNECTED        0x92
-#define OBEX_NOT_FOUND           0x93
 
 // EVENTS
 
