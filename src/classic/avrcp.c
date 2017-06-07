@@ -327,14 +327,31 @@ void avrcp_target_create_sdp_record(uint8_t * service, uint32_t service_record_h
     avrcp_create_sdp_record(0, service, service_record_handle, browsing, supported_features, service_name, service_provider_name);
 }
 
-static void avrcp_emit_repeat_and_shuffle_mode(btstack_packet_handler_t callback, uint16_t con_handle, uint8_t status, avrcp_repeat_mode_t repeat_mode, avrcp_shuffle_mode_t shuffle_mode){
+static void avrcp_emit_connection_established(btstack_packet_handler_t callback, uint8_t status, bd_addr_t addr, uint16_t con_handle, uint16_t avrcp_cid){
+    if (!callback) return;
+    uint8_t event[14];
+    int pos = 0;
+    event[pos++] = HCI_EVENT_AVRCP_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = AVRCP_SUBEVENT_CONNECTION_ESTABLISHED;
+    event[pos++] = status;
+    reverse_bd_addr(addr,&event[pos]);
+    pos += 6;
+    little_endian_store_16(event, pos, con_handle);
+    pos += 2;
+    little_endian_store_16(event, pos, avrcp_cid);
+    pos += 2;
+    (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
+static void avrcp_emit_repeat_and_shuffle_mode(btstack_packet_handler_t callback, uint16_t avrcp_cid, uint8_t status, avrcp_repeat_mode_t repeat_mode, avrcp_shuffle_mode_t shuffle_mode){
     if (!callback) return;
     uint8_t event[8];
     int pos = 0;
     event[pos++] = HCI_EVENT_AVRCP_META;
     event[pos++] = sizeof(event) - 2;
     event[pos++] = AVRCP_SUBEVENT_SHUFFLE_AND_REPEAT_MODE;
-    little_endian_store_16(event, pos, con_handle);
+    little_endian_store_16(event, pos, avrcp_cid);
     pos += 2;
     event[pos++] = status;
     event[pos++] = repeat_mode;
@@ -342,45 +359,28 @@ static void avrcp_emit_repeat_and_shuffle_mode(btstack_packet_handler_t callback
     (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-static void avrcp_emit_connection_established(btstack_packet_handler_t callback, uint16_t con_handle, uint8_t status, uint16_t local_cid, bd_addr_t addr){
-    if (!callback) return;
-    uint8_t event[14];
-    int pos = 0;
-    event[pos++] = HCI_EVENT_AVRCP_META;
-    event[pos++] = sizeof(event) - 2;
-    event[pos++] = AVRCP_SUBEVENT_CONNECTION_ESTABLISHED;
-    little_endian_store_16(event, pos, con_handle);
-    pos += 2;
-    event[pos++] = status;
-    little_endian_store_16(event, pos, local_cid);
-    pos += 2;
-    reverse_bd_addr(addr,&event[pos]);
-    pos += 6;
-    (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
-}
-
-static void avrcp_emit_operation_status(btstack_packet_handler_t callback, uint8_t subevent, uint16_t con_handle, uint8_t status, uint8_t operation_id){
+static void avrcp_emit_operation_status(btstack_packet_handler_t callback, uint8_t subevent, uint16_t avrcp_cid, uint8_t status, uint8_t operation_id){
     if (!callback) return;
     uint8_t event[7];
     int pos = 0;
     event[pos++] = HCI_EVENT_AVRCP_META;
     event[pos++] = sizeof(event) - 2;
     event[pos++] = subevent;
-    little_endian_store_16(event, pos, con_handle);
+    little_endian_store_16(event, pos, avrcp_cid);
     pos += 2;
     event[pos++] = status;
     event[pos++] = operation_id;
     (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-static void avrcp_emit_connection_closed(btstack_packet_handler_t callback, uint16_t con_handle){
+static void avrcp_emit_connection_closed(btstack_packet_handler_t callback, uint16_t avrcp_cid){
     if (!callback) return;
     uint8_t event[5];
     int pos = 0;
     event[pos++] = HCI_EVENT_AVRCP_META;
     event[pos++] = sizeof(event) - 2;
     event[pos++] = AVRCP_SUBEVENT_CONNECTION_RELEASED;
-    little_endian_store_16(event, pos, con_handle);
+    little_endian_store_16(event, pos, avrcp_cid);
     pos += 2;
     (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
@@ -391,17 +391,6 @@ static avrcp_connection_t * get_avrcp_connection_for_bd_addr(bd_addr_t addr){
     while (btstack_linked_list_iterator_has_next(&it)){
         avrcp_connection_t * connection = (avrcp_connection_t *)btstack_linked_list_iterator_next(&it);
         if (memcmp(addr, connection->remote_addr, 6) != 0) continue;
-        return connection;
-    }
-    return NULL;
-}
-
-static avrcp_connection_t * get_avrcp_connection_for_con_handle(hci_con_handle_t con_handle){
-    btstack_linked_list_iterator_t it;    
-    btstack_linked_list_iterator_init(&it, (btstack_linked_list_t *) &avrcp_connections);
-    while (btstack_linked_list_iterator_has_next(&it)){
-        avrcp_connection_t * connection = (avrcp_connection_t *)btstack_linked_list_iterator_next(&it);
-        if (connection->con_handle != con_handle) continue;
         return connection;
     }
     return NULL;
@@ -459,8 +448,8 @@ static void request_pass_through_release_control_cmd(avrcp_connection_t * connec
     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
 }
 
-static void request_pass_through_press_control_cmd(uint16_t con_handle, avrcp_operation_id_t opid, uint16_t playback_speed){
-    avrcp_connection_t * connection = get_avrcp_connection_for_con_handle(con_handle);
+static void request_pass_through_press_control_cmd(uint16_t avrcp_cid, avrcp_operation_id_t opid, uint16_t playback_speed){
+    avrcp_connection_t * connection = get_avrcp_connection_for_l2cap_signaling_cid(avrcp_cid);
     if (!connection){
         log_error("avrcp: could not find a connection.");
         return;
@@ -999,10 +988,12 @@ static void avrcp_handle_can_send_now(avrcp_connection_t * connection){
     switch (connection->state){
         case AVCTP_W2_SEND_PRESS_COMMAND:
             connection->state = AVCTP_W2_RECEIVE_PRESS_RESPONSE;
+            avrcp_send_cmd(connection->l2cap_signaling_cid, connection);
             break;
         case AVCTP_W2_SEND_COMMAND:
         case AVCTP_W2_SEND_RELEASE_COMMAND:
             connection->state = AVCTP_W2_RECEIVE_RESPONSE;
+            avrcp_send_cmd(connection->l2cap_signaling_cid, connection);
             break;
         case AVCTP_CONNECTION_OPENED:
             if (connection->disconnect){
@@ -1027,7 +1018,6 @@ static void avrcp_handle_can_send_now(avrcp_connection_t * connection){
         default:
             return;
     }
-    avrcp_send_cmd(connection->l2cap_signaling_cid, connection);
 }
 
 static avrcp_connection_t * avrcp_create_connection(bd_addr_t remote_addr){
@@ -1079,7 +1069,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     }
                     psm = l2cap_event_channel_opened_get_psm(packet); 
                     if (psm != BLUETOOTH_PROTOCOL_AVCTP){
-                        log_error("unexpected PSM - Not implemented yet: L2CAP_EVENT_CHANNEL_OPENED");
+                        log_error("L2CAP_EVENT_CHANNEL_OPENED avrcp: unexpected PSM");
                         return;
                     }
                     
@@ -1088,13 +1078,20 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 
                     con_handle = l2cap_event_channel_opened_get_handle(packet);
                     local_cid  = l2cap_event_channel_opened_get_local_cid(packet);
+                    
+                    if (connection->l2cap_signaling_cid != local_cid) {
+                        log_info("Connection is not established, expected 0x%02X l2cap cid, received 0x%02X\n", connection->l2cap_signaling_cid, local_cid);
+                        break;
+                    }
+
                     // printf("L2CAP_EVENT_CHANNEL_OPENED: Channel successfully opened: %s, handle 0x%02x, psm 0x%02x, local cid 0x%02x, remote cid 0x%02x\n",
                     //        bd_addr_to_str(event_addr), con_handle, psm, local_cid,  l2cap_event_channel_opened_get_remote_cid(packet));
-                    if (connection->l2cap_signaling_cid == 0) {
+
+                    if (connection->con_handle == 0) {
                         connection->l2cap_signaling_cid = local_cid;
                         connection->con_handle = con_handle;
                         connection->state = AVCTP_CONNECTION_OPENED;
-                        avrcp_emit_connection_established(avrcp_callback, con_handle, 0, local_cid, event_addr);
+                        avrcp_emit_connection_established(avrcp_callback, 0, event_addr, con_handle, local_cid);
                         break;
                     }
                     break;
@@ -1137,7 +1134,7 @@ void avrcp_register_packet_handler(btstack_packet_handler_t callback){
     avrcp_callback = callback;
 }
 
-uint8_t avrcp_connect(bd_addr_t bd_addr){
+uint8_t avrcp_connect(bd_addr_t bd_addr, uint16_t * avrcp_cid){
     avrcp_connection_t * connection = get_avrcp_connection_for_bd_addr(bd_addr);
     if (connection){
         return ERROR_CODE_COMMAND_DISALLOWED;
@@ -1150,12 +1147,15 @@ uint8_t avrcp_connect(bd_addr_t bd_addr){
     }
 
     connection->state = AVCTP_CONNECTION_W4_L2CAP_CONNECTED;
-    l2cap_create_channel(packet_handler, connection->remote_addr, BLUETOOTH_PROTOCOL_AVCTP, 0xffff, NULL);
+    l2cap_create_channel(packet_handler, connection->remote_addr, BLUETOOTH_PROTOCOL_AVCTP, 0xffff, &connection->l2cap_signaling_cid);
+    if (avrcp_cid) {
+        *avrcp_cid = connection->l2cap_signaling_cid;
+    }
     return ERROR_CODE_SUCCESS;
 }
 
-void avrcp_unit_info(uint16_t con_handle){
-    avrcp_connection_t * connection = get_avrcp_connection_for_con_handle(con_handle);
+void avrcp_unit_info(uint16_t avrcp_cid){
+    avrcp_connection_t * connection = get_avrcp_connection_for_l2cap_signaling_cid(avrcp_cid);
     if (!connection){
         log_error("avrcp_unit_info: could not find a connection.");
         return;
@@ -1173,8 +1173,8 @@ void avrcp_unit_info(uint16_t con_handle){
     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
 }
 
-static void avrcp_get_capabilities(uint16_t con_handle, uint8_t capability_id){
-    avrcp_connection_t * connection = get_avrcp_connection_for_con_handle(con_handle);
+static void avrcp_get_capabilities(uint16_t avrcp_cid, uint8_t capability_id){
+    avrcp_connection_t * connection = get_avrcp_connection_for_l2cap_signaling_cid(avrcp_cid);
     if (!connection){
         log_error("avrcp_get_capabilities: could not find a connection.");
         return;
@@ -1196,57 +1196,57 @@ static void avrcp_get_capabilities(uint16_t con_handle, uint8_t capability_id){
     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
 }
 
-void avrcp_get_supported_company_ids(uint16_t con_handle){
-    avrcp_get_capabilities(con_handle, AVRCP_CAPABILITY_ID_COMPANY);
+void avrcp_get_supported_company_ids(uint16_t avrcp_cid){
+    avrcp_get_capabilities(avrcp_cid, AVRCP_CAPABILITY_ID_COMPANY);
 }
 
-void avrcp_get_supported_events(uint16_t con_handle){
-    avrcp_get_capabilities(con_handle, AVRCP_CAPABILITY_ID_EVENT);
+void avrcp_get_supported_events(uint16_t avrcp_cid){
+    avrcp_get_capabilities(avrcp_cid, AVRCP_CAPABILITY_ID_EVENT);
 }
 
 
-void avrcp_play(uint16_t con_handle){
-    request_pass_through_press_control_cmd(con_handle, AVRCP_OPERATION_ID_PLAY, 0);
+void avrcp_play(uint16_t avrcp_cid){
+    request_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_PLAY, 0);
 }
 
-void avrcp_stop(uint16_t con_handle){
-    request_pass_through_press_control_cmd(con_handle, AVRCP_OPERATION_ID_STOP, 0);
+void avrcp_stop(uint16_t avrcp_cid){
+    request_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_STOP, 0);
 }
 
-void avrcp_pause(uint16_t con_handle){
-    request_pass_through_press_control_cmd(con_handle, AVRCP_OPERATION_ID_PAUSE, 0);
+void avrcp_pause(uint16_t avrcp_cid){
+    request_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_PAUSE, 0);
 }
 
-void avrcp_forward(uint16_t con_handle){
-    request_pass_through_press_control_cmd(con_handle, AVRCP_OPERATION_ID_FORWARD, 0);
+void avrcp_forward(uint16_t avrcp_cid){
+    request_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_FORWARD, 0);
 } 
 
-void avrcp_backward(uint16_t con_handle){
-    request_pass_through_press_control_cmd(con_handle, AVRCP_OPERATION_ID_BACKWARD, 0);
+void avrcp_backward(uint16_t avrcp_cid){
+    request_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_BACKWARD, 0);
 }
 
-void avrcp_start_rewind(uint16_t con_handle){
-    request_pass_through_press_control_cmd(con_handle, AVRCP_OPERATION_ID_REWIND, 0);
+void avrcp_start_rewind(uint16_t avrcp_cid){
+    request_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_REWIND, 0);
 }
 
-void avrcp_volume_up(uint16_t con_handle){
-    request_pass_through_press_control_cmd(con_handle, AVRCP_OPERATION_ID_VOLUME_UP, 0);
+void avrcp_volume_up(uint16_t avrcp_cid){
+    request_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_VOLUME_UP, 0);
 }
 
-void avrcp_volume_down(uint16_t con_handle){
-    request_pass_through_press_control_cmd(con_handle, AVRCP_OPERATION_ID_VOLUME_DOWN, 0);
+void avrcp_volume_down(uint16_t avrcp_cid){
+    request_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_VOLUME_DOWN, 0);
 }
 
-void avrcp_mute(uint16_t con_handle){
-    request_pass_through_press_control_cmd(con_handle, AVRCP_OPERATION_ID_MUTE, 0);
+void avrcp_mute(uint16_t avrcp_cid){
+    request_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_MUTE, 0);
 }
 
-void avrcp_skip(uint16_t con_handle){
-    request_pass_through_press_control_cmd(con_handle, AVRCP_OPERATION_ID_SKIP, 0);
+void avrcp_skip(uint16_t avrcp_cid){
+    request_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_SKIP, 0);
 }
 
-void avrcp_stop_rewind(uint16_t con_handle){
-    avrcp_connection_t * connection = get_avrcp_connection_for_con_handle(con_handle);
+void avrcp_stop_rewind(uint16_t avrcp_cid){
+    avrcp_connection_t * connection = get_avrcp_connection_for_l2cap_signaling_cid(avrcp_cid);
     if (!connection){
         log_error("avrcp_stop_rewind: could not find a connection.");
         return;
@@ -1255,12 +1255,12 @@ void avrcp_stop_rewind(uint16_t con_handle){
     request_pass_through_release_control_cmd(connection);
 }
 
-void avrcp_start_fast_forward(uint16_t con_handle){
-    request_pass_through_press_control_cmd(con_handle, AVRCP_OPERATION_ID_FAST_FORWARD, 0);
+void avrcp_start_fast_forward(uint16_t avrcp_cid){
+    request_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_FAST_FORWARD, 0);
 }
 
-void avrcp_stop_fast_forward(uint16_t con_handle){
-    avrcp_connection_t * connection = get_avrcp_connection_for_con_handle(con_handle);
+void avrcp_stop_fast_forward(uint16_t avrcp_cid){
+    avrcp_connection_t * connection = get_avrcp_connection_for_l2cap_signaling_cid(avrcp_cid);
     if (!connection){
         log_error("avrcp_stop_fast_forward: could not find a connection.");
         return;
@@ -1269,8 +1269,8 @@ void avrcp_stop_fast_forward(uint16_t con_handle){
     request_pass_through_release_control_cmd(connection);
 }
 
-void avrcp_get_play_status(uint16_t con_handle){
-    avrcp_connection_t * connection = get_avrcp_connection_for_con_handle(con_handle);
+void avrcp_get_play_status(uint16_t avrcp_cid){
+    avrcp_connection_t * connection = get_avrcp_connection_for_l2cap_signaling_cid(avrcp_cid);
     if (!connection){
         log_error("avrcp_get_play_status: could not find a connection.");
         return;
@@ -1291,8 +1291,8 @@ void avrcp_get_play_status(uint16_t con_handle){
     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
 }
 
-void avrcp_enable_notification(uint16_t con_handle, avrcp_notification_event_id_t event_id){
-    avrcp_connection_t * connection = get_avrcp_connection_for_con_handle(con_handle);
+void avrcp_enable_notification(uint16_t avrcp_cid, avrcp_notification_event_id_t event_id){
+    avrcp_connection_t * connection = get_avrcp_connection_for_l2cap_signaling_cid(avrcp_cid);
     if (!connection){
         log_error("avrcp_get_play_status: could not find a connection.");
         return;
@@ -1300,8 +1300,8 @@ void avrcp_enable_notification(uint16_t con_handle, avrcp_notification_event_id_
     avrcp_register_notification(connection, event_id);
 }
 
-void avrcp_disable_notification(uint16_t con_handle, avrcp_notification_event_id_t event_id){
-    avrcp_connection_t * connection = get_avrcp_connection_for_con_handle(con_handle);
+void avrcp_disable_notification(uint16_t avrcp_cid, avrcp_notification_event_id_t event_id){
+    avrcp_connection_t * connection = get_avrcp_connection_for_l2cap_signaling_cid(avrcp_cid);
     if (!connection){
         log_error("avrcp_get_play_status: could not find a connection.");
         return;
@@ -1309,8 +1309,8 @@ void avrcp_disable_notification(uint16_t con_handle, avrcp_notification_event_id
     connection->notifications_to_deregister |= (1 << event_id);
 }
 
-void avrcp_get_now_playing_info(uint16_t con_handle){
-    avrcp_connection_t * connection = get_avrcp_connection_for_con_handle(con_handle);
+void avrcp_get_now_playing_info(uint16_t avrcp_cid){
+    avrcp_connection_t * connection = get_avrcp_connection_for_l2cap_signaling_cid(avrcp_cid);
     if (!connection){
         log_error("avrcp_get_capabilities: could not find a connection.");
         return;
@@ -1345,8 +1345,8 @@ void avrcp_get_now_playing_info(uint16_t con_handle){
 
 }
 
-void avrcp_set_absolute_volume(uint16_t con_handle, uint8_t volume){
-     avrcp_connection_t * connection = get_avrcp_connection_for_con_handle(con_handle);
+void avrcp_set_absolute_volume(uint16_t avrcp_cid, uint8_t volume){
+     avrcp_connection_t * connection = get_avrcp_connection_for_l2cap_signaling_cid(avrcp_cid);
     if (!connection){
         log_error("avrcp_get_capabilities: could not find a connection.");
         return;
@@ -1374,8 +1374,8 @@ void avrcp_set_absolute_volume(uint16_t con_handle, uint8_t volume){
     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
 }
 
-void avrcp_query_shuffle_and_repeat_modes(uint16_t con_handle){
-    avrcp_connection_t * connection = get_avrcp_connection_for_con_handle(con_handle);
+void avrcp_query_shuffle_and_repeat_modes(uint16_t avrcp_cid){
+    avrcp_connection_t * connection = get_avrcp_connection_for_l2cap_signaling_cid(avrcp_cid);
     if (!connection){
         log_error("avrcp_get_capabilities: could not find a connection.");
         return;
@@ -1403,8 +1403,8 @@ void avrcp_query_shuffle_and_repeat_modes(uint16_t con_handle){
 }
 
 
-static void avrcp_set_current_player_application_setting_value(uint16_t con_handle, uint8_t attribute_id, uint8_t attribute_value){
-    avrcp_connection_t * connection = get_avrcp_connection_for_con_handle(con_handle);
+static void avrcp_set_current_player_application_setting_value(uint16_t avrcp_cid, uint8_t attribute_id, uint8_t attribute_value){
+    avrcp_connection_t * connection = get_avrcp_connection_for_l2cap_signaling_cid(avrcp_cid);
     if (!connection){
         log_error("avrcp_get_capabilities: could not find a connection.");
         return;
@@ -1433,18 +1433,18 @@ static void avrcp_set_current_player_application_setting_value(uint16_t con_hand
     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
 }
 
-void avrcp_set_shuffle_mode(uint16_t con_handle, avrcp_shuffle_mode_t mode){
+void avrcp_set_shuffle_mode(uint16_t avrcp_cid, avrcp_shuffle_mode_t mode){
     if (mode < AVRCP_SHUFFLE_MODE_OFF || mode > AVRCP_SHUFFLE_MODE_GROUP) return;
-    avrcp_set_current_player_application_setting_value(con_handle, 0x03, mode);
+    avrcp_set_current_player_application_setting_value(avrcp_cid, 0x03, mode);
 }
 
-void avrcp_set_repeat_mode(uint16_t con_handle, avrcp_repeat_mode_t mode){
+void avrcp_set_repeat_mode(uint16_t avrcp_cid, avrcp_repeat_mode_t mode){
     if (mode < AVRCP_REPEAT_MODE_OFF || mode > AVRCP_REPEAT_MODE_GROUP) return;
-    avrcp_set_current_player_application_setting_value(con_handle, 0x02, mode);
+    avrcp_set_current_player_application_setting_value(avrcp_cid, 0x02, mode);
 }
 
-void avrcp_disconnect(uint16_t con_handle){
-    avrcp_connection_t * connection = get_avrcp_connection_for_con_handle(con_handle);
+void avrcp_disconnect(uint16_t avrcp_cid){
+    avrcp_connection_t * connection = get_avrcp_connection_for_l2cap_signaling_cid(avrcp_cid);
     if (!connection){
         log_error("avrcp_get_capabilities: could not find a connection.");
         return;

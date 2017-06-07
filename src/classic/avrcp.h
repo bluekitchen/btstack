@@ -189,7 +189,7 @@ typedef struct {
     bd_addr_t remote_addr;
     hci_con_handle_t con_handle;
     uint16_t l2cap_signaling_cid;
-    
+   
     avctp_connection_state_t state;
     uint8_t wait_to_send;
 
@@ -269,136 +269,138 @@ void avrcp_register_packet_handler(btstack_packet_handler_t callback);
 /**
  * @brief Connect to device with a bluetooth address.
  * @param bd_addr
+ * @param avrcp_cid
  */
-uint8_t avrcp_connect(bd_addr_t bd_addr);
-void avrcp_disconnect(uint16_t con_handle);
+uint8_t avrcp_connect(bd_addr_t bd_addr, uint16_t * avrcp_cid);
+
+void avrcp_disconnect(uint16_t avrcp_cid);
 /**
  * @brief Unit info.
- * @param con_handle
+ * @param avrcp_cid
  */
-void avrcp_unit_info(uint16_t con_handle);
+void avrcp_unit_info(uint16_t avrcp_cid);
 
 /**
  * @brief Get capabilities.
- * @param con_handle
+ * @param avrcp_cid
  */
-void avrcp_get_supported_company_ids(uint16_t con_handle);
-void avrcp_get_supported_events(uint16_t con_handle);
+void avrcp_get_supported_company_ids(uint16_t avrcp_cid);
+void avrcp_get_supported_events(uint16_t avrcp_cid);
 
 
 /**
  * @brief Play. Event AVRCP_SUBEVENT_OPERATION_COMPLETE returns operation id and status.
- * @param con_handle
+ * @param avrcp_cid
  */
-void avrcp_play(uint16_t con_handle);
+void avrcp_play(uint16_t avrcp_cid);
 
 /**
  * @brief Stop. Event AVRCP_SUBEVENT_OPERATION_COMPLETE returns operation id and status.
- * @param con_handle
+ * @param avrcp_cid
  */
-void avrcp_stop(uint16_t con_handle);
+void avrcp_stop(uint16_t avrcp_cid);
 
 /**
  * @brief Pause. Event AVRCP_SUBEVENT_OPERATION_COMPLETE returns operation id and status.
- * @param con_handle
+ * @param avrcp_cid
  */
-void avrcp_pause(uint16_t con_handle);
+void avrcp_pause(uint16_t avrcp_cid);
 
 /**
  * @brief Fast forward. Event AVRCP_SUBEVENT_OPERATION_COMPLETE returns operation id and status.
- * @param con_handle
+ * @param avrcp_cid
  */
-void avrcp_start_fast_forward(uint16_t con_handle);
-void avrcp_stop_fast_forward(uint16_t con_handle);
+void avrcp_start_fast_forward(uint16_t avrcp_cid);
+void avrcp_stop_fast_forward(uint16_t avrcp_cid);
 
 /**
  * @brief Rewind. Event AVRCP_SUBEVENT_OPERATION_COMPLETE returns operation id and status.
- * @param con_handle
+ * @param avrcp_cid
  */
-void avrcp_start_rewind(uint16_t con_handle);
-void avrcp_stop_rewind(uint16_t con_handle);
+void avrcp_start_rewind(uint16_t avrcp_cid);
+void avrcp_stop_rewind(uint16_t avrcp_cid);
 
 /**
  * @brief Forward. Event AVRCP_SUBEVENT_OPERATION_COMPLETE returns operation id and status.
- * @param con_handle
+ * @param avrcp_cid
  */
-void avrcp_forward(uint16_t con_handle); 
+void avrcp_forward(uint16_t avrcp_cid); 
 
 /**
  * @brief Backward. Event AVRCP_SUBEVENT_OPERATION_COMPLETE returns operation id and status.
- * @param con_handle
+ * @param avrcp_cid
  */
-void avrcp_backward(uint16_t con_handle);
+void avrcp_backward(uint16_t avrcp_cid);
 
 
 /**
  * @brief Get play status. Returns event of type AVRCP_SUBEVENT_PLAY_STATUS (length, position, play_status).
  * If TG does not support SongLength And SongPosition on TG, then TG shall return 0xFFFFFFFF.
- * @param con_handle
+ * @param avrcp_cid
  */
-void avrcp_get_play_status(uint16_t con_handle);
+void avrcp_get_play_status(uint16_t avrcp_cid);
 
 /**
  * @brief Register notification. Response via AVRCP_SUBEVENT_ENABLE_NOTIFICATION_COMPLETE.
- * @param con_handle
+ * @param avrcp_cid
  * @param event_id
  */
-void avrcp_enable_notification(uint16_t con_handle, avrcp_notification_event_id_t event_id);
-void avrcp_disable_notification(uint16_t con_handle, avrcp_notification_event_id_t event_id);
+void avrcp_enable_notification(uint16_t avrcp_cid, avrcp_notification_event_id_t event_id);
+void avrcp_disable_notification(uint16_t avrcp_cid, avrcp_notification_event_id_t event_id);
 
 /**
  * @brief Get info on now playing media.
- * @param con_handle
+ * @param avrcp_cid
  */
-void avrcp_get_now_playing_info(uint16_t con_handle);
+void avrcp_get_now_playing_info(uint16_t avrcp_cid);
 
 /**
  * @brief Set absolute volume 0-127 (corresponds to 0-100%). Response via AVRCP_SUBEVENT_SET_ABSOLUTE_VOLUME_RESPONSE
- * @param con_handle
+ * @param avrcp_cid
  */
-void avrcp_set_absolute_volume(uint16_t con_handle, uint8_t volume);
+void avrcp_set_absolute_volume(uint16_t avrcp_cid, uint8_t volume);
 
 /**
  * @brief Turns the volume to high. Event AVRCP_SUBEVENT_OPERATION_COMPLETE returns operation id and status.
- * @param con_handle
+ * @param avrcp_cid
  */
-void avrcp_volume_up(uint16_t con_handle);
+void avrcp_volume_up(uint16_t avrcp_cid);
 
 /**
  * @brief Turns the volume to low. Event AVRCP_SUBEVENT_OPERATION_COMPLETE returns operation id and status.
- * @param con_handle
+ * @param avrcp_cid
  */
-void avrcp_volume_down(uint16_t con_handle);
+void avrcp_volume_down(uint16_t avrcp_cid);
 
 /**
  * @brief Puts the sound out. Event AVRCP_SUBEVENT_OPERATION_COMPLETE returns operation id and status.
- * @param con_handle
+ * @param avrcp_cid
  */
-void avrcp_mute(uint16_t con_handle);
+void avrcp_mute(uint16_t avrcp_cid);
 
 /**
  * @brief Skip to next playing media. Event AVRCP_SUBEVENT_OPERATION_COMPLETE returns operation id and status.
- * @param con_handle
+ * @param avrcp_cid
  */
-void avrcp_skip(uint16_t con_handle);
+void avrcp_skip(uint16_t avrcp_cid);
 
 /**
  * @brief Query repeat and shuffle mode. Response via AVRCP_SUBEVENT_SHUFFLE_AND_REPEAT_MODE.
- * @param con_handle
+ * @param avrcp_cid
  */
-void avrcp_query_shuffle_and_repeat_modes(uint16_t con_handle);
+void avrcp_query_shuffle_and_repeat_modes(uint16_t avrcp_cid);
 
 /**
  * @brief Set shuffle mode. Event AVRCP_SUBEVENT_OPERATION_COMPLETE returns operation id and status.
- * @param con_handle
+ * @param avrcp_cid
  */
-void avrcp_set_shuffle_mode(uint16_t con_handle, avrcp_shuffle_mode_t mode);
+void avrcp_set_shuffle_mode(uint16_t avrcp_cid, avrcp_shuffle_mode_t mode);
 
 /**
  * @brief Set repeat mode. Event AVRCP_SUBEVENT_OPERATION_COMPLETE returns operation id and status.
- * @param con_handle
+ * @param avrcp_cid
  */
-void avrcp_set_repeat_mode(uint16_t con_handle, avrcp_repeat_mode_t mode);
+void avrcp_set_repeat_mode(uint16_t avrcp_cid, avrcp_repeat_mode_t mode);
 
 const char * avrcp_subunit2str(uint16_t index);
 const char * avrcp_event2str(uint16_t index);

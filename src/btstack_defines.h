@@ -1453,26 +1453,26 @@ typedef uint8_t sm_key_t[16];
 /** AVRCP Subevent */
 
 /**
- * @format 1H12B
+ * @format 11BH2
  * @param subevent_code
- * @param con_handle
  * @param status 0 == OK
- * @param local_cid
  * @param bd_addr
+ * @param con_handle
+ * @param avrcp_cid
  */
 #define AVRCP_SUBEVENT_CONNECTION_ESTABLISHED                           0x01
 
 /**
- * @format 1H
+ * @format 12
  * @param subevent_code
- * @param con_handle
+ * @param avrcp_cid
  */
 #define AVRCP_SUBEVENT_CONNECTION_RELEASED                              0x02
 
 /**
- * @format 1H1114JVJVJVJV
+ * @format 121114JVJVJVJV
  * @param subevent_code
- * @param con_handle
+ * @param avrcp_cid
  * @param status
  * @param track
  * @param total_tracks
@@ -1489,9 +1489,9 @@ typedef uint8_t sm_key_t[16];
 #define AVRCP_SUBEVENT_NOW_PLAYING_INFO                                 0x03
 
 /**
- * @format 1H111
+ * @format 12111
  * @param subevent_code
- * @param con_handle
+ * @param avrcp_cid
  * @param status
  * @param repeat_mode
  * @param shuffle_mode
@@ -1499,9 +1499,9 @@ typedef uint8_t sm_key_t[16];
 #define AVRCP_SUBEVENT_SHUFFLE_AND_REPEAT_MODE                          0x04
 
 /**
- * @format 1H1441
+ * @format 121441
  * @param subevent_code
- * @param con_handle
+ * @param avrcp_cid
  * @param status
  * @param song_length
  * @param song_position
@@ -1510,88 +1510,88 @@ typedef uint8_t sm_key_t[16];
  #define AVRCP_SUBEVENT_PLAY_STATUS                                     0x05
 
 /**
- * @format 1H11
+ * @format 1211
  * @param subevent_code
- * @param con_handle
+ * @param avrcp_cid
  * @param status
  * @param playback_status
  */
 #define AVRCP_SUBEVENT_NOTIFICATION_PLAYBACK_STATUS_CHANGED             0x06
 
 /**
- * @format 1H11
+ * @format 1211
  * @param subevent_code
- * @param con_handle
+ * @param avrcp_cid
  * @param status
  * @param track_status
  */
 #define AVRCP_SUBEVENT_NOTIFICATION_TRACK_CHANGED                       0x07
   
 /**
- * @format 1H1
+ * @format 121
  * @param subevent_code
- * @param con_handle
+ * @param avrcp_cid
  * @param status
  */
 #define AVRCP_SUBEVENT_NOTIFICATION_NOW_PLAYING_CONTENT_CHANGED          0x08
 
 /**
- * @format 1H1
+ * @format 121
  * @param subevent_code
- * @param con_handle
+ * @param avrcp_cid
  * @param status
  */
 #define AVRCP_SUBEVENT_NOTIFICATION_AVAILABLE_PLAYERS_CHANGED            0x09
 
 /**
- * @format 1H11
+ * @format 1211
  * @param subevent_code
- * @param con_handle
+ * @param avrcp_cid
  * @param status
  * @param absolute_volume
  */
 #define AVRCP_SUBEVENT_NOTIFICATION_VOLUME_CHANGED                       0x0A
 
 /**
- * @format 1H11
+ * @format 1211
  * @param subevent_code
- * @param con_handle
+ * @param avrcp_cid
  * @param status
  * @param absolute_volume
  */
 #define AVRCP_SUBEVENT_SET_ABSOLUTE_VOLUME_RESPONSE                      0x0B
 
 /**
- * @format 1H11
+ * @format 1211
  * @param subevent_code
- * @param con_handle
+ * @param avrcp_cid
  * @param status
  * @param notification_id
  */
 #define AVRCP_SUBEVENT_ENABLE_NOTIFICATION_COMPLETE                       0x0C
 
 /**
- * @format 1H11
+ * @format 1211
  * @param subevent_code
- * @param con_handle
+ * @param avrcp_cid
  * @param status
  * @param operation_id
  */
 #define AVRCP_SUBEVENT_OPERATION_START                                    0x0D
 
 /**
- * @format 1H11
+ * @format 1211
  * @param subevent_code
- * @param con_handle
+ * @param avrcp_cid
  * @param status
  * @param operation_id
  */
 #define AVRCP_SUBEVENT_OPERATION_COMPLETE                                 0x0E
 
 /**
- * @format 1H1
+ * @format 121
  * @param subevent_code
- * @param con_handle
+ * @param avrcp_cid
  * @param status
  */
 #define AVRCP_SUBEVENT_PLAYER_APPLICATION_VALUE_RESPONSE                   0x0F
