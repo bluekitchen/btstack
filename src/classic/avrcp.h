@@ -270,7 +270,7 @@ void avrcp_register_packet_handler(btstack_packet_handler_t callback);
  * @brief Connect to device with a bluetooth address.
  * @param bd_addr
  */
-void avrcp_connect(bd_addr_t bd_addr);
+uint8_t avrcp_connect(bd_addr_t bd_addr);
 void avrcp_disconnect(uint16_t con_handle);
 /**
  * @brief Unit info.

@@ -557,22 +557,23 @@ static uint8_t avrcp_cmd_opcode(uint8_t *packet, uint16_t size){
 }
 
 static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connection_t * connection, uint8_t *packet, uint16_t size){
-    avrcp_command_type_t ctype;
-    avrcp_subunit_type_t subunit_type;
-    avrcp_subunit_type_t subunit_id;
-
     uint8_t operands[20];
     uint8_t opcode;
-    int pos = 0;
+    int     pos = 3;
     // uint8_t transport_header = packet[0];
     // uint8_t transaction_label = transport_header >> 4;
     // uint8_t packet_type = (transport_header & 0x0F) >> 2;
     // uint8_t frame_type = (transport_header & 0x03) >> 1;
     // uint8_t ipid = transport_header & 0x01;
-    uint8_t byte_value = packet[2];
+    // uint8_t byte_value = packet[2];
     // uint16_t pid = (byte_value << 8) | packet[2];
-    pos = 3;
-
+    
+    avrcp_command_type_t ctype = packet[pos++];
+    uint8_t byte_value = packet[pos++];
+    avrcp_subunit_type_t subunit_type = byte_value >> 3;
+    avrcp_subunit_type_t subunit_id = byte_value & 0x07;
+    opcode = packet[pos++];
+    
     // printf("    Transport header 0x%02x (transaction_label %d, packet_type %d, frame_type %d, ipid %d), pid 0x%4x\n", 
     //     transport_header, transaction_label, packet_type, frame_type, ipid, pid);
     // // printf_hexdump(packet+pos, size-pos);
@@ -581,12 +582,6 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
             if (connection->state == AVCTP_W2_RECEIVE_RESPONSE){
                 connection->state = AVCTP_CONNECTION_OPENED;
             }
-            ctype = packet[pos++];
-            byte_value = packet[pos++];
-            subunit_type = byte_value >> 3;
-            subunit_id = byte_value & 0x07;
-            opcode = packet[pos++];
-            
             // operands:
             memcpy(operands, packet+pos, 5);
             uint8_t unit_type = operands[1] >> 3;
@@ -600,11 +595,6 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
             if (connection->state == AVCTP_W2_RECEIVE_RESPONSE){
                 connection->state = AVCTP_CONNECTION_OPENED;
             }
-            ctype = packet[pos++];
-            byte_value = packet[pos++];
-            subunit_type = byte_value >> 3;
-            subunit_id = byte_value & 0x07;
-            opcode = packet[pos++];
 
             if (size - pos < 7) {
                 log_error("avrcp: wrong packet size");
@@ -965,11 +955,6 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
             break;
         case AVRCP_CMD_OPCODE_PASS_THROUGH:{
             // 0x80 | connection->cmd_operands[0]
-            ctype = packet[pos++];
-            byte_value = packet[pos++];
-            subunit_type = byte_value >> 3;
-            subunit_id = byte_value & 0x07;
-            opcode = packet[pos++];
             uint8_t operation_id = packet[pos++];
             switch (connection->state){
                 case AVCTP_W2_RECEIVE_PRESS_RESPONSE:
@@ -1152,18 +1137,21 @@ void avrcp_register_packet_handler(btstack_packet_handler_t callback){
     avrcp_callback = callback;
 }
 
-void avrcp_connect(bd_addr_t bd_addr){
+uint8_t avrcp_connect(bd_addr_t bd_addr){
     avrcp_connection_t * connection = get_avrcp_connection_for_bd_addr(bd_addr);
-    if (!connection){
-        connection = avrcp_create_connection(bd_addr);
+    if (connection){
+        return ERROR_CODE_COMMAND_DISALLOWED;
     }
+    
+    connection = avrcp_create_connection(bd_addr);
     if (!connection){
-        log_error("avrcp: could not find or create a connection.");
-        return;
+        log_error("avrcp: could not allocate connection struct.");
+        return BTSTACK_MEMORY_ALLOC_FAILED;
     }
-    if (connection->state != AVCTP_CONNECTION_IDLE) return;
+
     connection->state = AVCTP_CONNECTION_W4_L2CAP_CONNECTED;
     l2cap_create_channel(packet_handler, connection->remote_addr, BLUETOOTH_PROTOCOL_AVCTP, 0xffff, NULL);
+    return ERROR_CODE_SUCCESS;
 }
 
 void avrcp_unit_info(uint16_t con_handle){
